@@ -3,13 +3,18 @@
 // chặn member sớm): platform_admin mọi công ty · tenant_admin CHỈ công ty mình (khác ⇒ 404, không lộ tồn tại) · còn lại 403.
 // Ghi qua `LibraryService.write` = `withConfigWrite` (scope system, khoá `config_meta` ⇒ hai admin cùng bấm tuần tự: người sau thấy bản đã có ⇒ 200
 // `created:false`) trong MỘT transaction: sao + vào tập gán + đổi luật + audit. Không đọc/ghi gì ngoài công ty `:tid`.
-import type { CloneForCompanyResponse, ProcessLibraryView } from "@ai/contracts/hub-admin";
+import type {
+  CloneForCompanyResponse,
+  ProcessDefInput,
+  ProcessLibraryView,
+} from "@ai/contracts/hub-admin";
 import { PROCESS_LIBRARY_VIEW_RUNS_MAX } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import type { ProcessDeps } from "../core/ports";
+import { subprocessCheck } from "../defs/edge-check";
 import { assertStagesWithinLimit } from "../defs/platform-limits";
 import { labelOf, runRecordLabels } from "../runs/run-record-labels";
 import { listRuns, toSummary } from "../runs/runs.repo";
@@ -91,6 +96,11 @@ export class CompanyLibraryService {
       if (!rel) throw libError("PROCESS_NOT_PUBLISHED");
       await assertStagesWithinLimit(tx, rel.stages.length); // CR-122 p22 · bản xuất bản cũ dài hơn trần mới ⇒ không sao chép
       const key = await co.freeCompanyKey(tx, tenantId, `${src.key.slice(0, KEY_BASE_MAX)}-copy`);
+      // CR-125 · Quy trình con: bản riêng cùng guard (có / vòng / sâu) như lưu def công ty.
+      await subprocessCheck(tx, tenantId, {
+        key,
+        stages: rel.stages,
+      } as unknown as ProcessDefInput);
       const newId = await co.insertCompanyCopy(tx, {
         src: src.id,
         tenantId,

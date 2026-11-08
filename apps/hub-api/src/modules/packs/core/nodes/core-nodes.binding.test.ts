@@ -11,7 +11,7 @@ const fresh = () =>
   });
 
 describe("bindCoreNodes", () => {
-  it("ghi nhận 7 bước cơ bản với executor lõi, không đăng ký validator/tool", () => {
+  it("ghi nhận 8 bước cơ bản với executor lõi, không đăng ký validator/tool", () => {
     const r = fresh();
     const keys = bindCoreNodes(r);
     expect(keys.sort()).toEqual(
@@ -21,6 +21,7 @@ describe("bindCoreNodes", () => {
         "core.email",
         "core.end",
         "core.if",
+        "core.subprocess",
         "core.wait-for",
         "core.wait-until",
       ].sort(),

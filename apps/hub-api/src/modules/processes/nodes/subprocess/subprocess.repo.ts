@@ -28,6 +28,39 @@ export async function ancestorDepth(tx: Tx, tenantId: string, runId: string): Pr
   return Number(r?.n ?? 0);
 }
 
+/** Chu kỳ hẹn canh: lưới an toàn khi đường nhanh (trigger 0129) không chạy (lượt con bị xoá, hẹn đang bị vòng khác giữ…). */
+export const SUBPROCESS_WATCH_MS = 10 * 60_000;
+
+/**
+ * MỘT câu: stage cha có hẹn canh mở ⇒ (dueNow) kéo về `now`; chưa có ⇒ ghi hẹn canh `sub:<stage>:<attempt>:<round>:<n>` tới hạn sau
+ * `SUBPROCESS_WATCH_MS` (hoặc ngay). Gọi khi run cha ĐÃ khoá (launcher / `finishWait`) ⇒ không hai hẹn canh mở cho một stage.
+ */
+export async function armWatch(
+  tx: Tx,
+  tenantId: string,
+  w: {
+    runId: string;
+    stage: { id: string; attempt: number; round: number };
+    now: Date;
+    dueNow: boolean;
+  },
+): Promise<void> {
+  const due = new Date(w.now.getTime() + (w.dueNow ? 0 : SUBPROCESS_WATCH_MS)).toISOString();
+  const base = `sub:${w.stage.id}:${Number(w.stage.attempt)}:${Number(w.stage.round)}:`;
+  await tx.execute(sql`with open as (
+      select id from hub.process_timers where tenant_id = ${tenantId} and stage_run_id = ${w.stage.id}
+        and kind = 'wait_until' and fired_at is null and cancelled_at is null and idempotency_key like 'sub:%'
+      for update),
+    up as (update hub.process_timers set due_at = least(due_at, ${due}::timestamptz)
+      where ${w.dueNow} and id in (select id from open) returning 1)
+    insert into hub.process_timers (tenant_id, process_run_id, stage_run_id, kind, due_at, timezone, idempotency_key)
+    select ${tenantId}, ${w.runId}, ${w.stage.id}, 'wait_until', ${due}::timestamptz, 'UTC',
+      ${base} || (select count(*) + 1 from hub.process_timers
+        where tenant_id = ${tenantId} and stage_run_id = ${w.stage.id} and idempotency_key like 'sub:%')::text
+    where not exists (select 1 from open)
+    on conflict (idempotency_key) do nothing`);
+}
+
 /** Ghi liên kết cha vào lượt con vừa tạo (cùng tx tạo lượt). */
 export async function linkChild(
   tx: Tx,

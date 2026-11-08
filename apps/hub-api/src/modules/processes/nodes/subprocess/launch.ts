@@ -1,11 +1,10 @@
 // CR-125 · node `subprocess` — chạy (tx scope user người bắt đầu, run cha ĐÃ khoá FOR UPDATE): mở MỘT lượt con (cùng công ty, cùng người
 // bắt đầu, không tính trần lượt/công ty — lượt cha đã tính) + ghi liên kết cha trong CÙNG tx (unique ⇒ kick lại / thử lại cùng lần chạy
-// không mở lượt thứ hai), stage cha `waiting_timer` (KHÔNG hẹn, không poll) ⇒ kick lượt con SAU COMMIT. Lượt con kết thúc ⇒ trigger 0129
-// ghi hẹn tới hạn ngay ⇒ vòng hẹn giờ chốt bước cha (`finishWait`). Vào lại khi lượt con đã lỗi/hết hạn (`finishWait` trả stage về queued)
+// không mở lượt thứ hai), stage cha `waiting_timer` + hẹn canh ⇒ kick lượt con SAU COMMIT. Lượt con kết thúc ⇒ trigger 0129 kéo
+// hẹn canh về now ⇒ vòng hẹn giờ chốt bước cha (`finishWait`). Vào lại khi lượt con đã lỗi/hết hạn (`finishWait` trả stage về queued)
 // ⇒ «Cần xử lý» `tool_failed` (Thử lại = attempt mới ⇒ lượt con mới). Lồng quá `SUBPROCESS_DEPTH_MAX` / không thấy quy trình ⇒ như vậy.
 import { type ProcessInputValue, SUBPROCESS_DEPTH_MAX } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
-import { sql } from "drizzle-orm";
 import { AppError } from "../../../../lib/errors";
 import { ifFacts } from "../../adapters/runs/if-facts.repo";
 import { settleStepTx } from "../../adapters/runs/step.repo";
@@ -19,7 +18,7 @@ import type { KickResult, LaunchCtx, LauncherDeps, NodeLauncher } from "../../ru
 import type { StartDefRow } from "../../runs/runs.repo";
 import { createRun } from "../../runs/start-inputs";
 import { toDecision } from "../../runs/team-runner";
-import { ancestorDepth, childOfStage, linkChild } from "./subprocess.repo";
+import { ancestorDepth, armWatch, childOfStage, linkChild } from "./subprocess.repo";
 import { resolveSubprocessDef } from "./subprocess-def";
 
 type Exec = { kind: "subprocess"; def_key: string; input_map?: Record<string, string> };
@@ -32,12 +31,10 @@ export const subprocessLauncher: NodeLauncher = {
     const s = { id: c.stage.id, attempt: Number(c.stage.attempt), round: Number(c.stage.round) };
     const child = await childOfStage(tx, tenantId, s);
     if (child) {
-      if (!isTerminal(child.status as ProcessRunStatus)) return waiting(d, tx, c, null);
-      if (child.status === "failed" || child.status === "expired") return failed(d, tx, c);
-      // Lượt con đã xong mà stage cha bị đưa lại hàng đợi ⇒ chờ + hẹn tới hạn ngay (vòng hẹn giờ chốt như đường thường).
-      await waiting(d, tx, c, null);
-      await dueNow(tx, tenantId, c, `sub:${child.id}:${d.now().getTime()}`);
-      return { kind: "events", events: [] };
+      const st = child.status as ProcessRunStatus;
+      if (st === "failed" || st === "expired") return failed(d, tx, c);
+      // Lượt con còn chạy ⇒ chờ tiếp (hẹn canh mới); đã xong mà stage cha bị đưa lại hàng đợi ⇒ hẹn canh tới hạn NGAY ⇒ vòng hẹn giờ chốt.
+      return waiting(d, tx, c, { childId: null, dueNow: isTerminal(st) });
     }
     if ((await ancestorDepth(tx, tenantId, c.runId)) >= SUBPROCESS_DEPTH_MAX)
       return failed(d, tx, c);
@@ -46,7 +43,7 @@ export const subprocessLauncher: NodeLauncher = {
     const childId = await openChild(d, tx, c, { def, map: ex.input_map });
     if (!childId) return failed(d, tx, c);
     await linkChild(tx, tenantId, childId, { runId: c.runId, stageRunId: s.id, ...s });
-    return waiting(d, tx, c, childId);
+    return waiting(d, tx, c, { childId, dueNow: false });
   },
 };
 
@@ -108,18 +105,21 @@ async function childInputs(
   });
 }
 
-/** Stage cha `waiting_timer` + trạng thái lượt theo bước + `process.updated`; lượt con mới ⇒ kick sau COMMIT. */
+/** Stage cha `waiting_timer` + MỘT hẹn canh (lượt con kết thúc ⇒ trigger kéo về now) + trạng thái lượt theo bước; lượt con mới ⇒ kick sau COMMIT. */
 async function waiting(
   d: LauncherDeps,
   tx: Tx,
   c: LaunchCtx,
-  childId: string | null,
+  o: { childId: string | null; dueNow: boolean },
 ): Promise<KickResult> {
   const tenantId = c.u.tenantId;
-  await waitRepo(tx, tenantId).markWaiting(c.stage.id, d.now());
+  const now = d.now();
+  await waitRepo(tx, tenantId).markWaiting(c.stage.id, now);
+  const stage = { id: c.stage.id, attempt: Number(c.stage.attempt), round: Number(c.stage.round) };
+  await armWatch(tx, tenantId, { runId: c.runId, stage, now, dueNow: o.dueNow });
   const recipients = await core.runRecipients(tx, c.runId, tenantId);
   const step = await settleStepTx(tx, c.runId, tenantId);
-  const kicks = childId ? [childId] : [];
+  const kicks = o.childId ? [o.childId] : [];
   if (!step) return { kind: "events", events: [], kicks };
   const run = { id: c.runId, status: step.status, stageIdx: step.stageIdx, step: step.step };
   return { kind: "events", events: processUpdated(recipients, run), kicks };
@@ -135,11 +135,4 @@ async function failed(d: LauncherDeps, tx: Tx, c: LaunchCtx): Promise<KickResult
     ...processUpdated(recipients, { id: c.runId, status: "needs_decision", stageIdx: c.idx }),
   );
   return { kind: "events", events };
-}
-
-async function dueNow(tx: Tx, tenantId: string, c: LaunchCtx, key: string): Promise<void> {
-  await tx.execute(sql`insert into hub.process_timers (tenant_id, process_run_id, stage_run_id, kind, due_at,
-      timezone, idempotency_key)
-    values (${tenantId}, ${c.runId}, ${c.stage.id}, 'wait_until', now(), 'UTC', ${key})
-    on conflict (idempotency_key) do nothing`);
 }

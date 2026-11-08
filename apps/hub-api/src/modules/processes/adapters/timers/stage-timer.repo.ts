@@ -127,7 +127,9 @@ async function finishWait(
   if (!h || !s) return;
   const name = h.snapshot.stages?.[s.stage_idx]?.name ?? "";
   const isSub = h.snapshot.stages?.[s.stage_idx]?.executor?.kind === "subprocess";
-  const sub = isSub ? await subprocessWaitOut(c.tx, c.tenantId, { stage: s, name }) : null;
+  const sub = isSub
+    ? await subprocessWaitOut(c.tx, c.tenantId, { runId, stage: s, name, now: new Date() })
+    : null;
   if (sub?.kind === "skip") return;
   if (sub?.kind === "requeue") {
     // CR-125 · lượt con lỗi ⇒ launcher (deps đầy đủ) mở «Cần xử lý» cho bước cha.

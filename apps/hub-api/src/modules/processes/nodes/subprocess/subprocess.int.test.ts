@@ -8,16 +8,18 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
+import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../../lib/db";
 import { AppError } from "../../../../lib/errors";
 import { createHubUow } from "../../adapters/hub-uow";
 import { fireTimer } from "../../application/timers/fire-timer.usecase";
 import * as core from "../../core/core.repo";
-import type { ProcessDeps } from "../../core/ports";
+import type { ProcessBgDeps, ProcessDeps } from "../../core/ports";
 import { subprocessCheck } from "../../defs/subprocess-check";
 import { cancelEnd } from "../../gates/gates.effects";
 import { actorRef } from "../../gates/gates.repo";
+import { expireRuns } from "../../runs/expire";
 import { createStageLauncher } from "../../runs/launcher";
 import { StartService } from "../../runs/start.service";
 
@@ -151,6 +153,22 @@ const phaseFields = async (runId: string) =>
       where s.process_run_id = ${runId} and s.stage_idx = 0`
   )[0]?.fields;
 
+const openTimers = async (runId: string) =>
+  Number(
+    (
+      await o<{ n: number }[]>`select count(*)::int as n from hub.process_timers
+        where process_run_id = ${runId} and fired_at is null and cancelled_at is null`
+    )[0]?.n,
+  );
+/** «Dừng» lượt cha như `GateService.cancel` (tx scope user, khoá cha → `cancelEnd`). */
+const cancelParent = (pid: string, lockTimeout?: string) =>
+  withHubScope(db, { kind: "user", tenantId: T, userId: A }, async (tx) => {
+    if (lockTimeout) await tx.execute(sql.raw(`set local lock_timeout = '${lockTimeout}'`));
+    const run = await core.lockRun(tx, T, pid);
+    if (!run) throw new Error("no run");
+    await cancelEnd({ d, tx }, { run, idx: 0, ref: await actorRef(tx, A, T) }, null);
+  });
+
 let okDef = "";
 let noDef = "";
 let waitDef = "";
@@ -224,23 +242,89 @@ describe("CR-125 · «Quy trình con» chạy thật", () => {
     expect((await stagesOf(pid))[0]).toBe("waiting_timer");
   });
 
-  it("huỷ lượt cha ⇒ lượt con còn chạy bị huỷ, không hẹn nào cho cha", async () => {
+  it("huỷ lượt cha ⇒ lượt con còn chạy bị huỷ, không hẹn mở nào cho cha", async () => {
     const pid = await start(waitDef);
     const [kid] = await childrenOf(pid);
-    await withHubScope(db, { kind: "user", tenantId: T, userId: A }, async (tx) => {
-      const run = await core.lockRun(tx, T, pid);
-      if (!run) throw new Error("no run");
-      const ref = await actorRef(tx, A, T);
-      await cancelEnd({ d, tx }, { run, idx: 0, ref }, null);
-    });
+    await cancelParent(pid);
     expect(await runOf(pid)).toBe("cancelled");
     expect(await runOf(kid?.id as string)).toBe("cancelled");
-    const [t] = await o<{ n: number }[]>`select count(*)::int as n from hub.process_timers
-      where process_run_id = ${kid?.id as string} and fired_at is null and cancelled_at is null`;
-    expect(t?.n).toBe(0);
-    const [p] = await o<{ n: number }[]>`select count(*)::int as n from hub.process_timers
-      where process_run_id = ${pid}`;
-    expect(p?.n).toBe(0);
+    expect(await openTimers(kid?.id as string)).toBe(0);
+    expect(await openTimers(pid)).toBe(0);
+  });
+
+  it("huỷ cha ĐỒNG THỜI lượt con kết thúc (hai thứ tự khoá) ⇒ không lỗi, không chờ khoá, trạng thái nhất quán", async () => {
+    // (1) cha đang bị khoá (tx huỷ giữ hàng cha) ⇒ tx kết thúc lượt con KHÔNG chờ hàng cha (lock_timeout 2 s ⇒ lỗi nếu chờ).
+    const p1 = await start(waitDef);
+    const [k1] = await childrenOf(p1);
+    await withHubScope(db, { kind: "user", tenantId: T, userId: A }, async (tx) => {
+      const run = await core.lockRun(tx, T, p1);
+      if (!run) throw new Error("no run");
+      await o.begin(async (t) => {
+        await t`set local lock_timeout = '2s'`;
+        await t`update hub.process_runs set status = 'done', finished_at = now() where id = ${k1?.id as string}`;
+      });
+      await cancelEnd({ d, tx }, { run, idx: 0, ref: await actorRef(tx, A, T) }, null);
+    });
+    expect([await runOf(p1), await runOf(k1?.id as string)]).toEqual(["cancelled", "done"]);
+    // (2) lượt con đang kết thúc (giữ hàng con) ⇒ huỷ cha chờ hàng con rồi đi tiếp sau khi con COMMIT.
+    const p2 = await start(waitDef);
+    const [k2] = await childrenOf(p2);
+    let updated: () => void = () => {};
+    let release: () => void = () => {};
+    const isUpdated = new Promise<void>((r) => {
+      updated = r;
+    });
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    const finishing = o.begin(async (t) => {
+      await t`set local lock_timeout = '5s'`;
+      await t`update hub.process_runs set status = 'done', finished_at = now() where id = ${k2?.id as string}`;
+      updated();
+      await gate;
+    });
+    await isUpdated;
+    const cancelling = cancelParent(p2, "5s");
+    release();
+    await Promise.all([finishing, cancelling]);
+    expect([await runOf(p2), await runOf(k2?.id as string)]).toEqual(["cancelled", "done"]);
+    expect(await fireDue()).toBe(0);
+    expect(await stagesOf(p2)).toEqual(["cancelled", "cancelled", "cancelled"]);
+  });
+
+  it("lượt cha hết hạn ⇒ lượt con còn chạy bị huỷ", async () => {
+    const pid = await start(waitDef);
+    const [kid] = await childrenOf(pid);
+    await o`update hub.process_runs set expires_at = now() - interval '1 minute' where id = ${pid}`;
+    expect(await expireRuns(d as unknown as ProcessBgDeps)).toBeGreaterThanOrEqual(1);
+    expect([await runOf(pid), await runOf(kid?.id as string)]).toEqual(["expired", "cancelled"]);
+  });
+
+  it("lượt con không còn (bị xoá / gỡ liên kết) ⇒ hẹn canh chốt cha đầu ra `cancelled` + reason", async () => {
+    const pid = await start(waitDef);
+    const [kid] = await childrenOf(pid);
+    await o`update hub.process_runs set parent_run_id = null, parent_stage_run_id = null, parent_attempt = null,
+      parent_round = null where id = ${kid?.id as string}`;
+    await o`update hub.process_timers set due_at = now() where process_run_id = ${pid} and fired_at is null`;
+    expect(await fireDue()).toBe(1);
+    expect(await phaseFields(pid)).toMatchObject({ outcome: "cancelled", reason: "child_missing" });
+    expect(await stagesOf(pid)).toEqual(["done", "skipped", "done"]);
+  });
+
+  it("hẹn canh tới khi con còn chạy ⇒ ghi hẹn canh kế, con xong ⇒ chốt MỘT lần (hẹn thừa bị bỏ)", async () => {
+    const pid = await start(waitDef);
+    const [kid] = await childrenOf(pid);
+    await o`update hub.process_timers set due_at = now() where process_run_id = ${pid} and fired_at is null`;
+    expect(await fireDue()).toBe(1);
+    expect((await stagesOf(pid))[0]).toBe("waiting_timer");
+    expect(await openTimers(pid)).toBe(1);
+    await o`update hub.process_runs set status = 'done', finished_at = now() where id = ${kid?.id as string}`;
+    expect(await fireDue()).toBe(1);
+    expect((await phaseFields(pid))?.outcome).toBe("done");
+    expect(await fireDue()).toBe(0);
+    const [n] = await o<{ n: number }[]>`select count(*)::int as n from hub.process_outputs
+      where process_run_id = ${pid} and stage_idx = 0`;
+    expect(n?.n).toBe(1);
   });
 
   it("lượt con lỗi ⇒ bước cha «Cần xử lý» (tool_failed)", async () => {

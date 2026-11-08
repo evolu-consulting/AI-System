@@ -21,13 +21,15 @@ chờ (không poll) tới khi lượt con kết thúc, rồi đi theo đầu ra 
 
 ## Không làm / Chạm
 UI/canvas/e2e (lát cr125-subprocess-ui). Lượt cha hết hạn / lỗi hệ thống không lan sang con (chỉ «Dừng» lan). Guard chạy ở lưu def công ty
-(create/update), chưa ở đường xuất bản Thư viện (`library.service`).
+(create/update), xuất bản/rollback Thư viện, bản riêng công ty.
 
 ## Test tối thiểu
 - unit `domain/runs/subprocess.rules.test.ts`; int `nodes/subprocess/subprocess.int.test.ts` (evotest -Dirty).
 
 ## Quyết định trong lúc làm
-- Chờ = stage `waiting_timer` KHÔNG hẹn; tín hiệu = trigger DB ghi hẹn tới hạn ngay ⇒ vòng hẹn giờ sẵn có chốt (bền, phủ mọi đường kết thúc lượt).
+- Chờ = stage `waiting_timer` + MỘT hẹn canh 10 phút (lưới an toàn: con bị xoá ⇒ `cancelled` + `reason: child_missing`; con còn chạy ⇒ hẹn canh kế). Đường nhanh: trigger SECURITY DEFINER kéo hẹn canh về now (UPDATE `SKIP LOCKED`, không khoá hàng cha ⇒ không deadlock với huỷ cha khoá cha → con).
+- Guard chung `subprocessCheck`: lưu def công ty, xuất bản / rollback Thư viện, bản riêng công ty.
+- Lượt cha hết hạn ⇒ huỷ lượt con (`expire.ts`, cùng `cancelChildren` với «Dừng»).
 - Dữ liệu lượt con lộ dưới khoá `sub_<trường>` (không `sub.<trường>`: `FIELD_KEY_RE` không nhận dấu chấm, node Nếu / bước sau phải đọc được).
 - `executor.branches[{on: rejected|cancelled, goto_step}]` như `wait_event` (canvas ghi đầu ra có `on`); done = bước kế.
 - `input_map` giá trị = id nguồn `autoMapInputs`: `<khoá>` (đầu vào lượt) hoặc `<mã bước>:<trường>`.
@@ -45,8 +47,12 @@ dữ liệu cuối của lượt con dưới khoá `sub_<trường>`.
 - Kịch bản: khi lượt con xong bình thường thì bước cha đi đầu ra `done` với `sub_*`, lượt cha chạy tiếp tới Kết thúc [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » mở MỘT lượt con ⇒ con xong ⇒ cha đi tiếp `done` với dữ liệu `sub_*`, lượt cha xong]
 - Kịch bản: khi lượt con kết thúc Từ chối thì bước cha rẽ đầu ra `rejected` [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » con kết thúc Từ chối ⇒ cha rẽ đầu ra `rejected` (bước 2)]
 - Kịch bản: khi kick lại hoặc stage về hàng đợi cùng lần chạy thì không mở lượt con thứ hai [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » kick lại / stage về hàng đợi cùng lần chạy ⇒ không mở lượt con thứ hai]
-- Kịch bản: khi người dùng dừng lượt cha thì lượt con còn chạy bị huỷ [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » huỷ lượt cha ⇒ lượt con còn chạy bị huỷ, không hẹn nào cho cha]
+- Kịch bản: khi người dùng dừng lượt cha thì lượt con còn chạy bị huỷ [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » huỷ lượt cha ⇒ lượt con còn chạy bị huỷ, không hẹn mở nào cho cha]
 - Kịch bản: khi lượt con lỗi thì bước cha «Cần xử lý» như tool lỗi [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » lượt con lỗi ⇒ bước cha «Cần xử lý» (tool_failed)]
+- Kịch bản: khi huỷ cha đồng thời lượt con kết thúc thì không lỗi, không chờ khoá, trạng thái nhất quán [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » huỷ cha ĐỒNG THỜI lượt con kết thúc (hai thứ tự khoá) ⇒ không lỗi, không chờ khoá, trạng thái nhất quán]
+- Kịch bản: khi lượt cha hết hạn thì lượt con bị huỷ [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » lượt cha hết hạn ⇒ lượt con còn chạy bị huỷ]
+- Kịch bản: khi lượt con không còn thì cha đi đầu ra cancelled [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » lượt con không còn (bị xoá / gỡ liên kết) ⇒ hẹn canh chốt cha đầu ra `cancelled` + reason]
+- Kịch bản: khi hẹn canh tới lúc con còn chạy thì chờ tiếp và chỉ chốt một lần [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » hẹn canh tới khi con còn chạy ⇒ ghi hẹn canh kế, con xong ⇒ chốt MỘT lần (hẹn thừa bị bỏ)]
 #### Yêu cầu: Lưu quy trình có «Quy trình con» được kiểm
 Lưu def có bước `subprocess` trỏ quy trình không có / chưa xuất bản ⇒ 422 `SUBPROCESS_NOT_FOUND`; gọi vòng ⇒ `SUBPROCESS_CYCLE`; lồng quá 3 ⇒
 `SUBPROCESS_DEPTH`.
@@ -55,5 +61,4 @@ Lưu def có bước `subprocess` trỏ quy trình không có / chưa xuất b�
 - Kịch bản: khi lồng quá 3 tầng thì bị chặn [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » lồng quá 3 tầng ⇒ SUBPROCESS_DEPTH, đúng 3 ⇒ ok]
 
 ## Việc còn lại
-- Guard ở đường xuất bản Thư viện; lan huỷ khi lượt cha hết hạn (sweeper).
-- Khoá chéo hiếm: huỷ cha (khoá cha → con) song song lượt con vừa kết thúc (khoá con → FK KEY SHARE cha qua trigger) ⇒ Postgres gỡ deadlock, một bên lỗi.
+- Lượt cha `failed` (lỗi hệ thống) chưa lan sang con.

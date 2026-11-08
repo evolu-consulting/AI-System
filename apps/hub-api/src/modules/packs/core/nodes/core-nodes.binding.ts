@@ -14,6 +14,8 @@ export const CORE_WRITTEN_OUTPUTS: Readonly<Record<string, readonly string[]>> =
   "core.approve": ["decision", "decided_by", "feedback"],
   "core.email": ["sent_to"],
   "core.bell": ["sent_to"],
+  // CR-125 · Quy trình con ghi `outcome` (+ `sub_*` động) khi lượt con kết thúc (`processes/nodes/subprocess/settle.ts`).
+  "core.subprocess": ["outcome"],
 };
 
 export function bindCoreNodes(registry: ModuleRegistry = moduleRegistry): string[] {

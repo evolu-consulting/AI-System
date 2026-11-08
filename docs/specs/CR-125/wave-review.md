@@ -120,3 +120,7 @@ If `contract_events` or `contracts` is more than about 1M rows, or `stage_runs` 
     order by 1;
    ```
    Smoke sau deploy: trang cài đặt agent của tenant (danh sách agent, cờ điều phối), Admin hạn mức ngày (token AI đã dùng ≠ 0 khi có dùng), worker nhận job.
+
+## Ghi chú deploy · migration hub 0129_subprocess_parent (CR-125 «Quy trình con»)
+- Thêm 4 cột NULL + 2 index một phần + trigger trên `hub.process_runs`. Migrator chạy MỘT tx ⇒ không `CONCURRENTLY`: `CREATE INDEX` giữ khoá SHARE (chặn ghi `process_runs`) trong lúc quét bảng; migration đặt `lock_timeout = 10s`.
+- Trước deploy: `select count(*) from hub.process_runs` (đo thời gian quét); dừng hub-api/worker trong lúc `db:migrate` (như mọi migration hub), chạy lại an toàn (IF NOT EXISTS).

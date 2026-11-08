@@ -11,6 +11,7 @@ import { publishUserEvents } from "../../../lib/user-stream";
 import type { FinishedRun, ProcessBgDeps, ProcessDeps } from "../core/ports";
 import { THREAD_LOCALE } from "../core/thread";
 import { threadContent } from "../core/thread.rules";
+import { cancelChildren } from "../gates/cancel-children";
 
 const EXPIRE_BATCH = 100;
 /** Một lượt `sweepOnce` xả hết hạn tối đa chừng này rồi nhường các vòng khác của lượt. */
@@ -51,6 +52,7 @@ async function expireBatch(d: ProcessDeps, limit: number): Promise<{ n: number; 
       insertRunEnds(tx, runs),
       d.notifier.runsFinished(tx, runs),
     ]);
+    events.push(...(await expireChildren(d, tx, runs))); // CR-125 · lượt con của lượt hết hạn ⇒ huỷ (như Dừng)
     return { n: runs.length, more, events };
   });
   await publishUserEvents(d.redis, out.events, d.log);
@@ -168,4 +170,19 @@ function runEndStatement(tx: Tx, json: string) {
 export async function warmExpire(tx: Tx): Promise<void> {
   await claimExpired(tx, new Date(0), 0);
   await runEndStatement(tx, "[]");
+}
+
+/**
+ * CR-125 · «Quy trình con»: lượt cha vừa hết hạn (đã khoá trong tx này) ⇒ huỷ lượt con còn chạy — khoá cha → con như «Dừng». MỘT câu tìm cha
+ * có con còn chạy (index `process_runs_parent_idx`); thường rỗng.
+ */
+async function expireChildren(d: ProcessDeps, tx: Tx, runs: readonly Claimed[]) {
+  const ids = `{${runs.map((r) => r.id).join(",")}}`;
+  const parents = await tx.execute<{ id: string; tenant_id: string }>(sql`
+    select distinct parent_run_id as id, tenant_id from hub.process_runs
+    where parent_run_id = any(${ids}::uuid[]) and status = any(${textArray(PROCESS_RUN_ACTIVE)}::text[])`);
+  const events = [];
+  for (const p of parents)
+    events.push(...(await cancelChildren({ d, tx }, { tenantId: p.tenant_id, runId: p.id })));
+  return events;
 }

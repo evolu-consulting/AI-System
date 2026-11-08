@@ -21,7 +21,7 @@ import { type StudioAudit, withConfigWrite } from "../../studio/public";
 import type { ProcessDeps } from "../core/ports";
 import { defError, toProcessDef } from "../defs/defs.map";
 import { readDef } from "../defs/defs.repo";
-import { edgeCheck } from "../defs/edge-check";
+import { edgeCheck, subprocessCheck } from "../defs/edge-check";
 import { flowDefPaths } from "../defs/flow-def.rules";
 import * as lib from "./library.repo";
 import { libError, specOrThrow } from "./library-draft";
@@ -151,6 +151,7 @@ export class LibraryService {
         throw appError("VERSION_CONFLICT", { current_version: def.version });
       const { is_default } = await lib.usage(tx, id);
       await this.#b2(tx, def, { defId: id, asDefault: is_default, tenantIds: [] });
+      await subprocessCheck(tx, null, def as unknown as ProcessDefInput); // CR-125 · Quy trình con
       const snap = { name: def.name, stages: def.stages, slotBody: def.slot_body };
       const r = await lib.release(tx, { id, snap, actorId: u.userId, note: b.note ?? "" });
       const after = { rel_version: r.rel_version, version: r.version };
@@ -180,6 +181,7 @@ export class LibraryService {
           tenantIds: [],
         },
       );
+      await subprocessCheck(tx, null, { ...def, stages: old.stages } as unknown as ProcessDefInput);
       const snap = { name: old.name, stages: old.stages, slotBody: old.slot_body };
       const note = `rollback v${b.rel_version}`;
       const r = await lib.release(tx, { id, snap, actorId: u.userId, note });
