@@ -184,6 +184,7 @@ function Flow(p: FlowCanvasProps) {
     nodesFocusable: false,
     edgesFocusable: false,
     deleteKeyCode: null,
+    proOptions: { hideAttribution: true }, // CR-125 S3 · M1: bỏ nhãn thư viện ở góc phải
     fitView: true,
     minZoom: FIT.minZoom,
     maxZoom: 1.5,

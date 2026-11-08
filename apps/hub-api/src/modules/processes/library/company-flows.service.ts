@@ -15,6 +15,7 @@ import { libraryFlowDef } from "../runs/runs.repo";
 import { ensureFlowTriggersOn } from "../triggers/flags";
 import { bindGroupKeys } from "../triggers/group-keys.rules";
 import * as r from "./company-flows.repo";
+import { prefillEsignSigner } from "./esign-signer-prefill.rules";
 import { companyAccess } from "./library-company.service";
 import { withConfigWrite } from "./routing.service";
 import { notReadyError, type Readiness, readinessOf } from "./template-readiness";
@@ -190,7 +191,7 @@ export class CompanyFlowsService {
         tid,
         src: row.flow_id,
         key,
-        stages: b.stages,
+        stages: prefillEsignSigner(b.stages), // CR-125 S3 · C3: người ký công ty điền sẵn từ nhóm duyệt
         actor: u.userId,
       });
       const cid = await r.insertCompanyFlow(tx, {

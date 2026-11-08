@@ -51,6 +51,24 @@ type Args = {
 };
 const PATHED = new Set(["PROCESS_DEF_INVALID", "PROCESS_DEF_INCOMPLETE", "PROCESS_REF_INVALID"]);
 
+/**
+ * CR-125 S3 · C3: lỗi cấu hình node (vd Ký số chưa chọn người ký) không được chỉ nằm trong khung node đang đóng:
+ * gắn vào ô + nói bước nào thiếu gì kèm "Đến bước". Trả `false` khi không có lỗi theo ô.
+ */
+function reportNodeConfig(
+  err: unknown,
+  d: DraftState,
+  t: (k: string, o?: Record<string, unknown>) => string,
+): boolean {
+  const e = nodeConfigErrors(err);
+  if (Object.keys(e).length === 0) return false;
+  d.showErrors(e);
+  const stages = d.draftRef.current.stages;
+  const blocked = blockedInfo(e, stages);
+  if (blocked) reportBlocked(blocked, stages, d.select, t, true);
+  return true;
+}
+
 /** Lỗi lưu → lỗi theo ô (key trùng, `paths`) hoặc toast. */
 function useSaveFailure(d: DraftState) {
   const { t } = useTranslation();
@@ -62,10 +80,7 @@ function useSaveFailure(d: DraftState) {
     const max = err instanceof ApiError ? stagesMaxFromDetails(err.details) : null;
     if (max !== null)
       return notifyError(t("process.admin.canvas.err.stagesMax", { max }), undefined, "top-center");
-    if (code === "FLOW_NODE_CONFIG_INVALID") {
-      const e = nodeConfigErrors(err);
-      if (Object.keys(e).length > 0) return d.showErrors(e);
-    }
+    if (code === "FLOW_NODE_CONFIG_INVALID" && reportNodeConfig(err, d, t)) return;
     if (code && PATHED.has(code) && paths.length)
       return d.showErrors(serverErrors(code, paths, serverRules(err)));
     const spec = processErrorSpec(err);
@@ -92,9 +107,22 @@ function reportBlocked(
   stages: readonly { uid: string }[],
   select: (uid: string) => void,
   t: (k: string, o?: Record<string, unknown>) => string,
+  withGo = false,
 ): void {
   const reason = t(blocked.reasonKey);
   const uid = blocked.index === null ? undefined : stages[blocked.index]?.uid;
+  const goAction =
+    withGo && uid
+      ? {
+          label: t("process.admin.canvas.free.go"),
+          onClick: () => {
+            select(uid);
+            document
+              .querySelector(`[data-stage-uid="${uid}"]`)
+              ?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+          },
+        }
+      : undefined;
   if (blocked.reasonKey === FREE_ERR && uid) {
     notifyBrief(t("process.admin.canvas.free.blocked", { step: blocked.stepName }), {
       label: t("process.admin.canvas.free.go"),
@@ -111,7 +139,7 @@ function reportBlocked(
     blocked.stepName
       ? t("process.admin.editor.saveBlockedStep", { step: blocked.stepName, reason })
       : t("process.admin.editor.saveBlocked", { reason }),
-    undefined,
+    goAction,
     "top-center", // toast lỗi ở lại tới khi đóng: không đè nút Lưu ở góc dưới phải
   );
 }

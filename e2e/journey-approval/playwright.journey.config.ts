@@ -55,6 +55,7 @@ export default defineConfig({
     "**/cr123-*.spec.ts",
     "**/cr124-q5*.spec.ts",
     "**/cr124-q6*.spec.ts",
+    "**/cr125-*.spec.ts",
   ],
   workers: 1,
   fullyParallel: false,
