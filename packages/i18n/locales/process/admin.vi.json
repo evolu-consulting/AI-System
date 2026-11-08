@@ -1,7 +1,7 @@
 {
   "startForm": {
     "err": {
-      "START_FIELD_RESERVED": "Mã ô này trùng với dữ liệu hệ thống tự ghi (vd tên yêu cầu, mã bản ghi …_id). Đặt mã khác cho ô."
+      "START_FIELD_RESERVED": "Mã ô này trùng với dữ liệu hệ thống tự ghi (tên yêu cầu, record, ref, event, contract_id). Đặt mã khác cho ô."
     }
   },
   "parallel": {

@@ -1,7 +1,7 @@
 {
   "startForm": {
     "err": {
-      "START_FIELD_RESERVED": "This field key is used by data the system writes (e.g. request title, record ids …_id). Use another key."
+      "START_FIELD_RESERVED": "This field key is used by data the system writes (request_title, record, ref, event, contract_id). Use another key."
     }
   },
   "parallel": {

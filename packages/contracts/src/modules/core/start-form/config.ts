@@ -50,7 +50,7 @@ export type StartFormStarters = z.infer<typeof StartFormStartersSchema>;
 
 /**
  * Khoá input do hệ thống ghi vào lượt (tên yêu cầu, bản ghi / dữ kiện của sự kiện app) — ô phiếu không được trùng, kẻo đè hoặc bị đè
- * (input khai trước thắng). Bản ghi của mọi app (`<x>_id`, `record`) cũng cấm.
+ * (input khai trước thắng). Chỉ đúng các khoá này — ô nghiệp vụ như `supplier_id` vẫn dùng được.
  */
 export const START_FORM_RESERVED_KEYS = [
   "request_title",
@@ -60,7 +60,7 @@ export const START_FORM_RESERVED_KEYS = [
   "contract_id",
 ] as const;
 export const isReservedStartKey = (k: string): boolean =>
-  (START_FORM_RESERVED_KEYS as readonly string[]).includes(k) || /_id$/.test(k);
+  (START_FORM_RESERVED_KEYS as readonly string[]).includes(k);
 /** Mã lỗi cấu hình phiếu (message của issue zod; i18n `process.admin.startForm.err.<mã>`). */
 export const START_FORM_CONFIG_CODES = ["START_FIELD_RESERVED"] as const;
 export const START_FORM_CONFIG_KEY = "process.admin.startForm.err";

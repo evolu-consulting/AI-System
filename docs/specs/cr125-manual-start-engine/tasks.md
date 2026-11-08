@@ -61,7 +61,7 @@ qua ĐÚNG đường của sự kiện (`flowLaunchOf` → `StartService.createF
   trạng thái đã chốt ⇒ bộ điều phối không nhận). Chống trùng (soát Opus, High): `event_id = start:sha256(người × company_flow_id ×
   request_id)` + `process_runs_flow_event_uq`; trả lượt cũ chỉ khi sự kiện đúng người + đúng ref, lượt lọc theo `company_flow_id`;
   lệch ⇒ 409 `START_REQUEST_REUSED` (lưới an toàn).
-- Mã ô cấm (soát Opus, Low): `START_FORM_RESERVED_KEYS` (request_title, record, ref, event, contract_id) + mọi `*_id` ⇒ issue zod
+- Mã ô cấm (soát Opus, Low): `START_FORM_RESERVED_KEYS` (request_title, record, ref, event, contract_id; `supplier_id` … vẫn được) ⇒ issue zod
   message `START_FIELD_RESERVED` ở `fields.<i>.key` (i18n `process.admin.startForm.err.*`, `check:error-codes`).
 - Đọc flow + nhóm ở scope system (như `candidatesOf`, để đọc bản xuất bản mẫu Thư viện), lọc `cf.tenant_id = JWT tenant`; ghi sự kiện +
   đọc lượt ở scope user (RLS tenant).
@@ -81,7 +81,7 @@ liệt kê flow người xem được bắt đầu kèm phiếu. Chỉ công ty 
 - Kịch bản: khi phiếu sai (thiếu ô bắt buộc, sai kiểu, ô lạ) thì 422 START_FORM_INVALID kèm lỗi theo ô và không ghi gì [test: apps/hub-api/src/modules/processes/triggers/manual-start.int.test.ts » phiếu sai ⇒ 422 START_FORM_INVALID kèm lỗi theo ô, không mở lượt]
 - Kịch bản: khi người của công ty khác gọi thì không thấy và không bắt đầu được flow [test: apps/hub-api/src/modules/processes/triggers/manual-start.int.test.ts » công ty khác không thấy, không bắt đầu được flow của X]
 - Kịch bản: khi hai người, hoặc một người trên hai flow, gửi cùng request_id thì mỗi yêu cầu có lượt riêng, chỉ cùng người cùng flow gửi lại mới trả lượt cũ [test: apps/hub-api/src/modules/processes/triggers/manual-start.int.test.ts » cùng request_id — người khác ⇒ lượt riêng, cùng người flow khác ⇒ lượt riêng, cùng người cùng flow ⇒ cùng lượt]
-- Kịch bản: khi mã ô phiếu trùng dữ liệu hệ thống (request_title, record, …_id) thì cấu hình bị từ chối với START_FIELD_RESERVED [test: packages/contracts/src/modules/core/start-form/config.test.ts » mã ô trùng dữ liệu hệ thống ⇒ START_FIELD_RESERVED]
+- Kịch bản: khi mã ô phiếu trùng dữ liệu hệ thống (request_title, record, ref, event, contract_id — supplier_id vẫn được) thì cấu hình bị từ chối với START_FIELD_RESERVED [test: packages/contracts/src/modules/core/start-form/config.test.ts » mã ô trùng dữ liệu hệ thống ⇒ START_FIELD_RESERVED]
 - Kịch bản: khi cờ quy trình của công ty tắt thì 409 START_FLOW_OFF và danh sách rỗng [test: apps/hub-api/src/modules/processes/triggers/manual-start.int.test.ts » cờ quy trình của công ty tắt ⇒ 409 START_FLOW_OFF, danh sách rỗng]
 
 ### MODIFIED engine/company-flows.md
