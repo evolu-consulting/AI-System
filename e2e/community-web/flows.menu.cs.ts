@@ -73,6 +73,11 @@ test("quản trị community: menu + chữ trong trình sửa flow Duyệt bài 
     .getByRole("link", { name: /^(Mở|Sửa)/ })
     .last()
     .click();
+  // thứ tự hàng không cố định: nếu mở trúng bản dùng chung (chỉ xem) thì sang "bản riêng" của công ty
+  const own = page.getByRole("link", { name: "Mở bản riêng" });
+  await expect(page.getByTestId("flow-add-step").or(own)).toBeVisible({ timeout: 30_000 });
+  if (await own.isVisible()) await own.click();
+  await expect(page.getByTestId("flow-add-step")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator("[data-stage-uid]").first()).toBeVisible({ timeout: 30_000 });
 
   // B3 · menu "+ Thêm bước"
