@@ -23,7 +23,7 @@ const TD = "border-b border-rule-soft px-2.5 py-3";
 export function AppPreview() {
   const { t } = useTranslation();
   return (
-    <div className="mt-1 ml-auto flex h-[560px] w-[860px] shrink-0 overflow-hidden rounded-tl-2xl border border-r-0 border-b-0 border-rule bg-panel shadow-[0_24px_60px_rgba(30,27,75,0.18)]">
+    <div className="relative mt-1 ml-auto flex h-[560px] w-[860px] shrink-0 overflow-hidden rounded-tl-2xl border border-r-0 border-b-0 border-rule bg-panel shadow-[0_24px_60px_rgba(30,27,75,0.18)]">
       <div className="flex w-[188px] shrink-0 flex-col gap-1 border-r border-rule bg-sunk p-4">
         <div className="mb-3 flex items-center gap-2 text-[13.5px] font-bold">
           <img src="/evolu-icon.svg" alt="" className="h-6 w-6" /> {t("contracts.app.name")}
@@ -40,13 +40,6 @@ export function AppPreview() {
       <div className="flex min-w-0 flex-1 flex-col gap-3.5 p-5">
         <div className="flex items-center gap-3">
           <h3 className="text-[20px] font-bold">{t("contracts.nav.contracts")}</h3>
-          {/* CR-125 · UX M3 · dữ liệu mẫu giả: nói rõ là hình minh hoạ để không bị nhầm là dữ liệu thật */}
-          <span
-            data-testid="login-preview-sample"
-            className="rounded-full bg-sunk px-2.5 py-1 text-[11.5px] font-medium text-dim"
-          >
-            {t("contracts.login.preview.sample")}
-          </span>
           <span className="ml-auto rounded-lg bg-act px-3 py-1.5 text-[12.5px] font-semibold text-on-act">
             {t("contracts.login.preview.add")}
           </span>
@@ -84,6 +77,13 @@ export function AppPreview() {
           </tbody>
         </table>
       </div>
+      {/* CR-125 · UX M3 · dữ liệu mẫu giả: chú thích nhỏ ở góc, ngoài hàng tiêu đề (không làm xuống dòng) */}
+      <span
+        data-testid="login-preview-sample"
+        className="absolute right-3 bottom-3 rounded-full bg-sunk px-2.5 py-1 text-[11.5px] font-medium text-dim"
+      >
+        {t("contracts.login.preview.sample")}
+      </span>
     </div>
   );
 }
