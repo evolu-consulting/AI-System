@@ -1,6 +1,6 @@
-// HUB-FR-112 Â· D12 Â· PF3 Â· nghiá»‡p vá»¥ `/me/review-tasks`, `/me/process-inbox`, `/me/process-inbox/read` (plan Â§5, Â§11;
-// plan-contract Â§3 PF3, Â§7 `loadTaskDetails`). Äá»c dÆ°á»›i `withHubScope(user)`; `TaskDetail` + `can_act` qua `loadTaskDetails`
-// (B0) â€” khÃ´ng tá»± dá»±ng. NgÆ°á»i xem chá»‰ tháº¥y task gÃ¡n cho mÃ¬nh/Group mÃ¬nh (readiness #22).
+// HUB-FR-112 · D12 · PF3 · nghiệp vụ `/me/review-tasks`, `/me/process-inbox`, `/me/process-inbox/read` (plan §5, §11;
+// plan-contract §3 PF3, §7 `loadTaskDetails`). Đọc dưới `withHubScope(user)`; `TaskDetail` + `can_act` qua `loadTaskDetails`
+// (B0) — không tự dựng. Người xem chỉ thấy task gán cho mình/Group mình (readiness #22).
 import {
   OPEN_TASKS_COUNT_MAX,
   PROCESS_SYSTEM_SENDER,
@@ -38,7 +38,7 @@ const scopeOf = (u: AuthUser): Scope => ({
 });
 const toDate = (v: Date | string): Date => (v instanceof Date ? v : new Date(v));
 
-// Cursor má» = base64url(JSON [iso, id]); dáº¡ng láº¡ â‡’ 400 (nhÆ° `GET /rooms`).
+// Cursor mờ = base64url(JSON [iso, id]); dạng lạ ⇒ 400 (như `GET /rooms`).
 function encodeCursor(at: Date, id: string): string {
   return Buffer.from(JSON.stringify([at.toISOString(), id])).toString("base64url");
 }
@@ -80,7 +80,7 @@ const startedByRef = (r: TaskPageRow): UserRef => ({
   display_name: r.sb_display || r.sb_username || r.started_by,
 });
 
-/** `GET /me/review-tasks` â€” task cá»§a tÃ´i (open/closed), `open_count` má»i task má»Ÿ khÃ´ng phá»¥ thuá»™c `status`. */
+/** `GET /me/review-tasks` — task của tôi (open/closed), `open_count` mọi task mở không phụ thuộc `status`. */
 export function listReviewTasks(
   d: ProcessDeps,
   u: AuthUser,
@@ -142,7 +142,7 @@ function toNotice(r: NoticeRow): ProcessNotice {
   };
 }
 
-/** D2-47 Â· notice `escalated`: `group` + `after_h` tá»« payload (notice cÅ© khÃ´ng cÃ³ â‡’ váº¯ng). */
+/** D2-47 · notice `escalated`: `group` + `after_h` từ payload (notice cũ không có ⇒ vắng). */
 function escalateFields(p: Record<string, unknown>): Pick<ProcessNotice, "group" | "after_h"> {
   const g = p.group as { id?: unknown; name?: unknown } | null | undefined;
   const afterH = p.after_h;
@@ -156,7 +156,7 @@ function escalateFields(p: Record<string, unknown>): Pick<ProcessNotice, "group"
   };
 }
 
-/** `GET /me/process-inbox` â€” DM "Quy trÃ¬nh" (D12): ngÆ°á»i gá»­i áº£o cá»‘ Ä‘á»‹nh + danh sÃ¡ch notice + `unread`. */
+/** `GET /me/process-inbox` — DM "Quy trình" (D12): người gửi ảo cố định + danh sách notice + `unread`. */
 export function listInbox(
   d: ProcessDeps,
   u: AuthUser,
@@ -178,7 +178,7 @@ export function listInbox(
   });
 }
 
-/** `POST /me/process-inbox/read` â€” Ä‘á»c tá»›i `up_to_id` (cá»§a tÃ´i; else 404). */
+/** `POST /me/process-inbox/read` — đọc tới `up_to_id` (của tôi; else 404). */
 export function markInboxRead(
   d: ProcessDeps,
   u: AuthUser,
