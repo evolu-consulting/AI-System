@@ -16,7 +16,6 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
-import { flowViewOfCard } from "../../packs/contracts/domain/approval-flow-view.rules";
 import {
   actApproval,
   approvalEngineRepo,
@@ -25,6 +24,7 @@ import {
   contractsFactsReader,
   contractsOutcomeHandler,
   engineCard,
+  flowViewOfCard,
   getApproval,
   startApproval,
 } from "../../packs/contracts/testing";

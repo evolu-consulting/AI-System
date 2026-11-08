@@ -21,6 +21,7 @@ export type { ESignFiles } from "../application/esign.ports";
 export { withFlowResend } from "../application/flow-resend.usecase";
 export { getHistory } from "../application/manage.usecase";
 export { approvalSlotSpec } from "../approval.mount";
+export { flowViewOfCard } from "../domain/approval-flow-view.rules";
 export { esignModule } from "../esign.mount";
 export { contractsFactsReader, contractsOutcomeHandler } from "../flow-events.mount";
 export { intakeSlotSpec, intakeWiring } from "../intake.mount";
