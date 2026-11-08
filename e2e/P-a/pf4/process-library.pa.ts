@@ -55,15 +55,15 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await expect(p.getByRole("button", { name: "Tạo quy trình" })).toBeVisible();
 
     // Nhân bản ⇒ hộp thoại nhập TÊN (ký hiệu tự sinh) ⇒ mở nháp mới
-    await pickMenu(base, "Nhân bản");
+    await pickMenu(base, "Dùng mẫu này");
     const cloneDlg = p.getByRole("dialog");
     await expect(cloneDlg.getByRole("textbox", { name: "Tên quy trình mới" })).toHaveValue(
       "Quy trình HĐ mặc định – bản mới",
     );
     await cloneDlg.getByRole("textbox", { name: "Tên quy trình mới" }).fill("Quy trình HĐ e2e");
     await expect(cloneDlg.getByText("Ký hiệu tự sinh: quy-trinh-hd-e2e")).toBeVisible();
-    await cloneDlg.getByRole("button", { name: "Nhân bản", exact: true }).click();
-    await expect(p.getByText("Đã nhân bản thành bản nháp mới")).toBeVisible();
+    await cloneDlg.getByRole("button", { name: "Dùng mẫu này", exact: true }).click();
+    await expect(p.getByText("Đã tạo bản nháp từ mẫu")).toBeVisible();
     const toolbar = p.getByTestId("library-toolbar");
     await expect(toolbar.getByText("Nháp", { exact: true })).toBeVisible();
     const name = (await p.getByRole("heading", { level: 1 }).innerText()).trim();
@@ -86,9 +86,9 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await openMenu(base);
     await expect(p.getByTestId("delete-locked")).toBeDisabled(); // mặc định của khe: khoá (lý do nằm trong menu)
     await p.keyboard.press("Escape");
-    await pickMenu(base, "Nhân bản");
+    await pickMenu(base, "Dùng mẫu này");
     await p.getByRole("textbox", { name: "Tên quy trình mới" }).fill("Nháp tạm e2e");
-    await p.getByRole("dialog").getByRole("button", { name: "Nhân bản", exact: true }).click();
+    await p.getByRole("dialog").getByRole("button", { name: "Dùng mẫu này", exact: true }).click();
     await expect(p.getByRole("heading", { level: 1 })).toHaveText("Nháp tạm e2e");
     await p
       .getByRole("navigation", { name: "Điều hướng chính" })
