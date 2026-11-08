@@ -37,7 +37,7 @@
         "off": "Đang tắt. Công ty chưa gửi hoặc nhận hợp đồng với đối tác được. Nhờ quản trị nền tảng bật tính năng này.",
         "on": "Đang bật",
         "ready": "Đang bật · sẵn sàng gửi và nhận",
-        "missing": "Đang bật · còn {{count}} điều kiện chưa xong",
+        "missing": "Đang bật · còn {count} điều kiện chưa xong",
         "state": { "ok": "Xong", "todo": "Còn thiếu", "unknown": "Chưa rõ" },
         "who": { "platform": "Nhờ quản trị nền tảng", "company": "Quản trị công ty làm" },
         "item": {

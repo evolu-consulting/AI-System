@@ -673,7 +673,7 @@
       "status": {
         "off": "Đang tắt",
         "ready": "Đang bật · sẵn sàng gửi và nhận",
-        "missing": "Đang bật · còn {{count}} điều kiện chưa xong"
+        "missing": "Đang bật · còn {count} điều kiện chưa xong"
       },
       "state": {
         "ok": "Xong",
@@ -724,7 +724,7 @@
         },
         "groups": {
           "ok": "Nhóm xác nhận phía nhận đã có người.",
-          "todo": "Thiếu nhóm xác nhận: {{groups}}. Tạo nhóm rồi thêm người vào nhóm.",
+          "todo": "Thiếu nhóm xác nhận: {groups}. Tạo nhóm rồi thêm người vào nhóm.",
           "unknown": "Chưa kiểm tra được nhóm xác nhận (Hub không trả lời)."
         },
         "send_flow": {
@@ -733,7 +733,7 @@
           "unknown": "Chưa kiểm tra được quy trình gửi (Hub không trả lời)."
         }
       },
-      "emptyGroups": "Nhóm {{empty}} chưa có thành viên. Thêm người vào nhóm để có người xác nhận."
+      "emptyGroups": "Nhóm {empty} chưa có thành viên. Thêm người vào nhóm để có người xác nhận."
     },
     "companyFlows": {
       "newFlow": {

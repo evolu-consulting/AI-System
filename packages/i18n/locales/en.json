@@ -673,7 +673,7 @@
       "status": {
         "off": "Off",
         "ready": "On · ready to send and receive",
-        "missing": "On · {{count}} conditions not done yet"
+        "missing": "On · {count} conditions not done yet"
       },
       "state": {
         "ok": "Done",
@@ -724,7 +724,7 @@
         },
         "groups": {
           "ok": "The confirming group on the receiving side has members.",
-          "todo": "Missing confirming group: {{groups}}. Create the group, then add people to it.",
+          "todo": "Missing confirming group: {groups}. Create the group, then add people to it.",
           "unknown": "Could not check the confirming group (Hub did not answer)."
         },
         "send_flow": {
@@ -733,7 +733,7 @@
           "unknown": "Could not check the sending flow (Hub did not answer)."
         }
       },
-      "emptyGroups": "Group {{empty}} has no members. Add people so someone can confirm."
+      "emptyGroups": "Group {empty} has no members. Add people so someone can confirm."
     },
     "companyFlows": {
       "newFlow": {

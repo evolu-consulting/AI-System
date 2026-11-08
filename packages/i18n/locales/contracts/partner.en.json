@@ -37,7 +37,7 @@
         "off": "Off. The company cannot send or receive contracts with partners yet. Ask a platform admin to turn this on.",
         "on": "On",
         "ready": "On · ready to send and receive",
-        "missing": "On · {{count}} conditions not done yet",
+        "missing": "On · {count} conditions not done yet",
         "state": { "ok": "Done", "todo": "Missing", "unknown": "Unknown" },
         "who": { "platform": "Ask a platform admin", "company": "A company admin does this" },
         "item": {
