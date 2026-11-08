@@ -79,7 +79,8 @@ test.beforeAll(async () => {
   });
 });
 
-const FILE_BODY = Buffer.from("hang,so_luong\nmay chu,2\n", "utf8");
+// Ký số chỉ nhận PDF (ESIGN_UNSUPPORTED_FILE): tệp của phiếu là PDF để Phần 2 «Ký số» chạy được
+const FILE_BODY = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF");
 const VALUE_BY_TYPE: Record<string, string> = {
   number: "2",
   date: "2026-11-20",
@@ -104,8 +105,12 @@ async function submitOpenForm(page: Page): Promise<boolean> {
   for (const field of await form.locator("[data-flow-field]").all()) {
     const file = field.locator('input[type="file"]');
     if (await file.count()) {
-      await file.setInputFiles({ name: "tai-lieu.csv", mimeType: "text/csv", buffer: FILE_BODY });
-      await expect(field.getByTestId("file-item")).toContainText("tai-lieu.csv", {
+      await file.setInputFiles({
+        name: "tai-lieu.pdf",
+        mimeType: "application/pdf",
+        buffer: FILE_BODY,
+      });
+      await expect(field.getByTestId("file-item")).toContainText("tai-lieu.pdf", {
         timeout: 30_000,
       });
       continue;
