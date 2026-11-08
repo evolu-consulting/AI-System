@@ -66,6 +66,8 @@ async function expireBatch(d: ProcessDeps, limit: number): Promise<{ n: number; 
  * Tenant (K3 lô, T6c): bảo đảm nằm ở schema — `process_runs.id` là PK (duy nhất toàn bảng) + FK kép
  * `(process_run_id, tenant_id) → process_runs(id, tenant_id)` ⇒ hàng con khớp `process_run_id` thì chắc chắn cùng tenant run
  * nguồn. `tenant_id = any(…)` chỉ là lọc thừa cho index/RLS, KHÔNG khớp từng cặp (run, tenant) — đừng dựa vào nó.
+ * cr126-expire-race · `FOR NO KEY UPDATE` (đúng khoá của UPDATE không đổi khoá): vẫn bỏ qua run tx quy trình đang giữ (`FOR UPDATE`),
+ * nhưng KHÔNG bỏ qua run chỉ bị giữ `FOR KEY SHARE` (poster đăng tin sau commit, chèn hàng con có FK, vòng nhắc) ⇒ không lọt lượt.
  */
 export async function claimExpired(
   tx: Tx,
@@ -79,7 +81,7 @@ export async function claimExpired(
       where status = any(${textArray(PROCESS_RUN_ACTIVE)}::text[]) and expires_at <= ${at}::timestamptz
       order by expires_at asc, id asc
       limit ${limit}
-      for update skip locked
+      for no key update skip locked
     )
     , r as (
       update hub.process_runs r set status = 'expired', finished_at = ${at}::timestamptz, updated_at = ${at}::timestamptz

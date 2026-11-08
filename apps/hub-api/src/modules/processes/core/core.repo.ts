@@ -256,16 +256,19 @@ export type PostedEvent = {
 };
 
 /**
- * HUB-FR-143 · plan §6 · RA-01 · khoá run của sự kiện `FOR SHARE` TRƯỚC definer: chèn `room_messages` có FK
+ * HUB-FR-143 · plan §6 · RA-01 · khoá run của sự kiện `FOR KEY SHARE` TRƯỚC definer: chèn `room_messages` có FK
  * `process_run_id` ⇒ lấy `FOR KEY SHARE` trên `process_runs` SAU khi definer đã khoá `rooms` (thứ tự room → run, ngược
- * tx quy trình run → … → rooms qua FK của `process_thread_events`) ⇒ 40P01. `FOR SHARE` xung đột với `FOR UPDATE` /
- * `NO KEY UPDATE` ⇒ poster chờ tx quy trình đang giữ run commit hẳn rồi mới khoá `rooms` (run → room → sự kiện).
+ * tx quy trình run → … → rooms qua FK của `process_thread_events`) ⇒ 40P01. Lấy SỚM đúng khoá FK đó là đủ: chỉ `FOR UPDATE`
+ * (tx quy trình `runs.lock`) chặn được nó ⇒ poster chờ tx đó commit hẳn rồi mới khoá `rooms` (run → room → sự kiện); tx chỉ
+ * giữ `NO KEY UPDATE` (UPDATE thường, hết hạn) không chặn FK nên không thành chu trình.
+ * cr126-expire-race · KHÔNG dùng `FOR SHARE`: nó xung đột `NO KEY UPDATE` ⇒ `claimExpired` (`SKIP LOCKED`) bỏ qua run poster đang
+ * đăng tin ngay sau commit apply ⇒ run quá hạn lọt một lượt quét.
  * Một câu, không vòng hàng; sự kiện/run không thấy ⇒ không khoá gì (definer tự xử lý `not found`/`skipped`).
  */
 export async function lockEventRun(tx: Tx, eventId: string): Promise<void> {
   await tx.execute(sql`select 1 from hub.process_runs r
     join hub.process_thread_events e on e.process_run_id = r.id and e.tenant_id = r.tenant_id
-    where e.id = ${eventId}::uuid for share of r`);
+    where e.id = ${eventId}::uuid for key share of r`);
 }
 
 /** Definer `hub.room_post_process_message` (khoá rooms → sự kiện → room_messages; idempotent `id = event.id`). */
