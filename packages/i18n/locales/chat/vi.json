@@ -162,7 +162,6 @@
   "flow": {
     "label": "Flow: {{title}}",
     "more": "+{{count}} tin trong flow",
-    "time": "{{time}}",
     "openRight": "Đang mở bên phải",
     "messageCount": "{{count}} tin",
     "panelMeta": "{{count}} tin · nhớ cả flow",
@@ -173,8 +172,7 @@
     "log": "Tin nhắn trong flow",
     "dragClose": "Kéo để đóng",
     "resize": "Đổi độ rộng khung flow",
-    "cold": "Đang mở lại flow, lần đầu có thể mất vài giây…",
-    "noClose": "Flow không có nút đóng. Rảnh lâu thì hệ thống tự nghỉ, chat lại thì tự mở lại đủ ngữ cảnh."
+    "cold": "Đang mở lại flow, lần đầu có thể mất vài giây…"
   },
   "answer": {
     "who": "Consultant",
@@ -265,17 +263,10 @@
   },
   "settings": {
     "title": "Cài đặt",
-    "language": "Ngôn ngữ",
     "account": "Tài khoản",
     "privacy": "Quản trị nền tảng có thể xem nội dung hội thoại để hỗ trợ và gỡ lỗi. Quản trị viên công ty bạn không xem được nội dung, chỉ xem mức sử dụng",
     "logout": "Đăng xuất",
-    "company": "Công ty",
-    "langVi": "Tiếng Việt",
-    "langEn": "English",
-    "theme": "Giao diện",
-    "themeLight": "Sáng",
-    "themeDark": "Tối",
-    "themeSystem": "Theo hệ thống"
+    "company": "Công ty"
   },
   "toast": {
     "flowBusy": "Flow này đang trả lời, chờ xong rồi gửi tiếp.",
@@ -318,7 +309,6 @@
     "unknown": "Có lỗi khi xử lý. Thử lại sau."
   },
   "directory": {
-    "people": "Người",
     "messageTo": "Nhắn tin với {{name}}",
     "noMatch": "Không có ai khớp \"{{q}}\"",
     "error": "Không tìm được người. Thử lại"

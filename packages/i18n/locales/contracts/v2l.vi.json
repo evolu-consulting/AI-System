@@ -204,7 +204,11 @@
           "escalate": "Quá hạn ⇒ chuyển cấp (mặc định Toàn quyền)",
           "dim": "Mờ = bị bỏ qua theo xem trước"
         },
-        "view": { "label": "Cách xem quy trình", "canvas": "Sơ đồ", "list": "Danh sách" },
+        "view": {
+          "label": "Cách xem quy trình",
+          "canvas": "Sơ đồ",
+          "list": "Danh sách"
+        },
         "canvas": {
           "skip": "Không thoả ⇒ bỏ qua",
           "aria": "Sơ đồ quy trình duyệt (chỉ xem)",
@@ -285,12 +289,6 @@
       "groupMissing": "Nhóm phòng ban không còn tồn tại, hãy chọn lại.",
       "conflict": "Luồng đã được người khác sửa, tải lại.",
       "reload": "Tải lại",
-      "err": {
-        "nameEmpty": "Nhập tên bước.",
-        "whenEmpty": "Chọn loại hợp đồng hoặc giá trị, hoặc bỏ điều kiện.",
-        "amountInvalid": "Số tiền phải là số không âm.",
-        "difyEmpty": "Chưa chọn quy trình Dify."
-      },
       "difyFrom": "Lấy từ trường hợp đồng",
       "difyNoSend": "— Không gửi —",
       "contractField": {

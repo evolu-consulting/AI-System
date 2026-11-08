@@ -36,8 +36,7 @@
   },
   "user": {
     "account": "Tài khoản",
-    "logout": "Đăng xuất",
-    "language": "Ngôn ngữ"
+    "logout": "Đăng xuất"
   },
   "login": {
     "title": "Đăng nhập Agent Forge",
@@ -101,12 +100,7 @@
         "name": "Pilot",
         "tag": "Dự án"
       },
-      "editing": "Đang sửa Ledger",
-      "step1": "Hồ sơ",
-      "step2": "Kỹ năng",
-      "step3": "Quyền truy cập",
-      "step4": "Thử nghiệm",
-      "step5": "Xuất bản"
+      "editing": "Đang sửa Ledger"
     }
   },
   "session": {
@@ -277,7 +271,6 @@
     "cancel": "Huỷ",
     "save": "Lưu",
     "saving": "Đang lưu…",
-    "loadError": "Không tải được agent",
     "step": {
       "1": "Thông tin",
       "2": "Runtime & model",
@@ -336,7 +329,6 @@
       "pickerSearch": "Tìm theo key hoặc tên",
       "pickerEmpty": "Catalog chưa có workflow nào đang bật. Workflow được tạo ở Admin.",
       "attach": "Gắn",
-      "needOne": "Agent cần một workflow",
       "missing": "(không còn trong catalog)",
       "adminLink": "Admin › Workflows ↗",
       "adminText": "Admin › Workflows",
@@ -370,7 +362,6 @@
       "tokenBudget": "Ngân sách token phải ≥ 1 hoặc để trống",
       "agentType": "Chọn loại agent",
       "invalid": "Dữ liệu chưa hợp lệ, kiểm tra lại các trường.",
-      "field": "Giá trị chưa hợp lệ",
       "json": "JSON không hợp lệ",
       "maxTurns": "Số lượt từ 2 đến 100"
     },
@@ -450,8 +441,7 @@
       "titleNew": "Thêm Orchestrator cho tenant",
       "titleEdit": "Sửa Orchestrator của {tenant}",
       "tenant": "Tenant",
-      "pick": "Chọn tenant",
-      "noTenant": "Không còn tenant nào để thêm"
+      "pick": "Chọn tenant"
     },
     "delete": {
       "title": "Xoá Orchestrator của {tenant}?",

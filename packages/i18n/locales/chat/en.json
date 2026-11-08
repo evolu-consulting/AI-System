@@ -162,7 +162,6 @@
   "flow": {
     "label": "Flow: {{title}}",
     "more": "+{{count}} messages in flow",
-    "time": "{{time}}",
     "openRight": "Open on the right",
     "messageCount": "{{count}} messages",
     "panelMeta": "{{count}} messages · remembers the whole flow",
@@ -173,8 +172,7 @@
     "log": "Messages in this flow",
     "dragClose": "Drag to close",
     "resize": "Resize flow panel",
-    "cold": "Reopening the flow, the first reply may take a few seconds…",
-    "noClose": "Flows never close. When idle the system pauses them and restores full context when you chat again."
+    "cold": "Reopening the flow, the first reply may take a few seconds…"
   },
   "answer": {
     "who": "Consultant",
@@ -265,17 +263,10 @@
   },
   "settings": {
     "title": "Settings",
-    "language": "Language",
     "account": "Account",
     "privacy": "Platform administrators may view chat content for support and debugging. Your company administrators cannot see content, only usage",
     "logout": "Sign out",
-    "company": "Company",
-    "langVi": "Tiếng Việt",
-    "langEn": "English",
-    "theme": "Appearance",
-    "themeLight": "Light",
-    "themeDark": "Dark",
-    "themeSystem": "System"
+    "company": "Company"
   },
   "toast": {
     "flowBusy": "This flow is still replying; wait for it to finish.",
@@ -318,7 +309,6 @@
     "unknown": "Something went wrong. Try again later."
   },
   "directory": {
-    "people": "People",
     "messageTo": "Message {{name}}",
     "noMatch": "No one matches \"{{q}}\"",
     "error": "Couldn't search people. Retry"

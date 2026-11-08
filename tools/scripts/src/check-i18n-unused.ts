@@ -23,7 +23,12 @@ export function collectLiterals(src: string, into: Set<string>): void {
     into.add(m[1] ?? "");
 }
 
+const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
+
 export function isUsed(key: string, literals: Set<string>, prefixes: string[]): boolean {
+  // (d) khoá số nhiều `x_one`/`x_other` được dùng khi khoá gốc `x` được dùng (i18next chọn hậu tố theo count).
+  const base = key.replace(PLURAL_SUFFIX, "");
+  if (base !== key && isUsed(base, literals, prefixes)) return true;
   const parts = key.split(".");
   for (let i = 0; i <= parts.length - 2; i++)
     if (literals.has(parts.slice(i).join("."))) return true; // đầy đủ / hậu tố ≥ 2 đoạn
@@ -59,6 +64,7 @@ function main(): number {
     );
   const top = [...byPrefix].sort((a, b) => b[1] - a[1]).slice(0, 25);
   for (const [p, n] of top) console.log(`i18n-unused: ${p}.* — ${n} khoá`);
+  if (process.argv.includes("--list")) for (const k of unused) console.log(`  ${k}`);
   console.log(
     `i18n-unused: ${unused.length}/${keys.length} khoá không thấy trong mã (báo cáo; --strict để chặn)`,
   );

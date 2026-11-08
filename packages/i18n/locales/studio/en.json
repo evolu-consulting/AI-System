@@ -36,8 +36,7 @@
   },
   "user": {
     "account": "Account",
-    "logout": "Sign out",
-    "language": "Language"
+    "logout": "Sign out"
   },
   "login": {
     "title": "Sign in to Agent Forge",
@@ -101,12 +100,7 @@
         "name": "Pilot",
         "tag": "Projects"
       },
-      "editing": "Editing Ledger",
-      "step1": "Profile",
-      "step2": "Skills",
-      "step3": "Access",
-      "step4": "Test",
-      "step5": "Publish"
+      "editing": "Editing Ledger"
     }
   },
   "session": {
@@ -277,7 +271,6 @@
     "cancel": "Cancel",
     "save": "Save",
     "saving": "Saving…",
-    "loadError": "Couldn't load the agent",
     "step": {
       "1": "Details",
       "2": "Runtime & model",
@@ -336,7 +329,6 @@
       "pickerSearch": "Search by key or name",
       "pickerEmpty": "The catalog has no enabled workflows. Workflows are created in Admin.",
       "attach": "Attach",
-      "needOne": "The agent needs a workflow",
       "missing": "(no longer in the catalog)",
       "adminLink": "Admin › Workflows ↗",
       "adminText": "Admin › Workflows",
@@ -370,7 +362,6 @@
       "tokenBudget": "Token budget must be ≥ 1 or empty",
       "agentType": "Select an agent type",
       "invalid": "Some fields are invalid, please check.",
-      "field": "Invalid value",
       "json": "Invalid JSON",
       "maxTurns": "Max turns must be 2–100"
     },
@@ -450,8 +441,7 @@
       "titleNew": "Add Orchestrator for a tenant",
       "titleEdit": "Edit {tenant}'s Orchestrator",
       "tenant": "Tenant",
-      "pick": "Select a tenant",
-      "noTenant": "No tenant left to add"
+      "pick": "Select a tenant"
     },
     "delete": {
       "title": "Delete {tenant}'s Orchestrator?",

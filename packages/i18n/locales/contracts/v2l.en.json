@@ -204,7 +204,11 @@
           "escalate": "Overdue ⇒ escalation (default Full access)",
           "dim": "Faded = skipped in the preview"
         },
-        "view": { "label": "Process view", "canvas": "Diagram", "list": "List" },
+        "view": {
+          "label": "Process view",
+          "canvas": "Diagram",
+          "list": "List"
+        },
         "canvas": {
           "skip": "Not met ⇒ skipped",
           "aria": "Approval process diagram (read-only)",
@@ -285,12 +289,6 @@
       "groupMissing": "The department group no longer exists, choose again.",
       "conflict": "The flow was changed by someone else, reload.",
       "reload": "Reload",
-      "err": {
-        "nameEmpty": "Enter a step name.",
-        "whenEmpty": "Choose a contract type or value, or remove the condition.",
-        "amountInvalid": "Amount must be a non-negative number.",
-        "difyEmpty": "No Dify workflow selected."
-      },
       "difyFrom": "Take from contract field",
       "difyNoSend": "— Do not send —",
       "contractField": {

@@ -34,7 +34,6 @@
     "loading": "Loading",
     "stillLoading": "Still loading…",
     "saved": "Saved",
-    "reload": "Reload",
     "pagination": {
       "range": "{from}–{to} of {total}",
       "prev": "Previous",
@@ -42,8 +41,6 @@
       "aria": "Pagination"
     },
     "dismiss": "Close",
-    "moveUp": "Move up",
-    "moveDown": "Move down",
     "on": "Enabled",
     "off": "Disabled",
     "undo": "Undo",
@@ -60,8 +57,7 @@
     "back": "Back"
   },
   "toast": {
-    "saveFailed": "Couldn't save: {reason}",
-    "saved": "Saved and applied · v{n}"
+    "saveFailed": "Couldn't save: {reason}"
   },
   "auth": {
     "login": {
@@ -112,10 +108,7 @@
         },
         "quota": "Monthly quota",
         "quotaTenant": "acme",
-        "recent": "Recent changes",
-        "change1": "Finance team got access to Ledger",
-        "change2": "New user added to acme",
-        "change3": "/month-close enabled for acme"
+        "recent": "Recent changes"
       }
     },
     "lang": {
@@ -238,7 +231,6 @@
   "account": {
     "menu": "Your account",
     "changePassword": "Change password",
-    "language": "Language",
     "twofa": "Two-step verification"
   },
   "twofa": {
@@ -916,13 +908,6 @@
       "lockNote": "Locking the company stops its users from signing in until it is unlocked.",
       "lockedNote": "The company is locked — users cannot sign in."
     },
-    "agents": {
-      "unavailable": "Agents are granted in Agent Forge. This will be available once Agent Hub is ready."
-    },
-    "detail": {
-      "createdAt": "Created {date}",
-      "userCount": "{users} users"
-    },
     "defaultApp": {
       "title": "Default app",
       "label": "App opened after sign-in",
@@ -978,10 +963,6 @@
         "staffSize": "Enter a whole number, 0 or more",
         "tooLong": "The text is too long"
       }
-    },
-    "users": {
-      "summary": "{users} users · {admins} company admins · {locked} locked",
-      "open": "Open Users list"
     },
     "lock": {
       "button": "Lock tenant",
@@ -1057,11 +1038,8 @@
         "nonstandard": "Non-standard access"
       },
       "reason": {
-        "always": "always on",
-        "levelOff": "access is set to Off",
         "jobOff": "{job} is not on"
       },
-      "accessList": "Per feature",
       "flowsCount": "{on}/{total} on",
       "showDetail": "Details",
       "hideDetail": "Collapse",
@@ -1079,8 +1057,6 @@
         "planUnlimited": "Unlimited"
       },
       "title": "Apps",
-      "desc": "Pick the access level of each app for this company. Off = pack off; View/Edit/Admin = pack on with matching access (the company ceiling). Roles in the app only take effect up to this level.",
-      "descReadOnly": "The company's apps and levels (read only). The platform operator changes them.",
       "packOn": "Pack on",
       "packOff": "Pack off",
       "roles": "{count} role(s)",
@@ -1100,14 +1076,6 @@
       }
     },
     "features": {
-      "title": "Features by app",
-      "desc": "Pick the access level of each app for this company. A higher level includes the lower ones: Edit = View + Edit, Admin = View + Edit + Admin.",
-      "summary": {
-        "now": "Now: {state}",
-        "addons": "{count} add-on(s)",
-        "list": "{on}/{total} enabled"
-      },
-      "nonstandard": "Non-standard",
       "nonstandardHint": "The current permissions do not match a single level (e.g. Edit without View). Saving normalizes them.",
       "coreAria": "Basics is always on",
       "switchAria": "Enable {name}",
@@ -1115,8 +1083,6 @@
       "addonsTitle": "Add-ons",
       "addonsLocked": "turn the app on first",
       "pending": "Unsaved: grant {grant}, revoke {revoke}",
-      "noChange": "No changes",
-      "reset": "Undo changes",
       "confirmTitle": "Save changes for {tenant}?",
       "confirmBody": "{count} feature(s) will be revoked ({list}): the company's users lose the matching access within seconds. You can grant them again later.",
       "toast": {
@@ -1396,10 +1362,7 @@
       "access": "Effective access"
     },
     "access": {
-      "summary": "Sees {visible} of {total} commands",
-      "via": "via {path}",
       "core": "via core feature (default for everyone)",
-      "agentsUnavailable": "Not available yet",
       "openCheck": "Open access check",
       "empty": "This user can only use core commands."
     }
@@ -1722,8 +1685,7 @@
       "info": "Details",
       "input": "Input",
       "preview": "What the model sees",
-      "usage": "Used by",
-      "hasError": "has errors"
+      "usage": "Used by"
     },
     "field": {
       "difyAppId": "Dify app ID",
@@ -1742,11 +1704,6 @@
       "sideEffect": "Requires confirmation before running",
       "sideEffectHint": "Turn on when the workflow sends, writes or deletes external data. Chat asks the user to Agree/Cancel first."
     },
-    "type": {
-      "workflow": "workflow",
-      "chat": "chat",
-      "agent": "agent"
-    },
     "schema": {
       "title": "Input",
       "add": "+ Add parameter",
@@ -1755,8 +1712,7 @@
         "name": "Parameter name",
         "type": "Type",
         "required": "Required",
-        "description": "Parameter description",
-        "options": "Options"
+        "description": "Parameter description"
       },
       "optionsHint": "Separate with commas",
       "empty": "No inputs yet. Add parameters so commands and agents can pass data in.",
@@ -1778,9 +1734,6 @@
       "title": "Run history",
       "empty": "No runs match the filters.",
       "unavailable": "The Hub has not recorded Dify run history yet (not migrated).",
-      "total": "{n} runs",
-      "prev": "Previous page",
-      "next": "Next page",
       "openDify": "View details in Dify",
       "allTenants": "All tenants",
       "allStatus": "All statuses",
@@ -1852,15 +1805,11 @@
       "outputField": "Output field can be at most 128 characters"
     },
     "editor": {
-      "titleNew": "New workflow",
-      "stateNew": "Not saved yet"
+      "titleNew": "New workflow"
     },
     "schemaBreaksDetail": {
       "missing": "missing: {names}",
       "unknown": "no longer in the workflow: {names}"
-    },
-    "sideEffect": {
-      "asks": "Asks first"
     }
   },
   "commands": {
@@ -1875,7 +1824,6 @@
         "key": "Company key",
         "name": "Name",
         "features": "Features",
-        "users": "Users",
         "groups": "Granted groups",
         "visible": "Users who see it"
       },
@@ -1925,15 +1873,10 @@
       "text": "Text",
       "json": "JSON"
     },
-    "mode": {
-      "sync": "sync",
-      "async": "async"
-    },
     "args": {
       "add": "+ Add parameter",
       "col": {
         "name": "Parameter",
-        "description": "Description",
         "default": "Default",
         "fallback": "If empty use",
         "rest": "Take the rest"
@@ -1960,7 +1903,6 @@
     },
     "map": {
       "col": {
-        "input": "Workflow input",
         "source": "Source",
         "value": "Value"
       },
@@ -2014,11 +1956,7 @@
       "deleted": "Deleted /{name}"
     },
     "editor": {
-      "unsaved": "Unsaved changes",
       "titleNew": "New command"
-    },
-    "breadcrumb": {
-      "new": "New command"
     },
     "duplicate": {
       "hint": "Copy of /{name}: disabled, no aliases."
@@ -2154,8 +2092,6 @@
     "col": {
       "name": "Name",
       "status": "Status",
-      "commands": "Commands",
-      "tenants": "Tenants",
       "updated": "Updated",
       "usage": "Usage",
       "key": "Technical key"
@@ -2366,21 +2302,16 @@
     },
     "selectTenant": "Choose a company to see its groups.",
     "empty": {
-      "text": "No groups yet. Create a group to grant features to a whole team.",
-      "cta": "+ Create your first group"
+      "text": "No groups yet. Create a group to grant features to a whole team."
     },
     "editor": {
-      "titleNew": "New group",
-      "breadcrumb": {
-        "new": "New group"
-      }
+      "titleNew": "New group"
     },
     "summary": "{members} members · {features} features",
     "field": {
       "key": "Key",
       "name": "Name",
       "description": "Description",
-      "keyLocked": "Key can't be changed after creation",
       "descCount": "{n}/400"
     },
     "create": {
@@ -2429,7 +2360,6 @@
       "empty": "This group has no features beyond core."
     },
     "agents": {
-      "body": "Granting agents to a group is done in Agent Forge once Agent Hub is ready.",
       "caption": "Group agents",
       "col": {
         "agent": "Agent",
@@ -2496,14 +2426,11 @@
       "showUnopened": "Show unopened features ({count})",
       "noGroups": "No groups yet. Create a group first, then come back to grant features.",
       "noGroupsCta": "Create group",
-      "unopenedHint": "Contact the platform to open this feature for the company.",
-      "groupsTrimmed": "Showing {shown} of {total} groups. Type to filter.",
-      "filterGroups": "Filter groups"
+      "groupsTrimmed": "Showing {shown} of {total} groups. Type to filter."
     },
     "error": {
       "notEntitled": "The company hasn't been given this feature, so it can't be granted. The matrix was reloaded.",
-      "coreProtected": "core is available to everyone and needs no grant.",
-      "batchFail": "Couldn't save; none of the changes were applied."
+      "coreProtected": "core is available to everyone and needs no grant."
     },
     "subtitle": "Grant features to groups. You can only grant features the platform has opened for the company.",
     "tab": {
@@ -2517,14 +2444,12 @@
       "grantedToGroup": "Granted {feature} to group {group}"
     },
     "check": {
-      "title": "Access check",
       "subtitle": "Answers \"why can't I see command X\"",
       "user": "User",
       "userPlaceholder": "Enter a username…",
       "prompt": "Choose a user to see what they can use, and why.",
       "userNotFound": "This user isn't in the company.",
       "search": "Search commands",
-      "searchPlaceholder": "Search commands, e.g. kiemtra",
       "section": {
         "features": "Features",
         "commands": "Commands",
@@ -3107,53 +3032,10 @@
       "catalogHint": "Want to see every feature in the system?",
       "catalogLink": "Open the feature catalog"
     },
-    "processes": {
-      "noHub": "The Hub address is not configured, so flows cannot be shown.",
-      "noSlots": "This app has no flow slots. A slot is a place where the app lets you plug in a flow, for example \"Contract approval\".",
-      "alwaysOn": "Always on",
-      "needsAddon": "Turn on {addon} for this company (Company › Apps) to use it",
-      "trigger": "Starts when: {trigger}",
-      "slotMissing": "This job has no published default process yet, so companies that turn on the app will have no process for it. Publish a default process in the Library.",
-      "intro": "Each slot has a default flow. For a company that needs its own, duplicate, edit, then assign it in the Companies tab. Running items keep the old version; new items use the new one.",
-      "default": "Default",
-      "noDefault": "None",
-      "view": "View diagram",
-      "clone": "Duplicate to edit",
-      "pickDefault": "Pick the default flow",
-      "pickDefaultPlaceholder": "Pick a published flow…",
-      "changeDefault": "Change default",
-      "defaultDone": "\"{name}\" is now the default.",
-      "confirmTitle": "Make \"{name}\" the default?",
-      "confirmDesc": "Companies without their own flow will use it for new items. Running items keep the old flow.",
-      "others": "Other flows of this slot",
-      "noOthers": "No other flows yet. Use \"Duplicate to edit\" to create your own.",
-      "draftOnly": "Draft, not published",
-      "unpublished": "Unpublished changes",
-      "usedBy": "Assigned to {count} companies",
-      "noUsers": "No company uses a custom flow: all run the default. Assign one in the Companies tab.",
-      "openCompanies": "See company list",
-      "openList": "See in the flow list"
-    },
     "companies": {
-      "levelFilter": "Filter by level",
-      "search": "Search companies…",
-      "blocked": "Save or undo the open company's changes before switching to another company.",
-      "empty": "There are no companies yet.",
-      "noMatch": "No company matches the filter.",
       "col": {
-        "name": "Company",
-        "level": "Level",
-        "addons": "Add-ons",
-        "flows": "Flow per slot",
-        "users": "People"
-      },
-      "open": "Open settings of {name}",
-      "locked": "Locked",
-      "flowDefault": "Default",
-      "drawer": "Settings of the selected company",
-      "drawerHint": "Same app card as on the company page. Saved in one go, with a confirmation.",
-      "preview": "Preview what this company will see",
-      "pickHint": "Pick a company in the table to change its level, turn on add-ons and assign flows."
+        "name": "Company"
+      }
     },
     "preview": {
       "roleAria": "View as role",
@@ -3278,7 +3160,6 @@
     "emptyDesc": "Create a Dify workflow so agents, commands and company processes can call it.",
     "create": "Create workflow",
     "createCommand": "Create command",
-    "loadError": "Could not load the tools.",
     "notice": {
       "companyTools": "Switching Dify tools on or off per company now lives under AI tools. Pick a tool to choose which companies may use it."
     },

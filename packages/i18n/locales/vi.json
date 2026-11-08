@@ -34,7 +34,6 @@
     "loading": "Đang tải",
     "stillLoading": "Vẫn đang tải…",
     "saved": "Đã lưu",
-    "reload": "Tải lại",
     "pagination": {
       "range": "{from}–{to} / {total}",
       "prev": "Trước",
@@ -42,8 +41,6 @@
       "aria": "Phân trang"
     },
     "dismiss": "Đóng",
-    "moveUp": "Chuyển lên",
-    "moveDown": "Chuyển xuống",
     "on": "Bật",
     "off": "Tắt",
     "undo": "Hoàn tác",
@@ -60,8 +57,7 @@
     "back": "Quay lại"
   },
   "toast": {
-    "saveFailed": "Không lưu được: {reason}",
-    "saved": "Đã lưu và áp dụng · v{n}"
+    "saveFailed": "Không lưu được: {reason}"
   },
   "auth": {
     "login": {
@@ -112,10 +108,7 @@
         },
         "quota": "Hạn mức tháng",
         "quotaTenant": "acme",
-        "recent": "Thay đổi gần đây",
-        "change1": "Nhóm Tài chính được cấp quyền dùng Ledger",
-        "change2": "Đã thêm người dùng mới vào acme",
-        "change3": "Đã bật /month-close cho acme"
+        "recent": "Thay đổi gần đây"
       }
     },
     "lang": {
@@ -238,7 +231,6 @@
   "account": {
     "menu": "Tài khoản của bạn",
     "changePassword": "Đổi mật khẩu",
-    "language": "Ngôn ngữ",
     "twofa": "Xác thực hai bước"
   },
   "twofa": {
@@ -916,13 +908,6 @@
       "lockNote": "Khoá công ty: người dùng của công ty không đăng nhập được cho tới khi mở khoá.",
       "lockedNote": "Công ty đang bị khoá — người dùng không đăng nhập được."
     },
-    "agents": {
-      "unavailable": "Cấp agent cho tenant làm ở Agent Forge. Mục này sẽ khả dụng khi Agent Hub sẵn sàng."
-    },
-    "detail": {
-      "createdAt": "Tạo lúc {date}",
-      "userCount": "{users} user"
-    },
     "defaultApp": {
       "title": "App mặc định",
       "label": "App mở sau khi đăng nhập",
@@ -978,10 +963,6 @@
         "staffSize": "Nhập số nguyên từ 0 trở lên",
         "tooLong": "Nội dung quá dài"
       }
-    },
-    "users": {
-      "summary": "{users} user · {admins} quản trị công ty · {locked} đã khoá",
-      "open": "Mở danh sách Users"
     },
     "lock": {
       "button": "Khoá tenant",
@@ -1057,11 +1038,8 @@
         "nonstandard": "Quyền không chuẩn"
       },
       "reason": {
-        "always": "luôn bật",
-        "levelOff": "quyền truy cập đang Tắt",
         "jobOff": "{job} chưa bật"
       },
-      "accessList": "Theo từng tính năng",
       "flowsCount": "{on}/{total} bật",
       "showDetail": "Chi tiết",
       "hideDetail": "Thu gọn",
@@ -1079,8 +1057,6 @@
         "planUnlimited": "Không giới hạn"
       },
       "title": "Ứng dụng",
-      "desc": "Chọn mức dùng cho từng ứng dụng của công ty. Tắt = tắt gói; Xem/Sửa/Quản trị = bật gói và cấp quyền theo mức (trần của công ty). Vai trong app chỉ có hiệu lực tới mức này.",
-      "descReadOnly": "Ứng dụng và mức dùng của công ty (chỉ xem). Đơn vị vận hành nền tảng đổi mức.",
       "packOn": "Gói đang bật",
       "packOff": "Gói chưa bật",
       "roles": "{count} vai",
@@ -1100,14 +1076,6 @@
       }
     },
     "features": {
-      "title": "Tính năng theo ứng dụng",
-      "desc": "Chọn mức dùng cho từng ứng dụng của công ty. Mức cao gồm cả mức thấp: Sửa = Xem + Sửa, Quản trị = Xem + Sửa + Quản trị.",
-      "summary": {
-        "now": "Đang: {state}",
-        "addons": "{count} tính năng thêm",
-        "list": "{on}/{total} đang bật"
-      },
-      "nonstandard": "Không chuẩn",
       "nonstandardHint": "Bộ quyền hiện tại chưa khớp một mức (vd có Sửa nhưng thiếu Xem). Lưu sẽ chuẩn hoá lại.",
       "coreAria": "Cơ bản luôn bật",
       "switchAria": "Bật {name}",
@@ -1115,8 +1083,6 @@
       "addonsTitle": "Tính năng thêm",
       "addonsLocked": "bật ứng dụng trước để chọn",
       "pending": "Chưa lưu: cấp {grant}, thu hồi {revoke}",
-      "noChange": "Chưa có thay đổi",
-      "reset": "Hoàn tác thay đổi",
       "confirmTitle": "Lưu thay đổi cho {tenant}?",
       "confirmBody": "{count} tính năng sẽ bị thu hồi ({list}): người dùng của công ty mất quyền tương ứng trong vài giây. Có thể cấp lại sau.",
       "toast": {
@@ -1396,10 +1362,7 @@
       "access": "Quyền hiệu lực"
     },
     "access": {
-      "summary": "Thấy {visible}/{total} command",
-      "via": "qua {path}",
       "core": "qua feature core (mặc định cho mọi người)",
-      "agentsUnavailable": "Chưa khả dụng",
       "openCheck": "Mở Kiểm tra quyền",
       "empty": "Người dùng này chỉ dùng được các command của feature core."
     }
@@ -1722,8 +1685,7 @@
       "info": "Thông tin",
       "input": "Input",
       "preview": "Model thấy gì",
-      "usage": "Đang được dùng bởi",
-      "hasError": "có lỗi"
+      "usage": "Đang được dùng bởi"
     },
     "field": {
       "difyAppId": "Mã app Dify",
@@ -1742,11 +1704,6 @@
       "sideEffect": "Cần xác nhận trước khi chạy",
       "sideEffectHint": "Bật khi workflow gửi, ghi hoặc xoá dữ liệu bên ngoài. Chat sẽ hỏi người dùng Đồng ý/Huỷ trước khi chạy."
     },
-    "type": {
-      "workflow": "workflow",
-      "chat": "chat",
-      "agent": "agent"
-    },
     "schema": {
       "title": "Input",
       "add": "+ Thêm tham số",
@@ -1755,8 +1712,7 @@
         "name": "Tên tham số",
         "type": "Kiểu",
         "required": "Bắt buộc",
-        "description": "Mô tả tham số",
-        "options": "Lựa chọn"
+        "description": "Mô tả tham số"
       },
       "optionsHint": "Cách nhau bằng dấu phẩy",
       "empty": "Workflow chưa có input. Thêm tham số để command và agent truyền dữ liệu vào.",
@@ -1778,9 +1734,6 @@
       "title": "Lịch sử chạy",
       "empty": "Chưa có lượt chạy nào khớp bộ lọc.",
       "unavailable": "Hub chưa ghi lịch sử chạy Dify (chưa migrate).",
-      "total": "{n} lượt",
-      "prev": "Trang trước",
-      "next": "Trang sau",
       "openDify": "Xem chi tiết trong Dify",
       "allTenants": "Mọi tenant",
       "allStatus": "Mọi trạng thái",
@@ -1852,15 +1805,11 @@
       "outputField": "Output field tối đa 128 ký tự"
     },
     "editor": {
-      "titleNew": "Workflow mới",
-      "stateNew": "Chưa lưu"
+      "titleNew": "Workflow mới"
     },
     "schemaBreaksDetail": {
       "missing": "thiếu: {names}",
       "unknown": "không còn: {names}"
-    },
-    "sideEffect": {
-      "asks": "Hỏi xác nhận"
     }
   },
   "commands": {
@@ -1875,7 +1824,6 @@
         "key": "Mã công ty",
         "name": "Tên",
         "features": "Feature",
-        "users": "Số user",
         "groups": "Group được cấp",
         "visible": "Số user thấy"
       },
@@ -1925,15 +1873,10 @@
       "text": "Văn bản",
       "json": "JSON"
     },
-    "mode": {
-      "sync": "sync",
-      "async": "async"
-    },
     "args": {
       "add": "+ Thêm tham số",
       "col": {
         "name": "Tham số",
-        "description": "Mô tả",
         "default": "Mặc định",
         "fallback": "Nếu trống lấy",
         "rest": "Nuốt phần còn lại"
@@ -1960,7 +1903,6 @@
     },
     "map": {
       "col": {
-        "input": "Input của workflow",
         "source": "Nguồn",
         "value": "Giá trị"
       },
@@ -2014,11 +1956,7 @@
       "deleted": "Đã xoá /{name}"
     },
     "editor": {
-      "unsaved": "Chưa lưu thay đổi",
       "titleNew": "Command mới"
-    },
-    "breadcrumb": {
-      "new": "Command mới"
     },
     "duplicate": {
       "hint": "Bản sao của /{name}: đã tắt, không có alias."
@@ -2154,8 +2092,6 @@
     "col": {
       "name": "Tên",
       "status": "Trạng thái",
-      "commands": "Commands",
-      "tenants": "Tenant",
       "updated": "Cập nhật",
       "usage": "Sử dụng",
       "key": "Mã kỹ thuật"
@@ -2366,21 +2302,16 @@
     },
     "selectTenant": "Chọn một công ty để xem nhóm của công ty đó.",
     "empty": {
-      "text": "Chưa có group nào. Tạo group để cấp feature cho cả phòng ban.",
-      "cta": "+ Tạo group đầu tiên"
+      "text": "Chưa có group nào. Tạo group để cấp feature cho cả phòng ban."
     },
     "editor": {
-      "titleNew": "Group mới",
-      "breadcrumb": {
-        "new": "Group mới"
-      }
+      "titleNew": "Group mới"
     },
     "summary": "{members} thành viên · {features} feature",
     "field": {
       "key": "Key",
       "name": "Tên",
       "description": "Mô tả",
-      "keyLocked": "Key không đổi được sau khi tạo",
       "descCount": "{n}/400"
     },
     "create": {
@@ -2429,7 +2360,6 @@
       "empty": "Group chưa được cấp feature nào ngoài core."
     },
     "agents": {
-      "body": "Cấp agent cho group làm ở Agent Forge, khi Agent Hub sẵn sàng.",
       "caption": "Agent của group",
       "col": {
         "agent": "Agent",
@@ -2496,14 +2426,11 @@
       "showUnopened": "Hiện feature chưa mở ({count})",
       "noGroups": "Chưa có group nào. Tạo group trước, rồi quay lại cấp feature.",
       "noGroupsCta": "Tạo group",
-      "unopenedHint": "Liên hệ nền tảng để mở feature này cho công ty.",
-      "groupsTrimmed": "Đang hiện {shown}/{total} group. Gõ để lọc.",
-      "filterGroups": "Lọc group"
+      "groupsTrimmed": "Đang hiện {shown}/{total} group. Gõ để lọc."
     },
     "error": {
       "notEntitled": "Công ty chưa được mở feature này nên không cấp được. Đã tải lại ma trận.",
-      "coreProtected": "core có sẵn cho mọi người, không cần cấp.",
-      "batchFail": "Không lưu được, chưa có thay đổi nào được áp dụng."
+      "coreProtected": "core có sẵn cho mọi người, không cần cấp."
     },
     "subtitle": "Cấp feature cho từng group. Chỉ cấp được feature mà công ty đã được nền tảng mở.",
     "tab": {
@@ -2517,14 +2444,12 @@
       "grantedToGroup": "Đã cấp {feature} cho group {group}"
     },
     "check": {
-      "title": "Kiểm tra quyền",
       "subtitle": "Trả lời \"sao tôi không thấy lệnh X\"",
       "user": "Người dùng",
       "userPlaceholder": "Nhập username…",
       "prompt": "Chọn một người dùng để xem họ dùng được gì và vì sao.",
       "userNotFound": "Không tìm thấy người dùng này trong công ty.",
       "search": "Tìm command",
-      "searchPlaceholder": "Tìm command, ví dụ kiemtra",
       "section": {
         "features": "Feature",
         "commands": "Command",
@@ -3107,53 +3032,10 @@
       "catalogHint": "Muốn xem mọi tính năng của hệ thống?",
       "catalogLink": "Mở danh mục tính năng"
     },
-    "processes": {
-      "noHub": "Chưa cấu hình địa chỉ Hub nên chưa xem được quy trình.",
-      "noSlots": "App này chưa có vị trí quy trình. Vị trí quy trình là chỗ app cho phép gắn một quy trình, ví dụ \"Duyệt hợp đồng\".",
-      "alwaysOn": "Luôn bật",
-      "needsAddon": "Cần bật {addon} cho công ty này (Công ty › Ứng dụng) thì mới dùng được",
-      "trigger": "Mở lượt khi: {trigger}",
-      "slotMissing": "Việc này chưa có quy trình mặc định đã xuất bản nên công ty bật ứng dụng sẽ chưa có quy trình cho việc này. Hãy xuất bản một quy trình mặc định trong Thư viện.",
-      "intro": "Mỗi vị trí có một quy trình mặc định. Công ty nào cần luồng riêng thì nhân bản, sửa rồi gán ở tab Công ty. Lượt đang chạy giữ bản cũ; lượt mới dùng bản mới.",
-      "default": "Mặc định",
-      "noDefault": "Chưa có",
-      "view": "Xem sơ đồ",
-      "clone": "Nhân bản để sửa",
-      "pickDefault": "Chọn quy trình làm mặc định",
-      "pickDefaultPlaceholder": "Chọn quy trình đã xuất bản…",
-      "changeDefault": "Đổi mặc định",
-      "defaultDone": "Đã đặt \"{name}\" làm mặc định.",
-      "confirmTitle": "Đặt \"{name}\" làm mặc định?",
-      "confirmDesc": "Các công ty chưa được gán riêng sẽ dùng quy trình này cho lượt mới. Lượt đang chạy giữ quy trình cũ.",
-      "others": "Quy trình khác của vị trí",
-      "noOthers": "Chưa có quy trình nào khác. Dùng \"Nhân bản để sửa\" để tạo luồng riêng.",
-      "draftOnly": "Nháp, chưa xuất bản",
-      "unpublished": "Có thay đổi chưa xuất bản",
-      "usedBy": "Đang gán cho {count} công ty",
-      "noUsers": "Chưa công ty nào dùng quy trình riêng: các công ty đều chạy mặc định. Gán ở tab Công ty.",
-      "openCompanies": "Xem danh sách công ty",
-      "openList": "Xem trong danh sách quy trình"
-    },
     "companies": {
-      "levelFilter": "Lọc theo mức",
-      "search": "Tìm công ty…",
-      "blocked": "Hãy lưu hoặc hoàn tác thay đổi của công ty đang mở trước khi chuyển sang công ty khác.",
-      "empty": "Chưa có công ty nào trong hệ thống.",
-      "noMatch": "Không có công ty nào khớp bộ lọc.",
       "col": {
-        "name": "Công ty",
-        "level": "Mức",
-        "addons": "Tính năng thêm",
-        "flows": "Quy trình theo vị trí",
-        "users": "Số người"
-      },
-      "open": "Mở cấu hình của {name}",
-      "locked": "Đã khoá",
-      "flowDefault": "Mặc định",
-      "drawer": "Cấu hình công ty đang chọn",
-      "drawerHint": "Cùng thẻ app như ở trang công ty. Lưu một lượt, có hộp xác nhận.",
-      "preview": "Xem trước công ty này sẽ thấy gì",
-      "pickHint": "Chọn một công ty trong bảng để đổi mức, bật tính năng thêm và gán quy trình."
+        "name": "Công ty"
+      }
     },
     "preview": {
       "roleAria": "Xem như vai",
@@ -3278,7 +3160,6 @@
     "emptyDesc": "Tạo workflow Dify để agent, lệnh và quy trình của công ty gọi tới.",
     "create": "Tạo workflow",
     "createCommand": "Tạo lệnh",
-    "loadError": "Không tải được danh sách công cụ.",
     "notice": {
       "companyTools": "Bật/tắt Dify theo công ty nằm ở Công cụ AI. Chọn một công cụ để chọn công ty được dùng."
     },

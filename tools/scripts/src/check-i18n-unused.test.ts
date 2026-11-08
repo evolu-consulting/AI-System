@@ -20,6 +20,17 @@ describe("check-i18n-unused (CR-125 c3)", () => {
       ),
     ).toEqual([]);
   });
+  test("khoá số nhiều _one/_other theo khoá gốc đang dùng ⇒ không báo; gốc không dùng ⇒ báo", () => {
+    const l = new Set<string>();
+    collectLiterals('t("files.count")\nt(`files.kind.${k}`)', l);
+    expect(findUnused(["files.count_one", "files.count_other", "files.kind.doc_one"], l)).toEqual(
+      [],
+    );
+    expect(findUnused(["files.gone_one", "files.gone_other"], l)).toEqual([
+      "files.gone_one",
+      "files.gone_other",
+    ]);
+  });
   test("khoá không ai gọi ⇒ báo", () => {
     expect(findUnused(["tenants.slots.routing.noneAssigned", "tenants.tab.apps"], lits)).toEqual([
       "tenants.slots.routing.noneAssigned",
