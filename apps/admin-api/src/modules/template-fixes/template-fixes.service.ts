@@ -5,8 +5,7 @@
 import { suggestGroup } from "@ai/contracts/modules";
 import { withScope } from "@ai/db";
 import { AppError, appError } from "../../lib/errors";
-import { grantEntitlement } from "../features/features.entitlements";
-import * as featuresRepo from "../features/features.repo";
+import { featureIdByKey, grantEntitlement } from "../features/features.entitlements";
 import type { Call as FeaturesCall } from "../features/features.service";
 import { createGroup, type Call as GroupsCall } from "../groups/groups.service";
 
@@ -51,9 +50,7 @@ export async function enableFeatureForTemplate(
       422,
       "Mẫu này không cần tính năng đó ở công ty — chỉ bật được tính năng mẫu đang thiếu.",
     );
-  const id = await withScope(c.ctx.db, c.scope, (tx) =>
-    featuresRepo.featureIdByKey(tx, a.featureKey),
-  );
+  const id = await withScope(c.ctx.db, c.scope, (tx) => featureIdByKey(tx, a.featureKey));
   if (!id) throw appError("NOT_FOUND");
   return grantEntitlement(c, id, a.tenantId);
 }

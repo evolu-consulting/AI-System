@@ -90,6 +90,11 @@ export function grantEntitlement(
   });
 }
 
+/** Id tính năng theo khoá (cho module khác dùng trong tx của nó, không import thẳng repo). */
+export function featureIdByKey(tx: Tx, key: string): Promise<string | null> {
+  return repo.featureIdByKey(tx, key);
+}
+
 export function revokeEntitlement(c: Call, featureId: string, tenantId: string): Promise<void> {
   return configWrite(c, "entitlement.save", async (tx, ch) => {
     const f = await target(c, tx, { featureId, tenantId });
