@@ -14,6 +14,9 @@ consistency-audit #2 (Cao): gán/áp dụng quy trình xong vẫn phải bật c
 - Cờ `tenant_flow_settings.flow_triggers` vẫn là MỘT nguồn mà mọi chỗ đọc hiện có dùng (dispatcher, thẻ duyệt, community, receive…) — chỉ đổi cách GHI: do áp dụng/gán đặt, không còn bước tay. Không đổi chỗ đọc, không migration.
 - admin-web: `FlowSwitch` bỏ công tắc bật; còn nút cứu hộ "Tạm dừng quy trình mới" (quản trị công ty, có hỏi xác nhận) khi đang dùng; chưa dùng ⇒ lời chỉ dẫn "mở một quy trình rồi bấm Lưu và áp dụng". Sau áp dụng/gán làm tươi trạng thái.
 
+- Cả hai đường đều đủ, không bước ẩn (QC community B5): platform GÁN (`assign`) và quản trị công ty LƯU VÀ ÁP DỤNG (`apply`) cùng đặt cờ trong giao dịch; mọi thao tác trên danh sách (`useCompanyFlowOp`) và Lưu và áp dụng làm tươi `flow-settings` từ CÙNG nguồn ⇒ khối của platform không còn chữ cũ "Chưa có quy trình" và không còn công tắc bị khoá.
+- e2e hành trình không bật cờ sẵn (`enableFlowTriggers(…, false)`): G1.1 gán ⇒ "Đang dùng quy trình mới", G2 áp dụng ⇒ chạy tiếp hành trình thật.
+
 ## Không làm / Chạm
 - API `PUT /tenants/:tid/flow-settings` giữ nguyên (tương thích; chặn bật khi chưa có quy trình như FR-09) — UI chỉ dùng để tạm dừng.
 - Không đụng canvas/esign/partner.

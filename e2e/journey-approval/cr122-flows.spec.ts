@@ -119,12 +119,13 @@ test.beforeAll(async () => {
     trigger: { event: "contract.submitted" },
     stages: stages(),
   });
-  tenantId = await enableFlowTriggers(E.tenantKey);
+  // CR-125 · c2: KHÔNG bật cờ sẵn — gán (G1.1) / Lưu và áp dụng (G2) phải đủ để công ty dùng quy trình mới; cờ chỉ được đặt TẮT rõ ràng ở đầu
+  tenantId = await enableFlowTriggers(E.tenantKey, false);
 });
 
 test("G1.1 · platform_admin gán flow Thư viện cho công ty ⇒ dòng 'Được gán · chỉ xem · Đang bật'; canvas có node Bắt đầu khi và Nếu", async ({
   browser,
-}) => {
+}, testInfo) => {
   const page = await ctxPage(browser);
   await loginPlatformAdminUi(page, E.admin, E.adminUser, E.adminPw);
   await openTenantPage(page, E.tenantName);
@@ -133,6 +134,11 @@ test("G1.1 · platform_admin gán flow Thư viện cho công ty ⇒ dòng 'Đư�
   await expect(row).toContainText("Được gán · chỉ xem");
   await expect(row).toContainText("Khi gửi duyệt hợp đồng");
   await expect(row).toContainText("Đang dùng");
+  // CR-125 · c2 · gán là đủ: khối quy trình mới của platform cập nhật ngay "Đang dùng quy trình mới", không còn công tắc để bật
+  await expect(page.getByTestId("flow-switch-status")).toContainText("Đang dùng quy trình mới");
+  await expect(page.getByTestId("flow-pause")).toBeVisible();
+  await expect(page.getByTestId("flow-switch-toggle")).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath("cr125-c2-platform.png") });
   expect(flowId).not.toBe("");
 });
 
@@ -275,10 +281,14 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   // CR-125 · x7 · MỘT dòng cho quy trình đang dùng; bản gốc đã bị thay nằm trong mục "Mẫu thư viện" (gập), không có Bật để bấm nhầm
   await expect(flowRows(box2b).filter({ hasText: FLOW, visible: true })).toHaveCount(1);
   await box2b.getByTestId("company-flow-templates").locator("summary").click();
+  // CR-125 · c2 · quản trị công ty: sau Lưu và áp dụng khối quy trình mới nói "Đang dùng", chỉ còn nút Tạm dừng
+  await expect(page.getByTestId("flow-switch-status")).toContainText("Đang dùng quy trình mới");
+  await expect(page.getByTestId("flow-switch-toggle")).toHaveCount(0);
   const orig2 = box2b.getByTestId("company-flow-templates").locator("li").filter({ hasText: FLOW });
   await expect(orig2).toContainText("Đã thay bằng bản công ty");
   await expect(orig2.getByRole("button", { name: "Bật", exact: true })).toHaveCount(0);
   await page.screenshot({ path: testInfo.outputPath("cr125-x7-one-row.png"), fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("cr125-c2-tenant.png"), fullPage: true });
 
   // HĐ B: đi bản công ty ⇒ chờ Giám đốc (không phải Kế toán); HĐ A (lượt cũ) vẫn chờ Kế toán
   const b = await submit(browser, "g2b");
