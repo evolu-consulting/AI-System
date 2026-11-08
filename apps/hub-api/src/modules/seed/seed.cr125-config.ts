@@ -8,14 +8,18 @@
 //   5. flow mặc định của công ty (`company_flows` Bật): duyệt HĐ (Duyệt 2 cấp), nhận HĐ đối tác (Nhận HĐ thường), duyệt bài Community;
 //   6. cờ `flow_triggers` BẬT cho mọi công ty có flow Bật (như hub 0126) ⇒ ops `flow_flag` không cảnh báo.
 // Idempotent (on conflict / where thiếu), mỗi bước MỘT câu SQL theo tập (không theo số hàng). Gói chưa bật cho công ty ⇒ bước tương ứng bỏ qua.
+
 import {
+  bindGroupKeys,
   COMMUNITY_FLOW_TEMPLATE,
   FLOW_TEMPLATE_APP,
   FLOW_TEMPLATE_EVENT,
   FLOW_TEMPLATE_INPUTS,
   FLOW_TEMPLATES,
+  groupKeysOf,
   PURCHASE_PARENT,
   PURCHASE_PARENT_ID,
+  PURCHASE_PHASE_KEYS,
   PURCHASE_TEMPLATES,
 } from "../processes/public";
 import type { Tx } from "./seed.repo";
@@ -88,6 +92,7 @@ export type Cr125ConfigResult = {
   libraryReleases: number;
   companyFlows: number;
   flowFlags: number;
+  esignSigners: number;
 };
 
 const ZERO: Cr125ConfigResult = {
@@ -99,6 +104,7 @@ const ZERO: Cr125ConfigResult = {
   libraryReleases: 0,
   companyFlows: 0,
   flowFlags: 0,
+  esignSigners: 0,
 };
 
 /** Mẫu Thư viện do seed ghi (id cố định): 3 mẫu duyệt HĐ + mẫu Community + 3 mẫu «Quy trình mua hàng». */
@@ -153,6 +159,7 @@ export async function writeCr125Config(
   r.libraryReleases = l.releases;
   r.companyFlows = await assignDefaultFlows(tx, keys);
   r.flowFlags = await enableFlowTriggers(tx, keys);
+  r.esignSigners = await writePurchaseEsignSigners(tx, keys);
   await bumpIfChanged(tx, r, keys);
   return r;
 }
@@ -302,9 +309,68 @@ async function enableFlowTriggers(tx: Tx, keys: readonly string[]): Promise<numb
   ).length;
 }
 
+/** Mã quy trình con «Hợp đồng» (Phần 2) và nhóm ký phía công ty (Giám đốc) của «Quy trình mua hàng». */
+const PURCHASE_CONTRACT_KEY = PURCHASE_PHASE_KEYS[1];
+export const PURCHASE_SIGNER_GROUP = "giam-doc";
+
+/** Điền người ký công ty (`group:<id>`) vào mọi bước gửi ký số (`contracts-esign-send`) còn trống. THUẦN. */
+export function withEsignSigner(stages: readonly unknown[], groupId: string): unknown[] {
+  return stages.map((s) => {
+    const ex = (s as { executor?: { tool_key?: string; args?: Record<string, unknown> } }).executor;
+    if (ex?.tool_key !== "contracts-esign-send") return s;
+    const cur = ex.args?.company_signers as { value?: unknown } | undefined;
+    if (typeof cur?.value === "string" && cur.value.trim() !== "") return s;
+    const args = { ...ex.args, company_signers: { from: "const", value: `group:${groupId}` } };
+    return { ...(s as object), executor: { ...ex, args } };
+  });
+}
+
+/**
+ * 7 (CR-126 · D7): bước «Ký số» của Phần 2 «Hợp đồng» cần người ký công ty — mẫu Thư viện không mang được id nhóm, nên (như nút «Sao chép để
+ * sửa» của công ty) công ty có nhóm Giám đốc nhận bản riêng của Phần 2 (id nhóm thật, người ký = nhóm Giám đốc; lượt con ưu tiên bản công ty).
+ * Đã có bản công ty cùng mã (kể cả admin đã sửa) ⇒ giữ nguyên. Số câu SQL theo công ty (không theo hàng).
+ */
+async function writePurchaseEsignSigners(tx: Tx, keys: readonly string[]): Promise<number> {
+  const todo = await tx<
+    { tid: string; gid: string; lib: string }[]
+  >`select tn.id as tid, g.id as gid, d.id as lib
+    from admin.tenants tn
+    join admin.groups g on g.tenant_id = tn.id and g.key = ${PURCHASE_SIGNER_GROUP}
+    join hub.process_defs d on d.tenant_id is null and d.key = ${PURCHASE_CONTRACT_KEY} and d.deleted_at is null
+      and d.published_version is not null
+    where tn.key = any(${[...keys]}::text[]) and tn.active
+      and not exists (select 1 from hub.process_defs o
+        where o.tenant_id = tn.id and o.key = ${PURCHASE_CONTRACT_KEY} and o.deleted_at is null)`;
+  let n = 0;
+  for (const t of todo) {
+    const [lib] = await tx<{ stages: unknown[] }[]>`select r.stages from hub.process_def_releases r
+      join hub.process_defs d on d.id = r.def_id and r.rel_version = d.published_version where d.id = ${t.lib}`;
+    if (!lib) continue;
+    const groups = await tx<{ id: string; key: string }[]>`select id, key from admin.groups
+      where tenant_id = ${t.tid} and key = any(${groupKeysOf(lib.stages)}::text[])`;
+    const b = bindGroupKeys(lib.stages, new Map(groups.map((g) => [g.key, g.id])), { strip: true });
+    const stages = withEsignSigner(b.stages, t.gid); // nhóm duyệt thiếu ⇒ group_id null (admin chọn lại), vẫn có người ký
+    n += (
+      await tx`insert into hub.process_defs (tenant_id, key, name, description, input_hint, run_group_ids, stages, token_budget,
+          enabled, sources, inputs, ttl_days, trigger, app, source_template_id, source_rel_version)
+        select ${t.tid}, d.key, d.name, d.description, d.input_hint, '{}'::uuid[], ${tx.json(stages as never)}::jsonb, d.token_budget,
+          true, coalesce(d.sources, '[]'::jsonb), coalesce(d.inputs, '[]'::jsonb), d.ttl_days, d.trigger, d.app, d.id, d.published_version
+        from hub.process_defs d where d.id = ${t.lib} returning id`
+    ).length;
+  }
+  return n;
+}
+
 /** Entitlement/nhóm/flow mới ghi bằng SQL ⇒ báo cache cấu hình (admin + hub); chạy lại không đổi gì ⇒ không báo. */
 async function bumpIfChanged(tx: Tx, r: Cr125ConfigResult, keys: readonly string[]): Promise<void> {
-  const touched = r.features + r.groups + r.groupMembers + r.companyFlows + r.flowFlags + r.esign;
+  const touched =
+    r.features +
+    r.groups +
+    r.groupMembers +
+    r.companyFlows +
+    r.flowFlags +
+    r.esign +
+    r.esignSigners;
   if (touched === 0 && r.libraryDefs === 0) return;
   await notifyConfigChanged(tx, keys);
 }
