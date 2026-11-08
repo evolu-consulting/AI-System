@@ -1,13 +1,13 @@
 // CHAT-AC-55 · HUB-FR-112 · e2e P-a PF3 ⇢PF1 (`ReviewTaskCard`) · E-P12 (test-plan-e2e §2; plan-frontend-e2e §1 DM
 // `/process-inbox`): T (ngoài phòng) — `link "Quy trình"` + huy hiệu `process-dm-badge`; trang: heading "Quy trình", `log
-// "Thông báo quy trình"`, thẻ "Cần bạn kiểm: Hoá đơn T · Đọc hoá đơn" có region "Kiểm …" + Đạt/Chưa đạt; không textbox trong
+// "Thông báo quy trình"`, thẻ "Cần bạn duyệt: Hoá đơn T · Đọc hoá đơn" có region "Kiểm …" + Đạt/Chưa đạt; không textbox trong
 // main; T Đạt ⇒ thẻ "Bạn · Đạt"; mở trang ⇒ huy hiệu về 0.
 import { expect, test } from "@playwright/test";
 import { mkRoom, passBtn, seedRun, settle, users, withSql } from "../_pa-support";
 
 test.afterEach(() => settle());
 
-test('CHAT-AC-55 · E-P12 · T: link "Quy trình" có huy hiệu; /process-inbox có thẻ "Cần bạn kiểm: Hoá đơn T · Đọc hoá đơn" + Đạt/Chưa đạt, không textbox; Đạt ⇒ "Bạn · Đạt"; huy hiệu về 0', async ({
+test('CHAT-AC-55 · E-P12 · T: link "Quy trình" có huy hiệu; /process-inbox có thẻ "Cần bạn duyệt: Hoá đơn T · Đọc hoá đơn" + Đạt/Chưa đạt, không textbox; Đạt ⇒ "Bạn · Đạt"; huy hiệu về 0', async ({
   browser,
 }) => {
   const room = await mkRoom("EP12");
@@ -38,7 +38,7 @@ test('CHAT-AC-55 · E-P12 · T: link "Quy trình" có huy hiệu; /process-inbox
       p.getByText(/Đây là kênh thông báo của quy trình, không nhắn trả lời được/),
     ).toBeVisible();
     await expect(p.getByRole("main").getByRole("textbox")).toHaveCount(0);
-    const card = log.getByRole("article", { name: "Cần bạn kiểm: Hoá đơn T · Đọc hoá đơn" });
+    const card = log.getByRole("article", { name: "Cần bạn duyệt: Hoá đơn T · Đọc hoá đơn" });
     const reg = card.getByRole("region", { name: /^Kiểm / });
     await expect(reg.getByRole("button", { name: "Chưa đạt", exact: true })).toBeVisible();
     await passBtn(reg).click();

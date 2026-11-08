@@ -74,7 +74,7 @@ test('SC-1 · E-S2 · sdlc: 3 cổng (B, T, B), nhờ trả lời A→H ở Inta
     await u.B.goto(`/rooms/${room.id}`);
     await u.B.getByRole("log", { name: "Tin nhắn của phòng" })
       .getByRole("article", { name: name })
-      .getByRole("button", { name: "Kiểm ngay" })
+      .getByRole("button", { name: "Duyệt ngay" })
       .click();
     await passBtn(flowPane(u.B).getByRole("region", { name: "Kiểm Intake" })).click();
 
@@ -93,7 +93,7 @@ test('SC-1 · E-S2 · sdlc: 3 cổng (B, T, B), nhờ trả lời A→H ở Inta
     const kb = u.B.getByRole("log", { name: "Tin nhắn của phòng" }).getByRole("article", {
       name: name,
     });
-    await kb.getByRole("button", { name: "Kiểm ngay" }).click({ timeout: 60_000 });
+    await kb.getByRole("button", { name: "Duyệt ngay" }).click({ timeout: 60_000 });
     await passBtn(flowPane(u.B).getByRole("region", { name: "Kiểm Review" })).click();
 
     await expect(blk).toContainText("Hoàn tất", { timeout: 30_000 });

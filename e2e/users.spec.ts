@@ -44,7 +44,7 @@ test("ADM-FR-04 · BR-09 · binh: bảng chỉ có user acme, hàng 'binh (bạn
   await expect(rowOf(page, "Users", "binh (bạn)")).toBeVisible();
   await expect(rowOf(page, "Users", "lan")).toBeVisible();
   await expect(rowOf(page, "Users", "khang")).toHaveCount(0);
-  await expect(page.getByRole("combobox", { name: "Tenant" })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Công ty" })).toHaveCount(0);
   await rowOf(page, "Users", "binh (bạn)").getByRole("button", { name: "Thao tác khác" }).click();
   await expect(page.getByRole("menuitem")).toHaveCount(1);
   await expect(page.getByRole("menuitem", { name: "Sửa" })).toBeVisible();
@@ -56,7 +56,7 @@ test("ADM-FR-04 · ADM-FR-76 · M1-R14 · admin: /users?tenant=acme → workspac
   await asAdmin(page);
   await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.acme}.*tab=members`));
   await expect(page.getByRole("tab", { name: "Thành viên", selected: true })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "Tenant" })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Công ty" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "+ Tạo user" })).not.toHaveAttribute(
     "aria-disabled",
     "true",
@@ -152,7 +152,7 @@ test("ADM-BR-08 · M1-AC05 · hoa (globex) mở drawer sửa chính mình: role 
   await expect(drawer.getByRole("radio", { name: "member" })).toBeDisabled();
 });
 
-test("ADM-BR-08 · M1-AC05 · admin khoá hoa (tenant_admin duy nhất) → 'Tenant phải còn ít nhất một tenant_admin đang hoạt động'", async ({
+test("ADM-BR-08 · M1-AC05 · admin khoá hoa (tenant_admin duy nhất) → 'Công ty phải còn ít nhất một quản trị công ty đang hoạt động'", async ({
   page,
 }) => {
   await asAdmin(page, "globex");
@@ -162,7 +162,7 @@ test("ADM-BR-08 · M1-AC05 · admin khoá hoa (tenant_admin duy nhất) → 'Ten
     .getByRole("button", { name: "Khoá", exact: true })
     .click();
   await expect(
-    page.getByText("Tenant phải còn ít nhất một tenant_admin đang hoạt động"),
+    page.getByText("Công ty phải còn ít nhất một quản trị công ty đang hoạt động"),
   ).toBeVisible();
 });
 

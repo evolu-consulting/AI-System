@@ -1,6 +1,6 @@
 // CHAT-AC-52 · U1 · T7 · T9 · HUB-FR-113 · e2e P-a PF1 · E-P3, E-P17 (test-plan-e2e §2; plan-frontend-thread §4–§5): run trong
 // phòng = khối quy trình + thread `?flow=`. A gửi "!hoa-don-t HD-12" ⇒ A, B, X thấy tin gọi + khối ngay sau (không reload);
-// "Trả lời tiếp" ⇒ pane có "Kết quả Đọc hoá đơn v1"; chỉ B (assignee) có "Kiểm ngay"; composer thread không có "Quy trình";
+// "Trả lời tiếp" ⇒ pane có "Kết quả Đọc hoá đơn v1"; chỉ B (assignee) có "Duyệt ngay"; composer thread không có "Quy trình";
 // "▶ Quy trình" chỉ tạo khối. E-P17: tin người↔người trong thread, `@agent` ⇒ alert, `!…` là chữ.
 import { expect, test } from "@playwright/test";
 import {
@@ -26,7 +26,7 @@ import {
 
 test.afterEach(() => settle());
 
-test('CHAT-AC-52 · U1 · E-P3 · A gửi "!hoa-don-t HD-12" ⇒ A, B, X thấy tin gọi + khối "Quy trình Hoá đơn T" ngay sau; trạng thái đổi khi stage xong (không reload); "Trả lời tiếp" ⇒ "Kết quả Đọc hoá đơn v1"; B có "Kiểm ngay", X có "Đang chờ …"; composer thread không có nút "Quy trình"', async ({
+test('CHAT-AC-52 · U1 · E-P3 · A gửi "!hoa-don-t HD-12" ⇒ A, B, X thấy tin gọi + khối "Quy trình Hoá đơn T" ngay sau; trạng thái đổi khi stage xong (không reload); "Trả lời tiếp" ⇒ "Kết quả Đọc hoá đơn v1"; B có "Duyệt ngay", X có "Đang chờ …"; composer thread không có nút "Quy trình"', async ({
   browser,
 }) => {
   const room = await mkRoom("EP3");
@@ -53,8 +53,8 @@ test('CHAT-AC-52 · U1 · E-P3 · A gửi "!hoa-don-t HD-12" ⇒ A, B, X thấy 
     await rtScript("hoa-don-t", 0, [{ kind: "done" }]);
     // trạng thái sống: chờ kiểm (không reload)
     await expect(block(u.X)).toContainText(/Chờ duyệt|Đang chờ/);
-    await expect(block(u.B).getByRole("button", { name: "Kiểm ngay" })).toBeVisible();
-    await expect(block(u.X).getByRole("button", { name: "Kiểm ngay" })).toHaveCount(0);
+    await expect(block(u.B).getByRole("button", { name: "Duyệt ngay" })).toBeVisible();
+    await expect(block(u.X).getByRole("button", { name: "Duyệt ngay" })).toHaveCount(0);
     await expect(
       waitingNote(block(u.X), /Đang chờ .* duyệt — chỉ người duyệt mới bấm được\./),
     ).toBeVisible();

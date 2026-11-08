@@ -980,7 +980,7 @@
       }
     },
     "users": {
-      "summary": "{users} users · {admins} tenant admins · {locked} locked",
+      "summary": "{users} users · {admins} company admins · {locked} locked",
       "open": "Open Users list"
     },
     "lock": {
@@ -1014,7 +1014,7 @@
     "quota": {
       "title": "Quota for {month}",
       "hint": "Leave a cell empty for unlimited.",
-      "note": "Going over quota doesn't block; tenant admins are alerted at 80% and 100%. Months follow Vietnam time.",
+      "note": "Going over quota doesn't block; company admins are alerted at 80% and 100%. Months follow Vietnam time.",
       "scope": {
         "tenant": "Whole tenant"
       },
@@ -1290,7 +1290,7 @@
     },
     "col": {
       "username": "Username",
-      "tenant": "Tenant",
+      "tenant": "Company",
       "displayName": "Display name",
       "role": "Role",
       "lastLogin": "Last sign-in",
@@ -1308,14 +1308,14 @@
       },
       "neverLoggedIn": "Never signed in",
       "groupChip": "Group: {key}",
-      "groupNeedsTenant": "Choose a tenant first"
+      "groupNeedsTenant": "Choose a company first"
     },
     "status": {
       "active": "Active",
       "locked": "Locked",
       "tempLocked": "Temporarily locked until {time}"
     },
-    "lockedByTenant": "Locked with tenant {tenant}",
+    "lockedByTenant": "Locked with company {tenant}",
     "neverLoggedIn": "Never signed in",
     "menu": {
       "edit": "Edit",
@@ -1328,7 +1328,7 @@
     "drawer": {
       "createTitle": "New user",
       "editTitle": "{username} · {name}",
-      "tenantLine": "Tenant: {key}",
+      "tenantLine": "Company: {key}",
       "copyAll": {
         "text": "Company code: {tenant}\nUsername: {username}\nTemporary password: {password}"
       }
@@ -1378,11 +1378,11 @@
     },
     "error": {
       "usernameFormat": "Use lowercase letters, digits and . _ - only (2–32 chars)",
-      "usernameTaken": "Username is already used in this tenant",
-      "emailRequired": "Tenant admins need an email to receive quota alerts",
+      "usernameTaken": "Username is already used in this company",
+      "emailRequired": "Company admins need an email to receive quota alerts",
       "emailFormat": "Invalid email",
-      "emailTaken": "Email is already used in this tenant",
-      "lastAdmin": "The tenant must keep at least one active tenant admin",
+      "emailTaken": "Email is already used in this company",
+      "lastAdmin": "The company must keep at least one active company admin",
       "lastPlatformAdmin": "The system must keep at least one active platform admin",
       "displayNameRequired": "Enter a display name",
       "displayNameMax": "At most 64 characters"
@@ -1407,13 +1407,13 @@
   "feedbackAdmin": {
     "title": "Feedback",
     "subtitle": "User feedback about the apps. Change the status and reply; users see the reply in the feedback panel.",
-    "allTenants": "All tenants",
+    "allTenants": "All companies",
     "allApps": "All apps",
     "allKinds": "All types",
     "allStatuses": "All statuses",
     "col": {
       "date": "Date",
-      "tenant": "Tenant",
+      "tenant": "Company",
       "user": "Sender",
       "app": "App",
       "kind": "Type",
@@ -2364,7 +2364,7 @@
     "protected": {
       "tip": "The built-in beta-testers group can't be deleted"
     },
-    "selectTenant": "Choose a tenant to see its groups.",
+    "selectTenant": "Choose a company to see its groups.",
     "empty": {
       "text": "No groups yet. Create a group to grant features to a whole team.",
       "cta": "+ Create your first group"
@@ -2462,7 +2462,7 @@
     },
     "error": {
       "keyFormat": "Use lowercase letters, digits and - only (2–32 chars)",
-      "keyTaken": "Key is already used in this tenant",
+      "keyTaken": "Key is already used in this company",
       "nameRequired": "Enter a group name (at most 64 characters)",
       "descMax": "Description can be at most 400 characters",
       "betaProtected": "The built-in beta-testers group can't be deleted or re-keyed.",
@@ -2511,7 +2511,7 @@
       "matrix": "Matrix",
       "check": "Access check"
     },
-    "selectTenant": "Choose a tenant to manage its access.",
+    "selectTenant": "Choose a company to manage its access.",
     "toast": {
       "saved": "Saved · {added} granted, {removed} revoked. Members see the change within seconds.",
       "grantedToGroup": "Granted {feature} to group {group}"
@@ -2522,7 +2522,7 @@
       "user": "User",
       "userPlaceholder": "Enter a username…",
       "prompt": "Choose a user to see what they can use, and why.",
-      "userNotFound": "This user isn't in the tenant.",
+      "userNotFound": "This user isn't in the company.",
       "search": "Search commands",
       "searchPlaceholder": "Search commands, e.g. kiemtra",
       "section": {

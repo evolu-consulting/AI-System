@@ -86,6 +86,7 @@
         "levelLabel": "Level",
         "level": { "off": "Off", "read": "Read", "write": "Read & write", "admin": "Admin" },
         "noAddons": "No add-ons.",
+        "slotMissing": "No process yet — choose one under Approval process",
         "addonOn": "on",
         "addonOff": "off",
         "slotTitle": "Process in effect",

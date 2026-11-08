@@ -17,7 +17,7 @@
         "scoutHint": "Mặc định theo nhóm, trần lượt dò/tháng"
       },
       "unsaved": "Có thay đổi chưa lưu",
-      "isDefault": "Đang dùng mặc định",
+      "isDefault": "Đang áp dụng",
       "customised": "Đã tuỳ chỉnh",
       "resetAll": "Khôi phục tất cả",
       "discard": "Bỏ thay đổi",
@@ -167,9 +167,9 @@
     },
     "flow": {
       "current": {
-        "title": "Quy trình duyệt đang dùng: {{name}} · v{{version}}",
+        "title": "Quy trình duyệt đang áp dụng: {{name}} · v{{version}}",
         "lead": "Mục này chỉ để xem. Muốn đổi quy trình, liên hệ quản trị nền tảng.",
-        "defaultBadge": "Đang dùng mặc định",
+        "defaultBadge": "Đang áp dụng",
         "defaultHelp": "Công ty bạn chưa được gán quy trình riêng, đang dùng quy trình mặc định của hệ thống.",
         "saveNote": "Mục này chỉ để xem nên không có gì cần lưu.",
         "editLink": "Chỉnh quy trình duyệt",

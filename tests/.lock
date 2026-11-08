@@ -76,11 +76,11 @@ c6eef6ed40a050983db158075c6a01ddccd0ef6472a6156f35a0130f77e8e470  e2e/P-a/pf1/de
 b09da1e888f7532abc0fb1121a6eacd35477c6d3a6fdc27a7964844ec126d4e2  e2e/P-a/pf1/gate.pa.ts
 53da4f2aa530f5c4962a0be8f0518b3192078a2c1b20f4c86d9c89fb60e0552f  e2e/P-a/pf1/reject.pa.ts
 1f749cf8cb8a9c790bbd3ab30efcc435e9a18e0b584d55db8239bd1a2d4fcd7f  e2e/P-a/pf1/run-leave.pa.ts
-9ded99fb1498ee51d6329426882ce17ec7d74b7d17714f5da5940dc802db68f8  e2e/P-a/pf1/run-thread.pa.ts
+9c610b6d2df7d31f6151ce9f44d9a1e14ee494115972ab4e9593564c646ce8e7  e2e/P-a/pf1/run-thread.pa.ts
 60b3d3bf3ae77fe7796eefdf47f8fb446272dccb608613af86575feea37d8bce  e2e/P-a/pf1/run-unread.pa.ts
 be1a62ffeac76dcd9a5d62b3b5c8a217e7db62663c81ced6b9aa5a8841f1afc7  e2e/P-a/pf2/ask.pa.ts
 61379c04e24287c205d43f0c4cf1d90423d9d0700615ddccf95888629955e59c  e2e/P-a/pf2/forward.pa.ts
-3a3105275e8b99bab07797d7baa9f933c5a2d76c22c07a48046a9fc6624fc3fd  e2e/P-a/pf3/dm.pa.ts
+5594800db3eebb0a3943e6afd5021954b76c5a27e050df9a752076550b24e71b  e2e/P-a/pf3/dm.pa.ts
 27a1f483a85f078835ffaa7a3a0d15d125cd7ca9644d199b8e67d5720174b546  e2e/P-a/pf3/inbox.pa.ts
 c4b26bb5304322bcbd16ccd8b092d2e7fb761055ab42f6b688512f3a69ad96b0  e2e/P-a/pf3/outside-thread.pa.ts
 c9e5a2ddb6cc6e214013cca1331dfeff96026968e28fe68569343f480e8e6626  e2e/P-a/pf3/outside.pa.ts
@@ -92,8 +92,8 @@ b7436f13776b118e65e2dd6287dfb047966ee2fe5a927b259bcf8fcfa3ce2b13  e2e/P-a/pf4/ad
 bad672b9335bbd9e71b5d406c29732773e2026ac7a87abef9b0ea4ac0f1e7ee4  e2e/P-a/pf4/process-library.pa.ts
 72603518958efdf91c519864563ad874c5fb85941fa208165b52742df5210f8d  e2e/P-a/pf4/token.pa.ts
 aa4a57b7b7f35b91a29f8b318e4a28f2c54f036bc7b4351fe56a15b428caef21  e2e/P-a/playwright.pa.config.ts
-e786529d67cd6715b72320a9159b64a39529b5a86b49b04b16ee7807f8cad8cd  e2e/P-a/scenario/hoa-don.pa.ts
-7d93565cd2cd47918cc13ef720d7d84f355fdc024219d834a33b9768a7bc932f  e2e/P-a/scenario/sdlc.pa.ts
+36a0214e0f74da0ab764f417984a03d21a9808ca4fd686b4210208379fa1be41  e2e/P-a/scenario/hoa-don.pa.ts
+52295c60d34a8ca6c81516d0c63a8856174a7af37086b7f7df5d4a34529a2cfb  e2e/P-a/scenario/sdlc.pa.ts
 363cc918d755acd7acf51136a2421e6f5c111333465a9e6deb2301007eec2a0c  e2e/P-a/step0/flag-off.pa.ts
 41cf7c7b5c26e95eb68e3755d6112b7382fb73391daaf662b37b2bbf23a2872a  e2e/P-b/_pb-data.ts
 3d3525d2affda6c01d989e250a305d65a395a8ef80d2617f91c3311e94c64daa  e2e/P-b/_pb-runtime.ts
@@ -122,7 +122,7 @@ e80da141b41719e6e2164c538016b714db832b4f865f4456660c49c9add969ef  e2e/P-c2/chat/
 c2819175148be556f76c37369dde90368aea7b55f49dafc76e3e8cfe9fd82f76  e2e/P-c2/playwright.pc2.config.ts
 4f89a10a6cd056cef5663a3cb9ff9836acfb0bec20a0653b9ec146808e93d224  e2e/P-d/_pd-support.ts
 34210151c68a458b6844511a9c192340821715806e7492ed3bbc6b0235ecd99b  e2e/P-d/admin-real-step.pd.ts
-005f30610e0958a4e03886522b7e0033a8ad34992e3da48645723c88cdddb702  e2e/P-d/admin-stage.pd.ts
+018c6092cd58bc31ff02d2f460e8be68131ba0ea4f0792aa2f86035255535614  e2e/P-d/admin-stage.pd.ts
 27b7439b42f4f9158c7a77b8fb00265b6de5d3de9000213cd0044df5d9869e20  e2e/P-d/admin-tenant.pd.ts
 ea143e8c08ca83e4c59cefa90e1cbd0b3a9b0ed70bff4dcb1da881f5573ff0ca  e2e/P-d/admin-uat-fixes.pd.ts
 08561e0b7a9b3683fb7adc548d57b7700aaa8ad8cad60ef7568130b8613c6173  e2e/P-d/chat-labels.pd.ts
@@ -209,7 +209,7 @@ c9ff30345a0ceab5ef8b68bc075790fa74cae84f79fd3780a8d85bf9fbc74fb7  e2e/conflict-t
 d57e1ce21f6e22874dc9cb8f4cf9275512e10b6328e0130661ca0692c2d9af9f  e2e/conflict-users.spec.ts
 9d536c5739a8a078e8070e2f08500364e11a23a4175e9a47ad3c6d5effcf8c95  e2e/conflict-workflows.spec.ts
 2a3b0ca3dcf4265f7e2fda28e395114ce56387586bb1934983acb469713a2f71  e2e/contracts-web/DEVIATIONS.md
-b2530efa44713f2b25d0d3db8dac08bae385937eb7515809df2391b53da18fa8  e2e/contracts-web/approval-current.cw.ts
+8a1948ba78cd5d013bb83e9c445c433522f554280c1684ffe9c3d2eeda1c5882  e2e/contracts-web/approval-current.cw.ts
 888138a9757839c21b41f5777fc567dd0de5672b0200a59e303dd584a3e6f5bb  e2e/contracts-web/assistant.cw.ts
 5242e817a09a864866d006b2ccb6373485582b24e7243376a007d491c26de215  e2e/contracts-web/baseline/linux/overview-dark.json
 afb86af3dadf3fa8b271ea8860b7a808db86c781eb44c9dcf5fe33e54437796f  e2e/contracts-web/baseline/linux/overview-dark.png
@@ -479,7 +479,7 @@ a89788d7229ed05c90e7f7311f1081ac575b2d7dc4195e2d47639999e369ca39  e2e/deployed/1
 1618f0ea7689e22603d289f8a98689c2606928b642024e95a4047fe77aeaaf29  e2e/deployed/12-han-muc-duyet.deployed.ts
 39a729b78d82532b0a3b7d033a0732130898f1a3c4f1acee724e5aaf369ade4b  e2e/deployed/13-chat-dify-tool.deployed.ts
 a8d34055841f7db2f7c423ddf3c082d2ad61db8b667443352e1fe10fa81db534  e2e/deployed/14-app-perm-demo.deployed.ts
-6a5a11610b0d731603c6b310a18a3f9a20e51d4d16dde282620a0df7e7380801  e2e/deployed/15-user-bugs.deployed.ts
+c053b3604b9bef23372510b928f866f5c6b752fb580f860bf285e27a88e29837  e2e/deployed/15-user-bugs.deployed.ts
 85578c296ecef07ca07913f22ba791208f3fbaa2a8dc2afcb803000a9c060de2  e2e/deployed/16-upload-quota-popup.deployed.ts
 a8341779237a9a31f9cd76330b278b5c31ff343f745db63a4125717d6cd7d357  e2e/deployed/17-delivery-stock-409.deployed.ts
 ab92b78a97dc168b79a7d73a6455ff0b9188e56be880c43a585664d54c5bb9a9  e2e/deployed/18-rep-switch-preview.deployed.ts
@@ -570,7 +570,7 @@ f29af0f14a631176bc831bff1eafbbe22f8b4103cfdb46f675a06e85fd0307b9  e2e/tenants.sp
 1689a17c0f0075345535e11548a6f59e4d1555fcfd84f3966eb63363f2e9391c  e2e/trello-config.spec.ts
 7c5864cbc0a40a22545975f4bd38592e170cdab928d35382092ac4c7f9eb348f  e2e/usage-analytics.spec.ts
 16dd8031b968d82c9781a67ffa607f6baa8eb33bcb74433616a196ecd6fb4627  e2e/users-groups.spec.ts
-76260304b18acd3b2b50e028210702780cffaf5fbf5845fde94117e76ef011dd  e2e/users.spec.ts
+3e2ed08be9834d2b6aadd8d066933eb2e2d999f7d0fdf5dbfa452294459bb846  e2e/users.spec.ts
 ed5728a3c457b5f213c84a50460dc2963e6594586c796937ed2cafec4a244501  e2e/workflows-dify.spec.ts
 48af04906da1e3178e6553809e24040492511ff96286cd2238110d71bc2c3b35  e2e/workflows.spec.ts
 a3d31e03d8bc77e6da3afb783b2e839d229c34ec20448eb0ef671ff31f0e0d51  e2e/workspace-web/auth.ss.ts
@@ -1182,7 +1182,7 @@ fd855cf575dea61ae2e30b4b8363448552827c8d03a00a834ec1e05f944864c2  tests/acceptan
 2ebf7308b153d5161257424d48bf9c723e79b329cf293cf05577401764b7a83d  tests/acceptance/P-a/pf4/usage-real.int.test.ts
 f09c82f9bb24629c0305a7c5f8c7d0f981210ec894683e2ab509e0fb830bff61  tests/acceptance/P-a/pf4/usage.int.test.ts
 675353b87e73fd37a173db9a131c212a99f9d0b3324f613af044107117eeb911  tests/acceptance/P-a/scenario/_local.ts
-31e8348e60df9de4f0e9e6688bac7bc2b18e6a9520f6acf67cc39d548dd49e11  tests/acceptance/P-a/scenario/hoa-don.int.test.ts
+723bb755ccd15e615c60b30b52c4ebd321c05d736caa090911ba31d9c40442d0  tests/acceptance/P-a/scenario/hoa-don.int.test.ts
 0efa9b5ca300a340f9c3a67e9ac0236ed28776a00b0fab9fff4031c417e09bcf  tests/acceptance/P-a/scenario/sdlc.int.test.ts
 d540fe768fe0a0c5dc9d0e44bad42494337eeef6227cd1019404017ffa087d14  tests/acceptance/P-a/step0/defs.int.test.ts
 eeff8e81411ac9890271ac70760a1c2dd6f8b3a0fbefa9aee87d558626e07692  tests/acceptance/P-a/step0/flag.int.test.ts

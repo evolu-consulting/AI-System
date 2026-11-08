@@ -309,7 +309,7 @@
       },
       "remindEvery": "Nhắc mỗi (giờ)",
       "remindHint": "Để trống = nhắc một lần sau 24 giờ. Nhắc tối đa 10 lần.",
-      "escalate": "Chuyển cấp nếu chưa ai kiểm",
+      "escalate": "Chuyển cấp nếu chưa ai duyệt",
       "escalateAfter": "Chuyển cấp sau (giờ)",
       "escalateGroup": "Chuyển cấp tới nhóm",
       "escalateHint": "Nhóm này được thêm vào việc kiểm; phòng ban duyệt ban đầu vẫn duyệt được. Chỉ chuyển cấp một lần và không tự chấm Duyệt.",

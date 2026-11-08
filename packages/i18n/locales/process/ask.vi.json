@@ -35,7 +35,7 @@
   },
   "titleShort": "{{agent}} cần thêm thông tin",
   "onlyThisNoName": "Bạn chỉ thấy câu hỏi này. Lượt chạy dùng quyền và quota của người bắt đầu.",
-  "forwardTitleReview": "Chuyển cho ai kiểm?",
+  "forwardTitleReview": "Chuyển cho ai duyệt?",
   "forwardHelpReview": "Chỉ chuyển được cho người cùng nhóm kiểm.",
   "submitReview": "Chuyển kiểm",
   "you": "Bạn",

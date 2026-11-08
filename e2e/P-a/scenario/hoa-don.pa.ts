@@ -32,7 +32,7 @@ test('SC-2 · AC-H31 · E-S1 · "!hoa-don HD-12 12.000.000" ⇒ T Đạt trong D
 
     await u.T.getByRole("link", { name: "Quy trình", exact: true }).click();
     const card = u.T.getByRole("log", { name: "Thông báo quy trình" })
-      .getByRole("article", { name: /^Cần bạn kiểm: / })
+      .getByRole("article", { name: /^Cần bạn duyệt: / })
       .last();
     await passBtn(card.getByRole("region", { name: /^Kiểm / })).click();
     await expect(card.getByText(/Bạn · Đạt/i)).toBeVisible();

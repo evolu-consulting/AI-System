@@ -825,7 +825,7 @@
     "new": {
       "title": "Tạo tenant",
       "company": "Công ty",
-      "firstAdmin": "Tenant admin đầu tiên",
+      "firstAdmin": "Quản trị công ty đầu tiên",
       "submit": "Tạo tenant",
       "goTo": "Tiếp tục cấu hình"
     },
@@ -980,7 +980,7 @@
       }
     },
     "users": {
-      "summary": "{users} user · {admins} tenant_admin · {locked} đã khoá",
+      "summary": "{users} user · {admins} quản trị công ty · {locked} đã khoá",
       "open": "Mở danh sách Users"
     },
     "lock": {
@@ -1014,7 +1014,7 @@
     "quota": {
       "title": "Quota tháng {month}",
       "hint": "Để trống một ô = Không giới hạn.",
-      "note": "Vượt quota không chặn; tenant admin nhận cảnh báo ở 80% và 100%. Tháng tính theo giờ Việt Nam.",
+      "note": "Vượt quota không chặn; quản trị công ty nhận cảnh báo ở 80% và 100%. Tháng tính theo giờ Việt Nam.",
       "scope": {
         "tenant": "Cả tenant"
       },
@@ -1290,7 +1290,7 @@
     },
     "col": {
       "username": "Tên đăng nhập",
-      "tenant": "Tenant",
+      "tenant": "Công ty",
       "displayName": "Tên hiển thị",
       "role": "Role",
       "lastLogin": "Đăng nhập gần nhất",
@@ -1308,14 +1308,14 @@
       },
       "neverLoggedIn": "Chưa đăng nhập",
       "groupChip": "Group: {key}",
-      "groupNeedsTenant": "Chọn tenant trước"
+      "groupNeedsTenant": "Chọn công ty trước"
     },
     "status": {
       "active": "Đang hoạt động",
       "locked": "Đã khoá",
       "tempLocked": "Tạm khoá đến {time}"
     },
-    "lockedByTenant": "Khoá theo tenant {tenant}",
+    "lockedByTenant": "Khoá theo công ty {tenant}",
     "neverLoggedIn": "Chưa đăng nhập",
     "menu": {
       "edit": "Sửa",
@@ -1328,7 +1328,7 @@
     "drawer": {
       "createTitle": "Tạo user",
       "editTitle": "{username} · {name}",
-      "tenantLine": "Tenant: {key}",
+      "tenantLine": "Công ty: {key}",
       "copyAll": {
         "text": "Mã công ty: {tenant}\nTên đăng nhập: {username}\nMật khẩu tạm: {password}"
       }
@@ -1378,11 +1378,11 @@
     },
     "error": {
       "usernameFormat": "Chỉ dùng chữ thường không dấu, số và . _ - (2–32 ký tự)",
-      "usernameTaken": "Tên đăng nhập đã được dùng trong tenant này",
-      "emailRequired": "Tenant admin cần có email để nhận cảnh báo quota",
+      "usernameTaken": "Tên đăng nhập đã được dùng trong công ty này",
+      "emailRequired": "Quản trị công ty cần có email để nhận cảnh báo quota",
       "emailFormat": "Email không hợp lệ",
-      "emailTaken": "Email đã được dùng trong tenant này",
-      "lastAdmin": "Tenant phải còn ít nhất một tenant_admin đang hoạt động",
+      "emailTaken": "Email đã được dùng trong công ty này",
+      "lastAdmin": "Công ty phải còn ít nhất một quản trị công ty đang hoạt động",
       "lastPlatformAdmin": "Hệ thống phải còn ít nhất một platform_admin đang hoạt động",
       "displayNameRequired": "Nhập tên hiển thị",
       "displayNameMax": "Tối đa 64 ký tự"
@@ -1407,13 +1407,13 @@
   "feedbackAdmin": {
     "title": "Góp ý",
     "subtitle": "Góp ý của người dùng về các app. Đổi trạng thái và trả lời; người dùng thấy phản hồi trong khung góp ý.",
-    "allTenants": "Tất cả tenant",
+    "allTenants": "Tất cả công ty",
     "allApps": "Tất cả app",
     "allKinds": "Tất cả loại",
     "allStatuses": "Tất cả trạng thái",
     "col": {
       "date": "Ngày",
-      "tenant": "Tenant",
+      "tenant": "Công ty",
       "user": "Người gửi",
       "app": "App",
       "kind": "Loại",
@@ -2364,7 +2364,7 @@
     "protected": {
       "tip": "Group beta-testers có sẵn, không xoá được"
     },
-    "selectTenant": "Chọn một tenant để xem group của tenant đó.",
+    "selectTenant": "Chọn một công ty để xem nhóm của công ty đó.",
     "empty": {
       "text": "Chưa có group nào. Tạo group để cấp feature cho cả phòng ban.",
       "cta": "+ Tạo group đầu tiên"
@@ -2462,7 +2462,7 @@
     },
     "error": {
       "keyFormat": "Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)",
-      "keyTaken": "Key đã được dùng trong tenant này",
+      "keyTaken": "Key đã được dùng trong công ty này",
       "nameRequired": "Nhập tên group (tối đa 64 ký tự)",
       "descMax": "Mô tả tối đa 400 ký tự",
       "betaProtected": "Group beta-testers có sẵn: không xoá hay đổi key được.",
@@ -2511,7 +2511,7 @@
       "matrix": "Ma trận",
       "check": "Kiểm tra quyền"
     },
-    "selectTenant": "Chọn một tenant để phân quyền cho tenant đó.",
+    "selectTenant": "Chọn một công ty để phân quyền cho công ty đó.",
     "toast": {
       "saved": "Đã lưu quyền · {added} cấp, {removed} thu. Thành viên thấy thay đổi trong vài giây.",
       "grantedToGroup": "Đã cấp {feature} cho group {group}"
@@ -2522,7 +2522,7 @@
       "user": "Người dùng",
       "userPlaceholder": "Nhập username…",
       "prompt": "Chọn một người dùng để xem họ dùng được gì và vì sao.",
-      "userNotFound": "Không tìm thấy người dùng này trong tenant.",
+      "userNotFound": "Không tìm thấy người dùng này trong công ty.",
       "search": "Tìm command",
       "searchPlaceholder": "Tìm command, ví dụ kiemtra",
       "section": {

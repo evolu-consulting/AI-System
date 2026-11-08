@@ -86,7 +86,7 @@ test("Cài đặt hiện quy trình đang dùng, không có form sửa", async (
   const writes = await install(page, "tenant_admin");
   const dlg = await open(page);
   await expect(dlg.getByTestId("flow-current-title")).toHaveText(
-    "Quy trình duyệt đang dùng: Quy trình HĐ mặc định · v4",
+    "Quy trình duyệt đang áp dụng: Quy trình HĐ mặc định · v4",
   );
   // CR-106: mặc định là canvas chỉ đọc (Bắt đầu + 2 bước + Ghi Đã duyệt); công tắc "Danh sách" hiện `flow-diagram`
   await expect(dlg.getByTestId("flow-canvas")).toBeVisible();
@@ -114,7 +114,7 @@ test("Cài đặt hiện quy trình đang dùng, không có form sửa", async (
   await expect(dlg.getByTestId("flow-legend")).toContainText("Nhánh bỏ qua");
   await expect(dlg.getByTestId("flow-legend")).toContainText("Mờ = bị bỏ qua theo xem trước");
   // CR-108: giải thích mặc định + chỉ xem; thanh Lưu ẩn ở mục này
-  await expect(dlg.getByTestId("flow-default-badge")).toHaveText("Đang dùng mặc định");
+  await expect(dlg.getByTestId("flow-default-badge")).toHaveText("Đang áp dụng");
   await expect(dlg.getByTestId("flow-default-help")).toHaveText(
     "Công ty bạn chưa được gán quy trình riêng, đang dùng quy trình mặc định của hệ thống.",
   );

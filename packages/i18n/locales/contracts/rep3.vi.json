@@ -86,6 +86,7 @@
         "levelLabel": "Mức",
         "level": { "off": "Tắt", "read": "Chỉ xem", "write": "Xem và ghi", "admin": "Quản trị" },
         "noAddons": "Không có tính năng thêm.",
+        "slotMissing": "Chưa có quy trình — chọn ở mục Quy trình duyệt",
         "addonOn": "bật",
         "addonOff": "tắt",
         "slotTitle": "Quy trình đang áp dụng",

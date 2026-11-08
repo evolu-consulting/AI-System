@@ -63,7 +63,7 @@ test("ADM-FR-71 · AC-H42 · PD-E02 · gate Duyệt: nhắc 4 giờ + chuyển c
   await node(p, "Đọc hồ sơ").click();
   const pn = panel(p);
   await pn.getByRole("spinbutton", { name: "Nhắc mỗi (giờ)" }).fill("4");
-  await pn.getByRole("checkbox", { name: "Chuyển cấp nếu chưa ai kiểm" }).check();
+  await pn.getByRole("checkbox", { name: "Chuyển cấp nếu chưa ai duyệt" }).check();
   await pn.getByRole("spinbutton", { name: "Chuyển cấp sau (giờ)" }).fill("24");
   await pn.getByRole("combobox", { name: "Chuyển cấp tới nhóm" }).click();
   await expect(p.getByRole("option", { name: "Giám đốc" })).toBeVisible();

@@ -19,7 +19,7 @@
     "unread": "{{count}} chưa đọc"
   },
   "notice": {
-    "review_requested": "Cần bạn kiểm: {{process}} · {{stage}}",
+    "review_requested": "Cần bạn duyệt: {{process}} · {{stage}}",
     "ask_requested": "Cần bạn trả lời: {{process}} · {{stage}}",
     "decision_requested": "Cần bạn quyết định: {{process}}",
     "reminder": "Nhắc: việc ở {{process}} vẫn đang chờ bạn",
@@ -29,8 +29,8 @@
     "openRun": "Mở trang lượt chạy",
     "resolvedByYou": "Bạn · {{result}}",
     "escalated": "Việc ở {{process}} · {{stage}} đã chuyển cấp tới nhóm của bạn",
-    "escalatedTo": "Đã chuyển cấp tới nhóm {{group}} vì chưa ai kiểm.",
-    "escalatedToH": "Đã chuyển cấp tới nhóm {{group}} vì chưa ai kiểm sau {{hours}} giờ."
+    "escalatedTo": "Đã chuyển cấp tới nhóm {{group}} vì chưa ai duyệt.",
+    "escalatedToH": "Đã chuyển cấp tới nhóm {{group}} vì chưa ai duyệt sau {{hours}} giờ."
   },
   "run": {
     "tab": {

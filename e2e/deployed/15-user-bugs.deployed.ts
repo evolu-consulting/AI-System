@@ -1,4 +1,4 @@
-﻿// Luồng 15 · các lỗi người dùng đã báo, kiểm trên máy chủ thật (tenant demo, dữ liệu giả). Mỗi test ghi rõ lỗi gốc.
+// Luồng 15 · các lỗi người dùng đã báo, kiểm trên máy chủ thật (tenant demo, dữ liệu giả). Mỗi test ghi rõ lỗi gốc.
 // Dữ liệu tạo ra: hợp đồng + bản v2 tải lên có tên tệp/tiêu đề gắn E2E-DEPLOY (kèm SP tạo từ dòng HĐ, tên dòng cũng gắn thẻ) — dọn trong
 // afterAll qua API xoá HĐ (kèm SP mồ côi); góp ý E2E-DEPLOY đặt "Xong" ở admin-web. KHÔNG lưu luồng duyệt, KHÔNG gọi Trello (thẻ Trello
 // kiểm bằng log server: `docker logs` admin-api tìm "trello"), KHÔNG gửi email. Chỉ tenant demo (DEMO_USER, mật khẩu DEMO_PW).
@@ -444,7 +444,7 @@ test.describe("15 lỗi người dùng báo (không cần HĐ tải lên)", () =
     await page.getByRole("menuitem", { name: "Cài đặt", exact: true }).click();
     const dlg = page.getByRole("dialog");
     await dlg.getByRole("button", { name: /^Quy trình duyệt/ }).click();
-    await expect(dlg.getByRole("heading", { name: /^Quy trình duyệt đang dùng/ })).toBeVisible();
+    await expect(dlg.getByRole("heading", { name: /^Quy trình duyệt đang áp dụng/ })).toBeVisible();
     await settle(page);
     const text = await dlg.innerText();
     expect(text, "không hiện mã nhóm cụt").not.toMatch(/Nhóm [0-9a-f]{8}/i);

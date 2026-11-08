@@ -44,7 +44,7 @@ describe("SC-2 · hoá đơn: hành động thật chạy đúng 1 lần sau c�
     expect(task).not.toBeNull();
     // stage 2 chưa chạy trước cổng
     expect(c.handled.filter((h) => h.processRunId === runId && h.stageIdx === 1)).toHaveLength(0);
-    // T nhận thông báo DM "Cần bạn kiểm"
+    // T nhận thông báo DM "Cần bạn duyệt"
     const inbox = await until(
       () => c.call("T", "GET", "/me/process-inbox"),
       (r) =>

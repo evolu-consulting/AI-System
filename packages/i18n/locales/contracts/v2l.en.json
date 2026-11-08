@@ -167,9 +167,9 @@
     },
     "flow": {
       "current": {
-        "title": "Approval process in use: {{name}} · v{{version}}",
+        "title": "Approval process in effect: {{name}} · v{{version}}",
         "lead": "This section is view-only. To change the process, contact the platform administrator.",
-        "defaultBadge": "Using the default",
+        "defaultBadge": "In effect",
         "defaultHelp": "Your company has not been assigned its own process, so it uses the system default process.",
         "saveNote": "This section is view-only, so there is nothing to save.",
         "editLink": "Edit approval process",
@@ -216,7 +216,7 @@
       },
       "title": "Contract approval flow",
       "lead": "Approval steps run in order. Step 1 is drafting and checking and always runs. Later steps may be conditional on contract type and value.",
-      "isDefault": "Using default",
+      "isDefault": "In effect",
       "readOnly": "Only admins can edit.",
       "loadFail": "Could not load the approval flow.",
       "deptsFail": "Could not load departments.",

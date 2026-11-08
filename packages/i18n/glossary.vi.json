@@ -29,6 +29,20 @@
       "note": "Người dùng công ty không thấy 'tenant' (#22)"
     },
     {
+      "prefer": "quản trị công ty",
+      "forbid": [
+        "\\btenant_admin\\b",
+        "\\btenant admin\\b",
+        "Tenant phải",
+        "trong tenant này",
+        "Tenant: ",
+        "Chọn tenant trước"
+      ],
+      "flags": "i",
+      "scope": { "include": ["vi.json"] },
+      "note": "Màn Người dùng/Nhóm/Phân quyền không lộ tenant/tenant_admin (#22)"
+    },
+    {
       "prefer": "khoảng/mục (không dùng 'khe')",
       "forbid": ["\\bkhe\\b"],
       "flags": "i",
@@ -52,7 +66,14 @@
     },
     {
       "prefer": "duyệt",
-      "forbid": ["phê duyệt", "người kiểm\\b", "chờ kiểm\\b"],
+      "forbid": [
+        "phê duyệt",
+        "người kiểm\\b",
+        "chờ kiểm\\b",
+        "\\bkiểm ngay",
+        "Cần bạn kiểm",
+        "ai kiểm"
+      ],
       "flags": "i",
       "scope": { "exclude": ["studio/", "chat/"] },
       "note": "Một động từ duyệt cho trạng thái chờ (#14)"
