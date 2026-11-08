@@ -103,6 +103,7 @@ const HUB_TABLES = [
   "process_routing_rules",
   "process_routings",
   "process_run_events", // CR-120 hub 0093 · sự kiện gói bắn cho node wait_event
+  "process_run_files", // CR-125 hub 0130 · file gắn vào lượt chạy
   "process_runs",
   "process_slot_assignments_legacy", // CR-120 hub 0091 · bảng cũ đổi tên (giữ dữ liệu); VIEW cùng tên đã gỡ ở hub 0099 (CR-121)
   "process_slots",
