@@ -315,7 +315,7 @@
       "escalateHint": "This group is added to the review; the original group can still review. It escalates once and never marks Pass by itself.",
       "excludeStarter": "The person who started the run can't review this step",
       "err": {
-        "remind": "From 4 to 168 hours.",
+        "remind": "From {{min}} to {{max}} hours.",
         "escalateAfter": "From 4 to 2,160 hours.",
         "escalateGroup": "Pick a group other than the reviewing group.",
         "ESCALATE_INVALID": "The escalation isn't valid: pick a group other than the reviewing group and a time from 4 to 2,160 hours."
@@ -405,7 +405,7 @@
       "approver": "Who approves",
       "approverPh": "Choose an approver",
       "answerBy": "Time to respond (hours)",
-      "answerByHint": "After this the approver is reminded. 4 to 168 hours."
+      "answerByHint": "After this the approver is reminded. {{min}} to {{max}} hours."
     },
     "limits": "Run limits",
     "limitsText": "Contracts waiting more than 7 days alert the owner.",

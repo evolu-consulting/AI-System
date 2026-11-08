@@ -1,7 +1,7 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-b2: thẻ "Giai đoạn" (bàn làm việc theo bước, ≤ 10) và thẻ "Giới hạn" chỉ đọc.
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";
-import { PROCESS_TTL_DAYS } from "../../domain/limits";
+import { PROCESS_TTL_DAYS, REMIND_EVERY_H } from "../../domain/limits";
 import { ttlToValue } from "../../domain/ttl-rules";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
@@ -19,7 +19,7 @@ export function StagesCard({ d, readOnly, refs }: Props) {
     <Panel title={t(lib ? "process.admin.library.canvas.title" : "process.admin.editor.stages")}>
       {err ? (
         <p role="alert" className="text-label text-destructive">
-          {t(err)}
+          {t(err, REMIND_EVERY_H)}
         </p>
       ) : null}
       <StageWorkbench d={d} readOnly={readOnly} refs={refs} />

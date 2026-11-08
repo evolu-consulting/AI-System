@@ -11,7 +11,7 @@ import { APPS } from "@/features/features/lib/feature-meta";
 import { useTr } from "@/lib/use-translate";
 import { AddonList } from "../../components/features/AddonList";
 import { AppCardMeta } from "../../components/features/AppCardMeta";
-import { useJobName } from "../../flows/components/JobRow";
+import { useJobName } from "../../flows/lib/use-job-name";
 import {
   type AppCard,
   type AppLevel,

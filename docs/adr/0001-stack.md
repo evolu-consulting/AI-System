@@ -29,6 +29,7 @@ Nền tảng multi-tenant gồm Admin, Agent Hub, Worker, Chat App/Extension. Wo
 | Queue / cache | Redis 7 (ioredis), BullMQ ở Worker | Accepted (Gate M0) | Đã chốt trong design |
 | Format/lint | Biome, lefthook | Accepted (Gate M0) | Một công cụ, chạy trên file thay đổi |
 | Font `contracts-web` | Roboto + Roboto Mono (`@fontsource`, OFL), tự host như admin-web | Accepted (Gate N1, 2026-10-19) | Giống mgmt-app (N1 D-02); phiên bản ghi khi TF2 cài |
+| Màu thương hiệu `--primary` | admin-web tím `#6e56f0`; workspace/chat/studio chàm `#4f46e5` | Accepted (D-02, ghi lại CR-125 c7) | Lệch có chủ đích; `theme-parity.test.ts` cho phép lệch `--primary`, không coi là lỗi nhất quán |
 | Kiến trúc import | dependency-cruiser | Accepted (Gate M0) | Chặn import sai chiều |
 | Test | `bun test` (unit/integration), Playwright (e2e) | Accepted (Gate M0) | |
 | Email dev | Mailpit (SMTP) | Accepted (Gate M0) | Offline |

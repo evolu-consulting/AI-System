@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { escalateIssueKey, remindIssueKey } from "../../domain/error-keys";
-import { REMIND_EVERY_H } from "../../domain/limits";
+import { ESCALATE_AFTER_H, REMIND_EVERY_H } from "../../domain/limits";
 import { escalateIssues, remindIssue } from "../../domain/remind-rules";
 import { withCurrent } from "../../hooks/use-editor-refs";
 import { SelectField, TextField } from "./Fields";
@@ -18,7 +18,7 @@ export function StageRemind(p: StageFormProps & { skipRemind?: boolean }) {
   const { stage, index, errors, readOnly, refs, onChange } = p;
   if (stage.after !== "review") return null;
   const at = (f: string) => errors[`stages.${index}.after.${f}`];
-  const key = (k: string | undefined) => (k ? t(k) : undefined);
+  const key = (k: string | undefined) => (k ? t(k, REMIND_EVERY_H) : undefined);
   const esc = stage.escalate;
   const setEsc = (patch: Partial<typeof esc>) => onChange({ escalate: { ...esc, ...patch } });
   const live = escalateIssues(esc, stage.groupId);
@@ -76,8 +76,8 @@ export function StageRemind(p: StageFormProps & { skipRemind?: boolean }) {
                 id={`${stage.uid}-escalate-after`}
                 label={t(`${K}escalateAfter`)}
                 type="number"
-                min={4}
-                max={2160}
+                min={ESCALATE_AFTER_H.min}
+                max={ESCALATE_AFTER_H.max}
                 value={esc.afterH}
                 readOnly={readOnly}
                 alert

@@ -54,10 +54,8 @@ const partnerOf = (c: ContractDetail): string => {
   return typeof v === "string" ? shortName(v) : "";
 };
 
-const titleOf = (c: ContractDetail): string => {
-  const v = c.fields.title.value;
-  return (typeof v === "string" && v) || c.title;
-};
+// CR-125 c7 · `c.title` của chi tiết HĐ đã là TÊN HĐ do hub tính (contractNameSql) — không tự suy từ fields.title.
+const titleOf = (c: ContractDetail): string => c.title;
 
 type Info = ReturnType<typeof useInfoForm>;
 type Approval = ReturnType<typeof useApprovalUi>;

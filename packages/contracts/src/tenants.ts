@@ -95,6 +95,8 @@ export const ProcessRunsMaxSchema = z
 export const TENANT_APP_IDS = ["chat", "community", "contracts", "knowledge"] as const;
 /** CR-121 c18 · giá trị cột `admin.features.app` (nguồn duy nhất feature → ứng dụng): + `core` (luôn bật) và `other` (chưa phân app, nhóm "Khác"). */
 export const FEATURE_APP_IDS = ["core", ...TENANT_APP_IDS, "other"] as const;
+/** CR-125 c7 · khoá tính năng "Gửi hợp đồng cho đối tác xác nhận": MỘT chuỗi cho manifest, node, menu hub và màn tính năng admin. */
+export const CONTRACTS_PARTNER_CONFIRM_FEATURE = "contracts-partner-confirm";
 export const TenantAppSchema = z.enum(TENANT_APP_IDS);
 export type TenantApp = z.infer<typeof TenantAppSchema>;
 

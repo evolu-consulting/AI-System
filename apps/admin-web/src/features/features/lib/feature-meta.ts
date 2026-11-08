@@ -2,7 +2,7 @@
 // CR-121 c18 · ỨNG DỤNG của feature đọc từ CỘT `admin.features.app` (API trả `app`) — không suy từ tiền tố khoá. Chỉ MỨC (Xem/Sửa/Quản trị) và
 // "tính năng thêm" còn suy từ hậu tố khoá (registry bên dưới trước, rồi hậu tố) — đó là mức, không phải ứng dụng.
 
-import { FEATURE_APP_IDS } from "@ai/contracts/tenants";
+import { CONTRACTS_PARTNER_CONFIRM_FEATURE, FEATURE_APP_IDS } from "@ai/contracts/tenants";
 import {
   BookOpen,
   FileSignature,
@@ -49,7 +49,7 @@ const REGISTERED: ReadonlySet<string> = new Set([
   "contracts-write",
   "contracts-admin",
   "han-muc-duyet",
-  "contracts-partner-confirm",
+  CONTRACTS_PARTNER_CONFIRM_FEATURE,
   "knowledge-read",
   "knowledge-write",
   "knowledge-admin",

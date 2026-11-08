@@ -107,13 +107,7 @@ export const TS_PATTERNS: { re: RegExp; msg: string }[] = [
   { re: /\bc\?\.title\b/, msg: "đọc c?.title (tên file) làm tên HĐ — dùng contractNameOf" },
 ];
 /** Chỗ TS được phép (đường dẫn từ gốc repo) + số lần tối đa + lý do. */
-export const TS_ALLOWLIST: { file: string; max: number; reason: string }[] = [
-  {
-    file: "apps/workspace-web/src/features/contract-review/pages/ContractReviewPage.tsx",
-    max: 1,
-    reason: "ContractDetail chưa có `name` từ hub (audit CR-125 #10); bỏ khi hub trả tên HĐ",
-  },
-];
+export const TS_ALLOWLIST: { file: string; max: number; reason: string }[] = [];
 
 export function scanTsFile(file: string, src: string): Finding[] {
   const out: Finding[] = [];

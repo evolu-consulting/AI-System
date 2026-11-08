@@ -1,6 +1,7 @@
 // CR-118 · manifest dữ liệu của app Sổ Hợp Tác (key catalog `contracts`). Đối tác KHÔNG bao giờ thấy app này.
 import { MODULES } from "../modules/index.generated";
 import { nodesOfApp } from "../modules/modules.rules";
+import { CONTRACTS_PARTNER_CONFIRM_FEATURE } from "../tenants";
 import type { AppFactDecl, AppManifest } from "./manifest";
 
 /** CR-122 · dữ kiện HĐ (cùng khoá với `APPROVAL_SLOT_FIELDS` cũ của gói ⇒ M1 backfill điều kiện không phải đổi tên). */
@@ -34,7 +35,7 @@ export const CONTRACTS_MANIFEST: AppManifest = {
   // CR-121 D-4 · `contracts-approval-engine` không còn là add-on: gán quy trình cho khe duyệt là đủ (Luật GỐC 3 — không thao tác ẩn).
   addons: [
     { key: "han-muc-duyet", label: "Kiểm tra hạn mức duyệt" },
-    { key: "contracts-partner-confirm", label: "Gửi hợp đồng cho đối tác xác nhận" },
+    { key: CONTRACTS_PARTNER_CONFIRM_FEATURE, label: "Gửi hợp đồng cho đối tác xác nhận" },
   ],
   nav: [
     { key: "overview", labelKey: "contracts.nav.overview", label: "Tổng quan", level: "read" },
@@ -56,7 +57,7 @@ export const CONTRACTS_MANIFEST: AppManifest = {
       labelKey: "contracts.nav.partner-inbox",
       label: "Hợp đồng đối tác gửi",
       level: "read",
-      addon: "contracts-partner-confirm",
+      addon: CONTRACTS_PARTNER_CONFIRM_FEATURE,
     },
     {
       key: "products",

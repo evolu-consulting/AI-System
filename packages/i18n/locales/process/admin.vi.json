@@ -315,7 +315,7 @@
       "escalateHint": "Nhóm này được thêm vào việc kiểm; phòng ban duyệt ban đầu vẫn duyệt được. Chỉ chuyển cấp một lần và không tự chấm Duyệt.",
       "excludeStarter": "Người bắt đầu lượt chạy không được duyệt bước này",
       "err": {
-        "remind": "Từ 4 đến 168 giờ.",
+        "remind": "Từ {{min}} đến {{max}} giờ.",
         "escalateAfter": "Từ 4 đến 2.160 giờ.",
         "escalateGroup": "Chọn nhóm khác với phòng ban duyệt.",
         "ESCALATE_INVALID": "Cấu hình chuyển cấp chưa hợp lệ: chọn nhóm khác phòng ban duyệt và thời gian từ 4 đến 2.160 giờ."
@@ -405,7 +405,7 @@
       "approver": "Ai duyệt",
       "approverPh": "Chọn người duyệt",
       "answerBy": "Hạn trả lời (giờ)",
-      "answerByHint": "Quá hạn, hệ thống nhắc người duyệt. Từ 4 đến 168 giờ."
+      "answerByHint": "Quá hạn, hệ thống nhắc người duyệt. Từ {{min}} đến {{max}} giờ."
     },
     "limits": "Giới hạn của một lượt chạy",
     "limitsText": "Chờ quá 7 ngày sẽ báo người phụ trách.",

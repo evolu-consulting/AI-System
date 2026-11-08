@@ -1,28 +1,6 @@
 {
   "contracts": {
     "flow": {
-      "esignStep": "E-signature",
-      "addEsign": "Add e-signature step",
-      "approver": "Specific approver",
-      "approverByDept": "By department (no person)",
-      "esign": {
-        "defaultName": "Sign contract",
-        "signer": "Company signer",
-        "mode": {
-          "owner": "Contract owner",
-          "dept_head": "Department head",
-          "user": "Specific person"
-        },
-        "signerDept": "Signer's department",
-        "signerUser": "Signer",
-        "partnerSigns": "Partner also signs (email from partner contacts)",
-        "order": "Signing order",
-        "companyFirst": "Company signs first",
-        "partnerFirst": "Partner signs first",
-        "provider": "E-signature provider",
-        "providerDefault": "Company default",
-        "info": "Once approved, the contract is sent for signature automatically. Signing completes the flow; if declined or voided, the owner is notified to resend or reopen the contract."
-      },
       "err": {
         "ESIGN_MULTI": "Only one e-signature step is allowed.",
         "ESIGN_NOT_LAST": "The e-signature step must be last.",
@@ -105,7 +83,7 @@
             "sent": "Waiting for signers; nothing for you to do yet",
             "completed": "The contract is complete",
             "resend": "Fix the cause above, then press Resend",
-            "owner": "The contract owner handles it (Resend or Reopen the contract)"
+            "owner": "The contract owner handles it (Resend or Reopen the process)"
           }
         },
         "reason": {

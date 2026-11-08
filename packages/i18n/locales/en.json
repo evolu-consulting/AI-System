@@ -758,64 +758,21 @@
       }
     },
     "flows": {
-      "stepsGap": {
-        "loadFail": "Could not load the steps. Reload the page; if it persists, open the detail page.",
-        "noBody": "This process has no step list to draw yet (not published or incomplete). Open the detail page to view or complete it."
-      },
-      "systemDefaultShort": "Default",
       "appOffStatus": "App not in use",
       "err": {
         "appOff": "The company does not use {app}.",
         "openApps": "Turn it on in the Apps tab",
         "openGroups": "Open Members › Groups",
         "openLibrary": "Open the Process Library",
-        "go": {
-          "apps": "Turn the app on in the Apps tab.",
-          "library": "Fix it in the Process Library.",
-          "groups": "Create the group in Members › Groups."
-        },
         "groupsMissing": "The company has no group {keys} that this process needs, so it cannot be assigned.",
         "notPublished": "This process is not published, so it cannot be assigned.",
         "publishInvalid": "This process still has configuration errors, so it cannot be assigned.",
         "refInvalid": "The process refers to a person or group outside this company, so it cannot be assigned.",
         "unprocessable": "Could not assign this process to {app}. The company may not use {app}, or the process is not ready."
       },
-      "systemDefault": "Using the system default (no process assigned for this company yet)",
-      "lead": "Each job uses one process taken from the Library.",
-      "leadInfo": "Process templates are created and edited in the Process Library. Here the company only picks which template applies to which job.",
       "stepsMore": "+{n}",
-      "rulesTitle": "Routing rules",
-      "rulesInfo": "Checked top to bottom; the first matching rule is used. If none match, the default process is used.",
-      "rulesEdit": "Edit rules",
-      "rulesDone": "Done",
-      "rulesDefault": "Otherwise",
-      "rulesOtherDepts": "{n} other departments",
-      "rulesNone": "No rules yet; every record uses the default process.",
       "runTitle": "{job} · started {at}",
-      "summary": "{on}/{total} jobs have a process",
-      "empty": "This company uses no app that has processes.",
-      "loadFail": "Could not load process data. Try reloading the page.",
-      "col": {
-        "job": "Job",
-        "process": "Process",
-        "status": "Status",
-        "rules": "Rules"
-      },
-      "appJobs": "{n} jobs",
-      "steps": "{n} steps",
-      "noneChosen": "No process chosen",
-      "on": "On",
-      "off": "Off",
-      "reason": {
-        "appOff": "turn the app on in the Apps tab",
-        "noProcess": "no process assigned",
-        "unpublished": "process is not published; publish it in the Library",
-        "deleted": "process was deleted; pick another one"
-      },
-      "rules": "{n} rules",
-      "change": "Change",
       "assign": "Assign",
-      "drawerKind": "Job",
       "stepsTitle": "Steps",
       "viewMode": "How to view steps",
       "view": {
@@ -824,24 +781,7 @@
       },
       "libraryReadOnly": "Library template, view only.",
       "hasCopy": "The company already has its own copy of this process.",
-      "ownCopy": "This is the company's own copy and can be edited.",
       "copy": "Copy for this company",
-      "openDetail": "Open detail page",
-      "openEditor": "Open editor",
-      "assignTitle": "Assign process",
-      "sameKind": "Only processes of the same kind: {type}",
-      "tenantNoCandidates": "The company has no process to choose for this job yet. Copy a Library process in the Steps section.",
-      "inUse": "In use",
-      "use": "Use this process",
-      "running": "Running",
-      "runningNone": "No runs in progress.",
-      "runStep": "step {n}/{total}",
-      "runWaiting": "waiting",
-      "runRunning": "in progress",
-      "toast": {
-        "assigned": "Process changed for this job.",
-        "copied": "Copied and now using the company's own copy for this job."
-      },
       "job": {
         "contractsApproval": "Contract approval",
         "contractsIntake": "Contract intake",

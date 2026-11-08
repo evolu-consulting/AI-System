@@ -2,6 +2,7 @@
 // (cap `contracts.review`) hiện khi người xem (nội bộ, có quyền đọc gói) có việc duyệt mở HOẶC có vai duyệt trong quy trình ĐANG GÁN
 // cho khe `contracts.approval`; số = task duyệt mở người đó quyết được. Lọc theo `user.tenantId` (đọc scope user + scope system có
 // `tenant_id` tường minh trong `PackRunsPort.inboxOf`). Engine tắt (không có cầu) ⇒ không mục.
+import { CONTRACTS_PARTNER_CONFIRM_FEATURE } from "@ai/contracts/tenants";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { PackNavSource, PackRunsBridge } from "../kit/public";
 import {
@@ -16,7 +17,7 @@ const KEY = "contracts";
 export const CONTRACTS_APPROVAL_SLOT = "contracts.approval";
 /** CR-124 · q4 · mục «Hợp đồng đối tác gửi» (cap `contracts.partner`): chỉ khi công ty bật tính năng `contracts-partner-confirm`. */
 export const PARTNER_INBOX_CAP = "contracts.partner";
-export const PARTNER_FEATURE = "contracts-partner-confirm";
+export const PARTNER_FEATURE = CONTRACTS_PARTNER_CONFIRM_FEATURE;
 
 export function contractsNavSource(
   canRead: (u: AuthUser) => Promise<boolean>,

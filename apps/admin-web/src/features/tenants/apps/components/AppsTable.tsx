@@ -2,7 +2,7 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useTr } from "@/lib/use-translate";
-import { useJobName } from "../../flows/components/JobRow";
+import { useJobName } from "../../flows/lib/use-job-name";
 import type { Attention } from "../lib/apps-table";
 import { AppRow, type AppRowProps, ROW_GRID } from "./AppRow";
 import { LevelHelp } from "./LevelControl";

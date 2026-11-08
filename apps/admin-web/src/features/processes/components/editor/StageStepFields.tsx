@@ -2,6 +2,7 @@
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { REMIND_EVERY_H } from "../../domain/limits";
 import { useStagesMax } from "../../hooks/use-stages-max";
 import type { StageDraft } from "../../lib/def-form";
 import { stepFromLabel, stepLabel } from "../../lib/step-label";
@@ -29,7 +30,7 @@ function BackFields({ stage, all, readOnly, errors, index, onChange }: StageForm
     });
   const alertP = err ? (
     <p role="alert" className="text-caption text-destructive">
-      {t(err)}
+      {t(err, REMIND_EVERY_H)}
     </p>
   ) : null;
   if (stage.after !== "review" || stage.step === 0)

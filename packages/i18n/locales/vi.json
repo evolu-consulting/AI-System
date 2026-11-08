@@ -758,64 +758,21 @@
       }
     },
     "flows": {
-      "stepsGap": {
-        "loadFail": "Không tải được các bước. Tải lại trang; nếu vẫn lỗi, mở trang chi tiết để xem.",
-        "noBody": "Quy trình này chưa có danh sách bước để vẽ (chưa xuất bản hoặc nội dung chưa đủ). Mở trang chi tiết để xem hoặc hoàn thiện."
-      },
-      "systemDefaultShort": "Mặc định",
       "appOffStatus": "Chưa dùng ứng dụng",
       "err": {
         "appOff": "Công ty chưa dùng {app}.",
         "openApps": "Bật ở tab Ứng dụng",
         "openGroups": "Mở Thành viên › Nhóm",
         "openLibrary": "Mở Thư viện quy trình",
-        "go": {
-          "apps": "Hãy bật ứng dụng ở tab Ứng dụng.",
-          "library": "Hãy xử lý trong Thư viện quy trình.",
-          "groups": "Hãy tạo nhóm ở tab Thành viên › Nhóm."
-        },
         "groupsMissing": "Công ty chưa có nhóm {keys} mà quy trình này cần nên chưa gán được.",
         "notPublished": "Quy trình này chưa xuất bản nên chưa gán được.",
         "publishInvalid": "Quy trình này còn lỗi cấu hình nên chưa gán được.",
         "refInvalid": "Quy trình nhắc tới người hoặc nhóm không thuộc công ty này nên chưa gán được.",
         "unprocessable": "Chưa gán được quy trình này cho {app}. Có thể công ty chưa dùng {app} hoặc quy trình chưa sẵn sàng."
       },
-      "systemDefault": "Đang dùng mặc định hệ thống (công ty chưa gán quy trình riêng)",
-      "lead": "Mỗi việc dùng một quy trình lấy từ Thư viện.",
-      "leadInfo": "Mẫu quy trình được tạo và chỉnh ở Thư viện quy trình. Ở đây công ty chỉ chọn mẫu nào áp dụng cho việc nào.",
       "stepsMore": "+{n}",
-      "rulesTitle": "Luật định tuyến",
-      "rulesInfo": "Xét từ trên xuống, dùng luật khớp đầu tiên. Không luật nào khớp thì dùng quy trình mặc định.",
-      "rulesEdit": "Sửa luật",
-      "rulesDone": "Xong",
-      "rulesDefault": "Còn lại",
-      "rulesOtherDepts": "{n} phòng ban khác",
-      "rulesNone": "Chưa có luật nào, mọi hồ sơ dùng quy trình mặc định.",
       "runTitle": "{job} · bắt đầu {at}",
-      "summary": "{on}/{total} việc có quy trình",
-      "empty": "Công ty chưa dùng ứng dụng nào có quy trình.",
-      "loadFail": "Không tải được dữ liệu quy trình. Thử tải lại trang.",
-      "col": {
-        "job": "Việc",
-        "process": "Quy trình",
-        "status": "Trạng thái",
-        "rules": "Luật"
-      },
-      "appJobs": "{n} việc",
-      "steps": "{n} bước",
-      "noneChosen": "Chưa chọn quy trình",
-      "on": "Đang bật",
-      "off": "Đang tắt",
-      "reason": {
-        "appOff": "bật ứng dụng ở tab Ứng dụng",
-        "noProcess": "chưa gán quy trình",
-        "unpublished": "quy trình chưa xuất bản, cần xuất bản trong Thư viện",
-        "deleted": "quy trình đã bị xoá, hãy chọn quy trình khác"
-      },
-      "rules": "{n} luật",
-      "change": "Đổi",
       "assign": "Gán",
-      "drawerKind": "Việc",
       "stepsTitle": "Các bước",
       "viewMode": "Cách xem các bước",
       "view": {
@@ -824,24 +781,7 @@
       },
       "libraryReadOnly": "Quy trình mẫu của Thư viện, chỉ xem.",
       "hasCopy": "Công ty đã có bản riêng sao từ quy trình này.",
-      "ownCopy": "Đây là bản riêng của công ty, có thể sửa.",
       "copy": "Sao chép cho công ty này",
-      "openDetail": "Mở trang chi tiết",
-      "openEditor": "Mở trình sửa",
-      "assignTitle": "Gán quy trình",
-      "sameKind": "Chỉ gồm quy trình cùng loại: {type}",
-      "tenantNoCandidates": "Công ty chưa có quy trình nào để chọn cho việc này. Hãy sao một quy trình thư viện ở phần Các bước.",
-      "inUse": "Đang dùng",
-      "use": "Dùng quy trình này",
-      "running": "Đang chạy",
-      "runningNone": "Hiện không có lượt nào đang chạy.",
-      "runStep": "bước {n}/{total}",
-      "runWaiting": "đang chờ",
-      "runRunning": "đang xử lý",
-      "toast": {
-        "assigned": "Đã đổi quy trình cho việc này.",
-        "copied": "Đã sao chép và dùng bản riêng cho việc này."
-      },
       "job": {
         "contractsApproval": "Duyệt hợp đồng",
         "contractsIntake": "Nhận hợp đồng",

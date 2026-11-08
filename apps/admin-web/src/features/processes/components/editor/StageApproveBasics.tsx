@@ -42,9 +42,9 @@ export function StageApproveBasics(p: StageFormProps) {
         max={REMIND_EVERY_H.max}
         value={stage.remind}
         readOnly={readOnly}
-        description={t(`${K}answerByHint`)}
+        description={t(`${K}answerByHint`, REMIND_EVERY_H)}
         alert
-        error={rErr ? t(rErr) : undefined}
+        error={rErr ? t(rErr, REMIND_EVERY_H) : undefined}
         onChange={(v) => onChange({ remind: v })}
       />
     </div>
