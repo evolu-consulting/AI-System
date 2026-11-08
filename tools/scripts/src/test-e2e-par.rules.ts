@@ -18,6 +18,13 @@ export type Meta = {
 
 const REDIS_DB = (v: string): Meta["redis"] => ({ kind: "db", vars: [v] });
 const REDIS_URL = (v: string): Meta["redis"] => ({ kind: "url", vars: [v] });
+/** Cấu hình con của journey: cùng stack, DB + dịch cổng riêng. */
+const JA_SUB = (db: string, shift: string): Meta => ({
+  db,
+  redis: REDIS_DB("JA_REDIS_DB"),
+  env: { E2E_PORT_SHIFT: shift },
+  cost: 60,
+});
 
 /** Siêu dữ liệu theo cấu hình; cấu hình lạ ⇒ `fallbackMeta` (có DB riêng, không Redis). */
 export const META: Record<string, Meta> = {
@@ -73,18 +80,10 @@ export const META: Record<string, Meta> = {
     cost: 150,
   },
   // Cấu hình con của journey (cùng stack, chỉ lọc spec): PHẢI có DB + Redis DB + dịch cổng RIÊNG, nếu không rơi vào `fallbackMeta` (DB chung `x_e2e_journey_approv`\n  // cho cả -ms/-fsc, cổng 3440 và `JA_REDIS_DB`=11 mặc định đụng việc `journey-approval-journey`). `E2E_PORT_SHIFT` (cộng thêm dịch làn) ⇒ cổng 3460.. (-ms) / 3490.. (-fsc).\n  // `--only` khớp TIỀN TỐ tên việc: `journey-approval-journey` kéo cả -ms và -fsc; chọn riêng việc gốc bằng đường dẫn cấu hình `e2e/journey-approval/playwright.journey.config.ts`.
-  "e2e/journey-approval/playwright.journey-ms.config.ts": {
-    db: "jams",
-    redis: REDIS_DB("JA_REDIS_DB"),
-    env: { E2E_PORT_SHIFT: "20" },
-    cost: 60,
-  },
-  "e2e/journey-approval/playwright.journey-fsc.config.ts": {
-    db: "jafsc",
-    redis: REDIS_DB("JA_REDIS_DB"),
-    env: { E2E_PORT_SHIFT: "50" },
-    cost: 60,
-  },
+  "e2e/journey-approval/playwright.journey-ms.config.ts": JA_SUB("jams", "20"),
+  "e2e/journey-approval/playwright.journey-fsc.config.ts": JA_SUB("jafsc", "50"),
+  // CR-126 · ca mua hàng 11 bước: việc riêng (trình duyệt mới), cổng 3520..
+  "e2e/journey-approval/playwright.journey-purchase.config.ts": JA_SUB("japur", "80"),
   "e2e/contracts-web/playwright.config.ts": { cost: 22 },
   // Mock thuần (không DB). Cổng web mặc định 3410 TRÙNG web của workspace-web stack (3410) ⇒ riêng 3470 để hai việc chạy cùng lúc trong một slot.
   "e2e/community-web/playwright.config.ts": { env: { COMMUNITY_E2E_PORT: "3470" }, cost: 25 },

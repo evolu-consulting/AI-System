@@ -229,6 +229,7 @@ test("1 · nhân viên: Tạo yêu cầu → phiếu «Đề xuất mua hàng» 
   await expect(emp.getByTestId("request-page")).toBeVisible({ timeout: 60_000 });
   runUrl = emp.url().split("?")[0] ?? "";
   await expect(emp.getByTestId("request-field-ten_hang")).toContainText("Máy in HP LaserJet");
+  await emp.context().close();
 });
 
 test("2 · Phần 1 → 2 → 3: các thẻ điền / duyệt (dòng 3, 6, 10 hai–ba nhóm cùng duyệt, Giám đốc Ký thử) tới khi yêu cầu cha «Đã xong»", async ({
@@ -262,4 +263,5 @@ test("2 · Phần 1 → 2 → 3: các thẻ điền / duyệt (dòng 3, 6, 10 ha
   // toàn bộ chuỗi trên MỘT trang: lượt cha + ba Phần lồng dưới (parent_run_id)
   expect(await emp.locator("[data-run]").count()).toBeGreaterThanOrEqual(4);
   await shot(emp, "03-quy-trinh-mua-hang-da-xong");
+  for (const p of people) await p.context().close();
 });

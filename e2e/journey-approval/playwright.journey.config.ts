@@ -57,6 +57,8 @@ export default defineConfig({
     "**/cr124-q6*.spec.ts",
     "**/cr125-*.spec.ts",
   ],
+  // ca mua hàng 11 bước chạy ở việc riêng `playwright.journey-purchase.config.ts` (trình duyệt mới, song song)
+  testIgnore: ["**/cr125-purchase-full.spec.ts"],
   workers: 1,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
