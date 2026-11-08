@@ -29,7 +29,7 @@ unit `template-readiness.test.ts`, `flow-templates.community.test.ts`; int `comp
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-### MODIFIED hub/process-flows.md
+### MODIFIED engine/company-flows.md
 #### Yêu cầu: Mẫu Thư viện chỉ trao cho công ty khi áp dụng được
 Gán (platform) và sao chép (công ty) kiểm "mẫu dùng được": thiếu tính năng/chức năng ⇒ 422 nêu thiếu gì và ai cần bật; nhóm duyệt khớp nhóm có thật của công ty, không khớp ⇒ bước chọn người duyệt.
 - Kịch bản: khi mẫu cần tính năng công ty chưa bật thì gán và sao chép bị chặn kèm lý do [test: apps/hub-api/src/modules/processes/library/company-flows-readiness.int.test.ts » gán mẫu chưa dùng được]
