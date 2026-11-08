@@ -48,7 +48,8 @@ test("quản trị community: sao chép flow Duyệt bài, thêm bước Duyệt
   if (!(await ai.isVisible()))
     await page.locator("[data-stage-uid]", { hasText: "Bước duyệt mới" }).click();
   await expect(ai).toBeVisible();
-  await ai.selectOption({ index: 1 });
+  await ai.click();
+  await page.getByRole("option").first().click();
   await page.getByRole("button", { name: "Lưu và áp dụng" }).click();
   await expect(page.getByRole("alert").filter({ hasText: /Chưa lưu được/ })).toHaveCount(0);
 });
