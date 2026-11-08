@@ -5,14 +5,13 @@
 import { ESignSignerSchema } from "@ai/contracts/pack-contracts";
 import type { Db, Tx } from "@ai/db";
 import type { Redis } from "ioredis";
-import type { AttachmentStorage } from "../../attachments/public";
-import type { ConfigCache } from "../../config/public";
 import type { PackAccessView, PackRunsBridge, PackToolDef, SlotSpec } from "../kit/public";
 import { createPackUow, moduleRegistry, slotRegistry } from "../kit/public";
+import type { WithConfig } from "../packs.tenant-config";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { INTAKE_TOOL_KEYS, intakeTools } from "./adapters/intake.tools";
-import { mountCreateFromStep } from "./create-from-step.mount";
+import { type AttachmentBytes, mountCreateFromStep } from "./create-from-step.mount";
 import { contractCodeLabel } from "./domain/contract-name";
 import type { CompletedHook, ESignModule } from "./esign.mount";
 import { esignBindingBase } from "./nodes/esign/binding";
@@ -97,8 +96,8 @@ export function mountIntake(
     view?: PackAccessView | undefined; // q7 · cổng tính năng cho tool gửi đối tác
     partnerMailbox?: boolean | undefined; // q7 · kênh hộp thư (HUB_PARTNER_MAILBOX)
     redis?: Redis | undefined; // cr125-contract-from-step · hạn mức tải lên/ngày của use case tải lên
-    config?: ConfigCache | undefined; // múi giờ công ty
-    attachments?: { storage: AttachmentStorage } | undefined; // kho tệp đính kèm hub (bước Soạn thảo)
+    config?: WithConfig["config"] | undefined; // múi giờ công ty
+    attachmentBytes?: AttachmentBytes | undefined; // đọc tệp đính kèm hub (bước Soạn thảo), tiêm ở packs.mount.ts
   },
   db: Db,
 ): void {

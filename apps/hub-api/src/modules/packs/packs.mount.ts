@@ -65,7 +65,7 @@ import {
 import { afterPacksMounted } from "./packs.after-mount";
 import { fileboxClients, type PackFb, packFilebox } from "./packs.filebox";
 import { mountedApps, verifyPackModules } from "./packs.modules-check";
-import { envInt, tenantLimits, tenantTz } from "./packs.tenant-config";
+import { envInt, stepDeps, tenantLimits, tenantTz } from "./packs.tenant-config";
 import { PKDEMO_KEY, pkdemoModule } from "./pkdemo/pkdemo.mount";
 
 export { mountEsignWebhook } from "./contracts/esign.mount"; // app.ts gắn webhook trước JWT (không chạm nội bộ gói)
@@ -165,7 +165,7 @@ function mountContracts<E extends Env>(
   mountContractsCore(app, cx);
   mountContractsMore(app, cx);
   mountAssistantTools(d.db, d.packTools, { timeZoneOf: tenantTz(d), view }); // M2-chat Â· tool Ä‘á»c cá»§a trá»£ lÃ½
-  mountContractsContext(d.db, d.packTools, { ...d, view }); // + CR-120 khe contracts.intake (tool bước, esign.completed) // one-agent Â· nhÃ£n HÄ/Ä‘á»‘i tÃ¡c Ä‘ang xem (khá»‘i ngá»¯ cáº£nh dock)
+  mountContractsContext(d.db, d.packTools, { ...d, view, ...stepDeps(d) }); // + CR-120 khe contracts.intake (tool bước, esign.completed) // one-agent Â· nhÃ£n HÄ/Ä‘á»‘i tÃ¡c Ä‘ang xem (khá»‘i ngá»¯ cáº£nh dock)
 }
 
 type ContractsCtx = ReturnType<typeof contractsCtx>;

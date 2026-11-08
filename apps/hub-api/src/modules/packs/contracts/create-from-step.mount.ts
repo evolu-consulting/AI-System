@@ -6,9 +6,6 @@
 import { CREATE_FROM_STEP_STORAGE_OFF } from "@ai/contracts/modules";
 import type { Db } from "@ai/db";
 import type { Redis } from "ioredis";
-import type { AttachmentStorage } from "../../attachments/public";
-import { attachmentBytesOf } from "../../attachments/public";
-import type { ConfigCache } from "../../config/public";
 import {
   moduleRegistry,
   type PackAccessView,
@@ -16,7 +13,7 @@ import {
   type PackToolDef,
 } from "../kit/public";
 import { fileboxClients, packFilebox } from "../packs.filebox";
-import { tenantTz } from "../packs.tenant-config";
+import { tenantTz, type WithConfig } from "../packs.tenant-config";
 import { createFromStepTool, type StepFile } from "./adapters/create-from-step.tool";
 import type { UploadContract } from "./application/upload-contract.usecase";
 import { createFromStepBinding } from "./nodes/create-from-step/binding";
@@ -35,10 +32,8 @@ export type CreateFromStepMountDeps = {
   view?: PackAccessView | undefined;
   packs?: { filebox?: { url: string; token: string } } | undefined;
   redis?: Redis | undefined;
-  config?: ConfigCache | undefined;
-  /** Kho tệp đính kèm của hub (`AppDeps.attachments`); vắng ⇒ tool báo `CONTRACT_STEP_STORAGE_OFF` lúc chạy. */
-  attachments?: { storage: AttachmentStorage } | undefined;
-  /** Test tiêm bộ đọc tệp giả. */
+  config?: WithConfig["config"] | undefined;
+  /** Bộ đọc tệp đính kèm hub (tiêm ở `packs.mount.ts` — gói không import module hub); vắng ⇒ tool báo `CONTRACT_STEP_STORAGE_OFF`. */
   attachmentBytes?: AttachmentBytes | undefined;
 };
 
@@ -53,8 +48,7 @@ export function mountCreateFromStep(
   o: { upload?: UploadContract } = {},
 ): void {
   const fb = packFilebox(d.packs);
-  const bytes =
-    d.attachmentBytes ?? (d.attachments ? attachmentBytesOf(db, d.attachments.storage) : undefined);
+  const bytes = d.attachmentBytes;
   const timeZoneOf = d.config ? tenantTz({ config: d.config }) : async () => "UTC";
   const upload =
     o.upload ??
