@@ -18,15 +18,10 @@ phụ thuộc:
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
-
-Xoá khối mẫu dưới đây rồi điền thật (kiểm bằng `bun run openspec:check`). Lát không đổi hành vi: thay bằng
-một dòng `Không thay đổi hành vi (lý do: …)`.
-```
 ### MODIFIED sht/chung-tu.md
-#### Yêu cầu: <tên>
-<mô tả hành vi mới>
-- Kịch bản: khi … thì … [test: <path test> » <tiêu đề test>]  (hoặc [test: thủ công — <lý do>])
-(### ADDED <file mới>; ### REMOVED <file> + dòng "Lý do: …")
-```
-
+#### Yêu cầu: Mọi ô ngày dùng một bộ chọn ngày chung
+Mọi ô nhập ngày ở Sổ Hợp Tác, Admin và Chat (lọc, mốc, thanh toán, báo giá, form quy trình) là một ô duy nhất: hiện dd/mm/yyyy, gõ hoặc chọn lịch (thứ Hai đầu tuần, tháng tiếng Việt); giá trị lưu vẫn là yyyy-mm-dd. Không còn ô ngày gốc của trình duyệt (mm/dd theo máy Mỹ).
+- Kịch bản: khi gõ "3/9/2027" thì ô hiểu là 03/09/2027 [test: packages/web-kit/src/date-math.test.ts » hiển thị lại bằng viDate (một bộ định dạng) khớp phần đọc]
+- Kịch bản: khi có `type="date"` trong mã giao diện ngoài component chung thì cổng check:date-input đỏ [test: tools/scripts/src/check-date-input.rules.test.ts » bắt type=date và datetime-local trong .tsx]
+- Kịch bản: khi người dùng chọn ngày ở form quy trình chat thì nút "Chọn ngày" hiện và gửi yyyy-mm-dd [test: e2e/P-d/chat-labels.pd.ts » PD-E08(d) · form '!pd-wait-input']
 ## Việc còn lại
