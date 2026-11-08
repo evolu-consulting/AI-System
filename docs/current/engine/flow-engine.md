@@ -4,7 +4,7 @@ Nguồn: CR-103 (proposal `docs/specs/flow-node-registry/`), các lát `fnr-*`, 
 Viết tắt: `HP` = `apps/hub-api/src/modules/processes`, `CT` = `packages/contracts/src/hub-admin`, `AW` = `apps/admin-web/src/features/processes`.
 
 ## 1. Khái niệm
-- **Quy trình (def)** gồm ≤ 10 giai đoạn (stage, `PROCESS_STAGES_MAX`), mỗi stage thuộc một **bước** (step, 0-based). Một bước chứa ≤ 3 stage chạy **song song** (`PROCESS_STEP_STAGES_MAX`, `CT/processes.ts`).
+- **Quy trình (def)** gồm ≤ 50 giai đoạn mặc định (stage, `PROCESS_STAGES_DEFAULT`, xem "Trần stage quy trình"), mỗi stage thuộc một **bước** (step, 0-based). Một bước chứa ≤ 3 stage chạy **song song** (`PROCESS_STEP_STAGES_MAX`, `CT/processes.ts`).
 - Bước chỉ sang bước kế khi mọi stage của bước đó xong (**join**); stage bị nhảy qua chuyển `skipped`; bước "liền trước có hiệu lực" bỏ qua các bước toàn `skipped` (`effectivePrevStep`, `HP/domain/branch/branch.rules.ts`).
 - Lượt chạy (run) chạy theo **snapshot** def lúc bắt đầu: sửa def (kể cả đổi loại node) không ảnh hưởng run đang chạy.
 - Quyền: editor/lượt chạy chỉ mở cho `tenant_admin` / `platform_admin` (xem mục 8).
@@ -286,8 +286,8 @@ Stage `wait_event` chờ sự kiện theo khoá do gói bắn cho bản ghi gói
 #### Yêu cầu: Def mặc định khe `contracts.intake` và tool gói (nguồn: cr120-contracts-flow)
 Khe `contracts.intake` có def thư viện mặc định (seed hub 0093): AI trích xuất → Xác nhận và lưu (form, nhắc 24 giờ, chuyển cấp 48 giờ) → duyệt theo luật → ký số (tool, hành động thật) → chờ ký → chờ ngày nghĩa vụ − 7 → nhắc nghĩa vụ. Tool gói: `contracts-extract` (đọc trạng thái trích), `contracts-esign-send` (người ký công ty = người bắt đầu), `contracts-obligation-remind` (chuông idempotent); HĐ không thấy ⇒ lỗi `CONTRACT_NOT_FOUND`. Code: `packs/contracts/adapters/intake.tools`.
 
-#### Yêu cầu: Trần stage quy trình 22 (nguồn: cr121-d1-facts)
-Quy trình có tối đa 22 stage (`PROCESS_STAGES_MAX` trong `packages/contracts/src/chat/processes.ts`), chỉ số stage/bước 0..21; DB nới CHECK (hub 0097). Mẫu duyệt HĐ tối đa 20 bước (+ route + finalize = 22 stage); 21 bước ⇒ `STEPS_MAX`.
+#### Yêu cầu: Trần stage quy trình (nguồn: cr121-d1-facts, CR-122 p22, CR-126)
+Số stage tối đa của một quy trình = cài đặt nền tảng, mặc định **50** (`PROCESS_STAGES_DEFAULT`), kẹp ≤ trần cứng 50 (`PROCESS_STAGES_CEILING`, CHECK DB hub 0115) — `resolveStagesMax` trong `packages/contracts/src/chat/processes.ts`. `PROCESS_STAGES_MAX = 22` chỉ còn là giới hạn của mẫu duyệt HĐ: tối đa 20 bước (+ route + finalize = 22 stage); 21 bước ⇒ `STEPS_MAX`.
 
 #### Yêu cầu: Duyệt bước DLC trong chat (nguồn: dlc-chat-review)
 Run của quy trình gói DLC (key `dlc-*`) đang chờ kiểm có nút "Xem và duyệt" trên thẻ run ở chat; modal hiện kết quả đầy đủ của bước; Duyệt cho quy trình đi tiếp; Từ chối (kèm lý do) quay lại bước gần nhất trong `back_to_steps` của điểm duyệt, không cấu hình ⇒ làm lại chính bước đó. Người bắt đầu run, người quyết task mở hoặc admin đọc được nội dung bước; thành viên khác ⇒ 404. Run không phải `dlc-*` không có điểm duyệt này. Code: `apps/chat-web/.../run-block/lib/dlc-review`, `packs/dlc/adapters/dlc.routes`.
