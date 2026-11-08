@@ -140,6 +140,13 @@ export const esignErrKey = (code: string | undefined | null): string =>
 export const signReturnUrl = (origin: string, id: string): string =>
   `${origin}/contracts/c/${encodeURIComponent(id)}`;
 
+/** CR-125 · `?ky=1` từ thư "Mời ký": chỉ tự mở trang ký khi đúng lượt người xem và chưa ký; còn lại hiện trang thường. */
+export const decideAutoSign = (i: { ky: boolean; myTurn: boolean; signed: boolean }): boolean =>
+  i.ky && i.myTurn && !i.signed;
+
+export const hasSignIntent = (search: string): boolean =>
+  new URLSearchParams(search).get("ky") === "1";
+
 export function returnedFromSigning(search: string): boolean {
   return new URLSearchParams(search).get("esign") === "return";
 }

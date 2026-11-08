@@ -5,7 +5,7 @@ import type {
   ESignProviderOut,
   ESignStateOut,
 } from "@ai/contracts/pack-contracts";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, viDateTime } from "~/components/shared/format";
 import {
@@ -17,8 +17,10 @@ import {
 } from "~/components/ui/dialog";
 import { useEsign } from "../hooks/use-esign";
 import {
+  decideAutoSign,
   type EsignView,
   esignView,
+  hasSignIntent,
   hintKey,
   showProviderPicker,
   statusKey,
@@ -241,6 +243,20 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
   const [method, setMethod] = useState(false);
   const s = es.q.data;
   const v = esignView(s, { locked, write });
+  const kyDone = useRef(false);
+  // CR-125 · `?ky=1` (thư "Mời ký"): có trạng thái ⇒ MỘT lần quyết định; đúng lượt ⇒ chạy đúng thao tác của nút "Ký ngay"; luôn bỏ `ky` khỏi URL.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: một lần khi trạng thái về (cờ kyDone)
+  useEffect(() => {
+    if (kyDone.current || !s || !hasSignIntent(window.location.search)) return;
+    kyDone.current = true;
+    const u = new URL(window.location.href);
+    u.searchParams.delete("ky");
+    window.history.replaceState(null, "", u.toString());
+    if (
+      decideAutoSign({ ky: true, myTurn: v.canSignNow, signed: s.envelope?.status === "completed" })
+    )
+      signNowOf(s.providers, es, setMethod)();
+  }, [s]);
   if (v.mode === "hidden" || !s) return null;
   const e = s.envelope;
   const sk = statusKey(v, e?.status);
@@ -271,7 +287,7 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
           v={v}
           es={es}
           resend={e !== null}
-          onSignNow={() => (showProviderPicker(s.providers) ? setMethod(true) : void es.signNow())}
+          onSignNow={signNowOf(s.providers, es, setMethod)}
           onSend={() => {
             es.clearErr();
             setOpen(true);

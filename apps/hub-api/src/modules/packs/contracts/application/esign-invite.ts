@@ -7,6 +7,12 @@ import { orgForTenant } from "../../kit/public";
 import type { ESignFiles, ESignRepo } from "./esign.ports";
 import { signInviteBell } from "./esign-flow.usecase";
 
+/** CR-125 · liên kết trong thư "Mời ký": trang HĐ + ý định ký `?ky=1` (web tự mở trang ký nếu đúng lượt) + neo thẻ ký. */
+export const signInviteLink = (base: string | null | undefined, id: string): string => {
+  const path = (base ?? `/contracts/c/${id}`).split("#")[0] ?? "";
+  return `${path}${path.includes("?") ? "&" : "?"}ky=1#esign-panel`;
+};
+
 export type InviteThumb = { b64: string; width: number; height: number };
 /** Cổng dựng ảnh trang đầu (adapter `page-thumb.ts`); null ⇒ bỏ ảnh. */
 export type ThumbRenderer = (pdf: Uint8Array) => Promise<InviteThumb | null>;
@@ -68,7 +74,7 @@ export function inviteNotice(d: InviteDeps) {
       ]);
       return {
         ...plain,
-        link: `${plain.link ?? `/contracts/c/${id}`}#esign-panel`,
+        link: signInviteLink(plain.link, id),
         data: {
           type: "esign_invite",
           contract: {

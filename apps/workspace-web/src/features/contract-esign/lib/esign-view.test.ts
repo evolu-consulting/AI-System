@@ -5,8 +5,10 @@ import type {
   ESignStateOut,
 } from "@ai/contracts/pack-contracts";
 import {
+  decideAutoSign,
   esignErrKey,
   esignView,
+  hasSignIntent,
   pickDefaultProvider,
   returnedFromSigning,
   showProviderPicker,
@@ -57,6 +59,21 @@ const P = (key: string, available = true, legal = true): ESignProviderOut => ({
   kind: "envelope",
   available,
   legal,
+});
+
+describe("CR-125 · ý định ký từ thư", () => {
+  it("decideAutoSign: chỉ khi ky + đúng lượt + chưa ký", () => {
+    expect(decideAutoSign({ ky: true, myTurn: true, signed: false })).toBe(true);
+    expect(decideAutoSign({ ky: false, myTurn: true, signed: false })).toBe(false);
+    expect(decideAutoSign({ ky: true, myTurn: false, signed: false })).toBe(false);
+    expect(decideAutoSign({ ky: true, myTurn: true, signed: true })).toBe(false);
+  });
+  it("hasSignIntent đọc ?ky=1", () => {
+    expect(hasSignIntent("?ky=1")).toBe(true);
+    expect(hasSignIntent("?x=1&ky=1")).toBe(true);
+    expect(hasSignIntent("?ky=0")).toBe(false);
+    expect(hasSignIntent("")).toBe(false);
+  });
 });
 
 describe("provider helpers", () => {

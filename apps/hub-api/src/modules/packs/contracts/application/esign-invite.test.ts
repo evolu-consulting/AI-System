@@ -1,7 +1,7 @@
 // CR-125 · x12 · chuông "Mời ký" có dữ liệu thẻ + ảnh: ảnh dựng MỘT lần mỗi tệp (phiên bản HĐ), tắt cài đặt ⇒ không dựng, lỗi ⇒ chuông thường.
 import { describe, expect, it } from "bun:test";
 import type { ESignFiles, InviteCard } from "./esign.ports";
-import { inviteNotice } from "./esign-invite";
+import { inviteNotice, signInviteLink } from "./esign-invite";
 
 const T = "11111111-1111-4111-8111-111111111111";
 const card = (o: Partial<InviteCard> = {}): InviteCard => ({
@@ -58,7 +58,11 @@ describe("CR-125 x12 · inviteNotice", () => {
   it("có thẻ + ảnh; liên kết sâu tới thẻ ký; người yêu cầu theo chủ HĐ", async () => {
     const { n } = make(card());
     const r = await n(T, "cid", "signer", "HD-7");
-    expect(r.link).toBe("/contracts/c/cid#esign-panel");
+    expect(r.link).toBe("/contracts/c/cid?ky=1#esign-panel");
+    expect(signInviteLink(null, "x")).toBe("/contracts/c/x?ky=1#esign-panel");
+    expect(signInviteLink("/contracts/c/x?tab=log#a", "x")).toBe(
+      "/contracts/c/x?tab=log&ky=1#esign-panel",
+    );
     expect(r.kind).toBe("contract.esign");
     expect(r.data).toMatchObject({
       type: "esign_invite",

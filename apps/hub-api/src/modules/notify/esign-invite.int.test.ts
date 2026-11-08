@@ -93,8 +93,8 @@ describe("CR-125 x12 · email Mời ký có thẻ + ảnh trang đầu", () => {
     expect(mails.map((m) => m.to)).toEqual(["u982@kit.test"]); // B = người ký; A (chủ HĐ) và C không nhận
     const m = mails[0];
     expect(m?.subject).toStartWith("Mời ký: ");
-    expect(m?.html).toContain(`https://app.test.vn/contracts/c/${K[0]}#esign-panel`);
-    expect(m?.text).toContain(`https://app.test.vn/contracts/c/${K[0]}#esign-panel`);
+    expect(m?.html).toContain(`https://app.test.vn/contracts/c/${K[0]}?ky=1#esign-panel`);
+    expect(m?.text).toContain(`https://app.test.vn/contracts/c/${K[0]}?ky=1#esign-panel`);
     for (const f of ["600.000.000", "01/12/2026", "30/11/2027", "User 981", "Xem hợp đồng và ký"])
       expect(m?.html).toContain(f);
     expect(m?.html).toContain("Công ty TNHH Demo Việt");
