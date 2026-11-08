@@ -26,11 +26,27 @@ export const fetchRequest = (id: string, signal?: AbortSignal) =>
   api<StartRequestView>(`/processes/requests/${encodeURIComponent(id)}`, { signal });
 export const fetchMyTasks = (signal?: AbortSignal) =>
   api<ReviewTaskListResponse>("/me/review-tasks", { query: { limit: 50 }, signal });
-export const decideTask = (taskId: string, result: "pass" | "reject", feedback?: string) =>
+export const decideTask = (
+  taskId: string,
+  result: "pass" | "reject" | "fail",
+  feedback?: string,
+  backToStep?: number | null,
+) =>
   api<unknown>(`/review-tasks/${encodeURIComponent(taskId)}/decision`, {
     method: "POST",
-    body: { result, ...(feedback ? { feedback } : {}) },
+    body: {
+      result,
+      ...(feedback ? { feedback } : {}),
+      ...(result === "fail" && typeof backToStep === "number" ? { back_to_step: backToStep } : {}),
+    },
   });
+
+/** Khoá hành động của FlowTask ⇒ kết quả của `POST /review-tasks/:id/decision` (Duyệt / Trả lại / Từ chối). */
+export const RESULT_OF_ACTION: Readonly<Record<string, "pass" | "reject" | "fail">> = {
+  approve: "pass",
+  reject: "reject",
+  return: "fail",
+};
 
 /** `POST /attachments`: thân thô + tên tệp percent-encode (cùng đường tải tệp của chat). */
 export function uploadAttachment(file: File): Promise<Attachment> {

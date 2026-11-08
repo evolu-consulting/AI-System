@@ -859,6 +859,8 @@
       "approve": "Approve",
       "reject": "Reject",
       "rejectReason": "Reason for rejection",
+      "reason": "Reason ({{action}})",
+      "cancel": "Cancel",
       "decided": "Your decision was recorded.",
       "decideError": "Could not record the decision. Try again.",
       "createdNote": "Request sent. You can follow its status on this page.",

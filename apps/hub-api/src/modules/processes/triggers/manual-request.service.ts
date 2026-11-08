@@ -9,6 +9,7 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
+import { requestSteps, rootRunId } from "../runs/request-steps";
 import { ViewService } from "../runs/view.service";
 
 type RunInput = { key?: string; type?: string; text?: string; value?: string };
@@ -43,6 +44,10 @@ export class ManualRequestService {
     const cfg = startFormOf(row.stage0);
     const inputs = (Array.isArray(row.inputs) ? row.inputs : []) as RunInput[];
     const title = inputs.find((x) => x.key === "request_title")?.text ?? run.process.name;
-    return { run, title, fields: cfg ? requestFields(cfg, row.inputs) : [] };
+    const [steps, root_run_id] = await Promise.all([
+      requestSteps(this.d, u, { id: runId, name: run.process.name }),
+      rootRunId(this.d, u, runId),
+    ]);
+    return { run, title, fields: cfg ? requestFields(cfg, row.inputs) : [], steps, root_run_id };
   }
 }

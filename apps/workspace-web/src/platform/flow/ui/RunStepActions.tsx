@@ -1,0 +1,117 @@
+// CR-125 · cr125-request-steps · `<RunStepActions view/>`: MỘT component cho «việc của người xem ở lượt chạy» dùng chung mọi trang có
+// `FlowView` — các bước (renderer theo loại, trong đó bước «Điền thông tin» = `FormStep` + «Gửi») và hành động của task đang mở
+// (Duyệt / Trả lại / Từ chối theo `FlowTask.actions`, lý do bắt buộc khi hành động đòi `feedback`). Không biết gói nào: chỉ gọi hai
+// lệnh do trang cấp (`onSubmitForm`, `onDecide`) — trang HĐ cấp theo khe flow, trang yêu cầu cấp theo `/review-tasks/:id/*`.
+import type { FlowActionDef, FlowFormValues, FlowTask, FlowView } from "@ai/contracts/flow";
+import { type ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { FlowPanelBody } from "./FlowPanel";
+import type { StepOverrides } from "./types";
+
+export type RunStepActionsProps = {
+  /** Khe/ref chỉ để gắn thuộc tính (renderer bước dùng `ctx.slot/refId`). */
+  slot: string;
+  refId: string;
+  view: FlowView;
+  onSubmitForm: (taskId: string, values: FlowFormValues) => Promise<void>;
+  onDecide: (taskId: string, action: string, feedback?: string) => Promise<void>;
+  overrides?: StepOverrides | undefined;
+  frame?: ((steps: ReactNode, view: FlowView) => ReactNode) | undefined;
+  /** Đang gửi quyết định (khoá nút). */
+  busy?: boolean | undefined;
+  error?: boolean | undefined;
+};
+
+const BTN: Record<FlowActionDef["style"], string> = {
+  primary: "btn btn-primary",
+  default: "btn",
+  danger: "btn",
+};
+
+/** Task cần nút hành động: task `review` của người xem (task `form` gửi ngay trên thẻ bước). */
+export const decisionTaskOf = (view: FlowView): FlowTask | null =>
+  view.tasks.find((t) => t.kind !== "form" && t.actions.length > 0) ?? null;
+
+const needsReason = (a: FlowActionDef): boolean =>
+  a.input.kind === "feedback" && a.input.required === true;
+
+export function RunStepActions(p: RunStepActionsProps) {
+  const { t } = useTranslation();
+  const [asking, setAsking] = useState<FlowActionDef | null>(null);
+  const [reason, setReason] = useState("");
+  const task = decisionTaskOf(p.view);
+  const decide = async (a: FlowActionDef, feedback?: string) => {
+    if (!task) return;
+    await p.onDecide(task.task_id, a.key, feedback);
+    setAsking(null);
+    setReason("");
+  };
+  return (
+    <div data-flow="run-actions">
+      <FlowPanelBody
+        state={{ status: "ready", view: p.view }}
+        slot={p.slot}
+        refId={p.refId}
+        overrides={p.overrides}
+        frame={p.frame}
+        submitForm={(taskId, values) => p.onSubmitForm(taskId, values)}
+      />
+      {task && (
+        <div data-testid="request-task" className="mt-3">
+          {asking ? (
+            <div className="flex flex-col gap-2">
+              <label htmlFor={`run-reason-${p.refId}`} className="text-sm">
+                {t("contracts.requests.reason", { action: asking.label })}
+              </label>
+              <textarea
+                id={`run-reason-${p.refId}`}
+                rows={3}
+                className="w-full rounded-md border border-rule bg-panel px-3 py-2 text-sm"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  disabled={p.busy === true || reason.trim() === ""}
+                  data-testid={`request-${asking.key}-confirm`}
+                  onClick={() => void decide(asking, reason.trim())}
+                >
+                  {asking.label}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-quiet btn-sm"
+                  onClick={() => setAsking(null)}
+                >
+                  {t("contracts.requests.cancel")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {task.actions.map((a) => (
+                <button
+                  key={a.key}
+                  type="button"
+                  className={BTN[a.style]}
+                  disabled={p.busy === true}
+                  data-testid={`request-${a.key}`}
+                  onClick={() => (needsReason(a) ? setAsking(a) : void decide(a))}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {p.error && (
+            <p role="alert" className="mt-2 text-sm text-late">
+              {t("contracts.requests.decideError")}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

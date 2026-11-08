@@ -3,6 +3,7 @@
 import { z } from "zod";
 import type { ProcessRunView } from "../chat/processes-entities";
 import { UuidSchema } from "../common";
+import type { FlowView } from "../flow";
 import {
   START_FORM_NODE_KEY,
   type StartFormConfig,
@@ -60,4 +61,21 @@ export type StartRequestView = {
   run: ProcessRunView;
   title: string;
   fields: { key: string; label: string; type: string; value: string }[];
+  /** CR-125 · request-steps · các bước của lượt + lượt con lồng nhau (cùng `FlowView` với thẻ HĐ). */
+  steps: RequestStepNode;
+  /** Lượt gốc khi lượt này là lượt con VÀ người xem xem được lượt gốc; ngược lại null (trang inbox mở trang của lượt gốc). */
+  root_run_id: string | null;
+};
+
+/** Một lượt trong cây yêu cầu: bước (FlowView) + lượt con (Quy trình con) theo thứ tự bắt đầu. */
+export type RequestStepNode = {
+  run_id: string;
+  name: string;
+  status: string;
+  /** Vị trí bước của lượt cha mà lượt con này chạy (null ở lượt gốc của trang). */
+  parent_stage_idx: number | null;
+  /** Đích «Trả lại» của bước đang mở (stage có `back_to_steps`); null ⇒ nhánh Trả lại do chính bước quyết. */
+  back_to_step: number | null;
+  flow: FlowView;
+  children: RequestStepNode[];
 };

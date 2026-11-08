@@ -171,10 +171,12 @@ export async function stepsView(
   d: ProcessDeps,
   u: PackRunCaller,
   runId: string,
+  /** CR-125 · request-steps · `system` CHỈ khi người gọi đã qua kiểm quyền xem lượt cha (đọc lượt con); mọi lọc vẫn theo `tenant_id`. */
+  scope: "user" | "system" = "user",
 ): Promise<PackStepsView | null> {
   if (!UUID.test(runId)) return null;
   const groupIds = (await d.config.user(u.userId))?.groupIds ?? new Set<string>();
-  return withHubScope(d.db, userScope(u), async (tx) => {
+  return withHubScope(d.db, scope === "system" ? { kind: "system" } : userScope(u), async (tx) => {
     const rows = [...(await tx.execute<Row>(rowsSql([runId], u.tenantId, new Set(groupIds))))];
     const head = rows[0];
     if (!head) return null;

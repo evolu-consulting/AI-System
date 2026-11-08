@@ -3,6 +3,7 @@
 export { FLOW_ROUTE_NONE, FLOW_ROUTE_UNAVAILABLE } from "./domain/approval-engine.rules";
 export { attentionOf } from "./domain/approval-engine-card.rules";
 export { APPROVAL_PROCESS_KEY } from "./domain/approval-flow.rules";
+export { backTargetOfRun, flowViewOfRun } from "./domain/approval-flow-view.rules";
 export type { SlotFlowBody } from "./domain/approval-slot.rules";
 export { APPROVAL_SLOT, compileSlotStages, validateSlotBody } from "./domain/approval-slot.rules";
 export { APPROVAL_DEFAULT_DEF, defaultSlotBody } from "./domain/approval-slot-default.rules";

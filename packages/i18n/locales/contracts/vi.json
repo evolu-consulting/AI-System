@@ -859,6 +859,8 @@
       "approve": "Duyệt",
       "reject": "Từ chối",
       "rejectReason": "Lý do từ chối",
+      "reason": "Lý do ({{action}})",
+      "cancel": "Huỷ",
       "decided": "Đã ghi nhận quyết định của bạn.",
       "decideError": "Chưa ghi nhận được quyết định. Thử lại.",
       "createdNote": "Đã gửi yêu cầu. Bạn theo dõi trạng thái ở trang này.",

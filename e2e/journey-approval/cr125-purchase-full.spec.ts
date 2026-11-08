@@ -105,7 +105,10 @@ async function submitOpenForm(page: Page): Promise<boolean> {
   return true;
 }
 
-/** Việc đang chờ người này (hộp «Chờ tôi duyệt» của yêu cầu): mở từng việc, điền form (thẻ bước điền) hoặc bấm «Đạt» (nút duyệt của trang). */
+/**
+ * Việc đang chờ người này (hộp «Chờ tôi duyệt» của yêu cầu): mở từng việc ⇒ trang yêu cầu của lượt GỐC (việc của Phần 1/2/3 mở trang của
+ * yêu cầu cha, nhìn vào lượt con), làm ngay tại đó: điền form (thẻ bước điền, «Gửi») hoặc bấm «Duyệt» (cùng RunStepActions với thẻ HĐ).
+ */
 async function actOnWaiting(page: Page): Promise<boolean> {
   await page.goto(`${E.cw}/contracts/requests`);
   const rows = page.getByTestId("requests-waiting-row");
@@ -113,7 +116,10 @@ async function actOnWaiting(page: Page): Promise<boolean> {
   for (let i = 0; i < (await rows.count()); i++) {
     await page.goto(`${E.cw}/contracts/requests`);
     await rows.nth(i).click();
-    const approve = page.locator("[data-approval=pass], [data-testid=request-approve]").first();
+    await expect(page.getByTestId("request-page")).toBeVisible({ timeout: 30_000 });
+    // việc của lượt con ⇒ chuyển sang trang yêu cầu gốc (cùng URL với trang yêu cầu cha), lượt con nằm lồng dưới lượt cha
+    await expect(page).toHaveURL(new RegExp(`${runUrl.split("/").pop()}`), { timeout: 30_000 });
+    const approve = page.getByTestId("request-approve").first();
     if (await submitOpenForm(page)) acted = true;
     else if (await approve.isVisible()) {
       await approve.click();
@@ -175,5 +181,7 @@ test("2 · Phần 1 → 2 → 3: các thẻ điền / duyệt (dòng 3, 6, 10 ha
   }
   await emp.goto(runUrl);
   await expect(status).toHaveAttribute("data-status", "done", { timeout: 30_000 });
+  // toàn bộ chuỗi trên MỘT trang: lượt cha + ba Phần lồng dưới (parent_run_id)
+  expect(await emp.locator("[data-run]").count()).toBeGreaterThanOrEqual(4);
   await shot(emp, "03-quy-trinh-mua-hang-da-xong");
 });

@@ -15,6 +15,12 @@ import type {
 } from "@ai/contracts/flow";
 import { moduleFlowStep } from "@ai/contracts/flow";
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
+import {
+  type EngineStepsView,
+  openStep,
+  runCardSteps,
+  stageAt,
+} from "./approval-engine-card.rules";
 
 export const APPROVAL_FLOW_SLOT = "contracts.approval";
 export const PRODUCT_LINKS_EXTENSION = "contracts.product-links";
@@ -120,7 +126,10 @@ function esignOf(e: NonNullable<Card["esign"]>): FlowStepView {
 
 const FEEDBACK = { kind: "feedback" as const, required: true, max_len: 4000 };
 /** Hành động của task đang mở — cùng luật thẻ duyệt: Trả lại chỉ ở lượt engine và không ở bước soạn (idx 0). */
-function actionsOf(card: Card, openIdx: number | null): FlowActionDef[] {
+function actionsOf(
+  card: Pick<Card, "finalizes_on_approve" | "mode">,
+  openIdx: number | null,
+): FlowActionDef[] {
   const approve: FlowActionDef = {
     key: "approve",
     label: "Duyệt",
@@ -202,6 +211,65 @@ export function flowViewOfCard(card: Card, ref: string, snapshotVersion: number 
     steps,
     tasks: tasksOf(card),
   };
+}
+
+export const REQUEST_FLOW_SLOT = "processes.request";
+const RUN_STATE: Record<string, FlowState> = {
+  done: "done",
+  cancelled: "cancelled",
+  failed: "cancelled",
+  expired: "cancelled",
+  rejected: "rejected",
+};
+
+/**
+ * CR-125 · request-steps · lượt KHÔNG gắn HĐ (phiếu «Tạo yêu cầu», Quy trình con) ⇒ FlowView, CÙNG phép chiếu bước/hành động với thẻ HĐ
+ * (`stepOf`/`actionsOf`/`submitActions`): bước dựng từ stage của run (`runCardSteps`), task = task mở của người xem. Không có «Đọc lại».
+ */
+export function flowViewOfRun(sv: EngineStepsView, ref: string): FlowView {
+  const cs = runCardSteps(sv);
+  const open = openStep(cs);
+  const task = open ? (stageAt(sv, open.idx)?.task ?? null) : null;
+  const tasks: FlowTask[] = [];
+  if (open && task?.can_act) {
+    const form = open.kind === "form" ? open.form : undefined;
+    tasks.push({
+      task_id: task.id,
+      step_key: open.key,
+      kind: form ? "form" : "review",
+      actions: form
+        ? submitActions(form as NonNullable<CardStep["form"]>)
+        : actionsOf({ finalizes_on_approve: false, mode: "engine" }, open.idx).filter(
+            (a) => a.key !== "redo",
+          ),
+    });
+  }
+  return {
+    slot: REQUEST_FLOW_SLOT,
+    ref,
+    run: { id: ref, mode: "engine", status: sv.status, snapshot_version: null },
+    state: RUN_STATE[sv.status] ?? "running",
+    phase: null,
+    note: null,
+    attention:
+      sv.status === "needs_decision"
+        ? {
+            kind: "needs_decision",
+            reason: sv.decision?.reason ?? null,
+            since: sv.decision?.at ?? null,
+          }
+        : null,
+    block_reason: null,
+    steps: (cs as unknown as CardStep[]).map(stepOf),
+    tasks,
+  };
+}
+
+/** Đích «Trả lại» của bước mở (`back_to_steps[0]` của stage); không có ⇒ null (nhánh Trả lại do chính bước quyết). */
+export function backTargetOfRun(sv: EngineStepsView): number | null {
+  const open = openStep(runCardSteps(sv));
+  const back = open ? stageAt(sv, open.idx)?.back_to_steps?.[0] : undefined;
+  return typeof back === "number" ? back : null;
 }
 
 /** Hàng tóm tắt (một câu SQL cho cả lô) ⇒ huy hiệu. */

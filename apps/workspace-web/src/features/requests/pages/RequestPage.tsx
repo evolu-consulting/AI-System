@@ -1,49 +1,80 @@
-// CR-125 · cr125-manual-start-ui · trang MỘT yêu cầu: tên, trạng thái, nội dung phiếu đã điền, các bước; người được giao duyệt thấy nút
-// Duyệt / Từ chối ngay trên thẻ (cùng dữ liệu phiếu). Quyền xem do hub quyết (người gửi · người được giao · quản trị), ngoài ra 404.
+﻿// CR-125 · cr125-manual-start-ui · trang MỘT yêu cầu: tên, trạng thái, nội dung phiếu đã điền. cr125-request-steps: toàn bộ các bước của lượt
+// và lượt con (Phần 1/2/3 …) lồng dưới lượt cha; việc của người xem ở bất kỳ lượt nào (form «Gửi», Duyệt / Trả lại / Từ chối, thẻ nhóm cùng
+// duyệt) làm ngay tại đây qua `RunStepActions` (cùng component với thẻ HĐ). Mở từ lượt con ⇒ chuyển sang lượt gốc, nhìn vào lượt con đó.
+// Quyền xem do hub quyết (người gửi · người được giao · quản trị), ngoài ra 404.
+import type { RequestStepNode } from "@ai/contracts/hub-admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { fileIdsOf } from "~/components/shared/attachments";
 import { FileName } from "~/components/shared/FileUploadField";
 import { PageHead, Panel } from "~/components/shared/layout";
 import { Skeleton } from "~/components/ui/skeleton";
-import { decideTask, fetchRequest, requestKeys } from "../api";
+import { notifyFlowNavChanged } from "~/shared/kernel/flow-nav-event";
+import { decideTask, fetchRequest, RESULT_OF_ACTION, requestKeys } from "../api";
+import { RequestStepsTree } from "../components/RequestStepsTree";
+import { flattenSteps, redirectToRoot } from "../lib/request-tree";
 
 const money = (v: string): string => Number(v).toLocaleString("vi-VN");
 
 export function RequestPage({
   runId,
   sent,
+  focus,
 }: {
   runId: string;
   sent?: "new" | "again" | undefined;
+  /** Mã lượt con cần nhìn vào (từ «Chờ tôi duyệt» của lượt con). */
+  focus?: string | undefined;
 }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const q = useQuery({
     queryKey: requestKeys.one(runId),
     queryFn: ({ signal }) => fetchRequest(runId, signal),
     refetchInterval: (s) => (s.state.data?.run.status === "done" ? false : 5000),
     retry: false,
   });
-  const [reason, setReason] = useState("");
-  const [rejecting, setRejecting] = useState(false);
+  const changed = () => {
+    void qc.invalidateQueries({ queryKey: requestKeys.one(runId) });
+    void qc.invalidateQueries({ queryKey: requestKeys.tasks });
+    notifyFlowNavChanged();
+  };
   const decide = useMutation({
-    mutationFn: (r: "pass" | "reject") =>
-      decideTask(openTask(q.data)?.id ?? "", r, reason.trim() || undefined),
-    onSuccess: () => {
-      setRejecting(false);
-      void qc.invalidateQueries({ queryKey: requestKeys.one(runId) });
-      void qc.invalidateQueries({ queryKey: requestKeys.tasks });
-    },
+    mutationFn: (a: { n: RequestStepNode; taskId: string; action: string; feedback?: string }) =>
+      decideTask(
+        a.taskId,
+        RESULT_OF_ACTION[a.action] ?? "pass",
+        a.feedback,
+        a.action === "return" ? a.n.back_to_step : null,
+      ),
+    onSuccess: changed,
   });
+  const toRoot = q.data ? redirectToRoot(runId, q.data.root_run_id) : null;
+  useEffect(() => {
+    if (toRoot)
+      void navigate({
+        to: "/contracts/requests/$runId",
+        params: { runId: toRoot.runId },
+        search: { focus: toRoot.focus },
+        replace: true,
+      });
+  }, [toRoot, navigate]);
+  const target = focus ?? runId;
+  useEffect(() => {
+    if (q.data)
+      document
+        .querySelector(`[data-run="${CSS.escape(target)}"]`)
+        ?.scrollIntoView?.({ block: "center" });
+  }, [q.data, target]);
   const back = (
     <Link to="/contracts/requests" className="hover:underline">
       {t("contracts.requests.back")}
     </Link>
   );
-  if (q.isPending) return <Skeleton className="h-40 w-full" />;
+  if (q.isPending || toRoot) return <Skeleton className="h-40 w-full" />;
   if (q.isError || !q.data)
     return (
       <div data-testid="request-missing">
@@ -53,8 +84,8 @@ export function RequestPage({
         </p>
       </div>
     );
-  const { run, title, fields } = q.data;
-  const task = openTask(q.data);
+  const { run, title, fields, steps } = q.data;
+  const mineLeft = flattenSteps(steps).some((n) => n.flow.tasks.length > 0);
   return (
     <div data-testid="request-page">
       <PageHead title={title} crumb={back} />
@@ -97,77 +128,22 @@ export function RequestPage({
       )}
       <Panel className="mb-4 max-w-2xl px-6 py-4">
         <h2 className="mb-2 text-[15px] font-semibold">{t("contracts.requests.steps")}</h2>
-        <ol className="m-0 list-none p-0" data-testid="request-steps">
-          {run.stages.map((s) => (
-            <li key={s.idx} className="flex items-center gap-3 py-1 text-sm" data-status={s.status}>
-              <span className="min-w-0 flex-1 truncate">{s.name}</span>
-              <span className="text-label text-dim">
-                {t(`contracts.requests.stage.${s.status}`)}
-              </span>
-            </li>
-          ))}
-        </ol>
+        <div data-testid="request-steps">
+          <RequestStepsTree
+            node={steps}
+            focus={focus}
+            busy={decide.isPending}
+            error={decide.isError}
+            onChanged={changed}
+            onDecide={(n, taskId, action, feedback) =>
+              decide
+                .mutateAsync({ n, taskId, action, ...(feedback ? { feedback } : {}) })
+                .then(() => undefined)
+            }
+          />
+        </div>
       </Panel>
-      {task && (
-        <Panel className="max-w-2xl px-6 py-4">
-          <div data-testid="request-task">
-            <h2 className="mb-2 text-[15px] font-semibold">
-              {t("contracts.requests.myTask")} · {task.stage_name}
-            </h2>
-            {rejecting ? (
-              <div className="flex flex-col gap-2">
-                <label htmlFor="req-reject" className="text-sm">
-                  {t("contracts.requests.rejectReason")}
-                </label>
-                <textarea
-                  id="req-reject"
-                  rows={3}
-                  className="w-full rounded-md border border-rule bg-panel px-3 py-2 text-sm"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                />
-                <div>
-                  <button
-                    type="button"
-                    className="btn btn-sm"
-                    disabled={decide.isPending || reason.trim() === ""}
-                    data-testid="request-reject-confirm"
-                    onClick={() => decide.mutate("reject")}
-                  >
-                    {t("contracts.requests.reject")}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={decide.isPending}
-                  data-testid="request-approve"
-                  onClick={() => decide.mutate("pass")}
-                >
-                  {t("contracts.requests.approve")}
-                </button>
-                <button
-                  type="button"
-                  className="btn"
-                  data-testid="request-reject"
-                  onClick={() => setRejecting(true)}
-                >
-                  {t("contracts.requests.reject")}
-                </button>
-              </div>
-            )}
-            {decide.isError && (
-              <p role="alert" className="mt-2 text-sm text-late">
-                {t("contracts.requests.decideError")}
-              </p>
-            )}
-          </div>
-        </Panel>
-      )}
-      {decide.isSuccess && !task && (
+      {decide.isSuccess && !mineLeft && (
         <p role="status" className="text-sm text-ok" data-testid="request-decided">
           {t("contracts.requests.decided")}
         </p>
@@ -191,8 +167,4 @@ function FileLinks({ value }: { value: string }) {
       ))}
     </ul>
   );
-}
-
-function openTask(d: Awaited<ReturnType<typeof fetchRequest>> | undefined) {
-  return d?.run.my_tasks.find((x) => x.status === "open" && x.can_act && x.kind === "review");
 }

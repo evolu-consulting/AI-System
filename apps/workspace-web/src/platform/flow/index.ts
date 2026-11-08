@@ -4,6 +4,7 @@ export { flowViewKey, useFlowSubmitForm, useFlowSummary, useFlowView } from "./h
 export type { FlowRuntime } from "./port";
 export { packOfSlot } from "./port";
 export { FlowPanel, FlowPanelBody, type FlowPanelProps, type FlowPanelState } from "./ui/FlowPanel";
+export { decisionTaskOf, RunStepActions, type RunStepActionsProps } from "./ui/RunStepActions";
 export { RENDERERS, rendererFor } from "./ui/registry";
 export { StepFrame } from "./ui/StepRow";
 export {
