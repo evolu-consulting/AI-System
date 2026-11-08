@@ -123,3 +123,52 @@ describe("depcruise hook ngân sách", () => {
     expect(budgetNote(20)).toContain("slice:merge");
   });
 });
+
+describe("conflict code thật thì hủy rebase và báo rõ", () => {
+  function gitWith(unmerged: string[]) {
+    const calls: string[] = [];
+    const replies: Record<string, { ok: boolean; out: string }> = {
+      "merge-base": { ok: true, out: "abc123\n" },
+      "rebase --abort": { ok: true, out: "" },
+      rebase: { ok: false, out: "CONFLICT" },
+      diff: { ok: true, out: unmerged.join("\n") },
+      log: { ok: true, out: "d4e5f6 sửa a.ts upstream\n" },
+    };
+    const git = (...a: string[]) => {
+      calls.push(a.join(" "));
+      return replies[`${a[0]} ${a[1]}`] ?? replies[a[0] ?? ""] ?? { ok: true, out: "" };
+    };
+    return { git, calls };
+  }
+
+  test("rebase --abort chạy, báo file và commit upstream", () => {
+    const { git, calls } = gitWith(["src/a.ts", "src/b.ts"]);
+    const r = rebaseResolvingLock(git, "platform/gd0");
+    expect(r.ok).toBe(false);
+    expect(calls).toContain("rebase --abort");
+    expect(calls).toContain("log --oneline abc123..platform/gd0 -- src/a.ts src/b.ts");
+    expect(r.conflict).toContain("xung đột code — gửi lại agent của lát");
+    expect(r.conflict).toContain("src/a.ts");
+    expect(r.conflict).toContain("d4e5f6 sửa a.ts upstream");
+  });
+
+  test("baseline-only vẫn tự giải, không abort", () => {
+    const BASE_F = ".dependency-cruiser-known-violations.json";
+    let step = 0;
+    const calls: string[] = [];
+    const git = (...a: string[]) => {
+      calls.push(a.join(" "));
+      if (a[0] === "rebase" && !a.includes("--continue")) return { ok: false, out: "c" };
+      if (a[0] === "diff") return { ok: true, out: step === 0 ? BASE_F : "" };
+      if (a.includes("--continue")) {
+        step++;
+        return { ok: true, out: "" };
+      }
+      return { ok: true, out: "" };
+    };
+    const r = rebaseResolvingLock(git, "platform/gd0", () => true);
+    expect(r.ok).toBe(true);
+    expect(r.conflict).toBeUndefined();
+    expect(calls).not.toContain("rebase --abort");
+  });
+});

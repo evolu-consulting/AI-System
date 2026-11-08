@@ -34,6 +34,8 @@ export type RebaseOutcome = {
   out: string;
   lockResolved: number;
   baselineResolved: number;
+  /** Có ⇒ conflict thật đã `rebase --abort`; nội dung = báo cáo (file + commit upstream). */
+  conflict?: string;
 };
 
 /**
@@ -45,17 +47,24 @@ export function rebaseResolvingLock(
   base: string,
   regenBaseline?: () => boolean,
 ): RebaseOutcome {
+  const mergeBase = git("merge-base", "HEAD", base).out.trim();
   let r = git("rebase", base);
   let lockResolved = 0;
   let baselineResolved = 0;
+  const fail = (files: string[]): RebaseOutcome => ({
+    ok: false,
+    out: r.out,
+    lockResolved,
+    baselineResolved,
+    conflict: abortWithReport(git, base, mergeBase, files),
+  });
   for (let i = 0; !r.ok && i < MAX_STEPS; i++) {
     const unmerged = parseLines(git("diff", "--name-only", "--diff-filter=U").out);
-    if (!onlyResolvable(unmerged, regenBaseline !== undefined))
-      return { ok: false, out: r.out, lockResolved, baselineResolved };
+    if (!onlyResolvable(unmerged, regenBaseline !== undefined)) return fail(unmerged);
     // Khi rebase, "ours" = nhánh đích (upstream); bản lát sẽ được sinh lại sau rebase.
     for (const f of unmerged) git("checkout", "--ours", "--", f);
     if (unmerged.includes(BASELINE_FILE)) {
-      if (!regenBaseline?.()) return { ok: false, out: r.out, lockResolved, baselineResolved };
+      if (!regenBaseline?.()) return fail(unmerged);
       baselineResolved++;
     }
     for (const f of unmerged) git("add", f);
@@ -63,6 +72,31 @@ export function rebaseResolvingLock(
     r = continueRebase(git);
   }
   return { ok: r.ok, out: r.out, lockResolved, baselineResolved };
+}
+
+export const CONFLICT_HEADLINE = "xung đột code — gửi lại agent của lát";
+
+/** Báo cáo conflict: file xung đột + commit upstream đã đụng chúng (nguyên nhân thật, không để worktree kẹt giữa rebase). */
+export function conflictReport(files: string[], upstreamLog: string): string {
+  const log = parseLines(upstreamLog);
+  return [
+    CONFLICT_HEADLINE,
+    "File xung đột:",
+    ...(files.length ? files.map((f) => `  ${f}`) : ["  (không rõ)"]),
+    "Commit upstream đã sửa các file này:",
+    ...(log.length ? log.map((l) => `  ${l}`) : ["  (không tìm thấy)"]),
+    "Worktree đã về commit cuối của lát (rebase --abort); sửa rồi chạy lại slice:merge.",
+  ].join("\n");
+}
+
+/** `rebase --abort` ⇒ worktree về commit cuối của lát; trả báo cáo conflict. */
+function abortWithReport(git: GitFn, base: string, mergeBase: string, files: string[]): string {
+  const log =
+    files.length > 0 && mergeBase
+      ? git("log", "--oneline", `${mergeBase}..${base}`, "--", ...files).out
+      : "";
+  git("rebase", "--abort");
+  return conflictReport(files, log);
 }
 
 /** `rebase --continue`; commit chỉ đổi file sinh ra → rỗng sau khi giải ⇒ bỏ qua nó. */

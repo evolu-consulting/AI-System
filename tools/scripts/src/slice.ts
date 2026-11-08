@@ -1,4 +1,4 @@
-// `bun run slice:new|slice:merge|slice:rm <tên>` — mỗi lát một worktree + nhánh riêng (CLAUDE.md Luật 0b).
+﻿// `bun run slice:new|slice:merge|slice:rm <tên>` — mỗi lát một worktree + nhánh riêng (CLAUDE.md Luật 0b).
 //   slice:new <tên> [--force]  kiểm tài nguyên (res:check: từ chối khi đĩa < 15 GB / RAM < 2 GB, `--force` bỏ qua),
 //                     tạo worktree `<gốc>/../evolu-wt/<tên>` + nhánh `slice/<tên>` từ platform/gd0, bun install,
 //                     chép .env*.local, kiểm hook.
@@ -162,15 +162,8 @@ function cmdNew(name: string | undefined, force: boolean): void {
     );
 }
 
-function cmdMerge(name: string | undefined, noTest: boolean, noOpenspec: boolean): void {
-  const { main, dir, branch } = paths(name);
-  if (!existsSync(dir)) fail(`chưa có worktree ${dir}`);
-  if (git(dir, "status", "--porcelain").out) fail("worktree còn thay đổi chưa commit");
-  if (noOpenspec)
-    console.warn("slice: CẢNH BÁO --no-openspec: bỏ qua kiểm Delta (chỉ dùng khi khẩn cấp)");
-  else if (!run(dir, ["bun", "tools/scripts/src/openspec.ts", "check", name as string], true).ok)
-    fail("openspec:check đỏ — sửa Delta trong tasks.md (hoặc --no-openspec khi khẩn cấp)");
-  ensureMergeDriver(dir); // locale JSON gộp theo key (git config không nằm trong git)
+/** Rebase lên BASE; conflict code thật ⇒ đã `rebase --abort` + báo file/commit upstream rồi thoát khác 0. */
+function rebaseOrFail(dir: string): ReturnType<typeof rebaseResolvingLock> {
   const rb = rebaseResolvingLock(
     (...a) => git(dir, ...a),
     BASE,
@@ -180,7 +173,19 @@ function cmdMerge(name: string | undefined, noTest: boolean, noOpenspec: boolean
     console.log(
       `slice: tự giải ${rb.baselineResolved} conflict baseline ranh giới, sinh lại bằng check-boundaries --write`,
     );
-  if (!rb.ok) fail(`rebase lỗi (gỡ conflict trong ${dir}, rồi chạy lại):\n${rb.out}`);
+  if (!rb.ok) fail(rb.conflict ?? `rebase lỗi (xem ${dir}, rồi chạy lại):\n${rb.out}`);
+  return rb;
+}
+function cmdMerge(name: string | undefined, noTest: boolean, noOpenspec: boolean): void {
+  const { main, dir, branch } = paths(name);
+  if (!existsSync(dir)) fail(`chưa có worktree ${dir}`);
+  if (git(dir, "status", "--porcelain").out) fail("worktree còn thay đổi chưa commit");
+  if (noOpenspec)
+    console.warn("slice: CẢNH BÁO --no-openspec: bỏ qua kiểm Delta (chỉ dùng khi khẩn cấp)");
+  else if (!run(dir, ["bun", "tools/scripts/src/openspec.ts", "check", name as string], true).ok)
+    fail("openspec:check đỏ — sửa Delta trong tasks.md (hoặc --no-openspec khi khẩn cấp)");
+  ensureMergeDriver(dir); // locale JSON gộp theo key (git config không nằm trong git)
+  const rb = rebaseOrFail(dir);
   if (rb.lockResolved > 0) {
     console.log(
       `slice: tự giải ${rb.lockResolved} conflict tests/.lock, sinh lại bằng test:lock:write`,
