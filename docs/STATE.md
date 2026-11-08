@@ -183,3 +183,5 @@ A. **Sau M4:** (1) người dùng test service admin; (2) chạy lại e2e toàn
 
 - 2026-11-08 gộp current (cr124-/cr125-/qc-): 31 lát, 0 mục Chưa rõ; cr124-q3 'đúng 3 câu SQL' sửa thành 4 theo test thật.
 - 2026-11-08 gộp current (cr122-/cr123-): 85 lát, 0 mục Chưa rõ; 14 tham chiếu [test:] cũ trong Delta sửa về đường dẫn file còn tồn tại.
+
+- 2026-11-09 gộp current (nhóm A: admin/platform/hub/tools/deploy/ops): 86 lát, 5 mục Chưa rõ (admin/ghi-chu.md); cr118-lib-rls-fix không có Delta thật.
