@@ -33,6 +33,7 @@ test("quản trị community: sao chép flow Duyệt bài, thêm bước Duyệt
   const own = page.getByRole("link", { name: "Mở bản riêng" });
   await expect(page.getByTestId("flow-add-step").or(own)).toBeVisible({ timeout: 30_000 });
   if (await own.isVisible()) await own.click();
+  await expect(page.getByTestId("flow-add-step")).toBeVisible({ timeout: 30_000 }); // đang ở bản riêng (sửa được) rồi mới đếm bước
   const nodes = page.locator("[data-stage-uid]");
   await expect(nodes.first()).toBeVisible({ timeout: 30_000 });
   const pane = page.locator(".react-flow__pane").first();

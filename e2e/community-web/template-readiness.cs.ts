@@ -4,6 +4,7 @@
 //  2. Platform ở ai-admin chọn mẫu: thấy thiếu gì, nút Gán KHÓA; bấm "Bật tính năng cho công ty" + "Tạo nhóm theo gợi ý" ⇒ dùng được ⇒ Gán.
 //  3. Quản trị công ty: "Sao chép để sửa" ⇒ hộp nói mẫu dùng được ⇒ Sao chép ⇒ mở bản riêng ⇒ Lưu và áp dụng không bị chặn.
 // Ảnh chụp: thư mục env E2E_SHOTS_DIR (vắng ⇒ không chụp).
+import { writeFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
 import { approve, finish } from "../_kit/flows";
 import {
@@ -27,7 +28,9 @@ const GROUP = `nhom-c5b-${RUN}`;
 const TENANT_NAME = "Demo Sổ Hợp Tác";
 
 const shot = async (page: Page, name: string) => {
-  if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: false });
+  const body = await page.screenshot({ fullPage: false });
+  await test.info().attach(name, { body, contentType: "image/png" }); // vào report.json (base64) để soát UI sau lượt chạy server
+  if (SHOTS) writeFileSync(`${SHOTS}/${name}.png`, body);
 };
 
 async function prepare(): Promise<void> {
