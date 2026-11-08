@@ -187,6 +187,13 @@ async function main(): Promise<void> {
           key: `e2e-${k}-${sfx}`,
           name: `E2E ${k.toUpperCase()} ${sfx}`,
         });
+    // CR-125 · cr125-subprocess-ui: công ty MỚI cho hành trình «Quy trình con» (khoá `e2e-sub-<hậu tố>`).
+    if (sfx)
+      await provisionExtraJourneyTenant(admin, hubDb, {
+        pw: env("JA_USER_PW"),
+        key: `e2e-sub-${sfx}`,
+        name: `E2E SUB ${sfx}`,
+      });
   } finally {
     await admin.close();
     await hubDb.close();

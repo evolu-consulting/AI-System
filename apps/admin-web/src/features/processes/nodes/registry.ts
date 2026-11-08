@@ -14,8 +14,6 @@ import { SET_EXECUTOR, SET_PATCH, setFromDef, setToDef } from "../lib/set-form";
 import {
   emptySubprocess,
   SUBPROCESS_EXECUTOR,
-  SUBPROCESS_KIND,
-  type SubprocessExecutor,
   subprocessFromDef,
   subprocessToDef,
 } from "../lib/subprocess-form";
@@ -77,7 +75,7 @@ export type FeNode<K extends ExecutorKind = ExecutorKind> = {
 
 const refToDef = (s: StageDraft): Executor => executorToDef(s.executor);
 
-const BASE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
+export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
   agent: {
     kind: "agent",
     menu: [{ id: "agent", section: "advanced", order: 20, patch: { executor: "" } }],
@@ -230,37 +228,18 @@ const BASE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
       return_step: s.approve?.ret ?? null,
     }),
   },
-  // CR-125 · «Quy trình con» — CHỈ cho typecheck (engine đã có); `draftValue = null` ⇒ chưa chọn được. Lát UI (cr125-subprocess-ui) thay.
+  // CR-125 · cr125-subprocess-ui · «Quy trình con» (`core.subprocess`): họ `control` (không rẽ nhánh theo luật). Không `menu`/`labelKey`: nút ở menu "+"
+  // đến từ bảng node (`GET /process-palette`), không phải ô chọn loại bước thường. Nhánh rejected/cancelled nằm ở `wait.branches` của nháp.
   subprocess: {
     kind: "subprocess",
     family: NODE_FAMILY_OF.subprocess,
     labelKey: null,
-    defaults: () => ({}),
-    draftValue: null,
-    draftExecutor: () => "subprocess",
-    toDef: () => ({ kind: "subprocess", def_key: "" }),
+    defaults: () => ({ executor: SUBPROCESS_EXECUTOR, subprocess: emptySubprocess() }),
+    draftValue: SUBPROCESS_EXECUTOR,
+    draftExecutor: () => SUBPROCESS_EXECUTOR,
+    fromDef: (ex) => subprocessFromDef(ex),
+    toDef: (s) => subprocessToDef(s.subprocess, s.wait),
   },
-};
-
-/**
- * CR-125 · cr125-subprocess-ui · "Quy trình con" (`core.subprocess`): kiểu executor `subprocess` do lát engine thêm vào contract. Khi lát engine
- * chưa gộp, `ExecutorKind` chưa có khoá này ⇒ khai riêng ở đây rồi ép kiểu; sau khi gộp, gỡ ép kiểu (tasks.md "Việc còn lại").
- * Họ `control`: không rẽ nhánh theo luật, không sinh ô kết quả riêng. Không có `menu`/`labelKey`: nút trên menu "+" đến từ bảng node
- * (`GET /process-palette`, `core.subprocess`), không phải ô chọn loại bước thường.
- */
-const FE_SUBPROCESS = {
-  kind: SUBPROCESS_KIND,
-  family: "control",
-  labelKey: null,
-  defaults: () => ({ executor: SUBPROCESS_EXECUTOR, subprocess: emptySubprocess() }),
-  draftValue: SUBPROCESS_EXECUTOR,
-  draftExecutor: () => SUBPROCESS_EXECUTOR,
-  fromDef: (ex: SubprocessExecutor) => ({ subprocess: subprocessFromDef(ex) }),
-  toDef: (s: StageDraft) => subprocessToDef(s.subprocess),
-} as unknown as FeNode;
-
-export const FE_NODES = { ...BASE_NODES, subprocess: FE_SUBPROCESS } as {
-  readonly [K in ExecutorKind]: FeNode<K>;
 };
 
 /** Mục registry của executor contract. */

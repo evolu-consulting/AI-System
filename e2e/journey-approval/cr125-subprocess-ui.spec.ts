@@ -1,9 +1,9 @@
-﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-125 · cr125-subprocess-ui · HÀNH TRÌNH "Quy trình con" trên stack thật `playwright.journey.config.ts`, công ty MỚI `e2e-sub-<hậu tố>`:
 // quản trị công ty mở bản sao của quy trình cha ở trình sửa → menu "+ Thêm bước" có "Quy trình con" (kèm mô tả) → chọn "Mua hàng · Phần 2"
 // → panel nói quy trình con CẦN / TRẢ gì → Lưu và áp dụng → canvas có ô (tên, huy hiệu "quy trình con", Xong / Từ chối / Huỷ, liên kết "Mở quy trình con")
 // → bấm liên kết mở đúng quy trình con. Ảnh ô canvas + panel ghi vào docs/specs/cr125-subprocess-ui/.
-// ĐANG CHỜ: chạy trên evotest SAU KHI lát cr125-subprocess-engine gộp (node `core.subprocess` ở bảng node + executor `subprocess` ở hub).
+// Ảnh = outputPath của lượt chạy, sao vào docs/specs/cr125-subprocess-ui/ sau khi chạy evotest.
 import { expect, type Page, test } from "@playwright/test";
 import { apiLogin, assignCompanyFlow } from "../_kit/api";
 import { approve, createLibraryFlow, enableFlowTriggers, finish } from "../_kit/flows";
@@ -24,7 +24,6 @@ const KEY = `e2e-sub-${SFX}`;
 const PARENT = `Mua hàng · Phần 1 ${SFX}`;
 const CHILD = "Mua hàng · Phần 2";
 const CANVAS = { name: "Canvas quy trình" };
-const SHOTS = "docs/specs/cr125-subprocess-ui";
 
 let tenantId = "";
 
@@ -99,7 +98,7 @@ test("1 · quản trị công ty thêm 'Quy trình con', chọn 'Mua hàng · Ph
   await expect(panel.getByTestId("subprocess-chosen")).toContainText(CHILD);
   await expect(panel.getByTestId("subprocess-io")).toContainText("Cần");
   await expect(panel.getByTestId("subprocess-io")).toContainText("Trả về");
-  await panel.screenshot({ path: `${SHOTS}/panel.png` });
+  await panel.screenshot({ path: testInfo.outputPath("panel.png") });
 
   await page.getByRole("button", { name: "Lưu và áp dụng" }).first().click();
   await expect(page.getByRole("alert").filter({ hasText: /SUBPROCESS_/ })).toHaveCount(0);
@@ -116,11 +115,10 @@ test("1 · quản trị công ty thêm 'Quy trình con', chọn 'Mua hàng · Ph
   await expect(node.getByTestId("subprocess-child")).toContainText(CHILD);
   for (const x of ["done", "rejected", "cancelled"])
     await expect(node.getByTestId(`module-exit-${x}`)).toBeVisible();
-  await expect(node.getByTestId("module-exit-done")).toHaveText("Xong");
-  await expect(node.getByTestId("module-exit-rejected")).toHaveText("Từ chối");
-  await expect(node.getByTestId("module-exit-cancelled")).toHaveText("Huỷ");
-  await node.screenshot({ path: `${SHOTS}/canvas-node.png` });
-  testInfo.annotations.push({ type: "shots", description: SHOTS });
+  await expect(node.getByTestId("module-exit-done")).toHaveText("Hoàn tất");
+  await expect(node.getByTestId("module-exit-rejected")).toHaveText("Bị từ chối");
+  await expect(node.getByTestId("module-exit-cancelled")).toHaveText("Đã huỷ");
+  await node.screenshot({ path: testInfo.outputPath("canvas-node.png") });
 
   // liên kết mở đúng quy trình con trong trình sửa
   await node.getByTestId("subprocess-open").click();

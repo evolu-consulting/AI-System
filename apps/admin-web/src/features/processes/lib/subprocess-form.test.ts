@@ -5,7 +5,9 @@ import { collapseModules } from "../components/canvas/module-cluster";
 import type { StageView } from "../components/canvas/stage-view";
 import { hasNodePanel, panelRegistry } from "../modules/panel-registry";
 import "../modules/register-panels";
+import { featureNodeByKey, MODULES } from "@ai/contracts/modules";
 import { draftKindOf, feNodeOf } from "../nodes/registry";
+import { connectPatch } from "./canvas-connect";
 import { emptyStage, stageToDraft, stageToInput } from "./stage-convert";
 import {
   type ChildInput,
@@ -15,7 +17,6 @@ import {
   childReturns,
   childStatus,
   emptySubprocess,
-  SUBPROCESS_EXIT_DECL,
   SUBPROCESS_NODE,
   subprocessErrorKey,
   subprocessFromDef,
@@ -39,16 +40,20 @@ const item = (o: Partial<ProcessDefListItem>): ProcessDefListItem =>
 
 describe("executor ⇄ bản nháp", () => {
   test("đi về giữ def_key + input_map; không ánh xạ ⇒ không gửi input_map", () => {
-    const d = subprocessFromDef({
+    const p = subprocessFromDef({
       kind: "subprocess",
       def_key: "mua-hang-p2",
       input_map: { po_no: "po_no" },
+      branches: [{ on: "rejected", goto_step: 3 }],
     });
+    const d = p.subprocess;
     expect(d).toEqual({ defKey: "mua-hang-p2", inputMap: { po_no: "po_no" } });
-    expect(subprocessToDef(d)).toEqual({
+    expect(p.wait.branches).toEqual([{ on: "rejected", step: 3 }]);
+    expect(subprocessToDef(d, p.wait)).toEqual({
       kind: "subprocess",
       def_key: "mua-hang-p2",
       input_map: { po_no: "po_no" },
+      branches: [{ on: "rejected", goto_step: 3 }],
     });
     expect(subprocessToDef({ defKey: "x", inputMap: {} })).toEqual({
       kind: "subprocess",
@@ -136,9 +141,9 @@ describe("cần gì / trả gì", () => {
     ],
   } as unknown as ProcessDef;
 
-  test("cần = đầu vào khai báo; trả = ô kết quả dưới tên sub.<ô>, không trùng", () => {
+  test("cần = đầu vào khai báo; trả = ô kết quả dưới tên sub_<ô>, không trùng", () => {
     expect(childNeeds(def).map((n) => n.key)).toEqual(["po_no", "note"]);
-    expect(childReturns(def).map((r) => r.key)).toEqual(["sub.received_at", "sub.total"]);
+    expect(childReturns(def).map((r) => r.key)).toEqual(["sub_received_at", "sub_total"]);
     expect(childReturns(def)[0]?.label).toBe("Ngày nhận");
     expect(childNeeds(undefined)).toEqual([]);
   });
@@ -159,7 +164,7 @@ describe("panel + canvas + lỗi", () => {
     expect(hasNodePanel({ key: SUBPROCESS_NODE } as never)).toBe(true);
   });
 
-  test("ô canvas: một stage subprocess thành ô module có đủ ba đầu ra Xong / Từ chối / Huỷ", () => {
+  test("ô canvas: một stage subprocess thành ô module có ba đầu ra của sổ module; Từ chối / Huỷ vẽ cạnh theo branches", () => {
     const v = {
       uid: "s1",
       index: 0,
@@ -172,13 +177,54 @@ describe("panel + canvas + lỗi", () => {
       errorKey: null,
       src: { uid: "s1", step: 0, executor: "subprocess", node: SUBPROCESS_NODE },
     } as unknown as StageView;
-    const exits = SUBPROCESS_EXIT_DECL.map((x) => ({ key: x.key, label: x.label.vi, on: x.on }));
-    const out = collapseModules([v], (k) => (k === SUBPROCESS_NODE ? { exits } : undefined));
+    const decl = featureNodeByKey(MODULES, SUBPROCESS_NODE);
+    const exits = (decl?.exits ?? []).map((x) => ({ key: x.key, label: x.label.vi, on: x.on }));
+    const target = {
+      ...v,
+      uid: "s2",
+      index: 1,
+      step: 2,
+      src: { ...v.src, uid: "s2", step: 2, executor: "agent", node: undefined },
+    } as unknown as StageView;
+    const from = {
+      ...v,
+      src: { ...v.src, wait: { branches: [{ on: "rejected", step: 2 }] } },
+    } as unknown as StageView;
+    const out = collapseModules([from, target], (k) =>
+      k === SUBPROCESS_NODE ? { exits } : undefined,
+    );
     const m = out.views[0]?.module;
-    expect(m?.exits.map((e) => e.label)).toEqual(["Xong", "Từ chối", "Huỷ"]);
+    expect(m?.exits.map((e) => e.key)).toEqual(["done", "rejected", "cancelled"]);
     expect(m?.exits.filter((e) => e.main).map((e) => e.key)).toEqual(["done"]);
+    expect(m?.exits.find((e) => e.key === "rejected")?.to).toEqual(["s2"]); // cạnh thật tới ô đích
+    expect(m?.exits.find((e) => e.key === "cancelled")?.to).toEqual([]);
   });
 
+  test("kéo cổng Từ chối tới bước sau ⇒ ghi wait.branches; Hoàn tất ⇒ nextStep", () => {
+    const st = (uid: string, step: number, executor: string) =>
+      ({
+        uid,
+        step,
+        executor,
+        real: false,
+        ifx: { yes: null, no: null },
+        node: executor === "subprocess" ? SUBPROCESS_NODE : undefined,
+        wait: {},
+      }) as never;
+    const stages = [st("a", 0, "subprocess"), st("b", 1, "agent"), st("c", 2, "agent")];
+    const r = connectPatch(stages, {
+      source: "a",
+      target: "c",
+      sourceHandle: "exit:rejected:rejected",
+    });
+    expect(r).toMatchObject({
+      ok: true,
+      field: "exit",
+      patch: { wait: { branches: [{ on: "rejected", step: 2 }] } },
+    });
+    const done = connectPatch(stages, { source: "a", target: "c", sourceHandle: "exit:done" });
+    expect(done).toMatchObject({ ok: true, field: "next", patch: { nextStep: 2 } });
+  });
   test("mã lỗi quy trình con → khoá i18n; mã khác → null", () => {
     expect(subprocessErrorKey("SUBPROCESS_CYCLE")).toBe("process.admin.apiError.SUBPROCESS_CYCLE");
     expect(subprocessErrorKey("SUBPROCESS_DEPTH")).toBe("process.admin.apiError.SUBPROCESS_DEPTH");

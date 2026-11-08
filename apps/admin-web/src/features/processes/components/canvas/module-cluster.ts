@@ -30,7 +30,9 @@ function exitsOf(
   members: readonly StageView[],
   firstUidAtStep: (step: number) => string | undefined,
 ): ModuleExit[] {
-  const branches = members.find((m) => m.src.executor === "wait_event")?.src.wait.branches ?? [];
+  const branches =
+    members.find((m) => m.src.executor === "wait_event" || m.src.executor === "subprocess")?.src
+      .wait.branches ?? [];
   return decl.map((x) => {
     const to = new Set<string>();
     if (x.on)

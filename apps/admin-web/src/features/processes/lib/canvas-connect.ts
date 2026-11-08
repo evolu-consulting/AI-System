@@ -36,6 +36,8 @@ export const exitHandle = (key: string, on?: readonly string[]): string =>
 
 /** Stage CHỜ của cụm node module bắt đầu ở `index` (các stage liền sau cùng `node`); không phải cụm ⇒ -1. */
 function waitIndexOf(stages: readonly ConnectStage[], index: number): number {
+  // CR-125 · cr125-subprocess-ui · «Quy trình con» là MỘT stage vừa là ô vừa là nơi giữ nhánh rejected/cancelled (`wait.branches`)
+  if (stages[index]?.executor === "subprocess") return index;
   const node = stages[index]?.node;
   if (!node || stages[index]?.executor === "wait_event") return -1;
   for (let j = index + 1; stages[j]?.node === node; j++)

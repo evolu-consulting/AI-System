@@ -13,6 +13,7 @@ import { isIf } from "../../lib/if-form";
 import { draftClusterOf } from "../../lib/module-cluster";
 import { isSet } from "../../lib/set-form";
 import { isStartForm } from "../../lib/start-form";
+import { isSubprocessExecutor } from "../../lib/subprocess-form";
 import { isTool } from "../../lib/tool-form";
 import { isWait, isWaitFamily } from "../../lib/wait-form";
 import { hasNodePanel } from "../../modules/panel-registry";
@@ -160,6 +161,9 @@ function ModuleBody(p: StageFormProps) {
   const node = palette.data?.find((n) => n.key === stage.node);
   if (isWait(stage)) return <StageWait {...p} />;
   if (isWaitFamily(stage)) return <StageTimedWait {...p} />;
+  // CR-125 · cr125-subprocess-ui · «Quy trình con»: một stage, panel riêng ở panelRegistry (chọn quy trình con, nối đầu vào)
+  if (node && isSubprocessExecutor(stage.executor) && hasNodePanel(node))
+    return <NodeConfigPanel {...p} node={node} />;
   // CR-122 · U2f · node có cấu hình riêng (manifest `config`): panel theo `options_path`, chỉ ở stage `config.stage` (stage tool).
   if (
     node &&

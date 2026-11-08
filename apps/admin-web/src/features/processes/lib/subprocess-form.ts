@@ -1,32 +1,17 @@
 // CR-125 · cr125-subprocess-ui · node "Quy trình con" (`core.subprocess`): một bước của quy trình cha CHẠY MỘT QUY TRÌNH KHÁC rồi quay lại.
-// Hình đã thống nhất với lát engine (cr125-subprocess-engine): stage `{ node: "core.subprocess", executor: { kind: "subprocess", def_key, input_map? } }`,
-// đầu ra "done" / "rejected" / "cancelled", kết quả `sub.<field>`. Hợp đồng (zod) do lát engine sở hữu; khi gộp, kiểu cục bộ dưới đây đổi sang
-// kiểu của contract (xem tasks.md "Việc còn lại"). Thuần (không React) để test nhanh.
-import type { ProcessDef, ProcessDefListItem } from "@ai/contracts/hub-admin";
+// Hình chốt với lát engine: stage `{ node: "core.subprocess", executor: { kind: "subprocess", def_key, input_map?, branches? } }`; đầu ra done /
+// rejected / cancelled (rejected + cancelled rẽ theo `branches`, done đi bước kế); kết quả `outcome` + `sub_<trường>`. Thuần (không React).
+import type { ProcessDef, ProcessDefListItem, SubprocessExecutor } from "@ai/contracts/hub-admin";
+import { SUBPROCESS_FIELD_PREFIX } from "@ai/contracts/hub-admin";
+import type { WaitDraft } from "./draft-types";
+import { emptyWait } from "./wait-form";
 
 export const SUBPROCESS_NODE = "core.subprocess";
 export const SUBPROCESS_KIND = "subprocess";
 /** Giá trị ô `executor` của bản nháp. */
 export const SUBPROCESS_EXECUTOR = "subprocess";
-/** Đầu ra của node, theo thứ tự hiện trên canvas (Xong · Từ chối · Huỷ). Nhãn: `process.admin.subprocess.exit.<key>`. */
-export const SUBPROCESS_EXITS = ["done", "rejected", "cancelled"] as const;
-export type SubprocessExit = (typeof SUBPROCESS_EXITS)[number];
 
-/**
- * Đầu ra của ô trên canvas khi sổ MODULES (lát engine) chưa khai `exits` cho `core.subprocess`: Xong là đường đi tiếp; Từ chối / Huỷ là cổng có tên.
- * Khoá `on` chỉ để cổng có `handle` riêng (quy trình con không có stage chờ ⇒ chưa có cạnh nhánh — đích do engine quy định).
- */
-export const SUBPROCESS_EXIT_DECL: readonly {
-  key: SubprocessExit;
-  label: { vi: string; en: string };
-  on?: readonly string[];
-}[] = [
-  { key: "done", label: { vi: "Xong", en: "Done" } },
-  { key: "rejected", label: { vi: "Từ chối", en: "Rejected" }, on: ["rejected"] },
-  { key: "cancelled", label: { vi: "Huỷ", en: "Cancelled" }, on: ["cancelled"] },
-];
-
-/** Mã lỗi mà máy chủ trả khi lưu / chạy node này (khoá i18n `process.admin.apiError.<MÃ>`). */
+/** Mã lỗi mà máy chủ trả khi lưu node này (khoá i18n `process.admin.apiError.<MÃ>`). */
 export const SUBPROCESS_ERRORS = [
   "SUBPROCESS_NOT_FOUND",
   "SUBPROCESS_CYCLE",
@@ -34,12 +19,7 @@ export const SUBPROCESS_ERRORS = [
 ] as const;
 export type SubprocessError = (typeof SUBPROCESS_ERRORS)[number];
 
-/** Kiểu cục bộ của executor (contract thật nằm ở lát engine; gộp xong thì thay bằng `Extract<…, { kind: "subprocess" }>`). */
-export type SubprocessExecutor = {
-  kind: typeof SUBPROCESS_KIND;
-  def_key: string;
-  input_map?: Record<string, string>;
-};
+export type { SubprocessExecutor };
 
 /** Bản nháp: `defKey` rỗng = chưa chọn quy trình con; `inputMap`: đầu vào của quy trình con → nguồn ở quy trình cha. */
 export type SubprocessDraft = { defKey: string; inputMap: Record<string, string> };
@@ -49,19 +29,42 @@ export const emptySubprocess = (): SubprocessDraft => ({ defKey: "", inputMap: {
 export const isSubprocessNode = (node: string | undefined): boolean => node === SUBPROCESS_NODE;
 export const isSubprocessExecutor = (executor: string): boolean => executor === SUBPROCESS_EXECUTOR;
 
-export function subprocessFromDef(ex: SubprocessExecutor): SubprocessDraft {
-  return { defKey: ex.def_key, inputMap: { ...(ex.input_map ?? {}) } };
+/**
+ * Executor → phần nháp. Rẽ theo kết quả (`branches[].on` = rejected | cancelled ⇒ bước `goto_step`) dùng CHUNG khối `wait.branches` của nháp
+ * (cùng dạng `{ on, step }` với `wait_event` của Ký số) ⇒ kéo nối cổng, tính đích bước, đổi số bước đều đi qua đường đã có.
+ */
+export function subprocessFromDef(ex: SubprocessExecutor): {
+  subprocess: SubprocessDraft;
+  wait: WaitDraft;
+} {
+  return {
+    subprocess: { defKey: ex.def_key, inputMap: { ...(ex.input_map ?? {}) } },
+    wait: {
+      ...emptyWait(),
+      ...(ex.branches?.length
+        ? { branches: ex.branches.map((b) => ({ on: b.on, step: b.goto_step })) }
+        : {}),
+    },
+  };
 }
 
-/** Bản nháp → executor; ô ánh xạ trống bị bỏ, không có ánh xạ nào ⇒ không gửi `input_map`. */
-export function subprocessToDef(d: SubprocessDraft | undefined): SubprocessExecutor {
+/** Bản nháp → executor; ô ánh xạ trống bị bỏ; nhánh chưa chọn đích hoặc không phải rejected/cancelled bị bỏ. */
+export function subprocessToDef(
+  d: SubprocessDraft | undefined,
+  wait?: Pick<WaitDraft, "branches">,
+): SubprocessExecutor {
   const map = Object.fromEntries(
     Object.entries(d?.inputMap ?? {}).filter(([k, v]) => k !== "" && v !== ""),
   );
+  const branches: NonNullable<SubprocessExecutor["branches"]> = [];
+  for (const b of wait?.branches ?? [])
+    if (b.step !== null && (b.on === "rejected" || b.on === "cancelled"))
+      branches.push({ on: b.on, goto_step: b.step });
   return {
     kind: SUBPROCESS_KIND,
     def_key: d?.defKey ?? "",
     ...(Object.keys(map).length > 0 ? { input_map: map } : {}),
+    ...(branches.length > 0 ? { branches } : {}),
   };
 }
 
@@ -139,7 +142,7 @@ export function childNeeds(def: Pick<ProcessDef, "inputs"> | undefined): ChildIn
 }
 
 /**
- * Quy trình con TRẢ gì: các ô kết quả của form / bước của nó, ghi vào dữ liệu của cha dưới dạng `sub.<ô>` (engine). Trùng khoá chỉ kể một lần.
+ * Quy trình con TRẢ gì: các ô kết quả của form / bước của nó, ghi vào dữ liệu của cha dưới dạng `sub_<ô>` (engine). Trùng khoá chỉ kể một lần.
  */
 export function childReturns(def: Pick<ProcessDef, "stages"> | undefined): ChildReturn[] {
   const out = new Map<string, ChildReturn>();
@@ -147,7 +150,7 @@ export function childReturns(def: Pick<ProcessDef, "stages"> | undefined): Child
     const ex = s.executor as { kind: string; fields?: readonly { key: string; label?: string }[] };
     for (const f of [...(ex.kind === "form" ? (ex.fields ?? []) : []), ...s.output.fields]) {
       const label = "label" in f && typeof f.label === "string" && f.label !== "" ? f.label : f.key;
-      if (!out.has(f.key)) out.set(f.key, { key: `sub.${f.key}`, label });
+      if (!out.has(f.key)) out.set(f.key, { key: `${SUBPROCESS_FIELD_PREFIX}${f.key}`, label });
     }
   }
   return [...out.values()];
