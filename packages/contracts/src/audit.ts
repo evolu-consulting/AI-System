@@ -2,33 +2,11 @@
 // Hằng khớp `AUDIT_ACTION_VALUES` / `AUDIT_ENTITY_VALUES` của @ai/db (test ở packages/db).
 import { z } from "zod";
 import { IsoDateTime, LIST_Q_MAX, TenantKeySchema, UuidSchema, VersionSchema } from "./common";
+import { AUDIT_ACTIONS, AUDIT_ENTITIES } from "./light";
 import { DateOnlySchema } from "./quotas";
 
-export const AUDIT_ENTITIES = [
-  "tenant",
-  "user",
-  "user_totp",
-  "group",
-  "grant",
-  "entitlement",
-  "feature",
-  "workflow",
-  "command",
-  "secret",
-  "quota",
-  "config",
-] as const;
-export const AUDIT_ACTIONS = [
-  "create",
-  "update",
-  "delete",
-  "lock",
-  "unlock",
-  "grant",
-  "revoke",
-  "restore",
-  "import",
-] as const;
+// CR-125 cr125-bundle-admin · hai hằng định nghĩa ở `./light` (không zod, web tải ban đầu import được); re-export ở đây.
+export { AUDIT_ACTIONS, AUDIT_ENTITIES };
 export const AUDIT_LIMIT_DEFAULT = 50;
 export const AUDIT_LIMIT_MAX = 200;
 export const AUDIT_CURSOR_MAX = 32;

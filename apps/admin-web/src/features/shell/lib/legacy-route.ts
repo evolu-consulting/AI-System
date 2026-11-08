@@ -1,7 +1,6 @@
 // CR-112 · ADM-FR-76 · beforeLoad của route cũ (`/users`…): chuyển tới tab workspace công ty (tra mã → id khi platform_admin gửi `?tenant=`).
 import { redirect } from "@tanstack/react-router";
 import { queryClient } from "@/app/query-client";
-import { tenantOptionsQuery } from "@/features/tenants/api";
 import {
   type LegacyContext,
   type LegacyTab,
@@ -16,6 +15,8 @@ export async function redirectLegacy(tab: LegacyTab, search: Record<string, unkn
   const role = me?.role;
   let options: { id: string; key: string }[] = [];
   if (legacyTenantKey(role, search)) {
+    // Nạp lười: `tenants/api` kéo schema zod (contracts/tenants) — chỉ cần khi có `?tenant=` (cr125-bundle-admin).
+    const { tenantOptionsQuery } = await import("@/features/tenants/api");
     options = await queryClient.ensureQueryData(tenantOptionsQuery).catch(() => []);
   }
   const ctx: LegacyContext = {

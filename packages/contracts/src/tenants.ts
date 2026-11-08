@@ -18,6 +18,7 @@ import {
   UuidSchema,
   VersionSchema,
 } from "./common";
+import { CONTRACTS_PARTNER_CONFIRM_FEATURE, FEATURE_APP_IDS, TENANT_APP_IDS } from "./light";
 import { UserSchema } from "./users";
 
 export const MaxConcurrentSubSchema = z
@@ -91,12 +92,8 @@ export const ProcessRunsMaxSchema = z
   .min(TENANT_PROCESS_RUNS_MAX.min)
   .max(TENANT_PROCESS_RUNS_MAX.max);
 
-/** CR-121 Q-1 · ứng dụng lọc được (đọc cột `admin.features.app`; `core` luôn bật nên không có). */
-export const TENANT_APP_IDS = ["chat", "community", "contracts", "knowledge"] as const;
-/** CR-121 c18 · giá trị cột `admin.features.app` (nguồn duy nhất feature → ứng dụng): + `core` (luôn bật) và `other` (chưa phân app, nhóm "Khác"). */
-export const FEATURE_APP_IDS = ["core", ...TENANT_APP_IDS, "other"] as const;
-/** CR-125 c7 · khoá tính năng "Gửi hợp đồng cho đối tác xác nhận": MỘT chuỗi cho manifest, node, menu hub và màn tính năng admin. */
-export const CONTRACTS_PARTNER_CONFIRM_FEATURE = "contracts-partner-confirm";
+// CR-125 cr125-bundle-admin · TENANT_APP_IDS, FEATURE_APP_IDS, CONTRACTS_PARTNER_CONFIRM_FEATURE định nghĩa ở `./light` (không zod); re-export ở đây.
+export { CONTRACTS_PARTNER_CONFIRM_FEATURE, FEATURE_APP_IDS, TENANT_APP_IDS };
 export const TenantAppSchema = z.enum(TENANT_APP_IDS);
 export type TenantApp = z.infer<typeof TenantAppSchema>;
 
