@@ -1,7 +1,7 @@
 // contract-flow S4 · unit: danh sách "Chờ tôi duyệt" (tên HĐ, sắp theo hạn, quá hạn).
 import { describe, expect, test } from "bun:test";
 import type { MyWorkApproval } from "@ai/contracts/pack-contracts";
-import { approvalRows, approvalTitle } from "./approvals";
+import { approvalRows, approvalTarget, approvalTitle } from "./approvals";
 
 const A = (o: Partial<MyWorkApproval>): MyWorkApproval => ({
   task_id: "t",
@@ -34,5 +34,20 @@ describe("approvals", () => {
     expect(rows[0]).toMatchObject({ due: { late: true }, escalated: true });
     expect(rows[1]?.due?.late).toBe(false);
     expect(approvalRows(undefined, now)).toEqual([]);
+  });
+});
+
+describe("approvalTarget", () => {
+  test("CR-126 · task thuộc run mở trang yêu cầu của run, không có run mở thẻ HĐ", () => {
+    const row = { taskId: "t1", contractId: "c1" };
+    expect(approvalTarget(row, new Map([["t1", "run9"]]))).toEqual({
+      to: "/contracts/requests/$runId",
+      params: { runId: "run9" },
+    });
+    expect(approvalTarget(row, new Map([["x", "run9"]]))).toEqual({
+      to: "/contracts/c/$id",
+      params: { id: "c1" },
+    });
+    expect(approvalTarget(row)).toEqual({ to: "/contracts/c/$id", params: { id: "c1" } });
   });
 });

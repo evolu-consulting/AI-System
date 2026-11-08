@@ -12,7 +12,7 @@ import { approvalRows } from "../lib/approvals";
 
 export function ApprovalsInboxPage() {
   const { t } = useTranslation();
-  const { work, requests, count } = useInbox();
+  const { work, requests, runByTask, count } = useInbox();
   const rows = approvalRows(work.data?.approvals, Date.now());
   const signing = work.data?.signing ?? [];
   const loading = work.isPending || requests.kind === "loading";
@@ -53,7 +53,7 @@ export function ApprovalsInboxPage() {
           )}
           {rows.length > 0 && (
             <Panel>
-              <ApprovalRowList rows={rows} />
+              <ApprovalRowList rows={rows} runByTask={runByTask} />
             </Panel>
           )}
           {requests.kind === "list" && (

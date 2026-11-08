@@ -16,5 +16,9 @@ export function useInbox() {
   const seen = new Set((work.data?.approvals ?? []).map((a) => a.task_id));
   const requests: WaitingView = waitingView(tasks, seen);
   const extra = openTasks(tasks.data, seen).length;
-  return { work, requests, count: waitingOf(work.data).total + extra };
+  // task duyệt thuộc một run ⇒ dòng mở trang yêu cầu của run (cùng dữ liệu đã tải, không truy vấn thêm).
+  const runByTask = new Map(
+    (tasks.data?.items ?? []).map((i) => [i.task.id, i.process_run.id] as const),
+  );
+  return { work, requests, runByTask, count: waitingOf(work.data).total + extra };
 }

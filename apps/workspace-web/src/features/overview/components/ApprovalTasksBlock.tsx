@@ -7,10 +7,16 @@ import { viDate } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { Tag } from "~/components/shared/tag";
 import { useMyApprovals } from "../hooks/use-overview";
-import { type ApprovalRow, approvalRows } from "../lib/approvals";
+import { type ApprovalRow, approvalRows, approvalTarget } from "../lib/approvals";
 import { BlockHead } from "./BlockHead";
 
-export function ApprovalRowList({ rows }: { rows: readonly ApprovalRow[] }) {
+export function ApprovalRowList({
+  rows,
+  runByTask,
+}: {
+  rows: readonly ApprovalRow[];
+  runByTask?: ReadonlyMap<string, string>;
+}) {
   const { t } = useTranslation();
   return (
     <ul data-testid="approval-tasks">
@@ -21,8 +27,7 @@ export function ApprovalRowList({ rows }: { rows: readonly ApprovalRow[] }) {
           className="border-b border-rule-soft last:border-b-0"
         >
           <Link
-            to="/contracts/c/$id"
-            params={{ id: r.contractId }}
+            {...approvalTarget(r, runByTask)}
             className="flex min-w-0 items-center gap-3 px-5 py-3 max-sm:px-4"
           >
             <Tag tone={r.due?.late ? "late" : "act"}>{r.stage}</Tag>

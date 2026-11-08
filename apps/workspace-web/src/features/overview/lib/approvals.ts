@@ -33,3 +33,19 @@ export function approvalRows(
       (y.due ? Date.parse(y.due.at) : Number.POSITIVE_INFINITY),
   );
 }
+
+/** CR-126 · nơi mở của dòng duyệt: task thuộc một run quy trình/yêu cầu ⇒ trang yêu cầu của run (nơi có nút duyệt thật);
+ *  không có run ⇒ thẻ HĐ. `runByTask` = review_tasks.id → process_run.id, dựng cùng lượt từ `GET /me/review-tasks` (không truy vấn thêm). */
+export type ApprovalTarget =
+  | { to: "/contracts/requests/$runId"; params: { runId: string } }
+  | { to: "/contracts/c/$id"; params: { id: string } };
+
+export function approvalTarget(
+  row: Pick<ApprovalRow, "taskId" | "contractId">,
+  runByTask?: ReadonlyMap<string, string>,
+): ApprovalTarget {
+  const runId = runByTask?.get(row.taskId);
+  return runId
+    ? { to: "/contracts/requests/$runId", params: { runId } }
+    : { to: "/contracts/c/$id", params: { id: row.contractId } };
+}
