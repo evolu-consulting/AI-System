@@ -150,9 +150,15 @@ async function actOnWaiting(page: Page): Promise<boolean> {
       .catch(() => undefined);
     if (await submitOpenForm(page)) acted = true;
     else if (await approve.isVisible()) {
-      await approve.click();
-      // một người ở HAI nhóm của dòng cùng duyệt (vd. Giám đốc: Pháp chế + Trưởng bộ phận) ⇒ nút Duyệt hiện lại cho phần nhóm kia: chờ «đã ghi nhận»
-      await expect(page.getByTestId("request-decided")).toBeVisible({ timeout: 30_000 });
+      // nút Duyệt có thể hiện lại ngay (một người ở HAI nhóm của dòng cùng duyệt, hoặc bước kế cũng là việc của mình) ⇒ chờ API quyết định OK
+      const [res] = await Promise.all([
+        page.waitForResponse(
+          (r) => /\/review-tasks\/[^/]+\/decision/.test(r.url()) && r.request().method() === "POST",
+          { timeout: 30_000 },
+        ),
+        approve.click(),
+      ]);
+      expect(res.ok()).toBe(true);
       acted = true;
     }
   }
