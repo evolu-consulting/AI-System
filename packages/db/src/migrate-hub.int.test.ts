@@ -91,6 +91,9 @@ const HUB_TABLES = [
   "ops_events",
   "ops_settings",
   "orchestrator_settings",
+  "partner_email_events", // CR-124 · hộp thư đối tác
+  "partner_links",
+  "partner_mailbox",
   "platform_settings", // CR-122 p22 hub 0115 · cài đặt nền tảng (process.stages_max)
   "process_back_events",
   "process_def_releases", // hub 0068 · thư viện quy trình / CR-118 hub 0087 (routing, slot)
