@@ -1,5 +1,5 @@
 // HUB-FR-113 · U1 · T5 · T9 · T10 · đăng outbox `process_thread_events` thành tin phòng `sender_type='process'` (plan-thread
-// §1, §3). Mỗi sự kiện một tx `system`: khoá run `FOR SHARE` (RA-01, plan §6: run → room) → definer khoá `rooms` → sự
+// §1, §3). Mỗi sự kiện một tx `system`: khoá run `FOR KEY SHARE` (CR-126; RA-01, plan §6: run → room) → definer khoá `rooms` → sự
 // kiện → chèn tin (`id = event.id`, idempotent; FK `process_run_id` đã có khoá run) → `room_fanout_sys` cùng tx ⇒ phát
 // `room.message` + `room.unread` SAU COMMIT. Cùng thứ tự với tx quy trình/cổng (run → … → rooms qua FK sự kiện); tx start
 // (rooms → chèn run mới) không đụng run đã commit. Phòng xoá ⇒ `skipped`, run chạy tiếp (T10).

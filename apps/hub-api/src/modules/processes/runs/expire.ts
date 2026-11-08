@@ -1,7 +1,7 @@
 // HUB-FR-115 · BR-26 · CR-093 · plan-addendum A10/A11 · run hết hạn (`expires_at ≤ now`) THEO TẬP: mỗi lô 100 run trong
 // MỘT tx `system` = 3 câu SQL cố định (khoá + đặt `expired` + huỷ stage + đóng task + cờ còn hàng; tin thread
-// `run_end`; notice `run_finished` + unread) — không mở tx/khoá/truy vấn từng run. `FOR UPDATE SKIP LOCKED`: run đang bị tx khác khoá (đang
-// duyệt…) để lượt sau. Tin thread KHÔNG đăng trong vòng — `thread-poster` (`THREAD_RECONCILE_MS`) đăng. Sự kiện phát
+// `run_end`; notice `run_finished` + unread) — không mở tx/khoá/truy vấn từng run. `FOR NO KEY UPDATE SKIP LOCKED` (CR-126): run đang bị tx khác khoá
+// `FOR UPDATE` (đang duyệt…) để lượt sau; khoá `KEY SHARE` (thread-poster, FK) KHÔNG làm bỏ qua. Tin thread KHÔNG đăng trong vòng — `thread-poster` (`THREAD_RECONCILE_MS`) đăng. Sự kiện phát
 // SAU COMMIT, một pipeline Redis mỗi lô. Không tự duyệt task.
 import { PROCESS_RUN_ACTIVE, RoomProcessPartSchema } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
