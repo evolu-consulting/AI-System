@@ -170,7 +170,12 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
         onSelect={(id) => setSec(id as SectionId)}
       >
         <LoadState loading={loading} error={error} retry={retry} />
-        <SectionPanes sec={sec} owner={owner} appsTenantId={apps.tenantId} />
+        <SectionPanes
+          sec={sec}
+          owner={owner}
+          appsTenantId={apps.tenantId}
+          onGoFlow={() => setSec("flow")}
+        />
         {isDraftSection(sec) && draft && saved && defaults && (
           <fieldset disabled={!owner || saving} className="min-w-0 border-0 p-0">
             {sec === "co" && (

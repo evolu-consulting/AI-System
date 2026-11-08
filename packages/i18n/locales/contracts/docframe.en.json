@@ -8,7 +8,7 @@
       "fileDeal": "File:",
       "noFile": "none",
       "children": "Child documents",
-      "stage": { "not_started": "Not yet effective", "active": "In effect", "expired": "Expired" },
+      "stage": { "not_started": "Not yet effective", "expired": "Expired" },
       "value": "Total ordered (sum of children)",
       "count": "Documents",
       "limit": "Credit limit",

@@ -14,7 +14,6 @@
       "children": "Chứng từ con",
       "stage": {
         "not_started": "Chưa hiệu lực",
-        "active": "Đang hiệu lực",
         "expired": "Hết hiệu lực"
       },
       "value": "Tổng giá trị đã đặt (Σ chứng từ con)",

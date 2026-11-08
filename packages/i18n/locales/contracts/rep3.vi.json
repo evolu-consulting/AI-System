@@ -93,9 +93,7 @@
         "noneAssigned": "Hợp đồng chưa có quy trình duyệt — quản trị công ty chọn tại Công ty › Quy trình",
         "inUse": "Đang dùng",
         "current": "Đang áp dụng: {{name}}",
-        "viewDiagram": "Xem sơ đồ",
-        "hideDiagram": "Ẩn sơ đồ",
-        "diagramUnavailable": "Không xem được sơ đồ của quy trình này",
+        "openFlow": "Xem sơ đồ ở mục Quy trình duyệt",
         "loadFail": "Không tải được dữ liệu."
       },
       "cell": {

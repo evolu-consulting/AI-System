@@ -33,7 +33,13 @@ function AllFlowsLink() {
   );
 }
 
-export default function AppsPane({ tenantId }: { tenantId: string }) {
+export default function AppsPane({
+  tenantId,
+  onGoFlow,
+}: {
+  tenantId: string;
+  onGoFlow: () => void;
+}) {
   const { t } = useTranslation();
   const q = useCapabilities(tenantId);
   const a = (k: string) => t(`contracts.settings.apps.${k}`);
@@ -75,7 +81,7 @@ export default function AppsPane({ tenantId }: { tenantId: string }) {
                 </p>
               )}
               {s.present ? (
-                <SlotCard tenantId={tenantId} slot={s.key} />
+                <SlotCard tenantId={tenantId} slot={s.key} onGoFlow={onGoFlow} />
               ) : (
                 <p
                   role="alert"

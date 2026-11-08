@@ -93,9 +93,7 @@
         "noneAssigned": "This contract type has no approval process — a company admin chooses one in Company › Processes",
         "inUse": "In use",
         "current": "In effect: {{name}}",
-        "viewDiagram": "View diagram",
-        "hideDiagram": "Hide diagram",
-        "diagramUnavailable": "The diagram of this process cannot be viewed",
+        "openFlow": "See the diagram in Approval process",
         "loadFail": "Could not load data."
       },
       "cell": {

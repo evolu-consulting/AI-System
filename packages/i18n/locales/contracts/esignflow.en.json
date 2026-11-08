@@ -14,7 +14,6 @@
         "signer": "Signer: {{who}}",
         "outcome": {
           "pending": "Not started",
-          "waiting": "Waiting for signatures",
           "done": "Signed",
           "declined": "Declined",
           "expired": "Expired",

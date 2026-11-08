@@ -4,12 +4,18 @@ import { useTranslation } from "react-i18next";
 
 const AppsPane = lazy(() => import("./AppsPane"));
 
-export function AppsSection({ tenantId }: { tenantId: string | null }) {
+export function AppsSection({
+  tenantId,
+  onGoFlow,
+}: {
+  tenantId: string | null;
+  onGoFlow: () => void;
+}) {
   const { t } = useTranslation();
   if (!tenantId) return null;
   return (
     <Suspense fallback={<p className="text-dim">{t("contracts.common.loading")}</p>}>
-      <AppsPane tenantId={tenantId} />
+      <AppsPane tenantId={tenantId} onGoFlow={onGoFlow} />
     </Suspense>
   );
 }

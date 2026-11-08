@@ -9,15 +9,18 @@ export function SectionPanes({
   sec,
   owner,
   appsTenantId,
+  onGoFlow,
 }: {
   sec: SectionId;
   owner: boolean;
   /** Có khi người dùng được thấy mục "Ứng dụng & quy trình". */
   appsTenantId: string | null;
+  /** Chuyển sang mục "Quy trình duyệt" (thẻ ở mục Ứng dụng chỉ còn một dòng + liên kết này). */
+  onGoFlow: () => void;
 }) {
   if (sec === "scout") return <ScoutPane />;
   if (sec === "flow") return <FlowCurrentPane owner={owner} />;
   if (sec === "rep") return <ScoringPane owner={owner} />;
-  if (sec === "apps") return <AppsSection tenantId={appsTenantId} />;
+  if (sec === "apps") return <AppsSection tenantId={appsTenantId} onGoFlow={onGoFlow} />;
   return null;
 }

@@ -49,7 +49,9 @@ export function ModuleStepRow({
           {t(
             kind === "partner"
               ? `contracts.approval.module.partner.outcome.${outcome}`
-              : `contracts.approval.module.outcome.${outcome}`,
+              : outcome === "waiting"
+                ? "contracts.esign.pending" // một nhãn "Đang chờ ký" (CR-125 G6, #8)
+                : `contracts.approval.module.outcome.${outcome}`,
           )}
         </p>
         {signer ? (

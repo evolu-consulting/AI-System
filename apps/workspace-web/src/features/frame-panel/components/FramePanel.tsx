@@ -138,7 +138,9 @@ export function FramePanel({ c, write }: { c: ContractDetail; write: boolean }) 
         data-testid="frame-panel"
       >
         <h2 className="text-[15px] font-semibold">{L("children")}</h2>
-        <Tag tone={STAGE_TONE[stage] ?? "grey"}>{L(`stage.${stage}`)}</Tag>
+        <Tag tone={STAGE_TONE[stage] ?? "grey"}>
+          {stage === "active" ? t("contracts.gape.status.active") : L(`stage.${stage}`)}
+        </Tag>
         {write && <AddMenu id={c.id} onAttach={() => setAttach(true)} />}
       </div>
       <div className="flex flex-wrap gap-x-8 gap-y-3 px-5 py-4">
