@@ -4,6 +4,7 @@ import {
   type NotifyExecutor,
   type ProcessDefInput,
 } from "@ai/contracts/hub-admin";
+import { isIsoInstant, viDayOf } from "@ai/contracts/pack-contracts";
 import type { DefIssue } from "../types";
 
 /** Mục kết quả của .md (Hub sinh); mục "Bàn giao" như stage chờ. */
@@ -47,7 +48,8 @@ export function notifyVars(
   const out: Record<string, string> = {};
   for (const f of prior)
     for (const [k, v] of Object.entries(f)) {
-      if (typeof v === "string") out[k] = v;
+      if (typeof v === "string")
+        out[k] = isIsoInstant(v) ? viDayOf(v) : v; // đầu ra giữ mốc đầy đủ; ngày hiện theo giờ VN (CR-125 c1)
       else if ((typeof v === "number" && Number.isFinite(v)) || typeof v === "boolean")
         out[k] = String(v);
     }

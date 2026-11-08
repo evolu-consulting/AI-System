@@ -1,4 +1,4 @@
-// CR-121 D-2 · unit: mỗi mã luật có câu tiếng Việt nói cách sửa + bản Anh; vị trí bước/trường đúng.
+﻿// CR-121 D-2 · unit: mỗi mã luật có câu tiếng Việt nói cách sửa + bản Anh; vị trí bước/trường đúng.
 import { describe, expect, it } from "bun:test";
 import { explainIssue, missingGroupIssues } from "./library-publish.messages";
 
@@ -29,7 +29,7 @@ describe("explainIssue", () => {
   it("lỗi chung (không có bước) và ký số không ở cuối", () => {
     expect(explainIssue({ path: "steps", rule: "STEPS_MAX" }).message).toContain("20 bước");
     expect(explainIssue({ path: "steps.4", rule: "ESIGN_NOT_LAST" }).message).toContain(
-      "Ký số phải ở cuối",
+      "Bước Ký số phải là bước cuối.",
     );
   });
 

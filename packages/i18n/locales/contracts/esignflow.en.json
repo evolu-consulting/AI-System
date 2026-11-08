@@ -89,9 +89,6 @@
       "esign": {
         "status": {
           "pending": "Waiting for approval",
-          "sending": "Sending for signature",
-          "sent": "Sent, awaiting signatures",
-          "completed": "Signed",
           "needs_decision": "Needs action"
         },
         "line": {

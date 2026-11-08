@@ -1,45 +1,40 @@
-// esign-flow · luật thuần bước Ký số của mẫu luồng duyệt + người cụ thể (duyệt/ký): tối đa 1 bước Ký số, phải là bước CUỐI; người ký
+﻿// esign-flow · luật thuần bước Ký số của mẫu luồng duyệt + người cụ thể (duyệt/ký): tối đa 1 bước Ký số, phải là bước CUỐI; người ký
 // công ty `dept_head` cần phòng, `user` cần người; hạn/nhắc trong giới hạn engine. Người cụ thể thuộc tenant + có quyền gói kiểm ở
 // use case (`flowUserIds` ⇒ danh bạ thành viên). Lớp 1: chỉ builtin.
-import {
-  APPROVAL_FLOW_DUE_H,
-  APPROVAL_FLOW_REMIND_H,
-  type ApprovalFlowIssue,
-  type ApprovalFlowRule,
-  type FlowEsignStep,
-  type FlowStep,
-} from "./approval-flow.types";
+import { type EsignStepIssueField, esignStepIssues } from "@ai/contracts/pack-contracts";
+import type { ApprovalFlowIssue, FlowEsignStep, FlowStep } from "./approval-flow.types";
 
-const inRange = (v: number, r: { min: number; max: number }) =>
-  Number.isInteger(v) && v >= r.min && v <= r.max;
+const PATH: Record<EsignStepIssueField, string> = {
+  step: "",
+  signer_group: ".company_signer.department_group_id",
+  signer_user: ".company_signer.user_id",
+  due_h: ".due_h",
+  remind_every_h: ".remind_every_h",
+};
 
-function signerIssues(s: FlowEsignStep, i: number): ApprovalFlowIssue[] {
-  const out: ApprovalFlowIssue[] = [];
-  const add = (f: string, rule: ApprovalFlowRule) => out.push({ path: `steps.${i}.${f}`, rule });
-  const c = s.company_signer;
-  if (c.mode === "dept_head" && !c.department_group_id)
-    add("company_signer.department_group_id", "SIGNER_GROUP_REQUIRED");
-  if (c.mode === "user" && !c.user_id) add("company_signer.user_id", "SIGNER_USER_REQUIRED");
-  if (!inRange(s.due_h, APPROVAL_FLOW_DUE_H)) add("due_h", "DUE_RANGE");
-  if (s.remind_every_h !== null && !inRange(s.remind_every_h, APPROVAL_FLOW_REMIND_H))
-    add("remind_every_h", "REMIND_RANGE");
-  return out;
-}
-
-/** Bước Ký số: tối đa 1 (bước thừa ⇒ `ESIGN_MULTI`), phải là bước cuối (`ESIGN_NOT_LAST`), cấu hình người ký đủ. */
+/** Bước Ký số: tối đa 1 (bước thừa ⇒ `ESIGN_MULTI`), phải là bước cuối (`ESIGN_NOT_LAST`), cấu hình người ký đủ — luật DÙNG CHUNG
+ *  với admin-web (`esignStepIssues` ở `@ai/contracts/pack-contracts`); đây chỉ đổi tên trường sang đường dẫn `steps.i.…`. */
 export function esignIssues(steps: readonly FlowStep[]): ApprovalFlowIssue[] {
   const out: ApprovalFlowIssue[] = [];
-  let seen = 0;
+  let ordinal = 0;
   steps.forEach((s, i) => {
     if (s.kind !== "esign") return;
-    seen += 1;
-    if (seen > 1) out.push({ path: `steps.${i}`, rule: "ESIGN_MULTI" });
-    else if (i !== steps.length - 1) out.push({ path: `steps.${i}`, rule: "ESIGN_NOT_LAST" });
-    out.push(...signerIssues(s, i));
+    ordinal += 1;
+    const c = s.company_signer;
+    for (const x of esignStepIssues(
+      {
+        due_h: s.due_h,
+        remind_every_h: s.remind_every_h,
+        signer_mode: c.mode,
+        hasGroup: !!c.department_group_id,
+        hasUser: !!c.user_id,
+      },
+      { index: i, count: steps.length, ordinal },
+    ))
+      out.push({ path: `steps.${i}${PATH[x.field]}`, rule: x.code });
   });
   return out;
 }
-
 /** Bước Ký số của mẫu (bước cuối) hoặc null. */
 export function esignStepOf(steps: readonly FlowStep[] | null | undefined): FlowEsignStep | null {
   const last = steps?.[steps.length - 1];

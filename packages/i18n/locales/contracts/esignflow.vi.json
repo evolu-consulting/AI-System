@@ -89,9 +89,6 @@
       "esign": {
         "status": {
           "pending": "Chờ duyệt xong",
-          "sending": "Đang gửi ký",
-          "sent": "Đã gửi, chờ ký",
-          "completed": "Đã ký xong",
           "needs_decision": "Cần xử lý"
         },
         "line": {

@@ -1,8 +1,9 @@
-﻿// cf-esign-docusign · luật thuần khối "Ký số" ở chi tiết HĐ: chế độ hiển thị + nút được bấm theo trạng thái + quyền.
-import type {
-  ESignEnvelopeOut,
-  ESignProviderOut,
-  ESignStateOut,
+// cf-esign-docusign · luật thuần khối "Ký số" ở chi tiết HĐ: chế độ hiển thị + nút được bấm theo trạng thái + quyền.
+import {
+  type ESignEnvelopeOut,
+  type ESignProviderOut,
+  type ESignStateOut,
+  esignLabelKey,
 } from "@ai/contracts/pack-contracts";
 
 export type EsignMode =
@@ -87,10 +88,9 @@ function idleView(s: ESignStateOut, write: boolean, had: boolean, demo: boolean)
 
 /** Khoá i18n của dòng trạng thái / gợi ý. */
 export function statusKey(v: EsignView, status: string | undefined): string | null {
-  if (v.mode === "pending") return "contracts.esign.pending";
-  if (v.mode === "signed") return "contracts.esign.signedAt";
-  if (status === "declined") return "contracts.esign.declined";
-  if (status === "voided") return "contracts.esign.voided";
+  if (v.mode === "pending") return esignLabelKey("sent");
+  if (v.mode === "signed") return "contracts.esign.signedAt"; // = nhãn `signed` kèm thời điểm
+  if (status === "declined" || status === "voided") return esignLabelKey(status);
   return null;
 }
 const HINT: Partial<Record<EsignMode, string>> = {

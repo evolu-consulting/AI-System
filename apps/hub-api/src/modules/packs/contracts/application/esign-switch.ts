@@ -1,10 +1,11 @@
-// CR-125 · m4 · MOD-FR-11 · người ký chọn cách ký KHÁC loại phong bì đã gửi (vd gửi bằng DocuSign, chọn Ký thử): giành quyền đổi (MỘT tx:
+﻿// CR-125 · m4 · MOD-FR-11 · người ký chọn cách ký KHÁC loại phong bì đã gửi (vd gửi bằng DocuSign, chọn Ký thử): giành quyền đổi (MỘT tx:
 // `FOR UPDATE` + kiểm còn mở/chưa ai ký + UPDATE có điều kiện giữ lease) ⇒ huỷ ở nhà cung cấp (hụt ⇒ nhả quyền, phong bì cũ vẫn là phong bì
 // sống) ⇒ ghi `voided` + audit ⇒ gửi lại cùng người ký / thứ tự / HẠN CÒN LẠI / nhắc trên cách đã chọn. Gửi lại hụt ⇒ dựng lại trên cách cũ;
 // dựng lại cũng hụt ⇒ bắn `esign.voided` (lý do `resend-failed`) để lượt rời bước chờ, không kẹt. Hai lượt đổi cùng lúc ⇒ đúng MỘT phong bì mới.
 import type { ESignSignerIn } from "@ai/contracts/pack-contracts";
 import type { PackUow, PackWho } from "../../kit/public";
 import { type ESignStatus, isOpen } from "../domain/esign.rules";
+import { isSigned } from "../domain/esign-signer.rules";
 import { ESignFail } from "./esign.helpers";
 import type { EnvelopeRow, ESignProvider, ESignRepo } from "./esign.ports";
 import type { SendNodeOpts } from "./esign-node.usecase";
@@ -68,8 +69,8 @@ export const esignSwitch = (d: EsignSwitchDeps) => {
     d.uow.tenant(who, async (r) => {
       const cur = await r.esign.lockById(e.id);
       if (!cur || !isOpen(cur.status)) throw new ESignFail("ESIGN_STATE", "already-switched");
-      if (cur.signers.some((s) => s.signed_at != null))
-        // vắng khoá (hàng cũ) = chưa ký
+      if (cur.signers.some(isSigned))
+        // một định nghĩa "đã ký" chung (`isSigned`): có mốc ký hoặc trạng thái completed/signed
         throw new ESignFail("ESIGN_STATE", "signing");
       const got = await r.esign.claimSwitch(e.id, now(), ESIGN_SWITCH_LEASE_MIN);
       if (!got) throw new ESignFail("ESIGN_STATE", "switch-in-progress");

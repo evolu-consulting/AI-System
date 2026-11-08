@@ -1,6 +1,6 @@
 // CR-123 U2 (FLOW3-FR-13 · ux-audit 24-26) · mỗi bước của thẻ duyệt hiện đúng 3 dòng ngắn: TRẠNG THÁI · LÝ DO · BƯỚC KẾ (ai cần làm
 // gì). Thuần, không React: trả khoá i18n + tham số; `fmt` định dạng ngày giờ để test không phụ thuộc múi giờ máy.
-import type { ContractApproval } from "@ai/contracts/pack-contracts";
+import { type ContractApproval, esignLabelKey } from "@ai/contracts/pack-contracts";
 import { hoursLeft, type TimelineRow } from "./engine-card";
 
 export type Line = { key: string; vars?: Record<string, string | number> };
@@ -103,7 +103,7 @@ type Esign = NonNullable<ContractApproval["esign"]>;
 
 /** Bước Ký số ⇒ 3 dòng (lý do lỗi nói cách khắc phục; "Gửi lại" chỉ khi `can_resend`). */
 export function esignStatusLines(e: Esign): StatusLines {
-  const state = { key: `${E}.status.${e.status}` };
+  const state = { key: esignLabelKey(e.status) }; // CR-125 c1 · cùng nhãn với khối Ký số (nguồn: phong bì)
   switch (e.status) {
     case "pending":
       return {

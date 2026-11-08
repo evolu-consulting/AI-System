@@ -1,4 +1,4 @@
-// CR-105 · L3: trạng thái soạn Form (danh sách bước tuần tự) của khe `contracts.approval` — chuyển (copy, không import chéo app) từ
+﻿// CR-105 · L3: trạng thái soạn Form (danh sách bước tuần tự) của khe `contracts.approval` — chuyển (copy, không import chéo app) từ
 // contracts-web `features/settings/lib/flow-state.ts`; khác: phòng ban theo MÃ (`*_group_key`), không id (design §1/§5).
 // Thân Form = `slot_body`; Hub biên dịch ra `stages` mỗi lần lưu. Khe hở hợp đồng: tên trường theo mã + dạng bọc `{steps}` (xem `parseSlotBody`).
 
@@ -7,6 +7,7 @@ import {
   APPROVAL_FLOW_DUE_H,
   APPROVAL_FLOW_REMIND_H,
   APPROVAL_FLOW_STEPS_MAX,
+  esignStepIssues,
   type FlowWhen,
 } from "@ai/contracts/pack-contracts";
 import { condIssueCodes, DEFAULT_FIELDS } from "./flow-when";
@@ -260,12 +261,28 @@ function reviewIssues(s: LibReviewStep, i: number, fields: readonly SlotFieldDto
   return [...out, ...whenIssues(s.when, i, fields)];
 }
 
+/** Luật bước Ký số DÙNG CHUNG với hub (`esignStepIssues` ở `@ai/contracts/pack-contracts`); đây chỉ đổi tên trường sang ô của form. */
+const ESIGN_FIELD = {
+  step: "step",
+  signer_group: "company_signer",
+  signer_user: "company_signer",
+  due_h: "due_h",
+  remind_every_h: "remind_every_h",
+} as const;
 function esignIssues(s: LibEsignStep, i: number, n: number): FlowIssue[] {
-  const out = commonIssues(s, i);
-  if (i !== n - 1) out.push({ index: i, field: "step", code: "ESIGN_NOT_LAST" });
+  const out: FlowIssue[] = s.name.trim() ? [] : [{ index: i, field: "name", code: "nameEmpty" }];
   const c = s.company_signer;
-  if (c.mode === "dept_head" && !c.department_group_key)
-    out.push({ index: i, field: "company_signer", code: "SIGNER_GROUP_REQUIRED" });
+  for (const x of esignStepIssues(
+    {
+      due_h: s.due_h,
+      remind_every_h: s.remind_every_h,
+      signer_mode: c.mode,
+      hasGroup: !!c.department_group_key,
+      hasUser: true, // chế độ "người cụ thể" của form luôn chọn từ danh sách; hub kiểm thành viên khi lưu
+    },
+    { index: i, count: n },
+  ))
+    out.push({ index: i, field: ESIGN_FIELD[x.field], code: x.code });
   return out;
 }
 

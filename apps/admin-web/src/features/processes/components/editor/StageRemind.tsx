@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { escalateIssueKey, remindIssueKey } from "../../domain/error-keys";
+import { REMIND_EVERY_H } from "../../domain/limits";
 import { escalateIssues, remindIssue } from "../../domain/remind-rules";
 import { withCurrent } from "../../hooks/use-editor-refs";
 import { SelectField, TextField } from "./Fields";
@@ -48,8 +49,8 @@ export function StageRemind(p: StageFormProps & { skipRemind?: boolean }) {
           id={`${stage.uid}-remind`}
           label={t(`${K}remindEvery`)}
           type="number"
-          min={4}
-          max={168}
+          min={REMIND_EVERY_H.min}
+          max={REMIND_EVERY_H.max}
           value={stage.remind}
           readOnly={readOnly}
           description={t(`${K}remindHint`)}

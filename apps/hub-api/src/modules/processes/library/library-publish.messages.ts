@@ -1,5 +1,7 @@
-// CR-121 D-2 · câu tiếng Việt/Anh "nói cách sửa" cho lỗi kiểm khi xuất bản / gán quy trình thư viện. Thuần, không I/O.
+﻿// CR-121 D-2 · câu tiếng Việt/Anh "nói cách sửa" cho lỗi kiểm khi xuất bản / gán quy trình thư viện. Thuần, không I/O.
 // Mỗi vi phạm `{path, rule}` của khe ⇒ `{step, field, message (vi), message_en}`: `step` đánh số từ 1 như màn hình sửa quy trình.
+import { ESIGN_STEP_TEXT } from "@ai/contracts/pack-contracts";
+import { REMIND_EVERY_H } from "../domain/limits";
 import type { PublishIssue } from "./library-publish.rules";
 
 export type ExplainedIssue = PublishIssue & {
@@ -14,6 +16,11 @@ export type ExplainedIssue = PublishIssue & {
 type Msg = { vi: string; en: string };
 type Ctx = { step: string; field: string; param: string };
 const M = (vi: string, en: string): Msg => ({ vi, en });
+const esignText = (code: keyof typeof ESIGN_STEP_TEXT, step: string): Msg =>
+  M(
+    `${step ? `${step}: ` : ""}${ESIGN_STEP_TEXT[code].vi}`,
+    `${step ? `${step}: ` : ""}${ESIGN_STEP_TEXT[code].en}`,
+  );
 
 const RULES: Record<string, (c: Ctx) => Msg> = {
   STEPS_MAX: () =>
@@ -58,8 +65,8 @@ const RULES: Record<string, (c: Ctx) => Msg> = {
     ),
   REMIND_RANGE: (c) =>
     M(
-      `${c.step}: chu kỳ nhắc phải từ 4 đến 168 giờ — nhập lại hoặc để trống.`,
-      `${c.step}: the reminder interval must be 4 to 168 hours, or empty.`,
+      `${c.step}: chu kỳ nhắc phải từ ${REMIND_EVERY_H.min} đến ${REMIND_EVERY_H.max} giờ — nhập lại hoặc để trống.`,
+      `${c.step}: the reminder interval must be ${REMIND_EVERY_H.min} to ${REMIND_EVERY_H.max} hours, or empty.`,
     ),
   DIFY_WORKFLOW_UNKNOWN: (c) =>
     M(
@@ -76,23 +83,11 @@ const RULES: Record<string, (c: Ctx) => Msg> = {
       `${c.step}: ánh xạ thông tin cho trợ lý AI không khớp — kiểm lại các ô thông tin.`,
       `${c.step}: the assistant input mapping does not match — review the inputs.`,
     ),
-  ESIGN_MULTI: () =>
-    M(
-      "Chỉ được có một bước Ký số — xoá các bước Ký số thừa.",
-      "Only one e-signature step is allowed — remove the extra ones.",
-    ),
-  ESIGN_NOT_LAST: (c) =>
-    M(
-      `${c.step}: bước Ký số phải ở cuối quy trình — kéo bước Ký số xuống cuối.`,
-      `${c.step}: the e-signature step must be last — move it to the end.`,
-    ),
-  SIGNER_GROUP_REQUIRED: (c) =>
-    M(
-      `${c.step}: bước Ký số chưa chọn phòng ban người ký — chọn phòng ban.`,
-      `${c.step}: pick the signer's department.`,
-    ),
-  SIGNER_USER_REQUIRED: (c) =>
-    M(`${c.step}: bước Ký số chưa chọn người ký — chọn một người ký.`, `${c.step}: pick a signer.`),
+  // CR-125 · c1 · câu lỗi bước Ký số = MỘT bộ chung (`ESIGN_STEP_TEXT`) + chỗ bước; không viết lại ở hub.
+  ESIGN_MULTI: () => esignText("ESIGN_MULTI", ""),
+  ESIGN_NOT_LAST: (c) => esignText("ESIGN_NOT_LAST", c.step),
+  SIGNER_GROUP_REQUIRED: (c) => esignText("SIGNER_GROUP_REQUIRED", c.step),
+  SIGNER_USER_REQUIRED: (c) => esignText("SIGNER_USER_REQUIRED", c.step),
   USER_NOT_MEMBER: (c) =>
     M(
       `${c.step}: người được chọn không thuộc công ty hoặc không có quyền ghi — chọn người khác.`,

@@ -1,7 +1,9 @@
-// esign-sweep · luật thuần vòng nền bước Ký số (lớp 1, chỉ builtin): kẹt `sending` quá hạn ⇒ cần quyết SEND_FAILED; phong bì `sent`
+﻿// esign-sweep · luật thuần vòng nền bước Ký số (lớp 1, chỉ builtin): kẹt `sending` quá hạn ⇒ cần quyết SEND_FAILED; phong bì `sent`
 // chưa xong ⇒ nhắc người ký mỗi `remind_every_h` giờ kể từ lần gửi (`esign_at`) hoặc lần nhắc trước; quá `due_h` giờ kể từ lần gửi ⇒
 // chuyển cấp MỘT lần cho lần gửi đó (mốc chuyển cấp cũ hơn `esign_at` ⇒ của lần gửi trước, không tính). Câu quét SQL
 // (`adapters/esign-sweep.repo.ts`) viết lại đúng các vị từ này — sửa một chỗ phải sửa cả hai.
+
+import { isSigned } from "./esign-signer.rules";
 
 const H = 3_600_000;
 
@@ -37,9 +39,8 @@ export type EsignTurnSigner = {
   status: string | null;
   signed_at: string | null;
 };
-/** Đã ký: có `signed_at` hoặc trạng thái người ký `completed`/`signed` (DocuSign) — không phân biệt hoa thường. */
-export const signerDone = (s: EsignTurnSigner): boolean =>
-  s.signed_at != null || ["completed", "signed"].includes((s.status ?? "").toLowerCase());
+/** Đã ký: dùng chung `isSigned` (một định nghĩa cho nhắc ký / đổi cách ký / đầu ra node). */
+export const signerDone = (s: EsignTurnSigner): boolean => isSigned(s);
 
 /** Ai nhận chuông nhắc: có người ký công ty CHƯA ký mà mọi người `order` nhỏ hơn đã ký ⇒ "signer" (tới lượt công ty); ngược lại
  *  (công ty đã ký / chưa tới lượt vì đối tác ký trước) ⇒ "owner" (người phụ trách, "đang chờ đối tác ký"). Không có phong bì mở
