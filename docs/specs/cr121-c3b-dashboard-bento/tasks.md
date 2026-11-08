@@ -33,7 +33,7 @@ Dữ liệu từ `GET /ops/overview` của Hub (`useOpsOverview`, làm mới 60 
 - Ô cũ (Số run 24 giờ, Commands, Workflows, Tenant đang hoạt động, Tenant sắp vượt quota, Agent Forge "Sẽ có khi Agent Hub sẵn sàng") gỡ hẳn, không có doc current để REMOVED (D6). ở bản platform (thuộc nhật ký, đã có trang Nhật ký).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/tong-quan-bento.md
 #### Yêu cầu: Tổng quan platform dạng bento, mỗi ô có số hoặc lý do

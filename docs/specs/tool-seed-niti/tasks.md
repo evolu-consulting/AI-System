@@ -32,7 +32,7 @@ file mật khẩu không lọt log, tenant lệch hình bị từ chối.
 - Điều kiện luật `{departmentIds, contractKinds}` dựng ở MỘT hàm `conditionOf` (seed-niti.rules.ts). Không luật mặc định.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED docs/current/tools/seed-niti.md
 #### Yêu cầu: Nạp tenant khách NiTi Group bằng một lệnh chạy lại được

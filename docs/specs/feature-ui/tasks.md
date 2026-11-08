@@ -33,7 +33,7 @@ Metadata ở một registry: `features/features/lib/feature-meta.ts` + i18n `fea
 - Trạng thái công ty đọc từ `GET /admin/grants/matrix?tenant_id=&limit=1` (đã dùng cho quota), không thêm API.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Danh mục feature nhóm theo app với tên dễ hiểu
@@ -45,7 +45,7 @@ Trạng thái gộp: chưa gộp
 Tab Feature của chi tiết công ty (platform_admin) hiện mỗi app một thẻ: mức Tắt/Xem/Sửa/Quản trị (cộng dồn) và công tắc tính năng thêm; Lưu một lượt cấp/thu hồi entitlement theo diff; bộ không chuẩn hiện mức cao nhất kèm "Không chuẩn" và được chuẩn hoá khi lưu.
 - Kịch bản: khi chọn mức thì tập key = các mức thấp hơn + chính nó; bộ thiếu mức thấp bị nhận là không chuẩn [test: apps/admin-web/src/features/tenants/lib/feature-assign.test.ts » level ↔ keys]
 - Kịch bản: khi đổi mức/công tắc thì diff chỉ gồm cấp/thu hồi cần thiết, không đụng core [test: apps/admin-web/src/features/tenants/lib/feature-assign.test.ts » diffEntitlements]
-- Kịch bản: khi acme có bộ Sửa không chuẩn, chọn Quản trị + bật tính năng thêm rồi Lưu thì DB có đủ 4 entitlement; chuyển Tắt có xác nhận và thu hồi hết [test: e2e/feature-ui.spec.ts » CR-111 · tab Feature của acme]
+- Kịch bản: khi acme có bộ Sửa không chuẩn, chọn Quản trị + bật tính năng thêm rồi Lưu thì DB có đủ 4 entitlement; chuyển Tắt có xác nhận và thu hồi hết [test: e2e/feature-ui.spec.ts]
 
 ## Việc còn lại
 - Chưa merge (chờ điều phối). Ảnh chụp: `.data/cr111/catalog.png`, `tenant.png`.

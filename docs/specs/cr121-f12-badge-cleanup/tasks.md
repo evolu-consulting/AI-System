@@ -30,7 +30,7 @@ Không sửa e2e.
 - Ca đọc dòng "0/0 việc có quy trình" (nay ẩn khi chưa có việc nào tính) và ca tìm chấm số sidebar (không còn).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/trang-thai-badge-thong-nhat.md
 #### Yêu cầu: Trạng thái bật/tắt dùng một kiểu viên thống nhất

@@ -23,5 +23,23 @@ Mục dưới đây thắng nội dung cũ cùng chủ đề ở trên (lát: cr
 #### Yêu cầu: Gán quy trình cho tenant × khe (tập nhiều quy trình) và sửa luật chọn (nguồn: cr118-tenant-settings)
 Ở trang công ty và ngăn "Công ty" của trang app, mỗi khe có khối "Quy trình được gán & luật chọn theo phòng ban": platform_admin gán thêm quy trình đã
 xuất bản, bỏ gán (bị chặn khi còn luật dùng, nêu số luật bị ảnh hưởng) và sửa luật như tenant admin.
-- Kịch bản: platform gán thêm quy trình; bỏ gán quy trình đang được luật dùng ⇒ 409 nêu luật số bị ảnh hưởng [test: e2e/P-a/pf4/tenant-routing.pa.ts » platform gán quy trình vào tập của tenant và bỏ gán quy trình đang được luật dùng bị 409 nêu luật]
+- Kịch bản: platform gán thêm quy trình; bỏ gán quy trình đang được luật dùng ⇒ 409 nêu luật số bị ảnh hưởng [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
 - Kịch bản: số thứ tự luật bị ảnh hưởng lấy từ `details.rules` (priority + 1, bỏ trùng) [test: packages/web-kit/src/routing-rules.test.ts » IN_USE: số thứ tự luật = priority + 1, bỏ trùng, bỏ phần tử sai]
+
+
+## Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr112-rbac-ui).
+
+#### Yêu cầu: Tab Phân quyền theo vai (tạo vai, gán người, Lưu một lượt) (nguồn: cr112-rbac-ui)
+Màn Phân quyền có tab đầu "Vai theo ứng dụng": mỗi app một khối với các vai (mức Quản trị/Sửa/Xem, số người), tạo/sửa/xoá vai tuỳ biến, gán và gỡ người dùng nội bộ; mọi thay đổi là nháp (badge "N thay đổi chưa lưu") và chỉ ghi khi bấm Lưu. platform_admin chọn công ty; tenant_admin chỉ công ty mình.
+- Kịch bản: khi tạo vai "Kế toán HĐ" mức Sửa và gán lan rồi Lưu thì Group + grant read/write + thành viên được ghi một lượt [test: e2e/app-roles.spec.ts » ADM-FR-80 · ADM-FR-82 · platform_admin: 3 vai mặc định không sửa/xoá]
+- Kịch bản: khi người ở hai vai cùng app thì quyền thực tế là mức cao nhất, bỏ nháp đưa về cũ [test: e2e/app-roles.spec.ts » ADM-FR-82 AC2 · an ở 2 vai cùng app (Chỉ xem + Nhân viên)]
+- Kịch bản: khi vai có mức cao hơn trần công ty thì hiện "không hiệu lực" [test: e2e/app-roles.spec.ts » ADM-BR-12 · công ty chỉ có entitlement tới Sửa]
+- Kịch bản: khi tenant_admin vào Phân quyền thì thấy vai công ty mình, gán/gỡ người và xoá vai trống (gỡ người trước rồi xoá) [test: e2e/app-roles.spec.ts » ADM-FR-77 · ADM-FR-80 · ADM-FR-82 · tenant_admin (binh, acme)]
+- Kịch bản: khi lưu gặp 409 VERSION_CONFLICT thì báo vai đã đổi ở nơi khác, tải lại và bỏ nháp [test: e2e/app-roles.spec.ts » ADM-FR-80 · 409 VERSION_CONFLICT: vai đổi ở nơi khác]
+- Kịch bản: khi chỉnh nháp thì chỉ lưu chênh lệch, thứ tự thao tác là tạo ⇒ sửa ⇒ gán/gỡ ⇒ xoá, lỗi dừng lô [test: apps/admin-web/src/features/app-roles/lib/staging.test.ts » thứ tự tạo ⇒ sửa ⇒ gán/gỡ ⇒ xoá]
+
+#### Yêu cầu: Kiểm tra quyền theo app của một người (nguồn: cr112-rbac-ui)
+Từ bảng gán người, "Kiểm tra quyền" cho mức thực tế theo từng app và nguồn: qua vai, "quyền ngoài vai" (Group phòng ban) hoặc cấp lẻ; nguồn vượt trần ghi "không hiệu lực".
+- Kịch bản: khi kiểm tra lan (nhóm phòng ban có contracts-read) thì hiện Xem qua nhóm kèm nhãn "quyền ngoài vai", không có dòng "Qua vai" [test: e2e/app-roles.spec.ts » ADM-FR-82 AC5 · Kiểm tra quyền của lan]
+- Kịch bản: khi dựng giải thích từ effective-access thì tách vai khỏi quyền ngoài vai và lấy mức cao nhất hiệu lực [test: apps/admin-web/src/features/app-roles/lib/effective.test.ts » quyền qua vai + 'quyền ngoài vai' từ Group phòng ban]

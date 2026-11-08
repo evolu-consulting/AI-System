@@ -46,3 +46,13 @@ Khi NOTIFY `config_changed`/`profile_changed` của tenant Y tới trong lúc l�
 #### Yêu cầu: Flow độc lập lọc theo tenant trước giới hạn (nguồn: cr118-r1-fixes)
 Danh sách flow độc lập của capabilities lọc `tenant_id = tenant hỏi hoặc null` trong SQL rồi mới `limit`.
 - Kịch bản: khi tenant khác có > giới hạn flow độc lập thì flow của tenant hỏi vẫn có [test: apps/hub-api/src/modules/capabilities/capabilities.repo.int.test.ts » tenant khác > giới hạn ⇒ flow của tenant hỏi vẫn có]
+
+
+## Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr118-prod-fix).
+
+#### Yêu cầu: Ảnh năng lực của người dùng (`GET /pack/me`) (nguồn: cr118-capabilities; cr118-prod-fix)
+`flags["flow.runtime"]` báo flow runtime của kit (`HUB_FLOW_RUNTIME=on`) bật hay tắt; web chỉ gọi route `/pack/<k>/flow/*` khi cờ bật, tắt ⇒ không có yêu cầu nào (không 404 ở console).
+- Kịch bản: khi runtime tắt thì `flags["flow.runtime"]` = false, bật thì true [test: apps/hub-api/src/modules/capabilities/capabilities.rules.test.ts » cờ flow.runtime: mặc định tắt (false), bật theo đầu vào ⇒ web biết có gọi route "/flow/*" hay không]
+- Kịch bản: khi cờ tắt thì adapter flow của web không gửi yêu cầu nào [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
+- Kịch bản: khi cờ tắt thì danh sách HĐ không gọi /flow/* và không có 404 ở console; bật thì đúng một POST tóm tắt [test: e2e/contracts-web/flow-runtime-off.cw.ts » cờ TẮT ⇒ không yêu cầu /flow/* nào, không 404 ở console]

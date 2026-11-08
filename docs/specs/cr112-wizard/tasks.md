@@ -35,7 +35,7 @@ Wizard thêm công ty 4 bước tại `/tenants/new` (sidebar "+"), "Onboard l�
 - Bước Xem lại làm mới (invalidate) các truy vấn của công ty trước khi hiển thị số liệu.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/wizard-onboard.md
 #### Yêu cầu: Wizard thêm công ty 4 bước và Onboard lại (ADM-FR-79)
@@ -51,7 +51,7 @@ Wizard `/tenants/new` có 4 bước Thông tin → Ứng dụng & Gói → Phân
 Workspace có tab Tổng quan chỉ đọc (số người dùng, ứng dụng đang bật, số vai, quota tháng run/token); tenant_admin thấy thêm tab Quota rút gọn chỉ đọc, không tiền, không gọi route chỉ-platform.
 - Kịch bản: khi tenant_admin mở tab Quota thì thấy mức dùng run/token so với giới hạn, không có ô nhập, không có USD và không gọi daily-limits/grants-matrix/packs [test: e2e/cr112-wizard.spec.ts » ADM-FR-77 AC4 · tenant_admin: tab Quota rút gọn chỉ đọc (run/token, không tiền), không gọi route chỉ-platform]
 - Kịch bản: khi tóm tắt công ty thì chỉ app đang bật được liệt kê kèm mức cao nhất [test: apps/admin-web/src/features/tenants/lib/overview.test.ts » chỉ liệt kê app đang bật, kèm mức cao nhất, app Tắt và core bị bỏ]
-- Kịch bản: khi tenant_admin xem workspace thì thấy thêm tab Tổng quan và Quota [test: apps/admin-web/src/features/tenants/lib/workspace-tabs.test.ts » tenant_admin thấy overview/info/features/users/groups/partners/access/agents/quota (Quota rút gọn), tab chỉ-platform trên URL ⇒ info]
+- Kịch bản: khi tenant_admin xem workspace thì thấy thêm tab Tổng quan và Quota [test: apps/admin-web/src/features/tenants/lib/workspace-tabs.test.ts]
 
 ## Việc còn lại
 - e2e có sẵn chịu ảnh hưởng (cr112-e2e-fix): `tenants.spec` (tab đầu giờ là Tổng quan; sau dialog tạo công ty đích là `/tenants/new?tenant=…&step=2`, nút "Tiếp tục cấu hình"), `cr112-nav.spec` (tenant_admin giờ CÓ tab Quota).

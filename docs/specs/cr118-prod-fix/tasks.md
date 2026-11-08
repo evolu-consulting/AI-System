@@ -31,13 +31,13 @@ e2e `e2e/deployed` trên prod (3c66d953) có 2 ca đỏ:
 - Tranh chấp test (15-user-bugs.deployed.ts:447): heading mới = «Quy trình duyệt đang dùng: …» (`flow-current-title`), mở bằng nút «Quy trình duyệt» trong hộp Cài đặt; test cần khớp /^Quy trình duyệt đang dùng/.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/nang-luc.md
 #### Yêu cầu: Ảnh năng lực của người dùng (`GET /pack/me`) (nguồn: cr118-capabilities)
 `flags["flow.runtime"]` báo flow runtime của kit (`HUB_FLOW_RUNTIME=on`) bật hay tắt; web chỉ gọi route `/pack/<k>/flow/*` khi cờ bật, tắt ⇒ không có yêu cầu nào (không 404 ở console).
 - Kịch bản: khi runtime tắt thì `flags["flow.runtime"]` = false, bật thì true [test: apps/hub-api/src/modules/capabilities/capabilities.rules.test.ts » cờ flow.runtime: mặc định tắt (false), bật theo đầu vào ⇒ web biết có gọi route "/flow/*" hay không]
-- Kịch bản: khi cờ tắt thì adapter flow của web không gửi yêu cầu nào [test: apps/sohoptac-web/src/platform/flow/adapters/http.test.ts » cờ runtime tắt (/pack/me flags flow.runtime = false) ⇒ view/summary trả null, KHÔNG yêu cầu mạng nào (không 404 ở console)]
+- Kịch bản: khi cờ tắt thì adapter flow của web không gửi yêu cầu nào [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
 - Kịch bản: khi cờ tắt thì danh sách HĐ không gọi /flow/* và không có 404 ở console; bật thì đúng một POST tóm tắt [test: e2e/contracts-web/flow-runtime-off.cw.ts » cờ TẮT ⇒ không yêu cầu /flow/* nào, không 404 ở console]
 
 ## Việc còn lại

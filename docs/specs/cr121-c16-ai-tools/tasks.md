@@ -39,7 +39,7 @@ unit `features/ai-tools/lib/ai-tools.test.ts`, `tenants/lib/{workspace-tabs,work
 4. Breadcrumb "Hệ thống › Công cụ AI" như artboard; link Hệ thống chờ c22.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Công cụ AI — danh sách gộp + bật/tắt Dify theo công ty

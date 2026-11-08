@@ -26,7 +26,7 @@ phụ thuộc: cr121-c1b (khuôn danh sách), cr121-c2 (trang chi tiết công t
 - Tiêu đề trang + caption bảng đổi "Tenants" thành "Công ty"/"Companies" (i18n), e2e đổi theo.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/tenant-user.md
 #### Yêu cầu: Danh sách Công ty theo khuôn danh sách chung

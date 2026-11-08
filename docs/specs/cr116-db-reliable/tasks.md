@@ -33,7 +33,7 @@ phụ thuộc: cr116-bench-apps (đo Vòng 2)
 - Log mỗi lần thử lại: `level=warn msg=db.tx.retry reason=… code=… attempt=… backoff_ms=…` (tắt dưới NODE_ENV=test; app thay bằng `setTxRetryObserver`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED platform/giao-dich-db.md
 #### Yêu cầu: Transaction chịu được mất kết nối Postgres (CR-116)

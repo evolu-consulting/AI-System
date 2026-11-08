@@ -47,7 +47,7 @@ Công cụ vận hành `tools/scripts/src/tenant-purge.ts --tenant <uuid|key|tê
   `session_replication_role` (sẽ tắt cả FK).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/tenant-user.md
 #### Yêu cầu: Xoá sạch tenant bằng công cụ vận hành

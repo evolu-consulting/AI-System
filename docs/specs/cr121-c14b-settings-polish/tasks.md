@@ -28,7 +28,7 @@ Không: "Gói + Đổi gói" (chưa có gói thương mại; giữ ô hạn mứ
 - Chưa có "Gói + Đổi gói" (xem trên). Banner khoá nằm trong tab Cài đặt, chưa ở đầu mọi tab. Chưa có lý do khoá riêng (API không lưu lý do), chỉ ghi người thao tác gần nhất.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/cong-ty-cai-dat.md
 #### Yêu cầu: Tab Cài đặt có thanh lưu chung, chép mã và banner khoá

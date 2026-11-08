@@ -29,7 +29,7 @@ Không sửa e2e. Không đổi dữ liệu seed.
 - Ca đọc `flows-app-off-*`/"Công ty chưa dùng …" ở hàng việc (nay chỉ ở hàng nhóm: `flows-app-off-note`), ca đọc "Đang dùng mặc định hệ thống (…)" ở hàng (nay viên "Mặc định", câu đầy đủ ở `title`), ca đọc câu "Mỗi việc dùng một quy trình lấy từ Thư viện" (nay ở tooltip ⓘ `flows-lead-info`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/cong-ty-quy-trinh-gon.md
 #### Yêu cầu: Bảng Quy trình của công ty ít chữ

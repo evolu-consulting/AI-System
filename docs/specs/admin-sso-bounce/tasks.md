@@ -33,7 +33,7 @@ Nguyên nhân (đọc code):
 - Mở tab mới bằng `window.open` không `noopener` rồi `opener = null` (có `noopener` thì luôn trả null, không biết popup bị chặn).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Link từ admin-web sang app khác giữ phiên

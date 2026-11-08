@@ -33,7 +33,7 @@ Không đụng DLC. VAPID (`vapid_private_key`, `HUB_VAPID_*`) giữ nguyên (ng
 - Secret sai định dạng: `mailConfigReader` bật cờ trong tiến trình (`lib/mail-config-state.ts`, mã `mail_config_invalid`, không giá trị); check `notify_config` đọc cờ ⇒ warn "Cấu hình mail không đọc được — tạo lại secret" (cờ chỉ có sau lần gửi/đọc đầu của instance đó). Không giải mã trong check. Thiếu `hubSecretsKey` khi có `mailSeed` ⇒ log warn `notify_mail_secret_seed_skipped` code `hub_secrets_key_missing`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/cau-hinh-gui-mail-mot-nguon.md
 #### Yêu cầu: Cấu hình gửi mail chỉ có một nguồn là kho secret của Hub

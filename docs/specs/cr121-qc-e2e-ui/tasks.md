@@ -28,9 +28,9 @@ evotest e2e jobs root-0/1/2, ops, pm-checklist-pm (-Dirty).
 - `features/commands` (CommandsPage, list/*) không còn route nào dùng — mã chết cần dọn (D6), ngoài lát này.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Công ty ở sidebar đưa quản trị công ty vào thẳng công ty của mình
 Quản trị công ty (tenant_admin) bấm Công ty ở sidebar thì vào workspace công ty mình, không thấy danh sách công ty.
-- Kịch bản: khi binh (tenant_admin) bấm Công ty thì mở /tenants/<công ty acme> [test: e2e/auth.spec.ts » ADM-FR-01 · BR-05 · binh (tenant_admin) vào khung: main + Tổng quan (region 'Users đang hoạt động', M4) · menu phẳng CR-121 c10 Tổng quan · Công ty (vào thẳng công ty mình) · Hệ thống, không có Ứng dụng/Công cụ AI/Import-Export]
+- Kịch bản: khi binh (tenant_admin) bấm Công ty thì mở /tenants/<công ty acme> [test: e2e/auth.spec.ts]

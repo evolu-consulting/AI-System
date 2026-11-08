@@ -27,14 +27,14 @@ Không sửa trang đích, API, DLC. Perf: không.
 - Bẫy tenant_admin: Chi phí (`/usage` ép tenant mình, tenant khác 404), Góp ý (service ép tenant mình), Nhật ký (`requireRole` cả hai vai, tenantSummary ẩn chi tiết nội bộ) đã giới hạn công ty ở API. `/sources` API/trang cho phép tenant_admin nhưng brief chỉ cho platform_admin thấy trong hub; chưa kiểm sâu phạm vi công ty của Nguồn — ghi bẫy.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Màn Hệ thống gom lối vào quản trị chung
 `/system` hiển thị thẻ lối vào theo vai từ một registry: platform_admin thấy Chi phí · Nhật ký · Góp ý · Tình trạng hệ thống · Secrets · Nguồn · Bước DLC · Import/Export; tenant_admin thấy Chi phí · Nhật ký · Góp ý và sidebar có mục Hệ thống.
-- Kịch bản: khi tenant_admin xem registry thì chỉ có Chi phí, Nhật ký, Góp ý [test: apps/admin-web/src/features/system/lib/registry.test.ts » tenant_admin chỉ thấy Chi phí · Nhật ký · Góp ý, member không thấy gì]
-- Kịch bản: khi platform_admin xem registry thì thấy đủ 8 mục [test: apps/admin-web/src/features/system/lib/registry.test.ts » platform_admin thấy đủ 8 mục]
-- Kịch bản: khi tenant_admin mở admin thì sidebar có Hệ thống [test: apps/admin-web/src/features/shell/lib/nav.test.ts » tenant_admin: Tổng quan · Công ty (+ Quy trình khi engine bật) · Hệ thống]
+- Kịch bản: khi tenant_admin xem registry thì chỉ có Chi phí, Nhật ký, Góp ý [test: apps/admin-web/src/features/system/lib/registry.test.ts]
+- Kịch bản: khi platform_admin xem registry thì thấy đủ 8 mục [test: apps/admin-web/src/features/system/lib/registry.test.ts]
+- Kịch bản: khi tenant_admin mở admin thì sidebar có Hệ thống [test: apps/admin-web/src/features/shell/lib/nav.test.ts]
 - Kịch bản: khi tenant_admin bấm Hệ thống rồi Chi phí thì vào /usage [test: e2e/cr121-c22-system.spec.ts » CR-121 · tenant_admin: Hệ thống → Chi phí, chỉ thấy các mục của công ty mình]
 
 ## Việc còn lại

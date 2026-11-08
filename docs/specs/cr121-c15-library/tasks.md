@@ -43,7 +43,7 @@ Khác biệt còn lại (chờ điều phối duyệt):
 - Giữ `?tenant=` là URL cũ duy nhất; bộ lọc mới `usedBy`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/thu-vien-quy-trinh-bang.md
 #### Yêu cầu: Bảng Thư viện quy trình theo artboard Library (CR-121 R5)

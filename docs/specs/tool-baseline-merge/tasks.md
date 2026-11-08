@@ -24,7 +24,7 @@ Unit `baseline.rules.test.ts`, `slice-rebase.test.ts`. Perf: không.
 - So sánh theo điểm mã, không theo locale, để cùng kết quả mọi máy.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED docs/current/platform/baseline-merge.md
 #### Yêu cầu: Baseline ranh giới ghi ổn định

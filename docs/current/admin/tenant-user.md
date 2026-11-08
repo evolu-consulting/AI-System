@@ -39,3 +39,39 @@ Logic admin-api không đổi.
 - Kịch bản: khi đối tác đổi mật khẩu bắt buộc qua web gộp thì nhận cookie `ai_rt_contracts` (không `ai_rt_community`) [test: apps/admin-api/src/modules/auth/auth.unified-web.int.test.ts » đối tác lần đầu qua web gộp]
 - Kịch bản: khi đăng xuất web gộp thì refresh `contracts` bị từ chối, phiên `chat` vẫn refresh được [test: apps/admin-api/src/modules/auth/auth.unified-web.int.test.ts » đăng xuất xoá một phiên]
 - Kịch bản: khi redeem mã SSO bằng `tenant_key` của công ty khác thì bị từ chối [test: apps/admin-api/src/modules/auth/auth.unified-web.int.test.ts » chéo tenant]
+
+
+## Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: auth-refresh-reload, cr121-c3c-tenants-list, cr121-q1-app-filter-contract-label, tool-tenant-purge).
+
+#### Yêu cầu: Refresh token xoay vòng có ân hạn 30 s (không đăng xuất khi tải lại trang) (nguồn: auth-refresh-reload)
+Dùng lại refresh token vừa xoay trong ≤ 30 s (phản hồi mang cookie mới bị mất khi tải lại trang, hoặc hai tab refresh song song) được cấp một token thay thế (200); chuỗi luôn chỉ có MỘT token sống: lá kế nhiệm chưa dùng bị thu hồi và thay bằng lá mới. Nếu lá kế nhiệm đã được dùng, hoặc quá 30 s, hoặc token bị thu hồi vì lý do khác ⇒ 401 và thu hồi cả chuỗi (phát hiện đánh cắp). Chuỗi đã đăng xuất/khoá thì không được cấp lại. Đăng xuất thu hồi cả chuỗi.
+- Kịch bản: khi dùng lại token đã xoay trong 30 s thì 200 và chỉ còn một token sống [test: apps/admin-api/src/modules/auth/auth.service.int.test.ts » ADM-FR-02 · xoay: dùng lại token cũ ≤ 30 s → 200 và chỉ còn MỘT lá sống, lá chưa dùng bị thay, sau đó lá mới vẫn xoay được]
+- Kịch bản: khi dùng lại token đã xoay quá 30 s thì 401 và thu hồi cả chuỗi [test: tests/acceptance/M1/auth-refresh.int.test.ts » ADM-FR-02 · M1-AC04 · reuse (> 30 s) → 401 INVALID_REFRESH_TOKEN, thu hồi cả chuỗi, token mới cũng chết, cookie bị xoá]
+- Kịch bản: khi kẻ trộm phát lại token cũ trong 30 s thì lá của chủ bị thu hồi và chủ trình lá bị thay làm thu hồi cả chuỗi [test: tests/acceptance/M1/auth-refresh.int.test.ts » ADM-FR-02 · M1-R07 · kẻ trộm phát lại token cũ ≤ 30 s → lá của chủ bị thu hồi, chỉ một lá sống, chủ trình lá bị thay → thu hồi cả chuỗi]
+- Kịch bản: khi chủ đã dùng lá kế nhiệm rồi bản sao token cũ phát lại thì thu hồi cả chuỗi [test: tests/acceptance/M1/auth-refresh.int.test.ts » ADM-FR-02 · M1-R07 · chủ đã dùng lá kế nhiệm rồi bản sao token cũ phát lại ≤ 30 s → 401, thu hồi cả chuỗi, lá của chủ cũng chết]
+- Kịch bản: khi nhiều refresh song song cùng cookie thì tất cả thành công và chỉ còn đúng một token sống [test: tests/acceptance/M1/auth-refresh.int.test.ts » ADM-FR-02 · M1-R07 · 5 refresh song song cùng cookie → cả 5×200 và cuối cùng đúng MỘT lá sống, không ai bị thu hồi chuỗi]
+- Kịch bản: khi đã đăng xuất thì token cũ trong ân hạn không được cấp lại [test: tests/acceptance/M1/auth-refresh.int.test.ts » ADM-FR-02 · M1-R07 · đã đăng xuất thì token cũ trong ân hạn KHÔNG được cấp lại (không sống lại phiên)]
+- Kịch bản: khi reuse ở tenant A thì chuỗi tenant B không bị đụng và token B chỉ cấp phiên B [test: apps/admin-api/src/modules/auth/auth.service.int.test.ts » ADM-FR-02 · cô lập tenant: reuse ở tenant A không đụng chuỗi tenant B, token B trong ân hạn chỉ cấp phiên B, B bị khoá → 401]
+- Kịch bản: khi tải lại trang lúc phản hồi refresh bị huỷ thì lần tải sau vẫn đăng nhập [test: e2e/journey-approval/refresh-reload.ja.ts » 1 · phản hồi refresh bị huỷ lúc tải lại ⇒ lần tải sau vẫn đăng nhập (token cũ được cấp lại trong ân hạn)]
+
+#### Yêu cầu: Danh sách Công ty theo khuôn danh sách chung (nguồn: cr121-c3c-tenants-list)
+Trang `/tenants` có tiêu đề + số đếm, nút "Thêm công ty", phễu lọc chỉ icon (Trạng thái) với chip có nút xoá và dòng "n / tổng"; bấm hàng mở ngăn tóm tắt (mã, số người dùng, ứng dụng đang bật, trạng thái) có liên kết "Mở trang chi tiết" tới tab Hồ sơ.
+- Kịch bản: khi chọn Đã khoá trong phễu thì hiện chip "Trạng thái: Đã khoá" và "n / tổng" giảm; bỏ chip thì đủ lại [test: e2e/cr121-tenants-list.spec.ts » CR-121 · /tenants phễu lọc Đã khoá cho chip và n / tổng, bỏ chip thì đủ lại]
+- Kịch bản: khi bấm hàng acme thì mở ngăn tóm tắt và "Mở trang chi tiết" dẫn tới tab Hồ sơ [test: e2e/cr121-tenants-list.spec.ts » CR-121 · /tenants bấm hàng acme mở ngăn tóm tắt và Mở trang chi tiết tới tab Hồ sơ]
+
+#### Yêu cầu: Lọc danh sách Công ty theo Ứng dụng (nguồn: cr121-q1-app-filter-contract-label)
+Phễu lọc của `/tenants` có nhóm "Ứng dụng" (Chat AI, Cộng đồng, Sổ Hợp Tác, Tri thức); mỗi hàng hiện các ứng dụng đang bật bằng nhãn nghiệp vụ. API `GET /admin/tenants?app=` lọc bằng entitlement còn hiệu lực và trả `apps` trong cùng câu SQL.
+- Kịch bản: khi lọc Sổ Hợp Tác thì chỉ còn công ty đang bật ứng dụng đó, bỏ chip thì đủ lại [test: e2e/cr121-tenants-list.spec.ts » CR-121 · /tenants lọc Ứng dụng Sổ Hợp Tác chỉ còn công ty đang bật, cột Ứng dụng hiện nhãn nghiệp vụ]
+- Kịch bản: khi gọi API với `app=contracts` thì bỏ qua entitlement đã thu hồi và feature ẩn, `apps` mỗi hàng đã khử trùng [test: apps/admin-api/src/modules/tenants/tenants.list-app.int.test.ts]
+
+#### Yêu cầu: Xoá sạch tenant bằng công cụ vận hành (nguồn: tool-tenant-purge)
+Người vận hành xoá toàn bộ dữ liệu của một tenant (mọi bảng có tenant_id ở mọi schema, bảng allowlist, hàng tenant, file FileBox)
+bằng `tenant-purge.ts`; mặc định chạy thử, `--apply` cần `--confirm` đúng tên; tenant platform và bảng lạ chưa khai bị từ chối;
+một transaction, cache bỏ tenant qua bump + NOTIFY, audit platform ghi người/lúc/tenant/số hàng.
+- Kịch bản: khi chạy không có --apply thì in số hàng theo bảng và không xoá gì [test: tools/scripts/src/tenant-purge.int.test.ts » chạy thử: in số hàng theo bảng, không xoá gì (DB + FileBox)]
+- Kịch bản: khi chọn tenant platform hoặc --confirm sai thì từ chối [test: tools/scripts/src/tenant-purge.int.test.ts » từ chối tenant platform và --confirm sai]
+- Kịch bản: khi có bảng lạ tham chiếu dữ liệu tenant chưa khai thì kế hoạch FAIL [test: tools/scripts/src/tenant-purge.int.test.ts » bảng lạ tham chiếu dữ liệu tenant (FK hoặc cột *tenant*) ⇒ kế hoạch FAIL]
+- Kịch bản: khi --apply thì tenant còn 0 hàng ở mọi bảng tenant_id, tenant khác y nguyên, có audit platform, file FileBox bị xoá [test: tools/scripts/src/tenant-purge.int.test.ts » --apply: A còn 0 hàng ở mọi bảng tenant_id, B y nguyên, audit platform + config_version tăng, FileBox của A bị xoá]
+- Kịch bản: khi chạy lại sau khi tenant đã mất thì chỉ dọn FileBox, không lỗi [test: tools/scripts/src/tenant-purge.int.test.ts » chạy lại khi tenant đã mất ⇒ chỉ dọn FileBox (idempotent), không lỗi]
+- Kịch bản: khi tên trùng nhiều tenant thì từ chối [test: tools/scripts/src/tenant-purge.rules.test.ts » tên trùng hoặc tenant platform (key/platform_admin) ⇒ từ chối]

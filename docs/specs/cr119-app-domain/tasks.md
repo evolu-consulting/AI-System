@@ -29,7 +29,7 @@ Không đổi đường dẫn SPA/cổng/compose/mã app, không migration, khô
 > Cập nhật 2026-11-05: cờ S2_APP_HOST_LIVE và host sohoptac đã bị bỏ — xem docs/specs/cr119-drop-sohoptac/tasks.md (Delta thay thế UW-DEP-05/06).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED deploy/cr119-app-domain.md
 #### Yêu cầu: UW-DEP-04 Host trung tính app.<d> phục vụ web gộp

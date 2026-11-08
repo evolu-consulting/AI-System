@@ -27,7 +27,7 @@ Trang con, ngăn trượt dùng chung, route, API. Không sửa web-kit (PrefsPa
 - **Superseded (2026-11-06):** "Cấu trúc nav giữ nguyên" không còn đúng — nav đổi thành 6 mục phẳng theo `docs/specs/cr121-c/spec.md` R1 (lát c10), có đổi `nav.test.ts`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/khung-giao-dien.md
 #### Yêu cầu: Giao diện sáng/tối chọn ở menu tài khoản

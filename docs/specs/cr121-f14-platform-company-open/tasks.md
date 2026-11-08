@@ -30,7 +30,7 @@ CHƯA chụp/soát ảnh bằng mắt: môi trường agent không có biến m�
 Thêm ca platform_admin: Công ty › Quy trình ⇒ "Mở trình sửa" (bản riêng) và bấm lượt ở "Đang chạy" mở được (URL có `?company=`). Cột "Dùng bởi" không còn chữ "Chưa công ty nào dùng"/"Mặc định cho công ty chưa chọn" (nay "—"/viên Mặc định).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/platform-mo-ban-rieng-cong-ty.md
 #### Yêu cầu: platform_admin mở được bản riêng và lượt chạy của công ty từ mọi lối vào (CR-121 R3/R8)

@@ -31,7 +31,7 @@ Không sửa e2e. Dòng tóm tắt "x/y việc có quy trình" của c14 bỏ th
 - Trước: `…\scratchpad\uat-cr121c\02b-ung-dung-platform.png`; sau: `…\scratchpad\uat-cr121c\f11\shots\02b-ung-dung-platform.png`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/cong-ty-ung-dung-gon.md
 #### Yêu cầu: Tab Ứng dụng gọn và nhất quán

@@ -157,3 +157,13 @@ người tải lên; còn lại 404 giống hệt. Luôn `attachment` (ảnh ras
 - Kịch bản: khi thành viên cùng tenant hoặc đối tác trong audience tải thì 200 kèm attachment + nosniff [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] thành viên cùng tenant + đối tác trong audience tải được: attachment + nosniff]
 - Kịch bản: khi đối tác không thấy bài hoặc bài của đối tác khác thì 404 [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] đối tác không thấy bài ⇒ 404; bài đối tác khác ⇒ 404; chủ quản thấy bài đối tác]
 - Kịch bản: khi tenant khác hoặc tệp chưa gắn bài của người khác thì 404 [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] tenant khác ⇒ 404; tệp chưa gắn bài của người khác ⇒ 404; id rác ⇒ 404]
+
+
+## Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr120-one-shell).
+
+#### Yêu cầu: COM-FR-43 Link sang Sổ Hợp Tác là link trong app, cách ly đối tác bằng route + chunk (nguồn: cr118-spec; cr120-one-shell)
+Nhóm Sổ Hợp Tác trong menu trái là link trong app (`<Link>`), do manifest module contracts đóng góp và chỉ có khi gói contracts bật; không còn menu/topbar riêng
+của Community.
+- Kịch bản: khi chủ quản có quyền thì nhóm Sổ Hợp Tác có đúng 4 link trong app, không biểu tượng ngoài [test: e2e/community-web/shell.cm.ts » chủ quản có quyền (Admin)]
+- Kịch bản: khi là đối tác hoặc thành viên không có quyền contracts thì DOM không có nhóm/đường dẫn Sổ Hợp Tác [test: e2e/community-web/shell.cm.ts » cách ly đối tác]

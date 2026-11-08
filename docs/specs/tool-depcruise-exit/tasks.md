@@ -22,7 +22,7 @@ Unit `slice-rm.rules.test.ts`.
 Nguyên nhân `slice:rm` lỗi: worktree đã gỡ/prune nhưng thư mục thừa còn, `git worktree remove` báo "is not a working tree" và `rm` dừng trước khi xoá thư mục.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED docs/current/platform/tool-depcruise-exit.md
 #### Yêu cầu: slice:rm dọn thư mục thừa

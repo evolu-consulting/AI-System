@@ -82,7 +82,7 @@ kv cũng nhanh nhất (79 s so với 116 s).
 hơn cả num codes ở log phức tạp). Verbose JSON tốn gấp ~2,4 lần và làm Haiku sai nhiều hơn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED hub/agent-eval.md
 #### Yêu cầu: Eval chất lượng agent Hub dùng lại được

@@ -22,7 +22,7 @@ Không đụng `cr121-c-flows`, `c14-tabs`, `c16-ai-tools`, `app-config`, `m1-fl
 - Xoá workflow bị chặn: kiểm bằng API (409) vì danh sách /workflows và nút Xoá đã gỡ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Công cụ AI có lối tạo, editor lệnh có Xoá

@@ -61,7 +61,7 @@ gói (`packs.grant_agents`) cho Group vai tuỳ biến.
 - Gói không cài (thiếu 3 feature) ⇒ 422 `PACK_NOT_ROLEABLE` (README FR-80 AC2), thay vì 404 PACK_NOT_FOUND.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Vai theo app là nguồn quyền gói, biên dịch một chiều xuống Group

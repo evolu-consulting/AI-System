@@ -25,7 +25,7 @@ Không đổi tên thư mục kit/project Docker/volume; không deploy/push; kh�
 - `gen-env.sh` xoá khoá `S2_APP_HOST_LIVE` cũ khỏi `.env`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED deploy/cr119-host-app.md
 #### Yêu cầu: UW-DEP-07 Host app[-test].<d> là host web gộp duy nhất

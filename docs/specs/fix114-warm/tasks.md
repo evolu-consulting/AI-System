@@ -32,7 +32,7 @@ Chỉ `child.py` + test mới.
 - Đặt `tempfile.tempdir = None` (không gán thẳng): `gettempdir()` tự đọc lại `TMPDIR` của job và vẫn kiểm thư mục ghi được.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED hub/agent-runtime.md
 #### Yêu cầu: Thư mục tạm riêng của job khi dùng host dựng sẵn

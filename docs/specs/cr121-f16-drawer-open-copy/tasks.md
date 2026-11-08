@@ -26,7 +26,7 @@ Không sửa e2e. Không đổi API.
 - Việc dùng bản riêng ⇒ có `flows-open-editor` (href chứa `company=<id>`) cả platform_admin và tenant_admin; việc dùng thư viện ⇒ `flows-open-detail` và `flows-copy`; ca đọc câu "Chưa xem được các bước của quy trình này." nay có lý do + bước kế (`tenants.flows.stepsGap.*`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/ngan-viec-mo-chi-tiet.md
 #### Yêu cầu: Mọi việc có quy trình đều mở được trang chi tiết từ ngăn việc

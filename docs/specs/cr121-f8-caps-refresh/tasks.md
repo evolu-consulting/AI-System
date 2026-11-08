@@ -23,7 +23,7 @@ Không đổi hub. Không sửa e2e.
 - `e2e/cr121-c-flows.spec.ts`: gỡ `expect.soft` chờ sửa này — sau khi lưu mức app ở tab Ứng dụng, chuyển sang tab Quy trình phải hết "Chưa dùng ứng dụng" ngay, không cần tải lại.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/cong-ty-lam-tuoi-nang-luc.md
 #### Yêu cầu: Lưu mức ứng dụng làm tươi ngay tab Quy trình và tóm tắt

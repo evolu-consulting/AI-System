@@ -41,13 +41,13 @@ Sự cố: prod tenant Demo không thấy quy trình vì danh sách tenant thấ
   nhất); chốt lại khi mục xuất hiện.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/ops-watch-flow-coverage.md
 #### Yêu cầu: Check quy trình hiển thị cho tenant
 Mỗi lượt ops-watch kiểm: mọi tenant đang bật một gói có khe quy trình phải có ít nhất một quy trình (chưa xoá) trong danh sách tenant thấy của khe đó; thiếu thì check `flow_coverage` crit, nêu tên tenant và khe.
 - Kịch bản: khi tenant bật gói mà việc gán chỉ nằm ở bảng gán cũ (danh sách tenant thấy rỗng) thì check crit nêu tên tenant và khe [test: apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check.test.ts » tenant Demo thiếu quy trình hiển thị ⇒ crit, thông điệp có TÊN tenant + khe; apps/hub-api/src/modules/ops/ops.flow-coverage.int.test.ts » tenant chỉ có gán cũ (Demo) và tenant có def đã xoá ⇒ crit nêu tên + khe, tenant tốt và tenant không bật gói không bị nêu]
-- Kịch bản: khi mọi tenant bật gói đều có quy trình hiển thị (kể cả sau khi chép gán cũ sang bảng mới) thì check ok [test: apps/hub-api/src/modules/ops/ops.flow-coverage.int.test.ts » sau backfill (chép gán cũ sang process_tenant_defs) và gán lại def sống ⇒ ok]
+- Kịch bản: khi mọi tenant bật gói đều có quy trình hiển thị (kể cả sau khi chép gán cũ sang bảng mới) thì check ok [test: apps/hub-api/src/modules/ops/ops.flow-coverage.int.test.ts]
 - Kịch bản: khi nhiều tenant thiếu thì thông điệp chỉ nêu 5 tên đầu và số còn lại, số thật nằm ở value [test: apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check.test.ts » nhiều tenant ⇒ chỉ nêu 5 tên đầu và 'và N nữa', số thật nằm ở value]
 - Kịch bản: khi chưa tenant nào bật gói hoặc chưa khe nào đăng ký thì check ok, không truy vấn thừa [test: apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check.test.ts » chưa có khe nào đăng ký ⇒ ok, không đụng DB]
 - Kịch bản: khe dlc.* không bị kiểm [test: apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check.test.ts » bỏ khe dlc.*, feature = <gói>-read]

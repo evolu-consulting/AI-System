@@ -167,9 +167,9 @@ không tự dội sang AI System; path SHT giữ dội như nay. Đối tác gõ
 
 #### Yêu cầu: COM-FR-31 Routing feed/profile theo đường dẫn `/community/*` (thay hash) (nguồn: cr118-community-module)
 Module Community khai báo route dưới `/community/*` dạng dữ liệu (manifest) và ánh xạ hash cũ bằng hàm thuần `mapLegacyHash`: `#/feed`→`/community`, `#/profile/<o>/<s>`→`/community/profile/<o>/<s>`, `#/settings`→`/community?settings=1`. Module chỉ nói chuyện với host qua cổng `RouterPort`; không đọc `location`.
-- Kịch bản: khi hash cũ `#/profile/<org>/<section>` thì `mapLegacyHash` trả `/community/profile/<org>/<section>` và `parsePath` đọc lại đúng route [test: apps/community-web/src/modules/community/domain/legacy-hash.test.ts » kết quả đọc lại được bằng parsePath]
-- Kịch bản: khi `#/settings` thì ra `/community?settings=1` (Bảng tin + hộp thoại Cài đặt) [test: apps/community-web/src/modules/community/domain/legacy-hash.test.ts » #/feed và #/settings ánh xạ về /community và ?settings=1]
-- Kịch bản: khi dựng cây route cho router của host thì mỗi route con Community được tạo đúng một lần dưới route cha, trang tải lười [test: apps/community-web/src/modules/community/manifest.test.ts » gọi createRoute một lần mỗi route với route cha của host, một component lười dùng chung]
+- Kịch bản: khi hash cũ `#/profile/<org>/<section>` thì `mapLegacyHash` trả `/community/profile/<org>/<section>` và `parsePath` đọc lại đúng route [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
+- Kịch bản: khi `#/settings` thì ra `/community?settings=1` (Bảng tin + hộp thoại Cài đặt) [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
+- Kịch bản: khi dựng cây route cho router của host thì mỗi route con Community được tạo đúng một lần dưới route cha, trang tải lười [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
 
 #### Yêu cầu: Đính kèm tệp vào bài (CR-118 §11.1) (nguồn: cr118-community-files)
 Người đăng tải tệp lên `POST /pack/community/files` (thân thô, header `X-Filename`), nhận `CommunityFile {id,name,mime,size}`, rồi
@@ -179,3 +179,11 @@ gửi bài với media `{kind:"file", fileId}`. Loại/trần theo cấu hình u
 - Kịch bản: khi tệp vượt `ATTACH_MAX_BYTES` thì 413; thiếu tên thì 400 [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] quá ATTACH_MAX_BYTES ⇒ 413; thiếu tên ⇒ 400]
 - Kịch bản: khi đăng bài kèm tệp của mình thì media mang fileId/name/size/mime; tệp của người khác hoặc thiếu fileId thì 400 [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] media kind=file mang fileId/name/size/mime; dùng fileId của người khác ⇒ 400]
 - Kịch bản: khi sniff tên/nội dung thì đội lốt, markup, file chạy được bị chặn [test: apps/hub-api/src/modules/packs/community/domain/file.rules.test.ts » đội lốt / chạy được / markup / đuôi lạ / rỗng ⇒ null]
+
+
+## Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr121-f4-review-mediums).
+
+#### Yêu cầu: Admin công ty khác không xem/quyết được hàng đợi duyệt, yêu cầu tham gia, báo cáo (nguồn: cr121-f4-review-mediums)
+Người gọi thuộc công ty B (kể cả admin đủ quyền gói) không thấy hàng của công ty A trong hàng đợi/danh sách và không quyết được (403/404); dữ liệu công ty A không đổi.
+- Kịch bản: khi admin công ty B quyết bài/yêu cầu tham gia/báo cáo của công ty A thì 403 hoặc 404 và dữ liệu A giữ nguyên [test: apps/hub-api/src/modules/packs/community/adapters/community.cross-tenant.int.test.ts » admin công ty B: không thấy hàng đợi của A, quyết bài/yêu cầu tham gia/báo cáo của A ⇒ 403/404 và dữ liệu A không đổi]

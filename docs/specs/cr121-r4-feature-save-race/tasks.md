@@ -26,7 +26,7 @@ unit `save-merge.test.ts` (local, 7 ca); e2e `-Filter root` một lượt (CR-05
 Không dựng test component (admin-web chưa có testing-library): tái hiện bằng luật thuần + e2e có sẵn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/catalog-quota-audit.md
 #### Yêu cầu: Editor Feature giữ nháp khi lưu liên tiếp

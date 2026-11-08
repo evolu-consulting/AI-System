@@ -38,7 +38,7 @@ community-web-stack, workspace-web-stack, contracts-web, N1 shell.
 - Nhóm menu không còn xổ/gập (hai nhóm ngắn, cùng kiểu SHT).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED web/web-hop-nhat.md
 #### Yêu cầu: MỘT AppShell dùng chung cho mọi module, menu sinh từ manifest (CR-120 §one-shell)

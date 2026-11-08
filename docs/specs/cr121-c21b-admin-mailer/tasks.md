@@ -32,7 +32,7 @@ Không đụng DLC, không migration, không UI. `nodemailer` còn trong `apps/a
 - Deploy: hub-api phải lên trước/cùng admin-api; prod đã có `ADMIN_HUB_URL` + `HUB_INTERNAL_TOKEN` (gen-env.sh) nên không cần đổi env; kho chưa có cấu hình mail ⇒ mail quota chưa gửi (alert `pending`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/gui-mail-qua-hub.md
 #### Yêu cầu: Admin gửi mail qua Hub, cấu hình mail chỉ ở kho secret

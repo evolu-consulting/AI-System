@@ -33,7 +33,7 @@ Không sửa e2e (qc giữ). Nhãn hồ sơ của "Đang chạy": R1 chưa gộp
 - Ca đọc chữ cũ: hộp thoại vai ("Xem: chỉ đọc."), "Cần tính năng thêm", "Khe chưa có trên hub", "Quy trình hiển thị cho tenant".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/dieu-huong-shell-r2.md
 #### Yêu cầu: Điều hướng khung quản trị theo vai

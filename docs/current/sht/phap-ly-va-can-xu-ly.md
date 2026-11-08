@@ -27,3 +27,12 @@ Cập nhật: 2026-10-27 · Gộp từ: DOC-legal (CR-101), MS-impact (Câu 11),
 ## Chưa rõ
 1. Danh mục đủ các nguồn nền của Cần xử lý (V2-K/N) chưa kê ở đây; chỉ ghi nguồn do các lát CR-101 thêm.
 2. e2e ô ngưỡng Cài đặt chưa viết (cuối đợt).
+
+
+## Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr119-contracts-prefix).
+
+#### Yêu cầu: Link thông báo / ký số / trợ lý trỏ URL mới (nguồn: cr119-contracts-prefix)
+Chuông, email, Cần xử lý (hạn HĐ, ký số, giao nhắc) và `recordLink` của trợ lý dùng `/contracts/c/<id>`, `/contracts/partners?party=…`, `/contracts`; `return_url` ký số nhận `/contracts/c/<id>` (và dạng cũ).
+- Kịch bản: link hạn HĐ và `recordLink` dùng đường dẫn mới [test: apps/hub-api/src/modules/packs/contracts/domain/deadline.rules.test.ts » tiêu đề/thân/link]
+- Kịch bản: catalog `contracts` = `https://app[-test].<d>/contracts`, đổi cả hàng còn là gốc host [test: tools/scripts/src/s2-app-urls.test.ts » CR-119 p2: hàng contracts còn là gốc app[-test].<d> (CR-119 p1) -> thêm /contracts; idempotent; không đụng hàng khác]

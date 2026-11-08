@@ -29,7 +29,7 @@ unit: legacy-routes, login-machine, nav, manifest, chat.rules, s2-app-urls, depl
 - Tuyến chuyển hướng cũ (`/my-work`, `/cks`…) bỏ file route, gộp vào bảng legacy.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED web/web-hop-nhat.md
 #### Yêu cầu: UW-DEP-07..09 SHT dưới tiền tố /contracts, URL cũ còn chạy, basePath theo khoá app

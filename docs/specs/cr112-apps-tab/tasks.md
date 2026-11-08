@@ -35,12 +35,12 @@ Không đổi API/contract/migration. Không đụng nav/route (chỉ gỡ `pack
 - Community: luôn nhắc kiểm cách ly đối tác khi bật; thêm câu về số đối tác khi mức < Sửa (đối tác giữ 2 mức tĩnh).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Tab Ứng dụng & Gói hợp nhất (Feature + Gói)
 Chi tiết công ty có một tab "Ứng dụng & Gói": mỗi app một thẻ chọn mức Tắt/Xem/Sửa/Quản trị. Tắt ⇒ tắt gói; mức khác ⇒ bật gói + cấp entitlement theo mức (trần công ty). Lưu một lượt theo thứ tự bật gói → cấp/thu hồi → tắt gói; tắt gói hoặc thu hồi ⇒ hộp xác nhận nêu số người mất quyền và liệt kê quyền thu hồi. Thẻ hiện số vai, số người, số vai không hiệu lực và lối tắt Phân quyền; bật Community hiện cảnh báo đối tác. tenant_admin chỉ xem. Tab Gói cũ không còn, URL `?tab=packs` mở tab gộp.
-- Kịch bản: khi đặt mức Sửa cho app chưa bật gói thì kế hoạch bật gói, cấp Xem+Sửa và thu hồi mức Quản trị thừa do gói cấp sẵn [test: apps/admin-web/src/features/tenants/lib/apps-plan.test.ts » AC1: Tắt → Sửa ⇒ bật gói, cấp Xem+Sửa, thu hồi mức Quản trị thừa do gói cấp sẵn]
+- Kịch bản: khi đặt mức Sửa cho app chưa bật gói thì kế hoạch bật gói, cấp Xem+Sửa và thu hồi mức Quản trị thừa do gói cấp sẵn [test: apps/admin-web/src/features/tenants/lib/apps-plan.test.ts]
 - Kịch bản: khi đặt Tắt thì kế hoạch tắt gói và thu hồi mức + tính năng thêm [test: apps/admin-web/src/features/tenants/lib/apps-plan.test.ts » AC2: Sửa → Tắt ⇒ tắt gói, thu hồi mức và tính năng thêm]
 - Kịch bản: khi chạy kế hoạch thì bật gói trước khi cấp và thu hồi trước khi tắt gói [test: apps/admin-web/src/features/tenants/lib/apps-plan.test.ts » bật gói TRƯỚC khi cấp, thu hồi TRƯỚC khi tắt gói]
 - Kịch bản: khi entitlement lỗi giữa chừng thì không tắt gói và báo các bước đã áp dụng [test: apps/admin-web/src/features/tenants/lib/apps-plan.test.ts » entitlement lỗi ⇒ gói đã bật được ghi nhận, KHÔNG tắt gói (người dùng chưa mất quyền)]
@@ -48,7 +48,7 @@ Chi tiết công ty có một tab "Ứng dụng & Gói": mỗi app một thẻ c
 - Kịch bản: khi mức công ty hạ thì vai có mức cao hơn được đếm là không hiệu lực [test: apps/admin-web/src/features/tenants/lib/apps-plan.test.ts » mức Sửa ⇒ vai Quản trị không hiệu lực, Tắt ⇒ mọi vai, app khác không lẫn]
 - Kịch bản: khi platform_admin chọn Sửa rồi Tắt ở tab thì gói bật rồi tắt có xác nhận và entitlement khớp [test: e2e/tenant-packs.spec.ts » ADM-FR-78 · đặt mức Sửa ⇒ bật gói + entitlement Xem/Sửa (gỡ mức Quản trị do gói cấp sẵn), Tắt ⇒ hỏi xác nhận rồi tắt gói]
 - Kịch bản: khi mở ?tab=packs thì tab Ứng dụng & Gói được chọn và không còn tab Gói [test: e2e/feature-ui.spec.ts » CR-112 · URL cũ ?tab=packs mở tab Ứng dụng & Gói, tab Gói không còn]
-- Kịch bản: khi tenant_admin mở workspace thì không thấy tab Gói trong danh sách [test: apps/admin-web/src/features/tenants/lib/workspace-tabs.test.ts » ADM-FR-81 · workspace-tabs]
+- Kịch bản: khi tenant_admin mở workspace thì không thấy tab Gói trong danh sách [test: apps/admin-web/src/features/tenants/lib/workspace-tabs.test.ts]
 
 ## Việc còn lại
 - Cắm tab vào `visibleTabs` của tenant_admin (read-only đã sẵn trong component) do lát nav quyết định; nếu tab key Phân quyền khác `access` thì sửa hằng `ACCESS_TAB`.

@@ -24,7 +24,7 @@ Perf: không chạm đường nóng.
 - `e2e/P-a/pf4/process-library.pa.ts` ~dòng 131–136: bước `toolbar.getByRole("button", { name: "Gán cho tenant" })` + "Đã cập nhật gán cho 1 tenant" + kiểm "Dùng bởi = 1 công ty" — nút không còn; đổi sang gán ở Công ty › Quy trình (hoặc API `PUT /tenants/:tid/process-routing/...`) rồi kiểm cột "Dùng bởi", và thêm kiểm `assign-where` hiện chữ + link.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/thu-vien-khong-gan-truc-tiep.md
 #### Yêu cầu: Thư viện quy trình không gán trực tiếp cho công ty (CR-121 R5/R7)

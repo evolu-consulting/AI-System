@@ -7,7 +7,7 @@ migration: không
 phụ thuộc:
 ---
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED hub/observability.md
 #### Yêu cầu: Tracing OpenTelemetry tắt mặc định

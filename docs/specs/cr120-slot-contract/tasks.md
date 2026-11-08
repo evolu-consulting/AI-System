@@ -36,7 +36,7 @@ phụ thuộc: —
 - Trigger (chỉ hiển thị): `contract.submitted`, `contract.uploaded`, `post.created`, `partner.join_requested`, `report.created`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/cau-hinh-app.md
 #### Yêu cầu: App phải khai báo khe quy trình
@@ -52,8 +52,8 @@ Trang app ở admin liệt kê mọi khe theo manifest kèm mục đích, sự k
 ### MODIFIED web/web-hop-nhat.md
 #### Yêu cầu: Cài đặt › Ứng dụng & quy trình hiện mọi khe khai báo
 Mục Ứng dụng & quy trình liệt kê mọi khe của app theo manifest kèm tên và mục đích; khe công ty chưa có quy trình hiện cảnh báo thay vì bị ẩn.
-- Kịch bản: khi công ty bật Community mà chưa có khe nào thì vẫn thấy 3 khe với cảnh báo thiếu [test: apps/workspace-web/src/features/settings/lib/app-slots.test.ts » community: 3 khe manifest hiện cả khi năng lực chưa có (present=false)]
-- Kịch bản: khe năng lực ngoài manifest vẫn hiện sau khe manifest [test: apps/workspace-web/src/features/settings/lib/app-slots.test.ts » contracts: khe manifest theo thứ tự + khe năng lực ngoài manifest đứng sau]
+- Kịch bản: khi công ty bật Community mà chưa có khe nào thì vẫn thấy 3 khe với cảnh báo thiếu [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
+- Kịch bản: khe năng lực ngoài manifest vẫn hiện sau khe manifest [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
 
 ## Việc còn lại
 - Seed def `hd-tiep-nhan` (0093, contracts-flow) + 3 def community (0092, community-flows) + SlotSpec/adapter ⇒ hết log `slot-contract-gap`.

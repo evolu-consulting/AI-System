@@ -27,7 +27,7 @@ Không đổi hub (mã lỗi đã đủ). Không sửa e2e.
 - `e2e/cr121-c14-tabs.spec.ts`: "x/y việc có quy trình" không còn tính việc của app chưa dùng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/cong-ty-gan-quy-trinh-loi.md
 #### Yêu cầu: Việc của ứng dụng chưa dùng bị khoá và lỗi gán nói rõ cách sửa

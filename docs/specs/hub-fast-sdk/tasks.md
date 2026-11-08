@@ -43,7 +43,7 @@ Không migration, không đổi contract Runtime, không đổi đường job CL
   (mặc định), `effort: low` cho lượt chat ngắn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED hub/direct-sdk.md
 #### Yêu cầu: Đường SDK trực tiếp cho lượt chat ngắn

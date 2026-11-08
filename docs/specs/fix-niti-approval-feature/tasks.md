@@ -24,12 +24,12 @@ unit flow-coverage.check.test.ts; int seed-niti.int.test.ts, ops.flow-coverage.i
 Check mới gộp vào `flow_coverage` (cùng key), tenant active có luật hoặc process_tenant_defs cho `contracts.approval`, feature `status<>'off'`, entitlement chưa thu hồi.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED ops/ops-watch-flow-coverage.md
 #### Yêu cầu: Check flow_coverage bắt tenant thiếu feature engine duyệt
 Tenant có luật định tuyến hoặc quy trình đã gán cho khe `contracts.approval` mà không có entitlement `contracts-approval-engine` còn hiệu lực ⇒ crit, nêu tên tenant.
-- Kịch bản: khi tenant có luật/quy trình duyệt nhưng thiếu feature thì check crit nêu tên, cấp feature xong thì ok [test: apps/hub-api/src/modules/ops/ops.flow-coverage.int.test.ts » tenant có luật/quy trình contracts.approval nhưng thiếu feature contracts-approval-engine ⇒ crit nêu tên, cấp feature ⇒ ok]
+- Kịch bản: khi tenant có luật/quy trình duyệt nhưng thiếu feature thì check crit nêu tên, cấp feature xong thì ok [test: apps/hub-api/src/modules/ops/ops.flow-coverage.int.test.ts]
 
 ### ADDED tools/seed-niti.md
 #### Yêu cầu: seed-niti cấp feature duyệt HĐ

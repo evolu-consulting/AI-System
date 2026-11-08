@@ -42,7 +42,7 @@ web-kit/admin-web/studio-web vô hại, mã giữ trong contract cho client cũ)
   (trước: ném lỗi). Logout/reuse: +1 (SELECT … FOR UPDATE), không thuộc đường vui. Không vòng lặp theo hàng, không sleep/poll.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/tenant-user.md
 #### Yêu cầu: Refresh token xoay vòng có ân hạn 30 s (không đăng xuất khi tải lại trang)

@@ -38,13 +38,13 @@ Không deploy, không chạy stg-cr118 trên host, không build/tag `sohoptac2-a
 - Không có docker/bash/nginx trên máy dev: `docker compose config` và `nginx -t` CHƯA chạy; kiểm bằng parse YAML + test bất biến + `sh -n` + dry-run; `nginx -t` xảy ra khi container web UAT lên (up.sh).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED deploy/cr118-rollout.md
 #### Yêu cầu: UW-DEP-01 Host chính phục vụ Community theo đường dẫn, community.<d> chuyển hướng 301
 Kit prod build web gộp (`sohoptac-web`) và không còn build `community-web`; `sohoptac.<d>/community/*` rơi vào history fallback; `community.<d>` (cổng 8085) trả 301 cho điều hướng HTML về `https://sohoptac.<d>/community` (`community-test` → `sohoptac-test`), `/sso` → `/sso`, và giữ proxy `/auth,/pack,/conversations,/runs,/me/stream` đến mốc 30 ngày. `COMMUNITY_WEB_URL` và hàng catalog `community` = `<host SHT>/community`, `sso=false`; link báo giá của hub không còn `#/feed`.
-- Kịch bản: khi `community.<d>` nhận GET HTML thì trả 301 về `sohoptac.<d>/community` và tunnel cổng …5 trỏ về cổng …1 [test: tools/scripts/src/cr118-deploy-kit.test.ts » map đích 301]
-- Kịch bản: khi cổng 8085 nhận GET HTML thì không phục vụ SPA riêng mà vẫn proxy /auth,/pack,/me/stream [test: tools/scripts/src/cr118-deploy-kit.test.ts » community.<d> (8085)]
+- Kịch bản: khi `community.<d>` nhận GET HTML thì trả 301 về `sohoptac.<d>/community` và tunnel cổng …5 trỏ về cổng …1 [test: tools/scripts/src/cr118-deploy-kit.test.ts]
+- Kịch bản: khi cổng 8085 nhận GET HTML thì không phục vụ SPA riêng mà vẫn proxy /auth,/pack,/me/stream [test: tools/scripts/src/cr118-deploy-kit.test.ts]
 - Kịch bản: khi hub dựng link Lưu báo giá thì dùng `COMMUNITY_WEB_URL` (đường dẫn /community) không có `#/feed` [test: apps/hub-api/src/modules/packs/community/domain/quote.rules.test.ts » communityLink (CR-118)]
 - Kịch bản: khi chạy `s2-app-urls.ts` thì hàng community còn host cũ đổi sang `/community` và `sso=false`, chạy lại không đổi gì [test: tools/scripts/src/s2-app-urls.test.ts » CR-118: hàng community còn host cũ]
 

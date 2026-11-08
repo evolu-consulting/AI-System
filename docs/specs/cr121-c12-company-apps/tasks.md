@@ -38,7 +38,7 @@ Không: gỡ chỗ gán 3/4 và `/apps/$appKey` (c13), 5 tab (c14). Không đổ
 - Bỏ lối tắt "Mở cấu hình app" (c13 xử lý `/apps/$appKey`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/cau-hinh-app.md
 #### Yêu cầu: Khối gán quy trình nằm trong thẻ app (ADM-FR-84) (nguồn: cr118-app-config)

@@ -22,7 +22,7 @@ unit `lib/route-guard.test.ts`. Không sửa e2e. Perf: không chạm.
 `e2e/P-a/pf4/admin-runs.pa.ts`: chạy lại với tenant_admin; thêm ca bấm lượt ở khối "Đang chạy" (`flows-run-open-<id>`) ⇒ vào trang lượt chạy; ca 404 ⇒ "Không tìm thấy", không về Tổng quan.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/trang-luot-chay-tenant-admin.md
 #### Yêu cầu: tenant_admin vào được trang lượt chạy và trình sửa của công ty mình (CR-121 R3/R4)

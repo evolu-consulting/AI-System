@@ -1,0 +1,10 @@
+# Admin · Quy trình thư viện mở từ Công ty chỉ xem, sao chép thành bản riêng sửa được
+
+Cập nhật: 2026-11-09 · Gộp từ: cr121-c17-editor (đợt cr125-wave).
+
+## Yêu cầu: Quy trình thư viện mở từ Công ty chỉ xem, sao chép thành bản riêng sửa được (CR-121 R8) (nguồn: cr121-c17-editor)
+Mở quy trình thư viện từ Công ty › Quy trình hiện "Quy trình dùng chung — chỉ xem." với sơ đồ (mặc định) hoặc danh sách bước, không có sửa/Xuất bản, và nút "Sao chép cho công ty này" tạo bản riêng tự gán thay bản cũ; bấm lần hai mở lại cùng bản. Bản riêng ghi "Sao từ thư viện: <gốc> · vN" và lưu theo đường khe (bước được giữ để chạy). Lỗi sao chép nói lý do bằng ngôn ngữ nghiệp vụ.
+- Kịch bản: sửa bản riêng rồi lưu thì `slot_body` được dựng lại và giữ, khe vẫn null [test: apps/hub-api/src/modules/processes/library/clone-for-company.int.test.ts » CR-121 c17 · sửa bản riêng lưu theo đường khe]
+- Kịch bản: NOT_LIBRARY_DEF và SLOT_GONE có câu riêng [test: apps/admin-web/src/features/processes/lib/errors.test.ts » CR-121 c17 · mã lỗi Sao chép cho công ty này]
+- Kịch bản: mặc định canvas, nhớ lựa chọn danh sách, lỗi storage về canvas [test: apps/admin-web/src/features/processes/lib/view-mode.test.ts » mặc định canvas khi chưa lưu, không có kho, hoặc giá trị lạ]
+- Kịch bản: chỉ xem ⇒ Sao chép ⇒ bản riêng sửa được ⇒ sao lần hai trả 200 cùng bản [test: thủ công — e2e/P-a/pf4/library-readonly-copy.pa.ts viết, chạy một lần cuối đợt]

@@ -17,7 +17,7 @@ phụ thuộc:
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/tong-quan-van-hanh.md
 #### Yêu cầu: Câu rỗng của biểu đồ cột không mâu thuẫn với số trên ô

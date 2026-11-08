@@ -27,7 +27,7 @@ Không: thư viện đối chiếu (c15), 5 tab (c14), trình sửa (c17), API.
 - Tab Xem trước của trang app chỉ còn bản đã lưu (không còn bản nháp từ ngăn Công ty).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/cau-hinh-app.md
 #### Yêu cầu: Khối gán quy trình nằm trong thẻ app (ADM-FR-84) (nguồn: cr118-app-config)

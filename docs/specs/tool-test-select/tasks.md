@@ -31,7 +31,7 @@ Unit: `test-filter-frozen.test.ts`, `test-affected.select.test.ts`, `test-affect
 - `docs/**` im lặng như cũ (không vào danh sách `ignored`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED docs/current/tools/test-select.md
 #### Yêu cầu: Filter nêu tường minh đường dẫn đóng băng luôn chạy, không khớp thì báo ngay

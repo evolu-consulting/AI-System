@@ -26,7 +26,7 @@ Unit `run-detail-view.test.ts` (chạy xanh). e2e `e2e/K1/admin/cr121-run.k1.ts`
 - "Mở lại quy trình" cho lượt gắn gói: API mở lại hiện có là `POST /pack/contracts/contracts/:id/reopen` (theo id hợp đồng) mà `RunDetail` không có id hợp đồng ⇒ UI ẩn nút Chạy lại cả lượt khi 409 `pack_bound` và hiện câu giải thích (mở lại từ màn hợp đồng).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/processes-run-page.md
 #### Yêu cầu: Chi tiết lượt chạy (admin)

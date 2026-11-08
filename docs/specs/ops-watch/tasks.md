@@ -19,7 +19,7 @@ Xem `proposal.md`. Thứ tự: O1 → (O2 ∥ O3 ∥ O4). Review + security mộ
 - 2026-10-30 người dùng: "làm 1 cái cho AI admin page" ⇒ kênh = trang + chuông ai-admin.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/tinh-trang-he-thong.md
 #### Yêu cầu: Kiểm tra vận hành định kỳ không dùng AI
@@ -40,7 +40,7 @@ Platform_admin chỉnh tần suất, bật/tắt và ngưỡng từng check ở 
 
 #### Yêu cầu: Trang Tình trạng hệ thống
 Trang `/system` của ai-admin hiện từng check, gợi ý sửa, lịch sử, nút Kiểm tra ngay và Gói chẩn đoán.
-- Kịch bản: khi platform_admin bấm "Kiểm tra ngay" thì thẻ cập nhật thời điểm kiểm [test: e2e/ops/system.ops.ts » platform_admin: 8 thẻ check, bấm "Kiểm tra ngay" cập nhật lúc kiểm, bấm lại trong 1 phút thì đếm ngược]
+- Kịch bản: khi platform_admin bấm "Kiểm tra ngay" thì thẻ cập nhật thời điểm kiểm [test: e2e/ops/system.ops.ts]
 
 ## Việc còn lại
 Đã duyệt 2026-10-30 (câu 4: 30 phút).

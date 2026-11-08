@@ -16,7 +16,7 @@ UAT lượt 3: hàng "Nhận hợp đồng (mặc định)" ở Thư viện hi�
 unit `lib/step-chips.test.ts » CR-121 f17`. Không sửa e2e. Perf: không chạm.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/thu-vien-cot-cac-buoc.md
 #### Yêu cầu: Cột Các bước của Thư viện một kiểu hiển thị (CR-121 UAT)

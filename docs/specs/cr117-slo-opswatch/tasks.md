@@ -41,7 +41,7 @@ platform_admin, trang `/system` (thẻ + ngưỡng cấu hình + Gói chẩn đo
 - Trạng thái `unknown` (chưa có số đo nào) không phát chuông (luật CR-104 sẵn có).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/ops-watch-slo.md
 #### Yêu cầu: Check SLO trong ops-watch

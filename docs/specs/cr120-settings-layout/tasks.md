@@ -28,7 +28,7 @@ unit: bun test apps/workspace-web/src (595 xanh); e2e community-web (settings.cm
 - Các ngăn Sổ Hợp Tác có tiêu đề/mô tả riêng (kèm testid) giữ nguyên; chỉ mục Công ty dùng `SettingsSection`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED web/web-hop-nhat.md
 #### Yêu cầu: MỘT bố cục Cài đặt cho mọi module (CR-120 §settings-layout)

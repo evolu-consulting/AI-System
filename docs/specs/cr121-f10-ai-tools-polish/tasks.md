@@ -23,7 +23,7 @@ unit `ai-tools.test.ts` (tìm theo tên agent); int `workflow-tools.usage.int.te
 - Chọn đọc tên ở server (một nguồn, theo tập) thay vì gọi Hub từ trình duyệt (cần tenant + PUBLIC_HUB_URL).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Công cụ AI hiện tên agent thật và chặn tenant_admin bằng trang có lý do

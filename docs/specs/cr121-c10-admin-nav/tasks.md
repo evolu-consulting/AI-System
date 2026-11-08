@@ -32,7 +32,7 @@ Màn Công cụ AI thật (c16), tab Công ty (c14), nguồn dữ liệu badge. 
 4. "Quy trình" ẩn khi engine quy trình tắt (dev stack chụp không có Hub) ⇒ ảnh chụp chỉ 5 mục.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Thanh điều hướng 6 mục phẳng

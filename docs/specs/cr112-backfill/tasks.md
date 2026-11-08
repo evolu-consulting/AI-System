@@ -45,7 +45,7 @@ Không UI. Không thu hồi grant gói trên Group không phải vai (`pb-*`… 
 - Xoá Group vai tuỳ biến qua `/admin/groups` bị chặn (`ROLE_GROUP_MANAGED`) để luôn qua `DELETE /admin/app-roles/:id` (kiểm còn người).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Chuẩn hoá vai cho dữ liệu có sẵn (backfill dry-run/apply)

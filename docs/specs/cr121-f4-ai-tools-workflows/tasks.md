@@ -33,7 +33,7 @@ unit `ai-tools.test.ts` (lọc secret, tìm theo mã); int `workflow-tools.usage
 - Mã workflow chỉ để tìm, không hiện (Luật GỐC 3).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Công cụ AI giữ đủ thao tác của danh sách workflow cũ

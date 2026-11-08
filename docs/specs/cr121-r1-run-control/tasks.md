@@ -54,7 +54,7 @@ Chạm: `gates/back.effects.ts` (`taskId` nullable, cờ `backEvent`), `gates/ga
 - Chạy lại bước đã xong khi bước sau đang chạy: `applyBack` reset bước sau (`current_run_id` = null) ⇒ kết quả muộn bị driver bỏ (int xanh,
   không cần chặn 409).
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED hub/dieu-khien-luot-chay.md
 #### Yêu cầu: Dừng lượt chạy

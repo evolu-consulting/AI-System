@@ -11,7 +11,7 @@ Cập nhật: 2026-11-04 · Nguồn: CR-118 (cr118-flow-contract). Mục "Việc
 
 #### Yêu cầu: Endpoint flow chung của kit (UW-FR-11, UW-FR-14) (nguồn: cr118-flow-contract)
 `GET /pack/:k/flow/:slot/:ref`, `POST /pack/:k/flow/:slot/:ref/tasks/:id/actions/:action`, `POST /pack/:k/flow/:slot/summary` sau packGuard (read/write), bật bằng `HUB_FLOW_RUNTIME=on` (mặc định tắt ⇒ 404). Gói cung cấp FlowSlotAdapter; ref tra trong tx tenant của gói (không thấy ⇒ vắng/404). Đối tác bị chặn (403). Summary: số câu SQL cố định mỗi lô, p95 ≤ 50 ms lô 100.
-- Kịch bản: khi cờ không bật thì runtime tắt [test: apps/hub-api/src/modules/packs/contracts/application/approval-flow-slot.usecase.test.ts » cờ: mặc định TẮT]
+- Kịch bản: khi cờ không bật thì runtime tắt [test: apps/hub-api/src/modules/packs/contracts/application/approval-flow-slot.usecase.test.ts]
 - Kịch bản: khi đối tác gọi view/act/summary thì bị chặn trước khi gói được gọi [test: apps/hub-api/src/modules/packs/contracts/application/approval-flow-slot.usecase.test.ts » runtime: đối tác ⇒ forbidden; tests/acceptance/CR118/approval-flow-runtime.int.test.ts » đối tác (user ngoài acme)]
 - Kịch bản: khi người tenant khác gọi view/act/summary HĐ acme thì 403/404, không lộ dữ liệu [test: tests/acceptance/CR118/approval-flow-runtime.int.test.ts » tenant khác (Db, beta)]
 - Kịch bản: khi summary lô 100 có ref tenant khác/không tồn tại thì chỉ trả HĐ thấy được; lô 101 ⇒ 400 [test: tests/acceptance/CR118/approval-flow-runtime.int.test.ts » summary lô 100]
@@ -31,7 +31,7 @@ Sau khi gán và bật, sự kiện đầu tiên mở lượt ngay; thiếu tín
 
 #### Yêu cầu: Platform admin bật/tắt cờ "dùng quy trình mới" theo công ty
 Cờ `flow_triggers` của công ty được đọc/đặt qua `GET/PUT /tenants/:tid/flow-settings`, chỉ platform_admin; tenant_admin và member nhận 403. Mỗi lần đổi giá trị ghi audit (người đổi, lúc đổi, giá trị cũ và mới); đặt lại đúng giá trị hiện tại không ghi audit. Tab Quy trình của công ty có công tắc cho platform_admin, bật thì hỏi xác nhận một câu.
-- Kịch bản: khi platform_admin PUT `{flow_triggers:true}` rồi `false` thì GET trả đúng giá trị và audit có hai dòng (false→true, true→false); tenant_admin gọi nhận 403 [test: apps/hub-api/src/modules/processes/library/flow-settings.int.test.ts » platform_admin bật/tắt, tenant_admin 403, audit ghi cũ và mới]
+- Kịch bản: khi platform_admin PUT `{flow_triggers:true}` rồi `false` thì GET trả đúng giá trị và audit có hai dòng (false→true, true→false); tenant_admin gọi nhận 403 [test: apps/hub-api/src/modules/processes/library/flow-settings.int.test.ts]
 
 #### Yêu cầu: Thẻ duyệt HĐ khi công ty bật flow theo sự kiện
 Công ty bật FLOW_TRIGGERS: HĐ vào bước duyệt ⇒ lượt duyệt chờ flow (máy cũ không còn duyệt/khoá HĐ); bộ điều phối mở lượt flow và gắn
@@ -44,8 +44,8 @@ vào thẻ duyệt cùng lúc tạo lượt; thẻ hiện các bước Duyệt c
 #### Yêu cầu: Duyệt bài khi công ty bật flow theo sự kiện
 Công ty bật FLOW_TRIGGERS và gán flow `post.created`: ngay khi bộ điều phối mở lượt, bài vào hàng "chờ người duyệt" (không đợi hết hạn
 agent sàng lọc 2 phút); người duyệt duyệt được ngay. Chưa có lượt mở thì bài vẫn "đang xử lý".
-- Kịch bản: đăng bài, một lượt điều phối ⇒ task Duyệt mở và người duyệt duyệt được [test: apps/hub-api/src/modules/packs/community/adapters/community.flow-launch.int.test.ts » một dispatchOnce ⇒ task Duyệt mở + bài chờ người duyệt ngay + duyệt được]
-- Kịch bản: sự kiện tới task mở ≤ 5 s [test: apps/hub-api/src/modules/packs/community/adapters/community.flow-launch.int.test.ts » perf: sự kiện → bài sẵn sàng duyệt ≤ 5 s (đo *Once, không ngủ)]
+- Kịch bản: đăng bài, một lượt điều phối ⇒ task Duyệt mở và người duyệt duyệt được [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
+- Kịch bản: sự kiện tới task mở ≤ 5 s [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
 - Kịch bản: bài chờ không screen (flow đã mở lượt) ⇒ chờ người duyệt ngay [test: apps/hub-api/src/modules/packs/community/domain/flow.rules.test.ts » CR-122 P13 · pending + không screen (flow đã mở lượt) ⇒ chờ người duyệt ngay, không đợi quá hạn]
 
 #### Yêu cầu: Lượt duyệt chờ flow không kẹt khi không mở được quy trình
@@ -147,7 +147,7 @@ Gói bắn sự kiện kèm dữ liệu (khoá snake_case, giá trị vô hướ
 - Kịch bản: Ký số xong ⇒ bước chờ có thời điểm ký, người ký, mã phong bì; bắn lại không đổi; Thông báo sau đó hiện «Đã ký ngày {signed_at}» và ghi người nhận [test: tests/acceptance/CR-125/outputs-runstate.int.test.ts » Ký số xong ⇒ bước chờ có signed_at/signer/envelope_id · bắn lại không đổi · Thông báo sau đó dựng {signed_at} + ghi sent_to]
 - Kịch bản: đối tác trả lại sửa ⇒ bước chờ có lần gửi + lý do; công ty khác bắn cùng bản ghi không thả [test: tests/acceptance/CR-125/outputs-runstate.int.test.ts » Gửi đối tác: trả lại sửa ⇒ bước chờ có round + partner_reason · dữ liệu của sự kiện khác không lẫn vào]
 - Kịch bản: lọc dữ liệu kèm, chỉ áp cho sự kiện thắng [test: apps/hub-api/src/modules/processes/domain/timers/wait-event-data.rules.test.ts » đúng sự kiện thắng ⇒ gộp dữ liệu kèm, `event` không bị ghi đè]
-- Kịch bản: phong bì trạng thái cuối ⇒ đầu ra Ký số [test: apps/hub-api/src/modules/packs/contracts/domain/esign-outputs.rules.test.ts » ký xong ⇒ envelope_id + signed_at (ngày) + người ký theo thứ tự ký]
+- Kịch bản: phong bì trạng thái cuối ⇒ đầu ra Ký số [test: apps/hub-api/src/modules/packs/contracts/domain/esign-outputs.rules.test.ts]
 
 #### Yêu cầu: Thông báo đọc đầu ra các bước trước (nguồn: cr125-m9-outputs-runstate)
 Mẫu `{khoá}` của Thông báo lấy giá trị từ đầu ra các bước đứng trước và dữ liệu của lượt; Thông báo ghi người nhận (`sent_to`) vào đầu ra của bước.
@@ -171,3 +171,12 @@ Tệp người điền ở phiếu «Tạo yêu cầu» hoặc bước form đư
 - Kịch bản: khi người bước form tải tệp và gửi thì người duyệt bước sau mở được tệp, người ngoài cùng công ty và công ty khác nhận 404 [test: apps/hub-api/src/modules/processes/triggers/flow-form-step-card.int.test.ts » tệp bước form]
 - Kịch bản: khi lượt cha truyền tệp qua input_map thì lượt con kế thừa liên kết, tệp không truyền thì không [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » tệp truyền qua input_map]
 
+
+
+## Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr121-q1-app-filter-contract-label).
+
+#### Yêu cầu: Nhãn hợp đồng thật ở trang chi tiết lượt chạy (nguồn: cr121-q1-app-filter-contract-label)
+Nguồn gắn lượt hiển thị mã HĐ thật và tên HĐ do gói contracts đặt (một câu theo tập id, dưới RLS tenant của lượt); không có nhãn thì giữ "HĐ <8 ký tự id>".
+- Kịch bản: khi lượt gắn một HĐ có số HD-Q1-001 thì nguồn hiện "HĐ HD-Q1-001 · Thuê kho Q1" [test: apps/hub-api/src/modules/processes/runs/run-detail.int.test.ts » R-4 · nguồn hợp đồng và lượt đã chạy lại]
+- Kịch bản: khi gói không trả nhãn thì giữ nhãn cũ theo id [test: apps/hub-api/src/modules/processes/runs/run-detail.map.test.ts » gói hợp đồng ⇒ kind contract + nhãn HĐ + app_key]

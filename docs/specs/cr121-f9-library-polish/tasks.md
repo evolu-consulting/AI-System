@@ -23,7 +23,7 @@ unit: bộ unit `features/processes` (307 pass) + tsc + i18n:check; logic mới 
 - Bảng tab "Mẫu · chạy thử": không còn cột "Ký hiệu"; cột "Giai đoạn" đổi tên "Số bước".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/thu-vien-bang-gon.md
 #### Yêu cầu: Bảng Thư viện gọn và một nhãn Sơ đồ/Danh sách (CR-121 UAT)

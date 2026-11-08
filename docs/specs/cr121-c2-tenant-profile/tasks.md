@@ -27,7 +27,7 @@ unit: `tenants.profile.rules.test.ts`, `profile-fields.test.ts`, `workspace-tabs
 - Key URL `info` giữ cho tab Cài đặt (liên kết cũ không gãy); `?tab=overview` cũ ⇒ về Hồ sơ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/ho-so-cong-ty.md
 #### Yêu cầu: Hồ sơ công ty nhập tay
@@ -55,7 +55,7 @@ Onboarding (yaml/seed) ghi tên pháp lý, địa chỉ, MST, email vào CỘT c
 
 #### Yêu cầu: Tab của trang chi tiết công ty
 Tab theo thứ tự: Hồ sơ (mặc định) · Ứng dụng · Quy trình (chỉ platform_admin) · Thành viên · Cài đặt, rồi Nhóm · Đối tác · Phân quyền · Agents · Quota. Không còn tab "Tổng quan"; số người dùng, ứng dụng đang bật, số vai nằm trên MỘT dòng ở đầu trang; `?tab=overview` cũ mở Hồ sơ.
-- Kịch bản: khi mở công ty không kèm tab thì thấy tab Hồ sơ và không có tab Tổng quan [test: apps/admin-web/src/features/tenants/lib/workspace-tabs.test.ts » CR-121 · platform_admin: Hồ sơ · Ứng dụng · Quy trình · Thành viên · Cài đặt đứng đầu, không còn tab Tổng quan]
+- Kịch bản: khi mở công ty không kèm tab thì thấy tab Hồ sơ và không có tab Tổng quan [test: apps/admin-web/src/features/tenants/lib/workspace-tabs.test.ts]
 - Kịch bản: khi platform_admin sửa tên công ty tại chỗ và chọn CEO thì dữ liệu còn sau khi tải lại [test: e2e/cr121-tenant-profile.spec.ts » CR-121 · sửa tên công ty tại chỗ (Lưu), rồi chọn CEO từ thành viên]
 - Kịch bản: khi nhập số nhân viên sai thì hiện câu hướng dẫn, chưa lưu [test: apps/admin-web/src/features/tenants/lib/profile-fields.test.ts » CR-121 · validateField]
 

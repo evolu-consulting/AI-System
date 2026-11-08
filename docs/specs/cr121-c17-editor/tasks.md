@@ -39,7 +39,7 @@ Khác biệt còn lại (chờ điều phối duyệt/giao lát sau):
 - Số lượt evotest: 4 (hai lượt đầu do sai tham số/dữ liệu test: nhóm phòng ban, catalog tool giả) — vượt hạn mức 2.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/trinh-sua-quy-trinh-chi-xem.md
 #### Yêu cầu: Quy trình thư viện mở từ Công ty chỉ xem, sao chép thành bản riêng sửa được (CR-121 R8)

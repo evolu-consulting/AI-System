@@ -40,7 +40,7 @@ Hub/contract không đổi. Perf: không chạm đường nóng.
 - Tái dùng Form có sẵn làm "Danh sách" thay vì dựng component mới.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/trinh-sua-danh-sach-buoc.md
 #### Yêu cầu: Trình sửa quy trình có chế độ Sơ đồ và Danh sách bước dùng chung một lựa chọn (CR-121 R8)

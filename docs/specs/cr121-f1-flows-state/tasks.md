@@ -29,7 +29,7 @@ Không sửa e2e (qc giữ). Không sửa hub (không phải nguyên nhân).
 - `e2e/journey-approval/cr121-c-flows.spec.ts`: sau Gán kiểm dòng việc đổi tên quy trình + `flows-system-default-<việc>` biến mất + tóm tắt tăng; mở lại ngăn sau Esc vẫn thấy `flows-view-canvas`. Ca đọc "x/y việc có quy trình" (cr121-c14-tabs) nay không tính mặc định hệ thống.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/cong-ty-quy-trinh-nguon.md
 #### Yêu cầu: Dòng việc phản ánh quy trình đang dùng theo luật của công ty

@@ -20,7 +20,7 @@ UAT lượt 4: trình sửa BẢN RIÊNG công ty lộ trường kỹ thuật ("
 unit `lib/company-copy.test.ts » CR-121 f18`. Chưa chụp ảnh (môi trường agent không dựng được stack UAT) — điều phối chụp lại `1b-trinh-sua-ban-rieng-platform` và trình sửa thư viện. Không sửa e2e. Perf: không chạm.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/trinh-sua-thong-tin-don-gian.md
 #### Yêu cầu: Thẻ Thông tin của trình sửa chỉ hiện trường nghiệp vụ (CR-121 UAT)

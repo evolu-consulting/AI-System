@@ -34,7 +34,7 @@ Không sửa migration đã merge. Không đụng DLC. Các route `review-tasks/
 - Test chéo công ty Community: admin công ty B được cấp ĐỦ quyền gói (entitle + role owner của B) để chứng minh chính RLS/tenant chặn, không phải thiếu quyền gói.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/ho-so-cong-ty.md
 #### Yêu cầu: Hồ sơ công ty chứa PII không lộ cho Hub, quyền kiểm ngay ở service

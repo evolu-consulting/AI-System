@@ -38,7 +38,7 @@ Không: Ứng dụng (c12), gỡ chỗ gán 3/4 (c13: tab Quy trình + ngăn Cô
 - Bản thư viện chỉ xem: sơ đồ + ghi chú + nút "Sao chép cho công ty này"; trang trình sửa chỉ-xem đầy đủ để c17.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/cong-ty-quy-trinh.md
 #### Yêu cầu: Tab Quy trình của công ty là nơi duy nhất gán quy trình
@@ -46,8 +46,8 @@ Trang công ty có tab "Quy trình" liệt kê theo ứng dụng → việc → 
 - Kịch bản: việc chưa gán ⇒ Đang tắt kèm lý do chưa gán quy trình; có quy trình ⇒ Đang bật; mặc định đã xoá/chưa xuất bản ⇒ tắt với lý do tương ứng [test: apps/admin-web/src/features/tenants/flows/lib/flow-rows.test.ts » jobOf]
 - Kịch bản: việc xếp theo ứng dụng (Hợp đồng trước), số luật không tính Mặc định, tóm tắt "x/y việc có quy trình" [test: apps/admin-web/src/features/tenants/flows/lib/flow-rows.test.ts » groupJobs / summaryOf]
 - Kịch bản: quản trị công ty đổi quy trình mặc định trong tập quy trình công ty, luật điều kiện giữ nguyên [test: apps/admin-web/src/features/tenants/flows/lib/flow-rows.test.ts » withDefault (tenant_admin đổi quy trình)]
-- Kịch bản: tab `processes` có cho platform_admin và tenant_admin [test: apps/admin-web/src/features/tenants/lib/workspace-tabs.test.ts » tenant_admin thấy profile/features/processes]
-- Kịch bản: platform_admin gán từ đầu rồi tenant_admin Sao chép + Đổi (hành trình thật) [test: e2e/cr121-c-flows.spec.ts » tenant_admin công ty mình: bản thư viện chỉ xem]
+- Kịch bản: tab `processes` có cho platform_admin và tenant_admin [test: apps/admin-web/src/features/tenants/lib/workspace-tabs.test.ts]
+- Kịch bản: platform_admin gán từ đầu rồi tenant_admin Sao chép + Đổi (hành trình thật) [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
 
 #### Yêu cầu: Xem quy trình mặc định dạng sơ đồ và nhớ lựa chọn
 Chỗ xem quy trình mở ở chế độ sơ đồ (canvas); danh sách bước là chế độ phụ, nhớ theo trình duyệt; không đọc được bộ nhớ thì về sơ đồ.
@@ -56,7 +56,7 @@ Chỗ xem quy trình mở ở chế độ sơ đồ (canvas); danh sách bước
 ### MODIFIED admin/cau-hinh-app.md
 #### Yêu cầu: Khối gán quy trình nằm trong thẻ app (ADM-FR-84) (nguồn: cr118-app-config)
 Thẻ app ở tab Ứng dụng của công ty không còn khối gán quy trình; gán quy trình cho công ty chỉ làm ở tab Quy trình (một nơi duy nhất). Chỗ gán ở tab Quy trình và ngăn Công ty của trang app gỡ ở c13.
-- Kịch bản: khi mở thẻ app ở tab Ứng dụng thì không còn khối gán quy trình, việc gán nằm ở tab Quy trình của công ty [test: e2e/cr121-c-flows.spec.ts » platform_admin gán từ đầu]
+- Kịch bản: khi mở thẻ app ở tab Ứng dụng thì không còn khối gán quy trình, việc gán nằm ở tab Quy trình của công ty [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
 
 ## Việc còn lại
 - Chỗ đọc `TenantProcessSlots` (đã gỡ hết): `TenantFeaturesTab.tsx` (import + prop `slots`); chỉ còn nhắc trong comment `apps/pages/AppDetailPage.tsx:2`. Chỗ gán cũ còn lại tạm: `processes/components/flows/RulesPanel.tsx` (import `RoutingRules` vị trí mới), tab Quy trình + ngăn Công ty `/apps/$appKey`, `flowsMode` — gỡ ở c13.

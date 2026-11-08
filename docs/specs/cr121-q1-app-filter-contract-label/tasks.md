@@ -27,13 +27,13 @@ B. Pack kit có "bộ đặt nhãn bản ghi" (`recordLabelRegistry`, cửa `pac
 - Số câu SQL: list công ty = 1 (+1 đếm counts như cũ); nhãn = 1 câu/trang (+ set_config role của tx gói).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/tenant-user.md
 #### Yêu cầu: Lọc danh sách Công ty theo Ứng dụng
 Phễu lọc của `/tenants` có nhóm "Ứng dụng" (Chat AI, Cộng đồng, Sổ Hợp Tác, Tri thức); mỗi hàng hiện các ứng dụng đang bật bằng nhãn nghiệp vụ. API `GET /admin/tenants?app=` lọc bằng entitlement còn hiệu lực và trả `apps` trong cùng câu SQL.
 - Kịch bản: khi lọc Sổ Hợp Tác thì chỉ còn công ty đang bật ứng dụng đó, bỏ chip thì đủ lại [test: e2e/cr121-tenants-list.spec.ts » CR-121 · /tenants lọc Ứng dụng Sổ Hợp Tác chỉ còn công ty đang bật, cột Ứng dụng hiện nhãn nghiệp vụ]
-- Kịch bản: khi gọi API với `app=contracts` thì bỏ qua entitlement đã thu hồi và feature ẩn, `apps` mỗi hàng đã khử trùng [test: apps/admin-api/src/modules/tenants/tenants.list-app.int.test.ts » lọc app=contracts chỉ trả công ty đang bật, bỏ revoked và feature ẩn]
+- Kịch bản: khi gọi API với `app=contracts` thì bỏ qua entitlement đã thu hồi và feature ẩn, `apps` mỗi hàng đã khử trùng [test: apps/admin-api/src/modules/tenants/tenants.list-app.int.test.ts]
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Nhãn hợp đồng thật ở trang chi tiết lượt chạy

@@ -37,7 +37,7 @@ phụ thuộc:
 - Query sai ⇒ mặc định thay vì 422 (màn hình chủ không được hỏng vì tham số).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/tong-quan-platform.md
 #### Yêu cầu: Tổng quan admin platform chỉ cho platform_admin

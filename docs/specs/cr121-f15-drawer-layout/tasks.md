@@ -30,7 +30,7 @@ Không sửa e2e.
 - Ca bấm nút đóng ngăn bằng chữ "Xong" của tiêu đề luật (nay "Xong" là nút đóng ở đáy ngăn `flows-drawer-done`; nút bật/tắt sửa luật vẫn `flows-edit-rules-<việc>` và đổi nhãn "Xong"/"Sửa luật"), ca đọc "Còn lại (mặc định)", câu "Đây là quy trình mẫu của Thư viện…", placeholder "Chọn quy trình đã xuất bản để gán thêm", câu "Chưa hiển thị được các bước của khe này".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/ngan-viec-bo-cuc.md
 #### Yêu cầu: Ngăn việc gọn, có thanh hành động dính đáy

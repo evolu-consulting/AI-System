@@ -25,7 +25,7 @@ Không đổi API/trang Nguồn. Không sửa e2e.
 - Ca tenant_admin xem màn Hệ thống (`cr121-c22-system.spec.ts`): nay thấy thêm thẻ "Nguồn" (khi module nguồn bật) và mở được `/sources`; ca đếm số thẻ của tenant_admin (3 → 4).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/he-thong-nguon-tenant-admin.md
 #### Yêu cầu: Quản trị công ty vào được Nguồn từ màn Hệ thống

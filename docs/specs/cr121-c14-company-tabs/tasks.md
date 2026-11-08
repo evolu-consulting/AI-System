@@ -35,7 +35,7 @@ Không: "Gói + Đổi gói" (chưa có khái niệm gói thương mại), thanh
 - Thành viên: bộ chọn mục con dạng nút (không phải chip lọc có đếm).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/cong-ty-5-tab.md
 #### Yêu cầu: Trang công ty có đúng 5 tab cho cả hai vai

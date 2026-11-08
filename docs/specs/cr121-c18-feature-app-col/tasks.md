@@ -39,7 +39,7 @@ Một migration admin 0037: (1) cột `admin.features.app` NOT NULL + CHECK (`co
 - Mức (Xem/Sửa/Quản trị) và "tính năng thêm" vẫn suy từ hậu tố khoá ở admin-web — không phải ứng dụng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/feature-ung-dung.md
 #### Yêu cầu: Ứng dụng của feature là một cột duy nhất

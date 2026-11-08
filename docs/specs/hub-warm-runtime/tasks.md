@@ -68,7 +68,7 @@ lại của 7,4 s là CLI start (1,1–6,7 s) — không cắt được an toàn
 - Dòng `WARM_READY` chỉ `spawn_warm` đọc (không phải `ChildEvent`), để bể chỉ chứa host đã import xong.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED hub/agent-runtime.md
 #### Yêu cầu: Bể job host dựng sẵn (`RUNTIME_WARM_POOL`)

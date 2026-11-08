@@ -24,7 +24,7 @@ tsc admin-web, `i18n:check`, unit lát ai-tools. Ca e2e cần đổi (qc): `conf
 - Không dựng lại công tắc lạc quan trên hàng (bảng gộp không có cột công tắc); thao tác qua menu, trạng thái cập nhật sau khi server trả.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Công cụ AI bật/tắt lệnh ngay trên hàng

@@ -17,7 +17,7 @@ Lỗi từ e2e `library-readonly-copy.pa.ts`: bản riêng không hiện dòng "
 unit `lib/company-copy.test.ts » CR-121 f2 …`. Không sửa e2e. Perf: không chạm.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/ban-rieng-nguon-thu-vien.md
 #### Yêu cầu: Bản riêng luôn ghi nguồn thư viện (CR-121 R8)

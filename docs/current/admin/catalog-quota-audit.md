@@ -23,3 +23,14 @@ Dữ liệu thuộc schema `hub` (`hub.agent_grants`, `hub.agent_workflows`; Adm
 
 ## Quy trình, Nguồn, Export/Import
 Quy trình (ADM-FR-65..71): trang + editor + run + token theo run; dữ liệu `hub`; editor admin dùng khi `HUB_PROCESS_ROUTES=admin`; FR-70 đã bỏ (CR-074). Nguồn tham chiếu (FR-68/69): `git_remote`, `library`, `local_path`, nút "Kiểm tra kết nối" (đóng băng). Export/Import yaml (FR-54): workflow, command, feature, tenant, group, grant; nhập có bước xem diff; trần 5000 mỗi loại (module `transfer` đóng băng).
+
+
+## Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr121-r4-feature-save-race).
+
+#### Yêu cầu: Editor Feature giữ nháp khi lưu liên tiếp (nguồn: cr121-r4-feature-save-race)
+Sau khi lưu, form dựng lại theo ĐÚNG phản hồi của lần lưu (không chờ tải lại danh sách). Người dùng sửa tiếp trong lúc chờ thì nháp command được giữ (và vẫn tính là chưa lưu); phản hồi/tải lại cũ hơn bản đã áp bị bỏ qua; một command không bao giờ xuất hiện hai lần trong danh sách.
+- Kịch bản: khi phản hồi lưu lần 1 về muộn sau khi người dùng đã bỏ một command thì nháp được giữ và vẫn chưa lưu [test: apps/admin-web/src/features/features/lib/save-merge.test.ts » phản hồi lưu lần 1 về muộn sau khi người dùng bỏ /kiemtra-hoadon: giữ nháp [tom-tat], vẫn dirty]
+- Kịch bản: khi thêm command đã có thì danh sách không có hàng trùng [test: apps/admin-web/src/features/features/lib/save-merge.test.ts » không bao giờ có id lặp (nhân đôi hàng /tom-tat)]
+- Kịch bản: khi tải lại cũ về sau bản mới hơn thì giữ bản mới hơn [test: apps/admin-web/src/features/features/lib/save-merge.test.ts » refetch cũ (v2) về sau khi đã có v3 trong cache ⇒ giữ v3]
+- Kịch bản: khi lưu, bỏ command chỉ thuộc feature này rồi thêm lại thì lưu được liên tiếp [test: thủ công — e2e/features.spec.ts ca CR-055 M2-AC04 chạy ở verify:wave (tiêu đề ca chứa dấu chấm phẩy nên không trích được)]

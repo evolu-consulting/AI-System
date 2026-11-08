@@ -35,7 +35,7 @@ Không đổi API/contract; không sửa sidebar/routing/tab workspace (lát cr1
 - Hạ tầng e2e: cấu hình gốc `playwright.config.ts` dùng chung DB `ai_system_test` giữa các worktree ⇒ chạy song song bị đè dữ liệu; đã chạy bằng DB riêng (`db:test:create rbac`, đặt TEST_DATABASE_URL/TEST_ADMIN_API_DATABASE_URL).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ung-dung-quyen.md
 #### Yêu cầu: Tab Phân quyền theo vai (tạo vai, gán người, Lưu một lượt)

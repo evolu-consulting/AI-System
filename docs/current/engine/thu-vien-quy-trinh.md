@@ -38,8 +38,8 @@ Mục dưới đây thắng nội dung cũ cùng chủ đề ở trên (lát: cr
 
 #### Yêu cầu: Canvas editor quy trình dùng gói sơ đồ chung (ADM-FR-71) (nguồn: cr118-flow-canvas)
 Canvas của trình soạn quy trình do `@ai/flow-canvas` vẽ ở chế độ sửa: bố cục cột theo bước, làn Đúng/Sai của node If, cạnh quay lại/rẽ nhánh, kéo thả chốt cột. Bố cục và hành vi giữ nguyên toạ độ từng điểm; node giai đoạn do admin-web cấp.
-- Kịch bản: khi có các giai đoạn song song và nhánh If thì toạ độ node và cạnh bằng đúng bản trước khi gộp gói [test: packages/flow-canvas/src/layout/columns.test.ts » snapshot bố cục cột: toạ độ node và cạnh giữ nguyên (song song, quay lại, If)]
-- Kịch bản: khi thả node thì cột gần nhất được chọn và độ dịch để node không nằm dưới ngăn chi tiết đúng như trước [test: packages/flow-canvas/src/layout/columns.test.ts » stepFromDropX: cột gần nhất, vượt cuối ⇒ bước mới, revealDx]
+- Kịch bản: khi có các giai đoạn song song và nhánh If thì toạ độ node và cạnh bằng đúng bản trước khi gộp gói [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
+- Kịch bản: khi thả node thì cột gần nhất được chọn và độ dịch để node không nằm dưới ngăn chi tiết đúng như trước [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
 - Kịch bản: khi bật chế độ chỉ xem thì node không kéo được, chế độ sửa thì kéo được và gọi móc của host [test: packages/flow-canvas/src/mode.test.ts » mode view khoá kéo/nối/chọn, edit chỉ mở kéo]
 - Kịch bản: khi mở canvas ở trình soạn thì các nút giai đoạn và panel chi tiết vẫn hiện như trước [test: e2e/P-b2/admin/canvas.pb2.ts » ADM-FR-71 · E-PB2-01 · mở pb2-canvas ⇒ application 'Canvas quy trình', 4 nút 'Giai đoạn n: …', panel 'Chi tiết giai đoạn' chọn sẵn Giai đoạn 1]
 
@@ -122,3 +122,12 @@ Hub trả mỗi vi phạm dạng `{path, rule, step, field, code, params}` (khô
 - Kịch bản: khi gán quy trình cho công ty thiếu mã phòng ban thì Hub trả `GROUP_MISSING_IN_TENANT` với `params.key` và `params.tenant` [test: apps/hub-api/src/modules/processes/library/library-publish.messages.test.ts » missingGroupIssues]
 - Kịch bản: khi Hub trả `DUE_RANGE` kèm `min`,`max` thì admin hiện câu của khoá mã đó kèm "Bước N" [test: apps/admin-web/src/features/processes/lib/publish-issues.test.ts » parsePublishIssues]
 
+
+
+## Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr121-f4-review-mediums).
+
+#### Yêu cầu: Hộp "Chờ tôi duyệt" của Sổ Hợp Tác không lẫn công ty; điều khiển lượt chạy với id sai ⇒ 404; chạy lại không chặn xoá run gốc (nguồn: cr121-f4-review-mediums)
+`inboxOf` và mục nav contracts ghép người công ty này với công ty khác ⇒ 0 việc, không vai duyệt, không ghi gì. `POST /process-runs/:id/{stop,rerun-step,rerun}` với `:id` không phải uuid trả 404. Xoá run gốc không bị chặn bởi run chạy lại (`rerun_of` về NULL).
+- Kịch bản: khi ghép người A với công ty B (và ngược lại) thì 0 việc, không approver, không cap nav [test: tests/acceptance/CF/approval-inbox-count.int.test.ts » F-4 · ghép chéo (người A + công ty B, người B + công ty A) ⇒ 0 việc, không vai duyệt, không cap nav, không ghi gì]
+- Kịch bản: khi xoá run gốc thì FK `rerun_of` là ON DELETE SET NULL [test: apps/hub-api/src/modules/ops/ops.f4-privacy.int.test.ts » FK đổi sang ON DELETE SET NULL (đã VALIDATE)]

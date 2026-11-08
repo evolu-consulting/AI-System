@@ -27,7 +27,7 @@ Không sửa dữ liệu, không migration, không đổi `app-roles.compile.ts`
 unit `app-roles.check.test.ts`; int `ops.app-roles.int.test.ts` (evotest, tối đa 3 lượt).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/kiem-tra-vai-app.md
 #### Yêu cầu: Ops phát hiện lệch giữa vai hub và vai theo ứng dụng

@@ -18,7 +18,7 @@ Lỗi F5: `/features` (danh mục tính năng, platform_admin) không còn lối
 - unit: `features/system/lib/registry.test.ts` (platform_admin 9 mục có `features`; tenant_admin không thấy).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED admin/he-thong-danh-muc-tinh-nang.md
 #### Yêu cầu: Danh mục tính năng có lối vào ở màn Hệ thống

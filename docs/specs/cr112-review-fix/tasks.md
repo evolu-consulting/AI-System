@@ -33,7 +33,7 @@ Không sửa 0031. Không đổi Group/grant của gói khi bật theo mức (v�
 - Chốt 0032 fail-closed: phiên không đặt `app.scope` cũng bị từ chối (mọi đường gọi hiện có đều qua withScope/withConfigWrite).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Vai tuỳ biến không chiếm vai mặc định và chỉ tạo khi công ty có gói
