@@ -253,3 +253,13 @@ Lưu def có bước `subprocess` trỏ quy trình không có / chưa xuất b�
 - Kịch bản: khi A gọi B mà B gọi A thì bị chặn [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » gọi vòng A → B → A ⇒ SUBPROCESS_CYCLE (kể cả tự gọi chính mình)]
 - Kịch bản: khi lồng quá 3 tầng thì bị chặn [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » lồng quá 3 tầng ⇒ SUBPROCESS_DEPTH, đúng 3 ⇒ ok]
 
+## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
+
+#### Yêu cầu: Node «Tạo hợp đồng từ hồ sơ» (nguồn: cr125-contract-from-step)
+Sau bước Soạn thảo (có tệp), node tạo một hợp đồng trong Sổ Hợp Tác của công ty của lượt từ tệp đó (tên, đối tác, giá trị lấy từ ô của bước), gắn lượt với hợp đồng và trả mã hợp đồng cho bước Ký số. Không có tệp thì báo «Chưa có file hợp đồng ở bước Soạn thảo» và không tạo gì; chạy lại cùng lượt không tạo hợp đồng thứ hai.
+- Kịch bản: khi tệp của bước Soạn thảo có và công ty của lượt đúng thì hợp đồng được tạo ở công ty đó (chờ xác nhận, có tệp), lượt gắn hợp đồng và Ký số gửi ký đúng hợp đồng ấy [test: apps/hub-api/src/modules/packs/create-from-step.int.test.ts » tệp bước Soạn thảo → HĐ của công ty lượt, lượt gắn HĐ → Ký số (selfsign) ký đúng HĐ đó]
+- Kịch bản: khi không có tệp hoặc tệp thuộc công ty khác thì lỗi CONTRACT_STEP_FILE_MISSING và không tạo hợp đồng [test: apps/hub-api/src/modules/packs/create-from-step.int.test.ts » không có tệp / tệp chưa liên kết với lượt / công ty khác ⇒ CONTRACT_STEP_FILE_MISSING, không tạo gì]
+- Kịch bản: khi hai lời gọi cùng lượt chạy đồng thời thì chỉ tạo một hợp đồng [test: apps/hub-api/src/modules/packs/create-from-step.int.test.ts » hai lời gọi đồng thời cùng lượt ⇒ MỘT hợp đồng]
+- Kịch bản: khi hợp đồng không phải bản ghi của lượt (vd tải lên chưa gửi duyệt) thì bước Ký số từ chối, không khoá, không tạo phong bì [test: apps/hub-api/src/modules/packs/create-from-step.int.test.ts » Ký số từ chối HĐ không phải bản ghi của lượt (không bỏ qua duyệt): HĐ tải lên chưa gửi duyệt không bị khoá/ký]
+- Kịch bản: khi ánh xạ ô bước thành tên, đối tác, giá trị thì chuẩn hoá và mặc định tên khi trống [test: packages/contracts/src/modules/contracts/create-from-step/node.test.ts » planCreateFromStep · ánh xạ input_map]
+

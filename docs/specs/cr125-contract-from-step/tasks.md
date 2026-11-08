@@ -43,7 +43,7 @@ Không migration, không UI mới. Chạm: use case tải lên (thêm `prefill`)
 - e2e chưa chạy (theo luật).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Node «Tạo hợp đồng từ hồ sơ»

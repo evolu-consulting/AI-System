@@ -80,23 +80,11 @@ gán thêm, không sửa nội dung quy trình. Thành viên/đối tác không 
 - Kịch bản: lỗi 409/422 của hợp đồng ánh xạ về loại lỗi để hiện tiếng Việt [test: packages/web-kit/src/routing-rules.test.ts » mã 409/422 của hợp đồng]
 - Kịch bản: contracts-web proxy `/hub-admin` và `/tenants` sang hub [test: apps/workspace-web/rsbuild.config.test.ts » proxy /hub-admin và /tenants chuyển sang hub-api]
 
-#### Yêu cầu: Quy trình duyệt chỉ chọn ở một nơi
-Ứng dụng Hợp đồng không còn sửa "luật chọn quy trình". Cài đặt › Ứng dụng & quy trình chỉ hiện quy trình đang áp dụng (chỉ đọc) và nút "Mở trang Quy trình" tới Công ty › Quy trình ở trang quản trị. Khi chưa có quy trình: "Hợp đồng chưa có quy trình duyệt — quản trị công ty chọn tại Công ty › Quy trình".
-- Kịch bản: khi quản trị công ty mở Cài đặt thì thấy "Đang áp dụng: <tên>", nút "Mở trang Quy trình", không có "Thêm luật"/"Lưu luật" [test: e2e/contracts-web/u2-contracts-ux.cw.ts » Cài đặt › Ứng dụng & quy trình: chỉ đọc, một nút Mở trang Quy trình]
-- Kịch bản: khi công ty chưa có quy trình thì thấy câu chỉ rõ ai chọn ở đâu [test: e2e/contracts-web/u2-contracts-ux.cw.ts » Cài đặt › Ứng dụng & quy trình: chưa có quy trình ⇒ nói rõ ai làm gì ở đâu]
-
 #### Yêu cầu: Token chỉ hiện cho quản trị
 Mức dùng và ô trần "token" ở Cài đặt › Dò giá chỉ hiện cho quản trị công ty/nền tảng; người bán hàng và giám đốc không thấy.
 - Kịch bản: khi người không phải quản trị mở mục Dò giá thì không thấy "token" [test: thủ công — hiển thị theo vai ở ScoutQuota, không có logic tách riêng để kiểm đơn vị]
 
 ## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
-
-#### Yêu cầu: Quy trình duyệt chỉ chọn ở một nơi (nguồn: cr125-g6-contract-settings)
-Thẻ "Quy trình đang áp dụng" ở Cài đặt › Ứng dụng & quy trình chỉ còn MỘT dòng "Đang áp dụng: <tên>" + liên kết "Xem sơ đồ ở mục Quy trình duyệt" (chuyển sang mục Quy trình duyệt); sơ đồ chỉ xem ở mục đó. Cùng trạng thái dùng một chữ/khoá: "Đang hiệu lực" (`contracts.gape.status.active`) và "Đang chờ ký" (`contracts.esign.pending`).
-- Kịch bản: khi mở mục Ứng dụng thì thẻ quy trình chỉ có một dòng và liên kết sang Quy trình duyệt, không có nút xem/ẩn sơ đồ [test: thủ công — slot-labels.test.ts đã đổi tên/gộp]
-- Kịch bản: khi hiện trạng thái "Đang hiệu lực"/"Đang chờ ký" thì cùng một khoá [test: thủ công — slot-labels.test.ts đã đổi tên/gộp]
-
-(Bản sao khoá `contracts.flow.err.<MÃ>` ở locale v2l/esignflow đã gỡ: không còn nơi đọc; mã lỗi quy trình dùng khoá chuẩn `process.admin.library.form.err.<MÃ>` của G1.)
 
 #### Yêu cầu: Quy trình duyệt chỉ chọn ở một nơi (nguồn: cr125-ux-s2-current-flow)
 Cài đặt chỉ có MỘT mục quy trình ("Quy trình duyệt") và đọc cùng nguồn với trang Quy trình của công ty (flow Bật cho hợp đồng); không còn mục "Ứng dụng & quy trình" hay quy trình mặc định của khe; câu chưa có quy trình không đẩy sang quản trị nền tảng.

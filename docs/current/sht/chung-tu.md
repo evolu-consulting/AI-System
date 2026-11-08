@@ -121,18 +121,6 @@ Flow Thư viện được gán cho công ty có bước Ký số: sau khi duyệ
 Người ký thấy banner "Đến lượt bạn ký — hạn <ngày>" và một nút "Ký ngay"; thẻ tự cập nhật sau khi ký; "Huỷ ký" trong menu "…" có xác nhận; người khác thấy "Đang chờ <tên> ký" không có nút.
 - Kịch bản: HĐ chờ ký, người ký mở thẻ ⇒ banner + Ký ngay, không có Làm mới trạng thái; giám đốc không phải người ký ⇒ Đang chờ tên người ký, không Ký ngay [test: thủ công — e2e/journey-approval/cr123-u6-run-card.spec.ts (job journey-approval), ảnh docs/specs/CR-125/shots/x2]
 
-#### Yêu cầu: Danh sách hợp đồng (nguồn: cr125-x1-waiting-for-me, cr125-x8-date-picker)
-Giám đốc thấy ngay việc chờ chính mình: thẻ "Chờ bạn: N ký · M duyệt" đầu Tổng quan và mục "Chờ tôi" số đỏ ở thanh dưới điện thoại, cùng một nguồn với trang "Chờ tôi duyệt"; mọi ngày trong app hiện dd/mm/yyyy qua một bộ định dạng.
-- Kịch bản: khi người dùng là người ký công ty đã tới lượt của một phong bì còn mở thì HĐ đó nằm trong danh sách chờ ký của họ, người khác và tenant khác không thấy [test: apps/hub-api/src/modules/packs/contracts/adapters/mywork-signing.int.test.ts » chỉ phong bì còn mở, mình là người ký chưa ký và đã tới lượt]
-- Kịch bản: khi có việc ký và duyệt thì số hiển thị là tổng hợp từ một đọc, bằng 0 thì ẩn [test: apps/workspace-web/src/features/overview/lib/waiting.test.ts » 2 ký + 1 duyệt ⇒ tổng 3]
-- Kịch bản: khi hiển thị ngày thì luôn dd/mm/yyyy theo giờ Việt Nam [test: apps/workspace-web/src/components/shared/format-datetime.test.ts » ngày ISO ⇒ dd/mm/yyyy (30/09 chứ không 09/30)]
-- Kịch bản: khi giám đốc đăng nhập lúc có HĐ chờ duyệt thì thẻ Chờ bạn và số đỏ ở thanh dưới điện thoại hiện [test: e2e/journey-approval/cr122-flows.spec.ts » G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt → Xuất bản (gốc tự Tắt) → HĐ B theo bản công ty, HĐ A giữ bản cũ → Quay về bản gốc]
-
-Mọi ô ngày của app Sổ Hợp Tác dùng một bộ chọn ngày tiếng Việt: hiện dd/mm/yyyy qua bộ định dạng chung, tuần bắt đầu thứ Hai, tên tháng tiếng Việt.
-- Kịch bản: khi nhập hoặc đọc ngày thì dd/mm/yyyy (kể cả d/m và ISO) đúng, ngày kiểu mm/dd không có thật bị từ chối [test: apps/workspace-web/src/components/shared/date-picker/date-math.test.ts » dd/mm/yyyy (kể cả d/m, dấu - hoặc .) và ISO ⇒ ISO]
-- Kịch bản: khi mở lịch tháng 9/2027 thì hàng đầu bắt đầu thứ Hai 30/08 [test: apps/workspace-web/src/components/shared/date-picker/date-math.test.ts » tháng 9/2027 (1/9 là thứ Tư): hàng đầu bắt đầu 30/08 (T2) và có ô thứ Tư = 1]
-- Kịch bản: khi nhân viên mở form hợp đồng thì ô ngày hiện dd/mm/yyyy và lịch có tháng tiếng Việt, thứ Hai đầu tuần [test: e2e/journey-approval/cr122-flows.spec.ts » G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt → Xuất bản (gốc tự Tắt) → HĐ B theo bản công ty, HĐ A giữ bản cũ → Quay về bản gốc]
-
 #### Yêu cầu: Thẻ ký số tự cập nhật bằng sự kiện đẩy (nguồn: cr125-x6-sign-push)
 Thẻ ký số của người gửi/người ký cập nhật trong khoảng một giây khi phong bì đổi trạng thái, nhờ sự kiện đẩy; không hỏi trạng thái định kỳ; quay lại cửa sổ thì tải lại một lần.
 - Kịch bản: phong bì ký xong qua webhook/đồng bộ thì người gửi và người ký nhận sự kiện esign.updated, người khác thì không [test: apps/hub-api/src/modules/packs/contracts/adapters/esign-push.int.test.ts » esign.updated chỉ tới người gửi và người ký của đúng HĐ]
