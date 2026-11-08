@@ -46,7 +46,7 @@ test("CR-121 c17 · thư viện chỉ xem ⇒ Sao chép ⇒ bản riêng sửa �
 
     // Sao chép ⇒ mở bản riêng (đường dẫn khác), ghi nguồn, sửa được
     await p.getByTestId("library-copy").click();
-    await expect(p.getByText("Đã sao chép và gán cho công ty này")).toBeVisible();
+    await expect(p.getByText("Đã áp dụng cho công ty.")).toBeVisible();
     await p.waitForURL(
       (u) => /\/processes\/[0-9a-f-]{36}/.test(u.pathname) && !u.pathname.includes(libId),
     );
