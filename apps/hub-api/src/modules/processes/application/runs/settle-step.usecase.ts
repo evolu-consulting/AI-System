@@ -27,7 +27,12 @@ export type StepOutcome = {
 };
 export type StepRepos = { steps: StepRepo; clock: Clock };
 /** CR-120 · loại node chờ bằng hẹn giờ `wait_until` (ngày / N giờ / sự kiện + hạn). */
-const WAIT_KINDS: ReadonlySet<string> = new Set(["wait_until", "wait_for", "wait_event"]);
+const WAIT_KINDS: ReadonlySet<string> = new Set([
+  "wait_until",
+  "wait_for",
+  "wait_event",
+  "subprocess", // CR-125 · chờ lượt con (stage `waiting_timer`, không bao giờ thử lại theo hẹn)
+]);
 
 /** CR-103 · node If: Đúng ⇒ luật 1 (`then_step`); Sai + có `else_step` ⇒ luật 2; Sai không `else_step` ⇒ null (bước kế). */
 type Target = {

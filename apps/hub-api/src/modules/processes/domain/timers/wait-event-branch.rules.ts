@@ -11,6 +11,8 @@ export type WaitEventExec = {
 export const TIMEOUT_KEY = "timeout";
 /** Field output của stage chờ: khoá sự kiện đã nhận hoặc `timeout`. */
 export const WAIT_EVENT_FIELD = "event";
+/** = `SUBPROCESS_OUTCOME_FIELD` (contracts) — lớp domain không import contracts zod. */
+export const SUBPROCESS_OUTCOME_FIELD_KEY = "outcome";
 
 export function waitKeysOf(e: WaitEventExec | undefined): string[] {
   if (e?.kind !== "wait_event" || typeof e.event !== "string") return [];
@@ -34,9 +36,10 @@ export function winningEvent(
 
 /** Luật rẽ (cùng đường `after.branch`): `event == on` ⇒ `goto_step`. */
 export const waitBranchRules = (e: WaitEventExec | undefined): BranchRule[] =>
-  e?.kind === "wait_event" && Array.isArray(e.branches)
+  (e?.kind === "wait_event" || e?.kind === "subprocess") && Array.isArray(e.branches)
     ? e.branches.map((b) => ({
-        field: WAIT_EVENT_FIELD,
+        // CR-125 · «Quy trình con» rẽ theo kết quả lượt con (field `outcome` = done | rejected | cancelled).
+        field: e.kind === "subprocess" ? SUBPROCESS_OUTCOME_FIELD_KEY : WAIT_EVENT_FIELD,
         op: "eq" as const,
         value: b.on,
         gotoStep: b.goto_step,

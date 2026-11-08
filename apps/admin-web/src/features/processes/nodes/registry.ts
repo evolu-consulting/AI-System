@@ -219,6 +219,16 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
       return_step: s.approve?.ret ?? null,
     }),
   },
+  // CR-125 · «Quy trình con» — CHỈ cho typecheck (engine đã có); `draftValue = null` ⇒ chưa chọn được. Lát UI (cr125-subprocess-ui) thay.
+  subprocess: {
+    kind: "subprocess",
+    family: NODE_FAMILY_OF.subprocess,
+    labelKey: null,
+    defaults: () => ({}),
+    draftValue: null,
+    draftExecutor: () => "subprocess",
+    toDef: () => ({ kind: "subprocess", def_key: "" }),
+  },
 };
 
 /** Mục registry của executor contract. */

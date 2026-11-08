@@ -9,6 +9,7 @@ import { formNode } from "./form/node";
 import { ifNode } from "./if/node";
 import { notifyNode } from "./notify/node";
 import { setNode } from "./set/node";
+import { subprocessNode } from "./subprocess/node";
 import { teamNode } from "./team/node";
 import { toolNode } from "./tool/node";
 import type { DefIssue, DefStage, NodeSpec } from "./types";
@@ -30,6 +31,7 @@ export const NODES: { readonly [K in ExecutorKind]: NodeSpec<K> } = {
   wait_event: waitEventNode,
   notify: notifyNode,
   approve: approveNode,
+  subprocess: subprocessNode,
 };
 
 /** Thứ tự cố định (= `EXECUTOR_KINDS`): quyết thứ tự lỗi `defIssues` (team trước tool như cũ). */
@@ -46,6 +48,7 @@ const NODE_LIST: readonly NodeSpec[] = [
   NODES.wait_event,
   NODES.notify,
   NODES.approve,
+  NODES.subprocess,
 ] as NodeSpec[];
 
 /** Loại lạ (snapshot cũ/hỏng) ⇒ undefined. */

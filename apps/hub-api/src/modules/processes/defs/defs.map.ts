@@ -23,6 +23,10 @@ const MESSAGES: Record<HubAdminProcessErrorCode, string> = {
   FLOW_NODE_FEATURE_OFF: "A node uses a feature that is turned off for this company",
   FLOW_EDGE_MISSING: "A step needs fields that the previous step does not provide",
   FLOW_NODE_CONFIG_INVALID: "A step has an invalid configuration",
+  SUBPROCESS_NOT_FOUND:
+    "A sub-process step points to a process that does not exist or is not published",
+  SUBPROCESS_CYCLE: "Sub-process steps call each other in a loop",
+  SUBPROCESS_DEPTH: "Sub-processes are nested too deeply",
 };
 
 export function defError(code: HubAdminProcessErrorCode, details?: unknown): AppError {

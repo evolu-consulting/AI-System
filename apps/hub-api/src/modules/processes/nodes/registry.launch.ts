@@ -9,6 +9,7 @@ import { formLauncher } from "./form/launch";
 import { ifLauncher } from "./if/launch";
 import { notifyLauncher } from "./notify/launch";
 import { setLauncher } from "./set/launch";
+import { subprocessLauncher } from "./subprocess/launch";
 import { teamLauncher } from "./team/launch";
 import { toolLauncher } from "./tool/launch";
 import { waitEventLauncher } from "./wait-event/launch";
@@ -29,6 +30,11 @@ export const NODE_LAUNCHERS: Readonly<Record<ExecutorKind, NodeLauncher>> = {
   wait_event: waitEventLauncher,
   notify: notifyLauncher,
   approve: approveLauncher,
+  subprocess: subprocessLauncher,
 };
+
+/** CR-125 · «Quy trình con»: pha chốt trong `finishWait` + lượt con cần huỷ theo cha (lõi gọi qua registry, không import `nodes/<kind>`). */
+export { subprocessWaitOut } from "./subprocess/settle";
+export { liveChildren as liveChildRuns } from "./subprocess/subprocess.repo";
 
 export const nodeLauncherOf = (kind: ExecutorKind): NodeLauncher => NODE_LAUNCHERS[kind];

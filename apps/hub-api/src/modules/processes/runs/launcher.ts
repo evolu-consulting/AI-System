@@ -41,6 +41,16 @@ async function kick(d: LauncherDeps, self: StageLauncher, runId: string): Promis
   }
 }
 
+/** CR-125 · lượt con vừa mở (tx cha đã COMMIT): kick riêng từng lượt; lỗi chỉ log (quét mồ côi nhặt lại). */
+async function kickOthers(
+  d: Pick<LauncherDeps, "log">,
+  self: StageLauncher,
+  runIds: readonly string[] | undefined,
+): Promise<void> {
+  for (const id of runIds ?? [])
+    await self.kick(id).catch(() => d.log.warn("process-kick-failed", { run_id: id }));
+}
+
 /** D10 · một lượt kick của run (idempotent, khoá `process_runs` FOR UPDATE trước). `false` ⇒ không còn gì để làm. */
 async function kickOnce(
   d: LauncherDeps,
@@ -61,6 +71,7 @@ async function kickOnce(
   if (result.kind === "events") {
     await publishUserEvents(d.redis, result.events, d.log);
     await d.postThread(runId).catch(() => {});
+    await kickOthers(d, self, result.kicks);
     return { more: result.more === true, sync: true };
   }
   if (result.kind !== "launch") return none;

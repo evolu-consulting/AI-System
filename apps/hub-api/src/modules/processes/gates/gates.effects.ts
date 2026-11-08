@@ -28,6 +28,7 @@ import {
   stepsOfSnap,
 } from "../runs/step-persist";
 import { stageRowOf, toDecision } from "../runs/team-runner";
+import { cancelChildren } from "./cancel-children";
 import * as g from "./gates.repo";
 import { openParallel, parallelGroupIds } from "./parallel-open";
 
@@ -302,7 +303,9 @@ export async function cancelEnd(
     now,
   });
   await g.setRunStatus(tx, run.id, "cancelled", now);
-  return finish(gx, run, ref, "cancelled");
+  // CR-125 · «Quy trình con»: huỷ cha ⇒ huỷ lượt con còn chạy (cùng tx, khoá cha → con).
+  const children = await cancelChildren(gx, { tenantId: run.tenantId, runId: run.id });
+  return [...(await finish(gx, run, ref, "cancelled")), ...children];
 }
 
 async function finish(

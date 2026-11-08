@@ -1,7 +1,7 @@
 // HUB-FR-120 · ADM-FR-68 · PB-R01/02/05/06/19/21 · CR-060 · contract nguồn tham chiếu (plan §3.1). Mọi object strict.
 // `*Public` ẩn `config.path`/`pin.path` cho non-platform_admin (C1); server strip khi dựng `SourceView`/`SourceCheckResult`.
 import { z } from "zod";
-import { PROCESS_INPUT_MAX, ProcessKeySchema } from "../chat/processes";
+import { PROCESS_DESC_MAX, PROCESS_INPUT_MAX, ProcessKeySchema } from "../chat/processes";
 import { IsoDateTime, UpdatedBySchema, UuidSchema } from "../common";
 
 export const SOURCE_KEY_RE = /^[a-z0-9-]{2,32}$/;
@@ -346,3 +346,23 @@ export function applyModeIssue(config: ApplyModeInput): "SOURCE_APPLY_UNSUPPORTE
     return "SOURCE_APPLY_UNSUPPORTED";
   return null;
 }
+
+// Chuyển từ processes.ts (giữ file đó ≤ 400 dòng, CR-125).
+/** PB-R06 · stage chọn tập con nguồn + allowlist glob. */
+export const StageSourceSchema = z.strictObject({
+  source_key: SourceKeySchema,
+  allowlist: z.array(GlobSchema).max(STAGE_ALLOWLIST_MAX).default([]),
+});
+export type StageSource = z.infer<typeof StageSourceSchema>;
+
+/** C4 · chip nguồn cho user thường (`GET /process-runs/sources`); KHÔNG config/url/path. */
+export const ProcessSourceChipSchema = z.strictObject({
+  key: SourceKeySchema,
+  kind: SourceKindSchema,
+  description: z.string().max(PROCESS_DESC_MAX),
+  default_branch: BranchSchema.optional(),
+});
+export type ProcessSourceChip = z.infer<typeof ProcessSourceChipSchema>;
+export const ProcessSourceChipListResponseSchema = z.strictObject({
+  items: z.array(ProcessSourceChipSchema).max(200),
+});

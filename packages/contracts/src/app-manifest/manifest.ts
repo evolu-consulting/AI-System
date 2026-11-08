@@ -99,6 +99,7 @@ export const NODE_EXECUTORS = [
   "wait_event",
   "tool",
   "set",
+  "subprocess", // CR-125 · Quy trình con
 ] as const;
 export type NodeExecutor = (typeof NODE_EXECUTORS)[number];
 /** Nhóm trên bảng node. */

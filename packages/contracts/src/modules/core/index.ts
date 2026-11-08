@@ -7,6 +7,13 @@ import { WAIT_OFFSET_DAYS, WaitTimeSchema } from "../../chat/processes";
 import { ApproveParallelSchema } from "../../hub-admin/process-approve";
 import type { FeatureModule, FeatureNodeDecl, PortSchema } from "../types";
 import { START_FORM_NODE } from "./start-form/node";
+import { SUBPROCESS_NODE } from "./subprocess";
+
+export {
+  SUBPROCESS_CONFIG_PORT,
+  type SubprocessConfig,
+  SubprocessConfigSchema,
+} from "./subprocess";
 
 const WaitUntilPort = z.strictObject({
   offset_days: z.number().int().min(WAIT_OFFSET_DAYS.min).max(WAIT_OFFSET_DAYS.max),
@@ -153,6 +160,7 @@ export const CORE_MODULE: FeatureModule = {
       ...native("core.approve", "Duyệt", "Approve", "approve", APPROVE_OUTPUTS),
       configPort: APPROVE_CONFIG_PORT,
     },
+    SUBPROCESS_NODE, // CR-125 · Quy trình con
     native("core.if", "Nếu", "If", "if"),
     // Kết thúc = stage `set` mang `outcome` (xem `baseNodeOf`).
     native("core.end", "Kết thúc", "End", "set"),

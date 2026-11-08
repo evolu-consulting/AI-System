@@ -34,6 +34,7 @@ import { LIBRARY_DEF_FIELDS, LIBRARY_DEF_INPUT_FIELDS } from "./process-library"
 import { NotifyExecutorSchema } from "./process-notify";
 import { SetExecutorSchema } from "./process-set";
 import { PROCESS_DEF_RULES, processDefStageIssues } from "./process-steps";
+import { HUB_ADMIN_SUBPROCESS_ERRORS, SubprocessExecutorSchema } from "./process-subprocess";
 import {
   AfterBranchSchema,
   type BranchRule,
@@ -48,16 +49,14 @@ import {
   WaitUntilExecutorSchema,
 } from "./process-wait";
 import {
-  BranchSchema,
   DEF_INPUTS_MAX,
   DEF_SOURCES_MAX,
-  GlobSchema,
   ProcessInputDefSchema,
   ProcessInputValueSchema,
   SourceKeySchema,
-  SourceKindSchema,
-  STAGE_ALLOWLIST_MAX,
   STAGE_SOURCES_MAX,
+  type StageSource,
+  StageSourceSchema,
 } from "./sources";
 
 export * from "../chat/processes";
@@ -83,6 +82,7 @@ export * from "./process-library";
 export * from "./process-notify";
 export * from "./process-routing";
 export * from "./process-steps";
+export * from "./process-subprocess";
 export * from "./process-tools";
 export * from "./process-ui";
 export * from "./process-wait";
@@ -95,6 +95,7 @@ export const HUB_ADMIN_PROCESS_ERRORS = {
   TEMPLATE_READ_ONLY: 403,
   FLOW_NODE_FEATURE_OFF: 422, // CR-122 · FR-25 · node của tính năng đã tắt cho công ty
   FLOW_EDGE_MISSING: 422, // CR-122 · N2 · FR-26 · bước sau thiếu trường BẮT BUỘC mà bước trước không có (`details.edges`)
+  ...HUB_ADMIN_SUBPROCESS_ERRORS, // CR-125 · «Quy trình con»: không có / gọi vòng / lồng quá sâu
   FLOW_NODE_CONFIG_INVALID: 422, // CR-122 · E5b · cấu hình riêng của node sai (`details.issues[{path,code}]`, path `stages.<i>.executor.args.<khoá>`)
 } as const;
 export type HubAdminProcessErrorCode = keyof typeof HUB_ADMIN_PROCESS_ERRORS;
@@ -122,25 +123,6 @@ const NameSchema = z.string().trim().min(1).max(PROCESS_NAME_MAX);
 // ── Nguồn + đầu vào (P-b · HUB-FR-121/124 · PB-R06/R13): `ProcessInput*Schema`/`INPUT_*` ở `./sources` (tránh vòng import)
 export const MUST_KNOW_MAX = 10;
 export const MUST_KNOW_LEN = 200;
-
-/** PB-R06 · stage chọn tập con nguồn + allowlist glob. */
-export const StageSourceSchema = z.strictObject({
-  source_key: SourceKeySchema,
-  allowlist: z.array(GlobSchema).max(STAGE_ALLOWLIST_MAX).default([]),
-});
-export type StageSource = z.infer<typeof StageSourceSchema>;
-
-/** C4 · chip nguồn cho user thường (`GET /process-runs/sources`); KHÔNG config/url/path. */
-export const ProcessSourceChipSchema = z.strictObject({
-  key: SourceKeySchema,
-  kind: SourceKindSchema,
-  description: z.string().max(PROCESS_DESC_MAX),
-  default_branch: BranchSchema.optional(),
-});
-export type ProcessSourceChip = z.infer<typeof ProcessSourceChipSchema>;
-export const ProcessSourceChipListResponseSchema = z.strictObject({
-  items: z.array(ProcessSourceChipSchema).max(200),
-});
 
 /** P-c1 · HUB-FR-126 · stage tự-sửa mã trong nguồn git (PC-R01): nguồn + lệnh cài/test + allowlist ghi. */
 export const StageAutofixSchema = z.strictObject({
@@ -178,6 +160,8 @@ export const ProcessStageDefSchema = z.strictObject({
     NotifyExecutorSchema,
     /** CR-122 · E2b · node Duyệt độc lập (luật `approveStageIssues`, hub nodes/approve). */
     ApproveExecutorSchema,
+    /** CR-125 · node «Quy trình con» (luật `subprocessCheck`, hub nodes/subprocess). */
+    SubprocessExecutorSchema,
   ]),
   instruction: z.string().max(STAGE_INSTRUCTION_MAX),
   output: z.strictObject({

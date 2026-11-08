@@ -6,6 +6,7 @@ import {
   PARALLEL_KEY,
 } from "../../../packages/contracts/src/hub-admin/process-approve";
 import { HUB_ADMIN_LIBRARY_ERRORS } from "../../../packages/contracts/src/hub-admin/process-library";
+import { HUB_ADMIN_SUBPROCESS_ERRORS } from "../../../packages/contracts/src/hub-admin/process-subprocess";
 import {
   PROCESS_START_ERROR_KEY,
   PROCESS_START_ERRORS,
@@ -36,6 +37,11 @@ export const CODE_SETS: readonly CodeSet[] = [
     name: "process-start",
     codes: Object.keys(PROCESS_START_ERRORS),
     prefix: PROCESS_START_ERROR_KEY,
+  },
+  {
+    name: "hub-admin-subprocess",
+    codes: Object.keys(HUB_ADMIN_SUBPROCESS_ERRORS),
+    prefix: "process.admin.apiError",
   },
   {
     name: "hub-admin-library",

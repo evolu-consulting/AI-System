@@ -20,6 +20,7 @@ import {
 } from "../../domain/timers/wait-event-branch.rules";
 import { type WaitSignal, waitEventFields } from "../../domain/timers/wait-event-data.rules";
 import type { ProcessRunStatus, StageRunStatus } from "../../domain/types";
+import { subprocessWaitOut } from "../../nodes/registry.launch";
 import { persistStage } from "../../runs/step-persist";
 import { type SnapshotStages, waitOriginalDue } from "./timer-origin";
 
@@ -125,7 +126,17 @@ async function finishWait(
   const s = await stageOf(c.tx, c.tenantId, runId, stageRunId);
   if (!h || !s) return;
   const name = h.snapshot.stages?.[s.stage_idx]?.name ?? "";
-  const { md, fields } = await waitMd(c, { runId, h, s, w, name });
+  const isSub = h.snapshot.stages?.[s.stage_idx]?.executor?.kind === "subprocess";
+  const sub = isSub ? await subprocessWaitOut(c.tx, c.tenantId, { stage: s, name }) : null;
+  if (sub?.kind === "skip") return;
+  if (sub?.kind === "requeue") {
+    // CR-125 · lượt con lỗi ⇒ launcher (deps đầy đủ) mở «Cần xử lý» cho bước cha.
+    await c.tx.execute(sql`update hub.stage_runs set status = 'queued', updated_at = now()
+      where id = ${stageRunId} and process_run_id = ${runId} and tenant_id = ${c.tenantId}`);
+    c.outbox.emit({ kind: "kick", runId });
+    return;
+  }
+  const { md, fields } = sub ?? (await waitMd(c, { runId, h, s, w, name }));
   const outputId = await insertOutput(c.tx, { tenantId: c.tenantId, runId, stage: s, md, fields });
   const step = await persistStage(c.tx, {
     runId,

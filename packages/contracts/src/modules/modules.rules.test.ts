@@ -49,6 +49,7 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
       "core.bell",
       "core.wait-until",
       "core.wait-for",
+      "core.subprocess",
     ]);
     expect(APP_MANIFESTS.contracts?.nodes.map((n) => n.key)).toEqual([
       "contracts.esign",
@@ -100,6 +101,7 @@ describe("MOD-FR-05 · module core", () => {
       ["core.bell", "notify"],
       ["core.wait-until", "wait_until"],
       ["core.wait-for", "wait_for"],
+      ["core.subprocess", "subprocess"],
       ["core.approve", "approve"],
       ["core.if", "if"],
       ["core.end", "set"],

@@ -45,3 +45,6 @@ export function clusterCheck(input: Pick<ProcessDefInput, "stages">): void {
 
 export const withWarnings = (def: ProcessDef, w: readonly FlowEdgeIssue[]): ProcessDefSaved =>
   w.length > 0 ? { ...def, warnings: [...w] } : def;
+
+/** CR-125 · guard «Quy trình con» (gom một điểm import cho defs.service). */
+export { subprocessCheck } from "./subprocess-check";

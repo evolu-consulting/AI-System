@@ -175,6 +175,8 @@ export const EXECUTOR_KINDS = [
   "notify",
   // CR-122 · E2b · node Duyệt độc lập (Duyệt / Từ chối / Trả lại rẽ theo bước).
   "approve",
+  // CR-125 · «Quy trình con» (mở một lượt con, chờ nó kết thúc).
+  "subprocess",
 ] as const;
 export const STEP_ROLES = ["agent", "plan", "member"] as const;
 

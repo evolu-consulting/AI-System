@@ -136,8 +136,10 @@ async function afterCommit(
     const { r } = p;
     // TB2/TB3 · `skip` trong lô (run không khoá được, hay lý do bất ngờ) ⇒ không bỏ kick: đường từng run quyết lại.
     if (r.kind === "skip") return await kickOne(p.runId);
-    if (r.kind === "events") await d.postThread(p.runId).catch(() => {});
-    else if (!(await launchAfterCommit(d, self, r))) return;
+    if (r.kind === "events") {
+      await d.postThread(p.runId).catch(() => {});
+      for (const id of r.kicks ?? []) await self.kick(id); // CR-125 · lượt con vừa mở
+    } else if (!(await launchAfterCommit(d, self, r))) return;
     if (r.more === true) await kickOne(p.runId);
   } catch (err) {
     d.log.warn("process-kick-failed", { run_id: p.runId, ...safeErrorFields(err) });

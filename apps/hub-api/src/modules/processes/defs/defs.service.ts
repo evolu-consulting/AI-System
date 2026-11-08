@@ -58,7 +58,7 @@ import {
   toTeams,
 } from "./defs.map";
 import * as repo from "./defs.repo";
-import { edgeCheck, withWarnings } from "./edge-check";
+import { edgeCheck, subprocessCheck, withWarnings } from "./edge-check";
 import { flowDefPaths } from "./flow-def.rules";
 import { nodeFeatureError, nodeFeatureMiss } from "./node-features";
 import { assertStagesWithinLimit } from "./platform-limits";
@@ -181,13 +181,13 @@ export class DefsService {
     lib = false,
   ): Promise<void> {
     await assertStagesWithinLimit(tx, input.stages.length);
-    const toolKeys = toolKeysOf(input.stages);
     const refs = lib
       ? await libraryRefs(tx, input.stages, this.d.packTools)
-      : await loadDefRefs(tx, tenantId, toolKeys, this.d.packTools);
+      : await loadDefRefs(tx, tenantId, toolKeysOf(input.stages), this.d.packTools);
     throwIfInvalid(validateProcessDef(input, refs, { library: lib }));
     await this.#checkSources(tx, tenantId, input.sources);
     await this.#checkAutofixKinds(tx, tenantId, input);
+    await subprocessCheck(tx, tenantId, input); // CR-125 · Quy trình con: có / vòng / sâu (edge-check)
   }
 
   /** PC-R01 · nguồn của stage tự-sửa phải là git_remote/local_path; library ⇒ 422 PROCESS_REF_INVALID (path autofix.source_key). */

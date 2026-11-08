@@ -47,6 +47,8 @@ export type KickResult = (
 ) & {
   /** D5 · còn stage `queued` khác của bước ⇒ kick lặp thêm (vắng ⇒ dừng; tránh tx thừa ở def tuần tự). */
   more?: boolean;
+  /** CR-125 · lượt KHÁC cần kick SAU COMMIT (lượt con vừa mở bởi «Quy trình con»). */
+  kicks?: readonly string[];
 };
 
 type Lost = (reason: "permission_lost" | "user_inactive") => Promise<KickResult>;
