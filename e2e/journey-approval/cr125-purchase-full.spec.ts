@@ -7,7 +7,7 @@
 // Bước điền (form) của Phần 1–3 làm bằng thẻ bước điền thật (lát cr125-form-step-card: cùng bộ chọn với `cr125-form-step-card.spec.ts`).
 // KHÔNG chạy trong lát này — chạy MỘT lần ở đợt cuối. CHƯA BIẾT: việc của lượt CON không có HĐ có hiện ở «Chờ tôi duyệt» / mở được thẻ không.
 import { existsSync, readFileSync } from "node:fs";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import {
   notifyConfigChanged,
   writeCr125Config,
@@ -89,6 +89,14 @@ const VALUE_BY_TYPE: Record<string, string> = {
  * Bước điền (form) trên thẻ — đúng bộ chọn của `cr125-form-step-card.spec.ts`: `form[data-flow="form"]`, ô `[data-flow-field=<khoá>]`,
  * tệp `input[type=file]` + `file-item`, nút «Gửi». Điền mọi ô còn trống (chữ / số / tiền / ngày / tệp) rồi gửi. Trả true nếu có form để gửi.
  */
+/** Giá trị điền cho một ô: ô số / tiền của FormStep là input chữ có `inputmode` numeric|decimal (không phải type=number). */
+async function valueFor(field: Locator, input: Locator): Promise<string> {
+  const type = (await input.getAttribute("type")) ?? "text";
+  const numeric = ["numeric", "decimal"].includes((await input.getAttribute("inputmode")) ?? "");
+  if (!numeric) return VALUE_BY_TYPE[type] ?? "Dữ liệu e2e";
+  return /toán|tiền|giá|chi phí|₫/i.test((await field.textContent()) ?? "") ? "470000000" : "2";
+}
+
 async function submitOpenForm(page: Page): Promise<boolean> {
   const form = page.locator('form[data-flow="form"]').first();
   if (!(await form.isVisible())) return false;
@@ -103,9 +111,7 @@ async function submitOpenForm(page: Page): Promise<boolean> {
     }
     const input = field.locator("input, textarea").first();
     if ((await input.count()) === 0 || (await input.inputValue()) !== "") continue;
-    const type = (await input.getAttribute("type")) ?? "text";
-    const money = (await field.textContent())?.includes("₫") === true;
-    await input.fill(money ? "470000000" : (VALUE_BY_TYPE[type] ?? "Dữ liệu e2e"));
+    await input.fill(await valueFor(field, input));
   }
   await form.getByRole("button", { name: "Gửi", exact: true }).click();
   await expect(form).toHaveCount(0, { timeout: 60_000 });

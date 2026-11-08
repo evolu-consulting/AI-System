@@ -522,7 +522,7 @@ fe9dc3f40ceea231bfa7daf82a72e5f02dacb0b97d88afde8ed59d11ba0a86bb  e2e/journey-ap
 a8fdf2e685d882902b69e0ce1a4f95e461bd82e9ef93c8b06475241f57a2bc4c  e2e/journey-approval/cr125-form-step-card.spec.ts
 e4d0c5fb86e1fa50467e802d85c15403aa146602514ff034231c4bbd9db9aab0  e2e/journey-approval/cr125-manual-start.spec.ts
 8ddd03702fe58400216c4005b25f64902bb8447ff5d6b0a4bfa2baa7bc4416df  e2e/journey-approval/cr125-parallel-approval-ui.spec.ts
-b9f1cadde785edc41334f214f4116172edeaa70b95e7ad1612608792e0ab9a0b  e2e/journey-approval/cr125-purchase-full.spec.ts
+56db77309f8f75abe1b93704c87cd4381e60d34a2172e576ac35d5e22ce4e134  e2e/journey-approval/cr125-purchase-full.spec.ts
 beb0907d2f95260fe2384246e0a2c995de56636252dd7f1ded7d70a5f189bb04  e2e/journey-approval/cr125-s1-onboard.spec.ts
 0956bfa06fef57a741e2e8d73e65f3fa4cc59f198ed4487d900327c273115b6a  e2e/journey-approval/cr125-s2-settings-flow.spec.ts
 c2ded0de7ef358c3d4d24ae5fe3c82d22266013906650c124b01f450f2b4aa25  e2e/journey-approval/cr125-s3-save-blocked.spec.ts
