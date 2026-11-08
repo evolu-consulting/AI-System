@@ -55,3 +55,6 @@ export const TONE_TEXT: Record<Tone, string> = {
   dim: "text-dim",
   act: "text-act",
 };
+
+/** «dd/mm» theo giờ Việt Nam (CR-126: «Duyệt bởi X, dd/mm»). */
+export const ddmm = (iso: string): string => viDate(iso).slice(0, 5);

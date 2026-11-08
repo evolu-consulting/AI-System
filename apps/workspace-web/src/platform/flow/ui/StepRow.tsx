@@ -3,7 +3,7 @@
 import type { FlowAssignee, FlowStepView } from "@ai/contracts/flow";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { viDateTime } from "~/components/shared/format";
+import { ddmm, viDateTime } from "~/components/shared/format";
 import type { AnyStepProps } from "./types";
 
 const DOT: Record<FlowStepView["status"], string> = {
@@ -25,6 +25,21 @@ function Assignee({ a }: { a: FlowAssignee | null }) {
   const name = a.kind === "system" ? t("contracts.flowPanel.system") : a.label;
   if (!name) return null;
   return <span className="text-caption text-dim">· {name}</span>;
+}
+
+/** «Duyệt bởi X, dd/mm» khi bước đã qua; bước khác: «Quyết bởi X · dd/mm/yyyy HH:mm». */
+function Decided({ step }: { step: FlowStepView }) {
+  const { t } = useTranslation();
+  if (!step.decided_by) return null;
+  const name = step.decided_by.name;
+  const text =
+    step.status === "passed"
+      ? t("contracts.flowPanel.approvedBy", {
+          name,
+          date: step.decided_at ? ddmm(step.decided_at) : "",
+        }).replace(/, $/, "")
+      : `${t("contracts.flowPanel.decidedBy", { name })}${step.decided_at ? ` · ${viDateTime(step.decided_at)}` : ""}`;
+  return <div className="text-caption text-dim">{text}</div>;
 }
 
 /** Khung một dòng bước; `children` = phần riêng của loại (form, nút…). */
@@ -81,12 +96,7 @@ export function StepFrame({
               : ""}
           </div>
         )}
-        {step.decided_by && (
-          <div className="text-caption text-dim">
-            {t("contracts.flowPanel.decidedBy", { name: step.decided_by.name })}
-            {step.decided_at ? ` · ${viDateTime(step.decided_at)}` : ""}
-          </div>
-        )}
+        <Decided step={step} />
         {step.feedback && (
           <p className="mt-1 whitespace-pre-line text-caption">“{step.feedback}”</p>
         )}

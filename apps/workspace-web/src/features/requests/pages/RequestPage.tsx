@@ -1,10 +1,11 @@
-﻿// CR-125 · cr125-manual-start-ui · trang MỘT yêu cầu: tên, trạng thái, nội dung phiếu đã điền. cr125-request-steps: toàn bộ các bước của lượt
+// CR-125 · cr125-manual-start-ui · trang MỘT yêu cầu: tên, trạng thái, nội dung phiếu đã điền. cr125-request-steps: toàn bộ các bước của lượt
 // và lượt con (Phần 1/2/3 …) lồng dưới lượt cha; việc của người xem ở bất kỳ lượt nào (form «Gửi», Duyệt / Trả lại / Từ chối, thẻ nhóm cùng
 // duyệt) làm ngay tại đây qua `RunStepActions` (cùng component với thẻ HĐ). Mở từ lượt con ⇒ chuyển sang lượt gốc, nhìn vào lượt con đó.
 // Quyền xem do hub quyết (người gửi · người được giao · quản trị), ngoài ra 404.
 import type { RequestStepNode } from "@ai/contracts/hub-admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
+import type { TFunction } from "i18next";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { fileIdsOf } from "~/components/shared/attachments";
@@ -13,8 +14,16 @@ import { PageHead, Panel } from "~/components/shared/layout";
 import { Skeleton } from "~/components/ui/skeleton";
 import { notifyFlowNavChanged } from "~/shared/kernel/flow-nav-event";
 import { decideTask, fetchRequest, RESULT_OF_ACTION, requestKeys } from "../api";
-import { RequestStepsTree } from "../components/RequestStepsTree";
-import { flattenSteps, redirectToRoot } from "../lib/request-tree";
+import { RequestStepsTree, StepActions } from "../components/RequestStepsTree";
+import { firstActionable, redirectToRoot } from "../lib/request-tree";
+import {
+  currentNode,
+  summaryOf,
+  summaryText,
+  type Waiting,
+  waitingOf,
+  waitingText,
+} from "../lib/request-view";
 
 const money = (v: string): string => Number(v).toLocaleString("vi-VN");
 
@@ -85,13 +94,35 @@ export function RequestPage({
       </div>
     );
   const { run, title, fields, steps } = q.data;
-  const mineLeft = flattenSteps(steps).some((n) => n.flow.tasks.length > 0);
+  const mine = firstActionable(steps);
+  const treeProps = {
+    focus,
+    busy: decide.isPending,
+    error: decide.isError,
+    onChanged: changed,
+    onDecide: (n: RequestStepNode, taskId: string, action: string, feedback?: string) =>
+      decide
+        .mutateAsync({ n, taskId, action, ...(feedback ? { feedback } : {}) })
+        .then(() => undefined),
+  };
+  const waiting = waitingOf(steps, run.status);
+  const waitLine = waitingLine(t, waiting);
+  const summary = summaryText(
+    summaryOf(fields, "started_by" in run ? run.started_by.display_name : undefined),
+    t("contracts.requests.proposer"),
+  );
+  const nextWho = waiting.kind === "waiting" ? waiting.items.find((i) => i.who)?.who : undefined;
   return (
     <div data-testid="request-page">
       <PageHead title={title} crumb={back} />
+      {summary && (
+        <p className="mb-2 mt-0 text-sm text-dim" data-testid="request-summary">
+          {summary}
+        </p>
+      )}
       {sent && (
         <p role="status" className="mb-3 text-sm text-ok" data-testid="request-sent">
-          {t(sent === "new" ? "contracts.requests.createdNote" : "contracts.requests.reusedNote")}
+          {sentNote(t, sent, nextWho)}
         </p>
       )}
       <Panel className="mb-4 max-w-2xl px-6 py-4">
@@ -101,7 +132,20 @@ export function RequestPage({
             {t(`contracts.requests.status.${run.status}`)}
           </b>
         </p>
+        {waitLine && (
+          <p className="mb-0 mt-1 text-sm" data-testid="request-waiting">
+            {waitLine}
+          </p>
+        )}
       </Panel>
+      {mine && (
+        <Panel className="mb-4 max-w-2xl border-act px-6 py-4">
+          <div data-testid="request-action-bar">
+            <h2 className="mb-2 text-[15px] font-semibold">{t("contracts.requests.myTask")}</h2>
+            <StepActions node={mine} {...treeProps} />
+          </div>
+        </Panel>
+      )}
       {fields.length > 0 && (
         <Panel className="mb-4 max-w-2xl px-6 py-4">
           <h2 className="mb-2 text-[15px] font-semibold">{t("contracts.requests.formData")}</h2>
@@ -131,25 +175,43 @@ export function RequestPage({
         <div data-testid="request-steps">
           <RequestStepsTree
             node={steps}
-            focus={focus}
-            busy={decide.isPending}
-            error={decide.isError}
-            onChanged={changed}
-            onDecide={(n, taskId, action, feedback) =>
-              decide
-                .mutateAsync({ n, taskId, action, ...(feedback ? { feedback } : {}) })
-                .then(() => undefined)
-            }
+            currentRunId={currentNode(steps, focus).run_id}
+            hoistedRunId={mine?.run_id ?? null}
+            {...treeProps}
           />
         </div>
       </Panel>
-      {decide.isSuccess && !mineLeft && (
+      {decide.isSuccess && !mine && (
         <p role="status" className="text-sm text-ok" data-testid="request-decided">
-          {t("contracts.requests.decided")}
+          {t("contracts.requests.decided")}{" "}
+          <Link
+            to="/contracts/approvals"
+            className="font-semibold underline"
+            data-testid="request-next"
+          >
+            {t("contracts.requests.nextWork")}
+          </Link>
         </p>
       )}
     </div>
   );
+}
+
+/** «Đang chờ: <ai> · Phần N – <bước>» hoặc «Đã hoàn tất»; không ai giữ việc ⇒ null. */
+function waitingLine(t: TFunction, w: Waiting): string | null {
+  if (w.kind === "done") return t("contracts.requests.waitingDone");
+  if (w.kind === "none") return null;
+  return t("contracts.requests.waitingFor", {
+    text: waitingText(w.items, t("contracts.requests.part")),
+  });
+}
+
+/** Lời sau khi gửi: bước tiếp là ai (nếu biết) + sẽ có thông báo; gửi lại cùng mã ⇒ «đã gửi trước đó». */
+function sentNote(t: TFunction, sent: "new" | "again", nextWho: string | null | undefined): string {
+  if (sent !== "new") return t("contracts.requests.reusedNote");
+  return nextWho
+    ? t("contracts.requests.sentNext", { who: nextWho })
+    : t("contracts.requests.sentNoNext");
 }
 
 /** Ô «Tệp đính kèm» đã gửi: mỗi tệp một liên kết mở tệp (hub kiểm quyền xem lượt); giá trị không đọc ra id ⇒ chỉ đếm. */

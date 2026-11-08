@@ -25,7 +25,7 @@ export type RunStepActionsProps = {
 const BTN: Record<FlowActionDef["style"], string> = {
   primary: "btn btn-primary",
   default: "btn",
-  danger: "btn",
+  danger: "btn border border-late bg-panel text-late hover:bg-late-bg",
 };
 
 /** Task cần nút hành động: task `review` của người xem (task `form` gửi ngay trên thẻ bước). */
