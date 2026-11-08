@@ -33,7 +33,10 @@ describe("CSS module không có màu cứng", () => {
   });
 
   it("globals.css có bản sáng và tối cho màu thương hiệu Community", () => {
-    const css = readFileSync(join(import.meta.dir, "globals.css"), "utf8");
+    const css = readFileSync(
+      join(import.meta.dir, "../../../../packages/web-kit/src/styles/tokens.css"),
+      "utf8",
+    );
     for (const b of ["blue", "teal", "green", "orange", "rose"])
       expect(css.match(new RegExp(`--brand-${b}:`, "g"))?.length).toBe(2);
   });

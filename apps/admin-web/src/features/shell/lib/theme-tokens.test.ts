@@ -3,10 +3,15 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { DEFAULT_PREFS, resolveTheme } from "@ai/web-kit/prefs/prefs";
 
-const css = readFileSync(new URL("../../../styles/globals.css", import.meta.url), "utf8");
+const css = readFileSync(
+  new URL("../../../../../../packages/web-kit/src/styles/tokens.css", import.meta.url),
+  "utf8",
+);
 const block = (sel: string) => {
-  const m = new RegExp(`(^|\\n)${sel.replace(".", "\\.")} \\{([^}]*)\\}`).exec(css);
-  return m?.[2] ?? "";
+  const m = new RegExp(
+    `(^|\\n)${sel.replace(".", "\\.")}(,\\s*:root\\[data-theme="dark"\\])? \\{([^}]*)\\}`,
+  ).exec(css);
+  return m?.[3] ?? "";
 };
 
 describe("CR-121 · giao diện shell", () => {

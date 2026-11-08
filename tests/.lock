@@ -597,7 +597,7 @@ e2626bc81544422e788bb441f652a4cf0e6bf7562de96ee6ad699ff644e050fc  tests/acceptan
 6939f5309994e91a86f2ca31af75c4b36d7aa2ae7e69586a0f7dc3255b662ae1  tests/acceptance/ADM-NFR-06/trace.test.ts
 4e73272f86e84f3a682de2fa4698fbc344d0dc06438d01b153286d7165b5a683  tests/acceptance/AI-SUB/ai-sub.int.test.ts
 6d3ec6104d12a5171355a7e79c41136e14729370261eb280edcd686ae5905948  tests/acceptance/C1/_gate.ts
-b623b14308a36191f54e6b390e80b01e9eea67d9b200e9b934d1ca4b76f20697  tests/acceptance/C1/contrast.test.ts
+f50f4792070cb7b31c5b4d298c0adb3dc6f7fa1866b7e1f5b575625be99b0002  tests/acceptance/C1/contrast.test.ts
 77dd3d58d8d0ba5b4f740040743f7337bebd1b0b167e8590faf3b0c9d3fb7a64  tests/acceptance/C1/i18n-chat.test.ts
 067ec50ab263762facc1417a07e9e7fbb4f99de1bfb66dc39f6b3c7892852ecc  tests/acceptance/C1/no-hub-url.test.ts
 0dd63c84537c831d789675dd785db2a348edd9c947db9c58ad83f0e3caf50cdc  tests/acceptance/C1/rules.test.ts

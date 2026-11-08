@@ -5,11 +5,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { CHAT_WEB, CHAT_WEB_ENABLED } from "./_gate";
 
-const CSS = join(CHAT_WEB, "src/styles/globals.css");
+// CR-125 G4: token nằm ở gói chung web-kit (chat-web chỉ import).
+const CSS = join(CHAT_WEB, "../../packages/web-kit/src/styles/tokens.css");
 
 /** Lấy thân khối `selector { ... }` ở mức ngoài cùng (đếm ngoặc). */
 function block(css: string, selector: string): string {
-  const at = css.search(new RegExp(`(^|\\n)\\s*${selector.replace(".", "\\.")}\\s*\\{`));
+  const at = css.search(new RegExp(`(^|\\n)\\s*${selector.replace(".", "\\.")}\\s*[{,]`));
   if (at === -1) return "";
   const open = css.indexOf("{", at);
   let depth = 0;
