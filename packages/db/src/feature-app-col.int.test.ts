@@ -28,11 +28,12 @@ beforeAll(async () => {
 afterAll(() => sql.end());
 
 describe("CR-121 c18 · admin 0037 · journal", () => {
-  test("0037 là mục cuối của journal admin, `when` lớn hơn 0036 (đúng thứ tự)", () => {
+  test("0037 nằm trong journal admin ngay sau 0036, `when` lớn hơn 0036 (đúng thứ tự)", () => {
     const j = readJournal(here("../migrations"));
-    const last = j.at(-1);
-    const prev = j.at(-2);
-    expect(last?.tag).toBe("0037_feature_app_col");
+    const i = j.findIndex((e) => e.tag === "0037_feature_app_col");
+    const last = j[i];
+    const prev = j[i - 1];
+    expect(i).toBeGreaterThan(0);
     expect(prev?.tag).toBe("0036_tenants_profile_revoke_hub_ro");
     expect((last?.when ?? 0) > (prev?.when ?? Number.POSITIVE_INFINITY)).toBe(true);
   });

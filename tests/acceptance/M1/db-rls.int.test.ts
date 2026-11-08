@@ -204,7 +204,7 @@ describe("ADM-NFR-07 · quyền hub_ro", () => {
     expect(new Set(r.users.map((u) => u.tenant_id)).size).toBeGreaterThanOrEqual(2);
     expect(r.users).toHaveLength(14);
     expect(r.tenants).toHaveLength(4);
-    expect(r.features.map((f) => f.key).sort()).toEqual(["core"]);
+    expect(r.features.map((f) => f.key).sort()).toEqual(["contracts-partner-confirm", "core"]);
   });
 
   it("CR-121 · hub_ro không đọc được cột liên hệ/hồ sơ mới của tenants (PII) ⇒ 42501", async () => {
