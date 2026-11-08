@@ -95,7 +95,7 @@ const TABLE: Array<[string, string, string]> = [
   ["member.open", "Mở Evolu Copilot", "Open Evolu Copilot"],
   ["nav.main", "Điều hướng chính", "Main navigation"],
   ["nav.overview", "Tổng quan", "Overview"],
-  ["nav.group.access", "TRUY CẬP", "ACCESS"],
+  // CR-121 c10: gỡ nav.group.access khỏi admin-web (sidebar phẳng)
   ["nav.tenants", "Công ty", "Companies"], // CR-121 shell: mục "Tenants" đổi nhãn nghiệp vụ thành "Công ty"
   ["nav.users", "Users", "Users"],
   ["nav.collapse", "Thu gọn thanh bên", "Collapse sidebar"],
@@ -108,11 +108,7 @@ const TABLE: Array<[string, string, string]> = [
   ["account.language", "Ngôn ngữ", "Language"],
   // M4 (Q2a, test-plan §5 K11): bỏ overview.welcome/soon/platform.body/tenant.body (Tổng quan thật, plan-frontend §7).
   ["tenants.badge.platform", "Nền tảng", "Platform"],
-  [
-    "tenants.tab.unavailableBody",
-    "Mục này sẽ khả dụng ở bản sau.",
-    "This section will be available in a later release.",
-  ],
+  // CR-121 c14: gỡ tenants.tab.unavailableBody (trang công ty 5 tab)
   ["tenants.detail.createdAt", "Tạo lúc {date}", "Created {date}"],
   ["tenants.detail.userCount", "{users} user", "{users} users"],
   ["tenants.toast.saved", "Đã lưu {key}", "Saved {key}"],

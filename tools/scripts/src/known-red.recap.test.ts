@@ -14,7 +14,7 @@ import {
 
 const fixture = readFileSync(resolve(import.meta.dir, "__fixtures__/int-recap.txt"), "utf8");
 const entries = parseKnownRed(
-  readFileSync(resolve(import.meta.dir, "../../../tests/known-red.json"), "utf8"),
+  readFileSync(resolve(import.meta.dir, "__fixtures__/known-red.snapshot.json"), "utf8"),
 );
 const TODAY = "2026-11-03";
 

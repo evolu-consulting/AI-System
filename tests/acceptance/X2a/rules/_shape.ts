@@ -11,18 +11,22 @@ async function zod(): Promise<Z> {
   return zMod.z ?? zMod;
 }
 
+const clean = (x: unknown): unknown =>
+  JSON.parse(JSON.stringify(x, (k, y) => (k === "~standard" ? undefined : y)));
+
 export async function shapeOf(v: unknown): Promise<unknown> {
   if (v && typeof v === "object" && "_zod" in v) {
     const z = await zod();
     try {
-      return { zod: z.toJSONSchema(v, { unrepresentable: "any", io: "input" }) };
+      return { zod: clean(z.toJSONSchema(v, { unrepresentable: "any", io: "input" })) };
     } catch {
       return { zod: (v as { _zod: { def: { type: string } } })._zod.def.type };
     }
   }
   if (typeof v === "function") return { fn: v.length };
   if (v instanceof RegExp) return { re: String(v) };
-  return { value: JSON.parse(JSON.stringify(v ?? null)) };
+  // zod mới thêm khoá "~standard" (Standard Schema) vào schema lồng trong hằng ⇒ bỏ để snapshot không phụ thuộc phiên bản zod.
+  return { value: clean(v ?? null) };
 }
 
 export async function shapes(

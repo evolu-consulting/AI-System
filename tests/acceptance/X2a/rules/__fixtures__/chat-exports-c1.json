@@ -2621,6 +2621,11 @@
                   "type": "string",
                   "enum": ["vi", "en"]
                 },
+                "theme": {
+                  "default": "light",
+                  "type": "string",
+                  "enum": ["light", "dark", "system"]
+                },
                 "must_change_password": {
                   "type": "boolean",
                   "const": false
@@ -2644,6 +2649,22 @@
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 10
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": ["internal", "external"]
+                },
+                "ext_org_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [
@@ -2797,6 +2818,11 @@
           "type": "string",
           "enum": ["vi", "en"]
         },
+        "theme": {
+          "default": "light",
+          "type": "string",
+          "enum": ["light", "dark", "system"]
+        },
         "must_change_password": {
           "type": "boolean",
           "const": false
@@ -2820,6 +2846,22 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 10
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["internal", "external"]
+        },
+        "ext_org_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -2857,6 +2899,31 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 50000
+        },
+        "surface": {
+          "type": "string",
+          "enum": ["contracts", "community", "chat"]
+        },
+        "route": {
+          "type": "string",
+          "maxLength": 200,
+          "pattern": "^\\/[^\\s<>]*$"
+        },
+        "entity": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": ["contract", "partner"]
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          "required": ["kind", "id"],
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -3276,6 +3343,11 @@
               "type": "string",
               "enum": ["vi", "en"]
             },
+            "theme": {
+              "default": "light",
+              "type": "string",
+              "enum": ["light", "dark", "system"]
+            },
             "must_change_password": {
               "type": "boolean",
               "const": false
@@ -3299,6 +3371,22 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 10
+            },
+            "kind": {
+              "type": "string",
+              "enum": ["internal", "external"]
+            },
+            "ext_org_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "required": [
@@ -3755,6 +3843,31 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 50000
+            },
+            "surface": {
+              "type": "string",
+              "enum": ["contracts", "community", "chat"]
+            },
+            "route": {
+              "type": "string",
+              "maxLength": 200,
+              "pattern": "^\\/[^\\s<>]*$"
+            },
+            "entity": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": ["contract", "partner"]
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                }
+              },
+              "required": ["kind", "id"],
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -3987,6 +4100,11 @@
               "type": "string",
               "enum": ["vi", "en"]
             },
+            "theme": {
+              "default": "light",
+              "type": "string",
+              "enum": ["light", "dark", "system"]
+            },
             "must_change_password": {
               "type": "boolean",
               "const": false
@@ -4010,6 +4128,22 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 10
+            },
+            "kind": {
+              "type": "string",
+              "enum": ["internal", "external"]
+            },
+            "ext_org_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "required": [

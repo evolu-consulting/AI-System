@@ -167,7 +167,10 @@ describe("FB1-AC-09 · env + allowlist egress [HUB-FR-141 · §3.6, §4.5]", () 
     );
     expect(att.some((f) => /filebox/i.test(f))).toBe(true);
     const bad: string[] = [];
+    // Ngoại lệ có chủ đích: ops TLS-expiry chỉ đọc ngày hết hạn chứng chỉ (không gửi dữ liệu); chứng chỉ hết hạn vẫn phải bắt tay được để báo.
+    const TLS_PROBE = "modules/ops/adapters/checks/tls.check.ts";
     for (const f of srcFiles()) {
+      if (f.replaceAll("\\", "/") === TLS_PROBE) continue;
       const t = await Bun.file(join(SRC, f)).text();
       if (/rejectUnauthorized\s*:\s*false/.test(t) || /NODE_TLS_REJECT_UNAUTHORIZED/.test(t))
         bad.push(f);

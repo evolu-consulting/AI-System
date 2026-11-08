@@ -1,5 +1,6 @@
 // HUB-FR-104 · D18 · `buildProcessPlan` (thuần): seed mặc định hợp lệ; tham chiếu lạ / real_action sai chỗ ⇒ lỗi trước DB.
 import { describe, expect, it } from "bun:test";
+import { PROCESS_STEP_MAX } from "@ai/contracts/chat";
 import { DEFAULT_SEED_DIR, readSeedDir } from "./seed";
 import { buildProcessPlan, upsertTemplates } from "./seed.processes";
 import type { Tx } from "./seed.repo";
@@ -117,8 +118,8 @@ describe("seed.processes · K1 T5g after/step [HUB-FR-104]", () => {
     expect(String((err as Error).message)).toContain("BACK_TARGET_INVALID");
   });
 
-  it("K1 T5g · after object lạ (back_to_steps ngoài 0..9) ⇒ schema từ chối", () => {
-    const after = { review: { back_to_steps: [10] } };
+  it("K1 T5g · after object lạ (back_to_steps ngoài 0..PROCESS_STEP_MAX) ⇒ schema từ chối", () => {
+    const after = { review: { back_to_steps: [PROCESS_STEP_MAX + 1] } };
     expect(SeedStageSchema.safeParse(stage({ after })).success).toBe(false);
     expect(SeedStageSchema.safeParse(stage({ after: { review: {} } })).success).toBe(false);
   });

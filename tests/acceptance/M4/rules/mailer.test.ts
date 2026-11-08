@@ -30,7 +30,7 @@ describe("ADM-FR-08 · lib/mailer", () => {
 
   it("ADM-FR-08 · M-R02 · chống header injection + giới hạn: mỗi ca reject MAIL_INVALID (kiểm trước khi kết nối)", async () => {
     const m = await loadMailer();
-    const mailer = m.createMailer({ SMTP_URL: "smtp://127.0.0.1:1" });
+    const mailer = m.createMailer({ url: "http://127.0.0.1:1", token: "t".repeat(40) }); // CR-121 c21b: gửi qua Hub (không còn SMTP_URL);
     const bad = [
       { ...ok, subject: "a\r\nBcc: x@evil.test" },
       { ...ok, subject: "a\nb" },

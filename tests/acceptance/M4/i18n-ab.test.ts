@@ -76,8 +76,7 @@ const E2E_LABELS = [
   "Xem nhật ký",
   "Tạo tenant",
   "Tạo command",
-  "Tenant sắp hoặc đã vượt quota",
-  "Sẽ có khi Agent Hub sẵn sàng.",
+  // CR-121 C-3b: Tổng quan bento thay bản cũ ⇒ gỡ "Tenant sắp hoặc đã vượt quota" + "Sẽ có khi Agent Hub sẵn sàng."
   // E14–E21 · Nhật ký, khôi phục, conflict
   "Nhật ký",
   "Xem thay đổi",

@@ -80,7 +80,7 @@ function list(s: ProcessState, c: Context<ChatVars>) {
     .filter((r) => !q.data.status || r.status === q.data.status)
     .sort((a, b) => b.startedAt.localeCompare(a.startedAt))
     .slice(0, q.data.limit)
-    .map(summary);
+    .map((r) => ({ ...summary(r), record_label: null })); // CR-121 c11b: mock không gắn bản ghi
   return c.json({ items, next_cursor: null });
 }
 

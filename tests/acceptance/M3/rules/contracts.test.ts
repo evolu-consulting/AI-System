@@ -57,6 +57,8 @@ const [U1, U2, U3, U4] = [U(1), U(2), U(3), U(4)] as [string, string, string, st
 const pair = (f: string, g: string) => ({ feature_id: f, group_id: g });
 const ref = { id: U1, key: "ke-toan", name: { vi: "Kế toán" }, is_beta: false };
 const feat = { id: U2, key: "ke-toan", name: { vi: "Kế toán" }, status: "on", is_core: false };
+// CR-121 c18: MatrixFeature.feature có thêm `app` (nhóm feature theo app).
+const featApp = { ...feat, app: "other" };
 
 describe("ADM-FR-62 · bảng mã lỗi và hằng M3", () => {
   it("ADM-FR-62 · M3 · API_ERRORS = 34 mã M1+M2 giữ nguyên + BETA_GROUP_PROTECTED 409 + NOT_ENTITLED 409; tập cũ giữ nguyên sau M4 (toMatchObject)", () => {
@@ -313,7 +315,7 @@ describe("ADM-FR-32 · Grant (M3-R07, R08)", () => {
     expect(ok(GrantMatrixQuerySchema.safeParse({ offset: "-1" }))).toBe(false);
     expect(ok(GrantMatrixQuerySchema.safeParse({ offset: "100001" }))).toBe(false);
     const row = (state: string, names: string[]) => ({
-      feature: feat,
+      feature: featApp,
       state,
       command_names: names,
       command_count: names.length,

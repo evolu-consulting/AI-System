@@ -29,14 +29,7 @@ function many(prefix: string, keys: string[], vi: string[], en: string[]): Row[]
 
 const TABLE: Row[] = [
   // ---- menu (plan-frontend §7) ----
-  ["nav.group.features", "CHỨC NĂNG", "FEATURES"],
-  ["nav.group.security", "BẢO MẬT", "SECURITY"],
-  ...many(
-    "nav.",
-    ["commands", "workflows", "features", "secrets"],
-    ["Commands", "Workflows", "Features", "Secrets"],
-    ["Commands", "Workflows", "Features", "Secrets"],
-  ),
+  ...many("nav.", ["commands", "secrets"], ["Commands", "Secrets"], ["Commands", "Secrets"]),
   ["common.dismiss", "Đóng", "Close"],
   // ---- Secrets (missing-screens §6 + plan-frontend §7) ----
   ["secrets.list.title", "Secrets", "Secrets"],
@@ -104,21 +97,12 @@ const TABLE: Row[] = [
     "No secrets yet. Secrets store Dify app keys so workflows can call them.",
   ],
   // ---- Workflows (plan-frontend §7) ----
-  ["workflows.list.title", "Workflows", "Workflows"],
-  ["workflows.list.create", "+ Khai báo workflow", "+ Declare workflow"],
-  ["workflows.list.search", "Tìm theo tên, key, mô tả…", "Search by name, key, description…"],
-  ...many(
-    "workflows.filter.",
-    ["all", "on", "off", "unattached"],
-    ["Tất cả", "Bật", "Tắt", "Chưa gắn"],
-    ["All", "Enabled", "Disabled", "Unattached"],
-  ),
   ["workflows.unattached", "Chưa gắn", "Unattached"],
   ...many(
     "workflows.menu.",
-    ["edit", "enable", "disable", "createCommand", "delete"],
-    ["Sửa", "Bật", "Tắt", "Tạo command", "Xoá"],
-    ["Edit", "Enable", "Disable", "Create command", "Delete"],
+    ["edit", "enable", "disable", "delete"],
+    ["Sửa", "Bật", "Tắt", "Xoá"],
+    ["Edit", "Enable", "Disable", "Delete"],
   ),
   [
     "workflows.createCommandFrom",
@@ -171,11 +155,6 @@ const TABLE: Row[] = [
   ["workflows.error.secretRequired", "Chọn một secret", "Choose a secret"],
   ["workflows.error.paramDesc", "Mô tả tham số là bắt buộc", "Parameter description is required"],
   // ---- Commands (missing-screens §2 + plan-frontend §7) ----
-  ["commands.list.title", "Commands", "Commands"],
-  ["commands.list.create", "+ Tạo command", "+ New command"],
-  ["commands.list.search", "Tìm theo tên, alias, mô tả…", "Search by name, alias, description…"],
-  ["commands.list.workflowOff", "Bật workflow {key} trước", "Enable workflow {key} first"],
-  ["commands.list.toggle.aria", "Bật command /{name}", "Enable command /{name}"],
   ["commands.toast.disabled", "Đã tắt /{name}", "Disabled /{name}"],
   ["commands.toast.enabled", "Đã bật /{name}", "Enabled /{name}"],
   ["commands.toast.deleted", "Đã xoá /{name}", "Deleted /{name}"],
@@ -234,7 +213,6 @@ const TABLE: Row[] = [
     "Chưa gắn feature — không ai dùng được command này. Thêm feature để công ty có feature đó dùng được.",
     "No feature yet — nobody can use this command. Add a feature so companies with that feature can use it.",
   ],
-  ["commands.list.noFeature", "Chưa gắn feature", "No feature"],
   [
     "commands.error.workflowDisabled",
     "Workflow đang tắt. Bật workflow trước.",
@@ -330,8 +308,6 @@ const E2E_LABELS = [
   "Hiện giá trị đang gõ",
   "Lưu giá trị mới",
   "Xem các workflow dùng secret này",
-  "+ Khai báo workflow",
-  "Tìm theo tên, key, mô tả…",
   "Chưa gắn",
   "Model thấy gì",
   "Đang được dùng bởi",
@@ -347,8 +323,6 @@ const E2E_LABELS = [
   "Timeout (giây)",
   "Hiển thị",
   "Nhân bản",
-  "+ Tạo command",
-  "Tìm theo tên, alias, mô tả…",
   "Xoá command",
   "+ Tạo feature",
   "Thêm command",
@@ -385,7 +359,11 @@ describe("ADM-FR-50 · M2-R28 · i18n VI/EN", () => {
     const values = Object.values(load("vi"));
     const set = new Set(values);
     expect(E2E_LABELS.filter((l) => !set.has(l))).toEqual([]);
-    const bad = values.filter((v) => FORBIDDEN_VALUE.some((re) => re.test(v)));
+    // Trello (tích hợp góp ý) có nút "Kiểm tra kết nối" hợp lệ; cấm chỉ áp cho phần Dify/workflow.
+    const flat = load("vi");
+    const bad = Object.entries(flat)
+      .filter(([k, v]) => !/trello/i.test(k) && FORBIDDEN_VALUE.some((re) => re.test(v)))
+      .map(([, v]) => v);
     expect(bad).toEqual([]);
   });
 

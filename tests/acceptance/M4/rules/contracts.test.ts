@@ -112,10 +112,8 @@ describe("ADM-FR-42 · M4-R08 · UsageReportTenantSchema", () => {
     tokens: 300,
     input_tokens: 200,
     output_tokens: 100,
-    billable_usd: "0.20",
-    unpriced_rows: 0,
-    overage_runs: 0,
   };
+  // Bản Tenant (2026-10-21, tenant-admin-scope): không có số thu/định giá/vượt quota bằng tiền.
   const report = {
     range: { from: "2026-10-01", to: "2026-10-31" },
     tenant_id: U(101),
@@ -134,6 +132,7 @@ describe("ADM-FR-42 · M4-R08 · UsageReportTenantSchema", () => {
     expect(ok(S, report)).toBe(true);
     expect(ok(S, { ...report, kpi: { ...kpi, cost_usd: "0.12" } })).toBe(false);
     expect(ok(S, { ...report, kpi: { ...kpi, margin_usd: "0.08" } })).toBe(false);
+    expect(ok(S, { ...report, kpi: { ...kpi, billable_usd: "0.20" } })).toBe(false);
     expect(ok(S, { ...report, tenants: [] })).toBe(false);
   });
 });

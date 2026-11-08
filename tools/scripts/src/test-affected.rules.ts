@@ -71,7 +71,7 @@ export const API_OWNERS: Record<string, string[]> = {
 export function configInfos(configs: readonly string[], read: (c: string) => string): ConfigInfo[] {
   return configs.map((raw) => {
     const config = posix(raw);
-    const tag = /testMatch:\s*[^,\n]*?\*\.(\w+)\.ts/.exec(read(config))?.[1];
+    const tag = /testMatch:\s*\[?\s*[^,\n]*?\*\.(\w+)\.ts/.exec(read(config))?.[1];
     return tag ? { config, tag } : { config };
   });
 }

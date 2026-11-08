@@ -36,7 +36,9 @@ describe("HD-FR-08 · sniffFileType — nhận dạng theo magic bytes, không t
   });
   it("HD-FR-08 · zip KHÔNG có word/document.xml (xlsx, zip thường) ⇒ null (415)", async () => {
     const s = await sniff();
-    expect(s(b(0x50, 0x4b, 3, 4), ["[Content_Types].xml", "xl/workbook.xml"])).toBeNull();
+    // CR-122 p9: xlsx/pptx/odt (zip-office lấy chữ) nay nhận là "office" cho đường dự phòng đọc mọi định dạng.
+    expect(s(b(0x50, 0x4b, 3, 4), ["[Content_Types].xml", "xl/workbook.xml"])).toBe("office");
+    expect(s(b(0x50, 0x4b, 3, 4), ["[Content_Types].xml", "foo/bar.xml"])).toBeNull();
     expect(s(b(0x50, 0x4b, 3, 4), [])).toBeNull();
   });
   it("HD-FR-08 · zip không kèm danh sách phần ⇒ null (không đoán là docx từ chữ 'PK')", async () => {
@@ -45,11 +47,12 @@ describe("HD-FR-08 · sniffFileType — nhận dạng theo magic bytes, không t
   it("HD-AC10 · EXE ('MZ…') đặt tên .pdf ⇒ null", async () => {
     expect((await sniff())(b(0x4d, 0x5a, 0x90, 0, 3, 0, 0, 0))).toBeNull();
   });
-  it("D-09 · ngoài phạm vi: GIF, WebP (RIFF…WEBP), HEIC (ftypheic), HTML, rỗng ⇒ null", async () => {
+  it("D-09 · GIF, WebP nhận ra; HEIC (unreadableFormat), HTML, rỗng ⇒ null", async () => {
     const s = await sniff();
-    expect(s(ascii("GIF89a...."))).toBeNull();
-    expect(s(ascii("RIFF\0\0\0\0WEBPVP8 "))).toBeNull();
-    expect(s(b(0, 0, 0, 0x18, ...ascii("ftypheic")))).toBeNull();
+    // CR-122 p9: GIF/WebP nay được nhận ra (ảnh model nhận); HTML + rỗng vẫn null.
+    expect(s(ascii("GIF89a...."))).toBe("gif");
+    expect(s(ascii("RIFF\0\0\0\0WEBPVP8 "))).toBe("webp");
+    expect(s(b(0, 0, 0, 0x18, ...ascii("ftypheic")))).toBeNull(); // HEIC: có unreadableFormat riêng
     expect(s(ascii("<html><body>"))).toBeNull();
     expect(s(new Uint8Array(0))).toBeNull();
   });

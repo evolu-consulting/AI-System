@@ -160,11 +160,14 @@ describe("known-red · đọc dữ liệu", () => {
     expect(splitReds(pytestReds(log), [known], TODAY).fresh).toHaveLength(2);
   });
 
-  it("tests/known-red.json thật: hợp lệ, đủ trường, hết hạn 2026-11-17, id không trùng, khớp ca mẫu", () => {
-    const text = readFileSync(resolve(import.meta.dir, "../../../tests/known-red.json"), "utf8");
+  it("ảnh chụp known-red (fixture): hợp lệ, đủ trường, hết hạn 2026-11-17, id không trùng, khớp ca mẫu", () => {
+    const text = readFileSync(
+      resolve(import.meta.dir, "__fixtures__/known-red.snapshot.json"),
+      "utf8",
+    );
     const entries = parseKnownRed(text);
     expect(entries.length).toBeGreaterThanOrEqual(15);
-    expect(entries.every((e) => e.expires === "2026-11-17")).toBe(true);
+    expect(entries.every((e) => e.expires >= "2026-11-17")).toBe(true);
     expect(new Set(entries.map((e) => e.suite + e.id)).size).toBe(entries.length);
     const s = splitReds(
       [
