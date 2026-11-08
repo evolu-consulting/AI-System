@@ -281,6 +281,13 @@
       "when": 1806900000000,
       "tag": "0039_partner_confirm_feature",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1807300000000,
+      "tag": "0040_tenant_tombstone_ck",
+      "breakpoints": true
     }
   ]
 }

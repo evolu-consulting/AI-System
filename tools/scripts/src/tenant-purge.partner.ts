@@ -29,10 +29,13 @@ export const NO_PARTNER: PartnerStats = {
 const X = `'${PARTNER_DELETED_TENANT_ID}'::uuid`;
 /** Bên còn lại của dòng hộp thư đối với tenant `$1`. */
 const OTHER = "(case when m.from_tenant = $1::uuid then m.to_tenant else m.from_tenant end)";
-/** Dòng hộp thư phải XOÁ (không còn bên nào giữ lịch sử). */
-const DOOMED = `select m.id from hub.partner_mailbox m where (m.from_tenant = $1::uuid or m.to_tenant = $1::uuid)
-  and (${OTHER} is null or ${OTHER} = ${X} or (m.from_tenant = $1::uuid and m.status in ('held', 'sent')))`;
-
+/**
+ * Dòng hộp thư phải XOÁ (không còn bên nào giữ lịch sử). Lần gửi chưa giao (held/sent) chỉ xoá khi bên kia CHƯA có bản sao
+ * (`copies` = điều kiện NOT EXISTS trên partner_inbox/partner_sends của tenant khác): có bản sao ⇒ giữ dòng (ẩn danh) để bản sao còn mailbox_id hợp lệ.
+ */
+const doomed = (copies: string): string => `select m.id from hub.partner_mailbox m
+  where (m.from_tenant = $1::uuid or m.to_tenant = $1::uuid)
+  and (${OTHER} is null or ${OTHER} = ${X} or (m.from_tenant = $1::uuid and m.status in ('held', 'sent')${copies}))`;
 const count = async (tx: Tx, text: string, tid: string): Promise<number> =>
   (await tx.unsafe(text, [tid])).count;
 const has = async (tx: Tx, rel: string): Promise<boolean> =>
@@ -42,12 +45,61 @@ const has = async (tx: Tx, rel: string): Promise<boolean> =>
     }[]
   )[0]?.ok === true;
 
+/**
+ * Tên bên bị xoá còn nằm ở dữ liệu KHÁC của công ty còn lại, suy ra từ bản sao (contracts.partner_inbox.sender_name / partner_sends.to_name):
+ * tiêu đề HĐ nhận («Hợp đồng từ <tên>»), lịch sử HĐ (contract_events.data), chuông (hub.notifications). Thay bằng «Công ty đã xoá», theo tập
+ * (một bảng tạm + 3 câu), chỉ trong tenant và HĐ của bản sao. admin.audit_log KHÔNG sửa (append-only; đường đối tác không ghi tên vào đó).
+ */
+async function scrubNames(tx: Tx, tenantId: string, inbox: boolean, sends: boolean): Promise<void> {
+  const parts = [
+    inbox &&
+      `select i.tenant_id, i.contract_id, i.sender_name as old from contracts.partner_inbox i
+       where i.tenant_id <> $1::uuid and i.mailbox_id in (select m.id from hub.partner_mailbox m where m.from_tenant = $1::uuid)`,
+    sends &&
+      `select s.tenant_id, s.contract_id, s.to_name from contracts.partner_sends s
+       where s.tenant_id <> $1::uuid and s.mailbox_id in (select m.id from hub.partner_mailbox m where m.to_tenant = $1::uuid)`,
+  ].filter(Boolean);
+  await tx.unsafe("drop table if exists pg_temp._purge_names");
+  await tx.unsafe(
+    `create temp table _purge_names on commit drop as
+     select distinct x.tenant_id, x.contract_id, x.old from (${parts.join(" union all ")}) x
+     where x.old is not null and x.old <> '' and x.old <> '${PARTNER_DELETED_NAME}'`,
+    [tenantId],
+  );
+  await tx.unsafe(
+    `update contracts.contracts c set title = replace(c.title, n.old, '${PARTNER_DELETED_NAME}')
+     from _purge_names n where c.tenant_id = n.tenant_id and c.id = n.contract_id and strpos(c.title, n.old) > 0`,
+  );
+  // jsonb: so khớp trên bản văn JSON (tên thoát ký tự như trong data::text).
+  await tx.unsafe(
+    `update contracts.contract_events e set data = replace(e.data::text, substr(to_jsonb(n.old)::text, 2, length(to_jsonb(n.old)::text) - 2),
+         '${PARTNER_DELETED_NAME}')::jsonb
+     from _purge_names n where e.tenant_id = n.tenant_id and e.contract_id = n.contract_id
+       and strpos(e.data::text, substr(to_jsonb(n.old)::text, 2, length(to_jsonb(n.old)::text) - 2)) > 0`,
+  );
+  await tx.unsafe(
+    `update hub.notifications b set title = replace(b.title, n.old, '${PARTNER_DELETED_NAME}'), body = replace(b.body, n.old, '${PARTNER_DELETED_NAME}')
+     from (select distinct tenant_id, old from _purge_names) n
+     where b.tenant_id = n.tenant_id and (strpos(b.title, n.old) > 0 or strpos(b.body, n.old) > 0)`,
+  );
+}
 /** Ẩn danh bên `tenantId` trong dữ liệu đối tác của các tenant khác; xoá dòng không còn ai giữ lịch sử. */
 export async function anonymizePartner(tx: Tx, tenantId: string): Promise<PartnerStats> {
   if (!(await has(tx, "hub.partner_mailbox"))) return NO_PARTNER;
   const out = { ...NO_PARTNER };
+  const hasInbox = await has(tx, "contracts.partner_inbox");
+  const hasSends = await has(tx, "contracts.partner_sends");
+  const copies =
+    (hasInbox
+      ? " and not exists (select 1 from contracts.partner_inbox i where i.mailbox_id = m.id and i.tenant_id <> $1::uuid)"
+      : "") +
+    (hasSends
+      ? " and not exists (select 1 from contracts.partner_sends s where s.mailbox_id = m.id and s.tenant_id <> $1::uuid)"
+      : "");
+  const DOOMED = doomed(copies);
+  if (hasInbox || hasSends) await scrubNames(tx, tenantId, hasInbox, hasSends);
   // (1) Bản sao phía bên kia (gói contracts, tenant_id ≠ tenant bị xoá): tên/MST/bản chia sẻ của bên bị xoá.
-  if (await has(tx, "contracts.partner_inbox"))
+  if (hasInbox)
     out.copiesAnonymized += await count(
       tx,
       `update contracts.partner_inbox i set sender_name = '${PARTNER_DELETED_NAME}', sender_tax_code = null, sender_verified = false,
@@ -55,7 +107,7 @@ export async function anonymizePartner(tx: Tx, tenantId: string): Promise<Partne
        where i.tenant_id <> $1::uuid and i.mailbox_id in (select m.id from hub.partner_mailbox m where m.from_tenant = $1::uuid)`,
       tenantId,
     );
-  if (await has(tx, "contracts.partner_sends"))
+  if (hasSends)
     out.copiesAnonymized += await count(
       tx,
       `update contracts.partner_sends s set to_name = '${PARTNER_DELETED_NAME}', to_key = '${PARTNER_DELETED_KEY}'

@@ -23,8 +23,9 @@ let dir: string;
 let A = "";
 let B = "";
 let cB = "";
+let cB2 = "";
 let cA = "";
-const ids = { m1: "", m2: "", m3: "", m4: "" };
+const ids = { m1: "", m2: "", m3: "", m4: "", m5: "" };
 
 const store: FileStore = { list: async () => [], remove: async () => "missing" };
 const deps = (): PurgeDeps => ({
@@ -76,7 +77,10 @@ beforeAll(async () => {
   const [ua] = (await users(sql, A, 1, { from: 7301 })) as [string];
   const [ub] = (await users(sql, B, 1, { from: 7302 })) as [string];
   [cA] = (await contracts(sql, A, 1, { from: 7301, createdBy: ua, owner: ua })) as [string];
-  [cB] = (await contracts(sql, B, 1, { from: 7302, createdBy: ub, owner: ub })) as [string];
+  [cB, cB2] = (await contracts(sql, B, 2, { from: 7302, createdBy: ub, owner: ub })) as [
+    string,
+    string,
+  ];
   // m1: A gửi B (đã giao, B có bản sao). m4: B gửi A (A đã trả lời, B có vòng gửi). m2: A gửi email (có nhật ký). m3: A gửi B nhưng B chưa nhận (held).
   ids.m1 = await seedMailbox(A, B, "platform", "delivered");
   ids.m4 = await seedMailbox(B, A, "platform", "replied", {
@@ -85,6 +89,21 @@ beforeAll(async () => {
   });
   ids.m2 = await seedMailbox(A, null, "email", "sent", { toEmail: "ngoai@example.com" });
   ids.m3 = await seedMailbox(A, B, "platform", "held");
+  // m5: chưa giao (sent) nhưng B ĐÃ có bản sao ⇒ phải giữ (ẩn danh) để bản sao còn mailbox_id hợp lệ.
+  ids.m5 = await seedMailbox(A, B, "platform", "sent");
+  const ubId = (await one("select id::text as id from admin.users where tenant_id = $1::uuid", [B]))
+    ?.id as string;
+  await sql`insert into contracts.partner_inbox (tenant_id, contract_id, mailbox_id, sender_name, expires_at)
+    values (${B}::uuid, ${cB2}::uuid, ${ids.m5}::uuid, 'Tenant 7301', now() + interval '30 days')`;
+  // Dữ liệu KHÁC của B có tên A: tiêu đề HĐ nhận, lịch sử HĐ (nhận + gửi), chuông; cộng một dòng audit của B.
+  await sql`update contracts.contracts set title = 'Hợp đồng từ Tenant 7301' where id = ${cB}::uuid`;
+  await sql`insert into contracts.contract_events (tenant_id, contract_id, type, data) values
+    (${B}::uuid, ${cB}::uuid, 'partner_received', '{"from":"Tenant 7301","round":1}'::jsonb),
+    (${B}::uuid, ${cB}::uuid, 'partner_sent', '{"to":"Tenant 7301","round":1}'::jsonb)`;
+  await sql`insert into hub.notifications (tenant_id, user_id, source, kind, title, body, dedup_key)
+    values (${B}::uuid, ${ubId}::uuid, 'contracts', 'info', 'Hợp đồng từ Tenant 7301', 'Tenant 7301 gửi bạn một hợp đồng', 'partner-purge-1')`;
+  await sql`insert into admin.audit_log (tenant_id, action, entity, entity_name, summary)
+    values (${B}::uuid, 'update', 'user', 'u7302', '{}'::jsonb)`;
   await sql`insert into hub.partner_email_events (mailbox_id, event, ip_prefix, actor_name) values (${ids.m2}::uuid, 'opened', '1.2.3', 'Người ngoài')`;
   await sql`insert into contracts.partner_inbox (tenant_id, contract_id, mailbox_id, sender_name, sender_tax_code, sender_verified,
       message, shared, file_ref, pdf_sha256, expires_at)
@@ -107,7 +126,23 @@ describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn dan
     const left = (await sql`select id::text as id from hub.partner_mailbox order by 1`).map(
       (x) => x.id,
     );
-    expect(left.sort()).toEqual([ids.m1, ids.m4].sort());
+    expect(left.sort()).toEqual([ids.m1, ids.m4, ids.m5].sort());
+    // Bản sao nào của B cũng còn trỏ tới một hộp thư tồn tại.
+    expect(
+      (
+        await sql`select 1 from contracts.partner_inbox i
+          where not exists (select 1 from hub.partner_mailbox m where m.id = i.mailbox_id)`
+      ).length,
+    ).toBe(0);
+    // Dữ liệu khác của B (tiêu đề HĐ, lịch sử HĐ, chuông, audit) không còn tên A.
+    const bText = JSON.stringify([
+      await sql`select title from contracts.contracts where tenant_id = ${B}::uuid`,
+      await sql`select data from contracts.contract_events where tenant_id = ${B}::uuid`,
+      await sql`select title, body from hub.notifications where tenant_id = ${B}::uuid`,
+      await sql`select to_jsonb(a) as j from admin.audit_log a where a.tenant_id = ${B}::uuid`,
+    ]);
+    expect(bText.includes("Tenant 7301")).toBe(false);
+    expect(bText.includes(PARTNER_DELETED_NAME)).toBe(true);
     expect((await sql`select 1 from hub.partner_email_events`).length).toBe(0);
     // Mọi dấu vết của A trong hộp thư: không còn id A, tên/MST/tệp/ref (cả cột lẫn JSON).
     expect(
@@ -167,7 +202,16 @@ describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn dan
       "select summary -> 'partner' as p from admin.audit_log where entity_id = $1::uuid and action = 'delete'",
       [A],
     );
-    expect(au?.p).toMatchObject({ mailboxDeleted: 2, mailboxAnonymized: 2, copiesAnonymized: 2 });
+    expect(au?.p).toMatchObject({ mailboxDeleted: 2, mailboxAnonymized: 3, copiesAnonymized: 3 });
+  });
+
+  it("id tombstone không dùng được làm tenant thật (CHECK admin 0040)", async () => {
+    const code =
+      await sql`insert into admin.tenants (id, key, name) values (${X}::uuid, 'tomb', 'Tomb')`.then(
+        () => "ok",
+        (e: { code?: string }) => e.code,
+      );
+    expect(code).toBe("23514");
   });
 
   it("xoá nốt B (bên kia đã xoá) ⇒ hết dòng ở hộp thư và liên kết", async () => {
