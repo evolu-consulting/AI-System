@@ -6,6 +6,7 @@
 // chuẩn bị bằng SQL chỉ phần người dùng thật làm ở màn thành viên nhóm (gán 3 tài khoản e2e vào các nhóm duyệt).
 // Bước điền (form) của Phần 1–3 làm bằng thẻ bước điền thật (lát cr125-form-step-card: cùng bộ chọn với `cr125-form-step-card.spec.ts`).
 // KHÔNG chạy trong lát này — chạy MỘT lần ở đợt cuối. CHƯA BIẾT: việc của lượt CON không có HĐ có hiện ở «Chờ tôi duyệt» / mở được thẻ không.
+import { existsSync, readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
 import { writeCr125Config } from "../../apps/hub-api/src/modules/seed/seed.cr125-config";
 import { withOwner } from "../support/helpers";
@@ -129,6 +130,65 @@ async function actOnWaiting(page: Page): Promise<boolean> {
   }
   return acted;
 }
+/**
+ * cr125-fix-parent-timer-2 · CHỈ khi hỏng: in lượt cha + con (trạng thái), stage_runs của cha, hẹn của stage Quy trình con và đuôi log hub
+ * (process-timer | subprocess | settle) để chẩn đoán lượt cha đứng `waiting_timer`.
+ */
+async function dumpParent(): Promise<void> {
+  const id = runUrl.split("/").pop() ?? "";
+  const out: string[] = [`[dump] runUrl=${runUrl}`];
+  await withOwner(async (sql) => {
+    const root =
+      await sql`select id, status, current_step, current_stage_idx, updated_at from hub.process_runs
+      where id::text = ${id} or id = (select process_run_id from hub.stage_runs where id::text = ${id} limit 1)`;
+    out.push(`[dump] root ${JSON.stringify(root)}`);
+    const pid = (root[0]?.id as string | undefined) ?? id;
+    const q = async (name: string, p: Promise<unknown>) =>
+      out.push(`[dump] ${name} ${JSON.stringify(await p.catch((e) => ({ err: String(e) })))}`);
+    await q(
+      "runs",
+      sql`select id, status, parent_stage_run_id, parent_attempt, parent_round, current_step, current_stage_idx,
+        finished_at, updated_at, decision from hub.process_runs where id = ${pid} or parent_run_id = ${pid}
+        order by parent_stage_run_id nulls first`,
+    );
+    await q(
+      "stages",
+      sql`select s.process_run_id = ${pid} as parent, s.process_run_id, s.id, s.stage_idx, s.status, s.attempt,
+        s.round, s.current_output_id is not null as has_out, s.updated_at from hub.stage_runs s
+        where s.process_run_id = ${pid} or s.process_run_id in (select id from hub.process_runs where parent_run_id = ${pid})
+        order by 1 desc, s.process_run_id, s.stage_idx`,
+    );
+    await q(
+      "timers",
+      sql`select t.process_run_id = ${pid} as parent, t.stage_run_id, t.kind, t.idempotency_key, t.due_at, t.fired_at,
+        t.cancelled_at, now() as db_now from hub.process_timers t
+        where t.process_run_id = ${pid} or t.process_run_id in (select id from hub.process_runs where parent_run_id = ${pid})
+        order by t.due_at`,
+    );
+    await q(
+      "tasks",
+      sql`select * from hub.process_tasks where process_run_id in
+        (select id from hub.process_runs where id = ${pid} or parent_run_id = ${pid}) and closed_at is null`,
+    );
+  }).catch((e) => out.push(`[dump] sql lỗi ${String(e)}`));
+  const re = /process-timer|subprocess|settle|kick|error/i;
+  for (const ext of ["out", "err"]) {
+    const f = `.data/ja-hub/hub.${ext}`;
+    const lines = existsSync(f)
+      ? readFileSync(f, "utf8")
+          .split("\n")
+          .filter((l) => re.test(l))
+      : [];
+    out.push(`[dump] hub.${ext} (${lines.length} dòng khớp, 60 cuối):`, ...lines.slice(-60));
+  }
+  console.log(out.join("\n"));
+}
+
+// biome-ignore lint/correctness/noEmptyPattern: Playwright cần mẫu fixture rỗng
+test.afterEach(async ({}, info) => {
+  if (info.status !== info.expectedStatus && info.title.startsWith("2 ")) await dumpParent();
+});
+
 test("1 · nhân viên: Tạo yêu cầu → phiếu «Đề xuất mua hàng» (tải file báo giá) → gửi", async ({
   browser,
 }) => {
@@ -170,12 +230,15 @@ test("2 · Phần 1 → 2 → 3: các thẻ điền / duyệt (dòng 3, 6, 10 ha
   }
   const status = emp.getByTestId("request-status");
   let shots = 0;
+  let idle = 0;
   for (let round = 0; round < 100; round++) {
     await emp.goto(runUrl);
     if ((await status.getAttribute("data-status")) === "done") break;
     // mỗi người làm hết việc đang chờ mình; dòng cùng duyệt: cả hai nhóm đều có thẻ mở nên mỗi bên bấm «Đạt» phần của mình
     let moved = false;
     for (const p of people) moved = (await actOnWaiting(p)) || moved;
+    idle = moved ? 0 : idle + 1;
+    if (idle >= 20) break; // không ai có việc 8 vòng liền ⇒ lượt cha kẹt: dừng sớm, afterEach in chẩn đoán
     if (moved && shots < 6) await shot(people[1] as Page, `02-buoc-${++shots}`);
     if (!moved) await emp.waitForTimeout(5_000); // chờ hẹn canh chốt bước cha / lượt con (qc cr125-final-e2e: vòng không ngủ hết 60 lượt trước khi hẹn kịp chạy)
     // không có việc nào ⇒ đang chờ lượt con / hẹn canh chốt bước cha: nạp lại trang ở vòng sau (không ngủ chờ)

@@ -98,12 +98,15 @@ async function healthy(base: string, proc: Bun.Subprocess): Promise<void> {
   throw new Error(`${base}/health không sẵn sàng sau 60s`);
 }
 
-const spawn = (file: string, extra: Record<string, string>): Bun.Subprocess =>
+/** cr125-fix-parent-timer-2 · log hub-api ra tệp (spec `cr125-purchase-full` đọc đuôi khi hỏng để chẩn đoán): `<HUB_LOG>.out` / `.err`. */
+const HUB_LOG = resolve(REPO, ".data/ja-hub/hub");
+mkdirSync(dirname(HUB_LOG), { recursive: true });
+const spawn = (file: string, extra: Record<string, string>, logTo?: string): Bun.Subprocess =>
   Bun.spawn([process.execPath, file], {
     cwd: REPO,
     env: { ...process.env, ...extra },
-    stdout: "inherit",
-    stderr: "inherit",
+    stdout: logTo ? Bun.file(`${logTo}.out`) : "inherit",
+    stderr: logTo ? Bun.file(`${logTo}.err`) : "inherit",
   });
 
 async function main(): Promise<void> {
@@ -201,27 +204,31 @@ async function main(): Promise<void> {
 
   const fb = startFbFake();
   const cli = writeFakeClaude(resolve(REPO, "test-results/journey-approval/fake-claude"));
-  hub = spawn("apps/hub-api/src/server.ts", {
-    APP_ENV: "test",
-    HUB_PORT: String(PORTS.hub),
-    HUB_DATABASE_URL: hubDbUrl(url),
-    REDIS_URL: `redis://localhost:6379/${env("JA_REDIS_DB")}`,
-    HUB_INSTANCE_ID: "e2e-ja",
-    HUB_CORS_ORIGINS: origins,
-    HUB_CONFIG_POLL_S: "2",
-    HUB_PROCESS_ENGINE: "on",
-    CONTRACTS_APPROVAL_ENGINE: "on",
-    HUB_PARTNER_MAILBOX: "on", // CR-124 · q5 · bộ chuyển hộp thư liên công ty (mặc định prod: tắt)
-    // CR-123 u6b: "Ký thử" (selfsign, không mạng) cho hành trình thẻ duyệt có node Ký số; công ty nào bật ký số do spec đặt.
-    ESIGN_PROVIDERS: "selfsign",
-    AI_PROVIDER: "subscription",
-    AI_SUB_CLI_PATH: cli,
-    // FileBox: prod dùng FileBox HTTP; ở đây FileBox GIẢ trong tiến trình (hợp đồng thật, tests/acceptance/FB1/_fbfake.ts)
-    HUB_ATTACH_DRIVER: "filebox",
-    FILEBOX_URL: fb.origin,
-    FILEBOX_ORG: "ai-system",
-    FILEBOX_TOKEN: fb.token,
-  });
+  hub = spawn(
+    "apps/hub-api/src/server.ts",
+    {
+      APP_ENV: "test",
+      HUB_PORT: String(PORTS.hub),
+      HUB_DATABASE_URL: hubDbUrl(url),
+      REDIS_URL: `redis://localhost:6379/${env("JA_REDIS_DB")}`,
+      HUB_INSTANCE_ID: "e2e-ja",
+      HUB_CORS_ORIGINS: origins,
+      HUB_CONFIG_POLL_S: "2",
+      HUB_PROCESS_ENGINE: "on",
+      CONTRACTS_APPROVAL_ENGINE: "on",
+      HUB_PARTNER_MAILBOX: "on", // CR-124 · q5 · bộ chuyển hộp thư liên công ty (mặc định prod: tắt)
+      // CR-123 u6b: "Ký thử" (selfsign, không mạng) cho hành trình thẻ duyệt có node Ký số; công ty nào bật ký số do spec đặt.
+      ESIGN_PROVIDERS: "selfsign",
+      AI_PROVIDER: "subscription",
+      AI_SUB_CLI_PATH: cli,
+      // FileBox: prod dùng FileBox HTTP; ở đây FileBox GIẢ trong tiến trình (hợp đồng thật, tests/acceptance/FB1/_fbfake.ts)
+      HUB_ATTACH_DRIVER: "filebox",
+      FILEBOX_URL: fb.origin,
+      FILEBOX_ORG: "ai-system",
+      FILEBOX_TOKEN: fb.token,
+    },
+    HUB_LOG,
+  );
   await healthy(hubUrl, hub);
   Bun.serve({ port: PORTS.ready, fetch: () => new Response("ok") });
   console.log(
