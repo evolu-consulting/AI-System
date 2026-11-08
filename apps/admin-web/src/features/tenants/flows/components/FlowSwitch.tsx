@@ -1,4 +1,5 @@
-// CR-122 · P7 · công tắc "Dùng quy trình mới cho công ty này" (cờ flow_triggers) — chỉ platform_admin; bật thì hỏi xác nhận một câu.
+// CR-122 · P7 → CR-125 · c2: khối "quy trình mới" của công ty. KHÔNG còn công tắc BẬT bắt buộc: "Lưu và áp dụng" / gán quy trình là đủ (Hub tự
+// đặt cờ cùng giao dịch). Chỉ còn nút cứu hộ "Tạm dừng quy trình mới" khi đang dùng; chưa dùng ⇒ lời chỉ dẫn nói bước kế (Luật gốc 3).
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,8 +12,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { useFlowSettings, useSetFlowTriggers } from "../flow-settings-api";
+import { switchStateOf } from "../lib/flow-switch-access";
 
 export function FlowSwitch({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
@@ -20,35 +21,30 @@ export function FlowSwitch({ tenantId }: { tenantId: string }) {
   const set = useSetFlowTriggers(tenantId);
   const [ask, setAsk] = useState(false);
   if (!q.data) return null;
-  const on = q.data.flow_triggers;
-  const blocked = !on && !q.data.has_active_flow; // chưa có quy trình nào đang áp dụng ⇒ bật cũng không có gì để chạy
+  const state = switchStateOf(q.data);
   return (
     <div
       className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
       data-testid="flow-switch"
     >
-      <div className="min-w-0">
-        <p className="m-0 text-label font-medium">{t("tenants.companyFlows.newFlow.label")}</p>
-        <p className="m-0 text-caption text-muted-foreground" data-testid="flow-switch-status">
-          {t(`tenants.companyFlows.newFlow.${on ? "on" : "off"}`)}
-        </p>
-        {blocked ? (
-          <p className="m-0 text-caption text-warning" data-testid="flow-switch-reason">
-            {t("tenants.companyFlows.newFlow.noFlow")}
-          </p>
-        ) : null}
-      </div>
-      <Switch
-        checked={on}
-        disabled={set.isPending || blocked}
-        aria-label={t("tenants.companyFlows.newFlow.label")}
-        data-testid="flow-switch-toggle"
-        onCheckedChange={(v) => (v ? setAsk(true) : set.mutate(false))}
-      />
+      <p className="m-0 min-w-0 text-label" data-testid="flow-switch-status">
+        {t(`tenants.companyFlows.newFlow.${state}`)}
+      </p>
+      {state === "on" ? (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={set.isPending}
+          data-testid="flow-pause"
+          onClick={() => setAsk(true)}
+        >
+          {t("tenants.companyFlows.newFlow.pause")}
+        </Button>
+      ) : null}
       <AlertDialog open={ask} onOpenChange={setAsk}>
-        <AlertDialogContent data-testid="flow-switch-confirm">
+        <AlertDialogContent data-testid="flow-pause-confirm">
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("tenants.companyFlows.newFlow.label")}</AlertDialogTitle>
+            <AlertDialogTitle>{t("tenants.companyFlows.newFlow.pause")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("tenants.companyFlows.newFlow.confirm")}
             </AlertDialogDescription>
@@ -56,9 +52,9 @@ export function FlowSwitch({ tenantId }: { tenantId: string }) {
           <AlertDialogFooter>
             <AlertDialogCancel>{t("tenants.companyFlows.newFlow.cancel")}</AlertDialogCancel>
             <Button
-              data-testid="flow-switch-confirm-ok"
+              data-testid="flow-pause-confirm-ok"
               onClick={() => {
-                set.mutate(true);
+                set.mutate(false);
                 setAsk(false);
               }}
             >

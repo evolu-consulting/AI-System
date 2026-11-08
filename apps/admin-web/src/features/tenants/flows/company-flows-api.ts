@@ -55,7 +55,10 @@ export function useCompanyFlowOp(tid: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (a: FlowOp) => call(tid, a),
-    onSuccess: (list) => qc.setQueryData(key(tid), list),
+    onSuccess: (list) => {
+      qc.setQueryData(key(tid), list);
+      void qc.invalidateQueries({ queryKey: ["flow-settings", tid] }); // CR-125 · c2: gán/tắt có thể đổi cờ "đang dùng quy trình mới"
+    },
     onError: () => qc.invalidateQueries({ queryKey: key(tid) }),
   });
 }

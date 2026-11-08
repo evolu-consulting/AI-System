@@ -20,6 +20,16 @@ export async function flowTriggersOn(tx: Tx, tenantId: string): Promise<boolean>
   return (await flowTriggerTenants(tx, [tenantId])).has(tenantId);
 }
 
+/**
+ * CR-125 · c2 · "Lưu và áp dụng" / gán quy trình ⇒ công ty dùng quy trình mới, KHÔNG cần bật công tắc ở chỗ khác: đặt cờ BẬT (idempotent,
+ * không đổi `updated_at` khi đã bật). Công ty chưa từng áp dụng/gán sau thay đổi này giữ nguyên cờ ⇒ chạy đúng như trước (prod hiện TẮT hết).
+ */
+export async function ensureFlowTriggersOn(tx: Tx, tenantId: string): Promise<void> {
+  await tx.execute(sql`insert into hub.tenant_flow_settings (tenant_id, flow_triggers) values (${tenantId}::uuid, true)
+    on conflict (tenant_id) do update set flow_triggers = true,
+      updated_at = case when hub.tenant_flow_settings.flow_triggers then hub.tenant_flow_settings.updated_at else now() end`);
+}
+
 /** Bật/tắt (scope system — RLS chỉ cho system ghi). */
 export async function setFlowTriggers(tx: Tx, tenantId: string, on: boolean): Promise<void> {
   await tx.execute(sql`insert into hub.tenant_flow_settings (tenant_id, flow_triggers) values (${tenantId}::uuid, ${on})

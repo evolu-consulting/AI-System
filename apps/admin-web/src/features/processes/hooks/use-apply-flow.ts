@@ -29,6 +29,7 @@ export function useApplyFlow(tenantId: string | null | undefined, flowId: string
     setStatus({ kind: "pending" });
     try {
       qc.setQueryData(companyFlowsKey(tenantId), await applyCompanyFlow(tenantId, flowId));
+      void qc.invalidateQueries({ queryKey: ["flow-settings", tenantId] }); // CR-125 · c2: áp dụng ⇒ cờ đã bật cùng giao dịch
       setStatus({ kind: "applied" });
       return true;
     } catch (e) {

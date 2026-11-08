@@ -669,13 +669,13 @@
   "tenants": {
     "companyFlows": {
       "newFlow": {
-        "label": "Dùng quy trình mới cho công ty này",
-        "on": "Đang dùng quy trình mới",
-        "off": "Đang dùng cách cũ",
-        "confirm": "Hợp đồng của công ty này sẽ chạy theo quy trình mới. Bật?",
-        "ok": "Bật",
-        "cancel": "Huỷ",
-        "noFlow": "Chưa có quy trình nào được áp dụng cho công ty — liên hệ quản trị nền tảng để gán"
+        "on": "Đang dùng quy trình mới: hợp đồng gửi từ giờ chạy theo quy trình đã áp dụng.",
+        "idle": "Chưa dùng quy trình mới — mở một quy trình rồi bấm Lưu và áp dụng để bắt đầu. Hợp đồng gửi từ giờ vẫn chạy cách cũ.",
+        "none": "Chưa có quy trình nào được áp dụng cho công ty — liên hệ quản trị nền tảng để gán",
+        "pause": "Tạm dừng quy trình mới",
+        "confirm": "Hợp đồng gửi từ giờ sẽ chạy theo cách cũ cho tới khi bạn Lưu và áp dụng lại một quy trình. Hợp đồng đang chạy không bị ảnh hưởng.",
+        "ok": "Tạm dừng",
+        "cancel": "Huỷ"
       },
       "empty": "Công ty chưa có quy trình nào. Quản trị nền tảng gán quy trình từ Thư viện.",
       "col": {

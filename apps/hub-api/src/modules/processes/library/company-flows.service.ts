@@ -11,6 +11,7 @@ import { AppError, appError } from "../../../lib/errors";
 import { dbHubAudit } from "../../../lib/hub-audit";
 import { groupIdsByKey, groupMissingMessage } from "../defs/def-group-bind";
 import { libraryFlowDef } from "../runs/runs.repo";
+import { ensureFlowTriggersOn } from "../triggers/flags";
 import { bindGroupKeys, groupKeysOf } from "../triggers/group-keys.rules";
 import * as r from "./company-flows.repo";
 import { companyAccess } from "./library-company.service";
@@ -103,6 +104,7 @@ export class CompanyFlowsService {
         offReason: null,
         actor: u.userId,
       });
+      await ensureFlowTriggersOn(tx, tid); // CR-125 · c2: gán xong là dùng (không còn công tắc bắt buộc)
       return this.#list(tx, tid);
     });
   }
@@ -232,7 +234,7 @@ export class CompanyFlowsService {
           entityId: flowId,
           entityName: "company_flow.apply",
           before: { enabled: row.enabled, replaced_flow_id: null },
-          after: { enabled: true, replaced_flow_id: replaced },
+          after: { enabled: true, replaced_flow_id: replaced, flow_triggers: true },
           summary: {
             op: "company_flow.apply",
             tenant_id: tid,
@@ -273,6 +275,7 @@ export class CompanyFlowsService {
       replacedBy: null,
       actor: u.userId,
     });
+    await ensureFlowTriggersOn(tx, tid); // CR-125 · c2: áp dụng xong là dùng — cùng tx, không cần bật công tắc riêng
     return replaced;
   }
 

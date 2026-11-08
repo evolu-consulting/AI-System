@@ -669,13 +669,13 @@
   "tenants": {
     "companyFlows": {
       "newFlow": {
-        "label": "Use the new flows for this company",
-        "on": "Using the new flows",
-        "off": "Using the old way",
-        "confirm": "Contracts of this company will start running the new flows. Turn on?",
-        "ok": "Turn on",
-        "cancel": "Cancel",
-        "noFlow": "No process is applied to this company yet — ask the platform admin to assign one"
+        "on": "Using the new flows: contracts sent from now on follow the applied flow.",
+        "idle": "Not using the new flows yet — open a flow and press Save and apply to start. Contracts sent from now on still run the old way.",
+        "none": "No process is applied to this company yet — ask the platform admin to assign one",
+        "pause": "Pause the new flows",
+        "confirm": "Contracts sent from now on will run the old way until you Save and apply a flow again. Contracts already running are not affected.",
+        "ok": "Pause",
+        "cancel": "Cancel"
       },
       "empty": "This company has no flows yet. The platform admin assigns flows from the Library.",
       "col": {
