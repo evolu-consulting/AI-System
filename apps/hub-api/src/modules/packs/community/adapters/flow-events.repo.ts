@@ -129,6 +129,21 @@ export async function openReviewForFlow(tx: Tx, tenantId: string, ref: string): 
   return r?.ok === true;
 }
 
+/**
+ * CR-125 · UX-S5 · `OutcomeHandler.notLaunched` cho `post.created`: sự kiện chốt mà KHÔNG mở được lượt (chưa gán flow / thiếu nhóm duyệt /
+ * hết lượt thử) ⇒ bài đang "kiểm tra" không còn ai kiểm ⇒ chuyển người duyệt NGAY (`mod_screen = error` ⇒ hàng chờ có nút Duyệt/Từ chối,
+ * lý do "AI chưa kiểm được — chuyển người duyệt"). Không đổi máy trạng thái run. CAS: chỉ khi còn pending + running. MỘT câu.
+ */
+export async function markPostNotLaunched(tx: Tx, tenantId: string, ref: string): Promise<boolean> {
+  if (uuids([ref]).length === 0) return false;
+  const rows = await tx.execute<{
+    id: string;
+  }>(sql`update community.posts set mod_screen = 'error', mod_screened_at = now()
+    where id = ${ref}::uuid and tenant_id = ${tenantId}::uuid and moderation = 'pending' and mod_screen = 'running'
+    returning id`);
+  return rows.length > 0;
+}
+
 /** Nhận ⇒ approved + liên kết công ty đối tác (nhãn xin) CÙNG câu; Từ chối ⇒ rejected. Chỉ khi đang chờ. */
 export async function applyJoinOutcome(
   tx: Tx,

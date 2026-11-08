@@ -1,6 +1,6 @@
 // CR-120 · Hàng chờ duyệt bài (người duyệt): MỘT yêu cầu cho cả danh sách; duyệt/từ chối kèm lý do. 409 ⇒ "đã có người xử lý" + làm mới.
 import type { ModerationItem } from "@ai/contracts/community";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "../../application/ctx";
 import { isConflict, queueReasonKey } from "../../domain/flows";
 import { t } from "../../i18n";
@@ -10,6 +10,14 @@ export default function ReviewQueuePage() {
   const { api, toast, bump } = useApp();
   const list = useFlowList(async () => (await api.flows.modQueue()).items);
   const [rejecting, setRejecting] = useState<ModerationItem | null>(null);
+  // UX-S5 · còn bài "đang kiểm tra" ⇒ nạp lại mỗi 10 giây để bài sang "Cần bạn duyệt" (có nút Duyệt/Ẩn) mà không phải tải lại trang
+  const checking = !!list.items?.some((m) => !m.awaitingReview);
+  const { reload } = list;
+  useEffect(() => {
+    if (!checking) return;
+    const id = setInterval(reload, 10_000);
+    return () => clearInterval(id);
+  }, [checking, reload]);
 
   const decide = async (m: ModerationItem, action: "approve" | "reject", feedback?: string) => {
     try {

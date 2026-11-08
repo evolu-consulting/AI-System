@@ -228,6 +228,53 @@ describe("sự kiện flow Community [CR-122 A2]", () => {
     ).toBe("rejected");
   });
 
+  it("UX-S5 · cờ bật, sự kiện chốt mà không mở được lượt ⇒ bài sang người duyệt NGAY (không kẹt 'đang kiểm tra'), duyệt/ẩn được", async () => {
+    triggersOn = true;
+    const id = await newPost();
+    const st = () =>
+      row(sql`select moderation, mod_screen from community.posts where id = ${id}::uuid`);
+    expect(await st()).toMatchObject({ moderation: "pending", mod_screen: "running" });
+    const queue = async () =>
+      ((await call("hA", "GET", "/moderation/queue")).json.items as Record<string, unknown>[]).find(
+        (x) => x.id === id,
+      );
+    // chưa chốt: còn "đang kiểm tra" (chưa quá hạn) ⇒ chưa có nút duyệt
+    expect(await queue()).toMatchObject({ awaitingReview: false, screen: "running" });
+    const notLaunched = () =>
+      withHubScope(
+        db,
+        { kind: "system" },
+        async (tx) =>
+          (await ports.handler.notLaunched?.(tx, {
+            tenantId: c.A,
+            event: "post.created",
+            ref: id,
+            reason: "FLOW_NOT_ASSIGNED",
+          })) ?? false,
+      );
+    expect(await notLaunched()).toBe(true);
+    expect(await notLaunched()).toBe(false); // CAS: chỉ đổi một lần
+    expect(await st()).toMatchObject({ moderation: "pending", mod_screen: "error" });
+    // người xem thấy gì: hàng chờ có nút Duyệt/Ẩn + tác giả thấy "chờ người duyệt"
+    expect(await queue()).toMatchObject({ awaitingReview: true, screen: "error" });
+    const mine = (await call("s1a", "GET", "/moderation/mine")).json.items as Record<
+      string,
+      unknown
+    >[];
+    expect(mine.find((x) => x.id === id)).toMatchObject({ awaitingReview: true, screen: "error" });
+    const queued = (await queue()) as { taskId: string };
+    const hide = await call("hA", "POST", `/moderation/${id}/decide`, {
+      action: "reject",
+      taskId: queued.taskId,
+      feedback: "Chưa đủ thông tin",
+    });
+    expect(hide.status).toBe(200);
+    expect(hide.json).toMatchObject({ moderation: "rejected", feedback: "Chưa đủ thông tin" });
+    // sự kiện khác của app / bài đã quyết ⇒ không đổi
+    expect(await notLaunched()).toBe(false);
+    expect((await st()).moderation).toBe("rejected");
+  });
+
   it("cờ bật: đơn xin tham gia ⇒ partner.join_requested, Nhận idempotent", async () => {
     triggersOn = true;
     const r = await call("b2", "POST", "/join-requests", {

@@ -9,8 +9,8 @@ export const SLOT_JOIN = "community.partner-join";
 export const SLOT_REPORT = "community.report";
 export const AGENT_SCREEN = "community-screen";
 export const AGENT_TRIAGE = "community-triage";
-/** Lượt screen chạy quá mốc này (tiến trình chết giữa chừng) ⇒ coi như lỗi ⇒ vào hàng duyệt. */
-export const SCREEN_STALE_MS = 2 * 60_000;
+/** Lượt screen chạy quá mốc này (tiến trình chết giữa chừng / AI không trả lời) ⇒ coi như lỗi ⇒ vào hàng duyệt (> hạn agent 30 s). */
+export const SCREEN_STALE_MS = 60_000;
 export const REMIND_H = 24;
 export const ESCALATE_H = 48;
 

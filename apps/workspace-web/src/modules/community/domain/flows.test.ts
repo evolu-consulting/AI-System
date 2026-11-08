@@ -1,7 +1,7 @@
 // CR-120 · cr120-community-flow-ui · mapper trạng thái duyệt bài / lỗi tranh chấp.
 import { describe, expect, it } from "bun:test";
 import type { ModerationItem } from "@ai/contracts/community";
-import { byPostId, isConflict, moderationNote, queueReasonKey } from "./flows";
+import { byPostId, hasOpenModeration, isConflict, moderationNote, queueReasonKey } from "./flows";
 
 const base: ModerationItem = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -58,6 +58,22 @@ describe("hàng chờ + lỗi", () => {
     expect(queueReasonKey({ ...base, screen: "error" }).key).toBe(
       "community.flows.review.unchecked",
     );
+    // AI treo quá hạn (running + đã sang người duyệt) cũng là "AI chưa kiểm được"; flow mở lượt (screen null) thì không
+    expect(queueReasonKey({ ...base, screen: "running" }).key).toBe(
+      "community.flows.review.unchecked",
+    );
+    expect(queueReasonKey(base).key).toBe("community.flows.review.byFlow");
+  });
+  it("UX-S5 · tác giả: AI chưa kiểm được ⇒ nói rõ lý do chuyển người duyệt và biết còn bài chờ", () => {
+    expect(moderationNote({ ...base, screen: "error" })?.whyKey).toBe(
+      "community.flows.mod.pendingAiUnchecked",
+    );
+    expect(moderationNote({ ...base, screen: "running" })?.whyKey).toBe(
+      "community.flows.mod.pendingAiUnchecked",
+    );
+    expect(hasOpenModeration(byPostId([base]))).toBe(true);
+    expect(hasOpenModeration(byPostId([{ ...base, moderation: "approved" }]))).toBe(false);
+    expect(hasOpenModeration(undefined)).toBe(false);
   });
   it("409 = tranh chấp", () => {
     expect(isConflict({ status: 409 })).toBe(true);

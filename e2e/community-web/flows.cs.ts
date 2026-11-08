@@ -70,7 +70,7 @@ test("2 · đối tác đăng ⇒ Chờ duyệt ⇒ chủ quản duyệt ở Duy
   // FLOW_TRIGGERS bật: bài mở lượt qua bộ điều phối (≤ vài giây) ⇒ nhãn hiện sau, không còn đồng bộ như đường khe cũ
   await expect(async () => {
     await sup.page.reload();
-    await expect(mine.getByTestId("mod-label")).toHaveText("Chờ duyệt", { timeout: 4_000 });
+    await expect(mine.getByTestId("mod-label")).toHaveText("Đang chờ duyệt", { timeout: 4_000 });
   }).toPass({ timeout: 60_000 });
   await expect(mine.getByTestId("mod-hint")).toHaveText("Sửa nội dung sẽ gửi duyệt lại.");
 
@@ -90,7 +90,7 @@ test("2 · đối tác đăng ⇒ Chờ duyệt ⇒ chủ quản duyệt ở Duy
   await host.page.goto("/community");
   await expect(postByTitle(host.page, TITLE).first()).toBeVisible();
   await sup.page.goto("/community/profile");
-  await expect(postByTitle(sup.page, TITLE).getByTestId("mod-label")).toHaveText("Đã duyệt");
+  await expect(postByTitle(sup.page, TITLE).getByTestId("mod-label")).toHaveText("Đã đăng");
   await sup.ctx.close();
   await host.ctx.close();
 });

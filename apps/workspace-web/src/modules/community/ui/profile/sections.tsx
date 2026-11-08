@@ -7,7 +7,7 @@ import type {
 } from "@ai/contracts/community";
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "../../application/ctx";
-import { byPostId } from "../../domain/flows";
+import { byPostId, hasOpenModeration } from "../../domain/flows";
 import { hasReputation } from "../../domain/profile-sections";
 import { t } from "../../i18n";
 import { Composer } from "../Composer";
@@ -68,6 +68,18 @@ export function PostsSection({ own, orgId }: { own: boolean; orgId: string }) {
       () => setMods(undefined),
     );
   }, [api, own, rev]);
+  // UX-S5 · còn bài chờ duyệt ⇒ nạp lại mỗi 15 giây để tác giả thấy "Đã đăng" / "Đã ẩn — lý do" mà không phải tải lại trang
+  const open = hasOpenModeration(mods);
+  useEffect(() => {
+    if (!own || !open) return;
+    const id = setInterval(() => {
+      api.flows.myModeration().then(
+        (r) => setMods(byPostId(r.items)),
+        () => undefined,
+      );
+    }, 15_000);
+    return () => clearInterval(id);
+  }, [api, own, open]);
   return (
     <>
       {own && (

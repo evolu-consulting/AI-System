@@ -45,12 +45,23 @@ export function moderationNote(m: ModerationItem): ModerationNote | null {
   return {
     tone: "soon",
     labelKey: "community.flows.mod.pending",
-    whyKey: m.awaitingReview
-      ? "community.flows.mod.pendingReview"
-      : "community.flows.mod.pendingChecking",
+    whyKey: !m.awaitingReview
+      ? "community.flows.mod.pendingChecking"
+      : aiUnchecked(m)
+        ? "community.flows.mod.pendingAiUnchecked"
+        : "community.flows.mod.pendingReview",
     hintKey: hint,
   };
 }
+
+/** UX-S5 · bài đã sang người duyệt vì AI không kiểm được (lỗi / hết hạn / không mở được flow), không phải vì AI gắn cờ. */
+const aiUnchecked = (m: ModerationItem): boolean =>
+  m.awaitingReview && (m.screen === "running" || m.screen === "error");
+
+/** Còn bài đang chờ (cần nạp lại định kỳ để thấy kết quả duyệt mà không phải tải lại trang). */
+export const hasOpenModeration = (
+  items: ReadonlyMap<string, ModerationItem> | undefined,
+): boolean => !!items && [...items.values()].some((m) => m.moderation === "pending");
 
 /** Khoá i18n lý do bài vào hàng chờ (người duyệt đọc). */
 export function queueReasonKey(m: ModerationItem): {
@@ -62,7 +73,10 @@ export function queueReasonKey(m: ModerationItem): {
     return m.reason
       ? { key: "community.flows.review.flagged", params: { reason: m.reason } }
       : { key: "community.flows.review.flaggedNoReason" };
-  return { key: "community.flows.review.unchecked" };
+  // screen null = flow đã mở lượt cho người duyệt (bình thường); còn lại = AI chưa kiểm được
+  return m.screen === null
+    ? { key: "community.flows.review.byFlow" }
+    : { key: "community.flows.review.unchecked" };
 }
 
 /** Lỗi tranh chấp (người khác đã xử lý / trùng yêu cầu): HTTP 409. */

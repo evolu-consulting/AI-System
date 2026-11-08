@@ -22,6 +22,7 @@ import {
   applyPostOutcome,
   applyReportOutcome,
   factsOf,
+  markPostNotLaunched,
   openReviewForFlow,
 } from "./flow-events.repo";
 
@@ -60,6 +61,13 @@ export function communityOutcomeHandler(): OutcomeHandler<Tx> {
             openReviewForFlow(tx, i.tenantId, i.ref),
           )
         : Promise.resolve(true), // P11c · false = superseded (huỷ tạo run) ⇒ sự kiện khác không gắn gì: true
+    // CR-125 · UX-S5 · không mở được lượt ⇒ bài không kẹt "đang kiểm tra": chuyển người duyệt (lý do hiện ở UI từ `screen = error`).
+    notLaunched: (tx, i) =>
+      i.event === EV_POST
+        ? withPackRoleInTx(tx, COMMUNITY_PACK, i.tenantId, () =>
+            markPostNotLaunched(tx, i.tenantId, i.ref),
+          )
+        : Promise.resolve(false),
   };
 }
 
