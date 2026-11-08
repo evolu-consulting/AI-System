@@ -4,6 +4,7 @@
 // E1b · flow Thư viện được gán (`defTenantId` null) chạy THẲNG bản xuất bản mới nhất: đọc def + Group theo mã (scope system, 2 câu),
 // đổi mã → id công ty; thiếu ⇒ `FlowLaunchRefused`. Lỗi 4xx của engine ⇒ `FlowLaunchRefused` (không thử lại); lỗi khác ⇒ ném.
 import { eventOf, recordInputsOf } from "@ai/contracts/app-manifest";
+import { packGroupKey } from "@ai/contracts/packs";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
@@ -53,6 +54,17 @@ async function libraryDefFor(
   return { ...out.def, stages: b.stages };
 }
 
+/** CR-113 · cr125-fix-owner-override · Group Toàn quyền của app (`<app>-owner`) CÙNG tenant của sự kiện — quyết thay mọi bước duyệt
+ *  (`withOwnerOverride` lúc tạo run, cùng luật đường khe). Không có Group ⇒ rỗng. */
+async function ownerGroupIdsOf(d: ProcessDepsCore, tenantId: string, app: string) {
+  const key = packGroupKey(app, "owner");
+  const rows = await withHubScope(d.db, { kind: "system" }, (tx) =>
+    tx.execute<{ id: string }>(sql`select id::text as id from admin.groups
+      where tenant_id = ${tenantId}::uuid and key = ${key}`),
+  );
+  return [...rows].map((r) => r.id);
+}
+
 /** CR-122 · P11 · app gắn run vào bản ghi CÙNG tx tạo run (vd thẻ duyệt HĐ ⇒ `mode engine` + `engine_run_id`, CAS). */
 function onCreatedOf(e: ClaimedEvent, app: string) {
   const h = outcomeHandlerFor(app, e.event);
@@ -70,6 +82,7 @@ function launchOpts(
   c: CandidateRow,
   app: string,
   def: StartDefRow | undefined,
+  ownerGroupIds: string[],
   x?: LaunchExtra,
 ) {
   // CR-122 · A · input của lượt = bản ghi (`record` = ref) + dữ kiện lúc sự kiện ⇒ node/tool cần `contract_id` tự nhận.
@@ -84,6 +97,7 @@ function launchOpts(
       event: e.event, // P11g · snapshot.trigger.event ⇒ node Nếu đọc được dữ kiện app
       companyFlowId: c.companyFlowId,
       recordInputs,
+      ownerGroupIds,
       ...(def ? { def } : {}),
       ...(onCreated ? { onCreated } : {}),
     },
@@ -116,12 +130,15 @@ export function flowLaunchOf(d: ProcessDepsCore): FlowLaunchX {
     const off = await featureMissFresh(d, e.tenant_id, c.nodes);
     if (off) throw new FlowLaunchRefused(`FLOW_NODE_FEATURE_OFF:${off.node}`);
     const u = { tenantId: e.tenant_id, userId: e.actor_id } as AuthUser;
-    const def = c.defTenantId === null ? await libraryDefFor(d, e, c) : undefined;
+    const [def, owners] = await Promise.all([
+      c.defTenantId === null ? libraryDefFor(d, e, c) : undefined,
+      ownerGroupIdsOf(d, e.tenant_id, app),
+    ]);
     try {
       const s = await start.createFromApi(
         u,
         { process_key: c.defKey, input: "", origin: { kind: "none" } },
-        launchOpts(e, c, app, def, x),
+        launchOpts(e, c, app, def, owners, x),
       );
       return { runId: s.id };
     } catch (err) {

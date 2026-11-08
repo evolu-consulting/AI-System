@@ -152,10 +152,6 @@ async function main(): Promise<void> {
     { id: string }[]
   >`select id from admin.users where tenant_id = ${t?.id ?? null} and username = 'thomas.tran'`;
   if (!t || !u) throw new Error("pm-stack: thiếu tenant evolu hoặc thomas.tran");
-  // CR-125 · cr125-seed bật cờ flow_triggers + gán flow mặc định cho evolu ⇒ "Mở lại" chạy flow theo sự kiện, nơi KHÔNG có "Toàn quyền duyệt thay"
-  // (`also_group_ids` chỉ do khe duyệt HĐ biên dịch ra). Mẫu CR-113 kiểm đúng đường khe (quy trình gán qua luật định tuyến) ⇒ tắt cờ cho evolu trước khi gieo mẫu.
-  await owner`insert into hub.tenant_flow_settings (tenant_id, flow_triggers) values (${t.id}, false)
-    on conflict (tenant_id) do update set flow_triggers = false, updated_at = now()`;
   const lg = await fetch(`${API}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

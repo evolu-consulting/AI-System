@@ -2,6 +2,7 @@
 // hành vi 2 bước cũ), điều kiện AND/OR theo loại HĐ + giá trị (trống ⇒ cần bước, như `needsLevel2`), bước áp dụng kế tiếp và
 // dịch mẫu ⇒ def engine `contracts-approval` (`compileDef`). Bản mẫu: def HD3 cũ (`git show 7754adec^:…/approval-def.rules.ts`).
 
+import { ownerAlsoGroups } from "@ai/contracts/flow";
 import type { ApprovalSettings } from "./approval-def.rules";
 import {
   APPROVAL_FLOW_DUE_DEFAULT_H,
@@ -233,8 +234,9 @@ function groupOf(id: string | null, groupIds: ReadonlySet<string>): string {
 }
 
 /** prod-fix2 · Group "cũng quyết" của bước = Group Toàn quyền của gói còn ở tenant, trừ chính Group của bước; rỗng ⇒ không ghi. */
-function alsoOf(group: string, owners: readonly string[], groupIds: ReadonlySet<string>) {
-  const also = [...new Set(owners)].filter((g) => g !== group && groupIds.has(g));
+function alsoOf(group: string, owners: readonly string[], ids: ReadonlySet<string>, keep = false) {
+  const live = owners.filter((g) => ids.has(g));
+  const also = ownerAlsoGroups(live, group, keep); // luật chung CR-113 (cùng flow theo sự kiện)
   return also.length ? { also_group_ids: also } : {};
 }
 
@@ -258,8 +260,7 @@ function gateAfter(
   groupIds: ReadonlySet<string>,
 ) {
   if (!s.approver_user_id) return alsoOf(group, owners, groupIds);
-  const also = [...new Set(owners)].filter((g) => groupIds.has(g));
-  return { approver_user_id: s.approver_user_id, ...(also.length ? { also_group_ids: also } : {}) };
+  return { approver_user_id: s.approver_user_id, ...alsoOf(group, owners, groupIds, true) };
 }
 
 function stageOfStep(

@@ -7,6 +7,7 @@ import type {
   ProcessRunSummary,
   SendRoomMessageRequest,
 } from "@ai/contracts/chat";
+import { withOwnerOverride } from "@ai/contracts/flow";
 import type { ProcessInputValue } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -179,6 +180,7 @@ export class StartService {
       flowEvent?: FlowEventAttach & {
         /** E1b · flow Thư viện được gán: def (bản xuất bản, Group đã đổi sang id công ty) đọc sẵn ở scope system. */
         def?: repo.StartDefRow;
+        ownerGroupIds?: readonly string[]; // CR-113 · Toàn quyền của app (cùng tenant) ⇒ cũng quyết mọi stage duyệt
       };
     } = {},
   ): Promise<ProcessRunSummary> {
@@ -190,7 +192,7 @@ export class StartService {
       async (tx) => {
         const origin = await originOf(tx, u, req.origin);
         const pre = o.flowEvent?.def;
-        const def =
+        const def0 =
           pre && userState?.active && !pre.deleted
             ? pre
             : await this.#resolve(tx, u, userState, {
@@ -198,6 +200,8 @@ export class StartService {
                 key: req.process_key,
                 input: req.input,
               });
+        const owners = o.flowEvent?.ownerGroupIds ?? [];
+        const def = { ...def0, stages: withOwnerOverride(def0.stages, owners) };
         // prod-fix · run gắn bản ghi gói (lượt duyệt HĐ chờ người nhiều ngày) không chịu/không tính trần run/tenant.
         const r = await this.#insert(
           tx,
