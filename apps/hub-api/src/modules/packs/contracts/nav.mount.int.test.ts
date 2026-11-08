@@ -5,12 +5,12 @@ import { createDb, type Db } from "@ai/db";
 import { tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
+import { seedPartnerInbox } from "@ai/test-kit/partner-inbox-seed";
 import { Hono } from "hono";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { packNavRoutes } from "../kit/adapters/pack-nav.route";
 import { createPackNavRegistry } from "../kit/application/pack-nav.ports";
 import { contractsNavSource, partnerCountPort } from "./nav.mount";
-import { seedPartnerInbox } from "./testing/partner-inbox.seed";
 
 let o: Sql;
 let db: Db;

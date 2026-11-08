@@ -1,6 +1,6 @@
 // CR-125 G7 · dựng dữ liệu hộp thư đối tác cho int/perf (theo tập: 3 câu, không theo hàng). Chỉ dùng trong test.
-import { contracts } from "@ai/test-kit/builders";
-import type { Sql } from "@ai/test-kit/db";
+import { contracts } from "./builders";
+import type { Sql } from "./db";
 
 /**
  * `total` HĐ nhận của `tenant` (`source='partner_inbox'`), trong đó `pending` hàng đầu ở trạng thái chờ, còn lại đã `confirmed`.
