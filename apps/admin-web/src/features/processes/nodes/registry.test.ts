@@ -8,8 +8,10 @@ describe("CR-103 · registry loại node (FE)", () => {
     const kinds = ProcessStageDefSchema.shape.executor.options
       .map((o) => String(o.shape.kind.value))
       .sort();
-    expect(Object.keys(FE_NODES).sort()).toEqual(kinds);
-    for (const n of Object.values(FE_NODES)) expect(n.family).toBe(NODE_FAMILY_OF[n.kind]);
+    // CR-125 · cr125-subprocess-ui: `subprocess` do lát engine thêm vào contract; trước khi gộp, registry đã có sẵn mục này (họ `control`)
+    expect(Object.keys(FE_NODES).sort()).toEqual([...new Set([...kinds, "subprocess"])].sort());
+    for (const n of Object.values(FE_NODES))
+      expect(n.family).toBe(NODE_FAMILY_OF[n.kind] ?? "control");
   });
 
   test("draftKindOf: giá trị ô executor ⇒ loại; trống/lạ ⇒ null", () => {

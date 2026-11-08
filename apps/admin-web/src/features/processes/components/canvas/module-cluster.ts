@@ -6,6 +6,7 @@ import { moduleClusters } from "@ai/contracts/hub-admin";
 import type { Edge, MarkerType } from "@xyflow/react"; // chỉ kiểu: file này nằm cả ở chunk chính (use-module-canvas), không kéo xyflow vào
 import { exitHandle } from "../../lib/canvas-connect";
 import type { StageDraft } from "../../lib/draft-types";
+import { isSubprocessExecutor, isSubprocessNode } from "../../lib/subprocess-form";
 import type { ModuleExit, ModuleInfo, StageView } from "./stage-view";
 
 type Cluster = { node: string; uids: string[] };
@@ -52,9 +53,15 @@ export function collapseModules(
   infoOf: (node: string) => NodeInfo | undefined,
 ): Collapsed {
   // luật cụm dùng chung với panel / xoá / sao chép / validator (u3a): `[start, end)` trong mảng stage
-  const clusters: Cluster[] = moduleClusters(
-    views.map((v) => ({ node: v.src.node, executor: v.src.executor })),
-  ).map((c) => ({ node: c.node, uids: views.slice(c.start, c.end).map((v) => v.uid) }));
+  const clusters: Cluster[] = [
+    ...moduleClusters(views.map((v) => ({ node: v.src.node, executor: v.src.executor }))).map(
+      (c) => ({ node: c.node, uids: views.slice(c.start, c.end).map((v) => v.uid) }),
+    ),
+    // CR-125 · cr125-subprocess-ui · "Quy trình con" là Một stage nhưng có đầu ra theo kết quả (Xong / Từ chối / Huỷ) ⇒ cũng là ô module
+    ...views
+      .filter((v) => isSubprocessNode(v.src.node) && isSubprocessExecutor(v.src.executor))
+      .map((v) => ({ node: v.src.node as string, uids: [v.uid] })),
+  ];
   if (clusters.length === 0) return { views: [...views], head: new Map(), fromStep: (c) => c };
   const head = new Map<string, string>();
   for (const c of clusters) for (const u of c.uids) head.set(u, c.uids[0] as string);

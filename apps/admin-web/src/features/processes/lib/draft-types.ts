@@ -149,6 +149,8 @@ export type StageDraft = {
   approve?: { reject: number | null; ret: number | null };
   /** CR-125 · cr125-parallel-approval-ui · «A + B cùng duyệt» (`after.parallel`; chỉ bước Duyệt). Vắng = một nhóm duyệt như cũ (`groupId`). */
   parallel?: ParallelDraft;
+  /** CR-125 · cr125-subprocess-ui · khối "Quy trình con" (chỉ có nghĩa khi `executor = subprocess`). */
+  subprocess?: { defKey: string; inputMap: Record<string, string> };
   /** CR-122 · node Kết thúc: khoá kết quả app khai (`AppEventDecl.outcomes`); vắng = không phải Kết thúc. */
   outcome?: string;
   /** CR-122 · bước gộp (0-based, > bước của mình); vắng = đi tiếp bước kế. */

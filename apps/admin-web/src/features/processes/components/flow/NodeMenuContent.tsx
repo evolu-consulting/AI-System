@@ -18,6 +18,7 @@ import type { StageDraft } from "../../lib/def-form";
 import { finishPatch, type NodeEntry, nodesForApp } from "../../lib/flow-def";
 import { type MenuItem, splitMenu } from "../../lib/node-menu";
 import { nodeLabel, nodeToPatches } from "../../lib/palette-node";
+import { SUBPROCESS_NODE } from "../../lib/subprocess-form";
 import { usePalette } from "../../palette-api";
 import { useFlowCtx } from "./flow-ctx";
 
@@ -110,7 +111,17 @@ export function NodeMenuContent({ pick, room, align = "start", drag }: Props) {
         }}
         {...dragProps(moduleItems(m.node), room < m.node.stages.length)}
       >
-        {nodeLabel(m.node, i18n.language)}
+        {m.node.key === SUBPROCESS_NODE ? (
+          // CR-125 · cr125-subprocess-ui · mô tả nghiệp vụ ngắn dưới tên (menu là nơi người dùng chọn giữa các loại bước)
+          <span className="flex flex-col">
+            <span>{nodeLabel(m.node, i18n.language)}</span>
+            <span className="text-caption text-muted-foreground">
+              {t("process.admin.subprocess.menuDesc")}
+            </span>
+          </span>
+        ) : (
+          nodeLabel(m.node, i18n.language)
+        )}
       </DropdownMenuItem>
     );
   return (

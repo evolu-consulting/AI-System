@@ -77,7 +77,10 @@ export function emptyStage(step = 0): StageDraft {
 /** CR-103 · ô `executor` + phần draft riêng của loại (wait/tool) theo registry node. */
 function executorPart(
   ex: ProcessStageDef["executor"],
-): Pick<StageDraft, "executor" | "wait" | "tool" | "set" | "ifx" | "approve" | "notifyRaw"> {
+): Pick<
+  StageDraft,
+  "executor" | "wait" | "tool" | "set" | "ifx" | "approve" | "notifyRaw" | "subprocess"
+> {
   const node = feNodeOf(ex.kind) as FeNode;
   return {
     executor: node.draftExecutor(ex as never),

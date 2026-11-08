@@ -30,6 +30,10 @@ const KNOWN = new Set([
   "COPY_SOURCE_REMOVED",
   // CR-123 FR-09 · CR-125 G1 · bật "Dùng quy trình mới" khi chưa gán quy trình nào
   "FLOW_NONE_ASSIGNED",
+  // CR-125 · cr125-subprocess-ui · node "Quy trình con" (lát engine trả khi lưu / xuất bản)
+  "SUBPROCESS_NOT_FOUND",
+  "SUBPROCESS_CYCLE",
+  "SUBPROCESS_DEPTH",
 ]);
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 

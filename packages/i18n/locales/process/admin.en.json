@@ -619,6 +619,33 @@
       }
     }
   },
+  "subprocess": {
+    "title": "Sub-process",
+    "menuDesc": "Run another process, then come back",
+    "badge": "sub-process",
+    "child": "Process to run",
+    "pick": "Pick a sub-process",
+    "search": "Search processes by name",
+    "status": {
+      "published": "Published",
+      "enabled": "On",
+      "draft": "Draft"
+    },
+    "steps_other": "{{count}} steps",
+    "steps_one": "{{count}} step",
+    "draftHidden_other": "{{count}} draft processes can't be picked yet — publish them first.",
+    "draftHidden_one": "{{count}} draft process can't be picked yet — publish it first.",
+    "open": "Open sub-process",
+    "needs": "Needs",
+    "needsNone": "Nothing more",
+    "returns": "Returns",
+    "returnsNone": "No data returned",
+    "map": "Take data from earlier steps",
+    "autoMap": "Auto-connect",
+    "mapNone": "Not connected",
+    "unmapped": "Still missing a source for: {{names}}.",
+    "notPicked": "No sub-process picked"
+  },
   "apiError": {
     "FLOW_NODE_SPLIT": "The {{name}} step is split apart — delete it and add the {{name}} step again.",
     "FLOW_NODE_CONFIG_INVALID": "Some steps are not filled in correctly. Open the steps marked with an error.",

@@ -619,6 +619,33 @@
       }
     }
   },
+  "subprocess": {
+    "title": "Quy trình con",
+    "menuDesc": "Chạy một quy trình khác rồi quay lại",
+    "badge": "quy trình con",
+    "child": "Quy trình sẽ chạy",
+    "pick": "Chọn quy trình con",
+    "search": "Tìm quy trình theo tên",
+    "status": {
+      "published": "Đã xuất bản",
+      "enabled": "Đang bật",
+      "draft": "Nháp"
+    },
+    "steps_other": "{{count}} bước",
+    "steps_one": "{{count}} bước",
+    "draftHidden_other": "{{count}} quy trình còn nháp chưa chọn được — xuất bản rồi chọn lại.",
+    "draftHidden_one": "{{count}} quy trình còn nháp chưa chọn được — xuất bản rồi chọn lại.",
+    "open": "Mở quy trình con",
+    "needs": "Cần",
+    "needsNone": "Không cần gì thêm",
+    "returns": "Trả về",
+    "returnsNone": "Không trả dữ liệu",
+    "map": "Lấy dữ liệu từ các bước trước",
+    "autoMap": "Tự nối",
+    "mapNone": "Chưa nối",
+    "unmapped": "Còn thiếu nguồn cho: {{names}}.",
+    "notPicked": "Chưa chọn quy trình con"
+  },
   "apiError": {
     "FLOW_NODE_SPLIT": "Bước {{name}} bị tách rời — xoá rồi thêm lại bước {{name}}.",
     "FLOW_NODE_CONFIG_INVALID": "Có bước chưa điền đúng. Mở các bước có ô báo lỗi để sửa.",

@@ -11,6 +11,7 @@ export type NodeKind =
   | "notify"
   | "wait"
   | "agent"
+  | "subprocess"
   | "finish";
 
 /** Loại nghiệp vụ của stage (khoá `process.admin.flow.node.*`). */
@@ -23,7 +24,8 @@ export function kindOf(s: Pick<StageDraft, "executor" | "outcome">): NodeKind {
     e === "if" ||
     e === "set" ||
     e === "tool" ||
-    e === "notify"
+    e === "notify" ||
+    e === "subprocess"
   )
     return e;
   if (e === "wait_for" || e === "wait_until" || e === "wait_event") return "wait";

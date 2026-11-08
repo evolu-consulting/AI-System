@@ -3,6 +3,7 @@
 import { featureNodeByKey, MODULES } from "@ai/contracts/modules";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { SUBPROCESS_EXIT_DECL, SUBPROCESS_NODE } from "../../lib/subprocess-form";
 import { type FlowCtx, useFlowCtx } from "../flow/flow-ctx";
 import { collapseModules, type NodeInfo } from "./module-cluster";
 import type { ProcessCanvasProps } from "./ProcessCanvas";
@@ -14,10 +15,12 @@ const infoFrom =
   (lang: string) =>
   (key: string): NodeInfo | undefined => {
     const n = featureNodeByKey(MODULES, key);
-    if (!n) return undefined;
     const pick = (l: { vi: string; en: string }) => (lang.startsWith("en") ? l.en : l.vi);
+    // CR-125 · cr125-subprocess-ui · "Quy trình con": sổ chưa khai đầu ra ⇒ dùng ba đầu ra thống nhất (Xong / Từ chối / Huỷ)
+    const exits = n?.exits ?? (key === SUBPROCESS_NODE ? SUBPROCESS_EXIT_DECL : undefined);
+    if (!n && exits === undefined) return undefined;
     return {
-      exits: n.exits?.map((x) => ({ key: x.key, label: pick(x.label), on: x.on })),
+      exits: exits?.map((x) => ({ key: x.key, label: pick(x.label), on: x.on })),
     };
   };
 

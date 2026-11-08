@@ -7,6 +7,8 @@ import { kindOf, summaryOf } from "../../lib/node-summary";
 import { nodeLabel } from "../../lib/palette-node";
 import { parallelNames, ruleText } from "../../lib/parallel-form";
 import { isStartForm, startFieldCount } from "../../lib/start-form";
+import { isSubprocessExecutor, isSubprocessNode } from "../../lib/subprocess-form";
+import { SubprocessBody } from "../../modules/core/subprocess/Body";
 import { usePalette } from "../../palette-api";
 import { OP_SYMBOL } from "../flow/FactWhenEditor";
 import { useFlowCtx } from "../flow/flow-ctx";
@@ -96,7 +98,13 @@ function ErrorLine({ v, kind }: { v: StageView; kind: string }) {
   );
 }
 
+/** CR-125 · cr125-subprocess-ui · "Quy trình con" có thân riêng (huy hiệu, tên quy trình con, liên kết mở); còn lại dùng thân chung. */
 export function FlowNodeBody({ v }: { v: StageView }) {
+  const sub = isSubprocessNode(v.src.node) && isSubprocessExecutor(v.src.executor);
+  return sub ? <SubprocessBody v={v} /> : <CommonNodeBody v={v} />;
+}
+
+function CommonNodeBody({ v }: { v: StageView }) {
   const { t, i18n } = useTranslation();
   const flow = useFlowCtx();
   const palette = usePalette(flow?.app ?? "", flow?.tenantId);
