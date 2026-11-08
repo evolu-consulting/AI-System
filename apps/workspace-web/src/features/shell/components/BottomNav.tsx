@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useMyApprovals } from "~/features/overview/hooks/use-overview";
 import { waitingBadge, waitingOf } from "~/features/overview/lib/waiting";
+import { pickBottomItems } from "~/shell/bottom-nav";
 import { MODULES } from "~/shell/modules";
 import { buildShellNav } from "~/shell/nav";
 import { useShellPacks } from "~/shell/use-shell-packs";
@@ -40,10 +41,13 @@ export function BottomNav() {
   const packs = useShellPacks();
   const contracts = packs.contracts === true;
   const items = useMemo(() => {
-    const all = buildShellNav(MODULES, (p) => packs[p] === true)
-      .flatMap((g) => g.items)
-      .filter((n) => n.bottom !== false);
-    return contracts ? all.filter((n) => !n.to.endsWith("/products")).slice(0, 4) : all.slice(0, 5);
+    const all = buildShellNav(MODULES, (p) => packs[p] === true).flatMap((g) => g.items);
+    return contracts
+      ? pickBottomItems(
+          all.filter((n) => !n.to.endsWith("/products")),
+          4,
+        )
+      : pickBottomItems(all, 5);
   }, [packs, contracts]);
   const cols = items.length + (contracts ? 1 : 0);
   if (cols === 0) return null;

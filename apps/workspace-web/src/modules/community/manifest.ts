@@ -98,6 +98,7 @@ export const communityManifest = {
       icon: Newspaper,
       exact: true,
       testId: "nav-community",
+      mobile: "primary",
     },
     {
       to: `${COMMUNITY_BASE}/profile`,

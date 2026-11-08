@@ -26,11 +26,19 @@ export type NavItem = {
   exact?: true;
   /** Tiền tố con cũng thuộc mục này (chi tiết `/contracts/c/<id>` → "Hợp đồng"). */
   also?: readonly string[];
+  /** CR-125: thanh dưới điện thoại (xem NavEntry.mobile). */
+  mobile?: "primary" | "more";
 };
 
 export const NAV: readonly NavItem[] = [
   { to: B, labelKey: "contracts.nav.overview", icon: IconOverview, exact: true },
-  { to: `${B}/list`, labelKey: "contracts.nav.contracts", icon: IconContract, also: [`${B}/c`] },
+  {
+    to: `${B}/list`,
+    labelKey: "contracts.nav.contracts",
+    icon: IconContract,
+    also: [`${B}/c`],
+    mobile: "primary",
+  },
   { to: `${B}/partners`, labelKey: "contracts.nav.partners", icon: IconPartners },
   { to: `${B}/products`, labelKey: "contracts.nav.products", icon: IconBox },
 ];
@@ -48,6 +56,7 @@ export const REQUESTS_NAV: NavItem = {
   labelKey: "contracts.nav.requests",
   icon: FilePlus2,
   testId: "nav-contracts-requests",
+  mobile: "more",
 };
 /** CR-124 · q4 · mục «Hợp đồng đối tác gửi» (cap `contracts.partner`): chỉ hiện khi công ty bật tính năng gửi/nhận HĐ đối tác. */
 export const PARTNER_INBOX_NAV: NavItem = {

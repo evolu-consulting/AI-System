@@ -20,6 +20,8 @@ export type NavEntry = {
   testId?: string;
   /** CR-120: false ⇒ không đưa vào thanh dưới của điện thoại (tối đa 5 cột). */
   bottom?: false;
+  /** CR-125: thanh dưới điện thoại — `primary` luôn xếp đầu, `more` không chiếm cột (vào menu Thêm / menu trái). */
+  mobile?: "primary" | "more";
   /** CR-120: khoá quyền động (vai + khe đã bật, server tính): vắng ⇒ luôn hiện; có ⇒ chỉ hiện khi `hasCap(cap)` đúng. */
   cap?: string;
 };
