@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchAttachment, uploadAttachment } from "./attachments";
+import { downloadAttachment, fetchAttachment, uploadAttachment } from "./attachments";
 
 type Picked = { id: string; name: string };
 
@@ -86,19 +86,50 @@ export function FileUploadField({
   );
 }
 
-/** Chỉ đọc: tên tệp theo id (`GET /attachments/:id`); không tải được ⇒ chữ chung «Tệp đính kèm». */
+/**
+ * Chỉ đọc: tên tệp theo id (`GET /attachments/:id`) là LIÊN KẾT mở tệp (`/content` kèm Bearer). Hub chỉ cho người xem lượt (người gửi,
+ * người được giao, quản trị công ty) ⇒ không đọc được (403/404) ⇒ chữ chung «Tệp đính kèm» + câu báo không mở được.
+ */
 export function FileName({ id }: { id: string }) {
   const { t } = useTranslation();
+  const [denied, setDenied] = useState(false);
   const q = useQuery({
     queryKey: ["attachment", id],
     queryFn: ({ signal }) => fetchAttachment(id, signal),
     retry: false,
     staleTime: 300_000,
   });
+  const name = q.data?.filename ?? t("contracts.flowPanel.file.attached");
+  const open = async () => {
+    setDenied(false);
+    try {
+      await downloadAttachment(id, name);
+    } catch {
+      setDenied(true);
+    }
+  };
+  const blocked = q.isError || denied;
   return (
     <span data-testid="file-name">
-      {q.data?.filename ?? t("contracts.flowPanel.file.attached")}
-      {q.data && !q.data.available ? ` (${t("contracts.flowPanel.file.removed")})` : ""}
+      {q.data && !q.data.available ? (
+        `${name} (${t("contracts.flowPanel.file.removed")})`
+      ) : blocked && q.isError ? (
+        name
+      ) : (
+        <button
+          type="button"
+          className="text-act hover:underline"
+          data-testid="file-link"
+          onClick={() => void open()}
+        >
+          {name}
+        </button>
+      )}
+      {blocked && (
+        <span role="alert" className="ml-2 text-caption text-late" data-testid="file-denied">
+          {t("contracts.flowPanel.file.denied")}
+        </span>
+      )}
     </span>
   );
 }

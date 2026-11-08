@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { fileIdsOf } from "~/components/shared/attachments";
+import { FileName } from "~/components/shared/FileUploadField";
 import { PageHead, Panel } from "~/components/shared/layout";
 import { Skeleton } from "~/components/ui/skeleton";
 import { decideTask, fetchRequest, requestKeys } from "../api";
@@ -80,11 +82,13 @@ export function RequestPage({
               <div key={f.key} className="contents" data-testid={`request-field-${f.key}`}>
                 <dt className="text-sm text-dim">{f.label}</dt>
                 <dd className="m-0 whitespace-pre-wrap text-sm">
-                  {f.type === "money"
-                    ? money(f.value)
-                    : f.type === "attachments"
-                      ? t("contracts.requests.filesCount", { count: f.value.split(", ").length })
-                      : f.value}
+                  {f.type === "money" ? (
+                    money(f.value)
+                  ) : f.type === "attachments" ? (
+                    <FileLinks value={f.value} />
+                  ) : (
+                    f.value
+                  )}
                 </dd>
               </div>
             ))}
@@ -169,6 +173,23 @@ export function RequestPage({
         </p>
       )}
     </div>
+  );
+}
+
+/** Ô «Tệp đính kèm» đã gửi: mỗi tệp một liên kết mở tệp (hub kiểm quyền xem lượt); giá trị không đọc ra id ⇒ chỉ đếm. */
+function FileLinks({ value }: { value: string }) {
+  const { t } = useTranslation();
+  const ids = fileIdsOf(value);
+  if (ids.length === 0)
+    return <>{t("contracts.requests.filesCount", { count: value.split(", ").length })}</>;
+  return (
+    <ul className="m-0 flex list-none flex-col gap-1 p-0">
+      {ids.map((id) => (
+        <li key={id}>
+          <FileName id={id} />
+        </li>
+      ))}
+    </ul>
   );
 }
 

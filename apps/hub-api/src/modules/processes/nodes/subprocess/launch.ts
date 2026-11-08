@@ -6,6 +6,7 @@
 import { type ProcessInputValue, SUBPROCESS_DEPTH_MAX } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { AppError } from "../../../../lib/errors";
+import { inheritRunFiles, uuidsIn } from "../../../attachments/public";
 import { ifFacts } from "../../adapters/runs/if-facts.repo";
 import { settleStepTx } from "../../adapters/runs/step.repo";
 import {
@@ -59,10 +60,10 @@ async function openChild(
   c: LaunchCtx,
   o: { def: StartDefRow; map: Record<string, string> | undefined },
 ): Promise<string | null> {
-  const inputs = await childInputs(tx, c, o);
+  const { inputs, fileIds } = await childInputs(tx, c, o);
   try {
-    const r = await tx.transaction((sp) =>
-      createRun(
+    const r = await tx.transaction(async (sp) => {
+      const created = await createRun(
         sp as unknown as Tx,
         c.u,
         {
@@ -73,8 +74,16 @@ async function openChild(
           inputs,
         },
         { runsPerTenant: d.runsPerTenant, now: d.now, kh: d.kh, packBound: true },
-      ),
-    );
+      );
+      // CR-125 · tệp của lượt cha truyền qua input_map ⇒ lượt con kế thừa liên kết (chỉ tệp ĐÃ liên kết với lượt cha).
+      await inheritRunFiles(sp as unknown as Tx, {
+        tenantId: c.u.tenantId,
+        parentRunId: c.runId,
+        childRunId: created.runId,
+        ids: fileIds,
+      });
+      return created;
+    });
     return r.runId;
   } catch (err) {
     if (err instanceof AppError && err.status < 500) {
@@ -90,8 +99,8 @@ async function childInputs(
   tx: Tx,
   c: LaunchCtx,
   o: { def: StartDefRow; map: Record<string, string> | undefined },
-): Promise<ProcessInputValue[]> {
-  if (!o.map || Object.keys(o.map).length === 0) return [];
+): Promise<{ inputs: ProcessInputValue[]; fileIds: string[] }> {
+  if (!o.map || Object.keys(o.map).length === 0) return { inputs: [], fileIds: [] };
   const facts = await ifFacts(tx, c.u.tenantId, c.runId);
   const byStageKey: Record<string, Record<string, string | number>> = {};
   c.head.snapshot.stages.forEach((st, i) => {
@@ -100,7 +109,7 @@ async function childInputs(
     if (f && key) byStageKey[key] = f;
   });
   const vals = mappedValues(o.map, { byStageKey, inputs: facts.inputs });
-  return (o.def.inputs ?? []).flatMap((inp): ProcessInputValue[] => {
+  const inputs = (o.def.inputs ?? []).flatMap((inp): ProcessInputValue[] => {
     const v = vals[inp.key];
     if (v === undefined) return [];
     if (inp.type === "text") return [{ type: "text", key: inp.key, text: v }];
@@ -108,6 +117,10 @@ async function childInputs(
       return [{ type: inp.type, key: inp.key, value: v }];
     return [];
   });
+  // Giá trị đến được lượt con chứa id tệp (ô «Tệp đính kèm» của phiếu: "id1, id2"; ô `file_ref` của bước form: id) ⇒ kế thừa liên kết.
+  const fileVals = (o.def.inputs ?? []).filter((i) => i.type === "file").map((i) => vals[i.key]);
+  const textVals = inputs.map((i) => (i.type === "text" ? i.text : undefined));
+  return { inputs, fileIds: uuidsIn([...textVals, ...fileVals]) };
 }
 
 /** Stage cha `waiting_timer` + MỘT hẹn canh (lượt con kết thúc ⇒ trigger kéo về now) + trạng thái lượt theo bước; lượt con mới ⇒ kick sau COMMIT. */

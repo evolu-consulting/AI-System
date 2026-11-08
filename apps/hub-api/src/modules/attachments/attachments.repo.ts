@@ -115,6 +115,21 @@ const toReadable = (r: ReadableRow): ReadableAttachment => ({
 });
 
 /**
+ * CR-125 · cr125-run-attachments · hàng tệp theo id + tenant (scope `system` — RLS user chỉ thấy tệp của chủ). CHỈ gọi sau khi đã kiểm
+ * quyền xem lượt có liên kết tệp (`run-links.ts`).
+ */
+export async function fileRowById(
+  tx: Tx,
+  o: { tenantId: string; id: string },
+): Promise<ReadableAttachment | null> {
+  const [r] =
+    await tx.execute<ReadableRow>(sql`select a.id, a.filename, a.mime, a.size, a.created_at, a.purged_at,
+      a.storage_key, a.filebox_file_id, a.filebox_version_id
+    from hub.attachments a where a.id = ${o.id}::uuid and a.tenant_id = ${o.tenantId}::uuid`);
+  return r ? toReadable(r) : null;
+}
+
+/**
  * PC-R14 · plan §6.6 (B5b) · file diff/log của một `hub.autofix_results` trong tenant `tenantId` + run sở hữu. Scope
  * `system` (RLS attachments scope user chỉ thấy file của chủ) ⇒ lọc `tenant_id` tường minh cả hai bảng; CHỈ gọi rồi kiểm
  * quyền xem run trước khi trả file. Index một phần `autofix_results_{diff,log}_att_idx` (BitmapOr). `purged_at` giữ nguyên.

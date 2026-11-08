@@ -35,6 +35,7 @@ import {
   startFlows,
   upsertStartEvent,
 } from "./manual-start.repo";
+import { startFormFileIds } from "./start-files.rules";
 
 const MESSAGES: Record<ProcessStartErrorCode, string> = {
   START_NOT_ALLOWED: "You are not allowed to start this process",
@@ -183,7 +184,11 @@ export class ManualStartService {
       { key: "request_title", type: "text", text: title },
     ];
     try {
-      const r = await this.#launch(e, c, "core", { inputs });
+      // CR-125 · tệp ô «Tệp đính kèm» liên kết vào lượt CÙNG tx tạo lượt (người xem lượt mở được tệp).
+      const r = await this.#launch(e, c, "core", {
+        inputs,
+        fileIds: startFormFileIds(cfg, values),
+      });
       if (r !== "duplicate" && r !== "superseded") return { id: r.runId, created: true };
     } catch (err) {
       throw refusedToError(err);

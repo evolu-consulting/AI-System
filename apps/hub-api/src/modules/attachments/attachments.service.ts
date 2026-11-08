@@ -44,6 +44,7 @@ import {
 } from "./attachments.repo";
 import { readableAutofixFile } from "./autofix-files";
 import { countedBody } from "./counted-body";
+import { readableRunFile } from "./run-links";
 import { FileInspector } from "./sniff.rules";
 import {
   type AttachmentStorage,
@@ -329,14 +330,17 @@ export class AttachmentService {
     }
   }
 
-  /** X2b2-R05/R06 · file của chủ / phòng đang là thành viên; PC-R14 (B5b) · diff/log tự sửa theo quyền xem run; khác ⇒ 404. */
+  /** X2b2-R05/R06 · file của chủ / phòng đang là thành viên; PC-R14 (B5b) · diff/log tự sửa theo quyền xem run; CR-125 · tệp liên kết vào lượt theo quyền xem lượt; khác ⇒ 404. */
   async #readable(u: AuthUser, id: string, tenantIdQ?: string): Promise<ReadableAttachment> {
     const own = await withHubScope(
       this.d.db,
       { kind: "user", tenantId: u.tenantId, userId: u.userId },
       (tx) => findReadableAttachment(tx, { tenantId: u.tenantId, userId: u.userId, id }),
     );
-    const row = own ?? (await readableAutofixFile(this.d.db, u, id, tenantIdQ));
+    const row =
+      own ??
+      (await readableAutofixFile(this.d.db, u, id, tenantIdQ)) ??
+      (await readableRunFile(this.d.db, u, id));
     if (!row) throw appError("NOT_FOUND");
     return row;
   }

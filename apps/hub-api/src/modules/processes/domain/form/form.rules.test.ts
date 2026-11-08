@@ -2,7 +2,12 @@
 // + hình def form (key/option trùng, nhãn có thẻ, quá 20 trường) + ép stage khi lưu.
 import { describe, expect, test } from "bun:test";
 import { FORM_FIELDS_MAX, FormExecutorSchema, type FormField } from "@ai/contracts/hub-admin";
-import { canonicalFormValues, formOutputFields, validateFormValues } from "./form.rules";
+import {
+  canonicalFormValues,
+  fileRefIds,
+  formOutputFields,
+  validateFormValues,
+} from "./form.rules";
 
 const parse = (fields: unknown[]) => FormExecutorSchema.parse({ kind: "form", fields }).fields;
 const FIELDS: FormField[] = parse([
@@ -120,5 +125,16 @@ describe("CR-118 · FormExecutorSchema (def)", () => {
       "dong_y:string:false",
       "tep:string:false",
     ]);
+  });
+});
+describe("CR-125 · fileRefIds", () => {
+  test("chỉ ô file_ref có giá trị; không trùng", () => {
+    expect(fileRefIds(FIELDS, { ten: "x", tep: UUID })).toEqual([UUID]);
+    expect(fileRefIds(FIELDS, { ten: "x" })).toEqual([]);
+    const two = parse([
+      { key: "a", label: "A", type: "file_ref" },
+      { key: "b", label: "B", type: "file_ref" },
+    ]);
+    expect(fileRefIds(two, { a: UUID, b: UUID })).toEqual([UUID]);
   });
 });

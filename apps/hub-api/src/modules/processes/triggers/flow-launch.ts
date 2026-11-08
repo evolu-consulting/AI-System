@@ -10,6 +10,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
+import { linkRunFiles } from "../../attachments/public";
 import { outcomeHandlerFor } from "../adapters/runs/flow-ports";
 import { nodeFeatureMiss } from "../defs/node-features";
 import { type FlowEventAttach, FlowRunSuperseded } from "../runs/flow-event-attach";
@@ -74,8 +75,28 @@ function onCreatedOf(e: ClaimedEvent, app: string) {
     launched(tx, { tenantId: e.tenant_id, runId, event: e.event, ref: e.ref });
 }
 
+/** CR-125 · cr125-run-attachments · sau `onCreated` của app (false = thua CAS ⇒ không liên kết), liên kết tệp phiếu vào lượt mới. */
+function withStartFiles(
+  base: ((tx: Tx, runId: string) => Promise<unknown>) | undefined,
+  e: ClaimedEvent,
+  fileIds: readonly string[],
+): ((tx: Tx, runId: string) => Promise<unknown>) | undefined {
+  if (fileIds.length === 0 || !e.actor_id) return base;
+  const userId = e.actor_id;
+  return async (tx, runId) => {
+    const r = await base?.(tx, runId);
+    if (r === false) return false;
+    await linkRunFiles(tx, { tenantId: e.tenant_id, userId, runId, ids: fileIds, source: "start" });
+    return r;
+  };
+}
+
 /** CR-125 · bắt đầu bằng phiếu (`processes/start`): giá trị phiếu ⇒ input của lượt (cùng đường mở lượt với sự kiện). */
-export type LaunchExtra = { inputs?: FlowEventAttach["recordInputs"] };
+export type LaunchExtra = {
+  inputs?: FlowEventAttach["recordInputs"];
+  /** CR-125 · id tệp (ô «Tệp đính kèm») liên kết vào lượt CÙNG tx tạo lượt; chỉ tệp `upload` của người bắt đầu được nhận. */
+  fileIds?: readonly string[];
+};
 
 function launchOpts(
   e: ClaimedEvent,
@@ -90,7 +111,7 @@ function launchOpts(
     ...recordInputsOf(eventOf(app, e.event), e.ref, e.facts ?? {}),
     ...(x?.inputs ?? []),
   ];
-  const onCreated = onCreatedOf(e, app);
+  const onCreated = withStartFiles(onCreatedOf(e, app), e, x?.fileIds ?? []);
   return {
     flowEvent: {
       eventRowId: e.id,

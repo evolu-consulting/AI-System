@@ -85,6 +85,15 @@ export function validateFormValues(fields: readonly FormField[], raw: unknown): 
   return paths.length > 0 ? { ok: false, paths } : { ok: true, values };
 }
 
+/** CR-125 · id tệp (chữ thường, không trùng) của các ô `file_ref` trong giá trị đã chuẩn hoá. */
+export function fileRefIds(fields: readonly FormField[], values: Readonly<FormValues>): string[] {
+  const ids = fields
+    .filter((f) => f.type === "file_ref")
+    .map((f) => values[f.key])
+    .filter((v): v is string => typeof v === "string");
+  return [...new Set(ids)];
+}
+
 /** Chuỗi so sánh idempotent (giữ thứ tự khoá do `validateFormValues` dựng). */
 export const canonicalFormValues = (v: FormValues): string => JSON.stringify(v);
 

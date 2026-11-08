@@ -54,6 +54,7 @@ async function sweepUnbound(tx: Tx, c: Ctx): Promise<number> {
       SELECT a0.id FROM hub.attachments a0
       WHERE a0.message_id IS NULL AND a0.room_id IS NULL AND (a0.purged_at IS NOT NULL OR a0.created_at < ${cutoff}::timestamptz)
         AND NOT EXISTS (SELECT 1 FROM hub.process_outputs o WHERE o.attachment_id = a0.id)
+        AND NOT EXISTS (SELECT 1 FROM hub.process_run_files f WHERE f.attachment_id = a0.id)
       ORDER BY a0.created_at LIMIT ${SWEEP_BATCH} FOR UPDATE SKIP LOCKED
     )
     UPDATE hub.attachments a SET purged_at = coalesce(a.purged_at, ${now}::timestamptz) FROM c

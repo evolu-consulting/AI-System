@@ -30,5 +30,7 @@ export {
   orchestratorFilesBlock,
   withOutHint,
 } from "./run-files.rules";
+export { inheritRunFiles, linkRunFiles, type RunFileSource } from "./run-links";
+export { uuidsIn } from "./run-links.rules";
 export type { AttachmentStorage, Staged } from "./storage";
 export { storageKey, storageLocatorOf } from "./storage";

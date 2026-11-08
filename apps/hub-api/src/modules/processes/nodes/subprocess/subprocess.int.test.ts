@@ -12,6 +12,8 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../../lib/db";
 import { AppError } from "../../../../lib/errors";
+import { AttachmentService } from "../../../attachments/attachments.service";
+import { linkRunFiles } from "../../../attachments/public";
 import { createHubUow } from "../../adapters/hub-uow";
 import { fireTimer } from "../../application/timers/fire-timer.usecase";
 import * as core from "../../core/core.repo";
@@ -172,6 +174,9 @@ const cancelParent = (pid: string, lockTimeout?: string) =>
 let okDef = "";
 let noDef = "";
 let waitDef = "";
+let fileDef = "";
+const F1 = "7c1d2b6e-0000-4000-8000-0000000125f1"; // tệp truyền qua input_map
+const F2 = "7c1d2b6e-0000-4000-8000-0000000125f2"; // tệp của lượt cha, KHÔNG truyền
 
 beforeAll(async () => {
   await cloneDb("full");
@@ -200,6 +205,27 @@ beforeAll(async () => {
   okDef = await def("p-ok", parentStages("sp-ok"), AMOUNT);
   noDef = await def("p-no", parentStages("sp-no"), AMOUNT);
   waitDef = await def("p-wait", parentStages("sp-wait"), AMOUNT);
+  // CR-125 · cr125-run-attachments: cha 0 Chờ 24 giờ · 1 Quy trình con (sp-ok) · 2 approved · 3 rejected — chờ để liên kết tệp vào cha TRƯỚC khi mở con.
+  fileDef = await def(
+    "p-file",
+    [
+      { ...base("cho", "Chờ", 0), executor: { kind: "wait_for", hours: 24 } },
+      {
+        ...sub("sp-ok"),
+        step: 1,
+        executor: { ...sub("sp-ok").executor, branches: [{ on: "rejected", goto_step: 3 }] },
+      },
+      end("ok", 2, "approved"),
+      end("no", 3, "rejected"),
+    ],
+    AMOUNT,
+  );
+  for (const [id, name] of [
+    [F1, "hop-dong.txt"],
+    [F2, "khac.txt"],
+  ] as const)
+    await o`insert into hub.attachments (id, tenant_id, user_id, origin, filename, safe_name, mime, size, sha256, storage_key)
+      values (${id}, ${T}, ${A}, 'upload', ${name}, ${name}, 'text/plain', 5, ${"b".repeat(64)}, ${`${T}/${id}`})`;
   d = mkDeps();
 }, 120_000);
 afterAll(async () => {
@@ -374,5 +400,24 @@ describe("CR-125 · «Quy trình con» guard khi lưu", () => {
     await def("g-d5", [{ executor: { kind: "set" } }]);
     expect(await check(input("g-d1", "g-d2"))).toBe("SUBPROCESS_DEPTH");
     expect(await check(input("g-d1", "g-d3"))).toBe("ok");
+  });
+
+  it("CR-125 · tệp truyền qua input_map: lượt con kế thừa liên kết tệp của cha (chỉ tệp được truyền)", async () => {
+    const pid = await start(fileDef, F1); // đầu vào `amount` = id tệp F1 (ô văn bản)
+    await withHubScope(db, { kind: "user", tenantId: T, userId: A }, (tx) =>
+      linkRunFiles(tx, { tenantId: T, userId: A, runId: pid, ids: [F1, F2], source: "start" }),
+    );
+    expect(await childrenOf(pid)).toHaveLength(0);
+    await o`update hub.process_timers set due_at = now() - interval '1 second'
+      where process_run_id = ${pid} and fired_at is null and cancelled_at is null`;
+    expect(await fireDue()).toBeGreaterThanOrEqual(1);
+    const kids = await childrenOf(pid);
+    expect(kids).toHaveLength(1);
+    const rows = await o<{ attachment_id: string; source: string }[]>`select attachment_id, source
+      from hub.process_run_files where process_run_id = ${kids[0]?.id as string}`;
+    expect(rows.map((r) => `${r.attachment_id}:${r.source}`)).toEqual([`${F1}:subprocess`]);
+    // người xem lượt con mở được tệp được truyền (chủ tệp = người bắt đầu); tệp không truyền thì lượt con không có liên kết.
+    const files = new AttachmentService({ db, storage: {} as never, tenantMaxBytes: 1 });
+    expect(await files.get(u(), F1)).toMatchObject({ id: F1, filename: "hop-dong.txt" });
   });
 });

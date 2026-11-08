@@ -125,7 +125,8 @@
         "failed": "Không tải được tệp. Chọn lại tệp (PDF, ảnh, Word, Excel, văn bản; tối đa 20 MB).",
         "remove": "Bỏ tệp {{name}}",
         "attached": "Tệp đính kèm",
-        "removed": "đã bị xoá"
+        "removed": "đã bị xoá",
+        "denied": "Không mở được tệp (không có quyền hoặc tệp đã bị xoá)"
       },
       "form": {
         "yes": "Có",

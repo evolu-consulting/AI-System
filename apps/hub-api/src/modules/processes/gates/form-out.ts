@@ -8,10 +8,12 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { AppError } from "../../../lib/errors";
 import { clipEntityName, dbHubAudit } from "../../../lib/hub-audit";
+import { linkRunFiles } from "../../attachments/public";
 import { processError } from "../core/errors";
 import {
   canonicalFormValues,
   type FormValues,
+  fileRefIds,
   validateFormValues,
 } from "../domain/form/form.rules";
 import type { Viewer } from "../domain/runs/run-access.rules";
@@ -69,6 +71,15 @@ export async function writeFormOutput(tx: Tx, w: WriteForm): Promise<string> {
   await tx.execute(sql`update hub.process_outputs
     set content = ${setOutputMd(name, w.values)}, fields = ${answer}::jsonb, template_ok = true
     where id = ${w.outputId} and tenant_id = ${w.run.tenantId}`);
+  // CR-125 · tệp người điền đính kèm ⇒ liên kết vào lượt: người xem lượt (các bước sau) mở được. Chỉ tệp `upload` của chính người gửi.
+  const fields = snapFormFields(w.run, w.idx) ?? [];
+  await linkRunFiles(tx, {
+    tenantId: w.run.tenantId,
+    userId: w.v.userId,
+    runId: w.run.id,
+    ids: fileRefIds(fields, w.values),
+    source: "form",
+  });
   await dbHubAudit.insert(tx, {
     tenantId: w.run.tenantId,
     actorId: w.v.userId,

@@ -16,6 +16,8 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
+import { AttachmentService } from "../../attachments/attachments.service";
+import { linkRunFiles } from "../../attachments/public";
 import {
   actApproval,
   approvalEngineRepo,
@@ -48,6 +50,7 @@ let A = ""; // nhân viên tạo HĐ
 let B = ""; // trưởng Kế toán (người duyệt bước sau)
 let M = ""; // nhân viên Mua hàng (nhóm làm bước form)
 let X = ""; // người công ty khác
+let D = ""; // người cùng công ty, không dính lượt (người ngoài)
 let GB = "";
 let GM = "";
 let C = "";
@@ -104,7 +107,8 @@ const STAGES = [
     outcome: "approved",
   },
 ];
-const FILE = "7c1d2b6e-0000-4000-8000-0000000000aa";
+const FILE = "7c1d2b6e-0000-4000-8000-0000000000aa"; // tệp M tải lên (ô file_ref của bước form)
+const FILE_A = "7c1d2b6e-0000-4000-8000-0000000000ab"; // tệp của A (M không được kéo vào lượt)
 
 beforeAll(async () => {
   await cloneDb("full");
@@ -113,6 +117,7 @@ beforeAll(async () => {
   await o`insert into admin.tenants (id, key, name) values (${T}, 't1341', 'T'), (${T2}, 't1342', 'T2')`;
   [A, B, M] = (await users(o, T, 3, { from: 1341 })) as [string, string, string];
   [X] = (await users(o, T2, 1, { from: 1350 })) as [string];
+  [D] = (await users(o, T, 1, { from: 1345 })) as [string];
   const roles = (await enablePack(o, [T], "contracts")).get(T);
   await members(o, T, roles?.editor as string, [A]);
   await members(o, T, roles?.viewer as string, [B, M]);
@@ -125,6 +130,12 @@ beforeAll(async () => {
   ];
   await o`update contracts.contracts set deal = 'buy', direction = 'purchase',
     fields = jsonb_build_object('total_value', jsonb_build_object('value', 150000000)) where id = ${C}`;
+  for (const [id, owner, name] of [
+    [FILE, M, "bao-gia.txt"],
+    [FILE_A, A, "rieng-tu.txt"],
+  ] as const)
+    await o`insert into hub.attachments (id, tenant_id, user_id, origin, filename, safe_name, mime, size, sha256, storage_key)
+      values (${id}, ${T}, ${owner}, 'upload', ${name}, ${name}, 'text/plain', 5, ${"a".repeat(64)}, ${`${T}/${id}`})`;
   const st = JSON.stringify(STAGES);
   const [r] = await o<
     { id: string }[]
@@ -270,5 +281,29 @@ describe("CR-125 · bước form trên thẻ HĐ", () => {
     expect(flowViewOfCard(after as never, C, 1).tasks[0]?.kind).toBe("review");
     // gửi lại cùng giá trị ⇒ idempotent (không lỗi)
     await gates.formSubmit(asUser(M, T), taskId, { values: VALUES });
+  });
+
+  it("tệp bước form: người xem lượt (Kế toán, người tạo) mở được; người ngoài cùng công ty 404; công ty khác 404; không kéo tệp người khác vào lượt", async () => {
+    const files = new AttachmentService({ db, storage: {} as never, tenantMaxBytes: 1 });
+    const detail = (uid: string, tid = T) => files.get(asUser(uid, tid), FILE);
+    expect(await detail(B)).toMatchObject({ id: FILE, filename: "bao-gia.txt" });
+    expect(await detail(A)).toMatchObject({ id: FILE });
+    await expect(detail(D)).rejects.toMatchObject({ status: 404 });
+    await expect(detail(X, T2)).rejects.toMatchObject({ status: 404 });
+    // tệp của A mà M cố liên kết vào lượt ⇒ 0 hàng (chỉ tệp của chính người thao tác); D vẫn không mở được.
+    const [run] = await o<
+      { id: string }[]
+    >`select id from hub.process_runs where tenant_id = ${T} and pack_record_id = ${C}`;
+    const linked = await withHubScope(db, { kind: "user", tenantId: T, userId: M }, (tx) =>
+      linkRunFiles(tx, {
+        tenantId: T,
+        userId: M,
+        runId: run?.id as string,
+        ids: [FILE_A],
+        source: "form",
+      }),
+    );
+    expect(linked).toBe(0);
+    await expect(files.get(asUser(D, T), FILE_A)).rejects.toMatchObject({ status: 404 });
   });
 });

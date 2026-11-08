@@ -125,7 +125,8 @@
         "failed": "Could not upload the file. Choose it again (PDF, image, Word, Excel, text; up to 20 MB).",
         "remove": "Remove file {{name}}",
         "attached": "Attached file",
-        "removed": "deleted"
+        "removed": "deleted",
+        "denied": "Cannot open the file (no access, or it was deleted)"
       },
       "form": {
         "yes": "Yes",
