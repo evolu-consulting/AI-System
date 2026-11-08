@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { PageHead, Panel } from "~/components/shared/layout";
 import { Skeleton } from "~/components/ui/skeleton";
 import { fetchMyTasks, fetchStartable, requestKeys } from "../api";
+import { waitingView } from "../lib/waiting";
 
 export function RequestsPage() {
   const { t } = useTranslation();
@@ -19,7 +20,7 @@ export function RequestsPage() {
     queryFn: ({ signal }) => fetchMyTasks(signal),
     retry: false,
   });
-  const mine = (tasks.data?.items ?? []).filter((i) => i.task.status === "open" && i.task.can_act);
+  const waiting = waitingView(tasks);
   return (
     <div data-testid="requests-page">
       <PageHead title={t("contracts.requests.title")} lead={t("contracts.requests.lead")} />
@@ -63,14 +64,20 @@ export function RequestsPage() {
       <h2 className="mb-2 mt-6 text-[15px] font-semibold">
         {t("contracts.requests.waitingTitle")}
       </h2>
-      {mine.length === 0 ? (
+      {waiting.kind === "loading" ? (
+        <Skeleton className="h-12 w-full" />
+      ) : waiting.kind === "error" ? (
+        <p role="alert" className="text-sm text-late" data-testid="requests-waiting-error">
+          {t("contracts.requests.loadError")}
+        </p>
+      ) : waiting.kind === "empty" ? (
         <p className="text-sm text-dim" data-testid="requests-waiting-empty">
           {t("contracts.requests.waitingEmpty")}
         </p>
       ) : (
         <Panel>
           <ul data-testid="requests-waiting" className="m-0 list-none p-0">
-            {mine.map((i) => (
+            {waiting.items.map((i) => (
               <li key={i.task.id} className="border-b border-rule-soft last:border-b-0">
                 <Link
                   to="/contracts/requests/$runId"

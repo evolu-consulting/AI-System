@@ -134,6 +134,8 @@ async function actOnWaiting(page: Page): Promise<boolean> {
     await expect(page.getByTestId("request-page")).toBeVisible({ timeout: 30_000 });
     // việc của lượt con ⇒ chuyển sang trang yêu cầu gốc (cùng URL với trang yêu cầu cha), lượt con nằm lồng dưới lượt cha
     await expect(page).toHaveURL(new RegExp(`${runUrl.split("/").pop()}`), { timeout: 30_000 });
+    // cr126-child-task-visible-2 · các bước (lượt cha + con) tải SAU khung trang: chờ có lượt rồi mới xem form / nút Duyệt
+    await expect(page.locator("[data-run]").first()).toBeVisible({ timeout: 30_000 });
     const approve = page.getByTestId("request-approve").first();
     if (await submitOpenForm(page)) acted = true;
     else if (await approve.isVisible()) {
