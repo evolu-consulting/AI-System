@@ -49,7 +49,7 @@ export class MyRequestsService {
           (select t.result from hub.review_tasks t
             where t.process_run_id = r.id and t.tenant_id = r.tenant_id and t.status = 'closed' and t.result in ('reject', 'fail')
             order by t.decided_at desc nulls last limit 1) as last_negative,
-          (select string_agg(distinct coalesce(usr.display_name, g.name), ', ')
+          (select string_agg(distinct coalesce(usr.display_name, g.name ->> 'vi', g.name ->> 'en', g.key), ', ')
             from hub.review_tasks t
             join hub.review_task_assignees a on a.task_id = t.id and a.tenant_id = t.tenant_id
             left join admin.users usr on usr.id = a.user_id and usr.tenant_id = t.tenant_id
