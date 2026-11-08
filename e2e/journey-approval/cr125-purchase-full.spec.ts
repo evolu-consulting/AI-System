@@ -121,8 +121,34 @@ async function submitOpenForm(page: Page): Promise<boolean> {
     if ((await input.count()) === 0 || (await input.inputValue()) !== "") continue;
     await input.fill(await valueFor(field, input));
   }
+  const posts: string[] = [];
+  const onResp = async (r: import("@playwright/test").Response) => {
+    if (r.request().method() !== "GET" && /\/(pack|flow|review-tasks|process|runs)/.test(r.url()))
+      posts.push(
+        `${r.status()} ${r.request().method()} ${r.url()} ${(await r.text().catch(() => "")).slice(0, 300)}`,
+      );
+  };
+  page.on("response", onResp);
   await form.getByRole("button", { name: "Gửi", exact: true }).click();
-  await expect(form).toHaveCount(0, { timeout: 60_000 });
+  const gone = await expect(form)
+    .toHaveCount(0, { timeout: 60_000 })
+    .then(
+      () => true,
+      () => false,
+    );
+  page.off("response", onResp);
+  if (!gone) {
+    const vals = await form
+      .locator("input, textarea")
+      .evaluateAll((els) =>
+        els.map((e) => `${(e as HTMLInputElement).type}=${(e as HTMLInputElement).value}`),
+      );
+    const alerts = await page.locator("[role=alert], [data-error], .text-late").allInnerTexts();
+    console.log(
+      `[submit] values=${JSON.stringify(vals)} alerts=${JSON.stringify(alerts)} posts=${JSON.stringify(posts)}`,
+    );
+    await expect(form).toHaveCount(0, { timeout: 1_000 });
+  }
   return true;
 }
 
