@@ -27,6 +27,8 @@ export const NotifyInputSchema = z
     body: z.string().max(NOTIFY_BODY_MAX).optional(),
     link: z.string().max(NOTIFY_LINK_MAX).regex(NOTIFY_LINK_RE).optional(),
     dedup_key: z.string().min(1).max(NOTIFY_DEDUP_MAX).optional(),
+    /** CR-125 · x12 · dữ liệu có cấu trúc đi kèm (≤ 256 KB ở DB) để dựng email giàu; không bí mật. */
+    data: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();
 export type NotifyInput = z.infer<typeof NotifyInputSchema>;

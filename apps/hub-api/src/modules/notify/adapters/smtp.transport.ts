@@ -1,4 +1,4 @@
-﻿// N3-FR-07 · ADR-0027 · transport EMAIL thật trên `nodemailer` (hộp thư pool, SMTP nền tảng MỘT bộ — D-04). Mật khẩu KHÔNG ở đây:
+// N3-FR-07 · ADR-0027 · transport EMAIL thật trên `nodemailer` (hộp thư pool, SMTP nền tảng MỘT bộ — D-04). Mật khẩu KHÔNG ở đây:
 // `getPassword()` do nơi dựng truyền vào (CR-121 D4: cấu hình + mật khẩu từ kho secret Hub, xem `mail-config.ts`). Không log nội dung/địa chỉ.
 // Mỗi tin một `sendMail` song song (pool giới hạn kết nối); lỗi ánh xạ qua `mapSmtpError` (thuần, có test).
 import nodemailer from "nodemailer";
@@ -32,6 +32,13 @@ export type MailSender = {
     subject: string;
     text: string;
     html?: string;
+    attachments?: {
+      cid: string;
+      filename: string;
+      contentType: string;
+      contentDisposition: "inline";
+      content: Buffer;
+    }[];
     messageId: string;
   }): Promise<unknown>;
 };
@@ -108,6 +115,17 @@ export function createSmtpTransport(
                 subject: m.subject,
                 text: m.text,
                 ...(m.html ? { html: m.html } : {}),
+                ...(m.inline?.length
+                  ? {
+                      attachments: m.inline.map((a) => ({
+                        cid: a.cid,
+                        filename: `${a.cid}.jpg`,
+                        contentType: a.contentType,
+                        contentDisposition: "inline" as const,
+                        content: Buffer.from(a.base64, "base64"),
+                      })),
+                    }
+                  : {}),
                 messageId: `<${m.idempotencyKey}@${domain}>`,
               }),
         ),

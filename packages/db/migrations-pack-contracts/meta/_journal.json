@@ -575,6 +575,13 @@
       "when": 1807000000000,
       "tag": "0088_stage_decided_once",
       "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1807000100000,
+      "tag": "0089_esign_invite_thumb",
+      "breakpoints": true
     }
   ]
 }

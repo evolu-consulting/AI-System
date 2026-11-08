@@ -1,4 +1,4 @@
-﻿// cf-esign-docusign · ký số HĐ, trung lập nhà cung cấp (DocuSign / ký thử selfsign / CA VN sau này): contract `/pack/contracts/contracts/:id/esign*` + `/pack/contracts/esign/settings`.
+// cf-esign-docusign · ký số HĐ, trung lập nhà cung cấp (DocuSign / ký thử selfsign / CA VN sau này): contract `/pack/contracts/contracts/:id/esign*` + `/pack/contracts/esign/settings`.
 import { z } from "zod";
 
 /** Mã lỗi ⇒ HTTP status. */
@@ -81,10 +81,21 @@ export const ESignSignUrlSchema = z.strictObject({
 
 /** esign-multi · bật/tắt và/hoặc nhà cung cấp mặc định (phải khả dụng) — ít nhất một trường. */
 export const ESignSettingsSchema = z
-  .strictObject({ enabled: z.boolean().optional(), default_provider: ESignProviderKey.optional() })
-  .refine((b) => b.enabled !== undefined || b.default_provider !== undefined, {
-    message: "empty",
-  });
+  .strictObject({
+    enabled: z.boolean().optional(),
+    default_provider: ESignProviderKey.optional(),
+    /** CR-125 · x12 · "Kèm ảnh trang đầu trong email mời ký" (mặc định bật). */
+    invite_thumbnail: z.boolean().optional(),
+  })
+  .refine(
+    (b) =>
+      b.enabled !== undefined ||
+      b.default_provider !== undefined ||
+      b.invite_thumbnail !== undefined,
+    {
+      message: "empty",
+    },
+  );
 export type ESignSettingsIn = z.infer<typeof ESignSettingsSchema>;
 
 /** esign-multi · "envelope" = cả luồng ký trên nền tảng nhà cung cấp (DocuSign, chọn lúc gửi); "ca" = hệ thống mình điều phối,
@@ -114,6 +125,8 @@ export type ESignSettingsOut = {
   providers: ESignProviderOut[];
   /** esign-multi · = `provider` (mặc định hiệu lực của công ty). */
   default_provider: string | null;
+  /** CR-125 · x12 · email mời ký kèm ảnh trang đầu của hợp đồng (cài đặt công ty, mặc định bật). */
+  invite_thumbnail: boolean;
 };
 
 export type ESignSignerOut = {

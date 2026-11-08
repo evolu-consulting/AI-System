@@ -1,4 +1,4 @@
-﻿// cf-esign-docusign · cổng ký số: nhà cung cấp (`ESignProvider` — DocuSign thật / giả), repo trong tx RLS của tenant, tệp FileBox,
+// cf-esign-docusign · cổng ký số: nhà cung cấp (`ESignProvider` — DocuSign thật / giả), repo trong tx RLS của tenant, tệp FileBox,
 // thông tin user hiện tại. Lớp 2 — chỉ kiểu.
 import type { ESignStatus } from "../domain/esign.rules";
 
@@ -123,13 +123,38 @@ export type SignedFileNew = {
   createdBy: string;
 };
 
+/** CR-125 · x12 · dữ liệu thẻ "Mời ký" (một câu SQL). `file` = tệp gốc của HĐ (org + id FileBox + mime) — cache ảnh theo `fileRow` (bất biến theo phiên bản). */
+export type InviteCard = {
+  title: string;
+  number: string | null;
+  partner: string | null;
+  value: number | null;
+  start: string | null;
+  end: string | null;
+  ownerId: string | null;
+  company: string | null;
+  sentAt: string | null;
+  dueAt: string | null;
+  thumbOn: boolean;
+  file: { fileRow: string; org: string; fileId: string; mime: string | null } | null;
+};
+
 export type ESignRepo = {
   /** CR-125 · x6 · người gửi + người ký công ty của phong bì mới nhất của HĐ (nhận `esign.updated`). */
   watchers(contractId: string): Promise<string[]>;
   /** Cờ bật + nhà cung cấp mặc định đã chọn (chưa kiểm khả dụng). */
-  settings(): Promise<{ enabled: boolean; defaultProvider: string | null }>;
+  settings(): Promise<{
+    enabled: boolean;
+    defaultProvider: string | null;
+    inviteThumbnail: boolean;
+  }>;
   /** Lưu trường có mặt (vắng = giữ) + audit before/after. */
-  saveSettings(p: { enabled?: boolean; defaultProvider?: string }, actor: string): Promise<void>;
+  saveSettings(
+    p: { enabled?: boolean; defaultProvider?: string; inviteThumbnail?: boolean },
+    actor: string,
+  ): Promise<void>;
+  /** CR-125 · x12 · thẻ tóm tắt cho email "Mời ký" (chỉ các trường thẻ + tham chiếu tệp để dựng ảnh trang đầu; KHÔNG điều khoản). null khi không thấy HĐ. */
+  inviteCard(id: string): Promise<InviteCard | null>;
   /** HĐ thấy được (RLS + M1) hoặc null. */
   contract(id: string): Promise<ContractForSign | null>;
   /**

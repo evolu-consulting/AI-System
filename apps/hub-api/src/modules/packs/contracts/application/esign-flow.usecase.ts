@@ -66,6 +66,8 @@ export type EsignFlowDeps = {
   signerOk: (tenantId: string, userId: string) => Promise<boolean>;
   /** Đối tác ký hợp lệ theo schema người ký đối tác (adapter); sai ⇒ null. */
   parsePartner: (name: string, email: string) => { name: string; email: string } | null;
+  /** CR-125 · x12 · chuông "Mời ký" kèm dữ liệu thẻ (email giàu); vắng ⇒ chuông thường. Không bao giờ ném. */
+  invite?: (tenantId: string, id: string, signer: string, label: string) => Promise<NotifyInput>;
   warn: (msg: string, meta: Record<string, unknown>) => void;
 };
 export type EsignFlowOutcome = "none" | "sent" | "needs_decision";
@@ -167,9 +169,13 @@ export function esignFlow(d: EsignFlowDeps) {
     if (c.step.partner_signs && !partner) return needs(tid, id, c, "NO_PARTNER_EMAIL", label);
     if (!(await trySend(tid, id, signer, c, partner)))
       return needs(tid, id, c, "SEND_FAILED", label);
+    // Dựng thẻ + ảnh trang đầu NGOÀI tx (đọc FileBox, dựng ảnh); lỗi ⇒ chuông thường.
+    const notice = d.invite
+      ? await d.invite(tid, id, signer, label)
+      : signInviteBell(signer, id, label);
     await sys(tid, async (r) => {
       await r.esignFlow.set(c.approvalId, { status: "sent", reason: null, signer });
-      await r.notify.enqueue([signInviteBell(signer, id, label)]);
+      await r.notify.enqueue([notice]);
     });
     return "sent";
   };

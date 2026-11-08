@@ -757,6 +757,13 @@
       "when": 1806900600000,
       "tag": "0124_partner_receive_open_review",
       "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "7",
+      "when": 1806900700000,
+      "tag": "0125_notify_data",
+      "breakpoints": true
     }
   ]
 }

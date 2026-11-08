@@ -38,6 +38,8 @@
       "signerDone": "signed",
       "settingLabel": "Contract e-signature",
       "settingHint": "Allow sending approved contracts for e-signature.",
+      "inviteThumb": "Include the first-page image in signing invitation emails",
+      "inviteThumbHint": "Signing invitations always carry a contract summary card; turn this on to add the first-page image (the contract itself is never attached).",
       "settingOn": "On",
       "settingOff": "Off",
       "defaultProvider": "Default provider",

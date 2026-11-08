@@ -248,6 +248,7 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
   const failed = e !== null && (e.status === "declined" || e.status === "voided");
   return (
     <section
+      id="esign-panel"
       data-testid="esign-panel"
       className="mb-3 rounded-xl border border-rule bg-sunk px-4 py-3 text-sm"
     >

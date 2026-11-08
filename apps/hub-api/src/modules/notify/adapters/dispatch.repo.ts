@@ -17,11 +17,18 @@ type ClaimRow = {
   title: string;
   body: string;
   link: string | null;
+  data: Record<string, unknown> | string | null;
   email: string;
   display_name: string;
   locale: string;
   subs: { endpoint: string; p256dh: string; auth: string }[];
 };
+
+/** jsonb có thể về dạng chuỗi (tuỳ driver) ⇒ chuẩn hoá về object hoặc null. */
+function dataOf(v: ClaimRow["data"]): Record<string, unknown> | null {
+  const x = typeof v === "string" ? (JSON.parse(v) as unknown) : v;
+  return x && typeof x === "object" && !Array.isArray(x) ? (x as Record<string, unknown>) : null;
+}
 
 const toClaimed = (r: ClaimRow): Claimed => ({
   id: String(r.id),
@@ -33,6 +40,7 @@ const toClaimed = (r: ClaimRow): Claimed => ({
   title: r.title,
   body: r.body,
   link: r.link,
+  data: dataOf(r.data),
   email: r.email,
   displayName: r.display_name,
   locale: r.locale === "en" ? "en" : "vi",
@@ -89,7 +97,7 @@ async function claim(tx: Tx, nowIso: string, limit: number, o: ClaimOpts) {
         next_attempt_at = ${nowIso}::timestamptz + make_interval(secs => ${leaseSec})
       from due where d.id = due.id
       returning d.id, d.notification_id, d.tenant_id, d.user_id, d.channel, d.attempts)
-    select upd.id::text as id, upd.tenant_id, upd.user_id, upd.channel, upd.attempts, n.kind, n.title, n.body, n.link,
+    select upd.id::text as id, upd.tenant_id, upd.user_id, upd.channel, upd.attempts, n.kind, n.title, n.body, n.link, n.data,
       coalesce(u.email, '') as email, coalesce(u.display_name, '') as display_name, coalesce(u.locale, 'vi') as locale,
       case when upd.channel = 'push' then (
         select coalesce(jsonb_agg(jsonb_build_object('endpoint', s.endpoint, 'p256dh', s.p256dh, 'auth', s.auth)), '[]'::jsonb)

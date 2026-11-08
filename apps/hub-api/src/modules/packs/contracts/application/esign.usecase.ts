@@ -1,4 +1,4 @@
-﻿// cf-esign-docusign + esign-multi · use case ký số HĐ, trung lập nhà cung cấp, NHIỀU nhà cung cấp song song (registry): gửi ký (HĐ đã
+// cf-esign-docusign + esign-multi · use case ký số HĐ, trung lập nhà cung cấp, NHIỀU nhà cung cấp song song (registry): gửi ký (HĐ đã
 // duyệt xong/khoá + PDF; nhà cung cấp chỉ định hoặc mặc định công ty), xem trạng thái, "Ký ngay" (embedded, chỉ người ký công ty),
 // làm mới, huỷ, webhook + đồng bộ nền esign-sweep2 (map envelope ⇒ tenant qua bảng), lưu "Bản đã ký" vào FileBox idempotent. Lệnh sau
 // gửi dùng `provider` LƯU trên envelope. Gọi mạng NGOÀI tx. Thiếu cấu hình ⇒ tắt (409, không 500).
@@ -71,7 +71,7 @@ export function esignUsecase(d: ESignDeps) {
     (fn) =>
       d.uow.tenant(who, fn);
   const demoOf = (key: string) => d.providers.get(key)?.demo ?? key === "selfsign";
-  const out = (s: { enabled: boolean; defaultProvider: string | null }) =>
+  const out = (s: { enabled: boolean; defaultProvider: string | null; inviteThumbnail: boolean }) =>
     settingsOut(d.providers.entries, d.files !== null, s, demoOf);
   const settings = async (who: PackWho): Promise<ESignSettingsOut> =>
     out(await d.uow.tenant(who, (r) => r.esign.settings()));
@@ -242,13 +242,18 @@ export function esignUsecase(d: ESignDeps) {
     anchors: d.anchors ?? null,
     async saveSettings(
       who: PackWho,
-      b: { enabled?: boolean | undefined; default_provider?: string | undefined },
+      b: {
+        enabled?: boolean | undefined;
+        default_provider?: string | undefined;
+        invite_thumbnail?: boolean | undefined;
+      },
     ): Promise<ESignSettingsOut> {
       if (b.default_provider !== undefined && !avail(b.default_provider))
         throw new ESignFail("ESIGN_PROVIDER_UNAVAILABLE", "default_provider");
       const patch = {
         ...(b.enabled !== undefined ? { enabled: b.enabled } : {}),
         ...(b.default_provider !== undefined ? { defaultProvider: b.default_provider } : {}),
+        ...(b.invite_thumbnail !== undefined ? { inviteThumbnail: b.invite_thumbnail } : {}),
       };
       await d.uow.tenant(who, (r) => r.esign.saveSettings(patch, who.userId));
       return settings(who);

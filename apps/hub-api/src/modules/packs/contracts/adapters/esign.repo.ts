@@ -1,4 +1,4 @@
-﻿// cf-esign-docusign · repo ký số trong tx `PackUow` (role `contracts_rw`, RLS tenant + M1 của `contracts`): HĐ + tệp + đối tác (vai
+// cf-esign-docusign · repo ký số trong tx `PackUow` (role `contracts_rw`, RLS tenant + M1 của `contracts`): HĐ + tệp + đối tác (vai
 // `partner_role_of` + liên hệ đầu tiên có email), envelope mới nhất, cờ bật ở `approval_settings`. Lọc `tenant_id` tường minh ngoài
 // RLS. `tenantOfEnvelope`: role `contracts_job` (chỉ đọc tenant_id, envelope_id) — map webhook ⇒ tenant.
 import type { ESignStatus } from "@ai/contracts/pack-contracts";
@@ -84,29 +84,91 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
       return [...new Set(ids)];
     },
     settings: async () => {
-      const [r] = await tx.execute<{ on: boolean; dp: string | null }>(sql`select
-          coalesce(s.esign_enabled, false) as on, s.esign_default_provider as dp
+      const [r] = await tx.execute<{ on: boolean; dp: string | null; th: boolean }>(sql`select
+          coalesce(s.esign_enabled, false) as on, s.esign_default_provider as dp,
+          coalesce(s.esign_invite_thumbnail, true) as th
         from (select 1) one left join contracts.approval_settings s on s.tenant_id = ${t}::uuid`);
-      return { enabled: r?.on === true, defaultProvider: r?.dp ?? null };
+      return {
+        enabled: r?.on === true,
+        defaultProvider: r?.dp ?? null,
+        inviteThumbnail: r?.th !== false,
+      };
     },
     // esign-multi · vắng trường ⇒ giữ giá trị cũ (null ⇒ coalesce với cũ); audit before/after cả hai trường.
     saveSettings: async (p, actor) => {
       const en = p.enabled ?? null;
       const dp = p.defaultProvider ?? null;
-      await tx.execute(sql`with old as (select coalesce(s.esign_enabled, false) as en, s.esign_default_provider as dp
+      const th = p.inviteThumbnail ?? null;
+      await tx.execute(sql`with old as (select coalesce(s.esign_enabled, false) as en, s.esign_default_provider as dp,
+              coalesce(s.esign_invite_thumbnail, true) as th
             from (select 1) one left join contracts.approval_settings s on s.tenant_id = ${t}::uuid),
-          up as (insert into contracts.approval_settings (tenant_id, esign_enabled, esign_default_provider, updated_by)
-            values (${t}::uuid, coalesce(${en}::boolean, false), ${dp}::text, ${actor}::uuid)
+          up as (insert into contracts.approval_settings (tenant_id, esign_enabled, esign_default_provider, esign_invite_thumbnail, updated_by)
+            values (${t}::uuid, coalesce(${en}::boolean, false), ${dp}::text, coalesce(${th}::boolean, true), ${actor}::uuid)
             on conflict (tenant_id) do update set
               esign_enabled = coalesce(${en}::boolean, contracts.approval_settings.esign_enabled),
               esign_default_provider = coalesce(${dp}::text, contracts.approval_settings.esign_default_provider),
+              esign_invite_thumbnail = coalesce(${th}::boolean, contracts.approval_settings.esign_invite_thumbnail),
               updated_by = excluded.updated_by, updated_at = now()
-            returning esign_enabled, esign_default_provider)
+            returning esign_enabled, esign_default_provider, esign_invite_thumbnail)
         insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after)
           select ${t}::uuid, ${actor}::uuid,
-            (select jsonb_build_object('esign_enabled', en, 'esign_default_provider', dp) from old),
-            jsonb_build_object('esign_enabled', up.esign_enabled, 'esign_default_provider', up.esign_default_provider)
+            (select jsonb_build_object('esign_enabled', en, 'esign_default_provider', dp, 'esign_invite_thumbnail', th) from old),
+            jsonb_build_object('esign_enabled', up.esign_enabled, 'esign_default_provider', up.esign_default_provider,
+              'esign_invite_thumbnail', up.esign_invite_thumbnail)
           from up`);
+    },
+    inviteCard: async (id) => {
+      const [r] = await tx.execute<{
+        title: string;
+        number: string | null;
+        partner: string | null;
+        value: string | null;
+        start_d: string | null;
+        end_d: string | null;
+        owner: string | null;
+        company: string | null;
+        sent_at: string | null;
+        due_at: string | null;
+        th: boolean;
+        file_row: string | null;
+        org: string | null;
+        file_id: string | null;
+        mime: string | null;
+      }>(sql`select ${contractNameSql("c")} as title, c.number, p.name as partner,
+          nullif(btrim(c.fields -> 'total_value' ->> 'value'), '') as value,
+          nullif(btrim(c.fields -> 'start_date' ->> 'value'), '') as start_d,
+          nullif(btrim(c.fields -> 'end_date' ->> 'value'), '') as end_d,
+          c.owner_user_id::text as owner, (select s.name from hub.partner_self() s limit 1) as company,
+          to_char(e.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as sent_at,
+          to_char((e.created_at + make_interval(hours => e.due_h)) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as due_at,
+          coalesce(st.esign_invite_thumbnail, true) as th,
+          f.id::text as file_row, f.org, f.file_id, f.mime
+        from contracts.contracts c
+        left join contracts.files f on f.id = c.file_id and f.tenant_id = c.tenant_id and f.deleted_at is null
+        left join lateral contracts.partner_role_of(c) p on true
+        left join lateral (select x.created_at, x.due_h from contracts.esign_envelopes x
+          where x.tenant_id = c.tenant_id and x.contract_id = c.id order by x.created_at desc, x.id desc limit 1) e on true
+        left join contracts.approval_settings st on st.tenant_id = c.tenant_id
+        where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid limit 1`);
+      if (!r) return null;
+      const num = r.value !== null && /^-?\d+(\.\d+)?$/.test(r.value) ? Number(r.value) : null;
+      return {
+        title: r.title,
+        number: r.number,
+        partner: r.partner,
+        value: num,
+        start: r.start_d,
+        end: r.end_d,
+        ownerId: r.owner,
+        company: r.company,
+        sentAt: r.sent_at,
+        dueAt: r.due_at,
+        thumbOn: r.th !== false,
+        file:
+          r.file_row && r.org && r.file_id
+            ? { fileRow: r.file_row, org: r.org, fileId: r.file_id, mime: r.mime }
+            : null,
+      };
     },
     contract: async (id) => {
       const [r] =

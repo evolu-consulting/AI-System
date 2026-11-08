@@ -38,6 +38,8 @@
       "signerDone": "đã ký",
       "settingLabel": "Ký số hợp đồng",
       "settingHint": "Cho phép gửi hợp đồng đã duyệt đi ký số.",
+      "inviteThumb": "Kèm ảnh trang đầu trong email mời ký",
+      "inviteThumbHint": "Email mời ký luôn có thẻ tóm tắt hợp đồng; bật mục này để kèm thêm ảnh trang đầu (không đính kèm hợp đồng).",
       "settingOn": "Bật",
       "settingOff": "Tắt",
       "defaultProvider": "Nhà cung cấp mặc định",

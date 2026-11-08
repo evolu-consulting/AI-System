@@ -1,4 +1,4 @@
-﻿// cf-esign-docusign + esign-multi · hàm thuần của use case ký số: map hàng ⇒ DTO, gộp trạng thái người ký, dựng người ký lưu (người ký
+// cf-esign-docusign + esign-multi · hàm thuần của use case ký số: map hàng ⇒ DTO, gộp trạng thái người ký, dựng người ký lưu (người ký
 // công ty = CHÍNH tài khoản gửi), cài đặt hiệu lực từ registry (mặc định công ty ⇒ khả dụng đầu tiên).
 import type {
   ESignEnvelopeOut,
@@ -124,7 +124,7 @@ export function storedSigners(
 export function settingsOut(
   entries: readonly ESignProviderEntry[],
   hasFiles: boolean,
-  s: { enabled: boolean; defaultProvider: string | null },
+  s: { enabled: boolean; defaultProvider: string | null; inviteThumbnail: boolean },
   demoOf: (key: string) => boolean,
 ): ESignSettingsOut {
   const list = entries.map((e) => ({ ...e, available: e.available && hasFiles }));
@@ -142,5 +142,6 @@ export function settingsOut(
       legal: e.legal,
     })),
     default_provider: def,
+    invite_thumbnail: s.inviteThumbnail,
   };
 }

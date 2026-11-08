@@ -9,7 +9,7 @@ import { createPackUow, moduleRegistry, slotRegistry } from "../kit/public";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { INTAKE_TOOL_KEYS, intakeTools } from "./adapters/intake.tools";
-import { contractLabelOf, signInviteBell } from "./application/esign-flow.usecase";
+import { contractLabelOf } from "./application/esign-flow.usecase";
 import type { CompletedHook, ESignModule } from "./esign.mount";
 import { esignBindingBase } from "./nodes/esign/binding";
 import { mountPartnerSend } from "./partner-mailbox.mount";
@@ -36,12 +36,16 @@ export function intakeWiring(
         // CR-122 · bước Ký số của flow: chuông "Mời ký số" cho MỌI người ký công ty (đường cũ esign-flow đã có; flow mới thiếu ⇒
         // giám đốc không biết tới lượt ký). Lỗi chuông không làm hỏng gửi ký.
         const users = node?.companyUsers ?? [signer];
-        await uow
-          .system(tenantId, async (r) => {
-            const label = contractLabelOf(await r.esign.contract(contractId));
-            await r.notify.enqueue(users.map((u) => signInviteBell(u, contractId, label)));
-          })
-          .catch(() => undefined);
+        // CR-125 · x12 · chuông + dữ liệu thẻ/ảnh trang đầu (dựng NGOÀI tx; ảnh dựng một lần mỗi phiên bản HĐ).
+        await (async () => {
+          const label = await uow.system(tenantId, async (r) =>
+            contractLabelOf(await r.esign.contract(contractId)),
+          );
+          const notices = await Promise.all(
+            users.map((u) => esign.invite(tenantId, contractId, u, label)),
+          );
+          await uow.system(tenantId, (r) => r.notify.enqueue(notices));
+        })().catch(() => undefined);
       },
       nodeSigners: async (tenantId, entries) => {
         if (!esign) throw new Error("ESIGN_UNAVAILABLE");

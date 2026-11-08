@@ -11,6 +11,8 @@ export type NotifyInput = {
   link?: string;
   /** Khóa idempotency theo (tenant, người nhận, gói): gửi lại cùng khóa ⇒ bỏ qua. Vắng ⇒ không idempotent. */
   dedup_key?: string;
+  /** CR-125 · x12 · dữ liệu có cấu trúc đi kèm (jsonb) để dựng email giàu; không chứa bí mật. */
+  data?: Record<string, unknown>;
 };
 
 export type Notifier = {

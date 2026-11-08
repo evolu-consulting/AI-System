@@ -1,4 +1,4 @@
-﻿// cf-esign-docusign + esign-multi · nối ký số: registry nhà cung cấp theo env `ESIGN_PROVIDERS` (danh sách theo thứ tự; tương thích
+// cf-esign-docusign + esign-multi · nối ký số: registry nhà cung cấp theo env `ESIGN_PROVIDERS` (danh sách theo thứ tự; tương thích
 // ngược `ESIGN_PROVIDER=x`), mỗi nhà cung cấp khả dụng khi đủ cấu hình — seam test `provider`/`providers` ưu tiên; repo trong `PackUow`
 // (tenant + system), FileBox theo org tenant, tên/email user hiện tại (`admin.users` qua hub scope), map webhook envelope ⇒ tenant (role
 // `contracts_job`). Webhook gắn TRƯỚC JWT (`app.ts`). Thêm nhà cung cấp (MISA…) = adapter + một nhánh `adapterOf` + mục `PROVIDER_META`.
@@ -29,10 +29,12 @@ import { esignFlowRoutes } from "./adapters/esign-flow.routes";
 import { esignNodeDirectory } from "./adapters/esign-node.repo";
 import { escalateTargetsOf, esignSweepRepo } from "./adapters/esign-sweep.repo";
 import { esignSyncClaim } from "./adapters/esign-sync.repo";
+import { renderFirstPage } from "./adapters/page-thumb";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
 import { type ESignUsecase, esignUsecase } from "./application/esign.usecase";
 import { esignAnchors } from "./application/esign-anchor.usecase";
 import { type EsignFlow, esignFlow } from "./application/esign-flow.usecase";
+import { inviteNotice, type ThumbRenderer } from "./application/esign-invite";
 import { type EsignSweepDeps, startEsignSweeper } from "./application/esign-sweep";
 import { type EsignSyncDeps, esignSyncEnv } from "./application/esign-sync";
 import { metaOf, providerEntriesOf } from "./domain/esign.providers";
@@ -96,6 +98,8 @@ const registryOf = (s: ESignSeam | undefined): ESignRegistry => {
 /** esign-flow · use case ký số + bước Ký số của luồng duyệt (gắn hai chiều: gửi ký ⇄ hook trạng thái phong bì). */
 export type ESignModule = ESignUsecase & {
   flow: EsignFlow;
+  /** CR-125 · x12 · chuông "Mời ký" kèm dữ liệu thẻ (dùng ở bước Ký số của flow — `intake.mount`). */
+  invite: ReturnType<typeof inviteNotice>;
   /** esign-flow-fix · gắn kiểm quyền ghi gói của người ký công ty (cần cổng quyền của `packs.mount`). */
   bindWriters(w: Writers): void;
   bindView(view: PackAccessView): void;
@@ -112,6 +116,8 @@ export function esignModule(
     esign?: ESignSeam | undefined;
     files: ESignFiles | null;
     signal?: AbortSignal | undefined;
+    /** CR-125 · x12 · seam test: dựng ảnh trang đầu cho email mời ký (mặc định: unpdf + canvas). */
+    render?: ThumbRenderer | undefined;
     /** CR-125 · x6 · đẩy `esign.updated` tới người liên quan qua `/me/stream` (vắng ⇒ không đẩy; client vẫn tải lại khi quay lại cửa sổ). */
     publish?:
       | ((userIds: string[], contractId: string, status: ESignStatus) => Promise<void>)
@@ -180,6 +186,14 @@ export function esignModule(
   // CR-122 · E5b · lưu def có node Ký số ⇒ server tự kiểm cấu hình (validator theo node, `processes/defs` gọi).
   // E5d · theo KHOÁ TOOL (không chỉ theo node): def gọi thẳng `contracts-esign-send` không mang `node` cũng bị kiểm.
   moduleRegistry.bindNode(esignBindingChecks(u.checkNode)); // CR-125 · m4 · binding Ký số (nodes/esign/binding.ts) — validator theo khoá tool
+  // CR-125 · x12 · chuông "Mời ký" kèm thẻ HĐ + ảnh trang đầu (một nguồn cho đường cũ và bước Ký số của flow).
+  const selfName = selfContactOf(db);
+  const invite = inviteNotice({
+    uow,
+    person: async (tenantId, userId) => (await selfName({ tenantId, userId })).name,
+    files: d.files,
+    render: d.render ?? renderFirstPage,
+  });
   // esign-flow-fix · quyền ghi gói của người ký (cổng quyền cần cache cấu hình ⇒ gắn sau ở `packs.mount`).
   let writers: Writers | null = null;
   const active = activeUserOf(db);
@@ -196,6 +210,7 @@ export function esignModule(
         ? { name: p.data.name, email: p.data.email }
         : null;
     },
+    invite,
     warn: (m, meta) => logger.warn(m, meta),
   });
   const bindWriters = (w: Writers) => {
@@ -204,6 +219,7 @@ export function esignModule(
   return {
     ...u,
     flow,
+    invite,
     bindWriters,
     bindCompleted: (fn) => {
       completed = fn;

@@ -1,5 +1,6 @@
 // N3-FR-05 · N3-FR-06 · N3-FR-07 · luật thuần của cổng thông báo (không I/O, không import lớp khác): backoff, kết cục một lần
 // gửi, mã lỗi an toàn để lưu/log, nội dung email/push. Thời gian do người gọi truyền (đồng hồ giả trong test).
+import { buildSignInviteMail, parseInviteData, SIGN_INVITE_KIND } from "./sign-invite-mail.rules";
 
 /** Số lần gửi tối đa một bản gửi (tính cả lần đầu). Quá ⇒ `dead`. */
 export const MAX_ATTEMPTS = 5;
@@ -84,6 +85,8 @@ export type Claimed = {
   title: string;
   body: string;
   link: string | null;
+  /** CR-125 · x12 · dữ liệu có cấu trúc đi kèm thông báo (jsonb) — dựng email giàu (vd Mời ký). */
+  data?: Record<string, unknown> | null;
   email: string;
   displayName: string;
   locale: "vi" | "en";
@@ -100,6 +103,8 @@ export type EmailMessage = {
   text: string;
   /** CR-124 · q5 · phần HTML (tuỳ chọn); `text` luôn có làm bản dự phòng. */
   html?: string;
+  /** CR-125 · x12 · ảnh nhúng (CID) tham chiếu từ `html` (`cid:<cid>`); base64. */
+  inline?: { cid: string; contentType: string; base64: string }[];
 };
 export type PushMessage = {
   idempotencyKey: string;
@@ -122,6 +127,26 @@ function stripCtl(s: string): string {
 
 export function emailOf(c: Claimed, baseUrl: string): EmailMessage {
   const link = c.link ? `${baseUrl.replace(/\/+$/, "")}${c.link}` : "";
+  const invite = c.kind === SIGN_INVITE_KIND && c.data ? parseInviteData(c.data) : null;
+  if (invite) {
+    // CR-125 · x12 · "Mời ký": thẻ tóm tắt + ảnh trang đầu + nút (một nguồn câu chữ ở sign-invite-mail.rules).
+    const m = buildSignInviteMail({
+      data: invite,
+      link,
+      toName: stripCtl(c.displayName),
+      locale: c.locale,
+    });
+    return {
+      idempotencyKey: `n3-${c.id}`,
+      tenantId: c.tenantId,
+      to: c.email,
+      toName: stripCtl(c.displayName),
+      subject: stripCtl(m.subject),
+      text: m.text,
+      html: m.html,
+      ...(m.inline.length > 0 ? { inline: m.inline } : {}),
+    };
+  }
   const text = [c.body, link].filter((x) => x !== "").join("\n\n");
   return {
     idempotencyKey: `n3-${c.id}`,
