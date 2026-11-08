@@ -160,7 +160,11 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   const op = useCompanyFlowOp(tenantId);
   // CR-125 · c6 · B4: hộp xác nhận bật gọi đúng tên bản ghi của các flow công ty có (community ⇒ "bài đăng"), không cứng "hợp đồng"
   const words = joinRecordWords(
-    rows.map((r) => eventOf(r.app, r.trigger_event)?.record?.label),
+    // hàng không có sự kiện biết được (flow cũ theo khe) KHÔNG được kéo chữ "hợp đồng" vào câu của app khác (community)
+    rows.flatMap((r) => {
+      const label = eventOf(r.app, r.trigger_event)?.record?.label;
+      return label ? [label] : [];
+    }),
     i18n.language === "vi" ? "vi" : "en",
   );
   const role = useSession((s) => s.me?.role);

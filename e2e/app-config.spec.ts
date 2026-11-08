@@ -157,12 +157,12 @@ test("CR-118 · F3 · Xem trước acme: đối tác không thấy nhóm Sổ H�
   const member = page.getByTestId("preview-member");
   await expect(member.locator('li[data-visible="true"]').first()).toBeVisible();
   // CR-121 D-4: không còn add-on `contracts-approval-engine` ⇒ hành động duyệt theo quy trình hiện ngay ở mức Sửa; khe duyệt chạy (không còn "Cần bật tính năng thêm")
-  await expect(
-    member
-      .locator('li[data-visible="true"]')
-      .filter({ hasText: "Duyệt theo quy trình nhiều bước" }),
-  ).toBeVisible();
-  await expect(member.getByText("Cần bật tính năng thêm")).toHaveCount(0);
+  const approveRow = member
+    .locator('li[data-visible="true"]')
+    .filter({ hasText: "Duyệt theo quy trình nhiều bước" });
+  await expect(approveRow).toBeVisible();
+  // mục "Hợp đồng đối tác gửi" vẫn đòi add-on gửi đối tác (đúng sản phẩm) ⇒ chỉ khẳng định riêng hành động duyệt không đòi tính năng thêm
+  await expect(approveRow.getByText("Cần bật tính năng thêm")).toHaveCount(0);
   await expect(member.getByTestId("preview-slot-contracts.approval")).toContainText("Đang chạy");
   await expect(member.getByText("Chỉ quản trị công ty thấy").first()).toBeVisible();
 });
