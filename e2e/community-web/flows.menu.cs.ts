@@ -64,14 +64,16 @@ test("quản trị community: menu + chữ trong trình sửa flow Duyệt bài 
   await page.screenshot({ path: testInfo.outputPath("c6-switch-on.png") });
   await ask.getByRole("button", { name: "Huỷ" }).click();
 
-  // mở bản sao của flow Duyệt bài (sao chép nếu chưa có)
-  if ((await box.getByRole("link", { name: /^(Mở|Sửa)/ }).count()) < 2) {
-    await box.getByRole("button", { name: "Sao chép để sửa" }).first().click();
+  // mở bản sao của flow "Quản trị duyệt bài" (flow mặc định của công ty Community, D7; sao chép nếu chưa có)
+  const rows = flowRows(box).filter({ hasText: "Quản trị duyệt bài" });
+  if ((await rows.count()) < 2) {
+    await rows.first().getByRole("button", { name: "Sao chép để sửa" }).click();
     await page.getByTestId("copy-confirm").click(); // CR-125 c5b · hộp Sao chép nói mẫu dùng được trước khi sao chép
   }
-  await box
-    .getByRole("link", { name: /^(Mở|Sửa)/ })
+  await expect(rows).toHaveCount(2);
+  await rows
     .last()
+    .getByRole("link", { name: /^(Mở|Sửa)/ })
     .click();
   // thứ tự hàng không cố định: nếu mở trúng bản dùng chung (chỉ xem) thì sang "bản riêng" của công ty
   const own = page.getByRole("link", { name: "Mở bản riêng" });
