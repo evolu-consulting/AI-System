@@ -3,7 +3,13 @@
 // email/thủ công còn lại — token email = q5). Idempotent: đã có lần gửi MỞ cho HĐ ⇒ trả lại lần đó (engine retry không gửi đôi). Số câu SQL cố định
 // mỗi lần gửi (≤ 9), không phụ thuộc kích thước HĐ. Sau gửi: bên nhận → `contract.received` (bộ chuyển); trả lời → tín hiệu `partner.*` cho node chờ.
 import { PartnerSendConfigSchema, parseSendFields } from "@ai/contracts/modules";
-import type { PackToolArgs, PackToolCtx, PackToolDef, PackUow } from "../../kit/public";
+import type {
+  PackSystemUow,
+  PackToolArgs,
+  PackToolCtx,
+  PackToolDef,
+  PackUow,
+} from "../../kit/public";
 import type { ESignRepo } from "../application/esign.ports";
 import {
   buildPayload,
@@ -21,7 +27,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type PartnerToolRepos = { partnerSend: PartnerSendRepo; esign: Pick<ESignRepo, "contract"> };
 export type PartnerToolDeps = {
-  uow: PackUow<PartnerToolRepos>;
+  uow: PackUow<PartnerToolRepos> & PackSystemUow<PartnerToolRepos>;
   /** Công ty có bật tính năng `contracts-partner-confirm` (cùng nguồn với cap menu). Vắng ⇒ coi là bật (test dựng tool trực tiếp). */
   featureOn?: (tenantId: string) => Promise<boolean>;
   /** Kênh hộp thư liên công ty bật trên hệ thống (`HUB_PARTNER_MAILBOX=on`). Vắng ⇒ coi là bật. false ⇒ từ chối TRƯỚC KHI ghi bất cứ gì. */
@@ -89,9 +95,6 @@ async function planFor(r: R, cfg: Cfg, id: string) {
   const c = await r.partnerSend.contract(id);
   if (!c) throw new Error("CONTRACT_NOT_FOUND");
   if (!c.fileId) throw new Error("PARTNER_NEEDS_FILE");
-  // CR-126 · đối tác CHỌN phải là đối tác của chính công ty (không gửi HĐ cho MST lạ / của công ty khác); trước mọi ghi.
-  if (cfg.partner_tax_code && !(await r.partnerSend.isPartner(cfg.partner_tax_code)))
-    throw new Error("PARTNER_NOT_IN_COMPANY");
   const email = cfg.partner_email ?? (await r.esign.contract(id))?.partner?.email?.trim() ?? null;
   const tax = cfg.partner_tax_code ?? c.partnerTax;
   const route = tax ? await r.partnerSend.route(tax) : null;
@@ -110,6 +113,11 @@ const alreadySent = (last: { mailboxId: string; channel: string; round: number }
 async function run(d: PartnerToolDeps, ctx: PackToolCtx, args: PackToolArgs) {
   await assertEnabled(d, ctx.tenantId);
   const { cfg, id } = decodePartnerArgs(args);
+  // CR-126 · đối tác CHỌN phải là đối tác của CÔNG TY (sổ đối tác cả công ty, không theo quyền xem của người bắt đầu lượt — RLS
+  // `partner_roles_visible` ẩn đối tác người đó không thấy); kiểm ở phạm vi hệ thống của chính tenant, SQL lọc `tenant_id` tường minh. Trước mọi ghi.
+  const tax = cfg.partner_tax_code;
+  if (tax && !(await d.uow.system(ctx.tenantId, (r) => r.partnerSend.isPartner(tax))))
+    throw new Error("PARTNER_NOT_IN_COMPANY");
   return d.uow.tenant({ tenantId: ctx.tenantId, userId: ctx.userId }, async (r) => {
     const last = await r.partnerSend.latest(id);
     if (last?.status === "open") return alreadySent(last);

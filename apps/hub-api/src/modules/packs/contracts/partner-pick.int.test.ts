@@ -123,3 +123,47 @@ describe("CR-126 · chọn đối tác & người nhận", () => {
     expect(await sendsOf(id)).toBe(0);
   });
 });
+
+describe("CR-126 · fix4 · đối tác của CÔNG TY, không theo quyền xem của người gửi", () => {
+  const TAX_C1 = "0107777771"; // đối tác trên HĐ của người gửi
+  const TAX_C2 = "0107777772"; // đối tác thêm tay bởi người khác — người gửi KHÔNG thấy khi chế độ xem 'org'
+  let C = "";
+  let UC = "";
+  let UC2 = "";
+  let CC = "";
+  const sendC = (extra: Record<string, unknown>) =>
+    partnerSendTool({ uow: uow() }).run(
+      { tenantId: C, userId: UC, runId: null, processRunId: null },
+      { contract_id: CC, ...extra },
+    );
+  beforeAll(async () => {
+    [C] = (await tenants(o, 1, 1370)) as [string];
+    [UC, UC2] = (await users(o, C, 2, { from: 1370 })) as [string, string];
+    CC = await contractWith(C, UC, 1370, TAX_C1, "c1@doitacc.vn");
+    await o`insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from, created_by)
+      values (${C}, ${`tax:${TAX_C2}`}, 'supplier', 'Đối tác C2', 'manual', ${UC2})`;
+    await o`insert into contracts.visibility_settings (tenant_id, mode) values (${C}, 'org')
+      on conflict (tenant_id) do update set mode = 'org'`;
+  }, 60_000);
+
+  it("(a) chế độ 'org', nhân viên không phải người thêm đối tác ⇒ vẫn gửi được cho đối tác của công ty", async () => {
+    // tiền đề: người gửi KHÔNG thấy hàng đối tác qua RLS (lý do lỗi cũ)
+    const seen = await uow().tenant({ tenantId: C, userId: UC }, (r) =>
+      r.partnerSend.isPartner(TAX_C2),
+    );
+    expect(seen).toBe(false);
+    const r = await sendC({ partner_tax_code: TAX_C2, partner_email: "nhan@doitacc2.vn" });
+    expect(r).toMatchObject({ status: "sent", channel: "email" });
+    const [m] =
+      await o`select to_email from hub.partner_mailbox where id = ${r.mailbox_id as string}::uuid`;
+    expect(m?.to_email).toBe("nhan@doitacc2.vn");
+  });
+
+  it("(b) MST đối tác của công ty khác ⇒ PARTNER_NOT_IN_COMPANY, không ghi lần gửi mới", async () => {
+    const before = await sendsOf(CC);
+    expect(await codeOf(sendC({ partner_tax_code: TAX_B, partner_email: "x@y.vn" }))).toBe(
+      "PARTNER_NOT_IN_COMPANY",
+    );
+    expect(await sendsOf(CC)).toBe(before);
+  });
+});
