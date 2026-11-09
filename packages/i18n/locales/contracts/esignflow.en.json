@@ -139,8 +139,12 @@
           "tooLong": "Too long.",
           "range": "Value out of range.",
           "integer": "Enter a whole number.",
+          "email": "Email looks wrong. Use the form name@company.com.",
           "invalid": "Invalid value."
-        }
+        },
+        "search": "Search by name or tax code",
+        "choose": "Choose…",
+        "noMatch": "No match. Clear some text to search again."
       }
     }
   }

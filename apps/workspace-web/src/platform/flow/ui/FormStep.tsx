@@ -2,12 +2,19 @@
 // `POST /review-tasks/:id/form`. Nhãn/gợi ý render dạng TEXT (React escape) — không HTML. Lỗi sớm theo cùng giới hạn Hub
 // (`flowFormValuesSchema`); Hub vẫn kiểm lại theo snapshot (422 FORM_VALUES_INVALID ⇒ gắn lỗi vào trường).
 
-import type { FlowFormField } from "@ai/contracts/flow";
+import type { FlowFormField, FormPrefill } from "@ai/contracts/flow";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileUploadField } from "~/components/shared/FileUploadField";
-import { checkForm, emptyDraft, type FieldErrors, type FormDraft } from "../lib/form-values";
+import {
+  checkForm,
+  type FieldErrors,
+  type FormDraft,
+  initialDraft,
+  selectOptions,
+} from "../lib/form-values";
+import { FormSearchSelect } from "./FormSearchSelect";
 import { FormValuesView } from "./FormValues";
 import { StepFrame } from "./StepRow";
 import { FlowFormError, type StepProps } from "./types";
@@ -18,11 +25,13 @@ function Input({
   f,
   id,
   value,
+  prefill,
   onChange,
 }: {
   f: FlowFormField;
   id: string;
   value: string | boolean | undefined;
+  prefill?: FormPrefill;
   onChange: (v: string | boolean) => void;
 }) {
   const str = typeof value === "string" ? value : "";
@@ -48,6 +57,16 @@ function Input({
         />
       );
     case "select":
+      if (f.options_from)
+        return (
+          <FormSearchSelect
+            id={id}
+            className={INPUT}
+            options={selectOptions(f, prefill)}
+            value={str}
+            onChange={onChange}
+          />
+        );
       return (
         <select id={id} className={INPUT} value={str} onChange={(e) => onChange(e.target.value)}>
           <option value="" />
@@ -84,6 +103,7 @@ function Input({
         <input
           id={id}
           className={INPUT}
+          type={f.format === "email" ? "email" : "text"}
           maxLength={f.max_len}
           value={str}
           onChange={(e) => onChange(e.target.value)}
@@ -106,7 +126,7 @@ export default function FormStep({ step, ctx }: StepProps<"form">) {
   const { t } = useTranslation();
   const task = step.status === "open" ? ctx.taskOf(step.key) : null;
   const fillable = task !== null && ctx.submitForm !== undefined;
-  const [draft, setDraft] = useState<FormDraft>(() => emptyDraft(step.form));
+  const [draft, setDraft] = useState<FormDraft>(() => initialDraft(step.form, task?.prefill));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
   const [fail, setFail] = useState<string | null>(null);
@@ -155,6 +175,7 @@ export default function FormStep({ step, ctx }: StepProps<"form">) {
                   f={f}
                   id={id}
                   value={draft[f.key]}
+                  prefill={task?.prefill}
                   onChange={(v) => {
                     setDraft((d) => ({ ...d, [f.key]: v }));
                     setErrors((x) => ({ ...x, [f.key]: undefined }) as FieldErrors);

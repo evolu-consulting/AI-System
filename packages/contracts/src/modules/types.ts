@@ -11,6 +11,8 @@ export type PortWidget =
   | "person"
   | "people"
   | "department"
+  /** CR-126 · nhóm (Group) phụ trách một bước — cùng ô chọn nhóm với `department`. */
+  | "group"
   | "days"
   | "hours"
   | "text"

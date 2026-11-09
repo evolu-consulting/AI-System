@@ -59,6 +59,7 @@ const WIDGET_KIND: Record<PortWidget | "attachments", FieldKind> = {
   person: "person",
   people: "people",
   department: "department",
+  group: "department",
   days: "number",
   hours: "number",
   money: "number",

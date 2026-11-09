@@ -139,8 +139,12 @@
           "tooLong": "Quá dài.",
           "range": "Giá trị ngoài khoảng cho phép.",
           "integer": "Nhập số nguyên.",
+          "email": "Email chưa đúng. Nhập dạng ten@congty.vn.",
           "invalid": "Giá trị không hợp lệ."
-        }
+        },
+        "search": "Tìm theo tên hoặc MST",
+        "choose": "Chọn…",
+        "noMatch": "Không có kết quả. Xoá bớt chữ để tìm lại."
       }
     }
   }

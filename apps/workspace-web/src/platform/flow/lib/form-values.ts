@@ -5,17 +5,58 @@ import {
   type FlowForm,
   type FlowFormField,
   type FlowFormValues,
+  type FormPrefill,
   flowFormValuesSchema,
 } from "@ai/contracts/flow";
 
 /** Nháp: ô chữ/số/ngày/chọn = chuỗi thô, checkbox = boolean. */
 export type FormDraft = Record<string, string | boolean>;
-export type FieldErrorCode = "required" | "tooLong" | "range" | "integer" | "invalid";
+export type FieldErrorCode = "required" | "tooLong" | "range" | "integer" | "email" | "invalid";
 export type FieldErrors = Record<string, FieldErrorCode>;
 export type FormCheck = { ok: true; values: FlowFormValues } | { ok: false; errors: FieldErrors };
 
 export const emptyDraft = (form: FlowForm): FormDraft =>
   Object.fromEntries(form.fields.map((f) => [f.key, f.type === "checkbox" ? false : ""]));
+
+/** CR-126 · nháp ban đầu: trống ⇒ `default` của trường ⇒ giá trị máy chủ tính (`prefill.field_defaults`, thắng `default`). */
+export function initialDraft(form: FlowForm, prefill?: FormPrefill): FormDraft {
+  const draft = emptyDraft(form);
+  for (const f of form.fields) {
+    const raw = prefill?.field_defaults[f.key] ?? f.default;
+    if (raw === undefined || raw === null) continue;
+    if (f.type === "checkbox") draft[f.key] = raw === true || raw === "true";
+    else if (typeof raw === "string" || typeof raw === "number") draft[f.key] = String(raw);
+  }
+  return draft;
+}
+
+export type SelectOption = { value: string; label: string };
+
+/** CR-126 · lựa chọn của ô chọn: `options_from` ⇒ danh sách máy chủ cấp (`prefill.field_options`), còn lại ⇒ `options` của form. */
+export function selectOptions(
+  f: Extract<FlowFormField, { type: "select" }>,
+  prefill?: FormPrefill,
+): SelectOption[] {
+  return f.options_from ? (prefill?.field_options[f.key] ?? []) : f.options;
+}
+
+const fold = (s: string): string =>
+  s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d");
+
+/** CR-126 · lọc theo chữ gõ (không phân biệt hoa/thường và dấu) trên nhãn "tên · MST"; luôn giữ lựa chọn đang chọn. */
+export function filterOptions(
+  options: readonly SelectOption[],
+  query: string,
+  selected = "",
+): SelectOption[] {
+  const q = fold(query.trim());
+  if (!q) return [...options];
+  return options.filter((o) => o.value === selected || fold(o.label).includes(q));
+}
 
 /** Chuỗi số người nhập ⇒ số; không đọc được ⇒ giữ chuỗi để validator báo `invalid`. Tiền: bỏ dấu phân cách nghìn. */
 function parseNumber(raw: string, money: boolean): number | string {
@@ -39,6 +80,7 @@ function codeOf(f: FlowFormField, v: unknown, code: string): FieldErrorCode {
   if (f.type === "checkbox") return "required";
   if (code === "too_big" || code === "too_small")
     return f.type === "text" || f.type === "textarea" ? "tooLong" : "range";
+  if (f.type === "text" && f.format === "email") return "email";
   if (f.type === "number" && f.integer && typeof v === "number" && !Number.isInteger(v))
     return "integer";
   return "invalid";

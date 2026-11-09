@@ -11,6 +11,15 @@ export const FORM_LABEL_MAX = 120;
 export const FORM_TEXT_MAX = 500;
 export const FORM_TEXTAREA_MAX = 4_000;
 export const FORM_OPTIONS_MAX = 30;
+/** CR-126 · danh sách do máy chủ cấp (`options_from`) được dài hơn danh sách gõ tay ở form; trần khớp `FORM_PREFILL_OPTIONS_MAX`. */
+export const FORM_OPTIONS_FROM_MAX = 200;
+/** CR-126 · nguồn danh sách chọn do máy chủ cấp (trường select có `options_from` không cần `options` gõ tay). */
+export const FORM_OPTIONS_FROM = ["company_partners"] as const;
+export type FormOptionsFrom = (typeof FORM_OPTIONS_FROM)[number];
+/** CR-126 · định dạng kiểm thêm cho ô chữ ngắn. */
+export const FORM_TEXT_FORMATS = ["email"] as const;
+export const FORM_EMAIL_RE = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+export const FORM_EMAIL_MAX = 254;
 /** Trần tiền (đồng, số nguyên ≥ 0) — dưới `Number.MAX_SAFE_INTEGER`. */
 export const FORM_MONEY_MAX = 1_000_000_000_000_000;
 export const FORM_NUMBER_ABS_MAX = 1e15;
@@ -38,6 +47,10 @@ export const FormLabelSchema = z
   .refine(plainLabel, "plain text only");
 export const FORM_OPTION_VALUE_RE = /^[a-z0-9_-]{1,40}$/;
 
+/** Giá trị mặc định: không ký tự điều khiển (trừ xuống dòng/tab không cần ở ô ngắn). */
+const plainDefault = (s: string): boolean =>
+  ![...s].some((ch) => ch.charCodeAt(0) < 0x20 || ch === "\x7f");
+
 export const FORM_HELP_MAX = 300;
 /** Gợi ý ngắn dưới ô nhập (văn bản thuần). */
 export const FormHelpSchema = z
@@ -51,6 +64,8 @@ const base = {
   label: FormLabelSchema,
   help: FormHelpSchema.optional(),
   required: z.boolean().default(false),
+  /** CR-126 · giá trị điền sẵn (chuỗi thô như người gõ); máy chủ có thể ghi đè bằng giá trị tính từ dữ liệu (prefill). */
+  default: z.string().max(FORM_TEXT_MAX).refine(plainDefault, "plain text only").optional(),
 };
 const bound = z.number().finite().min(-FORM_NUMBER_ABS_MAX).max(FORM_NUMBER_ABS_MAX);
 
@@ -59,6 +74,8 @@ export const FormFieldSchema = z.discriminatedUnion("type", [
     ...base,
     type: z.literal("text"),
     max_len: z.number().int().min(1).max(FORM_TEXT_MAX).default(200),
+    /** CR-126 · `email` ⇒ ô nhập email, giá trị phải đúng dạng ten@congty.vn. */
+    format: z.enum(FORM_TEXT_FORMATS).optional(),
   }),
   z.strictObject({
     ...base,
@@ -82,18 +99,28 @@ export const FormFieldSchema = z.discriminatedUnion("type", [
   z.strictObject({
     ...base,
     type: z.literal("select"),
+    /** Gõ tay: 1..30 lựa chọn. Có `options_from`: máy chủ cấp danh sách (≤ 200), `options` có thể trống. */
     options: z
       .array(
         z.strictObject({ value: z.string().regex(FORM_OPTION_VALUE_RE), label: FormLabelSchema }),
       )
-      .min(1)
-      .max(FORM_OPTIONS_MAX),
+      .max(FORM_OPTIONS_FROM_MAX)
+      .default([]),
+    options_from: z.enum(FORM_OPTIONS_FROM).optional(),
   }),
   z.strictObject({ ...base, type: z.literal("checkbox") }),
   /** Id tệp đính kèm (uuid) — Hub chỉ kiểm dạng; quyền đọc tệp theo kênh đính kèm như cũ. */
   z.strictObject({ ...base, type: z.literal("file_ref") }),
 ]);
 export type FormField = z.infer<typeof FormFieldSchema>;
+
+/** Lựa chọn không trùng; danh sách gõ tay 1..30, danh sách máy chủ cấp (`options_from`) được trống và dài tới 200. */
+function optionsOk(f: Extract<FormField, { type: "select" }>): boolean {
+  if (new Set(f.options.map((o) => o.value)).size !== f.options.length) return false;
+  return (
+    f.options_from !== undefined || (f.options.length >= 1 && f.options.length <= FORM_OPTIONS_MAX)
+  );
+}
 
 /** Luật hình dạng không diễn tả được bằng từng trường: key/option trùng, `min > max`. */
 function fieldsIssues(fields: readonly FormField[]): string[] {
@@ -104,8 +131,7 @@ function fieldsIssues(fields: readonly FormField[]): string[] {
     seen.add(f.key);
     if ((f.type === "number" || f.type === "money") && f.min !== undefined && f.max !== undefined)
       if (f.min > f.max) out.push(`${i}.max`);
-    if (f.type === "select" && new Set(f.options.map((o) => o.value)).size !== f.options.length)
-      out.push(`${i}.options`);
+    if (f.type === "select" && !optionsOk(f)) out.push(`${i}.options`);
   });
   return out;
 }

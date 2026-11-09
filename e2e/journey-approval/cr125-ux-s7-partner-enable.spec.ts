@@ -33,6 +33,7 @@ import {
   U,
   uploadAndOpen,
 } from "./_journey";
+import { expectMailboxTo, groupIdByKey, pickPartnerAndSend } from "./_partner-pick";
 import { expect, test } from "./_test";
 
 const need = (n: string): string => {
@@ -118,6 +119,7 @@ test.beforeAll(async () => {
         1,
         {
           partner_tax_code: "0100000044",
+          assignee_group: await groupIdByKey(EA.tenantKey, "pb-giam-doc"),
           send_fields: "total_value",
           reply_days: 7,
           message: "Xin quý công ty xác nhận hợp đồng",
@@ -219,6 +221,11 @@ test("3 · công ty A gửi hợp đồng cho B: B thấy ở hộp thư đối 
   await expect(stepOf(emp, "Giám đốc duyệt")).toBeVisible({ timeout: 120_000 });
   const dir = await ctx(browser);
   await approveAs(dir, EA, U.director, id, "Giám đốc duyệt");
+  // CR-126: bước «Chọn đối tác & người nhận» (Việc của tôi) trước khi gửi; thư đi tới email đã chọn.
+  const chosen = await pickPartnerAndSend(await ctx(browser), EA, U.director, {
+    partnerTaxCode: "0100000044",
+    email: `chon-${RUN}s7@doitac.test`,
+  });
 
   // B: lời mời nối → nhận → hộp thư → xác nhận
   const b = await ctx(browser);
@@ -236,6 +243,7 @@ test("3 · công ty A gửi hợp đồng cho B: B thấy ở hộp thư đối 
     "Chờ công ty bạn xác nhận",
   );
   await b.screenshot({ path: shot("b-inbox"), fullPage: true });
+  await expectMailboxTo(id, chosen);
   await card.getByRole("link", { name: "Mở" }).click();
   await b.waitForURL(/\/contracts\/c\/[0-9a-f-]{36}/);
   const inboxId = /\/contracts\/c\/([0-9a-f-]{36})/.exec(b.url())?.[1] ?? "";

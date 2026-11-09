@@ -4,6 +4,7 @@
 // snapshot cũ không có ở đây: server luôn chiếu về một loại đã biết (`system` khi không có renderer riêng).
 import { z } from "zod";
 import { FlowFormSchema, FlowFormValueSchema, FlowFormValuesSchema } from "./form";
+import { FormPrefillSchema } from "./form-prefill";
 
 export const FLOW_REF_MAX_BATCH = 100;
 /** Khe `<gói>.<việc>` (khớp CHECK `process_slots_slot_ck`). */
@@ -145,6 +146,8 @@ export const FlowTaskSchema = z.strictObject({
   step_key: Key,
   kind: z.enum(FLOW_STEP_KINDS),
   actions: z.array(FlowActionDefSchema).max(10),
+  /** CR-126 · bước form: giá trị điền sẵn + danh sách chọn do máy chủ tính (vd «Chọn đối tác & người nhận»). */
+  prefill: FormPrefillSchema.optional(),
 });
 export type FlowTask = z.infer<typeof FlowTaskSchema>;
 

@@ -7,6 +7,8 @@
 //  2. Quản trị B thấy lời mời ở «Hợp đồng đối tác gửi», bấm «Nhận HĐ từ công ty này» ⇒ lần gửi được thả ⇒ HĐ nhận hiện ở hộp thư B.
 //  3. Flow nhận của B: người xác nhận bấm Đạt ⇒ A nhận `partner.confirmed` ⇒ flow A chạy tiếp «Đã xác nhận» ⇒ HĐ A khoá; thẻ A «đã xác nhận».
 //  4. Biến thể «Trả lại sửa»: B trả lại có lý do ⇒ A thấy thẻ «đã trả lại» + đúng lý do.
+// CR-126: trước khi gửi, người của «Nhóm phụ trách gửi đối tác» làm bước «Chọn đối tác & người nhận» ở «Việc của tôi» (đối tác + email điền sẵn, đổi email, «Gửi»);
+//  thư/hộp thư đi tới đúng email ĐÃ CHỌN.
 import type { Page } from "@playwright/test";
 import {
   apiLogin,
@@ -29,6 +31,7 @@ import {
 import { safeReload } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
 import { confirmAndSave, type Env, loginCw, stepOf, U, uploadAndOpen } from "./_journey";
+import { expectMailboxTo, groupIdByKey, pickPartnerAndSend } from "./_partner-pick";
 import { expect, test } from "./_test";
 
 const need = (n: string): string => {
@@ -61,7 +64,7 @@ const ctx = async (browser: import("@playwright/test").Browser, w = 1440): Promi
 
 test.describe.configure({ mode: "serial" });
 
-/** Gửi HĐ mới ở A: nhân viên tải + Gửi duyệt, Giám đốc A duyệt. Trả {id, emp}. */
+/** Gửi HĐ mới ở A: nhân viên tải + Gửi duyệt, Giám đốc A duyệt, rồi chọn đối tác & email người nhận (CR-126). Trả {id, emp, chosen}. */
 async function sendFromA(browser: import("@playwright/test").Browser, tag: string) {
   const emp = await ctx(browser);
   await loginCw(emp, EA, U.employee);
@@ -71,7 +74,11 @@ async function sendFromA(browser: import("@playwright/test").Browser, tag: strin
   const dir = await ctx(browser);
   const { approveAs } = await import("./_journey");
   await approveAs(dir, EA, U.director, id, "Giám đốc duyệt");
-  return { id, emp };
+  const chosen = await pickPartnerAndSend(await ctx(browser), EA, U.director, {
+    partnerTaxCode: TAX_B,
+    email: `chon-${RUN}${tag}@doitac.test`,
+  });
+  return { id, emp, chosen };
 }
 
 /** Mở lại trang HĐ cho tới khi khối «Gửi đối tác xác nhận» có thẻ vòng gửi chứa `text`. */
@@ -165,6 +172,7 @@ test.beforeAll(async () => {
         1,
         {
           partner_tax_code: TAX_B,
+          assignee_group: await groupIdByKey(EA.tenantKey, "pb-giam-doc"),
           send_fields: "total_value",
           reply_days: 7,
           message: "Xin quý công ty xác nhận hợp đồng",
@@ -184,7 +192,7 @@ test("1 · gửi lần đầu: giữ chờ kết nối → B nhận lời mời 
   browser,
 }) => {
   test.setTimeout(600_000);
-  const { id, emp } = await sendFromA(browser, "a");
+  const { id, emp, chosen } = await sendFromA(browser, "a");
 
   // A: lần gửi đầu tới công ty chưa nối ⇒ thẻ chờ kết nối (không «bị chặn»)
   await expectRound(emp, EA.cw, id, /Đang chờ công ty nhận đồng ý kết nối/);
@@ -209,6 +217,7 @@ test("1 · gửi lần đầu: giữ chờ kết nối → B nhận lời mời 
     "Chờ công ty bạn xác nhận",
   );
   await b.screenshot({ path: shot("b-inbox"), fullPage: true });
+  await expectMailboxTo(id, chosen); // thư đi tới email người dùng đã chọn ở bước «Chọn đối tác & người nhận»
   await card.getByRole("link", { name: "Mở" }).click();
   await b.waitForURL(/\/contracts\/c\/[0-9a-f-]{36}/);
   const inboxId = /\/contracts\/c\/([0-9a-f-]{36})/.exec(b.url())?.[1] ?? "";

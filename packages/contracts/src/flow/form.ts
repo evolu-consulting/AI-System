@@ -5,6 +5,8 @@
 import { z } from "zod";
 import { FIELD_KEY_RE } from "../hub-admin/field-key";
 import {
+  FORM_EMAIL_MAX,
+  FORM_EMAIL_RE,
   FORM_FIELD_TYPES,
   FORM_FIELDS_MAX,
   FORM_OPTIONS_MAX,
@@ -22,6 +24,9 @@ export const FLOW_FORM_TEXTAREA_MAX = FORM_TEXTAREA_MAX;
 export const FLOW_FORM_SELECT_MAX_OPTIONS = FORM_OPTIONS_MAX;
 export const FLOW_FORM_FIELD_TYPES = FORM_FIELD_TYPES;
 export type FlowFormFieldType = FormFieldType;
+
+/** Độ dài tối đa giá trị của ô chọn từ danh sách máy chủ cấp (khớp `FormPrefillOptionSchema.value`). */
+const FORM_PREFILL_VALUE_MAX = 200;
 
 export const FlowFormFieldSchema = FormFieldSchema;
 export type FlowFormField = FormField;
@@ -52,6 +57,12 @@ const noControl = (s: z.ZodString) =>
 function valueSchema(f: FlowFormField): z.ZodType {
   switch (f.type) {
     case "text":
+      if (f.format === "email")
+        return noControl(z.string().trim().max(Math.min(f.max_len, FORM_EMAIL_MAX))).refine(
+          (v) => FORM_EMAIL_RE.test(v),
+          { message: "email" },
+        );
+      return noControl(z.string().trim().max(f.max_len));
     case "textarea":
       return noControl(z.string().trim().max(f.max_len));
     case "number": {
@@ -70,6 +81,8 @@ function valueSchema(f: FlowFormField): z.ZodType {
     case "date":
       return IsoDate;
     case "select":
+      // Danh sách máy chủ cấp (`options_from`): máy chủ giữ danh sách thật và kiểm lại (vd đối tác thuộc công ty).
+      if (f.options_from) return z.string().trim().min(1).max(FORM_PREFILL_VALUE_MAX);
       return z.enum(f.options.map((o) => o.value) as [string, ...string[]]);
     case "checkbox":
       return f.required ? z.literal(true) : z.boolean();

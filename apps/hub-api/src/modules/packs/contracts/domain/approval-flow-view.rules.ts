@@ -12,8 +12,9 @@ import type {
   FlowSummaryItem,
   FlowTask,
   FlowView,
+  FormPrefill,
 } from "@ai/contracts/flow";
-import { moduleFlowStep } from "@ai/contracts/flow";
+import { FormPrefillSchema, moduleFlowStep } from "@ai/contracts/flow";
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import {
   type EngineStepsView,
@@ -155,6 +156,20 @@ function actionsOf(
   return out;
 }
 
+/**
+ * CR-126 · giá trị điền sẵn + danh sách chọn do máy chủ tính (engine ghi vào form/task của stage). Nguồn không phải dữ liệu tin cậy
+ * (JSON từ snapshot/payload) ⇒ kiểm bằng schema; sai dạng ⇒ bỏ (form vẫn nhập tay được), không làm vỡ cả thẻ.
+ */
+export function prefillOf(...sources: unknown[]): FormPrefill | undefined {
+  for (const s of sources) {
+    const raw = (s as { prefill?: unknown } | null | undefined)?.prefill;
+    if (raw === undefined || raw === null) continue;
+    const ok = FormPrefillSchema.safeParse(raw);
+    if (ok.success) return ok.data;
+  }
+  return undefined;
+}
+
 /** CR-125 · task của bước form: MỘT hành động «Gửi» mang cả form; gửi qua `POST /review-tasks/:id/form` (đường ghi sẵn có của engine). */
 const submitActions = (form: NonNullable<CardStep["form"]>): FlowActionDef[] => [
   {
@@ -166,6 +181,13 @@ const submitActions = (form: NonNullable<CardStep["form"]>): FlowActionDef[] => 
   },
 ];
 
+/** Task của bước form ⇒ `{ prefill }` (task thắng form); task review ⇒ không có. */
+const taskPrefill = (form: unknown, task: unknown): { prefill?: FormPrefill } =>
+  form ? withPrefill(prefillOf(task, form)) : {};
+
+const withPrefill = (p: FormPrefill | undefined): { prefill?: FormPrefill } =>
+  p ? { prefill: p } : {};
+
 function tasksOf(card: Card): FlowTask[] {
   if (!card.can_act || !card.task_id) return [];
   const open = card.steps?.find((s) => s.status === "open") ?? null;
@@ -176,6 +198,7 @@ function tasksOf(card: Card): FlowTask[] {
         step_key: open.key,
         kind: "form",
         actions: submitActions(open.form),
+        ...withPrefill(prefillOf(open.form)),
       },
     ];
   return [
@@ -237,6 +260,7 @@ export function flowViewOfRun(sv: EngineStepsView, ref: string): FlowView {
       task_id: task.id,
       step_key: open.key,
       kind: form ? "form" : "review",
+      ...taskPrefill(form, task),
       actions: form
         ? submitActions(form as NonNullable<CardStep["form"]>)
         : actionsOf({ finalizes_on_approve: false, mode: "engine" }, open.idx).filter(
