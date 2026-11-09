@@ -1,7 +1,7 @@
 // Phần đọc nhỏ của `stepsView` (tách khỏi pack-runs-view.ts cho ≤ 400 dòng): lý do quyết định mở của run, mã máy của stage kẹt, và
 // dữ liệu bước «Điền thông tin» (form) của thẻ — trường theo snapshot run + giá trị đã gửi. Thuần.
 import type { FormField } from "@ai/contracts/hub-admin";
-import { formPrefillRegistry, type PackStepView } from "../../packs/kit/public";
+import type { PackStepView } from "../../packs/kit/public";
 
 /** Khoá node module của stage snapshot (vắng ⇒ undefined). */
 export const nodeKeyOf = (s: unknown): string | undefined => {
@@ -21,7 +21,11 @@ export async function withFormPrefill(
   // Chỉ người QUYẾT ĐƯỢC bước (can_act của engine) mới nhận danh sách đối tác/email — người xem lượt (người tạo, quan sát) không.
   const at = steps.findIndex((s) => s.form && s.task?.can_act === true && s.status === "open");
   const step = steps[at];
-  const resolve = step ? formPrefillRegistry.of(nodeOf(step.idx)) : undefined;
+  if (!step) return steps;
+  // Nạp lười cửa kit (giá trị): import tĩnh kéo cả phần chạy của kit (logger Bun, worker docx) vào mọi chỗ import processes/public —
+  // vd seed trong e2e Playwright (Node) ⇒ «Bun is not defined». Module được cache sau lần đầu.
+  const { formPrefillRegistry } = await import("../../packs/kit/public");
+  const resolve = formPrefillRegistry.of(nodeOf(step.idx));
   if (!step?.form || !resolve) return steps;
   const prefill = await resolve(q).catch(() => null);
   if (!prefill) return steps;
