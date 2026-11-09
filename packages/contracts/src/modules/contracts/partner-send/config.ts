@@ -50,6 +50,8 @@ export const PartnerSendConfigSchema = z.object({
     .email()
     .optional()
     .describe("Email liên hệ (mặc định lấy từ hợp đồng)"),
+  /** CR-126 · nhóm làm bước «Chọn đối tác & người nhận» (id nhóm; def Thư viện: mã nhóm). Nguồn của `after.group_*` stage form (`applyNodeAssignee`). */
+  assignee_group: z.string().min(1).max(80).optional().describe("Nhóm phụ trách gửi đối tác"),
 });
 export type PartnerSendConfig = z.infer<typeof PartnerSendConfigSchema>;
 

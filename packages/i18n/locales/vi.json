@@ -762,7 +762,8 @@
           "READINESS_FEATURE_MISSING": "Bước «{stage}» cần tính năng {what} — công ty chưa được bật.",
           "READINESS_TOOL_MISSING": "Bước «{stage}» dùng chức năng công ty chưa có.",
           "READINESS_STEP_ORDER": "Bước «{stage}» phải đứng ngay sau một bước Duyệt.",
-          "READINESS_STEP_LOCKED": "Bước «{stage}» là bước cố định của nền tảng — không sửa được trên bản sao."
+          "READINESS_STEP_LOCKED": "Bước «{stage}» là bước cố định của nền tảng — không sửa được trên bản sao.",
+          "READINESS_ASSIGNEE_MISSING": "Bước «{stage}»: chọn {key}."
         },
         "loadFailed": {
           "HUB_UNCONFIGURED": "Chưa kiểm được mẫu: chưa cấu hình kết nối tới Hub. Nhờ quản trị hệ thống kiểm tra rồi thử lại.",

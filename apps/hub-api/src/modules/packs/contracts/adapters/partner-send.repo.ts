@@ -87,6 +87,22 @@ const routing = (tx: Tx, tid: string) => ({
         }
       : null;
   },
+  /** CR-126 · MST có phải đối tác CỦA công ty này không (sổ vai đối tác `partner_roles`, khoá `tax:<chữ số>`). MỘT câu, theo index. */
+  async isPartner(tax: string): Promise<boolean> {
+    const [r] = await tx.execute<{
+      ok: boolean;
+    }>(sql`select exists (select 1 from contracts.partner_roles p
+        where p.tenant_id = ${tid}::uuid and p.party_key = 'tax:' || regexp_replace(${tax}, '[^0-9]', '', 'g')) as ok`);
+    return r?.ok === true;
+  },
+  /** CR-126 · danh sách đối tác có MST của công ty (lựa chọn `company_partners`), ≤ `limit`, MỘT câu. */
+  async partners(limit: number): Promise<{ tax: string; name: string }[]> {
+    const rows = await tx.execute<{ tax: string; name: string }>(sql`select k.tax, k.name from (
+        select distinct on (p.party_key) substr(p.party_key, 5) as tax, coalesce(nullif(btrim(p.name), ''), substr(p.party_key, 5)) as name
+        from contracts.partner_roles p where p.tenant_id = ${tid}::uuid and p.party_key like 'tax:%'
+        order by p.party_key, p.name nulls last) k order by k.name, k.tax limit ${limit}`);
+    return [...rows];
+  },
   /** Công ty nhận theo MST khớp đúng (chỉ công ty bật "cho phép tìm thấy") + trạng thái nối. */
   async route(tax: string): Promise<RouteInfo | null> {
     const [r] = await tx.execute<{

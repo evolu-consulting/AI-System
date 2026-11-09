@@ -100,6 +100,7 @@ export const NODE_EXECUTORS = [
   "tool",
   "set",
   "subprocess", // CR-125 · Quy trình con
+  "form", // CR-126 · bước người điền bên trong node (vd «Chọn đối tác & người nhận»); nhóm làm = `assignee_group` của node
 ] as const;
 export type NodeExecutor = (typeof NODE_EXECUTORS)[number];
 /** Nhóm trên bảng node. */

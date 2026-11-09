@@ -19,7 +19,12 @@ export const PARTNER_SEND_NODE: FeatureNodeDecl = {
   requires: { before: "approval" },
   configPort: {
     schema: PartnerSendConfigSchema,
-    widgets: { importance: "enum", reply_days: "days", message: "longtext" },
+    widgets: {
+      importance: "enum",
+      reply_days: "days",
+      message: "longtext",
+      assignee_group: "group",
+    },
   },
   exits: [
     { key: "confirmed", label: { vi: "Đã xác nhận", en: "Confirmed" } },
@@ -31,7 +36,32 @@ export const PARTNER_SEND_NODE: FeatureNodeDecl = {
     { key: "declined", label: { vi: "Từ chối", en: "Declined" }, on: ["partner.declined"] },
     { key: "expired", label: { vi: "Hết hạn", en: "Expired" }, on: ["timeout"] },
   ],
+  // CR-126 · stage người làm TRƯỚC khi gửi: nhóm `assignee_group` (cấu hình node) chọn đối tác + email nhận; máy chủ điền sẵn từ HĐ
+  // (`FormPrefill`, nguồn `company_partners`). Giá trị chọn vào tool qua đầu vào `partner_tax_code` / `partner_email` (fieldArgSources).
   stages: [
+    {
+      executor: {
+        kind: "form",
+        fields: [
+          {
+            key: "partner_tax_code",
+            label: "Đối tác",
+            type: "select",
+            required: true,
+            options: [],
+            options_from: "company_partners",
+          },
+          {
+            key: "partner_email",
+            label: "Email người nhận",
+            type: "text",
+            required: true,
+            max_len: 254,
+            format: "email",
+          },
+        ],
+      },
+    },
     {
       executor: { kind: "tool", tool_key: PARTNER_SEND_TOOL, args: {} },
       real_action: true,
@@ -52,6 +82,19 @@ export const PARTNER_SEND_NODE: FeatureNodeDecl = {
       required: true,
       label: { vi: "Hợp đồng", en: "Contract" },
       fix: { vi: "thêm bước Tải hợp đồng trước.", en: "add an Upload contract step first." },
+    },
+    // CR-126 · do stage «Chọn đối tác & người nhận» của chính node ghi (trường form cùng khoá).
+    {
+      key: "partner_tax_code",
+      type: "string",
+      required: false,
+      label: { vi: "Đối tác (mã số thuế)", en: "Partner (tax code)" },
+    },
+    {
+      key: "partner_email",
+      type: "string",
+      required: false,
+      label: { vi: "Email người nhận", en: "Recipient email" },
     },
   ],
   // CR-125 · m8 · cổng ra đủ, nhãn nghiệp vụ. `event` (xác nhận / trả lại / từ chối / hết hạn) do stage chờ ghi = «partner_outcome».

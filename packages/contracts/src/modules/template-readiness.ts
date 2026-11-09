@@ -3,7 +3,10 @@
 // seed/onboard (D7). Công ty KHÔNG BAO GIỜ nhận mẫu mà không áp dụng được.
 import { startFormGroupKeys } from "./core/start-form/config";
 import { featureNodeByKey } from "./modules.rules";
+import { type NodeAssigneeNeed, nodeAssigneeMessage, nodeAssigneeNeeds } from "./node-assignee";
 import type { FeatureModule } from "./types";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -19,6 +22,8 @@ export type TemplateNeeds = {
   order: { node: string; stage: string; needs: "approval" }[];
   /** Bước CỐ ĐỊNH của nền tảng (khe `slot`): chạy được khi được gán nhưng không sửa/lưu được trên bản sao của công ty. */
   locked: string[];
+  /** CR-126 · nhóm phụ trách của node module có bước người làm (`nodeAssigneeNeeds`). */
+  assignees: NodeAssigneeNeed[];
 };
 
 export type TenantSide = {
@@ -36,6 +41,7 @@ export const READINESS_CODES = [
   "READINESS_TOOL_MISSING",
   "READINESS_STEP_ORDER",
   "READINESS_STEP_LOCKED",
+  "READINESS_ASSIGNEE_MISSING", // CR-126 · node module có bước người làm mà chưa chọn nhóm phụ trách (hoặc nhóm không có ở công ty)
 ] as const;
 export type ReadinessCode = (typeof READINESS_CODES)[number];
 export const READINESS_KEY = "tenants.companyFlows.readiness.err";
@@ -93,7 +99,14 @@ export function templateNeeds(
   stages: readonly unknown[],
   mods: readonly FeatureModule[],
 ): TemplateNeeds {
-  const needs: TemplateNeeds = { features: [], tools: [], groups: [], order: [], locked: [] };
+  const needs: TemplateNeeds = {
+    features: [],
+    tools: [],
+    groups: [],
+    order: [],
+    locked: [],
+    assignees: nodeAssigneeNeeds(stages, mods),
+  };
   const groups = new Set<string>();
   stages.forEach((raw, i) => {
     if (!isObj(raw)) return;
@@ -108,6 +121,7 @@ export function templateNeeds(
     if (node?.requires?.before === "approval" && needsApprovalBefore(stages, i))
       needs.order.push({ node: node.key, stage, needs: "approval" });
   });
+  for (const a of needs.assignees) if (a.group && !UUID_RE.test(a.group)) groups.add(a.group);
   needs.groups = [...groups];
   return needs;
 }
@@ -168,6 +182,13 @@ export function templateReadiness(needs: TemplateNeeds, tenant: TenantSide): Tem
       code: "READINESS_STEP_ORDER" as const,
       params: { stage: o.stage },
     })),
+    // CR-126 · chưa chọn nhóm phụ trách, hoặc mã nhóm không có ở công ty (id thì lưu def đã kiểm tham chiếu) ⇒ chưa sẵn sàng.
+    ...needs.assignees
+      .filter((a) => a.group === null || (!UUID_RE.test(a.group) && !groupMap[a.group]))
+      .map((a) => ({
+        code: "READINESS_ASSIGNEE_MISSING" as const,
+        params: { stage: a.stage, key: lowerFirst(a.label) },
+      })),
   ];
   const copyReasons: ReadinessReason[] = [
     ...reasons,
@@ -182,6 +203,11 @@ export function templateReadiness(needs: TemplateNeeds, tenant: TenantSide): Tem
     copyReasons,
   };
 }
+
+const lowerFirst = (s: string): string => s.charAt(0).toLowerCase() + s.slice(1);
+/** CR-126 · câu nghiệp vụ của lý do `READINESS_ASSIGNEE_MISSING` (máy chủ/log; web dịch theo mã). */
+export const assigneeReasonMessage = (r: ReadinessReason): string =>
+  nodeAssigneeMessage(r.params.key ?? "nhóm phụ trách");
 
 /** Nhóm gợi ý từ mã nhóm của mẫu (MỘT nguồn cho nút "Tạo nhóm theo gợi ý" của web và route tạo nhóm của admin-api): tên = mã bỏ gạch ngang, viết hoa chữ đầu. */
 export function suggestGroup(key: string): { key: string; name: { vi: string } } {

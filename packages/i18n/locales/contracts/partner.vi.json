@@ -8,7 +8,9 @@
             "tool": {
               "PARTNER_FEATURE_OFF": "công ty chưa bật Gửi đối tác xác nhận — nhờ quản trị nền tảng bật tính năng này, rồi bấm Thử lại",
               "PARTNER_CHANNEL_OFF": "kênh gửi đối tác chưa bật trên hệ thống — báo quản trị nền tảng bật kênh, rồi bấm Thử lại",
-              "PARTNER_NEEDS_FILE": "hợp đồng chưa có tệp để gửi đối tác — tải tệp lên hợp đồng rồi bấm Thử lại"
+              "PARTNER_NEEDS_FILE": "hợp đồng chưa có tệp để gửi đối tác — tải tệp lên hợp đồng rồi bấm Thử lại",
+              "PARTNER_NOT_IN_COMPANY": "đối tác đã chọn không có trong danh sách đối tác của công ty — chọn lại đối tác rồi bấm Thử lại",
+              "PARTNER_EMAIL_INVALID": "email người nhận không đúng dạng — sửa email (vd ten@congty.vn) rồi bấm Thử lại"
             }
           }
         }

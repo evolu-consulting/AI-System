@@ -54,6 +54,8 @@ const TOOL_CODES = new Set([
   "PARTNER_FEATURE_OFF", // CR-124 · q7 · công ty chưa bật tính năng Gửi đối tác xác nhận
   "PARTNER_CHANNEL_OFF", // CR-124 · q7 · kênh hộp thư liên công ty tắt trên hệ thống
   "PARTNER_NEEDS_FILE",
+  "PARTNER_NOT_IN_COMPANY", // CR-126 · đối tác chọn không thuộc công ty
+  "PARTNER_EMAIL_INVALID", // CR-126 · email người nhận sai dạng
 ]);
 const MISSING_ARG = "MISSING_ARG";
 

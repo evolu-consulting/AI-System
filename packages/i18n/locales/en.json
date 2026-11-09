@@ -762,7 +762,8 @@
           "READINESS_FEATURE_MISSING": "Step \"{stage}\" needs {what} — not enabled for the company.",
           "READINESS_TOOL_MISSING": "Step \"{stage}\" uses a function the company does not have.",
           "READINESS_STEP_ORDER": "Step \"{stage}\" must come right after an approval step.",
-          "READINESS_STEP_LOCKED": "Step \"{stage}\" is fixed by the platform — it cannot be edited on a copy."
+          "READINESS_STEP_LOCKED": "Step \"{stage}\" is fixed by the platform — it cannot be edited on a copy.",
+          "READINESS_ASSIGNEE_MISSING": "Step \"{stage}\": choose the responsible group."
         },
         "loadFailed": {
           "HUB_UNCONFIGURED": "Could not check the template: the connection to the Hub is not configured. Ask a system administrator to check, then retry.",

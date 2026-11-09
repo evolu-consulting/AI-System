@@ -42,10 +42,16 @@ const PARAMS: PackToolDef["params"] = [
   { name: "message", type: "text", required: false, description: "Lời nhắn" },
   { name: "partner_tax_code", type: "text", required: false, description: "MST công ty nhận" },
   { name: "partner_email", type: "text", required: false, description: "Email liên hệ" },
+  // CR-126 · cấu hình node (nhóm làm bước chọn người nhận) — tool không dùng, chỉ để args hằng của stage hợp lệ.
+  { name: "assignee_group", type: "text", required: false, description: "Nhóm phụ trách" },
 ];
 
 export function decodePartnerArgs(args: PackToolArgs) {
   const p = PartnerSendConfigSchema.safeParse(args);
+  // CR-126 · người nhận chọn ở bước «Chọn đối tác & người nhận»: sai dạng ⇒ lỗi nghiệp vụ riêng (thẻ nói rõ sửa gì), không gửi.
+  const bad = new Set(p.success ? [] : p.error.issues.map((i) => String(i.path[0])));
+  if (bad.has("partner_email")) throw new Error("PARTNER_EMAIL_INVALID");
+  if (bad.has("partner_tax_code")) throw new Error("PARTNER_NOT_IN_COMPANY");
   if (!p.success)
     throw new Error(
       `PARTNER_SEND_CONFIG_INVALID:${p.error.issues.map((i) => i.path.join(".")).join(",")}`,
@@ -83,6 +89,9 @@ async function planFor(r: R, cfg: Cfg, id: string) {
   const c = await r.partnerSend.contract(id);
   if (!c) throw new Error("CONTRACT_NOT_FOUND");
   if (!c.fileId) throw new Error("PARTNER_NEEDS_FILE");
+  // CR-126 · đối tác CHỌN phải là đối tác của chính công ty (không gửi HĐ cho MST lạ / của công ty khác); trước mọi ghi.
+  if (cfg.partner_tax_code && !(await r.partnerSend.isPartner(cfg.partner_tax_code)))
+    throw new Error("PARTNER_NOT_IN_COMPANY");
   const email = cfg.partner_email ?? (await r.esign.contract(id))?.partner?.email?.trim() ?? null;
   const tax = cfg.partner_tax_code ?? c.partnerTax;
   const route = tax ? await r.partnerSend.route(tax) : null;

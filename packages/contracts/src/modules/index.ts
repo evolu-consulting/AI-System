@@ -8,6 +8,7 @@ export * from "./core/start-form/config";
 export { START_FORM_NODE } from "./core/start-form/node";
 export * from "./index.generated";
 export * from "./modules.rules";
+export * from "./node-assignee";
 export * from "./partner-confirm";
 export * from "./template-readiness";
 export * from "./types";

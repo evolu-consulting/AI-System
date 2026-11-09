@@ -4,16 +4,20 @@ import { PartnerSendConfigSchema, parseSendFields } from "./config";
 import { PARTNER_SEND_NODE } from "./node";
 
 describe("contracts.partner-send", () => {
-  test("khoá node khớp thư mục, 2 stage: tool real_action + wait_event", () => {
+  test("khoá node khớp thư mục, 3 stage: form chọn người nhận + tool real_action + wait_event (CR-126)", () => {
     expect(PARTNER_SEND_NODE.key).toBe("contracts.partner-send");
-    const [send, wait] = PARTNER_SEND_NODE.stages;
+    const [pick, send, wait] = PARTNER_SEND_NODE.stages;
+    expect(pick?.executor.kind).toBe("form");
+    const keys = ((pick?.executor.fields ?? []) as { key: string }[]).map((f) => f.key);
+    expect(keys).toEqual(["partner_tax_code", "partner_email"]);
+    expect(PARTNER_SEND_NODE.inputs.map((i) => i.key)).toEqual(expect.arrayContaining(keys));
     expect(send?.executor.kind).toBe("tool");
     expect(send?.real_action).toBe(true);
     expect(wait?.executor.kind).toBe("wait_event");
   });
 
   test("đầu ra: mỗi khoá `on` là sự kiện của stage chờ hoặc timeout", () => {
-    const wait = PARTNER_SEND_NODE.stages[1]?.executor as unknown as {
+    const wait = PARTNER_SEND_NODE.stages[2]?.executor as unknown as {
       event: string;
       also_events: string[];
     };

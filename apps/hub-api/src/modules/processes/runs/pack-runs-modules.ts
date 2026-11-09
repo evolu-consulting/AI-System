@@ -99,6 +99,13 @@ export function collapseModuleSteps(
       i++;
       continue;
     }
+    // CR-126 · stage người làm bên trong node (form «Chọn đối tác & người nhận») đang mở ⇒ dòng node mang việc + form của stage đó.
+    const open = steps.slice(c.start, c.end).find((s) => s.task !== null && s.status === "open");
+    if (open) {
+      out.push({ ...open, module: { node: c.node, outcome: "waiting" } });
+      i = c.end;
+      continue;
+    }
     const outcome = outcomeOf(c.node, facts.slice(c.start, c.end));
     const signer = signerRefs(stages[c.start])
       .flatMap((k) => signerNames.get(k) ?? [])

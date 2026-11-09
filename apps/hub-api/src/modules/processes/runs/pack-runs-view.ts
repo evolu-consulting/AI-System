@@ -17,7 +17,7 @@ import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules"
 import { alsoGroupsOf, canAct, headGate, overrideOnly } from "../domain/tasks/task-access.rules";
 import type { ProcessRunStatus } from "../domain/types";
 import { RESOLVE_SLOT_SQL } from "../library/slot-resolve.repo";
-import { decisionOf, formOf, stageCode } from "./pack-runs-extra";
+import { decisionOf, formOf, nodeKeyOf, stageCode, withFormPrefill } from "./pack-runs-extra";
 import { collapseModuleSteps, signerNamesOf, signerRefs } from "./pack-runs-modules";
 
 type Ts = Date | string;
@@ -36,6 +36,7 @@ type Row = {
   run_status: string;
   started_by: string;
   run_decision: unknown;
+  record_id: string | null;
   stage_idx: number;
   stage_status: string;
   stage_error: string | null;
@@ -72,7 +73,7 @@ const userScope = (u: PackRunCaller) => ({
 });
 
 const rowsSql = (runIds: readonly string[], tenantId: string, gs = new Set<string>()) => sql`
-  select r.id::text as run_id, r.status as run_status, r.started_by, r.decision as run_decision, s.stage_idx, s.status as stage_status, s.last_error_code as stage_error, s.round,
+  select r.id::text as run_id, r.status as run_status, r.started_by, r.decision as run_decision, r.pack_record_id::text as record_id, s.stage_idx, s.status as stage_status, s.last_error_code as stage_error, s.round,
     r.snapshot->'stages'->(s.stage_idx::int) as stage,
     t.id as task_id, t.status as task_status, t.result, t.feedback, t.decided_by, t.decided_at,
     coalesce(nullif(du.display_name, ''), du.username) as decided_name,
@@ -176,40 +177,52 @@ export async function stepsView(
 ): Promise<PackStepsView | null> {
   if (!UUID.test(runId)) return null;
   const groupIds = (await d.config.user(u.userId))?.groupIds ?? new Set<string>();
-  return withHubScope(d.db, scope === "system" ? { kind: "system" } : userScope(u), async (tx) => {
-    const rows = [...(await tx.execute<Row>(rowsSql([runId], u.tenantId, new Set(groupIds))))];
-    const head = rows[0];
-    if (!head) return null;
-    const open = rows.flatMap((r) => (r.task_id && r.task_status === "open" ? [r.task_id] : []));
-    const grants =
-      open.length === 0
-        ? []
-        : [
-            ...(await tx.execute<Grant>(sql`select a.task_id, a.user_id, a.group_id, a.via
+  const nodes: (string | undefined)[] = [];
+  let recordId: string | null = null;
+  const view = await withHubScope(
+    d.db,
+    scope === "system" ? { kind: "system" } : userScope(u),
+    async (tx) => {
+      const rows = [...(await tx.execute<Row>(rowsSql([runId], u.tenantId, new Set(groupIds))))];
+      const head = rows[0];
+      if (!head) return null;
+      const open = rows.flatMap((r) => (r.task_id && r.task_status === "open" ? [r.task_id] : []));
+      const grants =
+        open.length === 0
+          ? []
+          : [
+              ...(await tx.execute<Grant>(sql`select a.task_id, a.user_id, a.group_id, a.via
                 from hub.review_task_assignees a
                 where a.task_id = any(${`{${open.join(",")}}`}::uuid[]) and a.tenant_id = ${u.tenantId}`)),
-          ];
-    const can = canActFn(u, groupIds, grants);
-    const snaps = rows.map(
-      (r) => (typeof r.stage === "string" ? JSON.parse(r.stage) : r.stage) ?? {},
-    );
-    const names = await signerNamesOf(tx, u.tenantId, snaps.flatMap(signerRefs));
-    return {
-      run_id: runId,
-      status: head.run_status,
-      started_by: head.started_by,
-      steps: collapseModuleSteps(
-        rows.map((r) => stepOf(r, can)),
-        snaps,
-        rows.map((r) => ({ stageStatus: r.stage_status, consumed: r.consumed_event })),
-        names,
-      ),
-      decision:
-        head.run_status === "needs_decision"
-          ? { ...decisionOf(head.run_decision), ...stageCode(rows) }
-          : null,
-    };
-  });
+            ];
+      const can = canActFn(u, groupIds, grants);
+      const snaps = rows.map(
+        (r) => (typeof r.stage === "string" ? JSON.parse(r.stage) : r.stage) ?? {},
+      );
+      const names = await signerNamesOf(tx, u.tenantId, snaps.flatMap(signerRefs));
+      for (const [k, s] of snaps.entries()) nodes[Number(rows[k]?.stage_idx)] = nodeKeyOf(s);
+      recordId = head.record_id;
+      return {
+        run_id: runId,
+        status: head.run_status,
+        started_by: head.started_by,
+        steps: collapseModuleSteps(
+          rows.map((r) => stepOf(r, can)),
+          snaps,
+          rows.map((r) => ({ stageStatus: r.stage_status, consumed: r.consumed_event })),
+          names,
+        ),
+        decision:
+          head.run_status === "needs_decision"
+            ? { ...decisionOf(head.run_decision), ...stageCode(rows) }
+            : null,
+      };
+    },
+  );
+  if (!view) return null;
+  // CR-126 · ngoài tx engine: resolver gói đọc bằng uow của gói (RLS gói).
+  const q = { tenantId: u.tenantId, userId: u.userId, recordId };
+  return { ...view, steps: await withFormPrefill(view.steps, (i) => nodes[i], q) };
 }
 
 /** CR-123 · u10 · cột "Bước" của danh sách: NHIỀU run, CÙNG `rowsSql`/`stepOf`/`collapseModuleSteps` với `stepsView`; ≤ 2 SQL cố định, không `can_act`. */

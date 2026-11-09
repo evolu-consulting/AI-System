@@ -1,7 +1,7 @@
 // CR-122 · P15 · def CÔNG TY chỉ nhận id Group. Client cũ / bản sao từ Thư viện có thể còn mã (`group_key`) ⇒ đổi sang id của
 // chính công ty bằng đúng luật lúc chạy (`bindGroupKeys`). Mã không có nhóm ở công ty ⇒ 422 nói rõ mã (không để lọt tới PROCESS_REF_INVALID).
 import type { ProcessDefInput } from "@ai/contracts/hub-admin";
-import { groupKeyCandidates, mapGroupKey } from "@ai/contracts/modules";
+import { applyNodeAssignee, groupKeyCandidates, MODULES, mapGroupKey } from "@ai/contracts/modules";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { AppError } from "../../../lib/errors";
@@ -16,14 +16,24 @@ export function isLibraryDef(
   return slot !== null || (tenantId === null && !!trigger);
 }
 
+/** CR-126 · nhóm phụ trách của node module (cấu hình node) ⇒ `after.group_*` của stage người làm trong cụm — tính lại mỗi lần lưu. */
+export const withNodeAssignee = (input: ProcessDefInput): ProcessDefInput => ({
+  ...input,
+  stages: applyNodeAssignee(input.stages, MODULES),
+});
+
 /** `slotted` (đường khe / bản riêng) hoặc def mẫu (tenant null) ⇒ giữ nguyên; còn lại là def công ty ⇒ mã → id. */
 export const bindIfCompany = (
   tx: Tx,
   tenantId: string | null,
   slotted: boolean,
-  input: ProcessDefInput,
-): Promise<ProcessDefInput> =>
-  slotted || tenantId === null ? Promise.resolve(input) : bindCompanyGroupKeys(tx, tenantId, input);
+  raw: ProcessDefInput,
+): Promise<ProcessDefInput> => {
+  const input = withNodeAssignee(raw);
+  return slotted || tenantId === null
+    ? Promise.resolve(input)
+    : bindCompanyGroupKeys(tx, tenantId, input);
+};
 
 /**
  * Mã → id Group của công ty (MỘT câu). KHỚP ĐÚNG MÃ (mặc định): lưu def công ty và mở lượt không bao giờ tự đổi nhóm duyệt.

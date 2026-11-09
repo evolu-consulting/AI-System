@@ -7,6 +7,7 @@ import { withPackScope } from "@ai/db/pack-scope";
 import {
   createPackUow,
   flowReceiveState,
+  formPrefillRegistry,
   moduleRegistry,
   orgForTenant,
   type PackAccessView,
@@ -21,13 +22,14 @@ import {
 import { fileboxClients, packFilebox } from "../packs.filebox";
 import { esignRepo } from "./adapters/esign.repo";
 import { type InboxItem, partnerInboxRepo } from "./adapters/partner-inbox.repo";
+import { partnerPrefill } from "./adapters/partner-prefill";
 import { type PartnerSendRepo, partnerSendRepo } from "./adapters/partner-send.repo";
 import { partnerSendTool } from "./adapters/partner-send.tool";
 import { FLOW_STARTING } from "./application/contract-flow.ports";
 import type { ESignFiles } from "./application/esign.ports";
 import { finalImportance, importanceByValue, sharedValueOf } from "./domain/partner-send.rules";
 import { PARTNER_FEATURE } from "./nav.mount";
-import { partnerSendBinding } from "./nodes/partner-send/binding";
+import { PARTNER_SEND_KEY, partnerSendBinding } from "./nodes/partner-send/binding";
 
 const PACK = "contracts";
 
@@ -180,6 +182,7 @@ export function mountPartnerSend(
   d.packTools?.register(tool);
   moduleRegistry.bindTool(tool);
   moduleRegistry.bindNode(partnerSendBinding());
+  formPrefillRegistry.register(PARTNER_SEND_KEY, partnerPrefill(uow)); // CR-126 · bước «Chọn đối tác & người nhận»
   const fb = filesOverride === undefined ? packFilebox(d.packs) : null;
   const files = filesOverride !== undefined ? filesOverride : fb ? fileboxClients(fb) : null;
   const pdfUow = createPackUow(db, PACK, (tx: Tx, t: string) => ({

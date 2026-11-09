@@ -8,7 +8,9 @@
             "tool": {
               "PARTNER_FEATURE_OFF": "the company has not turned on Send to partner for confirmation — ask the platform admin to enable it, then press Retry",
               "PARTNER_CHANNEL_OFF": "the partner sending channel is not turned on in the system — tell the platform admin, then press Retry",
-              "PARTNER_NEEDS_FILE": "the contract has no file to send to the partner — upload one, then press Retry"
+              "PARTNER_NEEDS_FILE": "the contract has no file to send to the partner — upload one, then press Retry",
+              "PARTNER_NOT_IN_COMPANY": "the chosen partner is not in the company's partner list — choose the partner again, then press Retry",
+              "PARTNER_EMAIL_INVALID": "the recipient email is not valid — fix it (e.g. name@company.com), then press Retry"
             }
           }
         }
