@@ -1,17 +1,51 @@
-// CR-126 · «Chọn đối tác & người nhận» · DB thật: (b) tool gửi dùng người nhận ĐÃ CHỌN, không phải mặc định của HĐ; (c) chọn đối tác của công
+﻿// CR-126 · «Chọn đối tác & người nhận» · DB thật: (b) tool gửi dùng người nhận ĐÃ CHỌN, không phải mặc định của HĐ; (c) chọn đối tác của công
 // ty khác ⇒ lỗi nghiệp vụ PARTNER_NOT_IN_COMPANY, không ghi lần gửi nào; email sai dạng ⇒ PARTNER_EMAIL_INVALID; điền sẵn = đối tác + email
 // của HĐ, danh sách = đối tác của CHÍNH công ty.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db } from "@ai/db";
-import { contracts, tenants, users } from "@ai/test-kit/builders";
+import { withHubScope } from "@ai/db/hub-scope";
+import {
+  contracts,
+  department,
+  enablePack,
+  members,
+  tenants,
+  users,
+  visibility,
+} from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
+import { connectDb, type Db as HubDb } from "../../../lib/db";
+import {
+  registerFactsReader,
+  registerOutcomeHandler,
+  unregisterFlowPorts,
+} from "../../processes/adapters/runs/flow-ports";
+import type { ProcessDeps } from "../../processes/core/ports";
+import { createStageLauncher } from "../../processes/runs/launcher";
+import { packRunsOf } from "../../processes/runs/pack-runs";
+import { dispatchOnce } from "../../processes/triggers/dispatcher";
+import { setFlowTriggers } from "../../processes/triggers/flags";
+import { flowLaunchOf } from "../../processes/triggers/flow-launch";
 import { createPackUow } from "../kit/adapters/pack-uow";
-import type { PackToolCtx } from "../kit/public";
+import { formPrefillRegistry, type PackToolCtx } from "../kit/public";
 import { esignRepo } from "./adapters/esign.repo";
 import { partnerPrefill } from "./adapters/partner-prefill";
 import { partnerSendRepo } from "./adapters/partner-send.repo";
 import { partnerSendTool } from "./adapters/partner-send.tool";
+import { PARTNER_SEND_KEY } from "./nodes/partner-send/binding";
+import {
+  actApproval,
+  approvalEngineRepo,
+  approvalRepo,
+  contractFlowRepo,
+  contractsFactsReader,
+  contractsOutcomeHandler,
+  engineCard,
+  flowViewOfCard,
+  getApproval,
+  startApproval,
+} from "./testing";
 
 let o: Sql;
 let db: Db;
@@ -165,5 +199,181 @@ describe("CR-126 · fix4 · đối tác của CÔNG TY, không theo quyền xem 
       "PARTNER_NOT_IN_COMPANY",
     );
     expect(await sendsOf(CC)).toBe(before);
+  });
+});
+
+describe("CR-126 · trang chi tiết HĐ · thẻ duyệt/FlowView mang prefill của bước chọn đối tác", () => {
+  const TAX_D = "0108888881";
+  const TAX_D2 = "0108888882";
+  let D = "";
+  let UAs = ""; // người tạo HĐ
+  let UM = ""; // nhóm phụ trách gửi đối tác (can_act)
+  let GM = "";
+  let CD = "";
+  let edb: HubDb;
+  const nodeBase = (key: string, name: string, step: number) => ({
+    key,
+    name,
+    step,
+    instruction: "",
+    output: { filename: `${key}.md`, template: "x", required_sections: ["x"], fields: [] },
+    real_action: false,
+    answerer: { kind: "starter" },
+    token_budget: null,
+    node: PARTNER_SEND_KEY,
+  });
+  const STAGES = () => [
+    {
+      ...nodeBase("chon-doi-tac", "Chọn đối tác & người nhận", 0),
+      executor: {
+        kind: "form",
+        fields: [
+          {
+            key: "partner_tax_code",
+            label: "Đối tác",
+            type: "select",
+            required: true,
+            options: [],
+            options_from: "company_partners",
+          },
+          { key: "partner_email", label: "Email", type: "text", required: true, max_len: 254 },
+        ],
+      },
+      after: {
+        kind: "review",
+        group_id: null,
+        group_key: "pb-doi-tac",
+        back_to_steps: [],
+        remind_every_h: null,
+        escalate: null,
+        branch: [],
+        exclude_starter: false,
+      },
+    },
+    {
+      ...nodeBase("gui", "Gửi", 1),
+      real_action: true,
+      executor: { kind: "tool", tool_key: "contracts-partner-send", args: {} },
+      after: { kind: "auto", branch: [] },
+    },
+    {
+      ...nodeBase("cho", "Chờ phản hồi", 2),
+      executor: { kind: "wait_event", event: "partner.confirmed", timeout_h: 24 },
+      after: { kind: "auto", branch: [] },
+    },
+  ];
+  const pipe: unknown = new Proxy(
+    {},
+    { get: (_, k) => (k === "exec" ? async () => [] : () => pipe) },
+  );
+  function deps(): ProcessDeps {
+    const d = {
+      db: edb,
+      config: {
+        user: async (uid: string) => ({
+          active: true,
+          groupIds: new Set<string>(uid === UM ? [GM] : []),
+        }),
+        poll: async () => {},
+        catalog: async () => ({
+          features: [{ id: "f-partner", key: "contracts-partner-confirm", status: "on" }],
+          entitled: new Set([`${D}:f-partner`]),
+          grantGroups: new Map(),
+        }),
+      },
+      redis: { pipeline: () => pipe },
+      notifier: new Proxy({}, { get: () => async () => [] }),
+      log: { warn: () => {}, info: () => {}, error: () => {} },
+      now: () => new Date(),
+      runsPerTenant: 100,
+      postThread: async () => {},
+    } as unknown as ProcessDeps & { launcher: unknown };
+    d.launcher = createStageLauncher(d as never);
+    return d;
+  }
+  const dUow = () =>
+    createPackUow(edb, "contracts", (tx, tid) => ({
+      approval: approvalRepo(tx, tid),
+      approvalEngine: approvalEngineRepo(tx, tid),
+      contractFlow: contractFlowRepo(tx, tid),
+    }));
+  function ad() {
+    const port = packRunsOf(deps());
+    const u = dUow();
+    const jobs = { enqueue: async () => {} };
+    return {
+      uow: u,
+      flow: { prepare: async () => ({ on: true, departments: null }) },
+      jobs,
+      groups: {
+        idsOf: async () => new Map(),
+        userGroups: async () => new Set(),
+        actionsOf: async () => new Set(["read", "write"]),
+      },
+      card: engineCard({ port: () => port, uow: u, jobs } as never),
+    } as never;
+  }
+  type PCard = { can_act: boolean; steps: { kind: string; form?: { prefill?: unknown } }[] };
+  const cardOf = (userId: string) =>
+    getApproval(ad())({ tenantId: D, userId }, CD) as Promise<PCard | null>;
+
+  beforeAll(async () => {
+    edb = connectDb(urls().hubApi, 6);
+    [D] = (await tenants(o, 1, 1380)) as [string];
+    [UAs, UM] = (await users(o, D, 2, { from: 1380 })) as [string, string];
+    const roles = (await enablePack(o, [D], "contracts")).get(D);
+    await members(o, D, roles?.editor as string, [UAs]);
+    await members(o, D, roles?.viewer as string, [UM]);
+    await visibility(o, [D], "org");
+    await department(o, D, "pb-kd", { head: UAs, members: [UAs] });
+    GM = await department(o, D, "pb-doi-tac", { head: UM, members: [UM] });
+    CD = await contractWith(D, UAs, 1380, TAX_D, "mac-dinh@doitacd.vn");
+    await o`update contracts.contracts set status = 'needs_review' where id = ${CD}`;
+    await o`insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from, created_by)
+      values (${D}, ${`tax:${TAX_D2}`}, 'supplier', 'Đối tác D2', 'manual', ${UAs})`;
+    const st = JSON.stringify(STAGES());
+    const [r] = await o<
+      { id: string }[]
+    >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app, published_version, enabled)
+      values (null, 'cr126-partner-pick', 'Gửi đối tác', ${st}::text::jsonb,
+      '{"event":"contract.submitted"}'::jsonb, 'contracts', 1, true) returning id::text as id`;
+    const lib = r?.id as string;
+    await o`insert into hub.process_def_releases (def_id, rel_version, name, stages) values (${lib}, 1, 'Gửi đối tác', ${st}::text::jsonb)`;
+    await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${D}, ${lib}, true)`;
+    await withHubScope(edb, { kind: "system" }, (tx) => setFlowTriggers(tx, D, true));
+    registerOutcomeHandler(contractsOutcomeHandler());
+    registerFactsReader(contractsFactsReader(edb));
+    formPrefillRegistry.register(PARTNER_SEND_KEY, partnerPrefill(uow())); // như `mountPartnerSend`
+    const wa = { tenantId: D, userId: UAs };
+    expect(await startApproval(ad())(wa, CD, "level1")).toBe("ok");
+    expect(await actApproval(ad())(wa, CD, { action: "approve" })).not.toHaveProperty("error");
+    expect(await dispatchOnce({ db: edb, launch: flowLaunchOf(deps()) })).toMatchObject({
+      launched: 1,
+    });
+  }, 120_000);
+  afterAll(async () => {
+    unregisterFlowPorts("contracts");
+    await edb?.close();
+  });
+
+  it("người được giao (can_act): thẻ + FlowView có prefill = đối tác của công ty + mặc định của HĐ", async () => {
+    const card = (await cardOf(UM)) as PCard;
+    expect(card.can_act).toBe(true);
+    const step = card.steps.find((s) => s.kind === "form");
+    expect(step).toBeDefined();
+    const view = flowViewOfCard(card as never, CD, 1);
+    const prefill = view.tasks[0]?.prefill;
+    const vals = (prefill?.field_options.partner_tax_code ?? []).map((x) => x.value);
+    expect(vals).toEqual(expect.arrayContaining([TAX_D, TAX_D2]));
+    expect(prefill?.field_defaults.partner_tax_code).toBe(TAX_D);
+  });
+
+  it("người không được giao: không có prefill (không lộ danh sách đối tác)", async () => {
+    {
+      const card = (await cardOf(UAs)) as PCard; // người tạo HĐ: xem được thẻ nhưng không quyết bước
+      expect(card.can_act).toBe(false);
+      expect(card.steps.find((s) => s.kind === "form")?.form?.prefill).toBeUndefined();
+      expect(flowViewOfCard(card as never, CD, 1).tasks).toEqual([]);
+    }
   });
 });
