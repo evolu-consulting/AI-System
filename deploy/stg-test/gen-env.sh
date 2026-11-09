@@ -4,7 +4,10 @@
 # Email: HUB_NOTIFY_MODE=off va khong co SMTP_PASSWORD/HUB_SMTP_* => khong gui mail that di dau ca.
 set -euo pipefail
 cd "$(dirname "$0")"
-[ -f .env ] && { echo "gen-env: .env da co - giu nguyen"; exit 0; }
+# .env da co: giu nguyen khoa/mat khau, chi BO SUNG khoa cau hinh moi (idempotent).
+ensure() { grep -q "^$1=" .env || { echo "$1=$2" >> .env; echo "gen-env: them $1=$2"; }; }
+# Module quy trinh mo cho MOI nguoi dung (Yeu cau, Viec cua toi, duyet/ky): vang => `off` (HUB_FROZEN_MODULES mac dinh off) => 404.
+[ -f .env ] && { ensure HUB_PROCESS_ROUTES all; echo "gen-env: .env da co - giu nguyen"; exit 0; }
 [ "${1:-}" = "--dry-run" ] && { echo "gen-env[dry-run]: se tao .env (600) + ADMIN.pw + DEMO_OWNER.pw (600) + data/ out/; cong 127.0.0.1:28541..28544; URL https://{app-test,ai-test,ai-test-admin,ai-test-hub}.<domain>"; exit 0; }
 umask 077
 D="${S2_BASE_DOMAIN:-evoluconsulting.com}"
@@ -63,6 +66,7 @@ HUB_NOTIFY_BASE_URL=$U_C
 HUB_NOTIFY_MODE=off
 HUB_SEED_FIXTURES=1
 HUB_PROCESS_ENGINE=on
+HUB_PROCESS_ROUTES=all
 ESIGN_PROVIDERS=selfsign
 CONTRACTS_APPROVAL_ENGINE=on
 AI_PROVIDER=subscription
