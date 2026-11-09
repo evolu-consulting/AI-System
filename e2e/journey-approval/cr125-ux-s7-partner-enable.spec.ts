@@ -243,7 +243,7 @@ test("3 · công ty A gửi hợp đồng cho B: B thấy ở hộp thư đối 
     "Chờ công ty bạn xác nhận",
   );
   await b.screenshot({ path: shot("b-inbox"), fullPage: true });
-  await expectMailboxTo(id, chosen);
+  await expectMailboxTo(id, chosen, EB.tenantKey);
   await card.getByRole("link", { name: "Mở" }).click();
   await b.waitForURL(/\/contracts\/c\/[0-9a-f-]{36}/);
   const inboxId = /\/contracts\/c\/([0-9a-f-]{36})/.exec(b.url())?.[1] ?? "";

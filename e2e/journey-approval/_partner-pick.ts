@@ -69,13 +69,30 @@ export async function pickPartnerAndSend(
 }
 
 /**
- * Thư tới đúng email ĐÃ CHỌN: stack e2e không có SMTP ⇒ kiểm hộp thư đi (`hub.partner_mailbox`, nguồn của bộ gửi thư) của hợp đồng `contractId`
- * có người nhận = email chọn và KHÔNG có dòng nào gửi tới email điền sẵn cũ.
+ * Lần gửi đi đúng người nhận ĐÃ CHỌN (hộp thư đi `hub.partner_mailbox` của hợp đồng `contractId`; stack e2e không có SMTP):
+ * - kênh `email` ⇒ người nhận = email chọn;
+ * - kênh `platform` (công ty nhận có trên nền tảng — CR-124: email chỉ là kênh dự phòng, `to_email` để trống) ⇒ tới đúng công ty `toTenantKey`.
+ * Cả hai: KHÔNG có dòng nào gửi tới email khác email chọn (vd email điền sẵn cũ).
  */
-export async function expectMailboxTo(contractId: string, chosen: string): Promise<void> {
+export async function expectMailboxTo(
+  contractId: string,
+  chosen: string,
+  toTenantKey: string,
+): Promise<void> {
   const rows = await withOwner(
-    (sql) => sql<{ to_email: string | null }[]>`select to_email from hub.partner_mailbox
-      where from_ref = ${contractId} and to_email is not null`,
+    (sql) => sql<{ channel: string; to_email: string | null; to_key: string | null }[]>`
+      select m.channel, m.to_email, t.key as to_key from hub.partner_mailbox m
+      left join admin.tenants t on t.id = m.to_tenant
+      where m.from_ref = ${contractId}`,
   );
-  expect(rows.map((r) => r.to_email)).toEqual([chosen]);
+  expect(rows.length).toBeGreaterThan(0);
+  expect(rows.filter((r) => r.to_email !== null && r.to_email !== chosen)).toEqual([]);
+  for (const r of rows) {
+    if (r.channel === "email") expect(r.to_email).toBe(chosen);
+    else
+      expect({ channel: r.channel, to: r.to_key }).toEqual({
+        channel: "platform",
+        to: toTenantKey,
+      });
+  }
 }

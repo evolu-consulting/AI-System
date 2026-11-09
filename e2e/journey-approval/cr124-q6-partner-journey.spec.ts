@@ -217,7 +217,7 @@ test("1 · gửi lần đầu: giữ chờ kết nối → B nhận lời mời 
     "Chờ công ty bạn xác nhận",
   );
   await b.screenshot({ path: shot("b-inbox"), fullPage: true });
-  await expectMailboxTo(id, chosen); // thư đi tới email người dùng đã chọn ở bước «Chọn đối tác & người nhận»
+  await expectMailboxTo(id, chosen, EB.tenantKey); // thư đi tới email người dùng đã chọn ở bước «Chọn đối tác & người nhận»
   await card.getByRole("link", { name: "Mở" }).click();
   await b.waitForURL(/\/contracts\/c\/[0-9a-f-]{36}/);
   const inboxId = /\/contracts\/c\/([0-9a-f-]{36})/.exec(b.url())?.[1] ?? "";
