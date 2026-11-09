@@ -22,6 +22,7 @@ const KNOWN = new Set([
   "PROCESS_PUBLISH_INVALID",
   "SLOT_SHAPE_UNSUPPORTED",
   "SLOT_GROUPS_MISSING",
+  "NODE_ASSIGNEE_MISSING", // CR-126 · bước người làm trong node (vd Gửi đối tác) chưa chọn nhóm phụ trách
   "SLOT_BODY_INVALID",
   "SLOT_UNKNOWN",
   // CR-121 c17 · Sao chép cho công ty này

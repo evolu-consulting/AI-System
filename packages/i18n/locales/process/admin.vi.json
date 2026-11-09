@@ -665,6 +665,7 @@
     "PROCESS_PUBLISH_INVALID": "Quy trình chưa hợp lệ để xuất bản. Xem chỗ sai bên dưới.",
     "SLOT_SHAPE_UNSUPPORTED": "Vị trí quy trình này chỉ nhận các bước tuần tự (không song song, không nhánh). Sửa lại ở Sơ đồ.",
     "SLOT_GROUPS_MISSING": "Có công ty chưa có phòng ban mà quy trình cần. Thêm phòng ban đó ở Người dùng › Phòng ban rồi lưu lại.",
+    "NODE_ASSIGNEE_MISSING": "Chọn nhóm phụ trách cho bước Gửi đối tác xác nhận (mở bước, mục Nhóm phụ trách gửi đối tác) rồi lưu lại.",
     "SLOT_BODY_INVALID": "Nội dung Form chưa hợp lệ. Xem chỗ sai bên dưới.",
     "SLOT_UNKNOWN": "Loại việc này chưa có trên hệ thống. Bật ứng dụng tương ứng cho công ty, hoặc nhờ quản trị nền tảng bổ sung.",
     "NOT_LIBRARY_DEF": "Quy trình này là bản riêng của công ty, không phải quy trình dùng chung. Mở nó để sửa trực tiếp.",

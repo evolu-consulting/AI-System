@@ -18,7 +18,8 @@ export async function withFormPrefill(
   nodeOf: (idx: number) => string | undefined,
   q: { tenantId: string; userId: string; recordId: string | null },
 ): Promise<PackStepView[]> {
-  const at = steps.findIndex((s) => s.form && s.task && s.status === "open");
+  // Chỉ người QUYẾT ĐƯỢC bước (can_act của engine) mới nhận danh sách đối tác/email — người xem lượt (người tạo, quan sát) không.
+  const at = steps.findIndex((s) => s.form && s.task?.can_act === true && s.status === "open");
   const step = steps[at];
   const resolve = step ? formPrefillRegistry.of(nodeOf(step.idx)) : undefined;
   if (!step?.form || !resolve) return steps;

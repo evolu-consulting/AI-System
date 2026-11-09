@@ -1,7 +1,14 @@
 // CR-122 · P15 · def CÔNG TY chỉ nhận id Group. Client cũ / bản sao từ Thư viện có thể còn mã (`group_key`) ⇒ đổi sang id của
 // chính công ty bằng đúng luật lúc chạy (`bindGroupKeys`). Mã không có nhóm ở công ty ⇒ 422 nói rõ mã (không để lọt tới PROCESS_REF_INVALID).
 import type { ProcessDefInput } from "@ai/contracts/hub-admin";
-import { applyNodeAssignee, groupKeyCandidates, MODULES, mapGroupKey } from "@ai/contracts/modules";
+import {
+  applyNodeAssignee,
+  groupKeyCandidates,
+  MODULES,
+  mapGroupKey,
+  nodeAssigneeMessage,
+  nodeAssigneeNeeds,
+} from "@ai/contracts/modules";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { AppError } from "../../../lib/errors";
@@ -17,10 +24,18 @@ export function isLibraryDef(
 }
 
 /** CR-126 · nhóm phụ trách của node module (cấu hình node) ⇒ `after.group_*` của stage người làm trong cụm — tính lại mỗi lần lưu. */
-export const withNodeAssignee = (input: ProcessDefInput): ProcessDefInput => ({
-  ...input,
-  stages: applyNodeAssignee(input.stages, MODULES),
-});
+export const withNodeAssignee = (input: ProcessDefInput): ProcessDefInput => {
+  // Quy trình BẬT mà node có bước người làm chưa chọn nhóm phụ trách ⇒ bước đó sẽ không ai nhận ⇒ chặn lưu với câu nghiệp vụ.
+  const miss = input.enabled
+    ? nodeAssigneeNeeds(input.stages, MODULES).find((n) => !n.group)
+    : undefined;
+  if (miss)
+    throw new AppError("NODE_ASSIGNEE_MISSING", 422, nodeAssigneeMessage(miss.label), {
+      stage: miss.stage,
+      node: miss.node,
+    });
+  return { ...input, stages: applyNodeAssignee(input.stages, MODULES) };
+};
 
 /** `slotted` (đường khe / bản riêng) hoặc def mẫu (tenant null) ⇒ giữ nguyên; còn lại là def công ty ⇒ mã → id. */
 export const bindIfCompany = (
