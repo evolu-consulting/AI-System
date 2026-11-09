@@ -29,7 +29,7 @@ HD4 locks, P-b2 race, subprocess, hub-uow — xanh.
   vòng nhắc `FOR KEY SHARE`), vẫn nhường tx đang đổi trạng thái run.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Lượt quá hạn hết hạn ở lượt quét kế dù tin thread đang đăng

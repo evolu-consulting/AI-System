@@ -271,11 +271,24 @@ Mục dưới thắng nội dung cũ cùng chủ đề ở trên (kể cả §1c
 ### Dữ liệu HĐ của lượt duyệt, tên HĐ, id lượt chạy (cr121-f5-notify-vars, cr121-q4-contract-name, cr121-f2)
 - Trước mỗi lần Đạt, gói cập nhật input lượt (số HĐ, tên, giá trị, người phụ trách, ngày) theo HĐ hiện tại; bản cũ không đè bản mới; lượt đã kết thúc/bản ghi khác không đổi; quy trình không có bước đọc dữ liệu HĐ thì bỏ qua. Thông báo sau bước duyệt dùng số và tên đã xác nhận.
 - Tên HĐ một nguồn: mọi nơi (danh sách, chi tiết, Việc của tôi, Chờ tôi duyệt, nhật ký, nhãn lượt, thông báo, sắp xếp theo tên) dùng trường "Tên hợp đồng"; chỉ khi trống mới dùng tên file lúc tải. Định nghĩa SQL duy nhất `contractNameSql` (`adapters/contract-name.sql.ts`); script `check-contract-name` chặn tự viết lại biểu thức hoặc đọc thô `c.title`.
+  - Kịch bản: khi hiển thị tên HĐ ở danh sách, Việc của tôi, nhật ký, nhãn thì ra trường "Tên hợp đồng" [test: apps/hub-api/src/modules/packs/contracts/adapters/contract-name.int.test.ts » danh sách + chi tiết HĐ trả tên thật, sắp xếp theo tên thật (không theo tên file)]
 - Thẻ duyệt của lượt engine trả thêm `engine_run_id` (khác `run_id` = lượt duyệt của gói); trang "Chi tiết lượt chạy" của quản trị mở bằng id này; tenant_admin công ty khác nhận 404.
 - Còn lệch: `contract_delete_log.title` (dòng audit khi xoá HĐ, ghi bởi hàm SQL trong migration) vẫn là tên file; HĐ cũ chưa có "Tên hợp đồng" ra tên file (đúng thiết kế: trống ⇒ tên file).
 
 ### Mục "Chờ tôi duyệt" (cr121-c7-approval-inbox-nav)
 Người có vai duyệt trong quy trình duyệt HĐ đang gán (hoặc đang có việc chờ) thấy mục "Chờ tôi duyệt" kèm số HĐ chờ sau "Hợp đồng"; mở ra danh sách HĐ chờ quyết. Rỗng ⇒ nói rõ vì sao và bước tiếp theo, kèm liên kết xem tất cả HĐ. Người khác không thấy; số chỉ đếm trong công ty.
+
+#### Yêu cầu: Một hộp «Việc của tôi» (nguồn: cr126-one-inbox, cr126-inbox-draft-row)
+Mục «Việc của tôi» (đường dẫn `/contracts/approvals`) luôn hiện cho mọi người; liệt kê mọi việc mở người đó làm được: duyệt/ký HĐ, bước yêu cầu và quy trình (kể cả run con), phiếu cần điền. Mỗi dòng: tên quy trình/HĐ, tên bước, mở. Số đỏ = số dòng. Mục «Tạo yêu cầu» tên «Yêu cầu» và chỉ còn danh sách loại yêu cầu bắt đầu được. Dòng mà task thuộc một run quy trình/yêu cầu mở `/contracts/requests/<runId>` (nơi có nút duyệt); dòng duyệt HĐ không thuộc run mở thẻ HĐ.
+- Kịch bản: khi task đã có ở danh sách duyệt HĐ thì không đếm hai lần [test: apps/workspace-web/src/features/requests/lib/waiting.test.ts » CR-126 · task đã có ở danh sách duyệt HĐ (skip) không đếm hai lần trong hộp «Việc của tôi»]
+- Kịch bản: khi người không có vai duyệt thì vẫn thấy «Việc của tôi» sau Hợp đồng và Yêu cầu [test: apps/workspace-web/src/shell/use-flow-caps.test.ts » CR-126 · «Việc của tôi» luôn hiện (không cần vai duyệt), đứng sau Hợp đồng + Yêu cầu]
+- Kịch bản: khi task duyệt thuộc một run thì dòng mở trang yêu cầu của run, không thì mở thẻ HĐ [test: apps/workspace-web/src/features/overview/lib/approvals.test.ts » CR-126 · task thuộc run mở trang yêu cầu của run, không có run mở thẻ HĐ]
+
+#### Yêu cầu: «Việc của tôi» nói rõ điều đang duyệt (nguồn: cr126-inbox-ceo)
+Mỗi dòng là một kiểu chung cho ký, duyệt HĐ và việc yêu cầu: nhãn bước, rồi «quy trình · đối tác/NCC · số tiền · người đề xuất · ngày» lấy từ phiếu của lượt (phần thiếu thì bỏ; `GET /me/review-tasks` trả `process_run.request {title, partner, amount}`, lượt con lấy phiếu lượt cha). Sắp theo hạn gần nhất, rồi việc chờ lâu nhất. Chip «Tất cả · Cần duyệt · Cần ký» lọc danh sách. Dòng duyệt HĐ ngoài lượt quy trình chỉ có «số · tên HĐ».
+- Kịch bản: khi lượt có phiếu thì `/me/review-tasks` trả số tiền của phiếu (lượt con lấy phiếu lượt cha) [test: apps/hub-api/src/modules/processes/nodes/subprocess/purchase-child-task.int.test.ts » CR-126 · việc đầu của lượt con hiện trong «Chờ tôi duyệt»]
+- Kịch bản: khi phiếu có ô tiền và ô nhà cung cấp thì tóm tắt lấy đúng hai ô, thiếu thì null [test: apps/hub-api/src/modules/processes/notify/task-request-summary.test.ts » requestSummary]
+- Kịch bản: khi có việc ký, duyệt, yêu cầu thì sắp hạn trước rồi chờ lâu nhất và chip lọc đúng [test: apps/workspace-web/src/features/overview/lib/inbox.test.ts » inbox rows]
 
 ## CR-120/121 · Delta gộp 2026-11-09 (đợt cr125-wave)
 

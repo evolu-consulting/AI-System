@@ -22,7 +22,7 @@ Rà bằng Grep + `bun run check:contract-name` (sạch): các chỗ trong danh 
 Không đổi code: mã đã đúng; lát chỉ sửa docs.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Tên HĐ một nguồn

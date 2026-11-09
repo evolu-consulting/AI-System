@@ -22,6 +22,6 @@ evotest journey-purchase xanh.
 Nguyên nhân là test (không phải lỗi sản phẩm).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 Không thay đổi hành vi (lý do: e2e hành trình)

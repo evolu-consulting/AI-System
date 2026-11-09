@@ -23,6 +23,6 @@ Chạy evotest e2e journey-approval + journey-purchase một lần.
 Không ca nào chia trang giữa các ca ⇒ đóng context theo từng ca an toàn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 Không thay đổi hành vi (lý do: e2e hành trình)

@@ -28,7 +28,7 @@ unit `request-view.test.ts`; không e2e trong lát (testid request-approve… gi
 - NewRequestPage không đổi (lời sau gửi hiện ở trang yêu cầu sau khi chuyển trang).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 ### MODIFIED engine/manual-start-ui.md
 #### Yêu cầu: Trang yêu cầu nói rõ ai đang giữ việc và cho làm việc ngay đầu trang (nguồn: cr126-request-page)

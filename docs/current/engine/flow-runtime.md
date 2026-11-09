@@ -190,3 +190,7 @@ Hành động `contracts.approval` qua flow gọi CÙNG use case thẻ duyệt, 
 
 #### Yêu cầu: Rẽ theo dữ kiện hiện tại của HĐ (nguồn: cr121-d1-facts)
 Tool `contracts-route`/`contracts-finalize` xét điều kiện bước trên loại HĐ, giá trị, phòng ban người bắt đầu lượt (gồm phòng cha, `creator_department in [...]`) và đối tác mới (HĐ chưa gắn đối tác hoặc chưa có HĐ duyệt cùng đối tác ⇒ mới), đọc lại mỗi lần rẽ (sửa giá trị giữa lượt có hiệu lực ở lần rẽ sau); thiếu dữ liệu ⇒ bước chạy; không đọc dữ liệu tenant khác. `contracts-finalize` kiểm lại cùng dữ kiện. Code: `packs/contracts/adapters/flow-facts.repo`.
+
+#### Yêu cầu: Lượt quá hạn hết hạn ở lượt quét kế dù tin thread đang đăng (nguồn: cr126-expire-race)
+Lượt quá hạn (`expires_at` đã qua) chỉ được để lượt sau khi một thao tác đang đổi trạng thái lượt giữ nó (`claimExpired` khoá `FOR NO KEY UPDATE SKIP LOCKED`); việc đăng tin thread hay chèn dữ liệu con của lượt (`lockEventRun` khoá `FOR KEY SHARE`) không làm lượt quét hết hạn bỏ qua lượt đó.
+- Kịch bản: khi bước vừa xong chuyển lượt quá hạn sang chờ duyệt (tin thread đang đăng) thì lượt quét kế đặt lượt thành hết hạn [test: tests/acceptance/P-a/pf1/lock-order.int.test.ts » P1-48e · ×20: job stage xong (apply) ∥ sweepOnce (hết hạn) ⇒ cuối cùng expired]

@@ -25,7 +25,7 @@ Không chạm inbox, RequestPage, RequestStepsTree, RunStepActions, NewRequestPa
 - Nhóm trạng thái: đang chạy ⇒ Đang chờ (kèm tên người/nhóm của task mở); done ⇒ Đã hoàn tất (trừ khi quyết âm gần nhất là reject); kết thúc khác: Trả lại (fail) ⇒ Bị trả lại, còn lại ⇒ Từ chối.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 ### MODIFIED engine/manual-start-ui.md
 #### Yêu cầu: Trang «Yêu cầu» liệt kê yêu cầu mình đã gửi và mô tả loại yêu cầu (nguồn: cr126-requests-mine)

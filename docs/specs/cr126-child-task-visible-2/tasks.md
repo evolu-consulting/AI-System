@@ -26,7 +26,7 @@ Không đổi hub. Không chạy e2e.
 - Lỗi tải dùng lại nhãn `contracts.requests.loadError` (không thêm khoá i18n).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 Không thay đổi hành vi (lý do: sửa lỗi hiển thị trạng thái tải/lỗi của danh sách «Việc chờ tôi»; dữ liệu và luật lọc giữ nguyên).
 

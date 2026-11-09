@@ -23,7 +23,7 @@ Không sửa e2e (agent khác); không DLC.
 Thành viên cũ do xoay vòng (nếu có trên DB đã seed) giữ nguyên; chỉ thêm. Mọi dòng cùng duyệt có giám đốc + kế toán nên ≥ 2 người khác nhau.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 ### MODIFIED engine/seed-cau-hinh-cong-ty.md
 #### Yêu cầu: Công ty mẫu demo chạy trọn «Quy trình mua hàng» ngay sau seed (nguồn: cr126-demo-purchase-seed)

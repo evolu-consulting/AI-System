@@ -24,7 +24,7 @@ unit `task-request-summary.test.ts`, `inbox.test.ts`; int: `purchase-child-task.
 - «Cần duyệt» = mọi việc không phải ký.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: «Việc của tôi» nói rõ điều đang duyệt

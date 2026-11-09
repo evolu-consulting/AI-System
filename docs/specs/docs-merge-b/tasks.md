@@ -18,6 +18,6 @@ Gộp cuối đợt cr125-wave: engine/** (docs-B).
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 Không thay đổi hành vi (lý do: chỉ gộp Delta các lát cr115–cr125 vào docs/current, không đổi code)

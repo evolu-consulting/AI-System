@@ -28,7 +28,7 @@ Không đổi engine/endpoint. Không chạy e2e (đợt cuối).
 - Sửa ở bước chuẩn bị e2e (đường SQL bỏ qua admin-api), không thêm đọc nhóm trực tiếp DB ở hub (giữ một nguồn: cache cấu hình).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 Không thay đổi hành vi (lý do: engine/endpoint giữ nguyên; chỉ tách hàm báo cache của seed và sửa bước chuẩn bị + câu dump của e2e).
 

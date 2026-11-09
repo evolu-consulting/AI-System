@@ -23,7 +23,7 @@ unit `waiting.test.ts`, `use-flow-caps.test.ts`; e2e viết lại, không chạy
 - Mục «Việc của tôi» luôn hiện; thanh dưới điện thoại giữ mục «Việc của tôi» riêng ⇒ mục menu là `more`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Một hộp «Việc của tôi»

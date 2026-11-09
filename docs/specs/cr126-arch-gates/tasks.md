@@ -24,7 +24,7 @@ Unit của file đổi; tsc các gói đổi.
 Rest-tuple để không đổi chỗ gọi.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 Không thay đổi hành vi (lý do: refactor cấu trúc để qua cổng kiến trúc, không đổi hành vi)
 

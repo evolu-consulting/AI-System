@@ -25,7 +25,7 @@ Một int: sau `writeCr125Config`, def lượt con Phần 2 có `ky-so` với ng
 Dùng bản công ty (như UI) thay vì sửa runtime thư viện, vì id nhóm là theo công ty.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 ### MODIFIED engine/seed-cau-hinh-cong-ty.md
 #### Yêu cầu: Công ty mẫu gửi ký số được ở Phần 2 «Hợp đồng» (nguồn: cr126-seed-esign-signer)

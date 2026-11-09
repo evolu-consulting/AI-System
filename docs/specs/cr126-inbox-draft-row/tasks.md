@@ -23,7 +23,7 @@ Dòng duyệt HĐ trong «Việc của tôi» mở thẻ HĐ còn nháp (không 
 - Giữ một dòng cho một việc (dedupe theo task id); chỉ đổi nơi mở.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-09 (đợt cr126-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Một hộp «Việc của tôi»
