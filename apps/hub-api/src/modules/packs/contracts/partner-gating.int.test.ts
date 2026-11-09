@@ -41,6 +41,9 @@ beforeAll(async () => {
   [UA] = (await users(o, A, 1, { from: 1340 })) as [string];
   await o`update admin.tenants set legal_name = 'Công ty A', tax_code = '0109999997' where id = ${A}`;
   await o`update admin.tenants set legal_name = 'Công ty B', tax_code = '0101234569', directory_listed = true where id = ${b}`;
+  // CR-126 · đối tác chọn phải có trong sổ đối tác của công ty (guard PARTNER_NOT_IN_COMPANY) ⇒ B là đối tác của A.
+  await o`insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from)
+    values (${A}, 'tax:0101234569', 'customer', 'Công ty B', 'manual')`;
   C = await contracts(o, A, 3, { from: 1340, createdBy: UA, status: "active" });
   for (const [i, id] of C.entries()) {
     const fid = crypto.randomUUID();
