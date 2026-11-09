@@ -573,7 +573,6 @@
         "editFlow": "Chỉnh quy trình duyệt",
         "headOnly": "chỉ trưởng phòng",
         "decidedBy": "Quyết bởi {{name}}",
-        "approvedBy": "Duyệt bởi {{name}}, {{date}}",
         "overdue": "quá hạn {{n}} giờ",
         "left": "còn {{n}} giờ",
         "escalated": "đã chuyển cấp {{group}}",

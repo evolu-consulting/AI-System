@@ -573,7 +573,6 @@
         "editFlow": "Edit approval flow",
         "headOnly": "department head only",
         "decidedBy": "Decided by {{name}}",
-        "approvedBy": "Approved by {{name}}, {{date}}",
         "overdue": "{{n}} h overdue",
         "left": "{{n}} h left",
         "escalated": "escalated to {{group}}",

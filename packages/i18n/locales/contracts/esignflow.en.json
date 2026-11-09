@@ -107,6 +107,7 @@
       "left": "{{n}}h left",
       "escalatedTo": "Escalated to {{name}}",
       "decidedBy": "Decided by {{name}}",
+      "approvedBy": "Approved by {{name}}, {{date}}",
       "attention": "Needs action",
       "status": {
         "pending": "Pending",

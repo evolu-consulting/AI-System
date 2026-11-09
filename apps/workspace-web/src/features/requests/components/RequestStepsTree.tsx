@@ -76,7 +76,7 @@ export function RequestStepsTree({ node, depth = 0, ...p }: Props) {
       </h3>
       {open &&
         (hoisted ? (
-          <p className="m-0 text-caption text-dim">{t("contracts.requests.doneAbove")}</p>
+          <p className="m-0 text-caption text-dim">{t("contracts.requests.workAbove")}</p>
         ) : (
           <StepActions node={node} {...p} />
         ))}

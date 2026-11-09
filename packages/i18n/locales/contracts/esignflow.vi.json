@@ -107,6 +107,7 @@
       "left": "còn {{n}}h",
       "escalatedTo": "Chuyển cấp tới {{name}}",
       "decidedBy": "Người quyết: {{name}}",
+      "approvedBy": "Duyệt bởi {{name}}, {{date}}",
       "attention": "Cần xử lý",
       "status": {
         "pending": "Chưa tới",
