@@ -26,6 +26,8 @@ export type PortSchema<T extends z.ZodTypeAny = z.ZodTypeAny> = {
   schema: T;
   /** khoá trường ⇒ ô nhập; vắng ⇒ panel chung suy từ kiểu zod. */
   widgets?: Readonly<Record<string, PortWidget>>;
+  /** CR-126 · khoá vẫn nằm trong schema/args (tương thích) nhưng KHÔNG hiện ở panel cấu hình (đã có ở form của node). */
+  hidden?: readonly string[];
 };
 
 /** `base` = bước cơ bản của lõi (khớp def cũ theo `executor.kind`); `app` = node của một app (cần binding ở máy chủ). */

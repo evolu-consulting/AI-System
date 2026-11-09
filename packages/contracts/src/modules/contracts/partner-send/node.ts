@@ -25,6 +25,8 @@ export const PARTNER_SEND_NODE: FeatureNodeDecl = {
       message: "longtext",
       assignee_group: "group",
     },
+    // CR-126 · đối tác + email chọn ở bước «Chọn đối tác & người nhận» (form của node) ⇒ không còn ô trùng ở cấu hình; args cũ vẫn đọc được.
+    hidden: ["partner_tax_code", "partner_email"],
   },
   exits: [
     { key: "confirmed", label: { vi: "Đã xác nhận", en: "Confirmed" } },

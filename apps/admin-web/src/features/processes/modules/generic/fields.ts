@@ -84,15 +84,18 @@ export function readableKey(key: string): string {
 }
 
 /** Trường của cổng cấu hình; bỏ đầu vào của flow (`contract_id` — tự nối, không phải ô cấu hình của node). */
-const configEntries = (shape: Record<string, unknown>): [string, unknown][] =>
-  Object.entries(shape).filter(([k]) => k !== "contract_id");
+const configEntries = (
+  shape: Record<string, unknown>,
+  hidden: readonly string[] = [],
+): [string, unknown][] =>
+  Object.entries(shape).filter(([k]) => k !== "contract_id" && !hidden.includes(k));
 
 export function fieldsOf(port: PortSchema): PanelField[] {
   const root = unwrap(port.schema).core;
   const shape = defOf(root).shape;
   if (!shape) return [];
   const out: PanelField[] = [];
-  for (const [key, raw] of configEntries(shape)) {
+  for (const [key, raw] of configEntries(shape, port.hidden)) {
     const { core, required, description } = unwrap(raw);
     const d = defOf(core);
     const w = port.widgets?.[key] as PortWidget | "attachments" | undefined;

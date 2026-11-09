@@ -33,7 +33,7 @@ import {
   U,
   uploadAndOpen,
 } from "./_journey";
-import { expectMailboxTo, groupIdByKey, pickPartnerAndSend } from "./_partner-pick";
+import { expectMailboxTo, groupIdByKey, pickPartnerAndSend, seedPartner } from "./_partner-pick";
 import { expect, test } from "./_test";
 
 const need = (n: string): string => {
@@ -106,6 +106,7 @@ test.beforeAll(async () => {
     await createGroupWith(API, bAdmin, { key, name, usernames: [U.director, U.accounting] });
   await enableFlowTriggers(EB.tenantKey);
   await enableFlowTriggers(EA.tenantKey);
+  await seedPartner(EA.tenantKey, "0100000044", `Công ty Nhận S7B ${SFX}`); // đối tác của A cho danh sách chọn
   // Flow GỬI của A (mẫu Thư viện có bước «Gửi đối tác xác nhận»): dựng sẵn, gán SAU khi bật tính năng ở giao diện (readiness chặn gán khi chưa có tính năng).
   sendFlowId = await createLibraryFlow(HUB, platformSession.token, {
     key: `s7a-${SFX}`,
@@ -114,21 +115,20 @@ test.beforeAll(async () => {
     trigger: { event: "contract.submitted" },
     inputs: [{ key: "contract_id", label: "Hợp đồng", type: "text", required: true }],
     stages: [
-      approve("giam-doc", "Giám đốc duyệt", 0, "pb-giam-doc", { reject: 4, ret: 5 }),
+      approve("giam-doc", "Giám đốc duyệt", 0, "pb-giam-doc", { reject: 5, ret: 6 }),
       ...partnerSendNode(
         1,
         {
-          partner_tax_code: "0100000044",
           assignee_group: await groupIdByKey(EA.tenantKey, "pb-giam-doc"),
           send_fields: "total_value",
           reply_days: 7,
           message: "Xin quý công ty xác nhận hợp đồng",
         },
-        { returned: 5, declined: 4, expired: 4 },
+        { returned: 6, declined: 5, expired: 5 },
       ),
-      finish("da-xac-nhan", "Đã xác nhận", 3, "approved"),
-      finish("tu-choi", "Đối tác từ chối", 4, "rejected"),
-      finish("tra-lai", "Trả lại sửa", 5, "returned"),
+      finish("da-xac-nhan", "Đã xác nhận", 4, "approved"),
+      finish("tu-choi", "Đối tác từ chối", 5, "rejected"),
+      finish("tra-lai", "Trả lại sửa", 6, "returned"),
     ],
   });
 });

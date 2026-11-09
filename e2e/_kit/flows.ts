@@ -128,9 +128,30 @@ export function esignNode(step: number): Json[] {
 }
 
 /**
- * CR-124 · node «Gửi đối tác xác nhận» (`contracts.partner-send`): hai stage (tool gửi + chờ `partner.*`) cùng `node`; cấu hình là args HẰNG
- * của stage tool (cùng schema với panel). Trả lại / Từ chối / Hết hạn rẽ tới `goto.returned|declined|expired`.
+ * CR-124 · node «Gửi đối tác xác nhận» (`contracts.partner-send`): BA stage cùng `node` (CR-126: «Chọn đối tác & người nhận» (form, người làm) + tool gửi + chờ `partner.*`);
+ * cấu hình là args HẰNG của stage tool (cùng schema với panel; `assignee_group` = nhóm làm bước chọn — Hub ghi `after.group_*` của stage form khi lưu).
+ * KHÔNG đặt `partner_tax_code`/`partner_email` ở đây: giá trị do người chọn ở bước form (đặt hằng ⇒ thắng form). Trả lại / Từ chối / Hết hạn rẽ tới `goto.*`.
  */
+/** Trường của bước «Chọn đối tác & người nhận» — đúng khai báo stage form của node (`partner-send/node.ts`). */
+const PARTNER_PICK_FIELDS = [
+  {
+    key: "partner_tax_code",
+    label: "Đối tác",
+    type: "select",
+    required: true,
+    options: [],
+    options_from: "company_partners",
+  },
+  {
+    key: "partner_email",
+    label: "Email người nhận",
+    type: "text",
+    required: true,
+    max_len: 254,
+    format: "email",
+  },
+];
+
 export function partnerSendNode(
   step: number,
   cfg: Json,
@@ -141,7 +162,22 @@ export function partnerSendNode(
   );
   return [
     {
-      ...base("gui-doi-tac", "Gửi đối tác xác nhận", step),
+      ...base("chon-doi-tac", "Chọn đối tác & người nhận", step),
+      executor: { kind: "form", fields: PARTNER_PICK_FIELDS },
+      output: {
+        filename: "chon-doi-tac.md",
+        template: "x",
+        required_sections: ["x"],
+        fields: [
+          { key: "partner_tax_code", type: "string", required: false },
+          { key: "partner_email", type: "string", required: false },
+        ],
+      },
+      after: auto,
+      node: "contracts.partner-send",
+    },
+    {
+      ...base("gui-doi-tac", "Gửi đối tác xác nhận", step + 1),
       executor: {
         kind: "tool",
         tool_key: "contracts-partner-send",
@@ -152,7 +188,7 @@ export function partnerSendNode(
       node: "contracts.partner-send",
     },
     {
-      ...base("cho-doi-tac", "Chờ đối tác xác nhận", step + 1),
+      ...base("cho-doi-tac", "Chờ đối tác xác nhận", step + 2),
       executor: {
         kind: "wait_event",
         event: "partner.confirmed",

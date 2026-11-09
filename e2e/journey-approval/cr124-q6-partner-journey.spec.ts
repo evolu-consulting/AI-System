@@ -31,7 +31,7 @@ import {
 import { safeReload } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
 import { confirmAndSave, type Env, loginCw, stepOf, U, uploadAndOpen } from "./_journey";
-import { expectMailboxTo, groupIdByKey, pickPartnerAndSend } from "./_partner-pick";
+import { expectMailboxTo, groupIdByKey, pickPartnerAndSend, seedPartner } from "./_partner-pick";
 import { expect, test } from "./_test";
 
 const need = (n: string): string => {
@@ -159,6 +159,7 @@ test.beforeAll(async () => {
     idB,
     await libraryDefIdByName(HUB, platform, "Nhận HĐ thường"),
   );
+  await seedPartner(EA.tenantKey, TAX_B, `Công ty Nhận Q6B ${SFX}`); // đối tác của A (danh sách chọn ở bước «Chọn đối tác & người nhận»)
   // A: Duyệt → Gửi đối tác xác nhận → (Đã xác nhận | Trả lại sửa | Từ chối).
   const flowId = await createLibraryFlow(HUB, platform.token, {
     key: `q6a-${SFX}`,
@@ -167,21 +168,20 @@ test.beforeAll(async () => {
     trigger: { event: "contract.submitted" },
     inputs: [{ key: "contract_id", label: "Hợp đồng", type: "text", required: true }],
     stages: [
-      approve("giam-doc", "Giám đốc duyệt", 0, "pb-giam-doc", { reject: 4, ret: 5 }),
+      approve("giam-doc", "Giám đốc duyệt", 0, "pb-giam-doc", { reject: 5, ret: 6 }),
       ...partnerSendNode(
         1,
         {
-          partner_tax_code: TAX_B,
           assignee_group: await groupIdByKey(EA.tenantKey, "pb-giam-doc"),
           send_fields: "total_value",
           reply_days: 7,
           message: "Xin quý công ty xác nhận hợp đồng",
         },
-        { returned: 5, declined: 4, expired: 4 },
+        { returned: 6, declined: 5, expired: 5 },
       ),
-      finish("da-xac-nhan", "Đã xác nhận", 3, "approved"),
-      finish("tu-choi", "Đối tác từ chối", 4, "rejected"),
-      finish("tra-lai", "Trả lại sửa", 5, "returned"),
+      finish("da-xac-nhan", "Đã xác nhận", 4, "approved"),
+      finish("tu-choi", "Đối tác từ chối", 5, "rejected"),
+      finish("tra-lai", "Trả lại sửa", 6, "returned"),
     ],
   });
   await enableFlowTriggers(EA.tenantKey);

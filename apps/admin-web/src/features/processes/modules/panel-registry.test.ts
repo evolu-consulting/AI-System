@@ -26,8 +26,7 @@ describe("CR-124 q4 · node Gửi đối tác xác nhận dùng panel chung từ
       "send_fields",
       "reply_days",
       "message",
-      "partner_tax_code",
-      "partner_email",
+      "assignee_group",
     ]);
     expect(fs.find((f) => f.key === "importance")).toMatchObject({
       kind: "enum",

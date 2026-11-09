@@ -20,6 +20,20 @@ export async function groupIdByKey(tenantKey: string, groupKey: string): Promise
 }
 
 /**
+ * Đối tác của công ty gửi trong sổ đối tác (nguồn của danh sách chọn `company_partners`). Người dùng thật có được dòng này khi HĐ có bên đối tác
+ * hoặc thêm ở «Đối tác»; e2e dựng bằng SQL (đường giống `supplier-quote.repo`: vai `supplier`, nguồn `manual`) vì HĐ mẫu không mang MST của công ty nhận.
+ */
+export async function seedPartner(tenantKey: string, tax: string, name: string): Promise<void> {
+  await withOwner(
+    (
+      sql,
+    ) => sql`insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from)
+      select t.id, ${`tax:${tax.replace(/\D/g, "")}`}, 'supplier', ${name}, 'manual' from admin.tenants t where t.key = ${tenantKey}
+      on conflict (tenant_id, party_key, role) do nothing`,
+  );
+}
+
+/**
  * Người của nhóm phụ trách: «Việc của tôi» có việc ⇒ mở ⇒ form đã điền sẵn đối tác (MST của công ty nhận) và email ⇒ nhập email SAI
  * thì báo cách sửa ⇒ nhập email CHỌN ⇒ «Gửi». Trả email đã chọn.
  */
@@ -37,12 +51,12 @@ export async function pickPartnerAndSend(
   const form = page.locator('form[data-flow="form"]').first();
   await expect(form).toBeVisible({ timeout: 60_000 });
 
-  // đối tác điền sẵn: dòng đang chọn có «tên · MST» của công ty nhận
+  // đối tác: gõ MST vào ô tìm ⇒ danh sách còn đúng công ty nhận («tên · MST») ⇒ chọn (HĐ mẫu không có MST đối tác nên chưa điền sẵn)
   const partner = form.locator(`[data-flow-field=${PICK.partner}]`);
-  await expect(partner.locator("select")).not.toHaveValue("", { timeout: 30_000 });
-  await expect(partner.locator("select option:checked")).toContainText(o.partnerTaxCode);
-  // ô tìm kiếm có mặt (danh sách đối tác chọn được, gõ để lọc)
-  await expect(partner.getByRole("searchbox")).toBeVisible();
+  await partner.getByRole("searchbox").fill(o.partnerTaxCode);
+  const option = partner.locator("select option", { hasText: o.partnerTaxCode });
+  await expect(option).toHaveCount(1, { timeout: 30_000 });
+  await partner.locator("select").selectOption((await option.getAttribute("value")) ?? "");
 
   // email sai dạng ⇒ báo cách sửa, chưa gửi
   const email = form.locator(`[data-flow-field=${PICK.email}] input`);
