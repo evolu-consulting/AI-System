@@ -2,6 +2,7 @@
 // người dùng của mẫu chụp (bỏ stage `route`/`finalize`), bước đang mở + task + `can_act`, `finalizes_on_approve`, lý do bị chặn;
 // và kế hoạch cho hành động (Đạt / Trả lại / Từ chối / Đọc lại) trước khi gọi engine. Domain chỉ import builtin (ADR-0023): kiểu
 // vào là cấu trúc khớp `PackStepsView` của kit.
+import type { FormPrefill } from "@ai/contracts/flow";
 import { finalizesOnApprove, isTerminalRun } from "./approval-engine.rules";
 import {
   condHolds,
@@ -46,7 +47,7 @@ export type EngineStageView = {
   /** CR-123 · u6 · cụm node module đã gộp một dòng (khớp `PackStepView.module`). */
   module?: { node: string; outcome: ModuleOutcome; signer?: string };
   /** CR-125 · cr125-form-step-card · stage `form` (khớp `PackStepView.form`). */
-  form?: { fields: unknown[]; values: Record<string, unknown> | null };
+  form?: { fields: unknown[]; values: Record<string, unknown> | null; prefill?: FormPrefill };
 };
 export type ModuleOutcome = "pending" | "waiting" | "done" | "declined" | "expired" | "failed";
 export type EngineStepsView = {
@@ -210,7 +211,13 @@ function runCardStep(st: EngineStageView, x: CardExtras): CardStep {
     group_id: st.group_id ?? null,
     head_only: false,
     ...(st.form
-      ? { form: { fields: st.form.fields }, ...(st.form.values ? { values: st.form.values } : {}) }
+      ? {
+          form: {
+            fields: st.form.fields,
+            ...(st.form.prefill ? { prefill: st.form.prefill } : {}),
+          },
+          ...(st.form.values ? { values: st.form.values } : {}),
+        }
       : {}),
     escalated_group_id: st.escalated_group_id,
     due_at: st.due_at,

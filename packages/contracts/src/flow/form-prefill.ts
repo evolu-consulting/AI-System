@@ -2,13 +2,10 @@
 // MỘT hình dạng dùng chung: hub (resolver) ghi vào payload task; web (FormStep) đọc để đặt mặc định + danh sách chọn.
 // Chỉ zod, không I/O (luật `contracts-only-zod`).
 import { z } from "zod";
+import { FORM_OPTIONS_FROM_MAX } from "../hub-admin/process-form";
 
-/** Nguồn danh sách chọn máy chủ hiểu (`options_from` của trường select). */
-export const FORM_OPTIONS_SOURCES = ["company_partners"] as const;
-export type FormOptionsSource = (typeof FORM_OPTIONS_SOURCES)[number];
-
-/** Trần số lựa chọn máy chủ trả cho một nguồn (một câu SQL, `limit`). */
-export const FORM_PREFILL_OPTIONS_MAX = 200;
+/** Trần số lựa chọn máy chủ trả cho một nguồn (`options_from`, nguồn = `FORM_OPTIONS_FROM` của process-form) — một câu SQL, `limit`. */
+export const FORM_PREFILL_OPTIONS_MAX = FORM_OPTIONS_FROM_MAX;
 
 export const FormPrefillOptionSchema = z.strictObject({
   value: z.string().max(200),

@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { IsoDateTime } from "../common";
 import { FlowFormValueSchema } from "../flow/form";
+import { FormPrefillSchema } from "../flow/form-prefill";
 import { FormFieldsSchema } from "../hub-admin/process-form";
 import { FlowCondSchema } from "./approval-flow";
 import { ProductLinksSchema } from "./product-links";
@@ -105,7 +106,10 @@ export const ApprovalCardStepSchema = z.strictObject({
   /** CR-123 U2 · bước Thông báo không có người nhận (bước vẫn xong): hub điền khi sẵn sàng; vắng ⇒ không cảnh báo. */
   warning: z.literal("NOTIFY_NO_RECIPIENT").optional(),
   /** CR-125 · cr125-form-step-card · bước «Điền thông tin» (`kind: form`): trường của form trong snapshot run + giá trị đã gửi (đóng bước xong mới có). */
-  form: z.strictObject({ fields: FormFieldsSchema }).optional(),
+  // CR-126 · `prefill`: giá trị điền sẵn + danh sách chọn do máy chủ tính (bước form trong node «Gửi đối tác xác nhận»).
+  form: z
+    .strictObject({ fields: FormFieldsSchema, prefill: FormPrefillSchema.optional() })
+    .optional(),
   values: z.record(z.string(), FlowFormValueSchema).optional(),
 });
 export type ApprovalCardStep = z.infer<typeof ApprovalCardStepSchema>;
