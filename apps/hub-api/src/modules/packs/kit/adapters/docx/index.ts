@@ -2,6 +2,7 @@
 // (đang chạy + đang chờ) hoặc tenant đã có việc đang chờ (review m-03) ⇒ `DOCX_BUSY` ngay; đầu vào > `DOCX_MAX_INPUT` ⇒
 // `DOCX_UNREADABLE` trước khi vào worker. Chờ kết quả bằng tín hiệu `message` của worker; `timeoutMs` chỉ là lưới an toàn
 // (Luật 4c): hết giờ / worker lỗi ⇒ `terminate()`, trả `DOCX_UNREADABLE`, worker mới dựng lười ở việc kế. Không ném.
+import { join } from "node:path";
 import {
   canQueueDocx,
   DOCX_MAX_INPUT,
@@ -76,7 +77,8 @@ class DocxQueue {
   }
 
   private spawn(): BunWorker {
-    const w = new Worker(new URL("./docx.worker.ts", import.meta.url).href) as BunWorker;
+    // `__dirname` (Bun có cả ở ESM) thay `import.meta.url`: e2e Playwright nạp chuỗi import này dạng CJS ⇒ `import.meta` là lỗi cú pháp.
+    const w = new Worker(join(__dirname, "docx.worker.ts")) as BunWorker;
     w.onmessage = (ev: MessageEvent<{ id: number; result: DocxResult }>) =>
       this.finish(ev.data.id, ev.data.result);
     w.onerror = () => this.running && this.finish(this.running.id, UNREADABLE, true);

@@ -2,6 +2,7 @@
 // tenant đã có việc chờ ⇒ `PDF_BUSY` ngay; đầu vào > `PDF_MAX_INPUT` ⇒ `PDF_TOO_LARGE` trước khi vào worker. Chờ kết quả bằng
 // tín hiệu `message`; `timeoutMs` chỉ là lưới an toàn (Luật 4c): hết giờ / worker lỗi ⇒ `terminate()`, `PDF_UNREADABLE`, worker
 // mới dựng lười ở việc kế. Không ném. (Cùng hình `DocxQueue` — gộp hàng đợi chung: TECH-DEBT.)
+import { join } from "node:path";
 import { canQueueDocx } from "../../domain/docx.rules";
 import {
   PDF_MAX_INPUT,
@@ -72,7 +73,8 @@ class PdfQueue {
   }
 
   private spawn(): BunWorker {
-    const w = new Worker(new URL("./pdf.worker.ts", import.meta.url).href) as BunWorker;
+    // `__dirname` thay `import.meta.url` (xem docx/index.ts): chuỗi import nạp được cả dạng CJS (e2e Playwright).
+    const w = new Worker(join(__dirname, "pdf.worker.ts")) as BunWorker;
     w.onmessage = (ev: MessageEvent<{ id: number; result: PdfResult }>) =>
       this.finish(ev.data.id, ev.data.result);
     w.onerror = () => this.running && this.finish(this.running.id, UNREADABLE, true);
