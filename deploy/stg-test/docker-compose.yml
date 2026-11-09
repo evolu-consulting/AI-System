@@ -1,0 +1,218 @@
+# sohoptac2-staging · STAGING that cho ten mien -test (app-test / ai-test / ai-test-admin / ai-test-hub .evoluconsulting.com), tren host prod (149.202.83.5) nhung CO LAP:
+# project Docker `sohoptac2-staging` (mang, container, volume rieng), image tag `staging` (sohoptac2-app:staging, sohoptac2-web:staging - KHONG BAO GIO :latest),
+# cong 127.0.0.1:28541..28544, DU LIEU BEN (volume ten: pgdata, redisdata, fbdata, fbminio -> song qua restart/up), bi mat sinh MOI boi gen-env.sh,
+# khong mount ./claude-home hay volume/.env prod. filebox + agent-runtime dung lai image prod (chi doc; down.sh KHONG xoa).
+# Quy trinh: bash build.sh -> bash up.sh -> bash edge.sh (tro CHI host -test vao stack nay) ; hoan tac: bash rollback.sh. Xem README.md.
+
+name: sohoptac2-staging
+
+# PUBLIC_* nhung luc build: https host -test (gen-env.sh ghi vao .env).
+x-public-args: &public
+  PUBLIC_HUB_URL: ${S2_PUBLIC_HUB_URL:?run gen-env.sh}
+  PUBLIC_STUDIO_URL: ${S2_PUBLIC_HUB_URL}/studio/
+  PUBLIC_CHAT_APP_URL: ${S2_PUBLIC_CHAT_URL:?run gen-env.sh}
+  PUBLIC_ADMIN_WEB_URL: ${S2_PUBLIC_ADMIN_URL:?run gen-env.sh}
+  PUBLIC_CHAT_WEB_URL: ${S2_PUBLIC_CHAT_URL}
+  PUBLIC_AUTH_URL: ""
+  PUBLIC_CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:?run gen-env.sh}/contracts
+  PUBLIC_SSO_URL: ${S2_PUBLIC_CHAT_URL}
+  PUBLIC_APP_VERSION: ${S2_APP_VERSION:-staging}
+
+x-app: &app
+  image: sohoptac2-app:staging
+  restart: unless-stopped
+  user: "${S2_UID:-1002}:${S2_GID:-1002}"
+  init: true
+  depends_on:
+    pg: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  pg:
+    image: postgres:16.15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: s2_owner
+      POSTGRES_PASSWORD: ${PG_OWNER_PASSWORD:?run gen-env.sh}
+      POSTGRES_DB: ai_system
+    command: ["postgres", "-c", "max_connections=200", "-c", "shared_buffers=256MB"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U s2_owner -d ai_system"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    cpus: 1
+    mem_limit: 1g
+
+  redis:
+    image: redis:7.4.11-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - redisdata:/data
+    cpus: 0.25
+    mem_limit: 192m
+
+  admin-api:
+    <<: *app
+    # build.sh: `docker compose build admin-api web` (cung image sohoptac2-app:staging cho admin-api/hub-api/tool).
+    build:
+      context: ./build
+      target: app
+      args: *public
+    environment:
+      HOME: /tmp
+      APP_URL_CHAT: ${S2_PUBLIC_CHAT_URL}
+      APP_URL_CONTRACTS: ${S2_PUBLIC_CONTRACTS_URL}/contracts
+      APP_URL_STUDIO: ${S2_PUBLIC_HUB_URL}/studio/
+      APP_URL_ADMIN: ${S2_PUBLIC_ADMIN_URL}
+      APP_URL_COMMUNITY: ${S2_PUBLIC_COMMUNITY_URL}
+    command: ["bun", "--env-file=/run/s2/app.env", "apps/admin-api/src/server.ts"]
+    volumes:
+      - ./.env:/run/s2/app.env:ro
+    cpus: 0.5
+    mem_limit: 768m
+
+  hub-api:
+    <<: *app
+    environment:
+      HOME: /tmp
+      HUB_FAST_ROUTE: "on"
+      HUB_FLOW_RUNTIME: "on"
+      HUB_ADMIN_API_URL: http://admin-api:3001
+      COMMUNITY_WEB_URL: ${S2_PUBLIC_COMMUNITY_URL}
+      CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL}
+      HUB_OPS_WATCH: "off"
+      CONTRACTS_APPROVAL_ENGINE: "on"
+    command: ["bun", "--env-file=/run/s2/app.env", "apps/hub-api/src/server.ts"]
+    volumes:
+      - ./.env:/run/s2/app.env:ro
+      - ./data/attachments:/data/attachments
+    depends_on:
+      pg: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      admin-api: { condition: service_started }
+      filebox: { condition: service_healthy }
+    cpus: 0.75
+    mem_limit: 1536m
+
+  filebox:
+    image: ${S2_FILEBOX_IMAGE:-sohoptac2-filebox:latest}
+    restart: unless-stopped
+    user: "${S2_UID:-1002}:${S2_GID:-1002}"
+    init: true
+    environment:
+      FILEBOX_TOKEN: ${FILEBOX_TOKEN:?run gen-env.sh}
+      FILEBOX_S3_URL: http://filebox-minio:9000
+      FILEBOX_DB: /data/filebox.db
+      MINIO_ROOT_USER: ${FILEBOX_MINIO_USER:?run gen-env.sh}
+      MINIO_ROOT_PASSWORD: ${FILEBOX_MINIO_PASSWORD:?run gen-env.sh}
+    expose: ["9100"]
+    volumes:
+      - fbdata:/data
+    depends_on:
+      filebox-minio: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://127.0.0.1:9100/health\", timeout=3).status == 200 else 1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    cpus: 0.25
+    mem_limit: 512m
+
+  filebox-minio:
+    image: alpine:3.20
+    restart: unless-stopped
+    entrypoint: ["/usr/local/bin/minio"]
+    command: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${FILEBOX_MINIO_USER:?run gen-env.sh}
+      MINIO_ROOT_PASSWORD: ${FILEBOX_MINIO_PASSWORD:?run gen-env.sh}
+    expose: ["9000"]
+    volumes:
+      - fbminio:/data
+      # ban sao CHI DOC cua nhi phan MinIO tinh (up.sh chep MOT file tu ~/workspace/sohoptac2/minio-bin, khong dung gi khac cua prod)
+      - ./minio-bin/minio:/usr/local/bin/minio:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    cpus: 0.5
+    mem_limit: 512m
+
+  # Agent Runtime: chi de image chay len duoc; khong co Claude CLI/dang nhap => khong chay job AI that (chat AI khong dung duoc o staging).
+  agent-runtime:
+    image: ${S2_RUNTIME_IMAGE:-sohoptac2-runtime:latest}
+    restart: unless-stopped
+    user: "${S2_UID:-1002}:${S2_GID:-1002}"
+    init: true
+    environment:
+      HOME: /tmp
+      APP_ENV: development
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      LOG_LEVEL: info
+      REDIS_URL: redis://redis:6379
+      AGENT_RT_DATABASE_URL: ${AGENT_RT_DATABASE_URL:?run gen-env.sh}
+      AGENT_RT_PROVIDERS: claude-sub
+      AGENT_RT_WORKER_ID: sohoptac2-staging
+      AGENT_RT_HUB_URL: http://hub-api:4000
+      AGENT_RT_WORK_DIR: /tmp/work
+      AGENT_RT_LOG_DIR: /tmp/logs
+    depends_on:
+      pg: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      hub-api: { condition: service_started }
+    cpus: 0.5
+    mem_limit: 512m
+
+  web:
+    image: sohoptac2-web:staging
+    build:
+      context: ./build
+      target: web
+      args: *public
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${S2_PORT_CONTRACTS}:8081"
+      - "127.0.0.1:${S2_PORT_ADMIN}:8082"
+      - "127.0.0.1:${S2_PORT_CHAT}:8083"
+      - "127.0.0.1:${S2_PORT_HUB}:8084"
+    depends_on: [admin-api, hub-api, filebox]
+    cpus: 0.25
+    mem_limit: 192m
+
+  # Lenh mot lan: docker compose -p sohoptac2-staging run --rm -T tool <file.ts>
+  tool:
+    image: sohoptac2-app:staging
+    profiles: ["tools"]
+    user: "${S2_UID:-1002}:${S2_GID:-1002}"
+    entrypoint: ["bun", "--env-file=/run/s2/app.env"]
+    environment:
+      HOME: /tmp
+      DEMO_OWNER_PW_FILE: /run/s2/demo-owner.pw
+      STG_PW_OUT: /run/s2/out/partners.json
+    volumes:
+      - ./.env:/run/s2/app.env:ro
+      - ./DEMO_OWNER.pw:/run/s2/demo-owner.pw:ro
+      - ./out:/run/s2/out
+      - ./stg-seed.ts:/app/tools/scripts/src/stg-seed.ts:ro
+    depends_on:
+      pg: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      filebox: { condition: service_healthy }
+    cpus: 1
+    mem_limit: 1g
+
+volumes:
+  pgdata:
+  redisdata:
+  fbdata:
+  fbminio:
