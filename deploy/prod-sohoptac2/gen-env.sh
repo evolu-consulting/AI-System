@@ -117,6 +117,8 @@ chmod 600 .env
 grep -q '^DIFY_CONSOLE_URL=' .env || setkv DIFY_CONSOLE_URL "http://149.202.83.5:4203" # web Dify gọi API qua http IP ⇒ mở bằng https bị chặn mixed content
 # engine quy trình: thiếu ⇒ Cài đặt › Quy trình duyệt 404 (smoke staging 2026-11-02). Chỉ đặt khi chưa có; giá trị sửa tay giữ nguyên.
 grep -q '^HUB_PROCESS_ENGINE=' .env || setkv HUB_PROCESS_ENGINE on
+# CR-125/126: «Yêu cầu», «Việc của tôi», duyệt/ký theo quy trình cho MỌI người dùng. Vắng ⇒ module quy trình `off` ⇒ 404 (staging 2026-11-09).
+grep -q '^HUB_PROCESS_ROUTES=' .env || setkv HUB_PROCESS_ROUTES all
 # FileBox riêng của sohoptac2: token + khoá MinIO riêng, đặt HUB_ATTACH_DRIVER=filebox (idempotent).
 bash ./filebox-env.sh
 
