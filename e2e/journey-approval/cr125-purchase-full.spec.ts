@@ -261,7 +261,8 @@ async function signOnCard(page: Page): Promise<boolean> {
 /** Làm dòng HĐ đầu tiên của loại `kind`; true nếu đã làm (dòng biến mất sau khi tải lại hộp). */
 async function actOnFirstContractRow(page: Page, kind: string): Promise<boolean> {
   await page.getByTestId(kind).first().locator("a").first().click();
-  await expect(page).toHaveURL(/\/contracts\/c\/[0-9a-f-]{36}/, { timeout: 30_000 });
+  // cr126-inbox-draft-row · việc duyệt thuộc lượt quy trình ⇒ dòng mở thẳng trang yêu cầu (có nút Duyệt); HĐ ngoài quy trình ⇒ thẻ HĐ
+  await expect(page).toHaveURL(/\/contracts\/(c|requests)\/[0-9a-f-]{36}/, { timeout: 30_000 });
   return kind === "approval-task-row" ? approveOnCard(page) : signOnCard(page);
 }
 
