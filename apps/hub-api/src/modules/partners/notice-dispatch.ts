@@ -29,7 +29,8 @@ function mailOf(
     link: `${d.baseUrl.replace(/\/+$/, "")}${PARTNER_INBOX_PATH}`,
   });
   return {
-    idempotencyKey: `partner-notice-${r.id}-${r.attempts}`,
+    // Khoá theo hàng (không kèm số lần thử): lượt gửi quá hạn giữ chỗ bị máy khác nhận lại thì nhà cung cấp vẫn bỏ bản trùng.
+    idempotencyKey: `partner-notice-${r.id}`,
     tenantId: r.from_tenant,
     to: r.to_email,
     toName: "Quý đối tác",
