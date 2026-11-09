@@ -1,4 +1,4 @@
-﻿// CR-126 · điền sẵn bước «Chọn đối tác & người nhận» (form trong node «Gửi đối tác xác nhận»): đối tác của HĐ (MST) + email liên hệ đầu tiên
+// CR-126 · điền sẵn bước «Chọn đối tác & người nhận» (form trong node «Gửi đối tác xác nhận»): đối tác của HĐ (MST) + email liên hệ đầu tiên
 // làm mặc định; lựa chọn = đối tác có MST của công ty (`company_partners`, ≤ 200). Danh sách đối tác đọc ở phạm vi hệ thống của CHÍNH công ty (SQL lọc `tenant_id`; RLS `partner_roles_visible` ẩn đối tác
 // người xem không thêm — giống kiểm `isPartner` của tool gửi), mặc định từ HĐ đọc bằng uow người xem; số câu cố định.
 import { FORM_PREFILL_OPTIONS_MAX, type FormPrefill } from "@ai/contracts/flow";
