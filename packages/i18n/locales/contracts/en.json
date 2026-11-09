@@ -885,7 +885,6 @@
       "sentNext": "Sent. Next: {{who}} will review. You will be notified of the result.",
       "sentNoNext": "Sent. You will be notified of the result.",
       "waitingFor": "Waiting: {{text}}",
-      "waitingDone": "Completed",
       "part": "Part",
       "proposer": "Requested by",
       "nextWork": "Next task",

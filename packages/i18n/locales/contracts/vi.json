@@ -885,7 +885,6 @@
       "sentNext": "Đã gửi. Bước tiếp: {{who}} duyệt. Bạn sẽ nhận thông báo khi có kết quả.",
       "sentNoNext": "Đã gửi. Bạn sẽ nhận thông báo khi có kết quả.",
       "waitingFor": "Đang chờ: {{text}}",
-      "waitingDone": "Đã hoàn tất",
       "part": "Phần",
       "proposer": "Người đề xuất",
       "nextWork": "Việc kế tiếp",

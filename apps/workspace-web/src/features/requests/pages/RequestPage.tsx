@@ -197,10 +197,9 @@ export function RequestPage({
   );
 }
 
-/** «Đang chờ: <ai> · Phần N – <bước>» hoặc «Đã hoàn tất»; không ai giữ việc ⇒ null. */
+/** «Đang chờ: <ai> · Phần N – <bước>»; đã xong (dòng Trạng thái đã nói) hoặc không ai giữ việc ⇒ null. */
 function waitingLine(t: TFunction, w: Waiting): string | null {
-  if (w.kind === "done") return t("contracts.requests.waitingDone");
-  if (w.kind === "none") return null;
+  if (w.kind !== "waiting") return null;
   return t("contracts.requests.waitingFor", {
     text: waitingText(w.items, t("contracts.requests.part")),
   });
