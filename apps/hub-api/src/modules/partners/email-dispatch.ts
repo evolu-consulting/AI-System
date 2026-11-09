@@ -4,9 +4,7 @@
 //  (3) MỘT lời gọi `sendBatch` của transport email chung của thông báo (cùng SMTP/hộp thư nền tảng);
 //  (4) tx system: chốt kết cục cả lô (+ nhật ký). Mạng (PDF, SMTP) ở NGOÀI tx. Lỗi tạm ⇒ nghỉ bậc thang rồi thử lại; lỗi vĩnh viễn ⇒ dừng.
 // Bật cùng `HUB_PARTNER_MAILBOX=on` (mặc định tắt). Vòng nền chỉ ngủ khi hết việc (Luật 4c); test gọi `partnerEmailOnce`.
-import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
-import type { PartnerMailboxPort } from "../packs/kit/public";
 import { claimEmails, type EmailSettle, setTokenHashes, settleEmails } from "./adapters/email.repo";
 import {
   buildPartnerEmail,
@@ -17,29 +15,25 @@ import {
   newToken,
   sha256Hex,
 } from "./domain/email-link.rules";
+import type {
+  MailOut,
+  MailResult,
+  PartnerEmailDeps,
+  PartnerEmailStats,
+  PartnerMailer,
+} from "./email-dispatch.types";
 import { partnerNoticeOnce } from "./notice-dispatch";
 
 const SYS = { kind: "system" as const };
 const IDLE_MS = 2000;
 
-export type MailOut = ReturnType<typeof buildPartnerEmail>;
-export type MailResult =
-  | { ok: true }
-  | { ok: false; permanent: boolean; code: string; skip?: boolean };
-/** Transport email chung của thông báo (cấu trúc tương thích; không import chéo module notify — ADR-0037). */
-export type PartnerMailer = { sendBatch(msgs: readonly MailOut[]): Promise<MailResult[]> };
-
-export type PartnerEmailDeps = {
-  db: Db;
-  /** Transport email chung (null khi thông báo tắt ⇒ không gửi, dòng nằm chờ). */
-  email: () => PartnerMailer | null;
-  /** Gốc URL công khai dựng link (vd `https://app.example.vn`). */
-  baseUrl: string;
-  /** Cổng gói lấy PDF của HĐ gửi (đọc mỗi lượt vì gói đăng ký lúc mount). */
-  port: () => PartnerMailboxPort | undefined;
-  batch?: number;
-};
-export type PartnerEmailStats = { claimed: number; sent: number; failed: number };
+export type {
+  MailOut,
+  MailResult,
+  PartnerEmailDeps,
+  PartnerEmailStats,
+  PartnerMailer,
+} from "./email-dispatch.types";
 
 type Prepared = { msg: MailOut; id: string; sha: string };
 

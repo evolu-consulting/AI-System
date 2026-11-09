@@ -6,7 +6,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { EmailSettle } from "./adapters/email.repo";
 import { type ClaimedNotice, claimNotices, settleNotices } from "./adapters/notice.repo";
 import { EMAIL_BATCH, EMAIL_LEASE_S } from "./domain/email-link.rules";
-import type { MailOut, PartnerEmailDeps, PartnerEmailStats } from "./email-dispatch";
+import type { MailOut, PartnerEmailDeps, PartnerEmailStats } from "./email-dispatch.types";
 
 const SYS = { kind: "system" as const };
 /** Hộp thư đối tác trong app Hợp đồng (đường dẫn của `workspace-web`). */
