@@ -43,7 +43,7 @@ const sendRow = (o2: {
     (
       tx,
     ) => tx`select hub.partner_send(${A}::uuid, ${o2.toTenant}::uuid, ${o2.toEmail}, ${o2.channel}, 'hd-1',
-      ${PAYLOAD}::jsonb, null, null, now() + interval '7 days', ${o2.prev ?? null}::uuid)::text as id`,
+      ${PAYLOAD}::text::jsonb, null, null, now() + interval '7 days', ${o2.prev ?? null}::uuid)::text as id`,
   ).then((r) => r[0]?.id as string);
 
 beforeAll(async () => {
