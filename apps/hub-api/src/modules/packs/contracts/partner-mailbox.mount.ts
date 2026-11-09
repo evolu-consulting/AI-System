@@ -27,6 +27,7 @@ import { type PartnerSendRepo, partnerSendRepo } from "./adapters/partner-send.r
 import { partnerSendTool } from "./adapters/partner-send.tool";
 import { FLOW_STARTING } from "./application/contract-flow.ports";
 import type { ESignFiles } from "./application/esign.ports";
+import { buildPartnerNoticeMail } from "./domain/partner-notice-mail.rules";
 import { finalImportance, importanceByValue, sharedValueOf } from "./domain/partner-send.rules";
 import { PARTNER_FEATURE } from "./nav.mount";
 import { PARTNER_SEND_KEY, partnerSendBinding } from "./nodes/partner-send/binding";
@@ -192,5 +193,6 @@ export function mountPartnerSend(
     receive: receiveInbox(db),
     onReplies: onPartnerReplies(db, () => d.packRuns),
     pdf: pdfOf(pdfUow, files), // q5 · thư/trang xem email
+    notice: buildPartnerNoticeMail, // CR-126 · thư báo vào app cho người nhận đã chọn (kênh nền tảng)
   });
 }

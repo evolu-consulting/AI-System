@@ -40,7 +40,8 @@ export type ChannelPlan =
   | {
       channel: "platform";
       toTenant: string;
-      toEmail: null;
+      /** CR-126 · email người nhận ĐÃ CHỌN: lưu ở dòng hộp thư + gửi MỘT thư báo (vào app để trả lời). null ⇒ không có thư báo. */
+      toEmail: string | null;
       toName: string;
       why: null;
       held: boolean;
@@ -62,7 +63,7 @@ export function planChannel(
     return {
       channel: "platform",
       toTenant: route.toTenant,
-      toEmail: null,
+      toEmail: email,
       toName: route.name,
       why: null,
       held: route.link !== "accepted",
@@ -83,9 +84,12 @@ export function prevMailboxOf(
   return last && last.status === "returned" && last.toKey === toKey ? last.mailboxId : null;
 }
 
+/** Nền tảng có email ⇒ khoá gồm cả email (hàm `hub.partner_send` đòi lần gửi trước cùng `to_tenant` VÀ `to_email`); đổi người nhận ⇒ vòng 1 mới. */
 export const toKeyOf = (p: ChannelPlan): string =>
   p.channel === "platform"
-    ? `t:${p.toTenant}`
+    ? p.toEmail
+      ? `t:${p.toTenant}|e:${p.toEmail.toLowerCase()}`
+      : `t:${p.toTenant}`
     : p.channel === "email"
       ? `e:${p.toEmail.toLowerCase()}`
       : "m:";

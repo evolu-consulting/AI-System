@@ -20,6 +20,19 @@ describe("planChannel (FLOW4-FR-15)", () => {
       toTenant: "t-b",
     });
   });
+  it("nền tảng ⇒ giữ email người nhận đã chọn (để báo vào app), không email ⇒ toEmail null, khoá gồm cả email", () => {
+    const withMail = planChannel(route("accepted"), "Chon@B.vn", null);
+    expect(withMail).toMatchObject({ channel: "platform", toEmail: "Chon@B.vn", held: false });
+    expect(toKeyOf(withMail)).toBe("t:t-b|e:chon@b.vn");
+    const noMail = planChannel(route("accepted"), null, null);
+    expect(noMail).toMatchObject({ channel: "platform", toEmail: null });
+    expect(toKeyOf(noMail)).toBe("t:t-b");
+  });
+  it("kênh email giữ nguyên: toEmail = email, khoá e:", () => {
+    const p = planChannel(null, "x@y.vn", null);
+    expect(p).toMatchObject({ channel: "email", toEmail: "x@y.vn" });
+    expect(toKeyOf(p)).toBe("e:x@y.vn");
+  });
   it("chưa nối / bị chặn / không trên nền tảng + có email ⇒ email, ghi lý do", () => {
     // chưa nối ⇒ vẫn nền tảng nhưng GIỮ tới khi B chấp nhận (q4)
     expect(planChannel(route("pending"), "x@y.vn", null)).toMatchObject({

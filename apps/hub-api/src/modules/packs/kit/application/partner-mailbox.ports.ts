@@ -23,7 +23,28 @@ export type PartnerMailboxPort = {
    * nền tảng. Chỉ trả khi tệp thuộc đúng tenant đó, là PDF thật (mime + chữ ký `%PDF-`) và ≤ 25 MB; khác ⇒ null. Không đọc gì khác của gói.
    */
   pdf?(tenantId: string, fileRef: string): Promise<PartnerPdf | null>;
+  /**
+   * CR-126 · mẫu thư BÁO cho người nhận đã chọn khi bên nhận ĐÃ trên nền tảng (kênh nền tảng, có `to_email`): chỉ báo + nút vào hộp thư đối tác
+   * trong app (đăng nhập mới xem/trả lời), KHÔNG đính hợp đồng, KHÔNG link trả lời không cần đăng nhập. Mẫu thuộc gói; bộ gửi hub chỉ gọi.
+   */
+  notice?(i: PartnerNoticeInput): PartnerNoticeMail;
 };
+
+export type PartnerNoticeInput = {
+  /** Tên công ty gửi (A). */
+  senderName: string;
+  /** Tên hợp đồng (tiêu đề bản chia sẻ). */
+  title: string;
+  /** Lời nhắn của bên gửi (nếu có). */
+  message: string | null;
+  /** Vòng gửi (≥ 2 ⇒ bản sửa). */
+  round: number;
+  /** Hạn trả lời. */
+  expiresAt: Date;
+  /** Đường dẫn tuyệt đối tới hộp thư đối tác trong app. */
+  link: string;
+};
+export type PartnerNoticeMail = { subject: string; text: string; html: string };
 
 export type PartnerPdf = { bytes: Uint8Array; name: string };
 

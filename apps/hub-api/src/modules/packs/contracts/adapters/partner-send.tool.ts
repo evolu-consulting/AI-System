@@ -103,6 +103,12 @@ async function planFor(r: R, cfg: Cfg, id: string) {
   return { c, plan: planChannel(route, email || null, c.partnerName) };
 }
 
+/** Tên công ty gửi cho thư báo (chỉ khi kênh nền tảng có email người nhận); còn lại null. */
+async function noticeSender(r: R, plan: ReturnType<typeof planChannel>): Promise<string | null> {
+  if (plan.channel !== "platform" || !plan.toEmail) return null;
+  return (await r.partnerSend.self())?.name ?? null;
+}
+
 const alreadySent = (last: { mailboxId: string; channel: string; round: number }) => ({
   status: "already_sent",
   mailbox_id: last.mailboxId,
@@ -124,18 +130,24 @@ async function run(d: PartnerToolDeps, ctx: PackToolCtx, args: PackToolArgs) {
     const { c, plan } = await planFor(r, cfg, id);
     const toKey = toKeyOf(plan);
     const prev = prevMailboxOf(last, toKey);
+    // CR-126 · kênh nền tảng + có email người nhận ⇒ dòng hộp thư mang `to_email` và bộ gửi hub gửi MỘT thư báo (một dòng = một vòng = một thư);
+    // thư cần tên công ty gửi mà hub_rw không đọc được `admin.tenants` ⇒ ghi kèm vào bản chia sẻ (tên pháp lý công khai của chính bên gửi).
+    const sender = await noticeSender(r, plan);
     const mailboxId = await r.partnerSend.send({
       toTenant: plan.toTenant,
       toEmail: plan.toEmail,
       channel: plan.channel,
       ref: id,
-      payload: buildPayload({
-        title: c.title,
-        message: cfg.message,
-        hint: cfg.importance as ImportanceHint | undefined,
-        sendFields: parseSendFields(cfg.send_fields),
-        fields: c.fields,
-      }),
+      payload: {
+        ...buildPayload({
+          title: c.title,
+          message: cfg.message,
+          hint: cfg.importance as ImportanceHint | undefined,
+          sendFields: parseSendFields(cfg.send_fields),
+          fields: c.fields,
+        }),
+        ...(sender ? { sender_name: sender.slice(0, 200) } : {}),
+      },
       fileRef: c.fileId,
       days: replyDaysOf(cfg.reply_days),
       prevId: prev,

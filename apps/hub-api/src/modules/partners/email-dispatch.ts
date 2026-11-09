@@ -17,6 +17,7 @@ import {
   newToken,
   sha256Hex,
 } from "./domain/email-link.rules";
+import { partnerNoticeOnce } from "./notice-dispatch";
 
 const SYS = { kind: "system" as const };
 const IDLE_MS = 2000;
@@ -143,7 +144,9 @@ export function startPartnerEmail(
     while (!o.signal?.aborted) {
       let busy = false;
       try {
-        busy = (await partnerEmailOnce(d)).claimed >= n; // lô đầy ⇒ còn việc, chạy tiếp ngay
+        // lô đầy ⇒ còn việc, chạy tiếp ngay; CR-126 · cùng lượt báo người nhận kênh nền tảng (thư báo vào app)
+        const [mail, notice] = [await partnerEmailOnce(d), await partnerNoticeOnce(d)];
+        busy = mail.claimed >= n || notice.claimed >= n;
       } catch (err) {
         d.log?.warn("partner-email-failed", {
           error: err instanceof Error ? err.message : String(err),

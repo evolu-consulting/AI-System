@@ -130,6 +130,8 @@ export type {
 export type {
   PartnerMailboxPort,
   PartnerMailboxPortRegistry,
+  PartnerNoticeInput,
+  PartnerNoticeMail,
   PartnerPdf,
   PartnerReplyRow,
 } from "./application/partner-mailbox.ports";
