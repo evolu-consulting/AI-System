@@ -99,10 +99,11 @@ export function collapseModuleSteps(
       i++;
       continue;
     }
-    // CR-126 · stage người làm bên trong node (form «Chọn đối tác & người nhận») đang mở ⇒ dòng node mang việc + form của stage đó.
+    // CR-126 · stage người làm bên trong node (form «Chọn đối tác & người nhận») đang mở ⇒ dòng = CHÍNH bước người làm (task + form),
+    // KHÔNG gắn `module`: thẻ/FlowView vẽ bước có `module` thành bước tự động (bỏ form) ⇒ người được giao không thấy form để điền.
     const open = steps.slice(c.start, c.end).find((s) => s.task !== null && s.status === "open");
     if (open) {
-      out.push({ ...open, module: { node: c.node, outcome: "waiting" } });
+      out.push(open);
       i = c.end;
       continue;
     }

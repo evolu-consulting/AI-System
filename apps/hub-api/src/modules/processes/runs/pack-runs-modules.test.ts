@@ -68,3 +68,37 @@ describe("collapseModuleSteps · Ký số", () => {
     );
   });
 });
+
+describe("collapseModuleSteps · CR-126 bước người làm trong node Gửi đối tác", () => {
+  const pk = (idx: number, key: string) => step(idx, key, key);
+  const ps = [pk(0, "duyet"), pk(1, "chon"), pk(2, "gui"), pk(3, "cho")];
+  const pstages = [
+    { executor: { kind: "approve" } },
+    { node: "contracts.partner-send", executor: { kind: "form" } },
+    { node: "contracts.partner-send", executor: { kind: "tool" } },
+    { node: "contracts.partner-send", executor: { kind: "wait_event" } },
+  ];
+  const facts: StageFact[] = [
+    { stageStatus: "done", consumed: null },
+    { stageStatus: "waiting_review", consumed: null },
+    { stageStatus: "pending", consumed: null },
+    { stageStatus: "pending", consumed: null },
+  ];
+  test("form đang mở ⇒ dòng là bước form (task + form), KHÔNG mang `module` (thẻ không vẽ thành bước tự động)", () => {
+    const open: PackStepView = {
+      ...(ps[1] as PackStepView),
+      status: "open",
+      task: { id: "t1", can_act: true },
+      form: { fields: [{ key: "partner_email" }], values: null },
+    };
+    const out = collapseModuleSteps(
+      [ps[0] as PackStepView, open, ps[2] as PackStepView, ps[3] as PackStepView],
+      pstages,
+      facts,
+    );
+    expect(out.map((s) => s.key)).toEqual(["duyet", "chon"]);
+    expect(out[1]?.module).toBeUndefined();
+    expect(out[1]?.task?.id).toBe("t1");
+    expect(out[1]?.form?.fields).toHaveLength(1);
+  });
+});
