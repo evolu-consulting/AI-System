@@ -6,6 +6,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { Db } from "../../../lib/db";
 import type { EventFlow } from "../../packs/kit/public";
+import { NEVER_TRIGGER } from "./purchase-templates";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EVENT = /^[a-z][a-z0-9_-]{0,39}\.[a-z][a-z0-9_.-]{0,59}$/;
@@ -28,6 +29,7 @@ export const EVENT_FLOW_SQL = (tenantId: string, event: string) => sql`
   left join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version
   where cf.tenant_id = ${tenantId}::uuid and cf.enabled and d.trigger_event = ${event}
     and d.published_version is not null
+    and d.trigger is distinct from ${JSON.stringify(NEVER_TRIGGER)}::text::jsonb
   order by cf.position, cf.id limit 1`;
 
 export async function eventFlowOf(

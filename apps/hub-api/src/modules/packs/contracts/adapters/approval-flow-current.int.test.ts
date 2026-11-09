@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import { connectDb, type Db } from "../../../../lib/db";
 import { mapError } from "../../../../lib/errors";
 import { packRunsPortForTest } from "../../../../test-support/pack-runs-port";
+import { NEVER_TRIGGER } from "../../../processes/library/purchase-templates";
 import { packGroups } from "../../kit/adapters/pack-groups";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import type { PackToolCatalog } from "../../kit/application/pack-tools.ports";
@@ -157,6 +158,25 @@ it("GET = flow Bật của company_flows: tên, bản, bước theo thứ tự, 
       ["Ký số", null, "esign", undefined],
     ],
   });
+});
+
+it("flow bắt đầu bằng phiếu (trigger «không bao giờ», vd Quy trình mua hàng) KHÔNG được chọn làm quy trình duyệt HĐ", async () => {
+  const never = JSON.stringify(NEVER_TRIGGER);
+  const [m] = await o<
+    { id: string }[]
+  >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app, published_version, enabled)
+    values (null, 'cr126-manual', 'Quy trình mua hàng', ${JSON.stringify(STAGES)}::text::jsonb, ${never}::text::jsonb, 'contracts', 1, true)
+    returning id::text as id`;
+  const mid = m?.id as string;
+  await o`insert into hub.process_def_releases (def_id, rel_version, name, stages) values (${mid}, 1, 'Quy trình mua hàng', ${JSON.stringify(STAGES)}::text::jsonb)`;
+  // id nhỏ nhất + cùng position ⇒ nếu không lọc thì đây là «flow đầu» (đúng ca e2e đỏ)
+  await o`insert into hub.company_flows (id, tenant_id, flow_id, enabled, position) values ('00000000-0000-4000-8000-000000000001', ${A}, ${mid}, true, 0)`;
+  try {
+    const a = (await (await app(A, own).request("/approval-flow")).json()) as Out;
+    expect([a.name, a.other_flows]).toEqual(["Duyệt 2 cấp", 0]);
+  } finally {
+    await o`delete from hub.company_flows where flow_id = ${mid}`;
+  }
 });
 
 it("công ty chỉ có flow Tắt ⇒ 404 (không có 'mặc định của khe'), PUT không còn route", async () => {
