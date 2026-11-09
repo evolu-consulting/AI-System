@@ -138,3 +138,55 @@ describe("CR-125 · fileRefIds", () => {
     expect(fileRefIds(two, { a: UUID, b: UUID })).toEqual([UUID]);
   });
 });
+
+describe("CR-126 · danh sách máy chủ cấp + ô email", () => {
+  const PF: FormField[] = parse([
+    {
+      key: "partner_tax_code",
+      label: "Đối tác",
+      type: "select",
+      required: true,
+      options: [],
+      options_from: "company_partners",
+    },
+    {
+      key: "partner_email",
+      label: "Email",
+      type: "text",
+      required: true,
+      max_len: 254,
+      format: "email",
+    },
+  ]);
+  test("select `options_from` (options trống) nhận MST đã chọn; email đúng dạng ⇒ hợp lệ", () => {
+    expect(
+      validateFormValues(PF, { partner_tax_code: " 0101111110 ", partner_email: "a@doitac.vn" }),
+    ).toEqual({
+      ok: true,
+      values: { partner_tax_code: "0101111110", partner_email: "a@doitac.vn" },
+    });
+  });
+  test("chuỗi rỗng / quá 200 ký tự / ký tự điều khiển ở select `options_from`; email sai dạng ⇒ lỗi đúng ô", () => {
+    expect(
+      validateFormValues(PF, {
+        partner_tax_code: "x".repeat(201),
+        partner_email: "khong-phai-email",
+      }),
+    ).toEqual({
+      ok: false,
+      paths: ["partner_tax_code", "partner_email"],
+    });
+    expect(
+      validateFormValues(PF, { partner_tax_code: "a\u0001b", partner_email: "a@b.vn" }),
+    ).toEqual({
+      ok: false,
+      paths: ["partner_tax_code"],
+    });
+  });
+  test("select gõ tay vẫn chỉ nhận giá trị trong danh sách", () => {
+    expect(validateFormValues(FIELDS, { ten: "A", muc: "z" })).toMatchObject({
+      ok: false,
+      paths: ["muc"],
+    });
+  });
+});

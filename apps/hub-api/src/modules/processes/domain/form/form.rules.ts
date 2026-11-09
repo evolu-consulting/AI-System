@@ -1,7 +1,13 @@
 // CR-118 · cr118-form-node · node `form`: luật THUẦN (lớp 1, không I/O) — kiểm giá trị người dùng gửi theo trường form
 // trong SNAPSHOT run (không theo def hiện hành), bỏ trường lạ, chuẩn hoá về scalar (string|number) để If/bước sau đọc.
 // Không ép kiểu lỏng: số phải là số JSON, checkbox phải là boolean.
-import { FORM_OUTPUT_TYPE, type FormField, isIsoCalendarDate } from "@ai/contracts/hub-admin";
+import {
+  FORM_EMAIL_MAX,
+  FORM_EMAIL_RE,
+  FORM_OUTPUT_TYPE,
+  type FormField,
+  isIsoCalendarDate,
+} from "@ai/contracts/hub-admin";
 
 export type FormValue = string | number;
 export type FormValues = Record<string, FormValue>;
@@ -34,7 +40,23 @@ type Check = (f: FormField, v: unknown) => FormValue | undefined;
 function text(f: Of<"text"> | Of<"textarea">, v: unknown): FormValue | undefined {
   if (typeof v !== "string") return undefined;
   const s = v.trim();
-  return s.length <= f.max_len && !hasCtrl(s, f.type === "textarea") ? s : undefined;
+  if (s.length > f.max_len || hasCtrl(s, f.type === "textarea")) return undefined;
+  // CR-126 · ô email (`format: "email"`): cùng luật với giao diện.
+  if (
+    f.type === "text" &&
+    f.format === "email" &&
+    (s.length > FORM_EMAIL_MAX || !FORM_EMAIL_RE.test(s))
+  )
+    return undefined;
+  return s;
+}
+/** CR-126 · danh sách do máy chủ cấp (`options_from`): `options` trống ⇒ nhận chuỗi gọn; tool của gói kiểm lại thuộc danh sách thật. */
+const PREFILL_VALUE_MAX = 200;
+function select(f: Of<"select">, v: unknown): FormValue | undefined {
+  if (typeof v !== "string") return undefined;
+  if (!f.options_from) return f.options.some((o) => o.value === v) ? v : undefined;
+  const s = v.trim();
+  return s.length > 0 && s.length <= PREFILL_VALUE_MAX && !hasCtrl(s, false) ? s : undefined;
 }
 function num(f: Of<"number">, v: unknown): FormValue | undefined {
   if (typeof v !== "number" || !Number.isFinite(v)) return undefined;
@@ -57,7 +79,7 @@ const CHECKS: {
   number: num,
   money,
   date: (_f, v) => str(v, isIsoCalendarDate),
-  select: (f, v) => str(v, (s) => f.options.some((o) => o.value === s)),
+  select,
   checkbox: (_f, v) => (typeof v === "boolean" ? String(v) : undefined),
   file_ref: (_f, v) => str(v, (s) => UUID_RE.test(s))?.toLowerCase(),
 };

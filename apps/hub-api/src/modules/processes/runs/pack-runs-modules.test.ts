@@ -89,7 +89,7 @@ describe("collapseModuleSteps · CR-126 bước người làm trong node Gửi �
       ...(ps[1] as PackStepView),
       status: "open",
       task: { id: "t1", can_act: true },
-      form: { fields: [{ key: "partner_email" }], values: null },
+      form: { fields: [{ key: "partner_email" }] as never, values: null },
     };
     const out = collapseModuleSteps(
       [ps[0] as PackStepView, open, ps[2] as PackStepView, ps[3] as PackStepView],
