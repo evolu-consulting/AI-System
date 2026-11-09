@@ -31,7 +31,7 @@ import {
 import { safeReload } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
 import { confirmAndSave, type Env, loginCw, stepOf, U, uploadAndOpen } from "./_journey";
-import { expectMailboxTo, groupIdByKey, pickPartnerAndSend, seedPartner } from "./_partner-pick";
+import { expectMailboxTo, pickPartnerAndSend, seedPartner } from "./_partner-pick";
 import { expect, test } from "./_test";
 
 const need = (n: string): string => {
@@ -172,7 +172,7 @@ test.beforeAll(async () => {
       ...partnerSendNode(
         1,
         {
-          assignee_group: await groupIdByKey(EA.tenantKey, "pb-giam-doc"),
+          assignee_group: "pb-giam-doc", // mã nhóm (flow Thư viện dùng mã, không id công ty)
           send_fields: "total_value",
           reply_days: 7,
           message: "Xin quý công ty xác nhận hợp đồng",

@@ -9,16 +9,6 @@ import { expect } from "./_test";
 /** Khoá ô «đối tác» (select từ danh sách công ty) và «email người nhận» của việc — khớp prefill của engine (cr126-partner-pick-engine). */
 export const PICK = { partner: "partner_tax_code", email: "partner_email" } as const;
 
-/** Id nhóm (mã `groupKey`) của công ty `tenantKey` — giá trị mà ô «Nhóm phụ trách gửi đối tác» của editor ghi vào cấu hình node. */
-export async function groupIdByKey(tenantKey: string, groupKey: string): Promise<string> {
-  return withOwner(async (sql) => {
-    const [g] = await sql<{ id: string }[]>`select g.id::text from admin.groups g
-      join admin.tenants t on t.id = g.tenant_id where t.key = ${tenantKey} and g.key = ${groupKey}`;
-    if (!g) throw new Error(`công ty ${tenantKey} chưa có nhóm ${groupKey}`);
-    return g.id;
-  });
-}
-
 /**
  * Đối tác của công ty gửi trong sổ đối tác (nguồn của danh sách chọn `company_partners`). Người dùng thật có được dòng này khi HĐ có bên đối tác
  * hoặc thêm ở «Đối tác»; e2e dựng bằng SQL (đường giống `supplier-quote.repo`: vai `supplier`, nguồn `manual`) vì HĐ mẫu không mang MST của công ty nhận.
