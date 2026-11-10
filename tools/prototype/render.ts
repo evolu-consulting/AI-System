@@ -1,35 +1,43 @@
 // renderPrototype(json) → MỘT file HTML tự chứa (CSS/JS nội tuyến, không gọi mạng). Mọi chữ của người dùng đều được escape.
-import type { z } from "zod";
-import { type leafBlock, type Prototype, prototypeSchema } from "./schema";
+import { PURE_JS, UI_JS } from "./client";
+import { protoId, protoVersion } from "./feedback.rules";
+import { flowSvg } from "./flow";
+import { esc } from "./html";
+import { type Leaf, type Prototype, prototypeSchema } from "./schema";
+import { CSS } from "./style";
 
-export const esc = (s: string): string =>
-  s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+export { esc };
 
-type Leaf = z.infer<typeof leafBlock>;
+type Block = Prototype["screens"][number]["blocks"][number];
+type Ctx = { modals: number };
 
 const STATUS: Record<string, string> = { done: "Xong", open: "Cần làm", waiting: "Đang chờ" };
+const attr = (name: string, v?: string) => (v ? ` ${name}="${esc(v)}"` : "");
 
-function leaf(b: Leaf): string {
+function field(b: Extract<Leaf, { type: "field" }>): string {
+  const req = b.required ? ' <span class="req">*</span>' : "";
+  let ctl: string;
+  if (b.kind === "select")
+    ctl = `<select>${b.options.map((o) => `<option${o === b.value ? " selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+  else if (b.kind === "checkbox")
+    ctl = `<input type="checkbox"${b.value === "true" ? " checked" : ""}>`;
+  else ctl = `<input type="${b.kind}" value="${esc(b.value)}">`;
+  return `<label class="field"><span>${esc(b.label)}${req}</span>${ctl}</label>`;
+}
+
+function modal(b: Extract<Leaf, { type: "modal" }>, ctx: Ctx): string {
+  const n = ctx.modals++;
+  return `<button type="button" class="btn ${b.danger ? "danger" : "secondary"}" data-modal="${n}">${esc(b.trigger)}</button><div class="modal" data-modal-box="${n}" hidden><div class="dlg" role="dialog" aria-modal="true"><h3>${esc(b.title)}</h3><p>${esc(b.text)}</p><button type="button" class="btn secondary" data-close>${esc(b.cancel)}</button><button type="button" class="btn ${b.danger ? "danger" : "primary"}" data-close${attr("data-goto", b.goto)}>${esc(b.confirm)}</button></div></div>`;
+}
+
+function leaf(b: Leaf, ctx: Ctx): string {
   switch (b.type) {
     case "heading":
       return `<h3>${esc(b.text)}</h3>`;
     case "text":
       return `<p>${esc(b.text)}</p>`;
-    case "field": {
-      const req = b.required ? ' <span class="req">*</span>' : "";
-      let ctl: string;
-      if (b.kind === "select")
-        ctl = `<select>${b.options.map((o) => `<option${o === b.value ? " selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
-      else if (b.kind === "checkbox")
-        ctl = `<input type="checkbox"${b.value === "true" ? " checked" : ""}>`;
-      else ctl = `<input type="${b.kind}" value="${esc(b.value)}">`;
-      return `<label class="field"><span>${esc(b.label)}${req}</span>${ctl}</label>`;
-    }
+    case "field":
+      return field(b);
     case "table":
       return `<table><thead><tr>${b.cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${b.rows
         .map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`)
@@ -41,92 +49,112 @@ function leaf(b: Leaf): string {
             `<li class="st-${i.status}"><b>${esc(i.label)}</b> <span class="tag">${STATUS[i.status]}</span>${i.who ? ` <em>${esc(i.who)}</em>` : ""}</li>`,
         )
         .join("")}</ol>`;
-    case "button": {
-      const g = b.goto ? ` data-goto="${esc(b.goto)}"` : "";
-      const r = b.role ? ` data-role="${esc(b.role)}"` : "";
-      return `<button type="button" class="btn ${b.variant}"${g}${r}>${esc(b.label)}</button>`;
-    }
-    default:
+    case "button":
+      return `<button type="button" class="btn ${b.variant}"${attr("data-goto", b.goto)}${attr("data-role", b.role)}>${esc(b.label)}</button>`;
+    case "banner":
       return `<div class="banner ${b.kind}">${esc(b.text)}</div>`;
+    case "badge":
+      return `<span class="badge ${b.tone}">${esc(b.text)}</span>`;
+    case "stats":
+      return `<div class="stats">${b.items.map((i) => `<div class="stat"><b>${esc(i.value)}</b><span>${esc(i.label)}</span></div>`).join("")}</div>`;
+    case "cards":
+      return `<div class="cards">${b.items
+        .map(
+          (i) =>
+            `<div class="icard"${attr("data-goto", i.goto)}><b>${esc(i.title)}</b>${i.badge ? ` <span class="badge ${i.tone}">${esc(i.badge)}</span>` : ""}${i.text ? `<p>${esc(i.text)}</p>` : ""}</div>`,
+        )
+        .join("")}</div>`;
+    case "empty":
+      return `<div class="empty"><b>${esc(b.title)}</b>${esc(b.text)}${b.action ? `<div><button type="button" class="btn primary"${attr("data-goto", b.goto)}>${esc(b.action)}</button></div>` : ""}</div>`;
+    case "modal":
+      return modal(b, ctx);
+    default:
+      return `<button type="button" class="btn secondary" data-toast="${b.kind}" data-text="${esc(b.text)}">${esc(b.trigger)}</button>`;
   }
 }
 
-function block(b: Prototype["screens"][number]["blocks"][number]): string {
-  if (b.type !== "states") return leaf(b);
-  const tabs = b.variants
+function switcher(
+  cls: "states" | "itabs",
+  items: { key: string; label: string; blocks: Leaf[] }[],
+  ctx: Ctx,
+): string {
+  const [btn, pane, lead] =
+    cls === "states"
+      ? ["data-state", "data-variant", "Trạng thái: "]
+      : ["data-itab", "data-ipane", ""];
+  const chips = items
     .map(
       (v, i) =>
-        `<button type="button" class="chip${i ? "" : " on"}" data-state="${esc(v.key)}">${esc(v.label)}</button>`,
+        `<button type="button" class="chip${i ? "" : " on"}" ${btn}="${esc(v.key)}">${esc(v.label)}</button>`,
     )
     .join("");
-  const bodies = b.variants
+  const bodies = items
     .map(
       (v, i) =>
-        `<div class="variant" data-variant="${esc(v.key)}"${i ? " hidden" : ""}>${v.blocks.map(leaf).join("")}</div>`,
+        `<div ${pane}="${esc(v.key)}"${i ? " hidden" : ""}>${v.blocks.map((l) => leaf(l, ctx)).join("")}</div>`,
     )
     .join("");
-  return `<div class="states"><div class="chips">Trạng thái: ${tabs}</div>${bodies}</div>`;
+  return `<div class="${cls}"><div class="chips">${lead}${chips}</div>${bodies}</div>`;
 }
 
-const CSS = `
-:root{--background:#f4f4f9;--foreground:#0a0a0a;--card:#fff;--muted:#f5f5f5;--muted-foreground:#6b6b6b;--primary:#4f46e5;--primary-foreground:#fff;--accent:#eef2ff;--border:#e5e5e5;--destructive:#b42318;--success:#05603f;--warning:#7f3c04;--radius:8px;--font:"Be Vietnam Pro","Segoe UI",system-ui,sans-serif}
-@media(prefers-color-scheme:dark){:root{--background:#0e0f1c;--foreground:#ececf4;--card:#17182a;--muted:#1d1f33;--muted-foreground:#a1a3b8;--primary:#818cf8;--primary-foreground:#0e0f1c;--accent:#24264a;--border:#2a2c44;--success:#6ee7a8;--warning:#fbbf24}}
-*{box-sizing:border-box}body{margin:0;font:14px/1.5 var(--font);background:var(--background);color:var(--foreground)}
-.ribbon{background:var(--warning);color:var(--card);text-align:center;padding:4px 8px;font-weight:600}
-header{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--border)}
-header h1{font-size:16px;margin:0;flex:1}select,input{font:inherit;color:inherit;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px}
-.tabs button{font:inherit;background:none;border:0;padding:6px 10px;cursor:pointer;color:var(--muted-foreground);border-bottom:2px solid transparent}.tabs button.on{color:var(--primary);border-color:var(--primary)}
-.layout{display:flex;min-height:calc(100vh - 100px)}nav{width:220px;padding:12px;border-right:1px solid var(--border);background:var(--card)}
-nav button{display:block;width:100%;text-align:left;font:inherit;color:inherit;background:none;border:0;border-radius:var(--radius);padding:8px 10px;cursor:pointer}nav button.on{background:var(--accent);color:var(--primary);font-weight:600}
-main{flex:1;padding:20px;max-width:860px}.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
-h2{margin:0 0 12px}h3{margin:16px 0 6px}.field{display:block;margin:10px 0}.field>span{display:block;color:var(--muted-foreground);margin-bottom:2px}.field input[type=text],.field input:not([type]),.field select{width:100%;max-width:420px}.req{color:var(--destructive)}
-table{border-collapse:collapse;width:100%;margin:8px 0}th,td{border-bottom:1px solid var(--border);padding:6px 8px;text-align:left}th{color:var(--muted-foreground);font-weight:600}
-.btn{font:inherit;border-radius:var(--radius);padding:8px 14px;cursor:pointer;margin:8px 8px 0 0;border:1px solid var(--border);background:var(--card);color:var(--foreground)}.btn.primary{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}.btn.danger{color:var(--destructive);border-color:var(--destructive)}
-.banner{border-radius:var(--radius);padding:10px 12px;margin:10px 0;border:1px solid var(--border);background:var(--accent)}.banner.warn{border-color:var(--warning)}.banner.error{border-color:var(--destructive);color:var(--destructive)}
-.steps{padding-left:20px}.steps li{margin:6px 0}.tag{font-size:12px;border-radius:99px;padding:1px 8px;background:var(--muted);color:var(--muted-foreground)}.st-done .tag{color:var(--success)}.st-open .tag{color:var(--primary)}.st-waiting .tag{color:var(--warning)}
-.chips{margin:8px 0}.chip{font:inherit;border:1px solid var(--border);background:var(--card);color:inherit;border-radius:99px;padding:2px 10px;margin-left:6px;cursor:pointer}.chip.on{background:var(--primary);color:var(--primary-foreground)}
-.flow li{margin:8px 0}.notes{color:var(--muted-foreground)}[hidden]{display:none!important}
-@media(max-width:640px){.layout{flex-direction:column}nav{width:auto;border-right:0;border-bottom:1px solid var(--border)}}`;
-
-const JS = `(function(){
-var d=document,$=function(s,r){return Array.prototype.slice.call((r||d).querySelectorAll(s))};
-var role="",cur=$("[data-screen]")[0]&&$("[data-screen]")[0].getAttribute("data-screen");
-function ok(el){var r=el.getAttribute("data-role");return !r||!role||r===role}
-function paint(){
- $("[data-nav]").forEach(function(n){n.hidden=!ok(n)});
- var vis=$("[data-nav]").filter(function(n){return !n.hidden}).map(function(n){return n.getAttribute("data-nav")});
- if(vis.indexOf(cur)<0)cur=vis[0];
- $("[data-screen]").forEach(function(s){s.hidden=s.getAttribute("data-screen")!==cur});
- $("[data-nav]").forEach(function(n){n.classList.toggle("on",n.getAttribute("data-nav")===cur)});
- $("main .btn[data-role]").forEach(function(b){b.hidden=!ok(b)});
- $(".flow li").forEach(function(l){l.hidden=!ok(l)});
+function block(b: Block, ctx: Ctx): string {
+  if (b.type === "states") return switcher("states", b.variants, ctx);
+  if (b.type === "tabs") return switcher("itabs", b.tabs, ctx);
+  return leaf(b, ctx);
 }
-d.addEventListener("click",function(e){var t=e.target;if(!t.closest)return;
- var n=t.closest("[data-nav]");if(n){cur=n.getAttribute("data-nav");paint();return}
- var g=t.closest("[data-goto]");if(g){cur=g.getAttribute("data-goto");showTab("screens");paint();return}
- var st=t.closest("[data-state]");if(st){var box=st.closest(".states");$("[data-state]",box).forEach(function(c){c.classList.toggle("on",c===st)});$("[data-variant]",box).forEach(function(v){v.hidden=v.getAttribute("data-variant")!==st.getAttribute("data-state")});return}
- var tb=t.closest("[data-tab]");if(tb)showTab(tb.getAttribute("data-tab"))});
-d.getElementById("role").addEventListener("change",function(e){role=e.target.value;paint()});
-function showTab(k){$("[data-tab]").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-tab")===k)});$("[data-pane]").forEach(function(p){p.hidden=p.getAttribute("data-pane")!==k})}
-paint()})();`;
+
+function questionCard(q: Prototype["questions"][number], cls = ""): string {
+  const opts = q.options
+    .map(
+      (o) =>
+        `<button type="button" class="chip" data-qa="${esc(q.id)}" data-val="${esc(o)}">${esc(o)}${o === q.default ? " (gợi ý)" : ""}</button>`,
+    )
+    .join("");
+  return `<div class="q${cls}" data-q="${esc(q.id)}"><p>${esc(q.text)}</p>${opts}</div>`;
+}
+
+function review(s: Prototype["screens"][number], qs: Prototype["questions"]): string {
+  const id = esc(s.id);
+  return `<div class="review"><b>Góp ý màn này:</b> <button type="button" class="chip" data-verdict="ok" data-sid="${id}">Đúng ý</button><button type="button" class="chip" data-verdict="fix" data-sid="${id}">Cần sửa</button><textarea data-note="${id}" placeholder="Ghi chú cho màn này (nếu có)"></textarea>${qs.map((q) => questionCard(q, " q-screen")).join("")}</div>`;
+}
+
+/** JSON nhúng trong thẻ script: chặn "<" để không đóng thẻ sớm. */
+const jsonIn = (v: unknown): string => JSON.stringify(v).replace(/</g, "\\u003c");
+
+function dataBlob(p: Prototype): string {
+  return jsonIn({
+    id: protoId(p),
+    title: p.title,
+    version: protoVersion(p),
+    roles: p.roles,
+    screens: p.screens.map((s) => ({ id: s.id, title: s.title, role: s.role ?? "" })),
+    flow: p.flow,
+    questions: p.questions.map((q) => ({
+      id: q.id,
+      text: q.text,
+      screen: q.screen ?? "",
+      default: q.default,
+    })),
+  });
+}
 
 export function renderPrototype(input: unknown): string {
   const p = prototypeSchema.parse(input);
+  const ctx: Ctx = { modals: 0 };
   const label = new Map(p.roles.map((r) => [r.key, r.label]));
-  const roleAttr = (r?: string) => (r ? ` data-role="${esc(r)}"` : "");
+  const title = (id: string) => p.screens.find((s) => s.id === id)?.title ?? id;
   const nav = p.screens
     .map(
       (s) =>
-        `<button type="button" data-nav="${esc(s.id)}"${roleAttr(s.role)}>${esc(s.title)}</button>`,
+        `<button type="button" data-nav="${esc(s.id)}"${attr("data-role", s.role)}>${esc(s.title)}</button>`,
     )
     .join("");
   const screens = p.screens
-    .map(
-      (s) =>
-        `<section class="card" data-screen="${esc(s.id)}"${roleAttr(s.role)} hidden><h2>${esc(s.title)}</h2>${s.blocks.map(block).join("")}</section>`,
-    )
+    .map((s) => {
+      const qs = p.questions.filter((q) => q.screen === s.id);
+      return `<section class="card" data-screen="${esc(s.id)}"${attr("data-role", s.role)} hidden><h2>${esc(s.title)}</h2>${s.blocks.map((b) => block(b, ctx)).join("")}${review(s, qs)}</section>`;
+    })
     .join("");
-  const title = (id: string) => p.screens.find((s) => s.id === id)?.title ?? id;
   const flow = p.flow
     .map(
       (f) =>
@@ -139,15 +167,31 @@ export function renderPrototype(input: unknown): string {
   const opts = p.roles
     .map((r) => `<option value="${esc(r.key)}">${esc(r.label)}</option>`)
     .join("");
+  const qTab = p.questions.length
+    ? '<button type="button" data-tab="questions">Câu hỏi</button>'
+    : "";
+  const qPane = p.questions.length
+    ? `<div data-pane="questions" hidden class="layout"><main><div class="card"><h2>Câu cần anh/chị chốt</h2>${p.questions.map((q) => questionCard(q)).join("")}</div></main></div>`
+    : "";
   return `<!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(p.title)} — Bản mẫu</title><style>${CSS}</style></head><body>
 <div class="ribbon">Bản mẫu — dữ liệu giả</div>
 <header><h1>${esc(p.title)}</h1>
 <label>Xem với vai: <select id="role"><option value="">Tất cả</option>${opts}</select></label>
-<div class="tabs"><button type="button" class="on" data-tab="screens">Màn hình</button><button type="button" data-tab="flow">Luồng</button></div></header>
+<div class="seg"><button type="button" class="on" data-device="desktop">Máy tính</button><button type="button" data-device="phone">Điện thoại</button></div>
+<label><input type="checkbox" id="review" checked> Góp ý</label>
+<button type="button" class="btn secondary" id="walk-start" style="margin:0">Đi thử từng bước</button>
+<span id="pending" class="pending"></span><button type="button" class="btn primary" id="export" style="margin:0">Xuất góp ý</button>
+<div class="tabs"><button type="button" class="on" data-tab="screens">Màn hình</button><button type="button" data-tab="flow">Luồng</button>${qTab}</div></header>
+<div id="walkbar" hidden><b id="walk-who"></b><span id="walk-what"></span><button type="button" class="btn" data-walk="back">Quay lại</button><button type="button" class="btn" data-walk="next">Tiếp</button><button type="button" class="btn" data-walk="stop">Thoát</button></div>
+<div class="frame">
 <div data-pane="screens" class="layout"><nav>${nav}</nav><main>${screens}</main></div>
-<div data-pane="flow" hidden class="layout"><main><div class="card"><h2>Luồng: ai làm gì</h2><ol class="flow">${flow}</ol>${notes}</div></main></div>
-<script>${JS}</script></body></html>
+<div data-pane="flow" hidden class="layout"><main><div class="card"><h2>Luồng: ai làm gì</h2>${flowSvg(p)}<ol class="flow">${flow}</ol>${notes}</div></main></div>
+${qPane}</div>
+<div class="modal" id="exp" hidden><div class="dlg" style="max-width:640px"><h3>Góp ý của anh/chị</h3><p>Bấm «Tải tệp» để gửi lại tệp, hoặc «Sao chép chữ» rồi dán vào khung chat.</p><textarea id="exp-text" readonly></textarea><button type="button" class="btn primary" data-exp="json">Tải tệp</button><button type="button" class="btn secondary" data-exp="copy">Sao chép chữ</button><button type="button" class="btn secondary" data-close>Đóng</button></div></div>
+<div id="toast" class="toast" role="status" hidden></div>
+<script type="application/json" id="proto-data">${dataBlob(p)}</script>
+<script>(function(){${PURE_JS}${UI_JS}})();</script></body></html>
 `;
 }

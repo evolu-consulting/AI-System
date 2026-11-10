@@ -179,8 +179,10 @@ Người dùng dây chuyền ngày càng là người nghiệp vụ, không đ�
 
 - **Khi dùng:** CR thêm hoặc đổi màn hình, luồng nhiều vai, hoặc người dùng nói "tôi chưa hình dung được". **Bỏ qua** với sửa lỗi, backend, công cụ.
 - **Là gì:** một file `prototype.html` tự chứa, sinh từ `prototype.json` (màn hình, vai, nút bấm chuyển màn, trạng thái trống/lỗi/chờ). Dữ liệu giả. Không cần chạy stack.
-- **Giới hạn cứng:** ≤ 15 phút, ≤ 8 màn. Chỉ lấy từ spec, không tự thêm yêu cầu; chỗ chưa rõ thành câu hỏi. Không dữ liệu khách thật.
-- **Không phải nguồn sự thật:** người dùng trả lời xong ⇒ ghi vào "Quyết định" của spec; bản mẫu bỏ được.
+- **Giới hạn cứng:** ≤ 15 phút, ≤ 8 màn (> 8 cảnh báo, > 12 lỗi). Chỉ lấy từ spec, không tự thêm yêu cầu; chỗ chưa rõ thành câu hỏi (`questions[]`). Không dữ liệu khách thật.
+- **Người nghiệp vụ làm gì:** mở file, bấm «Đi thử từng bước», đánh «Đúng ý»/«Cần sửa» từng màn, chọn đáp án các câu hỏi, bấm «Xuất góp ý» rồi gửi tệp (hoặc dán chữ) lại cho điều phối.
+- **Câu trả lời chảy về đâu:** `proto:feedback` nối «Quyết định từ bản mẫu» vào spec (từ chối góp ý của bản cũ) ⇒ `proto:scenarios` sinh khung Kịch bản cho Delta ⇒ chia lát. Mỗi Kịch bản sau đó có test thật.
+- **Không phải nguồn sự thật:** quyết định đã nằm trong spec; bản mẫu bỏ được.
 - **Đo:** số yêu cầu phát sinh sau khi đã code (mục tiêu giảm một nửa so với CR-125/126).
 
 ## 10. Công cụ ngoài đã xét (2026-11-10)

@@ -54,6 +54,80 @@ describe("renderPrototype", () => {
     expect(() => renderPrototype(bad)).toThrow(/zzz/);
   });
 
+  test("khối mới: tab, hộp thoại, thẻ việc, nhãn trạng thái, trang trống, thông báo, ô số", () => {
+    const p = structuredClone(base);
+    p.screens[0]?.blocks.push(
+      {
+        type: "tabs",
+        tabs: [{ key: "t1", label: "Tab một", blocks: [{ type: "text", text: "A" }] }],
+      },
+      {
+        type: "modal",
+        trigger: "Gửi",
+        title: "Chắc chưa?",
+        text: "Gửi ngay",
+        confirm: "Gửi",
+        goto: "s2",
+      },
+      { type: "cards", items: [{ title: "Việc 1", badge: "Mới", tone: "ok", goto: "s2" }] },
+      { type: "badge", text: "Đã xong", tone: "ok" },
+      { type: "empty", title: "Trống", text: "Chưa có", action: "Tạo", goto: "s2" },
+      { type: "toast", trigger: "Nhắc", kind: "error", text: "Lỗi rồi" },
+      { type: "stats", items: [{ label: "Cần làm", value: "3" }] },
+    );
+    const h = renderPrototype(p);
+    expect(h).toContain('data-itab="t1">Tab một');
+    expect(h).toContain('data-modal-box="0"');
+    expect(h).toContain('data-close data-goto="s2">Gửi</button>');
+    expect(h).toContain('class="icard" data-goto="s2"');
+    expect(h).toContain('<span class="badge ok">Đã xong</span>');
+    expect(h).toContain('<div class="empty"><b>Trống</b>');
+    expect(h).toContain('data-toast="error" data-text="Lỗi rồi">Nhắc');
+    expect(h).toContain('<div class="stat"><b>3</b><span>Cần làm</span></div>');
+  });
+
+  test("chế độ góp ý: mỗi màn có Đúng ý/Cần sửa/ghi chú; câu hỏi hiện thẻ và đếm", () => {
+    const p = structuredClone(base);
+    p.questions = [
+      {
+        id: "q1",
+        screen: "s2",
+        text: "Hạn bao lâu?",
+        options: ["3 ngày", "7 ngày"],
+        default: "7 ngày",
+      },
+    ];
+    const h = renderPrototype(p);
+    expect(h).toContain('data-verdict="ok" data-sid="s1">Đúng ý');
+    expect(h).toContain('data-verdict="fix" data-sid="s2">Cần sửa');
+    expect(h).toContain('data-note="s1"');
+    expect(h).toContain('data-qa="q1" data-val="7 ngày">7 ngày (gợi ý)');
+    expect(h).toContain('id="export"');
+    expect(h).toContain('id="pending"');
+    expect(h).toContain("Đi thử từng bước");
+    expect(h).toContain('data-device="phone"');
+    expect(h).toContain("prototype-feedback.json");
+  });
+
+  test("sơ đồ luồng: một làn mỗi vai có bước, mỗi bước một ô bấm được", () => {
+    const h = renderPrototype(base);
+    expect(h.match(/class="lane"/g)).toHaveLength(1);
+    expect(h).toContain('data-step="0"');
+    expect(h).toContain('<marker id="ah"');
+    const two = structuredClone(base);
+    two.flow.push({ from: "s2", action: "Xác nhận", to: "s1", by: "b" });
+    expect(renderPrototype(two).match(/marker-end/g)).toHaveLength(1);
+  });
+
+  test("dữ liệu nhúng chặn đóng thẻ script; tự chứa và nhỏ hơn 300 KB", () => {
+    const p = structuredClone(base);
+    p.title = "</script><b>";
+    const h = renderPrototype(p);
+    expect(h.match(/<\/script>/g)).toHaveLength(2);
+    expect(h).toContain("\\u003c/script>");
+    expect(Buffer.byteLength(h)).toBeLessThan(300 * 1024);
+  });
+
   test("escape mọi chữ người dùng", () => {
     const x = "<script>alert(1)</script>\"'&";
     const h = renderPrototype({
