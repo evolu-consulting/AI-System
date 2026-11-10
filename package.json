@@ -26,6 +26,8 @@
     "verify:slice": "bun tools/scripts/src/verify-slice.ts",
     "verify:wave": "bun tools/scripts/src/verify-wave.ts",
     "verify:predeploy": "bun tools/scripts/src/verify-predeploy.ts",
+    "check:env-contract": "bun tools/scripts/src/env-contract.ts",
+    "release:log": "bun tools/scripts/src/release-log.ts",
     "verify:prod": "bun tools/scripts/src/verify-prod.ts",
     "slice:new": "bun tools/scripts/src/slice.ts new",
     "slice:pool": "bun tools/scripts/src/slice.ts pool",

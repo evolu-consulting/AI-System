@@ -1,0 +1,77 @@
+{
+  "_doc": "Hop dong env: ten bien MOI bo trien khai (kit) phai tu dat (gen-env.sh / env.template / filebox-env.sh), vi mac dinh trong code am tham tat tinh nang. Chi ten, khong gia tri. Kiem: bun run check:env-contract",
+  "kitFiles": {
+    "prod-sohoptac2": [
+      "deploy/prod-sohoptac2/gen-env.sh",
+      "deploy/prod-sohoptac2/env.template",
+      "deploy/prod-sohoptac2/filebox-env.sh"
+    ],
+    "stg-test": ["deploy/stg-test/gen-env.sh"]
+  },
+  "vars": [
+    {
+      "name": "HUB_PROCESS_ROUTES",
+      "kits": ["prod-sohoptac2", "stg-test"],
+      "note": "vang => module quy trinh off => Yeu cau/Viec cua toi/duyet 404"
+    },
+    {
+      "name": "HUB_PROCESS_ENGINE",
+      "kits": ["prod-sohoptac2", "stg-test"],
+      "note": "vang => Cai dat > Quy trinh duyet 404"
+    },
+    {
+      "name": "HUB_NOTIFY_MODE",
+      "kits": ["prod-sohoptac2", "stg-test"],
+      "note": "mac dinh off => khong gui mail; phai dat tuong minh (off|live)"
+    },
+    {
+      "name": "DIFY_CONSOLE_URL",
+      "kits": ["prod-sohoptac2"],
+      "note": "vang => khong co nut Mo trong Dify o Admin > Workflows"
+    },
+    {
+      "name": "HUB_SMTP_HOST",
+      "kits": ["prod-sohoptac2"],
+      "note": "khoa seed kho thu: thieu => mail live khong khoi tao duoc"
+    },
+    { "name": "HUB_SMTP_PORT", "kits": ["prod-sohoptac2"], "note": "khoa seed kho thu" },
+    { "name": "HUB_SMTP_SECURE", "kits": ["prod-sohoptac2"], "note": "khoa seed kho thu" },
+    { "name": "HUB_SMTP_USER", "kits": ["prod-sohoptac2"], "note": "khoa seed kho thu" },
+    { "name": "HUB_SMTP_FROM", "kits": ["prod-sohoptac2"], "note": "khoa seed kho thu" },
+    {
+      "name": "SMTP_PASSWORD",
+      "kits": ["prod-sohoptac2"],
+      "note": "bi mat: chi ten trong env.template, dat tay tren server"
+    }
+  ],
+  "allowDiff": [
+    "S2_STACK",
+    "DIFY_CONSOLE_URL",
+    "S2_DOMAIN",
+    "S2_HOSTS",
+    "LOGIN_IP_MAX_ATTEMPTS",
+    "HUB_SEED_FIXTURES",
+    "CONTRACTS_APPROVAL_ENGINE",
+    "ESIGN_PROVIDER",
+    "ESIGN_PROVIDERS",
+    "DOCUSIGN_INTEGRATION_KEY",
+    "DOCUSIGN_USER_ID",
+    "DOCUSIGN_ACCOUNT_ID",
+    "DOCUSIGN_BASE_URI",
+    "DOCUSIGN_OAUTH_HOST",
+    "DOCUSIGN_PRIVATE_KEY_FILE",
+    "DOCUSIGN_CONNECT_HMAC_KEY",
+    "AI_SUB_CLI_PATH",
+    "AI_SUB_CLAUDE_CONFIG_DIR",
+    "HUB_SEED_PROFILE",
+    "TRELLO_API_KEY",
+    "TRELLO_TOKEN",
+    "TRELLO_FEEDBACK_LIST_ID",
+    "OPS_PUBLIC_URLS",
+    "HUB_OPS_WATCH",
+    "HUB_FLOW_RUNTIME",
+    "COMMUNITY_SWEEP",
+    "COMMUNITY_SWEEP_EVERY_MS",
+    "S2_PORT_COMMUNITY"
+  ]
+}

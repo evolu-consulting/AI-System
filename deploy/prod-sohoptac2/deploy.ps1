@@ -10,6 +10,7 @@
 # cua -Ref (vd prod dang chay nhanh khac) tru khi -Force (in canh bao).
 param([string]$Ref = "platform/gd0", [switch]$DryRun, [string]$Domain = "", [ValidateSet("", "prod", "test")][string]$Hosts = "", [switch]$Force, [string]$Key = "F:\workspace\id_evoc_key")
 $ErrorActionPreference = "Stop"
+# Sau khi deploy prod xong: bun run release:log --env prod --ref <sha> --by <ten>  (ghi docs/RELEASES.md; script nay khong tu goi)
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
 $Server = "evoc@149.202.83.5"; $Dir = "~/workspace/sohoptac2"
 $ssh = @("-i", $Key, "-o", "BatchMode=yes")

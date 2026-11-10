@@ -23,5 +23,7 @@ try {
   ssh @ssh $Server "mkdir -p $Dir && chmod 700 $Dir"; Assert-Exit "ssh mkdir"
   scp @ssh "$tmp\app.tgz" "$tmp\kit.tgz" "${Server}:/tmp/"; Assert-Exit "scp"
   ssh @ssh $Server "set -eo pipefail; cd $Dir; tar xzf /tmp/kit.tgz; rm -rf build/app.new; mkdir -p build/app.new; tar xzf /tmp/app.tgz -C build/app.new; rm -rf build/app; mv build/app.new build/app; cp build/app/deploy/prod-sohoptac2/Dockerfile build/app/deploy/prod-sohoptac2/nginx.conf build/; unlink /tmp/kit.tgz; unlink /tmp/app.tgz; echo $commit > REF"; Assert-Exit "ssh giai nen"
+  # nhat ky phat hanh (docs/RELEASES.md): chi ghi file local, khong dung may chu; loi o day khong lam hong lan day
+  try { Push-Location $Repo; bun run release:log --env staging --ref $commit --by $env:USERNAME } catch { Write-Host "push: release:log loi (bo qua)" } finally { Pop-Location }
   Write-Host "push: da day $commit len $Dir. Tiep: ssh ... 'cd $Dir && bash build.sh && bash up.sh && bash edge.sh'"
 } finally { Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue }
