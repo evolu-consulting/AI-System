@@ -115,7 +115,7 @@ describe("renderPrototype", () => {
     expect(h).toContain('data-step="0"');
     expect(h).toContain('<marker id="ah"');
     const two = structuredClone(base);
-    two.flow.push({ from: "s2", action: "Xác nhận", to: "s1", by: "b" });
+    two.flow?.push({ from: "s2", action: "Xác nhận", to: "s1", by: "b" });
     expect(renderPrototype(two).match(/marker-end/g)).toHaveLength(1);
   });
 
