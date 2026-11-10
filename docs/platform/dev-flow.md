@@ -194,7 +194,6 @@ Tiêu chí: miễn phí, nhanh, chính xác, không thêm thứ phải nuôi.
 | **Explore Haiku + Grep** (đang dùng) | tìm "ở đâu, có gì" | **Giữ** | chính xác tuyệt đối theo từ khoá, không cần chỉ mục; yếu khi hỏi theo ý |
 | **Graphify** (đồ thị tri thức của repo) | dựng đồ thị gọi hàm + khái niệm để hỏi thay vì đọc file | **Thử có đo, chưa đưa vào luật** | con số tiết kiệm lớn là do người làm công cụ và người dùng tự báo, có báo cáo ngược lại; phần tài liệu phải dùng model để trích (tốn tiền, có thể sai); đồ thị cũ dần khi 4 agent cùng sửa. Repo đã có `CODEMAP.md`, bản đồ file mỗi CR và depcruise làm phần lớn việc này |
 | **Caveman** (ép trả lời cộc lốc) | giảm token đầu ra | **Không dùng** | đầu ra là phần nhỏ của chi phí; báo cáo agent đã bị ép ≤ 6 dòng; người dùng cần câu trả lời dễ hiểu (G3). Phần nén file luật: đã tự làm bằng cách viết lại `CLAUDE.md` |
-
 | **Jev Router** (TypeSafe; model chọn model + mức suy nghĩ cho từng yêu cầu) | định tuyến yêu cầu tới model rẻ/đắt | **Không dùng cho dây chuyền; xét cho sản phẩm sau** | Claude Code chọn model cho agent bằng bảng cố định (`CLAUDE.md` A2): miễn phí, tức thì, đoán trước được. Jev chạy qua cổng ngoài (OpenRouter), không cắm vào cơ chế subagent; giấy phép mã nguồn mở chưa rõ (các nguồn nói khác nhau). Có thể hợp với chat của Agent Hub (nhiều câu dễ) — cần đo riêng |
 
 **Agent nói với agent (A2A) — cách rẻ và đúng nhất hiện có:**
@@ -203,3 +202,10 @@ Tiêu chí: miễn phí, nhanh, chính xác, không thêm thứ phải nuôi.
 - Giao thức A2A chuẩn (agent card, task, artifact) chỉ đáng dùng khi agent chạy ở hệ thống khác nhau. Trong một repo, file + git đã là kênh rẻ và kiểm được.
 
 Cách thử Graphify nếu muốn: chạy trên một worktree, lấy 10 câu hỏi "bản đồ file" của CR-125/126 đã biết đáp án, so với Explore Haiku về độ đúng, thời gian và token. Chỉ nhận khi đúng ≥ Haiku và nhanh hơn rõ.
+
+## 11. Bộ kit dùng lại và số đo (2026-11-10)
+
+- **Bộ kit:** xương sống của dây chuyền này đã tách thành repo riêng `F:\workspace\ai-dlc-kit` (ngoài repo này, không có tên dự án, tên khách hay script deploy). Gồm luật mẫu (giữ mã G/N/A), tài liệu, agent, skill và công cụ chạy độc lập; `bun run aidlc:init <thư mục dự án>` đổ khung vào dự án mới. Cải tiến dây chuyền từ nay làm ở kit trước rồi mới kéo về đây, để hai nơi không trôi xa nhau.
+- **Chưa kéo ngược về repo này:** công cụ đo `aidlc:metrics` và việc ghi thời gian chạy công cụ (`.aidlc/events.jsonl`) mới có ở kit.
+- **Số đo đầu tiên** (phiên điều phối 2026-11-09 → 10, lấy từ nhật ký Claude Code): ăn cache 98,0% · phiên chính 107,0 triệu token, agent con 162,5 triệu · token viết ra: Sonnet 592 nghìn, Opus 281 nghìn. Tiền chưa tính (chưa cấu hình bảng giá).
+- **Ngưỡng theo dõi:** lát ≤ 20 phút (trung vị) · tra cứu spec ≤ 2 giây · dựng bản mẫu ≤ 1 giây · ăn cache ≥ 70% · làm lại ≤ 20% · file luật ≤ 1.500 từ.
