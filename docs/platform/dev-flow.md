@@ -15,6 +15,8 @@ flowchart LR
   end
   subgraph S2[2 · Chốt]
     B --> C[CR + spec ngắn<br/>câu hỏi một lượt]
+    C -. tuỳ chọn .-> P[Bản mẫu bấm được<br/>/prototype ≤ 15 phút]
+    P -.-> D
     C --> D{Người dùng chốt}
   end
   subgraph S3[3 · Chia]
@@ -46,6 +48,7 @@ flowchart LR
 |---|---|---|---|---|---|
 | 1 | **Nhận (Intake)** | lời người dùng, file, lỗi prod | phiên chính (Nhanh) hoặc `intake-analyst` Opus (Đầy đủ) | bảng ý R1…Rn: Đã có / Mâu thuẫn / Mới / Mơ hồ / Ngoài phạm vi + ảnh hưởng + câu hỏi | người dùng trả lời một lượt |
 | 2 | **Chốt** | bảng Intake đã trả lời | `docs-architect` Sonnet (Opus khi phải tự thiết kế ranh giới) | dòng `CR-xxx` trong `CHANGE-REQUESTS.md`; CR lớn: `docs/specs/CR-xxx/spec.md` | người dùng chốt; làn đầy đủ: `spec-readiness` READY |
+| 2b | **Bản mẫu (tuỳ chọn)** | spec có màn hình hoặc luồng mới | một agent Sonnet, skill `/prototype` | `docs/specs/CR-xxx/prototype.json` → `prototype.html` bấm được, dữ liệu giả, đổi vai để xem | người dùng nghiệp vụ xem và trả lời; câu trả lời ghi vào "Quyết định" của spec |
 | 3 | **Chia** | spec/CR đã chốt | phiên chính + `Explore` Haiku | `docs/specs/CR-xxx/tasks.md`: bản đồ file, bảng lát, làn, số migration giao trước | `res:check` đủ tài nguyên; lát đụng chung file xếp nối tiếp |
 | 4 | **Làm** | brief 6 mục + perf | agent theo vùng: Sonnet viết, Opus `medium` chỉ lõi trạng thái/khoá | code + unit + int của file sửa; `docs/specs/<lát>/tasks.md` có Delta, mỗi Kịch bản `[test: …]` | hook pre-commit (biome, size, boundaries); `slice:merge` = rebase + `openspec:check` + `test:affected` |
 | 5a | **Kiểm — rủi ro** | diff của lát chạm dữ liệu khách / RLS / quyền / trạng thái run / migration | Opus `low`, chỉ đọc | danh sách lỗi theo mức | Blocker/Major ⇒ agent của lát sửa |
@@ -101,20 +104,21 @@ Vòng phản hồi: `ops-watch`, lỗi prod và góp ý người dùng quay lạ
 
 ## 6. Đề xuất cải tiến (chưa làm — cần người dùng chốt)
 
-Xếp theo lợi ích / công. Mỗi mục là một lát tool nhỏ, không đụng sản phẩm.
+Xếp theo mức chặn được lỗi đã xảy ra. Nguyên tắc chọn: **bắt lỗi ở tầng rẻ nhất** (`CLAUDE.md` mục 4, N1) — một lỗi lộ ở e2e tốn ~11 phút mỗi lượt, lộ ở int tốn 15 giây.
 
-| Ưu tiên | Việc | Vá hổng | Công |
+| Ưu tiên | Việc | Vá hổng | Trạng thái (2026-11-10) |
 |---|---|---|---|
-| 1 | **Tra cứu spec cho Intake** (`spec:find`) — xem mục 7 | G1 | 1 lát Sonnet |
-| 2 | **Hợp đồng env**: một schema zod liệt kê biến mỗi service cần; `verify:predeploy` so với `.env` do `gen-env.sh` sinh (chỉ so tên, không in giá trị) | G2 | 1 lát Sonnet |
-| 3 | **Luật vai cho e2e hành trình**: mỗi bước do đúng vai được giao làm, vai đó **không** phải người tạo dữ liệu; int quyền luôn có ca "người được giao, không phải người tạo" | G3 | sửa `_support` + ghi vào khuôn brief |
-| 4 | **Smoke staging thành cổng**: sau mỗi lần deploy staging chạy `e2e-smoke.ps1`; thêm một hành trình ghi ngắn bằng hộp thư thử | G2, G3 | đã có phần đọc; thêm phần ghi 1 lát |
-| 5 | **Kiểm import Node cho seed/e2e** trong `slice:merge` (`node --check` chuỗi import của `e2e/**/seed*`) | G4 | nửa lát |
-| 6 | **Delta cho sửa thẳng đổi hành vi**: hook commit hỏi "đổi hành vi nhìn thấy được?" ⇒ bắt ghi 3 dòng vào `docs/specs/_direct/<ngày>.md` theo định dạng Delta | G5 | nửa lát |
-| 7 | **Sổ phát hành** `docs/RELEASES.md` do script deploy ghi: môi trường · commit · CR · migration cuối · ai duyệt | G6 | nửa lát |
-| 8 | **Gom luật**: `CLAUDE.md` chỉ giữ luật ngắn theo giai đoạn + trỏ về file này; bỏ các câu "THẮNG" bằng một bảng ưu tiên duy nhất. Làm cuối đợt (giữ prompt cache) | G7 | 1 lát docs, người dùng duyệt từng dòng |
-| 9 | **Số đo dây chuyền**: script đọc git + log evotest ⇒ thời gian mỗi lát, số lượt e2e mỗi CR, số đỏ mới, số lần gửi lại agent | G8 | 1 lát Sonnet |
-| 10 | **Danh sách `uow.system`**: check liệt kê mọi chỗ gọi, bắt có chú thích lý do; chỗ mới ⇒ Opus `low` soát | G9 | nửa lát |
+| 1 | **Hợp đồng env** `deploy/env-contract.json` + `check:env-contract` trong `verify:predeploy` (chỉ so tên biến) | G2 | lát `pl-deploy-guard` |
+| 2 | **Luật vai cho e2e hành trình**: mỗi bước do đúng vai làm, khác người tạo dữ liệu; int quyền có ca "người được giao, không phải người tạo" | G3 | lát `pl-e2e-roles` + `CLAUDE.md` N2 |
+| 3 | **Sổ phát hành** `docs/RELEASES.md` do `release:log` ghi: môi trường · commit · CR · migration cuối | G6 | lát `pl-deploy-guard` |
+| 4 | **Tra cứu spec cho Intake** (`spec:find`) — mục 7 | G1 | lát `pl-spec-find` |
+| 5 | **Bản mẫu bấm được** (`/prototype`, tuỳ chọn) — mục 9 | yêu cầu đến muộn | lát `pl-prototype` |
+| 6 | **Gom luật**: `CLAUDE.md` ngắn theo giai đoạn, một bảng ưu tiên; chi tiết cũ ở `docs/RULES-DETAIL.md` | G7 | đã làm |
+| 7 | **Smoke staging thành cổng** sau mỗi lần deploy staging; thêm một hành trình ghi ngắn bằng hộp thư thử | G2, G3 | phần đọc đã có; phần ghi chưa |
+| 8 | **Kiểm import Node cho seed/e2e** trong `slice:merge` | G4 | chưa |
+| 9 | **Delta cho sửa thẳng đổi hành vi** (hook nhắc khi commit trên `platform/gd0`) | G5 | luật đã ghi; hook chưa |
+| 10 | **Danh sách `uow.system`**: check liệt kê mọi chỗ gọi, chỗ mới ⇒ Opus `low` soát | G9 | chưa |
+| 11 | **Số đo dây chuyền**: thời gian mỗi lát, số lượt e2e mỗi CR, số đỏ mới | G8 | chưa |
 
 ## 7. RAG ở Intake — có nên không
 
@@ -164,8 +168,29 @@ Xếp theo lợi ích / công. Mỗi mục là một lát tool nhỏ, không đ�
 | Gộp current | Có | tìm mọi chỗ trong current nhắc tới thứ vừa đổi (D6: chuyển mọi chỗ đọc) |
 | Hỗ trợ người dùng cuối | Đã có | trợ lý `assistant` + `knowledge-search`, `app-guide` — việc của sản phẩm, không phải dây chuyền |
 
-## 8. Lộ trình gợi ý
-1. **Tuần này:** mục 6 ưu tiên 1–3 (tra cứu Intake, hợp đồng env, luật vai e2e). Ba lát độc lập, chạy song song.
-2. **Sau khi CR đang mở đóng:** ưu tiên 4–7 (smoke ghi, kiểm import, Delta sửa thẳng, sổ phát hành).
-3. **Cuối đợt:** ưu tiên 8 (gom luật `CLAUDE.md`) — đổi một lần để giữ prompt cache; rồi 9–10.
-4. **Xét lại bậc 2 RAG** sau một tháng có số đo.
+## 8. Lộ trình
+1. **Đang làm (2026-11-10):** ưu tiên 1–6.
+2. **Sau khi CR đang mở đóng:** ưu tiên 7–9.
+3. **Sau đó:** ưu tiên 10–11; xét lại bậc 2 RAG sau một tháng có số đo.
+
+## 9. Bản mẫu bấm được (tuỳ chọn)
+
+Người dùng dây chuyền ngày càng là người nghiệp vụ, không đọc spec. Thứ họ phán được là **màn hình**. Bản mẫu đưa câu hỏi "có đúng ý không" lên trước khi code — lúc sửa còn rẻ.
+
+- **Khi dùng:** CR thêm hoặc đổi màn hình, luồng nhiều vai, hoặc người dùng nói "tôi chưa hình dung được". **Bỏ qua** với sửa lỗi, backend, công cụ.
+- **Là gì:** một file `prototype.html` tự chứa, sinh từ `prototype.json` (màn hình, vai, nút bấm chuyển màn, trạng thái trống/lỗi/chờ). Dữ liệu giả. Không cần chạy stack.
+- **Giới hạn cứng:** ≤ 15 phút, ≤ 8 màn. Chỉ lấy từ spec, không tự thêm yêu cầu; chỗ chưa rõ thành câu hỏi. Không dữ liệu khách thật.
+- **Không phải nguồn sự thật:** người dùng trả lời xong ⇒ ghi vào "Quyết định" của spec; bản mẫu bỏ được.
+- **Đo:** số yêu cầu phát sinh sau khi đã code (mục tiêu giảm một nửa so với CR-125/126).
+
+## 10. Công cụ ngoài đã xét (2026-11-10)
+
+Tiêu chí: miễn phí, nhanh, chính xác, không thêm thứ phải nuôi.
+
+| Công cụ | Làm gì | Quyết định | Lý do |
+|---|---|---|---|
+| **Explore Haiku + Grep** (đang dùng) | tìm "ở đâu, có gì" | **Giữ** | chính xác tuyệt đối theo từ khoá, không cần chỉ mục; yếu khi hỏi theo ý |
+| **Graphify** (đồ thị tri thức của repo) | dựng đồ thị gọi hàm + khái niệm để hỏi thay vì đọc file | **Thử có đo, chưa đưa vào luật** | con số tiết kiệm lớn là do người làm công cụ và người dùng tự báo, có báo cáo ngược lại; phần tài liệu phải dùng model để trích (tốn tiền, có thể sai); đồ thị cũ dần khi 4 agent cùng sửa. Repo đã có `CODEMAP.md`, bản đồ file mỗi CR và depcruise làm phần lớn việc này |
+| **Caveman** (ép trả lời cộc lốc) | giảm token đầu ra | **Không dùng** | đầu ra là phần nhỏ của chi phí; báo cáo agent đã bị ép ≤ 6 dòng; người dùng cần câu trả lời dễ hiểu (G3). Phần nén file luật: đã tự làm bằng cách viết lại `CLAUDE.md` |
+
+Cách thử Graphify nếu muốn: chạy trên một worktree, lấy 10 câu hỏi "bản đồ file" của CR-125/126 đã biết đáp án, so với Explore Haiku về độ đúng, thời gian và token. Chỉ nhận khi đúng ≥ Haiku và nhanh hơn rõ.

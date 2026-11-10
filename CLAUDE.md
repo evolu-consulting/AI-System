@@ -1,156 +1,82 @@
-# AI System — luật làm việc cho Claude
+# Evolu Platform — luật cho Claude và mọi agent
 
-Nền tảng AI multi-tenant: **Admin** (tenant, user, group, quyền, command, catalog workflow, quota), **Agent Hub** (điều phối agent, Studio), **Worker** (job, CLI subscription), **Chat App / Extension**. Chưa có code; thiết kế v0.4 đã xong.
+Nền tảng AI multi-tenant: lõi chung (đăng nhập, tenant, quyền, Agent Hub, MCP, RAG) + các app là gói riêng (Sổ Hợp Tác, Community…). Nhánh làm việc: `platform/gd0`.
 
-## Bắt đầu mỗi phiên
-1. Đọc `docs/STATE.md` (đang làm gì, việc kế tiếp).
-2. Cần tìm gì → `docs/INDEX.md`, rồi mở **đúng một** thứ. Không đọc cả `docs/design/`.
-3. Chuẩn code: `docs/CONVENTIONS.md`. Quy trình và đội agent: `docs/WORKFLOW.md`.
+**Đọc trước:** `docs/STATE.md` → cần tìm gì thì `docs/INDEX.md`, mở đúng một file. Bản đồ dây chuyền: `docs/platform/dev-flow.md`. Cách làm chi tiết: `docs/WORKFLOW.md`. Chuẩn code: `docs/CONVENTIONS.md`. Lý do và lịch sử từng luật: `docs/RULES-DETAIL.md` (không nạp mỗi phiên; mâu thuẫn thì file này thắng).
 
-## Stack (chi tiết: `docs/adr/0001-stack.md`)
-TypeScript strict · Bun + Turborepo · Rsbuild + React + Tailwind + shadcn/ui · Hono · Postgres + Drizzle (RLS) · zod · Redis · Biome · bun test + Playwright · Docker Compose.
+**Stack:** TypeScript strict · Bun + Turborepo · Rsbuild + React + Tailwind + shadcn/ui · Hono · Postgres + Drizzle (RLS) · zod · Redis · Biome · bun test + Playwright · Docker Compose.
 
-## Lệnh (có sau M0)
-`bun install` · `bun run dev` · `bun run typecheck` · `bun test` · `bun run test:int` (cần DB) · `bun run test:int:par [--workers=N] [đường dẫn…]` (int song song, DB riêng mỗi worker, DB test clone từ mẫu — dùng mặc định khi chạy ≥ 2 file int) · `bun run test:perf` (đo p95, không thuộc Lệnh xong) · `bun run e2e` (= `bunx playwright test`) · `bun run check:bundle` · `bun run keys:dev` · `bun run db:migrate` · `bun run mocks` · `bunx biome check --write --changed` · `bun run check:size` · `bun run res:check [--server] [--json]` (đo CPU/RAM/đĩa/slot → số agent/Playwright/slot evotest song song được) · `bun run trace <FR>` · `bun run test:lock:verify` · `docker compose up -d`
+**Lệnh hay dùng:** `bun run slice:new|slice:merge|slice:rm <lát>` · `bun run test:affected` · `powershell -File deploy/evotest/run-tests.ps1 -Step int|e2e -Filter "<đường dẫn cách nhau dấu cách>" [-Dirty]` · `bun run openspec:check|pending|archive` · `bun run spec:find "<câu>"` · `bun run proto:build <thư mục CR>` · `bun run res:check [--server]` · `bun run check:env-contract` · `bun run verify:predeploy|verify:prod` · `bun run release:log`.
 
-**Lệnh xong M0** (T17, máy sạch): `bun install --frozen-lockfile && docker compose up -d --wait && bun run db:migrate && bun run check && bun run typecheck && bun test && bun tests/acceptance/ADM-NFR-06/ac07.check.ts && bun run test:int && bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web check:bundle && bunx playwright test && bun run test:lock:verify && bun run trace --check`
+## 0. Thứ tự ưu tiên (một bảng duy nhất, không có ngoại lệ khác)
+1. **An toàn** — mục 2 (điểm dừng cứng).
+2. **Nhất quán và dễ hiểu** — mục 1.
+3. **Đúng** — spec, test, quyền.
+4. **Nhanh** — thời gian tới lúc người dùng dùng được.
+5. **Rẻ** — token.
 
-## Luật GỐC — Nhất quán và dễ hiểu (người dùng chốt 2026-11-05, THẮNG mọi luật khác khi mâu thuẫn)
-1. **Dữ liệu nhất quán:** mỗi khái niệm có **một nguồn sự thật**; không lưu cùng một thứ ở hai nơi không ràng buộc. Thay nguồn ⇒ backfill + chuyển mọi chỗ đọc + gỡ cái cũ trong cùng thay đổi (D6). Có check tự động (ops-watch/int) phát hiện lệch.
-2. **Thiết kế nhất quán:** một khái niệm = một tên + một màn hình/component dùng chung ở mọi nơi; không có hai control cho cùng một việc; mọi app dùng chung khung (shell), bố cục cài đặt, token màu, kiểu nút; app mới theo đúng khuôn (manifest, khe flow, basePath).
-3. **UI/UX dễ hiểu với người dùng thật:** nhãn theo ngôn ngữ nghiệp vụ, không lộ khái niệm kỹ thuật (khe, add-on, def…); màn hình nói rõ **trạng thái và lý do** (vì sao không chạy, bước kế là gì, ai cần làm gì); không có thao tác ẩn bắt buộc (vd gán xong mà phải bật công tắc ở chỗ khác); thông báo lỗi nói cách khắc phục.
-4. **Kiểm trước khi báo xong:** reviewer chặn (Blocker) nếu vi phạm 1–3; tính năng chỉ "xong" khi e2e hành trình thật (D5) xanh và một lượt soát UI theo mục 3 (chụp màn hình các bước chính).
+Hai luật mâu thuẫn ⇒ luật ở bậc trên thắng. Cùng bậc ⇒ chọn cách dễ đổi lại hơn.
 
-## Luật 0 — Intake: thông tin mới phải đối chiếu với spec (hỏi trước khi chạy)
-Khi người dùng đưa **yêu cầu / thay đổi / ghi chú / file** (đầu phiên hay giữa phiên):
-1. Không phải yêu cầu (câu hỏi, trò chuyện, xác nhận ngắn) → không làm gì.
-2. Người dùng đang gửi nhiều phần ("còn nữa", "gửi tiếp") → chờ tới "xong".
-3. **Hỏi một câu**: chạy Intake **Nhanh** (1–3 ý, tự đối chiếu trong phiên) / **Đầy đủ** (agent `intake-analyst`) / **Bỏ qua**. Không tự chạy. Đã Bỏ qua cho chủ đề đó thì không hỏi lại tới khi có dữ liệu mới.
-4. Chạy theo skill `/intake`. Kết quả chốt → `docs-architect` cập nhật BA/spec + `docs/CHANGE-REQUESTS.md` (`CR-xxx`) → Luật 1 cho spec bị ảnh hưởng. Spec đã qua Gate → Gate lại.
-Người dùng gõ `/intake` thì chạy luôn (đã là xác nhận).
+## 1. Luật gốc
+- **G1. Một nguồn sự thật.** Mỗi khái niệm lưu một chỗ. Thay nguồn ⇒ cùng thay đổi phải backfill, chuyển mọi chỗ đọc, gỡ cái cũ.
+- **G2. Một khái niệm = một tên, một màn hình, một control.** App mới theo đúng khuôn (manifest, shell, token màu).
+- **G3. Người dùng thật hiểu được.** Nhãn theo nghiệp vụ, không lộ từ kỹ thuật. Màn hình nói trạng thái, lý do, ai làm bước kế. Không có thao tác ẩn bắt buộc. Ít chữ.
+- **G4. "Xong" = e2e hành trình thật xanh + đã soát UI góc người dùng.** Thiếu một trong hai ⇒ nói "chưa xong".
 
-## Luật 0b — Chế độ nhanh (người dùng chốt 2026-10-19, CR-095) — THẮNG Luật 1, 1b, 2b, 3, 4b khi mâu thuẫn
-- **Lát nhỏ** (≤ ½ ngày), **một agent làm trọn** trên **worktree/nhánh riêng** của lát; merge tuần tự vào `platform/gd0`. Không readiness, không Gate, không qc viết trước, không review từng lát.
-- **Giấy tờ** (trừ làn sửa thẳng Luật 0d.6 — không cần): chỉ `docs/specs/<lát>/tasks.md` (plan ngắn + quyết định + việc còn lại). Không spec/plan/readiness/review/ket-luan/gate riêng; STATE/ROADMAP cập nhật một lần cuối đợt. Mục `## Delta (so với docs/current)` của `tasks.md` theo khối `### ADDED|MODIFIED|REMOVED <file>` + `#### Yêu cầu` + `- Kịch bản:` (mỗi Kịch bản kèm `[test: …]`) (hoặc `Không thay đổi hành vi (lý do: …)`); `bun run openspec:check` kiểm và `slice:merge` từ chối khi đỏ (ADR-0032).
-- **Test tối thiểu trong lát (người dùng chốt 2026-10-20, THẮNG Luật 3/4b/4c khi mâu thuẫn):** chỉ viết + chạy (a) unit cho logic thuần, (b) **một** int đường chính mỗi endpoint mới, (c) **một** test chặn đọc chéo tenant mỗi bảng mới. Logic chung cho mọi tenant ⇒ không test từng tenant/từng case lặp. Không chạy e2e, không chụp baseline, không chạy bộ khác, không chạy lại "cho chắc" trong lát; perf test chỉ cho đường nóng đã có ngưỡng. Viết file e2e được, **không chạy**. **e2e + `test:all` + UAT chạy MỘT lần ở cuối** khi đã làm hết feature. Lát phụ thuộc chạy ngay khi lát nó cần đã merge (không chờ cả đợt). Giao trước số migration + `when` journal cho mỗi lát chạy song song.
-- **Review:** một lượt review + security trên diff gộp **cuối đợt**; lỗi gửi lại đúng agent đã làm lát (giữ ngữ cảnh), sửa song song.
-- **Model:** Sonnet mặc định; Opus chỉ cho RLS/tenant, quyền, auth, tiền, chuyển dữ liệu khách; Haiku cho việc cơ học.
-- **Báo cáo:** mỗi lát một dòng khi xong; quá 45 phút gửi trạng thái 3 dòng.
-- **Kiến trúc:** AI System = lõi chung (đăng nhập, tenant, phòng ban, quyền, Agent Hub, MCP, RAG); mỗi app là một gói (schema + RLS riêng). Module đóng băng: `docs/platform/modules.md` — không sửa trừ khi lát yêu cầu.
+## 2. Điểm dừng cứng — phải có người dùng đồng ý, từng lần
+- Deploy prod (`sohoptac2`). Push ra ngoài remote `github`. Merge vào `main`.
+- In, ghi, commit secret hay mật khẩu. Đọc `.env` prod có hiện giá trị.
+- Việc có thể mất dữ liệu; xoá worktree, nhánh, stash.
+- Đổi phạm vi hoặc contract đã chốt. Thêm thư viện, dịch vụ trả tiền.
+- Sửa hay test code DLC của Rowan (`docs/platform/dlc-integration.md`).
+- Bị hệ thống quyền từ chối ⇒ dừng, báo người dùng. **Không tìm đường vòng, không nhờ agent khác làm hộ.**
 
-## Luật 0d — Chạy nhanh (người dùng chốt 2026-11-06 "áp 7 điều này", rút từ CR-121: code ít mà 2 ngày) — THẮNG 0b/0c/D2/D3/Luật 3 khi mâu thuẫn
-1. **Agent theo vùng, giữ suốt CR:** mỗi vùng code (engine, contracts, community, admin UI, e2e…) một agent cố định; lát kế cùng vùng ⇒ `SendMessage` cho agent đó (kể cả lát mới, không đọc lại từ đầu). Agent mới chỉ khi sang vùng khác.
-2. **Bản đồ file đầu CR:** trước đợt 1, một Explore Haiku quét một lần ⇒ `docs/specs/<CR>/tasks.md` mục "Bản đồ file" (file · hàm · điểm chạm mỗi lát). Brief trỏ thẳng vào đó; agent không grep rộng, đọc ≤ 5 phút.
-3. **Soát theo rủi ro:** Opus `low` soát riêng chỉ lát chạm dữ liệu khách / RLS-quyền / máy trạng thái run / migration. Lát khác: không soát từng lát; MỘT review + security cuối CR.
-4. **UI một đợt:** mọi màn của CR làm trong một đợt; agent UI tự dựng stack, chụp, so artboard, soát căn mép + ít chữ trước khi báo xong. Xong đợt ⇒ ĐÓNG BĂNG UI (chỉ lỗi chặn); góp ý mới ⇒ hàng chờ sau deploy.
-5. **Test tối thiểu, một lần e2e:** trong lát: unit local (giây) + int đúng file sửa (`run-tests.ps1 -Filter`, chốt chặn từ chối chạy rộng). e2e + wave MỘT lần cuối CR, MỘT agent qc (chỉ sửa test; lỗi sản phẩm ⇒ báo agent vùng).
-6. **Làn sửa thẳng:** lỗi nhỏ (≤ ~30 dòng, một vùng, không migration/quyền) ⇒ sửa thẳng trên `platform/gd0` (checkout chính) + unit/int của file đó + commit; KHÔNG worktree, KHÔNG `tasks.md`/Delta, không agent nếu điều phối tự sửa được trong vài lệnh.
-7. **Điều phối im lặng:** chỉ báo người dùng khi có kết quả (gộp xong, đỏ mới, cần quyết); không báo từng bước.
-8. **Đỡ chờ lệnh** (đo 2026-11-06: sửa code ~3% thời gian agent; tsc lặp 48 lần = 20 phút): tsc/check:*/depcruise MỘT lần cuối lát, chỉ gói đổi; tìm/đọc bằng Grep/Read, không Select-String/Get-Content; không Start-Sleep chờ (chạy nền); ≤ 60 lần gọi công cụ/lát, viết trọn file hoặc gom sửa; không dừng giữa lát để hỏi. Điều phối gộp ngay khi lát báo xong.
-9. **Chạy lại test chỉ phần đỏ, song song** (người dùng 2026-11-06 "phải set từ đầu"): lượt sau chỉ chạy job/file còn đỏ; job khác nhau ⇒ lệnh evotest riêng chạy nền song song; `run-tests.ps1 -Step e2e -Filter` tự chạy mọi job cùng lúc (≤ 4, 2 CPU/job); sửa hết ca đỏ đã biết rồi mới chạy lại; đọc đuôi ca đỏ, không đọc cả log; chờ evotest bằng lệnh TIỀN CẢNH (timeout 600000), KHÔNG chạy nền rồi Start-Sleep (qc CR-122 mất 52/89 phút vì ngủ chờ). Brief qc/agent luôn ghi sẵn điều này.
-10. **Lát nối app ↔ engine phải có e2e hành trình thật** (CR-122): lát làm app phát sự kiện / nhận kết quả flow, hoặc đổi trạng thái thẻ duyệt, VIẾT spec e2e hành trình (vd journey-approval) — **không chạy trong lát** (người dùng 2026-11-08), chạy MỘT lần ở lượt e2e cuối đợt; int phải kiểm cả thứ người dùng thấy (thẻ/`getApproval`), không chỉ dòng trong DB.
-11. **Siết tốc độ lát** (người dùng 2026-11-08 "siết rule lại"): (a) brief ghi sẵn **file + hàm cần sửa** (điều phối/Explore Haiku tra trước) — agent đọc ≤ 3 phút, không grep rộng; (b) lát chỉ chạy unit + int của file sửa, **tsc chỉ gói đổi**, không e2e; (c) mục tiêu ≤ 20 phút/lát thường, ≤ 40 phút/lát Opus; quá giờ ⇒ commit phần xanh + ghi "Việc còn lại", không điều tra mới; (d) việc tiếp cùng vùng ⇒ gửi agent cũ (đã có ngữ cảnh); (e) **Haiku** cho rebase/gỡ xung đột/relock/chạy lại test/dọn — phiên chính không tự làm; (f) lát đụng chung file ⇒ xếp nối tiếp theo thứ tự gộp cố định, lát độc lập mới song song; (g) phiên chính gộp ngay khi lát commit.
+Ngoài danh sách này: đủ thông tin thì làm, không hỏi "tiếp tục không?". Việc đã chốt không hỏi lại.
 
-## Luật 0c — Tiết kiệm token (người dùng chốt 2026-10-30, rút từ đợt CR-103) — xếp theo mức tiết kiệm
-1. **Ít làm lại nhất:** chạy `bun run res:check [--server]` trước khi giao lát song song (WORKFLOW "Kiểm tra tài nguyên…"); test kiểm trạng thái thật (không chỉ "dòng có hiện"); mỗi worktree có "làn" e2e riêng tự động (cổng, DB test, Redis DB thuê toàn máy — `bun run test:e2e:par` / `run-playwright.ts` tự lấy, không đặt env tay; `bun run e2e:lanes [--prune]`, `bun run e2e:reap`; xem WORKFLOW "e2e theo làn"); agent tự tắt mọi server mình bật (`Stop-Process` theo PID của worktree mình) trước khi báo xong.
-2. **Model theo rủi ro** (Luật 0b) — chia cụ thể:
-   - **Phiên chính (điều phối):** chỉ phân tích, chia lát, ra quyết định, hỏi người dùng, merge, deploy. KHÔNG tự chạy lại test/e2e, đọc log dài, dọn server/worktree, chụp ảnh — giao Haiku rồi đọc tóm tắt.
-   - **Opus (agent):** RLS/tenant, quyền, auth/secrets, tiền, migration dữ liệu khách, review + security cuối đợt, thiết kế ranh giới module/contract mà nhiều lát dựa vào, và **mọi thứ đổi trạng thái run/máy trạng thái** (launch/settle/kick/join/skip/retry/timer, kể cả phần chạy của một loại node mới), đồng thời/khoá/hàng đợi/idempotency, đường nóng có ngưỡng perf. Bài học CR-103: node `set`/`if` giao Sonnet ⇒ 1 lỗi Cao + 3 TB đều ở phần chạy; phần Opus không lỗi. **Lát lẫn hai loại ⇒ tách:** Opus làm phần chạy + int trạng thái, Sonnet làm contract/editor/canvas/e2e.
-   - **Giao Opus cho gọn** (không ôm việc không cần suy nghĩ): (a) trước khi gọi Opus, `Explore` Haiku gom sẵn danh sách file/hàm/điểm chạm + bối cảnh, đưa vào brief — Opus không tự grep rộng; (b) brief Opus chỉ phần khó (logic trạng thái/quyền/khoá + int test của chính phần đó), giới hạn file được sửa; (c) phần còn lại của lát (UI, contract hiển thị, e2e, `tasks.md`/Delta, relock, chạy lại bộ test rộng) giao Sonnet/Haiku sau khi Opus xong; (d) mức suy nghĩ của agent (người dùng chốt 2026-10-30: Opus 5.5 medium đủ mạnh): Opus luôn `effort: medium` (cả thiết kế/review bảo mật); chỉ nâng `high` khi một lượt medium đã làm sai/bế tắc trên đúng việc đó; Sonnet mặc định; Haiku mặc định (rẻ sẵn, không hạ `low` để tránh làm sai phải chạy lại). **Việc "hơi khó"** (khó hơn code thường nhưng không chạm trạng thái run/quyền — vd thuật toán layout, hạ tầng test có khoá, chẩn đoán lỗi nhiều bước): nhiều code/đầu ra ⇒ **Sonnet `effort: high`**; phán đoán ngắn, đầu ra ít (soát diff nhỏ tìm lỗi logic, chọn 1 trong 2 thiết kế, phân loại lỗi test mới/cũ) ⇒ **Opus `effort: low`**; Sonnet high sai lần 2 trên cùng việc ⇒ Opus medium.
-   - **Opus chỉ soát, không làm cả lát (người dùng chốt 2026-11-05):** migration/backfill đơn giản (vd `INSERT … SELECT … ON CONFLICT DO NOTHING`, thêm cột, grant) và sửa đường ghi dữ liệu ⇒ **Sonnet `effort: high`** viết migration + code + UI + test, rồi **Opus `effort: low`** soát riêng diff phần dữ liệu khách/RLS/quyền (một lượt ngắn). Opus `medium` làm cả lát chỉ khi đổi **máy trạng thái run/khoá/đồng thời** hoặc logic quyền phức tạp. **Không gộp UI/e2e vào lát Opus** — tách cho Sonnet.
-   - **Sonnet (agent, mặc định):** code + test + sửa lỗi của một lát (BE/FE/UI/e2e mới), gộp `docs/current` cuối đợt.
-   - **Quét tài liệu/code:** tìm "ở đâu, có gì" (file, chỗ dùng, danh sách) ⇒ agent `Explore` model **Haiku**, chỉ trả kết luận; đối chiếu spec↔code, tìm nguyên nhân lỗi ("có đúng không, vì sao") ⇒ **Sonnet**; quét để review bảo mật/quyền ⇒ **Opus**. Phiên chính chỉ tự đọc khi đã biết đúng 1–3 file, không grep rộng.
-   - **Haiku (agent):** chạy lại bộ test/e2e đã có và tóm tắt pass/fail + nguyên nhân sơ bộ; relock test (`test:lock:write/verify`); dọn worktree, server mồ côi, DB test; cập nhật STATE/CODEMAP/INDEX; chụp ảnh màn hình bằng script có sẵn; `openspec:pending/archive`; smoke prod bằng script có sẵn.
-3. **Tái dùng ngữ cảnh:** việc tiếp/sửa lỗi của **cùng lát hoặc cùng vùng code** ⇒ `SendMessage` cho agent đã làm (ngữ cảnh còn cache) — thắng câu "không SendMessage giao việc mới" của Luật 3; vùng khác ⇒ agent mới kèm bàn giao.
-4. **Brief hẹp, báo cáo ngắn:** brief đủ 6 mục (Luật 3), chỉ đường file cụ thể; báo cáo ≤ 10 dòng; phiên chính không đọc transcript agent, chỉ đọc đuôi log (`-Tail`, `Select-String`).
-5. **Prompt cache:** giữ `CLAUDE.md`/tài liệu chung ổn định trong đợt (sửa gom cuối đợt); Claude Code tự cache, không cần cấu hình.
-6. **Đọc ít:** tra `docs/INDEX.md`/CODEMAP trước, mở đúng file; code theo Clean Architecture + file nhỏ (Luật 4) để agent không phải đọc rộng.
+## 3. Dây chuyền — 7 giai đoạn
+| # | Giai đoạn | Luật |
+|---|---|---|
+| 1 | **Nhận** | Yêu cầu mới ⇒ Intake (`/intake`): tách ý, tra `spec:find`, phân loại, hỏi **một lượt** kèm mặc định. Câu hỏi thường, xác nhận ngắn ⇒ không Intake. "Đã có"/"Mâu thuẫn" phải kèm trích nguyên văn + `file:dòng`. |
+| 2 | **Chốt** | Ghi `CR-xxx`. CR có màn hình hoặc luồng mới ⇒ **nên** làm bản mẫu bấm được (`/prototype`, ≤ 15 phút) cho người dùng xem trước khi code. Chưa chốt ⇒ không code. |
+| 3 | **Chia** | Bản đồ file trước, rồi chia lát. Lát ≤ 20 phút (lát Opus ≤ 40). Lát chung file ⇒ nối tiếp. Giao trước số migration. |
+| 4 | **Làm** | Mỗi lát một worktree, một agent làm trọn. `tasks.md` có Delta; mỗi Kịch bản có `[test: …]`. Lỗi nhỏ (≤ 30 dòng, một vùng, không migration, không quyền) ⇒ sửa thẳng trên `platform/gd0`; nếu đổi hành vi nhìn thấy được thì vẫn ghi Delta. |
+| 5 | **Kiểm** | Soát Opus cho diff chạm dữ liệu khách / RLS / quyền / trạng thái run / migration — **không bỏ qua, kể cả sửa thẳng**. e2e hành trình **một lần** cuối đợt, do điều phối chạy. Soát UI góc CEO/sale. |
+| 6 | **Phát hành** | Staging: deploy ⇒ chạy smoke (`deploy/stg-test/e2e-smoke.ps1`) ⇒ `release:log`. Prod: mục 2 + `verify:predeploy` + backup + `verify:prod`. |
+| 7 | **Đóng** | Gộp Delta vào `docs/current`, `openspec:archive`, cập nhật `STATE.md`. Xoá worktree đã gộp (hỏi người dùng). |
 
-**Ma trận model (người dùng chốt 2026-11-05 — "việc không cần thinking cao thì không dùng Opus, giữ quality"). Chọn theo việc, không theo độ quan trọng của CR:**
+## 4. Nhanh và đúng — bắt lỗi ở tầng rẻ nhất
+- **N1. Tầng bắt lỗi.** Logic ⇒ unit (giây). Quyền, RLS, SQL ⇒ int (chục giây). Luồng nhiều vai ⇒ e2e (phút). Cấu hình môi trường ⇒ `check:env-contract` + smoke staging. Lỗi lọt xuống tầng đắt hơn ⇒ thêm test ở tầng rẻ, cùng lần sửa.
+- **N2. Test quyền luôn có ca "người được giao, không phải người tạo dữ liệu".** e2e hành trình: mỗi bước do đúng vai làm, khác người tạo.
+- **N3. Trong lát chỉ chạy:** unit + int của file sửa; `tsc` một lần cuối, chỉ gói đổi. Không e2e, không chạy lại "cho chắc". Tối đa 3 lượt test mỗi lát.
+- **N4. Chạy lại chỉ phần đỏ.** Chỉ báo đỏ mới (ngoài `tests/known-red.json`).
+- **N5. Không ngủ chờ.** Code, test, agent đều không `sleep`/poll. Chờ evotest bằng lệnh tiền cảnh.
+- **N6. Test nặng lên evotest**, chia slot song song. Local tối đa 2 Playwright.
+- **N7. Hiệu năng là yêu cầu.** SQL theo tập, số câu cố định mỗi lô. Đường nóng có ngưỡng và test perf. Báo số thật.
+- **N8. Sửa lỗi:** viết test đỏ tái hiện trước, rồi sửa.
 
-| Việc | Model · effort |
+## 5. Agent
+- **A1. Tối đa 4 agent code cùng lúc.** Việc độc lập ⇒ chạy song song. Không thêm việc vào agent đang chạy.
+- **A2. Model theo việc:**
+
+| Việc | Model |
 |---|---|
-| Dọn worktree/nhánh, relock, chạy script có sẵn + tóm tắt, cập nhật STATE/CODEMAP, đổi tên/đường dẫn hàng loạt | Haiku · mặc định |
-| Tìm "ở đâu/có gì" trong code/tài liệu | Explore Haiku |
-| Code + test một lát thường: UI, e2e, API CRUD, mapper, i18n, seed, script, docs/spec từ quyết định đã chốt | Sonnet · mặc định |
-| Lát "hơi khó": migration/backfill đơn giản, sửa đường ghi dữ liệu, perf SQL, hạ tầng test, chẩn đoán lỗi nhiều bước, đổi tên/refactor lớn | Sonnet · high |
-| Soát diff rủi ro (dữ liệu khách, RLS/quyền, máy trạng thái run) sau khi Sonnet viết; phân loại lỗi mới/cũ; chọn 1 trong 2 thiết kế | Opus · low |
-| Tự viết lõi máy trạng thái run / khoá / đồng thời / idempotency; thiết kế ranh giới module/contract nhiều lát dựa vào (spec CR lớn); review + security cuối đợt | Opus · medium |
-| Opus · high | chỉ khi Opus medium đã sai/bế tắc đúng việc đó |
+| Dọn, relock, chạy script, tìm "ở đâu" | Haiku |
+| Code + test một lát, UI, e2e, docs | Sonnet |
+| Migration đơn giản, perf SQL, chẩn đoán nhiều bước | Sonnet `high` |
+| Soát diff rủi ro, chọn một trong hai thiết kế | Opus `low` |
+| Tự viết lõi trạng thái run / khoá / đồng thời; review + security cuối CR | Opus `medium` |
 
-Quy tắc kèm: không gộp UI/e2e/docs vào lát Opus; spec CR thường (quyết định đã chốt, chỉ cần viết ra) ⇒ Sonnet; Opus chỉ khi phải tự thiết kế. Sonnet high sai lần 2 cùng việc ⇒ Opus medium. Phiên điều phối không tự làm việc của Haiku/Sonnet (đọc log dài, chạy test lặp).
+- **A3. Brief đủ 7 mục:** phạm vi (làm / không làm) · file + hàm cần sửa · xong khi (lệnh, chạy một lần) · được phép đỏ · giới hạn thời gian · perf · khuôn báo cáo. Trỏ file, không chép nội dung.
+- **A4. Báo cáo ≤ 6 dòng:** commit · test (lệnh → kết quả) · việc dở · bẫy · thời gian (code / chờ / sửa).
+- **A5. Cấm với mọi agent:** `--no-verify`, `LEFTHOOK=0`, tiến trình tách rời, ghi ngoài worktree của mình, `git checkout -- .`, `git stash`/`reset` index chung, kill rộng (chỉ dừng PID mình bật), tự chạy e2e toàn job, sửa test đã khoá (trừ qc), dừng giữa lát để hỏi.
+- **A6. Agent ≤ 60 lần gọi công cụ mỗi lát.** Tìm và đọc bằng Grep/Read. Quá giờ ⇒ commit phần xanh, ghi "Việc còn lại", dừng.
+- **A7. Việc tiếp cùng vùng ⇒ gửi lại agent cũ** (khi nó đã báo xong). Vùng khác ⇒ agent mới.
+- **A8. Điều phối:** chỉ chia việc, quyết, gộp, deploy. Gộp ngay khi lát báo xong. Trước khi gộp: `git reset -q` ở checkout chính, xem `git status`. Chỉ báo người dùng khi có kết quả hoặc cần quyết. Báo cáo của agent là lời khai, không phải bằng chứng — việc rủi ro thì đọc diff.
+- **A9. Trả lời người dùng:** tiếng Việt đơn giản, ngắn, kết quả trước. Nói rõ cái gì chưa kiểm.
 
-**Luật điều phối (người dùng chốt 2026-11-05, rút từ CR-118/120 — agent chạy lâu, tốn tiền, sót lỗi cơ bản):**
-- **D1. Trần song song:** tối đa **4 agent code** cùng lúc; lát đụng chung vùng code (cùng module/route/bảng) xếp **nối tiếp**, không song song.
-- **D2. Lát nhỏ, chốt phạm vi trước:** mỗi lát ≤ **60 phút**, phạm vi + file được sửa ghi trong brief. **Không SendMessage thêm việc vào agent đang chạy** (thắng Luật 0c mục 3/T6 khi agent đang chạy) — phát sinh ⇒ ghi hàng chờ, gom thành lát sau. Chỉ SendMessage để sửa lỗi của chính lát đó sau khi nó báo xong.
-- **D3. Model:** Sonnet viết; Opus `low` chỉ soát diff ngắn phần dữ liệu khách/RLS/quyền/máy trạng thái run (chỉ lát rủi ro — Luật 0d.3; lát thường không soát từng lát); Opus `medium` làm cả lát chỉ khi lõi máy trạng thái/khoá; không UI/e2e trong lát Opus.
-- **D4. Test trong lát:** chỉ unit + int của file mình sửa (evotest: commit trước hoặc `-Dirty`; suite đóng băng cần `-All`; đường dẫn dùng `/`). **e2e chạy MỘT lần cuối đợt bằng script chia slot**, do điều phối chạy — agent không tự chạy e2e toàn job.
-- **D5. Hành trình thật trước khi báo xong một tính năng:** mỗi tính năng người dùng nhìn thấy phải có ít nhất **một e2e hành trình không giả lập** (dữ liệu tạo đúng đường platform/khách làm, không bật sẵn gì trong seed) chạy xanh; test giả lập hub/seed bật sẵn không được tính là "chạy được".
-- **D6. Một nguồn dữ liệu:** thêm bảng/đường mới thay cái cũ ⇒ cùng lát phải (a) backfill + test backfill, (b) chuyển **mọi chỗ đọc** cái cũ (grep, liệt kê trong báo cáo), (c) gỡ hoặc khoá UI cũ. Không để hai control/hai màn hình cho cùng một khái niệm.
-- **D8. Hiệu năng trong brief + đo thời gian lát:** mọi brief có mục "perf" (đường nóng nào bị chạm, ngưỡng p95/số câu SQL/bundle phải giữ — Luật 4c; không chạm thì ghi "không"). Báo cáo agent ghi thời gian theo pha: code · chờ test · sửa. Lát vượt 60 phút ⇒ điều phối ghi nguyên nhân (chờ evotest, phạm vi phình, đọc rộng, rebase) vào STATE để sửa quy trình, không chỉ chạy tiếp.
-- **D7. Cấu hình khách đủ trọn:** script seed/onboard một tenant phải bật mọi tính năng mà cấu hình đó cần (vd gán quy trình duyệt ⇒ công ty có luật định tuyến + quy trình đã xuất bản/bản riêng; feature `contracts-approval-engine` đã gỡ ở CR-121 c18); ops-watch có check phát hiện cấu hình nửa vời.
-
-**Bổ sung (người dùng chốt 2026-11-03) — 6 tiêu chí, áp cho phiên điều phối và mọi agent:**
-- **T1. Script thay agent khi chạy test:** chạy `verify:*` / `test:affected` / `deploy/evotest/run-tests.ps1` rồi đọc tóm tắt JSON/đuôi log; không giao agent chỉ để chạy test và tóm tắt log. Thiếu script cho việc lặp lại ⇒ viết script (lát tool), không viết script tạm trong scratchpad lần thứ hai.
-- **T2. Chỉ báo lỗi mới:** đỏ có sẵn ghi ở `tests/known-red.json` (có hạn); báo cáo và cổng chỉ nêu ca đỏ ngoài danh sách. Ca mới nghi là có sẵn ⇒ chạy lại riêng trên evotest ở cả ref base và ref mới (một lần), rồi thêm vào danh sách hoặc sửa.
-- **T3. Brief trỏ file, báo cáo khuôn cố định:** brief chỉ ghi đường dẫn spec/`tasks.md` + mục cần đọc, không chép nội dung; báo cáo agent ≤ 6 dòng: commit hash · test (lệnh → kết quả) · việc dở · bẫy.
-- **T4. Ít vòng gửi lại:** merge driver JSON/i18n + tự ghi lại `tests/.lock` khi xung đột, hook chặn ghi ngoài worktree ⇒ không gửi agent đi rebase/dọn file rác; chỉ gửi lại khi xung đột code thật.
-- **T5. Model đúng việc:** Haiku cho việc cơ học (dọn, relock, chụp ảnh, smoke bằng script), Opus `medium` chỉ cho quyền/trạng thái/review; không chụp ảnh nếu người dùng không cần xem.
-- **T6. Gom việc cùng vùng:** việc nhỏ cùng vùng code ⇒ `SendMessage` cho agent đã có ngữ cảnh (mục 3), không mở agent mới đọc lại từ đầu.
-
-## Luật 1 — Cửa sẵn sàng (BẮT BUỘC; hỏi người dùng xác nhận trước khi chạy)
-Trước khi viết code cho một feature hoặc thay đổi không tầm thường — kể cả khi người dùng chỉ nói "implement", "code", "làm", "build", "tiếp tục", "chạy task":
-1. Xác định spec (`docs/specs/<ID>/`; chưa có spec thì mục BA/UI tương ứng trong `docs/design/`).
-2. Chạy agent **spec-readiness**. Người dùng đã bảo làm (implement/code/làm tiếp/run…) = đã xác nhận, **không hỏi lại**; chỉ hỏi khi không rõ người dùng có muốn code hay không. Agent chưa hiện trong danh sách → dùng subagent general-purpose đọc nguyên văn `.claude/agents/spec-readiness.md` và đóng đúng vai. (Áp dụng cách này cho mọi agent trong `.claude/agents/`.)
-3. **READY** → theo `docs/WORKFLOW.md`. **NOT READY** → không code; gom lỗ hổng Chặn/Cao kèm mặc định đề xuất, hỏi người dùng **một lượt**; ghi câu trả lời vào spec rồi chạy lại.
-4. Spec/design/tasks đổi sau lần READY gần nhất → chạy lại. Ghi mỗi lần chạy vào `docs/specs/<ID>/readiness.md`.
-
-Bỏ qua Luật 1 chỉ khi: sửa chính tả/câu chữ, cấu hình nhỏ, hoặc người dùng nói rõ "bỏ qua kiểm tra".
-
-## Luật 1b — Hai làn theo rủi ro (người dùng chốt 2026-10-19, áp từ đợt 2 CR-094)
-- **Làn đầy đủ** (Luật 1 + Gate + qc test trước + review/security 2 vòng) **chỉ** cho lát/phần chạm: RLS/tenant, quyền, auth/secrets, tiền (sổ thanh toán, giá), migration dữ liệu khách thật, đường nóng có ngưỡng perf.
-- **Làn nhanh** cho lát màn hình / rủi ro thường (UI, mapper, báo cáo, nhãn): **một** agent viết plan ngắn (≤ 1 trang, trong `tasks.md` của lát) + code + test cùng task (unit/int/e2e theo Luật 4b, Luật 4c vẫn áp) → **một** vòng review. Không readiness riêng, không Gate, không qc viết trước (qc chỉ ghi lock khi có test mới dưới `tests/**`/`e2e/**`).
-- Lát lẫn hai loại ⇒ tách phần rủi ro cao ra làn đầy đủ, phần còn lại làn nhanh. Phân làn ghi ở `tasks.md` (cột Làn); phân vân ⇒ làn đầy đủ.
-- **Một agent làm trọn một lát** (người dùng chốt 2026-10-19, thay cách băm nhiều agent nhỏ): agent viết spec+plan ngắn (≤ 1 trang mỗi file) + BE + FE + test + tự chạy cổng của lát, rồi **một** reviewer. Lát rủi ro cao: thêm security review và readiness **tối đa 1 vòng** (lỗ hổng Cao có mặc định ⇒ áp luôn). Test của lát do chính agent viết; qc chỉ ghi lock và đọc nhanh (Luật 3 test trước chỉ còn áp cho phần tenant/quyền/tiền/migration bên trong lát — agent viết test đó **trước** code của phần đó).
-
-## Luật 2 — Sau Gate thì tự làm hết, không hỏi lại
-Gặp chỗ mơ hồ, tra theo thứ tự và dừng ở nguồn đầu tiên có câu trả lời:
-spec → BA/UI (`docs/design/`) → ADR → `CONVENTIONS.md` → code hiện có (bắt chước) → phương án đơn giản nhất, dễ đổi nhất.
-Mỗi lần tự quyết: một dòng trong mục "Quyết định trong lúc làm" của spec.
-
-**Hard stop** (task `blocked`, làm tiếp task khác, gom vào báo cáo cuối): ảnh hưởng bảo mật / cách ly tenant · có thể mất dữ liệu · phải đổi contract hoặc phạm vi đã duyệt · cần dịch vụ trả tiền, secret thật, push, deploy.
-
-## Luật 2b — Đủ context thì chạy, không hỏi xác nhận
-- Không hỏi "bắt đầu mốc tiếp không?", "chạy bước X không?", "tiếp tục không?". Xong một mốc → chạy luôn vòng của mốc kế (ROADMAP) trên nhánh hiện tại.
-- **Tự duyệt Gate** khi spec-readiness READY và mọi lỗ hổng Chặn/Cao đều đã có câu trả lời trong spec/BA/readiness đã được người dùng chấp nhận; ghi `docs/specs/<mốc>-gate.md` với dòng "Tự duyệt theo Luật 2b". Chỉ trình Gate cho người dùng khi còn câu hỏi **mới** chưa có mặc định được chấp nhận, khi có ADR thêm thư viện/dịch vụ mới, hoặc khi có hard stop (Luật 2).
-- Vẫn hỏi: Intake (Luật 0, tránh chạy khi chỉ trò chuyện), hard stop, merge vào `main`, push, deploy.
-
-## Luật 3 — Đội agent và phân quyền (chi tiết: `docs/WORKFLOW.md`)
-- Phiên chính = điều phối: gọi agent đúng thứ tự, gom kết quả, giữ `tasks.md` + `docs/STATE.md`, trình Gate **một lần mỗi mốc**.
-- `backend-lead` sở hữu contract; `frontend-lead` không tự đổi contract; **test trước code theo rủi ro** (người dùng 2026-10-18): task rủi ro **cao** (RLS/tenant, quyền, khoá/transaction, đường nóng có ngưỡng perf, contract) ⇒ `qc` viết test **trước** code; task **thường** ⇒ agent code viết code + test cùng task (file test mới, không sửa file đã khoá), `qc` đọc nhanh diff test sau đó (Haiku/Sonnet) rồi ghi lock — không có vòng qc riêng trước code; `reviewer` và `spec-readiness` chỉ đọc; `docs-architect` giữ docs. `qc-uat` (Sonnet, Haiku khi chỉ chạy lại script) chạy UAT trình duyệt thật sau review: dựng stack, lái nhiều user, chụp evidence, báo lỗi; không sửa code/test khoá.
-- **Model theo rủi ro nghiệp vụ, kỷ luật token** (`docs/WORKFLOW.md` "Chính sách model", "Kỷ luật token"): mỗi lần gọi agent = một task, task kế gọi agent mới kèm bàn giao (không `SendMessage` giao việc mới); task rủi ro **cao** (RLS/tenant, quyền, auth/secrets/2FA, quota, audit, khoá/transaction/NOTIFY) dùng Opus, task thường truyền `model: sonnet`; việc cơ học (chạy lại script/test, relock, sửa đường dẫn, format, cập nhật STATE/CODEMAP) truyền `model: haiku` — Opus chỉ cho rủi ro cao hoặc phán đoán khó (`WORKFLOW.md` "Nguyên tắc việc đơn giản"). **Mọi brief giao agent có đủ 6 mục: phạm vi (làm/không làm), xong khi (lệnh, chạy một lần), được phép đỏ (phụ thuộc task sau, chập chờn đã biết), điểm dừng, giới hạn thời gian, khuôn báo cáo** — để agent không làm việc vô ích; task lớn chia trước Sonnet/Opus/Haiku (`WORKFLOW.md` "Điều phối nhanh"). Hết mốc: đo token → `/handoff` → `/clear`.
-- **Khoá test:** sau Gate, `tests/acceptance/**` và `e2e/**` chỉ `qc` được sửa (`tests/.lock`). Agent code tin test sai → ghi "Tranh chấp test", không sửa test.
-
-## Luật 4 — Chuẩn và phạm vi sửa
-- Theo `docs/CONVENTIONS.md`: feature-first, file ≤ 400 dòng, hàm ≤ 50 dòng, component ≤ 200 dòng.
-- Format/lint **chỉ file thay đổi**. Không refactor ngoài phạm vi task; thấy nợ → `docs/TECH-DEBT.md`.
-- Ngoại lệ (CR-089, ADR-0023): khi task sửa logic trong một module chưa theo Clean Architecture, được tách phần chạm tới sang `domain/`/`application/`/`adapters/` trong cùng task; qc sửa đường dẫn test khoá trong cùng task.
-
-## Luật 4b — Mọi thay đổi code có test chạy lại được (CR-092)
-- Tính năng mới hoặc sửa code (kể cả sửa lỗi nhỏ ngoài mốc) **phải kèm test** trong cùng task/commit: unit (luật thuần) + int (API/DB/RLS) cho phần đổi. Không có test → chưa xong.
-- Thay đổi chạm **UI hoặc luồng người dùng** (gồm API mà màn hình dùng) **phải thêm hoặc sửa e2e** Playwright; cấu hình e2e mới đặt dưới `e2e/**/playwright*.config.ts` để `test:all` tự nhận.
-- Sửa lỗi: viết test tái hiện lỗi (đỏ) trước, rồi sửa cho xanh.
-- Bộ hồi quy chạy lại bằng **một lệnh** `bun run test:all` (cần stack local: `scripts/dev-db.ps1 -Wait`); báo xong một mốc/nhánh phải ghi kết quả lệnh này. Test của mốc đã Gate vẫn theo khoá test (Luật 3).
-
-## Luật 4c — Hiệu năng là yêu cầu, không phải tối ưu sau (người dùng yêu cầu 2026-10-18, CR-093)
-- **Chậm mà không phải chờ AI = lỗi của mình.** Đường nóng (API, vòng nền, xử lý lô) phải nhanh và đúng cùng lúc; không đổi tính đúng đắn lấy tốc độ, không đổi tốc độ lấy "an toàn" mà không nói rõ.
-- **Thiết kế theo tập:** không truy vấn/transaction từng hàng trong vòng lặp; mỗi lô số câu SQL cố định (không phụ thuộc số hàng), lọc `= any(array)` qua index, khoá `FOR UPDATE SKIP LOCKED` khi nhiều instance; một pipeline Redis mỗi lô; không gọi mạng/đăng tin trong vòng lặp hàng.
-- **Kế hoạch truy vấn không phụ thuộc thống kê bảng** (sau chèn hàng loạt thống kê cũ): tránh join `unnest` để lọc bảng lớn; câu SQL văn bản cố định (dữ liệu lô qua một tham số JSON) để mỗi kết nối chỉ chuẩn bị một lần.
-- **Có số đo:** đường nóng mới/sửa phải có ngưỡng đo được (vd lô 100 p95 ≤ 50 ms, tổng 10.000 hàng) + test `*.perf.int.test.ts`; test đếm số câu SQL mỗi lô khi là vòng lô. Báo số thật (trước → sau), không làm tròn; chưa đạt thì nói chưa đạt và vì sao.
-- **Không chờ hết giờ, không ngủ chờ** (người dùng 2026-10-18): code và test KHÔNG `sleep`/`setTimeout` để đợi trạng thái, không poll tới khi hết timeout. Code: chờ bằng tín hiệu (promise trả về, sự kiện, NOTIFY/stream, `await` lời gọi), vòng nền chỉ ngủ giữa các lượt khi không còn việc. Test: đồng hồ giả (`d.now`) + gọi `*Once` trực tiếp + `await` kết quả; cần chờ việc bất đồng bộ thật thì chờ tín hiệu xong (handle trả promise, hook), không chờ mốc giờ. Thiếu tính năng/điều kiện tiền đề ⇒ fail NGAY với lý do rõ. Timeout chỉ là lưới an toàn cho lỗi treo, không phải cơ chế chờ.
-- **Test cũng phải nhanh:** int nhiều file chạy bằng `bun run test:int:par` (P-a + K1: 174 s tuần tự → 51 s); chỉ chạy test của phần đang sửa khi làm; bộ đầy đủ khi đóng task/mốc. Không chạy lại cả bộ để "chắc ăn"; thấy test chậm thì đo (file chậm nhất, reset/migrate DB, tuần tự) rồi sửa hạ tầng test.
-
-## Luật 5 — Truy vết
-- Mã yêu cầu (`ADM-FR-xx`, `HUB-FR-xx`, `WRK-FR-xx`, AC) có trong: frontmatter spec, comment đầu module, tên test, commit `[ADM-FR-xx]`.
-- Xong task: tick `tasks.md`, cập nhật `docs/STATE.md`. Đổi cấu trúc → `docs-architect` cập nhật CODEMAP/TRACE.
-- Một session: làm và commit trực tiếp trên `main` (người dùng yêu cầu 2026-10-01). Nhiều session cùng một mốc: Bước 0 trên `main`, rồi mỗi session một worktree + nhánh `feat/<mốc>-<feature>`, merge lần lượt qua cổng merge (`docs/WORKFLOW.md` "Làm song song nhiều session", CR-059). Không push trừ khi được yêu cầu.
+## 6. Code và ghi vết
+- Feature-first, Clean Architecture; file ≤ 400 dòng, hàm ≤ 50, component ≤ 200. Import qua `modules/<m>/public.ts`.
+- Format, lint chỉ file thay đổi. Không refactor ngoài phạm vi; nợ ghi `docs/TECH-DEBT.md`.
+- Mọi thay đổi code có test trong cùng commit. Đổi UI hoặc luồng ⇒ có e2e (viết trong lát, chạy cuối đợt).
+- Commit có mã `[CR-xxx]` hoặc mã yêu cầu. Xong lát: tick `tasks.md`.
+- Tự quyết giữa chừng ⇒ một dòng ở "Quyết định trong lúc làm". Tra theo thứ tự: spec → `docs/current` → ADR → CONVENTIONS → code hiện có → cách đơn giản nhất.
