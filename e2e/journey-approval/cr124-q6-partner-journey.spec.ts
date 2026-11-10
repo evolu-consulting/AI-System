@@ -77,6 +77,8 @@ async function sendFromA(browser: import("@playwright/test").Browser, tag: strin
   const chosen = await pickPartnerAndSend(await ctx(browser), EA, U.director, {
     partnerTaxCode: TAX_B,
     email: `chon-${RUN}${tag}@doitac.test`,
+    contractCreator: U.employee,
+    partnerAddedBy: U.accounting, // G3: đối tác do kế toán thêm, giám đốc (người chọn) không phải người thêm
   });
   return { id, emp, chosen };
 }
@@ -159,7 +161,7 @@ test.beforeAll(async () => {
     idB,
     await libraryDefIdByName(HUB, platform, "Nhận HĐ thường"),
   );
-  await seedPartner(EA.tenantKey, TAX_B, `Công ty Nhận Q6B ${SFX}`); // đối tác của A (danh sách chọn ở bước «Chọn đối tác & người nhận»)
+  await seedPartner(EA.tenantKey, TAX_B, `Công ty Nhận Q6B ${SFX}`, U.accounting); // đối tác của A (danh sách chọn ở bước «Chọn đối tác & người nhận»)
   // A: Duyệt → Gửi đối tác xác nhận → (Đã xác nhận | Trả lại sửa | Từ chối).
   const flowId = await createLibraryFlow(HUB, platform.token, {
     key: `q6a-${SFX}`,

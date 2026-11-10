@@ -106,7 +106,7 @@ test.beforeAll(async () => {
     await createGroupWith(API, bAdmin, { key, name, usernames: [U.director, U.accounting] });
   await enableFlowTriggers(EB.tenantKey);
   await enableFlowTriggers(EA.tenantKey);
-  await seedPartner(EA.tenantKey, "0100000044", `Công ty Nhận S7B ${SFX}`); // đối tác của A cho danh sách chọn
+  await seedPartner(EA.tenantKey, "0100000044", `Công ty Nhận S7B ${SFX}`, U.accounting); // đối tác của A cho danh sách chọn
   // Flow GỬI của A (mẫu Thư viện có bước «Gửi đối tác xác nhận»): dựng sẵn, gán SAU khi bật tính năng ở giao diện (readiness chặn gán khi chưa có tính năng).
   sendFlowId = await createLibraryFlow(HUB, platformSession.token, {
     key: `s7a-${SFX}`,
@@ -225,6 +225,8 @@ test("3 · công ty A gửi hợp đồng cho B: B thấy ở hộp thư đối 
   const chosen = await pickPartnerAndSend(await ctx(browser), EA, U.director, {
     partnerTaxCode: "0100000044",
     email: `chon-${RUN}s7@doitac.test`,
+    contractCreator: U.employee,
+    partnerAddedBy: U.accounting, // G3
   });
 
   // B: lời mời nối → nhận → hộp thư → xác nhận
