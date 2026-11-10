@@ -371,6 +371,13 @@
         "typescript": "6.0.3",
       },
     },
+    "tools/prototype": {
+      "name": "@ai/prototype",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "4.6.5",
+      },
+    },
     "tools/scripts": {
       "name": "@ai/scripts",
       "version": "0.0.0",
@@ -412,6 +419,8 @@
     "@ai/i18n": ["@ai/i18n@workspace:packages/i18n"],
 
     "@ai/mocks": ["@ai/mocks@workspace:tools/mocks"],
+
+    "@ai/prototype": ["@ai/prototype@workspace:tools/prototype"],
 
     "@ai/scripts": ["@ai/scripts@workspace:tools/scripts"],
 

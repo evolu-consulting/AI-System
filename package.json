@@ -33,6 +33,7 @@
     "slice:rm": "bun tools/scripts/src/slice.ts rm",
     "spec:find": "bun tools/scripts/src/spec-find.ts",
     "openspec:check": "bun tools/scripts/src/openspec.ts check",
+    "proto:build": "bun tools/prototype/build.ts",
     "eval:hub": "bun eval/hub/run.ts",
     "eval:log-format": "bun tools/eval/log-format/run.ts",
     "openspec:pending": "bun tools/scripts/src/openspec.ts pending",

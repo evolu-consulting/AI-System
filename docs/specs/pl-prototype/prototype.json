@@ -1,0 +1,98 @@
+{
+  "title": "Gửi đối tác xác nhận",
+  "roles": [
+    { "key": "ketoan", "label": "Kế toán" },
+    { "key": "doitac", "label": "Đối tác" },
+    { "key": "giamdoc", "label": "Giám đốc" }
+  ],
+  "screens": [
+    {
+      "id": "viec",
+      "title": "Việc của tôi",
+      "role": "ketoan",
+      "blocks": [
+        { "type": "heading", "text": "Việc cần làm" },
+        { "type": "table", "cols": ["Hợp đồng", "Bước", "Hạn"], "rows": [["HĐ-0001 Công ty Mẫu A", "Gửi đối tác xác nhận", "15/11"]] },
+        { "type": "button", "label": "Mở bước", "goto": "form", "variant": "primary" }
+      ]
+    },
+    {
+      "id": "form",
+      "title": "Chọn đối tác & người nhận",
+      "role": "ketoan",
+      "blocks": [
+        { "type": "field", "label": "Đối tác", "kind": "select", "value": "Công ty Mẫu A", "options": ["Công ty Mẫu A", "Công ty Mẫu B"], "required": true },
+        { "type": "field", "label": "Người nhận", "kind": "text", "value": "Nguyễn Văn A", "required": true },
+        { "type": "field", "label": "Email người nhận", "kind": "text", "value": "a@example.test", "required": true },
+        { "type": "banner", "kind": "info", "text": "Đối tác sẽ nhận email có đường dẫn để xác nhận." },
+        { "type": "button", "label": "Gửi đối tác", "goto": "da-gui", "variant": "primary" },
+        { "type": "button", "label": "Quay lại", "goto": "viec", "variant": "secondary" }
+      ]
+    },
+    {
+      "id": "da-gui",
+      "title": "Đã gửi - chờ đối tác",
+      "role": "ketoan",
+      "blocks": [
+        {
+          "type": "states",
+          "variants": [
+            {
+              "key": "waiting",
+              "label": "Đang chờ",
+              "blocks": [
+                { "type": "banner", "kind": "info", "text": "Đã gửi cho Nguyễn Văn A. Đang chờ đối tác xác nhận." },
+                { "type": "steps", "items": [
+                  { "label": "Gửi đối tác xác nhận", "status": "done", "who": "Kế toán" },
+                  { "label": "Đối tác xác nhận", "status": "waiting", "who": "Đối tác" },
+                  { "label": "Giám đốc ký", "status": "open", "who": "Giám đốc" }
+                ] }
+              ]
+            },
+            {
+              "key": "error",
+              "label": "Gửi lỗi",
+              "blocks": [
+                { "type": "banner", "kind": "error", "text": "Không gửi được email tới a@example.test. Kiểm tra địa chỉ rồi gửi lại." },
+                { "type": "button", "label": "Sửa người nhận", "goto": "form", "variant": "secondary" }
+              ]
+            }
+          ]
+        },
+        { "type": "button", "label": "Xem phía đối tác", "goto": "doitac", "variant": "secondary" }
+      ]
+    },
+    {
+      "id": "doitac",
+      "title": "Đối tác xác nhận",
+      "role": "doitac",
+      "blocks": [
+        { "type": "heading", "text": "Hợp đồng HĐ-0001" },
+        { "type": "text", "text": "Vui lòng kiểm tra nội dung và xác nhận hoặc từ chối." },
+        { "type": "button", "label": "Xác nhận", "goto": "xong", "variant": "primary" },
+        { "type": "button", "label": "Từ chối", "goto": "xong", "variant": "danger" }
+      ]
+    },
+    {
+      "id": "xong",
+      "title": "Đã xác nhận",
+      "role": "giamdoc",
+      "blocks": [
+        { "type": "banner", "kind": "info", "text": "Đối tác đã xác nhận. Hợp đồng chuyển sang giám đốc ký." },
+        { "type": "steps", "items": [
+          { "label": "Gửi đối tác xác nhận", "status": "done", "who": "Kế toán" },
+          { "label": "Đối tác xác nhận", "status": "done", "who": "Đối tác" },
+          { "label": "Giám đốc ký", "status": "open", "who": "Giám đốc" }
+        ] }
+      ]
+    }
+  ],
+  "flow": [
+    { "from": "viec", "action": "Mở bước gửi", "to": "form", "by": "ketoan" },
+    { "from": "form", "action": "Gửi đối tác", "to": "da-gui", "by": "ketoan" },
+    { "from": "da-gui", "action": "Nhận email, mở liên kết", "to": "doitac", "by": "doitac" },
+    { "from": "doitac", "action": "Xác nhận", "to": "xong", "by": "doitac" },
+    { "from": "xong", "action": "Ký hợp đồng", "to": "xong", "by": "giamdoc" }
+  ],
+  "notes": ["Đối tác từ chối thì kế toán nhận thông báo hay quay lại bước trước?", "Hạn xác nhận của đối tác là bao lâu?"]
+}
