@@ -193,4 +193,11 @@ Tiêu chí: miễn phí, nhanh, chính xác, không thêm thứ phải nuôi.
 | **Graphify** (đồ thị tri thức của repo) | dựng đồ thị gọi hàm + khái niệm để hỏi thay vì đọc file | **Thử có đo, chưa đưa vào luật** | con số tiết kiệm lớn là do người làm công cụ và người dùng tự báo, có báo cáo ngược lại; phần tài liệu phải dùng model để trích (tốn tiền, có thể sai); đồ thị cũ dần khi 4 agent cùng sửa. Repo đã có `CODEMAP.md`, bản đồ file mỗi CR và depcruise làm phần lớn việc này |
 | **Caveman** (ép trả lời cộc lốc) | giảm token đầu ra | **Không dùng** | đầu ra là phần nhỏ của chi phí; báo cáo agent đã bị ép ≤ 6 dòng; người dùng cần câu trả lời dễ hiểu (G3). Phần nén file luật: đã tự làm bằng cách viết lại `CLAUDE.md` |
 
+| **Jev Router** (TypeSafe; model chọn model + mức suy nghĩ cho từng yêu cầu) | định tuyến yêu cầu tới model rẻ/đắt | **Không dùng cho dây chuyền; xét cho sản phẩm sau** | Claude Code chọn model cho agent bằng bảng cố định (`CLAUDE.md` A2): miễn phí, tức thì, đoán trước được. Jev chạy qua cổng ngoài (OpenRouter), không cắm vào cơ chế subagent; giấy phép mã nguồn mở chưa rõ (các nguồn nói khác nhau). Có thể hợp với chat của Agent Hub (nhiều câu dễ) — cần đo riêng |
+
+**Agent nói với agent (A2A) — cách rẻ và đúng nhất hiện có:**
+- Không có "cache nối cache" giữa hai agent: mỗi agent có ngữ cảnh riêng. Thứ dùng lại được là **cache phần đầu giống nhau** (luật + tài liệu chung) và **ngữ cảnh của chính agent đó** khi gửi tiếp việc cho nó.
+- Vì vậy: luật ngắn và ổn định (ăn cache ở mọi agent), bàn giao bằng đường dẫn + commit thay cho lời kể (`CLAUDE.md` A9–A11), việc tiếp cùng vùng gửi lại agent cũ (A7), `fork` khi việc cần cả cuộc trao đổi.
+- Giao thức A2A chuẩn (agent card, task, artifact) chỉ đáng dùng khi agent chạy ở hệ thống khác nhau. Trong một repo, file + git đã là kênh rẻ và kiểm được.
+
 Cách thử Graphify nếu muốn: chạy trên một worktree, lấy 10 câu hỏi "bản đồ file" của CR-125/126 đã biết đáp án, so với Explore Haiku về độ đúng, thời gian và token. Chỉ nhận khi đúng ≥ Haiku và nhanh hơn rõ.

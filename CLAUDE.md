@@ -72,7 +72,11 @@ Ngoài danh sách này: đủ thông tin thì làm, không hỏi "tiếp tục k
 - **A6. Agent ≤ 60 lần gọi công cụ mỗi lát.** Tìm và đọc bằng Grep/Read. Quá giờ ⇒ commit phần xanh, ghi "Việc còn lại", dừng.
 - **A7. Việc tiếp cùng vùng ⇒ gửi lại agent cũ** (khi nó đã báo xong). Vùng khác ⇒ agent mới.
 - **A8. Điều phối:** chỉ chia việc, quyết, gộp, deploy. Gộp ngay khi lát báo xong. Trước khi gộp: `git reset -q` ở checkout chính, xem `git status`. Chỉ báo người dùng khi có kết quả hoặc cần quyết. Báo cáo của agent là lời khai, không phải bằng chứng — việc rủi ro thì đọc diff.
-- **A9. Trả lời người dùng:** tiếng Việt đơn giản, ngắn, kết quả trước. Nói rõ cái gì chưa kiểm.
+- **A9. Agent nói với agent qua file, không qua lời kể.** Gửi đường dẫn + `file:dòng` + commit; không chép nội dung file, log, diff vào tin nhắn. Kết quả bàn giao = commit + `tasks.md` + báo cáo A4.
+- **A10. Giữ phần đầu ngữ cảnh ổn định để ăn cache:** không sửa `CLAUDE.md` và tài liệu chung giữa đợt (gom cuối đợt). Việc cần cả cuộc trao đổi ⇒ `fork`; việc tự đứng được ⇒ agent mới với brief A3.
+- **A11. Một việc một chủ.** Đã giao thì điều phối không làm trùng, không đọc transcript của agent; chỉ đọc báo cáo và diff.
+- **A12. Agent thấy sai ngoài phạm vi ⇒ ghi một dòng vào báo cáo**, không tự sửa, không nhắn agent khác.
+- **A13. Trả lời người dùng:** tiếng Việt đơn giản, ngắn, kết quả trước. Nói rõ cái gì chưa kiểm.
 
 ## 6. Code và ghi vết
 - Feature-first, Clean Architecture; file ≤ 400 dòng, hàm ≤ 50, component ≤ 200. Import qua `modules/<m>/public.ts`.
