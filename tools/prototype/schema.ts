@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const str = z.string().min(1);
 
-const leafBlock = z.discriminatedUnion("type", [
+export const leafBlock = z.discriminatedUnion("type", [
   z.object({ type: z.literal("heading"), text: str }),
   z.object({ type: z.literal("text"), text: str }),
   z.object({

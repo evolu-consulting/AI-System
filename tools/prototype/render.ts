@@ -1,5 +1,6 @@
 // renderPrototype(json) → MỘT file HTML tự chứa (CSS/JS nội tuyến, không gọi mạng). Mọi chữ của người dùng đều được escape.
-import { type Prototype, prototypeSchema } from "./schema";
+import type { z } from "zod";
+import { type leafBlock, type Prototype, prototypeSchema } from "./schema";
 
 export const esc = (s: string): string =>
   s
@@ -9,7 +10,7 @@ export const esc = (s: string): string =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
-type Leaf = Extract<Prototype["screens"][number]["blocks"][number], { type: string }>;
+type Leaf = z.infer<typeof leafBlock>;
 
 const STATUS: Record<string, string> = { done: "Xong", open: "Cần làm", waiting: "Đang chờ" };
 
