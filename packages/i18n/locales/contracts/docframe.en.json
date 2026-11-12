@@ -1,14 +1,21 @@
 {
   "contracts": {
     "docframe": {
-      "type": { "contract": "Contract", "framework": "Framework agreement", "deal": "Deal" },
+      "type": {
+        "contract": "Contract",
+        "framework": "Framework agreement",
+        "deal": "Deal"
+      },
       "belongs": "under framework agreement",
       "restricted": "Framework agreement (no access)",
       "fileSigned": "Signed file:",
       "fileDeal": "File:",
       "noFile": "none",
       "children": "Child documents",
-      "stage": { "not_started": "Not yet effective", "expired": "Expired" },
+      "stage": {
+        "not_started": "Not yet effective",
+        "expired": "Expired"
+      },
       "value": "Total ordered (sum of children)",
       "count": "Documents",
       "limit": "Credit limit",
@@ -66,6 +73,30 @@
         "needsNumber": "Enter the contract number.",
         "notADeal": "This document is not a deal, so it cannot be promoted.",
         "forbidden": "You do not have permission to do this."
+      }
+    },
+    "cfiles": {
+      "title": "Attachments",
+      "add": "Add file",
+      "uploading": "Uploading…",
+      "view": "View",
+      "download": "Download",
+      "remove": "Remove",
+      "empty": "No attachments yet. Add a Word, Excel or image file so everyone can see it — these files are not sent for signing.",
+      "emptyReadOnly": "No attachments yet. Only the contract owner or an admin can add files.",
+      "steps": "Files attached to approval steps",
+      "loadErr": "Could not load attachments. Reload the page or try again in a few minutes.",
+      "source": {
+        "start": "When submitted",
+        "form": "Filled in at an approval step",
+        "subprocess": "From a sub-process"
+      },
+      "err": {
+        "FILE_TYPE": "This format is not accepted. Accepted: PDF, images (PNG, JPG, GIF, WEBP), Word (DOCX), Excel (XLSX), PowerPoint (PPTX), TXT, MD, CSV, XML, JSON. Save as one of these and add it again.",
+        "FILE_TOO_LARGE": "The file is too large (20 MB max). Compress or split it, then add it again.",
+        "CONTRACT_FILES_FULL": "This contract already has 20 attached files. Remove one, then add again.",
+        "PACK_FORBIDDEN": "You cannot add or remove files on this contract. Ask the contract owner or an admin.",
+        "generic": "Could not complete that. Try again in a few minutes."
       }
     }
   }

@@ -78,3 +78,61 @@ export async function readableRunFile(
     fileRowById(tx, { tenantId: u.tenantId, id }),
   );
 }
+
+export type RecordRunFile = {
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+  source: RunFileSource;
+  added_at: Date;
+};
+
+/**
+ * CR-133 · «Tài liệu kèm» (nhóm 2): tệp kèm các lượt duyệt của MỘT bản ghi gói (`pack_key` + `pack_record_id`), chỉ lượt mà người xem XEM ĐƯỢC
+ * (cùng luật `readableRunFile` ⇒ bấm tải luôn được). Hai câu SQL cố định (không N+1 theo lượt): (1) scope `user` — liên kết tệp ⋈ lượt đã qua
+ * `process_run_viewer`; (2) scope `system` — tên/kích thước tệp theo mảng id + tenant (RLS user chỉ thấy tệp của chủ). Tệp đã xoá nội dung bị bỏ.
+ */
+export async function recordRunFiles(
+  db: Db,
+  u: Pick<AuthUser, "tenantId" | "userId">,
+  o: { packKey: string; recordId: string },
+): Promise<RecordRunFile[]> {
+  const links = await withHubScope(
+    db,
+    { kind: "user", tenantId: u.tenantId, userId: u.userId },
+    (tx) =>
+      tx.execute<{ id: string; source: RunFileSource; added_at: Date }>(sql`
+        select distinct on (f.attachment_id) f.attachment_id as id, f.source, f.created_at as added_at
+        from hub.process_runs r
+        join hub.process_run_files f on f.process_run_id = r.id and f.tenant_id = r.tenant_id
+        where r.tenant_id = ${u.tenantId}::uuid and r.pack_key = ${o.packKey} and r.pack_record_id = ${o.recordId}::uuid
+          and hub.process_run_viewer(r.id) is not null
+        order by f.attachment_id, f.created_at`),
+  );
+  if (links.length === 0) return [];
+  const ids = links.map((l) => l.id);
+  const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+    tx.execute<{ id: string; filename: string; mime: string; size: number | string }>(sql`
+      select a.id, a.filename, a.mime, a.size from hub.attachments a
+      where a.tenant_id = ${u.tenantId}::uuid and a.id = any(${uuidArrayLiteral(ids)}::uuid[]) and a.purged_at is null`),
+  );
+  const by = new Map(rows.map((r) => [r.id, r]));
+  return links
+    .flatMap((l) => {
+      const a = by.get(l.id);
+      return a
+        ? [
+            {
+              id: l.id,
+              name: a.filename,
+              mime: a.mime,
+              size: Number(a.size),
+              source: l.source,
+              added_at: l.added_at,
+            },
+          ]
+        : [];
+    })
+    .sort((x, y) => x.added_at.getTime() - y.added_at.getTime());
+}

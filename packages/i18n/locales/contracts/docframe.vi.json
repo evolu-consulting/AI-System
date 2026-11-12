@@ -74,6 +74,30 @@
         "notADeal": "Chứng từ này không phải giao dịch nên không nâng thành hợp đồng được.",
         "forbidden": "Bạn không có quyền thực hiện thao tác này."
       }
+    },
+    "cfiles": {
+      "title": "Tài liệu kèm",
+      "add": "Thêm tệp",
+      "uploading": "Đang tải lên…",
+      "view": "Xem",
+      "download": "Tải về",
+      "remove": "Gỡ",
+      "empty": "Chưa có tài liệu kèm. Thêm bản Word, Excel hoặc ảnh để mọi người cùng xem — các tệp này không đem đi ký.",
+      "emptyReadOnly": "Chưa có tài liệu kèm. Chỉ người phụ trách hợp đồng hoặc quản trị mới thêm được tệp.",
+      "steps": "Tệp kèm các bước duyệt",
+      "loadErr": "Chưa tải được tài liệu kèm. Tải lại trang hoặc thử lại sau ít phút.",
+      "source": {
+        "start": "Khi gửi duyệt",
+        "form": "Điền ở bước duyệt",
+        "subprocess": "Từ quy trình con"
+      },
+      "err": {
+        "FILE_TYPE": "Định dạng này chưa nhận. Chỉ nhận PDF, ảnh (PNG, JPG, GIF, WEBP), Word (DOCX), Excel (XLSX), PowerPoint (PPTX), TXT, MD, CSV, XML, JSON. Hãy lưu sang một trong các định dạng này rồi thêm lại.",
+        "FILE_TOO_LARGE": "Tệp quá lớn (tối đa 20 MB). Nén hoặc tách nhỏ tệp rồi thêm lại.",
+        "CONTRACT_FILES_FULL": "Hợp đồng đã đủ 20 tệp kèm. Gỡ bớt một tệp rồi thêm lại.",
+        "PACK_FORBIDDEN": "Bạn không có quyền thêm hoặc gỡ tệp của hợp đồng này. Nhờ người phụ trách hợp đồng hoặc quản trị.",
+        "generic": "Chưa thực hiện được. Thử lại sau ít phút."
+      }
     }
   }
 }

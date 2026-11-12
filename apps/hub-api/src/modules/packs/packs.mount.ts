@@ -29,6 +29,7 @@ import { businessModule } from "./contracts/business.mount";
 import { cksModule } from "./contracts/cks/cks.mount";
 import { companyModule } from "./contracts/company.mount";
 import { mountContractsContext } from "./contracts/context.mount";
+import { contractFilesModule } from "./contracts/contract-files.mount";
 import { CONTRACTS_KEY, contractsModule } from "./contracts/contracts.mount";
 import { deleteContractModule } from "./contracts/delete-contract.mount";
 import { docFrameModule } from "./contracts/doc-frame.mount";
@@ -227,6 +228,7 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
   if (fb)
     app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
   else app.route(base, uploadUnavailableRoutes(view)); // FileBox váº¯ng â‡’ 503 FILE_STORAGE_UNAVAILABLE (khÃ´ng 404)
+  if (fb) app.route(base, contractFilesModule(db, view, fileboxClients(fb))); // CR-133 · «Tài liệu kèm» (FileBox vắng ⇒ không gắn)
   app.route(base, contractsRemind(d, view, db)); // HD4
   app.route(base, partnerModule(db, view)); // CR-124 q4 · hộp «Hợp đồng đối tác gửi» + ghi nhận thủ công
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9

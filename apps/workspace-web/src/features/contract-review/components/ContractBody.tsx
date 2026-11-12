@@ -10,6 +10,7 @@ import type { ApprovalUi } from "~/features/contract-approval/components/use-app
 import { decideOnly } from "~/features/contract-approval/lib/approval";
 import { EsignPanel } from "~/features/contract-esign/components/EsignPanel";
 import { SignSessionCard } from "~/features/contract-esign/components/SignSessionCard";
+import { ContractFilesPanel } from "~/features/contract-files/components/ContractFilesPanel";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import { lockView } from "~/features/contract-lock/lib/lock-view";
 import { MilestoneList } from "~/features/contract-milestones/components/MilestoneList";
@@ -183,6 +184,7 @@ export function ContractBody(p: {
           <SignSessionCard id={id} write={write} />
           <EsignPanel id={id} locked={c.status === "done"} write={write} />
           <VersionsPanels id={id} versions={c.versions} sup={sup} />
+          <ContractFilesPanel id={id} />
           <SaveNotice err={info.err ?? ap.err} />
           <StatsRow c={c} today={today} />
           {c.doc?.doc_type !== "framework" && (
