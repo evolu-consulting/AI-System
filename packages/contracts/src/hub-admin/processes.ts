@@ -4,6 +4,7 @@ import { z } from "zod";
 import { APP_NODE_KEY_RE, OUTCOME_KEY_RE } from "../app-manifest/manifest";
 import { EVIDENCE_MODES } from "../chat/evidence";
 import {
+  APPROVER_MODES,
   PROCESS_DESC_MAX,
   PROCESS_INPUT_MAX,
   PROCESS_NAME_MAX,
@@ -209,6 +210,8 @@ export const ProcessStageDefSchema = z.strictObject({
       parallel: ApproveParallelSchema.optional(), // CR-125 · «A + B cùng duyệt» (bước Duyệt; luật `parallelStageIssues`)
       also_group_ids: z.array(UuidSchema).max(5).optional(), // prod-fix2 · Group cũng quyết (không head_only, chịu exclude_starter)
       approver_user_id: UuidSchema.optional(), // esign-flow · người duyệt cụ thể (cửa như head_only)
+      /** CR-139 · kiểu người duyệt; `starter_head` ⇒ engine ghi `approver_user_id` vào snapshot run lúc mở việc (không cần `group_id`). */
+      approver_mode: z.enum(APPROVER_MODES).optional(),
       group_key: StageGroupKeySchema.optional(), // CR-105 · def thư viện: Group duyệt theo mã
       also_group_keys: z.array(StageGroupKeySchema).max(5).optional(), // CR-105
     }),

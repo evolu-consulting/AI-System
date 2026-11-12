@@ -57,6 +57,8 @@ export function reviewHasGroup(s: Stage, library: boolean): boolean {
   const groups = s.after.parallel?.groups;
   if (groups && groups.length > 0)
     return groups.every((g) => (g.group_id ?? null) !== null || g.group_key !== undefined);
+  // CR-139 · «Trưởng phòng của người đề xuất» không cần phòng (engine phân giải lúc mở việc) — cả def công ty lẫn mẫu Thư viện.
+  if (s.after.approver_mode === "starter_head") return true;
   // CR-127 · Z2 · bước Duyệt chỉ có người (`approver_user_id`, không phòng) hợp lệ ở def công ty; mẫu Thư viện không trỏ người.
   if (!library && (s.after.approver_user_id ?? null) !== null) return true;
   return library ? s.after.group_key !== undefined : s.after.group_id !== null;

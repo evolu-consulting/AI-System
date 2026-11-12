@@ -102,6 +102,11 @@ export const TASK_KINDS = ["review", "ask", "decision", "milestone"] as const;
 /** CR-127 · E1 · cần bao nhiêu người: một người nhận việc / trưởng phòng / tất cả (hub 0131 `review_tasks_need_ck`). */
 export const TASK_NEEDS = ["one", "head", "all"] as const;
 export type TaskNeed = (typeof TASK_NEEDS)[number];
+/** CR-139 · kiểu người duyệt của bước Duyệt: phòng (`group_id`) / người cụ thể (`approver_user_id`) / «Trưởng phòng của người
+ *  đề xuất» (`starter_head`: engine phân giải khi mở việc — phòng của người gửi, không trưởng / trưởng là người gửi ⇒ phòng cha).
+ *  Vắng ⇒ suy như cũ từ `group_id`/`approver_user_id`. */
+export const APPROVER_MODES = ["group", "user", "starter_head"] as const;
+export type ApproverMode = (typeof APPROVER_MODES)[number];
 export const TASK_STATUSES = ["open", "closed"] as const;
 export const TASK_RESULTS = [
   "pass",

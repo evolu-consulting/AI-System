@@ -7,6 +7,7 @@ import { REMIND_AFTER_H } from "../domain/limits";
 import { reviewTaskTiming } from "../domain/notify/remind.rules";
 import { zeroVoterTargets } from "../domain/tasks/all-vote.rules";
 import { type SoleTargets, soleStarterTargets } from "../domain/tasks/delegation.rules";
+import { isStarterHead, starterHeadFallback } from "../domain/tasks/starter-head.rules";
 import { headGateSql } from "./head-gate.sql";
 
 type AfterCfg = {
@@ -18,9 +19,13 @@ type AfterCfg = {
     user_id?: string | null;
   } | null;
   need?: string;
+  kind?: string;
+  approver_mode?: string;
 };
 
 export type TimingInput = {
+  /** CR-139 · chỉ việc duyệt (`review`) mới phân giải «Trưởng phòng của người đề xuất». */
+  kind?: string;
   tenantId: string;
   stageRunId: string;
   remindAt: Date;
@@ -52,7 +57,8 @@ export async function reviewTimingOf(tx: Tx, t: TimingInput) {
     select x.after, (select g.id::text from admin.groups g where g.tenant_id = s.tenant_id
         and g.key = x.after->'escalate'->>'group_key') as esc_key_id,
       gx.gate, pr.started_by::text as starter,
-      case when gx.gate = pr.started_by::text or ${soleUser}::uuid = pr.started_by or gx.all_vote then array(select u.id::text
+      case when gx.gate = pr.started_by::text or ${soleUser}::uuid = pr.started_by or gx.all_vote
+        or x.after->>'approver_mode' = 'starter_head' then array(select u.id::text
         from admin.users u where u.tenant_id = s.tenant_id and u.role = 'tenant_admin' and u.active
           and not u.locked_by_tenant and u.id <> pr.started_by order by u.id) end as admin_ids,
       case when gx.all_vote then array(select gm.user_id::text from admin.group_members gm
@@ -66,13 +72,23 @@ export async function reviewTimingOf(tx: Tx, t: TimingInput) {
       as gate) g0
     cross join lateral (select g0.gate, (g0.gate is null and x.after->>'need' = 'all') as all_vote) gx
     where s.id = ${t.stageRunId} and s.tenant_id = ${t.tenantId}`);
-  return stageCfgOf(t, soleUser, row);
+  const cfg = stageCfgOf(t, soleUser, row);
+  // CR-139 · bước «Trưởng phòng của người đề xuất»: phân giải + ghi vào snapshot (MỘT câu, chỉ bước kiểu này) ⇒ cửa = người đó;
+  // không ai ⇒ STARTER_HEAD_MISSING: giao đích dự phòng như R#15 (không treo).
+  if (t.kind !== "review" || !isStarterHead(afterOf(row))) return cfg;
+  const gate = await resolveStarterHead(tx, t.tenantId, t.stageRunId);
+  const fallback = gate ? null : starterHeadFallback(row?.starter ?? null, cfg.targets);
+  return { ...cfg, gate, sole: fallback, all: null };
 }
+
+const afterOf = (row: CfgRow | undefined): AfterCfg => {
+  const raw = row?.after ?? null;
+  return (typeof raw === "string" ? JSON.parse(raw) : raw) ?? {};
+};
 
 /** Phần tính (không I/O) của `reviewTimingOf`: mốc nhắc/chuyển cấp + cửa duyệt + R#15 + E5. */
 function stageCfgOf(t: TimingInput, soleUser: string | null, row: CfgRow | undefined) {
-  const raw = row?.after ?? null;
-  const after: AfterCfg = (typeof raw === "string" ? JSON.parse(raw) : raw) ?? {};
+  const after = afterOf(row);
   const esc = after.escalate ?? null;
   const groupId = esc ? (esc.group_id ?? row?.esc_key_id ?? null) : null;
   const timing = reviewTaskTiming(new Date(t.remindAt.getTime() - REMIND_AFTER_H * 3_600_000), {
@@ -82,7 +98,7 @@ function stageCfgOf(t: TimingInput, soleUser: string | null, row: CfgRow | undef
   const gate = row?.gate ?? null;
   const targets = { userId: esc?.user_id ?? null, groupId, adminIds: row?.admin_ids ?? [] };
   const sole = soleStarterTargets({ gate, soleUser, starter: row?.starter ?? null }, targets);
-  return { timing, gate, sole, all: allCfgOf(row, targets) };
+  return { timing, gate, sole, all: allCfgOf(row, targets), targets };
 }
 
 function allCfgOf(

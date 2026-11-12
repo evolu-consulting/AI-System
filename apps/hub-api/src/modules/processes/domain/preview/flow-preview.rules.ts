@@ -97,7 +97,8 @@ function gateOf(c: Ctx, a: After): Gate {
   const { stage, w, warn } = c;
   const group = a.group_id ? (w.groups.get(a.group_id) ?? null) : null;
   const groupId = group ? (a.group_id as string) : null;
-  if (!group && !a.approver_user_id)
+  if (!group && !a.approver_user_id && a.approver_mode !== "starter_head")
+    // CR-139
     warn(
       "group_missing",
       `Bước «${stage.name}» chưa chọn phòng duyệt (hoặc phòng không còn ở công ty): chọn phòng cho bước này.`,

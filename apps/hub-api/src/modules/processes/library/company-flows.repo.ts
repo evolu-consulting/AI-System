@@ -47,6 +47,8 @@ const COLS = sql`coalesce(d.stages -> 0 ->> 'node', '') = ${START_FORM_NODE_KEY}
         and jsonb_array_length(st -> 'after' -> 'parallel' -> 'groups') > 0
         then exists (select 1 from jsonb_array_elements(st -> 'after' -> 'parallel' -> 'groups') g
           where coalesce(g ->> 'group_id', '') = '' and coalesce(g ->> 'group_key', '') = '')
+      -- CR-139 · «Trưởng phòng của người đề xuất» (approver_mode = 'starter_head') không cần phòng.
+      when st -> 'after' ->> 'approver_mode' = 'starter_head' then false
       else coalesce(st -> 'after' ->> 'group_id', '') = '' and coalesce(st -> 'after' ->> 'approver_user_id', '') = ''
     end)) as no_group`;
 const FROM = sql`from hub.company_flows cf
