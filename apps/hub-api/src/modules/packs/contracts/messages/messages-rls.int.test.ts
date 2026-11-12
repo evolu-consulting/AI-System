@@ -35,8 +35,8 @@ beforeAll(async () => {
   [V1] = (await users(o, T2, 1, { from: 9344 })) as [string];
   await o`insert into admin.external_orgs (id, tenant_id, name) values (${ORG}, ${T}, 'Đối tác RLS tin nhắn')`;
   X = "e1320000-0000-4000-8000-000000000001";
-  await o`insert into admin.users (id, tenant_id, username, email, password_hash, display_name, kind, external_org_id)
-    values (${X}, ${T}, 'ext9350', 'ext9350@kit.test', 'kit-placeholder-hash', 'Khách ngoài', 'external', ${ORG})`;
+  await o`insert into admin.users (id, tenant_id, username, email, password_hash, display_name, role, kind, external_org_id)
+    values (${X}, ${T}, 'ext9350', 'ext9350@kit.test', 'kit-placeholder-hash', 'Khách ngoài', 'member', 'external', ${ORG})`;
   // Nội dung: C1 (T) 2 người + 1 tin kèm 1 tệp; C2 (T2) 1 người + 1 tin; C3 (T) U1 + X.
   await o`insert into contracts.msg_conversations (tenant_id, id, kind, title, created_by, last_seq) values
     (${T}, ${C1}, 'group', 'Mua hàng', ${U1}, 1), (${T2}, ${C2}, 'group', 'Kho T2', ${V1}, 1), (${T}, ${C3}, 'group', 'Có khách ngoài', ${U1}, 0)`;
