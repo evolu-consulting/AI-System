@@ -1,7 +1,9 @@
 // ADM-NFR-06 · `bun run depcruise`: kiểm luật import trên file đổi (spec M0 T-DEP-8), `--all` quét hết.
+
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { onlyStaleWarning } from "./baseline.rules";
+import { SLICE_BASE } from "./lib/base-branch";
 import { changedFiles, hasRef, repoRoot } from "./lib/git";
 import { failNote } from "./slice-rm.rules";
 
@@ -91,7 +93,7 @@ export function summarizeCruise(json: CruiseJson, show = 10): { errors: number; 
 
 /** Gốc so sánh cho `--affected`: điểm tách khỏi `platform/gd0` (fallback `main`); không có ⇒ undefined (quét hết). */
 function affectedBase(root: string): string | undefined {
-  for (const ref of ["platform/gd0", "main"]) {
+  for (const ref of [SLICE_BASE, "main"]) {
     if (!hasRef(ref, root)) continue;
     const p = Bun.spawnSync(["git", "merge-base", ref, "HEAD"], { cwd: root, stdout: "pipe" });
     const sha = p.stdout.toString().trim();

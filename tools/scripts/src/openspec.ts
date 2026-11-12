@@ -2,11 +2,13 @@
 //   check [lát…]      kiểm Delta trong docs/specs/<lát>/tasks.md (mặc định: lát đổi so với platform/gd0 + nhánh slice/<tên>)
 //   pending           liệt kê lát "chưa gộp" và file docs/current đích (hỗ trợ gộp cuối đợt)
 //   archive <lát> [--dot <tên>]  đổi dòng trạng thái thành "đã gộp <hôm nay>" (KHÔNG sửa docs/current)
+
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { SLICE_BASE } from "./lib/base-branch";
 import { markMerged, parseDelta, validateDelta, validateTestRefs } from "./openspec.rules";
 
-const BASE = "platform/gd0";
+const BASE = SLICE_BASE;
 
 const tasksPath = (root: string, slice: string) => join(root, "docs", "specs", slice, "tasks.md");
 

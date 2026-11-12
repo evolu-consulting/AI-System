@@ -1,11 +1,13 @@
 // `bun run res:check [--json] [--server] [--strict]` — đo tài nguyên máy trước khi chạy song song
 // (docs/WORKFLOW.md "Kiểm tra tài nguyên trước khi chạy song song"). Luật thuần: res-check.rules.ts.
 // Chỉ ĐỌC: không ghi file, không đổi trạng thái máy; ssh chỉ chạy lệnh đọc, không in khoá/bí mật.
+
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, statfsSync } from "node:fs";
 import { cpus, freemem, loadavg, totalmem } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { listLanes, processTable } from "./e2e-lane";
+import { SLICE_BASE } from "./lib/base-branch";
 import {
   PS_LOCAL_SCRIPT,
   parseLocalPs,
@@ -22,7 +24,7 @@ import {
   type ServerMetrics,
 } from "./res-check.rules";
 
-const BASE = "platform/gd0";
+const BASE = SLICE_BASE;
 const SERVER = "evoc@149.202.83.5";
 const KEY = "F:\\workspace\\id_evoc_key";
 const SERVER_SLOTS = 8;

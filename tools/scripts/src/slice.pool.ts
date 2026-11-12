@@ -1,6 +1,7 @@
 // slice:pool · hồ bơi worktree ấm: giữ N worktree `<evolu-wt>/_pool/<n>` (detached HEAD tại platform/gd0, đã `bun install`)
 // để `slice:new` lấy một cái (git worktree move + checkout -b) thay vì dựng 1–2 phút. Không import slice.ts (slice.ts chạy lệnh khi nạp).
 //   bun run slice:pool [--size N]   bổ sung hồ bơi tới N (mặc định 3); đĩa < 30 GB ⇒ không dựng.
+
 import { spawn, spawnSync } from "node:child_process";
 import {
   existsSync,
@@ -12,11 +13,12 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { SLICE_BASE } from "./lib/base-branch";
 import { collectLocal } from "./res-check";
 import { parseWorktreeList } from "./res-check.parse";
 import { canBuild, missingNames, parsePoolSize, pickReady } from "./slice.pool.rules";
 
-const BASE = "platform/gd0";
+const BASE = SLICE_BASE;
 const norm = (p: string) => resolve(p).replaceAll("\\", "/").toLowerCase();
 
 function git(cwd: string, ...a: string[]): { ok: boolean; out: string } {

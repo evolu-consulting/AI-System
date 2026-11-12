@@ -4,12 +4,14 @@
 // gói typecheck. Không `--run` ⇒ CHỈ in kế hoạch (người + `--json`). `--run local` = check+lock+typecheck+unit tại máy; `--run server` =
 // int + e2e trên evotest chia theo slot trống; `--run all` = mọi thứ tại máy (dùng bởi `slice:merge`). Quarantine đỏ đã biết
 // (tests/known-red.json) mặc định bật ở các lệnh int/e2e. `test:all` vẫn là cổng ĐỢT (WORKFLOW.md "Cổng lát và cổng đợt").
+
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Glob } from "bun";
 import { loadExternalOwned } from "./external-owned";
 import { externalMatcher } from "./external-owned.rules";
 import { isFrozenConfig, isFrozenFile } from "./frozen.rules";
+import { SLICE_BASE } from "./lib/base-branch";
 import { repoRoot } from "./lib/git";
 import { affectedBy, buildGraph, posix } from "./lib/import-graph";
 import { type RunStep, runWaves, type StepResult, summarizeRun } from "./lib/run-steps";
@@ -35,7 +37,7 @@ function git(root: string, args: string[]): string {
 /** merge-base của HEAD với `platform/gd0` (rồi `main`) khi còn khác HEAD (diff cả lát đã commit); không có ⇒ HEAD (chỉ chưa commit). */
 function defaultBase(root: string): string {
   const head = git(root, ["rev-parse", "HEAD"]);
-  for (const ref of ["platform/gd0", "main"]) {
+  for (const ref of [SLICE_BASE, "main"]) {
     const mb = git(root, ["merge-base", "HEAD", ref]);
     if (mb && mb !== head) return mb;
   }
