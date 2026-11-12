@@ -3,7 +3,8 @@ import { z } from "zod";
 import { CommunityCapsSchema } from "./brand";
 import { PartnerReputationSchema } from "./profile";
 
-export const COMMUNITY_ROLES = ["host_admin", "host_member", "partner"] as const;
+/** ADR-0044: không còn admin chủ quản — chủ quản = nhân viên nội bộ (`host_member`). */
+export const COMMUNITY_ROLES = ["host_member", "partner"] as const;
 export type CommunityRole = (typeof COMMUNITY_ROLES)[number];
 /** CR-130 L3: một tên với SHT — `customer` (Khách hàng), không còn `buyer`. */
 export const PARTNER_LABELS = ["supplier", "customer"] as const;

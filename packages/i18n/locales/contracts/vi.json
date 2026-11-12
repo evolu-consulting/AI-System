@@ -538,8 +538,8 @@
         "body": "Gói chỉ do đơn vị vận hành nền tảng bật. Nhờ quản trị viên công ty liên hệ đơn vị vận hành để bật gói Hợp đồng, rồi tải lại trang."
       },
       "communityOff": {
-        "title": "Cộng đồng chưa dùng được với tài khoản của bạn",
-        "body": "Cộng đồng chưa được bật cho công ty bạn hoặc bạn chưa được cấp quyền đọc. Nhờ quản trị viên công ty liên hệ đơn vị vận hành, rồi tải lại trang."
+        "title": "Bảng tin chưa được bật cho công ty — liên hệ quản trị nền tảng",
+        "body": "Quản trị nền tảng bật Bảng tin cho từng công ty. Nhờ quản trị công ty của bạn liên hệ quản trị nền tảng, rồi tải lại trang."
       },
       "logout": "Đăng xuất"
     },

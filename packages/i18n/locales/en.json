@@ -1121,9 +1121,6 @@
       "ineffective": "{count} role(s) not in effect",
       "ineffectiveHint": "Roles above the company level keep their grants but are not enforced. Raise the company level to make them effective.",
       "openAccess": "Permissions",
-      "communityWarn": "Partners never join roles and keep the static View/Edit levels on Community. Review partner isolation after enabling.",
-      "communityBelowWrite": "The company has {count} partner organization(s): a level below Edit does not narrow their static Edit access.",
-      "communityOffPartners": "The company has {count} partner organization(s); they cannot use Community while it is off.",
       "knowledgeNote": "There is no screen that uses the Knowledge Admin level yet.",
       "pendingPacks": "enable {on} pack(s), disable {off} pack(s)",
       "confirmPackOff": "Turning off {list}: {members} company user(s) lose access to this app immediately. Groups and roles are kept for when it is turned back on.",
@@ -2242,17 +2239,9 @@
         "name": "Chat AI",
         "desc": "Lets the company use the Chat AI app"
       },
-      "community-read": {
-        "name": "View Community",
-        "desc": "Read posts and comments"
-      },
-      "community-write": {
-        "name": "Edit Community",
-        "desc": "Post, comment and edit your own content"
-      },
-      "community-admin": {
-        "name": "Administer Community",
-        "desc": "Moderate posts, manage categories and settings"
+      "contracts-community": {
+        "name": "Community feed",
+        "desc": "The Contracts company feed: staff read, post, comment and connect with partners. Only the platform admin can enable it; off by default."
       },
       "contracts-read": {
         "name": "View contracts",
@@ -2566,7 +2555,6 @@
     },
     "pack": {
       "contracts": "Contracts",
-      "community": "Community",
       "knowledge": "Knowledge"
     },
     "ineffective": {
@@ -2617,7 +2605,6 @@
       "create": "Create role"
     },
     "note": {
-      "community": "Only internal users can be assigned to Community roles. Partners use two fixed levels, View/Edit, outside roles.",
       "knowledge": "Knowledge: no screen uses the Admin level yet."
     },
     "col": {

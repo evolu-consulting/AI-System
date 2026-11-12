@@ -98,7 +98,6 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
         ? {
             pack,
             roles: roleStats(a.roles, pack.key, level),
-            partners: a.partners,
             onOpenAccess: () => go(ACCESS_TAB, undefined, "access"),
           }
         : null,

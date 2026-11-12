@@ -28,12 +28,12 @@ describe("templateReadiness", () => {
     const n = templateNeeds([{ key: "k", name: "Hiện bài", node: "community.show-post" }], MODULES);
     const off = templateReadiness(n, none);
     expect(off.ready).toBe(false);
-    expect(off.missing.features).toEqual([{ key: "community-write", stage: "Hiện bài" }]);
+    expect(off.missing.features).toEqual([{ key: "contracts-community", stage: "Hiện bài" }]);
     expect(off.reasons[0]).toEqual({
       code: "READINESS_FEATURE_MISSING",
-      params: { stage: "Hiện bài", key: "community-write" },
+      params: { stage: "Hiện bài", key: "contracts-community" },
     });
-    const on = templateReadiness(n, { ...none, features: new Set(["community-write"]) });
+    const on = templateReadiness(n, { ...none, features: new Set(["contracts-community"]) });
     expect(on.ready).toBe(true);
   });
   test("stage tool không khả dụng ⇒ not ready; khả dụng ⇒ ready", () => {

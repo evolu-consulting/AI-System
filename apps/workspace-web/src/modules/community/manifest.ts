@@ -22,8 +22,8 @@ export type CommunityRouteDef = { id: CommunityRouteId; path: string };
 export type { LowRouter } from "./application/router-port";
 export type { CommunityHostConfig };
 
-/** Khoá gói quyền (FeatureGate) của module. */
-export const COMMUNITY_PACK = "community";
+/** ADR-0044: KHÔNG còn là gói riêng — `community` là CỜ tính ra (add-on `contracts-community` bật ∧ đọc được mặt Bảng tin), Hub trả trong `flags`. */
+export const COMMUNITY_FLAG = "community";
 
 /** Route con tương đối dưới `/community` (khung); `?settings=1` mở hộp thoại Cài đặt, không phải route. Giữ gọn: nằm trong bundle đầu. */
 const CHILD_PATHS = [
@@ -97,11 +97,11 @@ export function createCommunityRoutes<Parent, Route, Component>(
  * `/community/profile` (không orgId) = hồ sơ của mình ⇒ "Bài đăng của tôi" / "Tường nhà".
  */
 export const communityManifest = {
-  key: COMMUNITY_PACK,
+  key: COMMUNITY_FLAG,
   basePath: COMMUNITY_BASE,
   base: COMMUNITY_BASE,
   home: COMMUNITY_BASE,
-  requires: { pack: COMMUNITY_PACK, action: "read" as const },
+  requires: { pack: COMMUNITY_FLAG, action: "read" as const },
   routes: communityRoutes,
   groupLabelKey: "contracts.nav.group.community",
   order: 20,

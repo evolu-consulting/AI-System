@@ -1,5 +1,5 @@
 // CR-112 · ADM-FR-78 · dòng thông tin gói của thẻ app: trạng thái gói, số vai · số người (GET packs), huy hiệu "n vai không hiệu lực",
-// lối tắt tới tab Phân quyền, cảnh báo Community (đối tác) và ghi chú Knowledge.
+// lối tắt tới tab Phân quyền, và ghi chú Knowledge.
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -12,14 +12,12 @@ type Props = {
   pack: PackInfo;
   roles: RoleSummary;
   level: AppLevel;
-  partners: number;
   onOpenAccess: () => void;
 };
 
-export function AppCardMeta({ app, pack, roles, level, partners, onOpenAccess }: Props) {
+export function AppCardMeta({ app, pack, roles, level, onOpenAccess }: Props) {
   const { t } = useTranslation();
   const on = level !== "off";
-  const belowWrite = level === "off" || level === "read";
   return (
     <div className="space-y-2 border-t border-border pt-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-muted-foreground">
@@ -37,19 +35,6 @@ export function AppCardMeta({ app, pack, roles, level, partners, onOpenAccess }:
           {t("tenants.apps.openAccess")}
         </Button>
       </div>
-      {app === "community" && on ? (
-        <p role="note" className="rounded-md bg-warning-bg px-3 py-2 text-caption text-warning">
-          {t("tenants.apps.communityWarn")}
-          {partners > 0 && belowWrite
-            ? ` ${t("tenants.apps.communityBelowWrite", { count: partners })}`
-            : ""}
-        </p>
-      ) : null}
-      {app === "community" && !on && partners > 0 ? (
-        <p role="note" className="text-caption text-muted-foreground">
-          {t("tenants.apps.communityOffPartners", { count: partners })}
-        </p>
-      ) : null}
       {app === "knowledge" && on ? (
         <p className="text-caption text-muted-foreground">{t("tenants.apps.knowledgeNote")}</p>
       ) : null}

@@ -123,7 +123,7 @@ describe("visibility (hien-thi.md)", () => {
     caps: { contracts: false },
     contractsUrl: null,
   };
-  const host = { ...s1, role: "host_admin" as const, orgId: "host", labels: [] };
+  const host = { ...s1, role: "host_member" as const, orgId: "host", labels: [] };
   const base = {
     type: "note" as const,
     authorOrgId: "host",

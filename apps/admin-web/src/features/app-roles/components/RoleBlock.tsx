@@ -125,9 +125,6 @@ export function RoleBlock({ pack, roles, readOnly, onCreate, onEdit, onRemove, o
         )}
       </CardHeader>
       <CardContent className="space-y-3">
-        {pack === "community" ? (
-          <p className="text-caption text-muted-foreground">{t("appRoles.note.community")}</p>
-        ) : null}
         {pack === "knowledge" ? (
           <p className="text-caption text-muted-foreground">{t("appRoles.note.knowledge")}</p>
         ) : null}

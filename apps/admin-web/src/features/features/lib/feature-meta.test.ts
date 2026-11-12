@@ -6,10 +6,17 @@ import { groupByApp, isRegistered, metaOf } from "./feature-meta";
 
 describe("metaOf", () => {
   test("app lấy từ cột; mức theo hậu tố; tính năng thêm khi app có mức mà khoá không có hậu tố mức", () => {
-    expect(metaOf({ key: "community-write", app: "community" })).toEqual({
-      app: "community",
+    expect(metaOf({ key: "contracts-write", app: "contracts" })).toEqual({
+      app: "contracts",
       level: "write",
     });
+    // ADR-0044: «Bảng tin» là tính năng thêm đã đăng ký của Sổ Hợp Tác (không có mức riêng).
+    expect(metaOf({ key: "contracts-community", app: "contracts" })).toEqual({
+      app: "contracts",
+      addon: true,
+    });
+    expect(isRegistered("contracts-community")).toBe(true);
+    expect(isRegistered("community-read")).toBe(false);
     expect(metaOf({ key: "han-muc-duyet", app: "contracts" })).toEqual({
       app: "contracts",
       addon: true,
@@ -36,14 +43,13 @@ describe("groupByApp", () => {
     "chat-app",
     "contracts-read",
     "core",
-    "community-read",
     "contracts-write",
     "bao-cao",
   ];
   const groups = groupByApp(keys.map(featOf));
 
-  test("thứ tự nhóm: Cơ bản, Chat, Community, Sổ Hợp Tác, … Khác cuối; bỏ nhóm rỗng", () => {
-    expect(groups.map((g) => g.app)).toEqual(["core", "chat", "community", "contracts", "other"]);
+  test("thứ tự nhóm: Cơ bản, Chat, Sổ Hợp Tác, … Khác cuối; bỏ nhóm rỗng", () => {
+    expect(groups.map((g) => g.app)).toEqual(["core", "chat", "contracts", "other"]);
   });
   test("trong nhóm: Xem → Sửa → Quản trị → tính năng thêm (theo key)", () => {
     const contracts = groups.find((g) => g.app === "contracts");

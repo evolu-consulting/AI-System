@@ -1121,9 +1121,6 @@
       "ineffective": "{count} vai không hiệu lực",
       "ineffectiveHint": "Vai có mức cao hơn mức của công ty: quyền được giữ nhưng chưa thi hành. Nâng mức của công ty để vai có hiệu lực.",
       "openAccess": "Phân quyền",
-      "communityWarn": "Đối tác không vào vai, giữ 2 mức tĩnh Xem/Sửa trên Community. Kiểm tra cách ly đối tác sau khi bật.",
-      "communityBelowWrite": "Công ty có {count} đối tác: hạ mức dưới Sửa không thu hẹp quyền Sửa tĩnh của họ.",
-      "communityOffPartners": "Công ty có {count} đối tác; Community tắt thì họ không dùng được.",
       "knowledgeNote": "Chưa có màn dùng mức Quản trị của Tri thức.",
       "pendingPacks": "bật {on} gói, tắt {off} gói",
       "confirmPackOff": "Tắt gói {list}: {members} người dùng của công ty mất quyền vào ứng dụng này ngay. Nhóm và vai được giữ để bật lại sau.",
@@ -2242,17 +2239,9 @@
         "name": "Chat AI",
         "desc": "Cho phép công ty dùng ứng dụng Chat AI"
       },
-      "community-read": {
-        "name": "Xem Community",
-        "desc": "Đọc bài viết và bình luận"
-      },
-      "community-write": {
-        "name": "Sửa Community",
-        "desc": "Đăng bài, bình luận và chỉnh sửa nội dung của mình"
-      },
-      "community-admin": {
-        "name": "Quản trị Community",
-        "desc": "Duyệt bài, quản lý chuyên mục và cài đặt"
+      "contracts-community": {
+        "name": "Bảng tin",
+        "desc": "Bảng tin nội bộ của Sổ Hợp Tác: nhân viên xem, đăng bài, bình luận và kết nối với đối tác. Chỉ quản trị nền tảng bật; mặc định tắt."
       },
       "contracts-read": {
         "name": "Xem hợp đồng",
@@ -2566,7 +2555,6 @@
     },
     "pack": {
       "contracts": "Hợp đồng",
-      "community": "Community",
       "knowledge": "Knowledge"
     },
     "ineffective": {
@@ -2617,7 +2605,6 @@
       "create": "Tạo vai"
     },
     "note": {
-      "community": "Chỉ người dùng nội bộ được gán vào vai Community. Đối tác dùng hai mức cố định Xem/Sửa, không qua vai.",
       "knowledge": "Knowledge: chưa có màn dùng mức Quản trị."
     },
     "col": {

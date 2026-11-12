@@ -37,23 +37,19 @@ export const PARTNERS: PartnerOrg[] = [
 ];
 
 export type Persona = CommunityViewer & { id: string; label: string };
-const host = (
-  id: string,
-  name: string,
-  role: "host_admin" | "host_member",
-  label: string,
-): Persona => ({
+const host = (id: string, name: string, label: string): Persona => ({
   id,
   userId: id,
   name,
   email: null,
-  role,
+  role: "host_member",
   orgId: HOST_ORG.id,
   orgName: HOST_ORG.name,
   labels: [],
   cats: [],
-  caps: { contracts: role === "host_admin" },
-  contractsUrl: role === "host_admin" ? "/" : null,
+  // ADR-0044: không còn admin chủ quản — mọi nhân viên nội bộ vào được Sổ Hợp Tác.
+  caps: { contracts: true },
+  contractsUrl: "/",
   label,
 });
 const partner = (id: string, name: string, orgId: string, label: string): Persona => {
@@ -74,8 +70,8 @@ const partner = (id: string, name: string, orgId: string, label: string): Person
   };
 };
 export const PERSONAS: Persona[] = [
-  host("an", "Nguyễn Văn An", "host_admin", "A · Admin chủ quản (Nguyễn Văn An)"),
-  host("cuong", "Lê Quốc Cường", "host_member", "M · Thành viên chủ quản (Lê Quốc Cường)"),
+  host("an", "Nguyễn Văn An", "A · Nhân viên chủ quản (Nguyễn Văn An)"),
+  host("cuong", "Lê Quốc Cường", "M · Nhân viên chủ quản (Lê Quốc Cường)"),
   partner("tp", "Anh Phát", "tanphat", "S1 · Cơ sở Tân Phát (NCC)"),
   partner("ncca", "Chị Hoa", "ncca", "S2 · Hãng NCCA (NCC)"),
   partner("abc", "Trần B", "abc", "B1 · Công ty TNHH ABC (người mua)"),

@@ -16,13 +16,13 @@ export const DEFAULT_ROLE_KEY: Record<string, string> = {
   owner: "appRoles.defaultRole.owner",
 };
 
-const KNOWN_PACKS = ["contracts", "community", "knowledge"] as const;
+const KNOWN_PACKS = ["contracts", "knowledge"] as const;
 
 /** App có nhãn i18n riêng; app lạ ⇒ chính khoá gói. */
 export const packNameKey = (pack: string): string | null =>
   (KNOWN_PACKS as readonly string[]).includes(pack) ? `appRoles.pack.${pack}` : null;
 
-/** Contracts, Community, Knowledge đứng trước, còn lại theo khoá. */
+/** Contracts, Knowledge đứng trước, còn lại theo khoá. */
 export function sortPacks(packs: readonly string[]): string[] {
   const rank = (p: string) => {
     const i = (KNOWN_PACKS as readonly string[]).indexOf(p);

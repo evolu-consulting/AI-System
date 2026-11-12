@@ -6,7 +6,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useApplyTenantEntitlements } from "@/features/features/api";
-import { useOrgList } from "@/features/partners/api";
 import { useSession } from "@/lib/auth/use-session";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
@@ -71,8 +70,6 @@ export function useAppsTab(
   const [intent, setIntent] = useState<PackIntent>({});
   const [saving, setSaving] = useState(false);
   const value = draft ?? current;
-  const hasCommunity = cards.some((c) => c.app === "community" && c.mode === "levels");
-  const partnersQ = useOrgList({ tenantId: tenant.id, q: "", offset: 0 }, hasCommunity);
   const plan = useMemo(
     () => planChanges(features ?? [], cards, packs, value, intent),
     [features, cards, packs, value, intent],
@@ -121,7 +118,6 @@ export function useAppsTab(
     cards,
     packs,
     roles: rolesQ.data?.items ?? [],
-    partners: partnersQ.data?.total ?? 0,
     value,
     plan,
     dirty,

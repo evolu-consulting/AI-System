@@ -538,8 +538,8 @@
         "body": "Packs are enabled only by the platform operator. Ask your company's administrator to contact the platform operator to enable the Contracts pack, then reload the page."
       },
       "communityOff": {
-        "title": "Community is not available for your account",
-        "body": "Community is not enabled for your company, or you have not been granted read access. Ask your company administrator to contact the platform operator, then reload the page."
+        "title": "The company feed is not enabled for your company — contact the platform administrator",
+        "body": "The platform administrator enables the company feed for each company. Ask your company administrator to contact them, then reload the page."
       },
       "logout": "Sign out"
     },

@@ -25,13 +25,11 @@ const catalog = (on: string[] = []): TenantFeature[] =>
   [
     "core",
     "chat-app",
-    "community-read",
-    "community-write",
-    "community-admin",
     "contracts-read",
     "contracts-write",
     "contracts-admin",
     "han-muc-duyet",
+    "contracts-community",
     "ke-toan",
   ].map((k) => feat(k, k === "core" || on.includes(k)));
 const card = (app: string, on: string[] = []): AppCard => {
@@ -47,16 +45,23 @@ describe("buildCards", () => {
     expect(cards.map((c) => [c.app, c.mode])).toEqual([
       ["core", "core"],
       ["chat", "switch"],
-      ["community", "levels"],
       ["contracts", "levels"],
       ["other", "list"],
     ]);
-    expect(card("contracts").addons.map((f) => f.key)).toEqual(["han-muc-duyet"]);
+    expect(card("contracts").addons.map((f) => f.key)).toEqual([
+      "contracts-community",
+      "han-muc-duyet",
+    ]);
     expect(card("chat").main?.key).toBe("chat-app");
   });
+  test("ADR-0044: «Bảng tin» (contracts-community) là tính năng thêm của Sổ Hợp Tác, không có thẻ/mức riêng", () => {
+    const c = buildCards(catalog()).find((x) => x.app === "contracts") as AppCard;
+    expect(c.addons.map((f) => f.key)).toContain("contracts-community");
+    expect(c.levelFeatures.read?.key).toBe("contracts-read");
+  });
   test("catalog thiếu feature mức Sửa ⇒ chỉ chọn được Tắt/Xem", () => {
-    const cats = buildCards(catalog().filter((f) => f.key !== "community-write"));
-    const c = cats.find((x) => x.app === "community") as AppCard;
+    const cats = buildCards(catalog().filter((f) => f.key !== "contracts-write"));
+    const c = cats.find((x) => x.app === "contracts") as AppCard;
     expect(availableLevels(c)).toEqual({ off: true, read: true, write: false, admin: false });
   });
 });
@@ -93,18 +98,18 @@ describe("level ↔ keys", () => {
     expect(detectLevel(c, set("han-muc-duyet"))).toEqual({ level: "off", consistent: false });
   });
   test("setLevel chuẩn hoá và không đụng app khác", () => {
-    const draft = set("contracts-write", "community-read", "han-muc-duyet");
+    const draft = set("contracts-write", "knowledge-read", "han-muc-duyet");
     expect([...setLevel(draft, c, "admin")].sort()).toEqual([
-      "community-read",
       "contracts-admin",
       "contracts-read",
       "contracts-write",
       "han-muc-duyet",
+      "knowledge-read",
     ]);
     expect([...setLevel(draft, c, "read")].sort()).toEqual([
-      "community-read",
       "contracts-read",
       "han-muc-duyet",
+      "knowledge-read",
     ]);
   });
   test("Tắt gỡ cả tính năng thêm của app đó", () => {
@@ -120,7 +125,7 @@ describe("level ↔ keys", () => {
 });
 
 describe("diffEntitlements", () => {
-  const feats = catalog(["community-read", "contracts-read", "contracts-write", "chat-app"]);
+  const feats = catalog(["contracts-community", "contracts-read", "contracts-write", "chat-app"]);
   test("entitledKeys bỏ core", () => {
     expect(entitledKeys(feats).has("core")).toBe(false);
     expect(entitledKeys(feats).size).toBe(4);

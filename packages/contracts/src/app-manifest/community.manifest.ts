@@ -1,6 +1,6 @@
 // CR-118 · manifest dữ liệu của app Community (key catalog `community`). Đối tác thấy Bảng tin và Bài của tôi (đăng bài cần mức Sửa).
 // CR-130 · ADR-0044: Bảng tin là mảng con của gói `contracts` (add-on `contracts-community`), bản cơ bản KHÔNG quyền riêng/admin:
-// duyệt bài/đơn = mọi user nội bộ (mức Sửa, không `company_admin`). `levelFeatures` `community-*` là catalog cũ — lát 2/4 gỡ cùng migration.
+// duyệt bài/đơn = mọi user nội bộ (mức Sửa, không `company_admin`). Mức của mặt Bảng tin = quyền gói `contracts` (không còn feature `community-*`); add-on bật = `contracts-community`.
 import { MODULES } from "../modules/index.generated";
 import { nodesOfApp } from "../modules/modules.rules";
 import type { AppManifest } from "./manifest";
@@ -11,9 +11,9 @@ export const COMMUNITY_MANIFEST: AppManifest = {
   key: "community",
   name: "Community",
   levelFeatures: {
-    read: "community-read",
-    write: "community-write",
-    admin: "community-admin",
+    read: "contracts-read",
+    write: "contracts-write",
+    admin: "contracts-admin",
   },
   addons: [],
   nav: [

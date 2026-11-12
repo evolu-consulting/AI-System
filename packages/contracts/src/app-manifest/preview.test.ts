@@ -14,7 +14,7 @@ const navOf = (r: ReturnType<typeof previewApp>["member"]) =>
 
 describe("previewApp · Community", () => {
   test("mức Xem: thành viên thấy Bảng tin + Bài của tôi, chưa thấy Duyệt bài (cần mức Sửa), không có hành động Đăng bài", () => {
-    const p = previewApp(COMMUNITY_MANIFEST, set("community-read"), [], []);
+    const p = previewApp(COMMUNITY_MANIFEST, set("contracts-read"), [], []);
     expect(p.member.level).toBe("read");
     expect(p.member.appVisible).toBe(true);
     const nav = navOf(p.member);
@@ -36,7 +36,7 @@ describe("previewApp · Community", () => {
   });
 
   test("đối tác thấy Bảng tin khi công ty bật app, nhưng không bao giờ thấy mục chỉ quản trị", () => {
-    const p = previewApp(COMMUNITY_MANIFEST, set("community-read", "community-write"), [], []);
+    const p = previewApp(COMMUNITY_MANIFEST, set("contracts-read", "contracts-write"), [], []);
     expect(p.partner.appVisible).toBe(true);
     expect(navOf(p.partner).feed?.visible).toBe(true);
     expect(navOf(p.partner).moderate?.reason).toEqual({ code: "partner_never" });
@@ -44,7 +44,7 @@ describe("previewApp · Community", () => {
   });
 
   test("ADR-0044 · Duyệt bài chỉ cần mức Sửa (mọi nhân viên có quyền ghi), không cần quản trị; đối tác không bao giờ thấy", () => {
-    const w = previewApp(COMMUNITY_MANIFEST, set("community-read", "community-write"), [], []);
+    const w = previewApp(COMMUNITY_MANIFEST, set("contracts-read", "contracts-write"), [], []);
     expect(navOf(w.company_admin).moderate?.visible).toBe(true);
     expect(navOf(w.member).moderate?.visible).toBe(true);
     expect(navOf(w.partner).moderate?.reason).toEqual({ code: "partner_never" });

@@ -43,6 +43,8 @@ function hasFeature(f: string, v: Viewer): boolean {
 /**
  * CR-102a · com-c2: app user ngoài (đối tác) được mở — dữ liệu, không if theo tên ở nơi khác. Đối tác không có Group ⇒ feature
  * của app xét theo entitlement CÔNG TY (gói tenant đã bật), không theo grant. Mọi app khác (Chat, Sổ Hợp Tác, Studio, Admin) ⇒ không.
+ * CR-130 · ADR-0044: app `community` = MẶT (surface) Bảng tin của gói contracts; khoá ở đây PHẢI trùng `EXTERNAL_SURFACES` của hub
+ * (`apps/hub-api/.../kit/domain/pack-surface.rules.ts`) — hai app không import nhau nên đồng bộ tay (sửa một phía ⇒ sửa phía kia); feature yêu cầu = add-on `contracts-community`.
  */
 export const EXTERNAL_APPS: ReadonlySet<string> = new Set(["community"]);
 

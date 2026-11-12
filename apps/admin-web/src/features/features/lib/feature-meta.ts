@@ -3,6 +3,10 @@
 // "tính năng thêm" còn suy từ hậu tố khoá (registry bên dưới trước, rồi hậu tố) — đó là mức, không phải ứng dụng.
 
 import { CONTRACTS_PARTNER_CONFIRM_FEATURE, FEATURE_APP_IDS } from "@ai/contracts/light";
+
+/** ADR-0044 · khoá add-on «Bảng tin» (chỉ admin nền tảng bật; mặc định tắt). */
+const CONTRACTS_COMMUNITY_FEATURE = "contracts-community";
+
 import {
   BookOpen,
   FileSignature,
@@ -23,7 +27,8 @@ type AppInfo = { icon: LucideIcon; levels: boolean };
 export const APPS: Record<AppId, AppInfo> = {
   core: { icon: Layers, levels: false },
   chat: { icon: MessageSquare, levels: false },
-  community: { icon: Users, levels: true },
+  // ADR-0044: Bảng tin là add-on của gói contracts — không còn mức Xem/Sửa/Quản trị riêng.
+  community: { icon: Users, levels: false },
   contracts: { icon: FileSignature, levels: true },
   knowledge: { icon: BookOpen, levels: true },
   other: { icon: Package, levels: false },
@@ -36,19 +41,18 @@ export type FeatureMeta = { app: AppId; level?: Level; addon?: boolean };
 /** Mức / tính năng thêm đã biết theo khoá (ưu tiên hơn hậu tố). Không chứa app. */
 const KNOWN: Readonly<Record<string, { level?: Level; addon?: boolean }>> = {
   "han-muc-duyet": { addon: true },
+  [CONTRACTS_COMMUNITY_FEATURE]: { addon: true },
 };
 
 /** Khoá có tên/mô tả nghiệp vụ ở i18n `featmeta.f.<key>.*` (khoá lạ hiện tên/key gốc). */
 const REGISTERED: ReadonlySet<string> = new Set([
   "core",
   "chat-app",
-  "community-read",
-  "community-write",
-  "community-admin",
   "contracts-read",
   "contracts-write",
   "contracts-admin",
   "han-muc-duyet",
+  CONTRACTS_COMMUNITY_FEATURE,
   CONTRACTS_PARTNER_CONFIRM_FEATURE,
   "knowledge-read",
   "knowledge-write",

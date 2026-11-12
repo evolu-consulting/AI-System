@@ -5,19 +5,9 @@ import { IconContract } from "~/components/icons";
 
 export type PackBlock = "forbidden" | "disabled";
 
-/** `pack="community"` (CR-130): gói Cộng đồng tắt/không có quyền ⇒ cùng khung, câu chữ riêng (không nói "gói Hợp đồng"). */
-export function PackStatePage({
-  kind,
-  onLogout,
-  pack = "contracts",
-}: {
-  kind: PackBlock;
-  onLogout: () => void;
-  pack?: "contracts" | "community";
-}) {
+export function PackStatePage({ kind, onLogout }: { kind: PackBlock; onLogout: () => void }) {
   const { t } = useTranslation();
-  const base =
-    pack === "community" ? "contracts.packState.communityOff" : `contracts.packState.${kind}`;
+  const base = `contracts.packState.${kind}`;
   return (
     <div className="grid min-h-[60dvh] place-items-center px-6 py-10">
       <section className="flex max-w-md flex-col items-center gap-4 rounded-xl border border-rule bg-panel px-8 py-10 text-center">
