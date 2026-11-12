@@ -185,12 +185,14 @@ export function mountCommunity<E extends Env>(
     hostBook?: HostBookReader;
     brand?: CompanyBrandReader;
     caps?: ContractsCapReader;
+    /** CR-130 · cổng liên kết đối tác SHT khi duyệt đơn tham gia (thiếu ⇒ route nhận 503 `PARTNER_LINK_UNAVAILABLE`). */
+    partners?: PartnerLinker;
     blobs?: CommunityBlobs;
     gate?: CommunityUploadGate;
     flows?: CommunityFlowOpts;
   } = {},
 ): void {
-  const { quotes, hostBook, brand, caps, blobs, gate, flows, ...sweep } = o;
+  const { quotes, hostBook, brand, caps, partners, blobs, gate, flows, ...sweep } = o;
   startSweeper(db, view, { ...sweep, ...(blobs ? { blobs } : {}) });
   const shtUrl = process.env.CONTRACTS_WEB_URL || "/";
   app.route(
@@ -201,6 +203,7 @@ export function mountCommunity<E extends Env>(
       ...(hostBook ? { hostBook } : {}),
       ...(brand ? { brand } : {}),
       ...(caps ? { caps } : {}),
+      ...(partners ? { partners } : {}),
       ...(blobs ? { blobs } : {}),
       ...(gate ? { gate } : {}),
       ...(flows ? { flows } : {}),

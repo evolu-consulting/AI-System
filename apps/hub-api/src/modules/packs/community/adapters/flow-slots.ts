@@ -38,7 +38,7 @@ export async function accessOfWho(d: SlotAccessDeps, who: PackWho): Promise<Acce
 function outcomeOfError(e: unknown): FlowActOutcome {
   if (!(e instanceof AppError)) throw e;
   if (e.status === 404) return "not_found";
-  if (e.status === 403 || e.status === 409 || e.status === 422)
+  if (e.status === 403 || e.status === 409 || e.status === 422 || e.status === 503)
     return { error: { code: e.code, status: e.status } };
   throw e;
 }
