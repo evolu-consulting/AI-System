@@ -219,11 +219,40 @@ Máy dev/test dựng mới có sẵn: chủ quản là owner gói, thương hi�
 #### Yêu cầu: Dọn tệp đính kèm không dùng (nguồn: cr118-r2-server)
 Vòng nền Community xoá tệp không nằm trên bài nào sau 24 h (gồm tệp của bài đã xoá): xoá byte FileBox rồi mới xoá hàng; xoá byte lỗi ⇒ giữ hàng (đã đánh dấu, không tải/gắn được) để lượt sau làm lại. Lô ≤ limit, số câu SQL cố định mỗi lô, chạy lại không đổi kết quả; tệp < 24 h hoặc đang gắn được giữ. Gắn tệp và vòng dọn không cùng thắng: đã claim rồi gắn ⇒ 400; đang gắn (tx ghi bài khoá hàng `FOR KEY SHARE`) ⇒ claim bỏ qua. User không xoá cứng được tệp (RLS). Code: `packs/community/adapters/community-files-sweep`.
 
-## CR-130 pha 3 · lát 1 — quyền Bảng tin bản cơ bản (ADR-0044, chưa gộp: cần `slice:merge`)
-Bảng tin là mặt `/pack/community/*` của gói Sổ Hợp Tác, bật bằng add-on `contracts-community`; không còn quyền/Group riêng. Mọi nhân viên có quyền gói Sổ Hợp Tác: xem/đăng/bình luận, duyệt đơn tham gia, ẩn bài đối tác; ẩn bình luận = chỉ người đăng bài. Đối tác: chỉ mặt Bảng tin (`EXTERNAL_SURFACES`), không quyền `contracts`. Vai «Admin chủ quản» ở bảng mục 2 không còn phân biệt trong Bảng tin.
+## CR-130 · Bảng tin trong gói Sổ Hợp Tác (ADR-0044; gộp 2026-11-12, đợt cr132) — THẮNG mục 2 (vai), 4 (video) và 6 (Nhắn riêng) ở trên
+Nguồn: cr130-p3a/p3b/p3c, fix-join-admin, fix-j2-partners, cr129-media. Phía quản trị nền tảng: [admin/bang-tin-add-on.md](../admin/bang-tin-add-on.md).
 
-## CR-130 · duyệt đơn tham gia cần quản trị (chốt B 2026-11-12, chưa gộp: cần `slice:merge`)
-Duyệt đơn xin tham gia Bảng tin (ghi hồ sơ đối tác ở SHT) cần quyền quản trị Sổ Hợp Tác; người không đủ quyền không thấy đơn (403, không mục menu). Ẩn bài/báo cáo đối tác, đăng bài, bình luận: mọi nhân viên nội bộ.
+#### Yêu cầu: Quyền theo gói Sổ Hợp Tác, không quyền riêng
+Mặt `/pack/community/*` bật khi công ty có gói Sổ Hợp Tác và add-on `contracts-community` (mặc định tắt; chỉ admin nền tảng bật; chưa bật ⇒ `/community` nói «Bảng tin chưa được bật cho công ty — liên hệ quản trị nền tảng»). Mọi nhân viên có quyền gói SHT xem/đăng/bình luận, ẩn bài của đối tác; chỉ người đăng bài ẩn được bình luận trên bài đó. Mọi nhân viên nội bộ là thành viên chủ quản. Đối tác dùng đúng mặt Bảng tin (đọc, bình luận, đăng), không có quyền `contracts`, không vào `/pack/contracts/*`.
+- Kịch bản: chỉ có quyền Sửa SHT ⇒ đăng bài được, thấy hàng báo cáo [test: apps/hub-api/src/modules/packs/community/adapters/community.surface-access.int.test.ts » nội bộ chỉ có contracts-write]
+- Kịch bản: đối tác đọc/bình luận được, không vào hàng duyệt [test: apps/hub-api/src/modules/packs/community/adapters/community.surface-access.int.test.ts » đối tác: đọc + bình luận]
+- Kịch bản: ẩn bình luận chỉ chủ bài (người khác, kể cả quản trị công ty ⇒ 404) [test: apps/hub-api/src/modules/packs/community/adapters/community.surface-access.int.test.ts » ẩn bình luận = CHỈ chủ bài]
+- Kịch bản: add-on tắt ⇒ 403 PACK_DISABLED cho cả nhân viên và đối tác [test: apps/hub-api/src/modules/packs/community/adapters/community.surface-access.int.test.ts » add-on contracts-community tắt]
+- Kịch bản: đối tác không có quyền gói SHT, mặt community không có admin [test: apps/hub-api/src/modules/packs/kit/adapters/external-access.test.ts » ADR-0044 · đối tác]
+- Kịch bản: đối tác gọi `/pack/contracts/*` ⇒ 403 [test: apps/hub-api/src/modules/packs/kit/adapters/external-deny.int.test.ts » mọi bề mặt ngoài gói]
+- Kịch bản: chủ quản dùng dữ liệu mẫu ⇒ cả hai nhân viên là thành viên và vào được SHT [test: apps/workspace-web/src/modules/community/domain/logic.test.ts » audience]
 
-## CR-130 · «Chọn đối tác» lấy từ sổ đối tác (fix-j2-partners, chưa gộp: cần `slice:merge`)
-Ô «Gắn với đối tác có sẵn» khi duyệt đơn tham gia liệt kê sổ đối tác SHT (`GET /pack/contracts/partners/search`), gồm cả đối tác nhập tay chưa có HĐ; không dùng bảng điểm uy tín (`GET /pack/contracts/partners`).
+#### Yêu cầu: Không còn feature/Group `community-*`
+DB không còn feature `community-read|write|admin` và Group `community-owner|editor|viewer`; công ty đang có Bảng tin giữ add-on; danh mục app Cộng đồng đòi add-on này; seed/dev demo gán nhóm `contracts-*` và bật add-on; mẫu duyệt bài dùng nhóm `contracts-admin` khớp chủ gói `contracts-owner`.
+- Kịch bản: seed demo có add-on và nhóm `contracts-owner/editor` [test: tools/scripts/src/seed-community-demo.int.test.ts » com-c12 · seed-community-demo]
+- Kịch bản: seed fixture chỉ có Group `contracts-*` [test: apps/hub-api/src/modules/seed/seed.tenant-fixtures.int.test.ts » seed.tenant-fixtures]
+- Kịch bản: mẫu duyệt bài khớp nhóm chủ gói [test: apps/hub-api/src/modules/processes/library/flow-templates.community.test.ts » công ty chỉ có nhóm chủ gói]
+- Kịch bản: nhân viên nội bộ mở hàng đợi duyệt bài/báo cáo được xem [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » khe community.post-moderation]
+- Kịch bản: khe duyệt bài gán được theo add-on [test: apps/hub-api/src/modules/processes/library/slot-assigned.int.test.ts » slotAssigned]
+
+#### Yêu cầu: Duyệt đơn xin tham gia cần quyền QUẢN TRỊ Sổ Hợp Tác (chốt B 2026-11-12)
+Duyệt đơn ghi hồ sơ đối tác ở SHT nên chỉ quản trị SHT xem danh sách và duyệt; nhân viên chỉ có quyền Sửa không thấy đơn, không có mục menu (`joinReview=false`), nhận 403 khi quyết. Ẩn bài/báo cáo đối tác, đăng bài, bình luận vẫn cho mọi nhân viên nội bộ.
+- Kịch bản: quyền Sửa xem/quyết đơn ⇒ 403; quản trị duyệt được và liên kết công ty đối tác [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » khe community.partner-join]
+- Kịch bản: menu không có mục đơn tham gia với quyền Sửa [test: apps/hub-api/src/modules/packs/community/adapters/community.flows-nav.int.test.ts » GET /flows/nav]
+
+#### Yêu cầu: «Gắn với đối tác có sẵn» chọn từ sổ đối tác
+Liệt kê sổ đối tác SHT mà người duyệt được thấy (`GET /pack/contracts/partners/search`), gồm đối tác nhập tay chưa có HĐ; không lấy từ bảng điểm uy tín.
+- Kịch bản: đối tác nhập tay chưa có HĐ có trong sổ của người thêm, không có trong bảng điểm [test: apps/hub-api/src/modules/packs/contracts/adapters/partner-book-list.int.test.ts » «Chọn đối tác»]
+
+#### Yêu cầu: Đính kèm chỉ nhận ảnh và tài liệu; lỗi 415 nói rõ định dạng
+Bài không nhận video (đã bỏ khỏi §4); tệp sai định dạng báo «Chỉ nhận: PDF, PNG, JPG, …» theo danh sách hệ thống.
+- Kịch bản: sai định dạng ⇒ liệt kê định dạng nhận được, không có video [test: apps/workspace-web/src/modules/community/domain/media.test.ts » 415 nêu định dạng]
+
+#### Yêu cầu: Bình luận thường, không còn bước «Nhắn riêng» (CR-129)
+Chủ bài và đối tác bình luận trực tiếp; @ chọn đối tác; ai thấy bình luận: chủ bài, người viết, người được tag, bạn bè của người viết (RLS).
+- Kịch bản: chủ bài bình luận không cần bước ẩn nào [test: e2e/community-web/cr129-mention.cs.ts » M1]

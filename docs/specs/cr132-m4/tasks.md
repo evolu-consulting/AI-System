@@ -32,7 +32,7 @@ unit: `domain/messages.events.test.ts`, `chat-gate.rules.test.ts` (msg.* qua c�
 M5 (tệp). Client: chưa nối kho chưa đọc với `msg.*` (W1/W2/W3).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 ### ADDED pack-contracts/tin-nhan-realtime.md
 #### Yêu cầu: Tin nhắn tới tức thì cho đúng thành viên, không lộ cho người ngoài (nguồn: CR-132)
 Khi có tin mới, thu hồi, đã đọc hoặc đổi thành viên/tên nhóm, hệ thống đẩy sự kiện tới các thành viên của hội thoại (kể cả tab khác của người gửi) qua kênh sự kiện người dùng; đồng nghiệp ngoài hội thoại không nhận gì; công ty tắt Chat AI vẫn nhận tin nhắn; gửi lặp cùng mã không phát lại; đánh dấu đã đọc không tiến thì không phát.

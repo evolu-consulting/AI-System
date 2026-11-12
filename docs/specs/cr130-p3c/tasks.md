@@ -36,7 +36,7 @@ unit: admin-web `feature-meta.test` (đăng ký add-on, bỏ `community-*`, th�
 Lát 2/3 (catalog + seed) đổi cột `app`/Group; sau đó kiểm lại thẻ Bảng tin trên admin-web bằng ảnh chụp cuối đợt; `app-catalog.seed.ts` còn `requiredFeature: "community-read"` (lát 2).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 ### ADDED admin/bang-tin-add-on.md
 #### Yêu cầu: Bảng tin là tính năng thêm của Sổ Hợp Tác, chỉ quản trị nền tảng bật (nguồn: CR-130, ADR-0044)
 Màn công ty của quản trị nền tảng có công tắc «Bảng tin» trong danh sách tính năng thêm của Sổ Hợp Tác (mặc định tắt). Không còn mức Xem/Sửa/Quản trị riêng cho Bảng tin, không còn vai hay Group Bảng tin; quản trị công ty chỉ xem trạng thái, không bật được.

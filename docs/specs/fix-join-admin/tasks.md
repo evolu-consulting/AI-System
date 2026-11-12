@@ -14,7 +14,7 @@
 - `joinAdmin` tính từ `packAccessInput(view,"contracts",u)` ⇒ tenant_admin không Group vẫn bị 403 như mọi gói (đúng luật quyền hiện có).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Duyệt đơn xin tham gia Bảng tin cần quyền quản trị Sổ Hợp Tác

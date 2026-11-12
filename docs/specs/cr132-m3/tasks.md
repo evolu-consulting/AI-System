@@ -54,7 +54,7 @@ M4 (phát `msg.*` sau commit: `send` trả `memberIds`; thêm sự kiện cho `m
 
 ## Delta (so với docs/current)
 <!-- ADDED file riêng `tin-nhan-api.md`: `tin-nhan.md` của cr132-m1 chưa gộp vào docs/current; gộp cuối đợt nhập vào một file. -->
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 ### ADDED pack-contracts/tin-nhan-api.md
 #### Yêu cầu: Nhắn tin 1-1 và nhóm trong Sổ Hợp Tác qua API riêng của công ty (nguồn: CR-132)
 Nhân viên tạo hội thoại 1-1 (mỗi cặp một hội thoại, mở lại thì ra cùng hội thoại) hoặc nhóm (người tạo là chủ), gửi tin (gửi lặp cùng mã chỉ tạo một tin), xem tin theo trang, đánh dấu đã đọc và xem tổng số tin chưa đọc. Lỗi trả mã để giao diện tự dịch; người ngoài hội thoại hoặc công ty khác chỉ thấy «không tìm thấy».

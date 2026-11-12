@@ -22,7 +22,7 @@ Không đổi API/bảng hub, không SSE, poll 60s như cũ. e2e có thể vỡ 
 `apps/workspace-web/src/features/notifications/notification-row.test.tsx`; `bun test packages/web-kit`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 ### MODIFIED web/web-hop-nhat.md
 #### Yêu cầu: Một chuông thông báo dùng chung (nguồn: cr130-bell)

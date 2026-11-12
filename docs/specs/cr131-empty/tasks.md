@@ -24,7 +24,7 @@ Phần (a) CR-131: hình minh hoạ trạng thái trống / không tìm thấy d
 `packages/web-kit/src/ui/EmptyState.test.tsx` (kind→hình, hint/action, NotFoundPage); `shared.test.tsx` (Empty kind).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 ### ADDED web/trang-thai-trong.md
 #### Yêu cầu: Trạng thái trống và không tìm thấy dùng một hình chung ở mọi app (nguồn: CR-131)
 Mọi màn không có dữ liệu, lọc không ra, đường lạ/không có quyền, tính năng chưa bật hoặc mất kết nối dùng cùng một khối: hình minh hoạ theo loại + một câu nói rõ lý do + nút bước kế.

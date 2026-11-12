@@ -33,21 +33,21 @@ Realtime: `hooks/msg-realtime.ts` (nạp lazy vì kéo zod; MỘT bộ nghe cho 
 - `BottomNav` (điện thoại): mục «Tin nhắn» ở menu trái/«Thêm» (`mobile: "more"`), chưa có số đỏ ở đó (việc W3/UI sau nếu cần).
 
 ## Test
-unit: `features/messages/lib/messages-lib.test.ts` (sắp xếp/in đậm/lọc, áp sự kiện realtime vào cache, gộp trang tin, «Đã xem», quyền hiện nút theo vai, chọn người) · `shell/nav.test.ts` + `use-flow-caps.test.ts` cập nhật mục menu · e2e hành trình viết sẵn `e2e/contracts-web/cr132-messages.cw.ts` (KHÔNG chạy trong lát). Đã chạy: `bun test src` (workspace-web), `tsc --noEmit`, `check:bundle` (js 145.0 KB, chunk lớn nhất 55.7 KB), `i18n:check`, biome.
+unit: `features/messages/lib/messages-lib.test.ts` (sắp xếp/in đậm/lọc, áp sự kiện realtime vào cache, gộp trang tin, «Đã xem», quyền hiện nút theo vai, chọn người) · `shell/nav.test.ts` + `use-flow-caps.test.ts` cập nhật mục menu · e2e hành trình viết sẵn `e2e/cr127/j18-tin-nhan.spec.ts` (KHÔNG chạy trong lát). Đã chạy: `bun test src` (workspace-web), `tsc --noEmit`, `check:bundle` (js 145.0 KB, chunk lớn nhất 55.7 KB), `i18n:check`, biome.
 
 ## Việc còn lại
 W3 (tab trong khoang trợ lý + chấm đỏ nút khoang); M5 (đính kèm: nút + tải lên/xuống); M4 phát sự kiện thật (đến lúc đó realtime mới sống — trước đó UI refetch khi mở/gửi, stale 30–60 s); chạy e2e + soát UI cuối đợt. Lỗi có sẵn ngoài lát: `attach.test.ts` (community), `shell-ui.test.tsx` thiếu `./NotificationBell`, `placeholders`/`settings-paths` của `@ai/i18n`.
 
 ## Delta (so với docs/current)
 <!-- ADDED file riêng `tin-nhan-ui.md`: `tin-nhan*.md` của cr132-m1/m3 chưa gộp vào docs/current; gộp cuối đợt nhập vào một file. -->
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 ### ADDED pack-contracts/tin-nhan-ui.md
 #### Yêu cầu: Màn «Tin nhắn» toàn màn và mục menu có số chưa đọc (nguồn: CR-132)
 Nhân viên mở «Tin nhắn» từ menu (có số đỏ tổng chưa đọc) để xem danh sách hội thoại — hội thoại có tin chưa đọc in đậm, kèm số, và đưa lên đầu khi có tin mới; tìm theo tên người hoặc nhóm không phân biệt dấu. Danh sách và khung chat nói rõ khi đang tải, lỗi (kèm «Thử lại») hoặc rỗng.
 - Kịch bản: khi có tin mới từ người khác thì hội thoại lên đầu, tăng số chưa đọc (kẹp 99) và đổi xem trước; tin của mình hoặc đang mở xem thì không tăng [test: apps/workspace-web/src/features/messages/lib/messages-lib.test.ts » msg.new của người khác]
 - Kịch bản: khi lọc theo tên thì khớp không phân biệt hoa thường và dấu [test: apps/workspace-web/src/features/messages/lib/messages-lib.test.ts » lọc theo tên]
 - Kịch bản: khi mở menu thì «Tin nhắn» đứng sau «Yêu cầu» [test: apps/workspace-web/src/shell/nav.test.ts » đủ 7 + 2 mục]
-- Kịch bản: khi A nhắn B thì B thấy số chưa đọc ở menu, mở hội thoại thì số hết và A thấy «Đã xem» [test: e2e/contracts-web/cr132-messages.cw.ts » A nhắn B]
+- Kịch bản: khi A nhắn B thì B thấy số chưa đọc ở menu, mở hội thoại thì số hết và A thấy «Đã xem» [test: e2e/cr127/j18-tin-nhan.spec.ts » A nhắn B]
 #### Yêu cầu: Tạo hội thoại 1-1 hoặc nhóm từ «Nhắn tin mới» (nguồn: CR-132)
 Chọn 1 người ⇒ nhắn riêng; chọn từ 2 người ⇒ hiện «Tên nhóm» (bắt buộc) và «Tạo nhóm»; nhóm tối đa 50 người. Lỗi API hiện câu theo mã, nói cách khắc phục.
 - Kịch bản: khi chọn 0/1/2+ người thì chế độ là chưa chọn/nhắn riêng/nhóm, vượt 49 người thì báo nhóm đầy [test: apps/workspace-web/src/features/messages/lib/messages-lib.test.ts » chọn người]

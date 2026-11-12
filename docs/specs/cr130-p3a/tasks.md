@@ -17,7 +17,7 @@
 - `viewer.role`: enum `host_admin` vẫn trong contract (`COMMUNITY_ROLES`) nhưng server không còn trả; lát 4 gỡ khỏi contract + mock web (`apps/workspace-web/.../community/adapters/seed.ts`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Bảng tin bản cơ bản — quyền theo gói Sổ Hợp Tác, không quyền riêng

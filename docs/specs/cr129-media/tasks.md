@@ -15,7 +15,7 @@ Làn nhanh, một agent. Không đổi hub/migration/contract. (a)(b)(c) đã c�
 - [ ] Chạy e2e cuối đợt; e2e có thể vỡ: không thấy spec nào chọn `.mbox`/icon ảnh cũ (`composer.cm.ts` dùng `file-card` ⇒ giữ nguyên).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Ảnh trong bài đăng hiện dạng lưới thu nhỏ và xem phóng to

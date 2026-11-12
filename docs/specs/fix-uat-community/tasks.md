@@ -8,7 +8,7 @@
 - [x] ImageViewer + CSS · `formatQty` (factRows, dealStrip) · `hintLines` onHand · unit
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Số lượng và tồn kho hiển thị theo locale, bỏ số 0 thừa

@@ -34,7 +34,7 @@ Hồi quy: `messages.int`, `messages-rls.int`, `messages-stream.int` (24 pass t�
 Soát Opus (RLS 0108, `msg_file_visible`). UI tệp (W2/W3), e2e hành trình cuối đợt.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 ### ADDED pack-contracts/tin-nhan-tep.md
 #### Yêu cầu: Tệp trong tin nhắn chỉ thành viên hội thoại tải được (nguồn: CR-132)
 Nhân viên tải tệp (PDF, ảnh, Office… theo danh sách chung, tối đa 20 MB) vào hội thoại rồi gửi kèm tin (tối đa 10 tệp). Chỉ thành viên hội thoại xem và tải được tệp đã gửi; đồng nghiệp ngoài hội thoại và công ty khác không tải được, kể cả qua đường tải tệp chung của Sổ Hợp Tác. Tệp hợp đồng vẫn tải như cũ.

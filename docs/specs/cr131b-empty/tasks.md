@@ -20,7 +20,7 @@ Phần (b) CR-131: admin-web + studio-web dùng `EmptyState`/`NotFoundPage` chun
 Unit của admin-web (1201) + studio-web (126) xanh; component web-kit đã test ở phần (a).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 ### ADDED web/trang-thai-trong-admin-studio.md
 #### Yêu cầu: Trạng thái trống và không tìm thấy dùng một hình chung ở mọi app (nguồn: CR-131)

@@ -202,3 +202,22 @@ Các mục dưới thắng nội dung cũ cùng chủ đề ở trên. Chi tiế
 
 #### Yêu cầu: Thanh tab bảng tin không che bài đầu (nguồn: cr120-handson-fixes)
 Thanh tab sticky dính sát mép vùng cuộn, không đè thẻ bài đầu (dòng tác giả bài đầu luôn thấy) và không để khoảng trống lớn trên composer.
+
+## CR-129/130/UAT · gộp 2026-11-12 (đợt cr132)
+Nguồn: cr130-p1, cr129-media, fix-uat-community.
+
+#### Yêu cầu: Cài đặt Bảng tin nằm trong hộp thoại Cài đặt chung
+Ngăn «Bảng tin ▸ Thông báo» là một nhóm của Cài đặt Sổ Hợp Tác; không có trang/nút cài đặt thứ hai. `/community?settings=1` và `/contracts/settings?sec=feed` mở thẳng ngăn đó; tắt cờ `community` thì không có nhóm (và `/community` hiện `EmptyState kind="off"`).
+- Kịch bản: `?sec=feed` mở ngăn Bảng tin [test: apps/workspace-web/src/features/settings/lib/section-key.test.ts » navFromKey]
+- Kịch bản: cờ community tắt ⇒ không có nhóm Bảng tin [test: apps/workspace-web/src/features/settings/components/SettingsNav.test.ts » cờ community tắt]
+
+#### Yêu cầu: Ảnh trong bài dạng lưới thu nhỏ, bấm xem phóng to
+Tối đa 3 ô (1 ảnh rộng, 2 đôi, ≥ 4 thì ô cuối phủ «+N»); bấm mở hộp phóng to, qua lại vòng tròn, Esc đóng, có «Tải về». Tệp không phải ảnh giữ thẻ Tải về. Ảnh chỉ tải khi cuộn tới.
+- Kịch bản: 4 ảnh ⇒ 3 ô, ô cuối «+1» [test: apps/workspace-web/src/modules/community/domain/media.test.ts » CR-129 lưới ảnh]
+- Kịch bản: Ảnh sau đi vòng tròn [test: apps/workspace-web/src/modules/community/domain/media.test.ts » stepImage đi vòng tròn]
+- Kịch bản: đăng 4 ảnh, bấm mở hộp phóng to, Esc đóng [test: e2e/community-web/cr129-media.cm.ts » bài 4 ảnh]
+
+#### Yêu cầu: Số lượng/tồn kho theo locale, bỏ số 0 thừa
+"320.0000" ⇒ «320»; "1250.5000 kg" ⇒ «1.250,5 kg» (vi); chuỗi người dùng gõ giữ nguyên.
+- Kịch bản: gợi ý chủ quản «đang có 320 cuộn» [test: apps/workspace-web/src/modules/community/domain/quote.test.ts » gợi ý: Cần mua có hàng]
+- Kịch bản: formatQty [test: apps/workspace-web/src/modules/community/domain/format.test.ts » formatQty]

@@ -35,7 +35,7 @@ unit: `domain/contract-files.rules.test.ts`, `contract-files/lib/files-view.test
 - FileBox vắng ⇒ không gắn route (404), giống khối tải lên dùng FileBox; UI hiện câu lỗi chung khi tải danh sách lỗi.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 ### ADDED pack-contracts/tai-lieu-kem.md
 #### Yêu cầu: Trang chi tiết hợp đồng có một khối «Tài liệu kèm» cho mọi tệp của hợp đồng ngoài file chính (nguồn: CR-133)
 Khối gồm hai nhóm trong cùng một chỗ: tệp gắn thẳng vào hợp đồng (Word, Excel, ảnh… theo danh sách định dạng nhận được; thêm, gỡ, xem hoặc tải) và tệp kèm các bước duyệt của hợp đồng (chỉ đọc, ghi rõ khi nào được kèm). Các tệp này không đem đi ký; file chính vẫn theo luật PDF khi công ty bật ký số.

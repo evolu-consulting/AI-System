@@ -25,7 +25,7 @@ Nhận việc: vẫn MỘT câu UPDATE (điều kiện con theo PK `stage_runs`/
 - #1: câu lỗi `EVIDENCE_INVALID_MESSAGE` đổi «không thuộc công ty này» → «không do bạn tải lên». `expiring-outcome.repo` (engine) đặt `app.user_id` = người quyết ⇒ tệp do chính người đó tải lên, không ảnh hưởng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 ### MODIFIED engine/quy-trinh-cr127.md
 #### Yêu cầu: Bằng chứng chỉ gắn tệp của chính người ghi

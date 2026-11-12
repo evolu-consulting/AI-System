@@ -13,7 +13,7 @@
 - `?sec=feed` dùng hàm thuần `navFromKey` (mở rộng `sectionFromKey`, không đổi hành vi cũ).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Cài đặt Bảng tin nằm trong hộp thoại Cài đặt chung

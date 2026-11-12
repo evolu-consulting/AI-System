@@ -11,7 +11,7 @@ Web (`modules/community/adapters/http.ts` `listParties`) lấy danh sách từ `
 `e2e/community-web/cr130-journey.cs.ts:~210` `waitForResponse(r => r.url().includes("/pack/contracts/partners"))` vẫn khớp URL mới (`/pack/contracts/partners/search?...`) và đọc mảng `{party,name,…}` ⇒ không cần đổi; nếu muốn chặt hơn nên đổi thành `/pack/contracts/partners/search`. Không phát hiện chèn dữ liệu sai: `partner_roles` + `created_by` đúng như UI.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Gắn đơn tham gia với đối tác có sẵn chọn từ sổ đối tác

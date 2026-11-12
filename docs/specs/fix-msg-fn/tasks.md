@@ -21,5 +21,5 @@ Tách các factory dài của vùng `packs/contracts/messages/**` thành nhóm h
 unit `messages` (domain + application) local + int `messages`, `messages-files`, `messages-rls`, `messages-stream` trên evotest; tsc hub-api; `check:fn`/`check:size` hết cảnh báo ở file nguồn của vùng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 Không thay đổi hành vi (lý do: tách hàm theo check:fn)

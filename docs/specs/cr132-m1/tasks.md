@@ -36,7 +36,7 @@ unit: `messages/domain/messages.rules.test.ts`, `packages/contracts/src/pack-con
 - **Cho M3:** tạo hội thoại + lô thành viên đầu (gồm người tạo vai `owner`) trong CÙNG transaction, id sinh phía app, không RETURNING khi chèn hội thoại; chuyển chủ = chủ hiện tại UPDATE vai người kế rồi mới DELETE hàng của mình.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 ### ADDED pack-contracts/tin-nhan.md
 #### Yêu cầu: Tin nhắn trong Sổ Hợp Tác chỉ thuộc công ty và các thành viên của cuộc trò chuyện (nguồn: CR-132)
 Hội thoại, danh sách thành viên, tin và tệp đính kèm chỉ đọc/ghi được bởi nhân viên nội bộ của đúng công ty và đúng thành viên của hội thoại đó. Công ty khác, đồng nghiệp ngoài hội thoại và người dùng bên ngoài (đối tác) không thấy gì, kể cả khi có hàng thành viên. Quản trị công ty không có quyền đặc biệt đọc tin của người khác.

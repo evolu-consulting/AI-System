@@ -35,6 +35,9 @@
 | `platform/flow-model.md` · `specs/CR-122/` · `adr/0038-flow-trigger-model.md` | Mô hình flow theo sự kiện đã chốt (thay khe/luật định tuyến; CR-122, chưa code): nguồn, spec + lát, ADR |
 | `platform/architecture.md` · `current/engine/so-module-khoi-dong.md` | **Kiến trúc một nguồn** (lớp, cửa `public.ts`, cưỡng chế depcruise/check:modules, khuôn module tính năng CR-125, `module:new`); sổ module lúc khởi động + công cụ. `platform/modules.md` chỉ còn bảng đóng băng |
 | `current/engine/quy-trinh-cr127.md` | **Quy trình + hợp đồng hiện hành (CR-127)**, thắng mọi file `current/**` còn nói Thư viện/khe/sao chép |
+| `current/pack-contracts/tin-nhan.md` · `tai-lieu-kem.md` · `current/admin/bang-tin-add-on.md` · `current/web/trang-thai-trong.md` | Hành vi hiện hành đợt 2026-11-12: Tin nhắn SHT (CR-132), Tài liệu kèm HĐ (CR-133), Bảng tin là add-on (CR-130), trạng thái trống chung (CR-131) |
+| `adr/0044-community-into-contracts-pack.md` | Community thành mặt Bảng tin của gói Sổ Hợp Tác: add-on `contracts-community`, quyền theo `contracts-*`, bỏ feature/Group `community-*` (CR-130 pha 3) |
+| `specs/CR-132/spec.md` · `specs/CR-130/` · `specs/cr133-attach/` | Spec/lát đợt 2026-11-12: Tin nhắn (lát cr132-m1..w3), Bảng tin vào SHT, Tài liệu kèm — đã gộp vào `current/` |
 | `current/web/web-hop-nhat.md` | Web hợp nhất `workspace-web`: một phiên, module lazy, `/pack/me`, đổi hướng cũ (CR-118) |
 | `specs/cr112-admin-config/README.md` | CR-112 cải tổ cấu hình ai-admin: spec master, ADM-FR-76..83, lát S1..S7 |
 | `adr/0033-app-roles-source-of-truth.md` | Vai theo app là nguồn quyền (`admin.app_roles` → Group) |

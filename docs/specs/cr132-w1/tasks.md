@@ -20,7 +20,7 @@ Chuyển sang dùng: thẻ duyệt + ký số (`process-stream.ts` còn là lớ
 `bun test` workspace-web: `platform/stream/me-stream.test.ts` (1 kết nối nhiều người nghe, đóng khi huỷ cuối, nối lại + backoff, 4xx dừng) + test thẻ duyệt xanh; tsc workspace-web.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 Không thay đổi hành vi (lý do: tách kết nối realtime dùng chung, thẻ duyệt/ký số/cờ tính năng giữ nguyên)
 

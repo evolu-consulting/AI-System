@@ -17,7 +17,7 @@
 - `viewer.caps.contracts` của mặt Bảng tin luôn true với nội bộ (vì mặt chỉ mở cho người có quyền gói contracts): test COM-FR-43 đổi theo.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Bảng tin không còn gói/Group riêng — dữ liệu và seed theo gói Sổ Hợp Tác

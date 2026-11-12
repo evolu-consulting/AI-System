@@ -14,5 +14,5 @@ phụ thuộc:
 check-contract-name test (5 pass) · `check:size` xanh · tsc hub-api sạch · depcruise 0 MỚI.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 Không thay đổi hành vi (lý do: sửa gate + tách file nối module)

@@ -24,6 +24,18 @@ Cập nhật: 2026-11-11 · Nguồn: CR-127 (`docs/specs/CR-127/spec.md` §3–�
 ## Việc của tôi / uỷ quyền
 `/my-work` có `delegated_from`; web gọi `/me/delegations` (prod: nginx proxy `deploy/prod-sohoptac2/nginx.conf`).
 
+## Bằng chứng, nhận việc, uỷ quyền — gộp 2026-11-12 (sec-fix-1112, fix-sec-seed)
+- **Bằng chứng chỉ gắn tệp/chữ ký của chính người ghi.** Tệp của người khác ⇒ từ chối, không ghi gì, việc vẫn mở; API trả 422 `EVIDENCE_FILE_NOT_OWNED` (DB: 42501), cả khi duyệt qua cổng duyệt kèm tệp. Code: `apps/hub-api/src/modules/processes/gates/`. Web có câu cho mã này (`claim.ts`, `api-exec.ts`).
+  - Kịch bản: A gắn tệp/chữ ký của B ⇒ từ chối; tệp của A thì ghi được [test: apps/hub-api/src/modules/processes/gates/evidence-owner.int.test.ts » A gắn tệp / chữ ký của B]
+  - Kịch bản: duyệt qua cổng kèm tệp của B ⇒ 422, việc vẫn mở [test: apps/hub-api/src/modules/processes/gates/evidence-owner.int.test.ts » duyệt qua cổng duyệt kèm tệp của B]
+- **Người gửi không nhận việc ở bước «loại người gửi».** Kể cả thành viên phòng hay nhóm Toàn quyền ⇒ 403 `STARTER_CANNOT_REVIEW`, việc vẫn chưa ai giữ; bước không bật cờ thì nhận bình thường.
+  - Kịch bản: người gửi thuộc phòng [test: apps/hub-api/src/modules/processes/gates/claim-starter.int.test.ts » người gửi thuộc phòng]
+  - Kịch bản: người gửi chỉ thuộc Group Toàn quyền [test: apps/hub-api/src/modules/processes/gates/claim-starter.int.test.ts » người gửi chỉ thuộc Group Toàn quyền]
+  - Kịch bản: bước không bật exclude_starter [test: apps/hub-api/src/modules/processes/gates/claim-starter.int.test.ts » bước không bật exclude_starter]
+- **Uỷ quyền chỉ giữa nhân viên nội bộ còn hoạt động**; user đối tác ⇒ `DELEGATE_NO_ACCESS`, không ghi.
+  - Kịch bản: uỷ quyền cho user đối tác bị chặn [test: apps/hub-api/src/modules/processes/delegations/delegations-external.int.test.ts » A uỷ quyền cho user đối tác]
+- Tin nhắn không gắn được tệp hợp đồng: [pack-contracts/tin-nhan.md](../pack-contracts/tin-nhan.md) mục 4.
+
 ## e2e hiện hành
 Hành trình thật: `e2e/cr127/j01–j14` (soạn → áp dụng, uỷ quyền, thực hiện/giao thiếu/phạt, tạm khoá, giao dịch chờ duyệt, hai công ty gửi/nhận, ký cùng lúc, phiên bản, nhận việc, chưa có quy trình). Các e2e `cr121-*`/`cr122-*`/`cr123-*`/`cr124-q5,q6`/`cr125-*` (mẫu thư viện, sao chép, kéo thả, phiếu máy cũ…) **đã xoá** (progress.md Q9–Q11); các dòng Kịch bản trỏ tới chúng đã bị gỡ khỏi `docs/current`.
 

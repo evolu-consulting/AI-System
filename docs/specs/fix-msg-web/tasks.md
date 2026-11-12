@@ -28,7 +28,7 @@ unit: `platform/stream/me-stream.test.ts` (mục 2), `messages/lib/messages-fix.
 Int `messages.perf.int.test.ts` chạy ở lượt int cuối đợt (cần DB).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 <!-- ADDED file riêng: tin-nhan-ui.md của các lát trước chưa gộp vào docs/current; gộp cuối đợt. -->
 ### ADDED pack-contracts/tin-nhan-sua-loi.md
 #### Yêu cầu: Màn «Tin nhắn» toàn màn và mục menu có số chưa đọc (nguồn: CR-132)

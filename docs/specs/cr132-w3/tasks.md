@@ -20,19 +20,19 @@ Realtime (3): đã nối ở W2 trong MỘT chỗ `features/messages/hooks/msg-r
 - `Shell.tsx` tách `DockSheet`, `useContractsSync`, `fabLabel` để giữ độ phức tạp ≤ 15.
 
 ## Test
-unit: `messages/lib/files.test.ts` (định dạng/dung lượng/cỡ), `shell/components/dock-tabs.test.tsx` (tab, 99+, nút thu gọn), `shell-ui.test.tsx` sửa · e2e viết sẵn `e2e/contracts-web/cr132-messages-dock.cw.ts` (KHÔNG chạy). Đã chạy: `bun test src` (workspace-web: còn 1 lỗi có sẵn ngoài lát `attach.test.ts` community), `tsc --noEmit`, biome, `build` + `check:bundle` (js 145.0 KB, chunk lớn nhất 55.7 KB), `i18n:check`.
+unit: `messages/lib/files.test.ts` (định dạng/dung lượng/cỡ), `shell/components/dock-tabs.test.tsx` (tab, 99+, nút thu gọn), `shell-ui.test.tsx` sửa · e2e viết sẵn `e2e/cr127/j19-tin-nhan-khoang.spec.ts` (KHÔNG chạy). Đã chạy: `bun test src` (workspace-web: còn 1 lỗi có sẵn ngoài lát `attach.test.ts` community), `tsc --noEmit`, biome, `build` + `check:bundle` (js 145.0 KB, chunk lớn nhất 55.7 KB), `i18n:check`.
 
 ## Việc còn lại
 Chạy e2e + soát UI (chụp khoang hẹp, ảnh thu nhỏ) một lần cuối đợt; kéo thả tệp vào khung chat (chưa làm).
 
 ## Delta (so với docs/current)
 <!-- ADDED file riêng `tin-nhan-khoang.md`: `tin-nhan*.md` của các lát trước chưa gộp vào docs/current; gộp cuối đợt nhập vào một file. -->
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 ### ADDED pack-contracts/tin-nhan-khoang.md
 #### Yêu cầu: Tin nhắn trong khoang trợ lý với tab và chấm đỏ chưa đọc (nguồn: CR-132)
 Khoang bên phải có hai tab «Trợ lý AI» và «Tin nhắn». Tab Tin nhắn hiện danh sách hội thoại; bấm vào một hội thoại thì khung chat thay chỗ, nút ‹ quay về danh sách mà không đóng khoang, và khoang nhớ hội thoại đang mở khi đóng rồi mở lại. Nút mở khoang, tab Tin nhắn và mục «Tin nhắn» ở thanh dưới điện thoại cùng hiện số chưa đọc (trên 99 hiện 99+, bằng 0 thì không hiện).
 - Kịch bản: khi có tin chưa đọc thì tab Tin nhắn hiện số, trên 99 hiện 99+, bằng 0 không có chấm, nút thu gọn chỉ ở tab Tin nhắn [test: apps/workspace-web/src/features/shell/components/dock-tabs.test.tsx » DockTabs]
-- Kịch bản: khi A gửi chữ và một PDF thì B thấy chấm «1» ở nút mở khoang và tab, mở hội thoại thì chấm mất và A thấy «Đã xem» [test: e2e/contracts-web/cr132-messages-dock.cw.ts » Khoang: A gửi chữ + PDF]
+- Kịch bản: khi A gửi chữ và một PDF thì B thấy chấm «1» ở nút mở khoang và tab, mở hội thoại thì chấm mất và A thấy «Đã xem» [test: e2e/cr127/j19-tin-nhan-khoang.spec.ts » Khoang: A gửi chữ + PDF]
 #### Yêu cầu: Đính kèm tệp vào tin nhắn (nguồn: CR-132)
 Nút ghim ở ô soạn chọn tệp (PDF, Word, Excel, ảnh…, tối đa 20 MB, tối đa 10 tệp mỗi tin); tệp tải lên ngay và hiện thành chip gỡ được; tin có tệp mà không có chữ vẫn gửi được. Trong tin, ảnh hiện thu nhỏ và mở ra được, tệp khác là thẻ có tên và dung lượng để tải. Tệp sai định dạng hoặc quá lớn báo câu nói rõ loại nhận được.
 - Kịch bản: khi chọn tệp đuôi lạ, tệp rỗng hoặc quá 20 MB thì bị từ chối trước khi tải; đuôi hợp lệ thì nhận [test: apps/workspace-web/src/features/messages/lib/files.test.ts » tệp đính kèm]

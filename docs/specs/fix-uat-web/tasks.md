@@ -32,7 +32,7 @@ unit: `shell-lib.test.ts` (fabHiddenOn, nhãn ngắn), `auth/lib/guard.test.ts` 
 Khởi động lại hub để chuông dùng câu mới và `/link` thật; qc cập nhật e2e nếu có chỗ chờ chữ «DRAFT» / «Hủy» / nút nổi ở Tin nhắn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 ### ADDED shell/sua-loi-uat-web.md
 #### Yêu cầu: Giao diện nói tiếng nghiệp vụ và không che nút (nguồn: CR-130, CR-132)
 Màn hợp đồng gọi trạng thái đầu là «Nháp» (không hiện mã DRAFT); ảnh trong tin nhắn hiện thu nhỏ và bấm mở lớn; nút nổi trợ lý không che ô soạn tin; thanh dưới điện thoại có nhãn vừa cột; Bảng tin chưa bật thì nói rõ vì sao thay vì tự chuyển trang; đối tác không bị gọi các API của Sổ Hợp Tác; chuông bình luận Bảng tin gọn một câu.

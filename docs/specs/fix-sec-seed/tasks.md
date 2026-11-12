@@ -17,7 +17,7 @@ lane: nhanh (sửa sau sec-fix-1112)
 - Seed không có int riêng; chạy thật ở lượt e2e `pm-checklist-pm` cuối đợt (điều phối).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 
 ### MODIFIED engine/quy-trinh-cr127.md
 #### Yêu cầu: Tệp bằng chứng không của mình báo lỗi rõ

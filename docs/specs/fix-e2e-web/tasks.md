@@ -29,7 +29,7 @@ unit: `legacy-routes.test.ts` (b, g), `shell/mock-flag.test.ts` (c: bản thư�
 qc chạy lại e2e community-web (mock) + `cr129-mention.cs.ts` + `cr130-journey.cs.ts`; (c) chỉ xác nhận được bằng job mock.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-12 (đợt cr132-wave)
 ### ADDED shell/sua-loi-e2e-web.md
 #### Yêu cầu: Đường cũ của Sổ Hợp Tác và trang «Tin nhắn» không dẫn tới «Không tìm thấy» (nguồn: CR-130, CR-132)
 `/contracts/messages` là trang Tin nhắn. Các đích cũ `/contracts/login`, `/contracts/sso`, `/contracts/privacy`, `/contracts/terms` (SSO, đăng xuất, bookmark) chuyển về trang cùng tên ở gốc và giữ nguyên query và hash.
