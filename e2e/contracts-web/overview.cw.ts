@@ -303,7 +303,7 @@ test.describe("điện thoại (390×844)", () => {
     expect(over).toBeLessThanOrEqual(0);
     const bottom = page.getByRole("navigation", { name: "Điều hướng", exact: true });
     await expect(bottom.getByRole("link")).toHaveText([
-      "Hợp đồng & giao dịch",
+      "Hợp đồng",
       "Tổng quan",
       "Tin nhắn", // CR-132
       "Đối tác",

@@ -61,7 +61,7 @@ dd825133ab18bc62f767467ce64746ab8d307810a3d2a2678f31319cea9dcd7f  e2e/K1/playwri
 0208e9181393ca569eaa958420ac862efa1218abd52f7616b1c28e6f2970c030  e2e/N1/_support.ts
 f9a31a227e49e354959bbcfc983e61593e23ab0e6582a4cb9a3c4ed71920e368  e2e/N1/login.n1.ts
 c1ddea86a757d4445bebf5f5f28c84c1e599f26e4aa864dbe7ab37e49492271e  e2e/N1/playwright.config.ts
-35cf95af511743b41095e353088ea1e8f363e80d5b66f6d4e2a214d97462575f  e2e/N1/shell.n1.ts
+d1dca462b623570fd56227a35fa9d29fb99b439961df43e9f9ae12a2398b28f7  e2e/N1/shell.n1.ts
 87a3880053a0a615ddc8d91f6ab6cb35b7af839a39d3bf425323e00232bbf9c4  e2e/N1/states.n1.ts
 3963b9b20a88c63598855cbcfbb4d29a14b0d996d3dd2e4f9731205683a69858  e2e/N2/admin-n2.n2.ts
 263b799fcef70a7bf7973746821c7d7e169a847f3e934fab178666f673972285  e2e/N2/admin-popover.n2.ts
@@ -254,8 +254,8 @@ c496b5549c45def5a88b1b26364d8b3cd2efcf9726e33098da8965ea07c00715  e2e/contracts-
 180feb96273fb7dee9c2d431dec34a0ca65d408d2b486aa94436dfca245fc29c  e2e/contracts-web/baseline/linux/s05-review-dark.png
 48697f30cfa2f6e720471a97ba3ac94c3d3f4d7a5168543f9f7269bccfe6ab0f  e2e/contracts-web/baseline/linux/s05-review-light.json
 ca1eca099b7308fa4687134a89b6ec7449694f45b43ad840ef43275003ffb84f  e2e/contracts-web/baseline/linux/s05-review-light.png
-81d9932292ba08c4f159a7402c21555eb0dfef3f444d2087b0b327e9c68d8b0a  e2e/contracts-web/baseline/linux/s05-review-mobile.json
-a3f02eeb2d640492c9e4369f87709b31fd8162494de8b630dad2a9f634bd6ffe  e2e/contracts-web/baseline/linux/s05-review-mobile.png
+50d8bf5c9c7ac586f8bdf0e190eddd4dfb7795a7a860db99824cdbb7a5a78071  e2e/contracts-web/baseline/linux/s05-review-mobile.json
+84b747d6420d0684ef38fea7144dcca096c090096f7c7df30c0c20eddf1b20bf  e2e/contracts-web/baseline/linux/s05-review-mobile.png
 5e77a086ccffdb36852ec8a3f367106edbe2d5db0929488cc3be80b54a5c254e  e2e/contracts-web/baseline/linux/s08-prices-dark.json
 2d720b3dcc5d18bd46a84fd4c9f589430e77617320cd8224025ede839211d87c  e2e/contracts-web/baseline/linux/s08-prices-dark.png
 5e77a086ccffdb36852ec8a3f367106edbe2d5db0929488cc3be80b54a5c254e  e2e/contracts-web/baseline/linux/s08-prices-light.json
@@ -290,7 +290,7 @@ e3e90144ec2cc823b7232ee51a239f4534db38dbb1905e2cadfe1cfd7752b9fe  e2e/contracts-
 565e4713b477cb5269b773e77e05eb42e78ae2ba9e1d460173595f39e27322db  e2e/contracts-web/baseline/linux/shell-dark.png
 e3e90144ec2cc823b7232ee51a239f4534db38dbb1905e2cadfe1cfd7752b9fe  e2e/contracts-web/baseline/linux/shell-light.json
 565e4713b477cb5269b773e77e05eb42e78ae2ba9e1d460173595f39e27322db  e2e/contracts-web/baseline/linux/shell-light.png
-9e5b7216927cb2c2bd80c892f23f9658f4c8276aca808ab546816cf5e2b2269f  e2e/contracts-web/baseline/linux/shell-mobile.json
+f74547e3625e0a7518202bbc928a29b1c6de6ffb43bab3928f09c51c0f3693bd  e2e/contracts-web/baseline/linux/shell-mobile.json
 1510355ed0a4f2aa3238698400d893df55bb46ca9ab300a7a64e044b30be467b  e2e/contracts-web/baseline/linux/shell-mobile.png
 7605544cc082e24def0a0c432228175417c1cbe59441d967af001769e746b310  e2e/contracts-web/baseline/linux/shell-sidebar-collapsed.json
 3788d1e74aaa6b7c37a948cec7cf1b886b271457625180a139857ab550680d57  e2e/contracts-web/baseline/linux/shell-sidebar-collapsed.png
@@ -299,7 +299,7 @@ e3e90144ec2cc823b7232ee51a239f4534db38dbb1905e2cadfe1cfd7752b9fe  e2e/contracts-
 2fa213546dd6136b346f213ce9adcfabe6e749127e7037d4cda366269367f73a  e2e/contracts-web/baseline/linux/v2f-detail-light.json
 67bdb1805980dcd470b63749e5b24b7a237aeb5361539f525ae47fe84d301e1d  e2e/contracts-web/baseline/linux/v2f-detail-light.png
 a55b0b4a6fa17c3ef9f8287e3ee39bdd7a4514fb0468013d713ec236fff4ef22  e2e/contracts-web/baseline/linux/v2f-detail-mobile.json
-aaa9c373e3abcfc71317bda4a58ac3f9ebd71b5a874d066d8eb7178306233864  e2e/contracts-web/baseline/linux/v2f-detail-mobile.png
+995c006daeb52a6a0d6ea55b5d8a4314a912b1cb6d12d471a9dd02f4b9a5d5bc  e2e/contracts-web/baseline/linux/v2f-detail-mobile.png
 d4aa84f40d97e77a5bdab4de6a9c2aa358ff35d68b636434ce006163b9eb080b  e2e/contracts-web/baseline/win32/overview-dark.json
 3af7eb6f81f77021f722eaf9644099a41066198cef4cc9be757b51d72d725ef4  e2e/contracts-web/baseline/win32/overview-dark.png
 d4aa84f40d97e77a5bdab4de6a9c2aa358ff35d68b636434ce006163b9eb080b  e2e/contracts-web/baseline/win32/overview-light.json
@@ -431,7 +431,7 @@ b8fa4e6495c0cde739bb1db6edd833c21489625beda598b6da8a0e7687181acd  e2e/contracts-
 00f0ffa0c6a72412aa47ebe8c559b4a3c02b80e5bc00dba994082e3b1bb75366  e2e/contracts-web/legacy-routes.cw.ts
 57baf0dd0488bb55de6fb6aa5d3369d659a81025f7aa7f7e6cb0236971f4fa75  e2e/contracts-web/ms-impact.cw.ts
 040acfe1c7bfa75a7719b35cf1ff8c04bb9ee85dc6014311ee9166a74f22b037  e2e/contracts-web/org-visibility.cw.ts
-0fb10764d073f04f27725993494b90111db968f39d2d916d19189a13b6136977  e2e/contracts-web/overview.cw.ts
+55b57ba282263d1631663697bca3be9c4bf657f91067afe6edcaa0ef234cf084  e2e/contracts-web/overview.cw.ts
 ebb860458e023f120e9305ba36e0a05a69da1fbcf1d65372f64d89c09f314f74  e2e/contracts-web/playwright.config.ts
 49678173f3350eda52ff82033c3860063712c7e23b00d8276a73cc57047f4f51  e2e/contracts-web/rep3-engine.cw.ts
 31f92e50a5f256f1bf0d1bf0a20d4e54ef1fefe32324273244937ac052c0f5b2  e2e/contracts-web/scenes.cw.ts

@@ -262,7 +262,7 @@ test.describe("PK-FR-10 · shell mobile (390×844)", () => {
     await expect(bottom.getByRole("link")).toHaveCount(5);
     // CR-126 · «Yêu cầu» là mục `more` (không chiếm cột); «Việc của tôi» là cột riêng; Hợp đồng (primary) đứng đầu
     await expect(bottom.getByRole("link")).toHaveText([
-      "Hợp đồng & giao dịch",
+      "Hợp đồng",
       "Tổng quan",
       "Tin nhắn",
       "Đối tác",
