@@ -39,3 +39,28 @@ export const memberNamesOf =
     );
     return new Map(rows.map((x) => [x.id, x.name]));
   };
+
+/** CR-132 M3 · tên + «còn dùng được» của các nhân viên NỘI BỘ của tenant trong `ids` (một câu `= any(array)`, không phụ thuộc số id).
+ *  Người không có trong kết quả = không phải nhân viên của công ty (ngoài/khác công ty/không tồn tại). Đối tác (external) ⇒ rỗng. */
+export const internalUsersAmong =
+  (db: Db) =>
+  async (
+    who: { tenantId: string; userId: string; userKind?: "internal" | "external" },
+    ids: readonly string[],
+  ): Promise<Map<string, { name: string; active: boolean }>> => {
+    const uniq = [...new Set(ids)];
+    if (who.userKind === "external" || uniq.length === 0) return new Map();
+    const rows = await withHubScope(
+      db,
+      { kind: "user", tenantId: who.tenantId, userId: who.userId },
+      (tx) =>
+        tx.execute<{
+          id: string;
+          name: string;
+          active: boolean;
+        }>(sql`select u.id, u.display_name as name, (u.active and not u.locked_by_tenant) as active
+          from admin.users u
+          where u.tenant_id = ${who.tenantId}::uuid and u.kind = 'internal' and u.id = any(${`{${uniq.join(",")}}`}::uuid[])`),
+    );
+    return new Map(rows.map((x) => [x.id, { name: x.name, active: x.active }]));
+  };

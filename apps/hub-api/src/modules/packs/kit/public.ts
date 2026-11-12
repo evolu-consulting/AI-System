@@ -15,7 +15,7 @@ export {
   formPrefillRegistry,
 } from "./adapters/form-prefill-registry";
 export { packMeRoutes } from "./adapters/me.route";
-export { memberNamesOf, selfContactOf } from "./adapters/member-names";
+export { internalUsersAmong, memberNamesOf, selfContactOf } from "./adapters/member-names";
 export { packMembersRoutes } from "./adapters/members.route";
 export { createModuleRegistry, moduleRegistry } from "./adapters/module-registry";
 export {

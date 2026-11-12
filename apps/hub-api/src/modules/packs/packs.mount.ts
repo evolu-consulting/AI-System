@@ -37,6 +37,7 @@ import { type ESignModule, type ESignSeam, esignUserRoutes } from "./contracts/e
 import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.mount";
 import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
 import { manageModule } from "./contracts/manage.mount";
+import { messagesModule } from "./contracts/messages/messages.mount";
 import { myWorkModule } from "./contracts/mywork.mount";
 import { mountContractsNav } from "./contracts/nav.mount";
 import { partnerModule } from "./contracts/partner-routes.mount";
@@ -229,6 +230,7 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
     app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
   else app.route(base, uploadUnavailableRoutes(view)); // FileBox váº¯ng â‡’ 503 FILE_STORAGE_UNAVAILABLE (khÃ´ng 404)
   if (fb) app.route(base, contractFilesModule(db, view, fileboxClients(fb))); // CR-133 · «Tài liệu kèm» (FileBox vắng ⇒ không gắn)
+  app.route(base, messagesModule(db, view)); // CR-132 M3 · tin nhắn nhân viên (1-1 + nhóm)
   app.route(base, contractsRemind(d, view, db)); // HD4
   app.route(base, partnerModule(db, view)); // CR-124 q4 · hộp «Hợp đồng đối tác gửi» + ghi nhận thủ công
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9
