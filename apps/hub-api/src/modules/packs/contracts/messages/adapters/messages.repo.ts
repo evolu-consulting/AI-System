@@ -10,7 +10,6 @@ const MEMBERS_JSON = sql`(select coalesce(json_agg(json_build_object('user_id', 
     'joined_at', ${iso("mm.joined_at")}, 'last_read_seq', mm.last_read_seq) order by mm.joined_at, mm.user_id), '[]'::json)
   from contracts.msg_members mm where mm.tenant_id = c.tenant_id and mm.conversation_id = c.id)`;
 
-/** Tóm tắt hội thoại của MỘT người: tin cuối (lateral theo PK), chưa đọc (lateral, trần 99, bỏ qua khi đã đọc hết), người còn lại của 1-1. */
 /**
  * Tóm tắt hội thoại của MỘT người. `pick` = bộ lọc/sắp/`limit` áp lên (thành viên × hội thoại) TRƯỚC khi tính phần đắt (tin cuối, chưa đọc,
  * thành viên) ⇒ chỉ tính cho trang được chọn, không cho cả 200 hội thoại. Tin cuối (lateral theo PK), chưa đọc (lateral trần 99, bỏ qua khi đã đọc hết).

@@ -13,6 +13,8 @@ import type {
 } from "@ai/contracts/pack-contracts";
 import type { PackUow, PackWho } from "../../../kit/public";
 import { canEditGroup, dmKey, groupSizeOk, messageEmpty } from "../domain/messages.rules";
+import { leaveOrRemove, MsgFail, openDirect, openGroup, sendInTx } from "./messages.ops";
+import type { MessagesRepo, MessagesRepos, PeopleLookup, RawConversation } from "./messages.ports";
 import {
   detailOf,
   encodeCursor,
@@ -20,9 +22,7 @@ import {
   type People,
   personIdsOf,
   summaryOf,
-} from "../domain/messages.view";
-import { leaveOrRemove, MsgFail, openDirect, openGroup, sendInTx } from "./messages.ops";
-import type { MessagesRepo, MessagesRepos, PeopleLookup, RawConversation } from "./messages.ports";
+} from "./messages.view";
 
 export { MsgFail };
 

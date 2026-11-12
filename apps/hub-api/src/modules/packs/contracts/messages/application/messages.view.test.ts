@@ -1,7 +1,7 @@
 // CR-132 M3 · HD-MSG-01..12 · luật thuần dựng DTO tin nhắn: con trỏ phân trang, xem trước, tóm tắt hội thoại, tin đã thu hồi.
 import { describe, expect, it } from "bun:test";
 import { ConversationDetailSchema, MessageSchema } from "@ai/contracts/pack-contracts";
-import type { RawConversation } from "../application/messages.ports";
+import type { RawConversation } from "./messages.ports";
 import {
   decodeCursor,
   detailOf,

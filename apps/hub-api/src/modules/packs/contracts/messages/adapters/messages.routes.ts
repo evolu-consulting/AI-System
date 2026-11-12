@@ -17,7 +17,7 @@ import { AppError, appError } from "../../../../../lib/errors";
 import { parseJson, parseQuery } from "../../../../../lib/http";
 import { type PackAccessView, type PackGuardVars, packGuard } from "../../../kit/public";
 import { type MessagesUsecases, MsgFail } from "../application/messages.usecase";
-import { decodeCursor } from "../domain/messages.view";
+import { decodeCursor } from "../application/messages.view";
 
 const notFound = () => new AppError("MSG_NOT_FOUND", MSG_ERRORS.MSG_NOT_FOUND, "MSG_NOT_FOUND");
 const forbidden = () => new AppError("PACK_FORBIDDEN", 403, "Forbidden");

@@ -5,8 +5,8 @@ import {
   type Message,
   MSG_PREVIEW_MAX,
 } from "@ai/contracts/pack-contracts";
-import type { RawConversation, RawMessage } from "../application/messages.ports";
-import { capUnread } from "./messages.rules";
+import { capUnread } from "../domain/messages.rules";
+import type { RawConversation, RawMessage } from "./messages.ports";
 
 export type PersonInfo = { name: string; active: boolean };
 export type People = ReadonlyMap<string, PersonInfo>;

@@ -13,7 +13,7 @@ Route `/pack/contracts/messages/*` (spec `docs/specs/CR-132/spec.md` §4, §6) +
 ## Làm
 - `application/messages.usecase.ts` (+ `messages.ops.ts` bước nguyên tử trong tx, `messages.ports.ts`): list · unread · get · create (1-1 tái dùng / nhóm) · rename · addMembers · removeMember (rời/bớt/chuyển chủ/xoá) · messages · send · revoke · markRead. Lỗi = `MsgFail(mã MSG_ERRORS)` ⇒ route đổi HTTP theo `MSG_ERRORS` (không câu chữ ở server).
 - `adapters/messages.repo.ts` + `messages-send.repo.ts` + `messages.sql.ts`: SQL tham số, câu hằng. `adapters/messages.routes.ts`: 11 route; user ngoài ⇒ 403 `PACK_FORBIDDEN`; id sai dạng ⇒ 404 `MSG_NOT_FOUND`.
-- `domain/messages.view.ts`: dựng DTO từ dòng thô, con trỏ danh sách (`last_at` µs + id, base64url).
+- `application/messages.view.ts`: dựng DTO từ dòng thô, con trỏ danh sách (`last_at` µs + id, base64url).
 - Kit: `internalUsersAmong(db)(who, ids)` (`member-names.ts`, xuất qua `kit/public.ts`): tên + «còn dùng» của nhân viên nội bộ — MỘT câu `id = any(array)` (tên khác spec `activeInternalAmong` vì trả cả tên + cờ).
 
 ## Số câu SQL mỗi request (cố định, đếm trong `messages.perf.int.test.ts`)
@@ -38,7 +38,7 @@ Route `/pack/contracts/messages/*` (spec `docs/specs/CR-132/spec.md` §4, §6) +
 Sửa: danh sách chọn 31 dòng đầu (thành viên × hội thoại, sắp `last_at`) TRƯỚC rồi mới tính phần đắt; tổng chưa đọc dùng vòng lặp lồng + `LIMIT 999` dừng sớm (cùng kết quả `least(sum, 999)` của spec §6, chi phí theo trần 999).
 
 ## Test
-unit: `domain/messages.view.test.ts` · int (use case trên DB thật): `messages.int.test.ts` (đường chính mọi endpoint + một ca NGOÀI hội thoại / công ty khác ⇒ cùng 404) · perf: `messages.perf.int.test.ts` (đếm câu + p95).
+unit: `application/messages.view.test.ts` · int (use case trên DB thật): `messages.int.test.ts` (đường chính mọi endpoint + một ca NGOÀI hội thoại / công ty khác ⇒ cùng 404) · perf: `messages.perf.int.test.ts` (đếm câu + p95).
 
 ## Quyết định trong lúc làm
 - `ON CONFLICT` bị policy SELECT (RESTRICTIVE) chặn khi chèn hội thoại (người tạo chưa là thành viên) ⇒ chèn thường; trùng khoá 1-1 đồng thời ⇒ 23505 ⇒ `retryOnRace` chạy lại MỘT lần (lần sau thấy bản có sẵn). Gửi trùng `client_id` đồng thời: cùng cơ chế (23505 → chạy lại → trả bản cũ).
@@ -73,4 +73,4 @@ Người gửi thu hồi tin của mình mọi lúc (nội dung và tệp biến
 Danh sách 30 hội thoại, tổng chưa đọc, trang 50 tin, gửi tin và đã đọc dùng số câu SQL cố định và đạt ngưỡng p95 của spec.
 - Kịch bản: khi một người có 200 hội thoại và 100.000 tin thì danh sách ≤ 50 ms, tổng chưa đọc ≤ 20 ms, số câu SQL không đổi [test: apps/hub-api/src/modules/packs/contracts/messages/messages.perf.int.test.ts » chưa đọc tổng]
 - Kịch bản: khi lấy 30 hội thoại thì chỉ một câu SQL và ≤ 50 ms [test: apps/hub-api/src/modules/packs/contracts/messages/messages.perf.int.test.ts » danh sách 30 hội thoại]
-- Kịch bản: khi dựng dữ liệu hiển thị thì con trỏ và xem trước đúng [test: apps/hub-api/src/modules/packs/contracts/messages/domain/messages.view.test.ts » con trỏ danh sách hội thoại]
+- Kịch bản: khi dựng dữ liệu hiển thị thì con trỏ và xem trước đúng [test: apps/hub-api/src/modules/packs/contracts/messages/application/messages.view.test.ts » con trỏ danh sách hội thoại]

@@ -1,5 +1,5 @@
 // CR-132 M3 · HD-MSG-01..12 · cổng của use case tin nhắn (lớp 2, chỉ kiểu): repo trong tx `PackUow` (role `contracts_rw`, RLS tenant + thành viên)
-// và tra người dùng (admin.users qua kit, NGOÀI tx của gói). Dòng thô từ SQL: use case/`messages.view.ts` đổi sang DTO của contract.
+// và tra người dùng (admin.users qua kit, NGOÀI tx của gói). Dòng thô từ SQL: use case/`messages.view.ts` (cùng thư mục) đổi sang DTO của contract.
 import type { ConvKind, MemberRole } from "@ai/contracts/pack-contracts";
 
 export type RawMember = {
