@@ -61,7 +61,7 @@ Khoá `doc` (optional ở zod): `frame` (`restricted`), `summary` (giai đoạn,
 5. Trigger `doc_frame_check` lúc xác nhận con khi cha đổi đối tác sau khi gắn: mã lỗi hiển thị ở màn duyệt (`FRAME_PARTNER_MISMATCH`) chưa kiểm.
 
 #### Yêu cầu: Số chứng từ không ký tự đặc biệt
-Số chứng từ chỉ gồm chữ không dấu, số và dấu gạch ngang, tối đa 50 ký tự; web chuẩn hoá khi gõ/dán/AI đọc và báo lỗi dưới ô; server chặn 422 path `number`; số cũ chưa sửa không chặn lưu.
+⚠ Sẽ đổi theo CR-135 (Q3): số chứng từ giữ nguyên văn người nhập/AI đọc (cho «/», chữ có dấu), chỉ cắt khoảng trắng 2 đầu, ≤ 50 ký tự. Hiện tại: chỉ chữ không dấu, số, gạch ngang, ≤ 50 ký tự; web chuẩn hoá khi gõ/dán/AI đọc và báo lỗi dưới ô; server chặn 422 path `number`; số cũ chưa sửa không chặn lưu.
 - Kịch bản: số "2026/11-xyz" chuẩn hoá thành "2026-11-XYZ" [test: packages/contracts/src/pack-contracts/doc-number.test.ts]
 - Kịch bản: tạo tay / PATCH với số có "/" ⇒ lỗi path number; PATCH không có khoá number không bị ảnh hưởng [test: packages/contracts/src/pack-contracts/doc-number.test.ts]
 - Kịch bản: AI đọc số có "/" và dấu ⇒ form xác nhận điền bản chuẩn hoá [test: apps/workspace-web/src/features/contract-form/lib/review-model.test.ts]

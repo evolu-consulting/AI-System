@@ -3,6 +3,7 @@
 Cập nhật: 2026-11-12 (chốt đợt) · Người cập nhật: docs-architect (chốt đợt CR-128..133)
 
 ## Đang ở đâu
+- **2026-11-12 INTAKE ĐỢT 2 CHỐT: CR-134..140 «Đã chốt, chưa làm»** (người dùng đồng ý mọi mặc định; Q4 theo người dùng). Thứ tự: sửa thẳng → CR-134 (chuẩn UI) → CR-135 ‖ CR-136 ‖ CR-137 → CR-138 → CR-139 → CR-140 (phụ thuộc 139). Hàng chờ: Q15 PO theo mẫu (COULD, sau CR-140); ảnh bìa cá nhân. Chi tiết ở `CHANGE-REQUESTS.md`.
 - **2026-11-12 CHỐT ĐỢT: CR-128 (a–e), CR-129, CR-130 (pha 1–3, ADR-0044, quyết định B), CR-131, CR-132, CR-133 — code xong, chờ UAT người dùng; chưa push/deploy.**
   - Đã làm: Sổ Hợp Tác (header «Thao tác ▾», cột Số HĐ, xoá nháp), Bảng tin gộp vào SHT (một trợ lý/Cài đặt/chuông; add-on `contracts-community`, bỏ feature/Group `community-*`; duyệt đơn tham gia cần quản trị SHT), trạng thái trống chung (`EmptyState`), Tin nhắn 1-1/nhóm (RLS, realtime, tệp, màn + khoang), Tài liệu kèm HĐ, sửa bảo mật bằng chứng/nhận việc/uỷ quyền. Delta của 26 lát đã gộp vào `docs/current` (`pack-contracts/tin-nhan.md`, `tai-lieu-kem.md`, `admin/bang-tin-add-on.md`, `web/trang-thai-trong.md`…).
   - Nhánh: `staging-improve` = `platform/gd0` (đã gộp 11 commit origin/platform/gd0; chưa push).

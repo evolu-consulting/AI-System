@@ -98,7 +98,7 @@ Sửa 2026-11-10 (đối chiếu code `gap-a…d`): §3 "Giao dịch", §10.2 (B
 
 ## 7. Thực hiện bước duyệt (C127-BR-20…34)
 ### 7.1 Người duyệt
-- **C127-BR-20** "Ai duyệt" chọn từ **phòng ban và người thật** của công ty; "Trưởng phòng" = trưởng của phòng đã chọn. Không có "trưởng phòng của người gửi".
+- **C127-BR-20** "Ai duyệt" chọn từ **phòng ban và người thật** của công ty; "Trưởng phòng" = trưởng của phòng đã chọn. Không có "trưởng phòng của người gửi" (**thay bởi CR-139**: thêm kiểu «Trưởng phòng của người đề xuất»; phòng không có trưởng ⇒ lên phòng cha).
 - **C127-BR-21** Người gửi không tự duyệt HĐ của mình (khi người gửi thuộc phòng duyệt ⇒ người khác trong phòng).
 - **C127-BR-22** Thẻ duyệt đủ thông tin [M5]: tóm tắt HĐ, tiến trình, ý kiến + bằng chứng của người trước, văn bản; khi gửi lại có **so sánh với lần trước**.
 
@@ -229,7 +229,7 @@ Mỗi mục (trừ 12.4) là một **kiểu bắt đầu mới** (cần code) + 
 
 ## 14. Ngoài phạm vi / để sau
 - Duyệt hàng loạt, duyệt qua email/điện thoại, hạn theo giờ làm việc (Mức 3).
-- Giao việc theo "trưởng phòng của người gửi"; lớp vai trò "Người phụ trách".
+- (Hoãn → **thay bởi CR-139**) Giao việc theo "trưởng phòng của người gửi"; lớp vai trò "Người phụ trách".
 - Đối tác tự xác nhận "Đã nhận hàng" qua link.
 
 ## 15. Câu còn mở (chưa trả lời ⇒ áp mặc định)
