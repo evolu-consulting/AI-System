@@ -106,7 +106,8 @@ export async function createCtx(
           and (d.from_user_id = any(array[${a.fromUserId}::uuid, ${a.toUserId}::uuid])
             or d.to_user_id = ${a.fromUserId}::uuid)) as existing,
       (select count(*) = 2 from admin.users u where u.tenant_id = ${a.tenantId}::uuid and u.active
-        and not u.locked_by_tenant and u.id = any(array[${a.fromUserId}::uuid, ${a.toUserId}::uuid])) as ok`);
+        and not u.locked_by_tenant and u.kind = 'internal'
+        and u.id = any(array[${a.fromUserId}::uuid, ${a.toUserId}::uuid])) as ok`);
   const ex = (
     typeof r?.existing === "string" ? JSON.parse(r.existing) : (r?.existing ?? [])
   ) as Row[];

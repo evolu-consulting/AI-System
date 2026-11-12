@@ -862,6 +862,13 @@
       "when": 1806901300000,
       "tag": "0139_cr130_slot_group_contracts",
       "breakpoints": true
+    },
+    {
+      "idx": 123,
+      "version": "7",
+      "when": 1806901400000,
+      "tag": "0140_sec_evidence_owner",
+      "breakpoints": true
     }
   ]
 }

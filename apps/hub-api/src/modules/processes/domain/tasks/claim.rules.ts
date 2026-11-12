@@ -34,20 +34,24 @@ export type ClaimMiss = {
   groupId: string | null;
   claimedBy: string | null;
   member: boolean;
+  /** SEC 2026-11-12 · người xem là người gửi lượt chạy và bước bật `exclude_starter` (cùng nguồn `starterExcluded`). Vắng ⇒ false. */
+  starterExcluded?: boolean;
 };
 export type ClaimMissOutcome =
   | "not_found"
   | "TASK_CLOSED"
   | "TASK_NOT_CLAIMABLE"
+  | "STARTER_CANNOT_REVIEW"
   | "TASK_CLAIMED"
   | "mine";
 
-/** Thứ tự: không thấy/không thuộc nhóm ⇒ 404 (không lộ task) · đã xong · không cần nhận · mình đã giữ (idempotent) · người khác. */
+/** Thứ tự: không thấy/không thuộc nhóm ⇒ 404 (không lộ task) · đã xong · không cần nhận · người gửi bị loại (`exclude_starter`) · mình đã giữ (idempotent) · người khác. */
 export function claimMissOutcome(m: ClaimMiss | null, viewerId: string): ClaimMissOutcome {
   if (!m) return "not_found";
   if (!m.member && m.claimedBy !== viewerId) return "not_found";
   if (m.status !== "open") return "TASK_CLOSED";
   if (!claimable(m)) return "TASK_NOT_CLAIMABLE";
+  if (m.starterExcluded === true && m.claimedBy !== viewerId) return "STARTER_CANNOT_REVIEW";
   if (m.claimedBy === viewerId) return "mine";
   return m.claimedBy ? "TASK_CLAIMED" : "TASK_NOT_CLAIMABLE";
 }

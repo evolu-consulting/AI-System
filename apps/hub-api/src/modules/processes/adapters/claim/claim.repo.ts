@@ -27,6 +27,16 @@ const alsoMember = (g: string) => sql`(t.kind = 'review' and exists (select 1 fr
       and jsonb_typeof(x.ag) = 'array' and x.ag ?| ${g}::text[]))`;
 
 /**
+ * SEC 2026-11-12 · N2-FR-05 · cùng nguồn `starterExcluded` (task-access.rules): task `review` của bước `after.kind='review'` bật
+ * `exclude_starter` (snapshot run, bất biến) và `u` là `process_runs.started_by` ⇒ người gửi KHÔNG nhận được (kể cả qua Toàn quyền).
+ */
+const starterOut = (u: string) => sql`(t.kind = 'review' and exists (select 1 from hub.stage_runs s
+    join hub.process_runs pr on pr.id = t.process_run_id and pr.tenant_id = t.tenant_id
+    cross join lateral (select pr.snapshot->'stages'->(s.stage_idx::int)->'after' as af) x
+    where s.id = t.stage_run_id and s.tenant_id = t.tenant_id and pr.started_by = ${u}::uuid
+      and x.af->>'kind' = 'review' and x.af->'exclude_starter' = 'true'::jsonb))`;
+
+/**
  * MỘT câu: nhận task nhóm `need='one'` loại duyệt/mốc khi người xem thuộc Group assignee (hoặc Group chuyển cấp đã thêm, hoặc
  * Group Toàn quyền `also_group_ids` của stage — FIX-OV).
  * Hạn tự trả = lúc nhận + `tenant_flow_settings.claim_release_h` (vắng ⇒ 24). Không động `remind_at/created_at`.
@@ -45,6 +55,7 @@ export async function claimTask(
       and t.need = 'one' and t.kind in ('review', 'milestone') and t.assignee_group_id is not null
       and (t.assignee_group_id = any(${g}::uuid[])
         or (t.escalated_at is not null and t.escalate_group_id = any(${g}::uuid[])) or ${alsoMember(g)})
+      and not ${starterOut(a.userId)}
     returning t.claimed_at, ${nameOf("t.claimed_by")} as by_name`);
   return r ? { claimedAt: new Date(r.claimed_at), byName: r.by_name ?? a.userId } : null;
 }
@@ -54,7 +65,7 @@ export type ClaimMissRow = ClaimMiss & { claimedAt: Date | null; byName: string 
 /** Đọc lại khi nhận / trả / giao hụt (chỉ đường lỗi): trạng thái + người giữ + người xem có thuộc nhóm. */
 export async function claimMiss(
   tx: Tx,
-  a: { taskId: string; tenantId: string; groupIds: Iterable<string> },
+  a: { taskId: string; tenantId: string; groupIds: Iterable<string>; userId?: string },
 ): Promise<ClaimMissRow | null> {
   const g = uuids(a.groupIds);
   const [r] = await tx.execute<{
@@ -66,11 +77,13 @@ export async function claimMiss(
     claimed_at: Date | string | null;
     by_name: string | null;
     member: boolean;
+    starter_out: boolean;
   }>(sql`
     select t.status, t.kind, t.need, t.assignee_group_id as group_id, t.claimed_by, t.claimed_at,
       ${nameOf("t.claimed_by")} as by_name,
       (t.assignee_group_id = any(${g}::uuid[])
-        or (t.escalated_at is not null and t.escalate_group_id = any(${g}::uuid[])) or ${alsoMember(g)}) as member
+        or (t.escalated_at is not null and t.escalate_group_id = any(${g}::uuid[])) or ${alsoMember(g)}) as member,
+      ${a.userId ? starterOut(a.userId) : sql`false`} as starter_out
     from hub.review_tasks t where t.id = ${a.taskId}::uuid and t.tenant_id = ${a.tenantId}::uuid`);
   if (!r) return null;
   return {
@@ -82,6 +95,7 @@ export async function claimMiss(
     claimedAt: r.claimed_at === null ? null : new Date(r.claimed_at),
     byName: r.by_name,
     member: r.member === true,
+    starterExcluded: r.starter_out === true,
   };
 }
 

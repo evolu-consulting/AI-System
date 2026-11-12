@@ -7,7 +7,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import * as cr from "../adapters/claim/claim.repo";
 import type { NoticeRow } from "../application/ports";
-import { claimError } from "../core/errors";
+import { claimError, processN2Error } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { claimMissOutcome, reassignBlock } from "../domain/tasks/claim.rules";
 import { writeNotices } from "../notify/batch.repo";
@@ -36,9 +36,10 @@ export class ClaimService {
       const a = { taskId, tenantId: c.tenantId, groupIds: c.groupIds };
       const hit = await cr.claimTask(tx, { ...a, userId: u.userId, now: this.d.now() });
       if (hit) return mine(u.userId, hit.byName, hit.claimedAt);
-      const m = await cr.claimMiss(tx, a);
+      const m = await cr.claimMiss(tx, { ...a, userId: u.userId });
       const out = claimMissOutcome(m, u.userId);
       if (out === "not_found" || !m) throw notFound();
+      if (out === "STARTER_CANNOT_REVIEW") throw processN2Error(out);
       if (out === "mine") return mine(u.userId, m.byName, m.claimedAt ?? this.d.now());
       if (out === "TASK_CLAIMED")
         throw claimError("TASK_CLAIMED", { by: person(m.claimedBy as string, m.byName) });

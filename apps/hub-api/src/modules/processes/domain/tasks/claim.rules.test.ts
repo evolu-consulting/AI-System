@@ -51,6 +51,16 @@ describe("CR-127 E2 · claim.rules", () => {
     expect(claimMissOutcome(miss({ claimedBy: "a" }), "a")).toBe("mine");
     expect(claimMissOutcome(miss({ claimedBy: "b" }), "a")).toBe("TASK_CLAIMED");
   });
+
+  it("SEC 2026-11-12 · người gửi ở bước exclude_starter ⇒ STARTER_CANNOT_REVIEW (kể cả người khác đang giữ)", () => {
+    expect(claimMissOutcome(miss({ starterExcluded: true }), "a")).toBe("STARTER_CANNOT_REVIEW");
+    expect(claimMissOutcome(miss({ starterExcluded: true, claimedBy: "b" }), "a")).toBe(
+      "STARTER_CANNOT_REVIEW",
+    );
+    expect(claimMissOutcome(miss({ starterExcluded: true, status: "closed" }), "a")).toBe(
+      "TASK_CLOSED",
+    );
+  });
   it("claimDeadline + claimHoursOk 1..168", () => {
     expect(claimDeadline(new Date("2026-11-10T00:00:00Z"), 24).toISOString()).toBe(
       "2026-11-11T00:00:00.000Z",

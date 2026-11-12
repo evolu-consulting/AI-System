@@ -43,7 +43,7 @@ const pgErr = (e: unknown): { code?: string; message?: string } | null => {
   return x?.cause?.code ? x.cause : x?.code ? x : null;
 };
 export const EVIDENCE_INVALID_MESSAGE =
-  "Tệp hoặc chữ ký của bằng chứng không dùng được (không thuộc công ty này, đã bị dọn hoặc quá 10 MB). Tải lại tệp rồi thử lại.";
+  "Tệp hoặc chữ ký của bằng chứng không dùng được (không do bạn tải lên, đã bị dọn hoặc quá 10 MB). Tải lại tệp rồi thử lại.";
 
 /** FIX-EV: `hub.record_evidence` từ chối (tệp/chữ ký công ty khác, quá cỡ, ý kiến sai — 42501/22023) ⇒ 422 có câu, không 500. */
 function evidenceDbError(e: unknown): void {
