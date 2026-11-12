@@ -218,3 +218,6 @@ Máy dev/test dựng mới có sẵn: chủ quản là owner gói, thương hi�
 
 #### Yêu cầu: Dọn tệp đính kèm không dùng (nguồn: cr118-r2-server)
 Vòng nền Community xoá tệp không nằm trên bài nào sau 24 h (gồm tệp của bài đã xoá): xoá byte FileBox rồi mới xoá hàng; xoá byte lỗi ⇒ giữ hàng (đã đánh dấu, không tải/gắn được) để lượt sau làm lại. Lô ≤ limit, số câu SQL cố định mỗi lô, chạy lại không đổi kết quả; tệp < 24 h hoặc đang gắn được giữ. Gắn tệp và vòng dọn không cùng thắng: đã claim rồi gắn ⇒ 400; đang gắn (tx ghi bài khoá hàng `FOR KEY SHARE`) ⇒ claim bỏ qua. User không xoá cứng được tệp (RLS). Code: `packs/community/adapters/community-files-sweep`.
+
+## CR-130 pha 3 · lát 1 — quyền Bảng tin bản cơ bản (ADR-0044, chưa gộp: cần `slice:merge`)
+Bảng tin là mặt `/pack/community/*` của gói Sổ Hợp Tác, bật bằng add-on `contracts-community`; không còn quyền/Group riêng. Mọi nhân viên có quyền gói Sổ Hợp Tác: xem/đăng/bình luận, duyệt đơn tham gia, ẩn bài đối tác; ẩn bình luận = chỉ người đăng bài. Đối tác: chỉ mặt Bảng tin (`EXTERNAL_SURFACES`), không quyền `contracts`. Vai «Admin chủ quản» ở bảng mục 2 không còn phân biệt trong Bảng tin.
