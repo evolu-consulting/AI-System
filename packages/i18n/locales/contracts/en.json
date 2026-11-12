@@ -250,7 +250,7 @@
     },
     "orgChart": {
       "title": "Org chart",
-      "lead": "The company departments, department heads and members. View only — admins edit them in Settings › Members.",
+      "lead": "The company departments, department heads and members. View only — company admins edit them on the Members & departments page.",
       "people_one": "{{count}} person",
       "people_other": "{{count}} people",
       "head": "Department head",
@@ -261,7 +261,7 @@
       "loadError": "Could not load the org chart. Try again in a few minutes.",
       "retry": "Try again",
       "emptyTitle": "The company has no departments yet",
-      "emptyBody": "A company admin creates departments and sets department heads in Settings › Members."
+      "emptyBody": "A company admin creates departments and sets department heads on the Members & departments page."
     },
     "approvalsPage": {
       "title": "My tasks",

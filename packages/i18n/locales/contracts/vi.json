@@ -250,7 +250,7 @@
     },
     "orgChart": {
       "title": "Sơ đồ tổ chức",
-      "lead": "Phòng ban, trưởng phòng và thành viên của công ty. Chỉ để xem — người quản trị chỉnh ở Cài đặt › Thành viên.",
+      "lead": "Phòng ban, trưởng phòng và thành viên của công ty. Chỉ để xem — quản trị công ty chỉnh ở trang Thành viên & phòng ban.",
       "people_one": "{{count}} người",
       "people_other": "{{count}} người",
       "head": "Trưởng phòng",
@@ -261,7 +261,7 @@
       "loadError": "Không tải được sơ đồ tổ chức. Thử lại sau ít phút.",
       "retry": "Thử lại",
       "emptyTitle": "Công ty chưa có phòng ban",
-      "emptyBody": "Quản trị công ty tạo phòng ban và đặt trưởng phòng ở Cài đặt › Thành viên."
+      "emptyBody": "Quản trị công ty tạo phòng ban và đặt trưởng phòng ở trang Thành viên & phòng ban."
     },
     "approvalsPage": {
       "title": "Việc của tôi",
