@@ -85,8 +85,9 @@ describe("groupSizeOk · clampRead · seenBy · messageEmpty · capUnread", () =
     expect(messageEmpty("", 1)).toBe(false);
     expect(messageEmpty("a", 0)).toBe(false);
   });
-  test("kẹp chưa đọc 99 / 999", () => {
-    expect(capUnread(150, "conversation")).toBe(99);
+  test("kẹp chưa đọc 100 (hiện «99+») / 999", () => {
+    expect(capUnread(150, "conversation")).toBe(100);
+    expect(capUnread(99, "conversation")).toBe(99);
     expect(capUnread(1500, "total")).toBe(999);
     expect(capUnread(-1, "total")).toBe(0);
     expect(capUnread(7, "conversation")).toBe(7);

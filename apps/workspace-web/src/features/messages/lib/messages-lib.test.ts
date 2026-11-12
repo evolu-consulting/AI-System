@@ -78,6 +78,7 @@ describe("danh sách hội thoại", () => {
     expect(unreadLabel(0)).toBeNull();
     expect(unreadLabel(7)).toBe("7");
     expect(unreadLabel(99)).toBe("99");
+    expect(unreadLabel(100)).toBe("99+"); // server đếm tối đa 100 ⇒ «99+»
     expect(unreadLabel(120)).toBe("99+");
   });
   it("lọc theo tên không phân biệt dấu/hoa thường", () => {
@@ -148,13 +149,13 @@ describe("danh sách hội thoại", () => {
       }).known,
     ).toBe(false);
   });
-  it("chưa đọc kẹp 99; đã đọc ⇒ xoá chấm; thu hồi tin cuối ⇒ xem trước thu hồi", () => {
-    const r = applyNewToList(list(conv(1, { unread: 99 })), msg(2), {
+  it("chưa đọc kẹp 100 («99+»); đã đọc ⇒ xoá chấm; thu hồi tin cuối ⇒ xem trước thu hồi", () => {
+    const r = applyNewToList(list(conv(1, { unread: 100 })), msg(2), {
       myId: ME,
       viewing: false,
       senderName: "x",
     });
-    expect(r.data.pages[0]?.items[0]?.unread).toBe(99);
+    expect(r.data.pages[0]?.items[0]?.unread).toBe(100);
     expect(clearUnread(list(conv(1, { unread: 4 })), id(1)).pages[0]?.items[0]?.unread).toBe(0);
     const withLast = list(
       conv(1, {

@@ -59,7 +59,7 @@ describe("messages.view · previewOf / tóm tắt / chi tiết / tin", () => {
     expect(Array.from(previewOf("𝒳".repeat(300)))).toHaveLength(120);
   });
 
-  it("chi tiết đúng contract: peer + tên, kẹp chưa đọc 99, xem trước một dòng", () => {
+  it("chi tiết đúng contract: peer + tên, kẹp chưa đọc 100 («99+»), xem trước một dòng", () => {
     const people = new Map([
       [A, { name: "An", active: true }],
       [B, { name: "Bình", active: false }],
@@ -67,7 +67,7 @@ describe("messages.view · previewOf / tóm tắt / chi tiết / tin", () => {
     const d = detailOf(raw(), people);
     expect(ConversationDetailSchema.safeParse(d).success).toBe(true);
     expect(d.peer).toEqual({ id: B, name: "Bình", active: false });
-    expect(d.unread).toBe(99);
+    expect(d.unread).toBe(100);
     expect(d.last_message?.preview).toBe("xin chào bạn");
     expect(d.last_message?.sender_name).toBe("Bình");
     expect(d.last_at).toBe("2026-11-12T10:00:00.123Z");

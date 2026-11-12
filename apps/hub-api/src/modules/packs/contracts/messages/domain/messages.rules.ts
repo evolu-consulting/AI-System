@@ -4,7 +4,7 @@ import {
   type ConvKind,
   type MemberRole,
   MSG_GROUP_MAX,
-  MSG_UNREAD_CONV_MAX,
+  MSG_UNREAD_CONV_CAP,
   MSG_UNREAD_TOTAL_MAX,
 } from "@ai/contracts/pack-contracts";
 
@@ -68,8 +68,8 @@ export function messageEmpty(body: string, fileCount: number): boolean {
   return body.trim().length === 0 && fileCount === 0;
 }
 
-/** Kẹp số chưa đọc để hiển thị: mỗi hội thoại 99 («99+»), tổng 999. */
+/** Kẹp số chưa đọc trên dây: mỗi hội thoại 100 (client hiện «99+» khi > 99), tổng 999. */
 export function capUnread(n: number, scope: "conversation" | "total"): number {
-  const max = scope === "conversation" ? MSG_UNREAD_CONV_MAX : MSG_UNREAD_TOTAL_MAX;
+  const max = scope === "conversation" ? MSG_UNREAD_CONV_CAP : MSG_UNREAD_TOTAL_MAX;
   return Math.max(0, Math.min(n, max));
 }

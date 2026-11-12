@@ -69,7 +69,7 @@ Mount `apps/hub-api/src/modules/packs/contracts/messages/` (domain/application/a
 Chọn người: dùng lại `GET /pack/contracts/members` (đã có, chỉ nhân viên nội bộ).
 
 Schema:
-- `ConversationSummary = {id, kind, title: string|null, peer: {id,name,active}|null (direct), member_count, last_message: {seq, sender_id, sender_name, preview: string≤120, has_files, deleted, at}|null, unread: int 0..99 (99 = 99+), last_at}`
+- `ConversationSummary = {id, kind, title: string|null, peer: {id,name,active}|null (direct), member_count, last_message: {seq, sender_id, sender_name, preview: string≤120, has_files, deleted, at}|null, unread: int 0..100 (≤ 99 đúng số, 100 = «99+»; server đếm `limit 100`), last_at}`
 - `ConversationDetail = ConversationSummary & {my_role:'owner'|'member', members: {user_id, name, role, last_read_seq, active}[]}`
 - `Message = {id, seq, conversation_id, sender_id, client_id, body, files: FileRef[], at, deleted: boolean}`; `FileRef = {id, name, mime: AttachMime, size}`.
 

@@ -3,7 +3,7 @@ import {
   type ConversationDetail,
   type ConversationSummary,
   type Message,
-  MSG_PREVIEW_MAX,
+  messagePreview,
 } from "@ai/contracts/pack-contracts";
 import { capUnread } from "../domain/messages.rules";
 import type { RawConversation, RawMessage } from "./messages.ports";
@@ -12,12 +12,8 @@ export type PersonInfo = { name: string; active: boolean };
 export type People = ReadonlyMap<string, PersonInfo>;
 
 const isoOf = (raw: string): string => new Date(raw).toISOString();
-/** Một dòng, gọn khoảng trắng, tối đa `MSG_PREVIEW_MAX` ký tự (cắt theo ký tự Unicode, không cắt đôi cặp thay thế). */
-export function previewOf(body: string): string {
-  const one = body.replace(/\s+/g, " ").trim();
-  const chars = Array.from(one);
-  return chars.length <= MSG_PREVIEW_MAX ? one : chars.slice(0, MSG_PREVIEW_MAX).join("");
-}
+/** Xem trước = hàm chung của contract (client cập nhật theo `msg.new` cùng quy ước). */
+export const previewOf = messagePreview;
 
 /** Id người cần tra tên cho một nhóm dòng: người gửi tin cuối, người còn lại của 1-1, thành viên (chi tiết). */
 export function personIdsOf(rows: readonly RawConversation[]): string[] {

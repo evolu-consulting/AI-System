@@ -119,6 +119,30 @@ describe("meStream", () => {
     expect(f.conns.length).toBe(2);
   });
 
+  test("dừng do 4xx rồi người nghe mới mở lại ⇒ lần mở đó báo nối lại cho cả người nghe cũ (không lỡ tin/đếm)", async () => {
+    const f = fake();
+    const s = createMeStream({ transport: f.transport, wait: f.wait });
+    let resyncs = 0;
+    s.subscribe(
+      "msg.new",
+      () => {},
+      () => resyncs++,
+    );
+    f.conns[0]?.open();
+    f.conns[0]?.fail(new ApiError(403, "FORBIDDEN", ""));
+    await tick();
+    expect(resyncs).toBe(0);
+    s.subscribe("msg.read", () => {});
+    f.conns[1]?.open();
+    expect(resyncs).toBe(1);
+    f.conns[1]?.drop();
+    await tick();
+    f.releases[0]?.();
+    await tick();
+    f.conns[2]?.open(); // nối lại thường: một lần nữa
+    expect(resyncs).toBe(2);
+  });
+
   test("429 ⇒ vẫn nối lại", async () => {
     const f = fake();
     const s = createMeStream({ transport: f.transport, wait: f.wait });

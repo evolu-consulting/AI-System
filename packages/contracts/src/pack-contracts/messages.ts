@@ -9,8 +9,10 @@ export const MSG_TITLE_MAX = 80;
 export const MSG_BODY_MAX = 4000;
 export const MSG_FILES_MAX = 10;
 export const MSG_PREVIEW_MAX = 120;
-/** Trần số chưa đọc mỗi hội thoại hiển thị (99 = «99+») và tổng (999). */
+/** Trần số chưa đọc HIỂN THỊ mỗi hội thoại (99 ⇒ «99+» khi vượt) và tổng (999). */
 export const MSG_UNREAD_CONV_MAX = 99;
+/** Giá trị đếm tối đa trên dây mỗi hội thoại: 100 = «có hơn 99» (server đếm `limit 100`, client hiện «99+» khi > 99). MỘT quy ước ở cả hai phía. */
+export const MSG_UNREAD_CONV_CAP = MSG_UNREAD_CONV_MAX + 1;
 export const MSG_UNREAD_TOTAL_MAX = 999;
 export const MSG_CONV_PAGE_DEFAULT = 30;
 export const MSG_CONV_PAGE_MAX = 50;
@@ -46,6 +48,13 @@ const UniqueIds = (max: number) =>
     .min(1)
     .max(max)
     .refine((a) => new Set(a).size === a.length, { message: "unique" });
+
+/** Xem trước tin: một dòng (gộp khoảng trắng), tối đa `MSG_PREVIEW_MAX` KÝ TỰ Unicode (không cắt đôi cặp thay thế). Dùng chung server (`messages.view`) và client (cập nhật theo `msg.new`). */
+export function messagePreview(body: string): string {
+  const one = body.replace(/\s+/g, " ").trim();
+  const chars = Array.from(one);
+  return chars.length <= MSG_PREVIEW_MAX ? one : chars.slice(0, MSG_PREVIEW_MAX).join("");
+}
 
 export const MsgConversationsQuerySchema = z.object({
   cursor: z.string().max(200).optional(),
@@ -135,8 +144,8 @@ export const ConversationSummarySchema = z.object({
   peer: PeerSchema.nullable(),
   member_count: z.number().int().min(1).max(MSG_GROUP_MAX),
   last_message: LastMessageSchema.nullable(),
-  /** 0..99 (99 hiển thị «99+»). */
-  unread: z.number().int().min(0).max(MSG_UNREAD_CONV_MAX),
+  /** 0..100: ≤ 99 hiển thị đúng số, 100 hiển thị «99+». */
+  unread: z.number().int().min(0).max(MSG_UNREAD_CONV_CAP),
   last_at: z.iso.datetime(),
 });
 export type ConversationSummary = z.infer<typeof ConversationSummarySchema>;

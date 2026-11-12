@@ -23,7 +23,7 @@ import {
   type MsgPages,
   nextBefore,
 } from "../lib/message-pages";
-import { setViewing } from "./msg-realtime";
+import { enterViewing, leaveViewing } from "./msg-realtime";
 import { useMsgRealtime } from "./use-unread";
 
 export function useConversation(id: string) {
@@ -122,8 +122,8 @@ export function useMarkRead(id: string, lastSeq: number | null, myId: string) {
   const sent = useRef(0);
   useEffect(() => {
     sent.current = 0;
-    setViewing(id);
-    return () => setViewing(null);
+    enterViewing(id);
+    return () => leaveViewing(id);
   }, [id]);
   useEffect(() => {
     if (!lastSeq || lastSeq <= sent.current) return;

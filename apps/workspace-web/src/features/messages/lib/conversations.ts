@@ -2,9 +2,10 @@
 import {
   type ConversationSummary,
   type Message,
-  MSG_PREVIEW_MAX,
+  MSG_UNREAD_CONV_CAP,
   MSG_UNREAD_CONV_MAX,
   MSG_UNREAD_TOTAL_MAX,
+  messagePreview,
 } from "@ai/contracts/pack-contracts";
 import { foldText } from "./format";
 
@@ -15,7 +16,7 @@ export type ListPages = {
 
 export const isUnread = (c: Pick<ConversationSummary, "unread">): boolean => c.unread > 0;
 
-/** Chữ số chưa đọc: 0 ⇒ null (không hiện); trên 99 ⇒ «99+». */
+/** Chữ số chưa đọc: 0 ⇒ null (không hiện); trên 99 (server trả 100) ⇒ «99+». */
 export function unreadLabel(n: number, max = MSG_UNREAD_CONV_MAX): string | null {
   if (n <= 0) return null;
   return n > max ? `${max}+` : String(n);
@@ -63,7 +64,7 @@ const lastOf = (m: Message, senderName: string): Last => ({
   seq: m.seq,
   sender_id: m.sender_id,
   sender_name: senderName,
-  preview: m.body.slice(0, MSG_PREVIEW_MAX),
+  preview: messagePreview(m.body),
   has_files: m.files.length > 0,
   deleted: m.deleted,
   at: m.at,
@@ -96,7 +97,7 @@ export function applyNewToList(
     ...found,
     last_message: lastOf(m, ctx.senderName),
     last_at: m.at,
-    unread: Math.min(MSG_UNREAD_CONV_MAX, found.unread + bump),
+    unread: Math.min(MSG_UNREAD_CONV_CAP, found.unread + bump),
   };
   const [first, ...rest] = pages;
   if (!first) return { data: list, known: false };
@@ -146,4 +147,26 @@ export function flattenList(list: ListPages | undefined): ConversationSummary[] 
         out.push(c);
       }
   return out;
+}
+
+/** Số chưa đọc của một hội thoại trong cache (không có ⇒ 0). */
+export function unreadOf(list: ListPages | undefined, id: string): number {
+  return flattenList(list).find((c) => c.id === id)?.unread ?? 0;
+}
+
+/**
+ * Tên người gửi từ dữ liệu SẴN CÓ (không gọi mạng): 1-1 ⇒ tên người kia; nhóm ⇒ chi tiết đã tải (thành viên), rồi tin cuối cùng người gửi
+ * (`last_message.sender_name`). Không biết ⇒ "" (xem trước vẫn đúng chữ, chỉ thiếu tên; danh sách được tải lại gộp một lần).
+ */
+export function senderNameFrom(
+  list: ListPages | undefined,
+  members: readonly { user_id: string; name: string }[] | undefined,
+  convId: string,
+  senderId: string,
+): string {
+  const c = flattenList(list).find((x) => x.id === convId);
+  if (c?.kind === "direct") return c.peer?.name ?? "";
+  const fromMember = members?.find((m) => m.user_id === senderId)?.name;
+  if (fromMember) return fromMember;
+  return c?.last_message?.sender_id === senderId ? c.last_message.sender_name : "";
 }

@@ -70,6 +70,8 @@ export function createMeStream(deps: { transport?: StreamTransport; wait?: Wait 
   const reconnects = new Set<() => void>();
   let total = 0;
   let conn: AbortController | null = null;
+  /** Dừng do lỗi 4xx ⇒ người nghe cũ có thể đã lỡ sự kiện; lần mở kế tiếp (kể cả do người nghe MỚI) phải báo `onReconnected` cho TẤT CẢ. */
+  let needResync = false;
 
   const dispatch: FrameHandler = (f) => {
     for (const h of [...(handlers.get(f.event) ?? [])]) h(f);
@@ -80,7 +82,10 @@ export function createMeStream(deps: { transport?: StreamTransport; wait?: Wait 
     let failures = 0;
     let wasOpen = false;
     const onOpen = () => {
-      if (wasOpen) for (const r of [...reconnects]) r();
+      if (wasOpen || needResync) {
+        needResync = false;
+        for (const r of [...reconnects]) r();
+      }
       wasOpen = true;
       failures = 0;
     };
@@ -88,7 +93,10 @@ export function createMeStream(deps: { transport?: StreamTransport; wait?: Wait 
       try {
         await transport(signal, onOpen, dispatch);
       } catch (err) {
-        if (isFatalStreamError(err)) break;
+        if (isFatalStreamError(err)) {
+          needResync = true;
+          break;
+        }
       }
       if (signal.aborted) break;
       await wait(reconnectDelay(failures++), signal);

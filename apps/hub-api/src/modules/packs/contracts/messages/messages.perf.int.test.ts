@@ -112,7 +112,7 @@ describe("CR-132 M3 · perf tin nhắn (200 hội thoại × 500 tin = 100.000 t
     const page = await uc().list(w(), { cursor: null, limit: 30 });
     expect(page.items).toHaveLength(30);
     expect(page.next_cursor).not.toBeNull();
-    expect(page.items[0]?.unread).toBe(99);
+    expect(page.items[0]?.unread).toBe(100);
   });
 
   it("50 tin gần nhất: 1 câu, p95 ≤ 30 ms", async () => {

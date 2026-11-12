@@ -18,6 +18,8 @@ import {
   bumpTotal,
   clearUnread,
   type ListPages,
+  senderNameFrom,
+  unreadOf,
 } from "../lib/conversations";
 import {
   applyDeleted,
@@ -25,14 +27,26 @@ import {
   applyReadToMembers,
   type MsgPages,
 } from "../lib/message-pages";
+import { createViewing } from "../lib/viewing";
 
-let viewing: string | null = null;
-/** Hội thoại đang mở (ChatView đặt/bỏ): tin tới khi đang xem không cộng chưa đọc. */
-export const setViewing = (id: string | null): void => {
-  viewing = id;
-};
+const viewing = createViewing();
+/** Khung chat mở / đóng hội thoại `id` (đóng chỉ xoá khi vẫn là `id`): tin tới khi đang xem không cộng chưa đọc. */
+export const enterViewing = viewing.enter;
+export const leaveViewing = viewing.leave;
 const isViewing = (id: string): boolean =>
-  viewing === id && (typeof document === "undefined" || document.visibilityState === "visible");
+  viewing.current() === id &&
+  (typeof document === "undefined" || document.visibilityState === "visible");
+
+/** Tải lại danh sách GỘP: nhiều tin liên tiếp ⇒ một lần (không một lần mỗi tin). */
+let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+const REFRESH_COALESCE_MS = 300;
+function scheduleListRefresh(qc: QueryClient): void {
+  if (refreshTimer) return;
+  refreshTimer = setTimeout(() => {
+    refreshTimer = null;
+    void qc.invalidateQueries({ queryKey: msgKeys.list });
+  }, REFRESH_COALESCE_MS);
+}
 
 const parse = <T>(
   f: StreamFrame,
@@ -46,13 +60,6 @@ const parse = <T>(
   }
 };
 
-function senderNameOf(qc: QueryClient, convId: string, senderId: string, list: ListPages): string {
-  const c = list.pages.flatMap((p) => p.items).find((x) => x.id === convId);
-  if (c?.kind === "direct") return c.peer?.name ?? "";
-  const d = qc.getQueryData<ConversationDetail>(msgKeys.detail(convId));
-  return d?.members.find((m) => m.user_id === senderId)?.name ?? "";
-}
-
 function onNew(qc: QueryClient, f: StreamFrame): void {
   const d = parse(f, MsgNewEventDataSchema);
   const myId = session.getState().me?.id;
@@ -64,13 +71,14 @@ function onNew(qc: QueryClient, f: StreamFrame): void {
   const mine = m.sender_id === myId;
   const viewingNow = isViewing(d.conversation_id);
   const list = qc.getQueryData<ListPages>(msgKeys.list);
-  const name = list ? senderNameOf(qc, d.conversation_id, m.sender_id, list) : "";
+  const detail = qc.getQueryData<ConversationDetail>(msgKeys.detail(d.conversation_id));
+  const name = senderNameFrom(list, detail?.members, d.conversation_id, m.sender_id);
   const res = list
     ? applyNewToList(list, m, { myId, viewing: viewingNow, senderName: mine ? "" : name })
     : null;
   if (res?.known) qc.setQueryData(msgKeys.list, res.data);
-  // Hội thoại mới (chưa có trong cache) hoặc nhóm chưa biết tên người gửi ⇒ tải lại danh sách (một câu).
-  if (!res?.known || (!mine && !name)) void qc.invalidateQueries({ queryKey: msgKeys.list });
+  // Hội thoại mới (chưa có trong cache) hoặc nhóm chưa biết tên người gửi ⇒ tải lại danh sách, GỘP (tên lấy từ dữ liệu có sẵn trước).
+  if (!res?.known || (!mine && !name)) scheduleListRefresh(qc);
   if (!mine && !viewingNow)
     qc.setQueryData<{ total: number }>(msgKeys.unread, (u) =>
       u ? { total: bumpTotal(u.total, 1) } : u,
@@ -96,6 +104,9 @@ function onDeleted(qc: QueryClient, f: StreamFrame): void {
   const d = parse(f, MsgDeletedEventDataSchema);
   if (!d) return;
   qc.setQueryData<MsgPages>(msgKeys.msgs(d.conversation_id), (o) => applyDeleted(o, d.seq));
+  // Tin bị thu hồi có thể là tin chưa đọc của mình ⇒ số chưa đọc của hội thoại đổi (client không biết mốc đọc) ⇒ tải lại danh sách gộp.
+  if (unreadOf(qc.getQueryData<ListPages>(msgKeys.list), d.conversation_id) > 0)
+    scheduleListRefresh(qc);
   qc.setQueryData<ListPages>(msgKeys.list, (l) =>
     l ? applyDeletedToList(l, d.conversation_id, d.seq) : l,
   );

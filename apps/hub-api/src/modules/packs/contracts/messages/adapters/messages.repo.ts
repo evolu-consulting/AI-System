@@ -33,7 +33,7 @@ function summary(t: string, me: string, withMembers: boolean, pick: SQL) {
       from contracts.msg_messages x where x.tenant_id = c.tenant_id and x.conversation_id = c.id order by x.seq desc limit 1) lm on true
     cross join lateral (select count(*)::int as n from (select 1 from contracts.msg_messages x
         where c.last_seq > c.me_read and x.tenant_id = c.tenant_id and x.conversation_id = c.id
-          and x.seq > c.me_read and x.sender_id <> c.me_id and x.deleted_at is null limit 99) s) u
+          and x.seq > c.me_read and x.sender_id <> c.me_id and x.deleted_at is null limit 100) s) u
     order by c.last_at desc, c.id desc`;
 }
 
