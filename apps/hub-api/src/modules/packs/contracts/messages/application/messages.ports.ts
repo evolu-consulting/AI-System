@@ -54,6 +54,27 @@ export type RevokeRow = {
   done: boolean;
   /** Mọi thành viên (người nhận `msg.deleted`). */
   member_ids: string[];
+  /** Tệp của tin vừa thu hồi (đã soft-delete ở DB) — use case gỡ byte FileBox SAU commit. */
+  gone: StoredFile[];
+};
+/** Tệp ở FileBox (org theo tenant + id trong FileBox). */
+export type StoredFile = { org: string; file_id: string };
+export type NewMsgFile = {
+  id: string;
+  cid: string;
+  org: string;
+  fileId: string;
+  versionId: string;
+  name: string;
+  mime: string;
+  size: number;
+  by: string;
+};
+/** Kho byte (FileBox, org theo tenant). `remove` không ném khi đã mất. */
+export type MsgFileStore = {
+  put(org: string, name: string, bytes: Uint8Array): Promise<{ fileId: string; versionId: string }>;
+  remove(org: string, fileId: string): Promise<void>;
+  link(org: string, fileId: string): Promise<string | null>;
 };
 /** Kết quả đánh dấu đã đọc: mốc mới, mốc trước (không tiến ⇒ không phát `msg.read`), mọi thành viên. */
 export type ReadRow = { seq: number; prev: number; member_ids: string[] };
@@ -106,6 +127,12 @@ export type MessagesRepo = {
   }): Promise<RawMessage["files"]>;
   filesOf(cid: string, seq: number): Promise<RawMessage["files"]>;
   revoke(m: { me: string; cid: string; seq: number }): Promise<RevokeRow | null>;
+  /** Tệp tải lên (chưa gửi): chèn `contracts.files` + `msg_files` (seq NULL) trong MỘT câu. */
+  insertFile(f: NewMsgFile): Promise<void>;
+  /** Tệp của hội thoại mà người gọi tải được: thành viên (RLS); tệp chưa gửi chỉ người tải lên. Không thấy ⇒ null. */
+  fileRef(me: string, cid: string, fileId: string): Promise<StoredFile | null>;
+  /** Mọi tệp còn sống của hội thoại (trước khi xoá hội thoại ⇒ gỡ byte). */
+  convFiles(cid: string): Promise<StoredFile[]>;
   /** null = không phải thành viên. Trả mốc đọc mới + cũ + mọi thành viên (đã kẹp theo `clampRead`: không lùi, không vượt tin cuối). */
   markRead(me: string, cid: string, seq: number): Promise<ReadRow | null>;
 };

@@ -1,7 +1,7 @@
 // CR-132 M3 · HD-MSG-01..12 · các bước NGUYÊN TỬ chạy trong MỘT tx của use case tin nhắn (tách riêng cho gọn + dễ đọc). Không SQL (gọi repo), không I/O ngoài tx.
 import type { MemberRole, MsgErrorCode, SendMessageRequest } from "@ai/contracts/pack-contracts";
 import { canRemoveMember, nextOwner } from "../domain/messages.rules";
-import type { MessagesRepo, RawConversation, SentRow } from "./messages.ports";
+import type { MessagesRepo, RawConversation, SentRow, StoredFile } from "./messages.ports";
 
 /** Lỗi nghiệp vụ ⇒ route đổi sang HTTP theo `MSG_ERRORS` (không câu chữ ở server — client dịch theo mã). */
 export class MsgFail extends Error {
@@ -54,7 +54,7 @@ export async function openGroup(
 export async function leaveOrRemove(
   r: MessagesRepo,
   a: { me: string; cid: string; targetId: string },
-): Promise<string[]> {
+): Promise<{ rest: string[]; gone: StoredFile[] }> {
   const f = await r.facts(a.me, a.cid, true);
   if (!f) throw new MsgFail("MSG_NOT_FOUND");
   if (f.kind === "direct") throw new MsgFail("MSG_DIRECT_FIXED");
@@ -65,9 +65,11 @@ export async function leaveOrRemove(
   const rest = f.members.filter((m) => m.user_id !== a.targetId);
   const next = target.role === "owner" ? nextOwner(rest) : null;
   if (next) await r.setOwner(a.cid, next);
+  // Người cuối rời: liệt kê tệp TRƯỚC khi xoá hàng mình (sau đó RLS giấu hội thoại) rồi xoá hội thoại; byte gỡ SAU commit.
+  const gone = rest.length === 0 ? await r.convFiles(a.cid) : [];
   await r.removeMember(a.cid, a.targetId);
   if (rest.length === 0) await r.dropIfEmpty(a.cid);
-  return rest.map((m) => m.user_id);
+  return { rest: rest.map((m) => m.user_id), gone };
 }
 
 /** Chèn tin + gắn tệp. Trùng `client_id` ⇒ bản cũ (kèm tệp đã gắn). Tệp không hợp lệ ⇒ `MSG_FILE_INVALID` (tx hoàn tác cả tin). */

@@ -62,7 +62,6 @@ import {
   packGroups,
   packMeRoutes,
   packNavRoutes,
-  packStreamPublishMany,
   packTenantOnly,
 } from "./kit/public";
 import { afterPacksMounted } from "./packs.after-mount";
@@ -233,8 +232,8 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
   if (fb) app.route(base, contractFilesModule(db, view, fileboxClients(fb))); // CR-133 · «Tài liệu kèm» (FileBox vắng ⇒ không gắn)
   app.route(
     base,
-    messagesModule(db, view, d.redis ? packStreamPublishMany(d.redis, logger) : undefined),
-  ); // CR-132 M3/M4 · tin nhắn nhân viên (1-1 + nhóm) + `msg.*` realtime
+    messagesModule(db, view, { redis: d.redis, filebox: fb ? fileboxClients(fb) : undefined }),
+  ); // CR-132 · tin nhắn nhân viên (1-1 + nhóm), `msg.*` realtime (cần Redis), tệp (cần FileBox)
   app.route(base, contractsRemind(d, view, db)); // HD4
   app.route(base, partnerModule(db, view)); // CR-124 q4 · hộp «Hợp đồng đối tác gửi» + ghi nhận thủ công
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9

@@ -1,6 +1,8 @@
 // CR-132 M3 · HD-MSG-01..12 · `/pack/contracts/messages/**` (mount dưới `/pack/contracts`): hội thoại, thành viên, tin, đã đọc, chưa đọc. Guard `read` của gói TRƯỚC
 // khi đọc tham số/thân; user ngoài (đối tác) ⇒ 403 `PACK_FORBIDDEN`. Không phải thành viên / không có ⇒ 404 `MSG_NOT_FOUND` (cùng thân). Lỗi nghiệp vụ trả MÃ
 // `MSG_ERRORS` (client dịch), không câu chữ riêng. KHÔNG realtime (M4), không tải tệp lên (M5).
+
+import { ATTACH_MAX_BYTES } from "@ai/contracts/attach";
 import {
   AddMembersRequestSchema,
   CreateConversationRequestSchema,
@@ -12,10 +14,12 @@ import {
   SendMessageRequestSchema,
 } from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { AppError, appError } from "../../../../../lib/errors";
 import { parseJson, parseQuery } from "../../../../../lib/http";
 import { type PackAccessView, type PackGuardVars, packGuard } from "../../../kit/public";
+import { cleanFileName, fileNameOf } from "../../adapters/upload.routes";
 import { type MessagesUsecases, MsgFail } from "../application/messages.usecase";
 import { decodeCursor } from "../application/messages.view";
 
@@ -28,6 +32,10 @@ const run = <T>(p: Promise<T>): Promise<T> =>
     throw e;
   });
 const SeqSchema = z.coerce.number().int().min(1);
+const MULTIPART_SLACK = 64 * 1024;
+const tooLarge = () =>
+  new AppError("MSG_FILE_TOO_LARGE", MSG_ERRORS.MSG_FILE_TOO_LARGE, "MSG_FILE_TOO_LARGE");
+const storageOff = () => new AppError("FILE_STORAGE_UNAVAILABLE", 503, "FILE_STORAGE_UNAVAILABLE");
 
 export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
@@ -115,6 +123,36 @@ export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Hono
     const cid = uuid(c, "id");
     const body = await parseJson(c, MarkReadRequestSchema);
     return c.json(await run(uc.markRead(w, cid, body.seq)));
+  });
+  // Tệp (M5): tải lên (multipart `file`, gắn `msg_files` ngay, chưa gửi) + tải xuống 302 tới FileBox. FileBox vắng ⇒ 503.
+  r.post(
+    "/messages/conversations/:id/files",
+    read,
+    bodyLimit({
+      maxSize: ATTACH_MAX_BYTES + MULTIPART_SLACK,
+      onError: () => Promise.reject(tooLarge()),
+    }),
+    async (c) => {
+      const w = who(c);
+      const cid = uuid(c, "id");
+      if (!uc.filesEnabled) throw storageOff();
+      const form = await c.req.formData().catch(() => null);
+      const file = form?.getAll("file").find((f): f is File => f instanceof Blob);
+      if (!file) throw appError("VALIDATION_ERROR");
+      if (file.size > ATTACH_MAX_BYTES) throw tooLarge();
+      const name = cleanFileName(fileNameOf(file));
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      return c.json(await run(uc.uploadFile(w, cid, { name, bytes })), 201);
+    },
+  );
+  r.get("/messages/conversations/:id/files/:fileId", read, async (c) => {
+    const w = who(c);
+    const cid = uuid(c, "id");
+    const fid = uuid(c, "fileId");
+    if (!uc.filesEnabled) throw storageOff();
+    const url = await run(uc.fileLink(w, cid, fid));
+    noStore(c);
+    return c.redirect(url, 302);
   });
   return r;
 }

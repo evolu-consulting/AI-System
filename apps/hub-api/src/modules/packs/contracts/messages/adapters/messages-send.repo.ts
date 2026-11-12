@@ -8,6 +8,7 @@ import type {
   ReadRow,
   RevokeRow,
   SentRow,
+  StoredFile,
 } from "../application/messages.ports";
 import { iso, uuidArr } from "./messages.sql";
 
@@ -17,7 +18,18 @@ type FileRow = RawMessage["files"][number];
 export function messagesSendRepo(
   tx: Tx,
   t: string,
-): Pick<MessagesRepo, "page" | "send" | "attach" | "filesOf" | "revoke" | "markRead"> {
+): Pick<
+  MessagesRepo,
+  | "page"
+  | "send"
+  | "attach"
+  | "filesOf"
+  | "revoke"
+  | "markRead"
+  | "insertFile"
+  | "fileRef"
+  | "convFiles"
+> {
   return {
     // Thành viên (1 dòng) + trang tin (tối đa limit+1, mới → cũ) + tệp từng tin (lateral theo index `msg_files (tenant,conv,seq)`).
     page: async (me, cid, before, limit) => {
@@ -84,11 +96,34 @@ export function messagesSendRepo(
             and sender_id = ${me}::uuid and deleted_at is null returning seq),
         fl as (update contracts.files f set deleted_at = now() from contracts.msg_files mf
           where mf.tenant_id = ${t}::uuid and mf.conversation_id = ${cid}::uuid and mf.seq = ${seq}::bigint
-            and exists (select 1 from upd) and f.tenant_id = ${t}::uuid and f.id = mf.file_id and f.deleted_at is null returning f.id)
+            and exists (select 1 from upd) and f.tenant_id = ${t}::uuid and f.id = mf.file_id and f.deleted_at is null returning f.org, f.file_id)
         select m.sender_id, m.deleted_at is not null as was_deleted, exists (select 1 from upd) as done,
           (select coalesce(array_agg(mm.user_id::text), '{}') from contracts.msg_members mm
-            where mm.tenant_id = ${t}::uuid and mm.conversation_id = ${cid}::uuid) as member_ids from m`);
+            where mm.tenant_id = ${t}::uuid and mm.conversation_id = ${cid}::uuid) as member_ids,
+          (select coalesce(json_agg(json_build_object('org', fl.org, 'file_id', fl.file_id)), '[]'::json) from fl) as gone from m`);
       return r ?? null;
+    },
+    // HAI câu cùng tx (cố định): policy INSERT của `msg_files` kiểm `contracts.files` bằng subquery KHÔNG thấy hàng vừa chèn trong cùng câu (CTE).
+    insertFile: async (f) => {
+      await tx.execute(sql`insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
+        values (${f.id}::uuid, ${t}::uuid, ${f.org}, ${f.fileId}, ${f.versionId}, ${f.name}, ${f.mime}, ${f.size}::bigint, ${f.by}::uuid)`);
+      await tx.execute(sql`insert into contracts.msg_files (tenant_id, file_id, conversation_id, seq, uploaded_by)
+        values (${t}::uuid, ${f.id}::uuid, ${f.cid}::uuid, null, ${f.by}::uuid)`);
+    },
+    fileRef: async (me, cid, fileId) => {
+      const [r] =
+        await tx.execute<StoredFile>(sql`select f.org, f.file_id from contracts.msg_files mf
+        join contracts.files f on f.id = mf.file_id and f.tenant_id = mf.tenant_id and f.deleted_at is null
+        where mf.tenant_id = ${t}::uuid and mf.conversation_id = ${cid}::uuid and mf.file_id = ${fileId}::uuid
+          and (mf.seq is not null or mf.uploaded_by = ${me}::uuid)`);
+      return r ?? null;
+    },
+    convFiles: async (cid) => {
+      const rows =
+        await tx.execute<StoredFile>(sql`select f.org, f.file_id from contracts.msg_files mf
+        join contracts.files f on f.id = mf.file_id and f.tenant_id = mf.tenant_id and f.deleted_at is null
+        where mf.tenant_id = ${t}::uuid and mf.conversation_id = ${cid}::uuid`);
+      return [...rows];
     },
     // Cùng công thức `clampRead(current, requested, lastSeq)` (domain): max(hiện tại, min(yêu cầu, tin cuối)).
     markRead: async (me, cid, seq) => {

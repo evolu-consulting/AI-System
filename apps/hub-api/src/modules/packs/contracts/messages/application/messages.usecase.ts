@@ -21,7 +21,13 @@ import {
 } from "../domain/messages.events";
 import { canEditGroup, dmKey, groupSizeOk, messageEmpty } from "../domain/messages.rules";
 import { leaveOrRemove, MsgFail, openDirect, openGroup, sendInTx } from "./messages.ops";
-import type { MessagesRepo, MessagesRepos, PeopleLookup, RawConversation } from "./messages.ports";
+import type {
+  MessagesRepo,
+  MessagesRepos,
+  MsgFileStore,
+  PeopleLookup,
+  RawConversation,
+} from "./messages.ports";
 import {
   detailOf,
   encodeCursor,
@@ -30,6 +36,7 @@ import {
   personIdsOf,
   summaryOf,
 } from "./messages.view";
+import { messagesFileOps } from "./messages-files.usecase";
 
 export { MsgFail };
 
@@ -66,7 +73,10 @@ export function messagesUsecases(d: {
   newId: () => string;
   /** Phát `msg.*` tới `/me/stream` SAU commit (một pipeline Redis cho cả lô khung); vắng (không Redis) ⇒ không phát. Lỗi Redis chỉ log, không ném. */
   publish?: PackStreamPublishMany | undefined;
+  /** Kho byte FileBox (M5); vắng ⇒ route tệp trả 503, tin chữ vẫn chạy. */
+  files?: MsgFileStore | undefined;
 }) {
+  const fileOps = messagesFileOps(d);
   const emit = async (frames: MsgFrame[]): Promise<void> => {
     if (d.publish && frames.length > 0) await d.publish(frames).catch(() => undefined);
   };
@@ -172,10 +182,11 @@ export function messagesUsecases(d: {
     },
 
     async removeMember(who: PackWho, cid: string, targetId: string): Promise<void> {
-      const rest = await d.uow.tenant(who, (r) =>
+      const out = await d.uow.tenant(who, (r) =>
         leaveOrRemove(r.messages, { me: who.userId, cid, targetId }),
       );
-      await emit(conversationFrames(cid, { removed: [targetId], rest }));
+      await fileOps.dropBytes(out.gone); // người cuối rời ⇒ hội thoại + tệp đã xoá ở DB; gỡ byte SAU commit
+      await emit(conversationFrames(cid, { removed: [targetId], rest: out.rest }));
     },
 
     async messages(who: PackWho, cid: string, q: MsgListQuery): Promise<MessagePage> {
@@ -216,8 +227,15 @@ export function messagesUsecases(d: {
       const r = await d.uow.tenant(who, (x) => x.messages.revoke({ me: who.userId, cid, seq }));
       if (!r) throw new MsgFail("MSG_NOT_FOUND");
       if (r.sender_id !== who.userId) throw new MsgFail("MSG_NOT_SENDER");
-      if (r.done) await emit(deletedFrames(cid, seq, r.member_ids));
+      if (r.done) {
+        await fileOps.dropBytes(r.gone); // tệp của tin đã soft-delete ở DB; gỡ byte SAU commit
+        await emit(deletedFrames(cid, seq, r.member_ids));
+      }
     },
+
+    filesEnabled: fileOps.filesEnabled,
+    uploadFile: fileOps.upload,
+    fileLink: fileOps.link,
 
     async markRead(who: PackWho, cid: string, seq: number): Promise<{ unread_total: number }> {
       const out = await d.uow.tenant(who, async (r) => {
