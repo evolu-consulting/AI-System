@@ -3,6 +3,7 @@
 // (2) brand công ty (tên = admin.tenants.name đổi qua admin-api, c20) và `default_app` bump `config_version` CÙNG transaction ⇒ ETag `/pack/me` đổi + `config.changed` tới đúng
 // tenant trong một vòng LISTEN; `home` theo default_app khi user đọc được gói đó, không thì theo quyền; tenant khác không bị chạm.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { enableAddon } from "@ai/test-kit/builders";
 import {
   type CtxN1,
   countHops,
@@ -59,9 +60,11 @@ beforeAll(async () => {
     on conflict (key) do nothing`;
   await c.sql`update admin.tenants set default_app = null where id in (${T.acme}, ${T.beta})`;
   await c.enable(T.acme);
-  await c.enable(T.acme, "community");
+  // CR-130 p3: app community = gói contracts + add-on contracts-community (nền tảng bật), không còn gói `community`.
+  await c.enable(T.acme, "contracts");
+  await enableAddon(c.sql, [T.acme], "contracts-community");
   await c.addToRole(T.acme, "editor", [P.hoa]);
-  await c.addToRole(T.acme, "viewer", [P.hoa], "community");
+  await c.addToRole(T.acme, "viewer", [P.hoa], "contracts");
   // agent Hub tối thiểu của riêng file này (mẫu DB không có agent)
   agentKey = AGENT;
   await c.sql`insert into hub.providers (key, kind, vendor, max_concurrency, enabled, dev_only)
@@ -174,7 +177,7 @@ describe("CR-118 · config-consistency · brand + default_app bump version", () 
 
   it("đổi default_app công ty ⇒ home theo default_app khi user đọc được gói đó, app không phải gói ⇒ theo quyền, beta không đổi", async () => {
     const before = await me(P.hoa);
-    expect(before.json.home).toBe("community");
+    expect(before.json.home).toBe("contracts"); // CR-130 p3: Bảng tin = gói contracts + add-on ⇒ người đọc cả hai mặc định về Sổ Hợp Tác
     const beta0 = (await me(P.an)).json.home;
     const sa = await openMeStream(c.hub, await c.tok(P.hoa));
     try {
@@ -192,7 +195,7 @@ describe("CR-118 · config-consistency · brand + default_app bump version", () 
         () => me(P.hoa),
         (x) => x.json?.home !== PK,
       );
-      expect(off.json.home).toBe("community");
+      expect(off.json.home).toBe("contracts");
     } finally {
       sa.close();
     }

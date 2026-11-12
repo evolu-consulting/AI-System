@@ -1,8 +1,9 @@
 // CR-132 · W2 · e2e hành trình «Tin nhắn» toàn màn (stack journey thật, KHÔNG giả lập; chưa chạy trong lát — chạy một lần cuối đợt):
 // A (nhân viên) nhắn B (giám đốc) ⇒ B thấy số chưa đọc ở menu «Tin nhắn» và hội thoại in đậm ở đầu danh sách; B mở ⇒ số hết; A thấy «Đã xem».
 // Không seed sẵn hội thoại: A tạo bằng «Nhắn tin mới». Nhãn/role giữ đúng bản UI (docs/specs/CR-132/spec.md §8).
-import { envOf, expect, loginCw, SPEC_TENANT, U } from "../cr127/_cr127-kit";
+
 import { test } from "../journey-approval/_test";
+import { envOf, expect, loginCw, SPEC_TENANT, U } from "./_cr127-kit";
 
 const E = envOf(SPEC_TENANT.j01);
 const HELLO = `Chào B ${Date.now().toString(36)}`;

@@ -46,12 +46,14 @@ describe("nextRemind, reviewTaskTiming [PD-R18, PD-R19]", () => {
       remindEveryH: null,
       escalateAt: null,
       escalateGroupId: null,
+      escalateUserId: null, // CR-127: chuyển cấp có thể tới người (escalate.userId)
     });
     expect(f(N, { remindEveryH: 4, escalate: { afterH: 24, groupId: G2 } })).toEqual({
       remindAt: at(4),
       remindEveryH: 4,
       escalateAt: at(24),
       escalateGroupId: G2,
+      escalateUserId: null,
     });
   });
 });

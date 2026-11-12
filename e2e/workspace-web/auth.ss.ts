@@ -91,8 +91,8 @@ test("MỘT khung (CR-120): Sổ Hợp Tác ↔ Community đổi trang trong app
   await nav.getByRole("link", { name: "Hợp đồng & giao dịch" }).click(); // Community → SHT
   await expect(page).toHaveURL(/\/contracts\/list$/);
   await sameShell();
-  await nav.getByRole("link", { name: "Bài đăng của tôi" }).click(); // SHT → Community (hồ sơ)
-  await expect(page).toHaveURL(/\/community\/profile$/);
+  await nav.getByRole("link", { name: "Hồ sơ của tôi" }).click(); // SHT → Community (hồ sơ; CR-129: «Bài đăng của tôi» → «Hồ sơ của tôi», /community/me)
+  await expect(page).toHaveURL(/\/community\/me$/);
   await sameShell();
   const w = () =>
     page.evaluate(() => {

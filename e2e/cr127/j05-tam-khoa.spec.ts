@@ -1,5 +1,6 @@
 // CR-127 · J05 · U5 · tạm khoá thực hiện (stack journey thật, công ty `e2e-fsc-<hậu tố>` có quy trình «Giám đốc duyệt» (sơ đồ trống) ⇒ HĐ DONE sau khi Giám đốc duyệt, mốc Giao/Thu lập bằng API của gói): người phụ
 // trách tạm khoá HĐ DONE (cần bằng chứng) ⇒ chip + băng lý do; giao/nhận mốc bị chặn, thu tiền vẫn ghi được; mở khoá cần bằng chứng.
+import type { Locator, Page } from "@playwright/test";
 import { test } from "../journey-approval/_test";
 import { doneContractWithMilestones, envOf, expect, loginCw, SPEC_TENANT, U } from "./_cr127-kit";
 
@@ -23,10 +24,19 @@ const proof = async (page: import("@playwright/test").Page, note: string) => {
   await dlg.getByTestId("ask-ok").click();
 };
 
+/** CR-128 (e): thao tác có thể là nút chính hoặc nằm trong «Thao tác ▾» — mở menu khi mục chưa hiện. */
+async function reveal(page: Page, testId: string): Promise<Locator> {
+  const item = page.getByTestId(testId);
+  const menu = page.getByTestId("head-actions-menu");
+  await expect(item.or(menu).first()).toBeVisible();
+  if (!(await item.isVisible())) await menu.click();
+  return item;
+}
+
 test("Tạm khoá ⇒ chip + băng, giao bị chặn, thu tiền vẫn được", async ({ page }) => {
   await loginCw(page, E, U.employee);
   await page.goto(`/contracts/c/${contract}`);
-  await page.getByTestId("act-hold").click();
+  await (await reveal(page, "act-hold")).click();
   // thiếu bằng chứng ⇒ báo, chưa khoá
   await page.getByTestId("ask-ok").click();
   await expect(page.getByTestId("evidence-issue")).toBeVisible();
@@ -43,8 +53,8 @@ test("Tạm khoá ⇒ chip + băng, giao bị chặn, thu tiền vẫn được"
 test("Mở khoá cần bằng chứng, xong chip biến mất và giao được lại", async ({ page }) => {
   await loginCw(page, E, U.employee);
   await page.goto(`/contracts/c/${contract}`);
-  await page.getByTestId("act-release").click();
+  await (await reveal(page, "act-release")).click();
   await proof(page, "Đối tác đã trả 120 tr.");
   await expect(page.getByTestId("hold-chip")).toHaveCount(0);
-  await expect(page.getByTestId("act-hold")).toBeVisible();
+  await expect(await reveal(page, "act-hold")).toBeVisible();
 });

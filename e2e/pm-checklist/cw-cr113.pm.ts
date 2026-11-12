@@ -80,8 +80,11 @@ test("CR-113 · 2 · HĐ chờ bước 1: bước 1 đang mở, julian.bui (Toà
   await page.getByTestId("claim-take").click();
   await expect(page.getByTestId("claim-state")).toContainText("Bạn đang giữ");
   await expect(page.getByRole("button", { name: "Duyệt", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Trả lại sửa" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Từ chối" })).toBeVisible();
+  // CR-128 (e): Trả lại sửa / Từ chối nằm trong menu «Thao tác ▾» (giữ data-approval)
+  await page.getByTestId("head-actions-menu").click();
+  await expect(page.locator("[data-approval=return]")).toBeVisible();
+  await expect(page.locator("[data-approval=reject]")).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Gửi duyệt" })).toHaveCount(0);
   // trả việc về nhóm: HĐ 1 dùng chung với ca 4 (thomas.tran) — giữ việc sẽ chặn người khác nhận đúng luật
   await page.getByTestId("claim-release").click();
@@ -140,7 +143,8 @@ test("CR-113 · 4 · thomas.tran (Trưởng phòng) Duyệt bước 1 HĐ chờ:
 test("cr120-handson-fixes · 1b · đăng nhập từ trang quay về của SSO (`/contracts/login?sso=none&next=/contracts`) ⇒ về /contracts, không phải /contracts/c/login", async ({
   page,
 }) => {
-  await page.goto("/contracts/login?sso=none&next=%2Fcontracts");
+  // CR-131: URL lạ không còn chuyển hướng âm thầm ⇒ `/contracts/login` là «Không tìm thấy»; form đăng nhập thật nằm ở `/login`.
+  await page.goto("/login?sso=none&next=%2Fcontracts");
   await page.getByRole("textbox", { name: "Mã công ty" }).fill("evolu");
   await page.getByRole("textbox", { name: "Email" }).fill("julian.bui");
   await page.getByLabel("Mật khẩu", { exact: true }).fill(DEMO_PW);

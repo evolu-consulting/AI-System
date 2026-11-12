@@ -174,7 +174,7 @@ test("CR130-J2 · duyệt đơn tham gia «Gắn với đối tác có sẵn» �
     event: "partner.join_requested",
     inputs: [{ key: "join_id", label: "Đơn tham gia", type: "text", required: true }],
     stages: [
-      approve("duyet-don", "Duyệt đơn", 0, "community-owner", { reject: 2, ret: 2 }),
+      approve("duyet-don", "Duyệt đơn", 0, "contracts-owner", { reject: 2, ret: 2 }),
       finish("nhan", "Nhận", 1, "accepted"),
       finish("tu-choi", "Từ chối", 2, "rejected"),
     ],

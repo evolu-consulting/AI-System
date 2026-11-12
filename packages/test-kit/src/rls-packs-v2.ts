@@ -240,6 +240,13 @@ export const v2IgnoreTables = [
   "transactions",
   "transaction_lines",
   "transaction_events",
+  // CR-132 (0107): tin nhắn — RLS «thành viên hội thoại» RESTRICTIVE + khoá ghép, kiểm riêng ở messages-rls.int.test.ts (apps/hub-api).
+  "msg_conversations",
+  "msg_members",
+  "msg_messages",
+  "msg_files",
+  // CR-133 (0106): tài liệu kèm HĐ — khoá ghép (contract_id, file_id), cách ly tenant kiểm ở adapters/contract-files.int.test.ts.
+  "contract_files",
 ] as const;
 
 // D1/D2/niti-import · bảng id (product_sources, partner_contacts, price_scout_alerts) + bảng khoá ghép (dò theo một cột).

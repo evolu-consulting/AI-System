@@ -1,8 +1,9 @@
 // CR-132 · W3 · e2e hành trình «Tin nhắn» trong khoang phải + đính kèm (stack journey thật; chưa chạy trong lát — chạy một lần cuối đợt).
 // A mở khoang → tab «Tin nhắn» → Nhắn tin mới → chọn B → gửi «Chào B» + 1 PDF; B (ngữ cảnh khác, đang ở trang khác) thấy chấm đỏ «1» ở nút mở khoang
 // và ở tab, hội thoại in đậm ở đầu; B mở ⇒ chấm mất, A thấy «Đã xem»; B bấm thẻ tệp ⇒ tải được. Không seed sẵn hội thoại.
-import { envOf, expect, loginCw, SPEC_TENANT, U } from "../cr127/_cr127-kit";
+
 import { test } from "../journey-approval/_test";
+import { envOf, expect, loginCw, SPEC_TENANT, U } from "./_cr127-kit";
 
 const E = envOf(SPEC_TENANT.j01);
 const HELLO = `Chào B khoang ${Date.now().toString(36)}`;

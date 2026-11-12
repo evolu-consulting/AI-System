@@ -180,13 +180,14 @@ f7946ae067e79154a319f531f1f391452259f2ad78926c5c944d789d247cc2d5  e2e/combine/x1
 adff2c93fa08ec4d31ba0d5aef9301b296a6cdf3678b7fc58edc6d96e776e4bf  e2e/combine/x1-test-run.combine.ts
 10dd0d613a5ec36b35df0e0351441a3f39284142bcc25fe1aa91e8c1606fc204  e2e/commands.spec.ts
 c25949b06ecb3b9b0c6b47b82cafb9274ae685d4dce40a67c0ff4771dc2d63b0  e2e/community-web/_cs-stack.ts
-b897123d34978cc558dbf55762435dee610f41bfb4e8317d0b3be6b80f053242  e2e/community-web/_flow.ts
+d908ab596256c0bb1bf1fa07675acb8c2cab3f6ed7e8b91b2860cbe00ce89bb0  e2e/community-web/_flow.ts
 d95da2900357ab68912fb9cc05e0577b20bc05c006f4bf4f42564445dfb1cb9c  e2e/community-web/_nav.ts
 a9fcf1f4d01c89abe4ff5c54208af3446aa534987a818c60f64e16a626177dc9  e2e/community-web/_stack.ts
 7701abf77a410dd04e212de279cc49f3cf5d65deff7ef3aeaa4e89786e25d4f6  e2e/community-web/composer.cm.ts
 727ca5551b7f762039d98f0dc4dea292c4b42d05ded4a605400ec3ed3ed2f769  e2e/community-web/contrast.cm.ts
+befc2e4a6c92ab45bafd6c03e928d3d1f763d3ecb2959796f2b73cfe1911299b  e2e/community-web/cr129-media.cm.ts
 affeb3bd773ebad7c486891c832a10ba323a1974d9790b519f293c7c3eb1b302  e2e/community-web/cr129-mention.cs.ts
-76eee15decdd5828e7142182b68111de8147fdc9719524d7123039101af0f14a  e2e/community-web/cr130-journey.cs.ts
+bd92a0b3f7af8ced0d32ad41cb042222b305dc0323a88b573a5fc92bfdae3e2d  e2e/community-web/cr130-journey.cs.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts
 22d6ba1fda1bab86448ebdb6794d32fd7f0d970942ffa2b5a765bf5ffdc29696  e2e/community-web/feed.cm.ts
 7a26054205205b1c89cd770742912398c2f4156e92f2bbf4cb5c5c1eec0d5b18  e2e/community-web/flow-edit.cs.ts
@@ -395,7 +396,7 @@ c6042a98431105024071eea17033cd5ae6e59022f93e04b91e9e370661a01103  e2e/contracts-
 b6f033a32a5a9100692b9e940474d0e1a99bec1a494c78a0e862d2ecc7eb0844  e2e/contracts-web/bell.cw.ts
 d6b40397e62fceca860dad538dd4d88d7d3dce2af011a293166397493970ecf6  e2e/contracts-web/contract-flow.cw.ts
 1d12b9c314d83afe39a9bf380f13a592b6050fcdac3a8eb7f784a289d179160b  e2e/contracts-web/cr120-intake-flow.cw.ts
-84bff36c37e510ea042083ec5baab3843614535728e570319f5f679a2994290b  e2e/contracts-web/cr125-s4-card.cw.ts
+c052b9feeae1af8dd6ee3cd3b3fdbddcd159bacb26fe67a792a420a26597bae9  e2e/contracts-web/cr125-s4-card.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 3284b63f843acd19b41e3d6f513011ec89aa89a9cb924882012e7068085ebf11  e2e/contracts-web/dataset-contract.ts
 0b445d3aeeb94128fe9107461082b07a0b2807b30dfa0c8930eb762e44068d85  e2e/contracts-web/dataset-list.ts
@@ -404,8 +405,8 @@ a09ddb05443e744fa3e61bf7f7a533357553cb7b38859cae61e0699f71871f70  e2e/contracts-
 fcd7f0da09270b0999864bcefc4599d02c45a9b07773d491cc9814c1ebd83f50  e2e/contracts-web/dataset-v2f.ts
 56e7b3f26fb4dceafbce5fa2732e991bfb6bc2f28a5948f5c441418e7e91dd43  e2e/contracts-web/dataset-v2g.ts
 9e07d89900e6e3937d538521c75c3f10315285d0d93c92066422be48fb910027  e2e/contracts-web/dataset.ts
-eb1425aa174e182cee47843f6a36f5f2cfa0dd2fe8af40355dbd077b4d69fcd7  e2e/contracts-web/delivery-opts.cw.ts
-a59d12cbff088073ba9f3ca4567dd61933ad5ecff77d0fc4c304a809fc1e7b13  e2e/contracts-web/delivery-stock-409.cw.ts
+a3673328ff03e15ab2c5295eab2d3e1163a97885cc13fc4bf1f7d9927243a6dc  e2e/contracts-web/delivery-opts.cw.ts
+e3becf19b1f0a60264817812894bfb6ef3d0cafdc389416126d6790c1aba0a80  e2e/contracts-web/delivery-stock-409.cw.ts
 5f40c43a29493486e705fdb43f21ba7b812f456bcffd75488f9f4927bea0adf1  e2e/contracts-web/doc-frame.cw.ts
 9af4eefbf60d0c00cd156ee6ceda5bf1b7a4c9ec3742765d4b486d4b2c8571a1  e2e/contracts-web/doc-list.cw.ts
 b46ad19b5991617cc2de9738776935211489bed35cce76f836f8727c5789d8e7  e2e/contracts-web/esign-anchor.cw.ts
@@ -418,7 +419,7 @@ b46ad19b5991617cc2de9738776935211489bed35cce76f836f8727c5789d8e7  e2e/contracts-
 3455a2cd40c45199bc0e4d3f196c6b309aed98b19bc5aef769ce99f05acaeec3  e2e/contracts-web/gap-a2-source-ask.cw.ts
 6e18072e54cc211e42bf44dce4a1aeaf25c467aa78e966810f50bfdc09a36027  e2e/contracts-web/gap-b-list.cw.ts
 e9e3739d6d88f7040e9d1ba89f906ed5d012f0b9133c7d77dec843c1c758a721  e2e/contracts-web/gap-d2.cw.ts
-3e7e05c634704b344021dd78a3bf485c400f8cab04ddde270ab88d98db6027ad  e2e/contracts-web/gapa1-manage.cw.ts
+daf3a88023e43802944b22f2c2f8ddda3557cceb1059acfb47539c61a103cfbe  e2e/contracts-web/gapa1-manage.cw.ts
 37fb53abfc11019e1732384e5a3ae071b19aa19b693c8b3535e30a9693788a7b  e2e/contracts-web/hd2-flow.cw.ts
 542bd5759aecb3160e68071af706fccfb93a069ab1660a69a2b6719beabb1103  e2e/contracts-web/hd4-deadline.cw.ts
 514a7b05a27653df9654e2971edbf1595aa82b85bf63bf41a67be92eba56c9b5  e2e/contracts-web/hd5-list.cw.ts
@@ -463,7 +464,7 @@ bdba214da1ac3bd31e2d7df7aafda07177415fb2b0f080cdae9176007e25b1aa  e2e/cr127/_cr1
 1d3e70b971a03d78c7eadbd2247ebb05754b22eacebd828239f1555cf1144979  e2e/cr127/j01-soan-ap-dung-duyet.spec.ts
 b91b1599f066d4901ff4384d3b2bdb32160507f6f67970b9ea502fdc312d1259  e2e/cr127/j03-uy-quyen.spec.ts
 a37befb266ee80f79ce503ffb6f9035c7bdba4d7e25c30bfa156392df5f6dc85  e2e/cr127/j04-thuc-hien-giao-thieu-phat.spec.ts
-8efd6ab13a1be2eba6581c2080d3d54d31282afa2b0b4354e5295df773c5f385  e2e/cr127/j05-tam-khoa.spec.ts
+563f1b281a04fee302afccc551e2c2d4f0a404966b7784e0b2e3e33749946530  e2e/cr127/j05-tam-khoa.spec.ts
 8f4f4a207992bde1d4bb510cc27adf253b9387bbbaeef0cfd2afa43cae610245  e2e/cr127/j06-giao-dich-cho-duyet.spec.ts
 3d21f4ed26b3b2346569c08df0bd74fdcc8958cc0a843582031a3d3c7d3bd4d5  e2e/cr127/j07-hai-cong-ty-gui-nhan.spec.ts
 5eaa089bd52ba65a5c3ffc3c5997b79e54afd1adc309aa4a381acedb087719c3  e2e/cr127/j08-ky-cung-luc.spec.ts
@@ -472,7 +473,10 @@ e941fef97fcb9125defcbc8ef9b9ef5ef79aa0a1ab0235a9e651b4fc0b1ccbbb  e2e/cr127/j10-
 f6d7283896604237e091c95a404086eea656b0cddd094c6e2ff0a065b6965d69  e2e/cr127/j13-nhan-khong-quy-trinh.spec.ts
 1d8d93434a20ac0138a29cda81c3647c11e9a72b7797450802f9462f5d24eac5  e2e/cr127/j14-chua-co-quy-trinh.spec.ts
 d917894b2823cbaec37b1e4872d521fa556828a68611c1e0c33537af209e5051  e2e/cr127/j15-xoa-quy-trinh-nhap.spec.ts
-97dba0c14619d4cf6566d9f1e09fc6d65bf652f6a9a5935c586a71d5658d5fe0  e2e/cr127/j16-xoa-hop-dong-nhap.spec.ts
+71afad7feb9485ea1b14e74d97bb7a49e4098e471a99acdd0df3e83be8af60c6  e2e/cr127/j16-xoa-hop-dong-nhap.spec.ts
+83a780d963b041fd270283e1c8dd0dba368f42f1aac33491478d9ffadf377322  e2e/cr127/j17-tai-lieu-kem.spec.ts
+f940b4f7a10f95993beabc788714abb20d3486d30e524daa7a6fcaf0adfe3cc4  e2e/cr127/j18-tin-nhan.spec.ts
+a8d53bed091d1121d8b8f4b3d89701366f90c9bc07537f956d2a1a7f31d2030f  e2e/cr127/j19-tin-nhan-khoang.spec.ts
 1714c2ee6b512e667dbed6f340c1eb797fcd13faa384539bfc9dae15bbb3e904  e2e/cr127/playwright.cr127.config.ts
 5f6463f2cf998ff7a41248b28166addc2fbd6cbeffe6e4b328a3d810dab1e87f  e2e/deployed/01-login-sso.deployed.ts
 22752a5188da24c037b6ba6708d203c3e8a8ed53b9d3a3336f089f657127840b  e2e/deployed/02-contracts-pages.deployed.ts
@@ -537,9 +541,9 @@ c19aa08b6d7fe451d6f6187e9a101eda3021ec979222c5d11b6982ba5b6fe949  e2e/m4-usage.s
 51350d094e3c8a466a9090a7f61d01a088717f8f19969c2372d670626eb69739  e2e/ops/playwright.ops.config.ts
 1d32aec56a02719238e5768d64a22340c2b51a1a67ef0d6d707b76f8ded3fd2e  e2e/ops/system.ops.ts
 870133377eae9e6c297aa7ac6f5408ca730f3d733acfe415645802b5cccc6f58  e2e/partners.spec.ts
-dd5495a074eac5fc11b7eb353912ee72c49c7c9826c016ba932b8f309a0e7807  e2e/pm-checklist/_pm-stack.ts
-6b2e570f33d85ee140bd71ffb205d8207103f475e92a98f3243673f71659fd5e  e2e/pm-checklist/admin-cr112.pm.ts
-e1a992c9e05b146c91ffd67fcd2e10a0b12147eebc79d2b4da52eb7e37df0af2  e2e/pm-checklist/cw-cr113.pm.ts
+f000be1b92208458058de509b7e25c13396acb7738d1192e8812c0894fd1334d  e2e/pm-checklist/_pm-stack.ts
+5a07b4ff11aac84c7b9c1bf32f8f1629c8fb041d331261d0905689608f247eef  e2e/pm-checklist/admin-cr112.pm.ts
+595e1bee2adb7f31daef9e4189a94122a25aa68407824b9cb661eb1720ef4208  e2e/pm-checklist/cw-cr113.pm.ts
 585553890a7d9dd632f4b340de1ed9387af36f69a40b4ffb6a29f7b3143ba5d9  e2e/pm-checklist/playwright.pm.config.ts
 d2b4a5ea412e75c211bd082ccd13abef72c2e34a4954c499a13feeef2a46aecb  e2e/secrets.spec.ts
 4d981c522670bcef4dda52aa84f2b194dccff6ae435d90e202cf77052ba5fdd9  e2e/smoke.spec.ts
@@ -577,7 +581,7 @@ f29af0f14a631176bc831bff1eafbbe22f8b4103cfdb46f675a06e85fd0307b9  e2e/tenants.sp
 3e2ed08be9834d2b6aadd8d066933eb2e2d999f7d0fdf5dbfa452294459bb846  e2e/users.spec.ts
 ed5728a3c457b5f213c84a50460dc2963e6594586c796937ed2cafec4a244501  e2e/workflows-dify.spec.ts
 48af04906da1e3178e6553809e24040492511ff96286cd2238110d71bc2c3b35  e2e/workflows.spec.ts
-a3d31e03d8bc77e6da3afb783b2e839d229c34ec20448eb0ef671ff31f0e0d51  e2e/workspace-web/auth.ss.ts
+7bdc4e2bec472f998c442332bfae6cfd4dceeadd7193d0d3419e07e72def0aac  e2e/workspace-web/auth.ss.ts
 e593b585f99cfb2d582ecbcb4ef64fced200dd2dfd806c78d77838767a6771bb  e2e/workspace-web/playwright.stack.config.ts
 a5ce2addb28e60269a2e042cd031bdbc4df40d3c106a29187da29ba1507b511c  e2e/x1-studio-link.spec.ts
 5c59d494e7045319f7375f161fbeb7dbed3d9ac822d5feedcd69e4a375839c5b  e2e/x1/_hub-stub.ts
@@ -606,7 +610,7 @@ e2626bc81544422e788bb441f652a4cf0e6bf7562de96ee6ad699ff644e050fc  tests/acceptan
 067ec50ab263762facc1417a07e9e7fbb4f99de1bfb66dc39f6b3c7892852ecc  tests/acceptance/C1/no-hub-url.test.ts
 0dd63c84537c831d789675dd785db2a348edd9c947db9c58ad83f0e3caf50cdc  tests/acceptance/C1/rules.test.ts
 8b3804152a957ce18f63f00bc7edd0dfe40349a898ba74c892c1bda84433c71c  tests/acceptance/CF/_cf.ts
-1d9b5e3adc6caeaff080a87b5c0208eaa7dc5a77132f4f7b6c9c96646e9aac26  tests/acceptance/CF/approval-inbox-count.int.test.ts
+333fb1b957357c089570f1d41cec67292f11019867d0b1af63dc83c64567d360  tests/acceptance/CF/approval-inbox-count.int.test.ts
 6a013a8028e8abf2394a17a992f2f8a200e3b20dcec5bd53461c69c8cff4e3d7  tests/acceptance/CF/approval-inbox.int.test.ts
 3557173f181f1ed9041188fb1fb177a6037eba09f8d64c10e605078895c6a81c  tests/acceptance/CF/assign-default-rule.int.test.ts
 15756a59796295575451dfbcaa1214716a1fbd4524de6496fd67dc7a72647c26  tests/acceptance/CF/bells-batch.int.test.ts
@@ -642,7 +646,7 @@ f49f995bf3e1ca6198a521dae00c43924426391dd210b61ba79e41f0a5c2582f  tests/acceptan
 99a5947b3cb6602def078871de733b7e21e037713be3ce29c038d7e0ce0f23ba  tests/acceptance/CR-127/X5/claim.int.test.ts
 26b5ba108c90380ec7fdce035a8a534436bc45e9da35ce565a68f276a9ca3f4a  tests/acceptance/CR118/approval-flow-summary.perf.int.test.ts
 aff8fbafdade829813b2cba7420c706de9f862b5bd04a04c5a658ffa4b2e2061  tests/acceptance/CR118/capabilities.int.test.ts
-fdefb31767486efcfb7fc22ea5ab0b491b814217a95bbf7bec1a1958e0714db3  tests/acceptance/CR118/config-consistency.int.test.ts
+09f99e5ee4cebb5917a28e9798bc7b6dee96b9a0f58a8d943cc3433b7f5dc384  tests/acceptance/CR118/config-consistency.int.test.ts
 aa5a91ad586c00b78a8adf8ecf8eb0acb72c4ebbdb875e34ddb0620934edffc9  tests/acceptance/CR118/form-node.int.test.ts
 6920999ba5134855c884c00350332d2074af1e0b1dfe5ce580938e482c88bdb1  tests/acceptance/CR118/perf/capabilities.perf.int.test.ts
 331bacd202875cf7f0de25c87ab66af42c863d51d36feef0edaa7090ce4114ab  tests/acceptance/DOC-deals/deals.int.test.ts
@@ -864,7 +868,8 @@ c412fdb620af5ec2cbf7bde86568231b23769cc794123e665e96fe05cef0d289  tests/acceptan
 609c6b67bd1513f28866187a866eba868c1075fd88920d1f98b423b33044855b  tests/acceptance/H4b2/rules/models-rules.test.ts
 e71e9e60da4e813e67e46d738fa357c58a2e6d9b5337e2d27efe36f52325fd40  tests/acceptance/H4b2/rules/profile-step.test.ts
 04d1205fb578751250d553b9e0cae3d958be660d0da10ec3b936e7c545672c98  tests/acceptance/H4b2/rules/provider-check-rules.test.ts
-256da9b8872913ff6130726e49cfde15a9503f65c8c5f96d114cb0f833a02671  tests/acceptance/HD1/_support/hd1.ts
+558a8306a094ea8db64931939a86948ddb0c7fcde54dac94c2c59db2bcb77221  tests/acceptance/HD1/_support/bytes.ts
+144740655c0b11d7a754f404026def1f6df7ab7557343ed0bad466601be6ffd7  tests/acceptance/HD1/_support/hd1.ts
 ba43d8c37b3f52656f125fe5552f1c3172436cd8c370d1a1cf5bb3ed4440223d  tests/acceptance/HD1/_support/hops.ts
 0b53bb5dcd10ad55f59b026627751a8853704d3b4df1fa7f7e3561d744b139d9  tests/acceptance/HD1/_support/pure.ts
 cacbd63684e0bec4dd3cb574ac916f9727ea8ba457dcf84bf643b0ea984377ad  tests/acceptance/HD1/_support/seed.ts
@@ -874,7 +879,7 @@ fdc1d3c7368c61f031cfe26bff3664705b9a76ee14d076093885b492e695845b  tests/acceptan
 a5b284f2366fca54cf248b7f2a72900a2dc0a415437697afbdcaaf7750de42e8  tests/acceptance/HD1/export.int.test.ts
 4ed38eb4cdbbd56af69cc3cd5f14182f383ea5afaf4bbd7bb152c8b855489d54  tests/acceptance/HD1/hops.int.test.ts
 75f4ecb54467a89d2fab62c405d24ba39b8b9a172a8098b833e3c94b7a3da4d0  tests/acceptance/HD1/ingest-formats.int.test.ts
-a721b36619684e5b999e945444987dd92e70f9d0769f47d6e18398bb9d2b0565  tests/acceptance/HD1/list.int.test.ts
+16b82c8b24402b801c345e181f72d1be6eb8321b90b9b5f3a99384c0395712f6  tests/acceptance/HD1/list.int.test.ts
 35869b676517b12f84f8da7bbf2c96931622fb59d63a0dead0d6b30cafff6b15  tests/acceptance/HD1/patch.int.test.ts
 cac1966e817c11e8f5b86c7b224a98ca7a5e1fcafdfa98932ec38d167f76825f  tests/acceptance/HD1/perf/export.perf.int.test.ts
 04ecc8b4eb80583bbe0921cb81a074b643d3e1b3a5b6976c2916c57d3cd59132  tests/acceptance/HD1/perf/list.perf.int.test.ts
@@ -896,7 +901,7 @@ be7d46b02430cd8b3511392dcc927e39e9fe2f57701cd7accc345d90d2bccc8a  tests/acceptan
 60791c12c0fa5ac1a7b1ee5e1565a952c924dfd2c804965150d35edd85c14b90  tests/acceptance/HD4/locks.int.test.ts
 b14729fe633ad2643d3e4481ad95082692805f89aac37ed1ede066bf77256c2a  tests/acceptance/HD4/perf/remind.perf.int.test.ts
 e691a9d70ac9f3a103187ac1dd7e8a2ffb0b684be34b3a462b4cac5ffd8a97ec  tests/acceptance/HD4/remind.int.test.ts
-7775168686ab19e955514843fc4c05d5c07a5acea9d7a79262d7cfc597b54cbd  tests/acceptance/HD5/hd5.int.test.ts
+ad7e9f06e927ffe9077cea3fe405fdcd5f10f2657f8319ed22e42c7243fab739  tests/acceptance/HD5/hd5.int.test.ts
 26994b140cb6bbcf1c442b92e7e2f5ea97ace8288732f97178bd0d0d1e7166d4  tests/acceptance/HD5/perf/hd5.perf.int.test.ts
 b23acd19d8ad8b260699f0486cabb182a44209e9c972455580fcfa5a21dccd11  tests/acceptance/HD7/_support/hd7.ts
 325f69adeaaec87d6c43cb50d302a647cf956bd9bb329ca215889eb55d63a634  tests/acceptance/HD7/access.int.test.ts
@@ -1333,7 +1338,7 @@ fc7fbc4aa8ef905cfd4596ba7831e0a0e717427d61ab65939e732d40cef8d773  tests/acceptan
 748faa80f2e61a03385040d5abcba5dc67958742480f9d784c813a8955695abe  tests/acceptance/P-d/rules/escalate.test.ts
 d9a08c3f7f4ce1b56b660e7f9cb291290a60c08dc231d29e3b169e74e4399bff  tests/acceptance/P-d/rules/forward.test.ts
 05021d0780346bab468221908de28c9ede51c89729bd75c3bb408fab8b7a7f6d  tests/acceptance/P-d/rules/job-error.test.ts
-df6ba693d0c41e02639cfe4296479bb0b389f76cf076c615c4d11b70b6b888a3  tests/acceptance/P-d/rules/remind.test.ts
+8bbafefcf113f052e563a7268e427072f23d27b7c83593cbe4fb144b9bd90492  tests/acceptance/P-d/rules/remind.test.ts
 9f0b896e5cf23aca8943a469dd692c5240023e88ac2f2931f2b0a2944090a19d  tests/acceptance/P-d/rules/retry.test.ts
 6ce44829e5bda17fd11ce3a56b06c4b654bf09c7900e94db7290fe548128e18b  tests/acceptance/P-d/rules/run-state.test.ts
 50b52dbfc21d4b2b2ae9d6c676b1208e8c352d00d06e1f8b1fe3605a20978449  tests/acceptance/P-d/rules/start-inputs.test.ts

@@ -56,11 +56,14 @@ test("Người khác (không phải người tạo/phụ trách) không thấy �
     await loginCw(other, E, user);
     await other.goto(`${E.cw}/contracts/c/${id}`);
     // trang đã tải xong: hiện trạng thái HĐ hoặc câu «không có quyền xem»
-    await expect(other.getByTestId("status-chip").or(other.getByRole("alert")).first()).toBeVisible(
-      {
-        timeout: 60_000,
-      },
-    );
+    await expect(
+      other
+        .getByTestId("status-chip")
+        .or(other.getByText(/không có quyền xem/))
+        .first(),
+    ).toBeVisible({
+      timeout: 60_000,
+    });
     await expect(menu(other)).toHaveCount(0);
   }
   const s = await apiAs(E, U.accounting);
@@ -84,7 +87,9 @@ test("HĐ đang duyệt: người tạo không thấy «Xoá hợp đồng», qu
   await expect(emp.getByTestId("status-chip")).not.toHaveAttribute("data-status", "draft", {
     timeout: 60_000,
   });
-  await expect(menu(emp)).toHaveCount(0);
+  // CR-128 (e): người tạo có thể còn mục khác trong «Thao tác» (vd Rút về) ⇒ kiểm riêng mục «Xoá hợp đồng»
+  if ((await menu(emp).count()) > 0) await menu(emp).click();
+  await expect(del(emp)).toHaveCount(0);
   const dir = await newPage(browser);
   await loginCw(dir, E, U.director);
   await dir.goto(`${E.cw}/contracts/c/${id}`);

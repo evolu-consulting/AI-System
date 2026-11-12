@@ -88,7 +88,7 @@ describe("HD-FR-51 · danh sách + chi tiết có phụ lục", () => {
     const r = await listOf(c, P.tam);
     expect(r.status).toBe(200);
     expect(r.json.parents).toEqual([{ id: cid(1), title: "HĐ gốc", number: "01/2026/HĐMB-PN" }]);
-    expect(Object.keys(r.json.items[0]).length).toBe(28); // CR-127: ListRow thêm 5 khoá (trạng thái 4 mức/hiệu lực…) — 23 → 28
+    expect(Object.keys(r.json.items[0]).length).toBe(29); // CR-127: +5 khoá (23 → 28); CR-128 j16: +can_delete (29)
     const only = await listOf(c, P.tam, { kind: "contract" });
     expect(only.json.parents).toEqual([]);
   });

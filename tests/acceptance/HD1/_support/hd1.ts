@@ -45,6 +45,7 @@ import type { HubPa } from "../../P-a/_support/pa";
 import { hubActivity } from "../../P-d/d1/_count";
 import { setupX2a } from "../../X2a/_x2a";
 
+import { pdf } from "./bytes";
 import { itemId } from "./pure";
 import { BACKGROUND } from "./sql-capture";
 

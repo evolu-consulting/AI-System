@@ -17,14 +17,14 @@ async function openEvolu(page: Page, tab: string, view?: string) {
   if (view) await page.getByTestId(`members-view-${view}`).click();
 }
 
-test("CR-112 · 1 · Evolu › Ứng dụng: Sổ Hợp Tác, Community, DLC kèm số vai và số người", async ({
+test("CR-112 · 1 · Evolu › Ứng dụng: Sổ Hợp Tác (kèm Bảng tin — CR-130 p3, không còn thẻ Community riêng) kèm số vai và số người", async ({
   page,
 }) => {
   await loginAdmin(page);
   await openEvolu(page, "Ứng dụng");
   // Thực tế: thẻ Sổ Hợp Tác + Community kèm "Gói đang bật 3 vai 5 người"; DLC không có thẻ app riêng ở tab này.
   // CR-121 c12: bảng Ứng dụng (mỗi app một hàng); số vai/người nằm ở phần "Chi tiết" của hàng.
-  for (const id of ["contracts", "community"]) {
+  for (const id of ["contracts"]) {
     const row = page.getByTestId(`apps-row-${id}`);
     await expect(row).toBeVisible();
     await row.getByRole("button", { name: "Chi tiết" }).click();
@@ -38,8 +38,8 @@ test("CR-112 · 2 · Phân quyền: mỗi app 3 vai (Toàn quyền/Nhân viên/C
   await loginAdmin(page);
   await openEvolu(page, "Thành viên", "access");
   const tables = page.getByRole("table", { name: /^Vai của / });
-  await expect(tables).toHaveCount(3);
-  for (let i = 0; i < 3; i++)
+  await expect(tables).toHaveCount(2); // CR-130 p3: Sổ Hợp Tác (gồm Bảng tin) + DLC; không còn bảng vai Community
+  for (let i = 0; i < 2; i++)
     for (const r of ["Toàn quyền", "Nhân viên", "Chỉ xem"])
       await expect(tables.nth(i).getByRole("row").filter({ hasText: r }).first()).toBeVisible();
   const julian = page

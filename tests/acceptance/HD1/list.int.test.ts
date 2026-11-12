@@ -137,7 +137,6 @@ async function dataset() {
 }
 const ids = (...n: number[]) => n.map(cid);
 const sorted = (xs: string[]) => [...xs].sort();
-
 describe("HD-FR-07 · quyền và cách ly (HD-AC01)", () => {
   it("HD-AC01 · user tenant B: danh sách KHÔNG chứa HĐ của A (chỉ HĐ của B); total của B = 1", async () => {
     await dataset();
@@ -451,6 +450,7 @@ describe("HD-FR-07 · dòng tóm tắt ListRow (đủ cột màn danh sách)", (
         "waiting",
         "step_label",
         "superseded",
+        "can_delete",
       ].sort(),
     );
     expect({ ...row, value: Number(row.value), updated_at: undefined }).toMatchObject({
