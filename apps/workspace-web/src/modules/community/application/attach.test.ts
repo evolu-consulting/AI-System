@@ -1,5 +1,6 @@
 // CR-118 · COM-FR-37 · tải nhiều tệp: thêm tệp thành công, báo lỗi 415, báo quá hạn mức.
 import { describe, expect, it } from "bun:test";
+import { acceptedTypes } from "../domain/media";
 import { uploadFiles } from "./attach";
 
 const f = (name: string) => new File(["x"], name);
@@ -15,7 +16,9 @@ describe("uploadFiles", () => {
     };
     const r = await uploadFiles(api, [f("a.pdf"), f("bad.exe"), f("b.png")], []);
     expect(r.media.map((m) => `${m.kind}:${m.label}`)).toEqual(["file:a.pdf", "image:b.png"]);
-    expect(r.notices).toEqual([{ key: "community.composer.fileTypeNotAllowed" }]);
+    expect(r.notices).toEqual([
+      { key: "community.composer.fileTypeNotAllowed", params: { types: acceptedTypes() } },
+    ]);
   });
   it("quá 10 tệp thì báo tối đa", async () => {
     const api = { uploadFile: async (file: File) => ok(file.name, "application/pdf") };

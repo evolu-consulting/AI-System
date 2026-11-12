@@ -39,7 +39,7 @@ export function tone(id: string, host: boolean): string {
  * ("320 cuộn", "1.250,5 kg"). Chuỗi người dùng gõ ("1.250 kg", "8 tấn") giữ nguyên.
  */
 export function formatQty(raw: string, locale: string = numLocale()): string {
-  return raw.replace(/^(d+.d{4})(?=s|$)/, (m) =>
+  return raw.replace(/^(\d+\.\d{4})(?=\s|$)/, (m) =>
     Number(m).toLocaleString(locale, { maximumFractionDigits: 4 }),
   );
 }
