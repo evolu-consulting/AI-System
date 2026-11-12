@@ -98,10 +98,10 @@ describe("form xác nhận", () => {
     });
     expect(lineOfItem(item()).product_id).toBe("");
   });
-  it("CR-122 p12: số chứng từ AI đọc có / hoặc dấu ⇒ chuẩn hoá trước khi điền", () => {
+  it("CR-135 Q3: số chứng từ AI đọc có / hoặc dấu ⇒ giữ nguyên văn (chỉ cắt 2 đầu)", () => {
     const d = detail();
-    d.fields.number = f("hđ 2026/11-xyz");
-    expect(formOfConfirm(d).number).toBe("HD-2026-11-XYZ");
+    d.fields.number = f(" hđ 2026/11-xyz ");
+    expect(formOfConfirm(d).number).toBe("hđ 2026/11-xyz");
   });
 });
 

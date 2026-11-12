@@ -45,6 +45,7 @@ export type UploadRoutesDeps = {
 const MESSAGES: Record<UploadError["code"], string> = {
   FILE_TOO_LARGE: "File too large",
   FILE_TYPE: "File type not allowed",
+  ESIGN_NEEDS_PDF: "E-signing is on: the main file must be a PDF",
   FILE_TOO_MANY_PAGES: "File has too many pages",
   PARENT_INVALID: "Invalid parent contract",
   FRAME_INVALID: "Invalid framework contract",
@@ -67,6 +68,7 @@ const STATUS = {
   DOCX_BUSY: 503,
   NOT_FOUND: 404,
   FILE_TOO_MANY_PAGES: 422,
+  ESIGN_NEEDS_PDF: 422,
 } as const;
 const VersionFormSchema = UploadContractFormSchema.pick({ title: true });
 /** CR-122 p9: lý do nghiệp vụ rõ cho ảnh không nhận được (FLOW2-FR-27). */

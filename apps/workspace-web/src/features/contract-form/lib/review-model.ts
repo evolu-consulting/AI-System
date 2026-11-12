@@ -39,7 +39,7 @@ export function lineOfItem(it: ContractItem): LineState {
 /** Form xác nhận: thông tin điền sẵn từ `fields` + dòng hàng AI đọc + hoa hồng đã lưu. */
 export function formOfConfirm(c: Detail): FormState {
   const f = formOfDetail(c);
-  // CR-122 p12: AI đọc ra số chứng từ có "/", dấu… ⇒ chuẩn hoá trước khi điền.
+  // CR-135 Q3: AI đọc ra số nào giữ đúng số đó (chỉ NFC + cắt 2 đầu).
   return { ...f, number: normalizeDocNumber(f.number), items: c.items.map(lineOfItem) };
 }
 

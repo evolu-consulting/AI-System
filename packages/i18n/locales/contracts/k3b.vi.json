@@ -21,6 +21,7 @@
         "hasVersions": "Không xoá được vì hợp đồng có nhiều phiên bản. Chỉ bỏ được bản nháp cập nhật.",
         "notAllowed": "Phụ lục không có phiên bản. Hãy tải bản cập nhật cho hợp đồng chính.",
         "notLocked": "Hợp đồng chưa xác nhận nên chưa tải được bản cập nhật.",
+        "esignNeedsPdf": "Công ty đang bật ký số nên bản cập nhật phải là PDF — chuyển sang PDF rồi tải lại. Bản Word thêm vào «Tài liệu kèm» của hợp đồng.",
         "generic": "Không tải được bản cập nhật. Vui lòng thử lại."
       },
       "diff": {

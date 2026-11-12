@@ -10,7 +10,7 @@ export function blockerMessage(
   t: TFunction,
   onChecked: () => void,
   onMissing?: (msg: string) => void,
-  /** Số chứng từ đã lưu: chưa sửa ⇒ không chặn (CR-122 p12). */
+  /** Số chứng từ đã lưu: chưa sửa ⇒ không chặn (CR-135 Q3). */
   savedNumber?: string,
 ): string | null {
   if (form.number !== savedNumber && !isValidDocNumber(form.number.trim()))

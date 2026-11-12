@@ -41,6 +41,8 @@ export type UploadMountDeps = {
   tenantLimitOf?: (tenantId: string) => Promise<number | null>;
   /** HD2 · hàng đợi trích (`contractsAiModule`); gọi SAU commit, không chặn tải lên. */
   starter: ExtractionStarter;
+  /** CR-135 Q4 · công ty đang ký số (cùng nguồn `settings` của ký số) ⇒ chỉ nhận PDF làm tệp chính; vắng ⇒ không kiểm. */
+  esignOn?: (who: PackWho) => Promise<boolean>;
   /** CR-101 DOC-deals-fix: nâng giao dịch khi tenant bật duyệt ⇒ mở lượt duyệt cấp 1 (engine/máy, như nhập tay). */
 };
 
@@ -99,6 +101,7 @@ export function uploadContractFor(d: UploadMountDeps, o: { flow?: boolean } = {}
     pdfPages: pdfPageCounter(scanLimits().maxPages), // CR-122 p9: quá trần trang ⇒ 422 FILE_TOO_MANY_PAGES
     newId: () => Bun.randomUUIDv7(),
     log: logger,
+    ...(d.esignOn ? { esignOn: d.esignOn } : {}),
     ...(o.flow === false ? {} : { flow: contractFlowGate(d.db) }), // CR-122 A1
   });
 }

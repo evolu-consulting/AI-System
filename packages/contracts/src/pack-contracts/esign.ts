@@ -117,6 +117,10 @@ export type ESignProviderOut = {
   redirects_to_provider?: boolean;
 };
 
+/** CR-135 Q4 · MỘT nguồn cho "công ty đang ký số ⇒ tệp chính của HĐ phải là PDF" (hub chặn khi tải lên, web lọc khi chọn tệp). */
+export const esignRequiresPdf = (s: { enabled: boolean; configured: boolean }): boolean =>
+  s.enabled && s.configured;
+
 export type ESignSettingsOut = {
   /** Server có ít nhất một nhà cung cấp khả dụng. */
   configured: boolean;

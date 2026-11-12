@@ -62,6 +62,8 @@ export type UploadContractDeps = {
   log?: { warn(msg: string, fields?: Record<string, unknown>): void };
   /** CR-122 A1 · cờ flow bật ⇒ ghi `contract.uploaded` CÙNG tx với hàng HĐ. */
   flow?: ContractFlowGate;
+  /** CR-135 Q4 · công ty đang ký số (bật + có nhà cung cấp) ⇒ tệp chính phải là PDF; vắng ⇒ không kiểm (docx/ảnh… làm tệp chính). */
+  esignOn?: (who: PackWho) => Promise<boolean>;
 };
 
 export type UploadContractInput = {
@@ -119,6 +121,9 @@ async function precheck(d: UploadContractDeps, i: UploadContractInput): Promise<
     throw new UploadError("FILE_TYPE", format ? { format } : undefined);
   }
   precheckKind(i);
+  // CR-135 Q4: tệp dựng sẵn từ phiếu (`prefill`) không qua cổng này (bước Ký số sẽ báo `ESIGN_UNSUPPORTED_FILE` nếu không phải PDF).
+  if (type !== "pdf" && !i.prefill && d.esignOn && (await d.esignOn(i.who)))
+    throw new UploadError("ESIGN_NEEDS_PDF");
   const pages = type === "pdf" && d.pdfPages ? await d.pdfPages(i.bytes) : null;
   if (pages !== null && d.pdfPages && pages > d.pdfPages.limit)
     throw new UploadError("FILE_TOO_MANY_PAGES", { pages, limit: d.pdfPages.limit });

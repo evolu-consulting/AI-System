@@ -21,6 +21,7 @@
         "hasVersions": "Cannot delete: the contract has several versions. Only a draft update can be discarded.",
         "notAllowed": "Appendices have no versions. Upload the update on the main contract.",
         "notLocked": "The contract is not confirmed yet, so it cannot be updated.",
+        "esignNeedsPdf": "E-signing is on for your company, so the update must be a PDF — convert it and upload again. Add the Word copy under \"Attachments\" on the contract.",
         "generic": "Could not upload the update. Please try again."
       },
       "diff": {

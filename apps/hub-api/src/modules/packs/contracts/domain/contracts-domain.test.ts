@@ -1,5 +1,5 @@
 ﻿import { describe, expect, it } from "bun:test";
-import { asDate, foldVi, searchKey, signerKeys } from "./fold.rules";
+import { asDate, foldVi, likePattern, searchKey, signerKeys } from "./fold.rules";
 import { isContractStatus } from "./status.rules";
 
 describe("asDate (D-15)", () => {
@@ -31,6 +31,13 @@ describe("khoá lọc (D-14)", () => {
   it("searchKey gộp, fold, thiếu ⇒ ''", () => {
     expect(searchKey(["Hợp Đồng", null, "ABC", undefined])).toBe("hop dong abc");
     expect(foldVi(searchKey([null]))).toBe("");
+  });
+  it("CR-135 Q3: số HĐ giữ nguyên «/» và dấu ⇒ vẫn tìm được bằng chữ không dấu / có dấu", () => {
+    const key = searchKey(["Thuê kho", "HĐ/2026/001"]);
+    expect(key).toBe("thue kho hd/2026/001");
+    for (const q of ["HĐ/2026/001", "hd/2026", "2026/001", "hđ"])
+      expect(key.includes(foldVi(q))).toBe(true);
+    expect(likePattern("HĐ/2026_1")).toBe("hd/2026\\_1");
   });
 });
 describe("status", () => {

@@ -82,6 +82,7 @@ const ERR_KEY: Record<string, string> = {
   CONTRACT_HAS_VERSIONS: "contracts.versions.err.hasVersions",
   VERSION_NOT_ALLOWED: "contracts.versions.err.notAllowed",
   CONTRACT_NOT_LOCKED: "contracts.versions.err.notLocked",
+  ESIGN_NEEDS_PDF: "contracts.versions.err.esignNeedsPdf",
 };
 /** Mã lỗi API ⇒ khoá i18n thân thiện; lạ ⇒ lỗi chung. */
 export const versionErrorKey = (code: string | undefined): string =>

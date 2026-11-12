@@ -28,7 +28,7 @@ type Props = {
   unsure?: ReadonlySet<TextKey>;
   /** DOC-ui-list: form Giao dịch — nhãn "Tên giao dịch / Số chứng từ / Ngày giao dịch", bỏ ô chỉ của HĐ (kết thúc, nhắc hạn, người ký). */
   dealMode?: boolean;
-  /** CR-122 p12: số chứng từ đã lưu (HĐ cũ có thể còn "/"): chưa sửa ⇒ không báo lỗi, chỉ gợi ý bản chuẩn hoá. */
+  /** CR-135 Q3: số chứng từ đã lưu: chưa sửa ⇒ không báo lỗi. */
   numberSaved?: string | undefined;
 };
 
@@ -91,31 +91,19 @@ type TextOpts = {
   hint?: string | undefined;
 };
 
-type NumState = { kind: "ok" } | { kind: "bad" } | { kind: "legacy"; suggestion: string };
+type NumState = { kind: "ok" } | { kind: "bad" };
 
-/** Số đã lưu từ trước (có "/"…) mà người dùng chưa sửa ⇒ không báo lỗi, chỉ gợi ý bản chuẩn hoá. */
+/** Số đã lưu từ trước mà người dùng chưa sửa ⇒ không báo lỗi. */
 function numberState(value: string, saved: string | undefined): NumState {
-  if (isValidDocNumber(value)) return { kind: "ok" };
-  if (saved === undefined || value !== saved) return { kind: "bad" };
-  const suggestion = normalizeDocNumber(value);
-  return isValidDocNumber(suggestion) ? { kind: "legacy", suggestion } : { kind: "bad" };
+  return isValidDocNumber(value) || value === saved ? { kind: "ok" } : { kind: "bad" };
 }
 
-function NumberNote({ num, onUse }: { num: NumState; onUse: (v: string) => void }) {
+function NumberNote({ num }: { num: NumState }) {
   const { t } = useTranslation();
-  if (num.kind === "bad")
-    return (
-      <span role="alert" data-testid="cf-number-error" className="text-[12px] text-late">
-        {t("contracts.cform.numberBad")}
-      </span>
-    );
-  if (num.kind !== "legacy") return null;
+  if (num.kind !== "bad") return null;
   return (
-    <span data-testid="cf-number-suggest" className="text-[12px] text-dim">
-      {t("contracts.cform.numberSuggest", { value: num.suggestion })}{" "}
-      <button type="button" className="underline" onClick={() => onUse(num.suggestion)}>
-        {t("contracts.cform.numberUse")}
-      </button>
+    <span role="alert" data-testid="cf-number-error" className="text-[12px] text-late">
+      {t("contracts.cform.numberBad")}
     </span>
   );
 }
@@ -183,7 +171,7 @@ function PlainTextField({
         )}
       </div>
       {o.hint && <span className="text-[12px] text-dim">{o.hint}</span>}
-      {num.kind !== "ok" && <NumberNote num={num} onUse={(v) => onSet(k, v)} />}
+      {num.kind !== "ok" && <NumberNote num={num} />}
     </Row>
   );
 }

@@ -9,6 +9,7 @@ const KEYS: Record<string, string> = {
   FILE_TOO_LARGE: "contracts.list.upload.tooLarge",
   FILE_TOO_MANY_PAGES: "contracts.list.upload.tooManyPages",
   FILE_TYPE: "contracts.list.upload.badType",
+  ESIGN_NEEDS_PDF: "contracts.list.upload.esignNeedsPdf",
   UPLOAD_QUOTA: "contracts.list.upload.quota",
   UPLOAD_QUOTA_UNAVAILABLE: "contracts.list.fileStorageUnavailable",
   DOCX_BUSY: "contracts.list.upload.busy",

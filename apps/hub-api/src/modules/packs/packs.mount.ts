@@ -2,6 +2,7 @@
 // + route nghiá»‡p vá»¥ tá»«ng gÃ³i dÆ°á»›i `/pack/<k>`. Chá»— DUY NHáº¤T ná»‘i `modules/config` (ConfigCache thoáº£ cá»•ng `PackAccessView`) vÃ o
 // module gÃ³i. JWT á»Ÿ gá»‘c: `PACK_PREFIX` náº±m trong `PROTECTED_PREFIXES` cá»§a `app.ts` (401 trÆ°á»›c 404). GÃ³i `pkdemo` (D-08) chá»‰
 // ngoÃ i production: `deps.packs.pkdemo` Æ°u tiÃªn, váº¯ng â‡’ `pkdemoEnabled(appEnv)` (review m-04: chá»‰ khi khai bÃ¡o rÃµ dev/test).
+import { esignRequiresPdf } from "@ai/contracts/pack-contracts";
 import { packFeatureKey } from "@ai/contracts/packs";
 import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
@@ -372,6 +373,10 @@ function contractsUpload(
     timeZoneOf: async (tid) => (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ,
     tenantLimitOf: async (tid) => (await tenantLimits(d)(tid))?.uploads ?? null, // tenant-quotas
     starter,
+    // CR-135 Q4: cùng nguồn cài đặt ký số với màn Cài đặt/gửi ký (`esign.settings`) ⇒ công ty ký số chỉ nhận PDF làm tệp chính.
+    ...(d.esign
+      ? { esignOn: async (who) => esignRequiresPdf(await (d.esign as ESignModule).settings(who)) }
+      : {}),
   });
 }
 

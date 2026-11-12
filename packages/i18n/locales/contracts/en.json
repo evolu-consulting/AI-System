@@ -106,7 +106,8 @@
       "upload": {
         "title": "Contract uploads",
         "drop": "Drop files here to upload",
-        "needPdf": "E-signing needs a PDF file — convert to PDF and upload again: {{names}}",
+        "needPdf": "E-signing is on for your company, so the contract file must be a PDF — convert it and upload again. To keep a Word copy for everyone to read, add it under \"Attachments\" on the contract: {{names}}",
+        "esignNeedsPdf": "E-signing is on for your company, so the contract file must be a PDF — convert it and upload again. Add the Word copy under \"Attachments\" on the contract.",
         "close": "Close",
         "retry": "Retry",
         "state": {

@@ -106,7 +106,8 @@
       "upload": {
         "title": "Tải lên hợp đồng",
         "drop": "Thả tệp vào đây để tải lên",
-        "needPdf": "Ký số cần tệp PDF — chuyển sang PDF rồi tải lại: {{names}}",
+        "needPdf": "Công ty đang bật ký số nên tệp hợp đồng phải là PDF — chuyển sang PDF rồi tải lại. Muốn giữ bản Word cho mọi người cùng xem, thêm vào «Tài liệu kèm» của hợp đồng: {{names}}",
+        "esignNeedsPdf": "Công ty đang bật ký số nên tệp hợp đồng phải là PDF — chuyển sang PDF rồi tải lại. Bản Word thêm vào «Tài liệu kèm» của hợp đồng.",
         "close": "Đóng",
         "retry": "Thử lại",
         "state": {

@@ -85,6 +85,8 @@ export type ExtractionStarter = {
 export type UploadErrorCode =
   | "FILE_TOO_LARGE"
   | "FILE_TYPE"
+  /** CR-135 Q4 · công ty đang bật ký số mà tệp chính không phải PDF ⇒ 422 (không lưu, không tạo HĐ nháp). */
+  | "ESIGN_NEEDS_PDF"
   /** CR-122 p9 · PDF/ảnh ghép quá số trang AI đọc được ⇒ 422 ngay lúc tải lên (không lưu, không tạo HĐ nháp); details `{pages, limit}`. */
   | "FILE_TOO_MANY_PAGES"
   | "PARENT_INVALID"

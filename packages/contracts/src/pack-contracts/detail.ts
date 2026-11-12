@@ -144,7 +144,7 @@ type PatchShape = { [K in ContractFieldKey]: z.ZodOptional<z.ZodNullable<z.ZodTy
 const PATCH_SHAPE = Object.fromEntries(
   CONTRACT_FIELD_KEYS.map((k) => [
     k,
-    // CR-122 p12: chỉ khoá `number` được gửi lên (đã đổi) mới bị kiểm định dạng; số cũ có "/" không đụng tới thì không bị chặn.
+    // CR-135 Q3: chỉ khoá `number` được gửi lên (đã đổi) mới bị kiểm (≤ 50 ký tự, không điều khiển).
     k === "number" ? DocNumberSchema.nullable().optional() : fieldValueSchema(k).optional(),
   ]),
 ) as PatchShape;
