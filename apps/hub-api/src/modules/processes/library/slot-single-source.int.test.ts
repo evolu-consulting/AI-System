@@ -10,7 +10,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { withHubScope } from "@ai/db/hub-scope";
-import { tenantId, userId } from "@ai/test-kit/builders";
+import { enableAddon, enablePack, tenantId, userId } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { sql } from "drizzle-orm";
@@ -20,7 +20,7 @@ import { usage } from "./library.repo";
 import { pickProcess, type RoutingRule } from "./routing.rules";
 import { listAssignments } from "./slot-assign.repo";
 import { ensureSlotDefaults } from "./slot-defaults";
-import { enableGenPack, GEN_DEFAULT_ID, GEN_FEATURE, GEN_SLOT } from "./slot-generic.fixture";
+import { GEN_DEFAULT_ID, GEN_FEATURE, GEN_PACK, GEN_SLOT } from "./slot-generic.fixture";
 import { resolveSlot } from "./slot-resolve.repo";
 import { routeSlot } from "./slot-route.repo";
 
@@ -151,10 +151,9 @@ beforeAll(async () => {
   expect(await relkind()).toBe("r");
   await o`insert into admin.tenants (id, key, name) select t, 'ss' || right(t::text, 4), 'SS ' || right(t::text, 4)
     from unnest(${o.array(ALL)}::uuid[]) t`;
-  await enableGenPack(
-    o,
-    ALL.filter((t) => t !== T.t5),
-  );
+  const enabled = ALL.filter((t) => t !== T.t5);
+  await enablePack(o, enabled, GEN_PACK);
+  await enableAddon(o, enabled, GEN_FEATURE);
   lib.A = await libCopy("ss-a");
   lib.B = await libCopy("ss-b");
   lib.C = await libCopy("ss-c");
