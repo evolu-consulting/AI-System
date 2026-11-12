@@ -4,7 +4,7 @@
 #   scripts\dev-up.ps1 -Only core   chỉ admin-api + hub-api
 #   scripts\dev-up.ps1 -Fresh       xoá DB dev rồi dựng lại (mất dữ liệu dev)
 #   scripts\dev-up.ps1 -DbName ai_system_try   chạy trên DB riêng (tự tạo nếu chưa có), không đụng DB ai_system
-#   scripts\dev-up.ps1 -SeedDemo    thêm tenant `demo` (demo-owner) + dữ liệu mẫu Sổ Hợp Tác, Community, flow duyệt — giống demo prod
+#   scripts\dev-up.ps1 -SeedDemo    thêm tenant `demo` (công ty mẫu 15 người, 5 phòng: demo-owner = Giám đốc; `bun run demo:org`) + dữ liệu mẫu Sổ Hợp Tác, Community, flow duyệt
 # Các bước: bun install → .env.local (keys:dev) → Postgres/Redis → `hub:dev` (migrate, admin-api :3001, user demo, hub:seed,
 # hub-api :4000; không bật agent-runtime) → web dev server. Web chỉ nhận biến PUBLIC_* + URL proxy, không nhận secret.
 param([ValidateSet("all", "core")] [string]$Only = "all", [switch]$Fresh, [ValidatePattern('^[a-z][a-z0-9_]*$')] [string]$DbName = "ai_system",
@@ -149,6 +149,9 @@ if ($SeedDemo) {
   "seed demo: flow duyệt mẫu (seed-flow-showcase)…"
   bun --env-file=.env.local tools/scripts/src/seed-flow-showcase.ts --apply
   if ($LASTEXITCODE) { throw "seed-flow-showcase lỗi" }
+  "seed demo: công ty mẫu (phòng ban, 15 người, nhóm vai, quy trình duyệt theo trưởng phòng, HĐ mẫu) — demo:org…"
+  bun --env-file=.env.local tools/scripts/src/seed-demo-org.ts
+  if ($LASTEXITCODE) { throw "demo:org lỗi (cần admin-api + hub-api đang chạy; xem log phía trên)" }
 }
 
 # 5. web dev server — chỉ biến công khai + đích proxy (giống combine:dev, plan R2)

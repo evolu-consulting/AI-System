@@ -14,6 +14,7 @@ import {
   approve,
   finish,
   norm,
+  reviewNew,
   type Stage,
 } from "../../../apps/hub-api/src/modules/processes/library/flow-templates.def";
 import { bindGroupKeys } from "../../../apps/hub-api/src/modules/processes/public";
@@ -25,8 +26,8 @@ const TENANT = "demo";
 const CONTRACT_FLOW = "Duyệt hợp đồng";
 const BUY_FLOW = "Đề nghị mua hàng";
 const THRESHOLD = 500_000_000;
-const HEAD_GROUP = "truong-phong";
-const DIRECTOR_GROUP = "giam-doc";
+/** CR-139c · phòng ban là nguồn duy nhất: «Giám đốc duyệt» = trưởng Ban Giám đốc (phòng gốc của `deploy/tenants/demo.yaml`); không còn nhóm trùng phòng ban. */
+const DIRECTOR_DEPT = "pb-giam-doc";
 
 // biome-ignore lint/suspicious/noExplicitAny: JSON của API, đọc theo đường dẫn
 type Json = Record<string, any>;
@@ -90,13 +91,28 @@ const ifTotal = (step: number, then: number, otherwise: number): Stage => ({
   after: { kind: "auto", branch: [] },
 });
 
+/** CR-139c · «Trưởng phòng duyệt» theo người đề xuất: `approver_mode='starter_head'` (không chọn nhóm; phòng không có trưởng ⇒ lên phòng cha). */
+const headApprove = (step: number, to: { reject: number; ret: number }, o: Stage = {}) => {
+  const { group_key: _k, ...after } = reviewNew("") as Record<string, unknown>;
+  return approve("truong-phong", "Trưởng phòng duyệt", step, "", to, {
+    after: { ...after, approver_mode: "starter_head" },
+    ...o,
+  });
+};
+/** CR-139c · «Giám đốc duyệt» = trưởng phòng Ban Giám đốc (chỉ trưởng phòng quyết). */
+const directorApprove = (step: number, to: { reject: number; ret: number }) =>
+  approve("giam-doc", "Giám đốc duyệt", step, DIRECTOR_DEPT, to, {
+    next_step: 3,
+    after: { ...reviewNew(DIRECTOR_DEPT), head_only: true, need: "head" },
+  });
+
 /** Trưởng phòng duyệt → Nếu > 500 triệu → Giám đốc duyệt → Kết thúc · Đã duyệt (+ Từ chối, Trả lại). */
 const contractStages = (): unknown[] => {
   const to = { reject: 4, ret: 5 };
   return norm([
-    approve("truong-phong", "Trưởng phòng duyệt", 0, HEAD_GROUP, to),
+    headApprove(0, to),
     ifTotal(1, 2, 3),
-    approve("giam-doc", "Giám đốc duyệt", 2, DIRECTOR_GROUP, to, { next_step: 3 }),
+    directorApprove(2, to),
     finish(3, "approved", "Đã duyệt"),
     finish(4, "rejected", "Từ chối"),
     finish(5, "returned", "Trả lại"),
@@ -135,7 +151,7 @@ const buyStages = (): unknown[] => {
   };
   return norm([
     phieu,
-    approve("truong-phong", "Trưởng phòng duyệt", 1, HEAD_GROUP, to),
+    headApprove(1, to),
     finish(2, "approved", "Đã duyệt"),
     finish(3, "rejected", "Từ chối"),
     finish(4, "returned", "Trả lại"),

@@ -4,7 +4,7 @@
 
 export const DEV_PASSWORD = "dev-password-1";
 
-type FixtureUser = {
+export type FixtureUser = {
   tenant_key: string;
   username: string;
   password: string;
@@ -33,10 +33,10 @@ export function contractUsersJson(): string {
   return JSON.stringify(out);
 }
 
-type Json = Record<string, unknown>;
-type Api = { base: string; token?: string };
+export type Json = Record<string, unknown>;
+export type Api = { base: string; token?: string };
 
-async function call(api: Api, method: string, path: string, body?: Json): Promise<Json> {
+export async function call(api: Api, method: string, path: string, body?: Json): Promise<Json> {
   const res = await fetch(`${api.base}${path}`, {
     method,
     headers: {
@@ -57,7 +57,7 @@ async function call(api: Api, method: string, path: string, body?: Json): Promis
 const login = (base: string, tenant_key: string, username: string, password: string) =>
   call({ base }, "POST", "/auth/login", { tenant_key, username, password });
 
-async function adminToken(base: string): Promise<string> {
+export async function adminToken(base: string): Promise<string> {
   const username = process.env.SEED_ADMIN_USERNAME || "admin";
   const password = process.env.SEED_ADMIN_PASSWORD ?? "";
   const r = await login(base, "platform", username, password);
@@ -108,7 +108,7 @@ async function devLoginOk(api: Api, u: FixtureUser): Promise<boolean> {
   }
 }
 
-async function ensureUser(api: Api, tenantId: string, u: FixtureUser): Promise<void> {
+export async function ensureUser(api: Api, tenantId: string, u: FixtureUser): Promise<void> {
   const q = `/admin/users?tenant_id=${tenantId}&q=${u.username}&limit=50`;
   let user = ((await call(api, "GET", q)).items as Json[]).find((x) => x.username === u.username);
   if (!user) {

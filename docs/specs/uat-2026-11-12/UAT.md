@@ -1,9 +1,31 @@
 # UAT đợt 2026-11-12 (CR-128e, CR-129, CR-130, CR-131, CR-132, CR-133, sửa bảo mật)
 
 Môi trường: tenant **demo** (mã công ty `demo`). Không dùng tenant evolu.
-Tài khoản: nội bộ `demo-owner` (quản trị Sổ Hợp Tác), `demo-editor`, `demo-viewer`; đối tác `doitac-*`; admin nền tảng `admin`.
-Mật khẩu: xem `.env.local` (`DEMO_OWNER_PW`, `SEED_ADMIN_PASSWORD`) và `.data/dev-up/demo-partners.txt`. KHÔNG ghi mật khẩu vào tài liệu.
-Dữ liệu có sẵn: quy trình «Duyệt hợp đồng», «Đề nghị mua hàng»; HĐ «Hợp đồng mua văn phòng phẩm» (UAT-1) đang duyệt; Bảng tin đã bật, có bài mẫu.
+Mật khẩu: một mật khẩu dev chung = **DEMO_OWNER_PW** trong `.env.local` cho mọi tài khoản nội bộ bên dưới; admin nền tảng `admin` dùng `SEED_ADMIN_PASSWORD`; đối tác `doitac-*`: `.data/dev-up/demo-partners.txt`. KHÔNG ghi mật khẩu vào tài liệu.
+Dựng/chạy lại dữ liệu: `bun run demo:org` (lặp lại được; dev-up có -SeedDemo tự chạy). Có sẵn: quy trình «Duyệt hợp đồng», «Đề nghị mua hàng» (bước «Trưởng phòng duyệt» = trưởng phòng của người gửi); 4 HĐ mẫu «[Demo] …» đang chờ duyệt; HĐ «Hợp đồng mua văn phòng phẩm» (UAT-1) như cũ; Bảng tin đã bật, có bài mẫu.
+
+### Sơ đồ tổ chức công ty mẫu
+
+| Phòng ban (đều trực thuộc Ban Giám đốc) | Trưởng phòng | Thành viên |
+|---|---|---|
+| Ban Giám đốc | Nguyễn Văn An (`demo-owner`) — Giám đốc | — |
+| Phòng Kinh doanh | Trần Thị Bình (`binh.tran`) | Lê Minh Cường (`cuong.le`), Phạm Thu Dung (`dung.pham`), Hồ Minh Quân (`demo-editor`) |
+| Phòng Mua hàng | Đỗ Quang Phúc (`phuc.do`) | Mai Văn Tùng (`tung.mai`) |
+| Phòng Kế toán – Tài chính | Hoàng Văn Em (`em.hoang`) — Kế toán trưởng | Vũ Thị Giang (`giang.vu`) KT quản trị · Lý Thu Hà (`ha.ly`) KT thanh toán/mua hàng · Đinh Văn Hùng (`hung.dinh`) Thủ quỹ · Phan Thị Yến (`demo-viewer`) NV Kế toán |
+| Phòng Pháp chế | Đặng Quốc Huy (`huy.dang`) | — |
+| Kho vận | Bùi Văn Khoa (`khoa.bui`) — Quản lý kho | Ngô Thị Lan (`lan.ngo`) |
+
+Quyền trong Sổ Hợp Tác: Giám đốc = Toàn quyền; trưởng phòng, kế toán, nhân viên = Nhân viên (sửa); Thủ quỹ = Chỉ xem. Nhóm vai (ngoài phòng ban): «Người ký HĐ» = Giám đốc + Kế toán trưởng; «Tài chính» = Giang; «Thủ quỹ» = Hùng; «Kế toán thanh toán / mua hàng» = Hà.
+
+### Ca quy trình theo người thật (HĐ mẫu đã gửi sẵn; mở bằng đúng tài khoản)
+
+| UC | Người | Bước | Kỳ vọng |
+|---|---|---|---|
+| P1 | `cuong.le` gửi, `binh.tran` duyệt | Cường có HĐ «[Demo] HĐ dịch vụ chữ ký số» 300 triệu đã gửi duyệt; đăng nhập `binh.tran` ⇒ «Chờ tôi duyệt» | Bình thấy việc và duyệt được; Cường/Dung/Quân KHÔNG thấy việc này; duyệt xong HĐ «Đã duyệt» (dưới 500 triệu, không lên Giám đốc) |
+| P2 | `giang.vu` gửi ⇒ `em.hoang` ⇒ `demo-owner` | HĐ «[Demo] HĐ mua thiết bị văn phòng» 800 triệu: Em duyệt trước; sau đó đăng nhập `demo-owner` | Việc đầu về Em (trưởng phòng Kế toán), không về Giang; Em duyệt xong thì việc «Giám đốc duyệt» về An (trên 500 triệu); An duyệt ⇒ «Đã duyệt» |
+| P3 | `binh.tran` tự gửi ⇒ `demo-owner` | HĐ «[Demo] HĐ bán lô thiết bị» 150 triệu do chính trưởng phòng gửi | Bình không tự duyệt được; việc «Trưởng phòng duyệt» lên An (trưởng phòng cấp trên) |
+| P4 | `binh.tran` uỷ quyền `dung.pham` | Bình ⇒ Uỷ quyền duyệt cho Dung (khoảng ngày bao gồm hôm nay); sau đó `cuong.le` gửi thêm một HĐ | Việc về Bình đồng thời hiện cho Dung duyệt thay (thẻ «Duyệt thay Bình»); hết hạn uỷ quyền thì Dung không còn thấy |
+| P5 | `tung.mai` gửi ⇒ `phuc.do` | HĐ «[Demo] HĐ mua nguyên vật liệu» 120 triệu | Việc về Phúc (trưởng phòng Mua hàng), không về Em |
 
 Ghi kết quả: ✅ đạt · ❌ lỗi (ghi mã UC + mô tả + ảnh).
 
@@ -28,7 +50,7 @@ Ghi kết quả: ✅ đạt · ❌ lỗi (ghi mã UC + mô tả + ảnh).
 | B2 | demo-owner | Mở UAT-1, khối «Tài liệu kèm» ⇒ Thêm tệp .docx | Tệp hiện trong khối, tải về được |
 | B3 | demo-owner | Bấm «Gỡ» tệp ở B2 | Có hộp hỏi xác nhận; xác nhận thì tệp biến mất |
 | B4 | demo-owner | Thêm file .doc (Word cũ) hoặc .exe | Báo lỗi, nói rõ định dạng được nhận |
-| B5 | demo-viewer | Mở UAT-1 | Xem và tải tệp kèm được; không có nút Thêm/Gỡ (nếu không có quyền sửa) |
+| B5 | hung.dinh (Chỉ xem) | Mở UAT-1 | Xem và tải tệp kèm được; không có nút Thêm/Gỡ (nếu không có quyền sửa) |
 | B6 | bất kỳ | HĐ có tệp kèm ở bước duyệt | Cùng khối hiện nhóm «tệp kèm theo bước duyệt», chỉ xem/tải |
 
 ## C. Tin nhắn (CR-132)

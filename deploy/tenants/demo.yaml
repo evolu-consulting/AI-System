@@ -14,12 +14,15 @@ packs: [contracts]
 #   Absent => tenant runs the default process. Invalid/unpublished/missing groups => step error in report, tenant still created.
 #   Needs ADMIN_HUB_URL + HUB_INTERNAL_TOKEN (service token) in the env of tenant-onboard.cli.ts.
 
+# CR-139c · công ty mẫu có cấu trúc doanh nghiệp thật (dữ liệu giả; phòng ban là NGUỒN DUY NHẤT của trưởng phòng/thành viên).
+# Người dùng + mật khẩu dev tạo bởi `bun run demo:org` (tools/scripts/src/seed-demo-org.ts); email chưa có user ⇒ onboard báo `pending`.
 root: { key: pb-giam-doc, vi: Ban Giám đốc, en: Board of Directors, head: demo-owner@example.invalid }
 departments:
-  - { key: pb-kinh-doanh, vi: Phòng Kinh doanh, en: Sales, members: [demo-editor@example.invalid] }
-  - { key: pb-ke-toan, vi: Phòng Kế toán, en: Accounting, members: [demo-viewer@example.invalid] }
-  - { key: pb-phap-che, vi: Phòng Pháp chế, en: Legal }
-  - { key: pb-kho-van, vi: Kho vận, en: Warehouse & Logistics }
+  - { key: pb-kinh-doanh, vi: Phòng Kinh doanh, en: Sales, head: binh.tran@example.invalid, members: [cuong.le@example.invalid, dung.pham@example.invalid, demo-editor@example.invalid] }
+  - { key: pb-mua-hang, vi: Phòng Mua hàng, en: Purchasing, head: phuc.do@example.invalid, members: [tung.mai@example.invalid] }
+  - { key: pb-ke-toan, vi: Phòng Kế toán – Tài chính, en: Accounting & Finance, head: em.hoang@example.invalid, members: [giang.vu@example.invalid, ha.ly@example.invalid, hung.dinh@example.invalid, demo-viewer@example.invalid] }
+  - { key: pb-phap-che, vi: Phòng Pháp chế, en: Legal, head: huy.dang@example.invalid }
+  - { key: pb-kho-van, vi: Kho vận, en: Warehouse & Logistics, head: khoa.bui@example.invalid, members: [lan.ngo@example.invalid] }
 
 import:
   source: mgmt-prod

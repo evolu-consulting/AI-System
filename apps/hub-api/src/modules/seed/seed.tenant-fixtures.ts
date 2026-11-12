@@ -8,6 +8,7 @@ import { z } from "zod";
 import { logger } from "../../lib/logger";
 import { type Cr113FlowResult, writeCr113Flow } from "./seed.cr113-flow";
 import { type Cr125ConfigResult, writeCr125Config } from "./seed.cr125-config";
+import { SKIP_TEMPLATE_GROUPS } from "./seed.cr125-members";
 import { libSampleEnabled } from "./seed.library-sample";
 import type { Tx } from "./seed.repo";
 
@@ -25,7 +26,7 @@ export const ACCOUNTING = {
   name: { vi: "Phòng Kế toán", en: "Accounting" },
   members: {
     evolu: ["thomas.tran", "vio.ngo"],
-    demo: ["demo-viewer@example.invalid", "demo-editor@example.invalid"],
+    demo: [], // CR-139c: demo có cơ cấu phòng ban thật (deploy/tenants/demo.yaml + `bun run demo:org`) — không nhét người vào Kế toán ở đây
   },
 } as const;
 
@@ -97,7 +98,7 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
     await writePackRoles(tx, r);
     r.brands = await writeBrands(tx);
     r.cr113 = await writeCr113Flow(tx);
-    r.cr125 = await writeCr125Config(tx, keys);
+    r.cr125 = await writeCr125Config(tx, keys, { skipGroups: SKIP_TEMPLATE_GROUPS });
   }
   if (appEnv === "development") r.catalogUrls = await writeCatalogUrls(tx);
   return r;
@@ -106,10 +107,13 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
 /** 6: Group `pb-ke-toan` + 2 thành viên mỗi công ty (user vắng ⇒ bỏ qua). Cùng Group `tenant-onboard` (demo) tạo ⇒ không đụng. */
 async function writeAccounting(tx: Tx, r: TenantFixtureResult): Promise<void> {
   const a = ACCOUNTING;
+  const accountingTenants = Object.entries(a.members)
+    .filter(([, m]) => m.length > 0)
+    .map(([tenant]) => tenant);
   r.accountingGroups = (
     await tx`insert into admin.groups (tenant_id, key, name, description)
       select tn.id, ${a.key}, ${tx.json(a.name)}, 'Phòng ban Kế toán (mẫu dev/test)'
-      from admin.tenants tn where tn.key = any(${keys}::text[])
+      from admin.tenants tn where tn.key = any(${accountingTenants}::text[])
       on conflict (tenant_id, key) do nothing returning id`
   ).length;
   const map = tx.json(

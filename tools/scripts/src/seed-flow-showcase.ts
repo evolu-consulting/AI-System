@@ -24,8 +24,8 @@ import { checkShowcase, dryRunRefs } from "./seed-flow-showcase.check";
 
 const DEMO_KEY = "demo";
 const TAG = "seed-flow-showcase";
-/** Admin demo mặc định sẽ bấm "Chạy thử" (ghi đè bằng `--admin a,b`). */
-const DEFAULT_ADMIN = "demo-owner";
+/** Mặc định KHÔNG thêm ai vào phòng duyệt (CR-139c: phòng ban là nguồn duy nhất — thêm giám đốc vào Kế toán/Pháp chế làm sai sơ đồ); `--admin a,b` khi cần "Chạy thử". */
+const DEFAULT_ADMIN = "";
 
 type Found = { tenantId: string; actorId: string; groups: GroupIds };
 

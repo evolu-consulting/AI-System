@@ -53,3 +53,24 @@ export const TEMPLATE_GROUP_MEMBERS: Record<string, Record<string, readonly stri
     }),
   },
 };
+
+/**
+ * CR-139c · luật gốc 1: công ty `demo` có cơ cấu phòng ban thật (`deploy/tenants/demo.yaml`) — phòng ban là NGUỒN DUY NHẤT của «ai thuộc
+ * phòng nào / ai là trưởng phòng». Nhóm mẫu trùng phòng ban thì KHÔNG tạo cho `demo` (evolu giữ nguyên). Nhóm vai không suy được từ phòng ban
+ * (`nguoi-ky-hd`, `tai-chinh`, `thu-quy`) vẫn tạo; thành viên do `bun run demo:org`.
+ */
+export const SKIP_TEMPLATE_GROUPS: Record<string, readonly string[]> = {
+  demo: [
+    "truong-phong",
+    "giam-doc",
+    "phong-kinh-doanh",
+    "nhan-vien-phong-ban",
+    "truong-bo-phan",
+    "mua-hang",
+    "truong-mua-hang",
+    "phap-che",
+    "ke-toan",
+    "ke-toan-truong",
+    "kho",
+  ],
+};

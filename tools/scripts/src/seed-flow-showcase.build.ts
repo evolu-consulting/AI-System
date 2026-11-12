@@ -8,9 +8,9 @@ export const SHOWCASE_NAME = "Duyệt đề nghị chi (mẫu)";
 export const AMOUNT_LIMIT = 100_000_000;
 export const PURPOSE_VALUE = "mua sắm";
 
-/** Key Group demo mặc định (seed demo: `demo-ai-fix.people.ts`); ghi đè bằng cờ `--legal-group/--accounting-group/--director-group`. */
+/** Key phòng ban của công ty demo (`deploy/tenants/demo.yaml`, CR-139c); ghi đè bằng cờ `--legal-group/--accounting-group/--director-group`. */
 export const DEFAULT_GROUPS = {
-  legal: "pb-kinh-doanh", // demo chưa có nhóm Pháp chế riêng ⇒ tạm dùng Kinh doanh
+  legal: "pb-phap-che",
   accounting: "pb-ke-toan",
   director: "pb-giam-doc",
 } as const;

@@ -139,7 +139,21 @@ describe("seed-refresh · fixture công ty evolu/demo", () => {
     }
     expect(await entitled()).toEqual([]); // CR-121 D-4 · gán quy trình là đủ, không cấp feature engine
     expect(await members("evolu", ACCOUNTING.key)).toEqual(["thomas.tran", "vio.ngo"]);
-    expect(await members("demo", ACCOUNTING.key)).toEqual(["demo-editor", "demo-viewer"]);
+    expect(await members("demo", ACCOUNTING.key)).toEqual([]); // CR-139c: demo có phòng ban thật (demo:org)
+    // CR-139c · luật gốc 1: demo KHÔNG có nhóm trùng phòng ban (giam-doc, phap-che…); nhóm vai (nguoi-ky-hd) vẫn có; evolu giữ nguyên.
+    const keysOf = async (t: string) =>
+      (
+        await sql`select g.key from admin.groups g join admin.tenants tn on tn.id = g.tenant_id
+          where tn.key = ${t} and g.key in ('giam-doc', 'phap-che', 'ke-toan', 'truong-phong', 'nguoi-ky-hd') order by 1`
+      ).map((r) => String(r.key));
+    expect(await keysOf("demo")).toEqual(["nguoi-ky-hd"]);
+    expect(await keysOf("evolu")).toEqual([
+      "giam-doc",
+      "ke-toan",
+      "nguoi-ky-hd",
+      "phap-che",
+      "truong-phong",
+    ]);
     const grp =
       await sql`select g.name from admin.groups g join admin.tenants t on t.id = g.tenant_id
       where t.key = 'evolu' and g.key = ${ACCOUNTING.key}`;

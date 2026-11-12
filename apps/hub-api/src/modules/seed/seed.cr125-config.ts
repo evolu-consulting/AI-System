@@ -100,14 +100,18 @@ export const libraryRows = () => [
   })),
 ];
 
+/** CR-139c: `skipGroups[tenantKey]` = mã nhóm mẫu KHÔNG tạo cho công ty đó (nhóm trùng phòng ban — xem `SKIP_TEMPLATE_GROUPS`). */
+export type Cr125Opts = { skipGroups?: Record<string, readonly string[]> };
+
 export async function writeCr125Config(
   tx: Tx,
   keys: readonly string[],
+  opts: Cr125Opts = {},
 ): Promise<Cr125ConfigResult> {
   const r: Cr125ConfigResult = { ...ZERO };
   r.features = await grantAppFeatures(tx, keys);
   r.esign = await enableDemoEsign(tx, keys);
-  const g = await writeTemplateGroups(tx, keys);
+  const g = await writeTemplateGroups(tx, keys, opts);
   r.groups = g.groups;
   r.groupMembers = g.members;
   const l = await writeLibrary(tx);
@@ -161,13 +165,20 @@ async function enableDemoEsign(tx: Tx, keys: readonly string[]): Promise<number>
 async function writeTemplateGroups(
   tx: Tx,
   keys: readonly string[],
+  opts: Cr125Opts,
 ): Promise<{ groups: number; members: number }> {
+  const rows = keys.flatMap((tenant) =>
+    TEMPLATE_GROUPS.filter((g) => !(opts.skipGroups?.[tenant] ?? []).includes(g.key)).map((g) => ({
+      tenant,
+      key: g.key,
+      name: g.name,
+    })),
+  );
   const groups = (
     await tx`insert into admin.groups (tenant_id, key, name, description)
       select tn.id, x.key, x.name, 'Nhóm duyệt của mẫu quy trình mặc định (mẫu dev/test, CR-125)'
-      from admin.tenants tn
-      cross join jsonb_to_recordset(${tx.json(TEMPLATE_GROUPS as never)}::jsonb) as x(key text, name jsonb)
-      where tn.key = any(${[...keys]}::text[]) and tn.active
+      from jsonb_to_recordset(${tx.json(rows as never)}::jsonb) as x(tenant text, key text, name jsonb)
+      join admin.tenants tn on tn.key = x.tenant and tn.active
       on conflict (tenant_id, key) do nothing returning id`
   ).length;
   const map = Object.entries(TEMPLATE_GROUP_MEMBERS).flatMap(([tenant, byGroup]) =>

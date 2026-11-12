@@ -132,9 +132,14 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
       await sql`select 1 from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
       where e.tenant_id = ${demo} and e.revoked_at is null and f.key = 'contracts-partner-confirm'`;
     expect(feats.length).toBe(1);
-    const owners = await sql`select g.key from admin.groups g where g.tenant_id = ${demo}
-      and g.key in ('contracts-owner', 'truong-phong', 'giam-doc', 'phong-kinh-doanh') order by 1`;
-    expect(owners.map((x) => x.key)).toEqual([
+    // CR-139c: công ty demo KHÔNG có nhóm trùng phòng ban (phòng ban là nguồn duy nhất); công ty khác (evolu) giữ nguyên.
+    const groupsOf = async (t: string) =>
+      (
+        await sql`select g.key from admin.groups g where g.tenant_id = ${ids.get(t) as string}
+          and g.key in ('contracts-owner', 'truong-phong', 'giam-doc', 'phong-kinh-doanh') order by 1`
+      ).map((x) => x.key);
+    expect(await groupsOf("demo")).toEqual(["contracts-owner"]);
+    expect(await groupsOf("evolu")).toEqual([
       "contracts-owner",
       "giam-doc",
       "phong-kinh-doanh",
@@ -158,8 +163,8 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
 });
 
 describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
-  it("3 mẫu «Quy trình mua hàng» có trong Thư viện và templateReadiness ready cho công ty demo + evolu (đủ nhóm, có thành viên)", async () => {
-    for (const t of ["evolu", "demo"]) {
+  it("3 mẫu «Quy trình mua hàng» có trong Thư viện và templateReadiness ready cho công ty evolu (đủ nhóm, có thành viên) — demo: CR-140 dựng lại theo phòng ban", async () => {
+    for (const t of ["evolu"]) {
       const tid = ids.get(t) as string;
       const defs = await sql`select d.key, d.stages from hub.process_defs d
         where d.tenant_id is null and d.key like 'mua-hang-%' and d.published_version = 1 order by d.key`;
@@ -195,7 +200,7 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
       await sql`select d.key, d.stages, d.trigger from hub.process_defs d where d.id = ${PURCHASE_PARENT_ID}`
     )[0] as { key: string; stages: unknown[]; trigger: unknown };
     expect(parent.trigger).toMatchObject({ event: "contract.submitted", when: { op: "and" } }); // không bao giờ đúng
-    for (const t of ["evolu", "demo"]) {
+    for (const t of ["evolu"]) {
       const rd = await withHubScope(hub, { kind: "system" }, (tx) =>
         readinessOf(tx, ids.get(t) as string, parent.stages, packTools),
       );
