@@ -205,11 +205,14 @@ async function submit(d: SamplesDeps, n: number): Promise<boolean> {
   return true;
 }
 
-/** Một tệp mẫu (hàng `hub.attachments` của người tạo; bằng chứng chỉ kiểm tệp tồn tại + cùng công ty, không đọc nội dung). */
-async function sampleFile(d: SamplesDeps): Promise<string> {
+/**
+ * Một tệp mẫu (hàng `hub.attachments`) của CHÍNH người ghi bằng chứng `userId` — `hub.record_evidence` (hub 0140, SEC 2026-11-12) chỉ nhận
+ * tệp do người ghi tải lên; không đọc nội dung.
+ */
+async function sampleFile(d: SamplesDeps, userId: string): Promise<string> {
   const id = crypto.randomUUID();
   await d.sql`insert into hub.attachments (id, tenant_id, user_id, origin, filename, safe_name, mime, size, sha256, storage_key)
-    values (${id}::uuid, ${d.tenantId}::uuid, ${d.creatorId}::uuid, 'upload', 'bien-ban-mau.pdf', 'bien-ban-mau.pdf', 'application/pdf', 1,
+    values (${id}::uuid, ${d.tenantId}::uuid, ${userId}::uuid, 'upload', 'bien-ban-mau.pdf', 'bien-ban-mau.pdf', 'application/pdf', 1,
       ${"0".repeat(64)}, ${`${d.tenantId}/${id}`})`;
   return id;
 }
@@ -233,11 +236,12 @@ async function overrideStep1(d: SamplesDeps, n: number): Promise<void> {
       ...(evidence ? { evidence } : {}),
     });
   let r = await decide();
-  // Bước Duyệt đòi Bằng chứng (ý kiến + tệp/chữ ký, E4): seed gửi đủ — ý kiến + một tệp mẫu đã có sẵn trong kho tệp của công ty.
+  // Bước Duyệt đòi Bằng chứng (ý kiến + tệp/chữ ký, E4): seed gửi đủ — ý kiến + một tệp mẫu của chính người duyệt thay.
   if (r.status === 422 && r.json.error?.code === "EVIDENCE_REQUIRED")
     r = await decide({
       note: "Duyệt thay (dữ liệu mẫu CR-113)",
-      attachment_ids: [await sampleFile(d)],
+      // người duyệt thay = người vừa Nhận việc (`claim.by.id`) ⇒ tệp phải của người đó
+      attachment_ids: [await sampleFile(d, c.json.claim?.by?.id ?? d.creatorId)],
     });
   if (r.status !== 200)
     throw new Error(

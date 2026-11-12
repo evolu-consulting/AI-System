@@ -49,6 +49,7 @@ export function processError(
 /** CR-127 · E2 · khối lỗi nhận việc / bằng chứng / uỷ quyền (`CHAT_CLAIM_ERRORS`); câu VI ở client theo `code` (tasks.md §9). */
 const CLAIM_MESSAGES: Record<ChatClaimErrorCode, string> = {
   EVIDENCE_REQUIRED: "Evidence is required",
+  EVIDENCE_FILE_NOT_OWNED: "Evidence files must be uploaded by you",
   TASK_CLAIMED: "Someone else has taken this task",
   TASK_NOT_CLAIMABLE: "This task does not need to be taken",
   TASK_CLOSED: "Task is already closed",

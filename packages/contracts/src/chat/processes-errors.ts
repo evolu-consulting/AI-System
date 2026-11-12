@@ -36,6 +36,8 @@ export type ChatProcessN2ErrorCode = keyof typeof CHAT_PROCESS_N2_ERRORS;
  */
 export const CHAT_CLAIM_ERRORS = {
   EVIDENCE_REQUIRED: 422,
+  /** SEC 2026-11-12 · tệp/chữ ký bằng chứng không do người ghi tải lên (hub 0141 RAISE EK422 ⇒ `mapError`). */
+  EVIDENCE_FILE_NOT_OWNED: 422,
   TASK_CLAIMED: 409,
   TASK_NOT_CLAIMABLE: 409,
   TASK_CLOSED: 409,
