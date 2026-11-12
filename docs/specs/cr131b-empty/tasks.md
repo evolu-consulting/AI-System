@@ -22,7 +22,7 @@ Unit của admin-web (1201) + studio-web (126) xanh; component web-kit đã test
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-### MODIFIED web/trang-thai-trong.md
+### ADDED web/trang-thai-trong-admin-studio.md
 #### Yêu cầu: Trạng thái trống và không tìm thấy dùng một hình chung ở mọi app (nguồn: CR-131)
 Admin và Studio dùng cùng khối hình + câu + nút như Hợp đồng và Chat; danh sách lọc không ra dùng hình «không có kết quả» kèm «Xoá bộ lọc».
 - Kịch bản: khối trống/không tìm thấy hiển thị hình riêng theo loại cùng tiêu đề và nút hành động [test: packages/web-kit/src/ui/EmptyState.test.tsx » EmptyState]
