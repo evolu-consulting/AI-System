@@ -11,6 +11,11 @@ export function sectionFromKey(raw: unknown): SectionId | null {
   return SECTION_KEYS.find((k) => k === raw) ?? DEFAULT_SECTION;
 }
 
+/** CR-130 · như `sectionFromKey` nhưng nhận thêm "feed" (ngăn Bảng tin ▸ Thông báo): `?sec=feed` mở thẳng ngăn đó. */
+export function navFromKey(raw: unknown): SettingsNavId | null {
+  return raw === "feed" ? "feed" : sectionFromKey(raw);
+}
+
 /** CR-130 · mục đang hiển thị: mục được chọn nếu nhóm của nó có mặt; không thì mục đầu của nhóm có mặt (người chỉ có Cộng đồng ⇒ "feed"). */
 export function pickNav(want: SettingsNavId, contracts: boolean, feed: boolean): SettingsNavId {
   if (want === "feed" ? feed : contracts) return want;

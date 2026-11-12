@@ -123,7 +123,7 @@ describe("CR-130 · một trợ lý cho cả Sổ Hợp Tác và Cộng đồng 
     expect(surfaceOf("/contracts/list")).toBe("contracts");
     expect(surfaceOf("/community")).toBe("community");
   });
-  test("ngữ cảnh Bảng tin/Hồ sơ như ChatDock cũ: route + từ khoá tìm; id lạ bị bỏ", () => {
+  test("ngữ cảnh Bảng tin/Hồ sơ (một trợ lý chung): route + từ khoá tìm; id lạ bị bỏ", () => {
     expect(dockContext("/community", "", "  USB   Token ")).toEqual({
       surface: "community",
       route: "/feed",

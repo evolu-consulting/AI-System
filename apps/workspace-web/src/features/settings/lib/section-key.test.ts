@@ -1,6 +1,6 @@
 // CR-110 · COM-FR-41/42 · khoá `?sec=` → mục Cài đặt.
 import { describe, expect, test } from "bun:test";
-import { pickNav, sectionFromKey } from "./section-key";
+import { navFromKey, pickNav, sectionFromKey } from "./section-key";
 
 describe("sectionFromKey", () => {
   test("khoá hợp lệ ⇒ đúng mục", () => {
@@ -28,5 +28,14 @@ describe("CR-130 · pickNav (một trang Cài đặt, nhóm theo gói)", () => {
     expect(pickNav("feed", true, false)).toBe("co");
     expect(pickNav("co", false, true)).toBe("feed"); // người chỉ có Cộng đồng
     expect(pickNav("flow", false, true)).toBe("feed");
+  });
+});
+
+describe("CR-130 · navFromKey (link cũ ?sec=feed ⇒ ngăn Bảng tin)", () => {
+  test("feed ⇒ feed; khoá khác như sectionFromKey; rỗng ⇒ null", () => {
+    expect(navFromKey("feed")).toBe("feed");
+    expect(navFromKey("flow")).toBe("flow");
+    expect(navFromKey("lạ")).toBe("co");
+    expect(navFromKey(undefined)).toBeNull();
   });
 });
