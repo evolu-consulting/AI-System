@@ -9,6 +9,7 @@ import { zeroVoterTargets } from "../domain/tasks/all-vote.rules";
 import { type SoleTargets, soleStarterTargets } from "../domain/tasks/delegation.rules";
 import { isStarterHead, starterHeadFallback } from "../domain/tasks/starter-head.rules";
 import { headGateSql } from "./head-gate.sql";
+import { resolveStarterHead } from "./starter-head.sql";
 
 type AfterCfg = {
   remind_every_h?: number | null;
