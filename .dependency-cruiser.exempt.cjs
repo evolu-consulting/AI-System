@@ -1,6 +1,6 @@
 // Tách khỏi .dependency-cruiser.cjs (giới hạn 400 dòng).
 /** Luật ranh giới code sản phẩm: file test (`*.test.ts(x)`, kể cả `.int.`/`.perf.int.`) được import chéo để dựng fixture ⇒ không tính. */
-const TEST_FILE = ".test.tsx?$";
+const TEST_FILE = "[.]test[.]tsx?$";
 const TEST_EXEMPT = new Set([
   "no-cross-module-repo",
   "pack-no-cross-pack",
