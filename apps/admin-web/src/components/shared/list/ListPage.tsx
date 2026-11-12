@@ -5,6 +5,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEmbedded } from "@/components/shared/embedded";
 import { IconButton } from "@/components/shared/IconButton";
+import { EmptyState } from "@/components/shared/states/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -162,12 +163,14 @@ export function ListPage({
 export function ListEmpty({ what, onClear }: { what: string; onClear: () => void }) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-      <Funnel aria-hidden className="size-5 text-muted-foreground" />
-      <span className="font-medium">{t("common.list.noMatch", { what })}</span>
-      <Button type="button" variant="link" onClick={onClear}>
-        {t("common.clearFilters")}
-      </Button>
-    </div>
+    <EmptyState
+      kind="search"
+      message={t("common.list.noMatch", { what })}
+      action={
+        <Button type="button" variant="link" onClick={onClear}>
+          {t("common.clearFilters")}
+        </Button>
+      }
+    />
   );
 }

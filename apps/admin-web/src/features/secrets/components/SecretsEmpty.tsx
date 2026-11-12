@@ -11,6 +11,7 @@ export function SecretsEmpty({ filtered, q, createAction, onClear }: Props) {
   if (!filtered) return <EmptyState message={t("secrets.empty")} action={createAction} />;
   return (
     <EmptyState
+      kind="search"
       message={q ? t("state.empty.noResults", { q }) : t("state.empty.noMatch")}
       action={
         <Button variant="outline" onClick={onClear}>

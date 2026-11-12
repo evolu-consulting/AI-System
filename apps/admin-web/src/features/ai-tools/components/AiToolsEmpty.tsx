@@ -25,6 +25,7 @@ export function AiToolsEmpty({ filters, onClear }: Props) {
   const onlyUnused = status === "unused" && !kind && !q;
   return (
     <EmptyState
+      kind="search"
       message={t(onlyUnused ? "aiTools.allUsed" : "aiTools.noMatch")}
       action={
         <Button variant="outline" onClick={onClear}>

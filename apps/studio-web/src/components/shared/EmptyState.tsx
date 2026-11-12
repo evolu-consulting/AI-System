@@ -1,15 +1,9 @@
-// HUB-FR-72 · trạng thái rỗng: icon + câu mô tả + nút tuỳ chọn.
-import { Inbox, type LucideIcon } from "lucide-react";
+// HUB-FR-72 · trạng thái rỗng: hình + câu mô tả + nút tuỳ chọn. CR-131: lớp mỏng trên EmptyState dùng chung của web-kit.
+import { EmptyState as KitEmptyState } from "@ai/web-kit/ui/EmptyState";
 import type { ReactNode } from "react";
 
-type Props = { message: string; icon?: LucideIcon; action?: ReactNode };
+type Props = { message: string; kind?: "empty" | "search" | "off"; action?: ReactNode };
 
-export function EmptyState({ message, icon: Icon = Inbox, action }: Props) {
-  return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-card px-6 py-12 text-center">
-      <Icon aria-hidden className="size-8 text-primary/50" />
-      <p className="max-w-md text-body text-muted-foreground">{message}</p>
-      {action}
-    </div>
-  );
+export function EmptyState({ message, kind = "empty", action }: Props) {
+  return <KitEmptyState kind={kind} title={message} action={action} />;
 }

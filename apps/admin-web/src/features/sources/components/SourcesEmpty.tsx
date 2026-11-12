@@ -16,6 +16,7 @@ export function SourcesEmpty({ filtered, q, createAction, onClear }: Props) {
   if (!filtered) return <EmptyState message={t("process.sources.empty")} action={createAction} />;
   return (
     <EmptyState
+      kind="search"
       message={q ? t("state.empty.noResults", { q }) : t("state.empty.noMatch")}
       action={
         <Button variant="outline" onClick={onClear}>

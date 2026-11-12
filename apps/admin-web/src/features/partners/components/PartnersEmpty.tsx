@@ -18,6 +18,7 @@ export function PartnersEmpty({ needsTenant, filtered, q, createAction, onClear 
   if (!filtered) return <EmptyState message={t("partners.empty.text")} action={createAction} />;
   return (
     <EmptyState
+      kind="search"
       message={q ? t("state.empty.noResults", { q }) : t("state.empty.noMatch")}
       action={
         <Button variant="outline" onClick={onClear}>
