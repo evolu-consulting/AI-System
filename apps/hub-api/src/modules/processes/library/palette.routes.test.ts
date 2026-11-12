@@ -14,7 +14,7 @@ const view = {
   catalog: async () => ({
     features: [
       { id: "f1", key: "contracts-write", status: "on" },
-      { id: "f2", key: "community-write", status: "on" },
+      { id: "f2", key: "contracts.community", status: "on" },
     ],
     entitled: new Set([`${X}:f1`]),
     grantGroups: new Map(),
@@ -48,7 +48,7 @@ const keys = async (who: string, q = "") => {
 };
 
 describe("CR-122 N1 · bảng node", () => {
-  test("tenant_admin: lõi + Ký số (contracts-write bật), không Hiện bài (community-write chưa cấp)", async () => {
+  test("tenant_admin: lõi + Ký số (contracts-write bật), không Hiện bài (contracts.community chưa cấp)", async () => {
     const r = await keys("A");
     expect(r.status).toBe(200);
     expect(r.keys).toEqual([
@@ -71,7 +71,7 @@ describe("CR-122 N1 · bảng node", () => {
     expect(await nodeFeatureMiss(view, X, ["community.show-post"])).toEqual({
       node: "community.show-post",
       label: "Hiện bài",
-      feature: "community-write",
+      feature: "contracts.community",
     });
   });
 });

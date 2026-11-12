@@ -100,12 +100,12 @@ beforeAll(async () => {
     if (m.status === 500) console.error(e);
     return c.json(m.body, m.status);
   });
-  // N1 · cache cấu hình giả: `contracts-write` cấp cho X, `community-write` không ⇒ node Hiện bài tắt.
+  // N1 · cache cấu hình giả: `contracts-write` cấp cho X, `contracts.community` không ⇒ node Hiện bài tắt.
   const config = {
     catalog: async () => ({
       features: [
         { id: "f1", key: "contracts-write", status: "on" },
-        { id: "f2", key: "community-write", status: "on" },
+        { id: "f2", key: "contracts.community", status: "on" },
       ],
       entitled: new Set(contractsOff ? [] : [`${X}:f1`]),
       grantGroups: new Map(),
@@ -186,7 +186,7 @@ describe("CR-122 E1 · lưu def có trigger", () => {
       422,
       "FLOW_NODE_FEATURE_OFF",
     ]);
-    expect(JSON.stringify(off.json)).toContain("community-write");
+    expect(JSON.stringify(off.json)).toContain("contracts.community");
     const on = await call("PUT", `/process-defs/${id}`, withNode("contracts.esign"));
     expect(on.status).toBe(200);
     expect(on.json.stages[0].node).toBe("contracts.esign");

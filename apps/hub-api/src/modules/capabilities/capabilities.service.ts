@@ -8,9 +8,11 @@ import {
 } from "@ai/contracts/capabilities";
 import type { ConfigCache } from "../config/public";
 import {
-  externalPackActions,
+  externalSurfaceActions,
+  PACK_SURFACES,
   packAccessInput,
   packActionsFor,
+  surfaceOf,
   tenantFeatureOn,
 } from "../packs/kit/public";
 import type { HubExtras } from "./capabilities.repo";
@@ -96,10 +98,18 @@ export class CapabilitiesService {
     const hit = this.#memo.get(key);
     if (hit?.stamp === stamp) return hit.out;
     const packs = await Promise.all(
-      installedPacks(cat.features).map(async (k) => {
-        const i = await packAccessInput(this.#d.view, k, u);
-        return { key: k, enabled: i.entitled && !i.featureOff, actions: packActionsFor(i) };
-      }),
+      installedPacks(cat.features)
+        .filter((k) => !surfaceOf(k)) // ADR-0044: mặt API không phải gói quyền
+        .map(async (k) => {
+          const i = await packAccessInput(this.#d.view, k, u);
+          return { key: k, enabled: i.entitled && !i.featureOff, actions: packActionsFor(i) };
+        }),
+    );
+    const surfaces = await Promise.all(
+      Object.keys(PACK_SURFACES).map(async (key) => ({
+        key,
+        actions: packActionsFor(await packAccessInput(this.#d.view, key, u)),
+      })),
     );
     const addons = await this.#addons(cat.features, packs, u.tenantId);
     const body = ShellMeResponseSchema.parse(
@@ -111,8 +121,9 @@ export class CapabilitiesService {
         brand: brand.brand,
         defaultApp,
         flowRuntime: this.#d.flowRuntime === true,
+        surfaces,
         externalPacks: new Set(
-          packs.map((p) => p.key).filter((k) => externalPackActions(k).length > 0),
+          packs.map((p) => p.key).filter((k) => externalSurfaceActions(k).length > 0),
         ),
       }),
     );

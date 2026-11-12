@@ -7,7 +7,7 @@ export const SHOW_POST_NODE: FeatureNodeDecl = {
   label: { vi: "Hiện bài", en: "Show post" },
   group: "content",
   kind: "app",
-  feature: "community-write",
+  feature: "contracts.community", // ADR-0044: add-on Bảng tin của gói contracts (không còn `community-write`)
   // CR-125 · c6b · KHÔNG khai `menu`: "Hiện bài" chỉ là Kết thúc đặt sẵn kết quả `shown` — menu "+" đã có "Kết thúc · Hiện bài" (từ `outcomes`
   // của sự kiện), nên node này không hiện thêm một lối thứ hai. Vẫn đăng ký ở sổ MODULES vì flow đã lưu có thể mang khoá node này.
   stages: [{ executor: { kind: "set", values: [] }, outcome: "shown" }],

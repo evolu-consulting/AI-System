@@ -57,8 +57,10 @@ export type ShellInput = {
   /** Add-on bật cho tenant (`tenantFeatureOn`), theo gói. */
   addons: readonly { pack: string; key: string; on: boolean }[];
   brand: ShellBrand | null;
-  /** Gói mở cho đối tác (`EXTERNAL_PACKS`). */
+  /** Gói mở cho đối tác (rỗng: ADR-0044 — đối tác không bao giờ nhận quyền gói; chỉ mặt API `surfaces`). */
   externalPacks?: ReadonlySet<string>;
+  /** ADR-0044 · mặt API do gói sở hữu (vd `community`): cờ TÍNH RA từ quyền mặt (`packAccessInput(surface)`), không phải gói riêng. */
+  surfaces?: readonly { key: string; actions: readonly PackAction[] }[];
   /** `default_app` của user / công ty (admin-api, bump `config_version`); vắng ⇒ home theo quyền. */
   defaultApp?: { user: string | null; tenant: string | null };
   /** Flow runtime của kit đang bật (`HUB_FLOW_RUNTIME=on`) ⇒ route `/pack/<k>/flow/*` có mặt; web chỉ gọi khi cờ này bật. */
@@ -74,7 +76,16 @@ function homeOf(i: ShellInput, readable: ReadonlySet<string>, apps: readonly str
   return HOME_ORDER.find((k) => readable.has(k)) ?? apps[0] ?? null;
 }
 
-const DEFAULT_EXTERNAL: ReadonlySet<string> = new Set(["community"]);
+const DEFAULT_EXTERNAL: ReadonlySet<string> = new Set();
+
+/** ADR-0044: mặt API (Bảng tin) — chỉ cờ (`<surface>`, `<surface>.<action>`), không có mục trong `packs`; đọc được ⇒ vào `readable`. */
+function surfaceFlags(i: ShellInput, flags: Record<string, boolean>, readable: Set<string>) {
+  for (const sf of i.surfaces ?? []) {
+    if (sf.actions.includes("read")) readable.add(sf.key);
+    flags[sf.key] = readable.has(sf.key);
+    for (const a of LEVELS) flags[`${sf.key}.${a}`] = sf.actions.includes(a);
+  }
+}
 
 /** Gói theo user: đối tác chỉ gói mở cho đối tác; ghi flags `<k>` + `<k>.<action>`. */
 function shellPacks(i: ShellInput, flags: Record<string, boolean>) {
@@ -89,6 +100,7 @@ function shellPacks(i: ShellInput, flags: Record<string, boolean>) {
     flags[p.key] = readable.has(p.key);
     for (const a of LEVELS) flags[`${p.key}.${a}`] = actions.includes(a);
   }
+  surfaceFlags(i, flags, readable);
   return { packs, readable };
 }
 
@@ -103,7 +115,9 @@ export function shellMe(i: ShellInput): ShellMeResponse {
     flags[a.key] = on;
     if (on) addons.push(a.key);
   }
-  const apps = i.packs.map((p) => p.key).filter((k) => readable.has(k));
+  const apps = [...i.packs.map((p) => p.key), ...(i.surfaces ?? []).map((x) => x.key)].filter((k) =>
+    readable.has(k),
+  );
   return {
     versions: i.versions,
     user: {

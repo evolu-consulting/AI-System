@@ -23,7 +23,8 @@ let db: Db;
 let c: Cast;
 let app: Hono<PackGuardVars>;
 let P = new Map<string, string>();
-const F = { read: "c-r", write: "c-w", admin: "c-a" };
+// ADR-0044: Bảng tin = gói contracts ∧ add-on contracts.community (không còn feature community-*)
+const F = { read: "c-r", write: "c-w", admin: "c-a", addon: "c-ad" };
 
 type Who = "hA" | "hM" | "s1a" | "s1b" | "s2" | "b1";
 const ORG: Partial<Record<Who, "S1" | "S2" | "B1">> = { s1a: "S1", s1b: "S1", s2: "S2", b1: "B1" };
@@ -32,9 +33,10 @@ function view(): PackAccessView {
   return {
     catalog: async () => ({
       features: [
-        { id: F.read, key: "community-read", status: "on" },
-        { id: F.write, key: "community-write", status: "on" },
-        { id: F.admin, key: "community-admin", status: "on" },
+        { id: F.read, key: "contracts-read", status: "on" },
+        { id: F.write, key: "contracts-write", status: "on" },
+        { id: F.admin, key: "contracts-admin", status: "on" },
+        { id: F.addon, key: "contracts.community", status: "on" },
       ],
       entitled: new Set(Object.values(F).map((f) => `${c.A}:${f}`)),
       grantGroups: new Map([

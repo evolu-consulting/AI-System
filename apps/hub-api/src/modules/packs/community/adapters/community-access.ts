@@ -1,6 +1,7 @@
-// CR-102 · com-c3 · quyền vào gói community + người xem của request. Gói phải bật cho tenant (entitlement, cache 0 SQL).
-// User nội bộ: theo Group như mọi gói (read/write/admin). User ngoài (CR-102a): đọc + ghi, KHÔNG BAO GIỜ admin, công ty còn
-// hiệu lực (C2 sẽ gộp nhánh này vào `packGuard` chung qua `EXTERNAL_PACKS`; ở đây cục bộ để không chạm file C2).
+// CR-102 · com-c3 · CR-130 · ADR-0044 · quyền vào MẶT `community` (Bảng tin) + người xem của request. Mặt bật khi gói `contracts` bật ∧
+// add-on `contracts.community` bật (kit `packAccessInput`/`packEnabled`, cache 0 SQL). Bản cơ bản, KHÔNG quyền riêng/admin: user nội bộ
+// có quyền gói `contracts` ⇒ đọc + ghi; duyệt đơn/ẩn bài đối tác = mọi user nội bộ. User ngoài (CR-102a): đọc + ghi theo
+// `EXTERNAL_SURFACES`, công ty còn hiệu lực.
 // Danh bạ (tên tenant/user/công ty) = MỘT câu qua cổng kit `ExternalOrgResolver.directory`.
 import type { Context } from "hono";
 import type { AuthUser } from "../../../../lib/auth.middleware";
@@ -21,8 +22,6 @@ export type Access = {
   /** null = chủ quản. */
   org: string | null;
   canWrite: boolean;
-  /** Admin chủ quản: `tenant_admin` hoặc Group được cấp `community-admin` (HT-82). Đối tác: luôn false. */
-  isAdmin: boolean;
   dir: ExtDirectory;
 };
 
@@ -30,10 +29,10 @@ const forbidden = () => new AppError("PACK_FORBIDDEN", 403, "Forbidden");
 
 async function internalAccess(view: PackAccessView, u: AuthUser) {
   const i = await packAccessInput(view, COMMUNITY_KEY, u);
-  const ok = (a: "read" | "write" | "admin") =>
+  const ok = (a: "read" | "write") =>
     checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction[a] }) === "ok";
   if (!ok("read")) throw forbidden();
-  return { canWrite: ok("write"), isAdmin: u.role === "tenant_admin" || ok("admin") };
+  return { canWrite: ok("write") };
 }
 
 /** Người gọi + quyền; `need = "write"` ⇒ 403 khi chỉ đọc. Ném 403 PACK_DISABLED/PACK_FORBIDDEN. */
@@ -55,7 +54,7 @@ export async function accessOfUser(
     throw new AppError("PACK_DISABLED", 403, "Pack is not enabled");
   const external = u.userKind === "external";
   if (external && !u.extOrgId) throw forbidden();
-  const rights = external ? { canWrite: true, isAdmin: false } : await internalAccess(view, u);
+  const rights = external ? { canWrite: true } : await internalAccess(view, u);
   if (need === "write" && !rights.canWrite) throw forbidden();
   const dir = await resolver.directory(u.tenantId, u.userId);
   // Review TB1: claim token phải khớp DB (kind bất biến; lệch ⇒ token cũ/giả ⇒ từ chối, không trả raw/hits).

@@ -25,8 +25,10 @@ export const remove = (uow: Uow, a: Access, r: Ref): Promise<void> =>
     must(await deleteComment(tx, { ...r, userId: a.who.userId }));
   });
 
-/** Chỉ chủ quản; bài của đối tác không ẩn bình luận được (chủ quản ẩn cả bài thay vào đó). */
+/** CHỈ người đăng bài (nội bộ, ADR-0044); bài của đối tác không ẩn bình luận được (nội bộ ẩn cả bài thay vào đó). */
 export const hide = (uow: Uow, a: Access, r: Ref, hidden: boolean): Promise<CommentRow> => {
   if (a.org !== null) throw appError("NOT_FOUND");
-  return uow.tenant(a.who, async ({ tx }) => must(await hideComment(tx, { ...r, hidden })));
+  return uow.tenant(a.who, async ({ tx }) =>
+    must(await hideComment(tx, { ...r, hidden, userId: a.who.userId })),
+  );
 };

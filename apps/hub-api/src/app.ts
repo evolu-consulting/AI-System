@@ -160,7 +160,7 @@ function mountDbRoutes(app: Hono<AppVars>, deps: AppDeps & { db: Db }, config?: 
 function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache) {
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
-  // CR-102a · com-c2-ext-deny: đối tác chỉ qua gói `EXTERNAL_PACKS` + chuông; còn lại 403 (từ chối mặc định).
+  // CR-102a · com-c2-ext-deny: đối tác chỉ qua gói `EXTERNAL_SURFACES` + chuông; còn lại 403 (từ chối mặc định).
   const firewall = externalFirewall();
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, firewall);
   if (config) {

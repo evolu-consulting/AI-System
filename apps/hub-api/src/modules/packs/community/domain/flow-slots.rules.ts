@@ -143,8 +143,8 @@ export function communitySlotSpecs(): SlotSpec[] {
     systemTools: shape.steps.map((s) => s.tool),
     validate: (b) => validateSlotBody(key, b),
     compile: (b) => compileSlotBody(key, b),
-    // Người duyệt do GÓI quyết (tenant_admin hoặc quyền `community-admin` của gói) — hub không giải Group của khe này; `community-admin` là
-    // khoá QUYỀN, không phải mã Group (Group vai là `community-owner|editor|viewer`) ⇒ khai ở đây sẽ chặn mọi lần gán (B2 thiếu Group).
+    // Người duyệt do MẶT Bảng tin quyết (ADR-0044: mọi user nội bộ của công ty, không Group riêng) — hub không giải Group của khe này;
+    // `group_key` ở thân khe chỉ là nhãn dữ liệu cũ (lát 2 đổi/gỡ) ⇒ khai `groupKeys` ở đây sẽ chặn mọi lần gán (B2 thiếu Group).
     groupKeys: () => [],
   }));
 }

@@ -34,10 +34,9 @@ const FEATURES = [
 const shell = (o: Partial<ShellInput> = {}): ShellInput => ({
   versions: { admin: 3, hub: 7 },
   user: { id: U, tenantId: T, role: "member", external: false },
-  packs: [
-    { key: "contracts", enabled: true, actions: ["read", "write"] },
-    { key: "community", enabled: true, actions: ["read"] },
-  ],
+  packs: [{ key: "contracts", enabled: true, actions: ["read", "write"] }],
+  // ADR-0044: Bảng tin là mặt API (cờ tính ra), không phải gói
+  surfaces: [{ key: "community", actions: ["read", "write"] }],
   addons: [
     { pack: "contracts", key: "contracts-export", on: true },
     { pack: "contracts", key: "contracts.extract", on: false },
@@ -48,7 +47,7 @@ const shell = (o: Partial<ShellInput> = {}): ShellInput => ({
 
 describe("CR-118 · installedPacks / addonKeysOf", () => {
   it("gói = bộ đủ read/write/admin; bỏ DLC (của Rowan) và feature lẻ", () => {
-    expect(installedPacks(FEATURES)).toEqual(["community", "contracts"]);
+    expect(installedPacks(FEATURES)).toEqual(["community", "contracts"]); // lọc mặt API ở service (`surfaceOf`)
   });
   it("add-on = feature cùng tiền tố gói, trừ 3 mức", () => {
     expect(addonKeysOf(FEATURES, "contracts")).toEqual([
@@ -101,9 +100,26 @@ describe("CR-118 · UW-FR-04 · shellMe", () => {
     expect(r.home).toBe("community");
     expect(r.user.kind).toBe("external");
   });
+  it("ADR-0044: community là cờ tính ra từ mặt API — không có mục trong packs; mặt không đọc được ⇒ cờ tắt", () => {
+    const r = shellMe(shell());
+    expect(r.packs.community).toBeUndefined();
+    expect(r.flags).toMatchObject({
+      community: true,
+      "community.read": true,
+      "community.write": true,
+      "community.admin": false,
+    });
+    const off = shellMe(shell({ surfaces: [{ key: "community", actions: [] }] }));
+    expect(off.flags).toMatchObject({ community: false, "community.write": false });
+    expect(off.apps).toEqual(["contracts"]);
+  });
   it("gói bật nhưng không có quyền đọc ⇒ không vào apps, add-on tắt", () => {
     const r = shellMe(
-      shell({ packs: [{ key: "contracts", enabled: true, actions: [] }], addons: shell().addons }),
+      shell({
+        packs: [{ key: "contracts", enabled: true, actions: [] }],
+        surfaces: [],
+        addons: shell().addons,
+      }),
     );
     expect(r.apps).toEqual([]);
     expect(r.home).toBeNull();

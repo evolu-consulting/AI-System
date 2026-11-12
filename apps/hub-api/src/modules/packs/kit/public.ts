@@ -173,7 +173,8 @@ export type {
   FlowTaskSubject,
 } from "./application/task-signal.ports";
 export type { DocxConverter } from "./domain/docx.rules";
-export { externalPackActions } from "./domain/external-access.rules";
+export { externalSurfaceActions } from "./domain/external-access.rules";
 export { checkPackAccess, packActionsFor } from "./domain/pack-access.rules";
+export { PACK_SURFACES, surfaceOf } from "./domain/pack-surface.rules";
 export { PackToolBusinessError } from "./domain/pack-tool-error";
 export type { PdfConverter, PdfResult } from "./domain/pdf.rules";

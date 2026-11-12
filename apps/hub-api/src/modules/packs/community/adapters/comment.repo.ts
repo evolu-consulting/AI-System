@@ -30,13 +30,17 @@ export async function deleteComment(tx: Tx, c: Id & { userId: string }): Promise
   return rows.length > 0;
 }
 
-/** Chủ quản ẩn/hiện bình luận bất kỳ trên bài CỦA MÌNH (author_org null). */
-export async function hideComment(tx: Tx, c: Id & { hidden: boolean }): Promise<CommentRow | null> {
+/** ADR-0044 · CHỈ người đăng bài ẩn/hiện bình luận trên bài đó (bài chủ quản: author_org null; người khác ⇒ 0 hàng ⇒ null). */
+export async function hideComment(
+  tx: Tx,
+  c: Id & { hidden: boolean; userId: string },
+): Promise<CommentRow | null> {
   return first(
     await tx.execute<{ r: CommentRow }>(sql`
       update community.comments c set hidden = ${c.hidden}::boolean
       where c.id = ${c.id}::uuid and c.post_id = ${c.postId}::uuid
-        and exists (select 1 from community.posts p where p.id = ${c.postId}::uuid and p.author_org is null)
+        and exists (select 1 from community.posts p where p.id = ${c.postId}::uuid and p.author_org is null
+          and p.author_user_id = ${c.userId}::uuid)
       returning ${commentJson("c")} as r`),
   );
 }

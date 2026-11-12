@@ -19,22 +19,17 @@ import * as svc from "./flows.service";
 export type SlotAccessDeps = {
   view: PackAccessView;
   resolver: ExternalOrgResolver;
-  /** `tenant_admin` của tenant (admin.users) — cổng do wire tiêm; vắng ⇒ chỉ Group `community-admin`. */
-  tenantAdmin?: ((who: PackWho) => Promise<boolean>) | undefined;
 };
 
 /** Access của người gọi flow (nội bộ): quyền gói + danh bạ. Không đọc được gói ⇒ null (= 404). */
 export async function accessOfWho(d: SlotAccessDeps, who: PackWho): Promise<Access | null> {
   const i = await packAccessInput(d.view, COMMUNITY_KEY, who);
-  const ok = (a: "read" | "write" | "admin") =>
+  const ok = (a: "read" | "write") =>
     checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction[a] }) === "ok";
   if (!ok("read")) return null;
-  const [dir, ta] = await Promise.all([
-    d.resolver.directory(who.tenantId, who.userId),
-    d.tenantAdmin ? d.tenantAdmin(who) : false,
-  ]);
+  const dir = await d.resolver.directory(who.tenantId, who.userId);
   if (!dir.user || dir.user.deactivated || dir.user.kind === "external") return null;
-  return { who, org: null, canWrite: ok("write"), isAdmin: ta || ok("admin"), dir };
+  return { who, org: null, canWrite: ok("write"), dir };
 }
 
 /** Lỗi use case ⇒ kết quả FlowRuntime (404 ⇒ not_found; 403/409/422 ⇒ lỗi mã; khác ⇒ ném lại). */

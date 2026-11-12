@@ -1,4 +1,6 @@
 // CR-118 · manifest dữ liệu của app Community (key catalog `community`). Đối tác thấy Bảng tin và Bài của tôi (đăng bài cần mức Sửa).
+// CR-130 · ADR-0044: Bảng tin là mảng con của gói `contracts` (add-on `contracts.community`), bản cơ bản KHÔNG quyền riêng/admin:
+// duyệt bài/đơn = mọi user nội bộ (mức Sửa, không `company_admin`). `levelFeatures` `community-*` là catalog cũ — lát 2/4 gỡ cùng migration.
 import { MODULES } from "../modules/index.generated";
 import { nodesOfApp } from "../modules/modules.rules";
 import type { AppManifest } from "./manifest";
@@ -37,8 +39,7 @@ export const COMMUNITY_MANIFEST: AppManifest = {
       key: "moderate",
       labelKey: "community.nav.moderate",
       label: "Duyệt bài và chuyên mục",
-      level: "admin",
-      audience: "company_admin",
+      level: "write",
     },
   ],
   // CR-120 §2 · §6: 3 khe luôn bật; def mặc định seed ở hub 0092 (lát cr120-community-flows) theo `defaultDefKey`.
@@ -47,7 +48,8 @@ export const COMMUNITY_MANIFEST: AppManifest = {
       key: "community.post-moderation",
       label: "Duyệt bài đăng",
       level: "write",
-      purpose: "Sàng lọc bài mới; bài bị gắn cờ chờ quản trị community duyệt rồi mới hiện.",
+      purpose:
+        "Sàng lọc bài mới; bài bị gắn cờ chờ người duyệt (nhân viên công ty) duyệt rồi mới hiện.",
       defaultDefKey: "community-post-moderation",
       allowedKinds: ["system", "review"],
       trigger: "post.created",
@@ -57,7 +59,7 @@ export const COMMUNITY_MANIFEST: AppManifest = {
       label: "Đối tác xin tham gia",
       level: "write",
       purpose:
-        "Công ty đối tác điền đơn xin tham gia; quản trị công ty duyệt rồi mới tạo liên kết.",
+        "Công ty đối tác điền đơn xin tham gia; nhân viên công ty duyệt rồi mới tạo liên kết.",
       defaultDefKey: "community-partner-join",
       allowedKinds: ["form", "review", "system"],
       trigger: "partner.join_requested",

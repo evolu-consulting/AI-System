@@ -13,14 +13,14 @@ const navOf = (r: ReturnType<typeof previewApp>["member"]) =>
   Object.fromEntries(r.nav.map((n) => [n.key, n]));
 
 describe("previewApp · Community", () => {
-  test("mức Xem: thành viên thấy Bảng tin + Bài của tôi, không thấy Duyệt bài, không có hành động Đăng bài", () => {
+  test("mức Xem: thành viên thấy Bảng tin + Bài của tôi, chưa thấy Duyệt bài (cần mức Sửa), không có hành động Đăng bài", () => {
     const p = previewApp(COMMUNITY_MANIFEST, set("community-read"), [], []);
     expect(p.member.level).toBe("read");
     expect(p.member.appVisible).toBe(true);
     const nav = navOf(p.member);
     expect(nav.feed?.visible).toBe(true);
     expect(nav.myPosts?.visible).toBe(true);
-    expect(nav.moderate?.reason).toEqual({ code: "company_admin_only" });
+    expect(nav.moderate?.reason).toEqual({ code: "need_level", level: "write" }); // ADR-0044: duyệt = mức Sửa, không quản trị riêng
     const post = nav.feed?.actions.find((a) => a.key === "post");
     expect(post?.visible).toBe(false);
     expect(post?.reason).toEqual({ code: "need_level", level: "write" });
@@ -43,16 +43,11 @@ describe("previewApp · Community", () => {
     expect(navOf(p.partner).feed?.actions.find((a) => a.key === "post")?.visible).toBe(true);
   });
 
-  test("quản trị công ty thấy Duyệt bài chỉ khi có mức Quản trị", () => {
+  test("ADR-0044 · Duyệt bài chỉ cần mức Sửa (mọi nhân viên có quyền ghi), không cần quản trị; đối tác không bao giờ thấy", () => {
     const w = previewApp(COMMUNITY_MANIFEST, set("community-read", "community-write"), [], []);
-    expect(navOf(w.company_admin).moderate?.reason).toEqual({ code: "need_level", level: "admin" });
-    const a = previewApp(
-      COMMUNITY_MANIFEST,
-      set("community-read", "community-write", "community-admin"),
-      [],
-      [],
-    );
-    expect(navOf(a.company_admin).moderate?.visible).toBe(true);
+    expect(navOf(w.company_admin).moderate?.visible).toBe(true);
+    expect(navOf(w.member).moderate?.visible).toBe(true);
+    expect(navOf(w.partner).moderate?.reason).toEqual({ code: "partner_never" });
   });
 });
 

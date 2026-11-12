@@ -9,7 +9,6 @@ import type {
   OutcomeHandler,
   PackAccessView,
   PackGuardVars,
-  PackWho,
 } from "../kit/public";
 import {
   createPackUow,
@@ -22,6 +21,7 @@ import {
   pgExternalOrgResolver,
   selfContactOf,
   slotRegistry,
+  surfaceOf,
 } from "../kit/public";
 import { commentsRoutes } from "./adapters/comments.routes";
 import { COMMUNITY_KEY } from "./adapters/community-access";
@@ -152,7 +152,7 @@ export function communityModule(
   // CR-120 · ADR-0035/0036: SlotSpec + FlowSlotAdapter của 3 khe (khoá = key khe); route flow kit sau cờ runtime.
   for (const s of communitySlotSpecs()) slotRegistry.register(s);
   if (flowRuntimeOn(fo.runtimeOn)) {
-    const slots = communityFlowSlots(flows, { view, resolver, tenantAdmin: fo.tenantAdmin });
+    const slots = communityFlowSlots(flows, { view, resolver });
     for (const s of slots) flowAdapterSlots.add(s.slot); // CR-121 R-8 · kiểm khe manifest ↔ adapter lúc mount
     r.route("/", flowRoutes(view, COMMUNITY_KEY, flowRuntime(COMMUNITY_KEY, slots)));
   }
@@ -162,7 +162,6 @@ export function communityModule(
 export type CommunityFlowOpts = {
   agents?: FlowAgents | undefined;
   moderationOn?: ((tenantId: string) => Promise<boolean>) | undefined;
-  tenantAdmin?: ((who: PackWho) => Promise<boolean>) | undefined;
   background?: ((p: Promise<unknown>) => void) | undefined;
   /** Seam test của cờ `HUB_FLOW_RUNTIME` (vắng ⇒ env). */
   runtimeOn?: boolean | undefined;
@@ -210,13 +209,21 @@ export function mountCommunity<E extends Env>(
   );
 }
 
-/** Tenant có entitlement `community-read` (cache cấu hình, 0 SQL) — tập quét của vòng nền. */
+/** Tenant bật mặt Bảng tin: entitlement `contracts-read` ∧ add-on `contracts.community` (cache cấu hình, 0 SQL) — tập quét của vòng nền. */
 async function communityTenants(view: PackAccessView): Promise<string[]> {
   const cat = await view.catalog();
-  const f = cat.features.find((x) => x.key === packFeatureKey(COMMUNITY_KEY, "read"));
-  if (!f || f.status === "off") return [];
-  const suffix = `:${f.id}`;
-  return [...cat.entitled].filter((e) => e.endsWith(suffix)).map((e) => e.slice(0, -suffix.length));
+  const sf = surfaceOf(COMMUNITY_KEY);
+  if (!sf) return [];
+  const live = (key: string) => {
+    const f = cat.features.find((x) => x.key === key);
+    if (!f || f.status === "off") return new Set<string>();
+    const suffix = `:${f.id}`;
+    return new Set(
+      [...cat.entitled].filter((e) => e.endsWith(suffix)).map((e) => e.slice(0, -suffix.length)),
+    );
+  };
+  const addon = live(sf.addon);
+  return [...live(packFeatureKey(sf.pack, "read"))].filter((t) => addon.has(t));
 }
 
 /** C9 · vòng tự lưu trữ + nhắc hết hạn + tổng hợp; bật khi APP_ENV development/production và `COMMUNITY_SWEEP` ≠ off. */

@@ -58,7 +58,7 @@ const approve = {
   answerer: { kind: "starter" },
   real_action: false,
 };
-/** Bước Hiện bài = node của tính năng `community-write` (công ty X/Z chưa được cấp). */
+/** Bước Hiện bài = node của tính năng `contracts.community` (công ty X/Z chưa được cấp). */
 const showPost = { ...approve, key: "hien", name: "Hiện bài", node: "community.show-post" };
 
 async function libDef(key: string, stages: object[]): Promise<string> {
@@ -106,7 +106,7 @@ describe("CR-125 c5 · mẫu dùng được ở công ty", () => {
     expect(bad.status).toBe(200);
     expect(bad.json.ready).toBe(false);
     expect(bad.json.missing.features[0]).toMatchObject({
-      key: "community-write",
+      key: "contracts.community",
       stage: "Hiện bài",
     });
     const ok = await call("A", "GET", `${P(X)}/readiness/${okTpl}`);

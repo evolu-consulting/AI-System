@@ -1,5 +1,5 @@
 // CR-120 · cr120-community-flows · use case 3 khe Community (route REST + `FlowSlotAdapter` dùng CHUNG ⇒ một luật). Mỗi hàm MỘT
-// tx gói (RLS người xem). Người duyệt = Admin chủ quản (`tenant_admin` hoặc Group `community-admin`); đối tác KHÔNG BAO GIỜ duyệt.
+// tx gói (RLS người xem). Người duyệt = MỌI user nội bộ của công ty (ADR-0044, không kiểm admin); đối tác KHÔNG BAO GIỜ duyệt.
 // Agent (`screen`/`triage`) chạy NỀN sau commit, tx hệ thống riêng; lỗi/hết hạn/sai hình ⇒ vào duyệt (không tự đăng).
 
 import type { Tx } from "@ai/db";
@@ -61,7 +61,7 @@ export type FlowDeps = {
   warn?: (m: string, meta: Record<string, unknown>) => void;
 };
 
-export const reviewer = (a: Access): boolean => a.org === null && a.isAdmin;
+export const reviewer = (a: Access): boolean => a.org === null;
 
 /** CR-121 C-7 · số đếm cho menu: chỉ đếm khi người xem là người duyệt (đối tác/thành viên ⇒ 0, không tốn câu SQL). */
 export const navCounts = (d: FlowDeps, a: Access) =>

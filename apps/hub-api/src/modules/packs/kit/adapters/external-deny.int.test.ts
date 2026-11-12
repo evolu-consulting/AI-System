@@ -1,5 +1,5 @@
 // CR-102a · com-c2-ext-deny · ma trận user ngoài (đối tác) × bề mặt hub-api trên app + DB thật: tường lửa (mọi gốc route ngoài
-// gói `EXTERNAL_PACKS`), gói `contracts` (packGuard bỏ grant Group), Chat App / chat-gate, agent, danh bạ `/directory`,
+// gói `EXTERNAL_SURFACES`), gói `contracts` (packGuard bỏ grant Group), Chat App / chat-gate, agent, danh bạ `/directory`,
 // danh bạ người phụ trách `/pack/contracts/members`, RLS `contracts` phòng thủ. Mỗi bề mặt: đường từ chối + nội bộ không đổi.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { withPackScope } from "@ai/db/pack-scope";
@@ -75,7 +75,7 @@ afterAll(async () => {
 });
 
 describe("com-c2 · tường lửa user ngoài (hub-api)", () => {
-  it("mọi bề mặt ngoài gói EXTERNAL_PACKS ⇒ 403 FORBIDDEN, không ghi gì", async () => {
+  it("mọi bề mặt ngoài gói EXTERNAL_SURFACES ⇒ 403 FORBIDDEN, không ghi gì", async () => {
     const before = await sql`select count(*)::int as n from hub.conversations`;
     for (const [m, p, body] of [
       ["GET", "/conversations", undefined], // Chat App
@@ -87,7 +87,7 @@ describe("com-c2 · tường lửa user ngoài (hub-api)", () => {
       ["GET", "/agent-grants", undefined],
       ["GET", "/directory", undefined], // danh bạ
       ["GET", "/me/stream", undefined],
-      ["GET", "/pack/contracts/me", undefined], // gói không thuộc EXTERNAL_PACKS
+      ["GET", "/pack/contracts/me", undefined], // gói không thuộc EXTERNAL_SURFACES
       ["GET", "/pack/contracts/members", undefined],
       ["GET", "/studio/api/agents", undefined],
     ] as const) {

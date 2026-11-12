@@ -2,7 +2,6 @@
 //   moderationOn(tenant) — khe `community.post-moderation` do platform admin GÁN (OPT-IN): có luật định tuyến thật HOẶC quy trình trong
 //     tập gán (`process_tenant_defs` — đúng thứ màn "Được platform gán" ghi) ⇒ bài mới vào duyệt. KHÔNG xét đầu luật rỗng (cấp tự
 //     động cũ) và view gán cũ (D6). Hub không còn tự cấp khe này (SlotSpec.optIn). MỘT câu theo PK/index, scope system.
-//   tenantAdmin(who)     — `admin.users.role = 'tenant_admin'` (cột hub_ro 0002), MỘT câu.
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
@@ -51,15 +50,6 @@ export function communityFlowPorts(db: Db, agents: AgentCaller | undefined): Com
           ) as on`),
       );
       return r?.on === true;
-    },
-    tenantAdmin: async (who) => {
-      const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
-        tx.execute<{
-          ok: boolean;
-        }>(sql`select exists (select 1 from admin.users u where u.id = ${who.userId}::uuid
-            and u.tenant_id = ${who.tenantId}::uuid and u.role = 'tenant_admin') as ok`),
-      );
-      return r?.ok === true;
     },
   };
 }

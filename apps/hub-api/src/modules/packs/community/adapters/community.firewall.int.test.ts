@@ -1,4 +1,4 @@
-// CR-102 · com-c3 × com-c2: app hub-api thật (requireAuth + `externalFirewall` + `EXTERNAL_PACKS`): đối tác vào được
+// CR-102 · com-c3 × com-c2: app hub-api thật (requireAuth + `externalFirewall` + `EXTERNAL_SURFACES`): đối tác vào được
 // `/pack/community/*` (gói đã cài + bật cho tenant) nhưng vẫn 403 ở bề mặt khác; nội bộ vào community theo Group.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
@@ -38,13 +38,15 @@ beforeAll(async () => {
   await sql`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, kind,
       external_org_id, must_change_password) values
     (${EXT_ID}, ${T.acme}, 'ncc-c3', 'x', 'Đối tác C3', 'member', 'external', ${ORG}, false)`;
+  // ADR-0044: Bảng tin = gói contracts ∧ add-on `contracts.community` (lát 2 seed vào migration; ở đây fixture tự tạo)
+  await sql`insert into admin.features (key, name) values ('contracts.community', ${sql.json({ vi: "Bảng tin" })}) on conflict (key) do nothing`;
   await sql`insert into admin.feature_entitlements (feature_id, tenant_id)
-    select f.id, ${T.acme}::uuid from admin.features f where f.key in ('community-read', 'community-write', 'community-admin')
+    select f.id, ${T.acme}::uuid from admin.features f where f.key in ('contracts-read', 'contracts-write', 'contracts-admin', 'contracts.community')
     on conflict (feature_id, tenant_id) do update set revoked_at = null`;
   await sql`insert into admin.groups (id, tenant_id, key, name) values (${GRP}, ${T.acme}, 'c3-community', ${sql.json({ vi: "Cộng đồng" })})`;
   await sql`insert into admin.group_members (tenant_id, group_id, user_id) values (${T.acme}, ${GRP}, ${USERS.lan.id})`;
   await sql`insert into admin.feature_grants (tenant_id, feature_id, group_id, user_id)
-    select ${T.acme}::uuid, f.id, ${GRP}::uuid, null from admin.features f where f.key in ('community-read', 'community-write')`;
+    select ${T.acme}::uuid, f.id, ${GRP}::uuid, null from admin.features f where f.key in ('contracts-read', 'contracts-write')`;
   // CR-130 (ADR-0043): đối tác = SHT `partner_roles` (vai) + `partner_profiles` (nhóm hàng + tài khoản)
   await sql`insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from)
     values (${T.acme}, 'name:ncc c3', 'supplier', 'NCC C3', 'manual')`;

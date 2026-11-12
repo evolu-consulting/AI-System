@@ -4,14 +4,19 @@ import { packFeatureKey } from "@ai/contracts/packs";
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
-import type { PackAccessView } from "./pack-guard.middleware";
+import { surfaceOf } from "../domain/pack-surface.rules";
+import { type PackAccessView, packEnabled } from "./pack-guard.middleware";
 
 export function packHosts(db: Db, view: PackAccessView, packKey: string) {
   return async (tenantId: string): Promise<string[]> => {
     await view.adminSettled?.();
+    if (!(await packEnabled(view, packKey, tenantId))) return [];
     const cat = await view.catalog();
-    const f = cat.features.find((x) => x.key === packFeatureKey(packKey, "read"));
-    if (!f || f.status === "off" || !cat.entitled.has(`${tenantId}:${f.id}`)) return [];
+    // Mặt API (ADR-0044) ⇒ chủ quản = tenant_admin hoặc Group đọc gói CHỦ (`contracts`).
+    const f = cat.features.find(
+      (x) => x.key === packFeatureKey(surfaceOf(packKey)?.pack ?? packKey, "read"),
+    );
+    if (!f) return [];
     const groups = cat.grantGroups.get(`${tenantId}:${f.id}`) ?? [];
     const rows = await withHubScope(db, { kind: "system" }, (tx) =>
       tx.execute<{ id: string }>(sql`select u.id::text as id from admin.users u

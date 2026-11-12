@@ -64,7 +64,7 @@ async function viewerOf(d: CommunityDeps, a: Access): Promise<CommunityViewer> {
     userId: a.who.userId,
     name: a.dir.userName,
     email: self?.email ?? null,
-    role: a.org !== null ? "partner" : a.isAdmin ? "host_admin" : "host_member",
+    role: a.org !== null ? "partner" : "host_member", // ADR-0044: không còn admin chủ quản
     orgId: a.org ?? a.who.tenantId,
     orgName:
       a.org === null ? a.dir.tenantName : (a.dir.orgs.find((o) => o.id === a.org)?.name ?? ""),
