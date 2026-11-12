@@ -31,6 +31,7 @@ unit: `domain/contract-files.rules.test.ts`, `contract-files/lib/files-view.test
 - Nhóm 2: DB chỉ có `source` (start/form/subprocess), không có id bước ⇒ hiện nhãn nguồn («Khi gửi duyệt», «Điền ở bước duyệt», «Từ quy trình con») thay tên bước. Chỉ liệt kê tệp của lượt mà người xem XEM ĐƯỢC (cùng luật `readableRunFile`) để bấm tải luôn được; tải qua `GET /attachments/:id/content` hiện có.
 - Chỉ HĐ bản đang xem (theo `pack_record_id`), không gộp tệp của các phiên bản khác trong chuỗi.
 - Xoá HĐ ⇒ liên kết mất theo CASCADE, hàng `contracts.files` còn lại không đánh dấu xoá (nợ nhỏ, không lộ ra UI).
+- Review cuối đợt (fix-cr133): `contract-files.mount.ts` không import module hub nữa — `stepFiles` (`recordRunFiles`) tiêm từ `packs.mount.ts` như `filebox` (luật `pack-no-hub-modules-any-layer`), gỡ dòng khỏi baseline depcruise. UI: đang tải ⇒ khung xương, lỗi tải ⇒ câu + nút «Thử lại», «Gỡ» ⇒ hộp xác nhận (`confirmDialog`).
 - FileBox vắng ⇒ không gắn route (404), giống khối tải lên dùng FileBox; UI hiện câu lỗi chung khi tải danh sách lỗi.
 
 ## Delta (so với docs/current)

@@ -97,7 +97,10 @@
         "CONTRACT_FILES_FULL": "This contract already has 20 attached files. Remove one, then add again.",
         "PACK_FORBIDDEN": "You cannot add or remove files on this contract. Ask the contract owner or an admin.",
         "generic": "Could not complete that. Try again in a few minutes."
-      }
+      },
+      "retry": "Try again",
+      "removeTitle": "Remove attachment?",
+      "removeBody": "Remove “{{name}}” from this contract. You can add the file again later."
     }
   }
 }

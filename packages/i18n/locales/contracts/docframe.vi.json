@@ -97,7 +97,10 @@
         "CONTRACT_FILES_FULL": "Hợp đồng đã đủ 20 tệp kèm. Gỡ bớt một tệp rồi thêm lại.",
         "PACK_FORBIDDEN": "Bạn không có quyền thêm hoặc gỡ tệp của hợp đồng này. Nhờ người phụ trách hợp đồng hoặc quản trị.",
         "generic": "Chưa thực hiện được. Thử lại sau ít phút."
-      }
+      },
+      "retry": "Thử lại",
+      "removeTitle": "Gỡ tài liệu kèm?",
+      "removeBody": "Gỡ «{{name}}» khỏi hợp đồng. Bạn có thể thêm lại tệp này sau."
     }
   }
 }

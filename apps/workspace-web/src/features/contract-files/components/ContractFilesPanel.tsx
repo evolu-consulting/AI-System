@@ -3,6 +3,8 @@
 import type { ContractOwnFile, ContractStepFile } from "@ai/contracts/pack-contracts";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { confirmDialog } from "~/components/shared/dialog-bus";
+import { Skeleton } from "~/components/ui/skeleton";
 import { ApiError } from "~/lib/api-error";
 import {
   isPreviewable,
@@ -82,14 +84,42 @@ export function ContractFilesPanel({ id }: { id: string }) {
         <p role="alert" className="mt-1 text-sm text-late">
           {t("contracts.cfiles.loadErr")}
         </p>
+        <button
+          type="button"
+          className="btn btn-outline btn-sm mt-2"
+          data-testid="cfiles-retry"
+          onClick={() => void list.refetch()}
+        >
+          {t("contracts.cfiles.retry")}
+        </button>
       </section>
     );
-  if (!data) return null;
+  if (!data)
+    return (
+      <section
+        data-testid="cfiles-loading"
+        aria-busy="true"
+        className="mb-3 rounded-lg border border-rule bg-panel p-4"
+      >
+        <h3 className="font-semibold">{t("contracts.cfiles.title")}</h3>
+        <Skeleton className="mt-3 h-5 w-2/3" />
+        <Skeleton className="mt-2 h-5 w-1/2" />
+      </section>
+    );
   const run = (p: Promise<unknown>) => {
     setErr(null);
     p.catch((e) =>
       setErr(t(`contracts.cfiles.err.${errorKey(e instanceof ApiError ? e.code : undefined)}`)),
     );
+  };
+  const askRemove = async (f: ContractOwnFile) => {
+    const ok = await confirmDialog({
+      title: t("contracts.cfiles.removeTitle"),
+      body: t("contracts.cfiles.removeBody", { name: f.name }),
+      confirmLabel: t("contracts.cfiles.remove"),
+      danger: true,
+    });
+    if (ok) run(remove.mutateAsync(f.id));
   };
   const empty = data.files.length === 0 && data.steps.length === 0;
   return (
@@ -139,7 +169,7 @@ export function ContractFilesPanel({ id }: { id: string }) {
               f={f}
               busy={remove.isPending}
               onOpen={() => run(openOwnFile(id, f.id))}
-              onRemove={() => run(remove.mutateAsync(f.id))}
+              onRemove={() => void askRemove(f)}
             />
           ))}
         </ul>

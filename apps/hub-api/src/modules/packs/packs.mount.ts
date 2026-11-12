@@ -13,6 +13,7 @@ import { logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
 import { createTaxRegistry, taxBaseUrl } from "../../lib/tax-registry.http";
 import { agentSpecOf } from "../agents/agent-spec.service";
+import { recordRunFiles } from "../attachments/public";
 import type { ConfigCache } from "../config/public";
 import { DEFAULT_TENANT_TZ } from "../config/public";
 import { mountKnowledge } from "../knowledge/public";
@@ -229,7 +230,13 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
   if (fb)
     app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
   else app.route(base, uploadUnavailableRoutes(view)); // FileBox váº¯ng â‡’ 503 FILE_STORAGE_UNAVAILABLE (khÃ´ng 404)
-  if (fb) app.route(base, contractFilesModule(db, view, fileboxClients(fb))); // CR-133 · «Tài liệu kèm» (FileBox vắng ⇒ không gắn)
+  if (fb)
+    app.route(
+      base,
+      contractFilesModule(db, view, fileboxClients(fb), (w, recordId) =>
+        recordRunFiles(db, w, { packKey: CONTRACTS_KEY, recordId }),
+      ),
+    ); // CR-133 · «Tài liệu kèm» (FileBox vắng ⇒ không gắn)
   app.route(
     base,
     messagesModule(db, view, { redis: d.redis, filebox: fb ? fileboxClients(fb) : undefined }),

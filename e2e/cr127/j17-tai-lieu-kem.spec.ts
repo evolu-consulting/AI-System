@@ -58,6 +58,7 @@ test("Thêm .docx vào HĐ ⇒ thấy trong «Tài liệu kèm» ⇒ tải đư�
   expect(cross.status).toBe(404);
 
   await row.getByRole("button", { name: "Gỡ" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Gỡ" }).click(); // hộp xác nhận
   await expect(page.getByTestId("cfile-row")).toHaveCount(0);
   await expect(page.getByTestId("cfiles-empty")).toBeVisible();
 });

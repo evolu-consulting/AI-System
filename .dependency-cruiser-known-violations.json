@@ -496,17 +496,6 @@
   },
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/contracts/contract-files.mount.ts",
-    "to": "apps/hub-api/src/modules/attachments/public.ts",
-    "unresolvedTo": "../../attachments/public",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "pack-no-hub-modules-any-layer"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/contracts/adapters/exec-head.repo.ts",
     "to": "packages/db/src/hub-scope.ts",
     "unresolvedTo": "@ai/db/hub-scope",
