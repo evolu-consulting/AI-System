@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { Skeleton } from "~/components/ui/skeleton";
+import { FileRecordButton } from "~/features/contract-file-record/components/FileRecordButton";
 import { ApiError } from "~/lib/api-error";
 import {
   isPreviewable,
@@ -20,11 +21,13 @@ const OpenLabel = ({ mime }: { mime: string }) => {
 };
 
 function OwnRow({
+  id,
   f,
   onOpen,
   onRemove,
   busy,
 }: {
+  id: string;
   f: ContractOwnFile;
   onOpen: () => void;
   onRemove: () => void;
@@ -43,6 +46,7 @@ function OwnRow({
       <button type="button" className="btn btn-outline btn-sm" onClick={onOpen}>
         <OpenLabel mime={f.mime} />
       </button>
+      <FileRecordButton target={{ kind: "attachment", contractId: id, file: f }} />
       {f.can_remove && (
         <button type="button" className="btn btn-quiet btn-sm" disabled={busy} onClick={onRemove}>
           {t("contracts.cfiles.remove")}
@@ -52,7 +56,7 @@ function OwnRow({
   );
 }
 
-function StepRow({ f, onOpen }: { f: ContractStepFile; onOpen: () => void }) {
+function StepRow({ id, f, onOpen }: { id: string; f: ContractStepFile; onOpen: () => void }) {
   const { t } = useTranslation();
   return (
     <li
@@ -67,6 +71,7 @@ function StepRow({ f, onOpen }: { f: ContractStepFile; onOpen: () => void }) {
       <button type="button" className="btn btn-outline btn-sm" onClick={onOpen}>
         <OpenLabel mime={f.mime} />
       </button>
+      <FileRecordButton target={{ kind: "step", contractId: id, file: f }} />
     </li>
   );
 }
@@ -166,6 +171,7 @@ export function ContractFilesPanel({ id }: { id: string }) {
           {data.files.map((f) => (
             <OwnRow
               key={f.id}
+              id={id}
               f={f}
               busy={remove.isPending}
               onOpen={() => run(openOwnFile(id, f.id))}
@@ -179,7 +185,7 @@ export function ContractFilesPanel({ id }: { id: string }) {
           <h4 className="mt-3 text-sm font-semibold text-dim">{t("contracts.cfiles.steps")}</h4>
           <ul className="divide-y divide-rule" data-testid="cfiles-steps">
             {data.steps.map((f) => (
-              <StepRow key={f.id} f={f} onOpen={() => run(openStepFile(f))} />
+              <StepRow key={f.id} id={id} f={f} onOpen={() => run(openStepFile(f))} />
             ))}
           </ul>
         </>

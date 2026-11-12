@@ -10,6 +10,7 @@ import type { ApprovalUi } from "~/features/contract-approval/components/use-app
 import { decideOnly } from "~/features/contract-approval/lib/approval";
 import { EsignPanel } from "~/features/contract-esign/components/EsignPanel";
 import { SignSessionCard } from "~/features/contract-esign/components/SignSessionCard";
+import { FileRecordButton } from "~/features/contract-file-record/components/FileRecordButton";
 import { ContractFilesPanel } from "~/features/contract-files/components/ContractFilesPanel";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import { lockView } from "~/features/contract-lock/lib/lock-view";
@@ -137,7 +138,14 @@ export function ContractBody(p: {
     <DetailLead
       c={c}
       partner={partner}
-      file={file ? <FileLink file={file} title={file.name} /> : null}
+      file={
+        file ? (
+          <span className="inline-flex items-center gap-2">
+            <FileLink file={file} title={file.name} />
+            <FileRecordButton target={{ kind: "main", contractId: id }} />
+          </span>
+        ) : null
+      }
       owner={<OwnerRow c={c} write={write && c.status !== "reject"} />}
     />
   );

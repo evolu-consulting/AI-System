@@ -101,6 +101,51 @@
       "retry": "Thử lại",
       "removeTitle": "Gỡ tài liệu kèm?",
       "removeBody": "Gỡ «{{name}}» khỏi hợp đồng. Bạn có thể thêm lại tệp này sau."
+    },
+    "frec": {
+      "open": "Hồ sơ",
+      "title": "Hồ sơ file",
+      "subtitle": "Thông tin, người duyệt và trạng thái ký của file",
+      "unknown": "Không rõ",
+      "loadErr": "Chưa tải được hồ sơ của file này. Thử lại, hoặc nhờ người phụ trách hợp đồng nếu bạn không có quyền xem.",
+      "sec": {
+        "info": "Thông tin file",
+        "approval": "Duyệt",
+        "sign": "Ký số"
+      },
+      "info": {
+        "name": "Tên",
+        "kind": "Loại",
+        "by": "Người tải / nguồn",
+        "at": "Lúc tải",
+        "version": "Phiên bản HĐ"
+      },
+      "kind": {
+        "pdf": "PDF",
+        "image": "Ảnh",
+        "word": "Word",
+        "excel": "Excel",
+        "powerpoint": "PowerPoint",
+        "text": "Văn bản",
+        "other": "Tệp khác"
+      },
+      "role": {
+        "company": "bên công ty",
+        "partner": "đối tác"
+      },
+      "evidence": {
+        "of": "Tệp này là bằng chứng của bước:",
+        "none": "Tệp này không được gắn làm bằng chứng của bước duyệt nào.",
+        "attachOnly": "Tệp này chỉ đính kèm vào hợp đồng, không gắn làm bằng chứng của bước duyệt nào."
+      },
+      "sign": {
+        "none": "Không ký số — xác nhận bằng bằng chứng duyệt ở trên.",
+        "notSent": "Công ty có ký số nhưng hợp đồng này chưa được gửi ký.",
+        "attachNote": "Tệp kèm không đem đi ký; trạng thái dưới đây là của file chính của hợp đồng.",
+        "download": "Tải bản đã ký",
+        "loadErr": "Chưa xem được trạng thái ký. Tải lại trang rồi mở lại Hồ sơ.",
+        "downloadErr": "Chưa tải được bản đã ký. Thử lại sau ít phút."
+      }
     }
   }
 }

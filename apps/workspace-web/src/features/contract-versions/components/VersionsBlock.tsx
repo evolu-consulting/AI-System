@@ -3,6 +3,7 @@ import type { ContractVersionRef } from "@ai/contracts/pack-contracts";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
+import { FileRecordButton } from "~/features/contract-file-record/components/FileRecordButton";
 import { KIND_ICON, versionKind } from "../lib/versions";
 
 export function VersionsBlock({
@@ -40,6 +41,7 @@ export function VersionsBlock({
                 {viDate(v.effective_from)} – {viDate(v.effective_to)}
               </span>
               <span className="ml-auto tabular-nums">{vnd(v.total_value)}</span>
+              <FileRecordButton target={{ kind: "main", contractId: v.id }} />
               {v.id !== currentId && (
                 <button
                   type="button"

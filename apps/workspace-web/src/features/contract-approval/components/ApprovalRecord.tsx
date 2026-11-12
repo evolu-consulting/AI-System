@@ -79,7 +79,7 @@ function PdfButton({ id }: { id: string }) {
   );
 }
 
-function RecordBody({ id }: { id: string }) {
+export function RecordBody({ id }: { id: string }) {
   const { t } = useTranslation();
   const q = useQuery({
     queryKey: recordKey(id),

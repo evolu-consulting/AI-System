@@ -101,6 +101,51 @@
       "retry": "Try again",
       "removeTitle": "Remove attachment?",
       "removeBody": "Remove “{{name}}” from this contract. You can add the file again later."
+    },
+    "frec": {
+      "open": "Record",
+      "title": "File record",
+      "subtitle": "Details, approvers and signing status of the file",
+      "unknown": "Unknown",
+      "loadErr": "Could not load this file's record. Try again, or ask the contract owner if you do not have access.",
+      "sec": {
+        "info": "File details",
+        "approval": "Approval",
+        "sign": "E-signature"
+      },
+      "info": {
+        "name": "Name",
+        "kind": "Type",
+        "by": "Added by / source",
+        "at": "Added at",
+        "version": "Contract version"
+      },
+      "kind": {
+        "pdf": "PDF",
+        "image": "Image",
+        "word": "Word",
+        "excel": "Excel",
+        "powerpoint": "PowerPoint",
+        "text": "Text",
+        "other": "Other file"
+      },
+      "role": {
+        "company": "company side",
+        "partner": "partner"
+      },
+      "evidence": {
+        "of": "This file is evidence for the step:",
+        "none": "This file is not attached as evidence to any approval step.",
+        "attachOnly": "This file is only attached to the contract, not as evidence to any approval step."
+      },
+      "sign": {
+        "none": "No e-signature — confirmed by the approval evidence above.",
+        "notSent": "The company uses e-signature but this contract has not been sent for signing.",
+        "attachNote": "Attachments are not sent for signing; the status below is for the contract's main file.",
+        "download": "Download signed copy",
+        "loadErr": "Could not load the signing status. Reload the page and open the record again.",
+        "downloadErr": "Could not download the signed copy. Try again in a few minutes."
+      }
     }
   }
 }
