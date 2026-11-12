@@ -13,7 +13,11 @@ INSERT INTO admin.feature_entitlements (feature_id, tenant_id)
 SELECT a.id, e.tenant_id
 FROM admin.feature_entitlements e
 JOIN admin.features f ON f.id = e.feature_id AND f.key = 'community-read' AND e.revoked_at IS NULL
-CROSS JOIN admin.features a WHERE a.key = 'contracts-community'
+CROSS JOIN admin.features a
+WHERE a.key = 'contracts-community'
+  AND EXISTS (SELECT 1 FROM admin.feature_entitlements ce  -- chỉ khi công ty đã có gói contracts (tránh add-on nửa vời)
+    JOIN admin.features cf ON cf.id = ce.feature_id AND cf.key = 'contracts-read'
+    WHERE ce.tenant_id = e.tenant_id AND ce.revoked_at IS NULL)
 ON CONFLICT (feature_id, tenant_id) DO UPDATE SET revoked_at = NULL;
 --> statement-breakpoint
 -- Group vai Bảng tin = theo app_roles (pack='community') ∪ mã `community-owner|editor|viewer` (mỗi câu tự tính tập, không bảng tạm).
@@ -27,8 +31,14 @@ DELETE FROM admin.feature_grants g USING (SELECT tenant_id, group_id AS id FROM 
 DELETE FROM admin.group_members m USING (SELECT tenant_id, group_id AS id FROM admin.app_roles WHERE pack = 'community'
    UNION SELECT tenant_id, id FROM admin.groups WHERE key IN ('community-owner', 'community-editor', 'community-viewer')) x WHERE m.tenant_id = x.tenant_id AND m.group_id = x.id;
 --> statement-breakpoint
-DELETE FROM admin.groups g USING (SELECT tenant_id, group_id AS id FROM admin.app_roles WHERE pack = 'community'
-   UNION SELECT tenant_id, id FROM admin.groups WHERE key IN ('community-owner', 'community-editor', 'community-viewer')) x WHERE g.tenant_id = x.tenant_id AND g.id = x.id;
+WITH gone AS (
+  DELETE FROM admin.groups g USING (SELECT tenant_id, group_id AS id FROM admin.app_roles WHERE pack = 'community'
+   UNION SELECT tenant_id, id FROM admin.groups WHERE key IN ('community-owner', 'community-editor', 'community-viewer')) x WHERE g.tenant_id = x.tenant_id AND g.id = x.id
+  RETURNING g.tenant_id, g.id, g.key)
+INSERT INTO admin.audit_log (tenant_id, action, entity, entity_id, entity_name, summary)
+SELECT tenant_id, 'delete', 'group', id, key,
+       '{"reason": "CR-130 ADR-0044: gỡ Group vai Bảng tin (gộp vào gói contracts)"}'::jsonb
+FROM gone;
 --> statement-breakpoint
 DELETE FROM admin.app_roles WHERE pack = 'community';
 --> statement-breakpoint
