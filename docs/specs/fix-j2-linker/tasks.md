@@ -10,4 +10,5 @@
 - Int mới `packs/community-wire.join-link.int.test.ts` qua `mountCommunityWired` thật (không tiêm tay): duyệt + `partyKey` ⇒ 200 approved + hồ sơ SHT gắn công ty đối tác; đỏ (503) khi bỏ sửa, xanh khi có.
 
 ## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: sửa nối cổng PartnerLinker bị rơi ở wiring để đúng hành vi đã chốt «duyệt đơn kèm đối tác có sẵn»; 503 thẻ việc chỉ đổi từ lỗi chưa xử lý sang mã HTTP).
