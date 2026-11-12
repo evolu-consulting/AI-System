@@ -18,6 +18,8 @@ const C1 = "c1320000-0000-4000-8000-000000000001"; // nhóm U1 + U2 (T)
 const C2 = "c1320000-0000-4000-8000-000000000002"; // nhóm V1 (T2)
 const C3 = "c1320000-0000-4000-8000-000000000003"; // nhóm U1 + X (T): X là external nhưng có hàng thành viên
 const F1 = "f1320000-0000-4000-8000-000000000001";
+const F2 = "f1320000-0000-4000-8000-000000000002"; // tệp của U1, chưa gắn tin
+const F3 = "f1320000-0000-4000-8000-000000000003"; // tệp của U2, chưa gắn tin
 const CL = (n: number) => `c1320000-0000-4000-8000-0000000001${String(n).padStart(2, "0")}`;
 
 const counts = (tx: Sql) => tx`select
@@ -47,6 +49,9 @@ beforeAll(async () => {
     (${T}, ${C1}, 1, ${U1}, ${Bun.randomUUIDv7()}, 'xin chào'), (${T2}, ${C2}, 1, ${V1}, ${Bun.randomUUIDv7()}, 'tin T2')`;
   await o`insert into contracts.files (id, tenant_id, org, file_id, name, mime, size_bytes, created_by)
     values (${F1}, ${T}, ${`t_${T}`}, 'fb-1', 'bao-gia.pdf', 'application/pdf', 10, ${U1})`;
+  await o`insert into contracts.files (id, tenant_id, org, file_id, name, mime, size_bytes, created_by) values
+    (${F2}, ${T}, ${`t_${T}`}, 'fb-2', 'cua-u1.pdf', 'application/pdf', 10, ${U1}),
+    (${F3}, ${T}, ${`t_${T}`}, 'fb-3', 'cua-u2.pdf', 'application/pdf', 10, ${U2})`;
   await o`insert into contracts.msg_files (tenant_id, file_id, conversation_id, seq, uploaded_by) values (${T}, ${F1}, ${C1}, 1, ${U1})`;
 }, 120_000);
 afterAll(async () => {
@@ -235,6 +240,72 @@ describe("CR-132 M1 · chặn người cùng công ty NGOÀI hội thoại + use
       );
     expect(await revoke(U2)).toBe(0);
     expect(await revoke(U1)).toBe(1);
+  });
+
+  it("thành viên: không tự nâng chủ, không sửa/xoá người khác, tự rời được; chỉ chủ thêm/bớt/chuyển chủ", async () => {
+    const run = <R>(who: string, fn: (tx: Sql) => Promise<R>) =>
+      inPackAsRollback("contracts", T, who, fn);
+    expect(
+      await pgCode(() =>
+        run(
+          U2,
+          (tx) =>
+            tx`update contracts.msg_members set role = 'owner' where conversation_id = ${C1} and user_id = ${U2}`,
+        ),
+      ),
+    ).toBe("42501"); // tự nâng chủ
+    const out = await run(U2, async (tx) => ({
+      readOwn: (
+        await tx`update contracts.msg_members set last_read_seq = 1 where conversation_id = ${C1} and user_id = ${U2} returning 1`
+      ).length,
+      editOther: (
+        await tx`update contracts.msg_members set role = 'member' where conversation_id = ${C1} and user_id = ${U1} returning 1`
+      ).length,
+      delOther: (
+        await tx`delete from contracts.msg_members where conversation_id = ${C1} and user_id = ${U1} returning 1`
+      ).length,
+      leave: (
+        await tx`delete from contracts.msg_members where conversation_id = ${C1} and user_id = ${U2} returning 1`
+      ).length,
+    }));
+    expect(out).toEqual({ readOwn: 1, editOther: 0, delOther: 0, leave: 1 });
+    // thành viên thường không thêm người; chủ thêm được
+    const add = (who: string) =>
+      pgCode(() =>
+        run(
+          who,
+          (tx) =>
+            tx`insert into contracts.msg_members (tenant_id, conversation_id, user_id) values (${T}, ${C1}, ${U3})`,
+        ),
+      );
+    expect(await add(U2)).toBe("42501");
+    expect(await add(U1)).toBeNull();
+    // chủ chuyển chủ (đổi vai người khác) rồi xoá người khác
+    const owner = await run(U1, async (tx) => ({
+      transfer: (
+        await tx`update contracts.msg_members set role = 'owner' where conversation_id = ${C1} and user_id = ${U2} returning 1`
+      ).length,
+      del: (
+        await tx`delete from contracts.msg_members where conversation_id = ${C1} and user_id = ${U2} returning 1`
+      ).length,
+    }));
+    expect(owner).toEqual({ transfer: 1, del: 1 });
+  });
+
+  it("msg_files: chỉ gắn được tệp do chính mình tải lên (không gắn tệp của người khác)", async () => {
+    const attach = (who: string, file: string) =>
+      pgCode(() =>
+        inPackAsRollback(
+          "contracts",
+          T,
+          who,
+          (tx) =>
+            tx`insert into contracts.msg_files (tenant_id, file_id, conversation_id, uploaded_by) values (${T}, ${file}, ${C1}, ${who})`,
+        ),
+      );
+    expect(await attach(U2, F3)).toBeNull(); // tệp của chính U2
+    expect(await attach(U2, F2)).toBe("42501"); // tệp của U1
+    expect(await attach(U1, F2)).toBeNull();
   });
 
   it("user ngoài (external): 0 hàng dù có hàng thành viên; không chèn tin, không tạo hội thoại, không drop", async () => {

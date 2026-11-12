@@ -32,6 +32,8 @@ unit: `messages/domain/messages.rules.test.ts`, `packages/contracts/src/pack-con
 - Sự kiện realtime đặt trong `pack-contracts/messages.ts` (brief M2) thay vì `chat/me-stream-msg.ts` của spec §5; M4 có thể re-export ở đó khi nối `meStreamEventAllowed`.
 - Hàm definer dựa vào chủ migration không chịu FORCE RLS (cùng khuôn `community_partners` 0103) và lọc tường minh theo GUC tenant.
 - `capUnread(n, scope)` (kẹp 99/999) thêm vào luật thuần cho M3 dùng.
+- Soát Opus (0107): thêm `msg_is_owner(cid)`. `msg_members` UPDATE/DELETE: chủ nhóm sửa/xoá bất kỳ hàng; thành viên thường chỉ sửa hàng của mình với `role='member'` (không tự nâng chủ) và chỉ xoá (rời) chính mình. INSERT thành viên: lô đầu của người tạo (`msg_created_by_me`) hoặc chủ nhóm hiện tại (chặt hơn spec «thành viên hoặc created_by_me»; quyền nhóm vẫn kiểm ở use case). `msg_files` INSERT yêu cầu `contracts.files.created_by` = người gọi (không gắn tệp của người khác).
+- **Cho M3:** tạo hội thoại + lô thành viên đầu (gồm người tạo vai `owner`) trong CÙNG transaction, id sinh phía app, không RETURNING khi chèn hội thoại; chuyển chủ = chủ hiện tại UPDATE vai người kế rồi mới DELETE hàng của mình.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp

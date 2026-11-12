@@ -131,9 +131,17 @@ BEGIN
   RETURN n > 0;
 END $$;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION contracts.msg_my_conversations(), contracts.msg_created_by_me(uuid), contracts.msg_drop_if_empty(uuid) FROM PUBLIC;
+-- «Tôi là chủ nhóm của hội thoại này» (vai `owner` hiện tại, đọc trạng thái TRƯỚC câu lệnh đang chạy ⇒ không tự nâng quyền trong cùng câu).
+CREATE OR REPLACE FUNCTION contracts.msg_is_owner(cid uuid) RETURNS boolean
+  LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+  SELECT EXISTS (SELECT 1 FROM contracts.msg_members m
+    WHERE m.tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid AND m.conversation_id = cid
+      AND m.user_id = NULLIF(current_setting('app.user_id', true), '')::uuid AND m.role = 'owner')
+$$;
 --> statement-breakpoint
-GRANT EXECUTE ON FUNCTION contracts.msg_my_conversations(), contracts.msg_created_by_me(uuid), contracts.msg_drop_if_empty(uuid) TO contracts_rw;
+REVOKE ALL ON FUNCTION contracts.msg_my_conversations(), contracts.msg_created_by_me(uuid), contracts.msg_drop_if_empty(uuid), contracts.msg_is_owner(uuid) FROM PUBLIC;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION contracts.msg_my_conversations(), contracts.msg_created_by_me(uuid), contracts.msg_drop_if_empty(uuid), contracts.msg_is_owner(uuid) TO contracts_rw;
 --> statement-breakpoint
 -- ===== Policy RESTRICTIVE (AND với policy tenant). Mọi policy: chỉ người nội bộ (`viewer_ext_org() IS NULL`). Quyền chi tiết (chủ nhóm,
 -- thu hồi) ở use case; RLS là lưới chặn cuối = tenant + thành viên. DELETE `USING (false)` = không cấp (CASCADE của FK bỏ qua RLS). =====
@@ -168,18 +176,25 @@ DROP POLICY IF EXISTS msg_members_ins ON contracts.msg_members;
 --> statement-breakpoint
 CREATE POLICY msg_members_ins ON contracts.msg_members AS RESTRICTIVE FOR INSERT TO contracts_rw
   WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL
-    AND (conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]) OR contracts.msg_created_by_me(conversation_id)));
+    AND (contracts.msg_created_by_me(conversation_id)
+      OR (conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]) AND contracts.msg_is_owner(conversation_id))));
 --> statement-breakpoint
+-- Sửa thành viên: chủ nhóm sửa bất kỳ hàng nào (đổi vai khi chuyển chủ); thành viên thường chỉ sửa hàng CỦA MÌNH (mốc đã đọc) và vai phải
+-- còn `member` (không tự nâng chủ). Xoá: chủ nhóm xoá người khác; ai cũng xoá (rời) chính mình.
 DROP POLICY IF EXISTS msg_members_upd ON contracts.msg_members;
 --> statement-breakpoint
 CREATE POLICY msg_members_upd ON contracts.msg_members AS RESTRICTIVE FOR UPDATE TO contracts_rw
-  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]))
-  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]));
+  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[])
+    AND (user_id = NULLIF(current_setting('app.user_id', true), '')::uuid OR contracts.msg_is_owner(conversation_id)))
+  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[])
+    AND (contracts.msg_is_owner(conversation_id)
+      OR (user_id = NULLIF(current_setting('app.user_id', true), '')::uuid AND role = 'member')));
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_members_del ON contracts.msg_members;
 --> statement-breakpoint
 CREATE POLICY msg_members_del ON contracts.msg_members AS RESTRICTIVE FOR DELETE TO contracts_rw
-  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]));
+  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[])
+    AND (user_id = NULLIF(current_setting('app.user_id', true), '')::uuid OR contracts.msg_is_owner(conversation_id)));
 --> statement-breakpoint
 -- msg_messages: ghi chỉ khi là thành viên VÀ là người gửi (thu hồi = UPDATE của người gửi); không DELETE.
 DROP POLICY IF EXISTS msg_messages_sel ON contracts.msg_messages;
@@ -215,7 +230,10 @@ DROP POLICY IF EXISTS msg_files_ins ON contracts.msg_files;
 --> statement-breakpoint
 CREATE POLICY msg_files_ins ON contracts.msg_files AS RESTRICTIVE FOR INSERT TO contracts_rw
   WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[])
-    AND uploaded_by = NULLIF(current_setting('app.user_id', true), '')::uuid);
+    AND uploaded_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+    -- chỉ gắn được tệp do CHÍNH MÌNH tải lên (không gắn tệp hợp đồng/tệp của người khác vào hội thoại)
+    AND EXISTS (SELECT 1 FROM contracts.files f WHERE f.id = msg_files.file_id AND f.tenant_id = msg_files.tenant_id
+      AND f.created_by = NULLIF(current_setting('app.user_id', true), '')::uuid));
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_files_upd ON contracts.msg_files;
 --> statement-breakpoint
