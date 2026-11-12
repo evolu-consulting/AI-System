@@ -141,7 +141,7 @@ GRANT EXECUTE ON FUNCTION contracts.msg_my_conversations(), contracts.msg_create
 DROP POLICY IF EXISTS msg_conversations_sel ON contracts.msg_conversations;
 --> statement-breakpoint
 CREATE POLICY msg_conversations_sel ON contracts.msg_conversations AS RESTRICTIVE FOR SELECT TO contracts_rw
-  USING ((SELECT packs.viewer_ext_org()) IS NULL AND id = ANY ((SELECT contracts.msg_my_conversations())));
+  USING ((SELECT packs.viewer_ext_org()) IS NULL AND id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]));
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_conversations_ins ON contracts.msg_conversations;
 --> statement-breakpoint
@@ -151,8 +151,8 @@ CREATE POLICY msg_conversations_ins ON contracts.msg_conversations AS RESTRICTIV
 DROP POLICY IF EXISTS msg_conversations_upd ON contracts.msg_conversations;
 --> statement-breakpoint
 CREATE POLICY msg_conversations_upd ON contracts.msg_conversations AS RESTRICTIVE FOR UPDATE TO contracts_rw
-  USING ((SELECT packs.viewer_ext_org()) IS NULL AND id = ANY ((SELECT contracts.msg_my_conversations())))
-  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND id = ANY ((SELECT contracts.msg_my_conversations())));
+  USING ((SELECT packs.viewer_ext_org()) IS NULL AND id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]))
+  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]));
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_conversations_del ON contracts.msg_conversations;
 --> statement-breakpoint
@@ -162,43 +162,43 @@ CREATE POLICY msg_conversations_del ON contracts.msg_conversations AS RESTRICTIV
 DROP POLICY IF EXISTS msg_members_sel ON contracts.msg_members;
 --> statement-breakpoint
 CREATE POLICY msg_members_sel ON contracts.msg_members AS RESTRICTIVE FOR SELECT TO contracts_rw
-  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())));
+  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]));
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_members_ins ON contracts.msg_members;
 --> statement-breakpoint
 CREATE POLICY msg_members_ins ON contracts.msg_members AS RESTRICTIVE FOR INSERT TO contracts_rw
   WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL
-    AND (conversation_id = ANY ((SELECT contracts.msg_my_conversations())) OR contracts.msg_created_by_me(conversation_id)));
+    AND (conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]) OR contracts.msg_created_by_me(conversation_id)));
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_members_upd ON contracts.msg_members;
 --> statement-breakpoint
 CREATE POLICY msg_members_upd ON contracts.msg_members AS RESTRICTIVE FOR UPDATE TO contracts_rw
-  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())))
-  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())));
+  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]))
+  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]));
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_members_del ON contracts.msg_members;
 --> statement-breakpoint
 CREATE POLICY msg_members_del ON contracts.msg_members AS RESTRICTIVE FOR DELETE TO contracts_rw
-  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())));
+  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]));
 --> statement-breakpoint
 -- msg_messages: ghi chỉ khi là thành viên VÀ là người gửi (thu hồi = UPDATE của người gửi); không DELETE.
 DROP POLICY IF EXISTS msg_messages_sel ON contracts.msg_messages;
 --> statement-breakpoint
 CREATE POLICY msg_messages_sel ON contracts.msg_messages AS RESTRICTIVE FOR SELECT TO contracts_rw
-  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())));
+  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]));
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_messages_ins ON contracts.msg_messages;
 --> statement-breakpoint
 CREATE POLICY msg_messages_ins ON contracts.msg_messages AS RESTRICTIVE FOR INSERT TO contracts_rw
-  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations()))
+  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[])
     AND sender_id = NULLIF(current_setting('app.user_id', true), '')::uuid);
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_messages_upd ON contracts.msg_messages;
 --> statement-breakpoint
 CREATE POLICY msg_messages_upd ON contracts.msg_messages AS RESTRICTIVE FOR UPDATE TO contracts_rw
-  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations()))
+  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[])
     AND sender_id = NULLIF(current_setting('app.user_id', true), '')::uuid)
-  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations()))
+  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[])
     AND sender_id = NULLIF(current_setting('app.user_id', true), '')::uuid);
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_messages_del ON contracts.msg_messages;
@@ -209,19 +209,19 @@ CREATE POLICY msg_messages_del ON contracts.msg_messages AS RESTRICTIVE FOR DELE
 DROP POLICY IF EXISTS msg_files_sel ON contracts.msg_files;
 --> statement-breakpoint
 CREATE POLICY msg_files_sel ON contracts.msg_files AS RESTRICTIVE FOR SELECT TO contracts_rw
-  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())));
+  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]));
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_files_ins ON contracts.msg_files;
 --> statement-breakpoint
 CREATE POLICY msg_files_ins ON contracts.msg_files AS RESTRICTIVE FOR INSERT TO contracts_rw
-  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations()))
+  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[])
     AND uploaded_by = NULLIF(current_setting('app.user_id', true), '')::uuid);
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_files_upd ON contracts.msg_files;
 --> statement-breakpoint
 CREATE POLICY msg_files_upd ON contracts.msg_files AS RESTRICTIVE FOR UPDATE TO contracts_rw
-  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())))
-  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())));
+  USING ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]))
+  WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL AND conversation_id = ANY ((SELECT contracts.msg_my_conversations())::uuid[]));
 --> statement-breakpoint
 DROP POLICY IF EXISTS msg_files_del ON contracts.msg_files;
 --> statement-breakpoint
