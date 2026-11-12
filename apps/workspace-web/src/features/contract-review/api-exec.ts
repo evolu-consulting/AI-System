@@ -35,6 +35,7 @@ const CODES = new Set([
   "HOLD_FORBIDDEN",
   "HOLD_NOT_ALLOWED",
   "EVIDENCE_REQUIRED",
+  "EVIDENCE_FILE_NOT_OWNED",
   "NO_APPROVAL_FLOW",
 ]);
 export const execErrorKey = (code: string | undefined): string | null =>
