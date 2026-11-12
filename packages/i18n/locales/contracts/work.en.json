@@ -182,7 +182,7 @@
         },
         "record": {
           "title": "Approval record",
-          "pdf": "Download PDF",
+          "pdf": "Download approval record (PDF)",
           "pdfError": "Could not download the approval record PDF. You need permission to view this record — check and try again.",
           "loadError": "Could not load the approval record. Reload the page and try again.",
           "empty": "No approval step has been decided yet.",
@@ -194,7 +194,8 @@
           },
           "hidden": "An opinion/signature is attached — only people in the flow can view it.",
           "signature": "View signature",
-          "file": "Download file"
+          "file": "Download file",
+          "stageFallback": "Approval step"
         },
         "changes": {
           "title": "Changed since last time",

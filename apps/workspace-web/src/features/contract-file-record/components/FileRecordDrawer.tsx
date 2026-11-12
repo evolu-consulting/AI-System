@@ -127,7 +127,13 @@ export function FileRecordDrawer({
             <Section title={t("contracts.frec.sec.approval")} testId="frec-approval">
               <RecordBody id={target.contractId} />
               {target.kind === "step" && (
-                <EvidenceOf steps={evidenceStepsOf(target.file.id, r.lines)} />
+                <EvidenceOf
+                  steps={evidenceStepsOf(
+                    target.file.id,
+                    r.lines,
+                    t("contracts.work.u4.record.stageFallback"),
+                  )}
+                />
               )}
               {target.kind === "attachment" && (
                 <p className="m-0 mt-3 text-sm text-dim" data-testid="frec-evidence">

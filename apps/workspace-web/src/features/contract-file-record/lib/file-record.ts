@@ -28,12 +28,16 @@ export function nameOf(
 }
 
 /** Tên các bước duyệt mà tệp (id tệp hub) được gắn làm bằng chứng; không bước nào ⇒ []. Không trùng, giữ thứ tự bước. */
-export function evidenceStepsOf(fileId: string, lines: readonly RecordLine[]): string[] {
+export function evidenceStepsOf(
+  fileId: string,
+  lines: readonly RecordLine[],
+  fallback = "",
+): string[] {
   return [
     ...new Set(
       lines
         .filter((l) => l.fileIds.includes(fileId) || l.signatureId === fileId)
-        .map((l) => l.stage),
+        .map((l) => l.stage ?? fallback),
     ),
   ];
 }

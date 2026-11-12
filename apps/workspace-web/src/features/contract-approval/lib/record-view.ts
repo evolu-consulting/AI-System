@@ -4,7 +4,8 @@ import type { ApprovalRecord } from "@ai/contracts/pack-contracts";
 
 export type RecordLine = {
   key: string;
-  stage: string;
+  /** Tên bước cho người dùng; null ⇒ không tra được tên (UI ghi «Bước duyệt»). */
+  stage: string | null;
   action: "approve" | "return" | "reject";
   who: string;
   /** «thay {người được giao}» khi làm thay. */
@@ -19,14 +20,30 @@ export type RecordLine = {
   evidenceId: string | null;
 };
 
-export function recordLines(r: ApprovalRecord): RecordLine[] {
+/** Mã bước của quy trình (vd `truong-phong`, `step_2`): chữ thường + số + gạch, không dấu cách — KHÔNG phải tên cho người dùng. */
+const looksLikeKey = (s: string): boolean => /^[a-z0-9]+([-_][a-z0-9]+)*$/.test(s);
+
+/** Tên bước cho người dùng: tra mã bước trong các bước của thẻ duyệt; không tra được mà trông như mã ⇒ null (UI ghi «Bước duyệt», không lộ mã). */
+export function stageName(
+  stage: string,
+  steps: readonly { key: string; name: string }[] | undefined,
+): string | null {
+  const hit = steps?.find((x) => x.key === stage);
+  if (hit) return hit.name;
+  return looksLikeKey(stage) ? null : stage;
+}
+
+export function recordLines(
+  r: ApprovalRecord,
+  steps?: readonly { key: string; name: string }[],
+): RecordLine[] {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CR-127 U4 — luật hiển thị gom một chỗ, tách sau khi UI đóng băng
   return r.items.map((i) => {
     const e = i.evidence;
     const readable = e?.readable === true && r.can_read_evidence;
     return {
       key: i.task_id,
-      stage: i.stage,
+      stage: stageName(i.stage, steps),
       action: i.action,
       who: e?.by_user.display_name ?? i.actor.display_name ?? "",
       onBehalf: e?.on_behalf_of?.display_name ?? null,

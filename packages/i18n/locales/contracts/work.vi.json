@@ -182,7 +182,7 @@
         },
         "record": {
           "title": "Hồ sơ duyệt",
-          "pdf": "Tải PDF",
+          "pdf": "Tải hồ sơ duyệt (PDF)",
           "pdfError": "Không tải được PDF hồ sơ duyệt. Bạn cần quyền xem hồ sơ này — kiểm tra rồi thử lại.",
           "loadError": "Không tải được hồ sơ duyệt. Tải lại trang rồi thử lại.",
           "empty": "Chưa có bước duyệt nào được quyết.",
@@ -194,7 +194,8 @@
           },
           "hidden": "Có ý kiến/chữ ký kèm theo — chỉ người trong quy trình xem được.",
           "signature": "Xem chữ ký",
-          "file": "Tải tệp"
+          "file": "Tải tệp",
+          "stageFallback": "Bước duyệt"
         },
         "changes": {
           "title": "Đã đổi so với lần trước",

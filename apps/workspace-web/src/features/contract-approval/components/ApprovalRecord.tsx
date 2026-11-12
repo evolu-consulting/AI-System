@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { approvalKey, fetchApproval } from "../api";
 import {
   changesKey,
   downloadEvidenceFile,
@@ -86,6 +87,13 @@ export function RecordBody({ id }: { id: string }) {
     queryFn: ({ signal }) => fetchApprovalRecord(id, signal),
     retry: false,
   });
+  // Tên bước (thẻ duyệt, chung khoá với trang chi tiết): hồ sơ chỉ lưu MÃ bước.
+  const card = useQuery({
+    queryKey: approvalKey(id),
+    queryFn: ({ signal }) => fetchApproval(id, signal),
+    retry: false,
+    staleTime: 30_000,
+  });
   if (q.isPending) return <p className="text-sm text-dim">{t("contracts.common.loading")}</p>;
   if (q.isError || !q.data)
     return (
@@ -93,7 +101,7 @@ export function RecordBody({ id }: { id: string }) {
         {t("contracts.work.u4.record.loadError")}
       </p>
     );
-  const lines = recordLines(q.data);
+  const lines = recordLines(q.data, card.data?.steps);
   if (lines.length === 0)
     return <p className="text-sm text-dim">{t("contracts.work.u4.record.empty")}</p>;
   return (
@@ -106,7 +114,7 @@ export function RecordBody({ id }: { id: string }) {
             className="border-b border-rule-soft py-2 text-sm last:border-b-0"
             data-testid="record-line"
           >
-            <b>{l.stage}</b> · {l.who}
+            <b>{l.stage ?? t("contracts.work.u4.record.stageFallback")}</b> · {l.who}
             {l.onBehalf ? ` (${t("contracts.work.u4.record.behalf", { who: l.onBehalf })})` : ""} ·{" "}
             {t(`contracts.work.u4.record.action.${l.action}`)} ·{" "}
             <span className="text-dim">{new Date(l.at).toLocaleString("vi-VN")}</span>

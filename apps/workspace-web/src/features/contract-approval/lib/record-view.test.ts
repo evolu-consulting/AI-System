@@ -1,6 +1,6 @@
 // CR-127 · U4 · M6 · hồ sơ duyệt theo quyền xem bằng chứng (BR-26).
 import { describe, expect, test } from "bun:test";
-import { hasChanges, recordLines } from "./record-view";
+import { hasChanges, recordLines, stageName } from "./record-view";
 
 const U = "11111111-1111-4111-8111-111111111111";
 const person = { id: U, display_name: "Hoa" };
@@ -46,4 +46,22 @@ describe("recordLines", () => {
 test("hasChanges", () => {
   expect(hasChanges({ fields: [], clauses: [], return_note: null })).toBe(false);
   expect(hasChanges({ fields: [], clauses: [], return_note: "Sửa Điều 5" })).toBe(true);
+});
+
+describe("stageName (hồ sơ duyệt không lộ mã bước)", () => {
+  const steps = [{ key: "truong-phong", name: "Trưởng phòng duyệt" }];
+  test("mã bước tra được ⇒ tên bước", () => {
+    expect(stageName("truong-phong", steps)).toBe("Trưởng phòng duyệt");
+  });
+  test("mã không tra được ⇒ null (không in mã); tên sẵn (có dấu/cách) giữ nguyên", () => {
+    expect(stageName("truong-phong", undefined)).toBeNull();
+    expect(stageName("step_2", steps)).toBeNull();
+    expect(stageName("Kế toán", steps)).toBe("Kế toán");
+  });
+  test("recordLines dùng tên bước", () => {
+    const it = { ...(item(true) as object), stage: "truong-phong" } as never;
+    expect(recordLines({ items: [it], can_read_evidence: true }, steps)[0]?.stage).toBe(
+      "Trưởng phòng duyệt",
+    );
+  });
 });
