@@ -23,6 +23,14 @@ export const IconContract = (p: P) => (
     <path d="M14 3v5h5M9 13h6M9 17h4" />
   </svg>
 );
+/** CR-135: Hợp đồng nguyên tắc — hai lớp giấy chồng nhau. */
+export const IconFramework = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M8 3h9a2 2 0 0 1 2 2v11" />
+    <path d="M5 7h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" />
+    <path d="M7 12h6M7 16h4" />
+  </svg>
+);
 export const IconTransaction = (p: P) => (
   <svg {...base(p)}>
     <path d="M4 8h14M14 4l4 4-4 4" />

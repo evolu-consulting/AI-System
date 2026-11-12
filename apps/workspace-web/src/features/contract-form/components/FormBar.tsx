@@ -10,6 +10,7 @@ export function FormBar({
   cancel,
   save,
   sticky = true,
+  accent = false,
 }: {
   crumb: ReactNode;
   title: ReactNode;
@@ -19,6 +20,8 @@ export function FormBar({
   /** Nhóm nút chính (phải). */
   save: ReactNode;
   sticky?: boolean;
+  /** CR-135 Q2: thanh dính nền nhấn (accent nhạt + viền) cho nổi khỏi nội dung. */
+  accent?: boolean;
 }) {
   return (
     <div
@@ -27,6 +30,7 @@ export function FormBar({
         "mb-5 flex flex-col gap-1",
         sticky &&
           "sticky -top-7 z-10 -mx-1 -mt-7 border-b border-rule bg-ground px-1 pt-6 pb-3.5 max-md:-top-4 max-md:-mt-4 max-md:pt-4",
+        sticky && accent && "rounded-b-lg border border-act/30 bg-act-soft px-4",
       )}
     >
       <nav className="text-label text-dim">{crumb}</nav>

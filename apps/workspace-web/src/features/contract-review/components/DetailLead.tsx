@@ -57,11 +57,6 @@ export function DetailLead({
     <MetaLine>
       {typeof n === "string" && n ? <span>{n}</span> : null}
       <span className="inline-flex flex-wrap items-center gap-2">
-        {c.doc && (
-          <Tag tone={type === "framework" ? "ok" : type === "deal" ? "soon" : "grey"}>
-            <span data-testid="doc-type-tag">{t(`contracts.docframe.type.${type}`)}</span>
-          </Tag>
-        )}
         <Tag tone={DEAL_TONE[deal]}>{t(`contracts.cform.dealName.${deal}`)}</Tag>
       </span>
       {partner ? <TruncText maxWidth="20rem">{partner}</TruncText> : null}

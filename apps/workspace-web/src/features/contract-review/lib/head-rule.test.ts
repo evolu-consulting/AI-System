@@ -134,6 +134,7 @@ describe("NF1 · công ty chưa có quy trình duyệt (submit_block=no_flow)", 
 
 describe("headActs (CR-128 e)", () => {
   const rule = (o: Partial<HeadActIn["rule"]> = {}): HeadActIn["rule"] => ({
+    sticky: false,
     resubmit: false,
     submitBlocked: false,
     confirmSave: false,
@@ -177,5 +178,25 @@ describe("headActs (CR-128 e)", () => {
     expect(
       headActs({ rule: rule({ withdraw: true, hold: true }), view, canDelete: false }).primary,
     ).toBeNull();
+  });
+  test("CR-135 Q2: nháp lần đầu — chính = Xác nhận/Gửi duyệt, Lưu nháp + Huỷ + Xoá trong menu", () => {
+    const a = headActs({
+      rule: rule({ sticky: true }),
+      view: { ...view, confirm: true },
+      canDelete: true,
+    });
+    expect(a.primary).toBe("approvalConfirm");
+    expect(a.menu.map((m) => m.key)).toEqual(["saveDraft", "cancel", "delete"]);
+  });
+  test("CR-135 Q2: nháp chưa gửi duyệt được ⇒ Lưu nháp là nút chính, menu còn Huỷ", () => {
+    const a = headActs({ rule: rule({ sticky: true }), view, canDelete: false });
+    expect(a.primary).toBe("saveDraft");
+    expect(a.menu.map((m) => m.key)).toEqual(["cancel"]);
+  });
+  test("CR-135 Q12: chỉ DRAFT + người ghi mới đổi tên được", () => {
+    expect(headRule({ ...base }).rename).toBe(true);
+    expect(headRule({ ...base, write: false }).rename).toBe(false);
+    expect(headRule({ ...base, status: "processing" }).rename).toBe(false);
+    expect(headRule({ ...base, superseded: true }).rename).toBe(false);
   });
 });

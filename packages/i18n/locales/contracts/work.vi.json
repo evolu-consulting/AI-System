@@ -381,6 +381,7 @@
       },
       "act": {
         "resubmit": "Gửi lại",
+        "submit": "Gửi duyệt",
         "withdraw": "Rút về Nháp",
         "recreate": "Tạo hợp đồng mới từ văn bản này",
         "newVersion": "Tải phiên bản mới",

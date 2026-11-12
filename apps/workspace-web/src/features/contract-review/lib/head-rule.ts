@@ -43,6 +43,8 @@ export type HeadRule = {
   /** Ô thông tin sửa được (chỉ DRAFT, AI đã đọc xong). */
   canSave: boolean;
   sticky: boolean;
+  /** CR-135 Q12: đổi tên HĐ tại chỗ — chỉ DRAFT, người sửa được nháp (cùng điều kiện ô sửa được). */
+  rename: boolean;
   /** "Lưu nháp" (DRAFT, thẻ duyệt không đang giữ nút Xác nhận). */
   draftSave: boolean;
   /** "Xác nhận và lưu" của trang (DRAFT lần đầu, tenant tắt duyệt). */
@@ -86,6 +88,7 @@ export function headRule(i: HeadRuleIn): HeadRule {
   return {
     canSave,
     sticky: first,
+    rename: canSave,
     draftSave: first && !i.approvalConfirm,
     confirmSave: first && off && !i.approvalConfirm && !blocked,
     resubmit: canSave && i.round > 0 && (i.can.submit || blocked),
@@ -116,11 +119,14 @@ export type HeadActKey =
   | "hold"
   | "back"
   | "reject"
+  | "saveDraft"
+  | "cancel"
   | "delete";
 
 export type HeadActIn = {
   rule: Pick<
     HeadRule,
+    | "sticky"
     | "resubmit"
     | "submitBlocked"
     | "confirmSave"
@@ -169,6 +175,14 @@ export function headActs(i: HeadActIn): HeadActs {
   const menu: HeadMenuEntry[] = present
     .filter((k) => k !== primary)
     .map((key) => (blocked(key) ? { key, whyKey: "contracts.u5.err.NO_APPROVAL_FLOW" } : { key }));
+  // CR-135 Q2: nháp lần đầu — «Lưu nháp» + «Huỷ» vào menu (đầu danh sách); không có nút chính ⇒ «Lưu nháp» lên làm nút chính.
+  let main = primary;
+  if (r.sticky) {
+    if (main === null) main = "saveDraft";
+    menu.unshift(...(main === "saveDraft" ? [] : [{ key: "saveDraft" as const }]), {
+      key: "cancel" as const,
+    });
+  }
   if (i.canDelete) menu.push({ key: "delete", danger: true });
-  return { primary, menu };
+  return { primary: main, menu };
 }

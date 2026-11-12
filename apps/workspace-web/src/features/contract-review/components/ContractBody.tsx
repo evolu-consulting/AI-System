@@ -26,10 +26,11 @@ import { PartnerSendPanel } from "~/features/partner-inbox/components/PartnerSen
 import { ProductLinkDialog } from "~/features/product-links/components/ProductLinkDialog";
 import { EditLogPanel } from "~/features/promote-deal/components/EditLogPanel";
 import { PromoteDeal } from "~/features/promote-deal/components/PromoteDeal";
-import { contractKey, fileHref } from "../api";
+import { contractKey, fileHref, patchContractFields } from "../api";
 import type { useInfoForm } from "../hooks/use-info-form";
 import { headRule } from "../lib/head-rule";
 import { saveLabelKey } from "../lib/review";
+import { saveErrorText } from "../lib/save-error";
 import { ContractHead } from "./ContractHead";
 import { DetailGrid } from "./DetailGrid";
 import { DetailLead } from "./DetailLead";
@@ -58,22 +59,6 @@ function Fold({ on, label, children }: { on: boolean; label: string; children: R
       <summary className="cursor-pointer text-sm font-semibold">{label}</summary>
       <div className="mt-3">{children}</div>
     </details>
-  );
-}
-
-function SaveButton({ info, ap, confirm }: { info: Info; ap: ApprovalUi; confirm: boolean }) {
-  const { t } = useTranslation();
-  return (
-    <>
-      <button
-        type="button"
-        className="btn btn-primary btn-sm"
-        disabled={info.busy || ap.busy || (!confirm && !info.dirty)}
-        onClick={() => void info.save()}
-      >
-        {info.busy ? t("contracts.review.saving") : t(saveLabelKey(confirm))}
-      </button>
-    </>
   );
 }
 
@@ -119,7 +104,34 @@ export function ContractBody(p: {
   const file = c.file
     ? { href: fileHref(id), name: c.file.name, onOpen: () => setOrigOpen(true) }
     : null;
-  const saveButton = canSave ? <SaveButton info={info} ap={ap} confirm={confirm} /> : null;
+  const saveButton = canSave ? (
+    <button
+      type="button"
+      className="btn btn-primary btn-sm"
+      disabled={info.busy || ap.busy || (!confirm && !info.dirty)}
+      onClick={() => void info.save()}
+    >
+      {info.busy ? t("contracts.review.saving") : t(saveLabelKey(confirm))}
+    </button>
+  ) : null;
+  const onCancel = () =>
+    rule.cancel === "reset" ? info.reset() : void nav({ to: "/contracts/list" });
+  // CR-135 Q12: đổi tên tại chỗ. Form đang có sửa dở ⇒ chỉ đổi ô tên trong form (lưu cùng «Lưu nháp»/«Gửi duyệt», một nguồn);
+  // chưa sửa gì ⇒ PATCH `title` ngay rồi tải lại.
+  const rename = async (next: string): Promise<string | null> => {
+    if (info.edited) {
+      info.set("title", next);
+      return null;
+    }
+    try {
+      await patchContractFields(id, c.version, { title: next });
+      await qc.invalidateQueries({ queryKey: contractKey(id) });
+      await qc.invalidateQueries({ queryKey: ["contracts", "list"] });
+      return null;
+    } catch (e) {
+      return saveErrorText(e, t);
+    }
+  };
   const refresh = () => void qc.invalidateQueries({ queryKey: contractKey(id) });
   const lead = (
     <DetailLead
@@ -145,10 +157,7 @@ export function ContractBody(p: {
             title={c.title}
             lead={lead}
             sticky={rule.sticky}
-            onCancel={() =>
-              rule.cancel === "reset" ? info.reset() : void nav({ to: "/contracts/list" })
-            }
-            saveButton={rule.draftSave ? saveButton : null}
+            rename={{ enabled: rule.rename, onSave: rename }}
             actions={
               <HeadActions
                 id={id}
@@ -161,6 +170,8 @@ export function ContractBody(p: {
                   view: ap.view,
                   busy: ap.busy || info.busy,
                   pageConfirm: () => void info.confirmSave.start(),
+                  saveDraft: () => void info.save(),
+                  cancel: onCancel,
                 }}
               />
             }

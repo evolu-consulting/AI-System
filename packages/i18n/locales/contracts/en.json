@@ -731,6 +731,8 @@
       },
       "saving": "Saving…",
       "saveDraft": "Save draft",
+      "titleEdit": "Rename contract",
+      "titleEmpty": "The contract name cannot be empty — type a name and press Enter.",
       "foldEdit": "View and edit contract details",
       "notFound": "Contract not found — go back to the list and pick another one.",
       "notVisible": "This contract has not been sent for approval yet, or you do not have access. Ask its creator to confirm it.",

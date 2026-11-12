@@ -32,6 +32,9 @@ export type HeadApprovalActs = {
   onAsk: (kind: "reject" | "return") => void;
   /** "Xác nhận và lưu" của trang (nháp lần đầu, tenant tắt duyệt). */
   pageConfirm: () => void;
+  /** CR-135 Q2: «Lưu nháp» / «Huỷ» của thanh nháp (nằm trong menu «Thao tác»). */
+  saveDraft: () => void;
+  cancel: () => void;
 };
 
 export function HeadActions({
@@ -90,10 +93,16 @@ export function HeadActions({
     { label: string; run: () => void; attr?: string; testId: string }
   > = {
     approvalConfirm: {
-      label: "contracts.approval.confirmSave",
+      label: rule.sticky ? "contracts.u5.act.submit" : "contracts.approval.confirmSave",
       run: approval.onConfirm,
       testId: "act-approvalConfirm",
     },
+    saveDraft: {
+      label: "contracts.review.saveDraft",
+      run: approval.saveDraft,
+      testId: "act-saveDraft",
+    },
+    cancel: { label: "contracts.common.cancel", run: approval.cancel, testId: "act-cancel" },
     pageConfirm: {
       label: "contracts.approval.confirmSave",
       run: approval.pageConfirm,
