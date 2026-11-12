@@ -70,6 +70,8 @@ describe("chatRouteKind", () => {
     expect(meStreamEventAllowed(false, "process.updated")).toBe(true);
     expect(meStreamEventAllowed(false, "review_task.created")).toBe(true);
     expect(meStreamEventAllowed(false, "room.message")).toBe(false);
+    for (const e of ["msg.new", "msg.deleted", "msg.read", "msg.conversation"])
+      expect(meStreamEventAllowed(false, e)).toBe(true); // CR-132 M4 · tin nhắn đi qua cả khi công ty tắt Chat AI
     expect(meStreamEventAllowed(false, "room.run")).toBe(false);
     expect(meStreamEventAllowed(true, "room.message")).toBe(true);
   });

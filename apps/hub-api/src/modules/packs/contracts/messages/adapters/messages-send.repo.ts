@@ -2,7 +2,13 @@
 // chèn tin → trả thành viên); trùng `client_id` ⇒ trả bản cũ, không tăng seq. Thu hồi = MỘT câu (tin + soft-delete tệp). Tải tệp lên ở M5.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { MessagesRepo, RawMessage, RevokeRow, SentRow } from "../application/messages.ports";
+import type {
+  MessagesRepo,
+  RawMessage,
+  ReadRow,
+  RevokeRow,
+  SentRow,
+} from "../application/messages.ports";
 import { iso, uuidArr } from "./messages.sql";
 
 const FILE_JSON = sql`json_build_object('id', f.id, 'name', f.name, 'mime', f.mime, 'size', f.size_bytes::int)`;
@@ -79,18 +85,24 @@ export function messagesSendRepo(
         fl as (update contracts.files f set deleted_at = now() from contracts.msg_files mf
           where mf.tenant_id = ${t}::uuid and mf.conversation_id = ${cid}::uuid and mf.seq = ${seq}::bigint
             and exists (select 1 from upd) and f.tenant_id = ${t}::uuid and f.id = mf.file_id and f.deleted_at is null returning f.id)
-        select m.sender_id, m.deleted_at is not null as was_deleted, exists (select 1 from upd) as done from m`);
+        select m.sender_id, m.deleted_at is not null as was_deleted, exists (select 1 from upd) as done,
+          (select coalesce(array_agg(mm.user_id::text), '{}') from contracts.msg_members mm
+            where mm.tenant_id = ${t}::uuid and mm.conversation_id = ${cid}::uuid) as member_ids from m`);
       return r ?? null;
     },
     // Cùng công thức `clampRead(current, requested, lastSeq)` (domain): max(hiện tại, min(yêu cầu, tin cuối)).
     markRead: async (me, cid, seq) => {
-      const [r] = await tx.execute<{ last_read_seq: number }>(sql`update contracts.msg_members m
+      const [r] = await tx.execute<ReadRow>(sql`update contracts.msg_members m
         set last_read_seq = greatest(m.last_read_seq, least(${seq}::bigint, c.last_seq))
         from contracts.msg_conversations c
         where m.tenant_id = ${t}::uuid and m.conversation_id = ${cid}::uuid and m.user_id = ${me}::uuid
           and c.tenant_id = m.tenant_id and c.id = m.conversation_id
-        returning m.last_read_seq::int as last_read_seq`);
-      return r ? r.last_read_seq : null;
+        returning m.last_read_seq::int as seq,
+          (select p.last_read_seq from contracts.msg_members p where p.tenant_id = m.tenant_id
+            and p.conversation_id = m.conversation_id and p.user_id = m.user_id)::int as prev,
+          (select coalesce(array_agg(mm.user_id::text), '{}') from contracts.msg_members mm
+            where mm.tenant_id = m.tenant_id and mm.conversation_id = m.conversation_id) as member_ids`);
+      return r ?? null;
     },
   };
 }

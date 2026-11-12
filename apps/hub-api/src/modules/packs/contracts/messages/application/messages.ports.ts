@@ -48,7 +48,15 @@ export type RawMessage = {
   files: { id: string; name: string; mime: string; size: number }[];
 };
 export type SentRow = RawMessage & { dup: boolean; member_ids: string[] };
-export type RevokeRow = { sender_id: string; was_deleted: boolean; done: boolean };
+export type RevokeRow = {
+  sender_id: string;
+  was_deleted: boolean;
+  done: boolean;
+  /** Mọi thành viên (người nhận `msg.deleted`). */
+  member_ids: string[];
+};
+/** Kết quả đánh dấu đã đọc: mốc mới, mốc trước (không tiến ⇒ không phát `msg.read`), mọi thành viên. */
+export type ReadRow = { seq: number; prev: number; member_ids: string[] };
 
 export type MessagesRepo = {
   conversations(
@@ -98,8 +106,8 @@ export type MessagesRepo = {
   }): Promise<RawMessage["files"]>;
   filesOf(cid: string, seq: number): Promise<RawMessage["files"]>;
   revoke(m: { me: string; cid: string; seq: number }): Promise<RevokeRow | null>;
-  /** null = không phải thành viên. Trả mốc đọc mới (đã kẹp theo `clampRead`: không lùi, không vượt tin cuối). */
-  markRead(me: string, cid: string, seq: number): Promise<number | null>;
+  /** null = không phải thành viên. Trả mốc đọc mới + cũ + mọi thành viên (đã kẹp theo `clampRead`: không lùi, không vượt tin cuối). */
+  markRead(me: string, cid: string, seq: number): Promise<ReadRow | null>;
 };
 export type MessagesRepos = { messages: MessagesRepo };
 

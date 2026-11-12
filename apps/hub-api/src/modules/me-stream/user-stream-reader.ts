@@ -3,9 +3,11 @@
 // Entry sai contract ⇒ bỏ + `warn user-event-invalid` (không log nội dung, R24). Không pub/sub bộ nhớ ⇒ đúng nhiều instance.
 import {
   type MeStreamEvent,
+  type MeStreamMsgEvent,
   type MeStreamProcessEvent,
   type MeStreamRunEvent,
   parseMeStreamEvent,
+  parseMeStreamMsgEvent,
   parseMeStreamProcessEvent,
   parseMeStreamRunEvent,
 } from "@ai/contracts/chat";
@@ -19,7 +21,10 @@ import type { StreamInfo } from "./me-stream.rules";
 
 /** Một sự kiện đã đánh id Redis Stream (`stream.reset` không bao giờ đến từ Redis). */
 /** X2b D10: kèm sự kiện run phòng (`MeStreamRunEvent`); P-a D16: + sự kiện quy trình. */
-export type UserEntry = { id: string; ev: MeStreamEvent | MeStreamRunEvent | MeStreamProcessEvent };
+export type UserEntry = {
+  id: string;
+  ev: MeStreamEvent | MeStreamRunEvent | MeStreamProcessEvent | MeStreamMsgEvent;
+};
 type StreamEntry = [id: string, fields: string[]];
 type Sub = { key: string; last: string; push: (e: UserEntry[]) => void };
 
@@ -161,7 +166,8 @@ export function parseFields(fields: string[]): UserEntry["ev"] | null {
   return (
     parseMeStreamEvent(body.event, data) ??
     parseMeStreamRunEvent(body.event, data) ??
-    parseMeStreamProcessEvent(body.event, data)
+    parseMeStreamProcessEvent(body.event, data) ??
+    parseMeStreamMsgEvent(body.event, data)
   );
 }
 

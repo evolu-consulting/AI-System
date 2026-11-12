@@ -195,6 +195,7 @@ export const MsgReadEventDataSchema = z.strictObject({
   seq: z.number().int().min(0),
 });
 export const MsgConversationChangeSchema = z.enum(["added", "removed", "updated"]);
+export type MsgConversationChange = z.infer<typeof MsgConversationChangeSchema>;
 export const MsgConversationEventDataSchema = z.strictObject({
   conversation_id: z.uuid(),
   change: MsgConversationChangeSchema,
@@ -211,3 +212,17 @@ export const MeStreamMsgEventSchema = z.discriminatedUnion("event", [
   z.strictObject({ event: z.literal("msg.conversation"), data: MsgConversationEventDataSchema }),
 ]);
 export type MeStreamMsgEvent = z.infer<typeof MeStreamMsgEventSchema>;
+
+/** `data` là chuỗi SSE (JSON) hoặc object đã parse; JSON hỏng, event lạ, khoá thừa ⇒ `null` (không ném). Dùng ở người đọc `ustream:<user>` (hub) và client. */
+export function parseMeStreamMsgEvent(event: string, data: unknown): MeStreamMsgEvent | null {
+  let json: unknown = data;
+  if (typeof data === "string") {
+    try {
+      json = JSON.parse(data);
+    } catch {
+      return null;
+    }
+  }
+  const r = MeStreamMsgEventSchema.safeParse({ event, data: json });
+  return r.success ? r.data : null;
+}

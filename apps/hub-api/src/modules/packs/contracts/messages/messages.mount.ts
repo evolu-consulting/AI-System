@@ -7,19 +7,26 @@ import {
   internalUsersAmong,
   type PackAccessView,
   type PackGuardVars,
+  type PackStreamPublishMany,
   packTenantOnly,
 } from "../../kit/public";
 import { messagesRepo } from "./adapters/messages.repo";
 import { messagesRoutes } from "./adapters/messages.routes";
 import { messagesUsecases } from "./application/messages.usecase";
 
-export function messagesModule(db: Db, view: PackAccessView): Hono<PackGuardVars> {
+/** `publish` (kit `packStreamPublishMany`): phát `msg.*` tới `/me/stream` sau commit; vắng (không Redis) ⇒ không phát. */
+export function messagesModule(
+  db: Db,
+  view: PackAccessView,
+  publish?: PackStreamPublishMany,
+): Hono<PackGuardVars> {
   const uc = messagesUsecases({
     uow: packTenantOnly(
       createPackUow(db, "contracts", (tx, t) => ({ messages: messagesRepo(tx, t) })),
     ),
     people: internalUsersAmong(db),
     newId: () => Bun.randomUUIDv7(),
+    publish,
   });
   return messagesRoutes(view, uc);
 }

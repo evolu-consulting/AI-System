@@ -57,8 +57,13 @@ export { packHosts } from "./adapters/pack-hosts";
 export { packNavRoutes } from "./adapters/pack-nav.route";
 export { packNavRegistry } from "./adapters/pack-nav-registry";
 export { withPackJobRoleInTx, withPackRoleInTx } from "./adapters/pack-role-in-tx";
-export type { PackStreamEvent, PackStreamPublish } from "./adapters/pack-stream-publish";
-export { packStreamPublish } from "./adapters/pack-stream-publish";
+export type {
+  PackStreamEvent,
+  PackStreamFrame,
+  PackStreamPublish,
+  PackStreamPublishMany,
+} from "./adapters/pack-stream-publish";
+export { packStreamPublish, packStreamPublishMany } from "./adapters/pack-stream-publish";
 export { PackToolRegistry } from "./adapters/pack-tools.registry";
 export { createPackUow, packTenantOnly } from "./adapters/pack-uow";
 export {

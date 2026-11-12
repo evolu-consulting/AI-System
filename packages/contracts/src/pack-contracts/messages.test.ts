@@ -5,6 +5,7 @@ import {
   CreateConversationRequestSchema,
   MeStreamMsgEventSchema,
   MsgListQuerySchema,
+  parseMeStreamMsgEvent,
   SendMessageRequestSchema,
 } from "./messages";
 
@@ -85,5 +86,18 @@ describe("MeStreamMsgEvent", () => {
     expect(ev("msg.conversation", { conversation_id: U(2), change: "removed" })).toBe(true);
     expect(ev("msg.conversation", { conversation_id: U(2), change: "x" })).toBe(false);
     expect(ev("msg.new", { conversation_id: U(2), message, unread_total: 1 })).toBe(false);
+  });
+});
+
+describe("parseMeStreamMsgEvent", () => {
+  test("chuỗi SSE hoặc object đúng ⇒ sự kiện; JSON hỏng / event lạ / khoá thừa ⇒ null", () => {
+    const data = { conversation_id: U(2), change: "added" };
+    expect(parseMeStreamMsgEvent("msg.conversation", JSON.stringify(data))?.event).toBe(
+      "msg.conversation",
+    );
+    expect(parseMeStreamMsgEvent("msg.conversation", data)?.event).toBe("msg.conversation");
+    expect(parseMeStreamMsgEvent("msg.conversation", "{hỏng")).toBeNull();
+    expect(parseMeStreamMsgEvent("process.updated", data)).toBeNull();
+    expect(parseMeStreamMsgEvent("msg.conversation", { ...data, x: 1 })).toBeNull();
   });
 });

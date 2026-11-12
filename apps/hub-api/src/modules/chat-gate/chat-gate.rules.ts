@@ -2,7 +2,7 @@
 // `app-catalog.rules` (`TENANT_APP_FEATURES`: feature theo CÔNG TY, không theo nhóm/user; feature chưa tồn tại ⇒ mở;
 // platform_admin luôn được). Không I/O: đọc ảnh catalog trong cache cấu hình (0 SQL mỗi request).
 
-import { ME_STREAM_PROCESS_EVENTS } from "@ai/contracts/chat";
+import { ME_STREAM_MSG_EVENTS, ME_STREAM_PROCESS_EVENTS } from "@ai/contracts/chat";
 import type { Role } from "@ai/contracts/common";
 import { routeMessage } from "../mention/public";
 import { classifyBang } from "../processes/public";
@@ -91,8 +91,11 @@ export function chatGateVerdict(kind: ChatRouteKind, chatOk: boolean, dockOk: bo
   return kind === "dock" && dockOk;
 }
 
-const PROCESS_EVENTS: ReadonlySet<string> = new Set(ME_STREAM_PROCESS_EVENTS);
+const PROCESS_EVENTS: ReadonlySet<string> = new Set([
+  ...ME_STREAM_PROCESS_EVENTS,
+  ...ME_STREAM_MSG_EVENTS, // CR-132 M4 · tin nhắn nhân viên đi qua cả khi công ty tắt Chat AI
+]);
 
-/** CR-107 · `/me/stream` của người không có Chat AI: chỉ sự kiện quy trình (`process.*`, `review_task.*`); có ⇒ mọi sự kiện. */
+/** CR-107 · `/me/stream` của người không có Chat AI: chỉ sự kiện quy trình (`process.*`, `review_task.*`, `esign.updated`) + `msg.*` (tin nhắn); có ⇒ mọi sự kiện. */
 export const meStreamEventAllowed = (chatOk: boolean, event: string): boolean =>
   chatOk || PROCESS_EVENTS.has(event);

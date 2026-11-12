@@ -49,12 +49,12 @@ export async function openGroup(
 
 /**
  * Bớt người / rời nhóm. Chủ rời ⇒ người vào sớm nhất thành chủ (UPDATE vai TRƯỚC, rồi mới xoá hàng mình — RLS `msg_members`);
- * người cuối rời ⇒ xoá hội thoại + đánh dấu xoá tệp.
+ * người cuối rời ⇒ xoá hội thoại + đánh dấu xoá tệp. Trả những người CÒN LẠI (nhận `msg.conversation`).
  */
 export async function leaveOrRemove(
   r: MessagesRepo,
   a: { me: string; cid: string; targetId: string },
-): Promise<void> {
+): Promise<string[]> {
   const f = await r.facts(a.me, a.cid, true);
   if (!f) throw new MsgFail("MSG_NOT_FOUND");
   if (f.kind === "direct") throw new MsgFail("MSG_DIRECT_FIXED");
@@ -67,6 +67,7 @@ export async function leaveOrRemove(
   if (next) await r.setOwner(a.cid, next);
   await r.removeMember(a.cid, a.targetId);
   if (rest.length === 0) await r.dropIfEmpty(a.cid);
+  return rest.map((m) => m.user_id);
 }
 
 /** Chèn tin + gắn tệp. Trùng `client_id` ⇒ bản cũ (kèm tệp đã gắn). Tệp không hợp lệ ⇒ `MSG_FILE_INVALID` (tx hoàn tác cả tin). */

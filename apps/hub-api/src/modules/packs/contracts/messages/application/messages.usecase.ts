@@ -11,7 +11,14 @@ import type {
   SendMessageRequest,
   UnreadResponse,
 } from "@ai/contracts/pack-contracts";
-import type { PackUow, PackWho } from "../../../kit/public";
+import type { PackStreamPublishMany, PackUow, PackWho } from "../../../kit/public";
+import {
+  conversationFrames,
+  deletedFrames,
+  type MsgFrame,
+  newFrames,
+  readFrames,
+} from "../domain/messages.events";
 import { canEditGroup, dmKey, groupSizeOk, messageEmpty } from "../domain/messages.rules";
 import { leaveOrRemove, MsgFail, openDirect, openGroup, sendInTx } from "./messages.ops";
 import type { MessagesRepo, MessagesRepos, PeopleLookup, RawConversation } from "./messages.ports";
@@ -57,7 +64,12 @@ export function messagesUsecases(d: {
   uow: PackUow<MessagesRepos>;
   people: PeopleLookup;
   newId: () => string;
+  /** Phát `msg.*` tới `/me/stream` SAU commit (một pipeline Redis cho cả lô khung); vắng (không Redis) ⇒ không phát. Lỗi Redis chỉ log, không ném. */
+  publish?: PackStreamPublishMany | undefined;
 }) {
+  const emit = async (frames: MsgFrame[]): Promise<void> => {
+    if (d.publish && frames.length > 0) await d.publish(frames).catch(() => undefined);
+  };
   const peopleOf = (who: PackWho, rows: readonly RawConversation[]): Promise<People> =>
     d.people(who, personIdsOf(rows));
   const detail = async (who: PackWho, row: RawConversation | null): Promise<ConversationDetail> => {
@@ -80,7 +92,9 @@ export function messagesUsecases(d: {
     const made = await retryOnRace(() =>
       d.uow.tenant(who, (r) => openDirect(r.messages, { me, peer, key, newId: d.newId() })),
     );
-    return { detail: await detail(who, made.row), created: made.created };
+    const out = await detail(who, made.row);
+    if (made.created) await emit(conversationFrames(out.id, { added: [me, peer] }));
+    return { detail: out, created: made.created };
   }
 
   async function createGroup(who: PackWho, title: string, memberIds: string[]) {
@@ -90,7 +104,9 @@ export function messagesUsecases(d: {
     const row = await d.uow.tenant(who, (r) =>
       openGroup(r.messages, { me: who.userId, title, memberIds, newId: d.newId() }),
     );
-    return { detail: await detail(who, row), created: true };
+    const out = await detail(who, row);
+    await emit(conversationFrames(out.id, { added: [who.userId, ...memberIds] }));
+    return { detail: out, created: true };
   }
 
   return {
@@ -129,18 +145,19 @@ export function messagesUsecases(d: {
     },
 
     async rename(who: PackWho, cid: string, title: string): Promise<ConversationDetail> {
-      const row = await d.uow.tenant(who, async (r) => {
-        await lockGroupAsOwner(r.messages, who.userId, cid);
+      const { row, members } = await d.uow.tenant(who, async (r) => {
+        const f = await lockGroupAsOwner(r.messages, who.userId, cid);
         await r.messages.rename(cid, title);
-        return r.messages.conversation(who.userId, cid);
+        return { row: await r.messages.conversation(who.userId, cid), members: f.members };
       });
+      await emit(conversationFrames(cid, { rest: members.map((m) => m.user_id) }));
       return detail(who, row);
     },
 
     /** Thêm người: chỉ chủ nhóm; người đã trong nhóm bỏ qua; người mới bắt đầu «đã đọc tới tin cuối» (không đỏ cả lịch sử cũ). */
     async addMembers(who: PackWho, cid: string, userIds: string[]): Promise<ConversationDetail> {
       const people = await d.people(who, userIds);
-      const row = await d.uow.tenant(who, async (r) => {
+      const { row, add, have } = await d.uow.tenant(who, async (r) => {
         const f = await lockGroupAsOwner(r.messages, who.userId, cid);
         if (!userIds.every((id) => active(people, id))) throw new MsgFail("MSG_USER_INVALID");
         const have = new Set(f.members.map((m) => m.user_id));
@@ -148,13 +165,17 @@ export function messagesUsecases(d: {
         if (!groupSizeOk(f.members.length, add.length)) throw new MsgFail("MSG_GROUP_FULL");
         const rows = add.map((u) => ({ user_id: u, role: "member" as const }));
         await r.messages.addMembers(cid, rows, f.last_seq);
-        return r.messages.conversation(who.userId, cid);
+        return { row: await r.messages.conversation(who.userId, cid), add, have };
       });
+      if (add.length > 0) await emit(conversationFrames(cid, { added: add, rest: [...have] }));
       return detail(who, row);
     },
 
     async removeMember(who: PackWho, cid: string, targetId: string): Promise<void> {
-      await d.uow.tenant(who, (r) => leaveOrRemove(r.messages, { me: who.userId, cid, targetId }));
+      const rest = await d.uow.tenant(who, (r) =>
+        leaveOrRemove(r.messages, { me: who.userId, cid, targetId }),
+      );
+      await emit(conversationFrames(cid, { removed: [targetId], rest }));
     },
 
     async messages(who: PackWho, cid: string, q: MsgListQuery): Promise<MessagePage> {
@@ -185,7 +206,9 @@ export function messagesUsecases(d: {
       const row = await retryOnRace(() =>
         d.uow.tenant(who, (r) => sendInTx(r.messages, { me: who.userId, cid, req })),
       );
-      return { message: messageOf(row, cid), created: !row.dup, memberIds: row.member_ids };
+      const message = messageOf(row, cid);
+      if (!row.dup) await emit(newFrames(cid, message, row.member_ids));
+      return { message, created: !row.dup, memberIds: row.member_ids };
     },
 
     /** Thu hồi tin của mình (mọi lúc, lặp lại vô hại). Tin người khác ⇒ 403. */
@@ -193,14 +216,19 @@ export function messagesUsecases(d: {
       const r = await d.uow.tenant(who, (x) => x.messages.revoke({ me: who.userId, cid, seq }));
       if (!r) throw new MsgFail("MSG_NOT_FOUND");
       if (r.sender_id !== who.userId) throw new MsgFail("MSG_NOT_SENDER");
+      if (r.done) await emit(deletedFrames(cid, seq, r.member_ids));
     },
 
     async markRead(who: PackWho, cid: string, seq: number): Promise<{ unread_total: number }> {
-      return d.uow.tenant(who, async (r) => {
-        if ((await r.messages.markRead(who.userId, cid, seq)) === null)
-          throw new MsgFail("MSG_NOT_FOUND");
-        return { unread_total: await r.messages.unread(who.userId) };
+      const out = await d.uow.tenant(who, async (r) => {
+        const row = await r.messages.markRead(who.userId, cid, seq);
+        if (row === null) throw new MsgFail("MSG_NOT_FOUND");
+        return { row, unread_total: await r.messages.unread(who.userId) };
       });
+      // Chỉ phát khi mốc đọc TIẾN (mở lại hội thoại đã đọc hết không sinh sự kiện).
+      if (out.row.seq > out.row.prev)
+        await emit(readFrames(cid, who.userId, out.row.seq, out.row.member_ids));
+      return { unread_total: out.unread_total };
     },
   };
 }

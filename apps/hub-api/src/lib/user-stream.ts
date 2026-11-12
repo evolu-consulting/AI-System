@@ -3,6 +3,7 @@
 // (không nội dung tin, R24), không ném: tin đã ghi DB, client tự đồng bộ lại bằng `GET /rooms`.
 import {
   type MeStreamEvent,
+  type MeStreamMsgEvent,
   type MeStreamProcessEvent,
   type MeStreamRunEvent,
   USER_STREAM_MAXLEN,
@@ -23,6 +24,7 @@ export type UserEvent = { userIds: string[] } & (
   | Exclude<MeStreamEvent, { event: "stream.reset" }>
   | MeStreamRunEvent
   | MeStreamProcessEvent
+  | MeStreamMsgEvent
 );
 
 export const userStreamKey = (userId: string): string => `ustream:${userId}`;
