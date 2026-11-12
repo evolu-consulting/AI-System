@@ -28,6 +28,11 @@ Cơ sở dữ liệu không còn feature `community-read|write|admin` và Group 
 - Kịch bản: khi nhân viên nội bộ bất kỳ mở hàng đợi duyệt/đơn tham gia/báo cáo thì được xem [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » khe community.post-moderation]
 - Kịch bản: khi công ty có gói và add-on thì khe duyệt bài gán được theo add-on [test: apps/hub-api/src/modules/processes/library/slot-assigned.int.test.ts » slotAssigned]
 
+## Kiểm tra đỏ có sẵn (chạy trên ref 0a87ad46d, trước p3a, worktree tạm)
+- `defs-flow.int.test.ts` 6 ca đỏ ⇒ **có sẵn** (POST /process-defs 403 — CR-127 E8 `tenantAdminReadOnly`), không do CR-130.
+- `tools/scripts/src/tenant-purge.int.test.ts` TREO (kill sau 121 s) cả trên ref gốc ⇒ **có sẵn**; chưa điều tra (ngoài phạm vi).
+- 2 unit `ADM-FR-72 · múi giờ tenant` (packages/contracts) đỏ — không liên quan lát này (không đụng timezone).
+
 ## Việc còn lại
 - Test khoá cần qc: `tests/acceptance/com-c3/_support/cast.ts:80` vẫn `enablePack(sql,[A,B],"community")` (vô hại: không còn feature ⇒ chỉ tạo Group `community-*` rỗng; nên đổi sang `contracts` + `enableAddon`), các spec `com-c2`/`com-c3`/`NITI/onboard.int.test.ts` nhắc `community-*` hoặc `EXTERNAL_PACKS`.
 - Web/admin-web (lát 4): `feature-meta.ts`, `feature-assign.test.ts`, `apps-table.test.ts`, `x3-approve-rules.test.ts`, `packages/i18n` còn nhắc `community-*`; `COMMUNITY_MANIFEST.levelFeatures` còn `community-*` (catalog cũ); `packages/db/src/feature-app-col.int.test.ts` giữ (hàm `feature_app_of` không đổi).

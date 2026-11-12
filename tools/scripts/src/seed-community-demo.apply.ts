@@ -3,10 +3,11 @@
 // audience D2, luồng D3 chạy y như thật. Lặp lại được: bài định danh theo (người đăng, tiêu đề), bình luận theo (luồng, người, nội dung).
 // `hub` = pool vai hub_api (RLS gói); `admin` = pool admin_api. Cố định số câu theo số bài (dữ liệu mẫu nhỏ, không phải đường nóng).
 import { type CreatePostInput, CreatePostInputSchema } from "@ai/contracts/community";
-import { type Db, type Tx, withScope } from "@ai/db";
+import { type Db, type Tx, withConfigWrite, withScope } from "@ai/db";
 import { withPackScope } from "@ai/db/pack-scope";
 import { sql } from "drizzle-orm";
-import { grantEntitlement } from "../../../apps/admin-api/src/modules/features/features.entitlements";
+import { auditOf } from "../../../apps/admin-api/src/lib/audit/audit.write";
+import { publishConfigChanged } from "../../../apps/admin-api/src/lib/config/config-write";
 import { enablePack } from "../../../apps/admin-api/src/modules/packs/packs.service";
 import * as comments from "../../../apps/hub-api/src/modules/packs/community/adapters/comment-list.service";
 import {
@@ -62,12 +63,39 @@ export async function enableCommunityPack(
       );
     throw e;
   }
-  const [f] = (await withScope(admin, { kind: "platform" }, (tx) =>
-    tx.execute(sql`select id from admin.features where key = ${COMMUNITY_ADDON}`),
-  )) as unknown as { id: string }[];
-  if (!f)
-    throw new Error(`seed-community-demo: thiếu feature ${COMMUNITY_ADDON} (chạy db:migrate)`);
-  await grantEntitlement(call, f.id, tenantId);
+  // Add-on = chỉ entitlement (idempotent: cấp lại khi đã thu hồi); config_changed để Hub nạp lại cache.
+  const w = await withConfigWrite(
+    admin,
+    { kind: "platform" },
+    async (tx, ch) => {
+      const rows =
+        (await tx.execute(sql`insert into admin.feature_entitlements (feature_id, tenant_id, granted_by)
+        select f.id, ${tenantId}::uuid, ${hostUserId}::uuid from admin.features f where f.key = ${COMMUNITY_ADDON}
+        on conflict (feature_id, tenant_id) do update set revoked_at = null, granted_at = now()
+          where admin.feature_entitlements.revoked_at is not null
+        returning feature_id::text as id`)) as unknown as { id: string }[];
+      const [f] = (await tx.execute(
+        sql`select 1 from admin.features where key = ${COMMUNITY_ADDON}`,
+      )) as unknown as unknown[];
+      if (!f)
+        throw new Error(`seed-community-demo: thiếu feature ${COMMUNITY_ADDON} (chạy db:migrate)`);
+      if (rows[0]) {
+        ch.changed({ entity: "entitlement", tenantId });
+        const dto = { feature_id: rows[0].id, tenant_id: tenantId };
+        ch.audit(
+          auditOf("grant", "entitlement", {
+            entityId: rows[0].id,
+            entityName: COMMUNITY_ADDON,
+            tenantId,
+            before: null,
+            after: dto,
+          }),
+        );
+      }
+    },
+    { actorId: hostUserId },
+  );
+  if (w.version !== null) await publishConfigChanged(admin, w.version, w.events);
 }
 
 /**
@@ -94,7 +122,6 @@ async function accessFor(c: CommunityCtx, userId: string, orgId: string | null):
     },
     org: orgId,
     canWrite: true,
-    isAdmin: orgId === null,
     dir,
   };
 }
