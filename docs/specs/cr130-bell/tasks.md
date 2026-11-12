@@ -22,7 +22,9 @@ Không đổi API/bảng hub, không SSE, poll 60s như cũ. e2e có thể vỡ 
 `apps/workspace-web/src/features/notifications/notification-row.test.tsx`; `bun test packages/web-kit`.
 
 ## Delta (so với docs/current)
-### MODIFIED docs/current/web/web-hop-nhat.md
+Trạng thái gộp: chưa gộp
+
+
 #### Yêu cầu: Một chuông thông báo dùng chung (nguồn: cr130-bell)
 Workspace-web dùng đúng component chuông của web-kit như chat/admin/studio; thông báo Community và Sổ Hợp Tác chung một chuông, bấm hàng mở đúng trang (kể cả `/community?post=<id>`); chân «Xem tất cả/Cài đặt thông báo» chỉ khi người dùng có gói Sổ Hợp Tác; tin nhắn không vào chuông.
 - Kịch bản: hàng thông báo có link là liên kết thật, chưa đọc có chấm và đậm, hiện ngày tạo [test: apps/workspace-web/src/features/notifications/notification-row.test.tsx » linkRows: <a href> thật, chưa đọc có chấm + đậm, có giờ]
