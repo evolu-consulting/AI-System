@@ -39,6 +39,12 @@ export const ALLOWLIST: { file: string; max: number; reason: string }[] = [
     max: 1,
     reason: "`c` là đối tượng TS đầu vào (tên chứng từ CKS), không phải cột contracts.title",
   },
+  {
+    file: "messages/adapters/messages.repo.ts",
+    max: 3,
+    reason:
+      "`c` là hội thoại tin nhắn (`contracts.msg_conversations`), `title` là TÊN NHÓM chat (CR-132) — không phải `contracts.title` của HĐ",
+  },
 ];
 
 export type Finding = { file: string; line: number; msg: string };
