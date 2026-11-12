@@ -89,9 +89,9 @@ describe("com-c12 · seed-community-demo", () => {
     expect(
       await count(
         `select count(*)::int n from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
-         where f.key like 'community-%' and e.tenant_id = '${tenantId}' and e.revoked_at is null`,
+         where f.key = 'contracts-community' and e.tenant_id = '${tenantId}' and e.revoked_at is null`,
       ),
-    ).toBe(3);
+    ).toBe(1); // ADR-0044: add-on Bảng tin (không còn 3 feature community-*)
     // Nội dung đối tác: liên hệ bị che ở cột masked, raw vẫn còn cho người đăng.
     expect(
       await count(
@@ -143,8 +143,8 @@ describe("com-c12 · seed-community-demo", () => {
     expect(a.granted).toEqual({ owner: [name], editor: [name] });
     const b = await runSeed(admin, opts({ grantOwner: [name] }));
     expect(b.granted.owner).toEqual([]);
-    expect(await members("community-owner")).toBe(1);
-    expect(await members("community-editor")).toBe(1);
+    expect(await members("contracts-owner")).toBe(1);
+    expect(await members("contracts-editor")).toBe(1);
     expect(
       await count(
         `select count(*)::int n from admin.group_members where tenant_id = '${tenantId}' and added_by is not null
@@ -153,6 +153,6 @@ describe("com-c12 · seed-community-demo", () => {
     ).toBe(0); // actor hệ thống
     const ext = (PARTNER_SEEDS[0] as (typeof PARTNER_SEEDS)[0]).username;
     await expect(runSeed(admin, opts({ grantOwner: [ext] }))).rejects.toThrow(/ngoài/);
-    expect(await members("community-owner")).toBe(1);
+    expect(await members("contracts-owner")).toBe(1);
   });
 });

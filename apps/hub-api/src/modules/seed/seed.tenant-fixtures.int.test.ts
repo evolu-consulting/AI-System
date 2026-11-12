@@ -44,7 +44,7 @@ async function seed(appEnv: string, fixtures: boolean): Promise<void> {
   }
 }
 
-const ROLE_GROUPS = ["contracts-owner", "community-owner", "contracts-editor", "community-editor"];
+const ROLE_GROUPS = ["contracts-owner", "contracts-editor"]; // ADR-0044: không còn Group community
 const U = [
   ["evolu", "julian.bui", "tenant_admin"],
   ["evolu", "thomas.tran", "member"],
@@ -129,11 +129,11 @@ describe("seed-refresh · fixture công ty evolu/demo", () => {
   it("development + fixtures (chạy 2 lần): owner ∈ Group owner, editor evolu, engine, Kế toán 2 người, locale vi, brand, URL", async () => {
     await seed("development", true);
     await seed("development", true);
-    for (const g of ["contracts-owner", "community-owner"]) {
+    for (const g of ["contracts-owner"]) {
       expect(await members("evolu", g)).toEqual(["julian.bui"]);
       expect(await members("demo", g)).toEqual(["demo-owner"]);
     }
-    for (const g of ["contracts-editor", "community-editor"]) {
+    for (const g of ["contracts-editor"]) {
       expect(await members("evolu", g)).toEqual(["edgar.nguyen", "thomas.tran", "vio.ngo"]);
       expect(await members("demo", g)).toEqual([]); // demo giữ vai theo demo.yaml
     }

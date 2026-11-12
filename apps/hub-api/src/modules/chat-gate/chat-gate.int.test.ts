@@ -56,13 +56,12 @@ beforeAll(async () => {
     (${T.beta}, ${GRP_CV}, ${USERS.an.id})`;
   await sql`insert into admin.feature_grants (tenant_id, feature_id, group_id, user_id) values
     (${T.beta}, ${F.cread}, ${GRP_CV}, null)`;
-  // com-c10b · gói Cộng đồng: `an` (nhóm GRP_CV) được đọc gói `community` → mở dock `community`; `binh` thì không.
-  await sql`insert into admin.features (key, name, status) values
-    ('community-read', ${sql.json({ vi: "Xem Cộng đồng" })}, 'on') on conflict (key) do nothing`;
+  // com-c10b · ADR-0044: dock `community` mở khi có quyền gói contracts ∧ add-on `contracts-community` (migration 0018 gieo feature);
+  // `an` (nhóm GRP_CV, đã có contracts-read ở trên) được cấp add-on → mở dock; `binh` thì không.
   const [cm] = await sql<
     { id: string }[]
-  >`select id from admin.features where key = 'community-read'`;
-  if (!cm) throw new Error("thiếu feature community-read");
+  >`select id from admin.features where key = 'contracts-community'`;
+  if (!cm) throw new Error("thiếu feature contracts-community");
   await sql`insert into admin.feature_entitlements (feature_id, tenant_id) values (${cm.id}, ${T.beta})
     on conflict (feature_id, tenant_id) do update set revoked_at = null`;
   await sql`insert into admin.feature_grants (tenant_id, feature_id, group_id, user_id) values

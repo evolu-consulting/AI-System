@@ -85,6 +85,19 @@ const fk = (k: string): string => k.replaceAll("_", "-");
  * Bật gói `key` cho các tenant bằng SQL (tương đương `PUT /admin/tenants/:id/packs/:key`): entitlement 3 feature, 3 Group vai,
  * 6 grant. Số câu = 3, không phụ thuộc số tenant. Trả `tenant -> role -> group_id`.
  */
+/** ADR-0044: bật add-on (feature lẻ, vd `contracts-community`) cho các tenant — chỉ entitlement (add-on không có Group riêng). Feature phải có sẵn (migration). */
+export async function enableAddon(
+  sql: Sql,
+  tenantIds: readonly string[],
+  key: string,
+): Promise<void> {
+  const [f] = await sql<{ id: string }[]>`select id from admin.features where key = ${key}`;
+  if (!f) throw new Error(`enableAddon: thiếu feature ${key} (chạy migration)`);
+  await sql`insert into admin.feature_entitlements (feature_id, tenant_id)
+    select ${f.id}::uuid, t from unnest(${sql.array([...tenantIds])}::uuid[]) t
+    on conflict (feature_id, tenant_id) do update set revoked_at = null`;
+}
+
 export async function enablePack(
   sql: Sql,
   tenantIds: readonly string[],

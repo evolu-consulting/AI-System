@@ -4,12 +4,12 @@
 // luật (tenant admin đặt, kể cả không có mặc định) giữ nguyên — không đè lựa chọn của tenant. MỘT câu theo tập cho mọi khe (khe +
 // tenant qua tham số JSON), idempotent (điều kiện "chưa có luật" + ON CONFLICT DO NOTHING ⇒ nhiều instance chạy cùng lúc vô hại).
 // Def hiệu lực không đổi: trước khi cấp, `RESOLVE_SLOT_SQL` đã rơi về đúng mẫu khe. Chạy lúc boot + mỗi lần ảnh cấu hình đổi.
-import { packFeatureKey } from "@ai/contracts/packs";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
+import { slotFeatureKey } from "../../packs/kit/public";
 
 export type DefaultSlot = { slot: string; feature: string };
 
@@ -48,7 +48,7 @@ export const defaultSlotsOf = (
 ): DefaultSlot[] =>
   list()
     .filter((s) => !s.key.startsWith("dlc.") && !s.optIn)
-    .map((s) => ({ slot: s.key, feature: packFeatureKey(s.packKey, "read") }));
+    .map((s) => ({ slot: s.key, feature: slotFeatureKey(s.packKey) }));
 
 /** Cấp phát một lượt (scope system). `tenantIds` vắng/null ⇒ mọi tenant. Trả số tenant × khe vừa được cấp. */
 export async function ensureSlotDefaults(

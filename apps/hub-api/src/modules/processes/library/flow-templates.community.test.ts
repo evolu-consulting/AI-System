@@ -14,13 +14,13 @@ describe("CR-125 c5 · mẫu Community", () => {
     expect(flowDefIssues(def, COMMUNITY_MANIFEST.events)).toEqual([]);
   });
 
-  it("công ty chỉ có nhóm chủ gói ⇒ dùng được ngay, nhóm duyệt khớp community-owner", () => {
+  it("công ty chỉ có nhóm chủ gói ⇒ dùng được ngay, nhóm duyệt khớp contracts-owner", () => {
     const r = templateReadiness(templateNeeds(def.stages, MODULES), {
       features: new Set(),
       tools: new Set(),
-      groupKeys: ["community-owner"],
+      groupKeys: ["contracts-owner"],
     });
     expect(r.ready).toBe(true);
-    expect(r.groupMap).toEqual({ "community-admin": "community-owner" });
+    expect(r.groupMap).toEqual({ "contracts-admin": "contracts-owner" });
   });
 });

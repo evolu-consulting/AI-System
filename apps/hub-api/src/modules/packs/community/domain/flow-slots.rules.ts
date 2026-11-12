@@ -108,7 +108,7 @@ function stage(shape: (typeof SHAPES)[string], s: Body["steps"][number], i: numb
           branch: [],
           exclude_starter: true,
           group_id: null,
-          group_key: "community-admin",
+          group_key: "contracts-admin",
           escalate: null,
         }
       : { kind: "auto", branch: last ? [] : [] },

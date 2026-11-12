@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { createDb, type Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
-import { enablePack, tenants, users } from "@ai/test-kit/builders";
+import { enableAddon, enablePack, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { AppError } from "../../lib/errors";
@@ -65,7 +65,8 @@ beforeAll(async () => {
   sql = openOwner(2);
   db = createDb(urls().hubApi, { max: 2 });
   T = await tenants(sql, 6, 71);
-  await enablePack(sql, T, "community");
+  await enablePack(sql, T, "contracts");
+  await enableAddon(sql, T, "contracts-community"); // ADR-0044
   actor = (await users(sql, T[0] as string, 1, { from: 71 }))[0] as string;
   const [d] =
     await sql`select default_def_id::text as id from hub.process_slots where slot = ${SLOT_MODERATION}`;

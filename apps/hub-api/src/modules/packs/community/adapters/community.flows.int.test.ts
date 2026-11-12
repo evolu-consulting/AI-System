@@ -22,7 +22,8 @@ let db: Db;
 let c: Cast;
 let app: Hono<PackGuardVars>;
 let hostPost = "";
-const F = { read: "c-r", write: "c-w", admin: "c-a" };
+// ADR-0044: Bảng tin = gói contracts ∧ add-on contracts-community
+const F = { read: "c-r", write: "c-w", admin: "c-a", addon: "c-ad" };
 type Who = "hA" | "hM" | "s1a" | "s1b" | "s2" | "b2";
 const ORG: Partial<Record<Who, "S1" | "S2" | "B2">> = { s1a: "S1", s1b: "S1", s2: "S2", b2: "B2" };
 
@@ -48,9 +49,10 @@ function view(): PackAccessView {
   return {
     catalog: async () => ({
       features: [
-        { id: F.read, key: "community-read", status: "on" },
-        { id: F.write, key: "community-write", status: "on" },
-        { id: F.admin, key: "community-admin", status: "on" },
+        { id: F.read, key: "contracts-read", status: "on" },
+        { id: F.write, key: "contracts-write", status: "on" },
+        { id: F.admin, key: "contracts-admin", status: "on" },
+        { id: F.addon, key: "contracts-community", status: "on" },
       ],
       entitled: new Set(Object.values(F).map((f) => `${c.A}:${f}`)),
       grantGroups: new Map([
@@ -149,11 +151,11 @@ describe("khe community.post-moderation [CR-120]", () => {
     agentOut = () => flag();
     const id = await post();
     expect(await modRow(id)).toMatchObject({ moderation: "pending", mod_screen: "flagged" });
-    // hàng đợi: chỉ admin chủ quản
+    // hàng đợi: mọi nhân viên nội bộ (ADR-0044)
     expect(
       (await call("hA", "GET", "/moderation/queue")).json.items.map((i: { id: string }) => i.id),
     ).toContain(id);
-    expect((await call("hM", "GET", "/moderation/queue")).status).toBe(403);
+    expect((await call("hM", "GET", "/moderation/queue")).status).toBe(200); // ADR-0044: mọi nhân viên nội bộ duyệt
     expect((await call("s1a", "GET", "/moderation/queue")).status).toBe(403);
     expect((await call("s1a", "GET", "/moderation/mine")).json.items[0].id).toBe(id);
     // bảng tin: người đăng thấy; chủ quản (thành viên) chưa thấy tới khi duyệt
@@ -168,10 +170,9 @@ describe("khe community.post-moderation [CR-120]", () => {
     expect(await seen(c.s1b)).toBe(0);
     expect(await seen(c.s1a)).toBe(1);
     expect(await seen(c.hM)).toBe(1);
-    // quyền quyết: đối tác / thành viên ⇒ 403; sai taskId ⇒ 409; action lạ ⇒ 422
+    // quyền quyết: đối tác ⇒ 403 (ADR-0044: mọi nhân viên nội bộ quyết được); sai taskId ⇒ 409; action lạ ⇒ 422
     const body = { action: "approve" };
     expect((await call("s1a", "POST", `/moderation/${id}/decide`, body)).status).toBe(403);
-    expect((await call("hM", "POST", `/moderation/${id}/decide`, body)).status).toBe(403);
     expect(
       (
         await call("hA", "POST", `/moderation/${id}/decide`, {
@@ -384,15 +385,12 @@ describe("khe community.partner-join [CR-120]", () => {
         (i: { id: string }) => i.id,
       ),
     ).toContain(id);
-    expect((await call("hM", "GET", "/join-requests")).status).toBe(403);
+    expect((await call("hM", "GET", "/join-requests")).status).toBe(200); // ADR-0044
     expect((await call("s2", "GET", "/join-requests")).json.items).toEqual([]);
     expect((await call("b2", "GET", "/join-requests")).json.items).toHaveLength(1);
     // quyền quyết
     expect(
       (await call("b2", "POST", `/join-requests/${id}/decide`, { action: "approve" })).status,
-    ).toBe(403);
-    expect(
-      (await call("hM", "POST", `/join-requests/${id}/decide`, { action: "approve" })).status,
     ).toBe(403);
     expect(
       (await call("hA", "POST", `/join-requests/${id}/decide`, { action: "hide" })).status,
@@ -498,7 +496,7 @@ describe("khe community.report [CR-120]", () => {
     expect(
       (await call("hA", "GET", "/reports?pending=1")).json.items.map((i: { id: string }) => i.id),
     ).toContain(id);
-    expect((await call("hM", "GET", "/reports")).status).toBe(403);
+    expect((await call("hM", "GET", "/reports")).status).toBe(200); // ADR-0044
   });
 
   it("triage lỗi ⇒ triage=error nhưng vẫn xử lý tay, quyết hide ⇒ resolved + bài bị ẩn, quyền + quyết lại", async () => {
@@ -520,9 +518,6 @@ describe("khe community.report [CR-120]", () => {
       ).postTitle,
     ).toBe(title ?? "");
     expect((await call("s1b", "POST", `/reports/${id}/decide`, { action: "hide" })).status).toBe(
-      403,
-    );
-    expect((await call("hM", "POST", `/reports/${id}/decide`, { action: "hide" })).status).toBe(
       403,
     );
     expect((await call("hA", "POST", `/reports/${id}/decide`, { action: "approve" })).status).toBe(

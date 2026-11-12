@@ -74,7 +74,6 @@ beforeAll(async () => {
       actor: { userId: (u as { id: string }).id },
     };
     await enablePack(call, ids.get(t) as string, "contracts");
-    await enablePack(call, ids.get(t) as string, "community");
   }
 }, 180_000);
 
@@ -134,9 +133,8 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
       where e.tenant_id = ${demo} and e.revoked_at is null and f.key = 'contracts-partner-confirm'`;
     expect(feats.length).toBe(1);
     const owners = await sql`select g.key from admin.groups g where g.tenant_id = ${demo}
-      and g.key in ('contracts-owner', 'community-owner', 'truong-phong', 'giam-doc', 'phong-kinh-doanh') order by 1`;
+      and g.key in ('contracts-owner', 'truong-phong', 'giam-doc', 'phong-kinh-doanh') order by 1`;
     expect(owners.map((x) => x.key)).toEqual([
-      "community-owner",
       "contracts-owner",
       "giam-doc",
       "phong-kinh-doanh",

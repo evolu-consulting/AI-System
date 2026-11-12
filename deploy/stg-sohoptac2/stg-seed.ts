@@ -51,7 +51,7 @@ try {
     out: need("STG_PW_OUT"),
     hubDb,
   });
-  console.log(`[stg-seed] demo-owner ∈ community-owner: ${await ensureOwnerInGroup(db)}`);
+  console.log(`[stg-seed] demo-owner ∈ contracts-owner: ${await ensureOwnerInGroup(db)}`);
 } finally {
   await hubDb.close();
   await db.close();

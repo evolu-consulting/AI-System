@@ -21,15 +21,9 @@ let db: Db;
 let c: Cast;
 let app: Hono<PackGuardVars>;
 let reads = 0;
-const F = ["c-r", "c-w", "c-a", "k-r", "k-w", "k-a"];
-const KEYS = [
-  "community-read",
-  "community-write",
-  "community-admin",
-  "contracts-read",
-  "contracts-write",
-  "contracts-admin",
-];
+const F = ["c-ad", "k-r", "k-w", "k-a"];
+// ADR-0044: Bảng tin = gói contracts ∧ add-on contracts-community (không còn feature community-*)
+const KEYS = ["contracts-community", "contracts-read", "contracts-write", "contracts-admin"];
 
 const view = (): PackAccessView => ({
   catalog: async () => ({
@@ -38,9 +32,7 @@ const view = (): PackAccessView => ({
     grantGroups: new Map(
       F.map((f, i) => [
         `${c.A}:${f}`,
-        i % 3 === 0
-          ? [c.roles.owner, c.roles.editor, c.roles.viewer]
-          : [c.roles.owner, c.roles.editor],
+        i < 2 ? [c.roles.owner, c.roles.editor, c.roles.viewer] : [c.roles.owner, c.roles.editor],
       ]),
     ),
   }),

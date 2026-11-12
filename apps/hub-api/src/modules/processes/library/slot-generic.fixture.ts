@@ -1,15 +1,23 @@
 // CHỈ CHO TEST (CR-127 Z3d-2): khe mẫu cho các int kiểm CƠ CHẾ CHUNG của thư viện/định tuyến/gán khe (không riêng HĐ). Dùng khe
 // Community còn sống `community.post-moderation` + mẫu mặc định do hub 0092 gieo (id cố định, đã xuất bản v1) — thay cho khe duyệt HĐ cũ.
 
+import { enableAddon, enablePack } from "@ai/test-kit/builders";
 import type { Sql } from "@ai/test-kit/db";
 import { communitySlotSpecs } from "../../packs/community/public";
 import { slotRegistry } from "../../packs/kit/public";
 
 export const GEN_SLOT = "community.post-moderation";
-export const GEN_PACK = "community";
-export const GEN_FEATURE = "community-read";
+/** Gói quyền của khe (ADR-0044: Bảng tin = gói contracts + add-on `GEN_FEATURE`); dùng `enableGenPack` để bật cho tenant. */
+export const GEN_PACK = "contracts";
+export const GEN_FEATURE = "contracts-community";
 export const GEN_DEFAULT_ID = "0c120000-0000-4000-8000-000000000921";
 export const GEN_DEFAULT_KEY = "community-post-moderation";
+
+/** Bật gói + add-on của khe mẫu cho các tenant (entitlement `contracts-*` + `contracts-community`). */
+export async function enableGenPack(sql: Sql, tenantIds: readonly string[]): Promise<void> {
+  await enablePack(sql, tenantIds, GEN_PACK);
+  await enableAddon(sql, tenantIds, GEN_FEATURE);
+}
 
 /** Đăng ký 3 khe Community (như `community.mount`) vào registry của tiến trình test. */
 export function registerCommunitySlots(): void {
@@ -39,7 +47,7 @@ export function genSlotBody(tag?: string): { steps: Record<string, unknown>[] } 
       key: "review",
       kind: "review",
       name: "Quản trị duyệt bài",
-      group_key: "community-admin",
+      group_key: "contracts-admin",
       remind_every_h: 24,
       escalate_after_h: 48,
     },

@@ -24,8 +24,8 @@ let sql: Sql;
 let db: Db;
 let c: Cast;
 let app: Hono<PackGuardVars>;
-const F = ["c-r", "c-w", "c-a"];
-const KEYS = ["community-read", "community-write", "community-admin"];
+const F = ["c-r", "c-w", "c-a", "c-ad"]; // ADR-0044: contracts-* + add-on Bảng tin
+const KEYS = ["contracts-read", "contracts-write", "contracts-admin", "contracts-community"];
 
 const view = (): PackAccessView => ({
   catalog: async () => ({

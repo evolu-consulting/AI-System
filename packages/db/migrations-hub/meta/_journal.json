@@ -855,6 +855,13 @@
       "when": 1806901208000,
       "tag": "0138_cr127_remove_shared_company_flows",
       "breakpoints": true
+    },
+    {
+      "idx": 122,
+      "version": "7",
+      "when": 1806901300000,
+      "tag": "0139_cr130_slot_group_contracts",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,7 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
 import { linkRunFiles } from "../../attachments/public";
+import { surfaceOf } from "../../packs/kit/public";
 import { outcomeHandlerFor } from "../adapters/runs/flow-ports";
 import { nodeFeatureMiss } from "../defs/node-features";
 import { type FlowEventAttach, FlowRunSuperseded } from "../runs/flow-event-attach";
@@ -58,7 +59,7 @@ async function libraryDefFor(
 /** CR-113 · cr125-fix-owner-override · Group Toàn quyền của app (`<app>-owner`) CÙNG tenant của sự kiện — quyết thay mọi bước duyệt
  *  (`withOwnerOverride` lúc tạo run, cùng luật đường khe). Không có Group ⇒ rỗng. */
 async function ownerGroupIdsOf(d: ProcessDepsCore, tenantId: string, app: string) {
-  const key = packGroupKey(app, "owner");
+  const key = packGroupKey(surfaceOf(app)?.pack ?? app, "owner"); // ADR-0044: mặt Bảng tin dùng nhóm chủ gói contracts
   const rows = await withHubScope(d.db, { kind: "system" }, (tx) =>
     tx.execute<{ id: string }>(sql`select id::text as id from admin.groups
       where tenant_id = ${tenantId}::uuid and key = ${key}`),

@@ -96,10 +96,10 @@ export async function setPartnerDevPasswords(
 }
 
 /** Group gói giữ quyền chủ quản đầy đủ (do `enablePack` tạo). */
-export const OWNER_GROUP = "community-owner";
+export const OWNER_GROUP = "contracts-owner";
 
 /**
- * Sau `enablePack`: demo-owner vào Group `community-owner` (nội bộ vào gói theo Group — thiếu thì 403 PACK_FORBIDDEN). Như
+ * Sau `enablePack`: demo-owner vào Group `contracts-owner` (nội bộ vào gói theo Group — thiếu thì 403 PACK_FORBIDDEN). Như
  * tenant-owner-setup: một configWrite (audit + config_changed để Hub nạp lại). Đã là thành viên ⇒ không đổi.
  */
 export async function ensureOwnerInGroup(db: Db): Promise<"added" | "exists"> {
@@ -121,7 +121,7 @@ export async function ensureOwnerInGroup(db: Db): Promise<"added" | "exists"> {
   );
   if (!r)
     throw new Error(
-      `dev-fixture: thiếu demo-owner hoặc Group ${OWNER_GROUP} (gói community chưa bật?)`,
+      `dev-fixture: thiếu demo-owner hoặc Group ${OWNER_GROUP} (gói contracts chưa bật?)`,
     );
   if (r.member) return "exists";
   // Actor audit = HỆ THỐNG (actor_id null, như audit của bộ giới hạn đăng nhập) — không ghi demo-owner tự thêm mình.

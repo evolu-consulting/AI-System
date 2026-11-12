@@ -30,7 +30,7 @@ export const DEFAULT_APPS: readonly repo.DefaultApp[] = [
     name: { vi: "Cộng đồng", en: "Community" },
     icon: "users",
     audience: "all",
-    requiredFeature: "community-read",
+    requiredFeature: "contracts-community",
     sso: true,
     sortOrder: 25,
   },

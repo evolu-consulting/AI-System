@@ -185,8 +185,10 @@ export const DEMO_USERS: FixtureUser[] = [
   password: DEMO_PASSWORD,
 }));
 
-/** Gói bật cho tenant demo khi `scripts/dev-up.ps1` dựng máy dev: Sổ Hợp Tác + Community. */
-export const DEMO_PACKS = ["contracts", "community", "dlc"] as const; // dlc-engine · gói DLC (khe thư viện + duyệt bước)
+/** Gói bật cho tenant demo khi `scripts/dev-up.ps1` dựng máy dev: Sổ Hợp Tác (+ add-on Bảng tin). */
+export const DEMO_PACKS = ["contracts", "dlc"] as const; // dlc-engine · gói DLC (khe thư viện + duyệt bước)
+/** ADR-0044: Bảng tin không còn là gói — bật bằng add-on của gói contracts (admin nền tảng bật; dev demo vẫn có Bảng tin). */
+export const DEMO_ADDONS = ["contracts-community"] as const;
 
 /** Bật gói cho `evolu` và đưa user demo vào Group vai của gói: tenant_admin ⇒ owner, còn lại ⇒ editor. Sau `ensureDemoFixture`. */
 export function ensureDemoPacks(adminUrl: string): Promise<void> {
@@ -212,6 +214,12 @@ export async function ensureTenantPacks(
     const groups = (state.groups as Json[] | undefined) ?? [];
     await addPackMembers(api, String(hit.id), pack, groups, "owner", t.owners);
     await addPackMembers(api, String(hit.id), pack, groups, "editor", t.editors);
+  }
+  for (const key of DEMO_ADDONS) {
+    const fs = await call(api, "GET", `/admin/features?q=${key}&limit=50`);
+    const f = (fs.items as Json[]).find((x) => x.key === key);
+    if (!f) throw new Error(`thiếu feature ${key} (chạy db:migrate)`);
+    await call(api, "PUT", `/admin/features/${String(f.id)}/entitlements/${String(hit.id)}`);
   }
 }
 

@@ -6,14 +6,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { withHubScope } from "@ai/db/hub-scope";
-import { enablePack, tenantId } from "@ai/test-kit/builders";
+import { tenantId } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../lib/db";
 import { deleteAssignment, upsertAssignment, upsertSlotDefault } from "./slot-assign.repo";
 import { slotAssigned } from "./slot-assigned.repo";
 import { ensureSlotDefaults } from "./slot-defaults";
-import { GEN_DEFAULT_ID, GEN_FEATURE, GEN_PACK, GEN_SLOT } from "./slot-generic.fixture";
+import { enableGenPack, GEN_DEFAULT_ID, GEN_FEATURE, GEN_SLOT } from "./slot-generic.fixture";
 
 const SLOT = GEN_SLOT;
 const DFLT = GEN_DEFAULT_ID;
@@ -41,7 +41,7 @@ beforeAll(async () => {
   db = connectDb(urls().hubApi, 4);
   await o`insert into admin.tenants (id, key, name) values (${A}, 't1401', 'A'), (${B}, 't1402', 'B'),
     (${C}, 't1403', 'C'), (${D}, 't1404', 'D')`;
-  await enablePack(o, [A, B], GEN_PACK);
+  await enableGenPack(o, [A, B]);
   const [r] = await o<
     { id: string }[]
   >`insert into hub.process_defs (tenant_id, key, name, description, input_hint,

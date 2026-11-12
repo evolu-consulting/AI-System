@@ -1,5 +1,5 @@
 // com-prod-seed · `--grant-owner` / `--grant-editor` của seed-community-demo: đưa user NỘI BỘ của tenant vào Group
-// `community-owner` / `community-editor` (do enablePack tạo). Như ensureOwnerInGroup: một configWrite (audit `membersAudit` +
+// `contracts-owner` / `contracts-editor` (do enablePack(contracts) tạo). Như ensureOwnerInGroup: một configWrite (audit `membersAudit` +
 // config_changed để Hub nạp lại), actor = HỆ THỐNG (actor_id null). Idempotent (đã là thành viên ⇒ bỏ qua); user ngoài (đối tác)
 // ⇒ TỪ CHỐI cả lô (đúng luật CR-102a của admin addMembers); user không có ⇒ lỗi. Không in/ghi mật khẩu.
 import { type Db, withConfigWrite, withScope } from "@ai/db";
@@ -8,8 +8,9 @@ import { publishConfigChanged } from "../../../apps/admin-api/src/lib/config/con
 import { pgArray } from "../../../apps/admin-api/src/lib/sql";
 import { membersAudit } from "../../../apps/admin-api/src/modules/groups/groups.service";
 
-export const EDITOR_GROUP = "community-editor";
-export const OWNER_GROUP_KEY = "community-owner";
+// ADR-0044: Bảng tin dùng nhóm gói contracts.
+export const EDITOR_GROUP = "contracts-editor";
+export const OWNER_GROUP_KEY = "contracts-owner";
 
 /** "a, b,,a" ⇒ ["a","b"] (cắt khoảng trắng, bỏ rỗng/trùng). Thiếu giá trị (undefined hoặc cờ kế tiếp) ⇒ lỗi. */
 export function parseUserList(flag: string, v: string | undefined): string[] {
@@ -60,7 +61,7 @@ export async function grantGroup(
     return { ...g, rows };
   });
   if (!info)
-    throw new Error(`seed-community-demo: thiếu Group ${groupKey} (gói community chưa bật?)`);
+    throw new Error(`seed-community-demo: thiếu Group ${groupKey} (gói contracts chưa bật?)`);
   const bad = checkGrantTargets(info.rows, usernames);
   if (bad) throw new Error(`seed-community-demo: ${bad}`);
   const todo = info.rows.filter((r) => !r.member);

@@ -18,7 +18,7 @@ const SPEC: SeedSpec = {
   tenantName: "Seed Test Co",
   timezone: "Asia/Ho_Chi_Minh",
   emailDomain: "seedtest.example.invalid",
-  packs: ["contracts", "community"],
+  packs: ["contracts"],
   root: D("pb-root", "Ban Root"),
   departments: [D("pb-sales", "Sales"), D("pb-acc", "Accounting")],
   people: [
@@ -126,7 +126,7 @@ describe("seed-niti", () => {
     expect(dep.map((g) => g.key)).toEqual(["pb-acc", "pb-root", "pb-sales"]);
     const own =
       await o`select u.username from admin.group_members m join admin.groups g on g.id = m.group_id
-      join admin.users u on u.id = m.user_id where m.tenant_id = ${t} and g.key in ('contracts-owner','community-owner') order by 1`;
+      join admin.users u on u.id = m.user_id where m.tenant_id = ${t} and g.key in ('contracts-owner') order by 1`;
     expect([...new Set(own.map((x) => x.username))]).toEqual(["boss"]);
     // CR-127 Z3: không tạo def / gán / luật định tuyến nào từ seed.
     expect(

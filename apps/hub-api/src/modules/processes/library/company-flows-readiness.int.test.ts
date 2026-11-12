@@ -1,6 +1,6 @@
 // CR-125 · c5 · int (Hono thật `companyFlowsRoutes` + DB thật): công ty không bao giờ nhận mẫu mà nó không áp dụng được.
 // Gán (platform) và sao chép (công ty) mẫu cần tính năng chưa bật ⇒ 422 FLOW_TEMPLATE_NOT_READY nêu tính năng + ai cần làm gì;
-// mẫu chỉ cần bước lõi ⇒ gán + sao chép được, nhóm duyệt `community-admin` khớp nhóm chủ gói `community-owner` (không đoán nhóm khác);
+// mẫu chỉ cần bước lõi ⇒ gán + sao chép được, nhóm duyệt `contracts-admin` khớp nhóm chủ gói `contracts-owner` (không đoán nhóm khác);
 // công ty chưa có nhóm nào khớp ⇒ bước để trống ("Chọn người duyệt") + cảnh báo, không chặn.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Role } from "@ai/contracts/common";
@@ -14,7 +14,7 @@ import { mapError } from "../../../lib/errors";
 import type { ProcessDeps } from "../core/ports";
 import { companyFlowsRoutes } from "./company-flows.routes";
 
-const X = tenantId(1271); // có nhóm chủ gói community-owner
+const X = tenantId(1271); // có nhóm chủ gói contracts-owner
 const Z = tenantId(1272); // chưa có nhóm nào
 const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
   P: { userId: userId(1270), tenantId: X, role: "platform_admin" },
@@ -54,7 +54,7 @@ const approve = {
   name: "Duyệt bài",
   step: 0,
   executor: { kind: "approve", reject_step: 1, return_step: 1 },
-  after: { kind: "review", group_key: "community-admin", branch: [] },
+  after: { kind: "review", group_key: "contracts-admin", branch: [] },
   answerer: { kind: "starter" },
   real_action: false,
 };
@@ -80,7 +80,7 @@ beforeAll(async () => {
   await o`insert into admin.tenants (id, key, name) values (${X}, 't1271', 'X'), (${Z}, 't1272', 'Z')`;
   await users(o, X, 2, { from: 1270 });
   await users(o, Z, 1, { from: 1273 });
-  gOwner = [...(await groups(o, X, ["community-owner"])).values()][0] as string;
+  gOwner = [...(await groups(o, X, ["contracts-owner"])).values()][0] as string;
   okTpl = await libDef("c5-ok", [approve, end]);
   needFeature = await libDef("c5-need", [showPost, end]);
   app = new Hono<AuthVars>();
@@ -111,6 +111,6 @@ describe("CR-125 c5 · mẫu dùng được ở công ty", () => {
     });
     const ok = await call("A", "GET", `${P(X)}/readiness/${okTpl}`);
     expect(ok.json.ready).toBe(true);
-    expect(ok.json.groupMap).toEqual({ "community-admin": "community-owner" });
+    expect(ok.json.groupMap).toEqual({ "contracts-admin": "contracts-owner" });
   });
 });

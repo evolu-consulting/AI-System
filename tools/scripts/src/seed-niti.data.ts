@@ -12,7 +12,7 @@ export type Person = {
   head: boolean;
   /** tenant_admin ⇒ app Admin + owner các gói; member ⇒ vai theo `packRole`. */
   role: "tenant_admin" | "member";
-  /** Vai gói contracts/community: owner = Toàn quyền, editor = Nhân viên (đọc+ghi, duyệt qua cổng trưởng phòng). */
+  /** Vai gói contracts: owner = Toàn quyền, editor = Nhân viên (đọc+ghi, duyệt qua cổng trưởng phòng). */
   packRole: "owner" | "editor";
 };
 export type SeedSpec = {
@@ -36,7 +36,7 @@ export const NITI_SPEC: SeedSpec = {
   tenantName: "NiTi Group",
   timezone: "Asia/Ho_Chi_Minh",
   emailDomain: "nitigroup.example.invalid",
-  packs: ["contracts", "community"],
+  packs: ["contracts"], // ADR-0044: Bảng tin = add-on `contracts-community`, admin nền tảng bật riêng
   root: BGD,
   departments: [KD, KT],
   people: [

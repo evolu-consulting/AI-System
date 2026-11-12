@@ -17,6 +17,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { dbHubAudit } from "../../../lib/hub-audit";
+import { slotFeatureKey } from "../../packs/kit/public";
 import { type StudioAudit, withConfigWrite } from "../../studio/public";
 import type { ProcessDeps } from "../core/ports";
 import { defError, toProcessDef } from "../defs/defs.map";
@@ -50,7 +51,8 @@ const audit = (
   summary: { key: def.key, ...o.after },
 });
 type B2Def = Pick<lib.LibRow, "key" | "name" | "slot" | "stages" | "slot_body" | "trigger" | "app">;
-const feature = (spec: SlotSpec) => `${spec.packKey}-read`;
+/** Feature quyết "công ty có khe này": gói thường `<k>-read`; mặt API (ADR-0044) = add-on của mặt. */
+const feature = (spec: SlotSpec) => slotFeatureKey(spec.packKey);
 const notFound = () => appError("NOT_FOUND");
 
 export class LibraryService {

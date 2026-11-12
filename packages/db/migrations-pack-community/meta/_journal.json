@@ -120,6 +120,13 @@
       "when": 1807000306000,
       "tag": "0017_cr129_mention_target_check",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1807000400000,
+      "tag": "0018_cr130_p3b_into_contracts",
+      "breakpoints": true
     }
   ]
 }

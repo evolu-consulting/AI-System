@@ -7,9 +7,8 @@
 // thấy được rỗng nhưng vẫn có đường chạy (mẫu khe — tenant chưa được `ensureSlotDefaults` cấp) là đúng ca Demo ⇒ cũng crit (chạy được
 // mà tenant không xem/sửa được). Một câu SQL tập hợp (Luật 4c), không ngưỡng.
 
-import { packFeatureKey } from "@ai/contracts/packs";
 import { sql } from "drizzle-orm";
-import { slotRegistry } from "../../../packs/kit/public";
+import { slotFeatureKey, slotRegistry } from "../../../packs/kit/public";
 import type { OpsCheck, OpsCheckResult } from "../../application/ops.check";
 import { systemRead } from "./check-kit";
 
@@ -130,7 +129,7 @@ export const coverageSlotsOf = (
 ): CoverageSlot[] =>
   list()
     .filter((s) => !s.key.startsWith("dlc.") && !s.optIn)
-    .map((s) => ({ slot: s.key, feature: packFeatureKey(s.packKey, "read") }));
+    .map((s) => ({ slot: s.key, feature: slotFeatureKey(s.packKey) }));
 
 export function makeFlowCoverageCheck(
   list: () => readonly {

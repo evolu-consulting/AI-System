@@ -6,6 +6,7 @@ import { type CreatePostInput, CreatePostInputSchema } from "@ai/contracts/commu
 import { type Db, type Tx, withScope } from "@ai/db";
 import { withPackScope } from "@ai/db/pack-scope";
 import { sql } from "drizzle-orm";
+import { grantEntitlement } from "../../../apps/admin-api/src/modules/features/features.entitlements";
 import { enablePack } from "../../../apps/admin-api/src/modules/packs/packs.service";
 import * as comments from "../../../apps/hub-api/src/modules/packs/community/adapters/comment-list.service";
 import {
@@ -36,27 +37,37 @@ export type CommunityCtx = {
   partners: ReadonlyMap<string, { userId: string; orgId: string; orgName: string }>;
 };
 
+/** Add-on bật Bảng tin (ADR-0044) — khớp `PACK_SURFACES.community.addon` ở hub-api kit. */
+const COMMUNITY_ADDON = "contracts-community";
+
 export type ApplyResult = { postsCreated: number; postsExisting: number; commentsCreated: number };
 
-/** Bật gói `community` cho tenant bằng service admin (khoá feature, entitlement, 3 Group vai, grant, audit) — idempotent. */
+/** ADR-0044: bật Bảng tin = gói `contracts` (khoá feature, entitlement, 3 Group vai, grant, audit) + add-on `contracts-community` — idempotent. */
 export async function enableCommunityPack(
   admin: Db,
   tenantId: string,
   hostUserId: string,
 ): Promise<void> {
+  const call = {
+    ctx: { db: admin },
+    scope: { kind: "platform" },
+    actor: { userId: hostUserId },
+  } as const;
   try {
-    await enablePack(
-      { ctx: { db: admin }, scope: { kind: "platform" }, actor: { userId: hostUserId } },
-      tenantId,
-      COMMUNITY_KEY,
-    );
+    await enablePack(call, tenantId, "contracts");
   } catch (e) {
     if ((e as { code?: string }).code === "PACK_NOT_FOUND")
       throw new Error(
-        'seed-community-demo: gói "community" chưa cài (chạy `bun run db:migrate` rồi cài gói) trước khi seed',
+        'seed-community-demo: gói "contracts" chưa cài (chạy `bun run db:migrate` rồi cài gói) trước khi seed',
       );
     throw e;
   }
+  const [f] = (await withScope(admin, { kind: "platform" }, (tx) =>
+    tx.execute(sql`select id from admin.features where key = ${COMMUNITY_ADDON}`),
+  )) as unknown as { id: string }[];
+  if (!f)
+    throw new Error(`seed-community-demo: thiếu feature ${COMMUNITY_ADDON} (chạy db:migrate)`);
+  await grantEntitlement(call, f.id, tenantId);
 }
 
 /**

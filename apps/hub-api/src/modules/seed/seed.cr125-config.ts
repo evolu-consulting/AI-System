@@ -22,7 +22,7 @@ import { SIGNER_GROUP, writeSignerGroup } from "./seed.cr127-config";
 import type { Tx } from "./seed.repo";
 
 /** Ứng dụng có tính năng được cấp tự động (khi công ty đã có `<app>-read`). */
-const FEATURE_APPS = ["contracts", "community"] as const;
+const FEATURE_APPS = ["contracts"] as const; // ADR-0044: add-on `contracts-community` thuộc app contracts
 /** `han-muc-duyet` chỉ cấp tay trên prod; engine duyệt HĐ đã gỡ (CR-121 c18). */
 const FEATURE_EXCLUDED = ["han-muc-duyet", "contracts-approval-engine"] as const;
 /** Nhà cung cấp ký số demo (nhãn "Ký thử"); không bao giờ DocuSign. */

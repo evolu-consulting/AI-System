@@ -13,8 +13,9 @@ import type { Tx } from "./seed.repo";
 
 /** Công ty fixture. Khoá khớp `tools/hub-dev/src/fixture.ts` (evolu) và `seed-community-demo.dev-fixture.ts` (demo). */
 export const FIXTURE_TENANTS = ["evolu", "demo"] as const;
-const OWNER_GROUPS = ["contracts-owner", "community-owner"] as const;
-const EDITOR_GROUPS = ["contracts-editor", "community-editor"] as const;
+// ADR-0044: Bảng tin dùng nhóm gói contracts (không còn Group community)
+const OWNER_GROUPS = ["contracts-owner"] as const;
+const EDITOR_GROUPS = ["contracts-editor"] as const;
 /** Chỉ evolu có user thường ⇒ editor của gói; `demo` giữ nguyên vai theo `deploy/tenants/demo.yaml`. */
 const EDITOR_TENANTS = ["evolu"] as const;
 
@@ -126,7 +127,7 @@ async function writeAccounting(tx: Tx, r: TenantFixtureResult): Promise<void> {
   ).length;
 }
 
-/** 2: chủ quản (tenant_admin: julian.bui / demo-owner) ∈ Group `contracts-owner` + `community-owner`; evolu: user thường ∈ `*-editor`. */
+/** 2: chủ quản (tenant_admin: julian.bui / demo-owner) ∈ Group `contracts-owner`; evolu: user thường ∈ `*-editor`. */
 async function writePackRoles(tx: Tx, r: TenantFixtureResult): Promise<void> {
   r.ownerMembers = (
     await tx`insert into admin.group_members (tenant_id, group_id, user_id)

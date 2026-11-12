@@ -1,4 +1,4 @@
-// CR-125 · c5 · mẫu Thư viện "Quản trị duyệt bài" cho gói Community: MỘT bước Duyệt (nhóm `community-admin` ⇒ nhóm chủ gói của công ty)
+// CR-125 · c5 · mẫu Thư viện "Quản trị duyệt bài" cho gói Community: MỘT bước Duyệt (nhóm `contracts-admin` ⇒ nhóm chủ gói contracts của công ty, ADR-0044)
 // rồi Kết thúc · Hiện bài / Ẩn bài. CHỈ dùng bước lõi + tính năng gói đã bật ⇒ công ty có Community là áp dụng được ngay (không cần bật
 // gì thêm, D7). Thay mẫu cũ "Duyệt bài Community" (khe, bước tool khoá không áp dụng được ở công ty).
 
@@ -17,7 +17,7 @@ export const COMMUNITY_FLOW_TEMPLATE = {
   inputs: [{ key: "post_id", label: "Bài", type: "text", required: true }],
   stages: () =>
     norm([
-      approve("duyet-bai", "Quản trị duyệt bài", 0, "community-admin", { reject: 2, ret: 2 }),
+      approve("duyet-bai", "Quản trị duyệt bài", 0, "contracts-admin", { reject: 2, ret: 2 }),
       finish(1, "shown", "Hiện bài"),
       finish(2, "hidden", "Ẩn bài"),
     ]),

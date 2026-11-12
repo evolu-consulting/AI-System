@@ -20,15 +20,9 @@ let c: Cast;
 let app: Hono<PackGuardVars>;
 const SHT = "https://sht.example.test";
 const LOGO = "data:image/png;base64,iVBORw0KGgo=";
-const F = ["c-r", "c-w", "c-a", "k-r", "k-w", "k-a"];
-const KEYS = [
-  "community-read",
-  "community-write",
-  "community-admin",
-  "contracts-read",
-  "contracts-write",
-  "contracts-admin",
-];
+const F = ["c-ad", "k-r", "k-w", "k-a"];
+// ADR-0044: Bảng tin = gói contracts ∧ add-on contracts-community (không còn feature community-*)
+const KEYS = ["contracts-community", "contracts-read", "contracts-write", "contracts-admin"];
 
 /** Community read/write: owner + editor, admin: owner (A); nhóm `gB` (B). Contracts: CHỈ owner (A) ⇒ hM có community nhưng không có contracts. */
 const view = (): PackAccessView => ({
@@ -120,11 +114,11 @@ describe("viewer.caps.contracts + contractsUrl (COM-FR-43)", () => {
     expect(v.contractsUrl).toBe(SHT);
   });
 
-  it("[COM-FR-43] thành viên chủ quản không có quyền contracts ⇒ caps false, contractsUrl null", async () => {
+  it("[COM-FR-43] ADR-0044: mặt Bảng tin chỉ mở cho người có quyền gói contracts ⇒ thành viên chủ quản cũng caps.contracts true", async () => {
     const v = CommunityViewerSchema.parse((await call("hM", "/viewer")).json);
     expect(v.role).toBe("host_member");
-    expect(v.caps).toEqual({ contracts: false });
-    expect(v.contractsUrl).toBeNull();
+    expect(v.caps).toEqual({ contracts: true });
+    expect(v.contractsUrl).toBe(SHT);
   });
 
   it("[COM-FR-43] đối tác ⇒ caps false, contractsUrl null (I1)", async () => {

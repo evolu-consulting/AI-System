@@ -5,7 +5,15 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { contracts, department, enablePack, managers, tenants, users } from "@ai/test-kit/builders";
+import {
+  contracts,
+  department,
+  enableAddon,
+  enablePack,
+  managers,
+  tenants,
+  users,
+} from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { type PurgeDeps, runPurge } from "./tenant-purge";
 import { readTables } from "./tenant-purge.db";
@@ -92,7 +100,7 @@ beforeAll(async () => {
   store = fakeStore();
   [A, B] = (await tenants(sql, 2, 7101)) as [string, string];
   await enablePack(sql, [A, B], "contracts");
-  await enablePack(sql, [A, B], "community");
+  await enableAddon(sql, [A, B], "contracts-community"); // ADR-0044: Bảng tin = add-on của contracts
   await seedTenant(A, 7101);
   await seedTenant(B, 7201);
 });

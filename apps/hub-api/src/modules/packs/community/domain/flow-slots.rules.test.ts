@@ -69,7 +69,7 @@ describe("validateSlotBody", () => {
 });
 
 describe("compileSlotBody", () => {
-  it("dựng stages: tool khoá của khe, input theo khe, bước duyệt có group community-admin + nhắc", () => {
+  it("dựng stages: tool khoá của khe, input theo khe, bước duyệt có group contracts-admin + nhắc", () => {
     const st = compileSlotBody(SLOT_MODERATION, mod()) as {
       key: string;
       executor: { tool_key: string; args: Record<string, unknown> };
@@ -86,7 +86,7 @@ describe("compileSlotBody", () => {
     expect(st[1]?.after).toMatchObject({
       kind: "review",
       remind_every_h: 12,
-      group_key: "community-admin",
+      group_key: "contracts-admin",
     });
     expect(st[2]?.after.kind).toBe("auto");
   });
@@ -97,7 +97,7 @@ describe("compileSlotBody", () => {
 });
 
 describe("communitySlotSpecs", () => {
-  it("đủ 3 khe gói community, input bắt buộc + nhóm duyệt community-admin", () => {
+  it("đủ 3 khe gói community, input bắt buộc + nhóm duyệt contracts-admin", () => {
     const s = communitySlotSpecs();
     expect(s.map((x) => x.key).sort()).toEqual([SLOT_JOIN, SLOT_MODERATION, SLOT_REPORT].sort());
     for (const x of s) {

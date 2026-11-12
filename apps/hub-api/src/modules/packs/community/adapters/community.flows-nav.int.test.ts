@@ -21,7 +21,8 @@ let sql: Sql;
 let db: Db;
 let c: Cast;
 let app: Hono<PackGuardVars>;
-const F = { read: "c-r", write: "c-w", admin: "c-a" };
+// ADR-0044: Bảng tin = gói contracts ∧ add-on contracts-community
+const F = { read: "c-r", write: "c-w", admin: "c-a", addon: "c-ad" };
 type Who = "hA" | "hM" | "s1a" | "s1b" | "s2" | "b2";
 const ORG: Partial<Record<Who, "S1" | "S2" | "B2">> = { s1a: "S1", s1b: "S1", s2: "S2", b2: "B2" };
 let moderationOn = true;
@@ -30,9 +31,10 @@ function view(): PackAccessView {
   return {
     catalog: async () => ({
       features: [
-        { id: F.read, key: "community-read", status: "on" },
-        { id: F.write, key: "community-write", status: "on" },
-        { id: F.admin, key: "community-admin", status: "on" },
+        { id: F.read, key: "contracts-read", status: "on" },
+        { id: F.write, key: "contracts-write", status: "on" },
+        { id: F.admin, key: "contracts-admin", status: "on" },
+        { id: F.addon, key: "contracts-community", status: "on" },
       ],
       entitled: new Set(Object.values(F).map((f) => `${c.A}:${f}`)),
       grantGroups: new Map([
@@ -95,7 +97,7 @@ afterAll(async () => {
 });
 
 describe("GET /flows/nav [CR-120]", () => {
-  it("người duyệt + duyệt bài bật ⇒ đủ, thành viên thường ⇒ không, đối tác ⇒ chỉ gửi yêu cầu, công ty chưa bật khe ⇒ không có hàng chờ", async () => {
+  it("mọi nhân viên nội bộ là người duyệt (duyệt bài bật ⇒ đủ), đối tác ⇒ chỉ gửi yêu cầu, công ty chưa bật khe ⇒ không có hàng chờ", async () => {
     moderationOn = true;
     expect((await call("hA", "GET", "/flows/nav")).json).toEqual({
       moderationQueue: true,
@@ -104,12 +106,13 @@ describe("GET /flows/nav [CR-120]", () => {
       joinReview: true,
       reports: true,
     });
+    // ADR-0044: không còn vai quản trị riêng — mọi nhân viên nội bộ đều là người duyệt
     expect((await call("hM", "GET", "/flows/nav")).json).toEqual({
-      moderationQueue: false,
+      moderationQueue: true,
       moderationOn: true,
       joinSubmit: false,
-      joinReview: false,
-      reports: false,
+      joinReview: true,
+      reports: true,
     });
     expect((await call("s2", "GET", "/flows/nav")).json).toEqual({
       moderationQueue: false,
@@ -147,7 +150,7 @@ describe("GET /flows/nav [CR-120]", () => {
       { cap: "community.join", count: w?.join },
       { cap: "community.reports", count: w?.reports },
     ]);
-    expect(await items("hM")).toEqual([]); // thành viên thường: không mục luồng
+    expect(await items("hM")).toEqual(await items("hA")); // ADR-0044: mọi nhân viên là người duyệt ⇒ cùng số
     expect(await items("s2")).toEqual([{ cap: "community.join", count: 0 }]); // đối tác: chỉ gửi yêu cầu, không số
   });
 });
