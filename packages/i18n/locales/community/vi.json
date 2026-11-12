@@ -149,7 +149,7 @@
       "maxVideos": "Tối đa 2 video",
       "maxFiles": "Tối đa 10 tệp",
       "fileTooLarge": "Tệp quá lớn, vui lòng chọn tệp nhỏ hơn",
-      "fileTypeNotAllowed": "Loại tệp này không được phép tải lên",
+      "fileTypeNotAllowed": "Loại tệp này không được phép tải lên. Chỉ nhận: {{types}}",
       "filesUnavailable": "Chưa bật kho tệp, thử lại sau",
       "quota": {
         "user": "Bạn đã dùng hết hạn mức tải tệp ({{limit}} lượt).",
@@ -186,6 +186,12 @@
     },
     "post": {
       "download": "Tải về",
+      "imageViewer": "Xem ảnh",
+      "imagePrev": "Ảnh trước",
+      "imageNext": "Ảnh sau",
+      "imageClose": "Đóng",
+      "imageMore": "Xem thêm {{n}} ảnh",
+      "imageOpen": "Phóng to ảnh {{name}}",
       "downloadFailed": "Không tải được tệp",
       "options": "Tuỳ chọn bài đăng",
       "friends": "Bạn bè",

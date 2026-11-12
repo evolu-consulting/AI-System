@@ -1,5 +1,6 @@
 // CR-118 · COM-FR-37 · tệp đính kèm bài đăng (thuần): đổi `CommunityFile` (server đã sniff MIME) ra mục media của bài,
 // ánh xạ lỗi upload ra khoá i18n, dung lượng hiển thị.
+import { ATTACH_ALLOWED } from "@ai/contracts/attach";
 import type { CommunityFile, MediaItem } from "@ai/contracts/community";
 
 /** Mục media từ tệp đã tải lên: ảnh (theo MIME server sniff) ⇒ `image`, còn lại ⇒ `file`. Gửi `{id,kind,label,fileId}`; server điền lại. */
@@ -51,7 +52,8 @@ export function uploadNotice(
     };
   }
   if (status === 413) return { key: "community.composer.fileTooLarge" };
-  if (status === 415) return { key: "community.composer.fileTypeNotAllowed" };
+  if (status === 415)
+    return { key: "community.composer.fileTypeNotAllowed", params: { types: acceptedTypes() } };
   if (status === 503) return { key: "community.composer.filesUnavailable" };
   return { key: "community.composer.uploadFailed" };
 }
@@ -69,3 +71,30 @@ export function formatSize(bytes: number, locale = "vi-VN"): string {
     i === 0 ? String(Math.round(v)) : v.toLocaleString(locale, { maximumFractionDigits: 1 });
   return `${n} ${units[i]}`;
 }
+
+/** Đuôi tệp được nhận (theo `ATTACH_ALLOWED`), viết hoa, bỏ `JPEG` trùng `JPG`: "PDF, PNG, JPG, …". */
+export function acceptedTypes(): string {
+  return Object.keys(ATTACH_ALLOWED)
+    .filter((e) => e !== "jpeg")
+    .map((e) => e.toUpperCase())
+    .join(", ");
+}
+
+/** Mục media của bài tách ảnh (có tệp để vẽ) khỏi phần còn lại (tệp, mục mẫu chưa có `fileId`). */
+export function splitMedia(media: MediaItem[]): { images: MediaItem[]; others: MediaItem[] } {
+  const images: MediaItem[] = [];
+  const others: MediaItem[] = [];
+  for (const m of media) (m.kind === "image" && m.fileId ? images : others).push(m);
+  return { images, others };
+}
+
+/** Lưới ảnh thu nhỏ: tối đa 3 ô; ô cuối phủ «+extra» khi còn ảnh dư. */
+export function imageGrid(n: number): { shown: number; extra: number; cols: 1 | 2 | 3 } {
+  if (n <= 0) return { shown: 0, extra: 0, cols: 1 };
+  const shown = Math.min(n, 3);
+  return { shown, extra: n - shown, cols: shown as 1 | 2 | 3 };
+}
+
+/** Qua lại giữa ảnh trong hộp phóng to (vòng tròn). */
+export const stepImage = (i: number, delta: number, n: number): number =>
+  n <= 0 ? 0 : (((i + delta) % n) + n) % n;

@@ -149,7 +149,7 @@
       "maxVideos": "Up to 2 videos",
       "maxFiles": "Up to 10 files",
       "fileTooLarge": "The file is too large, pick a smaller one",
-      "fileTypeNotAllowed": "This file type is not allowed",
+      "fileTypeNotAllowed": "This file type is not allowed. Accepted: {{types}}",
       "filesUnavailable": "File storage is not enabled, try again later",
       "quota": {
         "user": "You have used your file upload quota ({{limit}} uploads).",
@@ -186,6 +186,12 @@
     },
     "post": {
       "download": "Download",
+      "imageViewer": "Image viewer",
+      "imagePrev": "Previous image",
+      "imageNext": "Next image",
+      "imageClose": "Close",
+      "imageMore": "View {{n}} more images",
+      "imageOpen": "Enlarge image {{name}}",
       "downloadFailed": "Could not download the file",
       "options": "Post options",
       "friends": "Friends",

@@ -113,4 +113,6 @@ export interface CommunityApi {
   uploadFile(file: File): Promise<CommunityFile>;
   /** `GET /pack/community/files/:fileId` — tải về (cần Bearer nên không dùng `<a href>` trần). */
   downloadFile(fileId: string, name: string): Promise<void>;
+  /** `GET /pack/community/files/:fileId` ⇒ object URL của ảnh (Bearer); NGƯỜI GỌI thu hồi bằng `URL.revokeObjectURL`. */
+  fileObjectUrl(fileId: string): Promise<string>;
 }

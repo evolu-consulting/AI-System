@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useApp } from "../application/ctx";
 import { draftFromFields } from "../domain/compose";
 import { dealStrip, expiryNote, initials, timeAgo, tone } from "../domain/format";
-import { formatSize } from "../domain/media";
 import { hintLines, saveButtonLabel, savedText } from "../domain/quote";
 import { focusCommentId, focusPostId } from "../domain/search-hint";
 import { numLocale, t } from "../i18n";
@@ -13,7 +12,6 @@ import { ModerationNote, ReportDialog } from "./flows/PostFlows";
 import { Highlighted } from "./Highlighted";
 import {
   IconArchive,
-  IconAttach,
   IconBox,
   IconChat,
   IconCheck,
@@ -21,12 +19,11 @@ import {
   IconEdit,
   IconEyeOff,
   IconFlag,
-  IconImage,
   IconLock,
-  IconPlay,
   IconSave,
   IconTrash,
 } from "./icons";
+import { PostMedia } from "./PostMedia";
 import { has, PostMenu } from "./PostMenu";
 import { QuoteForm } from "./QuoteForm";
 import { Thread } from "./Thread";
@@ -228,38 +225,7 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
           )}
         </div>
       )}
-      {p.media.length > 0 && (
-        <div className={`media n${Math.min(p.media.length, 3)}`}>
-          {p.media.map((m) =>
-            m.kind === "file" && m.fileId ? (
-              <button
-                key={m.id}
-                type="button"
-                className="mbox filecard"
-                data-testid="file-card"
-                title={t("community.post.download")}
-                onClick={() => void download(m.fileId as string, m.name ?? m.label)}
-              >
-                <IconAttach size={22} />
-                <span className="fname">{m.name ?? m.label}</span>
-                {m.size !== undefined && <i className="fsize">{formatSize(m.size, numLocale())}</i>}
-                <b className="fget">{t("community.post.download")}</b>
-              </button>
-            ) : (
-              <div key={m.id} className={m.kind === "video" ? "mbox vid" : "mbox"}>
-                {m.kind === "video" ? (
-                  <span className="play">
-                    <IconPlay />
-                  </span>
-                ) : (
-                  <IconImage size={26} />
-                )}
-                <span>{m.label}</span>
-              </div>
-            ),
-          )}
-        </div>
-      )}
+      {p.media.length > 0 && <PostMedia media={p.media} onDownload={download} />}
       {isHostViewer && p.hostHint && (
         <div className="callout hint" data-testid="host-hint">
           <span className="ci">

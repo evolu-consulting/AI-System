@@ -77,6 +77,8 @@ export function createHttpApi(): CommunityApi {
       a.click();
       setTimeout(() => URL.revokeObjectURL(href), 10_000);
     },
+    fileObjectUrl: async (fileId) =>
+      URL.createObjectURL(await (await apiResponse(`${BASE}/files/${enc(fileId)}`)).blob()),
     createPost: (input) => api(`${BASE}/posts`, { method: "POST", body: input }),
     updatePost: (id, input) => api(`${BASE}/posts/${enc(id)}`, { method: "PATCH", body: input }),
     postAction: async (id, input) =>
