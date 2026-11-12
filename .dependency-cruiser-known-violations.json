@@ -1,8 +1,109 @@
 [
   {
     "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/application/approval-record.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/adapters/approval-record.pdf.ts",
+    "unresolvedTo": "../adapters/approval-record.pdf",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-application-inward-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/application/exec-request.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/adapters/exec-requests.repo.ts",
+    "unresolvedTo": "../adapters/exec-requests.repo",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-application-inward-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/application/expiry-outcome.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/adapters/exec-requests.repo.ts",
+    "unresolvedTo": "../adapters/exec-requests.repo",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-application-inward-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/application/expiry-outcome.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/adapters/expiring-outcome.repo.ts",
+    "unresolvedTo": "../adapters/expiring-outcome.repo",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-application-inward-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/application/link-deal.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/adapters/open-milestones.repo.ts",
+    "unresolvedTo": "../adapters/open-milestones.repo",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-application-inward-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/application/link-deal.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/adapters/transaction-flow.repo.ts",
+    "unresolvedTo": "../adapters/transaction-flow.repo",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-application-inward-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/application/penalty.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/adapters/penalty.repo.ts",
+    "unresolvedTo": "../adapters/penalty.repo",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-application-inward-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/application/submit.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/adapters/contract-state.repo.ts",
+    "unresolvedTo": "../adapters/contract-state.repo",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-application-inward-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/application/submit.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/adapters/submissions.repo.ts",
+    "unresolvedTo": "../adapters/submissions.repo",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-application-inward-only"
+    }
+  },
+  {
+    "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/domain/dlc-detail.rules.ts",
     "to": "apps/hub-api/src/modules/packs/dlc/application/ports.ts",
+    "unresolvedTo": "../application/ports",
+    "dependencyTypes": ["local", "type-only", "import"],
     "rule": {
       "severity": "error",
       "name": "ca-domain-builtin-only"
@@ -12,6 +113,8 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/domain/dlc-progress.rules.ts",
     "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
+    "unresolvedTo": "../../kit/application/pack-runs.ports",
+    "dependencyTypes": ["local", "type-only", "import"],
     "rule": {
       "severity": "error",
       "name": "ca-domain-builtin-only"
@@ -19,8 +122,87 @@
   },
   {
     "type": "dependency",
+    "from": "apps/hub-api/src/modules/processes/domain/preview/flow-outline.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/public.ts",
+    "unresolvedTo": "../../../packs/kit/public",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-domain-builtin-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/processes/domain/preview/flow-outline.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/public.ts",
+    "unresolvedTo": "../../../packs/kit/public",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "ca-inner-no-cross-module"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/admin-web/src/features/processes/components/CompanyFlowsOverview.tsx",
+    "to": "apps/admin-web/src/features/tenants/api.ts",
+    "unresolvedTo": "@/features/tenants/api",
+    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "component-no-fetch"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/admin-web/src/features/processes/components/DeleteDraftFlow.tsx",
+    "to": "apps/admin-web/src/features/processes/api.ts",
+    "unresolvedTo": "../api",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "component-no-fetch"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/admin-web/src/features/processes/components/editor/CompanyEditorBar.tsx",
+    "to": "apps/admin-web/src/features/tenants/api.ts",
+    "unresolvedTo": "@/features/tenants/api",
+    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "component-no-fetch"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/admin-web/src/features/processes/components/editor/EditorParts.tsx",
+    "to": "apps/admin-web/src/lib/http.ts",
+    "unresolvedTo": "@/lib/http",
+    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "component-no-fetch"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/admin-web/src/features/processes/components/testrun/TestRunDialog.tsx",
+    "to": "apps/admin-web/src/features/agents/api.ts",
+    "unresolvedTo": "@/features/agents/api",
+    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "component-no-fetch"
+    }
+  },
+  {
+    "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.routes.ts",
     "to": "apps/hub-api/src/modules/packs/kit/adapters/pack-guard.middleware.ts",
+    "unresolvedTo": "../../kit/adapters/pack-guard.middleware",
+    "dependencyTypes": ["local", "type-only", "import"],
     "rule": {
       "severity": "error",
       "name": "cross-module-deep"
@@ -30,6 +212,8 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.routes.ts",
     "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
+    "unresolvedTo": "../../kit/application/pack-runs.ports",
+    "dependencyTypes": ["local", "type-only", "import"],
     "rule": {
       "severity": "error",
       "name": "cross-module-deep"
@@ -39,6 +223,8 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.tools.ts",
     "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
+    "unresolvedTo": "../../kit/application/pack-runs.ports",
+    "dependencyTypes": ["local", "type-only", "import"],
     "rule": {
       "severity": "error",
       "name": "cross-module-deep"
@@ -48,6 +234,8 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.tools.ts",
     "to": "apps/hub-api/src/modules/packs/kit/application/pack-tools.ports.ts",
+    "unresolvedTo": "../../kit/application/pack-tools.ports",
+    "dependencyTypes": ["local", "type-only", "import"],
     "rule": {
       "severity": "error",
       "name": "cross-module-deep"
@@ -57,6 +245,8 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.tools.ts",
     "to": "apps/hub-api/src/modules/packs/kit/domain/pack-tool-error.ts",
+    "unresolvedTo": "../../kit/domain/pack-tool-error",
+    "dependencyTypes": ["local", "import"],
     "rule": {
       "severity": "error",
       "name": "cross-module-deep"
@@ -66,6 +256,8 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/application/run-step.usecase.ts",
     "to": "apps/hub-api/src/modules/packs/kit/application/pack-tools.ports.ts",
+    "unresolvedTo": "../../kit/application/pack-tools.ports",
+    "dependencyTypes": ["local", "type-only", "import"],
     "rule": {
       "severity": "error",
       "name": "cross-module-deep"
@@ -75,6 +267,8 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/application/start-flow.usecase.ts",
     "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
+    "unresolvedTo": "../../kit/application/pack-runs.ports",
+    "dependencyTypes": ["local", "type-only", "import"],
     "rule": {
       "severity": "error",
       "name": "cross-module-deep"
@@ -84,6 +278,8 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/application/start-flow.usecase.ts",
     "to": "apps/hub-api/src/modules/packs/kit/application/slot.ports.ts",
+    "unresolvedTo": "../../kit/application/slot.ports",
+    "dependencyTypes": ["local", "type-only", "import"],
     "rule": {
       "severity": "error",
       "name": "cross-module-deep"
@@ -93,6 +289,8 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/application/step-context.ts",
     "to": "apps/hub-api/src/modules/packs/kit/domain/pack-tool-error.ts",
+    "unresolvedTo": "../../kit/domain/pack-tool-error",
+    "dependencyTypes": ["local", "import"],
     "rule": {
       "severity": "error",
       "name": "cross-module-deep"
@@ -102,6 +300,8 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/domain/dlc-progress.rules.ts",
     "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
+    "unresolvedTo": "../../kit/application/pack-runs.ports",
+    "dependencyTypes": ["local", "type-only", "import"],
     "rule": {
       "severity": "error",
       "name": "cross-module-deep"
@@ -111,6 +311,8 @@
     "type": "cycle",
     "from": "apps/dlc-workspace/src/app.ts",
     "to": "apps/dlc-workspace/src/deploy.routes.ts",
+    "unresolvedTo": "./deploy.routes",
+    "dependencyTypes": ["local", "import"],
     "rule": {
       "severity": "error",
       "name": "no-circular"
@@ -127,9 +329,221 @@
     ]
   },
   {
+    "type": "cycle",
+    "from": "apps/hub-api/src/app.ts",
+    "to": "apps/hub-api/src/app.wiring.ts",
+    "unresolvedTo": "./app.wiring",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "apps/hub-api/src/app.wiring.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "apps/hub-api/src/app.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "apps/hub-api/src/modules/packs/contracts/application/approval-engine-card.types.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/application/approval-record.usecase.ts",
+    "unresolvedTo": "./approval-record.usecase",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-record.usecase.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      },
+      {
+        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine-card.usecase.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      },
+      {
+        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine-card.types.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "apps/hub-api/src/modules/packs/contracts/application/approval-engine-card.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/application/approval-record.usecase.ts",
+    "unresolvedTo": "./approval-record.usecase",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-record.usecase.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine-card.usecase.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      }
+    ]
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/community/adapters/comment-seed.testkit.ts",
+    "to": "packages/test-kit/src/db.ts",
+    "unresolvedTo": "@ai/test-kit/db",
+    "dependencyTypes": ["undetermined", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-prod-import-test-kit"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/processes/library/slot-generic.fixture.ts",
+    "to": "packages/test-kit/src/db.ts",
+    "unresolvedTo": "@ai/test-kit/db",
+    "dependencyTypes": ["undetermined", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-prod-import-test-kit"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/processes/testing/claim-seed.ts",
+    "to": "packages/test-kit/src/builders.ts",
+    "unresolvedTo": "@ai/test-kit/builders",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-prod-import-test-kit"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/processes/testing/claim-seed.ts",
+    "to": "packages/test-kit/src/db.ts",
+    "unresolvedTo": "@ai/test-kit/db",
+    "dependencyTypes": ["undetermined", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-prod-import-test-kit"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/processes/testing/company-copy-seed.ts",
+    "to": "packages/test-kit/src/db.ts",
+    "unresolvedTo": "@ai/test-kit/db",
+    "dependencyTypes": ["undetermined", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-prod-import-test-kit"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/processes/testing/company-flow-seed.ts",
+    "to": "packages/test-kit/src/db.ts",
+    "unresolvedTo": "@ai/test-kit/db",
+    "dependencyTypes": ["undetermined", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-prod-import-test-kit"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/sign-session.routes.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/adapters/sign-session.repo.ts",
+    "unresolvedTo": "./adapters/sign-session.repo",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "no-routes-to-repo"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/shell/components/shell-ui.test.tsx",
+    "to": "./NotificationBell",
+    "unresolvedTo": "./NotificationBell",
+    "dependencyTypes": ["unknown"],
+    "rule": {
+      "severity": "error",
+      "name": "not-to-unresolvable"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/adapters/partner-linker.ts",
+    "to": "apps/hub-api/src/modules/packs/community/public.ts",
+    "unresolvedTo": "../../community/public",
+    "dependencyTypes": ["local", "type-only", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pack-no-cross-pack"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/contract-files.mount.ts",
+    "to": "apps/hub-api/src/modules/attachments/public.ts",
+    "unresolvedTo": "../../attachments/public",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pack-no-hub-modules-any-layer"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/adapters/exec-head.repo.ts",
+    "to": "packages/db/src/hub-scope.ts",
+    "unresolvedTo": "@ai/db/hub-scope",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pack-no-platform-db-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/contract-access.mount.ts",
+    "to": "packages/db/src/hub-scope.ts",
+    "unresolvedTo": "@ai/db/hub-scope",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pack-no-platform-db-internals"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/contracts/partner-routes.mount.ts",
+    "to": "packages/db/src/hub-scope.ts",
+    "unresolvedTo": "@ai/db/hub-scope",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "pack-no-platform-db-internals"
+    }
+  },
+  {
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/dlc.mount.ts",
     "to": "packages/db/src/hub-scope.ts",
+    "unresolvedTo": "@ai/db/hub-scope",
+    "dependencyTypes": ["undetermined", "import"],
     "rule": {
       "severity": "error",
       "name": "pack-no-platform-db-internals"
@@ -139,9 +553,176 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.routes.ts",
     "to": "apps/hub-api/src/lib/admin-role.middleware.ts",
+    "unresolvedTo": "../../../../lib/admin-role.middleware",
+    "dependencyTypes": ["local", "import"],
     "rule": {
       "severity": "error",
       "name": "pack-ports-only-lib"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/contract-approval/components/ApprovalTimeline.tsx",
+    "to": "apps/workspace-web/src/features/contract-approval/api.ts",
+    "unresolvedTo": "../api",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/contract-milestones/components/FulfillDialog.tsx",
+    "to": "packages/web-kit/src/http.ts",
+    "unresolvedTo": "@ai/web-kit/http",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/contract-milestones/components/MilestoneList.tsx",
+    "to": "packages/web-kit/src/http.ts",
+    "unresolvedTo": "@ai/web-kit/http",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/contract-review/components/ContractBody.tsx",
+    "to": "apps/workspace-web/src/features/contract-review/api.ts",
+    "unresolvedTo": "../api",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/contract-review/components/HeadActions.tsx",
+    "to": "packages/web-kit/src/http.ts",
+    "unresolvedTo": "@ai/web-kit/http",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/contract-review/components/SubmitPreview.tsx",
+    "to": "apps/workspace-web/src/features/contract-review/api.ts",
+    "unresolvedTo": "../api",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/contracts-list/components/PartnerInviteBand.tsx",
+    "to": "apps/workspace-web/src/features/partner-inbox/api.ts",
+    "unresolvedTo": "~/features/partner-inbox/api",
+    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/overview/components/InboxDecisionRow.tsx",
+    "to": "apps/workspace-web/src/features/overview/api.ts",
+    "unresolvedTo": "../api",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/overview/components/InboxDecisionRow.tsx",
+    "to": "packages/web-kit/src/http.ts",
+    "unresolvedTo": "@ai/web-kit/http",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/requests/components/MyRequests.tsx",
+    "to": "apps/workspace-web/src/features/requests/api.ts",
+    "unresolvedTo": "../api",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/requests/components/RequestField.tsx",
+    "to": "apps/workspace-web/src/features/requests/api.ts",
+    "unresolvedTo": "../api",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/settings/components/DelegationPane.tsx",
+    "to": "apps/workspace-web/src/features/contracts-list/api.ts",
+    "unresolvedTo": "~/features/contracts-list/api",
+    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/settings/components/DelegationPane.tsx",
+    "to": "packages/web-kit/src/http.ts",
+    "unresolvedTo": "@ai/web-kit/http",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/settings/components/FlowWorkSettings.tsx",
+    "to": "apps/workspace-web/src/features/contract-approval/api.ts",
+    "unresolvedTo": "~/features/contract-approval/api",
+    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/settings/components/FlowWorkSettings.tsx",
+    "to": "packages/web-kit/src/http.ts",
+    "unresolvedTo": "@ai/web-kit/http",
+    "dependencyTypes": ["undetermined", "import"],
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
     }
   }
 ]

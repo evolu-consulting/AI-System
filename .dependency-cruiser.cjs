@@ -4,8 +4,9 @@
 const NPM = (names) => `(^|/)node_modules/(${names})/`;
 const { join } = require("node:path");
 
+const { withTestExempt } = require("./.dependency-cruiser.exempt.cjs");
 /** @type {import('dependency-cruiser').IConfiguration} */
-module.exports = {
+module.exports = withTestExempt({
   forbidden: [
     {
       name: "no-routes-to-repo",
@@ -396,4 +397,4 @@ module.exports = {
       conditionNames: ["bun", "import", "types", "default"],
     },
   },
-};
+});
