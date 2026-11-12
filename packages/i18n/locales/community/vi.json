@@ -477,7 +477,14 @@
         "retry": "Tải lại",
         "cancel": "Hủy",
         "reasonNeeded": "Hãy nhập lý do để người nhận biết cần làm gì tiếp.",
-        "submitError": "Chưa gửi được. Kiểm tra kết nối rồi thử lại; nội dung bạn nhập vẫn còn nguyên."
+        "submitError": "Chưa gửi được. Kiểm tra kết nối rồi thử lại; nội dung bạn nhập vẫn còn nguyên.",
+        "filterAll": "Tất cả",
+        "filterAria": "Lọc theo trạng thái",
+        "back": "Quay lại danh sách",
+        "colDate": "Ngày",
+        "colStatus": "Trạng thái",
+        "colSummary": "Tóm tắt",
+        "emptyFiltered": "Không có mục nào ở trạng thái này. Chọn «Tất cả» để xem toàn bộ."
       },
       "mod": {
         "pending": "Đang chờ duyệt",
@@ -550,7 +557,9 @@
         "summaryLink": "Duyệt: gắn «{{company}}» vào đối tác có sẵn «{{party}}».",
         "summaryPick": "Chọn đối tác có sẵn để gắn, hoặc quay lại «Tạo đối tác mới».",
         "errLinked": "Đối tác này đã có tài khoản Bảng tin. Chọn đối tác khác hoặc «Tạo đối tác mới».",
-        "errPartyGone": "Không tìm thấy đối tác đã chọn (có thể vừa bị xoá). Chọn lại đối tác khác."
+        "errPartyGone": "Không tìm thấy đối tác đã chọn (có thể vừa bị xoá). Chọn lại đối tác khác.",
+        "colCompany": "Công ty · người liên hệ",
+        "detailTitle": "Chi tiết yêu cầu"
       },
       "reports": {
         "menu": "Báo cáo",
@@ -597,7 +606,10 @@
         "send": "Gửi báo cáo",
         "sent": "Đã gửi báo cáo. Quản trị sẽ xem và xử lý.",
         "duplicate": "Bạn đã báo cáo bài này rồi. Quản trị sẽ xử lý, không cần gửi lại.",
-        "postUntitled": "(Bài không có tiêu đề)"
+        "postUntitled": "(Bài không có tiêu đề)",
+        "colPost": "Bài bị báo cáo",
+        "colKind": "Loại",
+        "detailTitle": "Chi tiết báo cáo"
       }
     },
     "me": {

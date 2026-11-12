@@ -3,9 +3,11 @@ import type { JoinRequest } from "@ai/contracts/community";
 import { PARTNER_LABELS } from "@ai/contracts/community";
 import { useState } from "react";
 import { useApp } from "../../application/ctx";
+import { shortDay } from "../../domain/admin-list";
 import { isConflict } from "../../domain/flows";
 import { approveErrorKey } from "../../domain/join-approve";
-import { t } from "../../i18n";
+import { numLocale, t } from "../../i18n";
+import { AdminList, type Column } from "./AdminList";
 import { JoinApprove } from "./JoinApprove";
 import { FlowPage, ListState, ReasonDialog, useFlowList } from "./parts";
 
@@ -14,6 +16,28 @@ const TONE: Record<JoinRequest["status"], string> = {
   approved: "tag ok sm",
   rejected: "tag late sm",
 };
+
+const JOIN_STATUSES = ["pending", "approved", "rejected"] as const;
+const joinColumns = (): Column<JoinRequest>[] => [
+  { key: "company", head: t("community.flows.join.colCompany"), cell: (j) => j.company },
+  {
+    key: "date",
+    head: t("community.flows.common.colDate"),
+    cell: (j) => shortDay(j.createdAt, numLocale()),
+  },
+  {
+    key: "status",
+    head: t("community.flows.common.colStatus"),
+    cell: (j) => (
+      <span className={TONE[j.status]}>{t(`community.flows.join.status.${j.status}`)}</span>
+    ),
+  },
+  {
+    key: "sum",
+    head: t("community.flows.common.colSummary"),
+    cell: (j) => `${j.contact} · ${j.email}`,
+  },
+];
 
 function JoinForm() {
   const { api, toast } = useApp();
@@ -127,37 +151,51 @@ function JoinReview() {
   };
   return (
     <>
-      <ListState {...list} emptyKey="community.flows.join.empty" />
-      {list.items?.map((j) => (
-        <article className="card post" key={j.id} data-testid="join-item">
-          <div className="ph">
-            <div className="who">
-              <b>{j.company}</b>
-              <div className="meta">
-                {j.contact} · {j.email}{" "}
-                <span className={TONE[j.status]}>
-                  {t(`community.flows.join.status.${j.status}`)}
-                </span>
+      {(list.failed || !list.items) && (
+        <ListState {...list} emptyKey="community.flows.join.empty" />
+      )}
+      {list.items && !list.failed && (
+        <AdminList
+          testId="join-list"
+          rowTestId="join-item"
+          rows={list.items}
+          statuses={JOIN_STATUSES}
+          pendingStatus="pending"
+          statusLabel={(s) => t(`community.flows.join.status.${s}`)}
+          columns={joinColumns()}
+          detailTitle={t("community.flows.join.detailTitle")}
+          emptyKey="community.flows.join.empty"
+          detail={(j) => (
+            <div data-testid="join-detail">
+              <div className="pbody">
+                <p>
+                  <b>{j.company}</b>{" "}
+                  <span className={TONE[j.status]}>
+                    {t(`community.flows.join.status.${j.status}`)}
+                  </span>
+                </p>
+                <p className="muted">
+                  {j.contact} · {j.email} · {shortDay(j.createdAt, numLocale())}
+                </p>
+                {j.reason && <p>{j.reason}</p>}
+                {j.status === "rejected" && j.feedback && (
+                  <p className="muted">
+                    {t("community.flows.join.rejectedWhy", { reason: j.feedback })}
+                  </p>
+                )}
               </div>
+              {j.status === "pending" && (
+                <JoinApprove
+                  key={j.id}
+                  j={j}
+                  onApprove={(party) => void decide(j, "approve", undefined, party)}
+                  onReject={() => setRejecting(j)}
+                />
+              )}
             </div>
-          </div>
-          <div className="pbody">
-            {j.reason && <p>{j.reason}</p>}
-            {j.status === "rejected" && j.feedback && (
-              <p className="muted">
-                {t("community.flows.join.rejectedWhy", { reason: j.feedback })}
-              </p>
-            )}
-          </div>
-          {j.status === "pending" && (
-            <JoinApprove
-              j={j}
-              onApprove={(party) => void decide(j, "approve", undefined, party)}
-              onReject={() => setRejecting(j)}
-            />
           )}
-        </article>
-      ))}
+        />
+      )}
       {rejecting && (
         <ReasonDialog
           testId="join-reject-dialog"

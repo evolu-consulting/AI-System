@@ -477,7 +477,14 @@
         "retry": "Reload",
         "cancel": "Cancel",
         "reasonNeeded": "Enter a reason so the recipient knows what to do next.",
-        "submitError": "Not sent yet. Check your connection and try again; what you typed is kept."
+        "submitError": "Not sent yet. Check your connection and try again; what you typed is kept.",
+        "filterAll": "All",
+        "filterAria": "Filter by status",
+        "back": "Back to list",
+        "colDate": "Date",
+        "colStatus": "Status",
+        "colSummary": "Summary",
+        "emptyFiltered": "Nothing in this status. Choose “All” to see everything."
       },
       "mod": {
         "pending": "Awaiting review",
@@ -550,7 +557,9 @@
         "summaryLink": "Approve: link \"{{company}}\" to existing partner \"{{party}}\".",
         "summaryPick": "Pick an existing partner to link, or go back to \"Create a new partner\".",
         "errLinked": "This partner already has a Feed account. Pick another partner or \"Create a new partner\".",
-        "errPartyGone": "The selected partner was not found (it may have just been removed). Pick another one."
+        "errPartyGone": "The selected partner was not found (it may have just been removed). Pick another one.",
+        "colCompany": "Company · contact",
+        "detailTitle": "Request details"
       },
       "reports": {
         "menu": "Report",
@@ -597,7 +606,10 @@
         "send": "Send report",
         "sent": "Report sent. An admin will review it.",
         "duplicate": "You already reported this post. An admin will handle it; no need to send again.",
-        "postUntitled": "(Post without a title)"
+        "postUntitled": "(Post without a title)",
+        "colPost": "Reported post",
+        "colKind": "Type",
+        "detailTitle": "Report details"
       }
     },
     "me": {

@@ -1,11 +1,81 @@
-// CR-120 · Báo cáo vi phạm (người duyệt): danh sách MỘT yêu cầu; quyết Ẩn bài / Cảnh báo / Bỏ qua. Gợi ý phân loại tự động chỉ để tham khảo.
+// CR-120 · CR-137 · Báo cáo vi phạm (người duyệt): BẢNG (bài · loại · ngày · trạng thái · lý do) + khung chi tiết; quyết Ẩn bài / Cảnh báo / Bỏ qua.
+// Gợi ý phân loại tự động chỉ để tham khảo.
 import type { Report } from "@ai/contracts/community";
 import { useApp } from "../../application/ctx";
+import { shortDay } from "../../domain/admin-list";
 import { isConflict, reportKindKey, reportLevelKey } from "../../domain/flows";
-import { t } from "../../i18n";
+import { numLocale, t } from "../../i18n";
+import { AdminList, type Column } from "./AdminList";
 import { FlowPage, ListState, useFlowList } from "./parts";
 
 const ACTIONS = ["hide", "warn", "dismiss"] as const;
+const STATUSES = ["pending", "resolved"] as const;
+const statusTag = (r: Report) => (
+  <span className={r.status === "pending" ? "tag soon sm" : "tag ok sm"}>
+    {t(`community.flows.reports.status.${r.status}`)}
+  </span>
+);
+const title = (r: Report) => r.postTitle || t("community.flows.reports.postUntitled");
+
+const columns = (): Column<Report>[] => [
+  { key: "post", head: t("community.flows.reports.colPost"), cell: title },
+  { key: "kind", head: t("community.flows.reports.colKind"), cell: (r) => t(reportKindKey(r)) },
+  {
+    key: "date",
+    head: t("community.flows.common.colDate"),
+    cell: (r) => shortDay(r.createdAt, numLocale()),
+  },
+  { key: "status", head: t("community.flows.common.colStatus"), cell: statusTag },
+  { key: "sum", head: t("community.flows.common.colSummary"), cell: (r) => r.reason },
+];
+
+function ReportDetail({
+  r,
+  onDecide,
+}: {
+  r: Report;
+  onDecide: (a: (typeof ACTIONS)[number]) => void;
+}) {
+  const level = reportLevelKey(r);
+  return (
+    <div data-testid="report-detail" data-post-id={r.postId}>
+      <div className="pbody">
+        <p>
+          <b data-testid="report-post-title">{title(r)}</b>
+        </p>
+        <p>
+          <span className="tag grey sm">{t(reportKindKey(r))}</span>{" "}
+          {level && <span className="tag soon sm">{t(level)}</span>} {statusTag(r)}
+        </p>
+        <p className="muted">{shortDay(r.createdAt, numLocale())}</p>
+        <p>
+          <b>{t("community.flows.reports.reason")}:</b> {r.reason}
+        </p>
+        {r.status === "resolved" && r.action && (
+          <p className="muted">
+            {t(`community.flows.reports.result.${r.action}`, { by: r.decidedBy ?? "" })}
+          </p>
+        )}
+      </div>
+      {r.status === "pending" && (
+        <div className="cbar">
+          <div className="sp" />
+          {ACTIONS.map((a) => (
+            <button
+              key={a}
+              type="button"
+              className={a === "hide" ? "primary sm" : "ghost"}
+              data-testid={`report-${a}`}
+              onClick={() => onDecide(a)}
+            >
+              {t(`community.flows.reports.action.${a}`)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ReportsPage() {
   const { api, toast, bump } = useApp();
@@ -27,59 +97,23 @@ export default function ReportsPage() {
       intro={t("community.flows.reports.intro")}
       testId="reports-page"
     >
-      <ListState {...list} emptyKey="community.flows.reports.empty" />
-      {list.items?.map((r) => {
-        const level = reportLevelKey(r);
-        return (
-          <article
-            className="card post"
-            key={r.id}
-            data-testid="report-item"
-            data-post-id={r.postId}
-          >
-            <div className="ph">
-              <div className="who">
-                <b data-testid="report-post-title">
-                  {r.postTitle || t("community.flows.reports.postUntitled")}
-                </b>
-                <div className="meta">
-                  <span className="tag grey sm">{t(reportKindKey(r))}</span>
-                  {level && <span className="tag soon sm">{t(level)}</span>}
-                  <span className={r.status === "pending" ? "tag soon sm" : "tag ok sm"}>
-                    {t(`community.flows.reports.status.${r.status}`)}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="pbody">
-              <p>
-                <b>{t("community.flows.reports.reason")}:</b> {r.reason}
-              </p>
-              {r.status === "resolved" && r.action && (
-                <p className="muted">
-                  {t(`community.flows.reports.result.${r.action}`, { by: r.decidedBy ?? "" })}
-                </p>
-              )}
-            </div>
-            {r.status === "pending" && (
-              <div className="cbar">
-                <div className="sp" />
-                {ACTIONS.map((a) => (
-                  <button
-                    key={a}
-                    type="button"
-                    className={a === "hide" ? "primary sm" : "ghost"}
-                    data-testid={`report-${a}`}
-                    onClick={() => void decide(r, a)}
-                  >
-                    {t(`community.flows.reports.action.${a}`)}
-                  </button>
-                ))}
-              </div>
-            )}
-          </article>
-        );
-      })}
+      {(list.failed || !list.items) && (
+        <ListState {...list} emptyKey="community.flows.reports.empty" />
+      )}
+      {list.items && !list.failed && (
+        <AdminList
+          testId="reports-list"
+          rowTestId="report-item"
+          rows={list.items}
+          statuses={STATUSES}
+          pendingStatus="pending"
+          statusLabel={(s) => t(`community.flows.reports.status.${s}`)}
+          columns={columns()}
+          detailTitle={t("community.flows.reports.detailTitle")}
+          emptyKey="community.flows.reports.empty"
+          detail={(r) => <ReportDetail r={r} onDecide={(a) => void decide(r, a)} />}
+        />
+      )}
     </FlowPage>
   );
 }
