@@ -28,7 +28,7 @@ Trạng thái gộp: chưa gộp
 #### Yêu cầu: Một chuông thông báo dùng chung (nguồn: cr130-bell)
 Workspace-web dùng đúng component chuông của web-kit như chat/admin/studio; thông báo Community và Sổ Hợp Tác chung một chuông, bấm hàng mở đúng trang (kể cả `/community?post=<id>`); chân «Xem tất cả/Cài đặt thông báo» chỉ khi người dùng có gói Sổ Hợp Tác; tin nhắn không vào chuông.
 - Kịch bản: hàng thông báo có link là liên kết thật, chưa đọc có chấm và đậm, hiện ngày tạo [test: apps/workspace-web/src/features/notifications/notification-row.test.tsx » linkRows: <a href> thật, chưa đọc có chấm + đậm, có giờ]
-- Kịch bản: mặc định (chat/admin/studio) hàng vẫn là nút, đã đọc không chấm [test: apps/workspace-web/src/features/notifications/notification-row.test.tsx » mặc định: nút; đã đọc không chấm; không link vẫn là nút]
+- Kịch bản: mặc định (chat/admin/studio) hàng vẫn là nút, đã đọc không chấm [test: apps/workspace-web/src/features/notifications/notification-row.test.tsx » mặc định: nút, đã đọc không chấm, không link vẫn là nút]
 
 ## Quyết định trong lúc làm
 Thêm props vào chuông web-kit thay vì slot render: ít bề mặt, 3 app kia không đổi.

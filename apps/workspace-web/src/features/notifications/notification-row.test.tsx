@@ -37,7 +37,7 @@ describe("NotificationRow", () => {
     expect(h).toContain("font-weight:600");
     expect(h).toContain("T:2026-10-18");
   });
-  test("mặc định: nút; đã đọc không chấm; không link vẫn là nút", () => {
+  test("mặc định: nút, đã đọc không chấm, không link vẫn là nút", () => {
     const h = renderToStaticMarkup(
       <NotificationRow
         n={n({ read: true, link: null })}
