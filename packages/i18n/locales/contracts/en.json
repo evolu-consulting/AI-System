@@ -745,7 +745,8 @@
         "tooLarge": "The file is too large for AI to read. Split it, or press “Enter manually”.",
         "unsupported": "This file format cannot be read automatically. Upload a PDF, DOCX or JPG/PNG image, or press “Enter manually”.",
         "cap": "Your company has used all AI reads for today. Try again tomorrow, or press “Enter manually”."
-      }
+      },
+      "toList": "Back to list"
     },
     "catalog": {
       "tabs": "Product groups",
@@ -915,6 +916,11 @@
         "skipped": "Skipped"
       },
       "filesCount": "{{count}} attached file(s)"
+    },
+    "notFoundPage": {
+      "title": "Page not found",
+      "body": "The link may be out of date, or you may not have access. Go back to Overview to continue.",
+      "home": "Back to Overview"
     }
   }
 }

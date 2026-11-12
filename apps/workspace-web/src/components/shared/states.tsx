@@ -1,4 +1,6 @@
 // PK-FR-10 · TF2 · trạng thái rỗng / đang tải / lỗi + Chips. Nguồn: reference/mgmt-app-contracts/web/src/components/ui.tsx:61-121 (viết lại bằng token Tailwind).
+
+import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
@@ -41,43 +43,17 @@ export function Chips<T extends string>({
   );
 }
 
-/** Không có gì để hiện (chưa có dữ liệu / tìm không ra). Mặc định biểu tượng kính lúp; `icon` để đổi. */
+/** Không có gì để hiện: `empty` (chưa có dữ liệu, mặc định) hoặc `search` (lọc không ra) — CR-131, hình dùng chung từ web-kit. */
 export function Empty({
   title,
   children,
-  icon,
+  kind = "empty",
 }: {
   title: string;
   children?: ReactNode;
-  icon?: ReactNode;
+  kind?: "empty" | "search";
 }) {
-  return (
-    <div className="flex flex-col items-center px-6 py-14 text-center">
-      <span
-        aria-hidden
-        className="mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-sunk text-dim"
-      >
-        {icon ?? (
-          // biome-ignore lint/a11y/noSvgWithoutTitle: trang trí, bọc trong span aria-hidden
-          <svg
-            width="26"
-            height="26"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" />
-          </svg>
-        )}
-      </span>
-      <p className="font-medium">{title}</p>
-      {children && <div className="mt-1 max-w-sm text-sm text-dim">{children}</div>}
-    </div>
-  );
+  return <EmptyState kind={kind} title={title} hint={children} />;
 }
 
 /** Vòng quay (currentColor); giảm chuyển động thì globals.css tắt animation, còn lại vòng tĩnh. */

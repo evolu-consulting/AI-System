@@ -83,7 +83,9 @@ export function ContractsTab({ party }: { party: string }) {
         </fieldset>
       </div>
       {shown.length === 0 ? (
-        <Empty title={L("emptyTitle")}>{rows.length ? L("emptyFilter") : L("emptyBody")}</Empty>
+        <Empty kind={rows.length ? "search" : "empty"} title={L("emptyTitle")}>
+          {rows.length ? L("emptyFilter") : L("emptyBody")}
+        </Empty>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-[14px]">

@@ -128,7 +128,12 @@ export function PartnersPage() {
     if (q.isLoading) return <Loading />;
     if (q.error) return <ErrorLine error={q.error} />;
     if (!items.length) return <Empty title={L("emptyTitle")}>{L("emptyBody")}</Empty>;
-    if (!tb.total) return <Empty title={L("noMatchTitle")}>{L("noMatchBody")}</Empty>;
+    if (!tb.total)
+      return (
+        <Empty kind="search" title={L("noMatchTitle")}>
+          {L("noMatchBody")}
+        </Empty>
+      );
     return (
       <ul data-testid="partner-list" className="md:min-h-0 md:flex-1 md:overflow-auto">
         {tb.shown.map((p) => (

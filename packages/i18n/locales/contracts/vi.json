@@ -745,7 +745,8 @@
         "tooLarge": "Tệp quá lớn để AI đọc. Hãy tách nhỏ tệp, hoặc bấm “Nhập tay”.",
         "unsupported": "Định dạng tệp này chưa hỗ trợ đọc tự động. Hãy tải lên PDF, DOCX hoặc ảnh JPG/PNG, hoặc bấm “Nhập tay”.",
         "cap": "Hôm nay đã hết lượt AI đọc của công ty. Hãy thử lại ngày mai, hoặc bấm “Nhập tay”."
-      }
+      },
+      "toList": "Về danh sách"
     },
     "catalog": {
       "tabs": "Nhóm sản phẩm",
@@ -915,6 +916,11 @@
         "skipped": "Bỏ qua"
       },
       "filesCount": "{{count}} tệp đính kèm"
+    },
+    "notFoundPage": {
+      "title": "Không tìm thấy trang này",
+      "body": "Đường dẫn có thể đã cũ hoặc bạn không có quyền xem. Quay về Tổng quan để tiếp tục.",
+      "home": "Về Tổng quan"
     }
   }
 }

@@ -494,5 +494,9 @@
   },
   "processRoute": {
     "notFound": "Not found"
+  },
+  "notFoundPage": {
+    "title": "Page not found",
+    "body": "The link may be out of date. Go back to the welcome page to start a new conversation."
   }
 }

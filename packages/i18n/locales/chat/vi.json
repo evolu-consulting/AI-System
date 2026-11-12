@@ -494,5 +494,9 @@
   },
   "processRoute": {
     "notFound": "Không tìm thấy"
+  },
+  "notFoundPage": {
+    "title": "Không tìm thấy trang này",
+    "body": "Đường dẫn có thể đã cũ. Quay về trang chào để bắt đầu hội thoại mới."
   }
 }

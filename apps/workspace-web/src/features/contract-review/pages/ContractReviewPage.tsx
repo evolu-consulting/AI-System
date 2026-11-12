@@ -1,6 +1,8 @@
 // CR-127 · U5 · M9/M10: trang chi tiết HĐ — nạp HĐ (tải lại mỗi 2 s khi AI đang đọc) + thẻ duyệt; thân trang ở `ContractBody`.
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
+import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
@@ -41,9 +43,16 @@ export function ContractReviewPage({ id }: { id: string }) {
   const hidden = detailErrorKey(q.error);
   if (hidden)
     return (
-      <div data-testid="contract-not-visible">
-        <ErrorLine error={new Error(t(hidden))} />
-      </div>
+      <EmptyState
+        kind="notFound"
+        title={t(hidden)}
+        titleTestId="contract-not-visible"
+        action={
+          <Link to="/contracts/list" className="text-act hover:underline">
+            {t("contracts.review.toList")}
+          </Link>
+        }
+      />
     );
   if (q.error || !q.data || !info.f) return <ErrorLine error={q.error} />;
   return <ContractBody id={id} c={q.data} info={{ ...info, f: info.f }} ap={ap} />;

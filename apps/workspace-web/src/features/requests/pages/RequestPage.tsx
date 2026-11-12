@@ -4,6 +4,7 @@
 // Quyền xem do hub quyết (người gửi · người được giao · quản trị), ngoài ra 404.
 import type { EvidenceInput } from "@ai/contracts/chat";
 import type { RequestStepNode } from "@ai/contracts/hub-admin";
+import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
@@ -96,9 +97,15 @@ export function RequestPage({
     return (
       <div data-testid="request-missing">
         <PageHead title={t("contracts.requests.statusTitle")} crumb={back} />
-        <p role="alert" className="text-sm text-late">
-          {t("contracts.requests.notFound")}
-        </p>
+        <EmptyState
+          kind="notFound"
+          title={t("contracts.requests.notFound")}
+          action={
+            <Link to="/contracts/requests" className="text-act hover:underline">
+              {t("contracts.review.toList")}
+            </Link>
+          }
+        />
       </div>
     );
   const { run, title, fields, steps } = q.data;

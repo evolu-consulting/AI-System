@@ -244,7 +244,9 @@ export function ContractsListPage() {
           // CR-123 u9: người không có quyền tải/nhập (vd kế toán) không được gợi ý "Upload" — nói đúng phạm vi họ thấy
           <ListEmpty write={write} />
         ) : !hasRows ? (
-          <Empty title={t("contracts.list.noMatchTitle")}>{t("contracts.list.noMatchBody")}</Empty>
+          <Empty kind="search" title={t("contracts.list.noMatchTitle")}>
+            {t("contracts.list.noMatchBody")}
+          </Empty>
         ) : (
           <>
             <div className="overflow-auto max-sm:hidden md:min-h-0 md:flex-1">

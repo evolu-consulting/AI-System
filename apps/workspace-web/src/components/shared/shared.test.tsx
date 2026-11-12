@@ -46,11 +46,11 @@ describe("shared states", () => {
     expect(html(<ErrorLine error={new Error("Hỏng rồi")} />)).toContain("Hỏng rồi");
     expect(html(<ErrorLine error="chuỗi" />)).toContain("chuỗi");
   });
-  test("Empty: tiêu đề + nội dung; có thể đổi icon", () => {
+  test("Empty: tiêu đề + nội dung; kind chọn hình (CR-131)", () => {
     const out = html(<Empty title="Chưa có hợp đồng">Thêm mới</Empty>);
     expect(out).toContain("Chưa có hợp đồng");
     expect(out).toContain("Thêm mới");
-    expect(html(<Empty title="t" icon={<i>I</i>} />)).toContain("<i>I</i>");
+    expect(html(<Empty title="t" kind="search" />)).toContain('data-kind="search"');
   });
   test("Chips: nhóm có nhãn, aria-pressed theo giá trị", () => {
     const out = html(
