@@ -24,6 +24,7 @@ export function companyRoutes(view: PackAccessView, uc: CompanyUsecase): Hono<Pa
     return { tenantId: u.tenantId, userId: u.userId };
   };
   r.get("/company", read, async (c) => c.json(await uc.get(who(c))));
+  r.get("/company/cover", read, async (c) => c.json(await uc.cover(who(c))));
   r.put("/company", write, async (c) => {
     const i = await packAccessInput(view, KEY, c.get("user"));
     if (checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) !== "ok")

@@ -354,7 +354,8 @@
         "error": "Could not load photos & files.",
         "image": "Photo",
         "video": "Video"
-      }
+      },
+      "coverAlt": "Company cover image"
     },
     "settings": {
       "saved": "Settings saved",

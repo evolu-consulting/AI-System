@@ -5,7 +5,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { applyTheme, ownTheme } from "~/features/shell/lib/theme";
-import { fetchBizConfig, fetchCompany, previewBiz, saveChanged, settingsKeys } from "../api";
+import {
+  fetchBizConfig,
+  fetchCompany,
+  fetchCompanyCover,
+  previewBiz,
+  saveChanged,
+  settingsKeys,
+} from "../api";
 import { applyBrandDom, type Brand, brandStore, effectiveTheme, useBrand } from "../lib/brand";
 import { buildState, type Changed } from "../lib/data";
 import type { SettingsData } from "../lib/types";
@@ -79,6 +86,18 @@ export function useSettingsState(enabled: boolean) {
       void biz.refetch();
     },
   };
+}
+
+/** CR-138 Q9: ảnh bìa đã lưu (chỉ tải khi mục Công ty mở và công ty có ảnh bìa). */
+export function useCompanyCover(enabled: boolean) {
+  return useQuery({
+    queryKey: settingsKeys.cover,
+    queryFn: ({ signal }) => fetchCompanyCover(signal),
+    enabled,
+    staleTime: 0,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 }
 
 /** Thử tính điểm kinh doanh trên mẫu nhập tay. */

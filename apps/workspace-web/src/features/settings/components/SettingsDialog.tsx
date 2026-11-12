@@ -10,7 +10,7 @@ import { useShellPacks } from "~/shell/use-shell-packs";
 import { brandOf, useSaveSettings, useSettingsState } from "../hooks/use-settings";
 import { brandStore } from "../lib/brand";
 import { settingsBus, useSettingsOpen } from "../lib/bus";
-import { anyChanged, changedParts, firstIssue, same } from "../lib/data";
+import { anyChanged, changedParts, firstIssue, same, settledCompany } from "../lib/data";
 import { pickNav } from "../lib/section-key";
 import type { SectionId, SettingsData, SettingsNavId } from "../lib/types";
 import { Dot } from "./controls";
@@ -38,7 +38,7 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
   const { state, loading, error, retry } = useSettingsState(open && hasContracts);
   const [draft, setDraft] = useState<SettingsData | null>(null);
   const [picked, setSec] = useState<SettingsNavId>("co");
-  const sec = pickNav(picked, hasContracts, hasFeed);
+  const sec = pickNav(picked, hasContracts, hasFeed, owner);
   const csec = sec === "feed" ? null : sec;
   const [saving, setSaving] = useState(false);
   const s = (k: string) => t(`contracts.settings.${k}`);
@@ -66,8 +66,10 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
     if (!draft || !vsSaved || issue) return;
     setSaving(true);
     const r = await saveSettings(draft, vsSaved);
-    if (r.ok) toast(s("saved"));
-    else toast(r.message ?? s("saveFail"), "late");
+    if (r.ok) {
+      toast(s("saved"));
+      setDraft((d) => d && { ...d, company: settledCompany(d.company) });
+    } else toast(r.message ?? s("saveFail"), "late");
     setSaving(false);
   };
   // Mở từ nơi khác với mục chỉ định (vd thẻ duyệt ⇒ "Quy trình duyệt").
@@ -80,6 +82,7 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
   const groups = buildNavGroups({
     hasContracts,
     hasFeed,
+    owner,
     s,
     dot: (k) => (sectionChanged(k, vsDef) ? <Dot label={s("changed")} /> : undefined),
   });

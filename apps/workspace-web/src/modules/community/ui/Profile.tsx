@@ -11,6 +11,7 @@ import {
   visibleSections,
 } from "../domain/profile-sections";
 import { t } from "../i18n";
+import { ProfileCover } from "./ProfileCover";
 import { AboutSection, MediaSection, PartnersSection, PostsSection } from "./profile/sections";
 
 export function ProfilePage() {
@@ -48,7 +49,7 @@ export function ProfilePage() {
       <main className="wsmain">
         <div className="wscenter" data-testid="profile-page">
           <div className="card">
-            <div className="cover pcover" />
+            <ProfileCover isHost={p.org.isHost} />
             <div className="phero">
               <span className="biglogo">{initials(p.org.name)}</span>
               <div className="pname">

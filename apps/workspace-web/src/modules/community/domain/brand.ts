@@ -25,6 +25,10 @@ const isAccent = (v: unknown): v is CommunityBrandAccent =>
 const safeLogo = (v: string | null): string | null =>
   v && /^data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,/i.test(v) ? v : null;
 
+/** CR-138 Q9 · chỉ nhận data URL ảnh bìa PNG/JPG/WebP (server đã kiểm; phòng thủ thêm để `<img src>` không nhận URL lạ). */
+export const safeCover = (v: string | null | undefined): string | null =>
+  v && /^data:image\/(png|jpeg|webp);base64,/i.test(v) ? v : null;
+
 export function toBrandView(b: CommunityBrand | null, fallbackName: string): BrandView {
   const name = b?.name?.trim() || fallbackName;
   return {

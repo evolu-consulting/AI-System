@@ -3,7 +3,7 @@
 // giao diện/cờ duyệt (P5-AC06). Chưa có brand ⇒ tên tenant + indigo, logo null (UI vẽ chữ cái đầu, P5-AC07).
 import { z } from "zod";
 
-/** 6 màu công ty (khớp `COMPANY_ACCENTS` của gói contracts; community thêm `rose`). */
+/** 6 màu gốc có token riêng của Community; màu khác (CR-138: 6 màu thêm + màu tự chọn) ⇒ `indigo` = dùng `--primary` do brand toàn app đặt. */
 export const COMMUNITY_BRAND_ACCENTS = [
   "indigo",
   "blue",
@@ -25,6 +25,13 @@ export const CommunityBrandSchema = z.strictObject({
   accent: z.enum(COMMUNITY_BRAND_ACCENTS),
 });
 export type CommunityBrand = z.infer<typeof CommunityBrandSchema>;
+
+/**
+ * CR-138 Q9 · ảnh bìa công ty chủ quản (`GET /pack/community/brand/cover`, mọi account trong tenant kể cả đối tác): data URL PNG/JPG/WebP
+ * ≤ 3 MB hoặc null (UI vẽ nền màu chủ đạo). Tách khỏi `/brand` để không kéo ảnh to vào mỗi lần tải app. `/brand` vẫn đúng 4 trường.
+ */
+export const CommunityBrandCoverSchema = z.strictObject({ cover: z.string().nullable() });
+export type CommunityBrandCover = z.infer<typeof CommunityBrandCoverSchema>;
 
 /** Quyền theo gói của người xem (I3). `contracts` = có quyền đọc gói contracts (chủ quản); đối tác luôn false. */
 export const CommunityCapsSchema = z.strictObject({

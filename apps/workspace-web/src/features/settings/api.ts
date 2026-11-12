@@ -4,6 +4,7 @@ import type {
   BizConfigOut,
   BizPreviewIn,
   BizScore,
+  CompanyCoverOut,
   CompanyIn,
   CompanyOut,
 } from "@ai/contracts/pack-contracts";
@@ -14,10 +15,14 @@ import type { SettingsData } from "./lib/types";
 const P = "/pack/contracts";
 export const settingsKeys = {
   company: ["settings", "company"] as const,
+  cover: ["settings", "company-cover"] as const,
   biz: ["settings", "biz"] as const,
 };
 
 export const fetchCompany = (signal?: AbortSignal) => api<CompanyOut>(`${P}/company`, { signal });
+/** CR-138 Q9: ảnh bìa công ty (data URL) — tách khỏi `/company` để khỏi kéo ảnh to vào mỗi lần tải app. */
+export const fetchCompanyCover = (signal?: AbortSignal) =>
+  api<CompanyCoverOut>(`${P}/company/cover`, { signal });
 export const fetchBizConfig = (signal?: AbortSignal) =>
   api<BizConfigOut>(`${P}/business/config`, { signal });
 
@@ -26,7 +31,9 @@ export const previewBiz = (body: BizPreviewIn, signal?: AbortSignal) =>
 
 /** Lưu đúng các phần đã đổi, tuần tự (phần lỗi dừng ngay, phần đã lưu giữ nguyên; người dùng sửa rồi Lưu tiếp). */
 export async function saveChanged(d: SettingsData, ch: Changed): Promise<void> {
-  if (ch.company)
-    await api<CompanyOut>(`${P}/company`, { method: "PUT", body: d.company satisfies CompanyIn });
+  if (ch.company) {
+    const { has_cover: _shown, ...body } = d.company; // `has_cover` chỉ để hiển thị; thân PUT strict
+    await api<CompanyOut>(`${P}/company`, { method: "PUT", body: body satisfies CompanyIn });
+  }
   if (ch.biz) await api(`${P}/business/config`, { method: "PUT", body: d.biz satisfies BizConfig });
 }

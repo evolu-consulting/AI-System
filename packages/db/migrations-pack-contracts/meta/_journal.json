@@ -722,6 +722,13 @@
       "when": 1807000219000,
       "tag": "0109_sec_msg_files_attach",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1807000220000,
+      "tag": "0110_cr138_company_cover",
+      "breakpoints": true
     }
   ]
 }

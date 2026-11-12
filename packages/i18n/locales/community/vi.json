@@ -354,7 +354,8 @@
         "error": "Không tải được ảnh & tệp.",
         "image": "Ảnh",
         "video": "Video"
-      }
+      },
+      "coverAlt": "Ảnh bìa công ty"
     },
     "settings": {
       "saved": "Đã lưu cài đặt",

@@ -30,7 +30,13 @@
         "teal": "Xanh ngọc",
         "green": "Xanh lá",
         "orange": "Cam",
-        "rose": "Hồng"
+        "rose": "Hồng",
+        "violet": "Tím",
+        "magenta": "Tím hồng",
+        "amber": "Vàng đất",
+        "lime": "Xanh chanh",
+        "sky": "Xanh da trời",
+        "slate": "Xám than"
       },
       "account": {
         "language": "Ngôn ngữ",

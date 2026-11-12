@@ -4,6 +4,7 @@ import type {
   CommentPage,
   CommentView,
   CommunityBrand,
+  CommunityBrandCover,
   CommunityFile,
   CommunitySettings,
   CommunityViewer,
@@ -69,6 +70,8 @@ export interface CommunityApi {
   getViewer(): Promise<CommunityViewer>;
   /** `GET /pack/community/brand` — brand công ty chủ quản, mọi vai kể cả đối tác (CR-110 COM-FR-45). */
   getBrand(): Promise<CommunityBrand>;
+  /** `GET /pack/community/brand/cover` — ảnh bìa công ty chủ quản (data URL) hoặc null (CR-138 Q9). */
+  getBrandCover(): Promise<CommunityBrandCover>;
   /** `GET /pack/community/feed` */
   listFeed(q: FeedQuery): Promise<FeedResponse>;
   /** `POST /pack/community/posts` */

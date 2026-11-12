@@ -10,12 +10,11 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { SettingsNavGroup } from "~/shared/ui/settings-layout";
+import { allowedSections } from "../lib/section-key";
 import type { SectionId } from "../lib/types";
 
 /** Mục dùng bản nháp chung + nút Lưu chung (công ty, điểm kinh doanh); còn lại lưu riêng. */
 export const isDraftSection = (s: SectionId) => s === "co" || s === "biz";
-const SECTIONS: readonly SectionId[] = ["co", "rep", "biz", "scout", "flow"];
-
 const SECTION_ICON: Record<SectionId, LucideIcon> = {
   co: Building2,
   rep: Star,
@@ -27,6 +26,8 @@ const SECTION_ICON: Record<SectionId, LucideIcon> = {
 export function buildNavGroups(p: {
   hasContracts: boolean;
   hasFeed: boolean;
+  /** CR-138 Q6 · không phải chủ sở hữu ⇒ chỉ mục «Quy trình duyệt» (các mục chỉ đọc bị ẩn). Mặc định true. */
+  owner?: boolean;
   s: (k: string) => string;
   dot: (k: SectionId) => ReactNode;
 }): SettingsNavGroup[] {
@@ -37,7 +38,7 @@ export function buildNavGroups(p: {
     out.push({
       id: "contracts",
       label: multi ? s("group.contracts") : undefined,
-      items: SECTIONS.map((k) => ({
+      items: allowedSections(p.owner ?? true).map((k) => ({
         id: k,
         label: s(`sec.${k}`),
         hint: s(`sec.${k}Hint`),

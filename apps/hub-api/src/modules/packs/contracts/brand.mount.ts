@@ -16,7 +16,11 @@ type BrandRow = {
   logo: string | null;
   accent: string;
 };
-type BrandReader = { brand(tenantId: string): Promise<BrandRow | null> };
+type BrandReader = {
+  brand(tenantId: string): Promise<BrandRow | null>;
+  /** CR-138 Q9: ảnh bìa công ty (data URL) hoặc null — tách khỏi `brand` để không kéo ảnh to vào mỗi lần tải app. */
+  cover(tenantId: string): Promise<string | null>;
+};
 
 const brandOf = (tx: Tx, tid: string): Promise<BrandRow | null> =>
   one<BrandRow | null>(
@@ -25,7 +29,19 @@ const brandOf = (tx: Tx, tid: string): Promise<BrandRow | null> =>
       from contracts.company_settings s where s.tenant_id = ${tid}::uuid`,
   );
 
+const coverOf = (tx: Tx, tid: string): Promise<string | null> =>
+  one<{ cover: string | null } | null>(
+    tx,
+    sql`select jsonb_build_object('cover', s.cover) as j from contracts.company_settings s where s.tenant_id = ${tid}::uuid`,
+  ).then((r) => r?.cover ?? null);
+
 export function companyBrandModule(db: Db): BrandReader {
-  const uow = createPackUow(db, KEY, (tx, t) => ({ brand: () => brandOf(tx, t) }));
-  return { brand: (tenantId) => uow.system(tenantId, (r) => r.brand()) };
+  const uow = createPackUow(db, KEY, (tx, t) => ({
+    brand: () => brandOf(tx, t),
+    cover: () => coverOf(tx, t),
+  }));
+  return {
+    brand: (tenantId) => uow.system(tenantId, (r) => r.brand()),
+    cover: (tenantId) => uow.system(tenantId, (r) => r.cover()),
+  };
 }

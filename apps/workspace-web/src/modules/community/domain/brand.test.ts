@@ -64,3 +64,27 @@ describe("getBrand", () => {
     ]);
   });
 });
+
+describe("CR-138 Q9 · ảnh bìa công ty", () => {
+  it("safeCover: chỉ nhận data URL PNG/JPG/WebP, SVG/URL lạ/rỗng ⇒ null", async () => {
+    const { safeCover } = await import("./brand");
+    expect(safeCover("data:image/png;base64,AAAA")).toBe("data:image/png;base64,AAAA");
+    expect(safeCover("data:image/jpeg;base64,AAAA")).not.toBeNull();
+    expect(safeCover("data:image/webp;base64,AAAA")).not.toBeNull();
+    expect(safeCover("data:image/svg+xml;base64,AAAA")).toBeNull();
+    expect(safeCover("https://x.test/a.png")).toBeNull();
+    expect(safeCover(null)).toBeNull();
+  });
+  it("http: GET /pack/community/brand/cover", async () => {
+    const calls: string[] = [];
+    globalThis.fetch = (async (url: string) => {
+      calls.push(url);
+      return new Response(JSON.stringify({ cover: null }));
+    }) as unknown as typeof fetch;
+    expect(await createHttpApi().getBrandCover()).toEqual({ cover: null });
+    expect(calls[0]).toContain("/pack/community/brand/cover");
+  });
+  it("mock: chưa có ảnh bìa ⇒ null", async () => {
+    expect(await createMockApi().api.getBrandCover()).toEqual({ cover: null });
+  });
+});

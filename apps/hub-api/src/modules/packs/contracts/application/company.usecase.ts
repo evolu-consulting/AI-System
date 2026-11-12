@@ -6,10 +6,16 @@ import type { CompanyIn, CompanyOut } from "../domain/companies.types";
 import { LEGAL_WARN_DEFAULT } from "../domain/legal-warn.rules";
 import type { CompanyRepo } from "./companies.ports";
 
-export const DEFAULT_COMPANY: Omit<CompanyIn, "allow_negative_stock" | "legal_warn_threshold"> = {
+export const DEFAULT_COMPANY: Omit<
+  CompanyIn,
+  "allow_negative_stock" | "legal_warn_threshold" | "cover"
+> & {
+  has_cover: boolean;
+} = {
   name: null,
   app_name: null,
   logo: null,
+  has_cover: false,
   accent: "indigo",
   theme: "auto",
   own_names: [],
@@ -51,6 +57,9 @@ export function companyUsecase(d: { uow: PackUow<{ company: CompanyRepo }> }) {
   return {
     get: (who: PackWho): Promise<CompanyOut> =>
       tx(who, async (r) => out(await r.company(), await r.approval())),
+    /** CR-138 Q9: ảnh bìa công ty (đọc: mọi người có quyền đọc gói). */
+    cover: (who: PackWho): Promise<{ cover: string | null }> =>
+      tx(who, async (r) => ({ cover: await r.cover() })),
     async save(who: PackWho, c: CompanyIn): Promise<CompanyOut> {
       const msg = companyProblem(c);
       if (msg) throw new CompanyFail(msg);

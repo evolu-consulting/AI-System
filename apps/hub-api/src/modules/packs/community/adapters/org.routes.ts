@@ -91,6 +91,18 @@ function viewerAndPartners(r: R, d: CommunityDeps, access: Acc): void {
     }
     return c.body(body, 200, { ...cache, "Content-Type": "application/json" });
   });
+  // CR-138 Q9: ảnh bìa công ty chủ quản (mọi account trong tenant, kể cả đối tác — cùng quyền xem hồ sơ công ty); ETag + private cache như /brand.
+  r.get("/brand/cover", async (c) => {
+    const a = await access(c);
+    const cover = d.brand ? await d.brand.cover(a.who.tenantId) : null;
+    const body = JSON.stringify({ cover });
+    const etag = `"${new Bun.CryptoHasher("sha256").update(body).digest("hex")}"`;
+    const cache = { ETag: etag, "Cache-Control": "private, max-age=300" };
+    const inm = c.req.header("if-none-match");
+    if (inm?.split(",").some((t) => t.trim() === etag || t.trim() === `W/${etag}`))
+      return c.body(null, 304, cache);
+    return c.body(body, 200, { ...cache, "Content-Type": "application/json" });
+  });
   r.get("/partners", async (c) => {
     const a = await access(c);
     const list = partnerViews(a, await orgs.partners(d.uow, a));

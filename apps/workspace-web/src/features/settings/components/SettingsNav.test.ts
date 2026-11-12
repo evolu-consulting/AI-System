@@ -21,6 +21,13 @@ describe("buildNavGroups", () => {
   test("cờ community tắt ⇒ không có nhóm Bảng tin", () => {
     expect(ids(true, false)).toEqual([["contracts", undefined, 5]]);
   });
+  test("CR-138 Q6 · không phải chủ sở hữu ⇒ nhóm Sổ Hợp Tác chỉ còn «Quy trình duyệt» (chỉ xem)", () => {
+    const g = buildNavGroups({ hasContracts: true, hasFeed: true, owner: false, s, dot });
+    expect(g.map((x) => [x.id, x.items.map((i) => i.id)])).toEqual([
+      ["contracts", ["flow"]],
+      ["feed", ["feed"]],
+    ]);
+  });
   test("chỉ Cộng đồng ⇒ một nhóm, không tiêu đề", () => {
     expect(ids(false, true)).toEqual([["feed", undefined, 1]]);
   });

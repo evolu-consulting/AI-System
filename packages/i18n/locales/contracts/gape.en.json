@@ -30,7 +30,13 @@
         "teal": "Teal",
         "green": "Green",
         "orange": "Orange",
-        "rose": "Rose"
+        "rose": "Rose",
+        "violet": "Violet",
+        "magenta": "Magenta",
+        "amber": "Amber",
+        "lime": "Lime",
+        "sky": "Sky",
+        "slate": "Slate"
       },
       "account": {
         "language": "Language",

@@ -16,7 +16,9 @@ export type CompaniesRepo = {
 };
 
 export type StoredCompany = {
-  company: Omit<CompanyIn, "allow_negative_stock" | "legal_warn_threshold">;
+  company: Omit<CompanyIn, "allow_negative_stock" | "legal_warn_threshold" | "cover"> & {
+    has_cover: boolean;
+  };
   version: number;
   updated_at: string;
 } | null;
@@ -30,6 +32,8 @@ export type CompanyRepo = {
   company(): Promise<StoredCompany>;
   saveCompany(c: CompanyIn): Promise<NonNullable<StoredCompany>>;
   approval(): Promise<ApprovalFlag>;
+  /** CR-138 Q9: ảnh bìa (data URL) hoặc null. */
+  cover(): Promise<string | null>;
   /** Cài đặt "cho phép giao vượt tồn" + nhật ký trước/sau trong MỘT câu. */
   saveAllowNegative(allow: boolean, actor: string): Promise<void>;
   /** DOC-legal: ngưỡng cảnh báo pháp lý + nhật ký trước/sau trong MỘT câu. */

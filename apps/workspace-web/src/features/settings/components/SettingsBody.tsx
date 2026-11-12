@@ -1,9 +1,10 @@
 // CR-130 · thân hộp thoại Cài đặt chung: ngăn Bảng tin (module Cộng đồng, nạp lười) hoặc 5 ngăn Sổ Hợp Tác (nháp chung + ngăn lưu riêng).
+import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
+import { PaneSkeleton } from "~/components/shared/Refreshing";
 import { SettingsSection } from "~/shared/ui/settings-layout";
 import type { SettingsData, SettingsNavId } from "../lib/types";
 import { BizPane } from "./BizPane";
-import { CompanyPane } from "./CompanyPane";
 import { FeedSettingsPane } from "./FeedSettingsPane";
 import { LoadState } from "./LoadState";
 import { SectionPanes } from "./SectionPanes";
@@ -15,6 +16,9 @@ export type DraftForm = {
   setDraft: (d: SettingsData) => void;
   saving: boolean;
 };
+
+// CR-138 · mục Công ty (bảng 12 màu, ô màu tự chọn, ảnh bìa) tải lười: giữ chunk Cài đặt trong ngân sách.
+const CompanyPane = lazy(() => import("./CompanyPane").then((m) => ({ default: m.CompanyPane })));
 
 export function SettingsBody({
   sec,
@@ -42,11 +46,13 @@ export function SettingsBody({
               title={t("contracts.settings.sec.co")}
               description={t("contracts.settings.sec.coHint")}
             >
-              <CompanyPane
-                value={form.draft.company}
-                tenantName={tenantName}
-                set={(company) => form.setDraft({ ...form.draft, company })}
-              />
+              <Suspense fallback={<PaneSkeleton lines={4} />}>
+                <CompanyPane
+                  value={form.draft.company}
+                  tenantName={tenantName}
+                  set={(company) => form.setDraft({ ...form.draft, company })}
+                />
+              </Suspense>
             </SettingsSection>
           )}
           {sec === "biz" && (

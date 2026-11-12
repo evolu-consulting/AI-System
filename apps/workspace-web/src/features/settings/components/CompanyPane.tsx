@@ -1,11 +1,6 @@
-// V2-L · CD-01: mục "Công ty" — tên, tên ứng dụng, logo ≤ 1 MB, màu chủ đạo (6), giao diện; tên + MST của chính công ty (V2-G đoán
+// V2-L · CD-01: mục "Công ty" — tên, tên ứng dụng, logo ≤ 1 MB, màu chủ đạo (12 + tự chọn), ảnh bìa, giao diện; tên + MST của chính công ty (V2-G đoán
 // Mua/Bán); cờ duyệt hợp đồng (V2-A). Sửa là sidebar/menu/nút đổi ngay (bản xem thử ở `brandStore`).
-import {
-  COMPANY_ACCENTS,
-  COMPANY_LOGO_MAX_BYTES,
-  type CompanyIn,
-  MST_RE,
-} from "@ai/contracts/pack-contracts";
+import { COMPANY_LOGO_MAX_BYTES, MST_RE } from "@ai/contracts/pack-contracts";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,7 +11,9 @@ import {
   SettingsSeg,
   SettingsSwitch,
 } from "~/shared/ui/settings-layout";
-import { ACCENTS } from "../lib/brand";
+import type { CompanyDraft } from "../lib/types";
+import { AccentPicker } from "./AccentPicker";
+import { CoverField } from "./CoverField";
 import { FIELD } from "./controls";
 
 const lines = (v: string) =>
@@ -30,9 +27,9 @@ export function CompanyPane({
   tenantName,
   set,
 }: {
-  value: CompanyIn;
+  value: CompanyDraft;
   tenantName: string;
-  set: (c: CompanyIn) => void;
+  set: (c: CompanyDraft) => void;
 }) {
   const { t } = useTranslation();
   const file = useRef<HTMLInputElement>(null);
@@ -105,24 +102,11 @@ export function CompanyPane({
             <p className="basis-full text-caption text-dim">{s("logoHint")}</p>
           </div>
         </SettingsRow>
+        <SettingsRow label={s("coverLabel")}>
+          <CoverField value={c} set={set} />
+        </SettingsRow>
         <SettingsRow label={s("accent")}>
-          <div role="radiogroup" aria-label={s("accent")} className="flex flex-wrap gap-2">
-            {COMPANY_ACCENTS.map((a) => (
-              // biome-ignore lint/a11y/useSemanticElements: nút chọn màu dạng radio theo mockup
-              <button
-                key={a}
-                type="button"
-                role="radio"
-                aria-checked={c.accent === a}
-                onClick={() => set({ ...c, accent: a })}
-                style={{ "--sw": ACCENTS[a].l[0] } as React.CSSProperties}
-                className={`inline-flex h-9 items-center gap-2 rounded-full border bg-panel px-3 text-[13px] ${c.accent === a ? "border-[var(--sw)] shadow-[0_0_0_1px_var(--sw)]" : "border-rule"}`}
-              >
-                <i className="h-5 w-5 rounded-full bg-[var(--sw)]" />
-                {t(`contracts.gape.accent.${a}`)}
-              </button>
-            ))}
-          </div>
+          <AccentPicker value={c.accent} set={(accent) => set({ ...c, accent })} />
         </SettingsRow>
         <SettingsRow label={s("theme")}>
           <SettingsSeg

@@ -64,6 +64,7 @@ export function createHttpApi(): CommunityApi {
     flows: createHttpFlows(),
     getViewer: () => api(`${BASE}/viewer`),
     getBrand: () => api(`${BASE}/brand`),
+    getBrandCover: () => api(`${BASE}/brand/cover`),
     listFeed: (q) => api(`${BASE}/feed`, { query: feedQueryString(q) }),
     uploadFile: (file) =>
       api(`${BASE}/files`, {

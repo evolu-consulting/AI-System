@@ -22,7 +22,10 @@ export type CompanyIn = {
   name: string | null;
   app_name: string | null;
   logo: string | null;
-  accent: "indigo" | "blue" | "teal" | "green" | "orange" | "rose";
+  /** CR-138: khoá một trong 12 màu đặt sẵn hoặc `#rrggbb` tự chọn (đã kiểm ở contract). */
+  accent: string;
+  /** CR-138 Q9: ảnh bìa công ty (data URL); vắng ⇒ giữ nguyên khi lưu, null ⇒ xoá. */
+  cover?: string | null | undefined;
   theme: "auto" | "light" | "dark";
   own_names: string[];
   own_tax_ids: string[];
@@ -31,10 +34,13 @@ export type CompanyIn = {
 };
 
 export type CompanyOut = {
-  company: Omit<CompanyIn, "allow_negative_stock" | "legal_warn_threshold">;
+  /** CR-138: `has_cover` = đã có ảnh bìa (ảnh lấy ở `GET /company/cover`, không kèm ở đây để khỏi kéo ảnh to vào mỗi lần tải app). */
+  company: Omit<CompanyIn, "allow_negative_stock" | "legal_warn_threshold" | "cover"> & {
+    has_cover: boolean;
+  };
   allow_negative_stock: boolean;
   legal_warn_threshold: number;
-  defaults: CompanyIn;
+  defaults: CompanyIn & { has_cover: boolean };
   version: number;
   updated_at: string | null;
 };

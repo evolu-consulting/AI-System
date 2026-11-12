@@ -16,8 +16,23 @@ export function navFromKey(raw: unknown): SettingsNavId | null {
   return raw === "feed" ? "feed" : sectionFromKey(raw);
 }
 
-/** CR-130 · mục đang hiển thị: mục được chọn nếu nhóm của nó có mặt; không thì mục đầu của nhóm có mặt (người chỉ có Cộng đồng ⇒ "feed"). */
-export function pickNav(want: SettingsNavId, contracts: boolean, feed: boolean): SettingsNavId {
-  if (want === "feed" ? feed : contracts) return want;
-  return contracts ? DEFAULT_SECTION : "feed";
+/** CR-138 Q6 · mục Sổ Hợp Tác người xem được thấy: chủ sở hữu thấy đủ 5; người khác chỉ thấy «Quy trình duyệt» (chỉ xem) — các mục còn lại chỉ đọc nên ẩn. */
+export const READONLY_SECTION: SectionId = "flow";
+export const allowedSections = (owner: boolean): readonly SectionId[] =>
+  owner ? SECTION_KEYS : [READONLY_SECTION];
+
+/**
+ * CR-130 · mục đang hiển thị: mục được chọn nếu nhóm của nó có mặt; không thì mục đầu của nhóm có mặt (người chỉ có Cộng đồng ⇒ "feed").
+ * CR-138 · mục bị ẩn theo quyền (link cũ `?sec=co`…) ⇒ mục đầu tiên được phép, không lỗi.
+ */
+export function pickNav(
+  want: SettingsNavId,
+  contracts: boolean,
+  feed: boolean,
+  owner = true,
+): SettingsNavId {
+  if (want === "feed") return feed ? want : contracts ? firstAllowed(owner) : "feed";
+  if (!contracts) return "feed";
+  return allowedSections(owner).includes(want) ? want : firstAllowed(owner);
 }
+const firstAllowed = (owner: boolean): SectionId => allowedSections(owner)[0] ?? DEFAULT_SECTION;

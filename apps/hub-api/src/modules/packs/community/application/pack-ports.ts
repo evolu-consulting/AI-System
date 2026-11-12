@@ -67,6 +67,8 @@ export type HostBookReader = {
  */
 export type CompanyBrandReader = {
   brand(tenantId: string): Promise<CompanyBrandRow | null>;
+  /** CR-138 Q9: ảnh bìa công ty chủ quản (data URL PNG/JPG/WebP ≤ 3 MB) hoặc null. */
+  cover(tenantId: string): Promise<string | null>;
 };
 
 /** CR-110 · COM-FR-43 (I3): người gọi có quyền đọc gói contracts? Từ cache cấu hình (0 SQL khi nóng). User ngoài ⇒ false. */

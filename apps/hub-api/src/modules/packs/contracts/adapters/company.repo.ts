@@ -14,7 +14,7 @@ export function companyRepo(tx: Tx, tid: string) {
     one<StoredCompany>(
       tx,
       sql`select jsonb_build_object('company', jsonb_build_object('name', contracts.tenant_name(), 'app_name', s.app_name,
-          'logo', s.logo, 'accent', s.accent, 'theme', s.theme, 'own_names', to_jsonb(s.own_names),
+          'logo', s.logo, 'has_cover', s.cover is not null, 'accent', s.accent, 'theme', s.theme, 'own_names', to_jsonb(s.own_names),
           'own_tax_ids', to_jsonb(s.own_tax_ids)), 'version', s.version, 'updated_at', s.updated_at) as j
         from contracts.company_settings s where s.tenant_id = ${tid}::uuid`,
     );
@@ -22,17 +22,24 @@ export function companyRepo(tx: Tx, tid: string) {
   const saveCompany = (c: CompanyIn): Promise<NonNullable<StoredCompany>> =>
     one<NonNullable<StoredCompany>>(
       tx,
-      sql`insert into contracts.company_settings as s (tenant_id, app_name, logo, accent, theme, own_names, own_tax_ids)
-        values (${tid}::uuid, ${c.app_name}, ${c.logo}, ${c.accent}, ${c.theme},
+      sql`insert into contracts.company_settings as s (tenant_id, app_name, logo, cover, accent, theme, own_names, own_tax_ids)
+        values (${tid}::uuid, ${c.app_name}, ${c.logo}, ${c.cover ?? null}, ${c.accent}, ${c.theme},
           array(select jsonb_array_elements_text(${JSON.stringify(c.own_names)}::jsonb)),
           array(select jsonb_array_elements_text(${JSON.stringify(c.own_tax_ids)}::jsonb)))
         on conflict (tenant_id) do update set app_name = excluded.app_name,
-          logo = excluded.logo, accent = excluded.accent, theme = excluded.theme, own_names = excluded.own_names,
+          logo = excluded.logo, cover = case when ${c.cover === undefined}::boolean then s.cover else excluded.cover end,
+          accent = excluded.accent, theme = excluded.theme, own_names = excluded.own_names,
           own_tax_ids = excluded.own_tax_ids, version = s.version + 1, updated_by = excluded.updated_by, updated_at = now()
         returning jsonb_build_object('company', jsonb_build_object('name', contracts.tenant_name(), 'app_name', s.app_name,
-          'logo', s.logo, 'accent', s.accent, 'theme', s.theme, 'own_names', to_jsonb(s.own_names),
+          'logo', s.logo, 'has_cover', s.cover is not null, 'accent', s.accent, 'theme', s.theme, 'own_names', to_jsonb(s.own_names),
           'own_tax_ids', to_jsonb(s.own_tax_ids)), 'version', s.version, 'updated_at', s.updated_at) as j`,
     );
+
+  const cover = (): Promise<string | null> =>
+    one<{ cover: string | null } | null>(
+      tx,
+      sql`select jsonb_build_object('cover', s.cover) as j from contracts.company_settings s where s.tenant_id = ${tid}::uuid`,
+    ).then((r) => r?.cover ?? null);
 
   /** Cờ hiệu lực (hàng cài đặt > mặc định theo tenant) và mặc định. */
   const approval = () => approvalFlag(tx, tid);
@@ -40,6 +47,7 @@ export function companyRepo(tx: Tx, tid: string) {
   return {
     company,
     saveCompany,
+    cover,
     approval,
     saveAllowNegative: (allow: boolean, actor: string) =>
       saveAllowNegativeStock(tx, tid, allow, actor),

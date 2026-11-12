@@ -3,9 +3,12 @@
 // Kiểu theo `GET /pack/contracts/{company,business/config}`; thân PUT strict nên có hàm chuyển riêng ở `data.ts`.
 import type { BizConfig, CompanyIn } from "@ai/contracts/pack-contracts";
 
+/** Bản nháp công ty = thân PUT + `has_cover` (đã có ảnh bìa; chỉ để hiển thị, bị bỏ khi gửi) + `cover` (ảnh mới/null = xoá, vắng = giữ). */
+export type CompanyDraft = CompanyIn & { has_cover: boolean };
+
 /** Mọi thứ hộp thoại chỉnh được bằng nút Lưu chung. */
 export type SettingsData = {
-  company: CompanyIn;
+  company: CompanyDraft;
   biz: BizConfig;
 };
 export type SettingsState = { saved: SettingsData; defaults: SettingsData };

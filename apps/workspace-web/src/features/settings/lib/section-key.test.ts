@@ -1,6 +1,6 @@
 // CR-110 · COM-FR-41/42 · khoá `?sec=` → mục Cài đặt.
 import { describe, expect, test } from "bun:test";
-import { navFromKey, pickNav, sectionFromKey } from "./section-key";
+import { allowedSections, navFromKey, pickNav, sectionFromKey } from "./section-key";
 
 describe("sectionFromKey", () => {
   test("khoá hợp lệ ⇒ đúng mục", () => {
@@ -28,6 +28,23 @@ describe("CR-130 · pickNav (một trang Cài đặt, nhóm theo gói)", () => {
     expect(pickNav("feed", true, false)).toBe("co");
     expect(pickNav("co", false, true)).toBe("feed"); // người chỉ có Cộng đồng
     expect(pickNav("flow", false, true)).toBe("feed");
+  });
+});
+
+describe("CR-138 Q6 · mục theo quyền", () => {
+  test("chủ sở hữu thấy đủ 5 mục; người khác chỉ «flow»", () => {
+    expect(allowedSections(true)).toEqual(["co", "rep", "biz", "scout", "flow"]);
+    expect(allowedSections(false)).toEqual(["flow"]);
+  });
+  test("link cũ tới mục bị ẩn ⇒ mục đầu tiên được phép, không lỗi", () => {
+    for (const k of ["co", "rep", "biz", "scout"] as const)
+      expect(pickNav(k, true, true, false)).toBe("flow");
+    expect(pickNav("flow", true, true, false)).toBe("flow");
+    expect(pickNav("rep", true, true, true)).toBe("rep");
+  });
+  test("không có Bảng tin + không phải chủ ⇒ flow; chỉ Cộng đồng ⇒ feed", () => {
+    expect(pickNav("feed", true, false, false)).toBe("flow");
+    expect(pickNav("co", false, true, false)).toBe("feed");
   });
 });
 
