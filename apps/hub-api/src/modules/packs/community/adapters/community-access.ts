@@ -22,6 +22,8 @@ export type Access = {
   /** null = chủ quản. */
   org: string | null;
   canWrite: boolean;
+  /** ADR-0044 (người dùng chốt B 2026-11-12): duyệt ĐƠN THAM GIA (ghi hồ sơ đối tác ở SHT) cần quyền QUẢN TRỊ gói contracts; đối tác luôn false. */
+  joinAdmin: boolean;
   dir: ExtDirectory;
 };
 
@@ -32,7 +34,10 @@ async function internalAccess(view: PackAccessView, u: AuthUser) {
   const ok = (a: "read" | "write") =>
     checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction[a] }) === "ok";
   if (!ok("read")) throw forbidden();
-  return { canWrite: ok("write") };
+  // Quản trị Sổ Hợp Tác = quyền `admin` của gói chủ (cache cấu hình, 0 SQL) — cùng luật `PUT /partners/community/account`.
+  const c = await packAccessInput(view, "contracts", u);
+  const joinAdmin = checkPackAccess({ ...c, grantedGroupIds: c.grantedByAction.admin }) === "ok";
+  return { canWrite: ok("write"), joinAdmin };
 }
 
 /** Người gọi + quyền; `need = "write"` ⇒ 403 khi chỉ đọc. Ném 403 PACK_DISABLED/PACK_FORBIDDEN. */
@@ -54,7 +59,7 @@ export async function accessOfUser(
     throw new AppError("PACK_DISABLED", 403, "Pack is not enabled");
   const external = u.userKind === "external";
   if (external && !u.extOrgId) throw forbidden();
-  const rights = external ? { canWrite: true } : await internalAccess(view, u);
+  const rights = external ? { canWrite: true, joinAdmin: false } : await internalAccess(view, u);
   if (need === "write" && !rights.canWrite) throw forbidden();
   const dir = await resolver.directory(u.tenantId, u.userId);
   // Review TB1: claim token phải khớp DB (kind bất biến; lệch ⇒ token cũ/giả ⇒ từ chối, không trả raw/hits).

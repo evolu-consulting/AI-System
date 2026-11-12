@@ -385,7 +385,11 @@ describe("khe community.partner-join [CR-120]", () => {
         (i: { id: string }) => i.id,
       ),
     ).toContain(id);
-    expect((await call("hM", "GET", "/join-requests")).status).toBe(200); // ADR-0044
+    // ADR-0044 (chốt B): duyệt đơn tham gia cần QUẢN TRỊ Sổ Hợp Tác — nhân viên chỉ có quyền Sửa: 403 xem danh sách + 403 khi quyết
+    expect((await call("hM", "GET", "/join-requests")).status).toBe(403);
+    expect(
+      (await call("hM", "POST", `/join-requests/${id}/decide`, { action: "approve" })).status,
+    ).toBe(403);
     expect((await call("s2", "GET", "/join-requests")).json.items).toEqual([]);
     expect((await call("b2", "GET", "/join-requests")).json.items).toHaveLength(1);
     // quyền quyết

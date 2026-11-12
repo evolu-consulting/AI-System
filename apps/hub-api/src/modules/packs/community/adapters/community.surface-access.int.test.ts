@@ -109,7 +109,7 @@ afterAll(async () => {
 
 describe("CR-130 p3a · ADR-0044 · mặt community theo quyền gói contracts + add-on", () => {
   let post = "";
-  it("nội bộ chỉ có contracts-write (không admin, không Group community): đăng bài, thấy hàng duyệt đơn/báo cáo, đọc danh sách đơn", async () => {
+  it("nội bộ chỉ có contracts-write (không admin, không Group community): đăng bài, thấy hàng duyệt bài/báo cáo, KHÔNG thấy đơn tham gia (cần quản trị)", async () => {
     const p = await ok(
       PostViewSchema,
       call("hM", "POST", "/posts", { type: "note", body: "Chào cả nhà" }),
@@ -118,8 +118,10 @@ describe("CR-130 p3a · ADR-0044 · mặt community theo quyền gói contracts 
     post = p.id;
     const nav = await call("hM", "GET", "/flows/nav");
     expect(nav.status).toBe(200);
-    expect(nav.json).toMatchObject({ joinReview: true, reports: true, joinSubmit: false });
-    expect((await call("hM", "GET", "/join-requests")).status).toBe(200);
+    // chốt B: hàng duyệt bài/báo cáo = mọi nội bộ; đơn tham gia cần quản trị Sổ Hợp Tác ⇒ hM (chỉ Sửa) không có
+    expect(nav.json).toMatchObject({ joinReview: false, reports: true, joinSubmit: false });
+    expect((await call("hM", "GET", "/join-requests")).status).toBe(403);
+    expect((await call("hA", "GET", "/join-requests")).status).toBe(200); // quản trị
   });
   it("đối tác: đọc + bình luận Bảng tin được; KHÔNG vào hàng duyệt (403), nav không có quyền duyệt", async () => {
     expect((await call("s1a", "GET", "/feed")).status).toBe(200);

@@ -82,7 +82,7 @@ export function flowsRoutes(d: CommunityDeps, f: svc.FlowDeps): Hono<PackGuardVa
       moderationQueue: rev && on,
       moderationOn: on,
       joinSubmit: a.org !== null,
-      joinReview: rev,
+      joinReview: svc.joinReviewer(a),
       reports: rev,
     };
     return c.json(nav);

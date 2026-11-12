@@ -122,6 +122,7 @@ async function accessFor(c: CommunityCtx, userId: string, orgId: string | null):
     },
     org: orgId,
     canWrite: true,
+    joinAdmin: orgId === null,
     dir,
   };
 }

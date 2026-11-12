@@ -21,7 +21,9 @@ export function communityNavSource(
       ]);
       return [
         ...(rev && on ? [{ cap: "community.review", count: n.review }] : []),
-        ...(a.org !== null || rev ? [{ cap: "community.join", count: n.join }] : []),
+        ...(a.org !== null || svc.joinReviewer(a)
+          ? [{ cap: "community.join", count: n.join }]
+          : []),
         ...(rev ? [{ cap: "community.reports", count: n.reports }] : []),
       ];
     },

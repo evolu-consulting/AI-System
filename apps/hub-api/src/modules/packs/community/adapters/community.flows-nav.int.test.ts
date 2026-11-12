@@ -111,7 +111,7 @@ describe("GET /flows/nav [CR-120]", () => {
       moderationQueue: true,
       moderationOn: true,
       joinSubmit: false,
-      joinReview: true,
+      joinReview: false, // chốt B: đơn tham gia cần quản trị Sổ Hợp Tác (hM chỉ có quyền Sửa)
       reports: true,
     });
     expect((await call("s2", "GET", "/flows/nav")).json).toEqual({
@@ -150,7 +150,10 @@ describe("GET /flows/nav [CR-120]", () => {
       { cap: "community.join", count: w?.join },
       { cap: "community.reports", count: w?.reports },
     ]);
-    expect(await items("hM")).toEqual(await items("hA")); // ADR-0044: mọi nhân viên là người duyệt ⇒ cùng số
+    // ADR-0044: mọi nhân viên duyệt bài/báo cáo; đơn tham gia chỉ quản trị ⇒ hM không có mục `community.join`
+    expect(await items("hM")).toEqual(
+      (await items("hA")).filter((i: { cap: string }) => i.cap !== "community.join"),
+    );
     expect(await items("s2")).toEqual([{ cap: "community.join", count: 0 }]); // đối tác: chỉ gửi yêu cầu, không số
   });
 });

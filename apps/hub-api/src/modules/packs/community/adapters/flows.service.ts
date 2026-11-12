@@ -62,6 +62,8 @@ export type FlowDeps = {
 };
 
 export const reviewer = (a: Access): boolean => a.org === null;
+/** Người duyệt đơn tham gia: nội bộ có quyền QUẢN TRỊ Sổ Hợp Tác (người khác không thấy hàng, 403 khi quyết). */
+export const joinReviewer = (a: Access): boolean => a.org === null && a.joinAdmin;
 
 /** CR-121 C-7 · số đếm cho menu: chỉ đếm khi người xem là người duyệt (đối tác/thành viên ⇒ 0, không tốn câu SQL). */
 export const navCounts = (d: FlowDeps, a: Access) =>
@@ -247,7 +249,7 @@ export const joinRows = (d: FlowDeps, a: Access, ids: readonly string[]) =>
   ids.length === 0 ? Promise.resolve([]) : d.uow.tenant(a.who, ({ tx }) => repo.joinRows(tx, ids));
 
 export const joinList = (d: FlowDeps, a: Access, pendingOnly: boolean) => {
-  if (a.org === null && !reviewer(a)) throw new AppError("PACK_FORBIDDEN", 403, "Forbidden");
+  if (a.org === null && !joinReviewer(a)) throw new AppError("PACK_FORBIDDEN", 403, "Forbidden");
   return d.uow.tenant(a.who, ({ tx }) => repo.joinList(tx, pendingOnly, 100));
 };
 
@@ -261,7 +263,7 @@ export async function decideJoin(
   return d.uow.tenant(a.who, async ({ tx }) => {
     const [cur] = await repo.joinRows(tx, [id]);
     if (!cur) throw appError("NOT_FOUND");
-    const next = ruleJoin(cur.status, b.action, { reviewer: reviewer(a) });
+    const next = ruleJoin(cur.status, b.action, { reviewer: joinReviewer(a) });
     if (next !== "approved" && next !== "rejected") throw new FlowDecideError(next);
     const taskId = b.taskId ?? cur.task_id;
     if (taskId !== cur.task_id) throw new FlowDecideError("TASK_STALE");

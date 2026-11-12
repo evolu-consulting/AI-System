@@ -29,7 +29,9 @@ export async function accessOfWho(d: SlotAccessDeps, who: PackWho): Promise<Acce
   if (!ok("read")) return null;
   const dir = await d.resolver.directory(who.tenantId, who.userId);
   if (!dir.user || dir.user.deactivated || dir.user.kind === "external") return null;
-  return { who, org: null, canWrite: ok("write"), dir };
+  const c = await packAccessInput(d.view, "contracts", who);
+  const joinAdmin = checkPackAccess({ ...c, grantedGroupIds: c.grantedByAction.admin }) === "ok";
+  return { who, org: null, canWrite: ok("write"), joinAdmin, dir };
 }
 
 /** Lỗi use case ⇒ kết quả FlowRuntime (404 ⇒ not_found; 403/409/422 ⇒ lỗi mã; khác ⇒ ném lại). */
@@ -45,6 +47,8 @@ type Pick3<R> = {
   slot: string;
   rows: (d: svc.FlowDeps, a: Access, ids: readonly string[]) => Promise<R[]>;
   view: (r: R, o: { reviewer: boolean; now: number }) => FlowView;
+  /** Ai là người duyệt của khe (mặc định mọi nội bộ; khe đơn tham gia cần quản trị). */
+  reviewer?: (a: Access) => boolean;
   decide: (d: svc.FlowDeps, a: Access, id: string, b: svc.DecideBody) => Promise<unknown>;
 };
 
@@ -56,7 +60,7 @@ function adapterOf<R extends { id: string }>(
   const now = () => (d.now ? d.now() : Date.now());
   const one = async (a: Access, ref: string) => {
     const [r] = await p.rows(d, a, [ref]);
-    return r ? p.view(r, { reviewer: svc.reviewer(a), now: now() }) : null;
+    return r ? p.view(r, { reviewer: (p.reviewer ?? svc.reviewer)(a), now: now() }) : null;
   };
   return {
     slot: p.slot,
@@ -82,7 +86,9 @@ function adapterOf<R extends { id: string }>(
       const a = await accessOfWho(acc, who);
       if (!a) return [];
       const rows = await p.rows(d, a, refs);
-      return rows.map((r) => summaryOf(p.view(r, { reviewer: svc.reviewer(a), now: now() })));
+      return rows.map((r) =>
+        summaryOf(p.view(r, { reviewer: (p.reviewer ?? svc.reviewer)(a), now: now() })),
+      );
     },
   };
 }
@@ -100,6 +106,7 @@ export function communityFlowSlots(d: svc.FlowDeps, acc: SlotAccessDeps): FlowSl
       rows: svc.joinRows,
       view: (r, o) => joinView(r, o),
       decide: svc.decideJoin,
+      reviewer: svc.joinReviewer,
     }),
     adapterOf(d, acc, {
       slot: SLOT_REPORT,
