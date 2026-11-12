@@ -800,6 +800,15 @@
         "notPublished": "Quy trình chưa áp dụng nên chưa bật được. Mở quy trình, sửa rồi bấm Lưu và áp dụng.",
         "groupMissing": "Còn bước duyệt chưa chọn nhóm. Chọn nhóm cho mọi bước duyệt rồi áp dụng lại.",
         "generic": "Không thực hiện được. Tải lại trang rồi thử lại."
+      },
+      "readiness": {
+        "err": {
+          "READINESS_FEATURE_MISSING": "Bước «{stage}» cần tính năng {what} — công ty chưa được bật.",
+          "READINESS_TOOL_MISSING": "Bước «{stage}» dùng chức năng công ty chưa có.",
+          "READINESS_STEP_ORDER": "Bước «{stage}» phải đứng ngay sau một bước Duyệt.",
+          "READINESS_STEP_LOCKED": "Bước «{stage}» là bước cố định của nền tảng — không sửa được trên bản sao.",
+          "READINESS_ASSIGNEE_MISSING": "Bước «{stage}»: chọn {key}."
+        }
       }
     },
     "flows": {

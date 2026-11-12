@@ -800,6 +800,15 @@
         "notPublished": "The flow is not applied yet, so it cannot be turned on. Open it, edit and press Save and apply.",
         "groupMissing": "A review step has no group. Pick a group for every review step and apply again.",
         "generic": "Could not complete. Reload and try again."
+      },
+      "readiness": {
+        "err": {
+          "READINESS_FEATURE_MISSING": "Step \"{stage}\" needs {what} — not enabled for the company.",
+          "READINESS_TOOL_MISSING": "Step \"{stage}\" uses a function the company does not have.",
+          "READINESS_STEP_ORDER": "Step \"{stage}\" must come right after an approval step.",
+          "READINESS_STEP_LOCKED": "Step \"{stage}\" is fixed by the platform — it cannot be edited on a copy.",
+          "READINESS_ASSIGNEE_MISSING": "Step \"{stage}\": choose the responsible group."
+        }
       }
     },
     "flows": {
