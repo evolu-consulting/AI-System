@@ -4,8 +4,8 @@ import {
   type ShellMeResponse,
   ShellMeResponseSchema,
 } from "@ai/contracts/capabilities";
-import { createSseParser } from "@ai/contracts/chat";
 import { ApiError, apiResponse } from "@ai/web-kit/http";
+import { listenFrames } from "~/platform/stream/me-stream";
 import type { ConfigListener, PackMeFetch } from "../lib/pack-me-source";
 
 export const PACK_ME_PATH = "/pack/me";
@@ -37,65 +37,6 @@ export const fetchPackMe: PackMeFetch = async (etag, signal) => {
   return { status: "fresh", data, etag: res.headers.get("ETag") };
 };
 
-const FIRST_MS = 1000;
-const CAP_MS = 30_000;
-export const reconnectDelay = (n: number): number => Math.min(FIRST_MS * 2 ** n, CAP_MS);
-/** 4xx (trừ 408/429) = nối lại vô ích ⇒ dừng; dự phòng focus/403 lo phần còn lại. */
-export const isFatal = (err: unknown): boolean =>
-  err instanceof ApiError &&
-  err.status >= 400 &&
-  err.status < 500 &&
-  err.status !== 408 &&
-  err.status !== 429;
-
-const sleep = (ms: number, signal: AbortSignal) =>
-  new Promise<void>((resolve) => {
-    const t = setTimeout(resolve, ms);
-    signal.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(t);
-        resolve();
-      },
-      { once: true },
-    );
-  });
-
-async function readOnce(signal: AbortSignal, onOpen: () => void, onChanged: () => void) {
-  const res = await apiResponse("/me/stream", { headers: { Accept: "text/event-stream" }, signal });
-  if (!res.body) throw new ApiError(res.status, "HTTP_ERROR", "Empty event stream");
-  onOpen();
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  const feed = createSseParser((raw) => {
-    if (raw.event === CONFIG_CHANGED_EVENT) onChanged();
-  });
-  signal.addEventListener("abort", () => void reader.cancel().catch(() => {}), { once: true });
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done || signal.aborted) return;
-    feed(decoder.decode(value, { stream: true }));
-  }
-}
-
-export const listenConfigChanged: ConfigListener = async (signal, onChanged, onReconnected) => {
-  let failures = 0;
-  let wasOpen = false;
-  while (!signal.aborted) {
-    try {
-      await readOnce(
-        signal,
-        () => {
-          if (wasOpen) onReconnected();
-          wasOpen = true;
-          failures = 0;
-        },
-        onChanged,
-      );
-    } catch (err) {
-      if (isFatal(err)) return;
-    }
-    if (signal.aborted) return;
-    await sleep(reconnectDelay(failures++), signal);
-  }
-};
+/** CR-132 W1: dùng bộ phát `/me/stream` chung (một kết nối mỗi tab); chỉ lọc `config.changed`. */
+export const listenConfigChanged: ConfigListener = (signal, onChanged, onReconnected) =>
+  listenFrames([CONFIG_CHANGED_EVENT], signal, () => onChanged(), onReconnected);
