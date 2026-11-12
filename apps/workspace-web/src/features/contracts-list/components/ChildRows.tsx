@@ -119,7 +119,7 @@ export function ChildCard({ child, orphan }: { child: ListFrameChild; orphan: bo
         className={cn("flex flex-col gap-1 py-3 pr-4 hover:bg-sunk", orphan ? "pl-4" : "pl-9")}
       >
         <span className="flex items-center gap-2">
-          <span className="truncate font-medium">
+          <span className="truncate font-medium" title={child.title}>
             {!orphan && <span aria-hidden="true">↳ </span>}
             {child.title}
           </span>

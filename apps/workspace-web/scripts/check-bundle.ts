@@ -4,7 +4,8 @@ import { join } from "node:path";
 
 export const JS_BUDGET_BYTES = 162 * 1024; // CR-118 bundle: React 19 runtime (+23,5 KB gzip) trá»« pháº§n Ä‘Ã£ cáº¯t lÆ°á»i (ná»›i 150 -> 162, xem docs/specs/cr118-bundle/tasks.md)
 export const CSS_BUDGET_BYTES = 25 * 1024;
-export const CHUNK_BUDGET_BYTES = 50 * 1024;
+/** CR-134: 50 → 53 KB — chunk Cài đặt/luồng duyệt (đang 49,4 KB sát trần) nhận `Btn` + `Refreshing`/`PaneSkeleton` dùng chung (+1,4 KB gz, thay các lớp `.btn` lặp). */
+export const CHUNK_BUDGET_BYTES = 53 * 1024;
 /** CR-106: chunk `canvas*` (xyflow, lazy trong Cài đặt › Quy trình duyệt; như admin-web ADR-0013 #2): ngân sách riêng. */
 export const CANVAS_CHUNK_BUDGET_BYTES = 80 * 1024;
 /** CR-118: chunk `cm*` (= community; tên ngắn để bundle đầu nhỏ hơn: module Community, tải lười dưới /community/*): JS ≤ 60 KB gz, CSS ≤ 15 KB gz. */

@@ -1,6 +1,6 @@
 // U3 · R45/R46 · truy vấn/ghi cách tính điểm đối tác (engine HD8): `/scoring/:role` (đọc · lịch sử · xem trước · lưu = version+1).
 import type { PartnerRole, ScoringDraft } from "@ai/contracts/pack-contracts";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchScoring,
   fetchScoringHistory,
@@ -29,6 +29,7 @@ export const useScoringPreview = (role: PartnerRole, draft: ScoringDraft | null)
     queryKey: ["scoring", role, "preview", JSON.stringify(draft)],
     queryFn: () => previewScoring(role, draft as ScoringDraft),
     enabled: draft !== null,
+    placeholderData: keepPreviousData, // CR-134: đổi bản nháp ⇒ giữ kết quả cũ + chỉ báo, không nhấp nháy
     staleTime: 30_000,
     retry: false,
   });

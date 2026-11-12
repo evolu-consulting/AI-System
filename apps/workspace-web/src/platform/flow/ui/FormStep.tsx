@@ -7,6 +7,7 @@ import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileUploadField } from "~/components/shared/FileUploadField";
+import { Btn } from "~/components/ui/Btn";
 import {
   checkForm,
   type FieldErrors,
@@ -195,9 +196,9 @@ export default function FormStep({ step, ctx }: StepProps<"form">) {
               {fail}
             </p>
           ) : null}
-          <button type="submit" className="btn btn-primary" disabled={busy}>
+          <Btn type="submit" variant="primary" loading={busy}>
             {t("contracts.flowPanel.form.submit")}
-          </button>
+          </Btn>
         </form>
       )}
     </StepFrame>

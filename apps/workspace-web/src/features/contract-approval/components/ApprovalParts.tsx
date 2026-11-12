@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
+import { Btn } from "~/components/ui/Btn";
 import type { Busy } from "../hooks/use-approval";
-import { type ApprovalView, feedbackOk, overflowOf } from "../lib/approval";
+import { feedbackOk } from "../lib/approval";
 
 const REASON_LABEL = {
   reject: "contracts.approval.rejectReason",
@@ -63,12 +64,10 @@ export function ReasonForm({
         </p>
       )}
       <div className="flex gap-2">
-        <button type="submit" className="btn btn-primary" disabled={busy !== null}>
+        <Btn type="submit" variant="primary" loading={busy !== null}>
           {t(SUBMIT_LABEL[kind])}
-        </button>
-        <button type="button" className="btn btn-quiet" onClick={onCancel}>
-          {t("contracts.common.cancel")}
-        </button>
+        </Btn>
+        <Btn onClick={onCancel}>{t("contracts.common.cancel")}</Btn>
       </div>
     </form>
   );

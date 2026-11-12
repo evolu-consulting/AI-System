@@ -6,6 +6,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MetaLine } from "~/components/shared/meta-line";
+import { TruncText } from "~/components/shared/TruncText";
 import { Tag } from "~/components/shared/tag";
 import { DEAL_TONE, dealOf } from "~/features/contract-form/lib/deal";
 import { frameLinkOf } from "~/features/frame-panel/lib/frame-view";
@@ -63,17 +64,17 @@ export function DetailLead({
         )}
         <Tag tone={DEAL_TONE[deal]}>{t(`contracts.cform.dealName.${deal}`)}</Tag>
       </span>
-      {partner ? <span>{partner}</span> : null}
+      {partner ? <TruncText maxWidth="20rem">{partner}</TruncText> : null}
       {frameLinkOf(c.doc) ? <FrameRef doc={c.doc} /> : null}
       {c.doc && type !== "framework" ? (
         <span
           data-testid="doc-file-line"
           className="inline-flex max-w-[24rem] items-baseline gap-1"
         >
-          <span>{fileLabel}</span>
-          <span className="truncate" title={c.file?.name ?? ""}>
+          <span className="shrink-0">{fileLabel}</span>
+          <TruncText title={c.file?.name ?? ""}>
             {c.file ? c.file.name : t("contracts.docframe.noFile")}
-          </span>
+          </TruncText>
         </span>
       ) : null}
       {file}

@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type PopItem, PopMenu } from "~/components/shared/pop-menu";
+import { btnClass } from "~/components/ui/Btn";
 import { DeleteContractDialog } from "./DeleteContractDialog";
 
 export function ContractActionsMenu({
@@ -37,7 +38,7 @@ export function ContractActionsMenu({
       <PopMenu
         trigger={<>{t("contracts.del.menu")} ▾</>}
         ariaLabel={t("contracts.del.menu")}
-        triggerClass="btn btn-sm"
+        triggerClass={btnClass("quiet", "sm")}
         triggerTestId="head-actions-menu"
         items={all}
         busy={busy}

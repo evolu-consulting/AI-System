@@ -5,6 +5,7 @@ import type { PriceScoutGroup } from "@ai/contracts/pack-contracts";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Btn } from "~/components/ui/Btn";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ScoutFields } from "~/features/product-suppliers/components/ScoutFields";
 import {
@@ -45,11 +46,12 @@ function GroupEditor({ group, owner }: { group: PriceScoutGroup; owner: boolean 
         )}
         {form && (
           <div className="mt-3 flex justify-end">
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Btn
+              variant="primary"
               data-testid={`scout-defaults-save-${group}`}
-              disabled={!owner || save.isPending || issue !== null}
+              disabled={!owner || issue !== null}
+              loading={save.isPending}
+              reason={owner ? undefined : L("forbidden")}
               onClick={() =>
                 save.mutate(
                   { group, config: fromForm(form) },
@@ -61,7 +63,7 @@ function GroupEditor({ group, owner }: { group: PriceScoutGroup; owner: boolean 
               }
             >
               {L("save")}
-            </button>
+            </Btn>
           </div>
         )}
       </div>

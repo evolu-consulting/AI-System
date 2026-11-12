@@ -1,7 +1,7 @@
 // REP-v3-ui · V2-E · truy vấn/ghi cấu hình điểm uy tín: nạp `GET /reputation/config`, thử tính trên dữ liệu thật, lưu phần đã đổi.
 
 import type { RepPreviewIn } from "@ai/contracts/pack-contracts";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchRepFull, previewRep, repKeys, saveRepChanged } from "../api-rep";
 import { buildRep, type RepChanged } from "../lib/rep-data";
 import type { RepData } from "../lib/rep-types";
@@ -29,6 +29,7 @@ export function useRepPreview(key: string | null) {
     queryKey: ["settings", "rep-preview", key],
     queryFn: ({ signal }) => previewRep(JSON.parse(key as string) as RepPreviewIn, signal),
     enabled: key !== null,
+    placeholderData: keepPreviousData, // CR-134
     staleTime: 30_000,
     retry: false,
   });

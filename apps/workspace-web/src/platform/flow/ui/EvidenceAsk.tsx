@@ -3,6 +3,7 @@ import type { EvidenceInput as EvidenceBody } from "@ai/contracts/chat";
 import type { FlowActionDef } from "@ai/contracts/flow";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Btn } from "~/components/ui/Btn";
 import {
   EMPTY_EVIDENCE,
   type EvidenceDraft,
@@ -10,13 +11,8 @@ import {
   evidenceBody,
   evidenceIssue,
 } from "../lib/evidence";
+import { ACTION_VARIANT } from "./action-variant";
 import { EvidenceInput } from "./EvidenceInput";
-
-const BTN: Record<FlowActionDef["style"], string> = {
-  primary: "btn btn-primary",
-  default: "btn",
-  danger: "btn border border-late bg-panel text-late hover:bg-late-bg",
-};
 
 export function EvidenceAsk(p: {
   action: FlowActionDef;
@@ -39,18 +35,15 @@ export function EvidenceAsk(p: {
         disabled={p.busy}
       />
       <div className="flex gap-2">
-        <button
-          type="button"
-          className={BTN[p.action.style]}
-          disabled={p.busy}
+        <Btn
+          variant={ACTION_VARIANT[p.action.style]}
+          loading={p.busy}
           data-testid={`request-${p.action.key}-confirm`}
           onClick={() => (issue ? setTried(true) : p.onSend(evidenceBody(draft, p.rule)))}
         >
           {p.action.label}
-        </button>
-        <button type="button" className="btn btn-quiet btn-sm" onClick={p.onCancel}>
-          {t("contracts.requests.cancel")}
-        </button>
+        </Btn>
+        <Btn onClick={p.onCancel}>{t("contracts.requests.cancel")}</Btn>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 // PK-FR-10 · TF2 · hộp thoại xác nhận/nhập bằng shadcn Dialog. Nguồn: reference/mgmt-app-contracts/web/src/components/dialog.tsx:28-82 (viết lại).
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "~/components/ui/button";
+import { Btn } from "~/components/ui/Btn";
 import {
   Dialog,
   DialogContent,
@@ -76,17 +76,17 @@ export function DialogHost() {
             </div>
           )}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={cancel}>
+            <Btn variant="outline" onClick={cancel}>
               {req.cancelLabel ?? t("contracts.common.cancel")}
-            </Button>
-            <Button
+            </Btn>
+            <Btn
               type="submit"
               disabled={confirmOff}
-              variant={req.kind === "confirm" && req.danger ? "destructive" : "default"}
+              variant={req.kind === "confirm" && req.danger ? "danger" : "primary"}
             >
               {req.confirmLabel ??
                 (isPrompt ? t("contracts.common.save") : t("contracts.common.confirm"))}
-            </Button>
+            </Btn>
           </DialogFooter>
         </form>
       </DialogContent>

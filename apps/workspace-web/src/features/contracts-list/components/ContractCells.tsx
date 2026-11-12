@@ -12,6 +12,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
+import { TruncText } from "~/components/shared/TruncText";
 import { Tag } from "~/components/shared/tag";
 import {
   ContractLockChip,
@@ -69,9 +70,9 @@ function SubLine({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const parent = r.parent_id ? ctx.parents.get(r.parent_id) : undefined;
   if (!parent) return null;
   return (
-    <span className="block truncate text-[12.5px] text-dim">
+    <TruncText className="block text-[12.5px] text-dim">
       {t("contracts.list.appendixOf", { title: parent })}
-    </span>
+    </TruncText>
   );
 }
 
@@ -313,7 +314,7 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
         className="flex flex-col gap-1.5 px-4 py-3.5 hover:bg-sunk"
       >
         <span className="flex items-center gap-2">
-          <span className="truncate font-semibold">
+          <span className="truncate font-semibold" title={r.title}>
             {r.locked && <RowLock />}
             {r.title}
             <VersionBadge no={r.version_no} count={r.versions_count} />

@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { Chips, Empty } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
-import { Button } from "~/components/ui/button";
+import { Btn } from "~/components/ui/Btn";
 import { useRemind } from "../hooks/use-remind";
 import {
   CUSTOMER_FILTERS,
@@ -31,9 +31,9 @@ function RemindCell({ productId, c }: { productId: string; c: ServiceCustomer })
     );
   if (!canRemind(c)) return null;
   return (
-    <Button variant="outline" size="sm" disabled={m.isPending} onClick={() => m.mutate()}>
+    <Btn variant="outline" size="sm" loading={m.isPending} onClick={() => m.mutate()}>
       {t("contracts.svc.remind")}
-    </Button>
+    </Btn>
   );
 }
 

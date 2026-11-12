@@ -2,6 +2,7 @@
 import type { PartnerRole, ScoringDraft } from "@ai/contracts/pack-contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PaneSkeleton, Refreshing } from "~/components/shared/Refreshing";
 import { SettingsGroup } from "~/shared/ui/settings-layout";
 import { useScoringPreview } from "../hooks/use-scoring";
 
@@ -18,26 +19,31 @@ export function ScoringImpact({ role, draft }: { role: PartnerRole; draft: Scori
   const p = q.data;
   return (
     <SettingsGroup title={s("impactTitle")}>
-      <div className="px-5 py-3 text-label" data-testid="score-impact" aria-live="polite">
-        {q.isLoading || !debounced ? (
-          <span className="text-dim">{s("impactLoading")}</span>
-        ) : q.error || !p ? (
-          <span className="text-late">{s("impactFail")}</span>
-        ) : (
-          <>
-            <b>{s("impactCount", { n: p.changed_band, total: p.total })}</b>
-            <ul className="mt-2 space-y-1 text-caption text-dim">
-              {p.changes.slice(0, 5).map((c) => (
-                <li key={c.party}>
-                  {c.name}: {c.old ?? "–"} → {c.new ?? "–"}
-                  {c.band_old !== c.band_new &&
-                    ` · ${c.band_old ? s(`band.${c.band_old}`) : "–"} → ${c.band_new ? s(`band.${c.band_new}`) : "–"}`}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
+      <Refreshing
+        fetching={!!p && (q.isFetching || debounced !== draft)}
+        className="px-5 py-3 text-label"
+      >
+        <div data-testid="score-impact" aria-live="polite">
+          {!p && !q.error ? (
+            <PaneSkeleton lines={2} />
+          ) : q.error || !p ? (
+            <span className="text-late">{s("impactFail")}</span>
+          ) : (
+            <>
+              <b>{s("impactCount", { n: p.changed_band, total: p.total })}</b>
+              <ul className="mt-2 space-y-1 text-caption text-dim">
+                {p.changes.slice(0, 5).map((c) => (
+                  <li key={c.party}>
+                    {c.name}: {c.old ?? "–"} → {c.new ?? "–"}
+                    {c.band_old !== c.band_new &&
+                      ` · ${c.band_old ? s(`band.${c.band_old}`) : "–"} → ${c.band_new ? s(`band.${c.band_new}`) : "–"}`}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      </Refreshing>
     </SettingsGroup>
   );
 }

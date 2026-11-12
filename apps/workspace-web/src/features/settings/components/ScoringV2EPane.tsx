@@ -5,14 +5,13 @@
 import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PaneSkeleton } from "~/components/shared/Refreshing";
+import { Btn } from "~/components/ui/Btn";
 import { ApiError } from "~/lib/api-error";
 import { useRepState, useSaveRep } from "../hooks/use-rep";
 import { firstRepIssue, repAnyChanged, repChangedParts } from "../lib/rep-data";
 import type { CellTab, RepData, RepSel } from "../lib/rep-types";
 import { RepPane } from "./RepPane";
-
-const BTN =
-  "h-8 rounded-lg border border-rule px-3 text-label text-ink-2 hover:bg-panel disabled:opacity-50";
 
 export function ScoringV2EPane({ owner }: { owner: boolean }) {
   const { t } = useTranslation();
@@ -29,7 +28,7 @@ export function ScoringV2EPane({ owner }: { owner: boolean }) {
   useEffect(() => {
     if (saved) setDraft(structuredClone(saved));
   }, [savedKey]);
-  if (loading) return <p className="text-label text-dim">{t("contracts.common.loading")}</p>;
+  if (loading) return <PaneSkeleton lines={4} />;
   if (error || !state || !draft)
     return (
       <p role="alert" className="text-label text-late">
@@ -51,35 +50,39 @@ export function ScoringV2EPane({ owner }: { owner: boolean }) {
           toast(e instanceof ApiError && e.status === 422 ? e.message : s("saveFail"), "late"),
       },
     );
+  const lock = owner ? undefined : s("readOnly"); // Q7
   return (
     <div data-testid="rep-v2e">
-      {owner ? (
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-caption text-dim">
-            {dirty ? <b className="text-soon">{s("unsaved")}</b> : s("customised")}
-          </span>
-          <button
-            type="button"
-            disabled={!dirty}
-            onClick={() => setDraft(structuredClone(state.saved))}
-            className={BTN}
-          >
-            {s("discard")}
-          </button>
-          <button
-            type="button"
-            data-testid="rep-save"
-            disabled={!dirty || save.isPending || issue !== null}
-            title={issue ? s(issue) : undefined}
-            onClick={doSave}
-            className="h-8 rounded-lg bg-act px-4 text-label font-semibold text-on-act disabled:opacity-50"
-          >
-            {s("save")}
-          </button>
-        </div>
-      ) : (
-        <p className="mb-4 text-caption text-dim">{s("readOnly")}</p>
-      )}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-caption text-dim">
+          {!owner ? (
+            s("readOnly")
+          ) : dirty ? (
+            <b className="text-soon">{s("unsaved")}</b>
+          ) : (
+            s("customised")
+          )}
+        </span>
+        <Btn
+          size="sm"
+          disabled={!owner || !dirty}
+          reason={lock}
+          onClick={() => setDraft(structuredClone(state.saved))}
+        >
+          {s("discard")}
+        </Btn>
+        <Btn
+          size="sm"
+          variant="primary"
+          data-testid="rep-save"
+          disabled={!owner || !dirty || issue !== null}
+          loading={save.isPending}
+          reason={lock ?? (issue ? s(issue) : undefined)}
+          onClick={doSave}
+        >
+          {s("save")}
+        </Btn>
+      </div>
       <fieldset disabled={!owner || save.isPending} className="min-w-0 border-0 p-0">
         <RepPane
           data={draft}

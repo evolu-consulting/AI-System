@@ -4,6 +4,7 @@ import type { PartnerRole, ScoreConfigOut, ScoringDraft } from "@ai/contracts/pa
 import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PaneSkeleton } from "~/components/shared/Refreshing";
 import { scoringIssue, weightSum } from "~/features/partners/lib/partner-score";
 import { ApiError } from "~/lib/api-error";
 import { SettingsGroup, SettingsRow, SettingsSwitch } from "~/shared/ui/settings-layout";
@@ -188,7 +189,7 @@ function Body({ role, cfg, owner }: { role: PartnerRole; cfg: ScoreConfigOut; ow
 export function ScoringEditor({ role, owner }: { role: PartnerRole; owner: boolean }) {
   const { t } = useTranslation();
   const q = useScoring(role);
-  if (q.isLoading) return <p className="text-dim">{t("contracts.common.loading")}</p>;
+  if (q.isLoading) return <PaneSkeleton lines={4} />;
   if (q.error || !q.data)
     return (
       <p role="alert" className="text-late">

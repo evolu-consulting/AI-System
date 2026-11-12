@@ -1,4 +1,4 @@
-// CR-125 G3 · quy ước toast duy nhất: thành công tự ẩn, lỗi ở lại tới khi bấm đóng (audit #20).
+// CR-125 G3 · quy ước toast duy nhất: thành công và lỗi tự ẩn sau 3 giây (CR-134 Q11), lỗi có nút hành động ở lại tới khi bấm (audit #20).
 import { describe, expect, mock, test } from "bun:test";
 
 type Call = { kind: string; opts: Record<string, unknown> };
@@ -21,6 +21,7 @@ mock.module("sonner", () => ({
 }));
 
 import {
+  ERROR_TOAST_MS,
   INFO_TOAST_MS,
   notifyBrief,
   notifyError,
@@ -32,7 +33,7 @@ import {
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 describe("toast", () => {
-  test("ok → success 4s, late/error → ở lại + nút đóng", async () => {
+  test("ok → success 3s, late/error → 3s + nút đóng (CR-134 Q11)", async () => {
     calls.length = 0;
     await toast("Đã lưu");
     await toast("Lỗi", "late");
@@ -40,9 +41,18 @@ describe("toast", () => {
     expect(calls.map((c) => c.kind)).toEqual(["success", "error", "error"]);
     expect(calls[0]?.opts.duration).toBe(SUCCESS_TOAST_MS);
     for (const c of calls.slice(1)) {
-      expect(c.opts.duration).toBe(Number.POSITIVE_INFINITY);
+      expect(c.opts.duration).toBe(ERROR_TOAST_MS);
       expect(c.opts.closeButton).toBe(true);
     }
+    expect(ERROR_TOAST_MS).toBe(3000);
+  });
+
+  test("lỗi có nút hành động ở lại tới khi bấm (không mất nút sau 3s)", async () => {
+    calls.length = 0;
+    notifyError("Hỏng", { label: "Tải lại", onClick: () => {} });
+    await flush();
+    expect(calls[0]?.opts.duration).toBe(Number.POSITIVE_INFINITY);
+    expect(calls[0]?.opts.closeButton).toBe(true);
   });
 
   test("tuỳ chọn gọi tường minh thắng mặc định; info 8s; brief tự đóng", async () => {

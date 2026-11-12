@@ -1,5 +1,6 @@
 // Trạng thái tải/lỗi của hộp thoại Cài đặt chung (tách khỏi SettingsDialog để file gọn).
 import { useTranslation } from "react-i18next";
+import { PaneSkeleton } from "~/components/shared/Refreshing";
 
 export function LoadState({
   loading,
@@ -13,7 +14,7 @@ export function LoadState({
   const { t } = useTranslation();
   return (
     <>
-      {loading && <p className="text-dim">{t("contracts.common.loading")}</p>}
+      {loading && <PaneSkeleton />}
       {error && (
         <p role="alert" className="text-late">
           {t("contracts.settings.loadFail")}{" "}

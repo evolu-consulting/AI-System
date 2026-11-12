@@ -24,14 +24,14 @@ export function Tag({
 }) {
   return (
     <span
-      title={title}
+      title={title ?? (typeof children === "string" ? children : undefined)}
       className={cn(
-        "inline-flex h-[22px] items-center rounded-md px-2 text-[12px] whitespace-nowrap",
+        "inline-flex h-[22px] max-w-full items-center rounded-md px-2 text-[12px] whitespace-nowrap",
         TONE[tone],
         className,
       )}
     >
-      {children}
+      <span className="min-w-0 truncate">{children}</span>
     </span>
   );
 }

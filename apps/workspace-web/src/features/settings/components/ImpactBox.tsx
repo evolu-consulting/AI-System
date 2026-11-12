@@ -2,6 +2,7 @@
 import type { RepPreviewIn } from "@ai/contracts/pack-contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PaneSkeleton, Refreshing } from "~/components/shared/Refreshing";
 import { SettingsGroup } from "~/shared/ui/settings-layout";
 import { useRepPreview } from "../hooks/use-rep";
 
@@ -29,26 +30,28 @@ export function ImpactBox({ body }: { body: RepPreviewIn | null }) {
   const ch = q.data?.changes ?? [];
   return (
     <SettingsGroup title={s("title")} sub={s("sub")}>
-      <div className="px-5 py-3 text-caption" aria-live="polite">
-        {q.isPending && <span className="text-dim">{s("loading")}</span>}
-        {q.isError && <span className="text-late">{s("error")}</span>}
-        {q.data &&
-          (ch.length === 0 ? (
-            <span>{s("same", { n: q.data.total })}</span>
-          ) : (
-            <span data-testid="impact-count">
-              {s("count", { n: ch.length, total: q.data.total })}
-            </span>
+      <Refreshing fetching={!!q.data && q.isFetching} className="px-5 py-3 text-caption">
+        <div aria-live="polite">
+          {q.isPending && <PaneSkeleton lines={2} />}
+          {q.isError && <span className="text-late">{s("error")}</span>}
+          {q.data &&
+            (ch.length === 0 ? (
+              <span>{s("same", { n: q.data.total })}</span>
+            ) : (
+              <span data-testid="impact-count">
+                {s("count", { n: ch.length, total: q.data.total })}
+              </span>
+            ))}
+          {ch.slice(0, 5).map((c) => (
+            <p key={`${c.party}-${c.role}`} className="mt-1 flex justify-between gap-3">
+              <span className="truncate">{c.name}</span>
+              <span className="tabular-nums">
+                {c.old ?? "—"} → {c.new ?? "—"}
+              </span>
+            </p>
           ))}
-        {ch.slice(0, 5).map((c) => (
-          <p key={`${c.party}-${c.role}`} className="mt-1 flex justify-between gap-3">
-            <span className="truncate">{c.name}</span>
-            <span className="tabular-nums">
-              {c.old ?? "—"} → {c.new ?? "—"}
-            </span>
-          </p>
-        ))}
-      </div>
+        </div>
+      </Refreshing>
     </SettingsGroup>
   );
 }

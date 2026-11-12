@@ -7,6 +7,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PopItem } from "~/components/shared/pop-menu";
+import { Btn } from "~/components/ui/Btn";
 import type { ApprovalView } from "~/features/contract-approval/lib/approval";
 import { ContractActionsMenu } from "~/features/contract-delete/components/ContractActionsMenu";
 import { UploadVersionPanel } from "~/features/contract-versions/components/UploadVersionPanel";
@@ -170,9 +171,9 @@ export function HeadActions({
   return (
     <>
       {main && (
-        <button
-          type="button"
-          className="btn btn-primary btn-sm"
+        <Btn
+          variant="primary"
+          size="sm"
           data-testid={main.testId}
           data-approval={main.attr}
           disabled={off}
@@ -181,7 +182,7 @@ export function HeadActions({
           {approval.busy && main.attr === "approve"
             ? t("contracts.approval.approving")
             : t(main.label)}
-        </button>
+        </Btn>
       )}
       <ContractActionsMenu id={id} canDelete={canDelete} items={items} busy={off} />
       {err && !ask && (

@@ -4,7 +4,7 @@ import { Children, Fragment, type ReactNode } from "react";
 export function MetaLine({ children }: { children: ReactNode }) {
   const items = Children.toArray(children).filter(Boolean);
   return (
-    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+    <span className="flex min-w-0 max-w-full flex-wrap items-center gap-x-2 gap-y-1">
       {items.map((it, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: danh sách tĩnh theo thứ tự
         <Fragment key={i}>
@@ -13,7 +13,7 @@ export function MetaLine({ children }: { children: ReactNode }) {
               ·
             </span>
           )}
-          {it}
+          <span className="min-w-0 max-w-full">{it}</span>
         </Fragment>
       ))}
     </span>

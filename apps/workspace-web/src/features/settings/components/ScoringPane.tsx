@@ -6,9 +6,9 @@
 import type { PartnerRole } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PaneSkeleton } from "~/components/shared/Refreshing";
 import { useEngine } from "~/features/partners/hooks/use-rep-v2e";
 import { SettingsSeg } from "~/shared/ui/settings-layout";
-
 import { ScoringEditor } from "./ScoringEditor";
 import { ScoringV2EPane } from "./ScoringV2EPane";
 import { SwitchPreview } from "./SwitchPreview";
@@ -38,9 +38,8 @@ function Hd8Pane({ owner }: { owner: boolean }) {
 }
 
 export function ScoringPane({ owner }: { owner: boolean }) {
-  const { t } = useTranslation();
   const { engine, loading } = useEngine();
-  if (loading || !engine) return <p className="text-dim">{t("contracts.common.loading")}</p>;
+  if (loading || !engine) return <PaneSkeleton lines={4} />;
   return (
     <>
       {owner && (

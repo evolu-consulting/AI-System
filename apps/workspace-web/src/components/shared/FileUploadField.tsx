@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { TruncText } from "~/components/shared/TruncText";
 import { downloadAttachment, fetchAttachment, uploadAttachment } from "./attachments";
 
 type Picked = { id: string; name: string };
@@ -69,7 +70,7 @@ export function FileUploadField({
           const name = names.find((n) => n.id === fid)?.name ?? fid;
           return (
             <li key={fid} className="flex items-center gap-2 text-sm" data-testid="file-item">
-              <span className="min-w-0 truncate">{name}</span>
+              <TruncText>{name}</TruncText>
               <button
                 type="button"
                 className="text-caption text-act hover:underline"
@@ -122,7 +123,7 @@ export function FileName({ id }: { id: string }) {
           data-testid="file-link"
           onClick={() => void open()}
         >
-          {name}
+          <TruncText maxWidth="20rem">{name}</TruncText>
         </button>
       )}
       {blocked && (

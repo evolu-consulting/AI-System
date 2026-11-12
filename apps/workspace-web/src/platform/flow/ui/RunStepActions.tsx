@@ -7,8 +7,10 @@ import type { EvidenceInput as EvidenceBody } from "@ai/contracts/chat";
 import type { FlowActionDef, FlowFormValues, FlowTask, FlowView } from "@ai/contracts/flow";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Btn } from "~/components/ui/Btn";
 import { claimView } from "../lib/claim";
 import { type EvidenceRule, evidenceRuleOf } from "../lib/evidence";
+import { ACTION_VARIANT } from "./action-variant";
 import { ClaimBar } from "./ClaimBar";
 import { EvidenceAsk } from "./EvidenceAsk";
 import { FlowPanelBody } from "./FlowPanel";
@@ -38,12 +40,6 @@ export type RunStepActionsProps = {
   /** Đang gửi quyết định (khoá nút). */
   busy?: boolean | undefined;
   error?: boolean | undefined;
-};
-
-const BTN: Record<FlowActionDef["style"], string> = {
-  primary: "btn btn-primary",
-  default: "btn",
-  danger: "btn border border-late bg-panel text-late hover:bg-late-bg",
 };
 
 /** Task cần nút hành động: task `review` của người xem (task `form` gửi ngay trên thẻ bước). */
@@ -110,33 +106,26 @@ export function RunStepActions(p: RunStepActionsProps) {
                 onChange={(e) => setReason(e.target.value)}
               />
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  disabled={p.busy === true || reason.trim() === ""}
+                <Btn
+                  variant={ACTION_VARIANT[asking.style]}
+                  disabled={reason.trim() === ""}
+                  loading={p.busy === true}
                   data-testid={`request-${asking.key}-confirm`}
                   onClick={() => void decide(asking, reason.trim())}
                 >
                   {asking.label}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-quiet btn-sm"
-                  onClick={() => setAsking(null)}
-                >
-                  {t("contracts.requests.cancel")}
-                </button>
+                </Btn>
+                <Btn onClick={() => setAsking(null)}>{t("contracts.requests.cancel")}</Btn>
               </div>
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
               {task.actions.map((a) => (
-                <button
+                <Btn
                   key={a.key}
-                  type="button"
-                  className={BTN[a.style]}
+                  variant={ACTION_VARIANT[a.style]}
                   disabled={p.busy === true || cv?.decideLocked != null}
-                  title={
+                  reason={
                     cv?.decideLocked
                       ? t(`contracts.work.u4.claim.locked.${cv.decideLocked}`)
                       : undefined
@@ -145,7 +134,7 @@ export function RunStepActions(p: RunStepActionsProps) {
                   onClick={() => (ruleOf(a) || needsReason(a) ? setAsking(a) : void decide(a))}
                 >
                   {a.label}
-                </button>
+                </Btn>
               ))}
             </div>
           )}

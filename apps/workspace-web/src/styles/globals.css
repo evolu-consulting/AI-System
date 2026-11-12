@@ -83,6 +83,10 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+  .btn:focus-visible {
+    outline: 2px solid var(--color-act);
+    outline-offset: 2px;
+  }
   .btn-primary {
     background: var(--color-act);
     color: var(--color-on-act);
@@ -106,6 +110,15 @@
   }
   .btn-quiet:hover:not(:disabled) {
     background: var(--color-sunk);
+  }
+  /* CR-134: nút nguy hiểm (Xoá/Từ chối/Huỷ HĐ) cùng cỡ với `.btn`; chữ đỏ viền đỏ, rê chuột nền đỏ nhạt. */
+  .btn-danger {
+    border: 1.5px solid var(--color-late);
+    background: var(--color-panel);
+    color: var(--color-late);
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: var(--color-late-bg);
   }
   /* Nút biểu tượng không viền (thao tác dòng danh sách): nền khi rê chuột, vòng focus giữ nguyên. */
   .btn-icon-ghost {

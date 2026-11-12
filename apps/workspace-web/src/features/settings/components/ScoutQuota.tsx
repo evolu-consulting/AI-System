@@ -4,6 +4,7 @@
 import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Btn } from "~/components/ui/Btn";
 import { useSession } from "~/features/auth/hooks/use-session";
 import { parseCap } from "~/features/product-suppliers/lib/scout";
 import { isCompanyAdmin } from "~/features/shell/lib/nav";
@@ -67,11 +68,12 @@ export function ScoutQuota({ owner }: { owner: boolean }) {
         </p>
       )}
       <div className="flex justify-end px-5 py-3">
-        <button
-          type="button"
-          className="btn btn-primary"
+        <Btn
+          variant="primary"
           data-testid="scout-quota-save"
-          disabled={!owner || save.isPending || bad}
+          disabled={!owner || bad}
+          loading={save.isPending}
+          reason={owner ? undefined : L("forbidden")}
           onClick={() =>
             save.mutate(parsed as Parameters<typeof save.mutate>[0], {
               onSuccess: () => toast(L("saved")),
@@ -80,7 +82,7 @@ export function ScoutQuota({ owner }: { owner: boolean }) {
           }
         >
           {L("save")}
-        </button>
+        </Btn>
       </div>
     </SettingsGroup>
   );
