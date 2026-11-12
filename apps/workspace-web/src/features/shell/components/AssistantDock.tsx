@@ -3,41 +3,75 @@ import { FeedbackPanel } from "@ai/web-kit/ui/FeedbackPanel";
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "~/components/ui/skeleton";
-import type { DockMode } from "../hooks/use-dock";
+import { useUnreadTotal } from "~/features/messages/hooks/use-unread";
+import { useShellPacks } from "~/shell/use-shell-packs";
+import type { DockMode, DockPanel } from "../hooks/use-dock";
 import { clampWidth } from "../lib/stored";
+import { DockTabs } from "./DockTabs";
 
 const AssistantPanel = lazy(
   () => import(/* webpackChunkName: "assistant" */ "../assistant/AssistantPanel"),
 );
 
+const MessagesDockPanel = lazy(
+  () =>
+    import(
+      /* webpackChunkName: "messages-dock" */ "~/features/messages/components/MessagesDockPanel"
+    ),
+);
+
 /** Ruột khoang: trợ lý (lazy) hoặc khung góp ý. `closeLabel` chỉ có ở khoang gắn bên phải. */
 export function DockBody({
   mode,
+  panel,
   onClose,
   closeLabel,
 }: {
   mode: DockMode;
+  panel: DockPanel;
   onClose: () => void;
   closeLabel?: string;
 }) {
   const { i18n } = useTranslation();
+  const hasMessages = useShellPacks().contracts === true;
+  const unread = useUnreadTotal(hasMessages);
   if (mode === "feedback")
     return <FeedbackPanel app="contracts" lang={i18n.language} onClose={onClose} />;
+  const tab = hasMessages ? panel.tab : "assistant";
   return (
-    <Suspense fallback={<Skeleton className="m-4 h-8" />}>
-      <AssistantPanel onClose={onClose} closeLabel={closeLabel} />
-    </Suspense>
+    <div className="flex h-full min-h-0 flex-col">
+      {hasMessages && (
+        <DockTabs
+          tab={tab}
+          onTab={panel.setTab}
+          unread={unread}
+          onClose={onClose}
+          closeLabel={closeLabel}
+        />
+      )}
+      <div className="min-h-0 flex-1" role={hasMessages ? "tabpanel" : undefined}>
+        <Suspense fallback={<Skeleton className="m-4 h-8" />}>
+          {tab === "messages" ? (
+            <MessagesDockPanel convId={panel.convId} onOpen={panel.setConvId} />
+          ) : (
+            <AssistantPanel onClose={onClose} closeLabel={closeLabel} />
+          )}
+        </Suspense>
+      </div>
+    </div>
   );
 }
 
 export function AssistantDock({
   mode,
+  panel,
   width,
   dragging,
   onDragStart,
   onClose,
 }: {
   mode: DockMode;
+  panel: DockPanel;
   width: number;
   dragging: boolean;
   onDragStart: (e: React.MouseEvent) => void;
@@ -61,7 +95,12 @@ export function AssistantDock({
         aria-orientation="vertical"
         className="absolute inset-y-0 -left-1 z-10 w-2 cursor-col-resize hover:bg-act-soft"
       />
-      <DockBody mode={mode} onClose={onClose} closeLabel={t("contracts.shell.collapse")} />
+      <DockBody
+        mode={mode}
+        panel={panel}
+        onClose={onClose}
+        closeLabel={t("contracts.shell.collapse")}
+      />
     </aside>
   );
 }

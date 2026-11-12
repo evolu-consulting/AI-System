@@ -5,8 +5,11 @@ import { Link } from "@tanstack/react-router";
 import { ClipboardCheck } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { UnreadBadge } from "~/features/messages/components/UnreadBadge";
+import { useUnreadTotal } from "~/features/messages/hooks/use-unread";
 import { useInbox } from "~/features/overview/hooks/use-inbox";
 import { waitingBadge } from "~/features/overview/lib/waiting";
+import type { NavEntry } from "~/shared/kernel/module-manifest";
 import { pickBottomItems } from "~/shell/bottom-nav";
 import { MODULES } from "~/shell/modules";
 import { buildShellNav } from "~/shell/nav";
@@ -33,6 +36,16 @@ function WaitingItem() {
       </span>
       <span className="max-w-full truncate">{t("contracts.nav.waiting")}</span>
     </Link>
+  );
+}
+
+/** CR-132 · mục «Tin nhắn» ở thanh dưới: số đỏ = tổng chưa đọc (cùng một query với menu trái và nút khoang). */
+function UnreadIcon({ icon: Icon }: { icon: NavEntry["icon"] }) {
+  return (
+    <span className="relative">
+      <Icon width={19} height={19} />
+      <UnreadBadge count={useUnreadTotal()} className="absolute -right-3 -top-2" />
+    </span>
   );
 }
 
@@ -64,7 +77,7 @@ export function BottomNav() {
           activeOptions={{ exact: n.exact === true }}
           className={ITEM}
         >
-          <n.icon width={19} height={19} />
+          {n.unread ? <UnreadIcon icon={n.icon} /> : <n.icon width={19} height={19} />}
           <span className="max-w-full truncate">{t(n.labelKey)}</span>
         </Link>
       ))}

@@ -70,7 +70,6 @@ export const MESSAGES_NAV: NavItem = {
   icon: IconMessage,
   testId: "nav-contracts-messages",
   unread: true,
-  mobile: "more",
 };
 export type Role = "owner" | "editor" | "viewer";
 

@@ -2,8 +2,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { i18n, initI18n } from "~/app/i18n";
+import { ConnectedBell } from "~/features/notifications/components/ConnectedBell";
 import AssistantPanel from "../assistant/AssistantPanel";
-import { NotificationBell } from "./NotificationBell";
 
 beforeAll(async () => {
   await initI18n();
@@ -14,11 +14,9 @@ afterAll(async () => {
 });
 
 describe("Shell · khung rỗng", () => {
-  test("chuông: nút 'Thông báo' (đóng sẵn); có chưa đọc ⇒ nhãn kèm số và chấm số", () => {
-    expect(renderToStaticMarkup(<NotificationBell />)).toContain('aria-label="Thông báo"');
-    const html = renderToStaticMarkup(<NotificationBell unread={12} />);
-    expect(html).toContain("Thông báo, 12 chưa đọc");
-    expect(html).toContain("9+");
+  test("chuông: MỘT chuông web-kit (ConnectedBell) có nút 'Thông báo' đóng sẵn", () => {
+    const html = renderToStaticMarkup(<ConnectedBell />);
+    expect(html).toContain('aria-label="Thông báo"');
   });
   test("khoang trợ lý: tiêu đề + nút 'Thu gọn ›' khi gắn bên phải; sheet không có nút", () => {
     const docked = renderToStaticMarkup(

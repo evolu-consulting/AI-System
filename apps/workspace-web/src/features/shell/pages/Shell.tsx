@@ -5,20 +5,36 @@ import { useTranslation } from "react-i18next";
 import { IconRobot } from "~/components/icons";
 import { assistantVisible } from "~/features/assistant/lib/chat.rules";
 import { logout } from "~/features/auth/api";
+import { useUnreadTotal } from "~/features/messages/hooks/use-unread";
 import { SettingsDialogLazy } from "~/features/settings/components/SettingsDialogLazy";
 import { useBrandSync } from "~/features/settings/hooks/use-settings";
 import { cn } from "~/lib/utils";
 import { AssistantFab } from "~/shared/ui/AssistantFab";
 import { useNavPath } from "~/shell/use-nav-path";
 import { useShellPacks } from "~/shell/use-shell-packs";
-import { AssistantDock, DockBody } from "../components/AssistantDock";
+import { AssistantDock } from "../components/AssistantDock";
 import { BottomNav } from "../components/BottomNav";
+import { DockSheet } from "../components/DockSheet";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import type { ShellUser } from "../components/UserMenu";
 import { useDock } from "../hooks/use-dock";
 import { layoutOf, roleOf } from "../lib/nav";
 import { NAV_PINNED_KEY, useStoredBool } from "../lib/stored";
+
+type T = (k: string, o?: Record<string, unknown>) => string;
+/** Nhãn đọc màn hình của nút mở khoang: kèm số tin chưa đọc khi có. */
+const fabLabel = (t: T, unread: number): string =>
+  unread > 0
+    ? `${t("contracts.shell.openAssistant")} · ${t("contracts.messages.unread", { n: unread })}`
+    : t("contracts.shell.openAssistant");
+
+/** Đồng bộ thương hiệu khi có gói Sổ Hợp Tác; trả tổng tin chưa đọc (cho nút mở khoang). */
+function useContractsSync(showAssistant: boolean): number {
+  const hasContracts = useShellPacks().contracts === true;
+  useBrandSync(hasContracts);
+  return useUnreadTotal(showAssistant && hasContracts);
+}
 
 export function Shell({ user, write, owner }: { user: ShellUser; write: boolean; owner: boolean }) {
   const { t } = useTranslation();
@@ -28,7 +44,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
   const onCard = /^\/contracts\/c\/(?!new(?:\/|$))[^/]+\/?$/.test(pathname);
   const dock = useDock();
   const showAssistant = assistantVisible(user?.role); // đối tác không có trợ lý (Chat AI bị chặn phía Hub)
-  useBrandSync(useShellPacks().contracts === true);
+  const unread = useContractsSync(showAssistant);
   const [pinned, setPinned] = useStoredBool(NAV_PINNED_KEY, true);
   const role = roleOf({ write, owner });
   const sheetName =
@@ -69,6 +85,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
           {dock.open && (showAssistant || dock.mode === "feedback") && (
             <AssistantDock
               mode={dock.mode}
+              panel={dock.panel}
               width={dock.width}
               dragging={dock.dragging}
               onDragStart={dock.startResize}
@@ -82,7 +99,8 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
       {showAssistant && (
         <AssistantFab
           onClick={dock.openAssistant}
-          label={t("contracts.shell.openAssistant")}
+          label={fabLabel(t, unread)}
+          badge={unread}
           tooltip={t("contracts.shell.askAssistant")}
           icon={<IconRobot width={24} height={24} />}
           className={cn(
@@ -93,27 +111,13 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
         />
       )}
       {dock.sheet && (
-        <div className="fixed inset-0 z-40 flex flex-col lg:hidden">
-          <button
-            type="button"
-            tabIndex={-1}
-            aria-label={t("contracts.common.close")}
-            onClick={dock.closeSheet}
-            className="absolute inset-0 bg-black/40"
-          />
-          <div
-            role="dialog"
-            aria-label={sheetName}
-            className="relative mt-auto h-[85dvh] overflow-hidden rounded-t-2xl bg-panel"
-          >
-            <DockBody
-              mode={dock.sheet}
-              onClose={dock.closeSheet}
-              closeLabel={t("contracts.common.close")}
-            />
-          </div>
-        </div>
-      )}{" "}
+        <DockSheet
+          mode={dock.sheet}
+          panel={dock.panel}
+          name={sheetName}
+          onClose={dock.closeSheet}
+        />
+      )}
     </div>
   );
 }

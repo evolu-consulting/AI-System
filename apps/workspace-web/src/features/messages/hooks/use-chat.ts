@@ -1,6 +1,6 @@
 // CR-132 · W2 · khung chat của MỘT hội thoại: chi tiết, trang tin (tải thêm cũ), gửi (tin đang gửi mờ, lỗi bấm gửi lại), thu hồi,
 // đánh dấu đã đọc khi mở/tin tới, đổi tên / thêm / bớt / rời nhóm.
-import type { ConversationDetail, Message } from "@ai/contracts/pack-contracts";
+import type { ConversationDetail, FileRef, Message } from "@ai/contracts/pack-contracts";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -48,20 +48,26 @@ export function useMessages(id: string) {
   return { ...q, items };
 }
 
-export type Outgoing = { clientId: string; body: string; failed: string | null };
+export type Outgoing = {
+  clientId: string;
+  body: string;
+  fileIds: string[];
+  fileNames: string[];
+  failed: string | null;
+};
 
 /** Tin đang gửi (mờ; component phải `key={id}` để đổi hội thoại thì hàng chờ trống) / gửi lỗi (bấm gửi lại cùng `client_id` ⇒ server không tạo trùng). */
 export function useOutbox(id: string, myId: string) {
   const qc = useQueryClient();
   const [out, setOut] = useState<Outgoing[]>([]);
   const run = useCallback(
-    (clientId: string, body: string) => {
+    (clientId: string, body: string, fileIds: string[], fileNames: string[]) => {
       setOut((o) =>
         o.some((x) => x.clientId === clientId)
           ? o.map((x) => (x.clientId === clientId ? { ...x, failed: null } : x))
-          : [...o, { clientId, body, failed: null }],
+          : [...o, { clientId, body, fileIds, fileNames, failed: null }],
       );
-      sendMessage(id, { client_id: clientId, body, file_ids: [] })
+      sendMessage(id, { client_id: clientId, body, file_ids: fileIds })
         .then((m: Message) => {
           qc.setQueryData<MsgPages>(msgKeys.msgs(id), (old) => applyNewMessage(old, m));
           const list = qc.getQueryData<ListPages>(msgKeys.list);
@@ -78,11 +84,20 @@ export function useOutbox(id: string, myId: string) {
     },
     [id, qc, myId],
   );
-  const send = useCallback((body: string) => run(crypto.randomUUID(), body), [run]);
+  const send = useCallback(
+    (body: string, files: readonly FileRef[] = []) =>
+      run(
+        crypto.randomUUID(),
+        body,
+        files.map((f) => f.id),
+        files.map((f) => f.name),
+      ),
+    [run],
+  );
   const retry = useCallback(
     (clientId: string) => {
       const x = out.find((o) => o.clientId === clientId);
-      if (x) run(clientId, x.body);
+      if (x) run(clientId, x.body, x.fileIds, x.fileNames);
     },
     [out, run],
   );

@@ -10,6 +10,15 @@ import {
 } from "../lib/stored";
 
 export type DockMode = "assistant" | "feedback";
+/** CR-132 · tab trong khoang trợ lý. */
+export type DockTab = "assistant" | "messages";
+/** Trạng thái tab + hội thoại đang mở (nhớ khi đóng/mở khoang, vì hook sống cùng khung). */
+export type DockPanel = {
+  tab: DockTab;
+  setTab: (t: DockTab) => void;
+  convId: string | null;
+  setConvId: (id: string | null) => void;
+};
 /** Sự kiện mở góp ý: nút trên header và route `/feedback` cùng bắn. */
 export const FEEDBACK_OPEN = "contracts:feedback-open";
 
@@ -22,6 +31,8 @@ export function useDock() {
   const [sheet, setSheet] = useState<DockMode | null>(null);
   const [width, setWidth] = useStoredWidth(ASSISTANT_WIDTH_KEY);
   const [dragging, setDragging] = useState(false);
+  const [tab, setTab] = useState<DockTab>("assistant");
+  const [convId, setConvId] = useState<string | null>(null);
 
   const openAssistant = () => {
     if (isWide()) {
@@ -58,6 +69,7 @@ export function useDock() {
     width,
     dragging,
     sheet,
+    panel: { tab, setTab, convId, setConvId } satisfies DockPanel,
     openAssistant,
     openFeedback,
     closeDock: () => (feedback ? setFeedback(false) : setAssistant(false)),

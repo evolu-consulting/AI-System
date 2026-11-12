@@ -4,12 +4,13 @@ import type {
   ConversationDetail,
   ConversationPage,
   CreateConversationRequest,
+  FileRef,
   Message,
   MessagePage,
   SendMessageRequest,
   UnreadResponse,
 } from "@ai/contracts/pack-contracts";
-import { api } from "@ai/web-kit/http";
+import { api, apiResponse } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/messages";
 const conv = (id: string) => `${BASE}/conversations/${encodeURIComponent(id)}`;
@@ -55,3 +56,21 @@ export const markRead = (id: string, seq: number) =>
 /** Người nội bộ chọn được (cùng nguồn «người có thể được giao»; tra MỘT lần, lọc ở máy khách). */
 export const fetchPeople = (signal?: AbortSignal) =>
   api<{ items: { id: string; name: string }[] }>("/pack/contracts/assignees", { signal });
+
+const fileBase = (id: string, fileId: string) => `${conv(id)}/files/${encodeURIComponent(fileId)}`;
+
+/** `POST …/files` (multipart `file`) ⇒ 201 `FileRef` (tệp gắn vào hội thoại, chưa gửi). 415/413 ⇒ mã `MSG_FILE_TYPE`/`MSG_FILE_TOO_LARGE`. */
+export function uploadFile(id: string, file: File): Promise<FileRef> {
+  const form = new FormData();
+  form.append("file", file);
+  return api<FileRef>(`${conv(id)}/files`, { method: "POST", rawBody: form as unknown as Blob });
+}
+
+/** `GET …/files/:fileId` (Bearer; 302 tới FileBox) ⇒ blob. */
+export async function fetchFileBlob(
+  id: string,
+  fileId: string,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  return (await apiResponse(fileBase(id, fileId), { signal })).blob();
+}

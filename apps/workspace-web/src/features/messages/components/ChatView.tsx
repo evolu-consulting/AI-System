@@ -160,6 +160,7 @@ function ChatBody({
   const outgoing = box.outgoing.map((o) => ({
     clientId: o.clientId,
     body: o.body,
+    fileNames: o.fileNames,
     failedText: o.failed ? t(o.failed) : null,
   }));
   if (!d || msgs.isPending)
@@ -236,6 +237,7 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
       <ChatBody d={d} msgs={msgs} box={box} myId={myId} />
       {d && (
         <MessageComposer
+          conversationId={id}
           onSend={box.send}
           lockedReason={composerLocked(d) ? t("contracts.messages.peerGone") : null}
         />

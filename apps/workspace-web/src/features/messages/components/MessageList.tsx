@@ -8,8 +8,14 @@ import { cn } from "~/lib/utils";
 import { dayLabel, timeLabel } from "../lib/format";
 import { groupByDay } from "../lib/message-pages";
 import { canRevoke } from "../lib/perms";
+import { MessageFiles } from "./MessageFiles";
 
-export type OutgoingView = { clientId: string; body: string; failedText: string | null };
+export type OutgoingView = {
+  clientId: string;
+  body: string;
+  fileNames: readonly string[];
+  failedText: string | null;
+};
 
 export type MessageListProps = {
   items: readonly Message[];
@@ -62,12 +68,7 @@ function Bubble({
           ) : (
             <>
               {m.body && <p className="m-0 whitespace-pre-wrap">{m.body}</p>}
-              {m.files.map((f) => (
-                <p key={f.id} className="m-0 truncate text-[12.5px] underline-offset-2">
-                  {"📎 "}
-                  {f.name}
-                </p>
-              ))}
+              <MessageFiles conv={m.conversation_id} files={m.files} />
             </>
           )}
         </div>
@@ -156,6 +157,12 @@ export function MessageList(p: MessageListProps) {
               className="max-w-[85%] rounded-2xl border border-late px-3.5 py-2 text-left text-[13.5px] [overflow-wrap:anywhere]"
             >
               <span className="block whitespace-pre-wrap">{o.body}</span>
+              {o.fileNames.map((n) => (
+                <span key={n} className="block truncate text-[12.5px]">
+                  {"📎 "}
+                  {n}
+                </span>
+              ))}
               <span className="block text-micro text-late">
                 {t("contracts.messages.sendFailed")}
               </span>
@@ -167,6 +174,12 @@ export function MessageList(p: MessageListProps) {
               className="m-0 max-w-[85%] whitespace-pre-wrap rounded-2xl bg-act px-3.5 py-2 text-[13.5px] text-on-act opacity-60 [overflow-wrap:anywhere]"
             >
               {o.body}
+              {o.fileNames.map((n) => (
+                <span key={n} className="block truncate text-[12.5px]">
+                  {"📎 "}
+                  {n}
+                </span>
+              ))}
               <span className="sr-only"> {t("contracts.messages.sending")}</span>
             </p>
           )}

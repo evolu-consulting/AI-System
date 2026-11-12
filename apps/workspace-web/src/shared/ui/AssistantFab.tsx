@@ -1,6 +1,7 @@
 // CR-121 C-6 · nút nổi trợ lý AI DUY NHẤT của mọi module (Sổ Hợp Tác, Community): nút tròn chỉ có biểu tượng, nhãn hiện khi di chuột /
 // tập trung bàn phím (tooltip). Module truyền nhãn + hành động; kích cỡ, vị trí, màu do component này quyết định.
 import type { ReactNode } from "react";
+import { UnreadBadge } from "~/features/messages/components/UnreadBadge";
 import { cn } from "~/lib/utils";
 
 export function AssistantFab({
@@ -8,6 +9,7 @@ export function AssistantFab({
   label,
   tooltip,
   onClick,
+  badge = 0,
   className,
 }: {
   icon: ReactNode;
@@ -16,6 +18,8 @@ export function AssistantFab({
   /** Nhãn hiện khi di chuột, vd "Hỏi trợ lý AI". */
   tooltip: string;
   onClick: () => void;
+  /** CR-132: số tin nhắn chưa đọc (0 ⇒ không hiện; trên 99 ⇒ 99+). */
+  badge?: number;
   className?: string;
 }) {
   return (
@@ -30,6 +34,7 @@ export function AssistantFab({
       )}
     >
       {icon}
+      <UnreadBadge count={badge} className="absolute -top-1 -right-1" />
       <span
         role="tooltip"
         className="pointer-events-none absolute right-full mr-2 rounded-md bg-ink px-2 py-1 text-micro whitespace-nowrap text-panel opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
