@@ -3,7 +3,7 @@
 // (`POST /review-tasks/:id/form` · `/decision`) tới khi lượt cha xong. Hai lượt: LỚN (600 triệu: đủ A+B+C, Giám đốc duyệt ngân sách) và NHỎ
 // (15 triệu: bỏ B). In bảng «bước · người nhận việc · kết quả» (dán vào tasks.md). Dùng cho `bun run demo:purchase --trial`. Chỉ máy dev.
 
-import { caller, env, fail, type Json, login, type Urls } from "./seed-purchase-flow";
+import { caller, env, fail, type Json, login, type Urls } from "./seed-purchase-flow.api";
 import { NAMES, stagesA, stagesB, stagesC } from "./seed-purchase-flow.data";
 
 const PEOPLE = [

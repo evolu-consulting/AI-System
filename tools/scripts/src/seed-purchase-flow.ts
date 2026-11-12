@@ -9,6 +9,17 @@ import { bindGroupKeys } from "../../../apps/hub-api/src/modules/processes/publi
 import { isLocalDbHost } from "./seed-community-demo.guard";
 import { flowSeedGuard } from "./seed-flow-showcase.build";
 import {
+  type Call,
+  caller,
+  env,
+  fail,
+  type Json,
+  login,
+  must,
+  type Urls,
+  urls,
+} from "./seed-purchase-flow.api";
+import {
   groupKeysOf,
   NAMES,
   NEVER_TRIGGER,
@@ -20,42 +31,6 @@ import {
 
 const TAG = "seed-purchase-flow";
 export const TENANT = "demo";
-
-// biome-ignore lint/suspicious/noExplicitAny: JSON của API, đọc theo đường dẫn
-export type Json = Record<string, any>;
-export type Res = { status: number; json: Json };
-export type Call = (method: string, path: string, body?: unknown) => Promise<Res>;
-
-export const fail = (msg: string): never => {
-  throw new Error(msg);
-};
-export const env = (k: string): string => process.env[k] || fail(`thiếu ${k} trong .env.local`);
-
-export async function login(authUrl: string, tenant: string, username: string, password: string) {
-  const res = await fetch(`${authUrl}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tenant_key: tenant, username, password }),
-  });
-  const j = (await res.json()) as Json;
-  if (j.status !== "authenticated") fail(`đăng nhập ${tenant}/${username} → ${res.status}`);
-  return String(j.access_token);
-}
-export const caller =
-  (base: string, token: string): Call =>
-  async (method, path, body) => {
-    const res = await fetch(`${base}${path}`, {
-      method,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    const text = await res.text();
-    return { status: res.status, json: (text ? JSON.parse(text) : {}) as Json };
-  };
-export const must = (r: Res, ok: number[], what: string): Json => {
-  if (!ok.includes(r.status)) fail(`${what} → ${r.status} ${JSON.stringify(r.json).slice(0, 400)}`);
-  return r.json;
-};
 
 type Ctx = { hub: Call; tid: string; groups: Map<string, string> };
 
@@ -113,12 +88,6 @@ export async function groupIds(admin: Call, tid: string): Promise<Map<string, st
   const j = must(await admin("GET", `/admin/groups?tenant_id=${tid}&limit=200`), [200], "đọc nhóm");
   return new Map((j.items as Json[]).map((g) => [String(g.key), String(g.id)]));
 }
-
-export type Urls = { authUrl: string; hubUrl: string };
-export const urls = (): Urls => ({
-  authUrl: process.env.AUTH_URL || process.env.ADMIN_API_URL || "http://localhost:3001",
-  hubUrl: process.env.HUB_URL || `http://localhost:${process.env.HUB_PORT || "4000"}`,
-});
 
 export async function platformCtx(u: Urls): Promise<Ctx & { admin: Call }> {
   const tok = await login(
