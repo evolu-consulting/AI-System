@@ -209,7 +209,7 @@ export function mountCommunity<E extends Env>(
   );
 }
 
-/** Tenant bật mặt Bảng tin: entitlement `contracts-read` ∧ add-on `contracts.community` (cache cấu hình, 0 SQL) — tập quét của vòng nền. */
+/** Tenant bật mặt Bảng tin: entitlement `contracts-read` ∧ add-on `contracts-community` (cache cấu hình, 0 SQL) — tập quét của vòng nền. */
 async function communityTenants(view: PackAccessView): Promise<string[]> {
   const cat = await view.catalog();
   const sf = surfaceOf(COMMUNITY_KEY);

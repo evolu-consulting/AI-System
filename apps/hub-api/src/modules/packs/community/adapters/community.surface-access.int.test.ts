@@ -1,4 +1,4 @@
-// CR-130 · p3a · ADR-0044 · lát 1: quyền mặt `/pack/community/*` = quyền gói `contracts` ∧ add-on `contracts.community`; bản cơ bản
+// CR-130 · p3a · ADR-0044 · lát 1: quyền mặt `/pack/community/*` = quyền gói `contracts` ∧ add-on `contracts-community`; bản cơ bản
 // không admin (duyệt đơn/báo cáo = mọi nội bộ; ẩn bình luận = chủ bài; đối tác đọc/bình luận, không duyệt). Pool hub_api + RLS thật.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { CommentViewSchema, PostViewSchema } from "@ai/contracts/community";
@@ -16,7 +16,7 @@ import { communityModule } from "../community.mount";
 let sql: Sql;
 let db: Db;
 let c: Cast;
-// ADR-0044: Bảng tin = gói contracts ∧ add-on contracts.community (không còn feature community-*)
+// ADR-0044: Bảng tin = gói contracts ∧ add-on contracts-community (không còn feature community-*)
 let addonOn = true;
 const F = { read: "c-r", write: "c-w", admin: "c-a", addon: "c-ad" };
 
@@ -27,7 +27,7 @@ function view(): PackAccessView {
         { id: F.read, key: "contracts-read", status: "on" },
         { id: F.write, key: "contracts-write", status: "on" },
         { id: F.admin, key: "contracts-admin", status: "on" },
-        { id: F.addon, key: "contracts.community", status: "on" },
+        { id: F.addon, key: "contracts-community", status: "on" },
       ],
       entitled: new Set(
         Object.entries(F)
@@ -121,14 +121,15 @@ describe("CR-130 p3a · ADR-0044 · mặt community theo quyền gói contracts 
     expect(nav.json).toMatchObject({ joinReview: true, reports: true, joinSubmit: false });
     expect((await call("hM", "GET", "/join-requests")).status).toBe(200);
   });
-  it("đối tác: đọc + bình luận Bảng tin được; KHÔNG duyệt đơn (403), nav không có quyền duyệt", async () => {
+  it("đối tác: đọc + bình luận Bảng tin được; KHÔNG vào hàng duyệt (403), nav không có quyền duyệt", async () => {
     expect((await call("s1a", "GET", "/feed")).status).toBe(200);
     await ok(
       CommentViewSchema,
       call("s1a", "POST", `/posts/${post}/comments`, { text: "Em chào anh chị" }),
       201,
     );
-    expect((await call("s1a", "GET", "/join-requests")).status).toBe(403);
+    expect((await call("s1a", "GET", "/moderation/queue")).status).toBe(403);
+    expect((await call("hM", "GET", "/moderation/queue")).status).toBe(200);
     expect(await call("s1a", "GET", "/flows/nav")).toMatchObject({
       json: { joinReview: false, reports: false },
     });
@@ -144,7 +145,7 @@ describe("CR-130 p3a · ADR-0044 · mặt community theo quyền gói contracts 
     expect((await hide("hA")).status).toBe(404);
     expect((await hide("hM")).status).toBe(200);
   });
-  it("add-on contracts.community tắt ⇒ mặt community như gói tắt (403 PACK_DISABLED, cả nội bộ lẫn đối tác); bật lại ⇒ 200", async () => {
+  it("add-on contracts-community tắt ⇒ mặt community như gói tắt (403 PACK_DISABLED, cả nội bộ lẫn đối tác); bật lại ⇒ 200", async () => {
     addonOn = false;
     try {
       for (const who of ["hM", "s1a"] as const) {

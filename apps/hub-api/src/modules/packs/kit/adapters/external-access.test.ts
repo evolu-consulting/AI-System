@@ -13,8 +13,8 @@ import {
 const T = "t1";
 const features = (k: string) =>
   ["read", "write", "admin"].map((a) => ({ id: `${k}-${a}`, key: `${k}-${a}`, status: "on" }));
-// ADR-0044: mặt `community` = gói `contracts` ∧ add-on `contracts.community` (không còn feature `community-*`).
-const ADDON = { id: "contracts.community", key: "contracts.community", status: "on" };
+// ADR-0044: mặt `community` = gói `contracts` ∧ add-on `contracts-community` (không còn feature `community-*`).
+const ADDON = { id: "contracts-community", key: "contracts-community", status: "on" };
 const cat: PackCatalogView = {
   features: [...features("contracts"), ADDON],
   entitled: new Set([

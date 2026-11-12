@@ -38,10 +38,10 @@ beforeAll(async () => {
   await sql`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, kind,
       external_org_id, must_change_password) values
     (${EXT_ID}, ${T.acme}, 'ncc-c3', 'x', 'Đối tác C3', 'member', 'external', ${ORG}, false)`;
-  // ADR-0044: Bảng tin = gói contracts ∧ add-on `contracts.community` (lát 2 seed vào migration; ở đây fixture tự tạo)
-  await sql`insert into admin.features (key, name) values ('contracts.community', ${sql.json({ vi: "Bảng tin" })}) on conflict (key) do nothing`;
+  // ADR-0044: Bảng tin = gói contracts ∧ add-on `contracts-community` (lát 2 seed vào migration; ở đây fixture tự tạo)
+  await sql`insert into admin.features (key, name) values ('contracts-community', ${sql.json({ vi: "Bảng tin" })}) on conflict (key) do nothing`;
   await sql`insert into admin.feature_entitlements (feature_id, tenant_id)
-    select f.id, ${T.acme}::uuid from admin.features f where f.key in ('contracts-read', 'contracts-write', 'contracts-admin', 'contracts.community')
+    select f.id, ${T.acme}::uuid from admin.features f where f.key in ('contracts-read', 'contracts-write', 'contracts-admin', 'contracts-community')
     on conflict (feature_id, tenant_id) do update set revoked_at = null`;
   await sql`insert into admin.groups (id, tenant_id, key, name) values (${GRP}, ${T.acme}, 'c3-community', ${sql.json({ vi: "Cộng đồng" })})`;
   await sql`insert into admin.group_members (tenant_id, group_id, user_id) values (${T.acme}, ${GRP}, ${USERS.lan.id})`;

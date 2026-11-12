@@ -21,15 +21,17 @@ import { communityModule } from "../community.mount";
 let sql: Sql;
 let db: Db;
 let c: Cast;
-const F = { read: "c-r", write: "c-w", admin: "c-a" };
+// ADR-0044: Bảng tin = gói contracts ∧ add-on contracts-community
+const F = { read: "c-r", write: "c-w", admin: "c-a", addon: "c-ad" };
 
 function view(): PackAccessView {
   return {
     catalog: async () => ({
       features: [
-        { id: F.read, key: "community-read", status: "on" },
-        { id: F.write, key: "community-write", status: "on" },
-        { id: F.admin, key: "community-admin", status: "on" },
+        { id: F.read, key: "contracts-read", status: "on" },
+        { id: F.write, key: "contracts-write", status: "on" },
+        { id: F.admin, key: "contracts-admin", status: "on" },
+        { id: F.addon, key: "contracts-community", status: "on" },
       ],
       entitled: new Set(Object.values(F).map((f) => `${c.A}:${f}`)),
       grantGroups: new Map([

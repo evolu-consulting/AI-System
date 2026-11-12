@@ -1,5 +1,5 @@
 // CR-102 · com-c3 · CR-130 · ADR-0044 · quyền vào MẶT `community` (Bảng tin) + người xem của request. Mặt bật khi gói `contracts` bật ∧
-// add-on `contracts.community` bật (kit `packAccessInput`/`packEnabled`, cache 0 SQL). Bản cơ bản, KHÔNG quyền riêng/admin: user nội bộ
+// add-on `contracts-community` bật (kit `packAccessInput`/`packEnabled`, cache 0 SQL). Bản cơ bản, KHÔNG quyền riêng/admin: user nội bộ
 // có quyền gói `contracts` ⇒ đọc + ghi; duyệt đơn/ẩn bài đối tác = mọi user nội bộ. User ngoài (CR-102a): đọc + ghi theo
 // `EXTERNAL_SURFACES`, công ty còn hiệu lực.
 // Danh bạ (tên tenant/user/công ty) = MỘT câu qua cổng kit `ExternalOrgResolver.directory`.

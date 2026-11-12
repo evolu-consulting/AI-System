@@ -23,7 +23,7 @@ let db: Db;
 let c: Cast;
 let app: Hono<PackGuardVars>;
 let P = new Map<string, string>();
-// ADR-0044: Bảng tin = gói contracts ∧ add-on contracts.community (không còn feature community-*)
+// ADR-0044: Bảng tin = gói contracts ∧ add-on contracts-community (không còn feature community-*)
 const F = { read: "c-r", write: "c-w", admin: "c-a", addon: "c-ad" };
 
 type Who = "hA" | "hM" | "s1a" | "s1b" | "s2" | "b1";
@@ -36,7 +36,7 @@ function view(): PackAccessView {
         { id: F.read, key: "contracts-read", status: "on" },
         { id: F.write, key: "contracts-write", status: "on" },
         { id: F.admin, key: "contracts-admin", status: "on" },
-        { id: F.addon, key: "contracts.community", status: "on" },
+        { id: F.addon, key: "contracts-community", status: "on" },
       ],
       entitled: new Set(Object.values(F).map((f) => `${c.A}:${f}`)),
       grantGroups: new Map([
