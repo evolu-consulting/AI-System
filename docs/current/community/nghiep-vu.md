@@ -224,3 +224,6 @@ Bảng tin là mặt `/pack/community/*` của gói Sổ Hợp Tác, bật bằn
 
 ## CR-130 · duyệt đơn tham gia cần quản trị (chốt B 2026-11-12, chưa gộp: cần `slice:merge`)
 Duyệt đơn xin tham gia Bảng tin (ghi hồ sơ đối tác ở SHT) cần quyền quản trị Sổ Hợp Tác; người không đủ quyền không thấy đơn (403, không mục menu). Ẩn bài/báo cáo đối tác, đăng bài, bình luận: mọi nhân viên nội bộ.
+
+## CR-130 · «Chọn đối tác» lấy từ sổ đối tác (fix-j2-partners, chưa gộp: cần `slice:merge`)
+Ô «Gắn với đối tác có sẵn» khi duyệt đơn tham gia liệt kê sổ đối tác SHT (`GET /pack/contracts/partners/search`), gồm cả đối tác nhập tay chưa có HĐ; không dùng bảng điểm uy tín (`GET /pack/contracts/partners`).

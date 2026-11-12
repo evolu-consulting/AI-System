@@ -3,7 +3,7 @@
 import type { JoinRequest } from "@ai/contracts/community";
 import { useState } from "react";
 import { useApp } from "../../application/ctx";
-import { filterParties, type Party } from "../../domain/join-approve";
+import { filterParties, PARTY_LIMIT, type Party } from "../../domain/join-approve";
 import { t } from "../../i18n";
 
 export function JoinApprove({
@@ -25,7 +25,13 @@ export function JoinApprove({
     setPicked(null);
     if (on && !parties) api.flows.listParties().then(setParties, () => setParties([]));
   };
-  const shown = filterParties(parties ?? [], q);
+  // Danh sách đầy (= trần máy chủ) ⇒ gõ từ khoá thì hỏi máy chủ; chưa đầy ⇒ lọc tại máy.
+  const truncated = (parties?.length ?? 0) >= PARTY_LIMIT;
+  const onSearch = (v: string) => {
+    setQ(v);
+    if (truncated) api.flows.listParties(v).then(setParties, () => undefined);
+  };
+  const shown = filterParties(parties ?? [], truncated ? "" : q);
   return (
     <div
       data-testid="join-approve-panel"
@@ -58,7 +64,7 @@ export function JoinApprove({
             aria-label={t("community.flows.join.searchParty")}
             placeholder={t("community.flows.join.searchParty")}
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => onSearch(e.target.value)}
           />
           <select
             className="field"

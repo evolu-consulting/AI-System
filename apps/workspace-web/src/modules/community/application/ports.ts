@@ -56,8 +56,8 @@ export interface FlowsApi {
   createJoin(input: JoinRequestInput): Promise<JoinRequest>;
   listJoins(pendingOnly: boolean): Promise<JoinRequest[]>;
   decideJoin(id: string, input: FlowDecideInput): Promise<JoinRequest>;
-  /** Đối tác SHT để gắn khi duyệt yêu cầu tham gia (`GET /pack/contracts/partners`); lỗi/gói tắt ⇒ chỉ còn «Tạo đối tác mới». */
-  listParties(): Promise<{ party: string; name: string }[]>;
+  /** Đối tác SHT để gắn khi duyệt yêu cầu tham gia (`GET /pack/contracts/partners/search`, sổ đối tác — gồm cả đối tác chưa có HĐ); lỗi/gói tắt ⇒ chỉ còn «Tạo đối tác mới». */
+  listParties(q?: string): Promise<{ party: string; name: string }[]>;
   reportPost(postId: string, reason: string): Promise<Report>;
   listReports(pendingOnly: boolean): Promise<Report[]>;
   decideReport(id: string, input: FlowDecideInput): Promise<Report>;

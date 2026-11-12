@@ -1,5 +1,7 @@
 // CR-130 · duyệt yêu cầu tham gia: chọn «Tạo đối tác mới» hoặc «Gắn với đối tác có sẵn» (đối tác SHT). Thuần, không I/O.
 export type Party = { party: string; name: string };
+/** Trần của `GET /partners/search` (contract `PartnerSearchQuerySchema`): danh sách đầy ⇒ gõ từ khoá thì hỏi máy chủ. */
+export const PARTY_LIMIT = 50;
 
 /** Bỏ dấu (dấu kết hợp U+0300–U+036F, đ/Đ U+0111/U+0110 ⇒ d) và hạ chữ thường — viết bằng mã ký tự, không chuỗi tiếng Việt. */
 const fold = (s: string): string => {

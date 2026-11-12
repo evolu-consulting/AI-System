@@ -4,6 +4,7 @@ import type { FeedQuery, JoinRequest, Report } from "@ai/contracts/community";
 import { api, apiResponse } from "@ai/web-kit/http";
 import { notifyFlowNavChanged } from "~/shared/kernel/flow-nav-event";
 import type { CommunityApi, FlowsApi } from "../application/ports";
+import { PARTY_LIMIT } from "../domain/join-approve";
 
 const BASE = "/pack/community";
 const enc = encodeURIComponent;
@@ -42,11 +43,16 @@ export const createHttpFlows = (): FlowsApi => ({
   listJoins: async (p) =>
     (await api<{ items: JoinRequest[] }>(`${BASE}/join-requests`, pend(p))).items,
   decideJoin: (id, input) => decided(api(`${BASE}/join-requests/${enc(id)}/decide`, post(input))),
-  listParties: async () => {
-    const rows = await api<{ party: string; name: string }[]>("/pack/contracts/partners", {
-      query: { role: "all" },
-    });
-    return [...new Map(rows.map((r) => [r.party, { party: r.party, name: r.name }])).values()];
+  // Sổ đối tác SHT (vai ∪ danh bạ, dưới RLS người xem) — KHÔNG dùng `GET /partners` (bảng điểm uy tín, chỉ đối tác đã có HĐ duyệt):
+  // đối tác mới nhập tay chưa có HĐ vẫn phải chọn được. Tối đa 50 dòng/lần; gõ từ khoá ⇒ tìm theo tiền tố ở máy chủ.
+  listParties: async (q) => {
+    const rows = await api<{ party: string; name: string | null }[]>(
+      "/pack/contracts/partners/search",
+      { query: { limit: PARTY_LIMIT, ...(q?.trim() ? { q: q.trim() } : {}) } },
+    );
+    return [
+      ...new Map(rows.map((r) => [r.party, { party: r.party, name: r.name ?? r.party }])).values(),
+    ];
   },
   reportPost: (postId, reason) => api(`${BASE}/posts/${enc(postId)}/report`, post({ reason })),
   listReports: async (p) => (await api<{ items: Report[] }>(`${BASE}/reports`, pend(p))).items,
