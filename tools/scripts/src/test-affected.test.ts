@@ -213,8 +213,11 @@ describe("TS1 · test:affected trên chính repo", () => {
 
   it("mọi cấu hình e2e có tag riêng (trừ gốc) và mọi file spec e2e có đúng một cấu hình chủ", async () => {
     const configs = await findE2eConfigs(root);
-    const infos = configInfos(configs, (c) =>
-      require("node:fs").readFileSync(join(root, c), "utf8"),
+    const read = (c: string) => require("node:fs").readFileSync(join(root, c), "utf8") as string;
+    // Cấu hình con (journey-ms/-fsc/-purchase, cr127) `...base` từ cấu hình journey: chỉ lọc spec, không có tag riêng.
+    const infos = configInfos(
+      configs.filter((c) => !read(c).includes("...base,")),
+      read,
     );
     expect(infos.filter((i) => !i.tag).map((i) => i.config)).toEqual(["playwright.config.ts"]);
     const tags = infos.map((i) => i.tag).filter(Boolean);

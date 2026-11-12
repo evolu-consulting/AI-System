@@ -1,6 +1,6 @@
-// CR-122 · U2 · client `/tenants/:tid/company-flows*` (E1b): đọc danh sách + bật/tắt, kéo thứ tự, sao chép, xuất bản, quay về bản gốc.
+// CR-122 · U2 · client `/tenants/:tid/company-flows*` (E1b): đọc danh sách + bật/tắt, kéo thứ tự, tạo.
 // Mỗi thao tác trả lại cả danh sách ⇒ ghi thẳng vào cache (vẽ lại một lần).
-import type { CompanyFlowRow } from "@ai/contracts/hub-admin";
+import type { CompanyFlowCreate, CompanyFlowRow } from "@ai/contracts/hub-admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
@@ -25,8 +25,7 @@ export const useCompanyFlowList = (tid: string, enabled = true) =>
 export type FlowOp =
   | { op: "toggle"; id: string; enabled: boolean }
   | { op: "order"; ids: string[] }
-  | { op: "assign"; flowId: string }
-  | { op: "clone" | "revert"; id: string };
+  | { op: "create"; body: CompanyFlowCreate }; // CR-127 · M1
 
 /** CR-123 FR-10 · "Lưu và áp dụng" (bước áp dụng, sau khi editor lưu def): bản công ty thành flow đang dùng của sự kiện — một tx ở Hub. */
 export async function applyCompanyFlow(tid: string, flowId: string): Promise<List> {
@@ -41,12 +40,10 @@ function call(tid: string, a: FlowOp): Promise<List> {
         method: "PATCH",
         body: { enabled: a.enabled },
       });
-    case "assign":
-      return api<List>(url(tid), { method: "POST", body: { flow_id: a.flowId } });
+    case "create":
+      return api<List>(url(tid), { method: "POST", body: a.body });
     case "order":
       return api<List>(url(tid, "/order"), { method: "PUT", body: { ids: a.ids } });
-    default:
-      return api<List>(url(tid, `/${enc(a.id)}/${a.op}`), { method: "POST", body: {} });
   }
 }
 

@@ -1,21 +1,8 @@
-﻿// HD-FR-01 · HD-FR-03 · D-04 · plan §1/§4: kiểu trạng thái hợp đồng (khớp `CONTRACT_STATUSES`/`HANDLED_OUTCOMES` ở contract
-// zod T4; domain không import ngoài built-in nên khai lại, test parity ở T4/T5).
+// HD-FR-01 · HD-FR-03 · D-04 · CR-127 K1a (BR-01): kiểu trạng thái hợp đồng — 4 trạng thái, nguồn duy nhất `contract-state.rules.ts`
+// (khớp `CONTRACT_STATUSES` ở contract zod; domain không import ngoài built-in nên khai lại).
+import { CONTRACT_STATES, type ContractState, isContractState } from "./contract-state.rules";
 
-export const CONTRACT_STATUS_ORDER = [
-  "extracting",
-  "extract_failed",
-  "needs_review",
-  "active",
-  "expiring",
-  "expired",
-  "renewed",
-  "terminated",
-  "rejected",
-] as const;
-export type ContractStatus = (typeof CONTRACT_STATUS_ORDER)[number];
+export const CONTRACT_STATUS_ORDER = CONTRACT_STATES;
+export type ContractStatus = ContractState;
 
-export const HANDLED_OUTCOME_ORDER = ["renewed", "not_renewed", "negotiating", "replaced"] as const;
-export type HandledOutcome = (typeof HANDLED_OUTCOME_ORDER)[number];
-
-export const isContractStatus = (s: unknown): s is ContractStatus =>
-  (CONTRACT_STATUS_ORDER as readonly unknown[]).includes(s);
+export const isContractStatus = isContractState;

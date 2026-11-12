@@ -1,6 +1,7 @@
 // HD-FR-31…37 · D3-13/D3-14 · M3-decouple: SQL máy trạng thái duyệt trong tx `PackUow` (role `contracts_rw`, RLS FORCE) +
 // `tenant_id` tường minh. Mỗi hàm MỘT câu văn bản hằng; ghi có điều kiện `run_id` (= id lượt duyệt) + trạng thái (idempotent,
 // nhiều instance an toàn). Chỉ mục duy nhất `approvals_live_uq` chặn hai lượt sống cho một HĐ.
+// CR-127 Z1 · LƯU Ý: `mode = 'machine'` + `extracting` còn lại CHỈ là bản ghi theo dõi lượt AI ĐỌC (hợp lệ, không phải máy duyệt 2 bước cũ — đã gỡ); lượt duyệt thật là `mode = 'engine'`.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type {
@@ -14,9 +15,8 @@ import { APPROVAL_DEFAULTS, type ApprovalSettings } from "../domain/approval-def
 import type { FlowStep } from "../domain/approval-flow.types";
 import { OVERRIDE_EVENT } from "../domain/approval-owner.rules";
 import { settingsRepo } from "./approval-settings.repo";
+import { contractStateRepo } from "./contract-state.repo";
 
-/** Trạng thái HĐ còn trong flow (chưa "Đã duyệt"/"Bị từ chối"/theo dõi). */
-const OPEN = sql`('extracting', 'extract_failed', 'needs_review')`;
 const LIVE = sql`('extracting', 'level1', 'level2')`;
 const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v);
 
@@ -164,91 +164,63 @@ function openOnce(tx: Tx, tid: string): ApprovalRepo["open"] {
   };
 }
 
-function toLevel2Q(tx: Tx, tid: string): ApprovalRepo["toLevel2"] {
-  return async (aid, actor) => {
-    const rows = await tx.execute<{
-      id: string;
-    }>(sql`update contracts.approvals set status = 'level2',
-        level1_by = ${actor}::uuid, level1_at = now(), updated_at = now()
-      where id = ${aid}::uuid and tenant_id = ${tid}::uuid and status = 'level1' and mode = 'machine' returning id`);
-    return rows.length > 0;
-  };
-}
-
-function finalizeQ(tx: Tx, tid: string): ApprovalRepo["finalize"] {
-  return async (id, runId, by, level2Passed) => {
-    // Re-verify TOCTOU (D3-14): luật cấp 2 nằm TRONG điều kiện UPDATE (đánh giá lại trên hàng mới nhất sau khi chờ khoá hàng —
-    // PATCH giữ `FOR UPDATE` cùng hàng). Cột sinh `value` (bigint) ≡ `needsLevel2`: trống / âm / ≥ ngưỡng ⇒ cần cấp 2.
-    // Review B #26 · `level2Passed` của caller không đủ: câu UPDATE tự kiểm lượt đang ở `level2` và người quyết ≠ người bắt đầu.
-    const rows = await tx.execute<{ id: string }>(sql`with u as (
-        update contracts.contracts c set status = 'active', confirmed_at = now(), confirmed_by = ${by}::uuid,
-          version = c.version + 1, updated_at = now()
-        where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = ${runId}::uuid
-          and c.status = 'needs_review'
-          and not exists (select 1 from contracts.approvals m where m.id = ${runId}::uuid and m.tenant_id = ${tid}::uuid
-            and m.mode = 'engine')
-          and ((${level2Passed}::boolean and exists (select 1 from contracts.approvals y
-              where y.id = ${runId}::uuid and y.tenant_id = ${tid}::uuid and y.status = 'level2'
-                and y.started_by <> ${by}::uuid))
-            or (c.value is not null and c.value >= 0 and c.value < coalesce(
-            (select s.threshold from contracts.approval_settings s where s.tenant_id = ${tid}::uuid),
-            ${APPROVAL_DEFAULTS.threshold}::bigint)))
-        returning c.id),
-      a as (update contracts.approvals x set status = 'done', decided_by = ${by}::uuid, decided_at = now(),
-          level1_by = coalesce(x.level1_by, ${by}::uuid), level1_at = coalesce(x.level1_at, now()), updated_at = now()
-        from u where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.mode = 'machine'
-          and x.status in ('level1', 'level2')),
-      e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
-        select ${tid}::uuid, u.id, 'approved', ${by}::uuid, jsonb_build_object('run_id', ${runId}::text) from u)
-      select id from u`);
-    return rows.length > 0;
-  };
-}
-
+/** Từ chối / huỷ lượt ENGINE ⇒ HĐ `processing` → `reject` qua CỔNG (`flow_rejected`) + lượt `rejected`/`cancelled` + event. Chỉ khi HĐ còn giữ lượt. */
 function rejectQ(tx: Tx, tid: string): ApprovalRepo["markRejected"] {
   return async (id, runId, e, o) => {
     if (o?.reviewer === true) await approvalWrite(tx);
-    const rows = await tx.execute<{ id: string }>(sql`with u as (
-        update contracts.contracts set status = 'rejected', version = version + 1, updated_at = now()
-        where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${runId}::uuid and status in ${OPEN}
-        returning id),
-      a as (update contracts.approvals x set status = ${e.kind}, decided_by = ${e.actor}::uuid, decided_at = now(),
-          feedback = ${e.feedback}, updated_at = now()
-        from u where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.status in ${LIVE}),
-      ev as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
-        select ${tid}::uuid, u.id, ${e.kind}, ${e.actor}::uuid,
-          jsonb_build_object('run_id', ${runId}::text, 'feedback', ${e.feedback}::text) from u)
-      select id from u`);
-    return rows.length > 0;
+    const g = await contractStateRepo(tx, tid).applyTransition({
+      contractId: id,
+      ev: "flow_rejected",
+      actorId: e.actor,
+      reason: e.feedback,
+      runId,
+    });
+    if (!g.ok) return false;
+    await tx.execute(sql`with a as (update contracts.approvals x set status = ${e.kind}, decided_by = ${e.actor}::uuid,
+          decided_at = now(), feedback = ${e.feedback}, updated_at = now()
+        where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.status in ${LIVE})
+      insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+      values (${tid}::uuid, ${id}::uuid, ${e.kind}, ${e.actor}::uuid,
+        jsonb_build_object('run_id', ${runId}::text, 'feedback', ${e.feedback}::text))`);
+    return true;
   };
 }
 
+/** "Trích lại" ở lượt engine đang mở: HĐ `processing` → `draft` qua CỔNG (`flow_cancelled`), `extract_state = 'reading'`, lượt → `extracting` (lượt đọc). */
 function markQ(tx: Tx, tid: string): ApprovalRepo["markExtracting"] {
   return async (id, runId) => {
-    const rows = await tx.execute<{ id: string }>(sql`with u as (
-        update contracts.contracts set status = 'extracting', error = null, version = version + 1, updated_at = now()
-        where id = ${id}::uuid and tenant_id = ${tid}::uuid and run_id = ${runId}::uuid
-          and status in ('needs_review', 'extract_failed') returning id),
-      a as (update contracts.approvals x set status = 'extracting', queued_at = now(), updated_at = now(),
-          mode = 'machine', engine_run_id = null, pending_links = null
-        from u where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.status in ('level1', 'level2'))
-      select id from u`);
-    return rows.length > 0;
+    const o = await contractStateRepo(tx, tid).applyTransition({
+      contractId: id,
+      ev: "flow_cancelled",
+      actorId: null,
+      reason: "Trích lại",
+      runId,
+    });
+    if (!o.ok) return false;
+    const rows = await tx.execute<{ id: string }>(sql`update contracts.contracts
+      set extract_state = 'reading', error = null, version = version + 1, updated_at = now()
+      where id = ${id}::uuid and tenant_id = ${tid}::uuid and status = 'draft' and run_id = ${runId}::uuid
+      returning id`);
+    if (rows.length === 0) return false;
+    await tx.execute(sql`update contracts.approvals x set status = 'extracting', queued_at = now(), updated_at = now(),
+        mode = 'machine', engine_run_id = null, pending_links = null
+      where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.status in ('level1', 'level2')`);
+    return true;
   };
 }
 
-/** prod-fix · tenant TẮT duyệt (`approval_on()` đọc trong câu): đọc xong ⇒ KHÔNG mở cấp 1 — lượt (chỉ để theo dõi lượt đọc) đóng
+/** CR-127 Z1 · đọc xong ⇒ KHÔNG mở cấp 1 (HĐ là nháp chờ rà soát, vào quy trình qua "Gửi" — K3): lượt (chỉ để theo dõi lượt đọc) đóng
  *  `cancelled` và HĐ bỏ `run_id` ⇒ thẻ duyệt rỗng (bước = null), trang dùng "Xác nhận và lưu" (atomic-confirm). */
 function afterQ(tx: Tx, tid: string): ApprovalRepo["afterExtraction"] {
   return async (id, runId) => {
     const [r] = await tx.execute<{ status: string }>(sql`with
       x as (update contracts.approvals x set updated_at = now(), queued_at = null,
-          status = case when c.status = 'extract_failed' then 'failed'
-            when contracts.approval_on() then 'level1' else 'cancelled' end
+          status = case when c.extract_state = 'failed' then 'failed'
+            else 'cancelled' end
         from contracts.contracts c
         where x.id = ${runId}::uuid and x.tenant_id = ${tid}::uuid and x.status = 'extracting'
           and c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = x.id
-          and c.status in ('needs_review', 'extract_failed')
+          and c.status = 'draft' and c.extract_state in ('ready', 'failed')
         returning x.id, x.status),
       u as (update contracts.contracts c set run_id = null from x
         where x.status = 'cancelled' and c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = x.id)
@@ -265,27 +237,9 @@ function startedQ(tx: Tx, tid: string): ApprovalRepo["markStarted"] {
         update contracts.approvals set queued_at = null, updated_at = now()
         where id = ${runId}::uuid and tenant_id = ${tid}::uuid and status = 'extracting' returning id)
       update contracts.contracts c set updated_at = now() from a
-      where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = a.id and c.status = 'extracting'
+      where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = a.id and c.extract_state = 'reading'
       returning c.id`);
     return rows.length > 0;
-  };
-}
-
-function statusQ(tx: Tx, tid: string): ApprovalRepo["statusOf"] {
-  return async (runId) => {
-    const [r] = await tx.execute<{ status: string }>(sql`select status from contracts.approvals
-      where id = ${runId}::uuid and tenant_id = ${tid}::uuid`);
-    return r?.status ?? null;
-  };
-}
-
-function engineRunQ(tx: Tx, tid: string): ApprovalRepo["engineRunOf"] {
-  return async (runId) => {
-    const [r] = await tx.execute<{
-      run: string | null;
-    }>(sql`select engine_run_id as run from contracts.approvals
-      where id = ${runId}::uuid and tenant_id = ${tid}::uuid and mode = 'engine'`);
-    return r?.run ?? null;
   };
 }
 
@@ -295,14 +249,10 @@ export function approvalRepo(tx: Tx, tenantId: string): ApprovalRepo {
     runOf: runOfQ(tx, tenantId),
     state: stateQ(tx, tenantId),
     open: openQ(tx, tenantId),
-    toLevel2: toLevel2Q(tx, tenantId),
-    finalize: finalizeQ(tx, tenantId),
     markRejected: rejectQ(tx, tenantId),
     markExtracting: markQ(tx, tenantId),
     afterExtraction: afterQ(tx, tenantId),
     markStarted: startedQ(tx, tenantId),
-    statusOf: statusQ(tx, tenantId),
-    engineRunOf: engineRunQ(tx, tenantId),
     settings: s.settings,
     saveSettings: s.saveSettings,
   };

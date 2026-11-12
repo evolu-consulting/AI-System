@@ -1,154 +1,26 @@
-import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { AutomationNote } from "@/components/shared/AutomationNote";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
-import { FilterChips } from "@/components/shared/form/FilterChips";
-import { EmptyState } from "@/components/shared/states/EmptyState";
-import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
 import { HubNotConfigured } from "@/components/shared/states/HubLoadError";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ApiError } from "@/lib/http";
 import { hubConfigured } from "@/lib/hub";
-import { useTr } from "@/lib/use-translate";
+import { CompanyFlowsOverview } from "../components/CompanyFlowsOverview";
 import { CloneDialog } from "../components/library/CloneDialog";
-import { LibraryFilter } from "../components/library/LibraryFilter";
 import { ProcessesHeader } from "../components/ProcessesHeader";
-import { ProcessesTable } from "../components/ProcessesTable";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
 import { RunDialog } from "../components/RunDialog";
-import {
-  type ProcessesView,
-  type StateFilter,
-  type Tab,
-  useProcessesView,
-} from "../hooks/use-processes-view";
-import { appOfSlot, appOptions } from "../lib/library-filter";
-import type { LibraryListItem } from "../library-api";
-
-/** CR-118 · đang lọc theo app (link từ trang cấu hình app): nói rõ + lối về trang app + bỏ lọc. */
-function AppFilterNotice({ app, onClear }: { app: string; onClear: () => void }) {
-  const { t } = useTranslation();
-  const tr = useTr();
-  const name = tr(`featmeta.app.${app}.name`, { defaultValue: app });
-  return (
-    <p
-      role="note"
-      className="flex flex-wrap items-center gap-2 rounded-md bg-muted px-3 py-2 text-caption"
-    >
-      {t("appcfg.listFilter", { app: name })}
-      <Button variant="link" size="sm" className="h-auto p-0" asChild>
-        <Link to="/apps/$appKey" params={{ appKey: app }}>
-          {t("appcfg.openApp")}
-        </Link>
-      </Button>
-      <Button variant="link" size="sm" className="h-auto p-0" onClick={onClear}>
-        {t("appcfg.listFilterClear")}
-      </Button>
-    </p>
-  );
-}
-
-/** CR-121 c17 · "N quy trình" (artboard Library); còn trang sau ⇒ "N+". */
-function LibraryCount({ v }: { v: ProcessesView }) {
-  const { t } = useTranslation();
-  if (!v.library || !v.rows) return null;
-  return (
-    <p role="status" className="text-caption text-muted-foreground tabular-nums">
-      {t("process.admin.library.count", { n: v.rows.length })}
-      {v.q.hasNextPage ? "+" : ""}
-    </p>
-  );
-}
-
-function Body({ v }: { v: ProcessesView }) {
-  const { t } = useTranslation();
-  const tr = useTr();
-  const err = v.q.error;
-  if (err instanceof ApiError && err.status === 403) return <ForbiddenState />;
-  const chips = (["all", "on", "off"] as const).map((value) => ({
-    value,
-    label: t(`process.admin.list.filter.${value}`),
-  }));
-  const emptyKey = v.templates ? "emptyTemplates" : "empty";
-  const filtered = v.filtered;
-  const message = filtered
-    ? t("process.admin.library.filter.noMatch")
-    : t(`process.admin.list.${emptyKey}`);
-  // CR-120 · chưa chọn app và có ≥ 2 app ⇒ tiêu đề nhóm theo app.
-  const group =
-    v.library && !v.app && appOptions(v.rows ?? []).length > 1
-      ? {
-          of: (r: LibraryListItem) => appOfSlot(r.slot),
-          label: (a: string) => tr(`featmeta.app.${a}.name`, { defaultValue: a }),
-        }
-      : undefined;
-  return (
-    <div className="space-y-3">
-      {v.library ? (
-        <LibraryFilter
-          q={v.term}
-          onQ={v.setQ}
-          filter={v.libFilter}
-          rows={v.allRows ?? []}
-          onChange={v.setLibFilter}
-        />
-      ) : null}
-      <LibraryCount v={v} />
-      {v.app ? <AppFilterNotice app={v.app} onClear={v.clearApp} /> : null}
-      {v.templates ? null : (
-        <FilterChips
-          label={t("process.admin.list.col.enabled")}
-          chips={chips}
-          value={v.filter}
-          onChange={(f: StateFilter) => v.setFilter(f)}
-        />
-      )}
-      <ProcessesTable
-        rows={v.rows}
-        templates={v.templates}
-        library={v.library}
-        canEditTemplates={v.canEditTemplates}
-        canRun={v.canRun}
-        loading={v.q.isPending}
-        fetching={v.q.isFetching}
-        error={
-          err
-            ? { message: err.message, code: err instanceof ApiError ? String(err.code) : "" }
-            : null
-        }
-        onRetry={() => void v.q.refetch()}
-        empty={<EmptyState message={message} />}
-        actions={v.actions}
-        group={group}
-      />
-      {v.q.hasNextPage ? (
-        <Button
-          variant="outline"
-          disabled={v.q.isFetchingNextPage}
-          onClick={() => void v.q.fetchNextPage()}
-        >
-          {t("process.admin.list.more")}
-        </Button>
-      ) : null}
-    </div>
-  );
-}
+import { type ProcessesView, type Tab, useProcessesView } from "../hooks/use-processes-view";
 
 /** Thư viện platform (chưa chọn công ty): giữ hai tab Thư viện / Mẫu · chạy thử như cũ. */
+/** CR-127 · U2 · M8: gỡ tab «Mẫu có sẵn» (AI-SDLC, đều Tắt) — chỉ còn danh sách Thư viện. */
 function LibraryTabs({ v }: { v: ProcessesView }) {
-  const { t } = useTranslation();
-  return (
-    <Tabs value={v.tab} onValueChange={(x) => v.setTab(x as Tab)}>
-      <TabsList>
-        <TabsTrigger value="own">{t("process.admin.library.tab.own")}</TabsTrigger>
-        <TabsTrigger value="templates">{t("process.admin.list.tab.templates")}</TabsTrigger>
-      </TabsList>
-      <TabsContent value="own">{v.tab === "own" ? <Body v={v} /> : null}</TabsContent>
-      <TabsContent value="templates">{v.tab === "templates" ? <Body v={v} /> : null}</TabsContent>
-    </Tabs>
-  );
+  const { setTab } = v;
+  useEffect(() => {
+    if (v.tab === "templates") setTab("own" as Tab);
+  }, [v.tab, setTab]);
+  if (v.tab !== "own") return null;
+  // CR-127 · M1: chỉ danh sách quy trình THEO CÔNG TY (Thư viện mẫu ẩn khỏi ai-admin — người dùng chốt: chỉ tạo sơ đồ trống)
+  return <CompanyFlowsOverview />;
 }
 
 function ListPage() {
@@ -159,7 +31,6 @@ function ListPage() {
   return (
     <>
       <ProcessesHeader v={v} />
-      <AutomationNote kind="processes" showLink={v.tenant.isPlatform} />
       {hub ? <LibraryTabs v={v} /> : <HubNotConfigured />}
       <RunDialog row={v.runRow} tenantId={v.tenant.tenantId} onClose={v.closeRun} />
       <ConfirmDialog

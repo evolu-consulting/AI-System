@@ -1,6 +1,7 @@
 // CR-122 · E1 · ADR-0038 · FLOW2-FR-03/20 · luật THUẦN chọn flow cho một sự kiện: điều kiện Bắt đầu khi trên dữ kiện lúc sự kiện,
 // "chạy mọi flow đang bật khớp", sự kiện `decides` ⇒ chỉ flow khớp ĐẦU TIÊN theo `position` (H1), flow khác ghi lý do.
 import type { FactCond, FactWhen } from "@ai/contracts/hub-admin";
+import { scheduleDaysMatch } from "./schedule.rules";
 
 export type FactsIn = Readonly<Record<string, unknown>>;
 
@@ -11,6 +12,8 @@ export type FlowCandidate = {
   defKey: string;
   position: number;
   when: FactWhen | null;
+  /** CR-127 E6 · R#12 · N của flow theo lịch (`trigger.params.days` hoặc mặc định manifest); null/vắng = sự kiện không theo lịch. */
+  days?: number | null;
 };
 
 export type SkipReason = "not_matched" | "decided_by_earlier";
@@ -70,7 +73,7 @@ export function planEvent<C extends FlowCandidate>(
 ): EventPlan<C> {
   const plan: EventPlan<C> = { run: [], skipped: [] };
   for (const c of candidates) {
-    if (!whenHolds(c.when, facts)) {
+    if (!scheduleDaysMatch(c.days, facts.days) || !whenHolds(c.when, facts)) {
       plan.skipped.push({ companyFlowId: c.companyFlowId, reason: "not_matched" });
       continue;
     }

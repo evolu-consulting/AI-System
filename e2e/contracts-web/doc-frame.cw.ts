@@ -20,7 +20,7 @@ const child = (n: number, o: object = {}) => ({
   doc_type: "contract",
   title: `Đơn đặt hàng ${n}`,
   number: `ĐH-${n}`,
-  status: "active",
+  status: "done",
   value: 100_000_000,
   start_date: "2026-03-01",
   outside_frame: false,
@@ -100,7 +100,7 @@ test("gắn chứng từ có sẵn: chọn ⇒ POST /attach {ids}; lệch đối
     (r) =>
       r.fulfill(
         json(200, {
-          items: [{ id: CAND, kind: "contract", status: "active", title: "HĐ lẻ", number: "L-1" }],
+          items: [{ id: CAND, kind: "contract", status: "done", title: "HĐ lẻ", number: "L-1" }],
           docs: [{ id: CAND, doc_type: "contract", frame_root_id: null, frame_restricted: false }],
           parents: [],
           page: 1,

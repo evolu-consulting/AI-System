@@ -1,6 +1,6 @@
 // PK-FR-10 · TF5 · nav-v2 (người dùng chốt 2026-10-20): 4 mục menu — Tổng quan · Hợp đồng · Đối tác · Sản phẩm & Giá — theo mockup NITI;
 // vai suy từ quyền gói (`write`/`owner`). CR-119 p2: mọi đường dẫn dưới `/contracts`; tuyến cũ chuyển hướng bằng shared/kernel/legacy-routes.
-import { ClipboardCheck, FilePlus2, Inbox } from "lucide-react";
+import { ClipboardCheck, FilePlus2 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { IconBox, IconContract, IconOverview, IconPartners } from "~/components/icons";
 import { basePathOf } from "~/shared/kernel/app-path";
@@ -14,7 +14,6 @@ export type NavItem = {
     | "/contracts/list"
     | "/contracts/approvals"
     | "/contracts/requests"
-    | "/contracts/partner-inbox"
     | "/contracts/partners"
     | "/contracts/products";
   labelKey: string;
@@ -60,14 +59,6 @@ export const REQUESTS_NAV: NavItem = {
   icon: FilePlus2,
   testId: "nav-contracts-requests",
   mobile: "more",
-};
-/** CR-124 · q4 · mục «Hợp đồng đối tác gửi» (cap `contracts.partner`): chỉ hiện khi công ty bật tính năng gửi/nhận HĐ đối tác. */
-export const PARTNER_INBOX_NAV: NavItem = {
-  to: `${B}/partner-inbox`,
-  labelKey: "contracts.nav.partner-inbox",
-  icon: Inbox,
-  testId: "nav-contracts-partner-inbox",
-  cap: "contracts.partner",
 };
 export type Role = "owner" | "editor" | "viewer";
 

@@ -112,3 +112,43 @@ export function saneSchedule(
   const tol = t / 1000n > 1000n ? t / 1000n : 1000n; // chia nguyên như `//` (t > 0)
   return diff <= tol;
 }
+
+// ---------- CR-127 · X1 · spec §2.2 / §6: ghi thực hiện vào mốc (`recordFulfillment`) ----------
+
+/** Mốc bị chặn khi HĐ tạm khoá — trừ thu tiền (`payment` + `receive`, BR-41: vẫn cho thu). */
+export function blockedByHold(kind: string, direction: Direction): boolean {
+  return !(kind === "payment" && direction === "receive");
+}
+
+/** Tiền thật vs kế hoạch: vắng ⇒ đủ; vượt ⇒ "over"; `left` = phần còn lại (> 0 ⇒ làm thiếu). Kế hoạch null ⇒ không còn lại. */
+export function fulfillMoney(
+  planned: number | null,
+  actual: number | null | undefined,
+): { amount: number | null; left: number | null } | "over" {
+  if (actual === null || actual === undefined) return { amount: planned, left: null };
+  if (planned === null) return { amount: actual, left: null };
+  if (actual > planned) return "over";
+  return { amount: actual, left: actual < planned ? planned - actual : null };
+}
+
+export type QtyLine = { itemId: string; qty: bigint };
+/**
+ * SL thật từng dòng vs dòng kế hoạch của mốc (`deliveryLines`): vắng ⇒ đủ; dòng ngoài kế hoạch hoặc vượt ⇒ "over"; dòng không ghi ⇒ 0.
+ * `left` = dòng còn thiếu (> 0) — hàng con chép sang `milestone_items`.
+ */
+export function fulfillQty(
+  planned: readonly QtyLine[],
+  actual: ReadonlyMap<string, bigint> | null,
+): { given: QtyLine[]; left: QtyLine[] } | "over" {
+  if (!actual) return { given: [...planned], left: [] };
+  const plan = new Map(planned.map((l) => [l.itemId, l.qty]));
+  for (const [id, q] of actual) {
+    const p = plan.get(id);
+    if (p === undefined || q > p || q < 0n) return "over";
+  }
+  const given = planned.map((l) => ({ itemId: l.itemId, qty: actual.get(l.itemId) ?? 0n }));
+  const left = planned
+    .map((l) => ({ itemId: l.itemId, qty: l.qty - (actual.get(l.itemId) ?? 0n) }))
+    .filter((l) => l.qty > 0n);
+  return { given, left };
+}

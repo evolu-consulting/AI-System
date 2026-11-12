@@ -20,13 +20,15 @@ export type ExportInput = {
   type: string | null;
   direction: string | null;
   status: string;
+  /** Hiệu lực (`done`) và trạng thái đọc (`draft`) — K2a-1 nạp từ `effect` / `extract_state`. */
+  effect?: string | null | undefined;
+  extractState?: string | null | undefined;
   seller: string | null;
   buyer: string | null;
   sellerSigner: string | null;
   buyerSigner: string | null;
   value: number | null;
   endDate: string | null;
-  actionDeadline: string | null;
   categories: readonly string[];
   updatedAt: Date;
 };
@@ -44,24 +46,40 @@ export const EXPORT_COLUMNS: readonly ExportColumn[] = [
   { key: "buyerSigner", header: "Người ký bên mua", kind: "text", width: 24 },
   { key: "value", header: "Giá trị (đ)", kind: "money", width: 18 },
   { key: "endDate", header: "Hiệu lực đến", kind: "date", width: 14 },
-  { key: "actionDeadline", header: "Hạn chót xử lý", kind: "date", width: 14 },
   { key: "status", header: "Trạng thái", kind: "text", width: 16 },
   { key: "owner", header: "Phụ trách", kind: "text", width: 22 },
   { key: "categories", header: "Loại hàng", kind: "text", width: 28 },
   { key: "updatedAt", header: "Cập nhật", kind: "datetime", width: 17 },
 ];
 
+// CR-127 K2a-2: nhãn xuất Excel theo 4 trạng thái + `extract_state` (nháp) + `effect` (done). Đã xác nhận mà chưa có hiệu lực ⇒ "Đã xác nhận".
 const STATUS_VI: Record<string, string> = {
-  needs_review: "Chờ xác nhận",
-  extracting: "Đang đọc",
-  extract_failed: "Đọc lỗi",
-  active: "Đang hiệu lực",
-  expiring: "Sắp đáo hạn",
-  expired: "Đã hết hạn",
-  renewed: "Đã xử lý",
-  terminated: "Đã xử lý",
-  rejected: "Bị từ chối",
+  draft: "Bản nháp",
+  processing: "Đang duyệt",
+  reject: "Bị từ chối",
+  done: "Đã xác nhận",
 };
+const EXTRACT_VI: Record<string, string> = { reading: "Đang đọc", failed: "Đọc lỗi" };
+const EFFECT_VI: Record<string, string> = {
+  not_started: "Chưa hiệu lực",
+  active: "Đang hiệu lực",
+  expiring: "Sắp hết hạn",
+  expired: "Đã hết hạn",
+  renewed: "Đã gia hạn",
+  terminated: "Đã chấm dứt",
+};
+
+/** Ô "Trạng thái": nháp đang đọc/lỗi đọc theo `extract_state`; done theo `effect`; còn lại theo trạng thái. */
+export function statusLabelOf(r: {
+  status: string;
+  effect?: string | null | undefined;
+  extractState?: string | null | undefined;
+}): string {
+  if (r.status === "draft" && r.extractState && EXTRACT_VI[r.extractState])
+    return EXTRACT_VI[r.extractState] as string;
+  if (r.status === "done" && r.effect && EFFECT_VI[r.effect]) return EFFECT_VI[r.effect] as string;
+  return STATUS_VI[r.status] ?? r.status;
+}
 const DIRECTION_VI: Record<string, string> = { sale: "Bán ra", purchase: "Mua vào" };
 const TYPE_VI: Record<string, string> = {
   purchase: "Mua bán hàng hoá",
@@ -93,8 +111,7 @@ export function exportCells(
     r.buyerSigner,
     r.value,
     r.endDate,
-    r.actionDeadline,
-    STATUS_VI[r.status] ?? r.status,
+    statusLabelOf(r),
     r.ownerUserId ? (owners.get(r.ownerUserId) ?? null) : null,
     r.categories.length ? r.categories.join(", ") : null,
     r.updatedAt,

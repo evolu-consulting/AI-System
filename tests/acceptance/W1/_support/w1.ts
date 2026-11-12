@@ -135,7 +135,7 @@ export async function priced(sql: Sql, o: Priced): Promise<string> {
     title: `HĐ ${o.number}`,
     kind: o.parent ? "appendix" : "contract",
     parent: o.parent ?? null,
-    status: o.status ?? "active",
+    status: o.status ?? "done",
     direction: direction(o),
     ...(o.owner === undefined ? {} : { owner: o.owner }),
     ...(o.handled === undefined ? {} : { handled: o.handled }),

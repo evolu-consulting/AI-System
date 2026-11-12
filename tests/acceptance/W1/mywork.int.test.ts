@@ -1,3 +1,4 @@
+// CR-127 K6: mywork.deadlines/reminders (hạn chót hành động HD4) đã gỡ ⇒ đã xoá 3 ca "hạn xử lý HĐ", "nhắc hạn đã gửi", "hạn xử lý + nhắc hạn không bị ẩn"; chuông hết hạn nay là outcome contract.expiring (test ở apps/hub-api expiry-outcome.int).
 // W1 · "Việc của tôi" (`GET /pack/contracts/my-work`, `POST /my-work/followups/:id/{done,snooze}`): nguồn dữ liệu (đợt HD7, hạn HD4, nhắc
 // hạn HD4, hẹn nhắc HD9), luật thấy M1 (chế độ org: không có việc của HĐ mình không thấy), hẹn nhắc CHỈ của chính mình, quyền gói,
 // cách ly tenant, đầu vào xấu không bao giờ 5xx, số câu SQL cố định. Ngày tương đối theo múi tenant (Asia/Ho_Chi_Minh).
@@ -82,69 +83,7 @@ describe("W1 · nguồn dữ liệu", () => {
     expect(r.json.counts).toEqual({ late: 1, today: 1, upcoming: 1 });
     expect(r.json.truncated).toBe(false);
   });
-  it("hạn xử lý HĐ (HD4): HĐ chưa ghi kết quả có hạn ≤ 7 ngày; đã ghi kết quả, chờ kiểm, hạn xa, hết hạn quá 60 ngày thì không", async () => {
-    await arrangeW1(c);
-    const near = await priced(c.sql, { partner: "A", number: "D-1", items: [], end: d(2) });
-    await priced(c.sql, {
-      partner: "B",
-      number: "D-2",
-      items: [],
-      end: d(2),
-      handled: { outcome: "renewed" },
-    });
-    await priced(c.sql, { partner: "C", number: "D-3", items: [], end: d(40) });
-    await priced(c.sql, {
-      partner: "D",
-      number: "D-4",
-      items: [],
-      end: d(2),
-      status: "needs_review",
-    });
-    await priced(c.sql, { partner: "E", number: "D-5", items: [], end: d(-80), status: "expired" });
-    const lateOne = await priced(c.sql, {
-      partner: "F",
-      number: "D-6",
-      items: [],
-      end: d(-10),
-      status: "expired",
-    });
-    const r = await myWork(c, P.hoa);
-    expect(ids(r).sort()).toEqual([`deadline:${near}`, `deadline:${lateOne}`].sort());
-    expect(r.json.items.find((i: { id: string }) => i.id === `deadline:${lateOne}`)).toMatchObject({
-      tone: "late",
-      days: 10,
-      contract_id: lateOne,
-      contract_direction: "purchase",
-    });
-  });
-  it("nhắc hạn đã gửi cho MÌNH (HD4): hạn xa hơn 7 ngày, chưa xử lý, mốc mới nhất mỗi HĐ; của người khác không thấy", async () => {
-    await arrangeW1(c);
-    const k = await priced(c.sql, { partner: "A", number: "R-1", items: [], end: d(20) });
-    const done = await priced(c.sql, {
-      partner: "B",
-      number: "R-2",
-      items: [],
-      end: d(20),
-      handled: { outcome: "renewed" },
-    });
-    for (const [cid, ms] of [
-      [k, 30],
-      [k, 14],
-      [done, 30],
-    ] as const)
-      await c.sql`insert into contracts.contract_reminders (tenant_id, contract_id, deadline, milestone, user_id, channel)
-        values (${T.acme}, ${cid}, ${d(20)}, ${ms}, ${P.hoa.id}, 'email')`;
-    const mine = await myWork(c, P.hoa);
-    expect(ids(mine)).toEqual([`reminder:${await reminderId(k, 14)}`]);
-    expect(mine.json.items[0]).toMatchObject({
-      kind: "reminder",
-      tone: "dim",
-      milestone: 14,
-      days: -20,
-      contract_id: k,
-    });
-    expect(ids(await myWork(c, P.lan))).toEqual([]);
-  });
+
   it("hẹn nhắc (HD9): chỉ của mình, chưa xong, ≤ 7 ngày; mang ngày + giờ địa phương, tên khách, ghi chú", async () => {
     await arrangeW1(c);
     const mine = await addFollowup(c.sql, P.hoa, {
@@ -172,7 +111,7 @@ describe("W1 · nguồn dữ liệu", () => {
   });
 });
 
-async function reminderId(contract: string, milestone: number): Promise<string> {
+async function _reminderId(contract: string, milestone: number): Promise<string> {
   const [r] = await c.sql<{ id: string }[]>`select id::text from contracts.contract_reminders
     where contract_id = ${contract} and milestone = ${milestone}`;
   return r?.id as string;
@@ -192,27 +131,7 @@ describe("W1 · luật thấy M1 (chế độ org)", () => {
     expect(ids(await myWork(c, P.hoa))).toHaveLength(3);
     expect(ids(await myWork(c, P.tam))).toHaveLength(3);
   });
-  it("hạn xử lý + nhắc hạn của HĐ không thấy bị ẩn; hẹn nhắc của mình vẫn thuộc mình", async () => {
-    await arrangeW1(c);
-    const mineC = await priced(c.sql, {
-      partner: "A",
-      number: "V-1",
-      items: [],
-      end: d(2),
-      owner: P.hoa.id,
-    });
-    await priced(c.sql, { partner: "B", number: "V-2", items: [], end: d(2), owner: P.lan.id });
-    const f = await addFollowup(c.sql, P.hoa, { at: at(0) });
-    await setVisibility(c, "org");
-    try {
-      expect(ids(await myWork(c, P.hoa)).sort()).toEqual(
-        [`deadline:${mineC}`, `followup:${f}`].sort(),
-      );
-      expect(ids(await myWork(c, P.lan)).filter((x) => x.startsWith("deadline:"))).toHaveLength(2);
-    } finally {
-      await setVisibility(c, "tenant");
-    }
-  });
+
   it("hẹn nhắc gia hạn của HĐ mình không thấy (renewal bị RLS) ⇒ không hiện; hẹn nhắc khách thì hiện", async () => {
     await arrangeW1(c);
     const hidden = await priced(c.sql, { partner: "X", number: "H-1", items: [], owner: P.lan.id });

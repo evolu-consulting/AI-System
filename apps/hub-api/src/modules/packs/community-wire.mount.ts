@@ -10,11 +10,13 @@ import type {
   CompanyBrandReader,
   ContractsCapReader,
   HostBookReader,
+  PartnerLinker,
   SupplierQuoteWriter,
 } from "./community/application/pack-ports";
 import { mountCommunity } from "./community/community.mount";
 import { communityAgents, communityFlowPorts } from "./community-flow.mount";
 import { communityUploadGate } from "./community-quota.mount";
+import { partnerLinker } from "./contracts/adapters/partner-linker";
 import { productsRepo } from "./contracts/adapters/products.repo";
 import { supplierQuoteRepo } from "./contracts/adapters/supplier-quote.repo";
 import { saveQuoteUsecase } from "./contracts/application/save-quote.usecase";
@@ -43,6 +45,8 @@ export type CommunityPorts = {
   hostBook: HostBookReader;
   brand: CompanyBrandReader;
   caps: ContractsCapReader;
+  /** CR-130 · ADR-0043: cổng ghi liên kết đối tác (duyệt yêu cầu tham gia ⇒ vai + hồ sơ SHT, cùng tx). */
+  partners: PartnerLinker;
 };
 
 export function communityPorts(
@@ -72,7 +76,7 @@ export function communityPorts(
       who.userKind !== "external" &&
       packActionsFor(await packAccessInput(view, KEY, who)).includes("read"),
   };
-  return { quotes, hostBook, brand: companyBrandModule(db), caps };
+  return { quotes, hostBook, brand: companyBrandModule(db), caps, partners: partnerLinker() };
 }
 
 /** `packs.mount.ts` gọi: gắn `/pack/community/*` kèm hai cổng đã nối contracts. */

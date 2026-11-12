@@ -1,11 +1,16 @@
-// CR-102 · C6 · int route sửa/xoá/ẩn bình luận + Nhắn riêng (HT-46): đường chính mỗi endpoint + một ca RLS chặn đối tác sửa bình luận công ty khác.
+// CR-102 · C6 · CR-129 · int route bình luận phẳng: sửa/xoá/ẩn (HT-46), ai thấy gì (HT-44), nhắc công ty (mentionables, 422), phân trang.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { PostViewSchema, ThreadSchema } from "@ai/contracts/community";
+import {
+  CommentPageSchema,
+  CommentViewSchema,
+  MentionableSchema,
+  PostViewSchema,
+} from "@ai/contracts/community";
 import { createDb, type Db } from "@ai/db";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
-import type { z } from "zod";
+import { z } from "zod";
 
 import { type Cast, seedCast } from "../../../../../../../tests/acceptance/com-c3/_support/cast";
 import { mapError } from "../../../../lib/errors";
@@ -89,8 +94,12 @@ const ok = async <S extends z.ZodType>(
 };
 let post = "";
 let s1Post = "";
-const cid = async (who: Who, p: string, org: string) =>
-  (await ok(ThreadSchema, call(who, "GET", `/posts/${p}/threads/${org}`))).comments;
+const list = async (who: Who, p: string, qs = "") =>
+  await ok(CommentPageSchema, call(who, "GET", `/posts/${p}/comments${qs}`));
+const texts = async (who: Who, p: string) => (await list(who, p)).comments.map((x) => x.text);
+const add = (who: Who, p: string, text: string, mentions: string[] = []) =>
+  ok(CommentViewSchema, call(who, "POST", `/posts/${p}/comments`, { text, mentions }), 201);
+const MentionablesSchema = z.array(MentionableSchema);
 
 beforeAll(async () => {
   await cloneDb("full");
@@ -131,81 +140,136 @@ afterAll(async () => {
 });
 
 describe("C6 sửa / xoá / ẩn bình luận", () => {
-  it("PATCH + DELETE: người viết sửa (che lại) và xoá; RLS chặn đối tác sửa bình luận công ty khác / đồng nghiệp", async () => {
-    const t = await ok(
-      ThreadSchema,
-      call("s1a", "POST", `/posts/${post}/comments`, { text: "Giá sỉ?" }),
-      201,
-    );
-    const id = t.comments[0]?.id ?? "";
-    const other = await ok(
-      ThreadSchema,
-      call("s2", "POST", `/posts/${post}/comments`, { text: "Của S2" }),
-      201,
-    );
-    const s2c = other.comments[0]?.id ?? "";
-    // RLS deny: S1 sửa/xoá bình luận của S2 (luồng khác) ⇒ 404; đồng nghiệp cùng công ty (s1b) cũng không sửa được.
+  it("PATCH + DELETE: người viết sửa (che lại) và xoá (204); RLS chặn đối tác sửa bình luận công ty khác / đồng nghiệp", async () => {
+    const mine = await add("s1a", post, "Giá sỉ?");
+    const s2c = await add("s2", post, "Của S2");
+    // RLS deny: S1 sửa/xoá bình luận của S2 ⇒ 404; đồng nghiệp cùng công ty (s1b) cũng không sửa được.
     expect(
-      (await call("s1a", "PATCH", `/posts/${post}/comments/${s2c}`, { text: "hack" })).status,
+      (await call("s1a", "PATCH", `/posts/${post}/comments/${s2c.id}`, { text: "hack" })).status,
     ).toBe(404);
-    expect((await call("s1a", "DELETE", `/posts/${post}/comments/${s2c}`)).status).toBe(404);
+    expect((await call("s1a", "DELETE", `/posts/${post}/comments/${s2c.id}`)).status).toBe(404);
     expect(
-      (await call("s1b", "PATCH", `/posts/${post}/comments/${id}`, { text: "hack" })).status,
+      (await call("s1b", "PATCH", `/posts/${post}/comments/${mine.id}`, { text: "hack" })).status,
     ).toBe(404);
-    expect((await cid("hA", post, c.S2))[0]?.text).toBe("Của S2");
+    expect(await texts("hA", post)).toContain("Của S2");
     const e = await ok(
-      ThreadSchema,
-      call("s1a", "PATCH", `/posts/${post}/comments/${id}`, { text: "Gọi 0987654321" }),
+      CommentViewSchema,
+      call("s1a", "PATCH", `/posts/${post}/comments/${mine.id}`, { text: "Gọi 0987654321" }),
     );
-    expect(e.comments[0]?.text.includes("0987654321")).toBe(false);
-    expect((await cid("hA", post, c.S1))[0]?.text).toBe("Gọi 0987654321");
-    const d = await ok(ThreadSchema, call("s1a", "DELETE", `/posts/${post}/comments/${id}`));
-    expect(d.comments).toEqual([]);
+    expect(e.text.includes("0987654321")).toBe(false);
+    expect(await texts("hA", post)).toContain("Gọi 0987654321");
+    const d = await call("s1a", "DELETE", `/posts/${post}/comments/${mine.id}`);
+    expect(d.status).toBe(204);
+    expect((await list("hA", post)).comments.some((x) => x.id === mine.id)).toBe(false);
   });
 
   it("POST /hide: chủ quản ẩn ⇒ đối tác không còn dấu vết (HT-46), chủ quản vẫn thấy hidden; hiện lại được; bài đối tác ⇒ 404", async () => {
-    const t = await ok(
-      ThreadSchema,
-      call("s1a", "POST", `/posts/${post}/comments`, { text: "Bình luận cần ẩn" }),
-      201,
-    );
-    const id = t.comments[0]?.id ?? "";
+    const t = await add("s1a", post, "Bình luận cần ẩn");
     const h = await ok(
-      ThreadSchema,
-      call("hA", "POST", `/posts/${post}/comments/${id}/hide`, { hidden: true }),
+      CommentViewSchema,
+      call("hA", "POST", `/posts/${post}/comments/${t.id}/hide`, { hidden: true }),
     );
-    expect(h.comments.find((x) => x.id === id)?.hidden).toBe(true);
-    expect((await cid("s1a", post, c.S1)).some((x) => x.id === id)).toBe(false);
+    expect(h.hidden).toBe(true);
+    expect((await list("s1a", post)).comments.some((x) => x.id === t.id)).toBe(false);
+    expect((await list("hA", post)).comments.find((x) => x.id === t.id)?.hidden).toBe(true);
     const un = await ok(
-      ThreadSchema,
-      call("hA", "POST", `/posts/${post}/comments/${id}/hide`, { hidden: false }),
+      CommentViewSchema,
+      call("hA", "POST", `/posts/${post}/comments/${t.id}/hide`, { hidden: false }),
     );
-    expect(un.comments.find((x) => x.id === id)?.hidden).toBe(false);
+    expect(un.hidden).toBe(false);
     expect(
-      (await call("s1a", "POST", `/posts/${post}/comments/${id}/hide`, { hidden: true })).status,
+      (await call("s1a", "POST", `/posts/${post}/comments/${t.id}/hide`, { hidden: true })).status,
     ).toBe(404);
-    const pc = await ok(
-      ThreadSchema,
-      call("s1a", "POST", `/posts/${s1Post}/comments`, { text: "Ghi chú" }),
-      201,
-    );
-    const pid = pc.comments[0]?.id ?? "";
+    const pc = await add("s1a", s1Post, "Ghi chú");
     expect(
-      (await call("hA", "POST", `/posts/${s1Post}/comments/${pid}/hide`, { hidden: true })).status,
+      (await call("hA", "POST", `/posts/${s1Post}/comments/${pc.id}/hide`, { hidden: true }))
+        .status,
     ).toBe(404);
   });
+});
 
-  it("Nhắn riêng: chủ quản mở luồng với công ty trong audience (201), ngoài audience ⇒ 404 (kiểm của C3); xoá bình luận của chính chủ quản", async () => {
-    expect(
-      (await call("hA", "POST", `/posts/${post}/comments`, { text: "Riêng", orgId: c.B1 })).status,
-    ).toBe(404);
-    const t = await ok(
-      ThreadSchema,
-      call("hA", "POST", `/posts/${post}/comments`, { text: "Riêng", orgId: c.S2 }),
-      201,
+describe("CR-129 bình luận phẳng theo bạn bè + nhắc đối tác", () => {
+  it("ai thấy gì: chủ quản thấy tất cả; S1 thấy của mình + chủ quản, không thấy S2; chủ quản trả lời S2 ⇒ S1 cũng thấy (HT-44)", async () => {
+    await add("s1a", post, "d1 S1 hỏi");
+    await add("s2", post, "d1 S2 hỏi");
+    await add("hA", post, "d1 chủ quản trả lời S2", [c.S2]);
+    const mineOnly = (xs: string[]) => xs.filter((x) => x.startsWith("d1 "));
+    expect({
+      host: mineOnly(await texts("hA", post)),
+      s1: mineOnly(await texts("s1b", post)),
+      s2: mineOnly(await texts("s2", post)),
+    }).toEqual({
+      host: ["d1 S1 hỏi", "d1 S2 hỏi", "d1 chủ quản trả lời S2"],
+      s1: ["d1 S1 hỏi", "d1 chủ quản trả lời S2"],
+      s2: ["d1 S2 hỏi", "d1 chủ quản trả lời S2"],
+    });
+    // bài không thấy ⇒ 404 (B1 là người mua, bài chỉ cho nhà cung cấp)
+    expect((await call("b1", "GET", `/posts/${post}/comments`)).status).toBe(404);
+  });
+
+  it("mentions trong CommentView: chủ quản thấy đủ; đối tác chỉ nhận phần tử là công ty mình", async () => {
+    const t = await add("hA", post, "d2 tag hai", [c.S1, c.S2]);
+    expect(t.mentions.map((m) => m.orgId).sort()).toEqual([c.S1, c.S2].sort());
+    const find = async (who: Who) =>
+      (await list(who, post)).comments.find((x) => x.id === t.id)?.mentions.map((m) => m.orgId);
+    expect({ s1: await find("s1a"), s2: await find("s2") }).toEqual({ s1: [c.S1], s2: [c.S2] });
+  });
+
+  it("GET /mentionables: công ty còn hiệu lực thấy được bài (audience), lọc q, limit; đối tác ⇒ rỗng; bài đối tác ⇒ chỉ công ty đăng", async () => {
+    const ids = (r: { orgId: string }[]) => r.map((x) => x.orgId).sort();
+    const all = await ok(MentionablesSchema, call("hA", "GET", `/posts/${post}/mentionables`));
+    expect(ids(all)).toEqual([c.S1, c.S2, c.X].sort()); // nhà cung cấp; B1/B2 là người mua; LEFT đã rời
+    const q = await ok(MentionablesSchema, call("hA", "GET", `/posts/${post}/mentionables?q=tân`));
+    expect(q.map((x) => x.orgId)).toEqual([c.S1]);
+    const one = await ok(
+      MentionablesSchema,
+      call("hA", "GET", `/posts/${post}/mentionables?limit=1`),
     );
-    const mine = t.comments.find((x) => x.mine);
-    const d = await ok(ThreadSchema, call("hA", "DELETE", `/posts/${post}/comments/${mine?.id}`));
-    expect(d.comments.some((x) => x.mine)).toBe(false);
+    expect(one).toHaveLength(1);
+    expect(await ok(MentionablesSchema, call("s1a", "GET", `/posts/${post}/mentionables`))).toEqual(
+      [],
+    );
+    const mine = await ok(MentionablesSchema, call("hA", "GET", `/posts/${s1Post}/mentionables`));
+    expect(mine.map((x) => x.orgId)).toEqual([c.S1]);
+    expect((await call("hA", "GET", `/posts/${post}/mentionables?limit=21`)).status).toBe(400);
+  });
+
+  it("POST mentions ngoài tập ⇒ 422 MENTION_NOT_ALLOWED (không ghi gì); đối tác không nhắc được ai; quá 10 ⇒ 422", async () => {
+    const before = (await list("hA", post)).comments.length;
+    const post422 = (who: Who, mentions: string[]) =>
+      call(who, "POST", `/posts/${post}/comments`, { text: "d3", mentions });
+    const code = (r: { status: number; json: { error?: { code?: string } } | null }) => ({
+      s: r.status,
+      code: r.json?.error?.code,
+    });
+    const notAllowed = { s: 422, code: "MENTION_NOT_ALLOWED" };
+    expect(code(await post422("hA", [c.B1]))).toEqual(notAllowed); // ngoài audience
+    expect(code(await post422("hA", [c.LEFT]))).toEqual(notAllowed); // đã rời
+    expect(code(await post422("s1a", [c.S2]))).toEqual(notAllowed); // đối tác không nhắc ai
+    expect(
+      (
+        await post422(
+          "hA",
+          Array.from({ length: 11 }, () => c.S1),
+        )
+      ).status,
+    ).toBe(400);
+    expect((await list("hA", post)).comments.length).toBe(before);
+  });
+
+  it("GET /comments phân trang cũ → mới: limit + nextCursor, không lặp, không sót", async () => {
+    const all = (await list("hA", post, "?limit=100")).comments.map((x) => x.id);
+    expect(all.length).toBeGreaterThanOrEqual(3);
+    const got: string[] = [];
+    let cursor: string | undefined;
+    for (let i = 0; i < 100; i++) {
+      const p = await list("hA", post, `?limit=2${cursor ? `&cursor=${cursor}` : ""}`);
+      got.push(...p.comments.map((x) => x.id));
+      cursor = p.nextCursor;
+      if (!cursor) break;
+    }
+    expect(got).toEqual(all);
+    expect((await call("hA", "GET", `/posts/${post}/comments?limit=101`)).status).toBe(400);
+    expect((await call("hA", "GET", `/posts/${post}/comments?cursor=xx`)).status).toBe(400);
   });
 });

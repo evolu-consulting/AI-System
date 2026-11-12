@@ -1,10 +1,15 @@
 // CR-122 · U2 · tab "Quy trình" của công ty — MỘT danh sách flow (`company_flows`) thay "việc → quy trình → luật" của CR-121.
 // platform_admin + tenant_admin công ty mình.
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
+import { Button } from "@/components/ui/button";
+import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
 import { useCompanyFlowList } from "../company-flows-api";
 import { CompanyFlowList } from "./CompanyFlowList";
+import { CreateFlowDialog } from "./CreateFlowDialog";
 
 export default function CompanyFlowsTab({
   tenant,
@@ -13,6 +18,10 @@ export default function CompanyFlowsTab({
   /** Còn nhận từ dải "Cần xử lý" của tab Ứng dụng; danh sách mới không còn ngăn Gán theo việc nên bỏ qua. */
   initialJob?: string | undefined;
 }) {
+  const { t } = useTranslation();
+  const [creating, setCreating] = useState(false);
+  // CR-127 · E8: quản trị công ty chỉ xem — nút ghi chỉ cho quản trị nền tảng
+  const isPlatform = useSession((s) => s.me?.role) === "platform_admin";
   const q = useCompanyFlowList(tenant.id);
   if (q.isPending) return <LoadingState />;
   if (q.isError) {
@@ -25,10 +34,24 @@ export default function CompanyFlowsTab({
       />
     );
   }
-  const rows = q.data.items;
+  // CR-127 · M8 · quy trình DLC là nhóm nội bộ: không hiện khi xem theo công ty
+  const rows = q.data.items.filter((r) => r.app !== "dlc" && !r.flow_key.startsWith("dlc."));
   return (
     <div className="space-y-4" data-testid="company-flows">
+      {isPlatform ? (
+        <div className="flex justify-end">
+          <Button type="button" onClick={() => setCreating(true)} data-testid="create-flow-open">
+            {t("tenants.companyFlows.create.open")}
+          </Button>
+        </div>
+      ) : null}
       <CompanyFlowList tenantId={tenant.id} rows={rows} />
+      <CreateFlowDialog
+        tenantId={tenant.id}
+        tenantName={tenant.name}
+        open={creating}
+        onOpenChange={setCreating}
+      />
     </div>
   );
 }

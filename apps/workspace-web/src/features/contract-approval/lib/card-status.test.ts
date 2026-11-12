@@ -215,7 +215,7 @@ describe("từ vựng thẻ duyệt trong chuỗi contracts", () => {
     .map((f) => ({ f, text: readFileSync(new URL(f, dir), "utf8") }));
   test("một chữ 'Cần xử lý': không còn 'Cần quyết', 'Giai đoạn'", () => {
     for (const { f, text } of vi) {
-      expect(text, f).not.toContain("Cần quyết");
+      expect(text, f).not.toMatch(/Cần quyết(?! định)/);
       expect(text, f).not.toContain("Giai đoạn");
     }
   });

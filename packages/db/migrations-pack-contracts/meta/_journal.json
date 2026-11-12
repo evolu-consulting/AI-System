@@ -589,6 +589,111 @@
       "when": 1807000200000,
       "tag": "0090_partner_inbox_pending_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1807000201000,
+      "tag": "0091_contract_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1807000202000,
+      "tag": "0092_contract_submissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1807000203000,
+      "tag": "0093_exec_fulfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1807000204000,
+      "tag": "0094_inbox_awaiting",
+      "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1807000205000,
+      "tag": "0095_sign_session_refs",
+      "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1807000206000,
+      "tag": "0096_expiry_cleanup",
+      "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1807000207000,
+      "tag": "0097_ai_penalty_terms",
+      "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1807000208000,
+      "tag": "0098_signer_group",
+      "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1807000209000,
+      "tag": "0099_drop_legacy_approval",
+      "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1807000210000,
+      "tag": "0100_cr127_close_cancelled_flow_contracts",
+      "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1807000211000,
+      "tag": "0101_cr127_tenant_fk_sign_refs_penalty",
+      "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1807000212000,
+      "tag": "0102_cr127_contract_submissions_fk",
+      "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1807000213000,
+      "tag": "0103_cr130_partner_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1807000214000,
+      "tag": "0104_cr130_community_link_partner",
+      "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1807000215000,
+      "tag": "0105_cr130_link_partner_explicit_key",
+      "breakpoints": true
     }
   ]
 }

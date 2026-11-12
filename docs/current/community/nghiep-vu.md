@@ -35,7 +35,7 @@ Mỗi tài khoản thuộc một công ty; quyền gắn với công ty (nhân v
 | Cần bán | chủ quản, NCC | sản phẩm, số lượng, giá hoặc "liên hệ" | bài chủ quản: bạn bè được chọn; bài NCC: chỉ chủ quản |
 | Cần mua | chủ quản, người mua | sản phẩm, số lượng, khu vực, ngày cần | bài chủ quản: bạn bè được chọn; bài người mua: chỉ chủ quản |
 | Thông báo | chỉ chủ quản | nội dung | bạn bè được chọn |
-Không có loại "Cần giá" (Q3). Tạo bài: form ngắn + nội dung tự do + tối đa 10 ảnh, 2 video (Filebox). "Dán mô tả, AI điền form" = COULD cuối đợt (Câu 7).
+Không có loại "Cần giá" (Q3). Tạo bài: form ngắn + nội dung tự do + tối đa 10 ảnh (Filebox; video bỏ khỏi v1 — CR-129 f). "Dán mô tả, AI điền form" = COULD cuối đợt (Câu 7).
 - Gộp C5: app `apps/community-web` (dev cổng 3400, prod `:18435` → host community) + contract `@ai/contracts/community`; đối tác vào bằng SSO app `community` (cookie `ai_rt_community`), không dùng phiên Sổ Hợp Tác (C3). Bản build production không chứa dữ liệu mẫu (`__COMMUNITY_MOCK__`, `check:bundle` báo lỗi). **[Thay bởi CR-118: Community là module của web gộp `workspace-web`, đăng nhập/phiên `contracts` chung, không còn app/SSO/login riêng — xem mục "CR-118" cuối file.]**
 - **Đăng nhập (fix-community-login):** community-web có màn Đăng nhập riêng (Mã công ty / Tên đăng nhập / Mật khẩu; đổi mật khẩu lần đầu). `/sso` chưa có phiên ⇒ `/login?next=/sso?…` (chỉ đường dẫn cùng origin, không open redirect) ⇒ xin mã ⇒ đích = `target_url` catalog admin-api. Chủ quản phải thuộc Group `community-owner`, thiếu ⇒ 403 `PACK_FORBIDDEN`. **[Thay bởi CR-118: Community là module của web gộp `workspace-web`, đăng nhập/phiên `contracts` chung, không còn app/SSO/login riêng — xem mục "CR-118" cuối file.]**
 - **Bảng tin** là trang đầu: chủ quản thấy cung cầu tổng hợp từ mọi bạn bè; đối tác thấy bài chủ quản được chia sẻ + bài của mình.
@@ -46,12 +46,13 @@ Không có loại "Cần giá" (Q3). Tạo bài: form ngắn + nội dung tự d
 - Chủ quản ẩn được bài/bình luận của đối tác (spam, sai), không sửa nội dung họ (R36).
 - Lọc: Cần bán / Cần mua / Lưu trữ, nhóm hàng, khu vực, khoảng giá, người đăng. Tìm chữ thường; "tên gọi khác" (AI ghép) = GĐ2 (R40, Câu 7).
 - Đăng trùng một hàng nhiều lần ⇒ gợi ý cập nhật bài cũ: COULD (Câu 8).
-- Trang công ty (icon user, R41): chủ quản = SHT (5 trang, chỉ chủ quản, mở sang contracts-web, D5/Câu 6) + Bài của tôi; đối tác = hồ sơ công ty + bài + bình luận của họ, không có SHT.
+- Trang công ty (icon user, R41; đã chốt thay đổi ở CR-129, chưa làm: account cá nhân hiện bảng tin của chính mình + tab «Bài đăng của tổ chức»): chủ quản = SHT (5 trang, chỉ chủ quản, mở sang contracts-web, D5/Câu 6) + Bài của tôi; đối tác = hồ sơ công ty + bài + bình luận của họ, không có SHT.
 
 ## 5. Người xem bài chủ quản (D2, R32; lát C3/C5)
 Khi chủ quản đăng, chọn người xem: tất cả bạn bè / chỉ NCC / chỉ người mua / theo nhóm hàng / từng công ty. Mặc định: Cần bán ⇒ người mua quan tâm nhóm hàng đó; Cần mua ⇒ NCC nhóm hàng đó; Thông báo ⇒ tất cả bạn bè. **Trần = bạn bè của chủ quản** (không bao giờ vượt). Bài lưu trữ/ẩn: xem `hien-thi.md`. Gộp C3: RLS thực thi ở DB (`visibility.rls.int.test.ts`, HT-01…50, HT-70…73).
 
 ## 6. Bình luận riêng theo đối tác (D3, R37, R38; lát C6)
+> Đã chốt thay đổi ở CR-129 (chưa làm): chủ bài bình luận thường (bỏ bước ẩn «Nhắn riêng»), @tag đối tác, ai thấy bình luận theo bạn bè + RLS. Xem `docs/CHANGE-REQUESTS.md`.
 - Trên bài chủ quản, mỗi cặp (bài × công ty đối tác) là **một luồng riêng** như nhắn tin gắn bài; RLS theo `external_org_id`. Đối tác chỉ thấy bình luận của công ty mình và câu trả lời gửi cho mình; chủ quản thấy tất cả.
 - Chủ quản hỏi thêm giá/số lượng ngay trong bình luận; giá NCC trả lời trong bình luận lưu được bằng nút Lưu báo giá trên bình luận (Q3, thay "qua chatbot").
 - Người viết sửa/xoá bình luận của mình; chủ quản ẩn mọi bình luận trên bài của mình.

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Soạn quy trình</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+.step{width:400px;background:#fff;border:1px solid #d9d8e8;border-radius:12px;padding:10px 14px;display:flex;gap:12px;align-items:center;box-sizing:border-box;font-size:13px}
+.ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.k{font-size:11px;font-weight:700;letter-spacing:.04em;color:#6b6a80}
+.sub{color:#6b6a80;font-size:12px}
+.plus{width:24px;height:24px;border-radius:50%;border:1px dashed #a5a3c9;background:#fff;color:#6b6a80;display:flex;align-items:center;justify-content:center;font-size:15px}
+.ln{width:2px;height:12px;background:#c7c6d6}
+.col{display:flex;flex-direction:column;align-items:center}
+.btn{background:#fff;border:1px solid #e5e5ee;border-radius:8px;padding:8px 14px;font:inherit;font-size:14px}
+.mi{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px}
+.mi:hover{background:#f5f4ff}
+.mg{font-size:10px;font-weight:700;letter-spacing:.06em;color:#9a99ad;padding:6px 8px 2px}
+.f{display:flex;flex-direction:column;gap:4px}
+.in{border:1px solid #e5e5ee;border-radius:8px;padding:8px 10px}
+.seg{display:flex;border:1px solid #e5e5ee;border-radius:8px;overflow:hidden;font-size:13px}
+.seg span{flex:1;text-align:center;padding:7px 4px}
+.seg .on{background:#ecebff;color:#4f46e5;font-weight:600}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <header style="height: 60px; background: #fff; border-bottom: 1px solid #e5e5ee; display: flex; align-items: center; gap: 12px; padding: 0 20px; box-sizing: border-box; flex-shrink: 0">
+    <span style="color: #6b6a80; font-size: 14px">← Quy trình</span>
+    <strong style="font-size: 18px">Duyệt hợp đồng bán</strong>
+    <span style="font-size: 12px; font-weight: 600; background: #ecebff; color: #4f46e5; padding: 3px 10px; border-radius: 999px">Demo Sổ Hợp Tác</span>
+    <span style="font-size: 12px; font-weight: 600; background: #fdf2e3; color: #b45309; padding: 3px 10px; border-radius: 999px">Nháp · đã lưu 10:42</span>
+    <span style="flex: 1"></span>
+    <button class="btn">Chạy thử</button>
+    <button class="btn" style="background: #4f46e5; color: #fff; border: 0; font-weight: 600">Áp dụng cho công ty</button>
+  </header>
+
+  <div style="flex: 1; display: flex; min-height: 0">
+    <section style="flex: 1; position: relative; background: #f7f7fb; min-width: 0; padding: 18px 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center">
+      <div style="position: absolute; left: 20px; top: 16px; display: flex; gap: 8px; font-size: 12px">
+        <span style="background: #e7f6ec; color: #15803d; padding: 4px 10px; border-radius: 999px; font-weight: 600">✓ Mọi bước có người làm</span>
+        <span style="background: #fff7ed; color: #b45309; padding: 4px 10px; border-radius: 999px; font-weight: 600">⚠ 1 lưu ý</span>
+      </div>
+
+      <div class="step" style="border-color: #c7c4ff; background: #f5f4ff"><span class="ic" style="background: #4f46e5; color: #fff">▶</span><div style="flex: 1"><div class="k" style="color: #4f46e5">KHI NÀO CHẠY</div><b>Nhân viên tải hợp đồng <u>Bán</u> lên và bấm Xác nhận &amp; lưu</b></div><span class="sub">Đổi</span></div>
+      <div class="col"><span class="ln"></span><span class="plus">+</span><span class="ln"></span></div>
+
+      <div class="step"><span class="ic" style="background: #ecebff">✓</span><div style="flex: 1"><div class="k">DUYỆT</div><b>Trưởng phòng Kinh doanh</b><div class="sub">48 giờ · ý kiến + chữ ký hoặc tệp</div></div></div>
+      <div class="col"><span class="ln"></span><span class="plus" style="border: 2px solid #4f46e5; color: #4f46e5; font-weight: 700">+</span><span class="ln"></span></div>
+
+      <div class="step" style="width: 300px"><span class="ic" style="background: #fef3c7">◆</span><div style="flex: 1"><div class="k">NẾU</div><b>Giá trị hợp đồng &gt; 500 triệu</b></div></div>
+      <div style="display: flex; gap: 40px; margin-top: 0">
+        <div class="col"><span class="ln"></span><span style="font-size: 11px; font-weight: 700; color: #15803d">ĐÚNG</span><span class="ln"></span>
+          <div class="step" style="width: 280px; border: 2px solid #f59e0b; background: #fffbeb"><span class="ic" style="background: #ecebff">✓</span><div style="flex: 1"><div class="k" style="color: #b45309">DUYỆT · đang sửa</div><b>Phòng Kế toán</b><div class="sub">một người nhận việc · 48 giờ</div><div style="font-size: 12px; color: #b45309">⚠ phòng chỉ có 1 người</div></div></div>
+          <span class="ln"></span><span class="plus">+</span></div>
+        <div class="col"><span class="ln"></span><span style="font-size: 11px; font-weight: 700; color: #6b6a80">SAI</span><span class="ln"></span>
+          <div style="width: 200px; border: 1px dashed #c7c6d6; border-radius: 12px; padding: 14px; text-align: center; font-size: 12px; color: #9a99ad">Đi tiếp, không thêm bước</div>
+          <span class="ln"></span><span class="plus">+</span></div>
+      </div>
+      <div style="width: 360px; height: 14px; border: 2px solid #c7c6d6; border-top: 0; border-radius: 0 0 14px 14px; box-sizing: border-box"></div>
+      <div class="col"><span class="ln"></span><span class="plus">+</span><span class="ln"></span></div>
+
+      <div class="step"><span class="ic" style="background: #e0f2fe">✍</span><div style="flex: 1"><div class="k">KÝ SỐ</div><b>Nguyễn Văn An ký</b><div class="sub">chứng thư USB token</div></div></div>
+      <div class="col"><span class="ln"></span></div>
+      <div class="step" style="border-color: #86efac; background: #f0fdf4; width: 400px"><span class="ic" style="background: #15803d; color: #fff">■</span><div style="flex: 1"><div class="k" style="color: #15803d">HOÀN TẤT</div><b>Hợp đồng ⇒ DONE</b><div class="sub">Từ chối ở bất kỳ bước ⇒ REJECT · Trả lại ⇒ DRAFT, gửi lại chạy từ đầu</div></div></div>
+
+      <div style="position: absolute; left: 470px; top: 196px; width: 250px; background: #fff; border: 1px solid #e5e5ee; border-radius: 12px; box-shadow: 0 12px 32px rgba(24,23,43,.14); padding: 6px; font-size: 13px">
+        <div class="mg">NGƯỜI LÀM</div>
+        <div class="mi"><span class="ic" style="width: 24px; height: 24px; background: #ecebff">✓</span><div><b>Duyệt</b><div class="sub">một người / tất cả</div></div></div>
+        <div class="mi"><span class="ic" style="width: 24px; height: 24px; background: #f1f1f6">✎</span><b>Bổ sung thông tin</b></div>
+        <div class="mg">RẼ NHÁNH</div>
+        <div class="mi"><span class="ic" style="width: 24px; height: 24px; background: #fef3c7">◆</span><b>Nếu</b></div>
+        <div class="mg">HỢP ĐỒNG</div>
+        <div class="mi"><span class="ic" style="width: 24px; height: 24px; background: #e0f2fe">✍</span><b>Ký số</b></div>
+        <div class="mi"><span class="ic" style="width: 24px; height: 24px; background: #e0f2fe">↗</span><b>Gửi đối tác xác nhận</b></div>
+        <div class="mg">BÁO TIN · CHỜ</div>
+        <div class="mi"><span class="ic" style="width: 24px; height: 24px; background: #f1f1f6">🔔</span><b>Thông báo</b></div>
+        <div class="mi"><span class="ic" style="width: 24px; height: 24px; background: #f1f1f6">⏱</span><b>Chờ</b></div>
+      </div>
+    </section>
+
+    <aside style="width: 360px; background: #fff; border-left: 1px solid #e5e5ee; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; font-size: 14px; flex-shrink: 0">
+      <div style="display: flex; justify-content: space-between"><b style="font-size: 16px">Duyệt</b><span style="color: #6b6a80; font-size: 13px">Xoá bước</span></div>
+      <div class="f"><span style="font-weight: 600">Ai duyệt</span>
+        <div class="in" style="border-color: #4f46e5">Phòng Kế toán ▾</div>
+        <span class="sub">Chọn phòng ban hoặc một người của Demo Sổ Hợp Tác</span></div>
+      <div class="f"><span style="font-weight: 600">Cần</span>
+        <div class="seg"><span class="on">Một người nhận việc</span><span>Trưởng phòng</span><span>Tất cả</span></div></div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+        <div class="f"><span style="font-weight: 600">Hạn</span><div class="in">48 giờ</div></div>
+        <div class="f"><span style="font-weight: 600">Quá hạn chuyển</span><div class="in">Ban Giám đốc ▾</div></div>
+      </div>
+      <div class="f"><span style="font-weight: 600">Bằng chứng khi quyết định</span>
+        <div class="seg"><span>Chỉ ý kiến</span><span class="on">Ý kiến + chữ ký hoặc tệp</span></div></div>
+      <div style="background: #fff7ed; border-radius: 10px; padding: 10px 12px; font-size: 13px; color: #9a3412">⚠ Phòng Kế toán chỉ có Lê Thị Hoa. Hoa nghỉ thì việc chuyển Ban Giám đốc sau 48 giờ.</div>
+      <span style="flex: 1"></span>
+      <div class="sub" style="font-size: 13px">Người duyệt có 3 nút: Duyệt · Trả lại · Từ chối. Không cần vẽ thêm bước Kết thúc.</div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -11,9 +11,6 @@ import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
-import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/public";
-import { approvalEngineTools, approvalSlotSpec } from "../../packs/contracts/testing";
-import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
 import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../core/ports";
 import { defsRoutes } from "../defs/defs.routes";
@@ -24,11 +21,12 @@ import { setFlowTriggers } from "../triggers/flags";
 import { bindGroupKeys, groupKeysOf } from "../triggers/group-keys.rules";
 import { companyFlowsRoutes } from "./company-flows.routes";
 import { libraryRoutes } from "./library.routes";
+import { communityToolInfos, GEN_DEFAULT_ID, registerCommunitySlots } from "./slot-generic.fixture";
 
-/** Khe `contracts.approval` thật + catalog tool hệ thống (như library.routes.int.test) — chỉ cho ca "def khe cũ". */
-function registerApprovalSlotForTest(): PackToolCatalog {
-  slotRegistry.register(approvalSlotSpec);
-  const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({
+/** Khe Community thật (còn sống) + catalog tool hệ thống của khe — chỉ cho ca "def theo khe". */
+function registerSlotsForTest(): PackToolCatalog {
+  registerCommunitySlots();
+  const tools = communityToolInfos.map((t) => ({
     key: t.name,
     name: t.name,
     description: t.description,
@@ -58,6 +56,11 @@ const EVENT = "contract.submitted";
 type Json = Record<string, any>;
 
 let o: Sql;
+/** CR-127 Z7: đường gán mẫu qua API đã gỡ ⇒ dòng `company_flows` của def Thư viện cũ dựng bằng SQL (dữ liệu trước CR-127; engine vẫn đọc được). */
+const assignSql = async (id: string) => {
+  await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${X}, ${id}, true)
+    on conflict (tenant_id, flow_id) do nothing`;
+};
 let db: Db;
 let app: Hono<AuthVars>;
 const launched: string[] = [];
@@ -116,7 +119,7 @@ beforeAll(async () => {
   db = connectDb(urls().hubApi, 4);
   await o`insert into admin.tenants (id, key, name) values (${X}, 't1261', 'X')`;
   await users(o, X, 2, { from: 1260 });
-  const packTools = registerApprovalSlotForTest();
+  const packTools = registerSlotsForTest();
   const deps = { db, packTools, start: {} } as unknown as ProcessDeps;
   app = new Hono<AuthVars>();
   app.use("*", async (c, next) => {
@@ -156,8 +159,7 @@ describe("CR-122 E6 · xuất bản flow Thư viện có trigger", () => {
       from hub.process_defs d where d.id = ${id}`;
     expect([rel?.pv, rel?.n]).toEqual([1, 1]);
 
-    const asg = await call("POST", `/tenants/${X}/company-flows`, { flow_id: id });
-    expect(asg.status).toBe(201);
+    await assignSql(id);
     await withHubScope(db, { kind: "system" }, (tx) => setFlowTriggers(tx, X, true));
     await withHubScope(db, { kind: "user", tenantId: X, userId: UX }, (tx) =>
       insertFlowEvents(tx, [
@@ -215,7 +217,7 @@ describe("CR-122 E6 · xuất bản flow Thư viện có trigger", () => {
     const id = c.json.id as string;
     await call("POST", `/process-defs/${id}/publish`, { version: c.json.version });
     expect((await call("GET", `/process-defs/${id}`, undefined, "A")).status).toBe(404); // chưa gán ⇒ ẩn
-    expect((await call("POST", `/tenants/${X}/company-flows`, { flow_id: id })).status).toBe(201);
+    await assignSql(id);
     const g = await call("GET", `/process-defs/${id}`, undefined, "A");
     expect([g.status, g.json.id]).toEqual([200, id]);
   });
@@ -238,7 +240,7 @@ describe("CR-122 E6 · xuất bản flow Thư viện có trigger", () => {
     expect(put.status).toBe(200);
     const pub = await call("POST", `/process-defs/${id}/publish`, { version: put.json.version });
     expect([pub.status, pub.json]).toEqual([201, { rel_version: 1 }]);
-    expect((await call("POST", `/tenants/${X}/company-flows`, { flow_id: id })).status).toBe(201);
+    await assignSql(id);
     // Đúng bước mở lượt (`flow-launch.libraryDefFor`): bản xuất bản + mã → id Group của công ty ⇒ task duyệt giao đúng nhóm.
     const def = await withHubScope(db, { kind: "system" }, (tx) => libraryFlowDef(tx, id));
     const keys = groupKeysOf(def?.stages ?? []);
@@ -290,76 +292,8 @@ describe("CR-122 E6 · xuất bản flow Thư viện có trigger", () => {
     expect(JSON.stringify(r.json)).toContain("Nhóm khong-co-nhom chưa có ở công ty");
   });
 
-  const reviewStages = (after: object) => [
-    stage("dau", 0),
-    stage("duyet", 1, { after: { kind: "review", back_to_steps: [], ...after } }),
-    stage("xong", 2, { outcome: "approved" }),
-  ];
-  /** Tạo + xuất bản flow Thư viện (người duyệt theo mã), gán cho X, rồi tenant_admin "Sao chép để sửa". */
-  async function cloneLib(key: string, groupKey: string) {
-    const c = await call(
-      "POST",
-      "/process-defs",
-      body(key, { stages: reviewStages({ group_key: groupKey }) }),
-    );
-    expect(c.status).toBe(201);
-    const id = c.json.id as string;
-    await call("POST", `/process-defs/${id}/publish`, { version: c.json.version });
-    const asg = await call("POST", `/tenants/${X}/company-flows`, { flow_id: id });
-    const rowId = (asg.json.items as Json[]).find((x) => x.flow_id === id)?.id;
-    const cl = await call("POST", `/tenants/${X}/company-flows/${rowId}/clone`, undefined, "A");
-    const copy = (cl.json.items as Json[]).find((x) => x.id === cl.json.id);
-    const [d] = await o<
-      { s: Json[] }[]
-    >`select stages as s from hub.process_defs where id = ${copy?.flow_id}`;
-    return { cl, copy, after: d?.s[1]?.after as Json, fid: copy?.flow_id as string };
-  }
-  const putCopy = async (fid: string, after: object) => {
-    const cur = (await call("GET", `/process-defs/${fid}`, undefined, "A")).json;
-    return call(
-      "PUT",
-      `/process-defs/${fid}`,
-      {
-        ...body(cur.key, { name: cur.name, stages: reviewStages(after), trigger: cur.trigger }),
-        version: cur.version,
-      },
-      "A",
-    );
-  };
-
-  it("P15 · sao chép flow Thư viện có Duyệt theo key ⇒ bản sao có group_id (không còn key); PUT đổi người duyệt (id hoặc key cũ) ⇒ 200", async () => {
-    const gx = await groups(o, X, ["p15-a", "p15-b"]);
-    const { cl, copy, after, fid } = await cloneLib("p15-ok", "p15-a");
-    expect(cl.status).toBe(201);
-    expect(cl.json.missing_group_keys).toBeUndefined();
-    expect(copy?.warnings).toEqual([]);
-    expect(after.group_id).toBe(gx.get("p15-a") as string);
-    expect(after.group_key).toBeUndefined();
-    const byId = await putCopy(fid, { group_id: gx.get("p15-b") });
-    expect(byId.status).toBe(200);
-    expect(byId.json.stages[1].after.group_id).toBe(gx.get("p15-b") as string);
-    const byKey = await putCopy(fid, { group_key: "p15-a" }); // client cũ gửi mã
-    expect(byKey.status).toBe(200);
-    expect(byKey.json.stages[1].after).toMatchObject({ group_id: gx.get("p15-a") });
-    expect(byKey.json.stages[1].after.group_key).toBeUndefined();
-  });
-
-  it("P15 · mã nhóm chưa có ở công ty ⇒ bản sao VẪN lưu được, trống nhóm + cảnh báo nêu mã; chọn nhóm khác ⇒ PUT 200", async () => {
-    const gx = await groups(o, X, ["p15-c"]);
-    const { cl, copy, after, fid } = await cloneLib("p15-thieu", "p15-thieu-nhom");
-    expect(cl.status).toBe(201);
-    expect(cl.json.missing_group_keys).toEqual(["p15-thieu-nhom"]);
-    expect(cl.json.message).toBe("Nhóm p15-thieu-nhom chưa có ở công ty — chọn nhóm khác.");
-    expect(copy?.warnings).toEqual(["group_missing"]);
-    expect([after.group_id, after.group_key]).toEqual([null, undefined]);
-    const put = await putCopy(fid, { group_id: gx.get("p15-c") });
-    expect(put.status).toBe(200);
-    const l = await call("GET", `/tenants/${X}/company-flows`, undefined, "A");
-    expect((l.json.items as Json[]).find((x) => x.flow_id === fid)?.warnings).toEqual([]);
-  });
-
-  it("def theo khe cũ xuất bản như trước (luật khe + nút hệ thống)", async () => {
-    const cl = await call("POST", `/process-defs/${APPROVAL_DEFAULT_DEF.id}/clone`, {
+  it("def theo khe xuất bản như trước (luật khe + nút hệ thống)", async () => {
+    const cl = await call("POST", `/process-defs/${GEN_DEFAULT_ID}/clone`, {
       key: "e6-khe",
     });
     expect(cl.status).toBe(201);

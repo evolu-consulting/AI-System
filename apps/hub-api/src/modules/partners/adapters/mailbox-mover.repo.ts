@@ -118,3 +118,64 @@ export async function emitReplies(tx: Tx, limit: number): Promise<Counts> {
     select (select count(*) from up)::int as moved, (select count(*) from ev)::int as emitted`);
   return r ?? { moved: 0, emitted: 0 };
 }
+
+/** CR-127 · P1 · dòng phiên ký chung cần báo (đã tính chuyển do hạn). */
+export type ClaimedSession = {
+  id: string;
+  status: string;
+  eff:
+    | "accepted"
+    | "signing"
+    | "done"
+    | "cancelled"
+    | "declined"
+    | "expired"
+    | "fallback"
+    | "proposed";
+  expire_choice: "resend" | "stop" | null;
+  from_tenant: string;
+  to_tenant: string;
+  notify_from: boolean;
+  notify_to: boolean;
+  cancel_side: "from" | "to" | null;
+  cancel_reason: string | null;
+};
+
+/**
+ * CR-127 · P1 · nhận lô phiên ký có cờ chưa báo HOẶC vừa quá hạn (proposed quá hạn trả lời ⇒ `fallback`; đang ký quá hạn ký ⇒ `expired`)
+ * — MỘT câu, `FOR UPDATE SKIP LOCKED` (giữ khoá tới `finishSessions` cùng tx: hàm `sign_session_*` của người dùng chờ, không đè trạng thái).
+ */
+export async function claimSessions(tx: Tx, limit: number): Promise<ClaimedSession[]> {
+  return tx.execute<ClaimedSession>(sql`
+    select id::text as id, status, expire_choice, from_tenant::text as from_tenant, to_tenant::text as to_tenant,
+      cancel_side, cancel_reason, d.eff,
+      (not emitted_from or d.eff <> status) as notify_from, (not emitted_to or d.eff <> status) as notify_to
+    from hub.partner_sign_sessions s,
+      lateral (select case
+        when s.status = 'proposed' and s.accept_deadline_at <= now() then 'fallback'
+        when s.status in ('accepted', 'signing') and s.sign_deadline_at <= now() then 'expired'
+        else s.status end as eff) d
+    where not (s.emitted_from and s.emitted_to)
+      or (s.status = 'proposed' and s.accept_deadline_at <= now())
+      or (s.status in ('accepted', 'signing') and s.sign_deadline_at <= now())
+    order by s.updated_at limit ${limit}
+    for update of s skip locked`);
+}
+
+/** CR-127 · P1 · chốt lô đã báo gói: ghi trạng thái do hạn + bật cờ đã báo hai bên — MỘT câu theo tập (`jsonb_to_recordset`). */
+export async function finishSessions(
+  tx: Tx,
+  rows: readonly { id: string; status: string }[],
+): Promise<number> {
+  if (rows.length === 0) return 0;
+  const [r] = await tx.execute<{ n: number }>(sql`
+    with u as (
+      update hub.partner_sign_sessions s set status = x.status, emitted_from = true, emitted_to = true,
+        updated_at = case when s.status <> x.status then now() else s.updated_at end
+      from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as x(id uuid, status text)
+      where s.id = x.id
+      returning 1
+    )
+    select count(*)::int as n from u`);
+  return r?.n ?? 0;
+}

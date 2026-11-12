@@ -67,12 +67,29 @@ export const PA = {
   H4: q(4),
   L: q(5),
   Adm: P.tadmin,
+  /** CR-127 E8: tadmin KHÔNG qua shim ghi quy trình (kiểm 403 FORBIDDEN_TENANT_ADMIN_WRITE). */
+  AdmRaw: P.tadmin,
   P: P.padmin,
   D: P.an,
   Db: tadminBeta,
   K: P.khoa,
 } as const;
 export type Role = keyof typeof PA;
+
+/** CR-127 E8: ghi `/process-defs` (trừ /run) chỉ quản trị nền tảng ⇒ vai "Adm" ghi quy trình đi bằng platform_admin ("P") + ?tenant_id; "AdmRaw" giữ tenant_admin (kiểm 403). */
+export function defsWriteVia(
+  role: string,
+  method: string,
+  path: string,
+): { role: string; path: string } {
+  const w =
+    role === "Adm" &&
+    method !== "GET" &&
+    /^\/process-defs(\/|\?|$)/.test(path) &&
+    !path.includes("/run");
+  if (!w) return { role, path };
+  return { role: "P", path: `${path}${path.includes("?") ? "&" : "?"}tenant_id=${T.acme}` };
+}
 
 async function insertPaData(sql: Sql): Promise<void> {
   const b = tadminBeta;
@@ -213,7 +230,10 @@ export async function startPa(o: PaOpts = {}): Promise<CtxPa> {
     redis,
     rt,
     tok,
-    call: async (r, method, path, body) => api(hub, await tok(r), method, path, body),
+    call: async (r, method, path, body) => {
+      const w = defsWriteVia(r, method, path);
+      return api(hub, await tok(w.role as Role), method, w.path, body);
+    },
     stop: async () => {
       await hub.stop();
       redis.disconnect();

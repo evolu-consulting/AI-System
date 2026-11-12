@@ -1,7 +1,8 @@
 // HD-FR-31…37 · HD3 spec §3: flow duyệt hợp đồng trên engine N2 (`/pack/contracts/contracts/:id/approval`,
 // `/pack/contracts/approval-settings`). Chỉ thêm — không đổi schema HD1/HD2.
 import { z } from "zod";
-import { IsoDateTime } from "../common";
+import { EvidenceInputSchema, TASK_CLAIM_FIELDS } from "../chat/evidence";
+import { IsoDateTime, UuidSchema } from "../common";
 import { FlowFormValueSchema } from "../flow/form";
 import { FormPrefillSchema } from "../flow/form-prefill";
 import { FormFieldsSchema } from "../hub-admin/process-form";
@@ -39,6 +40,8 @@ export const ApprovalActionRequestSchema = z.strictObject({
     .optional(),
   /** products-confirm: gắn/tạo SP cho dòng HĐ — chỉ áp khi `approve` làm HĐ thành "đã xác nhận" (cùng tx); bước khác bỏ qua. */
   products: ProductLinksSchema.optional(),
+  /** CR-127 · E4 · bằng chứng của quyết định (ý kiến + chữ ký/tệp): bước bật "Ý kiến + chữ ký hoặc tệp" mà Duyệt thiếu ⇒ 422 `EVIDENCE_REQUIRED`; Trả lại/Từ chối: ý kiến = `feedback` hoặc `evidence.note`. */
+  evidence: EvidenceInputSchema.optional(),
 });
 export type ApprovalActionRequest = z.infer<typeof ApprovalActionRequestSchema>;
 
@@ -139,6 +142,8 @@ export const ContractApprovalSchema = z.strictObject({
   step: ApprovalStepSchema.nullable(),
   task_id: z.uuid().nullable(),
   can_act: z.boolean(),
+  /** CR-127 · RA2 · nhận việc của task đang mở theo người xem (`claim` / `need` / `can_reassign` …) — đi tiếp tới `FlowTask`. */
+  ...TASK_CLAIM_FIELDS,
   feedback: z.string().max(APPROVAL_FEEDBACK_MAX).nullable(),
   /** Bước đang mở mà người xem không quyết được: vì sao (thẻ duyệt nói rõ thay vì chỉ "đang chờ"). Vắng ở hub cũ. */
   block_reason: z.enum(["not_reviewer", "starter"]).nullable().optional(),
@@ -207,3 +212,36 @@ export const ActionQuotaDetailsSchema = z.strictObject({
   limit: z.number().int().min(1),
   resets_at: IsoDateTime,
 });
+
+// ── CR-127 · E4 · `GET /contracts/:id/approval-record` — hồ sơ duyệt: mọi quyết định + bằng chứng (đã lọc BR-26) ─────────────────────
+const RecordPersonSchema = z.strictObject({
+  id: UuidSchema,
+  display_name: z.string().min(1).max(200).nullable(),
+});
+/** Bằng chứng trong hồ sơ: người chỉ xem nhận `readable:false` + ý kiến/chữ ký/tệp rỗng (chỉ thấy là CÓ bằng chứng). */
+export const ApprovalRecordEvidenceSchema = z.strictObject({
+  id: UuidSchema,
+  readable: z.boolean(),
+  note: z.string().max(4000).nullable(),
+  signature_attachment_id: UuidSchema.nullable(),
+  attachment_ids: z.array(UuidSchema).max(5),
+  by_user: RecordPersonSchema,
+  on_behalf_of: RecordPersonSchema.nullable(),
+  at: IsoDateTime,
+});
+export type ApprovalRecordEvidence = z.infer<typeof ApprovalRecordEvidenceSchema>;
+export const ApprovalRecordItemSchema = z.strictObject({
+  task_id: UuidSchema,
+  stage: z.string().max(200),
+  action: z.enum(["approve", "return", "reject"]),
+  at: IsoDateTime,
+  actor: RecordPersonSchema,
+  feedback: z.string().max(APPROVAL_FEEDBACK_MAX).nullable(),
+  evidence: ApprovalRecordEvidenceSchema.nullable(),
+});
+export const ApprovalRecordSchema = z.strictObject({
+  items: z.array(ApprovalRecordItemSchema).max(200),
+  /** Người xem đọc được nội dung bằng chứng (BR-26). */
+  can_read_evidence: z.boolean(),
+});
+export type ApprovalRecord = z.infer<typeof ApprovalRecordSchema>;

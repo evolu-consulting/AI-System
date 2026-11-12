@@ -1,5 +1,5 @@
 // V2-M · BA v2 HD-07 · 5.5e · 6a · C7: xoá hẳn một HĐ. `GET /contracts/:id/delete-preview` liệt kê tác động (hộp xác nhận),
-// `DELETE /contracts/:id` xoá trong MỘT tx (chỉ vai quản lý `contracts-owner` = quyền `admin`). Không hoàn tác.
+// `DELETE /contracts/:id` xoá trong MỘT tx (CR-127 Z8: HĐ nháp — quản trị gói / người tạo / người phụ trách; HĐ khác — chỉ quản trị gói `contracts-owner`). Không hoàn tác.
 import { z } from "zod";
 
 export const DELETE_CONTRACT_ERRORS = {
@@ -35,6 +35,8 @@ export const DeleteImpactSchema = z.object({
   has_cks: z.boolean(),
   /** Lý do KHÔNG xoá được (kho không đảo được) — null = xoá được. */
   stock_blocked: z.string().nullable(),
+  /** CR-127 · Z8: HĐ nháp đã từng gửi duyệt (có lượt duyệt) ⇒ hộp xác nhận nêu rõ lượt / hồ sơ duyệt cũng mất; không phải nháp / chưa gửi ⇒ vắng/false. */
+  submitted_before: z.boolean().optional(),
 });
 export type DeleteImpact = z.infer<typeof DeleteImpactSchema>;
 

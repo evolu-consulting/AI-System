@@ -13,20 +13,24 @@ import { esignNodeValidator } from "../../packs/contracts/testing";
 import { nodeConfigRegistry } from "../../packs/kit/public";
 import type { ProcessDeps } from "../core/ports";
 import { defsRoutes } from "./defs.routes";
+import { DefsService } from "./defs.service";
 
 const X = tenantId(1241);
 const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
-  A: { userId: userId(1241), tenantId: X, role: "tenant_admin" },
+  A: { userId: userId(1241), tenantId: X, role: "platform_admin" },
+  T: { userId: userId(1241), tenantId: X, role: "tenant_admin" },
 };
 // biome-ignore lint/suspicious/noExplicitAny: JSON response trong test
 type Json = Record<string, any>;
 let o: Sql;
 let db: Db;
 let app: Hono<AuthVars>;
+let deps: ProcessDeps;
 const checked: string[] = [];
 
 async function call(method: string, path: string, body?: unknown) {
-  const r = await app.request(path, {
+  // CR-127 E8: chỉ platform_admin ghi def; soạn cho công ty X qua ?tenant_id (palette node theo gói của X)
+  const r = await app.request(`${path}${path.includes("?") ? "&" : "?"}tenant_id=${X}`, {
     method,
     headers: { "content-type": "application/json", "x-who": "A" },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -123,10 +127,8 @@ beforeAll(async () => {
     }),
     user: async () => undefined,
   };
-  app.route(
-    "/",
-    defsRoutes({ db, packTools: undefined, start: {}, config } as unknown as ProcessDeps),
-  );
+  deps = { db, packTools: undefined, start: {}, config } as unknown as ProcessDeps;
+  app.route("/", defsRoutes(deps));
 }, 180_000);
 
 afterAll(async () => {
@@ -218,5 +220,41 @@ describe("CR-123 · u3a · FR-14 · lưu def mà node Ký số bị tách ⇒ 42
   it("thiếu nửa chờ (chỉ có bước gửi) ⇒ 422 FLOW_NODE_SPLIT", async () => {
     const r = await call("POST", "/process-defs", body([esignStage({})]));
     expect([r.status, codeOf(r)]).toEqual([422, "FLOW_NODE_SPLIT"]);
+  });
+});
+
+describe("CR-127 · FIX-E8 · ghi def: route người dùng chặn tenant_admin, đồng bộ gói nội bộ thì không", () => {
+  const asT = (method: string, path: string, b: unknown) =>
+    app.request(path, {
+      method,
+      headers: { "content-type": "application/json", "x-who": "T" },
+      body: JSON.stringify(b),
+    });
+  const plain = { ...body([stage("a", 0)]), key: "fix-e8-sync" };
+
+  it("POST/PUT /process-defs bằng tenant_admin ⇒ 403; DefsService.create bằng tenant_admin ⇒ 403", async () => {
+    expect((await asT("POST", "/process-defs", plain)).status).toBe(403);
+    const id = "00000000-0000-4000-8000-000000000001";
+    expect((await asT("PUT", `/process-defs/${id}`, { ...plain, version: 1 })).status).toBe(403);
+    const svc = new DefsService(deps);
+    await expect(svc.create(WHO.T as never, { tenantId: X }, plain as never)).rejects.toMatchObject(
+      {
+        code: "FORBIDDEN_TENANT_ADMIN_WRITE",
+      },
+    );
+  });
+
+  it("packSyncCreate/packSyncUpdate (ensureDef của gói) bằng tenant_admin ⇒ ghi def đúng tenant của run", async () => {
+    const svc = new DefsService(deps);
+    const made = await svc.packSyncCreate(WHO.T as never, { tenantId: X }, plain as never);
+    expect(made.tenant_id).toBe(X);
+    const upd = await svc.packSyncUpdate(WHO.T as never, { tenantId: X }, made.id, {
+      ...plain,
+      name: "Đồng bộ v2",
+      version: made.version,
+    } as never);
+    expect(upd.name).toBe("Đồng bộ v2");
+    const [row] = await o`select tenant_id from hub.process_defs where id = ${made.id}`;
+    expect(row?.tenant_id).toBe(X);
   });
 });

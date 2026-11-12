@@ -117,7 +117,7 @@ const legalSource = (t: string) => sql`
 const dueSources = (t: string, w: TodoWindow) => sql`
   ms as (select o.id, o.contract_id, o.kind, o.direction, o.amount, o.title, o.due_date from contracts.obligations o
     where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind not in ('renewal', 'commission')
-      and o.due_date <= ${w.horizon}::date and ${confirmedOf("o", t)}
+      and o.due_date <= ${w.milestoneHorizon ?? w.horizon}::date and ${confirmedOf("o", t)}
       and ${notDismissed(t, sql`${k("milestone", "o.id", "o.due_date")}`)}
     order by o.due_date, o.id limit ${LIM}::int),
   cm as (select o.id, o.contract_id, o.amount, o.title, o.due_date from contracts.obligations o
@@ -125,7 +125,7 @@ const dueSources = (t: string, w: TodoWindow) => sql`
       and ${confirmedOf("o", t)} and ${notDismissed(t, sql`${k("commission", "o.id", "o.due_date")}`)}
     order by o.due_date, o.id limit ${LIM}::int),
   ce as (select c.id, c.end_date, c.fields, c.number, c.title, c.direction, c.seller, c.buyer from contracts.contracts c
-    where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.status in ('active', 'expiring') and c.handled is null
+    where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.status = 'done' and c.effect in ('active', 'expiring')
       and c.superseded_at is null and c.doc_type <> 'framework' -- CR-101: HĐ NT nhắc qua reminders
       and c.end_date between ${w.today}::date and ${w.today}::date + 3650
       and c.end_date - ${NOTICE("c", t)}::int <= ${w.today}::date

@@ -297,7 +297,7 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
     <section
       id="esign-panel"
       data-testid="esign-panel"
-      className="mb-3 rounded-xl border border-rule bg-sunk px-4 py-3 text-sm"
+      className="mb-3 rounded-lg border border-rule bg-sunk px-3 py-1.5 text-[13px]"
     >
       <div className="flex flex-wrap items-center gap-3">
         <b>{t("contracts.esign.title")}</b>

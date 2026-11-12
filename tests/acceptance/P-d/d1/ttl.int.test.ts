@@ -1,6 +1,7 @@
 // AC-H43 · HUB-FR-115 · PD-R24/R25 · PD-I50…PD-I54 (test-plan-int §5; plan-contract §3 `ttl_days`): hạn run theo def
 // (`null` = không hết hạn, vắng khi tạo = 7, sửa vắng = giữ, copy chép). Đỏ trước code ở `needPdSchema` (migration 0036).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { T as T_FIX } from "../../H1/_fixtures";
 import {
   agentStage,
   type CtxPd,
@@ -93,7 +94,12 @@ describe("PD-I52, PD-I53 · sửa / chép def [AC-H43, PD-R24]", () => {
     const d = await createDef(c, body("pd-ttl-put"));
     const runId = await toReview("pd-ttl-put");
     const before = (await runRow(c.sql, runId)).expires_at;
-    const put = await c.call("Adm", "PUT", `/process-defs/${d.id}`, putBody(d, { ttl_days: 30 }));
+    const put = await c.call(
+      "P",
+      "PUT",
+      `/process-defs/${d.id}?tenant_id=${T_FIX.acme}`,
+      putBody(d, { ttl_days: 30 }),
+    );
     expect({ status: put.status, ttl_days: put.json?.ttl_days }).toEqual({
       status: 200,
       ttl_days: 30,
@@ -104,7 +110,12 @@ describe("PD-I52, PD-I53 · sửa / chép def [AC-H43, PD-R24]", () => {
     needPdSchema(c.pd);
     const d = await createDef(c, body("pd-ttl-30", { ttl_days: 30 }));
     expect(d.ttl_days).toBe(30);
-    const p1 = await c.call("Adm", "PUT", `/process-defs/${d.id}`, putBody(d, {}, true));
+    const p1 = await c.call(
+      "P",
+      "PUT",
+      `/process-defs/${d.id}?tenant_id=${T_FIX.acme}`,
+      putBody(d, {}, true),
+    );
     expect({ status: p1.status, ttl_days: p1.json?.ttl_days }).toEqual({
       status: 200,
       ttl_days: 30,
@@ -119,23 +130,6 @@ describe("PD-I52, PD-I53 · sửa / chép def [AC-H43, PD-R24]", () => {
     expect({ status: p2.status, ttl_days: p2.json?.ttl_days }).toEqual({
       status: 200,
       ttl_days: null,
-    });
-    // mẫu platform (tenant NULL) ttl 30 ⇒ chép sang acme
-    const tpl = "a5d10000-0000-4000-8000-000000000530";
-    const stages = [
-      agentStage({
-        key: "doc",
-        step: 0,
-        after: { kind: "review", group_id: null, back_to_steps: [] },
-      }),
-    ];
-    await c.sql`insert into hub.process_defs (id, tenant_id, key, name, description, input_hint, stages, token_budget,
-        enabled, version, ttl_days)
-      values (${tpl}, null, 'pd-ttl-tpl', 'Mẫu hạn 30 ngày', '', 'Mã hồ sơ', ${c.sql.json(stages)}, null, true, 1, 30)`;
-    const cp = await c.call("Adm", "POST", `/process-defs/${tpl}/copy`, { key: "pd-ttl-copy" });
-    expect({ status: cp.status, ttl_days: cp.json?.ttl_days }).toEqual({
-      status: 201,
-      ttl_days: 30,
     });
   });
 });

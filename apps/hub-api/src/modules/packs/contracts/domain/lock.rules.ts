@@ -1,43 +1,31 @@
-// CR-097 K1 · HD-FR-100 khoá cứng sau xác nhận (thay D3-13 "sửa sau duyệt ⇒ mở lại duyệt") · HD-FR-104 owner mở lại có lý do. Thuần.
-// HĐ đã khoá: mọi trường pháp lý (số, tên, bên, ngày, tiền, điều khoản) chỉ đọc cho MỌI người (kể cả owner) — muốn sửa thì owner
-// "Mở lại" (về Chờ duyệt, có log) hoặc tải bản cập nhật (K2). Vận hành vẫn sửa ở endpoint riêng: người phụ trách, đã xử lý, ghi chú,
-// mốc/sổ (ghi việc với đối tác), gắn SP cho dòng hàng, tóm tắt AI. Trong nhóm 23 trường chỉ `notice_days` (số ngày báo trước — dùng
-// cho nhắc hạn HD4) là vận hành.
-// CR-097 lock-strict (2026-10-23): người dùng chốt KHOÁ TUYỆT ĐỐI — `notice_days` cũng chỉ đọc; thêm/sửa/xoá mốc, gắn SP, gắn HĐ gốc ⇒ 409.
-// Chỉ còn thao tác vận hành: giao việc, ghi nhận xử lý, xác nhận xong mốc, hoãn/nhắc, ghi việc với đối tác, tóm tắt AI.
+// CR-127 K4 · BR-39 · khoá nội dung tự động theo TRẠNG THÁI (thay khoá theo `locked_at` + "Mở lại" của CR-097; BR-38/74 bỏ "Mở lại").
+// PROCESSING (đang duyệt) và DONE (đã xong) ⇒ mọi trường pháp lý/tiền/bên/ngày/điều khoản chỉ đọc cho MỌI người (kể cả người phụ trách);
+// sửa ⇒ "Tải phiên bản mới" (phiên bản v(n+1) bắt đầu ở DRAFT). DRAFT/REJECT sửa được. Không còn "sửa khi đang duyệt" (BR-39, gỡ
+// `approval-edit.rules`). Vận hành vẫn ghi ở endpoint riêng: người phụ trách, đã xử lý, ghi chú, mốc/sổ (ghi việc với đối tác), tóm tắt AI.
+// Thuần (lớp 1).
 
-/** Trường của `fields` vẫn sửa được khi HĐ đã khoá. */
+/** Trạng thái khoá nội dung (spec §3 · BR-39). */
+export const CONTENT_LOCKED_STATUSES: ReadonlySet<string> = new Set(["processing", "done"]);
+
+/** HĐ ở trạng thái `status` có bị khoá nội dung không. */
+export const isContentLocked = (status: string): boolean => CONTENT_LOCKED_STATUSES.has(status);
+
+/** Như `isContentLocked` nhưng giao dịch (`doc_type = 'deal'`) KHÔNG thuộc khoá K4: chứng từ nội bộ, done ngay khi tạo, BA CR-097 cho sửa
+ *  mô tả trực tiếp + thêm đợt giao (quyết định điều phối CR-127 FIX-Q1c). */
+export const isDocLocked = (status: string, docType?: string): boolean =>
+  docType !== "deal" && isContentLocked(status);
+
+/** Trường của `fields` vẫn sửa được khi HĐ đã khoá (lock-strict: không có). */
 export const LOCK_EDITABLE_FIELDS: ReadonlySet<string> = new Set();
 
 export type LockVerdict = "ok" | "locked";
 
-/** Đổi `changed` trên HĐ `locked` ⇒ có trường ngoài danh sách vận hành ⇒ `locked` (409, không ghi phần nào). */
-export function lockVerdict(i: { locked: boolean; changed: readonly string[] }): LockVerdict {
-  if (!i.locked) return "ok";
+/** Đổi `changed` trên HĐ khoá nội dung ⇒ có trường ngoài danh sách vận hành ⇒ `locked` (409, không ghi phần nào). */
+export function lockVerdict(i: {
+  status: string;
+  docType?: string;
+  changed: readonly string[];
+}): LockVerdict {
+  if (!isDocLocked(i.status, i.docType)) return "ok";
   return i.changed.every((k) => LOCK_EDITABLE_FIELDS.has(k)) ? "ok" : "locked";
 }
-
-export type ReopenVerdict = "ok" | "not_locked" | "forbidden";
-
-/** CR-101a (Câu 6): người mở lại được = owner gói HOẶC người phụ trách HĐ.
- *  CR-121 Q-3: HOẶC platform_admin (vai từ JWT; mở thay cho công ty — route đã ép `?tenant_id` + lý do + audit). Chỉ mở lại,
- *  không cấp thêm quyền nào khác. */
-export const canReopen = (i: {
-  admin: boolean;
-  actor: string;
-  owner: string | null;
-  platform?: boolean;
-}): boolean => i.admin || i.platform === true || (i.owner !== null && i.owner === i.actor);
-
-export const REOPEN_REASON_MAX_LEN = 500;
-/** Lý do mở lại hợp lệ: sau trim 1..500 ký tự (đếm code point). */
-export const reopenReasonOk = (reason: string): boolean => {
-  const n = Array.from(reason.trim()).length;
-  return n >= 1 && n <= REOPEN_REASON_MAX_LEN;
-};
-
-/** Không có quyền ⇒ `forbidden` (trước mọi kiểm khác); chỉ HĐ đang khoá mới mở lại được (lý do do schema). */
-export const reopenVerdict = (i: { locked: boolean; allowed?: boolean }): ReopenVerdict => {
-  if (i.allowed === false) return "forbidden";
-  return i.locked ? "ok" : "not_locked";
-};

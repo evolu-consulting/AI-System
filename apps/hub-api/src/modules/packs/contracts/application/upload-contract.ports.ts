@@ -30,12 +30,13 @@ export type NewUploadedContract = {
   kind: "contract" | "appendix";
   parentId: string | null;
   title: string;
-  status: UploadStatus;
+  /** CR-127 K1b · HĐ luôn vào `draft`; `extractState` = tiến độ AI đọc (`reading` khi xếp AI, `failed` khi không lấy được chữ, `ready` khi trường điền sẵn). */
+  extractState: UploadExtract;
   error: string | null;
   fields: ContractFields;
   sourceText: string | null;
   userId: string;
-  /** M3 · chế độ flow: id lượt duyệt mở CÙNG câu CTE (HĐ `extracting`); null ⇒ không mở. */
+  /** M3 · chế độ flow: id lượt duyệt mở CÙNG câu CTE (HĐ `draft` + `extract_state = reading`); null ⇒ không mở. */
   approvalId?: string | null;
   /** CR-101 DOC-model: loại chứng từ (vắng ⇒ HĐ kinh tế). Bản cập nhật (K2) kế thừa từ bản cũ, bỏ qua giá trị này. */
   doc?: UploadDoc;
@@ -47,13 +48,14 @@ export type UploadDoc = {
   creditLimit: number | null;
   orderTerms: string | null;
 };
-/** `needs_review` = HĐ tạo từ bước quy trình (`prefill`: trường đã có sẵn, không chạy AI trích). */
-export type UploadStatus = "extracting" | "extract_failed" | "needs_review";
+/** `ready` ngay khi tạo = HĐ tạo từ bước quy trình (`prefill`: trường đã có sẵn, không chạy AI trích). */
+export type UploadExtract = "reading" | "failed" | "ready";
 
 /** CR-097 K2 · kết quả ghi phiên bản mới (chuỗi của bản `supersedesId`). */
 export type InsertedVersion = {
   id: string;
-  status: UploadStatus;
+  status: "draft";
+  extractState: UploadExtract;
   version: number;
   version_no: number;
   root_id: string;
@@ -62,7 +64,9 @@ export type InsertedVersion = {
 
 /** Repo trong tx: một câu (CTE files → contracts → events). Cha không hợp lệ ⇒ `UploadError("PARENT_INVALID")`. */
 export type UploadContractRepo = {
-  insert(row: NewUploadedContract): Promise<{ id: string; status: UploadStatus; version: number }>;
+  insert(
+    row: NewUploadedContract,
+  ): Promise<{ id: string; status: "draft"; extractState: UploadExtract; version: number }>;
   /** CR-097 K2 · HD-FR-101: nháp v(n+1) của chuỗi chứa `supersedesId` (kế thừa loại/phụ trách/luật thấy) — MỘT câu; điều kiện
    *  (thấy, HĐ, hiện hành, đã khoá, chưa có nháp) kiểm trong câu ⇒ `UploadError` mã tương ứng, không ghi gì. */
   insertVersion(row: NewUploadedContract, supersedesId: string): Promise<InsertedVersion>;

@@ -263,5 +263,20 @@ export async function softDeleteDef(tx: Tx, id: string, actorId: string): Promis
     updated_by = ${actorId}, updated_at = now() where id = ${id}`);
 }
 
+/** CR-127 · Z7 · def có lượt chạy nào (mọi trạng thái, kể cả chạy thử) ⇒ không xoá được. Index `process_runs(process_def_id)`. */
+export async function defHasRuns(tx: Tx, id: string): Promise<boolean> {
+  const [r] = await tx.execute<{ x: boolean }>(
+    sql`select exists (select 1 from hub.process_runs where process_def_id = ${id}::uuid) as x`,
+  );
+  return r?.x === true;
+}
+
+/** CR-127 · Z7 · gỡ dòng `company_flows` của def công ty vừa xoá nháp (cùng tx với `softDeleteDef`). */
+export async function deleteCompanyFlowRows(tx: Tx, tenantId: string, id: string): Promise<void> {
+  await tx.execute(
+    sql`delete from hub.company_flows where tenant_id = ${tenantId}::uuid and flow_id = ${id}::uuid`,
+  );
+}
+
 /** `uuid[]` qua literal mảng (postgres.js không tự ép mảng JS trong `sql` drizzle). */
 const pgUuids = (ids: readonly string[]) => sql`${`{${ids.join(",")}}`}::uuid[]`;

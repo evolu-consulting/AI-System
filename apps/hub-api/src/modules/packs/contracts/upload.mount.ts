@@ -42,7 +42,6 @@ export type UploadMountDeps = {
   /** HD2 · hàng đợi trích (`contractsAiModule`); gọi SAU commit, không chặn tải lên. */
   starter: ExtractionStarter;
   /** CR-101 DOC-deals-fix: nâng giao dịch khi tenant bật duyệt ⇒ mở lượt duyệt cấp 1 (engine/máy, như nhập tay). */
-  review?: (who: PackWho, id: string) => Promise<unknown>;
 };
 
 /** Env số nguyên dương, sai/vắng ⇒ mặc định (plan §5: `CONTRACTS_MAX_MB`, `CONTRACTS_UPLOADS_*_DAY`). */
@@ -121,7 +120,6 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
       await takeQuota(q, { who, timeZone }, days, at);
       return () => q.counter.refund(who.tenantId, days);
     },
-    ...(d.review ? { review: d.review } : {}),
   });
   return uploadRoutes(d.view, { upload, promote, maxBytes, timeZoneOf: d.timeZoneOf });
 }

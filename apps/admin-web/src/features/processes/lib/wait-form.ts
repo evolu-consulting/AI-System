@@ -13,6 +13,7 @@ import { escalateIssues, remindIssue } from "../domain/remind-rules";
 import { type DateSource, dateSources, parseSourceValue, waitIssues } from "../domain/wait-rules";
 import { emptyAutofix } from "./autofix-form";
 import type { EscalateDraft, StageDraft, WaitDraft } from "./draft-types";
+import { isMilestone } from "./milestone-panel";
 import type { InputDraft } from "./sources-form";
 import { timedWaitErrors } from "./timed-wait-form";
 
@@ -48,9 +49,14 @@ export const WAIT_PATCH: Partial<StageDraft> = {
 /** Bản dùng để gửi/validate: xoá ô ẩn; Hub ép lại output/answerer/token_budget/timeout_s (plan §2, §14 G3). */
 export function normalizeWait(s: StageDraft): StageDraft {
   if (!isWaitFamily(s)) return s;
+  // CR-127 · U2e · «Xác nhận mốc»: engine đọc phòng/người/Cần/Hạn từ `after` kiểu review ⇒ giữ, không ép về "tự chạy tiếp".
+  const keep = isMilestone(s)
+    ? { after: s.after, backTo: s.backTo, groupId: s.groupId, real: s.real }
+    : {};
   return {
     ...s,
     ...WAIT_PATCH,
+    ...keep,
     executor: s.executor,
     instruction: "",
     filename: `${s.key}.md`,
@@ -90,13 +96,29 @@ export function waitToDef(w: WaitDraft): WaitExecutor {
 const hours = (t: string): number => Number(t.trim());
 export const remindToDef = (s: Pick<StageDraft, "remind">): number | null =>
   s.remind.trim() === "" ? null : hours(s.remind);
-export const escalateToDef = (s: Pick<StageDraft, "escalate">): StageEscalate | null =>
-  s.escalate.on ? { after_h: hours(s.escalate.afterH), group_id: s.escalate.groupId } : null;
+export const escalateToDef = (s: Pick<StageDraft, "escalate">): StageEscalate | null => {
+  const e = s.escalate;
+  if (!e.on) return null;
+  const after_h = hours(e.afterH);
+  if (e.userId) return { after_h, user_id: e.userId } as StageEscalate;
+  return e.groupKey && !e.groupId
+    ? { after_h, group_key: e.groupKey }
+    : { after_h, group_id: e.groupId };
+};
 
 export const remindFromDef = (v: number | null | undefined): string =>
   v === null || v === undefined ? "" : String(v);
 export function escalateFromDef(e: StageEscalate | null | undefined): EscalateDraft {
-  return e ? { on: true, afterH: String(e.after_h), groupId: e.group_id ?? "" } : emptyEscalate();
+  const x = e as (StageEscalate & { user_id?: string; group_key?: string }) | null | undefined;
+  return x
+    ? {
+        on: true,
+        afterH: String(x.after_h),
+        groupId: x.group_id ?? "",
+        ...(x.user_id ? { userId: x.user_id } : {}),
+        ...(x.group_key ? { groupKey: x.group_key } : {}),
+      }
+    : emptyEscalate();
 }
 
 /** Lỗi form "Chờ tới ngày": nguồn / chênh / giờ → path như server (`stages.i.executor.*`). */

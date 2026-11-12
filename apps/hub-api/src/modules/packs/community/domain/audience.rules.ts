@@ -3,7 +3,7 @@
 // xem trước / unit test và giữ hai bên khớp nhau.
 
 export type PostType = "sell" | "buy" | "note";
-export type Label = "supplier" | "buyer";
+export type Label = "supplier" | "customer";
 export type AudienceMode = "all" | "suppliers" | "buyers" | "cats" | "companies";
 export type Audience = {
   mode: AudienceMode;
@@ -24,6 +24,11 @@ export type PostAction =
 /** Người xem: `org = null` ⇔ chủ quản (thành viên tenant). */
 export type Viewer = { org: string | null; labels: readonly Label[]; cats: readonly string[] };
 
+/** Nhãn wire ⇒ vai SHT (cùng tên `supplier`|`customer`, CR-130 · ADR-0043), bỏ trùng. */
+export function rolesOfLabels(labels: readonly Label[]): ("supplier" | "customer")[] {
+  return [...new Set(labels.map((l) => (l === "customer" ? ("customer" as const) : l)))];
+}
+
 /** Mặc định D2: Cần bán ⇒ người mua nhóm hàng của bài; Cần mua ⇒ NCC nhóm hàng đó; Thông báo ⇒ tất cả bạn bè. */
 export function defaultAudience(type: PostType): Audience {
   return { mode: type === "note" ? "all" : "cats", cats: [], companies: [] };
@@ -42,13 +47,13 @@ export function audienceIncludes(
     case "suppliers":
       return v.labels.includes("supplier");
     case "buyers":
-      return v.labels.includes("buyer");
+      return v.labels.includes("customer");
     case "companies":
       return a.companies.includes(v.org);
     case "cats": {
       const wanted = a.cats.length > 0 ? a.cats : postCats;
       if (!v.cats.some((c) => wanted.includes(c))) return false;
-      if (type === "sell") return v.labels.includes("buyer");
+      if (type === "sell") return v.labels.includes("customer");
       if (type === "buy") return v.labels.includes("supplier");
       return true;
     }
@@ -58,7 +63,7 @@ export function audienceIncludes(
 /** Đối tác đăng được loại bài này? Cần bán: nhãn NCC; Cần mua: nhãn người mua; Thông báo: chỉ chủ quản. */
 export function partnerMayPost(type: PostType, labels: readonly Label[]): boolean {
   if (type === "sell") return labels.includes("supplier");
-  if (type === "buy") return labels.includes("buyer");
+  if (type === "buy") return labels.includes("customer");
   return false;
 }
 

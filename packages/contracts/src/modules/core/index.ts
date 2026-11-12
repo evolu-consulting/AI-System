@@ -6,9 +6,16 @@ import { z } from "zod";
 import { WAIT_OFFSET_DAYS, WaitTimeSchema } from "../../chat/processes";
 import { ApproveParallelSchema } from "../../hub-admin/process-approve";
 import type { FeatureModule, FeatureNodeDecl, PortSchema } from "../types";
+import {
+  NOTIFY_CONFIG_PORT,
+  NOTIFY_NODE_KEY,
+  WAIT_CONFIG_PORT,
+  WAIT_NODE_KEY,
+} from "./notify-wait";
 import { START_FORM_NODE } from "./start-form/node";
 import { SUBPROCESS_NODE } from "./subprocess";
 
+export * from "./notify-wait";
 export {
   SUBPROCESS_CONFIG_PORT,
   type SubprocessConfig,
@@ -81,34 +88,15 @@ export const CORE_MODULE: FeatureModule = {
   app: "core",
   events: [],
   nodes: [
+    // CR-127 · E9 · R#39 · hai node GỘP thay bốn node cũ ở menu (xem `notify-wait.ts`).
     {
-      key: "core.email",
-      label: { vi: "Gửi email", en: "Send email" },
-      group: "message",
-      menu: { section: "business", order: 50 },
-      kind: "base",
-      baseExecutor: "notify",
-      stages: [
-        {
-          executor: {
-            kind: "notify",
-            to: [{ who: "starter" }],
-            channels: ["bell", "email"],
-            title: "",
-            body: "",
-          },
-        },
-      ],
-      inputs: [],
-      outputs: NOTIFY_OUTPUTS,
-    },
-    {
-      key: "core.bell",
-      label: { vi: "Thông báo chuông", en: "In-app notification" },
+      key: NOTIFY_NODE_KEY,
+      label: { vi: "Thông báo", en: "Notify" },
       group: "message",
       menu: { section: "business", order: 40 },
       kind: "base",
       baseExecutor: "notify",
+      configPort: NOTIFY_CONFIG_PORT,
       stages: [
         {
           executor: {
@@ -124,13 +112,54 @@ export const CORE_MODULE: FeatureModule = {
       outputs: NOTIFY_OUTPUTS,
     },
     {
+      key: WAIT_NODE_KEY,
+      label: { vi: "Chờ", en: "Wait" },
+      group: "timing",
+      menu: { section: "business", order: 45 },
+      kind: "base",
+      baseExecutor: "wait_until",
+      configPort: WAIT_CONFIG_PORT,
+      stages: [{ executor: { kind: "wait_for", hours: 24 } }],
+      // Chỉ cần khi chọn «tới ngày» (không bắt buộc ⇒ chế độ «sau một khoảng» không bị đòi).
+      inputs: [
+        {
+          key: "date",
+          type: "date",
+          required: false,
+          label: { vi: "Ngày hẹn", en: "Target date" },
+        },
+      ],
+      outputs: [],
+    },
+    // Bốn node cũ: GIỮ trong sổ để def đã lưu / lượt đang chạy (`stage.node` cũ) đọc được; không còn stage mẫu ⇒ không vào bảng node / menu.
+    {
+      key: "core.email",
+      label: { vi: "Gửi email", en: "Send email" },
+      group: "message",
+      kind: "base",
+      baseExecutor: "notify",
+      stages: [],
+      inputs: [],
+      outputs: NOTIFY_OUTPUTS,
+    },
+    {
+      key: "core.bell",
+      label: { vi: "Thông báo chuông", en: "In-app notification" },
+      group: "message",
+      kind: "base",
+      baseExecutor: "notify",
+      stages: [],
+      inputs: [],
+      outputs: NOTIFY_OUTPUTS,
+    },
+    {
       key: "core.wait-until",
       label: { vi: "Hẹn giờ", en: "Wait until date" },
       group: "timing",
       kind: "base",
       baseExecutor: "wait_until",
       configPort: { schema: WaitUntilPort, widgets: { offset_days: "days", time: "text" } },
-      stages: [{ executor: { kind: "wait_until", offset_days: 0, time: "09:00" } }],
+      stages: [],
       inputs: [
         {
           key: "date",
@@ -151,7 +180,7 @@ export const CORE_MODULE: FeatureModule = {
       group: "timing",
       kind: "base",
       baseExecutor: "wait_for",
-      stages: [{ executor: { kind: "wait_for", hours: 24 } }],
+      stages: [],
       inputs: [],
       outputs: [],
     },

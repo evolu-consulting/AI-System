@@ -27,6 +27,7 @@ import {
   roleAllows,
 } from "../domain/runs/run-control.rules";
 import type { StageRunStatus } from "../domain/types";
+import { runEndHook } from "../runs/run-end-hooks";
 import * as repo from "../runs/runs.repo";
 import { stepsOfSnap } from "../runs/step-persist";
 import { stageRowOf } from "../runs/team-runner";
@@ -97,6 +98,8 @@ export class RunControlService {
       const ref = await g.actorRef(tx, a.userId, run.tenantId);
       // Đóng task mở (người chờ không còn thấy việc), huỷ hẹn, stage + run ⇒ cancelled, run_end + notifier.
       const events = await cancelEnd({ d: this.d, tx }, { run, idx, ref }, null);
+      // CR-127 K3 · #7b · lượt gắn bản ghi app (vd HĐ đang duyệt) ⇒ app đưa bản ghi về nháp, cùng tx (CAS theo run, không ném).
+      await runEndHook(tx, "cancelled", run, `cancelled:${reason}`);
       const stepNow = Number(run.currentStep);
       events.push(
         ...processUpdated(recipients, {

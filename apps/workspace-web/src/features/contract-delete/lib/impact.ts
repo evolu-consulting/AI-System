@@ -5,6 +5,8 @@ export type ImpactLine = { key: string; vars: Record<string, string | number> };
 
 export function impactLines(i: DeleteImpact): ImpactLine[] {
   const out: ImpactLine[] = [];
+  // CR-127 Z8: nháp đã từng gửi duyệt ⇒ nêu rõ lượt / hồ sơ duyệt cũng mất (đặt đầu danh sách).
+  if (i.submitted_before) out.push({ key: "submittedBefore", vars: {} });
   if (i.milestones > 0) out.push({ key: "milestones", vars: { count: i.milestones } });
   if (i.delivered_lines > 0)
     out.push({ key: "deliveredLines", vars: { count: i.delivered_lines } });

@@ -12,6 +12,7 @@ import { type Cast, seedCast } from "../../../../../tests/acceptance/com-c3/_sup
 import { mapError } from "../../lib/errors";
 import { dispatchOnce } from "../processes/triggers/dispatcher";
 import { type CommunityFlowPorts, communityModule } from "./community/community.mount";
+import { partnerLinker } from "./contracts/adapters/partner-linker";
 import { pgExternalOrgResolver } from "./kit/adapters/ext-org.pg";
 import type { PackAccessView, PackGuardVars } from "./kit/adapters/pack-guard.middleware";
 
@@ -106,6 +107,7 @@ beforeAll(async () => {
   h.route(
     "/",
     communityModule(db, view(), pgExternalOrgResolver(db), {
+      partners: partnerLinker(),
       flows: {
         agents: { call: async () => ({ ok: true, text: '{"flagged":true}' }) },
         moderationOn: async () => true,
@@ -302,9 +304,10 @@ describe("sự kiện flow Community [CR-122 A2]", () => {
     expect(
       (await row(sql`select status from community.join_requests where id = ${id}::uuid`)).status,
     ).toBe("approved");
-    const pc = await sql`select labels from community.partner_companies
-      where tenant_id = ${c.A}::uuid and ext_org_id = ${c.B2}::uuid`;
-    expect(pc[0]?.labels).toContain("supplier");
+    const pc = await sql`select array_agg(pr.role) as roles
+      from contracts.partner_profiles pp join contracts.partner_roles pr on pr.tenant_id = pp.tenant_id and pr.party_key = pp.party_key
+      where pp.tenant_id = ${c.A}::uuid and pp.ext_org_id = ${c.B2}::uuid`;
+    expect(pc[0]?.roles).toContain("supplier");
   });
 
   it("cờ bật: báo cáo ⇒ report.created, Ẩn idempotent", async () => {

@@ -11,8 +11,16 @@
         "deadline": "Contract deadlines",
         "reminder": "Reminders"
       },
-      "group": { "late": "Overdue", "today": "Today", "upcoming": "Upcoming" },
-      "when": { "late": "{{n}} days late", "today": "Today", "left": "{{n}} days left" },
+      "group": {
+        "late": "Overdue",
+        "today": "Today",
+        "upcoming": "Upcoming"
+      },
+      "when": {
+        "late": "{{n}} days late",
+        "today": "Today",
+        "left": "{{n}} days left"
+      },
       "kind": {
         "followup": "Follow-up",
         "obligation": "Payment",
@@ -39,7 +47,11 @@
         "remind": "Remind me",
         "compare": "Compare prices"
       },
-      "pick": { "postpone": "Date promised", "snooze": "Remind me at", "remind": "Remind me at" },
+      "pick": {
+        "postpone": "Date promised",
+        "snooze": "Remind me at",
+        "remind": "Remind me at"
+      },
       "emptyTitle": "Nothing to do",
       "emptyBody": "Your follow-ups, payments due and contracts to act on will show up here.",
       "truncated": "The list is long, so only the most urgent part is shown.",
@@ -50,6 +62,148 @@
         "VALIDATION_ERROR": "Invalid data.",
         "NOT_FOUND": "This item is gone — reload the page.",
         "PACK_FORBIDDEN": "You are not allowed to do this."
+      },
+      "u4": {
+        "someone": "someone else",
+        "sign": {
+          "aria": "Signature pad",
+          "hint": "Sign with your mouse or finger",
+          "done": "Signed",
+          "clear": "Clear and sign again"
+        },
+        "evidence": {
+          "note": "Your opinion",
+          "plusHint": "This step needs an opinion plus a handwritten signature or at least one file.",
+          "signature": "Handwritten signature",
+          "files": "Attachments (up to 5)",
+          "remove": "Remove",
+          "uploadFail": "Could not upload. Check your connection and size (file ≤ 10 MB, signature ≤ 200 KB) and try again.",
+          "issue": {
+            "note": "Write your opinion before sending.",
+            "noteLong": "Opinion is limited to 4,000 characters — shorten it and send.",
+            "proof": "Sign by hand or attach at least one file.",
+            "tooManyFiles": "At most 5 files."
+          }
+        },
+        "claim": {
+          "unclaimed": "Nobody has taken this",
+          "take": "Take it",
+          "other": "{{who}} is handling it",
+          "mine": "You are handling this",
+          "release": "Return to team",
+          "votes": "Approved {{n}}",
+          "behalf": "For {{who}}",
+          "locked": {
+            "unclaimed": "Take the task before approving.",
+            "other": "Someone else is handling this task."
+          }
+        },
+        "reassign": {
+          "open": "Hand over to…",
+          "who": "Hand over to",
+          "pick": "Pick someone in the department",
+          "reason": "Reason for handing over (required)",
+          "need": "Pick who takes it and give a reason to hand it over.",
+          "confirm": "Hand over"
+        },
+        "err": {
+          "TASK_CLAIMED": "{{who}} just took this task.",
+          "TASK_NOT_CLAIMABLE": "This task does not need to be taken.",
+          "TASK_CLOSED": "This task is already done.",
+          "TASK_NOT_CLAIMED": "Take the task before confirming the milestone.",
+          "NOT_CLAIMER": "You are not handling this task.",
+          "NOT_GROUP_HEAD": "Only the department head or a company admin can reassign.",
+          "TARGET_NOT_IN_GROUP": "The assignee must belong to this step's department.",
+          "FORWARD_REASON_REQUIRED": "Give a reason for forwarding.",
+          "DELEGATE_SELF": "You cannot delegate to yourself.",
+          "DELEGATE_CHAIN": "This person already delegates to someone else — choose another person.",
+          "DELEGATE_NOT_SIGNER": "E-sign delegation is only for members of the contract signers group.",
+          "DELEGATE_NO_ACCESS": "The delegate cannot view this contract.",
+          "DELEGATE_FORBIDDEN": "Only a company admin or department head can delegate on someone's behalf.",
+          "EVIDENCE_REQUIRED": "An opinion plus a signature or at least one file is required.",
+          "FEEDBACK_REQUIRED": "Write an opinion when returning or rejecting.",
+          "CLAIM_HOURS_RANGE": "Hours must be from 1 to 168.",
+          "INBOX_NOT_AWAITING": "This contract is not waiting for your decision.",
+          "INBOX_DECISION_FORBIDDEN": "Only the incoming-contract owner or a company admin can decide.",
+          "SIGNER_GROUP_INVALID": "The signers group must belong to your company — pick one from the list.",
+          "PARTNER_OWNER_INVALID": "The owner must be an active member of your company — pick one from the list."
+        },
+        "row": {
+          "milestone": "Confirm milestone"
+        },
+        "inbox": {
+          "title": "Partner {{sender}} sent a contract — you decide",
+          "note": "Your company has no incoming-contract flow",
+          "accept": "Accept",
+          "return": "Return for changes",
+          "reject": "Reject",
+          "open": "View contract"
+        },
+        "deleg": {
+          "title": "Delegate while away",
+          "sub": "New tasks for the absent person go to the delegate automatically",
+          "forUser": "Set delegation for",
+          "forMe": "Me",
+          "person": "Delegate",
+          "personHint": "Anyone in the company who can view the contract",
+          "pick": "Pick a person…",
+          "from": "From",
+          "to": "Until end of",
+          "kinds": "What to delegate",
+          "esignHint": "E-sign can only be delegated to members of the contract signers group.",
+          "kind": {
+            "approve": "Approve",
+            "form": "Add information",
+            "milestone": "Confirm milestone",
+            "esign": "E-sign"
+          },
+          "issue": {
+            "person": "Pick a delegate.",
+            "self": "You cannot delegate to yourself.",
+            "range": "Fill in both dates (the end must not be before the start).",
+            "kinds": "Pick at least one kind of task."
+          },
+          "save": "Save delegation",
+          "saved": "Delegation saved.",
+          "revoke": "Revoke",
+          "row": "{{from}} → {{to}} · {{start}} – {{end}}"
+        },
+        "settings": {
+          "title": "Taking tasks and signers",
+          "hours": "Time before a taken task returns",
+          "hoursHint": "A taken task not decided after this many hours returns to the team (1–168 hours).",
+          "signers": "Contract signers group",
+          "signersHint": "Only members of this group can e-sign or receive e-sign delegation.",
+          "signersNone": "No group selected",
+          "save": "Save settings",
+          "saved": "Settings saved."
+        },
+        "record": {
+          "title": "Approval record",
+          "pdf": "Download PDF",
+          "pdfError": "Could not download the approval record PDF. You need permission to view this record — check and try again.",
+          "loadError": "Could not load the approval record. Reload the page and try again.",
+          "empty": "No approval step has been decided yet.",
+          "behalf": "for {{who}}",
+          "action": {
+            "approve": "Approved",
+            "return": "Returned",
+            "reject": "Rejected"
+          },
+          "hidden": "An opinion/signature is attached — only people in the flow can view it.",
+          "signature": "View signature",
+          "file": "Download file"
+        },
+        "changes": {
+          "title": "Changed since last time",
+          "loadError": "Could not load the changes. Reload the page and try again.",
+          "none": "Nothing has changed since the previous submission.",
+          "returnNote": "In round {{n}} you returned it:",
+          "field": "Field",
+          "before": "Before",
+          "after": "Now",
+          "clauses": "The text changed in {{n}} passages."
+        }
       }
     },
     "sourcing": {
@@ -88,7 +242,10 @@
         "risk": "Risk",
         "atRisk": "{{n}} lines"
       },
-      "risk": { "source_expiring": "Source expiring", "source_ended": "Source no longer valid" },
+      "risk": {
+        "source_expiring": "Source expiring",
+        "source_ended": "Source no longer valid"
+      },
       "cardSale": "Sources and margin",
       "cardPurchase": "Sale lines bought from this contract",
       "auto": "Automatic: lowest purchase price in force",
@@ -102,6 +259,282 @@
         "NOT_FOUND": "The contract or line is gone — reload the page.",
         "PACK_FORBIDDEN": "Viewers cannot change the source.",
         "VALIDATION_ERROR": "Invalid data."
+      }
+    },
+    "u6": {
+      "source": {
+        "upload": "Uploaded by us",
+        "partner": "Sent by partner"
+      },
+      "extract": {
+        "reading": "AI reading",
+        "failed": "AI could not read"
+      },
+      "waiting": {
+        "anyStep": "In approval",
+        "until": "due {{date}}",
+        "over": "overdue"
+      },
+      "trade": {
+        "which": "Which contract does it belong to?",
+        "whichHint": "This partner has a valid contract. Pick the milestone to record, or choose Not under a contract.",
+        "milestone": "Milestone “{{title}}” · due {{due}}",
+        "remaining": "{{n}} left",
+        "late": "overdue",
+        "kind": {
+          "delivery": "Delivery",
+          "receipt": "Receipt",
+          "collect": "Collect payment",
+          "pay": "Pay"
+        },
+        "none": "Not under a contract",
+        "noneHint": "One-off deal, priced at the current price list.",
+        "reason": "Why it is not under a contract",
+        "reasonHint": "Why does this deal not belong to any contract?",
+        "evidence": "Evidence",
+        "evidenceHint": "A note plus at least a signature or a file — same box as in the Approve step.",
+        "openContract": "Open contract",
+        "linked": {
+          "posted": "Recorded on the contract milestone.",
+          "pending": "Under review — stock and balances change only after the approver agrees.",
+          "split": "The remainder was split into a new milestone with the same due date."
+        },
+        "err": {
+          "required": "This partner has a valid contract: pick a milestone or choose Not under a contract.",
+          "reason": "Choosing Not under a contract needs a reason.",
+          "evidence": "Recording on a milestone needs a note plus a signature or a file.",
+          "mixed": "The deal has product lines outside the chosen contract — split it into another deal.",
+          "overPlan": "Quantity exceeds the milestone plan — lower it or pick another milestone.",
+          "claimed": "Someone else is handling this milestone — ask them to confirm, or choose Not under a contract."
+        }
+      },
+      "cosign": {
+        "title": "Sign together",
+        "phase": {
+          "proposed": "Partner proposed signing together, awaiting reply",
+          "accepted": "Both sides agreed, preparing to sign",
+          "signing": "Both sides are signing in parallel",
+          "done": "Both sides have signed",
+          "cancelled": "Signing session cancelled",
+          "declined": "A side declined to sign",
+          "expired": "Signing session expired",
+          "fallback": "Handled normally — not signed together"
+        },
+        "until": "due {{at}}",
+        "reason": "Urgent because: {{reason}}",
+        "signedAt": "signed {{at}}",
+        "waiting": "waiting to sign",
+        "noLegal": "Test signing with the built-in provider has no legal value.",
+        "signer": "Our signer",
+        "pickSigner": "Pick a signer (Contract signers group)",
+        "accept": "Agree to sign together",
+        "normal": "Handle normally",
+        "decline": "Decline contract",
+        "cancelReason": "Reason for cancelling",
+        "cancel": "Cancel signing session",
+        "fail": "Could not do that. Reload the page and try again."
+      }
+    },
+    "u5": {
+      "preview": {
+        "title": "When you submit, the contract goes through:",
+        "hours": "{{n}} h",
+        "loadError": "Could not preview the approval steps — you can still submit."
+      },
+      "status": {
+        "draft": "Draft",
+        "processing": "In review",
+        "reject": "Rejected",
+        "done": "Approved"
+      },
+      "effect": {
+        "not_started": "Not yet in effect",
+        "active": "In effect",
+        "expiring": "Expiring soon",
+        "expiringIn": "Expires in {{n}} days",
+        "expired": "Expired",
+        "renewed": "Renewed",
+        "terminated": "Terminated"
+      },
+      "hold": {
+        "chip": "Execution on hold"
+      },
+      "owner": {
+        "label": "Owner"
+      },
+      "banner": {
+        "reading": "AI is reading the document — fields will be pre-filled in a moment for you to check.",
+        "readFailed": "AI could not read the document. Press “Re-read” or enter the fields by hand.",
+        "returnedBy": "Returned by {{who}} · {{at}}",
+        "rejectedBy": "Rejected by {{who}} · {{at}}",
+        "withdrawnBy": "Withdrawn by {{who}} · {{at}}",
+        "returnedHint": "Fields are open for editing. Press Resubmit to review again from the first step.",
+        "rejectedHint": "The contract ended here. You can create a new contract from this document.",
+        "waiting": "Waiting for {{step}} · {{who}}",
+        "over": "overdue",
+        "hoursLeft": "{{n}} h left",
+        "waitingHint": "Details are locked while in review. To edit, the submitter withdraws to DRAFT.",
+        "holdBy": "On hold by {{who}}",
+        "holdHint": "No delivery/receipt notes and no milestone confirmation; collections can still be recorded. Releasing needs evidence."
+      },
+      "act": {
+        "resubmit": "Resubmit",
+        "withdraw": "Withdraw to DRAFT",
+        "recreate": "Create a new contract from this document",
+        "newVersion": "Upload new version",
+        "hold": "Put on hold",
+        "release": "Release hold"
+      },
+      "ask": {
+        "withdraw": {
+          "title": "Withdraw to DRAFT",
+          "hint": "Give a reason so reviewers know.",
+          "ok": "Withdraw"
+        },
+        "hold": {
+          "title": "Put execution on hold",
+          "hint": "Give a reason and attach evidence (e.g. overdue balance sheet).",
+          "ok": "Put on hold"
+        },
+        "release": {
+          "title": "Release execution hold",
+          "hint": "Give a reason and attach evidence.",
+          "ok": "Release"
+        },
+        "unchanged": {
+          "title": "Resubmit without changes?",
+          "hint": "Nothing changed since last time — give a reason for resubmitting.",
+          "ok": "Resubmit"
+        }
+      },
+      "toast": {
+        "resubmitted": "Resubmitted for review.",
+        "recreated": "New DRAFT contract created.",
+        "withdrawn": "Withdrawn to DRAFT.",
+        "held": "Execution put on hold.",
+        "released": "Execution hold released."
+      },
+      "err": {
+        "STATE_CONFLICT": "The contract just changed state. Reload the page and try again.",
+        "CONTRACT_NOT_DRAFT": "Only a DRAFT contract can be submitted.",
+        "EXTRACT_NOT_READY": "AI has not finished reading — wait or press Re-read.",
+        "UNCHANGED_REASON_REQUIRED": "Nothing changed since last time — give a reason for resubmitting.",
+        "FILE_REQUIRED": "Upload the contract document before submitting.",
+        "WITHDRAW_NOT_ALLOWED": "Cannot withdraw: a reviewer already decided, only the submitter can withdraw, or the contract is no longer in review.",
+        "CONTRACT_NOT_REJECTED": "Only a rejected contract can be recreated.",
+        "NO_APPROVAL_FLOW": "Your company has no contract approval process yet — ask an admin to create one under Processes.",
+        "USE_NEW_VERSION": "Changing value, prices, parties or terms needs Upload new version.",
+        "HOLD_EXISTS": "The contract is already on hold.",
+        "NOT_HELD": "The contract is not on hold.",
+        "HOLD_FORBIDDEN": "Only the owner, their department head or a company admin can hold/release.",
+        "HOLD_NOT_ALLOWED": "Only an approved, in-effect contract can be put on hold.",
+        "CONTRACT_ON_HOLD": "The contract is on hold — only collections can be recorded.",
+        "EVIDENCE_REQUIRED": "An opinion and a signature or at least one file is required.",
+        "OVER_PLAN": "More than the milestone's remainder. Reduce the amount or pick another milestone.",
+        "OBLIGATION_CLOSED": "The milestone is already done.",
+        "CHANGE_PENDING": "The milestone has a change request awaiting approval.",
+        "CHANGE_PENDING_EXISTS": "The milestone has a change request awaiting approval.",
+        "CHANGE_FORBIDDEN": "Only the owner or a company admin can request execution changes.",
+        "CHANGE_INVALID": "This request does not apply to this milestone.",
+        "PENALTY_DECIDED": "The penalty for this milestone was already decided.",
+        "PENALTY_FORBIDDEN": "Only the owner or a company admin can decide the penalty.",
+        "PENALTY_NOT_APPLICABLE": "This milestone is not late, so no penalty applies.",
+        "PENALTY_OVER_CAP": "The penalty exceeds the contract cap — enter a smaller amount or attach evidence."
+      },
+      "ms": {
+        "title": "Execution milestones",
+        "sub": "AI-drafted from delivery and payment terms, editable",
+        "mine": "You are handling this",
+        "ours": "Us",
+        "whyHold": "on hold",
+        "whyUnclaimed": "Press Take to confirm this milestone.",
+        "done": "Done",
+        "upcoming": "Not yet due",
+        "postpone": "Postpone",
+        "confirm": "Confirm",
+        "confirmDelivery": "Confirm delivered",
+        "confirmPay": "Confirm paid",
+        "confirmCollect": "Confirm received"
+      },
+      "fulfill": {
+        "titleDelivery": "Confirm delivered · {{title}}",
+        "titlePay": "Confirm paid · {{title}}",
+        "titleCollect": "Confirm received · {{title}}",
+        "titleOther": "Confirm done · {{title}}",
+        "postponeTitle": "Postpone · {{title}}",
+        "lead": "Current due date {{date}}. Each confirmation needs the real date and evidence.",
+        "newDue": "New due date",
+        "atDelivery": "Actual delivery date",
+        "atMoney": "Actual date",
+        "amount": "Actual amount",
+        "late": "{{n}} days past the due date",
+        "faultAsk": "Whose fault?",
+        "short": "Less than planned — what happens to the remainder?",
+        "keep": "Keep the milestone open, old due date",
+        "split": "Split into a new milestone, new due date",
+        "evidence": "Evidence (opinion + signature or file)",
+        "ok": "Confirm",
+        "postponeOk": "Postpone",
+        "done": "Recorded.",
+        "postponed": "Due date changed.",
+        "postponePending": "Postpone request sent, awaiting approval."
+      },
+      "penalty": {
+        "booked": "Penalty booked to the ledger.",
+        "waived": "No penalty for this late milestone.",
+        "reason": {
+          "no_term": "No penalty term in the contract matches this milestone.",
+          "missing_amount": "The penalty term has no number — enter it by hand if needed."
+        },
+        "estimateReceive": "Partner is {{days}} days late — estimated penalty {{amount}} (we receive).",
+        "estimatePay": "We are {{days}} days late — estimated penalty {{amount}} (we owe).",
+        "book": "Book to ledger",
+        "waive": "No penalty",
+        "waiveNote": "No penalty for this late occurrence"
+      },
+      "stats": {
+        "delivered": "Delivered · {{pct}}% · {{left}} left",
+        "collected": "Collected · {{pct}}% · {{left}} left",
+        "next": "Next milestone · {{date}}",
+        "penalty": "Penalties incurred"
+      },
+      "notes": {
+        "title": "Things to note",
+        "sub": "AI summary of the document",
+        "cap": "capped at {{cap}}",
+        "group": {
+          "penalty": "Penalties",
+          "payment": "Payment",
+          "delivery": "Delivery and acceptance",
+          "warranty": "Warranty",
+          "renewal": "Renewal / termination",
+          "dispute": "Disputes"
+        },
+        "term": {
+          "generic": "Penalty rate {{rate}}%",
+          "partner.late_payment.per_day_of_value": "Partner pays late: {{rate}}%/day of the late amount.",
+          "ours.late_delivery.per_day_of_value": "We deliver late: {{rate}}%/day of the late portion's value.",
+          "partner.late_delivery.per_day_of_value": "Partner delivers late: {{rate}}%/day of the late portion's value.",
+          "ours.late_payment.per_day_of_value": "We pay late: {{rate}}%/day of the late amount."
+        }
+      },
+      "risks": {
+        "title": "Watch out"
+      },
+      "effectCard": {
+        "title": "Validity",
+        "until": "In effect until {{date}}",
+        "noEnd": "No end date recorded",
+        "renewed": "Renewed on {{date}}",
+        "terminated": "Terminated on {{date}}",
+        "hint": {
+          "not_started": "The contract is not yet in effect.",
+          "active": "In effect. When it is time, the Renew · Terminate · Let expire decision appears in My work.",
+          "expiring": "Expiring soon — decide Renew, Terminate or Let expire in the “Expiring” task in My work.",
+          "expired": "Expired with no renewal recorded.",
+          "renewed": "A renewal contract has replaced this one.",
+          "terminated": "The contract was terminated early."
+        }
       }
     }
   }

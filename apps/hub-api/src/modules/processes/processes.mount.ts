@@ -1,13 +1,14 @@
 // HUB-FR-104…117 · D15 · mount module quy trình khi cờ `HUB_PROCESS_ENGINE=on` (plan §8 hàng 0b, plan-contract §7.1):
 // route mọi PF (file của từng PF, mount sẵn ⇒ PF không sửa file này), ThreadPoster + vòng nền, seam N3. Cờ tắt ⇒ `app.ts`
 // không gọi ⇒ mọi route quy trình 404, `!` là chữ thường.
+
 import type { Env, Hono, MiddlewareHandler } from "hono";
 import { requireAdminRole } from "../../lib/admin-role.middleware";
 import { safeErrorFields } from "../../lib/errors";
 import { KhWriter } from "../kh/kh.writer";
 import type { WorkflowInvoker } from "../mcp/adapters/workflow-invoker";
 import type { PackRunsBridge, PackToolCatalog } from "../packs/kit/public";
-import { partnerMailboxPort } from "../packs/kit/public";
+import { partnerMailboxPort, registerFlowEngine } from "../packs/kit/public";
 import { startPartnerMover } from "../partners/mailbox-mover";
 import type { RoomProcessSender } from "../rooms/messages/messages.service";
 import type { ResolveBridge } from "../sources/resolve.bridge";
@@ -25,17 +26,25 @@ import type { ProcessHandles } from "./core/handles";
 import type { ProcessBgDeps, ProcessDeps, ProcessStartPort, StageLauncher } from "./core/ports";
 import { ThreadPoster } from "./core/thread-poster";
 import { defsRoutes } from "./defs/defs.routes";
+import { delegationsRoutes } from "./delegations/delegations.routes";
 import { gatesRoutes } from "./gates/gates.routes";
 import { companyFlowsRoutes } from "./library/company-flows.routes";
+import { flowPreviewRoutes } from "./library/flow-preview.routes";
 import { libraryInternalRoutes } from "./library/library.internal.routes";
 import { libraryRoutes } from "./library/library.routes";
 import { paletteRoutes } from "./library/palette.routes";
-import { previewRoutes } from "./library/preview.routes";
 import { inboxRoutes } from "./notify/inbox.routes";
 import { createNotifier } from "./notify/notifier";
-import { remindOnce, startProcessReminder } from "./notify/reminder";
+import {
+  claimReleaseOnce,
+  remindOnce,
+  startClaimRelease,
+  startProcessReminder,
+} from "./notify/reminder";
+import { startTaskSignal, taskSignalOnce } from "./notify/task-signal.loop";
 import { PROCESS_ROUTES_HEADER, type ProcessRoutesMode } from "./routes-mode";
 import { conversationStart } from "./runs/conversation-start";
+import { flowEngineOf } from "./runs/flow-engine";
 import { createStageLauncher } from "./runs/launcher";
 import { packRunsOf } from "./runs/pack-runs";
 import { applyResolveReport } from "./runs/resolve-apply";
@@ -46,6 +55,7 @@ import { warmBackgroundPool } from "./runs/warm-pool";
 import { startFlowDispatcher } from "./triggers/dispatcher";
 import { flowLaunchOf } from "./triggers/flow-launch";
 import { manualStartRoutes } from "./triggers/manual-start.routes";
+import { mountScheduleTestRoute, startScheduleSweep } from "./triggers/schedule-sweep";
 import { usageRoutes } from "./usage/usage.routes";
 
 /** Gốc route quy trình cần JWT (`app.ts` gắn `requireAuth`; `/me/*` đã có ở X2a). */
@@ -146,10 +156,12 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   const launcher = m.stageLauncher ?? createStageLauncher(base);
   const core: Omit<ProcessDeps, "start"> = { ...base, launcher };
   const d: ProcessDeps = { ...core, start: conversationStart(core) };
+  registerFlowEngine(flowEngineOf(d)); // CR-127 K3 · cổng engine cho gói (có quy trình khớp? · Rút về)
   // PB-R05 · nhận report resolve từ module nguồn (đã mount trước): ghim `pinned_sources`/`needs_decision` + kick.
   if (m.resolveBridge) m.resolveBridge.onReport = (r) => applyResolveReport(d, r);
   if (m.packRuns) m.packRuns.port = packRunsOf(d, systemOnly(uow)); // N2-FR-01
   mountRoutes(app, d, m.publicRoutes ?? "all");
+  mountScheduleTestRoute(app, { db: d.db, now, log: m.log }); // CR-127 · E6 · #63 · chỉ dev/test
   app.route("/internal", libraryInternalRoutes(d, m.internalToken)); // CR-105 · L5 · token dịch vụ, không JWT
   const bg: ProcessBgDeps = {
     ...d,
@@ -183,6 +195,7 @@ const ALL_ROUTES = [
   paletteRoutes, // CR-122 · N1
   bridgeRoutes, // CR-122 · N2
   manualStartRoutes, // CR-125 · bắt đầu bằng phiếu yêu cầu (người dùng workspace)
+  delegationsRoutes, // CR-127 · E3 · uỷ quyền
 ];
 
 /** CR-103 · `admin`: chặn role ở GỐC mọi tiền tố quy trình (JWT role, không dựa `X-App` do client đặt) ⇒ member 403. */
@@ -198,7 +211,7 @@ function mountRoutes<E extends Env>(app: Hono<E>, d: ProcessDeps, mode: ProcessR
     });
   }
   for (const r of mode === "admin" ? ADMIN_ROUTES : ALL_ROUTES) app.route("/", r(d));
-  app.route("/", previewRoutes(d)); // CR-105 · L2b · xem trước đường đi quy trình thư viện (platform_admin)
+  app.route("/", flowPreviewRoutes(d)); // CR-127 · E7 · Chạy thử quy trình (platform_admin, chỉ đọc)
 }
 
 /** CR-115 · kick theo lô của launcher (vắng — vd launcher giả của test ⇒ `kick` từng run, lỗi một run chỉ log). */
@@ -243,6 +256,8 @@ function startBackground(o: {
   m.onProcessHandles?.({
     sweepOnce: () => sweepOnce(bg),
     remindOnce: () => remindOnce(bg),
+    claimReleaseOnce: () => claimReleaseOnce(bg), // CR-127 · E2
+    taskSignalOnce: () => taskSignalOnce(bg), // CR-127 · E10
     postThreadOnce: () => poster.postThreadOnce(),
     kick: (runId) => bg.launcher.kick(runId),
     kickMany: (runIds) => kickMany(bg, runIds),
@@ -259,8 +274,13 @@ function startBackground(o: {
   startProcessSweeper(bg, { signal: m.signal });
   // D-PD10 · plan §5 · vòng nhắc + chuyển cấp 300 s (theo tập, `systemBatch`).
   startProcessReminder(bg, { signal: m.signal });
+  // CR-127 · E2 · vòng tự trả việc đã nhận quá giờ của công ty (R#27).
+  startClaimRelease(bg, { signal: m.signal });
+  startTaskSignal(bg, { signal: m.signal }); // CR-127 · E10
   // CR-122 · E1 · bộ điều phối sự kiện → lượt (cờ FLOW_TRIGGERS tắt ⇒ chỉ ghi bóng). Test gọi `dispatchOnce` trực tiếp.
   startFlowDispatcher({ db: bg.db, launch: flowLaunchOf(bg), log: m.log }, { signal: m.signal });
+  // CR-127 · E6 · vòng lịch (10 phút): flow theo lịch ⇒ `flow_events`. Test gọi `scheduleSweepOnce` trực tiếp.
+  startScheduleSweep({ db: bg.db, now: bg.now, log: m.log }, { signal: m.signal });
   // CR-124 · q1 · hộp thư liên công ty ⇒ `contract.received` (bên nhận) / `partner.*` (bên gửi). Test gọi `partnerMoveOnce`.
   // q3 · cổng gói Hợp đồng (tạo HĐ nhận / báo kết quả về node chờ) đăng ký lúc mount gói, đọc mỗi lượt.
   if (m.partnerMailbox)

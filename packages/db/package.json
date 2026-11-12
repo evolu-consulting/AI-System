@@ -16,6 +16,7 @@
     "./schema/hub-rooms": "./src/schema/hub-rooms.ts",
     "./schema/hub-processes": "./src/schema/hub-processes.ts",
     "./schema/hub-process-library": "./src/schema/hub-process-library.ts",
+    "./schema/hub-evidence": "./src/schema/hub-evidence.ts",
     "./schema/hub-secrets": "./src/schema/hub-secrets.ts",
     "./schema/hub-kh": "./src/schema/hub-kh.ts",
     "./schema/hub-autofix": "./src/schema/hub-autofix.ts"

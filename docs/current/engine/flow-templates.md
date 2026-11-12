@@ -1,5 +1,7 @@
 # flow templates
 
+> **CR-127 (2026-11-11) — phần Thư viện/khe/sao chép/mẫu/máy duyệt cũ trong file này ĐÃ THAY THẾ:** xem [engine/quy-trinh-cr127.md](quy-trinh-cr127.md). Giữ làm lịch sử; chỗ mâu thuẫn thì file CR-127 thắng.
+
 Cập nhật: 2026-11-08 · Nguồn: cr122-b-clean-templates. Mục "Việc còn lại" nằm ở `docs/specs/<lát>/tasks.md`.
 
 #### Yêu cầu: Thư viện có sẵn 3 flow mẫu duyệt hợp đồng

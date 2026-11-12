@@ -66,29 +66,69 @@ export async function openCompanyFlows(page: Page): Promise<Locator> {
 export const flowRows = (box: Locator): Locator => box.locator('li[data-testid^="company-flow-"]');
 export const flowRow = (box: Locator, name: string): Locator =>
   flowRows(box).filter({ hasText: name });
+/**
+ * CR-127 · quản trị nền tảng bấm «Tạo quy trình» ở trang Quy trình (công ty → [ứng dụng] → tên → «Tạo và mở sơ đồ»), chờ màn soạn mở. Trả id quy trình.
+ * `app` (tên hiển thị, vd "Community") chỉ cần khi công ty bật từ hai ứng dụng có quy trình trở lên (ô «Quy trình cho»); vắng ⇒ ứng dụng đầu (Sổ Hợp Tác).
+ */
+export async function createFlowUi(
+  page: Page,
+  adminUrl: string,
+  o: { company: string; name: string; app?: string },
+): Promise<string> {
+  await page.goto(`${adminUrl}/processes`);
+  await page.getByTestId("create-flow-open").click();
+  const dlg = page.getByTestId("create-flow-dialog");
+  await dlg.getByRole("combobox").first().click();
+  await page.getByRole("option", { name: o.company, exact: true }).click();
+  await expect(dlg.getByTestId("create-flow-summary")).toBeVisible();
+  if (o.app) {
+    await dlg.getByRole("combobox", { name: "Quy trình cho" }).click();
+    await page.getByRole("option", { name: o.app, exact: true }).click();
+  }
+  await dlg.getByRole("textbox", { name: "Tên quy trình" }).fill(o.name);
+  await dlg.getByRole("button", { name: "Tạo và mở sơ đồ" }).click();
+  await expect(page).toHaveURL(/\/processes\/[0-9a-f-]{36}/);
+  await expect(page.getByTestId("outline-editor")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("outline-done")).toBeVisible();
+  return /\/processes\/([0-9a-f-]{36})/.exec(page.url())?.[1] ?? "";
+}
+
+/**
+ * CR-127 · mở màn soạn quy trình (vẽ theo khối) của một quy trình công ty: `/processes/:flowId?company=:tenantId`; chờ khối «Bắt đầu» và «Hoàn tất» hiện.
+ * Chỉ quản trị nền tảng soạn được; quản trị công ty chỉ xem (tab Quy trình + `company-flow-readonly-note`).
+ */
+export async function openFlowEditor(
+  page: Page,
+  adminUrl: string,
+  tenantId: string,
+  flowId: string,
+): Promise<void> {
+  await page.goto(`${adminUrl}/processes/${flowId}?company=${tenantId}`);
+  await expect(page.getByTestId("outline-editor")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("outline-done")).toBeVisible({ timeout: 30_000 });
+}
+
+/** CR-127 · màn soạn theo khối: «+» thứ `index` trên đường chính → mục menu `item` (testid `flow-node-<id>` hoặc tên). */
+export async function addMainStep(page: Page, index: number, item: string | RegExp): Promise<void> {
+  await page.getByTestId(`outline-add-main-${index}`).click();
+  if (typeof item === "string") await page.getByTestId(`flow-node-${item}`).click();
+  else await page.getByRole("menuitem", { name: item }).click();
+}
+
+/** CR-127 · chọn người duyệt (ô «Ai duyệt» đầu tiên của panel bước) theo tên phòng/người. */
+export async function pickApprover(page: Page, who: RegExp | string): Promise<void> {
+  await page
+    .getByRole("combobox", { name: /Ai duyệt/ })
+    .first()
+    .click();
+  await page.getByRole("option", { name: who }).first().click();
+}
+
 /** Giá trị `value` của lựa chọn có chữ `text` trong `<select>` (ném lỗi rõ nếu không có). */
 export async function optionValue(select: Locator, text: string): Promise<string> {
   const v = await select.locator("option", { hasText: text }).first().getAttribute("value");
   if (!v) throw new Error(`không có lựa chọn "${text}"`);
   return v;
-}
-
-/**
- * CR-122 U2 · platform_admin gán flow Thư viện `name` cho công ty (hộp `company-flows`): chọn ở ô "Quy trình trong Thư viện" → "Gán".
- * Chạy lại được (đã có dòng thì bỏ qua). `name` vắng ⇒ lấy flow đầu tiên còn chọn được. Trả dòng vừa gán.
- */
-export async function assignFlowUi(box: Locator, name?: string): Promise<Locator> {
-  if (name && (await flowRow(box, name).count()) > 0) return flowRow(box, name);
-  const pick = box.getByRole("combobox", { name: "Quy trình trong Thư viện" });
-  const value = name
-    ? await optionValue(pick, name)
-    : await pick.locator("option[value]:not([value=''])").first().getAttribute("value");
-  if (!value) throw new Error("thư viện không có flow nào để gán");
-  await pick.selectOption(value);
-  await box.getByRole("button", { name: "Gán", exact: true }).click();
-  const row = name ? flowRow(box, name) : flowRows(box).last();
-  await expect(row).toBeVisible();
-  return row;
 }
 
 // ── tải lại an toàn ────────────────────────────────────────────────────────────────────────────────────────────────────────────

@@ -10,6 +10,7 @@ import { useGroupKeyOptions } from "../../hooks/use-group-key-options";
 import { isApply } from "../../lib/apply-form";
 import { isForm } from "../../lib/form-fields";
 import { isIf } from "../../lib/if-form";
+import { isMilestone } from "../../lib/milestone-panel";
 import { draftClusterOf } from "../../lib/module-cluster";
 import { isSet } from "../../lib/set-form";
 import { isStartForm } from "../../lib/start-form";
@@ -35,6 +36,7 @@ import { StageGate } from "./StageGate";
 import { StageGeneral, StageLimits } from "./StageGeneral";
 import { StageIfForm } from "./StageIf";
 import { StageLinks } from "./StageLinks";
+import { StageMilestone } from "./StageMilestone";
 import { StageMustKnow } from "./StageMustKnow";
 import { StageOutput } from "./StageOutput";
 import { StageRemind } from "./StageRemind";
@@ -159,6 +161,7 @@ function ModuleBody(p: StageFormProps) {
   const flow = useFlowCtx();
   const palette = usePalette(flow?.app ?? "", flow?.tenantId);
   const node = palette.data?.find((n) => n.key === stage.node);
+  if (isMilestone(stage)) return <StageMilestone {...p} />;
   if (isWait(stage)) return <StageWait {...p} />;
   if (isWaitFamily(stage)) return <StageTimedWait {...p} />;
   // CR-125 · cr125-subprocess-ui · «Quy trình con»: một stage, panel riêng ở panelRegistry (chọn quy trình con, nối đầu vào)
@@ -228,10 +231,28 @@ function NotifyBasics(p: Pick<StageFormProps, "stage" | "readOnly" | "onChange">
   const { t } = useTranslation();
   const raw = p.stage.notifyRaw;
   if (!raw) return null;
-  const set = (patch: { title?: string; body?: string; to?: NotifyTo[] }) =>
-    p.onChange({ notifyRaw: { ...raw, ...patch } });
+  const set = (patch: {
+    title?: string;
+    body?: string;
+    to?: NotifyTo[];
+    channels?: ("bell" | "email")[];
+  }) => p.onChange({ notifyRaw: { ...raw, ...patch } });
+  const email = raw.channels.includes("email");
+  const choice = email ? (raw.channels.includes("bell") ? "both" : "email") : "bell";
+  const CHANNELS = { bell: ["bell"], email: ["email"], both: ["bell", "email"] } as const;
   return (
     <div className="space-y-3" data-testid="notify-basics">
+      <SelectField
+        id={`${p.stage.uid}-nchannel`}
+        label={t("process.admin.flow.notify.channel")}
+        value={choice}
+        readOnly={p.readOnly}
+        options={(["bell", "email", "both"] as const).map((c) => ({
+          value: c,
+          label: t(`process.admin.flow.notify.channel_${c}`),
+        }))}
+        onChange={(v) => set({ channels: [...CHANNELS[v as keyof typeof CHANNELS]] })}
+      />
       <NotifyRecipients
         id={p.stage.uid}
         to={raw.to}
@@ -280,7 +301,9 @@ function FlowMain(p: StageFormProps) {
   return <Body {...p} />;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CR-127 · UI-FLOW — dựng nhiều khối, tách ở đợt dọn sau
 function FlowForm(p: StageFormProps) {
+  const { t } = useTranslation();
   const { stage } = p;
   // CR-123 · u3a · FR-14: stage của node module nhiều stage (Ký số) ⇒ MỘT panel cho cả ô, bấm stage nào cũng vậy.
   // CR-123 u9: "Nâng cao" (mã bước, người thực hiện, Tự sửa mã, Chạy tính năng…) chỉ cho quản trị nền tảng — công ty chỉ thấy phần nghiệp vụ
@@ -294,11 +317,22 @@ function FlowForm(p: StageFormProps) {
     <section className="space-y-4 px-1" aria-label={stage.name}>
       <StageGeneral {...p} part="name" />
       {approve ? <StageApproveBasics {...p} /> : null}
-      {stage.executor === "approve" ? <StageApprove {...p} /> : null}
+      {approve ? (
+        <p className="text-caption text-muted-foreground" data-testid="approve-note">
+          {(t as (k: string) => string)("process.admin.flow.outline.approveNote")}
+        </p>
+      ) : null}
+      {/* CR-127 · UI-FLOW: "Nếu từ chối / trả lại, đi tới…" là chi tiết kỹ thuật ⇒ nằm trong "Nâng cao" (người duyệt có sẵn 3 nút, không cần vẽ bước Kết thúc). */}
+      {stage.executor === "approve" && !isPlatform ? (
+        <AdvancedBox>
+          <StageApprove {...p} />
+        </AdvancedBox>
+      ) : null}
       <StageLinks {...p} />
       <FlowMain {...p} />
       {isPlatform ? (
         <AdvancedBox>
+          {stage.executor === "approve" ? <StageApprove {...p} /> : null}
           <StageGeneral {...p} part="tech" />
           <StageStepFields {...p} />
           {approve ? <StageRemind {...p} skipRemind /> : null}

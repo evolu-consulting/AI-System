@@ -11,19 +11,21 @@ import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
-import { APPROVAL_DEFAULT_DEF, FLOW_ROUTE_UNAVAILABLE } from "../../packs/contracts/public";
-import type { ApprovalEnginePort } from "../../packs/contracts/testing";
-import { approvalEngineTools, approvalSlotSpec, slotFlowOf } from "../../packs/contracts/testing";
-import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
 import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../core/ports";
 import { libraryRoutes } from "./library.routes";
+import {
+  communityToolInfos,
+  GEN_DEFAULT_ID,
+  GEN_SLOT,
+  registerCommunitySlots,
+} from "./slot-generic.fixture";
 import { resolveSlot } from "./slot-resolve.repo";
 import { routeSlot } from "./slot-route.repo";
 
-const SLOT = "contracts.approval";
+const SLOT = GEN_SLOT;
 const X = tenantId(1201);
-const DFLT = APPROVAL_DEFAULT_DEF.id;
+const DFLT = GEN_DEFAULT_ID;
 const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
   P: { userId: userId(1200), tenantId: X, role: "platform_admin" },
   A: { userId: userId(1201), tenantId: X, role: "tenant_admin" },
@@ -88,8 +90,8 @@ beforeAll(async () => {
     (${X}, ${SLOT}, 1, ${cond}::text::jsonb, ${lib.U}, false),
     (${X}, ${SLOT}, 2, '{}'::jsonb, ${lib.L}, true)`;
   await o`update hub.process_defs set deleted_at = now() where id = ${lib.D}`;
-  slotRegistry.register(approvalSlotSpec);
-  const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({
+  registerCommunitySlots();
+  const tools = communityToolInfos.map((t) => ({
     key: t.name,
     name: t.name,
     description: t.description,
@@ -166,20 +168,11 @@ describe("cr118-routing-deleted · def đã xoá / chưa xuất bản trong tậ
   it("launch khớp luật có def đã xoá ⇒ FLOW_ROUTE_UNAVAILABLE", async () => {
     const routed = await routeSlot(db, X, SLOT, STARTER);
     expect(routed && "blocked" in routed ? routed.blocked : routed).toBe("route_unavailable");
-    const port = {
-      resolveSlot: (t: string, s: string) => resolveSlot(db, t, s),
-      routeSlot: (t: string, s: string, u: string) => routeSlot(db, t, s, u),
-      sourceRefOf: () => "0123456789abcdef",
-    } as unknown as ApprovalEnginePort;
-    const groupsOf = { idsOf: async () => new Map<string, string>() };
-    expect(await slotFlowOf({ bridge: { port }, groups: groupsOf }, X, STARTER)).toEqual({
-      invalid: FLOW_ROUTE_UNAVAILABLE,
-    });
   });
 
   it("PUT chọn def đã xoá / chưa xuất bản ⇒ 422 ROUTING_PROCESS_UNAVAILABLE", async () => {
     const put = (d: string) =>
-      call("A", "PUT", R, {
+      call("P", "PUT", R, {
         version: 1,
         rules: [{ condition: {}, def_id: d, is_default: true }],
       });

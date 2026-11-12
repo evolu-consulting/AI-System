@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thư viện và bộ quy trình</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#4f46e5;text-decoration:none}
+.p{background:#fff;border:1px solid #e5e5ee;border-radius:14px;display:flex;flex-direction:column;font-size:13px;min-width:0}
+.ph{padding:12px 16px;border-bottom:1px solid #e5e5ee;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pb{padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1}
+.who{font-size:11px;font-weight:700;letter-spacing:.05em;color:#6b6a80}
+.sub{color:#6b6a80;font-size:12px}
+.btn{background:#fff;border:1px solid #e5e5ee;border-radius:8px;padding:7px 12px;font:inherit;font-size:13px;white-space:nowrap}
+.pri{background:#4f46e5;color:#fff;border:0;font-weight:600}
+.chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.it{border:1px solid #e5e5ee;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.map{display:grid;grid-template-columns:1fr 20px 1.2fr;gap:6px 8px;align-items:center}
+.in{border:1px solid #e5e5ee;border-radius:8px;padding:6px 10px}
+.menu{border:1px solid #e5e5ee;border-radius:10px;box-shadow:0 10px 28px rgba(24,23,43,.12);padding:4px;background:#fff}
+.menu div{padding:7px 10px;border-radius:6px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1000px; padding: 24px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <div><h1 style="margin: 0 0 4px; font-size: 22px">Dùng lại quy trình giữa các công ty</h1>
+    <div style="font-size: 13px; color: #6b6a80">Một đường duy nhất: mọi cách (sao chép, tải lên, bộ quy trình) đều đi qua <b>màn khớp phòng ban</b> rồi tạo quy trình <b>Nháp</b> ở công ty đích — không áp thẳng, không đè quy trình đang chạy.</div></div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 16px; flex: 1; min-height: 0">
+    <div class="p">
+      <div class="ph"><b style="font-size: 15px">Thư viện › Bộ quy trình</b><span class="btn pri">+ Bộ mới</span></div>
+      <div class="pb">
+        <div class="it" style="border-color: #c7c4ff; background: #fafaff">
+          <div class="row"><b>Sổ Hợp Tác · chuẩn</b><span class="chip" style="background: #e7f6ec; color: #15803d">v3 · 12 công ty</span></div>
+          <span class="sub">7 quy trình · cần phòng: Kinh doanh, Kế toán, Ban Giám đốc · nhóm Người ký HĐ</span>
+          <div style="display: flex; flex-direction: column; gap: 2px; margin-top: 4px">
+            <span>· Duyệt HĐ bán · Duyệt HĐ mua</span><span>· Nhận HĐ thường · Nhận HĐ quan trọng</span><span>· Sắp hết hạn · Mốc quá hạn · Giao dịch lớn</span>
+          </div>
+          <div style="display: flex; gap: 6px; margin-top: 6px"><span class="btn pri">Áp cho công ty…</span><span class="btn">Tải xuống</span></div>
+        </div>
+        <div class="it"><div class="row"><b>Mua hàng dài</b><span class="chip" style="background: #f1f1f6; color: #4b4a5e">v1 · 3 công ty</span></div><span class="sub">Phiếu đề nghị → 11 bước → Tạo HĐ (CR-126)</span></div>
+        <div class="it"><div class="row"><b>Cộng đồng · kiểm duyệt</b><span class="chip" style="background: #f1f1f6; color: #4b4a5e">v2 · 5 công ty</span></div><span class="sub">Kiểm duyệt bài · Đơn tham gia · Báo cáo vi phạm</span></div>
+        <span style="flex: 1"></span>
+        <div style="background: #fff7ed; border-radius: 10px; padding: 10px 12px">
+          <b style="color: #b45309">Bộ có bản mới v3</b>
+          <div>8 công ty dùng nguyên mẫu ⇒ "Cập nhật" (xem trước tác động, lượt đang chạy giữ bản cũ).</div>
+          <div>4 công ty đã chỉnh riêng ⇒ không đè; hiện "So sánh với mẫu mới".</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="p">
+      <div class="ph"><b style="font-size: 15px">Từ một quy trình của công ty</b></div>
+      <div class="pb">
+        <div class="it"><div class="row"><b>Duyệt HĐ bán</b><span class="sub">Demo Sổ Hợp Tác · đang áp dụng</span></div>
+          <div style="display: flex; justify-content: flex-end"><span class="btn">⋯</span></div></div>
+        <div class="menu">
+          <div style="background: #f5f4ff; color: #4f46e5; font-weight: 600">Sao chép sang công ty khác…</div>
+          <div>Lưu thành mẫu Thư viện…</div>
+          <div>Thêm vào bộ quy trình…</div>
+          <div>Tải xuống (.json)</div>
+        </div>
+        <div style="border-top: 1px solid #e5e5ee; padding-top: 10px; display: flex; flex-direction: column; gap: 8px">
+          <div class="row"><b>Tải lên quy trình</b><span class="btn">Chọn tệp .json</span></div>
+          <div class="sub">Dùng để chuyển giữa môi trường (staging → prod), sao lưu, hoặc nhận quy trình từ đối tác triển khai. Tệp chỉ có cấu trúc quy trình, không có dữ liệu, không có người/mật khẩu.</div>
+          <div class="it"><span>📄 duyet-hd-ban.v3.json</span><span class="sub">Định dạng 1 · tạo từ staging 09/11 · 6 bước · cần 3 phòng</span></div>
+          <div class="row"><span>Đưa vào</span><span class="in">Công ty: An Phú ▾</span><span class="sub">hoặc Thư viện</span></div>
+        </div>
+        <span style="flex: 1"></span>
+        <div class="sub">Lưu thành mẫu: người cụ thể trong quy trình phải đổi thành phòng/nhóm trước (mẫu không chứa người của công ty).</div>
+      </div>
+    </div>
+
+    <div class="p" style="border-color: #4f46e5">
+      <div class="ph" style="background: #f5f4ff; border-radius: 14px 14px 0 0"><div><span class="who">MÀN DÙNG CHUNG CHO MỌI CÁCH</span><br><b style="font-size: 15px">Khớp với công ty An Phú</b></div><span class="sub">Bộ Sổ Hợp Tác · 7 quy trình</span></div>
+      <div class="pb">
+        <b>Phòng ban / nhóm</b>
+        <div class="map">
+          <span>Kinh doanh</span><span>→</span><span class="in">Phòng Kinh doanh ✓</span>
+          <span>Kế toán</span><span>→</span><span class="in">Tài chính – Kế toán ▾</span>
+          <span>Ban Giám đốc</span><span>→</span><span class="in" style="border-color: #f59e0b; background: #fffbeb">Chưa có · <a href="#">Tạo nhóm theo gợi ý</a></span>
+          <span>Người ký HĐ</span><span>→</span><span class="in">Người ký HĐ ✓ (2 người)</span>
+        </div>
+        <b>Phần khác</b>
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <span>✓ Ứng dụng Hợp đồng đã bật</span>
+          <span>✓ Ký số đã cấu hình</span>
+          <span style="color: #b45309">⚠ Bước "Công cụ: Tra cứu MST" — công ty chưa có công cụ này ⇒ bước bị tắt, cần chọn lại</span>
+          <span>✓ Không trùng tên quy trình đang có (trùng ⇒ đặt "… (bản sao)")</span>
+        </div>
+        <div style="background: #f7f7fb; border-radius: 10px; padding: 10px 12px">Tạo <b>7 quy trình Nháp</b> ở An Phú, gắn với bộ v3. Chạy thử rồi bấm Áp dụng như bình thường; có thể "Áp dụng tất cả" khi mọi quy trình xanh.</div>
+        <span style="flex: 1"></span>
+        <div style="display: flex; gap: 8px; justify-content: flex-end"><span class="btn">Huỷ</span><span class="btn pri">Tạo bản nháp</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

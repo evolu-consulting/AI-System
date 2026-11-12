@@ -30,6 +30,14 @@ export type ExternalOrgResolver = {
    * ty đối tác của tenant (bạn bè của chủ quản, kể cả đã rời). Gói tự lọc theo người xem (đối tác không bao giờ nhận danh sách).
    */
   directory(tenantId: string, userId: string): Promise<ExtDirectory>;
+  /**
+   * CR-129: user ĐANG hoạt động (chưa vô hiệu) của các công ty đối tác `orgIds` trong tenant — MỘT câu `= any(array)`, dùng để
+   * phát chuông `mention`. Công ty lạ / tenant khác / không có user ⇒ vắng trong Map.
+   */
+  orgMembers(
+    tenantId: string,
+    orgIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly string[]>>;
 };
 
 export type ExtOrg = { id: string; name: string; active: boolean };

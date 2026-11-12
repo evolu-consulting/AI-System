@@ -4,15 +4,12 @@ import type {
   ContractDeal,
   ContractListRow,
   ContractProgress,
-  ContractStage,
   ContractStep,
 } from "@ai/contracts/pack-contracts";
-import { DEAL_TONE, STAGE_TONE } from "~/features/contract-form/lib/deal";
+import { DEAL_TONE } from "~/features/contract-form/lib/deal";
+import { type EffectChipView, effectChipOf } from "~/features/contract-shared/lib/status-view";
 
-export { DEAL_TONE, STAGE_TONE };
-
-/** Trạng thái chưa vào theo dõi: danh sách hiện nhãn trạng thái thay vì giai đoạn (chưa có mốc). */
-const UNTRACKED = new Set(["needs_review", "extracting", "extract_failed", "rejected"]);
+export { DEAL_TONE };
 
 export function dealOfRow(
   r: Pick<ContractListRow, "direction">,
@@ -36,30 +33,52 @@ export const stepKey = (step: ContractStep): string =>
     ? "contracts.list.step.waiting_sign_who"
     : `contracts.list.step.${step.code}`;
 
-/**
- * CR-123 · u10b: HĐ đã vào theo dõi (đang hiệu lực…) mà lượt duyệt kết thúc "Đã duyệt" ⇒ "Đã duyệt · <trạng thái HĐ>". Mã kết cục lấy
- * từ `step_label` của API (cùng helper `stepLabelOf` với thẻ duyệt); mã khác (đang chờ…) không ghép — HĐ đang hiệu lực không chờ ai.
- */
-export const approvedLabel = (
-  step: ContractStep | null | undefined,
-  approvedText: string,
-  statusText: string,
-): string | null => (step?.code === "approved" ? `${approvedText} · ${statusText}` : null);
+/** Số ngày từ hôm nay tới `end` (lịch địa phương); thiếu ngày ⇒ null. Chỉ dùng cho chip "Hết hạn sau N ngày". */
+export function daysLeftOf(end: string | null, now: Date = new Date()): number | null {
+  if (!end) return null;
+  const [y, m, d] = end.split("-").map(Number) as [number, number, number];
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((Date.UTC(y, m - 1, d) - today) / 86_400_000);
+}
 
-export type StageView =
-  | { kind: "status" }
-  | { kind: "stage"; stage: ContractStage; overdue: boolean; step: string | null };
+export type StatusView = {
+  effect: EffectChipView | null;
+  held: boolean;
+  /** AI đọc văn bản (không phải trạng thái): đang đọc / chưa đọc được; xong hoặc không có ⇒ null. */
+  extract: "reading" | "failed" | null;
+};
 
-export function stageView(
-  r: Pick<ContractListRow, "status">,
-  p: ContractProgress | undefined,
-): StageView {
-  if (!p || UNTRACKED.has(r.status)) return { kind: "status" };
-  const overdue = p.stage === "in_progress" && !!p.next?.overdue;
+/** CR-127 · U6: ô Trạng thái = chip 4 trạng thái + chip hiệu lực (chỉ HĐ đã duyệt xong, BR-07) + tạm khoá + trạng thái đọc của AI. */
+export function statusView(
+  r: Pick<ContractListRow, "status" | "effect" | "hold" | "extract_state">,
+  daysLeft: number | null,
+): StatusView {
   return {
-    kind: "stage",
-    stage: p.stage,
-    overdue,
-    step: p.stage === "in_progress" ? (p.next?.title ?? null) : null,
+    effect: effectChipOf(r, daysLeft),
+    held: !!r.hold,
+    extract:
+      r.extract_state === "reading" ? "reading" : r.extract_state === "failed" ? "failed" : null,
+  };
+}
+
+export type WaitingView = {
+  step: string | null;
+  who: string | null;
+  due: string | null;
+  overdue: boolean;
+};
+
+/** "Đang chờ": HĐ không có lượt duyệt mở ⇒ null; quá hạn khi `due_at` đã qua `now`. */
+export function waitingView(
+  w: ContractListRow["waiting"],
+  now: Date = new Date(),
+): WaitingView | null {
+  if (!w) return null;
+  const due = w.due_at ? w.due_at.slice(0, 10) : null;
+  return {
+    step: w.step,
+    who: w.who,
+    due,
+    overdue: !!w.due_at && Date.parse(w.due_at) < now.getTime(),
   };
 }

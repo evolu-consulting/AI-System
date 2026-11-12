@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Uỷ quyền</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#4f46e5;text-decoration:none}
+.p{background:#fff;border:1px solid #e5e5ee;border-radius:14px;display:flex;flex-direction:column;font-size:13px;min-width:0}
+.ph{padding:12px 16px;border-bottom:1px solid #e5e5ee;display:flex;flex-direction:column;gap:2px}
+.pb{padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1}
+.who{font-size:11px;font-weight:700;letter-spacing:.05em;color:#6b6a80}
+.sub{color:#6b6a80;font-size:12px}
+.in{border:1px solid #e5e5ee;border-radius:8px;padding:7px 10px}
+.btn{background:#fff;border:1px solid #e5e5ee;border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;text-align:center}
+.pri{background:#4f46e5;color:#fff;border:0;font-weight:600}
+.chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.it{border:1px solid #e5e5ee;border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;gap:3px}
+.opt{border:1px solid #e5e5ee;border-radius:8px;padding:6px 10px}
+.opt.on{border-color:#4f46e5;background:#f5f4ff;color:#4f46e5;font-weight:600}
+</style>
+</helmet>
+<div style="width: 1280px; height: 980px; padding: 24px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <div><h1 style="margin: 0 0 4px; font-size: 22px">Uỷ quyền: chuyển trong nhóm và chỉ định khi vắng</h1>
+    <div style="font-size: 13px; color: #6b6a80">Ví dụ: Lê Thị Hoa (Kế toán trưởng) nghỉ phép 12–15/11, uỷ quyền cho Trần Minh. Hồ sơ duyệt luôn ghi "duyệt thay".</div></div>
+
+  <div style="display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 16px; flex: 1; min-height: 0">
+    <div class="p">
+      <div class="ph"><span class="who">A · CHỈ ĐỊNH TRƯỚC · Hồ sơ của tôi › Uỷ quyền khi vắng</span><b style="font-size: 15px">Uỷ quyền khi vắng</b></div>
+      <div class="pb">
+        <div style="display: flex; flex-direction: column; gap: 4px"><b>Người làm thay</b><span class="in">Trần Minh · Kế toán ▾</span><span class="sub">Bất kỳ ai trong công ty có quyền xem hợp đồng</span></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+          <div style="display: flex; flex-direction: column; gap: 4px"><b>Từ</b><span class="in">12/11/2026</span></div>
+          <div style="display: flex; flex-direction: column; gap: 4px"><b>Tới hết</b><span class="in">15/11/2026</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><b>Uỷ quyền việc gì</b>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="opt on">✓ Duyệt</span><span class="opt on">✓ Bổ sung thông tin</span><span class="opt on">✓ Xác nhận mốc</span><span class="opt">Ký số</span></div>
+          <span class="sub">Ký số chỉ chọn được khi Trần Minh thuộc nhóm "Người ký HĐ" (hiện không thuộc).</span></div>
+        <div style="background: #f5f4ff; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px">
+          <b>Việc bạn đang giữ (2)</b>
+          <div class="row"><span>Duyệt HĐ bán thùng phi · Tân Phát</span><span class="opt on" style="padding: 3px 8px">Chuyển</span></div>
+          <div class="row"><span>Xác nhận mốc Thu đợt 2 · ABC</span><span class="opt on" style="padding: 3px 8px">Chuyển</span></div>
+          <span class="sub">Việc mới giao cho bạn trong 12–15/11 tự sang Trần Minh.</span>
+        </div>
+        <span style="flex: 1"></span>
+        <div class="sub">Quản trị công ty / trưởng nhóm đặt được thay khi bạn vắng đột xuất (Cài đặt › Thành viên › Lê Thị Hoa › Uỷ quyền).</div>
+        <div class="btn pri">Lưu uỷ quyền</div>
+      </div>
+    </div>
+
+    <div class="p">
+      <div class="ph"><span class="who">B · CHUYỂN TRONG NHÓM (tức thời)</span><b style="font-size: 15px">Chuyển việc cho người cùng nhóm</b><span class="sub">Mở từ thẻ duyệt, khi bạn đã nhận việc</span></div>
+      <div class="pb">
+        <div class="it"><b>Duyệt HĐ bán thùng phi cho Tân Phát</b><span class="sub">Nhóm Kế toán · bạn nhận lúc 09:10 · còn 31 giờ</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><b>Chuyển cho</b>
+          <div class="opt on">● Trần Minh · Kế toán</div>
+          <div class="opt">○ Đỗ Thu · Kế toán</div>
+          <span class="sub">Chỉ thành viên nhóm Kế toán; không có người gửi HĐ này.</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><b>Lý do <span style="color: #b91c1c">*</span></b><span class="in">Đi gặp khách cả chiều, Minh nắm hồ sơ Tân Phát.</span></div>
+        <div class="sub">Hạn giữ nguyên (còn 31 giờ). Trần Minh nhận được chuông + email.</div>
+        <span style="flex: 1"></span>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px"><div class="btn">Trả về nhóm</div><div class="btn pri">Chuyển</div></div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+      <div class="p">
+        <div class="ph"><span class="who">C · NGƯỜI LÀM THAY THẤY</span><b style="font-size: 15px">Việc của tôi · Trần Minh</b></div>
+        <div class="pb" style="gap: 8px">
+          <div class="it" style="border-color: #c7c4ff"><div class="row"><b>Duyệt HĐ bán thùng phi</b><span class="chip" style="background: #ecebff; color: #4f46e5">Thay Lê Thị Hoa</span></div><span class="sub">Uỷ quyền 12–15/11 · còn 31 giờ</span></div>
+          <div class="it"><div class="row"><b>Xác nhận mốc Thu đợt 2 · ABC</b><span class="chip" style="background: #ecebff; color: #4f46e5">Thay Lê Thị Hoa</span></div><span class="sub">hạn 14/11</span></div>
+        </div>
+      </div>
+      <div class="p">
+        <div class="ph"><span class="who">D · HỒ SƠ DUYỆT GHI</span><b style="font-size: 15px">Hồ sơ duyệt</b></div>
+        <div class="pb" style="gap: 8px">
+          <div><span style="color: #15803d">✓</span> <b>Kế toán</b> · <b>Trần Minh duyệt thay Lê Thị Hoa</b> · 13/11 10:20</div>
+          <div class="sub" style="padding-left: 16px">Uỷ quyền 12–15/11 do Lê Thị Hoa đặt ngày 11/11 · ✍ chữ ký Trần Minh</div>
+          <div><span style="color: #15803d">✓</span> Chuyển trong nhóm: Lê Thị Hoa → Trần Minh · 12/11 14:00 · "Đi gặp khách…"</div>
+        </div>
+      </div>
+      <div class="p">
+        <div class="ph"><b>Luật</b></div>
+        <div class="pb" style="gap: 6px">
+          <div>• Không uỷ quyền tiếp (Minh không chuyển uỷ quyền của Hoa sang người thứ ba; chỉ trả về nhóm).</div>
+          <div>• Người làm thay không được là người gửi HĐ đó ⇒ việc đó ở lại nhóm.</div>
+          <div>• Hết ngày 15/11: việc chưa xong ở lại với Minh; việc mới về lại Hoa.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

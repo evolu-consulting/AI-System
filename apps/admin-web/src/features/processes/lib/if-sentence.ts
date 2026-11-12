@@ -47,7 +47,7 @@ export function friendlyNumber(raw: string, w: Pick<SentenceWords, "million" | "
 
 /** Một điều kiện: "Giá trị hợp đồng lớn hơn 100 triệu"; chưa chọn nguồn ⇒ null (câu chưa đủ). */
 export function condText(c: SentenceCond, w: SentenceWords, from: string): string | null {
-  if (c.from === "") return null;
+  if (c.from === "" || c.from.endsWith("|")) return null; // chưa chọn nguồn ("input|" = ô trống) — không lộ khoá kỹ thuật
   if (c.bool && w.bool)
     return `${from} ${c.op === "ne" ? w.bool.isNot : w.bool.is} ${c.value.trim() === "false" ? w.bool.no : w.bool.yes}`;
   const value = c.type === "number" ? friendlyNumber(c.value, w) : c.value.trim();

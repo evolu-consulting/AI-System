@@ -1,5 +1,5 @@
 // #225 · khám phá cấu hình e2e phải thấy cấu hình gốc và mọi cấu hình dưới e2e/ (kể cả trên Windows).
-// GX2: khớp danh sách ĐÚNG (18 = gốc + 17 dưới e2e/); thêm/bớt cấu hình ⇒ cập nhật danh sách này.
+// GX2: khớp danh sách ĐÚNG (29 = gốc + 28 dưới e2e/); thêm/bớt cấu hình ⇒ cập nhật danh sách này.
 import { expect, it } from "bun:test";
 import { resolve } from "node:path";
 import { findE2eConfigs } from "./test-all.discover";
@@ -22,7 +22,11 @@ const EXPECTED = [
   "e2e/community-web/playwright.config.ts",
   "e2e/community-web/playwright.stack.config.ts",
   "e2e/contracts-web/playwright.config.ts",
+  "e2e/cr127/playwright.cr127.config.ts",
   "e2e/fnr-showcase/playwright.fnr.config.ts",
+  "e2e/journey-approval/playwright.journey-fsc.config.ts",
+  "e2e/journey-approval/playwright.journey-ms.config.ts",
+  "e2e/journey-approval/playwright.journey-purchase.config.ts",
   "e2e/journey-approval/playwright.journey.config.ts",
   "e2e/ops/playwright.ops.config.ts",
   "e2e/pm-checklist/playwright.pm.config.ts",
@@ -32,10 +36,10 @@ const EXPECTED = [
   "playwright.config.ts",
 ];
 
-it("findE2eConfigs: đúng 25 cấu hình (gốc + 24 dưới e2e/), không thừa không thiếu", async () => {
+it("findE2eConfigs: đúng 29 cấu hình (gốc + 28 dưới e2e/), không thừa không thiếu", async () => {
   const found = (await findE2eConfigs(resolve(import.meta.dir, "../../.."))).map((f) =>
     f.replaceAll("\\", "/"),
   );
   expect(found.sort()).toEqual([...EXPECTED].sort());
-  expect(found).toHaveLength(25);
+  expect(found).toHaveLength(29);
 });

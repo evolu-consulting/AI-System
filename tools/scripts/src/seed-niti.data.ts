@@ -1,6 +1,5 @@
 // tool-seed-niti · khai báo dữ liệu khách hàng NiTi Group (tenant thật) cho `seed-niti.ts`. Tách khỏi logic để test chạy bằng
 // `SeedSpec` giả (KHÔNG dùng dữ liệu NiTi trong test). Không chứa bí mật; email là `<username>@<emailDomain>` (đổi bằng --email-domain).
-import type { RoutingContractKind } from "@ai/contracts/hub-admin";
 
 export type Dept = { key: string; vi: string; en: string };
 export type Person = {
@@ -16,14 +15,6 @@ export type Person = {
   /** Vai gói contracts/community: owner = Toàn quyền, editor = Nhân viên (đọc+ghi, duyệt qua cổng trưởng phòng). */
   packRole: "owner" | "editor";
 };
-export type Proc = {
-  key: string;
-  name: string;
-  /** Mỗi bước duyệt = một phòng ban (cổng trưởng phòng), theo thứ tự. */
-  steps: { key: string; name: string; dept: string }[];
-};
-export type RuleSpec = { dept: string; kind: RoutingContractKind; process: string };
-
 export type SeedSpec = {
   tenantKey: string;
   tenantName: string;
@@ -34,11 +25,7 @@ export type SeedSpec = {
   root: Dept;
   departments: Dept[];
   people: Person[];
-  processes: Proc[];
-  rules: RuleSpec[];
 };
-
-export const SLOT = "contracts.approval";
 
 const BGD = { key: "pb-giam-doc", vi: "Ban Giám đốc", en: "Board of Directors" };
 const KD = { key: "pb-kinh-doanh", vi: "Phòng Kinh doanh", en: "Sales" };
@@ -98,31 +85,5 @@ export const NITI_SPEC: SeedSpec = {
       role: "member",
       packRole: "editor",
     },
-  ],
-  processes: [
-    {
-      key: "niti-mua-kd",
-      name: "Duyệt 2 cấp: Kế toán → Giám đốc",
-      steps: [
-        { key: "ke-toan", name: "Phòng Kế toán duyệt", dept: KT.key },
-        { key: "giam-doc", name: "Ban Giám đốc duyệt", dept: BGD.key },
-      ],
-    },
-    {
-      key: "niti-ban-kd",
-      name: "Duyệt 1 cấp: Giám đốc",
-      steps: [{ key: "giam-doc", name: "Ban Giám đốc duyệt", dept: BGD.key }],
-    },
-    {
-      key: "niti-mua-bgd",
-      name: "Duyệt 1 cấp: Kế toán",
-      steps: [{ key: "ke-toan", name: "Phòng Kế toán duyệt", dept: KT.key }],
-    },
-  ],
-  // Thứ tự = ưu tiên; KHÔNG có luật mặc định (HĐ không khớp ⇒ chạy đường gán/mặc định của khe như cũ).
-  rules: [
-    { dept: KD.key, kind: "buy", process: "niti-mua-kd" },
-    { dept: KD.key, kind: "sell", process: "niti-ban-kd" },
-    { dept: BGD.key, kind: "buy", process: "niti-mua-bgd" },
   ],
 };

@@ -8,7 +8,7 @@ export const RETRY_AFTER_HEADER = "Retry-After";
 export const TOO_MANY_RUNS_RETRY_AFTER_S = 5;
 
 /** Gap #10: cột ngày lọc được; cửa sổ tương đối: quá hạn (< hôm nay), 30/60/90 ngày tới (hôm nay … +N). */
-export const CONTRACT_DATE_FIELDS = ["end_date", "action_deadline"] as const;
+export const CONTRACT_DATE_FIELDS = ["end_date"] as const;
 export const CONTRACT_DUE_PRESETS = ["overdue", "30", "60", "90"] as const;
 
 /** CR-121 Q-1 · ứng dụng lọc được (đọc cột `admin.features.app`; `core` luôn bật nên không có). */

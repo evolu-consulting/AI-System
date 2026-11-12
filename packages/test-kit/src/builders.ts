@@ -125,9 +125,26 @@ export async function enablePack(
 export type ContractsOpts = {
   from?: number;
   createdBy: string;
+  /** CR-127 · 4 trạng thái: draft | processing | reject | done (mặc định done). */
   status?: string;
+  /** AI đọc: reading | failed | ready (mặc định ready). */
+  extractState?: "reading" | "failed" | "ready";
+  /** Hiệu lực (chỉ khi done; mặc định `active` khi done, null khi khác). Ghi thẳng khi INSERT (trigger cổng chỉ chặn UPDATE status). */
+  effect?: string | null;
   /** Người phụ trách (`owner_user_id`); mặc định null (chưa giao). */
   owner?: string | null;
+};
+/** Chuyển tiếp CR-127: literal 9 trạng thái cũ test còn truyền ⇒ trạng thái mới + `extract_state` (BR-77). Gỡ khi test đã đổi hết. */
+const LEGACY_STATUS: Record<string, { status: string; extractState?: "reading" | "failed" }> = {
+  extracting: { status: "draft", extractState: "reading" },
+  extract_failed: { status: "draft", extractState: "failed" },
+  needs_review: { status: "processing" },
+  rejected: { status: "reject" },
+  active: { status: "done" },
+  expiring: { status: "done" },
+  expired: { status: "done" },
+  renewed: { status: "done" },
+  terminated: { status: "done" },
 };
 /** `n` hợp đồng mẫu của `tenant` (`contracts.contracts`): id `contractId(i)`, title `HD i`. 1 câu. */
 export async function contracts(
@@ -137,11 +154,15 @@ export async function contracts(
   o: ContractsOpts,
 ): Promise<string[]> {
   const from = o.from ?? 1;
+  const legacy = LEGACY_STATUS[o.status ?? ""];
+  const status = legacy?.status ?? o.status ?? "done";
+  const extractState = o.extractState ?? legacy?.extractState ?? "ready";
+  const effect = status === "done" ? (o.effect === undefined ? "active" : o.effect) : null;
   await sql.unsafe(
-    `insert into contracts.contracts (id, tenant_id, title, status, created_by, owner_user_id)
-     select ${uuidSql(NS_CONTRACT, "i")}, $1::uuid, 'HD ' || i, $2, $3::uuid, $6::uuid
+    `insert into contracts.contracts (id, tenant_id, title, status, created_by, owner_user_id, extract_state, effect)
+     select ${uuidSql(NS_CONTRACT, "i")}, $1::uuid, 'HD ' || i, $2, $3::uuid, $6::uuid, $7, $8
      from generate_series($4::int, $5::int) i`,
-    [tenant, o.status ?? "active", o.createdBy, from, from + n - 1, o.owner ?? null],
+    [tenant, status, o.createdBy, from, from + n - 1, o.owner ?? null, extractState, effect],
   );
   return Array.from({ length: n }, (_, k) => contractId(from + k));
 }

@@ -13,10 +13,21 @@ import type {
 } from "../../packs/kit/public";
 import { approverSql, headGateSql } from "../core/head-gate.sql";
 import type { ProcessDeps } from "../core/ports";
+import { delegatedLive } from "../core/task-grants.sql";
 import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules";
 import { alsoGroupsOf, canAct, headGate, overrideOnly } from "../domain/tasks/task-access.rules";
 import type { ProcessRunStatus } from "../domain/types";
 import { RESOLVE_SLOT_SQL } from "../library/slot-resolve.repo";
+import { milestoneFrom } from "./pack-milestone-count.sql";
+import { groupsOf, OPEN_GATE, openTasksFrom, UUID } from "./pack-open-tasks.sql";
+import {
+  CLAIM_COLS,
+  type ClaimCols,
+  claimOf,
+  type Grant,
+  grantsOf,
+  openTask,
+} from "./pack-runs-claim";
 import { decisionOf, formOf, nodeKeyOf, stageCode, withFormPrefill } from "./pack-runs-extra";
 import { collapseModuleSteps, signerNamesOf, signerRefs } from "./pack-runs-modules";
 
@@ -55,14 +66,11 @@ type Row = {
   escalate_group_id: string | null;
   /** S1b · trưởng phòng của Group assignee task (null = không có). */
   group_head: string | null;
-  /** CR-123 · u6 · sự kiện stage chờ đã tiêu thụ (null = không có). */
-  consumed_event: string | null;
+  consumed_event: string | null; // CR-123 · u6 · sự kiện stage chờ đã tiêu thụ (null = không có)
   /** CR-125 · `process_outputs.fields` của output hiện hành của stage (chỉ dùng cho stage `form`). */
   form_values: unknown;
-};
-type Grant = { task_id: string; user_id: string | null; group_id: string | null; via: string };
+} & ClaimCols;
 
-export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const vrole = (r: string): "platform_admin" | "tenant_admin" | "member" =>
   r === "platform_admin" || r === "tenant_admin" ? r : "member";
 const iso = (v: Ts | null) => (v === null ? null : new Date(v).toISOString());
@@ -77,7 +85,7 @@ const rowsSql = (runIds: readonly string[], tenantId: string, gs = new Set<strin
     r.snapshot->'stages'->(s.stage_idx::int) as stage,
     t.id as task_id, t.status as task_status, t.result, t.feedback, t.decided_by, t.decided_at,
     coalesce(nullif(du.display_name, ''), du.username) as decided_name,
-    t.assignee_group_id, t.escalate_at, t.escalated_at, t.escalate_group_id,
+    t.assignee_group_id, t.escalate_at, t.escalated_at, t.escalate_group_id, ${CLAIM_COLS},
     (select e.event from hub.process_run_events e where e.consumed_by = s.id and e.tenant_id = r.tenant_id limit 1) as consumed_event,
     o.fields as form_values,
     coalesce(${approverSql("r.snapshot->'stages'->(s.stage_idx::int)", "r.tenant_id")}, (select d.head_user_id from admin.departments d where d.group_id = t.assignee_group_id
@@ -91,7 +99,7 @@ const rowsSql = (runIds: readonly string[], tenantId: string, gs = new Set<strin
   where r.id = any(${`{${runIds.join(",")}}`}::uuid[]) and r.tenant_id = ${tenantId}
   order by r.id, s.stage_idx`;
 
-type ActOf = (r: Row, stage: StageSnap) => { can: boolean; override: boolean };
+type ActOf = (r: Row, stage: StageSnap) => Parameters<typeof openTask>[1];
 function stepOf(r: Row, canActOf: ActOf): PackStepView {
   const stage: StageSnap = typeof r.stage === "string" ? JSON.parse(r.stage) : r.stage;
   const idx = Number(r.stage_idx);
@@ -123,9 +131,6 @@ function stepOf(r: Row, canActOf: ActOf): PackStepView {
   };
 }
 
-const openTask = (id: string, a: { can: boolean; override: boolean }) =>
-  a.can && a.override ? { id, can_act: true, override: true } : { id, can_act: a.can };
-
 /** `canAct` của engine cho task review mở (grant user/forward + Group duyệt + Group chuyển cấp + exclude_starter). CR-113 ·
  *  `override` = quyết được chỉ nhờ Group "cũng quyết" (`also_group_ids`) — không qua grant, Group duyệt/cửa, Group chuyển cấp. */
 function canActFn(
@@ -152,6 +157,8 @@ function canActFn(
       extraGroupIds: extra,
       starterExcluded: stage?.after?.exclude_starter === true,
       headGate: headGate(stage?.after, r.group_head), // S1b
+      // CR-127 · FIX-OV · CỐ Ý không truyền need/claimedBy: thẻ cần `can_act=true` + `claim.state='other'` để hiện dải «X đang xử lý»
+      // và khoá nút (ClaimBar); `can_act=false` ẩn cả khung việc (hồi quy j11). Quyết thử vẫn 409 `TASK_CLAIMED` ở máy chủ.
     };
     const inGroup = (g: string | null) => g !== null && groupIds.has(g);
     const t = { userIds, groupId: r.assignee_group_id, gate: task.headGate, escalated, also };
@@ -163,7 +170,11 @@ function canActFn(
     const run = { tenantId: u.tenantId, startedBy: r.started_by, originRoom: "none" as const };
     const status = r.run_status as ProcessRunStatus;
     const can = canAct(v, task, { ...run, taskAssignee: assignee, status });
-    return { can, override: can && overrideOnly(u.userId, groupIds, t) };
+    return {
+      can,
+      override: can && overrideOnly(u.userId, groupIds, t),
+      claim: claimOf(r, v, stage, mine),
+    };
   };
 }
 
@@ -187,14 +198,7 @@ export async function stepsView(
       const head = rows[0];
       if (!head) return null;
       const open = rows.flatMap((r) => (r.task_id && r.task_status === "open" ? [r.task_id] : []));
-      const grants =
-        open.length === 0
-          ? []
-          : [
-              ...(await tx.execute<Grant>(sql`select a.task_id, a.user_id, a.group_id, a.via
-                from hub.review_task_assignees a
-                where a.task_id = any(${`{${open.join(",")}}`}::uuid[]) and a.tenant_id = ${u.tenantId}`)),
-            ];
+      const grants = await grantsOf(tx, u.tenantId, open);
       const can = canActFn(u, groupIds, grants);
       const snaps = rows.map(
         (r) => (typeof r.stage === "string" ? JSON.parse(r.stage) : r.stage) ?? {},
@@ -265,41 +269,13 @@ export async function stepsViewMany(
   });
 }
 
-const OPEN_GATE = headGateSql("x.st", "t.tenant_id");
+export { UUID };
 
-/**
- * contract-flow S1b · "Việc của tôi": task review MỞ của run gói `packKey` mà `u` quyết được — cùng luật `canAct` (grant
- * user/chuyển tiếp ∪ Group duyệt có cửa trưởng phòng ∪ Group chuyển cấp; trừ người bắt đầu ở stage `exclude_starter`; run
- * chưa kết thúc). MỘT câu, scope user (RLS T) + lọc `tenant_id` tường minh; fix-review · vào qua index một phần run gói CHƯA
- * kết thúc `process_runs_pack_open_idx` (0060; điều kiện status khớp vị từ index) ⇒ không quét lịch sử run đã xong.
- */
-/** Mệnh đề FROM/WHERE của "task duyệt mở mà `u` quyết được" — MỘT nguồn cho danh sách (`openTasksOf`) và số đếm (`inboxOf`). */
-const openTasksFrom = (u: PackRunCaller, packKey: string, groups: string) => sql`
-      from hub.process_runs r
-      join hub.review_tasks t on t.process_run_id = r.id and t.tenant_id = r.tenant_id
-        and t.kind = 'review' and t.status = 'open'
-      join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
-      cross join lateral (select r.snapshot->'stages'->(s.stage_idx::int) as st offset 0) x
-      cross join lateral (select ${OPEN_GATE} as gate) hg
-      where r.tenant_id = ${u.tenantId} and r.pack_key = ${packKey} and r.pack_record_id is not null
-        and r.status in ('running', 'waiting_review', 'waiting_answer', 'needs_decision', 'waiting_timer')
-        and not (x.st->'after'->>'exclude_starter' = 'true' and r.started_by = ${u.userId})
-        and (exists (select 1 from hub.review_task_assignees a where a.task_id = t.id
-                and a.tenant_id = t.tenant_id and a.user_id = ${u.userId})
-          or (hg.gate is null and t.assignee_group_id = any(${groups}::uuid[]))
-          or hg.gate = ${u.userId}::uuid
-          or (t.escalated_at is not null and t.escalate_group_id = any(${groups}::uuid[]))
-          or coalesce(x.st->'after'->'also_group_ids', '[]'::jsonb) ?| ${groups}::text[])`;
-
-const groupsOf = async (d: ProcessDeps, userId: string): Promise<string> => {
-  const ids = [...((await d.config.user(userId))?.groupIds ?? [])].filter((g) => UUID.test(g));
-  return `{${ids.join(",")}}`;
-};
 const PACK_KEY = /^[a-z][a-z0-9-]{0,39}$/;
 const SLOT_KEY = /^[a-z][a-z0-9-]{0,39}\.[a-z][a-z0-9-]{0,39}$/;
 
 /**
- * CR-121 C-7 · hộp "Chờ tôi duyệt" cho menu. `count` = số task duyệt mở `u` quyết được (MỘT câu, scope user, cùng mệnh đề với
+ * CR-121 C-7 · hộp "Chờ tôi duyệt" cho menu. `count` = số task duyệt mở `u` quyết được + số việc «Xác nhận mốc» mở giao cho `u` (MỘT câu, scope user; mệnh đề duyệt dùng chung với
  * `openTasksOf`). `approver` = `u` có vai duyệt: có việc mở ⇒ đương nhiên true (không hỏi thêm); chưa có việc ⇒ MỘT câu thứ hai
  * (scope system — def/khe là bảng hệ thống) xem `u` có thuộc Group duyệt / "cũng quyết" / là người duyệt cụ thể của quy trình ĐANG
  * GÁN cho `slot` (bản xuất bản hiện hành, cùng `RESOLVE_SLOT_SQL`) không; khe chưa có quy trình ⇒ false. Tối đa 2 câu, cố định.
@@ -315,7 +291,7 @@ export async function inboxOf(
   const groups = await groupsOf(d, u.userId);
   const [c] = await withHubScope(d.db, userScope(u), (tx) =>
     tx.execute<{ n: number | string }>(
-      sql`select count(*)::int as n ${openTasksFrom(u, packKey, groups)}`,
+      sql`select ((select count(*) ${openTasksFrom(u, packKey, groups)}) + (select count(*) ${milestoneFrom(u, packKey, groups)}))::int as n`,
     ),
   );
   const count = Number(c?.n ?? 0);
@@ -349,7 +325,12 @@ export async function openTasksOf(
   const rows = await withHubScope(d.db, userScope(u), (tx) =>
     tx.execute<OpenRow>(sql`
       select t.id as task_id, r.id as run_id, r.pack_record_id as record_id, x.st->>'key' as stage_key,
-        x.st->>'name' as stage_name, t.escalate_at as due_at, (t.escalated_at is not null) as escalated
+        x.st->>'name' as stage_name, t.escalate_at as due_at, (t.escalated_at is not null) as escalated,
+        (select jsonb_build_object('id', a.on_behalf_of, 'name', (select coalesce(nullif(b.display_name, ''), b.username)
+            from admin.users b where b.id = a.on_behalf_of and b.tenant_id = a.tenant_id))
+          from hub.review_task_assignees a
+          where a.task_id = t.id and a.tenant_id = t.tenant_id and a.user_id = ${u.userId}
+            and a.via = 'delegated' and ${delegatedLive("a")} limit 1) as behalf
       ${openTasksFrom(u, packKey, groups)}
       order by t.created_at, t.id`),
   );
@@ -361,6 +342,9 @@ export async function openTasksOf(
     stage_name: r.stage_name ?? "",
     due_at: iso(r.due_at),
     escalated: r.escalated === true,
+    ...(r.behalf && {
+      delegated_from: { id: r.behalf.id, display_name: r.behalf.name || r.behalf.id },
+    }),
   }));
 }
 
@@ -372,6 +356,8 @@ type OpenRow = {
   stage_name: string | null;
   due_at: Ts | null;
   escalated: boolean;
+  /** CR-127 · uỷ quyền còn hiệu lực: người xem làm thay `id` (hàng `via='delegated'`). */
+  behalf: { id: string; name: string | null } | null;
 };
 
 /** S1a · task review MỞ của run khớp đích (id task hoặc khoá stage), scope user người quyết; không có ⇒ null. */

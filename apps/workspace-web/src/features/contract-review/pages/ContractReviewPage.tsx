@@ -1,48 +1,14 @@
-// HD-FR-22 · HD-FR-23 · HD-FR-26 · S05 · V2-F (HD-04 · HD-09 · HD-11 · mockup NITI "chi tiết hợp đồng"): trang HĐ — tiêu đề + dòng phụ theo
-// trạng thái, "Xem file gốc", thẻ duyệt (HD3), hai cột: [Thông tin · Sản phẩm] | [Dòng thời gian mốc · Tóm tắt]; "Ghi việc" (HD7) cuối trang.
-// Bước xác nhận sau upload (`needs_review`) dùng thanh Hủy/Lưu dính như form nhập tay. Đang đọc ⇒ tải lại mỗi 2 s.
+// CR-127 · U5 · M9/M10: trang chi tiết HĐ — nạp HĐ (tải lại mỗi 2 s khi AI đang đọc) + thẻ duyệt; thân trang ở `ContractBody`.
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
-import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
-import { decideOnly } from "~/features/contract-approval/lib/approval";
-import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
-import { todayIso } from "~/features/contract-deadline/lib/deadline";
-import { EsignPanel } from "~/features/contract-esign/components/EsignPanel";
-import { dealOf } from "~/features/contract-form/lib/deal";
-import type { TextKey } from "~/features/contract-form/lib/form-model";
-import { LockBanner } from "~/features/contract-lock/components/LockBanner";
-import { lockView, reopenRight } from "~/features/contract-lock/lib/lock-view";
-import { VersionsPanels } from "~/features/contract-versions/components/VersionsPanels";
-import { versionGate } from "~/features/contract-versions/lib/versions";
-import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
-import { dialogOpen } from "~/features/contracts-list/lib/extract-progress";
-import { shortName } from "~/features/contracts-list/lib/list-model";
-import { FramePanel } from "~/features/frame-panel/components/FramePanel";
-import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
-import { PartnerSendPanel } from "~/features/partner-inbox/components/PartnerSendPanel";
-import { ProductLinkDialog } from "~/features/product-links/components/ProductLinkDialog";
-import { EditLogPanel } from "~/features/promote-deal/components/EditLogPanel";
-import { PromoteDeal } from "~/features/promote-deal/components/PromoteDeal";
-import { contractKey, fetchContract, fileHref } from "../api";
-import { ContractHead } from "../components/ContractHead";
-import { DetailGrid } from "../components/DetailGrid";
-import { DetailLead } from "../components/DetailLead";
-import { HistoryPanel } from "../components/HistoryPanel";
-import { LegalBanner } from "../components/LegalBanner";
-import { ManagePanel } from "../components/ManagePanel";
-import { OriginalFileHost } from "../components/OriginalFileDialog";
-import { ExtractFailed, SaveNotice } from "../components/ReviewParts";
-import { SummaryPanel } from "../components/SummaryPanel";
+import { contractKey, fetchContract } from "../api";
+import { ContractBody } from "../components/ContractBody";
 import { useInfoForm } from "../hooks/use-info-form";
-import { headRule } from "../lib/head-rule";
 import { detailErrorKey } from "../lib/load-error";
-import { leadKey, saveLabelKey } from "../lib/review";
 
 const READING_REFRESH_MS = 2000;
 
@@ -52,243 +18,14 @@ const extractedOf = (c: ContractDetail | undefined) => {
   return f ? { value: f.value, quote: f.quote ?? "", edited: f.edited === true } : undefined;
 };
 
-const partnerOf = (c: ContractDetail): string => {
-  const v = c.fields[dealOf(c) === "buy" ? "supplier_name" : "buyer_name"]?.value;
-  return typeof v === "string" ? shortName(v) : "";
-};
-
-// CR-125 c7 · `c.title` của chi tiết HĐ đã là TÊN HĐ do hub tính (contractNameSql) — không tự suy từ fields.title.
-const titleOf = (c: ContractDetail): string => c.title;
-
-/** CR-125 · UX H4 · gập khối sửa (native `<details>`, đóng sẵn) khi `on`; không gập ⇒ giữ nguyên bố cục cũ. */
-function Fold({ on, label, children }: { on: boolean; label: string; children: ReactNode }) {
-  if (!on) return <>{children}</>;
-  return (
-    <details data-testid="detail-fold" className="mb-4 rounded-xl border border-line px-4 py-3">
-      <summary className="cursor-pointer text-sm font-semibold">{label}</summary>
-      <div className="mt-3">{children}</div>
-    </details>
-  );
-}
-
-type Info = ReturnType<typeof useInfoForm>;
-type Approval = ReturnType<typeof useApprovalUi>;
-
-function SaveButton({ info, ap, confirm }: { info: Info; ap: Approval; confirm: boolean }) {
-  const { t } = useTranslation();
-  const idle = t(saveLabelKey(confirm));
-  return (
-    <>
-      {/* CR-120 · bản nháp chỉ người tạo thấy ⇒ nói rõ cách chuyển duyệt (không có "Gửi duyệt" tay). */}
-      {confirm && (
-        <span data-testid="draft-hint" className="text-caption text-muted-foreground max-sm:hidden">
-          {t("contracts.review.draftHint")}
-        </span>
-      )}
-      <button
-        type="button"
-        className="btn btn-primary btn-sm"
-        disabled={info.busy || ap.busy || (!confirm && !info.dirty)}
-        onClick={() => void info.save()}
-      >
-        {info.busy ? t("contracts.review.saving") : idle}
-      </button>
-    </>
-  );
-}
-
-/** Khối "Quản lý" + lưới thông tin; người duyệt (`reviewer`) thấy gập lại, không lặp "Tóm tắt" đã hiện ở thẻ trên. */
-function DetailSection(p: {
-  c: ContractDetail;
-  id: string;
-  write: boolean;
-  info: Info & { f: NonNullable<Info["f"]> };
-  reviewer: boolean;
-  canSave: boolean;
-  saveButton: ReactNode;
-  file: { href: string; name: string; onOpen: () => void } | null;
-  lockedKeys: ReadonlySet<TextKey> | undefined;
-}) {
-  const { t } = useTranslation();
-  const { c, info } = p;
-  return (
-    <Fold on={p.reviewer} label={t("contracts.review.foldEdit")}>
-      <ManagePanel c={c} write={p.write} />
-      {c.status === "extract_failed" ? (
-        <ExtractFailed file={p.file} id={p.id} write={p.write} error={c.error} />
-      ) : (
-        <DetailGrid
-          c={c}
-          f={info.f}
-          onSet={info.set}
-          canSave={p.canSave}
-          saveButton={p.saveButton}
-          write={p.write}
-          partner={partnerOf(c)}
-          today={todayIso()}
-          info={info}
-          lockedKeys={p.lockedKeys}
-          summary={!p.reviewer}
-        />
-      )}
-    </Fold>
-  );
-}
-
-function ContractBody({
-  id,
-  c,
-  info,
-  ap,
-}: {
-  id: string;
-  c: ContractDetail;
-  info: Info & { f: NonNullable<Info["f"]> };
-  ap: Approval;
-}) {
-  const { t } = useTranslation();
-  const me = useMe();
-  // K3b: bản đã bị thay chỉ đọc hoàn toàn.
-  const { sup, write, owner, canUpdate } = versionGate(c, me);
-  const [origOpen, setOrigOpen] = useState(false);
-  const lock = lockView(
-    c,
-    !sup && reopenRight(c, { owner, write, userId: me.user?.id }),
-    ap.submitted,
-  );
-  const nav = useNavigate();
-  // Thông báo thành công của thẻ duyệt ⇒ toast (không còn khối giữ chỗ trong trang).
-  useEffect(() => {
-    if (ap.msg) toast(ap.msg);
-  }, [ap.msg]);
-  const rule = headRule({
-    status: c.status,
-    locked: c.locked,
-    write,
-    approvalLoaded: ap.loaded,
-    approvalStep: ap.step,
-    approvalConfirm: ap.view.confirm,
-    edited: info.edited,
-    submitted: ap.submitted,
-  });
-  // P11e · đã gửi duyệt (lượt engine, bước soạn đã qua) ⇒ không còn gợi ý "bản nháp … bấm Xác nhận và lưu".
-  const confirm = c.status === "needs_review" && !ap.submitted;
-  const { canSave } = rule;
-  // CR-125 · UX H4 · người duyệt (đang có nút Duyệt/Từ chối/Trả lại, không phải bước xác nhận của người tạo) thấy THẺ TÓM TẮT + 3 nút;
-  // form sửa dài gập lại để mở khi cần.
-  const reviewer = decideOnly(ap.view, c.status);
-  const key = leadKey(c.status, ap.submitted);
-  const lead = key ? t(key) : <DetailLead c={c} partner={partnerOf(c)} />;
-  // Nút chỉ có khi HĐ có tệp gốc (nhập tay ⇒ không có); phụ lục có tệp riêng xem trong hộp thoại.
-  const file = c.file
-    ? { href: fileHref(id), name: c.file.name, onOpen: () => setOrigOpen(true) }
-    : null;
-  const saveButton = canSave ? <SaveButton info={info} ap={ap} confirm={confirm} /> : null;
-  // "Xác nhận và lưu" khi tenant tắt duyệt (bật duyệt dùng nút của thẻ duyệt).
-  const confirmButton = rule.confirmSave ? (
-    <button
-      type="button"
-      className="btn btn-primary btn-sm"
-      data-testid="confirm-save"
-      disabled={info.busy || ap.busy}
-      onClick={() => void info.confirmSave.start()}
-    >
-      {t("contracts.approval.confirmSave")}
-    </button>
-  ) : null;
-  // Người dùng 2026-10-23: bỏ nút + khoang "Văn bản gốc" khỏi trang (code `contract-source` giữ lại, chỉ không render).
-  return (
-    <div className="flex items-start gap-4 max-lg:flex-col">
-      <div className="min-w-0 flex-1 max-lg:w-full">
-        {/* Thân trang như mgmt-app (`index.css:78-82`: 16 px, line-height 1.55) — Shell giữ thang chữ của nó. */}
-        <div className="text-base leading-[1.55]">
-          <ContractHead
-            title={titleOf(c)}
-            lead={lead}
-            sticky={rule.sticky}
-            file={file}
-            canSave={canSave}
-            onCancel={() =>
-              rule.cancel === "reset" ? info.reset() : void nav({ to: "/contracts/list" })
-            }
-            saveButton={rule.draftSave ? saveButton : null}
-            confirmButton={confirmButton}
-            approvalButtons={ap.buttons}
-            approvalBusy={ap.busy}
-          />
-          <ExtractDialog
-            open={dialogOpen({ uploading: false, status: c.status })}
-            name={c.file?.name ?? titleOf(c)}
-          />
-          <LockBanner id={id} view={lock} canUpdate={canUpdate} />
-          {/* cf-esign-docusign · ký số sau khi duyệt xong (đã khoá). */}
-          <PartnerSendPanel id={id} write={write} />
-          <EsignPanel id={id} locked={c.locked === true} write={write} />
-          <VersionsPanels id={id} versions={c.versions} sup={sup} />
-          <SaveNotice err={info.err ?? ap.err} />
-          {reviewer && (
-            <div className="mb-4">
-              <SummaryPanel c={c} partner={partnerOf(c)} />
-            </div>
-          )}
-          {ap.section}
-          {/* CR-125 · UX M6 · "ai · làm gì · lúc nào" ở phần trên của thẻ (ngay dưới các bước duyệt), không còn dưới đáy trang. */}
-          <HistoryPanel id={id} />
-          {/* atomic-confirm: "Xác nhận và lưu" (tắt duyệt) ⇒ hộp "Gắn sản phẩm" ⇒ một POST /review mang `products`. */}
-          <ProductLinkDialog
-            target={info.confirmSave.target}
-            busy={info.confirmSave.busy}
-            onCancel={info.confirmSave.cancel}
-            onConfirm={(links) => void info.confirmSave.confirmLinks(links)}
-          />
-          {/* CR-101 DOC-ui-frame: HĐ nguyên tắc ⇒ khối "Chứng từ con"; giao dịch ⇒ nút "Nâng thành hợp đồng". */}
-          <FramePanel c={c} write={write} />
-          {/* MS-impact phụ · DOC-legal: cảnh báo pháp lý (chỉ cảnh báo, không chặn). */}
-          <LegalBanner warning={c.legal_warning} />
-          {c.doc?.doc_type === "deal" && write && !sup && (
-            <div className="mb-4 flex justify-end">
-              <PromoteDeal id={id} />
-            </div>
-          )}
-          <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
-          <DetailSection
-            c={c}
-            id={id}
-            write={write}
-            info={info}
-            reviewer={reviewer}
-            canSave={canSave}
-            saveButton={confirm ? undefined : saveButton}
-            file={file}
-            lockedKeys={lock.lockedKeys}
-          />
-          {/* ux-excel E3: bỏ "Hỏi về hợp đồng này" khỏi trang (còn "Trợ lý AI" nổi); mã tính năng giữ nguyên. */}
-          <OriginalFileHost
-            open={origOpen}
-            contractId={id}
-            file={c.file}
-            hasSource={c.has_source}
-            appendices={c.appendices}
-            onClose={() => setOrigOpen(false)}
-          />
-          {/* ux-excel E3: bỏ "Phụ lục và giá" khỏi trang này (feature `appendix` giữ nguyên, chưa gắn). */}
-          {/* Bỏ "Nguồn hàng & lãi" khỏi chi tiết HĐ (người dùng 2026-10-23); feature `sourcing` giữ nguyên, chưa gắn. */}
-          <ContractLog contractId={id} status={c.status} />
-          {c.doc?.doc_type === "deal" && <EditLogPanel id={id} />}
-          {/* "Xoá hợp đồng" chuyển sang biểu tượng thùng rác ở hàng danh sách (người dùng 2026-10-23). */}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function ContractReviewPage({ id }: { id: string }) {
   const { t } = useTranslation();
   const { write, owner } = useMe();
   const q = useQuery({
     queryKey: contractKey(id),
     queryFn: ({ signal }) => fetchContract(id, signal),
-    refetchInterval: (s) => (s.state.data?.status === "extracting" ? READING_REFRESH_MS : false),
+    refetchInterval: (s) =>
+      s.state.data?.extract_state === "reading" ? READING_REFRESH_MS : false,
   });
   const info = useInfoForm(q.data, id);
   const ap = useApprovalUi({

@@ -43,12 +43,7 @@ export type PartnerItemKey = (typeof PARTNER_ITEM_KEYS)[number];
 /** Ai làm: nền tảng (quản trị nền tảng) hay công ty (quản trị công ty). */
 export type PartnerWho = "platform" | "company";
 /** Nút "Làm bước này" mà platform dùng (company chỉ xem). `open-*` = chuyển tới màn làm việc đó. */
-export type PartnerFix =
-  | "grant-feature"
-  | "assign-receive-flow"
-  | "create-group"
-  | "open-profile"
-  | "open-flows";
+export type PartnerFix = "grant-feature" | "create-group" | "open-profile" | "open-flows";
 /** Cần cho: gửi HĐ cho đối tác, nhận HĐ từ đối tác, hay cả hai. */
 export type PartnerNeed = "send" | "receive" | "both";
 
@@ -104,11 +99,8 @@ export function partnerChecklist(
       fix: "open-profile",
     }),
     item("listed", admin.listed, "company", "receive"),
-    item("receive_flow", h ? h.receive_flow : null, "platform", "receive", {
-      ...(h?.receive_template_id
-        ? { fix: "assign-receive-flow" as const, params: { template: h.receive_template_id } }
-        : {}),
-    }),
+    // CR-127 Z7: không còn mẫu để gán ⇒ nút đi tới tab Quy trình (tạo quy trình nhận từ sơ đồ trống)
+    item("receive_flow", h ? h.receive_flow : null, "platform", "receive", { fix: "open-flows" }),
     item("groups", groupsOk, missingGroups.length ? "platform" : "company", "receive", {
       ...(missingGroups.length ? { fix: "create-group" as const } : {}),
       params: { groups: missingGroups, empty: emptyGroups },

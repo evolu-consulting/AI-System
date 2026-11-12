@@ -55,6 +55,31 @@ export async function withPackJobScope<T>(
 }
 
 /**
+ * CR-127 K3 · #79/#80 · trong tx ĐANG mở (tx `system` của engine), chạy `fn` dưới role quét `<k>_job` (NOBYPASSRLS, chỉ quyền cột + policy
+ * riêng) rồi TRẢ role cũ — kể cả khi `fn` ném. Không đặt `app.tenant_id` (câu theo tập tự lọc `(tenant_id, id)`). 2 câu quanh `fn`.
+ */
+export async function withPackJobRoleInTx<T>(
+  tx: Tx,
+  packKey: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  if (!PackKeySchema.safeParse(packKey).success) throw new PackScopeError("PACK_KEY_INVALID");
+  const [prev] = await tx.execute<{ role: string }>(
+    sql`select current_user::text as role, set_config('role', ${`${packKey}_job`}, true)`,
+  );
+  if (!prev) throw new Error("withPackJobRoleInTx: không đọc được role hiện tại");
+  const restore = () => tx.execute(sql`select set_config('role', ${prev.role}, true)`);
+  try {
+    const out = await fn();
+    await restore();
+    return out;
+  } catch (e) {
+    await restore().catch(() => undefined);
+    throw e;
+  }
+}
+
+/**
  * Mở tx, một câu `set_config('role'…)` + tenant/user, rồi chạy `fn`. `fn` chỉ làm việc DB (chạy lại khi 40P01/40001/mất kết nối trước COMMIT không
  * có tác dụng phụ). Mọi bảng gói có RLS FORCE theo `app.tenant_id` (`packs.secure_table`).
  */

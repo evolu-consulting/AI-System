@@ -7,7 +7,12 @@ import type { FeatureNodeDecl, PortSchema } from "../../types";
 
 export const ESIGN_CONFIG_PORT: PortSchema = {
   schema: EsignNodeConfigSchema,
-  widgets: { company_signers: "people", due_days: "days", remind_every_hours: "hours" },
+  widgets: {
+    company_signers: "people",
+    due_days: "days",
+    due_hours: "hours",
+    remind_every_hours: "hours",
+  },
 };
 
 export const ESIGN_NODE: FeatureNodeDecl = {

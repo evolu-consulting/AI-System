@@ -1,5 +1,7 @@
 // V2-N · Tổng quan: `GET /overview?period=` (4 con số + 12 cột/nhóm), `GET /my-work/todo` (Cần xử lý 8 nguồn), `POST /my-work/todo/dismiss`.
 import type {
+  InboxDecisionRequest,
+  InboxDecisionResponse,
   MyWorkOut,
   OverviewOut,
   OverviewPeriod,
@@ -22,3 +24,10 @@ export const fetchTodo = (signal?: AbortSignal) => api<TodoOut>(`${BASE}/my-work
 export const fetchMyWork = (signal?: AbortSignal) => api<MyWorkOut>(`${BASE}/my-work`, { signal });
 export const dismissTodo = (key: string, action: TodoAction) =>
   api<{ ok: true }>(`${BASE}/my-work/todo/dismiss`, { method: "POST", body: { key, action } });
+
+/** CR-127 · K8: người phụ trách HĐ nhận quyết khi công ty chưa có quy trình nhận (`POST /contracts/:id/inbox-decision`). */
+export const postInboxDecision = (contractId: string, body: InboxDecisionRequest) =>
+  api<InboxDecisionResponse>(`${BASE}/contracts/${encodeURIComponent(contractId)}/inbox-decision`, {
+    method: "POST",
+    body,
+  });

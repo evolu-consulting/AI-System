@@ -21,9 +21,8 @@ export async function quoteSource(
 ): Promise<QuoteSource | null> {
   const rows = await tx.execute<QuoteSource>(sql`
     select p.type, p.author_org::text as author_org,
-      coalesce(c.thread_org, p.author_org)::text as supplier_org,
-      (select pc.party_key from community.partner_companies pc
-        where pc.tenant_id = p.tenant_id and pc.ext_org_id = coalesce(c.thread_org, p.author_org)) as party_key,
+      coalesce(c.author_org, p.author_org)::text as supplier_org,
+      (select pc.party_key from contracts.community_partners(array[coalesce(c.author_org, p.author_org)]) pc) as party_key,
       case when c.id is null then null else json_build_object('author_org', c.author_org) end as comment,
       (${commentId}::uuid is not null and c.id is null) as comment_missing
     from community.posts p

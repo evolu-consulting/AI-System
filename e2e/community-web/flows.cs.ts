@@ -6,13 +6,8 @@
 import { expect, test } from "@playwright/test";
 import { apiLogin, approvePost, createPost, pageFetch } from "../_kit/api";
 import { enableFlowTriggers } from "../_kit/flows";
-import {
-  assignFlowUi,
-  flowRows,
-  loginPlatformAdminUi,
-  openCompanyFlows,
-  openTenantAppsTab,
-} from "../_kit/ui";
+import { flowRows, loginPlatformAdminUi, openCompanyFlows, openTenantAppsTab } from "../_kit/ui";
+import { ensureModerationFlow } from "./_flow";
 import { openAs, postByTitle, TENANT, USERNAME } from "./_stack";
 
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
@@ -28,6 +23,7 @@ test.describe.configure({ mode: "serial" });
 test("1 · platform admin gán quy trình duyệt bài cho công ty (đường thật)", async ({ browser }) => {
   const ctx = await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
+  await ensureModerationFlow(); // CR-127 Z7: quản trị nền tảng dựng quy trình công ty từ sơ đồ trống + áp dụng (không còn «Gán» mẫu)
   await loginPlatformAdminUi(
     page,
     ADMIN,
@@ -37,10 +33,6 @@ test("1 · platform admin gán quy trình duyệt bài cho công ty (đường t
   await openTenantAppsTab(page, TENANT_NAME);
   // CR-122 U2: gán ở công ty › Quy trình = MỘT danh sách flow (không còn việc/ngăn Gán): chọn flow duyệt bài trong Thư viện → Gán
   const box = await openCompanyFlows(page);
-  const pick = box.getByRole("combobox", { name: "Quy trình trong Thư viện" });
-  const names = await pick.locator("option[value]:not([value=''])").allTextContents();
-  const moderation = names.find((n) => /bài/i.test(n));
-  if (moderation) await assignFlowUi(box, moderation); // đã gán rồi thì không còn trong ô chọn ⇒ bỏ qua
   await expect(flowRows(box).filter({ hasText: /bài/i })).not.toHaveCount(0);
   await enableFlowTriggers(TENANT); // G3: cờ FLOW_TRIGGERS bật cho công ty test (bóng → thật)
   await ctx.close();

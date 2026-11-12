@@ -9,7 +9,8 @@
   "kind": {
     "review": "Kiểm",
     "ask": "Trả lời",
-    "decision": "Quyết định"
+    "decision": "Quyết định",
+    "milestone": "Xác nhận mốc"
   },
   "dm": {
     "subtitle": "Tài khoản hệ thống · Hub gửi việc cần bạn xử lý, kể cả khi bạn không ở phòng đó",
@@ -30,7 +31,9 @@
     "resolvedByYou": "Bạn · {{result}}",
     "escalated": "Việc ở {{process}} · {{stage}} đã chuyển cấp tới nhóm của bạn",
     "escalatedTo": "Đã chuyển cấp tới nhóm {{group}} vì chưa ai duyệt.",
-    "escalatedToH": "Đã chuyển cấp tới nhóm {{group}} vì chưa ai duyệt sau {{hours}} giờ."
+    "escalatedToH": "Đã chuyển cấp tới nhóm {{group}} vì chưa ai duyệt sau {{hours}} giờ.",
+    "task_released": "Việc ở {{process}} · {{stage}} đã tự trả về nhóm vì người nhận chưa xử lý",
+    "milestone_task": "Cần bạn xác nhận mốc: {{process}} · {{stage}}"
   },
   "run": {
     "tab": {

@@ -15,9 +15,9 @@ Dùng thay vì viết lại trong từng lát. Dựng dữ liệu bằng API (`a
 - `loginPlatformAdminUi(page, adminUrl, user, pw)` — đăng nhập ai-admin. `await loginPlatformAdminUi(page, ADMIN, u, p);`
 - `openTenantAppsTab(page, tenantName)` — mở công ty › "Ứng dụng & Gói". `await openTenantAppsTab(page, "Demo Sổ Hợp Tác");`
 - `openCompanyFlows(page)` / `flowRows(box)` / `flowRow(box, name)` — công ty › tab "Quy trình" = MỘT danh sách flow (CR-122). `const box = await openCompanyFlows(page);`
-- `assignFlowUi(box, name?)` — platform_admin gán flow Thư viện cho công ty (chạy lại được). `await assignFlowUi(box, "Duyệt HĐ Demo");`
+- `createFlowUi(page, adminUrl, {company,name})` / `openFlowEditor` — tạo quy trình trống bằng UI / mở màn soạn. (CR-127 Z7: không còn «Gán» mẫu dùng chung; dựng bằng API: `createCompanyFlow` trong `flows.ts` = tạo trống → PUT bước → áp dụng.)
 - `loginTenantAdminUi(page, adminUrl, tenantKey, user, pw)` — quản trị công ty đăng nhập ai-admin.
-- `flows.ts` — dựng flow riêng: `seedLibraryFlow` (SQL, đã xuất bản v1), `enableFlowTriggers(tenantKey)`, bước `approve/ifFact/notifyCreator/finish/esignNode/bridgeSet`.
+- `flows.ts` — dựng flow riêng: `createCompanyFlow` (API: sơ đồ trống → bước → áp dụng), `seedLibraryFlow` (SQL, đã xuất bản v1), `enableFlowTriggers(tenantKey)`, bước `approve/ifFact/notifyCreator/finish/esignNode/bridgeSet`.
 - `optionValue(select, text)` — value của `<option>` theo chữ. `await sel.selectOption(await optionValue(sel, "E2E Mua"));`
 - `safeReload(page, { boot?, ready? })` — tải lại chờ `/auth/refresh` đang bay + app khởi động (tránh 401 do huỷ xoay token). `await safeReload(page, { ready: card });`
 - `trackRefresh(page)` — bắt đầu theo dõi refresh sớm (tuỳ chọn).

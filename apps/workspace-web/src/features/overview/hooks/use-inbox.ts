@@ -21,5 +21,11 @@ export function useInbox() {
     (tasks.data?.items ?? []).map((i) => [i.task.id, i.process_run.id] as const),
   );
   const itemByTask = new Map((tasks.data?.items ?? []).map((i) => [i.task.id, i] as const));
-  return { work, requests, runByTask, itemByTask, count: waitingOf(work.data).total + extra };
+  return {
+    work,
+    requests,
+    runByTask,
+    itemByTask,
+    count: waitingOf(work.data).total + extra + (work.data?.inbox?.length ?? 0),
+  };
 }

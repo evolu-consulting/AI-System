@@ -19,18 +19,8 @@ import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { type FlowOp, useCompanyFlowOp } from "../company-flows-api";
-import {
-  actionsOf,
-  errorKey,
-  groupByApp,
-  menuOf,
-  reorderIds,
-  splitRows,
-  statusKey,
-} from "../lib/company-flow-view";
+import { errorKey, groupByApp, menuOf, reorderIds, statusKey } from "../lib/company-flow-view";
 import { canSeeFlowSwitch } from "../lib/flow-switch-access";
-import { AssignFlow } from "./AssignFlow";
-import { CopyDialog } from "./CopyDialog";
 import { FlowSwitch } from "./FlowSwitch";
 
 /** Cùng lưới cho tiêu đề và mọi dòng ⇒ cột thẳng mép. */
@@ -42,11 +32,11 @@ function triggerText(r: CompanyFlowRow, cond: string): string {
   return `${ev?.label ?? r.trigger_event}${r.has_condition ? ` · ${cond}` : ""}`;
 }
 
-/** CR-125 · x7 · menu "…" của dòng: Quay về bản gốc · Tắt/Bật (Sao chép để sửa là nút riêng vì là lối vào sửa). */
+/** Menu "…" của dòng: Tắt (chỉ quản trị nền tảng — công ty chỉ xem). */
 function RowMenu(p: { r: CompanyFlowRow; busy: boolean; onOp: (a: FlowOp) => void }) {
   const { t } = useTranslation();
   const m = menuOf(p.r);
-  if (!m.revert && !m.toggle) return null;
+  if (!m.toggle) return null;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -61,11 +51,6 @@ function RowMenu(p: { r: CompanyFlowRow; busy: boolean; onOp: (a: FlowOp) => voi
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {m.revert ? (
-          <DropdownMenuItem onSelect={() => p.onOp({ op: "revert", id: p.r.id })}>
-            {t("tenants.companyFlows.revert")}
-          </DropdownMenuItem>
-        ) : null}
         {m.toggle ? (
           <DropdownMenuItem
             onSelect={() => p.onOp({ op: "toggle", id: p.r.id, enabled: m.toggle === "on" })}
@@ -84,17 +69,14 @@ function Row(p: {
   busy: boolean;
   /** Mục "Nâng cao: thứ tự" đang mở ⇒ mới cho kéo thả. */
   ordering: boolean;
-  /** CR-125 · x7 · dòng trong mục "Mẫu thư viện" (bản gốc đã được thay): chỉ "Mở". */
-  compact?: boolean;
+  /** CR-127 · Z5 · quản trị công ty chỉ xem: không hiện thao tác ghi (tránh bấm ra 403). */
+  readOnly: boolean;
   onOp: (a: FlowOp) => void;
   onDrop: (fromId: string, toId: string) => void;
-  /** CR-125 · c5b · "Sao chép để sửa" mở hộp nói trước mẫu dùng được chưa. */
-  onCopy?: (r: CompanyFlowRow) => void;
 }) {
   const { t } = useTranslation();
   const k = (s: string, o?: Record<string, unknown>) => t(`tenants.companyFlows.${s}`, o);
   const { r } = p;
-  const a = actionsOf(r);
   return (
     <li
       className={`${GRID} border-t border-border px-3 py-2`}
@@ -121,9 +103,7 @@ function Row(p: {
       <p className="m-0 min-w-0 truncate text-body text-muted-foreground">
         {r.source
           ? k("source.copy", { name: r.source.name || r.name, v: r.source.version })
-          : r.kind === "assigned"
-            ? k("source.assigned")
-            : k("source.own")}
+          : k("source.own")}
       </p>
       <div className="min-w-0">
         <StatusBadge tone={r.enabled ? "ok" : "off"}>{k(`status.${statusKey(r)}`)}</StatusBadge>
@@ -138,17 +118,7 @@ function Row(p: {
             {k("open")}
           </Link>
         </Button>
-        {a.clone && !p.compact ? (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={p.busy}
-            onClick={() => (p.onCopy ? p.onCopy(r) : p.onOp({ op: "clone", id: r.id }))}
-          >
-            {k("clone")}
-          </Button>
-        ) : null}
-        {p.compact ? null : <RowMenu r={r} busy={p.busy} onOp={p.onOp} />}
+        {p.readOnly ? null : <RowMenu r={r} busy={p.busy} onOp={p.onOp} />}
       </div>
     </li>
   );
@@ -171,8 +141,6 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   const isPlatform = role === "platform_admin";
   const [err, setErr] = useState<string | null>(null);
   const [ordering, setOrdering] = useState(false);
-  const [copying, setCopying] = useState<CompanyFlowRow | null>(null);
-  const { main, templates } = splitRows(rows);
   const run = (a: FlowOp) => {
     setErr(null);
     op.mutate(a, {
@@ -185,25 +153,12 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   };
   return (
     <div className="space-y-3" data-testid="company-flow-list">
-      {copying ? (
-        <CopyDialog
-          tenantId={tenantId}
-          flowId={copying.flow_id}
-          name={copying.name}
-          isPlatform={isPlatform}
-          onClose={() => setCopying(null)}
-          onConfirm={() => run({ op: "clone", id: copying.id })}
-        />
-      ) : null}
       {canSeeFlowSwitch(role) ? <FlowSwitch tenantId={tenantId} words={words} /> : null}
-      {isPlatform ? (
-        <AssignFlow
-          tenantId={tenantId}
-          assignedFlowIds={new Set(rows.map((r) => r.flow_id))}
-          busy={op.isPending}
-          onAssign={(flowId) => run({ op: "assign", flowId })}
-        />
-      ) : null}
+      {isPlatform ? null : (
+        <p className="text-body text-muted-foreground" data-testid="company-flow-readonly-note">
+          {t("tenants.companyFlows.readOnlyNote")}
+        </p>
+      )}
       {rows.length === 0 ? (
         <p className="text-body text-muted-foreground">{t("tenants.companyFlows.empty")}</p>
       ) : null}
@@ -224,7 +179,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
           <span>{t("tenants.companyFlows.col.status")}</span>
           <span />
         </div>
-        {groupByApp(main).map((g) => (
+        {groupByApp(rows).map((g) => (
           <section key={g.app} aria-label={tr(`featmeta.app.${g.app}.name`)}>
             <h2 className="m-0 border-t border-border bg-muted/40 px-3 py-2 text-label font-semibold">
               {tr(`featmeta.app.${g.app}.name`)}
@@ -236,55 +191,30 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
                   r={r}
                   tenantId={tenantId}
                   busy={op.isPending}
-                  ordering={ordering}
+                  ordering={ordering && isPlatform}
+                  readOnly={!isPlatform}
                   onOp={run}
                   onDrop={onDrop}
-                  onCopy={setCopying}
                 />
               ))}
             </ul>
           </section>
         ))}
       </div>
-      {templates.length > 0 ? (
+      {isPlatform ? (
         <details
           className="rounded-md border border-border px-3 py-2"
-          data-testid="company-flow-templates"
+          data-testid="company-flow-order"
+          onToggle={(e) => setOrdering((e.currentTarget as HTMLDetailsElement).open)}
         >
           <summary className="cursor-pointer text-label font-medium">
-            {t("tenants.companyFlows.templates", { n: templates.length })}
+            {t("tenants.companyFlows.orderTitle")}
           </summary>
           <p className="mt-2 text-caption text-muted-foreground">
-            {t("tenants.companyFlows.templatesHint")}
+            {t("tenants.companyFlows.orderHint")}
           </p>
-          <ul className="m-0 mt-2 list-none rounded-md border border-border p-0">
-            {templates.map((r) => (
-              <Row
-                key={r.id}
-                r={r}
-                compact
-                tenantId={tenantId}
-                busy={op.isPending}
-                ordering={false}
-                onOp={run}
-                onDrop={onDrop}
-              />
-            ))}
-          </ul>
         </details>
       ) : null}
-      <details
-        className="rounded-md border border-border px-3 py-2"
-        data-testid="company-flow-order"
-        onToggle={(e) => setOrdering((e.currentTarget as HTMLDetailsElement).open)}
-      >
-        <summary className="cursor-pointer text-label font-medium">
-          {t("tenants.companyFlows.orderTitle")}
-        </summary>
-        <p className="mt-2 text-caption text-muted-foreground">
-          {t("tenants.companyFlows.orderHint")}
-        </p>
-      </details>
     </div>
   );
 }

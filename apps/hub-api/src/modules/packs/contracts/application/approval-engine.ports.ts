@@ -170,6 +170,26 @@ export type DecisionEvent = {
   action: "approve" | "return" | "reject";
   feedback: string | null;
   actor: string;
+  /** CR-127 · E4 · id `hub.evidence` của quyết định (nếu có). */
+  evidenceId?: string | null;
+};
+/** CR-127 · E4 · một dòng hồ sơ duyệt (chưa lọc BR-26 — usecase lọc). */
+export type DecisionRow = {
+  taskId: string;
+  stage: string;
+  action: "approve" | "return" | "reject";
+  at: string;
+  actor: string;
+  feedback: string | null;
+  evidence: {
+    id: string;
+    note: string;
+    signature_attachment_id: string | null;
+    attachment_ids: string[];
+    by_user: string;
+    on_behalf_of: string | null;
+    at: string;
+  } | null;
 };
 export type PendingLinksOp =
   | (PendingLinksOwner & { links: readonly unknown[] | null })
@@ -195,7 +215,7 @@ export type ApprovalEngineRepo = {
     approvalId: string,
     s: { runId: string | null; reason: string },
   ): Promise<boolean>;
-  /** `needs_review → active` + `confirmed_*` + event `approved` + lượt `done` (chỉ HĐ của run engine). */
+  /** `processing → done` + `confirmed_*` + event `approved` + lượt `done` (chỉ HĐ của run engine). */
   finalize(
     contractId: string,
     approvalId: string,
@@ -213,6 +233,8 @@ export type ApprovalEngineRepo = {
   /** CR-125 · nhật ký MỖI quyết định của người duyệt trên bước của run engine (`contract_events` `stage_decided`: người, bước,
    *  approve|return|reject, góp ý) — hiện ở lịch sử HĐ. MỘT câu. */
   recordDecision?(contractId: string, approvalId: string, e: DecisionEvent): Promise<void>;
+  /** CR-127 · E4 · hồ sơ duyệt: mọi `stage_decided` của HĐ (≤ 200, theo thời gian) + bằng chứng qua `hub.evidence_get` — MỘT câu. */
+  decisionsOf?(contractId: string): Promise<DecisionRow[]>;
   /** S3b · nhãn HĐ (số, tiêu đề) của các HĐ người dùng THẤY (RLS M1) — MỘT câu `= any`. */
   labels(
     ids: readonly string[],

@@ -6,10 +6,18 @@ import { sql } from "drizzle-orm";
 import type { Hono } from "hono";
 import { logger } from "../../../lib/logger";
 import { startLoop } from "../../../lib/loop";
-import type { PackAccessView, PackGuardVars } from "../kit/public";
-import { createPackUow, packTenantOnly } from "../kit/public";
+import type { PackAccessView, PackGuardVars, PackWho } from "../kit/public";
+import {
+  checkPackAccess,
+  createPackUow,
+  memberNamesOf,
+  packAccessInput,
+  packTenantOnly,
+} from "../kit/public";
 import { deliveryRepo } from "./adapters/delivery.repo";
 import { deliveryRoutes } from "./adapters/delivery.routes";
+import { execRequestsRoutes } from "./adapters/exec-requests.routes";
+import { expiryOutcomeRoutes } from "./adapters/expiry-outcome.routes";
 import { ledgerRoutes } from "./adapters/ledger.routes";
 import { ledgerReadRepo } from "./adapters/ledger-read.repo";
 import { ledgerWriteRepo } from "./adapters/ledger-write.repo";
@@ -17,15 +25,23 @@ import { milestonesRepo } from "./adapters/milestones.repo";
 import { milestonesRoutes } from "./adapters/milestones.routes";
 import { obligationImpactRoutes } from "./adapters/obligation-impact.routes";
 import { overdueRepo } from "./adapters/overdue.repo";
+import { penaltyRepo } from "./adapters/penalty.repo";
+import { penaltyRoutes } from "./adapters/penalty.routes";
 import { repRepo } from "./adapters/rep.repo";
 import { rowsOf } from "./adapters/rep.sql";
 import { deliveryReads } from "./application/delivery.usecase";
+import { execCommands } from "./application/exec-request.usecase";
+import { expiryCommands } from "./application/expiry-outcome.usecase";
 import type { LockedObligation } from "./application/ledger.ports";
 import { ledgerCommands, ledgerReads } from "./application/ledger.usecase";
 import { milestoneCommands } from "./application/milestones.usecase";
 import { v2eDeltaIn } from "./application/obligation-impact.usecase";
 import { createOverdueSweepUsecase, type OverdueSweep } from "./application/overdue-sweep";
+import { penaltyCommands } from "./application/penalty.usecase";
+import { CONTRACTS_PACK } from "./domain/contract-flow-events.rules";
 import { localDate } from "./domain/local-time.rules";
+import { bindExecRequestEvents, execDepsOf } from "./exec-request-events.mount";
+import { expiryDepsOf } from "./expiry-outcome.mount";
 import { obligationImpactOf } from "./obligation-impact.mount";
 import { safeTimeZone } from "./reminders.mount";
 import { envRepEngine } from "./rep-current.mount";
@@ -76,12 +92,23 @@ export type ContractsOverdueDeps = { worker?: boolean; everyMs?: number };
 
 /** Deps chung của lệnh sổ (route sổ HD7 + "đã giao/đã thanh toán ngay" của giao dịch — DOC-deals): cùng `repDelta` ⇒ xác nhận ở
  *  đâu cũng lưu delta uy tín như nhau (cờ `v2e`). */
+/** CR-127 X5: quyền `admin` của gói (quản trị công ty) theo người gọi — cùng `checkPackAccess` của guard. */
+export const packAdminOf = (view: PackAccessView) => async (who: PackWho) => {
+  const i = await packAccessInput(view, KEY, { ...who, userKind: "internal" });
+  return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
+};
+
 export function ledgerDeps(
   db: Db,
-  d: { timeZoneOf: (tenantId: string) => Promise<string>; now: () => Date },
+  d: {
+    timeZoneOf: (tenantId: string) => Promise<string>;
+    now: () => Date;
+    isAdmin?: (who: PackWho) => Promise<boolean>;
+  },
 ) {
   const tz = safeTimeZone(d.timeZoneOf);
   return {
+    ...(d.isAdmin ? { isAdmin: d.isAdmin } : {}),
     uow: packTenantOnly(createPackUow(db, KEY, ledgerRepos)),
     timeZoneOf: tz,
     now: d.now,
@@ -115,13 +142,37 @@ export function ledgerModule(
   const now = d.now ?? (() => new Date());
   // MS-impact: xem trước tác động + delta uy tín lưu trên dòng sổ khi xác nhận (engine hiện hành).
   const impact = obligationImpactOf(db, { timeZoneOf: d.timeZoneOf, now });
-  const deps = ledgerDeps(db, { timeZoneOf: d.timeZoneOf, now });
+  const deps = ledgerDeps(db, { timeZoneOf: d.timeZoneOf, now, isAdmin: packAdminOf(view) });
+  // CR-127 X3: tạm khoá/mở khoá + yêu cầu thay đổi thực hiện (một bảng `exec_requests`); `fulfilment.change_requested` có binding thật.
+  const execDeps = execDepsOf(db, { timeZoneOf: d.timeZoneOf, now });
+  const exec = execCommands(execDeps);
+  bindExecRequestEvents(db, execDeps);
   const r = ledgerRoutes(view, {
     cmd: ledgerCommands(deps),
     reads: ledgerReads(deps),
     engine: envRepEngine, // REP-v3: cờ `v2e` ⇒ đóng chỉnh tay ±10
+    exec,
+    names: memberNamesOf(db), // CR-127 SG1: tên người giữ việc (`task.claimed_by_name`, `TASK_CLAIMED.details.by_name`)
   });
-  r.route("/", milestonesRoutes(view, milestoneCommands({ uow: deps.uow }))); // V2-A · thêm/sửa/xoá mốc
+  // CR-127 SG1 · BR-68: kết cục hiệu lực của HĐ sắp hết hạn bằng tay (cùng logic kết cục của quy trình `contract.expiring`).
+  r.route(
+    "/",
+    expiryOutcomeRoutes(
+      view,
+      expiryCommands(expiryDepsOf(db, { today: execDeps.today, isAdmin: packAdminOf(view) })),
+    ),
+  );
+  r.route("/", milestonesRoutes(view, milestoneCommands({ uow: deps.uow }), exec)); // V2-A · thêm/sửa/xoá mốc (X3: HĐ DONE ⇒ yêu cầu thay đổi)
+  r.route("/", execRequestsRoutes(view, exec)); // CR-127 X3
+  // CR-127 X4: phạt chậm — `POST /obligations/:id/penalty` (Ghi vào công nợ / Miễn phạt), `GET /contracts/:id/penalties` (ước tính)
+  const penalty = penaltyCommands({
+    uow: packTenantOnly(
+      createPackUow(db, CONTRACTS_PACK, (tx, tid) => ({ penalty: penaltyRepo(tx, tid) })),
+    ),
+    today: execDeps.today,
+    headOf: execDeps.headOf,
+  });
+  r.route("/", penaltyRoutes(view, penalty));
   r.route("/", deliveryRoutes(view, deliveryReads({ uow: deps.uow }))); // V2-D · bảng SL mốc giao + kiểm tồn
   r.route("/", obligationImpactRoutes(view, impact)); // MS-impact · xem trước tác động xác nhận mốc
   return r;

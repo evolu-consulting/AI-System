@@ -71,7 +71,7 @@ describe("HD-NFR-01 · danh sách và facets: 2 câu SQL, 0 Redis, 0 HTTP nội 
   });
   it("HD-NFR-01 · danh sách: MỌI bộ lọc cùng lúc + q + sort vẫn 2 câu (một văn bản SQL cố định)", async () => {
     await small();
-    const full = `?status=active&status=expiring&owner=${P.lan.id}&category=${catId(1)}&seller=A&buyer=B&signer=nguyen%20van%20a&direction=sale&kind=contract&value_min=0&value_max=9&q=abc&sort=value&dir=asc&page=2&page_size=10`;
+    const full = `?status=done&effect=active&effect=expiring&owner=${P.lan.id}&category=${catId(1)}&seller=A&buyer=B&signer=nguyen%20van%20a&direction=sale&kind=contract&value_min=0&value_max=9&q=abc&sort=value&dir=asc&page=2&page_size=10`;
     await get(full);
     const h = await hops(() => get(full));
     expect({ status: h.r.status, sql: h.sql, http: h.http }).toEqual({
@@ -102,18 +102,20 @@ describe("HD-NFR-01 · danh sách và facets: 2 câu SQL, 0 Redis, 0 HTTP nội 
 });
 
 describe("HD-NFR-02 · chi tiết, source, file", () => {
-  it("HD-NFR-02 · chi tiết: 2 câu — không đổi khi có 0 hay 30 item và 60 event", async () => {
+  // CR-127 SG1: chi tiết HĐ Nháp đọc thêm 2 câu (`submit_block`: quy trình khớp để Gửi? + hồ sơ lần gửi) ⇒ 4 câu; vẫn HẰNG SỐ theo số dòng/sự kiện.
+  const DETAIL_SQL = 4;
+  it("HD-NFR-02 · chi tiết: 4 câu — không đổi khi có 0 hay 30 item và 60 event", async () => {
     await small();
-    await get(`/${cid(2)}`);
-    const none = await hops(() => get(`/${cid(2)}`));
+    await get(`/${cid(1)}`);
+    const none = await hops(() => get(`/${cid(1)}`));
     for (let i = 1; i < 30; i++) await insItem(c.sql, T.acme, cid(1), i);
     await insEvents(c.sql, T.acme, cid(1), 60);
     const many = await hops(() => get(`/${cid(1)}`));
     expect([none.r.status, none.sql, many.r.status, many.sql, many.http, many.redis]).toEqual([
       200,
-      2,
+      DETAIL_SQL,
       200,
-      2,
+      DETAIL_SQL,
       [],
       [],
     ]);

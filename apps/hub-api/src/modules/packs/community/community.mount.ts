@@ -17,12 +17,13 @@ import {
   flowRoutes,
   flowRuntime,
   flowRuntimeOn,
-  packBell,
   packHosts,
   packNavRegistry,
   pgExternalOrgResolver,
+  selfContactOf,
   slotRegistry,
 } from "../kit/public";
+import { commentsRoutes } from "./adapters/comments.routes";
 import { COMMUNITY_KEY } from "./adapters/community-access";
 import type { CommunityDeps } from "./adapters/community-deps";
 import { filesRoutes } from "./adapters/files.routes";
@@ -39,13 +40,13 @@ import { postsRoutes } from "./adapters/posts.routes";
 import { profileRoutes } from "./adapters/profile.routes";
 import { quoteRoutes } from "./adapters/quote.routes";
 import { stockMatchVia } from "./adapters/quote.service";
-import { threadsRoutes } from "./adapters/threads.routes";
 import type {
   CommunityBlobs,
   CommunityUploadGate,
   CompanyBrandReader,
   ContractsCapReader,
   HostBookReader,
+  PartnerLinker,
   SupplierQuoteWriter,
 } from "./application/pack-ports";
 import { communitySlotSpecs } from "./domain/flow-slots.rules";
@@ -68,6 +69,8 @@ export function communityModule(
     /** CR-110: brand chủ quản + quyền gói contracts (vắng ⇒ brand mặc định theo tên tenant, caps false). */
     brand?: CompanyBrandReader | undefined;
     caps?: ContractsCapReader | undefined;
+    /** CR-130 · ADR-0043: cổng ghi liên kết đối tác SHT khi duyệt yêu cầu tham gia (vắng ⇒ duyệt yêu cầu tham gia 503). */
+    partners?: PartnerLinker | undefined;
     webUrl?: string | undefined;
     /** CR-118 §11.1: kho byte tệp bài (vắng ⇒ `/files` 503). */
     blobs?: CommunityBlobs | undefined;
@@ -86,6 +89,7 @@ export function communityModule(
   const events = communityEvents({
     uow,
     hosts,
+    orgMembers: (t, ids) => resolver.orgMembers(t, ids),
     ...(opts.savedBy ? { savedBy: opts.savedBy } : {}),
     ...(stockMatch ? { stockMatch } : {}),
     ...(opts.now ? { now: opts.now } : {}),
@@ -99,6 +103,7 @@ export function communityModule(
     moderationOn: fo.moderationOn,
     background: fo.background,
     triggersOn: fo.triggersOn,
+    partners: opts.partners,
     warn: (m, meta) => console.warn(m, meta),
     onApproved: async (p, tenantId) => {
       await events.emitNewPost({
@@ -114,15 +119,18 @@ export function communityModule(
     },
   };
   // CR-122 · A2: đăng ký FactsReader + OutcomeHandler của engine lúc mount (đăng ký lại ⇒ thay, vô hại)
-  fo.registerPorts?.({ readers: communityFactsReaders(uow), handler: communityOutcomeHandler() });
+  fo.registerPorts?.({
+    readers: communityFactsReaders(uow),
+    handler: communityOutcomeHandler(opts.partners),
+  });
   const d: CommunityDeps = {
     view,
     resolver,
     uow,
     events,
     flows,
-    bell: packBell(db, COMMUNITY_KEY),
     shtUrl: opts.shtUrl ?? "/",
+    contact: selfContactOf(db),
     quotes: opts.quotes,
     hostBook: opts.hostBook,
     brand: opts.brand,
@@ -134,7 +142,7 @@ export function communityModule(
   };
   const r = new Hono<PackGuardVars>();
   r.route("/", postsRoutes(d));
-  r.route("/", threadsRoutes(d));
+  r.route("/", commentsRoutes(d));
   r.route("/", orgRoutes(d));
   r.route("/", profileRoutes(d));
   r.route("/", quoteRoutes(d));

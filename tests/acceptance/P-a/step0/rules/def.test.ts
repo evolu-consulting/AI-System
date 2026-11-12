@@ -1,4 +1,4 @@
-// ADM-FR-65 · ADM-FR-66 · HUB-FR-104 · HUB-FR-109 · N1 · R-DF01…R-DF04 — `validateProcessDef`, `copyFromTemplate`
+// ADM-FR-65 · ADM-FR-66 · HUB-FR-104 · HUB-FR-109 · N1 · R-DF01…R-DF03 — `validateProcessDef`
 // (defs/def.rules.ts, plan-contract §6–§7). Thứ tự lỗi: INVALID → REF_INVALID (stage lỗi đầu) → INCOMPLETE.
 import { describe, expect, it } from "bun:test";
 import { fn, loadDefRules } from "../../_support/modules";
@@ -90,16 +90,5 @@ describe("R-DF · kiểm định nghĩa quy trình [ADM-FR-65, 66]", () => {
       refs,
     );
     expect(both.code).toBe("PROCESS_DEF_INVALID");
-  });
-  it("ADM-FR-65 · R-DF04 · copyFromTemplate: group review = null, enabled=false; key/tên theo tham số; không đổi mẫu", async () => {
-    const f = fn(await loadDefRules(), "copyFromTemplate");
-    const t = def([stage({ key: "a" }), stage({ key: "b" })]);
-    const c = f(t, {});
-    expect(c.enabled).toBe(false);
-    expect(c.key).toBe("p-thu");
-    for (const s of c.stages) if (s.after.kind === "review") expect(s.after.group_id).toBeNull();
-    const c2 = f(t, { key: "sdlc-2", name: "SDLC 2" });
-    expect(c2).toMatchObject({ key: "sdlc-2", name: "SDLC 2", enabled: false });
-    expect(t.stages[0].after.group_id).toBe(G1);
   });
 });

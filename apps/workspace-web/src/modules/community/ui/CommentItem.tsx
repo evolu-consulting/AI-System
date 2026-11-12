@@ -2,7 +2,7 @@
 import type { CommentView } from "@ai/contracts/community";
 import { type ReactNode, useState } from "react";
 import { initials, timeAgo, tone } from "../domain/format";
-import type { CommentActions } from "../domain/thread";
+import { type CommentActions, splitMentions } from "../domain/thread";
 import { t } from "../i18n";
 import { Highlighted } from "./Highlighted";
 import { IconEdit, IconEyeOff, IconTrash } from "./icons";
@@ -32,7 +32,11 @@ export function CommentItem({
     setEditing(false);
   };
   return (
-    <div className={c.hidden ? "cmt hiddencmt" : "cmt"} data-testid="comment">
+    <div
+      className={c.hidden ? "cmt hiddencmt" : "cmt"}
+      data-testid="comment"
+      data-comment-id={c.id}
+    >
       <span className={`av sm ${tone(c.authorOrgId, c.authorSide === "host")}`}>
         {initials(c.authorOrgName)}
       </span>
@@ -52,7 +56,21 @@ export function CommentItem({
             />
           ) : (
             <p>
-              <Highlighted text={c.text} hits={c.hits} field="body" />
+              {c.mentions.length > 0 && !c.hits?.length ? (
+                splitMentions(c.text, c.mentions).map((part, i) =>
+                  part.mention ? (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: đoạn tách từ chữ tĩnh, thứ tự cố định
+                    <b key={i} className="mention" data-testid="mention-tag">
+                      {part.text}
+                    </b>
+                  ) : (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: như trên
+                    <span key={i}>{part.text}</span>
+                  ),
+                )
+              ) : (
+                <Highlighted text={c.text} hits={c.hits} field="body" />
+              )}
             </p>
           )}
         </div>

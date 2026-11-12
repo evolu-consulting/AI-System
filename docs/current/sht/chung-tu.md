@@ -1,5 +1,7 @@
 # Sổ Hợp Tác · Chứng từ (HĐ · HĐ nguyên tắc · Giao dịch)
 
+> **CR-127 (2026-11-11) — phần Thư viện/khe/sao chép/mẫu/máy duyệt cũ trong file này ĐÃ THAY THẾ:** xem [engine/quy-trinh-cr127.md](../engine/quy-trinh-cr127.md). Giữ làm lịch sử; chỗ mâu thuẫn thì file CR-127 thắng.
+
 Cập nhật: 2026-10-27 · Gộp từ: DOC-model, DOC-deals, DOC-ui-list, DOC-ui-frame, DOC-ui-gaps, K4-reopen-version, CR-097/101/101a.
 
 ## 1. Ba loại chứng từ
@@ -95,7 +97,6 @@ Khối "Không đọc được hợp đồng này" nêu lý do nghiệp vụ (t�
 Lượt chờ flow chưa có run hoặc có run đã kết thúc bất thường ⇒ "Mở lại" phát lại sự kiện gửi duyệt và nói đúng lý do; run đang chạy ⇒ báo bước duyệt đã đổi, không đụng. Thẻ báo đúng lý do (kể cả lỗi mở quy trình / thiếu phòng ban) bằng câu nghiệp vụ.
 - Kịch bản: Mở lại khi run flow đã kẹt ⇒ lượt mở lại bằng flow, không rơi sang máy cũ [test: apps/hub-api/src/modules/processes/triggers/not-launched.int.test.ts » p24 · Mở lại khi lượt đã có run kẹt]
 - Kịch bản: Mở lại khi run flow còn chạy ⇒ not_stalled, run giữ nguyên [test: apps/hub-api/src/modules/processes/triggers/not-launched.int.test.ts » p24 · Mở lại khi lượt đã có run kẹt]
-- Kịch bản: chưa gán quy trình ⇒ thẻ nêu lý do + Mở lại [test: e2e/journey-approval/cr122-p24-not-assigned.spec.ts » chưa gán quy trình: thẻ nói rõ lý do]
 
 #### Yêu cầu: Xác nhận và lưu giữ sản phẩm chọn lúc xác nhận khi bật flow
 Cờ flow bật ⇒ hộp "Gắn sản phẩm" luôn mở ở nháp (không tuỳ ngưỡng giá trị), SP lưu ở lượt và gắn khi flow Đã duyệt. Sau khi gửi duyệt, thẻ cũ không còn nút Xác nhận và lưu.

@@ -2,7 +2,12 @@
 import { describe, expect, it } from "bun:test";
 import { mapLegacyHash } from "./domain/legacy-hash";
 import { COMMUNITY_BASE, parsePath, routeToPath } from "./domain/route";
-import { communityManifest, communityRoutes, createCommunityRoutes } from "./manifest";
+import {
+  communityManifest,
+  communityRoutes,
+  createCommunityRoutes,
+  isLegacySettingsLink,
+} from "./manifest";
 
 describe("communityRoutes", () => {
   it("id/đường dẫn duy nhất, đều nằm dưới /community", () => {
@@ -62,6 +67,8 @@ describe("createCommunityRoutes", () => {
       "/profile",
       "/profile/$orgId",
       "/profile/$orgId/$section",
+      "/me",
+      "/me/$section",
       "/review",
       "/join",
       "/reports",
@@ -77,6 +84,8 @@ describe("createCommunityRoutes", () => {
           "/profile",
           "/profile/$orgId",
           "/profile/$orgId/$section",
+          "/me",
+          "/me/$section",
           "/review",
           "/join",
           "/reports",
@@ -84,5 +93,15 @@ describe("createCommunityRoutes", () => {
       },
     ]);
     expect(lazyCalls).toBe(1); // bộ tải chỉ được gọi khi vào route ⇒ module tắt không nạp chunk
+  });
+});
+
+describe("CR-130 · link cũ ?settings=1", () => {
+  it("nhận ?settings=1 (số hoặc chuỗi); còn lại không", () => {
+    expect(isLegacySettingsLink({ settings: 1 })).toBe(true);
+    expect(isLegacySettingsLink({ settings: "1" })).toBe(true);
+    expect(isLegacySettingsLink({ settings: 0 })).toBe(false);
+    expect(isLegacySettingsLink({})).toBe(false);
+    expect(isLegacySettingsLink(undefined)).toBe(false);
   });
 });

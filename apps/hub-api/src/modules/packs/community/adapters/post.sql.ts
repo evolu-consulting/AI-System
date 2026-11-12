@@ -62,6 +62,8 @@ export type FeedFilter = {
   area: string | null;
   /** "host" = bài chủ quản; uuid = công ty; null = mọi người đăng. */
   author: string | null;
+  /** CR-129 L5 · id người đăng (hồ sơ cá nhân); null = mọi người. */
+  authorUser: string | null;
   q: string | null;
   mine: boolean;
   cursor: { at: string; id: string } | null;
@@ -81,7 +83,12 @@ const shown: SQL = sql`
   case when (select packs.viewer_ext_org()) is null then p.body_raw else p.body_masked end as t_body,
   case when (select packs.viewer_ext_org()) is null then p.fields_raw else p.fields_masked end as t_fields`;
 
-/** JSON một bài (alias `v` trên hàng đã có cột `shown`). */
+/** CTE `pk`: khoá đối tác SHT của các công ty đăng bài trong tập `rows` — MỘT lần gọi hàm cổng cho cả trang (không theo hàng). */
+const partnerKeys = (rows: "page" | "v"): SQL =>
+  sql`pk as (select cp.ext_org_id, cp.party_key
+    from contracts.community_partners(array(select distinct x.author_org from ${sql.raw(rows)} x where x.author_org is not null)) cp)`;
+
+/** JSON một bài (alias `v` trên hàng đã có cột `shown`; cần CTE `pk` = `partnerKeys` — khoá SHT, chỉ chủ quản thấy). */
 const itemJson: SQL = sql`json_build_object(
   'id', v.id, 'type', v.type, 'author_org', v.author_org, 'author_user_id', v.author_user_id,
   'author_name', v.author_name, 'status', v.eff, 'hidden', v.hidden, 'edited', v.edited,
@@ -98,7 +105,7 @@ const itemJson: SQL = sql`json_build_object(
     'price_edited', coalesce(v.price_edited_at > q.saved_at, false)) order by q.saved_at)
     from community.quote_saves q where q.post_id = v.id) end,
   'party_key', case when (select packs.viewer_ext_org()) is null and v.author_org is not null then (select pc.party_key
-    from community.partner_companies pc where pc.tenant_id = v.tenant_id and pc.ext_org_id = v.author_org) end)`;
+    from pk pc where pc.ext_org_id = v.author_org) end)`;
 
 /** `GET /feed`: một câu. Tab "all" = đang hiệu lực (mọi loại); "archived" = lưu trữ/đã xong/hết hạn. */
 export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promise<FeedRaw> {
@@ -116,6 +123,7 @@ export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promis
         and (${f.area}::text is null or lower(v.t_fields ->> 'area') = lower(${f.area}::text))
         and (${f.author}::text is null or (${f.author}::text = 'host' and v.author_org is null)
           or v.author_org::text = ${f.author}::text)
+        and (${f.authorUser}::uuid is null or v.author_user_id = ${f.authorUser}::uuid)
         and (${q}::text is null or (v.t_title || ' ' || coalesce(v.t_fields ->> 'product', '') || ' ' || v.t_body)
           ilike ${q}::text)
     ), page as (
@@ -126,7 +134,7 @@ export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promis
           or (v.created_at, v.id) < (${f.cursor?.at ?? null}::timestamptz, ${f.cursor?.id ?? null}::uuid))
       order by v.created_at desc, v.id desc
       limit ${f.limit + 1}::int
-    )
+    ), ${partnerKeys("page")}
     select json_build_object(
       'items', coalesce((select json_agg(${itemJson} order by v.created_at desc, v.id desc) from page v), '[]'::json),
       'counts', (select json_build_object(
@@ -145,6 +153,7 @@ export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promis
 /** Một bài theo id dưới RLS người xem (vắng ⇒ null = 404). */
 export async function postById(tx: Tx, id: string): Promise<PostRow | null> {
   const rows = await tx.execute<{ r: PostRow }>(sql`
-    select ${itemJson} as r from (select p.*, ${shown} from community.posts p where p.id = ${id}::uuid) v`);
+    with v as (select p.*, ${shown} from community.posts p where p.id = ${id}::uuid), ${partnerKeys("v")}
+    select ${itemJson} as r from v`);
   return rows[0]?.r ?? null;
 }

@@ -28,6 +28,27 @@ export type PartnerMailboxPort = {
    * trong app (đăng nhập mới xem/trả lời), KHÔNG đính hợp đồng, KHÔNG link trả lời không cần đăng nhập. Mẫu thuộc gói; bộ gửi hub chỉ gọi.
    */
   notice?(i: PartnerNoticeInput): PartnerNoticeMail;
+  /**
+   * CR-127 · P1 · phiên ký chung đổi trạng thái chưa báo (lô của bộ chuyển, dòng hub còn khoá): gói báo TỪNG bên có cờ chưa báo — chuyển HĐ
+   * (#12–#14c) qua cổng + tín hiệu `sign.session.*`. Ném ⇒ bộ chuyển KHÔNG bật cờ (lượt sau thử lại); idempotent (cổng CAS, tín hiệu một lần).
+   */
+  onSignSessions?(rows: readonly SignSessionRow[]): Promise<void>;
+};
+
+/** CR-127 · P1 · một phiên ký chung cần báo. `status` đã gồm chuyển do hạn (proposed quá hạn ⇒ fallback, đang ký quá hạn ⇒ expired). */
+export type SignSessionRow = {
+  sessionId: string;
+  status: "accepted" | "signing" | "done" | "cancelled" | "declined" | "expired" | "fallback";
+  /** Quá hạn ký: bên gửi đã chọn Gửi lại / Dừng (null = chưa chọn). */
+  expireChoice: "resend" | "stop" | null;
+  fromTenant: string;
+  toTenant: string;
+  /** Bên còn cần báo (cờ `emitted_*` đang tắt). */
+  notifyFrom: boolean;
+  notifyTo: boolean;
+  /** Bên đã huỷ / từ chối (null nếu không áp dụng). */
+  cancelSide: "from" | "to" | null;
+  cancelReason: string | null;
 };
 
 export type PartnerNoticeInput = {

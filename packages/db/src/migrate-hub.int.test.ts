@@ -72,9 +72,11 @@ const HUB_TABLES = [
   "company_flows", // CR-122 hub 0106 · flow công ty
   "config_meta",
   "conversations",
+  "delegations", // CR-127 hub 0131 · uỷ quyền
   "dify_runs", // dify-workflows hub 0056
   "dlc_step_templates", // dlc-step-library hub 0071
   "dlc_workflows",
+  "evidence", // CR-127 hub 0131 · bằng chứng bất biến
   "flow_events", // CR-122 hub 0105 · sự kiện flow (outbox gói → engine)
   "flows",
   "jobs",
@@ -94,6 +96,7 @@ const HUB_TABLES = [
   "partner_email_events", // CR-124 · hộp thư đối tác
   "partner_links",
   "partner_mailbox",
+  "partner_sign_sessions", // CR-127 · P1 hub 0132 · phiên ký chung
   "platform_settings", // CR-122 p22 hub 0115 · cài đặt nền tảng (process.stages_max)
   "process_back_events",
   "process_def_releases", // hub 0068 · thư viện quy trình / CR-118 hub 0087 (routing, slot)
@@ -115,6 +118,7 @@ const HUB_TABLES = [
   "providers",
   "push_subscriptions",
   "review_task_assignees",
+  "review_task_votes", // CR-127 hub 0131 · phiếu "Cần: tất cả"
   "review_tasks",
   "room_flow_reads",
   "room_members",
@@ -126,6 +130,7 @@ const HUB_TABLES = [
   "source_job_reads",
   "sources",
   "stage_runs",
+  "task_signals", // CR-127 hub 0131 · tín hiệu gói → engine đóng việc
   "team_runs",
   "tenant_agent_defaults",
   "tenant_flow_settings", // CR-122 hub 0106 · cài đặt flow theo tenant

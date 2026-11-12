@@ -25,13 +25,13 @@ beforeAll(async () => {
   await ensureRoles(c);
   const who = P.lan.id;
   await c.sql`insert into contracts.contracts (tenant_id, title, status, created_by, owner_user_id)
-    select ${T.acme}, 'HĐ perf ' || g, 'needs_review', ${who}, ${who} from generate_series(1, ${N}) g`;
+    select ${T.acme}, 'HĐ perf ' || g, 'draft', ${who}, ${who} from generate_series(1, ${N}) g`;
   const frames = await c.sql<{ id: string }[]>`insert into contracts.contracts
       (tenant_id, title, status, created_by, owner_user_id, doc_type, credit_limit)
-    select ${T.acme}, 'HĐ NT perf ' || g, 'needs_review', ${who}, ${who}, 'framework', 1000000000
+    select ${T.acme}, 'HĐ NT perf ' || g, 'draft', ${who}, ${who}, 'framework', 1000000000
     from generate_series(1, ${FRAMES}) g returning id::text`;
   await c.sql`insert into contracts.contracts (tenant_id, title, status, created_by, owner_user_id, frame_root_id)
-    select ${T.acme}, 'Con perf ' || k, 'needs_review', ${who}, ${who}, f::uuid
+    select ${T.acme}, 'Con perf ' || k, 'draft', ${who}, ${who}, f::uuid
     from unnest(${c.sql.array(frames.map((f) => f.id))}::text[]) f, generate_series(1, ${KIDS}) k`;
   await c.sql`analyze contracts.contracts`;
   token = await c.tok(P.lan);

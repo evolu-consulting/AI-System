@@ -71,10 +71,10 @@ describe("filters", () => {
 describe("audience", () => {
   const partners: PartnerOrg[] = [
     { id: "s1", name: "S1", labels: ["supplier"], cats: ["Đóng gói"] },
-    { id: "b1", name: "B1", labels: ["buyer"], cats: ["Đóng gói"] },
-    { id: "b2", name: "B2", labels: ["buyer"], cats: ["Chữ ký số"] },
-    { id: "x", name: "X", labels: ["supplier", "buyer"], cats: ["Chữ ký số"] },
-    { id: "gone", name: "Gone", labels: ["buyer"], cats: ["Đóng gói"], left: true },
+    { id: "b1", name: "B1", labels: ["customer"], cats: ["Đóng gói"] },
+    { id: "b2", name: "B2", labels: ["customer"], cats: ["Chữ ký số"] },
+    { id: "x", name: "X", labels: ["supplier", "customer"], cats: ["Chữ ký số"] },
+    { id: "gone", name: "Gone", labels: ["customer"], cats: ["Đóng gói"], left: true },
   ];
   const ids = (
     a: Parameters<typeof previewRecipients>[0],
@@ -117,6 +117,7 @@ describe("visibility (hien-thi.md)", () => {
     role: "partner" as const,
     orgId: "s1",
     orgName: "S1",
+    email: null,
     labels: ["supplier" as const],
     cats: ["Đóng gói"],
     caps: { contracts: false },

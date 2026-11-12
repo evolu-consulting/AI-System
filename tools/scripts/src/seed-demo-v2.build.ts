@@ -112,7 +112,8 @@ export function contractRows(a: Actors, tenant: string, shift: number): Row[] {
       title: c.title,
       direction: c.deal === "buy" ? "purchase" : "sale",
       deal: c.deal,
-      status: c.status,
+      status: "done", // 0091: trạng thái chỉ còn draft/review/reject/done; hiệu lực (active/renewed) ở `effect`
+      effect: c.status,
       owner_user_id: a[c.who],
       created_by: a.owner,
       created_at: `${start}T08:00:00Z`,

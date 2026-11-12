@@ -1,5 +1,7 @@
 # Admin · Tab Quy trình của công ty là nơi duy nhất gán quy trình
 
+> **CR-127 (2026-11-11) — phần Thư viện/khe/sao chép/mẫu/máy duyệt cũ trong file này ĐÃ THAY THẾ:** xem [engine/quy-trinh-cr127.md](../engine/quy-trinh-cr127.md). Giữ làm lịch sử; chỗ mâu thuẫn thì file CR-127 thắng.
+
 Cập nhật: 2026-11-09 · Gộp từ: cr121-c11-company-flows (đợt cr125-wave).
 
 ## Yêu cầu: Tab Quy trình của công ty là nơi duy nhất gán quy trình (nguồn: cr121-c11-company-flows)

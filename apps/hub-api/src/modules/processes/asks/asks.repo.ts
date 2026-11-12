@@ -10,7 +10,7 @@ export type TaskHead = {
   runId: string;
   stageRunId: string;
   stageIdx: number;
-  kind: "review" | "ask" | "decision";
+  kind: "review" | "ask" | "decision" | "milestone"; // CR-127 · E2
   groupId: string | null;
 };
 

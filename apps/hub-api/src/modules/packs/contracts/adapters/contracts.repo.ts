@@ -19,6 +19,7 @@ import type {
   ContractsReadRepo,
   ListParentRef,
 } from "../application/ports";
+import type { ListDeleteCtx } from "../domain/delete-contract.rules";
 import { appendixRepo } from "./appendix.repo";
 import { eventDataOut } from "./approval-engine.repo";
 import { categoriesRepo } from "./categories.repo";
@@ -28,16 +29,24 @@ import {
   type ContractFacetsDto,
   type ContractListRowDto,
   type DetailRaw,
-  type FacetsRaw,
   type ListRowRaw,
   toContractDetail,
-  toContractFacets,
   toContractListRow,
 } from "./contracts.mapper";
+import { facets } from "./contracts-facets.repo";
 import { childrenOf, docOf, docsOf, listChildren } from "./doc-types.sql";
 import { type ProgressRaw, toProgress } from "./milestones.mapper";
 import { msJson } from "./milestones.repo";
 import { contractFieldsRepo } from "./patch-fields.repo";
+
+// HD-FR-07 · HD-NFR-01 · D-03 · D-07 · D-10 · HD1 plan §6 (Luật 4c): repo đọc gói hợp đồng trong tx `PackUow` (role
+// `contracts_rw`, RLS FORCE). SQL văn bản CỐ ĐỊNH cho mọi tổ hợp (chuẩn bị một lần/kết nối): mọi bộ lọc `($x is null or col = any($x))`,
+// mảng = MỘT tham số literal `{…}` (drizzle nở mảng JS thành danh sách). Lát tenant vật chất hoá một lần (`f`/`c` MATERIALIZED);
+// total + trang cùng câu. Chỉ cột sinh hẹp — KHÔNG đọc `fields`/`source_text` (TOAST). Mọi câu lọc `tenant_id` tường minh ngoài RLS.
+
+/** CR-127 X1: tạm khoá thực hiện (`exec_hold_*`, MIGC 0093) ⇒ `{by, reason}` | null — cùng câu list/detail, không thêm câu. */
+const holdSql = sql.raw(`case when c.exec_hold_at is null then null
+  else jsonb_build_object('by', c.exec_hold_by, 'reason', coalesce(c.exec_hold_reason, '')) end`);
 
 /** Mảng chuỗi → literal mảng Postgres `{"a","b"}` (một tham số); `null` giữ nguyên (= không lọc). */
 export function pgTextArray(xs: readonly string[] | null): string | null {
@@ -84,10 +93,12 @@ const progressOf = (
 function filterWhere(tid: string, f: ContractListFilter) {
   const a = pgTextArray;
   const cats = a(f.category);
-  const df = f.dateField;
   // CR-097 K2 · R18: chỉ bản chưa bị thay (index partial `contracts_current_list_idx`).
   return sql`c.tenant_id = ${tid}::uuid and c.superseded_at is null
         and (${a(f.status)}::text[] is null or c.status = any(${a(f.status)}::text[]))
+        and (${a(f.effect ?? null)}::text[] is null or c.effect = any(${a(f.effect ?? null)}::text[]))
+        and (${a(f.source ?? null)}::text[] is null or (case when c.source = 'partner_inbox' then 'partner' else 'upload' end)
+             = any(${a(f.source ?? null)}::text[]))
         and (${a(f.owner)}::uuid[] is null or c.owner_user_id = any(${a(f.owner)}::uuid[]))
         and (${a(f.seller)}::text[] is null or c.seller = any(${a(f.seller)}::text[]))
         and (${a(f.buyer)}::text[] is null or c.buyer = any(${a(f.buyer)}::text[]))
@@ -99,10 +110,8 @@ function filterWhere(tid: string, f: ContractListFilter) {
              where fv.tenant_id = c.tenant_id and fv.id = c.frame_root_id))
         and (${f.valueMin}::bigint is null or c.value >= ${f.valueMin}::bigint)
         and (${f.valueMax}::bigint is null or c.value <= ${f.valueMax}::bigint)
-        and (${f.dateFrom}::date is null or (case when ${df}::text = 'action_deadline' then c.action_deadline
-             else c.end_date end) >= ${f.dateFrom}::date)
-        and (${f.dateTo}::date is null or (case when ${df}::text = 'action_deadline' then c.action_deadline
-             else c.end_date end) <= ${f.dateTo}::date)
+        and (${f.dateFrom}::date is null or c.end_date >= ${f.dateFrom}::date)
+        and (${f.dateTo}::date is null or c.end_date <= ${f.dateTo}::date)
         and (${f.like}::text is null or c.search_key like ${f.like}::text)
         and (${cats}::uuid[] is null or c.id in (select i.contract_id from contracts.contract_items i
              where i.tenant_id = ${tid}::uuid and i.category_id = any(${cats}::uuid[])))`;
@@ -120,7 +129,13 @@ const orderBy = (f: ContractListFilter) => sql`
         case when ${f.order}::text = 'title:asc' then ${contractNameSql("c")} end asc,
         c.id desc`;
 
-async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | undefined) {
+async function list(
+  tx: Tx,
+  tid: string,
+  f: ContractListFilter,
+  today: string | undefined,
+  del?: ListDeleteCtx,
+) {
   const rows = await tx.execute<ListOut>(sql`with f as materialized (
       select c.id, c.updated_at, c.value, c.end_date, ${contractNameSql("c")} as title from contracts.contracts c
       where ${filterWhere(tid, f)}),
@@ -138,9 +153,10 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | 
     select (select count(*) from f)::int as total,
       coalesce((select json_agg(r order by r.ord) from (
         select c.id, c.kind, c.parent_id, ${contractNameSql("c")} as title, c.number, c.type, c.direction, c.status, c.seller, c.buyer,
-          c.seller_signer, c.buyer_signer, c.value, c.end_date, c.action_deadline, c.owner_user_id, c.updated_at, c.version,
-          c.category_ids[1:50] as category_ids, c.locked_at is not null as locked, c.version_no,
-          ${versionsCount} as versions_count, pp.ord
+          c.seller_signer, c.buyer_signer, c.value, c.end_date, c.owner_user_id, c.created_by, c.updated_at, c.version,
+          c.extract_state, c.effect, c.superseded_at is not null as superseded, c.category_ids[1:50] as category_ids, c.locked_at is not null as locked, c.version_no,
+          case when c.source = 'partner_inbox' then 'partner' else 'upload' end as source,
+          ${holdSql} as hold, ${versionsCount} as versions_count, pp.ord
         from (select p.id, row_number() over () as ord from p) pp
         join contracts.contracts c on c.id = pp.id and c.tenant_id = ${tid}::uuid) r), '[]'::json) as items,
       coalesce((select json_agg(json_build_object('id', pc.id, 'title', ${contractNameSql("pc")}, 'number', pc.number) order by pc.id)
@@ -163,7 +179,7 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | 
     today === undefined ? [] : parsed(out.progress ?? []).map((p) => toProgress(p, today));
   return {
     total: out.total,
-    items: items.map(toContractListRow),
+    items: items.map((r) => toContractListRow(r, del)),
     parents,
     progress,
     step_runs: parsed(out.step_runs ?? []),
@@ -179,13 +195,14 @@ type ExportRaw = {
   type: string | null;
   direction: string | null;
   status: string;
+  effect: string | null;
+  extract_state: string | null;
   seller: string | null;
   buyer: string | null;
   seller_signer: string | null;
   buyer_signer: string | null;
   value: string | number | null;
   end_date: string | null;
-  action_deadline: string | null;
   owner_user_id: string | null;
   category_ids: string[] | null;
   updated_at: Date | string;
@@ -197,8 +214,8 @@ type ExportRaw = {
 async function exportRows(tx: Tx, tid: string, f: ContractListFilter, cap: number) {
   const rows =
     await tx.execute<ExportRaw>(sql`select count(*) over ()::int as total, c.number, ${contractNameSql("c")} as title, c.kind, c.type,
-      c.direction, c.status, c.seller, c.buyer, c.seller_signer, c.buyer_signer, c.value, c.end_date::text as end_date,
-      c.action_deadline::text as action_deadline, c.owner_user_id, c.category_ids[1:50] as category_ids, c.updated_at
+      c.direction, c.status, c.effect, c.extract_state, c.seller, c.buyer, c.seller_signer, c.buyer_signer, c.value, c.end_date::text as end_date,
+      c.owner_user_id, c.category_ids[1:50] as category_ids, c.updated_at
     from contracts.contracts c where ${filterWhere(tid, f)} and c.doc_type <> 'framework' -- CR-101: xuất tệp không gồm HĐ NT
     order by ${orderBy(f)} limit ${cap + 1}::int`);
   const cats = await tx.execute<{ id: string; name: string }>(
@@ -212,13 +229,14 @@ async function exportRows(tx: Tx, tid: string, f: ContractListFilter, cap: numbe
     type: r.type,
     direction: r.direction,
     status: r.status,
+    effect: r.effect,
+    extractState: r.extract_state,
     seller: r.seller,
     buyer: r.buyer,
     sellerSigner: r.seller_signer,
     buyerSigner: r.buyer_signer,
     value: r.value === null ? null : Number(r.value),
     endDate: r.end_date,
-    actionDeadline: r.action_deadline,
     ownerUserId: r.owner_user_id,
     categories: (r.category_ids ?? []).flatMap((id) => name.get(id) ?? []),
     updatedAt: new Date(r.updated_at),
@@ -239,50 +257,6 @@ const versionsOf = sql`(select json_agg(json_build_object('id', v.id, 'version_n
     from (select v.* from contracts.contracts v where v.tenant_id = c.tenant_id and v.root_id = c.root_id
       order by v.version_no limit ${CONTRACT_VERSIONS_MAX}::int) v)`;
 
-const FACET_CAP = 500;
-const CATEGORY_CAP = 200;
-
-/** Một facet văn bản: đếm theo cột `col` trên các nhóm của tập `gs` (cộng lại vì tập gộp nhiều cột), tới trần + 1. Tên cột là
- *  hằng nội bộ (`sql.raw`, không từ người dùng) ⇒ văn bản SQL vẫn cố định. */
-const dim = (col: string, gs: number) =>
-  sql.raw(`(select json_agg(json_build_object('v', x.v, 'n', x.n) order by x.n desc, x.v) from (select ${col} as v,
-    sum(g.n)::int as n from g where g.gs = ${gs} and ${col} is not null group by ${col} order by n desc, v
-    limit ${FACET_CAP + 1}) x)`);
-
-/** MỘT lượt đọc lát tenant (D-22, Luật 4c): GROUPING SETS 4 tập gộp cột + `()` — bitmask `grouping(status, seller, k1, cats)`:
- *  7 = (status, direction, kind, owner), 11 = (seller, buyer), 13 = (k1, l1, k2, l2), 14 = (category_ids), 15 = tổng (min/max giá
- *  trị); mỗi facet cộng lại từ nhóm của tập mình (ít bảng băm hơn 8 tập một cột, không aggregate `min(nhãn)` trên mọi tập). Người ký
- *  dùng cột sinh `signer_keys` (không gọi `person_key` mỗi hàng); `label` = min(raw) theo vị trí khoá (k2 trùng k1 ⇒ bỏ để đếm HĐ
- *  một lần; 1 khoá mà cả hai bên có raw ⇒ nhãn = khoá). Loại hàng: nhóm theo mảng gộp sẵn `category_ids` (trigger câu lệnh) rồi
- *  `unnest` trên các mảng khác nhau — mỗi HĐ đếm một lần, không quét `contract_items`. Lấy tới trần + 1 để mapper biết có cắt. */
-async function facets(tx: Tx, tid: string): Promise<ContractFacetsDto> {
-  const rows = await tx.execute<FacetsRaw>(sql`with g as materialized (
-      select grouping(c.status, c.seller, c.k1, c.cats) as gs, c.status, c.direction, c.kind, c.owner, c.seller, c.buyer,
-        c.k1, c.l1, c.k2, c.l2, c.cats, count(*)::int as n, min(c.value) as vmin, max(c.value) as vmax
-      from (select c.status, coalesce(c.direction, 'unknown') as direction, c.kind, c.owner_user_id::text as owner,
-          c.seller, c.buyer, c.signer_keys[1] as k1,
-          case when c.signer_keys[2] is distinct from c.signer_keys[1] then c.signer_keys[2] end as k2,
-          case when cardinality(c.signer_keys) = 2 or c.buyer_signer is null then c.seller_signer
-               when c.seller_signer is null then c.buyer_signer end as l1,
-          c.buyer_signer as l2, c.value, c.category_ids as cats
-        from contracts.contracts c where c.tenant_id = ${tid}::uuid and c.superseded_at is null) c
-      group by grouping sets ((c.status, c.direction, c.kind, c.owner), (c.seller, c.buyer), (c.k1, c.l1, c.k2, c.l2),
-        (c.cats), ())),
-    sg as (select x.k as v, sum(x.n)::int as n, coalesce(min(x.l), x.k) as label from (
-        select g.k1 as k, g.l1 as l, g.n from g where g.gs = 13 and g.k1 is not null
-        union all select g.k2, g.l2, g.n from g where g.gs = 13 and g.k2 is not null) x group by x.k),
-    cg as (select v, sum(g.n)::int as n from g cross join lateral unnest(g.cats) v where g.gs = 14 group by v)
-    select ${dim("status", 7)} as status, ${dim("direction", 7)} as direction, ${dim("kind", 7)} as kind,
-      ${dim("owner", 7)} as owner, ${dim("seller", 11)} as seller, ${dim("buyer", 11)} as buyer,
-      (select json_agg(json_build_object('v', x.v, 'label', x.label, 'n', x.n) order by x.n desc, x.v) from (select v, label, n
-        from sg order by n desc, v limit ${FACET_CAP + 1}::int) x) as signer,
-      (select json_agg(json_build_object('v', x.v, 'label', cc.name, 'n', x.n) order by x.n desc, x.v) from (select v, n
-        from cg order by n desc, v limit ${CATEGORY_CAP + 1}::int) x
-        join contracts.contract_categories cc on cc.id = x.v and cc.tenant_id = ${tid}::uuid) as category,
-      (select json_build_object('min', g.vmin, 'max', g.vmax) from g where g.gs = 15 and g.vmin is not null) as value`);
-  return toContractFacets(rows[0] as FacetsRaw, { text: FACET_CAP, category: CATEGORY_CAP });
-}
-
 /** HD-NFR-02 · plan §6 Chi tiết: MỘT câu — hàng (PK, lọc `tenant_id` tường minh) + items `(contract_id, tenant_id, ord)` ≤ 500
  *  + 50 event mới nhất `(contract_id, id DESC)` + tệp (PK `files`, chưa xoá mềm). Không đọc `source_text` (chỉ `is not null`,
  *  không giải nén TOAST), không trả `search_key`/`signer_keys`. Gói cả hàng thành một `json` ⇒ kiểu ngày/giờ/số thống nhất. */
@@ -291,15 +265,16 @@ async function detail(
   tid: string,
   id: string,
   today: string,
+  actor?: string,
 ): Promise<ContractDetailDto | null> {
   // json_build_object đã đủ 100 tham số ⇒ phần CR-101 nối bằng `jsonb ||`.
   const rows = await tx.execute<{ d: DetailRaw | string }>(sql`select (json_build_object(
       'id', c.id, 'kind', c.kind, 'parent_id', c.parent_id, 'title', ${contractNameSql("c")}, 'number', c.number, 'type', c.type,
       'direction', c.direction, 'status', c.status, 'seller', c.seller, 'buyer', c.buyer, 'seller_signer', c.seller_signer,
-      'buyer_signer', c.buyer_signer, 'value', c.value, 'end_date', c.end_date, 'action_deadline', c.action_deadline,
+      'buyer_signer', c.buyer_signer, 'value', c.value, 'end_date', c.end_date,
       'owner_user_id', c.owner_user_id, 'updated_at', c.updated_at, 'version', c.version, 'error', c.error,
       'created_by', c.created_by, 'created_at', c.created_at, 'confirmed_at', c.confirmed_at, 'confirmed_by', c.confirmed_by,
-      'file_id', c.file_id, 'clauses', c.clauses, 'warnings', c.warnings, 'handled', c.handled, 'run_id', c.run_id,
+      'file_id', c.file_id, 'clauses', c.clauses, 'warnings', c.warnings, 'run_id', c.run_id,
       'fields', c.fields, 'has_source', c.source_text is not null,
       'items', (select json_agg(i order by i.ord) from (select i.id, i.ord, i.code, i.name, i.spec, i.unit, i.qty,
           i.unit_price, i.vat_rate, i.moq, i.lead_time_days, i.valid_from, i.valid_to, i.category_id, i.quote, i.verified,
@@ -320,15 +295,33 @@ async function detail(
             order by a.created_at desc, a.id limit ${CONTRACT_APPENDICES_MAX}::int) a),
       'deal', c.deal, 'commission_pct', c.commission_pct, 'commission_fixed', c.commission_fixed,
       'start_date', c.start_date, 'milestones', ${milestonesOf}, 'ai_read', c.ai_read,
+      'penalty_terms', (select coalesce(json_agg(json_build_object('id', t.id, 'party', t.party, 'trigger', t.trigger,
+          'rate_pct', t.rate_pct, 'basis', t.basis, 'cap_pct', t.cap_pct, 'cap_amount', t.cap_amount,
+          'clause_ref', t.clause_ref, 'page', t.page, 'quote', t.quote, 'source', t.source) order by t.created_at, t.id), '[]'::json)
+          from contracts.penalty_terms t where t.contract_id = c.id and t.tenant_id = c.tenant_id),
       'locked', c.locked_at is not null, 'locked_at', c.locked_at, 'locked_by', c.locked_by,
       'root_id', c.root_id, 'version_no', c.version_no, 'versions_count', ${versionsCount},
       'superseded_at', c.superseded_at, 'superseded_by', c.superseded_by, 'versions', ${versionsOf}
     )::jsonb || jsonb_build_object('doc', ${docOf}, 'legal_threshold', (select s.legal_warn_threshold
-      from contracts.approval_settings s where s.tenant_id = c.tenant_id))) as d
+      from contracts.approval_settings s where s.tenant_id = c.tenant_id),
+      -- CR-127 K2a-1: trạng thái phụ + hiệu lực + vòng gửi (cột K1a); X1: tạm khoá thực hiện (cột exec_hold_*)
+      'hold', ${holdSql}, 'extract_state', c.extract_state, 'effect', c.effect, 'superseded', c.superseded_at is not null,
+      'effect_outcome', c.effect_outcome, 'effect_outcome_at', c.effect_outcome_at, 'submit_round', c.submit_round,
+      'submitted_by', c.submitted_by,
+      -- CR-127 SG1 · K8: HĐ nhận chờ người phụ trách quyết (chỉ HĐ có bản ghi nhận; chỉ mục partial 0094)
+      'awaiting_decision', exists (select 1 from contracts.partner_inbox p where p.tenant_id = c.tenant_id
+        and p.contract_id = c.id and p.awaiting_decision and p.status = 'pending'),
+      -- CR-127 SG1 · U5: lý do Trả lại gần nhất (chỉ HĐ DRAFT) = lý do người duyệt nhập, không có ⇒ ý kiến bằng chứng; lọc BR-26 ở mapper
+      'return_reason', case when c.status = 'draft' then (select coalesce(nullif(btrim(r.data ->> 'feedback'), ''),
+          (select ev.note from hub.evidence_get(array[(r.data ->> 'evidence_id')::uuid]) ev limit 1))
+        from contracts.contract_events r where r.tenant_id = c.tenant_id and r.contract_id = c.id and r.type = 'stage_decided'
+          and r.data ->> 'action' = 'return' order by r.id desc limit 1) end,
+      'return_involved', ${actor ?? null}::uuid is not null and exists (select 1 from contracts.contract_events r
+        where r.tenant_id = c.tenant_id and r.contract_id = c.id and r.type = 'stage_decided' and r.actor_user_id = ${actor ?? null}::uuid))) as d
     from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
   const d = rows[0]?.d;
   if (!d) return null;
-  return toContractDetail(typeof d === "string" ? (JSON.parse(d) as DetailRaw) : d, today);
+  return toContractDetail(typeof d === "string" ? (JSON.parse(d) as DetailRaw) : d, today, actor);
 }
 
 /** D-13: `source_text` (≤ 5 MB) — MỘT câu theo PK + `tenant_id`. */
@@ -353,10 +346,11 @@ type Repo = ContractsReadRepo<ContractListRowDto, ContractFacetsDto, ContractDet
 
 export function contractsRepo(tx: Tx, tenantId: string): Repo {
   return {
-    list: (f, today) => list(tx, tenantId, f, today),
+    list: (f, today, del) => list(tx, tenantId, f, today, del),
     facets: () => facets(tx, tenantId),
     exportRows: (f, cap) => exportRows(tx, tenantId, f, cap),
-    detail: (id, today) => detail(tx, tenantId, id, today ?? new Date().toISOString().slice(0, 10)),
+    detail: (id, today, actor) =>
+      detail(tx, tenantId, id, today ?? new Date().toISOString().slice(0, 10), actor),
     source: (id) => source(tx, tenantId, id),
     fileOf: (id) => fileOf(tx, tenantId, id),
   };

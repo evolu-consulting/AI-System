@@ -9,8 +9,11 @@ import {
   useMemo,
   useState,
 } from "react";
+import { setAssistantSelection } from "~/shared/kernel/assistant-hint";
 import { type BrandView, toBrandView } from "../domain/brand";
 import type { Route } from "../domain/route";
+import { trimSearch } from "../domain/search-hint";
+import { t } from "../i18n";
 import type { CommunityHost } from "./host";
 import type { CommunityApi, RouterPort } from "./ports";
 import type { Api } from "./runtime";
@@ -22,10 +25,6 @@ export type Ctx = {
   brand: BrandView;
   /** Màu nhấn công ty chủ quản (`data-accent`), cho phần tử vẽ ngoài cây trang (khe thanh trên). */
   brandAccent: string;
-  /** Hộp thoại Cài đặt chung (mở từ user-menu hoặc `?settings=1`); không phải route. */
-  settingsOpen: boolean;
-  openSettings: () => void;
-  closeSettings: () => void;
   api: CommunityApi;
   viewer: CommunityViewer;
   personas: Api["personas"];
@@ -67,9 +66,14 @@ export function AppProvider({
   const [viewer, setViewer] = useState<CommunityViewer | null>(null);
   const [rev, setRev] = useState(0);
   const [route, setRoute] = useState<Route>(() => router.read().route);
-  const [settingsOpen, setSettingsOpen] = useState<boolean>(() => router.read().settings);
   const [brandRaw, setBrandRaw] = useState<CommunityBrand | null>(null);
   const [search, setSearch] = useState("");
+  // CR-130 · một trợ lý chung: từ khoá đang tìm trên Bảng tin đi kèm câu hỏi (ngữ cảnh trang).
+  useEffect(() => {
+    const q = trimSearch(search);
+    setAssistantSelection(q && t("community.dock.searchContext", { q }));
+    return () => setAssistantSelection(null);
+  }, [search]);
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(
@@ -77,7 +81,6 @@ export function AppProvider({
       router.subscribe(() => {
         const p = router.read();
         setRoute(p.route);
-        if (p.settings) setSettingsOpen(true);
       }),
     [router],
   );
@@ -112,12 +115,6 @@ export function AppProvider({
   useEffect(() => {
     boot.api.getBrand().then(setBrandRaw, () => setBrandRaw(null));
   }, [boot, viewerId]);
-  const openSettings = useCallback(() => setSettingsOpen(true), []);
-  const closeSettings = useCallback(() => {
-    setSettingsOpen(false);
-    // Link `?settings=1` ⇒ đóng hộp thoại về Bảng tin (không thêm mục lịch sử).
-    if (router.read().settings) router.replace({ name: "feed" });
-  }, [router]);
   useEffect(() => {
     if (!msg) return;
     const t = setTimeout(() => setMsg(null), 2500);
@@ -130,9 +127,6 @@ export function AppProvider({
       viewer && {
         brand: toBrandView(brandRaw, viewer.orgName),
         brandAccent,
-        settingsOpen,
-        openSettings,
-        closeSettings,
         api: boot.api,
         viewer,
         personas: boot.personas,
@@ -155,21 +149,7 @@ export function AppProvider({
         toast: setMsg,
         isHostViewer: viewer.role !== "partner",
       },
-    [
-      boot,
-      router,
-      host,
-      viewer,
-      rev,
-      bump,
-      route,
-      search,
-      brandRaw,
-      brandAccent,
-      settingsOpen,
-      openSettings,
-      closeSettings,
-    ],
+    [boot, router, host, viewer, rev, bump, route, search, brandRaw, brandAccent],
   );
   if (!value)
     return (

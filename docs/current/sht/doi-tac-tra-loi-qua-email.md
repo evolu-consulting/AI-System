@@ -14,7 +14,6 @@ Dòng hộp thư kênh email được bộ gửi lấy theo lô cố định s�
 Link mở không cần đăng nhập, chỉ hiện bản chia sẻ + PDF của đúng lần gửi; ba nút Xác nhận / Trả lại sửa (lý do) / Từ chối (lý do) cùng họ tên + chức vụ; ghi qua `hub.partner_email_reply` → `partner_reply_apply`; bộ chuyển phát `partner.<kết quả>` vào tenant gửi đúng một lần; dùng lại link không ghi đôi; nhật ký ghi IP rút gọn, tên, chức vụ, băm PDF.
 - Kịch bản: khi mở link rồi Xác nhận thì dòng hộp thư replied nguồn email, tenant gửi nhận partner.confirmed một lần và nhật ký đủ [test: apps/hub-api/src/modules/partners/email.int.test.ts » mở link: đúng một hợp đồng + PDF, Xác nhận ⇒ partner.confirmed vào tenant GỬI, gửi lại không phát đôi]
 - Kịch bản: khi Trả lại sửa thiếu lý do hoặc thiếu họ tên thì 422 và không ghi gì [test: apps/hub-api/src/modules/partners/email.int.test.ts » Trả lại sửa cần lý do, thiếu họ tên bị chặn (422) và không ghi gì]
-- Kịch bản: khi người liên hệ mở link, Xác nhận thì lượt phía gửi chạy tiếp (HĐ khoá) [test: e2e/journey-approval/cr124-q5-partner-email.spec.ts » mở link email ⇒ xem HĐ ⇒ Xác nhận ⇒ lượt phía gửi chạy tiếp (HĐ khoá)]
 - Kịch bản: khi trả lời đường email thì đúng một lời gọi hàm (số câu SQL cố định) [test: apps/hub-api/src/modules/partners/email.int.test.ts » đường trả lời: số câu SQL cố định (1 lần gọi hàm), không phụ thuộc kích thước]
 
 #### Yêu cầu: Token hết hạn, đã dùng, sai hoặc bị đóng không lộ nội dung; hạn mức và CSRF (nguồn: cr124-q5-email)

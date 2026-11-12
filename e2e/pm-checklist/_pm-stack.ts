@@ -3,7 +3,9 @@
 // → hub-api CHẠY TRONG TIẾN TRÌNH NÀY (để giữ `remindOnce`, như test CF: đẩy escalate_at về quá khứ + MỘT lượt nhắc thay vì chờ vòng 300 s)
 // → 3 HĐ mẫu (`seedCr113Samples`, qua đường thật của hub) → cổng "sẵn sàng": GET / = ok, POST /ctl/remind = một lượt `remindOnce`.
 // Chỉ APP_ENV=test + DB `*_test`. Dừng: SIGTERM/SIGINT.
-import { resolve } from "node:path";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { runHubMigrations } from "@ai/db/migrate-hub";
 import { runPackMigrations } from "@ai/db/migrate-packs";
 import postgres from "postgres";
@@ -14,6 +16,7 @@ import { connectDb, pingDb } from "../../apps/hub-api/src/lib/db";
 import { importJwtPublicKey } from "../../apps/hub-api/src/lib/jwt";
 import { logger } from "../../apps/hub-api/src/lib/logger";
 import { createRedis, pingRedis } from "../../apps/hub-api/src/lib/redis";
+import { createLocalStorage } from "../../apps/hub-api/src/modules/attachments/storage.local";
 import { checkHubSecretsKey } from "../../apps/hub-api/src/modules/secrets/secrets.crypto";
 import { DEMO_PASSWORD, ensureDemoFixture, ensureDemoPacks } from "../../tools/hub-dev/src/fixture";
 import { seedCr113Samples } from "../../tools/scripts/src/seed-cr113-samples";
@@ -136,7 +139,12 @@ async function main(): Promise<void> {
     redis,
     jwtPublicKey,
     ...fromEnv,
-    attachments: undefined,
+    // tệp bằng chứng của bước Duyệt tải lên POST /attachments (như `openAttachments` của hub `server.ts`)
+    attachments: {
+      storage: await createLocalStorage({ dir: mkdtempSync(join(tmpdir(), "pm-attach-")) }),
+      tenantMaxBytes: 50_000_000,
+      sweepS: 0,
+    },
     hubSecretsKey: k.key,
     packs: { knowledgeDsn: hubEnv.HUB_DATABASE_URL },
     onProcessHandles: (h: { remindOnce: () => Promise<number> }) => {

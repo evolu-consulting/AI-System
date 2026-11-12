@@ -16,9 +16,10 @@ import {
   applyContractOutcome,
   attachFlowRun,
   contractFlowRepo,
-  markFlowNotLaunched,
 } from "./adapters/contract-flow.repo";
+import { endFlowRun, failRunsBatch } from "./adapters/flow-end.repo";
 import { applyReceivedOutcome } from "./adapters/partner-inbox.repo";
+import { markInboxAwaiting, markInboxAwaitingBatch } from "./adapters/partner-inbox-decision.repo";
 import { type ContractFlowGate, FLOW_OFF, type FlowPrep } from "./application/contract-flow.ports";
 import {
   CONTRACT_EVENTS,
@@ -30,6 +31,7 @@ import {
   isContractOutcome,
   pickFacts,
 } from "./domain/contract-flow-events.rules";
+import { mountContractSchedules } from "./schedule-sources.mount";
 
 /** Cờ `hub.tenant_flow_settings.flow_triggers` (scope system hub; role gói không đọc bảng này) + phòng ban người gây sự kiện khi bật. */
 export function contractFlowGate(db: Db): ContractFlowGate {
@@ -94,19 +96,52 @@ export function contractsOutcomeHandler(): OutcomeHandler<Tx> {
       input.event === EV_SUBMITTED || input.event === EV_RECEIVED
         ? attachFlowRun(tx, input)
         : Promise.resolve(true), // P11c · false = superseded
-    // CR-122 · P11b · không mở được lượt ⇒ thẻ ghi lý do (không kẹt mãi "đang mở quy trình").
+    // CR-127 K3 · spec §3 #7b · HĐ gửi duyệt không mở được lượt ⇒ về DRAFT kèm lý do (người gửi kiểm rồi Gửi lại).
+    // CR-127 K8 · #9b · HĐ nhận không mở được / huỷ / lỗi / hết hạn lượt nhận ⇒ giữ PROCESSING, chờ người phụ trách HĐ nhận quyết.
     notLaunched: (tx, input) =>
-      input.event === EV_SUBMITTED || input.event === EV_RECEIVED
-        ? markFlowNotLaunched(tx, input)
-        : Promise.resolve(false),
+      input.event === EV_SUBMITTED
+        ? endFlowRun(
+            tx,
+            { ...input, runId: null, reason: `not_launched:${input.reason}` },
+            "flow_not_launched",
+          )
+        : input.event === EV_RECEIVED
+          ? markInboxAwaiting(tx, { ...input, runId: null }, "failed")
+          : Promise.resolve(false),
+    // CR-127 K3 · #7b · lượt bị huỷ / lỗi / hết hạn ⇒ HĐ processing → draft (CAS theo run; lượt đã bị Rút về ⇒ bỏ qua).
+    cancelled: (tx, input) =>
+      input.event === EV_SUBMITTED
+        ? endFlowRun(tx, input, "flow_cancelled")
+        : input.event === EV_RECEIVED
+          ? markInboxAwaiting(tx, input, "cancelled")
+          : Promise.resolve(false),
+    failed: (tx, input) =>
+      input.event === EV_SUBMITTED
+        ? endFlowRun(tx, input, "flow_failed")
+        : input.event === EV_RECEIVED
+          ? markInboxAwaiting(tx, input, "failed")
+          : Promise.resolve(false),
+    failedBatch: async (tx, items) =>
+      (await failRunsBatch(
+        tx,
+        items.filter((i) => i.event === EV_SUBMITTED),
+      )) +
+      (await markInboxAwaitingBatch(
+        tx,
+        items.filter((i) => i.event === EV_RECEIVED),
+      )),
   };
 }
 
 /** Gọi MỘT lần lúc mount gói Hợp đồng; trả cổng cờ cho các use case bắn sự kiện. */
-export function mountContractFlow(db: Db): ContractFlowGate {
+export function mountContractFlow(
+  db: Db,
+  timeZoneOf?: (tenantId: string) => Promise<string>,
+): ContractFlowGate {
   moduleRegistry.bindEvent({
     facts: contractsFactsReader(db),
     outcome: contractsOutcomeHandler(),
   }); // CR-125 · m2 · đăng ký hộ `flowPortRegistry` (hành vi không đổi)
+  mountContractSchedules(db, timeZoneOf); // CR-127 · E6 · nguồn lịch + bộ đọc `contract.expiring` / `milestone.*` (#64)
   return contractFlowGate(db);
 }

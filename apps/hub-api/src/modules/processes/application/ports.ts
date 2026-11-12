@@ -197,6 +197,8 @@ export type StepRepo = {
   ifDecisions?(runId: string): Promise<{ stageIdx: number; matched: boolean }[]>;
   /** CR-122 · gọi `OutcomeHandler` của app TRONG tx này (idempotent phía app). Không handler ⇒ ném (rollback, không chốt lượt). */
   applyOutcome?(runId: string, pack: FlowPackRef, outcome: string): Promise<void>;
+  /** CR-127 K3 · lượt vừa thành `failed` ⇒ `OutcomeHandler.failed?` của gói (SAVEPOINT, lỗi chỉ log). */
+  runFailed?(runId: string, pack: FlowPackRef): Promise<void>;
   /** CR-122 · H2 · 2 câu: stage bước Kết thúc ⇒ `needs_decision`; run ⇒ `needs_decision{reason: facts_changed, stage_idx: Nếu}`. */
   needsAction?(
     runId: string,
@@ -254,7 +256,10 @@ export type ClaimedEscalation = {
   tenantId: string;
   processRunId: string;
   fromGroupId: string | null;
-  toGroupId: string;
+  /** CR-127 · E3c · đích nhóm HOẶC người (`toUserId`, `userOk` = người cùng tenant, còn hoạt động). */
+  toGroupId: string | null;
+  toUserId?: string | null;
+  userOk?: boolean;
   /** Tenant của Group đích khi tìm thấy CÙNG tenant task; null = không tồn tại / khác tenant (K4). */
   groupTenantId: string | null;
   processName: string;
@@ -266,14 +271,21 @@ export type ClaimedEscalation = {
 };
 /** Như `ReminderBatch`: `claimed` gồm task bị bỏ vì run đang bị giữ. */
 export type EscalationBatch = { tasks: ClaimedEscalation[]; claimed: number; more: boolean };
-export type EscalatedAssigneeRow = { tenantId: string; taskId: string; groupId: string };
+export type EscalatedAssigneeRow = {
+  tenantId: string;
+  taskId: string;
+  groupId?: string | null;
+  /** CR-127 · E3c · chuyển cấp tới một người. */
+  userId?: string | null;
+};
 export type EscalateAuditRow = {
   tenantId: string;
   taskId: string;
   action: "escalate" | "escalate_skipped";
   entityName: string;
   fromGroupId: string | null;
-  toGroupId: string;
+  toGroupId: string | null;
+  toUserId?: string | null;
 };
 export type ReviewTaskBatchRepo = {
   /** MỘT câu: khoá task mở tới hạn nhắc (SKIP LOCKED), trả kèm tên + người nhận (mọi Group assignee). */
@@ -286,7 +298,21 @@ export type ReviewTaskBatchRepo = {
   addEscalatedGroups(rows: readonly EscalatedAssigneeRow[]): Promise<void>;
   /** MỘT câu nhiều hàng: audit `escalate` / `escalate_skipped`. */
   auditEscalations(rows: readonly EscalateAuditRow[]): Promise<void>;
+  /** CR-127 · E2 · MỘT câu: trả về nhóm việc đã nhận quá `claim_deadline_at` (SKIP LOCKED) + người nhận báo. */
+  releaseDueClaims(limit: number, now: Date): Promise<ClaimReleaseBatch>;
 };
+/** CR-127 · E2 · việc vừa tự trả: báo trưởng phòng của nhóm; không có ⇒ quản trị công ty (R#27). */
+export type ReleasedClaim = {
+  taskId: string;
+  tenantId: string;
+  processRunId: string;
+  claimedBy: string;
+  processName: string;
+  stageName: string | null;
+  head: string | null;
+  tenantAdminIds: string[];
+};
+export type ClaimReleaseBatch = { tasks: ReleasedClaim[]; claimed: number; more: boolean };
 export type NoticeRow = {
   tenantId: string;
   userId: string;

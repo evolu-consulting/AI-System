@@ -1,9 +1,11 @@
 // CR-125 · cr125-request-steps · các bước của yêu cầu + lượt con (Phần 1/2/3 …) lồng dưới lượt cha. Mỗi lượt vẽ bằng `RunStepActions` — CÙNG
 // component với thẻ HĐ. CR-126: lượt có việc của người xem được kéo lên thanh đầu trang (`StepActions` ở RequestPage, một component duy nhất,
 // `hoistedRunId`) nên cây không vẽ lại nút; chỉ Phần hiện tại mở sẵn, các Phần khác bấm để mở.
+import type { EvidenceInput } from "@ai/contracts/chat";
 import type { RequestStepNode } from "@ai/contracts/hub-admin";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { usePeople } from "~/features/contracts-list/hooks/use-people";
 import { RunStepActions, useFlowSubmitForm } from "~/platform/flow";
 
 export type TreeProps = {
@@ -16,6 +18,7 @@ export type TreeProps = {
     taskId: string,
     action: string,
     feedback?: string,
+    evidence?: EvidenceInput,
   ) => Promise<void>;
 };
 type Props = TreeProps & {
@@ -29,6 +32,7 @@ type Props = TreeProps & {
 
 /** Các bước + nút Gửi form / Duyệt / Trả lại / Từ chối của MỘT lượt — dùng ở thanh đầu trang và trong cây. */
 export function StepActions({ node, ...p }: TreeProps & { node: RequestStepNode }) {
+  const people = usePeople(true);
   const submit = useFlowSubmitForm({
     slot: node.flow.slot,
     refId: node.run_id,
@@ -42,7 +46,12 @@ export function StepActions({ node, ...p }: TreeProps & { node: RequestStepNode 
       busy={p.busy}
       error={p.error}
       onSubmitForm={(taskId, values) => submit.mutateAsync({ taskId, values })}
-      onDecide={(taskId, action, feedback) => p.onDecide(node, taskId, action, feedback)}
+      evidence
+      people={people}
+      onClaimChanged={p.onChanged}
+      onDecide={(taskId, action, feedback, evidence) =>
+        p.onDecide(node, taskId, action, feedback, evidence)
+      }
     />
   );
 }

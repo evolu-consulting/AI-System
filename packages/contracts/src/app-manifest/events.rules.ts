@@ -11,6 +11,8 @@ import {
   FACT_KEY_RE,
   FLOW_EVENT_KEY_RE,
   OUTCOME_KEY_RE,
+  SCHEDULE_DAYS_MAX,
+  SCHEDULE_DAYS_MIN,
 } from "./manifest";
 
 export type AppEventIssue = {
@@ -30,6 +32,22 @@ export type AppEventCheckOpts = {
 const KINDS: ReadonlySet<string> = new Set(APP_FACT_TYPES);
 const badText = (v: string, max: number): boolean => v.trim().length === 0 || v.length > max;
 const dupOf = (keys: readonly string[]): boolean => new Set(keys).size !== keys.length;
+
+/** CR-127 · E1 · `schedule.param`: khoá `days`, 1 ≤ min ≤ default ≤ max ≤ 365. */
+function scheduleBad(e: AppEventDecl): boolean {
+  const p = e.schedule?.param;
+  if (!p) return false;
+  return (
+    p.key !== "days" ||
+    !Number.isInteger(p.min) ||
+    !Number.isInteger(p.max) ||
+    !Number.isInteger(p.default) ||
+    p.min < SCHEDULE_DAYS_MIN ||
+    p.max > SCHEDULE_DAYS_MAX ||
+    p.default < p.min ||
+    p.default > p.max
+  );
+}
 
 /** Luật lỗi của MỘT sự kiện theo thứ tự cố định (mã luật → vi phạm). */
 function eventRules(e: AppEventDecl): [string, boolean][] {
@@ -56,6 +74,8 @@ function eventRules(e: AppEventDecl): [string, boolean][] {
       "default_flow_key_format",
       e.defaultFlowKey !== undefined && !PROCESS_KEY_RE.test(e.defaultFlowKey),
     ],
+    ["schedule_param", scheduleBad(e)],
+    ["schedule_days_fact", e.schedule !== undefined && !fk.includes("days")],
   ];
 }
 

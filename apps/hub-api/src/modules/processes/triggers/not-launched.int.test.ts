@@ -8,13 +8,10 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../lib/db";
 import {
-  actApproval,
   approvalRepo,
   contractFlowRepo,
   contractsOutcomeHandler,
-  getApproval,
   startApproval,
-  withFlowResend,
 } from "../../packs/contracts/testing";
 import { createPackUow } from "../../packs/kit/adapters/pack-uow";
 import { registerOutcomeHandler, unregisterFlowPorts } from "../adapters/runs/flow-ports";
@@ -28,7 +25,6 @@ const N = tenantId(1301); // chưa gán flow
 const G = tenantId(1302); // flow cần nhóm chưa có
 let UN = "";
 let UG = "";
-let CN = "";
 let CG = "";
 let lib = "";
 let CX: string[] = []; // P11c · HĐ của N (flow đã gán sau ca đầu)
@@ -76,9 +72,6 @@ beforeAll(async () => {
   await o`insert into admin.tenants (id, key, name) values (${N}, 't1301', 'N'), (${G}, 't1302', 'G')`;
   [UN] = (await users(o, N, 1, { from: 1301 })) as [string];
   [UG] = (await users(o, G, 1, { from: 1302 })) as [string];
-  CN = (
-    await contracts(o, N, 1, { from: 1301, createdBy: UN, status: "needs_review" })
-  )[0] as string;
   CG = (
     await contracts(o, G, 1, { from: 1302, createdBy: UG, status: "needs_review" })
   )[0] as string;
@@ -144,8 +137,7 @@ const ad = () =>
 async function submitHd(w: { tenantId: string; userId: string }, id: string, _initial: "level1") {
   const s = await startApproval(ad())(w, id, "level1");
   if (s !== "ok") return s;
-  const out = await actApproval(ad())(w, id, { action: "approve" });
-  return out && typeof out === "object" && "error" in out ? out.error : "ok";
+  return "ok";
 }
 const dispatch = () =>
   dispatchOnce({ db, launch: flowLaunchOf(deps()), now: () => new Date(Date.now() + 1000) });
@@ -156,37 +148,21 @@ const approvalOf = async (cid: string) =>
       join contracts.contracts c on c.run_id = a.id where c.id = ${cid}`
   )[0];
 
-describe("CR-122 P11b · lượt chờ flow không mở được run", () => {
-  it("0 flow khớp ⇒ lý do FLOW_NOT_ASSIGNED, gán flow + Mở lại (event_id mới) ⇒ run gắn vào lượt", async () => {
-    const who = { tenantId: N, userId: UN };
-    expect(await submitHd(who, CN, "level1")).toBe("ok");
-    expect(await dispatch()).toMatchObject({ claimed: 1, launched: 0 });
-    expect(await approvalOf(CN)).toMatchObject({
-      run: null,
-      feedback: "FLOW_NOT_ASSIGNED",
-      status: "level1",
-    });
-    await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${N}, ${lib}, true)`;
-    const resend = withFlowResend(undefined, { uow: uow() as never, flow: gateOn });
-    expect(await resend(who, CN)).toBe("ok");
-    expect((await approvalOf(CN))?.feedback).toBe("FLOW_STARTING");
-    expect(await dispatch()).toMatchObject({ claimed: 1, launched: 1, failed: 0 });
-    const a = await approvalOf(CN);
-    expect(a).toMatchObject({ feedback: null, status: "level1" });
-    expect(a?.run).not.toBeNull();
-    const [ev] = await o<{ n: number }[]>`select count(*)::int as n from hub.flow_events
-      where tenant_id = ${N} and event = 'contract.submitted' and ref = ${CN}`;
-    expect(ev?.n).toBe(2); // sự kiện gốc + sự kiện gửi lại (không bị coi là trùng)
-  });
+const statusOf = async (cid: string) =>
+  (await o<{ status: string }[]>`select status from contracts.contracts where id = ${cid}`)[0]
+    ?.status;
 
+describe("CR-122 P11b · lượt chờ flow không mở được run", () => {
   it("flow cần nhóm công ty chưa có ⇒ lý do FLOW_GROUP_MISSING:<mã> (mã -admin không tự dùng nhóm -owner)", async () => {
     expect(await submitHd({ tenantId: G, userId: UG }, CG, "level1")).toBe("ok");
     expect(await dispatch()).toMatchObject({ claimed: 1, launched: 0 });
+    // CR-127 §3 #7b (K3): không mở được lượt ⇒ lượt `failed` kèm lý do `not_launched:<mã>`, HĐ processing → draft (người gửi sửa rồi Gửi lại).
     expect(await approvalOf(CG)).toMatchObject({
       run: null,
-      feedback: "FLOW_GROUP_MISSING:pb-admin",
-      status: "level1",
+      feedback: "not_launched:FLOW_GROUP_MISSING:pb-admin",
+      status: "failed",
     });
+    expect(await statusOf(CG)).toBe("draft");
   });
 });
 
@@ -195,40 +171,18 @@ const runsOf = async (cid: string) =>
     await o<{ n: number }[]>`select count(*)::int as n from hub.process_runs
       where pack_key = 'contracts' and pack_record_id = ${cid}`
   )[0]?.n ?? 0;
-/** Lượt đã kẹt thật (lý do khác FLOW_STARTING) — như sau khi bộ điều phối báo không mở được. */
-const stuck = (cid: string) =>
-  o`update contracts.approvals a set feedback = 'FLOW_START_FAILED' from contracts.contracts c
-    where c.id = ${cid} and a.id = c.run_id`;
 
 describe("CR-122 P11c · Mở lại an toàn + hook không chặn lô", () => {
   const who = () => ({ tenantId: N, userId: UN });
-  const resend = () => withFlowResend(undefined, { uow: uow() as never, flow: gateOn });
-
-  it("Mở lại 2 lần song song ⇒ một 'ok' + một 409 (flow_starting), đúng 1 run", async () => {
-    const id = CX[0] as string;
-    expect(await submitHd(who(), id, "level1")).toBe("ok");
-    await o`update hub.flow_events set processed_at = now() where ref = ${id}`; // sự kiện đầu đã chốt (không mở được)
-    await stuck(id);
-    const outs = await Promise.all([resend()(who(), id), resend()(who(), id)]);
-    expect([...outs].sort()).toEqual(["flow_starting", "ok"]);
-    await dispatch();
-    expect(await runsOf(id)).toBe(1);
-  });
-
-  it("Mở lại khi sự kiện đầu chưa xử lý xong ⇒ 409 (flow_starting), không phát thêm sự kiện", async () => {
-    const id = CX[1] as string;
-    expect(await submitHd(who(), id, "level1")).toBe("ok");
-    expect(await resend()(who(), id)).toBe("flow_starting");
-    const [ev] = await o<
-      { n: number }[]
-    >`select count(*)::int as n from hub.flow_events where ref = ${id}`;
-    expect(ev?.n).toBe(1);
-    await dispatch();
-    expect(await runsOf(id)).toBe(1);
-  });
 
   it("lượt đã có run + sự kiện thứ hai tới ⇒ superseded: tx tạo run rollback, vẫn 1 run, sự kiện chốt không lỗi", async () => {
     const id = CX[0] as string;
+    // N gán quy trình (nhóm pb-phap-che có) ⇒ lần gửi đầu mở đúng 1 run.
+    await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${N}, ${lib}, true)
+      on conflict do nothing`;
+    expect(await submitHd(who(), id, "level1")).toBe("ok");
+    expect(await dispatch()).toMatchObject({ claimed: 1, launched: 1, failed: 0 });
+    expect(await runsOf(id)).toBe(1);
     const [a] = await o<
       { id: string }[]
     >`select run_id::text as id from contracts.contracts where id = ${id}`;
@@ -264,7 +218,12 @@ describe("CR-122 P11c · Mở lại an toàn + hook không chặn lô", () => {
       const done = await o<{ n: number }[]>`select count(*)::int as n from hub.flow_events
         where ref = any(${o.array([bad, good])}::text[]) and processed_at is not null`;
       expect(done[0]?.n).toBe(2);
-      expect((await approvalOf(good))?.feedback).toBe("FLOW_NOT_ASSIGNED");
+      // #7b: báo được ⇒ lượt failed + HĐ về draft; hook ném ⇒ lượt giữ nguyên (FLOW_STARTING), sự kiện vẫn chốt.
+      expect(await approvalOf(good)).toMatchObject({
+        feedback: "not_launched:FLOW_NOT_ASSIGNED",
+        status: "failed",
+      });
+      expect(await statusOf(good)).toBe("draft");
       expect((await approvalOf(bad))?.feedback).toBe("FLOW_STARTING");
     } finally {
       registerOutcomeHandler(base);
@@ -277,69 +236,5 @@ describe("CR-122 P11c · Mở lại an toàn + hook không chặn lô", () => {
       where moderation = 'pending' and mod_screen is null`;
     console.log(`P11c p13: community.posts pending + mod_screen null = ${r?.n}`);
     expect(r?.n).toBeGreaterThanOrEqual(0);
-  });
-});
-
-describe("CR-122 p24 · Mở lại khi đã có run + sản phẩm lúc xác nhận", () => {
-  const who = () => ({ tenantId: N, userId: UN });
-  const resendWith = (stalled: boolean) =>
-    withFlowResend(undefined, { uow: uow() as never, flow: gateOn, stalled: async () => stalled });
-
-  it("p24 · Mở lại khi lượt đã có run kẹt: run còn chạy ⇒ not_stalled (run giữ nguyên); run kẹt ⇒ bỏ run cũ, mở lượt flow mới, không rơi sang máy cũ", async () => {
-    const id = CX[4] as string;
-    expect(await submitHd(who(), id, "level1")).toBe("ok");
-    expect(await dispatch()).toMatchObject({ launched: 1 });
-    const first = await approvalOf(id);
-    expect(first?.run).not.toBeNull();
-    // run còn chạy ⇒ không đụng
-    expect(await resendWith(false)(who(), id)).toBe("not_stalled");
-    expect((await approvalOf(id))?.run).toBe(first?.run as string);
-    // run đã kết thúc bất thường ⇒ mở lại bằng flow (event_id mới)
-    expect(await resendWith(true)(who(), id)).toBe("ok");
-    expect(await approvalOf(id)).toMatchObject({ run: null, feedback: "FLOW_STARTING" });
-    expect(await dispatch()).toMatchObject({ launched: 1, failed: 0 });
-    const again = await approvalOf(id);
-    expect(again?.feedback).toBeNull();
-    expect(again?.run).not.toBeNull();
-    expect(again?.run).not.toBe(first?.run as string);
-  });
-
-  it("p24 · hai Mở lại song song trên cùng run kẹt ⇒ đúng một sự kiện mới + một run mới; Mở lại muộn thấy run mới ⇒ not_stalled", async () => {
-    const id = CX[6] as string;
-    expect(await submitHd(who(), id, "level1")).toBe("ok");
-    expect(await dispatch()).toMatchObject({ launched: 1 });
-    const evCount = async () =>
-      (
-        await o<{ n: number }[]>`select count(*)::int as n from hub.flow_events
-          where tenant_id = ${N} and event = 'contract.submitted' and ref = ${id}`
-      )[0]?.n ?? 0;
-    const before = await evCount();
-    const outs = await Promise.all([resendWith(true)(who(), id), resendWith(true)(who(), id)]);
-    expect([...outs].sort()).toEqual(["not_stalled", "ok"]);
-    expect(await evCount()).toBe(before + 1);
-    expect(await dispatch()).toMatchObject({ launched: 1, failed: 0 });
-    expect(await runsOf(id)).toBe(2); // run kẹt cũ + đúng một run mới
-    // bấm muộn: đã thấy run CŨ trước khi lượt gắn run mới ⇒ CAS theo id run cũ trượt ⇒ không tháo run đang chạy, không phát thêm
-    const live = (await approvalOf(id))?.run;
-    expect(await resendWith(true)(who(), id)).toBe("ok"); // thấy run MỚI (đang là run kẹt theo stub) ⇒ hợp lệ, một sự kiện nữa
-    expect(await evCount()).toBe(before + 2);
-    expect((await approvalOf(id))?.run).not.toBe(live as string);
-  });
-
-  it("p24 · cờ flow bật: thẻ nháp luôn mở hộp SP (finalizes_on_approve), xác nhận kèm SP ⇒ pending_links", async () => {
-    const id = CX[5] as string;
-    expect(await startApproval(ad())(who(), id, "level1")).toBe("ok");
-    const card = await getApproval(ad())(who(), id);
-    expect(card).toMatchObject({ can_act: true, finalizes_on_approve: true });
-    const links = [{ item_id: crypto.randomUUID(), product_id: crypto.randomUUID() }];
-    const out = await actApproval(ad())(who(), id, { action: "approve", products: links } as never);
-    expect(out && typeof out === "object" && "error" in out).toBe(false);
-    const [pl] = await o<
-      { pending_links: unknown }[]
-    >`select a.pending_links from contracts.approvals a
-      join contracts.contracts c on c.run_id = a.id where c.id = ${id}`;
-    const stored =
-      typeof pl?.pending_links === "string" ? JSON.parse(pl.pending_links) : pl?.pending_links;
-    expect(stored).toEqual(links);
   });
 });

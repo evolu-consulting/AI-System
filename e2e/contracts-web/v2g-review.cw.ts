@@ -1,6 +1,6 @@
 // V2-G · HD-02/HD-08 · BA §4.2 "Upload và xác nhận" · 5.5 · Luật 4b: màn xác nhận sau khi AI đọc — form V2-F điền sẵn, ô AI chưa chắc tô vàng, mốc AI
-// tìm thấy ở cột phải, gợi ý SP theo quy tắc nhận diện, Lưu = MỘT POST /review, Hủy không gửi gì, tenant tắt duyệt ⇒ HĐ có hiệu lực; khối Sản phẩm của
-// HĐ đã lưu gắn lại SP (PUT) và Tóm tắt hiện 5 mục AI. Backend giả `page.route`; chờ phần tử/yêu cầu, không sleep.
+// tìm thấy ở cột phải, gợi ý SP theo quy tắc nhận diện, Lưu = MỘT POST /review, Hủy không gửi gì; khối Sản phẩm của
+// HĐ đã lưu gắn lại SP (PUT) và (thẻ Tóm tắt AI đã gỡ ở chi tiết). Backend giả `page.route`; chờ phần tử/yêu cầu, không sleep. CR-127 Q10b: ca «tenant tắt duyệt» đã gỡ (mọi công ty đi quy trình; e2e/cr127 j06).
 import { expect, type Page, test } from "@playwright/test";
 import { ACTIVE_ID, P_TOKEN } from "./dataset-v2f";
 import { ITEM1, ITEM2, P_USB, REVIEW_ID } from "./dataset-v2g";
@@ -135,34 +135,6 @@ test("dòng chưa gắn SP chặn Lưu (5.5a) — không gửi /review", async (
   expect(review(sent)).toHaveLength(0);
 });
 
-test("tenant tắt duyệt: «Gửi duyệt» ⇒ nháp ⇒ hộp Gắn SP ⇒ MỘT POST /review mang products ⇒ `active`, hết thanh dính", async ({
-  page,
-}) => {
-  const { sent } = await openReview(page, { saveStatus: "active" });
-  await page.getByRole("button", { name: "Gửi duyệt" }).click();
-  // atomic-confirm: bước 1 ghi nháp (không khoá), rồi hộp "Gắn sản phẩm" như khi bật duyệt.
-  const dlg = page.getByTestId("product-link-dialog");
-  await expect(dlg).toBeVisible();
-  expect(review(sent)).toHaveLength(1);
-  expect(review(sent)[0]?.body).toMatchObject({ draft: true });
-  await page.getByTestId("product-link-confirm").click();
-  await expect(toast(page)).toContainText("Đã lưu — hợp đồng có hiệu lực");
-  await expect(dlg).toHaveCount(0);
-  await expect(page.getByTestId("form-bar")).toHaveCount(0);
-  // Lệnh xác nhận: chỉ version + products (xác nhận + gắn SP cùng tx); KHÔNG gọi /product-links, không POST /products.
-  expect(review(sent)).toHaveLength(2);
-  const b = review(sent)[1]?.body as { version: number; draft?: boolean; products: unknown[] };
-  expect(b.draft).toBeUndefined();
-  expect(b.version).toBe(3);
-  expect(b.products.map((p) => (p as { item_id: string }).item_id)).toEqual([ITEM1, ITEM2]);
-  expect(b.products[1]).toEqual({
-    item_id: ITEM2,
-    new_product: { name: "Phí dịch vụ lạ", unit: "gói", group: "goods" },
-  });
-  expect(sent.filter((s) => s.path.endsWith("/product-links"))).toHaveLength(0);
-  expect(sent.filter((s) => s.path === "/pack/contracts/products")).toHaveLength(0);
-});
-
 test("chi tiết đã lưu: gắn lại SP cho dòng (PUT) + 409 ITEM_LOCKED báo câu riêng", async ({
   page,
 }) => {
@@ -178,19 +150,4 @@ test("chi tiết đã lưu: gắn lại SP cho dòng (PUT) + 409 ITEM_LOCKED bá
   st.locked = true;
   await page.getByLabel("Gắn dòng 2 với sản phẩm").selectOption(P_TOKEN.id);
   await expect(page.getByRole("alert").first()).toContainText("đã phát sinh kho");
-});
-
-test("Tóm tắt hiện các mục AI viết; mục trống (Thưởng) bị ẩn", async ({ page }) => {
-  await installV2g(page);
-  await page.goto(`/contracts/c/${ACTIVE_ID}`);
-  const s = page.getByTestId("ai-summary");
-  await expect(s.getByTestId("ai-sum-main")).toContainText("Hợp đồng bán bao bì");
-  await expect(s.getByTestId("ai-sum-aiSumDeadlines")).toContainText("Giao đợt 1 trước 01/03/2026");
-  await expect(s.getByTestId("ai-sum-aiSumPenalties")).toContainText("Phạt 0,05%/ngày");
-  await expect(s.getByTestId("ai-sum-aiSumClauses")).toContainText("Điều 5");
-  for (const h of ["Nội dung chính", "Hạn quan trọng", "Phạt", "Điều khoản chính"])
-    await expect(s.getByRole("heading", { name: h, exact: true })).toBeVisible();
-  // review khách 2026-10-22: mục không có nội dung không hiện dòng "—"
-  await expect(s.getByTestId("ai-sum-aiSumBonuses")).toHaveCount(0);
-  await expect(s.getByRole("heading", { name: "Thưởng", exact: true })).toHaveCount(0);
 });

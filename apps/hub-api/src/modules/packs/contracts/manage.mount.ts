@@ -2,16 +2,15 @@
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import type { AiClient } from "../../../lib/ai-client/ai-client";
-import type { PackAccessView, PackGuardVars, PackWho } from "../kit/public";
+import type { PackAccessView, PackGuardVars } from "../kit/public";
 import { createPackUow, packTenantOnly } from "../kit/public";
 import { EXTRACT_MODEL } from "./adapters/ai-transport";
 import { packAssignees } from "./adapters/manage.members";
 import { manageRepo } from "./adapters/manage.repo";
 import { manageRoutes } from "./adapters/manage.routes";
-import { reopenRepo } from "./adapters/reopen.repo";
-import { versionDiffRepo, versionsRoutes } from "./adapters/versions.routes";
+import { changesRepo, versionDiffRepo, versionsRoutes } from "./adapters/versions.routes";
+import { changesSinceLastOf } from "./application/changes-since-last.usecase";
 import { assignOwner, editCommission, getHistory, summarize } from "./application/manage.usecase";
-import { type ReopenContract, reopenContract } from "./application/reopen-contract.usecase";
 import { versionDiff } from "./application/version-diff.usecase";
 
 const KEY = "contracts";
@@ -19,28 +18,13 @@ const KEY = "contracts";
 export function manageModule(
   db: Db,
   view: PackAccessView,
-  d: {
-    ai: AiClient;
-    quota?: (tenantId: string) => Promise<void>;
-    /** esign-flow · K4 mở lại HĐ ⇒ huỷ phong bì đang mở. */
-    esign?: { voidOpen(who: PackWho, id: string): Promise<boolean> } | undefined;
-  },
+  d: { ai: AiClient; quota?: (tenantId: string) => Promise<void> },
 ): Hono<PackGuardVars> {
   const uow = packTenantOnly(createPackUow(db, KEY, manageRepo));
-  const reopenUow = packTenantOnly(createPackUow(db, KEY, reopenRepo));
   const members = packAssignees(db, view, KEY);
   const diffUow = packTenantOnly(createPackUow(db, KEY, versionDiffRepo));
-  const reopenBase = reopenContract({ uow: reopenUow });
-  const esign = d.esign;
-  const reopen: ReopenContract = esign
-    ? async (who, id, reason, o) => {
-        const out = await reopenBase(who, id, reason, o);
-        if (out.kind === "ok") await esign.voidOpen(who, id).catch(() => false);
-        return out;
-      }
-    : reopenBase;
+  const changesUow = packTenantOnly(createPackUow(db, KEY, changesRepo));
   const r = manageRoutes(view, {
-    reopen,
     history: getHistory({ uow }),
     assignees: members.list,
     assign: assignOwner({ uow, assignable: members.assignable }),
@@ -53,7 +37,10 @@ export function manageModule(
     }),
     ...(d.quota ? { quota: d.quota } : {}),
   });
-  // CR-097 K2 · UC-04 so sánh hai phiên bản.
-  r.route("/", versionsRoutes(view, versionDiff({ uow: diffUow })));
+  // CR-097 K2 · UC-04 so sánh hai phiên bản · CR-127 K5 · BR-36a "Đã đổi so với lần trước".
+  r.route(
+    "/",
+    versionsRoutes(view, versionDiff({ uow: diffUow }), changesSinceLastOf({ uow: changesUow })),
+  );
   return r;
 }

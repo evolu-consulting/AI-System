@@ -43,4 +43,39 @@ describe("node-summary", () => {
     };
     expect(summaryOf(s, l)).toBe("F:total_value > 100");
   });
+  test("Nếu: tiền hiện dễ đọc («500 triệu», «2,5 tỷ»), không «500000000»", () => {
+    const cond = (value: string) => ({
+      ...emptyStage(0),
+      executor: "if",
+      ifx: {
+        op: "and" as const,
+        conds: [{ from: "fact|total_value", type: "number" as const, op: "gt", value }],
+        yes: 2,
+        no: null,
+      },
+    });
+    expect(summaryOf(cond("500000000"), l)).toBe("F:total_value > 500 triệu");
+    expect(summaryOf(cond("2500000000"), l)).toBe("F:total_value > 2,5 tỷ");
+    expect(summaryOf(cond("1234567"), l)).toBe("F:total_value > 1234567");
+  });
+});
+
+describe("node-summary · Duyệt (CR-127 · U2)", () => {
+  test("mặc định: «một người nhận việc»", () => {
+    expect(summaryOf({ ...emptyStage(0), executor: "approve" }, l)).toBe("một người nhận việc");
+  });
+  test("Cần tất cả + Hạn + Bằng chứng", () => {
+    const s = {
+      ...emptyStage(0),
+      executor: "approve",
+      escalate: { on: true, afterH: "24", groupId: "g" },
+      review: { need: "all" as const, evidence: "opinion_plus" as const },
+    };
+    expect(summaryOf(s, l)).toBe("tất cả · 24 giờ · ý kiến + chữ ký hoặc tệp");
+  });
+  test("trưởng phòng suy từ head_only cũ", () => {
+    expect(
+      summaryOf({ ...emptyStage(0), executor: "approve", review: { headOnly: true } }, l),
+    ).toBe("trưởng phòng");
+  });
 });

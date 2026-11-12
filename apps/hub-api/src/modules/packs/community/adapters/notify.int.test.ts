@@ -6,17 +6,16 @@ import { users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
-import {
-  type Cast,
-  seedCast,
-  seedComments,
-} from "../../../../../../../tests/acceptance/com-c3/_support/cast";
+import { type Cast, seedCast } from "../../../../../../../tests/acceptance/com-c3/_support/cast";
 import { mapError } from "../../../../lib/errors";
 import { pgExternalOrgResolver } from "../../kit/adapters/ext-org.pg";
+import { packBell } from "../../kit/adapters/pack-bell";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import { packHosts } from "../../kit/adapters/pack-hosts";
 import { createPackUow } from "../../kit/adapters/pack-uow";
 import { communityModule } from "../community.mount";
+import { kindOfBell } from "../domain/notify.rules";
+import { seedComments } from "./comment-seed.testkit";
 import { communityEvents } from "./notify.events";
 import { sweepCommunityOnce } from "./notify.sweep";
 
@@ -57,6 +56,7 @@ const events = () =>
   communityEvents({
     uow: uow(),
     hosts: packHosts(db, view(), "community"),
+    orgMembers: (t, ids) => pgExternalOrgResolver(db).orgMembers(t, ids),
     savedBy: async () => savedBy,
     stockMatch: async () => stock,
   });
@@ -98,9 +98,29 @@ const call = async (who: Who, method: string, path: string, body?: unknown) => {
   const text = await res.text();
   return { status: res.status, json: text ? JSON.parse(text) : null };
 };
-type Item = { kind: string; postId?: string; orgId?: string; actorName: string; unread: boolean };
-const bell = async (who: Who): Promise<Item[]> =>
-  ((await call(who, "GET", "/notifications")).json as { items: Item[] }).items;
+type Item = {
+  kind: string;
+  postId?: string;
+  commentId?: string;
+  actorName: string;
+  unread: boolean;
+};
+// Chuông chung của shell đọc `hub.notifications`; ở đây đọc cùng nguồn qua packBell rồi dựng lại hình kiểm (kind, bài, bình luận).
+const bell = async (who: Who): Promise<Item[]> => {
+  const { items } = await packBell(db, "community").list({ tenantId: c.A, userId: c[who] }, 50);
+  return items.flatMap((r) => {
+    const kind = kindOfBell(r.kind);
+    if (!kind) return [];
+    const q = new URLSearchParams((r.link ?? "").split("?")[1] ?? "");
+    return {
+      kind,
+      actorName: r.body,
+      unread: !r.read,
+      ...(q.get("post") ? { postId: q.get("post") as string } : {}),
+      ...(q.get("comment") ? { commentId: q.get("comment") as string } : {}),
+    };
+  });
+};
 const kinds = async (who: Who) => (await bell(who)).map((i) => i.kind).sort();
 
 beforeAll(async () => {
@@ -176,56 +196,94 @@ describe("sửa giá bài đã lưu (R29)", () => {
 });
 
 describe("bình luận (emitComment)", () => {
-  const comment = async (who: "hA" | "s1a", text: string, orgId?: string, direct = false) => {
-    if (direct)
-      // C3 chặn chủ quản viết vào luồng của công ty đã hết thấy bài ⇒ chèn thẳng (owner) để thử riêng luật người nhận
-      await sql`insert into community.comments (tenant_id, post_id, thread_id, thread_org, author_user_id, author_name,
-          text_raw, text_masked) select ${c.A}::uuid, t.post_id, t.id, t.ext_org_id, ${c[who]}::uuid, ${who}, ${text}, ${text}
-        from community.threads t where t.post_id = ${hostPost}::uuid and t.ext_org_id = ${c.S1}::uuid`;
-    else {
-      const r = await call(who, "POST", `/posts/${hostPost}/comments`, {
-        text,
-        ...(orgId ? { orgId } : {}),
-      });
-      expect(r.status).toBe(201);
+  /** `direct` = chèn thẳng (owner) rồi phát bằng tay: thử riêng luật người nhận khi RLS không cho viết (chủ quản vẫn viết được). */
+  const comment = async (
+    who: "hA" | "s1a",
+    text: string,
+    mentions: string[] = [],
+    direct = false,
+  ) => {
+    if (!direct) {
+      const r = await call(who, "POST", `/posts/${hostPost}/comments`, { text, mentions });
+      expect(r.status).toBe(201); // đường route tự phát chuông (emitComment SAU commit)
+      return;
     }
-    if (!direct) return; // đường route đã tự phát chuông (emitComment sau commit của C6)
     const row =
-      (await sql`select id::text as id from community.comments where post_id = ${hostPost}::uuid
-      order by created_at desc, id desc limit 1`) as unknown as { id: string }[];
+      (await sql`insert into community.comments (tenant_id, post_id, author_user_id, author_name, author_org,
+        text_raw, text_masked, mention_orgs) values (${c.A}::uuid, ${hostPost}::uuid, ${c[who]}::uuid, ${who},
+        ${who === "hA" ? null : c.S1}::uuid, ${text}, ${text}, ${sql.array([...mentions])}::uuid[])
+      returning id::text as id`) as unknown as { id: string }[];
     await events().emitComment({
       tenantId: c.A,
       postId: hostPost,
-      threadOrg: c.S1,
       commentId: row[0]?.id as string,
       actor: { userId: c[who], name: who },
+      actorOrg: who === "hA" ? null : c.S1,
+      postAuthorOrg: null,
+      mentions,
       activeOrgs: [c.S1, c.S2, c.B1, c.B2, c.X],
     });
   };
   let hostPost = "";
-  it("đối tác bình luận bài chủ quản ⇒ người đăng nhận comment; chủ quản trả lời ⇒ đối tác nhận reply (mở đúng luồng)", async () => {
+  it("đối tác bình luận bài chủ quản ⇒ người đăng nhận comment; chủ quản trả lời ⇒ đối tác nhận reply (link mở đúng bình luận)", async () => {
     hostPost = (await call("hA", "POST", "/posts", { ...sell(), audience: { mode: "all" } })).json
       .id;
     const base = (await bell("hA")).length;
     await comment("s1a", "Cho hỏi giá?");
     const a = await bell("hA");
     expect(a.length).toBe(base + 1);
-    expect({ kind: a[0]?.kind, post: a[0]?.postId, org: a[0]?.orgId }).toEqual({
+    expect({ kind: a[0]?.kind, post: a[0]?.postId, hasComment: !!a[0]?.commentId }).toEqual({
       kind: "comment",
       post: hostPost,
-      org: c.S1,
+      hasComment: true,
     });
-    await comment("hA", "Giá 500k", c.S1);
+    await comment("hA", "Giá 500k");
     const s = await bell("s1a");
     expect(s.map((i) => i.kind)).toEqual(["reply"]);
-    expect(s[0]?.orgId).toBe(c.S1);
+    expect(s[0]?.commentId).toBeTruthy();
     expect((await bell("hA")).length).toBe(base + 1); // không tự báo cho chính mình
+    // CR-129: S2 (chưa bình luận) và B1 không nhận gì; S1 không nhận chuông về bình luận của S2 (không thấy)
+    expect({ s2: await kinds("s2"), b1: await kinds("b1") }).toEqual({ s2: [], b1: [] });
+  });
+  it("CR-129: chủ quản nhắc S2 ⇒ người của S2 nhận mention (chỉ SAU khi gửi, không khi gõ); S1 không nhận mention; người nhắc không tự nhận", async () => {
+    const before = {
+      s2: await kinds("s2"),
+      s1a: await kinds("s1a"),
+      hA: (await bell("hA")).length,
+    };
+    // gõ @ xem gợi ý = GET mentionables: không phát chuông
+    expect((await call("hA", "GET", `/posts/${hostPost}/mentionables`)).status).toBe(200);
+    expect(await kinds("s2")).toEqual(before.s2);
+    // mentions bị từ chối (422) ⇒ không bình luận ⇒ không chuông
+    const bad = await call("hA", "POST", `/posts/${hostPost}/comments`, {
+      text: "x",
+      mentions: [c.LEFT],
+    });
+    expect(bad.status).toBe(422);
+    expect(await kinds("s2")).toEqual(before.s2);
+    await comment("hA", "Anh S2 xem giúp", [c.S2]);
+    expect(await kinds("s2")).toEqual(["mention"]);
+    const m = (await bell("s2"))[0];
+    expect({ post: m?.postId, hasComment: !!m?.commentId, unread: m?.unread }).toEqual({
+      post: hostPost,
+      hasComment: true,
+      unread: true,
+    });
+    // S1a đã từng bình luận ⇒ nhận reply (thấy bình luận của chủ quản), KHÔNG mention
+    expect(await kinds("s1a")).toEqual([...before.s1a, "reply"].sort());
+    expect((await bell("hA")).length).toBe(before.hA);
+    // tắt loại mention ⇒ lần sau không nhận
+    await sql`insert into community.settings (tenant_id, user_id, notify) values (${c.A}::uuid, ${c.s2}::uuid, '{"mention": false}'::jsonb)
+      on conflict (tenant_id, user_id) do update set notify = excluded.notify`;
+    await comment("hA", "Nhắc lần hai", [c.S2]);
+    expect(await kinds("s2")).toEqual(["mention"]);
+    await sql`delete from community.settings where user_id = ${c.s2}::uuid`;
   });
   it("visibility: bài chuyển sang chỉ người mua ⇒ NCC hết thấy ⇒ không nhận reply", async () => {
     await sql`update community.posts set aud_mode = 'buyers' where id = ${hostPost}::uuid`;
-    await comment("hA", "Xin lỗi, đổi kế hoạch", c.S1, true);
-    expect((await bell("s1a")).length).toBe(1);
-    expect(await kinds("s2")).toEqual([]);
+    const before = (await bell("s1a")).length;
+    await comment("hA", "Xin lỗi, đổi kế hoạch", [c.S1], true);
+    expect((await bell("s1a")).length).toBe(before);
   });
 });
 
@@ -241,8 +299,8 @@ describe("review Thấp-10: người nhận còn quyền / công ty còn hiệu 
     const p = (await call("hA", "POST", "/posts", { ...sell(), audience: { mode: "all" } })).json
       .id as string;
     await seedComments(sql, c.A, [
-      { key: "mất quyền", post: p, thread: c.S1, author: lost, org: null },
-      { key: "đã rời", post: p, thread: c.S1, author: c.gone, org: c.S1 }, // tác giả thuộc S1 nhưng ta coi S1 đã rời
+      { key: "mất quyền", post: p, author: lost, org: null },
+      { key: "đã rời", post: p, author: c.gone, org: c.S1 }, // tác giả thuộc S1 nhưng ta coi S1 đã rời
     ]);
     const before = {
       lost: await bellsOf(lost),
@@ -252,9 +310,11 @@ describe("review Thấp-10: người nhận còn quyền / công ty còn hiệu 
     await events().emitComment({
       tenantId: c.A,
       postId: p,
-      threadOrg: c.S1,
       commentId: "00000000-0000-4000-8000-000000000001",
       actor: { userId: c.hM, name: "hM" },
+      actorOrg: null,
+      postAuthorOrg: null,
+      mentions: [],
       activeOrgs: [c.S2, c.B1], // S1 không còn hiệu lực
     });
     expect({

@@ -1,58 +1,18 @@
-// CR-097 K3a · HD-FR-100 · HD-FR-104: luật thuần màn khoá.
 import { describe, expect, test } from "bun:test";
-import { LOCKED_LEGAL_KEYS, lockErrorKey, lockView, reopenRight } from "./lock-view";
+import { contentLocked, LOCKED_LEGAL_KEYS, lockErrorKey, lockView } from "./lock-view";
 
-const base = { locked: false, status: "active", has_document: true } as const;
-
-describe("HD-FR-100 lockView", () => {
-  test("khoá ⇒ banner locked, mọi ô chỉ đọc (cả notice_days)", () => {
-    const v = lockView({ ...base, locked: true }, false);
-    expect(v.banner).toBe("locked");
-    expect(v.lockedKeys?.has("total_value")).toBe(true);
-    expect(v.lockedKeys?.has("commission_pct")).toBe(true);
-    expect(v.lockedKeys?.has("notice_days")).toBe(true);
-    expect(LOCKED_LEGAL_KEYS.has("title")).toBe(true);
+describe("CR-127 U5 · khoá nội dung theo trạng thái", () => {
+  test("chỉ DRAFT là form; PROCESSING/DONE/REJECT chữ đọc", () => {
+    expect(contentLocked("draft")).toBe(false);
+    for (const s of ["processing", "done", "reject"] as const) expect(contentLocked(s)).toBe(true);
   });
-  test("HD-FR-104 chỉ owner thấy mở lại, và chỉ khi khoá", () => {
-    expect(lockView({ ...base, locked: true }, true).canReopen).toBe(true);
-    expect(lockView({ ...base, locked: true }, false).canReopen).toBe(false);
-    expect(lockView({ ...base, status: "needs_review" }, true).canReopen).toBe(false);
+  test("khoá ⇒ mọi ô chỉ đọc; DRAFT ⇒ không khoá ô nào", () => {
+    expect(lockView({ status: "done" }).lockedKeys).toBe(LOCKED_LEGAL_KEYS);
+    expect(lockView({ status: "draft" }).lockedKeys).toBeUndefined();
   });
-  test("Chờ duyệt ⇒ banner pending, không khoá ô", () => {
-    const v = lockView({ ...base, status: "needs_review" }, true);
-    expect(v.banner).toBe("pending");
-    expect(v.lockedKeys).toBeUndefined();
-  });
-  test("CR-122 · bước Ký số đã khoá HĐ chưa xác nhận ⇒ banner signing (không ghi 'Đã xác nhận')", () => {
-    expect(lockView({ ...base, status: "needs_review", locked: true }, true, true).banner).toBe(
-      "signing",
-    );
-  });
-  test("CR-122 · đã Xác nhận và lưu (lượt duyệt đang chạy) ⇒ không còn banner Chưa xác nhận", () => {
-    expect(lockView({ ...base, status: "needs_review" }, true, true).banner).toBeNull();
-  });
-  test("không khoá, không chờ duyệt ⇒ không banner; thiếu văn bản ⇒ noDocument", () => {
-    expect(lockView(base, false).banner).toBeNull();
-    expect(lockView({ ...base, has_document: false }, false).noDocument).toBe(true);
-  });
-  test("lockErrorKey map CONTRACT_LOCKED / 403", () => {
-    expect(lockErrorKey(409, "CONTRACT_LOCKED")).toBe("contracts.lock.errLocked");
-    expect(lockErrorKey(409, "CONTRACT_NOT_LOCKED")).toBe("contracts.lock.errNotLocked");
-    expect(lockErrorKey(403, "FORBIDDEN")).toBe("contracts.lock.errForbidden");
+  test("lỗi: USE_NEW_VERSION nói cách khắc phục", () => {
+    expect(lockErrorKey(409, "USE_NEW_VERSION")).toBe("contracts.u5.err.USE_NEW_VERSION");
+    expect(lockErrorKey(403, undefined)).toBe("contracts.lock.errForbidden");
     expect(lockErrorKey(500, undefined)).toBeNull();
-    expect(lockErrorKey(410, "USE_VERSIONS")).toBe("contracts.lock.errUseVersions");
-  });
-});
-
-describe("CR-101a reopenRight — owner gói hoặc người phụ trách", () => {
-  const c = { owner_user_id: "u1" };
-  test("ma trận", () => {
-    expect(reopenRight(c, { owner: true, write: true, userId: "u9" })).toBe(true);
-    expect(reopenRight(c, { owner: false, write: true, userId: "u1" })).toBe(true);
-    expect(reopenRight(c, { owner: false, write: true, userId: "u9" })).toBe(false);
-    expect(reopenRight(c, { owner: false, write: false, userId: "u1" })).toBe(false);
-    expect(reopenRight({ owner_user_id: null }, { owner: false, write: true, userId: null })).toBe(
-      false,
-    );
   });
 });

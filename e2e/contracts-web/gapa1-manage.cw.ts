@@ -33,7 +33,9 @@ async function open(page: Page, role: Role, over: Record<string, unknown> = {}) 
   await page.route(`${BASE}/commission`, (r) =>
     rec(r, { id: ACTIVE_ID, version: 2, commission_pct: 7.5 }),
   );
-  await page.route(`${BASE}/extract`, (r) => rec(r, { id: ACTIVE_ID, status: "extracting" }, 202));
+  await page.route(`${BASE}/extract`, (r) =>
+    rec(r, { id: ACTIVE_ID, status: "draft", extract_state: "reading" }, 202),
+  );
   await page.route(`${BASE}/summary`, (r) =>
     rec(r, {
       id: ACTIVE_ID,
@@ -71,7 +73,12 @@ test("editor: giao cho người khác ⇒ một PUT /owner; mở lịch sử th�
 });
 
 test("editor: HĐ Giới thiệu sửa hoa hồng % ⇒ một PUT /commission kèm version", async ({ page }) => {
-  const sent = await open(page, "editor", { deal: "referral", commission_pct: 5, version: 1 });
+  const sent = await open(page, "editor", {
+    deal: "referral",
+    status: "needs_review",
+    commission_pct: 5,
+    version: 1,
+  });
   await page.locator("#commission-pct").fill("7,5");
   await page.getByTestId("commission-save").click();
   await expect.poll(() => sent.filter((s) => s.path.endsWith("/commission")).length).toBe(1);
@@ -90,16 +97,12 @@ test("editor: HĐ chờ xác nhận ⇒ xác nhận hộp thoại rồi một PO
 
 test("editor: đọc lỗi ⇒ nút Thử lại gọi POST /extract", async ({ page }) => {
   const sent = await open(page, "editor", { status: "extract_failed", error: "AGENT_FAILED" });
-  await page.getByTestId("reextract").click();
+  await page.getByTestId("reextract").first().click();
   await page.getByTestId("reextract-confirm").click();
   await expect.poll(() => sent.filter((s) => s.path.endsWith("/extract")).length).toBe(1);
 });
 
-test("editor: chưa có tóm tắt AI ⇒ Tạo tóm tắt bằng AI gọi POST /summary", async ({ page }) => {
-  const sent = await open(page, "editor", { ai: null });
-  await page.getByTestId("generate-summary").click();
-  await expect.poll(() => sent.filter((s) => s.path.endsWith("/summary")).length).toBe(1);
-});
+// CR-127 Q11: ca «Tạo tóm tắt bằng AI» đã xoá — thẻ Tóm tắt đã thay bằng «Điều cần lưu ý».
 
 test("viewer: không có ô giao, nút đọc lại, hoa hồng, tạo tóm tắt", async ({ page }) => {
   await open(page, "viewer", { deal: "referral", status: "needs_review", ai: null });

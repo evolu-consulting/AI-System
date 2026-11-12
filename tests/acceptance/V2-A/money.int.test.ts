@@ -1,6 +1,7 @@
 // V2-A · tiền + vòng đời mốc qua hub-api thật — viết TRƯỚC code. BA v2 §2 (loại HĐ, mốc, giai đoạn), §3.1 HD-01/HD-09/HD-11,
 // §5.4a (mốc trống chia đều giá trị), §5.4c (hoa hồng = phí gốc × % hoặc cố định), C3 (tenant tắt duyệt: lưu = có hiệu lực).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { setLegacyStatus } from "../HD1/_support/hd1";
 import {
   arrangeV2a,
   type CtxN1,
@@ -36,21 +37,22 @@ async function v2(): Promise<void> {
 const add = (id: string, b: Json) => ok(call(c, P.hoa, "POST", `/contracts/${id}/milestones`, b));
 const pick = (m: Json) => [m.kind, m.owner, m.amount, m.amount_effective, m.confirmed];
 
-describe("V2-A · HD-01 lưu HĐ ở tenant tắt duyệt ⇒ có hiệu lực + mốc mặc định theo loại", () => {
-  it("Bán 100.000.001: active, Giao (mình) + Thu tiền (khách) trống ⇒ tính đủ giá trị; giai đoạn Chưa bắt đầu", async () => {
+describe("V2-A · HD-01 Xác nhận & lưu (có quy trình khớp ⇒ Đang duyệt) + mốc mặc định theo loại", () => {
+  it("Bán 100.000.001: processing, Giao (mình) + Thu tiền (khách) trống ⇒ tính đủ giá trị; giai đoạn Chưa bắt đầu", async () => {
     await v2();
     const out = await manual(c, {
       deal: "sell",
       total_value: 100_000_001,
       start_date: d(10),
       end_date: d(40),
+      keepLocked: true, // giữ trạng thái sau "Xác nhận & lưu" (CR-127 K3: có quy trình khớp ⇒ processing)
     });
-    expect(out.status).toBe("active");
+    expect(out.status).toBe("processing");
     const x = await detail(c, out.id);
     expect([x.deal, x.direction, x.status, x.stage, x.start_date]).toEqual([
       "sell",
       "sale",
-      "active",
+      "processing",
       "not_started",
       d(10),
     ]);
@@ -64,7 +66,7 @@ describe("V2-A · HD-01 lưu HĐ ở tenant tắt duyệt ⇒ có hiệu lực +
     ]);
   });
 
-  it("Mua: Giao (NCC) + Thanh toán (mình); loại không có approval ⇒ không mở lượt duyệt", async () => {
+  it("Mua: Giao (NCC) + Thanh toán (mình)", async () => {
     await v2();
     const out = await manual(c, { deal: "buy", total_value: 5_000_000, end_date: d(3) });
     const x = await detail(c, out.id);
@@ -72,20 +74,9 @@ describe("V2-A · HD-01 lưu HĐ ở tenant tắt duyệt ⇒ có hiệu lực +
       ["delivery", "partner", null, null, false],
       ["pay", "ours", null, 5_000_000, false],
     ]);
-    const [a] = await c.sql<{ n: number }[]>`select count(*)::int as n from contracts.approvals
-      where contract_id = ${out.id}`;
-    expect(a?.n).toBe(0);
   });
 
-  it("tenant BẬT duyệt: HĐ chờ duyệt (needs_review), chưa có mốc (mốc HD7 sinh khi duyệt)", async () => {
-    await arrangeV2a(c);
-    await setApproval(c.sql, T.acme, true);
-    const out = await manual(c, { direction: "sale", total_value: 9_000_000 });
-    expect(out.status).toBe("needs_review");
-    expect((await rowsOf(c.sql, out.id)).length).toBe(0);
-  });
-
-  it("HD-09 · CR-097 K1: tenant tắt duyệt: HĐ đã lưu (xác nhận) bị khoá ⇒ sửa giá trị 409 CONTRACT_LOCKED, vẫn active", async () => {
+  it("HD-09 · CR-097 K1 · CR-127 K4: HĐ đã Xác nhận & lưu (Đang duyệt) bị khoá ⇒ sửa giá trị 409 CONTRACT_LOCKED, vẫn processing", async () => {
     await v2();
     const out = await manual(c, { deal: "sell", total_value: 1_000, keepLocked: true });
     const x = await detail(c, out.id);
@@ -95,7 +86,7 @@ describe("V2-A · HD-01 lưu HĐ ở tenant tắt duyệt ⇒ có hiệu lực +
     });
     expect([p.status, p.json?.error?.code]).toEqual([409, "CONTRACT_LOCKED"]);
     const y = await detail(c, out.id);
-    expect([y.status, y.value, y.locked]).toEqual(["active", 1_000, true]);
+    expect([y.status, y.value]).toEqual(["processing", 1_000]); // CR-127 K4: khoá theo trạng thái (không còn `locked_at`)
   });
 });
 
@@ -158,7 +149,7 @@ describe("V2-A · 5.4a mốc trống chia đều phần còn lại", () => {
 
   it("SL chỉ cho Giao hàng; số tiền chỉ cho Thu/Thanh toán/Hoa hồng ⇒ 422 MILESTONE_INVALID", async () => {
     await v2();
-    const id = await deal(c.sql, { sale: true });
+    const id = await deal(c.sql, { sale: true, status: "draft" }); // CR-127 K4: HĐ DONE khoá mốc ⇒ dựng HĐ mở
     const r = [
       await call(c, P.hoa, "POST", `/contracts/${id}/milestones`, {
         kind: "collect",
@@ -183,7 +174,12 @@ describe("V2-A · 5.4a mốc trống chia đều phần còn lại", () => {
 describe("V2-A · KN-07 mốc đã xác nhận giữ nguyên + lỗi do ai", () => {
   it("xác nhận trễ có lỗi đối tác ⇒ ghi fault; sửa/xoá mốc đã xác nhận ⇒ 409, hàng không đổi", async () => {
     await v2();
-    const id = await deal(c.sql, { sale: true, partner: "Khách Trễ", tax: "0311111111" });
+    const id = await deal(c.sql, {
+      sale: true,
+      partner: "Khách Trễ",
+      tax: "0311111111",
+      status: "draft",
+    });
     const m = await add(id, { kind: "collect", due_date: d(-4), amount: 7_000_000 });
     const s = await ok(
       call(c, P.hoa, "POST", `/obligations/${m.id}/settle`, { at: d(0), fault: "partner" }),
@@ -209,7 +205,12 @@ describe("V2-A · KN-07 mốc đã xác nhận giữ nguyên + lỗi do ai", () 
 
   it("trễ mà không chọn ⇒ unknown; đúng hạn ⇒ không ghi lỗi; huỷ dòng xác nhận ⇒ mốc mở lại, bỏ lỗi", async () => {
     await v2();
-    const id = await deal(c.sql, { sale: true, partner: "Khách B", tax: "0322222222" });
+    const id = await deal(c.sql, {
+      sale: true,
+      partner: "Khách B",
+      tax: "0322222222",
+      status: "draft",
+    });
     const late = await add(id, { kind: "collect", due_date: d(-2) });
     const onTime = await add(id, { kind: "delivery", due_date: d(3) });
     await ok(call(c, P.hoa, "POST", `/obligations/${late.id}/settle`, { at: d(0) }));
@@ -258,6 +259,7 @@ describe("V2-A · HD-09 loại HĐ không đổi sau khi lưu; backfill theo hư
   it("HĐ cũ (chỉ direction) ⇒ deal suy ra; đổi deal của HĐ đã có hiệu lực ⇒ DB từ chối", async () => {
     await arrangeV2a(c);
     const id = await deal(c.sql, { sale: false });
+    await setLegacyStatus(c.sql, id, "done"); // `deal()` mở khoá (draft) — "đã có hiệu lực" = DONE (CR-127 K4)
     const [r] = await c.sql<
       { deal: string }[]
     >`select deal from contracts.contracts where id = ${id}`;

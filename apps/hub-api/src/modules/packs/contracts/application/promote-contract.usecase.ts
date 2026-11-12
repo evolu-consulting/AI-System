@@ -1,8 +1,7 @@
 // CR-101 DOC-deals · R10 · HD-14 · Câu 1: nâng giao dịch thành HĐ kinh tế — file ký + số HĐ bắt buộc; GIỮ id/mốc/kho/điểm, chỉ đổi
 // `doc_type` + gắn file + số. Thứ tự: loại tệp (415) → kiểm thấy-được + là giao dịch hiện hành (404/409, chưa chạm FileBox/hạn mức)
 // → hạn mức tải lên/ngày (như tải lên; 429/503) → FileBox → MỘT tx (khoá hàng + INSERT files + UPDATE chứng từ + event `promoted`)
-// → không nâng được (đua) ⇒ gỡ tệp + hoàn hạn mức. Review cuối đợt: tenant BẬT duyệt ⇒ HĐ `needs_review` + mở lượt duyệt cấp 1 (engine
-// nếu công ty có entitlement, máy cũ nếu không — cùng `startApproval` của nhập tay); TẮT ⇒ khoá ngay (K1), `locked_by` = người nâng.
+// → không nâng được (đua) ⇒ gỡ tệp + hoàn hạn mức. CR-127 K1b: nâng = `created_done` — HĐ vẫn DONE, khoá ngay (K1), `locked_by` = người nâng; không còn nhánh mở lượt duyệt.
 // Không AI đọc lại (giao dịch đã có số liệu).
 
 import type { PackUow, PackWho } from "../../kit/public";
@@ -51,7 +50,7 @@ export type PromoteResult =
       kind: "ok";
       id: string;
       version: number;
-      status: "active" | "needs_review";
+      status: "done";
       locked: boolean;
       file_id: string;
     }
@@ -68,8 +67,7 @@ type Deps = {
   zipNames: (b: Uint8Array) => string[];
   newId: () => string;
   quota?: PromoteQuota;
-  /** Mở lượt duyệt cấp 1 sau commit khi HĐ về `needs_review` (engine/máy). */
-  review?: (who: PackWho, id: string) => Promise<unknown>;
+  /** KHÔNG còn gọi (CR-127 K1b: nâng giao dịch ⇒ DONE ngay, `initialState("promote")`); K2a gỡ chỗ nối. */
 };
 
 const verdictOf = (row: { doc_type: string | null; superseded: boolean } | null) => {
@@ -127,13 +125,11 @@ export function createPromoteContract(d: Deps): PromoteContract {
       await refund().catch(() => undefined);
       return { kind: verdictOf(row) ?? "not_found" };
     }
-    const status = row.status === "needs_review" ? "needs_review" : "active";
-    if (status === "needs_review") await d.review?.(who, i.id);
     return {
       kind: "ok",
       id: i.id,
       version: row.version,
-      status,
+      status: "done" as const,
       locked: row.locked,
       file_id: fileRowId,
     };

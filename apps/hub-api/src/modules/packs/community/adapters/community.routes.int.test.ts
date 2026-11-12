@@ -3,6 +3,8 @@
 // bằng schema strict của contract ⇒ trường thừa (saveQuote/hidden/hits/audience cho đối tác) làm đỏ.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
+  CommentPageSchema,
+  CommentViewSchema,
   CommunitySettingsSchema,
   CommunityViewerSchema,
   FeedResponseSchema,
@@ -10,8 +12,6 @@ import {
   PostSourceSchema,
   PostViewSchema,
   ProfileSchema,
-  ThreadSchema,
-  ThreadSummarySchema,
 } from "@ai/contracts/community";
 import { createDb, type Db } from "@ai/db";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
@@ -115,6 +115,18 @@ afterAll(async () => {
 });
 
 describe("viewer / partners / cats / profile / settings / notifications", () => {
+  it("CR-129 L5 · /viewer chỉ trả email của CHÍNH người xem (không lộ của người khác)", async () => {
+    const rows =
+      (await sql`select id::text as id, email from admin.users where id in (${c.hA}::uuid, ${c.s1a}::uuid)`) as unknown as {
+        id: string;
+        email: string | null;
+      }[];
+    const mail = (id: string) => rows.find((r) => r.id === id)?.email ?? null;
+    const a = await ok(CommunityViewerSchema, call("hA", "GET", "/viewer"));
+    const p = await ok(CommunityViewerSchema, call("s1a", "GET", "/viewer"));
+    expect({ a: a.email, p: p.email }).toEqual({ a: mail(c.hA), p: mail(c.s1a) });
+    expect(a.email === null || a.email !== p.email).toBe(true);
+  });
   it("GET /viewer: Admin chủ quản, thành viên, đối tác (nhãn + nhóm hàng của công ty)", async () => {
     expect(await ok(CommunityViewerSchema, call("hA", "GET", "/viewer"))).toMatchObject({
       role: "host_admin",
@@ -128,7 +140,7 @@ describe("viewer / partners / cats / profile / settings / notifications", () => 
       role: "partner",
       orgId: c.X,
       orgName: "Công ty Hai Chiều",
-      labels: ["supplier", "buyer"],
+      labels: ["supplier", "customer"],
       cats: ["dong-goi"],
     });
   });
@@ -143,23 +155,19 @@ describe("viewer / partners / cats / profile / settings / notifications", () => 
       (await ok(z.array(PartnerOrgSchema), call("s1a", "GET", "/partners"))).map((p) => p.id),
     ).toEqual([c.S1]);
   });
-  it("PUT /partners/:orgId: chỉ Admin chủ quản (HT-82: thành viên/đối tác 403)", async () => {
-    const body = {
-      labels: ["supplier", "buyer"],
-      cats: ["dong-goi", "chu-ky-so"],
-      partyKey: "sht-123",
-    };
-    expect((await call("hM", "PUT", `/partners/${c.S2}`, body)).status).toBe(403);
-    expect((await call("s2", "PUT", `/partners/${c.S2}`, body)).status).toBe(403);
-    expect(await ok(PartnerOrgSchema, call("hA", "PUT", `/partners/${c.S2}`, body))).toMatchObject({
-      labels: ["buyer", "supplier"],
-      partyKey: "sht-123",
-    });
-    await call("hA", "PUT", `/partners/${c.S2}`, { labels: ["supplier"], cats: ["chu-ky-so"] });
+  it("CR-130: PUT /partners/:orgId đã gỡ (vai/nhóm hàng quản ở SHT › Đối tác) ⇒ 404 cho mọi người", async () => {
+    const body = { labels: ["supplier"], cats: ["dong-goi"] };
+    for (const u of ["hM", "hA", "s2"] as const) {
+      const res = await app.request(`/partners/${c.S2}`, {
+        method: "PUT",
+        headers: { "x-who": u, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      expect(res.status).toBe(404);
+    }
   });
-  it("GET /cats, /notifications; settings mặc định → lưu → đọc lại", async () => {
+  it("GET /cats; settings mặc định → lưu → đọc lại", async () => {
     expect(await ok(z.array(z.string()), call("hA", "GET", "/cats"))).toContain("dong-goi");
-    expect((await call("s1a", "GET", "/notifications")).json).toEqual({ items: [], unread: 0 });
     const first = await ok(CommunitySettingsSchema, call("s1a", "GET", "/settings"));
     expect(first).not.toHaveProperty("accent");
     // D8: client cũ vẫn gửi `accent` ⇒ nhận (không 422) nhưng bỏ qua, không lưu, không trả lại.
@@ -259,6 +267,11 @@ describe("bài: tạo / bảng tin / sửa / thao tác / nguồn", () => {
     expect(mine?.actions).not.toContain("saveQuote");
     const b1 = await ok(FeedResponseSchema, call("b1", "GET", "/feed"));
     expect(b1.items.map((x) => x.id)).toEqual([hostPost]);
+    // CR-129 L5 · hồ sơ cá nhân: authorUserId lọc bài của một người; vẫn qua RLS/audience (B1 không thấy bài S1 dù lọc đúng tác giả)
+    const byS1a = await ok(FeedResponseSchema, call("hA", "GET", `/feed?authorUserId=${c.s1a}`));
+    expect(byS1a.items.map((x) => x.id)).toEqual([s1Post]);
+    const b1ByS1a = await ok(FeedResponseSchema, call("b1", "GET", `/feed?authorUserId=${c.s1a}`));
+    expect(b1ByS1a.items).toEqual([]);
     const page = await ok(FeedResponseSchema, call("hA", "GET", "/feed?limit=1&q=keo"));
     expect({ ids: page.items.map((x) => x.id), next: page.nextCursor }).toEqual({
       ids: [s1Post],
@@ -307,52 +320,44 @@ describe("bài: tạo / bảng tin / sửa / thao tác / nguồn", () => {
   });
 });
 
-describe("luồng bình luận (D3)", () => {
-  it("POST /comments + GET /threads + GET /threads/:org: luồng riêng mỗi công ty; chủ quản trả lời đúng luồng", async () => {
+describe("bình luận phẳng theo bạn bè (CR-129)", () => {
+  it("POST /comments + GET /comments: không còn luồng; đối tác thấy của mình + chủ quản, không thấy đối tác khác", async () => {
     const t1 = await ok(
-      ThreadSchema,
+      CommentViewSchema,
       call("s1a", "POST", `/posts/${hostPost}/comments`, { text: "Giá sỉ? zalo 0987654321" }),
       201,
     );
-    expect({ org: t1.orgId, masked: !t1.comments[0]?.text.includes("0987654321") }).toEqual({
-      org: c.S1,
+    expect({
+      side: t1.authorSide,
+      masked: !t1.text.includes("0987654321"),
+      mentions: t1.mentions,
+    }).toEqual({
+      side: "partner",
       masked: true,
+      mentions: [],
     });
     await ok(
-      ThreadSchema,
+      CommentViewSchema,
       call("b1", "POST", `/posts/${hostPost}/comments`, { text: "Còn hàng không?" }),
       201,
     );
-    expect(
-      (await call("hA", "POST", `/posts/${hostPost}/comments`, { text: "Bạn chọn luồng" })).status,
-    ).toBe(422);
+    // chủ quản trả lời không cần chọn "luồng" (không còn orgId) — 201
     const reply = await ok(
-      ThreadSchema,
-      call("hA", "POST", `/posts/${hostPost}/comments`, {
-        text: "Gọi tôi 0911111111",
-        orgId: c.S1,
-      }),
+      CommentViewSchema,
+      call("hA", "POST", `/posts/${hostPost}/comments`, { text: "Gọi tôi 0911111111" }),
       201,
     );
-    expect(reply.comments.map((x) => x.authorSide)).toEqual(["partner", "host"]);
-    const host = await ok(
-      z.array(ThreadSummarySchema),
-      call("hM", "GET", `/posts/${hostPost}/threads`),
-    );
-    expect(host.map((t) => t.orgId).sort()).toEqual([c.S1, c.B1].sort());
-    const s1b = await ok(ThreadSchema, call("s1b", "GET", `/posts/${hostPost}/threads/${c.B1}`)); // orgId lạ ⇒ luồng mình
-    expect({
-      org: s1b.orgId,
-      texts: s1b.comments.map((x) => x.text.includes("0911111111")),
-    }).toEqual({
-      org: c.S1,
-      texts: [false, true], // HT-55: nội dung chủ quản không che
-    });
-    expect(
-      (await ok(z.array(ThreadSummarySchema), call("b1", "GET", `/posts/${hostPost}/threads`))).map(
-        (t) => t.orgId,
-      ),
-    ).toEqual([c.B1]);
-    expect((await call("s2", "GET", `/posts/${s1Post}/threads`)).status).toBe(404);
+    expect(reply.authorSide).toBe("host");
+    const page = (who: "hM" | "s1b" | "b1") =>
+      ok(CommentPageSchema, call(who, "GET", `/posts/${hostPost}/comments`));
+    const host = await page("hM");
+    expect(host.comments.map((x) => x.authorSide)).toEqual(["partner", "partner", "host"]);
+    const s1b = await page("s1b");
+    expect(s1b.comments.map((x) => [x.authorSide, x.text.includes("0911111111")])).toEqual([
+      ["partner", false],
+      ["host", true], // HT-55: nội dung chủ quản không che
+    ]);
+    expect((await page("b1")).comments.map((x) => x.authorSide)).toEqual(["partner", "host"]);
+    expect((await call("s2", "GET", `/posts/${s1Post}/comments`)).status).toBe(404);
   });
 });

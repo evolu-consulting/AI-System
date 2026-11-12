@@ -24,6 +24,11 @@ export type CommunityEventDeps = {
   uow: PackSystemUow<EventTx>;
   /** Chủ quản (user nội bộ có quyền đọc gói) của tenant — một câu. */
   hosts: (tenantId: string) => Promise<readonly string[]>;
+  /** CR-129: user đang hoạt động của các công ty đối tác được nhắc (`ExternalOrgResolver.orgMembers`, một câu). */
+  orgMembers: (
+    tenantId: string,
+    orgIds: readonly string[],
+  ) => Promise<ReadonlyMap<string, readonly string[]>>;
   /** Ghi đè nguồn "chủ quản đã LƯU BÁO GIÁ" (test); vắng ⇒ bảng `quote_saves` trong tx phát. */
   savedBy?: (tenantId: string, postId: string) => Promise<readonly string[]>;
   /** Người có quyền đọc SHT đang có hàng khớp bài Cần mua (`HostBookReader.stockHolders`); vắng ⇒ `matchBuy` không phát. */
@@ -74,9 +79,12 @@ const toItems = (
 export type CommentEvent = {
   tenantId: string;
   postId: string;
-  threadOrg: string;
   commentId: string;
   actor: Actor;
+  /** Bên của người viết (null = chủ quản) + bên đăng bài + công ty được nhắc (đã lưu cùng bình luận). */
+  actorOrg: string | null;
+  postAuthorOrg: string | null;
+  mentions: readonly string[];
   /** Công ty đối tác CÒN hiệu lực (danh bạ) — đối tác của công ty đã rời / vắng không nhận. */
   activeOrgs: readonly string[];
 };
@@ -120,25 +128,35 @@ export function communityEvents(d: CommunityEventDeps) {
   };
 
   return {
-    /** Bình luận mới (đã commit): người đăng ⇒ comment; người từng bình luận ⇒ reply; chỉ chủ quản còn quyền + đối tác còn hiệu lực thấy bài. */
+    /** Bình luận mới (đã commit): công ty được nhắc ⇒ mention; người đăng ⇒ comment; người từng bình luận ⇒ reply; chỉ người thấy bài + thấy bình luận (luật `canSeeComment`). */
     emitComment: (i: CommentEvent): Promise<number> =>
       safely("comment", i, async () => {
         const hosts = await d.hosts(i.tenantId);
+        const members =
+          i.mentions.length > 0
+            ? await d.orgMembers(i.tenantId, i.mentions)
+            : new Map<string, readonly string[]>();
+        const mentioned = [...members].flatMap(([o, us]) => us.map((u) => ({ u, o })));
         return d.uow.system(i.tenantId, async (r) => {
           const { title, cands } = await commentCandidates(r.tx, {
             tenantId: i.tenantId,
             postId: i.postId,
-            threadOrg: i.threadOrg,
             actorUserId: i.actor.userId,
             at: d.now?.() ?? new Date(),
             activeOrgs: i.activeOrgs,
             hosts,
+            mentioned,
           });
           const post = { id: i.postId, title };
-          const o = { actor: i.actor.name, threadOrg: i.threadOrg, ref: i.commentId };
+          const o = { actor: i.actor.name, ref: i.commentId };
+          const ctx = {
+            actorOrg: i.actorOrg,
+            postAuthorOrg: i.postAuthorOrg,
+            mentions: i.mentions,
+          };
           return deliver(
             r,
-            commentRecipients(cands, i.threadOrg, i.actor.userId).map((c) => ({ c, post, o })),
+            commentRecipients(cands, ctx, i.actor.userId).map((c) => ({ c, post, o })),
           );
         });
       }),

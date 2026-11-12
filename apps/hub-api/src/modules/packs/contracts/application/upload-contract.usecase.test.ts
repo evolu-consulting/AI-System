@@ -29,7 +29,7 @@ function fakeRepos(st: St): UploadTxRepos {
       insert: async (r) => {
         if (st.failTx) throw st.failTx;
         st.inserted.push(r);
-        return { id: r.id, status: r.status, version: 1 };
+        return { id: r.id, status: "draft" as const, extractState: r.extractState, version: 1 };
       },
       insertVersion: async () => {
         throw new Error("not used");
@@ -96,7 +96,7 @@ describe("upload-contract use case", () => {
   it("PDF ⇒ một lần take (ngày tenant theo múi, ngày toàn cục UTC), put org t_<tenant>, insert + outbox, start sau commit", async () => {
     const s = setup();
     const r = await s.input(PDF);
-    expect(r.status).toBe("extracting");
+    expect(r).toMatchObject({ status: "draft", extractState: "reading" });
     expect(s.log).toEqual(["take:2026-10-20/2026-10-19", `put:t_${T}`, "outbox:1", "start"]);
     expect(s.inserted[0]).toMatchObject({ mime: "application/pdf", sourceText: null, error: null });
     expect(Object.keys(s.inserted[0]?.fields ?? {})).toHaveLength(23);
@@ -142,7 +142,7 @@ describe("upload-contract use case · quota + hoàn tác", () => {
     expect(await codeOf(busy.input(ZIP))).toBe("DOCX_BUSY");
     expect(busy.log.slice(1)).toEqual(["refund"]);
     const bad = setup({ docx: { ok: false, code: "DOCX_UNREADABLE" } });
-    expect(await bad.input(ZIP)).toMatchObject({ status: "extract_failed" });
+    expect(await bad.input(ZIP)).toMatchObject({ status: "draft", extractState: "failed" });
     expect(bad.inserted[0]).toMatchObject({ error: "DOCX_UNREADABLE", sourceText: null });
     const ok = setup();
     await ok.input(ZIP);

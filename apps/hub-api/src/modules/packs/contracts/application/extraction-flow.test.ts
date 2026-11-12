@@ -19,7 +19,19 @@ const emptyJson = () =>
     clauses: [],
   });
 
-type Row = { status: string; version: number; fields: unknown; warnings?: unknown };
+type Row = {
+  status: string;
+  extractState: string;
+  version: number;
+  fields: unknown;
+  warnings?: unknown;
+};
+const reading = (version: number): Row => ({
+  status: "draft",
+  extractState: "reading",
+  version,
+  fields: {},
+});
 function fakeUow(row: Row, o: { failSave?: boolean; beforeSave?: () => void } = {}) {
   const log: string[] = [];
   const repo = {
@@ -38,9 +50,10 @@ function fakeUow(row: Row, o: { failSave?: boolean; beforeSave?: () => void } = 
       o.beforeSave?.();
       if (o.failSave) throw new Error("22P05");
       log.push(`save@${r.expected}`);
-      if (row.version !== r.expected || row.status !== "extracting") return false;
+      if (row.version !== r.expected || row.status !== "draft" || row.extractState !== "reading")
+        return false;
       Object.assign(row, {
-        status: "needs_review",
+        extractState: "ready", // cổng `extracted`: draft → draft, extract_state = ready, version + 1
         version: row.version + 1,
         fields: r.fields,
         warnings: r.warnings,
@@ -55,7 +68,7 @@ function fakeUow(row: Row, o: { failSave?: boolean; beforeSave?: () => void } = 
     },
     saveFailure: async (_id: string, code: string) => {
       log.push(`fail:${code}`);
-      row.status = "extract_failed";
+      row.extractState = "failed"; // cổng `extract_failed`
       return true;
     },
   };
@@ -72,14 +85,11 @@ describe("Trung 1 · ghi có điều kiện version, không khoá trước", () 
     const edited = fillFields({
       total_value: { value: 9, quote: "", verified: true, edited: true },
     });
-    const f = fakeUow(
-      { status: "extracting", version: 2, fields: {} },
-      {
-        beforeSave: () => {
-          if (f.row.version === 2) Object.assign(f.row, { version: 3, fields: edited }); // PATCH lúc agent chạy
-        },
+    const f = fakeUow(reading(2), {
+      beforeSave: () => {
+        if (f.row.version === 2) Object.assign(f.row, { version: 3, fields: edited }); // PATCH lúc agent chạy
       },
-    );
+    });
     const run = createRunExtraction({
       uow: f.uow,
       agent: okAgent(),
@@ -91,7 +101,7 @@ describe("Trung 1 · ghi có điều kiện version, không khoá trước", () 
     expect((f.row.fields as Record<string, { value: unknown }>).total_value?.value).toBe(9);
   });
   it("S-M1 · ghi ném ⇒ SAVE_FAILED ⇒ extract_failed", async () => {
-    const f = fakeUow({ status: "extracting", version: 1, fields: {} }, { failSave: true });
+    const f = fakeUow(reading(1), { failSave: true });
     const run = createRunExtraction({
       uow: f.uow,
       agent: okAgent(),
@@ -125,7 +135,7 @@ describe("Trung 2 · agent treo", () => {
       },
       { deadline },
     );
-    const f = fakeUow({ status: "extracting", version: 1, fields: {} });
+    const f = fakeUow(reading(1));
     const settled: string[] = [];
     const q = createExtractionQueue({
       concurrency: 1,
@@ -186,7 +196,7 @@ describe("Trung 4 · hẹn giờ tra lại MST từ hàng đợi", () => {
     const json = JSON.parse(emptyJson());
     json.fields.supplier_name = { value: "Công ty A", quote: "Bên bán: Công ty A" };
     json.fields.supplier_tax_id = { value: "0312345678", quote: "MST: 0312345678" };
-    const fk = fakeUow({ status: "extracting", version: 1, fields: {} });
+    const fk = fakeUow(reading(1));
     const deps = { uow: fk.uow, tax };
     let q: ReturnType<typeof createExtractionQueue> | null = null;
     const schedule = (w: typeof who, id: string, at: number, n: number) =>

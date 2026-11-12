@@ -6,6 +6,7 @@ import {
   type PriceItem,
   type PriceSource,
 } from "./appendix-pricing.rules";
+import { isPriceLive } from "./price-live.rules";
 import type { Role } from "./scoring-config.rules";
 
 function pushTo<K, V>(m: Map<K, V[]>, key: K, v: V): void {
@@ -19,6 +20,8 @@ export type PricedContract = {
   id: string;
   kind: "contract" | "appendix";
   status: string;
+  /** Hiệu lực (`done` ⇒ active/expiring/…; K2a-1 nạp từ `contracts.effect`). */
+  effect?: string | null;
   parent: string | null;
   direction: string | null;
   party: string | null;
@@ -52,9 +55,6 @@ export type Quote = {
   /** Máy chủ đã thấy đúng con số trên trang (null = không có link). */
   verified?: boolean | null;
 };
-
-/** `products.LIVE`: chỉ HĐ đang hiệu lực mới có "giá đang áp dụng". */
-const LIVE = new Set(["active", "expiring", "renewed"]);
 
 const src = (c: PricedContract): PriceSource => ({
   id: c.id,
@@ -107,7 +107,7 @@ function lineOf(l: ReturnType<typeof applyAppendixPricingKeyed>[number], c: Pric
     valid_from: l.valid_from,
     contract_id: c.id,
     role: c.direction === "sale" ? "customer" : "supplier", // không rõ chiều ⇒ mua (như mgmt)
-    current: l.superseded_by === null && LIVE.has(c.status) && l.current,
+    current: l.superseded_by === null && isPriceLive(c) && l.current,
     party: { key: c.party, name: c.party_name },
   };
 }

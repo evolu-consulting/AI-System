@@ -20,6 +20,7 @@ export const flowsMock = (): { flows: FlowsApi } => ({
     createJoin: off,
     listJoins: async () => [],
     decideJoin: off,
+    listParties: async () => [],
     reportPost: off,
     listReports: async () => [],
     decideReport: off,

@@ -12,6 +12,7 @@ import {
   seedPosts,
 } from "../../../../../../../tests/acceptance/com-c3/_support/cast";
 import { mapError } from "../../../../lib/errors";
+import { partnerLinker } from "../../contracts/adapters/partner-linker";
 import { pgExternalOrgResolver } from "../../kit/adapters/ext-org.pg";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import { communityModule } from "../community.mount";
@@ -84,6 +85,7 @@ beforeAll(async () => {
   h.route(
     "/",
     communityModule(db, view(), pgExternalOrgResolver(db), {
+      partners: partnerLinker(),
       flows: {
         agents: { call: async () => ({ ok: true as const, text: agentOut }) },
         moderationOn: async () => true,
@@ -120,13 +122,13 @@ describe("chặn chéo công ty [CR-121 F-4]", () => {
     agentOut = '{"kind":"spam","level":"high"}';
     const rp = await call("b1", "POST", `/posts/${hostPost}/report`, { reason: "Quảng cáo rác" });
     expect(rp.status).toBe(201);
-    await sql`delete from community.partner_companies where ext_org_id = ${c.B1}::uuid`;
+    await sql`delete from contracts.partner_profiles where ext_org_id = ${c.B1}::uuid`;
     const jr = await call("b1", "POST", "/join-requests", {
       company: "Công ty Bao Bì Một",
       contact: "Anh Một",
       email: "mot@doi-tac.test",
       reason: "Muốn mua bao bì",
-      labels: ["buyer"],
+      labels: ["customer"],
     });
     expect(jr.status).toBe(201);
     await drain();

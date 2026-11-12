@@ -1,96 +1,55 @@
-// CR-097 K1 · HD-FR-100 (khoá cứng sau xác nhận) · HD-FR-104 (owner mở lại có lý do): luật thuần — viết TRƯỚC code.
+// CR-127 K4 · BR-39: khoá nội dung theo trạng thái (PROCESSING + DONE) — luật thuần. BR-38/74: "Mở lại" đã gỡ (không còn luật mở lại).
 import { describe, expect, test } from "bun:test";
 import { CONTRACT_FIELD_KEYS } from "./fields.rules";
-import {
-  canReopen,
-  LOCK_EDITABLE_FIELDS,
-  lockVerdict,
-  reopenReasonOk,
-  reopenVerdict,
-} from "./lock.rules";
+import { isContentLocked, LOCK_EDITABLE_FIELDS, lockVerdict } from "./lock.rules";
 
-describe("HD-FR-100 · lockVerdict", () => {
-  test("HĐ chưa khoá ⇒ mọi trường ok (luật duyệt cũ quyết tiếp)", () => {
-    expect(lockVerdict({ locked: false, changed: ["total_value", "buyer_tax_id"] })).toBe("ok");
+describe("BR-39 · isContentLocked", () => {
+  test("chỉ processing và done bị khoá", () => {
+    expect(["draft", "processing", "reject", "done"].map(isContentLocked)).toEqual([
+      false,
+      true,
+      false,
+      true,
+    ]);
   });
-  test("HĐ đã khoá ⇒ trường pháp lý / tiền / bên / ngày ⇒ locked (cho mọi người, kể cả owner)", () => {
-    for (const k of [
-      "total_value",
-      "vat_rate",
-      "buyer_name",
-      "supplier_tax_id",
-      "signed_date",
-      "end_date",
-      "payment_terms",
-      "number",
-      "title",
-    ])
-      expect({ k, v: lockVerdict({ locked: true, changed: [k] }) }).toEqual({ k, v: "locked" });
+});
+
+describe("BR-39 · lockVerdict", () => {
+  test("DRAFT / REJECT ⇒ mọi trường ok", () => {
+    for (const status of ["draft", "reject"])
+      expect(lockVerdict({ status, changed: ["total_value", "buyer_tax_id"] })).toBe("ok");
   });
-  test("HĐ đã khoá ⇒ notice_days cũng bị khoá (lock-strict)", () => {
-    expect(lockVerdict({ locked: true, changed: ["notice_days"] })).toBe("locked");
+  test("PROCESSING / DONE ⇒ trường pháp lý / tiền / bên / ngày ⇒ locked (cho mọi người, kể cả người phụ trách)", () => {
+    for (const status of ["processing", "done"])
+      for (const k of [
+        "total_value",
+        "vat_rate",
+        "buyer_name",
+        "supplier_tax_id",
+        "signed_date",
+        "end_date",
+        "payment_terms",
+        "number",
+        "title",
+      ])
+        expect({ status, k, v: lockVerdict({ status, changed: [k] }) }).toEqual({
+          status,
+          k,
+          v: "locked",
+        });
+  });
+  test("khoá ⇒ notice_days cũng bị khoá (lock-strict)", () => {
+    expect(lockVerdict({ status: "processing", changed: ["notice_days"] })).toBe("locked");
   });
   test("lẫn trường vận hành + pháp lý ⇒ locked (không ghi một phần)", () => {
-    expect(lockVerdict({ locked: true, changed: ["notice_days", "total_value"] })).toBe("locked");
+    expect(lockVerdict({ status: "done", changed: ["notice_days", "total_value"] })).toBe("locked");
   });
   test("không đổi gì ⇒ ok", () => {
-    expect(lockVerdict({ locked: true, changed: [] })).toBe("ok");
+    expect(lockVerdict({ status: "processing", changed: [] })).toBe("ok");
   });
-  test("lock-strict: danh sách trường sửa được khi khoá rỗng", () => {
+  test("lock-strict: danh sách trường sửa được khi khoá rỗng và chỉ gồm khoá hợp lệ", () => {
     expect(LOCK_EDITABLE_FIELDS.size).toBe(0);
-  });
-  test("danh sách trường sửa được khi khoá chỉ gồm khoá hợp lệ và KHÔNG có trường tiền/bên/ngày", () => {
     for (const k of LOCK_EDITABLE_FIELDS)
       expect((CONTRACT_FIELD_KEYS as readonly string[]).includes(k)).toBe(true);
-    const legal = ["total_value", "vat_rate", "vat_included", "buyer_name", "buyer_tax_id"];
-    const legalDates = [
-      "supplier_name",
-      "supplier_tax_id",
-      "signed_date",
-      "start_date",
-      "end_date",
-    ];
-    for (const k of [...legal, ...legalDates]) expect(LOCK_EDITABLE_FIELDS.has(k)).toBe(false);
-  });
-});
-
-describe("HD-FR-104 · reopenVerdict", () => {
-  test("HĐ đã khoá + lý do ⇒ ok", () => {
-    expect(reopenVerdict({ locked: true })).toBe("ok");
-  });
-  test("HĐ chưa khoá ⇒ not_locked (409)", () => {
-    expect(reopenVerdict({ locked: false })).toBe("not_locked");
-  });
-  test("CR-101a: không có quyền ⇒ forbidden, kể cả khi chưa khoá", () => {
-    expect(reopenVerdict({ locked: true, allowed: false })).toBe("forbidden");
-    expect(reopenVerdict({ locked: false, allowed: false })).toBe("forbidden");
-  });
-});
-
-describe("CR-101a · canReopen (người phụ trách hoặc owner gói)", () => {
-  test("ma trận", () => {
-    const u = "u1";
-    expect(canReopen({ admin: true, actor: u, owner: "u2" })).toBe(true);
-    expect(canReopen({ admin: false, actor: u, owner: u })).toBe(true);
-    expect(canReopen({ admin: false, actor: u, owner: "u2" })).toBe(false);
-    expect(canReopen({ admin: false, actor: u, owner: null })).toBe(false);
-  });
-  test("CR-121 Q-3 · platform_admin mở lại được dù không phụ trách / không owner gói, cờ false/vắng không cấp quyền", () => {
-    const u = "u1";
-    expect(canReopen({ admin: false, platform: true, actor: u, owner: "u2" })).toBe(true);
-    expect(canReopen({ admin: false, platform: true, actor: u, owner: null })).toBe(true);
-    expect(canReopen({ admin: false, platform: false, actor: u, owner: "u2" })).toBe(false);
-    expect(canReopen({ admin: false, actor: u, owner: "u2" })).toBe(false);
-  });
-});
-
-describe("CR-121 Q-3 · reopenReasonOk (lý do platform_admin 1..500)", () => {
-  test("rỗng/khoảng trắng ⇒ sai; 500 ⇒ đúng; 501 ⇒ sai; đếm code point", () => {
-    expect(reopenReasonOk("")).toBe(false);
-    expect(reopenReasonOk("   \n")).toBe(false);
-    expect(reopenReasonOk("a")).toBe(true);
-    expect(reopenReasonOk("a".repeat(500))).toBe(true);
-    expect(reopenReasonOk("a".repeat(501))).toBe(false);
-    expect(reopenReasonOk("😀".repeat(500))).toBe(true);
   });
 });

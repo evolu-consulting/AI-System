@@ -3,7 +3,7 @@
 // 0, vẫn qua trần) và chọn nhà cung cấp theo `feature` của lời gọi.
 import { describe, expect, test } from "bun:test";
 import { createAiClient, type ModelProvider, type UsageRecord } from "./ai-client";
-import { envProviderRouter, featureEnvKey, featureMode } from "./ai-client.env";
+import { envProviderRouter, featureEnvKey, featureMode, resolveCliShim } from "./ai-client.env";
 import type { CliRun } from "./claude-cli.provider";
 
 const usage = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 };
@@ -128,5 +128,18 @@ describe("AI client · billing + chọn theo tính năng", () => {
       caps: { dailyTokens: async () => null },
     });
     expect(ai.ready).toBe(false);
+  });
+});
+
+describe("resolveCliShim (Windows claude.cmd có dấu cách)", () => {
+  const base = String.raw`C:\Users\MSI VN\AppData\Roaming\npm`;
+  const cmd = String.raw`${base}\claude.cmd`;
+  const exe = String.raw`${base}\node_modules\@anthropic-ai\claude-code\bin\claude.exe`;
+  test("shim .cmd + có claude.exe cạnh ⇒ dùng exe", () => {
+    expect(resolveCliShim(cmd, (f) => f === exe)).toBe(exe);
+  });
+  test("không có exe ⇒ giữ shim; đường dẫn khác .cmd ⇒ giữ nguyên", () => {
+    expect(resolveCliShim(cmd, () => false)).toBe(cmd);
+    expect(resolveCliShim("/usr/bin/claude", () => true)).toBe("/usr/bin/claude");
   });
 });

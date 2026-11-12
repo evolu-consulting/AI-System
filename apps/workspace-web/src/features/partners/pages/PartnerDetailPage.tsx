@@ -5,7 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
+import { useShellPacks } from "~/shell/use-shell-packs";
 import { fetchContractCounts, fetchProfile, fetchRoles, partnerKeys } from "../api";
+import { CommunityTab } from "../components/CommunityTab";
 import { ContractsTab } from "../components/ContractsTab";
 import { OverviewTab } from "../components/OverviewTab";
 import { OverviewTabV2E } from "../components/OverviewTabV2E";
@@ -18,6 +20,7 @@ import { type PartnersSearch, type Range, rolesOf, type Tab } from "../lib/partn
 
 type PanelProps = {
   party: string;
+  canEditCommunity: boolean;
   tab: Tab;
   role: RepRole | null;
   roles: RepRole[];
@@ -26,8 +29,9 @@ type PanelProps = {
 };
 
 /** Thân tab theo engine: HD8 (bảng tiêu chí, sổ việc) hoặc V2-E (vai × nhóm SP, biểu đồ, sao). */
-function PartnerPanel({ party, tab, role, roles, range, v2e }: PanelProps) {
+function PartnerPanel({ party, tab, role, roles, range, v2e, canEditCommunity }: PanelProps) {
   const { t } = useTranslation();
+  if (tab === "community") return <CommunityTab party={party} canEdit={canEditCommunity} />;
   if (tab === "contracts") return <ContractsTab party={party} />;
   if (tab === "review")
     return v2e ? (
@@ -43,9 +47,10 @@ function PartnerPanel({ party, tab, role, roles, range, v2e }: PanelProps) {
   );
 }
 export function PartnerDetailPage({ search }: { search: PartnersSearch & { party: string } }) {
-  const { write } = useMe();
+  const { write, owner } = useMe();
+  const community = useShellPacks().community === true;
   const { party } = search;
-  const tab = search.tab ?? "overview";
+  const tab = search.tab === "community" && !community ? "overview" : (search.tab ?? "overview");
   const list = usePartnerRows();
   const profile = useQuery({
     queryKey: partnerKeys.profile(party),
@@ -84,6 +89,7 @@ export function PartnerDetailPage({ search }: { search: PartnersSearch & { party
         party={party}
         role={search.role}
         tab={tab}
+        community={community}
         contracts={counts.data?.find((c) => c.party === party)?.n ?? 0}
       />
       <div
@@ -94,6 +100,7 @@ export function PartnerDetailPage({ search }: { search: PartnersSearch & { party
       >
         <PartnerPanel
           party={party}
+          canEditCommunity={owner}
           tab={tab}
           role={role}
           roles={roles}

@@ -23,6 +23,7 @@ import {
   EV_APPROVED,
 } from "../domain/contract-flow-events.rules";
 import { approvalWrite } from "./approval.repo";
+import { contractStateRepo } from "./contract-state.repo";
 import { CREATOR_DEPARTMENTS_SQL } from "./flow-facts.repo";
 import { productLinksRepo } from "./product-links.repo";
 
@@ -36,7 +37,22 @@ const FACTS = (depts: string | null) => sql`jsonb_strip_nulls(jsonb_build_object
     'creator_department', ${depts}::jsonb,
     'new_partner', case when c.partner_key is null then null else not exists (
       select 1 from contracts.contracts o where o.tenant_id = c.tenant_id and o.partner_key = c.partner_key
-        and o.kind = 'contract' and o.id <> c.id and o.confirmed_at is not null) end))`;
+        and o.kind = 'contract' and o.id <> c.id and o.confirmed_at is not null) end,
+    -- CR-127 E1 · dữ kiện thêm của contract.submitted (spec §4.1), vẫn MỘT câu (scalar subquery, không N+1):
+    -- mức quan trọng theo giá trị + ngưỡng công ty (mặc định 500 triệu / 2 tỷ), phòng người gửi, điểm đối tác (chụp mới nhất theo vai), SP đã gắn.
+    'importance', case
+      when jsonb_typeof(c.fields -> 'total_value' -> 'value') <> 'number' then 'normal'
+      when (c.fields -> 'total_value' ->> 'value')::numeric >= coalesce((select s.critical_min from contracts.partner_settings s
+        where s.tenant_id = c.tenant_id), 2000000000) then 'critical'
+      when (c.fields -> 'total_value' ->> 'value')::numeric >= coalesce((select s.important_min from contracts.partner_settings s
+        where s.tenant_id = c.tenant_id), 500000000) then 'important'
+      else 'normal' end,
+    'submitter_group_ids', ${depts}::jsonb,
+    'partner_score', (select s.score from contracts.score_snapshots s where s.tenant_id = c.tenant_id
+      and s.party_key = c.partner_key and s.role = case when c.deal = 'buy' then 'supplier' else 'customer' end
+      order by s.at desc limit 1),
+    'product_ids', (select jsonb_agg(distinct i.product_id) from contracts.contract_items i
+      where i.tenant_id = c.tenant_id and i.contract_id = c.id and i.product_id is not null)))`;
 
 const deptsJson = (d: readonly string[] | null) => (d && d.length > 0 ? JSON.stringify(d) : null);
 
@@ -66,6 +82,28 @@ export function contractFlowRepo(tx: Tx, tid: string): ContractFlowRepo {
     },
     async holdForFlow(cid, aid, links) {
       const pl = links && links.length > 0 ? JSON.stringify(links) : null;
+      // CR-127 K1b · "Gửi" (có quy trình) = HĐ draft → processing qua CỔNG TRƯỚC khi đổi lượt (CAS `run_id = aid`, không đang đọc). Chỉ bỏ qua khi HĐ ĐÃ
+      // processing (backfill); conflict khác ⇒ false, chưa ghi gì. K3 thay bằng `submit.usecase`.
+      const [pre] = await tx.execute<{
+        started_by: string | null;
+      }>(sql`select x.started_by from contracts.approvals x
+        where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid and x.contract_id = ${cid}::uuid
+          and x.status = 'level1' and x.mode = 'machine' and x.engine_run_id is null`);
+      if (!pre) return false;
+      const g = await contractStateRepo(tx, tid).applyTransition({
+        contractId: cid,
+        ev: "submit",
+        actorId: pre.started_by,
+        ctx: { hasFlow: true },
+        runId: aid,
+        extra: sql`c.extract_state <> 'reading'`,
+      });
+      if (!g.ok) {
+        const [c] = await tx.execute<{ status: string }>(
+          sql`select status from contracts.contracts where id = ${cid}::uuid and tenant_id = ${tid}::uuid`,
+        );
+        if (c?.status !== "processing") return false;
+      }
       const rows = await tx.execute<{
         id: string;
       }>(sql`update contracts.approvals x set mode = 'engine',
@@ -97,7 +135,12 @@ export function contractFlowRepo(tx: Tx, tid: string): ContractFlowRepo {
           -- CR-124 · q3 · \`contract.received\`: mức quan trọng + dấu xác minh bên gửi (bản ghi nhận, cùng tenant) + loại HĐ — thêm cho MỌI HĐ,
           -- khoá thừa vô hại (FactsReader chỉ chọn khoá được hỏi).
           || coalesce((select jsonb_build_object('importance', i.importance, 'sender_verified', i.sender_verified)
-            from contracts.partner_inbox i where i.tenant_id = c.tenant_id and i.contract_id = c.id), '{}'::jsonb)
+            from contracts.partner_inbox i where i.tenant_id = c.tenant_id and i.contract_id = c.id
+            order by i.round desc limit 1), '{}'::jsonb) -- CR-127 K8 · nhiều vòng ⇒ vòng mới nhất
+          -- CR-127 · P2c · \`sign_together\` (như lúc phát \`contract.received\`): HĐ nhận gắn phiên ký chung chưa về «xử lý bình thường».
+          || jsonb_build_object('sign_together', exists(select 1 from contracts.sign_session_refs r
+            cross join lateral hub.sign_session_mine(r.session_id) m
+            where r.tenant_id = c.tenant_id and r.contract_id = c.id and r.side = 'to' and m.status <> 'fallback'))
           || jsonb_strip_nulls(jsonb_build_object('contract_type', c.type)) as facts, a.started_by
         from contracts.contracts c
         left join contracts.approvals a on a.id = c.run_id and a.tenant_id = c.tenant_id
@@ -110,49 +153,48 @@ export function contractFlowRepo(tx: Tx, tid: string): ContractFlowRepo {
 }
 
 type Applied = { n: number; links: unknown; startedBy: string | null; approvalId: string };
-const CONTRACT_STATUS: Record<ContractOutcome, string> = {
-  approved: "active",
-  rejected: "rejected",
-  returned: "needs_review", // Nháp: HĐ giữ needs_review nhưng bỏ `run_id` ⇒ không còn lượt duyệt, người gửi sửa rồi gửi lại
-};
+const FLOW_EV = {
+  approved: "flow_approved",
+  rejected: "flow_rejected",
+  returned: "flow_returned",
+} as const;
 
-/** MỘT câu: khoá HĐ + lượt đang mở → HĐ + lượt + event; chạy lại ⇒ 0 hàng (lượt không còn mở). */
+/** Khoá HĐ + lượt đang mở → đổi trạng thái qua CỔNG (CAS theo lượt) → cột phụ + lượt + event; chạy lại ⇒ n = 0 (lượt không còn mở). */
 async function applyQ(tx: Tx, tid: string, i: OutcomeInput, o: ContractOutcome): Promise<Applied> {
   const approved = o === "approved";
   const returned = o === "returned";
-  const [r] = await tx.execute<{
-    n: number;
-    links: unknown;
+  const none: Applied = { n: 0, links: null, startedBy: null, approvalId: "" };
+  const [a0] = await tx.execute<{
+    id: string;
     started_by: string | null;
-    approval_id: string | null;
-  }>(sql`with
-    a0 as (select a.id, a.contract_id, a.started_by from contracts.approvals a
+  }>(sql`select a.id, a.started_by
+    from contracts.approvals a
       join contracts.contracts c on c.id = a.contract_id and c.tenant_id = a.tenant_id and c.run_id = a.id
-      where a.tenant_id = ${tid}::uuid and a.contract_id = ${i.ref}::uuid and a.status in ('level1', 'level2')
-        and c.status = 'needs_review' for update of c),
-    u as (update contracts.contracts c set status = ${CONTRACT_STATUS[o]},
-        confirmed_at = case when ${approved}::boolean then now() else c.confirmed_at end,
-        confirmed_by = case when ${approved}::boolean then ${i.actorId}::uuid else c.confirmed_by end,
+    where a.tenant_id = ${tid}::uuid and a.contract_id = ${i.ref}::uuid and a.status in ('level1', 'level2')
+      and c.status = 'processing' for update of c`);
+  if (!a0) return none;
+  const g = await contractStateRepo(tx, tid).applyTransition({
+    contractId: i.ref,
+    ev: FLOW_EV[o],
+    actorId: i.actorId,
+    runId: a0.id,
+  });
+  if (!g.ok) return none;
+  const [r] = await tx.execute<{ links: unknown }>(sql`with
+    u as (update contracts.contracts c set
         -- CR-122 · bước Ký số đã khoá HĐ; Từ chối / Trả lại ⇒ mở khoá (HĐ chưa xác nhận không giữ khoá)
         locked_at = case when ${approved}::boolean then c.locked_at else null end,
         locked_by = case when ${approved}::boolean then c.locked_by else null end,
-        run_id = case when ${returned}::boolean then null else c.run_id end,
-        version = c.version + 1, updated_at = now()
-      from a0 where c.id = a0.contract_id and c.tenant_id = ${tid}::uuid returning c.id),
+        run_id = case when ${returned}::boolean then null else c.run_id end
+      where c.id = ${i.ref}::uuid and c.tenant_id = ${tid}::uuid returning c.id),
     a as (update contracts.approvals x set status = ${APPROVAL_STATUS_OF[o]}, mode = 'engine',
         engine_run_id = ${i.runId}::uuid, decided_by = ${i.actorId}::uuid, decided_at = now(), updated_at = now()
-      from u, a0 where x.id = a0.id and x.tenant_id = ${tid}::uuid returning x.pending_links),
+      from u where x.id = ${a0.id}::uuid and x.tenant_id = ${tid}::uuid returning x.pending_links),
     ev as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
       select ${tid}::uuid, u.id, ${o}, ${i.actorId}::uuid,
-        jsonb_build_object('run_id', a0.id::text, 'engine_run_id', ${i.runId}::text) from u, a0)
-    select (select count(*) from u)::int as n, (select pending_links from a limit 1) as links,
-      (select started_by from a0 limit 1) as started_by, (select id from a0 limit 1) as approval_id`);
-  return {
-    n: r?.n ?? 0,
-    links: r?.links ?? null,
-    startedBy: r?.started_by ?? null,
-    approvalId: r?.approval_id ?? "",
-  };
+        jsonb_build_object('run_id', ${a0.id}::text, 'engine_run_id', ${i.runId}::text) from u)
+    select (select pending_links from a limit 1) as links`);
+  return { n: 1, links: r?.links ?? null, startedBy: a0.started_by, approvalId: a0.id };
 }
 
 /** Đã áp trước đó? (lượt gắn đúng run này và đã đóng đúng trạng thái của kết cục). */
@@ -190,7 +232,7 @@ export async function attachFlowRun(
     await approvalWrite(tx); // CR-109: cờ tx-local cho policy ghi HĐ (khoá FOR UPDATE)
     const rows = await tx.execute<{ id: string }>(sql`with c as (
         select id, run_id from contracts.contracts
-        where id = ${i.ref}::uuid and tenant_id = ${tid}::uuid and status = 'needs_review' for update)
+        where id = ${i.ref}::uuid and tenant_id = ${tid}::uuid and status = 'processing' for update)
       update contracts.approvals x set engine_run_id = ${i.runId}::uuid, flow_steps = null, feedback = null,
         updated_at = now()
       from c where x.id = c.run_id and x.tenant_id = ${tid}::uuid and x.contract_id = c.id

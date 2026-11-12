@@ -102,14 +102,3 @@ export function attentionText(
   // ENGINE_RUN_<STATUS> dùng lại nhãn "run kết thúc bất thường" sẵn có; còn lại ⇒ câu chung.
   return { key: releaseNoteKey(reason) ?? "contracts.approval.engine.release.OTHER" };
 }
-
-/** Chủ hợp đồng/quản trị gói thấy nút xử lý; người khác chỉ thấy câu "báo chủ hợp đồng". */
-export const attentionActions = (
-  a: Pick<ApprovalAttention, "kind">,
-  owner: boolean,
-): { retry: boolean; cancelReopen: boolean; reopen: boolean; tellOwner: boolean } => ({
-  retry: owner && a.kind === "needs_decision",
-  cancelReopen: owner && a.kind === "needs_decision",
-  reopen: owner && a.kind === "stalled",
-  tellOwner: !owner,
-});

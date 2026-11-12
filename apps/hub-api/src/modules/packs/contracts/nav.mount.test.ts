@@ -1,5 +1,4 @@
-// CR-125 G7 · nguồn nav Sổ Hợp Tác: mục `contracts.partner` lấy số từ cổng đếm của kit (một lần gọi/lượt, song song với mục duyệt);
-// cổng vắng/lỗi ⇒ mục vẫn hiện, số 0; tính năng tắt ⇒ không mục và KHÔNG gọi cổng.
+// CR-127 U6 · nguồn nav Sổ Hợp Tác: chỉ còn mục duyệt (`contracts.partner` gỡ); `countedCap` của kit vẫn được test ở đây.
 import { describe, expect, it } from "bun:test";
 import type { PackNavCountPort, PackRunsBridge } from "../kit/public";
 import { countedCap } from "../kit/public";
@@ -15,41 +14,20 @@ const port = (n: number, seen: string[] = []): PackNavCountPort => ({
 const runs = (count: number): PackRunsBridge =>
   ({ port: { inboxOf: async () => ({ approver: true, count }) } }) as never;
 
-describe("contractsNavSource · contracts.partner", () => {
-  it("có số từ cổng đếm, đúng tenant người xem; mục duyệt đi sau, độc lập", async () => {
-    const seen: string[] = [];
-    const s = contractsNavSource(
-      async () => true,
-      runs(2),
-      async () => true,
-      port(5, seen),
-    );
-    expect(await s.caps(U)).toEqual([
-      { cap: "contracts.partner", count: 5 },
-      { cap: "contracts.review", count: 2 },
-    ]);
-    expect(seen).toEqual(["t1"]);
+describe("contractsNavSource · CR-127 U6 (đã gỡ cap contracts.partner)", () => {
+  it("chỉ còn mục duyệt; không còn mục «đối tác gửi»", async () => {
+    const s = contractsNavSource(async () => true, runs(2));
+    expect(await s.caps(U)).toEqual([{ cap: "contracts.review", count: 2 }]);
   });
 
-  it("tính năng tắt ⇒ không mục và không gọi cổng đếm", async () => {
-    const seen: string[] = [];
-    const s = contractsNavSource(
-      async () => true,
-      undefined,
-      async () => false,
-      port(5, seen),
-    );
+  it("không có quyền đọc ⇒ không mục", async () => {
+    const s = contractsNavSource(async () => false, runs(2));
     expect(await s.caps(U)).toEqual([]);
-    expect(seen).toEqual([]);
   });
 
-  it("không có cổng đếm ⇒ mục hiện, số 0 (như trước)", async () => {
-    const s = contractsNavSource(
-      async () => true,
-      undefined,
-      async () => true,
-    );
-    expect(await s.caps(U)).toEqual([{ cap: "contracts.partner", count: 0 }]);
+  it("không có cầu duyệt ⇒ không mục", async () => {
+    const s = contractsNavSource(async () => true, undefined);
+    expect(await s.caps(U)).toEqual([]);
   });
 });
 

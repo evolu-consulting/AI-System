@@ -2,17 +2,9 @@
 // RLS FORCE): ① `set_config` ② `SELECT … FOR UPDATE` một hàng (0 hàng ⇒ not_found = 404 giống id lạ; `version` lệch ⇒ stale = 409)
 // ③ `applyEdits` trong RAM (giá trị y cũ ⇒ không đổi, trả bản hiện tại, không tăng version, không ghi) ④ một CTE UPDATE + INSERT
 // event `field_edited` ⑤ outbox `{contract, upsert}` = 4 câu cố định. Khoá `edited` giữ khi trích lại (`mergeFields`, HD2).
-// Review HD3 S1: luật `editVerdict` — trường rẽ nhánh khi HĐ đang qua duyệt sau cấp 1 ⇒ 409 `CONTRACT_IN_APPROVAL` (hỏi engine
-// giai đoạn run chỉ khi cần, +1 câu hub). CR-097 K1 · HD-FR-100: HĐ đã khoá (`locked_at`) ⇒ trường pháp lý 409 `CONTRACT_LOCKED`
-// cho mọi người (`lockVerdict`, trước luật duyệt); chỉ trường vận hành (`notice_days`) sửa được. D3-13 (sửa ⇒ mở lại duyệt) bỏ.
+// CR-127 K4 · BR-39: HĐ PROCESSING / DONE ⇒ nội dung khoá cho mọi người (`lockVerdict`) ⇒ 409 `CONTRACT_LOCKED` ("tải phiên bản mới để sửa");
+// bỏ "sửa khi đang duyệt" (`approval-edit.rules`, seam `patchGuard`) và "Mở lại".
 import type { KitTxRepos, PackUow, PackWho } from "../../kit/public";
-import {
-  type ApprovalEditPolicy,
-  DEFAULT_EDIT_POLICY,
-  editVerdict,
-  needsRunPhase,
-  type RunPhase,
-} from "../domain/approval-edit.rules";
 import {
   applyEdits,
   type ContractFieldKey,
@@ -27,13 +19,10 @@ export type LockedContract = {
   version: number;
   updated_at: string;
   fields: unknown;
-  /** HD3 · vắng (fake cũ) ⇒ coi như không trong flow. */
-  status?: string;
-  run_id?: string | null;
-  /** V2-A · C3: cờ duyệt của tenant (vắng ⇒ coi như bật). */
-  approval?: boolean;
-  /** CR-097 K1 · `locked_at is not null` (vắng ⇒ chưa khoá). */
-  locked?: boolean;
+  /** CR-127 K4 · trạng thái HĐ (khoá nội dung khi processing/done). */
+  status: string;
+  /** Giao dịch (`deal`) không thuộc khoá K4. */
+  doc_type?: string;
 };
 export type SavedContract = { version: number; updated_at: string };
 
@@ -62,13 +51,7 @@ export type PatchFieldsResult =
   | { kind: "ok"; out: PatchFieldsOk }
   | { kind: "not_found" }
   | { kind: "stale"; current: { version: number }; updated_at: string }
-  | { kind: "in_approval" | "locked" };
-
-/** HD3 · seam duyệt: giai đoạn run (engine) + chính sách; vắng ⇒ hành vi HD1. */
-export type PatchApprovalGuard = {
-  phase(who: PackWho, runId: string): Promise<RunPhase>;
-  policy?: ApprovalEditPolicy;
-};
+  | { kind: "locked" };
 
 export type PatchFields = (
   who: PackWho,
@@ -76,28 +59,12 @@ export type PatchFields = (
   input: PatchFieldsInput,
 ) => Promise<PatchFieldsResult>;
 
-type Deps = {
-  uow: PackUow<KitTxRepos & { fields: ContractFieldsRepo }>;
-  approval?: PatchApprovalGuard;
-};
-
-/** K1 khoá cứng (mọi tenant) rồi S1 · phán quyết theo trạng thái + giai đoạn run (hỏi engine chỉ khi đổi trường rẽ nhánh). */
-async function verdictOf(d: Deps, who: PackWho, cur: LockedContract, changed: string[]) {
-  if (lockVerdict({ locked: cur.locked === true, changed }) === "locked") return "locked";
-  // V2-A · C3: tenant tắt duyệt ⇒ không có lượt duyệt để lách.
-  if (!d.approval || !cur.status || cur.approval === false) return "ok";
-  const status = cur.status;
-  const run = cur.run_id ?? null;
-  const phase =
-    run && needsRunPhase(status, true, changed) ? await d.approval.phase(who, run) : "none";
-  return editVerdict({ status, changed, phase, policy: d.approval.policy ?? DEFAULT_EDIT_POLICY });
-}
+type Deps = { uow: PackUow<KitTxRepos & { fields: ContractFieldsRepo }> };
 
 type Tx = KitTxRepos & { fields: ContractFieldsRepo };
 
-/** Phần trong tx: khoá hàng → kiểm version → sửa trong RAM → luật khoá + duyệt → ghi. */
+/** Phần trong tx: khoá hàng → kiểm version → sửa trong RAM → luật khoá nội dung → ghi. */
 async function applyPatch(
-  d: Deps,
   r: Tx,
   q: { who: PackWho; id: string; input: PatchFieldsInput },
 ): Promise<PatchFieldsResult> {
@@ -110,8 +77,8 @@ async function applyPatch(
   if (changes.length === 0)
     return { kind: "ok", out: { id, version: cur.version, updated_at: cur.updated_at, fields } };
   const changed = changes.map((c) => c.key);
-  const verdict = await verdictOf(d, who, cur, changed);
-  if (verdict !== "ok") return { kind: verdict };
+  if (lockVerdict({ status: cur.status, docType: cur.doc_type, changed }) === "locked")
+    return { kind: "locked" };
   const saved = await r.fields.save(id, {
     fields,
     changes,
@@ -123,5 +90,5 @@ async function applyPatch(
 }
 
 export function patchFields(d: Deps): PatchFields {
-  return (who, id, input) => d.uow.tenant(who, (r) => applyPatch(d, r, { who, id, input }));
+  return (who, id, input) => d.uow.tenant(who, (r) => applyPatch(r, { who, id, input }));
 }

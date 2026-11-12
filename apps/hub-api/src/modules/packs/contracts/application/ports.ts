@@ -1,6 +1,7 @@
 ﻿// HD-FR-07 · D-03 · D-10 · HD1 plan §4 §6: cổng đọc của gói hợp đồng (lớp 2 — chỉ kiểu). Repo dựng trong tx `PackUow`
-// (role `contracts_rw` + `app.tenant_id`, RLS FORCE). Kiểu DTO (`@ai/contracts`) chỉ ở adapter ⇒ cổng generic theo dòng/facets.
 import type { KitTxRepos } from "../../kit/public";
+// (role `contracts_rw` + `app.tenant_id`, RLS FORCE). Kiểu DTO (`@ai/contracts`) chỉ ở adapter ⇒ cổng generic theo dòng/facets.
+import type { ListDeleteCtx } from "../domain/delete-contract.rules";
 import type { AppendixRepo } from "./appendix.usecase";
 import type { CategoriesRepo } from "./categories.usecase";
 import type { ContractFieldsRepo } from "./patch-fields.usecase";
@@ -13,6 +14,9 @@ export type ContractSortDir = "asc" | "desc";
 export type ContractListInput = {
   q?: string | undefined;
   status?: readonly string[] | undefined;
+  effect?: readonly string[] | undefined;
+  /** CR-127 K8 · nguồn HĐ: `upload` | `partner`. */
+  source?: readonly string[] | undefined;
   owner?: readonly string[] | undefined;
   category?: readonly string[] | undefined;
   seller?: readonly string[] | undefined;
@@ -23,7 +27,7 @@ export type ContractListInput = {
   value_min?: number | undefined;
   value_max?: number | undefined;
   /** Gap #10: lọc ngày (cột + cửa sổ tương đối + khoảng). */
-  date_field?: "end_date" | "action_deadline" | undefined;
+  date_field?: "end_date" | undefined;
   due?: "overdue" | "30" | "60" | "90" | undefined;
   date_from?: string | undefined;
   date_to?: string | undefined;
@@ -41,6 +45,10 @@ export type ContractListInput = {
 /** Bộ lọc gửi xuống SQL văn bản cố định: `null` = không lọc (mọi tham số luôn gửi). */
 export type ContractListFilter = {
   status: readonly string[] | null;
+  /** CR-127 K2a-1 · BR-05: lọc Hiệu lực (`c.effect`); vắng/null ⇒ không lọc. */
+  effect?: readonly string[] | null;
+  /** CR-127 K8 · `partner` ⇒ `source = 'partner_inbox'`; `upload` ⇒ còn lại; cả hai/null ⇒ không lọc. */
+  source?: readonly string[] | null;
   owner: readonly string[] | null;
   category: readonly string[] | null;
   seller: readonly string[] | null;
@@ -56,8 +64,8 @@ export type ContractListFilter = {
   docs?: boolean;
   valueMin: number | null;
   valueMax: number | null;
-  /** Gap #10: cột ngày (`end_date` | `action_deadline`) + khoảng gồm hai đầu (`due` đã quy ra ngày ở use case); cả hai null = không lọc. */
-  dateField: "end_date" | "action_deadline";
+  /** Gap #10: cột ngày (`end_date`) + khoảng gồm hai đầu (`due` đã quy ra ngày ở use case); cả hai null = không lọc. */
+  dateField: "end_date";
   dateFrom: string | null;
   dateTo: string | null;
   /** Mẫu LIKE trên `search_key` (đã fold, thoát `% _ \`, bọc `%`). */
@@ -91,13 +99,15 @@ export type ContractExportRow = {
   type: string | null;
   direction: string | null;
   status: string;
+  /** CR-127 K2a-1: hiệu lực (`done`) + trạng thái đọc (`draft`) cho nhãn cột Trạng thái. */
+  effect?: string | null;
+  extractState?: string | null;
   seller: string | null;
   buyer: string | null;
   sellerSigner: string | null;
   buyerSigner: string | null;
   value: number | null;
   endDate: string | null;
-  actionDeadline: string | null;
   ownerUserId: string | null;
   categories: string[];
   updatedAt: Date;
@@ -109,14 +119,20 @@ export type ContractFileRef = { org: string; fileId: string };
 /** Đọc danh sách/facets/chi tiết: mỗi hàm = MỘT câu SQL (route = 2 câu gồm `set_config`). id lạ/tenant khác ⇒ `null`. */
 export type ContractsReadRepo<Row, Facets, Detail = unknown> = {
   /** V2-A: `today` (ngày lịch tenant) có ⇒ kèm `progress` (giai đoạn + quá hạn); vắng ⇒ không tính. */
-  list(f: ContractListFilter, today?: string): Promise<ContractListPage<Row>>;
+  list(
+    f: ContractListFilter,
+    today?: string,
+    /** CR-128 L1: người gọi + vai (một lần/lệnh) ⇒ mỗi hàng có `can_delete` theo `canDeleteContract`. */
+    del?: ListDeleteCtx,
+  ): Promise<ContractListPage<Row>>;
   facets(): Promise<Facets>;
   /** Gap #8: mọi hàng khớp bộ lọc (bỏ phân trang), tối đa `cap + 1` (dòng thừa = báo cắt), `total` = số khớp. MỘT câu + một câu loại hàng. */
   exportRows(
     f: ContractListFilter,
     cap: number,
   ): Promise<{ total: number; rows: ContractExportRow[] }>;
-  detail(id: string, today?: string): Promise<Detail | null>;
+  /** `actor` = người gọi (để tính `can` theo quyền); vắng ⇒ các nút cần quyền = false. */
+  detail(id: string, today?: string, actor?: string): Promise<Detail | null>;
   /** `source_text` (Markdown); HĐ không có hoặc source rỗng (`null`) ⇒ `null`. */
   source(id: string): Promise<string | null>;
   fileOf(id: string): Promise<ContractFileRef | null>;

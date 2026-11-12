@@ -15,9 +15,13 @@ import {
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { RunFacts, Viewer } from "../domain/runs/run-access.rules";
+import { voteAs, voteProgress } from "../domain/tasks/all-vote.rules";
 import { alsoGroupsOf, canAct, headGate } from "../domain/tasks/task-access.rules";
 import { autofixDecisionOptions, isAutofixReason } from "../runs/autofix.rules";
-import { approverSql } from "./head-gate.sql";
+import { allVoteOf, allVoteSql } from "./all-vote.sql";
+import { claimFields, evidenceModeOf } from "./claim-fields";
+import { approverSql, groupHeadSql } from "./head-gate.sql";
+import { delegatedLive } from "./task-grants.sql";
 
 export type TaskRow = {
   id: string;
@@ -127,12 +131,25 @@ type TaskSql = {
   head_gate?: string | null;
   /** prod-fix2 · Group "cũng quyết" của stage (`after.also_group_ids`). */
   also_group_ids?: string[];
+  /** CR-127 · E4 · `after.evidence` của stage (spec §4.2 `TaskDetail.evidence_mode`). */
+  evidence_mode?: "opinion" | "opinion_plus";
+  /** CR-127 · E2 · Nhận việc (0131). */
+  need?: "one" | "head" | "all";
+  claimed_by?: string | null;
+  claimed_at?: Ts | null;
+  claimer_name?: string | null;
+  /** CR-127 · RA1 · trưởng phòng của nhóm được giao (cho cờ `can_reassign`). */
+  assignee_head?: string | null;
+  /** CR-127 · E5 · `allVoteSql` (chỉ task `need='all'`). */
+  all_vote?: unknown;
 };
 type GrantSql = {
   task_id: string;
   user_id: string | null;
   group_id: string | null;
-  via: "initial" | "forward" | "escalated";
+  via: "initial" | "forward" | "escalated" | "delegated";
+  /** CR-127 · E3 · hàng uỷ quyền: người được giao thật (A) mà `user_id` (B) làm thay. */
+  on_behalf_of: string | null;
   from_user_id: string | null;
   note: string | null;
   created_at: Ts;
@@ -147,6 +164,7 @@ type StageSnap = {
     exclude_starter?: boolean;
     head_only?: boolean;
     also_group_ids?: string[];
+    evidence?: string;
   } | null;
 } | null;
 
@@ -163,6 +181,7 @@ const withStage = (r: TaskSql & { stage: StageSnap | string }): TaskSql => {
     starter_excluded: st?.after?.exclude_starter === true,
     head_gate: headGate(st?.after, r.group_head ?? null), // contract-flow S1b
     also_group_ids: alsoGroupsOf(st?.after), // prod-fix2
+    evidence_mode: evidenceModeOf(st?.after?.evidence), // CR-127 · E4
   };
 };
 
@@ -174,6 +193,9 @@ async function taskRows(tx: Tx, v: ViewerCtx, ids: readonly string[]): Promise<T
       pr.tenant_id, pr.started_by, pr.status as run_status, pr.back_rounds, pr.back_limit,
       pr.pack_key is not null as pack_bound,
       t.remind_count::int as remind_count,
+      t.need, t.claimed_by, t.claimed_at, (select coalesce(nullif(cu.display_name, ''), cu.username) from admin.users cu
+        where cu.id = t.claimed_by and cu.tenant_id = t.tenant_id) as claimer_name, ${allVoteSql("t")} as all_vote,
+      ${groupHeadSql("t")} as assignee_head,
       coalesce(${approverSql("pr.snapshot->'stages'->(s.stage_idx::int)", "t.tenant_id")}, (select d.head_user_id from admin.departments d where d.tenant_id = t.tenant_id
         and d.group_id = coalesce(t.assignee_group_id,
           nullif(pr.snapshot->'stages'->(s.stage_idx::int)->'after'->>'group_id', '')::uuid))) as group_head,
@@ -196,12 +218,15 @@ async function taskRows(tx: Tx, v: ViewerCtx, ids: readonly string[]): Promise<T
 
 async function grantRows(tx: Tx, v: ViewerCtx, ids: readonly string[]) {
   const grants = await tx.execute<GrantSql>(sql`
-    select a.task_id, a.user_id, a.group_id, a.via, a.from_user_id, a.note, a.created_at
+    select a.task_id, a.user_id, a.group_id, a.via, a.from_user_id, a.note, a.created_at, a.on_behalf_of
     from hub.review_task_assignees a
     where a.task_id = any(${`{${ids.join(",")}}`}::uuid[]) and a.tenant_id = ${v.tenantId}
+      and ${delegatedLive("a")}
     order by a.created_at, a.id`);
   const userIds = [
-    ...new Set(grants.flatMap((g) => [g.user_id, g.from_user_id]).filter((x) => x !== null)),
+    ...new Set(
+      grants.flatMap((g) => [g.user_id, g.from_user_id, g.on_behalf_of]).filter((x) => x !== null),
+    ),
   ];
   const users = await tx.execute<{ id: string; display_name: string | null; username: string }>(sql`
     select id, display_name, username from admin.users
@@ -240,12 +265,18 @@ function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string,
   const extraGroupIds = [...(escalatedGroupId ? [escalatedGroupId] : []), ...also];
   const facts = { kind: r.kind, status: r.status, reason: r.reason, userIds, groupId: r.group_id };
   const starterExcluded = r.starter_excluded === true; // N2-FR-05
+  // CR-127 · E3 · người xem đang làm thay A (hàng uỷ quyền còn hiệu lực) ⇒ nhãn "Thay A"; E5 · bỏ phiếu thay A.
+  const behalf = mine.find((g) => g.via === "delegated" && g.user_id === v.userId)?.on_behalf_of;
+  const { allVote, votes } = allVoteView(v.userId, r, mine, behalf); // CR-127 · E5
   const task = {
     ...facts,
     reviewGroupId: r.review_group_id,
     extraGroupIds,
     starterExcluded,
     headGate: r.head_gate ?? null, // contract-flow S1b
+    need: r.need ?? null, // CR-127 · E2
+    claimedBy: r.claimed_by ?? null,
+    allVote,
   };
   const inGroup = (g: string | null) => g !== null && v.groupIds.has(g);
   const assignee =
@@ -282,9 +313,35 @@ function detailOf(v: ViewerCtx, r: TaskSql, mine: GrantSql[], names: Map<string,
   });
   // Review HD3 m9 · D3-07: người bắt đầu ở stage `exclude_starter` không được thấy `use_current` (engine sẽ 403).
   const hideUse = starterExcluded && r.kind === "decision" && r.started_by === v.userId;
-  return hideUse && detail.options
-    ? { ...detail, options: detail.options.filter((o) => o !== "use_current") }
-    : detail;
+  const out = {
+    ...detail,
+    ...claimFields(r, v),
+    ...votes, // CR-127 · E5 · tiến độ x/n (chỉ số đếm — BR-26)
+    ...evidenceField(r),
+    ...(behalf && { delegated_from: nameRef(names, behalf) }),
+  };
+  return hideUse && out.options
+    ? { ...out, options: out.options.filter((o) => o !== "use_current") }
+    : out;
+}
+
+/** CR-127 · E5 · task `need='all'`: phiếu + tư cách bỏ phiếu của người xem (cho `canAct`); task khác ⇒ null. */
+function allVoteView(
+  viewerId: string,
+  r: TaskSql,
+  mine: GrantSql[],
+  behalf: string | null | undefined,
+) {
+  const av = r.need === "all" && r.kind === "review" ? allVoteOf(r.all_vote) : null;
+  if (!av) return { allVote: null, votes: {} };
+  const as = voteAs(viewerId, av.voters, av.votes, behalf ?? null).kind;
+  const escalatedUser = mine.some((g) => g.via === "escalated" && g.user_id === viewerId);
+  return { allVote: { as, escalatedUser }, votes: { votes: voteProgress(av.voters, av.votes) } };
+}
+
+/** CR-127 · E4 · `evidence_mode` chỉ cho task duyệt của bước có cấu hình bằng chứng. */
+function evidenceField(r: TaskSql): Pick<TaskDetail, "evidence_mode"> {
+  return r.kind === "review" && r.evidence_mode ? { evidence_mode: r.evidence_mode } : {};
 }
 
 /** Task theo thứ tự tạo; id không thấy (RLS/tenant) bị bỏ. 3 truy vấn cố định (task, grant, tên) bất kể số task. */

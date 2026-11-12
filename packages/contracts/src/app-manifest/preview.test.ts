@@ -90,9 +90,9 @@ describe("previewApp · Sổ Hợp Tác", () => {
     });
   });
 
-  test("CR-121 D-4 · duyệt theo quy trình KHÔNG cần tính năng thêm: đủ mức Sửa là hiện, khe chạy kèm quy trình đang gán", () => {
+  test("CR-121 D-4 · duyệt theo quy trình KHÔNG cần tính năng thêm: đủ mức Sửa là hiện, khe chạy kèm quy trình đang gán (CR-127 Z3c: khe Tiếp nhận)", () => {
     const assign = [
-      { slot: "contracts.approval", def_name: "Duyệt 3 phòng", rel_version: 2, is_default: false },
+      { slot: "contracts.intake", def_name: "Duyệt 3 phòng", rel_version: 2, is_default: false },
     ];
     const p = previewApp(CONTRACTS_MANIFEST, sht("contracts-write"), [], assign);
     const act = navOf(p.member).contracts?.actions.find((a) => a.key === "approve-flow");

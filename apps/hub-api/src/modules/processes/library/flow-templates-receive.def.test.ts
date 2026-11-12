@@ -15,11 +15,11 @@ const SQL = readFileSync(
   "utf8",
 );
 
-// Bước (stages) hiện hành = bản sau cùng ở 0124 (UPDATE từ seed 0121); id + trigger giữ ở 0121.
+// Bước (stages) hiện hành = bản sau cùng ở 0134 (UPDATE từ 0124 ← seed 0121; CR-127 Z2: Cần + Bằng chứng); id + trigger giữ ở 0121.
 const SQL_STAGES = readFileSync(
   join(
     import.meta.dir,
-    "../../../../../../packages/db/migrations-hub/0124_partner_receive_open_review.sql",
+    "../../../../../../packages/db/migrations-hub/0134_cr127_review_templates.sql",
   ),
   "utf8",
 );
@@ -34,7 +34,7 @@ describe("flow mẫu nhận HĐ đối tác", () => {
       const outcomes = t.stages().flatMap((s) => (s.outcome ? [s.outcome] : []));
       expect(outcomes.sort()).toEqual(["confirmed", "declined", "returned"]);
     });
-    it(`${t.key}: seed hub 0121 (id, trigger) + 0124 (bước duyệt không loại người gây sự kiện) khớp nguồn TS`, () => {
+    it(`${t.key}: seed hub 0121 (id, trigger) + 0134 (bước duyệt: không loại người gây sự kiện, Cần + Bằng chứng) khớp nguồn TS`, () => {
       expect(SQL_STAGES).toContain(`$j$${JSON.stringify(t.stages())}$j$`);
       expect(SQL).toContain(`$j$${JSON.stringify(receiveTriggerOf(t))}$j$`);
       expect(SQL).toContain(`'${t.id}'`);

@@ -11,8 +11,16 @@
         "deadline": "Hạn hợp đồng",
         "reminder": "Nhắc hạn"
       },
-      "group": { "late": "Trễ hạn", "today": "Hôm nay", "upcoming": "Sắp tới" },
-      "when": { "late": "Trễ {{n}} ngày", "today": "Hôm nay", "left": "Còn {{n}} ngày" },
+      "group": {
+        "late": "Trễ hạn",
+        "today": "Hôm nay",
+        "upcoming": "Sắp tới"
+      },
+      "when": {
+        "late": "Trễ {{n}} ngày",
+        "today": "Hôm nay",
+        "left": "Còn {{n}} ngày"
+      },
       "kind": {
         "followup": "Hẹn nhắc",
         "obligation": "Thanh toán",
@@ -39,7 +47,11 @@
         "remind": "Hẹn nhắc",
         "compare": "So sánh giá"
       },
-      "pick": { "postpone": "Ngày khách hẹn", "snooze": "Nhắc lại lúc", "remind": "Nhắc tôi lúc" },
+      "pick": {
+        "postpone": "Ngày khách hẹn",
+        "snooze": "Nhắc lại lúc",
+        "remind": "Nhắc tôi lúc"
+      },
       "emptyTitle": "Không có việc nào cần làm",
       "emptyBody": "Hẹn nhắc, khoản thu/trả tới hạn và hợp đồng cần xử lý của bạn sẽ hiện ở đây.",
       "truncated": "Danh sách dài nên chỉ hiện phần gấp nhất.",
@@ -50,6 +62,148 @@
         "VALIDATION_ERROR": "Dữ liệu chưa hợp lệ.",
         "NOT_FOUND": "Việc này không còn nữa — tải lại trang.",
         "PACK_FORBIDDEN": "Bạn không có quyền thao tác này."
+      },
+      "u4": {
+        "someone": "người khác",
+        "sign": {
+          "aria": "Ô ký tay",
+          "hint": "Ký bằng chuột hoặc ngón tay",
+          "done": "Đã ký",
+          "clear": "Xoá nét, ký lại"
+        },
+        "evidence": {
+          "note": "Ý kiến của bạn",
+          "plusHint": "Bước này cần ý kiến và chữ ký tay hoặc ít nhất một tệp đính kèm.",
+          "signature": "Chữ ký tay",
+          "files": "Tệp đính kèm (tối đa 5)",
+          "remove": "Bỏ",
+          "uploadFail": "Không tải được tệp. Kiểm tra mạng và dung lượng (tệp ≤ 10 MB, chữ ký ≤ 200 KB) rồi thử lại.",
+          "issue": {
+            "note": "Ghi ý kiến của bạn trước khi gửi.",
+            "noteLong": "Ý kiến tối đa 4.000 ký tự — rút gọn rồi gửi.",
+            "proof": "Cần ký tay hoặc đính kèm ít nhất một tệp.",
+            "tooManyFiles": "Tối đa 5 tệp."
+          }
+        },
+        "claim": {
+          "unclaimed": "Chưa ai nhận",
+          "take": "Nhận việc",
+          "other": "{{who}} đang xử lý",
+          "mine": "Bạn đang giữ việc này",
+          "release": "Trả về nhóm",
+          "votes": "Đã duyệt {{n}}",
+          "behalf": "Thay {{who}}",
+          "locked": {
+            "unclaimed": "Bấm Nhận việc trước khi duyệt.",
+            "other": "Việc đang do người khác xử lý."
+          }
+        },
+        "reassign": {
+          "open": "Chuyển cho…",
+          "who": "Chuyển cho",
+          "pick": "Chọn người trong phòng",
+          "reason": "Lý do chuyển (bắt buộc)",
+          "need": "Chọn người nhận và ghi lý do để chuyển.",
+          "confirm": "Chuyển việc"
+        },
+        "err": {
+          "TASK_CLAIMED": "{{who}} vừa nhận việc này.",
+          "TASK_NOT_CLAIMABLE": "Việc này không cần nhận.",
+          "TASK_CLOSED": "Việc đã xong.",
+          "TASK_NOT_CLAIMED": "Bấm Nhận việc trước khi xác nhận mốc.",
+          "NOT_CLAIMER": "Bạn không giữ việc này.",
+          "NOT_GROUP_HEAD": "Chỉ trưởng phòng hoặc quản trị công ty giao lại được.",
+          "TARGET_NOT_IN_GROUP": "Người được giao phải thuộc phòng của bước này.",
+          "FORWARD_REASON_REQUIRED": "Ghi lý do chuyển việc.",
+          "DELEGATE_SELF": "Không uỷ quyền cho chính mình.",
+          "DELEGATE_CHAIN": "Người này đang uỷ quyền cho người khác — chọn người khác.",
+          "DELEGATE_NOT_SIGNER": "Uỷ quyền ký số chỉ cho người trong nhóm Người ký HĐ.",
+          "DELEGATE_NO_ACCESS": "Người được uỷ quyền không xem được hợp đồng này.",
+          "DELEGATE_FORBIDDEN": "Chỉ quản trị công ty hoặc trưởng phòng đặt uỷ quyền thay người khác.",
+          "EVIDENCE_REQUIRED": "Cần ý kiến và chữ ký hoặc ít nhất một tệp.",
+          "FEEDBACK_REQUIRED": "Ghi ý kiến khi Trả lại hoặc Từ chối.",
+          "CLAIM_HOURS_RANGE": "Số giờ từ 1 tới 168.",
+          "INBOX_NOT_AWAITING": "Hợp đồng này không chờ bạn quyết.",
+          "INBOX_DECISION_FORBIDDEN": "Chỉ người phụ trách hợp đồng nhận hoặc quản trị công ty quyết được.",
+          "SIGNER_GROUP_INVALID": "Nhóm «Người ký HĐ» phải là nhóm của công ty bạn — chọn lại trong danh sách.",
+          "PARTNER_OWNER_INVALID": "Người phụ trách phải là thành viên đang dùng của công ty — chọn lại trong danh sách."
+        },
+        "row": {
+          "milestone": "Xác nhận mốc"
+        },
+        "inbox": {
+          "title": "Đối tác {{sender}} gửi hợp đồng — bạn quyết định",
+          "note": "Công ty chưa có quy trình nhận hợp đồng",
+          "accept": "Đồng ý",
+          "return": "Trả lại để sửa",
+          "reject": "Từ chối",
+          "open": "Xem hợp đồng"
+        },
+        "deleg": {
+          "title": "Uỷ quyền khi vắng",
+          "sub": "Việc mới giao cho người vắng sẽ tự sang người làm thay",
+          "forUser": "Đặt uỷ quyền cho",
+          "forMe": "Chính tôi",
+          "person": "Người làm thay",
+          "personHint": "Bất kỳ ai trong công ty có quyền xem hợp đồng",
+          "pick": "Chọn người…",
+          "from": "Từ ngày",
+          "to": "Tới hết ngày",
+          "kinds": "Uỷ quyền việc gì",
+          "esignHint": "Ký số chỉ chọn được khi người làm thay thuộc nhóm «Người ký HĐ».",
+          "kind": {
+            "approve": "Duyệt",
+            "form": "Bổ sung thông tin",
+            "milestone": "Xác nhận mốc",
+            "esign": "Ký số"
+          },
+          "issue": {
+            "person": "Chọn người làm thay.",
+            "self": "Không uỷ quyền cho chính mình.",
+            "range": "Chọn đủ ngày bắt đầu và ngày kết thúc (kết thúc không trước bắt đầu).",
+            "kinds": "Chọn ít nhất một loại việc."
+          },
+          "save": "Lưu uỷ quyền",
+          "saved": "Đã lưu uỷ quyền.",
+          "revoke": "Thu hồi",
+          "row": "{{from}} → {{to}} · {{start}} – {{end}}"
+        },
+        "settings": {
+          "title": "Nhận việc và người ký",
+          "hours": "Thời gian tự trả việc đã nhận",
+          "hoursHint": "Việc đã nhận mà chưa quyết sau số giờ này sẽ tự về nhóm (1–168 giờ).",
+          "signers": "Nhóm Người ký HĐ",
+          "signersHint": "Chỉ người trong nhóm này ký số và nhận uỷ quyền ký số được.",
+          "signersNone": "Chưa chọn nhóm",
+          "save": "Lưu cài đặt",
+          "saved": "Đã lưu cài đặt."
+        },
+        "record": {
+          "title": "Hồ sơ duyệt",
+          "pdf": "Tải PDF",
+          "pdfError": "Không tải được PDF hồ sơ duyệt. Bạn cần quyền xem hồ sơ này — kiểm tra rồi thử lại.",
+          "loadError": "Không tải được hồ sơ duyệt. Tải lại trang rồi thử lại.",
+          "empty": "Chưa có bước duyệt nào được quyết.",
+          "behalf": "thay {{who}}",
+          "action": {
+            "approve": "Duyệt",
+            "return": "Trả lại",
+            "reject": "Từ chối"
+          },
+          "hidden": "Có ý kiến/chữ ký kèm theo — chỉ người trong quy trình xem được.",
+          "signature": "Xem chữ ký",
+          "file": "Tải tệp"
+        },
+        "changes": {
+          "title": "Đã đổi so với lần trước",
+          "loadError": "Không tải được phần đã đổi. Tải lại trang rồi thử lại.",
+          "none": "Chưa có thay đổi nào so với lần gửi trước.",
+          "returnNote": "Lần {{n}} bạn trả lại:",
+          "field": "Trường",
+          "before": "Lần trước",
+          "after": "Lần này",
+          "clauses": "Văn bản đã đổi ở {{n}} đoạn."
+        }
       }
     },
     "sourcing": {
@@ -88,7 +242,10 @@
         "risk": "Rủi ro",
         "atRisk": "{{n}} dòng"
       },
-      "risk": { "source_expiring": "Nguồn sắp hết hạn", "source_ended": "Nguồn hết hiệu lực" },
+      "risk": {
+        "source_expiring": "Nguồn sắp hết hạn",
+        "source_ended": "Nguồn hết hiệu lực"
+      },
       "cardSale": "Nguồn hàng & lãi",
       "cardPurchase": "Hàng bán đang mua từ hợp đồng này",
       "auto": "Tự chọn: giá mua thấp nhất đang áp dụng",
@@ -102,6 +259,282 @@
         "NOT_FOUND": "Hợp đồng hoặc dòng hàng không còn — tải lại trang.",
         "PACK_FORBIDDEN": "Người xem không được đổi nguồn.",
         "VALIDATION_ERROR": "Dữ liệu chưa hợp lệ."
+      }
+    },
+    "u6": {
+      "source": {
+        "upload": "Mình tải lên",
+        "partner": "Đối tác gửi"
+      },
+      "extract": {
+        "reading": "AI đang đọc",
+        "failed": "AI chưa đọc được"
+      },
+      "waiting": {
+        "anyStep": "Đang duyệt",
+        "until": "hạn {{date}}",
+        "over": "quá hạn"
+      },
+      "trade": {
+        "which": "Thuộc hợp đồng nào?",
+        "whichHint": "Đối tác này có hợp đồng còn hiệu lực. Chọn mốc cần ghi nhận, hoặc chọn Không theo hợp đồng.",
+        "milestone": "Mốc “{{title}}” · hạn {{due}}",
+        "remaining": "còn {{n}}",
+        "late": "đã quá hạn",
+        "kind": {
+          "delivery": "Giao hàng",
+          "receipt": "Nhận hàng",
+          "collect": "Thu tiền",
+          "pay": "Chi tiền"
+        },
+        "none": "Không theo hợp đồng",
+        "noneHint": "Giao dịch lẻ, tính theo bảng giá hiện tại.",
+        "reason": "Lý do không theo hợp đồng",
+        "reasonHint": "Vì sao giao dịch này không thuộc hợp đồng nào?",
+        "evidence": "Bằng chứng",
+        "evidenceHint": "Ý kiến và ít nhất chữ ký hoặc một tệp — giống ô bằng chứng ở bước Duyệt.",
+        "openContract": "Mở hợp đồng",
+        "linked": {
+          "posted": "Đã ghi nhận vào mốc của hợp đồng.",
+          "pending": "Đang kiểm duyệt — kho và công nợ chỉ đổi khi người duyệt đồng ý.",
+          "split": "Phần còn lại được tách thành mốc mới, giữ nguyên hạn."
+        },
+        "err": {
+          "required": "Đối tác này có hợp đồng còn hiệu lực: chọn một mốc hoặc chọn Không theo hợp đồng.",
+          "reason": "Chọn Không theo hợp đồng thì phải ghi lý do.",
+          "evidence": "Ghi nhận vào mốc cần ý kiến và ít nhất chữ ký hoặc một tệp.",
+          "mixed": "Giao dịch có dòng sản phẩm ngoài hợp đồng đã chọn — tách thành giao dịch khác.",
+          "overPlan": "Số lượng vượt kế hoạch của mốc — giảm số lượng hoặc chọn mốc khác.",
+          "claimed": "Mốc đang do người khác xử lý — nhờ họ xác nhận hoặc chọn Không theo hợp đồng."
+        }
+      },
+      "cosign": {
+        "title": "Ký cùng lúc",
+        "phase": {
+          "proposed": "Đối tác đề nghị ký cùng lúc, chờ trả lời",
+          "accepted": "Hai bên đã đồng ý, đang chuẩn bị ký",
+          "signing": "Hai bên đang ký song song",
+          "done": "Cả hai bên đã ký",
+          "cancelled": "Phiên ký đã huỷ",
+          "declined": "Một bên từ chối ký",
+          "expired": "Phiên ký quá hạn",
+          "fallback": "Xử lý bình thường — không ký cùng lúc"
+        },
+        "until": "hạn {{at}}",
+        "reason": "Lý do khẩn: {{reason}}",
+        "signedAt": "đã ký {{at}}",
+        "waiting": "đang chờ ký",
+        "noLegal": "Ký thử bằng nhà cung cấp nội bộ chưa có giá trị pháp lý.",
+        "signer": "Người ký phía công ty",
+        "pickSigner": "Chọn người ký (nhóm Người ký HĐ)",
+        "accept": "Đồng ý ký cùng lúc",
+        "normal": "Xử lý bình thường",
+        "decline": "Từ chối HĐ",
+        "cancelReason": "Lý do huỷ phiên ký",
+        "cancel": "Huỷ phiên ký",
+        "fail": "Chưa thực hiện được. Tải lại trang rồi thử lại."
+      }
+    },
+    "u5": {
+      "preview": {
+        "title": "Khi gửi, hợp đồng sẽ đi qua:",
+        "hours": "{{n}} giờ",
+        "loadError": "Chưa xem trước được các bước duyệt — vẫn gửi được bình thường."
+      },
+      "status": {
+        "draft": "Nháp",
+        "processing": "Đang duyệt",
+        "reject": "Bị từ chối",
+        "done": "Đã duyệt xong"
+      },
+      "effect": {
+        "not_started": "Chưa tới hạn hiệu lực",
+        "active": "Còn hiệu lực",
+        "expiring": "Sắp hết hạn",
+        "expiringIn": "Hết hạn sau {{n}} ngày",
+        "expired": "Đã hết hạn",
+        "renewed": "Đã gia hạn",
+        "terminated": "Đã chấm dứt"
+      },
+      "hold": {
+        "chip": "Tạm khoá thực hiện"
+      },
+      "owner": {
+        "label": "Phụ trách"
+      },
+      "banner": {
+        "reading": "AI đang đọc văn bản — vài chục giây nữa các trường sẽ được điền sẵn để bạn kiểm tra.",
+        "readFailed": "AI chưa đọc được văn bản. Bấm “AI đọc lại từ đầu” hoặc nhập tay các trường.",
+        "returnedBy": "{{who}} trả lại · {{at}}",
+        "rejectedBy": "{{who}} từ chối · {{at}}",
+        "withdrawnBy": "{{who}} rút về · {{at}}",
+        "returnedHint": "Các trường đã mở để sửa. Bấm Gửi lại để duyệt lại từ bước đầu.",
+        "rejectedHint": "Hợp đồng đã kết thúc ở đây. Có thể tạo hợp đồng mới từ văn bản này.",
+        "waiting": "Đang chờ {{step}} · {{who}}",
+        "over": "đã quá hạn",
+        "hoursLeft": "còn {{n}} giờ",
+        "waitingHint": "Thông tin khoá trong lúc duyệt. Muốn sửa, người gửi Rút về DRAFT.",
+        "holdBy": "Đang tạm khoá bởi {{who}}",
+        "holdHint": "Không tạo phiếu giao/nhận, không xác nhận mốc; thu tiền vẫn ghi được. Mở khoá cần bằng chứng."
+      },
+      "act": {
+        "resubmit": "Gửi lại",
+        "withdraw": "Rút về DRAFT",
+        "recreate": "Tạo hợp đồng mới từ văn bản này",
+        "newVersion": "Tải phiên bản mới",
+        "hold": "Tạm khoá",
+        "release": "Mở khoá"
+      },
+      "ask": {
+        "withdraw": {
+          "title": "Rút về DRAFT",
+          "hint": "Ghi lý do rút về để người duyệt biết.",
+          "ok": "Rút về"
+        },
+        "hold": {
+          "title": "Tạm khoá thực hiện",
+          "hint": "Ghi lý do và đính kèm bằng chứng (vd bảng công nợ quá hạn).",
+          "ok": "Tạm khoá"
+        },
+        "release": {
+          "title": "Mở khoá thực hiện",
+          "hint": "Ghi lý do mở khoá và đính kèm bằng chứng.",
+          "ok": "Mở khoá"
+        },
+        "unchanged": {
+          "title": "Gửi lại không sửa?",
+          "hint": "Bạn chưa đổi gì so với lần trước — ghi lý do gửi lại.",
+          "ok": "Gửi lại"
+        }
+      },
+      "toast": {
+        "resubmitted": "Đã gửi lại để duyệt.",
+        "recreated": "Đã tạo hợp đồng mới ở DRAFT.",
+        "withdrawn": "Đã rút về DRAFT.",
+        "held": "Đã tạm khoá thực hiện.",
+        "released": "Đã mở khoá thực hiện."
+      },
+      "err": {
+        "STATE_CONFLICT": "Hợp đồng vừa đổi trạng thái. Tải lại trang rồi thử lại.",
+        "CONTRACT_NOT_DRAFT": "Chỉ gửi được hợp đồng ở DRAFT.",
+        "EXTRACT_NOT_READY": "AI chưa đọc xong hợp đồng — chờ hoặc bấm Đọc lại.",
+        "UNCHANGED_REASON_REQUIRED": "Bạn chưa đổi gì so với lần trước — ghi lý do gửi lại.",
+        "FILE_REQUIRED": "Tải văn bản hợp đồng lên trước khi gửi.",
+        "WITHDRAW_NOT_ALLOWED": "Không rút về được: người duyệt đã quyết, chỉ người gửi được rút, hoặc hợp đồng không còn đang duyệt.",
+        "CONTRACT_NOT_REJECTED": "Chỉ tạo lại từ hợp đồng bị từ chối.",
+        "NO_APPROVAL_FLOW": "Công ty chưa có quy trình duyệt hợp đồng — nhờ quản trị soạn ở mục Quy trình.",
+        "USE_NEW_VERSION": "Đổi giá trị, đơn giá, các bên hoặc điều khoản cần Tải phiên bản mới.",
+        "HOLD_EXISTS": "Hợp đồng đang tạm khoá.",
+        "NOT_HELD": "Hợp đồng không bị tạm khoá.",
+        "HOLD_FORBIDDEN": "Chỉ người phụ trách, trưởng phòng của họ hoặc quản trị công ty được tạm khoá/mở khoá.",
+        "HOLD_NOT_ALLOWED": "Chỉ tạm khoá được hợp đồng đã duyệt và còn hiệu lực.",
+        "CONTRACT_ON_HOLD": "Hợp đồng đang tạm khoá — chỉ ghi được tiền thu.",
+        "EVIDENCE_REQUIRED": "Cần ý kiến và chữ ký hoặc ít nhất một tệp.",
+        "OVER_PLAN": "Vượt phần còn lại của mốc. Giảm số hoặc chọn mốc khác.",
+        "OBLIGATION_CLOSED": "Mốc đã xong.",
+        "CHANGE_PENDING": "Mốc đang có yêu cầu thay đổi chờ duyệt.",
+        "CHANGE_PENDING_EXISTS": "Mốc đang có yêu cầu thay đổi chờ duyệt.",
+        "CHANGE_FORBIDDEN": "Chỉ người phụ trách hoặc quản trị công ty được yêu cầu thay đổi thực hiện của hợp đồng.",
+        "CHANGE_INVALID": "Yêu cầu không áp dụng được cho mốc này.",
+        "PENALTY_DECIDED": "Phạt của mốc này đã được quyết.",
+        "PENALTY_FORBIDDEN": "Chỉ người phụ trách hoặc quản trị công ty quyết được phạt.",
+        "PENALTY_NOT_APPLICABLE": "Mốc này chưa trễ nên chưa tính phạt.",
+        "PENALTY_OVER_CAP": "Số phạt vượt trần trong hợp đồng — nhập số nhỏ hơn hoặc đính kèm bằng chứng."
+      },
+      "ms": {
+        "title": "Các mốc thực hiện",
+        "sub": "AI lập từ điều khoản giao hàng và thanh toán, sửa được",
+        "mine": "Bạn đang xử lý",
+        "ours": "Mình",
+        "whyHold": "đang tạm khoá",
+        "whyUnclaimed": "Bấm Nhận việc để xác nhận mốc này.",
+        "done": "Đã xong",
+        "upcoming": "Chưa tới",
+        "postpone": "Dời hạn",
+        "confirm": "Xác nhận",
+        "confirmDelivery": "Xác nhận đã giao",
+        "confirmPay": "Xác nhận đã trả",
+        "confirmCollect": "Xác nhận đã nhận tiền"
+      },
+      "fulfill": {
+        "titleDelivery": "Xác nhận đã giao · {{title}}",
+        "titlePay": "Xác nhận đã trả · {{title}}",
+        "titleCollect": "Xác nhận đã nhận tiền · {{title}}",
+        "titleOther": "Xác nhận đã thực hiện · {{title}}",
+        "postponeTitle": "Dời hạn · {{title}}",
+        "lead": "Hạn hiện tại {{date}}. Mỗi lần xác nhận cần ngày thật và bằng chứng.",
+        "newDue": "Hạn mới",
+        "atDelivery": "Ngày giao thực tế",
+        "atMoney": "Ngày thực tế",
+        "amount": "Số tiền thực tế",
+        "late": "Trễ {{n}} ngày so với hạn",
+        "faultAsk": "Lỗi do ai?",
+        "short": "Làm thiếu so với kế hoạch — phần còn lại xử lý thế nào?",
+        "keep": "Giữ mốc mở, hạn cũ",
+        "split": "Tách thành mốc mới, hạn mới",
+        "evidence": "Bằng chứng (ý kiến + chữ ký hoặc tệp)",
+        "ok": "Xác nhận",
+        "postponeOk": "Dời hạn",
+        "done": "Đã ghi nhận.",
+        "postponed": "Đã dời hạn.",
+        "postponePending": "Đã gửi yêu cầu dời hạn, chờ duyệt."
+      },
+      "penalty": {
+        "booked": "Đã ghi phạt vào công nợ.",
+        "waived": "Không tính phạt cho mốc trễ này.",
+        "reason": {
+          "no_term": "Hợp đồng không có điều khoản phạt khớp mốc này.",
+          "missing_amount": "Điều khoản phạt thiếu số — ghi số tay khi cần."
+        },
+        "estimateReceive": "Đối tác trễ {{days}} ngày — phạt ước tính {{amount}} (mình được nhận).",
+        "estimatePay": "Mình trễ {{days}} ngày — phạt ước tính {{amount}} (mình chịu).",
+        "book": "Ghi vào công nợ",
+        "waive": "Không tính phạt",
+        "waiveNote": "Không tính phạt cho lần trễ này"
+      },
+      "stats": {
+        "delivered": "Đã giao · {{pct}}% · còn {{left}} đợt",
+        "collected": "Đã thu · {{pct}}% · còn {{left}} đợt",
+        "next": "Mốc kế tiếp · {{date}}",
+        "penalty": "Phạt phát sinh"
+      },
+      "notes": {
+        "title": "Điều cần lưu ý",
+        "sub": "AI tóm từ văn bản",
+        "cap": "tối đa {{cap}}",
+        "group": {
+          "penalty": "Phạt vi phạm",
+          "payment": "Thanh toán",
+          "delivery": "Giao hàng và nghiệm thu",
+          "warranty": "Bảo hành",
+          "renewal": "Gia hạn / chấm dứt",
+          "dispute": "Tranh chấp"
+        },
+        "term": {
+          "generic": "Mức phạt {{rate}}%",
+          "partner.late_payment.per_day_of_value": "Đối tác trả chậm: {{rate}}%/ngày trên số tiền chậm.",
+          "ours.late_delivery.per_day_of_value": "Mình giao chậm: {{rate}}%/ngày giá trị phần giao chậm.",
+          "partner.late_delivery.per_day_of_value": "Đối tác giao chậm: {{rate}}%/ngày giá trị phần giao chậm.",
+          "ours.late_payment.per_day_of_value": "Mình trả chậm: {{rate}}%/ngày trên số tiền chậm."
+        }
+      },
+      "risks": {
+        "title": "Cần chú ý"
+      },
+      "effectCard": {
+        "title": "Hiệu lực",
+        "until": "Có hiệu lực tới {{date}}",
+        "noEnd": "Không ghi ngày hết hạn",
+        "renewed": "Đã gia hạn ngày {{date}}",
+        "terminated": "Đã chấm dứt ngày {{date}}",
+        "hint": {
+          "not_started": "Hợp đồng chưa tới ngày hiệu lực.",
+          "active": "Còn hiệu lực. Tới lúc nhắc, việc quyết Gia hạn · Chấm dứt · Để hết hạn sẽ hiện ở Việc của tôi.",
+          "expiring": "Sắp hết hạn — quyết Gia hạn, Chấm dứt hoặc Để hết hạn ở việc “Sắp hết hạn” trong Việc của tôi.",
+          "expired": "Đã hết hạn, không có gia hạn nào được ghi nhận.",
+          "renewed": "Đã có hợp đồng gia hạn thay thế.",
+          "terminated": "Hợp đồng đã chấm dứt trước hạn."
+        }
       }
     }
   }

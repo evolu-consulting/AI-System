@@ -7,6 +7,7 @@ import type { ContractFieldKey, FieldValue } from "../domain/fields.rules";
 import type { Deal } from "../domain/milestones.rules";
 import { planReview, type ReviewMilestoneIn } from "../domain/review.rules";
 import type { AttachOutcome, ReviewItemWrite, ReviewTxRepos } from "./review.ports";
+import { type SubmitDeps, SubmitRollback, type SubmitTxRepos, submitInTx } from "./submit.usecase";
 
 export type ReviewInput = {
   version: number;
@@ -35,13 +36,14 @@ export type ReviewResult =
       kind: "ok";
       out: {
         id: string;
-        status: "needs_review" | "active";
+        status: "draft" | "processing" | "done";
         version: number;
         items: number;
         milestones: number;
       };
     }
   | { kind: "not_found" }
+  | { kind: "submit"; code: string }
   | { kind: "stale"; current: { version: number }; updated_at: string }
   | {
       kind:
@@ -61,7 +63,9 @@ export type AttachProduct = (
 ) => Promise<AttachOutcome>;
 
 type Deps = {
-  uow: PackUow<ReviewTxRepos>;
+  uow: PackUow<ReviewTxRepos & Partial<SubmitTxRepos>>;
+  /** CR-127 K3 · "Xác nhận & lưu" = Gửi (`submit.usecase`); vắng (test cũ) ⇒ đường K1b (không quy trình ⇒ DONE). */
+  submit?: SubmitDeps;
   /** Ngày lịch của tenant (`YYYY-MM-DD`) — hạn mốc mặc định khi HĐ chưa có ngày. */
   today: (tenantId: string) => Promise<string>;
 };
@@ -88,36 +92,55 @@ const stale = (cur: { version: number; updated_at: string }): ReviewResult => ({
 
 /** Phần trong tx: khoá → kiểm version → luật thuần → ghi (3 câu) → outbox. Lỗi dữ liệu ở câu ghi ⇒ ném để ROLLBACK. */
 async function reviewTx(
-  r: ReviewTxRepos,
+  r: ReviewTxRepos & Partial<SubmitTxRepos>,
   who: PackWho,
   id: string,
-  { input, today }: { input: ReviewInput; today: string },
+  { input, today, submit }: { input: ReviewInput; today: string; submit?: SubmitDeps | undefined },
 ): Promise<ReviewResult> {
   const cur = await r.review.lock(id);
   if (!cur) return { kind: "not_found" };
   if (cur.version !== input.version) return stale(cur);
-  const plan = planReview(cur, input, today);
-  if (typeof plan === "string") return { kind: plan };
+  const planned = planReview(cur, input, today);
+  if (typeof planned === "string") return { kind: planned };
+  const viaSubmit = submit !== undefined && r.sub && r.st && r.contractFlow && input.draft !== true;
+  // CR-127 K3 · cổng đổi trạng thái do `submitInTx` làm (có quy trình ⇒ PROCESSING, không ⇒ DONE) — câu lưu không tự kích hoạt.
+  const plan = viaSubmit ? { ...planned, activate: false } : planned;
   const items = input.items ? input.items.map(itemWrite) : null;
   const saved = await r.review.save(id, { plan, items, expected: cur.version, actor: who.userId });
   if (saved === "stale") return stale(cur);
+  if (saved === "not_draft") return { kind: "not_reviewable" };
   if (typeof saved === "string") throw new ReviewRollback(saved);
-  if (saved.status === "active") await linkOnConfirm(r, who, id, input.products);
+  let out: Extract<ReviewResult, { kind: "ok" }>["out"] = { id, ...saved };
+  if (viaSubmit && submit) {
+    // CR-127 BR-02 · SP gắn khi HĐ còn DRAFT (sửa được), cùng tx, TRƯỚC khi chuyển — sau khi processing/done K4 khoá gắn SP.
+    // Lỗi dòng lạ / kho ⇒ ném ⇒ ROLLBACK (HĐ giữ Nháp). Đã gắn xong ⇒ không giữ `pending_links` ở lượt (không gắn lần hai khi duyệt).
+    await linkProducts(r, who, id, input.products, true);
+    const s = await submitInTx(
+      r as SubmitTxRepos,
+      who,
+      id,
+      { links: null, checkRole: false },
+      submit,
+    );
+    if ("error" in s) throw new SubmitRollback(s.error);
+    out = { ...out, status: s.status, version: saved.version + 1 };
+  } else if (out.status === "done") await linkProducts(r, who, id, input.products, false);
   await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);
-  return { kind: "ok", out: { id, ...saved } };
+  return { kind: "ok", out };
 }
 
-/** atomic-confirm: HĐ vừa xác nhận (tắt duyệt) ⇒ gắn/tạo SP theo hộp "Gắn sản phẩm" TRONG tx này (cùng cổng với bước duyệt cuối,
- *  không lock-strict vì cùng tx với lệnh khoá). Dòng không thuộc HĐ / HĐ có kho ⇒ ném ⇒ ROLLBACK (HĐ giữ chờ xác nhận, không SP). */
-async function linkOnConfirm(
+/** atomic-confirm: gắn/tạo SP theo hộp "Gắn sản phẩm" TRONG tx của lệnh xác nhận (không lock-strict vì cùng tx với lệnh chuyển trạng thái).
+ *  `inDraft` ⇒ HĐ còn DRAFT (đường Gửi); không ⇒ HĐ đã `done` (đường K1b). Dòng không thuộc HĐ / HĐ có kho ⇒ ném ⇒ ROLLBACK. */
+async function linkProducts(
   r: ReviewTxRepos,
   who: PackWho,
   id: string,
   products: readonly ProductLink[] | undefined,
+  inDraft: boolean,
 ): Promise<void> {
   if (!products?.length) return;
   if (!r.links) throw new Error("review: products without links repo");
-  const out = await r.links.link(id, products, who.userId);
+  const out = await r.links.link(id, products, who.userId, false, inDraft);
   if (out.kind !== "ok" || out.matched !== products.length)
     throw new ReviewRollback("item_unknown");
 }
@@ -126,9 +149,11 @@ export function reviewSave(d: Deps): ReviewSave {
   return async (who, id, input) => {
     const today = await d.today(who.tenantId);
     return d.uow
-      .tenant(who, (r) => reviewTx(r, who, id, { input, today }))
+      .tenant(who, (r) => reviewTx(r, who, id, { input, today, submit: d.submit }))
       .catch((e) => {
         if (e instanceof ReviewRollback) return { kind: e.reason } satisfies ReviewResult;
+        if (e instanceof SubmitRollback)
+          return { kind: "submit", code: e.code } satisfies ReviewResult;
         throw e;
       });
   };

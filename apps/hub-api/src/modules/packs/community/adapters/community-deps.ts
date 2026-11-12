@@ -1,12 +1,6 @@
 // CR-102 · com-c3 · phụ thuộc route community (dựng ở `community.mount.ts`).
 import type { Tx } from "@ai/db";
-import type {
-  ExternalOrgResolver,
-  NotifyTxRepos,
-  PackAccessView,
-  PackBell,
-  PackUow,
-} from "../../kit/public";
+import type { ExternalOrgResolver, NotifyTxRepos, PackAccessView, PackUow } from "../../kit/public";
 import type {
   CommunityBlobs,
   CommunityUploadGate,
@@ -25,7 +19,10 @@ export type CommunityDeps = {
   /** C9 · phát chuông (`emitComment` cho C6 gọi sau khi chèn bình luận). */
   events: CommunityEvents;
   /** C9 · chuông của chính người dùng (đọc + đánh dấu đã đọc). */
-  bell: PackBell;
+  /** CR-129 L5 · liên hệ của CHÍNH người xem (email từ `admin.users`, một câu); vắng ⇒ null. */
+  contact?:
+    | ((who: { tenantId: string; userId: string }) => Promise<{ email: string | null }>)
+    | undefined;
   /** Mở Sổ Hợp Tác (contracts-web) — chỉ chủ quản xem hồ sơ chủ quản. */
   shtUrl: string;
   /** ADR-0031: cổng ghi/đọc SP & Giá do `packs.mount.ts` tiêm; vắng ⇒ không Lưu báo giá / không gợi ý (route 503 / bỏ gợi ý). */

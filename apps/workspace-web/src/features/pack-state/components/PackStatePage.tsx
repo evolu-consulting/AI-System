@@ -5,8 +5,19 @@ import { IconContract } from "~/components/icons";
 
 export type PackBlock = "forbidden" | "disabled";
 
-export function PackStatePage({ kind, onLogout }: { kind: PackBlock; onLogout: () => void }) {
+/** `pack="community"` (CR-130): gói Cộng đồng tắt/không có quyền ⇒ cùng khung, câu chữ riêng (không nói "gói Hợp đồng"). */
+export function PackStatePage({
+  kind,
+  onLogout,
+  pack = "contracts",
+}: {
+  kind: PackBlock;
+  onLogout: () => void;
+  pack?: "contracts" | "community";
+}) {
   const { t } = useTranslation();
+  const base =
+    pack === "community" ? "contracts.packState.communityOff" : `contracts.packState.${kind}`;
   return (
     <div className="grid min-h-[60dvh] place-items-center px-6 py-10">
       <section className="flex max-w-md flex-col items-center gap-4 rounded-xl border border-rule bg-panel px-8 py-10 text-center">
@@ -16,10 +27,8 @@ export function PackStatePage({ kind, onLogout }: { kind: PackBlock; onLogout: (
         >
           <IconContract width={26} height={26} />
         </span>
-        <h1 className="text-[22px] font-semibold tracking-[-0.01em]">
-          {t(`contracts.packState.${kind}.title`)}
-        </h1>
-        <p className="text-sm text-dim">{t(`contracts.packState.${kind}.body`)}</p>
+        <h1 className="text-[22px] font-semibold tracking-[-0.01em]">{t(`${base}.title`)}</h1>
+        <p className="text-sm text-dim">{t(`${base}.body`)}</p>
         <button
           type="button"
           onClick={onLogout}

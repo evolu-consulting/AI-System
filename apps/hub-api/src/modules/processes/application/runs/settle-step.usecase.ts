@@ -208,5 +208,7 @@ export async function settleStep(r: StepRepos, runId: string): Promise<StepOutco
   );
   const status: ProcessRunStatus = agg === "step_done" ? "running" : agg;
   await r.steps.setStatus(runId, status, first);
+  // CR-127 K3 · #7b · lượt LỖI gắn bản ghi app ⇒ app đưa bản ghi về nháp cùng tx (hook CAS, không ném).
+  if (status === "failed" && load.pack) await r.steps.runFailed?.(runId, load.pack);
   return { kind: "wait", status, step, stageIdx: first };
 }

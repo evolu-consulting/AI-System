@@ -117,6 +117,20 @@ export function contractAsMgmt(status = contract.status) {
   };
 }
 
+/** CR-127 Q10a: tên trạng thái cũ trong test ⇒ (status, extract_state, hiệu lực) mới. */
+export function newStatus(legacy: string): Record<string, unknown> {
+  if (legacy === "active") return { status: "done", extract_state: "ready", effect: "active" };
+  if (legacy === "needs_review") return { status: "draft", extract_state: "ready" };
+  if (legacy === "extracting") return { status: "draft", extract_state: "reading" };
+  if (legacy === "extract_failed") return { status: "draft", extract_state: "failed" };
+  if (legacy === "processing") return { status: "processing", submit_round: 1 };
+  return { status: legacy };
+}
+/** Áp `newStatus` lên `over.status` cũ (test truyền `status: "needs_review"`…) để mock khớp hợp đồng mới. */
+export function normOver<T extends Record<string, unknown>>(o: T): T {
+  return typeof o.status === "string" ? { ...o, ...newStatus(o.status) } : o;
+}
+
 export function contractAsHub(status = contract.status) {
   const c = contract;
   const at = "2026-10-18T02:00:00.000Z";
@@ -126,7 +140,19 @@ export function contractAsHub(status = contract.status) {
     parent_id: null,
     // CR-125 c7: hub trả `title` = TÊN HĐ (contractNameSql: fields.title, trống ⇒ cột title) — mock phải cùng hình.
     title: String(c.fields.title?.value ?? "").trim() || c.title,
-    status,
+    submit_round: 0,
+    submitted_by: null,
+    ...newStatus(status),
+    can: {
+      submit: false,
+      withdraw: false,
+      recreate: false,
+      new_version: false,
+      hold: false,
+      release: false,
+    },
+    submit_block: null,
+    hold: null, // CR-127: `c.hold !== null` ⇒ tạm khoá; thiếu trường ⇒ mốc bị khoá giả
     direction: null,
     owner_user_id: dataset.user.id,
     updated_at: at,
@@ -205,7 +231,7 @@ export function contractAsHub(status = contract.status) {
       {
         id: c.id,
         version_no: 1,
-        status,
+        status: String(newStatus(status).status),
         superseded_at: null as string | null,
         number: (c.fields.number?.value ?? null) as string | null,
         effective_from: null as string | null,

@@ -6,13 +6,16 @@ import { ContractParentRefSchema } from "./appendix";
 import { DocTypeSchema, ListDocRefSchema, ListFrameChildSchema } from "./doc-types";
 import {
   CONTRACT_DIRECTIONS,
+  CONTRACT_EFFECTS,
   CONTRACT_STATUSES,
   CONTRACT_TITLE_MAX,
   CONTRACT_TOTAL_VALUE_MAX,
   ContractDirectionSchema,
+  ContractEffectSchema,
   ContractKindSchema,
   ContractStatusSchema,
   ContractTypeSchema,
+  ExtractStateSchema,
   IsoDateSchema,
   nfcText,
 } from "./fields";
@@ -48,9 +51,18 @@ const QSchema = nfcText(CONTRACT_Q_MAX)
   .transform((v) => (v === "" ? undefined : v))
   .optional();
 
+/** CR-127 K8 · BR-59: nguồn HĐ trong danh sách gộp — mình tải / đối tác gửi (`contracts.source = 'partner_inbox'`). */
+export const CONTRACT_SOURCES = ["upload", "partner"] as const;
+export const ContractSourceSchema = z.enum(CONTRACT_SOURCES);
+export type ContractSource = z.infer<typeof ContractSourceSchema>;
+
 export const ContractListQuerySchema = z.strictObject({
   q: QSchema,
   status: repeated(ContractStatusSchema, CONTRACT_STATUSES.length),
+  /** CR-127 K2a-1 · BR-05: lọc Hiệu lực (chỉ HĐ DONE có hiệu lực; HĐ khác không khớp bộ lọc này). */
+  effect: repeated(ContractEffectSchema, CONTRACT_EFFECTS.length),
+  /** CR-127 K8 · BR-59: nguồn HĐ — `upload` (công ty tự tải/tạo) | `partner` (đối tác gửi qua nền tảng). */
+  source: repeated(ContractSourceSchema, CONTRACT_SOURCES.length),
   owner: repeated(z.uuid(), 50),
   category: repeated(z.uuid(), 50),
   seller: repeated(nameText(300), 50),
@@ -64,7 +76,7 @@ export const ContractListQuerySchema = z.strictObject({
   nest: z.enum(["0", "1"]).optional(),
   value_min: valueBound(),
   value_max: valueBound(),
-  /** Gap #10: lọc theo ngày — cột (`end_date` hiệu lực đến | `action_deadline` hạn chót), cửa sổ tương đối `due` (so với ngày lịch tenant)
+  /** Gap #10: lọc theo ngày — cột (`end_date` hiệu lực đến; CR-127 K6 gỡ `action_deadline`), cửa sổ tương đối `due` (so với ngày lịch tenant)
    *  hoặc khoảng `date_from`…`date_to` (gồm cả hai đầu). `due` thắng khoảng. */
   date_field: z.enum(CONTRACT_DATE_FIELDS).optional(),
   due: z.enum(CONTRACT_DUE_PRESETS).optional(),
@@ -111,6 +123,17 @@ export const ContractStepSchema = z.strictObject({
 });
 export type ContractStep = z.infer<typeof ContractStepSchema>;
 
+/** CR-127 K2a-1 · BR-05: "Đang chờ" của HĐ đang duyệt — bước hiện tại, người (tên người ký khi là bước Ký số) và hạn; HĐ không đang chờ ⇒ null. */
+export const ContractWaitingSchema = z.strictObject({
+  step: z.string().max(160).nullable(),
+  who: z.string().max(160).nullable(),
+  due_at: IsoDateTime.nullable(),
+});
+export type ContractWaiting = z.infer<typeof ContractWaitingSchema>;
+/** CR-127 · tạm khoá thực hiện (X1 thêm cột; tới đó luôn null): người khoá + lý do. */
+export const ContractHoldSchema = z.strictObject({ by: z.uuid(), reason: z.string().max(2000) });
+export type ContractHold = z.infer<typeof ContractHoldSchema>;
+
 export const ContractListRowSchema = z.strictObject({
   id: z.uuid(),
   kind: ContractKindSchema,
@@ -126,7 +149,6 @@ export const ContractListRowSchema = z.strictObject({
   buyer_signer: z.string().nullable(),
   value: z.number().int().nullable(),
   end_date: IsoDateSchema.nullable(),
-  action_deadline: IsoDateSchema.nullable(),
   owner_user_id: z.uuid().nullable(),
   category_ids: z.array(z.uuid()).max(50),
   updated_at: IsoDateTime,
@@ -139,6 +161,17 @@ export const ContractListRowSchema = z.strictObject({
   /** CR-123 · u10 · bước hiện tại, cùng nguồn thẻ duyệt; null/vắng ⇒ dùng nhãn trạng thái. ListRow 23 khoá.
    *  CR-125 · SA H4: MÃ bước (+ tên người ký / tên bước của khách), web dịch qua i18n `contracts.list.step.<code>`. */
   step_label: ContractStepSchema.nullable().optional(),
+  /** CR-127 K2a-1: AI đọc (reading/failed/ready) — không phải trạng thái; hiệu lực (null khi chưa DONE hoặc bản đã bị thay);
+   *  bản đã bị thay; tạm khoá; đang chờ (null/vắng ⇒ không có lượt duyệt mở). */
+  extract_state: ExtractStateSchema,
+  effect: ContractEffectSchema.nullable(),
+  superseded: z.boolean(),
+  hold: ContractHoldSchema.nullable(),
+  waiting: ContractWaitingSchema.nullable().optional(),
+  /** CR-128 L1: người gọi được xoá HĐ này (cùng luật `canDeleteContract` với chi tiết/guard xoá); chỉ có ở danh sách, vắng ⇒ false. */
+  can_delete: z.boolean().optional(),
+  /** CR-127 K8 · BR-59: nguồn HĐ (vắng ở hàng cũ/fake ⇒ coi như `upload`). */
+  source: ContractSourceSchema.optional(),
 });
 export type ContractListRow = z.infer<typeof ContractListRowSchema>;
 

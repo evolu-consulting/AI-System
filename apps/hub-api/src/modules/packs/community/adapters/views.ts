@@ -10,10 +10,10 @@ import type {
   QuoteMark,
 } from "@ai/contracts/community";
 import { postActions } from "../domain/audience.rules";
+import type { CommentRow } from "./comment-list.repo";
 import type { Access } from "./community-access";
 import type { PartnerRow } from "./org.repo";
 import type { PostRow, QuoteMarkRow } from "./post.sql";
-import type { CommentRow } from "./thread.repo";
 
 const iso = (s: string): string => new Date(s).toISOString();
 
@@ -94,6 +94,10 @@ export function commentView(a: Access, n: Names, r: CommentRow): CommentView {
     createdAt: iso(r.created_at),
     ...(host ? { hidden: r.hidden } : {}),
     mine: r.author_user_id === a.who.userId,
+    // đối tác chỉ nhận phần tử là công ty MÌNH (không lộ đối tác khác được nhắc cùng — design §6.1)
+    mentions: r.mentions
+      .filter((m) => host || m === a.org)
+      .map((m) => ({ orgId: m, name: n.orgName(m) })),
   };
 }
 

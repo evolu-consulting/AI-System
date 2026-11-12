@@ -21,7 +21,24 @@ export type WaitDraft = {
   /** Sự kiện phụ cũng kết thúc chờ (`also_events`, ≤ 3) — giữ nguyên khi lưu. */
   also?: string[];
 };
-export type EscalateDraft = { on: boolean; afterH: string; groupId: string };
+/** CR-127 · E3c: quá hạn chuyển cho một PHÒNG (`groupId`) hoặc một NGƯỜI (`userId`) — đúng một; `groupKey` = mã phòng của mẫu Thư viện (giữ nguyên). */
+export type EscalateDraft = {
+  on: boolean;
+  afterH: string;
+  groupId: string;
+  userId?: string;
+  groupKey?: string;
+};
+
+/** CR-127 · U2 · phần của bước Duyệt mà màn soạn sửa (`need`, `evidence`) + phần giữ nguyên khi mở / lưu (không để mất khi qua bản nháp). */
+export type ReviewExtra = {
+  need?: "one" | "head" | "all";
+  evidence?: "opinion" | "opinion_plus";
+  headOnly?: boolean;
+  approverUserId?: string;
+  alsoGroupIds?: string[];
+  alsoGroupKeys?: string[];
+};
 
 /** P-d2 · nguồn một tham số tool: `from` rỗng = chưa chọn; `value` = giá trị cố định | khoá input | `<stage_key>:<field>`. */
 export type ArgDraft = {
@@ -128,6 +145,8 @@ export type StageDraft = {
   /** P-d1 · "Chuyển cấp nếu chưa ai kiểm" (tắt ⇒ `escalate: null`, giữ giá trị đã nhập). */
   /** N2-FR-05 · "Người bắt đầu không được duyệt bước này" (`after.exclude_starter`); vắng = false. */
   excludeStarter?: boolean;
+  /** CR-127 · U2 · Cần / Bằng chứng của bước Duyệt (+ trường giữ nguyên) — xem `ReviewExtra`. */
+  review?: ReviewExtra;
   escalate: EscalateDraft;
   /** P-d2 · khối "Gọi tool" (chỉ có nghĩa khi `executor = tool`). */
   tool: ToolDraft;

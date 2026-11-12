@@ -4,7 +4,7 @@
 // độ này (CKS, tri thức, hẹn nhắc…) ⇒ đếm bản ghi gắn với người đó vào `not_imported` để vận hành thấy còn sót gì. Thuần.
 import { docsOf, type Snapshot, type SourceDoc } from "./context";
 import { EXTRA_EXPORT_INDICES } from "./extras-scope.rules";
-import { parseRemindKey } from "./map-contracts.rules";
+import { parseRemindKey } from "./map-reminders.rules";
 import { lowerEmail, str } from "./values.rules";
 
 /** Index chế độ owner nhập (còn lại chỉ đếm). Danh tính (orgs/users/memberships) không nhập: user đích tạo trước bằng script. */

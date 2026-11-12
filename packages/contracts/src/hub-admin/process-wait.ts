@@ -6,7 +6,7 @@ import {
   WAIT_TIME_DEFAULT,
   WaitTimeSchema,
 } from "../chat/processes";
-import { FIELD_KEY_RE } from "./process-tools";
+import { FIELD_KEY_RE } from "./field-key"; // không qua ./process-tools (vòng nhập tới sổ module)
 import { InputKeySchema } from "./sources";
 /** P-d1 · nguồn ngày của `wait_until`: input run kiểu `date` hoặc field `date` của output stage ở bước nhỏ hơn. */
 export const WaitFromSchema = z.discriminatedUnion("kind", [

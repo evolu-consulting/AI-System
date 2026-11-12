@@ -81,7 +81,7 @@ export class Bench {
     await members(sql, q, roles.get(q)?.owner as string, [userId(5001)]);
     await sql.unsafe(
       `insert into contracts.contracts (tenant_id, title, status, owner_user_id, created_by)
-       select $1::uuid, 'Nen ' || i, 'active', $2::uuid, $2::uuid from generate_series(1, 60000) i`,
+       select $1::uuid, 'Nen ' || i, 'done', $2::uuid, $2::uuid from generate_series(1, 60000) i`,
       [q, userId(5001)],
     );
     await visibility(sql, [s, l, q], "org");
@@ -103,7 +103,7 @@ export class Bench {
     await members(sql, t.id, ownerGroup, [t.O]);
     await sql.unsafe(
       `insert into contracts.contracts (tenant_id, title, status, owner_user_id, created_by, updated_at)
-       select $1::uuid, 'HD ' || i, 'active', u.id, u.id, now() - (i || ' seconds')::interval
+       select $1::uuid, 'HD ' || i, 'done', u.id, u.id, now() - (i || ' seconds')::interval
        from generate_series(1, $2::int) i
        cross join lateral (select ('7e5d00a2-0000-4000-8000-' || lpad(to_hex($3::int + (i % 300)), 12, '0'))::uuid as id) u`,
       [t.id, t.n, t.base],

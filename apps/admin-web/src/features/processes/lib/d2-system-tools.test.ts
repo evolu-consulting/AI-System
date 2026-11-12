@@ -18,11 +18,11 @@ const tool = (key: string, step: number, p: Partial<StageDraft> = {}): StageDraf
 });
 
 describe("toolErrors · tool hệ thống của khe", () => {
-  test("contracts-route / finalize / bước duyệt (cũng gọi route) không lỗi dù catalog không có", () => {
+  test("dlc-step (tool hệ thống của khe) không lỗi dù catalog không có", () => {
     const stages = [
-      tool("contracts-route", 0, { slotRaw: { kind: "review" } }),
-      tool("contracts-route", 1),
-      tool("contracts-finalize", 2),
+      tool("dlc-step", 0, { slotRaw: { kind: "dlc" } }),
+      tool("dlc-step", 1),
+      tool("dlc-step", 2),
     ];
     expect(toolErrors(stages, [], CATALOG)).toEqual({});
     expect(toolSubmitErrors(stages, CATALOG)).toEqual({});

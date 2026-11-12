@@ -128,25 +128,6 @@ describe("P-02…P-05 · tham chiếu hợp lệ [PB-R06, AC-H36(d)]", () => {
       expect(vcode(r)).toEqual({ status: 422, code: "VALIDATION_ERROR" });
     }
   });
-
-  it("PB-R06 · C14 · P-05 · chép mẫu platform tham chiếu key tenant không có ⇒ 404 SOURCE_NOT_FOUND", async () => {
-    const col = await c.sql`select 1 from information_schema.columns where table_schema = 'hub'
-      and table_name = 'process_defs' and column_name = 'sources'`;
-    expect({ process_defs_sources_column: col.length === 1 }).toEqual({
-      process_defs_sources_column: true,
-    });
-    const tplId = "b1b10000-0000-4000-8000-0000000000a5";
-    const input = defWithSource("pbx-tpl", "app-repo");
-    await insertDef(c.sql, { id: tplId, tenantId: null, input });
-    await c.sql`update hub.process_defs set sources = ${c.sql.json(["app-repo"])}, stages = ${c.sql.json(input.stages)} where id = ${tplId}`;
-    const r = await c.call("Adm", "POST", `/process-defs/${tplId}/copy`, { key: "pbx-copy" });
-    expect(code(r)).toEqual({ status: 404, code: "SOURCE_NOT_FOUND" });
-    // Có nguồn trong tenant ⇒ chép được
-    await mkSource(c, "Adm", gitBody("app-repo"));
-    const ok = await c.call("Adm", "POST", `/process-defs/${tplId}/copy`, { key: "pbx-copy" });
-    expect(ok.status).toBe(201);
-    expect(ok.json.sources).toEqual(["app-repo"]);
-  });
 });
 
 describe("P-07…P-09 · version, xoá mềm, tương thích P-a [HUB-FR-121]", () => {
@@ -155,13 +136,13 @@ describe("P-07…P-09 · version, xoá mềm, tương thích P-a [HUB-FR-121]", 
     const r = await post(defWithSource("pbx-p07", "app-repo"));
     expect(r.status).toBe(201);
     const input = asInput(r.json);
-    const ok = await c.call("Adm", "PUT", `/process-defs/${r.json.id}`, {
+    const ok = await c.call("P", "PUT", `/process-defs/${r.json.id}?tenant_id=${T.acme}`, {
       ...input,
       name: "v2",
       version: r.json.version,
     });
     expect(ok.status).toBe(200);
-    const again = await c.call("Adm", "PUT", `/process-defs/${r.json.id}`, {
+    const again = await c.call("P", "PUT", `/process-defs/${r.json.id}?tenant_id=${T.acme}`, {
       ...input,
       name: "v3",
       version: r.json.version,
@@ -177,8 +158,13 @@ describe("P-07…P-09 · version, xoá mềm, tương thích P-a [HUB-FR-121]", 
       "SOURCE_IN_USE",
     );
     expect(
-      (await c.call("Adm", "DELETE", `/process-defs/${r.json.id}?version=${r.json.version}`))
-        .status,
+      (
+        await c.call(
+          "P",
+          "DELETE",
+          `/process-defs/${r.json.id}?version=${r.json.version}&tenant_id=${T.acme}`,
+        )
+      ).status,
     ).toBe(204);
     expect((await c.call("Adm", "DELETE", "/admin/sources/app-repo?version=1")).status).toBe(204);
   });

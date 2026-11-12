@@ -10,8 +10,8 @@ export async function seedCksPerf(sql: Sql, tenant: string, by: string): Promise
     from generate_series(1, 20) g`;
   await sql`insert into contracts.cks_customers (id, tenant_id, name, tax_id)
     select gen_random_uuid(), ${tenant}, 'Khách ' || g, lpad(g::text, 10, '0') from generate_series(1, 400) g`;
-  await sql`insert into contracts.contracts (id, tenant_id, title, direction, status, created_by, fields)
-    select gen_random_uuid(), ${tenant}, 'Dịch vụ chữ ký số · CKS-2026-' || lpad(n::text, 3, '0'), 'sale', 'active', ${by},
+  await sql`insert into contracts.contracts (id, tenant_id, title, direction, status, effect, created_by, fields)
+    select gen_random_uuid(), ${tenant}, 'Dịch vụ chữ ký số · CKS-2026-' || lpad(n::text, 3, '0'), 'sale', 'done', 'active', ${by},
       jsonb_build_object('number', jsonb_build_object('value', 'CKS-2026-' || lpad(n::text, 3, '0')),
         'signed_date', jsonb_build_object('value', '2026-03-01'))
     from generate_series(1, 400) n`;

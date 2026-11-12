@@ -1,9 +1,10 @@
 // CR-113 · luật Toàn quyền: chuyển cấp mặc định khi biên dịch (`compileDef` + `defaultEscalateOf`), thứ tự Group Toàn quyền,
 // `decided_as` của thẻ (duyệt thay / người của bước), `overdue` + `escalated_to` của bước.
+
 import { describe, expect, it } from "bun:test";
+import { compileDef } from "../testing/approval-slot/approval-compile";
 import { PACK_OWNER_GROUP_KEY } from "./approval-def.rules";
 import { cardSteps, type EngineStageView } from "./approval-engine-card.rules";
-import { compileDef } from "./approval-flow.rules";
 import type { FlowStep } from "./approval-flow.types";
 import { decidedAsOf, defaultEscalateOf, escalateOrder, overrideKey } from "./approval-owner.rules";
 

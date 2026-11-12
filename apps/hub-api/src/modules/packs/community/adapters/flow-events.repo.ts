@@ -144,25 +144,34 @@ export async function markPostNotLaunched(tx: Tx, tenantId: string, ref: string)
   return rows.length > 0;
 }
 
-/** Nhận ⇒ approved + liên kết công ty đối tác (nhãn xin) CÙNG câu; Từ chối ⇒ rejected. Chỉ khi đang chờ. */
-export async function applyJoinOutcome(
+/** Yêu cầu vừa được nhận (để liên kết đối tác ở SHT — CR-130 · `PartnerLinker`, cùng tx). */
+export type JoinedRow = {
+  requester_org: string;
+  labels: ("supplier" | "customer")[];
+  company: string;
+};
+
+/**
+ * Nhận ⇒ approved; Từ chối ⇒ rejected. Chỉ khi đang chờ. Trả thêm hàng vừa nhận (`joined`, chỉ khi Nhận) để người gọi liên kết
+ * công ty đối tác qua cổng `PartnerLinker` (CR-130: không còn ghi `community.partner_companies`). MỘT câu.
+ */
+export async function applyJoinDecision(
   tx: Tx,
   tenantId: string,
   ref: string,
   target: "approved" | "rejected",
-): Promise<OutcomeResult> {
-  if (uuids([ref]).length === 0) return "not_found";
-  const [r] = await tx.execute<Applied>(sql`with j as (
+): Promise<{ res: OutcomeResult; joined: JoinedRow | null }> {
+  if (uuids([ref]).length === 0) return { res: "not_found", joined: null };
+  const [r] = await tx.execute<Applied & { joined: JoinedRow | null }>(sql`with j as (
       update community.join_requests set status = ${target}, decided_name = 'Quy trình', decided_at = now()
       where id = ${ref}::uuid and tenant_id = ${tenantId}::uuid and status = 'pending'
-      returning tenant_id, requester_org, labels
-    ), p as (
-      insert into community.partner_companies (tenant_id, ext_org_id, labels, cats, area, party_key, updated_by)
-      select tenant_id, requester_org, labels, '{}'::text[], '', null, null from j where ${target} = 'approved'
-      on conflict (tenant_id, ext_org_id) do update set labels = excluded.labels, updated_at = now() returning 1
+      returning requester_org, labels, company
     ) select (select count(*) from j)::int as n,
-      exists (select 1 from community.join_requests where id = ${ref}::uuid and tenant_id = ${tenantId}::uuid) as ex`);
-  return result(r as Applied);
+      exists (select 1 from community.join_requests where id = ${ref}::uuid and tenant_id = ${tenantId}::uuid) as ex,
+      (select jsonb_build_object('requester_org', j.requester_org, 'labels', j.labels, 'company', j.company)
+        from j where ${target} = 'approved') as joined`);
+  const x = r as Applied & { joined: JoinedRow | null };
+  return { res: result(x), joined: x.joined };
 }
 
 /** Ẩn ⇒ hide (+ ẩn bài), Giữ ⇒ dismiss, Cảnh báo ⇒ warn. Chỉ khi báo cáo đang chờ. */

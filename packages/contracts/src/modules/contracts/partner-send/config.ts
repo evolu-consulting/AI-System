@@ -19,6 +19,12 @@ export type PartnerSendField = (typeof PARTNER_SEND_FIELDS)[number];
 export const PARTNER_REPLY_DAYS_DEFAULT = 7;
 export const PARTNER_REPLY_DAYS_MAX = 30;
 
+/** CR-127 · P2 · BR-60 · «Đề nghị ký cùng lúc»: hạn trả lời của bên nhận (giờ, mặc định 2) và hạn ký sau khi đồng ý (giờ, mặc định 4). */
+export const SIGN_TOGETHER_ACCEPT_H_DEFAULT = 2;
+export const SIGN_TOGETHER_SIGN_H_DEFAULT = 4;
+export const SIGN_TOGETHER_ACCEPT_H_MAX = 168;
+export const SIGN_TOGETHER_SIGN_H_MAX = 720;
+
 export const PartnerSendConfigSchema = z.object({
   /** Mã HĐ (đầu vào của flow, không phải ô cấu hình). */
   contract_id: z.string().optional(),
@@ -50,6 +56,24 @@ export const PartnerSendConfigSchema = z.object({
     .email()
     .optional()
     .describe("Email liên hệ (mặc định lấy từ hợp đồng)"),
+  /** CR-127 · P2 · BR-60 · bật «Đề nghị ký cùng lúc» (đối tác trên Evolu đồng ý trước; ngoài Evolu: bỏ qua, ký qua link như cũ — BR-66). */
+  sign_together: z.boolean().optional().describe("Đề nghị ký cùng lúc"),
+  /** Lý do khẩn — BẮT BUỘC khi `sign_together` bật (kiểm ở `signTogetherPlan`). */
+  sign_reason: z.string().max(500).optional().describe("Lý do cần ký cùng lúc"),
+  accept_h: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(SIGN_TOGETHER_ACCEPT_H_MAX)
+    .optional()
+    .describe("Hạn đối tác trả lời (giờ)"),
+  sign_h: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(SIGN_TOGETHER_SIGN_H_MAX)
+    .optional()
+    .describe("Hạn ký sau khi đồng ý (giờ)"),
   /** CR-126 · nhóm làm bước «Chọn đối tác & người nhận» (id nhóm; def Thư viện: mã nhóm). Nguồn của `after.group_*` stage form (`applyNodeAssignee`). */
   assignee_group: z.string().min(1).max(80).optional().describe("Nhóm phụ trách gửi đối tác"),
 });

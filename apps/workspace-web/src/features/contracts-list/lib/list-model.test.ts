@@ -1,18 +1,21 @@
 // HD-FR-51 · S03: nhãn/tên rút gọn, lựa chọn lọc từ facets, truy vấn server từ bộ lọc.
 import { describe, expect, test } from "bun:test";
 import type { ContractFacets } from "@ai/contracts/pack-contracts";
-import vi from "../../../../../../packages/i18n/locales/contracts/gape.vi.json";
+import gape from "../../../../../../packages/i18n/locales/contracts/gape.vi.json";
+import work from "../../../../../../packages/i18n/locales/contracts/work.vi.json";
 import { exportQueryString, filterMaps, listQueryString, personOf, shortName } from "./list-model";
 
 /** `t` giả đọc đúng bản dịch vi (GAP-E #34). */
 const t = (key: string): string =>
-  key.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)[k], vi) as string;
+  key.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)[k], {
+    contracts: { ...gape.contracts, ...work.contracts },
+  } as unknown) as string;
 
 const facets = {
   status: [
-    { v: "renewed", n: 1 },
-    { v: "active", n: 5 },
-    { v: "terminated", n: 2 },
+    { v: "done", n: 1 },
+    { v: "draft", n: 5 },
+    { v: "reject", n: 2 },
   ],
   direction: [
     { v: "unknown", n: 1 },
@@ -44,9 +47,18 @@ describe("tên hiển thị", () => {
 
 describe("filterMaps", () => {
   const m = filterMaps(facets, new Map([["u1", "Lan"]]), t);
-  test("trạng thái cùng nhãn gộp (Đã xử lý = renewed + terminated), theo thứ tự trạng thái", () => {
-    expect(m.status.map((s) => s.label)).toEqual(["Đang hiệu lực", "Đã xử lý"]);
-    expect(m.status[1]?.values).toEqual(["renewed", "terminated"]);
+  test("bốn trạng thái theo thứ tự cố định; Hiệu lực và Nguồn là danh sách cố định (không từ facets)", () => {
+    expect(m.status.map((s) => s.values[0])).toEqual(["draft", "reject", "done"]);
+    expect(m.effect.map((s) => s.values[0])).toEqual([
+      "not_started",
+      "active",
+      "expiring",
+      "expired",
+      "renewed",
+      "terminated",
+    ]);
+    expect(m.source.map((s) => s.values[0])).toEqual(["upload", "partner"]);
+    expect(m.source.map((s) => s.label)).toEqual(["Mình tải lên", "Đối tác gửi"]);
   });
   test("bên bán cùng tên rút gọn gộp về một lựa chọn, giữ cả hai giá trị thô", () => {
     expect(m.seller).toEqual([
@@ -80,7 +92,9 @@ describe("listQueryString", () => {
         q: " a ",
         page: 3,
         conds: {
-          status: { in: ["Đã xử lý"] },
+          status: { in: ["Đã duyệt xong", "Bị từ chối"] },
+          effect: { in: ["Còn hiệu lực"] },
+          source: { in: ["Đối tác gửi"] },
           seller: { in: ["Bao Bì Phương Nam"] },
           category: { in: ["Bao bì"] },
           value: { min: 100, max: null },
@@ -88,7 +102,9 @@ describe("listQueryString", () => {
       }),
     );
     expect(qs.has("q")).toBe(false);
-    expect(qs.getAll("status")).toEqual(["renewed", "terminated"]);
+    expect(qs.getAll("status")).toEqual(["reject", "done"]);
+    expect(qs.getAll("effect")).toEqual(["active"]);
+    expect(qs.getAll("source")).toEqual(["partner"]);
     expect(qs.getAll("seller")).toHaveLength(2);
     expect(qs.getAll("category")).toEqual(["c1"]);
     expect([qs.get("value_min"), qs.get("value_max"), qs.get("page")]).toEqual(["100", null, "3"]);
@@ -111,9 +127,9 @@ describe("Gap #8/#10 · lọc ngày + xuất tệp (cùng bộ lọc với danh 
   };
   test("lọc ngày vào danh sách: due thắng; khoảng; không lọc ⇒ không thêm tham số", () => {
     expect(listQueryString(base)).not.toContain("date_");
-    expect(
-      listQueryString({ ...base, date: { field: "action_deadline", due: "overdue" } }),
-    ).toContain("date_field=action_deadline&due=overdue");
+    expect(listQueryString({ ...base, date: { field: "end_date", due: "overdue" } })).toContain(
+      "date_field=end_date&due=overdue",
+    );
     const r = listQueryString({
       ...base,
       date: { field: "end_date", from: "2026-01-01", to: "2026-02-01" },

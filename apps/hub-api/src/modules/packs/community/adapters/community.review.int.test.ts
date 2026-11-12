@@ -9,13 +9,13 @@ import { Hono } from "hono";
 import {
   type Cast,
   seedCast,
-  seedComments,
   seedPosts,
 } from "../../../../../../../tests/acceptance/com-c3/_support/cast";
 import { mapError } from "../../../../lib/errors";
 import { pgExternalOrgResolver } from "../../kit/adapters/ext-org.pg";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import { communityModule } from "../community.mount";
+import { seedComments } from "./comment-seed.testkit";
 import { feedQuery } from "./post.sql";
 
 let sql: Sql;
@@ -90,8 +90,8 @@ beforeAll(async () => {
     { key: "S1_post", type: "sell", org: c.S1, author: c.s1a },
   ]);
   await seedComments(sql, c.A, [
-    { key: "c_s2", post: P.get("P_sup") as string, thread: c.S2, author: c.s2, org: c.S2 },
-    { key: "c_s1", post: P.get("P_sup") as string, thread: c.S1, author: c.s1a, org: c.S1 },
+    { key: "c_s2", post: P.get("P_sup") as string, author: c.s2, org: c.S2 },
+    { key: "c_s1", post: P.get("P_sup") as string, author: c.s1a, org: c.S1 },
   ]);
 }, 120_000);
 afterAll(async () => {
@@ -118,6 +118,7 @@ describe("com-c3 review", () => {
           cat: null,
           area: null,
           author: null,
+          authorUser: null,
           q: null,
           mine: false,
           cursor: null,
@@ -146,18 +147,17 @@ describe("com-c3 review", () => {
     expect(PostViewSchema.parse(ok.json).media[0]?.label).not.toContain("0987654321");
   });
 
-  it("TB3: đối tác chèn bình luận vào luồng công ty khác (thread_id của S2) ⇒ 42501; đổi bài khi sửa ⇒ 23514", async () => {
+  it("TB3: đối tác chèn bình luận dưới tên công ty khác (S2) ⇒ 42501; đổi bài khi sửa ⇒ 23514", async () => {
     const pa = P.get("P_sup") as string;
-    const [t2] = await sql<{ id: string }[]>`select id::text as id from community.threads
-      where post_id = ${pa}::uuid and ext_org_id = ${c.S2}::uuid`;
     const code = await pgCode(() =>
       inPackAs(
         "community",
         c.A,
         c.s1a,
-        (tx) => tx`insert into community.comments (tenant_id, post_id, thread_id,
-          thread_org, author_user_id, author_org, text_raw, text_masked)
-        values (${c.A}::uuid, ${pa}::uuid, ${t2?.id as string}::uuid, ${c.S1}::uuid, ${c.s1a}::uuid, ${c.S1}::uuid, 'x', 'x')`,
+        (
+          tx,
+        ) => tx`insert into community.comments (tenant_id, post_id, author_user_id, author_org, text_raw, text_masked)
+        values (${c.A}::uuid, ${pa}::uuid, ${c.s1a}::uuid, ${c.S2}::uuid, 'x', 'x')`,
       ),
     );
     const move = await pgCode(() =>
@@ -172,17 +172,17 @@ describe("com-c3 review", () => {
     expect({ code, move }).toEqual({ code: "42501", move: "23514" });
   });
 
-  it("Thấp1: chủ quản mở luồng cho công ty ngoài audience / khác bên đăng ⇒ 404; đúng ⇒ 201", async () => {
+  it("Thấp1: chủ quản nhắc công ty ngoài audience / khác bên đăng ⇒ 422 MENTION_NOT_ALLOWED; đúng ⇒ 201", async () => {
     const pa = P.get("P_sup") as string;
     const s1p = P.get("S1_post") as string;
     expect(
-      (await call("hA", "POST", `/posts/${pa}/comments`, { text: "x", orgId: c.B1 })).status,
-    ).toBe(404);
+      (await call("hA", "POST", `/posts/${pa}/comments`, { text: "x", mentions: [c.B1] })).status,
+    ).toBe(422);
     expect(
-      (await call("hA", "POST", `/posts/${s1p}/comments`, { text: "x", orgId: c.S2 })).status,
-    ).toBe(404);
+      (await call("hA", "POST", `/posts/${s1p}/comments`, { text: "x", mentions: [c.S2] })).status,
+    ).toBe(422);
     expect(
-      (await call("hA", "POST", `/posts/${pa}/comments`, { text: "x", orgId: c.S2 })).status,
+      (await call("hA", "POST", `/posts/${pa}/comments`, { text: "x", mentions: [c.S2] })).status,
     ).toBe(201);
   });
 
@@ -199,20 +199,20 @@ describe("com-c3 review", () => {
     });
   });
 
-  it("Thấp3: ghi nhãn đối tác ở DB chỉ Admin chủ quản (thành viên ⇒ 42501)", async () => {
+  it("CR-130 (Thấp3 cũ): hồ sơ đối tác nằm ở SHT — role community KHÔNG ghi/đọc bảng contracts (kể cả Admin chủ quản ⇒ 42501)", async () => {
     const w = (u: string) =>
       pgCode(() =>
         inPackAs(
           "community",
           c.A,
           u,
-          (tx) => tx`update community.partner_companies set area = 'HN'
+          (tx) => tx`update contracts.partner_profiles set area = 'HN'
           where ext_org_id = ${c.S1}::uuid`,
         ),
       );
     expect({ member: await w(c.hM), admin: await w(c.hA) }).toEqual({
       member: "42501",
-      admin: null,
+      admin: "42501",
     });
   });
 });

@@ -1,9 +1,11 @@
 # Mô hình Flow chuẩn (đích) — nền cho các CR sau
 
+> **CR-127 (2026-11-11) cập nhật §A:** mô hình Thư viện platform → tenant sao chép **đã gỡ**. Chỉ còn quy trình công ty tạo từ sơ đồ trống, platform_admin soạn, quản trị công ty xem. Các mục B–I, G2/G3, F còn nói Thư viện/clone/khe là **lịch sử thiết kế**; hiện hành: `current/engine/quy-trinh-cr127.md`.
+
 Trạng thái: **ĐÃ CHỐT 2026-11-06** — người dùng: "Chốt theo mặc định" cho mục A–I và H1–H6; thêm: "các tool hoặc flow Dify dùng như tool, có thể tạo node là tool đó để gắn vô flow app" (⇒ node **Công cụ**: mỗi workflow Dify / tool MCP / tool của app trong catalog đã bật cho công ty là một node chọn được trên canvas, đầu ra là trường khai báo của tool). Chưa code. Thay thế mô hình "khe + luật định tuyến" (ADR-0035, ADR-0036) khi được chốt ⇒ cần ADR mới.
 Nguồn ý người dùng: CR-120 ("flow là xương sống mọi app; flow động"), chat 2026-11-06 (trigger theo sự kiện, nhất quán, If/else, tenant admin sửa được), Luật GỐC 1–3 (`CLAUDE.md:18-22`).
 
-Từ vựng (một khái niệm = một tên): **Quy trình** (UI) = **Flow** (code) · **Node** = một ô trên sơ đồ · **Sự kiện** = việc xảy ra trong app làm flow chạy · **Dữ kiện** (code `facts`) = các trường nghiệp vụ của bản ghi mà flow đọc được · **Lượt chạy** = run · **Thư viện** = flow của platform · **Bản công ty** = flow do công ty sở hữu.
+Từ vựng (một khái niệm = một tên): **Quy trình** (UI) = **Flow** (code) · **Node** = một ô trên sơ đồ · **Sự kiện** = việc xảy ra trong app làm flow chạy · **Dữ kiện** (code `facts`) = các trường nghiệp vụ của bản ghi mà flow đọc được · **Lượt chạy** = run · **Quy trình công ty** = flow do platform_admin soạn cho một công ty (CR-127: không còn Thư viện).
 
 ---
 
@@ -18,10 +20,10 @@ Từ vựng (một khái niệm = một tên): **Quy trình** (UI) = **Flow** (c
 | Trường | Ý nghĩa |
 |---|---|
 | `key`, `name`, `app` | định danh, tên nghiệp vụ, app sở hữu (`contracts`, `community`…) |
-| `owner` | `library` (tenant_id null) hoặc `company` (tenant_id) |
+| `owner` | `company` (tenant_id) — mọi quy trình thuộc một công ty (không còn `library`) |
 | `trigger` | `{event, when?}` — sự kiện trong danh mục của app + điều kiện trên dữ kiện (mục C) |
 | `stages[]` | **định dạng stage hiện có của engine** (`step`, `executor`, `after`) + 2 trường mới: `next_step` (nhánh đi tiếp tới bước gộp), `outcome` cho node Kết thúc |
-| `source` | chỉ bản công ty: `{flow_key, version}` bản Thư viện đã sao (giữ `source_ref` + `source_rel_version` hiện có) |
+| `source` | **đã bỏ (CR-127)** — không còn bản sao từ Thư viện |
 | `version` | số bản xuất bản; nháp không có số |
 
 Giữ `stages` làm định dạng duy nhất vì engine đã chạy nó, canvas đã vẽ nó (nhánh, song song, gộp) [brief: hub-processes.ts:135; `docs/current/engine/flow-engine.md` §1–3]. Bỏ `slot_body` và `Flow` riêng của contracts.
@@ -35,19 +37,18 @@ Nháp ──Xuất bản──► vN (bất biến) ──Bật cho công ty─�
 Lượt chạy luôn chụp snapshot bản lúc bắt đầu ⇒ sửa/xuất bản không đổi lượt đang chạy [ADR-0017 bài 5; flow-engine.md §1]
 ```
 
-**Danh sách flow của công ty** (`company_flows`: tenant, flow, `enabled`, `replaced_by`, `position`) là **nguồn duy nhất** cho "công ty có flow nào, flow nào đang bật". Hai loại dòng, cùng định dạng flow:
-- **Được gán**: platform_admin gán (cấp) một flow Thư viện cho công ty ⇒ dòng trỏ flow Thư viện, chỉ xem, chạy bản Thư viện xuất bản mới nhất (như hành vi gán hiện nay, `thu-vien-quy-trinh.md` "Nháp, xuất bản").
-- **Bản công ty**: do tenant_admin (hoặc platform_admin) clone, sửa được.
+**Danh sách flow của công ty** (`company_flows`: tenant, flow, `enabled`, `position`) là **nguồn duy nhất** cho "công ty có flow nào, flow nào đang bật". Hai loại dòng, cùng định dạng flow:
+- **Quy trình công ty**: do **platform_admin** tạo từ **sơ đồ trống** cho công ty (chọn app trước) và áp dụng; quản trị công ty chỉ xem + bật/tắt vận hành theo cài đặt (ngoại lệ E8 `flow-settings`). Không còn dòng "được gán từ Thư viện".
 Thay cho `process_tenant_defs` + `process_routings` + `process_routing_rules` + `process_slots`.
 
-**Clone để dùng thay** (mở rộng cr121-c Q1/Q9): tenant_admin mở flow được gán (chỉ xem) → "Sao chép để sửa" ⇒ tạo bản công ty **cùng định dạng**, ghi "Sao từ <tên> · vN". Bản sao sửa ở nháp; **khi xuất bản lần đầu** ⇒ bản sao Bật, bản gốc **tự Tắt cho công ty này** (`replaced_by` = bản sao, lý do hiện trên dòng gốc: "Đang tắt · đã thay bằng <bản công ty>"), một transaction. **Quay về bản gốc** = một nút trên bản công ty: bật lại bản gốc, tắt bản sao (giữ bản sao để dùng lại). Bấm Sao chép lần hai ⇒ mở bản sao đã có. Mã phòng ban đổi thành Group của công ty lúc sao (giữ luật "mã Group → id theo tenant"); thiếu phòng ⇒ lỗi nói rõ phòng nào + cách sửa. Bản gốc và bản sao không bao giờ cùng Bật cho một công ty ⇒ không chạy trùng.
+**Không còn Thư viện, mẫu, sao chép (CR-127, người dùng chốt 2026-11-10/11):** không có mẫu Sổ Hợp Tác, mẫu Thư viện, "Sao chép để sửa", Quay về bản gốc, `replaced_by`, tự gán mặc định cho công ty mới. Công ty chưa có quy trình ⇒ Gửi duyệt bị chặn `409 NO_APPROVAL_FLOW` (nói rõ lý do + ai cần làm gì). Mô hình hiện hành: [current/engine/quy-trinh-cr127.md](../current/engine/quy-trinh-cr127.md).
 
 **Ai sửa gì**
 
-| Vai | Thư viện | Bản công ty | Danh sách flow công ty | Lượt chạy |
+| Vai | Thư viện (đã bỏ) | Quy trình công ty | Cài đặt/danh sách | Lượt chạy |
 |---|---|---|---|---|
-| platform_admin | tạo, sửa, xuất bản, tắt; **gán cho công ty** | của mọi công ty | mọi công ty | xem, huỷ, mở lại |
-| tenant_admin | flow được gán: chỉ xem + Sao chép để sửa | của công ty mình: sửa, xuất bản (= dùng thay bản gốc), quay về bản gốc, xoá | công ty mình: bật/tắt, xếp thứ tự | công ty mình |
+| platform_admin | — (không còn Thư viện) | **tạo từ sơ đồ trống, sửa, áp dụng cho mọi công ty và mọi app** | mọi công ty | xem, huỷ |
+| tenant_admin | — | chỉ **xem** (readOnly) | công ty mình: cài đặt vận hành (`flow_triggers`, `claim_release_h`) | công ty mình |
 | member | — | — | — | xem trạng thái + làm việc được giao (duyệt, form) trên bản ghi |
 
 ---

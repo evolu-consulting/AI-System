@@ -8,10 +8,10 @@ import { useCreateOrg, useDeactivateOrg, useReactivateOrg, useRenameOrg } from "
 import { PartnerNameDialog } from "../components/PartnerNameDialog";
 import { useReportError } from "./use-report-error";
 
-type NameTarget = { mode: "create" } | { mode: "rename"; org: ExternalOrg };
+type NameTarget = { mode: "create"; name?: string } | { mode: "rename"; org: ExternalOrg };
 
 export function useOrgActions(tenantId: string | undefined): {
-  openCreate: () => void;
+  openCreate: (name?: string) => void;
   rename: (org: ExternalOrg) => void;
   deactivate: (org: ExternalOrg) => void;
   reactivate: (org: ExternalOrg) => void;
@@ -61,7 +61,7 @@ export function useOrgActions(tenantId: string | undefined): {
       {nameTarget ? (
         <PartnerNameDialog
           mode={nameTarget.mode}
-          initial={nameTarget.mode === "rename" ? nameTarget.org.name : ""}
+          initial={nameTarget.mode === "rename" ? nameTarget.org.name : (nameTarget.name ?? "")}
           onSubmit={submitName}
           onError={report}
           onClose={() => setNameTarget(null)}
@@ -79,7 +79,7 @@ export function useOrgActions(tenantId: string | undefined): {
     </>
   );
   return {
-    openCreate: () => setNameTarget({ mode: "create" }),
+    openCreate: (name) => setNameTarget({ mode: "create", ...(name ? { name } : {}) }),
     rename: (org) => setNameTarget({ mode: "rename", org }),
     deactivate: setToDeactivate,
     reactivate,

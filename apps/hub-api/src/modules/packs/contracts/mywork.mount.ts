@@ -2,17 +2,25 @@
 // gắn dưới `/pack/contracts` ở `packs.mount.ts`. Múi tenant qua `safeTimeZone` (HD4); `now` để test tiêm.
 import type { Db, Tx } from "@ai/db";
 import type { Hono } from "hono";
-import type { PackAccessView, PackGuardVars, PackWho } from "../kit/public";
-import { createPackUow, packTenantOnly } from "../kit/public";
+import {
+  createPackUow,
+  flowEngine,
+  type PackAccessView,
+  type PackGuardVars,
+  type PackWho,
+  packTenantOnly,
+} from "../kit/public";
 import { followupsRepo } from "./adapters/followups.repo";
 import { myWorkRepo } from "./adapters/mywork.repo";
 import { myWorkRoutes } from "./adapters/mywork.routes";
 import { overviewRepo } from "./adapters/overview.repo";
 import { overviewRoutes } from "./adapters/overview.routes";
+import { EV_MILESTONE_DUE } from "./adapters/schedule-source.repo";
 import { todoRepo } from "./adapters/todo.repo";
 import { followupsUsecases } from "./application/followups.usecase";
 import { myWork } from "./application/mywork.usecase";
 import { overviewUsecase } from "./application/overview.usecase";
+import { CONTRACTS_PACK } from "./domain/contract-flow-events.rules";
 import type { MyWorkApproval } from "./domain/mywork.types";
 import { safeTimeZone } from "./reminders.mount";
 import { envRepEngine } from "./rep-current.mount";
@@ -51,7 +59,22 @@ export function myWorkModule(
   // REP-v3 mục 7: cờ `REPUTATION_ENGINE` (đọc mỗi yêu cầu) bật nguồn "Đánh giá đối tác".
   r.route(
     "/",
-    overviewRoutes(view, overviewUsecase({ uow, timeZoneOf: tz, now, engine: envRepEngine })),
+    overviewRoutes(
+      view,
+      overviewUsecase({
+        uow,
+        timeZoneOf: tz,
+        now,
+        engine: envRepEngine,
+        milestoneFlow: async (tenantId) =>
+          (await flowEngine()?.availability.hasFlowFor(null, {
+            tenantId,
+            app: CONTRACTS_PACK,
+            event: EV_MILESTONE_DUE,
+            facts: {},
+          })) ?? false,
+      }),
+    ),
   );
   return r;
 }

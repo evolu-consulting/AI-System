@@ -1,10 +1,8 @@
-// CR-121 c17 · Q1/Q9/Q11 · quy trình THƯ VIỆN mở từ Công ty › Quy trình: CHỈ XEM (sơ đồ mặc định, danh sách bước là chế độ phụ) + nút
-// "Sao chép cho công ty này" (bản riêng, TỰ GÁN thay bản cũ; bấm lần hai ⇒ 200 mở cùng bản). Không có sửa/Xuất bản ở đây.
+// CR-121 c17 · Q1/Q9/Q11 · quy trình THƯ VIỆN mở từ Công ty › Quy trình: CHỈ XEM (sơ đồ mặc định, danh sách bước là chế độ phụ).
+// CR-127 · Z5: không còn "Sao chép cho công ty này" — chỉ quản trị nền tảng soạn; bản riêng đã có (dữ liệu cũ) vẫn mở được.
 
-import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { type ReactNode, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/components/shared/DataTable";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -16,11 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FlowRowsView } from "@/features/apps/components/SlotFlowView";
 import { rowsFromSlotBody } from "@/features/apps/lib/flow-view";
-import { cloneForCompany, useLibraryView } from "@/features/tenants/flows/api";
+import { useLibraryView } from "@/features/tenants/flows/api";
 import { isApiError } from "@/lib/errors";
 import { useViewMode } from "../../hooks/use-view-mode";
 import { companySearch } from "../../lib/company-copy";
-import { processErrorSpec } from "../../lib/errors";
 import { libraryFlowOf } from "../../lib/library-flow";
 import { runColumns } from "../editor/EditorRunsTab";
 import { ViewModeToggle } from "../ViewModeToggle";
@@ -28,42 +25,13 @@ import { LibraryFlowCanvas } from "./LibraryFlowCanvas";
 
 type Props = { tenantId: string; defId: string; fallback: ReactNode };
 
-/** Không phải quy trình thư viện (bản riêng của công ty ⇒ 422 NOT_LIBRARY_DEF; không thấy ⇒ 404) ⇒ để trình sửa/NotFound xử lý. */
-const notLibrary = (e: unknown): boolean =>
-  isApiError(e) && (e.status === 404 || String(e.code) === "NOT_LIBRARY_DEF");
-
-function useCopyForCompany(tenantId: string, defId: string) {
-  const { t } = useTranslation();
-  const qc = useQueryClient();
-  const navigate = useNavigate();
-  const [pending, setPending] = useState(false);
-  const copy = async () => {
-    setPending(true);
-    try {
-      const r = await cloneForCompany(tenantId, defId);
-      notifySuccess(t("process.admin.editor.copied"));
-      void qc.invalidateQueries({ queryKey: ["process", "company-lib", tenantId] });
-      void qc.invalidateQueries({ queryKey: ["process", "assigned", "caps", tenantId] });
-      void navigate({
-        to: "/processes/$processId",
-        params: { processId: r.def_id },
-        search: companySearch(tenantId),
-      });
-    } catch (e) {
-      const s = processErrorSpec(e);
-      notifyError(t("process.admin.editor.copyFailed", { reason: t(s.key, s.params) }));
-    } finally {
-      setPending(false);
-    }
-  };
-  return { pending, copy };
-}
+/** Không phải quy trình thư viện (không thấy ⇒ 404) ⇒ để trình sửa/NotFound xử lý. */
+const notLibrary = (e: unknown): boolean => isApiError(e) && e.status === 404;
 
 export function LibraryReadOnlyView({ tenantId, defId, fallback }: Props) {
   const { t } = useTranslation();
   const q = useLibraryView(tenantId, defId, true);
   const [mode, setMode] = useViewMode();
-  const act = useCopyForCompany(tenantId, defId);
   if (q.isPending) return <LoadingState />;
   if (notLibrary(q.error)) return <>{fallback}</>;
   if (q.isError || !q.data)
@@ -95,11 +63,7 @@ export function LibraryReadOnlyView({ tenantId, defId, fallback }: Props) {
               {t("process.admin.editor.openCopy")}
             </Link>
           </Button>
-        ) : (
-          <Button disabled={act.pending} data-testid="library-copy" onClick={() => void act.copy()}>
-            {t("tenants.flows.copy")}
-          </Button>
-        )}
+        ) : null}
       </Alert>
       <Tabs defaultValue="steps">
         <TabsList>

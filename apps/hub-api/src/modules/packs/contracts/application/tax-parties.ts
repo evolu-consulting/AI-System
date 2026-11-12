@@ -57,7 +57,7 @@ export function retryAtOf(f: ContractFields, hits: TaxHits): number | null {
   return at;
 }
 
-/** Lượt tra lại MST của HĐ đã `needs_review`; còn hẹn ⇒ hẹn tiếp (≤ `TAX_RETRY_MAX` lần). */
+/** Lượt tra lại MST của HĐ còn `draft` (đang soát); còn hẹn ⇒ hẹn tiếp (≤ `TAX_RETRY_MAX` lần). */
 export function createRefreshParties(d: {
   uow: ExtractionUow;
   tax: TaxRegistry | null;
@@ -65,7 +65,7 @@ export function createRefreshParties(d: {
 }) {
   return async (who: PackWho, id: string, attempt: number): Promise<"updated" | "skipped"> => {
     const src = await d.uow.tenant(who, (r) => r.extraction.source(id));
-    if (!src || src.status !== "needs_review") return "skipped";
+    if (!src || src.status !== "draft") return "skipped";
     const f = fillFields(src.fields);
     const hits = await prefetchTax(
       d.tax,

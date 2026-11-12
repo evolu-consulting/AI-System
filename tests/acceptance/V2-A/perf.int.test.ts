@@ -24,9 +24,9 @@ afterAll(async () => {
 });
 
 /** n HĐ bán, mỗi HĐ k mốc (thêm thẳng DB, nhanh). */
-async function seed(n: number, k: number): Promise<string[]> {
+async function seed(n: number, k: number, status = "done"): Promise<string[]> {
   const ids: string[] = [];
-  for (let i = 0; i < n; i++) ids.push(await deal(c.sql, { sale: true }));
+  for (let i = 0; i < n; i++) ids.push(await deal(c.sql, { sale: true, status }));
   if (k > 0)
     await c.sql`insert into contracts.obligations (tenant_id, contract_id, party_key, direction, kind, seq, due_date, title)
       select cc.tenant_id, cc.id, null, 'receive', 'payment', g, current_date + g, 'Thu ' || g
@@ -38,7 +38,7 @@ const count = async (fn: () => Promise<unknown>) => (await captureSql(c, fn)).qu
 const TX = 1;
 
 describe("V2-A · số câu SQL cố định (Luật 4c)", () => {
-  it("chi tiết: 0 mốc = 40 mốc = MỘT câu đọc", async () => {
+  it("chi tiết: 0 mốc = 40 mốc = số câu cố định (một câu đọc HĐ + một câu `submit_block` của quy trình)", async () => {
     await arrangeV2a(c);
     const [a] = await seed(1, 0);
     const [b] = await seed(1, 40);
@@ -46,7 +46,8 @@ describe("V2-A · số câu SQL cố định (Luật 4c)", () => {
     await get(a as string)(); // ấm (kế hoạch truy vấn, cache quyền)
     const na = await count(get(a as string));
     const nb = await count(get(b as string));
-    expect({ na, nb }).toEqual({ na: TX + 1, nb: TX + 1 });
+    // CR-127 SG1: chi tiết đọc thêm MỘT câu (`submit_block`: HĐ có quy trình khớp để Gửi?) — hằng số, không theo số mốc.
+    expect({ na, nb }).toEqual({ na: TX + 2, nb: TX + 2 });
     const body = await get(b as string)();
     expect(body.milestones.length).toBe(40);
   });
@@ -70,7 +71,7 @@ describe("V2-A · số câu SQL cố định (Luật 4c)", () => {
 
   it("thêm / sửa / xoá một mốc = số câu cố định (khoá HĐ + khoá mốc + một CTE ghi)", async () => {
     await arrangeV2a(c);
-    const [id] = await seed(1, 30);
+    const [id] = await seed(1, 30, "draft"); // CR-127 K4: HĐ processing/done khoá kế hoạch mốc ⇒ thêm/sửa/xoá mốc cần HĐ Nháp
     const add = () =>
       ok(call(c, P.hoa, "POST", `/contracts/${id}/milestones`, { kind: "other", due_date: d(2) }));
     await add();
@@ -82,7 +83,8 @@ describe("V2-A · số câu SQL cố định (Luật 4c)", () => {
     const nDel = await count(() => call(c, P.hoa, "DELETE", `/milestones/${m.id}`));
     expect({ add: cap.queries.length, patch: nPatch, del: nDel }).toEqual({
       add: TX + 2,
-      patch: TX + 3,
+      // CR-127 X3: PATCH có thêm tx chọn đường (đọc HĐ + quyền, tx riêng) trước tx ghi ⇒ 2 TX + 4 câu; vẫn hằng số theo số mốc (30 mốc).
+      patch: 2 * TX + 4,
       del: TX + 3,
     });
   });

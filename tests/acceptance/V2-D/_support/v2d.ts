@@ -2,13 +2,13 @@
 // HĐ gắn SP (owner, bỏ RLS). Xác nhận mốc giao = `POST /obligations/:id/settle` THẬT. Đỏ NGAY nếu thiếu migration 0026.
 // Không chứa `it(...)`.
 import { expect } from "bun:test";
-import { unlockContract } from "../../HD1/_support/hd1";
+import { setLegacyStatus, unlockContract } from "../../HD1/_support/hd1";
 import {
   arrangeV2a,
   type CtxN1,
   call,
   d,
-  deal,
+  deal as dealBase,
   type Json,
   ok,
   P,
@@ -19,7 +19,11 @@ import {
 } from "../../V2-A/_support/v2a";
 
 export type { CtxN1, Json, Res, Sql };
-export { call, d, deal, ok, P, startHd1, T };
+export { call, d, ok, P, startHd1, T };
+
+/** CR-127 K4: HĐ DONE khoá thêm/sửa mốc + dòng ⇒ fixture dựng khi còn DRAFT (mở); `settleRaw` chuyển DONE (qua cổng) trước khi xác nhận. */
+export const deal = (sql: Sql, o: Parameters<typeof dealBase>[1] = {}) =>
+  dealBase(sql, { status: "draft", ...o });
 
 type Person = (typeof P)[keyof typeof P];
 
@@ -108,8 +112,17 @@ export const addDelivery = async (
 ): Promise<string> => (await ok(addDeliveryRaw(c, contractId, items))).id;
 
 /** Xác nhận mốc (editor) — thân thô. */
-export const settleRaw = (c: CtxN1, id: string, p: Person = P.hoa, b: unknown = {}) =>
-  call(c, p, "POST", `/obligations/${id}/settle`, b);
+export async function settleRaw(c: CtxN1, id: string, p: Person = P.hoa, b: unknown = {}) {
+  const [k] = await c.sql<{ id: string }[]>`select c.id::text from contracts.contracts c
+    join contracts.obligations o on o.contract_id = c.id where o.id = ${id} and c.status = 'draft'`;
+  if (k) await setLegacyStatus(c.sql, k.id, "done");
+  return call(c, p, "POST", `/obligations/${id}/settle`, b);
+}
+
+/** Fixture: mở lại HĐ (về draft) để thêm đợt giao tiếp theo sau khi đợt trước đã xác nhận (HĐ done khoá kế hoạch mốc — K4; thực tế đi qua phụ lục). */
+export async function reopen(c: CtxN1, contractId: string): Promise<void> {
+  await setLegacyStatus(c.sql, contractId, "draft");
+}
 
 /** Trạng thái thành phần (owner): tồn số, giá trị, BQ. */
 export async function comp(sql: Sql, id: string) {
@@ -165,6 +178,7 @@ export async function stockIn(
   price: number,
   o: { end?: string; componentIds?: string[] } = {},
 ): Promise<void> {
+  // CR-127 K4: HĐ DONE khoá thêm mốc ⇒ dựng item + mốc khi còn DRAFT, rồi chuyển DONE (qua cổng) trước khi xác nhận giao.
   const k = await deal(c.sql, { sale: false, end: o.end ?? d(365) });
   await item(c.sql, k, { qty, price, productId, componentIds: o.componentIds ?? null });
   const m = await addDelivery(c, k);

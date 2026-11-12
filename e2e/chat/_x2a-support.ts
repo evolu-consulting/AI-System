@@ -46,11 +46,11 @@ export async function twoUsers(browser: Browser, a = "lan", b = "thu") {
 }
 
 // ---------- API thật (dựng dữ liệu trong ca) ----------
-export async function token(user: string, tenant = "acme"): Promise<string> {
+export async function token(user: string, tenant = "acme", password = PW): Promise<string> {
   const r = await fetch(`${AUTH}/auth/login`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ tenant_key: tenant, username: user, password: PW }),
+    body: JSON.stringify({ tenant_key: tenant, username: user, password }),
   });
   expect(r.status).toBe(200);
   return ((await r.json()) as { access_token: string }).access_token;

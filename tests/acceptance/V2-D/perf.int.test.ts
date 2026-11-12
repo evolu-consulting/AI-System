@@ -26,7 +26,7 @@ afterAll(async () => {
 });
 
 const TX = 1;
-const STMTS = 9; // lockContractOf + lockObligation + nạp + 4 applyDelivery + ghi + notify.enqueue (gap-c: một câu cố định mỗi lô, không theo số dòng)
+const STMTS = 11; // lockContractOf + lockObligation + nạp + 4 applyDelivery + ghi + record_evidence + task_signal (CR-127 X1) + notify.enqueue — HẰNG SỐ theo số dòng (1 = 20)
 
 async function contractWith(n: number, sale: boolean, products: string[]): Promise<string> {
   const k = await deal(c.sql, { sale, end: d(365) });
@@ -69,6 +69,7 @@ describe("V2-D · xác nhận mốc giao: số câu SQL cố định (Luật 4c)
     await item(c.sql, k, { qty: 5, price: 1 });
     const m = await addDelivery(c, k);
     const cap = await captureSql(c, () => ok(settleRaw(c, m, undefined, { at: d(0) })));
-    expect(cap.queries.length).toBe(TX + 4);
+    // CR-127 X1: ghi bằng chứng + tín hiệu việc (record_evidence, task_signal) + notify.enqueue ⇒ khoá + nạp + ghi + 3 câu = TX + 6.
+    expect(cap.queries.length).toBe(TX + 6);
   });
 });

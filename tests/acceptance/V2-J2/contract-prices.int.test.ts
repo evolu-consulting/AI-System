@@ -29,8 +29,8 @@ async function contract(o: {
     buyer_tax_id: fv(o.deal === "buy" ? "0100000000" : "0108888888"),
   };
   const [k] = await c.sql<{ id: string }[]>`insert into contracts.contracts
-    (tenant_id, kind, title, direction, deal, status, owner_user_id, created_by, fields, superseded_at)
-    values (${T.acme}, 'contract', ${o.number}, ${o.deal === "buy" ? "purchase" : "sale"}, ${o.deal}, 'active',
+    (tenant_id, kind, title, direction, deal, status, effect, owner_user_id, created_by, fields, superseded_at)
+    values (${T.acme}, 'contract', ${o.number}, ${o.deal === "buy" ? "purchase" : "sale"}, ${o.deal}, 'done', 'active',
       ${P.lan.id}, ${P.lan.id}, ${c.sql.json(fields)}, null) returning id`;
   await c.sql`insert into contracts.contract_items (tenant_id, contract_id, ord, name, unit, qty, unit_price, product_id)
     values (${T.acme}, ${k?.id as string}, 0, 'Thùng carton 5 lớp', 'cái', 100, ${o.price}, ${o.product})`;

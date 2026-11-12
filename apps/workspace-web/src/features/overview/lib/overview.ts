@@ -15,21 +15,16 @@ export const WORK_PREVIEW = 6;
 /** "Sắp hết hiệu lực" hiện tối đa bấy nhiêu HĐ. */
 export const EXPIRING_MAX = 3;
 /** Truy vấn danh sách HĐ sắp hết hiệu lực nhất (`GET /contracts`). */
-export const EXPIRING_QS = `status=expiring&sort=end_date&dir=asc&page=1&page_size=${EXPIRING_MAX}`;
+export const EXPIRING_QS = `effect=expiring&sort=end_date&dir=asc&page=1&page_size=${EXPIRING_MAX}`;
 
 export const CONTRACT_GROUPS = ["pending", "active", "done"] as const;
 export type ContractGroup = (typeof CONTRACT_GROUPS)[number];
 
 const GROUP_OF: Record<ContractStatus, ContractGroup> = {
-  needs_review: "pending",
-  extracting: "pending",
-  extract_failed: "pending",
-  active: "active",
-  expiring: "active",
-  expired: "done",
-  renewed: "done",
-  terminated: "done",
-  rejected: "done",
+  draft: "pending",
+  processing: "pending",
+  done: "active",
+  reject: "done",
 };
 
 /** Số hợp đồng theo nhóm trạng thái (từ facets cả tenant mà người dùng thấy) và tổng. */

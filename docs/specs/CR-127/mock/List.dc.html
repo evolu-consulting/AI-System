@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Danh sách hợp đồng</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#4f46e5}a:hover{color:#3730a3}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; padding: 24px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <div style="display: flex; justify-content: space-between; align-items: center">
+    <h1 style="margin: 0; font-size: 24px">Hợp đồng</h1>
+    <button style="background: #4f46e5; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font: inherit; font-size: 14px; font-weight: 600">Tải hợp đồng lên</button>
+  </div>
+  <div style="display: flex; gap: 8px; font-size: 14px; flex-wrap: wrap">
+    <span style="padding: 6px 12px; border-radius: 999px; background: #ecebff; color: #4f46e5; font-weight: 600">Tất cả 18</span>
+    <span style="padding: 6px 12px; border-radius: 999px; background: #fff; border: 1px solid #e5e5ee">DRAFT 2</span>
+    <span style="padding: 6px 12px; border-radius: 999px; background: #fff; border: 1px solid #e5e5ee">PROCESSING 3</span>
+    <span style="padding: 6px 12px; border-radius: 999px; background: #fff; border: 1px solid #e5e5ee">REJECT 1</span>
+    <span style="padding: 6px 12px; border-radius: 999px; background: #fff; border: 1px solid #e5e5ee">DONE 12</span>
+    <span style="flex: 1"></span>
+    <span style="padding: 6px 12px; border-radius: 8px; background: #fff; border: 1px solid #e5e5ee; color: #6b6a80">Sắp hết hiệu lực (30 ngày) 2</span>
+  </div>
+  <div style="background: #fff; border: 1px solid #e5e5ee; border-radius: 12px; overflow: hidden; font-size: 14px">
+    <div style="display: grid; grid-template-columns: 2.4fr 1.4fr 1fr 1.2fr 1.6fr 1.4fr; padding: 10px 16px; background: #f7f7fb; color: #6b6a80; font-size: 12px; font-weight: 600; gap: 10px">
+      <span>HỢP ĐỒNG</span><span>ĐỐI TÁC</span><span style="text-align: right">GIÁ TRỊ</span><span>TRẠNG THÁI</span><span>ĐANG CHỜ</span><span>HIỆU LỰC</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 2.4fr 1.4fr 1fr 1.2fr 1.6fr 1.4fr; padding: 12px 16px; border-top: 1px solid #e5e5ee; gap: 10px; align-items: center">
+      <b>HĐ bán thùng phi cho Tân Phát</b><span>Cơ sở Tân Phát</span><span style="text-align: right">650.000.000</span><span><span style="font-size: 12px; font-weight: 700; background: #ecebff; color: #4f46e5; padding: 3px 10px; border-radius: 999px">PROCESSING</span></span><span>Kế toán · còn 31 giờ</span><span style="color: #6b6a80">—</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 2.4fr 1.4fr 1fr 1.2fr 1.6fr 1.4fr; padding: 12px 16px; border-top: 1px solid #e5e5ee; gap: 10px; align-items: center">
+      <b>HĐ bán CKS cho Cty ABC</b><span>Abc</span><span style="text-align: right">1.650.000</span><span><span style="font-size: 12px; font-weight: 700; background: #eeeef3; color: #4b4a5e; padding: 3px 10px; border-radius: 999px">DRAFT</span></span><span style="color: #b45309">Bị trả lại · Trần Bình sửa</span><span style="color: #6b6a80">—</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 2.4fr 1.4fr 1fr 1.2fr 1.6fr 1.4fr; padding: 12px 16px; border-top: 1px solid #e5e5ee; gap: 10px; align-items: center">
+      <b>HĐ mua CKS NCCA · Lô Q3</b><span>Hãng NCCA</span><span style="text-align: right">236.000.000</span><span><span style="font-size: 12px; font-weight: 700; background: #fdecec; color: #b91c1c; padding: 3px 10px; border-radius: 999px">REJECT</span></span><span style="color: #6b6a80">—</span><span style="color: #6b6a80">—</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 2.4fr 1.4fr 1fr 1.2fr 1.6fr 1.4fr; padding: 12px 16px; border-top: 1px solid #e5e5ee; gap: 10px; align-items: center">
+      <b>HĐ hoá đơn điện tử Viettel</b><span>Viettel S-Invoice</span><span style="text-align: right">48.000.000</span><span><span style="font-size: 12px; font-weight: 700; background: #e7f6ec; color: #15803d; padding: 3px 10px; border-radius: 999px">DONE</span></span><span style="color: #6b6a80">—</span><span>tới 21/06/2027</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 2.4fr 1.4fr 1fr 1.2fr 1.6fr 1.4fr; padding: 12px 16px; border-top: 1px solid #e5e5ee; gap: 10px; align-items: center">
+      <b>HĐ bán CKS USB cho An Phú</b><span>An Phú</span><span style="text-align: right">21.000.000</span><span><span style="font-size: 12px; font-weight: 700; background: #e7f6ec; color: #15803d; padding: 3px 10px; border-radius: 999px">DONE</span></span><span style="color: #6b6a80">—</span><span style="color: #b45309">hết hạn sau 12 ngày</span>
+    </div>
+  </div>
+  <div style="font-size: 13px; color: #6b6a80">Trạng thái = tiến trình duyệt (4 giá trị). Hiệu lực = tính từ ngày trên hợp đồng, hiện riêng, không phải trạng thái.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

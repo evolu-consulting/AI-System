@@ -56,7 +56,7 @@ export type TeamRunStatus =
   | "limit"
   | "failed"
   | "cancelled";
-export type TaskKind = "review" | "ask" | "decision";
+export type TaskKind = "review" | "ask" | "decision" | "milestone"; // CR-127 · E2 · việc Xác nhận mốc (hub 0131)
 export type TaskStatus = "open" | "closed";
 export type DecisionOption = "add_attempt" | "use_current" | "cancel";
 export type ExecutorKind =
@@ -82,7 +82,9 @@ export type NoticeKind =
   | "reminder"
   | "task_closed"
   | "run_finished"
-  | "escalated";
+  | "escalated"
+  | "task_released" // CR-127 · E2 · việc đã nhận tự trả về nhóm
+  | "milestone_task"; // CR-127 · E1 · việc Xác nhận mốc mới
 
 /** Con trỏ hẹn giờ (đọc từ repo; `Date` thay chuỗi ISO — mapper/repo chuyển). */
 export type Timer = {

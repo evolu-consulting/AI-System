@@ -1,6 +1,6 @@
 // CR-118 §11.2 · làn đầy đủ · viết TRƯỚC code phần quyền/tenant: route tập quy trình đã gán + luật chọn quy trình qua Hono thật
 // (`libraryRoutes`) trên DB thật (`hub_api`), user giả qua header. Kiểm trạng thái DB thật (hàng luật, tập gán, audit, version cấu
-// hình), không chỉ mã HTTP. Khe `contracts.approval` thật; def thư viện = bản sao def mặc định seed 0069 (đã xuất bản v1).
+// hình), không chỉ mã HTTP. Khe `contracts.intake` thật (khe thường, không opt-in); def thư viện = bản sao def mặc định seed 0093 (đã xuất bản v1).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { APP_MANIFESTS } from "@ai/contracts/app-manifest";
 import type { Role } from "@ai/contracts/common";
@@ -15,21 +15,17 @@ import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
 import { communitySlotSpecs } from "../../packs/community/public";
 import { communityFlowPorts } from "../../packs/community-flow.mount";
-import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/public";
-import {
-  approvalEngineTools,
-  approvalSlotSpec,
-  intakeSlotSpec,
-} from "../../packs/contracts/testing";
+import { intakeSlotSpec } from "../../packs/contracts/testing";
 import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
 import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../core/ports";
 import { libraryRoutes } from "./library.routes";
+import { INTAKE_DEFAULT_ID, INTAKE_SLOT } from "./slot-generic.fixture";
 
-const SLOT = "contracts.approval";
+const SLOT = INTAKE_SLOT;
 const X = tenantId(1181);
 const Y = tenantId(1182);
-const DFLT = APPROVAL_DEFAULT_DEF.id;
+const DFLT = INTAKE_DEFAULT_ID;
 const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
   P: { userId: userId(1180), tenantId: X, role: "platform_admin" },
   A: { userId: userId(1181), tenantId: X, role: "tenant_admin" },
@@ -105,17 +101,9 @@ beforeAll(async () => {
   lib.A = await libCopy("rt-a", "QT A");
   lib.B = await libCopy("rt-b", "QT B");
   lib.C = await libCopy("rt-c", "QT C");
-  slotRegistry.register(approvalSlotSpec);
   slotRegistry.register(intakeSlotSpec);
   for (const s of communitySlotSpecs()) slotRegistry.register(s);
-  const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({
-    key: t.name,
-    name: t.name,
-    description: t.description,
-    sideEffect: false,
-    action: t.action,
-    params: t.params,
-  }));
+  const tools: { key: string }[] = [];
   const packTools = {
     has: (k: string) => tools.some((t) => t.key === k),
     info: (k: string) => tools.find((t) => t.key === k),
@@ -198,7 +186,7 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
     const v1 = Number(g.json.version);
     expect({ s: g.status, v: v1, n: g.json.processes.length }).toEqual({ s: 200, v: 5, n: 2 });
     const v0 = await hubVersion();
-    const r = await call("A", "PUT", R(X), {
+    const r = await call("P", "PUT", R(X), {
       version: v1,
       rules: [
         { condition: { departmentIds: [dx.get("van-hanh")] }, def_id: lib.B },
@@ -216,12 +204,12 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
     const [a] =
       await o`select actor_role, before->>'version' as b, after->>'version' as af from hub.audit_log
       where tenant_id = ${X} and action = 'set_routing' order by at desc limit 1`;
-    expect(a).toEqual({ actor_role: "tenant_admin", b: String(v1), af: String(v1 + 1) });
+    expect(a).toEqual({ actor_role: "platform_admin", b: String(v1), af: String(v1 + 1) });
   });
 
   it("quy trình chưa gán ⇒ 422", async () => {
     const v = await ver();
-    const r = await call("A", "PUT", R(X), {
+    const r = await call("P", "PUT", R(X), {
       version: v,
       rules: [{ condition: { departmentIds: [dx.get("van-hanh")] }, def_id: lib.C }],
     });
@@ -234,12 +222,12 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
       def_id: lib.A,
     }));
     // > 50 luật ⇒ chặn ở contract (zod `max`) ⇒ 400 VALIDATION_ERROR, không ghi gì.
-    expect((await call("A", "PUT", R(X), { version: v, rules: many })).status).toBe(400);
+    expect((await call("P", "PUT", R(X), { version: v, rules: many })).status).toBe(400);
     expect(await ver()).toBe(v);
   });
 
   it("phòng ban tenant khác ⇒ 422", async () => {
-    const r = await call("A", "PUT", R(X), {
+    const r = await call("P", "PUT", R(X), {
       version: await ver(),
       rules: [{ condition: { departmentIds: [dy.get("phong-y")] }, def_id: lib.A }],
     });
@@ -254,7 +242,7 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
   it("tenant admin tenant khác ⇒ 404, member ⇒ 403", async () => {
     const body = { version: 2, rules: [] };
     expect((await call("AY", "GET", R(X))).status).toBe(404);
-    expect((await call("AY", "PUT", R(X), body)).status).toBe(404);
+    expect((await call("AY", "PUT", R(X), body)).status).toBe(403); // quản trị công ty chỉ xem (E8)
     expect((await call("M", "GET", R(X))).status).toBe(403);
     expect((await call("M", "PUT", R(X), body)).status).toBe(403);
     expect((await rulesInDb(X)).length).toBe(3);
@@ -267,7 +255,7 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
       rules: [{ condition: { departmentIds: [dx.get("kinh-doanh")] }, def_id: d }],
     });
     const [a, b] = await Promise.all([
-      call("A", "PUT", R(X), body(lib.A)),
+      call("P", "PUT", R(X), body(lib.A)),
       call("P", "PUT", R(X), body(lib.B)),
     ]);
     expect([a.status, b.status].sort()).toEqual([200, 409]);
@@ -358,7 +346,7 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
   it("cr118-route-kind · luật theo loại HĐ: lưu, loại ngoài enum ⇒ 400, không điều kiện ⇒ 422", async () => {
     const version = (await call("A", "GET", R(X))).json.version as number;
     const kd = dx.get("kinh-doanh") as string;
-    const r = await call("A", "PUT", R(X), {
+    const r = await call("P", "PUT", R(X), {
       version,
       rules: [
         { condition: { departmentIds: [kd], contractKinds: ["buy", "buy"] }, def_id: lib.A },
@@ -374,12 +362,12 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
         { departmentIds: [kd] },
       ],
     });
-    const bad = await call("A", "PUT", R(X), {
+    const bad = await call("P", "PUT", R(X), {
       version: version + 1,
       rules: [{ condition: { contractKinds: ["lease"] }, def_id: lib.A }],
     });
     expect(bad.status).toBe(400);
-    const empty = await call("A", "PUT", R(X), {
+    const empty = await call("P", "PUT", R(X), {
       version: version + 1,
       rules: [{ condition: { departmentIds: [], contractKinds: [] }, def_id: lib.A }],
     });

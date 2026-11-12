@@ -30,13 +30,13 @@ export function audienceIncludes(
     case "suppliers":
       return v.labels.includes("supplier");
     case "buyers":
-      return v.labels.includes("buyer");
+      return v.labels.includes("customer");
     case "companies":
       return a.companies.includes(v.orgId);
     case "cats": {
       const wanted = a.cats.length > 0 ? a.cats : postCats;
       const interested = v.cats.some((c) => wanted.includes(c));
-      if (type === "sell") return interested && v.labels.includes("buyer");
+      if (type === "sell") return interested && v.labels.includes("customer");
       if (type === "buy") return interested && v.labels.includes("supplier");
       return interested;
     }

@@ -4,16 +4,15 @@
 // flow Thư viện ở trang Quy trình (admin) ⇒ Cài đặt ở Sổ Hợp Tác hiện CÙNG tên quy trình với dòng ở tab Quy trình; không còn mục "Ứng dụng &
 // quy trình" / "Quy trình HĐ mặc định"; (3) công tắc ký số trong Cài đặt bật được thật (lưu rồi tải lại vẫn bật).
 import type { Page } from "@playwright/test";
-import { apiLogin } from "../_kit/api";
+import { apiLogin, tenantIdByKey } from "../_kit/api";
 import {
   approve,
-  createLibraryFlow,
+  createCompanyFlow,
   enableFlowTriggers,
   finish,
   notifyCreator,
 } from "../_kit/flows";
 import {
-  assignFlowUi,
   flowRow,
   loginPlatformAdminUi,
   openCompanyFlows,
@@ -45,17 +44,24 @@ const ctxPage = async (browser: import("@playwright/test").Browser): Promise<Pag
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
+  await enableFlowTriggers(E.tenantKey, false);
+});
+
+/** CR-127 Z7: quản trị nền tảng dựng quy trình công ty từ SƠ ĐỒ TRỐNG qua API + áp dụng (không còn gán mẫu dùng chung). */
+async function createCompanyApproval(): Promise<void> {
   const platform = await apiLogin({
     base: need("JA_API_URL"),
     tenantKey: "platform",
     username: E.adminUser,
     password: E.adminPw,
   });
-  await createLibraryFlow(need("JA_HUB_URL"), platform.token, {
-    key: `s2-2cap-${SFX}`,
+  await enableFlowTriggers(E.tenantKey); // như `_cr127-stack`: công ty có quy trình áp dụng thì chạy theo sự kiện
+  const tenantId = await tenantIdByKey(need("JA_API_URL"), platform, E.tenantKey);
+  await createCompanyFlow(need("JA_HUB_URL"), platform.token, tenantId, {
     name: FLOW,
     app: "contracts",
-    trigger: { event: "contract.submitted" },
+    event: "contract.submitted",
+    inputs: [{ key: "contract_id", label: "Hợp đồng", type: "text", required: true }],
     stages: [
       approve("tp", "Kế toán duyệt", 0, "pb-ke-toan", { reject: 4 }),
       approve("gd", "Giám đốc duyệt", 1, "pb-giam-doc", { reject: 4 }),
@@ -64,8 +70,7 @@ test.beforeAll(async () => {
       finish("tu-choi", "Từ chối", 4, "rejected"),
     ],
   });
-  await enableFlowTriggers(E.tenantKey, false);
-});
+}
 
 async function openFlowSettings(page: Page): Promise<void> {
   await page.goto(`${E.cw}/contracts/settings?sec=flow`);
@@ -91,22 +96,29 @@ test("1 · chưa có quy trình Bật: Cài đặt nói rõ ai làm gì, không 
   await page.screenshot({ path: testInfo.outputPath("s2-after-none.png") });
 });
 
-test("2 · platform admin gán flow ⇒ Cài đặt hiện CÙNG tên với tab Quy trình, không còn 'Quy trình HĐ mặc định'", async ({
+test("2 · platform admin dựng quy trình từ sơ đồ trống + áp dụng ⇒ Cài đặt hiện CÙNG tên với tab Quy trình, không còn 'Quy trình HĐ mặc định'", async ({
   browser,
 }, testInfo) => {
   const admin = await ctxPage(browser);
   await loginPlatformAdminUi(admin, E.admin, E.adminUser, E.adminPw);
+  await createCompanyApproval();
   await openTenantPage(admin, E.tenantName);
   const box = await openCompanyFlows(admin);
-  const row = await assignFlowUi(box, FLOW);
+  const row = flowRow(box, FLOW);
+  await expect(row).toBeVisible();
   await expect(row).toContainText("Đang dùng");
   const adminName = (await flowRow(box, FLOW).first().innerText()).includes(FLOW) ? FLOW : "";
   expect(adminName).toBe(FLOW);
 
   const page = await ctxPage(browser);
   await loginCw(page, E, U.director);
-  await openFlowSettings(page);
-  await expect(page.getByTestId("flow-current-title")).toContainText(adminName);
+  // quy trình vừa áp dụng ⇒ Hub có thể còn bộ nhớ đệm «chưa có quy trình» của lần mở ở ca 1: mở lại Cài đặt tới khi hiện (tối đa 60 s)
+  await expect(async () => {
+    await openFlowSettings(page);
+    await expect(page.getByTestId("flow-current-title")).toContainText(adminName, {
+      timeout: 3_000,
+    });
+  }).toPass({ timeout: 60_000 });
   await expect(page.getByTestId("flow-readonly-lead")).not.toContainText("quản trị nền tảng");
   await expect(page.getByText("Quy trình HĐ mặc định")).toHaveCount(0);
   await expect(page.getByTestId("flow-default-badge")).toHaveCount(0);

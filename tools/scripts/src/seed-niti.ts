@@ -9,50 +9,25 @@ import { appendFileSync, chmodSync, existsSync, mkdirSync, writeFileSync } from 
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { createDb, type Db, withScope } from "@ai/db";
-import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { OnboardSpec } from "../../../apps/admin-api/src/modules/tenant-onboard/domain/onboard.rules";
 import { onboardTenant } from "../../../apps/admin-api/src/modules/tenant-onboard/tenant-onboard.run";
 import { createUser } from "../../../apps/admin-api/src/modules/users/users.service";
 import { connectDb } from "../../../apps/hub-api/src/lib/db";
-import { APPROVAL_DEFAULT_DEF } from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-slot-default.rules";
-import type { ProcessDeps } from "../../../apps/hub-api/src/modules/processes/core/ports";
-import { toProcessDef } from "../../../apps/hub-api/src/modules/processes/defs/defs.map";
-import { readDef } from "../../../apps/hub-api/src/modules/processes/defs/defs.repo";
-import { DefsService } from "../../../apps/hub-api/src/modules/processes/defs/defs.service";
-import { LibraryService } from "../../../apps/hub-api/src/modules/processes/library/library.service";
-import { RoutingService } from "../../../apps/hub-api/src/modules/processes/library/routing.service";
 import { grantGroup } from "./seed-community-demo.grant";
-import { NITI_SPEC, type Person, type SeedSpec, SLOT } from "./seed-niti.data";
-import {
-  applyGuard,
-  canon,
-  conditionOf,
-  credLine,
-  emailOf,
-  type RuleLike,
-  sameRules,
-  slotBodyOf,
-  tenantShape,
-} from "./seed-niti.rules";
-import { approvalPackTools } from "./seed-niti.tools";
+import { NITI_SPEC, type Person, type SeedSpec } from "./seed-niti.data";
+import { applyGuard, credLine, emailOf, tenantShape } from "./seed-niti.rules";
 
-type AuthUser = { userId: string; tenantId: string; role: "platform_admin" };
 export type SeedOpts = {
   apply: boolean;
   credFile: string;
   log?: (s: string) => void;
-  /** false ⇒ chỉ dựng tenant + quy trình thư viện, KHÔNG gán/đặt luật chọn (platform admin làm ở ai-admin; e2e-journey-approval). Mặc định true. */
-  routing?: boolean;
 };
-type PState = "created" | "updated" | "same";
 export type SeedReport = {
   tenant: "created" | "exists";
   usersCreated: string[];
   usersExisting: string[];
   roleGrants: number;
-  processes: { key: string; state: PState }[];
-  routing: "set" | "same";
   credFile: string | null;
 };
 
@@ -110,131 +85,6 @@ function appendCred(file: string, line: string): void {
   }
 }
 
-type Hubs = {
-  hub: Db;
-  lib: LibraryService;
-  defs: DefsService;
-  routing: RoutingService;
-  u: AuthUser;
-};
-const LIB_SCOPE = { tenantId: null, library: true } as const;
-const COPY_KEYS = [
-  "description",
-  "input_hint",
-  "run_group_ids",
-  "stages",
-  "token_budget",
-  "enabled",
-  "sources",
-  "inputs",
-  "ttl_days",
-] as const;
-
-async function findDef(hub: Db, key: string) {
-  return withHubScope(hub, { kind: "system" }, async (tx) => {
-    const [d] =
-      (await tx.execute(sql`select d.id, d.name, d.published_version from hub.process_defs d
-      where d.key = ${key} and d.slot = ${SLOT} and d.tenant_id is null and d.deleted_at is null`)) as unknown as {
-        id: string;
-        name: string;
-        published_version: number | null;
-      }[];
-    return d ?? null;
-  });
-}
-
-/** Quy trình thư viện theo khoá: chưa có ⇒ nhân bản mặc định + lưu thân + xuất bản; có mà thân/tên khác bản đang chạy ⇒ lưu + xuất bản bản mới. */
-async function ensureProcess(
-  h: Hubs,
-  p: SeedSpec["processes"][number],
-  dry: boolean,
-): Promise<{ id: string | null; state: PState }> {
-  const body = slotBodyOf(p);
-  const cur = await findDef(h.hub, p.key);
-  if (cur?.published_version != null) {
-    const rel = await h.lib.release(cur.id, cur.published_version);
-    if (cur.name === p.name && canon(rel.slot_body) === canon(body))
-      return { id: cur.id, state: "same" };
-  }
-  const state: PState = cur ? "updated" : "created";
-  if (dry) return { id: cur?.id ?? null, state };
-  const id =
-    cur?.id ??
-    (await h.lib.clone(h.u as never, APPROVAL_DEFAULT_DEF.id, { key: p.key, name: p.name })).id;
-  const row = await withHubScope(h.hub, { kind: "system" }, (tx) => readDef(tx, LIB_SCOPE, id));
-  if (!row) throw new Error(`seed-niti: không đọc lại được quy trình ${p.key}`);
-  const d = toProcessDef(row) as unknown as Record<string, unknown> & { version: number };
-  const input = Object.fromEntries(COPY_KEYS.map((k) => [k, d[k]]));
-  await h.defs.update(h.u as never, LIB_SCOPE as never, id, {
-    ...input,
-    key: p.key,
-    name: p.name,
-    slot: SLOT,
-    slot_body: body,
-    version: d.version,
-  } as never);
-  const v = (await withHubScope(h.hub, { kind: "system" }, (tx) => readDef(tx, LIB_SCOPE, id)))
-    ?.version;
-  await h.lib.publish(h.u as never, id, { version: v as number, note: "seed-niti" });
-  return { id, state };
-}
-
-async function deptIds(admin: Db, tenantId: string): Promise<Map<string, string>> {
-  const r = await rows<{ id: string; key: string }>(
-    admin,
-    sql`select id, key from admin.groups where tenant_id = ${tenantId}::uuid`,
-  );
-  return new Map(r.map((g) => [g.key, g.id]));
-}
-
-/** Luật theo phòng ban × loại HĐ theo spec; null nếu thiếu quy trình/phòng ban. */
-function wantedRules(
-  s: SeedSpec,
-  defIds: Map<string, string | null>,
-  depts: Map<string, string>,
-): RuleLike[] | null {
-  const want: RuleLike[] = [];
-  for (const r of s.rules) {
-    const def = defIds.get(r.process);
-    const dept = depts.get(r.dept);
-    if (!def || !dept) return null;
-    want.push({ condition: conditionOf(r, dept), def_id: def, is_default: false });
-  }
-  return want;
-}
-/** Luật chọn quy trình (theo thứ tự spec, không mặc định) — bỏ qua nếu đã đúng. dry ⇒ chỉ so. */
-async function ensureRouting(
-  h: Hubs,
-  s: SeedSpec,
-  tenantId: string,
-  defIds: Map<string, string | null>,
-  depts: Map<string, string>,
-  dry: boolean,
-): Promise<"set" | "same"> {
-  const want = wantedRules(s, defIds, depts);
-  if (!want) return "set"; // chưa đủ thành phần (chỉ xảy ra khi chạy thử trước khi có gì)
-  // Gán (CR-121 F-1) = vào tập gán + đặt luật MẶC ĐỊNH của khe = quy trình vừa gán ⇒ chỉ gán quy trình CHƯA trong tập (chạy lại không
-  // đổi luật mặc định/phiên bản). Luật mặc định là do bước gán đặt: so sánh/ghi chỉ phần luật theo phòng ban × loại HĐ, giữ nguyên mặc định.
-  const before = await h.routing.get(h.u as never, tenantId, SLOT).catch(() => null);
-  const have = new Set(before?.processes.map((p) => p.def_id));
-  if (!dry)
-    for (const id of new Set(want.map((w) => w.def_id)))
-      if (!have.has(id)) await h.routing.assign(h.u as never, tenantId, SLOT, id);
-  const cur = await h.routing.get(h.u as never, tenantId, SLOT).catch(() => null);
-  const curRules = cur?.rules.filter((r) => !r.is_default) ?? [];
-  if (cur && sameRules(curRules, want)) return "same";
-  if (dry) return "set";
-  const keep = (cur?.rules ?? []).filter((r) => r.is_default);
-  await h.routing.put(h.u as never, tenantId, SLOT, {
-    version: cur?.version ?? 0,
-    rules: [
-      ...want,
-      ...keep.map((r) => ({ condition: {}, def_id: r.def_id, is_default: true })),
-    ] as never,
-  });
-  return "set";
-}
-
 type Cur = { timezone: string; profile: unknown } | null;
 type Actor = { userId: string; tenantId: string; tenantKey: string };
 
@@ -284,7 +134,8 @@ async function applyAdmin(
     res.roleGrants += (await grantGroup(admin, s.tenantKey, g, names)).length;
 }
 
-export async function runSeed(admin: Db, hub: Db, s: SeedSpec, o: SeedOpts): Promise<SeedReport> {
+/** Seed tenant + gói + phòng ban + user + vai gói. KHÔNG tạo quy trình/luật (CR-127: quy trình tạo từ sơ đồ trống ở màn công ty); `_hub` giữ chữ ký cũ. */
+export async function runSeed(admin: Db, _hub: Db, s: SeedSpec, o: SeedOpts): Promise<SeedReport> {
   const log = o.log ?? console.log;
   const found = await rows<{
     id: string;
@@ -300,16 +151,6 @@ export async function runSeed(admin: Db, hub: Db, s: SeedSpec, o: SeedOpts): Pro
   if (shape !== "absent" && shape !== "present") throw new Error(`seed-niti: ${shape}`);
   const cur = found[0] ?? null;
   const actor = await platformActor(admin);
-  const u: AuthUser = { userId: actor.userId, tenantId: actor.tenantId, role: "platform_admin" };
-  const libSvc = new LibraryService({ db: hub, packTools: approvalPackTools() } as never);
-  const deps = { db: hub, packTools: approvalPackTools(), start: {} } as unknown as ProcessDeps;
-  const h: Hubs = {
-    hub,
-    lib: libSvc,
-    defs: new DefsService(deps),
-    routing: new RoutingService(deps, libSvc),
-    u,
-  };
   const dry = !o.apply;
 
   const existing = cur
@@ -328,28 +169,11 @@ export async function runSeed(admin: Db, hub: Db, s: SeedSpec, o: SeedOpts): Pro
     usersCreated: missing.map((p) => p.username),
     usersExisting: s.people.filter((p) => existing.has(p.username)).map((p) => p.username),
     roleGrants: 0,
-    processes: [],
-    routing: "set",
     credFile: null,
   };
 
   if (!dry) await applyAdmin(admin, s, cur, actor, missing, o, res);
 
-  const defIds = new Map<string, string | null>();
-  for (const p of s.processes) {
-    const r = await ensureProcess(h, p, dry);
-    defIds.set(p.key, r.id);
-    res.processes.push({ key: p.key, state: r.state });
-  }
-  const tenantId = (
-    await rows<{ id: string }>(admin, sql`select id from admin.tenants where key = ${s.tenantKey}`)
-  )[0]?.id;
-  res.routing =
-    o.routing === false
-      ? "same"
-      : tenantId
-        ? await ensureRouting(h, s, tenantId, defIds, await deptIds(admin, tenantId), dry)
-        : "set";
   log(summary(s, res, dry));
   return res;
 }
@@ -360,8 +184,6 @@ function summary(s: SeedSpec, r: SeedReport, dry: boolean): string {
     `seed-niti: ${dry ? "chạy thử (thêm --apply để ghi)" : "đã ghi"} — tenant ${s.tenantKey} "${s.tenantName}": ${r.tenant === "created" ? "sẽ tạo/tạo" : "đã có"}; gói ${s.packs.join("+")} (+ app Admin theo vai tenant_admin)`,
     `  phòng ban: ${[s.root, ...s.departments].map((d) => d.vi).join(", ")}`,
     `  user mới: ${r.usersCreated.join(", ") || "(không)"}; đã có: ${r.usersExisting.join(", ") || "(không)"}${dry ? "" : `; gán vai gói mới: ${r.roleGrants}`}`,
-    ...r.processes.map((p) => `  quy trình ${p.key}: ${p.state}`),
-    `  luật chọn quy trình (${s.rules.length}, không mặc định): ${r.routing}`,
     r.credFile ? `  file mật khẩu tạm (không in nội dung): ${r.credFile}` : "",
   ];
   return l.filter(Boolean).join("\n");

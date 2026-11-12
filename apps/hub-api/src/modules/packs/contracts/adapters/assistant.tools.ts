@@ -61,7 +61,6 @@ const brief = (r: ContractListRowDto) => ({
   buyer: r.buyer,
   value: r.value,
   end_date: r.end_date,
-  action_deadline: r.action_deadline,
 });
 
 export async function searchContracts(d: AssistantToolDeps, ctx: PackToolCtx, a: PackToolArgs) {

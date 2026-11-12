@@ -65,7 +65,7 @@ export function milestonesRepo(tx: Tx, t: string): MilestonesRepo {
         deal: string | null;
         n: number;
         locked: boolean;
-      }>(sql`select c.deal, c.locked_at is not null as locked,
+      }>(sql`select c.deal, (c.status in ('processing', 'done') and c.doc_type <> 'deal') as locked,
           (select count(*)::int from contracts.obligations o
             where o.tenant_id = ${t}::uuid and o.contract_id = c.id and o.status <> 'replaced') as n
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid for no key update of c`);
@@ -75,7 +75,7 @@ export function milestonesRepo(tx: Tx, t: string): MilestonesRepo {
       const [r] = await tx.execute<{
         deal: string | null;
         locked: boolean;
-      }>(sql`select c.deal, c.locked_at is not null as locked from contracts.contracts c
+      }>(sql`select c.deal, (c.status in ('processing', 'done') and c.doc_type <> 'deal') as locked from contracts.contracts c
         where c.tenant_id = ${t}::uuid and c.id = (select o.contract_id from contracts.obligations o
           where o.id = ${id}::uuid and o.tenant_id = ${t}::uuid and o.status <> 'replaced')
         for no key update`);

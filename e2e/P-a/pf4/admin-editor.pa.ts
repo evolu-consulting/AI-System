@@ -1,15 +1,19 @@
 // ADM-FR-66 · e2e P-a PF4 · E-P15b (test-plan-e2e §2; plan-frontend-e2e §2 Editor): mở `hoa-don-t` (fixture, Group kiểm sẵn)
 // ⇒ `region "Bước 1: Đọc hoá đơn"`, `combobox "Nhóm kiểm"`, `switch "Hành động thật"` disabled ở giai đoạn 1; đổi Nhóm
 // kiểm ⇒ "Lưu" ⇒ bật được; sửa song song (PUT /process-defs/:id trước) ⇒ ConflictDialog (409); mở mẫu `sdlc` ⇒ "Đây là quy trình mẫu, chỉ
-// xem. Dùng mẫu này để chỉnh sửa.".
+// xem. Liên hệ quản trị nền tảng để thay đổi." (CR-127 Z5: không còn nút Dùng mẫu này).
 import { expect, test } from "@playwright/test";
-import { ADMIN_URL, adminLogin, hub, settle, tok } from "../_pa-support";
+import { ACME, ADMIN_URL, adminLogin, hub, platformLogin, platTok, settle } from "../_pa-support";
 
 test.afterEach(() => settle());
 
 // CR-121 c15: hộp "Tạo quy trình" theo công ty đã gỡ (c13) ⇒ mở quy trình/mẫu thẳng theo id (Hub), không qua danh sách theo công ty.
 const defId = async (kind: "sample" | "template", key: string): Promise<string> => {
-  const list = await hub(await tok("Adm"), "GET", `/process-defs?kind=${kind}&limit=100`);
+  const list = await hub(
+    await platTok(),
+    "GET",
+    `/process-defs?kind=${kind}&limit=100&tenant_id=${ACME}`,
+  );
   const item = (list.json?.items ?? []).find((d: { key: string }) => d.key === key);
   expect(item, `GET /process-defs?kind=${kind} có ${key}`).toBeTruthy();
   return item.id;
@@ -21,8 +25,8 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
   const ctx = await browser.newContext();
   const p = await ctx.newPage();
   try {
-    await adminLogin(p);
-    await p.goto(`${ADMIN_URL}/processes/${await defId("sample", "hoa-don-t")}`); // fnr-editor-drawer (qc, người dùng chốt ngăn chi tiết đóng mặc định 2026-10-29): bấm node để mở ngăn.
+    await platformLogin(p);
+    await p.goto(`${ADMIN_URL}/processes/${await defId("sample", "hoa-don-t")}?company=${ACME}`); // fnr-editor-drawer (qc, người dùng chốt ngăn chi tiết đóng mặc định 2026-10-29): bấm node để mở ngăn.
     await p
       .getByRole("application", { name: "Canvas quy trình" })
       .getByRole("button", { name: /^Bước 1: Đọc hoá đơn/ })
@@ -38,14 +42,15 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
 
     // sửa song song: đổi mô tả qua API admin (Hub) trước khi Lưu ⇒ 409 ⇒ ConflictDialog
     await p.getByRole("textbox", { name: "Mô tả" }).fill("Sửa ở tab 1");
-    const list = await hub(await tok("Adm"), "GET", "/process-defs?kind=sample");
+    const list = await hub(await platTok(), "GET", `/process-defs?kind=sample&tenant_id=${ACME}`);
     const item = (list.json?.items ?? []).find((d: { key: string }) => d.key === "hoa-don-t");
     expect(item, "GET /process-defs có hoa-don-t").toBeTruthy();
-    const def = (await hub(await tok("Adm"), "GET", `/process-defs/${item.id}`)).json;
+    const def = (await hub(await platTok(), "GET", `/process-defs/${item.id}?tenant_id=${ACME}`))
+      .json;
     const { id, tenant_id, is_template, source_template_id, created_at, updated_at, ...input } =
       def;
     void [tenant_id, is_template, source_template_id, created_at, updated_at];
-    const put = await hub(await tok("Adm"), "PUT", `/process-defs/${id}`, {
+    const put = await hub(await platTok(), "PUT", `/process-defs/${id}?tenant_id=${ACME}`, {
       ...input,
       description: "Sửa ở nơi khác",
     });
@@ -57,12 +62,21 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
     await conflict.getByRole("button", { name: "Tải bản mới" }).click();
     await expect(conflict).toHaveCount(0);
 
-    // mẫu: chỉ xem (mở thẳng mẫu sdlc theo id)
-    await p.goto(`${ADMIN_URL}/processes/${await defId("template", "sdlc")}`);
-    await expect(
-      p.getByText("Đây là quy trình mẫu, chỉ xem. Dùng mẫu này để chỉnh sửa."),
-    ).toBeVisible();
-    await expect(p.getByRole("button", { name: "Dùng mẫu này" })).toBeVisible();
+    // mẫu: quản trị công ty chỉ xem (mở thẳng mẫu sdlc theo id) — CR-127: quản trị nền tảng mới soạn được
+    const ctx2 = await browser.newContext();
+    try {
+      const p2 = await ctx2.newPage();
+      await adminLogin(p2);
+      await p2.goto(`${ADMIN_URL}/processes/${await defId("template", "sdlc")}`);
+      await expect(
+        p2.getByText(
+          "Quy trình do quản trị nền tảng soạn — chỉ xem. Muốn thay đổi, liên hệ quản trị nền tảng.",
+        ),
+      ).toBeVisible();
+      await expect(p2.getByRole("button", { name: "Dùng mẫu này" })).toHaveCount(0); // CR-127 · Z5
+    } finally {
+      await ctx2.close();
+    }
   } finally {
     await ctx.close();
   }

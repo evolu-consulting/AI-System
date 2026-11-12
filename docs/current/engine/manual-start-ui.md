@@ -1,5 +1,7 @@
 # manual start ui
 
+> **CR-127 (2026-11-11) — phần Thư viện/khe/sao chép/mẫu/máy duyệt cũ trong file này ĐÃ THAY THẾ:** xem [engine/quy-trinh-cr127.md](quy-trinh-cr127.md). Giữ làm lịch sử; chỗ mâu thuẫn thì file CR-127 thắng.
+
 Cập nhật: 2026-11-08 · Nguồn: CR-125.
 
 ## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
@@ -7,7 +9,6 @@ Cập nhật: 2026-11-08 · Nguồn: CR-125.
 #### Yêu cầu: Tạo yêu cầu từ phiếu ở workspace (nguồn: cr125-manual-start-ui)
 Nhân viên mở «Tạo yêu cầu», chọn loại yêu cầu mà flow bắt đầu bằng phiếu cho phép mình, điền phiếu dựng từ cấu hình flow rồi gửi; hệ thống mở lượt
 và đưa tới trang yêu cầu (trạng thái, nội dung phiếu, các bước). Người được giao duyệt thấy nội dung phiếu trên thẻ và Duyệt/Từ chối tại đó.
-- Kịch bản: khi quản trị công ty bật phiếu ở flow, đặt ô và áp dụng, rồi nhân viên điền phiếu và gửi thì người duyệt thấy dữ liệu phiếu và duyệt xong thì yêu cầu hoàn tất [test: e2e/journey-approval/cr125-manual-start.spec.ts » 2 · nhân viên: Tạo yêu cầu → điền phiếu (tải file) → gửi → trang yêu cầu, người duyệt thấy dữ liệu phiếu → Duyệt → hoàn tất]
 - Kịch bản: khi ô bắt buộc để trống hoặc tiền sai thì lỗi hiện cạnh ô và không gửi; lỗi API theo mã nói bằng lời nghiệp vụ [test: apps/workspace-web/src/features/requests/lib/request-form.test.ts » ô bắt buộc trống ⇒ lỗi theo ô, tiền sai ⇒ money, đủ ⇒ không lỗi]
 
 #### Yêu cầu: Quản trị công ty dựng phiếu yêu cầu ở trình sửa flow (nguồn: cr125-manual-start-ui)

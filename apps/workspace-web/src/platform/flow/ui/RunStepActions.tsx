@@ -2,10 +2,17 @@
 // `FlowView` — các bước (renderer theo loại, trong đó bước «Điền thông tin» = `FormStep` + «Gửi») và hành động của task đang mở
 // (Duyệt / Trả lại / Từ chối theo `FlowTask.actions`, lý do bắt buộc khi hành động đòi `feedback`). Không biết gói nào: chỉ gọi hai
 // lệnh do trang cấp (`onSubmitForm`, `onDecide`) — trang HĐ cấp theo khe flow, trang yêu cầu cấp theo `/review-tasks/:id/*`.
+// CR-127 · U4: dải nhận việc (`ClaimBar`) + ô bằng chứng (`EvidenceInput`) khi trang bật `evidence`.
+import type { EvidenceInput as EvidenceBody } from "@ai/contracts/chat";
 import type { FlowActionDef, FlowFormValues, FlowTask, FlowView } from "@ai/contracts/flow";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { claimView } from "../lib/claim";
+import { type EvidenceRule, evidenceRuleOf } from "../lib/evidence";
+import { ClaimBar } from "./ClaimBar";
+import { EvidenceAsk } from "./EvidenceAsk";
 import { FlowPanelBody } from "./FlowPanel";
+import type { Person } from "./ReassignBox";
 import type { StepOverrides } from "./types";
 
 export type RunStepActionsProps = {
@@ -14,7 +21,18 @@ export type RunStepActionsProps = {
   refId: string;
   view: FlowView;
   onSubmitForm: (taskId: string, values: FlowFormValues) => Promise<void>;
-  onDecide: (taskId: string, action: string, feedback?: string) => Promise<void>;
+  onDecide: (
+    taskId: string,
+    action: string,
+    feedback?: string,
+    evidence?: EvidenceBody,
+  ) => Promise<void>;
+  /** CR-127 · trang chuyển `evidence` tới server ⇒ hành động có ô bằng chứng hiện ý kiến + chữ ký + tệp (thay vì chỉ lý do). */
+  evidence?: boolean | undefined;
+  /** CR-127 · sau «Nhận việc» / «Trả về nhóm»: tải lại view. */
+  onClaimChanged?: (() => void) | undefined;
+  /** CR-127 · U4b-1 · người có thể nhận việc chuyển giao (trang cấp) ⇒ hiện «Chuyển cho…». */
+  people?: readonly Person[] | undefined;
   overrides?: StepOverrides | undefined;
   frame?: ((steps: ReactNode, view: FlowView) => ReactNode) | undefined;
   /** Đang gửi quyết định (khoá nút). */
@@ -40,12 +58,19 @@ export function RunStepActions(p: RunStepActionsProps) {
   const [asking, setAsking] = useState<FlowActionDef | null>(null);
   const [reason, setReason] = useState("");
   const task = decisionTaskOf(p.view);
-  const decide = async (a: FlowActionDef, feedback?: string) => {
+  const cv = task ? claimView(task) : null;
+  const ruleOf = (a: FlowActionDef): EvidenceRule | null =>
+    p.evidence === true ? evidenceRuleOf(a.input, task?.evidence_mode, a.key) : null;
+  const decide = async (a: FlowActionDef, feedback?: string, evidence?: EvidenceBody) => {
     if (!task) return;
-    await p.onDecide(task.task_id, a.key, feedback);
+    await p.onDecide(task.task_id, a.key, feedback, evidence);
     setAsking(null);
     setReason("");
   };
+  // Trả lại / Từ chối: ý kiến cũng là lý do bắt buộc của hành động (`FEEDBACK_REQUIRED`).
+  const sendEvidence = (a: FlowActionDef, body: EvidenceBody) =>
+    void decide(a, a.style === "primary" ? undefined : body.note, body);
+  const askingRule = asking ? ruleOf(asking) : null;
   return (
     <div data-flow="run-actions">
       <FlowPanelBody
@@ -58,7 +83,21 @@ export function RunStepActions(p: RunStepActionsProps) {
       />
       {task && (
         <div data-testid="request-task" className="mt-3">
-          {asking ? (
+          <ClaimBar
+            taskId={task.task_id}
+            info={task}
+            people={p.people}
+            onChanged={() => p.onClaimChanged?.()}
+          />
+          {asking && askingRule ? (
+            <EvidenceAsk
+              action={asking}
+              rule={askingRule}
+              busy={p.busy === true}
+              onSend={(b) => sendEvidence(asking, b)}
+              onCancel={() => setAsking(null)}
+            />
+          ) : asking ? (
             <div className="flex flex-col gap-2">
               <label htmlFor={`run-reason-${p.refId}`} className="text-sm">
                 {t("contracts.requests.reason", { action: asking.label })}
@@ -96,9 +135,14 @@ export function RunStepActions(p: RunStepActionsProps) {
                   key={a.key}
                   type="button"
                   className={BTN[a.style]}
-                  disabled={p.busy === true}
+                  disabled={p.busy === true || cv?.decideLocked != null}
+                  title={
+                    cv?.decideLocked
+                      ? t(`contracts.work.u4.claim.locked.${cv.decideLocked}`)
+                      : undefined
+                  }
                   data-testid={`request-${a.key}`}
-                  onClick={() => (needsReason(a) ? setAsking(a) : void decide(a))}
+                  onClick={() => (ruleOf(a) || needsReason(a) ? setAsking(a) : void decide(a))}
                 >
                   {a.label}
                 </button>

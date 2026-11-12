@@ -12,6 +12,7 @@ import { type ModuleRegistry, moduleRegistry } from "../../kit/public";
  */
 export const CORE_WRITTEN_OUTPUTS: Readonly<Record<string, readonly string[]>> = {
   "core.approve": ["decision", "decided_by", "feedback"],
+  "core.notify": ["sent_to"], // CR-127 · E9 · node gộp (chuông/email)
   "core.email": ["sent_to"],
   "core.bell": ["sent_to"],
   // CR-125 · Quy trình con ghi `outcome` (+ `sub_*` động) khi lượt con kết thúc (`processes/nodes/subprocess/settle.ts`).

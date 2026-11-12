@@ -80,8 +80,8 @@ export async function installV2g(page: Page, init: Partial<V2gState> = {}) {
     rec(r);
     // atomic-confirm: "Lưu nháp" (draft) giữ chờ xác nhận kể cả tenant tắt duyệt; chỉ lệnh xác nhận ra `active`.
     const draft = (r.request().postDataJSON() as { draft?: boolean }).draft === true;
-    const status = draft ? "needs_review" : st.saveStatus;
-    if (status === "active") st.reviewStatus = "active";
+    const status = draft || st.saveStatus !== "active" ? "draft" : "done"; // CR-127 Q10b: trạng thái mới trên dây
+    if (status === "done") st.reviewStatus = "active";
     return json(r, 200, {
       id: REVIEW_ID,
       status,

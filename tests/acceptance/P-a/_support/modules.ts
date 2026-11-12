@@ -50,7 +50,7 @@ export const loadCoreRules = (name: string): Promise<Loose> =>
 export const loadThread = (): Promise<Loose> => tryLoad(`${PROC}/core/thread.ts`);
 /** `core/thread-poster.ts` (B0): `postThreadOnce`, `post`. */
 export const loadThreadPoster = (): Promise<Loose> => tryLoad(`${PROC}/core/thread-poster.ts`);
-/** `defs/def.rules.ts` (B3): `validateProcessDef`, `copyFromTemplate`. */
+/** `defs/def.rules.ts` (B3): `validateProcessDef`. */
 export const loadDefRules = (): Promise<Loose> => tryLoad(`${PROC}/defs/def.rules.ts`);
 /** PF dùng: `runs/template.rules.ts`, `runs/team.rules.ts`, `gates/*.rules.ts`, `domain/asks/forward.rules.ts`, … */
 export const loadProcRules = (rel: string): Promise<Loose> => tryLoad(`${PROC}/${rel}`);

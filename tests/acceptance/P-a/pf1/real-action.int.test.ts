@@ -22,7 +22,16 @@ import {
 } from "../../H2a/_h2a";
 import { isConfirmation, toolCall } from "../../H2a/_h2a2";
 import { newJobToken, tokenHash } from "../../H2a/_runtime2";
-import { api, type HubPa, type Json, PA, type Role, setupPa, waitFor } from "../_support/pa";
+import {
+  api,
+  defsWriteVia,
+  type HubPa,
+  type Json,
+  PA,
+  type Role,
+  setupPa,
+  waitFor,
+} from "../_support/pa";
 import { needSchema } from "../_support/schema";
 import {
   type CtxPf1,
@@ -139,7 +148,10 @@ beforeAll(async () => {
     redis,
     rt: new ScriptRuntime(sql, redis),
     tok,
-    call: async (r, method, path, body) => api(hub, await tok(r), method, path, body),
+    call: async (r, method, path, body) => {
+      const w = defsWriteVia(r, method, path);
+      return api(hub, await tok(w.role as typeof r), method, w.path, body);
+    },
     stop: async () => {
       await hub.stop();
       redis.disconnect();

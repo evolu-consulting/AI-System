@@ -7,7 +7,6 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../../lib/db";
 import { createPackUow } from "../../kit/adapters/pack-uow";
-import { myWorkWindow } from "../application/mywork.usecase";
 import type { ContractListFilter } from "../application/ports";
 import { activityRepo } from "./activity.repo";
 import { approvalEngineRepo } from "./approval-engine.repo";
@@ -91,9 +90,7 @@ describe("CR-121 Q-4 · tên HĐ một nguồn (title = tên file, fields.title 
     expect(d?.title).toBe(NAME_A);
   });
 
-  it("Việc của tôi (hạn xử lý HĐ) + nhãn lượt duyệt + nhãn ngữ cảnh trợ lý ra tên thật", async () => {
-    const w = await uow().tenant(who(), (r) => r.mywork.list(myWorkWindow(new Date(), "UTC")));
-    expect(w.deadlines.map((x) => x.title).sort()).toEqual([NAME_A, NAME_B].sort());
+  it("nhãn lượt duyệt + nhãn ngữ cảnh trợ lý ra tên thật (CR-127 K8: nguồn hạn xử lý HĐ đã gỡ khỏi Việc của tôi)", async () => {
     const labels = await uow().tenant(who(), (r) => r.engine.labels([ids[0] as string]));
     expect(labels.map((x) => x.title)).toEqual([NAME_A]);
     const c = await uow().tenant(who(), (r) => r.ctx.contract(ids[1] as string));

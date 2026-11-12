@@ -55,7 +55,8 @@ export function myWork(d: Deps) {
     // MỘT câu: danh sách + việc ký của mình (`raw.signing`; một nguồn cho thẻ "Chờ bạn" và thanh dưới)
     const raw = await d.uow.tenant(who, ({ mywork: r }) => r.list(w));
     const base = buildMyWork(raw, w.today);
-    const out = raw.signing ? { ...base, signing: raw.signing } : base;
+    const signed = raw.signing ? { ...base, signing: raw.signing } : base;
+    const out = raw.inbox ? { ...signed, inbox: raw.inbox } : signed; // CR-127 K8 · HĐ nhận chờ mình quyết
     return d.approvals ? { ...out, approvals: await d.approvals(who) } : out;
   };
   const done = async (who: PackWho, id: string): Promise<{ ok: true }> => {

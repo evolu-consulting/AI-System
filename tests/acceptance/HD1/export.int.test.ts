@@ -78,8 +78,8 @@ describe("Gap #10 · lọc ngày của danh sách", () => {
     );
     const range = await listOf(c, P.lan, { date_from: "2099-01-01", date_to: "2099-12-31" });
     expect(idsOf(range)).toEqual([cid(4)]);
-    const dl = await listOf(c, P.lan, { date_field: "action_deadline", due: "overdue" });
-    expect(idsOf(dl)).toEqual([cid(1)]);
+    // CR-127 K6: `action_deadline` đã gỡ ⇒ không còn date_field=action_deadline (lọc hạn chót dùng end_date).
+    expect((await listOf(c, P.lan, { date_field: "action_deadline" })).status).toBe(400);
     expect((await listOf(c, P.lan, { due: "7" })).status).toBe(400);
   });
 });
@@ -89,7 +89,7 @@ describe("Gap #8 · xuất danh sách", () => {
     await dataset();
     const { res, bytes } = await raw(
       P.lan,
-      "?format=csv&status=expiring&status=active&sort=value&dir=asc",
+      "?format=csv&status=done&effect=expiring&effect=active&sort=value&dir=asc",
     );
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/csv");
@@ -105,7 +105,7 @@ describe("Gap #8 · xuất danh sách", () => {
     expect(lines).toHaveLength(3);
     expect(lines[1]).toContain("'=HĐ mười ngày");
     expect(lines[1]).toContain("2000000");
-    expect(lines[1]).toContain("Sắp đáo hạn");
+    expect(lines[1]).toContain("Sắp hết hạn");
     expect(text).not.toContain("beta");
   });
   it("lọc ngày + sắp xếp áp dụng cho xuất tệp; tổng khớp danh sách", async () => {
@@ -146,10 +146,11 @@ describe("Gap #9 · tải lên Markdown", () => {
     });
     expect(r.status).toBe(201);
     const [row] =
-      await c.sql`select c.status, c.source_text, f.mime, c.title from contracts.contracts c
+      await c.sql`select c.status, c.extract_state, c.source_text, f.mime, c.title from contracts.contracts c
       join contracts.files f on f.id = c.file_id where c.id = ${r.json.id}`;
     expect(row).toMatchObject({
-      status: "extracting",
+      status: "draft",
+      extract_state: "reading",
       source_text: md,
       mime: "text/markdown",
       title: "hd-moi",

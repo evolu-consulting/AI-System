@@ -70,6 +70,7 @@ describe("không còn danh sách node cứng: thứ tự + nhóm đọc từ kha
     expect(t.filter((e) => e.section === "business").map((e) => e.id)).toEqual([
       "approve",
       "if",
+      "form", // CR-127 · E9
       "finish",
     ]);
     expect(t.filter((e) => e.section === "advanced").at(-1)?.id).toBe("set");

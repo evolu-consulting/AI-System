@@ -50,6 +50,12 @@ export const IGNORED_TABLES: readonly IgnoredTable[] = [
   { rel: "hub.partner_mailbox", reason: "hai bên: ẩn danh bên bị xoá (tenant-purge.partner.ts)" },
   { rel: "hub.partner_links", reason: "hai bên: ẩn danh bên bị xoá (tenant-purge.partner.ts)" },
   { rel: "hub.partner_email_events", reason: "nhật ký email của hộp thư; xoá cùng dòng hộp thư" },
+  // CR-127 (hub 0132): phiên ký chung hai bên (from_tenant/to_tenant, FK mailbox_id) — cùng khuôn partner_mailbox: ẩn danh bên bị xoá,
+  // xoá cùng dòng hộp thư khi không còn bên nào giữ (`anonymizeSignSessions`/`deleteDoomed` ở tenant-purge.partner.ts).
+  {
+    rel: "hub.partner_sign_sessions",
+    reason: "hai bên: ẩn danh bên bị xoá, xoá cùng hộp thư (tenant-purge.partner.ts)",
+  },
 ];
 
 /**

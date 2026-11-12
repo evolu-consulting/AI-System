@@ -3,6 +3,7 @@
 // (role `contracts_rw` + tenant + người dùng, chế độ thấy `org` ở tenant A).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { inPackAs } from "@ai/test-kit/db";
+import { setLegacyStatus } from "../HD1/_support/hd1";
 import { failOf, product, type Sql, type World, world } from "../V2-B/_support/v2b";
 
 let w: World;
@@ -62,15 +63,15 @@ describe("V2-H · business_settings", () => {
 describe("V2-H · service_customers theo luật thấy M1", () => {
   it("u1 thấy khách của HĐ mình, u2 không; u2 gia hạn (HĐ mới hạn sau) ⇒ dòng chuyển sang HĐ của u2, renewals 1", async () => {
     const p = await product(w.sql, w.A, { name: "Chữ ký số V2-H", grp: "service" });
-    const sell = (
-      id: string,
-      end: string,
-    ) => w.sql`update contracts.contracts set deal = 'sell', direction = 'sale', kind = 'contract',
-        status = 'active', fields = coalesce(fields, '{}'::jsonb) || ${w.sql.json({
+    const sell = async (id: string, end: string) => {
+      await w.sql`update contracts.contracts set deal = 'sell', direction = 'sale', kind = 'contract',
+        fields = coalesce(fields, '{}'::jsonb) || ${w.sql.json({
           buyer_name: fv("Khách Gia Hạn"),
           end_date: fv(end),
         })}
       where id = ${id}`;
+      await setLegacyStatus(w.sql, id, "active"); // CR-127: qua cổng state_gate ⇒ done + effect active
+    };
     await sell(w.C1, "2027-01-31");
     await w.sql`insert into contracts.contract_items (tenant_id, contract_id, ord, name, product_id)
       values (${w.A}, ${w.C1}, 1, 'CKS 1 năm', ${p.id})`;

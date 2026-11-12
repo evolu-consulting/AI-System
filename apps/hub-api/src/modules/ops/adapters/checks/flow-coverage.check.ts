@@ -9,7 +9,6 @@
 
 import { packFeatureKey } from "@ai/contracts/packs";
 import { sql } from "drizzle-orm";
-import { APPROVAL_PROCESS_KEY, APPROVAL_SLOT } from "../../../packs/contracts/public";
 import { slotRegistry } from "../../../packs/kit/public";
 import type { OpsCheck, OpsCheckResult } from "../../application/ops.check";
 import { systemRead } from "./check-kit";
@@ -20,12 +19,6 @@ export type CoverageAgg = {
   checked: number;
   gap_count: number;
   gaps: CoverageGap[];
-  /** CR-121 D-4 · tên công ty còn lượt duyệt HĐ trên engine đang chạy nhưng khe `contracts.approval` KHÔNG còn quy trình gán nào (gỡ gán giữa chừng). */
-  unrouted?: string[];
-  /** CR-121 D-4 · tên công ty có quy trình đã gán nhưng không chạy được: quy trình của luật bị xoá/chưa xuất bản, hoặc run duyệt HĐ kẹt `needs_decision`. */
-  broken?: string[];
-  /** CR-121 c18 (D1) · feature `contracts-approval-engine` còn trong `admin.features` (đã gỡ ở admin 0037; gán quy trình là đủ). */
-  engine_feature?: boolean;
   /** CR-121 c18 (D5) · key feature theo quy ước thuộc một ứng dụng nhưng cột `admin.features.app` = `other` (thiếu app). */
   feature_app_missing?: string[];
 };
@@ -37,48 +30,25 @@ const NAMES_IN_MESSAGE = 5;
 const HINT =
   "Gán quy trình cho tenant ở admin › Quy trình nghiệp vụ (Được platform gán); tenant bật app được hub cấp mặc định khe khi khởi động / khi cấu hình đổi (ensureSlotDefaults) — kiểm mẫu khe đã xuất bản rồi kiểm lại.";
 
-const APPROVAL_FIX_HINT =
-  "Vào Admin › Công ty › Quy trình: gán (hoặc gán lại) quy trình cho khe Duyệt hợp đồng, xuất bản lại quy trình bị xoá, rồi mở lại các lượt duyệt kẹt.";
-
 const namesOf = (xs: readonly string[]): string =>
   `${xs.slice(0, NAMES_IN_MESSAGE).join(", ")}${xs.length > NAMES_IN_MESSAGE ? ` và ${xs.length - NAMES_IN_MESSAGE} nữa` : ""}`;
 
-/** CR-121 D-4 · các đoạn thông điệp cho cấu hình duyệt HĐ nửa vời (rỗng ⇒ bỏ đoạn). */
-function approvalConfigParts(unrouted: readonly string[], broken: readonly string[]): string[] {
-  const parts: string[] = [];
-  if (unrouted.length > 0)
-    parts.push(
-      `${unrouted.length} công ty còn hợp đồng đang duyệt theo quy trình nhưng khe duyệt hợp đồng không còn quy trình gán: ${namesOf(unrouted)}`,
-    );
-  if (broken.length > 0)
-    parts.push(
-      `${broken.length} công ty có quy trình duyệt hợp đồng không chạy được (quy trình bị xoá/chưa xuất bản hoặc lượt duyệt kẹt): ${namesOf(broken)}`,
-    );
-  return parts;
-}
-/** CR-121 c18 · đoạn thông điệp cho danh mục feature lệch (engine còn sót, feature thiếu app). */
-function featureCatalogParts(engine: boolean, missing: readonly string[]): string[] {
-  const parts: string[] = [];
-  if (engine)
-    parts.push("feature contracts-approval-engine còn trong danh mục (đã gỡ: gán quy trình là đủ)");
-  if (missing.length > 0)
-    parts.push(
-      `${missing.length} feature chưa gán ứng dụng (cột app = other): ${namesOf(missing)}`,
-    );
-  return parts;
+/** CR-121 c18 · đoạn thông điệp cho danh mục feature lệch (feature thiếu app). */
+function featureCatalogParts(missing: readonly string[]): string[] {
+  return missing.length > 0
+    ? [`${missing.length} feature chưa gán ứng dụng (cột app = other): ${namesOf(missing)}`]
+    : [];
 }
 
-const FEATURE_CATALOG_HINT =
-  "Admin › Tính năng: gán ứng dụng cho feature (cột app) rồi kiểm lại; feature engine còn sót thì chạy lại migration admin 0037.";
+const FEATURE_CATALOG_HINT = "Admin › Tính năng: gán ứng dụng cho feature (cột app) rồi kiểm lại.";
 
 /** Thuần. Danh mục feature lệch (c18) nêu trước, nối với kết quả hiển thị/duyệt bên dưới. */
 export function evaluateFlowCoverage(a: CoverageAgg): OpsCheckResult {
-  const engine = a.engine_feature ?? false;
   const missing = a.feature_app_missing ?? [];
   const base = evaluateCoverage(a);
-  const value = { ...(base.value as object), engine_feature: engine, feature_app_missing: missing };
-  if (!engine && missing.length === 0) return { ...base, value };
-  const parts = featureCatalogParts(engine, missing);
+  const value = { ...(base.value as object), feature_app_missing: missing };
+  if (missing.length === 0) return { ...base, value };
+  const parts = featureCatalogParts(missing);
   return {
     status: "crit",
     value,
@@ -88,19 +58,7 @@ export function evaluateFlowCoverage(a: CoverageAgg): OpsCheckResult {
 }
 
 function evaluateCoverage(a: CoverageAgg): OpsCheckResult {
-  const unrouted = a.unrouted ?? [];
-  const broken = a.broken ?? [];
-  const value = { checked: a.checked, gap_count: a.gap_count, gaps: a.gaps, unrouted, broken };
-  if (unrouted.length > 0 || broken.length > 0) {
-    const r = evaluateCoverage({ ...a, unrouted: [], broken: [] });
-    const parts = approvalConfigParts(unrouted, broken);
-    return {
-      status: "crit",
-      value,
-      message: `${parts.join(" · ")}${r.status === "crit" ? ` · ${r.message}` : ""}`,
-      hint: `${APPROVAL_FIX_HINT} ${r.status === "crit" ? HINT : ""}`.trim(),
-    };
-  }
+  const value = { checked: a.checked, gap_count: a.gap_count, gaps: a.gaps };
   if (a.gap_count === 0) {
     return {
       status: "ok",
@@ -155,47 +113,12 @@ export const flowCoverageQuery = (slots: readonly CoverageSlot[]) => sql`
 
 /** Trần số tên công ty mỗi danh sách (thông điệp chỉ nêu  tên đầu; `value` giữ tối đa chừng này). */
 const NAMES_LIMIT = 100;
-const ACTIVE_RUN = sql`('running', 'waiting_review', 'waiting_answer', 'needs_decision')`;
-
 /**
- * CR-121 D-4 · cấu hình duyệt HĐ nửa vời (gán ⇒ engine chạy, không còn feature). Một câu theo tập, hai danh sách tên công ty:
- * - `unrouted`: còn run duyệt HĐ đang chạy (def tenant `contracts-approval`) mà khe không còn luật định tuyến nào (gỡ gán giữa chừng).
- * - `broken`: có luật cho khe mà quy trình của luật đã xoá mềm / chưa xuất bản (HĐ mới bị chặn `FLOW_ROUTE_UNAVAILABLE`), hoặc có run
- *   duyệt HĐ kẹt `needs_decision`.
- * (Hub không đọc được `contracts.approvals` — cách ly gói — nên HĐ chờ duyệt chạy máy cũ của công ty chưa gán không đếm ở đây.)
- */
-export const approvalConfigQuery = () => sql`
-  with ad as (
-    select d.id as def_id, d.tenant_id from hub.process_defs d
-    where d.key = ${APPROVAL_PROCESS_KEY} and d.source_ref is not null and d.tenant_id is not null),
-  un as (
-    select distinct ad.tenant_id from ad
-    where exists (select 1 from hub.process_runs r where r.tenant_id = ad.tenant_id and r.process_def_id = ad.def_id
-                  and r.status in ${ACTIVE_RUN})
-      and not exists (select 1 from hub.process_routing_rules x where x.tenant_id = ad.tenant_id and x.slot = ${APPROVAL_SLOT})),
-  bk as (
-    select r.tenant_id from hub.process_routing_rules r join hub.process_defs d on d.id = r.def_id
-    where r.slot = ${APPROVAL_SLOT} and (d.deleted_at is not null or (d.published_version is null and d.source_rel_version is null)
-        or (d.tenant_id is not null and d.tenant_id <> r.tenant_id))
-    union
-    select ad.tenant_id from ad
-    where exists (select 1 from hub.process_runs r where r.tenant_id = ad.tenant_id and r.process_def_id = ad.def_id
-                  and r.status = 'needs_decision'))
-  select
-    coalesce((select jsonb_agg(n order by n) from (
-      select coalesce(nullif(tn.name, ''), tn.key) as n from admin.tenants tn
-      where tn.active and tn.id in (select tenant_id from un) order by 1 limit ${NAMES_LIMIT}) x), '[]'::jsonb) as unrouted,
-    coalesce((select jsonb_agg(n order by n) from (
-      select coalesce(nullif(tn.name, ''), tn.key) as n from admin.tenants tn
-      where tn.active and tn.id in (select tenant_id from bk) order by 1 limit ${NAMES_LIMIT}) y), '[]'::jsonb) as broken`;
-
-/**
- * CR-121 c18 · danh mục feature lệch, một câu tập hợp: (a) engine còn tồn tại; (b) feature mà quy ước (`admin.feature_app_of`, cùng hàm
+ * CR-121 c18 · danh mục feature lệch, một câu tập hợp: feature mà quy ước (`admin.feature_app_of`, cùng hàm
  * backfill/trigger của 0037) xếp vào một ứng dụng nhưng cột `app` = `other`. Feature cố ý gán app khác quy ước không bị nêu.
  */
 export const featureCatalogQuery = () => sql`
   select
-    exists (select 1 from admin.features where key = 'contracts-approval-engine') as engine_feature,
     coalesce((select jsonb_agg(k order by k) from (
       select f.key as k from admin.features f
       where f.app = 'other' and admin.feature_app_of(f.key) <> 'other' order by f.key limit ${NAMES_LIMIT}) m), '[]'::jsonb)
@@ -221,20 +144,12 @@ export function makeFlowCoverageCheck(
     async run(d) {
       const slots = coverageSlotsOf(list);
       if (slots.length === 0) return evaluateFlowCoverage({ checked: 0, gap_count: 0, gaps: [] });
-      const [r, e, c] = await systemRead(d.db, async (tx) => [
+      const [r, c] = await systemRead(d.db, async (tx) => [
         (await tx.execute<CoverageAgg>(flowCoverageQuery(slots)))[0],
-        (await tx.execute<{ unrouted: string[]; broken: string[] }>(approvalConfigQuery()))[0],
-        (
-          await tx.execute<{ engine_feature: boolean; feature_app_missing: string[] }>(
-            featureCatalogQuery(),
-          )
-        )[0],
+        (await tx.execute<{ feature_app_missing: string[] }>(featureCatalogQuery()))[0],
       ]);
       return evaluateFlowCoverage({
         ...(r ?? { checked: 0, gap_count: 0, gaps: [] }),
-        unrouted: e?.unrouted ?? [],
-        broken: e?.broken ?? [],
-        engine_feature: c?.engine_feature ?? false,
         feature_app_missing: c?.feature_app_missing ?? [],
       });
     },

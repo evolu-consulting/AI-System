@@ -2,6 +2,7 @@
 // run export lại từ `chat/processes*` (một nguồn; Evolu Control xem run/token qua endpoint chat §3).
 import { z } from "zod";
 import { APP_NODE_KEY_RE, OUTCOME_KEY_RE } from "../app-manifest/manifest";
+import { EVIDENCE_MODES } from "../chat/evidence";
 import {
   PROCESS_DESC_MAX,
   PROCESS_INPUT_MAX,
@@ -15,6 +16,7 @@ import {
   STAGE_KEY_RE,
   STAGE_TIMEOUT_S,
   STAGE_TIMEOUT_S_HARD_MAX,
+  TASK_NEEDS,
   TeamModeSchema,
   TtlDaysSchema,
 } from "../chat/processes";
@@ -93,6 +95,7 @@ export const HUB_ADMIN_PROCESS_ERRORS = {
   PROCESS_DEF_INCOMPLETE: 422,
   PROCESS_REF_INVALID: 422,
   TEMPLATE_READ_ONLY: 403,
+  PROCESS_NOT_DELETABLE: 409, // CR-127 · Z7 · chỉ xoá được quy trình công ty còn NHÁP (chưa áp dụng, chưa có lượt chạy) — `details.reason`: applied | has_runs
   FLOW_NODE_FEATURE_OFF: 422, // CR-122 · FR-25 · node của tính năng đã tắt cho công ty
   FLOW_EDGE_MISSING: 422, // CR-122 · N2 · FR-26 · bước sau thiếu trường BẮT BUỘC mà bước trước không có (`details.edges`)
   ...HUB_ADMIN_SUBPROCESS_ERRORS, // CR-125 · «Quy trình con»: không có / gọi vòng / lồng quá sâu
@@ -200,6 +203,8 @@ export const ProcessStageDefSchema = z.strictObject({
       branch: AfterBranchSchema,
       /** N2-FR-05 · người bắt đầu run không được quyết task duyệt của stage này (vắng ở snapshot cũ ⇒ false). */
       exclude_starter: z.boolean().default(false),
+      need: z.enum(TASK_NEEDS).optional(), // CR-127 · E1 · Cần: một người nhận việc / trưởng phòng / tất cả (vắng ⇒ suy từ head_only)
+      evidence: z.enum(EVIDENCE_MODES).optional(), // CR-127 · E1 · 'opinion' | 'opinion_plus' (vắng ⇒ opinion)
       head_only: z.boolean().optional(), // contract-flow S1b · chỉ trưởng phòng của `group_id` quyết (không trưởng ⇒ cả nhóm)
       parallel: ApproveParallelSchema.optional(), // CR-125 · «A + B cùng duyệt» (bước Duyệt; luật `parallelStageIssues`)
       also_group_ids: z.array(UuidSchema).max(5).optional(), // prod-fix2 · Group cũng quyết (không head_only, chịu exclude_starter)

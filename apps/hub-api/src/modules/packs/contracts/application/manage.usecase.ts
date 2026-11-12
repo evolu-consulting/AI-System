@@ -2,6 +2,7 @@
 // chặn trước; ở đây chỉ luật nghiệp vụ. AI gọi NGOÀI tx (không giữ khoá trong lúc chờ model).
 import type { AiSummary, HistoryItem } from "@ai/contracts/pack-contracts";
 import type { PackUow, PackWho } from "../../kit/public";
+import { isDocLocked } from "../domain/lock.rules";
 import {
   buildSummaryPrompt,
   parseSummary,
@@ -22,8 +23,7 @@ export type CommissionLock = {
   deal: string | null;
   status: string;
   commission_pct: number | null;
-  /** CR-097 K1 · HĐ đã khoá ⇒ hoa hồng (điều khoản tiền) chỉ đọc. Vắng (fake cũ) ⇒ chưa khoá. */
-  locked?: boolean;
+  doc_type?: string;
 };
 
 export type ManageRepo = {
@@ -79,7 +79,7 @@ export const editCommission =
       const c = await r.manage.lockCommission(id);
       if (!c) return { kind: "not_found" };
       if (c.deal !== "referral" || UNREADY.has(c.status)) return { kind: "not_allowed" };
-      if (c.locked === true) return { kind: "locked" };
+      if (isDocLocked(c.status, c.doc_type)) return { kind: "locked" }; // CR-127 K4 · BR-39: processing/done ⇒ chỉ đọc
       if (c.version !== input.version)
         return { kind: "stale", current: { version: c.version }, updated_at: c.updated_at };
       const s = await r.manage.saveCommission(

@@ -28,6 +28,7 @@ const OPEN_NOTICE: Record<TaskKind, NoticeKind> = {
   review: "review_requested",
   ask: "ask_requested",
   decision: "decision_requested",
+  milestone: "milestone_task", // CR-127 · E2
 };
 
 export type NoticeMeta = {

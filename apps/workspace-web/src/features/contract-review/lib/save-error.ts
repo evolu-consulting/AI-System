@@ -13,9 +13,16 @@ const SERVER_TEXT = new Set([
   "DELIVERY_LOCKED",
 ]);
 const KEYED: Record<string, string> = {
+  NO_APPROVAL_FLOW: "contracts.u5.err.NO_APPROVAL_FLOW",
   CONTRACT_LOCKED: "contracts.lock.errLocked",
   OBLIGATION_DONE: "contracts.errors.alreadyDone",
   MILESTONE_CONFIRMED: "contracts.errors.alreadyDone",
+  LINK_REQUIRED: "contracts.u6.trade.err.required",
+  LINK_REASON_REQUIRED: "contracts.u6.trade.err.reason",
+  EVIDENCE_REQUIRED: "contracts.u6.trade.err.evidence",
+  LINK_MIXED: "contracts.u6.trade.err.mixed",
+  OVER_PLAN: "contracts.u6.trade.err.overPlan",
+  TASK_CLAIMED: "contracts.u6.trade.err.claimed",
 };
 
 export function saveErrorText(e: unknown, t: T): string {

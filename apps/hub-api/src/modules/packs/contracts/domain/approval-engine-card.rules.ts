@@ -2,6 +2,7 @@
 // người dùng của mẫu chụp (bỏ stage `route`/`finalize`), bước đang mở + task + `can_act`, `finalizes_on_approve`, lý do bị chặn;
 // và kế hoạch cho hành động (Đạt / Trả lại / Từ chối / Đọc lại) trước khi gọi engine. Domain chỉ import builtin (ADR-0023): kiểu
 // vào là cấu trúc khớp `PackStepsView` của kit.
+import type { TaskDetail } from "@ai/contracts/chat";
 import type { FormPrefill } from "@ai/contracts/flow";
 import { finalizesOnApprove, isTerminalRun } from "./approval-engine.rules";
 import {
@@ -13,6 +14,29 @@ import {
 } from "./approval-flow.rules";
 import type { FlowCond } from "./approval-flow.types";
 import { type DecidedAs, decidedAsOf } from "./approval-owner.rules";
+
+// contract-flow S3b · luật thuần (lớp 1) của thẻ duyệt HĐ chạy trên engine: dòng thời gian stage của engine (`stepsView`) ⇒ các bước
+// người dùng của mẫu chụp (bỏ stage `route`/`finalize`), bước đang mở + task + `can_act`, `finalizes_on_approve`, lý do bị chặn;
+// và kế hoạch cho hành động (Đạt / Trả lại / Từ chối / Đọc lại) trước khi gọi engine. Domain chỉ
+/** CR-127 · RA2 · nhận việc của task mở (khớp `PackTaskClaim` của kit = các trường `TASK_CLAIM_FIELDS` có ở `TaskDetail`). */
+type PackTaskClaim = Pick<
+  TaskDetail,
+  "claim" | "need" | "can_reassign" | "votes" | "delegated_from" | "evidence_mode"
+>;
+const CLAIM_KEYS = [
+  "claim",
+  "need",
+  "can_reassign",
+  "votes",
+  "delegated_from",
+  "evidence_mode",
+] as const;
+/** Chỉ các trường nhận việc có giá trị của task (thẻ HĐ `ContractApproval` + `FlowTask` mang tiếp). */
+export function claimPart(t: PackTaskClaim | null | undefined): PackTaskClaim {
+  const out: Record<string, unknown> = {};
+  for (const k of CLAIM_KEYS) if (t?.[k] !== undefined) out[k] = t[k];
+  return out as PackTaskClaim;
+}
 
 export type CardStepStatus =
   | "pending"
@@ -34,7 +58,7 @@ export type EngineStageView = {
   decided_at: string | null;
   feedback: string | null;
   /** CR-113 · `override` = người xem quyết được chỉ nhờ quyền Toàn quyền (duyệt thay). */
-  task: { id: string; can_act: boolean; override?: boolean } | null;
+  task: ({ id: string; can_act: boolean; override?: boolean } & PackTaskClaim) | null;
   /** CR-113 · id task review gần nhất của stage (khớp lần "duyệt thay" đã ghi). */
   task_ref?: string | null;
   /** CR-124 · q6 · đích lùi hợp lệ của stage (khớp `PackStepView.back_to_steps`). */
@@ -325,6 +349,7 @@ export function engineCardView(i: EngineCardInput) {
     step: cardStepOf(i.approval.status),
     task_id: live && task ? task.id : null,
     can_act: live && can,
+    ...(live && task ? claimPart(task) : {}), // CR-127 · RA2
     feedback: i.approval.feedback,
     block_reason:
       live && open && task && !can
@@ -337,54 +362,4 @@ export function engineCardView(i: EngineCardInput) {
     attention,
     steps,
   };
-}
-
-export type EngineAction = "approve" | "reject" | "redo" | "return";
-export type EngineErrorCode =
-  | "APPROVAL_NOT_OPEN"
-  | "NOT_REVIEWER"
-  | "STARTER_CANNOT_REVIEW"
-  | "FEEDBACK_REQUIRED";
-export type EnginePlan =
-  | { kind: "error"; code: EngineErrorCode }
-  | { kind: "pass"; taskId: string; finalizes: boolean }
-  | { kind: "fail_back"; taskId: string; backTo: number }
-  /** CR-124 · q6 · lượt flow theo sự kiện (`from_run`) mà stage KHÔNG có đích lùi: Trả lại = quyết `fail` không `back_to_step` — nhánh «Trả lại» do chính stage Duyệt quyết (`return_step`). */
-  | { kind: "fail_flow"; taskId: string }
-  | { kind: "reject"; taskId: string }
-  | { kind: "redo"; taskId: string; reextract: boolean };
-
-const hasText = (s: string | null | undefined) => typeof s === "string" && s.trim() !== "";
-const err = (code: EngineErrorCode): EnginePlan => ({ kind: "error", code });
-
-/** Hành động ⇒ kế hoạch (đã kiểm: bước mở có task, quyền `can_act`, lý do, Trả lại không ở bước soạn). */
-export function planEngineAct(
-  i: EngineCardInput & {
-    action: EngineAction;
-    feedback: string | null | undefined;
-    hasSource: boolean;
-  },
-): EnginePlan {
-  const card = engineCardView(i);
-  const open = openStep(card.steps);
-  const task = open ? stageAt(i.sv, open.idx)?.task : null;
-  if (i.approval.status !== "level1" || !open || !task) return err("APPROVAL_NOT_OPEN");
-  if (!task.can_act)
-    return err(card.block_reason === "starter" ? "STARTER_CANNOT_REVIEW" : "NOT_REVIEWER");
-  if (i.action !== "approve" && !hasText(i.feedback)) return err("FEEDBACK_REQUIRED");
-  if (i.action === "approve")
-    return { kind: "pass", taskId: task.id, finalizes: card.finalizes_on_approve };
-  if (i.action === "reject") return { kind: "reject", taskId: task.id };
-  if (i.action === "redo") return { kind: "redo", taskId: task.id, reextract: i.hasSource };
-  if (card.from_run) {
-    // Lượt flow theo sự kiện: bước 0 là stage thật. Stage có đích lùi (`back_to_steps`) ⇒ lùi về đó; không ⇒ nhánh Trả lại của stage.
-    const back = stageAt(i.sv, open.idx)?.back_to_steps?.[0];
-    return typeof back === "number"
-      ? { kind: "fail_back", taskId: task.id, backTo: back }
-      : { kind: "fail_flow", taskId: task.id };
-  }
-  // Bước 0 của thẻ máy cũ là bước soạn (không có nơi để trả về); các bước sau lùi về bước soạn 0.
-  return open.idx === 0
-    ? err("APPROVAL_NOT_OPEN")
-    : { kind: "fail_back", taskId: task.id, backTo: 0 };
 }

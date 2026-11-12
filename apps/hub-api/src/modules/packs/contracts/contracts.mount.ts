@@ -14,23 +14,41 @@ import type {
   PackRunsBridge,
   PackWho,
 } from "../kit/public";
-import { createPackUow, memberNamesOf, packMembersRoutes, packTenantOnly } from "../kit/public";
+import {
+  checkPackAccess,
+  createPackUow,
+  memberNamesOf,
+  packAccessInput,
+  packMembersRoutes,
+  packTenantOnly,
+} from "../kit/public";
 import { appendixRoutes } from "./adapters/appendix.routes";
+import { contractRoleOf } from "./adapters/contract-role";
+import type { ContractDetailDto } from "./adapters/contracts.mapper";
 import { contractsRepos } from "./adapters/contracts.repo";
 import { CONTRACTS_KEY, contractsRoutes } from "./adapters/contracts.routes";
+import { headOfOwner } from "./adapters/exec-head.repo";
 import { visibilityRoutes } from "./adapters/visibility.routes";
 import { attachParent, getPrices, suggestParentsFor } from "./application/appendix.usecase";
 import { createCategory, listCategories } from "./application/categories.usecase";
+import { withDeleteCan } from "./application/detail-delete-role";
+import { withExpiryCan } from "./application/detail-expiry-role";
+import { withHoldRole } from "./application/detail-hold-role";
+import { withSubmitBlock } from "./application/detail-submit-block";
+import { holdRoleOk } from "./application/exec-request.usecase";
+import { expiryFlowOpen, expiryStateOk } from "./application/expiry-outcome.usecase";
 import { exportContracts } from "./application/export-contracts.usecase";
-import { getContract } from "./application/get-contract.usecase";
+import { type GetContract, getContract } from "./application/get-contract.usecase";
 import { getFacets } from "./application/get-facets.usecase";
 import { getFileLink } from "./application/get-file-link.usecase";
 import { getSource } from "./application/get-source.usecase";
 import { listContracts } from "./application/list-contracts.usecase";
-import { type PatchApprovalGuard, patchFields } from "./application/patch-fields.usecase";
+import { type StepInfo, waitingOf } from "./application/list-waiting";
+import { patchFields } from "./application/patch-fields.usecase";
 import { stepLabelOf } from "./domain/approval-step-label.rules";
 import { DEFAULT_TENANT_TZ, localDate } from "./domain/local-time.rules";
 import { uploadDay } from "./domain/upload.rules";
+import { expiryDepsOf } from "./expiry-outcome.mount";
 
 export { CONTRACTS_KEY };
 
@@ -44,10 +62,10 @@ export type ContractsClock = {
   /** Múi giờ tenant (HD4-FR-02: ngày lịch của tenant); vắng ⇒ múi mặc định. `now` để test tiêm. */
   timeZoneOf?: (tenantId: string) => Promise<string>;
   now?: () => Date;
-  /** HD3 · review S1: seam duyệt cho PATCH trường (giai đoạn run + mở lại duyệt); vắng ⇒ hành vi HD1. */
-  guard?: PatchApprovalGuard;
   /** CR-123 · u10 · cầu engine để đặt nhãn cột "Bước" (một lô `stepsViewMany` cho cả trang); vắng ⇒ không có `step_label`. */
   runs?: PackRunsBridge;
+  /** CR-127 NF1 · "Gửi sẽ có quy trình khớp?" (= `submitFlowOpen` của lệnh Gửi, dựng ở `contractsAiModule`); vắng ⇒ không có `submit_block`. */
+  submitFlowOpen?: (who: PackWho, id: string) => Promise<boolean>;
 };
 
 const stepLabelsOf = (runs: PackRunsBridge | undefined) =>
@@ -56,9 +74,18 @@ const stepLabelsOf = (runs: PackRunsBridge | undefined) =>
         new Map(
           [
             ...((await runs.port?.stepsViewMany?.({ ...who, role: "member" }, ids)) ?? new Map()),
-          ].map(([k, v]) => [k, stepLabelOf(v, fromRuns.has(k))] as const),
+          ].map(([k, v]) => {
+            const label = stepLabelOf(v, fromRuns.has(k));
+            return [k, { label, waiting: waitingOf(v, label) } satisfies StepInfo] as const;
+          }),
         )
     : undefined;
+
+/** Quyền `admin` của gói (quản trị công ty) theo người gọi — nguồn: cùng `checkPackAccess` của guard. */
+const holdAdmin = (view: PackAccessView) => async (who: { tenantId: string; userId: string }) => {
+  const i = await packAccessInput(view, CONTRACTS_KEY, { ...who, userKind: "internal" });
+  return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
+};
 
 export function contractsModule(
   db: Db,
@@ -66,7 +93,6 @@ export function contractsModule(
   filebox: ((org: string) => Pick<PackFileboxClient, "getLink">) | null = null,
   clock: ContractsClock = {},
 ): Hono<PackGuardVars> {
-  const { guard } = clock;
   const uow = packTenantOnly(createPackUow(db, CONTRACTS_KEY, contractsRepos));
   const link = filebox ? (org: string, fileId: string) => filebox(org).getLink(fileId) : null;
   // V2-A: ngày lịch tenant cho giai đoạn/quá hạn của mốc (cache múi giờ, 0 SQL khi nóng).
@@ -74,10 +100,23 @@ export function contractsModule(
     fmt((clock.now ?? (() => new Date()))(), await (clock.timeZoneOf?.(tid) ?? DEFAULT_TENANT_TZ));
   const today = dayWith(localDate);
   const stepLabels = stepLabelsOf(clock.runs);
+  const expiryDeps = expiryDepsOf(db, { today, isAdmin: holdAdmin(view) });
+  const sfo = clock.submitFlowOpen;
+  const blockErr = (e: unknown) =>
+    logger.warn("contracts-submit-block-failed", {
+      error: e instanceof Error ? e.message.slice(0, 200) : "unknown",
+    });
+  const withBlock = (g: GetContract<ContractDetailDto>) =>
+    sfo ? withSubmitBlock(g, sfo, blockErr) : g;
   const r = contractsRoutes(view, {
     list: timed(
       "contracts.list",
-      listContracts({ uow, today, ...(stepLabels ? { stepLabels } : {}) }),
+      listContracts({
+        uow,
+        today,
+        roleOf: contractRoleOf(view),
+        ...(stepLabels ? { stepLabels } : {}),
+      }),
     ),
     facets: getFacets({ uow }),
     export: exportContracts({
@@ -87,10 +126,30 @@ export function contractsModule(
       owners: memberNamesOf(db),
       cap: CONTRACT_EXPORT_MAX_ROWS,
     }),
-    detail: timed("contracts.detail", getContract({ uow, today })),
+    // CR-127 X3 · R#18: `can.hold/release` cộng vai trưởng phòng của người phụ trách + quản trị công ty (chỉ tra khi trạng thái cho phép nút).
+    // CR-127 SG1 · BR-68: `can.expiry` (kết cục hiệu lực bằng tay) — vai như hold + công ty không có quy trình `contract.expiring` khớp.
+    // CR-127 NF1: `submit_block` (Gửi bị chặn vì chưa có quy trình duyệt khớp) — chỉ HĐ DRAFT mới hỏi engine.
+    detail: timed(
+      "contracts.detail",
+      withBlock(
+        withDeleteCan(
+          withExpiryCan(
+            withHoldRole(getContract({ uow, today }), (who, c) =>
+              holdRoleOk({ headOf: headOfOwner(db), isAdmin: holdAdmin(view) }, who, c),
+            ),
+            {
+              stateOk: expiryStateOk,
+              roleOk: expiryDeps.roleOk,
+              flowOpen: expiryFlowOpen(expiryDeps),
+            },
+          ),
+          contractRoleOf(view),
+        ),
+      ),
+    ),
     source: getSource({ uow }),
     fileLink: getFileLink({ packKey: CONTRACTS_KEY, uow, link, log: logger }),
-    patchFields: patchFields({ uow, ...(guard ? { approval: guard } : {}) }),
+    patchFields: patchFields({ uow }),
   });
   r.route(
     "/",

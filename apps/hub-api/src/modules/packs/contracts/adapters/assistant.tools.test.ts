@@ -25,7 +25,6 @@ const row = (i: number) => ({
   buyer: "B",
   value: 1000,
   end_date: null,
-  action_deadline: null,
   owner_user_id: U,
   seller_signer: null,
   buyer_signer: null,
@@ -104,13 +103,13 @@ describe("M2-chat · tool đọc gói contracts cho trợ lý [N2-FR-03]", () =>
     const f = fakes();
     const out = (await tool(assistantTools(f.deps), "contracts-search").run(ctx, {
       q: "bao bì",
-      status: "active",
+      status: "done",
       limit: 500,
     })) as { total: number; items: Record<string, unknown>[] };
     expect(f.calls[0]?.who).toEqual(WHO);
     expect(f.calls[0]?.arg).toMatchObject({
       q: "bao bì",
-      status: ["active"],
+      status: ["done"],
       page_size: LIMIT_MAX,
     });
     expect(out.total).toBe(99);

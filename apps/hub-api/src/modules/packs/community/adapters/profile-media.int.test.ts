@@ -55,7 +55,10 @@ const hostBook: HostBookReader = {
     if (who.userId !== c.hA) throw Object.assign(new Error("forbidden"), { kind: "forbidden" });
     return {
       products: [],
-      partners: (q.partyKeys ?? []).map((partyKey) => ({ partyKey, band: "good", score: 88 })),
+      // CR-130: mọi đối tác có tài khoản đều là đối tác SHT (có khoá); sổ chỉ có điểm cho `tax:S1` (như sổ thật: chưa đủ sự kiện ⇒ không điểm)
+      partners: (q.partyKeys ?? [])
+        .filter((partyKey) => partyKey === "tax:S1")
+        .map((partyKey) => ({ partyKey, band: "good", score: 88 })),
     };
   },
   stockHolders: async () => [],
@@ -142,7 +145,7 @@ beforeAll(async () => {
   await sql`insert into community.media (tenant_id, post_id, position, kind, label, url)
     select x.t, x.post, x.i, x.kind, x.label, 'https://img.example.test/' || x.label
     from jsonb_to_recordset(${sql.json(rows)}) as x(t uuid, post uuid, i int, kind text, label text)`;
-  await sql`update community.partner_companies set party_key = 'tax:S1' where ext_org_id = ${c.S1}::uuid`;
+  await sql`update contracts.partner_profiles set party_key = 'tax:S1' where ext_org_id = ${c.S1}::uuid`;
   db = createDb(urls().hubApi, { max: 2 });
   app = build();
 }, 120_000);
@@ -195,7 +198,7 @@ describe("GET /profile/:orgId/media (COM-FR-37)", () => {
 });
 
 describe("GET /partners?rep=1 — tab Đối tác (COM-FR-37, chỉ chủ quản)", () => {
-  it("[COM-FR-37] chủ quản có quyền contracts: uy tín qua HostBookReader cho đối tác đã liên kết SHT", async () => {
+  it("[COM-FR-37] chủ quản có quyền contracts: uy tín qua HostBookReader cho đối tác có điểm trong sổ SHT", async () => {
     const r = await call("hA", "/partners?rep=1");
     expect(r.status).toBe(200);
     const list = z.array(PartnerOrgSchema).parse(r.json);

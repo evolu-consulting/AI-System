@@ -12,8 +12,8 @@ describe("nodeToPatches · mọi node của bảng", () => {
       expect(nodeToPatches(n).length).toBe(n.stages.length);
     },
   );
-  test("node Chờ tới (lõi) không có nguồn ngày ⇒ để trống, không ném lỗi", () => {
-    const w = CORE_NODES.find((n) => n.stages[0]?.executor.kind === "wait_until");
-    expect(w && nodeToPatches(w)[0]?.wait?.source).toBe("");
+  test("node Chờ (lõi) đặt sẵn một khoảng, không ném lỗi", () => {
+    const w = CORE_NODES.find((n) => n.key === "core.wait");
+    expect(w && nodeToPatches(w)[0]?.executor).toBe("wait_for");
   });
 });

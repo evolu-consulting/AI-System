@@ -34,3 +34,4 @@ Mỗi quyết định kiến trúc một file `NNNN-<slug>.md`: Trạng thái (P
 | 0036 | Mọi app phải khai báo khe flow (`check:app-slots`); gán quy trình một nguồn (`process_tenant_defs` + luật), bảng mới thay bảng cũ ⇒ backfill (CR-120) | Accepted (người dùng, 2026-11-05) |
 | 0037 | Ranh giới module hub-api: một cửa `modules/<m>/public.ts`, `testing/` chỉ cho test, baseline vi phạm chỉ co lại (`check:boundaries`, CR-121 B) | Accepted (người dùng, 2026-11-05) |
 | 0038 | Mô hình flow theo sự kiện: node Bắt đầu khi + `company_flows`, thay khe/luật định tuyến (thay 0035, 0036; sửa 0030 §3; CR-122) | Accepted (người dùng, 2026-11-06) |
+| 0043 | Một nguồn đối tác ở contracts (`partner_profiles`) + hàm SQL đọc `community_partners` cho RLS Bảng tin, bổ sung 0031 (CR-130 pha 2) | Accepted (Luật 2b, 2026-11-12) |

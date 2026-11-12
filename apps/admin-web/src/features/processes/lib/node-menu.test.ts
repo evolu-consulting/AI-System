@@ -7,7 +7,7 @@ import {
 } from "@ai/contracts/app-manifest";
 import { featureNodeByKey, MODULES as REGISTRY } from "@ai/contracts/modules";
 import { eventOf, finishPatch, nodesForApp } from "./flow-def";
-import { isOutcomeOnlyNode, splitMenu } from "./node-menu";
+import { groupMenu, isOutcomeOnlyNode, menuGroupKey, splitMenu } from "./node-menu";
 
 const mod = (key: string, menu?: AppNodeDecl["menu"]): AppNodeDecl =>
   ({
@@ -35,10 +35,12 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
       "contracts.create-from-step", // CR-126 · «Tạo hợp đồng từ hồ sơ»
       "contracts.esign",
       "contracts.partner-send",
-      "core.bell",
-      "core.email",
-      "core.subprocess",
-      "finish",
+      "contracts.sign-together-accept", // CR-127 · P2 · Ký cùng lúc
+      "core.notify", // CR-127 · E9 · «Thông báo» gộp chuông + email
+      "contracts.milestone-confirm", // CR-127 · E10 · «Xác nhận mốc» (nhóm Người làm)
+      "form", // «Bổ sung thông tin» lên nhóm nghiệp vụ
+      "core.wait", // «Chờ» gộp Hẹn giờ + Chờ khoảng
+      // CR-127 · Hoàn tất tự có cuối quy trình hợp đồng ⇒ không còn «Kết thúc» trên menu
     ]);
     expect(m.advanced).toEqual([]);
   });
@@ -46,7 +48,7 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
     const m = splitMenu({ app: "contracts", isPlatform: true, table, modules: MODULES });
     expect(ids(m.business)).toContain("contracts.esign");
     const adv = ids(m.advanced);
-    for (const k of ["form", "agent", "tool", "dify.run", "dlc.step", "core.wait-until"])
+    for (const k of ["agent", "tool", "dify.run", "dlc.step", "core.subprocess"])
       expect(adv).toContain(k);
     expect(adv.at(-1)).toBe("set");
     expect(adv).not.toContain("approve");
@@ -66,7 +68,7 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
       event: post,
     });
     const keys = ids(cm.business);
-    expect(keys).toContain("core.bell");
+    expect(keys).toContain("core.notify");
     expect(keys).not.toContain("contracts.esign");
     expect(keys).not.toContain("contracts.partner-send");
     const ct = splitMenu({
@@ -123,11 +125,8 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
         x.kind === "table" && x.entry.outcome ? [`${x.entry.id}:${x.entry.outcome.label}`] : [],
       );
     expect(ends("community", "post.created")).toEqual(["finish:Hiện bài", "finish:Ẩn bài"]);
-    expect(ends("contracts", "contract.submitted")).toEqual([
-      "finish:Đã duyệt",
-      "finish:Từ chối",
-      "finish:Trả lại",
-    ]);
+    // CR-127 · U2 · hợp đồng: Hoàn tất tự có, Từ chối / Trả lại là nút của bước Duyệt ⇒ không còn mục Kết thúc trên menu
+    expect(ends("contracts", "contract.submitted")).toEqual([]);
   });
   test("CR-125 c6 · B3: Kết thúc chọn từ menu mang đúng kết quả đã chọn", () => {
     const ev = eventOf("community", "post.created");
@@ -144,5 +143,28 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
       });
       expect([...ids(m.business), ...ids(m.advanced)]).not.toContain("waitEsign");
     }
+  });
+});
+
+describe("CR-127 · U2 · menu «+» theo nhóm nghiệp vụ", () => {
+  test("nhóm: Người làm · Rẽ nhánh · Hợp đồng · Báo tin & Chờ; không lộ Quy trình con / Công cụ / Kết thúc", () => {
+    const m = splitMenu({ app: "contracts", isPlatform: false, table, modules: MODULES });
+    const g = groupMenu(m.business).map((x) => [x.group, ids(x.items)]);
+    expect(g).toEqual([
+      ["people", expect.arrayContaining(["approve", "form", "contracts.milestone-confirm"])],
+      ["branch", ["if"]],
+      ["contract", expect.arrayContaining(["contracts.esign", "contracts.partner-send"])],
+      ["notify", expect.arrayContaining(["core.notify", "core.wait"])],
+    ]);
+    const all = ids(m.business);
+    for (const k of ["core.subprocess", "tool", "agent", "finish"]) expect(all).not.toContain(k);
+  });
+});
+
+describe("nhãn nhóm menu theo app", () => {
+  test("nhóm «Hợp đồng» chỉ ở app hợp đồng; app khác ⇒ «other»", () => {
+    expect(menuGroupKey("contract", "contracts")).toBe("contract");
+    expect(menuGroupKey("contract", "community")).toBe("other");
+    expect(menuGroupKey("people", "community")).toBe("people");
   });
 });

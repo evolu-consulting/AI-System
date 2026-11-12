@@ -109,6 +109,68 @@ export const AiSummarySchema = z.strictObject({
 });
 export type AiSummary = z.infer<typeof AiSummarySchema>;
 
+/** CR-127 K7 · BR-55: "Điều cần lưu ý" — nhóm cố định; mỗi ý kèm điều khoản + trang. */
+export const AI_NOTE_GROUPS = [
+  "penalty",
+  "payment",
+  "delivery",
+  "warranty",
+  "renewal",
+  "dispute",
+] as const;
+export const AI_NOTES_MAX = 40;
+const clauseRef = () => pgText(60).nullable().optional();
+const pageNo = () => z.number().int().min(1).max(9999).nullable().optional();
+export const AiNoteSchema = z.strictObject({
+  group: z.enum(AI_NOTE_GROUPS),
+  text: pgText(600),
+  clause_ref: clauseRef(),
+  page: pageNo(),
+  party: z.enum(["ours", "partner"]).nullable().optional(),
+});
+export type AiNote = z.infer<typeof AiNoteSchema>;
+
+/** "Cần chú ý" (R#47): danh sách rủi ro cố định. */
+export const AI_RISK_KINDS = [
+  "auto_renew",
+  "no_suspension_clause",
+  "one_sided_penalty",
+  "unlimited_liability",
+  "short_notice",
+  "missing_acceptance",
+  "other",
+] as const;
+export const AI_RISKS_MAX = 20;
+export const AiRiskSchema = z.strictObject({
+  kind: z.enum(AI_RISK_KINDS),
+  text: pgText(600),
+  clause_ref: clauseRef(),
+});
+export type AiRisk = z.infer<typeof AiRiskSchema>;
+
+/** BR-56: phạt dạng số (tỷ lệ, cơ sở tính, trần, trích dẫn điều khoản + trang). `party` = bên PHẠT (ours: mình bị phạt). */
+export const PENALTY_TRIGGERS = ["late_delivery", "late_payment", "other"] as const;
+export const PENALTY_BASES = ["per_day_of_value", "per_day_of_milestone", "fixed"] as const;
+export const PENALTY_TERMS_MAX = 20;
+export const PenaltyTermInputSchema = z.strictObject({
+  party: z.enum(["ours", "partner"]),
+  trigger: z.enum(PENALTY_TRIGGERS),
+  rate_pct: z.number().min(0).max(100).nullable(),
+  basis: z.enum(PENALTY_BASES),
+  cap_pct: z.number().min(0).max(100).nullable().optional(),
+  cap_amount: money().nullable().optional(),
+  clause_ref: clauseRef(),
+  page: pageNo(),
+  quote: quote(),
+});
+export type PenaltyTermInput = z.infer<typeof PenaltyTermInputSchema>;
+/** Hàng đã lưu (`contracts.penalty_terms`) trả ở chi tiết. */
+export const PenaltyTermSchema = PenaltyTermInputSchema.extend({
+  id: z.uuid(),
+  source: z.enum(["ai", "manual"]),
+});
+export type PenaltyTerm = z.infer<typeof PenaltyTermSchema>;
+
 /** Mốc AI tìm thấy trong văn bản (loại BA 7 loại; ngày có thể chưa rõ). */
 export const AiMilestoneSchema = z.strictObject({
   kind: MilestoneKindSchema,
@@ -116,6 +178,9 @@ export const AiMilestoneSchema = z.strictObject({
   due_date: outDate().nullable(),
   amount: money().nullable(),
   quote: quote(),
+  /** CR-127 K7 · BR-43: điều khoản gốc (Điều x, trang y) — tuỳ chọn, bản cũ vẫn hợp lệ. */
+  clause_ref: clauseRef(),
+  page: pageNo(),
 });
 export type AiMilestone = z.infer<typeof AiMilestoneSchema>;
 
@@ -135,6 +200,10 @@ export const ExtractionOutputSchema = z.strictObject({
   milestones: z.array(AiMilestoneSchema).max(AI_MILESTONES_MAX).optional(),
   /** CR-101 Câu 9: AI gợi ý loại chứng từ (HĐ kinh tế / HĐ nguyên tắc / giao dịch). */
   doc_type_suggest: DocTypeSchema.nullable().optional(),
+  /** CR-127 K7 · BR-55/56 (tuỳ chọn): điều cần lưu ý, rủi ro, phạt dạng số. */
+  notes: z.array(AiNoteSchema).max(AI_NOTES_MAX).optional(),
+  risks: z.array(AiRiskSchema).max(AI_RISKS_MAX).optional(),
+  penalty_terms: z.array(PenaltyTermInputSchema).max(PENALTY_TERMS_MAX).optional(),
 });
 export type ExtractionOutput = z.infer<typeof ExtractionOutputSchema>;
 
@@ -147,6 +216,9 @@ export const AiReadSchema = z.strictObject({
   milestones: z.array(AiMilestoneSchema.extend({ verified: z.boolean() })).max(AI_MILESTONES_MAX),
   /** CR-101 Câu 9: ô "Loại chứng từ" tô vàng "AI" khi có; người dùng chọn lại được. */
   doc_type_suggest: DocTypeSchema.nullable().optional(),
+  /** CR-127 K7: thẻ "Điều cần lưu ý" / "Cần chú ý" (vắng ở bản trích cũ). Phạt số ở `ContractDetail.penalty_terms`. */
+  notes: z.array(AiNoteSchema).max(AI_NOTES_MAX).optional(),
+  risks: z.array(AiRiskSchema).max(AI_RISKS_MAX).optional(),
 });
 export type AiRead = z.infer<typeof AiReadSchema>;
 
@@ -173,7 +245,9 @@ export type ContractWarning = z.infer<typeof ContractWarningSchema>;
 /** `POST /pack/contracts/contracts/:id/extract` (trích lại) ⇒ 202. */
 export const ExtractResponseSchema = z.strictObject({
   id: z.uuid(),
-  status: z.literal("extracting"),
+  /** CR-127: trích lại ⇒ HĐ vẫn `draft`, `extract_state = reading`. */
+  status: z.literal("draft"),
+  extract_state: z.literal("reading"),
   version: VersionSchema,
 });
 export type ExtractResponse = z.infer<typeof ExtractResponseSchema>;
@@ -249,8 +323,8 @@ export type ManualContractRequest = z.infer<typeof ManualContractRequestSchema>;
 
 export const ManualContractResponseSchema = z.strictObject({
   id: z.uuid(),
-  /** V2-A: tenant tắt duyệt (C3) ⇒ HĐ lưu là có hiệu lực (`active`) + mốc mặc định. */
-  status: z.enum(["needs_review", "active"]),
+  /** CR-127: tạo tay ⇒ `done` ngay (`created_done`, hiệu lực tính từ ngày) + mốc mặc định. */
+  status: z.literal("done"),
   version: VersionSchema,
 });
 export type ManualContractResponse = z.infer<typeof ManualContractResponseSchema>;

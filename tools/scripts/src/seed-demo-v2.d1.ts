@@ -148,7 +148,7 @@ export async function loadDeals(tx: Tx, tenant: string, a: Actors, today: string
   await tx.unsafe(
     `insert into contracts.contracts (id, tenant_id, kind, doc_type, source, title, direction, deal, status, owner_user_id,
        created_by, created_at, updated_at, confirmed_at, confirmed_by, fields)
-     select x.id, x.tenant_id, 'contract', 'deal', x.source, x.title, x.direction, x.deal, 'active', x.owner_user_id,
+     select x.id, x.tenant_id, 'contract', 'deal', x.source, x.title, x.direction, x.deal, 'done', x.owner_user_id,
        x.created_by, x.created_at, x.created_at, x.created_at, x.created_by, x.fields
      from jsonb_to_recordset($1::text::jsonb) as x(id uuid, tenant_id uuid, source text, title text, direction text, deal text,
        owner_user_id uuid, created_by uuid, created_at timestamptz, fields jsonb)`,
@@ -224,7 +224,7 @@ export async function loadVersionChain(tx: Tx, tenant: string, today: string): P
   const at = `${addDays(today, -10)}T08:00:00Z`;
   await tx`insert into contracts.contracts (id, tenant_id, kind, title, direction, deal, status, owner_user_id, created_by,
       created_at, confirmed_at, confirmed_by, fields, commission_pct, ai_read, root_id, version_no, supersedes_id)
-    select ${v2}, tenant_id, kind, title || ' (bản cập nhật)', direction, deal, 'active', owner_user_id, created_by,
+    select ${v2}, tenant_id, kind, title || ' (bản cập nhật)', direction, deal, 'done', owner_user_id, created_by,
       ${at}::timestamptz, ${at}::timestamptz, confirmed_by,
       jsonb_set(jsonb_set(fields, '{total_value,value}', to_jsonb(${CHAIN.newValue}::bigint)),
         '{end_date,value}', to_jsonb(${CHAIN.newEnd}::text)),

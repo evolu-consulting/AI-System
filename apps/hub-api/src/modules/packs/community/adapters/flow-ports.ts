@@ -8,6 +8,8 @@ import {
   type PackSystemUow,
   withPackRoleInTx,
 } from "../../kit/public";
+import type { PartnerLinker } from "../application/pack-ports";
+import { rolesOfLabels } from "../domain/audience.rules";
 import {
   COMMUNITY_EVENTS,
   EV_JOIN,
@@ -18,7 +20,7 @@ import {
   reportTarget,
 } from "../domain/flow-events.rules";
 import {
-  applyJoinOutcome,
+  applyJoinDecision,
   applyPostOutcome,
   applyReportOutcome,
   factsOf,
@@ -42,12 +44,13 @@ export function communityFactsReaders(sys: PackSystemUow<{ tx: Tx }>): FactsRead
  * settle chạy lại hoặc hai lần Kết thúc cùng kết quả ⇒ `already_applied`, không ghi đè quyết định đã có.
  * Outcome lạ ⇒ ném (settle rollback, engine báo "Cần xử lý") — không âm thầm bỏ qua.
  */
-export function communityOutcomeHandler(): OutcomeHandler<Tx> {
+export function communityOutcomeHandler(partners?: PartnerLinker): OutcomeHandler<Tx> {
+  const byEvent = stepsOf(partners);
   return {
     packKey: COMMUNITY_PACK,
     events: COMMUNITY_EVENTS,
     async apply(tx, i) {
-      const h = BY_EVENT[i.event];
+      const h = byEvent[i.event];
       const t = h?.target(i.outcome);
       if (!h || !t) throw new Error(`Community: outcome lạ ${i.event}/${i.outcome}`);
       return withPackRoleInTx(tx, COMMUNITY_PACK, i.tenantId, () =>
@@ -75,8 +78,29 @@ type Step = {
   target: (outcome: string) => string | null;
   apply: (tx: Tx, tenantId: string, ref: string, target: never) => Promise<OutcomeResult>;
 };
-const BY_EVENT: Record<string, Step | undefined> = {
+
+/** Nhận đơn ⇒ approved + liên kết đối tác ở SHT (cổng `PartnerLinker`, CÙNG tx settle ⇒ rollback chung). Thiếu cổng ⇒ ném (settle rollback). */
+const joinStep =
+  (partners: PartnerLinker | undefined): Step["apply"] =>
+  async (tx, tenantId, ref, target) => {
+    const { res, joined } = await applyJoinDecision(tx, tenantId, ref, target);
+    if (joined) {
+      if (!partners) throw new Error("Community: thiếu PartnerLinker để nhận đơn tham gia");
+      await partners.linkInTx(
+        tx,
+        { tenantId, kind: "internal" },
+        {
+          extOrgId: joined.requester_org,
+          name: joined.company,
+          roles: rolesOfLabels(joined.labels),
+        },
+      );
+    }
+    return res;
+  };
+
+const stepsOf = (partners: PartnerLinker | undefined): Record<string, Step | undefined> => ({
   [EV_POST]: { target: postTarget, apply: applyPostOutcome },
-  [EV_JOIN]: { target: joinTarget, apply: applyJoinOutcome },
+  [EV_JOIN]: { target: joinTarget, apply: joinStep(partners) },
   [EV_REPORT]: { target: reportTarget, apply: applyReportOutcome },
-};
+});

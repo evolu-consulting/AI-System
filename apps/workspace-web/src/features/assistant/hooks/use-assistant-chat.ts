@@ -2,6 +2,7 @@
 // tới khi tải lại trang — như mgmt-app `useKept`. Một hội thoại Hub + một flow cho cả phiên; gửi khi đang trả lời ⇒ chặn.
 import { ApiError } from "@ai/web-kit/http";
 import { useSyncExternalStore } from "react";
+import { getAssistantSelection } from "~/shared/kernel/assistant-hint";
 import { cancelRun, createConversation, sendAndStream } from "../api";
 import { applyEvent, buildRequest, dockContext, type Msg, titleOf } from "../lib/chat.rules";
 
@@ -42,7 +43,7 @@ export async function ask(
   try {
     const convId = await ensureConversation(q, fallbackTitle);
     const loc = typeof location === "undefined" ? null : location;
-    const dock = loc ? dockContext(loc.pathname, loc.search) : undefined;
+    const dock = loc ? dockContext(loc.pathname, loc.search, getAssistantSelection()) : undefined;
     const req = buildRequest(q, state.flowId, loc?.href ?? null, dock, instruction);
     const sent = await sendAndStream(convId, req, (e) => {
       if (e.event === "run.started")

@@ -80,7 +80,7 @@ describe("CR-101 DOC-deals · đường chính giao dịch", () => {
     const made = await ok(call(c, P.hoa, "POST", "/contracts/deals", body("buy", 10)));
     expect(made).toMatchObject({
       doc_type: "deal",
-      status: "active",
+      status: "done",
       settled: [],
       settle_error: null,
     });
@@ -152,8 +152,10 @@ describe("CR-101 DOC-deals · đường chính giao dịch", () => {
     const s = await ok(
       call(c, P.hoa, "POST", "/contracts/deals", body("sell", 4, { settled_now: true })),
     );
-    expect(s.settled).toHaveLength(2);
-    expect(s.settle_error).toBeNull();
+    expect({ settled: s.settled.length, settle_error: s.settle_error }).toEqual({
+      settled: 2,
+      settle_error: null,
+    });
     expect((await milestones(s.id)).map((m) => m.status)).toEqual(["done", "done"]);
     expect(await onHand()).toBe((before as number) - 4);
     expect((await call(c, P.hoa, "DELETE", `/contracts/${s.id}`)).status).toBe(403);

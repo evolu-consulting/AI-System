@@ -43,8 +43,12 @@ const KEYS = [
   "warranty",
   "penalty",
 ];
-const STATUS =
-  "array['extracting','extract_failed','needs_review','active','expiring','expired','renewed','terminated','rejected']::text[]";
+// CR-127: 9 hàng mẫu ⇒ 4 trạng thái mới (+ extract_state, effect) — cùng phân bố cũ (3 chưa xác nhận · 5 đã xong · 1 từ chối).
+const STATUS = "array['draft','draft','draft','done','done','done','done','done','reject']::text[]";
+const EXTRACT =
+  "array['reading','failed','ready','ready','ready','ready','ready','ready','ready']::text[]";
+const EFFECT =
+  "array[null,null,null,'active','expiring','expired','renewed','terminated',null]::text[]";
 const fv = (expr: string) =>
   `jsonb_build_object('value', ${expr}, 'quote', 'trích dẫn nguyên văn từ hợp đồng', 'verified', true, 'edited', false)`;
 
@@ -93,11 +97,11 @@ export async function seedPerf(sql: Sql): Promise<SeedResult> {
       [tid],
     );
     await sql.unsafe(
-      `insert into contracts.contracts (id, tenant_id, kind, parent_id, title, direction, status, owner_user_id, created_by,
+      `insert into contracts.contracts (id, tenant_id, kind, parent_id, title, direction, status, extract_state, effect, owner_user_id, created_by,
          created_at, updated_at, version, fields)
        select ${contractUuid(n, "g")}, $1::uuid, case when g % 20 = 0 then 'appendix' else 'contract' end,
          case when g % 20 = 0 then ${contractUuid(n, "(g - 1)")} end, 'Hợp đồng ' || g,
-         (array['sale','purchase',null]::text[])[1 + g % 3], (${STATUS})[1 + g % 9], (${owners})[1 + g % 5], '${OWNERS[0]}'::uuid,
+         (array['sale','purchase',null]::text[])[1 + g % 3], (${STATUS})[1 + g % 9], (${EXTRACT})[1 + g % 9], (${EFFECT})[1 + g % 9], (${owners})[1 + g % 5], '${OWNERS[0]}'::uuid,
          timestamptz '2026-01-01 00:00:00+00' + g * interval '1 minute', timestamptz '2026-01-01 00:00:00+00' + g * interval '1 minute', 1,
          $2::text::jsonb || jsonb_build_object(
            'number', ${fv("'HD-' || g")},
@@ -128,9 +132,9 @@ export async function seedPerf(sql: Sql): Promise<SeedResult> {
     );
   }
   await sql.unsafe(
-    `insert into contracts.contracts (id, tenant_id, title, direction, status, owner_user_id, created_by, created_at, updated_at, fields)
+    `insert into contracts.contracts (id, tenant_id, title, direction, status, extract_state, effect, owner_user_id, created_by, created_at, updated_at, fields)
      select ('c0de0900-0000-4000-8000-' || lpad(g::text, 12, '0'))::uuid, $1::uuid, 'Nền ' || g,
-       (array['sale','purchase',null]::text[])[1 + g % 3], (${STATUS})[1 + g % 9], (${owners})[1 + g % 5], '${OWNERS[0]}'::uuid,
+       (array['sale','purchase',null]::text[])[1 + g % 3], (${STATUS})[1 + g % 9], (${EXTRACT})[1 + g % 9], (${EFFECT})[1 + g % 9], (${owners})[1 + g % 5], '${OWNERS[0]}'::uuid,
        timestamptz '2026-01-01 00:00:00+00' + g * interval '1 minute', timestamptz '2026-01-01 00:00:00+00' + g * interval '1 minute', $2::text::jsonb
      from generate_series(1, ${BG_ROWS}) g`,
     [BG_TENANT, tplJson],

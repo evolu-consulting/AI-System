@@ -10,7 +10,7 @@ import { draftKindOf, type FeNode, feNodeOf } from "../nodes/registry";
 import { executorToDef, normalizeApply } from "./apply-form";
 import { autofixToDef, autofixToDraft, emptyAutofix } from "./autofix-form";
 import { branchToRules, rulesToBranch } from "./branch-form";
-import type { StageDraft } from "./draft-types";
+import type { ReviewExtra, StageDraft } from "./draft-types";
 import { normalizeForm } from "./form-fields";
 import { emptyIf, normalizeIf } from "./if-form";
 import { parallelFromDef, parallelToDef } from "./parallel-form";
@@ -111,6 +111,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     remind: remindFromDef(rv?.remind_every_h),
     escalate: escalateFromDef(rv?.escalate),
     ...(rv?.exclude_starter ? { excludeStarter: true } : {}),
+    ...reviewExtraToDraft(rv),
     ...(rv?.parallel ? { parallel: parallelFromDef(rv.parallel) } : {}),
     instruction: s.instruction,
     filename: s.output.filename,
@@ -141,6 +142,33 @@ const optionalDraftPart = (s: ProcessStageDef): Partial<StageDraft> => ({
   ...(s.start_form ? { startForm: startFormToDraft(s.start_form) } : {}),
   ...(s.slot ? { slotRaw: repairSlot(structuredClone(s.slot)) } : {}),
 });
+
+/** CR-127 · U2 · `need` / `evidence` + trường giữ nguyên của bước Duyệt ⇄ `StageDraft.review`. */
+function reviewExtraToDraft(
+  rv: Extract<ProcessStageDef["after"], { kind: "review" }> | null,
+): Partial<StageDraft> {
+  if (!rv) return {};
+  const r: ReviewExtra = {
+    ...(rv.need ? { need: rv.need } : {}),
+    ...(rv.evidence ? { evidence: rv.evidence } : {}),
+    ...(rv.head_only ? { headOnly: true } : {}),
+    ...(rv.approver_user_id ? { approverUserId: rv.approver_user_id } : {}),
+    ...(rv.also_group_ids?.length ? { alsoGroupIds: [...rv.also_group_ids] } : {}),
+    ...(rv.also_group_keys?.length ? { alsoGroupKeys: [...rv.also_group_keys] } : {}),
+  };
+  return Object.keys(r).length > 0 ? { review: r } : {};
+}
+const reviewExtraToDef = (r: ReviewExtra | undefined) =>
+  r
+    ? {
+        ...(r.need ? { need: r.need } : {}),
+        ...(r.evidence ? { evidence: r.evidence } : {}),
+        ...(r.headOnly ? { head_only: true } : {}),
+        ...(r.approverUserId ? { approver_user_id: r.approverUserId } : {}),
+        ...(r.alsoGroupIds?.length ? { also_group_ids: r.alsoGroupIds } : {}),
+        ...(r.alsoGroupKeys?.length ? { also_group_keys: r.alsoGroupKeys } : {}),
+      }
+    : {};
 
 /** Mã nhóm duyệt của mẫu Thư viện (`after.group_key`) ⇒ nháp. */
 const groupKeyDraft = (a: ProcessStageDef["after"]): { groupKey?: string } =>
@@ -199,6 +227,7 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
             remind_every_h: remindToDef(s),
             escalate: escalateToDef(s),
             ...(s.excludeStarter ? { exclude_starter: true } : {}),
+            ...reviewExtraToDef(s.review),
             ...(s.parallel ? { parallel: parallelToDef(s.parallel) } : {}),
             ...branch,
           }

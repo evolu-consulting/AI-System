@@ -14,8 +14,30 @@ const json = (body: unknown, status = 200) => ({
   contentType: "application/json",
   body: JSON.stringify(body),
 });
-const node = (page: Page, title: string) =>
-  page.locator('li[data-node="milestone"]', { hasText: title });
+/** CR-127 U5: mốc nay là `ms-row`; bấm `ms-confirm` ⇒ hộp `fulfill-dialog` (Ý kiến + tệp bằng chứng bắt buộc), ghi bằng POST /obligations/:id/fulfill. */
+async function openFulfill(page: Page, title: string) {
+  // tệp bằng chứng tải lên POST /attachments trước khi gửi (EvidenceInput) ⇒ giả phản hồi
+  await page.route("**/attachments", (r) =>
+    r.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "a1000000-0000-4000-8000-000000000001",
+        filename: "bien-ban.pdf",
+      }),
+    }),
+  );
+  await page.getByTestId("ms-row").filter({ hasText: title }).getByTestId("ms-confirm").click();
+  const dlg = page.getByTestId("fulfill-dialog");
+  await dlg.getByLabel(/Ý kiến/).fill("Đã giao đủ theo biên bản.");
+  await dlg.locator("input[type=file]").setInputFiles({
+    name: "bien-ban.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4 bien ban"),
+  });
+  await expect(dlg.getByText("bien-ban.pdf")).toBeVisible();
+  return dlg;
+}
 
 const VIEW = {
   milestone_id: M3,
@@ -36,29 +58,19 @@ const VIEW = {
   ],
 };
 
-for (const stage of ["settle", "patch"] as const) {
-  test(`giao vượt tồn (409 STOCK_INSUFFICIENT ở ${stage}) ⇒ hiện câu tồn kho không đủ, không hiện "Dữ liệu vừa được cập nhật"`, async ({
-    page,
-  }) => {
-    await installV2f(page);
-    await page.route(`**${P}/milestones/${M3}/delivery`, (r) => r.fulfill(json(VIEW)));
-    const stock409 = (r: { fulfill: (o: object) => Promise<void> }) =>
-      r.fulfill(json({ error: { code: "STOCK_INSUFFICIENT", message: MSG } }, 409));
-    if (stage === "settle") {
-      await page.route(`**${P}/obligations/*/settle`, stock409);
-    } else {
-      await page.route(`**${P}/milestones/${M3}`, (r) =>
-        r.request().method() === "PATCH" ? stock409(r) : r.fallback(),
-      );
-    }
-    await page.goto(`/contracts/c/${ACTIVE_ID}`);
-    await node(page, "Giao đợt 2").getByRole("button", { name: "Xác nhận xong" }).click();
-    const box = page.getByTestId("confirm-box");
-    const qty = box.getByLabel("Giao đợt này · Chữ ký số");
-    await qty.fill(stage === "patch" ? "25" : "30"); // khác SL tính sẵn ⇒ mới có PATCH items
-    await box.getByRole("button", { name: "Xác nhận" }).click();
-    const body = page.locator("body");
-    await expect(body).toContainText(MSG);
-    await expect(body).not.toContainText("Dữ liệu vừa được cập nhật");
-  });
-}
+// CR-127: không còn bước PATCH items / settle — chỉ POST /obligations/:id/fulfill; 409 ở đó phải hiện câu tồn kho thật.
+test('giao vượt tồn (409 STOCK_INSUFFICIENT ở fulfill) ⇒ hiện câu tồn kho không đủ, không hiện "Dữ liệu vừa được cập nhật"', async ({
+  page,
+}) => {
+  await installV2f(page);
+  await page.route(`**${P}/milestones/${M3}/delivery`, (r) => r.fulfill(json(VIEW)));
+  await page.route(`**${P}/obligations/${M3}/fulfill`, (r) =>
+    r.fulfill(json({ error: { code: "STOCK_INSUFFICIENT", message: MSG } }, 409)),
+  );
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
+  const dlg = await openFulfill(page, "Giao đợt 2");
+  await dlg.getByTestId("fulfill-ok").click();
+  const body = page.locator("body");
+  await expect(body).toContainText(MSG);
+  await expect(body).not.toContainText("Dữ liệu vừa được cập nhật");
+});

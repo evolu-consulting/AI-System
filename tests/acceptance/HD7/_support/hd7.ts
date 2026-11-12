@@ -82,7 +82,7 @@ export async function deal(sql: Sql, o: Deal = {}): Promise<string> {
     number: `N-${id.slice(-4)}`,
     value: 100_000_000,
     tenant: T.acme,
-    status: "active",
+    status: "done",
     ...o,
   };
   const party = { name: fv(x.partner), tax: fv(x.tax) };

@@ -2,9 +2,8 @@
 import { describe, expect, it } from "bun:test";
 import { CONTRACTS_MANIFEST } from "@ai/contracts/app-manifest";
 import { CONTRACT_EVENTS, contractEventId, FACT_KEYS } from "../domain/contract-flow-events.rules";
-import { startApproval } from "./approval.usecase";
+import { startApproval } from "../testing/start-approval";
 import { type ContractFlowGate, emitGuarded, type FlowPrep } from "./contract-flow.ports";
-import { handleExtractJob } from "./extract-job.usecase";
 
 const who = {
   tenantId: "11111111-1111-4111-8111-111111111111",
@@ -54,8 +53,10 @@ function harness(prep: FlowPrep) {
 
 describe("A1 · manifest ⇄ luật thuần", () => {
   it("3 sự kiện + khoá dữ kiện khớp manifest events[]", () => {
-    // esign.* (N1) là sự kiện của node Ký số, không thuộc 3 sự kiện hợp đồng.
-    const evs = (CONTRACTS_MANIFEST.events ?? []).filter((e) => e.key.startsWith("contract."));
+    // esign.* (N1) là sự kiện của node Ký số; `contract.expiring` (CR-127 K6) phát từ vòng hiệu lực, dữ kiện kiểm ở expiry-outcome.int.
+    const evs = (CONTRACTS_MANIFEST.events ?? []).filter(
+      (e) => e.key.startsWith("contract.") && e.key !== "contract.expiring",
+    );
     expect(evs.map((e) => e.key).sort()).toEqual([...CONTRACT_EVENTS].sort());
     for (const e of evs)
       expect(e.facts.map((f) => f.key).sort()).toEqual(
@@ -90,7 +91,7 @@ describe("A1 · emitGuarded (savepoint khi cờ tắt)", () => {
 });
 
 describe("A1 · gửi duyệt (startApproval level1)", () => {
-  it("cờ BẬT: lượt level1 chưa phát (phát lúc Xác nhận và lưu), không gọi engine cũ", async () => {
+  it("cờ BẬT: lượt level1 (fixture Z1) phát contract.submitted cùng tx mở lượt, không còn máy duyệt cũ", async () => {
     const h = harness({ on: true, departments: ["pb-kd"] });
     const out = await startApproval({
       uow: h.uow,
@@ -100,12 +101,13 @@ describe("A1 · gửi duyệt (startApproval level1)", () => {
       groups: {},
     } as never)(who, CID, "level1");
     expect(out).toBe("ok");
-    // P11d · lượt vào level1 = nháp chờ rà soát: KHÔNG phát (phát lúc "Xác nhận và lưu"), không mở run cũ
-    expect(h.order).toEqual(["open"]);
-    expect(h.emitted).toHaveLength(0);
+    // CR-127 Z1: máy duyệt cũ + "Xác nhận và lưu" đã gỡ; fixture mô phỏng "Gửi": mở lượt rồi phát cùng tx
+    expect(h.order).toEqual(["open", "emit"]);
+    expect(h.emitted).toHaveLength(1);
+    expect(h.emitted[0]).toMatchObject({ event: "contract.submitted", departments: ["pb-kd"] });
     expect(h.started).toEqual([]);
   });
-  it("cờ TẮT: vẫn ghi sự kiện (bóng) và mở run theo đường cũ", async () => {
+  it("cờ TẮT: vẫn ghi sự kiện (bóng), không mở run theo đường cũ (đã gỡ)", async () => {
     const h = harness({ on: false, departments: ["pb-kd"] });
     await startApproval({
       uow: h.uow,
@@ -116,9 +118,9 @@ describe("A1 · gửi duyệt (startApproval level1)", () => {
     } as never)(who, CID, "level1");
     expect(h.emitted).toHaveLength(1);
     expect(h.emitted[0]).toMatchObject({ event: "contract.submitted", departments: ["pb-kd"] });
-    expect(h.started).toEqual([CID]);
+    expect(h.started).toEqual([]);
   });
-  it("không cổng (test cũ): như cờ tắt", async () => {
+  it("không cổng (test cũ): không phát, không mở run", async () => {
     const h = harness({ on: true, departments: null });
     await startApproval({
       uow: h.uow,
@@ -127,7 +129,7 @@ describe("A1 · gửi duyệt (startApproval level1)", () => {
       groups: {},
     } as never)(who, CID, "level1");
     expect(h.emitted).toEqual([]);
-    expect(h.started).toEqual([CID]);
+    expect(h.started).toEqual([]);
   });
   it("initial extracting: chưa bắn (bắn lúc vào level1 sau AI đọc)", async () => {
     const h = harness({ on: true, departments: null });
@@ -139,33 +141,5 @@ describe("A1 · gửi duyệt (startApproval level1)", () => {
       groups: {},
     } as never)(who, CID, "extracting");
     expect(h.emitted).toEqual([]);
-  });
-});
-
-describe("A1 · sau AI đọc (handleExtractJob → level1)", () => {
-  const job = { ...who, contractId: CID, approvalId: "44444444-4444-4444-8444-444444444444" };
-  it("cờ BẬT: AI đọc xong chưa phát (nháp chờ rà soát), không mở run cũ", async () => {
-    const h = harness({ on: true, departments: null });
-    await handleExtractJob({
-      run: async () => "ok",
-      uow: h.uow,
-      flow: h.gate,
-      engine: h.engine,
-    } as never)(job);
-    // P11d · AI đọc xong ⇒ nháp chờ rà soát: KHÔNG phát `contract.submitted`, không mở run cũ
-    expect(h.order).toEqual(["after"]);
-    expect(h.emitted).toHaveLength(0);
-    expect(h.started).toEqual([]);
-  });
-  it("cờ TẮT: giữ đường cũ, vẫn ghi sự kiện bóng", async () => {
-    const h = harness({ on: false, departments: null });
-    await handleExtractJob({
-      run: async () => "ok",
-      uow: h.uow,
-      flow: h.gate,
-      engine: h.engine,
-    } as never)(job);
-    expect(h.emitted).toHaveLength(1);
-    expect(h.started).toEqual([CID]);
   });
 });

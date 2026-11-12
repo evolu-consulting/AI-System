@@ -7,6 +7,7 @@ import type {
   PartnerOrg,
 } from "@ai/contracts/community";
 import { useApp } from "../application/ctx";
+import { useFocusPost } from "../application/focus-post";
 import { useFeed, useFeedFilters, usePartners } from "../application/useFeed";
 import { hasActiveFilter } from "../domain/filters";
 import { t } from "../i18n";
@@ -26,7 +27,7 @@ const tabLabel = (id: FeedTab): string => t(`community.feed.tabs.${id}`);
 type Filters = ReturnType<typeof useFeedFilters>;
 
 type Props = {
-  fixed?: Pick<FeedQuery, "mine" | "authorOrgId">;
+  fixed?: Pick<FeedQuery, "mine" | "authorOrgId" | "authorUserId">;
   tabs?: FeedTab[];
   withFilters?: boolean;
   /** Trạng thái duyệt của bài tôi theo id (một lần gọi cho cả danh sách). */
@@ -164,6 +165,7 @@ export function FeedPage() {
   const f = useFeedFilters();
   const { data, error } = useFeed(f.query);
   const partners = usePartners();
+  useFocusPost(!!data);
   return (
     <div className="feedwrap">
       <div className="feedcol">

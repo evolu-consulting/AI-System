@@ -192,6 +192,7 @@ export async function toLevel1(
   expect({ run: typeof runId }).toEqual({ run: "string" });
   expect(await done).toBe("needs_review");
   const a = await approval(c, "A", id);
-  expect({ status: a.status, step: a.json?.step }).toEqual({ status: 200, step: "level1" });
+  // CR-127 Z3b: máy duyệt cũ đã gỡ ⇒ không còn bước "level1"; lượt chưa vào engine ⇒ `step` = null (AI đọc xong ⇒ nháp chờ rà soát)
+  expect({ status: a.status, step: a.json?.step ?? null }).toEqual({ status: 200, step: null });
   return { runId, call: c.model.calls[before] as ModelCall };
 }

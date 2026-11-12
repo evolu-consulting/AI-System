@@ -3,8 +3,9 @@
 // (mỗi HĐ một tx) + liệt kê HĐ + trường nguồn không có chỗ ở đích. Thuần.
 import { companyIndex } from "./companies.rules";
 import type { Ctx, SourceDoc } from "./context";
-import { type FileJob, mapContracts, mapReminders } from "./map-contracts.rules";
+import { type FileJob, mapContracts } from "./map-contracts.rules";
 import { mapLedger } from "./map-ledger.rules";
+import { mapReminders } from "./map-reminders.rules";
 import type { OwnerScope } from "./owner-scope.rules";
 import { newPlan, type Plan, type Row, TABLE_ORDER, type TableName, type TenantPlan } from "./plan";
 import { isObj, str } from "./values.rules";

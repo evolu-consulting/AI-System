@@ -84,8 +84,14 @@ describe("fix-migrate-guard · journal mọi thư mục migration", () => {
     expect(new Set(e.map((x) => x.tag)).size).toBe(e.length);
   });
 
-  test("ACCEPTED_EDITS trỏ tới tag có thật trong journal hub", () => {
-    const tags = new Set(readJournal(`${DB_DIR}migrations-hub`).map((x) => x.tag));
-    for (const a of ACCEPTED_EDITS) expect(tags.has(a.tag)).toBe(true);
+  test("ACCEPTED_EDITS trỏ tới tag có thật trong journal của đúng bảng theo dõi (hub / gói)", () => {
+    const folderOf = (table: string): string =>
+      table === "__drizzle_migrations_hub"
+        ? "migrations-hub"
+        : `migrations-pack-${table.replace("__drizzle_migrations_pack_", "")}`;
+    for (const a of ACCEPTED_EDITS) {
+      const tags = new Set(readJournal(`${DB_DIR}${folderOf(a.table)}`).map((x) => x.tag));
+      expect(tags.has(a.tag)).toBe(true);
+    }
   });
 });

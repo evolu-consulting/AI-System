@@ -27,7 +27,27 @@ async function openContract(page: Page, n: number, title: string) {
 }
 /** Thẻ flow theo sự kiện (CR-125): bước 1 là bước Duyệt thật ⇒ người duyệt bấm "Duyệt" (không còn bước soạn "Gửi duyệt"). */
 async function passStep1(page: Page) {
-  await page.getByRole("button", { name: "Duyệt", exact: true }).click();
+  // CR-127 U4: việc nhóm — «Nhận việc» trước, rồi mới có nút Duyệt (người đã giữ việc thì dải hiện «Bạn đang giữ», không còn nút nhận)
+  const take = page.getByTestId("claim-take");
+  const pass = page.getByRole("button", { name: "Duyệt", exact: true });
+  await expect(take.or(pass).first()).toBeVisible();
+  if (await take.isVisible()) {
+    await take.click();
+    await expect(page.getByTestId("claim-state")).toContainText("Bạn đang giữ");
+  }
+  await pass.click();
+  // bước Duyệt của mẫu «Duyệt 2 cấp» đòi bằng chứng (Ý kiến + tệp) — hộp hiện sau khi bấm Duyệt
+  const ev = page.getByTestId("evidence-input");
+  if (await ev.isVisible()) {
+    await ev.locator("textarea").fill("Đã xem xét, đồng ý duyệt.");
+    await ev.locator("input[type=file]").setInputFiles({
+      name: "bien-ban.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4 bien ban"),
+    });
+    await expect(ev.getByText("bien-ban.pdf")).toBeVisible();
+    await page.getByTestId(/^request-.*-confirm$/).click();
+  }
 }
 /** HĐ mẫu do edgar.nguyen tạo (không thuộc Trưởng phòng): bước Duyệt loại người tạo (`exclude_starter`) nên thomas.tran duyệt được. */ const step =
   (p: Page, i: number) => p.getByTestId(`approval-step-${i}`);
@@ -56,11 +76,16 @@ test("CR-113 · 2 · HĐ chờ bước 1: bước 1 đang mở, julian.bui (Toà
   await login(page, "julian.bui");
   await openContract(page, 1, T.pending);
   await expect(step(page, 0)).toHaveAttribute("data-status", "open");
-  // Thẻ flow theo sự kiện: bước 1 là bước Duyệt thật ⇒ chủ gói (Toàn quyền, ngoài nhóm Trưởng phòng) thấy Duyệt / Trả lại sửa / Từ chối, không có "Gửi duyệt" của bước soạn.
+  // CR-127 U4: Nhận việc trước Duyệt ở MỌI quy trình (Toàn quyền không được miễn) ⇒ bấm «Nhận việc» rồi mới có Duyệt / Trả lại sửa / Từ chối, không có "Gửi duyệt" của bước soạn.
+  await page.getByTestId("claim-take").click();
+  await expect(page.getByTestId("claim-state")).toContainText("Bạn đang giữ");
   await expect(page.getByRole("button", { name: "Duyệt", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Trả lại sửa" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Từ chối" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Gửi duyệt" })).toHaveCount(0);
+  // trả việc về nhóm: HĐ 1 dùng chung với ca 4 (thomas.tran) — giữ việc sẽ chặn người khác nhận đúng luật
+  await page.getByTestId("claim-release").click();
+  await expect(page.getByTestId("claim-state")).toContainText("Chưa ai nhận");
 });
 
 test("CR-113 · 3 · HĐ Toàn quyền duyệt thay: bước 1 có huy hiệu 'Duyệt thay · Toàn quyền', bước 2 (Giám đốc) mở", async ({

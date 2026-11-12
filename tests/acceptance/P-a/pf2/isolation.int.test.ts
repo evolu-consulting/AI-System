@@ -125,7 +125,10 @@ describe("M-* · cột forward [HUB-BR-25, PF2]", () => {
       const f = fx === "r1" ? r1 : r1a;
       const task = name === "H" ? f.ask : f.review;
       expectCell(
-        await call(who, `/review-tasks/${task}/forward`, { to_user_id: FWD_TO[name] ?? PA.H2.id }),
+        await call(who, `/review-tasks/${task}/forward`, {
+          to_user_id: FWD_TO[name] ?? PA.H2.id,
+          note: "Chuyển giúp",
+        }),
         want,
       );
     });
@@ -133,14 +136,24 @@ describe("M-* · cột forward [HUB-BR-25, PF2]", () => {
     needSchema(c.ready);
     const f = await askRun(c);
     expect(
-      (await call("A", `/review-tasks/${f.taskId}/forward`, { to_user_id: PA.H.id })).status,
+      (
+        await call("A", `/review-tasks/${f.taskId}/forward`, {
+          to_user_id: PA.H.id,
+          note: "Chuyển giúp",
+        })
+      ).status,
     ).toBe(200);
   });
   it("HUB-BR-25 · M-A'-forward¹ · A' (người bắt đầu đã rời R, U5) chuyển task ask open của mình ⇒ 200", async () => {
     needSchema(c.ready);
     const f = await askRun(c, { by: PA.L });
     expect(
-      (await call("L", `/review-tasks/${f.taskId}/forward`, { to_user_id: PA.H.id })).status,
+      (
+        await call("L", `/review-tasks/${f.taskId}/forward`, {
+          to_user_id: PA.H.id,
+          note: "Chuyển giúp",
+        })
+      ).status,
     ).toBe(200);
   });
 });

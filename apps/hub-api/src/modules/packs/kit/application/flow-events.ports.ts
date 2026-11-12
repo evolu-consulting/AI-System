@@ -73,4 +73,101 @@ export type OutcomeHandler<TX = unknown> = {
     tx: TX,
     input: { tenantId: string; event: string; ref: string; reason: string },
   ): Promise<boolean>;
+  /**
+   * CR-127 K3 · spec §3 #7b · lượt bị HUỶ (Dừng / Rút về) — gọi TRONG tx dừng lượt (`RunControlService.stop`, sau `cancelEnd`). CAS theo
+   * `runId` (lượt đã đổi / bản ghi đã rời trạng thái ⇒ false, KHÔNG ném). Ném ⇒ chỉ log (engine không rollback lệnh dừng).
+   */
+  cancelled?(tx: TX, input: FlowRunEnd): Promise<boolean>;
+  /** CR-127 K3 · lượt LỖI (settle tổng hợp `failed`) — như `cancelled`, gọi trong tx settle. */
+  failed?(tx: TX, input: FlowRunEnd): Promise<boolean>;
+  /**
+   * CR-127 K3 · #76 · lượt HẾT HẠN theo lô (tx `system` nhiều tenant của `expireBatch`) — gọi MỘT lần mỗi lô với mọi lượt của handler này;
+   * app làm theo tập (số câu cố định). Trả số bản ghi đã đổi. Ném ⇒ chỉ log.
+   */
+  failedBatch?(tx: TX, items: readonly FlowRunEnd[]): Promise<number>;
 };
+
+/** Lượt kết thúc không thành công (huỷ / lỗi / hết hạn). `reason` = mã hoặc câu ngắn (≤ 200 ký tự). */
+export type FlowRunEnd = {
+  tenantId: string;
+  event: string;
+  ref: string;
+  runId: string;
+  reason: string;
+};
+
+/** CR-127 K3 · "có quy trình khớp?" — cùng luật `match.rules` + `company_flows` đang bật của bộ điều phối (spec §3). */
+export type FlowAvailability<TX = unknown> = {
+  hasFlowFor(
+    tx: TX,
+    q: { tenantId: string; app: string; event: string; facts: FlowFacts },
+  ): Promise<boolean>;
+  /**
+   * CR-127 · M4 · các bước SẼ đi qua nếu sự kiện xảy ra bây giờ (CÙNG chọn quy trình với `hasFlowFor`; đi đường "Duyệt hết" theo dữ kiện
+   * hiện tại bằng luật thuần của Chạy thử). Không quy trình khớp ⇒ null. Chỉ đọc; số câu SQL cố định. Vắng ⇒ gói coi như không xem trước được.
+   */
+  outline?(
+    q: { tenantId: string; app: string; event: string; facts: FlowFacts },
+    o: { starterId: string },
+  ): Promise<FlowOutline | null>;
+};
+
+/** CR-127 · M4 · kết quả `outline` (cùng hình dạng với `SubmitPreviewResponse` không có `block`). */
+export type FlowOutline = {
+  flowName: string;
+  steps: readonly {
+    kind: "review" | "esign" | "partner_send" | "notify" | "milestone" | "step";
+    label: string;
+    whoLabel: string;
+    dueH?: number;
+  }[];
+};
+
+/** CR-127 K3 · bước hiện tại của lượt: đã có quyết định/phiếu chưa (chặn Rút về) + ai đang giữ việc (được báo khi rút — R#26). */
+export type FlowRunStep = {
+  open: boolean;
+  decided: { by: string | null; stageIdx: number } | null;
+  claimers: string[];
+};
+/** CR-127 K3 · lệnh huỷ lượt (Rút về): huỷ như "Dừng" (`RunControlService.stop`, hook `cancelled` cùng tx) + báo người đã nhận việc. */
+export type FlowRunControl = {
+  inspect(q: { tenantId: string; runId: string }): Promise<FlowRunStep | null>;
+  cancel(q: {
+    tenantId: string;
+    runId: string;
+    actorId: string;
+    reason: string;
+    notify: readonly string[];
+  }): Promise<boolean>;
+};
+/** CR-127 E6 · một bản ghi tới mốc lịch: `dueKey` = mốc ngày (vd ngày hết hạn / hạn mốc, `YYYY-MM-DD`) — vào khoá idempotent. */
+export type ScheduledDue = {
+  ref: string;
+  /** Dữ kiện lúc tới mốc (KHÔNG gồm `days` — engine đặt `days = N` của quy trình). */
+  facts: FlowFacts;
+  dueKey: string;
+  /** Người bắt đầu lượt (vd người phụ trách HĐ); null ⇒ bộ điều phối không mở lượt (`no_actor`). */
+  actorId: string | null;
+};
+export type ScheduledQuery = {
+  tenantId: string;
+  event: string;
+  params: { days: number };
+  /** Ngày hôm nay theo múi giờ công ty, `YYYY-MM-DD`. */
+  today: string;
+  limit: number;
+  /** Trang theo khoá: bản ghi sắp tăng theo `(dueKey, ref)`; chỉ lấy bản sau `after` (bản cuối của trang trước). */
+  after: { dueKey: string; ref: string } | null;
+};
+/**
+ * CR-127 E6 · spec §5.5 · nguồn của sự kiện THEO LỊCH (`AppEventDecl.schedule`): bản ghi tới mốc N ngày. MỘT câu SQL theo tập mỗi trang,
+ * tự lọc `tenant_id`, loại bản đã thay thế. Engine (`schedule-sweep`) phát `flow_events` idempotent theo (sự kiện, ref, dueKey, N).
+ */
+export type ScheduledSource = {
+  packKey: string;
+  events: readonly string[];
+  dueRecords(q: ScheduledQuery): Promise<ScheduledDue[]>;
+};
+
+/** Cổng engine cho gói (processes đăng ký lúc mount; gói không import `processes`). */
+export type FlowEngine = { runControl: FlowRunControl; availability: FlowAvailability };

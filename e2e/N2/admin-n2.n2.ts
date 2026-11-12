@@ -49,7 +49,9 @@ test("N2-FR-04 · padmin đặt trần run acme = 200 ⇒ Lưu 200, tải lại 
   expect(Number(row?.n)).toBe(200);
 });
 
-test("N2-FR-05 · tadmin bật 'không cho người bắt đầu duyệt' ở stage Duyệt ⇒ Lưu 200, mở lại vẫn bật, def có exclude_starter", async ({
+// CR-127 Z5b: quản trị công ty CHỈ XEM quy trình (ghi def = quản trị nền tảng) ⇒ N2-FR-05 đổi: tadmin bật ô rồi Lưu ⇒ 403 `FORBIDDEN_TENANT_ADMIN_WRITE`, def KHÔNG đổi.
+// Việc bật `exclude_starter` do quản trị nền tảng làm: phủ ở int hub-api (defs) + `tests/acceptance/N2`.
+test("N2-FR-05 · tadmin chỉ xem: bật 'không cho người bắt đầu duyệt' rồi Lưu ⇒ 403, mở lại vẫn tắt, def không có exclude_starter", async ({
   page: p,
 }) => {
   await openDef(p, "pd-edit", "Chờ hạn E2E");
@@ -57,9 +59,9 @@ test("N2-FR-05 · tadmin bật 'không cho người bắt đầu duyệt' ở st
   const cb = panel(p).getByRole("checkbox", { name: EXCLUDE });
   await expect(cb).not.toBeChecked();
   await cb.check();
-  expect(await saveDef(p)).toBe(200);
+  expect(await saveDef(p)).toBe(403);
   await p.reload();
   await node(p, "Đọc hồ sơ").click();
-  await expect(panel(p).getByRole("checkbox", { name: EXCLUDE })).toBeChecked();
-  expect((await defByKey("pd-edit")).stages?.[0]?.after?.exclude_starter).toBe(true);
+  await expect(panel(p).getByRole("checkbox", { name: EXCLUDE })).not.toBeChecked();
+  expect((await defByKey("pd-edit")).stages?.[0]?.after?.exclude_starter).not.toBe(true);
 });

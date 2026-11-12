@@ -4,7 +4,6 @@
 
 import type {
   AgentTeamListResponse,
-  CopyProcessDefRequest,
   FlowEdgeIssue,
   ProcessDef,
   ProcessDefInput,
@@ -28,7 +27,7 @@ import { type StudioAudit, withConfigWrite } from "../../studio/public";
 import { tenantTzRepo } from "../adapters/timers/tenant-tz.repo";
 import { toolSwitchReader, toToolItem } from "../adapters/tools/tool-switch.repo";
 import { listTools } from "../application/tools/list-tools.usecase";
-import { processError } from "../core/errors";
+import { claimError, processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { ttlOnCreate, ttlOnUpdate } from "../domain/defs/ttl.rules";
 import {
@@ -41,7 +40,6 @@ import {
 import { toolKeysOf } from "../nodes/registry";
 import {
   autofixSourceKindMiss,
-  copyFromTemplate,
   decodeDefCursor,
   encodeDefCursor,
   validateProcessDef,
@@ -59,12 +57,13 @@ import {
 } from "./defs.map";
 import * as repo from "./defs.repo";
 import { edgeCheck, subprocessCheck, withWarnings } from "./edge-check";
-import { flowDefPaths } from "./flow-def.rules";
+import { flowCheck } from "./flow-check";
 import { nodeFeatureError, nodeFeatureMiss } from "./node-features";
 import { assertStagesWithinLimit } from "./platform-limits";
 import { listTeams, loadDefRefs } from "./teams.repo";
 
 type Scope = repo.DefScope;
+type DefUpdate = ProcessDefInput & { version: number };
 type Audit = Pick<StudioAudit, "action" | "before" | "after"> & { row: repo.DefRow };
 
 const audit = (a: Audit): StudioAudit => ({
@@ -96,11 +95,6 @@ async function nodeCheck(
   if (issues.length > 0) throw defError("FLOW_NODE_CONFIG_INVALID", { issues });
 }
 
-/** CR-122 · E1 · def có `trigger` ⇒ luật FlowDef (422 `PROCESS_DEF_INVALID`, `paths`). */
-function flowCheck(input: ProcessDefInput, tenantId: string | null, cur: repo.DefRow | null): void {
-  const paths = flowDefPaths(input, tenantId, cur);
-  if (paths.length > 0) throw defError("PROCESS_DEF_INVALID", { paths });
-}
 export class DefsService {
   readonly #w;
   constructor(
@@ -262,7 +256,34 @@ export class DefsService {
     return { input: d.input, slot: null, body: d.body };
   }
 
+  /** CR-127 · E8 · lưới thứ hai sau `tenantAdminReadOnly` ở route: ghi def chỉ quản trị nền tảng. */
+  #platformOnly(u: AuthUser): void {
+    if (u.role === "tenant_admin") throw claimError("FORBIDDEN_TENANT_ADMIN_WRITE");
+  }
+
   async create(u: AuthUser, s: Scope, raw: ProcessDefInput): Promise<ProcessDefSaved> {
+    this.#platformOnly(u);
+    return this.#create(u, s, raw);
+  }
+
+  async update(u: AuthUser, s: Scope, id: string, b: DefUpdate): Promise<ProcessDefSaved> {
+    this.#platformOnly(u);
+    return this.#update(u, s, id, b);
+  }
+
+  /**
+   * CR-127 · FIX-E8 · đồng bộ def NỘI BỘ của gói (`ensureDef`/`syncSlotDef`, dlc start-flow) — người kích hoạt là
+   * tenant_admin/nhân viên, không phải người soạn def ⇒ bỏ lưới `#platformOnly`. KHÔNG gắn route; phạm vi = tenant của run.
+   */
+  packSyncCreate(u: AuthUser, s: Scope, raw: ProcessDefInput): Promise<ProcessDefSaved> {
+    return this.#create(u, s, raw);
+  }
+
+  packSyncUpdate(u: AuthUser, s: Scope, id: string, b: DefUpdate): Promise<ProcessDefSaved> {
+    return this.#update(u, s, id, b);
+  }
+
+  async #create(u: AuthUser, s: Scope, raw: ProcessDefInput): Promise<ProcessDefSaved> {
     let warnings: FlowEdgeIssue[] = [];
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
       const { input: i0, slot, body } = this.#draft(u, s.tenantId, raw, null);
@@ -289,12 +310,7 @@ export class DefsService {
     return withWarnings(toProcessDef(result), warnings);
   }
 
-  async update(
-    u: AuthUser,
-    s: Scope,
-    id: string,
-    b: ProcessDefInput & { version: number },
-  ): Promise<ProcessDefSaved> {
+  async #update(u: AuthUser, s: Scope, id: string, b: DefUpdate): Promise<ProcessDefSaved> {
     const { version, ...raw } = b;
     let warnings: FlowEdgeIssue[] = [];
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
@@ -337,40 +353,24 @@ export class DefsService {
   }
 
   async remove(u: AuthUser, s: Scope, id: string, version: number): Promise<void> {
+    this.#platformOnly(u);
     await withConfigWrite(this.#w, u, async (tx) => {
       const cur = await this.#lock(tx, u, { s, id, version });
       await guardInUse(tx, cur, "delete");
+      // CR-127 · Z7: quy trình CÔNG TY chỉ xoá được khi còn NHÁP — chưa xuất bản/áp dụng (đã áp dụng ⇒ Tắt) và chưa có lượt chạy.
+      if (cur.tenant_id !== null) {
+        if (cur.published_version !== null)
+          throw defError("PROCESS_NOT_DELETABLE", { reason: "applied" });
+        if (await repo.defHasRuns(tx, id))
+          throw defError("PROCESS_NOT_DELETABLE", { reason: "has_runs" });
+        await repo.deleteCompanyFlowRows(tx, cur.tenant_id, id);
+      }
       await repo.softDeleteDef(tx, id, u.userId);
       return {
         result: null,
         audit: audit({ action: "delete", row: cur, before: auditSnapshot(cur), after: null }),
       };
     });
-  }
-
-  /** Mẫu → tenant đích (platform_admin phải chọn tenant). Không kiểm tham chiếu: bản chép tắt, admin gán đủ rồi bật. */
-  async copy(u: AuthUser, s: Scope, id: string, b: CopyProcessDefRequest): Promise<ProcessDef> {
-    const tenantId = s.tenantId;
-    if (tenantId === null) throw appError("TENANT_REQUIRED");
-    const { result } = await withConfigWrite(this.#w, u, async (tx) => {
-      const tpl = await repo.readDef(tx, s, id);
-      if (!tpl || tpl.tenant_id !== null || tpl.slot !== null) throw appError("NOT_FOUND"); // CR-105
-      const input = withHandoff(copyFromTemplate(inputOf(tpl), b));
-      await this.#checkSources(tx, tenantId, input.sources);
-      await this.#keyFree(tx, tenantId, input.key);
-      const row = await repo.insertDef(tx, {
-        tenantId,
-        input,
-        sourceTemplateId: tpl.id,
-        ttlDays: ttlOnCreate(tpl.ttl_days),
-        actorId: u.userId,
-      });
-      return {
-        result: row,
-        audit: audit({ action: "copy", row, before: null, after: auditSnapshot(row) }),
-      };
-    });
-    return toProcessDef(result);
   }
 
   /** ADM-FR-67 · chỉ user của tenant (platform_admin ⇒ 403); quy trình tắt/mẫu/không thấy ⇒ 404 `PROCESS_NOT_FOUND`. */

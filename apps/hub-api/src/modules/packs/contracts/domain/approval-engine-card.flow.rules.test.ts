@@ -1,12 +1,8 @@
 // CR-122 · P11 · thẻ duyệt của lượt flow theo sự kiện (không có mẫu chụp `flow_steps`): bước = stage Duyệt của run đã tới, đúng
 // `s<idx>`; nhánh chưa tới không hiện; chờ bộ điều phối (`FLOW_STARTING`, chưa run) không báo "kẹt".
 import { describe, expect, it } from "bun:test";
-import {
-  attentionOf,
-  type EngineStageView,
-  engineCardView,
-  planEngineAct,
-} from "./approval-engine-card.rules";
+import { planEngineAct } from "./approval-engine-act.rules";
+import { attentionOf, type EngineStageView, engineCardView } from "./approval-engine-card.rules";
 
 const st = (key: string, status: EngineStageView["status"], o: Partial<EngineStageView> = {}) =>
   ({

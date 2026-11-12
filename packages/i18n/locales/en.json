@@ -688,7 +688,6 @@
         "grant-feature": "Turn on feature",
         "open-profile": "Open Profile",
         "open-flows": "Open Flows",
-        "assign-receive-flow": "Assign receiving flow",
         "create-group": "Create group"
       },
       "item": {
@@ -739,86 +738,50 @@
       "newFlow": {
         "on": "Using the new flows: every new {record} from now on follows the applied flow.",
         "idle": "Not using the new flows yet — open a flow and press Save and apply to start. Every new {record} from now on still runs the old way.",
-        "none": "No process is applied to this company yet — ask the platform admin to assign one",
+        "none": "No process is applied to this company yet — ask the platform admin to create one",
         "pause": "Pause the new flows",
         "confirm": "Every new {record} from now on will run the old way until you Save and apply a flow again. Ones already running are not affected.",
         "ok": "Pause",
         "cancel": "Cancel"
       },
-      "empty": "This company has no flows yet. The platform admin assigns flows from the Library.",
+      "empty": "This company has no processes yet. The platform admin creates processes for it from a blank diagram.",
       "col": {
         "name": "Flow",
         "trigger": "Starts when",
         "source": "Source",
         "status": "Status"
       },
-      "readiness": {
-        "loading": "Checking whether this template works for this company…",
-        "ok": "This template works for this company.",
-        "okWarn": "The template works; see the notes below.",
-        "blockedPlatform": "Cannot assign yet: the company is missing the following.",
-        "blockedCompany": "This template cannot be used by your company yet.",
-        "err": {
-          "READINESS_FEATURE_MISSING": "Step \"{stage}\" needs {what} — not enabled for the company.",
-          "READINESS_TOOL_MISSING": "Step \"{stage}\" uses a function the company does not have.",
-          "READINESS_STEP_ORDER": "Step \"{stage}\" must come right after an approval step.",
-          "READINESS_STEP_LOCKED": "Step \"{stage}\" is fixed by the platform — it cannot be edited on a copy.",
-          "READINESS_ASSIGNEE_MISSING": "Step \"{stage}\": choose the responsible group."
-        },
-        "loadFailed": {
-          "HUB_UNCONFIGURED": "Could not check the template: the connection to the Hub is not configured. Ask a system administrator to check, then retry.",
-          "FORBIDDEN": "Could not check the template: you do not have permission to view this company's workflows.",
-          "NOT_FOUND": "Could not check the template: it is no longer in the Library — pick another.",
-          "default": "Could not check the template — check the connection and retry."
-        },
-        "retry": "Retry",
-        "fixError": {
-          "FEATURE_NOT_NEEDED": "The template no longer needs this feature — the list will refresh, nothing more to enable.",
-          "CORE_FEATURE_PROTECTED": "Core features are always on with the company's plan — they cannot be enabled separately.",
-          "HUB_UNREACHABLE": "Could not reach the Hub — try again in a few minutes.",
-          "NOT_FOUND": "The feature or template no longer exists — reload the page.",
-          "FORBIDDEN": "Only a platform administrator can enable this — ask them.",
-          "default": "Could not fix. Try again or check permissions."
-        },
-        "group": "The company has no \"{key}\" approver group — the approval step will ask you to pick approvers.",
-        "askPlatform": "Ask the platform administrator to enable the required features, then copy again.",
-        "level": {
-          "read": "View",
-          "write": "Edit",
-          "admin": "Admin"
-        },
-        "fix": {
-          "enable-feature": "Enable feature for company",
-          "create-group": "Create suggested group"
-        }
-      },
-      "copy": {
-        "title": "Copy \"{name}\" to edit",
-        "hint": "The copy belongs to your company; save with Save and apply when done.",
-        "cancel": "Cancel",
-        "confirm": "Copy"
-      },
-      "legacy": "Legacy template — cannot be copied",
       "withCondition": "with condition",
-      "assign": {
-        "pick": "Library flow",
-        "placeholder": "Pick a flow to assign to this company",
-        "dialogTitle": "Assign a flow to the company",
-        "dialogHint": "Pick a flow from the Library; the company can use it right after assigning.",
-        "add": "Assign"
+      "create": {
+        "company": "Company",
+        "open": "Create flow",
+        "title": "Create a flow for {company}",
+        "hint": "Name it, then create it from a blank diagram.",
+        "name": "Flow name",
+        "from": "Start from",
+        "blank": "Empty diagram",
+        "submit": "Create and open diagram",
+        "titleGeneric": "Create process",
+        "companyPh": "Choose a company",
+        "summary": "{depts} departments · {members} members · apps on: {apps}",
+        "noneOn": "none",
+        "noApp": "This company has no app that uses processes turned on — turn one on in the Apps tab.",
+        "openApps": "Open the Apps tab",
+        "appFor": "Process for",
+        "blankHint": "Add the steps yourself",
+        "failed": "Could not create the process. Check the company, app and name, then try again; if it still fails, tell the platform admin."
       },
       "source": {
-        "assigned": "Assigned · view only",
         "own": "Company copy",
         "copy": "Copied from {name} · v{v}"
       },
       "status": {
         "on": "In use",
         "off": {
-          "replaced": "Replaced by the company copy",
-          "reverted": "Off · reverted to the original",
           "turned_off": "Off",
-          "not_published": "Off · not applied (open it to edit and Save and apply)"
+          "not_published": "Off · not applied (open it to edit and Save and apply)",
+          "replaced": "Replaced by the company copy",
+          "reverted": "Off · reverted to the original"
         }
       },
       "warn": {
@@ -827,20 +790,15 @@
       },
       "open": "Open",
       "more": "More actions",
-      "templates": "Library templates ({n})",
-      "templatesHint": "Library originals already replaced by the company copy. Open to view; to use the original again, choose Revert to original on the company flow row.",
-      "clone": "Copy to edit",
-      "revert": "Revert to original",
       "turnOn": "Turn on",
       "turnOff": "Turn off",
       "orderHint": "Drag to reorder. For deciding events, the first matching flow runs.",
+      "readOnlyNote": "Processes are authored by the platform admin — contact them to make changes.",
       "orderTitle": "Advanced: order when several flows match",
       "err": {
         "requiredLast": "A required event needs at least one active flow without conditions. Turn another one on first.",
-        "pairActive": "The original and the company copy cannot both be on. Turn the other off or use Revert to original.",
         "notPublished": "The flow is not applied yet, so it cannot be turned on. Open it, edit and press Save and apply.",
         "groupMissing": "A review step has no group. Pick a group for every review step and apply again.",
-        "notAssignable": "The flow has no Start-when event. Choose a start event and apply again.",
         "generic": "Could not complete. Reload and try again."
       }
     },
@@ -866,11 +824,9 @@
         "canvas": "Diagram",
         "list": "Step list"
       },
-      "libraryReadOnly": "Library template, view only.",
+      "libraryReadOnly": "Authored by the platform admin — view only. Contact them to make changes.",
       "hasCopy": "The company already has its own copy of this process.",
-      "copy": "Copy for this company",
       "job": {
-        "contractsApproval": "Contract approval",
         "contractsIntake": "Contract intake",
         "communityModeration": "Post moderation",
         "communityJoin": "Partner join requests",
@@ -1596,7 +1552,8 @@
       "app_roles": "App roles",
       "tenant_profile": "Company profile",
       "notify_config": "Mail sending setup",
-      "flow_flag": "Company flow switch"
+      "flow_flag": "Company flow switch",
+      "contract_state_drift": "Contract state drift"
     },
     "history": {
       "title": "History (last 50 events)",

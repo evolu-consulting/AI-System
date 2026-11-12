@@ -1,6 +1,6 @@
 // CR-122 · P11b · lượt flow theo sự kiện không mở được ⇒ câu nghiệp vụ riêng (kèm cách sửa), nút Mở lại cho chủ HĐ.
 import { describe, expect, test } from "bun:test";
-import { attentionActions, attentionText } from "./attention";
+import { attentionText } from "./attention";
 
 const B = "contracts.approval.engine.attention.reason";
 
@@ -14,6 +14,5 @@ describe("P11b · lý do flow không mở được", () => {
       key: `${B}.FLOW_GROUP_MISSING`,
       vars: { keys: "pb-phap-che" },
     });
-    expect(attentionActions({ kind: "stalled" }, true).reopen).toBe(true);
   });
 });

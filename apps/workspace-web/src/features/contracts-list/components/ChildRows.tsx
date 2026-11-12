@@ -24,7 +24,7 @@ export function SourceName({ source }: { source: DealSource }) {
 }
 
 const statusText = (t: (k: string) => string, s: string): string => {
-  const key = `contracts.gape.status.${s}`;
+  const key = `contracts.u5.status.${s}`;
   const v = t(key);
   return v === key ? s : v;
 };
@@ -58,11 +58,12 @@ export function ChildRowCells({
                   {!orphan && <span aria-hidden="true">↳ </span>}
                   {child.title}
                 </Link>
-                {child.number && (
-                  <span className={cn("block truncate text-[12.5px] text-dim", !orphan && "pl-6")}>
-                    {child.number}
-                  </span>
-                )}
+              </td>
+            );
+          case "number":
+            return (
+              <td key={k} className={cn("whitespace-nowrap", TD)}>
+                {child.number ?? <span className="text-dim">—</span>}
               </td>
             );
           case "type":
@@ -81,7 +82,7 @@ export function ChildRowCells({
                 )}
               </td>
             );
-          case "stage":
+          case "status":
             return (
               <td key={k} className={cn("min-w-[150px]", TD)}>
                 <Tag tone="grey">{statusText(t, child.status)}</Tag>

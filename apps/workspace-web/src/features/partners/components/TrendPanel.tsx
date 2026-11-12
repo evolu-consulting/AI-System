@@ -1,7 +1,7 @@
 // GAP-D2 · #27: đường xu hướng điểm 6 tháng + khối "Cảnh báo bất thường" của một đối tác ở tab Tổng quan (luật ở lib/alerts.ts).
 import type { RepRole } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
-import { todayIso } from "~/features/contract-deadline/lib/deadline";
+import { todayIso } from "~/features/contract-shared/lib/date";
 import { useRepDetail, useRepHistory } from "../hooks/use-rep-v2e";
 import { type Alert, alertsOf, sparkOf } from "../lib/alerts";
 import { periodLabel, seriesOf } from "../lib/partner-v2e";

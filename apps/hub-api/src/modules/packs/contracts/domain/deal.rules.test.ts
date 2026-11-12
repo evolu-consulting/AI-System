@@ -21,9 +21,9 @@ describe("deal.rules", () => {
     expect(promoteVerdict({ doc_type: "deal", superseded: true })).toBe("superseded");
   });
 
-  it("legacyStatus: rejected ⇒ cancelled, còn lại posted", () => {
-    expect(legacyStatus("rejected")).toBe("cancelled");
-    expect(legacyStatus("active")).toBe("posted");
+  it("legacyStatus: reject ⇒ cancelled, còn lại posted", () => {
+    expect(legacyStatus("reject")).toBe("cancelled");
+    expect(legacyStatus("done")).toBe("posted");
   });
 
   it("dealDbCode: EK422/EG410 + message ⇒ mã API; lỗi khác ⇒ null", () => {

@@ -6,6 +6,7 @@ import { createApp as createHubApp } from "../../../apps/hub-api/src/app";
 import { connectDb, pingDb } from "../../../apps/hub-api/src/lib/db";
 import { createRedis, pingRedis } from "../../../apps/hub-api/src/lib/redis";
 import { HUB_API_URL, REDIS_TEST_URL } from "../H1/_fixtures";
+import { setLegacyStatus } from "../HD1/_support/hd1";
 import { arrangeW1, type CtxN1, d, type Json, P, priced, startHd1, T } from "../W1/_support/w1";
 
 let c: CtxN1;
@@ -123,7 +124,7 @@ describe("W1b · nhiều instance hub-api dùng chung DB", () => {
   it("đổi trạng thái HĐ (không đổi version) và thêm HĐ mới ở một nơi ⇒ cả hai instance cập nhật; luật thấy vẫn theo từng người", async () => {
     const w = await world();
     for (const i of ["A", "B"] as const) await via(i, P.hoa, "GET", "/sourcing");
-    await c.sql`update contracts.contracts set status = 'expiring' where id = ${w.m1}`;
+    await setLegacyStatus(c.sql, w.m1, "expiring");
     for (const i of ["A", "B"] as const)
       expect(a4(await via(i, P.hoa, "GET", "/sourcing"))).toMatchObject({
         risk: "source_expiring",

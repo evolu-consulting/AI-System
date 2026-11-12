@@ -13,10 +13,26 @@ export type ContractEvent = (typeof CONTRACT_EVENTS)[number];
 
 /** Khoá dữ kiện đã khai (`AppFactDecl.key`) theo sự kiện. */
 export const FACT_KEYS: Record<ContractEvent, readonly string[]> = {
-  [EV_SUBMITTED]: ["total_value", "deal", "creator_department", "new_partner"],
+  [EV_SUBMITTED]: [
+    "total_value",
+    "deal",
+    "creator_department",
+    "new_partner",
+    "importance",
+    "submitter_group_ids",
+    "partner_score",
+    "product_ids",
+  ],
   [EV_APPROVED]: ["total_value", "deal", "creator_department", "new_partner"],
   [EV_UPLOADED]: ["file_type", "uploader_department"],
-  [EV_RECEIVED]: ["total_value", "importance", "contract_type", "new_partner", "sender_verified"],
+  [EV_RECEIVED]: [
+    "total_value",
+    "importance",
+    "contract_type",
+    "new_partner",
+    "sender_verified",
+    "sign_together", // CR-127 P2 · phát cùng sự kiện (partner-inbox.repo), không đọc lại từ HĐ
+  ],
 };
 
 /**

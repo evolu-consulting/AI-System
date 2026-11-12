@@ -2,6 +2,7 @@
 // chạy trong tx gói của ĐÚNG tenant run (RLS `pkdemo_rw`), giữ kiểm P-d2 (gói bật = công tắc, D2-49 side_effect ⇒ real_action),
 // tenant chưa bật gói không lưu được def. Chờ bằng `handles.settled()` (không ngủ).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { T as T_FIX } from "../H1/_fixtures";
 import {
   createDef,
   decisionOf,
@@ -78,7 +79,13 @@ describe("N2-AC06…08 · tool gói trong stage tool [N2-FR-03]", () => {
   }, 60_000);
 
   it("N2-AC07 · beta chưa bật gói ⇒ lưu def 422 PROCESS_REF_INVALID (ref tool)", async () => {
-    const r = await c.call("Db", "POST", "/process-defs", packDef("pkdemo-touch"));
+    // CR-127 BR-10/11: quản trị công ty (Db) chỉ XEM quy trình (403 FORBIDDEN_TENANT_ADMIN_WRITE) ⇒ ghi bằng admin nền tảng cho công ty beta.
+    const r = await c.call(
+      "P",
+      "POST",
+      `/process-defs?tenant_id=${T_FIX.beta}`,
+      packDef("pkdemo-touch"),
+    );
     expect({ status: r.status, code: errCode(r) }).toEqual({
       status: 422,
       code: "PROCESS_REF_INVALID",
@@ -88,7 +95,12 @@ describe("N2-AC06…08 · tool gói trong stage tool [N2-FR-03]", () => {
   });
 
   it("N2-AC08 · tool side_effect ở stage không real_action ⇒ 422 (TOOL_SIDE_EFFECT)", async () => {
-    const r = await c.call("Adm", "POST", "/process-defs", packDef("pkdemo-mark"));
+    const r = await c.call(
+      "P",
+      "POST",
+      `/process-defs?tenant_id=${T_FIX.acme}`,
+      packDef("pkdemo-mark"),
+    );
     expect({ status: r.status, code: errCode(r) }).toEqual({
       status: 422,
       code: "PROCESS_DEF_INVALID",

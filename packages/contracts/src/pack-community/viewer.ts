@@ -5,11 +5,12 @@ import { PartnerReputationSchema } from "./profile";
 
 export const COMMUNITY_ROLES = ["host_admin", "host_member", "partner"] as const;
 export type CommunityRole = (typeof COMMUNITY_ROLES)[number];
-export const PARTNER_LABELS = ["supplier", "buyer"] as const;
+/** CR-130 L3: một tên với SHT — `customer` (Khách hàng), không còn `buyer`. */
+export const PARTNER_LABELS = ["supplier", "customer"] as const;
 export type PartnerLabel = (typeof PARTNER_LABELS)[number];
 export const PARTNER_LABEL_TEXT: Record<PartnerLabel, string> = {
   supplier: "Nhà cung cấp",
-  buyer: "Người mua",
+  customer: "Khách hàng",
 };
 
 /** Màu chủ đạo (mockup: Chàm, Xanh dương, Xanh ngọc, Xanh lá, Cam). */
@@ -19,6 +20,8 @@ export type CommunityAccent = (typeof COMMUNITY_ACCENTS)[number];
 export const CommunityViewerSchema = z.strictObject({
   userId: z.string(),
   name: z.string(),
+  /** CR-129 L5 · email của CHÍNH người xem (hồ sơ cá nhân); không bao giờ trả của người khác; chưa có ⇒ null. */
+  email: z.string().nullable(),
   role: z.enum(COMMUNITY_ROLES),
   orgId: z.string(),
   orgName: z.string(),
@@ -50,16 +53,6 @@ export const PartnerOrgSchema = z.strictObject({
 });
 export type PartnerOrg = z.infer<typeof PartnerOrgSchema>;
 
-/** C3 · `PUT /pack/community/partners/:orgId` — chỉ Admin chủ quản (HT-82): nhãn, nhóm hàng, khu vực, liên kết đối tác SHT. */
-export const PartnerUpdateInputSchema = z.strictObject({
-  labels: z.array(z.enum(PARTNER_LABELS)).max(2),
-  cats: z.array(z.string().trim().min(1).max(80)).max(50).default([]),
-  area: z.string().trim().max(100).default(""),
-  /** null = gỡ liên kết. */
-  partyKey: z.string().trim().min(1).max(200).nullable().default(null),
-});
-export type PartnerUpdateInput = z.input<typeof PartnerUpdateInputSchema>;
-
 export const ProfileSchema = z.strictObject({
   org: PartnerOrgSchema.extend({ isHost: z.boolean(), blurb: z.string().default("") }),
   stats: z.strictObject({
@@ -77,6 +70,7 @@ export type Profile = z.infer<typeof ProfileSchema>;
 export const NOTIFY_KINDS = [
   "comment",
   "reply",
+  "mention",
   "newSell",
   "newBuy",
   "matchBuy",
@@ -100,6 +94,7 @@ export const DEFAULT_SETTINGS: CommunitySettings = {
   notify: {
     comment: true,
     reply: true,
+    mention: true,
     newSell: true,
     newBuy: true,
     matchBuy: true,

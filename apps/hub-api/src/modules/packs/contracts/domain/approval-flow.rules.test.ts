@@ -1,5 +1,6 @@
 // contract-flow S2 · luật thuần mẫu luồng duyệt: điều kiện AND/OR (trống ⇒ cần bước), mẫu mặc định = 2 bước cũ, kiểm mẫu,
 // bước kế áp dụng, và def dịch ra qua được bộ kiểm của engine (`ProcessDefInputSchema` + `branchStageIssues`).
+
 import { describe, expect, it } from "bun:test";
 import * as C from "@ai/contracts";
 import {
@@ -8,9 +9,9 @@ import {
   ProcessDefInputSchema,
   REMIND_EVERY_H,
 } from "@ai/contracts/hub-admin";
+import { compileDef } from "../testing/approval-slot/approval-compile";
 import { needsLevel2 } from "./approval-def.rules";
 import {
-  compileDef,
   type DifyWorkflow,
   defaultFlowFromSettings,
   difyArgs,

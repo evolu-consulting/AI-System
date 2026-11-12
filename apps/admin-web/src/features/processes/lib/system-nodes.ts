@@ -1,21 +1,26 @@
-// CR-105: nút hệ thống của khe app (quy trình thư viện `contracts.approval`).
-// Hub biên dịch MỖI bước duyệt thành một stage gọi tool `contracts-route` (kèm cổng review) ⇒ không thể khoá theo khoá tool:
-//  - "tool hệ thống" = stage gọi `contracts-route`/`contracts-finalize` (không kiểm theo catalog tool của tenant — tool do gói/khe cấp, không có ở catalog nền tảng);
-//  - "nút hệ thống" (khoá: không xoá/đổi/kéo) = tool hệ thống KHÔNG mang `slot.kind` ⇒ chỉ stage `route` và `finalize`;
-//  - "bước của khe" = stage mang `slot.kind` review/dify ⇒ sửa được (form theo mã phòng ban), Hub dựng lại `slot_body` từ `stages`.
+// CR-105 / CR-127 Z3b: tool hệ thống của khe app do gói cấp (nay chỉ `dlc-step`; `contracts-route`/`contracts-finalize` của máy duyệt cũ đã gỡ).
+//  - "nút hệ thống" (khoá) = tool hệ thống KHÔNG mang `slot.kind`; "bước của khe" = stage mang `slot.kind` ⇒ sửa được.
 
 // dlc-engine · `dlc-step`: tool của bước DLC (khe `dlc.*`) — do gói cấp, không có ở catalog tool của tenant.
-export const SYSTEM_TOOL_KEYS: readonly string[] = [
-  "contracts-route",
-  "contracts-finalize",
-  "dlc-step",
-];
+import { MODULES } from "@ai/contracts/modules";
+
+export const SYSTEM_TOOL_KEYS: readonly string[] = ["dlc-step"];
 
 type StageLike = {
   executor: string;
   tool: { key: string };
   slotRaw?: Record<string, unknown> | undefined;
 };
+
+/** Tool do một node của gói/module khai báo (vd `contracts-esign-send`): hub kiểm riêng (validator cấu hình node) ⇒ KHÔNG kiểm theo catalog tool nền tảng. */
+const MODULE_TOOL_KEYS: ReadonlySet<string> = new Set<string>(
+  MODULES.flatMap((m) => m.nodes).flatMap((n) =>
+    (n.stages ?? []).flatMap((st): string[] =>
+      st.executor.kind === "tool" ? [String(st.executor.tool_key)] : [],
+    ),
+  ),
+);
+export const isModuleToolKey = (key: string): boolean => MODULE_TOOL_KEYS.has(key);
 
 /** Stage gọi tool hệ thống của khe (bước duyệt, route hoặc finalize). */
 export const isSystemToolStage = (s: StageLike): boolean =>

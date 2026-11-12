@@ -11,3 +11,5 @@ export type SettingsData = {
 export type SettingsState = { saved: SettingsData; defaults: SettingsData };
 
 export type SectionId = "co" | "rep" | "biz" | "scout" | "flow";
+/** CR-130 · mục của hộp thoại Cài đặt chung: 5 mục Sổ Hợp Tác + "feed" (Bảng tin › Thông báo, gói Cộng đồng). */
+export type SettingsNavId = SectionId | "feed";

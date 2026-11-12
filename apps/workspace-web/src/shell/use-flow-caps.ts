@@ -14,7 +14,6 @@ export const CAP = {
   communityJoin: "community.join",
   communityReports: "community.reports",
   contractsReview: "contracts.review",
-  contractsPartner: "contracts.partner",
 } as const;
 
 /** Thuần: từ kết quả server (`GET /pack/nav`) sang tập khoá `cap` của manifest. */

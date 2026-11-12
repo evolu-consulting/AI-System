@@ -144,7 +144,7 @@ export async function create(
   const trig = await triggersEnabled(flows, a.who.tenantId); // CR-122: bật ⇒ sự kiện `post.created` thay agent screen của khe cũ
   const row = await uow.tenant(a.who, async ({ tx }) => {
     if (a.org !== null) {
-      const me = (await partnerRows(tx)).find((p) => p.ext_org_id === a.org);
+      const me = (await partnerRows(tx, [a.org]))[0];
       if (!partnerMayPost(input.type, me?.labels ?? []))
         throw new AppError("POST_TYPE_FORBIDDEN", 403, "Post type not allowed for your company");
     }

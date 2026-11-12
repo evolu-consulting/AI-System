@@ -37,24 +37,10 @@ export function companyRepo(tx: Tx, tid: string) {
   /** Cờ hiệu lực (hàng cài đặt > mặc định theo tenant) và mặc định. */
   const approval = () => approvalFlag(tx, tid);
 
-  /** Ghi cờ + nhật ký trước/sau (cùng bảng nhật ký với ngưỡng duyệt) trong MỘT câu. */
-  const saveApproval = async (enabled: boolean, actor: string): Promise<void> => {
-    await tx.execute(sql`with old as (select contracts.approval_on() as v),
-        up as (insert into contracts.approval_settings (tenant_id, approval_enabled, updated_by)
-          values (${tid}::uuid, ${enabled}, ${actor}::uuid)
-          on conflict (tenant_id) do update set approval_enabled = excluded.approval_enabled,
-            updated_by = excluded.updated_by, updated_at = now()
-          returning approval_enabled)
-      insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after)
-        select ${tid}::uuid, ${actor}::uuid, jsonb_build_object('approval_enabled', (select v from old)),
-          jsonb_build_object('approval_enabled', up.approval_enabled) from up`);
-  };
-
   return {
     company,
     saveCompany,
     approval,
-    saveApproval,
     saveAllowNegative: (allow: boolean, actor: string) =>
       saveAllowNegativeStock(tx, tid, allow, actor),
     saveLegalThreshold: (v: number, actor: string) => saveLegalThreshold(tx, tid, v, actor),
@@ -65,7 +51,7 @@ export type CompanyRepo = ReturnType<typeof companyRepo>;
 const approvalFlag = (tx: Tx, tid: string): Promise<ApprovalFlag> =>
   one<ApprovalFlag>(
     tx,
-    sql`select jsonb_build_object('enabled', contracts.approval_on(), 'by_default', contracts.approval_default(),
+    sql`select jsonb_build_object(
       'allow_negative', coalesce((select s.allow_negative_stock from contracts.approval_settings s
         where s.tenant_id = ${tid}::uuid), false),
       'legal_warn_threshold', coalesce((select s.legal_warn_threshold from contracts.approval_settings s

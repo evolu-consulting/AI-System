@@ -66,7 +66,11 @@ describe("CR-122 P7 · flow-settings", () => {
     expect((await call("M", "PUT", { flow_triggers: true })).status).toBe(403);
     expect((await call("O", "GET")).status).toBe(403);
     expect((await call("O", "PUT", { flow_triggers: true })).status).toBe(403);
-    expect((await call("A", "GET")).json).toEqual({ flow_triggers: false, has_active_flow: false });
+    expect((await call("A", "GET")).json).toEqual({
+      flow_triggers: false,
+      has_active_flow: false,
+      claim_release_h: 24,
+    });
   });
   it("CR-123 FR-09: chưa có quy trình đang áp dụng ⇒ 422 FLOW_NONE_ASSIGNED; gán xong thì quản trị công ty bật được", async () => {
     const refused = await call("A", "PUT", { flow_triggers: true });
@@ -80,11 +84,16 @@ describe("CR-122 P7 · flow-settings", () => {
     expect((await call("A", "PUT", { flow_triggers: true })).json).toEqual({
       flow_triggers: true,
       has_active_flow: true,
+      claim_release_h: 24,
     });
     expect((await call("A", "PUT", { flow_triggers: false })).json.flow_triggers).toBe(false);
   });
   it("platform_admin bật/tắt, audit ghi cũ và mới", async () => {
-    expect((await call("P", "GET")).json).toEqual({ flow_triggers: false, has_active_flow: true });
+    expect((await call("P", "GET")).json).toEqual({
+      flow_triggers: false,
+      has_active_flow: true,
+      claim_release_h: 24,
+    });
     expect((await call("P", "PUT", { flow_triggers: true })).json.flow_triggers).toBe(true);
     expect((await call("P", "GET")).json.flow_triggers).toBe(true);
     await call("P", "PUT", { flow_triggers: true });
@@ -95,5 +104,19 @@ describe("CR-122 P7 · flow-settings", () => {
       [true, false],
     ]);
     expect(rows[0]?.actor_id).toBe(WHO.P?.userId as string);
+  });
+  it("CR-127 E2 · giờ tự trả việc đã nhận: 1..168 (ngoài ⇒ 422 CLAIM_HOURS_RANGE), member 403, đổi ⇒ audit", async () => {
+    expect((await call("M", "PUT", { claim_release_h: 48 })).status).toBe(403);
+    for (const h of [0, 169, 1.5]) {
+      const r = await call("A", "PUT", { claim_release_h: h });
+      expect([r.status, r.json.error?.code]).toEqual([422, "CLAIM_HOURS_RANGE"]);
+    }
+    expect((await call("A", "PUT", { claim_release_h: 48 })).json.claim_release_h).toBe(48);
+    expect((await call("A", "GET")).json.claim_release_h).toBe(48);
+    const [a] = await o<
+      { before: { claim_release_h: number }; after: { claim_release_h: number } }[]
+    >`
+      select before, after from hub.audit_log where tenant_id = ${X} and entity_name = 'claim_release_h' order by seq desc limit 1`;
+    expect([a?.before.claim_release_h, a?.after.claim_release_h]).toEqual([24, 48]);
   });
 });

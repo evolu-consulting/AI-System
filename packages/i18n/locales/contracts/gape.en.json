@@ -2,6 +2,10 @@
   "contracts": {
     "gape": {
       "status": {
+        "draft": "Draft",
+        "processing": "In approval",
+        "reject": "Rejected",
+        "done": "Confirmed",
         "needs_review": "Awaiting confirmation",
         "extracting": "Reading",
         "extract_failed": "Read failed",

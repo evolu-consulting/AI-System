@@ -2,7 +2,7 @@
 
 import type { Db } from "@ai/db";
 import type { AttachmentStorage } from "../attachments/public";
-import { attachmentBytesOf } from "../attachments/public";
+import { attachmentBytesOf, evidenceFileBytesOf, evidenceFileNamesOf } from "../attachments/public";
 import type { ConfigCache } from "../config/public";
 import { DEFAULT_TENANT_TZ } from "../config/public";
 
@@ -25,3 +25,12 @@ export const envInt = (k: string, def: number): number => {
 /** cr125-contract-from-step · cổng tiêm cho gói Hợp đồng (gói không import module hub): bộ đọc tệp đính kèm hub — chỉ khi có `db` + kho tệp. */
 export const stepDeps = (d: { db?: Db; attachments?: { storage: AttachmentStorage } }) =>
   d.db && d.attachments ? { attachmentBytes: attachmentBytesOf(d.db, d.attachments.storage) } : {};
+
+/** CR-127 · E4b · cổng tiêm cho gói Hợp đồng: đọc byte tệp/chữ ký của bằng chứng duyệt (BR-26 kiểm ở gói) — chỉ khi có `db` + kho tệp. */
+export const evidenceDeps = (d: { db?: Db; attachments?: { storage: AttachmentStorage } }) =>
+  d.db && d.attachments
+    ? {
+        evidenceBytes: evidenceFileBytesOf(d.db, d.attachments.storage),
+        evidenceNames: evidenceFileNamesOf(d.db), // U4b-3 · PDF Hồ sơ duyệt
+      }
+    : {};

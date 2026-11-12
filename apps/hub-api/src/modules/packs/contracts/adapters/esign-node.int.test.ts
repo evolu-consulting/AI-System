@@ -36,6 +36,13 @@ const files: ESignFiles = () => ({
   deleteFile: async () => null,
 });
 
+/** CR-127 K1: `contracts.status` chỉ đổi qua cổng (trigger) — fixture mở cổng `bulk:<txid>` trong đúng tx của nó. */
+const gated = (f: (t: typeof o) => unknown) =>
+  o.begin(async (tx) => {
+    await tx`select set_config('contracts.state_gate', 'bulk:' || txid_current(), true)`;
+    await f(tx as unknown as typeof o);
+  });
+
 beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
@@ -47,8 +54,12 @@ beforeAll(async () => {
     const fid = crypto.randomUUID();
     await o`insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
       values (${fid}, ${T1}, ${`t_${T1}`}, ${`f${i}`}, ${`v${i}`}, 'hd.pdf', 'application/pdf', 16, ${A})`;
-    await o`update contracts.contracts set status = 'active', confirmed_at = now(), file_id = ${fid}
-      where id = ${id}`;
+    await gated(
+      (
+        t,
+      ) => t`update contracts.contracts set status = 'done', confirmed_at = now(), file_id = ${fid}
+      where id = ${id}`,
+    );
   }
   db = createDb(urls().hubApi, { max: 4 });
 }, 60_000);
@@ -234,8 +245,12 @@ describe("CR-122 · bước Ký số của flow báo chuông người ký", () =
       { enabled: true, default_provider: "selfsign" },
     );
     const id = K[6] as string;
-    await o`update contracts.contracts set status = 'needs_review', confirmed_at = null, locked_at = null,
-        run_id = gen_random_uuid() where id = ${id}`;
+    await gated(
+      (
+        t,
+      ) => t`update contracts.contracts set status = 'processing', confirmed_at = null, locked_at = null,
+        run_id = gen_random_uuid() where id = ${id}`,
+    );
     const w = intakeWiring(db, u);
     const send = w.tools.find((t) => t.name === "contracts-esign-send") as (typeof w.tools)[number];
     await send.run(CTX(A), { contract_id: id, company_signers: `user:${C}`, partner_signs: false });
@@ -254,9 +269,13 @@ describe("CR-122 · Ký số giữa flow: HĐ chưa xác nhận", () => {
     );
     const [v1, v2] = [K[2] as string, K[5] as string];
     // v2 của chuỗi v1, đang chờ duyệt (needs_review + run_id), chưa khoá — như sau "Xác nhận và lưu" của flow mới
-    await o`update contracts.contracts set status = 'needs_review', confirmed_at = null, locked_at = null,
+    await gated(
+      (
+        t,
+      ) => t`update contracts.contracts set status = 'processing', confirmed_at = null, locked_at = null,
         run_id = gen_random_uuid(), root_id = ${v1}, version_no = 2, supersedes_id = ${v1}
-      where id = ${v2}`;
+      where id = ${v2}`,
+    );
     await send.run(CTX(B), { contract_id: v2, company_signers: `user:${B}` });
     expect((await envelope(v2))?.provider).toBe("selfsign");
     const st = async (id: string) =>
@@ -264,14 +283,17 @@ describe("CR-122 · Ký số giữa flow: HĐ chưa xác nhận", () => {
         await o<{ status: string; locked_by: string | null; superseded_at: Date | null }[]>`
           select status, locked_by, superseded_at from contracts.contracts where id = ${id}`
       )[0];
-    expect(await st(v2)).toMatchObject({ status: "needs_review", locked_by: B });
+    expect(await st(v2)).toMatchObject({ status: "processing", locked_by: B });
     expect((await st(v1))?.superseded_at).toBeNull(); // khoá sớm KHÔNG thay bản cũ
     // chạy lại (Thử lại của bước) ⇒ không đổi người khoá
     await o`update contracts.esign_envelopes set status = 'voided' where contract_id = ${v2}`;
     await send.run(CTX(A), { contract_id: v2, company_signers: `user:${A}` });
     expect((await st(v2))?.locked_by).toBe(B);
     // "Kết thúc · Đã duyệt" xác nhận ⇒ lúc này mới thay bản cũ
-    await o`update contracts.contracts set status = 'active', confirmed_at = now() where id = ${v2}`;
+    await gated(
+      (t) =>
+        t`update contracts.contracts set status = 'done', confirmed_at = now() where id = ${v2}`,
+    );
     expect((await st(v1))?.superseded_at).not.toBeNull();
   });
 });

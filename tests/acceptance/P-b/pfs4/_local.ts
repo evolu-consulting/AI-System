@@ -19,6 +19,7 @@ import { newJobToken, tokenHash } from "../../H2a/_runtime2";
 import {
   api,
   type CtxPa,
+  defsWriteVia,
   type Json,
   PA,
   PA_FIX,
@@ -168,7 +169,10 @@ export async function startPfs4(o: { storage?: AttachmentStorage } = {}): Promis
     redis: rtRedis,
     rt: new ScriptRuntime(sql, rtRedis),
     tok,
-    call: async (r, method, path, body) => api(c.hub, await tok(r), method, path, body),
+    call: async (r, method, path, body) => {
+      const w = defsWriteVia(r, method, path);
+      return api(c.hub, await tok(w.role as typeof r), method, w.path, body);
+    },
     dir,
     stop: async () => {
       process.off("unhandledRejection", onRejection);

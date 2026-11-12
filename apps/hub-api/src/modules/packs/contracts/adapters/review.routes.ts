@@ -11,6 +11,7 @@ import {
   PRODUCT_LINK_ERRORS,
   ProductLinksRequestSchema,
   ReviewSaveRequestSchema,
+  SUBMIT_ERRORS,
 } from "@ai/contracts/pack-contracts";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -66,6 +67,12 @@ function productFail(e: unknown): never {
 function replyOf(res: ReviewResult) {
   if (res.kind === "ok") return res.out;
   if (res.kind === "not_found") throw appError("NOT_FOUND");
+  // CR-127 K3 · "Xác nhận & lưu" = Gửi: lỗi của Gửi (EXTRACT_NOT_READY, FILE_REQUIRED, …) theo bảng mã §9.
+  if (res.kind === "submit") {
+    if (res.code === "not_found") throw appError("NOT_FOUND");
+    const http = ((SUBMIT_ERRORS as Record<string, number>)[res.code] ?? 409) as 409 | 422;
+    throw new AppError(res.code, http, res.code);
+  }
   if (res.kind === "stale")
     throw new AppError("CONTRACT_STALE", CONTRACT_ERRORS.CONTRACT_STALE, "Contract was modified", {
       current: res.current,

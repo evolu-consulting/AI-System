@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Danh sách bước</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+.tb{display:grid;grid-template-columns:150px 200px 1fr 110px 1fr;border:1px solid #e5e5ee;border-radius:12px;overflow:hidden;background:#fff;font-size:13px}
+.tb span{padding:8px 10px;border-top:1px solid #eeeef3}
+.h{background:#f7f7fb;font-weight:600;color:#6b6a80;border-top:0 !important}
+.g{font-weight:700;color:#4b4a5e}
+.s{font-weight:700;font-size:12px}
+.have{color:#15803d}.merge{color:#4f46e5}.new{color:#b45309}.later{color:#6b6a80}.drop{color:#b91c1c}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1040px; padding: 26px 30px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <div><h1 style="margin: 0 0 4px; font-size: 22px">Các bước dùng được trong quy trình hợp đồng</h1>
+    <div style="font-size: 13px; color: #6b6a80">Đã có = có trong engine hôm nay · Gộp = nhiều bước cũ thành một · Mới = cần làm · Đợt sau = không vào CR-127 · Ẩn = không hiện với quy trình hợp đồng</div></div>
+  <div class="tb">
+    <span class="h">Nhóm</span><span class="h">Bước</span><span class="h">Làm gì</span><span class="h">Tình trạng</span><span class="h">Ghi chú</span>
+
+    <span class="g">Khi nào chạy</span><span><b>Tải hợp đồng lên</b></span><span>Chạy khi bấm Xác nhận &amp; lưu; lọc được theo loại Mua / Bán</span><span class="s have">Đã có · sửa</span><span>Đổi từ "khi tải lên" sang "khi xác nhận"</span>
+    <span></span><span><b>Đối tác gửi hợp đồng</b></span><span>Công ty khác trên Evolu gửi HĐ cho mình ⇒ chạy duyệt nội bộ ⇒ báo kết quả về bên gửi</span><span class="s have">Đã có</span><span>CR-124 · sự kiện "Nhận hợp đồng từ đối tác" · xem màn 2c</span>
+    <span></span><span><b>Phiếu yêu cầu</b></span><span>Vd đề nghị mua hàng ⇒ duyệt ⇒ tạo HĐ</span><span class="s have">Đã có</span><span>Dùng cho quy trình mua hàng dài (CR-126)</span>
+    <span></span><span><b>Sắp hết hạn</b></span><span>Còn N ngày tới hạn / mốc quá hạn ⇒ chạy (vd duyệt gia hạn)</span><span class="s later">Đợt sau</span><span>Hiện thẻ Hiệu lực tự nhắc</span>
+
+    <span class="g">Người làm</span><span><b>Duyệt</b></span><span>Chọn phòng hoặc người · Cần: một người nhận việc / trưởng phòng / tất cả · hạn · quá hạn chuyển · bằng chứng</span><span class="s merge">Gộp</span><span>Gộp "Duyệt" + "Nhiều phòng cùng duyệt" thành một bước, chọn ở ô Cần</span>
+    <span></span><span><b>Bổ sung thông tin</b></span><span>Một người điền thêm trường/tệp (vd kế toán nhập mã công nợ)</span><span class="s new">Mới</span><span>Engine có "form" trong node (CR-126), chưa thành bước riêng</span>
+
+    <span class="g">Rẽ nhánh</span><span><b>Nếu</b></span><span>Một điều kiện, hai nhánh Đúng / Sai; Sai để trống = đi tiếp</span><span class="s have">Đã có</span><span>Điều kiện: giá trị, loại Mua/Bán, phòng người gửi, đối tác mới / điểm thấp, có sản phẩm X</span>
+
+    <span class="g">Hợp đồng</span><span><b>Ký số</b></span><span>Người ký bằng chứng thư</span><span class="s have">Đã có</span><span></span>
+    <span></span><span><b>Gửi đối tác xác nhận</b></span><span>Đối tác xem, Xác nhận / Trả lại sửa / Từ chối qua link</span><span class="s have">Đã có</span><span></span>
+    <span></span><span><b>Tạo hợp đồng từ hồ sơ</b></span><span>Từ phiếu yêu cầu đã duyệt sinh HĐ</span><span class="s have">Đã có</span><span>Chỉ hiện khi bắt đầu bằng Phiếu yêu cầu</span>
+
+    <span class="g">Báo tin · Chờ</span><span><b>Thông báo</b></span><span>Chọn kênh: chuông / email · gửi ai: người gửi, phòng, người, đối tác</span><span class="s merge">Gộp</span><span>Gộp "Thông báo chuông" + "Gửi email"</span>
+    <span></span><span><b>Chờ</b></span><span>Chờ tới ngày hoặc chờ một khoảng</span><span class="s merge">Gộp</span><span>Gộp "Hẹn giờ" + "Chờ khoảng"; hiện chưa có trong menu</span>
+
+    <span class="g">Tự có, không kéo</span><span><b>Hoàn tất (DONE)</b></span><span>Luôn ở cuối</span><span class="s merge">Gộp</span><span>Bỏ 3 bước Kết thúc cũ</span>
+    <span></span><span><b>REJECT / về DRAFT</b></span><span>Từ nút Từ chối / Trả lại của bước Duyệt</span><span class="s merge">Gộp</span><span>Không vẽ trên sơ đồ</span>
+
+    <span class="g">Nâng cao</span><span><b>Quy trình con</b></span><span>Gọi một quy trình khác</span><span class="s later">Ẩn</span><span>Chỉ quản trị nền tảng bật "Nâng cao"</span>
+    <span></span><span><b>Bước AI / Workflow Dify / gọi API</b></span><span>—</span><span class="s drop">Ẩn</span><span>Không hiện với quy trình hợp đồng</span>
+  </div>
+  <div style="font-size: 13px; color: #6b6a80">Menu "+" chỉ hiện 7 bước thường dùng: Duyệt · Bổ sung thông tin · Nếu · Ký số · Gửi đối tác xác nhận · Thông báo · Chờ. Bước của app chưa bật ở công ty thì không hiện.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

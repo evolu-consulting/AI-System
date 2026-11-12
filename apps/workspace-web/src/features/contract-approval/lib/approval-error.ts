@@ -15,6 +15,7 @@ const KEYS: Record<string, string> = {
   // p24 · 409 Mở lại khi lượt đang chờ mở quy trình; 422 quy trình dùng phòng ban công ty chưa có
   APPROVAL_FLOW_STARTING: "contracts.approval.errors.flowStarting",
   GROUPS_MISSING: "contracts.approval.errors.groupsMissing",
+  NO_APPROVAL_FLOW: "contracts.u5.err.NO_APPROVAL_FLOW",
   FORBIDDEN: "contracts.approval.errors.notOwner",
   PACK_FORBIDDEN: "contracts.approval.errors.notOwner",
   ENGINE_UNAVAILABLE: "contracts.approval.errors.engineUnavailable",

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Chi tiết HĐ theo người xem</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#4f46e5;text-decoration:none}
+.card{background:#fff;border:1px solid #e5e5ee;border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;font-size:13px}
+.lab{font-size:12px;font-weight:700;color:#6b6a80;letter-spacing:.04em}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.t{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700}
+.chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
+.btn{background:#fff;border:1px solid #e5e5ee;border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;white-space:nowrap}
+.pri{background:#4f46e5;color:#fff;border:0;font-weight:600}
+.band{border-radius:8px;padding:8px 12px}
+.sub{color:#6b6a80;font-size:12px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1000px; padding: 26px 30px; box-sizing: border-box; display: flex; gap: 24px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <section style="flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0">
+    <div><h1 style="margin: 0 0 4px; font-size: 22px">Cùng một HĐ đang duyệt, mỗi người thấy khác nhau</h1>
+      <div class="sub" style="font-size: 13px">HĐ bán thùng phi cho Tân Phát · PROCESSING · bước Kế toán duyệt (giao cho nhóm Kế toán: Lê Thị Hoa, Đỗ Minh)</div></div>
+
+    <div class="lab">1 · THÀNH VIÊN NHÓM, CHƯA AI NHẬN</div>
+    <div class="card" style="border-color: #c7c4ff">
+      <div class="row"><span class="t">Việc của nhóm Kế toán <span class="chip" style="background: #ecebff; color: #4f46e5">Chưa ai nhận</span></span><button class="btn pri">Nhận việc</button></div>
+      <div class="sub">Nhận ⇒ việc chuyển về bạn, người khác trong nhóm chỉ xem. Hạn 12/11 10:42 tính từ lúc vào nhóm, không đặt lại khi nhận.</div>
+    </div>
+
+    <div class="lab">2 · BẠN ĐÃ NHẬN — CẦN LÀM</div>
+    <div class="card" style="border-color: #4f46e5; box-shadow: 0 0 0 2px #ecebff">
+      <div class="row"><span class="t">Đến lượt bạn duyệt <span class="chip" style="background: #fff7ed; color: #b45309">còn 31 giờ</span></span><span style="display: flex; gap: 8px"><button class="btn">Trả về nhóm</button><button class="btn pri">Duyệt / Trả lại / Từ chối</button></span></div>
+      <div class="sub">Bạn nhận lúc 11/11 08:50. Bảng quyết định (ý kiến + bằng chứng) mở bên phải như màn 5. Thông tin HĐ khoá với mọi người khác trong lúc bạn xử lý.</div>
+    </div>
+
+    <div class="lab">3 · THÀNH VIÊN NHÓM, NGƯỜI KHÁC ĐÃ NHẬN</div>
+    <div class="card">
+      <div class="row"><span class="t">Lê Thị Hoa đang xử lý <span class="chip" style="background: #f1f1f6; color: #4b4a5e">từ 11/11 08:50</span></span><span class="sub">Không có thao tác</span></div>
+      <div class="sub">Trưởng nhóm Kế toán thấy thêm nút <b>Giao cho người khác</b> (vd Hoa nghỉ). Hoa không làm gì sau 24 giờ ⇒ tự trả về nhóm và báo trưởng nhóm.</div>
+    </div>
+
+    <div class="lab">4 · NGƯỜI GỬI / NGƯỜI PHỤ TRÁCH HĐ</div>
+    <div class="card">
+      <div class="row"><span class="t">Đang chờ Kế toán · Lê Thị Hoa <span class="chip" style="background: #fff7ed; color: #b45309">còn 31 giờ</span></span><span style="display: flex; gap: 8px"><button class="btn">Nhắc</button><button class="btn">Rút về DRAFT</button></span></div>
+      <div class="sub">✓ Tải lên — ✓ Trưởng phòng KD — ● Kế toán — ○ Ký số. Bạn không cần làm gì lúc này.</div>
+    </div>
+
+    <div class="lab">5 · NGƯỜI CHỈ XEM (cùng công ty, có quyền xem HĐ)</div>
+    <div class="card">
+      <div class="row"><span class="t">Đang duyệt · bước 3/4</span><span class="sub">Không có thao tác</span></div>
+      <div class="sub">Thấy tiến trình, không thấy ý kiến/tệp của người duyệt nếu công ty cấu hình ẩn.</div>
+    </div>
+
+    <div class="lab">KHOÁ HỢP ĐỒNG</div>
+    <div class="card" style="border-color: #fecaca">
+      <div class="row"><span class="t">HĐ mua CKS NCCA <span class="chip" style="background: #fdecec; color: #b91c1c">🔒 Tạm khoá thực hiện</span></span><button class="btn">Mở khoá</button></div>
+      <div class="band" style="background: #fdecec">Khoá bởi Nguyễn Văn An · 11/11 · "Đối tác nợ quá hạn 120 tr, ngừng nhận hàng tới khi trả." 📎 cong-no-NCCA.xlsx</div>
+      <div class="sub">Trong lúc khoá: không tạo phiếu giao/nhận, không xác nhận mốc, trang Sản phẩm không cho chọn HĐ này. Thu tiền vẫn được ghi. Khoá/mở đều cần bằng chứng.</div>
+    </div>
+  </section>
+
+  <section style="width: 420px; background: #fff; border: 1px solid #e5e5ee; border-radius: 12px; padding: 18px 20px; box-sizing: border-box; font-size: 13px; line-height: 1.5; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px">
+    <b style="font-size: 16px">Luật</b>
+    <div><b>Nhận việc</b></div>
+    <ul style="margin: 0; padding-left: 18px">
+      <li>Áp cho mọi việc giao cho một nhóm mà chỉ cần một người làm: bước Duyệt, bước Điền, xác nhận mốc.</li>
+      <li>Duyệt song song (cần mọi người) thì không có Nhận việc.</li>
+      <li>Hai người bấm cùng lúc ⇒ người sau thấy "Lê Thị Hoa vừa nhận".</li>
+      <li>Giao cho một người cụ thể ⇒ đã là của người đó, không cần nhận.</li>
+    </ul>
+    <div><b>Ba loại khoá</b></div>
+    <ul style="margin: 0; padding-left: 18px">
+      <li><b>Khoá nội dung</b> (tự động): PROCESSING và DONE. Đổi nội dung ⇒ phiên bản mới.</li>
+      <li><b>Khoá đang xử lý</b> (tự động): người đã nhận việc đang làm; người khác chỉ xem.</li>
+      <li><b>Tạm khoá thực hiện</b> (người phụ trách hoặc quản lý bấm): tranh chấp, nợ quá hạn, chờ pháp lý. Chặn giao/nhận/xác nhận mốc; vẫn ghi được tiền thu.</li>
+    </ul>
+    <div><b>Hiện ở đâu</b></div>
+    <ul style="margin: 0; padding-left: 18px">
+      <li>Chip khoá trên đầu trang chi tiết, danh sách và Sản phẩm &amp; Giá.</li>
+      <li>Thao tác bị chặn nói rõ: "HĐ đang tạm khoá bởi An — lý do…".</li>
+    </ul>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1101,103 +1101,6 @@
   opacity: 0.55;
 }
 
-/* C10b · dock "Hỏi trợ lý giá" (mockup .fab/.chat/.msg) */
-[data-mod="community"] .chat {
-  position: fixed;
-  right: 24px;
-  bottom: 88px;
-  z-index: 41;
-  width: 390px;
-  max-width: calc(100vw - 32px);
-  height: 560px;
-  max-height: calc(100vh - 120px);
-  background: var(--card);
-  border: 1px solid var(--rule);
-  border-radius: 16px;
-  box-shadow: 0 20px 48px var(--shadow-color-dialog);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-[data-mod="community"] .chat .hd {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--rule-soft);
-}
-[data-mod="community"] .chat .hd b {
-  display: block;
-  font-size: 14.5px;
-}
-[data-mod="community"] .chat .hd span {
-  font-size: 12px;
-  color: var(--dim);
-}
-[data-mod="community"] .chat .msgs {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: var(--sunk);
-}
-[data-mod="community"] .msg {
-  max-width: 88%;
-  padding: 9px 12px;
-  border-radius: 12px;
-  font-size: 13.5px;
-  white-space: pre-line;
-}
-[data-mod="community"] .msg.bot {
-  background: var(--card);
-  border: 1px solid var(--rule);
-  align-self: flex-start;
-}
-[data-mod="community"] .msg.me {
-  background: var(--cm-accent);
-  color: var(--primary-foreground);
-  align-self: flex-end;
-}
-[data-mod="community"] .msg.err {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-[data-mod="community"] .chat .qp {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 8px 14px;
-  border-top: 1px solid var(--rule-soft);
-}
-[data-mod="community"] .chat .qp button {
-  border: 1px solid var(--field);
-  background: var(--card);
-  border-radius: 999px;
-  font-size: 12px;
-  padding: 6px 10px;
-  color: var(--ink-2);
-  min-height: 32px;
-}
-[data-mod="community"] .chat .qp button:hover {
-  background: var(--sunk);
-}
-[data-mod="community"] .chat .in {
-  display: flex;
-  gap: 8px;
-  padding: 10px 14px;
-  border-top: 1px solid var(--rule-soft);
-}
-[data-mod="community"] .chat .in input {
-  flex: 1;
-  height: 40px;
-  border-radius: 999px;
-  border: 1px solid var(--field);
-  padding: 0 14px;
-  font: inherit;
-}
-
 /* com-fix-community-login · màn Đăng nhập riêng (thẻ giữa trang, cùng bảng màu mockup). */
 [data-mod="community"] .auth {
   display: grid;
@@ -1244,4 +1147,10 @@
   border-bottom: 1px solid var(--soon-line);
   font-size: 13px;
   color: var(--ink-2);
+}
+
+/* CR-130 · bài được mở từ thông báo (chuông chung) */
+[data-mod="community"] [data-testid="post"].focused {
+  outline: 2px solid var(--cm-accent);
+  outline-offset: 2px;
 }

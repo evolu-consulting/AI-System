@@ -99,7 +99,7 @@ async function write(tx: Tx, p: Full): Promise<Applied> {
       status, owner_user_id, created_by, created_at, updated_at, confirmed_at, confirmed_by, fields, product_group)
     select x.id, x.tenant_id, 'contract', 'deal', 'other', left('Giao dịch ' || x.partner_name, 200),
       case x.deal when 'buy' then 'purchase' else 'sale' end, x.deal,
-      case x.status when 'cancelled' then 'rejected' else 'active' end,
+      case x.status when 'cancelled' then 'reject' else 'done' end,
       coalesce(x.created_by, x.posted_by, x.cancelled_by), coalesce(x.created_by, x.posted_by, x.cancelled_by),
       x.created_at, x.updated_at, coalesce(x.posted_at, x.created_at), coalesce(x.posted_by, x.created_by, x.cancelled_by),
       jsonb_build_object(case x.deal when 'buy' then 'supplier_name' else 'buyer_name' end, ${tx.unsafe(fv("x.partner_name"))},

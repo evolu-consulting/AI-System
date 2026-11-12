@@ -1,12 +1,13 @@
 // N3-FR-09 · danh sách thông báo trong chuông: chưa đọc in đậm + chấm; bấm vào ⇒ đánh dấu đã đọc và đi tới liên kết (đường dẫn trong app).
 import type { Notification } from "@ai/contracts/notify";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { cn } from "~/lib/utils";
 
 function Row({ n, onRead }: { n: Notification; onRead?: (id: string) => void }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const body = (
     <>
       <span className="flex items-start gap-2">
@@ -33,7 +34,22 @@ function Row({ n, onRead }: { n: Notification; onRead?: (id: string) => void }) 
   const click = () => {
     if (!n.read) onRead?.(n.id);
   };
-  // `link` do server kiểm: bắt đầu `/`, không `//` ⇒ chỉ điều hướng trong app.
+  // `link` do server kiểm: bắt đầu `/`, không `//` ⇒ chỉ điều hướng trong app. Có query (vd `/community?post=<id>`) ⇒ đi bằng href.
+  if (n.link?.includes("?")) {
+    const href = n.link;
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          click();
+          void router.navigate({ href });
+        }}
+        className={cls}
+      >
+        {body}
+      </button>
+    );
+  }
   return n.link ? (
     <Link to={n.link as "/"} onClick={click} className={cls}>
       {body}

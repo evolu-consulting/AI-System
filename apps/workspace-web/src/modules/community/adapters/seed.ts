@@ -23,14 +23,14 @@ export const PARTNERS: PartnerOrg[] = [
   {
     id: "abc",
     name: "Công ty TNHH ABC",
-    labels: ["buyer"],
+    labels: ["customer"],
     cats: ["Chữ ký số", "Đóng gói"],
     area: "TP.HCM",
   },
   {
     id: "hungthinh",
     name: "Hưng Thịnh Logistics",
-    labels: ["supplier", "buyer"],
+    labels: ["supplier", "customer"],
     cats: ["Chữ ký số", "Hoá đơn điện tử"],
     area: "Đà Nẵng",
   },
@@ -46,6 +46,7 @@ const host = (
   id,
   userId: id,
   name,
+  email: null,
   role,
   orgId: HOST_ORG.id,
   orgName: HOST_ORG.name,
@@ -61,6 +62,7 @@ const partner = (id: string, name: string, orgId: string, label: string): Person
     id,
     userId: id,
     name,
+    email: null,
     role: "partner",
     orgId,
     orgName: o.name,
@@ -99,12 +101,13 @@ export type RawPost = {
 export type RawComment = {
   id: string;
   postId: string;
-  threadOrgId: string;
   authorOrgId: string;
   authorName: string;
   text: string;
   minAgo: number;
   hidden: boolean;
+  /** Id công ty được nhắc (@). */
+  mentions?: string[];
 };
 
 const aud = (
@@ -303,7 +306,6 @@ export const SEED_COMMENTS: RawComment[] = [
   {
     id: "c1",
     postId: "p1",
-    threadOrgId: "hungthinh",
     authorOrgId: "hungthinh",
     authorName: "Anh Hưng",
     text: "Bên mình cần thêm chữ ký HSM, báo giá giúp nhé.",
@@ -313,17 +315,16 @@ export const SEED_COMMENTS: RawComment[] = [
   {
     id: "c2",
     postId: "p1",
-    threadOrgId: "hungthinh",
     authorOrgId: "host",
     authorName: "Lê Quốc Cường",
-    text: "Bên mình gửi báo giá qua đây trong hôm nay. Liên hệ 0901 111 222.",
+    text: "@Hưng Thịnh Logistics bên mình gửi báo giá qua đây trong hôm nay. Liên hệ 0901 111 222.",
+    mentions: ["hungthinh"],
     minAgo: 20,
     hidden: false,
   },
   {
     id: "c3",
     postId: "p1",
-    threadOrgId: "abc",
     authorOrgId: "abc",
     authorName: "Trần B",
     text: "Gói 1 năm còn ưu đãi không bạn?",
@@ -333,7 +334,6 @@ export const SEED_COMMENTS: RawComment[] = [
   {
     id: "c4",
     postId: "p6",
-    threadOrgId: "abc",
     authorOrgId: "host",
     authorName: "Lê Quốc Cường",
     text: "Bên mình có sẵn, em gửi báo giá ngay nhé.",
@@ -343,7 +343,6 @@ export const SEED_COMMENTS: RawComment[] = [
   {
     id: "c5",
     postId: "p5",
-    threadOrgId: "tanphat",
     authorOrgId: "host",
     authorName: "Nguyễn Văn An",
     text: "Cho mình xin giá thùng phi nếu lấy 60 thùng.",

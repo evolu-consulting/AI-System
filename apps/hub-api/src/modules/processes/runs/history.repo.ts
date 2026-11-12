@@ -20,6 +20,10 @@ type HistoryRow = {
   after_h: number | string | null;
   to_step: number | null;
   rule: number | null;
+  /** CR-127 · E4 · bằng chứng của quyết định (`hub.evidence`, subject = task) + người được giao thật khi làm thay. */
+  evidence_id: string | null;
+  behalf_id: string | null;
+  behalf_name: string | null;
 };
 
 function toHistoryItem(h: HistoryRow): HistoryItem {
@@ -35,6 +39,10 @@ function toHistoryItem(h: HistoryRow): HistoryItem {
     ...(h.after_h !== null && Number.isInteger(afterH) && afterH >= 1 && { after_h: afterH }),
     ...(h.to_step !== null && { to_step: Number(h.to_step) }),
     ...(h.rule !== null && { rule: Number(h.rule) }),
+    ...(h.evidence_id && { evidence_id: h.evidence_id }),
+    ...(h.behalf_id && {
+      on_behalf_of: { id: h.behalf_id, display_name: h.behalf_name ?? h.behalf_id },
+    }),
   };
 }
 
@@ -46,21 +54,26 @@ function toHistoryItem(h: HistoryRow): HistoryItem {
 export async function loadHistory(tx: Tx, runId: string, tenantId: string): Promise<HistoryItem[]> {
   const rows = await tx.execute<HistoryRow>(sql`
     select h.task_id, h.kind, h.stage_idx, h.result, h.feedback, h.decided_by, h.actor_name,
-      ${iso(sql`h.at_ts`)} as at, h.group_id, h.group_name, h.after_h, h.to_step, h.rule
+      ${iso(sql`h.at_ts`)} as at, h.group_id, h.group_name, h.after_h, h.to_step, h.rule,
+      h.evidence_id, h.behalf_id, h.behalf_name
     from (
+
       select t.id as task_id, t.kind, s.stage_idx, t.result, t.feedback, t.decided_by,
         u.display_name as actor_name, t.decided_at as at_ts, t.created_at as c_ts,
         null::uuid as group_id, null::text as group_name, null::text as after_h,
-        null::int as to_step, null::int as rule
+        null::int as to_step, null::int as rule, ev.id as evidence_id, ev.on_behalf_of as behalf_id, bu.display_name as behalf_name
       from hub.review_tasks t
       join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
       left join admin.users u on u.id = t.decided_by and u.tenant_id = t.tenant_id
+      left join lateral (select e.id, e.on_behalf_of from hub.evidence e where e.tenant_id = t.tenant_id
+        and e.subject_kind = 'task_decision' and e.subject_id = t.id order by e.at desc limit 1) ev on true
+      left join admin.users bu on bu.id = ev.on_behalf_of and bu.tenant_id = t.tenant_id
       where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.status = 'closed'
         and t.kind in ('review', 'decision')
       union all
       select t.id, 'escalate', s.stage_idx, null, null, null, null, t.escalated_at, t.created_at,
         esc.group_id, esc.name, pr.snapshot->'stages'->(s.stage_idx::int)->'after'->'escalate'->>'after_h',
-        null, null
+        null, null, null::uuid, null::uuid, null::text
       from hub.review_tasks t
       join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
       join hub.process_runs pr on pr.id = t.process_run_id and pr.tenant_id = t.tenant_id
@@ -74,7 +87,8 @@ export async function loadHistory(tx: Tx, runId: string, tenantId: string): Prom
       union all
       -- P-d2 · PD2-R14 · rẽ nhánh: audit branch (actor hệ thống), payload ở summary (index entity, entity_id).
       select null, 'branch', (a.summary->>'stage_idx')::int, null, null, null, null, a.at, a.at,
-        null, null, null, (a.summary->>'to_step')::int, (a.summary->>'rule')::int
+        null, null, null, (a.summary->>'to_step')::int, (a.summary->>'rule')::int,
+        null::uuid, null::uuid, null::text
       from hub.audit_log a
       where a.entity = 'process_run' and a.entity_id = ${runId} and a.tenant_id = ${tenantId}
         and a.action = 'branch'

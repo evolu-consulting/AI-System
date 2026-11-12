@@ -14,6 +14,7 @@ import {
   needV2g,
   P,
   restoreApproval,
+  reviewFlow,
   reviewOf,
   rowsOf,
   seedReview,
@@ -52,8 +53,8 @@ const MS = [
 ];
 const pick = (m: Json) => [m.kind, m.owner, m.title, m.due_date, m.amount_effective, m.source];
 
-describe("V2-G · Lưu ở tenant TẮT duyệt ⇒ active ngay (HD-01 · C3)", () => {
-  it("lưu trường + loại + dòng (sửa/thêm) + mốc người đã xem; active, confirmed, version+1, một sự kiện review_saved", async () => {
+describe("V2-G · Xác nhận & lưu khi CÓ quy trình khớp ⇒ Đang duyệt (HD-01, CR-127 K3/NF1)", () => {
+  it("lưu trường + loại + dòng (sửa/thêm) + mốc người đã xem; processing, version+1, một sự kiện review_saved", async () => {
     await arrange(false);
     const s = await seedReview(c, 1, {
       deal: "sell",
@@ -64,7 +65,7 @@ describe("V2-G · Lưu ở tenant TẮT duyệt ⇒ active ngay (HD-01 · C3)", 
       ],
     });
     const tok = await makeProduct(c, P.hoa, { name: "Chữ ký số DN – USB Token", group: "goods" });
-    const r = await reviewOf(c, s.id, {
+    const r = await reviewFlow(c, s.id, {
       version: 1,
       fields: { title: "HĐ đã xác nhận", total_value: 150_000_000 },
       items: [
@@ -83,12 +84,13 @@ describe("V2-G · Lưu ở tenant TẮT duyệt ⇒ active ngay (HD-01 · C3)", 
       milestones: MS,
     });
     expect(r.status).toBe(200);
-    expect(r.json).toEqual({ id: s.id, status: "active", version: 2, items: 3, milestones: 3 });
+    expect(r.json).toMatchObject({ id: s.id, status: "processing", items: 3, milestones: 3 });
+    expect(r.json.version).toBeGreaterThanOrEqual(2); // lưu +1; chuyển trạng thái qua cổng có thể +1 nữa
 
     const x = await detail(c, s.id);
-    expect([x.status, x.version, x.deal, x.direction]).toEqual(["active", 2, "sell", "sale"]);
-    expect(x.confirmed_by).toBe(P.hoa.id);
-    expect(x.confirmed_at).not.toBeNull();
+    expect([x.status, x.deal, x.direction]).toEqual(["processing", "sell", "sale"]);
+    expect(x.version).toBe(r.json.version);
+    // CR-127: `confirmed_*` ghi lúc HĐ done (quy trình xong), không ghi lúc Gửi ⇒ không kiểm ở đây.
     expect(x.fields.title).toMatchObject({ value: "HĐ đã xác nhận", edited: true, verified: true });
     expect(x.fields.total_value.value).toBe(150_000_000);
     expect(
@@ -111,15 +113,15 @@ describe("V2-G · Lưu ở tenant TẮT duyệt ⇒ active ngay (HD-01 · C3)", 
     >`select type, data from contracts.contract_events
       where contract_id = ${s.id} and type = 'review_saved'`;
     expect(ev).toHaveLength(1);
-    expect(ev[0]?.data).toMatchObject({ deal: "sell", status: "active", items: 3, milestones: 3 });
+    expect(ev[0]?.data).toMatchObject({ deal: "sell", items: 3, milestones: 3 });
     expect(ev[0]?.data.fields).toEqual(["title", "total_value"]);
   });
 
   it("không gửi mốc ⇒ mốc mặc định theo loại (Giao + Thu tiền theo ngày HĐ), nguồn default", async () => {
     await arrange(false);
     const s = await seedReview(c, 1, { deal: "sell", ai: AI() });
-    const r = await reviewOf(c, s.id, { version: 1 });
-    expect(r.json).toMatchObject({ status: "active", milestones: 2 });
+    const r = await reviewFlow(c, s.id, { version: 1 });
+    expect(r.json).toMatchObject({ status: "processing", milestones: 2 });
     const x = await detail(c, s.id);
     expect(x.milestones.map(pick)).toEqual([
       ["delivery", "ours", "Giao hàng", d(10), null, "default"],
@@ -130,7 +132,7 @@ describe("V2-G · Lưu ở tenant TẮT duyệt ⇒ active ngay (HD-01 · C3)", 
   it("đổi Bán → Mua: hướng purchase, mốc theo loại mới (đối tác = bên bán), HD7 không sinh thêm đợt", async () => {
     await arrange(false);
     const s = await seedReview(c, 1, { deal: "sell", ai: AI() });
-    const r = await reviewOf(c, s.id, {
+    const r = await reviewFlow(c, s.id, {
       version: 1,
       deal: "buy",
       milestones: [{ kind: "pay", due_date: d(20), amount: 5_000_000 }],
@@ -155,7 +157,7 @@ describe("V2-G · Lưu ở tenant TẮT duyệt ⇒ active ngay (HD-01 · C3)", 
   it("Giới thiệu + hoa hồng: đối tác phía bên mua; mốc Nhận hoa hồng; hoa hồng cũ bị bỏ khi đổi sang loại khác", async () => {
     await arrange(false);
     const s = await seedReview(c, 1, { deal: "sell", ai: AI({ deal: "referral" }) });
-    const r = await reviewOf(c, s.id, { version: 1, deal: "referral", commission_pct: 12.5 });
+    const r = await reviewFlow(c, s.id, { version: 1, deal: "referral", commission_pct: 12.5 });
     expect(r.status).toBe(200);
     const x = await detail(c, s.id);
     expect([x.deal, x.direction, x.commission_pct, x.commission_fixed]).toEqual([
@@ -169,24 +171,22 @@ describe("V2-G · Lưu ở tenant TẮT duyệt ⇒ active ngay (HD-01 · C3)", 
     ]);
   });
 
-  it("lượt duyệt đang mở (level1) được đóng `done` khi tenant tắt duyệt", async () => {
+  it("CR-127 NF1 · KHÔNG có quy trình khớp ⇒ 409 NO_APPROVAL_FLOW, HĐ giữ Nháp, không ghi gì (không mốc, không sự kiện review_saved)", async () => {
     await arrange(false);
     const s = await seedReview(c, 1, { deal: "sell", ai: AI() });
-    const [a] = await c.sql<
-      { id: string }[]
-    >`insert into contracts.approvals (tenant_id, contract_id, status, started_by)
-      values (${T.acme}, ${s.id}, 'level1', ${P.hoa.id}) returning id`;
-    await c.sql`update contracts.contracts set run_id = ${a?.id as string} where id = ${s.id}`;
-    expect((await reviewOf(c, s.id, { version: 1 })).status).toBe(200);
-    const [x] = await c.sql<
-      { status: string; decided_by: string }[]
-    >`select status, decided_by::text from contracts.approvals
-      where id = ${a?.id as string}`;
-    expect(x).toEqual({ status: "done", decided_by: P.hoa.id });
+    const r = await reviewOf(c, s.id, { version: 1 });
+    expect([r.status, r.json?.error?.code]).toEqual([409, "NO_APPROVAL_FLOW"]);
+    const x = await detail(c, s.id);
+    expect([x.status, x.version, x.milestones.length]).toEqual(["draft", 1, 0]);
+    const [ev] = await c.sql<
+      { n: number }[]
+    >`select count(*)::int as n from contracts.contract_events
+      where contract_id = ${s.id} and type = 'review_saved'`;
+    expect(ev?.n).toBe(0);
   });
 });
 
-describe("V2-G · Lưu ở tenant BẬT duyệt ⇒ vẫn needs_review (còn bước Xác nhận)", () => {
+describe("V2-G · Lưu nháp (`draft: true`) ⇒ vẫn draft, chưa gửi duyệt", () => {
   it("lưu mốc (nguồn ai, chưa tính nợ/quá hạn vì HĐ chưa được duyệt); Lưu lần hai THAY bộ mốc cũ", async () => {
     await arrange(true);
     const s = await seedReview(c, 1, {
@@ -194,16 +194,17 @@ describe("V2-G · Lưu ở tenant BẬT duyệt ⇒ vẫn needs_review (còn bư
       ai: AI(),
       items: [{ name: "Hàng", qty: 1, unit_price: 1 }],
     });
-    const r1 = await reviewOf(c, s.id, { version: 1, milestones: MS });
-    expect(r1.json).toMatchObject({ status: "needs_review", version: 2, milestones: 3 });
+    const r1 = await reviewOf(c, s.id, { version: 1, milestones: MS, draft: true });
+    expect(r1.json).toMatchObject({ status: "draft", version: 2, milestones: 3 });
     const x = await detail(c, s.id);
-    expect([x.status, x.confirmed_at, x.milestones.length]).toEqual(["needs_review", null, 3]);
+    expect([x.status, x.confirmed_at, x.milestones.length]).toEqual(["draft", null, 3]);
     // Hạn trong quá khứ: HĐ chưa duyệt ⇒ vòng quá hạn không ghi sổ cho mốc này (confirmedOf).
     const r2 = await reviewOf(c, s.id, {
       version: 2,
+      draft: true,
       milestones: [{ kind: "delivery", title: "Giao một lần", due_date: d(-5) }],
     });
-    expect(r2.json).toMatchObject({ status: "needs_review", version: 3, milestones: 1 });
+    expect(r2.json).toMatchObject({ status: "draft", version: 3, milestones: 1 });
     const live = (await rowsOf(c.sql, s.id)).filter((m) => m.status !== "replaced");
     expect(live.map((m) => [m.kind, m.title])).toEqual([["delivery", "Giao một lần"]]);
     expect((await rowsOf(c.sql, s.id)).filter((m) => m.status === "replaced")).toHaveLength(3);
@@ -216,8 +217,8 @@ describe("V2-G · Lưu ở tenant BẬT duyệt ⇒ vẫn needs_review (còn bư
   it("không gửi mốc ⇒ không đụng; Lưu không đổi trạng thái; viewer không Lưu được", async () => {
     await arrange(true);
     const s = await seedReview(c, 1, { deal: "buy", ai: AI() });
-    expect((await reviewOf(c, s.id, { version: 1 })).json).toMatchObject({
-      status: "needs_review",
+    expect((await reviewOf(c, s.id, { version: 1, draft: true })).json).toMatchObject({
+      status: "draft",
       milestones: 0,
     });
     expect((await rowsOf(c.sql, s.id)).length).toBe(0);
@@ -310,13 +311,19 @@ describe("V2-G · lỗi ⇒ không ghi gì (một tx)", () => {
     );
     expect(r.json.error.details.current.version).toBe(1);
   });
-  it("HĐ không còn chờ xác nhận (đã active / đang đọc / bị từ chối) ⇒ 409 REVIEW_NOT_ALLOWED", async () => {
+  it("HĐ không còn chờ xác nhận (đã done / bị từ chối ⇒ REVIEW_NOT_ALLOWED; đang đọc ⇒ EXTRACT_NOT_READY) ⇒ 409", async () => {
+    // CR-127: `done`/`reject` ⇒ không còn sửa được; đang đọc (`extract_state=reading`) ⇒ lỗi của Gửi EXTRACT_NOT_READY.
+    const expectCode: Record<string, string> = {
+      active: "REVIEW_NOT_ALLOWED",
+      extracting: "EXTRACT_NOT_READY",
+      rejected: "REVIEW_NOT_ALLOWED",
+    };
     for (const status of ["active", "extracting", "rejected"]) {
       await arrange(false);
       const s = await seedReview(c, 1, { deal: "sell", status });
       const before = await snapshot(c.sql, s.id);
       const r = await reviewOf(c, s.id, { version: 1, fields: { title: "x" } });
-      expect([status, r.status, r.json.error.code]).toEqual([status, 409, "REVIEW_NOT_ALLOWED"]);
+      expect([status, r.status, r.json.error.code]).toEqual([status, 409, expectCode[status]]);
       expect(await snapshot(c.sql, s.id)).toEqual(before);
     }
   });

@@ -6,9 +6,8 @@ import { defineRlsSuite } from "@ai/test-kit/rls-suite";
 
 const tenants = { a: tenantId(951), b: tenantId(952) };
 const who = userId(951);
-/** Bài/luồng cha theo tenant (điền lúc seed). */
+/** Bài cha theo tenant (điền lúc seed). */
 const post = new Map<string, string>();
-const thread = new Map<string, string>();
 const rnd = (pk?: string) => pk ?? crypto.randomUUID();
 
 const one = async (sql: Sql, text: string, params: unknown[]): Promise<string> => {
@@ -37,21 +36,6 @@ defineRlsSuite({
       on conflict do nothing`;
   },
   tables: [
-    {
-      name: "partner_companies",
-      pk: "ext_org_id",
-      seed: (o, t) =>
-        one(
-          o,
-          "insert into community.partner_companies (tenant_id, ext_org_id) values ($1, $2) returning ext_org_id::text as id",
-          [t, crypto.randomUUID()],
-        ),
-      insert: (tx, t, pk) =>
-        tx.unsafe(
-          "insert into community.partner_companies (tenant_id, ext_org_id) values ($1, $2)",
-          [t, rnd(pk)],
-        ),
-    },
     {
       name: "posts",
       seed: async (o, t) => {
@@ -108,36 +92,19 @@ defineRlsSuite({
         ),
     },
     {
-      name: "threads",
-      seed: async (o, t) => {
-        const id = await one(
-          o,
-          "insert into community.threads (tenant_id, post_id, ext_org_id) values ($1, $2, $3) returning id::text as id",
-          [t, post.get(t), crypto.randomUUID()],
-        );
-        thread.set(t, id);
-        return id;
-      },
-      insert: (tx, t, pk) =>
-        tx.unsafe(
-          "insert into community.threads (id, tenant_id, post_id, ext_org_id) values ($1, $2, $3, $4)",
-          [rnd(pk), t, post.get(t) as string, crypto.randomUUID()],
-        ),
-    },
-    {
       name: "comments",
       seed: (o, t) =>
         one(
           o,
-          `insert into community.comments (tenant_id, post_id, thread_id, thread_org, author_user_id, text_raw, text_masked)
-           select $1, t.post_id, t.id, t.ext_org_id, $3, 'x', 'x' from community.threads t where t.id = $2 returning id::text as id`,
-          [t, thread.get(t), who],
+          `insert into community.comments (tenant_id, post_id, author_user_id, text_raw, text_masked)
+           values ($1, $2, $3, 'x', 'x') returning id::text as id`,
+          [t, post.get(t), who],
         ),
       insert: (tx, t, pk) =>
         tx.unsafe(
-          `insert into community.comments (id, tenant_id, post_id, thread_id, thread_org, author_user_id, text_raw, text_masked)
-           values ($1, $2, $3, $4, $5, $6, 'x', 'x')`,
-          [rnd(pk), t, post.get(t) as string, thread.get(t) as string, crypto.randomUUID(), who],
+          `insert into community.comments (id, tenant_id, post_id, author_user_id, text_raw, text_masked)
+           values ($1, $2, $3, $4, 'x', 'x')`,
+          [rnd(pk), t, post.get(t) as string, who],
         ),
     },
     {

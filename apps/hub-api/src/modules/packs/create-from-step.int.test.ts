@@ -149,7 +149,7 @@ describe("contracts-create-from-step", () => {
     expect(c).toMatchObject({
       tenant_id: T1,
       title: "HĐ mua máy",
-      status: "needs_review",
+      status: "draft", // CR-127: HĐ tạo từ bước = Nháp (`needs_review` đã gỡ)
       v: "12000000",
       supplier: "Công ty A",
     });
@@ -242,7 +242,11 @@ describe("contracts-create-from-step · tệp đính kèm, Ký số", () => {
   it("Ký số từ chối HĐ không phải bản ghi của lượt (không bỏ qua duyệt): HĐ tải lên chưa gửi duyệt không bị khoá/ký", async () => {
     const run = await mkRun(T1, A);
     const [id] = await contracts(o, T1, 1, { from: 985, createdBy: A, owner: A });
-    await o`update contracts.contracts set status = 'needs_review', locked_at = null, locked_by = null, confirmed_at = null where id = ${id as string}`;
+    // CR-127: `status` chỉ đổi qua cổng `contracts.state_gate` (STATUS_GATE_ONLY) ⇒ đưa HĐ về Nháp (chưa gửi duyệt) trong một tx có cổng.
+    await o.begin(async (tx) => {
+      await tx`select set_config('contracts.state_gate', 'bulk:' || txid_current()::text, true)`;
+      await tx`update contracts.contracts set status = 'draft', effect = null, effect_outcome = null, locked_at = null, locked_by = null, confirmed_at = null where id = ${id as string}`;
+    });
     const { u, send } = esignSend();
     await u.saveSettings(
       { tenantId: T1, userId: A },

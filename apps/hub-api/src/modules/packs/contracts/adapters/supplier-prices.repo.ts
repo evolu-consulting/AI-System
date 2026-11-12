@@ -34,14 +34,14 @@ const overviewQ = (t: string, productId: string) => sql`select jsonb_build_objec
                 and m.supplier_party_key is not null
               group by m.supplier_party_key limit 50) x), '[]'::jsonb),
           'contract_lines', coalesce((select jsonb_agg(jsonb_build_object('deal', k.deal, 'contract_id', k.id,
-              'number', coalesce(k.number, k.title), 'status', k.status, 'price', i.unit_price::float8, 'unit', i.unit,
+              'number', coalesce(k.number, k.title), 'status', k.status, 'effect', k.effect, 'price', i.unit_price::float8, 'unit', i.unit,
               'on', k.dt, 'party_name', case when k.deal = 'buy' then k.seller else k.buyer end,
               'party_key', case when k.deal = 'buy'
                 then contracts.party_key(k.fields -> 'supplier_name' ->> 'value', k.fields -> 'supplier_tax_id' ->> 'value') end)
               order by k.dt desc nulls last, k.id)
             from (select i0.* from contracts.contract_items i0 where i0.tenant_id = p.tenant_id and i0.product_id = p.id
                 and i0.unit_price is not null limit 300) i
-              join (select c.id, c.deal, c.number, ${contractNameSql("c")} as title, c.status, c.seller, c.buyer, c.fields,
+              join (select c.id, c.deal, c.number, ${contractNameSql("c")} as title, c.status, c.effect, c.seller, c.buyer, c.fields,
                   coalesce(c.start_date, c.created_at::date) as dt
                 from contracts.contracts c where c.tenant_id = p.tenant_id and c.kind = 'contract'
                   and c.deal in ('buy', 'sell') and c.status in (${CONFIRMED}) and c.superseded_at is null) k

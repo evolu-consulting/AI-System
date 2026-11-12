@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { t } from "../i18n";
 import { useApp } from "./ctx";
 
-export function useFeedFilters(fixed: Pick<FeedQuery, "mine" | "authorOrgId"> = {}) {
+export function useFeedFilters(
+  fixed: Pick<FeedQuery, "mine" | "authorOrgId" | "authorUserId"> = {},
+) {
   const { search } = useApp();
   const [tab, setTab] = useState<FeedTab>("all");
   const [cat, setCat] = useState("");

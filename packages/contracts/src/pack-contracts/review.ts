@@ -64,7 +64,7 @@ export const ReviewSaveRequestSchema = z
     fields: z.strictObject(PATCH_SHAPE).optional(),
     items: z.array(ReviewItemSchema).max(REVIEW_ITEMS_MAX).optional(),
     milestones: z.array(ReviewMilestoneSchema).max(MILESTONES_MAX).optional(),
-    /** "Lưu nháp": chỉ ghi, HĐ giữ `needs_review` (không xác nhận / khoá) kể cả khi tenant tắt duyệt. */
+    /** "Lưu nháp": chỉ ghi, HĐ giữ DRAFT (không xác nhận / khoá). */
     draft: z.boolean().optional(),
     /** atomic-confirm: tenant tắt duyệt — gắn/tạo SP cho dòng HĐ (đã lưu) trong CÙNG tx xác nhận; lỗi ⇒ ROLLBACK cả lệnh.
      *  Chỉ cho lệnh xác nhận (không `draft`); bật duyệt (HĐ còn chờ) ⇒ bỏ qua — SP gắn ở bước duyệt cuối. */
@@ -80,10 +80,10 @@ export const ReviewSaveRequestSchema = z
   });
 export type ReviewSaveRequest = z.infer<typeof ReviewSaveRequestSchema>;
 
-/** `status = active` khi tenant tắt duyệt (HĐ lưu là có hiệu lực, V2-A C3); bật duyệt ⇒ `needs_review` (còn bước Xác nhận). */
+/** CR-127 K1b: "Xác nhận và lưu" không qua quy trình ⇒ `done`; còn lại (K3: có quy trình ⇒ PROCESSING) giữ `draft`. */
 export const ReviewSaveResponseSchema = z.strictObject({
   id: z.uuid(),
-  status: z.enum(["needs_review", "active"]),
+  status: z.enum(["draft", "processing", "done"]),
   version: VersionSchema,
   items: z.number().int().min(0),
   milestones: z.number().int().min(0),

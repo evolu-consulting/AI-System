@@ -3,6 +3,7 @@
 // cờ `OutputRef.handoff_truncated`), KHÔNG nhúng nguyên file (file vẫn đính kèm); def lưu qua API thiếu mục ⇒ template_invalid.
 // DB tag `pb2_tok`. 0024 vắng ⇒ đỏ ở `needPb2`.
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
+import { T as T_FIX } from "../../H1/_fixtures";
 import { MD_OK } from "../../P-a/pf1/_local";
 import {
   attachNames,
@@ -72,7 +73,7 @@ describe("HO · Bàn giao vào prompt [AC-PB2-09][HUB-FR-136]", () => {
   it("AC-PB2-09 · HO-03 · def lưu qua POST /process-defs (ensureHandoff) + output thiếu 'Bàn giao' 4 lần ⇒ needs_decision template_invalid", async () => {
     needPb2(c.pb2);
     const body = defBody("pb2-ho03", [st({ key: "a", name: "Đọc", agent: P1.agRead })]);
-    const r = await c.call("Adm", "POST", "/process-defs", body);
+    const r = await c.call("P", "POST", `/process-defs?tenant_id=${T_FIX.acme}`, body);
     expect(r.status).toBe(201);
     const s = await startInRoom(c, { key: "pb2-ho03" });
     for (let i = 0; i < 4; i++) await jobDone(c, await jobOfStage(c, s.runId, 0), MD_NOHO);

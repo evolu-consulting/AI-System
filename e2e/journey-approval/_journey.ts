@@ -105,8 +105,16 @@ export async function adminAssignAndRoute(_page: Page, e: Env): Promise<void> {
     sell: await apiAssignDef(e, PROC.sell),
   };
   await setRoutingRules(hub, s, tenantId, SLOT, [
-    { condition: { departmentIds: [dept], contractKinds: ["buy"] }, def_id: ids.buy },
-    { condition: { departmentIds: [dept], contractKinds: ["sell"] }, def_id: ids.sell },
+    {
+      condition: { departmentIds: [dept], contractKinds: ["buy"] },
+      def_id: ids.buy,
+      is_default: false,
+    },
+    {
+      condition: { departmentIds: [dept], contractKinds: ["sell"] },
+      def_id: ids.sell,
+      is_default: false,
+    },
   ]);
 }
 
@@ -122,14 +130,24 @@ export async function uploadAndOpen(
   e: Env,
   run: string,
   total?: number,
+  /** Công ty bật ký số ⇒ tải PDF (`usePdfGate` chặn «Ký số cần tệp PDF…» với .md): truyền `pdf` = hàm dựng PDF từ văn bản. */
+  pdf?: (text: string) => Promise<Buffer>,
 ): Promise<string> {
   const doc = buyContract(run, total);
   await page.goto(`${e.cw}/contracts/list`);
-  await page.locator('input[type="file"]').setInputFiles({
-    name: `hop-dong-mua-${run}.md`,
-    mimeType: "text/markdown",
-    buffer: Buffer.from(doc.text, "utf8"),
-  });
+  await page.locator('input[type="file"]').setInputFiles(
+    pdf
+      ? {
+          name: `hop-dong-mua-${run}.pdf`,
+          mimeType: "application/pdf",
+          buffer: await pdf(doc.text),
+        }
+      : {
+          name: `hop-dong-mua-${run}.md`,
+          mimeType: "text/markdown",
+          buffer: Buffer.from(doc.text, "utf8"),
+        },
+  );
   await page.getByTestId("upload-confirm").click();
   await page.waitForURL(UUID, { timeout: 60_000 });
   const id = UUID.exec(page.url())?.[1] ?? "";
@@ -179,14 +197,20 @@ export async function approveAs(
   await page.goto(`${e.cw}/contracts/c/${id}`);
   await first;
   const btn = page.locator("[data-approval=pass], [data-approval=approve]").first();
+  const take = page.getByTestId("claim-take");
   let n = 0;
   await expect(async () => {
     if (n++ > 0) {
       await safeReload(page, { boot: isApproval });
     }
     await expect(stepOf(page, stepName)).toHaveAttribute("data-status", "open", { timeout: 4_000 });
-    await expect(btn).toBeVisible({ timeout: 4_000 });
+    await expect(take.or(btn).first()).toBeVisible({ timeout: 4_000 });
   }).toPass({ timeout: 60_000 });
+  // CR-127 U4 · việc nhóm: nút Duyệt chỉ hiện SAU khi bấm «Nhận việc» (nhận việc trước duyệt ở MỌI quy trình)
+  if (await take.isVisible()) {
+    await take.click();
+    await expect(page.getByTestId("claim-state")).toContainText("Bạn đang giữ");
+  }
   await btn.click();
   await expect(stepOf(page, stepName)).toHaveAttribute("data-status", "passed");
 }

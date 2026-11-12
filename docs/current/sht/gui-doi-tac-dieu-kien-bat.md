@@ -1,5 +1,7 @@
 # gui doi tac dieu kien bat
 
+> **CR-127 (2026-11-11) — phần Thư viện/khe/sao chép/mẫu/máy duyệt cũ trong file này ĐÃ THAY THẾ:** xem [engine/quy-trinh-cr127.md](../engine/quy-trinh-cr127.md). Giữ làm lịch sử; chỗ mâu thuẫn thì file CR-127 thắng.
+
 Cập nhật: 2026-11-08 · Nguồn: CR-125.
 
 ## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
@@ -9,7 +11,6 @@ Công ty › Ứng dụng có thẻ «Đối tác xác nhận hợp đồng»: c
 - Kịch bản: khi nền tảng bật/tắt thì tính năng được cấp/thu hồi đúng công ty, có audit, danh sách đổi theo [test: apps/admin-api/src/modules/partner-confirm/partner-confirm.int.test.ts » platform bật/tắt qua đúng service entitlement: danh sách đổi theo, audit grant/revoke đúng công ty, công ty khác nguyên trạng]
 - Kịch bản: khi thiếu điều kiện thì mỗi dòng nêu ai làm và nút làm hộ nếu có [test: packages/contracts/src/modules/partner-confirm.test.ts » chưa cấp tính năng ⇒ tắt, nêu nút bật và AI làm (nền tảng)]
 - Kịch bản: khi Hub không trả lời thì các mục của Hub «chưa rõ», không coi là sẵn sàng [test: packages/contracts/src/modules/partner-confirm.test.ts » Hub không trả lời ⇒ mục của Hub 'chưa rõ', chưa coi là sẵn sàng]
-- Kịch bản: khi platform bật qua giao diện thì công ty gửi được và đối tác thấy, xác nhận được [test: e2e/journey-approval/cr125-ux-s7-partner-enable.spec.ts » 1 · platform admin bật Đối tác xác nhận bằng giao diện: điều kiện hiện đúng trạng thái, bấm Làm bước này]
 
 #### Yêu cầu: Quyền cấp tính năng Đối tác xác nhận chỉ thuộc quản trị nền tảng (nguồn: cr125-ux-s7-partner-enable)
 Quản trị công ty xem được điều kiện của công ty mình (công ty khác 404) nhưng không cấp/thu hồi được.
@@ -22,5 +23,4 @@ Quản trị công ty xem được điều kiện của công ty mình (công ty
 
 #### Yêu cầu: Cài đặt của công ty cho thấy Đối tác xác nhận đang bật hay tắt và điều kiện còn thiếu (nguồn: cr125-ux-s7-partner-enable)
 Cài đặt (Sổ Hợp Tác) hiện trạng thái thật, điều kiện, ai phải làm; không có công tắc ẩn.
-- Kịch bản: khi quản trị công ty mở Cài đặt thì thấy trạng thái và ai làm, không có công tắc [test: e2e/journey-approval/cr125-ux-s7-partner-enable.spec.ts » 2 · quản trị công ty chỉ xem: thấy trạng thái thật, không có công tắc bật/tắt hay nút làm hộ]
 

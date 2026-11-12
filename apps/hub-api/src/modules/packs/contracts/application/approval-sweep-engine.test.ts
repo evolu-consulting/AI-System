@@ -8,13 +8,13 @@ const T = "00000000-0000-4000-8000-0000000000a1";
 const refs = (n: number) =>
   Array.from({ length: n }, (_, i) => ({ approvalId: `a${i}`, runId: `r${i}` }));
 
-function run(o: { n: number; outs: Record<string, object>; healed?: SweepCounts["healedLevel1"] }) {
+function run(o: { n: number; outs: Record<string, object> }) {
   const calls: string[] = [];
   let items: readonly ReconcileItem[] = [];
   const repo: SweepRepo = {
     sweep: async () => {
       calls.push("sweep");
-      return { read: 0, closed: 0, healed: 0, ...(o.healed ? { healedLevel1: o.healed } : {}) };
+      return { read: 0, closed: 0, healed: 0 };
     },
     engineRuns: async (limit) => {
       calls.push(`engineRuns:${limit}`);
@@ -45,7 +45,6 @@ function run(o: { n: number; outs: Record<string, object>; healed?: SweepCounts[
           );
         },
       }),
-      start: async (_w: unknown, id: string) => void calls.push(`start:${id}`),
     },
   };
   // biome-ignore lint/suspicious/noExplicitAny: cổng giả
@@ -77,9 +76,9 @@ describe("sweep · reconcile run engine", () => {
     });
     expect(x.items().some((i) => i.approvalId === "a2")).toBe(false);
   });
-  it("không có lượt engine ⇒ không gọi engine; heal level1 ⇒ mở run từng HĐ", async () => {
-    const x = run({ n: 0, outs: {}, healed: [{ contractId: "c1", userId: "u1" }] });
+  it("không có lượt engine ⇒ chỉ quét STALE, không gọi engine thêm", async () => {
+    const x = run({ n: 0, outs: {} });
     await x.go();
-    expect(x.calls).toEqual(["sweep", "engineRuns:100", "start:c1"]);
+    expect(x.calls).toEqual(["sweep", "engineRuns:100"]);
   });
 });

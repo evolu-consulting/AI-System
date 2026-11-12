@@ -2,6 +2,7 @@
 // Sắp hết hạn theo số ngày nhắc của HĐ hoặc mặc định Cài đặt / Còn hạn), "Nhắc gia hạn" ⇒ việc "Liên hệ mời gia hạn" trong Cần xử lý
 // ⇒ Đã xong, Cài đặt kinh doanh (mặc định 60), CKS chỉ đọc (Q4). HĐ + dòng dựng bằng owner (trigger khách đang dùng chạy như khi lưu).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { setLegacyStatus } from "../HD1/_support/hd1";
 import {
   arrangeV2d,
   type CtxN1,
@@ -38,6 +39,7 @@ async function arrange() {
       await c.sql`update contracts.contracts set fields = jsonb_set(fields, '{notice_days}', ${c.sql.json(fv(notice))})
         where id = ${k}`;
     await item(c.sql, k, { qty: 1, price: 500_000, productId: p.id });
+    await setLegacyStatus(c.sql, k, "done"); // CR-127: `deal()` mở ở Nháp — khách đang dùng chỉ tính HĐ đã hoàn tất
   };
   await sold("Khách Hết", d(-5));
   await sold("Khách Sắp", d(20));

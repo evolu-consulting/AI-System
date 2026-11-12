@@ -136,3 +136,40 @@ describe("HD7-FR-02 · lịch AI có tin được không (schedule._sane)", () =
     expect(Number.isSafeInteger(MONEY_MAX)).toBe(true);
   });
 });
+
+describe("CR-127 X1 · luật ghi thực hiện", () => {
+  it("tạm khoá chặn mọi mốc trừ thu tiền", async () => {
+    const { blockedByHold } = await import("./ledger.rules");
+    expect(blockedByHold("payment", "receive")).toBe(false);
+    expect(blockedByHold("payment", "pay")).toBe(true);
+    expect(blockedByHold("delivery", "receive")).toBe(true);
+  });
+  it("tiền: vắng ⇒ đủ; thiếu ⇒ phần còn lại; vượt ⇒ over; kế hoạch null ⇒ không còn lại", async () => {
+    const { fulfillMoney } = await import("./ledger.rules");
+    expect(fulfillMoney(1000, null)).toEqual({ amount: 1000, left: null });
+    expect(fulfillMoney(1000, 400)).toEqual({ amount: 400, left: 600 });
+    expect(fulfillMoney(1000, 1000)).toEqual({ amount: 1000, left: null });
+    expect(fulfillMoney(1000, 1001)).toBe("over");
+    expect(fulfillMoney(null, 5)).toEqual({ amount: 5, left: null });
+  });
+  it("SL: thiếu ⇒ dòng còn lại; dòng ngoài kế hoạch / vượt ⇒ over; dòng không ghi ⇒ 0", async () => {
+    const { fulfillQty } = await import("./ledger.rules");
+    const plan = [
+      { itemId: "a", qty: 100n },
+      { itemId: "b", qty: 50n },
+    ];
+    expect(fulfillQty(plan, null)).toEqual({ given: plan, left: [] });
+    expect(fulfillQty(plan, new Map([["a", 40n]]))).toEqual({
+      given: [
+        { itemId: "a", qty: 40n },
+        { itemId: "b", qty: 0n },
+      ],
+      left: [
+        { itemId: "a", qty: 60n },
+        { itemId: "b", qty: 50n },
+      ],
+    });
+    expect(fulfillQty(plan, new Map([["a", 101n]]))).toBe("over");
+    expect(fulfillQty(plan, new Map([["z", 1n]]))).toBe("over");
+  });
+});

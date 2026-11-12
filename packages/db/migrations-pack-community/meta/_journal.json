@@ -71,6 +71,55 @@
       "when": 1805900000000,
       "tag": "0010_emit_flow_event_grant",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1807000300000,
+      "tag": "0011_cr130_drop_partner_companies",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1807000301000,
+      "tag": "0012_cr130_grant_link_partner",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1807000302000,
+      "tag": "0013_cr130_grant_link_partner_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1807000303000,
+      "tag": "0014_cr130_join_labels_customer",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1807000304000,
+      "tag": "0015_cr129_open_comments",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1807000305000,
+      "tag": "0016_cr129_posts_author_user_idx",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1807000306000,
+      "tag": "0017_cr129_mention_target_check",
+      "breakpoints": true
     }
   ]
 }

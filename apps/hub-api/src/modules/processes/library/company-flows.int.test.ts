@@ -1,6 +1,5 @@
-// CR-122 · E1b · FLOW2-FR-05..09/20 · int (Hono thật `companyFlowsRoutes` + DB thật): gán (platform_admin), vai + cách ly công ty,
-// chặn trỏ def của công ty khác (soát E1 #2), chặn tắt flow không điều kiện cuối của sự kiện required, "Sao chép để sửa" (Group theo
-// mã → id; bấm lần hai trả bản cũ; thiếu phòng ⇒ 422 nêu mã), xuất bản bản sao ⇒ gốc Tắt (một tx), "Quay về bản gốc", xếp thứ tự.
+// CR-122 · E1b · FLOW2-FR-05..09/20 · CR-127 Z7 · int (Hono thật `companyFlowsRoutes` + DB thật): vai + cách ly công ty (không còn đường gán mẫu dùng chung —
+// POST chỉ còn tạo từ sơ đồ trống), chặn tắt flow không điều kiện cuối của sự kiện required, bản công ty có sẵn (dữ liệu cũ), xếp thứ tự.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Role } from "@ai/contracts/common";
 import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
@@ -11,6 +10,8 @@ import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
 import type { ProcessDeps } from "../core/ports";
+import { seedCompanyCopy } from "../testing/company-copy-seed";
+import { seedCompanyFlow } from "../testing/company-flow-seed";
 import { companyFlowsRoutes } from "./company-flows.routes";
 
 const X = tenantId(1251);
@@ -29,6 +30,7 @@ let db: Db;
 let app: Hono<AuthVars>;
 let lib = "";
 let libCond = "";
+let legacySrc = "";
 let defY = "";
 let gx: Map<string, string>;
 
@@ -42,28 +44,9 @@ async function call(who: string, method: string, path: string, body?: unknown) {
   return { status: r.status, json: (text ? JSON.parse(text) : {}) as Json };
 }
 const P = (t: string) => `/tenants/${t}/company-flows`;
-const stages = (group?: string) => [
-  {
-    key: "dau",
-    name: "Đầu",
-    step: 0,
-    executor: { kind: "set", values: [] },
-    after: { kind: "auto", branch: [] },
-    answerer: group ? { kind: "group", group_key: group } : { kind: "starter" },
-    real_action: false,
-  },
-  {
-    key: "xong",
-    name: "Xong",
-    step: 1,
-    outcome: "approved",
-    executor: { kind: "set", values: [] },
-  },
-];
-
-/** Def Thư viện đã xuất bản v1 có trigger. */
-async function libDef(key: string, trigger: object, group?: string): Promise<string> {
-  const st = JSON.stringify(stages(group));
+/** Def Thư viện CŨ (dữ liệu trước CR-127): chỉ làm nguồn cho bản sao có sẵn, KHÔNG gán cho công ty. */
+async function libDef(key: string, trigger: object): Promise<string> {
+  const st = JSON.stringify([{ key: "dau", executor: { kind: "set", values: [] } }]);
   const [r] = await o<
     { id: string }[]
   >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app,
@@ -83,11 +66,24 @@ beforeAll(async () => {
   await users(o, X, 3, { from: 1250 });
   await users(o, Y, 1, { from: 1253 });
   gx = await groups(o, X, ["kinh-doanh"]);
-  lib = await libDef("e1b-duyet", { event: "contract.submitted" }, "kinh-doanh");
-  libCond = await libDef("e1b-lon", {
-    event: "contract.submitted",
-    when: { op: "and", conds: [{ fact: "total_value", op: "ge", value: 1 }] },
-  });
+  lib = (
+    await seedCompanyFlow(o, {
+      tenantId: X,
+      key: "e1b-duyet",
+      trigger: { event: "contract.submitted" },
+    })
+  ).flowId;
+  libCond = (
+    await seedCompanyFlow(o, {
+      tenantId: X,
+      key: "e1b-lon",
+      trigger: {
+        event: "contract.submitted",
+        when: { op: "and", conds: [{ fact: "total_value", op: "ge", value: 1 }] },
+      },
+    })
+  ).flowId;
+  legacySrc = await libDef("e1b-cu", { event: "contract.submitted" });
   const [y] = await o<
     { id: string }[]
   >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app)
@@ -111,116 +107,106 @@ afterAll(async () => {
 });
 
 describe("CR-122 E1b · company-flows", () => {
-  it("gán: platform_admin được, tenant_admin 403, vai: member 403, công ty khác 404, def công ty khác 422 và không lộ", async () => {
-    expect((await call("A", "POST", P(X), { flow_id: lib })).status).toBe(403);
-    const a = await call("P", "POST", P(X), { flow_id: lib });
-    expect(a.status).toBe(201);
-    expect(rowOf(a.json, lib)).toMatchObject({
-      kind: "assigned",
+  it("vai + cách ly: tạo chỉ platform_admin (tenant_admin 403), member 403, công ty khác 404, dạng gán {flow_id} đã gỡ ⇒ 400, không lộ def công ty khác", async () => {
+    const blank = { name: "Mới", app: "contracts", from: "blank" };
+    expect((await call("A", "POST", P(X), blank)).status).toBe(403);
+    expect((await call("P", "POST", P(X), { flow_id: lib })).status).toBe(400); // CR-127 Z7
+    const l = await call("A", "GET", P(X));
+    expect(rowOf(l.json, lib)).toMatchObject({
+      kind: "company",
       enabled: true,
       trigger_event: "contract.submitted",
+      deletable: false, // đã áp dụng ⇒ không xoá (Tắt thay)
     });
     expect((await call("M", "GET", P(X))).status).toBe(403);
     expect((await call("AY", "GET", P(X))).status).toBe(404);
-    const bad = await call("P", "POST", P(X), { flow_id: defY });
-    expect([bad.status, bad.json.error?.code ?? bad.json.code]).toEqual([
-      422,
-      "FLOW_NOT_ASSIGNABLE",
-    ]);
     // ghi tay dòng trỏ def của Y (bỏ qua service) ⇒ danh sách X không hiện def của Y
     await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${X}, ${defY}, true)`;
-    const l = await call("A", "GET", P(X));
-    expect(rowOf(l.json, defY)).toBeUndefined();
+    const l2 = await call("A", "GET", P(X));
+    expect(rowOf(l2.json, defY)).toBeUndefined();
     await o`delete from hub.company_flows where flow_id = ${defY}`;
   });
 
   it("tắt flow không điều kiện cuối của sự kiện required ⇒ 409, có flow khác không điều kiện thì tắt được", async () => {
     const l = await call("A", "GET", P(X));
     const id = rowOf(l.json, lib)?.id as string;
-    const t = await call("A", "PATCH", `${P(X)}/${id}`, { enabled: false });
+    const t = await call("P", "PATCH", `${P(X)}/${id}`, { enabled: false });
     expect([t.status, t.json.error?.code ?? t.json.code]).toEqual([409, "FLOW_REQUIRED_LAST"]);
-    await call("P", "POST", P(X), { flow_id: libCond }); // có điều kiện ⇒ không tính lưới cuối
-    expect((await call("A", "PATCH", `${P(X)}/${id}`, { enabled: false })).status).toBe(409);
+    // libCond (có điều kiện) đã Bật từ đầu ⇒ không tính lưới cuối
+    expect((await call("P", "PATCH", `${P(X)}/${id}`, { enabled: false })).status).toBe(409);
   });
 
-  it("sao chép để sửa: bản công ty Tắt chưa xuất bản, Group mã → id, lần hai trả bản cũ, công ty thiếu phòng ⇒ vẫn sao chép, nêu mã thiếu", async () => {
+  it("bản công ty có sẵn (dữ liệu cũ, không còn đường sao chép): hiện Tắt chưa xuất bản kèm nguồn; không có route sao chép ⇒ 403/404", async () => {
     const l = await call("A", "GET", P(X));
     const id = rowOf(l.json, lib)?.id as string;
-    const c1 = await call("A", "POST", `${P(X)}/${id}/clone`);
-    expect(c1.status).toBe(201);
-    const copy = (c1.json.items as Json[]).find((x) => x.id === c1.json.id);
+    const made = await seedCompanyCopy(o, {
+      tenantId: X,
+      srcFlowId: legacySrc,
+      actor: userId(1250),
+      bind: { "kinh-doanh": gx.get("kinh-doanh") as string },
+    });
+    const l2 = await call("A", "GET", P(X));
+    const copy = rowOf(l2.json, made.flowId);
     expect(copy).toMatchObject({ kind: "company", enabled: false, off_reason: "not_published" });
-    expect(copy?.source).toMatchObject({ flow_key: "e1b-duyet", version: 1 });
-    const [d] = await o<
-      { s: Json[]; t: Json }[]
-    >`select stages as s, trigger as t from hub.process_defs where id = ${copy?.flow_id}`;
-    expect(d?.s[0]?.answerer.group_id).toBe(gx.get("kinh-doanh"));
-    expect(d?.t).toEqual({ event: "contract.submitted" });
-    const c2 = await call("A", "POST", `${P(X)}/${id}/clone`);
-    expect(c2.json.id).toBe(c1.json.id);
-    await call("P", "POST", P(Y), { flow_id: lib });
-    const ly = await call("AY", "GET", P(Y));
-    const cy = await call("AY", "POST", `${P(Y)}/${rowOf(ly.json, lib)?.id}/clone`);
-    // CR-122 · P15: công ty thiếu nhóm ⇒ vẫn sao chép được (nhóm để trống + cảnh báo nêu mã), không chặn.
-    expect([cy.status, cy.json.missing_group_keys]).toEqual([201, ["kinh-doanh"]]);
+    expect(copy?.source).toMatchObject({ flow_key: "e1b-cu", version: 1 });
+    const gone = await app.request(`${P(X)}/${id}/clone`, {
+      method: "POST",
+      headers: { "x-who": "P" },
+    });
+    expect(gone.status).toBe(404); // CR-127 · Z5: tạo quy trình công ty chỉ từ sơ đồ trống
   });
 
-  it("xuất bản bản sao ⇒ bản sao Bật + gốc Tắt (replaced_by), quay về bản gốc ⇒ đảo lại, bản sao giữ (reverted)", async () => {
-    const l = await call("A", "GET", P(X));
-    const orig = rowOf(l.json, lib);
-    const copy = (l.json.items as Json[]).find((x) => x.kind === "company");
-    const p = await call("A", "POST", `${P(X)}/${copy?.id}/publish`);
-    expect(p.status).toBe(200);
-    expect(rowOf(p.json, lib)).toMatchObject({
-      enabled: false,
-      off_reason: "replaced",
-      replaced_by: copy?.id,
+  it("CR-127 Z9 · cảnh báo group_missing cùng luật reviewHasGroup: «cùng duyệt» đủ nhóm ⇒ không cảnh báo; thiếu nhóm / bước Duyệt không nhóm ⇒ cảnh báo; chỉ người duyệt ⇒ không", async () => {
+    const g = gx.get("kinh-doanh") as string;
+    const review = (after: object) => [
+      {
+        key: "d",
+        name: "D",
+        step: 0,
+        executor: { kind: "approve" },
+        after: { kind: "review", ...after },
+      },
+      {
+        key: "xong",
+        name: "Xong",
+        step: 1,
+        outcome: "approved",
+        executor: { kind: "set", values: [] },
+      },
+    ];
+    const mk = async (key: string, after: object) =>
+      (
+        await seedCompanyFlow(o, {
+          tenantId: X,
+          key,
+          trigger: { event: "contract.approved" },
+          stages: review(after),
+          position: 50,
+        })
+      ).flowId;
+    const ok = await mk("z9-par-ok", {
+      group_id: null,
+      parallel: { rule: "all", groups: [{ group_id: g }, { group_key: "giam-doc" }] },
     });
-    expect(rowOf(p.json, copy?.flow_id)).toMatchObject({ enabled: true, off_reason: null });
-    const r = await call("A", "POST", `${P(X)}/${copy?.id}/revert`);
-    expect(rowOf(r.json, lib)).toMatchObject({
-      enabled: true,
-      off_reason: null,
-      replaced_by: null,
+    const bad = await mk("z9-par-bad", {
+      group_id: null,
+      parallel: { rule: "all", groups: [{ group_id: g }, {}] },
     });
-    expect(rowOf(r.json, copy?.flow_id)).toMatchObject({ enabled: false, off_reason: "reverted" });
-    expect(orig?.id).toBeTruthy();
-  });
-
-  it("soát B1: bản gốc và bản sao không cùng Bật qua PATCH, bản chưa xuất bản không PATCH bật được", async () => {
-    const code = (j: Json) => j.error?.code ?? j.code;
-    let l = await call("A", "GET", P(X));
-    const orig = rowOf(l.json, lib);
-    const copy = (l.json.items as Json[]).find(
-      (x) => x.kind === "company" && x.source?.flow_key === "e1b-duyet",
-    );
-    // sau revert: gốc Bật, bản sao Tắt ⇒ bật bản sao bằng PATCH bị chặn
-    const a = await call("A", "PATCH", `${P(X)}/${copy?.id}`, { enabled: true });
-    expect([a.status, code(a.json)]).toEqual([409, "FLOW_PAIR_ACTIVE"]);
-    // xuất bản bản sao (gốc Tắt) rồi PATCH bật lại gốc ⇒ chặn
-    await call("A", "POST", `${P(X)}/${copy?.id}/publish`);
-    const b = await call("A", "PATCH", `${P(X)}/${orig?.id}`, { enabled: true });
-    expect([b.status, code(b.json)]).toEqual([409, "FLOW_PAIR_ACTIVE"]);
-    l = await call("A", "GET", P(X));
-    expect([rowOf(l.json, lib)?.enabled, rowOf(l.json, copy?.flow_id)?.enabled]).toEqual([
-      false,
-      true,
-    ]);
-    // bản sao mới (chưa xuất bản) của flow có điều kiện ⇒ PATCH bật bị chặn, phải qua Xuất bản
-    const condRow = rowOf(l.json, libCond);
-    const c = await call("A", "POST", `${P(X)}/${condRow?.id}/clone`);
-    const n = await call("A", "PATCH", `${P(X)}/${c.json.id}`, { enabled: true });
-    expect([n.status, code(n.json)]).toEqual([409, "FLOW_NOT_PUBLISHED"]);
-    await call("A", "POST", `${P(X)}/${copy?.id}/revert`); // trả trạng thái cho ca sau
+    const none = await mk("z9-none", { group_id: null });
+    const user = await mk("z9-user", { group_id: null, approver_user_id: userId(1250) });
+    const l = await call("P", "GET", P(X));
+    const w = (id: string) =>
+      ((rowOf(l.json, id)?.warnings ?? []) as string[]).includes("group_missing");
+    expect([w(ok), w(bad), w(none), w(user)]).toEqual([false, true, true, false]);
   });
 
   it("xếp thứ tự: đủ id ⇒ position theo mảng, thiếu/lạ ⇒ 422", async () => {
     const l = await call("A", "GET", P(X));
     const ids = (l.json.items as Json[]).map((x) => x.id).reverse();
-    const r = await call("A", "PUT", `${P(X)}/order`, { ids });
+    const r = await call("P", "PUT", `${P(X)}/order`, { ids });
     expect(r.status).toBe(200);
     expect((r.json.items as Json[]).map((x) => x.id)).toEqual(ids);
-    const bad = await call("A", "PUT", `${P(X)}/order`, { ids: ids.slice(1) });
+    const bad = await call("P", "PUT", `${P(X)}/order`, { ids: ids.slice(1) });
     expect(bad.status).toBe(422);
   });
 });

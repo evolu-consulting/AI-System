@@ -1,4 +1,4 @@
-// Gap #10: phân tích/dựng tham số của lọc ngày.
+// Gap #10 · CR-127 K6: phân tích/dựng tham số của lọc ngày (chỉ còn cột "Hiệu lực đến" — `action_deadline` đã gỡ).
 import { describe, expect, test } from "bun:test";
 import {
   applyDateAction,
@@ -10,21 +10,17 @@ import {
 } from "./date-filter";
 
 describe("lọc ngày · URL ↔ bộ lọc ↔ tham số API", () => {
-  test("parse: giữ khoá hợp lệ, bỏ rác; due thắng khoảng; ngày sai bị bỏ", () => {
+  test("parse: giữ khoá hợp lệ, bỏ rác; due thắng khoảng; ngày sai bị bỏ; cột đã gỡ bị bỏ", () => {
     expect(parseDateSearch({ due: "30", df: "2026-01-01" })).toEqual({ due: "30" });
-    expect(
-      parseDateSearch({ dfield: "action_deadline", df: "2026-01-01", dt: "2026-02-30x" }),
-    ).toEqual({
-      dfield: "action_deadline",
-      df: "2026-01-01",
-    });
+    expect(parseDateSearch({ df: "2026-01-01", dt: "2026-02-30x" })).toEqual({ df: "2026-01-01" });
     expect(parseDateSearch({ due: "7", dfield: "x", dt: "2026-13-45" })).toEqual({});
+    expect(parseDateSearch({ dfield: "action_deadline" })).toEqual({});
     expect(parseDateSearch({ dfield: "end_date" })).toEqual({});
   });
   test("không lọc ⇒ không tham số; due ⇒ date_field + due; khoảng ⇒ from/to", () => {
     expect(dateParams(dateFilterOf({}))).toEqual([]);
-    expect(dateParams(dateFilterOf({ dfield: "action_deadline", due: "overdue" }))).toEqual([
-      ["date_field", "action_deadline"],
+    expect(dateParams(dateFilterOf({ due: "overdue" }))).toEqual([
+      ["date_field", "end_date"],
       ["due", "overdue"],
     ]);
     expect(dateParams(dateFilterOf({ df: "2026-01-01", dt: "2026-03-31" }))).toEqual([
@@ -43,40 +39,26 @@ describe("lọc ngày · URL ↔ bộ lọc ↔ tham số API", () => {
     expect(isDateActive({ field: "end_date" })).toBe(false);
     expect(isDateActive({ field: "end_date", to: "2026-01-01" })).toBe(true);
   });
-  test("hai thao tác liên tiếp trên CÙNG search cũ: giữ cả hai (không ghi đè theo bộ lọc đã vẽ); khoá khác giữ nguyên", () => {
+  test("hai thao tác liên tiếp trên CÙNG search cũ: giữ cả hai; khoá khác giữ nguyên", () => {
     const start = { type: "deal" };
-    // cột rồi cửa sổ; mỗi bước đọc search do bước trước trả về (functional update của router)
-    const a = applyDateAction(start, { type: "field", field: "action_deadline" });
-    const b = applyDateAction(a, { type: "mode", mode: "overdue" });
-    expect(b).toEqual({
-      type: "deal",
-      dfield: "action_deadline",
-      due: "overdue",
-      df: undefined,
-      dt: undefined,
-    });
-    // thứ tự ngược: cửa sổ rồi cột
-    const c = applyDateAction(applyDateAction(start, { type: "mode", mode: "30" }), {
+    const a = applyDateAction(applyDateAction(start, { type: "mode", mode: "overdue" }), {
       type: "field",
-      field: "action_deadline",
+      field: "end_date",
     });
-    expect(dateFilterOf(parseDateSearch(c))).toEqual({ field: "action_deadline", due: "30" });
-    // khoảng: từ rồi đến; chọn cửa sổ tương đối thì xoá khoảng
-    const r = applyDateAction(
-      applyDateAction({ dfield: "action_deadline" }, { type: "from", value: "2026-01-01" }),
-      { type: "to", value: "2026-03-31" },
-    );
+    expect(dateFilterOf(parseDateSearch(a))).toEqual({ field: "end_date", due: "overdue" });
+    expect((a as { type: string }).type).toBe("deal");
+    const r = applyDateAction(applyDateAction({}, { type: "from", value: "2026-01-01" }), {
+      type: "to",
+      value: "2026-03-31",
+    });
     expect(dateFilterOf(parseDateSearch(r))).toEqual({
-      field: "action_deadline",
+      field: "end_date",
       from: "2026-01-01",
       to: "2026-03-31",
     });
     expect(parseDateSearch(applyDateAction(r, { type: "mode", mode: "60" }))).toEqual({
-      dfield: "action_deadline",
       due: "60",
     });
-    expect(parseDateSearch(applyDateAction(r, { type: "mode", mode: "" }))).toEqual({
-      dfield: "action_deadline",
-    });
+    expect(parseDateSearch(applyDateAction(r, { type: "mode", mode: "" }))).toEqual({});
   });
 });

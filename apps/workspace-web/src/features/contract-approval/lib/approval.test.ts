@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
-import { approvalView, feedbackOk, flowActionOf, showLinkDialog } from "./approval";
+import { approvalView, decideOnly, feedbackOk, flowActionOf, showLinkDialog } from "./approval";
 import { approvalErrorText } from "./approval-error";
 
 describe("CR-120 · flowActionOf (thân thẻ ⇒ FlowRuntime.act)", () => {
@@ -103,5 +103,20 @@ describe("products-confirm · showLinkDialog", () => {
     expect(showLinkDialog(A({}), 2)).toBe(false); // hub cũ không báo
     expect(showLinkDialog(A({ finalizes_on_approve: true }), 0)).toBe(false);
     expect(showLinkDialog(undefined, 2)).toBe(false);
+  });
+});
+
+describe("CR-127 · decideOnly (trạng thái HĐ mới draft|processing|reject|done)", () => {
+  const v = (o: Partial<ReturnType<typeof approvalView>>) =>
+    ({ pass: false, approve: true, confirm: false, ...o }) as ReturnType<typeof approvalView>;
+  test("đang duyệt (processing) + có nút quyết ⇒ chỉ thẻ tóm tắt", () => {
+    expect(decideOnly(v({}), "processing")).toBe(true);
+  });
+  test("HĐ còn ở bước chờ xác nhận sau upload (draft) ⇒ form đầy đủ", () => {
+    expect(decideOnly(v({}), "draft")).toBe(false);
+  });
+  test("bước xác nhận của người tạo, hoặc không có nút quyết ⇒ không", () => {
+    expect(decideOnly(v({ confirm: true }), "processing")).toBe(false);
+    expect(decideOnly(v({ approve: false }), "processing")).toBe(false);
   });
 });

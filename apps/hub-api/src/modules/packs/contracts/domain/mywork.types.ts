@@ -33,12 +33,23 @@ export type MyWorkApproval = {
   stage_name: string;
   due_at: string | null;
   escalated: boolean;
+  /** CR-127 · U4 · uỷ quyền còn hiệu lực: người xem làm thay người này («Thay A»). Vắng ⇒ việc của chính người xem. */
+  delegated_from?: { id: string; display_name: string };
 };
 export type MyWorkSign = {
   contract_id: string;
   contract_number: string | null;
   contract_title: string | null;
   /** Lúc gửi ký (ISO) — HĐ chờ lâu nhất đứng trước. */
+  since: string;
+};
+/** CR-127 K8 · HĐ nhận chờ người phụ trách quyết (spec §3 #9b). */
+export type MyWorkInboxDecision = {
+  contract_id: string;
+  contract_number: string | null;
+  contract_title: string | null;
+  sender_name: string;
+  round: number;
   since: string;
 };
 export type MyWorkOut = {
@@ -48,4 +59,5 @@ export type MyWorkOut = {
   truncated: boolean;
   approvals?: MyWorkApproval[];
   signing?: MyWorkSign[];
+  inbox?: MyWorkInboxDecision[];
 };

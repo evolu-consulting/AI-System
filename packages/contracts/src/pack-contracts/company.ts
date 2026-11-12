@@ -43,8 +43,6 @@ export const CompanySchema = z.strictObject({
   /** Tên pháp nhân của mình (mỗi tên một dòng) — khớp tên bên mua/bên bán của hợp đồng. */
   own_names: z.array(nfcText(120).pipe(z.string().min(1))).max(10),
   own_tax_ids: z.array(z.string().regex(MST_RE)).max(10),
-  /** Bật/tắt bước duyệt hợp đồng (V2-A). */
-  approval_enabled: z.boolean(),
   /** Cho phép giao vượt tồn kho (mặc định tắt); vắng ⇒ giữ nguyên. Bật ⇒ xác nhận giao không chặn khi thiếu kho, tồn có thể âm. */
   allow_negative_stock: z.boolean().optional(),
   /** DOC-legal · Câu 8: ngưỡng (đồng) cảnh báo pháp lý cho giao dịch đứng riêng; 0 = tắt; vắng ⇒ giữ nguyên. */
@@ -53,11 +51,10 @@ export const CompanySchema = z.strictObject({
 export type CompanyIn = z.infer<typeof CompanySchema>;
 
 export type CompanyOut = {
-  company: Omit<CompanyIn, "approval_enabled" | "allow_negative_stock" | "legal_warn_threshold">;
-  approval_enabled: boolean;
+  company: Omit<CompanyIn, "allow_negative_stock" | "legal_warn_threshold">;
   allow_negative_stock: boolean;
   legal_warn_threshold: number;
-  /** Mặc định của tenant (cờ duyệt theo khoá tenant). */
+  /** Mặc định của tenant (cài đặt công ty). */
   defaults: CompanyIn;
   version: number;
   updated_at: string | null;

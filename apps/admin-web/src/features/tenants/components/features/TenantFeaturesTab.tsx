@@ -14,7 +14,6 @@ import { loadError } from "@/lib/load-error";
 import { useTr } from "@/lib/use-translate";
 import { AppsTable, AttentionStrip, StatTiles, type Tile } from "../../apps/components/AppsTable";
 import { appsOnCount, attentionOf, flowCounts, isAppOn } from "../../apps/lib/apps-table";
-import { AssignFlowDialog } from "../../flows/components/AssignFlowDialog";
 import { useCompanyFlows } from "../../flows/hooks/use-company-flows";
 import { useAppsTab } from "../../hooks/use-apps-tab";
 import { useTenantOverview } from "../../hooks/use-tenant-overview";
@@ -33,7 +32,7 @@ type Props = {
     process_runs_max?: number;
   };
   onDirtyChange: (dirty: boolean) => void;
-  /** CR-125 · H3: trong wizard onboard, "Gán" mở hộp chọn ngay tại bước (không thoát sang tab Quy trình). */
+  /** Giữ để nơi gọi (wizard onboard) không đổi; CR-127 Z7: "Gán" luôn đi sang tab Quy trình (không còn hộp gán mẫu). */
   inWizard?: boolean;
 };
 
@@ -41,7 +40,7 @@ type Props = {
 const ACCESS_TAB: string = "members";
 const FLOWS_TAB: string = "processes";
 
-export default function TenantFeaturesTab({ tenant, onDirtyChange, inWizard }: Props) {
+export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
   const { t, i18n } = useTranslation();
   const tr = useTr();
   const navigate = useNavigate();
@@ -50,7 +49,6 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, inWizard }: P
   const flows = useCompanyFlows(tenant.id);
   const overview = useTenantOverview(tenant.id);
   const [confirm, setConfirm] = useState(false);
-  const [assignOpen, setAssignOpen] = useState(false);
   const { value } = a;
   const err = loadError(a.query.error) ?? (readOnly ? null : loadError(a.packsQ.error));
   if (err) {
@@ -140,13 +138,7 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, inWizard }: P
   return (
     <div className="space-y-6">
       <section aria-label={t("tenants.apps.title")} className="space-y-4">
-        <AttentionStrip
-          items={attention}
-          onAssign={(slot) => (inWizard && !readOnly ? setAssignOpen(true) : go(FLOWS_TAB, slot))}
-        />
-        {inWizard && !readOnly ? (
-          <AssignFlowDialog tenantId={tenant.id} open={assignOpen} onOpenChange={setAssignOpen} />
-        ) : null}
+        <AttentionStrip items={attention} onAssign={(slot) => go(FLOWS_TAB, slot)} />
         <AppsTable rows={rows} />
         <PartnerConfirmCard tenantId={tenant.id} canEdit={!readOnly} onOpen={(tab) => go(tab)} />
         <StatTiles tiles={tiles} onOpenFlows={() => go(FLOWS_TAB)} />

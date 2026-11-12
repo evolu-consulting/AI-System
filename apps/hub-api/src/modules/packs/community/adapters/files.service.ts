@@ -85,7 +85,7 @@ export async function download(
   if (!row) throw appError("NOT_FOUND");
   const bytes = await store.get(a.who.tenantId, row.file_id);
   if (!bytes) throw appError("NOT_FOUND");
-  return new Response(bytes, {
+  return new Response(bytes as unknown as BodyInit, {
     status: 200,
     headers: downloadHeaders({ name: row.name, mime: row.mime, size: bytes.length }),
   });

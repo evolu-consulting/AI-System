@@ -23,7 +23,11 @@ type Props = {
 
 export function FinishFields({ stage, readOnly, onChange, onRemove }: Props) {
   const { t } = useTranslation();
-  const outs = useFlowCtx()?.event?.outcomes ?? [];
+  const ctx = useFlowCtx();
+  const outs = ctx?.event?.outcomes ?? [];
+  // app hợp đồng giữ câu "Hợp đồng sẽ…"; app khác dùng câu chung (không nhắc hợp đồng)
+  const sfx = ctx?.app === "contracts" ? "" : "Generic";
+  const K = (k: "effect" | "pick") => `process.admin.flow.finish.${k}${sfx}`;
   const cur = outs.find((o) => o.key === stage.outcome);
   return (
     <div className="space-y-3" data-testid="flow-finish">
@@ -56,12 +60,10 @@ export function FinishFields({ stage, readOnly, onChange, onRemove }: Props) {
         </Select>
         {cur ? (
           <p className="text-caption text-muted-foreground" data-testid="finish-effect">
-            {t("process.admin.flow.finish.effect", { effect: cur.effect })}
+            {t(K("effect"), { effect: cur.effect })}
           </p>
         ) : (
-          <p className="text-caption text-muted-foreground">
-            {t("process.admin.flow.finish.pick")}
-          </p>
+          <p className="text-caption text-muted-foreground">{t(K("pick"))}</p>
         )}
       </div>
       {readOnly ? null : (

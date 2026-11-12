@@ -21,9 +21,9 @@ describe("mapLegacyHash", () => {
     expect(mapLegacyHash("#/gì-đó-lạ")).toBe("/community");
   });
   it("kết quả đọc lại được bằng parsePath", () => {
-    const [path = "", q = ""] = (mapLegacyHash("#/profile/abc/files") ?? "").split("?");
-    expect(parsePath(path, q).route).toEqual({ name: "profile", orgId: "abc", section: "files" });
-    const [p2 = "", q2 = ""] = (mapLegacyHash("#/settings") ?? "").split("?");
-    expect(parsePath(p2, q2)).toEqual({ route: { name: "feed" }, settings: true });
+    const [path = ""] = (mapLegacyHash("#/profile/abc/files") ?? "").split("?");
+    expect(parsePath(path).route).toEqual({ name: "profile", orgId: "abc", section: "files" });
+    const [p2 = ""] = (mapLegacyHash("#/settings") ?? "").split("?");
+    expect(parsePath(p2)).toEqual({ route: { name: "feed" } });
   });
 });

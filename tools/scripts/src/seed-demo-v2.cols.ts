@@ -62,6 +62,7 @@ export const COLS: Record<string, readonly Col[]> = {
     "direction text",
     "deal text",
     "status text",
+    "effect text",
     "owner_user_id uuid",
     "created_by uuid",
     "created_at timestamptz",

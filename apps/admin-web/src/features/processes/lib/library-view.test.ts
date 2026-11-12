@@ -4,7 +4,6 @@ import {
   deleteLock,
   inUseReason,
   isLibraryRow,
-  normalizePreview,
   parseSampleValue,
   publishState,
   tenantUsage,
@@ -44,28 +43,6 @@ describe("library-view", () => {
     expect(publishState({ slot: "s", published_version: 4 })).toBe("published");
     expect(canSetDefault({ slot: "s", published_version: 1, is_default: true })).toBe(false);
     expect(canSetDefault({ slot: "s", published_version: 1, is_default: false })).toBe(true);
-  });
-  test("normalizePreview chịu hai dạng + thiếu tên", () => {
-    const want = [
-      { key: "s0", name: "Trưởng phòng", run: true },
-      { key: "s1", name: "s1", run: false },
-    ];
-    expect(
-      normalizePreview({
-        steps: [
-          { key: "s0", name: "Trưởng phòng", run: true },
-          { key: "s1", run: false },
-        ],
-      }),
-    ).toEqual(want);
-    expect(
-      normalizePreview([
-        { key: "s0", name: "Trưởng phòng" },
-        { key: "s1", skipped: true },
-      ]),
-    ).toEqual(want);
-    expect(normalizePreview(null)).toEqual([]);
-    expect(normalizePreview({ steps: [1, "x"] })).toEqual([]);
   });
   test("parseSampleValue: 50.000.000 → số; trống → null; chữ → invalid", () => {
     expect(parseSampleValue("50.000.000")).toBe(50_000_000);
@@ -116,9 +93,9 @@ describe("splitRule + errorLines có dịch luật", () => {
 });
 
 describe("tab Mẫu · chạy thử", () => {
-  test("rowMode: mẫu toàn nền tảng chỉ chép được khi không có quyền sửa mẫu; def tenant luôn đầy đủ", async () => {
+  test("rowMode: mẫu toàn nền tảng chỉ xem được khi không có quyền sửa mẫu; def tenant luôn đầy đủ", async () => {
     const { rowMode, isTemplateRow } = await import("./library-view");
-    expect(rowMode({ is_template: true }, false)).toBe("copy");
+    expect(rowMode({ is_template: true }, false)).toBe("view");
     expect(rowMode({ is_template: true }, true)).toBe("full");
     expect(rowMode({ is_template: false }, false)).toBe("full");
     // def thư viện: tenant NULL (is_template true) nhưng có khe ⇒ quy trình thật, không phải mẫu

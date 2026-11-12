@@ -95,8 +95,8 @@ describe("CR-122 p17 · hub 0112 contract-id → contract_id", () => {
     const rows = await o<
       { slot: string; inp: string; st: string }[]
     >`select slot, inputs::text as inp, stages::text as st
-      from hub.process_defs where slot in ('contracts.approval', 'contracts.intake') and tenant_id is null`;
-    expect(rows.map((r) => r.slot).sort()).toEqual(["contracts.approval", "contracts.intake"]);
+      from hub.process_defs where slot = 'contracts.intake' and tenant_id is null`;
+    expect(rows.map((r) => r.slot)).toEqual(["contracts.intake"]); // khe duyệt cũ đã gỡ (CR-127)
     for (const r of rows) {
       expect(r.inp).toContain('"contract_id"');
       expect(r.inp).not.toContain('"contract-id"');

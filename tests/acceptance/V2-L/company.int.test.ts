@@ -38,12 +38,11 @@ const body = (o: Record<string, unknown> = {}) => ({
   theme: "dark",
   own_names: ["NITI GROUP", "Công ty CP Niti"],
   own_tax_ids: ["0312345678", "0312345678-001"],
-  approval_enabled: false,
   ...o,
 });
 
 describe("V2-L · cài đặt công ty", () => {
-  it("GET mặc định → quản lý PUT → đọc lại (mọi người); cờ duyệt đổi có nhật ký; sai ⇒ 400/403/422", async () => {
+  it("GET mặc định → quản lý PUT → đọc lại (mọi người); sai ⇒ 400/403/422", async () => {
     await arrangeV2a(c);
     await c.sql`delete from contracts.company_settings`;
     const g = await ok(call(c, P.hoa, "GET", C));
@@ -57,7 +56,9 @@ describe("V2-L · cài đặt công ty", () => {
       own_tax_ids: [],
     });
     expect(g.version).toBe(0);
-    expect(g.approval_enabled).toBe(g.defaults.approval_enabled);
+    // CR-127 Z1b: cờ `approval_enabled` đã gỡ (toggle thay bằng quy trình) ⇒ GET/PUT không còn trường này.
+    expect(g).not.toHaveProperty("approval_enabled");
+    expect(g.defaults).not.toHaveProperty("approval_enabled");
 
     expect((await call(c, P.tam, "PUT", C, body())).status).toBe(403);
     expect((await call(c, P.lan, "PUT", C, body({ accent: "pink" }))).status).toBe(400);
@@ -79,11 +80,8 @@ describe("V2-L · cài đặt công ty", () => {
       (await call(c, P.lan, "PUT", C, body({ own_tax_ids: ["0312345678", "0312345678"] }))).status,
     ).toBe(422);
 
-    const flipped = !g.approval_enabled;
-    const s = await ok(call(c, P.lan, "PUT", C, body({ approval_enabled: flipped })));
-    expect([s.company.accent, s.company.own_tax_ids.length, s.approval_enabled, s.version]).toEqual(
-      ["teal", 2, flipped, 1],
-    );
+    const s = await ok(call(c, P.lan, "PUT", C, body()));
+    expect([s.company.accent, s.company.own_tax_ids.length, s.version]).toEqual(["teal", 2, 1]);
     // CR-121 c20: tên công ty = admin.tenants.name; `name` trong thân PUT bị bỏ qua (không phải nguồn).
     const [tn] = await c.sql<
       { name: string }[]
@@ -92,13 +90,7 @@ describe("V2-L · cài đặt công ty", () => {
     expect(s.company.name).toBe(tn?.name);
     const r = await ok(call(c, P.hoa, "GET", C));
     expect(r.company).toMatchObject({ name: tn?.name, logo: PNG, theme: "dark" });
-    expect(r.approval_enabled).toBe(flipped);
-    const [a] = await c.sql<
-      { n: number }[]
-    >`select count(*)::int as n from contracts.approval_settings_audit
-      where tenant_id = ${T.acme} and (after ->> 'approval_enabled')::boolean = ${flipped}`;
-    expect(a?.n).toBe(1);
-    const again = await ok(call(c, P.lan, "PUT", C, body({ approval_enabled: flipped, name: "" })));
+    const again = await ok(call(c, P.lan, "PUT", C, body({ name: "" })));
     expect([again.company.name, again.version]).toEqual([tn?.name, 2]);
   });
 

@@ -116,3 +116,67 @@ export const HUB_EFFECTIVE_OK = {
     },
   ],
 };
+
+// --- CR-127 K7 · đầu ra AI trích HĐ có phạt dạng số + "Điều cần lưu ý" (e2e/test dùng; khoá `fields` thêm ở nơi dùng) ---
+export const CONTRACT_EXTRACT_PENALTY_FIXTURE = {
+  items: [],
+  clauses: [{ number: "7", topic: "penalty" }],
+  deal: "sell",
+  unsure: [],
+  summary: {
+    main: "Hợp đồng bán hàng có phạt chậm giao.",
+    deadlines: [],
+    penalties: ["Phạt 0,5%/ngày giá trị phần chậm, tối đa 8%"],
+    bonuses: [],
+    clauses: [],
+  },
+  milestones: [
+    {
+      kind: "delivery",
+      title: "Giao đợt 1",
+      due_date: "2026-12-01",
+      amount: null,
+      quote: "Giao hàng trước ngày 01/12/2026",
+      clause_ref: "Điều 4.1",
+      page: 2,
+    },
+    {
+      kind: "collect",
+      title: "Thu đợt 1",
+      due_date: "2026-12-15",
+      amount: 100000000,
+      quote: "Thanh toán trong 15 ngày",
+      clause_ref: "Điều 5",
+      page: 3,
+    },
+  ],
+  notes: [
+    {
+      group: "penalty",
+      text: "Phạt 0,5%/ngày khi giao chậm, tối đa 8% giá trị phần chậm.",
+      clause_ref: "Điều 7.1",
+      page: 4,
+      party: "partner",
+    },
+    {
+      group: "warranty",
+      text: "Bảo hành 12 tháng kể từ ngày nghiệm thu.",
+      clause_ref: "Điều 8",
+      page: 5,
+    },
+  ],
+  risks: [{ kind: "one_sided_penalty", text: "Chỉ bên bán bị phạt.", clause_ref: "Điều 7.1" }],
+  penalty_terms: [
+    {
+      party: "partner",
+      trigger: "late_delivery",
+      rate_pct: 0.5,
+      basis: "per_day_of_milestone",
+      cap_pct: 8,
+      cap_amount: null,
+      clause_ref: "Điều 7.1",
+      page: 4,
+      quote: "phạt 0,5% giá trị phần chậm mỗi ngày, tối đa 8%",
+    },
+  ],
+} as const;

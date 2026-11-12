@@ -18,7 +18,6 @@ export type RowActions = {
   onToggle: (row: Row, enabled: boolean) => void;
   onRun: (row: Row) => void;
   onDelete: (row: Row) => void;
-  onCopy: (row: Row) => void;
   /** CR-105 · Nhân bản quy trình thư viện ⇒ nháp mới cùng khe, chưa gán. */
   onClone: (row: Row) => void;
 };
@@ -123,9 +122,11 @@ function actionsColumn(t: TFunction, o: Opts): Column<Row> {
     className: "whitespace-nowrap text-right",
     cell: (r) => (
       <span className="flex items-center justify-end gap-1">
-        {rowMode(r, canEditTemplates) === "copy" ? (
-          <Button size="sm" variant="outline" onClick={() => actions.onCopy(r)}>
-            {L(t, "copy")}
+        {rowMode(r, canEditTemplates) === "view" ? (
+          <Button size="sm" variant="ghost" asChild>
+            <Link to="/processes/$processId" params={{ processId: r.id }}>
+              {L(t, "view")}
+            </Link>
           </Button>
         ) : null}
         {isTemplateRow(r) || library ? null : (

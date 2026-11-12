@@ -1,5 +1,5 @@
 // CR-126 · cr126-demo-purchase-seed · D7: công ty `demo` sau `writeCr125Config` chạy được trọn «Quy trình mua hàng» mà không set tay:
-// flow cha đã gán + Bật, ba phần có trong Thư viện, mọi nhóm duyệt có người, mọi dòng «cùng duyệt» có ≥ 2 người KHÁC NHAU, chạy lại 0 đổi.
+// mẫu cha (không gán cho công ty — CR-127 Z9), ba phần có trong Thư viện, mọi nhóm duyệt có người, mọi dòng «cùng duyệt» có ≥ 2 người KHÁC NHAU, chạy lại 0 đổi.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { PURCHASE_PARENT_ID, PURCHASE_PHASE_KEYS } from "../processes/public";
@@ -33,13 +33,14 @@ afterAll(async () => {
 });
 
 describe("CR-126 · demo chạy trọn «Quy trình mua hàng» ngay sau seed", () => {
-  it("cha gán + Bật, mọi nhóm có người, dòng cùng duyệt ≥ 2 người khác nhau, chạy lại 0 đổi", async () => {
+  it("cha không gán, mọi nhóm có người, dòng cùng duyệt ≥ 2 người khác nhau, chạy lại 0 đổi", async () => {
     const r1 = await o.begin((tx) => writeCr125Config(tx as never, ["demo"]));
     expect(r1.groupMembers).toBeGreaterThan(0);
 
-    const [cf] =
-      await o`select enabled from hub.company_flows where tenant_id = ${T} and flow_id = ${PURCHASE_PARENT_ID}`;
-    expect(cf?.enabled).toBe(true);
+    // CR-127 Z9: seed KHÔNG gán «Quy trình mua hàng» cho công ty (quản trị nền tảng tạo quy trình riêng từ sơ đồ trống); mẫu còn trong Thư viện.
+    const cf =
+      await o`select 1 from hub.company_flows where tenant_id = ${T} and flow_id = ${PURCHASE_PARENT_ID}`;
+    expect(cf.length).toBe(0);
     const phases = await o`select key from hub.process_defs
       where tenant_id is null and key = any(${[...PURCHASE_PHASE_KEYS]}::text[]) and published_version is not null and deleted_at is null`;
     expect(phases.length).toBe(PURCHASE_PHASE_KEYS.length);
@@ -73,9 +74,9 @@ describe("CR-126 · demo chạy trọn «Quy trình mua hàng» ngay sau seed", 
       groupMembers: 0,
       libraryDefs: 0,
       libraryReleases: 0,
-      companyFlows: 0,
       flowFlags: 0,
       esignSigners: 0,
+      partnerSigners: 0,
     });
   });
 });

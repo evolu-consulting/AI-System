@@ -1,5 +1,5 @@
 // CR-102 · C12b · 3 vai trên stack thật + seed demo (docs/current/community/hien-thi.md): ai thấy bài nào, che liên hệ,
-// luồng riêng từng công ty, dấu "chỉ chủ quản". Dữ liệu = `seed-community-demo` (bài Thùng phi 200L, CKS, Băng keo…).
+// bình luận phẳng (CR-129), dấu "chỉ chủ quản". Dữ liệu = `seed-community-demo` (bài Thùng phi 200L, CKS, Băng keo…).
 import { expect, type Page, test } from "@playwright/test";
 import { MASK_PHONE, ORG, openAs, postByTitle, READONLY } from "./_stack";
 
@@ -10,7 +10,7 @@ const openComposer = (page: Page) =>
     .click();
 
 test.describe("community-web · 3 vai (stack thật)", () => {
-  test("chủ quản: thấy mọi bài, số điện thoại NCC bị tô (raw), luồng theo từng công ty, đánh dấu bài đối tác", async ({
+  test("chủ quản: thấy mọi bài, số điện thoại NCC bị tô (raw), bình luận phẳng, đánh dấu bài đối tác", async ({
     browser,
   }) => {
     const { ctx, page } = await openAs(browser, "host");
@@ -26,16 +26,16 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await tp.getByRole("button", { name: /Lưu báo giá/ }).click();
     await expect(tp.locator("#q-sup")).toHaveValue(ORG.supplier);
     await expect(postByTitle(page, "Lịch nghỉ lễ 20/11")).not.toContainText("Chỉ chủ quản");
-    // luồng riêng: bài Thùng phi có tab công ty Tân Phát, thấy số điện thoại gốc trong luồng
+    // bình luận phẳng (CR-129): không còn tab công ty; chủ quản thấy số điện thoại gốc trong bình luận
     const phi = postByTitle(page, "Thùng phi 200L");
     await phi.getByRole("button", { name: /Bình luận/ }).click();
-    await expect(phi.getByRole("tab", { name: new RegExp(ORG.supplier) })).toBeVisible();
+    await expect(phi.getByRole("tab")).toHaveCount(0);
     await expect(phi.getByTestId("thread")).toContainText("0903 123 456");
     await expect(phi.getByTestId("thread")).not.toContainText(MASK_PHONE);
     await ctx.close();
   });
 
-  test("NCC (Tân Phát): chỉ thấy bài được gửi tới mình, liên hệ của mình bị che, không Lưu báo giá, luồng riêng", async ({
+  test("NCC (Tân Phát): chỉ thấy bài được gửi tới mình, liên hệ của mình bị che, không Lưu báo giá, bình luận che liên hệ", async ({
     browser,
   }) => {
     const { ctx, page } = await openAs(browser, "supplier");
@@ -53,11 +53,11 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await openComposer(page); // ô soạn bài thu gọn mặc định (CR-110) ⇒ mở ra mới thấy nhắc cho đối tác
     await expect(page.getByTestId("partner-note")).toHaveText("Chỉ chủ quản thấy bài này");
     await expect(page.getByText("Lưu báo giá")).toHaveCount(0);
-    // luồng riêng của mình: số điện thoại trong bình luận chính mình cũng bị che; không có tab công ty khác
+    // số điện thoại trong bình luận của chính mình cũng bị che; không có tab công ty / dòng "Chỉ chủ quản thấy trao đổi"
     const phi = postByTitle(page, "Thùng phi 200L");
     await phi.getByRole("button", { name: /Bình luận/ }).click();
     const th = phi.getByTestId("thread");
-    await expect(th).toContainText("Chỉ chủ quản thấy trao đổi này.");
+    await expect(th.getByText("Chỉ chủ quản thấy trao đổi này.")).toHaveCount(0);
     await expect(th).not.toContainText("0903");
     await expect(th).toContainText(MASK_PHONE);
     await expect(phi.getByRole("tab")).toHaveCount(0);
@@ -85,7 +85,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await expect(page.getByTestId("partner-note")).toHaveText("Chỉ chủ quản thấy bài này");
     await expect(page.getByText("Lưu báo giá")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Mở trợ lý giá" })).toHaveCount(0);
-    // không có tab luồng công ty khác: ABC chỉ có luồng riêng với chủ quản
+    // bình luận phẳng: không có tab công ty
     const mine = postByTitle(page, "Chữ ký số DN – USB Token");
     await mine.getByRole("button", { name: /Bình luận/ }).click();
     await expect(mine.getByRole("tab")).toHaveCount(0);

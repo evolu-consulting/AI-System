@@ -5,6 +5,7 @@
 import type { Tx } from "@ai/db";
 import { AppError, appError } from "../../../../lib/errors";
 import type { PackSystemUow, PackUow, PackWho } from "../../kit/public";
+import type { PartnerLinker } from "../application/pack-ports";
 import {
   AGENT_SCREEN,
   AGENT_TRIAGE,
@@ -21,8 +22,8 @@ import {
 import { EV_JOIN, EV_REPORT, joinFacts, reportFacts } from "../domain/flow-events.rules";
 import type { Access } from "./community-access";
 import { emitEvent } from "./flow-events.repo";
+import { linkJoined } from "./flows.link";
 import * as repo from "./flows.repo";
-import { upsertPartner } from "./org.repo";
 
 type Uow = PackUow<{ tx: Tx }>;
 type Sys = PackSystemUow<{ tx: Tx }>;
@@ -53,6 +54,8 @@ export type FlowDeps = {
   triggersOn?: ((tenantId: string) => Promise<boolean>) | undefined;
   /** Bài được duyệt (tự động hoặc tay) ⇒ phát chuông bài mới. */
   onApproved?: ((row: repo.ModPostRow, tenantId: string) => Promise<void>) | undefined;
+  /** CR-130 · ADR-0043: duyệt yêu cầu tham gia ⇒ liên kết tài khoản công ty với đối tác SHT cùng tx (vắng ⇒ 503). */
+  partners?: PartnerLinker | undefined;
   agentTimeoutMs?: number;
   now?: () => number;
   warn?: (m: string, meta: Record<string, unknown>) => void;
@@ -69,6 +72,8 @@ export type DecideBody = {
   taskId?: string | undefined;
   action: string;
   feedback?: string | undefined;
+  /** Duyệt đơn tham gia: đối tác SHT Admin chọn (L4 làm ô chọn ở màn duyệt); vắng ⇒ tạo đối tác mới. */
+  partyKey?: string | undefined;
 };
 const nowOf = (d: FlowDeps) => (d.now ? d.now() : Date.now());
 
@@ -172,7 +177,7 @@ export async function decideModeration(
   d: FlowDeps,
   a: Access,
   id: string,
-  b: { taskId?: string | undefined; action: string; feedback?: string | undefined },
+  b: DecideBody,
 ): Promise<repo.ModPostRow> {
   const out = await d.uow.tenant(a.who, async ({ tx }) => {
     const [cur] = await repo.modRows(tx, [id]);
@@ -204,7 +209,7 @@ export type JoinInput = {
   contact: string;
   email: string;
   reason: string;
-  labels: ("supplier" | "buyer")[];
+  labels: ("supplier" | "customer")[];
 };
 
 /** Đối tác (người xin) gửi form; host ⇒ 403; đang có yêu cầu chờ của công ty ⇒ 409. */
@@ -251,7 +256,7 @@ export async function decideJoin(
   d: FlowDeps,
   a: Access,
   id: string,
-  b: { taskId?: string | undefined; action: string; feedback?: string | undefined },
+  b: DecideBody,
 ): Promise<repo.JoinRow> {
   return d.uow.tenant(a.who, async ({ tx }) => {
     const [cur] = await repo.joinRows(tx, [id]);
@@ -269,13 +274,7 @@ export async function decideJoin(
       feedback: b.feedback ?? null,
     });
     if (!row) throw new FlowDecideError("TASK_STALE");
-    if (next === "approved")
-      await upsertPartner(tx, a.who, row.requester_org, {
-        labels: row.labels,
-        cats: [],
-        area: "",
-        partyKey: null,
-      });
+    if (next === "approved") await linkJoined(d.partners, tx, a, row, b.partyKey);
     return row;
   });
 }
@@ -350,7 +349,7 @@ export async function decideReport(
   d: FlowDeps,
   a: Access,
   id: string,
-  b: { taskId?: string | undefined; action: string; feedback?: string | undefined },
+  b: DecideBody,
 ): Promise<repo.ReportRow> {
   return d.uow.tenant(a.who, async ({ tx }) => {
     const [cur] = await repo.reportRows(tx, [id]);

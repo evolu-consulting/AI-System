@@ -11,6 +11,7 @@ import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
 import type { ProcessDeps } from "../core/ports";
+import { seedCompanyFlow } from "../testing/company-flow-seed";
 import { companyFlowsRoutes } from "./company-flows.routes";
 
 const X = tenantId(1281);
@@ -36,16 +37,21 @@ async function get(who: string, tid: string) {
   const text = await r.text();
   return { status: r.status, json: (text ? JSON.parse(text) : {}) as Json };
 }
-const assign = (tid: string, flowId: string) =>
-  app.request(`/tenants/${tid}/company-flows`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-who": "P" },
-    body: JSON.stringify({ flow_id: flowId }),
+// CR-127 Z7: đường gán mẫu qua API đã gỡ ⇒ công ty có quy trình NHẬN của chính nó (áp dụng, sự kiện contract.received).
+const assign = async (tid: string, _flowId: string) => {
+  await seedCompanyFlow(o, {
+    tenantId: tid,
+    key: "ux-s7-nhan",
+    trigger: { event: "contract.received" },
   });
+  return { status: 201 };
+};
 
 beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
+  // CR-127 Z4: hub 0136 đã lưu trữ mẫu Thư viện «Nhận HĐ»; test này dùng chúng làm dữ liệu nền ⇒ mở lại trong DB test.
+  await o`update hub.process_defs set deleted_at = null, enabled = true where tenant_id is null and key in ('hd-nhan-quan-trong', 'hd-nhan-thuong')`;
   db = connectDb(urls().hubApi, 4);
   await o`insert into admin.tenants (id, key, name) values (${X}, 't1281', 'X'), (${Z}, 't1282', 'Z')`;
   await users(o, X, 2, { from: 1280 });

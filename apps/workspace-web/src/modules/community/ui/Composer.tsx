@@ -19,6 +19,7 @@ import { initials } from "../domain/format";
 import { formatSize } from "../domain/media";
 import { defaultAudience } from "../domain/visibility";
 import { numLocale, t } from "../i18n";
+import { CategoryDialog } from "./CategoryDialog";
 import { DraftFields } from "./DraftFields";
 import {
   IconAttach,
@@ -69,17 +70,8 @@ function AudiencePicker({
         ))}
       </fieldset>
       {aud.mode === "cats" && (
-        <div className="chips">
-          {cats.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={aud.cats.includes(c) ? "chip on" : "chip"}
-              onClick={() => upd({ cats: toggle(aud.cats, c) })}
-            >
-              {c}
-            </button>
-          ))}
+        <div className="catsel">
+          <CategoryDialog cats={cats} value={aud.cats} onChange={(v) => upd({ cats: v })} />
         </div>
       )}
       {aud.mode === "companies" && (
@@ -131,7 +123,7 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
     ? ["sell", "buy", "note"]
     : ([
         viewer.labels.includes("supplier") ? "sell" : null,
-        viewer.labels.includes("buyer") ? "buy" : null,
+        viewer.labels.includes("customer") ? "buy" : null,
       ].filter(Boolean) as PostType[]);
   useEffect(() => {
     const first = types[0];
@@ -224,9 +216,41 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
           {t("community.composer.prefillBanner", { product: prefill })}
         </div>
       )}
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+      <div className="cmain">
         <span className="av t1">{initials(viewer.orgName)}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="cbody">
+          <div className="ctop">
+            <fieldset className="seg" aria-label={t("community.composer.typeLabel")}>
+              {types.map((ty) => (
+                <button
+                  key={ty}
+                  type="button"
+                  className={draft.type === ty ? "on" : ""}
+                  data-type={ty}
+                  onClick={() => setDraft({ ...draft, type: ty, audience: undefined })}
+                >
+                  {typeLabel(ty)}
+                </button>
+              ))}
+            </fieldset>
+            {isHostViewer && (
+              <select
+                className="field prefillsel"
+                aria-label={t("community.composer.prefillFrom")}
+                title={t("community.composer.prefillFrom")}
+                value={prefill}
+                onChange={(e) => {
+                  setPrefill(e.target.value);
+                  if (e.target.value) setDraft({ ...draft, product: e.target.value });
+                }}
+              >
+                <option value="">{t("community.composer.prefillOption")}</option>
+                {DEMO_PRODUCTS.map((p) => (
+                  <option key={p}>{p}</option>
+                ))}
+              </select>
+            )}
+          </div>
           <label htmlFor="draft-body" style={{ position: "absolute", left: -9999 }}>
             {t("community.composer.bodyLabel")}
           </label>
@@ -261,38 +285,7 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
               ))}
             </div>
           )}
-          {isHostViewer && (
-            <div className="selrow" style={{ marginTop: 10, marginBottom: 0 }}>
-              <select
-                className="field"
-                aria-label={t("community.composer.prefillFrom")}
-                value={prefill}
-                onChange={(e) => {
-                  setPrefill(e.target.value);
-                  if (e.target.value) setDraft({ ...draft, product: e.target.value });
-                }}
-              >
-                <option value="">{t("community.composer.prefillOption")}</option>
-                {DEMO_PRODUCTS.map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-              </select>
-            </div>
-          )}
           <div className="cbar">
-            <fieldset className="seg" aria-label={t("community.composer.typeLabel")}>
-              {types.map((ty) => (
-                <button
-                  key={ty}
-                  type="button"
-                  className={draft.type === ty ? "on" : ""}
-                  data-type={ty}
-                  onClick={() => setDraft({ ...draft, type: ty, audience: undefined })}
-                >
-                  {typeLabel(ty)}
-                </button>
-              ))}
-            </fieldset>
             <input
               ref={fileInput}
               type="file"
@@ -303,25 +296,25 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
             />
             <button
               type="button"
-              className="ghost"
+              className="ghost icononly"
               data-testid="attach-btn"
+              aria-label={t("community.composer.attach")}
+              title={t("community.composer.attach")}
               disabled={uploading}
               onClick={() => fileInput.current?.click()}
             >
-              <IconAttach size={16} />
-              {t("community.composer.attach")}
+              <IconAttach size={18} />
             </button>
-            <div className="sp" />
             {isHostViewer && (
               <button
                 type="button"
-                className="ghost"
+                className="ghost audbtn"
                 aria-expanded={audOpen}
                 aria-label={t("community.audience.choose")}
                 onClick={() => setAudOpen(!audOpen)}
               >
                 <IconLock size={13} />
-                {audienceSummary(draft.audience, draft.type)}
+                <span className="audbtn-txt">{audienceSummary(draft.audience, draft.type)}</span>
               </button>
             )}
             {!isHostViewer && (
@@ -330,6 +323,7 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
                 {partnerNote()}
               </span>
             )}
+            <div className="sp" />
             <button type="button" className="primary" disabled={busy} onClick={publish}>
               {t("community.composer.publish")}
             </button>

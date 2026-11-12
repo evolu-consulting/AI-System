@@ -18,7 +18,7 @@ function setup(source: {
   text: string | null;
   file: { org: string; fileId: string; mime: string } | null;
 }) {
-  const row = { status: "extracting", version: 1, fields: {} as unknown };
+  const row = { status: "draft", extractState: "reading", version: 1, fields: {} as unknown };
   const repo = {
     source: async () => ({ ...row, kind: "contract", parent: null, items: [], ...source }),
     saveResult: async () => {

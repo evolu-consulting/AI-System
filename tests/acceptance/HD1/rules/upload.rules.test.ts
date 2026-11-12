@@ -5,7 +5,7 @@ import { domainFn } from "../_support/pure";
 type Sniff = (
   head: Uint8Array,
   zipNames?: readonly string[],
-) => "pdf" | "docx" | "jpeg" | "png" | null;
+) => "pdf" | "docx" | "jpeg" | "png" | "office" | "gif" | "webp" | null;
 type Day = (now: Date, timeZone: string) => string;
 type Verdict = (
   c: { tenant: number; global: number },

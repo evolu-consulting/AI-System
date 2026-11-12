@@ -2,7 +2,15 @@
 // kiểm từng trường/dòng, `effective_date` chỉ cho phụ lục, gộp giữ trường `edited`, dòng hàng chỉ ghi khi HĐ chưa có dòng
 // nào (D-08: `contract_items` không DELETE ở HD1/HD2), chủ đề điều khoản theo số điều. Thuần.
 import { parseDocTypeSuggest } from "./doc-types.rules";
-import type { AiMilestone, AiRead, AiSummary, AiUnsureKey } from "./extraction.types";
+import type {
+  AiMilestone,
+  AiNote,
+  AiRead,
+  AiRisk,
+  AiSummary,
+  AiUnsureKey,
+  PenaltyTermInput,
+} from "./extraction.types";
 import { type ContractFieldKey, type ContractFields, mergeFields } from "./fields.rules";
 import type { Deal } from "./milestones.rules";
 import {
@@ -41,6 +49,10 @@ export type RawExtraction = {
   milestones?: readonly AiMilestone[] | undefined;
   /** CR-101 Câu 9: AI gợi ý loại chứng từ (người dùng chọn lại được). */
   doc_type_suggest?: string | null | undefined;
+  /** CR-127 K7 (vắng ở bản trích cũ). */
+  notes?: readonly AiNote[] | undefined;
+  risks?: readonly AiRisk[] | undefined;
+  penalty_terms?: readonly PenaltyTermInput[] | undefined;
 };
 export type ExtractedItemRow = RawItem & { ord: number; verified: boolean; edited: false };
 export type Clause = { number: string; topic: string };
@@ -58,6 +70,8 @@ export type ApplyOutput = {
   items: ExtractedItemRow[] | null;
   clauses: Clause[];
   ai: AiRead | null;
+  /** CR-127 K7: phạt dạng số AI trích (`null` ⇒ bản trích cũ, không đụng `penalty_terms` đã có). */
+  penaltyTerms: PenaltyTermInput[] | null;
 };
 
 /** Phần nặng (chuẩn hoá cả văn bản + dò từng quote): chạy NGOÀI tx, văn bản lớn ở Worker (review Trung 1). */
@@ -67,6 +81,7 @@ export type VerifiedExtraction = {
   clauses: Clause[];
   /** V2-G · HD-02/HD-08: loại đoán + trường chưa chắc + tóm tắt + mốc (`null` ⇒ bản trích cũ, không ghi đè phần AI đọc đã có). */
   ai: AiRead | null;
+  penaltyTerms: PenaltyTermInput[] | null;
 };
 
 /** V2-G: "chưa chắc" = AI tự báo ∪ có giá trị mà trích dẫn không có trong văn bản (chưa kiểm chứng). Loại Mua/Bán luôn chưa chắc
@@ -81,6 +96,8 @@ export function aiReadOf(
     !raw.unsure &&
     !raw.summary &&
     !raw.milestones &&
+    !raw.notes &&
+    !raw.risks &&
     raw.doc_type_suggest === undefined
   )
     return null;
@@ -101,6 +118,8 @@ export function aiReadOf(
     ...(raw.doc_type_suggest !== undefined
       ? { doc_type_suggest: parseDocTypeSuggest(raw.doc_type_suggest) }
       : {}),
+    ...(raw.notes ? { notes: [...raw.notes] } : {}),
+    ...(raw.risks ? { risks: [...raw.risks] } : {}),
   };
 }
 
@@ -126,6 +145,7 @@ export function verifyExtraction(i: {
     items,
     clauses: clauses.map((c) => ({ number: c.number, topic: c.topic })),
     ai: aiReadOf(i.raw, fields, src),
+    penaltyTerms: i.raw.penalty_terms ? [...i.raw.penalty_terms] : null,
   };
 }
 
@@ -141,7 +161,13 @@ export function mergeExtraction(
     ...v.ai,
     unsure: v.ai.unsure.filter((k) => k === "deal" || !fields[k].edited),
   };
-  return { fields, items: hasItems ? null : v.items, clauses: v.clauses, ai };
+  return {
+    fields,
+    items: hasItems ? null : v.items,
+    clauses: v.clauses,
+    ai,
+    penaltyTerms: v.penaltyTerms,
+  };
 }
 
 export function applyExtraction(i: ApplyInput): ApplyOutput {

@@ -1,6 +1,8 @@
 // CR-124 · q3 · FLOW4-FR-08/15/17 · luật thuần (lớp 1) của bước «Gửi đối tác xác nhận»: chọn kênh, mức quan trọng, bản chia sẻ, kết quả → trạng thái
 // HĐ nhận. Không I/O. Tên khoá khớp `packages/contracts/src/modules/contracts/partner-send/config.ts` (domain không import `@ai/contracts`, ADR-0023).
 
+import type { ContractEv } from "./contract-state.rules";
+
 export const PARTNER_FIELD_KEYS = [
   "total_value",
   "start_date",
@@ -106,6 +108,7 @@ export function buildPayload(i: {
   hint: ImportanceHint | undefined;
   sendFields: readonly string[];
   fields: Readonly<Record<string, unknown>>;
+  signTogether?: SignTogether | null | undefined;
 }): Record<string, unknown> {
   const shared: Record<string, unknown> = {};
   for (const k of i.sendFields) {
@@ -117,6 +120,39 @@ export function buildPayload(i: {
     ...(i.message ? { message: i.message.slice(0, 1000) } : {}),
     importance_hint: i.hint ?? "auto",
     fields: shared,
+    ...(i.signTogether
+      ? {
+          sign_together: {
+            reason: i.signTogether.reason,
+            accept_h: i.signTogether.acceptH,
+            sign_h: i.signTogether.signH,
+          },
+        }
+      : {}),
+  };
+}
+
+/** CR-127 · P2 · BR-60: đề nghị ký cùng lúc kèm lần gửi (ghi vào `payload.sign_together` + phiên ký chung). Tên khoá khớp `PartnerSendConfigSchema`. */
+export type SignTogether = { reason: string; acceptH: number; signH: number };
+export const SIGN_TOGETHER_DEFAULTS = { acceptH: 2, signH: 4 } as const;
+
+/**
+ * Cấu hình node ⇒ đề nghị ký cùng lúc. Không bật ⇒ `null` (gửi thường). Bật mà thiếu lý do ⇒ `SIGN_TOGETHER_REASON_REQUIRED` (BR-60: lý do bắt buộc —
+ * lỗi nghiệp vụ, không gửi). Hạn mặc định 2 giờ trả lời / 4 giờ ký.
+ */
+export function signTogetherPlan(cfg: {
+  sign_together?: boolean | undefined;
+  sign_reason?: string | undefined;
+  accept_h?: number | undefined;
+  sign_h?: number | undefined;
+}): SignTogether | null {
+  if (!cfg.sign_together) return null;
+  const reason = (cfg.sign_reason ?? "").trim();
+  if (!reason) throw new Error("SIGN_TOGETHER_REASON_REQUIRED");
+  return {
+    reason: reason.slice(0, 500),
+    acceptH: cfg.accept_h ?? SIGN_TOGETHER_DEFAULTS.acceptH,
+    signH: cfg.sign_h ?? SIGN_TOGETHER_DEFAULTS.signH,
   };
 }
 
@@ -127,11 +163,11 @@ export function sharedValueOf(shared: Readonly<Record<string, unknown>>): number
   return Number.isFinite(n) ? n : null;
 }
 
-/** Trạng thái HĐ nhận theo câu trả lời: Đồng ý ⇒ có hiệu lực; Trả lại/Từ chối ⇒ đóng (bên gửi sẽ gửi bản mới nếu cần). */
-export const INBOX_CONTRACT_STATUS: Record<PartnerOutcome, string> = {
-  confirmed: "active",
-  returned: "rejected",
-  declined: "rejected",
+/** Sự kiện cổng `contract-state` theo câu trả lời của flow nhận (spec §3 #5/#10/#6): Đồng ý ⇒ DONE; Trả lại ⇒ DRAFT "Chờ đối tác gửi bản sửa"; Từ chối ⇒ REJECT. */
+export const INBOX_CONTRACT_EV: Record<PartnerOutcome, ContractEv> = {
+  confirmed: "flow_approved",
+  returned: "partner_returned",
+  declined: "flow_rejected",
 };
 
 export const isPartnerOutcome = (o: string): o is PartnerOutcome =>

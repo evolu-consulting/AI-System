@@ -5,9 +5,10 @@ import { companyIndex } from "./companies.rules";
 import type { Ctx, Snapshot } from "./context";
 import { targetId, uuidV5 } from "./ids.rules";
 import { mapCks } from "./map-cks.rules";
-import { approvalRow, matchForm, parseRemindKey, productKey } from "./map-contracts.rules";
+import { approvalRow, matchForm, productKey } from "./map-contracts.rules";
 import { memberships, usersExport } from "./map-identity.rules";
 import { mapLedger } from "./map-ledger.rules";
+import { parseRemindKey } from "./map-reminders.rules";
 import { newPlan, tenantPlan } from "./plan";
 import { mgmtVisible, sourceMoney } from "./reconcile.rules";
 import { day, type Issue, money, serialKey, str } from "./values.rules";
@@ -243,27 +244,25 @@ describe("đối soát", () => {
 
 describe("M3 lượt duyệt", () => {
   test("trạng thái HĐ ⇒ contracts.approvals như migration 0011_m3_approvals; người xác nhận = cấp 1 + người quyết khi done", () => {
-    const c = (status: string) => ({
+    const c = (status: string, extract_state = "ready") => ({
       id: "c",
       run_id: "r",
       status,
+      extract_state,
       created_by: "u",
       confirmed_by: "k",
       confirmed_at: "t",
     });
-    expect(approvalRow(c("active"))).toMatchObject({
+    expect(approvalRow(c("done"))).toMatchObject({
       id: "r",
       contract_id: "c",
       status: "done",
       level1_by: "k",
       decided_by: "k",
     });
-    expect(approvalRow(c("needs_review"))).toMatchObject({
-      status: "level1",
-      decided_by: null,
-      started_by: "u",
-    });
-    expect(approvalRow(c("extract_failed")).status).toBe("failed");
-    expect(approvalRow(c("terminated")).status).toBe("done");
+    // chờ xem lại ⇒ nháp không lượt (run_id null) ⇒ không ghi approvals
+    expect(approvalRow({ ...c("draft"), run_id: null })).toBeNull();
+    expect(approvalRow(c("draft", "failed"))?.status).toBe("failed");
+    expect(approvalRow(c("reject"))?.status).toBe("rejected");
   });
 });

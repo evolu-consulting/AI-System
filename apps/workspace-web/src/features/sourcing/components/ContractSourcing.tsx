@@ -3,7 +3,7 @@
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
-import { showsDeadline } from "~/features/contract-deadline/lib/deadline";
+
 import { type SourcingParams, useContractSourcing } from "../hooks/use-sourcing";
 import { SaleLines } from "./SaleLines";
 
@@ -14,8 +14,8 @@ export function ContractSourcing({ c, write }: Props) {
   const sale = c.direction === "sale";
   const { t } = useTranslation();
   const params: SourcingParams = { contract: id, page: 1, page_size: 100 };
-  const q = useContractSourcing(params, showsDeadline(c)); // chỉ HĐ đã duyệt có dòng giá
-  if (!showsDeadline(c) || !q.data?.lines.length) return null;
+  const q = useContractSourcing(params, c.status === "done"); // chỉ HĐ đã duyệt có dòng giá
+  if (c.status !== "done" || !q.data?.lines.length) return null;
   return (
     <Panel className="mb-4">
       <h2

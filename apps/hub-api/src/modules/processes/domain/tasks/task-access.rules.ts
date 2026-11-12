@@ -9,6 +9,8 @@ import {
 } from "../runs/run-access.rules";
 import { isTerminal } from "../runs/run-state.rules";
 import type { DecisionReason, ProcessRunStatus, TaskKind, TaskStatus } from "../types";
+import type { VoteAs } from "./all-vote.rules";
+import { claimBlocks, type TaskNeed } from "./claim.rules";
 
 export type TaskFacts = {
   kind: TaskKind;
@@ -25,6 +27,11 @@ export type TaskFacts = {
   starterExcluded?: boolean;
   /** contract-flow S1b · cửa trưởng phòng của stage `head_only` (= `headGate`); null/vắng ⇒ cả Group duyệt. */
   headGate?: string | null;
+  /** CR-127 · E2 · cần bao nhiêu người (vắng = one) + người đang giữ việc nhóm (Nhận việc). */
+  need?: TaskNeed | null;
+  claimedBy?: string | null;
+  /** CR-127 · E5 · task `need='all'`: tư cách bỏ phiếu của người xem (`voteAs`) + người xem có hàng chuyển cấp riêng. Vắng ⇒ hành vi cũ. */
+  allVote?: { as: VoteAs["kind"]; escalatedUser: boolean } | null;
 };
 
 /**
@@ -142,6 +149,14 @@ export function starterDecisionBlocked(
   return d.option === "use_current" || starterGated("decision", d.reason);
 }
 
+/** CR-127 · E5 · `canAct` của task `need='all'` (đã có `allVote`). */
+function allVoteCan(groupIds: ReadonlySet<string>, t: TaskFacts): boolean {
+  const a = t.allVote;
+  if (!a) return false;
+  if (a.as !== "none") return a.as === "vote";
+  return a.escalatedUser || (t.extraGroupIds ?? []).some((g) => groupIds.has(g));
+}
+
 export function canAct(
   v: Viewer & { groupIds: ReadonlySet<string> },
   t: TaskFacts,
@@ -149,8 +164,13 @@ export function canAct(
 ): boolean {
   if (v.role !== "platform_admin" && v.tenantId !== r.tenantId) return false;
   if (t.status !== "open" || isTerminal(r.status)) return false;
+  // CR-127 · E2 · spec §5.1 · người khác đã Nhận việc ⇒ chặn (`block_reason='claimed_by_other'`).
+  if (claimBlocks(t, v.userId)) return false;
   if (t.starterExcluded === true && r.startedBy === v.userId && starterGated(t.kind, t.reason))
     return false;
+  // CR-127 · E5 · "Cần: tất cả": người có phiếu chưa bỏ ⇒ được; đã bỏ / bị loại ⇒ không; không có phiếu ⇒ chỉ chuyển cấp / "cũng quyết"
+  // (thành viên phòng không trong tập không quyết thay cả nhóm).
+  if (t.need === "all" && t.kind === "review" && t.allVote) return allVoteCan(v.groupIds, t);
   // S1b · cửa trưởng phòng chỉ áp cho task duyệt/decision của stage (ask có người trả lời riêng).
   const gate = t.kind === "ask" ? null : t.headGate;
   if (t.kind === "decision") {

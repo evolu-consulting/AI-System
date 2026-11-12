@@ -15,4 +15,19 @@ describe("check-pack-sql", () => {
       "knowledge.docs",
     ]);
   });
+  test("ADR-0043: community gọi đúng hàm contracts.community_partners được; bảng/hàm khác của contracts bị bắt; contracts tự tham chiếu mình sạch", () => {
+    const ok = "SELECT * FROM contracts.community_partners(ARRAY[o]);";
+    const bad = `SELECT * FROM contracts.partner_profiles;\nSELECT contracts.fold('x');\nSELECT 1 FROM community.posts;`;
+    expect(checkPackSql("community", ok)).toEqual([]);
+    expect(checkPackSql("community", bad).map((f) => f.ref)).toEqual([
+      "contracts.partner_profiles",
+      "contracts.fold",
+    ]);
+    expect(
+      checkPackSql("contracts", "SELECT contracts.fold(name) FROM contracts.partner_roles;"),
+    ).toEqual([]);
+    expect(checkPackSql("contracts", "SELECT 1 FROM community.posts;").map((f) => f.ref)).toEqual([
+      "community.posts",
+    ]);
+  });
 });

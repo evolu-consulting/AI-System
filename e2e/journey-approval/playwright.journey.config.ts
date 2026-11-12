@@ -44,19 +44,7 @@ process.env.JA_D5_SUFFIX ||= randomBytes(3).toString("hex");
 
 export default defineConfig({
   testDir: ".",
-  testMatch: [
-    "**/*.ja.ts",
-    "**/cr121-editor*.spec.ts",
-    "**/cr121-d-journey*.spec.ts",
-    "**/cr121-d6b*.spec.ts",
-    "**/cr122-flows*.spec.ts",
-    "**/cr122-editor*.spec.ts",
-    "**/cr122-p24*.spec.ts",
-    "**/cr123-*.spec.ts",
-    "**/cr124-q5*.spec.ts",
-    "**/cr124-q6*.spec.ts",
-    "**/cr125-*.spec.ts",
-  ],
+  testMatch: ["**/*.ja.ts", "**/cr123-*.spec.ts", "**/cr125-*.spec.ts"],
   // ca mua hàng 11 bước chạy ở việc riêng `playwright.journey-purchase.config.ts` (trình duyệt mới, song song)
   testIgnore: ["**/cr125-purchase-full.spec.ts"],
   workers: 1,

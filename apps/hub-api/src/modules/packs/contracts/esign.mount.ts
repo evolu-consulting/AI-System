@@ -30,6 +30,8 @@ import { esignNodeDirectory } from "./adapters/esign-node.repo";
 import { escalateTargetsOf, esignSweepRepo } from "./adapters/esign-sweep.repo";
 import { esignSyncClaim } from "./adapters/esign-sync.repo";
 import { renderFirstPage } from "./adapters/page-thumb";
+import { partnerSendRepo } from "./adapters/partner-send.repo";
+import { signSessionRepo } from "./adapters/sign-session.repo";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
 import { type ESignUsecase, esignUsecase } from "./application/esign.usecase";
 import { esignAnchors } from "./application/esign-anchor.usecase";
@@ -37,14 +39,21 @@ import { type EsignFlow, esignFlow } from "./application/esign-flow.usecase";
 import { inviteNotice, type ThumbRenderer } from "./application/esign-invite";
 import { type EsignSweepDeps, startEsignSweeper } from "./application/esign-sweep";
 import { type EsignSyncDeps, esignSyncEnv } from "./application/esign-sync";
+import { voidForSession } from "./application/esign-void";
+import { sessionSignedOnEnvelope } from "./application/sign-session-esign";
 import { metaOf, providerEntriesOf } from "./domain/esign.providers";
-import { docusignConfigOf } from "./domain/esign.rules";
+import { docusignConfigOf, isOpen } from "./domain/esign.rules";
 import { type ESignEvent, esignEventOf } from "./domain/esign-event.rules";
 import { esignOutputsOf } from "./domain/esign-outputs.rules";
 import { esignBindingChecks } from "./nodes/esign/binding";
+import { fileShaOf } from "./partner-mailbox.mount";
 
 type EnvMap = Record<string, string | undefined>;
-const repos = (tx: Tx, t: string) => ({ esign: esignRepo(tx, t), esignFlow: esignFlowRepo(tx, t) });
+const repos = (tx: Tx, t: string) => ({
+  esign: esignRepo(tx, t),
+  esignFlow: esignFlowRepo(tx, t),
+  signSession: signSessionRepo(tx, t), // CR-127 · P2b · phiên ký chung
+});
 
 /** Adapter của nhà cung cấp KHẢ DỤNG (đã kiểm ở `providerEntriesOf`). */
 function adapterOf(key: string, env: EnvMap): ESignProvider | null {
@@ -108,6 +117,8 @@ export type ESignModule = ESignUsecase & {
   bindCompleted(fn: CompletedHook): void;
   /** esign-sweep · bật vòng nền bước Ký số (một lần; tắt ngoài dev/prod hoặc `CONTRACTS_ESIGN_SWEEP=off`). */
   startSweep(view: PackAccessView): void;
+  /** CR-127 · P2b · phiên ký chung kết thúc không ký ⇒ huỷ phong bì còn mở của HĐ (bộ chuyển hộp thư gọi). true = đã huỷ. */
+  endSession(tenantId: string, contractId: string): Promise<boolean>;
 };
 
 export function esignModule(
@@ -135,6 +146,18 @@ export function esignModule(
       .then((e) => (e ? esignOutputsOf(e) : {}))
       .catch(() => ({}));
   const providers = registryOf(d.esign);
+  const warn = (m: string, meta: Record<string, unknown>) => logger.warn(m, meta);
+  // CR-127 · P2b · phong bì ký xong ⇒ đánh dấu bên mình đã ký trong phiên ký chung (SHA văn bản HĐ, so ở hàm hub).
+  const pdfUow = createPackUow(db, "contracts", (tx: Tx, t: string) => ({
+    partnerSend: partnerSendRepo(tx, t),
+  }));
+  const sessionSigned = sessionSignedOnEnvelope({ uow, sha: fileShaOf(pdfUow, d.files), warn });
+  const voidSession = voidForSession(warn);
+  const endSession = async (tid: string, contractId: string): Promise<boolean> => {
+    const e = await uow.system(tid, (r) => r.esign.latest(contractId));
+    if (!e || !isOpen(e.status)) return false;
+    return voidSession(d.files ? providers.get(e.provider) : null, e, (fn) => uow.system(tid, fn));
+  };
   /** Đổi trạng thái phong bì ⇒ báo người gửi + người ký (lỗi đẩy không làm hỏng luồng ký). */
   const push = async (tid: string, id: string, st: ESignStatus): Promise<void> => {
     if (!d.publish) return;
@@ -170,6 +193,13 @@ export function esignModule(
     onStatus: async (tid, id, st) => {
       await push(tid, id, st);
       await flow?.onStatus(tid, id, st);
+      if (st === "completed")
+        await sessionSigned(tid, id).catch((e: unknown) =>
+          warn("sign-session-mark-failed", {
+            contract_id: id,
+            error: e instanceof Error ? e.name : "unknown",
+          }),
+        );
       const ev = esignEventOf(st);
       if (ev && completed)
         await envelopeData(tid, id)
@@ -225,6 +255,7 @@ export function esignModule(
       completed = fn;
     },
     bindView: (v) => bindWriters(packWriters(db, v, "contracts")),
+    endSession,
     startSweep: esignSweepStarter(db, d.signal, esignSyncOf(db, providers, u), u.expireOpen),
   };
 }

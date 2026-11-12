@@ -104,6 +104,17 @@ function boardRows(t: string, filter: string, today: string): SQL {
     select ${rowsOf(t, today, sql`r.due_date, r.id`)}::text as j`;
 }
 
+/**
+ * CR-127 X5 · spec §5.9: «Chưa ai nhận» / «X đang xử lý» của mốc = việc Xác nhận mốc đang mở (`hub.task_holder`, definer, không khoá).
+ * Chỉ tra khi liệt kê THEO MỘT HĐ (mốc mở, ≤ vài chục dòng) — danh sách rộng không gọi hàm theo từng dòng (Luật 4c).
+ */
+const taskOf = (o: string, contractId: string | null) =>
+  contractId === null
+    ? sql`null::jsonb`
+    : sql`case when ${sql.raw(o)}.status = 'open' then (select jsonb_build_object('task_id', h.task_id,
+        'state', case when h.claimed_by is null then 'unclaimed' else 'claimed' end, 'claimed_by', h.claimed_by)
+        from hub.task_holder('milestone', ${sql.raw(o)}.id::text) h limit 1) end`;
+
 export function ledgerReadRepo(tx: Tx, t: string): LedgerReadRepo {
   return {
     payments: (filter, today) =>
@@ -122,7 +133,8 @@ export function ledgerReadRepo(tx: Tx, t: string): LedgerReadRepo {
             and (${q.due_before ?? null}::date is null or o.due_date <= ${q.due_before ?? null}::date)
           order by o.due_date, o.seq, o.id limit ${LEDGER_LIST_MAX}::int)
         select coalesce(jsonb_agg(${obJson("o")} || jsonb_build_object('contract_number',
-            ${contractCodeSql("c")}) order by o.due_date, o.seq, o.id),
+            ${contractCodeSql("c")}, 'task', ${taskOf("o", q.contract_id ?? null)})
+            order by o.due_date, o.seq, o.id),
           '[]'::jsonb) as j
         from o left join contracts.contracts c on c.tenant_id = o.tenant_id and c.id = o.contract_id`,
       ),

@@ -1,15 +1,12 @@
 // V2-L · CD-01: đọc/ghi cài đặt công ty. Đọc: mọi người có quyền đọc gói (sidebar/menu dùng tên, logo, màu); ghi: chỉ quản lý (route).
-// Một tx đọc cả hai nguồn (bảng nhận diện + cờ duyệt); ghi chỉ cờ khi đổi (nhật ký duyệt chỉ ghi lúc đổi thật).
+// Một tx đọc cả hai nguồn (bảng nhận diện + cài đặt kho/pháp lý); ghi chỉ khi đổi.
 
 import type { PackUow, PackWho } from "../../kit/public";
 import type { CompanyIn, CompanyOut } from "../domain/companies.types";
 import { LEGAL_WARN_DEFAULT } from "../domain/legal-warn.rules";
 import type { CompanyRepo } from "./companies.ports";
 
-export const DEFAULT_COMPANY: Omit<
-  CompanyIn,
-  "approval_enabled" | "allow_negative_stock" | "legal_warn_threshold"
-> = {
+export const DEFAULT_COMPANY: Omit<CompanyIn, "allow_negative_stock" | "legal_warn_threshold"> = {
   name: null,
   app_name: null,
   logo: null,
@@ -41,12 +38,10 @@ export function companyUsecase(d: { uow: PackUow<{ company: CompanyRepo }> }) {
     flag: Awaited<ReturnType<CompanyRepo["approval"]>>,
   ): CompanyOut => ({
     company: s?.company ?? DEFAULT_COMPANY,
-    approval_enabled: flag.enabled,
     allow_negative_stock: flag.allow_negative ?? false,
     legal_warn_threshold: flag.legal_warn_threshold ?? LEGAL_WARN_DEFAULT,
     defaults: {
       ...DEFAULT_COMPANY,
-      approval_enabled: flag.by_default,
       allow_negative_stock: false,
       legal_warn_threshold: LEGAL_WARN_DEFAULT,
     },
@@ -59,20 +54,18 @@ export function companyUsecase(d: { uow: PackUow<{ company: CompanyRepo }> }) {
     async save(who: PackWho, c: CompanyIn): Promise<CompanyOut> {
       const msg = companyProblem(c);
       if (msg) throw new CompanyFail(msg);
-      const { approval_enabled, allow_negative_stock, legal_warn_threshold, ...rest } = c;
+      const { allow_negative_stock, legal_warn_threshold, ...rest } = c;
       return tx(who, async (r) => {
         const before = await r.approval();
-        if (before.enabled !== approval_enabled) await r.saveApproval(approval_enabled, who.userId);
         const allow = allow_negative_stock ?? before.allow_negative ?? false;
         if (allow !== (before.allow_negative ?? false))
           await r.saveAllowNegative(allow, who.userId);
         const legal = legal_warn_threshold ?? before.legal_warn_threshold ?? LEGAL_WARN_DEFAULT;
         if (legal !== (before.legal_warn_threshold ?? LEGAL_WARN_DEFAULT))
           await r.saveLegalThreshold(legal, who.userId);
-        const saved = await r.saveCompany({ ...rest, approval_enabled });
+        const saved = await r.saveCompany(rest);
         return out(saved, {
           ...before,
-          enabled: approval_enabled,
           allow_negative: allow,
           legal_warn_threshold: legal,
         });

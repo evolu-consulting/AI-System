@@ -1,18 +1,13 @@
-// CR-097 K3a · HD-FR-100 · HD-FR-104: luật thuần màn HĐ theo khoá — banner nào hiện, ô nào sửa được, ai được mở lại. Thuần.
-import type { ContractDetail } from "@ai/contracts/pack-contracts";
+// CR-127 · U5 · BR-35…42: luật thuần "khoá" của màn HĐ. Chỉ DRAFT là form; PROCESSING/DONE (khoá nội dung, tự động) và REJECT hiện dạng chữ đọc.
+// Tạm khoá thực hiện (`hold`) là chip riêng, KHÔNG khoá nội dung. "Mở lại" đã gỡ — sửa sau DONE đi qua "Tải phiên bản mới".
+import type { ContractStatus } from "@ai/contracts/pack-contracts";
 import type { TextKey } from "~/features/contract-form/lib/form-model";
 
-/** `signing` (CR-122): bước Ký số của flow đã khoá HĐ nhưng chưa xác nhận (còn `needs_review`). */
-export type LockBanner = "locked" | "signing" | "pending" | null;
-
 export type LockView = {
-  banner: LockBanner;
+  /** Nội dung khoá (không ô nhập, chỉ chữ đọc). */
   locked: boolean;
   /** Ô thông tin chỉ đọc khi khoá (tất cả). */
   lockedKeys: ReadonlySet<TextKey> | undefined;
-  /** Owner gói hoặc người phụ trách (CR-101a) thấy link "Mở lại để sửa lỗi trích xuất". */
-  canReopen: boolean;
-  noDocument: boolean;
 };
 
 const ALL_KEYS: readonly TextKey[] = [
@@ -31,38 +26,21 @@ const ALL_KEYS: readonly TextKey[] = [
   "commission_fixed",
 ];
 
-/** lock-strict (2026-10-23): sau khi khoá KHÔNG trường nào sửa được (cả `notice_days`). */
+/** Khoá nội dung: không trường nào sửa được (cả `notice_days`). */
 export const LOCKED_LEGAL_KEYS: ReadonlySet<TextKey> = new Set(ALL_KEYS);
 
-/** CR-101a (Câu 6): link "Mở lại" cho owner gói HOẶC người phụ trách HĐ (có quyền ghi) — khớp luật server `canReopen`. */
-export const reopenRight = (
-  c: Pick<ContractDetail, "owner_user_id">,
-  me: { owner: boolean; write: boolean; userId: string | null | undefined },
-): boolean => me.owner || (me.write && !!me.userId && c.owner_user_id === me.userId);
+/** Chỉ DRAFT là form; mọi trạng thái khác là chữ đọc. */
+export const contentLocked = (status: ContractStatus): boolean => status !== "draft";
 
-export function lockView(
-  c: Pick<ContractDetail, "locked" | "status" | "has_document">,
-  owner: boolean,
-  /** Đã "Xác nhận và lưu" (lượt duyệt đang chạy) ⇒ không còn dải "Chưa xác nhận" — thẻ duyệt nói trạng thái. */
-  submitted = false,
-): LockView {
-  const pending = c.status === "needs_review" && !submitted;
-  const signing = c.locked && c.status === "needs_review";
-  const banner: LockBanner = signing ? "signing" : c.locked ? "locked" : pending ? "pending" : null;
-  return {
-    banner,
-    locked: c.locked,
-    lockedKeys: c.locked ? LOCKED_LEGAL_KEYS : undefined,
-    canReopen: c.locked && owner,
-    noDocument: !c.has_document,
-  };
+export function lockView(c: { status: ContractStatus }): LockView {
+  const locked = contentLocked(c.status);
+  return { locked, lockedKeys: locked ? LOCKED_LEGAL_KEYS : undefined };
 }
 
 /** Lỗi API của đường khoá ⇒ khoá i18n (null = để nơi gọi dùng câu chung). */
 export function lockErrorKey(status: number | undefined, code: string | undefined): string | null {
   if (code === "CONTRACT_LOCKED") return "contracts.lock.errLocked";
-  if (code === "CONTRACT_NOT_LOCKED") return "contracts.lock.errNotLocked";
-  if (code === "USE_VERSIONS") return "contracts.lock.errUseVersions";
+  if (code === "USE_NEW_VERSION") return "contracts.u5.err.USE_NEW_VERSION";
   if (status === 403) return "contracts.lock.errForbidden";
   return null;
 }

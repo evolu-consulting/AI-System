@@ -60,7 +60,8 @@ describe("HD-FR-07 · chi tiết HĐ", () => {
     expect(d).toMatchObject({
       id: cid(1),
       title: "HĐ Minh Phát",
-      status: "needs_review",
+      status: "draft",
+      extract_state: "ready",
       version: 1,
       kind: "contract",
       has_source: true,

@@ -142,7 +142,14 @@ function hubRow(r: Row) {
     number: r.number,
     type: null,
     direction: r.direction,
-    status: r.status,
+    // CR-127 Q10a: trạng thái cũ ⇒ 4 trạng thái mới + extract_state + hiệu lực dẫn xuất.
+    status: r.status === "needs_review" ? "draft" : "done",
+    extract_state: "ready",
+    effect: r.status === "needs_review" ? null : r.status === "expiring" ? "expiring" : "active",
+    superseded: false,
+    hold: null,
+    waiting: null,
+    source: "upload",
     seller: r.seller,
     buyer: r.buyer,
     seller_signer: r.seller_signer,
@@ -154,7 +161,7 @@ function hubRow(r: Row) {
     category_ids: r.categories,
     updated_at: at,
     version: 1,
-    locked: ["active", "expiring"].includes(r.status), // CR-097 K1: đã xác nhận ⇒ khoá
+    locked: r.status !== "needs_review", // CR-097 K1: đã xác nhận ⇒ khoá
     version_no: 1, // CR-097 K2
     versions_count: 1,
   };
@@ -167,7 +174,7 @@ export function facetsAsHub() {
     return [...m].map(([v, n]) => ({ v, n }));
   };
   return {
-    status: count(ROWS.map((r) => r.status)),
+    status: count(ROWS.map((r) => (r.status === "needs_review" ? "draft" : "done"))), // CR-127 Q10b: nhãn lọc = trạng thái mới
     direction: count(ROWS.map((r) => r.direction ?? "unknown")),
     kind: [{ v: "contract", n: ROWS.length }],
     owner: [{ v: OWNER, n: ROWS.length }],

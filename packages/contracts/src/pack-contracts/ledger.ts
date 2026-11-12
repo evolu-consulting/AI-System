@@ -17,6 +17,7 @@ export const OBLIGATION_DB_KINDS = [
   "serial",
   "renewal",
   "other",
+  "penalty", // CR-127 X1 (MIGC 0093): phạt ghi vào công nợ (X4)
 ] as const;
 export const OBLIGATION_STATUSES = ["open", "done", "cancelled"] as const;
 export const PARTNER_ROLES = ["customer", "supplier"] as const;
@@ -128,10 +129,20 @@ export type Obligation = {
   postponed_to: string | null;
   postpones: number;
   reminders: number;
-  source: "manual" | "ai" | "default" | "cks";
+  source: "manual" | "ai" | "default" | "cks" | "fulfill";
   estimated: boolean;
+  /** CR-127 X1: hàng con phần còn lại ⇒ id mốc gốc; mốc thường ⇒ null/vắng. */
+  parent_obligation_id?: string | null;
   basis: string | null;
   contract_number?: string | null;
+  /** CR-127 X5 · spec §5.9: việc Xác nhận mốc đang mở của mốc (chỉ khi liệt kê theo một HĐ): chưa ai nhận / do `claimed_by` xử lý; null = không có việc. */
+  task?: {
+    task_id: string;
+    state: "unclaimed" | "claimed";
+    claimed_by: string | null;
+    /** CR-127 SG1: tên hiển thị người giữ việc (một lần tra cho cả danh sách); không tra được ⇒ null. */
+    claimed_by_name?: string | null;
+  } | null;
 };
 /** Hàng bảng Thanh toán (`payments.board`): `party` = TÊN đối tác như mgmt-app, khoá đối tác ở `party_key`. */
 export type PaymentRow = Omit<Obligation, "party" | "contract_number"> & {

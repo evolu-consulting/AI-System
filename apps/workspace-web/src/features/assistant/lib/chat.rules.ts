@@ -10,8 +10,38 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const ROUTE_MAX = 200;
 const PARTY_MAX = 300;
 
-/** Ngữ cảnh dock từ URL: `/contracts/c/<uuid>` ⇒ HĐ; `/contracts/partners?party=<khoá>` ⇒ đối tác; còn lại chỉ màn hình. */
-export function dockContext(pathname: string, search: string): MessageContext {
+const COMMUNITY_BASE = "/community";
+const ORG_RE = /^[\w-]{1,100}$/;
+const SELECTION_MAX = 200;
+
+/** Trang Cộng đồng (Bảng tin / Hồ sơ / hàng đợi): trợ lý gửi bề mặt `community` (Hub tính token cho gói Cộng đồng). */
+export const isCommunityPath = (pathname: string): boolean =>
+  pathname === COMMUNITY_BASE || pathname.startsWith(`${COMMUNITY_BASE}/`);
+export const surfaceOf = (pathname: string): "contracts" | "community" =>
+  isCommunityPath(pathname) ? "community" : "contracts";
+
+/** Đối tác (`partner`) không có trợ lý (Chat AI bị chặn phía Hub, C2): ẩn nút + khoang. */
+export const assistantVisible = (role: string | undefined): boolean => role !== "partner";
+
+/** Ngữ cảnh ở Cộng đồng: `/feed` hoặc `/profile[/<org>]` + từ khoá đang tìm (`selection`, do trang cấp qua assistant-hint). */
+function communityContext(pathname: string, selection: string | null): MessageContext {
+  const [, , name, orgId] = pathname.split("/");
+  const route =
+    name === "profile" ? `/profile${orgId && ORG_RE.test(orgId) ? `/${orgId}` : ""}` : "/feed";
+  const sel = selection?.replace(/\s+/g, " ").trim().slice(0, SELECTION_MAX);
+  return { surface: "community", route, ...(sel ? { selection: sel } : {}) };
+}
+
+/**
+ * Ngữ cảnh dock từ URL: `/contracts/c/<uuid>` ⇒ HĐ; `/contracts/partners?party=<khoá>` ⇒ đối tác; `/community/*` ⇒ bề mặt
+ * Cộng đồng; còn lại chỉ màn hình.
+ */
+export function dockContext(
+  pathname: string,
+  search: string,
+  selection: string | null = null,
+): MessageContext {
+  if (isCommunityPath(pathname)) return communityContext(pathname, selection);
   const route = pathname.startsWith("/") ? pathname.slice(0, ROUTE_MAX) : "/";
   const ctx: MessageContext = { surface: "contracts" };
   if (/^\/[^\s<>]*$/.test(route)) ctx.route = route;

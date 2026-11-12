@@ -4,7 +4,7 @@
 import type { DeleteImpact } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { DeleteContractRepo } from "../application/delete-contract.usecase";
+import type { DeleteContractRepo, DeleteFactsRow } from "../application/delete-contract.usecase";
 import { contractNameSql } from "./contract-name.sql";
 import { one } from "./ledger-sql";
 import { contractStockBlock, reverseContractStock } from "./stock.repo";
@@ -67,6 +67,15 @@ const previewSql = (t: string, ids: string[]) => {
 
 export function deleteContractRepo(tx: Tx, t: string): DeleteContractRepo {
   return {
+    // CR-127 Z8: sự thật để kiểm quyền xoá (trạng thái hiện tại; `lock` ⇒ khoá hàng tới hết tx, chặn Gửi duyệt chen giữa). Hai văn bản cố định.
+    facts: async (id, lock) => {
+      const rows = lock
+        ? await tx.execute<DeleteFactsRow>(sql`select c.status, c.created_by::text as created_by, c.owner_user_id::text as owner_user_id,
+            c.submit_round from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid for update`)
+        : await tx.execute<DeleteFactsRow>(sql`select c.status, c.created_by::text as created_by, c.owner_user_id::text as owner_user_id,
+            c.submit_round from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid`);
+      return [...rows][0] ?? null;
+    },
     // CR-097 K2 · CR-097b: số phiên bản của chuỗi + bản này có phải nháp mở (còn bản trước chưa bị thay) — một câu theo PK/index chuỗi.
     chain: async (id) => {
       const [r] = await tx.execute<{ versions: number; draft: boolean }>(sql`select

@@ -18,7 +18,16 @@ import { testRedis } from "../../H1/_hub";
 import { type Job, ScriptRuntime } from "../../H1/_runtime";
 import { api } from "../../X2a/_x2a";
 import { fn, loadSeed } from "../_support/modules";
-import { type Json, PA, PA_FIX, type Res, type Role, type Sql, setupPa } from "../_support/pa";
+import {
+  defsWriteVia,
+  type Json,
+  PA,
+  PA_FIX,
+  type Res,
+  type Role,
+  type Sql,
+  setupPa,
+} from "../_support/pa";
 
 export type Step =
   | { kind: "done" }
@@ -128,7 +137,10 @@ export async function startScenario(): Promise<Scenario> {
     sql,
     ready,
     tok,
-    call: async (r, method, path, body) => api(hub as never, await tok(r), method, path, body),
+    call: async (r, method, path, body) => {
+      const w = defsWriteVia(r, method, path);
+      return api(hub as never, await tok(w.role as typeof r), method, w.path, body);
+    },
     script,
     handled,
     stop: async () => {

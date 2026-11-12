@@ -79,6 +79,7 @@ Bài P = bài chủ quản đăng, `audience` như ghi ở cột 3.
 | HT-32 | S1 | bài của S1 sau khi S1 bị vô hiệu (đối tác rời) | A, M thấy nhãn "đối tác đã rời"; S1 không đăng nhập được |
 
 ## 3. Bình luận (D3 — luồng riêng bài × công ty)
+> Đã chốt thay đổi ở CR-129 (chưa làm): ai thấy bình luận = chủ bài, người viết, người được tag, bạn bè của người viết (RLS); các dòng HT-41…HT-50 sẽ đổi theo. Xem `docs/CHANGE-REQUESTS.md`.
 | # | Người xem | Bình luận | Kết quả mong đợi |
 |---|---|---|---|
 | HT-40 | A, M | mọi luồng trên bài P | Thấy tất cả luồng, tách theo công ty |
@@ -182,6 +183,7 @@ Các mục dưới thắng nội dung cũ cùng chủ đề ở trên. Chi tiế
 - Tiêu đề HTML tĩnh của community-web là "Community" (không chứa tên Sổ Hợp Tác); tiêu đề runtime chuyển sang tên công ty.
 
 ### Hồ sơ công ty (cr110-profile-api, cr110-profile-ui)
+> Đã chốt thay đổi ở CR-129 (chưa làm): hồ sơ account cá nhân = bảng tin của chính account + tab «Bài đăng của tổ chức»; thông tin công ty là phần phụ.
 - Hero (cover, logo, tên, dòng phụ), số liệu, hàng tab theo registry section. Chủ quản 4 tab (Giới thiệu, Bài đăng, Đối tác, Ảnh & tệp); đối tác 3 tab, không tab Đối tác, không số Bạn bè, không câu về Sổ Hợp Tác. Section lạ về Bài đăng; `files` mở Ảnh & tệp.
 - `GET /pack/community/profile/:orgId/media`: đính kèm của bài công ty `orgId` mà người xem được thấy theo luật bảng tin (RLS), mới nhất trước, phân trang con trỏ. Đối tác chỉ xem hồ sơ công ty mình + chủ quản; công ty khác ⇒ 404; không bao giờ lộ media đối tác khác.
 - `GET /pack/community/partners?rep=1` gắn `reputation` (qua cổng `HostBookReader`) cho đối tác đã liên kết SHT khi người xem là chủ quản có quyền contracts; đối tác không nhận uy tín và không gọi cổng sổ. Tab Đối tác có cột Uy tín.

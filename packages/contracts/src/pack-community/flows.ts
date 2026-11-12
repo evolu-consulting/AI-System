@@ -35,6 +35,8 @@ export const FlowDecideInputSchema = z.strictObject({
   action: z.string().regex(/^[a-z][a-z0-9_-]{0,31}$/),
   taskId: Id.optional(),
   feedback: Txt(4000).optional(),
+  /** Chỉ khe «đơn xin tham gia» + `approve`: đối tác SHT (`party_key`) Admin chọn để gắn tài khoản công ty; vắng ⇒ tạo đối tác mới. */
+  partyKey: z.string().trim().min(1).max(300).optional(),
 });
 export type FlowDecideInput = z.infer<typeof FlowDecideInputSchema>;
 

@@ -39,6 +39,8 @@ const open = (group: string) => ({
     escalate: null,
     branch: [],
     exclude_starter: false,
+    need: "one",
+    evidence: "opinion_plus", // CR-127 · Z2 · mô hình mới
   },
 });
 

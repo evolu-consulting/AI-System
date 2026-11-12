@@ -2,7 +2,7 @@
 import { describe, expect, it } from "bun:test";
 import type { ContractProgress } from "@ai/contracts/pack-contracts";
 import { summaryRows } from "../../contract-review/lib/summary";
-import { dealOfRow, partnerOfRow, stageView } from "./row-view";
+import { daysLeftOf, dealOfRow, partnerOfRow, statusView, waitingView } from "./row-view";
 
 const prog = (o: Partial<ContractProgress>): ContractProgress => ({
   id: "i",
@@ -26,21 +26,42 @@ describe("danh sách HĐ v2", () => {
     expect(partnerOfRow(r, "sell")).toBe("B");
     expect(partnerOfRow(r, "referral")).toBe("B");
   });
-  it("giai đoạn: quá hạn đỏ + bước hiện tại; chưa theo dõi ⇒ nhãn trạng thái", () => {
-    expect(stageView({ status: "active" }, prog({}))).toEqual({
-      kind: "stage",
-      stage: "in_progress",
-      overdue: true,
-      step: "Thu tiền",
+  it("ô Trạng thái: chip hiệu lực chỉ khi DONE; tạm khoá; AI đang đọc/lỗi không phải trạng thái", () => {
+    const r = { status: "done", effect: "expiring", hold: null, extract_state: "ready" } as const;
+    expect(statusView(r, 12)).toEqual({
+      effect: { effect: "expiring", tone: "soon", daysLeft: 12 },
+      held: false,
+      extract: null,
     });
-    expect(stageView({ status: "active" }, prog({ stage: "done", next: null }))).toEqual({
-      kind: "stage",
-      stage: "done",
+    expect(statusView({ ...r, status: "processing" }, 12).effect).toBeNull();
+    expect(statusView({ ...r, status: "draft", extract_state: "reading" }, null).extract).toBe(
+      "reading",
+    );
+    expect(statusView({ ...r, status: "draft", extract_state: "failed" }, null).extract).toBe(
+      "failed",
+    );
+    expect(statusView({ ...r, hold: { by: "u", reason: "x" } }, null).held).toBe(true);
+  });
+  it("Đang chờ: không có lượt duyệt mở ⇒ null; quá hạn khi hạn đã qua", () => {
+    const now = new Date("2026-11-10T10:00:00Z");
+    expect(waitingView(null, now)).toBeNull();
+    expect(waitingView(undefined, now)).toBeNull();
+    expect(
+      waitingView({ step: "Kế toán", who: "Lan", due_at: "2026-11-11T10:00:00Z" }, now),
+    ).toEqual({
+      step: "Kế toán",
+      who: "Lan",
+      due: "2026-11-11",
       overdue: false,
-      step: null,
     });
-    expect(stageView({ status: "needs_review" }, prog({}))).toEqual({ kind: "status" });
-    expect(stageView({ status: "active" }, undefined)).toEqual({ kind: "status" });
+    expect(
+      waitingView({ step: "Ký số", who: null, due_at: "2026-11-09T10:00:00Z" }, now)?.overdue,
+    ).toBe(true);
+    expect(waitingView({ step: null, who: null, due_at: null }, now)?.overdue).toBe(false);
+  });
+  it("daysLeftOf: số ngày lịch tới ngày hết hạn", () => {
+    expect(daysLeftOf("2026-11-22", new Date(2026, 10, 10))).toBe(12);
+    expect(daysLeftOf(null)).toBeNull();
   });
 });
 

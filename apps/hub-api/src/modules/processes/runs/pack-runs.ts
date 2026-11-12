@@ -7,9 +7,6 @@
 import { ProcessDefInputBaseSchema, type ProcessInputValue } from "@ai/contracts/hub-admin";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
-import type { AuthUser } from "../../../lib/auth.middleware";
-import { AppError } from "../../../lib/errors";
-import { publishUserEvents } from "../../../lib/user-stream";
 import type {
   PackOpenRun,
   PackRunCaller,
@@ -21,20 +18,24 @@ import type {
 } from "../../packs/kit/public";
 import { availableToolRows, paramsOf } from "../adapters/tools/tool-switch.repo";
 import type { SystemUow } from "../application/ports";
-import * as core from "../core/core.repo";
-import { processUpdated } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
 import { DefsService } from "../defs/defs.service";
-import { isTerminal } from "../domain/runs/run-state.rules";
-import type { ProcessRunStatus } from "../domain/types";
-import { cancelEnd } from "../gates/gates.effects";
-import type * as g from "../gates/gates.repo";
 import { GateService } from "../gates/gates.service";
 import { eventFlowOf } from "../library/event-flow.repo";
 import { resolveSlot, resolveSlotDef } from "../library/slot-resolve.repo";
 import { routeSlot } from "../library/slot-route.repo";
 import { defSourceRef } from "../library/source-ref";
 import { updatePackInputs } from "./pack-inputs";
+import {
+  asUser,
+  cancelOwn,
+  cancelSys,
+  OUTCOME_SYS,
+  PASSED,
+  raced,
+  retryDecision,
+  SYS,
+} from "./pack-runs-sys";
 import {
   inboxOf,
   openTaskFor,
@@ -46,18 +47,20 @@ import {
 import { packRecordPort, signalPackEvent } from "./pack-signal";
 import { StartService } from "./start.service";
 
-const asUser = (u: PackRunCaller): AuthUser => u as AuthUser;
-const uuids = (xs: readonly string[]) => `{${xs.filter((x) => UUID.test(x)).join(",")}}`;
+// N2-FR-01 · N2-D04 · N2-D08 · plan N2 §2: cài đặt `PackRunsPort` cho module gói (cùng process, không HTTP nội bộ).
+// start = `POST /process-runs` origin none (kiểm def/Group/trần/inputs như route) nhưng hoãn kick; cancel = huỷ của người
+// bắt đầu (`GateService.cancel`); outcomes = MỘT câu theo tập trong scope user (RLS + lọc tenant tường minh).
+// contract-flow S1a · cầu v2: `ensureDef` (= `DefsService.create/update`, idempotent theo `pack_version`), `start` + `ref`,
+// `act` (= `GateService.reviewDecision` scope user), `cancelSys` (= `cancelEnd` scope system), đọc hệ thống MỘT câu lọc
+// tenant tường minh; `stepsView` ở `pack-runs-view.ts`.
+
 const PACK_KEY = /^[a-z][a-z0-9-]{0,39}$/;
-const SYS = { kind: "system" as const };
 /** dify-input-map · mô tả tham số từ `input_schema` (chuỗi không rỗng), để UI ánh xạ trường HĐ. */
 function descOf(schema: unknown, name: string): string | undefined {
   if (!Array.isArray(schema)) return undefined;
   const p = (schema as { name?: unknown; description?: unknown }[]).find((x) => x?.name === name);
   return typeof p?.description === "string" && p.description ? p.description : undefined;
 }
-/** Lỗi engine coi như "đã có người làm trước" (đua) — không ném cho gói. */
-const raced = (e: unknown, code: string) => e instanceof AppError && e.code === code;
 
 async function ensureDef(
   d: ProcessDeps,
@@ -75,8 +78,11 @@ async function ensureDef(
   if (cur && (cur.pack_version ?? 0) >= def.packVersion) return "exists";
   try {
     if (cur)
-      await svc.update(asUser(u), scope, cur.id, { ...input, version: cur.version } as never);
-    else await svc.create(asUser(u), scope, input as never);
+      await svc.packSyncUpdate(asUser(u), scope, cur.id, {
+        ...input,
+        version: cur.version,
+      } as never);
+    else await svc.packSyncCreate(asUser(u), scope, input as never);
   } catch (e) {
     // Hai instance cùng đồng bộ ⇒ bên sau "exists"; pack_version không ghi ⇒ lần gọi kế đồng bộ lại nếu cần.
     if (raced(e, "PROCESS_KEY_TAKEN") || raced(e, "VERSION_CONFLICT")) return "exists";
@@ -116,8 +122,11 @@ async function syncSlotDefOnce(
   const scope = { tenantId: u.tenantId };
   try {
     const row = cur
-      ? await svc.update(asUser(u), scope, cur.id, { ...input, version: cur.version } as never)
-      : await svc.create(asUser(u), scope, input as never);
+      ? await svc.packSyncUpdate(asUser(u), scope, cur.id, {
+          ...input,
+          version: cur.version,
+        } as never)
+      : await svc.packSyncCreate(asUser(u), scope, input as never);
     const stamped = await withHubScope(d.db, SYS, (tx) =>
       tx.execute(sql`update hub.process_defs set source_ref = ${def.sourceRef}
         where id = ${row.id} and tenant_id = ${u.tenantId} and version = ${row.version}`),
@@ -165,94 +174,6 @@ export async function stampSlotRun(
   if (ok.count === 1) return;
   await cancelSys(d, tenantId, runId).catch(() => false);
   throw new Error("PackRunsPort.start: def khe đã đổi (source_ref lệch)");
-}
-
-/** Huỷ run ở scope system (khoá run trước — §10); không có trong tenant / đã kết thúc ⇒ false. */
-async function cancelSys(d: ProcessDeps, tenantId: string, runId: string): Promise<boolean> {
-  if (!UUID.test(runId) || !UUID.test(tenantId)) return false;
-  const events = await withHubScope(d.db, SYS, async (tx) => {
-    const run = await core.lockRun(tx, tenantId, runId);
-    if (!run || isTerminal(run.status as ProcessRunStatus)) return null;
-    const recipients = await core.runRecipients(tx, run.id, tenantId);
-    const idx = Number(run.currentStageIdx);
-    // Không có người thao tác (hệ thống) ⇒ run_end không kèm actor.
-    const ref = null as unknown as g.ActorRef;
-    const ev = await cancelEnd({ d, tx }, { run, idx, ref }, null);
-    const upd = {
-      id: run.id,
-      status: "cancelled" as const,
-      stageIdx: idx,
-      step: Number(run.currentStep),
-    };
-    return [...ev, ...processUpdated(recipients, upd)];
-  });
-  if (events === null) return false;
-  await publishUserEvents(d.redis, events, d.log);
-  await d.postThread(runId).catch(() => {});
-  return true;
-}
-
-const OUTCOME_SYS = (tenantIds: readonly string[], runIds: readonly string[]) => sql`
-  select r.id as run_id, r.tenant_id, r.status, (rj.id is not null) as rejected, rj.feedback,
-    r.snapshot->'stages'->(r.current_stage_idx::int)->>'key' as stage_key
-  from hub.process_runs r
-  left join lateral (select t.id, t.feedback from hub.review_tasks t where t.process_run_id = r.id
-    and t.tenant_id = r.tenant_id and t.result = 'reject' limit 1) rj on true
-  where r.id = any(${uuids(runIds)}::uuid[]) and r.tenant_id = any(${uuids(tenantIds)}::uuid[])`;
-
-/**
- * Stage `done` mà task REVIEW đóng gần nhất là Đạt (`pass`) — stage bị quay lại rồi chưa xong không tính. fix-review: decision
- * `use_current` (coi như Đạt, không ai trong Group duyệt quyết) KHÔNG tính.
- */
-const PASSED = (tenantId: string, runId: string) => sql`
-  select r.snapshot->'stages'->(s.stage_idx::int)->>'key' as k
-  from hub.stage_runs s join hub.process_runs r on r.id = s.process_run_id and r.tenant_id = s.tenant_id
-  where s.process_run_id = ${runId} and s.tenant_id = ${tenantId} and s.status = 'done'
-    and (select t.result from hub.review_tasks t where t.stage_run_id = s.id and t.tenant_id = s.tenant_id
-      and t.kind = 'review' and t.status = 'closed'
-      order by t.decided_at desc nulls last, t.created_at desc limit 1) = 'pass'
-  order by s.stage_idx`;
-
-/**
- * Huỷ bù của gói (`PackRunsPort.cancel`): run gắn gói không huỷ được qua API process-runs (fix-review) ⇒ người bắt đầu huỷ
- * run gắn gói của CHÍNH mình qua `cancelSys` (lọc tenant + `started_by`); run không gắn gói ⇒ như cũ (`GateService.cancel`).
- */
-async function cancelOwn(d: ProcessDeps, gates: GateService, u: PackRunCaller, runId: string) {
-  if (!UUID.test(runId) || !UUID.test(u.tenantId)) return;
-  const [r] = await withHubScope(d.db, SYS, (tx) =>
-    tx.execute<{
-      own: boolean;
-    }>(sql`select (started_by = ${u.userId}::uuid) as own from hub.process_runs
-      where id = ${runId} and tenant_id = ${u.tenantId} and pack_key is not null`),
-  );
-  if (r?.own === true) await cancelSys(d, u.tenantId, runId);
-  else await gates.cancel(asUser(u), runId);
-}
-
-/**
- * CR-107 · "Thử lại" của gói cho run gắn gói đang `needs_decision`: CÙNG đường quyết `GateService.decide` (`add_attempt`) — người
- * gọi mang vai admin vì run gắn gói chỉ admin quyết (`canDecide`); quyền thật (admin gói) gói đã kiểm trước. Không gắn gói / không
- * còn decision mở (đua) ⇒ "not_open".
- */
-async function retryDecision(
-  d: ProcessDeps,
-  gates: GateService,
-  u: PackRunCaller,
-  runId: string,
-): Promise<"ok" | "not_open"> {
-  if (!UUID.test(runId) || !UUID.test(u.tenantId)) return "not_open";
-  const [r] = await withHubScope(d.db, SYS, (tx) =>
-    tx.execute<{ ok: boolean }>(sql`select (status = 'needs_decision') as ok from hub.process_runs
-      where id = ${runId} and tenant_id = ${u.tenantId} and pack_key is not null`),
-  );
-  if (r?.ok !== true) return "not_open";
-  try {
-    await gates.decide({ ...asUser(u), role: "tenant_admin" }, runId, { option: "add_attempt" });
-  } catch (e) {
-    if (raced(e, "PROCESS_RUN_STATE")) return "not_open";
-    throw e;
-  }
-  return "ok";
 }
 
 const PACK_OPEN = `{running,waiting_review,waiting_answer,needs_decision,waiting_timer}`;
@@ -376,9 +297,12 @@ export function packRunsOf(d: ProcessDeps, sys?: Pick<SystemUow, "system">): Pac
         result: b.result,
         ...(b.feedback !== undefined ? { feedback: b.feedback } : {}),
         ...(b.back_to_step !== undefined ? { back_to_step: b.back_to_step } : {}),
+        ...(b.evidence ? { evidence: b.evidence } : {}), // CR-127 · E4
       };
       try {
-        await gates.reviewDecision(asUser(u), taskId, body);
+        await gates.reviewDecision(asUser(u), taskId, body, undefined, {
+          ...(b.onEvidence ? { onEvidence: b.onEvidence } : {}),
+        });
       } catch (e) {
         if (raced(e, "REVIEW_TASK_CLOSED")) return "not_open"; // người khác quyết trước (first-wins)
         throw e;

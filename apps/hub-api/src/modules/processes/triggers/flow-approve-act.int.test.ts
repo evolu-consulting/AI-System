@@ -181,7 +181,6 @@ describe("CR-122 P11h · người duyệt Đạt bước Duyệt của lượt f
     const wa = { tenantId: T, userId: A };
     const wb = { tenantId: T, userId: B };
     expect(await startApproval(ad())(wa, C, "level1")).toBe("ok");
-    expect(await actApproval(ad())(wa, C, { action: "approve" })).not.toHaveProperty("error");
     expect(await dispatchOnce({ db, launch: flowLaunchOf(deps()) })).toMatchObject({ launched: 1 });
     const card = (await getApproval(ad())(wb, C)) as {
       task_id: string | null;
@@ -196,6 +195,6 @@ describe("CR-122 P11h · người duyệt Đạt bước Duyệt của lượt f
     });
     expect(out).not.toBe("not_found"); // trước sửa: 404 NOT_FOUND
     expect(out).not.toHaveProperty("error");
-    expect(await rowOf()).toEqual({ c: "active", a: "done" });
+    expect(await rowOf()).toEqual({ c: "done", a: "done" });
   });
 });

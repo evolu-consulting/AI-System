@@ -1,14 +1,13 @@
-// CR-097 K2 · HD-FR-101 (cập nhật = phiên bản mới) · HD-FR-102 (xác nhận v2 thay v1) · HD-FR-103 (cutover nghĩa vụ) · X5 (xoá).
-// Luật thuần viết TRƯỚC code (làn đầy đủ: tiền/kho). SQL trigger `contracts.k2_supersede` làm đúng `cutoverPlan` theo tập.
+// CR-097 K2 · HD-FR-101 (cập nhật = phiên bản mới) · HD-FR-102 (xác nhận v2 thay v1) · BR-36b (chuyển mốc mở) · X5 (xoá).
+// Luật thuần viết TRƯỚC code (làn đầy đủ: tiền/kho). SQL chuyển mốc theo tập: `version-milestones.repo.ts`.
 import { describe, expect, it } from "bun:test";
 import {
   type ChainRow,
   currentOf,
-  cutoverPlan,
-  cutoverReason,
   deleteVerdict,
   diffFields,
   effectiveFrom,
+  milestoneMovePlan,
   newVersionVerdict,
   openDraftOf,
 } from "./versions.rules";
@@ -68,36 +67,17 @@ describe("HD-FR-101 · tải bản cập nhật", () => {
   });
 });
 
-describe("HD-FR-103 · cutover nghĩa vụ", () => {
-  const ob = (id: string, status: string, due: string, has_stock = false) => ({
-    id,
-    status,
-    due_date: due,
-    has_stock,
-  });
-  it("mở + hạn ≥ ngày hiệu lực v2 ⇒ huỷ; hạn trước ⇒ giữ; đã xong / đã thay ⇒ không đụng", () => {
-    const plan = cutoverPlan(
-      [
-        ob("before", "open", "2026-10-31"),
-        ob("same", "open", "2026-11-01"),
-        ob("after", "open", "2026-12-01"),
-        ob("done", "done", "2026-12-01"),
-        ob("replaced", "replaced", "2026-12-01"),
-        ob("cancelled", "cancelled", "2026-12-01"),
-      ],
-      "2026-11-01",
-    );
-    expect(plan).toEqual({ cancel: ["same", "after"], keep_stock: [] });
-  });
-  it("nghĩa vụ đã có dòng kho ⇒ giữ (không huỷ, không đảo kho) và ghi vào kết quả", () => {
-    const plan = cutoverPlan(
-      [ob("stock", "open", "2026-12-01", true), ob("plain", "open", "2026-12-01")],
-      "2026-11-01",
-    );
-    expect(plan).toEqual({ cancel: ["plain"], keep_stock: ["stock"] });
-  });
-  it("lý do huỷ = 'thay bằng phiên bản N'", () => {
-    expect(cutoverReason(2)).toBe("thay bằng phiên bản 2");
+describe("CR-127 K5 · BR-36b chuyển mốc mở sang v(n+1)", () => {
+  const ob = (id: string, status: string) => ({ id, status });
+  it("mốc mở ⇒ chuyển sang v(n+1); đã xong / huỷ / thay ⇒ ở lại v(n)", () => {
+    const plan = milestoneMovePlan([
+      ob("open1", "open"),
+      ob("open2", "open"),
+      ob("done", "done"),
+      ob("replaced", "replaced"),
+      ob("cancelled", "cancelled"),
+    ]);
+    expect(plan).toEqual({ move: ["open1", "open2"], stay: ["done", "replaced", "cancelled"] });
   });
   it("ngày hiệu lực v2 = ngày bắt đầu trên văn bản; trống ⇒ hôm nay (ngày lịch tenant)", () => {
     expect(effectiveFrom("2026-11-01", "2026-10-23")).toBe("2026-11-01");

@@ -72,7 +72,7 @@
       "templates": "Mẫu có sẵn"
     },
     "create": "Tạo quy trình",
-    "copy": "Dùng mẫu này",
+    "view": "Xem",
     "run": {
       "button": "Chạy",
       "title": "Chạy quy trình {{name}}",
@@ -100,7 +100,6 @@
       "prompt": "Gõ lại tên quy trình để xác nhận"
     },
     "toast": {
-      "copied": "Đã dùng mẫu",
       "deleted": "Đã xoá quy trình",
       "started": "Đã bắt đầu lượt chạy"
     },
@@ -118,8 +117,6 @@
     "copyBadge": "Bản riêng của công ty",
     "stepsTab": "Các bước",
     "libReadonly": "Quy trình dùng chung — chỉ xem.",
-    "copied": "Đã áp dụng cho công ty. Hợp đồng gửi duyệt từ giờ theo quy trình này.",
-    "copyFailed": "Không sao chép được: {{reason}}",
     "saveBlocked": "Chưa lưu được: {{reason}}",
     "saveBlockedStep": "Chưa lưu được — bước «{{step}}»: {{reason}}",
     "stepOpt": "Bước {{n}}",
@@ -253,7 +250,7 @@
         },
         "after": "Chạy tiếp (cố định)",
         "err": {
-          "source": "Chọn nguồn ngày.",
+          "source": "Chưa chọn ngày để chờ tới. Chọn một ngày ở ô «Lấy ngày từ» (ví dụ ngày hết hạn hợp đồng); nếu danh sách trống, hãy thêm trường kiểu Ngày ở đầu vào hoặc ở bước trước.",
           "offset": "Từ −365 đến 365 ngày.",
           "time": "Nhập giờ dạng HH:mm, ví dụ 09:00.",
           "WAIT_INVALID": "Nguồn ngày không hợp lệ. Chọn trường nhập kiểu Ngày hoặc trường Ngày của bước ở bước trước."
@@ -327,7 +324,8 @@
         "nextStep": "Bước tiếp theo",
         "stepOpt": "Bước {{n}}",
         "err": {
-          "IF_INVALID": "Điều kiện Nếu chưa hợp lệ: kiểm tra nguồn, phép so sánh, giá trị và bước đích (phải đứng sau bước này)."
+          "IF_INVALID": "Điều kiện Nếu chưa hợp lệ: kiểm tra nguồn, phép so sánh, giá trị và bước đích (phải đứng sau bước này).",
+          "IF_TARGET_REAL": "Điều kiện Nếu chưa hợp lệ: nhánh này đi thẳng tới bước có hành động thật (vd «Ký số») nhưng ngay trước đó chỉ có khối Nếu, chưa có người duyệt. Cách sửa: thêm một bước Duyệt ngay sau khối Nếu (trước bước đó) hoặc đặt bước đó bên trong nhánh đã có Duyệt."
         },
         "s": {
           "if": "Nếu",
@@ -469,12 +467,28 @@
       },
       "approver": "Ai duyệt",
       "approverPh": "Chọn người duyệt",
+      "milestone": {
+        "owner": "Người phụ trách hợp đồng",
+        "who": "Ai xác nhận",
+        "whoHint": "Để mặc định = việc giao cho người phụ trách hợp đồng (hoặc phòng của người đó). Chọn phòng hoặc một người để giao cố định."
+      },
+      "need": "Cần",
+      "need_one": "Một người nhận việc",
+      "need_head": "Trưởng phòng",
+      "need_all": "Tất cả",
+      "due": "Hạn (giờ)",
+      "dueHint": "Để trống nếu không đặt hạn. Từ {{min}} đến {{max}} giờ.",
+      "dueTo": "Quá hạn chuyển cho",
+      "dueToPh": "Chọn phòng hoặc người…",
+      "evidence": "Bằng chứng",
+      "evidence_opinion": "Chỉ ý kiến",
+      "evidence_opinion_plus": "Ý kiến + chữ ký hoặc tệp",
       "answerBy": "Hạn trả lời (giờ)",
       "answerByHint": "Quá hạn, hệ thống nhắc người duyệt. Từ {{min}} đến {{max}} giờ."
     },
     "limits": "Giới hạn của một lượt chạy",
     "limitsText": "Chờ quá 7 ngày sẽ báo người phụ trách.",
-    "readonly": "Đây là quy trình mẫu, chỉ xem. Dùng mẫu này để chỉnh sửa.",
+    "readonly": "Quy trình do quản trị nền tảng soạn — chỉ xem. Muốn thay đổi, liên hệ quản trị nền tảng.",
     "runs": {
       "empty": "Chưa có lượt chạy nào",
       "waitUntil": "Chờ tới {{date}}",
@@ -668,13 +682,12 @@
     "NODE_ASSIGNEE_MISSING": "Chọn nhóm phụ trách cho bước Gửi đối tác xác nhận (mở bước, mục Nhóm phụ trách gửi đối tác) rồi lưu lại.",
     "SLOT_BODY_INVALID": "Nội dung Form chưa hợp lệ. Xem chỗ sai bên dưới.",
     "SLOT_UNKNOWN": "Loại việc này chưa có trên hệ thống. Bật ứng dụng tương ứng cho công ty, hoặc nhờ quản trị nền tảng bổ sung.",
-    "NOT_LIBRARY_DEF": "Quy trình này là bản riêng của công ty, không phải quy trình dùng chung. Mở nó để sửa trực tiếp.",
     "SUBPROCESS_NOT_FOUND": "Bước «Quy trình con» trỏ tới quy trình không có, đã tắt hoặc chưa xuất bản. Chọn quy trình khác hoặc xuất bản nó trước.",
     "SUBPROCESS_CYCLE": "Các quy trình con đang gọi vòng lại nhau. Bỏ bước «Quy trình con» gây vòng.",
     "SUBPROCESS_DEPTH": "Quy trình con lồng quá 3 tầng. Gộp bớt một tầng.",
     "FLOW_NONE_ASSIGNED": "Công ty chưa có quy trình nào đang áp dụng nên chưa bật được. Gán một quy trình ở Công ty › Quy trình rồi bật lại.",
     "COPY_SOURCE_REMOVED": "Quy trình gốc trong thư viện đã bị gỡ — bản riêng vẫn chạy được nhưng không sửa được. Nhờ quản trị nền tảng khôi phục quy trình gốc, hoặc gán quy trình khác ở Công ty › Quy trình.",
-    "SLOT_GONE": "Việc dùng quy trình này không còn trong ứng dụng nữa. Hãy chọn quy trình khác ở Công ty › Quy trình."
+    "PROCESS_NOT_DELETABLE": "Không xoá được: quy trình đã áp dụng hoặc đã có lượt chạy. Hãy Tắt quy trình thay vì xoá."
   },
   "validate": {
     "nameRequired": "Nhập tên quy trình.",
@@ -1037,18 +1050,6 @@
     "assign": {
       "where": "Công ty gán quy trình này ở trang Công ty › Quy trình.",
       "openCompanies": "Xem danh sách công ty"
-    },
-    "preview": {
-      "button": "Xem trước bằng HĐ mẫu",
-      "title": "Xem trước đường đi “{{name}}”",
-      "body": "Nhập loại hợp đồng và giá trị mẫu: bước nào chạy, bước nào bị bỏ qua. Không ghi gì.",
-      "value": "Giá trị mẫu (VND)",
-      "valueHint": "Để trống = 0",
-      "valueInvalid": "Nhập số nguyên không âm.",
-      "run": "Xem đường đi",
-      "result": "Đường đi",
-      "runs": "chạy",
-      "skipped": "bỏ qua"
     },
     "default": {
       "button": "Đặt làm mặc định",
@@ -1496,9 +1497,37 @@
       "generic": "Không thực hiện được. Kiểm tra kết nối rồi thử lại."
     }
   },
+  "editorBar": {
+    "back": "Quy trình",
+    "name": "Tên quy trình",
+    "saved": "đã lưu {{time}}",
+    "runs": "Lượt chạy",
+    "config": "Về sơ đồ",
+    "apply": "Áp dụng cho công ty"
+  },
+  "byCompany": {
+    "title": "Quy trình",
+    "subtitle": "Quy trình của từng công ty. Mỗi công ty có quy trình riêng, tạo từ sơ đồ trống.",
+    "tabCompany": "Theo công ty",
+    "tabLibrary": "Thư viện mẫu",
+    "noApproval": "Sổ Hợp Tác của {{company}} chưa có quy trình duyệt — nhân viên chưa gửi duyệt được.",
+    "create": "Tạo quy trình",
+    "flow": "Quy trình",
+    "company": "Công ty",
+    "status": "Trạng thái",
+    "updated": "Cập nhật",
+    "on": "Đang áp dụng",
+    "draft": "Nháp",
+    "hint": "Bấm tên quy trình để mở sơ đồ. Quy trình mới tạo ở trạng thái Nháp cho tới khi bấm «Áp dụng cho công ty».",
+    "delete": "Xoá",
+    "deleteTitle": "Xoá quy trình «{{name}}»?",
+    "deleteBody": "Quy trình còn là bản nháp, chưa áp dụng cho công ty và chưa có lượt chạy. Xoá xong không khôi phục được.",
+    "deleteConfirm": "Xoá quy trình"
+  },
   "flow": {
     "trigger": "Bắt đầu khi",
     "event": "Sự kiện",
+    "eventPh": "Chọn sự kiện bắt đầu…",
     "onlyWhen": "Chỉ khi",
     "always": "Luôn chạy",
     "addCond": "Thêm điều kiện",
@@ -1544,6 +1573,9 @@
       "remind": "Nhắc mỗi (giờ)",
       "signers": "Người ký phía công ty (tối đa {{max}})",
       "group": "Phòng ban",
+      "packOff": "Công ty chưa bật Ký số — bật ở Công ty › Ứng dụng.",
+      "packOffPlatform": "Tài khoản quản trị nền tảng chưa xem được lựa chọn ký số của công ty. Người ký và cách ký đặt ở màn soạn khi đăng nhập bằng tài khoản của công ty.",
+      "openApps": "Mở tab Ứng dụng",
       "unavailable": "Chưa tải được lựa chọn ký số. Mở bản của công ty để chỉnh cấu hình này.",
       "disabled": "Công ty chưa bật ký số. Bật ở {{path:flow}}.",
       "err": {
@@ -1562,6 +1594,10 @@
     "advanced": "Nâng cao",
     "moduleNote": "Nhà cung cấp, người ký và các thiết lập khác của bước này lấy từ cài đặt của ứng dụng. Mở Nâng cao nếu cần chỉnh chi tiết.",
     "notify": {
+      "channel": "Gửi qua",
+      "channel_bell": "Chuông trong ứng dụng",
+      "channel_email": "Email",
+      "channel_both": "Chuông và email",
       "to": "Gửi cho",
       "toStarter": "Người tạo hợp đồng",
       "toGroup": "Phòng ban",
@@ -1575,6 +1611,74 @@
     "companies": "{{n}} công ty",
     "add": "Thêm bước",
     "moreActions": "Thao tác khác",
+    "scheduleDays": "Số ngày (N)",
+    "scheduleDaysRange": "Nhập số ngày từ {{min}} đến {{max}}.",
+    "testRun": {
+      "button": "Chạy thử",
+      "title": "Chạy thử · {{name}}",
+      "banner": "Chạy thử: không tạo hợp đồng thật, không gửi thông báo, không ghi chữ ký. Bạn đóng vai từng người duyệt.",
+      "sample": "Hợp đồng thử",
+      "starter": "Người tải lên",
+      "yes": "Có",
+      "no": "Không",
+      "numberHint": "Ví dụ 650.000.000",
+      "numberInvalid": "Nhập số, ví dụ 650.000.000.",
+      "check": "Kiểm tra trước khi áp dụng",
+      "path": "Đường đi",
+      "restart": "Chạy lại từ đầu",
+      "loading": "Đang chạy thử…",
+      "willAssign": "Lúc chạy thật sẽ giao cho: {{who}}",
+      "noOne": "Lúc chạy thật chưa có ai nhận việc ở bước này — chọn người duyệt trong bước.",
+      "needs": "Cần nộp: {{what}}",
+      "actAs": "Bạn đóng vai",
+      "approve": "Duyệt thử",
+      "return": "Trả lại thử",
+      "reject": "Từ chối thử",
+      "quick": "Thử nhanh các nhánh",
+      "quickRun": "Chạy cả 4 trường hợp",
+      "stepsN": "{{n}} bước",
+      "hint": "Chạy thử dùng đúng phòng ban, thành viên và bước của bản nháp đang mở. Sửa xong bấm Chạy lại từ đầu."
+    },
+    "outline": {
+      "kindStart": "Khi nào chạy",
+      "change": "Đổi",
+      "doneTitle": "{{Record}} ⇒ DONE",
+      "doneSub": "Từ chối ở bất kỳ bước ⇒ REJECT · Trả lại ⇒ DRAFT, gửi lại chạy từ đầu",
+      "signBy": "{{names}} ký",
+      "loading": "Đang tải sơ đồ…",
+      "approveNote": "Người duyệt có 3 nút: Duyệt · Trả lại · Từ chối. Không cần vẽ thêm bước Kết thúc.",
+      "word": {
+        "owner": "Người phụ trách hợp đồng",
+        "milestone": "Xác nhận mốc",
+        "needOne": "một người nhận việc",
+        "needHead": "trưởng phòng",
+        "needAll": "tất cả",
+        "due": "{{n}} giờ",
+        "evidence": "ý kiến + chữ ký hoặc tệp"
+      },
+      "esignSummary": "Gửi hợp đồng để ký và chờ ký xong",
+      "blocked": "Còn {{n}} chỗ cần sửa — sửa các bước có nhãn «Cần sửa» rồi mới lưu và áp dụng được.",
+      "blockedSteps": "⚠ {{n}} bước cần sửa — bấm tên bước để mở:",
+      "add": "Thêm bước",
+      "start": "Bắt đầu: {{event}}",
+      "done": "Hoàn tất",
+      "needFix": "Cần sửa",
+      "note": "Lưu ý",
+      "up": "Đưa lên",
+      "down": "Đưa xuống",
+      "remove": "Xoá bước",
+      "yes": "Đúng",
+      "no": "Sai",
+      "emptyBranch": "Đi tiếp, không thêm bước",
+      "unsupported": "Quy trình này được soạn theo kiểu cũ nên chỉ xem được ở đây. Quy trình do quản trị nền tảng soạn — muốn thay đổi, hãy liên hệ quản trị nền tảng (hoặc tạo quy trình mới từ sơ đồ trống)."
+    },
+    "menuGroup": {
+      "people": "Người làm",
+      "branch": "Rẽ nhánh",
+      "contract": "Hợp đồng",
+      "other": "Khác",
+      "notify": "Báo tin · Chờ"
+    },
     "group": {
       "advanced": "Nâng cao"
     },
@@ -1619,7 +1723,9 @@
       "name": "Tên",
       "outcome": "Kết thúc với",
       "effect": "Hợp đồng sẽ: {{effect}}",
-      "pick": "Chọn kết quả cho hợp đồng."
+      "pick": "Chọn kết quả cho hợp đồng.",
+      "effectGeneric": "Quy trình sẽ: {{effect}}",
+      "pickGeneric": "Chọn kết quả khi quy trình kết thúc."
     },
     "err": {
       "tooManySteps": "Quy trình tối đa 20 bước. Gộp bớt bước.",

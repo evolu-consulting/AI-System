@@ -8,8 +8,6 @@ export const RULES_MAX = 50;
 /** = `ROUTING_CONTRACT_KINDS` của hợp đồng (Mua / Bán / Giới thiệu) — thứ tự hiển thị. */
 export const ROUTING_KINDS = ["buy", "sell", "referral"] as const;
 export type RoutingKind = (typeof ROUTING_KINDS)[number];
-/** Khe có loại HĐ lúc khởi tạo (duyệt hợp đồng) ⇒ UI hiện ô chọn loại; khe khác bỏ qua điều kiện này. */
-export const slotHasKinds = (slot: string): boolean => slot === "contracts.approval";
 
 export type RuleDraft = {
   /** Khoá React ổn định (id luật từ server hoặc khoá tạm `n<k>`). */

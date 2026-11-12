@@ -34,20 +34,32 @@ const signingSelect = (
                   where coalesce(o2->>'signed_at', '') = '' and (o2->>'order')::int < (m->>'order')::int))
           order by e.created_at, e.id limit ${LIM}::int`;
 
-/** Sáu nguồn (CTE), mỗi nguồn ≤ LIM hàng. */
+/**
+ * CR-127 K8 · spec §3 #9b · HĐ nhận chờ CHÍNH mình quyết: bản ghi nhận đang chờ + `awaiting_decision` (chỉ mục partial MIGC 0094), HĐ còn
+ * PROCESSING, mình là người phụ trách HĐ nhận (`owner_user_id` — đặt lúc nhận: người phụ trách công ty hoặc quản trị công ty).
+ */
+const inboxFrom = (t: string) => sql`from contracts.partner_inbox p
+          join contracts.contracts c on c.tenant_id = p.tenant_id and c.id = p.contract_id
+          where p.tenant_id = ${t}::uuid and p.awaiting_decision and p.status = 'pending'
+            and c.status = 'processing' and c.owner_user_id = ${ME}`;
+const inboxSelect = (
+  t: string,
+) => sql`select c.id as contract_id, c.number, ${contractLabelSql("c")} as title, p.sender_name, p.round,
+            to_char(p.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as since, p.created_at
+          ${inboxFrom(t)}
+          order by p.created_at, p.contract_id limit ${LIM}::int`;
+
+/** CR-127 · RA1 · số HĐ nhận chờ CHÍNH mình quyết — cùng mệnh đề với nguồn `inbox` của "Việc của tôi" (số đếm menu `contracts.review`). */
+export async function partnerAwaitingCount(tx: Tx, t: string): Promise<number> {
+  return one<number>(tx, sql`select count(*)::int as j ${inboxFrom(t)}`);
+}
+
+/** Bảy nguồn (CTE), mỗi nguồn ≤ LIM hàng. */
 const sources = (t: string, w: Window) => sql`with ob as (
             select o.id, o.contract_id, o.direction, o.amount, o.due_date from contracts.obligations o
             where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment' and o.due_date <= ${w.horizon}::date
               and ${confirmedOf("o", t)}
             order by o.due_date, o.id limit ${LIM}::int),
-          dl as (
-            select c.id, c.action_deadline, c.number, ${contractLabelSql("c")} as title, c.direction, c.seller, c.buyer, c.fields from contracts.contracts c
-            where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.handled is null
-              and c.status in ('active', 'expiring', 'expired') and c.superseded_at is null
-              and c.doc_type <> 'framework' -- CR-101: HĐ NT nhắc gia hạn qua reminders
-              and c.action_deadline <= ${w.horizon}::date
-              and (c.end_date is null or c.end_date >= ${w.archive}::date)
-            order by c.action_deadline, c.id limit ${LIM}::int),
           fu as (
             select f.id, f.due_at, f.note, f.customer_id, f.renewal_id from contracts.cks_followups f
             where f.tenant_id = ${t}::uuid and f.user_id = ${ME} and f.done_at is null
@@ -66,19 +78,8 @@ const sources = (t: string, w: Window) => sql`with ob as (
                 else exists (select 1 from contracts.obligations o
                   where o.tenant_id = ${t}::uuid and o.id = g.subject_id::uuid and o.status = 'open' and ${confirmedOf("o", t)}) end
             order by g.due_at, g.id limit ${LIM}::int),
-          rm as (
-            select * from (
-              select distinct on (r.contract_id) r.id, r.contract_id, r.deadline, r.milestone, c.number, ${contractLabelSql("c")} as title, c.direction,
-                c.seller, c.buyer, c.fields
-              from contracts.contract_reminders r
-              join contracts.contracts c on c.tenant_id = r.tenant_id and c.id = r.contract_id
-              where r.tenant_id = ${t}::uuid and r.user_id = ${ME} and r.sent_at >= now() - interval '14 days'
-                and r.deadline > ${w.horizon}::date and c.handled is null and c.status in ('active', 'expiring')
-                and c.superseded_at is null
-                and c.action_deadline = r.deadline
-              order by r.contract_id, r.sent_at desc) x
-            order by x.deadline, x.id limit ${LIM}::int),
-          sg as (${signingSelect(t)})`;
+          sg as (${signingSelect(t)}),
+          ib as (${inboxSelect(t)})`;
 
 /** Gom năm nguồn thành MỘT jsonb (`RawMyWork`). */
 const payload = (t: string, w: Window) => sql`select jsonb_build_object(
@@ -88,15 +89,8 @@ const payload = (t: string, w: Window) => sql`select jsonb_build_object(
                 'party', case when c.direction = 'sale' then c.buyer else c.seller end,
                 'contract_direction', c.direction) order by r.due_date, r.id)
               from ob r left join contracts.contracts c on c.tenant_id = ${t}::uuid and c.id = r.contract_id), '[]'::jsonb),
-            'deadlines', coalesce((select jsonb_agg(jsonb_build_object('id', d.id, 'deadline', d.action_deadline,
-                'number', d.number, 'title', d.title,
-                'party', case when d.direction = 'sale' then d.buyer else d.seller end,
-                'contract_direction', d.direction) order by d.action_deadline, d.id) from dl d), '[]'::jsonb),
-            'reminders', coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'contract_id', m.contract_id,
-                'deadline', m.deadline, 'milestone', m.milestone, 'number', m.number,
-                'title', m.title,
-                'party', case when m.direction = 'sale' then m.buyer else m.seller end,
-                'contract_direction', m.direction) order by m.deadline, m.id) from rm m), '[]'::jsonb),
+            'deadlines', '[]'::jsonb, -- CR-127 K6: gỡ Hạn chót hành động (nhắc hạn đi qua quy trình contract.expiring)
+            'reminders', '[]'::jsonb,
             'gfollowups', coalesce((select jsonb_agg(jsonb_build_object('id', g.id,
                 'due', (g.due_at at time zone ${w.tz}::text)::date,
                 'at', to_char(g.due_at at time zone ${w.tz}::text, 'YYYY-MM-DD"T"HH24:MI'),
@@ -112,7 +106,10 @@ const payload = (t: string, w: Window) => sql`select jsonb_build_object(
               left join contracts.cks_customers cu on cu.tenant_id = ${t}::uuid and cu.id = coalesce(f.customer_id, rn.customer_id)),
               '[]'::jsonb),
             'signing', coalesce((select jsonb_agg(jsonb_build_object('contract_id', s.contract_id, 'contract_number', s.number,
-                'contract_title', s.title, 'since', s.since) order by s.created_at, s.id) from sg s), '[]'::jsonb)) as j`;
+                'contract_title', s.title, 'since', s.since) order by s.created_at, s.id) from sg s), '[]'::jsonb),
+            'inbox', coalesce((select jsonb_agg(jsonb_build_object('contract_id', b.contract_id, 'contract_number', b.number,
+                'contract_title', b.title, 'sender_name', b.sender_name, 'round', b.round, 'since', b.since)
+                order by b.created_at, b.contract_id) from ib b), '[]'::jsonb)) as j`;
 
 export function myWorkRepo(tx: Tx, t: string): MyWorkRepo {
   return {

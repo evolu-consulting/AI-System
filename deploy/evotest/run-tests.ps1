@@ -31,7 +31,7 @@ if ($Step -eq "e2e" -and $Filter -and -not $InShard -and -not $Jobs) {
 if ($Exclusive -and $Step -ne "perf" -and $Step -ne "py") { throw "-Exclusive chỉ dùng với -Step perf|py (đo hiệu năng cần máy yên)" }
 if ($Probe -and $Step -ne "perf" -and $Step -ne "py") { throw "-Probe chỉ dùng với -Step perf|py" }
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
-$Key = "F:\workspace\id_evoc_key"; $Server = "evoc@149.202.83.5"
+$Key = if ($env:EVOTEST_KEY) { $env:EVOTEST_KEY } else { "F:\workspace\id_evoc_key" }; $Server = "evoc@149.202.83.5"
 $ssh = @("-i", $Key, "-o", "BatchMode=yes")
 $commit = (git -C $Repo rev-parse --short $Ref).Trim() + $(if ($Dirty) { "+dirty" } else { "" })
 $stamp = (Get-Date -Format "yyyyMMdd-HHmmss") + "-" + $PID   # PID: các lượt cùng giây không đè thư mục tạm/file /tmp/log của nhau
@@ -198,7 +198,7 @@ try {
   $srcRef = ""
   if (-not $NoMirror) {
     $ea = $ErrorActionPreference; $ErrorActionPreference = "Continue"
-    $oldGs = $env:GIT_SSH_COMMAND; $env:GIT_SSH_COMMAND = "ssh -i F:/workspace/id_evoc_key -o BatchMode=yes"
+    $oldGs = $env:GIT_SSH_COMMAND; $env:GIT_SSH_COMMAND = "ssh -i `"$($Key -replace '\\', '/')`" -o BatchMode=yes"
     try {
       $tryRef = "refs/evotest/$stamp"
       $null = git -C $Repo push -q "${Server}:workspace/evotest/mirror.git" "${srcSha}:$tryRef" 2>&1

@@ -37,7 +37,6 @@ HĐ nhận không có người gửi thật bên trong công ty nhận; người
 
 #### Yêu cầu: Bước «Gửi đối tác xác nhận» nói chữ đối tác, không nói «ký» (nguồn: cr124-q6-journey)
 Thẻ duyệt dùng khoá node của bước module (`module_node`) để hiện «Đang chờ đối tác trả lời / Đối tác đã xác nhận / Đối tác từ chối / hết hạn» thay vì «Đang chờ ký / Đã ký».
-- Kịch bản: khi bước module có node contracts.partner-send thì thẻ dùng chữ đối tác [test: e2e/journey-approval/cr124-q6-partner-journey.spec.ts » 1 · gửi lần đầu]
 
 ## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
 

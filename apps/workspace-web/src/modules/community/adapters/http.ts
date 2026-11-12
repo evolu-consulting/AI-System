@@ -4,7 +4,6 @@ import type { FeedQuery, JoinRequest, Report } from "@ai/contracts/community";
 import { api, apiResponse } from "@ai/web-kit/http";
 import { notifyFlowNavChanged } from "~/shared/kernel/flow-nav-event";
 import type { CommunityApi, FlowsApi } from "../application/ports";
-import { cancelRun, createConversation, sendAndStream } from "./dock";
 
 const BASE = "/pack/community";
 const enc = encodeURIComponent;
@@ -16,6 +15,7 @@ export function feedQueryString(q: FeedQuery): Record<string, string | number | 
     cat: q.cat,
     area: q.area,
     authorOrgId: q.authorOrgId,
+    authorUserId: q.authorUserId,
     q: q.q,
     mine: q.mine ? "true" : undefined,
     cursor: q.cursor,
@@ -42,6 +42,12 @@ export const createHttpFlows = (): FlowsApi => ({
   listJoins: async (p) =>
     (await api<{ items: JoinRequest[] }>(`${BASE}/join-requests`, pend(p))).items,
   decideJoin: (id, input) => decided(api(`${BASE}/join-requests/${enc(id)}/decide`, post(input))),
+  listParties: async () => {
+    const rows = await api<{ party: string; name: string }[]>("/pack/contracts/partners", {
+      query: { role: "all" },
+    });
+    return [...new Map(rows.map((r) => [r.party, { party: r.party, name: r.name }])).values()];
+  },
   reportPost: (postId, reason) => api(`${BASE}/posts/${enc(postId)}/report`, post({ reason })),
   listReports: async (p) => (await api<{ items: Report[] }>(`${BASE}/reports`, pend(p))).items,
   decideReport: (id, input) => decided(api(`${BASE}/reports/${enc(id)}/decide`, post(input))),
@@ -76,8 +82,10 @@ export function createHttpApi(): CommunityApi {
     postAction: async (id, input) =>
       (await api(`${BASE}/posts/${enc(id)}/actions`, { method: "POST", body: input })) ?? null,
     getPostSource: (id) => api(`${BASE}/posts/${enc(id)}/source`),
-    listThreads: (postId) => api(`${BASE}/posts/${enc(postId)}/threads`),
-    getThread: (postId, orgId) => api(`${BASE}/posts/${enc(postId)}/threads/${enc(orgId)}`),
+    listComments: (postId, cursor) =>
+      api(`${BASE}/posts/${enc(postId)}/comments`, { query: { cursor, limit: 100 } }),
+    listMentionables: (postId, q) =>
+      api(`${BASE}/posts/${enc(postId)}/mentionables`, { query: { q: q || undefined, limit: 20 } }),
     addComment: (postId, input) =>
       api(`${BASE}/posts/${enc(postId)}/comments`, { method: "POST", body: input }),
     editComment: (postId, id, text) =>
@@ -89,21 +97,14 @@ export function createHttpApi(): CommunityApi {
         method: "POST",
         body: { hidden },
       }),
-    listNotifications: () => api(`${BASE}/notifications`),
-    markRead: async (id) => {
-      await api(`${BASE}/notifications/read`, { method: "POST", body: id ? { id } : {} });
-    },
     listPartners: (opts) =>
       api(`${BASE}/partners`, opts?.rep ? { query: { rep: "1" } } : undefined),
     getProfileMedia: (orgId, q) =>
       api(`${BASE}/profile/${enc(orgId)}/media`, { query: { cursor: q?.cursor, limit: q?.limit } }),
-    updatePartner: (orgId, input) =>
-      api(`${BASE}/partners/${enc(orgId)}`, { method: "PUT", body: input }),
     listCats: () => api(`${BASE}/cats`),
     getProfile: (orgId) => api(orgId ? `${BASE}/profile/${enc(orgId)}` : `${BASE}/profile`),
     getSettings: () => api(`${BASE}/settings`),
     saveSettings: (s) => api(`${BASE}/settings`, { method: "PUT", body: s }),
-    chat: { createConversation, send: sendAndStream, cancel: cancelRun },
     previewQuote: (postId, input) =>
       api(`${BASE}/posts/${enc(postId)}/quote/preview`, { method: "POST", body: input }),
     saveQuote: (postId, input) =>

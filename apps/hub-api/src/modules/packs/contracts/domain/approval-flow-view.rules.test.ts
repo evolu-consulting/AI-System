@@ -245,3 +245,32 @@ describe("CR-121 D-6b · bước Thông báo / Chờ tới trong FlowView của 
     expect(w?.kind === "wait" ? w.until : null).toBe(due);
   });
 });
+
+describe("CR-127 RA2 · FlowTask mang nhận việc của task mở", () => {
+  const claim = { state: "unclaimed" as const };
+  test("thẻ HĐ: claim / need / can_reassign của thẻ ⇒ FlowTask (qua zod)", () => {
+    const c = card({
+      task_id: U(9),
+      can_act: true,
+      claim,
+      need: "all",
+      can_reassign: true,
+      votes: { done: 1, total: 2 },
+      delegated_from: { id: U(7), display_name: "A" },
+      evidence_mode: "opinion_plus",
+      steps: [step(0, { status: "open" })],
+    });
+    const t = FlowViewSchema.parse(flowViewOfCard(c, U(2), 4)).tasks[0];
+    expect([t?.claim, t?.need, t?.can_reassign]).toEqual([claim, "all", true]);
+    expect([t?.votes, t?.delegated_from?.id, t?.evidence_mode]).toEqual([
+      { done: 1, total: 2 },
+      U(7),
+      "opinion_plus",
+    ]);
+  });
+  test("không có việc nhóm ⇒ FlowTask không có các trường (vắng, không phải false)", () => {
+    const c = card({ task_id: U(9), can_act: true, steps: [step(0, { status: "open" })] });
+    const t = flowViewOfCard(c, U(2), 4).tasks[0];
+    expect(t && ("claim" in t || "can_reassign" in t)).toBe(false);
+  });
+});

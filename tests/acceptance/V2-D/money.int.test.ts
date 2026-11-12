@@ -18,6 +18,7 @@ import {
   ok,
   P,
   product,
+  reopen,
   settleRaw,
   startHd1,
   statusOf,
@@ -261,6 +262,7 @@ describe("V2-D · giao nhiều đợt: Trên HĐ · Đã giao · Giao lần này
     await ok(settleRaw(c, m2));
     expect(await comp(c.sql, cid)).toEqual({ onHand: 100, value: 5_000_000, avg: 50_000 });
     expect(await deliveredOf(c.sql, line)).toBe(100);
+    await reopen(c, k);
     const m3 = await addDelivery(c, k);
     const r3 = await ok(settleRaw(c, m3));
     expect(r3.status).toBe("done");
@@ -286,6 +288,7 @@ describe("V2-D · giao nhiều đợt: Trên HĐ · Đã giao · Giao lần này
     const k = await deal(c.sql, { sale: false });
     const line = await item(c.sql, k, { qty: 100, price: 50_000, productId: p.id });
     await ok(settleRaw(c, await addDelivery(c, k, [{ item_id: line, qty: 70 }])));
+    await reopen(c, k);
     const r = await addDeliveryRaw(c, k, [{ item_id: line, qty: 31 }]);
     expect([r.status, r.json?.error?.code]).toEqual([422, "DELIVERY_OVER"]);
     const fine = await addDeliveryRaw(c, k, [{ item_id: line, qty: 30 }]);

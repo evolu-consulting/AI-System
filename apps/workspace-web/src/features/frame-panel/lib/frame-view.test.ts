@@ -81,7 +81,7 @@ describe("attachCandidates", () => {
       row("fw"),
       row("att"),
       row("app", { kind: "appendix" }),
-      row("rej", { status: "rejected" }),
+      row("rej", { status: "reject" }),
       row("ok"),
       row("deal"),
     ];

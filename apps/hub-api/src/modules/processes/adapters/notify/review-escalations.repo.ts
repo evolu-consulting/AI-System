@@ -17,7 +17,9 @@ type EscalationRow = {
   tenant_id: string;
   process_run_id: string;
   from_group_id: string | null;
-  to_group_id: string;
+  to_group_id: string | null;
+  to_user_id: string | null;
+  user_ok: boolean | null;
   group_tenant_id: string | null;
   process_name: string | null;
   stage_name: string | null;
@@ -54,10 +56,13 @@ export async function claimDueEscalations(
       update hub.review_tasks t set escalated_at = ${iso(now)}::timestamptz
       from c where t.id = c.id and t.tenant_id = c.tenant_id
       returning t.id, t.tenant_id, t.process_run_id, t.stage_run_id, t.assignee_group_id, t.escalate_group_id,
-        t.escalate_at
+        t.escalate_user_id, t.escalate_at
     )
     select n.claimed, u.id, u.tenant_id, u.process_run_id, u.assignee_group_id as from_group_id,
-      u.escalate_group_id as to_group_id, g.tenant_id as group_tenant_id, g.name->>'vi' as group_name,
+      u.escalate_group_id as to_group_id, u.escalate_user_id::text as to_user_id,
+      exists (select 1 from admin.users eu where eu.id = u.escalate_user_id and eu.tenant_id = u.tenant_id
+        and eu.active and not eu.locked_by_tenant) as user_ok,
+      g.tenant_id as group_tenant_id, g.name->>'vi' as group_name,
       pr.snapshot->'stages'->(s.stage_idx::int)->'after'->'escalate'->>'after_h' as after_h,
       pr.snapshot->>'name' as process_name,
       pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name,
@@ -88,6 +93,8 @@ function toEscalation(r: EscalationRow & { id: string }): ClaimedEscalation {
     processRunId: r.process_run_id,
     fromGroupId: r.from_group_id,
     toGroupId: r.to_group_id,
+    toUserId: r.to_user_id,
+    userOk: r.user_ok === true,
     groupTenantId: r.group_tenant_id,
     processName: r.process_name ?? "",
     stageName: r.stage_name,
@@ -103,13 +110,22 @@ export async function addEscalatedGroups(
   rows: readonly EscalatedAssigneeRow[],
 ): Promise<void> {
   const json = JSON.stringify(
-    rows.map((r) => ({ tenant_id: r.tenantId, task_id: r.taskId, group_id: r.groupId })),
+    rows.map((r) => ({
+      tenant_id: r.tenantId,
+      task_id: r.taskId,
+      group_id: r.groupId ?? null,
+      user_id: r.groupId ? null : (r.userId ?? null),
+    })),
   );
+  // CR-127 · E3c · hàng người (`user_id`) khi đích là một người cùng tenant; hàng nhóm như cũ.
   await tx.execute(sql`
-    insert into hub.review_task_assignees (tenant_id, task_id, group_id, via, depth)
-    select x.tenant_id, x.task_id, x.group_id, 'escalated', 0
-    from jsonb_to_recordset(${json}::jsonb) as x(tenant_id uuid, task_id uuid, group_id uuid)
-    where exists (select 1 from admin.groups g where g.id = x.group_id and g.tenant_id = x.tenant_id)`);
+    insert into hub.review_task_assignees (tenant_id, task_id, group_id, user_id, via, depth)
+    select x.tenant_id, x.task_id, x.group_id, x.user_id, 'escalated', 0
+    from jsonb_to_recordset(${json}::jsonb) as x(tenant_id uuid, task_id uuid, group_id uuid, user_id uuid)
+    where (x.group_id is not null
+        and exists (select 1 from admin.groups g where g.id = x.group_id and g.tenant_id = x.tenant_id))
+      or (x.group_id is null and x.user_id is not null
+        and exists (select 1 from admin.users u where u.id = x.user_id and u.tenant_id = x.tenant_id))`);
 }
 
 /** MỘT câu nhiều hàng: audit `escalate` / `escalate_skipped` (actor hệ thống = NULL, TC3 `summary {from_group, to_group}`). */
@@ -120,7 +136,11 @@ export async function auditEscalations(tx: Tx, rows: readonly EscalateAuditRow[]
       action: r.action,
       entity_id: r.taskId,
       entity_name: Array.from(r.entityName).slice(0, 200).join(""),
-      summary: { from_group: r.fromGroupId, to_group: r.toGroupId },
+      summary: {
+        from_group: r.fromGroupId,
+        to_group: r.toGroupId,
+        ...(r.toUserId ? { to_user: r.toUserId } : {}),
+      },
     })),
   );
   await tx.execute(sql`

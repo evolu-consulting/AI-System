@@ -65,7 +65,7 @@ describe("I1 review B#20 · chạy tiếp theo điểm dừng", () => {
     const c = await counts(ctx);
     expect(c).toMatchObject({
       "contracts.contracts": 6,
-      "contracts.approvals": 6,
+      "contracts.approvals": 5, // CR-127 Z1c: HĐ "chờ xem lại" nhập về ⇒ draft, không ghi lượt duyệt (5 thay vì 6)
       "contracts.contract_items": 4,
       "contracts.files": 1,
       "contracts.cks_certificates": 3,

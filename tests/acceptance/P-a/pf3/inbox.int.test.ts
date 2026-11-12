@@ -124,8 +124,12 @@ describe("P3-09 · gỡ khỏi Group + tenant khác [HUB-BR-25]", () => {
     );
     expect(ids).not.toContain(f.taskId);
     expect(
-      (await c.call("B", "POST", `/review-tasks/${f.taskId}/forward`, { to_user_id: PA.T.id }))
-        .status,
+      (
+        await c.call("B", "POST", `/review-tasks/${f.taskId}/forward`, {
+          to_user_id: PA.T.id,
+          note: "Chuyển giúp",
+        })
+      ).status,
     ).toBe(404);
     // Thêm lại qua adminChange (bump config_version + NOTIFY) để cache cấu hình nạp lại groupIds của B trước P3-12.
     await adminChange(

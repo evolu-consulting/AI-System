@@ -2,45 +2,33 @@
 // (cap `contracts.review`) hiện khi người xem (nội bộ, có quyền đọc gói) có việc duyệt mở HOẶC có vai duyệt trong quy trình ĐANG GÁN
 // cho khe `contracts.approval`; số = task duyệt mở người đó quyết được. Lọc theo `user.tenantId` (đọc scope user + scope system có
 // `tenant_id` tường minh trong `PackRunsPort.inboxOf`). Engine tắt (không có cầu) ⇒ không mục.
-import { CONTRACTS_PARTNER_CONFIRM_FEATURE } from "@ai/contracts/tenants";
 import type { Db } from "@ai/db";
 import type { AuthUser } from "../../../lib/auth.middleware";
-import type { PackNavCap, PackNavCountPort, PackNavSource, PackRunsBridge } from "../kit/public";
+import type { PackNavCap, PackNavSource, PackRunsBridge } from "../kit/public";
 import {
-  countedCap,
   createPackUow,
   type PackAccessView,
   packAccessInput,
   packActionsFor,
   packNavRegistry,
-  packTenantOnly,
-  tenantFeatureOn,
 } from "../kit/public";
-import { partnerInboxRepo } from "./adapters/partner-inbox.repo";
+import { partnerAwaitingCount } from "./adapters/mywork.repo";
 
 const KEY = "contracts";
 export const CONTRACTS_APPROVAL_SLOT = "contracts.approval";
-/** CR-124 · q4 · mục «Hợp đồng đối tác gửi» (cap `contracts.partner`): chỉ khi công ty bật tính năng `contracts-partner-confirm`. */
-export const PARTNER_INBOX_CAP = "contracts.partner";
-export const PARTNER_FEATURE = CONTRACTS_PARTNER_CONFIRM_FEATURE;
-
+/** CR-127 · U6: mục «Hợp đồng đối tác gửi» (cap `contracts.partner`) đã gỡ — HĐ đối tác gửi nằm trong danh sách Hợp đồng (lọc Nguồn). */
 export function contractsNavSource(
   canRead: (u: AuthUser) => Promise<boolean>,
   runs: PackRunsBridge | undefined,
-  partnerOn: (u: AuthUser) => Promise<boolean> = async () => false,
-  /** CR-125 G7 · số «Đang chờ công ty nhận» của hộp thư đối tác; vắng ⇒ mục hiện, không badge. */
-  partnerCount?: PackNavCountPort,
+  /** CR-127 · RA1 · số HĐ nhận chờ người xem quyết (luồng nhận đối tác, `awaiting_decision`); vắng ⇒ 0. */
+  partnerWaiting: (u: AuthUser) => Promise<number> = async () => 0,
 ): PackNavSource {
   return {
     pack: KEY,
     async caps(u) {
       if (u.userKind === "external" || !(await canRead(u))) return [];
-      // Hai mục độc lập ⇒ chạy song song (đường nóng `/pack/nav`): thêm số chờ hộp thư không cộng thêm độ trễ nối tiếp.
-      const [partner, review] = await Promise.all([
-        partnerOn(u).then((on) => (on ? countedCap(PARTNER_INBOX_CAP, partnerCount, u) : null)),
-        reviewCap(runs, u),
-      ]);
-      return [...(partner ? [partner] : []), ...(review ? [review] : [])];
+      const review = await reviewCap(runs, u, partnerWaiting);
+      return review ? [review] : [];
     },
   };
 }
@@ -48,35 +36,39 @@ export function contractsNavSource(
 async function reviewCap(
   runs: PackRunsBridge | undefined,
   u: AuthUser,
+  partnerWaiting: (u: AuthUser) => Promise<number>,
 ): Promise<PackNavCap | null> {
   const port = runs?.port;
-  if (!port?.inboxOf) return null;
-  const r = await port.inboxOf(
-    { userId: u.userId, tenantId: u.tenantId, role: "member" },
-    KEY,
-    CONTRACTS_APPROVAL_SLOT,
-  );
-  return r.approver ? { cap: "contracts.review", count: r.count } : null;
-}
-
-/** Cổng đếm hộp thư đối tác: MỘT câu `count(*)` trong tx gói của tenant người xem (RLS + lọc `tenant_id` tường minh). */
-export function partnerCountPort(db: Db): PackNavCountPort {
-  const uow = packTenantOnly(
-    createPackUow(db, KEY, (tx, tid) => ({ inbox: partnerInboxRepo(tx, tid) })),
-  );
-  return { count: (u) => uow.tenant(u, (r) => r.inbox.pendingCount()) };
+  // Số = việc duyệt + việc xác nhận mốc (engine: `inboxOf`) + HĐ nhận chờ mình quyết (gói) — mỗi nguồn MỘT câu SQL, song song.
+  const [r, partner] = await Promise.all([
+    port?.inboxOf
+      ? port.inboxOf(
+          { userId: u.userId, tenantId: u.tenantId, role: "member" },
+          KEY,
+          CONTRACTS_APPROVAL_SLOT,
+        )
+      : Promise.resolve(null),
+    partnerWaiting(u),
+  ]);
+  if (!(r?.approver || partner > 0)) return null;
+  return { cap: "contracts.review", count: (r?.count ?? 0) + partner };
 }
 
 export const mountContractsNav = (
   view: PackAccessView,
   runs: PackRunsBridge | undefined,
   db?: Db,
-): void =>
+): void => {
+  const uow = db
+    ? createPackUow(db, KEY, (tx, t) => ({ partnerWaiting: () => partnerAwaitingCount(tx, t) }))
+    : null;
   packNavRegistry.register(
     contractsNavSource(
       async (u) => packActionsFor(await packAccessInput(view, KEY, u)).includes("read"),
       runs,
-      (u) => tenantFeatureOn(view, PARTNER_FEATURE, u.tenantId),
-      db ? partnerCountPort(db) : undefined,
+      uow
+        ? (u) => uow.tenant({ userId: u.userId, tenantId: u.tenantId }, (r) => r.partnerWaiting())
+        : undefined,
     ),
   );
+};

@@ -11,7 +11,7 @@ const json = <T>(v: T | string): T => (typeof v === "string" ? (JSON.parse(v) as
 type Kind = "contract" | "appendix";
 
 /** Phụ lục chỉ áp giá khi đã qua kiểm/duyệt (không tính đang đọc/lỗi/chờ kiểm/bị từ chối — như `project.py` chỉ chiếu HĐ đã xác nhận). */
-export const PRICED_STATUSES = ["active", "expiring", "expired", "renewed", "terminated"] as const;
+export const PRICED_STATUSES = ["done"] as const;
 const FAMILY_MAX = 101;
 const ITEMS_MAX = 500;
 
@@ -29,7 +29,7 @@ function lockQ(tx: Tx, tenantId: string): AppendixRepo["lockForParent"] {
       has_appendices: boolean;
       parent_kind: Kind | null;
       locked: boolean;
-    }>(sql`select c.version, c.kind, c.parent_id, c.updated_at, c.locked_at is not null as locked,
+    }>(sql`select c.version, c.kind, c.parent_id, c.updated_at, (c.status in ('processing', 'done') and c.doc_type <> 'deal') as locked,
           exists (select 1 from contracts.contracts a where a.parent_id = c.id and a.tenant_id = c.tenant_id) as has_appendices,
           (select p.kind from contracts.contracts p where p.id = ${parentId}::uuid and p.tenant_id = c.tenant_id) as parent_kind
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid for update of c`);
@@ -119,7 +119,7 @@ function familyQ(tx: Tx, tenantId: string): AppendixRepo["family"] {
           from contracts.contracts c
           where c.tenant_id = ${tenantId}::uuid
             and (c.id = (select root from r) or c.parent_id = (select root from r))
-            and (c.kind = 'contract' or c.status in ('active', 'expiring', 'expired', 'renewed', 'terminated'))
+            and (c.kind = 'contract' or c.status = 'done')
           order by (c.kind = 'appendix'), c.created_at, c.id limit ${FAMILY_MAX}::int)
         select json_agg(json_build_object('id', f.id, 'kind', f.kind, 'title', f.title, 'effective_date', f.eff,
           'items', coalesce((select json_agg(json_build_object('code', i.code, 'name', i.name, 'spec', i.spec,

@@ -8,14 +8,14 @@ import { ReextractButton } from "./ReextractButton";
 export type FileRef = { href: string; name: string; onOpen: () => void };
 
 /** "📄 Xem file gốc": giữ `<a>` như mgmt-app (khung/ảnh), bấm ⇒ `onOpen` (xin link có Bearer, #220). */
-function FileLink({ file, title }: { file: FileRef; title?: string }) {
+export function FileLink({ file, title }: { file: FileRef; title?: string }) {
   const { t } = useTranslation();
   return (
     <a
       href={file.href}
       target="_blank"
       rel="noreferrer"
-      className="btn btn-outline"
+      className="text-[13px] font-medium text-act hover:underline"
       title={title}
       onClick={(e) => {
         e.preventDefault();
@@ -24,31 +24,6 @@ function FileLink({ file, title }: { file: FileRef; title?: string }) {
     >
       {t("contracts.review.viewFile")}
     </a>
-  );
-}
-
-/** Nút trên tiêu đề (`ContractPage.tsx:95-109`): "Xem file gốc" + "Lưu" ("Xác nhận" thuộc HD3). */
-export function ReviewActions({
-  file,
-  canSave,
-  busy,
-  onSave,
-}: {
-  file: FileRef | null;
-  canSave: boolean;
-  busy: boolean;
-  onSave: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <>
-      {file && <FileLink file={file} title={file.name} />}
-      {canSave && (
-        <button type="button" className="btn btn-quiet" disabled={busy} onClick={onSave}>
-          {busy ? t("contracts.review.saving") : t("contracts.common.save")}
-        </button>
-      )}
-    </>
   );
 }
 

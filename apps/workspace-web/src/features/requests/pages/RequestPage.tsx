@@ -2,6 +2,7 @@
 // và lượt con (Phần 1/2/3 …) lồng dưới lượt cha; việc của người xem ở bất kỳ lượt nào (form «Gửi», Duyệt / Trả lại / Từ chối, thẻ nhóm cùng
 // duyệt) làm ngay tại đây qua `RunStepActions` (cùng component với thẻ HĐ). Mở từ lượt con ⇒ chuyển sang lượt gốc, nhìn vào lượt con đó.
 // Quyền xem do hub quyết (người gửi · người được giao · quản trị), ngoài ra 404.
+import type { EvidenceInput } from "@ai/contracts/chat";
 import type { RequestStepNode } from "@ai/contracts/hub-admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -52,12 +53,19 @@ export function RequestPage({
     notifyFlowNavChanged();
   };
   const decide = useMutation({
-    mutationFn: (a: { n: RequestStepNode; taskId: string; action: string; feedback?: string }) =>
+    mutationFn: (a: {
+      n: RequestStepNode;
+      taskId: string;
+      action: string;
+      feedback?: string;
+      evidence?: EvidenceInput;
+    }) =>
       decideTask(
         a.taskId,
         RESULT_OF_ACTION[a.action] ?? "pass",
         a.feedback,
         a.action === "return" ? a.n.back_to_step : null,
+        a.evidence,
       ),
     onSuccess: changed,
   });
@@ -100,9 +108,21 @@ export function RequestPage({
     busy: decide.isPending,
     error: decide.isError,
     onChanged: changed,
-    onDecide: (n: RequestStepNode, taskId: string, action: string, feedback?: string) =>
+    onDecide: (
+      n: RequestStepNode,
+      taskId: string,
+      action: string,
+      feedback?: string,
+      evidence?: EvidenceInput,
+    ) =>
       decide
-        .mutateAsync({ n, taskId, action, ...(feedback ? { feedback } : {}) })
+        .mutateAsync({
+          n,
+          taskId,
+          action,
+          ...(feedback ? { feedback } : {}),
+          ...(evidence ? { evidence } : {}),
+        })
         .then(() => undefined),
   };
   const waiting = waitingOf(steps, run.status);

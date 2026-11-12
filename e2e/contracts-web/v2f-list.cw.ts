@@ -22,14 +22,15 @@ test("chỉ nút Upload (không còn Thêm thủ công) + cột theo mockup; kh�
     "Loại",
     "Giá trị",
     "Hiệu lực",
-    "Bước",
+    "Trạng thái",
+    "Đang chờ",
     "Thao tác",
   ]);
   await expect(page.getByRole("button", { name: /^Xoá/ })).toHaveCount(0);
   await expect(page.getByTitle("Xoá")).toHaveCount(0);
 });
 
-test("hàng: tên + số, đối tác theo loại (Mua ⇒ bên bán), loại, giá trị, hiệu lực, giai đoạn + bước hiện tại đỏ khi quá hạn", async ({
+test("hàng: tên + số, đối tác theo loại (Mua ⇒ bên bán), loại, giá trị, hiệu lực, trạng thái + hiệu lực, đang chờ", async ({
   page,
 }) => {
   await installV2f(page);
@@ -41,19 +42,13 @@ test("hàng: tên + số, đối tác theo loại (Mua ⇒ bên bán), loại, g
   await expect(row.locator("td").nth(3)).toHaveText("245.000.000 đ");
   await expect(row.locator("td").nth(4)).toContainText("01/01/2026");
   await expect(row.locator("td").nth(4)).toContainText("đến 31/12/2026");
-  const stage = row.locator("td").nth(5);
-  await expect(stage.getByText("Quá hạn", { exact: true })).toBeVisible();
-  await expect(stage.getByText("Giao đợt 2")).toHaveClass(/text-late/);
-  const waiting = page
-    .locator("main tbody tr", { hasText: "Hợp đồng cung cấp gia vị" })
-    .locator("td")
-    .nth(5);
-  await expect(waiting).toHaveText("Chờ xác nhận");
-  const done = page
-    .locator("main tbody tr", { hasText: "Hợp đồng vận chuyển quý 4" })
-    .locator("td")
-    .nth(5);
-  await expect(done).toHaveText("Đã xong");
+  // CR-127 Q10b: cột «Trạng thái» (4 trạng thái mới + hiệu lực) và «Đang chờ» (ai đang giữ bước) thay cột «Bước» của máy cũ.
+  const cellOf = (title: string, n: number) =>
+    page.locator("main tbody tr", { hasText: title }).locator("td").nth(n);
+  await expect(row.locator("td").nth(5)).toHaveText("Đã duyệt xongCòn hiệu lực");
+  await expect(cellOf("Hợp đồng cung cấp gia vị", 5)).toHaveText("Nháp");
+  await expect(cellOf("Hợp đồng vận chuyển quý 4", 5)).toContainText("Hết hạn sau 33 ngày");
+  await expect(row.locator("td").nth(6)).toHaveText("—");
 });
 
 test("yêu cầu danh sách kèm include=progress", async ({ page }) => {

@@ -86,12 +86,6 @@
   min-width: 150px;
   height: 36px;
 }
-[data-mod="community"] .threadtabs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
 [data-mod="community"] .toast {
   position: fixed;
   left: 50%;
@@ -144,4 +138,75 @@
 [data-mod="community"] .filecard .fget {
   color: var(--cm-accent);
   font-size: 12.5px;
+}
+[data-mod="community"] .mentionbox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+[data-mod="community"] .mentionbox input {
+  width: 100%;
+}
+[data-mod="community"] .mentionpop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 30;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--card);
+  border: 1px solid var(--field);
+  border-radius: 10px;
+  box-shadow: var(--cm-shadow);
+}
+[data-mod="community"] .mentionopt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font: inherit;
+  color: var(--ink);
+}
+[data-mod="community"] .mentionopt.on,
+[data-mod="community"] .mentionopt:hover {
+  background: var(--cm-accent-soft);
+  color: var(--cm-accent-ink);
+}
+[data-mod="community"] .mentionhint {
+  font-size: 11.5px;
+  color: var(--dim);
+  margin: 4px 0 0 12px;
+}
+[data-mod="community"] .mention {
+  display: inline;
+  font-weight: 600;
+  color: var(--cm-accent);
+}
+[data-mod="community"] .bubble p .mention {
+  display: inline;
+  font-size: inherit;
+}
+[data-mod="community"] .cmt.focused .bubble {
+  outline: 2px solid var(--cm-accent);
+}
+[data-mod="community"] .ctime {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+[data-mod="community"] .ctime .clink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 0;
+  padding: 2px 0;
+  line-height: 1;
 }

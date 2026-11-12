@@ -36,7 +36,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
       // user-menu + hộp thoại Cài đặt cũng sạch
       await page.getByRole("button", { name: "Tài khoản" }).click();
       expect(await page.locator("body").innerHTML()).not.toContain(SHT);
-      await page.getByRole("menuitem", { name: "Cài đặt Community" }).click();
+      await page.getByRole("menuitem", { name: "Cài đặt", exact: true }).click();
       await expect(page.getByRole("dialog", { name: "Cài đặt" })).toBeVisible();
       expect(await page.locator("body").innerHTML()).not.toContain(SHT);
       await page.keyboard.press("Escape");
@@ -96,9 +96,9 @@ test("MỘT khung: không còn header/sidebar riêng của Community; mục menu
   await expect(page.locator("a.sidelink")).toHaveCount(0);
   const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
   await expect(nav.getByRole("link", { name: "Bảng tin" })).toHaveAttribute("aria-current", "page");
-  await expect(nav.getByRole("link", { name: "Bài đăng của tôi" })).toHaveAttribute(
+  await expect(nav.getByRole("link", { name: "Hồ sơ của tôi" })).toHaveAttribute(
     "href",
-    "/community/profile",
+    "/community/me",
   );
 });
 
@@ -115,7 +115,7 @@ test("điều hướng trong app KHÔNG tải lại trang: Bảng tin ↔ Bài �
     });
   });
   const navEntries = await page.evaluate(() => performance.getEntriesByType("navigation").length);
-  await nav.getByRole("link", { name: "Bài đăng của tôi" }).click();
+  await nav.getByRole("link", { name: "Hồ sơ của tôi" }).click();
   await expect(page).toHaveURL(/\/community\/profile$/);
   await nav.getByRole("link", { name: "Bảng tin" }).click();
   await expect(page).toHaveURL(/\/community$/);
@@ -155,6 +155,20 @@ test("giao diện nằm TRONG menu tài khoản (chỉ biểu tượng Sáng/T�
     "EN",
   ]);
 });
+test("đổi ngôn ngữ qua menu tài khoản (VI → EN → VI): nhãn thanh trên đổi theo, lựa chọn được đánh dấu", async ({
+  page,
+}) => {
+  await page.goto("/community");
+  await page.getByRole("button", { name: "Tài khoản" }).click();
+  const lang = page.getByRole("radiogroup", { name: "Ngôn ngữ" });
+  await lang.getByRole("radio", { name: "EN", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Account" })).toBeVisible();
+  await page.getByRole("button", { name: "Account" }).click();
+  const en = page.getByRole("radio", { name: "EN", exact: true });
+  await expect(en).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("radio", { name: "VI", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Tài khoản" })).toBeVisible();
+});
 test("3 loại bài có màu KHÁC nhau (nhãn, viền thẻ, nút soạn nhanh, đếm tab): bán ≠ mua ≠ thông báo", async ({
   page,
 }) => {
@@ -190,12 +204,12 @@ test("user-menu role=menu, Tường nhà mở hồ sơ mình, Esc đóng; mục 
   await page.keyboard.press("Escape");
   await expect(page.getByRole("menu")).toHaveCount(0);
   await avatar.click();
-  await page.getByRole("menuitem", { name: "Tường nhà" }).click();
-  await expect(page).toHaveURL(/\/community\/profile$/);
+  await page.getByRole("menuitem", { name: "Hồ sơ của tôi" }).click();
+  await expect(page).toHaveURL(/\/community\/me$/);
   await expect(
     page
       .getByRole("navigation", { name: "Điều hướng chính" })
-      .getByRole("link", { name: "Bài đăng của tôi" }),
+      .getByRole("link", { name: "Hồ sơ của tôi" }),
   ).toHaveAttribute("aria-current", "page");
 });
 

@@ -6,7 +6,7 @@ import { planReview, type ReviewCur } from "./review.rules";
 import { norm, prepareSource } from "./verify.rules";
 
 const cur = (o: Partial<ReviewCur> = {}): ReviewCur => ({
-  status: "needs_review",
+  status: "draft",
   deal: null,
   fields: {
     start_date: { value: "2026-03-01", quote: "", verified: true, edited: false },

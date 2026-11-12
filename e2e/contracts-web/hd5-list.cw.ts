@@ -44,11 +44,11 @@ test.describe("HD-FR-51 · danh sách phía server", () => {
     expect(queries[0]?.get("page")).toBe("1");
     await page.getByRole("button", { name: "Lọc", exact: true }).click();
     await page.getByRole("button", { name: /^Trạng thái/ }).click();
-    await page.getByRole("checkbox", { name: "Chờ xác nhận" }).check();
-    await expect.poll(() => queries.at(-1)?.getAll("status")).toEqual(["needs_review"]);
+    await page.getByRole("checkbox", { name: "Nháp" }).check();
+    await expect.poll(() => queries.at(-1)?.getAll("status")).toEqual(["draft"]);
     await page.getByRole("searchbox").fill("gia vị");
     await expect.poll(() => queries.at(-1)?.get("q")).toBe("gia vị");
-    expect(queries.at(-1)?.getAll("status")).toEqual(["needs_review"]);
+    expect(queries.at(-1)?.getAll("status")).toEqual(["draft"]);
   });
 
   test("hàng phụ lục hiện 'Phụ lục của <HĐ gốc>'; viewer không có nút thêm", async ({ page }) => {

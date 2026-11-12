@@ -1,6 +1,7 @@
 // P-b · PF-S1 · HUB-FR-120 · ADM-FR-68 · PB-R01/02/08 · C10 · C-01…C-18 (test-plan §4.1): CRUD `/admin/sources`.
 // Đỏ trước code: route `/admin/sources` chưa mount ⇒ 404 thay vì 201/200…; bảng `hub.sources` chưa có ⇒ fixture SQL được bảo vệ.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+import { T as T_FIX } from "../../H1/_fixtures";
 import {
   type Ctx1,
   code,
@@ -209,7 +210,14 @@ describe("C-10…C-13 · sửa [PB-R08]", () => {
 
     await mkSource(c, "Adm", gitBody("app-repo"));
     expect(
-      (await c.call("Adm", "POST", "/process-defs", defWithSource("pbx-src", "app-repo"))).status,
+      (
+        await c.call(
+          "P",
+          "POST",
+          `/process-defs?tenant_id=${T_FIX.acme}`,
+          defWithSource("pbx-src", "app-repo"),
+        )
+      ).status,
     ).toBe(201);
     const used = await c.call(
       "Adm",
@@ -222,7 +230,12 @@ describe("C-10…C-13 · sửa [PB-R08]", () => {
 
   it("PB-R08 · C-13 · đổi URL/branch khi đang dùng ⇒ 200", async () => {
     await mkSource(c, "Adm", gitBody("app-repo"));
-    await c.call("Adm", "POST", "/process-defs", defWithSource("pbx-src", "app-repo"));
+    await c.call(
+      "P",
+      "POST",
+      `/process-defs?tenant_id=${T_FIX.acme}`,
+      defWithSource("pbx-src", "app-repo"),
+    );
     const r = await c.call(
       "Adm",
       "PUT",
@@ -264,7 +277,12 @@ describe("C-14…C-17 · xoá mềm + used_by [PB-R08]", () => {
 
   it("PB-R08 · C-16 · DELETE khi p-src/stage s1 dùng ⇒ 409 SOURCE_IN_USE details.refs, hàng còn", async () => {
     await mkSource(c, "Adm", gitBody("app-repo"));
-    const def = await c.call("Adm", "POST", "/process-defs", defWithSource("p-src", "app-repo"));
+    const def = await c.call(
+      "P",
+      "POST",
+      `/process-defs?tenant_id=${T_FIX.acme}`,
+      defWithSource("p-src", "app-repo"),
+    );
     expect(def.status).toBe(201);
     const del = await c.call("Adm", "DELETE", "/admin/sources/app-repo?version=1");
     expect(code(del)).toEqual({ status: 409, code: "SOURCE_IN_USE" });
@@ -274,7 +292,12 @@ describe("C-14…C-17 · xoá mềm + used_by [PB-R08]", () => {
 
   it("PB-R08 · C-17 · used_by = [p-src] sau khi quy trình tham chiếu; về [] sau khi gỡ", async () => {
     await mkSource(c, "Adm", gitBody("app-repo"));
-    const def = await c.call("Adm", "POST", "/process-defs", defWithSource("p-src", "app-repo"));
+    const def = await c.call(
+      "P",
+      "POST",
+      `/process-defs?tenant_id=${T_FIX.acme}`,
+      defWithSource("p-src", "app-repo"),
+    );
     expect(def.status).toBe(201);
     expect((await c.call("Adm", "GET", "/admin/sources/app-repo")).json.used_by).toEqual(["p-src"]);
     const del = await c.call(

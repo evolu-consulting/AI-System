@@ -3,6 +3,7 @@
 // code vắng). Chờ tool-driver bằng `handles.settled()`; không ngủ chờ.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { PROCESS_STAGES_MAX } from "@ai/contracts/chat";
+import { T as T_FIX } from "../../H1/_fixtures";
 import { loadChat } from "../_support/modules";
 import {
   agentStage,
@@ -97,7 +98,7 @@ describe("PD2-P01 · lưu def 10 stage / 3 tool [plan-d2 §9; trần PROCESS_STA
       const def = await createDef(c, defBody(key, st, { inputs: MA_KH_INPUT }));
       let version = def.version as number;
       return async () => {
-        const r = await c.call("Adm", "PUT", `/process-defs/${def.id}`, {
+        const r = await c.call("P", "PUT", `/process-defs/${def.id}?tenant_id=${T_FIX.acme}`, {
           ...defBody(key, st, { inputs: MA_KH_INPUT }),
           version,
         });

@@ -121,6 +121,8 @@ export const companyFlows = hub.table("company_flows", {
 export const tenantFlowSettings = hub.table("tenant_flow_settings", {
   tenantId: uuid("tenant_id").primaryKey(),
   flowTriggers: boolean("flow_triggers").notNull().default(false),
+  /** CR-127 · E1 (0131) · giờ tự trả việc đã nhận về nhóm (1..168, mặc định 24). */
+  claimReleaseH: integer("claim_release_h").notNull().default(24),
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });
 

@@ -121,3 +121,21 @@ export function toArg(f: PanelField, raw: string): string | number | boolean | u
   }
   return raw;
 }
+
+/** CR-127 · P2 · ô chỉ hiện khi ô khác đang bật: lý do / hạn ký chỉ có nghĩa khi «Đề nghị ký cùng lúc» bật. */
+const SHOW_WHEN: Readonly<Record<string, { key: string; value: string | number | boolean }>> = {
+  sign_reason: { key: "sign_together", value: true },
+  accept_h: { key: "sign_together", value: true },
+  sign_h: { key: "sign_together", value: true },
+};
+
+/** Các ô đang hiện theo giá trị hiện tại (`cur`); ô không có luật ⇒ luôn hiện. */
+export function visibleFields(
+  fields: readonly PanelField[],
+  cur: Readonly<Record<string, string | number | boolean>>,
+): PanelField[] {
+  return fields.filter((f) => {
+    const r = SHOW_WHEN[f.key];
+    return !r || cur[r.key] === r.value;
+  });
+}

@@ -3,6 +3,11 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 
+/** CR-127 K3 · spec §3: app luôn chạy quy trình theo sự kiện (không đọc cờ `flow_triggers`/`approval_on()` cho nhánh HĐ). */
+export const ALWAYS_ON_APPS: ReadonlySet<string> = new Set(["contracts"]);
+export const appFlowOn = (app: string | undefined, tenantOn: boolean): boolean =>
+  tenantOn || (app !== undefined && ALWAYS_ON_APPS.has(app));
+
 /** Công ty nào trong tập đang BẬT — MỘT câu, lọc `= any`. */
 export async function flowTriggerTenants(
   tx: Tx,

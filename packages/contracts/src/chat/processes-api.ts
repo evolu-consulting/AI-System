@@ -8,6 +8,7 @@ import {
   ProcessInputValueSchema,
 } from "../hub-admin/sources";
 import { CHAT_ASK_CHOICE_MAX } from "./entities";
+import { EvidenceInputSchema } from "./evidence";
 import {
   ANSWER_MAX,
   DecisionOptionSchema,
@@ -180,6 +181,8 @@ export const ReviewDecisionRequestSchema = z.strictObject({
     .optional(),
   /** P-b2 · `fail` + quay lại bước (∈ `after.back_to_steps`, sai ⇒ 422 BACK_TARGET_INVALID ở luật). */
   back_to_step: ProcessStepSchema.optional(),
+  /** CR-127 · E1 · bằng chứng (ý kiến + chữ ký/tệp); thiếu khi bước đòi `opinion_plus` ⇒ 422 EVIDENCE_REQUIRED ở luật (E4). */
+  evidence: EvidenceInputSchema.optional(),
 });
 export type ReviewDecisionRequest = z.infer<typeof ReviewDecisionRequestSchema>;
 export const ReviewAnswerRequestSchema = z.strictObject({

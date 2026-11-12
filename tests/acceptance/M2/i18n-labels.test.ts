@@ -129,9 +129,9 @@ const TABLE: Row[] = [
   ),
   ...many(
     "workflows.schema.col.",
-    ["name", "type", "required", "description", "options"],
-    ["Tên tham số", "Kiểu", "Bắt buộc", "Mô tả tham số", "Lựa chọn"],
-    ["Parameter name", "Type", "Required", "Parameter description", "Options"],
+    ["name", "type", "required", "description"],
+    ["Tên tham số", "Kiểu", "Bắt buộc", "Mô tả tham số"],
+    ["Parameter name", "Type", "Required", "Parameter description"],
   ),
   [
     "workflows.blocked.disable",

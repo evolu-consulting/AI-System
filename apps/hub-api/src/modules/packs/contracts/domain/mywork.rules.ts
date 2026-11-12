@@ -7,6 +7,7 @@ import { daysBetween } from "./local-time.rules";
 import {
   MYWORK_MAX,
   MYWORK_SOURCE_MAX,
+  type MyWorkInboxDecision,
   type MyWorkItem,
   type MyWorkKind,
   type MyWorkOut,
@@ -73,6 +74,8 @@ export type RawMyWork = {
   reminders: RawReminder[];
   /** CR-125 · x1 · HĐ chờ CHÍNH mình ký — cùng câu SQL với bốn nguồn trên; vắng (repo/giả lập cũ) ⇒ không có trường `signing`. */
   signing?: MyWorkSign[];
+  /** CR-127 K8 · HĐ nhận chờ mình quyết (không có quy trình nhận) — cùng câu SQL; vắng (fake cũ) ⇒ không có trường `inbox`. */
+  inbox?: MyWorkInboxDecision[];
 };
 
 const KIND_RANK: Record<MyWorkKind, number> = {

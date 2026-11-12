@@ -104,7 +104,7 @@ export const NODE_EXECUTORS = [
 ] as const;
 export type NodeExecutor = (typeof NODE_EXECUTORS)[number];
 /** Nhóm trên bảng node. */
-export const NODE_GROUPS = ["message", "timing", "sign", "content", "partner"] as const;
+export const NODE_GROUPS = ["message", "timing", "sign", "content", "partner", "people"] as const;
 export type NodeGroup = (typeof NODE_GROUPS)[number];
 export const NODE_STAGES_MAX = 3;
 export const NODE_IO_MAX = 20;
@@ -219,7 +219,18 @@ export type AppEventDecl = {
   required: boolean;
   /** Khoá flow Thư viện mặc định (dạng `ProcessKey`); bắt buộc khi `required` (thiếu ⇒ `check:app-events` cảnh báo). */
   defaultFlowKey?: string;
+  /**
+   * CR-127 · E1 · sự kiện THEO LỊCH (vòng `schedule-sweep`, E6): flow chọn N ngày (`trigger.params.days`); facts của sự kiện có `days = N`.
+   * Sự kiện không có `schedule` do app phát (không theo lịch).
+   */
+  schedule?: AppEventSchedule;
 };
+/** Tham số duy nhất của sự kiện theo lịch: N ngày (khoá `days`, `min..max`, mặc định `default`). */
+export type AppEventSchedule = {
+  param: { key: "days"; min: number; max: number; default: number };
+};
+export const SCHEDULE_DAYS_MIN = 1;
+export const SCHEDULE_DAYS_MAX = 365;
 
 export const EVENT_LABEL_MAX = 120;
 export const EVENT_FACTS_MAX = 20;

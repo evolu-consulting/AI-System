@@ -54,7 +54,7 @@ describe("HD-FR-91 · lô mua", () => {
     expect(k).toEqual({
       tenant_id: T.acme,
       direction: "purchase",
-      status: "active",
+      status: "done",
       number: "LO-2026-03",
       value: "5500000",
       title: "Mua lô 5 chữ ký · 2026-03",
@@ -96,7 +96,7 @@ describe("HD-FR-92 · bán chữ ký", () => {
       from contracts.contracts where id = ${w.bv.contract_id}`;
     expect(k).toEqual({
       direction: "sale",
-      status: "active",
+      status: "done",
       value: "4950000",
       end_date: d(9),
       buyer: "Bếp Việt",
@@ -297,7 +297,7 @@ describe("HD-FR-94 · gia hạn cả nhóm", () => {
     );
     const [rk] =
       await c.sql`select status, direction, value, title from contracts.contracts where id = ${ren.new_contract_id}`;
-    expect(rk).toMatchObject({ status: "active", direction: "sale", value: "4950000" });
+    expect(rk).toMatchObject({ status: "done", direction: "sale", value: "4950000" });
     expect(String(rk?.title)).toStartWith("Gia hạn chữ ký số · CKS-");
     const old = ren.certificate_ids as string[];
     const done = await kcall(c, P.hoa, "POST", `/renewals/${ren.id}/complete`, {
@@ -376,9 +376,10 @@ describe("HD-FR-94 · gia hạn cả nhóm", () => {
       reason: "gia hạn ở MISA",
     });
     expect([lost.status, lost.json.status]).toEqual([200, "lost"]);
-    const [k] = await c.sql`select status, handled ->> 'outcome' as outcome from contracts.contracts
+    // CR-127: 4 trạng thái — "terminated" là HIỆU LỰC (effect) của HĐ done, không còn là status.
+    const [k] = await c.sql`select status, effect from contracts.contracts
       where id = ${ren.new_contract_id}`;
-    expect(k).toEqual({ status: "terminated", outcome: "not_renewed" });
+    expect(k).toEqual({ status: "done", effect: "terminated" });
     const ba = await customerNamed(c, "Thực phẩm Sạch Bình An");
     expect(ba.certs.map((x: { status: string }) => x.status)).toEqual(["active"]);
     expect(ba.sales[0].renewal).toBeNull();

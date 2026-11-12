@@ -33,7 +33,8 @@ const con = (o: Partial<RawContract> & { items: RawItem[] }): RawContract => ({
   parent_id: null,
   title: "HĐ",
   number: null,
-  status: "active",
+  status: "done",
+  effect: "active",
   direction: "purchase",
   end_date: "2027-01-01",
   effective_date: null,
@@ -67,7 +68,7 @@ describe("W1 · dòng giá", () => {
     const [a, b, c, d] = priceLines(
       [
         buy([item("A", 1)]),
-        buy([item("A", 2)], { status: "expired" }),
+        buy([item("A", 2)], { effect: "expired" }),
         buy([item("A", 3, { valid_from: "2026-11-01" })]),
         buy([item("A", 4, { valid_to: "2026-10-19" })]),
       ],
@@ -165,8 +166,8 @@ describe("W1 · sales: nguồn, lãi, rủi ro (đơn vị, rủi ro)", () => {
         sale([item("A", 80)], { id: "s1", number: "S-2" }),
         sale([item("B", 80)], { id: "s2", number: "S-1" }),
         sale([item("C", 80)], { id: "s3", number: "S-0" }),
-        buy([item("A", 50)], { status: "expiring" }),
-        buy([item("B", 50)], { id: "bx", status: "expired" }),
+        buy([item("A", 50)], { effect: "expiring" }),
+        buy([item("B", 50)], { id: "bx", effect: "expired" }),
         buy([item("C", 50)]),
       ],
       TODAY,
@@ -181,7 +182,7 @@ describe("W1 · sales: nguồn, lãi, rủi ro (đơn vị, rủi ro)", () => {
     ]);
   });
   it("chỉ dòng bán đang áp dụng; hợp đồng bán đã hết hạn không có mặt", () => {
-    expect(sales(priceLines([sale([item("A", 80)], { status: "expired" })], TODAY), [])).toEqual(
+    expect(sales(priceLines([sale([item("A", 80)], { effect: "expired" })], TODAY), [])).toEqual(
       [],
     );
   });
@@ -191,7 +192,7 @@ const lines = priceLines(
   [
     sale([item("A", 80)], { id: "s1" }),
     sale([item("B", 90)], { id: "s2", buyer: { key: "tax:8", name: "Khách 2" } }),
-    buy([item("A", 50), item("B", 40, { ord: 1 })], { status: "expiring" }),
+    buy([item("A", 50), item("B", 40, { ord: 1 })], { effect: "expiring" }),
   ],
   TODAY,
 );

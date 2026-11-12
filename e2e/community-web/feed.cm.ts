@@ -54,7 +54,7 @@ test("đối tác: bài của NCC bị che liên hệ, không có Lưu báo giá
   await expect(page.getByTestId("post").filter({ hasText: "Chữ ký số HSM" })).toHaveCount(0); // audience chỉ người mua
 });
 
-test("chủ quản: luồng theo từng công ty + audience preview + nút Lưu báo giá bật và mở form (C7b)", async ({
+test("chủ quản: bình luận phẳng (không tab công ty) + audience preview + nút Lưu báo giá bật và mở form (C7b)", async ({
   page,
 }) => {
   await page.goto("/community");
@@ -68,8 +68,9 @@ test("chủ quản: luồng theo từng công ty + audience preview + nút Lưu 
   await expect(page.getByTestId("audience-preview")).toContainText("Sẽ hiện với 3 công ty");
   const post = page.locator('[data-post-id="p1"]');
   await post.getByRole("button", { name: /Bình luận/ }).click();
-  await expect(post.getByRole("tab", { name: /Hưng Thịnh/ })).toBeVisible();
-  await expect(post.getByRole("tab", { name: /ABC/ })).toBeVisible();
+  await expect(post.getByTestId("thread")).toBeVisible();
+  await expect(post.getByRole("tab")).toHaveCount(0); // CR-129: không còn luồng riêng theo công ty
+  await expect(post.getByRole("combobox", { name: "Viết bình luận" })).toBeVisible();
   const tp = page.locator('[data-post-id="p5"]');
   const saveBtn = tp.getByRole("button", { name: /Lưu báo giá/ });
   await expect(saveBtn).toBeEnabled(); // C7b: chủ quản được lưu báo giá của NCC
@@ -79,17 +80,17 @@ test("chủ quản: luồng theo từng công ty + audience preview + nút Lưu 
 
 test("thông báo, cài đặt và hồ sơ qua user-menu", async ({ page }) => {
   await page.goto("/community");
-  await page.locator('header button.iconbtn[aria-label="Thông báo"]').click(); // chuông (khe thanh trên chung); chip lọc "Thông báo" cùng tên nên không dùng getByRole
+  await page.getByTestId("topbar-bell").getByRole("button").first().click(); // chuông (khe thanh trên chung); chip lọc "Thông báo" cùng tên nên không dùng getByRole
   await expect(page.getByRole("dialog", { name: "Thông báo" })).toBeVisible();
   await page.getByRole("button", { name: "Đánh dấu đã đọc" }).click();
-  await page.locator('header button.iconbtn[aria-label="Thông báo"]').click(); // bấm lại chuông để đóng popover (che user-menu)
+  await page.getByTestId("topbar-bell").getByRole("button").first().click(); // bấm lại chuông để đóng popover (che user-menu)
   await expect(page.getByRole("dialog", { name: "Thông báo" })).toHaveCount(0);
   // cài đặt + hồ sơ nay nằm trong user-menu (avatar) của Shell
   await page.getByRole("button", { name: "Tài khoản" }).click();
-  await page.getByRole("menuitem", { name: "Tường nhà" }).click();
+  await page.getByRole("menuitem", { name: "Hồ sơ của tôi" }).click();
   await expect(page.getByTestId("nav-group-contracts").getByRole("link").first()).toBeVisible(); // menu trái chung có nhóm Sổ Hợp Tác
   await page.getByRole("button", { name: "Tài khoản" }).click();
-  await page.getByRole("menuitem", { name: "Cài đặt Community" }).click();
+  await page.getByRole("menuitem", { name: "Cài đặt Sổ Hợp Tác" }).click();
   await expect(page.getByRole("dialog", { name: "Cài đặt" })).toBeVisible(); // màu nhấn = thương hiệu công ty, không còn chọn màu cá nhân (COM-FR-39)
 });
 

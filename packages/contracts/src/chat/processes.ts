@@ -97,7 +97,11 @@ export const TEAM_RUN_STATUSES = [
   "failed",
   "cancelled",
 ] as const;
-export const TASK_KINDS = ["review", "ask", "decision"] as const;
+// CR-127 · E1 · `milestone` = việc Xác nhận mốc (spec §5.9; hub 0131 `review_tasks_kind_ck`, cần `subject_ref`).
+export const TASK_KINDS = ["review", "ask", "decision", "milestone"] as const;
+/** CR-127 · E1 · cần bao nhiêu người: một người nhận việc / trưởng phòng / tất cả (hub 0131 `review_tasks_need_ck`). */
+export const TASK_NEEDS = ["one", "head", "all"] as const;
+export type TaskNeed = (typeof TASK_NEEDS)[number];
 export const TASK_STATUSES = ["open", "closed"] as const;
 export const TASK_RESULTS = [
   "pass",
@@ -156,6 +160,9 @@ export const NOTICE_KINDS = [
   "run_finished",
   // P-d1 · PD-R20 · task duyệt được chuyển cấp thêm Group.
   "escalated",
+  // CR-127 · E1 · việc nhận tự trả về nhóm (quá giờ không thao tác) · việc Xác nhận mốc mới (hub 0131 `process_notices_kind_ck`).
+  "task_released",
+  "milestone_task",
 ] as const;
 export const ORIGIN_KINDS = ["room", "conversation", "admin"] as const;
 export const STAGE_AFTER_KINDS = ["review", "auto"] as const;

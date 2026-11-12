@@ -32,13 +32,13 @@ export const linkRows = (links: readonly ProductLink[]) =>
 
 export function productLinksRepo(tx: Tx, t: string): ProductLinksRepo {
   return {
-    link: async (contractId, links, actor, strict = false) => {
+    link: async (contractId, links, actor, strict = false, inDraft = false) => {
       const rows = await tx.execute<Row>(sql`with k as (
           select c.id, c.deal, c.fields,
-            c.status not in ('needs_review', 'extracting', 'extract_failed', 'rejected') as confirmed,
+            (c.status = 'done' or (${inDraft}::boolean and c.status = 'draft')) as confirmed,
             exists (select 1 from contracts.stock_moves m where m.tenant_id = c.tenant_id and m.contract_id = c.id) as locked,
             -- lock-strict: HĐ đã khoá ⇒ MỌI link bị chặn (atomic-confirm: gắn SP lúc xác nhận đi trong tx của lệnh xác nhận).
-            (${strict}::boolean and c.locked_at is not null) as clocked
+            (${strict}::boolean and c.status in ('processing', 'done') and c.doc_type <> 'deal') as clocked
           from contracts.contracts c where c.tenant_id = ${t}::uuid and c.id = ${contractId}::uuid),
         ok as (select k.* from k where k.confirmed and not k.locked and not k.clocked),
         x as (select x.* from ok, jsonb_to_recordset(${JSON.stringify(linkRows(links))}::jsonb)

@@ -9,10 +9,11 @@ import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { useStagesMax } from "../../hooks/use-stages-max";
 import { isDlcStep } from "../../lib/dlc-slot";
-import { useFitMin, useRegisterSelect } from "../flow/flow-ctx";
+import { useFitMin, useFlowCtx, useRegisterSelect } from "../flow/flow-ctx";
 import { FlowToolbar } from "../flow/NodePalette";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
 import { SlotCanvasToolbar } from "../library/SlotCanvasToolbar";
+import { OutlineView } from "../outline/OutlineView";
 import { CanvasToolbar } from "./CanvasToolbar";
 import { CanvasTools } from "./CanvasTools";
 import { CanvasView } from "./CanvasView";
@@ -46,6 +47,7 @@ const dirOf = (lib: unknown, dir: LayoutDir): LayoutDir => (lib ? "RIGHT" : dir)
 const linkableOf = (lib: unknown, readOnly: boolean, stages: DraftState["draft"]["stages"]) =>
   !!lib && !readOnly && stages.some(isDlcStep);
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CR-127 · U2 — dựng form nhiều ô, tách ở đợt dọn sau
 export function StageWorkbench({ d, readOnly, refs }: Props) {
   const { t } = useTranslation();
   const w = useWorkbench(d, refs);
@@ -54,6 +56,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
   const { ops } = w;
   const fitMin = useFitMin(!!lib);
   useRegisterSelect((uid) => w.select(uid, true));
+  const flow = useFlowCtx();
   // CR-105 UX: quy trình khe không vẽ "Quay lại"/"Rẽ nhánh" — trừ cổng "Từ chối" của bước DLC (dlc-step-library).
   const views = lib ? withoutSlotLinks(w.views) : w.views;
   const addStage = () => ops.add();
@@ -75,6 +78,8 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
     onSelect: w.select,
     onRemove: w.askRemove,
   };
+  // CR-127 · U2 · quy trình theo sự kiện (có node Bắt đầu): MỘT màn danh sách dọc, không còn Sơ đồ/Danh sách + Ngang/Dọc + kéo thả.
+  if (flow && !lib) return <OutlineView d={d} w={w} readOnly={readOnly} refs={refs} />;
   return (
     <div className="space-y-3">
       <Tabs value={lib ? "canvas" : w.mode} onValueChange={(v) => w.setMode(v as Mode)}>

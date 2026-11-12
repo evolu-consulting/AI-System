@@ -56,18 +56,25 @@ export function nextRemind(t: { remindAt: Date; remindCount: number; remindEvery
 /** Giá trị chép vào review_task khi tạo (snapshot, PD-R19). Không cấu hình ⇒ `remindAt = created + 24 h` như cũ. */
 export function reviewTaskTiming(
   createdAt: Date,
-  cfg: { remindEveryH: number | null; escalate: { afterH: number; groupId: string } | null },
+  cfg: {
+    remindEveryH: number | null;
+    /** CR-127 · E3c · đích: Group HOẶC một người (`userId`, 0133) — Group thắng khi có cả hai. */
+    escalate: { afterH: number; groupId: string | null; userId?: string | null } | null;
+  },
 ): {
   remindAt: Date;
   remindEveryH: number | null;
   escalateAt: Date | null;
   escalateGroupId: string | null;
+  escalateUserId: string | null;
 } {
+  const esc = cfg.escalate && (cfg.escalate.groupId || cfg.escalate.userId) ? cfg.escalate : null;
   const t = createdAt.getTime();
   return {
     remindAt: new Date(t + (cfg.remindEveryH ?? REMIND_AFTER_H) * HOUR_MS),
     remindEveryH: cfg.remindEveryH,
-    escalateAt: cfg.escalate ? new Date(t + cfg.escalate.afterH * HOUR_MS) : null,
-    escalateGroupId: cfg.escalate ? cfg.escalate.groupId : null,
+    escalateAt: esc ? new Date(t + esc.afterH * HOUR_MS) : null,
+    escalateGroupId: esc?.groupId ?? null,
+    escalateUserId: esc && !esc.groupId ? (esc.userId ?? null) : null,
   };
 }

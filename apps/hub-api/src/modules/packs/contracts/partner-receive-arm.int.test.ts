@@ -12,7 +12,6 @@ import { contractFlowRepo } from "./adapters/contract-flow.repo";
 import { esignRepo } from "./adapters/esign.repo";
 import { partnerSendRepo } from "./adapters/partner-send.repo";
 import { partnerSendTool } from "./adapters/partner-send.tool";
-import { withFlowResend } from "./application/flow-resend.usecase";
 import { receiveInbox, receiveStateOf } from "./partner-mailbox.mount";
 
 let o: Sql;
@@ -48,6 +47,8 @@ const inboxOf = async () =>
 beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
+  // CR-127 Z4: hub 0136 đã lưu trữ mẫu Thư viện «Nhận HĐ»; test này dùng chúng làm dữ liệu nền ⇒ mở lại trong DB test.
+  await o`update hub.process_defs set deleted_at = null, enabled = true where tenant_id is null and key in ('hd-nhan-quan-trong', 'hd-nhan-thuong')`;
   [A, B] = (await tenants(o, 2, 1330)) as [string, string];
   [UA] = (await users(o, A, 1, { from: 1330 })) as [string];
   UB = (await users(o, B, 3, { from: 1331 })) as string[];
@@ -120,7 +121,7 @@ describe("CR-124 q6 · S2 · người gây sự kiện của flow nhận (một 
   });
 });
 
-describe("CR-124 q6 · chưa có người gây sự kiện + Mở lại", () => {
+describe("CR-124 q6 · chưa có người gây sự kiện", () => {
   it("sẵn sàng nhưng không có người phụ trách/quản trị ⇒ lượt kẹt RECEIVE_NO_OWNER, KHÔNG phát sự kiện", async () => {
     await o`update contracts.partner_settings set owner_user_id = null where tenant_id = ${B}`;
     await send(C[2] as string);
@@ -130,19 +131,5 @@ describe("CR-124 q6 · chưa có người gây sự kiện + Mở lại", () => 
       await o`select status, feedback from contracts.approvals where contract_id = ${id}::uuid`;
     expect(ap).toMatchObject({ status: "level1", feedback: "RECEIVE_NO_OWNER" });
     expect(await o`select 1 from hub.flow_events where ref = ${id}`).toHaveLength(0);
-  });
-
-  it("Mở lại HĐ nhận ⇒ phát contract.received (người bấm là người gây), KHÔNG phát contract.submitted", async () => {
-    const id = await inboxOf();
-    await o`update admin.users set role = 'tenant_admin' where id = ${UB[0] as string}`;
-    const resend = withFlowResend(undefined, {
-      uow: uow() as never,
-      flow: { prepare: async () => ({ on: true, departments: null }) } as never,
-    });
-    expect(await resend({ tenantId: B, userId: UB[0] as string }, id)).toBe("ok");
-    const evs =
-      await o`select event, actor_id::text as actor from hub.flow_events where ref = ${id}`;
-    expect(evs).toHaveLength(1);
-    expect(evs[0]).toMatchObject({ event: "contract.received", actor: UB[0] as string });
   });
 });

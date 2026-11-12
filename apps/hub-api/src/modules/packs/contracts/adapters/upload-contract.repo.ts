@@ -7,11 +7,12 @@ import {
   type NewUploadedContract,
   type UploadContractRepo,
   UploadError,
-  type UploadStatus,
+  type UploadExtract,
 } from "../application/upload-contract.ports";
+import { initialState } from "../domain/contract-state.rules";
 import { newVersionVerdict } from "../domain/versions.rules";
 
-type Out = { id: string; status: UploadStatus; version: number };
+type Out = { id: string; status: "draft"; extract_state: UploadExtract; version: number };
 
 /** Lỗi PG trong chuỗi `cause` (Drizzle bọc lỗi postgres.js). */
 function pgError(
@@ -34,7 +35,8 @@ type VersionOut = {
   locked: boolean;
   draft: boolean;
   id: string | null;
-  status: UploadStatus | null;
+  status: "draft" | null;
+  extract_state: UploadExtract | null;
   version: number | null;
   version_no: number | null;
   root_id: string | null;
@@ -46,7 +48,8 @@ type VersionOut = {
  *  để tập người thấy không rộng hơn) → lượt duyệt (flow) → event `uploaded`. Đua hai lượt tải ⇒ index `contracts_open_draft_uq`. */
 async function insertVersion(tx: Tx, tenantId: string, r: NewUploadedContract, base: string) {
   const data = JSON.stringify({ name: r.name, mime: r.mime, size: r.size });
-  const approvalId = r.status === "extracting" ? (r.approvalId ?? null) : null;
+  const approvalId = r.extractState === "reading" ? (r.approvalId ?? null) : null;
+  const init = initialState("upload", { reading: r.extractState === "reading" });
   let rows: VersionOut[];
   try {
     // CR-101 DOC-model: v(n+1) kế thừa loại chứng từ, HĐ NT cha, hạn mức, cách đặt hàng của bản cũ.
@@ -66,14 +69,14 @@ async function insertVersion(tx: Tx, tenantId: string, r: NewUploadedContract, b
           ${r.size}, ${r.userId}::uuid from ok
         returning id),
       c as (
-        insert into contracts.contracts (id, tenant_id, kind, title, status, error, owner_user_id, created_by, fields, file_id,
+        insert into contracts.contracts (id, tenant_id, kind, title, status, extract_state, error, owner_user_id, created_by, fields, file_id,
           source_text, run_id, root_id, version_no, supersedes_id, doc_type, frame_root_id, credit_limit, order_terms)
-        select ${r.id}::uuid, ${tenantId}::uuid, 'contract', coalesce(nullif(${r.title}, ''), ok.title), ${r.status}, ${r.error},
+        select ${r.id}::uuid, ${tenantId}::uuid, 'contract', coalesce(nullif(${r.title}, ''), ok.title), ${init.status}, ${r.extractState}, ${r.error},
           ok.owner_user_id, case when ok.owner_user_id is null then ok.created_by else ${r.userId}::uuid end,
           ${JSON.stringify(r.fields)}::jsonb, f.id, ${r.sourceText}, ${approvalId}::uuid, ok.root_id, ok.no, ok.id,
           ok.doc_type, ok.frame_root_id, ok.credit_limit, ok.order_terms
         from ok, f
-        returning id, status, version, version_no, root_id, supersedes_id),
+        returning id, status, extract_state, version, version_no, root_id, supersedes_id),
       a as (
         insert into contracts.approvals (id, tenant_id, contract_id, status, started_by)
         select ${approvalId}::uuid, ${tenantId}::uuid, c.id, 'extracting', ${r.userId}::uuid from c
@@ -84,7 +87,7 @@ async function insertVersion(tx: Tx, tenantId: string, r: NewUploadedContract, b
           ${data}::jsonb || jsonb_build_object('version_no', c.version_no, 'supersedes_id', c.supersedes_id) from c)
       select exists (select 1 from k) as found, (select kind from k) as kind,
         coalesce((select superseded from k), false) as superseded, coalesce((select locked from k), false) as locked,
-        coalesce((select draft from k), false) as draft, c.id, c.status, c.version, c.version_no, c.root_id, c.supersedes_id
+        coalesce((select draft from k), false) as draft, c.id, c.status, c.extract_state, c.version, c.version_no, c.root_id, c.supersedes_id
       from (select 1) one left join c on true`);
   } catch (e) {
     const pg = pgError(e);
@@ -102,7 +105,8 @@ async function insertVersion(tx: Tx, tenantId: string, r: NewUploadedContract, b
   if (verdict !== "ok" || !o?.id) throw new UploadError(verdict === "ok" ? "NOT_FOUND" : verdict);
   return {
     id: o.id,
-    status: o.status as UploadStatus,
+    status: "draft" as const,
+    extractState: o.extract_state as UploadExtract,
     version: o.version as number,
     version_no: o.version_no as number,
     root_id: o.root_id as string,
@@ -115,7 +119,8 @@ export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo
     insertVersion: (r, base) => insertVersion(tx, tenantId, r, base),
     insert: async (r: NewUploadedContract) => {
       const data = JSON.stringify({ name: r.name, mime: r.mime, size: r.size });
-      const approvalId = r.status === "extracting" ? (r.approvalId ?? null) : null;
+      const approvalId = r.extractState === "reading" ? (r.approvalId ?? null) : null;
+      const init = initialState("upload", { reading: r.extractState === "reading" });
       const doc = r.doc ?? {
         docType: "contract",
         frameId: null,
@@ -133,12 +138,12 @@ export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo
               ${r.size}, ${r.userId}::uuid)
             returning id),
           c as (
-            insert into contracts.contracts (id, tenant_id, kind, parent_id, title, status, error, owner_user_id, created_by,
+            insert into contracts.contracts (id, tenant_id, kind, parent_id, title, status, extract_state, error, owner_user_id, created_by,
               fields, file_id, source_text, run_id, doc_type, frame_root_id, credit_limit, order_terms)
-            select ${r.id}::uuid, ${tenantId}::uuid, ${r.kind}, ${r.parentId}::uuid, ${r.title}, ${r.status}, ${r.error},
+            select ${r.id}::uuid, ${tenantId}::uuid, ${r.kind}, ${r.parentId}::uuid, ${r.title}, ${init.status}, ${r.extractState}, ${r.error},
               ${r.userId}::uuid, ${r.userId}::uuid, ${JSON.stringify(r.fields)}::jsonb, f.id, ${r.sourceText},
               ${approvalId}::uuid, ${doc.docType}, fr.root, ${doc.creditLimit}::bigint, ${doc.orderTerms} from f, fr
-            returning id, status, version),
+            returning id, status, extract_state, version),
           a as (
             -- M3 · lượt duyệt mở trong CÙNG câu (chế độ flow): giữ "1 tx 3 câu" của tải lên (HD-NFR-03).
             insert into contracts.approvals (id, tenant_id, contract_id, status, started_by)
@@ -147,10 +152,15 @@ export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo
           e as (
             insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
             select ${tenantId}::uuid, c.id, 'uploaded', ${r.userId}::uuid, ${data}::jsonb from c)
-          select id, status, version from c`);
+          select id, status, extract_state, version from c`);
         const out = rows[0];
         if (!out) throw new Error("upload insert returned no row");
-        return out;
+        return {
+          id: out.id,
+          status: "draft" as const,
+          extractState: out.extract_state,
+          version: out.version,
+        };
       } catch (e) {
         throw insertError(e);
       }

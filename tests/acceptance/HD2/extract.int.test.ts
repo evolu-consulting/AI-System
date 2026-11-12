@@ -77,12 +77,15 @@ describe("HD-FR-24 · khởi chạy trích", () => {
     c.ai.script = () => ({ ok: true, text: agentJson({}) });
     const r = await upload(c, P.hoa, {});
     expect(r.status).toBe(201);
-    expect(r.json.status).toBe("extracting");
+    expect([r.json.status, r.json.extractState ?? r.json.extract_state]).toEqual([
+      "draft",
+      "reading",
+    ]);
     const done = c.ai.settled(r.json.id);
     expect(await done).toBe("needs_review");
     expect(c.ai.calls.map((x) => x.tenantId)).toEqual([T.acme]);
     const d = await detail(r.json.id);
-    expect(d.status).toBe("needs_review");
+    expect([d.status, d.extract_state]).toEqual(["draft", "ready"]);
     // review Thấp 5: chưa có pháp nhân của mình ⇒ không cảnh báo chiều mua/bán (khớp mgmt-app enrich.py:105)
     expect(d.warnings.map((w: { code: string }) => w.code)).not.toContain("direction_unknown");
   });
@@ -94,7 +97,7 @@ describe("HD-FR-24 · khởi chạy trích", () => {
     const done = c.ai.settled(cid(1));
     const r = await extract(P.hoa, cid(1));
     expect(r.status).toBe(202);
-    expect(r.json).toMatchObject({ id: cid(1), status: "extracting" });
+    expect(r.json).toMatchObject({ id: cid(1), status: "draft", extract_state: "reading" });
     expect(await done).toBe("needs_review");
     const d = await detail(cid(1));
     expect(d.fields.total_value).toMatchObject({
@@ -112,7 +115,10 @@ describe("HD-FR-24 · khởi chạy trích", () => {
     });
     const ev =
       await c.sql`select type from contracts.contract_events where contract_id = ${cid(1)} order by id`;
-    expect(ev.map((e) => e.type)).toEqual(["extract_requested", "extracted"]);
+    expect(ev.map((e) => e.type).filter((t) => t !== "status_changed")).toEqual([
+      "extract_requested",
+      "extracted",
+    ]); // CR-127: cổng trạng thái ghi thêm status_changed
     const [ob] =
       await c.sql`select count(*)::int as n from contracts.index_outbox where entity_id = ${cid(1)}`;
     expect(ob?.n).toBe(2);
@@ -143,8 +149,9 @@ describe("HD-FR-24 · khởi chạy trích", () => {
     await extract(P.hoa, cid(1));
     expect(await done).toBe("extract_failed");
     const d = await detail(cid(1));
-    expect({ status: d.status, error: d.error }).toEqual({
-      status: "extract_failed",
+    expect({ status: d.status, extract_state: d.extract_state, error: d.error }).toEqual({
+      status: "draft",
+      extract_state: "failed",
       error: "TIMEOUT",
     });
   });
@@ -190,8 +197,9 @@ describe("HD-FR-24 · tenant + quyền + trạng thái (viết trước code rou
     await seedText();
     const r = await extract(P.an, cid(1));
     expect(r.status).toBe(404);
-    const [row] = await c.sql`select status, version from contracts.contracts where id = ${cid(1)}`;
-    expect(row).toEqual({ status: "extract_failed", version: 1 });
+    const [row] =
+      await c.sql`select status, extract_state, version from contracts.contracts where id = ${cid(1)}`;
+    expect(row).toEqual({ status: "draft", extract_state: "failed", version: 1 });
     expect(c.ai.calls).toHaveLength(0);
   });
   it("quyền · viewer ⇒ 403; id sai dạng ⇒ 400", async () => {
@@ -306,7 +314,7 @@ describe("HD2 review · trích lại khi đã có dòng hàng, trạng thái kh�
       code: "EXTRACT_NOT_ALLOWED",
     });
     const [row] = await c.sql`select status, version from contracts.contracts where id = ${cid(1)}`;
-    expect(row).toEqual({ status: "active", version: 1 });
+    expect(row).toEqual({ status: "done", version: 1 });
   });
   it("#220 · GET /file-link ⇒ 200 {url} link FileBox ngắn hạn, no-store; tenant khác ⇒ 404; viewer đọc được", async () => {
     await arrangeAi();

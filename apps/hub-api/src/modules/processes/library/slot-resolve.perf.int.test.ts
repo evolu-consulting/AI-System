@@ -9,7 +9,7 @@ import { connectDb, type Db } from "../../../lib/db";
 import { resolveSlot } from "./slot-resolve.repo";
 import { routeSlot } from "./slot-route.repo";
 
-const SLOT = "contracts.approval";
+const SLOT = "community.post-moderation";
 const NS = 0xb5;
 const N_TENANT = 10_000;
 const N_DEF = 50;

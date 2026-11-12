@@ -44,17 +44,13 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
   test("mỗi khoá node đúng một lần; manifest + CORE_NODES đọc lại từ sổ, không đổi hình", () => {
     const keys = MODULES.flatMap((m) => m.nodes.map((n) => n.key));
     expect(new Set(keys).size).toBe(keys.length);
-    expect(CORE_NODES.map((n) => n.key)).toEqual([
-      "core.email",
-      "core.bell",
-      "core.wait-until",
-      "core.wait-for",
-      "core.subprocess",
-    ]);
+    expect(CORE_NODES.map((n) => n.key)).toEqual(["core.notify", "core.wait", "core.subprocess"]);
     expect(APP_MANIFESTS.contracts?.nodes.map((n) => n.key)).toEqual([
       "contracts.create-from-step",
       "contracts.esign",
       "contracts.partner-send",
+      "contracts.milestone-confirm",
+      "contracts.sign-together-accept",
     ]);
     expect(APP_MANIFESTS.community?.nodes.map((n) => n.key)).toEqual(["community.show-post"]);
     // hình AppNodeDecl cũ: không lộ kind / baseExecutor / configPort
@@ -92,6 +88,8 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
         ],
         ["core.email", { tools: [], outputs: ["sent_to"] }], // CR-125 m9 · Thông báo ghi người nhận
         ["core.bell", { tools: [], outputs: ["sent_to"] }],
+        ["contracts.milestone-confirm", { tools: [], outputs: ["event"] }], // CR-127 · E10
+        ["contracts.sign-together-accept", { tools: [], outputs: ["event"] }], // CR-127 · P2
         ["community.show-post", { tools: [] }],
       ]),
       tools: new Set([
@@ -109,6 +107,8 @@ describe("MOD-FR-05 · module core", () => {
     const core = MODULES.find((m) => m.app === "core")?.nodes ?? [];
     expect(core.every((n) => n.kind === "base" && n.baseExecutor !== undefined)).toBe(true);
     expect(core.map((n) => [n.key, n.baseExecutor])).toEqual([
+      ["core.notify", "notify"],
+      ["core.wait", "wait_until"],
       ["core.email", "notify"],
       ["core.bell", "notify"],
       ["core.wait-until", "wait_until"],
@@ -124,10 +124,11 @@ describe("MOD-FR-05 · module core", () => {
     const key = (s: Parameters<typeof baseNodeOf>[1]) => baseNodeOf(MODULES, s)?.key;
     expect(key({ executor: { kind: "approve" } })).toBe("core.approve");
     expect(key({ executor: { kind: "if" } })).toBe("core.if");
-    expect(key({ executor: { kind: "wait_until" } })).toBe("core.wait-until");
-    expect(key({ executor: { kind: "wait_for" } })).toBe("core.wait-for");
-    expect(key({ executor: { kind: "notify", channels: ["bell", "email"] } })).toBe("core.email");
-    expect(key({ executor: { kind: "notify", channels: ["bell"] } })).toBe("core.bell");
+    // CR-127 · E9 · def cũ ⇒ node gộp (khoá cũ vẫn tra được bằng featureNodeByKey)
+    expect(key({ executor: { kind: "wait_until" } })).toBe("core.wait");
+    expect(key({ executor: { kind: "wait_for" } })).toBe("core.wait");
+    expect(key({ executor: { kind: "notify", channels: ["bell", "email"] } })).toBe("core.notify");
+    expect(key({ executor: { kind: "notify", channels: ["bell"] } })).toBe("core.notify");
     expect(key({ executor: { kind: "set" }, outcome: "approved" })).toBe("core.end");
     // Ghi giá trị (set không outcome) và executor lạ: không khớp, không lỗi
     expect(key({ executor: { kind: "set" } })).toBeUndefined();
@@ -259,6 +260,9 @@ describe("moduleIssues (MOD-FR-01/04/10)", () => {
       "partner.confirmed",
       "partner.returned",
       "partner.declined",
+      "sign.session.accepted",
+      "sign.session.declined",
+      "sign.session.expired",
     ]);
     expect(
       moduleIssues(mods, bound())

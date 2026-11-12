@@ -49,6 +49,7 @@ export type {
 import { dlcDraftErrors } from "./dlc-slot";
 import type { DefDraft, DraftErrors, StageDraft } from "./draft-types";
 import { approveAloneErrors, endNextErrors, freeErrors } from "./free-nodes";
+import { isMilestone } from "./milestone-panel";
 
 export { emptyStage, slugKey };
 
@@ -198,6 +199,7 @@ export function validateDraft(
       s.groupId === "" &&
       !s.groupKey &&
       !s.parallel &&
+      !isMilestone(s) && // để trống = người phụ trách hợp đồng
       !slotHasReviewer(s)
     )
       e[`stages.${i}.after.group_id`] = "process.admin.apiError.PROCESS_DEF_INCOMPLETE";

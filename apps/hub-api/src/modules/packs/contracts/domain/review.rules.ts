@@ -121,7 +121,8 @@ export function planReview(
   input: ReviewIn,
   today: string,
 ): ReviewPlan | ReviewError {
-  if (cur.status !== "needs_review") return "not_reviewable";
+  // CR-127 BR-02: chỉ HĐ DRAFT sửa/xác nhận được (`needs_review` là trạng thái cũ đã gỡ ở K1a).
+  if (cur.status !== "draft") return "not_reviewable";
   const deal = input.deal ?? cur.deal ?? DEFAULT_DEAL;
   const referral = deal === "referral";
   // Hoa hồng không gửi lên ⇒ giữ giá trị đã lưu (nếu vẫn là HĐ Giới thiệu); gửi tay thì thắng (kể cả null).

@@ -14,6 +14,7 @@ import {
   IF_CONDS_MAX,
   type IfDraft,
   ifErrorAt,
+  inputSrc,
 } from "../../lib/if-form";
 import { ifSentence } from "../../lib/if-sentence";
 import { stepNames, useStepOptionLabel } from "../../lib/step-options";
@@ -303,14 +304,18 @@ export function StageIf(p: StageIfProps) {
 export function StageIfForm(p: StageFormProps) {
   const { stage, index, all, defInputs, errors, readOnly, onChange } = p;
   const label = useStepOptionLabel(all);
+  const flow = useFlowCtx();
   return (
     <StageIf
       id={stage.uid}
       index={index}
       value={stage.ifx}
       sources={[
-        ...factSources(useFlowCtx()?.event?.facts ?? []),
-        ...condSources(all, defInputs ?? [], stage.step),
+        ...factSources(flow?.event?.facts ?? []),
+        // khoá bản ghi của sự kiện (vd contract_id) là kỹ thuật — không phải dữ kiện nghiệp vụ để so sánh
+        ...condSources(all, defInputs ?? [], stage.step).filter(
+          (x) => x.value !== inputSrc(flow?.event?.record?.key ?? ""),
+        ),
       ]}
       steps={gotoSteps(all, stage.step).map((s) => s + 1)}
       optLabel={(s) => label(s - 1)}

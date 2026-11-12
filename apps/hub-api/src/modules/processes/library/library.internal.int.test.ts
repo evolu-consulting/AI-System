@@ -7,14 +7,18 @@ import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
-import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/public";
-import { approvalEngineTools, approvalSlotSpec } from "../../packs/contracts/testing";
-import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
 import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../core/ports";
 import { libraryInternalRoutes } from "./library.internal.routes";
+import {
+  communityToolInfos,
+  GEN_DEFAULT_ID,
+  GEN_DEFAULT_KEY,
+  GEN_SLOT,
+  registerCommunitySlots,
+} from "./slot-generic.fixture";
 
-const SLOT = "contracts.approval";
+const SLOT = GEN_SLOT;
 const TOKEN = "lib-internal-int-token";
 const X = tenantId(1081);
 const ACTOR = userId(1080);
@@ -40,8 +44,8 @@ beforeAll(async () => {
   await o`insert into admin.tenants (id, key, name) values (${X}, 't1081', 'Công ty X')`;
   await users(o, X, 1, { from: 1080 });
   await groups(o, X, ["contracts-editor", "contracts-owner"]);
-  slotRegistry.register(approvalSlotSpec);
-  const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({
+  registerCommunitySlots();
+  const tools = communityToolInfos.map((t) => ({
     key: t.name,
     name: t.name,
     description: t.description,
@@ -71,7 +75,7 @@ afterAll(async () => {
 
 describe("CR-105 · L5 · gán quy trình nội bộ", () => {
   it("thiếu / sai token ⇒ 401, không ghi; chưa cấu hình token ⇒ 503", async () => {
-    const body = { process_key: APPROVAL_DEFAULT_DEF.key, actor: ACTOR };
+    const body = { process_key: GEN_DEFAULT_KEY, actor: ACTOR };
     expect((await put(null, body)).status).toBe(401);
     expect((await put("Bearer wrong", body)).status).toBe(401);
     expect(await assigned()).toHaveLength(0);
@@ -89,11 +93,11 @@ describe("CR-105 · L5 · gán quy trình nội bộ", () => {
   });
 
   it("token đúng ⇒ gán theo key + audit có actor; key lạ ⇒ 404", async () => {
-    const r = await put(`Bearer ${TOKEN}`, { process_key: APPROVAL_DEFAULT_DEF.key, actor: ACTOR });
+    const r = await put(`Bearer ${TOKEN}`, { process_key: GEN_DEFAULT_KEY, actor: ACTOR });
     expect(r.status).toBe(200);
-    expect((await assigned()).map((x) => x.def_id)).toEqual([APPROVAL_DEFAULT_DEF.id]);
+    expect((await assigned()).map((x) => x.def_id)).toEqual([GEN_DEFAULT_ID]);
     const [a] = await o`select actor_id from hub.audit_log
-      where action = 'assign' and entity_id = ${APPROVAL_DEFAULT_DEF.id} order by at desc limit 1`;
+      where action = 'assign' and entity_id = ${GEN_DEFAULT_ID} order by at desc limit 1`;
     expect(a?.actor_id).toBe(ACTOR);
     const nf = await put(`Bearer ${TOKEN}`, { process_key: "khong-co", actor: ACTOR });
     expect(nf.status).toBe(404);

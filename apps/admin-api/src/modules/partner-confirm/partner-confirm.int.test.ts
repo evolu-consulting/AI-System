@@ -108,7 +108,7 @@ describe("UX-S7 · Đối tác xác nhận hợp đồng (admin-api)", () => {
     expect(item(off.json, "channel")?.state).toBe("ok"); // phần Hub gộp vào
     expect(item(off.json, "receive_flow")).toMatchObject({
       state: "todo",
-      fix: "assign-receive-flow",
+      fix: "open-flows",
     });
 
     const on = await call(platform, "PUT", path(A), { on: true });

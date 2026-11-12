@@ -3,6 +3,7 @@
 import { Outlet } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconRobot } from "~/components/icons";
+import { assistantVisible } from "~/features/assistant/lib/chat.rules";
 import { logout } from "~/features/auth/api";
 import { SettingsDialogLazy } from "~/features/settings/components/SettingsDialogLazy";
 import { useBrandSync } from "~/features/settings/hooks/use-settings";
@@ -23,10 +24,10 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
   const { t } = useTranslation();
   const pathname = useNavPath();
   const layout = layoutOf(pathname);
-  const inCommunity = pathname === "/community" || pathname.startsWith("/community/");
   // CR-125 · UX L1 · thẻ hợp đồng trên điện thoại: nút trợ lý nổi che nút Duyệt/Ký ⇒ ẩn (vẫn có ở desktop).
   const onCard = /^\/contracts\/c\/(?!new(?:\/|$))[^/]+\/?$/.test(pathname);
   const dock = useDock();
+  const showAssistant = assistantVisible(user?.role); // đối tác không có trợ lý (Chat AI bị chặn phía Hub)
   useBrandSync(useShellPacks().contracts === true);
   const [pinned, setPinned] = useStoredBool(NAV_PINNED_KEY, true);
   const role = roleOf({ write, owner });
@@ -65,7 +66,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
               <Outlet />
             </div>
           </main>
-          {dock.open && (
+          {dock.open && (showAssistant || dock.mode === "feedback") && (
             <AssistantDock
               mode={dock.mode}
               width={dock.width}
@@ -78,8 +79,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
       </div>
       <BottomNav />
       <SettingsDialogLazy owner={owner} tenantName={user?.tenant.name ?? ""} />
-      {/* Community có nút trợ lý riêng (ChatDock, cùng AssistantFab): chỉ MỘT nút nổi ở mỗi module */}
-      {!inCommunity && (
+      {showAssistant && (
         <AssistantFab
           onClick={dock.openAssistant}
           label={t("contracts.shell.openAssistant")}

@@ -4,7 +4,7 @@ import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { copyDef, deleteDef, useInvalidateDefs, useProcessDefs } from "../api";
+import { deleteDef, useInvalidateDefs, useProcessDefs } from "../api";
 import type { CloneSource } from "../components/library/CloneDialog";
 import { processErrorSpec } from "../lib/errors";
 import { activeCount, type LibFilter, libFilterSearch, parseSearchQ } from "../lib/library-filter";
@@ -52,38 +52,21 @@ function useRowActions(
   tenantId: string | undefined,
   onRun: (r: Row) => void,
   onDelete: (r: Row) => void,
-  onCopied: () => void,
   onCloneOpen: (s: CloneSource) => void,
 ) {
-  const { t } = useTranslation();
-  const fail = useFail();
-  const invalidate = useInvalidateDefs();
   const toggler = useToggleEnabled(tenantId);
   const latest = useRef({
     toggle: toggler.toggle,
     tenantId,
-    t,
-    invalidate,
-    fail,
-    onCopied,
     onCloneOpen,
   });
-  latest.current = { toggle: toggler.toggle, tenantId, t, invalidate, fail, onCopied, onCloneOpen };
+  latest.current = { toggle: toggler.toggle, tenantId, onCloneOpen };
   const actions = useMemo(
     () => ({
       onToggle: (r: Row, v: boolean) => void latest.current.toggle(r, v),
       onRun,
       onDelete,
       onClone: (r: Row) => latest.current.onCloneOpen({ id: r.id, name: r.name }),
-      onCopy: (r: Row) => {
-        const c = latest.current;
-        void copyDef(r.id, c.tenantId).then(() => {
-          notifySuccess(c.t("process.admin.list.toast.copied"));
-          void c.invalidate();
-          // D8a (UAT 2026-10-11) → CR-105: bản chép nằm ở "Mẫu · chạy thử" (xem `goOwn`).
-          c.onCopied();
-        }, c.fail);
-      },
     }),
     [onRun, onDelete],
   );
@@ -111,9 +94,6 @@ export function useProcessesView() {
     tenant.tenantId,
   );
   const q = useLib ? libQ : ownQ;
-  // Sau "Chép mẫu": danh sách MỘT trang tự làm tươi (invalidate) ⇒ chỉ đóng hộp thoại tạo; thư viện platform: sang tab Mẫu như cũ.
-  const goOwn = () =>
-    void navigate({ to: "/processes", search: { tab: "templates" }, replace: true });
   const goEditor = (id: string) =>
     void navigate({ to: "/processes/$processId", params: { processId: id } });
   const cloneFlow = useCloneFlow(goEditor);
@@ -122,7 +102,6 @@ export function useProcessesView() {
     tenant.tenantId,
     setRunRow,
     del.open,
-    goOwn,
     cloneFlow.open,
   );
   // CR-118/120: bộ lọc thư viện (app · việc · trạng thái · tenant) ở URL, lọc phía client trên danh sách đã tải (chỉ tab thư viện).

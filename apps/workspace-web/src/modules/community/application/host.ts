@@ -16,7 +16,7 @@ export type CommunityHostConfig = {
   contractsHref(path: string): string;
   /** CR-120: khe thanh trên dùng chung của AppShell (phần tử DOM); module vẽ ô tìm + chuông vào đó bằng portal. */
   slots: {
-    get(name: "search" | "bell"): HTMLElement | null;
+    get(name: "search"): HTMLElement | null;
     subscribe(cb: () => void): () => void;
   };
   /** CR-120: báo shell người xem hiện tại + brand chủ quản (mock: còn cấp danh tính + gói cho AppShell vì không có phiên). */

@@ -9,7 +9,8 @@
   "kind": {
     "review": "Review",
     "ask": "Answer",
-    "decision": "Decide"
+    "decision": "Decide",
+    "milestone": "Confirm milestone"
   },
   "dm": {
     "subtitle": "System account · Hub sends you work to handle, even if you aren't in that room",
@@ -30,7 +31,9 @@
     "resolvedByYou": "You · {{result}}",
     "escalated": "{{process}} · {{stage}} was escalated to your group",
     "escalatedTo": "Escalated to the group {{group}} because nobody has reviewed it.",
-    "escalatedToH": "Escalated to the group {{group}} because nobody reviewed it after {{hours}} hours."
+    "escalatedToH": "Escalated to the group {{group}} because nobody reviewed it after {{hours}} hours.",
+    "task_released": "The task at {{process}} · {{stage}} went back to the group because the person who took it did not act",
+    "milestone_task": "Please confirm a milestone: {{process}} · {{stage}}"
   },
   "run": {
     "tab": {

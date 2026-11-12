@@ -15,8 +15,8 @@ export const FLOW_TEMPLATE_INPUTS = [
   { key: "contract_id", label: "Hợp đồng", type: "text", required: true },
 ];
 
-const auto = { kind: "auto", branch: [] };
-const base = {
+export const auto = { kind: "auto", branch: [] };
+export const base = {
   instruction: "",
   real_action: false,
   answerer: { kind: "starter" },
@@ -26,13 +26,13 @@ const base = {
   must_know: [],
   autofix: null,
 };
-const out = (file: string, fields: unknown[] = []) => ({
+export const out = (file: string, fields: unknown[] = []) => ({
   filename: file,
   template: "x",
   required_sections: ["x"],
   fields,
 });
-const review = (group: string) => ({
+export const review = (group: string) => ({
   kind: "review",
   group_id: null,
   group_key: group,
@@ -41,6 +41,13 @@ const review = (group: string) => ({
   escalate: null,
   branch: [],
   exclude_starter: true,
+});
+
+/** CR-127 · Z2 · bước Duyệt theo mô hình mới: Cần «một người nhận việc» (`need`), Bằng chứng «ý kiến + tệp/chữ ký» (`evidence`). */
+export const reviewNew = (group: string) => ({
+  ...review(group),
+  need: "one",
+  evidence: "opinion_plus",
 });
 
 export type Stage = Record<string, unknown>;
@@ -59,7 +66,7 @@ export const approve = (
   step,
   executor: { kind: "approve", reject_step: to.reject, return_step: to.ret },
   output: out(`${key}.md`, [{ key: "decision", type: "string", required: true }]),
-  after: review(group),
+  after: reviewNew(group),
   ...o,
 });
 const esignSend = (step: number): Stage => ({

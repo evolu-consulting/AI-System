@@ -1,5 +1,7 @@
 # Sổ Hợp Tác · Duyệt, khoá, ký số
 
+> **CR-127 (2026-11-11) — phần Thư viện/khe/sao chép/mẫu/máy duyệt cũ trong file này ĐÃ THAY THẾ:** xem [engine/quy-trinh-cr127.md](../engine/quy-trinh-cr127.md). Giữ làm lịch sử; chỗ mâu thuẫn thì file CR-127 thắng.
+
 Cập nhật: 2026-10-27 · Gộp từ: contract-flow (CR-098, ADR-0030), engine-flag-tenant, M3-decouple/HD3 (máy cũ), k1-lock/lock-strict (CR-097), cf-esign-docusign, esign-multi, esign-anchor(+fix), esign-flow(+fix), esign-sweep, esign-sweep2.
 
 ## 1. Hai cơ chế duyệt HĐ
@@ -32,10 +34,6 @@ Mỗi lần mở lượt duyệt (kể cả mở lại), gói tra quy trình the
 - Kịch bản: khi Group theo mã đã bị xoá khỏi tenant thì lượt kẹt `FLOW_GROUP_MISSING:<mã>` (không về máy cũ; xem mục CR-107 cuối file) [test: apps/hub-api/src/modules/packs/contracts/application/approval-engine-slot.int.test.ts » thiếu Group lúc chạy ⇒ lượt kẹt FLOW_GROUP_MISSING]
 - Kịch bản: khi mở lượt với 10.000 tenant và 500 bản phát hành thì `resolveSlot` p95 ≤ 5 ms với số câu SQL cố định [test: apps/hub-api/src/modules/processes/library/slot-resolve.perf.int.test.ts » resolveSlot p95 ≤ 5 ms]
 
-### Yêu cầu: Chuyển mẫu cũ sang thư viện
-Tenant có `contracts.approval_flows` (hoặc cài đặt duyệt khác mặc định) ⇒ quy trình thư viện riêng "Quy trình HĐ – <tên tenant>" đã xuất bản + gán; tenant khác chạy mặc định; id phòng ban đổi sang mã; chạy lại không tạo trùng.
-- Kịch bản: khi chạy script hai lần trên tenant có mẫu riêng thì có đúng một quy trình riêng, một gán, bước dùng mã phòng ban [test: apps/hub-api/scripts/process-library-backfill.int.test.ts » chạy hai lần: một quy trình riêng, một gán, bước theo mã]
-- Kịch bản: khi tenant chưa lưu mẫu và cài đặt mặc định thì không có gán và lượt mới chạy quy trình mặc định [test: apps/hub-api/scripts/process-library-backfill.int.test.ts » tenant chưa lưu mẫu không gán, chạy mặc định]
 
 ## 2. Khoá sau xác nhận (K1)
 Xác nhận xong = khoá cứng (tenant tắt duyệt: bấm xác nhận là khoá; bật duyệt: khoá khi duyệt xong). Chi tiết thao tác được/không: `chung-tu.md` §4. Giao dịch (`deal`) không khoá. Mở lại: người phụ trách hoặc owner (`chung-tu.md` §4).
@@ -151,7 +149,6 @@ Lỗi gửi ký lại nói vì sao và cách sửa.
 #### Yêu cầu: Bước Thông báo không có người nhận được báo cho chủ hợp đồng
 Khi một bước Thông báo xong nhưng không có người nhận, thẻ duyệt hiện cho chủ hợp đồng dòng "Không có ai nhận thông báo bước <tên> — chọn người nhận trong Công ty › Quy trình" thay vì im lặng.
 - Kịch bản: khi hub gửi cờ cảnh báo ở bước Thông báo thì chủ hợp đồng thấy dòng cảnh báo [test: apps/workspace-web/src/features/contract-approval/lib/card-status.test.ts » noRecipientSteps (NOTIFY_NO_RECIPIENT)]
-- Kịch bản: khi xem thẻ ở trình duyệt thì dòng cảnh báo hiện cho chủ hợp đồng [test: e2e/contracts-web/u2-contracts-ux.cw.ts » chủ HĐ thấy cảnh báo bước Thông báo không có người nhận]
 
 ## CR-124/125 · Delta gộp 2026-11-08 (đợt cr124-cr125)
 

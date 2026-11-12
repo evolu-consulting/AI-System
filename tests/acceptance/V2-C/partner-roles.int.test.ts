@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { withPackScope } from "@ai/db/pack-scope";
 import { connectDb } from "../../../apps/hub-api/src/lib/db";
 import { HUB_API_URL } from "../H1/_fixtures";
+import { setLegacyStatus } from "../HD1/_support/hd1";
 import {
   arrangeHd8,
   type CtxN1,
@@ -59,6 +60,15 @@ const asHoa = <R>(fn: Parameters<typeof withPackScope<R>>[2]) =>
 const rows = async (q: string) =>
   asHoa(async (tx) => (await tx.execute(q as never)) as unknown as Record<string, unknown>[]);
 
+// Lệnh bị DB từ chối (quyền / RLS). Không dùng `expect(p).rejects`: lỗi drizzle (kèm `cause`/params) làm bun treo đúng chỗ này (CR-127 Q1c).
+const denied = async (p: Promise<unknown>): Promise<void> => {
+  const err = await p.then(
+    () => null,
+    (e: unknown) => e,
+  );
+  expect(err).not.toBeNull();
+};
+
 describe("V2-C · 5.6 đối tác từ HĐ (trigger khi lưu)", () => {
   it("khớp tên không phân biệt hoa thường ⇒ một đối tác; thiếu vai ⇒ thêm vai; HĐ nháp không tạo; xác nhận / đổi tên ⇒ tạo", async () => {
     await arrangeV2c();
@@ -74,7 +84,7 @@ describe("V2-C · 5.6 đối tác từ HĐ (trigger khi lưu)", () => {
     expect(r.find((x) => x.role === "supplier")?.contract_id).toBe(a);
     expect(r.find((x) => x.role === "supplier")?.name).toBe("Công ty ABC");
 
-    await c.sql`update contracts.contracts set status = 'active' where id = ${draft}`;
+    await setLegacyStatus(c.sql, draft, "active");
     // HD-09: đổi sang tên đối tác chưa có (dưới role gói, người sửa = Hoà) ⇒ tạo đối tác + vai, tác giả = Hoà
     await c.sql`update contracts.contracts set owner_user_id = ${P.hoa.id} where id = ${a}`;
     const upd = await rows(
@@ -108,8 +118,8 @@ describe("V2-C · 5.6 đối tác từ HĐ (trigger khi lưu)", () => {
       supplier_tax_id: fv("0100000000"),
       total_value: fv(null),
     };
-    await c.sql`insert into contracts.contracts (tenant_id, title, direction, deal, status, created_by, owner_user_id, fields)
-      values (${T.acme}, 'HĐ giới thiệu', 'sale', 'referral', 'active', ${P.lan.id}, ${P.lan.id},
+    await c.sql`insert into contracts.contracts (tenant_id, title, direction, deal, status, effect, created_by, owner_user_id, fields)
+      values (${T.acme}, 'HĐ giới thiệu', 'sale', 'referral', 'done', 'active', ${P.lan.id}, ${P.lan.id},
         ${c.sql.json(fields as never)})`;
     const r = await rolesOf(c.sql);
     expect(r.map((x) => [x.party_key, x.role])).toEqual([
@@ -169,29 +179,25 @@ describe("V2-C · M1 trên vai + ghi chú (chế độ org) · cách ly tenant",
         `delete from contracts.partner_notes where id = '${lanNote.id}' returning id`,
       );
       expect(del.length).toBe(0);
-      await expect(
-        rows("update contracts.partner_notes set body = 'x' returning id"),
-      ).rejects.toThrow();
-      await expect(
+      await denied(rows("update contracts.partner_notes set body = 'x' returning id"));
+      await denied(
         rows(`insert into contracts.partner_notes (tenant_id, party_key, body)
           values ('${T.acme}', '${LAN_ONLY}', 'chen ngang')`),
-      ).rejects.toThrow();
-      await expect(
+      );
+      await denied(
         rows(`insert into contracts.partner_notes (tenant_id, party_key, body, created_by)
           values ('${T.acme}', '${SHARED}', 'gia tac gia', '${P.lan.id}')`),
-      ).rejects.toThrow();
-      await expect(
+      );
+      await denied(
         rows(`insert into contracts.partner_roles (tenant_id, party_key, role, created_by)
           values ('${T.acme}', 'tax:0311119999', 'supplier', '${P.lan.id}')`),
-      ).rejects.toThrow();
-      await expect(rows("delete from contracts.partner_roles returning id")).rejects.toThrow();
-      await expect(
-        rows("update contracts.partner_roles set name = 'x' returning id"),
-      ).rejects.toThrow();
-      await expect(
+      );
+      await denied(rows("delete from contracts.partner_roles returning id"));
+      await denied(rows("update contracts.partner_roles set name = 'x' returning id"));
+      await denied(
         rows(`insert into contracts.partner_roles (tenant_id, party_key, role)
           values ('${T.beta}', 'tax:0311119998', 'supplier')`),
-      ).rejects.toThrow();
+      );
       // owner vẫn thấy hết
       expect((await ok(call(c, P.lan, "GET", "/partners/roles"))).length).toBe(2);
       const lanSees: Json[] = await ok(

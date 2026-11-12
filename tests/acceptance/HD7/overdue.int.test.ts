@@ -89,7 +89,13 @@ describe("HD7-AC03 · dòng quá hạn do hệ thống ghi", () => {
     await arrangeHd7(c);
     const { ob } = await sale("0366660002", "OD-2");
     await sweepAt("2026-10-05");
-    await ok(call(c, P.hoa, "POST", `/obligations/${ob.id}/postpone`, { to: "2026-10-20" }));
+    // CR-127 X3: yêu cầu thay đổi thực hiện chỉ do người phụ trách / quản trị công ty (lan) ⇒ không dùng editor thường.
+    await ok(
+      call(c, P.lan, "POST", `/obligations/${ob.id}/postpone`, {
+        to: "2026-10-20",
+        evidence: { note: "Khách xin hẹn lại, đã trao đổi" },
+      }),
+    );
     await sweepAt("2026-10-25");
     expect((await overdueLines(ob.party)).map((e: Json) => e.due_date)).toEqual([
       "2026-10-01",

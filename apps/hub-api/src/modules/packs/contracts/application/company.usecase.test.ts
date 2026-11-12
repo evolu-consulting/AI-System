@@ -18,7 +18,6 @@ const base = CompanySchema.parse({
   theme: "light",
   own_names: ["NITI GROUP"],
   own_tax_ids: ["0312345678"],
-  approval_enabled: true,
 });
 
 describe("V2-L · company", () => {

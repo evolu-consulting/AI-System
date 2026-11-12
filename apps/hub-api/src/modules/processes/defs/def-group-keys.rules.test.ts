@@ -126,6 +126,14 @@ describe("CR-105 · Group theo mã trong def thư viện", () => {
     expect(reviewHasGroup(st(undefined), false)).toBe(false);
   });
 
+  it("CR-127 · Z2 · bước Duyệt chỉ có người (không phòng): hợp lệ ở def công ty, mẫu Thư viện vẫn đòi mã Group", () => {
+    const only = {
+      after: { kind: "review", group_id: null, approver_user_id: G },
+    } as unknown as Parameters<typeof reviewHasGroup>[0];
+    expect(reviewHasGroup(only, false)).toBe(true);
+    expect(reviewHasGroup(only, true)).toBe(false);
+  });
+
   it("escalate phải có đúng một trong group_id / group_key (hình dạng)", () => {
     expect(() => def({ group_id: G, escalate: { after_h: 24 } })).toThrow();
     expect(() =>

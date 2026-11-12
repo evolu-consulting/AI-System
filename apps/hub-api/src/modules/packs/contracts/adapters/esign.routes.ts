@@ -25,7 +25,13 @@ import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
 import { logger } from "../../../../lib/logger";
-import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
+import {
+  type PackAccessView,
+  type PackGuardVars,
+  packGuard,
+  packGuardOrPlatform,
+  requestWho,
+} from "../../kit/public";
 import { ESignProviderError } from "../application/esign.ports";
 import { ESignFail, type ESignUsecase } from "../application/esign.usecase";
 
@@ -64,10 +70,15 @@ export function esignRoutes(view: PackAccessView, u: ESignUsecase): Hono<PackGua
     return c.json(await run(u.saveSettings(who(c), b)));
   });
   // CR-122 · E5 · panel node Ký số: lựa chọn (nhà cung cấp đang bật + Group) và kiểm cấu hình trước khi lưu def.
-  r.get("/esign/options", read, async (c) => c.json(await run(u.nodeOptions(who(c)))));
-  r.post("/esign/node-config/check", write, async (c) => {
+  // CR-127 · EO1 · platform_admin soạn quy trình cho công ty: `?tenant_id=<công ty đích>` (gói phải bật cho công ty đó, 403
+  // `PACK_DISABLED` nếu không; scope tenant đích, không user). Vai khác: như `read` — `tenant_id` bị bỏ qua. CHỈ route đọc này.
+  r.get("/esign/options", packGuardOrPlatform(view, KEY, "read"), async (c) =>
+    c.json(await run(u.nodeOptions(requestWho(c)))),
+  );
+  // CR-127 · EO2 · cùng khuôn: kiểm cấu hình, KHÔNG ghi dữ liệu ⇒ platform_admin kiểm theo `?tenant_id=` công ty đích.
+  r.post("/esign/node-config/check", packGuardOrPlatform(view, KEY, "write"), async (c) => {
     const b = parseWith(EsignNodeConfigSchema, await readJson(c));
-    return c.json({ issues: await run(u.checkNode(who(c).tenantId, b)) });
+    return c.json({ issues: await run(u.checkNode(requestWho(c).tenantId, b)) });
   });
   r.get("/contracts/:id/esign", read, async (c) => c.json(await run(u.state(who(c), idOf(c)))));
   r.post("/contracts/:id/esign", write, async (c) => {

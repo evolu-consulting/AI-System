@@ -2,6 +2,7 @@
 // ép): input `date` lúc bắt đầu (ngày lịch thật), luật lưu def `wait_until` (422 `PROCESS_DEF_INVALID` + path từng ca),
 // Hub ép output/answerer/token_budget/timeout_s khi lưu.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { T as T_FIX } from "../../H1/_fixtures";
 import {
   agentStage,
   type CtxPd,
@@ -78,7 +79,7 @@ describe("PD-I34 · input date lúc bắt đầu [AC-H41][HUB-FR-105]", () => {
 });
 
 describe("PD-I35 · WAIT_INVALID khi lưu def [AC-H41][HUB-BR-42][plan-addendum A2]", () => {
-  const post = (body: Json) => c.call("Adm", "POST", "/process-defs", body);
+  const post = (body: Json) => c.call("P", "POST", `/process-defs?tenant_id=${T_FIX.acme}`, body);
   it("HUB-BR-42 · PD-I35 · after review ⇒ path stages.1.after", async () => {
     needPdSchema(c.pd);
     const body = defBody("pd-wi-after", [

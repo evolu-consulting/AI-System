@@ -111,12 +111,12 @@
       "label": "Audience",
       "all": "All friends",
       "suppliers": "Suppliers only",
-      "buyers": "Buyers only",
+      "buyers": "Customers only",
       "cats": "By category",
       "companies": "Specific companies",
       "partnerNote": "Only the host can see this post",
       "catsList": "Categories: {{list}}",
-      "catsSell": "Buyers interested in the post's category",
+      "catsSell": "Customers interested in the post's category",
       "catsBuy": "Suppliers in the post's category",
       "catsNote": "Partners interested in the post's category",
       "companiesCount": "{{n}} companies selected",
@@ -124,14 +124,21 @@
       "previewMore": " and {{n}} more",
       "preview": "Visible to {{n}} companies: {{names}}{{more}}",
       "errorPickOne": "Select at least one company",
-      "choose": "Choose audience"
+      "choose": "Choose audience",
+      "catsPick": "Choose categories",
+      "catsTitle": "Choose categories",
+      "catsSearch": "Search categories",
+      "catsEmpty": "No matching category",
+      "catsCount": "{{n}} selected",
+      "catsDone": "Done",
+      "catsCancel": "Cancel"
     },
     "composer": {
       "prompt": "Does {{org}} have goods to sell or something to buy?",
       "bodyLabel": "Post content",
       "prefillFrom": "Sample suggestions (not your company products)",
       "prefillBanner": "Prefilled from Sổ Hợp Tác · {{product}}",
-      "prefillOption": "Sample suggestions (not your company products)…",
+      "prefillOption": "Sample suggestions…",
       "typeLabel": "Post type",
       "removeAttachment": "Remove attachment",
       "image": "Photo",
@@ -213,16 +220,17 @@
       "quoteCommentDeleted": " · comment deleted"
     },
     "thread": {
-      "noteHost": "One private thread per partner: partners only see their own conversation with you.",
-      "notePartner": "Only the host can see this conversation.",
-      "tabsLabel": "Threads by company",
-      "new": "new",
-      "empty": "No threads yet. When a partner comments, the thread appears here.",
-      "startPrivate": "Message privately",
-      "startPrivateOption": "Message privately…",
+      "note": "All comments appear in one shared list under the post. Type @ to mention a partner company.",
+      "notePartner": "You see the host's comments, your company's comments and comments that mention you.",
+      "empty": "No comments yet.",
+      "more": "Show more comments",
       "writeComment": "Write a comment",
-      "writeCommentPlaceholder": "Write a comment…",
-      "send": "Send comment"
+      "writeCommentPlaceholder": "Write a comment… type @ to mention a company",
+      "send": "Send comment",
+      "mentionHint": "Every partner who can see this post will be able to read this comment.",
+      "mentionList": "Companies you can mention",
+      "mentionNotAllowed": "This company can't be mentioned on this post. Remove the mention and send again.",
+      "sendFailed": "Couldn't send the comment, please try again."
     },
     "comment": {
       "edit": "Edit comment",
@@ -297,7 +305,7 @@
       "partnersGroup": "Partners",
       "settings": "Settings",
       "labelSupplier": "Supplier",
-      "labelBuyer": "Buyer",
+      "labelBuyer": "Customer",
       "partnerLeft": "partner left",
       "statActive": "Active posts",
       "statArchived": "Archived",
@@ -343,52 +351,12 @@
       }
     },
     "settings": {
-      "navLabel": "Settings sections",
-      "title": "Settings",
       "saved": "Settings saved",
       "autosave": "Changes are saved as soon as you make them.",
       "loadError": "Couldn't load settings.",
       "retry": "Retry",
-      "noPermTitle": "No permission",
-      "noPerm": "This section is for host company admins only.",
-      "companyWide": "Applies to the whole company",
-      "groups": {
-        "personal": "Personal",
-        "company": "Company",
-        "sht": "Partner Ledger"
-      },
       "sections": {
-        "notify": "Notifications",
-        "lang": "Language",
-        "brand": "Accent colour",
-        "co": "Company",
-        "rep": "Reputation score",
-        "biz": "Business score",
-        "scout": "Price scouting",
-        "flow": "Approval flow"
-      },
-      "lang": {
-        "lead": "Display language of the app.",
-        "aria": "Language",
-        "vi": "Tiếng Việt",
-        "en": "English"
-      },
-      "brand": {
-        "lead": "The accent colour is set by the host company and applies to every member.",
-        "aria": "Current accent colour",
-        "indigo": "Indigo",
-        "blue": "Blue",
-        "teal": "Teal",
-        "green": "Green",
-        "orange": "Orange",
-        "rose": "Rose",
-        "edit": "Change colour in Partner Ledger"
-      },
-      "sht": {
-        "lead": "This is configured in Partner Ledger. Click to open the exact section.",
-        "openHere": "Open Contracts settings",
-        "open": "Open in Partner Ledger",
-        "readonly": "View only; edit in Partner Ledger."
+        "notify": "Notifications"
       },
       "notify": {
         "lead": "Choose when you want to be notified (in the app only).",
@@ -396,8 +364,10 @@
         "commentDesc": "Notify as soon as a new comment arrives.",
         "reply": "Someone replies to my comment",
         "replyDesc": "Follow ongoing conversations.",
+        "mention": "Someone mentions me",
+        "mentionDesc": "Notify me when my company is mentioned (@) in a comment.",
         "newSell": "A supplier posts a new Selling post",
-        "newBuy": "A buyer posts a new Buying post",
+        "newBuy": "A customer posts a new Buying post",
         "matchBuy": "A Buying post matches goods in stock",
         "priceEdited": "A supplier edits the price of a saved post",
         "hostOnly": "Host only.",
@@ -408,23 +378,7 @@
       }
     },
     "dock": {
-      "title": "Price assistant",
-      "subtitle": "Answers from the price book, posts and quotes · always with sources",
-      "close": "Close assistant",
-      "welcome": "Ask the price of a product, compare suppliers, or see what's new today. Every figure comes with its source and date.",
-      "searching": "Looking up…",
-      "suggestion1": "Price of a USB Token digital signature?",
-      "suggestion2": "What's new today?",
-      "inputLabel": "Ask the price assistant",
-      "inputPlaceholder": "Ask a price, record a price, draft a quote…",
-      "stop": "Stop",
-      "send": "Send",
-      "open": "Open price assistant",
-      "fab": "Ask AI assistant",
-      "searchContext": "Searching the feed: {{q}}",
-      "errForbidden": "You can't use the price assistant yet. Ask an admin to grant read access to the Community pack.",
-      "errBusy": "The assistant is busy, try again in a moment.",
-      "errGeneric": "The assistant couldn't answer. Try again later."
+      "searchContext": "Searching the feed: {{q}}"
     },
     "sso": {
       "signedInAs": "Signed in as:",
@@ -580,7 +534,17 @@
         "rejectedWhy": "Reason for rejecting: {{reason}}",
         "approved": "Approved. The company is now linked as a partner.",
         "rejected": "Request rejected.",
-        "conflict": "Someone else already handled this request. The list was refreshed."
+        "conflict": "Someone else already handled this request. The list was refreshed.",
+        "modeNew": "Create a new partner",
+        "modeLink": "Link to an existing partner",
+        "searchParty": "Search partners by name",
+        "pickParty": "Pick a partner",
+        "noParties": "No partner to link yet.",
+        "summaryNew": "Approve: create a new partner \"{{company}}\" and give it a Feed account.",
+        "summaryLink": "Approve: link \"{{company}}\" to existing partner \"{{party}}\".",
+        "summaryPick": "Pick an existing partner to link, or go back to \"Create a new partner\".",
+        "errLinked": "This partner already has a Feed account. Pick another partner or \"Create a new partner\".",
+        "errPartyGone": "The selected partner was not found (it may have just been removed). Pick another one."
       },
       "reports": {
         "menu": "Report",
@@ -629,6 +593,20 @@
         "duplicate": "You already reported this post. An admin will handle it; no need to send again.",
         "postUntitled": "(Post without a title)"
       }
+    },
+    "me": {
+      "company": "Company",
+      "companyPage": "View company page",
+      "role": {
+        "host_admin": "Admin",
+        "host_member": "Member",
+        "partner": "Partner"
+      },
+      "tabs": {
+        "mine": "My posts",
+        "org": "Organisation posts"
+      },
+      "email": "Email"
     }
   }
 }

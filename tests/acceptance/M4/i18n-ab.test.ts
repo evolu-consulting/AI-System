@@ -68,7 +68,7 @@ const E2E_LABELS = [
   "Đã dùng 85% quota tháng này",
   "Xem chi tiết",
   "Đang vượt quota, phần vượt được tính phí",
-  "Users đang hoạt động",
+  "Người dùng đang hoạt động",
   "Quota tháng",
   "Run",
   "Người dùng mới chưa đăng nhập",

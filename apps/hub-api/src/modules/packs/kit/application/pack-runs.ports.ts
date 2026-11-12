@@ -4,6 +4,7 @@
 // contract-flow S1a · cầu v2: def gói (`ensureDef`), run gắn bản ghi gói (`ref`), quyết task (`act`, scope user ⇒ canAct/RLS
 // của engine), đọc dòng thời gian (`stepsView`) + lời gọi hệ thống lọc tenant tường minh.
 
+import type { TaskDetail } from "@ai/contracts/chat";
 import type { FormPrefill } from "@ai/contracts/flow";
 import type { FormField } from "@ai/contracts/hub-admin";
 import type { EventFlow, ResolvedSlot, RoutedSlot, RouteSlotFacts } from "./slot.ports";
@@ -54,6 +55,10 @@ export type PackReviewAct = {
   result: "pass" | "fail" | "reject";
   feedback?: string;
   back_to_step?: number;
+  /** CR-127 · E4 · bằng chứng của quyết định (ý kiến + chữ ký/tệp); engine ghi `hub.evidence` cùng tx đóng task. */
+  evidence?: { note: string; signature_attachment_id?: string; attachment_ids?: string[] };
+  /** CR-127 · E4 · engine báo id bằng chứng đã ghi (gói lưu vào nhật ký quyết định để đọc lại). */
+  onEvidence?: (evidenceId: string) => void;
 };
 /** S1a · task duyệt đích: id task (của đúng run) hoặc khoá stage (task review đang mở của stage đó). */
 export type PackActTarget = { task_id: string } | { stage: string };
@@ -70,6 +75,11 @@ export type PackStepStatus =
   | "failed"; // cf-dify · bước Dify lỗi hết lượt (needs_decision)
 /** CR-123 · u6 · trạng thái nghiệp vụ của một node module (Ký số): chưa tới · đang chờ · xong · từ chối · hết hạn. */
 export type PackModuleOutcome = "pending" | "waiting" | "done" | "declined" | "expired" | "failed";
+/** CR-127 · RA2 · nhận việc của task mở theo người xem (cùng `TASK_CLAIM_FIELDS` của `TaskDetail`): đi tới `FlowTask`. */
+export type PackTaskClaim = Pick<
+  TaskDetail,
+  "claim" | "need" | "can_reassign" | "votes" | "delegated_from" | "evidence_mode"
+>;
 export type PackStepView = {
   /** CR-123 · u6 · bước này là CẢ cụm stage của một node module (gửi + chờ) — một dòng, trạng thái theo stage chờ. */
   module?: { node: string; outcome: PackModuleOutcome; signer?: string };
@@ -91,7 +101,7 @@ export type PackStepView = {
   feedback: string | null;
   /** Task review đang mở + người xem quyết được không (`canAct` của engine). CR-113 · `override` = người xem quyết được CHỈ nhờ
    *  Group "cũng quyết" của stage (`after.also_group_ids`, Toàn quyền) — không phải người của bước ⇒ "duyệt thay". */
-  task: { id: string; can_act: boolean; override?: boolean } | null;
+  task: ({ id: string; can_act: boolean; override?: boolean } & PackTaskClaim) | null;
   /** CR-113 · id task review gần nhất của stage (mở hoặc đã đóng); vắng ⇒ không biết. */
   task_ref?: string | null;
   /** CR-124 · q6 · bước (`after.back_to_steps`) mà quyết `fail` được phép lùi về; rỗng/vắng ⇒ stage không có đích lùi. */
@@ -126,6 +136,8 @@ export type PackOpenTask = {
   /** Hạn = mốc chuyển cấp của task; null khi stage không chuyển cấp. */
   due_at: string | null;
   escalated: boolean;
+  /** CR-127 · U4 · task giao cho người khác mà người xem làm thay (uỷ quyền còn hiệu lực) — nhãn «Thay A» ở «Việc của tôi». */
+  delegated_from?: { id: string; display_name: string };
 };
 
 /** cf-dify · một workflow catalog cho gói: khoá, tên, tham số (`input_schema`). */

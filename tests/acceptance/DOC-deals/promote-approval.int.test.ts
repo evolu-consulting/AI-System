@@ -71,34 +71,13 @@ const rowOf = async (id: string) =>
   )[0];
 
 describe("DOC-deals-fix · nâng thành HĐ theo cờ duyệt", () => {
-  it("bật duyệt ⇒ needs_review + lượt duyệt mở, KHÔNG khoá", async () => {
-    await setApproval(c.sql, T.acme, true);
-    const id = await newDeal();
-    const r = await promote(P.lan, id);
-    expect(r.status).toBe(200);
-    expect(r.json).toMatchObject({
-      id,
-      doc_type: "contract",
-      status: "needs_review",
-      locked: false,
-    });
-    expect(await rowOf(id)).toMatchObject({
-      status: "needs_review",
-      locked: false,
-      doc_type: "contract",
-    });
-    const [a] = await c.sql<{ n: number }[]>`select count(*)::int as n from contracts.approvals
-      where contract_id = ${id} and status in ('extracting', 'level1', 'level2')`;
-    expect(a?.n).toBe(1);
-  });
-
   it("tắt duyệt ⇒ khoá ngay, locked_by = người nâng", async () => {
     await setApproval(c.sql, T.acme, false);
     const id = await newDeal(P.hoa);
     const r = await promote(P.lan, id);
-    expect(r.json).toMatchObject({ status: "active", locked: true });
+    expect(r.json).toMatchObject({ status: "done", locked: true });
     expect(await rowOf(id)).toEqual({
-      status: "active",
+      status: "done",
       locked: true,
       locked_by: P.lan.id,
       doc_type: "contract",

@@ -185,3 +185,25 @@ export type MapRow = {
   labels: readonly string[];
   categories: readonly string[];
 };
+
+/** Công ty xin tham gia Bảng tin (đơn đang chờ duyệt): có tài khoản công ty nhưng CHƯA gắn đối tác SHT — để thử màn duyệt chọn đối tác. */
+export type JoinSeed = {
+  name: string;
+  username: string;
+  displayName: string;
+  contact: string;
+  email: string;
+  reason: string;
+  labels: readonly ("supplier" | "customer")[];
+};
+export const JOIN_SEEDS: readonly JoinSeed[] = [
+  {
+    name: "Nam Việt Packaging",
+    username: "doitac-namviet",
+    displayName: "Nam Việt (đối tác xin tham gia)",
+    contact: "Trần Minh Khoa",
+    email: "khoa@namviet.example.invalid",
+    reason: "Muốn chào giá bao bì và thùng carton cho các đơn của công ty.",
+    labels: ["supplier"],
+  },
+];

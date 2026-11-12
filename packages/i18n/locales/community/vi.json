@@ -111,12 +111,12 @@
       "label": "Người xem",
       "all": "Tất cả bạn bè",
       "suppliers": "Chỉ nhà cung cấp",
-      "buyers": "Chỉ người mua",
+      "buyers": "Chỉ khách hàng",
       "cats": "Theo nhóm hàng",
       "companies": "Từng công ty",
       "partnerNote": "Chỉ chủ quản thấy bài này",
       "catsList": "Nhóm hàng: {{list}}",
-      "catsSell": "Người mua quan tâm nhóm hàng của bài",
+      "catsSell": "Khách hàng quan tâm nhóm hàng của bài",
       "catsBuy": "Nhà cung cấp nhóm hàng của bài",
       "catsNote": "Đối tác quan tâm nhóm hàng của bài",
       "companiesCount": "{{n}} công ty được chọn",
@@ -124,14 +124,21 @@
       "previewMore": " và {{n}} công ty khác",
       "preview": "Sẽ hiện với {{n}} công ty: {{names}}{{more}}",
       "errorPickOne": "Chọn ít nhất một công ty",
-      "choose": "Chọn người xem"
+      "choose": "Chọn người xem",
+      "catsPick": "Chọn nhóm hàng",
+      "catsTitle": "Chọn nhóm hàng",
+      "catsSearch": "Tìm nhóm hàng",
+      "catsEmpty": "Không có nhóm hàng phù hợp",
+      "catsCount": "Đã chọn {{n}} nhóm",
+      "catsDone": "Xong",
+      "catsCancel": "Huỷ"
     },
     "composer": {
       "prompt": "{{org}} đang có hàng cần bán hay nhu cầu cần mua?",
       "bodyLabel": "Nội dung bài đăng",
       "prefillFrom": "Gợi ý mẫu (chưa phải sản phẩm của công ty)",
       "prefillBanner": "Điền sẵn từ Sổ Hợp Tác · {{product}}",
-      "prefillOption": "Gợi ý mẫu (chưa phải sản phẩm của công ty)…",
+      "prefillOption": "Gợi ý mẫu…",
       "typeLabel": "Loại bài",
       "removeAttachment": "Bỏ tệp đính kèm",
       "image": "Ảnh",
@@ -163,9 +170,9 @@
       "product": "Hàng hoá",
       "qty": "Số lượng",
       "price": "Giá",
-      "priceHint": "Giá (bỏ trống = Liên hệ)",
+      "priceHint": "Giá (trống = Liên hệ)",
       "budget": "Ngân sách",
-      "budgetHint": "Ngân sách (có thể bỏ trống)",
+      "budgetHint": "Ngân sách (tuỳ chọn)",
       "area": "Khu vực",
       "areaRequired": "Khu vực (bắt buộc)",
       "neededBy": "Ngày cần",
@@ -213,16 +220,17 @@
       "quoteCommentDeleted": " · bình luận đã xoá"
     },
     "thread": {
-      "noteHost": "Mỗi đối tác một luồng riêng: đối tác chỉ thấy trao đổi của chính họ với bạn.",
-      "notePartner": "Chỉ chủ quản thấy trao đổi này.",
-      "tabsLabel": "Luồng theo công ty",
-      "new": "mới",
-      "empty": "Chưa có luồng nào. Khi đối tác bình luận, luồng hiện ở đây.",
-      "startPrivate": "Nhắn riêng",
-      "startPrivateOption": "Nhắn riêng…",
+      "note": "Mọi bình luận hiện ở một danh sách chung dưới bài. Gõ @ để nhắc tên một công ty đối tác.",
+      "notePartner": "Bạn thấy bình luận của chủ quản, của công ty bạn và các bình luận nhắc tên bạn.",
+      "empty": "Chưa có bình luận nào.",
+      "more": "Xem thêm bình luận",
       "writeComment": "Viết bình luận",
-      "writeCommentPlaceholder": "Viết bình luận…",
-      "send": "Gửi bình luận"
+      "writeCommentPlaceholder": "Viết bình luận… gõ @ để nhắc tên công ty",
+      "send": "Gửi bình luận",
+      "mentionHint": "Mọi đối tác thấy bài sẽ đọc được bình luận này.",
+      "mentionList": "Gợi ý công ty để nhắc tên",
+      "mentionNotAllowed": "Không nhắc được công ty này trên bài này. Hãy bỏ tên được nhắc rồi gửi lại.",
+      "sendFailed": "Chưa gửi được bình luận, vui lòng thử lại."
     },
     "comment": {
       "edit": "Sửa bình luận",
@@ -297,7 +305,7 @@
       "partnersGroup": "Đối tác",
       "settings": "Cài đặt",
       "labelSupplier": "Nhà cung cấp",
-      "labelBuyer": "Người mua",
+      "labelBuyer": "Khách hàng",
       "partnerLeft": "đối tác đã rời",
       "statActive": "Bài đang đăng",
       "statArchived": "Đã lưu trữ",
@@ -343,52 +351,12 @@
       }
     },
     "settings": {
-      "navLabel": "Mục cài đặt",
-      "title": "Cài đặt",
       "saved": "Đã lưu cài đặt",
       "autosave": "Thay đổi được lưu ngay khi bạn chọn.",
       "loadError": "Không tải được cài đặt.",
       "retry": "Thử lại",
-      "noPermTitle": "Bạn chưa có quyền",
-      "noPerm": "Mục này chỉ dành cho quản trị công ty chủ quản.",
-      "companyWide": "Áp dụng cho cả công ty",
-      "groups": {
-        "personal": "Cá nhân",
-        "company": "Công ty",
-        "sht": "Sổ Hợp Tác"
-      },
       "sections": {
-        "notify": "Thông báo",
-        "lang": "Ngôn ngữ",
-        "brand": "Màu chủ đạo",
-        "co": "Công ty",
-        "rep": "Điểm uy tín",
-        "biz": "Điểm kinh doanh",
-        "scout": "Dò giá",
-        "flow": "Quy trình duyệt"
-      },
-      "lang": {
-        "lead": "Ngôn ngữ hiển thị của ứng dụng.",
-        "aria": "Ngôn ngữ",
-        "vi": "Tiếng Việt",
-        "en": "English"
-      },
-      "brand": {
-        "lead": "Màu chủ đạo do công ty chủ quản đặt, áp dụng cho mọi thành viên.",
-        "aria": "Màu chủ đạo hiện tại",
-        "indigo": "Chàm",
-        "blue": "Xanh dương",
-        "teal": "Xanh ngọc",
-        "green": "Xanh lá",
-        "orange": "Cam",
-        "rose": "Hồng",
-        "edit": "Đổi màu trong Sổ Hợp Tác"
-      },
-      "sht": {
-        "lead": "Cấu hình nằm trong Sổ Hợp Tác. Bấm để mở đúng mục.",
-        "open": "Mở trong Sổ Hợp Tác",
-        "openHere": "Mở cài đặt Sổ Hợp Tác",
-        "readonly": "Chỉ xem; chỉnh trong Sổ Hợp Tác."
+        "notify": "Thông báo"
       },
       "notify": {
         "lead": "Chọn khi nào bạn muốn nhận thông báo (chỉ trong ứng dụng).",
@@ -396,8 +364,10 @@
         "commentDesc": "Thông báo ngay khi có bình luận mới.",
         "reply": "Có người trả lời bình luận của tôi",
         "replyDesc": "Theo dõi các cuộc trao đổi đang diễn ra.",
+        "mention": "Có người nhắc tên tôi",
+        "mentionDesc": "Thông báo khi tên công ty bạn được nhắc (@) trong một bình luận.",
         "newSell": "Nhà cung cấp đăng bài Cần bán mới",
-        "newBuy": "Người mua đăng bài Cần mua mới",
+        "newBuy": "Khách hàng đăng bài Cần mua mới",
         "matchBuy": "Bài Cần mua khớp hàng đang có",
         "priceEdited": "Nhà cung cấp sửa giá bài đã lưu",
         "hostOnly": "Chỉ chủ quản.",
@@ -408,23 +378,7 @@
       }
     },
     "dock": {
-      "title": "Trợ lý giá",
-      "subtitle": "Trả lời từ Sổ giá, bài đăng và báo giá · luôn kèm nguồn",
-      "close": "Đóng trợ lý",
-      "welcome": "Hỏi giá một sản phẩm, so sánh nhà cung cấp hoặc xem hôm nay có gì mới. Mỗi con số đều kèm nguồn và ngày.",
-      "searching": "Đang tra…",
-      "suggestion1": "Giá chữ ký số USB Token?",
-      "suggestion2": "Hôm nay có gì mới?",
-      "inputLabel": "Hỏi trợ lý giá",
-      "inputPlaceholder": "Hỏi giá, ghi giá, soạn báo giá…",
-      "stop": "Dừng",
-      "send": "Gửi",
-      "open": "Mở trợ lý giá",
-      "fab": "Hỏi trợ lý AI",
-      "searchContext": "Đang tìm trên bảng tin: {{q}}",
-      "errForbidden": "Bạn chưa được dùng Trợ lý giá. Nhờ quản trị cấp quyền đọc gói Cộng đồng.",
-      "errBusy": "Trợ lý đang bận, thử lại sau giây lát.",
-      "errGeneric": "Trợ lý chưa trả lời được. Thử lại sau."
+      "searchContext": "Đang tìm trên bảng tin: {{q}}"
     },
     "sso": {
       "signedInAs": "Đang đăng nhập:",
@@ -580,7 +534,17 @@
         "rejectedWhy": "Lý do từ chối: {{reason}}",
         "approved": "Đã duyệt. Công ty đã được liên kết đối tác.",
         "rejected": "Đã từ chối yêu cầu.",
-        "conflict": "Yêu cầu đã được người khác xử lý. Danh sách đã được làm mới."
+        "conflict": "Yêu cầu đã được người khác xử lý. Danh sách đã được làm mới.",
+        "modeNew": "Tạo đối tác mới",
+        "modeLink": "Gắn với đối tác có sẵn",
+        "searchParty": "Tìm đối tác theo tên",
+        "pickParty": "Chọn đối tác",
+        "noParties": "Chưa có đối tác nào để gắn.",
+        "summaryNew": "Duyệt: tạo đối tác mới «{{company}}» và cấp tài khoản Bảng tin.",
+        "summaryLink": "Duyệt: gắn «{{company}}» vào đối tác có sẵn «{{party}}».",
+        "summaryPick": "Chọn đối tác có sẵn để gắn, hoặc quay lại «Tạo đối tác mới».",
+        "errLinked": "Đối tác này đã có tài khoản Bảng tin. Chọn đối tác khác hoặc «Tạo đối tác mới».",
+        "errPartyGone": "Không tìm thấy đối tác đã chọn (có thể vừa bị xoá). Chọn lại đối tác khác."
       },
       "reports": {
         "menu": "Báo cáo",
@@ -629,6 +593,20 @@
         "duplicate": "Bạn đã báo cáo bài này rồi. Quản trị sẽ xử lý, không cần gửi lại.",
         "postUntitled": "(Bài không có tiêu đề)"
       }
+    },
+    "me": {
+      "company": "Công ty",
+      "companyPage": "Xem trang công ty",
+      "role": {
+        "host_admin": "Quản trị",
+        "host_member": "Thành viên",
+        "partner": "Đối tác"
+      },
+      "tabs": {
+        "mine": "Bài đăng của tôi",
+        "org": "Bài đăng của tổ chức"
+      },
+      "email": "Email"
     }
   }
 }

@@ -24,6 +24,10 @@ type Props = {
   refs: EditorRefs;
   patch: (p: Partial<DefDraft>) => void;
   variant?: InfoVariant;
+  /** CR-127 · M8 · có bước AI không: không ⇒ ẩn Giới hạn chi phí AI + Mã nội bộ. */
+  hasAi?: boolean;
+  /** CR-127 · M8 · quy trình theo sự kiện: hạn nằm ở từng bước Duyệt ⇒ không còn «Thời hạn lượt chạy». */
+  flow?: boolean;
 };
 
 function GroupsField({
@@ -73,12 +77,22 @@ function GroupsField({
   );
 }
 
-export function DefInfoCard({ draft, errors, readOnly, refs, patch, variant = "full" }: Props) {
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CR-127 · U2b — cờ ẩn/hiện theo loại quy trình, tách ở đợt dọn sau
+export function DefInfoCard({
+  draft,
+  errors,
+  readOnly,
+  refs,
+  patch,
+  variant = "full",
+  hasAi = true,
+  flow = false,
+}: Props) {
   const { t } = useTranslation();
   const platform = useSession((s) => s.me?.role) === "platform_admin";
   const e = (f: string): string | undefined => (errors[f] ? t(errors[f] as string) : undefined);
   const full = variant === "full";
-  const budget = (
+  const budgetField = (
     <TextField
       id="pd-budget"
       label={t(full ? "process.admin.editor.budget" : "process.admin.editor.budgetAi")}
@@ -100,6 +114,7 @@ export function DefInfoCard({ draft, errors, readOnly, refs, patch, variant = "f
       <Label htmlFor="pd-enabled">{label}</Label>
     </div>
   );
+  const budget = hasAi ? budgetField : null;
   return (
     <Panel title={t("process.admin.editor.info")}>
       <div className={full ? "grid gap-3 sm:grid-cols-2" : undefined}>
@@ -134,7 +149,9 @@ export function DefInfoCard({ draft, errors, readOnly, refs, patch, variant = "f
         rows={2}
         onChange={(v) => patch({ description: v })}
       />
-      <DefTtlField draft={draft} error={e("ttl_days")} readOnly={readOnly} patch={patch} />
+      {flow ? null : (
+        <DefTtlField draft={draft} error={e("ttl_days")} readOnly={readOnly} patch={patch} />
+      )}
       {full ? (
         <>
           <TextField
@@ -161,7 +178,7 @@ export function DefInfoCard({ draft, errors, readOnly, refs, patch, variant = "f
             {t("process.admin.editor.advanced")}
           </summary>
           <div className="mt-3 space-y-3">
-            {variant === "library" ? (
+            {variant === "library" && hasAi ? (
               <TextField
                 id="pd-key"
                 label={t("process.admin.editor.keyInternal")}

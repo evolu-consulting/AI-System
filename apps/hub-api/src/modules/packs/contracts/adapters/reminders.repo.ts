@@ -1,13 +1,15 @@
-// HD4-FR-03…05 · HD4-NFR-01/02 · plan §2: SQL vòng nhắc. Văn bản cố định, lô qua MỘT tham số jsonb (Luật 4c).
-// `dueTenantFinder`: tx role `contracts_job` (chỉ thấy tenant_id/remind_at của `contract_schedule`). `reminderBatchRepo`: trong tx
-// `contracts_rw` + `app.tenant_id` (RLS FORCE) và vẫn lọc `tenant_id` tường minh. Claim khoá hàng lịch (`FOR UPDATE OF s SKIP
-// LOCKED`, index `(tenant_id, remind_at)`); áp dụng = 1 câu CTE: lịch (nhẹ) + `contracts` chỉ khi đổi trạng thái (D4-11).
+// CR-127 K6 · HD4-NFR-01/02 · plan §2: SQL vòng tính lại HIỆU LỰC hằng ngày (bỏ chuông cứng — nhắc đi qua quy trình `contract.expiring`).
+// Văn bản cố định, lô qua MỘT tham số jsonb (Luật 4c). `dueTenantFinder`: tx role `contracts_job` (chỉ thấy tenant_id/remind_at của
+// `contract_schedule`). `reminderBatchRepo`: trong tx `contracts_rw` + `app.tenant_id` (RLS FORCE) và vẫn lọc `tenant_id` tường minh.
+// Claim khoá hàng lịch (`FOR UPDATE OF s SKIP LOCKED`, index `(tenant_id, remind_at)`); áp dụng = 1 câu CTE: `refresh_effect` theo tập
+// (nguồn ghi duy nhất của `effect`) + lịch kế tiếp + outbox hàng đổi hiệu lực. Số câu mỗi lô cố định (claim + apply).
 import type { Db, Tx } from "@ai/db";
 import { withPackJobScope } from "@ai/db/pack-scope";
 import { sql } from "drizzle-orm";
 import type { DueTenantFinder, ReminderBatchRepo } from "../application/remind-due.usecase";
 import type { DueContract } from "../domain/deadline.rules";
-import type { ContractStatus } from "../domain/status.rules";
+import type { EffectOutcome } from "../domain/effect.rules";
+import { DEFAULT_TENANT_TZ, localDate } from "../domain/local-time.rules";
 
 export function dueTenantFinder(db: Db, packKey: string): DueTenantFinder {
   return {
@@ -24,18 +26,12 @@ export function dueTenantFinder(db: Db, packKey: string): DueTenantFinder {
 
 type ClaimRow = {
   id: string;
-  status: ContractStatus;
   kind: string;
-  outcome: string | null;
+  status: string;
+  outcome: EffectOutcome | null;
+  start_date: string | null;
   end_date: string | null;
-  deadline: string | null;
-  owner_user_id: string | null;
-  number: string | null;
-  direction: string | null;
-  seller: string | null;
-  buyer: string | null;
-  value: string | number | null;
-  auto_renew: string | null;
+  notice: string | null;
 };
 
 const toDue = (r: ClaimRow): DueContract => ({
@@ -43,24 +39,17 @@ const toDue = (r: ClaimRow): DueContract => ({
   status: r.status,
   kind: r.kind,
   outcome: r.outcome,
+  startDate: r.start_date,
   endDate: r.end_date,
-  deadline: r.deadline,
-  ownerUserId: r.owner_user_id,
-  number: r.number,
-  direction: r.direction,
-  seller: r.seller,
-  buyer: r.buyer,
-  value: r.value === null ? null : Number(r.value),
-  autoRenew: r.auto_renew === "true" ? true : r.auto_renew === "false" ? false : null,
+  noticeDays: r.notice,
 });
 
 export function reminderBatchRepo(tx: Tx, tenantId: string): ReminderBatchRepo {
   return {
     async claim(now, limit) {
       const rows = await tx.execute<ClaimRow>(sql`
-        select c.id, c.status, c.kind, c.handled ->> 'outcome' as outcome, to_char(c.end_date, 'YYYY-MM-DD') as end_date,
-          to_char(c.action_deadline, 'YYYY-MM-DD') as deadline, c.owner_user_id, c.number, c.direction, c.seller, c.buyer,
-          c.value, c.fields -> 'auto_renew' ->> 'value' as auto_renew
+        select c.id, c.status, c.kind, c.effect_outcome as outcome, to_char(c.start_date, 'YYYY-MM-DD') as start_date,
+          to_char(c.end_date, 'YYYY-MM-DD') as end_date, c.fields -> 'notice_days' ->> 'value' as notice
         from contracts.contracts c
         join contracts.contract_schedule s on s.contract_id = c.id and s.tenant_id = c.tenant_id
         where s.tenant_id = ${tenantId}::uuid and s.remind_at <= ${now.toISOString()}::timestamptz
@@ -72,7 +61,7 @@ export function reminderBatchRepo(tx: Tx, tenantId: string): ReminderBatchRepo {
     async purgeOrphans(now) {
       // Review m1: hàng lịch mất HĐ (trigger không chạy: replica, restore một phần) hoặc HĐ đã bị thay (CR-097 K2, `claim` bỏ qua)
       // ⇒ xoá, tránh tìm-tenant rỗng mãi. Chỉ chạy
-      // khi claim ra 0 hàng (đường hiếm), nên lô thường vẫn 3 câu.
+      // khi claim ra 0 hàng (đường hiếm), nên lô thường vẫn 2 câu.
       const r = await tx.execute<{ n: number }>(sql`
         with d as (
           delete from contracts.contract_schedule s where s.contract_id in (
@@ -85,46 +74,31 @@ export function reminderBatchRepo(tx: Tx, tenantId: string): ReminderBatchRepo {
         select count(*)::int as n from d`);
       return Number(r[0]?.n ?? 0);
     },
-    async apply(plans) {
-      const [r] = await tx.execute<{ changed: number; reminded: number; notified: number }>(
-        applyQ(tenantId, batchJson(plans)),
+    async apply(plans, today) {
+      const [r] = await tx.execute<{ changed: number }>(
+        applyQ(tenantId, batchJson(plans), today ?? localDate(new Date(), DEFAULT_TENANT_TZ)),
       );
-      return {
-        statusChanged: r?.changed ?? 0,
-        reminded: r?.reminded ?? 0,
-        notified: r?.notified ?? 0,
-      };
+      return { statusChanged: r?.changed ?? 0 };
     },
   };
 }
 
 const batchJson = (plans: Parameters<ReminderBatchRepo["apply"]>[0]) =>
   JSON.stringify(
-    plans.map((p) => ({
-      id: p.id,
-      status: p.status,
-      prev: p.prev,
-      changed: p.changed,
-      next_at: p.nextAt?.toISOString() ?? null,
-      milestone: p.reminder?.milestone ?? null,
-      deadline: p.reminder?.deadline ?? null,
-      user_id: p.reminder?.userId ?? null,
-      title: p.reminder?.title ?? null,
-      body: p.reminder?.body ?? null,
-      link: p.reminder?.link ?? null,
-    })),
+    plans.map((p) => ({ id: p.id, effect: p.effect, next_at: p.nextAt?.toISOString() ?? null })),
   );
 
-/** MỘT câu CTE áp cả lô: trạng thái, lịch, nhắc, sự kiện, outbox, NOTIFY. */
-function applyQ(tenantId: string, batch: string) {
+/** MỘT câu CTE áp cả lô: hiệu lực (`refresh_effect`; status KHÔNG đổi), lịch kế tiếp, outbox chỉ hàng đổi hiệu lực. */
+function applyQ(tenantId: string, batch: string, today: string) {
   return sql`
         with x as (
-          select * from jsonb_to_recordset(${batch}::jsonb) as x(id uuid, status text, prev text, changed boolean, next_at timestamptz,
-            milestone int, deadline date, user_id uuid, title text, body text, link text)
+          select * from jsonb_to_recordset(${batch}::jsonb) as x(id uuid, effect text, next_at timestamptz)
         ), upd as (
-          update contracts.contracts c set status = x.status
-          from x where c.id = x.id and c.tenant_id = ${tenantId}::uuid and x.changed and c.status = x.prev
-          returning c.id
+          -- hàng đổi hiệu lực (snapshot trước khi refresh_effect ghi): chỉ để phát outbox; effect chỉ ghi qua refresh_effect.
+          select c.id from contracts.contracts c join x on x.id = c.id
+          where c.tenant_id = ${tenantId}::uuid and c.effect is distinct from x.effect
+        ), rf as (
+          select contracts.refresh_effect(coalesce(array(select x.id from x), '{}'::uuid[]), ${today}::date) as n
         ), sch as (
           update contracts.contract_schedule s set remind_at = x.next_at
           from x where s.contract_id = x.id and s.tenant_id = ${tenantId}::uuid and x.next_at is not null
@@ -133,32 +107,11 @@ function applyQ(tenantId: string, batch: string) {
           delete from contracts.contract_schedule s using x
           where s.contract_id = x.id and s.tenant_id = ${tenantId}::uuid and x.next_at is null
           returning s.contract_id
-        ), rem as (
-          insert into contracts.contract_reminders (tenant_id, contract_id, deadline, milestone, user_id, channel)
-          select ${tenantId}::uuid, x.id, x.deadline, x.milestone, x.user_id, 'in_app' from x where x.milestone is not null
-          on conflict do nothing
-          returning contract_id
-        ), sent as (
-          select x.* from rem join x on x.id = rem.contract_id
-        ), ev as (
-          insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
-          select ${tenantId}::uuid, x.id, 'status_changed', null::uuid, jsonb_build_object('from', x.prev, 'to', x.status)
-            from x join upd on upd.id = x.id
-          union all
-          select ${tenantId}::uuid, s.id, 'reminded', null::uuid,
-            jsonb_build_object('deadline', s.deadline, 'milestone', s.milestone, 'user_id', s.user_id) from sent s
-          returning 1
         ), ob as (
           insert into contracts.index_outbox (tenant_id, entity, entity_id, op)
           select ${tenantId}::uuid, 'contract', upd.id, 'upsert' from upd
           returning 1
         )
-        select (select count(*) from upd)::int as changed, (select count(*) from rem)::int as reminded,
-          notify.enqueue('contracts', coalesce((select jsonb_agg(jsonb_build_object('user_id', s.user_id,
-            'kind', 'contract.deadline', 'title', s.title, 'body', s.body, 'link', s.link,
-            'lead', s.milestone, 'managed', true,
-            'dedup_key', 'remind:' || s.id || ':' || to_char(s.deadline, 'YYYY-MM-DD') || ':' || s.milestone)) from sent s),
-            '[]'::jsonb)) as notified,
-          (select count(*) from sch) + (select count(*) from unsch) + (select count(*) from ev)
-            + (select count(*) from ob) as touched`;
+        select (select coalesce(sum(n), 0) from rf)::int as changed,
+          (select count(*) from sch) + (select count(*) from unsch) + (select count(*) from ob) as touched`;
 }

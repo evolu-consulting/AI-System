@@ -13,13 +13,7 @@ import type {
   ReleaseRef,
   TenantProcessSlot,
 } from "@ai/contracts/hub-admin";
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueries,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
 import { LIST_LIMIT, PKEYS } from "./api";
@@ -38,9 +32,6 @@ export type ImpactInfo = ProcessImpact;
 export type ReleaseItem = ProcessRelease;
 export type AssignmentItem = ProcessAssignment;
 export type TenantSlotInfo = TenantProcessSlot;
-export type PreviewStep = { key: string; name: string; run: boolean };
-/** `POST …/preview`: `value` bắt buộc (số ≥ 0). */
-export type PreviewFacts = { contract_type: DealKind; value: number };
 const url = (path: string): string => {
   const u = hubUrl(path);
   if (u === null) throw new Error("PUBLIC_HUB_URL chưa cấu hình: không gọi Hub");
@@ -157,9 +148,6 @@ export const setSlotDefault = (slot: string, defId: string) =>
     body: { def_id: defId },
   });
 
-export const previewDef = (id: string, facts: PreviewFacts) =>
-  api<unknown>(url(`${D(id)}/preview`), { method: "POST", body: facts });
-
 /** Làm tươi mọi thứ của thư viện sau khi xuất bản / quay lại / gán / đổi mặc định / nhân bản. */
 export function useLibraryRefresh() {
   const qc = useQueryClient();
@@ -169,8 +157,4 @@ export function useLibraryRefresh() {
       qc.invalidateQueries({ queryKey: LKEYS.slots }),
       qc.invalidateQueries({ queryKey: ["process", "tenant-slots"] }),
     ]);
-}
-
-export function usePreview(id: string) {
-  return useMutation({ mutationFn: (facts: PreviewFacts) => previewDef(id, facts) });
 }

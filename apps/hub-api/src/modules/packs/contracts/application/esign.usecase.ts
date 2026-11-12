@@ -289,13 +289,6 @@ export function esignUsecase(d: ESignDeps) {
     /** CR-122 · E5c · phong bì của node quá hạn ⇒ huỷ + bắn `esign.voided` (`esign-expire.ts`). */
     expireOpen: esignExpire({ ...d, avail, voidExpired }),
 
-    /** esign-flow · K4 mở lại HĐ: phong bì đang mở ⇒ huỷ ở nhà cung cấp + ghi `voided` (bản đã ký cũ giữ lịch sử). Không ném. */
-    async voidOpen(who: PackWho, id: string): Promise<boolean> {
-      const e = await d.uow.tenant(who, (r) => r.esign.latest(id)).catch(() => null);
-      if (!e || !isOpen(e.status)) return false;
-      return voidAt(avail(e.provider), e, tenantRun(who));
-    },
-
     async refresh(who: PackWho, id: string): Promise<ESignStateOut> {
       const e = await d.uow.tenant(who, async (r) => {
         if (!(await r.esign.contract(id))) throw new ESignFail("NOT_FOUND", "contract");

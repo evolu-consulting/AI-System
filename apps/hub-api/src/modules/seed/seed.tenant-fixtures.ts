@@ -18,7 +18,7 @@ const EDITOR_GROUPS = ["contracts-editor", "community-editor"] as const;
 /** Chỉ evolu có user thường ⇒ editor của gói; `demo` giữ nguyên vai theo `deploy/tenants/demo.yaml`. */
 const EDITOR_TENANTS = ["evolu"] as const;
 
-/** Phòng Kế toán (mã `pb-ke-toan` = bước "Kế toán duyệt" của "QT thử") + 2 thành viên (username HOẶC email). */
+/** Phòng Kế toán (mã `pb-ke-toan`) + 2 thành viên (username HOẶC email). */
 export const ACCOUNTING = {
   key: "pb-ke-toan",
   name: { vi: "Phòng Kế toán", en: "Accounting" },
@@ -71,7 +71,7 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
     editorMembers: 0,
     brands: 0,
     catalogUrls: 0,
-    cr113: { legalGroups: 0, legalMembers: 0, flowDefs: 0, flowReleases: 0, flowAssignments: 0 },
+    cr113: { legalGroups: 0, legalMembers: 0 },
     cr125: {
       features: 0,
       esign: 0,
@@ -79,9 +79,9 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
       groupMembers: 0,
       libraryDefs: 0,
       libraryReleases: 0,
-      companyFlows: 0,
       flowFlags: 0,
       esignSigners: 0,
+      partnerSigners: 0,
     },
   };
   if (t.length > 0) {
@@ -91,7 +91,7 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
         where u.tenant_id = tn.id and tn.key = any(${keys}::text[]) and u.locale <> 'vi' returning u.id`
     ).length;
     // 3: (CR-121 D-4) KHÔNG cấp feature `contracts-approval-engine` nữa — duyệt HĐ trên engine bật khi công ty được GÁN quy trình
-    // (xem `writeCr113Flow` bên dưới: evolu có quy trình + luật gán), không cần công tắc riêng.
+    // (quy trình do admin nền tảng soạn + gán trên app; seed không tạo), không cần công tắc riêng.
     await writeAccounting(tx, r);
     await writePackRoles(tx, r);
     r.brands = await writeBrands(tx);

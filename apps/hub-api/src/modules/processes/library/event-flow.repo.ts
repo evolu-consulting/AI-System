@@ -1,7 +1,8 @@
 // CR-125 · S2 · "quy trình đang chạy" của công ty cho một sự kiện (vd `contract.submitted`) — đọc ĐÚNG nguồn mà tab Quy trình ở admin và bộ
 // điều phối đọc: `hub.company_flows` (Bật) ⨝ def (Thư viện được gán hoặc bản của chính công ty). Một câu SQL cố định (Luật 4c), scope system,
 // tenant từ ngữ cảnh gói. Xét theo `position, id` như `candidatesOf`; flow đầu = flow hiển thị, còn lại đếm vào `others`.
-// Stage lấy từ BẢN XUẤT BẢN (`process_def_releases`), không phải bản nháp; chưa xuất bản ⇒ không tính (admin ghi "chưa xuất bản").
+// Stage: def Thư viện (dữ liệu cũ) lấy từ BẢN XUẤT BẢN (`process_def_releases`); quy trình CỦA CÔNG TY (CR-127 Z9) lấy `d.stages` hiện hành —
+// «Lưu và áp dụng» không tạo bản xuất bản, bộ điều phối (`candidatesOf`) cũng chạy def công ty theo `d.stages` ⇒ MỘT nguồn "quy trình đang bật".
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { Db } from "../../../lib/db";
@@ -19,16 +20,16 @@ type Row = {
   n: number;
 };
 
-/** Câu tra (xuất cho test đếm câu). Flow Bật + def chưa xoá + đã xuất bản + đúng sự kiện. */
+/** Câu tra (xuất cho test đếm câu). Flow Bật + def chưa xoá + đúng sự kiện + (def công ty, hoặc def Thư viện đã xuất bản). */
 export const EVENT_FLOW_SQL = (tenantId: string, event: string) => sql`
-  select d.id as def_id, d.name, d.published_version as rel_version,
-    coalesce(r.stages, d.stages) as stages, count(*) over ()::int as n
+  select d.id as def_id, d.name, coalesce(d.published_version, d.version) as rel_version,
+    case when d.tenant_id is null then coalesce(r.stages, d.stages) else d.stages end as stages, count(*) over ()::int as n
   from hub.company_flows cf
   join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null
     and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
   left join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version
   where cf.tenant_id = ${tenantId}::uuid and cf.enabled and d.trigger_event = ${event}
-    and d.published_version is not null
+    and (d.tenant_id is not null or d.published_version is not null)
     and d.trigger is distinct from ${JSON.stringify(NEVER_TRIGGER)}::text::jsonb
   order by cf.position, cf.id limit 1`;
 

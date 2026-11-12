@@ -35,6 +35,26 @@ import {
 } from "../lib/step-ops";
 import { remapStepRefs } from "../lib/step-refs";
 
+/**
+ * CR-127 · EO4: lỗi theo bước chỉ là ảnh chụp lúc Lưu; sửa bước nào thì bỏ lỗi của bước đó (đổi số/thứ tự bước ⇒ bỏ mọi lỗi theo bước),
+ * nếu không nút «Áp dụng» bị tắt mãi vì lỗi cũ dù người dùng đã sửa xong. Còn sai ⇒ lần Lưu kế báo lại.
+ */
+export function pruneStageErrors(
+  errors: DraftErrors,
+  prev: readonly { uid: string }[],
+  next: readonly { uid: string }[],
+): DraftErrors {
+  if (prev === next) return errors;
+  const same = prev.length === next.length && prev.every((s, i) => s.uid === next[i]?.uid);
+  const out: DraftErrors = {};
+  for (const [k, v] of Object.entries(errors)) {
+    const m = /^stages\.(\d+)(\.|$)/.exec(k);
+    if (m && (!same || prev[Number(m[1])] !== next[Number(m[1])])) continue;
+    out[k] = v;
+  }
+  return Object.keys(out).length === Object.keys(errors).length ? errors : out;
+}
+
 /** `remap = false` ⇒ phép đã tự đánh lại đích bước (vd `insertOnEdge`), không remap lần hai. */
 /** `key` = khoá gộp lịch sử hoàn tác (sửa liên tiếp cùng một ô); vắng ⇒ luôn là một bước riêng. */
 type Update = (fn: (d: DefDraft) => DefDraft, remap?: boolean, key?: string) => void;
@@ -179,6 +199,7 @@ export function useDraft() {
     if (next !== prev) hist.current = record(hist.current, prev, key, Date.now());
     ref.current = next;
     setDraft(next);
+    setErrors((e) => pruneStageErrors(e, prev.stages, next.stages));
   };
   /** Hoàn tác / làm lại (CR-123 · p25): trả `true` khi có gì để đổi. */
   const step = (go: typeof undoH): boolean => {

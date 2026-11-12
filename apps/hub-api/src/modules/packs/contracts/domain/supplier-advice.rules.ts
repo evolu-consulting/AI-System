@@ -1,5 +1,7 @@
 // V2-J2 · BA v2 §3.3 SP-04/05/06: so sánh giá NCC với giá vốn BQ của mình + 4 gợi ý hợp tác. Thuần (không DB/mạng).
 // Gợi ý theo ba yếu tố: đã mua bao nhiêu (tỉ trọng chi tiêu), giá (chênh so với nơi rẻ nhất), uy tín (V2-E vai NCC).
+
+import { isPriceLive } from "./price-live.rules";
 import type {
   ProductPricing,
   SellPriceRow,
@@ -49,6 +51,8 @@ export type ContractLine = {
   contract_id: string;
   number: string | null;
   status: string;
+  /** Hiệu lực (`done` ⇒ active/expiring/…; K2a-1 nạp từ `contracts.effect`). */
+  effect?: string | null;
   party_key: string | null;
   party_name: string | null;
   price: number;
@@ -63,8 +67,6 @@ export type OverviewData = {
   contract_lines?: ContractLine[];
 };
 
-/** HĐ còn hiệu lực cho giá (khớp `sourcing.rules::LIVE`). */
-const LIVE = new Set(["active", "expiring", "renewed"]);
 const SELL_SHOWN = 5;
 
 /** Dòng giá từ HĐ mua đã xác nhận: giá theo đơn vị của dòng HĐ, `current` = HĐ còn hiệu lực. */
@@ -89,7 +91,7 @@ function contractRows(
       reputation: repOf(scores, l.party_key),
       contract_id: l.contract_id,
       contract_number: l.number,
-      current: LIVE.has(l.status),
+      current: isPriceLive(l),
     }));
 }
 
@@ -105,11 +107,11 @@ export function buildPricing(d: OverviewData, own: number | null): ProductPricin
     price: l.price,
     unit: l.unit,
     on: l.on,
-    current: LIVE.has(l.status),
+    current: isPriceLive(l),
   }));
-  const sellRef = sells.find((l) => LIVE.has(l.status)) ?? sells[0];
+  const sellRef = sells.find((l) => isPriceLive(l)) ?? sells[0];
   const buys = lines.filter((l) => l.deal === "buy");
-  const live = buys.filter((l) => LIVE.has(l.status)).sort((a, b) => a.price - b.price);
+  const live = buys.filter((l) => isPriceLive(l)).sort((a, b) => a.price - b.price);
   const contractCost = live[0]?.price ?? null;
   const cost = contractCost ?? own;
   const sell = sellRef?.price ?? null;

@@ -1,4 +1,5 @@
 // ADM-FR-74 · /partners: Tenant (platform), ô tìm, bảng công ty phân trang server, `+ Thêm công ty đối tác`, drawer tài khoản (`?org=`).
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
@@ -21,10 +22,19 @@ export function PartnersPage() {
   const actions = useOrgActions(view.tenantId);
   const { list, tenantKey, page } = view;
 
+  // CR-130: `?name=` (từ Sổ Hợp Tác) ⇒ mở sẵn hộp thoại thêm công ty với tên điền sẵn, rồi bỏ khỏi URL (không mở lại khi tải lại).
+  const prefill = view.search.name;
+  const { openCreate } = actions;
+  useEffect(() => {
+    if (!prefill || !view.canCreate || !view.ready) return;
+    openCreate(prefill);
+    patch({ name: undefined }, true);
+  }, [prefill, view.canCreate, view.ready, openCreate, patch]);
+
   if (!me) return null;
 
   const create = (
-    <Button disabled={!view.canCreate} onClick={actions.openCreate}>
+    <Button disabled={!view.canCreate} onClick={() => actions.openCreate()}>
       {t("partners.create")}
     </Button>
   );

@@ -55,6 +55,21 @@ describe("CR-118 · approvalFlowSlot", () => {
     ]);
     expect(out).toMatchObject({ view: { ref: U(2), run: { snapshot_version: 2 } } });
   });
+  test("act: evidence của FlowRuntime đi nguyên xuống actApproval (CR-127 · E4); kèm products vẫn giữ cả hai", async () => {
+    const f = fake();
+    const evidence = { note: "Đã đối chiếu", attachment_ids: [U(5)] };
+    await f.slot.act(WHO, U(2), U(9), "approve", { evidence });
+    expect(f.acts).toEqual([
+      { action: "approve", evidence, expect: { taskId: U(9), step: "level1" } },
+    ]);
+    f.acts.length = 0;
+    await f.slot.act(WHO, U(2), U(9), "reject", { feedback: "Sai", evidence: { note: "Sai giá" } });
+    expect(f.acts[0]).toMatchObject({
+      action: "reject",
+      feedback: "Sai",
+      evidence: { note: "Sai giá" },
+    });
+  });
   test("act: task cũ ⇒ 409 APPROVAL_NOT_OPEN, không gọi use case", async () => {
     const f = fake();
     expect(await f.slot.act(WHO, U(2), U(8), "approve", {})).toEqual({

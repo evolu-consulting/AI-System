@@ -3,6 +3,8 @@
 // phụ thuộc số chữ ký/người giữ/tệp. Nhật ký giá ghi trong cùng câu với lệnh đặt giá (BR-2).
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
+import { refreshEffect } from "../../adapters/contract-state.repo";
+import { initialState } from "../../domain/contract-state.rules";
 import type { AuditWrite, CksRepo, ContractWrite, RenewalOut } from "../application/ports";
 
 type J<T> = { j: T };
@@ -15,11 +17,12 @@ const BY = sql`nullif(current_setting('app.user_id', true), '')::uuid`;
 /** CTE dựng HĐ + 1 dòng hàng + event `created_cks` (đặt sau `with`, trước CTE khác). */
 function contractCtes(t: string, c: ContractWrite): SQL {
   return sql`k as (
+      -- CR-127 K1b · initialState("cks") = DONE (created_done); effect tính sau câu bằng refreshEffect (cùng tx).
       -- M1d (N-1): HĐ bán/mua CKS tự vào "đã duyệt" bởi chính người ghi ⇒ ghi người duyệt = người tạo (tự duyệt — không mở đối tác
       -- ngoài chính HĐ này, xem migration 0019).
       insert into contracts.contracts (id, tenant_id, kind, title, direction, status, owner_user_id, created_by, fields,
         confirmed_by, confirmed_at)
-      values (${c.id}::uuid, ${t}::uuid, 'contract', ${c.title}, ${c.direction}, 'active', ${BY}, ${BY},
+      values (${c.id}::uuid, ${t}::uuid, 'contract', ${c.title}, ${c.direction}, ${initialState("cks").status}, ${BY}, ${BY},
         ${json(c.fields)}, ${BY}, now())
       returning id, direction, fields),
     ko as (
@@ -122,6 +125,7 @@ function insertLotQ(tx: Tx, t: string): CksRepo["insertLot"] {
           ${l.device}, ${l.bought_at}::date, k.id, ${BY} from k),
       ${auditCte(t, withOrd(w.audit))}
       select 1`);
+    await refreshEffect(tx, [w.contract.id]);
   };
 }
 
@@ -142,6 +146,7 @@ function insertSaleQ(tx: Tx, t: string): CksRepo["insertSale"] {
         from jsonb_to_recordset(${json(w.certs)}) as x (${CERT_COLS})),
       ${auditCte(t, withOrd(w.audit))}
       select 1`);
+    if (w.contract) await refreshEffect(tx, [w.contract.id]);
   };
 }
 
@@ -185,6 +190,7 @@ function insertRenewalQ(tx: Tx, t: string): CksRepo["insertRenewal"] {
         from re where ${w.remindAt?.local ?? null}::text is not null),
       ${auditCte(t, withOrd(w.audit))}
       select 1`);
+    await refreshEffect(tx, [w.contract.id]);
   };
 }
 
@@ -246,8 +252,8 @@ function completeRenewalQ(tx: Tx, t: string): CksRepo["completeRenewal"] {
 }
 
 function loseRenewalQ(tx: Tx, t: string): CksRepo["loseRenewal"] {
-  return (w) =>
-    one<RenewalOut>(
+  return async (w) => {
+    const out = await one<RenewalOut>(
       tx,
       sql`with r as (
         update contracts.cks_renewals rr set status = 'lost', lost_reason = ${w.reason}, done_at = ${w.today}::date
@@ -257,9 +263,9 @@ function loseRenewalQ(tx: Tx, t: string): CksRepo["loseRenewal"] {
         update contracts.cks_certificates c set status = 'active'
         from r where c.tenant_id = ${t}::uuid and c.id = any (r.certificate_ids) and c.status = 'pending_renewal'),
       k as (
-        update contracts.contracts k set status = 'terminated', updated_at = now(), version = k.version + 1,
-          handled = jsonb_build_object('outcome', 'not_renewed', 'by', ${BY}::text, 'at', ${w.today}::text,
-            'note', ${w.reason}::text)
+        -- CR-127 K1b · "Chấm dứt" là HIEU LUC (effect_outcome), không phải trạng thái: HĐ gia hạn vẫn DONE; effect do refresh_effect tính sau câu.
+        update contracts.contracts k set effect_outcome = 'terminated', effect_outcome_at = now(),
+          updated_at = now(), version = k.version + 1
         from r where k.tenant_id = ${t}::uuid and k.id = r.new_contract_id),
       ko as (
         -- HD7-FR-11 (sales.py:146-148): mất khách ⇒ đợt chưa xong của HĐ gia hạn không còn ai nợ (cancelled).
@@ -277,6 +283,10 @@ function loseRenewalQ(tx: Tx, t: string): CksRepo["loseRenewal"] {
         where cu.party_key is not null)
       select ${renewalJson} as j from r`,
     );
+    // effect của HĐ gia hạn đổi theo outcome ⇒ tính lại bằng hàm DB chung.
+    if (out?.new_contract_id) await refreshEffect(tx, [out.new_contract_id]);
+    return out;
+  };
 }
 
 function insertFollowupQ(tx: Tx, t: string): CksRepo["insertFollowup"] {

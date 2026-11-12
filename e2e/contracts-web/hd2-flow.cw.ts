@@ -38,10 +38,12 @@ async function install(page: Page): Promise<Sent[]> {
         updated_at: "2026-10-18T03:00:00Z",
         fields: {},
       });
-    if (req.method() === "POST")
-      return json(r, 201, { id: NEW_ID, status: "needs_review", version: 1 });
+    if (req.method() === "POST") return json(r, 201, { id: NEW_ID, status: "draft", version: 1 });
     if (path.endsWith("/file-link")) return json(r, 200, { url: FILE_URL });
-    return json(r, 200, { ...contractAsHub(), id: path.split("/").pop() });
+    // CR-127 Q10b: chi tiết mới còn đọc các đường con (đối tác, duyệt…) — chỉ trả HĐ cho đúng đường của nó, còn lại 404.
+    if (path.endsWith("/partner")) return json(r, 200, { party: null, name: null });
+    if (path.endsWith(`/${contract.id}`)) return json(r, 200, contractAsHub());
+    return json(r, 404, { error: { code: "NOT_FOUND", message: "x" } });
   });
   return sent;
 }

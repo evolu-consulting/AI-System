@@ -50,7 +50,7 @@ describe("flowEdgeIssues", () => {
       {
         stages: [
           st("a", { step: 0, ...field("date", "string") }),
-          st("b", { step: 1, node: "core.wait-until" }),
+          st("b", { step: 1, node: "core.wait" }),
         ],
       },
       palette,

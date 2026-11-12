@@ -1,57 +1,63 @@
-// CR-110 · COM-FR-38..42 · e2e hộp thoại Cài đặt (adapter mock + persona). VIẾT, CHƯA CHẠY (chạy một lần cuối đợt).
+// CR-110 · COM-FR-38..42 · CR-130 · e2e Cài đặt: MỘT hộp thoại cho cả app (Sổ Hợp Tác + Bảng tin). VIẾT, CHƯA CHẠY (chạy một lần cuối đợt).
 import { expect, type Page, test } from "@playwright/test";
 
 const as = async (page: Page, id: string) => {
   await page.getByLabel("Chọn nhân vật").selectOption(id);
 };
-const open = async (page: Page) => {
+const open = async (page: Page, name: string) => {
   await page.getByRole("button", { name: "Tài khoản" }).click();
-  await page.getByRole("menuitem", { name: "Cài đặt Community" }).click();
+  await page.getByRole("menuitem", { name, exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Cài đặt" })).toBeVisible();
 };
 
-test("đối tác: chỉ nhóm Cá nhân, không có Sổ Hợp Tác / Công ty trong DOM", async ({ page }) => {
+test("đối tác: chỉ ngăn Bảng tin › Thông báo, không có Sổ Hợp Tác trong DOM", async ({ page }) => {
   await page.goto("/community");
   await as(page, "tp");
-  await open(page);
-  await expect(page.getByTestId("settings-group-personal")).toBeVisible();
-  await expect(page.getByTestId("settings-group-company")).toHaveCount(0);
-  await expect(page.getByTestId("settings-group-sht")).toHaveCount(0);
-  await expect(page.getByTestId("settings-sht-link")).toHaveCount(0);
+  await open(page, "Cài đặt");
+  await expect(page.getByTestId("settings-nav-feed")).toBeVisible();
+  for (const sec of ["co", "rep", "biz", "scout", "flow"])
+    await expect(page.getByTestId(`settings-nav-${sec}`)).toHaveCount(0);
+  await expect(page.getByRole("switch").first()).toBeVisible(); // công tắc thông báo (tự lưu)
   expect(await page.locator("body").innerHTML()).not.toContain("Sổ Hợp Tác");
 });
 
-test("Admin: mục Sổ Hợp Tác nằm trong dialog Cài đặt, không đổi URL ngoài ?settings=", async ({
+test("Admin: hai nhóm trong cùng một hộp thoại (Hợp đồng & giao dịch · Bảng tin); không còn mục Ngôn ngữ/Màu chủ đạo riêng", async ({
   page,
 }) => {
   await page.goto("/community");
   await as(page, "an");
-  await open(page);
-  await expect(page.getByTestId("settings-group-sht")).toBeVisible();
+  await open(page, "Cài đặt Sổ Hợp Tác");
   await expect(
-    page.getByTestId("settings-group-sht").getByTestId("settings-group-head"),
-  ).toHaveAttribute("title", "Áp dụng cho cả công ty");
+    page.getByTestId("settings-group-contracts").getByTestId("settings-group-head"),
+  ).toHaveText("Hợp đồng & giao dịch");
   await expect(
-    page.getByTestId("settings-group-personal").getByTestId("settings-group-head"),
-  ).not.toHaveAttribute("title", /.+/);
-  for (const sec of ["co", "rep", "biz", "scout", "flow"]) {
+    page.getByTestId("settings-group-feed").getByTestId("settings-group-head"),
+  ).toHaveText("Bảng tin");
+  for (const old of ["lang", "brand", "notify"])
+    await expect(page.getByTestId(`settings-nav-${old}`)).toHaveCount(0);
+  for (const sec of ["co", "rep", "biz", "scout", "flow", "feed"]) {
     await page.getByTestId(`settings-nav-${sec}`).click();
-    await expect(page.getByTestId("settings-sht-link")).toHaveAttribute("data-sec", sec);
     expect(new URL(page.url()).pathname).toBe("/community");
   }
 });
-test("thành viên chủ quản không phải Admin: mục Công ty báo chưa có quyền", async ({ page }) => {
-  await page.goto("/community");
-  await as(page, "cuong");
-  await open(page);
-  await page.getByTestId("settings-nav-brand").click();
-  await expect(page.getByTestId("settings-no-perm")).toBeVisible();
+
+test("link cũ /community?settings=1 mở Cài đặt chung ở mục Bảng tin rồi bỏ ?settings", async ({
+  page,
+}) => {
+  await page.goto("/community?settings=1");
+  await expect(page.getByRole("dialog", { name: "Cài đặt" })).toBeVisible();
+  await expect(page.getByTestId("settings-nav-feed")).toHaveAttribute("aria-current", "true");
+  await expect(page).toHaveURL(/\/community$/);
 });
 
-test("ngôn ngữ: chọn English đổi nhãn và lưu ai.locale", async ({ page }) => {
+test("thành viên chủ quản không có quyền Sổ Hợp Tác mở Cài đặt: chỉ ngăn Bảng tin, không có câu «chưa có quyền», không mục Sổ Hợp Tác", async ({
+  page,
+}) => {
   await page.goto("/community");
-  await open(page);
-  await page.getByTestId("settings-nav-lang").click();
-  await page.getByRole("radio", { name: "English" }).click();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("ai.locale"))).toBe("en");
+  await as(page, "cuong");
+  await open(page, "Cài đặt");
+  await expect(page.getByTestId("settings-nav-feed")).toBeVisible();
+  for (const sec of ["co", "rep", "biz", "scout", "flow"])
+    await expect(page.getByTestId(`settings-nav-${sec}`)).toHaveCount(0);
+  expect(await page.locator("body").innerHTML()).not.toContain("chưa có quyền");
 });

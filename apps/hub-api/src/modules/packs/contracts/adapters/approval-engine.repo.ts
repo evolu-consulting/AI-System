@@ -13,6 +13,7 @@ import type { FlowStep } from "../domain/approval-flow.types";
 import { OVERRIDE_EVENT } from "../domain/approval-owner.rules";
 import { approvalWrite } from "./approval.repo";
 import { contractNameSql } from "./contract-name.sql";
+import { contractStateRepo } from "./contract-state.repo";
 
 const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v);
 
@@ -122,23 +123,24 @@ function markStalledQ(tx: Tx, tid: string): ApprovalEngineRepo["markStalled"] {
 function finalizeQ(tx: Tx, tid: string): ApprovalEngineRepo["finalize"] {
   return async (id, aid, runId, by) => {
     await approvalWrite(tx); // CR-109
-    const rows = await tx.execute<{ id: string }>(sql`with a0 as (
-        select y.id from contracts.approvals y
-        where y.id = ${aid}::uuid and y.tenant_id = ${tid}::uuid and y.engine_run_id = ${runId}::uuid
-          and y.mode = 'engine' and y.status = 'level1'),
-      u as (update contracts.contracts c set status = 'active', confirmed_at = now(), confirmed_by = ${by}::uuid,
-          version = c.version + 1, updated_at = now()
-        from a0 where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.run_id = a0.id
-          and c.status = 'needs_review'
-        returning c.id),
-      a as (update contracts.approvals x set status = 'done', decided_by = ${by}::uuid, decided_at = now(),
-          updated_at = now()
-        from u where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid),
-      e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
-        select ${tid}::uuid, u.id, 'approved', ${by}::uuid,
-          jsonb_build_object('run_id', ${aid}::text, 'engine_run_id', ${runId}::text) from u)
-      select id from u`);
-    return rows.length > 0;
+    const [a0] = await tx.execute<{ id: string }>(sql`select y.id from contracts.approvals y
+      where y.id = ${aid}::uuid and y.tenant_id = ${tid}::uuid and y.engine_run_id = ${runId}::uuid
+        and y.mode = 'engine' and y.status = 'level1'`);
+    if (!a0) return false;
+    // CR-127 K1b · HĐ processing → done qua CỔNG (CAS theo lượt `run_id = aid`).
+    const o = await contractStateRepo(tx, tid).applyTransition({
+      contractId: id,
+      ev: "flow_approved",
+      actorId: by,
+      runId: aid,
+    });
+    if (!o.ok) return false;
+    await tx.execute(sql`with a as (update contracts.approvals x set status = 'done', decided_by = ${by}::uuid, decided_at = now(),
+          updated_at = now() where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid)
+      insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+      values (${tid}::uuid, ${id}::uuid, 'approved', ${by}::uuid,
+        jsonb_build_object('run_id', ${aid}::text, 'engine_run_id', ${runId}::text))`);
+    return true;
   };
 }
 
@@ -189,7 +191,7 @@ function pendingQ(tx: Tx, tid: string): ApprovalEngineRepo["setPendingLinks"] {
  *  `engine_run_id`) — chỉ còn `run_id` (lượt, như event duyệt khác), `stage`, `action`. `e` = bí danh bảng event (hằng). */
 export const eventDataOut = (e: "e") =>
   sql.raw(
-    `(case when ${e}.type in ('${OVERRIDE_EVENT}', 'stage_decided') then ${e}.data - 'task_id' - 'engine_run_id' else ${e}.data end)`,
+    `(case when ${e}.type in ('${OVERRIDE_EVENT}', 'stage_decided') then ${e}.data - 'task_id' - 'engine_run_id' - 'evidence_id' - (case when ${e}.data ? 'evidence_id' then 'feedback' else '' end) else ${e}.data end)`,
   );
 
 /** CR-113 · "duyệt thay": MỘT câu chèn (không `returning` — người duyệt ngoài cây không đọc được hàng; FK HĐ kiểm tồn tại). Review ·
@@ -216,9 +218,65 @@ function decisionQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["recordD
     await tx.execute(sql`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
       values (${tid}::uuid, ${id}::uuid, 'stage_decided', ${e.actor}::uuid,
         jsonb_strip_nulls(jsonb_build_object('run_id', ${aid}::text, 'task_id', ${e.taskId}::text, 'stage', ${e.stageKey}::text,
-          'action', ${e.action}::text, 'feedback', ${e.feedback}::text)))
+          'action', ${e.action}::text, 'feedback', ${e.feedback}::text, 'evidence_id', ${e.evidenceId ?? null}::text)))
       -- bấm đúp / thử lại cùng task ⇒ một dòng (index 0088)
       on conflict (tenant_id, (data ->> 'task_id')) where type = 'stage_decided' do nothing`);
+  };
+}
+
+/**
+ * CR-127 · E4 · hồ sơ duyệt: `stage_decided` của HĐ (RLS gói) + bằng chứng của chúng qua `hub.evidence_get(ids)` (DEFINER, CHỈ tenant của tx ⇒
+ * id tenant khác ⇒ rỗng) — MỘT câu, ≤ 200 dòng. Lọc BR-26 làm ở usecase (không ở SQL).
+ */
+function decisionsOfQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["decisionsOf"]> {
+  return async (contractId) => {
+    const rows = await tx.execute<{
+      task_id: string;
+      stage: string | null;
+      action: "approve" | "return" | "reject";
+      at: string;
+      actor: string;
+      feedback: string | null;
+      ev_id: string | null;
+      note: string | null;
+      sig: string | null;
+      files: string[] | null;
+      ev_by: string | null;
+      ev_behalf: string | null;
+      ev_at: string | null;
+    }>(sql`with d as (
+        select e.id, e.actor_user_id, e.at, e.data from contracts.contract_events e
+        where e.tenant_id = ${tid}::uuid and e.contract_id = ${contractId}::uuid and e.type = 'stage_decided'
+        order by e.at, e.id limit 200),
+      ev as (select * from hub.evidence_get(coalesce(
+        (select array_agg((d.data ->> 'evidence_id')::uuid) from d where d.data ->> 'evidence_id' is not null), '{}'::uuid[])))
+      select d.data ->> 'task_id' as task_id, d.data ->> 'stage' as stage, d.data ->> 'action' as action,
+        to_char(d.at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as at, d.actor_user_id::text as actor,
+        d.data ->> 'feedback' as feedback, ev.id::text as ev_id, ev.note, ev.signature_attachment_id::text as sig,
+        ev.attachment_ids::text[] as files, ev.by_user::text as ev_by, ev.on_behalf_of::text as ev_behalf,
+        to_char(ev.at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as ev_at
+      from d left join ev on ev.id = (d.data ->> 'evidence_id')::uuid
+      order by d.at, d.id`);
+    return [...rows].map((r) => ({
+      taskId: r.task_id,
+      stage: r.stage ?? "",
+      action: r.action,
+      at: r.at,
+      actor: r.actor,
+      feedback: r.feedback,
+      evidence:
+        r.ev_id && r.ev_by && r.ev_at
+          ? {
+              id: r.ev_id,
+              note: r.note ?? "",
+              signature_attachment_id: r.sig,
+              attachment_ids: r.files ?? [],
+              by_user: r.ev_by,
+              on_behalf_of: r.ev_behalf,
+              at: r.ev_at,
+            }
+          : null,
+    }));
   };
 }
 
@@ -261,7 +319,10 @@ function difyFactsQ(tx: Tx, tid: string): ApprovalEngineRepo["difyFacts"] {
         case c.deal when 'sell' then c.buyer when 'buy' then c.seller
           else concat_ws(' / ', c.seller, c.buyer) end as partner,
         c.number, c.owner_user_id::text as owner, c.end_date::date::text as end_date,
-        c.action_deadline::date::text as deadline, c.version
+        -- CR-127 K6: hạn xử lý nay DẪN XUẤT (end_date trừ notice_days, sai hoặc thiếu thì 0); cột action_deadline đã gỡ, Z1 gỡ cả bước máy cũ.
+        (c.end_date - coalesce(case when (c.fields -> 'notice_days' ->> 'value') ~ '^[0-9]{1,4}$'
+          and (c.fields -> 'notice_days' ->> 'value')::int <= 3650 then (c.fields -> 'notice_days' ->> 'value')::int end, 0))::text as deadline,
+        c.version
       from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
     return r
       ? {
@@ -292,5 +353,6 @@ export function approvalEngineRepo(tx: Tx, tenantId: string): ApprovalEngineRepo
     recordOverride: overrideQ(tx, tenantId),
     voidOverride: voidOverrideQ(tx),
     recordDecision: decisionQ(tx, tenantId),
+    decisionsOf: decisionsOfQ(tx, tenantId),
   };
 }

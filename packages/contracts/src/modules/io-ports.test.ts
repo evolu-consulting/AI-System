@@ -60,6 +60,7 @@ describe("cổng đủ nhãn nghiệp vụ", () => {
     expect(keys("core.approve")).toEqual(["decision", "decided_by", "feedback"]);
     expect(keys("contracts.esign")).toEqual(["event", "signed_at", "signer", "envelope_id"]);
     expect(keys("contracts.partner-send")).toEqual(["event", "partner_reason", "round"]);
+    expect(keys("core.notify")).toEqual(["sent_to"]);
     expect(keys("core.bell")).toEqual(["sent_to"]);
     expect(keys("core.email")).toEqual(["sent_to"]);
     expect(keys("core.if")).toEqual([]);

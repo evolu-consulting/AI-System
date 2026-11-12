@@ -1,5 +1,7 @@
 // V2-F · mockup `.fhead`: thanh đầu form DÍNH trên cùng khi cuộn — tiêu đề + nút "Hủy" / "Lưu" luôn trong tầm tay (không phải cuộn xuống cuối).
+// CR-128 L1: tiêu đề (trái) và nút (phải) CÙNG MỘT HÀNG (hẹp thì nút xuống dòng); dòng thông tin full-width bên dưới. `sticky={false}` ⇒ cùng khuôn nhưng không dính (trang HĐ đã gửi).
 import type { ReactNode } from "react";
+import { cn } from "~/lib/utils";
 
 export function FormBar({
   crumb,
@@ -7,27 +9,37 @@ export function FormBar({
   lead,
   cancel,
   save,
+  sticky = true,
 }: {
   crumb: ReactNode;
   title: ReactNode;
   lead?: ReactNode;
+  /** Nhóm nút phụ (trái của cụm nút). */
   cancel: ReactNode;
+  /** Nhóm nút chính (phải). */
   save: ReactNode;
+  sticky?: boolean;
 }) {
   return (
     <div
-      data-testid="form-bar"
-      className="sticky -top-7 z-10 -mx-1 mb-5 -mt-7 flex flex-wrap items-end gap-4 border-b border-rule bg-ground px-1 pt-6 pb-3.5 max-md:-top-4 max-md:-mt-4 max-md:pt-4"
+      data-testid={sticky ? "form-bar" : "page-head"}
+      className={cn(
+        "mb-5 flex flex-col gap-1",
+        sticky &&
+          "sticky -top-7 z-10 -mx-1 -mt-7 border-b border-rule bg-ground px-1 pt-6 pb-3.5 max-md:-top-4 max-md:-mt-4 max-md:pt-4",
+      )}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <nav className="text-label text-dim">{crumb}</nav>
-        <h1 className="text-[26px] font-semibold tracking-[-0.01em] max-sm:text-[22px]">{title}</h1>
-        {lead && <p className="text-sm text-dim">{lead}</p>}
+      <nav className="text-label text-dim">{crumb}</nav>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h1 className="min-w-0 flex-[1_1_20rem] text-[26px] font-semibold tracking-[-0.01em] max-sm:text-[22px]">
+          {title}
+        </h1>
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-6 gap-y-2">
+          <div className="flex flex-wrap items-center gap-2.5">{cancel}</div>
+          <div className="flex flex-wrap items-center gap-2.5">{save}</div>
+        </div>
       </div>
-      <div className="flex gap-2.5 max-md:w-full max-md:[&>*]:flex-1">
-        {cancel}
-        {save}
-      </div>
+      {lead && <p className="text-sm text-dim">{lead}</p>}
     </div>
   );
 }

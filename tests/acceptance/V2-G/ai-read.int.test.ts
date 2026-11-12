@@ -107,7 +107,12 @@ describe("V2-G · HD-02 AI đọc: loại + chưa chắc + tóm tắt + mốc", 
         milestones: MILESTONES,
       }),
     );
-    expect([d.deal, d.direction, d.status]).toEqual(["sell", "sale", "needs_review"]);
+    expect([d.deal, d.direction, d.status, d.extract_state]).toEqual([
+      "sell",
+      "sale",
+      "draft",
+      "ready",
+    ]);
     expect(d.ai.deal).toBe("sell");
     expect(d.ai.unsure).toEqual(["end_date", "payment_terms", "deal"]);
     expect(d.ai.summary).toEqual(SUMMARY);
@@ -176,8 +181,9 @@ describe("V2-G · HD-02 AI đọc: loại + chưa chắc + tóm tắt + mốc", 
     await c.hubCall(P.hoa, "POST", `${CBASE}/${id}/extract`);
     expect(await done).toBe("extract_failed");
     const d = await detail(c, id);
-    expect({ status: d.status, error: d.error, ai: d.ai }).toEqual({
-      status: "extract_failed",
+    expect({ status: d.status, extract_state: d.extract_state, error: d.error, ai: d.ai }).toEqual({
+      status: "draft",
+      extract_state: "failed",
       error: "INVALID_OUTPUT",
       ai: null,
     });

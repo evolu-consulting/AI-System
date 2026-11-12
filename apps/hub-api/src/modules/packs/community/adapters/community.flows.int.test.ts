@@ -11,6 +11,7 @@ import {
   seedPosts,
 } from "../../../../../../../tests/acceptance/com-c3/_support/cast";
 import { mapError } from "../../../../lib/errors";
+import { partnerLinker } from "../../contracts/adapters/partner-linker";
 import { pgExternalOrgResolver } from "../../kit/adapters/ext-org.pg";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import { packNavRoutes } from "../../kit/adapters/pack-nav.route";
@@ -114,6 +115,7 @@ beforeAll(async () => {
   h.route(
     "/",
     communityModule(db, view(), pgExternalOrgResolver(db), {
+      partners: partnerLinker(),
       flows: {
         agents: {
           call: async (r) => {
@@ -369,7 +371,7 @@ describe("khe community.partner-join [CR-120]", () => {
   });
 
   it("đối tác gửi form ⇒ pending, trùng ⇒ 409, chủ quản gửi ⇒ 403, tenant admin duyệt ⇒ liên kết công ty đối tác", async () => {
-    await sql`delete from community.partner_companies where ext_org_id = ${c.B2}::uuid`;
+    await sql`delete from contracts.partner_profiles where ext_org_id = ${c.B2}::uuid`;
     const r = await call("b2", "POST", "/join-requests", form("Công ty Số Hai"));
     expect(r.status).toBe(201);
     expect(r.json.status).toBe("pending");
@@ -397,17 +399,19 @@ describe("khe community.partner-join [CR-120]", () => {
     ).toBe(422);
     const ok = await call("hA", "POST", `/join-requests/${id}/decide`, { action: "approve" });
     expect(ok.json).toMatchObject({ status: "approved", decidedBy: expect.any(String) });
-    const pc =
-      await sql`select labels from community.partner_companies where ext_org_id = ${c.B2}::uuid`;
+    // CR-130: liên kết = hồ sơ SHT gắn tài khoản B2 + vai `supplier` (cùng đối tác trùng tên "Công ty Số Hai", đã có vai khách hàng)
+    const pc = await sql`select pp.party_key, array_agg(pr.role order by pr.role) as roles
+      from contracts.partner_profiles pp join contracts.partner_roles pr on pr.tenant_id = pp.tenant_id and pr.party_key = pp.party_key
+      where pp.ext_org_id = ${c.B2}::uuid group by pp.party_key`;
     expect(pc).toHaveLength(1);
-    expect(pc[0]?.labels).toEqual(["supplier"]);
+    expect(pc[0]?.roles).toContain("supplier");
     expect(
       (await call("hA", "POST", `/join-requests/${id}/decide`, { action: "reject" })).status,
     ).toBe(409);
   });
 
   it("từ chối ⇒ rejected, KHÔNG liên kết, sau đó được gửi lại yêu cầu mới", async () => {
-    await sql`delete from community.partner_companies where ext_org_id = ${c.S2}::uuid`;
+    await sql`delete from contracts.partner_profiles where ext_org_id = ${c.S2}::uuid`;
     const r = await call("s2", "POST", "/join-requests", form("Hãng NCCA"));
     const id = r.json.id as string;
     const rej = await call("hA", "POST", `/join-requests/${id}/decide`, {
@@ -416,9 +420,34 @@ describe("khe community.partner-join [CR-120]", () => {
     });
     expect(rej.json).toMatchObject({ status: "rejected", feedback: "thiếu hồ sơ" });
     expect(
-      await sql`select 1 from community.partner_companies where ext_org_id = ${c.S2}::uuid`,
+      await sql`select 1 from contracts.partner_profiles where ext_org_id = ${c.S2}::uuid`,
     ).toHaveLength(0);
     expect((await call("s2", "POST", "/join-requests", form("Hãng NCCA"))).status).toBe(201);
+  });
+
+  it("CR-130 (soát L2): duyệt với partyKey không có ở SHT ⇒ 422 PARTNER_NOT_FOUND, yêu cầu vẫn chờ, không có hồ sơ", async () => {
+    await sql`delete from contracts.partner_profiles where ext_org_id = ${c.S2}::uuid`;
+    const pend = (await call("hA", "GET", "/join-requests?pending=1")).json.items as {
+      id: string;
+      company: string;
+    }[];
+    const id = pend.find((i) => i.company === "Hãng NCCA")?.id as string;
+    expect(id).toBeTruthy();
+    const bad = await call("hA", "POST", `/join-requests/${id}/decide`, {
+      action: "approve",
+      partyKey: "tax:khong-co",
+    });
+    expect(bad.status).toBe(422);
+    expect(bad.json.error.code).toBe("PARTNER_NOT_FOUND");
+    expect(
+      (await call("hA", "GET", "/join-requests?pending=1")).json.items.map(
+        (i: { id: string }) => i.id,
+      ),
+    ).toContain(id);
+    expect(
+      await sql`select 1 from contracts.partner_profiles where ext_org_id = ${c.S2}::uuid`,
+    ).toHaveLength(0);
+    await call("hA", "POST", `/join-requests/${id}/decide`, { action: "reject" });
   });
 
   it("RLS: đối tác không sửa trạng thái / không tạo dưới tên công ty khác", async () => {
@@ -517,63 +546,5 @@ describe("khe community.report [CR-120]", () => {
       (tx) => tx`update community.reports set status = 'resolved', action = 'dismiss' returning id`,
     );
     expect(own).toHaveLength(0);
-  });
-});
-
-describe("GET /flows/nav [CR-120]", () => {
-  it("người duyệt + duyệt bài bật ⇒ đủ, thành viên thường ⇒ không, đối tác ⇒ chỉ gửi yêu cầu, công ty chưa bật khe ⇒ không có hàng chờ", async () => {
-    moderationOn = true;
-    expect((await call("hA", "GET", "/flows/nav")).json).toEqual({
-      moderationQueue: true,
-      moderationOn: true,
-      joinSubmit: false,
-      joinReview: true,
-      reports: true,
-    });
-    expect((await call("hM", "GET", "/flows/nav")).json).toEqual({
-      moderationQueue: false,
-      moderationOn: true,
-      joinSubmit: false,
-      joinReview: false,
-      reports: false,
-    });
-    expect((await call("s2", "GET", "/flows/nav")).json).toEqual({
-      moderationQueue: false,
-      moderationOn: true,
-      joinSubmit: true,
-      joinReview: false,
-      reports: false,
-    });
-    moderationOn = false; // tenant chưa được gán khe duyệt bài
-    const off = (await call("hA", "GET", "/flows/nav")).json;
-    expect(off).toMatchObject({ moderationQueue: false, moderationOn: false, reports: true });
-    moderationOn = true;
-  });
-
-  it("C-7 · /pack/nav: người duyệt thấy đúng số công ty mình (không lẫn công ty khác), người khác không có số", async () => {
-    const mk = (t: string, k: string[]) =>
-      seedPosts(
-        sql,
-        t,
-        k.map((key) => ({ key, type: "note", org: null, author: c.hA })),
-      );
-    const ids = [
-      ...(await mk(c.A, ["C7_a"])).values(),
-      ...(await mk(c.B, ["C7_b1", "C7_b2"])).values(),
-    ];
-    await sql`update community.posts set moderation = 'pending', mod_at = now() where id = any(${ids}::uuid[])`;
-    const [w] =
-      await sql`select (select count(*)::int from community.posts where tenant_id = ${c.A}::uuid and moderation = 'pending') as review,
-      (select count(*)::int from community.join_requests where tenant_id = ${c.A}::uuid and status = 'pending') as join,
-      (select count(*)::int from community.reports where tenant_id = ${c.A}::uuid and status = 'pending') as reports`;
-    expect(w?.review).toBeGreaterThanOrEqual(1); // chỉ A; 2 bài chờ của B không được cộng
-    const items = async (u: Who) => (await call(u, "GET", "/pack/nav")).json.items;
-    expect(await items("hA")).toEqual([
-      { cap: "community.review", count: w?.review },
-      { cap: "community.join", count: w?.join },
-      { cap: "community.reports", count: w?.reports },
-    ]);
-    expect(await items("hM")).toEqual([]); // thành viên thường: không mục luồng
-    expect(await items("s2")).toEqual([{ cap: "community.join", count: 0 }]); // đối tác: chỉ gửi yêu cầu, không số
   });
 });

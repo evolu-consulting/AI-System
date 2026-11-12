@@ -1,28 +1,11 @@
-// CR-121 c9 · unit schema: body `{}` của clone-for-company, response 201/200, lọc `slot`/`def_id` của GET /process-runs, mã lỗi mới.
+// CR-121 c9 · unit schema: lọc `slot`/`def_id` của GET /process-runs, mã lỗi mới.
 import { describe, expect, it } from "bun:test";
 import { ProcessRunListQuerySchema } from "../chat/processes-api";
-import {
-  CloneForCompanyRequestSchema,
-  CloneForCompanyResponseSchema,
-  ProcessLibraryViewSchema,
-} from "./process-company";
-import { HUB_ADMIN_LIBRARY_ERRORS } from "./process-library";
+import { ProcessLibraryViewSchema } from "./process-company";
 
 const ID = "c1219000-0000-4000-8000-000000000001";
 
 describe("CR-121 c9 · contracts", () => {
-  it("clone-for-company: body chỉ nhận {}", () => {
-    expect(CloneForCompanyRequestSchema.safeParse({}).success).toBe(true);
-    expect(CloneForCompanyRequestSchema.safeParse({ tenant_id: ID }).success).toBe(false);
-  });
-
-  it("response đủ 4 trường, rel_version ≥ 1", () => {
-    const ok = { def_id: ID, source_template_id: ID, rel_version: 1, created: false };
-    expect(CloneForCompanyResponseSchema.safeParse(ok).success).toBe(true);
-    expect(CloneForCompanyResponseSchema.safeParse({ ...ok, rel_version: 0 }).success).toBe(false);
-    expect(CloneForCompanyResponseSchema.safeParse({ ...ok, extra: 1 }).success).toBe(false);
-  });
-
   it("đọc chỉ-xem luôn read_only=true (không có quyền sửa)", () => {
     const v = {
       read_only: true,
@@ -46,10 +29,5 @@ describe("CR-121 c9 · contracts", () => {
     expect(q.success).toBe(true);
     expect(ProcessRunListQuerySchema.safeParse({ slot: "Sai Dang" }).success).toBe(false);
     expect(ProcessRunListQuerySchema.safeParse({ def_id: "x" }).success).toBe(false);
-  });
-
-  it("mã lỗi mới là 422", () => {
-    expect(HUB_ADMIN_LIBRARY_ERRORS.NOT_LIBRARY_DEF).toBe(422);
-    expect(HUB_ADMIN_LIBRARY_ERRORS.SLOT_GONE).toBe(422);
   });
 });

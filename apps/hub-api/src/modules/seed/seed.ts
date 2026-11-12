@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import postgres from "postgres";
 import { z } from "zod";
 import { logger } from "../../lib/logger";
-import { libSampleEnabled, writeLibrarySample } from "./seed.library-sample";
+import { libSampleEnabled } from "./seed.library-sample";
 import { buildProcessPlan, writeProcesses } from "./seed.processes";
 import {
   bumpHubConfigVersion,
@@ -112,7 +112,6 @@ export async function runHubSeed(o: RunHubSeedOptions): Promise<{ version: numbe
       const w = await writeAccess(tx, plan);
       const pw = await writeProcesses(tx, processes);
       if (libSampleEnabled(o.appEnv, o.fixtures ?? false)) {
-        await writeLibrarySample(tx);
         await writeTenantFixtures(tx, o.appEnv); // seed-refresh: công ty evolu/demo chạy được mọi tính năng CR-105..111
       }
       await notifyHubConfigChanged(tx, v);

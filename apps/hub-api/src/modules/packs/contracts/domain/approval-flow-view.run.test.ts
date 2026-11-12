@@ -88,3 +88,30 @@ describe("flowViewOfRun · quyền xem, đích trả lại", () => {
     expect(backTargetOfRun(none)).toBeNull();
   });
 });
+
+describe("CR-127 RA2 · flowViewOfRun mang nhận việc", () => {
+  test("task mở có claim/can_reassign ⇒ FlowTask có đủ", () => {
+    const sv = run([
+      stage(0, {
+        status: "open",
+        task: {
+          id: U(500),
+          can_act: true,
+          claim: { state: "mine" },
+          need: "all",
+          can_reassign: false,
+          votes: { done: 0, total: 3 },
+          evidence_mode: "opinion",
+        },
+      }),
+    ]);
+    const t = FlowViewSchema.parse(flowViewOfRun(sv, U(1))).tasks[0];
+    expect([t?.claim?.state, t?.need, t?.can_reassign, t?.votes?.total, t?.evidence_mode]).toEqual([
+      "mine",
+      "all",
+      false,
+      3,
+      "opinion",
+    ]);
+  });
+});

@@ -4,7 +4,13 @@
       "title": "Cài đặt",
       "scope": "Áp dụng cho cả công ty",
       "sections": "Chọn phần cài đặt",
+      "group": {
+        "contracts": "Hợp đồng & giao dịch",
+        "feed": "Bảng tin"
+      },
       "sec": {
+        "feed": "Thông báo",
+        "feedHint": "Khi nào báo cho bạn trên Bảng tin",
         "co": "Công ty",
         "coHint": "Tên, logo, màu, giao diện",
         "rep": "Điểm uy tín",
@@ -55,10 +61,6 @@
         "ownTax": "Mã số thuế (mỗi dòng một mã)",
         "taxBad": "Mã số thuế không đúng (10 hoặc 13 số): {{list}}",
         "taxInvalid": "Mã số thuế phải gồm 10 hoặc 13 số",
-        "approvalTitle": "Duyệt hợp đồng",
-        "approval": "Bước duyệt hợp đồng",
-        "approvalOn": "Bật: hợp đồng đi qua lượt duyệt rồi mới có hiệu lực.",
-        "approvalOff": "Tắt: lưu hợp đồng là có hiệu lực ngay.",
         "stockTitle": "Kho & giao hàng",
         "stockOver": "Cho phép giao vượt tồn kho",
         "stockOverOn": "Bật: xác nhận giao hàng không chặn khi thiếu kho; tồn kho được phép âm và có cảnh báo \"giao vượt tồn\".",
@@ -300,6 +302,35 @@
         "total_value": "Giá trị hợp đồng",
         "partner": "Đối tác"
       }
+    },
+    "pcm": {
+      "profileTitle": "Hồ sơ trên Bảng tin",
+      "profileHint": "Nhóm hàng và khu vực để Bảng tin gợi ý bài đúng người.",
+      "cats": "Nhóm hàng",
+      "catsPh": "Chữ ký số, Đóng gói (cách nhau bằng dấu phẩy)",
+      "area": "Khu vực",
+      "save": "Lưu hồ sơ",
+      "saved": "Đã lưu hồ sơ Bảng tin",
+      "accountTitle": "Tài khoản trên Bảng tin",
+      "accountHint": "Đối tác chỉ thấy và đăng bài trên Bảng tin khi đã được mời bằng một tài khoản công ty.",
+      "active": "Đang hoạt động",
+      "inactive": "Tài khoản đã ngừng",
+      "notInvited": "Đối tác này chưa được mời vào Bảng tin. Chọn tài khoản công ty của họ để mời.",
+      "notInvitedView": "Đối tác này chưa được mời vào Bảng tin. Chỉ quản trị mới mời được.",
+      "pickAccount": "Chọn tài khoản công ty",
+      "invite": "Mời vào Bảng tin",
+      "invited": "Đã mời đối tác vào Bảng tin",
+      "noCandidates": "Chưa có tài khoản công ty nào còn trống. Hãy tạo tài khoản cho đối tác ở trang Quản trị, rồi quay lại chọn.",
+      "createAccount": "Tạo tài khoản đối tác (trang Quản trị)",
+      "adminFail": "Không mở được trang Quản trị. Thử lại sau.",
+      "remove": "Gỡ khỏi Bảng tin",
+      "removeTitle": "Gỡ đối tác khỏi Bảng tin?",
+      "removeBody": "{{name}} sẽ không còn thấy và đăng bài trên Bảng tin. Hợp đồng và dữ liệu đối tác không đổi; bạn có thể mời lại bất cứ lúc nào.",
+      "removed": "Đã gỡ khỏi Bảng tin",
+      "errTaken": "Tài khoản này đã gắn với một đối tác khác. Chọn tài khoản khác hoặc gỡ ở đối tác kia trước.",
+      "errUnknownAccount": "Tài khoản không hợp lệ. Tải lại danh sách rồi chọn lại.",
+      "errGeneric": "Chưa lưu được. Thử lại sau.",
+      "tabName": "Bảng tin"
     }
   }
 }

@@ -7,6 +7,10 @@ export type SweepResult = { queued: number; interrupted: number; expired: number
 export type ProcessHandles = {
   sweepOnce(): Promise<SweepResult>;
   remindOnce(): Promise<number>;
+  /** CR-127 · E2 · một lượt tự trả việc đã nhận quá hạn (số việc đã trả). */
+  claimReleaseOnce(): Promise<number>;
+  /** CR-127 · E10 · một lượt vòng `task-signal` (số tín hiệu đã xử lý). */
+  taskSignalOnce(): Promise<number>;
   postThreadOnce(): Promise<number>;
   kick(runId: string): Promise<void>;
   /** CR-115 · `StageLauncher.kickMany` (đường kick của lô hẹn giờ) — test gọi trực tiếp (ca khoá/lỗi COMMIT). */

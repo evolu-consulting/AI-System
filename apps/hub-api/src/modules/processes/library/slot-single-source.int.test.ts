@@ -15,18 +15,18 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { sql } from "drizzle-orm";
 import { connectDb, type Db } from "../../../lib/db";
-import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/public";
 import { listDefs } from "../defs/defs.repo";
 import { usage } from "./library.repo";
 import { pickProcess, type RoutingRule } from "./routing.rules";
 import { listAssignments } from "./slot-assign.repo";
 import { ensureSlotDefaults } from "./slot-defaults";
+import { GEN_DEFAULT_ID, GEN_FEATURE, GEN_PACK, GEN_SLOT } from "./slot-generic.fixture";
 import { resolveSlot } from "./slot-resolve.repo";
 import { routeSlot } from "./slot-route.repo";
 
-const SLOT = "contracts.approval";
-const DFLT = APPROVAL_DEFAULT_DEF.id;
-const SLOTS = [{ slot: SLOT, feature: "contracts-read" }];
+const SLOT = GEN_SLOT;
+const DFLT = GEN_DEFAULT_ID;
+const SLOTS = [{ slot: SLOT, feature: GEN_FEATURE }];
 const tid = (i: number) => tenantId(1300 + i);
 /** SQLSTATE của lỗi (drizzle bọc lỗi postgres trong `cause`). */
 const codeOf = (f: () => Promise<unknown>) =>
@@ -154,10 +154,8 @@ beforeAll(async () => {
   await enablePack(
     o,
     ALL.filter((t) => t !== T.t5),
-    "contracts",
+    GEN_PACK,
   );
-  await o`insert into hub.process_slots (slot, default_def_id) values (${SLOT}, ${DFLT})
-    on conflict (slot) do update set default_def_id = excluded.default_def_id`;
   lib.A = await libCopy("ss-a");
   lib.B = await libCopy("ss-b");
   lib.C = await libCopy("ss-c");

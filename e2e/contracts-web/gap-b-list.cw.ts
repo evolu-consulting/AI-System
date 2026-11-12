@@ -38,12 +38,10 @@ test.describe("Gap #10 · lọc ngày", () => {
       return json(r, listAsHub());
     });
     await page.goto("/contracts/list");
-    await page.getByLabel("Cột ngày").selectOption("action_deadline");
-    // trạng thái lọc nằm trên URL: chờ URL nhận cột mới rồi mới chọn cửa sổ (chọn ngay thì ô cửa sổ còn giữ cột cũ và ghi đè `dfield`)
-    await expect(page).toHaveURL(/dfield=action_deadline/);
+    // CR-127 Q11: chỉ còn cột «Hiệu lực đến» (end_date) ⇒ không có ô «Cột ngày» để chọn
     await page.getByLabel("Khoảng thời gian").selectOption("overdue");
     await expect.poll(() => queries.at(-1)?.get("due")).toBe("overdue");
-    expect(queries.at(-1)?.get("date_field")).toBe("action_deadline");
+    expect(queries.at(-1)?.get("date_field")).toBe("end_date");
     await expect(page).toHaveURL(/due=overdue/);
     await page.reload();
     await expect(page.getByLabel("Khoảng thời gian")).toHaveValue("overdue");
@@ -105,7 +103,8 @@ test.describe("Gap #9 · tải lên nhiều tệp", () => {
           r,
           {
             id: `c2000000-0000-4000-8000-00000000000${posted.length}`,
-            status: "extracting",
+            status: "draft",
+            extract_state: "reading",
             version: 1,
           },
           201,

@@ -67,6 +67,7 @@ export function DraftFields({
               className="field"
               aria-label={t("community.draft.budget")}
               placeholder={t("community.draft.budgetHint")}
+              title={t("community.draft.budgetHint")}
               value={draft.budget}
               onChange={on("budget")}
             />
@@ -75,6 +76,7 @@ export function DraftFields({
               className="field"
               aria-label={t("community.draft.price")}
               placeholder={t("community.draft.priceHint")}
+              title={t("community.draft.priceHint")}
               value={draft.price}
               onChange={on("price")}
             />

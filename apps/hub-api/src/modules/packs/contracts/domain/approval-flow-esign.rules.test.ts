@@ -1,10 +1,11 @@
 // esign-flow · luật thuần: bước Ký số (tối đa 1, cuối luồng, người ký đủ), người duyệt cụ thể (thay phòng), bước engine bỏ Ký số,
 // def engine mang cửa `approver_user_id` và qua được bộ kiểm def của engine.
+
 import { describe, expect, it } from "bun:test";
 import * as C from "@ai/contracts";
 import { ProcessDefInputSchema } from "@ai/contracts/hub-admin";
+import { compileDef } from "../testing/approval-slot/approval-compile";
 import {
-  compileDef,
   engineSteps,
   esignStepOf,
   flowGroupIds,

@@ -14,6 +14,8 @@ export type NotificationBellProps = {
   onOpen?: () => void;
   onRead?: (id: string) => void;
   onReadAll?: () => void;
+  /** Chân "Xem tất cả / Cài đặt thông báo" trỏ trang `/contracts/notifications`: chỉ khi người dùng có gói Sổ Hợp Tác (đối tác không có trang đó). */
+  showFooter?: boolean;
 };
 
 export function NotificationBell({
@@ -22,6 +24,7 @@ export function NotificationBell({
   onOpen,
   onRead,
   onReadAll,
+  showFooter = true,
 }: NotificationBellProps) {
   const { t } = useTranslation();
   const label = unread
@@ -65,14 +68,16 @@ export function NotificationBell({
             <NotificationItems items={items} onRead={onRead} />
           )}
           {/* gap-c #13: chân luôn có — danh sách đầy đủ + form tùy chọn (kể cả khi chưa có thông báo). */}
-          <div className="flex items-center justify-between border-t border-rule px-4 py-3 text-micro font-medium">
-            <Link to="/contracts/notifications" className="text-act hover:underline">
-              {t("contracts.shell.notificationsViewAll")}
-            </Link>
-            <Link to="/contracts/notifications" hash="prefs" className="text-act hover:underline">
-              {t("contracts.shell.notificationsSettings")}
-            </Link>
-          </div>
+          {showFooter && (
+            <div className="flex items-center justify-between border-t border-rule px-4 py-3 text-micro font-medium">
+              <Link to="/contracts/notifications" className="text-act hover:underline">
+                {t("contracts.shell.notificationsViewAll")}
+              </Link>
+              <Link to="/contracts/notifications" hash="prefs" className="text-act hover:underline">
+                {t("contracts.shell.notificationsSettings")}
+              </Link>
+            </div>
+          )}
         </>
       )}
     </Popover>

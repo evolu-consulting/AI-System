@@ -72,7 +72,7 @@
       "templates": "Ready-made templates"
     },
     "create": "Create process",
-    "copy": "Use this template",
+    "view": "View",
     "run": {
       "button": "Run",
       "title": "Run {{name}}",
@@ -100,7 +100,6 @@
       "prompt": "Type the process name to confirm"
     },
     "toast": {
-      "copied": "Template used",
       "deleted": "Process deleted",
       "started": "Run started"
     },
@@ -118,8 +117,6 @@
     "copyBadge": "Company copy",
     "stepsTab": "Steps",
     "libReadonly": "Shared process — view only.",
-    "copied": "Applied. Contracts sent for approval from now follow this process.",
-    "copyFailed": "Could not copy: {{reason}}",
     "saveBlocked": "Not saved: {{reason}}",
     "stepOpt": "Step {{n}}",
     "stepOptNamed": "Step {{n}} · {{names}}",
@@ -253,7 +250,7 @@
         },
         "after": "Continue (fixed)",
         "err": {
-          "source": "Choose a date source.",
+          "source": "No date picked yet. Choose a date in \"Take the date from\" (for example the contract end date). If the list is empty, add a Date field to the inputs or to an earlier step first.",
           "offset": "From −365 to 365 days.",
           "time": "Enter a time as HH:mm, for example 09:00.",
           "WAIT_INVALID": "The date source isn't valid. Pick a Date input field or a Date field from a stage in an earlier step."
@@ -327,7 +324,8 @@
         "nextStep": "Next step",
         "stepOpt": "Step {{n}}",
         "err": {
-          "IF_INVALID": "The If condition is invalid: check the source, comparison, value and target step (must come after this step)."
+          "IF_INVALID": "The If condition is invalid: check the source, comparison, value and target step (must come after this step).",
+          "IF_TARGET_REAL": "The If condition is not valid: this branch goes straight to a step with a real action (e.g. E-signature) but only the If block comes right before it, with no approver. Fix: add an Approve step right after the If block (before that step), or put that step inside a branch that already has an approval."
         },
         "s": {
           "if": "If",
@@ -469,12 +467,28 @@
       },
       "approver": "Who approves",
       "approverPh": "Choose an approver",
+      "milestone": {
+        "owner": "Contract owner",
+        "who": "Who confirms",
+        "whoHint": "Default = the task goes to the contract owner (or their department). Pick a department or a person to assign it fixed."
+      },
+      "need": "Needs",
+      "need_one": "One person takes it",
+      "need_head": "Head of department",
+      "need_all": "Everyone",
+      "due": "Due in (hours)",
+      "dueHint": "Leave empty for no deadline. {{min}} to {{max}} hours.",
+      "dueTo": "If overdue, pass to",
+      "dueToPh": "Choose a department or person…",
+      "evidence": "Evidence",
+      "evidence_opinion": "Opinion only",
+      "evidence_opinion_plus": "Opinion + signature or file",
       "answerBy": "Time to respond (hours)",
       "answerByHint": "After this the approver is reminded. {{min}} to {{max}} hours."
     },
     "limits": "Run limits",
     "limitsText": "Contracts waiting more than 7 days alert the owner.",
-    "readonly": "This is a template (read-only). Copy it to edit.",
+    "readonly": "Authored by the platform admin — view only. Contact them to make changes.",
     "runs": {
       "empty": "No runs yet",
       "waitUntil": "Waiting until {{date}}",
@@ -667,14 +681,13 @@
     "SLOT_GROUPS_MISSING": "A company is missing a department the process needs. Add it in Users › Departments.",
     "NODE_ASSIGNEE_MISSING": "Choose the responsible group for the Send to partner step (open the step, Responsible group) and save again.",
     "SLOT_BODY_INVALID": "The Form content is not valid. See what is wrong below.",
-    "NOT_LIBRARY_DEF": "This process is the company copy, not a shared one. Open it to edit directly.",
     "SUBPROCESS_NOT_FOUND": "A sub-process step points to a process that does not exist, is off, or is not published. Pick another or publish it first.",
     "SUBPROCESS_CYCLE": "Sub-processes call each other in a loop. Remove the sub-process step that closes the loop.",
     "SUBPROCESS_DEPTH": "Sub-processes are nested more than 3 levels. Merge one level.",
     "FLOW_NONE_ASSIGNED": "The company has no active process yet, so this cannot be turned on. Assign a process in Company › Processes, then turn it on again.",
     "COPY_SOURCE_REMOVED": "The original library process has been removed. This company copy still runs but cannot be edited. Ask the platform admin to restore the original, or assign another process in Company › Processes.",
-    "SLOT_GONE": "The job that used this process no longer exists in the app. Pick another process in Company › Processes.",
-    "SLOT_UNKNOWN": "This kind of job is not available on the system. Turn on the matching app for the company, or ask the platform admin to add it."
+    "SLOT_UNKNOWN": "This kind of job is not available on the system. Turn on the matching app for the company, or ask the platform admin to add it.",
+    "PROCESS_NOT_DELETABLE": "Cannot delete: the process is applied or has runs. Turn it off instead of deleting."
   },
   "validate": {
     "nameRequired": "Enter a process name.",
@@ -1037,18 +1050,6 @@
     "assign": {
       "where": "Companies assign this process on the Company › Processes page.",
       "openCompanies": "Open the company list"
-    },
-    "preview": {
-      "button": "Preview with a sample contract",
-      "title": "Preview the path of “{{name}}”",
-      "body": "Enter a contract type and a sample value: which steps run and which are skipped. Nothing is written.",
-      "value": "Sample value (VND)",
-      "valueHint": "Leave empty = 0",
-      "valueInvalid": "Enter a non-negative whole number.",
-      "run": "Preview path",
-      "result": "Path",
-      "runs": "runs",
-      "skipped": "skipped"
     },
     "default": {
       "button": "Set as default",
@@ -1496,9 +1497,37 @@
       "generic": "Could not complete this. Check your connection and try again."
     }
   },
+  "editorBar": {
+    "back": "Processes",
+    "name": "Process name",
+    "saved": "saved {{time}}",
+    "runs": "Runs",
+    "config": "Back to the diagram",
+    "apply": "Apply to company"
+  },
+  "byCompany": {
+    "title": "Processes",
+    "subtitle": "Each company's own processes, created from a blank diagram.",
+    "tabCompany": "By company",
+    "tabLibrary": "Template library",
+    "noApproval": "{{company}} has Contract Book on but no approval process in use — staff cannot send contracts for approval yet.",
+    "create": "Create process",
+    "flow": "Process",
+    "company": "Company",
+    "status": "Status",
+    "updated": "Updated",
+    "on": "In use",
+    "draft": "Draft",
+    "hint": "Click a process name to open its diagram. A new process stays a Draft until you click \"Apply to company\".",
+    "delete": "Delete",
+    "deleteTitle": "Delete process \"{{name}}\"?",
+    "deleteBody": "This process is still a draft: not applied to the company and never run. Deleting cannot be undone.",
+    "deleteConfirm": "Delete process"
+  },
   "flow": {
     "trigger": "Starts when",
     "event": "Event",
+    "eventPh": "Pick what starts this process…",
     "onlyWhen": "Only if",
     "always": "Always runs",
     "addCond": "Add condition",
@@ -1544,6 +1573,9 @@
       "remind": "Remind every (hours)",
       "signers": "Company signers (max {{max}})",
       "group": "Department",
+      "packOff": "This company has not turned on E-sign — turn it on under Company › Apps.",
+      "packOffPlatform": "A platform admin account cannot load the company's e-sign options. Set signers and signing method in the editor while signed in as a company user.",
+      "openApps": "Open the Apps tab",
       "unavailable": "Could not load e-sign options. Open the company copy to edit this.",
       "disabled": "E-sign is not enabled for this company. Enable it in {{path:flow}}.",
       "err": {
@@ -1562,6 +1594,10 @@
     "advanced": "Advanced",
     "moduleNote": "The provider, signers and other settings of this step come from the app settings. Open Advanced to tweak details.",
     "notify": {
+      "channel": "Send via",
+      "channel_bell": "In-app bell",
+      "channel_email": "Email",
+      "channel_both": "Bell and email",
       "to": "Send to",
       "toStarter": "Contract creator",
       "toGroup": "Department",
@@ -1575,6 +1611,74 @@
     "companies": "{{n}} companies",
     "add": "Add step",
     "moreActions": "More actions",
+    "scheduleDays": "Days (N)",
+    "scheduleDaysRange": "Enter a number of days from {{min}} to {{max}}.",
+    "testRun": {
+      "button": "Test run",
+      "title": "Test run · {{name}}",
+      "banner": "Test run: no real contract is created, no notification is sent, no signature is recorded. You play each approver.",
+      "sample": "Sample contract",
+      "starter": "Uploaded by",
+      "yes": "Yes",
+      "no": "No",
+      "numberHint": "For example 650,000,000",
+      "numberInvalid": "Enter a number, for example 650,000,000.",
+      "check": "Check before applying",
+      "path": "Path",
+      "restart": "Run again from the start",
+      "loading": "Running the test…",
+      "willAssign": "In a real run this goes to: {{who}}",
+      "noOne": "In a real run nobody would receive this step — choose an approver in the step.",
+      "needs": "Needed: {{what}}",
+      "actAs": "You play",
+      "approve": "Approve (test)",
+      "return": "Send back (test)",
+      "reject": "Reject (test)",
+      "quick": "Quick check of the branches",
+      "quickRun": "Run all 4 cases",
+      "stepsN": "{{n}} steps",
+      "hint": "The test uses the departments, members and steps of the draft you have open. After editing, run again from the start."
+    },
+    "outline": {
+      "kindStart": "When it runs",
+      "change": "Change",
+      "doneTitle": "{{Record}} ⇒ DONE",
+      "doneSub": "Rejected at any step ⇒ REJECT · Sent back ⇒ DRAFT, resubmit to start over",
+      "signBy": "{{names}} to sign",
+      "loading": "Loading the diagram…",
+      "approveNote": "The approver has 3 buttons: Approve · Send back · Reject. No need to draw an extra End step.",
+      "word": {
+        "owner": "Contract owner",
+        "milestone": "Confirm milestone",
+        "needOne": "one person takes it",
+        "needHead": "the head of department",
+        "needAll": "everyone",
+        "due": "{{n}} h",
+        "evidence": "opinion + signature or file"
+      },
+      "esignSummary": "Send the contract for signing and wait until it is signed",
+      "blocked": "{{n}} item(s) still need fixing — fix the steps marked “Needs fixing” before saving and applying.",
+      "blockedSteps": "⚠ {{n}} step(s) need attention — click a step to open it:",
+      "add": "Add step",
+      "start": "Starts: {{event}}",
+      "done": "Done",
+      "needFix": "Needs fixing",
+      "note": "Note",
+      "up": "Move up",
+      "down": "Move down",
+      "remove": "Remove step",
+      "yes": "Yes",
+      "no": "No",
+      "emptyBranch": "Continue, no extra step",
+      "unsupported": "This process was built in the old format, so it is view-only here. Processes are authored by the platform admin — contact them for changes (or create a new process from a blank diagram)."
+    },
+    "menuGroup": {
+      "people": "People",
+      "branch": "Branching",
+      "contract": "Contract",
+      "other": "Other",
+      "notify": "Notify · Wait"
+    },
     "group": {
       "advanced": "Advanced"
     },
@@ -1619,7 +1723,9 @@
       "name": "Name",
       "outcome": "Finish with",
       "effect": "The contract will: {{effect}}",
-      "pick": "Choose the outcome for the contract."
+      "pick": "Choose the outcome for the contract.",
+      "effectGeneric": "The process will: {{effect}}",
+      "pickGeneric": "Choose the outcome when the process finishes."
     },
     "err": {
       "tooManySteps": "A process has at most 20 steps. Merge some.",

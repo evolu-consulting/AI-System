@@ -347,7 +347,7 @@ describe("F07–F11 · chế độ theo nguồn + không job [PC2-R02, PC2-R03, 
   }, 45_000);
   it("HUB-FR-128 · C7 · F11 · def không có stage Áp ⇒ autofix.apply_mode null, apply_base null", async () => {
     needPc2(c);
-    const r = await c.call("Adm", "POST", "/process-defs", {
+    const r = await c.call("P", "POST", `/process-defs?tenant_id=${T.acme}`, {
       key: "pc2-fnoapply",
       name: "Không áp",
       description: "Chỉ tự sửa, không Áp.",

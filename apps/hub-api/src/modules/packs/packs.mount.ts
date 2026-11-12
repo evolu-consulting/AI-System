@@ -65,7 +65,7 @@ import {
 import { afterPacksMounted } from "./packs.after-mount";
 import { fileboxClients, type PackFb, packFilebox } from "./packs.filebox";
 import { mountedApps, verifyPackModules } from "./packs.modules-check";
-import { envInt, stepDeps, tenantLimits, tenantTz } from "./packs.tenant-config";
+import { envInt, evidenceDeps, stepDeps, tenantLimits, tenantTz } from "./packs.tenant-config";
 import { PKDEMO_KEY, pkdemoModule } from "./pkdemo/pkdemo.mount";
 
 export { mountEsignWebhook } from "./contracts/esign.mount"; // app.ts gắn webhook trước JWT (không chạm nội bộ gói)
@@ -161,7 +161,6 @@ function mountContracts<E extends Env>(
 ): void {
   const cx = contractsCtx(d, view, fb);
   mountContractsNav(view, d.packRuns, d.db); // CR-121 C-7 · mục "Chờ tôi duyệt" + số đếm cho `GET /pack/nav` (độc lập Community)
-  for (const t of cx.ai.tools) d.packTools?.register(t); // contract-flow S3a · tool engine duyệt HĐ (cờ bật)
   mountContractsCore(app, cx);
   mountContractsMore(app, cx);
   mountAssistantTools(d.db, d.packTools, { timeZoneOf: tenantTz(d), view }); // M2-chat Â· tool Ä‘á»c cá»§a trá»£ lÃ½
@@ -193,7 +192,7 @@ function contractsCtx(d: PacksMountDeps & { db: Db }, view: PackAccessView, fb: 
   const ai = contractsAiModule(
     db,
     view,
-    { ...aiDeps, tax },
+    { ...aiDeps, tax, ...evidenceDeps(d) }, // CR-127 E4b: tai tep bang chung duyet
     {
       // M3 Â· AI client chung (khoÃ¡ tá»« env; test tiÃªm `model` giáº£) + Group duyá»‡t (admin.groups + cache cáº¥u hÃ¬nh)
       ai: aiClient,
@@ -218,18 +217,15 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
     base,
     contractsModule(db, view, fb ? fileboxClients(fb) : null, {
       timeZoneOf,
-      guard: ai.guard,
+      submitFlowOpen: ai.submitFlowOpen, // CR-127 NF1 · `submit_block` của chi tiết HĐ
       ...(d.packRuns ? { runs: d.packRuns } : {}), // HD1 T7/T8 · HD5 giá · HD3 seam duyệt · CR-123 u10 cột "Bước"
     }),
   );
   app.route(base, ai.routes); // HD2
-  app.route(base, manageModule(db, view, { ai: cx.aiClient, quota: cx.quota, esign: d.esign })); // gap-a1 · giao/hoa hồng/lịch sử/tóm tắt
+  app.route(base, manageModule(db, view, { ai: cx.aiClient, quota: cx.quota })); // gap-a1 · giao/hoa hồng/lịch sử/tóm tắt
   app.route(base, ai.approval); // HD3
   if (fb)
-    app.route(
-      base,
-      contractsUpload(d, view, { db, fb, starter: ai.starter, review: ai.startReview }),
-    ); // HD1 T10 + HD2 starter
+    app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
   else app.route(base, uploadUnavailableRoutes(view)); // FileBox váº¯ng â‡’ 503 FILE_STORAGE_UNAVAILABLE (khÃ´ng 404)
   app.route(base, contractsRemind(d, view, db)); // HD4
   app.route(base, partnerModule(db, view)); // CR-124 q4 · hộp «Hợp đồng đối tác gửi» + ghi nhận thủ công
@@ -365,12 +361,7 @@ function envTaxRegistry() {
 function contractsUpload(
   d: PacksMountDeps,
   view: PackAccessView,
-  {
-    db,
-    fb,
-    starter,
-    review,
-  }: { db: Db; fb: PackFb; starter: ExtractionStarter; review: UploadMountDeps["review"] },
+  { db, fb, starter }: { db: Db; fb: PackFb; starter: ExtractionStarter },
 ) {
   return uploadModule({
     db,
@@ -380,7 +371,6 @@ function contractsUpload(
     timeZoneOf: async (tid) => (await d.config.tenant(tid))?.timezone ?? DEFAULT_TENANT_TZ,
     tenantLimitOf: async (tid) => (await tenantLimits(d)(tid))?.uploads ?? null, // tenant-quotas
     starter,
-    ...(review ? { review } : {}), // DOC-deals-fix: nâng giao dịch khi bật duyệt
   });
 }
 

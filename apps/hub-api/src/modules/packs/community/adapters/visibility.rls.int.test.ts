@@ -1,17 +1,19 @@
-// CR-102 · com-c3 · hien-thi.md HT-01…HT-50, HT-70…HT-73: ma trận người xem × nội dung bằng RLS thật (role `community_rw`,
-// `app.user_id` như `withPackScope`). Một dòng = một ca; "không thấy" = 0 hàng. Ghi sai phía (đăng thay công ty khác, bình luận
-// luồng khác, sửa bài chủ quản, ghi nhãn đối tác) bị chặn ở DB.
+// CR-102 · com-c3 · CR-129 · hien-thi.md HT-01…HT-52, HT-70…HT-73: ma trận người xem × nội dung bằng RLS thật (role `community_rw`,
+// `app.user_id` như `withPackScope`). Một dòng = một ca; "không thấy" = 0 hàng. Bình luận phẳng theo bạn bè (CR-129): đối tác thấy
+// bình luận của chủ quản + công ty mình + bài của mình + bình luận nhắc mình. Ghi sai phía (đăng thay công ty khác, bình luận
+// thay công ty khác, nhắc người không phải bạn, sửa bài chủ quản, ghi nhãn đối tác) bị chặn ở DB.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { cloneDb, inPackAs, openOwner, pgCode, type Sql } from "@ai/test-kit/db";
 import {
   type Cast,
   seedCast,
-  seedComments,
   seedPosts,
 } from "../../../../../../../tests/acceptance/com-c3/_support/cast";
+import { seedComments } from "./comment-seed.testkit";
 
 let sql: Sql;
 let c: Cast;
+const ALL_ORGS: string[] = []; // công ty đối tác truyền cho hàm cổng `contracts.community_partners` (host = tất cả, đối tác = chỉ mình)
 let P = new Map<string, string>();
 let C = new Map<string, string>();
 
@@ -21,18 +23,12 @@ const postsSeen = (u: string) =>
   as(u, async (tx) => keysOf(await tx`select title_raw as k from community.posts`));
 const commentsSeen = (u: string) =>
   as(u, async (tx) => keysOf(await tx`select text_raw as k from community.comments`));
-const threadsSeen = (u: string) =>
-  as(u, async (tx) =>
-    keysOf(
-      await tx`select p.title_raw || '/' || t.ext_org_id::text as k from community.threads t
-      join community.posts p on p.id = t.post_id`,
-    ),
-  );
 
 beforeAll(async () => {
   await cloneDb("full");
   sql = openOwner(2);
   c = await seedCast(sql, 31);
+  ALL_ORGS.push(c.S1, c.S2, c.B1, c.B2, c.X, c.LEFT);
   const host = (
     key: string,
     aud: { mode: string; cats?: string[]; orgs?: string[] },
@@ -68,32 +64,17 @@ beforeAll(async () => {
   await sql`update community.posts set aud_orgs = ${sql.array([c.S2])}::uuid[] where id = ${P.get("P_co_S2") as string}`;
   const pa = P.get("P_all") as string;
   C = await seedComments(sql, c.A, [
-    { key: "c_s1b", post: pa, thread: c.S1, author: c.s1b, org: c.S1 },
-    { key: "c_host_to_S1", post: pa, thread: c.S1, author: c.hA, org: null },
-    { key: "c_s1_hidden", post: pa, thread: c.S1, author: c.s1a, org: c.S1, hidden: true },
-    { key: "c_s2", post: pa, thread: c.S2, author: c.s2, org: c.S2 },
-    { key: "c_host_to_S2", post: pa, thread: c.S2, author: c.hM, org: null },
-    {
-      key: "c_arch_s1",
-      post: P.get("P_archived") as string,
-      thread: c.S1,
-      author: c.s1a,
-      org: c.S1,
-    },
-    {
-      key: "c_s1post_s1",
-      post: P.get("S1_sell") as string,
-      thread: c.S1,
-      author: c.s1a,
-      org: c.S1,
-    },
-    {
-      key: "c_s1post_host",
-      post: P.get("S1_sell") as string,
-      thread: c.S1,
-      author: c.hA,
-      org: null,
-    },
+    { key: "c_s1b", post: pa, author: c.s1b, org: c.S1 },
+    { key: "c_host_to_S1", post: pa, author: c.hA, org: null, mentions: [c.S1] },
+    { key: "c_s1_hidden", post: pa, author: c.s1a, org: c.S1, hidden: true },
+    { key: "c_s2", post: pa, author: c.s2, org: c.S2 },
+    { key: "c_host_to_S2", post: pa, author: c.hM, org: null, mentions: [c.S2] },
+    // HT-51: S2 nhắc S1 (chèn bằng owner — RLS không cho đối tác nhắc ai); HT-5x: S2 trên bài của S1 (cùng cách)
+    { key: "c_s2_tag_S1", post: pa, author: c.s2, org: c.S2, mentions: [c.S1] },
+    { key: "c_arch_s1", post: P.get("P_archived") as string, author: c.s1a, org: c.S1 },
+    { key: "c_s1post_s1", post: P.get("S1_sell") as string, author: c.s1a, org: c.S1 },
+    { key: "c_s1post_host", post: P.get("S1_sell") as string, author: c.hA, org: null },
+    { key: "c_s2_on_s1post", post: P.get("S1_sell") as string, author: c.s2, org: c.S2 },
   ]);
 }, 120_000);
 afterAll(async () => {
@@ -155,9 +136,7 @@ describe("§1–2 bài (HT-01…HT-32)", () => {
     const [id] = (
       await seedPosts(sql, c.A, [{ key: "P_del", type: "note", org: null, author: c.hA }])
     ).values();
-    await seedComments(sql, c.A, [
-      { key: "c_del", post: id as string, thread: c.S1, author: c.s1a, org: c.S1 },
-    ]);
+    await seedComments(sql, c.A, [{ key: "c_del", post: id as string, author: c.s1a, org: c.S1 }]);
     const before = (await postsSeen(c.s1a)).includes("P_del");
     const n = await as(
       c.hA,
@@ -177,42 +156,128 @@ describe("§1–2 bài (HT-01…HT-32)", () => {
   });
 });
 
-describe("§3 bình luận theo luồng (HT-40…HT-50)", () => {
-  it("HT-40: chủ quản thấy mọi luồng và mọi bình luận (kể cả bị ẩn)", async () => {
+describe("§3 bình luận mở theo bạn bè (HT-40…HT-52)", () => {
+  it("HT-40: chủ quản thấy mọi bình luận (kể cả bị ẩn, của mọi đối tác)", async () => {
     expect(await commentsSeen(c.hM)).toEqual([...C.keys()].sort());
   });
-  it("HT-41/42/43/44/46/47/48: S1a chỉ thấy luồng của S1 trên bài mình thấy, không bình luận ẩn", async () => {
+  it("HT-41/43/44/46/47: S1a thấy bình luận của công ty mình + chủ quản (kể cả trả lời S2) + được nhắc + trên bài của mình; không thấy S2, không bị ẩn", async () => {
     expect(await commentsSeen(c.s1a)).toEqual([
       "c_host_to_S1",
+      "c_host_to_S2", // HT-44: câu chủ quản trả lời S2 nay S1 cũng thấy
       "c_s1b",
       "c_s1post_host",
       "c_s1post_s1",
+      "c_s2_on_s1post", // bài của chính S1: thấy mọi bình luận trên bài
+      "c_s2_tag_S1", // HT-51: được nhắc
     ]);
-    expect(await threadsSeen(c.s1a)).toEqual([`P_all/${c.S1}`, `S1_sell/${c.S1}`]);
   });
-  it("HT-42/44/48: S2 chỉ thấy luồng của S2; không thấy luồng S1 trên bài của S1", async () => {
-    expect(await commentsSeen(c.s2)).toEqual(["c_host_to_S2", "c_s2"]);
+  it("HT-42/48: S2 thấy bình luận của S2 + chủ quản; không thấy bình luận của S1, không thấy bài của S1", async () => {
+    expect(await commentsSeen(c.s2)).toEqual([
+      "c_host_to_S1",
+      "c_host_to_S2",
+      "c_s2",
+      "c_s2_tag_S1",
+    ]);
   });
-  it("HT-45: B1 không thấy bình luận của S1 trên cùng bài", async () => {
-    expect({ c: await commentsSeen(c.b1), t: await threadsSeen(c.b1) }).toEqual({ c: [], t: [] });
+  it("HT-45: B1 chỉ thấy bình luận của chủ quản trên bài mình thấy; không thấy bình luận của S1/S2", async () => {
+    expect(await commentsSeen(c.b1)).toEqual(["c_host_to_S1", "c_host_to_S2"]);
   });
-  it("HT-49: A ghi bình luận vào luồng S1 ⇒ S1b thấy, S2 không", async () => {
+  it("HT-49: A ghi bình luận ⇒ mọi đối tác thấy bài đều thấy (S1b, S2, B1)", async () => {
     const pa = P.get("P_all") as string;
     await as(
       c.hA,
       (
         tx,
-      ) => tx`insert into community.comments (tenant_id, post_id, thread_id, thread_org, author_user_id,
-        author_org, text_raw, text_masked)
-      select ${c.A}::uuid, ${pa}::uuid, t.id, t.ext_org_id, ${c.hA}::uuid, null, 'c_ht49', 'c_ht49'
-      from community.threads t where t.post_id = ${pa}::uuid and t.ext_org_id = ${c.S1}::uuid`,
+      ) => tx`insert into community.comments (tenant_id, post_id, author_user_id, author_org, text_raw, text_masked)
+      values (${c.A}::uuid, ${pa}::uuid, ${c.hA}::uuid, null, 'c_ht49', 'c_ht49')`,
     );
     expect({
       s1b: (await commentsSeen(c.s1b)).includes("c_ht49"),
       s2: (await commentsSeen(c.s2)).includes("c_ht49"),
-    }).toEqual({ s1b: true, s2: false });
+      b1: (await commentsSeen(c.b1)).includes("c_ht49"),
+    }).toEqual({ s1b: true, s2: true, b1: true });
   });
-  it("HT-50: S1a xoá bình luận của chính mình ⇒ mất ở cả hai phía; không xoá được của S1b", async () => {
+  it("HT-51: chủ quản nhắc S1 trong bình luận ⇒ ghi được (mention_orgs = [S1]); HT-52: S1 không nhắc được S2 / chính mình ⇒ 42501", async () => {
+    const pa = P.get("P_all") as string;
+    const ins = (u: string, org: string | null, mentions: string[]) =>
+      pgCode(() =>
+        as(
+          u,
+          (
+            tx,
+          ) => tx`insert into community.comments (tenant_id, post_id, author_user_id, author_org, text_raw, text_masked,
+            mention_orgs) values (${c.A}::uuid, ${pa}::uuid, ${u}::uuid, ${org}::uuid, 'x51', 'x51', ${tx.array(mentions)}::uuid[])`,
+        ),
+      );
+    expect({
+      hostTagsS1S2: await ins(c.hA, null, [c.S1, c.S2]),
+      s1TagsS2: await ins(c.s1a, c.S1, [c.S2]),
+      s1TagsSelf: await ins(c.s1a, c.S1, [c.S1]),
+      s1NoTag: await ins(c.s1a, c.S1, []),
+    }).toEqual({ hostTagsS1S2: null, s1TagsS2: "42501", s1TagsSelf: "42501", s1NoTag: null });
+    const tooMany = await pgCode(
+      () =>
+        sql`insert into community.comments (tenant_id, post_id, author_user_id, author_org, text_raw, text_masked, mention_orgs)
+        values (${c.A}::uuid, ${pa}::uuid, ${c.hA}::uuid, null, 'x', 'x', ${sql.array(Array.from({ length: 11 }, () => c.S1))}::uuid[])`,
+    );
+    expect(tooMany).toBe("23514");
+  });
+  it("lời nhắc bất biến khi sửa ⇒ 23514 (sửa chữ không phát chuông lại)", async () => {
+    const id = C.get("c_s2_tag_S1") as string;
+    const code = await pgCode(() =>
+      as(
+        c.s2,
+        (tx) => tx`update community.comments set mention_orgs = '{}' where id = ${id}::uuid`,
+      ),
+    );
+    expect(code).toBe("23514");
+  });
+  it("soát RLS: chủ quản chỉ nhắc được công ty ĐỐI TÁC của tenant mình, đang hoạt động, thấy được bài ⇒ còn lại 42501 ở DB", async () => {
+    const pa = P.get("P_all") as string;
+    const psup = P.get("P_suppliers") as string; // chỉ nhà cung cấp: B1 (người mua) không thấy
+    const orgB = crypto.randomUUID();
+    await sql`insert into admin.external_orgs (id, tenant_id, name, active) values (${orgB}::uuid, ${c.B}::uuid, 'Công ty tenant B', true)`;
+    const ins = (post: string, mentions: string[]) =>
+      pgCode(() =>
+        as(
+          c.hA,
+          (
+            tx,
+          ) => tx`insert into community.comments (tenant_id, post_id, author_user_id, author_org, text_raw, text_masked,
+            mention_orgs) values (${c.A}::uuid, ${post}::uuid, ${c.hA}::uuid, null, 'x_mt', 'x_mt', ${tx.array(mentions)}::uuid[])`,
+        ),
+      );
+    expect({
+      otherTenantOrg: await ins(pa, [orgB]),
+      randomOrg: await ins(pa, [crypto.randomUUID()]),
+      inactiveOrg: await ins(pa, [c.LEFT]),
+      orgCannotSeePost: await ins(psup, [c.B1]),
+      okSeesPost: await ins(psup, [c.S1]),
+    }).toEqual({
+      otherTenantOrg: "42501",
+      randomOrg: "42501",
+      inactiveOrg: "42501",
+      orgCannotSeePost: "42501",
+      okSeesPost: null,
+    });
+  });
+  it("soát RLS: được nhắc trên bài mình KHÔNG thấy ⇒ không thấy bình luận (bài chặn trước); đọc chéo tenant ⇒ 0 hàng", async () => {
+    const psup = P.get("P_suppliers") as string;
+    await seedComments(sql, c.A, [
+      { key: "c_tag_unseen", post: psup, author: c.hA, org: null, mentions: [c.B1] }, // owner bỏ RLS ghi
+    ]);
+    expect({
+      b1: (await commentsSeen(c.b1)).includes("c_tag_unseen"),
+      s1: (await commentsSeen(c.s1a)).includes("c_tag_unseen"), // S1 thấy bài + bình luận chủ quản
+      host: (await commentsSeen(c.hA)).includes("c_tag_unseen"),
+    }).toEqual({ b1: false, s1: true, host: true });
+    // chủ quản tenant B (cùng DB) đọc bảng bình luận: không thấy hàng nào của tenant A
+    const crossRead = await inPackAs("community", c.B, c.hB, async (tx) =>
+      keysOf(await tx`select text_raw as k from community.comments`),
+    );
+    expect(crossRead).toEqual([]);
+  });
+  it("HT-50: S1a xoá bình luận của chính mình ⇒ mất ở mọi phía; không xoá được của S1b", async () => {
     const id = C.get("c_s1post_s1") as string;
     const other = C.get("c_s1b") as string;
     const del = (x: string) =>
@@ -231,7 +296,10 @@ describe("§3 bình luận theo luồng (HT-40…HT-50)", () => {
 describe("§6 bạn bè / hồ sơ (HT-70…HT-73)", () => {
   const orgs = (u: string) =>
     as(u, async (tx) =>
-      (await tx`select ext_org_id::text as k from community.partner_companies`).map((r) => r.k),
+      (
+        await tx`select ext_org_id::text as k from contracts.community_partners(
+          array(select jsonb_array_elements_text(${tx.json(ALL_ORGS)}::jsonb)::uuid))`
+      ).map((r) => r.k),
     );
   it("HT-70/72: A, M thấy mọi công ty đối tác; HT-71/73: S1, B1 chỉ thấy hàng của công ty mình", async () => {
     expect({
@@ -270,7 +338,7 @@ describe("ghi sai phía bị DB chặn", () => {
       s1Ok: null,
     });
   });
-  it("đối tác không sửa/xoá bài chủ quản (0 hàng), không ghi nhãn đối tác, không bình luận luồng công ty khác", async () => {
+  it("đối tác không sửa/xoá bài chủ quản (0 hàng), không ghi nhãn đối tác, không bình luận dưới tên công ty khác / trên bài không thấy", async () => {
     const pa = P.get("P_all") as string;
     const upd = await as(
       c.s1a,
@@ -285,40 +353,26 @@ describe("ghi sai phía bị DB chặn", () => {
       as(
         c.s1a,
         (tx) =>
-          tx`update community.partner_companies set labels = '{supplier,buyer}' where ext_org_id = ${c.S1}::uuid`,
+          tx`update contracts.partner_profiles set cats = '{x}' where ext_org_id = ${c.S1}::uuid`,
       ),
     );
-    const cross = await pgCode(() =>
-      as(
-        c.s1a,
-        (
-          tx,
-        ) => tx`insert into community.comments (tenant_id, post_id, thread_id, thread_org, author_user_id,
-          author_org, text_raw, text_masked)
-        select ${c.A}::uuid, ${pa}::uuid, t.id, ${c.S2}::uuid, ${c.s1a}::uuid, ${c.S1}::uuid, 'x', 'x'
-        from community.threads t where t.post_id = ${pa}::uuid and t.ext_org_id = ${c.S2}::uuid`,
-      ),
-    );
-    const s2Thread = await pgCode(() =>
-      as(
-        c.s1a,
-        (tx) => tx`insert into community.threads (tenant_id, post_id, ext_org_id)
-        values (${c.A}::uuid, ${pa}::uuid, ${c.S2}::uuid)`,
-      ),
-    );
-    const hiddenPost = await pgCode(() =>
-      as(
-        c.b1,
-        (tx) => tx`insert into community.threads (tenant_id, post_id, ext_org_id)
-        values (${c.A}::uuid, ${P.get("P_suppliers") as string}::uuid, ${c.B1}::uuid)`,
-      ),
-    );
-    expect({ upd, del, label, cross, s2Thread, hiddenPost }).toEqual({
+    const cmt = (u: string, org: string, post: string) =>
+      pgCode(() =>
+        as(
+          u,
+          (
+            tx,
+          ) => tx`insert into community.comments (tenant_id, post_id, author_user_id, author_org, text_raw, text_masked)
+          values (${c.A}::uuid, ${post}::uuid, ${u}::uuid, ${org}::uuid, 'x', 'x')`,
+        ),
+      );
+    const cross = await cmt(c.s1a, c.S2, pa); // bình luận dưới tên công ty khác
+    const hiddenPost = await cmt(c.b1, c.B1, P.get("P_suppliers") as string); // bài B1 không thấy
+    expect({ upd, del, label, cross, hiddenPost }).toEqual({
       upd: 0,
       del: 0,
       label: "42501",
-      cross: null, // luồng S2 không thấy dưới S1 ⇒ SELECT nguồn 0 hàng ⇒ không chèn gì
-      s2Thread: "42501",
+      cross: "42501",
       hiddenPost: "42501",
     });
     expect((await commentsSeen(c.hA)).filter((k) => k === "x")).toEqual([]);

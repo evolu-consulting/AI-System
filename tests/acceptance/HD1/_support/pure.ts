@@ -44,17 +44,8 @@ export const ITEM_KEYS = [
   "valid_from",
   "valid_to",
 ] as const;
-export const STATUSES = [
-  "extracting",
-  "extract_failed",
-  "needs_review",
-  "active",
-  "expiring",
-  "expired",
-  "renewed",
-  "terminated",
-  "rejected",
-] as const;
+/** CR-127: 4 trạng thái HĐ (hiệu lực `effect` và `extract_state` là cột riêng). */
+export const STATUSES = ["draft", "processing", "reject", "done"] as const;
 export const OUTCOMES = ["renewed", "not_renewed", "negotiating", "replaced"] as const;
 export const emptyField = () => ({ value: null, quote: "", verified: false, edited: false });
 /** Chỉ các khoá cho trước (thưa) — dùng để chèn HĐ "cũ thiếu khoá" (HD-AC12). */

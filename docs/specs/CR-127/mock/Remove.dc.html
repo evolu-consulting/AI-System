@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Nên gỡ hoặc gộp</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1280px; height: 980px; padding: 28px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #ffffff">
+  <div>
+    <h1 style="margin: 0 0 4px; font-size: 24px">Nên gỡ hoặc gộp trên giao diện hiện có</h1>
+    <div style="font-size: 14px; color: #6b6a80">Dựa trên ảnh chụp ai-admin và Sổ Hợp Tác ngày 10/11. Gỡ = bỏ khỏi màn hình. Gộp = hai chỗ cho cùng một việc thành một. Ẩn = giữ cho quy trình AI, không hiện với quy trình hợp đồng.</div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; flex: 1">
+    <section style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+      <b style="font-size: 15px">ai-admin · Quy trình</b>
+      <div style="display: grid; grid-template-columns: 1.7fr 0.6fr 1.7fr; gap: 0; border: 1px solid #e5e5ee; border-radius: 10px; overflow: hidden">
+        <span style="padding: 8px 10px; background: #f7f7fb; font-weight: 600; color: #6b6a80">Đang có</span><span style="padding: 8px 10px; background: #f7f7fb; font-weight: 600; color: #6b6a80">Làm</span><span style="padding: 8px 10px; background: #f7f7fb; font-weight: 600; color: #6b6a80">Thay bằng</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Hộp "Bắt đầu khi" + điều kiện giả "Giá trị HĐ &lt; -1"</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #b91c1c; font-weight: 600">Gỡ</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Bước Bắt đầu kéo vào sơ đồ</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Khối "Các trường" (Thêm trường, Xoá trường contract_id)</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #b91c1c; font-weight: 600">Gỡ</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Hệ thống tự biết dữ liệu hợp đồng</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Nguồn của quy trình · Giới hạn chi phí AI · Mã nội bộ</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #b45309; font-weight: 600">Ẩn</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Chỉ hiện khi quy trình có bước AI</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Thời hạn lượt chạy + Không hết hạn + khối "Giới hạn của một lượt chạy"</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #4f46e5; font-weight: 600">Gộp</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Hạn trả lời ở từng bước Duyệt</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Xem trước bằng HĐ mẫu</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #4f46e5; font-weight: 600">Gộp</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Chạy thử (màn 3)</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Sơ đồ / Danh sách bước · Ngang / Dọc</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #b91c1c; font-weight: 600">Gỡ</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Một sơ đồ, tự sắp xếp</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Ba bước Kết thúc · Đã duyệt / Từ chối / Trả lại</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #4f46e5; font-weight: 600">Gộp</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Kết thúc DONE / REJECT; Trả lại là nút trong bước Duyệt</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Tab "Mẫu có sẵn" (AI-SDLC, đều Tắt)</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #b91c1c; font-weight: 600">Gỡ</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Không cần cho khách</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Dòng "luồng duyệt do hub chạy… Xem Workflow Dify →"</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #b91c1c; font-weight: 600">Gỡ</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Lộ khái niệm kỹ thuật</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Nhãn "Mẫu cũ – không sao chép được"</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #b91c1c; font-weight: 600">Gỡ</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Dọn mẫu cũ khỏi Thư viện</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Quy trình DLC trong cùng Thư viện với nghiệp vụ</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #b45309; font-weight: 600">Ẩn</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Tách nhóm nội bộ, không hiện khi chọn công ty</span>
+      </div>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+      <b style="font-size: 15px">Sổ Hợp Tác · Hợp đồng</b>
+      <div style="display: grid; grid-template-columns: 1.7fr 0.6fr 1.7fr; border: 1px solid #e5e5ee; border-radius: 10px; overflow: hidden">
+        <span style="padding: 8px 10px; background: #f7f7fb; font-weight: 600; color: #6b6a80">Đang có</span><span style="padding: 8px 10px; background: #f7f7fb; font-weight: 600; color: #6b6a80">Làm</span><span style="padding: 8px 10px; background: #f7f7fb; font-weight: 600; color: #6b6a80">Thay bằng</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">9 trạng thái (đang trích xuất, cần xem lại, đang hiệu lực, sắp hết, hết hạn, gia hạn, chấm dứt, từ chối…)</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #4f46e5; font-weight: 600">Gộp</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">DRAFT / PROCESSING / REJECT / DONE + nhãn Hiệu lực riêng</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Chip "Đã khoá" + "Chưa có văn bản" + băng "Đã xác nhận – đã khoá"</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #4f46e5; font-weight: 600">Gộp</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Một chip trạng thái; khoá suy từ PROCESSING/DONE</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Thẻ "Ký số · Chưa cấu hình ký số" trên chi tiết HĐ</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #b91c1c; font-weight: 600">Gỡ</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Ký số là một dòng trong Hồ sơ duyệt</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">"Ghi nhận xử lý: Chọn kết quả…" + "Hạn chót hành động"</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #6b6a80; font-weight: 600">Xem lại</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Thuộc gia hạn/hết hạn, đưa xuống mục Hiệu lực</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Cột "Bước" (Đã xong / Đang thực hiện) ở danh sách</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #4f46e5; font-weight: 600">Gộp</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Cột Trạng thái + Đang chờ (ai, còn bao lâu)</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">"Mở lại để sửa lỗi trích xuất"</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #4f46e5; font-weight: 600">Gộp</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Sửa ở DRAFT trước khi Xác nhận &amp; lưu</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Menu "Yêu cầu" riêng</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #6b6a80; font-weight: 600">Xem lại</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Giữ nếu còn phiếu mua hàng; HĐ đi thẳng từ Tải lên</span>
+        <span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Hai đường duyệt HĐ (khe cũ + quy trình mới, cờ FLOW_TRIGGERS)</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee; color: #b91c1c; font-weight: 600">Gỡ</span><span style="padding: 8px 10px; border-top: 1px solid #e5e5ee">Chỉ còn quy trình mới</span>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

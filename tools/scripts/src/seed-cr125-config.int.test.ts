@@ -9,7 +9,6 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls, withCreds } from "@ai/test-kit/env";
 import { enablePack } from "../../../apps/admin-api/src/modules/packs/packs.service";
 import {
-  approvalConfigQuery,
   evaluateFlowCoverage,
   featureCatalogQuery,
 } from "../../../apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check";
@@ -25,11 +24,7 @@ import type { PackToolCatalog } from "../../../apps/hub-api/src/modules/packs/ki
 import { subprocessCheck } from "../../../apps/hub-api/src/modules/processes/defs/subprocess-check";
 import { PURCHASE_PARENT_ID } from "../../../apps/hub-api/src/modules/processes/library/purchase-templates";
 import { readinessOf } from "../../../apps/hub-api/src/modules/processes/library/template-readiness";
-import {
-  APPROVAL_DEFAULT_FLOW_ID,
-  DEMO_ESIGN_PROVIDER,
-  RECEIVE_DEFAULT_FLOW_ID,
-} from "../../../apps/hub-api/src/modules/seed/seed.cr125-config";
+import { DEMO_ESIGN_PROVIDER } from "../../../apps/hub-api/src/modules/seed/seed.cr125-config";
 import { writeTenantFixtures } from "../../../apps/hub-api/src/modules/seed/seed.tenant-fixtures";
 
 let sql: Sql;
@@ -125,12 +120,11 @@ const packTools = {
 } as unknown as PackToolCatalog;
 
 describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
-  it("lần 1: tính năng, Ký thử, nhóm, mẫu Thư viện, flow mặc định, cờ flow_triggers đều có", async () => {
+  it("lần 1: tính năng, Ký thử, nhóm, mẫu Thư viện, KHÔNG gán flow nào cho công ty", async () => {
     const r = await seed();
     expect(r.cr125.features).toBeGreaterThan(0);
-    expect(r.cr125.companyFlows).toBe(8); // (3 flow theo sự kiện + «Quy trình mua hàng» bắt đầu bằng phiếu) × 2 công ty
-    expect(r.cr125.flowFlags).toBe(2);
-    expect(r.cr125.libraryDefs).toBe(8); // 3 mẫu duyệt HĐ + Community + 3 phần + «Quy trình mua hàng» (cha)
+    expect(r.cr125.flowFlags).toBe(0); // CR-127 Z9: seed không gán flow ⇒ không công ty nào có flow Bật ⇒ không bật cờ
+    expect(r.cr125.libraryDefs).toBe(5); // Community + 3 phần + «Quy trình mua hàng» (cha)
     const demo = ids.get("demo") as string;
     const [ps] =
       await sql`select esign_enabled, esign_default_provider from contracts.approval_settings where tenant_id = ${demo}`;
@@ -156,33 +150,13 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
 });
 
 describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
-  it("mọi mẫu được gán cho công ty đều templateReadiness ready (tính năng, tool, nhóm đủ)", async () => {
+  it("seed KHÔNG gán flow nào cho công ty (CR-127 Z9): công ty tự có quy trình riêng do quản trị nền tảng tạo từ sơ đồ trống", async () => {
     for (const t of ["evolu", "demo"]) {
-      const tid = ids.get(t) as string;
-      const flows = await sql`select d.id::text as id, d.key, d.stages from hub.company_flows cf
-        join hub.process_defs d on d.id = cf.flow_id where cf.tenant_id = ${tid} and cf.enabled order by d.key`;
-      expect(flows.map((f) => f.key)).toEqual([
-        "community-duyet-bai",
-        "hd-duyet-2-cap",
-        "hd-nhan-thuong",
-        "quy-trinh-mua-hang",
-      ]);
-      expect(flows.map((f) => f.id)).toContain(APPROVAL_DEFAULT_FLOW_ID);
-      expect(flows.map((f) => f.id)).toContain(RECEIVE_DEFAULT_FLOW_ID);
-      for (const f of flows) {
-        const rd = await withHubScope(hub, { kind: "system" }, (tx) =>
-          readinessOf(tx, tid, f.stages as unknown[], packTools),
-        );
-        expect([t, f.key, rd.ready, rd.reasons, rd.missing.groups]).toEqual([
-          t,
-          f.key,
-          true,
-          [],
-          [],
-        ]);
-      }
+      const rows =
+        await sql`select 1 from hub.company_flows where tenant_id = ${ids.get(t) as string}`;
+      expect([t, rows.length]).toEqual([t, 0]);
     }
-  }, 120_000);
+  }, 60_000);
 });
 
 describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
@@ -256,20 +230,13 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
 });
 
 describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
-  it("ops-watch: flow_flag 0 công ty lệch; hồ sơ công ty, cấu hình duyệt HĐ, danh mục feature đều ok", async () => {
+  it("ops-watch: flow_flag 0 công ty lệch; hồ sơ công ty, danh mục feature đều ok", async () => {
     const r = await withHubScope(hub, { kind: "system" }, async (tx) => ({
       flag: (await tx.execute<{ n: number; sample: string[] }>(flowFlagQuery()))[0],
       profile: [
         ...(await tx.execute<{ rule: 1 | 2; n: number; sample: string[] }>(tenantProfileQuery())),
       ],
-      approval: (
-        await tx.execute<{ unrouted: string[]; broken: string[] }>(approvalConfigQuery())
-      )[0],
-      catalog: (
-        await tx.execute<{ engine_feature: boolean; feature_app_missing: string[] }>(
-          featureCatalogQuery(),
-        )
-      )[0],
+      catalog: (await tx.execute<{ feature_app_missing: string[] }>(featureCatalogQuery()))[0],
     }));
     const flag = evaluateFlowFlag({ n: Number(r.flag?.n ?? 0), sample: r.flag?.sample ?? [] });
     expect([flag.status, flag.value]).toEqual(["ok", { count: 0 }]);
@@ -280,9 +247,6 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
       checked: 0,
       gap_count: 0,
       gaps: [],
-      unrouted: r.approval?.unrouted ?? [],
-      broken: r.approval?.broken ?? [],
-      engine_feature: r.catalog?.engine_feature ?? false,
       feature_app_missing: r.catalog?.feature_app_missing ?? [],
     });
     expect([cov.status, cov.message]).toEqual(["ok", expect.any(String)]);

@@ -3,12 +3,16 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { StepRepo } from "../../application/ports";
+import { runEndHook } from "../../runs/run-end-hooks";
 import { factsReaderFor, outcomeHandlerFor } from "./flow-ports";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type FlowStepRepo = Required<
-  Pick<StepRepo, "readFacts" | "ifDecisions" | "applyOutcome" | "needsAction" | "missingFact">
+  Pick<
+    StepRepo,
+    "readFacts" | "ifDecisions" | "applyOutcome" | "needsAction" | "missingFact" | "runFailed"
+  >
 >;
 
 export function flowStepRepo(tx: Tx, tenantId: string): FlowStepRepo {
@@ -43,6 +47,15 @@ export function flowStepRepo(tx: Tx, tenantId: string): FlowStepRepo {
         order by s.stage_idx desc limit 1`);
       const actorId = a?.actor && UUID_RE.test(a.actor) ? a.actor : null;
       await h.apply(tx, { tenantId, runId, event: p.event, ref: p.recordId, outcome, actorId });
+    },
+    async runFailed(runId, p) {
+      const snapshot = { trigger: { event: p.event } };
+      await runEndHook(
+        tx,
+        "failed",
+        { id: runId, tenantId, packKey: p.pack, packRecordId: p.recordId, snapshot },
+        "failed",
+      );
     },
     async needsAction(runId, a) {
       const decision = {

@@ -3,6 +3,7 @@
 // (BR-27), mất quyền giữa run (BR-23), timeout / lỗi / ngân sách token (C1), quét `interrupted` (D11) + `queued` mồ côi (K4).
 // Trước code: mọi ca đỏ ở `needSchema` (0019 vắng) — beforeAll không chèn bảng mới khi `ready=false`.
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
+import { T as T_FIX } from "../../H1/_fixtures";
 import { insertRun, type Json, PA, PA_FIX, type Sql, stageDef, waitFor } from "../_support/pa";
 import { needSchema } from "../_support/schema";
 import {
@@ -158,7 +159,12 @@ describe("P1-20…P1-29 · stage [HUB-FR-106]", () => {
       enabled: d.enabled,
       version: d.version,
     };
-    const put = await c.call("Adm", "PUT", `/process-defs/${PA_FIX.defHoaDon}`, body);
+    const put = await c.call(
+      "P",
+      "PUT",
+      `/process-defs/${PA_FIX.defHoaDon}?tenant_id=${T_FIX.acme}`,
+      body,
+    );
     expect(put.status).toBe(200);
     expect((await review(c, "B", g.taskId, { result: "pass" })).status).toBe(200);
     const j = await nextStageJob(c, g.runId);

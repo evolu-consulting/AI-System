@@ -29,7 +29,7 @@ export function rolesOf(
       (r === "customer" && known.includes("commission_payer")),
   );
 }
-export const TABS = ["overview", "contracts", "review"] as const;
+export const TABS = ["overview", "contracts", "review", "community"] as const;
 export type Tab = (typeof TABS)[number];
 
 export type PartnersSearch = { party?: string; role?: RepRole; tab?: Tab; range?: Range };
@@ -41,7 +41,7 @@ export function parsePartnersSearch(s: Record<string, unknown>): PartnersSearch 
   const party = text(s.party, 300);
   if (!party) return {};
   const role = REP_ROLE_ORDER.find((r) => r === s.role);
-  const tab = s.tab === "contracts" || s.tab === "review" ? s.tab : undefined;
+  const tab = TABS.find((k) => k === s.tab && k !== "overview");
   const range =
     s.range === 3 || s.range === "3" ? 3 : s.range === 6 || s.range === "6" ? 6 : undefined;
   return { party, ...(role ? { role } : {}), ...(tab ? { tab } : {}), ...(range ? { range } : {}) };

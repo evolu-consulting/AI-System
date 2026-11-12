@@ -25,7 +25,8 @@ const json = (quote: string) =>
 function setup(mime: string, pdf: PdfResult) {
   const log: string[] = [];
   const row = {
-    status: "extracting",
+    status: "draft",
+    extractState: "reading",
     version: 1,
     fields: {} as unknown,
     warnings: [] as unknown[],

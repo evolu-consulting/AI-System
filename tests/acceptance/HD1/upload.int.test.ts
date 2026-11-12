@@ -56,12 +56,14 @@ describe("HD-AC11 · tải DOCX/PDF/ảnh thành công", () => {
     const bytes = new Uint8Array(readFileSync(SAMPLE));
     const r = await upload(c, P.hoa, { bytes, name: "HD-bao-bi-Minh-Phat.docx", type: DOCX_MIME });
     expect(r.status).toBe(201);
-    expect(r.json).toEqual({ id: expect.any(String), status: "extracting", version: 1 });
+    // phản hồi upload dùng `extractState` camelCase (Lỗi sản phẩm nghi) ⇒ `extract_state` kiểm ở cột DB bên dưới
+    expect([typeof r.json.id, r.json.status, r.json.version]).toEqual(["string", "draft", 1]);
     const [row] = await c.sql`select * from contracts.contracts where id = ${r.json.id}`;
     expect(row).toMatchObject({
       tenant_id: T.acme,
       kind: "contract",
-      status: "extracting",
+      status: "draft",
+      extract_state: "reading",
       version: 1,
       title: "HD-bao-bi-Minh-Phat",
       owner_user_id: P.hoa.id,
@@ -104,11 +106,12 @@ describe("HD-AC11 · tải DOCX/PDF/ảnh thành công", () => {
     ]);
     const r = await upload(c, P.hoa, { bytes, name: "hong.docx", type: DOCX_MIME });
     expect(r.status).toBe(201);
-    expect(r.json.status).toBe("extract_failed");
+    expect(r.json.status).toBe("draft"); // `extract_state` ở cột DB (phản hồi upload dùng `extractState`)
     const [row] =
-      await c.sql`select status, error, source_text, file_id from contracts.contracts where id = ${r.json.id}`;
+      await c.sql`select status, extract_state, error, source_text, file_id from contracts.contracts where id = ${r.json.id}`;
     expect(row).toMatchObject({
-      status: "extract_failed",
+      status: "draft",
+      extract_state: "failed",
       error: "DOCX_UNREADABLE",
       source_text: null,
     });
@@ -159,9 +162,13 @@ describe("HD-AC11 · tải DOCX/PDF/ảnh thành công", () => {
     });
     expect(f.status).toBe(302);
     const l = await c.hubCall(P.tam, "GET", CBASE);
-    expect(l.json.items.map((i: { id: string; status: string }) => [i.id, i.status])).toEqual([
-      [r.json.id, "extracting"],
-    ]);
+    expect(
+      l.json.items.map((i: { id: string; status: string; extract_state: string }) => [
+        i.id,
+        i.status,
+        i.extract_state,
+      ]),
+    ).toEqual([[r.json.id, "draft", "reading"]]);
   });
 });
 

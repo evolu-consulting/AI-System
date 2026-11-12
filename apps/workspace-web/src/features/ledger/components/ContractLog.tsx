@@ -7,9 +7,8 @@ import { Panel } from "~/components/shared/layout";
 import { useContractPartner } from "../hooks/use-ledger";
 import { PartnerLog } from "./PartnerLog";
 
-/** mgmt: mọi trạng thái trừ đang đọc / đọc lỗi / chờ kiểm. */
-export const showsLog = (status: ContractStatus | string) =>
-  !["extracting", "extract_failed", "needs_review"].includes(status);
+/** CR-127: mọi trạng thái trừ DRAFT (chưa gửi duyệt). */
+export const showsLog = (status: ContractStatus | string) => status !== "draft";
 
 export function ContractLog({ contractId, status }: { contractId: string; status: string }) {
   const { t } = useTranslation();

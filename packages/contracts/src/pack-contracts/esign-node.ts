@@ -10,6 +10,8 @@ export const ESIGN_NODE_ORDERS = ["parallel", "sequential"] as const;
 export type EsignNodeOrder = (typeof ESIGN_NODE_ORDERS)[number];
 export const ESIGN_NODE_SIGNERS_MAX = 3;
 export const ESIGN_NODE_DUE_DAYS_MAX = 90;
+/** CR-127 · P2 · BR-60: hạn ký theo GIỜ (ký cùng lúc: mặc định 4 giờ) — cùng trần với hạn ngày. */
+export const ESIGN_NODE_DUE_HOURS_MAX = ESIGN_NODE_DUE_DAYS_MAX * 24;
 export const ESIGN_NODE_REMIND_HOURS_MAX = 720;
 
 export const EsignNodeSignerSchema = z.strictObject({
@@ -28,6 +30,8 @@ export const EsignNodeConfigSchema = z.strictObject({
   order: z.enum(ESIGN_NODE_ORDERS).optional(),
   /** Hạn ký (ngày) — panel đặt cùng `timeout_h` của stage chờ (`esignWaitTimeoutH`). */
   due_days: z.number().int().min(1).max(ESIGN_NODE_DUE_DAYS_MAX).optional(),
+  /** CR-127 · P2 · hạn ký theo giờ; có cả hai ⇒ giờ thắng (`esignWaitTimeoutH`). */
+  due_hours: z.number().int().min(1).max(ESIGN_NODE_DUE_HOURS_MAX).optional(),
   /** Nhắc người ký chưa ký mỗi N giờ. */
   remind_every_hours: z.number().int().min(1).max(ESIGN_NODE_REMIND_HOURS_MAX).optional(),
 });
@@ -39,6 +43,7 @@ export const ESIGN_NODE_PARAMS = [
   "partner_signs",
   "order",
   "due_days",
+  "due_hours",
   "remind_every_hours",
 ] as const;
 
@@ -55,6 +60,7 @@ export function encodeEsignNodeArgs(c: EsignNodeConfig): EsignNodeArgs {
   if (c.partner_signs !== undefined) out.partner_signs = c.partner_signs;
   if (c.order !== undefined) out.order = c.order;
   if (c.due_days !== undefined) out.due_days = c.due_days;
+  if (c.due_hours !== undefined) out.due_hours = c.due_hours;
   if (c.remind_every_hours !== undefined) out.remind_every_hours = c.remind_every_hours;
   return out;
 }
@@ -90,7 +96,7 @@ const BAD = Symbol("bad");
 function coerce(k: (typeof ESIGN_NODE_PARAMS)[number], v: Scalar): unknown {
   if (k === "company_signers") return signersOf(String(v));
   if (k === "partner_signs") return asBool(v);
-  if (k === "due_days" || k === "remind_every_hours") return asNum(v);
+  if (k === "due_days" || k === "due_hours" || k === "remind_every_hours") return asNum(v);
   return v;
 }
 function signersOf(s: string): unknown {
@@ -115,9 +121,12 @@ export function esignConfigIssues(c: EsignNodeConfig): { field: string; code: st
     : [{ field: "company_signers", code: ESIGN_NODE_NO_SIGNER_SELECTED }];
 }
 
-/** Giờ chờ của stage "chờ ký" theo hạn ký (ngày × 24); vắng ⇒ null (giữ `timeout_h` mặc định của node). */
-export const esignWaitTimeoutH = (c: EsignNodeConfig): number | null =>
-  c.due_days === undefined ? null : c.due_days * 24;
+/** Hạn ký (giờ): `due_hours` thắng `due_days × 24`; vắng ⇒ null. MỘT luật cho stage chờ và tool gửi ký. */
+export const esignDueHours = (c: EsignNodeConfig): number | null =>
+  c.due_hours ?? (c.due_days === undefined ? null : c.due_days * 24);
+
+/** Giờ chờ của stage "chờ ký" theo hạn ký; vắng ⇒ null (giữ `timeout_h` mặc định của node). */
+export const esignWaitTimeoutH = (c: EsignNodeConfig): number | null => esignDueHours(c);
 
 /** Tên nhà cung cấp/Group cho ô chọn của panel node: `GET /pack/contracts/esign/options`. */
 export type ESignNodeOptionsOut = {

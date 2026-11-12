@@ -13,7 +13,7 @@ import {
 const v = (n: number, sup: string | null): ContractVersionRef => ({
   id: `00000000-0000-4000-8000-00000000000${n}`,
   version_no: n,
-  status: "active",
+  status: "done",
   superseded_at: sup,
   number: null,
   effective_from: null,

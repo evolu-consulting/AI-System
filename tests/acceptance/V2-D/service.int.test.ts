@@ -2,6 +2,7 @@
 // cùng khách + SP = gia hạn: thay hạn, đếm vào "Gia hạn qua mình" (`renewals`, `prev_contract_id`). Viết TRƯỚC code. HĐ/dòng ghi
 // bằng owner (trigger trì hoãn tới cuối tx chạy như mọi đường lưu).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { setLegacyStatus } from "../HD1/_support/hd1";
 import {
   arrangeV2d,
   type CtxN1,
@@ -44,7 +45,9 @@ describe("V2-D · khách đang dùng (5.8a)", () => {
     const p = await product(c.sql, { name: "Chứng thư số 1 năm", grp: "service" });
     const end = d(365);
     const k = await deal(c.sql, { sale: true, partner: "Công ty Khách A", tax: "0312345678", end });
+    // CR-127: `deal()` dựng Nháp; khách dịch vụ ghi khi HĐ bán CHUYỂN sang done ⇒ chuyển sau khi đã có dòng hàng.
     await item(c.sql, k, { qty: 1, price: 500_000, productId: p.id });
+    await setLegacyStatus(c.sql, k, "active");
     expect([...(await rows(c.sql))]).toEqual([
       {
         product_id: p.id,
@@ -74,7 +77,7 @@ describe("V2-D · khách đang dùng (5.8a)", () => {
     });
     await item(c.sql, draft, { qty: 1, price: 1, productId: svc.id });
     expect([...(await rows(c.sql))]).toEqual([]);
-    await c.sql`update contracts.contracts set status = 'active' where id = ${draft}`;
+    await setLegacyStatus(c.sql, draft, "active");
     expect((await rows(c.sql)).map((r) => r.contract_id)).toEqual([draft]);
   });
 
@@ -83,6 +86,7 @@ describe("V2-D · khách đang dùng (5.8a)", () => {
     const p = await product(c.sql, { name: "Chứng thư số 1 năm", grp: "service" });
     const k = await deal(c.sql, { sale: true, partner: "Khách C", end: d(100) });
     await item(c.sql, k, { qty: 1, price: 1, productId: p.id });
+    await setLegacyStatus(c.sql, k, "active");
     const end = d(200);
     await c.sql`update contracts.contracts
       set fields = jsonb_set(fields, '{end_date}', ${c.sql.json({ value: end, quote: "", verified: true, edited: true })})
@@ -98,10 +102,11 @@ describe("V2-D · gia hạn (5.8b)", () => {
     const p = await product(c.sql, { name: "Chứng thư số 1 năm", grp: "service" });
     const k1 = await deal(c.sql, { sale: true, partner: "Khách D", tax: "0399999999", end: d(30) });
     await item(c.sql, k1, { qty: 1, price: 1, productId: p.id });
+    await setLegacyStatus(c.sql, k1, "active");
     const end2 = d(395);
     const k2 = await deal(c.sql, { sale: true, partner: "Khách D", tax: "0399999999", end: end2 });
     await item(c.sql, k2, { qty: 1, price: 1, productId: p.id });
-    await c.sql`update contracts.contracts set status = 'expiring' where id = ${k2}`;
+    await setLegacyStatus(c.sql, k2, "expiring");
     expect([...(await rows(c.sql))]).toEqual([
       expect.objectContaining({
         contract_id: k2,
@@ -111,7 +116,7 @@ describe("V2-D · gia hạn (5.8b)", () => {
       }),
     ]);
     // HĐ cũ được sửa sau đó không giành lại dòng khách.
-    await c.sql`update contracts.contracts set status = 'renewed' where id = ${k1}`;
+    await setLegacyStatus(c.sql, k1, "renewed");
     expect((await rows(c.sql)).map((r) => [r.contract_id, r.renewals])).toEqual([[k2, 1]]);
   });
 
@@ -127,6 +132,7 @@ describe("V2-D · gia hạn (5.8b)", () => {
     await item(c.sql, k2, { qty: 1, price: 1, productId: p.id });
     const kb = await deal(c.sql, { sale: true, partner: "Khách E", end: d(60), tenant: T.beta });
     await item(c.sql, kb, { qty: 1, price: 1, productId: pb.id, tenant: T.beta });
+    await setLegacyStatus(c.sql, [k1, k2, kb], "active");
     const all = await rows(c.sql);
     expect(all).toHaveLength(4);
     expect(all.every((r) => r.renewals === 0)).toBe(true);

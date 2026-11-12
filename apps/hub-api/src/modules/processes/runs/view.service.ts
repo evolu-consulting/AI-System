@@ -2,6 +2,7 @@
 // (plan §5, plan-contract §2–§3). Đọc scope `user` người xem; quyền xem = definer `hub.process_run_viewer` (phân biệt
 // phòng xoá/đã rời xuyên RLS, U5), quyền thao tác = `canCancel`/`canDecide`/`canReadThread` thuần (HUB-BR-25).
 // Audit `view`: assignee lần đầu mỗi (task, user); người bắt đầu đã rời phòng (U5) + mỗi lần đọc output.
+
 import type {
   ProcessOutput,
   ProcessRunStatus,
@@ -27,6 +28,7 @@ import {
   type RunFacts,
   type Viewer,
 } from "../domain/runs/run-access.rules";
+import { evidenceReadable, redactHistoryEvidence } from "../domain/runs/run-redact.rules";
 import { isTerminal } from "../domain/runs/run-state.rules";
 import * as repo from "./runs.repo";
 import { applyViews, withApply } from "./view-apply";
@@ -217,7 +219,17 @@ export class ViewService {
       access: "full",
       input: r.input,
       stages,
-      history: await withToSteps(tx, r, hist),
+      // CR-127 · E4 · BR-26: người chỉ xem (vd thành viên phòng nguồn) chỉ thấy tiến trình — không nhận id bằng chứng.
+      history: redactHistoryEvidence(
+        await withToSteps(tx, r, hist),
+        evidenceReadable(v, {
+          tenantId: r.tenant_id,
+          startedBy: r.started_by,
+          taskAssignee: myIds.length > 0,
+          // người đã quyết một bước của lượt (kể cả bước trước) vẫn đọc được; người phụ trách bản ghi gói: engine không biết ⇒ gói lọc ở hồ sơ duyệt.
+          decidedBy: new Set(hist.flatMap((h) => (h.actor ? [h.actor.id] : []))),
+        }),
+      ),
       decision: await this.#decision(tx, v, r, stages),
       my_tasks: my,
       open_tasks: open,

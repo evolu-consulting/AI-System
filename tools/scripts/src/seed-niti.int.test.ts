@@ -59,25 +59,6 @@ const SPEC: SeedSpec = {
       packRole: "editor",
     },
   ],
-  processes: [
-    {
-      key: "st-buy",
-      name: "Buy flow",
-      steps: [
-        { key: "acc", name: "Acc approve", dept: "pb-acc" },
-        { key: "root", name: "Root approve", dept: "pb-root" },
-      ],
-    },
-    {
-      key: "st-sell",
-      name: "Sell flow",
-      steps: [{ key: "root", name: "Root approve", dept: "pb-root" }],
-    },
-  ],
-  rules: [
-    { dept: "pb-sales", kind: "buy", process: "st-buy" },
-    { dept: "pb-sales", kind: "sell", process: "st-sell" },
-  ],
 };
 
 let o: Sql;
@@ -133,8 +114,7 @@ describe("seed-niti", () => {
 
   it("--apply tạo đủ và mật khẩu chỉ ở file, không ở log", async () => {
     logs.length = 0;
-    const r = await runSeed(admin, hub, SPEC, opts(true));
-    expect(r.processes.map((p) => p.state)).toEqual(["created", "created"]);
+    await runSeed(admin, hub, SPEC, opts(true));
     const t = (await o`select id from admin.tenants where key = 'seedtest'`)[0]?.id as string;
     expect(
       (
@@ -148,18 +128,18 @@ describe("seed-niti", () => {
       await o`select u.username from admin.group_members m join admin.groups g on g.id = m.group_id
       join admin.users u on u.id = m.user_id where m.tenant_id = ${t} and g.key in ('contracts-owner','community-owner') order by 1`;
     expect([...new Set(own.map((x) => x.username))]).toEqual(["boss"]);
-    const defs =
-      await o`select key, published_version from hub.process_defs where key in ('st-buy','st-sell') and tenant_id is null`;
-    expect(defs.map((d) => d.published_version)).toEqual([1, 1]);
+    // CR-127 Z3: không tạo def / gán / luật định tuyến nào từ seed.
+    expect(
+      (
+        await o`select count(*)::int n from hub.process_defs where key in ('st-buy','st-sell') and tenant_id is null`
+      )[0]?.n,
+    ).toBe(0);
     expect(
       (await o`select count(*)::int n from hub.process_tenant_defs where tenant_id = ${t}`)[0]?.n,
-    ).toBe(2);
-    const rules =
-      await o`select condition, is_default from hub.process_routing_rules where tenant_id = ${t} order by priority`;
-    // CR-121 F-1 · gán đặt luật MẶC ĐỊNH của khe (= quy trình gán sau cùng) và seed giữ nguyên nó: 2 luật loại HĐ + 1 mặc định (cuối).
-    expect(rules).toHaveLength(3);
-    expect(rules.slice(0, 2).map((x) => x.condition.contractKinds)).toEqual([["buy"], ["sell"]]);
-    expect(rules.map((x) => x.is_default)).toEqual([false, false, true]);
+    ).toBe(0);
+    expect(
+      (await o`select count(*)::int n from hub.process_routing_rules where tenant_id = ${t}`)[0]?.n,
+    ).toBe(0);
     // CR-121 D-4 · gán quy trình là đủ: seed KHÔNG cấp feature `contracts-approval-engine` (hay feature nào khác cho engine).
     expect(
       (
@@ -181,8 +161,6 @@ describe("seed-niti", () => {
     const file = readFileSync(cred, "utf8");
     const r = await runSeed(admin, hub, SPEC, opts(true));
     expect(r.usersCreated).toEqual([]);
-    expect(r.processes.map((p) => p.state)).toEqual(["same", "same"]);
-    expect(r.routing).toBe("same");
     expect(r.credFile).toBeNull();
     expect(await snap()).toBe(before);
     expect(readFileSync(cred, "utf8")).toBe(file);

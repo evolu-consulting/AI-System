@@ -7,6 +7,7 @@ import type { Tx } from "@ai/db";
 import { processNotices } from "@ai/db/schema/hub-processes";
 import { sql } from "drizzle-orm";
 import { headGateSql } from "../core/head-gate.sql";
+import { delegatedLive } from "../core/task-grants.sql";
 import type { ViewerCtx } from "../core/task-view";
 
 /** contract-flow S1b · stage `head_only` + phòng có trưởng ⇒ người nhận phía Group duyệt chỉ là trưởng phòng. */
@@ -24,7 +25,8 @@ const before = (cur: Cursor | undefined) =>
 const mine = (v: ViewerCtx) => sql`exists (
   select 1 from hub.review_task_assignees a
   where a.task_id = t.id and a.tenant_id = t.tenant_id
-    and (a.user_id = ${v.userId}::uuid or a.group_id = any(${uuidArray([...v.groupIds])}::uuid[])))`;
+    and (a.user_id = ${v.userId}::uuid or a.group_id = any(${uuidArray([...v.groupIds])}::uuid[]))
+    and ${delegatedLive("a")})`; // CR-127 · E3b · việc làm thay chỉ hiện khi uỷ quyền còn hiệu lực
 
 // ── `/me/review-tasks` ──
 export type TaskPageRow = {

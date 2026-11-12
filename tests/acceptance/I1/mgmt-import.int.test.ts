@@ -66,7 +66,7 @@ describe("I1 mgmt-import", () => {
     const c = await counts(ctx);
     expect(c).toMatchObject({
       "contracts.contracts": 6,
-      "contracts.approvals": 6,
+      "contracts.approvals": 5,
       "contracts.contract_items": 4,
       "contracts.contract_categories": 2,
       "contracts.contract_events": 6,
@@ -139,8 +139,9 @@ describe("I1 mgmt-import", () => {
       from contracts.contracts c join contracts.approvals a on a.id = c.run_id where c.tenant_id = ${A}`;
     const st = Object.fromEntries(ap.map((x) => [x.id, x.status]));
     expect(st[targetId(SOURCE, "contract", "c1")]).toBe("done");
-    expect(st[targetId(SOURCE, "contract", "c3")]).toBe("level1");
-    expect(ap.length).toBe(5);
+    // CR-127 Z1c: HĐ nguồn "chờ xem lại" ⇒ draft, KHÔNG ghi lượt duyệt (không còn level1)
+    expect(st[targetId(SOURCE, "contract", "c3")]).toBeUndefined();
+    expect(ap.length).toBe(4);
     expect(ap.every((x) => x.ok)).toBe(true);
     const [v] = await ctx.sql<
       { mode: string }[]

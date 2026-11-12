@@ -34,7 +34,7 @@ describe("CR-118 perf [UW-FR-14]", () => {
         id,
         tenant_id: T.acme,
         title: `HĐ ${i}`,
-        status: "needs_review",
+        status: "processing",
         created_by: PA.A.id,
         source_text: C1_TEXT,
       })),

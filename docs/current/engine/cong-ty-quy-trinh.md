@@ -1,5 +1,7 @@
 # Engine · Quy trình của công ty (sao chép, chỉ xem, lọc lượt chạy)
 
+> **CR-127 (2026-11-11) — phần Thư viện/khe/sao chép/mẫu/máy duyệt cũ trong file này ĐÃ THAY THẾ:** xem [engine/quy-trinh-cr127.md](quy-trinh-cr127.md). Giữ làm lịch sử; chỗ mâu thuẫn thì file CR-127 thắng.
+
 Cập nhật: 2026-11-09 · Nguồn: cr121-c9-runs-clone-api (CR-121). Chạy bản riêng: `cong-ty-quy-trinh-ban-rieng.md`. Code: `apps/hub-api/src/modules/processes/library/clone-for-company*`, `processes/runs/`.
 
 #### Yêu cầu: Sao chép quy trình thư viện cho công ty (nguồn: cr121-c9-runs-clone-api)

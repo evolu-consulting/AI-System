@@ -164,7 +164,6 @@ describe("cr125-fix-owner-override · Toàn quyền duyệt thay trên flow theo
   it("contracts-owner quyết bước của Group khác (duyệt thay, audit), người ngoài bị NOT_REVIEWER", async () => {
     const wa = { tenantId: T, userId: A };
     expect(await startApproval(ad())(wa, C, "level1")).toBe("ok");
-    expect(await actApproval(ad())(wa, C, { action: "approve" })).not.toHaveProperty("error");
     expect(await dispatchOnce({ db, launch: flowLaunchOf(deps()) })).toMatchObject({ launched: 1 });
 
     const wx = { tenantId: T, userId: X };
@@ -188,6 +187,6 @@ describe("cr125-fix-owner-override · Toàn quyền duyệt thay trên flow theo
     const [row] = await o<
       { c: string }[]
     >`select status as c from contracts.contracts where id = ${C}`;
-    expect(row?.c).toBe("active");
+    expect(row?.c).toBe("done");
   });
 });

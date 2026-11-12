@@ -36,8 +36,15 @@ export const FactWhenSchema = z.strictObject({
 export type FactWhen = z.infer<typeof FactWhenSchema>;
 
 /** Node Bắt đầu khi: sự kiện trong `AppManifest.events` + điều kiện tuỳ chọn trên dữ kiện lúc sự kiện. */
+/** CR-127 · E1 · tham số của sự kiện theo lịch (`AppEventDecl.schedule`): N ngày; ngoài 1..365 ⇒ 422 TRIGGER_PARAM_RANGE ở luật (E6). */
+export const FLOW_TRIGGER_DAYS = { min: 1, max: 365 } as const;
+export const FlowTriggerParamsSchema = z.strictObject({
+  days: z.number().int().min(FLOW_TRIGGER_DAYS.min).max(FLOW_TRIGGER_DAYS.max).optional(),
+});
+export type FlowTriggerParams = z.infer<typeof FlowTriggerParamsSchema>;
 export const FlowTriggerSchema = z.strictObject({
   event: z.string().regex(FLOW_EVENT_KEY_RE),
   when: FactWhenSchema.optional(),
+  params: FlowTriggerParamsSchema.optional(),
 });
 export type FlowTrigger = z.infer<typeof FlowTriggerSchema>;

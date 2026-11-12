@@ -36,24 +36,32 @@ export const CONTRACT_TYPES = ["purchase", "service", "framework", "principle"] 
 export const ContractTypeSchema = z.enum(CONTRACT_TYPES);
 export type ContractType = z.infer<typeof ContractTypeSchema>;
 
-/** 8 trạng thái spec + `rejected` ở cuối (D-04); chỉ thêm cuối. */
-export const CONTRACT_STATUSES = [
-  "extracting",
-  "extract_failed",
-  "needs_review",
+/** CR-127 · BR-01: 4 trạng thái (DRAFT / PROCESSING / REJECT / DONE) — khớp `HP/domain/contract-state.rules.ts`, CHECK MIGC 0091. */
+export const CONTRACT_STATUSES = ["draft", "processing", "reject", "done"] as const;
+export const ContractStatusSchema = z.enum(CONTRACT_STATUSES);
+export type ContractStatus = z.infer<typeof ContractStatusSchema>;
+
+/** CR-127 · AI đang đọc / đọc lỗi — cột phụ, không phải trạng thái. */
+export const EXTRACT_STATES = ["reading", "failed", "ready"] as const;
+export const ExtractStateSchema = z.enum(EXTRACT_STATES);
+export type ExtractState = z.infer<typeof ExtractStateSchema>;
+
+/** CR-127 · BR-07: hiệu lực dẫn xuất (chỉ khi `status='done'`, ngược lại null) — khớp `HP/domain/effect.rules.ts`. */
+export const CONTRACT_EFFECTS = [
+  "not_started",
   "active",
   "expiring",
   "expired",
   "renewed",
   "terminated",
-  "rejected",
 ] as const;
-export const ContractStatusSchema = z.enum(CONTRACT_STATUSES);
-export type ContractStatus = z.infer<typeof ContractStatusSchema>;
+export const ContractEffectSchema = z.enum(CONTRACT_EFFECTS);
+export type ContractEffect = z.infer<typeof ContractEffectSchema>;
 
-export const HANDLED_OUTCOMES = ["renewed", "not_renewed", "negotiating", "replaced"] as const;
-export const HandledOutcomeSchema = z.enum(HANDLED_OUTCOMES);
-export type HandledOutcome = z.infer<typeof HandledOutcomeSchema>;
+/** CR-127 · BR-08: kết cục "Đã gia hạn / Đã chấm dứt" (thay `handled`). */
+export const EFFECT_OUTCOMES = ["renewed", "terminated"] as const;
+export const EffectOutcomeSchema = z.enum(EFFECT_OUTCOMES);
+export type EffectOutcome = z.infer<typeof EffectOutcomeSchema>;
 
 export const CONTRACT_KINDS = ["contract", "appendix"] as const;
 export const ContractKindSchema = z.enum(CONTRACT_KINDS);
@@ -88,6 +96,8 @@ export const CONTRACT_EVENT_TYPES = [
   "partner_sent",
   "partner_received",
   "partner_replied",
+  /** CR-127 · cổng đổi trạng thái (`data: {from, to, ev, reason, evidence_id}`). */
+  "status_changed",
 ] as const;
 export const ContractEventTypeSchema = z.enum(CONTRACT_EVENT_TYPES);
 export type ContractEventType = z.infer<typeof ContractEventTypeSchema>;

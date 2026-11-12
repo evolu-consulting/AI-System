@@ -6,6 +6,7 @@ import { draftFromFields } from "../domain/compose";
 import { dealStrip, expiryNote, initials, timeAgo, tone } from "../domain/format";
 import { formatSize } from "../domain/media";
 import { hintLines, saveButtonLabel, savedText } from "../domain/quote";
+import { focusCommentId, focusPostId } from "../domain/search-hint";
 import { numLocale, t } from "../i18n";
 import { DraftFields } from "./DraftFields";
 import { ModerationNote, ReportDialog } from "./flows/PostFlows";
@@ -89,7 +90,10 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
   const [menu, setMenu] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [open, setOpen] = useState(false);
+  // Mở sẵn bình luận khi vào từ chuông `?post=<id>&comment=<id>` (CR-129).
+  const [open, setOpen] = useState(
+    () => focusPostId(location.search) === p.id && focusCommentId(location.search) !== null,
+  );
   const [quote, setQuote] = useState<{ supplier: string; commentId?: string; idx: number } | null>(
     null,
   );

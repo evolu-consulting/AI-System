@@ -6,10 +6,12 @@ import { approvalEngineRepo } from "./adapters/approval-engine.repo";
 import { approvalFlowRepo } from "./adapters/approval-flow.repo";
 import { sweepRepo } from "./adapters/approval-sweep.repo";
 import { contractFlowRepo } from "./adapters/contract-flow.repo";
+import { contractStateRepo } from "./adapters/contract-state.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { flowFactsRepo } from "./adapters/flow-facts.repo";
 import { productLinksRepo } from "./adapters/product-links.repo";
 import { reviewRepo } from "./adapters/review.repo";
+import { submissionsRepo } from "./adapters/submissions.repo";
 import { CONTRACTS_PACK } from "./domain/contract-flow-events.rules";
 
 export const packUow = (db: Db) =>
@@ -23,4 +25,6 @@ export const packUow = (db: Db) =>
     links: productLinksRepo(tx, tid),
     flowFacts: flowFactsRepo(tx, tid), // CR-121 D-1
     contractFlow: contractFlowRepo(tx, tid), // CR-122 A1
+    sub: submissionsRepo(tx, tid), // CR-127 K3
+    st: contractStateRepo(tx, tid), // CR-127 K3
   }));

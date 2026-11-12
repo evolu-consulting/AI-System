@@ -73,7 +73,8 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
           <e.icon width={18} height={18} /> {t(e.labelKey)}
         </Link>
       ))}
-      {packs.contracts && canSeeSettings(role, user.role) && (
+      {/* CR-130 · MỘT mục Cài đặt cho cả app: gói Sổ Hợp Tác (người ghi) hoặc gói Cộng đồng (mục Bảng tin). */}
+      {((packs.contracts && canSeeSettings(role, user.role)) || packs.community) && (
         <>
           <button
             type="button"
@@ -85,16 +86,22 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
             className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-label hover:bg-sunk"
           >
             <FileText width={18} height={18} aria-hidden />{" "}
-            {t("contracts.shell.menuContractsSettings")}
+            {t(
+              packs.contracts
+                ? "contracts.shell.menuContractsSettings"
+                : "contracts.shell.settings",
+            )}
           </button>
-          <Link
-            to="/contracts/settings"
-            role="menuitem"
-            onClick={close}
-            className="flex items-center gap-2.5 px-4 py-2.5 text-label hover:bg-sunk"
-          >
-            <Users width={18} height={18} aria-hidden /> {t("contracts.settings.more")}
-          </Link>
+          {packs.contracts && canSeeSettings(role, user.role) && (
+            <Link
+              to="/contracts/settings"
+              role="menuitem"
+              onClick={close}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-label hover:bg-sunk"
+            >
+              <Users width={18} height={18} aria-hidden /> {t("contracts.settings.more")}
+            </Link>
+          )}
         </>
       )}
       <hr className="mx-3 my-1 border-rule-soft" />

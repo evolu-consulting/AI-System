@@ -3,6 +3,7 @@
 import {
   CancelProcessRunRequestSchema,
   DecideProcessRunRequestSchema,
+  ReassignReviewTaskRequestSchema,
   RerunProcessRunRequestSchema,
   RerunStepRequestSchema,
   ReviewDecisionRequestSchema,
@@ -14,17 +15,31 @@ import type { AuthVars } from "../../../lib/auth.middleware";
 import { parseIdParam, parseJson } from "../../../lib/http";
 import type { ProcessDeps } from "../core/ports";
 import { tenantIdQuery } from "../runs/runs.routes";
+import { ClaimService } from "./claim.service";
 import { GateService } from "./gates.service";
 import { RunControlService } from "./run-control.service";
 
 export function gatesRoutes(d: ProcessDeps): Hono<AuthVars> {
   const svc = new GateService(d);
   const ctl = new RunControlService(d);
+  const claims = new ClaimService(d);
   const r = new Hono<AuthVars>();
 
   r.post("/review-tasks/:id/decision", async (c) => {
     const body = await parseJson(c, ReviewDecisionRequestSchema);
     return c.json(await svc.reviewDecision(c.var.user, c.req.param("id"), body, tenantIdQuery(c)));
+  });
+
+  // CR-127 · E2 · Nhận việc / Trả về nhóm / Giao cho người khác (task nhóm `need='one'`).
+  r.post("/review-tasks/:id/claim", async (c) =>
+    c.json(await claims.claim(c.var.user, parseIdParam(c), tenantIdQuery(c))),
+  );
+  r.post("/review-tasks/:id/release", async (c) =>
+    c.json(await claims.release(c.var.user, parseIdParam(c), tenantIdQuery(c))),
+  );
+  r.post("/review-tasks/:id/reassign", async (c) => {
+    const b = await parseJson(c, ReassignReviewTaskRequestSchema);
+    return c.json(await claims.reassign(c.var.user, parseIdParam(c), b, tenantIdQuery(c)));
   });
 
   // CR-118 · node `form`: người điền gửi giá trị (Hub kiểm theo snapshot; cùng giá trị gửi lại ⇒ 200 cùng kết quả).

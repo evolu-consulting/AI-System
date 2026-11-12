@@ -8,6 +8,7 @@ import { notifyInfo } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
 import {
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -16,7 +17,7 @@ import { useSession } from "@/lib/auth/use-session";
 import { autoBindNode, mapSources } from "../../lib/auto-bind";
 import type { StageDraft } from "../../lib/def-form";
 import { finishPatch, type NodeEntry, nodesForApp } from "../../lib/flow-def";
-import { type MenuItem, splitMenu } from "../../lib/node-menu";
+import { groupMenu, type MenuItem, menuGroupKey, splitMenu } from "../../lib/node-menu";
 import { nodeLabel, nodeToPatches } from "../../lib/palette-node";
 import { SUBPROCESS_NODE } from "../../lib/subprocess-form";
 import { usePalette } from "../../palette-api";
@@ -33,7 +34,10 @@ type Props = {
 };
 
 export function NodeMenuContent({ pick, room, align = "start", drag }: Props) {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation() as unknown as {
+    t: (key: string, opts?: Record<string, unknown>) => string;
+    i18n: { language: string };
+  };
   const ctx = useFlowCtx();
   const isPlatform = useSession((s) => s.me?.role) === "platform_admin";
   const palette = usePalette(ctx?.app ?? "", ctx?.tenantId);
@@ -126,7 +130,15 @@ export function NodeMenuContent({ pick, room, align = "start", drag }: Props) {
     );
   return (
     <DropdownMenuContent align={align} className="max-h-96 overflow-y-auto">
-      {business.map(item)}
+      {groupMenu(business).map((g) => (
+        <DropdownMenuGroup key={g.group}>
+          {/* CR-127 · U2 · nhóm nghiệp vụ: Người làm · Rẽ nhánh · Hợp đồng · Báo tin & Chờ */}
+          <DropdownMenuLabel className="text-caption text-muted-foreground">
+            {t(`process.admin.flow.menuGroup.${menuGroupKey(g.group, ctx.app)}`)}
+          </DropdownMenuLabel>
+          {g.items.map(item)}
+        </DropdownMenuGroup>
+      ))}
       {advanced.length > 0 ? (
         <>
           <DropdownMenuSeparator />

@@ -3,16 +3,11 @@
 // Không log nội dung.
 import type { DecisionReason, RoomProcessKind, TaskKind, TaskResult } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
-import {
-  processRuns,
-  processThreadEvents,
-  reviewTaskAssignees,
-  reviewTasks,
-} from "@ai/db/schema/hub-processes";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { processRuns, processThreadEvents, reviewTasks } from "@ai/db/schema/hub-processes";
+import { and, asc, eq, isNull, ne, or, sql } from "drizzle-orm";
 import type { FanoutRow } from "../../rooms/public";
-import { REMIND_AFTER_H } from "../domain/limits";
-import { reviewTaskTiming } from "../domain/notify/remind.rules";
+import { reviewTimingOf } from "./review-timing.sql";
+import { insertGrants } from "./task-grants.sql";
 
 export type RunHead = typeof processRuns.$inferSelect;
 
@@ -88,6 +83,8 @@ export type NewTask = {
   choices?: string[] | null;
   excerpt?: string | null;
   reason?: DecisionReason | null;
+  /** CR-127 · E10 · bản ghi gói của việc nhóm (`kind='milestone'` ⇒ id mốc). */
+  subjectRef?: string | null;
   /** Grant: user (`via=initial`) + tối đa một group. */
   userIds: readonly string[];
   groupId: string | null;
@@ -96,9 +93,16 @@ export type NewTask = {
 /** Mở task + grant (plan-step0 §1: PF1 `open_review/open_ask/open_decision`). Trả id task. */
 export async function insertTask(tx: Tx, t: NewTask): Promise<string> {
   const id = crypto.randomUUID();
-  const timing = t.kind === "review" ? await reviewTimingOf(tx, t) : null;
+  const rt = t.kind === "review" ? await reviewTimingOf(tx, t) : null;
+  // CR-127 · E10a · việc Xác nhận mốc: nhắc + quá hạn chuyển cho chép từ cấu hình node như Duyệt (đích giao đã chọn ở
+  // `openMilestoneTask` ⇒ chỉ lấy mốc giờ, không cửa duyệt / R#15 / phiếu tất cả).
+  const mt =
+    t.kind === "milestone" ? (await reviewTimingOf(tx, { ...t, userIds: [] })).timing : null;
+  const timing = rt?.timing ?? mt;
   await tx.insert(reviewTasks).values({
     ...(timing ?? {}),
+    // CR-127 · E3 (việc dở E2) · bước có người giữ cửa (trưởng phòng head_only / người duyệt cụ thể) ⇒ need='head' (không Nhận việc).
+    ...needOf(rt),
     id,
     tenantId: t.tenantId,
     processRunId: t.runId,
@@ -109,48 +113,31 @@ export async function insertTask(tx: Tx, t: NewTask): Promise<string> {
     choices: t.choices ?? null,
     excerpt: t.excerpt ?? null,
     reason: t.reason ?? null,
+    subjectRef: t.subjectRef ?? null,
     assigneeGroupId: t.groupId,
     remindAt: timing?.remindAt ?? t.remindAt,
   });
-  const grant = { tenantId: t.tenantId, taskId: id, via: "initial" as const, depth: 0 };
-  const rows = [
-    ...[...new Set(t.userIds)].map((userId) => ({ ...grant, userId })),
-    ...(t.groupId ? [{ ...grant, groupId: t.groupId }] : []),
-  ];
-  if (rows.length > 0) await tx.insert(reviewTaskAssignees).values(rows);
+  // CR-127 · E3 · grant + uỷ quyền (hàng `via='delegated'`) trong MỘT câu như trước.
+  // E5 · người bỏ phiếu = hàng user `via='initial'` (không hàng Group: thành viên vào phòng sau không có phiếu); n = 0 ⇒ giao đích
+  // "Quá hạn chuyển cho" / quản trị công ty như việc một người (hàng `via='escalated'`).
+  // CR-127 · Z2 · bước Duyệt chỉ có người (không phòng, có cửa `approver_user_id`) ⇒ giao đích danh người đó (hàng `via='initial'`).
+  const gateOnly = t.kind === "review" && !t.groupId && t.userIds.length === 0 ? rt?.gate : null;
+  const userIds = gateOnly ? [gateOnly] : t.userIds;
+  await insertGrants(tx, { ...t, userIds, ...grantOf(t, rt), taskId: id, gate: rt?.gate ?? null });
   return id;
 }
 
-type AfterCfg = {
-  remind_every_h?: number | null;
-  escalate?: { after_h: number; group_id?: string | null; group_key?: string } | null;
-};
+type Timing = Awaited<ReturnType<typeof reviewTimingOf>> | null;
+/** `need` của task duyệt: cửa duyệt ⇒ 'head'; E5 "Cần: tất cả" (không cửa) ⇒ 'all'; còn lại mặc định cột ('one'). */
+const needOf = (rt: Timing) =>
+  rt?.gate ? { need: "head" as const } : rt?.all ? { need: "all" as const } : {};
 
-/**
- * PD-R19 · task review chép cấu hình nhắc/chuyển cấp từ SNAPSHOT stage của run (sửa def sau không ảnh hưởng). Mốc tạo =
- * `remindAt − REMIND_AFTER_H` (mọi nơi gọi truyền `now + 24 h` theo đồng hồ seam). Một câu tra PK `stage_runs` + `process_runs`.
- * cr125-fix-escalate-kick · Group chuyển cấp = `group_id` của snapshot, vắng ⇒ `group_key` → id CÙNG tenant (cùng câu; đường khe
- * và flow theo sự kiện đi chung chỗ này). Không ra Group ⇒ bỏ chuyển cấp (task vẫn mở) thay vì vi phạm `review_tasks_remind_ck`.
- */
-async function reviewTimingOf(tx: Tx, t: NewTask): Promise<ReturnType<typeof reviewTaskTiming>> {
-  const [row] = await tx.execute<{
-    after: AfterCfg | string | null;
-    esc_key_id: string | null;
-  }>(sql`
-    select x.after, (select g.id::text from admin.groups g where g.tenant_id = s.tenant_id
-        and g.key = x.after->'escalate'->>'group_key') as esc_key_id
-    from hub.stage_runs s
-    join hub.process_runs pr on pr.id = s.process_run_id and pr.tenant_id = s.tenant_id
-    cross join lateral (select pr.snapshot->'stages'->(s.stage_idx::int)->'after' as after) x
-    where s.id = ${t.stageRunId} and s.tenant_id = ${t.tenantId}`);
-  const raw = row?.after ?? null;
-  const after: AfterCfg = (typeof raw === "string" ? JSON.parse(raw) : raw) ?? {};
-  const esc = after.escalate ?? null;
-  const groupId = esc ? (esc.group_id ?? row?.esc_key_id ?? null) : null;
-  return reviewTaskTiming(new Date(t.remindAt.getTime() - REMIND_AFTER_H * 3_600_000), {
-    remindEveryH: after.remind_every_h ?? null,
-    escalate: esc && groupId ? { afterH: esc.after_h, groupId } : null,
-  });
+/** Grant người dùng/nhóm + đích giao thêm (R#15; E5 n = 0) của task. */
+function grantOf(t: NewTask, rt: Timing) {
+  const all = rt?.all ?? null;
+  if (!all) return { escalated: rt?.sole ?? null };
+  const userIds = [...t.userIds, ...all.voters];
+  return { userIds, groupId: null, escalated: all.voters.length === 0 ? all.zero : null };
 }
 
 export type CloseTask = {
@@ -175,7 +162,20 @@ export async function closeTask(tx: Tx, taskId: string, c: CloseTask): Promise<b
       answer: c.answer ?? null,
       sections: c.sections ?? null,
     })
-    .where(and(eq(reviewTasks.id, taskId), eq(reviewTasks.status, "open")))
+    .where(
+      and(
+        eq(reviewTasks.id, taskId),
+        eq(reviewTasks.status, "open"),
+        // CR-127 · E2 · người quyết khác người đã Nhận việc (`need='one'`) ⇒ không đóng (cổng báo `TASK_CLAIMED`).
+        c.decidedBy
+          ? or(
+              ne(reviewTasks.need, "one"),
+              isNull(reviewTasks.claimedBy),
+              eq(reviewTasks.claimedBy, c.decidedBy),
+            )
+          : undefined,
+      ),
+    )
     .returning({ id: reviewTasks.id });
   return rows.length > 0;
 }

@@ -6,7 +6,13 @@ import { type Ctx, docsOf, idOf, type Snapshot, type SourceDoc } from "./context
 import { addMoney, bump, type Plan, push, type Row, type TenantPlan, tenantPlan } from "./plan";
 import { bool, day, int, isObj, jsonSafe, lowerEmail, money, num, str, ts } from "./values.rules";
 
+// I1 · hợp đồng mgmt-app (index `contracts`, `catalogs`, `state` remind:*) ⇒ contracts.contracts/contract_items/
+// contract_categories/contract_events/contract_reminders/visibility_settings + việc file. Trường trích xuất giữ nguyên dạng
+// `{value, quote, verified, edited}` (cột sinh đọc `fields->x->>'value'`). Phụ lục (`addendum`) ⇒ `appendix`, chủ = chủ HĐ cha
+// (D-M1-03). Nhắc đã gửi ⇒ `contract_reminders` để vòng nhắc HD4 không gửi lại. Thuần.
+
 const STATUSES = new Set([
+  "rejected",
   "extracting",
   "extract_failed",
   "needs_review",
@@ -123,15 +129,48 @@ function mapFields(raw: unknown, ctx: Ctx, ref: string): Record<string, unknown>
   return out;
 }
 
+/**
+ * CR-127 K1b · trạng thái mgmt-app (9) ⇒ 4 trạng thái + cột phụ, cùng luật backfill 0091 (BR-77): đã xác nhận ở nguồn (active/expiring/expired/
+ * renewed/terminated) ⇒ DONE (`initialState("mgmt_import")` = `created_done`; renewed/terminated ⇒ `effect_outcome`, `handled.outcome`
+ * renewed/replaced ⇒ idem); `rejected` ⇒ REJECT; extracting/extract_failed ⇒ DRAFT + extract_state failed; needs_review ⇒ DRAFT (chờ "Gửi"; không lượt duyệt) — KHÔNG ép DONE
+ * để không bỏ qua bước duyệt. `effect` do INSERT tính (`effect_of`, target.sql.ts).
+ */
+export function stateOf(
+  src: string,
+  handled: Record<string, unknown> | null,
+): { status: string; extract_state: string; effect_outcome: string | null } {
+  const done = ["active", "expiring", "expired", "renewed", "terminated"].includes(src);
+  if (done) {
+    const byHandled =
+      handled?.outcome === "renewed"
+        ? "renewed"
+        : handled?.outcome === "replaced"
+          ? "terminated"
+          : null;
+    const outcome =
+      src === "renewed" || src === "terminated"
+        ? src
+        : ["active", "expiring", "expired"].includes(src)
+          ? byHandled
+          : null;
+    return { status: "done", extract_state: "ready", effect_outcome: outcome };
+  }
+  if (src === "rejected") return { status: "reject", extract_state: "ready", effect_outcome: null };
+  // needs_review (chờ xem lại): HĐ là NHÁP đã đọc xong, KHÔNG có lượt duyệt (`run_id` null, không ghi `approvals`) — người dùng bấm "Gửi" (K3).
+  // Không thể là processing: máy duyệt cũ đã gỡ (Z1), processing mà không có lượt mở sẽ kẹt vĩnh viễn.
+  if (src === "needs_review")
+    return { status: "draft", extract_state: "ready", effect_outcome: null };
+  return { status: "draft", extract_state: "failed", effect_outcome: null };
+}
+
 function contractRow(d: SourceDoc, ctx: Ctx, tid: string, parentOwner: string | null): Row {
   const s = d.src;
   const ref = `contracts/${d.id}`;
   const fields = mapFields(s.fields, ctx, ref);
-  let status = typeof s.status === "string" && STATUSES.has(s.status) ? s.status : "needs_review";
-  if (status !== s.status) ctx.issues.push({ entity: "contract", ref, code: "STATUS_MAPPED" });
+  const src = typeof s.status === "string" && STATUSES.has(s.status) ? s.status : "needs_review";
+  if (src !== s.status) ctx.issues.push({ entity: "contract", ref, code: "STATUS_MAPPED" });
   // M3: trích HĐ = job Redis do lúc tải lên xếp; HĐ đang đọc dở ở mgmt-app không có job ⇒ kẹt. Đánh dấu lỗi để người dùng trích lại.
-  const interrupted = status === "extracting";
-  if (interrupted) status = "extract_failed";
+  const interrupted = src === "extracting";
   const handled = isObj(s.handled) && OUTCOMES.has(String(s.handled.outcome)) ? s.handled : null;
   const fv = (k: string) => (isObj(fields[k]) ? (fields[k] as { value: unknown }).value : null);
   return {
@@ -140,7 +179,7 @@ function contractRow(d: SourceDoc, ctx: Ctx, tid: string, parentOwner: string | 
     parent_id: null,
     title: str(s.title, 200) ?? str(fv("number"), 200) ?? "Hợp đồng",
     direction: s.direction === "sale" || s.direction === "purchase" ? s.direction : null,
-    status,
+    ...stateOf(src, handled),
     error: interrupted ? "MGMT_IMPORT_INTERRUPTED" : str(s.error, 2000),
     owner_user_id: parentOwner ?? ctx.userOf(tid, lowerEmail(s.owner_email)),
     created_by: ctx.userOf(tid, lowerEmail(s.created_by)) ?? ctx.fallbackUser(tid),
@@ -153,9 +192,8 @@ function contractRow(d: SourceDoc, ctx: Ctx, tid: string, parentOwner: string | 
     source_text: str(s.source_md, 5_000_000),
     clauses: jsonSafe(Array.isArray(s.clauses) ? s.clauses : []),
     warnings: jsonSafe(Array.isArray(s.warnings) ? s.warnings : []),
-    action_deadline: day(s.action_deadline),
-    handled: jsonSafe(handled),
-    run_id: idOf(ctx, "approval", d.id),
+    // chờ xem lại ⇒ nháp không lượt duyệt (xem `stateOf`)
+    run_id: src === "needs_review" ? null : idOf(ctx, "approval", d.id),
   };
 }
 
@@ -274,17 +312,19 @@ function parentOf(
 }
 
 /** M3 · trạng thái HĐ ⇒ lượt duyệt `contracts.approvals` (cùng luật migration 0011_m3_approvals): đã duyệt ⇒ done (người xác
- *  nhận = cấp 1 + người quyết), bị từ chối ⇒ rejected, trích lỗi ⇒ failed, chờ xem lại ⇒ level1 (lượt sống). `contracts.run_id`
- *  = id lượt. `migrated = true` (lượt không đi qua máy trạng thái). */
-export function approvalRow(c: Row): Row {
+ *  nhận = cấp 1 + người quyết), bị từ chối ⇒ rejected, trích lỗi ⇒ failed, `contracts.run_id`
+ *  = id lượt. Chờ xem lại ⇒ nháp KHÔNG có lượt (null). `migrated = true` (lượt không đi qua máy trạng thái). */
+export function approvalRow(c: Row): Row | null {
+  if (c.run_id == null) return null;
   const s = String(c.status);
-  const status = ["active", "expiring", "expired", "renewed", "terminated"].includes(s)
-    ? "done"
-    : s === "rejected"
-      ? "rejected"
-      : s === "extract_failed"
-        ? "failed"
-        : "level1";
+  const status =
+    s === "done"
+      ? "done"
+      : s === "reject"
+        ? "rejected"
+        : c.extract_state === "failed"
+          ? "failed"
+          : "cancelled";
   const done = status === "done";
   return {
     id: c.run_id,
@@ -306,7 +346,8 @@ function mapOne(d: SourceDoc, t: TenantPlan, m: CMap): void {
   const row = contractRow(d, ctx, t.tenantId, parent?.owner ?? null);
   if (parent) Object.assign(row, { kind: "appendix", parent_id: parent.id });
   push(t, "contracts.contracts", row);
-  push(t, "contracts.approvals", approvalRow(row));
+  const ap = approvalRow(row);
+  if (ap) push(t, "contracts.approvals", ap);
   const total = (row.fields as Record<string, { value?: unknown } | undefined>).total_value?.value;
   addMoney(t, "contracts.total_value", typeof total === "number" ? total : null);
   mapItems(d, t, m, row.id as string);
@@ -337,42 +378,4 @@ export function mapContracts(s: Snapshot, ctx: Ctx, p: Plan): FileJob[] {
     owners.set(last.id as string, (last.owner_user_id as string | null) ?? null);
   }
   return files;
-}
-
-/** Khoá `remind:{hđ}:{hạn}:{mốc}:{email}` ⇒ phần; hạn không phải ngày (mốc giá `price-…`) ⇒ null. */
-export function parseRemindKey(
-  id: string,
-): { contract: string; deadline: string; milestone: number; email: string } | null {
-  if (!id.startsWith("remind:")) return null;
-  const parts = id.slice(7).split(":");
-  const email = lowerEmail(parts.at(-1));
-  const milestone = int(parts.at(-2), -3650, 3650);
-  const deadline = day(parts.at(-3));
-  if (parts.length < 4 || !email || milestone === null || !deadline) return null;
-  return { contract: parts.slice(0, -3).join(":"), deadline, milestone, email };
-}
-
-/** `state` remind:* ⇒ contract_reminders (khoá idempotent của HD4: vòng nhắc không gửi lại nhắc đã gửi ở mgmt-app). */
-export function mapReminders(
-  s: Snapshot,
-  ctx: Ctx,
-  p: Plan,
-  orgOfContract: Map<string, string>,
-): void {
-  for (const d of docsOf(s, "state")) {
-    const k = parseRemindKey(d.id);
-    const org = k ? orgOfContract.get(k.contract) : undefined;
-    const tid = org ? ctx.tenantOf(org) : null;
-    const user = k && tid ? ctx.userOf(tid, k.email) : null;
-    if (!k || !org || !tid || !user) continue;
-    const v = isObj(d.src.value) ? d.src.value : {};
-    push(tenantPlan(p, tid, org), "contracts.contract_reminders", {
-      contract_id: idOf(ctx, "contract", k.contract),
-      deadline: k.deadline,
-      milestone: k.milestone,
-      user_id: user,
-      channel: "mgmt_import",
-      sent_at: ts(v.at),
-    });
-  }
 }

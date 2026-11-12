@@ -1,13 +1,13 @@
 // CR-121 D-2 · unit: kiểm loại bước + điều kiện theo danh mục khe, mã phòng ban trong điều kiện, xem trước "chưa có dữ liệu".
 import { describe, expect, it } from "bun:test";
-import type { FlowStep } from "./approval-flow.types";
 import {
   conditionDepartmentKeys,
   previewPath,
   stepKindAndCondIssues,
   validateApprovalBody,
-} from "./approval-flow-stages.rules";
-import { defaultSlotBody } from "./approval-slot-default.rules";
+} from "../testing/approval-slot/approval-flow-stages.rules";
+import { defaultSlotBody } from "../testing/approval-slot/approval-slot-default.rules";
+import type { FlowStep } from "./approval-flow.types";
 
 const rev = (when: unknown) => ({ ...(defaultSlotBody().steps[0] as object), key: "x", when });
 const bodyWith = (when: unknown) => ({ steps: [defaultSlotBody().steps[0], rev(when)] });

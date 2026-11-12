@@ -1,5 +1,5 @@
 // CR-105 · L3: ánh xạ thuần cho màn thư viện quy trình (cột danh sách, xoá được không, kế hoạch gán, kết quả xem trước, trạng thái xuất bản).
-import type { LibraryDef, LibraryListItem, PreviewStep } from "../library-api";
+import type { LibraryDef, LibraryListItem } from "../library-api";
 
 export type RowLike = Pick<LibraryListItem, "slot" | "is_default" | "tenant_count" | "enabled">;
 
@@ -36,18 +36,6 @@ export const canSetDefault = (d: Pick<LibraryDef, "slot" | "published_version" |
   publishState(d) === "published" && d.is_default !== true;
 
 const rec = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
-
-/** Xem trước (B3): Hub trả `{steps:[{key,name,run}]}` (hoặc mảng trần; `skipped:true` thay `run:false`); thiếu tên ⇒ khoá. */
-export function normalizePreview(raw: unknown): PreviewStep[] {
-  const list = Array.isArray(raw) ? raw : rec(raw) && Array.isArray(raw.steps) ? raw.steps : [];
-  return list.flatMap((s): PreviewStep[] => {
-    if (!rec(s)) return [];
-    const key = typeof s.key === "string" ? s.key : "";
-    const run = typeof s.run === "boolean" ? s.run : s.skipped !== true;
-    const name = typeof s.name === "string" && s.name !== "" ? s.name : key;
-    return [{ key, name, run }];
-  });
-}
 
 /** Ô "Giá trị mẫu" (chữ) ⇒ số nguyên ≥ 0 hoặc null (trống = chưa nhập); không hợp lệ ⇒ "invalid". */
 export function parseSampleValue(raw: string): number | null | "invalid" {
@@ -94,7 +82,7 @@ function issueLines(list: readonly unknown[], fmt?: RuleFormat): string[] {
 
 /**
  * CR-105 · tab "Mẫu · chạy thử" trộn mẫu toàn nền tảng (`is_template`) với def tenant không khe/không của gói (vd flow-showcase,
- * bản "Chép mẫu"): mẫu mà người xem không sửa được ⇒ chỉ "Chép mẫu" (`copy`); còn lại ⇒ Chạy/Sửa/Xoá (`full`).
+ * bản "Chép mẫu"): mẫu mà người xem không sửa được ⇒ chỉ "Xem" (`view`); còn lại ⇒ Chạy/Sửa/Xoá (`full`).
  */
 /**
  * Mẫu toàn nền tảng = `is_template` (tenant NULL) VÀ không khe: def thư viện cũng có tenant NULL (`is_template` true) nhưng có `slot`
@@ -106,7 +94,7 @@ export const isTemplateRow = (r: Pick<LibraryListItem, "is_template" | "slot">):
 export const rowMode = (
   r: Pick<LibraryListItem, "is_template" | "slot">,
   canEditTemplates: boolean,
-): "copy" | "full" => (isTemplateRow(r) && !canEditTemplates ? "copy" : "full");
+): "view" | "full" => (isTemplateRow(r) && !canEditTemplates ? "view" : "full");
 
 /** Hàng của một tab: Hub đã lọc theo `kind` (danh sách chính / `sample`) ⇒ client chỉ áp bộ lọc Bật/Tắt ở tab chính. */
 export function rowsForTab<R extends { enabled: boolean }>(

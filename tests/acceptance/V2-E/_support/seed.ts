@@ -5,10 +5,10 @@ import type { Sql } from "./v2e";
 import { P } from "./v2e";
 
 export async function seedBoard(sql: Sql, tenant: string, n: number, k: number): Promise<void> {
-  await sql`insert into contracts.contracts (id, tenant_id, kind, title, direction, deal, product_group, status, owner_user_id,
+  await sql`insert into contracts.contracts (id, tenant_id, kind, title, direction, deal, product_group, status, effect, owner_user_id,
       created_by, fields)
     select gen_random_uuid(), ${tenant}, 'contract', 'HĐ ' || g || '-' || r, case when r = 0 then 'purchase' else 'sale' end,
-      (array['buy', 'sell', 'referral'])[r + 1], case when r = 0 and g % 2 = 0 then 'service' else 'goods' end, 'active',
+      (array['buy', 'sell', 'referral'])[r + 1], case when r = 0 and g % 2 = 0 then 'service' else 'goods' end, 'done', 'active',
       ${P.lan.id}, ${P.lan.id},
       jsonb_build_object('number', jsonb_build_object('value', 'B-' || g || '-' || r),
         'start_date', jsonb_build_object('value', (current_date - 40)::text),

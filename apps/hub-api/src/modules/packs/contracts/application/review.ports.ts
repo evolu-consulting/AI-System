@@ -11,7 +11,7 @@ export type ReviewLocked = {
   status: string;
   deal: Deal | null;
   fields: unknown;
-  /** Cờ duyệt của tenant, đọc cùng câu khoá (`contracts.approval_on()`). */
+  /** CR-127 Z1 · luôn false (cờ duyệt theo công ty đã gỡ; HĐ vào quy trình qua "Gửi") — luật `review.rules` còn đọc, K3/Q1 gỡ tiếp. */
   approvalOn: boolean;
   commissionPct: number | null;
   commissionFixed: number | null;
@@ -37,12 +37,17 @@ export type ReviewWrite = {
 };
 export type ReviewSaved = {
   version: number;
-  status: "needs_review" | "active";
+  status: "draft" | "done";
   items: number;
   milestones: number;
 };
 /** `item_unknown`: có `id` dòng không thuộc HĐ; `component_invalid`: thành phần không thuộc SP đã chọn. */
-export type ReviewSaveOutcome = ReviewSaved | "item_unknown" | "component_invalid" | "stale";
+export type ReviewSaveOutcome =
+  | ReviewSaved
+  | "item_unknown"
+  | "component_invalid"
+  | "stale"
+  | "not_draft";
 
 export type AttachOutcome =
   | { kind: "ok"; item: { id: string; product_id: string | null; component_ids: string[] | null } }

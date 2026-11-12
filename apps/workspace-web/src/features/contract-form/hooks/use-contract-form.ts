@@ -1,6 +1,6 @@
 // V2-F · HD-01 · 5.5a: trạng thái + lưu của form nhập tay — kiểm số, ô bắt buộc (viền đỏ), dòng chưa gắn SP, tạo SP mới từ dòng (5.5c;
 // HĐ Mua ⇒ NCC chính, 5.5d) rồi `POST /contracts/manual` với `product_id` từng dòng; xong mở HĐ mới.
-import type { ContractDeal } from "@ai/contracts/pack-contracts";
+import type { ContractDeal, OpenMilestone } from "@ai/contracts/pack-contracts";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -13,12 +13,18 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { attachToFrame, createDeal, createManualContract } from "~/features/contract-new/api";
+import {
+  attachToFrame,
+  createDeal,
+  createManualContract,
+  fetchOpenMilestones,
+} from "~/features/contract-new/api";
 import { saveErrorText } from "~/features/contract-review/lib/save-error";
 import { linkNewFormLines } from "~/features/product-links/api";
 import { fetchProducts, PRODUCTS_KEY } from "../api";
 import { blockerMessage } from "../lib/blocker";
 import { type DealExtra, EMPTY_EXTRA, toDealRequest } from "../lib/deal-form";
+import { linkDirection, linkIssue } from "../lib/deal-link";
 import {
   EMPTY_FORM,
   EMPTY_LINE,
@@ -34,6 +40,7 @@ import {
   withNoticeDefault,
 } from "../lib/form-model";
 import { useNoticeDefault } from "./use-notice-default";
+import { usePartnerLookup } from "./use-partner-lookup";
 
 /** Áp một phần sửa lên dòng: gợi ý đến muộn không đè lựa chọn tay; sửa tên sau khi chọn do gợi ý ⇒ chọn lại. */
 export function patchOneLine(l: LineState, p: Partial<LineState>): LineState {
@@ -88,8 +95,19 @@ async function saveDeal(
   f: FormState,
   deal: DealExtra & { source: Exclude<DealExtra["source"], ""> },
   t: (k: string) => string,
+  open: readonly OpenMilestone[],
 ): Promise<DealSaved> {
   const res = await createDeal(toDealRequest(f, readNumbers(f), productIdsOf(f), deal));
+  if ("obligation_id" in res) {
+    // M12: ghi thẳng vào mốc (không tạo chứng từ giao dịch) ⇒ mở HĐ của mốc; chờ duyệt ⇒ ở lại báo "Đang kiểm duyệt".
+    const m = deal.link.kind === "milestone" ? deal.link.obligationId : null;
+    return {
+      id: open.find((o) => o.obligation_id === m)?.contract_id ?? "",
+      settleError: null,
+      attachError: null,
+      linked: { state: res.state, split: !!res.child_obligation_id, obligationId: m },
+    };
+  }
   let attachError: string | null = null;
   if (deal.frame) {
     try {
@@ -103,7 +121,21 @@ async function saveDeal(
 }
 
 /** Kết quả lưu Giao dịch khi cần ở lại màn hình báo: "xác nhận ngay" dừng giữa chừng và/hoặc gắn HĐ nguyên tắc lỗi. */
-export type DealSaved = { id: string; settleError: string | null; attachError: string | null };
+export type DealSaved = {
+  id: string;
+  settleError: string | null;
+  attachError: string | null;
+  /** M12: đã ghi vào mốc (`posted`) hoặc đang chờ duyệt (`pending`); `split` = phần còn lại thành mốc con. */
+  linked?: { state: "posted" | "pending"; split: boolean; obligationId: string | null };
+};
+
+/** Giao dịch: thiếu nguồn / chưa chọn «Thuộc hợp đồng nào» ⇒ câu báo (null = ổn). */
+function dealPrecheck(deal: DealExtra | undefined, openCount: number, t: (k: string) => string) {
+  if (!deal) return null;
+  if (!deal.source) return t("contracts.doclist.sourceRequired");
+  const li = linkIssue(deal.link, openCount, deal.evidence);
+  return li ? t(`contracts.u6.trade.err.${li}`) : null;
+}
 
 /** Lưu: chặn lỗi ⇒ câu báo; ổn ⇒ tạo HĐ (hoặc Giao dịch, `deal`) rồi mở bản mới. */
 function useSubmit(
@@ -111,6 +143,7 @@ function useSubmit(
   setTried: (v: boolean) => void,
   deal: DealExtra | undefined,
   setSaved: (s: DealSaved) => void,
+  open: readonly OpenMilestone[],
 ) {
   const { t } = useTranslation();
   const nav = useNavigate();
@@ -126,14 +159,15 @@ function useSubmit(
       (msg) => toast(msg, "late"),
     );
     if (stop) return setErr(stop);
-    if (deal && !deal.source) return setErr(t("contracts.doclist.sourceRequired"));
+    const dealStop = dealPrecheck(deal, open.length, t);
+    if (dealStop) return setErr(dealStop);
     setBusy(true);
     try {
       if (deal?.source) {
-        const s = await saveDeal(f, { ...deal, source: deal.source }, t);
+        const s = await saveDeal(f, { ...deal, source: deal.source }, t, open);
         await qc.invalidateQueries();
         toast(t("contracts.doclist.saved"));
-        if (s.settleError || s.attachError) return setSaved(s);
+        if (s.settleError || s.attachError || s.linked) return setSaved(s);
         return void (await nav({ to: "/contracts/c/$id", params: { id: s.id } }));
       }
       const rec = await createManualContract(toRequest(f, readNumbers(f), productIdsOf(f)));
@@ -148,6 +182,25 @@ function useSubmit(
     }
   }
   return { err, busy, submit };
+}
+
+/** M12: mốc mở của HĐ đã duyệt xong còn hiệu lực với đối tác đã chọn (chỉ khi form Giao dịch Bán/Mua và đối tác đã có trong danh bạ). */
+function useOpenMilestones(on: boolean, f: FormState) {
+  const dir = linkDirection(f.deal);
+  const { look } = usePartnerLookup(f.partner_name, f.partner_tax_id, f.deal);
+  const party = look.data?.status === "existing" ? look.data.party : null;
+  const q = useQuery({
+    queryKey: ["contracts", "open-milestones", party, dir],
+    queryFn: ({ signal }) =>
+      fetchOpenMilestones(
+        { party_key: party as string, direction: dir as "sale" | "purchase" },
+        signal,
+      ),
+    enabled: on && !!party && !!dir,
+    staleTime: 15_000,
+    retry: false,
+  });
+  return { items: on && party && dir ? (q.data ?? []) : [], loading: q.isFetching };
 }
 
 export function useContractForm(mode: "contract" | "deal" = "contract", frameId?: string) {
@@ -175,11 +228,13 @@ export function useContractForm(mode: "contract" | "deal" = "contract", frameId?
     [tried, f],
   );
   const editors = useFormEditors(setF);
+  const open = useOpenMilestones(mode === "deal", f);
   const { err, busy, submit } = useSubmit(
     f,
     setTried,
     mode === "deal" ? extra : undefined,
     setSaved,
+    open.items,
   );
   return {
     f,
@@ -193,6 +248,8 @@ export function useContractForm(mode: "contract" | "deal" = "contract", frameId?
     extra,
     setExtra,
     saved,
+    openMilestones: open,
+    triedSave: tried,
     sourceMissing: tried && mode === "deal" && !extra.source,
   };
 }

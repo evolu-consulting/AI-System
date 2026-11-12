@@ -82,15 +82,22 @@ export async function seedCast(sql: Sql, base: number): Promise<Cast> {
   const rolesB = packRoles.get(B) as Cast["roles"];
   await members(sql, A, roles.owner, [hA]);
   await members(sql, A, roles.editor, [hM]);
-  await sql`insert into community.partner_companies (tenant_id, ext_org_id, labels, cats)
-    select ${A}::uuid, x.org, x.labels, x.cats from jsonb_to_recordset(${sql.json([
-      { org: S1, labels: ["supplier"], cats: ["dong-goi"] },
-      { org: S2, labels: ["supplier"], cats: ["chu-ky-so"] },
-      { org: B1, labels: ["buyer"], cats: ["dong-goi"] },
-      { org: B2, labels: ["buyer"], cats: ["chu-ky-so"] },
-      { org: X, labels: ["supplier", "buyer"], cats: ["dong-goi"] },
-      { org: LEFT, labels: ["buyer"], cats: ["dong-goi"] },
-    ])}) as x(org uuid, labels text[], cats text[])`;
+  // CR-130 pha 2 (ADR-0043): đối tác = SHT `contracts.partner_roles` (vai; `buyer` ⇒ `customer`) + `contracts.partner_profiles` (nhóm hàng, tài khoản).
+  await sql`with x as (
+      select 'name:' || contracts.fold(o.name) as pk, o.name, x.org, x.roles, x.cats
+      from jsonb_to_recordset(${sql.json([
+        { org: S1, roles: ["supplier"], cats: ["dong-goi"] },
+        { org: S2, roles: ["supplier"], cats: ["chu-ky-so"] },
+        { org: B1, roles: ["customer"], cats: ["dong-goi"] },
+        { org: B2, roles: ["customer"], cats: ["chu-ky-so"] },
+        { org: X, roles: ["supplier", "customer"], cats: ["dong-goi"] },
+        { org: LEFT, roles: ["customer"], cats: ["dong-goi"] },
+      ])}) as x(org uuid, roles text[], cats text[])
+      join admin.external_orgs o on o.id = x.org),
+    r as (insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from)
+      select ${A}::uuid, x.pk, role, x.name, 'manual' from x, unnest(x.roles) as role returning 1)
+    insert into contracts.partner_profiles (tenant_id, party_key, cats, ext_org_id)
+    select ${A}::uuid, x.pk, x.cats, x.org from x`;
   return {
     A,
     B,
@@ -155,34 +162,5 @@ export async function seedPosts(
     )}) as x(key text, type text, author uuid, org uuid, status text, hidden boolean, edited boolean, body text,
       cats text[], aud_mode text, aud_cats text[], aud_orgs uuid[], expired boolean)
     returning title_raw as key, id::text as id`;
-  return new Map(got.map((r) => [r.key, r.id]));
-}
-
-export type CommentSeed = {
-  key: string;
-  post: string;
-  thread: string;
-  author: string;
-  org: string | null;
-  hidden?: boolean;
-};
-
-/** Luồng (upsert) + bình luận theo tập (2 câu). Trả `key -> id` bình luận. */
-export async function seedComments(
-  sql: Sql,
-  tenant: string,
-  rows: readonly CommentSeed[],
-): Promise<Map<string, string>> {
-  const data = sql.json(rows.map((r) => ({ ...r, hidden: r.hidden ?? false })));
-  await sql`insert into community.threads (tenant_id, post_id, ext_org_id)
-    select distinct ${tenant}::uuid, x.post, x.thread from jsonb_to_recordset(${data}) as x(post uuid, thread uuid)
-    on conflict (post_id, ext_org_id) do nothing`;
-  const got = await sql<{ key: string; id: string }[]>`
-    insert into community.comments (tenant_id, post_id, thread_id, thread_org, author_user_id, author_name, author_org,
-      text_raw, text_masked, hidden)
-    select ${tenant}::uuid, x.post, t.id, x.thread, x.author, 'Người viết', x.org, x.key, x.key, x.hidden
-    from jsonb_to_recordset(${data}) as x(key text, post uuid, thread uuid, author uuid, org uuid, hidden boolean)
-    join community.threads t on t.post_id = x.post and t.ext_org_id = x.thread
-    returning text_raw as key, id::text as id`;
   return new Map(got.map((r) => [r.key, r.id]));
 }

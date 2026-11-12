@@ -5,11 +5,14 @@ import {
   ASSISTANT_AGENT,
   applyEvent,
   assistantAgent,
+  assistantVisible,
   buildRequest,
   CONTRACT_QA_INSTRUCTION,
   dockContext,
   errorText,
+  isCommunityPath,
   type Msg,
+  surfaceOf,
   titleOf,
 } from "./chat.rules";
 
@@ -109,5 +112,33 @@ describe("M2-chat · chat.rules (lỗi, cờ, tiêu đề)", () => {
     expect(errorText("AGENT_NOT_FOUND", t)).toBe("contracts.assistant.errForbidden");
     expect(errorText("FLOW_BUSY", t)).toBe("contracts.assistant.errBusy");
     expect(errorText(undefined, t)).toBe("contracts.assistant.errGeneric");
+  });
+});
+
+describe("CR-130 · một trợ lý cho cả Sổ Hợp Tác và Cộng đồng (ngữ cảnh theo trang)", () => {
+  test("bề mặt theo đường dẫn: /community/* ⇒ community, còn lại ⇒ contracts", () => {
+    expect(isCommunityPath("/community")).toBe(true);
+    expect(isCommunityPath("/community/profile/o1")).toBe(true);
+    expect(isCommunityPath("/communityx")).toBe(false);
+    expect(surfaceOf("/contracts/list")).toBe("contracts");
+    expect(surfaceOf("/community")).toBe("community");
+  });
+  test("ngữ cảnh Bảng tin/Hồ sơ như ChatDock cũ: route + từ khoá tìm; id lạ bị bỏ", () => {
+    expect(dockContext("/community", "", "  USB   Token ")).toEqual({
+      surface: "community",
+      route: "/feed",
+      selection: "USB Token",
+    });
+    expect(dockContext("/community/profile/org-1/files", "")).toEqual({
+      surface: "community",
+      route: "/profile/org-1",
+    });
+    expect(dockContext("/community/profile/a<x>b", "").route).toBe("/profile");
+    expect(dockContext("/community/review", "").route).toBe("/feed");
+  });
+  test("đối tác không thấy trợ lý; chủ quản thấy", () => {
+    expect(assistantVisible("partner")).toBe(false);
+    expect(assistantVisible("tenant_admin")).toBe(true);
+    expect(assistantVisible(undefined)).toBe(true);
   });
 });

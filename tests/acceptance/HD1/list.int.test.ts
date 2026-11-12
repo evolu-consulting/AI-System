@@ -193,18 +193,24 @@ describe("HD-AC03 · bộ lọc", () => {
   });
   it("HD-AC03 · status[] nhiều giá trị = HOẶC trong cùng bộ lọc", async () => {
     await dataset();
-    expect(idsOf(await listOf(c, P.tam, { status: ["active"] }))).toEqual(ids(4, 1));
-    expect(idsOf(await listOf(c, P.tam, { status: ["active", "expiring"] }))).toEqual(ids(4, 2, 1));
+    const q = (effect: string[]) => listOf(c, P.tam, { status: ["done"], effect });
+    expect(idsOf(await q(["active"]))).toEqual(ids(4, 1));
+    expect(idsOf(await q(["active", "expiring"]))).toEqual(ids(4, 2, 1));
   });
   it("HD-AC03 · status[] + owner + category ⇒ GIAO các điều kiện", async () => {
     await dataset();
     expect(
       idsOf(
-        await listOf(c, P.tam, { status: ["active"], owner: [P.lan.id], category: [catId(1)] }),
+        await listOf(c, P.tam, {
+          status: ["done"],
+          effect: ["active"],
+          owner: [P.lan.id],
+          category: [catId(1)],
+        }),
       ),
     ).toEqual(ids(1));
     const r = await listOf(c, P.tam, {
-      status: ["active", "needs_review"],
+      status: ["done", "draft"],
       owner: [P.lan.id],
       category: [catId(1)],
     });
@@ -321,31 +327,26 @@ describe("HD-FR-07 · kiểm tra tham số (400)", () => {
 });
 
 describe("HD-FR-07 · sắp xếp", () => {
-  const three = { status: ["active", "expiring", "needs_review"], kind: ["contract"] }; // HĐ 1, 2, 3
+  // CR-127: status/effect không OR được ⇒ lấy HĐ (kind=contract) rồi giữ HĐ 1, 2, 3
+  const sorted3 = async (sort: string, dir: string) =>
+    idsOf(await listOf(c, P.tam, { kind: ["contract"], page_size: 100, sort, dir })).filter((x) =>
+      ids(1, 2, 3).includes(x),
+    );
   it("HD-FR-07 · mặc định updated_at giảm dần", async () => {
     await dataset();
     expect(idsOf(await listOf(c, P.tam))).toEqual(ids(6, 5, 4, 3, 2, 1));
-    expect(idsOf(await listOf(c, P.tam, { sort: "updated_at", dir: "asc" }))).toEqual(
-      ids(1, 2, 3, 4, 5, 6),
-    );
+    const asc = await listOf(c, P.tam, { sort: "updated_at", dir: "asc" });
+    expect(idsOf(asc)).toEqual(ids(1, 2, 3, 4, 5, 6));
   });
   it("HD-FR-07 · sort=value asc/desc theo giá trị số (không theo chuỗi): 90M < 120M < 500M", async () => {
     await dataset();
-    expect(idsOf(await listOf(c, P.tam, { ...three, sort: "value", dir: "asc" }))).toEqual(
-      ids(3, 2, 1),
-    );
-    expect(idsOf(await listOf(c, P.tam, { ...three, sort: "value", dir: "desc" }))).toEqual(
-      ids(1, 2, 3),
-    );
+    expect(await sorted3("value", "asc")).toEqual(ids(3, 2, 1));
+    expect(await sorted3("value", "desc")).toEqual(ids(1, 2, 3));
   });
   it("HD-FR-07 · sort=end_date theo ngày: 2026-12-31 < 2027-03-31 < 2027-06-30", async () => {
     await dataset();
-    expect(idsOf(await listOf(c, P.tam, { ...three, sort: "end_date", dir: "asc" }))).toEqual(
-      ids(2, 1, 3),
-    );
-    expect(idsOf(await listOf(c, P.tam, { ...three, sort: "end_date", dir: "desc" }))).toEqual(
-      ids(3, 1, 2),
-    );
+    expect(await sorted3("end_date", "asc")).toEqual(ids(2, 1, 3));
+    expect(await sorted3("end_date", "desc")).toEqual(ids(3, 1, 2));
   });
   it("HD-FR-07 · sort=title (tiêu đề ASCII cùng kiểu hoa)", async () => {
     await arrange(c);
@@ -409,9 +410,9 @@ describe("HD-AC05 · phân trang page/page_size/total (D-03; thay keyset cũ)", 
     }).toEqual({ n: 20, page: 1, size: 20, cursor: false });
     expect((await listOf(c, P.tam, { page_size: 100 })).json.items.length).toBe(100);
   });
-  it("D-03 · total theo bộ lọc (không phải tổng bảng): lọc status=active trên tập có 2 active ⇒ total 2", async () => {
+  it("D-03 · total theo bộ lọc (không phải tổng bảng): lọc status=done + effect=active trên tập có 2 HĐ đang hiệu lực ⇒ total 2", async () => {
     await dataset();
-    const r = await listOf(c, P.tam, { status: ["active"], page_size: 1 });
+    const r = await listOf(c, P.tam, { status: ["done"], effect: ["active"], page_size: 1 });
     expect({ n: r.json.items.length, total: r.json.total }).toEqual({ n: 1, total: 2 });
   });
 });
@@ -422,12 +423,14 @@ describe("HD-FR-07 · dòng tóm tắt ListRow (đủ cột màn danh sách)", (
     const row = (await listOf(c, P.tam, { q: "HD-001" })).json.items[0];
     expect(Object.keys(row).sort()).toEqual(
       [
-        "action_deadline",
         "buyer",
         "buyer_signer",
         "category_ids",
         "direction",
+        "effect",
         "end_date",
+        "extract_state",
+        "hold",
         "id",
         "kind",
         "number",
@@ -435,6 +438,7 @@ describe("HD-FR-07 · dòng tóm tắt ListRow (đủ cột màn danh sách)", (
         "parent_id",
         "seller",
         "seller_signer",
+        "source",
         "status",
         "title",
         "type",
@@ -444,7 +448,9 @@ describe("HD-FR-07 · dòng tóm tắt ListRow (đủ cột màn danh sách)", (
         "locked",
         "version_no",
         "versions_count",
+        "waiting",
         "step_label",
+        "superseded",
       ].sort(),
     );
     expect({ ...row, value: Number(row.value), updated_at: undefined }).toMatchObject({
@@ -455,7 +461,8 @@ describe("HD-FR-07 · dòng tóm tắt ListRow (đủ cột màn danh sách)", (
       number: "HD-001",
       type: "purchase",
       direction: "purchase",
-      status: "active",
+      status: "done",
+      effect: "active",
       seller: "Công ty Minh Phát",
       buyer: "Công ty ABC",
       seller_signer: "Trần Thị B",
@@ -463,7 +470,6 @@ describe("HD-FR-07 · dòng tóm tắt ListRow (đủ cột màn danh sách)", (
       value: 500_000_000,
       end_date: "2027-03-31",
       // HD4 (HD-FR-42): hạn chót = end_date − notice_days; HĐ này end 2027-03-31, không có notice_days (= 0) ⇒ 2027-03-31 (trước HD4: null).
-      action_deadline: "2027-03-31",
       owner_user_id: P.lan.id,
       version: 1,
     });
@@ -504,13 +510,8 @@ describe("D-10 · GET /contracts/facets (cả tenant, không theo bộ lọc)", 
   it("D-10 · đếm theo status, direction, kind, owner trên HĐ của tenant", async () => {
     await dataset();
     const f = (await c.hubCall(P.tam, "GET", `${CBASE}/facets`)).json;
-    expect(nOf(f.status)).toEqual({
-      active: 2,
-      expiring: 1,
-      needs_review: 1,
-      extracting: 1,
-      expired: 1,
-    });
+    // CR-127: status = 4 giá trị (draft gồm needs_review + extracting; done gồm active/expiring/expired)
+    expect(nOf(f.status)).toEqual({ done: 4, draft: 2 });
     expect(nOf(f.direction)).toEqual({ purchase: 2, sale: 2, unknown: 2 });
     expect(nOf(f.kind)).toEqual({ contract: 5, appendix: 1 });
     expect(nOf(f.owner)).toEqual({ [P.lan.id]: 3, [P.hoa.id]: 1, [P.tam.id]: 1, [OWNER_X]: 1 });

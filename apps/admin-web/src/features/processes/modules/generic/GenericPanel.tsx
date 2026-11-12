@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { SelectField, TextField } from "../../components/editor/Fields";
 import { constArgs, withConfigArgs } from "../../lib/node-config";
 import type { NodePanelProps } from "../panel-registry";
-import { fieldsOf, type PanelField, toArg } from "./fields";
+import { fieldsOf, type PanelField, toArg, visibleFields } from "./fields";
 
 const DEFAULT = "default";
 const K = "process.admin.flow.esign.";
@@ -58,7 +58,7 @@ export function GenericPanel(p: NodePanelProps & { port: PortSchema }) {
   };
   return (
     <fieldset className="grid grid-cols-2 items-start gap-3" data-testid="node-config-generic">
-      {fields.map((f) => {
+      {visibleFields(fields, cur).map((f) => {
         const id = `${stage.uid}-${f.key}`;
         const common = { id, label: f.label, error: err(f.key), readOnly };
         const v = cur[f.key];

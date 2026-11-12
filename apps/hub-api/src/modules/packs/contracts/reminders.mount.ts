@@ -1,19 +1,17 @@
-// HD4-FR-03…06 · HD4-NFR-01 · D4-01 · D4-02 · plan §2–§3 (lớp 4 của gói): nối vòng nhắc hạn (role `contracts_job` tìm tenant +
-// `PackSystemUow` role `contracts_rw` xử lý lô) và route ghi kết quả xử lý. Vòng nền chỉ khi `worker`: `drain` chạy tới hết việc rồi
+// CR-127 K6 · HD4-FR-03…05 · HD4-NFR-01 · D4-01 · D4-02 · plan §2 (lớp 4 của gói): nối vòng tính lại hiệu lực hằng ngày (role `contracts_job` tìm tenant +
+// `PackSystemUow` role `contracts_rw` xử lý lô; GRANT EXECUTE `refresh_effect` cho `contracts_job` ở MIGC 0096). Không còn route ghi kết quả xử lý (`/handled`).
+// Vòng nền chỉ khi `worker`: `drain` chạy tới hết việc rồi
 // mới trả ⇒ `startLoop` chỉ "ngủ" giữa các lượt khi không còn HĐ tới hạn (due_at = `remind_at`, không poll từng HĐ).
 import { TENANT_TZ_DEFAULT } from "@ai/contracts/tenants";
 import type { Db } from "@ai/db";
-import type { Hono } from "hono";
+import { Hono } from "hono";
 import { logger } from "../../../lib/logger";
 import { startLoop } from "../../../lib/loop";
 import type { PackAccessView, PackGuardVars } from "../kit/public";
-import { createPackUow, packTenantOnly } from "../kit/public";
+import { createPackUow } from "../kit/public";
 import { followupDueFinder, followupSendRepo } from "./adapters/followup-send.repo";
-import { handledRepo } from "./adapters/handled.repo";
-import { handledRoutes } from "./adapters/handled.routes";
 import { dueTenantFinder, reminderBatchRepo } from "./adapters/reminders.repo";
 import { createFollowupSender } from "./application/followup-send.usecase";
-import { recordHandled } from "./application/record-handled.usecase";
 import { createRemindDue } from "./application/remind-due.usecase";
 
 const KEY = "contracts";
@@ -94,14 +92,5 @@ export function contractsRemindModule(
       ...(d.signal ? { signal: d.signal } : {}),
     });
   }
-  const uow = packTenantOnly(
-    createPackUow(db, KEY, (tx, tid) => ({ handled: handledRepo(tx, tid) })),
-  );
-  return handledRoutes(view, {
-    record: recordHandled({
-      uow,
-      timeZoneOf: safeTimeZone(d.timeZoneOf),
-      now: d.now ?? (() => new Date()),
-    }),
-  });
+  return new Hono<PackGuardVars>(); // CR-127 K6: không còn route `/handled` (kết cục Gia hạn/Chấm dứt do quy trình Sắp hết hạn đặt)
 }

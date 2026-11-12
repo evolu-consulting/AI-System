@@ -1,41 +1,14 @@
-// CR-107 · eng-card-ui: banner khi lượt engine cần người xử lý (`attention`): lý do dễ hiểu + từ lúc nào; owner/admin gói có
-// Thử lại / Huỷ & mở lại (hộp xác nhận) hoặc Mở lại quy trình; người khác chỉ thấy "báo chủ hợp đồng".
+// CR-107 · eng-card-ui: banner khi lượt duyệt cần người xử lý (`attention`): lý do dễ hiểu + từ lúc nào + bước kế.
+// CR-127 · Z3b-ui: route Mở lại / Thử lại / Huỷ & mở lại đã gỡ ⇒ banner chỉ báo trạng thái + lý do + ai cần làm gì (không nút chết).
 import type { ApprovalAttention } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
-import { confirmDialog } from "~/components/shared/dialog-bus";
 import { viDateTime } from "~/components/shared/format";
-import { attentionActions, attentionText } from "../lib/attention";
+import { attentionText } from "../lib/attention";
 
-type Props = {
-  attention: ApprovalAttention;
-  owner: boolean;
-  busy: boolean;
-  onRetry: () => void;
-  onCancelReopen: () => void;
-  onReopen: () => void;
-};
-
-export function AttentionBanner({
-  attention,
-  owner,
-  busy,
-  onRetry,
-  onCancelReopen,
-  onReopen,
-}: Props) {
+export function AttentionBanner({ attention }: { attention: ApprovalAttention }) {
   const { t } = useTranslation();
   const text = attentionText(attention);
-  const can = attentionActions(attention, owner);
   const at = attention.since ? new Date(attention.since) : null;
-  const confirmCancel = async () => {
-    const ok = await confirmDialog({
-      title: t("contracts.approval.engine.attention.confirmTitle"),
-      body: t("contracts.approval.engine.attention.confirmBody"),
-      confirmLabel: t("contracts.approval.engine.attention.cancelReopen"),
-      danger: true,
-    });
-    if (ok) onCancelReopen();
-  };
   return (
     <div
       role="alert"
@@ -53,46 +26,9 @@ export function AttentionBanner({
           })}
         </p>
       )}
-      {can.tellOwner && (
-        <p data-approval="tell-owner" className="mt-2 text-muted">
-          {t("contracts.approval.engine.attention.tellOwner")}
-        </p>
-      )}
-      <div className="mt-2 flex flex-wrap gap-2">
-        {can.retry && (
-          <button
-            type="button"
-            data-approval="retry"
-            className="btn btn-primary btn-sm"
-            disabled={busy}
-            onClick={onRetry}
-          >
-            {t("contracts.approval.engine.attention.retry")}
-          </button>
-        )}
-        {can.cancelReopen && (
-          <button
-            type="button"
-            data-approval="cancel-reopen"
-            className="btn btn-outline btn-sm"
-            disabled={busy}
-            onClick={() => void confirmCancel()}
-          >
-            {t("contracts.approval.engine.attention.cancelReopen")}
-          </button>
-        )}
-        {can.reopen && (
-          <button
-            type="button"
-            data-approval="reopen"
-            className="btn btn-primary btn-sm"
-            disabled={busy}
-            onClick={onReopen}
-          >
-            {t("contracts.approval.engine.reopen")}
-          </button>
-        )}
-      </div>
+      <p data-approval="tell-owner" className="mt-2 text-muted">
+        {t("contracts.approval.engine.attention.tellOwner")}
+      </p>
     </div>
   );
 }

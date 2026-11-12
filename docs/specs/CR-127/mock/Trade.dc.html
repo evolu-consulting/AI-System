@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bán từ Sản phẩm vào mốc hợp đồng</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#4f46e5;text-decoration:none}
+.dlg{background:#fff;border:1px solid #e5e5ee;border-radius:14px;box-shadow:0 12px 40px rgba(24,23,43,.10);display:flex;flex-direction:column;font-size:13px}
+.dh{padding:14px 18px;border-bottom:1px solid #e5e5ee;display:flex;flex-direction:column;gap:3px}
+.db{padding:14px 18px;display:flex;flex-direction:column;gap:12px}
+.df{padding:12px 18px;border-top:1px solid #e5e5ee;display:flex;justify-content:flex-end;gap:8px}
+.lbl{font-weight:600}
+.in{border:1px solid #e5e5ee;border-radius:8px;padding:7px 10px}
+.sub{color:#6b6a80;font-size:12px}
+.btn{background:#fff;border:1px solid #e5e5ee;border-radius:8px;padding:8px 14px;font:inherit;font-size:13px}
+.pri{background:#4f46e5;color:#fff;border:0;font-weight:600}
+.pick{border:1px solid #e5e5ee;border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+.pick.on{border-color:#4f46e5;background:#f5f4ff}
+.rd{width:14px;height:14px;border-radius:50%;border:2px solid #c7c6d6;box-sizing:border-box;margin-top:2px;flex-shrink:0}
+.on .rd{border:4px solid #4f46e5}
+.ev{border:1px solid #c7c4ff;background:#fafaff;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.opt{border:1px solid #e5e5ee;border-radius:8px;padding:5px 10px;background:#fff}
+.opt.on{border-color:#4f46e5;color:#4f46e5;font-weight:600}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1000px; padding: 26px 30px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <div><h1 style="margin: 0 0 4px; font-size: 22px">Bán / mua từ Sản phẩm &amp; Giá ⇒ tự vào mốc hợp đồng</h1>
+    <div style="font-size: 13px; color: #6b6a80">Một phiếu giao/nhận/thu/chi duy nhất, tạo từ trang Sản phẩm hay từ mốc trên chi tiết HĐ đều là cùng một thứ. Tiến độ mốc tính từ phiếu, không nhập hai lần.</div></div>
+
+  <div style="display: flex; gap: 22px; flex: 1; min-height: 0">
+    <div class="dlg" style="flex: 1">
+      <div class="dh"><b style="font-size: 16px">Bán · Thùng phi 200L</b><span class="sub">Mở từ Sản phẩm &amp; Giá · tồn kho 820 thùng</span></div>
+      <div class="db">
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px">
+          <div style="display: flex; flex-direction: column; gap: 4px"><span class="lbl">Khách</span><span class="in">Cơ sở Tân Phát ▾</span></div>
+          <div style="display: flex; flex-direction: column; gap: 4px"><span class="lbl">Số lượng</span><span class="in">400 thùng</span></div>
+          <div style="display: flex; flex-direction: column; gap: 4px"><span class="lbl">Ngày giao</span><span class="in">22/11/2026</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><span class="lbl">Thuộc hợp đồng nào? <span style="color: #b91c1c">*</span> <span class="sub" style="font-weight: 400">HĐ còn hiệu lực với Tân Phát có dòng Thùng phi 200L</span></span>
+          <div class="pick on"><span class="rd"></span><div><b>2024/10-TP · HĐ bán thùng phi cho Tân Phát</b><div class="sub">Mốc mở: Giao đợt 2 · còn 650 thùng · hạn 20/11 (đã quá 2 ngày) · giá HĐ 500.000 đ/thùng</div></div></div>
+          <div class="pick"><span class="rd"></span><div><b>Không theo hợp đồng</b><div class="sub">Giao dịch lẻ, tính giá bảng giá hiện tại</div></div></div>
+        </div>
+        <div style="background: #f5f4ff; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+          <b>Sau khi lưu, mốc "Giao đợt 2" sẽ:</b>
+          <span>✓ ghi nhận 400 / 650 thùng · trừ kho 400 · công nợ Tân Phát +200.000.000 đ</span>
+          <span>Còn <b>250 thùng</b> chưa giao. Chọn:</span>
+          <div style="display: flex; gap: 6px"><span class="opt">Giữ hạn 20/11 (đang trễ)</span><span class="opt on">Tách thành mốc mới</span></div>
+          <div style="display: flex; gap: 10px; align-items: center">Mốc mới "Giao đợt 2b · 250 thùng" hạn <span class="in" style="background: #fff">30/11/2026</span></div>
+        </div>
+        <div class="ev">
+          <b>Bằng chứng <span class="sub" style="font-weight: 400">· bắt buộc vì đổi mốc đã thoả thuận</span></b>
+          <div class="in" style="background: #fff">Khách đồng ý nhận 400 trước, 250 còn lại giao 30/11 (email 21/11).</div>
+          <div style="display: flex; gap: 6px"><span class="opt on">✍ Ký điện tử</span><span class="opt on">📎 email-tan-phat-2111.pdf</span><span class="opt">📎 Biên bản giao nhận</span></div>
+          <span class="sub">Ý kiến bắt buộc + ít nhất chữ ký hoặc tệp. Giống ô bằng chứng ở bước Duyệt.</span>
+        </div>
+      </div>
+      <div class="df"><button class="btn">Huỷ</button><button class="btn pri">Lưu phiếu giao</button></div>
+    </div>
+
+    <div style="width: 460px; display: flex; flex-direction: column; gap: 16px; flex-shrink: 0">
+      <div class="dlg">
+        <div class="dh"><b style="font-size: 15px">Khách trả trước một phần</b><span class="sub">Thu đợt 2 · 455.000.000 đ · hạn 03/12</span></div>
+        <div class="db">
+          <div>Nhận <b>300.000.000 đ</b> ngày 28/11 · 📎 sao-ke-2811.pdf</div>
+          <div style="display: flex; gap: 6px"><span class="opt">Giữ hạn 03/12 cho 155 tr</span><span class="opt on">Tách mốc 155 tr · hạn 15/12</span></div>
+          <div class="ev" style="padding: 10px"><span>"Khách xin trả nốt 15/12, Giám đốc đồng ý." ✍ <span class="sub">· bắt buộc vì đổi hạn</span></span></div>
+          <div class="sub">Timeline tự cập nhật: Thu đợt 2 ✓ 300 tr · thêm "Thu đợt 2b · 155 tr · 15/12". Phạt chậm chỉ tính khi quá hạn mới.</div>
+        </div>
+      </div>
+      <div class="dlg">
+        <div class="dh"><b style="font-size: 15px">Mua hàng: nhận từ HĐ nào</b></div>
+        <div class="db" style="gap: 6px">
+          <div>Nhập kho từ Sản phẩm &amp; Giá ⇒ chọn <b>nhà cung cấp</b> ⇒ chọn <b>HĐ mua</b> có mốc nhận mở ⇒ ghi nhận vào mốc "Nhận hàng", công nợ phải trả tự thêm.</div>
+          <div class="sub">Có HĐ mua còn mở với NCC này mà chọn "Không theo HĐ" ⇒ phải ghi lý do.</div>
+        </div>
+      </div>
+      <div class="dlg">
+        <div class="dh"><b style="font-size: 15px">Khi nào cần bằng chứng</b></div>
+        <div class="db" style="gap: 6px">
+          <div>• <b>Ghi nhận đã làm</b> (giao, nhận, thu, chi): chứng từ hoặc ý kiến + chữ ký.</div>
+          <div>• <b>Đổi điều đã thoả thuận</b> (dời hạn, tách đợt, đổi số tiền/SL mốc, miễn phạt, huỷ phiếu): ý kiến + chữ ký hoặc tệp.</div>
+          <div>• <b>Đổi giá trị, giá, bên, điều khoản</b>: không sửa mốc được ⇒ Tải phiên bản mới (duyệt lại).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

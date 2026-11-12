@@ -66,10 +66,10 @@ export async function contract(
   const party = { name: fv(o.name ?? `Đối tác ${o.tax}`), tax: fv(o.tax) };
   const us = { name: fv("Công ty Chúng Tôi"), tax: fv("0100000000") };
   const [buyer, supplier] = o.deal === "buy" ? [us, party] : [party, us];
-  await sql`insert into contracts.contracts (id, tenant_id, kind, title, direction, deal, product_group, status, owner_user_id,
+  await sql`insert into contracts.contracts (id, tenant_id, kind, title, direction, deal, product_group, status, effect, owner_user_id,
       created_by, fields)
     values (${id}, ${o.tenant ?? T.acme}, 'contract', ${`HĐ ${id.slice(-4)}`}, ${o.deal === "buy" ? "purchase" : "sale"},
-      ${o.deal}, ${o.group ?? null}, 'active', ${P.lan.id}, ${P.lan.id},
+      ${o.deal}, ${o.group ?? null}, 'done', 'active', ${P.lan.id}, ${P.lan.id},
       ${sql.json({
         number: fv(`E-${id.slice(-4)}`),
         buyer_name: buyer.name,

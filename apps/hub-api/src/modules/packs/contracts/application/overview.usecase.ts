@@ -34,6 +34,8 @@ type Deps = {
   now: () => Date;
   /** REP-v3 mục 7: `v2e` ⇒ bật nguồn "Đánh giá đối tác"; vắng ⇒ `hd8` (tắt). */
   engine?: () => RepEngine;
+  /** CR-127 X4b · #61: công ty có quy trình `milestone.due` khớp? (engine `FlowAvailability`); vắng ⇒ không. */
+  milestoneFlow?: (tenantId: string) => Promise<boolean>;
 };
 
 export function overviewUsecase(d: Deps) {
@@ -51,10 +53,12 @@ export function overviewUsecase(d: Deps) {
   };
   const todo = async (who: PackWho): Promise<TodoOut> => {
     const { today, tz } = await zone(who);
+    const flow = d.milestoneFlow ? await d.milestoneFlow(who.tenantId) : false;
     const raw = await d.uow.tenant(who, ({ todo: t }) =>
       t.list({
         today,
         horizon: addDays(today, MYWORK_AHEAD_DAYS),
+        ...(flow ? { milestoneHorizon: addDays(today, -1) } : {}),
         tz,
         quarter: quarterWindow(today),
         rating: d.engine?.() === "v2e",

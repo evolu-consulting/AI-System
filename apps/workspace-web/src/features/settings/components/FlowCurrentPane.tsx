@@ -12,9 +12,11 @@ import { ApiError } from "~/lib/api-error";
 import { useFlow } from "../hooks/use-flow";
 import type { CurrentFlow } from "../lib/current-flow";
 import { flowEditorUrl } from "../lib/editor-link";
+import { DelegationPane } from "./DelegationPane";
 import { FlowCanvasLazy } from "./FlowCanvasLazy";
 import { FlowLegend } from "./FlowLegend";
 import { FlowList } from "./FlowList";
+import { FlowWorkSettings } from "./FlowWorkSettings";
 
 type View = "canvas" | "list";
 
@@ -139,6 +141,8 @@ export function FlowCurrentPane({ owner }: { owner: boolean }) {
       <FlowBlock q={q} />
       <EsignSetting owner={owner} />
       <ReceiveSettings owner={owner} />
+      <FlowWorkSettings />
+      <DelegationPane />
     </div>
   );
 }

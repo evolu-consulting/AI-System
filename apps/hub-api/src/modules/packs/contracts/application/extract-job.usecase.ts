@@ -1,11 +1,10 @@
 // HD-FR-24 · HD-FR-32 · #218 · M3-decouple: xử lý MỘT job AI đọc HĐ lấy từ hàng đợi bền — lượt trích HD2 (lời nhắc có rào, parse
 // strict, kiểm trích dẫn giữ nguyên) với agent = lời gọi model trực tiếp qua AI client chung; xong ⇒ lượt duyệt `extracting`
-// chuyển `level1` (HĐ needs_review) hoặc `failed`. Lỗi bất kỳ ⇒ log (không lộ nội dung), không ném (job được ACK).
+// đóng (`extract_state = ready`) hoặc `failed`. Lỗi bất kỳ ⇒ log (không lộ nội dung), không ném (job được ACK).
 // M3c (review B #7): trước lượt đọc đánh dấu lượt "đã bắt đầu" (hết xếp hàng) ⇒ STALE tính từ lúc chạy; lỗi đánh dấu chỉ log.
 
 import type { ApprovalUow } from "./approval.ports";
-import { type EngineStart, type ExtractJob, emitSubmitted, flowPrep } from "./approval.usecase";
-import { type ContractFlowGate, FLOW_OFF } from "./contract-flow.ports";
+import type { ExtractJob } from "./approval.usecase";
 import type { ExtractionOutcome, RunExtraction } from "./run-extraction.usecase";
 
 type Log = { warn(msg: string, f?: Record<string, unknown>): void };
@@ -14,10 +13,6 @@ export type ExtractJobDeps = {
   uow: ApprovalUow;
   log?: Log;
   onSettled?: (contractId: string, outcome: ExtractionOutcome | "error") => void;
-  /** contract-flow S3a · lượt vào `level1` ⇒ mở run engine (cờ bật); không ném. */
-  engine?: EngineStart;
-  /** CR-122 A1 · cờ flow bật ⇒ lượt vào `level1` ghi `contract.submitted` CÙNG tx và KHÔNG mở run theo `engine`. */
-  flow?: ContractFlowGate;
 };
 
 const errName = (e: unknown) => (e instanceof Error ? e.name : "unknown");
@@ -42,15 +37,8 @@ export function handleExtractJob(d: ExtractJobDeps) {
     try {
       if (aid) await markStarted(d, job, aid);
       out = await d.run(who, job.contractId);
-      const prep = aid ? await flowPrep(d.flow, who) : FLOW_OFF;
-      const st = aid
-        ? await d.uow.tenant(who, async (r) => {
-            const s = await r.approval.afterExtraction(job.contractId, aid);
-            if (s === "level1") await emitSubmitted(r, job.contractId, aid, who.userId, prep);
-            return s;
-          })
-        : null;
-      if (st === "level1" && d.engine && !prep.on) await d.engine(who, job.contractId); // contract-flow S3a
+      // CR-127 Z1 · đọc xong ⇒ lượt đọc đóng (HĐ là nháp chờ rà soát); vào quy trình qua "Gửi" (K3), không tự mở lượt duyệt.
+      if (aid) await d.uow.tenant(who, (r) => r.approval.afterExtraction(job.contractId, aid));
     } catch (e) {
       d.log?.warn("contract-extraction-failed", {
         contract_id: job.contractId,

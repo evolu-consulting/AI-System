@@ -1,7 +1,7 @@
 // CR-118 · COM-FR-31 (MODIFIED) · manifest module Community — dữ liệu route + nhà máy cây route tương thích TanStack Router.
 // Shell chỉ đọc file này (luật web-shell-manifest-only). KHÔNG khởi tạo router ở đây: host truyền `createRoute` + route cha
 // (`createRoute` của @tanstack/react-router, `lazyRouteComponent` làm `lazy`). Trang tải lười ⇒ module tắt không có chunk.
-import { ClipboardCheck, Flag, Newspaper, PenLine, Settings, User, UserPlus } from "lucide-react";
+import { ClipboardCheck, Flag, Newspaper, PenLine, User, UserPlus } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ModuleManifest } from "~/shared/kernel/module-manifest";
 import { type CommunityHostConfig, setCommunityHost } from "./application/host";
@@ -12,6 +12,8 @@ export type CommunityRouteId =
   | "profile"
   | "profileOrg"
   | "profileSection"
+  | "me"
+  | "meSection"
   | "review"
   | "join"
   | "reports";
@@ -29,6 +31,8 @@ const CHILD_PATHS = [
   "/profile",
   "/profile/$orgId",
   "/profile/$orgId/$section",
+  "/me",
+  "/me/$section",
   "/review",
   "/join",
   "/reports",
@@ -36,9 +40,19 @@ const CHILD_PATHS = [
 
 /** Route của module (đường dẫn tuyệt đối từ gốc router). */
 export const communityRoutes: readonly CommunityRouteDef[] = CHILD_PATHS.map((p, i) => ({
-  id: (["feed", "profile", "profileOrg", "profileSection", "review", "join", "reports"] as const)[
-    i
-  ] as CommunityRouteId,
+  id: (
+    [
+      "feed",
+      "profile",
+      "profileOrg",
+      "profileSection",
+      "me",
+      "meSection",
+      "review",
+      "join",
+      "reports",
+    ] as const
+  )[i] as CommunityRouteId,
   path: p === "/" ? COMMUNITY_BASE : COMMUNITY_BASE + p,
 }));
 
@@ -101,8 +115,8 @@ export const communityManifest = {
       mobile: "primary",
     },
     {
-      to: `${COMMUNITY_BASE}/profile`,
-      labelKey: "contracts.nav.myPosts",
+      to: `${COMMUNITY_BASE}/me`,
+      labelKey: "contracts.nav.myProfile",
       icon: PenLine,
       bottom: false,
     },
@@ -133,15 +147,19 @@ export const communityManifest = {
     },
   ],
   accountMenu: [
-    { to: `${COMMUNITY_BASE}/profile`, labelKey: "contracts.shell.menuProfile", icon: User },
-    {
-      to: COMMUNITY_BASE,
-      search: { settings: 1 },
-      labelKey: "contracts.shell.menuCommunitySettings",
-      icon: Settings,
-    },
+    { to: `${COMMUNITY_BASE}/me`, labelKey: "contracts.shell.menuProfile", icon: User },
   ],
 } as const;
 
 /** Kiểm kiểu: manifest Community thoả hợp đồng chung của shell (phần thừa `base`/`routes` là của riêng module). */
 export const communityShellManifest: ModuleManifest = communityManifest;
+
+/** CR-130 · ngăn "Bảng tin › Thông báo" của Cài đặt Sổ Hợp Tác (hộp thoại chung nạp lười khi gói Cộng đồng bật). */
+export const loadFeedSettingsPane = () =>
+  import(/* webpackChunkName: "cm-settings" */ "./ui/settings/FeedNotifyPane");
+
+/** CR-130 · link cũ `/community?settings=1` (menu tài khoản cũ, `#/settings`): nay mở Cài đặt chung ở mục Bảng tin. */
+export const isLegacySettingsLink = (search: unknown): boolean =>
+  typeof search === "object" &&
+  search !== null &&
+  String((search as { settings?: unknown }).settings) === "1";

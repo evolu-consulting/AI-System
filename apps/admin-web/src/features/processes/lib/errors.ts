@@ -18,6 +18,7 @@ const KNOWN = new Set([
   "NO_OUTPUT",
   // CR-105 · thư viện quy trình
   "PROCESS_IN_USE",
+  "PROCESS_NOT_DELETABLE", // CR-127 · Z7 · xoá quy trình công ty đã áp dụng/đã có lượt chạy
   "PROCESS_NOT_PUBLISHED",
   "PROCESS_PUBLISH_INVALID",
   "SLOT_SHAPE_UNSUPPORTED",
@@ -25,9 +26,7 @@ const KNOWN = new Set([
   "NODE_ASSIGNEE_MISSING", // CR-126 · bước người làm trong node (vd Gửi đối tác) chưa chọn nhóm phụ trách
   "SLOT_BODY_INVALID",
   "SLOT_UNKNOWN",
-  // CR-121 c17 · Sao chép cho công ty này
-  "NOT_LIBRARY_DEF",
-  "SLOT_GONE",
+  // CR-121 c17 · bản riêng của công ty
   "COPY_SOURCE_REMOVED",
   // CR-123 FR-09 · CR-125 G1 · bật "Dùng quy trình mới" khi chưa gán quy trình nào
   "FLOW_NONE_ASSIGNED",

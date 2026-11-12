@@ -1,42 +1,54 @@
-// CR-102 · com-c3 · công ty đối tác (nhãn/nhóm hàng/liên kết SHT), nhóm hàng, thống kê hồ sơ, cài đặt người dùng. RLS lọc
-// theo người xem (đối tác: chỉ hàng của công ty mình). Mỗi hàm MỘT câu.
+// CR-102 · com-c3 · công ty đối tác (vai/nhóm hàng/liên kết SHT), nhóm hàng, thống kê hồ sơ, cài đặt người dùng. CR-130 L2 · ADR-0043:
+// đối tác có MỘT nguồn ở gói contracts (`partner_roles` + `partner_profiles`); gói này chỉ ĐỌC qua hàm cổng SQL
+// `contracts.community_partners(uuid[])` (tenant lấy từ GUC; người xem là đối tác ⇒ chỉ hàng công ty mình). Mỗi hàm MỘT câu.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 
 export type PartnerRow = {
   ext_org_id: string;
-  labels: ("supplier" | "buyer")[];
+  /** Vai Bảng tin (CR-130: cùng tên với SHT, `supplier`|`customer`). */
+  labels: ("supplier" | "customer")[];
   cats: string[];
   area: string;
   party_key: string | null;
 };
 
-export async function partnerRows(tx: Tx): Promise<PartnerRow[]> {
-  return [
-    ...(await tx.execute<PartnerRow>(sql`
-    select ext_org_id::text as ext_org_id, labels, cats, area, party_key from community.partner_companies`)),
-  ];
+type FnRow = {
+  ext_org_id: string;
+  party_key: string;
+  roles: string[];
+  cats: string[];
+  area: string;
+};
+
+/** Vai SHT (`supplier`/`customer`) → nhãn wire. */
+export const labelsOf = (roles: readonly string[]): ("supplier" | "customer")[] => [
+  ...(roles.includes("supplier") ? (["supplier"] as const) : []),
+  ...(roles.includes("customer") ? (["customer"] as const) : []),
+];
+
+const orgArray = (ids: readonly string[]) => JSON.stringify(ids);
+
+/** Hồ sơ đối tác (vai, nhóm hàng, khu vực, khoá SHT) của các công ty `orgIds` có hồ sơ đã gắn tài khoản. MỘT câu qua hàm cổng. */
+export async function partnerRows(tx: Tx, orgIds: readonly string[]): Promise<PartnerRow[]> {
+  if (orgIds.length === 0) return [];
+  const rows = await tx.execute<FnRow>(sql`
+    select cp.ext_org_id::text as ext_org_id, cp.party_key, cp.roles, cp.cats, cp.area
+    from contracts.community_partners(array(select jsonb_array_elements_text(${orgArray(orgIds)}::jsonb)::uuid)) cp`);
+  return rows.map((r) => ({
+    ext_org_id: r.ext_org_id,
+    labels: labelsOf(r.roles),
+    cats: r.cats,
+    area: r.area,
+    party_key: r.party_key,
+  }));
 }
 
-export async function upsertPartner(
-  tx: Tx,
-  { tenantId, userId }: { tenantId: string; userId: string },
-  org: string,
-  p: { labels: readonly string[]; cats: readonly string[]; area: string; partyKey: string | null },
-): Promise<void> {
-  await tx.execute(sql`
-    insert into community.partner_companies (tenant_id, ext_org_id, labels, cats, area, party_key, updated_by)
-    values (${tenantId}::uuid, ${org}::uuid, array(select distinct jsonb_array_elements_text(${JSON.stringify(p.labels)}::jsonb)),
-      array(select distinct jsonb_array_elements_text(${JSON.stringify(p.cats)}::jsonb)), ${p.area}, ${p.partyKey},
-      ${userId}::uuid)
-    on conflict (tenant_id, ext_org_id) do update set labels = excluded.labels, cats = excluded.cats, area = excluded.area,
-      party_key = excluded.party_key, updated_by = excluded.updated_by, updated_at = now()`);
-}
-
-/** Nhóm hàng người xem được dùng: của công ty đối tác (RLS) ∪ của bài người xem thấy. */
-export async function catList(tx: Tx): Promise<string[]> {
+/** Nhóm hàng người xem được dùng: của công ty đối tác (`orgIds`) ∪ của bài người xem thấy. */
+export async function catList(tx: Tx, orgIds: readonly string[]): Promise<string[]> {
   const rows = await tx.execute<{ c: string }>(sql`
-    select c from (select unnest(cats) c from community.partner_companies
+    select c from (select unnest(cp.cats) c
+        from contracts.community_partners(array(select jsonb_array_elements_text(${orgArray(orgIds)}::jsonb)::uuid)) cp
       union select unnest(cats) c from community.posts) x where c <> '' order by c limit 500`);
   return rows.map((r) => r.c);
 }

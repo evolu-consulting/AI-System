@@ -1,7 +1,6 @@
 // CR-121 c11 · client Hub cho Công ty › Quy trình: đọc chỉ-xem quy trình thư viện, Sao chép cho công ty (tự gán thay bản cũ, Q9),
 // lượt đang chạy lọc theo việc, thân quy trình (chip bước / sơ đồ) trong tập đã gán. Vai: platform_admin + tenant_admin công ty mình.
 import type {
-  CloneForCompanyResponse,
   ProcessLibraryView,
   ProcessRoutingDefView,
   ProcessRunListResponse,
@@ -39,7 +38,7 @@ export const defStepsQuery = (tid: string, slot: string, defId: string) => ({
   },
 });
 
-/** `GET /tenants/:tid/process-library/:id` — chỉ quy trình thư viện; bản riêng của công ty ⇒ 422 NOT_LIBRARY_DEF. */
+/** `GET /tenants/:tid/process-library/:id` — chỉ quy trình thư viện; không phải quy trình thư viện ⇒ 404. */
 export const useLibraryView = (tid: string, defId: string | null, enabled: boolean) =>
   useQuery({
     queryKey: FKEYS.lib(tid, defId ?? ""),
@@ -48,13 +47,6 @@ export const useLibraryView = (tid: string, defId: string | null, enabled: boole
     queryFn: () =>
       api<ProcessLibraryView>(url(`/tenants/${enc(tid)}/process-library/${enc(defId ?? "")}`)),
   });
-
-/** Sao quy trình thư viện thành bản riêng của công ty + tự gán thay bản cũ (một thao tác, idempotent). */
-export const cloneForCompany = (tid: string, defId: string) =>
-  api<CloneForCompanyResponse>(
-    url(`/tenants/${enc(tid)}/process-defs/${enc(defId)}/clone-for-company`),
-    { method: "POST", body: {} },
-  );
 
 /** Lượt chưa kết thúc của MỘT việc (một lần gọi theo việc, chỉ khi mở ngăn — không gọi từng hàng). */
 export const useSlotRuns = (tid: string, slot: string, isPlatform: boolean, enabled: boolean) =>

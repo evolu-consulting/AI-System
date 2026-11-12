@@ -60,8 +60,8 @@ describe("PD-C01 · enum thêm CUỐI mảng [plan-contract §1, §2, §3]", () 
     ]);
     expect(r.slice(0, 2)).toEqual(["redo_limit", "ask_limit"]);
   });
-  it("AC-H42 · PD-C01 · NOTICE_KINDS thêm escalated cuối (7); EXECUTOR_KINDS 4 đầu = [agent, team, apply, wait_until]", () => {
-    expect(chat.NOTICE_KINDS).toEqual([
+  it("AC-H42 · PD-C01 · NOTICE_KINDS: 7 phần tử đầu giữ thứ tự (escalated thứ 7) + CR-127 thêm task_released, milestone_task (9); EXECUTOR_KINDS 4 đầu = [agent, team, apply, wait_until]", () => {
+    expect(chat.NOTICE_KINDS.slice(0, 7)).toEqual([
       "review_requested",
       "ask_requested",
       "decision_requested",
@@ -70,6 +70,8 @@ describe("PD-C01 · enum thêm CUỐI mảng [plan-contract §1, §2, §3]", () 
       "run_finished",
       "escalated",
     ]);
+    expect(chat.NOTICE_KINDS.slice(7)).toEqual(["task_released", "milestone_task"]);
+    expect(chat.NOTICE_KINDS).toHaveLength(9);
     expect(chat.EXECUTOR_KINDS.slice(0, 4)).toEqual(["agent", "team", "apply", "wait_until"]);
   });
   it("AC-H41 · AC-H42 · PD-C01 · PROCESS_DEF_RULES vị trí 14–15 = WAIT_INVALID, ESCALATE_INVALID (16); INPUT_TYPES (sources) thêm date, number cuối", () => {

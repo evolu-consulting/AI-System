@@ -7,6 +7,8 @@
 // đặt rõ `AI_SUB_CLI_PATH` (test không bao giờ gọi AI thật). API: `ANTHROPIC_API_KEY` (vắng ⇒ `UNAVAILABLE`),
 // `ANTHROPIC_BASE_URL` (tuỳ chọn). Trần: `AI_TENANT_DAILY_TOKENS` (token/tenant/ngày UTC, mặc định 5.000.000; `0` ⇒ không
 // trần) — áp cho CẢ gói lẫn API. Test tiêm `provider` giả qua seam.
+import { existsSync } from "node:fs";
+import { win32 } from "node:path";
 import { aiTokensSince, effectiveDailyLimit } from "@ai/contracts/daily-limits";
 import type { Db } from "../db";
 import { logger } from "../logger";
@@ -72,6 +74,21 @@ export type SubOptions = {
   which?: (cmd: string) => string | null;
 };
 
+/** Windows: shim npm `claude.cmd` không chạy được qua `Bun.spawn` khi đường dẫn có dấu cách (vd `C:\Users\MSI VN\…`: cmd.exe cắt
+ *  tại dấu cách) ⇒ dùng thẳng `claude.exe` cạnh shim (`node_modules/@anthropic-ai/claude-code/bin`); không có ⇒ giữ nguyên. */
+export function resolveCliShim(p: string, exists: (f: string) => boolean = existsSync): string {
+  if (!/\.(cmd|bat)$/i.test(p)) return p;
+  const exe = win32.join(
+    win32.dirname(p),
+    "node_modules",
+    "@anthropic-ai",
+    "claude-code",
+    "bin",
+    "claude.exe",
+  );
+  return exists(exe) ? exe : p;
+}
+
 /** Nhà cung cấp gói (Claude Code CLI); không tìm thấy CLI ⇒ null. */
 export function envSubscriptionProvider(
   env: Env = process.env,
@@ -79,8 +96,9 @@ export function envSubscriptionProvider(
 ): ModelProvider | null {
   const which = o.which ?? ((c: string) => Bun.which(c));
   const raw = env.AI_SUB_CLI_PATH?.trim() || "claude";
-  const cliPath = which(raw);
-  if (!cliPath) return null;
+  const found = which(raw);
+  if (!found) return null;
+  const cliPath = resolveCliShim(found);
   const conc = Number(env.AI_SUB_MAX_CONCURRENCY);
   const configDir = env.AI_SUB_CLAUDE_CONFIG_DIR?.trim();
   return claudeCliProvider({

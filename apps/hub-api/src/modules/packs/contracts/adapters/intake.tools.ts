@@ -11,6 +11,7 @@ import {
   type EsignNodeConfig,
   type EsignNodeSigner,
   esignConfigIssues,
+  esignDueHours,
 } from "@ai/contracts/pack-contracts";
 import type {
   NotifyTxRepos,
@@ -73,6 +74,7 @@ const ESIGN_NODE_PARAM_DEFS: readonly PackToolDef["params"][number][] = [
     description: "Thứ tự ký",
   },
   { name: "due_days", type: "number", required: false, description: "Hạn ký (ngày)" },
+  { name: "due_hours", type: "number", required: false, description: "Hạn ký (giờ)" },
   { name: "remind_every_hours", type: "number", required: false, description: "Nhắc mỗi (giờ)" },
 ];
 
@@ -97,7 +99,7 @@ async function planSend(
   const node: SendNodeOpts = {
     ...(users ? { companyUsers: users } : {}),
     ...(cfg.order ? { order: cfg.order } : {}),
-    ...(cfg.due_days !== undefined ? { dueH: cfg.due_days * 24 } : {}),
+    ...(esignDueHours(cfg) !== null ? { dueH: esignDueHours(cfg) as number } : {}),
     ...(cfg.remind_every_hours !== undefined ? { remindEveryH: cfg.remind_every_hours } : {}),
   };
   return {

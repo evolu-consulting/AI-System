@@ -1,10 +1,12 @@
 // CR-122 · E1 · FLOW2-FR-19/20 · SQL của bộ điều phối — mỗi lô số câu CỐ ĐỊNH (Luật 4c): nhận lô (1), flow ứng viên (1), cờ (1),
 // chốt lô (1). Câu văn bản hằng; dữ liệu lô qua mảng `= any` / một tham số JSON. Gọi trong tx scope system.
 import type { FactWhen } from "@ai/contracts/hub-admin";
+import { START_FORM_NODE_KEY } from "@ai/contracts/modules";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { FlowEventInput } from "../../packs/kit/public";
 import { FLOW_EVENT_ATTEMPTS_MAX, type FlowCandidate } from "./match.rules";
+import { scheduleDaysOf } from "./schedule.rules";
 
 export type ClaimedEvent = {
   id: string;
@@ -103,15 +105,19 @@ export async function candidatesOf(tx: Tx, evs: readonly ClaimedEvent[]): Promis
     def_tenant_id: string | null;
     nodes: string[] | null;
     trigger_event: string;
-    trigger: { when?: FactWhen } | null;
+    trigger: { when?: FactWhen; params?: unknown } | null;
   }>(sql`select cf.id, cf.tenant_id, cf.flow_id, cf.position, d.key, d.tenant_id as def_tenant_id,
       d.trigger_event, d.trigger,
       (select jsonb_agg(distinct s ->> 'node') from jsonb_array_elements(d.stages) s where s ? 'node') as nodes
     from hub.company_flows cf
     join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null
       and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
+    left join hub.process_def_releases rl on d.tenant_id is null and rl.def_id = d.id
+      and rl.rel_version = d.published_version
     where cf.enabled and cf.tenant_id = any(${arr(evs.map((e) => e.tenant_id))}::uuid[])
       and d.trigger_event = any(${arr(evs.map((e) => e.event))}::text[])
+      -- flow bắt đầu bằng phiếu KHÔNG BAO GIỜ là ứng viên của sự kiện (cùng định nghĩa "stage đầu" với manual-start.repo.startFlows)
+      and coalesce((case when d.tenant_id is null then rl.stages else d.stages end) -> 0 ->> 'node', '') <> ${START_FORM_NODE_KEY}::text
     order by cf.tenant_id, d.trigger_event, cf.position, cf.id`);
   return rows.map((r) => ({
     companyFlowId: r.id,
@@ -119,6 +125,7 @@ export async function candidatesOf(tx: Tx, evs: readonly ClaimedEvent[]): Promis
     defKey: r.key,
     position: r.position,
     when: r.trigger?.when ?? null,
+    days: scheduleDaysOf(r.trigger_event, r.trigger?.params), // CR-127 E6 · R#12
     tenantId: r.tenant_id,
     event: r.trigger_event,
     defTenantId: r.def_tenant_id,

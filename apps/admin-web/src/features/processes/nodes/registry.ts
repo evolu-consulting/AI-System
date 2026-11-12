@@ -153,7 +153,7 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
   // CR-118 · node form: trường sửa ở `StageFormFields`; `fields` (output) đồng bộ ở `formPatch`/`normalizeForm`.
   form: {
     kind: "form",
-    menu: [{ id: "form", section: "advanced", order: 10, patch: { executor: "form" } }],
+    menu: [{ id: "form", section: "business", order: 45, patch: { executor: "form" } }],
     family: NODE_FAMILY_OF.form,
     labelKey: "process.admin.editor.stage.kind.form",
     defaults: () => ({ ...FORM_PATCH }),

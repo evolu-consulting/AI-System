@@ -1,6 +1,8 @@
 {
   "contracts": {
     "del": {
+      "menu": "Thao tác",
+      "submittedBefore": "Hợp đồng nháp này đã từng gửi duyệt — lượt duyệt và hồ sơ duyệt trước đó cũng bị xoá theo.",
       "orphansAsk": "Xoá các sản phẩm không còn hợp đồng nào dùng?",
       "orphansHint": "Chọn sản phẩm muốn xoá cùng hợp đồng. Không chọn ⇒ giữ lại. Sản phẩm còn hợp đồng khác dùng không bao giờ bị xoá.",
       "button": "Xoá hợp đồng",

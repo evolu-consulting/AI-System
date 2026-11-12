@@ -237,7 +237,8 @@ export function uploadRoutes(view: PackAccessView, d: UploadRoutesDeps): Hono<Pa
   const run = async (c: Context<PackGuardVars>, i: Omit<UploadContractInput, "timeZone">) => {
     try {
       const out = await d.upload({ ...i, timeZone: await d.timeZoneOf(i.who.tenantId) });
-      return c.json(out, 201);
+      const { extractState, ...rest } = out;
+      return c.json({ ...rest, extract_state: extractState }, 201);
     } catch (e) {
       throw e instanceof UploadError ? toAppError(e) : e;
     }

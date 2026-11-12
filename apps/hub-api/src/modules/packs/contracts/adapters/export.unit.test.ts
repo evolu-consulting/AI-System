@@ -21,14 +21,15 @@ const row = {
   kind: "contract",
   type: "purchase",
   direction: "purchase",
-  status: "expiring",
+  status: "done",
+  effect: "expiring",
+  extractState: "ready",
   seller: "Công ty Minh Phát",
   buyer: null,
   sellerSigner: null,
   buyerSigner: "Lê Văn C",
   value: 1_500_000_000,
   endDate: "2026-12-31",
-  actionDeadline: null,
   ownerUserId: "u1",
   categories: ["Bao bì", "Vận chuyển"],
   updatedAt: new Date("2026-03-01T17:30:00Z"), // 00:30 ngày 02/03 giờ VN
@@ -52,7 +53,7 @@ describe("Gap #8 · định dạng", () => {
       kind: "Hợp đồng",
       type: "Mua bán hàng hoá",
       direction: "Mua vào",
-      status: "Sắp đáo hạn",
+      status: "Sắp hết hạn",
       owner: "Trần Thị Lan",
       categories: "Bao bì, Vận chuyển",
       value: 1_500_000_000,
@@ -65,7 +66,7 @@ describe("Gap #8 · định dạng", () => {
     const line = csvLine(exportCells(row, 1, owners), TZ);
     expect(line.endsWith("\r\n")).toBe(true);
     expect(line).toContain('"Hợp đồng ""bao bì"", Minh Phát"');
-    expect(line).toContain(",1500000000,31/12/2026,,Sắp đáo hạn,");
+    expect(line).toContain(",1500000000,31/12/2026,Sắp hết hạn,");
     expect(line).toContain(",02/03/2026 00:30");
   });
   it("CSV chống công thức: ô chữ bắt đầu = + - @ ⇒ thêm nháy đơn; số âm không bị đụng", () => {
@@ -120,7 +121,7 @@ describe("Gap #8 · xlsx", () => {
     expect(sheet).toContain("A &amp; B &lt;x&gt;</t>"); // thoát + bỏ ký tự điều khiển
     expect(sheet).not.toContain('r="K3"'); // value null ⇒ không ô
     expect(sheet.match(/<row /g)?.length).toBe(3);
-    expect(sheet).toContain('<autoFilter ref="A1:Q3"/></worksheet>');
+    expect(sheet).toContain('<autoFilter ref="A1:P3"/></worksheet>');
     expect(strFromU8(files["xl/workbook.xml"] as Uint8Array)).toContain('name="Hợp đồng"');
   });
 });

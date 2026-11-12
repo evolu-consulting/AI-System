@@ -23,44 +23,21 @@ export const statusKey = (r: Pick<CompanyFlowRow, "enabled" | "off_reason">): st
 export type RowActions = {
   open: true;
   toggle: boolean;
-  clone: boolean;
-  revert: boolean;
 };
 
 /**
- * Hành động hợp lệ của dòng: Sao chép chỉ cho flow được gán (chỉ xem); Quay về bản gốc chỉ cho bản công ty (cần có nguồn và đang
- * bật). CR-123 FR-10: bản công ty KHÔNG có Xuất bản/Bật riêng — "Lưu và áp dụng" ở trình sửa là đường duy nhất; chỉ còn Tắt khi đang bật.
- * Bật/Tắt đầy đủ chỉ cho flow được gán từ Thư viện.
+ * Hành động hợp lệ của dòng. CR-123 FR-10: quy trình công ty KHÔNG có Xuất bản/Bật riêng — "Lưu và áp dụng" ở trình sửa là đường duy nhất;
+ * chỉ còn Tắt khi đang bật. CR-127 Z7: không còn flow gán từ Thư viện, không còn "Quay về bản gốc".
  */
 export const actionsOf = (r: CompanyFlowRow): RowActions => ({
   open: true,
-  toggle: r.kind === "assigned" || r.enabled,
-  clone: r.kind === "assigned",
-  revert: r.kind === "company" && r.source !== null && r.enabled,
+  toggle: r.enabled,
 });
 
-/**
- * CR-125 · x7 · MỘT dòng cho mỗi quy trình đang dùng: bản gốc Thư viện đã được bản công ty thay (`off_reason = replaced`) không còn là
- * "một quy trình" của công ty ⇒ nằm trong mục "Mẫu thư viện" (gập), không chen vào danh sách chính.
- */
-export const isReplacedOriginal = (
-  r: Pick<CompanyFlowRow, "kind" | "off_reason" | "enabled">,
-): boolean => r.kind === "assigned" && !r.enabled && r.off_reason === "replaced";
-
-export function splitRows(rows: readonly CompanyFlowRow[]): {
-  main: CompanyFlowRow[];
-  templates: CompanyFlowRow[];
-} {
-  return {
-    main: rows.filter((r) => !isReplacedOriginal(r)),
-    templates: rows.filter(isReplacedOriginal),
-  };
-}
-
-/** Mục trong menu "…" của dòng: Sao chép (chỉ khi chưa sao) đứng riêng ngoài menu; menu giữ Quay về bản gốc + Tắt/Bật. */
-export function menuOf(r: CompanyFlowRow): { revert: boolean; toggle: "off" | "on" | null } {
+/** Mục trong menu "…" của dòng: chỉ còn Tắt (khi đang bật). */
+export function menuOf(r: CompanyFlowRow): { toggle: "off" | "on" | null } {
   const a = actionsOf(r);
-  return { revert: a.revert, toggle: a.toggle ? (r.enabled ? "off" : "on") : null };
+  return { toggle: a.toggle ? (r.enabled ? "off" : "on") : null };
 }
 
 /** Đổi chỗ `fromId` tới vị trí của `toId` trong cùng app; trả danh sách id TOÀN BỘ (mọi app) theo thứ tự mới, hoặc null nếu không đổi. */
@@ -87,10 +64,8 @@ export function reorderIds(
 
 const ERR: Record<string, string> = {
   FLOW_REQUIRED_LAST: "requiredLast",
-  FLOW_PAIR_ACTIVE: "pairActive",
   FLOW_NOT_PUBLISHED: "notPublished",
   FLOW_GROUP_MISSING: "groupMissing",
-  FLOW_NOT_ASSIGNABLE: "notAssignable",
 };
 /** Mã lỗi Hub → khoá i18n `tenants.companyFlows.err.*` (lạ ⇒ `generic`). */
 export const errorKey = (code: string | undefined): string => ERR[code ?? ""] ?? "generic";

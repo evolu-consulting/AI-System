@@ -15,6 +15,7 @@ import {
   AGB,
   api,
   type CtxPa,
+  defsWriteVia,
   type HubPa,
   type Json,
   PA,
@@ -359,7 +360,10 @@ export async function startPf1(o: Pf1Opts = {}): Promise<CtxPf1> {
     redis,
     rt,
     tok,
-    call: async (r, method, path, body) => api(hub, await tok(r), method, path, body),
+    call: async (r, method, path, body) => {
+      const w = defsWriteVia(r, method, path);
+      return api(hub, await tok(w.role as typeof r), method, w.path, body);
+    },
     stop: async () => {
       await hub.stop();
       redis.disconnect();

@@ -2,6 +2,7 @@
 // lưu (#16), tóm tắt bằng AI (#17). Mỗi endpoint một ca đường chính + chặn đọc/ghi chéo (viewer ⇒ 403, tenant khác ⇒ 404). "AI đọc lại" (#5)
 // dùng lại route `POST /extract` đã có test HD2.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { setLegacyStatus } from "../HD1/_support/hd1";
 import { arrangeV2a, type CtxN1, call, type Json, P, seedReview, T } from "../V2-G/_support/v2g";
 import { type CtxJ2, startJ2 } from "../V2-J2/_support/v2j2";
 
@@ -118,7 +119,7 @@ describe("gap-a1 · sửa hoa hồng % sau khi lưu", () => {
       ).status,
     ).toBe(404);
     expect((await row(r.id)).pct).toBe(7.5);
-    await c.sql`update contracts.contracts set status = 'active' where id = ${r.id}`;
+    await setLegacyStatus(c.sql, r.id, "active");
     const locked = await as(P.hoa, "PUT", `/contracts/${r.id}/commission`, {
       version: v + 1,
       commission_pct: 2,

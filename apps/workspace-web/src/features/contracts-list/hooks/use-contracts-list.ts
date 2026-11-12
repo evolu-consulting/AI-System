@@ -47,6 +47,8 @@ const FILTERS: { key: keyof FilterMaps | "value"; kind?: "number" }[] = [
   { key: "owner" },
   { key: "signer" },
   { key: "status" },
+  { key: "effect" },
+  { key: "source" },
   { key: "value", kind: "number" },
 ];
 
@@ -93,6 +95,8 @@ export function useContractsList(
   categoryExtra?: ReactNode,
   date?: DateFilter,
   docType?: DocFilter,
+  /** Nguồn từ URL (`?source=partner`, đường cũ «Hợp đồng đối tác gửi» chuyển hướng tới); bộ lọc Nguồn của bảng thắng nếu có. */
+  urlSource?: "upload" | "partner",
 ) {
   const { t: tr } = useTranslation();
   const { facets, members, cats } = useLookups();
@@ -124,6 +128,7 @@ export function useContractsList(
     pageSize: t.pageSize,
     ...(date ? { date } : {}),
     ...(docType ? { docType } : {}),
+    ...(urlSource ? { urlSource } : {}),
   };
   const qs = listQueryString(params);
   const list = useQuery({

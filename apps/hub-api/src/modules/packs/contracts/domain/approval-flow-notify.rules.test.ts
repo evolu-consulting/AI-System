@@ -1,11 +1,16 @@
 // CR-121 D-6 · bước Thông báo / Chờ tới của khe `contracts.approval`: kiểm, dịch ⇒ stage engine, dựng lại từ stages, danh mục node.
+
 import { describe, expect, it } from "bun:test";
-import { compileDef, routeNext, validateFlow } from "./approval-flow.rules";
+import { compileDef } from "../testing/approval-slot/approval-compile";
+import {
+  fromStages,
+  validateApprovalBody,
+} from "../testing/approval-slot/approval-flow-stages.rules";
+import { compileSlotStages } from "../testing/approval-slot/approval-slot.rules";
+import { APPROVAL_SLOT_NODES } from "../testing/approval-slot/approval-slot-catalog.rules";
+import { routeNext, validateFlow } from "./approval-flow.rules";
 import type { FlowStep } from "./approval-flow.types";
 import { notifyDefInputs, notifyRunInputs } from "./approval-flow-notify.rules";
-import { fromStages, validateApprovalBody } from "./approval-flow-stages.rules";
-import { compileSlotStages } from "./approval-slot.rules";
-import { APPROVAL_SLOT_NODES } from "./approval-slot-catalog.rules";
 
 const G = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const review = (key: string, when: unknown = null): FlowStep =>

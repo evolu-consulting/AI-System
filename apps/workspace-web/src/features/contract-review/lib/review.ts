@@ -12,13 +12,6 @@ export function warningsOf(c: Pick<ContractDetail, "warnings">): ContractWarning
   );
 }
 
-/** Dòng phụ dưới tiêu đề theo trạng thái (`ContractPage.tsx:93`). Đã gửi duyệt ⇒ không còn "kiểm tra rồi xác nhận". */
-export function leadKey(status: string, submitted = false): string | null {
-  if (status === "extracting") return "contracts.review.reading";
-  if (status === "needs_review" && !submitted) return "contracts.review.checkLead";
-  return null;
-}
-
 /** Nút Lưu: chờ xác nhận ⇒ "Lưu nháp" (lưu chưa phải xác nhận). */
 export const saveLabelKey = (confirm: boolean): string =>
   confirm ? "contracts.review.saveDraft" : "contracts.cform.saveChanges";
@@ -26,5 +19,5 @@ export const saveLabelKey = (confirm: boolean): string =>
 /** Thông báo sau khi lưu thành công; chỉ HĐ vừa chuyển sang hiệu lực mới được báo "có hiệu lực". */
 export function savedNoticeKey(status: string, becameActive: boolean): string {
   if (becameActive) return "contracts.cform.reviewSavedActive";
-  return status === "needs_review" ? "contracts.review.savedDraft" : "contracts.review.saved";
+  return status === "draft" ? "contracts.review.savedDraft" : "contracts.review.saved";
 }

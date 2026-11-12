@@ -68,18 +68,22 @@ describe("withPackRoleInTx [CR-122 A2b]", () => {
     const [u] = (await users(o, T, 1, { from: 1260 })) as [string];
     const [c] =
       (await o`insert into contracts.contracts (tenant_id, title, status, created_by, deal, direction, kind)
-      values (${T}, 'HĐ bán', 'needs_review', ${u}, 'sell', 'sale', 'contract') returning id::text`) as unknown as [
+      values (${T}, 'HĐ bán', 'draft', ${u}, 'sell', 'sale', 'contract') returning id::text`) as unknown as [
         { id: string },
       ];
     // trước sửa: COMMIT ném "permission denied for schema contracts" (contracts_v2d_sc_upd chạy bằng hub_api)
     await withHubScope(db, { kind: "system" }, async (tx) => {
       await withPackRoleInTx(tx, "contracts", T, async () => {
-        await tx.execute(sql`update contracts.contracts set status = 'active', confirmed_at = now()
+        // CR-127: `status` chỉ đổi qua cổng `contracts.state_gate` (STATUS_GATE_ONLY); done + effect active = HĐ bán "có hiệu lực".
+        await tx.execute(
+          sql`select set_config('contracts.state_gate', 'bulk:' || txid_current()::text, true)`,
+        );
+        await tx.execute(sql`update contracts.contracts set status = 'done', effect = 'active', confirmed_at = now()
           where id = ${c?.id}::uuid`);
       });
     });
     const [after] = await o`select status from contracts.contracts where id = ${c?.id ?? ""}::uuid`;
-    expect(after?.status).toBe("active");
+    expect(after?.status).toBe("done");
   });
 
   it("khoá gói sai / tenant không phải uuid ⇒ lỗi trước khi đổi gì", async () => {

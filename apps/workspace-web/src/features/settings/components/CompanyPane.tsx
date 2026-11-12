@@ -162,20 +162,6 @@ export function CompanyPane({
           )}
         </SettingsRow>
       </SettingsGroup>
-      <SettingsGroup title={s("approvalTitle")}>
-        <SettingsRow label={s("approval")}>
-          <div className="flex items-center gap-3">
-            <SettingsSwitch
-              checked={c.approval_enabled}
-              onChange={(v) => set({ ...c, approval_enabled: v })}
-              label={s("approval")}
-            />
-            <span className="text-caption text-dim">
-              {c.approval_enabled ? s("approvalOn") : s("approvalOff")}
-            </span>
-          </div>
-        </SettingsRow>
-      </SettingsGroup>
       <SettingsGroup title={s("stockTitle")}>
         <SettingsRow label={s("stockOver")}>
           <div className="flex items-center gap-3">

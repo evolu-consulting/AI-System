@@ -22,8 +22,8 @@ const labelsOf = (
 describe("capsOf + nav Community", () => {
   const labels = (n: PackNavResponse | null) => labelsOf(communityManifest, capsOf(n));
   it("chưa tải / lỗi / thành viên thường ⇒ chỉ Bảng tin + Bài của tôi", () => {
-    expect(labels(null)).toEqual(["contracts.nav.feed", "contracts.nav.myPosts"]);
-    expect(labels(nav())).toEqual(["contracts.nav.feed", "contracts.nav.myPosts"]);
+    expect(labels(null)).toEqual(["contracts.nav.feed", "contracts.nav.myProfile"]);
+    expect(labels(nav())).toEqual(["contracts.nav.feed", "contracts.nav.myProfile"]);
   });
   it("người duyệt ⇒ đủ 3 mục; khe duyệt bài tắt ⇒ mất hàng chờ nhưng còn yêu cầu + báo cáo", () => {
     const all = nav(["community.review", 1], ["community.join", 0], ["community.reports", 0]);

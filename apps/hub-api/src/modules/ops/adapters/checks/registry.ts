@@ -2,6 +2,7 @@
 import type { OpsCheck } from "../../application/ops.check";
 import { appRolesCheck } from "./app-roles.check";
 import { backupCheck } from "./backup.check";
+import { contractStateDriftCheck } from "./contract-state-drift.check";
 import { dbRedisCheck } from "./db-redis.check";
 import { diskCheck } from "./disk.check";
 import { flowCoverageCheck } from "./flow-coverage.check";
@@ -30,4 +31,5 @@ export const OPS_CHECKS: readonly OpsCheck[] = [
   tenantProfileCheck,
   notifyConfigCheck,
   flowFlagCheck,
+  contractStateDriftCheck,
 ];

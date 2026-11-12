@@ -34,6 +34,7 @@ export function myApprovals(d: MyApprovalsDeps) {
           stage_name: t.stage_name,
           due_at: t.due_at,
           escalated: t.escalated,
+          ...(t.delegated_from && { delegated_from: t.delegated_from }),
         },
       ];
     });

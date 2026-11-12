@@ -61,7 +61,7 @@ describe("HD9-AC09 · số câu SQL cố định", () => {
       });
     expect(w.lot.id).toBeString();
   });
-  it("bán 1 và 50 người giữ, hoàn tất gia hạn 1 và 50 chữ ký ⇒ cùng số câu (phạm vi tx + khoá + kiểm + ghi + outbox/kiểm serial = 5)", async () => {
+  it("bán 1 và 50 người giữ, hoàn tất gia hạn 1 và 50 chữ ký ⇒ cùng số câu (CR-127: 6 câu — thêm một câu ghi trạng thái done của HĐ bán; hằng số theo số người giữ)", async () => {
     await arrangeCks(c);
     const big = await lot(100);
     const sale = (n: number, tag: string, name: string) =>
@@ -75,7 +75,7 @@ describe("HD9-AC09 · số câu SQL cố định", () => {
       });
     const n1 = await count(() => sale(1, "A0", "Một"));
     const n50 = await count(() => sale(50, "B0", "Năm mươi"));
-    expect({ n1, n50 }).toEqual({ n1: 5, n50: 5 });
+    expect({ n1, n50 }).toEqual({ n1: 6, n50: 6 });
     const one = await ok(sale(1, "C0", "Ba"));
     const fifty = await ok(sale(40, "D0", "Bốn mươi"));
     const r1 = await ok(kcall(c, P.hoa, "POST", `/groups/${one.contract_id}/renew`, {}));

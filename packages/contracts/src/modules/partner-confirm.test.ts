@@ -49,12 +49,9 @@ describe("partnerChecklist", () => {
     expect(c.ready_to_receive).toBe(false);
     expect(c.ready_to_send).toBe(false); // hồ sơ cần cho cả hai hướng
   });
-  it("chưa có flow nhận ⇒ nút Gán kèm id mẫu; chỉ chặn hướng nhận", () => {
+  it("chưa có flow nhận ⇒ nút Mở Quy trình (tạo từ sơ đồ trống); chỉ chặn hướng nhận", () => {
     const c = partnerChecklist(admin, { ...hub, receive_flow: false });
-    expect(state(c, "receive_flow")).toMatchObject({
-      fix: "assign-receive-flow",
-      params: { template: "tpl-1" },
-    });
+    expect(state(c, "receive_flow")).toMatchObject({ fix: "open-flows" });
     expect(c.ready_to_receive).toBe(false);
     expect(c.ready_to_send).toBe(true);
   });

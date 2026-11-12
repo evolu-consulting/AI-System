@@ -1,6 +1,6 @@
-// CR-107 · eng-card-ui: lý do attention ⇒ khoá i18n + nút theo quyền.
+// CR-107 · eng-card-ui: lý do attention ⇒ khoá i18n (CR-127 Z3b: không còn nút Mở lại/Thử lại — route đã gỡ).
 import { describe, expect, test } from "bun:test";
-import { attentionActions, attentionText } from "./attention";
+import { attentionText } from "./attention";
 
 const B = "contracts.approval.engine.attention.reason";
 
@@ -62,25 +62,5 @@ describe("attentionText", () => {
     expect(attentionText({ kind: "stalled", reason: null }).key).toBe(
       "contracts.approval.engine.release.OTHER",
     );
-  });
-});
-
-describe("attentionActions", () => {
-  test("owner: needs_decision có Thử lại + Huỷ & mở lại; stalled có Mở lại", () => {
-    expect(attentionActions({ kind: "needs_decision" }, true)).toEqual({
-      retry: true,
-      cancelReopen: true,
-      reopen: false,
-      tellOwner: false,
-    });
-    expect(attentionActions({ kind: "stalled" }, true).reopen).toBe(true);
-  });
-  test("không phải owner: không nút, có câu báo chủ hợp đồng", () => {
-    expect(attentionActions({ kind: "needs_decision" }, false)).toEqual({
-      retry: false,
-      cancelReopen: false,
-      reopen: false,
-      tellOwner: true,
-    });
   });
 });

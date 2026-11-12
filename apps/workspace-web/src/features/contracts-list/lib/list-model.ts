@@ -1,28 +1,28 @@
 // HD-FR-51 · S03 · port `ContractsPage.tsx:20-58` (nhãn trạng thái, tên rút gọn, người ký) + dựng truy vấn phía server từ bộ lọc
 // của `useTable`. Thuần: không React, không fetch. Tuỳ chọn lọc lấy từ facets (cả tenant), không từ trang hiện tại.
-import type { ContractFacets, ContractStatus } from "@ai/contracts/pack-contracts";
+import {
+  CONTRACT_EFFECTS,
+  CONTRACT_SOURCES,
+  type ContractFacets,
+  type ContractStatus,
+} from "@ai/contracts/pack-contracts";
 import type { Cond } from "~/features/table";
 import { type DateFilter, dateParams } from "./date-filter";
 import { type DocFilter, docTypeParams } from "./doc-list";
 
 export type Tone = "late" | "soon" | "ok" | "dim" | "act";
 
-/** Nhóm trạng thái hiển thị (một nhãn có thể gồm nhiều mã); thứ tự = thứ tự gợi ý trong bộ lọc. */
+/** CR-127 · U6: bốn trạng thái (BR-35); thứ tự = thứ tự gợi ý trong bộ lọc. Hiệu lực là chip/bộ lọc riêng (chỉ HĐ đã duyệt xong). */
 export const STATUS_VIEW: Record<ContractStatus, { tone: Tone }> = {
-  needs_review: { tone: "act" },
-  extracting: { tone: "dim" },
-  extract_failed: { tone: "late" },
-  active: { tone: "dim" },
-  expiring: { tone: "soon" },
-  expired: { tone: "late" },
-  renewed: { tone: "dim" },
-  terminated: { tone: "dim" },
-  rejected: { tone: "late" },
+  draft: { tone: "dim" },
+  processing: { tone: "act" },
+  reject: { tone: "late" },
+  done: { tone: "ok" },
 };
 
-/** Hàm dịch tối thiểu (GAP-E #34: nhãn qua i18n `contracts.gape.*`, không còn chuỗi cứng). */
+/** Hàm dịch tối thiểu (nhãn qua i18n, không chuỗi cứng). */
 export type Tr = (key: string) => string;
-export const statusLabel = (t: Tr, s: ContractStatus): string => t(`contracts.gape.status.${s}`);
+export const statusLabel = (t: Tr, s: ContractStatus): string => t(`contracts.u5.status.${s}`);
 
 /** "Nguyễn Văn A – Giám đốc" → "Nguyễn Văn A": lọc theo tên người, không theo chức danh. */
 export const personOf = (s: string): string => (s.split(/\s[–-]\s|,/)[0] ?? "").trim();
@@ -48,6 +48,10 @@ export type FilterMaps = {
   owner: Choice[];
   signer: Choice[];
   status: Choice[];
+  /** Hiệu lực (chỉ HĐ đã duyệt xong) — danh sách cố định, không từ facets. */
+  effect: Choice[];
+  /** Nguồn: Mình tải lên / Đối tác gửi (BR-59). */
+  source: Choice[];
 };
 export type MemberNames = ReadonlyMap<string, string>;
 
@@ -70,6 +74,8 @@ export function filterMaps(f: ContractFacets | undefined, members: MemberNames, 
     owner: [],
     signer: [],
     status: [],
+    effect: [],
+    source: [],
   };
   if (!f) return none;
   const order = Object.keys(STATUS_VIEW);
@@ -88,6 +94,14 @@ export function filterMaps(f: ContractFacets | undefined, members: MemberNames, 
     owner: group(f.owner.map((o) => [members.get(o.v) ?? t("contracts.gape.ownerUnknown"), o.v])),
     signer: group(f.signer.map((s) => [personOf(s.label), s.label])),
     status: group(status, false),
+    effect: group(
+      CONTRACT_EFFECTS.map((e): [string, string] => [t(`contracts.u5.effect.${e}`), e]),
+      false,
+    ),
+    source: group(
+      CONTRACT_SOURCES.map((s): [string, string] => [t(`contracts.u6.source.${s}`), s]),
+      false,
+    ),
   };
 }
 
@@ -108,6 +122,8 @@ export type ListParams = {
   date?: DateFilter;
   /** DOC-ui-list: bộ lọc loại chứng từ; vắng ⇒ không gửi tham số loại (phản hồi HD1 cũ). */
   docType?: DocFilter;
+  /** Nguồn từ URL khi bảng chưa chọn Nguồn. */
+  urlSource?: "upload" | "partner";
 };
 
 /** Phần lọc dùng chung cho danh sách và xuất tệp (không phân trang): `q`, các lựa chọn, giá trị, ngày. `q` < 2 ký tự bị bỏ (API từ chối). */
@@ -125,6 +141,9 @@ function filterParams(p: ListParams): URLSearchParams {
   add("owner", p.maps.owner);
   add("signer", p.maps.signer);
   add("status", p.maps.status);
+  add("effect", p.maps.effect);
+  add("source", p.maps.source);
+  if (p.urlSource && !u.has("source")) u.set("source", p.urlSource);
   const v = p.conds.value;
   if (v?.min != null) u.set("value_min", String(v.min));
   if (v?.max != null) u.set("value_max", String(v.max));

@@ -2,7 +2,7 @@
 // Lưu (Hub kiểm FORM_INVALID: `output.fields` phải khớp trường form), Bật (publish), tải lại còn; sửa trường ở view Danh sách.
 // Dùng stack của `playwright.fnr.config.ts` (Hub thật + Runtime giả + admin-web). Mỗi ca tự dựng def riêng qua API (key ngẫu nhiên).
 import { expect, type Page, test } from "@playwright/test";
-import { ADMIN_URL, adminLogin, hub, settle, tok } from "../P-a/_pa-support";
+import { ACME, ADMIN_URL, hub, platformLogin, platTok, settle } from "../P-a/_pa-support";
 
 test.afterEach(() => settle());
 
@@ -61,7 +61,7 @@ const setStage = stage(
 
 async function createDef(prefix: string, stages: Json[]): Promise<string> {
   const key = uniq(prefix);
-  const r = await hub(await tok("Adm"), "POST", "/process-defs", {
+  const r = await hub(await platTok(), "POST", `/process-defs?tenant_id=${ACME}`, {
     key,
     name: `FNR ${key}`,
     description: "e2e editor form CR-118",
@@ -77,7 +77,7 @@ async function createDef(prefix: string, stages: Json[]): Promise<string> {
   return r.json.id as string;
 }
 const getDef = async (id: string): Promise<Json> => {
-  const r = await hub(await tok("Adm"), "GET", `/process-defs/${id}`);
+  const r = await hub(await platTok(), "GET", `/process-defs/${id}?tenant_id=${ACME}`);
   expect(r.status).toBe(200);
   return r.json;
 };
@@ -98,8 +98,8 @@ test("CR-118 · editor form · Canvas: thêm bước form + trường ⇒ Lưu 2
   page: p,
 }) => {
   const id = await createDef("fnr-form-a", [setStage]);
-  await adminLogin(p);
-  await p.goto(`${ADMIN_URL}/processes/${id}`);
+  await platformLogin(p);
+  await p.goto(`${ADMIN_URL}/processes/${id}?company=${ACME}`);
   await expect(canvas(p)).toBeVisible();
 
   await p.getByRole("button", { name: "Thêm bước", exact: true }).click();
@@ -193,8 +193,8 @@ test("CR-118 · editor form · Danh sách: sửa trường của bước form c�
       review,
     ),
   ]);
-  await adminLogin(p);
-  await p.goto(`${ADMIN_URL}/processes/${id}`);
+  await platformLogin(p);
+  await p.goto(`${ADMIN_URL}/processes/${id}?company=${ACME}`);
   await expect(canvas(p)).toBeVisible();
   // CR-121 F9: công tắc chế độ dùng chung `ViewModeToggle` (nút "Danh sách bước"), không còn tab
   await p.getByTestId("flows-view-list").click();

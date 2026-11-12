@@ -127,13 +127,6 @@ export const updateDef = (
     body,
   });
 
-export const copyDef = (id: string, tenantId?: string): Promise<ProcessDef> =>
-  api<ProcessDef>(url(`/process-defs/${enc(id)}/copy`), {
-    method: "POST",
-    query: { tenant_id: tenantId },
-    body: {},
-  });
-
 export const deleteDef = (id: string, version: number, tenantId?: string): Promise<undefined> =>
   api<undefined>(url(`/process-defs/${enc(id)}`), {
     method: "DELETE",

@@ -1,6 +1,7 @@
 // W1 · UAT CR-095 B5: đợt thanh toán của HĐ CHƯA xác nhận (needs_review — kể cả HĐ vừa bị mở lại duyệt do sửa MST) không vào
 // "Việc của tôi" và bảng Thanh toán (dòng, tổng, quá hạn), như mgmt-app (đợt chỉ có sau khi HĐ được xác nhận). Xác nhận lại ⇒ hiện lại.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { setLegacyStatus } from "../HD1/_support/hd1";
 import {
   addObligation,
   arrangeW1,
@@ -55,9 +56,9 @@ describe("W1 · UAT B5: chỉ HĐ đã xác nhận có việc tiền", () => {
     expect(obIds(await board("pay"))).toEqual([okLate]);
 
     // xác nhận ⇒ đợt hiện lại; mở lại duyệt (vd sửa MST) ⇒ ẩn lần nữa
-    await c.sql`update contracts.contracts set status = 'active' where id = ${wait}`;
+    await setLegacyStatus(c.sql, wait, "active");
     expect(obIds(await board()).sort()).toEqual([okLate, waitLate, waitSoon].sort());
-    await c.sql`update contracts.contracts set status = 'needs_review' where id = ${wait}`;
+    await setLegacyStatus(c.sql, wait, "needs_review");
     expect(obIds(await board())).toEqual([okLate]);
     expect((await myWork(c, P.hoa)).json.items.map((i: { id: string }) => i.id)).not.toContain(
       `obligation:${waitLate}`,

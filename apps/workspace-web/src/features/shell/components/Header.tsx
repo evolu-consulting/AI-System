@@ -76,12 +76,8 @@ export function Header({
           </span>
         )}
         <span data-testid="topbar-bell" className="flex items-center">
-          <span
-            ref={(el) => topbarSlots.set("bell", el)}
-            data-slot="topbar-bell"
-            className="flex items-center"
-          />
-          {packs.contracts && !inCommunity && <ConnectedBell />}
+          {/* CR-130 · MỘT chuông cho mọi người đã đăng nhập (kể cả đối tác, kể cả ở Bảng tin); chân "Xem tất cả" chỉ khi có gói Sổ Hợp Tác */}
+          <ConnectedBell />
         </span>
         {packs.contracts && (
           <button

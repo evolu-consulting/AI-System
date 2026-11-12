@@ -8,12 +8,15 @@ import type {
   ExtractionSource,
   RequestExtractOutcome,
 } from "../application/extraction.ports";
+import { initialState } from "../domain/contract-state.rules";
+import { contractStateRepo, refreshEffect } from "./contract-state.repo";
 
 const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v);
 const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
 
 type SourceRow = {
   status: string;
+  extract_state: string;
   version: number;
   items: unknown;
   kind: "contract" | "appendix";
@@ -38,6 +41,7 @@ function toSource(r: SourceRow): ExtractionSource {
   const items = (json(r.items) ?? []) as { qty: unknown; unit_price: unknown }[];
   return {
     status: r.status,
+    extractState: r.extract_state,
     version: r.version,
     items: items.map((i) => ({ qty: num(i.qty), unit_price: num(i.unit_price) })),
     kind: r.kind,
@@ -64,7 +68,7 @@ const ITEMS_JSON = sql`(code text, name text, spec text, unit text, qty numeric,
 function sourceQ(tx: Tx, tenantId: string): ExtractionRepo["source"] {
   return async (id) => {
     const rows =
-      await tx.execute<SourceRow>(sql`select c.status, c.version, c.kind, c.source_text as text, c.fields,
+      await tx.execute<SourceRow>(sql`select c.status, c.extract_state, c.version, c.kind, c.source_text as text, c.fields,
         (select coalesce(jsonb_agg(jsonb_build_object('qty', i.qty, 'unit_price', i.unit_price)), '[]'::jsonb)
           from contracts.contract_items i where i.contract_id = c.id and i.tenant_id = ${tenantId}::uuid) as items,
         f.org, f.file_id, f.mime, p.fields as p_fields,
@@ -86,6 +90,7 @@ function saveResultQ(tx: Tx, tenantId: string): ExtractionRepo["saveResult"] {
   return async (id, res) => {
     const items = res.items ?? [];
     const aiJson = res.ai ? JSON.stringify(res.ai) : null;
+    const terms = res.penaltyTerms ?? null; // K7 · null ⇒ bản trích cũ: không đụng penalty_terms
     // V2-G: loại HĐ AI đoán chỉ điền khi HĐ chưa có loại (người đã chọn/lưu thì giữ); Giới thiệu = tiền vào ⇒ hướng "sale".
     const aiDeal = res.ai?.deal ?? null;
     const rows = await tx.execute<{ id: string }>(sql`with u as (
@@ -95,8 +100,8 @@ function saveResultQ(tx: Tx, tenantId: string): ExtractionRepo["saveResult"] {
           deal = coalesce(deal, ${aiDeal}::text),
           direction = coalesce(direction, case ${aiDeal}::text when 'buy' then 'purchase' when 'sell' then 'sale'
             when 'referral' then 'sale' end),
-          status = 'needs_review', error = null, version = version + 1, updated_at = now()
-        where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and status = 'extracting'
+          error = null, updated_at = now()
+        where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and status = 'draft' and extract_state = 'reading'
           and version = ${res.expected}::int
         returning id),
       i as (
@@ -108,9 +113,25 @@ function saveResultQ(tx: Tx, tenantId: string): ExtractionRepo["saveResult"] {
       e as (
         insert into contracts.contract_events (tenant_id, contract_id, type, data)
         select ${tenantId}::uuid, u.id, 'extracted',
-          jsonb_build_object('items', ${items.length}::int, 'warnings', ${res.warnings.length}::int) from u)
+          jsonb_build_object('items', ${items.length}::int, 'warnings', ${res.warnings.length}::int) from u),
+      pd as (delete from contracts.penalty_terms p using u
+        where ${terms !== null}::boolean and p.contract_id = u.id and p.tenant_id = ${tenantId}::uuid and p.source = 'ai'),
+      pi as (
+        insert into contracts.penalty_terms (tenant_id, contract_id, party, trigger, rate_pct, basis, cap_pct, cap_amount,
+          clause_ref, page, quote, source)
+        select ${tenantId}::uuid, u.id, x.party, x.trigger, x.rate_pct, x.basis, x.cap_pct, x.cap_amount, x.clause_ref,
+          x.page, nullif(x.quote, ''), 'ai'
+        from u, jsonb_to_recordset(${JSON.stringify(terms ?? [])}::jsonb) as x (party text, trigger text, rate_pct numeric,
+          basis text, cap_pct numeric, cap_amount bigint, clause_ref text, page int, quote text))
       select id from u`);
-    return rows.length > 0;
+    if (rows.length === 0) return false;
+    // CR-127 K1b · `extract_state` reading → ready + version+1 + event `status_changed` qua CỔNG (draft → draft, ev `extracted`).
+    const g = await contractStateRepo(tx, tenantId).applyTransition({
+      contractId: id,
+      ev: "extracted",
+      actorId: null,
+    });
+    return g.ok;
   };
 }
 
@@ -118,8 +139,8 @@ function saveWarningsQ(tx: Tx, tenantId: string): ExtractionRepo["saveWarnings"]
   return async (id, warnings, expected) => {
     const rows = await tx.execute<{ id: string }>(sql`update contracts.contracts
       set warnings = ${JSON.stringify(warnings)}::jsonb
-      where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and status = 'needs_review'
-        and version = ${expected}::int
+      where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and status in ('draft', 'processing')
+        and extract_state = 'ready' and version = ${expected}::int
       returning id`);
     return rows.length > 0;
   };
@@ -127,44 +148,50 @@ function saveWarningsQ(tx: Tx, tenantId: string): ExtractionRepo["saveWarnings"]
 
 function saveFailureQ(tx: Tx, tenantId: string): ExtractionRepo["saveFailure"] {
   return async (id, code) => {
-    const rows = await tx.execute<{ id: string }>(sql`with u as (
-        update contracts.contracts set status = 'extract_failed', error = ${code}, version = version + 1,
-          updated_at = now()
-        where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and status = 'extracting' returning id),
-      e as (
-        insert into contracts.contract_events (tenant_id, contract_id, type, data)
-        select ${tenantId}::uuid, u.id, 'extract_failed', jsonb_build_object('code', ${code}::text) from u)
-      select id from u`);
-    return rows.length > 0;
+    // CR-127 K1b · CỔNG `extract_failed` (draft → draft, `extract_state = failed`), CAS còn `reading`; rồi ghi mã lỗi + event.
+    const g = await contractStateRepo(tx, tenantId).applyTransition({
+      contractId: id,
+      ev: "extract_failed",
+      actorId: null,
+      reason: code,
+      extra: sql`c.extract_state = 'reading'`,
+    });
+    if (!g.ok) return false;
+    await tx.execute(sql`with u as (update contracts.contracts set error = ${code}
+        where id = ${id}::uuid and tenant_id = ${tenantId}::uuid)
+      insert into contracts.contract_events (tenant_id, contract_id, type, data)
+      values (${tenantId}::uuid, ${id}::uuid, 'extract_failed', jsonb_build_object('code', ${code}::text))`);
+    return true;
   };
 }
 
 function requestExtractQ(tx: Tx, tenantId: string): ExtractionRepo["requestExtract"] {
   return async (id, actor): Promise<RequestExtractOutcome> => {
+    // CR-127 K1b · HĐ vẫn `draft`: chỉ `extract_state` ready|failed → reading (không đổi status ⇒ không qua cổng).
     const rows = await tx.execute<{
       status: string;
+      extract_state: string;
       has_src: boolean;
       version: number | null;
     }>(sql`with c as (
-        select id, status, (source_text is not null or file_id is not null) as has_src
+        select id, status, extract_state, (source_text is not null or file_id is not null) as has_src
         from contracts.contracts where id = ${id}::uuid and tenant_id = ${tenantId}::uuid for update),
       u as (
-        update contracts.contracts t set status = 'extracting', error = null, version = t.version + 1,
+        update contracts.contracts t set extract_state = 'reading', error = null, version = t.version + 1,
           updated_at = now()
         from c where t.id = c.id and t.tenant_id = ${tenantId}::uuid and c.has_src
-          and c.status in ('needs_review', 'extract_failed')
+          and c.status = 'draft' and c.extract_state in ('ready', 'failed')
         returning t.id, t.version),
       e as (
         insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
         select ${tenantId}::uuid, u.id, 'extract_requested', ${actor}::uuid, '{}'::jsonb from u)
-      select c.status, c.has_src, u.version from c left join u on u.id = c.id`);
+      select c.status, c.extract_state, c.has_src, u.version from c left join u on u.id = c.id`);
     const r = rows[0];
     if (!r) return { kind: "not_found" };
     if (r.version !== null) return { kind: "ok", version: r.version };
-    if (r.status === "extracting") return { kind: "busy" };
-    // Đã duyệt/đang theo dõi (HD3+): không trích lại (review Thấp 7).
-    if (r.status !== "needs_review" && r.status !== "extract_failed")
-      return { kind: "not_allowed" };
+    if (r.status === "draft" && r.extract_state === "reading") return { kind: "busy" };
+    // Đang duyệt/đã xong/bị từ chối: không trích lại (review Thấp 7).
+    if (r.status !== "draft") return { kind: "not_allowed" };
     return { kind: "no_source" };
   };
 }
@@ -172,24 +199,22 @@ function requestExtractQ(tx: Tx, tenantId: string): ExtractionRepo["requestExtra
 function insertManualQ(tx: Tx, tenantId: string): ExtractionRepo["insertManual"] {
   return async (m) => {
     const items = m.items;
-    // V2-A · C3: cờ duyệt đọc TRONG câu (`approval_on()`, RLS tenant) ⇒ tắt duyệt: HĐ `active` + mốc mặc định cùng câu.
-    // CR-101 DOC-deals: giao dịch bỏ qua cờ duyệt (lưu là có hiệu lực) — `doc_type = 'deal'` + nguồn.
+    // CR-127 K1b · R#2: nhập tay / giao dịch (`initialState`) vào DONE NGAY (`created_done`), có mốc mặc định, không qua duyệt; `effect`
+    // tính sau INSERT bằng `refresh_effect` (một câu). CR-101 DOC-deals: giao dịch = `doc_type = 'deal'` + nguồn.
     const src = m.deal_doc?.source ?? null;
+    const init = initialState(src ? "deal" : "create_manual");
     const rows = await tx.execute<{
       id: string;
       version: number;
-      status: "needs_review" | "active";
-    }>(sql`with s as (select contracts.approval_on() and ${src}::text is null as on),
-      c as (
+      status: "done";
+    }>(sql`with c as (
         insert into contracts.contracts (id, tenant_id, kind, doc_type, source, title, direction, deal, commission_pct,
-          commission_fixed, status, owner_user_id, created_by, fields, warnings, confirmed_at, confirmed_by)
-        select ${m.id}::uuid, ${tenantId}::uuid, 'contract',
+          commission_fixed, status, extract_state, owner_user_id, created_by, fields, warnings, confirmed_at, confirmed_by)
+        values (${m.id}::uuid, ${tenantId}::uuid, 'contract',
           case when ${src}::text is null then 'contract' else 'deal' end, ${src}::text, ${m.title}, ${m.direction}, ${m.deal},
-          ${m.commissionPct}::numeric, ${m.commissionFixed}::bigint,
-          case when s.on then 'needs_review' else 'active' end,
+          ${m.commissionPct}::numeric, ${m.commissionFixed}::bigint, ${init.status}, ${init.extractState},
           ${m.userId}::uuid, ${m.userId}::uuid, ${JSON.stringify(m.fields)}::jsonb, ${JSON.stringify(m.warnings)}::jsonb,
-          case when s.on then null else now() end, case when s.on then null else ${m.userId}::uuid end
-        from s
+          now(), ${m.userId}::uuid)
         returning id, version, status, direction, fields),
       ms as (
         insert into contracts.obligations (tenant_id, contract_id, party_key, direction, kind, seq, due_date, title, owner,
@@ -199,8 +224,7 @@ function insertManualQ(tx: Tx, tenantId: string): ExtractionRepo["insertManual"]
             c.fields -> (case when c.direction = 'sale' then 'buyer' else 'supplier' end || '_tax_id') ->> 'value'),
           x.direction, x.kind, x.ord, x.due_date, x.title, x.owner, 'default'
         from c, jsonb_to_recordset(${JSON.stringify(m.milestones.map((x, ord) => ({ ...x, ord: ord + 1 })))}::jsonb)
-          as x (ord int, kind text, direction text, due_date date, title text, owner text)
-        where c.status = 'active'),
+          as x (ord int, kind text, direction text, due_date date, title text, owner text)),
       i as (
         insert into contracts.contract_items (tenant_id, contract_id, ord, name, unit, qty, unit_price, verified, edited,
           product_id, component_ids)
@@ -216,6 +240,7 @@ function insertManualQ(tx: Tx, tenantId: string): ExtractionRepo["insertManual"]
       select id, version, status from c`);
     const r = rows[0];
     if (!r) throw new Error("insert-manual: no row");
+    if (init.sideEffects.includes("refresh_effect")) await refreshEffect(tx, [r.id]);
     return { id: r.id, version: r.version, status: r.status };
   };
 }

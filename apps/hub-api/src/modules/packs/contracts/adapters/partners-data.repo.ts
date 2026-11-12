@@ -27,8 +27,7 @@ const ISO = sql`'^\\d{4}-\\d{2}-\\d{2}$'`;
 
 /** HĐ đã duyệt người dùng thấy (RLS), trừ HĐ gia hạn CKS mất khách (`lost_renewal`). */
 const confirmed = (c: string) =>
-  sql.raw(`${c}.tenant_id = (select t from p) and ${c}.status in
-    ('active', 'expiring', 'expired', 'renewed', 'terminated')
+  sql.raw(`${c}.tenant_id = (select t from p) and ${c}.status = 'done'
     and not exists (select 1 from contracts.cks_renewals r where r.tenant_id = ${c}.tenant_id
       and r.new_contract_id = ${c}.id and r.status = 'lost')`);
 
@@ -39,14 +38,14 @@ const confirmed = (c: string) =>
 const bCte = sql`b as (
     select c.id, c.kind, c.status, c.parent_id, ${contractNameSql("c")} as title, c.created_at, c.direction as dir,
       c.fields -> 'effective_date' ->> 'value' as eff,
-      c.fields -> 'supplier_name' ->> 'value' as pname, c.fields -> 'supplier_tax_id' ->> 'value' as ptax
+      c.fields -> 'supplier_name' ->> 'value' as pname, c.fields -> 'supplier_tax_id' ->> 'value' as ptax, c.effect
     from contracts.contracts c
     where ${confirmed("c")} and c.kind = 'contract' and c.direction is distinct from 'sale' and c.superseded_at is null
       and c.doc_type <> 'framework' -- CR-101: HĐ NT không là nguồn giá/điểm
     union all
     select a.id, a.kind, a.status, a.parent_id, ${contractNameSql("a")} as title, a.created_at, coalesce(a.direction, par.direction),
       a.fields -> 'effective_date' ->> 'value',
-      src.f -> (src.sd || '_name') ->> 'value', src.f -> (src.sd || '_tax_id') ->> 'value'
+      src.f -> (src.sd || '_name') ->> 'value', src.f -> (src.sd || '_tax_id') ->> 'value', a.effect
     from contracts.contracts a
     left join lateral (select x.direction, x.fields from contracts.contracts x
       where x.tenant_id = a.tenant_id and x.id = a.parent_id limit 1) par on true
@@ -72,7 +71,7 @@ const factsJson = sql`coalesce((select json_agg(json_build_array(g.role, g.pname
 // Luật 4c: các tập lớn đi dạng CỘT (`array_agg` từng cột, một `to_json` mỗi mảng) — không dựng một mảng json cho từng hàng.
 // Thứ tự trong mọi cột của một tập = thứ tự của truy vấn con đã sắp (Postgres giữ thứ tự đầu vào cho `array_agg`).
 const buyJson = sql`(select json_build_array(array_agg(b.id), array_agg(b.kind), array_agg(b.status), array_agg(b.parent_id),
-    array_agg(b.dir), array_agg(b.title), array_agg(b.eff), array_agg(b.pname), array_agg(b.ptax))
+    array_agg(b.dir), array_agg(b.title), array_agg(b.eff), array_agg(b.pname), array_agg(b.ptax), array_agg(b.effect))
   from (select * from b order by b.created_at, b.id) b)`;
 
 // Dòng hàng trỏ HĐ bằng VỊ TRÍ của HĐ trong `buy` (số nhỏ thay uuid 36 ký tự mỗi dòng — Luật 4c: bớt ~⅓ chữ JSON phải gửi + đọc).
@@ -109,7 +108,7 @@ type N = number | null;
 type Cols<T extends unknown[]> = { [K in keyof T]: T[K][] | null };
 type Raw = {
   facts: [Role, S, S, number, S][];
-  buy: Cols<[string, "contract" | "appendix", string, S, S, string, S, S, S]>;
+  buy: Cols<[string, "contract" | "appendix", string, S, S, string, S, S, S, S]>;
   items: Cols<[number, S, string, S, S, N, N, N, S, S]>;
   groups: GroupRow[];
   pend: PendRow[];
@@ -160,7 +159,7 @@ function itemsBy(c: Raw["items"]): Map<number, PriceItem[]> {
 const day = (v: S | undefined) => (v && isIsoDate(v) ? v : null);
 
 function buyOf(c: Raw["buy"], items: Map<number, PriceItem[]>): PricedContract[] {
-  const [id, kind, status, parent, dir, title, eff, pname, ptax] = colsOf(c) as unknown as [
+  const [id, kind, status, parent, dir, title, eff, pname, ptax, effect] = colsOf(c) as unknown as [
     string[],
     ("contract" | "appendix")[],
     string[],
@@ -170,11 +169,13 @@ function buyOf(c: Raw["buy"], items: Map<number, PriceItem[]>): PricedContract[]
     S[],
     S[],
     S[],
+    S[],
   ];
   return id.map((x, i) => ({
     id: x,
     kind: kind[i] as "contract" | "appendix",
     status: status[i] as string,
+    effect: effect[i] ?? null,
     parent: parent[i] ?? null,
     direction: dir[i] ?? null,
     title: title[i] as string,

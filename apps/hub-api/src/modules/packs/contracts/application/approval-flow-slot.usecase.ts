@@ -46,6 +46,7 @@ function bodyOf(
   if (req.values !== undefined) return fail("FLOW_INPUT_INVALID", 422);
   const b: ApprovalAction = { action: action as ApprovalAction["action"] };
   if (req.feedback) b.feedback = req.feedback;
+  if (req.evidence) b.evidence = req.evidence; // CR-127 · E4 · FlowActionInput.kind = 'evidence' ⇒ engine kiểm EVIDENCE_REQUIRED + ghi cùng tx
   if (req.extension === undefined) return b;
   const p = ProductLinksSchema.safeParse(req.extension);
   if (action !== "approve" || !p.success) return fail("FLOW_INPUT_INVALID", 422);

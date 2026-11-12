@@ -56,11 +56,15 @@ beforeAll(async () => {
     const fid = crypto.randomUUID();
     await o`insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
       values (${fid}, ${T1}, ${`t_${T1}`}, ${`f${i}`}, ${`v${i}`}, 'hd.pdf', 'application/pdf', 16, ${A})`;
-    await o`update contracts.contracts set status = 'active', confirmed_at = now(), file_id = ${fid},
+    await o.begin(async (tx) => {
+      // CR-127 K1: status chỉ đổi qua cổng (trigger) — mở cổng bulk trong đúng tx của fixture
+      await tx`select set_config('contracts.state_gate', 'bulk:' || txid_current(), true)`;
+      await tx`update contracts.contracts set status = 'done', confirmed_at = now(), file_id = ${fid},
       title = ${`Hợp đồng mua bán lô ${i}`},
       fields = jsonb_build_object('total_value', jsonb_build_object('value', '600000000'),
         'start_date', jsonb_build_object('value', '2026-12-01'), 'end_date', jsonb_build_object('value', '2027-11-30'))
       where id = ${id}`;
+    });
   }
   await o`delete from hub.notifications`;
   db = createDb(urls().hubApi, { max: 4 });

@@ -63,6 +63,8 @@ describe("bộ lọc loại", () => {
         owner: [],
         signer: [],
         status: [],
+        effect: [],
+        source: [],
       },
       page: 1,
       pageSize: 20,

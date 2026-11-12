@@ -1,18 +1,15 @@
 // HD-FR-31 · #218 · M3-decouple: chế độ flow (production) — tải lên / trích lại / nhập tay MỞ LƯỢT DUYỆT của gói rồi xếp lượt AI
 // đọc vào hàng đợi bền (Redis Streams). Không engine quy trình. Lớp 2: chỉ cổng.
 import type { PackUow } from "../../kit/public";
-import { LIVE_APPROVAL } from "../domain/approval-machine.rules";
+import { LIVE_APPROVAL } from "../domain/approval-run.rules";
 import type { ApprovalTxRepos } from "./approval.ports";
-import type { ExtractJobs, startApproval } from "./approval.usecase";
-import type { CreateManual } from "./create-manual.usecase";
+import type { ExtractJobs } from "./approval.usecase";
 import type { ExtractionTxRepos, RequestExtractOutcome } from "./extraction.ports";
 import type { RequestExtract } from "./request-extract.usecase";
 import type { ExtractionStarter } from "./upload-contract.ports";
 
-type Start = ReturnType<typeof startApproval>;
-
-/** Tải lên (sau COMMIT): lượt duyệt đã mở trong CÙNG câu ghi (HĐ `extracting`) ⇒ chỉ xếp lượt đọc (0 SQL). Không có lượt (tệp
- *  không đọc được ⇒ `extract_failed`) ⇒ không làm gì; người dùng "Trích lại" sau. Không ném (tải lên đã 201); lỗi ⇒ quét STALE. */
+/** Tải lên (sau COMMIT): lượt duyệt đã mở trong CÙNG câu ghi (HĐ `draft` + `extract_state = reading`) ⇒ chỉ xếp lượt đọc (0 SQL). Không có lượt (tệp
+ *  không đọc được ⇒ `extract_state = failed`) ⇒ không làm gì; người dùng "Trích lại" sau. Không ném (tải lên đã 201); lỗi ⇒ quét STALE. */
 export function flowStarter(d: {
   jobs: ExtractJobs;
   log: { warn(msg: string, f?: Record<string, unknown>): void };
@@ -53,16 +50,6 @@ export function flowRequestExtract(d: {
       return o;
     });
     if (out.kind === "ok") await d.jobs.enqueue({ ...who, contractId: id, approvalId: aid });
-    return out;
-  };
-}
-
-/** Nhập tay: tạo HĐ như HD2 rồi mở lượt duyệt ở cấp 1 (không có gì cho AI đọc). V2-A · C3: tenant tắt duyệt ⇒ HĐ đã `active`,
- *  không mở lượt duyệt. */
-export function flowCreateManual(create: CreateManual, start: Start): CreateManual {
-  return async (who, input) => {
-    const out = await create(who, input);
-    if (out.status === "needs_review") await start(who, out.id, "level1");
     return out;
   };
 }

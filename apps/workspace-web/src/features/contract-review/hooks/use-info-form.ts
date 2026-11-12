@@ -15,7 +15,6 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { todayIso } from "~/features/contract-deadline/lib/deadline";
 import { fetchProducts, matchProduct, PRODUCTS_KEY } from "~/features/contract-form/api";
 import { patchOneLine, productIdsOf } from "~/features/contract-form/hooks/use-contract-form";
 import { useNoticeDefault } from "~/features/contract-form/hooks/use-notice-default";
@@ -42,6 +41,7 @@ import {
   unsureKeys,
 } from "~/features/contract-form/lib/review-model";
 import { suggestionPatch } from "~/features/contract-form/lib/suggest";
+import { todayIso } from "~/features/contract-shared/lib/date";
 import { contractKey, patchContractFields, saveReview } from "../api";
 import { firstSaveMode } from "../lib/confirm-save";
 import { savedNoticeKey } from "../lib/review";
@@ -62,7 +62,7 @@ function useInfoLoad(c: ContractDetail | undefined, confirm: boolean) {
   const [touched, setTouched] = useState(false);
   const load = useCallback(() => {
     if (!c) return;
-    setF(c.status === "needs_review" && c.ai !== null ? formOfConfirm(c) : formOfDetail(c));
+    setF(c.status === "draft" && c.ai !== null ? formOfConfirm(c) : formOfDetail(c));
     setRows(msRowsOf(c));
     setTried(false);
     setTouched(false);
@@ -224,7 +224,7 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
         const out = await saveConfirm(true);
         await qc.invalidateQueries({ queryKey: contractKey(id) });
         await qc.invalidateQueries({ queryKey: ["contracts", "list"] });
-        const m = t(savedNoticeKey(out?.status ?? "needs_review", out?.status === "active"));
+        const m = t(savedNoticeKey(out?.status ?? "draft", out?.status === "done"));
         toast(m);
         setMsg(m);
       } else {
@@ -253,7 +253,7 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
 
 export function useInfoForm(c: ContractDetail | undefined, id: string) {
   // Màn xác nhận sau AI đọc = chờ xác nhận + có phần AI đọc (`ai`); HĐ nhập tay / bản đọc cũ (ai = null) giữ luồng PATCH của V2-F.
-  const confirm = c?.status === "needs_review" && c.ai !== null;
+  const confirm = c?.status === "draft" && c.ai !== null;
   const L = useInfoLoad(c, confirm);
   const products = useQuery({
     queryKey: PRODUCTS_KEY,

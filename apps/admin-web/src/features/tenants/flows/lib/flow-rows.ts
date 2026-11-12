@@ -32,7 +32,6 @@ export type FlowGroup = { app: string; jobs: FlowJob[] };
 
 /** Tên việc theo khóa i18n `tenants.flows.job.<key>`; việc chưa có tên ⇒ null (dùng tên quy trình / chữ rút gọn). */
 export const JOB_KEY: Readonly<Record<string, string>> = {
-  "contracts.approval": "contractsApproval",
   "contracts.intake": "contractsIntake",
   "community.post-moderation": "communityModeration",
   "community.partner-join": "communityJoin",

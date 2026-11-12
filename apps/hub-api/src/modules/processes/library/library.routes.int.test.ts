@@ -1,6 +1,6 @@
 // CR-105 · L2a · làn đầy đủ · viết TRƯỚC code (quyền + publish/rollback + gán): route thư viện quy trình qua Hono thật (defsRoutes +
-// libraryRoutes) trên DB thật (`hub_api`, scope system), user giả qua header. Khe `contracts.approval` thật (test-support) + def mặc
-// định seed ở hub 0069. Kiểm trạng thái DB thật (hàng gán, bản phát hành, audit), không chỉ mã HTTP.
+// libraryRoutes) trên DB thật (`hub_api`, scope system), user giả qua header. Khe Community thật + def mặc
+// định seed ở hub 0092 (CR-127 Z3d-2: cơ chế chung, không riêng HĐ). Kiểm trạng thái DB thật (hàng gán, bản phát hành, audit), không chỉ mã HTTP.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Role } from "@ai/contracts/common";
 import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
@@ -11,19 +11,23 @@ import { insertRun } from "../../../../../../tests/acceptance/P-a/_support/proce
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
-import { APPROVAL_DEFAULT_DEF, defaultSlotBody } from "../../packs/contracts/public";
-import { approvalEngineTools, approvalSlotSpec } from "../../packs/contracts/testing";
-import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
 import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../core/ports";
 import { defsRoutes } from "../defs/defs.routes";
 import { libraryRoutes } from "./library.routes";
+import {
+  communityToolInfos,
+  GEN_DEFAULT_ID,
+  GEN_SLOT,
+  genSlotBody,
+  registerCommunitySlots,
+} from "./slot-generic.fixture";
 import { resolveSlot } from "./slot-resolve.repo";
 
-/** Khe `contracts.approval` thật + catalog tool hệ thống (như test preview L2b: test engine import gói trực tiếp). */
-function registerApprovalSlotForTest(): PackToolCatalog {
-  slotRegistry.register(approvalSlotSpec);
-  const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({
+/** Khe Community thật (còn sống) + catalog tool hệ thống của khe. */
+function registerSlotsForTest(): PackToolCatalog {
+  registerCommunitySlots();
+  const tools = communityToolInfos.map((t) => ({
     key: t.name,
     name: t.name,
     description: t.description,
@@ -39,10 +43,10 @@ function registerApprovalSlotForTest(): PackToolCatalog {
       tools.filter((t) => !keys || keys.includes(t.key)),
   } as unknown as PackToolCatalog;
 }
-const SLOT = "contracts.approval";
+const SLOT = GEN_SLOT;
 const X = tenantId(1071);
 const Y = tenantId(1072);
-const DFLT = APPROVAL_DEFAULT_DEF.id;
+const DFLT = GEN_DEFAULT_ID;
 const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
   P: { userId: userId(1070), tenantId: X, role: "platform_admin" },
   A: { userId: userId(1071), tenantId: X, role: "tenant_admin" },
@@ -73,20 +77,8 @@ async function call(
 const D = (id: string) => `/process-defs/${id}`;
 const ASSIGN = (t: string) => `/tenants/${t}/process-slots/${SLOT}`;
 
-/** Body theo mã: bước mặc định + (tuỳ chọn) bước pháp chế; `tag` đổi tên bước 1 để phân biệt bản. */
-function body(tag: string, extra?: string): Json {
-  const b = defaultSlotBody() as Json;
-  b.steps[0].name = `Kiểm tra ${tag}`;
-  if (extra)
-    b.steps.push({
-      ...b.steps[0],
-      key: "phap",
-      name: "Pháp chế",
-      department_group_key: extra,
-      when: null,
-    });
-  return b;
-}
+/** Body khe (khung bước cố định của khe Community); `tag` đổi tên bước 1 để phân biệt bản. */
+const body = (tag: string): Json => genSlotBody(tag) as Json;
 
 const INPUT_KEYS = [
   "key",
@@ -137,7 +129,7 @@ beforeAll(async () => {
   await users(o, X, 3, { from: 1070 });
   await groups(o, X, ["contracts-editor", "contracts-owner", "phap-che"]);
   await groups(o, Y, ["contracts-editor", "contracts-owner"]);
-  const packTools = registerApprovalSlotForTest();
+  const packTools = registerSlotsForTest();
   const deps = { db, packTools, start: {} } as unknown as ProcessDeps;
   app = new Hono<AuthVars>();
   app.use("*", async (c, next) => {
@@ -213,17 +205,17 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       dflt: {
         label: dflt?.slot_label,
         is_default: dflt?.is_default,
-        pv: dflt?.published_version,
+        pvOk: (dflt?.published_version ?? 0) >= 1,
         tc: dflt?.tenant_count,
       },
       tpl: (await keys("&kind=template")).includes("pl-tpl"),
-      tplHasLib: (await keys("&kind=template")).includes(APPROVAL_DEFAULT_DEF.key),
+      tplHasLib: (await keys("&kind=template")).includes("community-post-moderation"),
       tenantHidden: (await keys(`&tenant_id=${X}`)).filter(
-        (k) => k === "contracts-approval" || k === APPROVAL_DEFAULT_DEF.key,
+        (k) => k === "contracts-approval" || k === "community-post-moderation",
       ),
     }).toEqual({
       allSlot: true,
-      dflt: { label: "Sổ Hợp Tác · Duyệt hợp đồng", is_default: true, pv: 2, tc: 0 }, // pv 2: CR-122 M1 (hub 0111) tạo release v+1 cho def mặc định
+      dflt: { label: "Community · Duyệt bài", is_default: true, pvOk: true, tc: 0 },
       tpl: true,
       tplHasLib: false,
       tenantHidden: [],
@@ -262,7 +254,7 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
     const r = await call("P", "PUT", ASSIGN(X), { def_id: b });
     expect(r.json).toEqual({
       slot: SLOT,
-      label: "Sổ Hợp Tác · Duyệt hợp đồng",
+      label: "Community · Duyệt bài",
       def_id: b,
       def_name: "QT pl-gb",
       rel_version: 1,
@@ -286,26 +278,6 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       expect.objectContaining({ slot: SLOT, def_id: DFLT, is_default: true }),
     ]);
     expect(await auditCount("unassign", b)).toBe(1);
-  });
-
-  it("tenant thiếu Group ⇒ SLOT_GROUPS_MISSING", async () => {
-    const c = await published("pl-gc", body("C", "phap-che"));
-    const r = await call("P", "PUT", ASSIGN(Y), { def_id: c });
-    expect({ s: r.status, e: r.json.error }).toEqual({
-      s: 422,
-      e: expect.objectContaining({
-        code: "SLOT_GROUPS_MISSING",
-        details: expect.objectContaining({ tenant: "t1072", tenant_id: Y, keys: ["phap-che"] }),
-      }),
-    });
-    expect([
-      ...(await o`select count(*)::int as n from hub.process_routing_rules where is_default and tenant_id = ${Y}`),
-    ]).toEqual([{ n: 0 }]);
-    // Chưa xuất bản ⇒ không gán được.
-    const draft = await cloneOf(c, "pl-gc-nhap");
-    expect((await call("P", "PUT", ASSIGN(X), { def_id: draft })).json.error.code).toBe(
-      "PROCESS_NOT_PUBLISHED",
-    );
   });
 
   it("xoá hoặc tắt quy trình đang dùng ⇒ PROCESS_IN_USE", async () => {
@@ -444,56 +416,6 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
     }).toEqual({ s: [201, 409], codes: ["VERSION_CONFLICT"], rels: [{ n: 3 }] });
   });
 
-  it("lưu từ canvas (chỉ stages) dựng lại body theo mã, xuất bản áp dụng; song song ⇒ SLOT_SHAPE_UNSUPPORTED", async () => {
-    const id = await published("pl-cv", body("CV1"));
-    await call("P", "PUT", ASSIGN(X), { def_id: id });
-    const cur = (await call("P", "GET", D(id))).json;
-    const input = Object.fromEntries(INPUT_KEYS.map((k) => [k, cur[k]]));
-    const stages = (cur.stages as Json[]).map((s) =>
-      s.key === "s0" ? { ...s, name: "Kiểm tra canvas" } : s,
-    );
-    const ok = await call("P", "PUT", D(id), {
-      ...input,
-      stages,
-      slot: SLOT,
-      version: cur.version,
-    });
-    expect(ok.status).toBe(200);
-    const step0 = ok.json.slot_body.steps[0];
-    expect([step0.name, step0.department_group_key, step0.department_group_id]).toEqual([
-      "Kiểm tra canvas",
-      "contracts-editor",
-      null,
-    ]);
-    const pub = await call("P", "POST", `${D(id)}/publish`, { version: ok.json.version });
-    expect(pub.json).toEqual({ rel_version: 2 });
-    const res = await resolveSlot(db, X, SLOT);
-    expect([res?.defId, (res?.slotBody as Json | undefined)?.steps[0].name]).toEqual([
-      id,
-      "Kiểm tra canvas",
-    ]);
-    // Hai stage cùng bước (song song) ⇒ 422 kèm stage sai, nháp không đổi.
-    const s1 = (cur.stages as Json[]).find((s) => s.key === "s1") as Json;
-    const par = [...(cur.stages as Json[])];
-    par.splice(3, 0, { ...s1, key: "s1b", output: { ...s1.output, filename: "s1b.md" } });
-    const now = (await call("P", "GET", D(id))).json;
-    const bad = await call("P", "PUT", D(id), {
-      ...input,
-      stages: par,
-      slot: SLOT,
-      version: now.version,
-    });
-    expect({
-      s: bad.status,
-      code: bad.json.error?.code,
-      hasStage: typeof bad.json.error?.details?.stage,
-    }).toEqual({
-      s: 422,
-      code: "SLOT_SHAPE_UNSUPPORTED",
-      hasStage: "string",
-    });
-  });
-
   it("nhân bản tạo nháp mới không ảnh hưởng tenant đang gán", async () => {
     const a = await published("pl-cl", body("CL"));
     await call("P", "PUT", ASSIGN(X), { def_id: a });
@@ -525,29 +447,5 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
     expect([...(await o`select slot from hub.process_defs where id = ${id}`)]).toEqual([
       { slot: SLOT },
     ]);
-  });
-  it("mã phòng ban đặt nhầm vào *_group_id ⇒ SLOT_BODY_INVALID; bản sao mặc định có mã ở *_group_key", async () => {
-    const id = await cloneOf(DFLT, "pl-keyid");
-    const cl = (await call("P", "GET", D(id))).json;
-    const s0 = (cl.slot_body.steps as Json[])[0] as Json;
-    const st0 = ((cl.stages as Json[])[0] as Json).slot as Json;
-    expect([
-      s0.department_group_key,
-      s0.department_group_id,
-      st0.department_group_key,
-      st0.department_group_id,
-    ]).toEqual(["contracts-editor", null, "contracts-editor", null]);
-    const bad = body("KID") as Json;
-    bad.steps[0].department_group_id = "contracts-editor";
-    const r = await saveDraft(id, { slot_body: bad });
-    expect({
-      s: r.status,
-      code: r.json.error?.code,
-      rule: r.json.error?.details?.issues?.[0]?.rule,
-    }).toEqual({
-      s: 422,
-      code: "SLOT_BODY_INVALID",
-      rule: "GROUP_ID_IN_LIBRARY",
-    });
   });
 });

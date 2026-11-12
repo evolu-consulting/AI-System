@@ -6,6 +6,7 @@ import type { Context, Hono } from "hono";
 import { requireAdminRole, requirePlatformAdmin } from "../../../lib/admin-role.middleware";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { parseJson, validationError } from "../../../lib/http";
+import { tenantAdminReadOnly } from "./platform-write.middleware";
 import type { RoutingService } from "./routing.service";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -22,7 +23,7 @@ const defOf = (c: C) => param(c, "defId", (v) => UUID.test(v)).toLowerCase();
 const BASE = "/tenants/:tid/process-routing/:slot";
 
 export function routingRoutes(r: Hono<AuthVars>, svc: RoutingService): void {
-  r.use(BASE, requireAdminRole());
+  r.use(BASE, requireAdminRole(), tenantAdminReadOnly()); // CR-127 · E8 · ghi luật định tuyến (= áp dụng) chỉ quản trị nền tảng; GET vẫn xem
   r.use(`${BASE}/processes/*`, requireAdminRole());
   r.on(["PUT", "DELETE"], `${BASE}/processes/*`, requirePlatformAdmin());
   r.get(BASE, async (c) => c.json(await svc.get(c.var.user, tidOf(c), slotOf(c))));

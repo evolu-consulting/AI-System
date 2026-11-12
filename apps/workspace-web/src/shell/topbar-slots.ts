@@ -1,8 +1,8 @@
-// CR-120 · khe trên thanh trên dùng chung: AppShell (Header) đăng ký phần tử DOM, module Community (chunk lười) vẽ ô tìm kiếm + chuông
+// CR-120 · khe trên thanh trên dùng chung: AppShell (Header) đăng ký phần tử DOM, module Community (chunk lười) vẽ ô tìm kiếm
 // của nó vào đó bằng portal (module không import shell — host cấp `slots` qua configureCommunityHost). Thuần, không React.
-export type SlotName = "search" | "bell";
+export type SlotName = "search";
 
-const els: Record<SlotName, HTMLElement | null> = { search: null, bell: null };
+const els: Record<SlotName, HTMLElement | null> = { search: null };
 const subs = new Set<() => void>();
 
 export const topbarSlots = {

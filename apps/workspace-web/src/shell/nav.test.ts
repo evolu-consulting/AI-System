@@ -16,21 +16,22 @@ describe("buildShellNav", () => {
     expect(groups.map((g) => g.key)).toEqual(["community"]);
     expect(groups.flatMap((g) => g.items.map((n) => n.to))).toEqual([
       "/community",
-      "/community/profile",
+      "/community/me",
     ]);
   });
 
-  test("thành viên/chủ sở hữu có cả hai gói: Sổ Hợp Tác trước, Community sau; đủ 5 + 2 mục", () => {
+  test("thành viên/chủ sở hữu có cả hai gói: Sổ Hợp Tác trước, Community sau; đủ 6 + 2 mục", () => {
     const groups = buildShellNav(MODULES, member);
     expect(groups.map((g) => g.key)).toEqual(["contracts", "community"]);
     expect(groups[0]?.items.map((n) => n.to)).toEqual([
       "/contracts",
       "/contracts/list",
       "/contracts/requests",
+      "/contracts/approvals",
       "/contracts/partners",
       "/contracts/products",
     ]);
-    expect(groups[1]?.items.map((n) => n.to)).toEqual(["/community", "/community/profile"]);
+    expect(groups[1]?.items.map((n) => n.to)).toEqual(["/community", "/community/me"]);
   });
 
   test("gói community tắt ⇒ không có nhóm Community; không gói nào ⇒ rỗng", () => {
@@ -58,10 +59,9 @@ describe("một khung: mọi mục của mọi module cùng dạng (CR-121 C-5)"
 });
 
 describe("buildAccountEntries", () => {
-  test("Community đóng góp Tường nhà + Cài đặt Community chỉ khi gói community bật", () => {
+  test("Community đóng góp Tường nhà chỉ khi gói community bật (Cài đặt là MỘT mục chung ở UserMenu)", () => {
     expect(buildAccountEntries(MODULES, partner).map((e) => e.labelKey)).toEqual([
       "contracts.shell.menuProfile",
-      "contracts.shell.menuCommunitySettings",
     ]);
     expect(buildAccountEntries(MODULES, contractsOnly)).toEqual([]);
   });
@@ -70,11 +70,11 @@ describe("buildAccountEntries", () => {
 describe("activeEntry / moduleOfPath", () => {
   const groups = buildShellNav(MODULES, member);
   const [contracts, community] = groups;
-  test("mục sáng theo đường dẫn; Bảng tin chỉ sáng ở gốc, Bài đăng của tôi ở /community/profile…", () => {
+  test("mục sáng theo đường dẫn; Bảng tin chỉ sáng ở gốc, Hồ sơ của tôi ở /community/me…", () => {
     if (!contracts || !community) throw new Error("thiếu nhóm");
     expect(activeEntry(contracts, "/contracts/c/9")?.to).toBe("/contracts/list");
     expect(activeEntry(community, "/community")?.to).toBe("/community");
-    expect(activeEntry(community, "/community/profile/o1/posts")?.to).toBe("/community/profile");
+    expect(activeEntry(community, "/community/me/org")?.to).toBe("/community/me");
     expect(activeEntry(community, "/contracts/list")).toBeUndefined();
   });
   test("module sở hữu đường dẫn theo basePath, không khớp nửa chữ", () => {

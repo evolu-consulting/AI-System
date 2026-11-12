@@ -2,6 +2,8 @@
 // câu báo khi "xác nhận ngay" dừng giữa chừng (`settle_error`). Không React, không fetch.
 import type { DealCreateRequest, DealSource } from "@ai/contracts/pack-contracts";
 import { DEAL_SOURCES } from "@ai/contracts/pack-contracts";
+import { EMPTY_EVIDENCE, type EvidenceDraft } from "~/platform/flow/lib/evidence";
+import { type LinkChoice, linkBody, UNSET_LINK } from "./deal-link";
 import { type FormState, type Numbers, toRequest } from "./form-model";
 
 export type { DealSource };
@@ -13,8 +15,17 @@ export type DealExtra = {
   settledNow: boolean;
   /** HĐ nguyên tắc chủ (id bản bất kỳ); null = đứng riêng. */
   frame: { id: string; title: string } | null;
+  /** CR-127 M12: «Thuộc hợp đồng nào?» + bằng chứng khi gắn mốc. */
+  link: LinkChoice;
+  evidence: EvidenceDraft;
 };
-export const EMPTY_EXTRA: DealExtra = { source: "", settledNow: false, frame: null };
+export const EMPTY_EXTRA: DealExtra = {
+  source: "",
+  settledNow: false,
+  frame: null,
+  link: UNSET_LINK,
+  evidence: EMPTY_EVIDENCE,
+};
 
 /** Thân gửi API: các trường như form HĐ nhập tay, bỏ những trường chỉ của HĐ (kết thúc, nhắc hạn, người ký) + `source`/`settled_now`. */
 export function toDealRequest(
@@ -32,6 +43,7 @@ export function toDealRequest(
     our_signer: null,
     source: x.source,
     ...(x.settledNow ? { settled_now: true } : {}),
+    ...linkBody(x.link, x.evidence),
   };
 }
 

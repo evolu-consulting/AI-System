@@ -42,7 +42,13 @@ describe("đầu ra khai báo × binding thật", () => {
       "round",
     ]);
     expect(r.bindingOf("core.bell")?.outputs).toEqual(["sent_to"]);
-    expect(Object.keys(CORE_WRITTEN_OUTPUTS)).toEqual(["core.approve", "core.email", "core.bell"]);
+    expect(Object.keys(CORE_WRITTEN_OUTPUTS)).toEqual([
+      "core.approve",
+      "core.notify",
+      "core.email",
+      "core.bell",
+      "core.subprocess",
+    ]);
   });
   it("gỡ khoá ghi của Duyệt ⇒ MOD_OUTPUT_UNBOUND nói rõ node, cổng và file", () => {
     const r = createModuleRegistry({

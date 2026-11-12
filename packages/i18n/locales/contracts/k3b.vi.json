@@ -9,7 +9,7 @@
       "readOnly": "Bản này chỉ để xem, không sửa được.",
       "openCurrent": "Mở bản hiện hành",
       "upload": {
-        "title": "Tải bản cập nhật",
+        "title": "Tải phiên bản mới",
         "signedOnly": "Phải là văn bản đã ký, không nhập tay.",
         "hint": "Bản cập nhật sẽ thành phiên bản mới (nháp). Sau khi bạn xác nhận, nó thay thế bản hiện tại.",
         "submit": "Tải lên",

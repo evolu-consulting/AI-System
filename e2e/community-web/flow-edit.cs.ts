@@ -1,69 +1,74 @@
-// QC · qc-community-flow · hành trình "quản trị community sửa flow Duyệt bài trên canvas → Lưu và áp dụng" (stack community-web + ai-admin, CS_ADMIN_URL).
-// Lỗi B1 (docs/specs/qc-community-flow/tasks.md) đã sửa ở cr125-c5-template-readiness: mẫu dùng được ở công ty (readiness) + seed D7.
+// QC · qc-community-flow · hành trình "quản trị nền tảng soạn quy trình Duyệt bài cho công ty community → Áp dụng cho công ty" (stack community-web + ai-admin, CS_ADMIN_URL).
+// CR-127 Z5b: chỉ quản trị nền tảng soạn (tạo từ sơ đồ trống, vẽ theo khối); quản trị công ty chỉ xem + câu «Quy trình do quản trị nền tảng soạn…», không có nút Tạo/Sao chép.
 import { expect, test } from "@playwright/test";
-import { flowRow, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
+import {
+  addMainStep,
+  createFlowUi,
+  flowRow,
+  loginPlatformAdminUi,
+  loginTenantAdminUi,
+  openCompanyFlows,
+} from "../_kit/ui";
 
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến e2e
 const ADMIN = process.env.CS_ADMIN_URL ?? "";
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến e2e
 const OWNER_PW = process.env.DEMO_OWNER_PW ?? "";
+const TENANT_NAME = "Demo Sổ Hợp Tác";
+const FLOW = `Duyệt bài (soạn mới) ${Date.now().toString(36)}`;
 
-test("quản trị community: sao chép flow Duyệt bài, thêm bước Duyệt, Lưu và áp dụng được", async ({
+test("quản trị community: nền tảng tạo quy trình Duyệt bài từ sơ đồ trống, thêm bước Duyệt, Áp dụng cho công ty; quản trị công ty chỉ xem", async ({
   browser,
 }) => {
-  test.setTimeout(180_000);
-  const page = await (
-    await browser.newContext({ locale: "vi-VN", viewport: { width: 1600, height: 1000 } })
-  ).newPage();
-  await loginTenantAdminUi(page, ADMIN, "demo", "demo-owner", OWNER_PW);
-  await page.getByRole("link", { name: "Công ty" }).first().click();
-  const box = await openCompanyFlows(page);
-  // CR-125 c5 · công ty Community có sẵn flow "Quản trị duyệt bài" (seed bật Community ⇒ cùng có flow dùng được, D7); sao chép ⇒ áp dụng được.
-  const rows = flowRow(box, "Quản trị duyệt bài");
-  if ((await rows.count()) < 2) {
-    await rows.first().getByRole("button", { name: "Sao chép để sửa" }).click();
-    await page.getByTestId("copy-confirm").click(); // hộp Sao chép: mẫu dùng được ⇒ xác nhận
-  }
-  await expect(rows).toHaveCount(2);
-  await rows
-    .last()
-    .getByRole("link", { name: /^(Mở|Sửa)/ })
-    .click();
-  // thứ tự hàng không cố định: nếu mở trúng bản dùng chung (chỉ xem) thì sang "bản riêng" của công ty.
-  const own = page.getByRole("link", { name: "Mở bản riêng" });
-  await expect(page.getByTestId("flow-add-step").or(own)).toBeVisible({ timeout: 30_000 });
-  if (await own.isVisible()) await own.click();
-  await expect(page.getByTestId("flow-add-step")).toBeVisible({ timeout: 30_000 }); // đang ở bản riêng (sửa được) rồi mới đếm bước
-  const nodes = page.locator("[data-stage-uid]");
-  await expect(nodes.first()).toBeVisible({ timeout: 30_000 });
-  const pane = page.locator(".react-flow__pane").first();
-  const pb = await pane.boundingBox();
-  if (!pb) throw new Error("không thấy canvas");
-  // sơ đồ vẽ xong khi node Kết thúc (cuối dải) đã hiện và số node ngừng đổi qua hai lần đọc liên tiếp (bố cục chạy sau lần vẽ đầu ⇒ count() sớm có thể thấp hơn thật)
-  await expect(nodes.filter({ hasText: /^Kết thúc/ }).first()).toBeVisible({ timeout: 30_000 });
-  let prev = -1;
-  await expect
-    .poll(async () => {
-      const n = await nodes.count();
-      const same = n > 0 && n === prev;
-      prev = n;
-      return same;
-    })
-    .toBe(true);
-  const before = prev;
-  await page.getByTestId("flow-add-step").click();
+  test.setTimeout(240_000);
+  const pctx = await browser.newContext({
+    locale: "vi-VN",
+    viewport: { width: 1600, height: 1000 },
+  });
+  const page = await pctx.newPage();
+  await loginPlatformAdminUi(
+    page,
+    ADMIN,
+    process.env.SEED_ADMIN_USERNAME ?? "",
+    process.env.SEED_ADMIN_PASSWORD ?? "",
+  );
+  await createFlowUi(page, ADMIN, { company: TENANT_NAME, app: "Community", name: FLOW });
+  // sơ đồ trống chỉ có Bắt đầu → Hoàn tất; thêm một bước Duyệt giữa hai khối
+  await expect(page.getByTestId("outline-start")).toBeVisible();
+  await addMainStep(page, 0, "approve");
   await page
-    .getByRole("menuitem", { name: /^Duyệt/ })
+    .getByRole("combobox", { name: /Ai duyệt/ })
     .first()
-    .dragTo(pane, { targetPosition: { x: pb.width * 0.5, y: pb.height * 0.2 }, force: true });
-  await expect(nodes).toHaveCount(before + 1);
-  // bước Duyệt mới chưa có người duyệt (không đoán nhóm): mở bước, chọn một người duyệt thật của công ty.
-  const ai = page.getByTestId("stage-approve-basics").getByLabel("Ai duyệt");
-  if (!(await ai.isVisible()))
-    await page.locator("[data-stage-uid]", { hasText: "Bước duyệt mới" }).click();
-  await expect(ai).toBeVisible();
-  await ai.click();
+    .click();
   await page.getByRole("option").first().click();
-  await page.getByRole("button", { name: "Lưu và áp dụng" }).click();
+  await expect(page.getByTestId("outline-chip-error")).toHaveCount(0);
+  const applied = page.waitForResponse(
+    (r) => /\/company-flows\/apply/.test(r.url()) && r.request().method() === "POST",
+    { timeout: 60_000 },
+  );
+  await page.getByRole("button", { name: "Áp dụng cho công ty" }).click();
+  const res = await applied;
+  expect(res.status(), (await res.text()).slice(0, 300)).toBe(200);
   await expect(page.getByRole("alert").filter({ hasText: /Chưa lưu được/ })).toHaveCount(0);
+  await expect(page.getByTestId("apply-status").first()).toContainText("Đã áp dụng", {
+    timeout: 60_000,
+  });
+  await pctx.close();
+
+  // quản trị công ty: thấy quy trình đã áp dụng nhưng chỉ xem
+  const tctx = await browser.newContext({
+    locale: "vi-VN",
+    viewport: { width: 1600, height: 1000 },
+  });
+  const tpage = await tctx.newPage();
+  await loginTenantAdminUi(tpage, ADMIN, "demo", "demo-owner", OWNER_PW);
+  await tpage.getByRole("link", { name: "Công ty" }).first().click();
+  const box = await openCompanyFlows(tpage);
+  await expect(flowRow(box, FLOW)).toBeVisible();
+  await expect(box.getByTestId("company-flow-readonly-note")).toContainText(
+    "Quy trình do quản trị nền tảng soạn",
+  );
+  await expect(box.getByTestId("create-flow-open")).toHaveCount(0);
+  await expect(box.getByRole("button", { name: "Sao chép để sửa" })).toHaveCount(0);
+  await tctx.close();
 });

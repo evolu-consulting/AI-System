@@ -1,18 +1,16 @@
 // COM-FR-27 · CR-120 · phần Community đóng góp cho thanh trên DÙNG CHUNG của AppShell: ô tìm (debounce 250 ms) + dev persona (mock) vào khe
-// "search", chuông + badge vào khe "bell". Không còn header/brand/burger/avatar riêng (khung, menu trái và menu tài khoản do shell cấp).
+// "search", (CR-130: chuông là chuông chung của shell). Không còn header/brand/burger/avatar riêng (khung, menu trái và menu tài khoản do shell cấp).
 // Khe là phần tử DOM của shell (host.slots) — vẽ bằng portal; chưa có khe (test/ngoài shell) ⇒ không vẽ gì.
-import type { CommunityNotification } from "@ai/contracts/community";
-import { type ReactNode, useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { type ReactNode, useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useApp } from "../application/ctx";
 import { getCommunityHostConfig } from "../application/host";
 import { t } from "../i18n";
-import { IconBell, IconSearch } from "./icons";
-import { NotifPop } from "./NotifPop";
+import { IconSearch } from "./icons";
 
 const noSlots = { get: () => null, subscribe: () => () => undefined };
 
-function useSlot(name: "search" | "bell"): HTMLElement | null {
+function useSlot(name: "search"): HTMLElement | null {
   const slots = getCommunityHostConfig()?.slots ?? noSlots;
   return useSyncExternalStore(
     slots.subscribe,
@@ -22,7 +20,7 @@ function useSlot(name: "search" | "bell"): HTMLElement | null {
 }
 
 /** Portal vào khe của shell; bọc `data-mod` để CSS Community (đã scoped) áp cho phần tử nằm ngoài cây trang. */
-function InSlot({ name, children }: { name: "search" | "bell"; children: ReactNode }) {
+function InSlot({ name, children }: { name: "search"; children: ReactNode }) {
   const { brandAccent } = useApp();
   const el = useSlot(name);
   if (!el) return null;
@@ -76,44 +74,11 @@ function Persona() {
   );
 }
 
-function Bell() {
-  const { api, rev } = useApp();
-  const [open, setOpen] = useState(false);
-  const [data, setData] = useState<{ items: CommunityNotification[]; unread: number }>({
-    items: [],
-    unread: 0,
-  });
-  const load = useCallback(() => {
-    api.listNotifications().then(setData, () => undefined);
-  }, [api]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại khi dữ liệu đổi (rev)
-  useEffect(load, [load, rev]);
-  return (
-    <>
-      <button
-        type="button"
-        className={open ? "iconbtn on" : "iconbtn"}
-        onClick={() => setOpen(!open)}
-        aria-label={t("community.topbar.notifications")}
-      >
-        <IconBell size={20} />
-        {data.unread > 0 && <span className="badge">{data.unread}</span>}
-      </button>
-      {open && <NotifPop items={data.items} onClose={() => setOpen(false)} onChanged={load} />}
-    </>
-  );
-}
-
 export function TopbarContrib() {
   return (
-    <>
-      <InSlot name="search">
-        <SearchBox />
-        <Persona />
-      </InSlot>
-      <InSlot name="bell">
-        <Bell />
-      </InSlot>
-    </>
+    <InSlot name="search">
+      <SearchBox />
+      <Persona />
+    </InSlot>
   );
 }

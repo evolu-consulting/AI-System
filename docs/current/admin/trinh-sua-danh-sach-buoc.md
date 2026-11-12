@@ -8,4 +8,3 @@ Trình sửa quy trình thư viện mở ở Sơ đồ (canvas) mặc định; "
 - Kịch bản: xuất bản vN+1 và Danh sách ứng với Form [test: apps/admin-web/src/features/processes/lib/step-limit.test.ts » CR-121 c17b · xuất bản vN+1, chế độ xem]
 - Kịch bản: bản riêng của công ty dùng cùng Form bước dọc khi Hub trả slot_body, lượt chạy hiện nhãn hồ sơ [test: apps/admin-web/src/features/processes/lib/company-copy.test.ts » CR-121 c17b · bản riêng dùng Form bước dọc chung]
 - Kịch bản: tenant_admin xem trước bằng HĐ mẫu CHÍNH bản riêng của công ty mình, bản riêng công ty khác 404 [test: apps/hub-api/src/modules/processes/library/clone-for-company.int.test.ts » CR-121 c17b · bản riêng: Form bước dọc + xem trước bằng HĐ mẫu]
-- Kịch bản: platform chuyển Danh sách, tải lại vẫn Danh sách; tenant_admin thấy tab Lượt chạy và ghi chú lưu áp dụng ngay [test: thủ công — e2e/P-a/pf4/editor-steps.pa.ts viết, chạy một lần cuối đợt]

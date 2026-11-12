@@ -20,7 +20,7 @@ import { FREE_ERR } from "./free-nodes";
 import { draftToIf, isIf } from "./if-form";
 import type { InputDraft } from "./sources-form";
 import { isStartFormErrKey, startFormErrors } from "./start-form";
-import { isSystemToolStage } from "./system-nodes";
+import { isModuleToolKey, isSystemToolStage } from "./system-nodes";
 import { hasArg, isTool, toolToDef } from "./tool-form";
 import { isWait } from "./wait-form";
 
@@ -38,9 +38,16 @@ export const TOOL_ERR = {
 /** Khoá lỗi P-d2 do `d2LiveErrors` tính lại mỗi lần render (`argRequired` cũng sinh live; còn giữ khi Lưu nếu tham số vẫn trống). */
 export const isD2Key = (v: string): boolean =>
   v !== TOOL_ERR.argRequired &&
-  (v.startsWith(T) || v.startsWith(B) || v === IF_ERR || isFormErrKey(v) || isStartFormErrKey(v));
+  (v.startsWith(T) ||
+    v.startsWith(B) ||
+    v === IF_ERR ||
+    v === IF_REAL_ERR ||
+    isFormErrKey(v) ||
+    isStartFormErrKey(v));
 /** CR-103 · fnr-if · một câu chung cho mọi lỗi node If (đủ chi tiết ở ô có viền lỗi). */
 export const IF_ERR = "process.admin.editor.stage.if.err.IF_INVALID";
+/** CR-127 · EO4 · một nhánh Nếu đi thẳng tới bước hành động thật (Ký số…): nói đúng lý do + cách sửa thay vì câu chung `IF_ERR`. */
+export const IF_REAL_ERR = "process.admin.editor.stage.if.err.IF_TARGET_REAL";
 export const BRANCH_ERR = { all: `${B}BRANCH_INVALID`, real: `${B}real` } as const;
 
 const isApplyKind = (s: Pick<StageDraft, "executor">) => s.executor === "apply";
@@ -66,8 +73,21 @@ export function ifErrors(
     shaped,
     inputs.map((x) => ({ key: x.key, type: x.type })),
   ))
-    e[i.path] ??= IF_ERR;
+    e[i.path] ??= ifBranchHitsReal(stages, i.path) ? IF_REAL_ERR : IF_ERR;
   return e;
+}
+
+/**
+ * `stages.i.executor.then_step|else_step` mà bước đích (hoặc bước kế khi «Sai» để trống) có hành động thật. Runtime chỉ cho hành động thật
+ * chạy khi bước ngay trước (bỏ bước bị bỏ qua) là bước Duyệt; nhánh nhảy thẳng từ Nếu tới đó thì bước ngay trước là chính Nếu.
+ */
+function ifBranchHitsReal(stages: readonly StageDraft[], path: string): boolean {
+  const m = /^stages\.(\d+)\.executor\.(then_step|else_step)$/.exec(path);
+  const s = m ? stages[Number(m[1])] : undefined;
+  if (!m || !s || !isIf(s)) return false;
+  const x = draftToIf(s.ifx);
+  const target = m[2] === "then_step" ? x.then_step : (x.else_step ?? s.step + 1);
+  return stages.some((t) => t.step === target && t.real);
 }
 
 export function toolMap(tools: readonly ProcessToolItem[]): Map<string, ToolCatalogShape> {
@@ -147,10 +167,16 @@ export function toolErrors(
     inputs.map((x) => ({ key: x.key, type: x.type })),
     toolMap(tools),
   );
-  // CR-105 · tool hệ thống của khe (contracts-route/finalize) do gói cấp, không có ở catalog nền tảng ⇒ không kiểm theo catalog.
+  // CR-105 · tool hệ thống của khe (`dlc-step`) do gói cấp, không có ở catalog nền tảng ⇒ không kiểm theo catalog.
   const skip = (path: string): boolean => {
     const s = stages[Number(path.split(".")[1])];
-    return s !== undefined && isSystemToolStage(s);
+    if (s === undefined) return false;
+    if (isSystemToolStage(s)) return true;
+    // CR-127 · EO3: tool module (Ký số…) có panel riêng, không có ở catalog nền tảng ⇒ bỏ "thiếu tham số / tool lạ";
+    // nhưng tham số lấy từ khoá đầu vào KHÔNG khai (nguồn không có thật) vẫn phải báo.
+    return (
+      isModuleToolKey(s.tool.key) && !(path.includes(".executor.args.") && !unfilled(stages, path))
+    );
   };
   for (const i of issues) {
     if (skip(i.path)) continue;
@@ -162,6 +188,7 @@ export function toolErrors(
     if (
       isTool(s) &&
       !isSystemToolStage(s) &&
+      !isModuleToolKey(s.tool.key) &&
       s.tool.key !== "" &&
       !tools.some((t) => t.key === s.tool.key)
     )

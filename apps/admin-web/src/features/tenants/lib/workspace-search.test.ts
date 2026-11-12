@@ -32,24 +32,30 @@ describe("validateWorkspaceSearch", () => {
   it("tab lạ bị bỏ", () => {
     expect(validateWorkspaceSearch({ tab: "nope" }).tab).toBeUndefined();
   });
-});
 
-describe("CR-121 c16 · ?tab=workflow-tools cũ", () => {
-  it("chuyển tới /ai-tools kèm thông báo; tab khác không chuyển", () => {
-    const s = validateWorkspaceSearch({ tab: "workflow-tools" });
-    expect(s.tab).toBeUndefined();
-    expect(legacyTabRedirect(s)).toEqual({ to: "/ai-tools", notice: "company-tools" });
-    // tenant_admin không có quyền Công cụ AI ⇒ về tab Quy trình
-    expect(legacyTabRedirect(s, "tenant_admin")).toEqual({ to: "processes" });
-    expect(legacyTabRedirect(s, "platform_admin")).toEqual({
-      to: "/ai-tools",
-      notice: "company-tools",
+  describe("CR-121 c16 · ?tab=workflow-tools cũ", () => {
+    it("chuyển tới /ai-tools kèm thông báo; tab khác không chuyển", () => {
+      const s = validateWorkspaceSearch({ tab: "workflow-tools" });
+      expect(s.tab).toBeUndefined();
+      expect(legacyTabRedirect(s)).toEqual({ to: "/ai-tools", notice: "company-tools" });
+      // tenant_admin không có quyền Công cụ AI ⇒ về tab Quy trình
+      expect(legacyTabRedirect(s, "tenant_admin")).toEqual({ to: "processes" });
+      expect(legacyTabRedirect(s, "platform_admin")).toEqual({
+        to: "/ai-tools",
+        notice: "company-tools",
+      });
+      expect(legacyTabRedirect(validateWorkspaceSearch(s))).toEqual({
+        to: "/ai-tools",
+        notice: "company-tools",
+      }); // chạy lại trên kết quả
+      expect(legacyTabRedirect(validateWorkspaceSearch({ tab: "members" }))).toBeNull();
+      expect(legacyTabRedirect(validateWorkspaceSearch({}))).toBeNull();
     });
-    expect(legacyTabRedirect(validateWorkspaceSearch(s))).toEqual({
-      to: "/ai-tools",
-      notice: "company-tools",
-    }); // chạy lại trên kết quả
-    expect(legacyTabRedirect(validateWorkspaceSearch({ tab: "members" }))).toBeNull();
-    expect(legacyTabRedirect(validateWorkspaceSearch({}))).toBeNull();
+  });
+
+  it("CR-130 · ?name= giữ tên, cắt 200 ký tự, bỏ chuỗi rỗng", () => {
+    expect(validateWorkspaceSearch({ name: "Công ty ABC" }).name).toBe("Công ty ABC");
+    expect(validateWorkspaceSearch({ name: "x".repeat(300) }).name?.length).toBe(200);
+    expect(validateWorkspaceSearch({ name: "" }).name).toBeUndefined();
   });
 });

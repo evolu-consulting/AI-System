@@ -139,7 +139,7 @@ async function installCard(page: Page, state: ContractApproval) {
   await page.route("**/pack/contracts/contracts/**", (r) => {
     const path = new URL(r.request().url()).pathname;
     if (path.endsWith("/approval")) return json(r, 200, state);
-    return json(r, 200, contractAsHub());
+    return json(r, 200, contractAsHub("processing"));
   });
   await mockApprovalFlow(page, { card: () => state }); // CR-120: dòng thời gian đọc FlowView của hub
 }

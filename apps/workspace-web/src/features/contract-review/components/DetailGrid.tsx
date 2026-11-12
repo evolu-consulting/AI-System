@@ -4,17 +4,12 @@ import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import type { ReactNode } from "react";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import type { FormState, TextKey } from "~/features/contract-form/lib/form-model";
-import { Timeline } from "~/features/contract-milestones/components/Timeline";
 import { FrameDiary } from "~/features/frame-panel/components/FrameDiary";
 import type { useInfoForm } from "../hooks/use-info-form";
 import { AiMilestonesPanel } from "./AiMilestonesPanel";
 import { InfoPanel } from "./InfoPanel";
 import { ProductsPanel } from "./ProductsPanel";
 import { ReviewItemsPanel } from "./ReviewItemsPanel";
-import { SummaryPanel } from "./SummaryPanel";
-
-/** Trạng thái đã có dòng thời gian mốc (HĐ đã vào theo dõi). */
-const TRACKED = new Set(["active", "expiring", "expired", "renewed", "terminated"]);
 
 type Info = ReturnType<typeof useInfoForm>;
 
@@ -29,10 +24,10 @@ export function DetailGrid({
   today,
   info,
   lockedKeys,
-  summary = true,
+  right,
 }: {
-  /** CR-125 · UX H4: false ⇒ không vẽ "Tóm tắt" (trang người duyệt đã hiện thẻ tóm tắt ở trên). */
-  summary?: boolean;
+  /** CR-127: cột phải (Điều cần lưu ý · Cần chú ý · Hiệu lực · Hồ sơ duyệt). */
+  right?: ReactNode;
   lockedKeys?: ReadonlySet<TextKey> | undefined;
   c: ContractDetail;
   f: FormState;
@@ -47,7 +42,6 @@ export function DetailGrid({
 }) {
   const confirm = info.confirm && canSave;
   const aiMs = info.confirm && (c.ai?.milestones.length ?? 0) > 0;
-  const showTimeline = TRACKED.has(c.status) || c.milestones.length > 0;
   return (
     <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4 max-lg:grid-cols-1">
       <div className="flex min-w-0 flex-col gap-4">
@@ -100,20 +94,8 @@ export function DetailGrid({
           />
         ) : c.doc?.doc_type === "framework" ? (
           <FrameDiary c={c} partner={partner} write={write} today={today} />
-        ) : (
-          showTimeline && (
-            <Timeline c={c} partner={partner} write={write} locked={c.locked} today={today} />
-          )
-        )}
-        {summary && (
-          <SummaryPanel
-            c={c}
-            partner={partner}
-            generateFor={
-              write && c.has_source && c.status !== "extracting" && !confirm ? c.id : undefined
-            }
-          />
-        )}
+        ) : null}
+        {right}
       </div>
     </div>
   );

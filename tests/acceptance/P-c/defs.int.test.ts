@@ -3,7 +3,7 @@
 // 3 luật `AUTOFIX_*` ⇒ 422 PROCESS_DEF_INVALID (`paths`/`rules` cùng chỉ số), nguồn tenant khác ⇒ 422; seed mẫu `fixbug-apply`.
 // Đỏ trước code: `autofix` là khoá lạ (strict) ⇒ 400 ở expect; `needPc` đỏ đầu ca.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { OWNER_URL } from "../H1/_fixtures";
+import { OWNER_URL, T as T_FIX } from "../H1/_fixtures";
 import { fn, loadHubAdmin, loadSeed } from "../P-a/_support/modules";
 import {
   afDefBody,
@@ -75,7 +75,7 @@ describe("V01–V04 · nguồn của stage tự-sửa [PC-R01]", () => {
     }).toEqual(want);
     const okr = await postDef(c, afDefBody("pc-v03b", [afStage()]));
     expect(okr.status).toBe(201);
-    const put = await c.call("Adm", "PUT", `/process-defs/${okr.json.id}`, {
+    const put = await c.call("P", "PUT", `/process-defs/${okr.json.id}?tenant_id=${T_FIX.acme}`, {
       ...bad,
       key: "pc-v03b",
       version: okr.json.version,

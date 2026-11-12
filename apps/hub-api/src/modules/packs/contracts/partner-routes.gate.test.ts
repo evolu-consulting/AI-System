@@ -1,11 +1,11 @@
 // CR-124 · q7 · mọi route `/pack/contracts/partner/*` cần công ty đã bật tính năng `contracts-partner-confirm` (cùng nguồn `tenantFeatureOn`
 // với cap menu): tắt ⇒ 403 `PARTNER_FEATURE_OFF` kèm câu nghiệp vụ, TRƯỚC khi chạm DB/vai trò.
 import { describe, expect, it } from "bun:test";
+import { CONTRACTS_PARTNER_CONFIRM_FEATURE as PARTNER_FEATURE } from "@ai/contracts/tenants";
 import type { Db } from "@ai/db";
 import { Hono } from "hono";
 import { AppError } from "../../../lib/errors";
 import type { PackAccessView } from "../kit/public";
-import { PARTNER_FEATURE } from "./nav.mount";
 import { partnerModule } from "./partner-routes.mount";
 
 const T = "11111111-1111-4111-8111-111111111111";

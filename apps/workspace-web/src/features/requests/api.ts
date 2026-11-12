@@ -1,7 +1,7 @@
 // CR-125 · cr125-manual-start-ui · «Tạo yêu cầu»: gọi hub `GET /processes/startable`, `POST /processes/start`, `GET /processes/requests/:id`,
 // tải tệp `POST /attachments`, việc chờ tôi `GET /me/review-tasks`, quyết định `POST /review-tasks/:id/decision`.
 
-import type { ReviewTaskListResponse } from "@ai/contracts/chat";
+import type { EvidenceInput, ReviewTaskListResponse } from "@ai/contracts/chat";
 import { type Attachment, FILENAME_HEADER } from "@ai/contracts/chat";
 import type {
   MyRequestsResponse,
@@ -35,12 +35,14 @@ export const decideTask = (
   result: "pass" | "reject" | "fail",
   feedback?: string,
   backToStep?: number | null,
+  evidence?: EvidenceInput,
 ) =>
   api<unknown>(`/review-tasks/${encodeURIComponent(taskId)}/decision`, {
     method: "POST",
     body: {
       result,
       ...(feedback ? { feedback } : {}),
+      ...(evidence ? { evidence } : {}),
       ...(result === "fail" && typeof backToStep === "number" ? { back_to_step: backToStep } : {}),
     },
   });

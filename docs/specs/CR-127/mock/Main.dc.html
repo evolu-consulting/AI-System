@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tạo quy trình</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#4f46e5}a:hover{color:#3730a3}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8; position: relative; overflow: hidden">
+  <aside style="width: 220px; background: #fbfbfd; border-right: 1px solid #e5e5ee; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box">
+    <div style="font-weight: 700; font-size: 15px; padding: 4px 8px 16px; color: #4f46e5">Evolu · ai-admin</div>
+    <div style="padding: 8px 10px; font-size: 14px; border-radius: 8px">Tổng quan</div>
+    <div style="padding: 8px 10px; font-size: 14px; border-radius: 8px">Công ty</div>
+    <div style="padding: 8px 10px; font-size: 14px; border-radius: 8px">Ứng dụng</div>
+    <div style="padding: 8px 10px; font-size: 14px; border-radius: 8px; background: #ecebff; color: #4f46e5; font-weight: 600">Quy trình</div>
+    <div style="padding: 8px 10px; font-size: 14px; border-radius: 8px">Hệ thống</div>
+  </aside>
+  <main style="flex: 1; padding: 28px 32px; display: flex; flex-direction: column; gap: 16px; min-width: 0">
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <div>
+        <h1 style="margin: 0; font-size: 26px">Quy trình</h1>
+        <div style="color: #6b6a80; font-size: 14px">Quy trình của từng công ty. Mẫu dùng chung nằm ở tab Thư viện.</div>
+      </div>
+      <button style="background: #4f46e5; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font: inherit; font-weight: 600">Tạo quy trình</button>
+    </div>
+    <div style="display: flex; gap: 8px; font-size: 14px">
+      <span style="padding: 6px 12px; background: #fff; border: 1px solid #e5e5ee; border-radius: 8px; font-weight: 600">Theo công ty</span>
+      <span style="padding: 6px 12px; color: #6b6a80">Thư viện mẫu</span>
+    </div>
+    <div style="background: #fff; border: 1px solid #e5e5ee; border-radius: 12px; overflow: hidden; font-size: 14px">
+      <div style="display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr; padding: 10px 16px; background: #f7f7fb; color: #6b6a80; font-size: 12px; font-weight: 600">
+        <span>QUY TRÌNH</span><span>CÔNG TY</span><span>TRẠNG THÁI</span><span>CẬP NHẬT</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr; padding: 12px 16px; border-top: 1px solid #e5e5ee"><span style="color: #4f46e5; font-weight: 600">Duyệt hợp đồng bán</span><span>Demo Sổ Hợp Tác</span><span style="color: #15803d">Đang áp dụng</span><span>09/11/2026</span></div>
+      <div style="display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr; padding: 12px 16px; border-top: 1px solid #e5e5ee"><span style="color: #4f46e5; font-weight: 600">Duyệt hợp đồng mua</span><span>Hưng Thịnh</span><span style="color: #b45309">Nháp</span><span>08/11/2026</span></div>
+    </div>
+  </main>
+
+  <div style="position: absolute; inset: 0; background: rgba(20,18,40,0.45); display: flex; align-items: center; justify-content: center">
+    <div style="width: 560px; background: #fff; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 20px 60px rgba(0,0,0,0.25)">
+      <div>
+        <h2 style="margin: 0 0 4px; font-size: 20px">Tạo quy trình</h2>
+        <div style="font-size: 14px; color: #6b6a80">Chọn công ty trước. Người duyệt và các bước sẽ lấy theo công ty này.</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="c" style="font-size: 14px; font-weight: 600">Công ty</label>
+        <div id="c" style="border: 1px solid #4f46e5; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; font-size: 14px"><span>Demo Sổ Hợp Tác</span><span style="color: #6b6a80">▾</span></div>
+        <div style="font-size: 13px; color: #6b6a80">4 phòng ban · 12 thành viên · ứng dụng đã bật: Sổ Hợp Tác, Cộng đồng</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="n" style="font-size: 14px; font-weight: 600">Tên quy trình</label>
+        <div id="n" style="border: 1px solid #e5e5ee; border-radius: 8px; padding: 10px 12px; font-size: 14px">Duyệt hợp đồng bán</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 14px; font-weight: 600">Bắt đầu từ</span>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <div style="border: 2px solid #4f46e5; background: #f5f4ff; border-radius: 10px; padding: 12px"><div style="font-weight: 600; font-size: 14px">Sơ đồ trống</div><div style="font-size: 13px; color: #6b6a80">Tự kéo các bước vào</div></div>
+          <div style="border: 1px solid #e5e5ee; border-radius: 10px; padding: 12px"><div style="font-weight: 600; font-size: 14px">Từ mẫu Thư viện</div><div style="font-size: 13px; color: #6b6a80">Phòng ban khớp tên được gán sẵn</div></div>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px">
+        <button style="background: #fff; border: 1px solid #e5e5ee; border-radius: 8px; padding: 10px 16px; font: inherit">Huỷ</button>
+        <button style="background: #4f46e5; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font: inherit; font-weight: 600">Tạo và mở sơ đồ</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

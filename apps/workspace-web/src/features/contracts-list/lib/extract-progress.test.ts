@@ -14,10 +14,10 @@ describe("extract-progress (ux-excel E5)", () => {
     expect(chipStates(0)).toEqual(["active", "todo", "todo"]);
     expect(chipStates(2)).toEqual(["done", "done", "active"]);
   });
-  test("hộp mở khi đang tải hoặc extracting, đóng khi xong/lỗi", () => {
+  test("hộp mở khi đang tải hoặc AI đang đọc, đóng khi xong/lỗi", () => {
     expect(dialogOpen({ uploading: true })).toBe(true);
-    expect(dialogOpen({ uploading: false, status: "extracting" })).toBe(true);
-    expect(dialogOpen({ uploading: false, status: "needs_review" })).toBe(false);
-    expect(dialogOpen({ uploading: false, status: "extract_failed" })).toBe(false);
+    expect(dialogOpen({ uploading: false, extract: "reading" })).toBe(true);
+    expect(dialogOpen({ uploading: false, extract: "ready" })).toBe(false);
+    expect(dialogOpen({ uploading: false, extract: "failed" })).toBe(false);
   });
 });

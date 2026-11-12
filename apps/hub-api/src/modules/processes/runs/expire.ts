@@ -12,6 +12,7 @@ import type { FinishedRun, ProcessBgDeps, ProcessDeps } from "../core/ports";
 import { THREAD_LOCALE } from "../core/thread";
 import { threadContent } from "../core/thread.rules";
 import { cancelChildren } from "../gates/cancel-children";
+import { runsFailedBatch } from "./run-end-hooks";
 
 const EXPIRE_BATCH = 100;
 /** Một lượt `sweepOnce` xả hết hạn tối đa chừng này rồi nhường các vòng khác của lượt. */
@@ -28,7 +29,14 @@ const STAGE_OPEN = [
 
 const textArray = (xs: readonly string[]): string => `{${xs.map((x) => `"${x}"`).join(",")}}`;
 
-type Claimed = FinishedRun & { originKind: string; roomId: string | null };
+type Claimed = FinishedRun & {
+  originKind: string;
+  roomId: string | null;
+  /** CR-127 K3 · bản ghi app của lượt (hook `failedBatch`). */
+  packKey?: string | null;
+  packRecordId?: string | null;
+  event?: string | null;
+};
 
 /** Một lượt hết hạn: lặp lô tới khi hết run quá hạn (cờ `more`), lô < 100 hoặc hết ngân sách; trả tổng run `expired`. */
 export async function expireRuns(d: ProcessBgDeps): Promise<number> {
@@ -52,6 +60,8 @@ async function expireBatch(d: ProcessDeps, limit: number): Promise<{ n: number; 
       insertRunEnds(tx, runs),
       d.notifier.runsFinished(tx, runs),
     ]);
+    // CR-127 K3 · #76 · lượt gắn bản ghi app ⇒ `OutcomeHandler.failedBatch` MỘT lần mỗi handler/lô (theo tập; lô không có lượt gói ⇒ 0 câu).
+    await runsFailedBatch(tx, runs, "expired");
     events.push(...(await expireChildren(d, tx, runs))); // CR-125 · lượt con của lượt hết hạn ⇒ huỷ (như Dừng)
     return { n: runs.length, more, events };
   });
@@ -86,7 +96,8 @@ export async function claimExpired(
     , r as (
       update hub.process_runs r set status = 'expired', finished_at = ${at}::timestamptz, updated_at = ${at}::timestamptz
       from c where r.id = c.id and r.tenant_id = c.tenant_id
-      returning r.id, r.tenant_id, r.started_by, r.origin_kind, r.origin_room_id, r.snapshot->>'name' as name
+      returning r.id, r.tenant_id, r.started_by, r.origin_kind, r.origin_room_id, r.snapshot->>'name' as name,
+        r.pack_key, r.pack_record_id, r.snapshot->'trigger'->>'event' as event
     ), s as (
       update hub.stage_runs set status = 'cancelled', updated_at = ${at}::timestamptz
       where process_run_id = any(array(select id from r)) and tenant_id = any(array(select tenant_id from r))
@@ -117,6 +128,9 @@ type ClaimedRow = {
   origin_kind: string;
   origin_room_id: string | null;
   name: string | null;
+  pack_key: string | null;
+  pack_record_id: string | null;
+  event?: string | null;
   more: boolean;
 };
 
@@ -127,6 +141,9 @@ const toClaimed = (r: ClaimedRow): Claimed => ({
   processName: r.name ?? "",
   originKind: r.origin_kind,
   roomId: r.origin_room_id,
+  packKey: r.pack_key,
+  packRecordId: r.pack_record_id,
+  event: r.event,
 });
 
 /**

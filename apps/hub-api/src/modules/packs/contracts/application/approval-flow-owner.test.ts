@@ -1,11 +1,12 @@
 // CR-113 (review #3) · preview `GET /approval-flow` (`ownerView`) khớp `compileDef`: (a) nhóm chuyển cấp đặt tường minh mà Group
 // đã xoá ⇒ lỗi cấu hình (compileDef ném `approval-flow-group-missing`), KHÔNG hiện mặc định; (b) bước chỉ có người cụ thể ⇒ cùng
 // một thứ tự Toàn quyền (`escalateOrder`, owner trước) cho Group gắn task + đích chuyển cấp mặc định, không phụ thuộc thứ tự Map.
+
 import { describe, expect, it } from "bun:test";
 import { PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
-import { compileDef } from "../domain/approval-flow.rules";
 import type { FlowStep } from "../domain/approval-flow.types";
 import { escalateOrder } from "../domain/approval-owner.rules";
+import { compileDef } from "../testing/approval-slot/approval-compile";
 import { ownerView } from "./approval-flow.usecase";
 
 const G = {

@@ -163,7 +163,6 @@ test("CR-118 · F3 · Xem trước acme: đối tác không thấy nhóm Sổ H�
   await expect(approveRow).toBeVisible();
   // mục "Hợp đồng đối tác gửi" vẫn đòi add-on gửi đối tác (đúng sản phẩm) ⇒ chỉ khẳng định riêng hành động duyệt không đòi tính năng thêm
   await expect(approveRow.getByText("Cần bật tính năng thêm")).toHaveCount(0);
-  await expect(member.getByTestId("preview-slot-contracts.approval")).toContainText("Đang chạy");
   await expect(member.getByText("Chỉ quản trị công ty thấy").first()).toBeVisible();
 });
 

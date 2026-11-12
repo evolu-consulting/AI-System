@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bốn quy trình mới</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+.p{background:#fff;border:1px solid #e5e5ee;border-radius:14px;display:flex;flex-direction:column;font-size:12px;min-width:0}
+.ph{padding:10px 14px;border-bottom:1px solid #e5e5ee;display:flex;flex-direction:column;gap:2px}
+.pb{padding:12px 14px;display:flex;flex-direction:column;align-items:center;gap:0;flex:1}
+.st{width:100%;border:1px solid #d9d8e8;border-radius:10px;padding:7px 10px;background:#fff;box-sizing:border-box}
+.k{font-size:10px;font-weight:700;letter-spacing:.05em;color:#6b6a80}
+.ln{width:2px;height:10px;background:#c7c6d6}
+.sub{color:#6b6a80;font-size:11px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.two>div{display:flex;flex-direction:column;align-items:center}
+.lbl{font-size:10px;font-weight:700}
+.start{border-color:#c7c4ff;background:#f5f4ff}
+.end{border-color:#86efac;background:#f0fdf4}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1000px; padding: 24px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <div><h1 style="margin: 0 0 4px; font-size: 22px">Mục 3 · bốn quy trình mới — bạn tự tạo / sửa trên màn soạn</h1>
+    <div style="font-size: 13px; color: #6b6a80">Cần code: 4 kiểu <b>Khi nào chạy</b> mới + dữ liệu đi kèm (vd giao dịch có trạng thái "Chờ duyệt"). Sau đó bạn tự dựng quy trình như dưới; Thư viện có sẵn 4 mẫu này làm điểm bắt đầu, số ngưỡng sửa ở bước Nếu.</div></div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; flex: 1; min-height: 0">
+    <div class="p">
+      <div class="ph"><b style="font-size: 14px">1 · Sắp hết hạn / gia hạn</b><span class="sub">Thay "Hạn chót hành động + Ghi nhận xử lý"</span></div>
+      <div class="pb">
+        <div class="st start"><div class="k" style="color: #4f46e5">KHI NÀO CHẠY · MỚI</div><b>Còn 30 ngày tới ngày hết hạn</b><div class="sub">HĐ DONE · lọc Mua/Bán</div></div><span class="ln"></span>
+        <div class="st"><div class="k">BỔ SUNG THÔNG TIN</div><b>Người phụ trách chọn</b><div class="sub">Gia hạn / Chấm dứt / Để hết hạn + bằng chứng · 7 ngày</div></div><span class="ln"></span>
+        <div class="st"><div class="k">NẾU</div><b>Chọn Gia hạn</b></div>
+        <div class="two"><div><span class="ln"></span><span class="lbl" style="color: #15803d">ĐÚNG</span><span class="ln"></span><div class="st"><div class="k">HỢP ĐỒNG</div><b>Tạo HĐ gia hạn (DRAFT)</b><div class="sub">liên kết HĐ cũ ⇒ đi quy trình duyệt HĐ</div></div></div>
+          <div><span class="ln"></span><span class="lbl" style="color: #6b6a80">SAI</span><span class="ln"></span><div class="st"><div class="k">THÔNG BÁO</div><b>Báo đối tác</b><div class="sub">nếu Chấm dứt</div></div></div></div>
+        <span class="ln"></span>
+        <div class="st end"><div class="k" style="color: #15803d">HOÀN TẤT</div><b>Hiệu lực: Đã gia hạn / Đã chấm dứt / Hết hạn</b></div>
+      </div>
+    </div>
+
+    <div class="p">
+      <div class="ph"><b style="font-size: 14px">2 · Mốc quá hạn</b><span class="sub">Thay nhắc viết cứng</span></div>
+      <div class="pb">
+        <div class="st start"><div class="k" style="color: #4f46e5">KHI NÀO CHẠY · MỚI</div><b>Mốc quá hạn 1 ngày</b><div class="sub">lọc: mốc của đối tác / mình · loại mốc</div></div><span class="ln"></span>
+        <div class="st"><div class="k">THÔNG BÁO</div><b>Người phụ trách HĐ</b><div class="sub">chuông + email</div></div><span class="ln"></span>
+        <div class="st"><div class="k">NẾU</div><b>Mốc của đối tác</b></div>
+        <div class="two"><div><span class="ln"></span><span class="lbl" style="color: #15803d">ĐÚNG</span><span class="ln"></span><div class="st"><div class="k">THÔNG BÁO</div><b>Email nhắc đối tác</b></div></div>
+          <div><span class="ln"></span><span class="lbl" style="color: #6b6a80">SAI</span><span class="ln"></span><div class="st" style="border-style: dashed; color: #9a99ad; text-align: center">đi tiếp</div></div></div>
+        <span class="ln"></span>
+        <div class="st"><div class="k">CHỜ</div><b>3 ngày</b><div class="sub">mốc xong trước đó ⇒ dừng</div></div><span class="ln"></span>
+        <div class="st"><div class="k">THÔNG BÁO</div><b>Trưởng phòng Kinh doanh</b></div><span class="ln"></span>
+        <div class="st end"><div class="k" style="color: #15803d">HOÀN TẤT</div></div>
+      </div>
+    </div>
+
+    <div class="p">
+      <div class="ph"><b style="font-size: 14px">3 · Giao dịch lớn / không theo HĐ</b><span class="sub">Từ Sản phẩm &amp; Giá</span></div>
+      <div class="pb">
+        <div class="st start"><div class="k" style="color: #4f46e5">KHI NÀO CHẠY · MỚI</div><b>Giao dịch được lưu</b><div class="sub">giao dịch ở "Chờ duyệt", chưa đổi kho / công nợ</div></div><span class="ln"></span>
+        <div class="st"><div class="k">NẾU</div><b>Giá trị &gt; 100 triệu <u>hoặc</u> không theo hợp đồng</b><div class="sub">100 tr = số mẫu, bạn sửa</div></div>
+        <div class="two"><div><span class="ln"></span><span class="lbl" style="color: #15803d">ĐÚNG</span><span class="ln"></span><div class="st"><div class="k">DUYỆT</div><b>Trưởng phòng KD</b><div class="sub">từ chối ⇒ giao dịch bị từ chối</div></div></div>
+          <div><span class="ln"></span><span class="lbl" style="color: #6b6a80">SAI</span><span class="ln"></span><div class="st" style="border-style: dashed; color: #9a99ad; text-align: center">đi tiếp</div></div></div>
+        <span class="ln"></span>
+        <div class="st end"><div class="k" style="color: #15803d">HOÀN TẤT</div><b>Ghi sổ: trừ/cộng kho, công nợ, cập nhật mốc HĐ</b></div>
+      </div>
+    </div>
+
+    <div class="p">
+      <div class="ph"><b style="font-size: 14px">4 · Thay đổi thực hiện</b><span class="sub">Dời hạn · tách mốc · miễn phạt · tạm khoá / mở khoá</span></div>
+      <div class="pb">
+        <div class="st start"><div class="k" style="color: #4f46e5">KHI NÀO CHẠY · MỚI</div><b>Yêu cầu thay đổi thực hiện</b><div class="sub">kèm bằng chứng · mốc hiện "Chờ duyệt thay đổi"</div></div><span class="ln"></span>
+        <div class="st"><div class="k">NẾU</div><b>Miễn phạt &gt; 10 tr <u>hoặc</u> tạm khoá</b></div>
+        <div class="two"><div><span class="ln"></span><span class="lbl" style="color: #15803d">ĐÚNG</span><span class="ln"></span><div class="st"><div class="k">DUYỆT</div><b>Giám đốc</b></div></div>
+          <div><span class="ln"></span><span class="lbl" style="color: #6b6a80">SAI</span><span class="ln"></span><div class="st"><div class="k">NẾU</div><b>Dời &gt; 7 ngày</b><div class="sub">Đúng ⇒ Duyệt Trưởng phòng</div></div></div></div>
+        <span class="ln"></span>
+        <div class="st end"><div class="k" style="color: #15803d">HOÀN TẤT</div><b>Áp thay đổi vào mốc / khoá</b><div class="sub">từ chối ⇒ giữ như cũ, báo người yêu cầu</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background: #fff; border: 1px solid #e5e5ee; border-radius: 12px; padding: 12px 16px; font-size: 13px; display: flex; gap: 24px">
+    <div style="flex: 1"><b>5 · Bỏ "Mở lại hợp đồng đã khoá"</b> — không phải quy trình, là gỡ một nút trong code. Sửa sau khi khoá ⇒ Tải phiên bản mới (đã đi quy trình duyệt).</div>
+    <div style="flex: 1"><b>Ai tạo:</b> quản trị nền tảng, chọn công ty rồi soạn như màn 2. Công ty không có quy trình riêng ⇒ dùng mẫu Thư viện mặc định. Không có quy trình nào ⇒ hành vi như hôm nay (vd giao dịch ghi sổ ngay).</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

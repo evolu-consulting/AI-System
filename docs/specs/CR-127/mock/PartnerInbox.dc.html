@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hợp đồng đối tác gửi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+.panel{background:#fff;border:1px solid #e5e5ee;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px;font-size:13px}
+.card{border:1px solid #e5e5ee;border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+.sub{color:#6b6a80;font-size:12px}
+.btn{background:#fff;border:1px solid #e5e5ee;border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;white-space:nowrap}
+.pri{background:#4f46e5;color:#fff;border:0;font-weight:600}
+.bar{width:4px;align-self:stretch;border-radius:4px}
+.lab{font-size:12px;font-weight:700;color:#6b6a80;letter-spacing:.04em}
+.chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; padding: 26px 30px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <div><h1 style="margin: 0 0 4px; font-size: 22px">"Hợp đồng đối tác gửi" là gì</h1>
+    <div style="font-size: 13px; color: #6b6a80">Công ty A (cũng dùng Evolu) chạy bước <b>Gửi đối tác xác nhận</b> ⇒ hợp đồng sang hộp này của công ty B. B xem và trả lời Đồng ý / Trả lại / Từ chối; kết quả tự báo về A. Đã có từ CR-124.</div></div>
+
+  <div style="display: flex; gap: 22px; flex: 1; min-height: 0">
+    <section class="panel" style="flex: 1">
+      <div class="lab">HIỆN TẠI · DỰNG LẠI TỪ CODE (bên nhận: Demo Sổ Hợp Tác)</div>
+      <b style="font-size: 17px">Hợp đồng đối tác gửi</b>
+      <div class="card" style="background: #fffbeb; border-color: #fde68a">
+        <div style="flex: 1"><b>Công ty Bao Bì Minh Long muốn gửi hợp đồng cho bạn</b><div class="sub">Đã xác minh · Lần đầu · 2 hợp đồng đang chờ</div></div>
+        <button class="btn pri">Nhận HĐ từ công ty này</button><button class="btn">Chặn</button>
+      </div>
+      <div class="card"><span class="bar" style="background: #f59e0b"></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><b>HĐ cung cấp thùng carton Q1/2027</b>
+          <span>Chờ công ty bạn xác nhận · hạn 17/11</span>
+          <span class="sub">Từ Bao Bì Minh Long · Quan trọng</span>
+          <span class="sub">Mở để Đồng ý / Trả lại / Từ chối</span></div>
+        <button class="btn">Mở</button></div>
+      <div class="card"><span class="bar" style="background: #f59e0b"></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><b>HĐ vận chuyển tuyến Bắc – Nam</b>
+          <span>Chờ công ty bạn xác nhận · hạn 20/11</span>
+          <span class="sub">Bản sửa lần 2 từ Vận tải Hoà Bình · lần trước: "Sửa đơn giá cước"</span>
+          <span class="sub">Mở để Đồng ý / Trả lại / Từ chối</span></div>
+        <button class="btn">Mở</button></div>
+      <div class="card"><span class="bar" style="background: #15803d"></span>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><b>HĐ thuê kho Bình Dương</b>
+          <span>Đã xác nhận</span>
+          <span class="sub">Đã báo Kho vận Sài Gòn · không cần làm gì thêm</span></div>
+        <button class="btn">Mở</button></div>
+      <div style="border-top: 1px solid #e5e5ee; padding-top: 10px" class="sub">
+        Mở một dòng ⇒ trang chi tiết HĐ, có thẻ duyệt của <b>quy trình nhận</b> (sự kiện "Nhận hợp đồng từ đối tác").<br>
+        Cài đặt › Quy trình › "Nhận hợp đồng từ đối tác": ngưỡng mức Quan trọng / Rất quan trọng theo giá trị + người phụ trách HĐ nhận.
+      </div>
+    </section>
+
+    <section class="panel" style="width: 470px; flex-shrink: 0">
+      <div class="lab">ĐỀ XUẤT · KHỚP MÔ HÌNH MỚI</div>
+      <div><b>1. Là một kiểu "Khi nào chạy"</b><div>Quy trình "Duyệt HĐ đối tác gửi" bắt đầu bằng <b>Đối tác gửi hợp đồng</b> thay vì "Tải hợp đồng lên". Các bước sau giống hệt: Duyệt, Nếu, Ký số…</div></div>
+      <div><b>2. Trạng thái 4 giá trị</b>
+        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px">
+          <span><span class="chip" style="background: #ecebff; color: #4f46e5">PROCESSING</span> khi vừa nhận (đã bấm "Nhận HĐ từ công ty này")</span>
+          <span><span class="chip" style="background: #e7f6ec; color: #15803d">DONE</span> mình Đồng ý ⇒ báo bên gửi "Đã xác nhận"</span>
+          <span><span class="chip" style="background: #fdecec; color: #b91c1c">REJECT</span> mình Từ chối ⇒ báo bên gửi kèm lý do</span>
+          <span><span class="chip" style="background: #eeeef3; color: #4b4a5e">DRAFT</span> mình Trả lại ⇒ "Chờ đối tác gửi bản sửa"; bản sửa tới thì chạy lại từ đầu</span>
+        </div></div>
+      <div><b>3. Gộp vào danh sách Hợp đồng</b><div>Bỏ mục riêng ở thanh trái. Danh sách Hợp đồng thêm bộ lọc <b>Nguồn: Mình tải lên / Đối tác gửi</b>. Lời mời lần đầu hiện thành băng trên đầu danh sách.</div></div>
+      <div><b>4. Mức quan trọng</b><div>Ngưỡng Quan trọng / Rất quan trọng theo giá trị dùng được làm điều kiện trong bước <b>Nếu</b>.</div></div>
+      <div class="sub" style="border-top: 1px solid #e5e5ee; padding-top: 10px">Chỉ dùng được khi cả hai công ty đều trên Evolu. Đối tác ngoài hệ thống thì dùng bước Gửi đối tác xác nhận qua email/link (đã có).</div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

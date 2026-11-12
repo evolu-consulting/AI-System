@@ -14,6 +14,7 @@ import {
   ok,
   P,
   product,
+  reopen,
   settleRaw,
   startHd1,
   stockIn,
@@ -52,6 +53,7 @@ describe("delivery-opts · đợt giao theo %", () => {
 
     await ok(settleRaw(c, m1.id));
     expect(await deliveredOf(c.sql, line)).toBe(3);
+    await reopen(c, k);
     const m2 = await addPct(k, 70);
     await ok(settleRaw(c, m2.id));
     expect(await deliveredOf(c.sql, line)).toBe(10);
@@ -84,7 +86,6 @@ const company = (allow: boolean) => ({
   theme: "auto",
   own_names: [],
   own_tax_ids: [],
-  approval_enabled: false,
   allow_negative_stock: allow,
 });
 
@@ -106,6 +107,7 @@ describe("delivery-opts · giao vượt tồn", () => {
     const blocked = await settleRaw(c, m);
     expect([blocked.status, blocked.json?.error?.code]).toEqual([409, "STOCK_INSUFFICIENT"]);
 
+    await reopen(c, k);
     const saved = await ok(call(c, P.lan, "PUT", "/company", company(true)));
     expect(saved.allow_negative_stock).toBe(true);
     const r = await ok(settleRaw(c, m));

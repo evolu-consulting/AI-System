@@ -1,7 +1,7 @@
 // CR-101 DOC-deals · lớp tương thích ĐỌC `/transactions*` (UI G2 cũ, gỡ ở DOC-ui-list): giao dịch giờ là chứng từ `doc_type = 'deal'`
 // ⇒ map hàng `contracts` (bản hiện hành, Mua/Bán) sang hình DTO G1 (`TransactionSummary`/`TransactionDetail`). Mỗi hàm MỘT câu văn bản
 // cố định, lọc `tenant_id` tường minh ngoài RLS (Luật 4c); danh sách đi index một phần `contracts_deal_idx`.
-// Trạng thái: `rejected` (huỷ khi chuyển G1) ⇒ `cancelled`, còn lại ⇒ `posted` (`deal.rules.ts::legacyStatus`). `rev` = 0.
+// Trạng thái: `reject` (huỷ khi chuyển G1) ⇒ `cancelled`, còn lại ⇒ `posted` (`deal.rules.ts::legacyStatus`). `rev` = 0.
 import type { TransactionListQuery } from "@ai/contracts/pack-contracts";
 import { sql } from "drizzle-orm";
 import { contractNameSql } from "./contract-name.sql";
@@ -10,7 +10,7 @@ const PARTNER = `case c.direction when 'purchase' then c.seller else c.buyer end
 const DAY = `coalesce(c.start_date, (c.created_at at time zone 'UTC')::date)`;
 
 export const summaryJson = sql`jsonb_build_object('id', c.id, 'deal', c.deal,
-  'status', case c.status when 'rejected' then 'cancelled' else 'posted' end, 'rev', 0,
+  'status', case c.status when 'reject' then 'cancelled' else 'posted' end, 'rev', 0,
   'occurred_on', ${sql.raw(DAY)}, 'due_on', c.end_date, 'partner_name', coalesce(${sql.raw(PARTNER)}, ${contractNameSql("c")}), 'party_key', c.partner_key,
   'contract_id', null, 'total', coalesce(c.value, 0), 'lot_label', null, 'updated_at', c.updated_at)`;
 
@@ -20,7 +20,7 @@ export function listQ(t: string, q: TransactionListQuery) {
   return sql`with f as materialized (
       select c.* from contracts.contracts c
       where c.tenant_id = ${t}::uuid and c.doc_type = 'deal' and c.superseded_at is null and c.deal in ('buy', 'sell')
-        and (${st}::text is null or (${st}::text = 'cancelled') = (c.status = 'rejected'))
+        and (${st}::text is null or (${st}::text = 'cancelled') = (c.status = 'reject'))
         and (${st}::text is distinct from 'draft')
         and (${q.deal ?? null}::text is null or c.deal = ${q.deal ?? null}::text)
         and (${q.contract_id ?? null}::uuid is null or c.frame_root_id = ${q.contract_id ?? null}::uuid)
@@ -40,7 +40,7 @@ export function detailQ(t: string, id: string) {
         else c.fields -> 'buyer_tax_id' ->> 'value' end,
       'product_group', case when c.product_group in ('service', 'goods') then c.product_group end, 'note', null,
       'holder', null, 'created_by', c.created_by, 'created_at', c.created_at, 'posted_at', c.confirmed_at,
-      'cancelled_at', case c.status when 'rejected' then c.updated_at end, 'cancel_reason', null,
+      'cancelled_at', case c.status when 'reject' then c.updated_at end, 'cancel_reason', null,
       'lines', coalesce((select jsonb_agg(jsonb_build_object('id', i.id, 'ord', i.ord, 'name', i.name,
           'product_id', i.product_id, 'component_ids', i.component_ids, 'unit', i.unit,
           'qty', coalesce(trim_scale(i.qty)::text, '0'), 'unit_price', coalesce(i.unit_price, 0),

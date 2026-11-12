@@ -59,20 +59,9 @@ export type ApprovalRepo = {
   /** CR-109 · `approval: true` (chỉ lệnh duyệt lượt ENGINE) ⇒ khoá được cả khi người gọi là người duyệt ngoài cây (cờ
    *  `app.approval_write`); vắng/false ⇒ khoá theo luật thấy cũ (người duyệt ngoài cây ⇒ null). */
   state(id: string, o: { lock: boolean; approval?: boolean }): Promise<ApprovalState | null>;
-  /** Mở lượt duyệt mới (`extracting` khi có việc AI đọc, `level1` khi nhập tay/mở lại) + gắn `run_id` + event
-   *  `approval_started`; HĐ đã có lượt sống ⇒ `busy`. */
-  open(
-    id: string,
-    approvalId: string,
-    actor: string,
-    initial: "extracting" | "level1",
-  ): Promise<OpenOutcome>;
-  /** Cấp 1 Xác nhận mà giá trị cần cấp 2 ⇒ lượt `level2` + `level1_by/at`. */
-  toLevel2(approvalId: string, actor: string): Promise<boolean>;
-  /** `needs_review → active` + `confirmed_*` + event `approved` + lượt `done` (chỉ HĐ của lượt); giá trị cần cấp 2 mà
-   *  `!level2Passed` ⇒ 0 hàng (luật kiểm TRONG câu UPDATE, D3-14). */
-  finalize(id: string, runId: string, by: string | null, level2Passed: boolean): Promise<boolean>;
-  /** Từ chối / huỷ ⇒ HĐ `rejected` + event + lượt `rejected`/`cancelled` (chỉ khi HĐ còn giữ lượt và chưa kết thúc). */
+  /** CR-127 Z1 · mở lượt ĐỌC AI (`extracting`) + gắn `run_id` + event `approval_started`; HĐ đã có lượt sống ⇒ `busy`. */
+  open(id: string, approvalId: string, actor: string, initial: "extracting"): Promise<OpenOutcome>;
+  /** Từ chối / huỷ ⇒ HĐ `reject` + event + lượt `rejected`/`cancelled` (chỉ khi HĐ còn giữ lượt và chưa kết thúc). */
   /** CR-109 · `o.reviewer` (chỉ Từ chối trên lượt engine, sau khi engine đã nhận quyết) ⇒ ghi được khi người duyệt ngoài cây. */
   markRejected(
     id: string,
@@ -80,17 +69,13 @@ export type ApprovalRepo = {
     e: RejectEvent,
     o?: { reviewer?: boolean },
   ): Promise<boolean>;
-  /** Trích lại ở bước mở: HĐ `needs_review → extracting`, lượt → `extracting`. */
+  /** Trích lại ở bước mở: HĐ về draft + `extract_state = reading` (qua cổng), lượt → `extracting`. */
   markExtracting(id: string, runId: string): Promise<boolean>;
-  /** Sau lượt AI: lượt `extracting` ⇒ `level1` (HĐ needs_review) / `failed` (extract_failed). Trả trạng thái mới hoặc null. */
+  /** Sau lượt AI: lượt `extracting` ⇒ `cancelled` (đã đọc xong, HĐ bỏ `run_id`) / `failed` (`extract_state = failed`). Trả trạng thái mới hoặc null. */
   afterExtraction(id: string, runId: string): Promise<string | null>;
   /** Worker bắt đầu lượt đọc: lượt hết xếp hàng (`queued_at = null`) + HĐ `updated_at = now()`; false ⇒ lượt/HĐ không còn
    *  `extracting`. */
   markStarted(id: string, runId: string): Promise<boolean>;
-  /** Trạng thái lượt duyệt (luật sửa trường); không có ⇒ null. */
-  statusOf(runId: string): Promise<string | null>;
-  /** fix-review · run engine của lượt (`mode = 'engine'`); máy cũ / không có ⇒ null — luật sửa trường theo bước đang mở. */
-  engineRunOf(runId: string): Promise<string | null>;
   settings(): Promise<ApprovalSettings>;
   saveSettings(s: ApprovalSettings, actor: string): Promise<ApprovalSettings>;
 };
@@ -102,13 +87,10 @@ export type SweepOptions = {
   queuedMinutes: number;
   limit: number;
 };
-/** S3b · HĐ vừa heal `extracting → level1` (mở run engine sau) — người mở = người bắt đầu lượt. */
-export type HealedLevel1 = { contractId: string; userId: string };
 export type SweepCounts = {
   read: number;
   closed: number;
   healed: number;
-  healedLevel1?: HealedLevel1[];
 };
 /** S3b · lượt engine còn `level1` + run gắn (reconcile). */
 export type EngineApprovalRef = { approvalId: string; runId: string };

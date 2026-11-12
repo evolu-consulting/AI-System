@@ -13,7 +13,7 @@ import { createDb, type Db, hashPassword, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { connectDb } from "../../../apps/hub-api/src/lib/db";
 import { runSeed, type SeedReport } from "./seed-niti";
-import type { Person, RuleSpec, SeedSpec } from "./seed-niti.data";
+import type { Person, SeedSpec } from "./seed-niti.data";
 import { applyGuard } from "./seed-niti.rules";
 
 /** Tiền tố BẮT BUỘC của khoá tenant (và quy trình thư viện) do seed này tạo/đụng tới. */
@@ -50,18 +50,6 @@ export const JOURNEY_USERS = {
   director: "e2e-giamdoc",
 } as const;
 
-/** Hai quy trình thư viện (khoá `e2e-`): Mua = Kế toán → Giám đốc; Bán = Giám đốc. */
-export const JOURNEY_PROCESSES = {
-  buy: { key: "e2e-mua-kd", name: "E2E Mua (Kinh doanh)" },
-  sell: { key: "e2e-ban-kd", name: "E2E Bán (Kinh doanh)" },
-} as const;
-
-/** Luật chọn quy trình platform admin đặt ở ai-admin: phòng × loại HĐ (cùng hình `RuleSpec` của seed-niti). */
-export const JOURNEY_RULES: RuleSpec[] = [
-  { dept: KD.key, kind: "buy", process: JOURNEY_PROCESSES.buy.key },
-  { dept: KD.key, kind: "sell", process: JOURNEY_PROCESSES.sell.key },
-];
-
 export const JOURNEY_SPEC: SeedSpec = {
   tenantKey: JOURNEY_TENANT.key,
   tenantName: JOURNEY_TENANT.name,
@@ -76,28 +64,12 @@ export const JOURNEY_SPEC: SeedSpec = {
     person("e2e-kd-truong", "E2E Trưởng phòng Kinh doanh", KD.key, true),
     person(JOURNEY_USERS.employee, "E2E Nhân viên Kinh doanh", KD.key, false),
   ],
-  processes: [
-    {
-      ...JOURNEY_PROCESSES.buy,
-      steps: [
-        { key: "ke-toan", name: "Phòng Kế toán duyệt", dept: KT.key },
-        { key: "giam-doc", name: "Ban Giám đốc duyệt", dept: BGD.key },
-      ],
-    },
-    {
-      ...JOURNEY_PROCESSES.sell,
-      steps: [{ key: "giam-doc", name: "Ban Giám đốc duyệt", dept: BGD.key }],
-    },
-  ],
-  rules: JOURNEY_RULES,
 };
 
-/** Lý do TỪ CHỐI (null = được). Thuần: khoá tenant phải bắt đầu `e2e-`, mọi quy trình cũng; mật khẩu đủ độ dài. */
+/** Lý do TỪ CHỐI (null = được). Thuần: khoá tenant phải bắt đầu `e2e-`; mật khẩu đủ độ dài. */
 export function journeyGuard(o: { spec: SeedSpec; pw: string | undefined }): string | null {
   if (!o.spec.tenantKey.startsWith(JOURNEY_PREFIX))
     return `khoá tenant "${o.spec.tenantKey}" không bắt đầu "${JOURNEY_PREFIX}" — không bao giờ đụng tenant thật`;
-  const bad = o.spec.processes.find((p) => !p.key.startsWith(JOURNEY_PREFIX));
-  if (bad) return `quy trình "${bad.key}" không bắt đầu "${JOURNEY_PREFIX}"`;
   const n = o.pw?.length ?? 0;
   if (n < PASSWORD_MIN_LEN || n > PASSWORD_MAX_LEN)
     return `cần E2E_JOURNEY_PW (${PASSWORD_MIN_LEN}–${PASSWORD_MAX_LEN} ký tự)`;
@@ -143,7 +115,6 @@ async function provisionWith(
     const rep = await runSeed(admin, hub, spec, {
       apply: true,
       credFile,
-      routing: false,
       ...(o.log ? { log: o.log } : {}),
     });
     await setJourneyPasswords(admin, spec.tenantKey, o.pw);
@@ -170,8 +141,6 @@ export function provisionExtraJourneyTenant(
       tenantKey: o.key,
       tenantName: o.name,
       emailDomain: `${o.key}.example.invalid`,
-      processes: [],
-      rules: [],
     },
     o,
   );

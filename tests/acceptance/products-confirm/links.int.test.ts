@@ -34,8 +34,8 @@ const products = () =>
     created_from_contract_id::text as from, main_supplier_name as supplier
     from contracts.products where tenant_id = ${T.acme} order by name`;
 
-describe("products-confirm · gắn/tạo SP khi HĐ đã xác nhận", () => {
-  it("HĐ đã xác nhận: gắn SP có sẵn + tạo SP mới (trùng tên ⇒ dùng SP có); chờ xác nhận ⇒ 409; tenant khác ⇒ 404", async () => {
+describe("products-confirm · đường gắn SP sau xác nhận bị khoá theo K4 (CR-127)", () => {
+  it("HĐ đã xác nhận (K4 khoá gắn SP) ⇒ 409 CONTRACT_LOCKED, không tạo SP; chờ xác nhận ⇒ 409 CONTRACT_NOT_CONFIRMED; tenant khác ⇒ 404", async () => {
     await arrangeV2a(c);
     await setApproval(c.sql, T.acme, false);
     await c.sql`truncate contracts.products cascade`;
@@ -61,23 +61,14 @@ describe("products-confirm · gắn/tạo SP khi HĐ đã xác nhận", () => {
     expect((await post(s.id, [{ item_id: a, product_id: tape.id }], P.an)).status).toBe(404);
     expect((await products()).map((p) => p.name)).toEqual(["Băng keo"]);
 
+    // CR-127 K4 (BR-02): SP gắn khi HĐ còn Nháp (qua "Xác nhận & lưu" kèm `products`); HĐ đã processing/done khoá gắn SP ⇒ 409, không tạo SP, không đổi dòng.
     const r = await post(s.id, [
       { item_id: a, product_id: tape.id },
       { item_id: b, new_product: { name: "Thùng carton 5 lớp", unit: "thùng", group: "goods" } },
       { item_id: dup, new_product: { name: "Băng keo", group: "goods" } },
     ]);
-    expect([r.status, r.json]).toEqual([200, { created: 1, linked: 3 }]);
-    const ps = await products();
-    expect(ps as unknown[]).toEqual([
-      { name: "Băng keo", from: null, supplier: null },
-      { name: "Thùng carton 5 lớp", from: s.id, supplier: "Công ty Bán" },
-    ]);
-    const [{ id: carton }] = (await c.sql<{ id: string }[]>`select id::text from contracts.products
-      where name = 'Thùng carton 5 lớp'`) as unknown as [{ id: string }];
-    expect((await itemRows(c.sql, s.id)).map((i) => i.product_id)).toEqual([
-      tape.id,
-      carton,
-      tape.id,
-    ]);
+    expect([r.status, r.json?.error?.code]).toEqual([409, "CONTRACT_LOCKED"]);
+    expect([...(await products())]).toEqual([{ name: "Băng keo", from: null, supplier: null }]);
+    expect((await itemRows(c.sql, s.id)).map((i) => i.product_id)).toEqual([null, null, null]);
   });
 });

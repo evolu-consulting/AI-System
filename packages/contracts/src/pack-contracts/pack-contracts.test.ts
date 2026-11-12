@@ -24,7 +24,7 @@ describe("HD-FR-07 · ContractListQuerySchema", () => {
   });
   test("tham số lặp ⇒ mảng; một giá trị ⇒ mảng 1 phần tử; số từ chuỗi", () => {
     const r = ContractListQuerySchema.parse({
-      status: ["active", "expiring"],
+      status: ["draft", "processing"],
       owner: U,
       direction: "unknown",
       value_min: "0",
@@ -32,7 +32,7 @@ describe("HD-FR-07 · ContractListQuerySchema", () => {
       page_size: "100",
     });
     expect(r).toMatchObject({
-      status: ["active", "expiring"],
+      status: ["draft", "processing"],
       owner: [U],
       direction: ["unknown"],
       value_min: 0,
@@ -50,7 +50,7 @@ describe("HD-FR-07 · ContractListQuerySchema", () => {
     ["q 1 ký tự", { q: "a" }],
     ["q 101 ký tự", { q: "x".repeat(101) }],
     ["owner không phải uuid", { owner: "x" }],
-    ["status lạ", { status: "draft" }],
+    ["status lạ", { status: "active" }],
     ["value_min âm", { value_min: "-1" }],
     ["signer > 20", { signer: Array.from({ length: 21 }, (_, i) => `s${i}`) }],
     ["tham số lạ", { cursor: "x" }],

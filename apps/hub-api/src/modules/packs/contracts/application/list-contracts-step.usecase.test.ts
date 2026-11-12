@@ -22,27 +22,39 @@ const who = { tenantId: "t", userId: "u" };
 describe("listContracts · step_label", () => {
   it("một lô cho cả trang, hàng có run ⇒ nhãn, hàng không có run ⇒ null", async () => {
     const calls: (readonly string[])[] = [];
-    const out = await listContracts<{ id: string; step_label?: unknown }>({
+    const out = await listContracts<{ id: string; step_label?: unknown; waiting?: unknown }>({
       uow,
       stepLabels: async (_w, ids, fromRuns) => {
         calls.push(ids);
         expect([...fromRuns]).toEqual(["r1"]);
         return new Map([
-          ["r1", { code: "waiting_sign", who: "Giám đốc" }],
-          ["r2", null],
+          [
+            "r1",
+            {
+              label: { code: "waiting_sign", who: "Giám đốc" },
+              waiting: { step: "Ký số", who: "Giám đốc", due_at: null },
+            },
+          ],
+          ["r2", { label: null, waiting: null }],
         ]);
       },
     })(who, q);
     expect(calls).toEqual([["r1", "r2"]]);
     expect(out.items).toEqual([
-      { id: "c1", step_label: { code: "waiting_sign", who: "Giám đốc" } },
-      { id: "c2", step_label: null },
-      { id: "c3", step_label: null },
+      {
+        id: "c1",
+        step_label: { code: "waiting_sign", who: "Giám đốc" },
+        waiting: { step: "Ký số", who: "Giám đốc", due_at: null },
+      },
+      { id: "c2", step_label: null, waiting: null },
+      { id: "c3", step_label: null, waiting: null },
     ]);
   });
 
-  it("không có cầu engine ⇒ vẫn đủ khoá `step_label: null`, không gọi ai", async () => {
-    const out = await listContracts<{ id: string; step_label?: unknown }>({ uow })(who, q);
+  it("không có cầu engine ⇒ vẫn đủ khoá `step_label: null` + `waiting: null`, không gọi ai", async () => {
+    const out = await listContracts<{ id: string; step_label?: unknown; waiting?: unknown }>({
+      uow,
+    })(who, q);
     expect(out.items.every((x) => (x as { step_label?: unknown }).step_label === null)).toBe(true);
   });
 
@@ -52,7 +64,7 @@ describe("listContracts · step_label", () => {
       tenant: <T>(_w: unknown, fn: (r: never) => Promise<T>) =>
         fn({ contracts: { list: async () => ({ ...page, step_runs: [] }) } } as never),
     };
-    await listContracts<{ id: string; step_label?: unknown }>({
+    await listContracts<{ id: string; step_label?: unknown; waiting?: unknown }>({
       uow: none,
       stepLabels: async () => {
         n++;

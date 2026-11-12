@@ -6,7 +6,7 @@ import {
   SEVERE_EVENT_TYPES,
 } from "@ai/contracts/pack-contracts";
 import { vnd } from "~/components/shared/format";
-import { todayIso } from "~/features/contract-deadline/lib/deadline";
+import { todayIso } from "~/features/contract-shared/lib/date";
 
 type T = (k: string, o?: Record<string, unknown>) => string;
 const viDate = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");

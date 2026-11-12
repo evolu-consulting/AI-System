@@ -36,14 +36,16 @@ describe("community http adapter", () => {
     const calls = capture(200, {});
     await api.getViewer();
     await api.updatePost("p1", { title: "x" });
-    await api.getThread("p1", "o1");
-    await api.updatePartner("o1", { labels: ["buyer"] });
+    await api.listComments("p1");
+    await api.listMentionables("p1", "tan");
+    await api.deleteComment("p1", "c1");
     await api.getProfile();
     expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual([
       "GET /pack/community/viewer",
       "PATCH /pack/community/posts/p1",
-      "GET /pack/community/posts/p1/threads/o1",
-      "PUT /pack/community/partners/o1",
+      "GET /pack/community/posts/p1/comments?limit=100",
+      "GET /pack/community/posts/p1/mentionables?q=tan&limit=20",
+      "DELETE /pack/community/posts/p1/comments/c1",
       "GET /pack/community/profile",
     ]);
     capture(204);

@@ -14,9 +14,11 @@ export type ProductLinksRepo = {
     contractId: string,
     links: readonly ProductLink[],
     actor: string,
-    /** lock-strict: đường route (không phải bước duyệt / lệnh xác nhận) ⇒ HĐ đã khoá (`locked_at`) ⇒ `contract_locked` (MỌI
+    /** lock-strict: đường route (không phải bước duyệt / lệnh xác nhận) ⇒ HĐ khoá nội dung (processing/done — K4) ⇒ `contract_locked` (MỌI
      *  link, kể cả gắn lần đầu — atomic-confirm). Bước duyệt cuối / POST /review xác nhận gọi không strict TRONG tx khoá. */
     strict?: boolean,
+    /** CR-127 · "Xác nhận & lưu": gắn khi HĐ còn DRAFT (sửa được — BR-02), cùng tx, TRƯỚC khi chuyển trạng thái. Không bật ⇒ chỉ HĐ `done`. */
+    inDraft?: boolean,
   ): Promise<ProductLinksOutcome>;
 };
 export type ProductLinksTxRepos = { links: ProductLinksRepo } & KitTxRepos;

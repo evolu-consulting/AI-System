@@ -12,6 +12,8 @@ export const FeedQuerySchema = z.strictObject({
   area: z.string().max(100).optional(),
   /** Người đăng = id công ty. */
   authorOrgId: z.string().max(64).optional(),
+  /** CR-129 L5 · hồ sơ cá nhân: chỉ bài của MỘT người (id người dùng); RLS/audience như feed thường. */
+  authorUserId: z.uuid().optional(),
   /** Tìm chữ thường trong tiêu đề, sản phẩm, nội dung (đã che với user ngoài). */
   q: z.string().trim().max(100).optional(),
   /** Chỉ bài của công ty mình (trang hồ sơ "Bài của tôi"). */

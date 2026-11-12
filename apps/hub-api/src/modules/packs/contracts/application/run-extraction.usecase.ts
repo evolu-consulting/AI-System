@@ -58,7 +58,7 @@ function candidateTaxIds(raw: RawExtraction, old: unknown): (string | null)[] {
 export function createRunExtraction(d: RunExtractionDeps): RunExtraction {
   return async (who, id) => {
     const src = await d.uow.tenant(who, (r) => r.extraction.source(id));
-    if (!src || src.status !== "extracting") return "skipped";
+    if (!src || src.status !== "draft" || src.extractState !== "reading") return "skipped";
     if (!src.text && !src.file) return fail(d, who, id, "NO_SOURCE");
     const read = await sourceText(d, who, src);
     if (!read.ok) return fail(d, who, id, read.code);
@@ -71,7 +71,7 @@ export function createRunExtraction(d: RunExtractionDeps): RunExtraction {
       parent: src.parent,
     });
     if (!reply.ok) return fail(d, who, id, reply.code);
-    // Ghi hỏng (Worker lỗi, DB từ chối, mất kết nối) ⇒ `extract_failed SAVE_FAILED`, không để HĐ kẹt `extracting` (S-M1).
+    // Ghi hỏng (Worker lỗi, DB từ chối, mất kết nối) ⇒ `extract_failed SAVE_FAILED`, không để HĐ kẹt `reading` (S-M1).
     try {
       const verified = await d.verifier.verify({
         raw: reply.raw,
@@ -132,7 +132,11 @@ export function withOwnDeal(out: ApplyOutput, own: OwnParties): ApplyOutput {
 /** Ghi có điều kiện `version`; thua đua với sửa tay ⇒ đọc lại và gộp lại (CPU nặng đã xong, phần này rẻ). */
 async function save(d: RunExtractionDeps, s: SaveInput): Promise<ExtractionOutcome> {
   let cur: ExtractionSource | null = s.cur;
-  for (let i = 0; i < SAVE_ATTEMPTS && cur?.status === "extracting"; i++) {
+  for (
+    let i = 0;
+    i < SAVE_ATTEMPTS && cur?.status === "draft" && cur.extractState === "reading";
+    i++
+  ) {
     const merged = withOwnDeal(
       mergeExtraction(s.verified, cur.fields, cur.items.length > 0),
       s.own,
@@ -153,10 +157,12 @@ async function save(d: RunExtractionDeps, s: SaveInput): Promise<ExtractionOutco
     }
     cur = await d.uow.tenant(s.who, (r) => r.extraction.source(s.id));
   }
-  return cur?.status === "extracting" ? fail(d, s.who, s.id, "SAVE_FAILED") : "skipped";
+  return cur?.status === "draft" && cur.extractState === "reading"
+    ? fail(d, s.who, s.id, "SAVE_FAILED")
+    : "skipped";
 }
 
-/** Chỉ ghi lỗi khi HĐ còn `extracting` (repo kiểm trong câu UPDATE). */
+/** Chỉ ghi lỗi khi HĐ còn `reading` (repo kiểm trong CAS của cổng). */
 async function fail(
   d: RunExtractionDeps,
   who: PackWho,

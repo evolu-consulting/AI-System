@@ -4,6 +4,7 @@ import type { Db, Tx } from "@ai/db";
 import type { Hono } from "hono";
 import type { PackAccessView, PackGuardVars } from "../kit/public";
 import { createPackUow, packTenantOnly } from "../kit/public";
+import { contractRoleOf } from "./adapters/contract-role";
 import { deleteContractRepo } from "./adapters/delete-contract.repo";
 import { deleteContractRoutes } from "./adapters/delete-contract.routes";
 import { deleteContractUsecases } from "./application/delete-contract.usecase";
@@ -24,5 +25,6 @@ export function deleteContractModule(
       timeZoneOf: safeTimeZone(d.timeZoneOf),
       now: d.now ?? (() => new Date()),
     }),
+    contractRoleOf(view),
   );
 }

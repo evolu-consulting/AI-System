@@ -110,7 +110,7 @@ export function extractionRoutes(
     await d.quota?.(c.get("user").tenantId);
     const out = await d.requestExtract(whoOf(c.get("user")), id);
     if (out.kind !== "ok") throw extractError(out.kind);
-    return c.json({ id, status: "extracting", version: out.version }, 202);
+    return c.json({ id, status: "draft", extract_state: "reading", version: out.version }, 202);
   });
   return r;
 }

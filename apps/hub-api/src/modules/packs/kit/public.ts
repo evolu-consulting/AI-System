@@ -1,9 +1,12 @@
 // Cửa công khai của kit gói cho module khác (ADR-0037): registry nhãn bản ghi + registry mục hàng việc của menu + kiểu.
 
+export type { ContractAccess } from "./adapters/contract-access.registry";
+export { contractAccess, registerContractAccess } from "./adapters/contract-access.registry";
 export { createDocxConverter } from "./adapters/docx/index";
 export { pgExternalOrgResolver } from "./adapters/ext-org.pg";
 export { externalFirewall } from "./adapters/external-firewall.middleware";
 export { flowRoutes } from "./adapters/flow.routes";
+export { flowEngine, registerFlowEngine } from "./adapters/flow-engine.registry";
 export { flowPortRegistry } from "./adapters/flow-port-registry";
 export { flowReceiveState } from "./adapters/flow-receive-state";
 export {
@@ -30,6 +33,7 @@ export {
   CREATOR_DEPARTMENTS_SQL,
   companyGroups,
   creatorDepartmentsOf,
+  departmentsOfUsers,
   deptHeadOf,
   directoryRows,
   escalateTargetsOf,
@@ -52,7 +56,7 @@ export {
 export { packHosts } from "./adapters/pack-hosts";
 export { packNavRoutes } from "./adapters/pack-nav.route";
 export { packNavRegistry } from "./adapters/pack-nav-registry";
-export { withPackRoleInTx } from "./adapters/pack-role-in-tx";
+export { withPackJobRoleInTx, withPackRoleInTx } from "./adapters/pack-role-in-tx";
 export type { PackStreamEvent, PackStreamPublish } from "./adapters/pack-stream-publish";
 export { packStreamPublish } from "./adapters/pack-stream-publish";
 export { PackToolRegistry } from "./adapters/pack-tools.registry";
@@ -66,6 +70,7 @@ export { recordLabelRegistry } from "./adapters/record-label-registry";
 export { shadowEmit } from "./adapters/shadow-emit";
 export { checkSlotContract, flowAdapterSlots } from "./adapters/slot-contract.check";
 export { slotRegistry } from "./adapters/slot-registry";
+export { pgFlowTaskSignal } from "./adapters/task-signal.pg";
 export type {
   ActivityRow,
   ActivitySource,
@@ -78,12 +83,21 @@ export type { FlowActError, FlowActOutcome, FlowSlotAdapter } from "./applicatio
 export { flowRuntime, flowRuntimeOn } from "./application/flow.ports";
 export type {
   FactsReader,
+  FlowAvailability,
+  FlowEngine,
   FlowEventInput,
   FlowFacts,
   FlowFactValue,
+  FlowOutline,
+  FlowRunControl,
+  FlowRunEnd,
+  FlowRunStep,
   OutcomeHandler,
   OutcomeInput,
   OutcomeResult,
+  ScheduledDue,
+  ScheduledQuery,
+  ScheduledSource,
 } from "./application/flow-events.ports";
 export type { KitTxRepos } from "./application/index-outbox";
 export type {
@@ -119,6 +133,7 @@ export type {
   PackRunsPort,
   PackStepsView,
   PackStepView,
+  PackTaskClaim,
   PackWorkflow,
 } from "./application/pack-runs.ports";
 export type {
@@ -149,6 +164,14 @@ export type {
 export { slotFields, slotNodes } from "./application/slot.ports";
 export type { StartPackRunDeps, StartPackRunResult } from "./application/start-pack-run.usecase";
 export { startPackRun } from "./application/start-pack-run.usecase";
+// CR-127 · E10 · việc nhóm gắn bản ghi gói (Xác nhận mốc): gói chỉ ghi tín hiệu / đọc người giữ.
+export type {
+  FlowTaskHolder,
+  FlowTaskKind,
+  FlowTaskSignal,
+  FlowTaskSignalResult,
+  FlowTaskSubject,
+} from "./application/task-signal.ports";
 export type { DocxConverter } from "./domain/docx.rules";
 export { externalPackActions } from "./domain/external-access.rules";
 export { checkPackAccess, packActionsFor } from "./domain/pack-access.rules";

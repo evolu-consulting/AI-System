@@ -18,7 +18,7 @@ import { HUB_API_URL, type HubDeps, makeKeys, REDIS_TEST_URL, sign } from "../..
 import { testRedis } from "../../H1/_hub";
 import { ScriptRuntime } from "../../H1/_runtime";
 import { HUB_KEY, seedSecret, tableExists } from "../../H4b1/_h4b1";
-import { api, setupPa } from "../../P-a/_support/pa";
+import { api, defsWriteVia, setupPa } from "../../P-a/_support/pa";
 import { seedPf1 } from "../../P-a/pf1/_local";
 import { insertSource } from "../../P-b/pfs1/_local";
 import {
@@ -221,7 +221,10 @@ export async function startPc2(
     redis: rtRedis,
     rt: new ScriptRuntime(sql, rtRedis),
     tok,
-    call: async (r, method, path, body) => api(hub, await tok(r), method, path, body),
+    call: async (r, method, path, body) => {
+      const w = defsWriteVia(r, method, path);
+      return api(hub, await tok(w.role as typeof r), method, w.path, body);
+    },
     base,
     dir,
     clock,

@@ -13,20 +13,23 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { Tag } from "~/components/shared/tag";
+import {
+  ContractLockChip,
+  EffectChip,
+  StatusChip,
+} from "~/features/contract-shared/components/Chips";
 import { VersionBadge } from "~/features/contract-versions/components/VersionBadge";
 import { cn } from "~/lib/utils";
 import { COLUMN_KEYS, COLUMN_KEYS_DEAL, type ColumnKey } from "../lib/columns";
 import { deleteAction } from "../lib/delete-action";
-import { STATUS_VIEW, shortName, statusLabel } from "../lib/list-model";
+import { shortName } from "../lib/list-model";
 import {
-  approvedLabel,
   DEAL_TONE,
+  daysLeftOf,
   dealOfRow,
   partnerOfRow,
-  STAGE_TONE,
-  type StageView,
-  stageView,
-  stepKey,
+  statusView,
+  waitingView,
 } from "../lib/row-view";
 import { DocTypeTag, EyeIcon, SourceName } from "./ChildRows";
 
@@ -41,8 +44,6 @@ export type RowCtx = {
   sources?: ReadonlyMap<string, DealSource | null>;
   /** CR-118 · tóm tắt flow theo id HĐ (huy hiệu "Cần xử lý"); vắng khi runtime chưa bật. */
   flow?: ReadonlyMap<string, FlowSummaryItem> | undefined;
-  /** Vai quản lý (`useMe().owner`) ⇒ hiện nút Xoá. */
-  owner?: boolean;
   /** Mở hộp xoá của HĐ `id`. */
   onDelete?: (id: string) => void;
 };
@@ -66,10 +67,10 @@ function RowLock() {
 function SubLine({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const { t } = useTranslation();
   const parent = r.parent_id ? ctx.parents.get(r.parent_id) : undefined;
-  const parts = [r.number, parent ? t("contracts.list.appendixOf", { title: parent }) : null];
+  if (!parent) return null;
   return (
     <span className="block truncate text-[12.5px] text-dim">
-      {parts.filter(Boolean).join(" · ")}
+      {t("contracts.list.appendixOf", { title: parent })}
     </span>
   );
 }
@@ -101,60 +102,41 @@ function AttentionTag({ id, ctx }: { id: string; ctx: RowCtx }) {
   );
 }
 
-export function StageCell({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
+/** CR-127 · U6 · BR-35…40: MỘT chip trạng thái (4 giá trị) + chip hiệu lực (chỉ HĐ đã duyệt xong) + tạm khoá + "AI đang đọc" (không phải trạng thái). */
+export function StatusCell({ r }: { r: ContractListRow }) {
+  const { t } = useTranslation();
+  const v = statusView(r, daysLeftOf(r.end_date));
   return (
-    <>
-      <StageTag r={r} ctx={ctx} />
-      <AttentionTag id={r.id} ctx={ctx} />
-    </>
+    <span className="flex flex-wrap items-center gap-1" data-testid="status-cell">
+      <StatusChip status={r.status} />
+      {v.effect && <EffectChip effect={v.effect.effect} daysLeft={v.effect.daysLeft} />}
+      {v.held && <ContractLockChip {...(r.hold?.reason ? { reason: r.hold.reason } : {})} />}
+      {v.extract && (
+        <Tag tone={v.extract === "failed" ? "late" : "grey"}>
+          {t(`contracts.u6.extract.${v.extract}`)}
+        </Tag>
+      )}
+    </span>
   );
 }
 
-function StageTag({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
+/** Cột "Đang chờ": bước hiện tại · người (tên người ký ở bước Ký số) · hạn; HĐ không có lượt duyệt mở ⇒ —. */
+export function WaitingCell({ r }: { r: ContractListRow }) {
   const { t } = useTranslation();
-  const v = stageView(r, ctx.progress.get(r.id));
-  if (v.kind === "status") {
-    const s = STATUS_VIEW[r.status];
-    return (
-      <Tag
-        tone={
-          s.tone === "late"
-            ? "late"
-            : s.tone === "soon"
-              ? "soon"
-              : s.tone === "act"
-                ? "act"
-                : "grey"
-        }
-      >
-        {/* CR-123 · u10: bước THẬT của lượt duyệt ("Chờ Giám đốc ký") thay nhãn trạng thái chung ("Chờ xác nhận") */}
-        {r.step_label
-          ? t(stepKey(r.step_label), { who: r.step_label.who, name: r.step_label.name })
-          : statusLabel(t, r.status)}
-      </Tag>
-    );
-  }
-  return <TrackedTag r={r} v={v} />;
-}
-
-/** HĐ đã vào theo dõi: giai đoạn (+ bước kế). CR-123 · u10b: lượt duyệt đã xong ⇒ "Đã duyệt · Đang hiệu lực"; quá hạn vẫn đỏ như cũ. */
-function TrackedTag({ r, v }: { r: ContractListRow; v: Extract<StageView, { kind: "stage" }> }) {
-  const { t } = useTranslation();
-  const approved = v.overdue
-    ? null
-    : approvedLabel(r.step_label, t("contracts.list.step.approved"), statusLabel(t, r.status));
-  const stage = v.overdue
-    ? t("contracts.cdetail.stageOver")
-    : t(`contracts.cdetail.stage.${v.stage}`);
+  const w = waitingView(r.waiting);
+  if (!w) return <span className="text-dim">—</span>;
   return (
-    <>
-      <Tag tone={v.overdue ? "late" : STAGE_TONE[v.stage]}>{approved ?? stage}</Tag>
-      {v.step && (
-        <span className={cn("mt-0.5 block text-[12.5px]", v.overdue ? "text-late" : "text-dim")}>
-          {v.step}
+    <span data-testid="waiting-cell" className="block">
+      <span className="block font-medium">{w.step ?? t("contracts.u6.waiting.anyStep")}</span>
+      {(w.who || w.due) && (
+        <span className={cn("block text-[12.5px]", w.overdue ? "text-late" : "text-dim")}>
+          {[w.who, w.due ? t("contracts.u6.waiting.until", { date: viDate(w.due) }) : null]
+            .filter(Boolean)
+            .join(" · ")}
+          {w.overdue ? ` · ${t("contracts.u6.waiting.over")}` : ""}
         </span>
       )}
-    </>
+    </span>
   );
 }
 
@@ -201,6 +183,12 @@ export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode
           <SubLine r={r} ctx={ctx} />
         </td>
       );
+    case "number":
+      return (
+        <td className={cn("whitespace-nowrap", TD)} data-testid="number-cell">
+          {r.number ?? <span className="text-dim">—</span>}
+        </td>
+      );
     case "partner":
       return <PartnerCell r={r} ctx={ctx} />;
 
@@ -230,10 +218,17 @@ export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode
           <Dates r={r} ctx={ctx} />
         </td>
       );
-    case "stage":
+    case "status":
       return (
         <td className={cn("min-w-[150px]", TD)}>
-          <StageCell r={r} ctx={ctx} />
+          <StatusCell r={r} />
+          <AttentionTag id={r.id} ctx={ctx} />
+        </td>
+      );
+    case "waiting":
+      return (
+        <td className={cn("min-w-[150px]", TD)}>
+          <WaitingCell r={r} />
         </td>
       );
   }
@@ -242,7 +237,7 @@ export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode
 /** Xem (mắt) + Xoá (thùng rác, chỉ vai quản lý) — nút biểu tượng không viền. Nhiều phiên bản ⇒ Xoá bị khoá kèm lý do. */
 function RowActions({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const { t } = useTranslation();
-  const del = deleteAction(r, ctx.owner);
+  const del = deleteAction(r);
   return (
     <span className="inline-flex items-center gap-1">
       <Link
@@ -336,8 +331,13 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
             .join(" · ")}
         </span>
         <span>
-          <StageCell r={r} ctx={ctx} />
+          <StatusCell r={r} />
         </span>
+        {r.waiting && (
+          <span className="text-[13px]">
+            <WaitingCell r={r} />
+          </span>
+        )}
       </Link>
       <div className="absolute right-2 bottom-2">
         <RowActions r={r} ctx={ctx} />

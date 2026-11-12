@@ -1,17 +1,19 @@
-// HD4-FR-03…05 · HD4-NFR-01 · D4-01 · D4-02 · plan §2: vòng nhắc theo tập. Một lô = một tenant: tìm tenant có việc tới hạn (role
+// CR-127 K6 · HD4-NFR-01 · D4-01 · D4-02 · plan §2: vòng tính lại hiệu lực theo tập (bỏ chuông cứng). Một lô = một tenant: tìm tenant có việc tới hạn (role
 // `contracts_job`), rồi trong tx `system(tenant)` claim ≤ `batchSize` hàng (SKIP LOCKED) → domain thuần → MỘT câu áp dụng
-// (trạng thái, lịch, `contract_reminders`, event, outbox, `notify.enqueue`). Số câu mỗi lô cố định. `drain` chạy tới hết việc,
+// (`refresh_effect`, lịch, outbox). Số câu mỗi lô cố định. `drain` chạy tới hết việc,
 // bỏ qua tenant lỗi/đang bị instance khác khoá trong lượt đó (readiness #4), không sleep.
-import { type DueContract, planReminder, type ReminderPlan } from "../domain/deadline.rules";
 
-export type RemindApplied = { statusChanged: number; reminded: number; notified: number };
+import { type DueContract, planReminder, type ReminderPlan } from "../domain/deadline.rules";
+import { localDate } from "../domain/local-time.rules";
+
+export type RemindApplied = { statusChanged: number };
 export type ReminderBatchRepo = {
   /** ≤ `limit` HĐ của tenant tx có `remind_at <= now`, khoá `FOR UPDATE SKIP LOCKED`. */
   claim(now: Date, limit: number): Promise<DueContract[]>;
   /** Xoá hàng lịch tới hạn không còn HĐ (mồ côi); trả số hàng xoá. */
   purgeOrphans(now: Date): Promise<number>;
   /** Một câu cho cả lô. */
-  apply(plans: readonly ReminderPlan[]): Promise<RemindApplied>;
+  apply(plans: readonly ReminderPlan[], today?: string): Promise<RemindApplied>;
 };
 export type DueTenantFinder = {
   /** Tenant có hàng tới hạn sớm nhất, trừ `skip`; không còn ⇒ null. */
@@ -46,9 +48,12 @@ async function remindBatch(d: RemindDeps, tenantId: string, now: Date): Promise<
     const due = await reminders.claim(now, d.batchSize);
     if (due.length === 0) {
       await reminders.purgeOrphans(now);
-      return { tenantId, claimed: 0, statusChanged: 0, reminded: 0, notified: 0 };
+      return { tenantId, claimed: 0, statusChanged: 0 };
     }
-    const applied = await reminders.apply(due.map((c) => planReminder(c, now, tz)));
+    const applied = await reminders.apply(
+      due.map((c) => planReminder(c, now, tz)),
+      localDate(now, tz),
+    );
     return { tenantId, claimed: due.length, ...applied };
   });
 }
@@ -57,8 +62,6 @@ const addBatch = (t: RemindTotals, b: RemindBatch): void => {
   t.batches += b.claimed > 0 ? 1 : 0;
   t.claimed += b.claimed;
   t.statusChanged += b.statusChanged;
-  t.reminded += b.reminded;
-  t.notified += b.notified;
 };
 
 export function createRemindDue(d: RemindDeps) {
@@ -77,8 +80,6 @@ export function createRemindDue(d: RemindDeps) {
       batches: 0,
       claimed: 0,
       statusChanged: 0,
-      reminded: 0,
-      notified: 0,
       failed: 0,
     };
     const skip: string[] = [];

@@ -5,9 +5,10 @@ import { slotContractGaps } from "./slot-contract.rules";
 
 describe("FLOW-FR-01 · slotContractGaps", () => {
   test("khe manifest thiếu SlotSpec ⇒ gap spec, runtime bật mà thiếu adapter ⇒ gap adapter", () => {
-    const gaps = slotContractGaps([CONTRACTS_MANIFEST], new Set(["contracts.approval"]), new Set());
-    expect(gaps).toEqual([
-      { app: "contracts", slot: "contracts.approval", missing: "adapter" },
+    expect(
+      slotContractGaps([CONTRACTS_MANIFEST], new Set(["contracts.intake"]), new Set()),
+    ).toEqual([{ app: "contracts", slot: "contracts.intake", missing: "adapter" }]);
+    expect(slotContractGaps([CONTRACTS_MANIFEST], new Set(), new Set())).toEqual([
       { app: "contracts", slot: "contracts.intake", missing: "spec" },
       { app: "contracts", slot: "contracts.intake", missing: "adapter" },
     ]);

@@ -10,8 +10,8 @@ import {
 } from "../../../../../../tests/acceptance/P-a/_support/process-fixtures";
 
 const D = {
-  libA: "c1219000-0000-4000-8000-000000000001", // thư viện khe contracts.approval
-  libI: "c1219000-0000-4000-8000-000000000002", // thư viện khe contracts.intake
+  libA: "c1219000-0000-4000-8000-000000000001", // thư viện khe community.report
+  libI: "c1219000-0000-4000-8000-000000000002", // thư viện khe khác (contracts.intake)
   acme: "c1219000-0000-4000-8000-000000000003", // def vật chất hoá của acme
   copy: "c1219000-0000-4000-8000-000000000004", // bản riêng của acme sao từ libA
   beta: "c1219000-0000-4000-8000-000000000005",
@@ -25,7 +25,7 @@ beforeAll(async () => {
     await insertDef(c.sql, { id, tenantId: null, input: defInput({ key }) });
     await c.sql`update hub.process_defs set slot = ${slot}, published_version = 1 where id = ${id}`;
   };
-  await lib(D.libA, "cc-lib-a", "contracts.approval");
+  await lib(D.libA, "cc-lib-a", "community.report");
   await lib(D.libI, "cc-lib-i", "contracts.intake");
   await insertDef(c.sql, { id: D.acme, tenantId: PA.Adm.tid, input: defInput({ key: "cc-acme" }) });
   await insertDef(c.sql, { id: D.copy, tenantId: PA.Adm.tid, input: defInput({ key: "cc-copy" }) });
@@ -59,17 +59,17 @@ const ids = async (who: "Adm" | "Db" | "P", q: string) =>
 
 describe("CR-121 c9 · lượt chạy lọc theo khe / def", () => {
   it("lọc slot gồm def thư viện + bản riêng của chính công ty, công ty khác không lọt", async () => {
-    expect(await ids("Adm", "&slot=contracts.approval")).toEqual([runs.a1, runs.c1].sort());
+    expect(await ids("Adm", "&slot=community.report")).toEqual([runs.a1, runs.c1].sort());
     expect(await ids("Adm", "&slot=contracts.intake")).toEqual([runs.i1]);
-    expect(await ids("Db", "&slot=contracts.approval")).toEqual([runs.b1]); // chỉ lượt của beta
+    expect(await ids("Db", "&slot=community.report")).toEqual([runs.b1]); // chỉ lượt của beta
     expect(await ids("Adm", "&slot=contracts.nothing")).toEqual([]);
   });
 
   it("lọc def_id (thư viện hoặc bản riêng), giao với slot, không lọc ⇒ đủ", async () => {
     expect(await ids("Adm", `&def_id=${D.libA}`)).toEqual([runs.a1]);
     expect(await ids("Adm", `&def_id=${D.copy}`)).toEqual([runs.c1]);
-    expect(await ids("Adm", `&slot=contracts.approval&def_id=${D.libI}`)).toEqual([]); // khác khe ⇒ rỗng
-    expect(await ids("Adm", `&slot=contracts.approval&def_id=${D.copy}`)).toEqual([runs.c1]);
+    expect(await ids("Adm", `&slot=community.report&def_id=${D.libI}`)).toEqual([]); // khác khe ⇒ rỗng
+    expect(await ids("Adm", `&slot=community.report&def_id=${D.copy}`)).toEqual([runs.c1]);
     expect((await ids("Adm", "")).length).toBe(4); // a1, i1, c1, plain
   });
 
@@ -78,7 +78,7 @@ describe("CR-121 c9 · lượt chạy lọc theo khe / def", () => {
     const p1 = await c.call(
       "Adm",
       "GET",
-      "/process-runs?scope=tenant&slot=contracts.approval&limit=1",
+      "/process-runs?scope=tenant&slot=community.report&limit=1",
     );
     const l1 = p1.json as List;
     expect(l1.items.length).toBe(1);
@@ -86,7 +86,7 @@ describe("CR-121 c9 · lượt chạy lọc theo khe / def", () => {
     const p2 = await c.call(
       "Adm",
       "GET",
-      `/process-runs?scope=tenant&slot=contracts.approval&limit=1&cursor=${l1.next_cursor}`,
+      `/process-runs?scope=tenant&slot=community.report&limit=1&cursor=${l1.next_cursor}`,
     );
     const got = [...l1.items, ...(p2.json as List).items].map((i) => i.id).sort();
     expect(got).toEqual([runs.a1, runs.c1].sort());

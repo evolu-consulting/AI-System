@@ -15,12 +15,14 @@ export type EscalateIssues = { afterH?: "range"; groupId?: "required" | "same" }
 
 /** Tắt ⇒ không lỗi. Bật: 4…2160 giờ; nhóm bắt buộc và khác nhóm kiểm. */
 export function escalateIssues(
-  e: { on: boolean; afterH: string; groupId: string },
+  e: { on: boolean; afterH: string; groupId: string; userId?: string },
   reviewGroupId: string,
 ): EscalateIssues {
   if (!e.on) return {};
   const out: EscalateIssues = {};
   if (!intIn(e.afterH, ESCALATE_AFTER_H)) out.afterH = "range";
+  // CR-127 · E3c · chuyển cho một NGƯỜI thì không cần phòng
+  if (e.userId) return out;
   if (e.groupId === "") out.groupId = "required";
   else if (e.groupId === reviewGroupId) out.groupId = "same";
   return out;

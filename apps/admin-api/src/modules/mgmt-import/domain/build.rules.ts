@@ -3,11 +3,12 @@
 import { companyIndex } from "./companies.rules";
 import { type Ctx, docsOf, type Snapshot } from "./context";
 import { mapCks } from "./map-cks.rules";
-import { type FileJob, mapContracts, mapReminders } from "./map-contracts.rules";
+import { type FileJob, mapContracts } from "./map-contracts.rules";
 import type { Membership } from "./map-identity.rules";
 import { mapKnowledge } from "./map-knowledge.rules";
 import { mapLedger } from "./map-ledger.rules";
 import { mapLegacy } from "./map-legacy.rules";
+import { mapReminders } from "./map-reminders.rules";
 import { newPlan, type Plan, push, tenantPlan } from "./plan";
 import { str } from "./values.rules";
 

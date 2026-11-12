@@ -3,7 +3,6 @@
 import type { PartnerChecklist } from "@ai/contracts/modules";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
-import { useCompanyFlowOp } from "../flows/company-flows-api";
 
 const enc = encodeURIComponent;
 const key = (tid: string) => ["tenants", "partner-confirm", tid] as const;
@@ -39,16 +38,11 @@ export function useSetPartnerConfirm(tid: string) {
   });
 }
 
-/** Nút "Làm bước này" không phải chuyển màn: gán flow nhận · tạo nhóm theo gợi ý. */
+/** Nút "Làm bước này" không phải chuyển màn: tạo nhóm theo gợi ý. */
 export function usePartnerFix(tid: string) {
   const refresh = useRefresh(tid);
-  const assign = useCompanyFlowOp(tid);
   return useMutation({
-    mutationFn: async (
-      a: { fix: "assign-receive-flow"; flowId: string } | { fix: "create-group"; groupKey: string },
-    ) => {
-      if (a.fix === "assign-receive-flow")
-        return assign.mutateAsync({ op: "assign", flowId: a.flowId });
+    mutationFn: async (a: { fix: "create-group"; groupKey: string }) => {
       return api<unknown>(`/admin/tenants/${enc(tid)}/template-fixes/create-group`, {
         method: "POST",
         body: { group_key: a.groupKey },

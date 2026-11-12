@@ -240,51 +240,64 @@ export function finish(key: string, name: string, step: number, outcome: string)
 }
 
 /**
- * Flow Thư viện do platform_admin tạo + XUẤT BẢN qua API thật (E6): `POST /process-defs {trigger, app, stages}` → `POST /:id/publish`.
- * Trả id def. Gán cho công ty: `assignCompanyFlow` (api.ts) hoặc UI.
+ * CR-127 Z7 · quy trình CÔNG TY do platform_admin dựng từ SƠ ĐỒ TRỐNG qua API thật (không còn gán mẫu dùng chung): `POST /tenants/:tid/company-flows
+ * {name, app, from:"blank"}` → `PUT /process-defs/:id?tenant_id` (bước + «Bắt đầu khi» + đầu vào) → `POST …/company-flows/apply` (như «Áp dụng cho công ty»).
+ * Trả id quy trình công ty.
  */
-export async function createLibraryFlow(
+export async function createCompanyFlow(
   hub: string,
   token: string,
+  tenantId: string,
   o: {
-    key: string;
     name: string;
     app: string;
-    trigger: Json;
+    event: string;
+    /** Điều kiện «Bắt đầu khi» đầy đủ (vd có `when`); vắng ⇒ `{ event }`. */
+    trigger?: Json;
     stages: Json[];
-    /** Đầu vào khai báo của flow (vd `contract_id` cho node Ký số); vắng ⇒ không có. */
     inputs?: Json[];
   },
 ): Promise<string> {
   const h = { authorization: `Bearer ${token}`, "content-type": "application/json" };
-  const made = await fetch(`${hub}/process-defs`, {
-    method: "POST",
-    headers: h,
-    body: JSON.stringify({
-      key: o.key,
-      name: o.name,
-      description: "",
-      input_hint: "",
-      run_group_ids: [],
-      token_budget: null,
-      enabled: true,
-      sources: [],
-      inputs: o.inputs ?? [],
-      stages: o.stages,
-      trigger: o.trigger,
-      app: o.app,
-    }),
+  const call = async (method: string, url: string, body?: unknown): Promise<Json> => {
+    const r = await fetch(`${hub}${url}`, {
+      method,
+      headers: h,
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    const text = await r.text();
+    if (r.status >= 300) throw new Error(`${method} ${url} → ${r.status}: ${text.slice(0, 300)}`);
+    return text ? (JSON.parse(text) as Json) : {};
+  };
+  const made = await call("POST", `/tenants/${tenantId}/company-flows`, {
+    name: o.name,
+    app: o.app,
+    from: "blank",
   });
-  const text = await made.text();
-  if (made.status >= 300)
-    throw new Error(`tạo flow ${o.key}: ${made.status} ${text.slice(0, 300)}`);
-  const def = JSON.parse(text) as { id: string; version: number };
-  const pub = await fetch(`${hub}/process-defs/${def.id}/publish`, {
-    method: "POST",
-    headers: h,
-    body: JSON.stringify({ version: def.version, note: "e2e" }),
+  const flowId = String(made.flow_id);
+  const q = `?tenant_id=${tenantId}`;
+  const def = (await call("GET", `/process-defs/${flowId}${q}`)) as Json & { version: number };
+  const keep: Json = {};
+  for (const k of [
+    "key",
+    "name",
+    "description",
+    "input_hint",
+    "run_group_ids",
+    "token_budget",
+    "enabled",
+    "sources",
+    "ttl_days",
+  ])
+    if (def[k] !== undefined) keep[k] = def[k];
+  await call("PUT", `/process-defs/${flowId}${q}`, {
+    ...keep,
+    inputs: o.inputs ?? [],
+    stages: o.stages,
+    trigger: o.trigger ?? { event: o.event },
+    app: o.app,
+    version: def.version,
   });
-  if (pub.status >= 300)
-    throw new Error(`xuất bản flow ${o.key}: ${pub.status} ${(await pub.text()).slice(0, 300)}`);
-  return def.id;
+  await call("POST", `/tenants/${tenantId}/company-flows/apply`, { flow_id: flowId });
+  return flowId;
 }

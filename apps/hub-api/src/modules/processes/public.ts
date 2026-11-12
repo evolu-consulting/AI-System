@@ -7,12 +7,6 @@ export type { HandoffShape } from "./defs/def.rules";
 export type { RunAccess } from "./domain/runs/run-access.rules";
 export { COMMUNITY_FLOW_TEMPLATE } from "./library/flow-templates.community";
 export {
-  FLOW_TEMPLATE_APP,
-  FLOW_TEMPLATE_EVENT,
-  FLOW_TEMPLATE_INPUTS,
-  FLOW_TEMPLATES,
-} from "./library/flow-templates.def";
-export {
   PURCHASE_PARENT,
   PURCHASE_PARENT_ID,
   PURCHASE_PHASE_KEYS,

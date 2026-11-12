@@ -26,14 +26,12 @@ export type CompanyIn = {
   theme: "auto" | "light" | "dark";
   own_names: string[];
   own_tax_ids: string[];
-  approval_enabled: boolean;
   allow_negative_stock?: boolean | undefined;
   legal_warn_threshold?: number | undefined;
 };
 
 export type CompanyOut = {
-  company: Omit<CompanyIn, "approval_enabled" | "allow_negative_stock" | "legal_warn_threshold">;
-  approval_enabled: boolean;
+  company: Omit<CompanyIn, "allow_negative_stock" | "legal_warn_threshold">;
   allow_negative_stock: boolean;
   legal_warn_threshold: number;
   defaults: CompanyIn;

@@ -29,10 +29,10 @@ describe("frameValue · creditPct · giá trị = Σ con, % hạn mức (R45)", 
   it("cộng giá trị con, bỏ null và con bị từ chối", () => {
     expect(
       frameValue([
-        { value: 100, status: "active" },
-        { value: null, status: "active" },
-        { value: 50, status: "needs_review" },
-        { value: 999, status: "rejected" },
+        { value: 100, status: "done" },
+        { value: null, status: "done" },
+        { value: 50, status: "draft" },
+        { value: 999, status: "reject" },
       ]),
     ).toBe(150);
     expect(frameValue([])).toBe(0);

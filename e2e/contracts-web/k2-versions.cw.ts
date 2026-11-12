@@ -14,7 +14,7 @@ const V2_ID = "c1000000-0000-4000-8000-0000000000a2";
 const ref = (id: string, no: number, sup: string | null, number: string, value: number) => ({
   id,
   version_no: no,
-  status: "active",
+  status: "done",
   superseded_at: sup,
   number,
   effective_from: "2026-01-01",
@@ -41,6 +41,15 @@ const v1 = (superseded: boolean) =>
     superseded_at: superseded ? "2026-10-18T02:00:00Z" : null,
     superseded_by: superseded ? V2_ID : null,
     versions: superseded ? chain(true) : [chain(false)[0]],
+    // CR-127: nút «Tải phiên bản mới» theo `can.new_version` (HĐ done, chưa bị thay).
+    can: {
+      submit: false,
+      withdraw: false,
+      recreate: false,
+      new_version: !superseded,
+      hold: false,
+      release: false,
+    },
   });
 
 test("tải bản cập nhật từ HĐ đã khoá ⇒ POST multipart ⇒ mở nháp v2", async ({ page }) => {
@@ -50,7 +59,7 @@ test("tải bản cập nhật từ HĐ đã khoá ⇒ POST multipart ⇒ mở n
     posts.push(r.request().headers()["content-type"] ?? "");
     return json(r, 201, {
       id: V2_ID,
-      status: "extracting",
+      status: "draft",
       version: 1,
       version_no: 2,
       root_id: ACTIVE_ID,
@@ -58,10 +67,10 @@ test("tải bản cập nhật từ HĐ đã khoá ⇒ POST multipart ⇒ mở n
     });
   });
   await page.route(`**/pack/contracts/contracts/${V2_ID}`, (r) =>
-    json(r, 200, { ...v1(false), id: V2_ID, status: "needs_review", version_no: 2 }),
+    json(r, 200, { ...v1(false), id: V2_ID, status: "draft", version_no: 2 }),
   );
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
-  await page.getByTestId("update-version").click();
+  await page.getByTestId("act-newVersion").click();
   const dlg = page.getByTestId("upload-version");
   await expect(page.getByTestId("upload-version-signed")).toContainText("văn bản đã ký");
   await dlg.getByTestId("upload-version-file").setInputFiles({
@@ -81,7 +90,7 @@ test("lỗi VERSION_DRAFT_EXISTS ⇒ thông báo tiếng Việt", async ({ page 
     json(r, 409, { error: { code: "VERSION_DRAFT_EXISTS", message: "x" } }),
   );
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
-  await page.getByTestId("update-version").click();
+  await page.getByTestId("act-newVersion").click();
   await page.getByTestId("upload-version-file").setInputFiles({
     name: "hd-v2.pdf",
     mimeType: "application/pdf",
@@ -105,7 +114,7 @@ test("bản bị thay: banner + chỉ đọc + khối phiên bản + so sánh", 
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("superseded-banner")).toContainText("Đã thay thế bởi Phiên bản 2");
   await expect(page.getByTestId("open-current")).toBeVisible();
-  await expect(page.getByTestId("update-version")).toBeDisabled();
+  await expect(page.getByTestId("act-newVersion")).toHaveCount(0); // bản bị thay ⇒ không có nút tải phiên bản mới
   await expect(page.getByTestId("delete-contract")).toHaveCount(0);
   const block = page.getByTestId("versions-block");
   await expect(block.getByTestId("version-row-1")).toHaveAttribute("data-kind", "superseded");

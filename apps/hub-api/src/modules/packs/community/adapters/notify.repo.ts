@@ -7,25 +7,27 @@ import type { BellKind, Cand, CommentCand } from "../domain/notify.rules";
 const arr = (xs: readonly string[]) => JSON.stringify(xs);
 
 /**
- * Ứng viên nhận bình luận (người đăng + người từng bình luận trong luồng, trừ `actor`) + tiêu đề đã che của bài. Chủ quản chỉ khi
- * còn quyền đọc gói (`hosts`); đối tác chỉ khi công ty còn hiệu lực (`activeOrgs`) — người ngoài hai tập ⇒ `sees = false`.
+ * Ứng viên nhận bình luận (CR-129): người đăng bài + người từng bình luận trên bài (không ẩn) + người của công ty được nhắc
+ * (`mentioned` = [{u, o}] từ cổng `orgMembers`), trừ `actor`; kèm tiêu đề đã che của bài. Chủ quản chỉ khi còn quyền đọc gói
+ * (`hosts`); đối tác chỉ khi công ty còn hiệu lực (`activeOrgs`) và thấy bài — người ngoài hai tập ⇒ `sees = false`. "Thấy bình
+ * luận mới" do luật thuần `commentRecipients` quyết.
  */
 export async function commentCandidates(
   tx: Tx,
   q: {
     tenantId: string;
     postId: string;
-    threadOrg: string;
     actorUserId: string;
     at: Date;
     activeOrgs: readonly string[];
     hosts: readonly string[];
+    mentioned: readonly { u: string; o: string }[];
   },
 ): Promise<{ title: string; cands: CommentCand[] }> {
   const rows = await tx.execute<{
     u: string;
     o: string | null;
-    role: "author" | "commenter";
+    role: "author" | "commenter" | "mentioned";
     title: string;
     sees: boolean;
   }>(sql`
@@ -36,16 +38,18 @@ export async function commentCandidates(
         union
         select c.author_user_id, c.author_org, 'commenter' from community.comments c
           where c.post_id = ${q.postId}::uuid and c.tenant_id = ${q.tenantId}::uuid
-            and c.thread_org = ${q.threadOrg}::uuid and not c.hidden)
+            and not c.hidden
+        union
+        select m.u, m.o, 'mentioned' from jsonb_to_recordset(${JSON.stringify(q.mentioned)}::jsonb) as m(u uuid, o uuid))
     select cand.u::text as u, cand.o::text as o, cand.role, p.title_masked as title,
       (case when cand.o is null then cand.u::text = any (array(select jsonb_array_elements_text(${arr(q.hosts)}::jsonb)))
        else (cand.o::text = any (array(select jsonb_array_elements_text(${arr(q.activeOrgs)}::jsonb)))
         and (p.author_org = cand.o or (p.author_org is null and p.status = 'active' and not p.hidden
           and p.expires_at > ${q.at.toISOString()}::timestamptz
           and community.audience_ok(p.aud_mode, p.aud_cats, p.aud_orgs, p.type, p.cats, cand.o,
-            coalesce(pc.labels, '{}'), coalesce(pc.cats, '{}'))))) end) as sees
+            coalesce(pc.roles, '{}'), coalesce(pc.cats, '{}'))))) end) as sees
     from cand cross join p
-    left join community.partner_companies pc on pc.tenant_id = ${q.tenantId}::uuid and pc.ext_org_id = cand.o
+    left join contracts.community_partners(array(select c2.o from cand c2 where c2.o is not null)) pc on pc.ext_org_id = cand.o
     where cand.u <> ${q.actorUserId}::uuid`);
   return {
     title: rows[0]?.title ?? "",

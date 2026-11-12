@@ -1,19 +1,18 @@
 // biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-123 · u6b · FLOW3-FR-14 · HÀNH TRÌNH thẻ duyệt: HĐ đi qua bước Duyệt tới node Ký số (gửi + chờ) bằng "Ký thử" (selfsign, không cần DocuSign).
 // Thẻ phải có MỘT dòng "Ký số" với "Đang chờ ký" + tên người ký (không có dòng "Chờ ký" riêng); sau khi người ký bấm "Ký ngay" ⇒ "Đã ký".
-// Công ty MỚI `e2e-u6-<hậu tố>`; flow Thư viện dựng bằng SQL (như cr122-flows, `_kit/flows.ts`), gán bằng UI platform admin.
+// Công ty MỚI `e2e-u6-<hậu tố>`; quy trình công ty dựng từ sơ đồ trống qua API platform admin (`_kit/flows.ts`).
 
 import type { Page } from "@playwright/test";
 import { apiLogin } from "../_kit/api";
 import {
   approve,
-  createLibraryFlow,
+  createCompanyFlow,
   enableFlowTriggers,
   esignNode,
   finish,
   plainSet,
 } from "../_kit/flows";
-import { assignFlowUi, loginPlatformAdminUi, openCompanyFlows, openTenantPage } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
 import { approveAs, confirmAndSave, type Env, loginCw, U, uploadAndOpen } from "./_journey";
 import { expect, test } from "./_test";
@@ -49,11 +48,19 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
     username: E.adminUser,
     password: E.adminPw,
   });
-  await createLibraryFlow(need("JA_HUB_URL"), platform.token, {
-    key: `u6-${SFX}`,
+  // người ký công ty = nhân viên (tải HĐ): lấy id trước, ghi thẳng vào args của node Ký số
+  const tenantId = await enableFlowTriggers(E.tenantKey);
+  const uid = await withOwner(async (sql) => {
+    const [u] = await sql<
+      { id: string }[]
+    >`select id::text from admin.users where tenant_id = ${tenantId}::uuid and username = ${U.employee}`;
+    return u?.id as string;
+  });
+  // CR-127 Z7: quy trình công ty dựng từ SƠ ĐỒ TRỐNG qua API + áp dụng (không còn gán mẫu)
+  await createCompanyFlow(need("JA_HUB_URL"), platform.token, tenantId, {
     name: FLOW,
     app: "contracts",
-    trigger: { event: "contract.submitted" },
+    event: "contract.submitted",
     inputs: [{ key: "contract_id", label: "Hợp đồng", type: "text", required: true }],
     stages: [
       plainSet("khoi", "Tiếp nhận", 0),
@@ -66,7 +73,7 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
                 ...(s.executor as object),
                 args: {
                   contract_id: { from: "input", key: "contract_id" },
-                  company_signers: { from: "const", value: "SIGNER" },
+                  company_signers: { from: "const", value: `user:${uid}` },
                 },
               },
             }
@@ -75,19 +82,6 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
       finish("xong", "Hoàn tất", 4, "approved"),
       finish("tu-choi", "Từ chối", 5, "rejected"),
     ],
-  }).then(async (flowId) => {
-    // người ký công ty = nhân viên (tải HĐ); ghi vào args sau khi biết id (flow dựng bằng SQL nên sửa SQL)
-    const tenantId = await enableFlowTriggers(E.tenantKey);
-    await withOwner(async (sql) => {
-      const [u] = await sql<
-        { id: string }[]
-      >`select id::text from admin.users where tenant_id = ${tenantId}::uuid and username = ${U.employee}`;
-      const uid = u?.id as string;
-      await sql`update hub.process_defs set stages = replace(stages::text, 'SIGNER', ${`user:${uid}`})::jsonb
-        where id = ${flowId}::uuid`;
-      await sql`update hub.process_def_releases set stages = replace(stages::text, 'SIGNER', ${`user:${uid}`})::jsonb
-        where def_id = ${flowId}::uuid`;
-    });
   });
   const signer = await withOwner(async (sql) => {
     const [u] = await sql<
@@ -96,12 +90,6 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
       join admin.tenants t on t.id = u.tenant_id where t.key = ${E.tenantKey} and u.username = ${U.employee}`;
     return u?.n as string;
   });
-
-  // — platform admin gán flow cho công ty (UI) —
-  const admin = await ctxPage(browser);
-  await loginPlatformAdminUi(admin, E.admin, E.adminUser, E.adminPw);
-  await openTenantPage(admin, E.tenantName);
-  await assignFlowUi(await openCompanyFlows(admin), FLOW);
 
   // — nhân viên gửi HĐ; kế toán duyệt; HĐ tới node Ký số —
   const emp = await ctxPage(browser);

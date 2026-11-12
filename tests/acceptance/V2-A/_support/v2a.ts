@@ -2,7 +2,8 @@
 // Cờ duyệt (C3) đặt thẳng hàng `approval_settings.approval_enabled` của tenant và TRẢ LẠI sau file (không rò sang HD3). Đỏ NGAY
 // nếu thiếu migration 0022. Không chứa `it(...)`.
 import { expect } from "bun:test";
-import { insContract, unlockContract } from "../../HD1/_support/hd1";
+import { withFlowEngine } from "../../_support/flow-engine";
+import { insContract, setLegacyStatus, unlockContract } from "../../HD1/_support/hd1";
 import {
   arrangeHd7,
   type CtxN1,
@@ -27,10 +28,10 @@ export async function needV2a(sql: Sql): Promise<void> {
   const [r] = await sql<{ cols: number; fn: boolean }[]>`select
     (select count(*)::int from information_schema.columns where table_schema = 'contracts'
       and ((table_name = 'contracts' and column_name in ('deal', 'commission_pct', 'commission_fixed', 'start_date'))
-        or (table_name = 'obligations' and column_name in ('title', 'owner', 'fault', 'qty'))
-        or (table_name = 'approval_settings' and column_name = 'approval_enabled'))) as cols,
+        or (table_name = 'obligations' and column_name in ('title', 'owner', 'fault', 'qty')))) as cols,
     to_regprocedure('contracts.approval_on()') is not null as fn`;
-  expect({ v2a_migration_0022: r }).toEqual({ v2a_migration_0022: { cols: 9, fn: true } });
+  // CR-127 Z1b: cờ `approval_enabled` + hàm `approval_on()` đã gỡ (0099).
+  expect({ v2a_migration_0022: r }).toEqual({ v2a_migration_0022: { cols: 8, fn: false } });
 }
 
 export async function arrangeV2a(c: CtxN1): Promise<void> {
@@ -38,23 +39,9 @@ export async function arrangeV2a(c: CtxN1): Promise<void> {
   await arrangeHd7(c);
 }
 
-const touched = new Set<string>();
-/** Bật/tắt duyệt của tenant (null = mặc định theo tenant). Ghi nhớ để `restoreApproval` gỡ. */
-export async function setApproval(sql: Sql, tenant: string, on: boolean | null): Promise<void> {
-  const [had] = await sql<
-    { n: number }[]
-  >`select count(*)::int as n from contracts.approval_settings
-    where tenant_id = ${tenant}`;
-  if (!had?.n) touched.add(tenant);
-  await sql`insert into contracts.approval_settings (tenant_id, approval_enabled) values (${tenant}, ${on})
-    on conflict (tenant_id) do update set approval_enabled = excluded.approval_enabled`;
-}
-export async function restoreApproval(sql: Sql): Promise<void> {
-  await sql`update contracts.approval_settings set approval_enabled = null`;
-  for (const t of touched)
-    await sql`delete from contracts.approval_settings where tenant_id = ${t}`;
-  touched.clear();
-}
+/** CR-127 Z1b: cờ duyệt đã gỡ (HĐ đi qua quy trình khớp, không có công tắc) ⇒ no-op, giữ chữ ký cho test cũ; ca dựa trên "bật duyệt" phải bỏ/viết lại. */
+export async function setApproval(_sql: Sql, _tenant: string, _on: boolean | null): Promise<void> {}
+export async function restoreApproval(_sql: Sql): Promise<void> {}
 
 export type Manual = {
   deal?: "buy" | "sell" | "referral";
@@ -88,7 +75,7 @@ export async function manual(c: CtxN1, b: Manual, p: Person = P.hoa): Promise<Js
     id,
     tenant: T.acme,
     title: b.title ?? "HĐ V2-A",
-    status: "needs_review",
+    status: "draft",
     owner: p.id,
     createdBy: p.id,
     direction: dl === "buy" ? "purchase" : "sale",
@@ -103,8 +90,14 @@ export async function manual(c: CtxN1, b: Manual, p: Person = P.hoa): Promise<Js
   const body: Json = { version: 1, deal: dl };
   if (b.commission_pct !== undefined) body.commission_pct = b.commission_pct;
   if (b.commission_fixed !== undefined) body.commission_fixed = b.commission_fixed;
-  const saved = await ok(call(c, p, "POST", `/contracts/${id}/review`, body));
-  if (!b.keepLocked) await unlockContract(c.sql, id); // lock-strict: fixture "mở" để test thao tác mốc
+  // CR-127 NF1: "Xác nhận & lưu" = Gửi ⇒ cần quy trình khớp (không có ⇒ 409 NO_APPROVAL_FLOW). Fixture chỉ cần phần LƯU (mốc mặc định,
+  // hoa hồng, loại giao dịch) nên đặt tạm bộ tìm quy trình "luôn có" quanh đúng lệnh này, rồi trả lại như cũ.
+  const saved = await withFlowEngine(() => ok(call(c, p, "POST", `/contracts/${id}/review`, body)));
+  if (!b.keepLocked) {
+    // lock-strict: fixture "mở" để test thao tác mốc — CR-127 K4: khoá nội dung theo status (processing/done) ⇒ đưa về draft.
+    await unlockContract(c.sql, id);
+    await setLegacyStatus(c.sql, id, "draft");
+  }
   return saved;
 }
 

@@ -1,8 +1,10 @@
 // HUB-FR-105 · D16 · lỗi khối mới `CHAT_PROCESS_ERRORS` (plan-contract §4): status lấy từ contract (một nguồn); không thêm
 // vào `HubErrorCode` của `lib/errors.ts` (khối X2a/X2b khoá test) — `AppError` dùng chung nên `mapError` trả đúng body.
 import {
+  CHAT_CLAIM_ERRORS,
   CHAT_PROCESS_ERRORS,
   CHAT_PROCESS_N2_ERRORS,
+  type ChatClaimErrorCode,
   type ChatProcessErrorCode,
   type ChatProcessN2ErrorCode,
 } from "@ai/contracts/chat";
@@ -42,4 +44,28 @@ export function processError(
   const err = new AppError(code, CHAT_PROCESS_ERRORS[code], MESSAGES[code], details);
   if (headers) err.headers = headers;
   return err;
+}
+
+/** CR-127 · E2 · khối lỗi nhận việc / bằng chứng / uỷ quyền (`CHAT_CLAIM_ERRORS`); câu VI ở client theo `code` (tasks.md §9). */
+const CLAIM_MESSAGES: Record<ChatClaimErrorCode, string> = {
+  EVIDENCE_REQUIRED: "Evidence is required",
+  TASK_CLAIMED: "Someone else has taken this task",
+  TASK_NOT_CLAIMABLE: "This task does not need to be taken",
+  TASK_CLOSED: "Task is already closed",
+  NOT_CLAIMER: "Only the person holding this task can do this",
+  NOT_GROUP_HEAD: "Only the department head or a company admin can do this",
+  TARGET_NOT_IN_GROUP: "The person is not in the task's group",
+  FORWARD_REASON_REQUIRED: "A reason is required",
+  DELEGATE_SELF: "Cannot delegate to yourself",
+  DELEGATE_CHAIN: "Delegation chains are not allowed",
+  DELEGATE_NOT_SIGNER: "The delegate is not a contract signer",
+  DELEGATE_NO_ACCESS: "The delegate cannot access this work",
+  DELEGATE_FORBIDDEN: "Not allowed to manage this delegation",
+  FORBIDDEN_TENANT_ADMIN_WRITE: "Company admins cannot change this",
+  TRIGGER_PARAM_RANGE: "Value is out of range",
+  CLAIM_HOURS_RANGE: "Hours must be between 1 and 168",
+  ESCALATE_TARGET_REQUIRED: "Escalation target is required",
+};
+export function claimError(code: ChatClaimErrorCode, details?: unknown): AppError {
+  return new AppError(code, CHAT_CLAIM_ERRORS[code], CLAIM_MESSAGES[code], details);
 }

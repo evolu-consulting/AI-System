@@ -9,9 +9,10 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../../kit/adapters/pack-uow";
 import { withSystemScope } from "../../kit/testing/system-scope";
-import { actApproval, startApproval } from "../application/approval.usecase";
+import { actApproval } from "../application/approval.usecase";
 import type { ContractFlowGate } from "../application/contract-flow.ports";
 import { contractsFactsReader, contractsOutcomeHandler } from "../flow-events.mount";
+import { startApproval } from "../testing/start-approval";
 import { approvalRepo } from "./approval.repo";
 import { contractFlowRepo } from "./contract-flow.repo";
 
@@ -28,11 +29,9 @@ beforeAll(async () => {
   o = openOwner(2);
   [T1, T2] = (await tenants(o, 2, 922)) as [string, string];
   [A] = (await users(o, T1, 1, { from: 922 })) as [string];
-  C = await contracts(o, T1, 6, { from: 922, createdBy: A, status: "needs_review" });
+  C = await contracts(o, T1, 6, { from: 922, createdBy: A, status: "processing" });
   const [ux] = (await users(o, T2, 1, { from: 923 })) as [string];
-  X = (
-    await contracts(o, T2, 1, { from: 950, createdBy: ux, status: "needs_review" })
-  )[0] as string;
+  X = (await contracts(o, T2, 1, { from: 950, createdBy: ux, status: "processing" }))[0] as string;
   db = createDb(urls().hubApi, { max: 3 });
 }, 60_000);
 afterAll(async () => {
@@ -103,8 +102,6 @@ describe("A1 · gửi duyệt ghi sự kiện cùng tx", () => {
       },
     } as never;
     expect(await startApproval(ad)({ tenantId: T1, userId: A }, id, "level1")).toBe("ok");
-    expect(await events(T1, `contract.submitted:${id}:%`)).toHaveLength(0); // P11d · nháp chờ rà soát
-    await actApproval(ad)({ tenantId: T1, userId: A }, id, { action: "approve" });
     const rows = await events(T1, `contract.submitted:${id}:%`);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ event: "contract.submitted", ref: id });
@@ -123,12 +120,12 @@ describe("A1 · gửi duyệt ghi sự kiện cùng tx", () => {
 });
 
 describe("A1 · OutcomeHandler trong tx engine", () => {
-  it("Đã duyệt: HĐ active + lượt done + bắn contract.approved; gọi lại ⇒ already_applied, không ghi thêm", async () => {
+  it("Đã duyệt: HĐ done + lượt done + bắn contract.approved; gọi lại ⇒ already_applied, không ghi thêm", async () => {
     const id = C[1] as string;
     const aid = await openApproval(T1, id, A);
     const run = crypto.randomUUID();
     expect(await apply(T1, id, run, "approved", A)).toBe("applied");
-    expect((await cRow(id))?.status).toBe("active");
+    expect((await cRow(id))?.status).toBe("done");
     const [a] = await o<
       { status: string; engine_run_id: string; decided_by: string }[]
     >`select status, engine_run_id, decided_by from contracts.approvals where id = ${aid}`;
@@ -140,26 +137,26 @@ describe("A1 · OutcomeHandler trong tx engine", () => {
     expect(await events(T1, `contract.approved:${id}:%`)).toHaveLength(1);
     // run khác chưa từng áp lên HĐ đã đóng ⇒ không đè
     expect(await apply(T1, id, crypto.randomUUID(), "rejected")).toBe("not_found");
-    expect((await cRow(id))?.status).toBe("active");
+    expect((await cRow(id))?.status).toBe("done");
   });
-  it("Từ chối: HĐ rejected + lượt rejected; idempotent", async () => {
+  it("Từ chối: HĐ reject + lượt rejected; idempotent", async () => {
     const id = C[2] as string;
     const aid = await openApproval(T1, id, A);
     const run = crypto.randomUUID();
     expect(await apply(T1, id, run, "rejected")).toBe("applied");
-    expect((await cRow(id))?.status).toBe("rejected");
+    expect((await cRow(id))?.status).toBe("reject");
     const [a] = await o<
       { status: string }[]
     >`select status from contracts.approvals where id = ${aid}`;
     expect(a?.status).toBe("rejected");
     expect(await apply(T1, id, run, "rejected")).toBe("already_applied");
   });
-  it("Trả lại: về Nháp (needs_review, bỏ run_id), lượt đóng; gửi duyệt lại mở được lượt mới", async () => {
+  it("Trả lại: về Nháp (draft, bỏ run_id), lượt đóng; gửi duyệt lại mở được lượt mới", async () => {
     const id = C[3] as string;
     await openApproval(T1, id, A);
     const run = crypto.randomUUID();
     expect(await apply(T1, id, run, "returned")).toBe("applied");
-    expect(await cRow(id)).toMatchObject({ status: "needs_review", run_id: null });
+    expect(await cRow(id)).toMatchObject({ status: "draft", run_id: null });
     expect(await apply(T1, id, run, "returned")).toBe("already_applied");
     const start = startApproval({
       uow: uow(),
@@ -172,7 +169,7 @@ describe("A1 · OutcomeHandler trong tx engine", () => {
     const id = C[4] as string;
     await openApproval(T1, id, A);
     expect(await apply(T1, "không-phải-uuid", crypto.randomUUID(), "approved")).toBe("not_found");
-    expect((await cRow(id))?.status).toBe("needs_review");
+    expect((await cRow(id))?.status).toBe("processing");
   });
 });
 
@@ -187,12 +184,12 @@ describe("A1 · chặn đọc chéo tenant", () => {
       total_value: 750000000,
     });
     expect(await reader.read(T1, X, ["deal"])).toBeNull(); // HĐ của T2 đọc dưới tenant T1
-    expect((await cRow(id))?.status).toBe("needs_review");
-    expect((await cRow(X))?.status).toBe("needs_review");
+    expect((await cRow(id))?.status).toBe("processing");
+    expect((await cRow(X))?.status).toBe("processing");
   });
   it("OutcomeHandler của tenant khác ⇒ not_found, không đổi HĐ", async () => {
     const id = C[5] as string;
     expect(await apply(T2, id, crypto.randomUUID(), "approved")).toBe("not_found");
-    expect((await cRow(id))?.status).toBe("needs_review");
+    expect((await cRow(id))?.status).toBe("processing");
   });
 });

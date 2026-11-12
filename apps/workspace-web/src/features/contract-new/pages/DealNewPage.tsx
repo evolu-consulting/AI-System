@@ -5,10 +5,11 @@
 // Cảnh báo pháp lý (Câu 8): `legal-warn.ts`, ngưỡng từ GET /company; chỉ cảnh báo. Ghi chú (note): API tạo giao dịch chưa có trường.
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { type FormEvent, useEffect } from "react";
+import { type FormEvent, type ReactNode, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { Tag } from "~/components/shared/tag";
+import { DealLinkPicker } from "~/features/contract-form/components/DealLinkPicker";
 import { DealTiles } from "~/features/contract-form/components/DealTiles";
 import { FieldsGrid } from "~/features/contract-form/components/FieldsGrid";
 import { FormBar } from "~/features/contract-form/components/FormBar";
@@ -17,12 +18,65 @@ import { ItemTable } from "~/features/contract-form/components/ItemTable";
 import { useContractForm } from "~/features/contract-form/hooks/use-contract-form";
 import { STOCK_EFFECT } from "~/features/contract-form/lib/deal";
 import { DEAL_SOURCES, settleErrorKey } from "~/features/contract-form/lib/deal-form";
+import { linkIssue } from "~/features/contract-form/lib/deal-link";
 import { autoTotal, readNumbers } from "~/features/contract-form/lib/form-model";
 import { legalTotal, showLegalWarning } from "~/features/contract-form/lib/legal-warn";
 import { stockTone } from "~/features/contract-form/lib/stock-label";
 import { contractKey, fetchContract } from "~/features/contract-review/api";
 import { fetchCompany } from "~/features/settings/api";
 import { cn } from "~/lib/utils";
+
+/** Màn "đã lưu": báo giao dịch dừng giữa chừng / đã ghi vào mốc / gắn HĐ nguyên tắc lỗi. */
+function DealSaved({
+  saved,
+  back,
+}: {
+  saved: NonNullable<ReturnType<typeof useContractForm>["saved"]>;
+  back: ReactNode;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="text-base leading-[1.55]" data-testid="deal-saved">
+      <FormBar
+        crumb={back}
+        title={t("contracts.doclist.savedTitle")}
+        cancel={null}
+        save={
+          saved.id ? (
+            <Link to="/contracts/c/$id" params={{ id: saved.id }} className="btn btn-primary">
+              {t(saved.linked ? "contracts.u6.trade.openContract" : "contracts.doclist.openDeal")}
+            </Link>
+          ) : (
+            <Link to="/contracts/list" className="btn btn-primary">
+              {t("contracts.doclist.back")}
+            </Link>
+          )
+        }
+      />
+      <Panel>
+        <div className="flex flex-col gap-3 px-5 py-5">
+          {saved.settleError && (
+            <p role="alert" data-testid="settle-error" className="text-sm text-late">
+              {t("contracts.doclist.settleStopped")}{" "}
+              {t(settleErrorKey(saved.settleError), { code: saved.settleError })}
+            </p>
+          )}
+          {saved.linked && (
+            <p data-testid="deal-linked" role="status" className="text-sm">
+              {t(`contracts.u6.trade.linked.${saved.linked.state}`)}
+              {saved.linked.split ? ` ${t("contracts.u6.trade.linked.split")}` : ""}
+            </p>
+          )}
+          {saved.attachError && (
+            <p role="alert" data-testid="attach-error" className="text-sm text-late">
+              {t("contracts.doclist.attachFailed")} {saved.attachError}
+            </p>
+          )}
+        </div>
+      </Panel>
+    </div>
+  );
+}
 
 /** `frameId` (`/contracts/new?type=deal&frame=<id>`, từ menu "Thêm HĐ/Giao dịch" của HĐ nguyên tắc): điền sẵn "Thuộc HĐ nguyên tắc". */
 export function DealNewPage({ frameId }: { frameId?: string }) {
@@ -66,36 +120,7 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
       {t("contracts.doclist.back")}
     </Link>
   );
-  if (saved)
-    return (
-      <div className="text-base leading-[1.55]" data-testid="deal-saved">
-        <FormBar
-          crumb={back}
-          title={t("contracts.doclist.savedTitle")}
-          cancel={null}
-          save={
-            <Link to="/contracts/c/$id" params={{ id: saved.id }} className="btn btn-primary">
-              {t("contracts.doclist.openDeal")}
-            </Link>
-          }
-        />
-        <Panel>
-          <div className="flex flex-col gap-3 px-5 py-5">
-            {saved.settleError && (
-              <p role="alert" data-testid="settle-error" className="text-sm text-late">
-                {t("contracts.doclist.settleStopped")}{" "}
-                {t(settleErrorKey(saved.settleError), { code: saved.settleError })}
-              </p>
-            )}
-            {saved.attachError && (
-              <p role="alert" data-testid="attach-error" className="text-sm text-late">
-                {t("contracts.doclist.attachFailed")} {saved.attachError}
-              </p>
-            )}
-          </div>
-        </Panel>
-      </div>
-    );
+  if (saved) return <DealSaved saved={saved} back={back} />;
   return (
     <form onSubmit={onSubmit} noValidate className="text-base leading-[1.55]">
       <FormBar
@@ -156,6 +181,19 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
                 />
               </div>
             </div>
+            <DealLinkPicker
+              items={form.openMilestones.items}
+              choice={extra.link}
+              onChoice={(link) => form.setExtra((s) => ({ ...s, link }))}
+              evidence={extra.evidence}
+              onEvidence={(evidence) => form.setExtra((s) => ({ ...s, evidence }))}
+              issue={
+                form.triedSave
+                  ? linkIssue(extra.link, form.openMilestones.items.length, extra.evidence)
+                  : null
+              }
+              disabled={form.busy}
+            />
             {legal && (
               <p
                 role="note"

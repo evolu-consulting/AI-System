@@ -2,6 +2,7 @@
 // gọi AI thật. Cờ duyệt đặt thẳng `approval_settings.approval_enabled` và TRẢ LẠI sau file. Đỏ NGAY nếu thiếu migration 0027.
 // Không chứa `it(...)`.
 import { expect } from "bun:test";
+import { withFlowEngine } from "../../_support/flow-engine";
 import { startHd1, unlockContract } from "../../HD1/_support/hd1";
 import { agentJson, C1_TEXT, CBASE, cid, insContract, startHd2 } from "../../HD2/_support/hd2";
 import {
@@ -104,7 +105,7 @@ export async function seedReview(
   await insContract(c.sql, {
     id,
     tenant: o.tenant ?? T.acme,
-    status: o.status ?? "needs_review",
+    status: o.status ?? "draft",
     createdBy: P.hoa.id,
     owner: P.hoa.id,
     direction: deal === null ? null : deal === "buy" ? "purchase" : "sale",
@@ -132,6 +133,14 @@ export async function seedReview(
   await unlockContract(c.sql, id); // lock-strict: fixture "mở" để test gắn SP
   return { id, items: ids };
 }
+
+/** CR-127 NF1: "Xác nhận & lưu" CÓ quy trình khớp (bộ tìm quy trình giả quanh đúng lệnh) ⇒ HĐ sang `processing`. */
+export const reviewFlow = (
+  c: CtxN1,
+  id: string,
+  body: Json,
+  p: (typeof P)[keyof typeof P] = P.hoa,
+) => withFlowEngine(() => call(c, p, "POST", `/contracts/${id}/review`, body));
 
 export const reviewOf = (c: CtxN1, id: string, body: Json, p: (typeof P)[keyof typeof P] = P.hoa) =>
   call(c, p, "POST", `/contracts/${id}/review`, body);

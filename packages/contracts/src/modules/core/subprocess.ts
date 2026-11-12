@@ -22,7 +22,7 @@ export const SUBPROCESS_NODE: FeatureNodeDecl = {
   key: "core.subprocess",
   label: { vi: "Quy trình con", en: "Sub-process" },
   group: "content",
-  menu: { section: "business", order: 55 },
+  menu: { section: "advanced", order: 55 },
   kind: "base",
   baseExecutor: "subprocess",
   configPort: SUBPROCESS_CONFIG_PORT,

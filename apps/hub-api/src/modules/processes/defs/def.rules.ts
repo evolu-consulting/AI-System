@@ -154,25 +154,6 @@ export function autofixSourceKindMiss(
   return null;
 }
 
-/** Bản chép từ mẫu: Group kiểm của tenant khác nhau ⇒ để trống (null), tắt tới khi admin gán đủ. Không đổi `t`. */
-export function copyFromTemplate(
-  t: ProcessDefInput,
-  o: { key?: string; name?: string },
-): ProcessDefInput {
-  return {
-    ...t,
-    key: o.key ?? t.key,
-    name: o.name ?? t.name,
-    run_group_ids: [],
-    enabled: false,
-    stages: t.stages.map((s) => ({
-      ...s,
-      after: s.after.kind === "review" ? { kind: "review", group_id: null } : { kind: "auto" },
-      answerer: s.answerer.kind === "starter" ? s.answerer : { kind: "starter" },
-    })),
-  };
-}
-
 const HANDOFF_NORM = normSection(HANDOFF_SECTION);
 const HANDOFF_TPL = `\n\n## ${HANDOFF_SECTION}\n`;
 /** Heading cấp 2 `## Bàn giao` (NFC + trim + lowercase) — cùng `sectionMap` của `template.rules`. */

@@ -7,14 +7,15 @@ import {
   effectiveStatus,
   partnerMayPost,
   postActions,
+  rolesOfLabels,
 } from "./audience.rules";
 import { storeComment, storeContent } from "./content.rules";
 
 const S1 = { org: "s1", labels: ["supplier"] as const, cats: ["dong-goi"] };
 const S2 = { org: "s2", labels: ["supplier"] as const, cats: ["chu-ky-so"] };
-const B1 = { org: "b1", labels: ["buyer"] as const, cats: ["dong-goi"] };
-const B2 = { org: "b2", labels: ["buyer"] as const, cats: ["chu-ky-so"] };
-const X = { org: "x", labels: ["supplier", "buyer"] as const, cats: ["dong-goi"] };
+const B1 = { org: "b1", labels: ["customer"] as const, cats: ["dong-goi"] };
+const B2 = { org: "b2", labels: ["customer"] as const, cats: ["chu-ky-so"] };
+const X = { org: "x", labels: ["supplier", "customer"] as const, cats: ["dong-goi"] };
 const aud = (mode: Audience["mode"], more: Partial<Audience> = {}): Audience => ({
   mode,
   cats: [],
@@ -99,7 +100,7 @@ describe("việc trên bài (server tính)", () => {
     expect([
       partnerMayPost("sell", ["supplier"]),
       partnerMayPost("buy", ["supplier"]),
-      partnerMayPost("note", ["supplier", "buyer"]),
+      partnerMayPost("note", ["supplier", "customer"]),
     ]).toEqual([true, false, false]);
     const now = new Date("2026-10-28T00:00:00Z");
     expect(effectiveStatus("active", new Date("2026-10-27T00:00:00Z"), now)).toBe("expired");
@@ -127,5 +128,13 @@ describe("D4 raw + masked lúc ghi", () => {
     expect(s.contactDetected).toBe(true);
     const host = storeComment("Gọi tôi 0912345678", null);
     expect(host).toEqual({ raw: "Gọi tôi 0912345678", masked: "Gọi tôi 0912345678", hits: [] });
+  });
+});
+
+describe("rolesOfLabels [CR-130]", () => {
+  it("buyer ⇒ customer (một tên với SHT), supplier giữ, không trùng", () => {
+    expect(rolesOfLabels(["customer"])).toEqual(["customer"]);
+    expect(rolesOfLabels(["supplier", "customer", "customer"])).toEqual(["supplier", "customer"]);
+    expect(rolesOfLabels([])).toEqual([]);
   });
 });

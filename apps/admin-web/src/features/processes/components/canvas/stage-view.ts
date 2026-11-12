@@ -87,8 +87,7 @@ const ifsOf = (s: StageDraft): StageView["ifs"] =>
       }
     : null;
 
-const sysKind = (s: StageDraft): StageView["sys"] =>
-  !isSystemStage(s) ? null : s.tool.key === "contracts-finalize" ? "finalize" : "route";
+const sysKind = (s: StageDraft): StageView["sys"] => (isSystemStage(s) ? "route" : null);
 
 function slotInfoOf(s: StageDraft, all: readonly StageDraft[]): StageView["slotInfo"] {
   if (!isSlotStep(s) || isDlcStep(s)) return null;

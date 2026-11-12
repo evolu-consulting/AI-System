@@ -21,15 +21,13 @@ import {
 const facets = (status: { v: string; n: number }[]) => ({ status }) as unknown as ContractFacets;
 
 describe("groupCounts", () => {
-  test("gộp 9 trạng thái vào 3 nhóm và cộng tổng", () => {
+  test("gộp 4 trạng thái vào 3 nhóm và cộng tổng", () => {
     const g = groupCounts(
       facets([
-        { v: "needs_review", n: 2 },
-        { v: "extracting", n: 1 },
-        { v: "active", n: 5 },
-        { v: "expiring", n: 3 },
-        { v: "expired", n: 4 },
-        { v: "renewed", n: 1 },
+        { v: "draft", n: 2 },
+        { v: "processing", n: 1 },
+        { v: "done", n: 8 },
+        { v: "reject", n: 5 },
       ]),
     );
     expect(g.counts).toEqual({ pending: 3, active: 8, done: 5 });
@@ -68,7 +66,7 @@ describe("counterparty", () => {
 describe("hằng số", () => {
   test("6 việc xem trước; truy vấn sắp hết hiệu lực sắp theo ngày hết hạn tăng dần", () => {
     expect(WORK_PREVIEW).toBe(6);
-    expect(EXPIRING_QS).toContain("status=expiring");
+    expect(EXPIRING_QS).toContain("effect=expiring");
     expect(EXPIRING_QS).toContain("sort=end_date&dir=asc");
   });
 });

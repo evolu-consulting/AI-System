@@ -3,6 +3,7 @@
 // `stages.<i>.real_action`) — không để tới lúc chạy mới `tool_failed` (PD2-I57). Sau bước toàn `review` ⇒ lưu được.
 // Hub thật + seed workflow như `tool.int.test.ts`; thiếu 0012/0037/contract ⇒ đỏ NGAY ở `needD2`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { T as T_FIX } from "../../H1/_fixtures";
 import { agentStage, createDef, defBody, G1, type Json } from "../_support/pd";
 import {
   ACME,
@@ -42,7 +43,8 @@ async function prep(): Promise<void> {
   }
 }
 const body = (stages: Json[]) => defBody(`pd2-real-${++seq}`, stages, { inputs: MA_KH_INPUT });
-const post = (stages: Json[]) => c.call("Adm", "POST", "/process-defs", body(stages));
+const post = (stages: Json[]) =>
+  c.call("P", "POST", `/process-defs?tenant_id=${T_FIX.acme}`, body(stages));
 const shape = (r: Json) => ({
   status: r.status,
   code: r.json?.error?.code,
@@ -67,7 +69,7 @@ describe("AC-H44 · #204 · lưu def stage tool real_action theo bước trướ
     }
     // PUT def hợp lệ thành tool real ở bước 0 ⇒ cũng 422.
     const def = await createDef(c, body([agentStage({ key: "s0", step: 0 })]));
-    const put = await c.call("Adm", "PUT", `/process-defs/${def.id}`, {
+    const put = await c.call("P", "PUT", `/process-defs/${def.id}?tenant_id=${T_FIX.acme}`, {
       ...defBody(
         def.key as string,
         [toolStage({ key: "s0", step: 0, tool_key: WF.WS.key, args: ARGS0, real_action: true })],
@@ -94,12 +96,12 @@ describe("AC-H44 · #204 · lưu def stage tool real_action theo bước trướ
       toolStage({ tool_key: WF.WS.key, real_action: true }),
     ];
     const b = body(stages);
-    const r = await c.call("Adm", "POST", "/process-defs", b);
+    const r = await c.call("P", "POST", `/process-defs?tenant_id=${T_FIX.acme}`, b);
     expect({ status: r.status, real: r.json?.stages?.[1]?.real_action }).toEqual({
       status: 201,
       real: true,
     });
-    const put = await c.call("Adm", "PUT", `/process-defs/${r.json?.id}`, {
+    const put = await c.call("P", "PUT", `/process-defs/${r.json?.id}&tenant_id=${T_FIX.acme}`, {
       ...b,
       version: r.json?.version,
     });

@@ -8,6 +8,7 @@ import { type Browser, expect, type Locator, type Page } from "@playwright/test"
 import postgres from "postgres";
 import { PW } from "../../tests/acceptance/M1/_data";
 import { apiGroup, chatLogin, hub, roomComposer, roomLog, token } from "../chat/_x2a-support";
+import { seedAdmin } from "../support/helpers";
 import { ACME, DEF_HD_T, fullMd, PA_E2E, PERSONA, type Who } from "./_pa-data";
 import type { Step } from "./_pa-runtime";
 
@@ -43,6 +44,18 @@ export async function adminLogin(p: Page, who: Who = "Adm"): Promise<void> {
   await p.getByRole("textbox", { name: "Mã công ty" }).fill("acme");
   await p.getByRole("textbox", { name: "Tên đăng nhập" }).fill(PERSONA[who].username);
   await p.getByLabel("Mật khẩu", { exact: true }).fill(PW);
+  await p.getByRole("button", { name: "Đăng nhập", exact: true }).click();
+  await p.waitForURL((u) => !u.pathname.startsWith("/login"));
+}
+
+/** CR-127: chỉ admin nền tảng (tenant `platform`, tài khoản seed) ghi `/process-defs`; quản trị công ty (Adm) chỉ đọc. */
+export const platTok = () => token(seedAdmin().username, "platform", seedAdmin().password);
+/** Đăng nhập admin-web bằng admin nền tảng (soạn quy trình). */
+export async function platformLogin(p: Page): Promise<void> {
+  await p.goto(`${ADMIN_URL}/login`);
+  await p.getByRole("textbox", { name: "Mã công ty" }).fill("platform");
+  await p.getByRole("textbox", { name: "Tên đăng nhập" }).fill(seedAdmin().username);
+  await p.getByLabel("Mật khẩu", { exact: true }).fill(seedAdmin().password);
   await p.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await p.waitForURL((u) => !u.pathname.startsWith("/login"));
 }

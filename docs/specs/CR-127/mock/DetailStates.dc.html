@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Đầu trang chi tiết theo trạng thái</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+.card{background:#fff;border:1px solid #e5e5ee;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.lab{font-size:12px;font-weight:700;color:#6b6a80;letter-spacing:.04em}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.t{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700}
+.chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
+.btn{background:#fff;border:1px solid #e5e5ee;border-radius:8px;padding:7px 12px;font:inherit;font-size:13px;white-space:nowrap}
+.pri{background:#4f46e5;color:#fff;border:0;font-weight:600}
+.band{border-radius:8px;padding:9px 12px;font-size:13px;display:flex;flex-direction:column;gap:3px}
+.note{font-size:12px;color:#6b6a80}
+li{margin-bottom:7px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 980px; padding: 26px 30px; box-sizing: border-box; display: flex; gap: 26px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <section style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+    <div><h1 style="margin: 0 0 4px; font-size: 22px">Đầu trang chi tiết theo 4 trạng thái</h1><div class="note" style="font-size: 13px">Một chỗ cho trạng thái, lý do và việc kế tiếp. Phần thân bên dưới giữ bố cục màn 9.</div></div>
+
+    <div class="lab">DRAFT · VỪA TẢI LÊN HOẶC BỊ TRẢ LẠI</div>
+    <div class="card">
+      <div class="row"><span class="t">HĐ bán CKS cho Cty ABC <span class="chip" style="background: #eeeef3; color: #4b4a5e">DRAFT</span></span><span style="display: flex; gap: 8px"><button class="btn">Tải bản đã sửa</button><button class="btn pri">Gửi lại</button></span></div>
+      <div class="band" style="background: #fffbeb"><b>Trưởng phòng KD trả lại · Phạm Cường · 10/11 15:20</b><span>"Sửa điều khoản thanh toán thành 30 ngày."</span></div>
+      <div class="note">Các trường mở để sửa. Gửi lại ⇒ PROCESSING, chạy lại từ bước đầu.</div>
+    </div>
+
+    <div class="lab">PROCESSING · ĐANG DUYỆT</div>
+    <div class="card">
+      <div class="row"><span class="t">HĐ bán thùng phi cho Tân Phát <span class="chip" style="background: #ecebff; color: #4f46e5">PROCESSING</span></span><button class="btn pri">Mở để duyệt</button></div>
+      <div class="band" style="background: #f5f4ff"><span>✓ Tải lên — ✓ Trưởng phòng KD — <b style="color: #b45309">● Kế toán · Lê Thị Hoa · còn 31 giờ</b> — ○ Ký số</span></div>
+      <div class="note">"Mở để duyệt" chỉ hiện với người đang được giao; người khác chỉ xem. Thông tin khoá trong lúc duyệt.</div>
+    </div>
+
+    <div class="lab">REJECT · BỊ TỪ CHỐI, KẾT THÚC</div>
+    <div class="card">
+      <div class="row"><span class="t">HĐ mua CKS NCCA · Lô Q3 <span class="chip" style="background: #fdecec; color: #b91c1c">REJECT</span></span><button class="btn">Tạo hợp đồng mới từ văn bản này</button></div>
+      <div class="band" style="background: #fdecec"><b>Kế toán từ chối · Lê Thị Hoa · 11/11 09:40</b><span>"Đối tác còn nợ quá hạn 120 triệu, chưa ký mới." · 📎 cong-no-NCCA.xlsx</span></div>
+    </div>
+
+    <div class="lab">DONE · ĐÃ DUYỆT XONG</div>
+    <div class="card">
+      <div class="row"><span class="t">HĐ bán CKS USB cho An Phú <span class="chip" style="background: #e7f6ec; color: #15803d">DONE</span><span class="chip" style="background: #fff7ed; border: 1px solid #fed7aa; color: #b45309">Hết hạn sau 12 ngày</span></span><button class="btn">Tải phiên bản mới</button></div>
+      <div class="note">Không có băng thông báo. Sắp hết hạn ⇒ chip hiệu lực đổi cam, thẻ Hiệu lực hiện nút Gia hạn / Chấm dứt / Để hết hạn.</div>
+    </div>
+  </section>
+
+  <section style="width: 470px; background: #fff; border: 1px solid #e5e5ee; border-radius: 12px; padding: 18px 20px; box-sizing: border-box; font-size: 13px; line-height: 1.5; flex-shrink: 0">
+    <b style="font-size: 16px">Đổi so với màn chi tiết hiện tại</b>
+    <ol style="padding-left: 18px; margin: 12px 0 0">
+      <li><b>6 dải phía trên còn 1 đầu trang.</b> Chip Đã khoá, Chưa có văn bản, băng "Đã xác nhận – đã khoá", thẻ Ký số, Lịch sử thay đổi, Hạn chót/Ghi nhận xử lý, Quản lý hợp đồng ⇒ chip trạng thái + chip hiệu lực + một băng lý do khi cần.</li>
+      <li><b>Khoá là khoá thật.</b> Hiện báo "đã khoá" mà các ô vẫn trông như ô nhập. PROCESSING/DONE hiện dạng chữ; chỉ DRAFT là form.</li>
+      <li><b>Văn bản lên đầu.</b> Hiện không xem được văn bản trên trang chi tiết. Thêm khung xem kèm các phiên bản.</li>
+      <li><b>"Tóm tắt hợp đồng" ⇒ "Điều cần lưu ý"</b>: phạt vi phạm, thanh toán, giao hàng, bảo hành, gia hạn, tranh chấp — AI tóm từ văn bản, mỗi ý kèm điều khoản + trang. Hiện AI đã trích "phạt", "bảo hành" nhưng chưa hiện ở đâu.</li>
+      <li><b>Loại hợp đồng</b>: bỏ 3 thẻ lớn Mua/Bán/Giới thiệu trên HĐ đã lưu, hiện một giá trị.</li>
+      <li><b>Thêm "Hồ sơ duyệt" rút gọn</b> ở cột phải; bản đủ + PDF ở màn 6. Thẻ Ký số thành một dòng trong đó.</li>
+      <li><b>"Dòng thời gian" ⇒ "Các mốc thực hiện" ở giữa trang</b>: mỗi mốc ghi ai làm, điều khoản gốc, chứng từ, trễ/đúng hạn, phạt phát sinh; nút xác nhận ngay trên mốc (màn 11).</li>
+      <li><b>Hạn chót hành động + Ghi nhận xử lý + Nhắc trước khi hết hạn</b> gộp vào thẻ Hiệu lực; Gia hạn/Chấm dứt chỉ hiện khi tới lúc nhắc.</li>
+      <li><b>"Quản lý hợp đồng · Giao cho" ⇒ "Phụ trách ▾"</b> trên dòng thông tin.</li>
+      <li><b>Bỏ chữ phụ gây nhiễu</b>: "Số cũ có ký tự đặc biệt… Dùng", "Mới · chưa đủ việc để tính điểm khách hàng" (để ở trang Đối tác).</li>
+      <li><b>"Tải bản cập nhật" ⇒ "Tải phiên bản mới"</b>: tạo bản DRAFT mới và duyệt lại. Bỏ "Mở lại để sửa lỗi trích xuất" vì sửa ở DRAFT.</li>
+    </ol>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

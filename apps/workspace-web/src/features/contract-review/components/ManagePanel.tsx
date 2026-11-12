@@ -1,5 +1,5 @@
-// gap-a1 #7 · #16 · #5: khối "Quản lý" trên trang chi tiết — "Giao cho" (người phụ trách; chỉ thành viên có quyền xem gói), hoa hồng %
-// của HĐ Giới thiệu (sửa được sau khi lưu), "AI đọc lại từ đầu" khi HĐ còn chờ xác nhận. Chỉ vai có quyền ghi thấy ô sửa.
+// CR-127 · U5 · M9/M10: "Phụ trách ▾" nằm trên dòng thông tin đầu trang (thay khối "Quản lý hợp đồng · Giao cho"); hoa hồng % của HĐ Giới thiệu và
+// "AI đọc lại từ đầu" chỉ ở DRAFT. Chỉ vai có quyền ghi thấy ô sửa.
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,9 +13,8 @@ import {
 import { parsePct } from "../lib/manage";
 import { ReextractButton } from "./ReextractButton";
 
-const READY = (s: string) => s !== "extracting" && s !== "extract_failed";
-
-function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
+/** "Phụ trách ▾" — chọn người phụ trách (chữ đọc khi không có quyền ghi). */
+export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
   const { t } = useTranslation();
   const nameOf = useMemberNames();
   const people = useAssignees(write);
@@ -26,12 +25,12 @@ function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
     : t("contracts.gapa1.owner.none");
   const opts = people.data?.items ?? [];
   return (
-    <div className="flex flex-wrap items-center gap-3" data-testid="owner-row">
-      <span className="text-[13px] text-dim">{t("contracts.gapa1.owner.label")}</span>
+    <span className="inline-flex flex-wrap items-center gap-2" data-testid="owner-row">
+      <span className="text-[13px] text-dim">{t("contracts.u5.owner.label")}</span>
       {write ? (
         <select
-          className="input w-auto min-w-[200px]"
-          aria-label={t("contracts.gapa1.owner.label")}
+          className="input w-auto [field-sizing:content]"
+          aria-label={t("contracts.u5.owner.label")}
           data-testid="owner-select"
           value={cur ?? ""}
           disabled={assign.isPending || people.isPending}
@@ -48,7 +47,7 @@ function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
       ) : (
         <span className="font-medium">{label}</span>
       )}
-    </div>
+    </span>
   );
 }
 
@@ -91,18 +90,17 @@ function CommissionRow({ c }: { c: ContractDetail }) {
 }
 
 export function ManagePanel({ c, write }: { c: ContractDetail; write: boolean }) {
-  const { t } = useTranslation();
-  if (c.status === "extracting") return null;
-  const showCommission = write && c.deal === "referral" && READY(c.status);
-  const showReextract = write && c.status === "needs_review" && c.has_source;
+  const draft = c.status === "draft";
+  const showCommission = write && c.deal === "referral" && draft && c.extract_state === "ready";
+  const showReextract = write && draft && c.has_source && c.extract_state !== "reading";
+  if (!showCommission && !showReextract) return null;
   return (
     <Panel className="mb-4 flex flex-col gap-3 px-5 py-4">
-      <h2 className="text-[15px] font-semibold">{t("contracts.gapa1.manage")}</h2>
-      {/* confirm-flow: "AI đọc lại từ đầu" cùng hàng "Giao cho" (bên phải; màn hẹp thì xuống dòng). */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <OwnerRow c={c} write={write} />
-        {showReextract && <ReextractButton id={c.id} />}
-      </div>
+      {showReextract && (
+        <div className="flex justify-end">
+          <ReextractButton id={c.id} />
+        </div>
+      )}
       {showCommission && <CommissionRow key={`${c.id}:${c.version}`} c={c} />}
     </Panel>
   );

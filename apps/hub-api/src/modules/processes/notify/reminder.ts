@@ -3,6 +3,7 @@
 // `startProcessReminder` 300 s (`lib/loop.ts` chặn chồng lượt). Đồng hồ = seam `d.now`.
 import { probe } from "@ai/db/probe";
 import { startLoop } from "../../../lib/loop";
+import { releaseClaims } from "../application/notify/claim-release.usecase";
 import { remindTasks } from "../application/notify/remind-tasks.usecase";
 import type { ProcessBgDeps } from "../core/ports";
 
@@ -26,6 +27,24 @@ export function startProcessReminder(
     name: "process-remind",
     everyMs: o.everyMs ?? PROCESS_REMIND_EVERY_MS,
     tick: () => remindOnce(d),
+    log: d.log,
+    signal: o.signal,
+  });
+}
+
+/** CR-127 · E2 · nhịp vòng tự trả việc đã nhận (giờ tự trả tính theo giờ ⇒ 5 phút đủ mịn). */
+export const CLAIM_RELEASE_EVERY_MS = 300_000;
+
+/** CR-127 · E2 · một lượt tự trả việc đã nhận quá hạn (mọi lô). Test gọi qua `ProcessHandles.claimReleaseOnce`. */
+export function claimReleaseOnce(d: ProcessBgDeps): Promise<number> {
+  return releaseClaims({ sysUow: d.sysUow, now: d.now, elapsedMs: () => performance.now() });
+}
+
+export function startClaimRelease(d: ProcessBgDeps, o: { signal?: AbortSignal } = {}): void {
+  startLoop({
+    name: "claim-release",
+    everyMs: CLAIM_RELEASE_EVERY_MS,
+    tick: () => claimReleaseOnce(d),
     log: d.log,
     signal: o.signal,
   });

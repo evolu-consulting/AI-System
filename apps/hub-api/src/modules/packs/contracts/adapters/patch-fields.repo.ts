@@ -18,19 +18,11 @@ const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v
 export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo {
   return {
     lock: async (id): Promise<LockedContract | null> => {
-      // V2-A · C3: cờ duyệt của tenant đọc cùng câu (không thêm câu) — tắt duyệt ⇒ sửa HĐ đã lưu không mở lại duyệt.
-      // CR-097 K1: cờ khoá (`locked_at`) đọc cùng câu.
-      const rows = await tx.execute<
-        Raw & {
-          fields: unknown;
-          status: string;
-          run_id: string | null;
-          approval: boolean;
-          locked: boolean;
-        }
-      >(sql`select c.version, c.updated_at, c.fields, c.status, c.run_id, contracts.approval_on() as approval,
-          c.locked_at is not null as locked
-        from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid for update`);
+      // CR-127 K4 · BR-39: khoá nội dung theo `status` (processing/done) — đọc cùng câu khoá hàng.
+      const rows = await tx.execute<Raw & { fields: unknown; status: string; doc_type: string }>(
+        sql`select c.version, c.updated_at, c.fields, c.status, c.doc_type
+        from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid for update`,
+      );
       const r = rows[0];
       return r
         ? {
@@ -38,9 +30,7 @@ export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo
             updated_at: iso(r.updated_at),
             fields: json(r.fields),
             status: r.status,
-            run_id: r.run_id,
-            approval: r.approval,
-            locked: r.locked,
+            doc_type: r.doc_type,
           }
         : null;
     },

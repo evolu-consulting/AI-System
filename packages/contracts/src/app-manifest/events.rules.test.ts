@@ -36,6 +36,12 @@ describe("FLOW2-FR-17 · appEventIssues", () => {
       "contract.uploaded",
       "contract.approved",
       "contract.received",
+      // CR-127 · E1
+      "contract.expiring",
+      "milestone.overdue",
+      "milestone.due",
+      "transaction.saved",
+      "fulfilment.change_requested",
     ]);
     // CR-125 m2 · ký số là tín hiệu chờ, không phải sự kiện bắt đầu flow
     expect(APP_MANIFESTS.contracts?.signals?.map((s) => s.key)).toEqual([
@@ -45,7 +51,18 @@ describe("FLOW2-FR-17 · appEventIssues", () => {
       "partner.confirmed",
       "partner.returned",
       "partner.declined",
+      "sign.session.accepted",
+      "sign.session.declined",
+      "sign.session.expired",
     ]);
+    // CR-127 · E1 · sự kiện theo lịch có `days` trong facts và tham số 1..365
+    const sched = APP_MANIFESTS.contracts?.events.filter((e) => e.schedule) ?? [];
+    expect(sched.map((e) => e.key)).toEqual([
+      "contract.expiring",
+      "milestone.overdue",
+      "milestone.due",
+    ]);
+    expect(sched.every((e) => e.facts.some((f) => f.key === "days"))).toBe(true);
     expect(keys("community")).toEqual(["post.created", "partner.join_requested", "report.created"]);
     const sub = APP_MANIFESTS.contracts?.events[0];
     expect(sub?.decides && sub.required).toBe(true);
@@ -92,5 +109,35 @@ describe("FLOW2-FR-17 · appEventIssues", () => {
       "default_flow_not_seeded",
     ]);
     expect(appEventIssues([notSeeded], { seededFlowKeys: new Set(["demo-flow"]) })).toEqual([]);
+  });
+});
+
+describe("CR-127 · E1 · AppEventDecl.schedule", () => {
+  const days = { key: "days", label: "Số ngày", type: "number" } as const;
+  const sched = (p: Partial<{ key: string; min: number; max: number; default: number }> = {}) =>
+    ev({
+      facts: [days],
+      schedule: {
+        param: { key: "days", min: 1, max: 365, default: 3, ...p },
+      } as AppEventDecl["schedule"],
+    });
+  test("hợp lệ: khoá days, 1 ≤ min ≤ default ≤ max ≤ 365, facts có days", () => {
+    expect(errs([app([sched()])])).toEqual([]);
+  });
+  test("sai khoảng / mặc định ngoài khoảng / khoá lạ ⇒ schedule_param", () => {
+    for (const p of [
+      { min: 0 },
+      { max: 366 },
+      { default: 400 },
+      { min: 5, default: 3 },
+      { key: "weeks" },
+    ]) {
+      expect(errs([app([sched(p)])])).toContain("schedule_param");
+    }
+  });
+  test("schedule mà facts thiếu days ⇒ schedule_days_fact", () => {
+    expect(
+      errs([app([ev({ schedule: { param: { key: "days", min: 1, max: 365, default: 3 } } })])]),
+    ).toContain("schedule_days_fact");
   });
 });

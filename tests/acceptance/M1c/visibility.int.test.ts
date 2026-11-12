@@ -71,7 +71,7 @@ describe("M1D-FR-01 · A-2 khoá bên chỉ từ HĐ đã duyệt", () => {
   it("u5 tạo HĐ nháp (tự phụ trách) mang MST 0101 ⇒ vẫn 0 khách, 0 sự kiện sổ đối tác của 0101; u2 (quản lý u3) thấy", async () => {
     const abuse = await inPackAsRollback("contracts", A, u5, async (tx) => {
       await tx`insert into contracts.contracts (tenant_id, title, status, created_by, owner_user_id, fields)
-          values (${A}, 'Nhap gia', 'needs_review', ${u5}, ${u5}, ${tx.json(party("X", "0101"))})`;
+          values (${A}, 'Nhap gia', 'draft', ${u5}, ${u5}, ${tx.json(party("X", "0101"))})`;
       const c = await tx<{ n: number }[]>`select count(*)::int as n from contracts.cks_customers`;
       const e = await tx<{ n: number }[]>`select count(*)::int as n from contracts.partner_events`;
       return { customers: c[0]?.n, events: e[0]?.n };

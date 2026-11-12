@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Ký cùng lúc hai công ty</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#4f46e5;text-decoration:none}
+.p{background:#fff;border:1px solid #e5e5ee;border-radius:14px;display:flex;flex-direction:column;font-size:13px;min-width:0}
+.ph{padding:12px 16px;border-bottom:1px solid #e5e5ee;display:flex;flex-direction:column;gap:2px}
+.pb{padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1}
+.who{font-size:11px;font-weight:700;letter-spacing:.05em}
+.sub{color:#6b6a80;font-size:12px}
+.in{border:1px solid #e5e5ee;border-radius:8px;padding:7px 10px}
+.btn{background:#fff;border:1px solid #e5e5ee;border-radius:8px;padding:8px 12px;font:inherit;font-size:13px;text-align:center}
+.pri{background:#4f46e5;color:#fff;border:0;font-weight:600}
+.chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.tg{width:34px;height:20px;border-radius:999px;background:#4f46e5;position:relative;flex-shrink:0}
+.tg::after{content:"";position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff}
+.num{width:22px;height:22px;border-radius:50%;background:#4f46e5;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.st{border:1px solid #d9d8e8;border-radius:10px;padding:8px 12px;background:#fff}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1060px; padding: 24px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <div><h1 style="margin: 0 0 4px; font-size: 22px">Ký cùng lúc giữa hai công ty (khẩn)</h1>
+    <div style="font-size: 13px; color: #6b6a80">A đề nghị ⇒ <b>B phải đồng ý trước</b> ⇒ hai bên ký song song cùng một bản ⇒ DONE ở cả hai khi cả hai đã ký. B không đồng ý ⇒ quay về xử lý bình thường. Chỉ cần người ký, không có bước duyệt nhanh.</div></div>
+
+  <div style="display: flex; gap: 10px; align-items: center; font-size: 13px">
+    <span class="num">1</span><b>A đề nghị</b><span class="sub">→</span>
+    <span class="num">2</span><b>B đồng ý</b> <span class="sub">(hạn 2 giờ)</span><span class="sub">→</span>
+    <span class="num">3</span><b>Hai bên ký song song</b> <span class="sub">(hạn 4 giờ)</span><span class="sub">→</span>
+    <span class="num" style="background: #15803d">✓</span><b>DONE ở cả hai</b>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+    <div class="p">
+      <div class="ph"><span class="who" style="color: #4f46e5">1 · BÊN GỬI · CÔNG TY A</span><b style="font-size: 15px">Gửi đối tác xác nhận</b><span class="sub">HĐ cung cấp thùng phi lô gấp · 1,2 tỷ</span></div>
+      <div class="pb">
+        <div class="f" style="display: flex; flex-direction: column; gap: 4px"><b>Gửi tới</b><span class="in">Công ty Bao Bì Minh Long · Đã xác minh</span></div>
+        <div style="display: flex; gap: 10px; align-items: center; background: #f5f4ff; border-radius: 10px; padding: 10px 12px"><span class="tg"></span><div><b>Đề nghị ký cùng lúc (khẩn)</b><div class="sub">B đồng ý thì hai bên ký song song, bỏ qua duyệt thường</div></div></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+          <div style="display: flex; flex-direction: column; gap: 4px"><b>B trả lời trong</b><span class="in">2 giờ</span></div>
+          <div style="display: flex; flex-direction: column; gap: 4px"><b>Hạn ký</b><span class="in">4 giờ</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><b>Lý do khẩn <span style="color: #b91c1c">*</span></b><span class="in">Hàng phải xuất cảng trước 17:00 hôm nay</span></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><b>Người ký bên mình</b><span class="in">Nguyễn Văn An · Giám đốc</span></div>
+        <span style="flex: 1"></span>
+        <div class="btn pri">Gửi đề nghị</div>
+      </div>
+    </div>
+
+    <div class="p" style="border-color: #f59e0b">
+      <div class="ph" style="background: #fffbeb; border-radius: 14px 14px 0 0"><span class="who" style="color: #b45309">2 · BÊN NHẬN · CÔNG TY B</span><b style="font-size: 15px">Tân Phát đề nghị ký cùng lúc</b><span class="sub">Người phụ trách HĐ nhận thấy ở đầu Việc của tôi · chuông + email</span></div>
+      <div class="pb">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="chip" style="background: #fdecec; color: #b91c1c">Khẩn</span><span class="chip" style="background: #fff7ed; color: #b45309">Trả lời trong 1 giờ 42 phút</span></div>
+        <div><b>HĐ cung cấp thùng phi lô gấp</b><div class="sub">Từ Cơ sở Tân Phát · 1.200.000.000 đ · Rất quan trọng</div></div>
+        <div class="st"><span class="sub">Lý do của bên gửi</span><div>"Hàng phải xuất cảng trước 17:00 hôm nay"</div></div>
+        <div class="st" style="display: flex; justify-content: space-between"><span>Văn bản · 3 trang</span><a href="#">Xem</a></div>
+        <div style="display: flex; flex-direction: column; gap: 4px"><b>Ai ký bên mình</b><span class="in">Đỗ Thị Lan · Giám đốc ▾</span><span class="sub">Chỉ người có quyền ký trong nhóm "Người ký HĐ"</span></div>
+        <span style="flex: 1"></span>
+        <div class="btn pri">Đồng ý ký cùng lúc</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px"><div class="btn">Xử lý bình thường</div><div class="btn" style="color: #b91c1c; border-color: #fecaca">Từ chối HĐ</div></div>
+        <div class="sub">Xử lý bình thường ⇒ chạy quy trình nhận như mọi HĐ, A được báo "B không ký gấp". Hết 2 giờ không trả lời ⇒ cũng thành xử lý bình thường.</div>
+      </div>
+    </div>
+
+    <div class="p" style="border-color: #4f46e5">
+      <div class="ph" style="background: #f5f4ff; border-radius: 14px 14px 0 0"><span class="who" style="color: #4f46e5">3 · CẢ HAI BÊN THẤY GIỐNG NHAU</span><b style="font-size: 15px">Phiên ký chung</b><span class="sub">Trên chi tiết HĐ của mỗi bên · 🔒 nội dung khoá</span></div>
+      <div class="pb">
+        <div style="display: flex; gap: 6px"><span class="chip" style="background: #ecebff; color: #4f46e5">PROCESSING</span><span class="chip" style="background: #fff7ed; color: #b45309">Hạn ký 17:05 · còn 2 giờ 50</span></div>
+        <div class="st" style="display: flex; gap: 10px; align-items: center"><span style="color: #15803d; font-size: 18px">✓</span><div style="flex: 1"><b>Tân Phát</b> · Nguyễn Văn An<div class="sub">Đã ký 14:05 · chứng thư hợp lệ</div></div></div>
+        <div class="st" style="display: flex; gap: 10px; align-items: center; border-color: #f59e0b; background: #fffbeb"><span style="color: #b45309; font-size: 18px">●</span><div style="flex: 1"><b>Minh Long</b> · Đỗ Thị Lan<div class="sub">Đang chờ ký · đã nhắc 14:15</div></div></div>
+        <div class="sub">Chỉ hiện tên công ty và người ký của bên kia, không hiện người duyệt nội bộ.</div>
+        <div style="border-top: 1px solid #e5e5ee; padding-top: 10px; display: flex; flex-direction: column; gap: 6px">
+          <span><b style="color: #15803d">Cả hai đã ký</b> ⇒ DONE ở A và B, cùng một bản đã ký</span>
+          <span><b style="color: #b91c1c">Một bên từ chối ký</b> ⇒ huỷ phiên ở cả hai · REJECT ở cả hai, kèm lý do</span>
+          <span><b style="color: #b45309">Quá hạn</b> ⇒ huỷ phiên · A chọn: gửi lại (DRAFT) hoặc dừng (REJECT)</span>
+          <span><b>Cần sửa nội dung</b> ⇒ bên nào cũng chỉ có nút "Huỷ phiên ký", sửa xong gửi lại từ bước 1</span>
+        </div>
+        <span style="flex: 1"></span>
+        <div class="btn" style="color: #b91c1c; border-color: #fecaca">Huỷ phiên ký (cần lý do)</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+    <div class="p">
+      <div class="ph"><b>Quy trình nhận của B (soạn ở ai-admin)</b><span class="sub">Không cần bước mới cho người ký ngoài bước Ký số có sẵn</span></div>
+      <div class="pb" style="gap: 6px">
+        <div class="st">▶ <b>Đối tác gửi hợp đồng</b></div>
+        <div class="st">◆ <b>Nếu</b> đối tác đề nghị ký cùng lúc</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+          <div style="display: flex; flex-direction: column; gap: 6px"><span class="sub" style="font-weight: 700; color: #15803d">ĐÚNG</span><div class="st">✋ <b>Đồng ý ký cùng lúc</b><div class="sub">người phụ trách HĐ nhận · 2 giờ</div></div><div class="st">✍ <b>Ký số</b> · song song với đối tác<div class="sub">nhóm Người ký HĐ</div></div></div>
+          <div style="display: flex; flex-direction: column; gap: 6px"><span class="sub" style="font-weight: 700">SAI hoặc chọn xử lý bình thường</span><div class="st">✓ <b>Duyệt</b> · Kế toán → Giám đốc</div><div class="st">✍ <b>Ký số</b></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="p">
+      <div class="ph"><b>Còn thiếu so với code hiện tại</b></div>
+      <div class="pb" style="gap: 6px">
+        <div>✓ <b>Có sẵn:</b> Ký số có đối tác ký, thứ tự song song, hạn, nhắc; hộp chuyển giữa hai công ty.</div>
+        <div>＋ Cờ "đề nghị ký cùng lúc" + lý do + hai hạn trên bước Gửi đối tác xác nhận.</div>
+        <div>＋ Bước <b>Đồng ý ký cùng lúc</b> bên nhận (3 nút) và điều kiện Nếu "đối tác đề nghị ký cùng lúc".</div>
+        <div>＋ Phiên ký chung nối hai công ty: chỉ DONE khi cả hai đã ký; một bên huỷ ⇒ huỷ cả hai.</div>
+        <div>＋ Việc khẩn ghim đầu Việc của tôi, hạn theo giờ, nhắc mỗi giờ.</div>
+        <div class="sub">Rủi ro cao: máy trạng thái liên công ty, cần Opus + e2e hai công ty thật.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

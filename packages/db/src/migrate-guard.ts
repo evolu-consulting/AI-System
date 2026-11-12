@@ -58,6 +58,12 @@ export const ACCEPTED_EDITS: readonly AcceptedEdit[] = [
     dbHash: "dd1f1821f219b319d23ea8599ae82263f4887b59de6297c674c2e076796bbac4",
     why: "prod sohoptac2: bản 0068 trước fd7385677 (cr120-int-reds)",
   },
+  {
+    table: "__drizzle_migrations_pack_contracts",
+    tag: "0094_inbox_awaiting",
+    dbHash: "1f2fd04c161f6b890015195ed74e158204fc835df05e00d568139b90e7cc8037",
+    why: "CR-127 C2: bỏ ALTER CHECK hub.evidence khỏi migration gói (chuyển sang hub 0137); CR-127 chưa deploy, DB dev đã áp bản cũ — kết quả tương đương",
+  },
 ];
 
 type Journal = { entries: { tag: string; when: number }[] };

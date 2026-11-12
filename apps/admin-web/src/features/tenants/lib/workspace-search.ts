@@ -21,6 +21,8 @@ export type WorkspaceSearch = {
   job?: string;
   /** Id công ty đối tác đang mở drawer (tab Đối tác). */
   org?: string;
+  /** CR-130 · tên điền sẵn cho hộp thoại «Thêm công ty đối tác» (nút «Tạo tài khoản đối tác» ở Sổ Hợp Tác); mở xong thì bỏ khỏi URL. */
+  name?: string;
   /** CR-121 c14 · mục con của tab Thành viên (Người dùng mặc định · Nhóm · Đối tác · Phân quyền · Agents). */
   view?: MemberView;
   /** Tab con trong mục Phân quyền (trước đây là `view`). */
@@ -65,6 +67,7 @@ export function validateWorkspaceSearch(s: Record<string, unknown>): WorkspaceSe
     user: str(s.user),
     job: str(s.job),
     org: str(s.org),
+    name: str(s.name)?.slice(0, 200),
     view: oneOf(s.view, MEMBER_VIEWS) ?? old?.view,
     mode: oneOf(s.mode, ACCESS_MODES) ?? oldAccessMode,
     at: old?.at ?? (s.at === "quota" ? "quota" : undefined),

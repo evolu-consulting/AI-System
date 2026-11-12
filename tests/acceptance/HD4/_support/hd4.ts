@@ -57,7 +57,7 @@ export async function addContract(sql: Sql, r: H4Row = {}): Promise<string> {
   await insContract(sql, {
     id,
     tenant: r.tenant ?? T.acme,
-    status: r.status ?? "active",
+    status: r.status ?? "done",
     owner: r.owner === undefined ? P.lan.id : r.owner,
     kind: r.kind ?? "contract",
     parent: r.parent ?? null,
@@ -77,6 +77,9 @@ export async function addContract(sql: Sql, r: H4Row = {}): Promise<string> {
 
 export type HRow = {
   status: string;
+  /** CR-127: hiệu lực dẫn xuất (`effect`) + kết quả `effect_outcome` (thay `handled`). */
+  effect: string | null;
+  effect_outcome: string | null;
   action_deadline: string | null;
   remind_at: Date | null;
   /** `contract_schedule.remind_at::text` (`-infinity` = xử lý ngay; null = không có lịch). */
@@ -87,8 +90,8 @@ export type HRow = {
 export async function rowOf(sql: Sql, id: string): Promise<HRow> {
   const [r] = await sql<
     HRow[]
-  >`select c.status, to_char(c.action_deadline, 'YYYY-MM-DD') as action_deadline, s.remind_at,
-    s.remind_at::text as due, c.handled, c.version
+  >`select c.status, c.effect, c.effect_outcome, null::text as action_deadline, s.remind_at,
+    s.remind_at::text as due, null::jsonb as handled, c.version
     from contracts.contracts c left join contracts.contract_schedule s on s.contract_id = c.id where c.id = ${id}`;
   return r as HRow;
 }

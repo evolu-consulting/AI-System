@@ -18,14 +18,23 @@ describe("toListFilter", () => {
       true,
     ]);
   });
+  it("CR-127 K2a-1: lọc hiệu lực chuyển nguyên, rỗng ⇒ không lọc", () => {
+    expect(toListFilter({ ...base, effect: ["active", "expiring"] }).effect).toEqual([
+      "active",
+      "expiring",
+    ]);
+    expect(toListFilter({ ...base, effect: [] }).effect).toBeNull();
+  });
   it("không lọc ⇒ mọi bộ lọc null; trang 1 ⇒ offset 0", () => {
     expect(toListFilter(base)).toEqual({
       status: null,
+      effect: null,
       owner: null,
       category: null,
       seller: null,
       buyer: null,
       signerKeys: null,
+      source: null,
       direction: null,
       kind: null,
       docType: null,
@@ -57,8 +66,8 @@ describe("Gap #10 · cửa sổ ngày của bộ lọc", () => {
       to: "2026-02-01",
     });
     expect(dateWindow({ due: "60", date_from: "2020-01-01" }, today).from).toBe(today);
-    const f = toListFilter({ ...base, date_field: "action_deadline", due: "overdue" }, today);
-    expect([f.dateField, f.dateFrom, f.dateTo]).toEqual(["action_deadline", null, "2026-10-20"]);
+    const f = toListFilter({ ...base, date_field: "end_date", due: "overdue" }, today);
+    expect([f.dateField, f.dateFrom, f.dateTo]).toEqual(["end_date", null, "2026-10-20"]);
   });
 });
 

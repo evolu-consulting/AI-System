@@ -1,6 +1,6 @@
 // V2-F · HD-01/03/04/09/10/11 · 5.5a · 5.7e: dữ liệu giả cho form hợp đồng, chi tiết (dòng thời gian mốc) và gợi ý đối tác / sản phẩm.
 // Đồng hồ cố định 2026-10-18 (`page.clock`), nên "Giao đợt 2" hạn 10/10 đang quá hạn 8 ngày.
-import { contractAsHub } from "./dataset-contract";
+import { contractAsHub, normOver } from "./dataset-contract";
 
 export const ACTIVE_ID = "c1000000-0000-4000-8000-0000000000a1";
 export const NEW_ID = "c1000000-0000-4000-8000-0000000000b1";
@@ -74,7 +74,7 @@ export function activeContract(o: Over = {}) {
     next_milestone_id: M(3),
     milestones: MILESTONES,
     warnings: [],
-    ...o,
+    ...normOver(o),
   };
 }
 

@@ -29,6 +29,7 @@ import { DomainError } from "../domain/errors";
 import { writeNotices } from "../notify/batch.repo";
 import { createNotifier } from "../notify/notifier";
 import { claimExpired, insertRunEnds } from "../runs/expire";
+import { releaseDueClaims } from "./claim/claim.repo";
 import { notifyMany } from "./notify/notice-batch";
 import * as rt from "./notify/review-tasks.repo";
 import { retryRepo } from "./runs/retry.repo";
@@ -96,6 +97,7 @@ function batchRepos(tx: Tx, outbox: Outbox, notifier: HubUowDeps["notifier"]): B
       claimDueEscalations: (limit, now) => rt.claimDueEscalations(tx, now, limit),
       addEscalatedGroups: (rows) => rt.addEscalatedGroups(tx, rows),
       auditEscalations: (rows) => rt.auditEscalations(tx, rows),
+      releaseDueClaims: (limit, now) => releaseDueClaims(tx, now, limit), // CR-127 · E2
     },
     notices: {
       insertMany: (kind, rows) => writeNotices(tx, kind, rows),

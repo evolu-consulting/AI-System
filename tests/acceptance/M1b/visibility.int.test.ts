@@ -72,7 +72,7 @@ beforeAll(async () => {
   // Phụ lục chưa giao của HĐ u3, do boss tải (owner gói — u2/u5 không phải người tạo).
   const [ap] = await sql<{ id: string }[]>`insert into contracts.contracts
       (tenant_id, kind, parent_id, title, status, created_by)
-    values (${A}, 'appendix', ${C.u3 as string}, 'PL u3', 'active', ${boss}) returning id`;
+    values (${A}, 'appendix', ${C.u3 as string}, 'PL u3', 'done', ${boss}) returning id`;
   C.pl = ap?.id as string;
   await sql`insert into contracts.cks_customers (tenant_id, name, tax_id)
     values (${A}, 'Khach Mot', '0101'), (${A}, 'Khach Hai', '0202')`;
@@ -119,7 +119,7 @@ describe("M1D-FR-01 · phụ lục chưa giao theo HĐ cha (orgs.sees)", () => {
     const r = await inPackAsRollback("contracts", A, u5, async (tx) => {
       const [x] = await tx<{ id: string; v: string | null }[]>`insert into contracts.contracts
             (tenant_id, kind, parent_id, title, status, created_by, visibility_owner_id)
-          values (${A}, 'appendix', ${C.u3 as string}, 'PL u5', 'active', ${u5}, ${u3})
+          values (${A}, 'appendix', ${C.u3 as string}, 'PL u5', 'done', ${u5}, ${u3})
           returning id, visibility_owner_id::text as v`;
       const [y] = await tx<{ v: string | null }[]>`update contracts.contracts
           set visibility_owner_id = ${u3} where id = ${x?.id as string} returning visibility_owner_id::text as v`;

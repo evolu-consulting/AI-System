@@ -19,7 +19,7 @@ export type JoinRow = JoinViewRow & {
   contact: string;
   email: string;
   reason: string;
-  labels: ("supplier" | "buyer")[];
+  labels: ("supplier" | "customer")[];
 };
 
 export type ReportRow = ReportViewRow & {

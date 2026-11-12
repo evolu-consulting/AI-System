@@ -7,6 +7,8 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { PromoteRepo, PromoteRow } from "../application/promote-contract.usecase";
 import type { DealMilestone } from "../domain/deal.rules";
+import { refreshEffect } from "./contract-state.repo";
+import { insertUnlinkedNote } from "./transaction-flow.repo";
 import { detailQ, listQ } from "./transactions-read.sql";
 
 const fv = (v: string) =>
@@ -24,16 +26,13 @@ export function promoteRepo(tx: Tx, t: string): PromoteRepo {
             ${w.size}::bigint, ${w.userId}::uuid
           from cur where cur.doc_type = 'deal' and not cur.superseded
           returning id),
-        -- Review cuối đợt (lách duyệt): tenant BẬT duyệt ⇒ HĐ về needs_review (không khoá; người gọi mở lượt duyệt cấp 1 —
-        -- engine/máy như nhập tay); TẮT ⇒ confirmed_* = người nâng ⇒ K1 (BEFORE) khoá ngay, locked_by = người nâng.
-        s as (select contracts.approval_on() as on),
+        -- CR-127 K1b · nâng giao dịch thành HĐ = created_done (spec §3 #1b): giao dịch đã DONE từ lúc tạo, nâng KHÔNG đổi status; confirmed_*
+        -- = người nâng ⇒ K1 (BEFORE) khoá ngay, locked_by = người nâng. Không còn nhánh "bật duyệt ⇒ needs_review" (không đường lách).
         u as (
           update contracts.contracts c set doc_type = 'contract', file_id = f.id,
             fields = c.fields || jsonb_build_object('number', ${fv(w.number)}), version = c.version + 1, updated_at = now(),
-            status = case when s.on then 'needs_review' else c.status end,
-            confirmed_at = case when s.on then null else now() end,
-            confirmed_by = case when s.on then null else ${w.userId}::uuid end
-          from f, s where c.tenant_id = ${t}::uuid and c.id = ${w.id}::uuid
+            confirmed_at = now(), confirmed_by = ${w.userId}::uuid
+          from f where c.tenant_id = ${t}::uuid and c.id = ${w.id}::uuid
           returning c.id, c.version, c.status, c.locked_at is not null as locked),
         e as (
           insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
@@ -42,6 +41,8 @@ export function promoteRepo(tx: Tx, t: string): PromoteRepo {
         select cur.doc_type, coalesce(cur.superseded, false) as superseded, u.version, u.status,
           coalesce(u.locked, false) as locked
         from (select 1) one left join cur on true left join u on true`);
+      // `initialState("promote")` ⇒ side effect `refresh_effect` (một câu).
+      if (rows[0]?.version != null) await refreshEffect(tx, [w.id]);
       return (
         rows[0] ?? { doc_type: null, superseded: false, version: null, status: null, locked: false }
       );
@@ -64,6 +65,8 @@ export type DealsRepo = {
   editLog(id: string, limit: number): Promise<unknown[] | null>;
   legacyList(q: TransactionListQuery): Promise<unknown>;
   legacyDetail(id: string): Promise<unknown | null>;
+  /** CR-127 X2: lý do "Không theo hợp đồng" ⇒ nhật ký chứng từ (cùng tx tạo). */
+  unlinkedNote(id: string, by: string, reason: string): Promise<void>;
 };
 
 export function dealsRepo(tx: Tx, t: string): DealsRepo {
@@ -84,6 +87,7 @@ export function dealsRepo(tx: Tx, t: string): DealsRepo {
             order by l.id desc limit ${limit}::int) s(n, x)), '[]'::jsonb) end as j`);
       return j as unknown[] | null;
     },
+    unlinkedNote: (id, by, reason) => insertUnlinkedNote(tx, t, id, by, reason),
     legacyList: (q) => one(listQ(t, q)),
     legacyDetail: (id) => one(detailQ(t, id)),
   };

@@ -26,14 +26,13 @@ describe("toContractListRow", () => {
       number: null,
       type: null,
       direction: null,
-      status: "active",
+      status: "done",
       seller: null,
       buyer: null,
       seller_signer: null,
       buyer_signer: null,
       value: "500000000",
       end_date: "2027-03-31",
-      action_deadline: null,
       owner_user_id: U,
       category_ids: [],
       updated_at: "2026-03-01T07:00:00+07:00",
@@ -61,11 +60,9 @@ const NULLS = {
   buyer_signer: null,
   value: null,
   end_date: null,
-  action_deadline: null,
   error: null,
   confirmed_at: null,
   confirmed_by: null,
-  handled: null,
   run_id: null,
   parent: null,
   appendices: null,
@@ -77,7 +74,7 @@ const detailRaw = (o: Record<string, unknown>) =>
     id: U,
     kind: "contract",
     title: "HĐ",
-    status: "needs_review",
+    status: "draft",
     owner_user_id: U,
     updated_at: T0,
     version: 1,
@@ -212,5 +209,37 @@ describe("pgTextArray", () => {
   it('null giữ null; thoát " và \\', () => {
     expect(pgTextArray(null)).toBeNull();
     expect(pgTextArray(['a"b', "c\\d", "x,y"])).toBe('{"a\\"b","c\\\\d","x,y"}');
+  });
+});
+
+describe("CR-127 K2a-1 · trạng thái phụ + hiệu lực + can", () => {
+  it("hàng cũ thiếu cột mới ⇒ ready / null / false; hold luôn null tới X1", () => {
+    const r = toContractDetail(detailRaw({}), "2026-11-10", U);
+    expect(r).toMatchObject({
+      status: "draft",
+      extract_state: "ready",
+      effect: null,
+      superseded: false,
+      hold: null,
+      effect_outcome: null,
+      submit_round: 0,
+      submitted_by: null,
+    });
+  });
+  it("DONE hiệu lực + người gọi là phụ trách ⇒ can theo trạng thái", () => {
+    const raw = detailRaw({
+      status: "done",
+      effect: "expiring",
+      extract_state: "ready",
+      effect_outcome: "renewed",
+      effect_outcome_at: T0,
+      submit_round: 2,
+      submitted_by: U,
+    });
+    const mine = toContractDetail(raw, "2026-11-10", U);
+    expect(mine).toMatchObject({ effect: "expiring", effect_outcome: "renewed", submit_round: 2 });
+    expect(mine.effect_outcome_at).toBe("2026-03-01T00:00:00.000Z");
+    expect(mine.can).toMatchObject({ new_version: true, hold: true, submit: false });
+    expect(toContractDetail(raw, "2026-11-10").can.hold).toBe(false);
   });
 });

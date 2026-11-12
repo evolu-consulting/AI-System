@@ -12,7 +12,7 @@ export function createRouterPort(low: LowRouter): RouterPort {
   return {
     read() {
       const l = low.location();
-      return parsePath(l.pathname, l.search);
+      return parsePath(l.pathname);
     },
     go: (r: Route) => low.navigate(routeToHref(r), { replace: false }),
     replace: (r: Route) => low.navigate(routeToHref(r), { replace: true }),

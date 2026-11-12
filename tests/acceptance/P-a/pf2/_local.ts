@@ -11,6 +11,7 @@ import { api } from "../../X2a/_x2a";
 import {
   type CtxPa,
   defInput,
+  defsWriteVia,
   insertDef,
   insertOutput,
   insertRun,
@@ -164,7 +165,8 @@ export const forward = (c: CtxPa, r: Role, taskId: string, to: string, note?: st
     r,
     "POST",
     `/review-tasks/${taskId}/forward`,
-    note === undefined ? { to_user_id: to } : { to_user_id: to, note },
+    // CR-127 E3: chuyển tiếp luôn cần lý do (FORWARD_REASON_REQUIRED) ⇒ mặc định có ghi chú.
+    { to_user_id: to, note: note ?? "Chuyển giúp" },
   );
 
 /** Hub thật + launcher PF1 thật (không `stageLauncher` giả) — ca ⇢PF1 (P2-04 phần job, P2-11). */
@@ -219,7 +221,10 @@ export async function startPaReal(): Promise<CtxPa> {
     redis: r2,
     rt: new ScriptRuntime(sql, r2),
     tok,
-    call: async (r, method, path, body) => api(hub, await tok(r), method, path, body),
+    call: async (r, method, path, body) => {
+      const w = defsWriteVia(r, method, path);
+      return api(hub, await tok(w.role as typeof r), method, w.path, body);
+    },
     stop: async () => {
       await hub.stop();
       r2.disconnect();

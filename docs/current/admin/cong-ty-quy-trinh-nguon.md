@@ -1,5 +1,7 @@
 # Admin · Dòng việc phản ánh quy trình đang dùng theo luật của công ty
 
+> **CR-127 (2026-11-11) — phần Thư viện/khe/sao chép/mẫu/máy duyệt cũ trong file này ĐÃ THAY THẾ:** xem [engine/quy-trinh-cr127.md](../engine/quy-trinh-cr127.md). Giữ làm lịch sử; chỗ mâu thuẫn thì file CR-127 thắng.
+
 Cập nhật: 2026-11-09 · Gộp từ: cr121-f1-flows-state (đợt cr125-wave).
 
 ## Yêu cầu: Dòng việc phản ánh quy trình đang dùng theo luật của công ty (nguồn: cr121-f1-flows-state)

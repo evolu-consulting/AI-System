@@ -1,6 +1,7 @@
 // HD7-FR-02…08 · HD7-FR-10 · HD7-AC01 · AC02 · AC04 · AC05: tiền và ngày của sổ thanh toán qua hub-api thật — parity nguyên văn
 // với mgmt-app `tests/test_payments.py`, `test_ledger.py`, `test_schedule.py` (số tiền, ngày trễ, thứ tự, tổng). Viết TRƯỚC code.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { setLegacyStatus } from "../HD1/_support/hd1";
 import {
   arrangeHd7,
   type CtxN1,
@@ -16,6 +17,8 @@ import {
   startHd1,
 } from "./_support/hd7";
 
+/** CR-127 X3: dời hạn là yêu cầu thay đổi — cần bằng chứng, người phụ trách (owner = lan) của HĐ. */
+const EV = { note: "Đã trao đổi với đối tác, có biên bản" };
 let c: CtxN1;
 beforeAll(async () => {
   c = await startHd1();
@@ -181,18 +184,21 @@ describe("HD7-AC02 · đã trả trễ, hẹn lại, nhắc (test_ledger.py)", (
       { due_date: "2026-10-13", amount: 92_500_000 },
       { due_date: "2026-11-13", amount: 92_500_000 },
     ]);
-    const bad = await call(c, P.hoa, "POST", `/obligations/${first.id}/postpone`, {
+    const bad = await call(c, P.lan, "POST", `/obligations/${first.id}/postpone`, {
       to: "2026-10-12",
+      evidence: EV,
     });
     expect([bad.status, bad.json?.error?.code]).toEqual([422, "POSTPONE_DATE"]);
-    const same = await call(c, P.hoa, "POST", `/obligations/${first.id}/postpone`, {
+    const same = await call(c, P.lan, "POST", `/obligations/${first.id}/postpone`, {
       to: "2026-10-13",
+      evidence: EV,
     });
     expect(same.status).toBe(422);
     const moved = await ok(
-      call(c, P.hoa, "POST", `/obligations/${first.id}/postpone`, {
+      call(c, P.lan, "POST", `/obligations/${first.id}/postpone`, {
         to: "2026-10-20",
         note: "hẹn tuần sau",
+        evidence: EV,
       }),
     );
     expect([moved.due_date, moved.postpones, moved.postponed_to]).toEqual([
@@ -218,10 +224,10 @@ describe("HD7-AC02 · đã trả trễ, hẹn lại, nhắc (test_ledger.py)", (
     for (const act of ["remind", "postpone"]) {
       const r = await call(
         c,
-        P.hoa,
+        P.lan,
         "POST",
         `/obligations/${first.id}/${act}`,
-        act === "postpone" ? { to: "2026-12-01" } : {},
+        act === "postpone" ? { to: "2026-12-01", evidence: EV } : {},
       );
       expect({ act, status: r.status }).toEqual({ act, status: 409 });
     }
@@ -288,7 +294,9 @@ describe("HD7-AC04 · huỷ việc ghi nhầm hoàn tác đợt (test_voiding_a_
       (await events(c, ob.party)).filter((e: Json) => e.type === type).at(-1);
     const list = () => ok(call(c, P.hoa, "GET", `/obligations?contract_id=${sale}`));
 
-    await ok(call(c, P.hoa, "POST", `/obligations/${ob.id}/postpone`, { to: "2026-10-20" }));
+    await ok(
+      call(c, P.lan, "POST", `/obligations/${ob.id}/postpone`, { to: "2026-10-20", evidence: EV }),
+    );
     const p = await last("postponed");
     const v = await ok(call(c, P.hoa, "POST", `/partner-events/${p.id}/void`, {}));
     expect([v.voided, v.voided_by]).toEqual([true, P.hoa.id]);
@@ -384,15 +392,15 @@ describe("HD7-AC05 · lịch mặc định khi HĐ được duyệt (test_schedu
       status: "needs_review",
     });
     expect(await obligationsOf(c.sql, id)).toHaveLength(0);
-    await c.sql`update contracts.contracts set status = 'active' where id = ${id}`;
+    await setLegacyStatus(c.sql, id, "active");
     const rows = await obligationsOf(c.sql, id);
     expect(rows.map((r) => [r.due_date, r.amount, r.source, r.seq, r.status])).toEqual([
       ["2027-03-31", "12000000", "default", 1, "open"],
     ]);
     const [ob] = await ok(call(c, P.hoa, "GET", `/obligations?contract_id=${id}`));
     expect([ob.direction, ob.party]).toEqual(["receive", "tax:0355552222"]);
-    await c.sql`update contracts.contracts set status = 'needs_review' where id = ${id}`;
-    await c.sql`update contracts.contracts set status = 'active' where id = ${id}`;
+    await setLegacyStatus(c.sql, id, "needs_review");
+    await setLegacyStatus(c.sql, id, "active");
     expect((await obligationsOf(c.sql, id)).length).toBe(1);
   });
   it("không end ⇒ start ⇒ signed; không ngày ⇒ không lập; chưa biết bên ⇒ không lập; phụ lục ⇒ không lập", async () => {
@@ -405,7 +413,7 @@ describe("HD7-AC05 · lịch mặc định khi HĐ được duyệt (test_schedu
     const b = await deal(c.sql, { signed: "2026-11-01", status: "needs_review" });
     const none = await deal(c.sql, { status: "needs_review" });
     const blind = await deal(c.sql, { sale: null, end: "2026-12-31", status: "needs_review" });
-    await c.sql`update contracts.contracts set status = 'active' where id in ${c.sql([a, b, none, blind])}`;
+    await setLegacyStatus(c.sql, [a, b, none, blind], "active");
     expect((await obligationsOf(c.sql, a)).map((r) => r.due_date)).toEqual(["2026-12-01"]);
     expect((await obligationsOf(c.sql, b)).map((r) => r.due_date)).toEqual(["2026-11-01"]);
     expect(await obligationsOf(c.sql, none)).toHaveLength(0);
@@ -415,14 +423,14 @@ describe("HD7-AC05 · lịch mặc định khi HĐ được duyệt (test_schedu
     await arrangeHd7(c);
     const id = await deal(c.sql, { sale: false, end: "2026-12-31", status: "needs_review" });
     await schedule(c, id, [{ due_date: "2026-11-30", amount: 7 }]);
-    await c.sql`update contracts.contracts set status = 'active' where id = ${id}`;
+    await setLegacyStatus(c.sql, id, "active");
     expect((await obligationsOf(c.sql, id)).map((r) => r.source)).toEqual(["manual"]);
     const big = await deal(c.sql, {
       value: 9_000_000_000_000_000,
       end: "2026-12-31",
       status: "needs_review",
     });
-    await c.sql`update contracts.contracts set status = 'active' where id = ${big}`;
+    await setLegacyStatus(c.sql, big, "active");
     expect((await obligationsOf(c.sql, big)).map((r) => r.amount)).toEqual([null]);
   });
 });

@@ -170,18 +170,23 @@ export async function libraryDefIdByName(hub: string, s: Session, name: string):
   }
 }
 
-/** CR-122 · platform_admin gán flow Thư viện cho công ty (`POST /tenants/:tid/company-flows`) — phần chuẩn bị, không phải bước được kiểm. */
-export async function assignCompanyFlow(
+/**
+ * CR-127 · quản trị nền tảng tạo quy trình TRỐNG cho công ty (`POST /tenants/:tid/company-flows {name, app, from:"blank"}` — đúng cú gọi của hộp «Tạo quy trình»).
+ * Trả id quy trình; soạn tiếp bằng UI (`openFlowEditor`). Chạy lại cùng tên ⇒ trả lại quy trình đã có.
+ */
+export async function createBlankFlow(
   hub: string,
   s: Session,
   tenantId: string,
-  flowId: string,
-): Promise<void> {
-  await call(`${hub}/tenants/${tenantId}/company-flows`, {
+  name: string,
+  app = "contracts",
+): Promise<string> {
+  const r = await call<{ flow_id: string }>(`${hub}/tenants/${tenantId}/company-flows`, {
     method: "POST",
     token: s.token,
-    body: JSON.stringify({ flow_id: flowId }),
+    body: JSON.stringify({ name, app, from: "blank" }),
   });
+  return r.json.flow_id;
 }
 
 /** CR-122 · danh sách flow công ty (`GET /tenants/:tid/company-flows`). */

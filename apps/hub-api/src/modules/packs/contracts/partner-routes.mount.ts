@@ -4,8 +4,17 @@
 //   GET  /partner/sends/:contractId        — các vòng gửi của HĐ phía bên gửi (read)
 //   POST /partner/sends/:mailboxId/record  — «Ghi nhận kết quả đối tác» (write; chỉ lần gửi MỞ của HĐ người gọi thấy được)
 //   GET/PUT /partner/settings              — ngưỡng mức quan trọng + người phụ trách HĐ nhận (admin)
+//   POST /contracts/:id/inbox-decision     — CR-127 K8 · người phụ trách HĐ nhận quyết khi chưa có quy trình nhận (write; owner/admin)
 // Lỗi hàm DEFINER (42501/55000/22023) ⇒ câu nói cách khắc phục, không lộ chi tiết nội bộ.
+import {
+  INBOX_DECISION_ERRORS,
+  type InboxDecisionErrorCode,
+  InboxDecisionRequestSchema,
+} from "@ai/contracts/pack-contracts";
+import { CONTRACTS_PARTNER_CONFIRM_FEATURE as PARTNER_FEATURE } from "@ai/contracts/tenants";
 import type { Db, Tx } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
+import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../lib/errors";
@@ -15,11 +24,14 @@ import {
   type PackAccessView,
   type PackGuardVars,
   type PackUow,
+  packAccessInput,
+  packActionsFor,
   packGuard,
   tenantFeatureOn,
 } from "../kit/public";
+import { decideInbox, InboxReplyClosed } from "./adapters/partner-inbox-decision.repo";
 import { type PartnerUiRepo, partnerUiRepo } from "./adapters/partner-ui.repo";
-import { PARTNER_FEATURE } from "./nav.mount";
+import { signSessionRoutes } from "./sign-session.routes";
 
 const KEY = "contracts";
 const UUID = z.uuid();
@@ -46,6 +58,8 @@ const SettingsBody = z
     important_min: z.number().int().min(0).max(1_000_000_000_000),
     critical_min: z.number().int().min(1).max(1_000_000_000_000),
     owner_user_id: z.uuid().nullable(),
+    /** CR-127 · P2 · nhóm «Người ký HĐ» (vắng ⇒ giữ nguyên; null ⇒ bỏ). Phải là nhóm của CHÍNH công ty. */
+    signer_group_id: z.uuid().nullable().optional(),
   })
   .refine(
     (s) => s.critical_min > s.important_min,
@@ -71,7 +85,7 @@ function businessError(e: unknown): never {
   throw e;
 }
 
-type PartnerUow = PackUow<{ ui: PartnerUiRepo }>;
+type PartnerUow = PackUow<{ ui: PartnerUiRepo; tx: Tx; tid: string }>;
 type PartnerRouter = Hono<PackGuardVars>;
 const who = (c: { get(k: "user"): { tenantId: string; userId: string } }) => {
   const u = c.get("user");
@@ -103,12 +117,68 @@ function sendRoutes(r: PartnerRouter, view: PackAccessView, uow: PartnerUow): vo
   });
 }
 
-function settingsRoutes(r: PartnerRouter, view: PackAccessView, uow: PartnerUow): void {
+const INBOX_MSG: Record<InboxDecisionErrorCode, string> = {
+  INBOX_NOT_AWAITING: "Hợp đồng này không còn chờ bạn quyết — tải lại trang.",
+  INBOX_REPLY_CLOSED: "Lần gửi của đối tác đã hết hạn hoặc đã có trả lời — nhờ đối tác gửi lại.",
+  FEEDBACK_REQUIRED: "Ghi ý kiến khi Trả lại hoặc Từ chối.",
+  INBOX_DECISION_FORBIDDEN: "Chỉ người phụ trách hợp đồng nhận hoặc quản trị công ty được quyết.",
+};
+const inboxFail = (k: InboxDecisionErrorCode): never => {
+  throw new AppError(k, INBOX_DECISION_ERRORS[k], INBOX_MSG[k]);
+};
+
+/** CR-127 K8 · spec §3 #9b: HĐ nhận chờ người phụ trách quyết (không nằm dưới `/partner/*` — không phụ thuộc tính năng gửi đối tác). */
+function inboxDecisionRoute(r: PartnerRouter, view: PackAccessView, uow: PartnerUow): void {
+  r.post("/contracts/:id/inbox-decision", packGuard(view, KEY, "write"), async (c) => {
+    const id = parseWith(UUID, c.req.param("id"));
+    const b = parseWith(InboxDecisionRequestSchema, await readJson(c));
+    if (b.decision !== "accept" && !b.evidence?.note?.trim()) inboxFail("FEEDBACK_REQUIRED");
+    const u = c.get("user");
+    const isAdmin = packActionsFor(await packAccessInput(view, KEY, u)).includes("admin");
+    const out = await uow
+      .tenant(who(c), (x) =>
+        decideInbox(x.tx, x.tid, {
+          contractId: id,
+          decision: b.decision,
+          actorId: u.userId,
+          isAdmin,
+          evidence: b.evidence ?? null,
+        }),
+      )
+      .catch((e: unknown) => {
+        if (e instanceof InboxReplyClosed) inboxFail("INBOX_REPLY_CLOSED");
+        throw e;
+      });
+    if ("error" in out) {
+      if (out.error === "not_found") throw appError("NOT_FOUND");
+      inboxFail(out.error);
+    }
+    return c.json(out, 200);
+  });
+}
+
+async function groupOfTenant(db: Db, tenantId: string, groupId: string): Promise<boolean> {
+  const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+    tx.execute<{ ok: boolean }>(
+      sql`select exists (select 1 from admin.groups g where g.id = ${groupId}::uuid and g.tenant_id = ${tenantId}::uuid) as ok`,
+    ),
+  );
+  return rows[0]?.ok === true;
+}
+
+function settingsRoutes(r: PartnerRouter, view: PackAccessView, uow: PartnerUow, db: Db): void {
   r.get("/partner/settings", packGuard(view, KEY, "admin"), async (c) =>
     c.json(await uow.tenant(who(c), (x) => x.ui.settings()), 200),
   );
   r.put("/partner/settings", packGuard(view, KEY, "admin"), async (c) => {
     const b = parseWith(SettingsBody, await readJson(c));
+    // CR-127 · P2 · nhóm «Người ký HĐ» phải thuộc CHÍNH công ty (gói không đọc `admin.*` ⇒ kiểm ở scope hub, lọc tenant tường minh).
+    if (b.signer_group_id && !(await groupOfTenant(db, c.get("user").tenantId, b.signer_group_id)))
+      throw new AppError(
+        "SIGNER_GROUP_INVALID",
+        422,
+        "Nhóm «Người ký HĐ» phải là nhóm của công ty bạn — chọn lại trong danh sách.",
+      );
     const saved = await uow.tenant(who(c), (x) => x.ui.saveSettings(b, c.get("user").userId));
     if (!saved)
       throw new AppError(
@@ -123,6 +193,8 @@ function settingsRoutes(r: PartnerRouter, view: PackAccessView, uow: PartnerUow)
 export function partnerModule(db: Db, view: PackAccessView): Hono<PackGuardVars> {
   const uow: PartnerUow = createPackUow(db, KEY, (tx: Tx, t: string) => ({
     ui: partnerUiRepo(tx, t),
+    tx,
+    tid: t,
   }));
   const r = new Hono<PackGuardVars>();
   // q7 · MỌI route `/partner/*` cần công ty đã bật tính năng `contracts-partner-confirm` — cùng nguồn (`tenantFeatureOn`) với cap menu.
@@ -153,6 +225,8 @@ export function partnerModule(db: Db, view: PackAccessView): Hono<PackGuardVars>
     return c.json({ ok: true }, 200);
   });
   sendRoutes(r, view, uow);
-  settingsRoutes(r, view, uow);
+  settingsRoutes(r, view, uow, db);
+  inboxDecisionRoute(r, view, uow);
+  r.route("/", signSessionRoutes(db, view, uow)); // CR-127 · P2 · phiên ký chung
   return r;
 }

@@ -18,6 +18,7 @@ import { dbHubAudit } from "../../../lib/hub-audit";
 import { type StudioAudit, withConfigWrite } from "../../studio/public";
 import type { ProcessDeps } from "../core/ports";
 import type { LibraryService } from "./library.service";
+import { assertPlatformWrite } from "./library-company.service";
 import { specOrThrow } from "./library-draft";
 import * as rt from "./routing.repo";
 
@@ -179,6 +180,7 @@ export class RoutingService {
     slot: string,
     b: PutProcessRoutingRequest,
   ): Promise<ProcessRouting> {
+    assertPlatformWrite(u, tenantId); // CR-127 · E8 · BR-10/11 (lưới thứ hai sau route)
     const scope = scopeFor(u, tenantId);
     specOrThrow(slot);
     const rules = normalize(b);
@@ -237,6 +239,7 @@ export class RoutingService {
     slot: string,
     defId: string,
   ): Promise<ProcessRouting> {
+    assertPlatformWrite(u, tenantId);
     await withConfigWrite(this.#w, u, async (tx) => {
       await this.lib.assignable(tx, tenantId, slot, defId);
       const cur = await rt.defaultRuleOf(tx, tenantId, slot);
@@ -260,6 +263,7 @@ export class RoutingService {
    * (xoá luôn luật mặc định cùng tx, CR-121 F-1); khe thường luôn cần một mặc định ⇒ phải gán quy trình khác trước.
    */
   async unassign(u: AuthUser, tenantId: string, slot: string, defId: string): Promise<void> {
+    assertPlatformWrite(u, tenantId);
     const optIn = specOrThrow(slot).optIn === true;
     await withConfigWrite(this.#w, u, async (tx) => {
       const used = await rt.rulesUsing(tx, tenantId, slot, defId);

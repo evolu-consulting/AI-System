@@ -55,8 +55,7 @@ export function withEvents(
 }
 
 /**
- * MOD-FR-05 · def cũ không có `stage.node`: khớp bước cơ bản theo `executor.kind` (+ `outcome` ⇒ Kết thúc; `notify` có kênh email ⇒ Gửi email,
- * còn lại Thông báo chuông). Không khớp ⇒ undefined (bước tuỳ biến, không lỗi).
+ * MOD-FR-05 · def cũ không có `stage.node`: khớp bước cơ bản theo `executor.kind` (+ `outcome` ⇒ Kết thúc; CR-127: notify ⇒ Thông báo, wait_* ⇒ Chờ). Không khớp ⇒ undefined (bước tuỳ biến, không lỗi).
  */
 export function baseNodeOf(
   mods: readonly FeatureModule[],
@@ -66,10 +65,10 @@ export function baseNodeOf(
   const base = mods.flatMap((m) => m.nodes).filter((n) => n.kind === "base");
   if (kind === "set")
     return stage.outcome !== undefined ? base.find((n) => n.key === "core.end") : undefined;
-  const cands = base.filter((n) => n.baseExecutor === kind);
-  if (kind !== "notify") return cands[0];
-  const email = stage.executor.channels?.includes("email") === true;
-  return cands.find((n) => n.key === (email ? "core.email" : "core.bell"));
+  // CR-127 · E9 · def cũ khớp NODE GỘP: `notify` ⇒ Thông báo; `wait_until` / `wait_for` ⇒ Chờ (khoá cũ trong `stage.node` vẫn tra được bằng `featureNodeByKey`).
+  if (kind === "notify") return base.find((n) => n.key === "core.notify");
+  if (kind === "wait_until" || kind === "wait_for") return base.find((n) => n.key === "core.wait");
+  return base.find((n) => n.baseExecutor === kind);
 }
 
 const sep = "\0";

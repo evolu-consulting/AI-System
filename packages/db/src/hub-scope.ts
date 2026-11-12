@@ -38,3 +38,8 @@ export async function withHubScope<T>(
     config,
   );
 }
+
+/** Scope `system` cần đọc/ghi thay một công ty (hàm DEFINER, RLS theo `app.tenant_id`): đặt lại tenant trong tx hiện tại, giữ `app.scope`. */
+export async function setHubTenantInTx(tx: Tx, tenantId: string): Promise<void> {
+  await tx.execute(sql`select set_config('app.tenant_id', ${tenantId}, true)`);
+}

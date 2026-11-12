@@ -14,8 +14,30 @@ const json = (body: unknown, status = 200) => ({
   contentType: "application/json",
   body: JSON.stringify(body),
 });
-const node = (page: Page, title: string) =>
-  page.locator('li[data-node="milestone"]', { hasText: title });
+/** CR-127 U5: mốc nay là `ms-row`; bấm `ms-confirm` ⇒ hộp `fulfill-dialog` (Ý kiến + tệp bằng chứng bắt buộc), ghi bằng POST /obligations/:id/fulfill. */
+async function openFulfill(page: Page, title: string) {
+  // tệp bằng chứng tải lên POST /attachments trước khi gửi (EvidenceInput) ⇒ giả phản hồi
+  await page.route("**/attachments", (r) =>
+    r.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "a1000000-0000-4000-8000-000000000001",
+        filename: "bien-ban.pdf",
+      }),
+    }),
+  );
+  await page.getByTestId("ms-row").filter({ hasText: title }).getByTestId("ms-confirm").click();
+  const dlg = page.getByTestId("fulfill-dialog");
+  await dlg.getByLabel(/Ý kiến/).fill("Đã giao đủ theo biên bản.");
+  await dlg.locator("input[type=file]").setInputFiles({
+    name: "bien-ban.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4 bien ban"),
+  });
+  await expect(dlg.getByText("bien-ban.pdf")).toBeVisible();
+  return dlg;
+}
 
 const VIEW = {
   milestone_id: M3,
@@ -37,66 +59,34 @@ const VIEW = {
 };
 
 test.describe("đợt giao theo %", () => {
-  test("«+ Thêm mốc» Giao hàng có ô «Giao theo %»: nhập 30 ⇒ POST có pct, khoá ô SL chung", async ({
-    page,
-  }) => {
-    const sent = await installV2f(page);
-    await page.goto(`/contracts/c/${ACTIVE_ID}`);
-    await page.getByRole("button", { name: "+ Thêm mốc" }).click();
-    const dlg = page.getByRole("dialog", { name: "Thêm mốc" });
-    await dlg.getByLabel(/^Tên mốc/).fill("Giao đợt 1");
-    await dlg.getByLabel(/^Hạn/).fill("2026-11-15");
-    await dlg.getByLabel("Giao theo %").fill("30");
-    await expect(dlg.getByLabel("Số lượng giao")).toBeDisabled();
-    await dlg.getByRole("button", { name: "Thêm mốc" }).click();
-    await expect(dlg).toHaveCount(0);
-    expect(sent.at(-1)).toMatchObject({
-      method: "POST",
-      path: `${P}/contracts/${ACTIVE_ID}/milestones`,
-      body: { kind: "delivery", qty: null, pct: 30 },
-    });
-  });
+  // CR-127 Q11 (người dùng chốt): bỏ nút «+ Thêm mốc» trên HĐ thường là đúng ý — ca «Giao theo %» khi thêm mốc đã xoá.
 
-  test("xác nhận đợt: SL tính sẵn 30, sửa thành 25 ⇒ PATCH items rồi settle; phản hồi vượt tồn ⇒ toast cảnh báo", async ({
+  test("xác nhận đợt (Nhận việc/hộp xác nhận mới): SL tính sẵn 30, sửa thành 25 ⇒ POST fulfill có qty_items", async ({
     page,
   }) => {
     const sent = await installV2f(page);
     await page.route(`**${P}/milestones/${M3}/delivery`, (r) => r.fulfill(json(VIEW)));
-    await page.route(`**${P}/obligations/*/settle`, (r) => {
+    await page.route(`**${P}/obligations/${M3}/fulfill`, (r) => {
       sent.push({
         method: "POST",
         path: new URL(r.request().url()).pathname,
         body: r.request().postDataJSON(),
       });
-      return r.fulfill(
-        json({
-          id: M3,
-          status: "done",
-          delivery: {
-            items: [],
-            stock: [],
-            notes: [],
-            overdrawn: [{ component_id: "c", name: "Chữ ký số", need: "25", have: "10" }],
-          },
-        }),
-      );
+      return r.fulfill(json({ id: M3, status: "done" }));
     });
     await page.goto(`/contracts/c/${ACTIVE_ID}`);
-    await node(page, "Giao đợt 2").getByRole("button", { name: "Xác nhận xong" }).click();
-    const box = page.getByTestId("confirm-box");
-    const qty = box.getByLabel("Giao đợt này · Chữ ký số");
+    const dlg = await openFulfill(page, "Giao đợt 2");
+    const qty = dlg.getByLabel("Giao đợt này · Chữ ký số");
     await expect(qty).toHaveValue("30");
     await qty.fill("25");
-    await box.getByRole("button", { name: "Xác nhận" }).click();
-    await expect(box).toHaveCount(0);
-    await expect(page.locator("[data-sonner-toast]").first()).toContainText("Đã giao vượt tồn");
-    expect(sent.slice(-2).map((s) => [s.method, s.path])).toEqual([
-      ["PATCH", `${P}/milestones/${M3}`],
-      ["POST", `${P}/obligations/${M3}/settle`],
+    const res = page.waitForResponse((r) => r.url().includes(`/obligations/${M3}/fulfill`));
+    await dlg.getByTestId("fulfill-ok").click();
+    await res;
+    await expect(dlg).toHaveCount(0);
+    expect(sent.at(-1)).toMatchObject({ method: "POST", path: `${P}/obligations/${M3}/fulfill` });
+    expect(((sent.at(-1)?.body ?? {}) as { qty_items?: unknown }).qty_items).toEqual([
+      { contract_item_id: VIEW.rows[0]?.item_id, qty: 25 },
     ]);
-    expect(sent.at(-2)?.body).toEqual({
-      items: [{ item_id: VIEW.rows[0]?.item_id, qty: 25 }],
-    });
   });
 });
 

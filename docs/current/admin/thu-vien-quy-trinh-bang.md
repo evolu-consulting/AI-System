@@ -1,5 +1,7 @@
 # Admin · Bảng Thư viện quy trình theo artboard Library
 
+> **CR-127 (2026-11-11) — phần Thư viện/khe/sao chép/mẫu/máy duyệt cũ trong file này ĐÃ THAY THẾ:** xem [engine/quy-trinh-cr127.md](../engine/quy-trinh-cr127.md). Giữ làm lịch sử; chỗ mâu thuẫn thì file CR-127 thắng.
+
 Cập nhật: 2026-11-09 · Gộp từ: cr121-c15-library (đợt cr125-wave).
 
 ## Yêu cầu: Bảng Thư viện quy trình theo artboard Library (CR-121 R5) (nguồn: cr121-c15-library)

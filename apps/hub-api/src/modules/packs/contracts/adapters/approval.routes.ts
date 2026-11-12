@@ -6,7 +6,6 @@ import {
   ApprovalSettingsPatchSchema,
   CONTRACT_APPROVAL_ERRORS,
   CONTRACT_ERRORS,
-  ReopenRequestSchema,
 } from "@ai/contracts/pack-contracts";
 import { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -14,39 +13,37 @@ import { z } from "zod";
 import type { AuthUser } from "../../../../lib/auth.middleware";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-  packGuardOrPlatform,
-  requestWho,
-} from "../../kit/public";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import type {
   ApprovalAction,
   actApproval,
-  cancelReopenApproval,
   getApproval,
   readApprovalSettings,
-  reopenApproval,
-  retryApproval,
   saveApprovalSettings,
 } from "../application/approval.usecase";
-import type { PlatformApprovalOp, PlatformOpAudit } from "../application/reopen-contract.usecase";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
-import type { ApprovalErrorCode } from "../domain/approval-machine.rules";
-import { reopenReasonOk } from "../domain/lock.rules";
+import type { ApprovalErrorCode } from "../domain/approval-run.rules";
 
 const KEY = "contracts";
 export type ApprovalRoutesDeps = {
   get: ReturnType<typeof getApproval>;
   act: ReturnType<typeof actApproval>;
-  reopen: ReturnType<typeof reopenApproval>;
-  retry: ReturnType<typeof retryApproval>;
-  cancelReopen: ReturnType<typeof cancelReopenApproval>;
   readSettings: ReturnType<typeof readApprovalSettings>;
   saveSettings: ReturnType<typeof saveApprovalSettings>;
-  /** CR-121 Q-3: audit thao tác của platform_admin (vắng ⇒ platform_admin bị từ chối ở 3 route trên). */
-  audit?: PlatformOpAudit;
+  /** CR-127 · E4 · hồ sơ duyệt (BR-26: người chỉ xem không thấy ý kiến/tệp); vắng ⇒ 404. */
+  record?: (who: { userId: string; tenantId: string }, id: string) => Promise<unknown>;
+  /** CR-127 · U4b-3 · PDF Hồ sơ duyệt (cùng dữ liệu `record`, cùng quyền BR-26); sai/không thấy/vắng ⇒ null ⇒ 404. */
+  recordPdf?: (
+    who: { userId: string; tenantId: string },
+    id: string,
+  ) => Promise<{ name: string; bytes: Uint8Array } | null>;
+  /** CR-127 · E4b · byte tệp/chữ ký của bằng chứng (BR-26); sai/không được xem/vắng ⇒ null ⇒ 404. */
+  evidenceFile?: (
+    who: { userId: string; tenantId: string },
+    id: string,
+    evidenceId: string,
+    fileId: string,
+  ) => Promise<{ name: string; mime: string; bytes: Uint8Array } | null>;
 };
 
 const who = (u: AuthUser) => ({ userId: u.userId, tenantId: u.tenantId });
@@ -62,59 +59,12 @@ const ERRORS: Record<ApprovalErrorCode, [ContentfulStatusCode, string]> = {
   STARTER_CANNOT_REVIEW: [403, "The starter cannot review this step"],
   FEEDBACK_REQUIRED: [422, "Feedback is required"],
 };
+// CR-127 · E4 · `EVIDENCE_REQUIRED` (422) do engine ném (AppError) — đi thẳng tới client, không qua bảng này.
 const approvalError = (code: ApprovalErrorCode) => {
   const [status, msg] = ERRORS[code];
   return new AppError(code, status, msg);
 };
 
-/** Kết quả thao tác owner trên lượt engine ⇒ thẻ mới hoặc lỗi: 404 / 409 APPROVAL_NOT_OPEN / 422 APPROVAL_GROUP_MISSING / 503. */
-function ownerOut<T>(out: T | OwnerFail): T {
-  if (out === "not_found") throw appError("NOT_FOUND");
-  if (out === "forbidden") throw appError("FORBIDDEN");
-  if (out === "not_stalled" || out === "not_open") throw approvalError("APPROVAL_NOT_OPEN");
-  if (out === "flow_invalid")
-    throw new AppError(
-      "APPROVAL_GROUP_MISSING",
-      CONTRACT_APPROVAL_ERRORS.APPROVAL_GROUP_MISSING,
-      "Approval flow cannot start (group missing or invalid)",
-    );
-  if (out === "failed")
-    throw new AppError("ENGINE_UNAVAILABLE", 503, "Approval engine unavailable");
-  // CR-122 · P11c · lượt đang chờ bộ điều phối mở quy trình (bấm Mở lại đúp / quá sớm)
-  if (out === "flow_starting")
-    throw new AppError("APPROVAL_FLOW_STARTING", 409, "Đang mở quy trình, thử lại sau ít phút");
-  return out as T;
-}
-type OwnerFail =
-  | "not_found"
-  | "not_stalled"
-  | "not_open"
-  | "flow_invalid"
-  | "flow_starting"
-  | "failed"
-  | "forbidden";
-
-type PackWho = Parameters<PlatformOpAudit["intent"]>[0];
-
-/** CR-121 Q-3 · thao tác engine của platform_admin: lý do 1..500 (400) → audit `intent` TRƯỚC (fail-closed) → thao tác → audit `result`. */
-async function platformOp(
-  audit: PlatformOpAudit | undefined,
-  op: (who: PackWho, id: string, o?: { role?: string }) => Promise<unknown>,
-  w: PackWho,
-  id: string,
-  path: PlatformApprovalOp,
-  role: string,
-  rawBody: unknown,
-) {
-  if (!audit) throw appError("FORBIDDEN");
-  const { reason } = parseWith(ReopenRequestSchema, rawBody);
-  if (!reopenReasonOk(reason))
-    throw new AppError("REASON_REQUIRED", 400, "A reason (1-500 characters) is required");
-  await audit.intent(w, id, path, reason.trim());
-  const out = await op(w, id, { role });
-  await audit.result(w, id, path, typeof out === "string" ? out : "ok").catch(() => undefined);
-  return ownerOut(out as OwnerFail | object);
-}
 export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
   const read = packGuard(view, KEY, "read");
@@ -125,6 +75,43 @@ export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hon
     const out = await d.get(who(c.get("user")), id);
     if (!out) throw appError("NOT_FOUND");
     return c.json(out);
+  });
+  r.get("/contracts/:id/approval-record", read, async (c) => {
+    const id = parseWith(z.uuid(), c.req.param("id"));
+    const out = await d.record?.(who(c.get("user")), id);
+    if (!out) throw appError("NOT_FOUND");
+    return c.json(out);
+  });
+  r.get("/contracts/:id/approval-record.pdf", read, async (c) => {
+    const id = parseWith(z.uuid(), c.req.param("id"));
+    const f = await d.recordPdf?.(who(c.get("user")), id);
+    if (!f) throw appError("NOT_FOUND");
+    return new Response(f.bytes as unknown as BodyInit, {
+      headers: {
+        "content-type": "application/pdf",
+        "content-length": String(f.bytes.byteLength),
+        "content-disposition": `attachment; filename="${f.name}"`,
+        "x-content-type-options": "nosniff",
+        "cache-control": "private, no-store",
+      },
+    });
+  });
+  r.get("/contracts/:id/approval-record/evidence/:evidenceId/files/:fileId", read, async (c) => {
+    const id = parseWith(z.uuid(), c.req.param("id"));
+    const evidenceId = parseWith(z.uuid(), c.req.param("evidenceId"));
+    const fileId = parseWith(z.uuid(), c.req.param("fileId"));
+    const f = await d.evidenceFile?.(who(c.get("user")), id, evidenceId, fileId);
+    if (!f) throw appError("NOT_FOUND");
+    // tệp người dùng tải lên ⇒ luôn tải xuống (không hiển thị nội tuyến), chặn đoán kiểu
+    return new Response(f.bytes as unknown as BodyInit, {
+      headers: {
+        "content-type": f.mime || "application/octet-stream",
+        "content-length": String(f.bytes.byteLength),
+        "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(f.name)}`,
+        "x-content-type-options": "nosniff",
+        "cache-control": "private, no-store",
+      },
+    });
   });
   r.post("/contracts/:id/approval", write, async (c) => {
     const id = parseWith(z.uuid(), c.req.param("id"));
@@ -141,25 +128,6 @@ export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hon
     if ("error" in out) throw approvalError(out.error);
     return c.json(out);
   });
-  // fix-review · Mở lại quy trình (run kết thúc bất thường / CR-107 lượt kẹt chưa có run): owner/admin của gói; KHÔNG về máy cũ.
-  // CR-107 · Thử lại (run `needs_decision` ⇒ `add_attempt`) + Huỷ & mở lại: cùng quyền `admin` gói, cùng bảng mã lỗi.
-  // CR-121 Q-3: platform_admin dùng CHÍNH các route này cho công ty đích (`?tenant_id` bắt buộc, body `{reason}` ≤ 500 bắt buộc,
-  // audit `platform_approval_op` SAU khi thao tác thành công); chưa nối `audit` ⇒ 403 (fail-closed). Vai khác: như cũ, không đọc thân.
-  const ops = [
-    ["reopen", d.reopen],
-    ["retry", d.retry],
-    ["cancel-reopen", d.cancelReopen],
-  ] as const;
-  const adminOrPlatform = packGuardOrPlatform(view, KEY, "admin");
-  for (const [path, op] of ops)
-    r.post(`/contracts/:id/approval/${path}`, adminOrPlatform, async (c) => {
-      const id = parseWith(z.uuid(), c.req.param("id"));
-      const w = requestWho(c);
-      if (!w.platform) return c.json(ownerOut(await op(who(c.get("user")), id)));
-      return c.json(
-        await platformOp(d.audit, op, w, id, path, c.get("user").role, await readJson(c)),
-      );
-    });
   r.get("/approval-settings", read, async (c) =>
     c.json(settingsOut(await d.readSettings(who(c.get("user"))))),
   );

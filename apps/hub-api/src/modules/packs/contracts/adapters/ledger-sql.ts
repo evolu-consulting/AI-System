@@ -9,15 +9,9 @@ export const one = async <T>(tx: Tx, q: SQL): Promise<T> =>
 export const json = (v: unknown) => sql`${JSON.stringify(v)}::jsonb`;
 
 /** Trạng thái HĐ ĐÃ xác nhận (= `appendix.repo.ts::PRICED_STATUSES`; bản sao để không vòng import, `confirmed.test.ts` kiểm khớp). */
-export const CONFIRMED_STATUSES = [
-  "active",
-  "expiring",
-  "expired",
-  "renewed",
-  "terminated",
-] as const;
+export const CONFIRMED_STATUSES = ["done"] as const;
 /**
- * UAT CR-095 B5: đợt của bí danh `o` thuộc HĐ đã xác nhận — HĐ chờ xác nhận (needs_review, kể cả vừa mở lại do sửa MST) chưa có việc
+ * UAT CR-095 B5: đợt của bí danh `o` thuộc HĐ đã xác nhận — HĐ chưa DONE (draft/processing/reject; CR-127: đã gộp 5 trạng thái cũ thành `done`) chưa có việc
  * tiền, như mgmt-app (đợt chỉ sinh khi HĐ được xác nhận). Luật 4c: HĐ chưa xác nhận là số ít ⇒ gom id của chúng MỘT lần (InitPlan,
  * index `contracts_status_idx`) rồi loại bằng `<> all(mảng)` — không semi-join từng đợt vào bảng HĐ (RLS HĐ chạy mỗi hàng: /payments
  * 10.000 đợt p95 32 → 105 ms). Không thêm câu SQL. CR-097 G1: đợt của Giao dịch (`contract_id` null) chưa lên bảng Thanh toán HĐ

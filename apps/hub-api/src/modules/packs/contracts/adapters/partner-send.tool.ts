@@ -17,21 +17,30 @@ import {
   planChannel,
   prevMailboxOf,
   replyDaysOf,
+  signTogetherPlan,
   toKeyOf,
 } from "../domain/partner-send.rules";
 import { withBusinessCodes } from "./intake.errors";
 import type { PartnerSendRepo } from "./partner-send.repo";
+import type { SignSessionRepo } from "./sign-session.repo";
 
 export const PARTNER_TOOL_KEY = "contracts-partner-send";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export type PartnerToolRepos = { partnerSend: PartnerSendRepo; esign: Pick<ESignRepo, "contract"> };
+export type PartnerToolRepos = {
+  partnerSend: PartnerSendRepo;
+  esign: Pick<ESignRepo, "contract">;
+  /** CR-127 · P2 · phiên ký chung (đề nghị ký cùng lúc). Vắng ⇒ bỏ qua đề nghị (test dựng tool cũ). */
+  signSession?: Pick<SignSessionRepo, "propose">;
+};
 export type PartnerToolDeps = {
   uow: PackUow<PartnerToolRepos> & PackSystemUow<PartnerToolRepos>;
   /** Công ty có bật tính năng `contracts-partner-confirm` (cùng nguồn với cap menu). Vắng ⇒ coi là bật (test dựng tool trực tiếp). */
   featureOn?: (tenantId: string) => Promise<boolean>;
   /** Kênh hộp thư liên công ty bật trên hệ thống (`HUB_PARTNER_MAILBOX=on`). Vắng ⇒ coi là bật. false ⇒ từ chối TRƯỚC KHI ghi bất cứ gì. */
   channelOn?: boolean;
+  /** CR-127 · P2 · SHA-256 văn bản PDF của tệp HĐ (đọc FileBox ngoài tx); null/vắng ⇒ không lập phiên ký chung, gửi thường. */
+  fileSha?: (tenantId: string, contractId: string) => Promise<string | null>;
 };
 
 const PARAMS: PackToolDef["params"] = [
@@ -50,6 +59,11 @@ const PARAMS: PackToolDef["params"] = [
   { name: "partner_email", type: "text", required: false, description: "Email liên hệ" },
   // CR-126 · cấu hình node (nhóm làm bước chọn người nhận) — tool không dùng, chỉ để args hằng của stage hợp lệ.
   { name: "assignee_group", type: "text", required: false, description: "Nhóm phụ trách" },
+  // CR-127 · P2 · BR-60 · Đề nghị ký cùng lúc.
+  { name: "sign_together", type: "boolean", required: false, description: "Đề nghị ký cùng lúc" },
+  { name: "sign_reason", type: "text", required: false, description: "Lý do cần ký cùng lúc" },
+  { name: "accept_h", type: "number", required: false, description: "Hạn đối tác trả lời (giờ)" },
+  { name: "sign_h", type: "number", required: false, description: "Hạn ký sau khi đồng ý (giờ)" },
 ];
 
 export function decodePartnerArgs(args: PackToolArgs) {
@@ -116,59 +130,89 @@ const alreadySent = (last: { mailboxId: string; channel: string; round: number }
   round: last.round,
 });
 
+type SendIn = {
+  cfg: Cfg;
+  id: string;
+  together: ReturnType<typeof signTogetherPlan>;
+  sha: string | null;
+  ctx: PackToolCtx;
+};
+
+/** Một lượt gửi trong tx của tenant: kiểm đã gửi → chọn kênh → gửi → ghi sổ → (tuỳ) đề nghị ký chung. */
+async function sendOnce(r: R, { cfg, id, together, sha, ctx }: SendIn) {
+  const last = await r.partnerSend.latest(id);
+  if (last?.status === "open") return alreadySent(last);
+  const { c, plan } = await planFor(r, cfg, id);
+  const toKey = toKeyOf(plan);
+  const prev = prevMailboxOf(last, toKey);
+  // CR-126 · kênh nền tảng + có email người nhận ⇒ dòng hộp thư mang `to_email` và bộ gửi hub gửi MỘT thư báo (một dòng = một vòng = một thư);
+  // thư cần tên công ty gửi mà hub_rw không đọc được `admin.tenants` ⇒ ghi kèm vào bản chia sẻ (tên pháp lý công khai của chính bên gửi).
+  const sender = await noticeSender(r, plan);
+  // CR-127 · P2 · BR-60/66: chỉ kênh nền tảng (đối tác trên Evolu, đã nối) mới có phiên ký chung; ngoài Evolu giữ ký qua link.
+  const session =
+    together && sha && plan.channel === "platform" && !plan.held && r.signSession ? together : null;
+  const mailboxId = await r.partnerSend.send({
+    toTenant: plan.toTenant,
+    toEmail: plan.toEmail,
+    channel: plan.channel,
+    ref: id,
+    payload: {
+      ...buildPayload({
+        title: c.title,
+        message: cfg.message,
+        hint: cfg.importance as ImportanceHint | undefined,
+        sendFields: parseSendFields(cfg.send_fields),
+        fields: c.fields,
+        signTogether: session,
+      }),
+      ...(sender ? { sender_name: sender.slice(0, 200) } : {}),
+    },
+    fileRef: c.fileId,
+    days: replyDaysOf(cfg.reply_days),
+    prevId: prev,
+  });
+  const round = prev && last ? last.round + 1 : 1;
+  await r.partnerSend.record({
+    contractId: id,
+    mailboxId,
+    round,
+    channel: plan.channel,
+    toKey,
+    toName: plan.toName,
+    runId: ctx.processRunId ?? null,
+    by: ctx.userId,
+  });
+  if (session && sha && r.signSession)
+    await r.signSession.propose({
+      contractId: id,
+      mailboxId,
+      reason: session.reason,
+      acceptH: session.acceptH,
+      signH: session.signH,
+      pdfSha256: sha,
+    });
+  return {
+    status: plan.channel === "platform" && plan.held ? "held" : "sent",
+    ...(together ? { sign_together: session ? "proposed" : "skipped" } : {}),
+    mailbox_id: mailboxId,
+    channel: plan.channel,
+    round,
+    ...(plan.why ? { why: plan.why } : {}),
+  };
+}
+
 async function run(d: PartnerToolDeps, ctx: PackToolCtx, args: PackToolArgs) {
   await assertEnabled(d, ctx.tenantId);
   const { cfg, id } = decodePartnerArgs(args);
+  const together = signTogetherPlan(cfg); // BR-60 · bật mà thiếu lý do ⇒ lỗi nghiệp vụ TRƯỚC mọi ghi
   // CR-126 · đối tác CHỌN phải là đối tác của CÔNG TY (sổ đối tác cả công ty, không theo quyền xem của người bắt đầu lượt — RLS
   // `partner_roles_visible` ẩn đối tác người đó không thấy); kiểm ở phạm vi hệ thống của chính tenant, SQL lọc `tenant_id` tường minh. Trước mọi ghi.
   const tax = cfg.partner_tax_code;
   if (tax && !(await d.uow.system(ctx.tenantId, (r) => r.partnerSend.isPartner(tax))))
     throw new Error("PARTNER_NOT_IN_COMPANY");
-  return d.uow.tenant({ tenantId: ctx.tenantId, userId: ctx.userId }, async (r) => {
-    const last = await r.partnerSend.latest(id);
-    if (last?.status === "open") return alreadySent(last);
-    const { c, plan } = await planFor(r, cfg, id);
-    const toKey = toKeyOf(plan);
-    const prev = prevMailboxOf(last, toKey);
-    // CR-126 · kênh nền tảng + có email người nhận ⇒ dòng hộp thư mang `to_email` và bộ gửi hub gửi MỘT thư báo (một dòng = một vòng = một thư);
-    // thư cần tên công ty gửi mà hub_rw không đọc được `admin.tenants` ⇒ ghi kèm vào bản chia sẻ (tên pháp lý công khai của chính bên gửi).
-    const sender = await noticeSender(r, plan);
-    const mailboxId = await r.partnerSend.send({
-      toTenant: plan.toTenant,
-      toEmail: plan.toEmail,
-      channel: plan.channel,
-      ref: id,
-      payload: {
-        ...buildPayload({
-          title: c.title,
-          message: cfg.message,
-          hint: cfg.importance as ImportanceHint | undefined,
-          sendFields: parseSendFields(cfg.send_fields),
-          fields: c.fields,
-        }),
-        ...(sender ? { sender_name: sender.slice(0, 200) } : {}),
-      },
-      fileRef: c.fileId,
-      days: replyDaysOf(cfg.reply_days),
-      prevId: prev,
-    });
-    const round = prev && last ? last.round + 1 : 1;
-    await r.partnerSend.record({
-      contractId: id,
-      mailboxId,
-      round,
-      channel: plan.channel,
-      toKey,
-      toName: plan.toName,
-      runId: ctx.processRunId ?? null,
-      by: ctx.userId,
-    });
-    return {
-      status: plan.channel === "platform" && plan.held ? "held" : "sent",
-      mailbox_id: mailboxId,
-      channel: plan.channel,
-      round,
-      ...(plan.why ? { why: plan.why } : {}),
-    };
-  });
+  // FileBox ngoài tx: chỉ đọc khi có đề nghị ký cùng lúc (thiếu tệp/FileBox ⇒ null ⇒ gửi thường, không lập phiên).
+  const sha = together ? ((await d.fileSha?.(ctx.tenantId, id)) ?? null) : null;
+  return d.uow.tenant({ tenantId: ctx.tenantId, userId: ctx.userId }, (r) =>
+    sendOnce(r, { cfg, id, together, sha, ctx }),
+  );
 }

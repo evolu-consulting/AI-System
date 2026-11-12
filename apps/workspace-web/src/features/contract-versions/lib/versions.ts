@@ -18,15 +18,16 @@ export function versionKind(
   return live.length > 0 && v.version_no > Math.min(...live) ? "draft" : "current";
 }
 
-/** Nút "Tải bản cập nhật": đã khoá, chưa bị thay, chưa có bản lớn hơn (nháp). */
+/** Nút "Tải phiên bản mới": DONE (nội dung khoá), chưa bị thay, chưa có bản lớn hơn (nháp). CR-127: ưu tiên `can.new_version` của hub. */
 // Các trường phiên bản đều tuỳ chọn: Hub cũ / DTO thiếu ⇒ coi như một bản hiện hành duy nhất.
 export const canUploadUpdate = (c: {
   locked: boolean;
+  can?: { new_version: boolean } | undefined;
   superseded_at?: string | null | undefined;
   version_no?: number | undefined;
   versions?: readonly { version_no: number }[] | undefined;
 }): boolean =>
-  c.locked &&
+  (c.can ? c.can.new_version : c.locked) &&
   c.superseded_at == null &&
   !(c.versions ?? []).some((v) => v.version_no > (c.version_no ?? 1));
 

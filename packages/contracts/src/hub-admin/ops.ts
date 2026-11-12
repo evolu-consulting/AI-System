@@ -24,6 +24,7 @@ export const OPS_CHECK_KEYS = [
   "tenant_profile",
   "notify_config",
   "flow_flag",
+  "contract_state_drift",
 ] as const;
 export const OpsCheckKeySchema = z.enum(OPS_CHECK_KEYS);
 export type OpsCheckKey = z.infer<typeof OpsCheckKeySchema>;
@@ -157,6 +158,14 @@ export const OPS_CHECK_META: Readonly<Record<OpsCheckKey, OpsCheckMeta>> = {
     crit: null,
     order: null,
     note: "warn khi công ty có quy trình được gán đang bật mà cờ dùng quy trình mới tắt — HĐ chạy cách cũ (CR-125 G8, quy tắc D7)",
+  },
+  contract_state_drift: {
+    label: "Trạng thái hợp đồng lệch",
+    unit: "count",
+    warn: null,
+    crit: null,
+    order: null,
+    note: "crit khi HĐ processing mất lượt duyệt, HĐ đã chốt còn lượt mở hoặc hiệu lực ≠ tính lại; warn khi mốc thanh toán vượt giá trị HĐ hoặc yêu cầu thực hiện chờ duyệt chưa có sự kiện (CR-127 Z1, BR-79)",
   },
 };
 

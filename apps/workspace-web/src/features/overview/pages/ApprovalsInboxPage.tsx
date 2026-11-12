@@ -16,6 +16,7 @@ export function ApprovalsInboxPage() {
   const all = inboxRows({
     approvals: work.data?.approvals ?? [],
     signing: work.data?.signing ?? [],
+    inbox: work.data?.inbox ?? [],
     requests: requests.kind === "list" ? requests.items : [],
     itemByTask,
     signTag: t("contracts.waiting.signTag"),

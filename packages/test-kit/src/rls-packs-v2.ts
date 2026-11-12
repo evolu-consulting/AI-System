@@ -358,3 +358,23 @@ v2Tables.push(
   },
 );
 v2Tables.push(...partnerTables); // CR-124
+
+// CR-130 pha 2 · contracts 0103 · hồ sơ đối tác (nhóm hàng/khu vực/tài khoản Bảng tin). Khoá ghép (tenant_id, party_key) ⇒ dò theo
+// `party_key` (khoá theo tenant để hai tenant không cùng giá trị). Ghi chỉ cho việc nền/quản trị gói ⇒ ca chèn của kit chạy ở chế độ nền.
+v2Tables.push({
+  name: "partner_profiles",
+  pk: "party_key",
+  seed: async (o, t) => {
+    const key = `tax:pp-${t}`;
+    await o.unsafe(
+      "insert into contracts.partner_profiles (tenant_id, party_key) values ($1, $2)",
+      [t, key],
+    );
+    return key;
+  },
+  insert: (tx, t, pk) =>
+    tx.unsafe("insert into contracts.partner_profiles (tenant_id, party_key) values ($1, $2)", [
+      t,
+      pk ?? `tax:pp-${crypto.randomUUID()}`,
+    ]),
+});

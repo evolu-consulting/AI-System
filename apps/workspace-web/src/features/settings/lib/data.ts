@@ -9,7 +9,6 @@ export function buildState(co: CompanyOut, biz: BizConfigOut): SettingsState {
     saved: {
       company: {
         ...co.company,
-        approval_enabled: co.approval_enabled,
         allow_negative_stock: co.allow_negative_stock,
         legal_warn_threshold: co.legal_warn_threshold,
       },

@@ -30,6 +30,31 @@ export const CHAT_PROCESS_N2_ERRORS = {
 } as const;
 export type ChatProcessN2ErrorCode = keyof typeof CHAT_PROCESS_N2_ERRORS;
 
+/**
+ * CR-127 · E1 · khối riêng (không đụng khối khoá ở trên): nhận việc, bằng chứng, uỷ quyền, quyền soạn, tham số lịch.
+ * HTTP theo spec §4 (409 sai trạng thái/đua · 422 thiếu/sai dữ liệu · 403 quyền); câu VI ở `tasks.md` §9.
+ */
+export const CHAT_CLAIM_ERRORS = {
+  EVIDENCE_REQUIRED: 422,
+  TASK_CLAIMED: 409,
+  TASK_NOT_CLAIMABLE: 409,
+  TASK_CLOSED: 409,
+  NOT_CLAIMER: 403,
+  NOT_GROUP_HEAD: 403,
+  TARGET_NOT_IN_GROUP: 422,
+  FORWARD_REASON_REQUIRED: 422,
+  DELEGATE_SELF: 422,
+  DELEGATE_CHAIN: 422,
+  DELEGATE_NOT_SIGNER: 422,
+  DELEGATE_NO_ACCESS: 422,
+  DELEGATE_FORBIDDEN: 403,
+  FORBIDDEN_TENANT_ADMIN_WRITE: 403,
+  TRIGGER_PARAM_RANGE: 422,
+  CLAIM_HOURS_RANGE: 422,
+  ESCALATE_TARGET_REQUIRED: 422,
+} as const;
+export type ChatClaimErrorCode = keyof typeof CHAT_CLAIM_ERRORS;
+
 /** N2-FR-04 · `TOO_MANY_PROCESS_RUNS.details` (429): trần thật của tenant (`admin.tenants.process_runs_max`). */
 export const TooManyProcessRunsDetailsSchema = z.object({ max: z.number().int().min(1) });
 /** Trần để hiện trong câu 429: `details.max` của server; thiếu/sai (server cũ, mock) ⇒ `fallback`. Thuần — FE dùng chung. */

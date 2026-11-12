@@ -4,7 +4,13 @@
       "title": "Settings",
       "scope": "Applies to the whole company",
       "sections": "Choose a settings section",
+      "group": {
+        "contracts": "Contracts & deals",
+        "feed": "Feed"
+      },
       "sec": {
+        "feed": "Notifications",
+        "feedHint": "When to notify you on the Feed",
         "co": "Company",
         "coHint": "Name, logo, colour, appearance",
         "rep": "Reputation score",
@@ -55,10 +61,6 @@
         "ownTax": "Tax codes (one per line)",
         "taxBad": "Invalid tax code (10 or 13 digits): {{list}}",
         "taxInvalid": "Tax codes must have 10 or 13 digits",
-        "approvalTitle": "Contract approval",
-        "approval": "Contract approval step",
-        "approvalOn": "On: contracts go through approval before they take effect.",
-        "approvalOff": "Off: saving a contract makes it effective immediately.",
         "stockTitle": "Stock & delivery",
         "stockOver": "Allow delivery beyond stock",
         "stockOverOn": "On: confirming a delivery is not blocked when stock is short; stock may go negative and a \"delivered beyond stock\" warning is shown.",
@@ -300,6 +302,35 @@
         "total_value": "Contract value",
         "partner": "Partner"
       }
+    },
+    "pcm": {
+      "profileTitle": "Feed profile",
+      "profileHint": "Product groups and area let the Feed suggest posts to the right people.",
+      "cats": "Product groups",
+      "catsPh": "Digital signature, Packaging (comma separated)",
+      "area": "Area",
+      "save": "Save profile",
+      "saved": "Feed profile saved",
+      "accountTitle": "Feed account",
+      "accountHint": "A partner sees and posts on the Feed only after being invited with a company account.",
+      "active": "Active",
+      "inactive": "Account disabled",
+      "notInvited": "This partner has not been invited to the Feed. Pick their company account to invite.",
+      "notInvitedView": "This partner has not been invited to the Feed. Only admins can invite.",
+      "pickAccount": "Pick a company account",
+      "invite": "Invite to the Feed",
+      "invited": "Partner invited to the Feed",
+      "noCandidates": "No free company account yet. Create an account for the partner in Administration, then come back and pick it.",
+      "createAccount": "Create partner account (Administration)",
+      "adminFail": "Could not open Administration. Try again later.",
+      "remove": "Remove from the Feed",
+      "removeTitle": "Remove partner from the Feed?",
+      "removeBody": "{{name}} will no longer see or post on the Feed. Contracts and partner data stay; you can invite again any time.",
+      "removed": "Removed from the Feed",
+      "errTaken": "This account is already linked to another partner. Pick another account or remove it from that partner first.",
+      "errUnknownAccount": "Invalid account. Reload the list and pick again.",
+      "errGeneric": "Could not save. Try again later.",
+      "tabName": "Feed"
     }
   }
 }

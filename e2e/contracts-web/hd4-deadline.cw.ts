@@ -1,5 +1,4 @@
-// HD4-AC08 · HD4-FR-06 · S05 · Luật 4b: thẻ "Hạn chót hành động" + "Ghi nhận xử lý" trên màn HĐ đã duyệt (backend giả
-// `page.route`). Chọn kết quả ⇒ POST `/handled` đúng thân, tải lại chi tiết ⇒ "Đã xử lý: …". HĐ chưa duyệt ⇒ không có thẻ.
+// HD4-AC08 · S05 · Luật 4b: HĐ chưa duyệt (nháp) ⇒ không có thẻ "Hạn chót hành động" (backend giả `page.route`). CR-127 Q10b: thẻ Hạn chót + «Ghi nhận xử lý» (POST /handled) đã gỡ — kết cục hiệu lực nay là Gia hạn/Chấm dứt (e2e/cr127).
 import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
 import { contract, contractAsHub } from "./dataset-contract";
@@ -48,30 +47,14 @@ async function install(page: Page, status: string): Promise<Sent[]> {
         version: 4,
       });
     }
-    return json(r, 200, { ...contractAsHub(), status, action_deadline: iso(20), handled });
+    // CR-127 Q10b: chi tiết mới còn đọc các đường con (đối tác, duyệt…) — chỉ trả HĐ cho đúng đường của nó, còn lại 404.
+    if (path.endsWith("/partner")) return json(r, 200, { party: null, name: null });
+    if (path.endsWith(`/${contract.id}`))
+      return json(r, 200, { ...contractAsHub(status), action_deadline: iso(20), handled });
+    return json(r, 404, { error: { code: "NOT_FOUND", message: "x" } });
   });
   return sent;
 }
-
-test("HD4-AC08 · S05 · HĐ đã duyệt: hạn chót + còn 20 ngày; chọn «Đang đàm phán» ⇒ POST /handled ⇒ «Đã xử lý»", async ({
-  page,
-}) => {
-  const sent = await install(page, "expiring");
-  await page.goto(`/contracts/c/${contract.id}`);
-  const panel = page.getByTestId("deadline-panel");
-  await expect(panel).toContainText("Hạn chót hành động");
-  await expect(panel).toContainText(iso(20).split("-").reverse().join("/"));
-  await expect(panel).toContainText("còn 20 ngày");
-  await panel.getByRole("combobox").selectOption("negotiating");
-  await expect(panel).toContainText("Đã xử lý: Đang đàm phán");
-  expect(sent).toEqual([
-    {
-      method: "POST",
-      path: `/pack/contracts/contracts/${contract.id}/handled`,
-      body: { outcome: "negotiating" },
-    },
-  ]);
-});
 
 test("HD4-AC08 · S05 · HĐ chờ kiểm (needs_review) ⇒ không có thẻ hạn chót", async ({ page }) => {
   await install(page, "needs_review");

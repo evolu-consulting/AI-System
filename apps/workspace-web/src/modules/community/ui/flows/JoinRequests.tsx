@@ -4,7 +4,9 @@ import { PARTNER_LABELS } from "@ai/contracts/community";
 import { useState } from "react";
 import { useApp } from "../../application/ctx";
 import { isConflict } from "../../domain/flows";
+import { approveErrorKey } from "../../domain/join-approve";
 import { t } from "../../i18n";
+import { JoinApprove } from "./JoinApprove";
 import { FlowPage, ListState, ReasonDialog, useFlowList } from "./parts";
 
 const TONE: Record<JoinRequest["status"], string> = {
@@ -16,7 +18,7 @@ const TONE: Record<JoinRequest["status"], string> = {
 function JoinForm() {
   const { api, toast } = useApp();
   const [f, setF] = useState({ company: "", contact: "", email: "", reason: "" });
-  const [labels, setLabels] = useState<("supplier" | "buyer")[]>([]);
+  const [labels, setLabels] = useState<(typeof PARTNER_LABELS)[number][]>([]);
   const [sent, setSent] = useState<JoinRequest | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) =>
@@ -96,12 +98,18 @@ function JoinReview() {
   const { api, toast, bump } = useApp();
   const list = useFlowList(() => api.flows.listJoins(false));
   const [rejecting, setRejecting] = useState<JoinRequest | null>(null);
-  const decide = async (j: JoinRequest, action: "approve" | "reject", feedback?: string) => {
+  const decide = async (
+    j: JoinRequest,
+    action: "approve" | "reject",
+    feedback?: string,
+    partyKey?: string,
+  ) => {
     try {
       await api.flows.decideJoin(j.id, {
         action,
         taskId: j.taskId,
         ...(feedback ? { feedback } : {}),
+        ...(partyKey ? { partyKey } : {}),
       });
       toast(
         t(action === "approve" ? "community.flows.join.approved" : "community.flows.join.rejected"),
@@ -109,6 +117,8 @@ function JoinReview() {
       setRejecting(null);
       bump();
     } catch (e) {
+      const why = approveErrorKey(e);
+      if (why) return toast(t(why)); // vẫn ở màn duyệt để chọn lại đối tác
       if (!isConflict(e)) throw e;
       toast(t("community.flows.join.conflict"));
       setRejecting(null);
@@ -140,25 +150,11 @@ function JoinReview() {
             )}
           </div>
           {j.status === "pending" && (
-            <div className="cbar">
-              <div className="sp" />
-              <button
-                type="button"
-                className="ghost"
-                data-testid="join-reject"
-                onClick={() => setRejecting(j)}
-              >
-                {t("community.flows.join.reject")}
-              </button>
-              <button
-                type="button"
-                className="primary sm"
-                data-testid="join-approve"
-                onClick={() => void decide(j, "approve")}
-              >
-                {t("community.flows.join.approve")}
-              </button>
-            </div>
+            <JoinApprove
+              j={j}
+              onApprove={(party) => void decide(j, "approve", undefined, party)}
+              onReject={() => setRejecting(j)}
+            />
           )}
         </article>
       ))}

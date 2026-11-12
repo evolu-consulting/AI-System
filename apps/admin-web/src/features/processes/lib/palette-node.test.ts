@@ -19,9 +19,8 @@ test("edgeIssueView: tên bước + nhãn theo ngôn ngữ, thiếu thì lấy k
   expect(edgeIssueView(issue, "en").labels).toEqual(["Contract", "x"]);
 });
 
-const waitUntil = CORE_NODES.find((n) => n.key === "core.wait-until");
-const email = CORE_NODES.find((n) => n.key === "core.email");
-if (!waitUntil || !email) throw new Error("thiếu node lõi");
+const notify = CORE_NODES.find((n) => n.key === "core.notify");
+if (!notify) throw new Error("thiếu node lõi");
 
 const st = (uid: string, step: number, node?: string) => ({
   ...emptyStage(step),
@@ -31,16 +30,13 @@ const st = (uid: string, step: number, node?: string) => ({
 
 describe("palette-node", () => {
   test("node bảng → draft có `node` và giữ cấu hình thông báo đặt sẵn", () => {
-    const p = nodeToPatches(email)[0];
-    expect(p?.node).toBe("core.email");
+    const p = nodeToPatches(notify)[0];
+    expect(p?.node).toBe("core.notify");
     expect(p?.executor).toBe("notify");
-    expect(p?.notifyRaw?.channels).toContain("email");
+    expect(p?.notifyRaw?.channels).toContain("bell");
   });
-  test("cạnh vàng: Chờ tới ngày cần `date` mà bước trước không có", () => {
-    const r = edgeProblems([st("a", 0), st("b", 1, "core.wait-until")], CORE_NODES);
-    expect(r).toEqual([
-      expect.objectContaining({ from: "a", to: "b", rule: "missing", key: "date" }),
-    ]);
+  test("CR-127 · Chờ: `date` không bắt buộc (chế độ «sau một khoảng») ⇒ không cạnh vàng", () => {
+    expect(edgeProblems([st("a", 0), st("b", 1, "core.wait")], CORE_NODES)).toEqual([]);
   });
   test("không có node bảng ⇒ không cạnh vàng", () => {
     expect(edgeProblems([st("a", 0), st("b", 1)], CORE_NODES)).toEqual([]);

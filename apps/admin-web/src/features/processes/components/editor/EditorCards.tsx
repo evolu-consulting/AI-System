@@ -23,8 +23,11 @@ export function TechCards(p: {
   refs: Refs;
   tenantId: string | undefined;
   ready: boolean;
+  /** CR-127 · M8 · quy trình theo sự kiện: không còn Nguồn / «Các trường» (hệ thống tự biết dữ liệu hợp đồng). */
+  flow?: boolean;
 }) {
   if (p.hide) return null;
+  if (p.flow) return <StagesCard d={p.dv} readOnly={p.readOnly} refs={p.refs} />;
   const { d } = p;
   return (
     <>

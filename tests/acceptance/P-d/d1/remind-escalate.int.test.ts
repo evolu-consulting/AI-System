@@ -45,7 +45,7 @@ afterAll(async () => {
 });
 
 const forward = (r: Role, taskId: string, to: string) =>
-  c.call(r, "POST", `/review-tasks/${taskId}/forward`, { to_user_id: to });
+  c.call(r, "POST", `/review-tasks/${taskId}/forward`, { to_user_id: to, note: "Chuyển giúp" });
 const err = (r: { status: number; json: Json }) => ({
   status: r.status,
   code: r.json?.error?.code ?? null,
@@ -82,7 +82,7 @@ describe("PD-I47 · luật lưu escalate [AC-H42, A8 #57]", () => {
     remind_every_h: 4,
     escalate,
   });
-  const post = (b: Json) => c.call("Adm", "POST", "/process-defs", b);
+  const post = (b: Json) => c.call("P", "POST", `/process-defs?tenant_id=${T.acme}`, b);
 
   it("AC-H42 · PD-I47 · (a) escalate.group_id = Group duyệt ⇒ 422 PROCESS_DEF_INVALID rules ∋ ESCALATE_INVALID path stages.0.after.escalate", async () => {
     needPdSchema(c.pd);
@@ -196,7 +196,7 @@ describe("PD-I49 · không cấu hình / ask / decision / snapshot [AC-H42, HUB-
       where tenant_id = ${T.acme} and key = 'pd-remind-c' and deleted_at is null`;
     const upd = PD_DEFS.remind({ remind: 8 });
     upd.key = "pd-remind-c";
-    const put = await c.call("Adm", "PUT", `/process-defs/${def?.id}`, {
+    const put = await c.call("P", "PUT", `/process-defs/${def?.id}?tenant_id=${T.acme}`, {
       ...upd,
       version: def?.version,
     });

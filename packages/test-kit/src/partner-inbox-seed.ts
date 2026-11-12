@@ -12,7 +12,7 @@ export async function seedPartnerInbox(
   createdBy: string,
   opts: { from: number; total: number; pending: number },
 ): Promise<void> {
-  await contracts(o, tenant, opts.total, { from: opts.from, createdBy, status: "needs_review" });
+  await contracts(o, tenant, opts.total, { from: opts.from, createdBy, status: "processing" });
   await o`update contracts.contracts set source = 'partner_inbox' where tenant_id = ${tenant}::uuid`;
   await o`insert into contracts.partner_inbox (tenant_id, contract_id, mailbox_id, sender_name, status, expires_at)
     select ${tenant}::uuid, c.id, gen_random_uuid(), 'Công ty đối tác',

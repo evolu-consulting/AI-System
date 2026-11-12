@@ -35,9 +35,9 @@ const n = (user: string, table: string): Promise<number> =>
 /** u5 tự tạo HĐ `active` mang MST 0101 với người duyệt `by` (rollback) ⇒ số khách / sự kiện 0101 u5 thấy. */
 const forged = (by: string | null) =>
   inPackAsRollback("contracts", A, u5, async (tx) => {
-    await tx`insert into contracts.contracts (tenant_id, title, status, created_by, owner_user_id, confirmed_by,
+    await tx`insert into contracts.contracts (tenant_id, title, status, effect, created_by, owner_user_id, confirmed_by,
           confirmed_at, fields)
-        values (${A}, 'Tu duyet', 'active', ${u5}, ${u5}, ${by}, now(), ${tx.json(party("X", "0101"))})`;
+        values (${A}, 'Tu duyet', 'done', 'active', ${u5}, ${u5}, ${by}, now(), ${tx.json(party("X", "0101"))})`;
     const c = await tx<{ n: number }[]>`select count(*)::int as n from contracts.cks_customers`;
     const e = await tx<{ n: number }[]>`select count(*)::int as n from contracts.partner_events
         where party_key = 'tax:0101'`;

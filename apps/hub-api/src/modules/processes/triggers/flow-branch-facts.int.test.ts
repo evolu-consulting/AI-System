@@ -149,7 +149,6 @@ const ad = () =>
 async function submitAndDispatch(id: string) {
   const who = { tenantId: T, userId: A };
   expect(await startApproval(ad())(who, id, "level1")).toBe("ok");
-  expect(await actApproval(ad())(who, id, { action: "approve" })).not.toHaveProperty("error");
   expect(await dispatchOnce({ db, launch: flowLaunchOf(deps()) })).toMatchObject({ launched: 1 });
 }
 const openStageOf = async (cid: string) =>

@@ -9,13 +9,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { flowRuntime } from "~/platform/flow";
 import { notifyFlowNavChanged } from "~/shared/kernel/flow-nav-event";
-import {
-  approvalKey,
-  cancelReopenApproval,
-  fetchApproval,
-  reopenApproval,
-  retryApproval,
-} from "../api";
+import { approvalKey, fetchApproval } from "../api";
 import { advanceDelay } from "../lib/advance-wait";
 import { type ActResult, flowActionOf } from "../lib/approval";
 import { approvalErrorText } from "../lib/approval-error";
@@ -116,24 +110,6 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
         return null;
       }
     });
-  /** Xử lý run kẹt (owner/admin): mở lại / Thử lại / Huỷ & mở lại. Lỗi ⇒ câu lỗi theo mã, không ném. */
-  const recover = (call: (id: string) => Promise<unknown>, doneKey: string) => async () =>
-    (await once("redo", async () => {
-      try {
-        await call(id);
-        setMsg(t(doneKey));
-        await refresh();
-        return true;
-      } catch (e) {
-        setErr(approvalErrorText(e, t));
-        // 409 (không còn chờ quyết) / 422 (thẻ đã đổi lý do): tải lại để banner khớp trạng thái thật.
-        await refresh();
-        return false;
-      }
-    })) ?? false;
-  const reopen = recover(reopenApproval, "contracts.approval.engine.reopened");
-  const retry = recover(retryApproval, "contracts.approval.engine.retried");
-  const cancelReopen = recover(cancelReopenApproval, "contracts.approval.engine.reopened");
   return {
     approval: q.data,
     busy,
@@ -144,8 +120,5 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
     act,
     prepare,
     refresh,
-    reopen,
-    retry,
-    cancelReopen,
   };
 }

@@ -2,6 +2,7 @@
 // (0…4): s1 bước 1 (agent, fields tong_tien, review G1, branch gt 20000000 ⇒ goto 3). Đi tắt: stage bước bị nhảy `skipped`,
 // quay lại xuyên qua `skipped` ⇒ `pending`, `round` không tăng. Thiếu 0037/contract ⇒ đỏ NGAY ở `needD2`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { T as T_FIX } from "../../H1/_fixtures";
 import {
   agentStage,
   createDef,
@@ -213,7 +214,12 @@ describe("AC-H45 · quay lại xuyên qua stage skipped [PB2-R07, D2-08]", () =>
   it("AC-H45 · PD2-I34 · lưu def goto_step = step / stage rẽ nhánh trong bước song song ⇒ 422 BRANCH_INVALID", async () => {
     await needD2(c);
     const bad = (stages: Json[]) =>
-      c.call("Adm", "POST", "/process-defs", defBody(`pd2-bad-${++seq}`, stages));
+      c.call(
+        "P",
+        "POST",
+        `/process-defs?tenant_id=${T_FIX.acme}`,
+        defBody(`pd2-bad-${++seq}`, stages),
+      );
     const s1 = (goto: number) =>
       agentStage({
         key: "s1",

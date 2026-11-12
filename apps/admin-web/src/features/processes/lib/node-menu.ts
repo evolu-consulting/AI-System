@@ -72,7 +72,9 @@ export function splitMenu(a: {
   event?: AppEventDecl | undefined;
 }): MenuSplit {
   const items: MenuItem[] = [
-    ...withOutcomeEnds(a.table, a.event).map((entry): MenuItem => ({ kind: "table", entry })),
+    ...withOutcomeEnds(a.table, a.event)
+      .filter((e) => !(a.app === "contracts" && e.id === "finish")) // CR-127 · Hoàn tất tự có, không kéo
+      .map((entry): MenuItem => ({ kind: "table", entry })),
     ...a.modules
       .filter((n) => nodeFitsFlow(n, a.app, a.event))
       .map((node): MenuItem => ({ kind: "module", node })),
@@ -80,4 +82,35 @@ export function splitMenu(a: {
   const business = items.filter((m) => sectionOf(m) === "business");
   if (!a.isPlatform) return { business, advanced: [] };
   return { business, advanced: items.filter((m) => sectionOf(m) === "advanced") };
+}
+
+/** CR-127 · U2 · nhóm nghiệp vụ trên menu «+» (thứ tự hiển thị): Người làm · Rẽ nhánh · Hợp đồng · Báo tin · Chờ. */
+export const MENU_GROUPS = ["people", "branch", "contract", "notify"] as const;
+export type MenuGroup = (typeof MENU_GROUPS)[number];
+
+const TABLE_GROUP: Record<string, MenuGroup> = { approve: "people", form: "people", if: "branch" };
+const NODE_GROUP: Record<string, MenuGroup> = {
+  people: "people",
+  message: "notify",
+  timing: "notify",
+  sign: "contract",
+  partner: "contract",
+  content: "contract",
+};
+
+/** Nhãn nhóm «Hợp đồng» chỉ dành cho app hợp đồng; app khác gọi là «Khác» (không nhắc hợp đồng ở app Community…). */
+export const menuGroupKey = (g: MenuGroup, app: string): MenuGroup | "other" =>
+  g === "contract" && app !== "contracts" ? "other" : g;
+
+export const menuGroupOf = (m: MenuItem): MenuGroup =>
+  m.kind === "table"
+    ? (TABLE_GROUP[m.entry.id] ?? "contract")
+    : (NODE_GROUP[m.node.group] ?? "contract");
+
+/** Nhóm các mục (giữ thứ tự `order` trong nhóm), bỏ nhóm rỗng. */
+export function groupMenu(items: readonly MenuItem[]): { group: MenuGroup; items: MenuItem[] }[] {
+  return MENU_GROUPS.map((g) => ({
+    group: g,
+    items: items.filter((m) => menuGroupOf(m) === g),
+  })).filter((g) => g.items.length > 0);
 }

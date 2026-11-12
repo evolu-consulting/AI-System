@@ -25,7 +25,7 @@ beforeAll(async () => {
   sql = openOwner(2);
   [T] = (await tenants(sql, 1, 871)) as [string];
   [A, B] = (await users(sql, T, 2, { from: 871 })) as [string, string];
-  ids = await contracts(sql, T, 8, { from: 871, createdBy: A, status: "extracting" });
+  ids = await contracts(sql, T, 8, { from: 871, createdBy: A, status: "draft" });
   db = createDb(urls().hubApi, { max: 2 });
 }, 60_000);
 afterAll(async () => {
@@ -52,14 +52,19 @@ async function seed(
   await sql`insert into contracts.approvals (id, tenant_id, contract_id, status, started_by, queued_at)
     values (${aid}, ${T}, ${id}, ${o.aStatus}, ${o.by ?? A},
       ${o.queuedAgo === null ? null : mins(o.queuedAgo)})`;
-  await sql`update contracts.contracts set status = ${o.status}, run_id = ${aid}, updated_at = ${mins(o.ago)},
+  // CR-127: trạng thái cũ ⇒ draft + extract_state (status không đổi ⇒ không qua cổng)
+  const es =
+    o.status === "extracting" ? "reading" : o.status === "extract_failed" ? "failed" : "ready";
+  await sql`update contracts.contracts set extract_state = ${es}, run_id = ${aid}, updated_at = ${mins(o.ago)},
     fields = jsonb_build_object('total_value', jsonb_build_object('value', 900000000))
     where id = ${id}`;
   return { id, aid };
 }
 const row = async (id: string) =>
   (
-    await sql<{ status: string; error: string | null }[]>`select status, error
+    await sql<
+      { status: string; extract_state: string; error: string | null }[]
+    >`select status, extract_state, error
     from contracts.contracts where id = ${id}`
   )[0];
 const aRow = async (aid: string) =>
@@ -96,10 +101,10 @@ describe("M3c · STALE chỉ cho job đang chạy thật sự quá hạn [review
     });
     const s = await sweep();
     expect(s.closed).toBe(2);
-    expect(await row(q20.id)).toEqual({ status: "extracting", error: null });
-    expect(await row(q7h.id)).toEqual({ status: "extract_failed", error: "STALE" });
-    expect(await row(r2.id)).toEqual({ status: "extracting", error: null });
-    expect(await row(r20.id)).toEqual({ status: "extract_failed", error: "STALE" });
+    expect(await row(q20.id)).toEqual({ status: "draft", extract_state: "reading", error: null });
+    expect(await row(q7h.id)).toEqual({ status: "draft", extract_state: "failed", error: "STALE" });
+    expect(await row(r2.id)).toEqual({ status: "draft", extract_state: "reading", error: null });
+    expect(await row(r20.id)).toEqual({ status: "draft", extract_state: "failed", error: "STALE" });
     expect((await aRow(q7h.aid))?.status).toBe("failed");
     expect((await sweep()).closed).toBe(0);
   });
@@ -128,7 +133,7 @@ describe("M3c · worker bắt đầu lượt đọc ⇒ hết xếp hàng [revie
 });
 
 describe("M3c · lượt kẹt extracting khi HĐ đã xong lượt đọc [review B #12]", () => {
-  it("HĐ needs_review + lượt extracting ⇒ quét ⇒ lượt level1 (healed = 1), lượt 2 không đổi", async () => {
+  it("HĐ draft đã đọc xong + lượt extracting ⇒ quét ⇒ lượt cancelled (healed = 1, không mở cấp 1), chạy lại không đổi", async () => {
     const h = await seed(5, {
       status: "needs_review",
       ago: 1,
@@ -136,31 +141,7 @@ describe("M3c · lượt kẹt extracting khi HĐ đã xong lượt đọc [revi
       queuedAgo: null,
     });
     expect((await sweep()).healed).toBe(1);
-    expect((await aRow(h.aid))?.status).toBe("level1");
+    expect((await aRow(h.aid))?.status).toBe("cancelled");
     expect((await sweep()).healed).toBe(0);
-  });
-});
-
-describe("M3c · finalize tự kiểm cấp 2 [review B #26]", () => {
-  it("level2Passed=true nhưng lượt ở level1 / người bắt đầu tự duyệt ⇒ 0 hàng; level2 + người khác ⇒ active", async () => {
-    const l1 = await seed(6, {
-      status: "needs_review",
-      ago: 1,
-      aStatus: "level1",
-      queuedAgo: null,
-    });
-    const fin = (id: string, aid: string, by: string) =>
-      uow().tenant({ tenantId: T, userId: by }, (r) => r.approval.finalize(id, aid, by, true));
-    expect(await fin(l1.id, l1.aid, B)).toBe(false);
-    const l2 = await seed(7, {
-      status: "needs_review",
-      ago: 1,
-      aStatus: "level2",
-      queuedAgo: null,
-    });
-    expect(await fin(l2.id, l2.aid, A)).toBe(false); // A là người bắt đầu
-    expect(await fin(l2.id, l2.aid, B)).toBe(true);
-    expect((await row(l2.id))?.status).toBe("active");
-    expect((await aRow(l2.aid))?.status).toBe("done");
   });
 });

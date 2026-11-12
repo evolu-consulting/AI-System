@@ -20,3 +20,13 @@ export function accountPageUrl(page: AccountPage): Promise<string | null> {
     next: ACCOUNT_PAGES[page],
   });
 }
+
+/** CR-130 · mở một trang Admin bất kỳ (vd tạo tài khoản công ty đối tác) qua đăng nhập một lần; `next` bắt đầu bằng `/`. */
+export function adminUrl(next: string): Promise<string | null> {
+  return handOffUrl({
+    authed: true,
+    grant: () => session.ssoGrant(ADMIN_APP_KEY),
+    fallbackBase: FALLBACK_URLS[ADMIN_APP_KEY],
+    next,
+  });
+}

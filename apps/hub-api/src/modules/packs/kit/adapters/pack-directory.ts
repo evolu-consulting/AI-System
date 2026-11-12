@@ -45,6 +45,28 @@ export function creatorDepartmentsOf(db: Db) {
   };
 }
 
+/** CR-127 E6 · như `creatorDepartmentsOf` cho NHIỀU người một lượt (vòng lịch theo lô): MỘT câu, lọc `= any`. Người không phòng ⇒ vắng. */
+export function departmentsOfUsers(db: Db) {
+  return async (tenantId: string, userIds: readonly string[]): Promise<Map<string, string[]>> => {
+    const ids = [...new Set(userIds.filter((u) => UUID.test(u)))];
+    if (!UUID.test(tenantId) || ids.length === 0) return new Map();
+    const rows = await withHubScope(db, SYSTEM, (tx) =>
+      tx.execute<{ user_id: string; keys: string[] }>(sql`
+        with recursive anc(user_id, id) as (
+          select m.user_id, m.group_id from admin.group_members m
+            join admin.departments dp on dp.group_id = m.group_id and dp.tenant_id = m.tenant_id
+          where m.tenant_id = ${tenantId}::uuid and m.user_id = any(${`{${ids.join(",")}}`}::uuid[])
+          union
+          select anc.user_id, dp.parent_group_id from anc join admin.departments dp on dp.group_id = anc.id
+          where dp.tenant_id = ${tenantId}::uuid and dp.parent_group_id is not null)
+        select anc.user_id::text as user_id, array_agg(distinct g.key order by g.key) as keys
+        from anc join admin.groups g on g.id = anc.id and g.tenant_id = ${tenantId}::uuid
+        group by anc.user_id`),
+    );
+    return new Map(rows.map((r) => [r.user_id, r.keys]));
+  };
+}
+
 /** Trưởng phòng của Group (cùng tenant); không phòng/không trưởng ⇒ null. */
 export const deptHeadOf =
   (db: Db) =>

@@ -59,51 +59,54 @@ export function StageRemind(p: StageFormProps & { skipRemind?: boolean }) {
           onChange={(v) => onChange({ remind: v })}
         />
       )}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id={cbId}
-            checked={esc.on}
-            disabled={readOnly}
-            onCheckedChange={(v) => setEsc({ on: v === true })}
-          />
-          <Label htmlFor={cbId}>{t(`${K}escalate`)}</Label>
-        </div>
-        {esc.on ? (
-          <div className="ml-6 space-y-2">
-            <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
-              <TextField
-                id={`${stage.uid}-escalate-after`}
-                label={t(`${K}escalateAfter`)}
-                type="number"
-                min={ESCALATE_AFTER_H.min}
-                max={ESCALATE_AFTER_H.max}
-                value={esc.afterH}
-                readOnly={readOnly}
-                alert
-                error={key(afterErr)}
-                onChange={(v) => setEsc({ afterH: v })}
-              />
-              <SelectField
-                id={`${stage.uid}-escalate-group`}
-                label={t(`${K}escalateGroup`)}
-                value={esc.groupId}
-                readOnly={readOnly}
-                alert
-                error={key(groupErr)}
-                options={groups}
-                onChange={(v) => setEsc({ groupId: v })}
-              />
-            </div>
-            <p className="text-caption text-muted-foreground">{t(`${K}escalateHint`)}</p>
-            {at("escalate") ? (
-              <p role="alert" className="text-caption text-destructive">
-                {t(at("escalate") as string)}
-              </p>
-            ) : null}
+      {/* CR-127 · U2 · bước Duyệt: Hạn / Quá hạn chuyển cho nằm ở phần chính (StageApproveBasics) — không lặp ở Nâng cao */}
+      {p.skipRemind ? null : (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id={cbId}
+              checked={esc.on}
+              disabled={readOnly}
+              onCheckedChange={(v) => setEsc({ on: v === true })}
+            />
+            <Label htmlFor={cbId}>{t(`${K}escalate`)}</Label>
           </div>
-        ) : null}
-      </div>
+          {esc.on ? (
+            <div className="ml-6 space-y-2">
+              <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
+                <TextField
+                  id={`${stage.uid}-escalate-after`}
+                  label={t(`${K}escalateAfter`)}
+                  type="number"
+                  min={ESCALATE_AFTER_H.min}
+                  max={ESCALATE_AFTER_H.max}
+                  value={esc.afterH}
+                  readOnly={readOnly}
+                  alert
+                  error={key(afterErr)}
+                  onChange={(v) => setEsc({ afterH: v })}
+                />
+                <SelectField
+                  id={`${stage.uid}-escalate-group`}
+                  label={t(`${K}escalateGroup`)}
+                  value={esc.groupId}
+                  readOnly={readOnly}
+                  alert
+                  error={key(groupErr)}
+                  options={groups}
+                  onChange={(v) => setEsc({ groupId: v })}
+                />
+              </div>
+              <p className="text-caption text-muted-foreground">{t(`${K}escalateHint`)}</p>
+              {at("escalate") ? (
+                <p role="alert" className="text-caption text-destructive">
+                  {t(at("escalate") as string)}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

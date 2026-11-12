@@ -5,7 +5,26 @@ import { join } from "node:path";
 import { repoRoot } from "./lib/git";
 
 /** Schema của nền tảng/gói khác mà migration gói không được tham chiếu trực tiếp. */
-export const FOREIGN_SCHEMAS = ["admin", "hub", "ops", "public", "auth", "knowledge", "pkdemo"];
+export const FOREIGN_SCHEMAS = [
+  "admin",
+  "hub",
+  "ops",
+  "public",
+  "auth",
+  "knowledge",
+  "pkdemo",
+  "contracts",
+  "community",
+  "dlc",
+];
+/**
+ * Hàm gói↔gói được phép gọi (ADR-0043: cổng đọc cho RLS, SECURITY DEFINER, tenant từ GUC). Mỗi mục `schema.hàm`; thêm mục = ADR/CR.
+ * Chỉ HÀM — bảng/view của gói khác vẫn cấm.
+ */
+export const ALLOWED_CROSS_PACK_FNS = [
+  "contracts.community_partners",
+  "contracts.community_link_partner",
+];
 /** Hàm nền tảng được phép gọi (`packs.<tên>`). */
 export const ALLOWED_PLATFORM_FNS = [
   "install",
@@ -29,6 +48,8 @@ export const KNOWN_DEBT = new Set([
   "contracts/0073_brand_bumps_profile.sql:admin",
   "contracts/0076_company_name_one_source.sql:admin",
   "contracts/0077_emit_flow_event_grant.sql:hub",
+  // CR-130 L2: cổng ghi liên kết đối tác kiểm `p_org` thuộc tenant bằng `admin.external_orgs` (hàm DEFINER; contracts không có bảng tài khoản ngoài).
+  "contracts/0105_cr130_link_partner_explicit_key.sql:admin",
   "community/0010_emit_flow_event_grant.sql:hub",
   "knowledge/0006_scope_grants.sql:packs",
   // TECH-DEBT #264 (CR-124 q3/q4, đã áp dụng prod): gói gọi hàm hub.partner_* — chuyển sang cổng packs.* khi làm lại hộp thư đối tác.
@@ -57,7 +78,7 @@ function lineFindings(schema: string, text: string, line: number): Finding[] {
     const ref = `${q}.${(m[2] ?? "").toLowerCase()}`;
     if (q === "packs" && !ALLOWED_PLATFORM_FNS.includes((m[2] ?? "").toLowerCase())) {
       out.push({ line, ref, msg: "hàm nền tảng ngoài danh sách cho phép" });
-    } else if (foreign.includes(q)) {
+    } else if (foreign.includes(q) && !ALLOWED_CROSS_PACK_FNS.includes(ref)) {
       out.push({ line, ref, msg: `schema ngoài gói (${q})` });
     }
   }

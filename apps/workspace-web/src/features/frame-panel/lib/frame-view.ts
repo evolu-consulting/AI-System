@@ -114,8 +114,8 @@ export function attachCandidates(
   return list.items.filter((it, i) => {
     const d = docs[i];
     if (it.id === frameId || attached.has(it.id)) return false;
-    if (it.kind !== "contract" || it.status === "rejected") return false;
-    return !d || d.doc_type !== "framework";
+    if (it.kind !== "contract" || it.status === "reject") return false;
+    return d?.doc_type !== "framework";
   });
 }
 

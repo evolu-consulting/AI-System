@@ -90,27 +90,7 @@ describe("S0-20…S0-24 · danh sách + chép mẫu + quyền [ADM-FR-65]", () =
     expect(items.map((x) => x.id)).not.toContain(PA_FIX.defBeta);
     expect((await c.call("A", "GET", "/process-defs")).status).toBe(403);
   });
-  it("ADM-FR-65 · S0-21 · chép sdlc ⇒ 201 enabled=false, group review null, source_template_id; lần 2 ⇒ 409; key sdlc-2 ⇒ 201", async () => {
-    needSchema(c.ready);
-    const r = await c.call("Adm", "POST", `/process-defs/${TPL_SDLC}/copy`, {});
-    expect(r.status).toBe(201);
-    expect(r.json).toMatchObject({
-      key: "sdlc",
-      enabled: false,
-      source_template_id: TPL_SDLC,
-      tenant_id: T.acme,
-    });
-    for (const s of r.json?.stages ?? [])
-      if (s.after.kind === "review") expect(s.after.group_id).toBeNull();
-    expect(code(await c.call("Adm", "POST", `/process-defs/${TPL_SDLC}/copy`, {}))).toEqual({
-      s: 409,
-      code: "PROCESS_KEY_TAKEN",
-    });
-    expect(
-      (await c.call("Adm", "POST", `/process-defs/${TPL_SDLC}/copy`, { key: "sdlc-2" })).status,
-    ).toBe(201);
-  });
-  it("ADM-FR-65 · S0-22 · platform_admin POST không tenant_id ⇒ mẫu tenant_id null; tadmin PUT mẫu ⇒ 403 TEMPLATE_READ_ONLY", async () => {
+  it("ADM-FR-65 · S0-22 · platform_admin POST không tenant_id ⇒ mẫu tenant_id null; tadmin PUT mẫu ⇒ 403 FORBIDDEN_TENANT_ADMIN_WRITE", async () => {
     needSchema(c.ready);
     const r = await c.call(
       "P",
@@ -121,7 +101,11 @@ describe("S0-20…S0-24 · danh sách + chép mẫu + quyền [ADM-FR-65]", () =
     expect(r.status).toBe(201);
     expect(r.json).toMatchObject({ tenant_id: null, is_template: true });
     const body = { ...defInput({ key: "sdlc", name: "SDLC sửa", enabled: false }), version: 1 };
-    expect(code(await put("Adm", TPL_SDLC, body))).toEqual({ s: 403, code: "TEMPLATE_READ_ONLY" });
+    // CR-127 E8: quản trị công ty không ghi quy trình (kể cả mẫu) ⇒ 403 FORBIDDEN_TENANT_ADMIN_WRITE (chặn ở route, trước kiểm mẫu).
+    expect(code(await put("AdmRaw", TPL_SDLC, body))).toEqual({
+      s: 403,
+      code: "FORBIDDEN_TENANT_ADMIN_WRITE",
+    });
   });
   it("ADM-FR-65 · S0-23 · platform_admin GET không tenant_id ⇒ chỉ mẫu hoặc 400 TENANT_REQUIRED", async () => {
     needSchema(c.ready);
@@ -132,10 +116,13 @@ describe("S0-20…S0-24 · danh sách + chép mẫu + quyền [ADM-FR-65]", () =
       expect((r.json?.items ?? []).every((x: Json) => x.is_template === true)).toBe(true);
     }
   });
-  it("HUB-BR-25 · S0-24 · tadmin_beta GET/PUT quy trình acme ⇒ 404", async () => {
+  it("HUB-BR-25 · S0-24 · tadmin_beta GET quy trình acme ⇒ 404; PUT ⇒ 403 FORBIDDEN_TENANT_ADMIN_WRITE (quản trị công ty không ghi)", async () => {
     needSchema(c.ready);
     expect((await get("Db", PA_FIX.defHoaDon)).status).toBe(404);
-    expect((await put("Db", PA_FIX.defHoaDon, { ...defInput(), version: 1 })).status).toBe(404);
+    expect(code(await put("Db", PA_FIX.defHoaDon, { ...defInput(), version: 1 }))).toEqual({
+      s: 403,
+      code: "FORBIDDEN_TENANT_ADMIN_WRITE",
+    });
   });
 });
 
@@ -228,7 +215,13 @@ describe("S0-25…S0-29 · kiểm định nghĩa + version + audit [ADM-FR-66]",
       { s: 409, code: "VERSION_CONFLICT" },
     );
     expect(
-      code(await c.call("Adm", "DELETE", `/process-defs/${PA_FIX.defHoaDon}?version=${d.version}`)),
+      code(
+        await c.call(
+          "P",
+          "DELETE",
+          `/process-defs/${PA_FIX.defHoaDon}?version=${d.version}&tenant_id=${T.acme}`,
+        ),
+      ),
     ).toEqual({
       s: 409,
       code: "VERSION_CONFLICT",
@@ -245,7 +238,6 @@ describe("S0-25…S0-29 · kiểm định nghĩa + version + audit [ADM-FR-66]",
     const before = {
       create: await audits("create"),
       update: await audits("update"),
-      copy: await audits("copy"),
       delete: await audits("delete"),
     };
     const cr = await c.call(
@@ -262,11 +254,13 @@ describe("S0-25…S0-29 · kiểm định nghĩa + version + audit [ADM-FR-66]",
     });
     expect(up.json?.version).toBe(cr.json.version + 1);
     expect(
-      (await c.call("Adm", "POST", `/process-defs/${TPL_HD}/copy`, { key: "hd-audit" })).status,
-    ).toBe(201);
-    expect(
-      (await c.call("Adm", "DELETE", `/process-defs/${cr.json.id}?version=${up.json?.version}`))
-        .status,
+      (
+        await c.call(
+          "P",
+          "DELETE",
+          `/process-defs/${cr.json.id}?version=${up.json?.version}&tenant_id=${T.acme}`,
+        )
+      ).status,
     ).toBe(204);
     expect((await get("Adm", cr.json.id)).status).toBe(404);
     const [row] = await c.sql<
@@ -276,12 +270,10 @@ describe("S0-25…S0-29 · kiểm định nghĩa + version + audit [ADM-FR-66]",
     expect({
       create: await audits("create"),
       update: await audits("update"),
-      copy: await audits("copy"),
       delete: await audits("delete"),
     }).toEqual({
       create: before.create + 1,
       update: before.update + 1,
-      copy: before.copy + 1,
       delete: before.delete + 1,
     });
   });

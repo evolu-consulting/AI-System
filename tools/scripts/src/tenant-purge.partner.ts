@@ -1,4 +1,4 @@
-// tool-tenant-purge · hộp thư đối tác hai bên (hub.partner_mailbox / partner_links / partner_email_events): GIỮ lịch sử của công ty còn lại
+// tool-tenant-purge · hộp thư đối tác hai bên (hub.partner_mailbox / partner_links / partner_email_events / partner_sign_sessions): GIỮ lịch sử của công ty còn lại
 // (người dùng chốt 2026-11-08). Bên bị xoá được ẩn danh: id → tombstone `PARTNER_DELETED_TENANT_ID`, mọi dữ liệu của nó trong dòng bị xoá sạch,
 // bản sao phía bên kia (contracts.partner_inbox / partner_sends) đổi tên «Công ty đã xoá». Dòng chỉ bị XOÁ khi không còn bên nào để giữ
 // lịch sử: bên kia cũng đã xoá (tombstone) / không phải tenant (kênh email, ghi tay) / chưa tới tay bên kia (held, sent) / lời mời nối chưa chấp nhận.
@@ -136,10 +136,15 @@ async function deleteDoomed(
   out: PartnerStats,
   DOOMED: string,
 ): Promise<void> {
-  // (2) Hộp thư: xoá dòng không còn ai giữ (nhật ký email trước, rồi dòng; thread tham chiếu `prev_id` sang dòng bị xoá ⇒ NULL).
+  // (2) Hộp thư: xoá dòng không còn ai giữ (nhật ký email + phiên ký chung trước, rồi dòng; thread tham chiếu `prev_id` sang dòng bị xoá ⇒ NULL).
   await tx.unsafe(`delete from hub.partner_email_events where mailbox_id in (${DOOMED})`, [
     tenantId,
   ]);
+  // CR-127 (hub 0132): phiên ký chung gắn FK vào hộp thư ⇒ xoá cùng dòng hộp thư bị xoá.
+  if (await has(tx, "hub.partner_sign_sessions"))
+    await tx.unsafe(`delete from hub.partner_sign_sessions where mailbox_id in (${DOOMED})`, [
+      tenantId,
+    ]);
   await tx.unsafe(
     `update hub.partner_mailbox p set prev_id = null where p.prev_id in (${DOOMED}) and p.id not in (${DOOMED})`,
     [tenantId],
@@ -164,6 +169,28 @@ async function anonymizeMailbox(tx: Tx, tenantId: string, out: PartnerStats): Pr
     `update hub.partner_mailbox set to_tenant = ${X}, evidence = null, reason = null, token_hash = null, to_email = null,
        updated_at = now() where to_tenant = $1::uuid`,
     tenantId,
+  );
+  await anonymizeSignSessions(tx, tenantId);
+}
+
+/**
+ * CR-127 (hub 0132) · phiên ký chung hai bên (hub.partner_sign_sessions, không có tenant_id): bên bị xoá → tombstone, xoá tên người ký +
+ * lý do của nó (bên gửi: lý do đề xuất; huỷ phía nó: lý do huỷ). `pdf_sha256` GIỮ (mã băm không phải PII, là bằng chứng văn bản ký chung của công ty còn lại). Dòng còn đủ hai bên mới tới đây — dòng
+ * có bên kia đã xoá bị xoá ở `deleteDoomed` (nên `from_tenant <> to_tenant` không vỡ).
+ */
+async function anonymizeSignSessions(tx: Tx, tenantId: string): Promise<void> {
+  if (!(await has(tx, "hub.partner_sign_sessions"))) return;
+  await tx.unsafe(
+    `update hub.partner_sign_sessions set from_tenant = ${X}, from_signer_name = null, reason = null,
+       cancel_reason = case when cancel_side = 'from' then null else cancel_reason end, updated_at = now()
+     where from_tenant = $1::uuid`,
+    [tenantId],
+  );
+  await tx.unsafe(
+    `update hub.partner_sign_sessions set to_tenant = ${X}, to_signer_name = null,
+       cancel_reason = case when cancel_side = 'to' then null else cancel_reason end, updated_at = now()
+     where to_tenant = $1::uuid`,
+    [tenantId],
   );
 }
 

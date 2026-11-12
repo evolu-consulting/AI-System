@@ -9,7 +9,7 @@
       "readOnly": "This version is read-only.",
       "openCurrent": "Open current version",
       "upload": {
-        "title": "Upload update",
+        "title": "Upload new version",
         "signedOnly": "Must be the signed document, not typed in by hand.",
         "hint": "The update becomes a new draft version. Once you confirm it, it replaces the current one.",
         "submit": "Upload",

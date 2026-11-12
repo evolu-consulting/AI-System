@@ -12,6 +12,7 @@ import {
   AGB,
   type CtxPa,
   defInput,
+  defsWriteVia,
   insertDef,
   insertOutput,
   insertRun,
@@ -260,7 +261,10 @@ export async function startPaReal(): Promise<CtxPa> {
     redis: r2,
     rt: new ScriptRuntime(sql, r2),
     tok,
-    call: async (r, method, path, body) => api(hub, await tok(r), method, path, body),
+    call: async (r, method, path, body) => {
+      const w = defsWriteVia(r, method, path);
+      return api(hub, await tok(w.role as typeof r), method, w.path, body);
+    },
     stop: async () => {
       await hub.stop();
       r2.disconnect();

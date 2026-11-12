@@ -17,7 +17,12 @@ function setup(starter: ExtractionStarter) {
       tenant: (_w, fn) =>
         fn({
           upload: {
-            insert: async (r) => ({ id: r.id, status: r.status, version: 1 }),
+            insert: async (r) => ({
+              id: r.id,
+              status: "draft" as const,
+              extractState: r.extractState,
+              version: 1,
+            }),
             insertVersion: async () => {
               throw new Error("not used");
             },

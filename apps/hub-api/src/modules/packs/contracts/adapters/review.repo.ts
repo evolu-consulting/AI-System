@@ -13,6 +13,7 @@ import type {
   ReviewSaveOutcome,
   ReviewWrite,
 } from "../application/review.ports";
+import { contractStateRepo } from "./contract-state.repo";
 import { pgTextArray } from "./contracts.repo";
 
 type LockRow = {
@@ -35,7 +36,7 @@ function lockQ(tx: Tx, t: string): ReviewRepo["lock"] {
   return async (id) => {
     const rows =
       await tx.execute<LockRow>(sql`select c.version, c.updated_at, c.status, c.deal, c.fields,
-        contracts.approval_on() as approval, c.commission_pct, c.commission_fixed
+        false as approval, c.commission_pct, c.commission_fixed
       from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid for update`);
     const r = rows[0];
     if (!r) return null;
@@ -120,40 +121,94 @@ function milestoneCtes(t: string, id: string, w: ReviewWrite) {
       returning id)`;
 }
 
+type Written = Awaited<ReturnType<typeof itemsAndMilestones>>;
+
+/** Chốt lưu: trạng thái HĐ + đóng phiếu duyệt khi `activate` + sự kiện `review_saved` (MỘT câu); trả kết quả cho gọi. */
+async function closeSave(
+  tx: Tx,
+  t: string,
+  id: string,
+  w: Parameters<ReviewRepo["save"]>[1],
+  x: { version: number; c: Written },
+): Promise<ReviewSaveOutcome> {
+  const { c } = x;
+  const p = w.plan;
+  const done = await tx.execute<{ status: "draft" | "done" }>(sql`with u as (
+      select c.id, c.status from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid),
+    a as (
+      update contracts.approvals x set status = 'done', decided_by = ${w.actor}::uuid, decided_at = now(),
+        level1_by = coalesce(x.level1_by, ${w.actor}::uuid), level1_at = coalesce(x.level1_at, now()), updated_at = now()
+      from u where ${p.activate}::boolean and x.tenant_id = ${t}::uuid and x.contract_id = u.id
+        and x.status in ('extracting', 'level1', 'level2')),
+    e as (
+      insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+      select ${t}::uuid, u.id, 'review_saved', ${w.actor}::uuid, jsonb_build_object('deal', ${p.deal}::text,
+        'status', u.status, 'items', ${c.upd + c.ins}::int, 'milestones', ${c.ms}::int,
+        'fields', ${JSON.stringify(p.changes.map((x) => x.key))}::jsonb) from u)
+    select status from u`);
+  const status = done[0]?.status;
+  if (!status) throw new Error("review-save: contract vanished under lock");
+  return {
+    version: x.version + (p.activate ? 1 : 0),
+    status,
+    items: c.upd + c.ins,
+    milestones: c.ms,
+  };
+}
+
+/** Ghi đầu HĐ (theo `version` kỳ vọng, chỉ khi còn draft): trả version mới; không ghi được ⇒ `not_draft` | `stale`. */
+async function bumpHead(
+  tx: Tx,
+  t: string,
+  id: string,
+  w: Parameters<ReviewRepo["save"]>[1],
+): Promise<number | "not_draft" | "stale"> {
+  const p = w.plan;
+  const head = await tx.execute<{ version: number }>(sql`update contracts.contracts set
+        fields = ${JSON.stringify(p.fields)}::jsonb, deal = ${p.deal}, direction = ${p.direction},
+        commission_pct = ${p.commissionPct}::numeric, commission_fixed = ${p.commissionFixed}::bigint,
+        -- activate ⇒ cổng (submit không quy trình) tăng version đúng MỘT lần; không activate ⇒ câu này tăng.
+        version = version + ${p.activate ? 0 : 1}::int, updated_at = now()
+      where id = ${id}::uuid and tenant_id = ${t}::uuid and version = ${w.expected}::int and status = 'draft'
+      returning version`);
+  if (!head[0]) {
+    // Không ghi được: HĐ không còn draft (đổi trạng thái giữa chừng) ≠ version lệch (sửa tay mới hơn).
+    const [c] = await tx.execute<{ status: string }>(
+      sql`select status from contracts.contracts where id = ${id}::uuid and tenant_id = ${t}::uuid`,
+    );
+    return c && c.status !== "draft" ? "not_draft" : "stale";
+  }
+  return head[0].version;
+}
+
+/** K1b · cổng `submit` không quy trình (draft → done): false ⇒ cổng từ chối. */
+async function submitGate(
+  tx: Tx,
+  t: string,
+  id: string,
+  w: Parameters<ReviewRepo["save"]>[1],
+): Promise<boolean> {
+  const g = await contractStateRepo(tx, t).applyTransition({
+    contractId: id,
+    ev: "submit",
+    actorId: w.actor,
+    ctx: { hasFlow: false },
+  });
+  return g.ok;
+}
+
 function saveQ(tx: Tx, t: string): ReviewRepo["save"] {
   return async (id, w): Promise<ReviewSaveOutcome> => {
     const p = w.plan;
-    const head = await tx.execute<{ version: number }>(sql`update contracts.contracts set
-        fields = ${JSON.stringify(p.fields)}::jsonb, deal = ${p.deal}, direction = ${p.direction},
-        commission_pct = ${p.commissionPct}::numeric, commission_fixed = ${p.commissionFixed}::bigint,
-        version = version + 1, updated_at = now()
-      where id = ${id}::uuid and tenant_id = ${t}::uuid and version = ${w.expected}::int and status = 'needs_review'
-      returning version`);
-    if (!head[0]) return "stale";
+    const head = await bumpHead(tx, t, id, w);
+    if (typeof head === "string") return head;
     const c = await itemsAndMilestones(tx, t, id, w);
     if (c.bad > 0) return "component_invalid";
     const asked = (w.items ?? []).filter((i) => i.id !== null).length;
     if (c.upd !== asked) return "item_unknown";
-    const done = await tx.execute<{ status: "needs_review" | "active" }>(sql`with u as (
-        update contracts.contracts set status = case when ${p.activate}::boolean then 'active' else status end,
-          confirmed_at = case when ${p.activate}::boolean then now() else confirmed_at end,
-          confirmed_by = case when ${p.activate}::boolean then ${w.actor}::uuid else confirmed_by end
-        where id = ${id}::uuid and tenant_id = ${t}::uuid
-        returning id, status),
-      a as (
-        update contracts.approvals x set status = 'done', decided_by = ${w.actor}::uuid, decided_at = now(),
-          level1_by = coalesce(x.level1_by, ${w.actor}::uuid), level1_at = coalesce(x.level1_at, now()), updated_at = now()
-        from u where ${p.activate}::boolean and x.tenant_id = ${t}::uuid and x.contract_id = u.id
-          and x.status in ('extracting', 'level1', 'level2')),
-      e as (
-        insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
-        select ${t}::uuid, u.id, 'review_saved', ${w.actor}::uuid, jsonb_build_object('deal', ${p.deal}::text,
-          'status', u.status, 'items', ${c.upd + c.ins}::int, 'milestones', ${c.ms}::int,
-          'fields', ${JSON.stringify(p.changes.map((x) => x.key))}::jsonb) from u)
-      select status from u`);
-    const status = done[0]?.status;
-    if (!status) throw new Error("review-save: contract vanished under lock");
-    return { version: head[0].version, status, items: c.upd + c.ins, milestones: c.ms };
+    // CR-127 K1b · "Xác nhận và lưu" không qua quy trình = CỔNG `submit` không quy trình (draft → done); K3 thay bằng `submit.usecase`.
+    if (p.activate && !(await submitGate(tx, t, id, w))) return "stale";
+    return closeSave(tx, t, id, w, { version: head, c });
   };
 }
 
@@ -169,7 +224,7 @@ function attachQ(tx: Tx, t: string): ReviewRepo["attachProduct"] {
         select i.id from contracts.contract_items i
         where i.id = ${itemId}::uuid and i.contract_id = ${id}::uuid and i.tenant_id = ${t}::uuid),
       lk as (
-        select (c.locked_at is not null or c.status = 'extracting' or exists (select 1 from contracts.stock_moves m
+        select (((c.status in ('processing', 'done') and c.doc_type <> 'deal') or c.extract_state = 'reading') or exists (select 1 from contracts.stock_moves m
           where m.tenant_id = ${t}::uuid and m.contract_id = c.id)) as locked
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid),
       ck as (
@@ -186,7 +241,7 @@ function attachQ(tx: Tx, t: string): ReviewRepo["attachProduct"] {
         select ${t}::uuid, ${id}::uuid, 'item_product_set', ${actor}::uuid,
           jsonb_build_object('item_id', u.id, 'product_id', u.product_id) from u)
       select exists (select 1 from it) as found, coalesce((select locked from lk), false) as locked,
-        coalesce((select c.locked_at is not null from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid), false) as clocked,
+        coalesce((select (c.status in ('processing', 'done') and c.doc_type <> 'deal') from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid), false) as clocked,
         (select ok from ck) as ok`);
     const r = rows[0];
     if (!r?.found) return { kind: "not_found" };

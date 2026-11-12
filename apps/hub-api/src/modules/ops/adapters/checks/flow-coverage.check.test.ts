@@ -7,7 +7,7 @@ import {
   makeFlowCoverageCheck,
 } from "./flow-coverage.check";
 
-const gap = (tenant: string, slot = "contracts.approval", effective = true) => ({
+const gap = (tenant: string, slot = "contracts.intake", effective = true) => ({
   slot,
   tenant,
   effective,
@@ -35,7 +35,7 @@ describe("flow_coverage · evaluateFlowCoverage", () => {
   it("tenant Demo thiếu quy trình hiển thị ⇒ crit, thông điệp có TÊN tenant + khe", () => {
     const r = evaluateFlowCoverage(agg({ gap_count: 1, gaps: [gap("Demo")] }));
     expect(r.status).toBe("crit");
-    expect(r.message).toContain("Demo (contracts.approval)");
+    expect(r.message).toContain("Demo (contracts.intake)");
     expect(r.message).toContain("1/3");
     expect(r.hint).toContain("ensureSlotDefaults");
   });
@@ -51,46 +51,14 @@ describe("flow_coverage · evaluateFlowCoverage", () => {
 
   it("không có đường chạy nào (mặc định khe cũng thiếu) ⇒ vẫn crit, không gắn ghi chú 'chưa backfill'", () => {
     const r = evaluateFlowCoverage(
-      agg({ gap_count: 1, gaps: [gap("Demo", "contracts.approval", false)] }),
+      agg({ gap_count: 1, gaps: [gap("Demo", "contracts.intake", false)] }),
     );
     expect(r.status).toBe("crit");
     expect(r.message).not.toContain("backfill");
   });
 });
 
-describe("flow_coverage · cấu hình duyệt HĐ nửa vời (CR-121 D-4)", () => {
-  it("gỡ gán giữa chừng (còn lượt duyệt) ⇒ crit nêu tên công ty + cách sửa, không nhắc feature", () => {
-    const r = evaluateFlowCoverage(agg({ unrouted: ["NiTi"] }));
-    expect(r.status).toBe("crit");
-    expect(r.message).toContain("NiTi");
-    expect(r.message).toContain("không còn quy trình gán");
-    expect(r.hint).toContain("Admin › Công ty › Quy trình");
-    expect(`${r.message} ${r.hint}`).not.toContain("contracts-approval-engine");
-  });
-
-  it("quy trình đã gán không chạy được / lượt kẹt ⇒ crit nêu tên", () => {
-    const r = evaluateFlowCoverage(agg({ broken: ["Demo"] }));
-    expect(r.status).toBe("crit");
-    expect(r.message).toContain("Demo");
-    expect(r.message).toContain("không chạy được");
-  });
-
-  it("danh sách rỗng ⇒ không ảnh hưởng; có cả lệch hiển thị ⇒ nối thông điệp", () => {
-    expect(evaluateFlowCoverage(agg({ unrouted: [], broken: [] })).status).toBe("ok");
-    const r = evaluateFlowCoverage(agg({ unrouted: ["A"], gap_count: 1, gaps: [gap("Demo")] }));
-    expect(r.message).toContain("Demo (contracts.approval)");
-    expect(r.hint).toContain("ensureSlotDefaults");
-  });
-});
-
 describe("flow_coverage · danh mục feature lệch (CR-121 c18)", () => {
-  it("feature engine còn sót ⇒ crit nêu cách sửa", () => {
-    const r = evaluateFlowCoverage(agg({ engine_feature: true }));
-    expect(r.status).toBe("crit");
-    expect(r.message).toContain("contracts-approval-engine");
-    expect(r.hint).toContain("0037");
-  });
-
   it("feature thiếu app (cột app = other dù khoá thuộc một ứng dụng) ⇒ crit nêu key, kèm lệch hiển thị khi có", () => {
     const r = evaluateFlowCoverage(
       agg({ feature_app_missing: ["contracts-odd"], gap_count: 1, gaps: [gap("Demo")] }),
@@ -98,26 +66,24 @@ describe("flow_coverage · danh mục feature lệch (CR-121 c18)", () => {
     expect(r.status).toBe("crit");
     expect(r.message).toContain("contracts-odd");
     expect(r.message).toContain("chưa gán ứng dụng");
-    expect(r.message).toContain("Demo (contracts.approval)");
+    expect(r.message).toContain("Demo (contracts.intake)");
     expect((r.value as { feature_app_missing: string[] }).feature_app_missing).toEqual([
       "contracts-odd",
     ]);
   });
 
   it("danh mục sạch ⇒ không ảnh hưởng", () => {
-    expect(
-      evaluateFlowCoverage(agg({ engine_feature: false, feature_app_missing: [] })).status,
-    ).toBe("ok");
+    expect(evaluateFlowCoverage(agg({ feature_app_missing: [] })).status).toBe("ok");
   });
 });
 
 describe("flow_coverage · khe cần kiểm", () => {
   it("bỏ khe dlc.*, feature = <gói>-read", () => {
     const slots = coverageSlotsOf(() => [
-      { key: "contracts.approval", packKey: "contracts" },
+      { key: "contracts.intake", packKey: "contracts" },
       { key: "dlc.fast", packKey: "dlc" },
     ]);
-    expect(slots).toEqual([{ slot: "contracts.approval", feature: "contracts-read" }]);
+    expect(slots).toEqual([{ slot: "contracts.intake", feature: "contracts-read" }]);
   });
 
   it("chưa có khe nào đăng ký ⇒ ok, không đụng DB", async () => {

@@ -28,6 +28,7 @@ export * from "./directory";
 export * from "./entities";
 export * from "./errors";
 export * from "./events";
+export * from "./evidence";
 export * from "./me-stream";
 export * from "./me-stream-process";
 export * from "./processes";

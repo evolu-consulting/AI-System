@@ -1,8 +1,8 @@
 // HD-FR-01 · HD-FR-02 · HD-FR-03 · HD-FR-04 · D-04 · plan §1: contract zod `packages/contracts/src/pack-contracts/` (T4).
-// Chỉ dùng tên đã khai ở plan §1: CONTRACT_FIELD_KINDS, CONTRACT_TYPES, CONTRACT_STATUSES, HANDLED_OUTCOMES, ITEM_KINDS,
+// Chỉ dùng tên đã khai ở plan §1: CONTRACT_FIELD_KINDS, CONTRACT_TYPES, CONTRACT_STATUSES, ITEM_KINDS,
 // fieldValueSchema(key), ContractFieldSchema. Không DB.
 import { describe, expect, it } from "bun:test";
-import { FIELD_KINDS, ITEM_KEYS, loadContractsPkg, OUTCOMES, STATUSES } from "../_support/pure";
+import { FIELD_KINDS, ITEM_KEYS, loadContractsPkg } from "../_support/pure";
 
 type Schema = { safeParse: (v: unknown) => { success: boolean; data?: unknown } };
 const pkg = () => loadContractsPkg();
@@ -20,12 +20,6 @@ describe("HD-FR-02 · khai báo trường: đúng 23 khoá FIELD_KINDS, đúng k
   });
 });
 describe("HD-FR-03 · HD-FR-01 · enum", () => {
-  it("D-04 · CONTRACT_STATUSES = 8 trạng thái spec + 'rejected' ở CUỐI (thứ tự cố định)", async () => {
-    expect([...(await pkg()).CONTRACT_STATUSES]).toEqual([...STATUSES]);
-  });
-  it("HD-FR-03 · HANDLED_OUTCOMES = renewed, not_renewed, negotiating, replaced", async () => {
-    expect([...(await pkg()).HANDLED_OUTCOMES]).toEqual([...OUTCOMES]);
-  });
   it("HD-FR-01 · CONTRACT_TYPES = purchase, service, framework, principle", async () => {
     expect([...(await pkg()).CONTRACT_TYPES]).toEqual([
       "purchase",

@@ -8,7 +8,7 @@ import {
 } from "./appendix";
 import { DocNumberSchema } from "./doc-number";
 import { ContractDocSchema } from "./doc-types";
-import { AiReadSchema } from "./extract";
+import { AiReadSchema, PENALTY_TERMS_MAX, PenaltyTermSchema } from "./extract";
 import {
   CONTRACT_EVENT_TYPE_RE,
   CONTRACT_FIELD_KEYS,
@@ -17,8 +17,9 @@ import {
   ContractFieldsSchema,
   ContractItemSchema,
   ContractKindSchema,
+  EffectOutcomeSchema,
+  ExtractStateSchema,
   fieldValueSchema,
-  HandledOutcomeSchema,
   IsoDateSchema,
   nfcText,
 } from "./fields";
@@ -29,6 +30,7 @@ import {
   MILESTONES_MAX,
   MilestoneSchema,
 } from "./milestones";
+import { SUBMIT_BLOCKS } from "./submit";
 import { CONTRACT_VERSIONS_MAX, ContractVersionRefSchema } from "./versions";
 
 export const CONTRACT_EVENTS_MAX = 50;
@@ -54,11 +56,26 @@ export const ContractFileSchema = z.strictObject({
 });
 export type ContractFile = z.infer<typeof ContractFileSchema>;
 
-/** `handled` do HD4 ghi; HD1 chỉ chốt `outcome` (CHECK DB), giữ khoá khác. */
-export const ContractHandledSchema = z.looseObject({ outcome: HandledOutcomeSchema });
+/** CR-127 K2a-1 · BR-09/44: nút theo trạng thái (+ quyền người gọi); UI hiện lý do khi không bấm được. */
+export const ContractCanSchema = z.strictObject({
+  submit: z.boolean(),
+  withdraw: z.boolean(),
+  recreate: z.boolean(),
+  new_version: z.boolean(),
+  hold: z.boolean(),
+  release: z.boolean(),
+  /** CR-127 SG1 · BR-68: người gọi quyết được kết cục hiệu lực (Gia hạn / Chấm dứt / Để hết hạn) — HĐ đã duyệt sắp hết hạn, công ty không có quy trình `contract.expiring` khớp. */
+  expiry: z.boolean().optional(),
+  /** CR-127 · Z8: xoá HĐ — HĐ draft: người tạo / phụ trách / quản trị gói; HĐ khác: quản trị gói. Máy chủ tính (luật `canDeleteContract`), web chỉ đọc. */
+  delete: z.boolean().optional(),
+});
+export type ContractCan = z.infer<typeof ContractCanSchema>;
 
 /** Hàng `contracts` trừ `source_text`/`search_key`/`signer_keys` (D-13) + fields, items, 50 event, file, has_source. */
-export const ContractDetailSchema = ContractListRowSchema.omit({ category_ids: true }).extend({
+export const ContractDetailSchema = ContractListRowSchema.omit({
+  category_ids: true,
+  can_delete: true,
+}).extend({
   error: z.string().max(CONTRACT_ERROR_TEXT_MAX).nullable(),
   created_by: z.uuid(),
   created_at: IsoDateTime,
@@ -67,7 +84,6 @@ export const ContractDetailSchema = ContractListRowSchema.omit({ category_ids: t
   file_id: z.uuid().nullable(),
   clauses: z.array(z.unknown()),
   warnings: z.array(z.unknown()),
-  handled: ContractHandledSchema.nullable(),
   run_id: z.uuid().nullable(),
   fields: ContractFieldsSchema,
   items: z.array(ContractItemSchema).max(CONTRACT_ITEMS_MAX),
@@ -87,6 +103,8 @@ export const ContractDetailSchema = ContractListRowSchema.omit({ category_ids: t
   milestones: z.array(MilestoneSchema).max(MILESTONES_MAX),
   /** V2-G: phần AI đọc (loại đoán, trường chưa chắc, tóm tắt 5 mục, mốc tìm thấy); HĐ nhập tay / chưa đọc ⇒ null. */
   ai: AiReadSchema.nullable(),
+  /** CR-127 K7 · BR-56: điều khoản phạt dạng số (nguồn: `contracts.penalty_terms`). */
+  penalty_terms: z.array(PenaltyTermSchema).max(PENALTY_TERMS_MAX).optional(),
   /** CR-097 K1 · HD-FR-100: lúc/người khoá (= xác nhận); `locked` (từ ListRow) = `locked_at !== null`. */
   locked_at: IsoDateTime.nullable(),
   locked_by: z.uuid().nullable(),
@@ -98,6 +116,19 @@ export const ContractDetailSchema = ContractListRowSchema.omit({ category_ids: t
   current_id: z.uuid().nullable(),
   superseded_at: IsoDateTime.nullable(),
   superseded_by: z.uuid().nullable(),
+  /** CR-127 K2a-1: kết cục Gia hạn/Chấm dứt + lúc ghi; vòng gửi duyệt + người gửi gần nhất; nút nào bấm được (đã tính quyền theo người gọi). */
+  effect_outcome: EffectOutcomeSchema.nullable(),
+  effect_outcome_at: IsoDateTime.nullable(),
+  submit_round: z.number().int().min(0),
+  submitted_by: z.uuid().nullable(),
+  can: ContractCanSchema,
+  /** NF1 · HĐ DRAFT mà Gửi sẽ bị chặn ⇒ lý do (`no_flow` = công ty chưa có quy trình duyệt khớp; khi đó `can.submit = false`); gửi được / không phải DRAFT ⇒ null.
+   *  Tính bằng CÙNG hàm "có quy trình khớp" của lệnh Gửi (`submitFlowOpen`). Chỉ chi tiết, không có ở danh sách. */
+  submit_block: z.enum(SUBMIT_BLOCKS).nullable().optional(),
+  /** CR-127 SG1 · K8: HĐ nhận đang chờ CHÍNH người phụ trách quyết Đồng ý / Trả lại / Từ chối (`partner_inbox.awaiting_decision`); HĐ không phải HĐ nhận ⇒ false. */
+  awaiting_decision: z.boolean().optional(),
+  /** CR-127 SG1 · U5 · BR-26: lý do người duyệt nhập khi Trả lại (HĐ đang DRAFT sau khi bị trả lại) — chỉ người gửi / người phụ trách / người trong quy trình (`canReadEvidence`); còn lại null. */
+  return_reason: z.string().nullable().optional(),
   versions: z.array(ContractVersionRefSchema).max(CONTRACT_VERSIONS_MAX),
   /** CR-101 DOC-model: loại chứng từ, cha (HĐ NT) / con + tổng hợp HĐ NT. Hub luôn trả; optional để fixture cũ còn hợp lệ. */
   doc: ContractDocSchema.optional(),
@@ -174,7 +205,9 @@ export type UploadContractForm = z.infer<typeof UploadContractFormSchema>;
 
 export const UploadContractResponseSchema = z.strictObject({
   id: z.uuid(),
-  status: z.enum(["extracting", "extract_failed"]),
+  /** CR-127 K1b: HĐ tải lên luôn vào DRAFT; `extract_state` = AI đang đọc / đọc lỗi / đã điền sẵn. */
+  status: z.literal("draft"),
+  extract_state: ExtractStateSchema,
   version: VersionSchema,
 });
 export type UploadContractResponse = z.infer<typeof UploadContractResponseSchema>;

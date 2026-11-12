@@ -29,10 +29,10 @@ export const canDecide = (v: ApprovalView): boolean => v.pass === true || v.appr
 
 /**
  * CR-125 · UX H4 · người duyệt đúng nghĩa: đang có nút quyết (Duyệt/Đạt) ở bước KHÔNG phải xác nhận của người tạo, HĐ không còn
- * ở bước chờ xác nhận sau upload ⇒ trang hiện thẻ tóm tắt + nút thay vì cả form sửa.
+ * ở bước chờ xác nhận sau upload (CR-127: `status = 'draft'`; `needs_review` đã bỏ) ⇒ trang hiện thẻ tóm tắt + nút thay vì cả form sửa.
  */
 export const decideOnly = (v: ApprovalView, status: string): boolean =>
-  canDecide(v) && !v.confirm && status !== "needs_review";
+  canDecide(v) && !v.confirm && status !== "draft";
 
 /** p24 · nút theo thẻ, trừ khi vừa xác nhận mà thẻ còn bản cũ (khi đó không còn nút nào). */
 export const viewAfterConfirm = (
@@ -79,6 +79,7 @@ export function flowActionOf(b: ApprovalActionRequest): FlowActionRequest {
   return {
     ...(b.feedback !== undefined ? { feedback: b.feedback } : {}),
     ...(b.products !== undefined ? { extension: b.products } : {}),
+    ...(b.evidence !== undefined ? { evidence: b.evidence } : {}), // CR-127 · E4
   };
 }
 

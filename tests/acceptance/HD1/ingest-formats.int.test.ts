@@ -66,7 +66,7 @@ describe("p9 · tải nhiều ảnh (route multipart)", () => {
       [1, 2, 3].map((n) => ({ name: `trang-${n}.png`, bytes: png(n), type: "image/png" })),
     );
     expect(r.status).toBe(201);
-    expect(r.json.status).toBe("extracting");
+    expect(r.json.status).toBe("draft"); // `extract_state` ở cột DB (phản hồi upload dùng `extractState`)
     expect(c.fb.callsTo("post")).toHaveLength(1);
     const [f] = await c.sql`
       select f.name, f.mime from contracts.contracts k join contracts.files f on f.id = k.file_id where k.id = ${r.json.id}`;

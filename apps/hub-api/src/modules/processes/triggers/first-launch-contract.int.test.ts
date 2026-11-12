@@ -158,14 +158,9 @@ describe("CR-122 P11 · #4 HĐ gửi duyệt khi công ty bật flow theo sự k
     const id = C[0] as string;
     const who = { tenantId: T, userId: A };
     expect(await startApproval(ad(true))(who, id, "level1")).toBe("ok");
-    // P11d · AI đọc xong / nhập tay ⇒ nháp chờ rà soát: máy cũ, còn nút "Xác nhận và lưu", CHƯA phát sự kiện
-    expect(await approvalOf(id)).toMatchObject({ mode: "machine", run: null, status: "level1" });
-    expect(await eventsOf(id)).toBe(0);
-    expect(await dispatchOnce({ db, launch: flowLaunchOf(deps()) })).toMatchObject({ claimed: 0 });
-    // "Xác nhận và lưu" ⇒ đúng 1 sự kiện + lượt chờ flow, HĐ chưa khoá
-    expect(await actApproval(ad(true))(who, id, { action: "approve" })).not.toHaveProperty("error");
+    // Gửi duyệt ⇒ đúng 1 sự kiện + lượt chờ flow, HĐ chưa khoá (không còn nháp "Xác nhận và lưu" của máy cũ)
     expect(await eventsOf(id)).toBe(1);
-    expect(await contractOf(id)).toBe("needs_review");
+    expect(await contractOf(id)).toBe("processing");
     expect(await approvalOf(id)).toMatchObject({
       mode: "engine",
       run: null,
@@ -200,19 +195,7 @@ describe("CR-122 P11 · #4 HĐ gửi duyệt khi công ty bật flow theo sự k
       expect(err).toBe("");
     }
     expect(await openTask(a?.run as string)).toBe(1);
-    expect(await actApproval(ad(true))(who, id, { action: "approve" })).toEqual({
-      error: "APPROVAL_NOT_OPEN",
-    });
-    expect(await contractOf(id)).toBe("needs_review");
-  });
-
-  it("công ty cờ TẮT: lượt giữ máy cũ (không chờ flow), duyệt máy cũ khoá HĐ như trước", async () => {
-    const who = { tenantId: OFF, userId: AO };
-    expect(await startApproval(ad(false))(who, CO, "level1")).toBe("ok");
-    expect(await approvalOf(CO)).toMatchObject({ mode: "machine", run: null });
-    const out = await actApproval(ad(false))(who, CO, { action: "approve" });
-    expect(out).not.toHaveProperty("error");
-    expect(await contractOf(CO)).toBe("active");
+    expect(await contractOf(id)).toBe("processing");
   });
 
   it("perf · vòng thật: sự kiện → task Duyệt mở ≤ 5 s", async () => {
@@ -220,7 +203,6 @@ describe("CR-122 P11 · #4 HĐ gửi duyệt khi công ty bật flow theo sự k
     const ac = new AbortController();
     const t0 = performance.now();
     expect(await startApproval(ad(true))({ tenantId: T, userId: A }, id, "level1")).toBe("ok");
-    await actApproval(ad(true))({ tenantId: T, userId: A }, id, { action: "approve" }); // Xác nhận ⇒ sự kiện
     startFlowDispatcher({ db, launch: flowLaunchOf(deps()) }, { signal: ac.signal, idleMs: 2_000 });
     let ms = -1;
     try {

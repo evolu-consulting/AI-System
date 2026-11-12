@@ -8,11 +8,14 @@
 // KHÔNG chạy trong lát này — chạy MỘT lần ở đợt cuối. CHƯA BIẾT: việc của lượt CON không có HĐ có hiện ở «Chờ tôi duyệt» / mở được thẻ không.
 import { existsSync, readFileSync } from "node:fs";
 import type { Locator, Page } from "@playwright/test";
+import { PURCHASE_PARENT } from "../../apps/hub-api/src/modules/processes/library/purchase-templates";
 import {
   notifyConfigChanged,
   PURCHASE_ROLE_GROUPS,
   writeCr125Config,
 } from "../../apps/hub-api/src/modules/seed/seed.cr125-config";
+import { apiLogin, tenantIdByKey } from "../_kit/api";
+import { createCompanyFlow } from "../_kit/flows";
 import { withOwner } from "../support/helpers";
 import { type Env, loginCw, U } from "./_journey";
 import { expect, test } from "./_test";
@@ -71,6 +74,31 @@ test.beforeAll(async () => {
     // «Chờ tôi duyệt» trống với mọi người dù việc đã giao cho nhóm).
     await sql.begin((tx) => notifyConfigChanged(tx as never, [E.tenantKey]));
   });
+  // CR-127 Z7: «Quy trình mua hàng» là quy trình CỦA CÔNG TY dựng từ sơ đồ trống (đường platform), không còn gán mẫu dùng chung. Ba Phần (lượt con)
+  // vẫn đọc từ Thư viện (seed `writeLibrary`). Bản cha gán sẵn của seed cũ (`assignDefaultFlows`) bị gỡ để không có hai «Quy trình mua hàng».
+  await withOwner(async (sql) => {
+    await sql`delete from hub.company_flows cf using admin.tenants tn
+      where tn.id = cf.tenant_id and tn.key = ${E.tenantKey} and cf.flow_id = ${PURCHASE_PARENT.id}::uuid`;
+  });
+  const platform = await apiLogin({
+    base: need("JA_API_URL"),
+    tenantKey: "platform",
+    username: E.adminUser,
+    password: E.adminPw,
+  });
+  await createCompanyFlow(
+    need("JA_HUB_URL"),
+    platform.token,
+    await tenantIdByKey(need("JA_API_URL"), platform, E.tenantKey),
+    {
+      name: FLOW,
+      app: PURCHASE_PARENT.app,
+      event: PURCHASE_PARENT.trigger.event,
+      trigger: PURCHASE_PARENT.trigger as Record<string, unknown>,
+      inputs: PURCHASE_PARENT.inputs as Record<string, unknown>[],
+      stages: PURCHASE_PARENT.stages as Record<string, unknown>[],
+    },
+  );
 });
 
 // Ký số chỉ nhận PDF (ESIGN_UNSUPPORTED_FILE): tệp của phiếu là PDF để Phần 2 «Ký số» chạy được
@@ -98,6 +126,12 @@ async function valueFor(field: Locator, input: Locator): Promise<string> {
 async function submitOpenForm(page: Page): Promise<boolean> {
   const form = page.locator('form[data-flow="form"]').first();
   if (!(await form.isVisible())) return false;
+  // CR-127 U4 · việc nhóm: «Nhận việc» trước khi điền / duyệt (nhận việc trước ở MỌI quy trình)
+  const take = page.getByTestId("claim-take");
+  if (await take.isVisible()) {
+    await take.click();
+    await expect(page.getByTestId("claim-state")).toContainText("Bạn đang giữ");
+  }
   for (const field of await form.locator("[data-flow-field]").all()) {
     const file = field.locator('input[type="file"]');
     if (await file.count()) {
@@ -164,6 +198,11 @@ async function actOnWaiting(page: Page): Promise<boolean> {
       .catch(() => undefined);
     if (await submitOpenForm(page)) acted = true;
     else if (await approve.isVisible()) {
+      const takeA = page.getByTestId("claim-take");
+      if (await takeA.isVisible()) {
+        await takeA.click();
+        await expect(page.getByTestId("claim-state")).toContainText("Bạn đang giữ");
+      }
       // nút Duyệt có thể hiện lại ngay (một người ở HAI nhóm của dòng cùng duyệt, hoặc bước kế cũng là việc của mình) ⇒ chờ API quyết định OK
       const [res] = await Promise.all([
         page.waitForResponse(
@@ -205,6 +244,12 @@ async function approveOnRequestPage(page: Page): Promise<boolean> {
     .toBeVisible({ timeout: 15_000 })
     .catch(() => undefined);
   if (!(await approve.isVisible())) return false;
+  // CR-127 U4: việc nhóm ⇒ «Nhận việc» trước khi «Duyệt» (nút Duyệt tắt tới khi nhận)
+  const take = page.getByTestId("claim-take").first();
+  if (await take.isVisible()) {
+    await take.click();
+    await expect(approve).toBeEnabled({ timeout: 15_000 });
+  }
   const [res] = await Promise.all([
     page.waitForResponse(
       (r) => /\/review-tasks\/[^/]+\/decision/.test(r.url()) && r.request().method() === "POST",
@@ -228,6 +273,12 @@ async function approveOnCard(page: Page): Promise<boolean> {
     .catch(() => undefined);
   // Thẻ HĐ của Phần 2 là BẢN NHÁP («Gửi duyệt»): việc duyệt thuộc lượt con của yêu cầu, nút «Duyệt» nằm ở trang yêu cầu gốc ⇒ làm ở đó
   if (!(await btn.isVisible())) return approveOnRequestPage(page);
+  // CR-127 U4: việc nhóm ⇒ «Nhận việc» trước khi «Duyệt»
+  const takeCard = page.getByTestId("claim-take").first();
+  if (await takeCard.isVisible()) {
+    await takeCard.click();
+    await expect(btn).toBeEnabled({ timeout: 15_000 });
+  }
   const [res] = await Promise.all([
     page.waitForResponse(
       (r) =>

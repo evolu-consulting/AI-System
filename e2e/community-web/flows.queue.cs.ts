@@ -4,13 +4,8 @@
 //  2. Đối tác đăng bài ⇒ quản trị Ẩn kèm lý do ⇒ bài không lên bảng tin + tác giả thấy "Đã ẩn — lý do".
 import { expect, type Page, test } from "@playwright/test";
 import { enableFlowTriggers } from "../_kit/flows";
-import {
-  assignFlowUi,
-  flowRows,
-  loginPlatformAdminUi,
-  openCompanyFlows,
-  openTenantAppsTab,
-} from "../_kit/ui";
+import { flowRows, loginPlatformAdminUi, openCompanyFlows, openTenantAppsTab } from "../_kit/ui";
+import { ensureModerationFlow } from "./_flow";
 import { openAs, postByTitle, TENANT } from "./_stack";
 
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
@@ -36,6 +31,7 @@ async function post(page: Page, title: string): Promise<void> {
 test("0 · platform admin gán quy trình duyệt bài + bật cờ (đường thật)", async ({ browser }) => {
   const ctx = await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
+  await ensureModerationFlow(); // CR-127 Z7: quản trị nền tảng dựng quy trình công ty từ sơ đồ trống + áp dụng (không còn «Gán» mẫu)
   await loginPlatformAdminUi(
     page,
     ADMIN,
@@ -44,10 +40,6 @@ test("0 · platform admin gán quy trình duyệt bài + bật cờ (đường t
   );
   await openTenantAppsTab(page, TENANT_NAME);
   const box = await openCompanyFlows(page);
-  const pick = box.getByRole("combobox", { name: "Quy trình trong Thư viện" });
-  const names = await pick.locator("option[value]:not([value=''])").allTextContents();
-  const moderation = names.find((n) => /bài/i.test(n));
-  if (moderation) await assignFlowUi(box, moderation); // đã gán rồi thì không còn trong ô chọn ⇒ bỏ qua
   await expect(flowRows(box).filter({ hasText: /bài/i })).not.toHaveCount(0);
   await enableFlowTriggers(TENANT);
   await ctx.close();

@@ -39,6 +39,9 @@ process.env.COMMUNITY_SEED_PW_FILE ||= resolve("test-results/community-stack-see
 process.env.COMMUNITY_URL ||= WEB;
 // CR-120: ai-admin (platform admin gán quy trình duyệt bài ở hành trình `flows.cs.ts`).
 process.env.CS_ADMIN_URL ||= `http://localhost:${P.admin}`;
+// CR-127 Z7: API đường platform (tạo quy trình công ty từ sơ đồ trống): admin-api + hub-api của stack.
+process.env.CS_API_URL ||= `http://localhost:${P.api}`;
+process.env.CS_HUB_URL ||= `http://localhost:${P.hub}`;
 
 export default defineConfig({
   testDir: ".",

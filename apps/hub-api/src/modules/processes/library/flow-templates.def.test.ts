@@ -1,6 +1,8 @@
 // CR-122 · B · 3 flow mẫu: mỗi mẫu qua `parseFlowDef` + `flowDefIssues` (manifest contracts) + cấu hình node Ký số; Duyệt dùng mã Group;
 // không node Ghi giá trị. `flowEdgeIssues = 0` chờ lát A (bước tự có dữ liệu hồ sơ) ⇒ để `skip`.
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { CONTRACTS_MANIFEST } from "@ai/contracts/app-manifest";
 import { flowDefIssues, flowEdgeIssues, parseFlowDef } from "@ai/contracts/hub-admin";
 import { decodeEsignNodeArgs } from "@ai/contracts/pack-contracts";
@@ -118,5 +120,23 @@ describe("CR-122 B · flow mẫu Thư viện", () => {
 
   it("flowEdgeIssues = 0", () => {
     for (const t of FLOW_TEMPLATES) expect(flowEdgeIssues(flowDefOf(t) as never, [])).toEqual([]);
+  });
+
+  it("CR-127 · Z2 · bước Duyệt có Cần + Bằng chứng; seed hub 0134 khớp nguồn TS từng byte", () => {
+    const sql = readFileSync(
+      join(
+        import.meta.dir,
+        "../../../../../../packages/db/migrations-hub/0134_cr127_review_templates.sql",
+      ),
+      "utf8",
+    );
+    for (const t of FLOW_TEMPLATES) {
+      const approvals = t.stages().filter((s) => s.executor.kind === "approve");
+      expect(approvals.length).toBeGreaterThan(0);
+      for (const s of approvals)
+        expect(s.after).toMatchObject({ need: "one", evidence: "opinion_plus" });
+      expect(sql).toContain(`$j$${JSON.stringify(t.stages())}$j$`);
+      expect(sql).toContain(`'${t.id}'`);
+    }
   });
 });

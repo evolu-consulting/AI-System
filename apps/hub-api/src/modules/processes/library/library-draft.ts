@@ -23,8 +23,6 @@ const MESSAGES: Record<HubAdminLibraryErrorCode, string> = {
   SLOT_UNKNOWN: "Unknown process slot",
   SLOT_BODY_INVALID: "Invalid slot body",
   SLOT_SHAPE_UNSUPPORTED: "Stages cannot be represented by the slot",
-  NOT_LIBRARY_DEF: "Process is not a shared library process",
-  SLOT_GONE: "The slot of this process is no longer registered",
   COPY_SOURCE_REMOVED: "The library process this copy was made from has been removed",
   FLOW_NONE_ASSIGNED: "The company has no active process assigned",
 };

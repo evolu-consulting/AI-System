@@ -48,6 +48,7 @@ function feedFilter(c: Context<PackGuardVars>, a: Access): FeedFilter {
     cat: q.cat ?? null,
     area: q.area ?? null,
     author,
+    authorUser: q.authorUserId ?? null,
     q: q.q ? q.q : null,
     mine: q.mine === true,
     cursor: cursorOf(q.cursor),

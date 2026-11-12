@@ -173,7 +173,6 @@ describe("cr125-fix-escalate-kick · flow theo sự kiện có chuyển cấp �
   it("mở lượt ⇒ bước 0 chờ duyệt, task có hạn chuyển cấp về Group Toàn quyền, không có process-kick-failed", async () => {
     const wa = { tenantId: T, userId: A };
     expect(await startApproval(ad())(wa, C, "level1")).toBe("ok");
-    expect(await actApproval(ad())(wa, C, { action: "approve" })).not.toHaveProperty("error");
     expect(await dispatchOnce({ db, launch: flowLaunchOf(deps()) })).toMatchObject({ launched: 1 });
     expect(warns.filter((w) => w.msg === "process-kick-failed")).toEqual([]);
     const [run] = await o<{ id: string; status: string }[]>`select id::text as id, status
@@ -192,9 +191,6 @@ describe("cr125-fix-escalate-kick · flow theo sự kiện có chuyển cấp �
   it("bản công ty: escalate thiếu Group (group_id null) ⇒ bước 0 vẫn mở, không chuyển cấp (trước sửa: vi phạm review_tasks_remind_ck)", async () => {
     const w2 = { tenantId: T2, userId: A2 };
     expect(await startApproval(ad())(w2, C2[0] as string, "level1")).toBe("ok");
-    expect(await actApproval(ad())(w2, C2[0] as string, { action: "approve" })).not.toHaveProperty(
-      "error",
-    );
     expect(await dispatchOnce({ db, launch: flowLaunchOf(deps()) })).toMatchObject({ launched: 1 });
     const run = await lastRun(T2);
     expect(run?.status).toBe("waiting_review");
@@ -212,7 +208,6 @@ describe("cr125-fix-escalate-kick · kick lỗi", () => {
     const w2 = { tenantId: T2, userId: A2 };
     const id = C2[1] as string;
     expect(await startApproval(ad())(w2, id, "level1")).toBe("ok");
-    expect(await actApproval(ad())(w2, id, { action: "approve" })).not.toHaveProperty("error");
     const d = deps() as ProcessDeps & { launcher: unknown };
     const boom = Object.assign(new Error("check"), {
       code: "23514",

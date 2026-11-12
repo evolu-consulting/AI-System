@@ -3,6 +3,7 @@ import { z } from "zod";
 import { DISPLAY_NAME_MAX, IsoDateTime, UuidSchema } from "../common";
 import { StageKnowledgeSchema } from "../hub-admin/kh";
 import { CHAT_ASK_CHOICE_MAX, CHAT_ASK_CHOICES_MAX, CHAT_ASK_QUESTION_MAX } from "./entities";
+import { TASK_CLAIM_FIELDS } from "./evidence";
 import {
   BACK_EVENTS_MAX,
   BRANCH_RULES_MAX,
@@ -166,6 +167,9 @@ export const HistoryItemSchema = z.strictObject({
   at: IsoDateTime,
   // P-d1 thêm `escalate` (cuối). P-d2 thêm `branch` (cuối; `to_step` + `rule`, actor null = hệ thống).
   kind: z.enum(["review", "ask", "decision", "forward", "cancel", "expire", "escalate", "branch"]),
+  /** CR-127 · E1 · bằng chứng của quyết định (`hub.evidence`); `on_behalf_of` = người được giao thật khi làm thay. */
+  evidence_id: UuidSchema.optional(),
+  on_behalf_of: UserRefSchema.optional(),
   task_id: UuidSchema.nullable(),
   stage_idx: StageIdxSchema,
   actor: UserRefSchema.nullable(),
@@ -218,6 +222,7 @@ export const TaskDetailSchema = z.strictObject({
   /** P-d1 · chỉ task `review`: đã chuyển cấp / số lần đã nhắc lặp. */
   escalated: z.boolean().optional(),
   remind_count: z.number().int().min(0).max(REMIND_MAX).optional(),
+  ...TASK_CLAIM_FIELDS, // CR-127 · E1 · nhận việc / cần / phiếu / thay người / chế độ bằng chứng
 });
 export type TaskDetail = z.infer<typeof TaskDetailSchema>;
 
@@ -230,6 +235,7 @@ export const OpenTaskSchema = z.strictObject({
   group: GroupRefSchema.nullable(),
   /** P-d1 · Group chuyển cấp (assignee `via='escalated'`); `null` khi chưa chuyển — chỉ full view (A4 G7). */
   escalated_group: GroupRefSchema.nullable().optional(),
+  ...TASK_CLAIM_FIELDS, // CR-127 · E1
 });
 export type OpenTask = z.infer<typeof OpenTaskSchema>;
 

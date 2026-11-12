@@ -13,7 +13,10 @@ import type {
   ContractParentRef,
   ContractVersionRef,
 } from "@ai/contracts/pack-contracts";
+import { canOf } from "../application/contract-can";
 import type { MilestoneRow } from "../application/milestones.ports";
+import { canReadEvidence } from "../domain/approval-record.rules";
+import { canDeleteContract, type ListDeleteCtx } from "../domain/delete-contract.rules";
 import { fillFields } from "../domain/fields.rules";
 import { LEGAL_WARN_DEFAULT, legalWarning } from "../domain/legal-warn.rules";
 import { currentOf } from "../domain/versions.rules";
@@ -27,20 +30,51 @@ export type ContractDetailDto = ContractDetail;
 /** Một phần tử `json_agg` của câu danh sách (thừa `ord`). */
 export type ListRowRaw = Omit<
   ContractListRow,
-  "value" | "updated_at" | "locked" | "version_no" | "versions_count"
+  | "value"
+  | "updated_at"
+  | "locked"
+  | "version_no"
+  | "versions_count"
+  | "extract_state"
+  | "effect"
+  | "superseded"
+  | "hold"
+  | "waiting"
+  | "source"
 > & {
+  /** CR-127 K8 · vắng (hàng cũ / fake) ⇒ `upload`. */
+  source?: ContractListRow["source"];
+  /** CR-127 K2a-1 · vắng (hàng cũ / fake) ⇒ `ready` / null / false / null. */
+  extract_state?: ContractListRow["extract_state"];
+  effect?: ContractListRow["effect"];
+  superseded?: boolean;
+  /** Tạm khoá thực hiện — cột `exec_hold_*` (MIGC 0093, X1); vắng (hàng cũ / fake) ⇒ null. */
+  hold?: ContractListRow["hold"];
   /** CR-097 K1 · vắng (hàng cũ / fake) ⇒ false. */
   locked?: boolean;
   /** CR-097 K2 · vắng ⇒ 1 (HĐ một phiên bản). */
   version_no?: number;
   versions_count?: number;
+  /** CR-128 L1 · chỉ để tính `can_delete` (không ra API). */
+  created_by?: string;
   value: number | string | null;
   updated_at: string;
   ord?: number;
 };
 
-export function toContractListRow(r: ListRowRaw): ContractListRow {
+export function toContractListRow(r: ListRowRaw, del?: ListDeleteCtx): ContractListRow {
   return {
+    ...(del !== undefined
+      ? {
+          can_delete:
+            r.created_by !== undefined &&
+            canDeleteContract(
+              { status: r.status, created_by: r.created_by, owner_user_id: r.owner_user_id },
+              del.actor,
+              del.role,
+            ),
+        }
+      : {}),
     id: r.id,
     kind: r.kind,
     parent_id: r.parent_id,
@@ -55,7 +89,6 @@ export function toContractListRow(r: ListRowRaw): ContractListRow {
     buyer_signer: r.buyer_signer,
     value: r.value === null ? null : Number(r.value),
     end_date: r.end_date,
-    action_deadline: r.action_deadline,
     owner_user_id: r.owner_user_id,
     category_ids: r.category_ids ?? [],
     updated_at: new Date(r.updated_at).toISOString(),
@@ -63,6 +96,11 @@ export function toContractListRow(r: ListRowRaw): ContractListRow {
     locked: r.locked === true,
     version_no: r.version_no ?? 1,
     versions_count: r.versions_count ?? 1,
+    extract_state: r.extract_state ?? "ready",
+    effect: r.effect ?? null,
+    superseded: r.superseded === true,
+    hold: r.hold ?? null,
+    source: r.source ?? "upload",
   };
 }
 
@@ -76,7 +114,6 @@ export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
   file_id: string | null;
   clauses: unknown[] | null;
   warnings: unknown[] | null;
-  handled: ContractDetail["handled"];
   run_id: string | null;
   fields: unknown;
   items: ContractItem[] | null;
@@ -93,10 +130,21 @@ export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
   milestones?: MilestoneRow[] | null;
   /** V2-G */
   ai_read?: ContractDetail["ai"] | null;
+  /** CR-127 K7 */
+  penalty_terms?: ContractDetail["penalty_terms"] | null;
   /** CR-097 K1 */
   locked_at?: string | null;
   locked_by?: string | null;
   /** CR-097 K2 */
+  /** CR-127 K2a-1 */
+  effect_outcome?: ContractDetail["effect_outcome"];
+  effect_outcome_at?: string | null;
+  submit_round?: number;
+  submitted_by?: string | null;
+  /** CR-127 SG1: HĐ nhận chờ người phụ trách quyết (K8); lý do Trả lại gần nhất (HĐ DRAFT) + người gọi đã quyết ở một bước (BR-26). */
+  awaiting_decision?: boolean;
+  return_reason?: string | null;
+  return_involved?: boolean;
   root_id?: string;
   superseded_at?: string | null;
   superseded_by?: string | null;
@@ -151,8 +199,55 @@ function legalOf(r: DetailRaw, v: ReturnType<typeof v2aOf>) {
   });
 }
 
-export function toContractDetail(r: DetailRaw, today: string): ContractDetail {
-  const { category_ids: _c, ...row } = toContractListRow({ ...r, category_ids: [] });
+/** CR-127 SG1 · BR-26: lý do Trả lại chỉ cho người gửi / người phụ trách / người đã quyết ở một bước (luật `canReadEvidence`; quản trị đọc ở hồ sơ duyệt). */
+function returnReasonOf(r: DetailRaw, actor?: string): string | null {
+  if (!r.return_reason || !actor) return null;
+  const ok = canReadEvidence(
+    { userId: actor, admin: false },
+    {
+      startedBy: r.submitted_by ?? "",
+      owner: r.owner_user_id ?? null,
+      involved: new Set(r.return_involved ? [actor] : []),
+    },
+  );
+  return ok ? r.return_reason : null;
+}
+
+/** CR-127 K2a-1: kết cục hiệu lực, vòng gửi, người gửi, `can` theo người gọi. */
+function stateExtrasOf(r: DetailRaw, row: Omit<ContractListRow, "category_ids">, actor?: string) {
+  return {
+    effect_outcome: r.effect_outcome ?? null,
+    effect_outcome_at: r.effect_outcome_at ? iso(r.effect_outcome_at) : null,
+    submit_round: r.submit_round ?? 0,
+    submitted_by: r.submitted_by ?? null,
+    awaiting_decision: r.awaiting_decision === true,
+    return_reason: returnReasonOf(r, actor),
+    can: canOf(
+      {
+        status: row.status,
+        extract_state: row.extract_state,
+        superseded: row.superseded,
+        effect: row.effect,
+        hold: row.hold,
+        created_by: r.created_by,
+        owner_user_id: row.owner_user_id,
+        submitted_by: r.submitted_by ?? null,
+      },
+      actor,
+    ),
+  };
+}
+
+/** `actor` = người gọi, để `can` tính theo quyền (vắng ⇒ nút cần quyền = false). */
+export function toContractDetail(r: DetailRaw, today: string, actor?: string): ContractDetail {
+  const {
+    category_ids: _c,
+    can_delete: _d,
+    ...row
+  } = toContractListRow({
+    ...r,
+    category_ids: [],
+  });
   const v2a = v2aOf(r, today);
   return {
     ...v2a,
@@ -166,7 +261,6 @@ export function toContractDetail(r: DetailRaw, today: string): ContractDetail {
     file_id: r.file_id,
     clauses: r.clauses ?? [],
     warnings: r.warnings ?? [],
-    handled: r.handled,
     run_id: r.run_id,
     fields: fillFields(r.fields),
     items: (r.items ?? []).map((i) => ({
@@ -180,9 +274,11 @@ export function toContractDetail(r: DetailRaw, today: string): ContractDetail {
     parent: r.parent ?? null,
     appendices: r.appendices ?? [],
     ai: r.ai_read ?? null,
+    penalty_terms: r.penalty_terms ?? [],
     locked_at: r.locked_at ? iso(r.locked_at) : null,
     locked_by: r.locked_by ?? null,
     has_document: r.file_id !== null,
+    ...stateExtrasOf(r, row, actor),
     ...chainOf(r),
     ...(r.doc
       ? { doc: toContractDoc(r.doc, { start: r.start_date ?? null, end: r.end_date }, today) }

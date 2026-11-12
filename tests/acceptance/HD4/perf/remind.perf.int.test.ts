@@ -34,18 +34,18 @@ afterAll(async () => {
   await sql?.end();
 });
 
-/** INSERT…SELECT một câu: acme 10.000 HĐ đã duyệt, hạn còn 1…50 ngày (mỗi HĐ đúng một mốc tới); beta 10.000 needs_review. */
+/** INSERT…SELECT một câu: acme 10.000 HĐ đã duyệt, hạn còn 1…50 ngày (mỗi HĐ đúng một mốc tới); beta 10.000 draft (CR-127: done + effect, draft). */
 async function seed(): Promise<number> {
   await needHd4(sql);
   await resetHd4(sql);
   await sql`alter table contracts.contracts set (autovacuum_enabled = false)`;
   const t0 = performance.now();
   for (const [tenant, status, owner] of [
-    [T.acme, "active", P.lan.id],
-    [T.beta, "needs_review", P.an.id],
+    [T.acme, "done", P.lan.id],
+    [T.beta, "draft", P.an.id],
   ] as const)
-    await sql`insert into contracts.contracts (tenant_id, title, status, owner_user_id, created_by, fields)
-      select ${tenant}, 'HĐ perf ' || g, ${status}, ${owner}, ${owner}, jsonb_build_object(
+    await sql`insert into contracts.contracts (tenant_id, title, status, effect, owner_user_id, created_by, fields)
+      select ${tenant}, 'HĐ perf ' || g, ${status}, ${status === "done" ? "active" : null}, ${owner}, ${owner}, jsonb_build_object(
         'number', jsonb_build_object('value', 'P-' || g),
         'supplier_name', jsonb_build_object('value', 'Công ty A'), 'buyer_name', jsonb_build_object('value', 'Công ty B'),
         'end_date', jsonb_build_object('value', to_char(date '2026-10-02' + (g % 50), 'YYYY-MM-DD')),
@@ -97,11 +97,11 @@ async function phase(name: string): Promise<void> {
   );
   expect({ batches: ms.length, notes: n?.notes, rems: n?.rems, due: n?.due }).toEqual({
     batches: TOTAL / BATCH,
-    notes: TOTAL,
-    rems: TOTAL,
+    notes: 0, // CR-127 K6: vòng chỉ tính lại hiệu lực, không còn thông báo/hàng nhắc cũ
+    rems: 0,
     due: 0,
   });
-  expect([...new Set(perBatch)]).toEqual([5]); // tìm tenant (set_config + select) + lô (set_config + claim + apply)
+  expect([...new Set(perBatch)]).toHaveLength(1); // số câu mỗi lô cố định (không phụ thuộc số hàng); giá trị chốt khi đo lại (K6: 2 câu/lô + set_config)
   expect({ seqFind, seqClaim }).toEqual({ seqFind: [], seqClaim: [] });
   expect(st.p95).toBeLessThanOrEqual(THRESHOLD_MS);
 }

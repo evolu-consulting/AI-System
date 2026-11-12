@@ -67,5 +67,18 @@ export function pgExternalOrgResolver(db: Db): ExternalOrgResolver {
       );
       return rows[0]?.d ?? { tenantName: "", userName: "", orgs: [] };
     },
+    async orgMembers(tenantId, orgIds) {
+      const ids = clean(orgIds);
+      if (ids.length === 0 || !UUID_RE.test(tenantId)) return new Map();
+      const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+        tx.execute<{
+          org: string;
+          users: string[];
+        }>(sql`select external_org_id::text as org, array_agg(id::text order by id) as users
+          from admin.users where tenant_id = ${tenantId}::uuid and kind = 'external' and deactivated_at is null
+            and external_org_id = any(${uuidArr(ids)}::uuid[]) group by external_org_id`),
+      );
+      return new Map(rows.map((r) => [r.org, r.users]));
+    },
   };
 }

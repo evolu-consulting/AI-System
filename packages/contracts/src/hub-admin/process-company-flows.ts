@@ -6,8 +6,8 @@ import { ProcessKeySchema } from "../chat/processes";
 import { UuidSchema } from "../common";
 import { FlowSourceSchema } from "./process-flowdef";
 
-/** `assigned` = flow Thư viện platform gán (chỉ xem); `company` = bản công ty (clone hoặc tự tạo, sửa được). */
-export const COMPANY_FLOW_KINDS = ["assigned", "company"] as const;
+/** `company` = quy trình của chính công ty (tự tạo từ sơ đồ trống; quản trị nền tảng sửa). CR-127 Z7: không còn flow dùng chung gán cho công ty. */
+export const COMPANY_FLOW_KINDS = ["company"] as const;
 /** Lý do dòng đang Tắt (UI nói rõ trạng thái + lý do — Luật GỐC 3); null khi Bật. */
 export const COMPANY_FLOW_OFF_REASONS = [
   "replaced", // đã thay bằng bản công ty (`replaced_by`)
@@ -42,8 +42,22 @@ export const CompanyFlowRowSchema = z.strictObject({
   /** Thư viện có bản mới hơn bản đã sao (H5: chỉ báo, không ghi đè). */
   library_newer: z.number().int().min(1).nullable(),
   warnings: z.array(z.enum(COMPANY_FLOW_WARNINGS)).max(4),
+  /** CR-127 · M1 · lần sửa gần nhất của def (ISO) — cột «Cập nhật» của trang Quy trình. */
+  updated_at: z.string().optional(),
+  /** CR-127 · Z7 · `version` của def (gửi kèm khi xoá, 409 nếu lệch). */
+  def_version: z.number().int().min(1),
+  /** CR-127 · Z7 · xoá được = còn NHÁP (chưa xuất bản/áp dụng) và chưa có lượt chạy nào ⇒ UI hiện «Xoá»; ngược lại gợi ý Tắt. */
+  deletable: z.boolean(),
 });
 export type CompanyFlowRow = z.infer<typeof CompanyFlowRowSchema>;
 export const CompanyFlowListSchema = z.strictObject({
   items: z.array(CompanyFlowRowSchema).max(200),
 });
+
+/** CR-127 · M1 · `POST /tenants/:tid/company-flows` dạng TẠO: tên + app + sơ đồ trống (`from:"blank"` — CR-127 Z5: không còn tạo từ mẫu). CR-127 Z7: dạng gán `{flow_id}` đã gỡ. */
+export const CompanyFlowCreateSchema = z.strictObject({
+  name: z.string().trim().min(1).max(120),
+  app: z.string().min(1).max(64).optional(),
+  from: z.literal("blank"),
+});
+export type CompanyFlowCreate = z.infer<typeof CompanyFlowCreateSchema>;

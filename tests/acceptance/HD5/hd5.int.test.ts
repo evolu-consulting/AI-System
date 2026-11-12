@@ -13,6 +13,7 @@ import {
   listOf,
   mkFields,
   P,
+  setLegacyStatus,
   startHd1,
   T,
   unlockContract,
@@ -87,7 +88,7 @@ describe("HD-FR-51 · danh sách + chi tiết có phụ lục", () => {
     const r = await listOf(c, P.tam);
     expect(r.status).toBe(200);
     expect(r.json.parents).toEqual([{ id: cid(1), title: "HĐ gốc", number: "01/2026/HĐMB-PN" }]);
-    expect(Object.keys(r.json.items[0]).length).toBe(23);
+    expect(Object.keys(r.json.items[0]).length).toBe(28); // CR-127: ListRow thêm 5 khoá (trạng thái 4 mức/hiệu lực…) — 23 → 28
     const only = await listOf(c, P.tam, { kind: "contract" });
     expect(only.json.parents).toEqual([]);
   });
@@ -128,6 +129,7 @@ describe("HD-FR-54 · gắn / gỡ HĐ gốc (CR-101a)", () => {
   });
   it("gỡ phụ lục cũ ⇒ 200, trả về HĐ; viewer ⇒ 403; version cũ ⇒ 409 CONTRACT_STALE", async () => {
     await family();
+    await setLegacyStatus(c.sql, cid(2), "draft"); // CR-127 K4: HĐ processing/done khoá đổi HĐ gốc ⇒ phụ lục phải là Nháp
     const v = await send(P.tam, "PATCH", `/contracts/${cid(2)}/parent`, {
       version: 1,
       parent_id: null,

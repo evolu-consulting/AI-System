@@ -83,6 +83,8 @@ const replies = async () => {
 beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
+  // CR-127 Z4: hub 0136 đã lưu trữ mẫu Thư viện «Nhận HĐ»; test này dùng chúng làm dữ liệu nền ⇒ mở lại trong DB test.
+  await o`update hub.process_defs set deleted_at = null, enabled = true where tenant_id is null and key in ('hd-nhan-quan-trong', 'hd-nhan-thuong')`;
   [A, B] = (await tenants(o, 2, 1324)) as [string, string];
   [UA] = (await users(o, A, 1, { from: 1324 })) as [string];
   [UB] = (await users(o, B, 1, { from: 1325 })) as [string];
@@ -135,7 +137,7 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
     expect(rows[0]).toMatchObject({ importance: "important", sender_name: "Công ty A", round: 1 });
     const [c] =
       await o`select source, status, tenant_id::text as t from contracts.contracts where id = ${rows[0]?.id as string}::uuid`;
-    expect(c).toMatchObject({ source: "partner_inbox", status: "needs_review", t: B });
+    expect(c).toMatchObject({ source: "partner_inbox", status: "processing", t: B }); // CR-127 K8 · #9
     // Thẻ duyệt: HĐ nhận có lượt duyệt chờ quy trình nhận (người duyệt của B quyết trên trang HĐ như HĐ gửi duyệt).
     const [ap] =
       await o`select a.status, a.mode, a.feedback, a.engine_run_id from contracts.approvals a
@@ -230,7 +232,12 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
       stepLabels: async (_w, ids, fromRuns) => {
         expect(fromRuns.has(input.runId)).toBe(true);
         labels.push(...ids);
-        return new Map([[input.runId, stepLabelOf(sv as never, fromRuns.has(input.runId))]]);
+        return new Map([
+          [
+            input.runId,
+            { label: stepLabelOf(sv as never, fromRuns.has(input.runId)), waiting: null },
+          ],
+        ]);
       },
     })(whoB, { sort: "updated_at", dir: "desc", page: 1, page_size: 20 } as never);
     expect(labels).toEqual([input.runId]);
@@ -243,6 +250,8 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
       await o`select a.status from contracts.approvals a join contracts.contracts k on k.run_id = a.id
       where k.id = ${input.ref}::uuid`;
     expect(done?.status).toBe("cancelled"); // Trả lại ⇒ lượt duyệt của HĐ nhận đóng
+    const [hd] = await o`select status from contracts.contracts where id = ${input.ref}::uuid`;
+    expect(hd?.status).toBe("draft"); // CR-127 K8 · #10: "Chờ đối tác gửi bản sửa"
     expect(await apply()).toBe("already_applied");
     const st = await o`select status, reason from contracts.partner_inbox where tenant_id = ${B}`;
     expect(st[0]?.status).toBe("returned");
@@ -260,9 +269,51 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
     expect(r).toMatchObject({ status: "sent", channel: "platform", round: 2 });
     expect(await receive()).toBe(1);
     const [inb] =
-      await o`select round, prev_reason from contracts.partner_inbox where tenant_id = ${B} and round = 2`;
+      await o`select round, prev_reason, contract_id::text as cid from contracts.partner_inbox
+      where tenant_id = ${B} and round = 2`;
     expect(inb?.round).toBe(2);
     expect(inb?.prev_reason).toBeTruthy();
+    // CR-127 K8 · Q10/#11: bản sửa vào CÙNG HĐ nhận ⇒ PROCESSING lại, lượt duyệt mới chờ quy trình nhận chạy lại từ đầu.
+    const [r1] =
+      await o`select contract_id::text as cid from contracts.partner_inbox where tenant_id = ${B} and round = 1`;
+    expect(inb?.cid).toBe(r1?.cid);
+    const cid = inb?.cid as string;
+    const [hd] =
+      await o`select c.status, c.submit_round, a.status as ap, a.feedback from contracts.contracts c
+      join contracts.approvals a on a.id = c.run_id where c.id = ${cid}::uuid`;
+    expect(hd).toMatchObject({
+      status: "processing",
+      submit_round: 1,
+      ap: "level1",
+      feedback: "FLOW_STARTING",
+    });
+    const runId = crypto.randomUUID();
+    const sys = <T>(f: (tx: never) => Promise<T>) =>
+      withSystemScope(db, { kind: "system" }, f as never);
+    const h = contractsOutcomeHandler();
+    expect(
+      await sys(
+        (tx) =>
+          h.launched?.(tx, { tenantId: B, runId, event: "contract.received", ref: cid }) as never,
+      ),
+    ).toBe(true);
+    const ok = {
+      tenantId: B,
+      runId,
+      event: "contract.received",
+      ref: cid,
+      outcome: "confirmed",
+      actorId: null,
+    };
+    expect(await sys((tx) => h.apply(tx, ok))).toBe("applied");
+    const [fin] = await o`select status from contracts.contracts where id = ${cid}::uuid`;
+    expect(fin?.status).toBe("done");
+    expect(await replies()).toBe(1);
+    expect(signals.at(-1)).toEqual({
+      tenantId: A,
+      ref: C[0] as string,
+      event: "partner.confirmed",
+    });
     const [mb] =
       await o`select prev_id from hub.partner_mailbox where id = ${r.mailbox_id as string}::uuid`;
     expect(mb?.prev_id).toBeTruthy();

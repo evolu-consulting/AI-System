@@ -1,6 +1,6 @@
 // gap-a1 · route trang chi tiết HĐ (mount dưới `/pack/contracts`): `GET /contracts/:id/history` (read, theo luật thấy của người gọi),
 // `GET /assignees` + `PUT /contracts/:id/owner` + `PUT /contracts/:id/commission` + `POST /contracts/:id/summary` (write; AI có trần
-// thao tác theo tenant/ngày). Guard TRƯỚC đọc thân/tham số (viewer ⇒ 403, 0 SQL); `:id` sai dạng ⇒ 400; HĐ không thấy / tenant khác ⇒ 404.
+// thao tác theo tenant/ngày). CR-127 K4: không còn `POST /contracts/:id/reopen` (BR-38/74 ⇒ 404). Guard TRƯỚC đọc thân/tham số (viewer ⇒ 403, 0 SQL); `:id` sai dạng ⇒ 400; HĐ không thấy / tenant khác ⇒ 404.
 import {
   CONTRACT_ERRORS,
   CommissionEditRequestSchema,
@@ -8,31 +8,19 @@ import {
   LOCK_ERRORS,
   MANAGE_ERRORS,
   OwnerAssignRequestSchema,
-  ReopenRequestSchema,
-  VERSION_ERRORS,
 } from "@ai/contracts/pack-contracts";
 import { Hono } from "hono";
 import { z } from "zod";
-import type { AuthUser } from "../../../../lib/auth.middleware";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
-import type { PackWho } from "../../kit/public";
-import {
-  checkPackAccess,
-  type PackAccessView,
-  type PackGuardVars,
-  packAccessInput,
-  packGuard,
-  packGuardOrPlatform,
-  requestWho,
-} from "../../kit/public";
+import type { PackAccessView, PackGuardVars, PackWho } from "../../kit/public";
+import { packGuard } from "../../kit/public";
 import type {
   AssignOwner,
   EditCommission,
   GetHistory,
   Summarize,
 } from "../application/manage.usecase";
-import type { ReopenContract, ReopenOutcome } from "../application/reopen-contract.usecase";
 
 const KEY = "contracts";
 
@@ -42,17 +30,15 @@ export type ManageRoutesDeps = {
   assign: AssignOwner;
   commission: EditCommission;
   summarize: Summarize;
-  /** CR-097 K1 · HD-FR-104 (vắng ⇒ không mount). */
-  reopen?: ReopenContract;
   quota?: (tenantId: string) => Promise<void>;
 };
 
-/** CR-097 K1 · HD-FR-100: HĐ đã xác nhận ⇒ điều khoản pháp lý/tiền chỉ đọc. */
+/** CR-127 K4 · BR-39: HĐ đang duyệt (processing) / đã xong (done) ⇒ nội dung khoá; sửa ⇒ Tải phiên bản mới (không còn "Mở lại"). */
 export const lockedError = () =>
   new AppError(
     "CONTRACT_LOCKED",
     LOCK_ERRORS.CONTRACT_LOCKED,
-    "Confirmed contract is locked; only the owner can reopen it",
+    "Contract is in approval or done; upload a new version to edit it",
   );
 
 const whoOf = (u: { tenantId: string; userId: string }): PackWho => ({
@@ -61,38 +47,6 @@ const whoOf = (u: { tenantId: string; userId: string }): PackWho => ({
 });
 const idOf = (p: string | undefined) => parseWith(z.uuid(), p);
 
-const isPackAdmin = async (view: PackAccessView, u: AuthUser): Promise<boolean> => {
-  const i = await packAccessInput(view, KEY, u);
-  return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
-};
-
-/** Kết quả "mở lại" không thành công ⇒ lỗi HTTP (404 / 400 / 403 / 409). */
-function reopenFail(out: Exclude<ReopenOutcome, { kind: "ok" }>): AppError {
-  switch (out.kind) {
-    case "not_found":
-      return appError("NOT_FOUND");
-    case "reason_invalid":
-      return new AppError("REASON_REQUIRED", 400, "A reason (1-500 characters) is required");
-    case "forbidden":
-      return new AppError(
-        "REOPEN_FORBIDDEN",
-        LOCK_ERRORS.REOPEN_FORBIDDEN,
-        "Only the contract owner or a pack owner can reopen it",
-      );
-    case "not_locked":
-      return new AppError(
-        "CONTRACT_NOT_LOCKED",
-        LOCK_ERRORS.CONTRACT_NOT_LOCKED,
-        "Contract is not locked",
-      );
-    case "draft_exists":
-      return new AppError(
-        "VERSION_DRAFT_EXISTS",
-        VERSION_ERRORS.VERSION_DRAFT_EXISTS,
-        "An updated version is pending; discard it before reopening",
-      );
-  }
-}
 export function manageRoutes(view: PackAccessView, d: ManageRoutesDeps): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
   const read = packGuard(view, KEY, "read");
@@ -138,22 +92,6 @@ export function manageRoutes(view: PackAccessView, d: ManageRoutesDeps): Hono<Pa
     });
   });
 
-  // CR-097 K1 · HD-FR-104 · CR-101a (Câu 6): người phụ trách HĐ HOẶC owner gói (`admin`). Guard `write` TRƯỚC đọc thân (viewer ⇒
-  // 403, 0 SQL); lý do bắt buộc (400); `admin` từ cache quyền (0 SQL); không phụ trách, không owner ⇒ 403 `REOPEN_FORBIDDEN`.
-  const reopen = d.reopen;
-  // CR-121 Q-3: platform_admin mở lại HĐ của công ty đích qua CHÍNH route này (`?tenant_id` bắt buộc, lý do ≤ 500, event ghi
-  // `by_platform`); guard `packGuardOrPlatform` thay `write` chỉ cho vai đó, vai khác như cũ.
-  if (reopen)
-    r.post("/contracts/:id/reopen", packGuardOrPlatform(view, KEY, "write"), async (c) => {
-      const id = idOf(c.req.param("id"));
-      const body = parseWith(ReopenRequestSchema, await readJson(c));
-      const who = requestWho(c);
-      // `admin` gói chỉ tính cho người thuộc công ty (platform không có nhóm ở công ty đích; quyền của họ do use case xét).
-      const admin = who.platform ? false : await isPackAdmin(view, c.get("user"));
-      const out = await reopen(who, id, body.reason, { admin, role: c.get("user").role });
-      if (out.kind !== "ok") throw reopenFail(out);
-      return c.json({ id, status: "needs_review", version: out.version, locked: false });
-    });
   r.post("/contracts/:id/summary", write, async (c) => {
     const id = idOf(c.req.param("id"));
     await d.quota?.(c.get("user").tenantId);

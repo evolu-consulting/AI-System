@@ -142,7 +142,7 @@ async function main(): Promise<void> {
   try {
     const rep = await provisionJourneyTenant(admin, hubDb, { pw: env("JA_USER_PW") });
     console.log(
-      `[ja] tenant e2e-approval: ${rep.tenant}; quy trình ${rep.processes.map((p) => `${p.key}=${p.state}`).join(", ")}`,
+      `[ja] tenant e2e-approval: ${rep.tenant}; người dùng mới ${rep.usersCreated.length}, đã có ${rep.usersExisting.length}`,
     );
     // CR-121 D-5: hai công ty MỚI cho hành trình 2 tenant (chưa gán quy trình/luật nào; platform admin làm trong spec).
     const sfx = process.env.JA_D5_SUFFIX;

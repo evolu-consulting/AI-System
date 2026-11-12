@@ -1,6 +1,8 @@
 {
   "contracts": {
     "del": {
+      "menu": "Actions",
+      "submittedBefore": "This draft was sent for approval before — its earlier approval rounds and records are deleted too.",
       "orphansAsk": "Delete products no other contract uses?",
       "orphansHint": "Tick the products to delete with this contract. Unticked ones are kept. Products used by another contract are never deleted.",
       "button": "Delete contract",

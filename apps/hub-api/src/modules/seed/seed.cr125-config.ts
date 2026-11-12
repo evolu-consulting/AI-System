@@ -4,25 +4,21 @@
 //   2. ký số demo "Ký thử" (`selfsign`): `approval_settings.esign_enabled` + nhà cung cấp mặc định. KHÔNG secret DocuSign (env `ESIGN_PROVIDERS`
 //      do compose staging đặt, không nằm trong seed);
 //   3. nhóm duyệt mà mẫu Thư viện trỏ tới (truong-phong, giam-doc, phong-kinh-doanh) + thành viên mẫu (khớp theo username);
-//   4. mẫu Thư viện: 3 mẫu duyệt HĐ (CR-122 B) + "Quản trị duyệt bài" (CR-125 c5); 2 mẫu nhận HĐ đối tác đã có ở hub 0121;
-//   5. flow mặc định của công ty (`company_flows` Bật): duyệt HĐ (Duyệt 2 cấp), nhận HĐ đối tác (Nhận HĐ thường), duyệt bài Community;
+//   4. mẫu Thư viện: "Quản trị duyệt bài" (CR-125 c5) + «Quy trình mua hàng» (CR-127: 11 mẫu Sổ Hợp Tác đã gỡ, hub 0136 — công ty tự tạo flow trống);
+//   5. (CR-127 Z9: KHÔNG còn gán flow mặc định cho công ty — quản trị nền tảng tạo quy trình riêng từ sơ đồ trống);
 //   6. cờ `flow_triggers` BẬT cho mọi công ty có flow Bật (như hub 0126) ⇒ ops `flow_flag` không cảnh báo.
 // Idempotent (on conflict / where thiếu), mỗi bước MỘT câu SQL theo tập (không theo số hàng). Gói chưa bật cho công ty ⇒ bước tương ứng bỏ qua.
 
 import {
   bindGroupKeys,
   COMMUNITY_FLOW_TEMPLATE,
-  FLOW_TEMPLATE_APP,
-  FLOW_TEMPLATE_EVENT,
-  FLOW_TEMPLATE_INPUTS,
-  FLOW_TEMPLATES,
   groupKeysOf,
   PURCHASE_PARENT,
-  PURCHASE_PARENT_ID,
   PURCHASE_PHASE_KEYS,
   PURCHASE_TEMPLATES,
 } from "../processes/public";
 import { TEMPLATE_GROUP_MEMBERS } from "./seed.cr125-members";
+import { SIGNER_GROUP, writeSignerGroup } from "./seed.cr127-config";
 import type { Tx } from "./seed.repo";
 
 /** Ứng dụng có tính năng được cấp tự động (khi công ty đã có `<app>-read`). */
@@ -31,11 +27,6 @@ const FEATURE_APPS = ["contracts", "community"] as const;
 const FEATURE_EXCLUDED = ["han-muc-duyet", "contracts-approval-engine"] as const;
 /** Nhà cung cấp ký số demo (nhãn "Ký thử"); không bao giờ DocuSign. */
 export const DEMO_ESIGN_PROVIDER = "selfsign";
-
-/** Id mẫu "Nhận HĐ thường" (hub 0121) — flow mặc định cho sự kiện `contract.received`. */
-export const RECEIVE_DEFAULT_FLOW_ID = "0c124000-0000-4000-8000-0000000000c2";
-/** Id mẫu "Duyệt 2 cấp" (CR-122 B) — flow mặc định duyệt HĐ. */
-export const APPROVAL_DEFAULT_FLOW_ID = "0c122000-0000-4000-8000-0000000000b1";
 
 /** Nhóm duyệt mà các mẫu mặc định trỏ tới (mã theo mẫu; công ty không phải đổi). */
 export const TEMPLATE_GROUPS = [
@@ -53,16 +44,10 @@ export const TEMPLATE_GROUPS = [
   { key: "ke-toan-truong", name: { vi: "Kế toán trưởng", en: "Chief accountant" } },
   { key: "kho", name: { vi: "Kho", en: "Warehouse" } },
   { key: "thu-quy", name: { vi: "Thủ quỹ", en: "Cashier" } },
+  SIGNER_GROUP, // CR-127 Z0: nhóm «Người ký HĐ» (partner_settings.signer_group_id)
 ] as const;
 
 export { PURCHASE_ROLE_GROUPS, TEMPLATE_GROUP_MEMBERS } from "./seed.cr125-members";
-
-/** Flow mặc định của công ty: gán khi công ty có tính năng đòi hỏi (cùng luật `templateReadiness`: tính năng bật mới gán). */
-export const DEFAULT_FLOWS = [
-  { flow_id: APPROVAL_DEFAULT_FLOW_ID, feature: "contracts-write" },
-  { flow_id: RECEIVE_DEFAULT_FLOW_ID, feature: "contracts-partner-confirm" },
-  { flow_id: COMMUNITY_FLOW_TEMPLATE.id, feature: "community-read" },
-] as const;
 
 export type Cr125ConfigResult = {
   features: number;
@@ -71,9 +56,10 @@ export type Cr125ConfigResult = {
   groupMembers: number;
   libraryDefs: number;
   libraryReleases: number;
-  companyFlows: number;
   flowFlags: number;
   esignSigners: number;
+  /** CR-127 Z0: công ty được chọn nhóm «Người ký HĐ». */
+  partnerSigners: number;
 };
 
 const ZERO: Cr125ConfigResult = {
@@ -83,24 +69,13 @@ const ZERO: Cr125ConfigResult = {
   groupMembers: 0,
   libraryDefs: 0,
   libraryReleases: 0,
-  companyFlows: 0,
   flowFlags: 0,
   esignSigners: 0,
+  partnerSigners: 0,
 };
 
-/** Mẫu Thư viện do seed ghi (id cố định): 3 mẫu duyệt HĐ + mẫu Community + 3 mẫu «Quy trình mua hàng». */
+/** Mẫu Thư viện do seed ghi (id cố định): mẫu Community + 3 mẫu «Quy trình mua hàng». */
 export const libraryRows = () => [
-  ...FLOW_TEMPLATES.map((t) => ({
-    id: t.id,
-    key: t.key,
-    name: t.name,
-    description: t.description,
-    input_hint: "Mã hợp đồng",
-    stages: t.stages(),
-    inputs: FLOW_TEMPLATE_INPUTS,
-    trigger: { event: FLOW_TEMPLATE_EVENT },
-    app: FLOW_TEMPLATE_APP,
-  })),
   {
     id: COMMUNITY_FLOW_TEMPLATE.id,
     key: COMMUNITY_FLOW_TEMPLATE.key,
@@ -138,9 +113,9 @@ export async function writeCr125Config(
   const l = await writeLibrary(tx);
   r.libraryDefs = l.defs;
   r.libraryReleases = l.releases;
-  r.companyFlows = await assignDefaultFlows(tx, keys);
   r.flowFlags = await enableFlowTriggers(tx, keys);
   r.esignSigners = await writePurchaseEsignSigners(tx, keys);
+  r.partnerSigners = await writeSignerGroup(tx, keys);
   await bumpIfChanged(tx, r, keys);
   return r;
 }
@@ -233,50 +208,6 @@ async function writeLibrary(tx: Tx): Promise<{ defs: number; releases: number }>
   return { defs, releases };
 }
 
-/**
- * 5: flow mặc định (Bật) cho công ty có tính năng mà mẫu đòi. Công ty đã có flow Bật không điều kiện cho CÙNG sự kiện (vd hd-mac-dinh
- * backfill hub 0111, hoặc admin đã đổi) ⇒ không thêm flow thứ hai tranh nhau. Dòng đã có (kể cả đã Tắt) giữ nguyên.
- */
-async function assignDefaultFlows(tx: Tx, keys: readonly string[]): Promise<number> {
-  const byEvent = await assignEventFlows(tx, keys);
-  const manual = await assignManualFlows(tx, keys);
-  return byEvent + manual;
-}
-
-/**
- * «Quy trình mua hàng» (cha, bắt đầu bằng phiếu — không có sự kiện) gán cho công ty có `contracts-read`. Ba phần KHÔNG gán: chỉ chạy làm
- * lượt con của node Quy trình con (đọc thẳng từ Thư viện), nên không có flow công ty nào mở lượt theo sự kiện HĐ ⇒ không mở trùng.
- */
-async function assignManualFlows(tx: Tx, keys: readonly string[]): Promise<number> {
-  return (
-    await tx`insert into hub.company_flows (tenant_id, flow_id, enabled, position)
-      select tn.id, d.id, true, 0
-      from admin.tenants tn
-      join hub.process_defs d on d.id = ${PURCHASE_PARENT_ID}::uuid and d.deleted_at is null
-      join admin.features ft on ft.key = 'contracts-read' and ft.status <> 'off'
-      join admin.feature_entitlements en on en.feature_id = ft.id and en.tenant_id = tn.id and en.revoked_at is null
-      where tn.key = any(${[...keys]}::text[]) and tn.active
-      on conflict (tenant_id, flow_id) do nothing returning id`
-  ).length;
-}
-
-async function assignEventFlows(tx: Tx, keys: readonly string[]): Promise<number> {
-  return (
-    await tx`insert into hub.company_flows (tenant_id, flow_id, enabled, position)
-      select tn.id, x.flow_id, true, 0
-      from admin.tenants tn
-      cross join jsonb_to_recordset(${tx.json(DEFAULT_FLOWS as never)}::jsonb) as x(flow_id uuid, feature text)
-      join hub.process_defs d on d.id = x.flow_id and d.deleted_at is null and d.trigger is not null
-      join admin.features ft on ft.key = x.feature and ft.status <> 'off'
-      join admin.feature_entitlements en on en.feature_id = ft.id and en.tenant_id = tn.id and en.revoked_at is null
-      where tn.key = any(${[...keys]}::text[]) and tn.active
-        and not exists (select 1 from hub.company_flows cf join hub.process_defs d2 on d2.id = cf.flow_id
-          where cf.tenant_id = tn.id and cf.enabled and cf.flow_id <> x.flow_id
-            and d2.trigger_event = d.trigger_event and not (d2.trigger ? 'when'))
-      on conflict (tenant_id, flow_id) do nothing returning id`
-  ).length;
-}
-
 /** 6: như hub 0126 — công ty có flow Bật thì cờ `flow_triggers` BẬT (không đụng công ty khác; hàng đã Bật không đổi `updated_at`). */
 async function enableFlowTriggers(tx: Tx, keys: readonly string[]): Promise<number> {
   return (
@@ -348,10 +279,10 @@ async function bumpIfChanged(tx: Tx, r: Cr125ConfigResult, keys: readonly string
     r.features +
     r.groups +
     r.groupMembers +
-    r.companyFlows +
     r.flowFlags +
     r.esign +
-    r.esignSigners;
+    r.esignSigners +
+    r.partnerSigners;
   if (touched === 0 && r.libraryDefs === 0) return;
   await notifyConfigChanged(tx, keys);
 }

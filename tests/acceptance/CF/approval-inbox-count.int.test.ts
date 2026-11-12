@@ -1,11 +1,11 @@
 // CR-121 C-7 · số "Chờ tôi duyệt" cho menu (`PackRunsPort.inboxOf`, MỘT câu SQL) trên hub THẬT: đúng người duyệt thấy số, người
 // khác thấy 0, tenant khác không lẫn; `approver` = người có vai duyệt trong quy trình ĐANG GÁN của khe (Group theo mã); khe chưa gán ⇒ false.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { contractsNavSource } from "../../../apps/hub-api/src/modules/packs/contracts/nav.mount";
 import {
   APPROVAL_SLOT,
   compileSlotStages,
-} from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules";
-import { contractsNavSource } from "../../../apps/hub-api/src/modules/packs/contracts/nav.mount";
+} from "../../../apps/hub-api/src/modules/packs/contracts/testing";
 import type {
   PackRunCaller,
   PackRunsBridge,

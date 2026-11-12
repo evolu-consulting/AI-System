@@ -51,6 +51,8 @@ export type MyWorkApproval = {
   stage_name: string;
   due_at: string | null;
   escalated: boolean;
+  /** CR-127 · U4 · uỷ quyền còn hiệu lực: người xem làm thay người này («Thay A»). Vắng ⇒ việc của chính người xem. */
+  delegated_from?: { id: string; display_name: string };
 };
 
 /** CR-125 · x1 · HĐ đang chờ CHÍNH người xem ký (bước Ký số: người ký công ty có tên trong phong bì còn mở, đến lượt). */
@@ -59,6 +61,21 @@ export type MyWorkSign = {
   contract_number: string | null;
   contract_title: string | null;
   /** Lúc gửi ký (ISO) — HĐ chờ lâu nhất đứng trước. */
+  since: string;
+};
+
+/**
+ * CR-127 K8 · spec §3 #9b · HĐ đối tác gửi tới mà công ty CHƯA có quy trình nhận ⇒ người phụ trách HĐ nhận quyết (Đồng ý / Trả lại để sửa /
+ * Từ chối qua `POST /contracts/:id/inbox-decision`).
+ */
+export type MyWorkInboxDecision = {
+  contract_id: string;
+  contract_number: string | null;
+  contract_title: string | null;
+  /** Tên công ty đối tác gửi. */
+  sender_name: string;
+  round: number;
+  /** Lúc nhận (ISO). */
   since: string;
 };
 
@@ -72,4 +89,6 @@ export type MyWorkOut = {
   approvals?: MyWorkApproval[];
   /** CR-125 · x1 · việc KÝ của người xem (cùng đọc với `approvals` ⇒ thẻ "Chờ bạn" đếm một nguồn). */
   signing?: MyWorkSign[];
+  /** CR-127 K8 · HĐ nhận chờ CHÍNH người xem quyết (người phụ trách HĐ nhận). */
+  inbox?: MyWorkInboxDecision[];
 };

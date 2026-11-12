@@ -1,13 +1,14 @@
 // TK1 · PK-NFR-04 · PK-AC01 · PK-AC03 · HD-NFR-04 · chứng minh bộ RLS theo hợp đồng trên gói `contracts` (thật) và `pkdemo` (mẫu).
 // Mỗi gói chỉ khai bảng + cách seed/insert; ca cách ly do `defineRlsSuite` sinh.
 
-import { tenantId, userId } from "./builders";
+import { tenantId } from "./builders";
 import { cloneDb, openOwner, type Sql } from "./db";
+import { cksTables } from "./rls-packs-cks";
+import { one, parent, rnd, who } from "./rls-packs-helpers";
 import { v2IgnoreTables, v2Tables } from "./rls-packs-v2";
 import { defineRlsSuite, type RlsTable } from "./rls-suite";
 
 const tenants = { a: tenantId(901), b: tenantId(902) };
-const who = userId(901);
 const open = async (): Promise<Sql> => {
   await cloneDb("full");
   return openOwner(2);
@@ -16,15 +17,6 @@ const close = async (owner: Sql): Promise<void> => {
   await owner.end({ timeout: 2 });
 };
 
-/** `INSERT … RETURNING id::text` (owner hoặc role) — trả khoá chính dạng chuỗi. */
-const one = async (sql: Sql, text: string, params: unknown[]): Promise<string> => {
-  const rows = (await sql.unsafe(
-    `${text} returning id::text as id`,
-    params as never[],
-  )) as unknown as { id: string }[];
-  return rows[0]?.id as string;
-};
-const rnd = (pk?: string): string => pk ?? crypto.randomUUID();
 const org = (t: string): string => `t_${t}`;
 
 const frameTables = (k: string): RlsTable[] => [
@@ -55,138 +47,6 @@ const frameTables = (k: string): RlsTable[] => [
       tx.unsafe(
         `insert into ${k}.index_outbox (tenant_id, entity, entity_id, op) values ($1, 'item', $2, 'upsert')`,
         [t, crypto.randomUUID()],
-      ),
-  },
-];
-
-const parent = (sql: Sql, table: string, t: string): Promise<string> =>
-  sql
-    .unsafe(`select id::text as id from ${table} where tenant_id = $1 order by id limit 1`, [t])
-    .then((r) => (r[0] as unknown as { id: string }).id);
-
-/** HD9-AC08 · 8 bảng CKS (D9-01): cha khai trước con; hàng ghi qua role dùng cha giả (bị RLS chặn trước FK). */
-const CKS = "contracts.cks_";
-const cust = (sql: Sql, t: string) => parent(sql, `${CKS}customers`, t);
-const cksTables: RlsTable[] = [
-  {
-    name: "cks_customers",
-    seed: (o, t) =>
-      one(o, `insert into ${CKS}customers (tenant_id, name) values ($1, $2)`, [t, `K ${t}`]),
-    insert: (tx, t, pk) =>
-      tx.unsafe(`insert into ${CKS}customers (id, tenant_id, name) values ($1, $2, $3)`, [
-        rnd(pk),
-        t,
-        `K${Math.random()}`,
-      ]),
-  },
-  {
-    name: "cks_lots",
-    seed: (o, t) =>
-      one(
-        o,
-        `insert into ${CKS}lots (tenant_id, label, ca, qty, unit_cost, bought_at, purchase_contract_id, created_by)
-         values ($1, '2026-01', 'CA', 1, 1, '2026-01-01', $2, $3)`,
-        [t, crypto.randomUUID(), who],
-      ),
-    insert: (tx, t, pk) =>
-      tx.unsafe(
-        `insert into ${CKS}lots (id, tenant_id, label, ca, qty, unit_cost, bought_at, purchase_contract_id, created_by)
-         values ($1, $2, '2026-01', 'CA', 1, 1, '2026-01-01', $3, $4)`,
-        [rnd(pk), t, crypto.randomUUID(), who],
-      ),
-  },
-  {
-    name: "cks_certificates",
-    seed: async (o, t) =>
-      one(
-        o,
-        `insert into ${CKS}certificates (tenant_id, customer_id, ca, holder_name, valid_to, source)
-         values ($1, $2, 'CA', 'A', '2027-01-01', 'ours')`,
-        [t, await cust(o, t)],
-      ),
-    insert: (tx, t, pk) =>
-      tx.unsafe(
-        `insert into ${CKS}certificates (id, tenant_id, customer_id, ca, holder_name, valid_to, source)
-         values ($1, $2, $3, 'CA', 'A', '2027-01-01', 'ours')`,
-        [rnd(pk), t, crypto.randomUUID()],
-      ),
-  },
-  {
-    name: "cks_renewals",
-    seed: async (o, t) =>
-      one(
-        o,
-        `insert into ${CKS}renewals (tenant_id, sale_contract_id, customer_id, certificate_ids, new_contract_id,
-           price_each, valid_to, created_by)
-         values ($1, $2, $3, array[$2]::uuid[], $2, 1, '2027-01-01', $4)`,
-        [t, crypto.randomUUID(), await cust(o, t), who],
-      ),
-    insert: (tx, t, pk) =>
-      tx.unsafe(
-        `insert into ${CKS}renewals (id, tenant_id, sale_contract_id, customer_id, certificate_ids, new_contract_id,
-           price_each, valid_to, created_by)
-         values ($1, $2, $3, $3, array[$3]::uuid[], $3, 1, '2027-01-01', $4)`,
-        [rnd(pk), t, crypto.randomUUID(), who],
-      ),
-  },
-  {
-    name: "cks_followups",
-    seed: async (o, t) =>
-      one(
-        o,
-        `insert into ${CKS}followups (tenant_id, user_id, customer_id, due_at) values ($1, $2, $3, now())`,
-        [t, who, await cust(o, t)],
-      ),
-    insert: (tx, t, pk) =>
-      tx.unsafe(
-        `insert into ${CKS}followups (id, tenant_id, user_id, customer_id, due_at) values ($1, $2, $3, $4, now())`,
-        [rnd(pk), t, who, crypto.randomUUID()],
-      ),
-  },
-  {
-    name: "cks_signed_docs",
-    seed: (o, t) =>
-      one(
-        o,
-        `insert into ${CKS}signed_docs (tenant_id, kind, title, source, filename, sha256, created_by)
-         values ($1, 'other', 'X', 'xml', 'a.xml', $2, $3)`,
-        [t, "a".repeat(64), who],
-      ),
-    insert: (tx, t, pk) =>
-      tx.unsafe(
-        `insert into ${CKS}signed_docs (id, tenant_id, kind, title, source, filename, sha256, created_by)
-         values ($1, $2, 'other', 'X', 'xml', 'a.xml', $3, $4)`,
-        [rnd(pk), t, "b".repeat(64), who],
-      ),
-  },
-  {
-    name: "cks_market_prices",
-    seed: (o, t) =>
-      one(
-        o,
-        `insert into ${CKS}market_prices (tenant_id, ca_key, years, seller, seen) values ($1, 'ca', 1, 'S', '2026-01-01')`,
-        [t],
-      ),
-    insert: (tx, t, pk) =>
-      tx.unsafe(
-        `insert into ${CKS}market_prices (id, tenant_id, ca_key, years, seller, seen) values ($1, $2, 'ca', 1, 'S', '2026-01-01')`,
-        [rnd(pk), t],
-      ),
-  },
-  {
-    name: "cks_price_audit",
-    seed: (o, t) =>
-      one(
-        o,
-        `insert into ${CKS}price_audit (tenant_id, entity, entity_id, field, new_value, actor_user_id)
-         values ($1, 'lot', $2, 'unit_cost', 1, $3)`,
-        [t, crypto.randomUUID(), who],
-      ),
-    insert: (tx, t) =>
-      tx.unsafe(
-        `insert into ${CKS}price_audit (tenant_id, entity, entity_id, field, new_value, actor_user_id)
-         values ($1, 'lot', $2, 'unit_cost', 1, $3)`,
-        [t, crypto.randomUUID(), who],
       ),
   },
 ];
@@ -338,7 +198,7 @@ defineRlsSuite({
   close,
   reset: async (o) => {
     await o.unsafe(
-      "truncate contracts.partner_inbox, contracts.partner_sends, contracts.partner_settings, contracts.esign_envelopes, contracts.contract_edit_log, contracts.product_supplier_prices, contracts.product_rules, contracts.product_components, contracts.products, contracts.partner_notes, contracts.partner_roles, contracts.contract_delete_log, contracts.business_settings, contracts.company_settings, contracts.score_configs_v2, contracts.score_locks, contracts.score_lock_runs, contracts.score_ratings, contracts.milestone_items, contracts.legacy_records, contracts.followups, contracts.sourcing_choices, contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_flows, contracts.approval_settings_audit, contracts.visibility_settings, contracts.score_configs, contracts.score_config_history, contracts.score_snapshots, contracts.price_quotes, contracts.market_observations, contracts.companies cascade",
+      "truncate contracts.partner_inbox, contracts.partner_sends, contracts.partner_settings, contracts.esign_envelopes, contracts.contract_edit_log, contracts.product_supplier_prices, contracts.product_rules, contracts.product_components, contracts.products, contracts.partner_notes, contracts.partner_roles, contracts.partner_profiles, contracts.contract_delete_log, contracts.business_settings, contracts.company_settings, contracts.score_configs_v2, contracts.score_locks, contracts.score_lock_runs, contracts.score_ratings, contracts.milestone_items, contracts.legacy_records, contracts.followups, contracts.sourcing_choices, contracts.partner_event_voids, contracts.partner_events, contracts.obligations, contracts.cks_price_audit, contracts.cks_followups, contracts.cks_signed_docs, contracts.cks_renewals, contracts.cks_certificates, contracts.cks_lots, contracts.cks_customers, contracts.cks_market_prices, contracts.contract_items, contracts.contract_reminders, contracts.contract_events, contracts.approvals, contracts.contracts, contracts.contract_categories, contracts.files, contracts.index_outbox, contracts.approval_settings, contracts.approval_flows, contracts.approval_settings_audit, contracts.visibility_settings, contracts.score_configs, contracts.score_config_history, contracts.score_snapshots, contracts.price_quotes, contracts.market_observations, contracts.companies cascade",
     );
   },
   tables: [
@@ -360,12 +220,12 @@ defineRlsSuite({
       seed: (o, t) =>
         one(
           o,
-          "insert into contracts.contracts (tenant_id, title, status, created_by) values ($1, 'HD', 'active', $2)",
+          "insert into contracts.contracts (tenant_id, title, status, created_by) values ($1, 'HD', 'done', $2)",
           [t, who],
         ),
       insert: (tx, t, pk) =>
         tx.unsafe(
-          "insert into contracts.contracts (id, tenant_id, title, status, created_by) values ($1, $2, 'HD', 'active', $3)",
+          "insert into contracts.contracts (id, tenant_id, title, status, created_by) values ($1, $2, 'HD', 'done', $3)",
           [rnd(pk), t, who],
         ),
     },
@@ -381,6 +241,65 @@ defineRlsSuite({
         tx.unsafe(
           "insert into contracts.contract_items (id, tenant_id, contract_id, ord, name) values ($1, $2, $3, 0, 'Hàng')",
           [rnd(pk), t, crypto.randomUUID()],
+        ),
+    },
+    // CR-127 (gói 0092/0093/0095/0097): 4 bảng mới, RLS gói theo tenant (`packs.secure_table`); submissions/refs chỉ thêm (REVOKE UPDATE).
+    {
+      name: "contract_submissions",
+      seed: async (o, t) =>
+        one(
+          o,
+          "insert into contracts.contract_submissions (tenant_id, contract_id, round, submitted_by) values ($1, $2, 1, $3)",
+          [t, await parent(o, "contracts.contracts", t), who],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.contract_submissions (id, tenant_id, contract_id, round, submitted_by) values ($1, $2, $3, 1, $4)",
+          [rnd(pk), t, crypto.randomUUID(), who],
+        ),
+    },
+    {
+      name: "exec_requests",
+      seed: async (o, t) =>
+        one(
+          o,
+          "insert into contracts.exec_requests (tenant_id, contract_id, kind, requested_by) values ($1, $2, 'hold', $3)",
+          [t, await parent(o, "contracts.contracts", t), who],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.exec_requests (id, tenant_id, contract_id, kind, requested_by) values ($1, $2, $3, 'hold', $4)",
+          [rnd(pk), t, crypto.randomUUID(), who],
+        ),
+    },
+    {
+      name: "penalty_terms",
+      seed: async (o, t) =>
+        one(
+          o,
+          "insert into contracts.penalty_terms (tenant_id, contract_id, party, trigger, basis) values ($1, $2, 'ours', 'other', 'fixed')",
+          [t, await parent(o, "contracts.contracts", t)],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.penalty_terms (id, tenant_id, contract_id, party, trigger, basis) values ($1, $2, $3, 'ours', 'other', 'fixed')",
+          [rnd(pk), t, crypto.randomUUID()],
+        ),
+    },
+    {
+      name: "sign_session_refs", // khoá chính ghép (tenant_id, session_id) ⇒ dò theo session_id
+      pk: "session_id",
+      seed: async (o, t) =>
+        (
+          (await o.unsafe(
+            "insert into contracts.sign_session_refs (tenant_id, contract_id, session_id, side) values ($1, $2, $3, 'from') returning session_id::text as id",
+            [t, await parent(o, "contracts.contracts", t), crypto.randomUUID()],
+          )) as unknown as { id: string }[]
+        )[0]?.id as string,
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into contracts.sign_session_refs (tenant_id, contract_id, session_id, side) values ($1, $2, $3, 'from')",
+          [t, crypto.randomUUID(), rnd(pk)],
         ),
     },
     {
@@ -461,7 +380,7 @@ defineRlsSuite({
       seed: (o, t) =>
         one(
           o,
-          "insert into contracts.contracts (tenant_id, title, status, created_by) values ($1, 'HD', 'active', $2)",
+          "insert into contracts.contracts (tenant_id, title, status, created_by) values ($1, 'HD', 'done', $2)",
           [t, who],
         ),
       insert: (tx, t, pk) =>

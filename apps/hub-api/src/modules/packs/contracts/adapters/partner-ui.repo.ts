@@ -90,26 +90,42 @@ const writes = (tx: Tx, tid: string) => ({
     return r?.ok === true;
   },
   async settings() {
-    const [r] = await tx.execute<{ imp: string; cri: string; owner: string | null }>(sql`
-        select important_min::text as imp, critical_min::text as cri, owner_user_id::text as owner
+    const [r] = await tx.execute<{
+      imp: string;
+      cri: string;
+      owner: string | null;
+      sg: string | null;
+    }>(sql`
+        select important_min::text as imp, critical_min::text as cri, owner_user_id::text as owner,
+          signer_group_id::text as sg
         from contracts.partner_settings where tenant_id = ${tid}::uuid`);
     return {
       important_min: Number(r?.imp ?? 500_000_000),
       critical_min: Number(r?.cri ?? 2_000_000_000),
       owner_user_id: r?.owner ?? null,
+      signer_group_id: r?.sg ?? null,
     };
   },
   /** Lưu cài đặt; người phụ trách (nếu có) phải là thành viên của CHÍNH công ty (hàm DEFINER, một EXISTS). Sai ⇒ false, không ghi. */
   async saveSettings(
-    s: { important_min: number; critical_min: number; owner_user_id: string | null },
+    s: {
+      important_min: number;
+      critical_min: number;
+      owner_user_id: string | null;
+      /** `undefined` ⇒ giữ nguyên nhóm «Người ký HĐ» đã lưu. */
+      signer_group_id?: string | null | undefined;
+    },
     by: string,
   ): Promise<boolean> {
     const r = await tx.execute<{ tenant_id: string }>(sql`insert into contracts.partner_settings
-          (tenant_id, important_min, critical_min, owner_user_id, updated_by)
-        select ${tid}::uuid, ${s.important_min}, ${s.critical_min}, ${s.owner_user_id}::uuid, ${by}::uuid
+          (tenant_id, important_min, critical_min, owner_user_id, updated_by, signer_group_id)
+        select ${tid}::uuid, ${s.important_min}, ${s.critical_min}, ${s.owner_user_id}::uuid, ${by}::uuid,
+          ${s.signer_group_id ?? null}::uuid
         where ${s.owner_user_id}::uuid is null or hub.partner_is_member(${s.owner_user_id}::uuid)
         on conflict (tenant_id) do update set important_min = excluded.important_min, critical_min = excluded.critical_min,
-          owner_user_id = excluded.owner_user_id, updated_by = excluded.updated_by, updated_at = now()
+          owner_user_id = excluded.owner_user_id, updated_by = excluded.updated_by, updated_at = now(),
+          signer_group_id = case when ${s.signer_group_id !== undefined}::boolean then excluded.signer_group_id
+            else contracts.partner_settings.signer_group_id end
         returning tenant_id::text`);
     return r.length > 0;
   },

@@ -27,6 +27,7 @@ import { DocTypeFilter } from "../components/DocTypeFilter";
 import { ExportButtons } from "../components/ExportButtons";
 import { QueueExtractDialog } from "../components/ExtractDialog";
 import { NeedPdfNotice } from "../components/NeedPdfNotice";
+import { PartnerInviteBand } from "../components/PartnerInviteBand";
 import { QuotaDialog } from "../components/QuotaDialog";
 import { DropOverlay, UploadPanel } from "../components/UploadPanel";
 import { UploadTypeGate } from "../components/UploadTypeDialog";
@@ -60,9 +61,12 @@ function ListEmpty({ write }: { write: boolean }) {
   );
 }
 
+const sourceOf = (v: unknown): "upload" | "partner" | undefined =>
+  v === "partner" || v === "upload" ? v : undefined;
+
 export function ContractsListPage() {
   const { t } = useTranslation();
-  const { write, owner } = useMe();
+  const { write } = useMe();
   const nav = useNavigate();
   const qc = useQueryClient();
   const file = useRef<HTMLInputElement>(null);
@@ -80,6 +84,7 @@ export function ContractsListPage() {
     write ? addCategoryButton(t, () => void addCategory()) : undefined,
     date,
     docType,
+    sourceOf(search.source),
   );
   const setDocType = (f: DocFilter) => {
     table.setPage(1);
@@ -109,7 +114,7 @@ export function ContractsListPage() {
     keys.map((key) => ({
       key,
       label: t(`contracts.list.col.${key}`),
-      locked: key === "title" || key === "stage",
+      locked: key === "title" || key === "status",
     })),
   );
   const delDialog = useDeleteDialog();
@@ -121,10 +126,9 @@ export function ContractsListPage() {
       progress: new Map((list.data?.progress ?? []).map((p) => [p.id, p])),
       docs: new Map((list.data?.docs ?? []).map((d) => [d.id, d.doc_type])),
       sources: new Map((list.data?.docs ?? []).map((d) => [d.id, d.source])),
-      owner,
       onDelete: delDialog.open,
     }),
-    [list.data, flow, owner, delDialog.open],
+    [list.data, flow, delDialog.open],
   );
   const rows = useMemo(() => buildRows(list.data), [list.data]);
 
@@ -217,6 +221,7 @@ export function ContractsListPage() {
           {err}
         </p>
       )}
+      <PartnerInviteBand />
       <DocTypeFilter value={docType} counts={counts} onChange={setDocType} />
       <TableTools
         q={table.q}

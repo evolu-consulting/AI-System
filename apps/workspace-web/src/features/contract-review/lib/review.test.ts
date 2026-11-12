@@ -1,18 +1,14 @@
 ﻿// HD-FR-26 · S05: luật thuần màn HĐ (cảnh báo, dòng phụ, câu lỗi lưu). V2-F: form + PATCH ↔ `fields` ở `contract-form/lib/*.test.ts`.
 import { describe, expect, it } from "bun:test";
 import { ApiError } from "@ai/web-kit/http";
-import { leadKey, warningsOf } from "./review";
+import { warningsOf } from "./review";
 import { saveErrorText } from "./save-error";
 
 describe("S05 · màn HĐ", () => {
-  it("cảnh báo: chỉ phần có message; dòng phụ theo trạng thái", () => {
+  it("cảnh báo: chỉ phần có message", () => {
     expect(
       warningsOf({ warnings: [{ field: null, code: "vat_unknown", message: "x" }, 1, null] }),
     ).toHaveLength(1);
-    expect(leadKey("extracting")).toBe("contracts.review.reading");
-    expect(leadKey("needs_review")).toBe("contracts.review.checkLead");
-    expect(leadKey("active")).toBeNull();
-    expect(leadKey("needs_review", true)).toBeNull(); // CR-122 · đã gửi duyệt
   });
   it("409 nghiệp vụ không bị báo 'người khác cập nhật': thiếu tồn ⇒ câu máy chủ + gợi ý; mốc đã xác nhận ⇒ câu riêng", () => {
     const t = (k: string) => k;
@@ -43,13 +39,13 @@ describe("S05 · màn HĐ", () => {
   });
 });
 
-describe("save wording (needs_review)", () => {
+describe("save wording (draft)", () => {
   it("nhãn nút + thông báo", async () => {
     const { saveLabelKey, savedNoticeKey } = await import("./review");
     expect(saveLabelKey(true)).toBe("contracts.review.saveDraft");
     expect(saveLabelKey(false)).toBe("contracts.cform.saveChanges");
-    expect(savedNoticeKey("needs_review", false)).toBe("contracts.review.savedDraft");
-    expect(savedNoticeKey("needs_review", true)).toBe("contracts.cform.reviewSavedActive");
-    expect(savedNoticeKey("active", false)).toBe("contracts.review.saved");
+    expect(savedNoticeKey("draft", false)).toBe("contracts.review.savedDraft");
+    expect(savedNoticeKey("draft", true)).toBe("contracts.cform.reviewSavedActive");
+    expect(savedNoticeKey("done", false)).toBe("contracts.review.saved");
   });
 });

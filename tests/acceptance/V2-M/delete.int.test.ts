@@ -1,6 +1,7 @@
 // V2-M · BA v2 HD-07 · 5.5e · 6a · C7 — đường chính: chủ (contracts-owner) xem tác động rồi xoá HĐ BÁN (kho trả lại), HĐ MUA (kho trừ lại),
 // HĐ dịch vụ (khách đang dùng + SP sinh từ HĐ bị gỡ, sổ đối tác bị huỷ) — hub-api THẬT in-process, MỘT tx mỗi lần xoá, một dòng audit.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { setLegacyStatus } from "../HD1/_support/hd1";
 import {
   addDelivery,
   arrangeV2d,
@@ -83,6 +84,9 @@ describe("V2-M · xoá hợp đồng (owner)", () => {
       values (${T.acme}, gen_random_uuid(), 'contract', ${svc}, ${svc}, now(), 'nhắc người khác')`;
     await c.sql`insert into contracts.cks_lots (tenant_id, label, ca, qty, unit_cost, bought_at, purchase_contract_id, created_by)
       values (${T.acme}, 'L', 'CA', 1, 1, current_date, ${svc}, gen_random_uuid())`;
+    // CR-127: khách dịch vụ do móc "HĐ sang done" ghi (deal() dựng thẳng done, không qua móc) ⇒ gọi hàm đồng bộ như móc làm.
+    await setLegacyStatus(c.sql, svc, "done"); // v2d `deal()` dựng Nháp (K4 khoá HĐ done) ⇒ chuyển done sau khi dựng dòng
+    await c.sql`select contracts.v2d_sync_service_customers(${svc}::uuid, ${T.acme}::uuid)`;
     expect(await exists("service_customers", "contract_id", svc)).toBe(1);
     const pv3 = await ok(call(c, P.lan, "GET", `/contracts/${svc}/delete-preview`));
     expect([pv3.service_customers, pv3.products, pv3.partner_events]).toEqual([

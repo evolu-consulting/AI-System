@@ -15,7 +15,6 @@ import {
   insFile,
   insItem,
   needContracts,
-  OUTCOMES,
   OWNER_X,
   P,
   packDirsSrc,
@@ -57,7 +56,7 @@ const minimalContract = (
   extra: { kind?: string; parent?: string | null; status?: string } = {},
 ) =>
   tx`insert into contracts.contracts (id, tenant_id, kind, parent_id, title, status, created_by)
-    values (${id}, ${tenant}, ${extra.kind ?? "contract"}, ${extra.parent ?? null}, 'x', ${extra.status ?? "active"}, ${P.lan.id})`;
+    values (${id}, ${tenant}, ${extra.kind ?? "contract"}, ${extra.parent ?? null}, 'x', ${extra.status ?? "draft"}, ${P.lan.id})`;
 
 describe("HD-AC01 · cách ly tenant ở DB (RLS FORCE)", () => {
   it("HD-AC01 · tenant B đọc 5 bảng nghiệp vụ: 0 hàng của tenant A; chỉ thấy hàng của B", async () => {
@@ -234,13 +233,17 @@ describe("HD-FR-01/03 · CHECK ở DB", () => {
       "23514",
     );
   });
-  it("D-04 · status nhận đúng 9 giá trị (có 'rejected'), từ chối giá trị lạ (23514)", async () => {
+  it("D-04 · CR-127: status nhận đúng 4 giá trị (draft/processing/reject/done), từ chối 9 giá trị cũ và giá trị lạ (23514)", async () => {
     await arrange();
     for (const [i, s] of STATUSES.entries())
       expect({
         s,
         code: await pgCode(() => minimalContract(sql, T.acme, cid(100 + i), { status: s })),
       }).toEqual({ s, code: null });
+    for (const [i, old] of ["active", "needs_review", "extracting", "rejected"].entries())
+      expect(await pgCode(() => minimalContract(sql, T.acme, cid(130 + i), { status: old }))).toBe(
+        "23514",
+      );
     expect(await pgCode(() => minimalContract(sql, T.acme, cid(120), { status: "approved" }))).toBe(
       "23514",
     );
@@ -248,20 +251,7 @@ describe("HD-FR-01/03 · CHECK ở DB", () => {
       "23514",
     );
   });
-  it("HD-FR-03 · handled.outcome nhận 4 giá trị, từ chối giá trị lạ; handled null được", async () => {
-    await arrange();
-    for (const [i, o] of OUTCOMES.entries())
-      expect(
-        await pgCode(() =>
-          insContract(sql, { id: cid(130 + i), tenant: T.acme, handled: { outcome: o } }),
-        ),
-      ).toBeNull();
-    expect(
-      await pgCode(() =>
-        insContract(sql, { id: cid(140), tenant: T.acme, handled: { outcome: "ignored" } }),
-      ),
-    ).toBe("23514");
-  });
+
   it("HD-FR-01 · direction chỉ sale/purchase/null; title 1…200; fields phải là object; error ≤ 2000", async () => {
     await arrange();
     expect(
@@ -288,23 +278,22 @@ describe("HD-FR-01/03 · CHECK ở DB", () => {
       ),
     ).toBe("23514");
   });
-  it("HD-FR-01 · mặc định: status='extracting', version=1, fields='{}', clauses/warnings='[]', owner/confirmed/handled/run_id null", async () => {
+  it("HD-FR-01 · mặc định (CR-127): status='draft', extract_state='ready', version=1, fields='{}', clauses/warnings='[]', owner/confirmed/run_id null", async () => {
     await arrange();
     await sql`insert into contracts.contracts (id, tenant_id, title, created_by) values (${cid(160)}, ${T.acme}, 'x', ${P.lan.id})`;
     const [r] =
-      await sql`select status, version, fields, clauses, warnings, owner_user_id, confirmed_at, handled, run_id, action_deadline, source_text
+      await sql`select status, extract_state, version, fields, clauses, warnings, owner_user_id, confirmed_at, run_id, source_text
       from contracts.contracts where id = ${cid(160)}`;
     expect(r).toMatchObject({
-      status: "extracting",
+      status: "draft",
+      extract_state: "ready",
       version: 1,
       fields: {},
       clauses: [],
       warnings: [],
       owner_user_id: null,
       confirmed_at: null,
-      handled: null,
       run_id: null,
-      action_deadline: null,
       source_text: null,
     });
   });

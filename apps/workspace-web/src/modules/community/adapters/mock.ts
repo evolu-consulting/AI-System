@@ -3,21 +3,16 @@
 
 import {
   type CommentView,
-  type CommunityNotification,
   type CommunityViewer,
   type ContentHit,
   isHost,
-  type PartnerOrg,
   type PostAction,
   type PostView,
-  type Thread,
-  type ThreadSummary,
 } from "@ai/contracts/community";
 import type { CommunityApi } from "../application/ports";
 import { applyFeedQuery, countTabs, uniqueSorted } from "../domain/filters";
 import { applyMask, detectHits, type MaskContext } from "../domain/mask";
 import { canViewPost, defaultAudience } from "../domain/visibility";
-import { mockDockChat } from "./mock-chat";
 import { commentMutations } from "./mock-comments";
 import { fileMock } from "./mock-files";
 import { flowsMock } from "./mock-flows";
@@ -40,58 +35,12 @@ export { PERSONAS };
 const iso = (minAgo: number) => new Date(Date.now() - minAgo * 60_000).toISOString();
 const DAY = 1440;
 
-type Notif = CommunityNotification & { to: string };
-
 export function createMockApi(): { api: CommunityApi; setPersona: (id: string) => void } {
   let me: CommunityViewer = PERSONAS[0] as CommunityViewer;
   const quoteEnv = quoteEnvOf(() => isHost(me));
   let seq = 100;
   const posts: RawPost[] = structuredClone(SEED_POSTS);
   const comments: RawComment[] = structuredClone(SEED_COMMENTS);
-  const notifs: Notif[] = [
-    {
-      id: "n1",
-      to: "host",
-      kind: "comment",
-      actorName: "Hưng Thịnh Logistics",
-      text: "bình luận bài Chữ ký số DN – USB Token",
-      postId: "p1",
-      orgId: "hungthinh",
-      createdAt: iso(35),
-      unread: true,
-    },
-    {
-      id: "n2",
-      to: "host",
-      kind: "newBuy",
-      actorName: "Công ty TNHH ABC",
-      text: "đăng bài Cần mua Chữ ký số DN – USB Token",
-      postId: "p6",
-      createdAt: iso(25),
-      unread: true,
-    },
-    {
-      id: "n3",
-      to: "host",
-      kind: "newSell",
-      actorName: "Cơ sở Tân Phát",
-      text: "đăng bài Cần bán Băng keo 5cm",
-      postId: "p5",
-      createdAt: iso(180),
-      unread: false,
-    },
-    {
-      id: "n4",
-      to: "tanphat",
-      kind: "reply",
-      actorName: "Nguyễn Văn An",
-      text: "trả lời bình luận của bạn",
-      postId: "p5",
-      createdAt: iso(90),
-      unread: true,
-    },
-  ];
-
   const orgName = (id: string) =>
     id === HOST_ORG.id ? HOST_ORG.name : (PARTNERS.find((p) => p.id === id)?.name ?? id);
   const sideOf = (orgId: string) => (orgId === HOST_ORG.id ? "host" : "partner");
@@ -129,10 +78,17 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
     return out;
   };
 
-  const commentCount = (p: RawPost) =>
-    comments.filter(
-      (c) => c.postId === p.id && (isHost(me) || (c.threadOrgId === me.orgId && !c.hidden)),
-    ).length;
+  // Luật xem (CR-129): chủ quản thấy hết; đối tác (không bị ẩn) thấy bình luận của chủ quản, của công ty mình, trên bài của mình, hoặc nhắc mình.
+  const seesComment = (c: RawComment, p: RawPost) =>
+    isHost(me) ||
+    (!c.hidden &&
+      (c.authorOrgId === HOST_ORG.id ||
+        c.authorOrgId === me.orgId ||
+        p.authorOrgId === me.orgId ||
+        (c.mentions ?? []).includes(me.orgId)));
+  const visibleComments = (p: RawPost) =>
+    comments.filter((c) => c.postId === p.id && seesComment(c, p));
+  const commentCount = (p: RawPost) => visibleComments(p).length;
 
   const toView = (p: RawPost): PostView => {
     const host = isHost(me);
@@ -188,27 +144,20 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       createdAt: iso(c.minAgo),
       ...(host ? { hidden: c.hidden } : {}),
       mine: mineComment(c),
+      mentions: (c.mentions ?? [])
+        .filter((id) => host || id === me.orgId)
+        .map((id) => ({ orgId: id, name: orgName(id) })),
     };
   };
-
-  const thread = (postId: string, orgId: string): Thread => {
-    const org = isHost(me) ? orgId : me.orgId;
-    const list = comments
-      .filter((c) => c.postId === postId && c.threadOrgId === org && (isHost(me) || !c.hidden))
-      .sort((a, b) => b.minAgo - a.minAgo);
-    return {
-      postId,
-      orgId: org,
-      orgName: orgName(org),
-      count: list.length,
-      comments: list.map(commentView),
-      ...(list.length ? { lastAt: iso(Math.min(...list.map((c) => c.minAgo))) } : {}),
-    };
-  };
-
-  const notifyKey = (): string => (isHost(me) ? "host" : me.orgId);
-  const push = (n: Omit<Notif, "id" | "createdAt" | "unread">) =>
-    notifs.unshift({ ...n, id: `n${++seq}`, createdAt: iso(0), unread: true });
+  /** Công ty chủ quản nhắc được: mọi đối tác chưa rời (mock không tính audience). Đối tác: rỗng. */
+  const mentionables = (q?: string) =>
+    isHost(me)
+      ? PARTNERS.filter(
+          (p) => !p.left && p.name.toLowerCase().includes((q ?? "").trim().toLowerCase()),
+        )
+          .slice(0, 20)
+          .map((p) => ({ orgId: p.id, name: p.name }))
+      : [];
 
   const api: CommunityApi = {
     getViewer: async () => me,
@@ -221,7 +170,12 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
     listCats: async () => CATS,
     listFeed: async (q) => {
       const base = posts
-        .filter((p) => visible(p) && (!q.mine || p.authorOrgId === me.orgId))
+        .filter(
+          (p) =>
+            visible(p) &&
+            (!q.mine || p.authorOrgId === me.orgId) &&
+            (!q.authorUserId || p.authorName === me.name),
+        )
         .map(toView);
       const items = applyFeedQuery(base, q);
       return {
@@ -240,7 +194,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       if (
         me.role === "partner" &&
         ((input.type === "sell" && !me.labels.includes("supplier")) ||
-          (input.type === "buy" && !me.labels.includes("buyer")) ||
+          (input.type === "buy" && !me.labels.includes("customer")) ||
           input.type === "note")
       )
         throw new Error("403 Loại bài này không dành cho công ty bạn");
@@ -268,14 +222,6 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         audience: input.audience ?? defaultAudience(input.type),
       };
       posts.unshift(p);
-      if (!isHost(me))
-        push({
-          to: "host",
-          kind: p.type === "sell" ? "newSell" : "newBuy",
-          actorName: me.orgName,
-          text: `đăng bài ${p.type === "sell" ? "Cần bán" : "Cần mua"} ${p.fields.product ?? ""}`,
-          postId: p.id,
-        });
       return toView(p);
     },
     updatePost: async (id, input) => {
@@ -312,75 +258,40 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       const p = get(id); // mock: bài thô = nguồn; quyền xem raw do server C3 kiểm (HT-52)
       return { id, title: p.title, body: p.body, fields: p.fields };
     },
-    updatePartner: async (orgId, input) => {
-      const o = PARTNERS.find((p) => p.id === orgId) as PartnerOrg;
-      return Object.assign(o, { labels: [...new Set(input.labels)], cats: input.cats ?? [] });
-    },
-    listThreads: async (postId): Promise<ThreadSummary[]> => {
+    listComments: async (postId) => {
       const p = get(postId);
       if (!visible(p)) throw new Error("404 Không tìm thấy bài");
-      const orgs = isHost(me)
-        ? [
-            ...new Set([
-              ...comments.filter((c) => c.postId === postId).map((c) => c.threadOrgId),
-              ...(p.authorOrgId !== HOST_ORG.id ? [p.authorOrgId] : []),
-            ]),
-          ]
-        : [me.orgId];
-      return orgs.map((o) => {
-        const { comments: _c, ...s } = thread(postId, o);
-        return s;
-      });
+      const list = visibleComments(p).sort((a, b) => b.minAgo - a.minAgo);
+      return { comments: list.map(commentView) };
     },
-    getThread: async (postId, orgId) => {
+    listMentionables: async (postId, q) => {
       if (!visible(get(postId))) throw new Error("404 Không tìm thấy bài");
-      return thread(postId, orgId);
+      return mentionables(q);
     },
     addComment: async (postId, input) => {
       const p = get(postId);
       if (!visible(p)) throw new Error("404 Không tìm thấy bài");
-      const org = isHost(me) ? (input.orgId ?? p.authorOrgId) : me.orgId;
-      comments.push({
+      const ids = input.mentions ?? [];
+      const allowed = new Set(mentionables().map((m) => m.orgId));
+      if (ids.some((id) => !allowed.has(id)))
+        throw Object.assign(new Error("422 MENTION_NOT_ALLOWED"), { code: "MENTION_NOT_ALLOWED" });
+      const c: RawComment = {
         id: `c${++seq}`,
         postId,
-        threadOrgId: org,
         authorOrgId: me.orgId,
         authorName: me.name,
         text: input.text,
         minAgo: 0,
         hidden: false,
-      });
-      if (isHost(me))
-        push({
-          to: org,
-          kind: "reply",
-          actorName: me.name,
-          text: "trả lời bình luận của bạn",
-          postId,
-        });
-      else
-        push({
-          to: "host",
-          kind: "comment",
-          actorName: me.orgName,
-          text: `bình luận bài ${p.fields.product ?? "của bạn"}`,
-          postId,
-          orgId: org,
-        });
-      return thread(postId, org);
+        mentions: ids,
+      };
+      comments.push(c);
+      return commentView(c);
     },
-    ...commentMutations({ comments, thread, mine: mineComment, mayHide: hostOwns }),
-    listNotifications: async () => {
-      const items = notifs.filter((n) => n.to === notifyKey()).map(({ to: _to, ...n }) => n);
-      return { items, unread: items.filter((n) => n.unread).length };
-    },
-    markRead: async (id) => {
-      for (const n of notifs) if (n.to === notifyKey() && (!id || n.id === id)) n.unread = false;
-    },
+    ...commentMutations({ comments, view: commentView, mine: mineComment, mayHide: hostOwns }),
     ...fileMock(),
     ...flowsMock(),
     ...settingsMock(() => me.userId),
-    chat: mockDockChat,
     ...quoteMock(quoteEnv),
   };
 

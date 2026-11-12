@@ -22,8 +22,6 @@ export type OnboardSpec = {
   departments: DeptIn[];
   /** Gắn tenant với org mgmt-app cho importer I1 (marker `settings.mgmt_source/mgmt_org_id`); org null ⇒ chưa gắn. */
   import?: { source: string; org_id: string | null } | undefined;
-  /** CR-105 L5: key of a published library process for slot `contracts.approval`; absent => tenant runs the default. */
-  approval_process?: string | undefined;
 };
 export type DeptRow = {
   key: string;

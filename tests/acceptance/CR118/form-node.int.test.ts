@@ -2,7 +2,7 @@
 // member khác / tenant khác / đối tác ở run gói contracts ⇒ 404); gửi lại cùng giá trị ⇒ cùng kết quả (một output, một
 // audit); giá trị kiểm theo SNAPSHOT (def sửa sau khi run bắt đầu không ảnh hưởng); If bước sau đọc field; audit hàng.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { sign } from "../H1/_fixtures";
+import { sign, T as T_FIX } from "../H1/_fixtures";
 import { PA } from "../P-a/_support/pa";
 import {
   agentStage,
@@ -206,7 +206,7 @@ describe("CR-118 · node form", () => {
         ...def.body.stages.slice(1),
       ],
     };
-    const up = await c.call("Adm", "PUT", `/process-defs/${def.id}`, v2);
+    const up = await c.call("P", "PUT", `/process-defs/${def.id}?tenant_id=${T_FIX.acme}`, v2);
     expect(up.status).toBe(200);
     // Theo def MỚI thì thiếu `ly_do` (bắt buộc) và `so_tien` > 10 — run cũ vẫn theo snapshot ⇒ hợp lệ.
     expect((await submit("B", taskId, { so_tien: 50 })).status).toBe(200);

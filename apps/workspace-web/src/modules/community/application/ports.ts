@@ -1,10 +1,10 @@
 // CR-102 · C5 · giao diện API mà UI dùng. Hai adapter: `mock` (in-memory, chạy ngay) và `http` (C3 nối `/pack/community/*`).
 // Hình dữ liệu = `@ai/contracts/community`. UI không lọc quyền xem: mọi thứ do adapter/server quyết.
-import type { ChatEvent, SendMessageRequest } from "@ai/contracts/chat";
 import type {
+  CommentPage,
+  CommentView,
   CommunityBrand,
   CommunityFile,
-  CommunityNotification,
   CommunitySettings,
   CommunityViewer,
   CreateCommentInput,
@@ -15,10 +15,10 @@ import type {
   FlowNav,
   JoinRequest,
   JoinRequestInput,
+  Mention,
   ModerationItem,
   ModerationList,
   PartnerOrg,
-  PartnerUpdateInput,
   PostActionInput,
   PostSource,
   PostView,
@@ -29,8 +29,6 @@ import type {
   QuotePreview,
   QuoteSaved,
   Report,
-  Thread,
-  ThreadSummary,
   UpdatePostInput,
 } from "@ai/contracts/community";
 import type { Parsed, Route } from "../domain/route";
@@ -49,14 +47,6 @@ export interface RouterPort {
   subscribe(cb: () => void): () => void;
 }
 
-export type DockSent = { runId: string | null; flowId: string | null };
-/** com-c10b · cổng trợ lý giá (Agent Hub, SSE). http = `/conversations`+`/runs` (X-Ai-Surface: community); mock = trả lời mẫu. */
-export interface DockChat {
-  createConversation(title: string): Promise<{ id: string }>;
-  send(convId: string, req: SendMessageRequest, onEvent: (e: ChatEvent) => void): Promise<DockSent>;
-  cancel(runId: string): Promise<void>;
-}
-
 /** CR-120 · 3 luồng Community (`/pack/community/{moderation,join-requests,reports,posts/:id/report,flows/nav}`). Mỗi danh sách = MỘT yêu cầu (server giới hạn 100). */
 export interface FlowsApi {
   nav(): Promise<FlowNav>;
@@ -66,6 +56,8 @@ export interface FlowsApi {
   createJoin(input: JoinRequestInput): Promise<JoinRequest>;
   listJoins(pendingOnly: boolean): Promise<JoinRequest[]>;
   decideJoin(id: string, input: FlowDecideInput): Promise<JoinRequest>;
+  /** Đối tác SHT để gắn khi duyệt yêu cầu tham gia (`GET /pack/contracts/partners`); lỗi/gói tắt ⇒ chỉ còn «Tạo đối tác mới». */
+  listParties(): Promise<{ party: string; name: string }[]>;
   reportPost(postId: string, reason: string): Promise<Report>;
   listReports(pendingOnly: boolean): Promise<Report[]>;
   decideReport(id: string, input: FlowDecideInput): Promise<Report>;
@@ -87,28 +79,22 @@ export interface CommunityApi {
   postAction(id: string, input: PostActionInput): Promise<PostView | null>;
   /** `GET /pack/community/posts/:id/source` — bản gốc cho chính người đăng (HT-52), dùng khi sửa. */
   getPostSource(id: string): Promise<PostSource>;
-  /** `GET /pack/community/posts/:id/threads` (chủ quản: mọi luồng; đối tác: luồng của mình). */
-  listThreads(postId: string): Promise<ThreadSummary[]>;
-  /** `GET /pack/community/posts/:id/threads/:orgId` */
-  getThread(postId: string, orgId: string): Promise<Thread>;
-  /** `POST /pack/community/posts/:id/comments` */
-  addComment(postId: string, input: CreateCommentInput): Promise<Thread>;
-  /** `PATCH /pack/community/posts/:id/comments/:cid` — người viết sửa; trả luồng. */
-  editComment(postId: string, commentId: string, text: string): Promise<Thread>;
-  /** `DELETE /pack/community/posts/:id/comments/:cid` — người viết xoá; trả luồng. */
-  deleteComment(postId: string, commentId: string): Promise<Thread>;
+  /** `GET /pack/community/posts/:id/comments` — danh sách phẳng cũ → mới, server lọc theo người xem; `cursor` = trang kế. */
+  listComments(postId: string, cursor?: string): Promise<CommentPage>;
+  /** `GET /pack/community/posts/:id/mentionables?q=` — công ty nhắc (@) được trên bài này (đối tác: rỗng). */
+  listMentionables(postId: string, q?: string): Promise<Mention[]>;
+  /** `POST /pack/community/posts/:id/comments` — `mentions` = id công ty (≤ 10); ngoài tập cho phép ⇒ 422 MENTION_NOT_ALLOWED. */
+  addComment(postId: string, input: CreateCommentInput): Promise<CommentView>;
+  /** `PATCH /pack/community/posts/:id/comments/:cid` — người viết sửa chữ. */
+  editComment(postId: string, commentId: string, text: string): Promise<CommentView>;
+  /** `DELETE /pack/community/posts/:id/comments/:cid` — người viết xoá (204). */
+  deleteComment(postId: string, commentId: string): Promise<void>;
   /** `POST /pack/community/posts/:id/comments/:cid/hide` — chủ quản ẩn/hiện (bài của mình). */
-  hideComment(postId: string, commentId: string, hidden: boolean): Promise<Thread>;
-  /** `GET /pack/community/notifications` */
-  listNotifications(): Promise<{ items: CommunityNotification[]; unread: number }>;
-  /** `POST /pack/community/notifications/read` (không id = tất cả). */
-  markRead(id?: string): Promise<void>;
+  hideComment(postId: string, commentId: string, hidden: boolean): Promise<CommentView>;
   /** `GET /pack/community/partners` — chủ quản: bạn bè; đối tác: [công ty mình]. */
   listPartners(opts?: { rep?: boolean }): Promise<PartnerOrg[]>;
   /** `GET /pack/community/profile/:orgId/media` — ảnh & tệp của bài người xem được thấy (CR-110 COM-FR-37). */
   getProfileMedia(orgId: string, q?: { cursor?: string; limit?: number }): Promise<ProfileMedia>;
-  /** `PUT /pack/community/partners/:orgId` — chỉ Admin chủ quản (nhãn, nhóm hàng, liên kết SHT). */
-  updatePartner(orgId: string, input: PartnerUpdateInput): Promise<PartnerOrg>;
   /** `GET /pack/community/cats` — nhóm hàng để gắn bài / chọn người xem. */
   listCats(): Promise<string[]>;
   /** `GET /pack/community/profile/:orgId?` */
@@ -117,7 +103,6 @@ export interface CommunityApi {
   getSettings(): Promise<CommunitySettings>;
   saveSettings(s: CommunitySettings): Promise<CommunitySettings>;
   /** Trợ lý giá (C10b) — chỉ chủ quản; đối tác không có. */
-  chat: DockChat;
   /** `POST /pack/community/posts/:id/quote/preview` — chỉ chủ quản; so giá + cảnh báo, không ghi. */
   previewQuote(postId: string, input: QuoteInput): Promise<QuotePreview>;
   /** `POST /pack/community/posts/:id/quote` — Lưu báo giá vào SP & Giá (chỉ chủ quản). */

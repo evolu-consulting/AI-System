@@ -43,12 +43,7 @@ const rules = (m: AppManifest[]) => appNodeIssues(m).map((i) => i.rule);
 describe("FLOW2-FR-25 · nodes[]", () => {
   test("node lõi + manifest thật hợp lệ, Ký số = tool + wait_event, Hiện bài = Kết thúc shown", () => {
     expect(appNodeIssues(Object.values(APP_MANIFESTS))).toEqual([]);
-    expect(CORE_NODES.map((n) => n.key)).toEqual([
-      "core.email",
-      "core.bell",
-      "core.wait-until",
-      "core.wait-for",
-    ]);
+    expect(CORE_NODES.map((n) => n.key)).toEqual(["core.notify", "core.wait", "core.subprocess"]);
     const es = APP_MANIFESTS.contracts?.nodes.find((n) => n.key === "contracts.esign");
     expect(es?.stages.map((s) => s.executor.kind)).toEqual(["tool", "wait_event"]);
     expect(APP_MANIFESTS.community?.nodes[0]?.stages[0]?.outcome).toBe("shown");
@@ -75,7 +70,7 @@ describe("FLOW2-FR-25 · nodes[]", () => {
   });
   test("nodesFor: lõi + node của app được hỏi", () => {
     const keys = nodesFor(Object.values(APP_MANIFESTS), "community").map((n) => n.key);
-    expect(keys).toContain("core.email");
+    expect(keys).toContain("core.notify");
     expect(keys).toContain("community.show-post");
     expect(keys).not.toContain("contracts.esign");
   });

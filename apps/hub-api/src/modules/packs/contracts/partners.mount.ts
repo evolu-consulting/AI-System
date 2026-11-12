@@ -5,12 +5,14 @@ import type { Db, Tx } from "@ai/db";
 import { Hono } from "hono";
 import type { Redis } from "ioredis";
 import type { AiClient } from "../../../lib/ai-client/ai-client";
-import type { PackAccessView, PackGuardVars } from "../kit/public";
-import { createPackUow, packTenantOnly } from "../kit/public";
+import type { ExternalOrgResolver, PackAccessView, PackGuardVars } from "../kit/public";
+import { createPackUow, packTenantOnly, pgExternalOrgResolver } from "../kit/public";
 import { companiesRepo } from "./adapters/companies.repo";
 import { companiesRoutes } from "./adapters/companies.routes";
 import { createInspect } from "./adapters/link-check.http";
 import { LINK_CHECKS_PER_MINUTE, linkCheckLimit } from "./adapters/link-check-limit.redis";
+import { partnerCommunityRoutes } from "./adapters/partner-community.routes";
+import { partnerProfileRepo } from "./adapters/partner-profile.repo";
 import { partnerRolesRepo } from "./adapters/partner-roles.repo";
 import { partnerRolesRoutes } from "./adapters/partner-roles.routes";
 import { PARTNER_SEARCH_MODEL, partnerWebSearch } from "./adapters/partner-web-search";
@@ -19,6 +21,7 @@ import { partnersRoutes } from "./adapters/partners.routes";
 import { partnerDataOf } from "./adapters/partners-data.repo";
 import { companiesUsecase } from "./application/companies.usecase";
 import type { TaxRegistry } from "./application/extraction.ports";
+import { partnerCommunityUsecase } from "./application/partner-community.usecase";
 import { partnerRolesUsecase } from "./application/partner-roles.usecase";
 import { partnersUsecase } from "./application/partners.usecase";
 import type { Inspect } from "./domain/link-check.rules";
@@ -41,6 +44,8 @@ export type PartnersModuleDeps = {
   ai?: AiClient | null;
   /** REP-v3 · cờ engine điểm (vắng ⇒ env `REPUTATION_ENGINE`). */
   engine?: () => RepEngine;
+  /** CR-130 L3 · danh bạ tài khoản công ty ngoài (mời vào Bảng tin); vắng ⇒ cổng Postgres kit. */
+  ext?: ExternalOrgResolver;
 };
 
 const partnersUow = (db: Db) =>
@@ -49,6 +54,7 @@ const partnersUow = (db: Db) =>
       partners: partnersRepo(tx, t),
       companies: companiesRepo(tx, t),
       roles: partnerRolesRepo(tx, t),
+      profile: partnerProfileRepo(tx, t),
     })),
   );
 
@@ -90,5 +96,13 @@ export function partnersModule(
     webSearch: search,
   });
   r.route("/", partnerRolesRoutes(view, roles, limit));
+  // CR-130 L3 · hồ sơ Bảng tin của đối tác (nhóm hàng/khu vực/tài khoản).
+  r.route(
+    "/",
+    partnerCommunityRoutes(
+      view,
+      partnerCommunityUsecase({ uow, ext: d.ext ?? pgExternalOrgResolver(db) }),
+    ),
+  );
   return r;
 }

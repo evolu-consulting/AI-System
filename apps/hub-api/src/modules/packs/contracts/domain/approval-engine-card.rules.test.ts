@@ -1,12 +1,12 @@
 // contract-flow S3b · luật thuần thẻ duyệt engine: ghép stage ↔ bước người dùng, bước mở/task/can_act, finalizes_on_approve, lý do bị
 // chặn, kế hoạch hành động (Đạt / Trả lại / Từ chối / Đọc lại) + version def + đồng bộ run kết thúc (reconcile).
 import { describe, expect, it } from "bun:test";
-import { engineDefVersion, factsOf, reconcileOf } from "./approval-engine.rules";
+import { factsOf, reconcileOf } from "./approval-engine.rules";
+import { planEngineAct } from "./approval-engine-act.rules";
 import {
   type EngineCardInput,
   type EngineStageView,
   engineCardView,
-  planEngineAct,
 } from "./approval-engine-card.rules";
 import type { FlowStep } from "./approval-flow.rules";
 import type { FlowWhen } from "./approval-flow.types";
@@ -204,14 +204,7 @@ describe("planEngineAct", () => {
   });
 });
 
-describe("engineDefVersion · reconcileOf", () => {
-  it("mẫu lưu luôn lớn hơn mọi mẫu mặc định; mặc định tăng theo rev", () => {
-    const d = (rev: number) => engineDefVersion({ version: 1, isDefault: true }, rev);
-    // prod-fix2 · + ENGINE_SHAPE (dạng def mới ⇒ def cũ ≤ 100 tr + version bị ghi đè).
-    expect([d(0), d(5)]).toEqual([200_000_001, 200_000_006]);
-    expect(d(0)).toBeGreaterThan(100_000_000 + 1_000);
-    expect(engineDefVersion({ version: 2, isDefault: false }, 99)).toBeGreaterThan(d(5_000_000));
-  });
+describe("reconcileOf", () => {
   it("run kết thúc ⇒ đồng bộ; còn chạy ⇒ không làm gì", () => {
     const o = (status: string, rejected = false, feedback: string | null = null) => ({
       status,

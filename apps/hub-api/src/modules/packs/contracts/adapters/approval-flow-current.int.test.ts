@@ -4,6 +4,7 @@
 // không còn "Quy trình mặc định" của khe); flow Tắt không tính; `PUT /approval-flow` không có ⇒ 404.
 import { afterAll, beforeAll, expect, it } from "bun:test";
 import { createDb, type Db as PackDb } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
 import { enablePack, groups, members, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
@@ -12,6 +13,8 @@ import { connectDb, type Db } from "../../../../lib/db";
 import { mapError } from "../../../../lib/errors";
 import { packRunsPortForTest } from "../../../../test-support/pack-runs-port";
 import { NEVER_TRIGGER } from "../../../processes/library/purchase-templates";
+import type { ClaimedEvent } from "../../../processes/triggers/dispatcher.repo";
+import { candidatesOf } from "../../../processes/triggers/dispatcher.repo";
 import { packGroups } from "../../kit/adapters/pack-groups";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import type { PackToolCatalog } from "../../kit/application/pack-tools.ports";
@@ -187,4 +190,31 @@ it("công ty chỉ có flow Tắt ⇒ 404 (không có 'mặc định của khe')
     body: JSON.stringify({ version: 1, steps: [] }),
   });
   expect(put.status).toBe(404);
+});
+
+it("CR-127 Z9 · quy trình CỦA CÔNG TY (tạo trống → lưu → «Lưu và áp dụng»: KHÔNG có bản xuất bản) là flow đang bật: Cài đặt thấy nó và bộ điều phối (Gửi duyệt) chọn cùng flow", async () => {
+  const st = JSON.stringify(STAGES);
+  const [c] = await o<
+    { id: string }[]
+  >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app, enabled)
+    values (${B}, 'z9-cty', 'Duyệt của công ty B', ${st}::text::jsonb, '{"event":"contract.submitted"}'::jsonb, 'contracts', true)
+    returning id::text as id`; // published_version NULL, không có process_def_releases
+  const cid = c?.id as string;
+  await o`insert into hub.company_flows (tenant_id, flow_id, enabled, position) values (${B}, ${cid}, true, 0)`;
+  try {
+    const rb = await app(B, own).request("/approval-flow");
+    const b = (await rb.json()) as Out;
+    expect([rb.status, b.def_id, b.name, b.steps.length]).toEqual([
+      200,
+      cid,
+      "Duyệt của công ty B",
+      3,
+    ]);
+    const cands = await withHubScope(hubDb, { kind: "system" }, (tx) =>
+      candidatesOf(tx, [{ tenant_id: B, event: "contract.submitted" } as ClaimedEvent]),
+    );
+    expect(cands.map((x) => x.flowId)).toEqual([cid]); // Gửi duyệt dùng ĐÚNG flow này (không bị NO_APPROVAL_FLOW)
+  } finally {
+    await o`delete from hub.company_flows where flow_id = ${cid}`;
+  }
 });

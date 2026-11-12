@@ -12,16 +12,20 @@ import {
 } from "../domain/manual.rules";
 import { defaultMilestones, toDb } from "../domain/milestones.rules";
 import { ruleWarnings } from "../domain/warnings.rules";
-import type { ExtractionUow, TaxRegistry } from "./extraction.ports";
+import type { ExtractionTxRepos, ExtractionUow, TaxRegistry } from "./extraction.ports";
 import type { MilestoneWrite } from "./milestones.ports";
 import { partiesOf, prefetchTax, retryAtOf, type TaxRetryScheduler } from "./tax-parties";
 
 export type CreateManual = (
   who: PackWho,
   input: ManualInput,
-  /** CR-101 DOC-deals: có ⇒ tạo GIAO DỊCH (`doc_type = 'deal'` + nguồn), luôn `active` + mốc mặc định, không khoá. */
-  deal?: { source: "invoice" | "verbal" | "message" | "quote" | "other" },
-) => Promise<{ id: string; status: "needs_review" | "active"; version: number }>;
+  /** CR-101 DOC-deals: có ⇒ tạo GIAO DỊCH (`doc_type = 'deal'` + nguồn), vào DONE ngay (`initialState("deal")`) + mốc mặc định. */
+  deal?: {
+    source: "invoice" | "verbal" | "message" | "quote" | "other";
+    /** CR-127 X2: lý do "Không theo hợp đồng" — ghi nhật ký CÙNG tx tạo chứng từ (`onDeal`). */
+    unlinkedReason?: string | undefined;
+  },
+) => Promise<{ id: string; status: "done"; version: number }>;
 
 /** Mốc mặc định của HĐ nhập tay ⇒ hàng ghi (tiền để trống: 5.4a tính từ giá trị khi đọc). */
 export function manualMilestones(input: ManualInput, today: string): MilestoneWrite[] {
@@ -50,6 +54,8 @@ export function createManual(d: {
   today: (tenantId: string) => Promise<string>;
   /** MST đối tác chưa tra được vì cổng hẹn giờ ⇒ hẹn tra lại (review Trung 4). */
   schedule?: TaxRetryScheduler;
+  /** CR-127 X2: việc ghi thêm CÙNG tx với chứng từ giao dịch vừa tạo (nhật ký lý do không theo HĐ). */
+  onDeal?: (r: ExtractionTxRepos, id: string, who: PackWho, reason: string) => Promise<void>;
 }): CreateManual {
   return async (who, input, dealDoc) => {
     const fields = manualFields(input);
@@ -71,9 +77,10 @@ export function createManual(d: {
         items,
         warnings,
         userId: who.userId,
-        ...(dealDoc ? { deal_doc: dealDoc } : {}),
+        ...(dealDoc ? { deal_doc: { source: dealDoc.source } } : {}),
       });
       await r.outbox.enqueue([{ entity: "contract", entity_id: row.id, op: "upsert" }]);
+      if (dealDoc?.unlinkedReason) await d.onDeal?.(r, row.id, who, dealDoc.unlinkedReason);
       return row;
     });
     const at = retryAtOf(fields, hits);

@@ -9,7 +9,7 @@ import { setSlotDefault } from "../../../test-support/slot-default";
 
 const T = { a: tenantId(1051), b: tenantId(1052) };
 const U = { a: userId(1051), b: userId(1052) };
-const SLOT = "contracts.approval";
+const SLOT = "community.post-moderation";
 const NIL = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 const sys: HubScopeArg = { kind: "system" };
 const user = (k: "a" | "b"): HubScopeArg => ({ kind: "user", tenantId: T[k], userId: U[k] });

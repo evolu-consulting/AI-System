@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Chạy thử quy trình</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#4f46e5}a:hover{color:#3730a3}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; display: flex; flex-direction: column; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #18172b; background: #f4f4f8">
+  <header style="height: 64px; background: #fff; border-bottom: 1px solid #e5e5ee; display: flex; align-items: center; gap: 12px; padding: 0 20px; box-sizing: border-box">
+    <span style="color: #6b6a80; font-size: 14px">← Sơ đồ</span>
+    <strong style="font-size: 18px">Chạy thử · Duyệt hợp đồng bán</strong>
+    <span style="font-size: 12px; font-weight: 600; background: #ecebff; color: #4f46e5; padding: 3px 10px; border-radius: 999px">Demo Sổ Hợp Tác</span>
+    <span style="flex: 1"></span>
+    <button style="background: #fff; border: 1px solid #e5e5ee; border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 14px">Chạy lại từ đầu</button>
+    <button style="background: #4f46e5; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 14px; font-weight: 600">Áp dụng cho công ty</button>
+  </header>
+  <div style="background: #fdf2e3; color: #92400e; font-size: 14px; padding: 10px 20px; border-bottom: 1px solid #f5d9a8">Chạy thử: không tạo hợp đồng thật, không gửi thông báo, không ghi chữ ký. Bạn đóng vai từng người duyệt.</div>
+  <div style="flex: 1; display: flex; gap: 16px; padding: 16px 20px; min-height: 0; box-sizing: border-box">
+
+    <section style="width: 300px; background: #fff; border: 1px solid #e5e5ee; border-radius: 12px; padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; font-size: 14px">
+      <b style="font-size: 15px">Hợp đồng thử</b>
+      <div style="display: flex; gap: 6px; font-size: 13px"><span style="padding: 4px 10px; border-radius: 8px; background: #ecebff; color: #4f46e5; font-weight: 600">Nhập tay</span><span style="padding: 4px 10px; color: #6b6a80">Chọn HĐ có sẵn</span></div>
+      <div style="display: flex; flex-direction: column; gap: 4px"><label for="v" style="font-weight: 600">Giá trị hợp đồng</label><div id="v" style="border: 1px solid #e5e5ee; border-radius: 8px; padding: 8px 10px">650.000.000 đ</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px"><label for="l" style="font-weight: 600">Loại</label><div id="l" style="border: 1px solid #e5e5ee; border-radius: 8px; padding: 8px 10px">Bán</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px"><label for="u" style="font-weight: 600">Người tải lên</label><div id="u" style="border: 1px solid #e5e5ee; border-radius: 8px; padding: 8px 10px">Trần Bình · Phòng Kinh doanh</div></div>
+      <div style="border-top: 1px solid #e5e5ee; padding-top: 12px; display: flex; flex-direction: column; gap: 8px">
+        <b>Kiểm tra trước khi áp dụng</b>
+        <span style="font-size: 13px; color: #15803d">✓ Có một bước bắt đầu</span>
+        <span style="font-size: 13px; color: #15803d">✓ Mọi bước Duyệt đã có người</span>
+        <span style="font-size: 13px; color: #15803d">✓ Mọi nhánh đều tới Kết thúc</span>
+        <span style="font-size: 13px; color: #b45309">! Ban Giám đốc chỉ có 1 người: người này nghỉ thì việc quá hạn không có ai nhận</span>
+      </div>
+    </section>
+
+    <section style="flex: 1; background: #fff; border: 1px solid #e5e5ee; border-radius: 12px; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+      <div style="display: flex; justify-content: space-between; align-items: center"><b style="font-size: 15px">Đường đi</b><span style="font-size: 13px; color: #6b6a80">Trạng thái HĐ thử: <b style="color: #4f46e5">PROCESSING</b></span></div>
+      <div style="display: flex; gap: 12px; align-items: flex-start"><span style="width: 24px; height: 24px; border-radius: 50%; background: #15803d; color: #fff; font-size: 13px; display: flex; align-items: center; justify-content: center">✓</span><div style="font-size: 14px"><b>Tải hợp đồng lên</b> · DRAFT → PROCESSING</div></div>
+      <div style="display: flex; gap: 12px; align-items: flex-start"><span style="width: 24px; height: 24px; border-radius: 50%; background: #15803d; color: #fff; font-size: 13px; display: flex; align-items: center; justify-content: center">✓</span><div style="font-size: 14px"><b>Trưởng phòng KD duyệt</b> · bạn đóng vai Phạm Cường · Duyệt · ý kiến "OK" · chữ ký mẫu</div></div>
+      <div style="display: flex; gap: 12px; align-items: flex-start"><span style="width: 24px; height: 24px; border-radius: 50%; background: #15803d; color: #fff; font-size: 13px; display: flex; align-items: center; justify-content: center">✓</span><div style="font-size: 14px"><b>Nếu giá trị &gt; 500 triệu</b> · 650.000.000 &gt; 500.000.000 ⇒ <b style="color: #15803d">Đúng</b></div></div>
+      <div style="display: flex; gap: 12px; align-items: flex-start; background: #fffbeb; border: 1px solid #f5d9a8; border-radius: 10px; padding: 12px">
+        <span style="width: 24px; height: 24px; border-radius: 50%; background: #f59e0b; color: #fff; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0">4</span>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; min-width: 0">
+          <div><b>Kế toán duyệt</b> · đang chờ</div>
+          <div style="color: #6b6a80">Lúc chạy thật sẽ giao cho: <b style="color: #18172b">Lê Thị Hoa, Phạm Dung</b> (Phòng Kế toán, 1 người quyết là đủ). Hạn 48 giờ.</div>
+          <div style="color: #6b6a80">Cần nộp: ý kiến + (chữ ký điện tử hoặc tệp đính kèm)</div>
+          <div style="display: flex; gap: 8px">
+            <button style="background: #15803d; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 14px; font-weight: 600">Duyệt thử</button>
+            <button style="background: #fff; border: 1px solid #e5e5ee; border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 14px">Trả lại thử</button>
+            <button style="background: #fff; border: 1px solid #fecaca; color: #b91c1c; border-radius: 8px; padding: 8px 14px; font: inherit; font-size: 14px">Từ chối thử</button>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: flex-start; color: #9a99ad"><span style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #d9d8e8; box-sizing: border-box"></span><div style="font-size: 14px"><b>Ký số</b> · Nguyễn Văn An</div></div>
+      <div style="display: flex; gap: 12px; align-items: flex-start; color: #9a99ad"><span style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid #d9d8e8; box-sizing: border-box"></span><div style="font-size: 14px"><b>Kết thúc</b> · DONE</div></div>
+    </section>
+
+    <section style="width: 300px; display: flex; flex-direction: column; gap: 12px">
+      <div style="background: #fff; border: 1px solid #e5e5ee; border-radius: 12px; padding: 14px; font-size: 13px; display: flex; flex-direction: column; gap: 6px">
+        <b style="font-size: 14px">Thử nhanh các nhánh</b>
+        <span>650 tr · Duyệt hết ⇒ <b style="color: #15803d">DONE</b> (5 bước)</span>
+        <span>300 tr · bỏ qua Kế toán ⇒ <b style="color: #15803d">DONE</b> (4 bước)</span>
+        <span>Kế toán Từ chối ⇒ <b style="color: #b91c1c">REJECT</b></span>
+        <span>Trưởng KD Trả lại ⇒ <b>DRAFT</b>, gửi lại chạy từ đầu</span>
+        <button style="margin-top: 6px; background: #fff; border: 1px solid #e5e5ee; border-radius: 8px; padding: 8px; font: inherit; font-size: 13px">Chạy cả 4 trường hợp</button>
+      </div>
+      <div style="background: #fff; border: 1px solid #e5e5ee; border-radius: 12px; padding: 14px; font-size: 13px; color: #6b6a80">Chạy thử dùng đúng phòng ban, thành viên và bước của bản nháp đang mở. Sửa sơ đồ xong bấm Chạy lại từ đầu.</div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

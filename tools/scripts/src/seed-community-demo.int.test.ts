@@ -1,5 +1,5 @@
 // com-c12a/c12b · seed cộng đồng đối tác: --apply hai lần (không trùng, mật khẩu chỉ ở file), dry-run chỉ in kế hoạch;
-// bật gói community, nhãn partner_companies, bài + luồng mẫu (che liên hệ, audience D2) cũng idempotent.
+// bật gói community, vai + hồ sơ đối tác SHT, bài + luồng mẫu (che liên hệ, audience D2) cũng idempotent.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -9,7 +9,7 @@ import { tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls, withCreds } from "@ai/test-kit/env";
 import { assertTenant, runSeed, type SeedOpts } from "./seed-community-demo";
-import { PARTNER_SEEDS, POST_SAMPLES } from "./seed-community-demo.data";
+import { JOIN_SEEDS, PARTNER_SEEDS, POST_SAMPLES } from "./seed-community-demo.data";
 import { setPartnerDevPasswords } from "./seed-community-demo.dev-fixture";
 
 let sql: Sql;
@@ -68,7 +68,8 @@ describe("com-c12 · seed-community-demo", () => {
   });
 
   it("--apply hai lần: công ty/user/nhãn/bài/bình luận không trùng, liên hệ bị che, mật khẩu chỉ ở file", async () => {
-    const n = PARTNER_SEEDS.length;
+    const n = PARTNER_SEEDS.length; // công ty/user/hồ sơ Bảng tin của đối tác seed
+    const nOrgs = n + JOIN_SEEDS.length; // + công ty xin tham gia (chưa gắn SHT)
     const np = POST_SAMPLES.length;
     const a = await runSeed(admin, opts());
     expect(a.orgs).toEqual({ created: n, existing: 0 });
@@ -78,11 +79,13 @@ describe("com-c12 · seed-community-demo", () => {
     const b = await runSeed(admin, opts());
     expect(b.orgs).toEqual({ created: 0, existing: n });
     expect(b.users).toEqual({ created: 0, existing: n });
+    expect(a.joins).toBe(1);
+    expect(b.joins).toBe(0);
     expect(b.posts).toEqual({ created: 0, existing: np, comments: 0 });
 
-    expect(await count("select count(*)::int n from admin.external_orgs")).toBe(n);
+    expect(await count("select count(*)::int n from admin.external_orgs")).toBe(nOrgs);
     expect(await count("select count(*)::int n from community.posts")).toBe(np);
-    expect(await count("select count(*)::int n from community.partner_companies")).toBe(n);
+    expect(await count("select count(*)::int n from contracts.partner_profiles")).toBe(n);
     expect(
       await count(
         `select count(*)::int n from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
@@ -109,8 +112,8 @@ describe("com-c12 · seed-community-demo", () => {
     expect(nMedia).toBeGreaterThan(0);
     expect(await count("select count(*)::int n from community.media")).toBe(nMedia);
     // seed-refresh: dev-fixture đặt mật khẩu dev đã biết cho user đối tác (không bắt đổi); chạy lại ⇒ cùng số
-    expect(await setPartnerDevPasswords(admin, "dev-known-pw-1", tenantKey)).toBe(n);
-    expect(await setPartnerDevPasswords(admin, "dev-known-pw-1", tenantKey)).toBe(n);
+    expect(await setPartnerDevPasswords(admin, "dev-known-pw-1", tenantKey)).toBe(nOrgs);
+    expect(await setPartnerDevPasswords(admin, "dev-known-pw-1", tenantKey)).toBe(nOrgs);
     expect(
       await count(
         "select count(*)::int n from admin.users where kind = 'external' and must_change_password",
@@ -120,7 +123,9 @@ describe("com-c12 · seed-community-demo", () => {
     const pw = JSON.parse(readFileSync(join(dir, "pw.json"), "utf8")) as {
       users: Record<string, string>;
     };
-    expect(Object.keys(pw.users).sort()).toEqual(PARTNER_SEEDS.map((p) => p.username).sort());
+    expect(Object.keys(pw.users).sort()).toEqual(
+      [...PARTNER_SEEDS, ...JOIN_SEEDS].map((p) => p.username).sort(),
+    );
     const map = JSON.parse(readFileSync(`${join(dir, "pw.json")}.community.json`, "utf8"));
     const tp = map.partners.find((p: { org_name: string }) => p.org_name === "Cơ sở Tân Phát");
     expect(tp.party_key).toBe("tax:0101000003");

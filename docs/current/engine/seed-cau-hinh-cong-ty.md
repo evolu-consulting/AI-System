@@ -1,5 +1,7 @@
 # seed cau hinh cong ty
 
+> **CR-127 (2026-11-11) — phần Thư viện/khe/sao chép/mẫu/máy duyệt cũ trong file này ĐÃ THAY THẾ:** xem [engine/quy-trinh-cr127.md](quy-trinh-cr127.md). Giữ làm lịch sử; chỗ mâu thuẫn thì file CR-127 thắng.
+
 Cập nhật: 2026-11-08 · Nguồn: CR-125.
 
 ## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)

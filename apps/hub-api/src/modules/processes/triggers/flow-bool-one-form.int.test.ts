@@ -109,7 +109,7 @@ beforeAll(async () => {
   await party(C[2] as string, "Công ty Đối Tác Cũ", true); // 1) tạo def QUA API với boolean thật
   app = new Hono<AuthVars>();
   app.use("*", async (c, next) => {
-    c.set("user", { userId: A, tenantId: T, role: "tenant_admin" as Role } as never);
+    c.set("user", { userId: A, tenantId: T, role: "platform_admin" as Role } as never);
     await next();
   });
   app.onError((e, c) => {
@@ -145,7 +145,7 @@ afterAll(async () => {
 
 /** Tạo def qua API (đường người dùng) rồi gán cho công ty như sau khi Thư viện xuất bản (bản lưu đọc lại từ DB ⇒ đúng dạng đã chuẩn hoá). */
 async function createViaApiAndAssign(): Promise<{ status: number; value: unknown }> {
-  const r = await app.request("/process-defs", {
+  const r = await app.request(`/process-defs?tenant_id=${T}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -218,7 +218,6 @@ const ad = () =>
 async function submitAndDispatch(id: string) {
   const who = { tenantId: T, userId: A };
   expect(await startApproval(ad())(who, id, "level1")).toBe("ok");
-  expect(await actApproval(ad())(who, id, { action: "approve" })).not.toHaveProperty("error");
   expect(await dispatchOnce({ db, launch: flowLaunchOf(deps()) })).toMatchObject({ launched: 1 });
 }
 const openStageOf = async (cid: string) =>

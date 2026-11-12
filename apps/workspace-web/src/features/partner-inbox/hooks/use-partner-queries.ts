@@ -1,13 +1,11 @@
 // CR-124 · q4 · truy vấn/ghi của khối hộp thư đối tác (component chỉ trình bày — T-DEP-5): vòng gửi, ghi nhận kết quả, cài đặt nhận.
-import type { PackNavResponse } from "@ai/contracts/packs";
-import { ApiError, api } from "@ai/web-kit/http";
+import { ApiError } from "@ai/web-kit/http";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "~/features/auth/hooks/use-session";
 import { fetchMembers } from "~/features/contracts-list/api";
 import { isCompanyAdmin } from "~/features/shell/lib/nav";
-import { capsOf } from "~/shell/use-flow-caps";
 import {
   fetchPartnerConfirm,
   fetchReceiveSettings,
@@ -63,20 +61,14 @@ export function usePartnerConfirmStatus(owner: boolean) {
 /** Cài đặt nhận HĐ đối tác (chỉ khi `owner` và công ty bật tính năng) + danh sách người phụ trách + lưu. */
 export function useReceiveSettings(owner: boolean) {
   const qc = useQueryClient();
-  // Chỉ hiện khi công ty đã bật tính năng gửi/nhận HĐ đối tác (cap do server tính — cùng nguồn với mục menu).
-  const nav = useQuery({
-    queryKey: ["pack", "nav"],
-    queryFn: () => api<PackNavResponse>("/pack/nav"),
-    enabled: owner,
-    retry: false,
-  });
-  const on = capsOf(nav.data ?? null).has("contracts.partner");
+  // CR-127 · U6: không còn cap menu — công ty chưa bật tính năng thì API cài đặt từ chối ⇒ `on` = đọc được cài đặt.
   const settings = useQuery({
     queryKey: SETTINGS_KEY,
     queryFn: () => fetchReceiveSettings(),
-    enabled: owner && on,
+    enabled: owner,
     retry: false,
   });
+  const on = settings.isSuccess;
   const members = useQuery({
     queryKey: ["contracts", "members"],
     queryFn: ({ signal }) => fetchMembers(signal),

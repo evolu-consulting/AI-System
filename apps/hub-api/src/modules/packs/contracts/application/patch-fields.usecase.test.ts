@@ -37,7 +37,7 @@ function setup(row: LockedContract | null) {
 const base = () => {
   const f = fillFields({});
   f.notice_days = { value: 30, quote: "Điều 5", verified: false, edited: false };
-  return { version: 1, updated_at: T0, fields: f };
+  return { version: 1, updated_at: T0, fields: f, status: "draft" };
 };
 
 describe("patchFields", () => {
@@ -80,5 +80,24 @@ describe("patchFields", () => {
       edited: true,
     });
     expect(r.kind === "ok" && r.out.version).toBe(2);
+  });
+  it("CR-127 K4 · BR-39: draft / reject sửa được; processing / done ⇒ locked, không save/outbox (kể cả notice_days)", async () => {
+    for (const status of ["draft", "reject"]) {
+      const s = setup({ ...base(), status });
+      const r = await s.run(who, ID, { version: 1, fields: { notice_days: 60 } });
+      expect([status, r.kind]).toEqual([status, "ok"]);
+    }
+    for (const status of ["processing", "done"]) {
+      const s = setup({ ...base(), status });
+      const r = await s.run(who, ID, { version: 1, fields: { notice_days: 60 } });
+      expect([status, r.kind]).toEqual([status, "locked"]);
+      expect(s.log).toEqual([`lock:${ID}`]);
+      expect(s.outbox).toEqual([]);
+    }
+  });
+  it("khoá nhưng giá trị y cũ ⇒ vẫn ok (không đổi gì)", async () => {
+    const s = setup({ ...base(), status: "done" });
+    const r = await s.run(who, ID, { version: 1, fields: { notice_days: 30 } });
+    expect(r.kind).toBe("ok");
   });
 });

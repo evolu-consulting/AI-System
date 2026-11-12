@@ -38,12 +38,14 @@ export const TEMPLATE_GROUP_MEMBERS: Record<string, Record<string, readonly stri
     "truong-phong": ["thomas.tran"],
     "giam-doc": ["julian.bui"],
     "phong-kinh-doanh": ["vio.ngo"],
+    "nguoi-ky-hd": ["julian.bui"], // CR-127 Z0
     ...purchaseMembers({ director: "julian.bui", accounting: "vio.ngo", employee: "thomas.tran" }),
   },
   demo: {
     "truong-phong": ["demo-editor"],
     "giam-doc": ["demo-owner"],
     "phong-kinh-doanh": ["demo-editor"],
+    "nguoi-ky-hd": ["demo-owner"], // CR-127 Z0
     ...purchaseMembers({
       director: "demo-owner",
       accounting: "demo-viewer",

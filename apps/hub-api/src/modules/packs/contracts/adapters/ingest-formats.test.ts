@@ -107,16 +107,16 @@ describe("p9 · 3 ảnh ⇒ 1 PDF lưu FileBox (đường tải lên)", () => {
   it("PDF ghép đi qua tải lên: FileBox nhận đúng 1 tệp PDF, hàng HĐ mime pdf, trích được xếp lượt", async () => {
     const pdf = (await imagesToPdf([jpeg(8, 4), png(4, 4), png(3, 5)])) as Uint8Array;
     const puts: { name: string; size: number }[] = [];
-    const rows: { mime: string; name: string; status: string }[] = [];
+    const rows: { mime: string; name: string; extractState: string }[] = [];
     const started: string[] = [];
     const upload = createUploadContract({
       uow: {
         tenant: async (_w: unknown, fn: (r: unknown) => Promise<unknown>) =>
           fn({
             upload: {
-              insert: async (row: { mime: string; name: string; status: string }) => {
+              insert: async (row: { mime: string; name: string; extractState: string }) => {
                 rows.push(row);
-                return { id: "c1", status: row.status, version: 1 };
+                return { id: "c1", status: "draft", extractState: row.extractState, version: 1 };
               },
             },
             outbox: { enqueue: async () => {} },
@@ -145,10 +145,10 @@ describe("p9 · 3 ảnh ⇒ 1 PDF lưu FileBox (đường tải lên)", () => {
       kind: "contract",
       parentId: null,
     });
-    expect(r.status).toBe("extracting");
+    expect(r.status).toBe("draft");
     expect(puts).toEqual([{ name: "hop-dong.pdf", size: pdf.length }]);
     expect(rows).toEqual([
-      expect.objectContaining({ mime: "application/pdf", status: "extracting" }),
+      expect.objectContaining({ mime: "application/pdf", extractState: "reading" }),
     ]);
     expect(started).toEqual(["c1"]);
   });

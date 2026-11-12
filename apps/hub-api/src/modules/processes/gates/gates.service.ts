@@ -17,9 +17,9 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { safeErrorFields } from "../../../lib/errors";
-import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
+import { publishUserEvents } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
-import { processError } from "../core/errors";
+import { claimError, processError } from "../core/errors";
 import { processUpdated } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
 import { loadTaskDetails } from "../core/task-view";
@@ -32,120 +32,46 @@ import {
 } from "../domain/runs/run-access.rules";
 import { isTerminal, transition } from "../domain/runs/run-state.rules";
 import { pickDecisionStage } from "../domain/runs/step.rules";
-import { decisionOptionsFor } from "../domain/tasks/decision.rules";
 import * as repo from "../runs/runs.repo";
-import type { StepOutcome } from "../runs/step-persist";
 import { stageRowOf } from "../runs/team-runner";
 import { ViewService } from "../runs/view.service";
+import { allPartialOut, allVoteStep } from "./all-vote";
 import { approveDecide } from "./approve-out";
-import { type BackOut, backFromDecision, type CancelIds } from "./back.effects";
 import { type FormSubmit, formPre, formReplayCheck } from "./form-out";
-import { reviewDecisionCheck } from "./gate.rules";
+import { evidenceCheck } from "./gate.rules";
+import { recordTaskEvidence } from "./gate-task.repo";
 import {
   buildState,
   cancelEnd,
-  decideEffects,
   type Eff,
   type Gx,
   type Locked,
-  needsKick,
   notFound,
   snapOf,
 } from "./gates.effects";
+import {
+  assertMayDecide,
+  assertNotClaimedByOther,
+  decideOut,
+  evidenceModeOf,
+  type Outcome,
+  PASS,
+  type Req,
+  refreshDecision,
+  scopeOf,
+  updatedOf,
+  vrole,
+} from "./gates.helpers";
 import * as g from "./gates.repo";
 import { assertHeadGate, reviewGroupMember } from "./head-gate.check";
 import { parallelStep, partialOut } from "./parallel-approve";
 import { assertDecisionAllowed, assertReviewAllowed, cancelRunOf, reviewOut } from "./review-out";
+// HUB-FR-107 · HUB-FR-109 · AC-H28 · M5 · §3.1 · §3.4 · §10 · PF1 · cổng kiểm: `POST /review-tasks/:id/decision`
+// (Đạt/Chưa đạt), `POST /process-runs/:id/{decide,cancel}`. Khoá `process_runs` FOR UPDATE trước (§10); đóng task
+// first-wins (`core.closeTask`); máy trạng thái thuần (`transition`) → hiệu ứng DB (`gates.effects`); phát/đăng +
+// `launcher.kick` SAU COMMIT. Scope `user` người thao tác (RLS `room_members` theo tenant); lọc `tenant_id` tường minh.
 
 /** P-b2 D8 · decision `back_limit` + `add_attempt` ⇒ `back.effects` (nâng trần rồi quay lại); còn lại như P-a. */
-async function decideOut(
-  gx: Gx,
-  e: Eff,
-  q: {
-    reason: DecisionReason;
-    option: DecideProcessRunRequest["option"];
-    dtask: g.GateTask | null;
-  },
-): Promise<BackOut & { kick: boolean }> {
-  const { reason, option, dtask } = q;
-  if (reason !== "back_limit" || option !== "add_attempt") {
-    const o = await decideEffects(gx, e, option, dtask);
-    // D8 · `use_current` cho `back_limit` ⇒ stage coi như Đạt: bỏ đích + góp ý quay lại đã lưu (bị từ chối).
-    if (reason === "back_limit" && option === "use_current" && dtask)
-      await g.clearBackPending(gx.tx, { stageRunId: dtask.stage_run_id, tenantId: e.run.tenantId });
-    return { ...o, kick: needsKick(e.effects, o.step) };
-  }
-  if (!dtask) throw processError("PROCESS_RUN_STATE");
-  const o = await backFromDecision(gx, { run: e.run, idx: e.idx, ref: e.ref, dtask });
-  return { ...o, kick: o.step?.kind === "next_step" };
-}
-
-/** D9 · còn decision mở sau khi quyết ⇒ `process_runs.decision` jsonb = decision mở CŨ nhất (tương thích). */
-async function refreshDecision(gx: Gx, run: Locked): Promise<void> {
-  const open = await g.openDecisions(gx.tx, run.id, run.tenantId);
-  const idx = pickDecisionStage(open);
-  if (idx === null) return;
-  const reason = open.find((o) => o.stageIdx === idx)?.reason ?? "interrupted";
-  const stage = await stageRowOf(gx.tx, run.id, idx);
-  const options = decisionOptionsFor((stage?.current_output_id ?? null) !== null, reason);
-  const at = gx.d.now().toISOString();
-  await g.setDecisionJson(
-    gx.tx,
-    { id: run.id, tenantId: run.tenantId },
-    JSON.stringify({ reason, stage_idx: idx, options, at }),
-  );
-}
-
-/** Người thao tác + nhóm (gộp để ≤ 4 tham số, CONVENTIONS §2). */
-type Req = { v: Viewer; groupIds: ReadonlySet<string> };
-type Outcome<T> = {
-  body: T;
-  events: UserEvent[];
-  kick: boolean;
-  runId: string;
-  /** P-b2 · `hub.runs` của stage bị quay lại — huỷ SAU COMMIT ở scope system, TRƯỚC `kick`. */
-  cancel?: CancelIds;
-  /** HUB-FR-111 · run quy trình đã huỷ ⇒ huỷ mọi `hub.runs` còn chạy của nó SAU COMMIT ở scope system (TECH-DEBT #147). */
-  cancelRun?: { tenantId: string };
-};
-
-/** Scope `user` của người thao tác; platform_admin + `?tenant_id` ⇒ tenant đích (plan §5, như ViewService). */
-const scopeOf = (u: AuthUser, tenantIdQ?: string) => ({
-  kind: "user" as const,
-  userId: u.userId,
-  tenantId: u.role === "platform_admin" && tenantIdQ ? tenantIdQ : u.tenantId,
-});
-/** `process.updated` sau ghi: theo `step-persist` (bước/trạng thái tổng hợp); null ⇒ trạng thái máy + stage hiện tại. */
-const updatedOf = (run: Locked, status: ProcessRunStatus, step: StepOutcome | null) =>
-  step
-    ? { id: run.id, status: step.status, stageIdx: step.stageIdx, step: step.step }
-    : { id: run.id, status, stageIdx: Number(run.currentStageIdx), step: Number(run.currentStep) };
-const vrole = (r: AuthUser["role"]): Viewer["role"] =>
-  r === "platform_admin" || r === "tenant_admin" ? r : "member";
-
-type LoadedTask = Awaited<ReturnType<typeof g.loadTask>>;
-const PASS: ReviewDecisionRequest = { result: "pass" };
-
-/** Task phải có, cùng tenant (trừ platform_admin), người quyết thuộc Group duyệt/chuyển cấp, đúng loại, phản hồi hợp lệ. */
-function assertMayDecide(
-  task: LoadedTask,
-  { v, groupIds }: Req,
-  b: ReviewDecisionRequest,
-): asserts task is NonNullable<LoadedTask> {
-  if (!task) throw notFound();
-  if (v.role !== "platform_admin" && v.tenantId !== task.tenant_id) throw notFound();
-  const users = new Set(task.user_ids ?? []);
-  const inGroup = (id: string | null) => id !== null && groupIds.has(id);
-  // PD-R21 · thành viên Group duyệt HOẶC Group chuyển cấp đều quyết được (người đầu tiên khoá).
-  // contract-flow S1b · trưởng phòng (có thể ngoài `group_members`) qua cửa sơ bộ; `assertHeadGate` chốt sau khi khoá run.
-  const head = task.group_head != null && task.group_head === v.userId;
-  // prod-fix2 · Group "cũng quyết" của stage (vd "Toàn quyền" của gói) như Group chuyển cấp.
-  const also = (task.also_group_ids ?? []).some(inGroup);
-  if (!users.has(v.userId) && !inGroup(task.assignee_group_id) && !inGroup(task.escalated_group_id))
-    if (!head && !also) throw notFound();
-  if (task.kind !== "review") throw processError("TASK_KIND_MISMATCH");
-  if (reviewDecisionCheck(b) !== "ok") throw processError("FEEDBACK_REQUIRED");
-}
 
 export class GateService {
   private readonly view: ViewService;
@@ -164,10 +90,11 @@ export class GateService {
     taskId: string,
     b: ReviewDecisionRequest,
     tenantIdQ?: string,
+    hooks?: { onEvidence?: (evidenceId: string) => void },
   ): Promise<TaskDetail> {
     const req = await this.#req(u);
     const out = await withHubScope(this.d.db, scopeOf(u, tenantIdQ), (tx) =>
-      this.#review(tx, req, taskId, b),
+      this.#review(tx, req, taskId, b, undefined, hooks?.onEvidence),
     );
     await this.#post(out);
     return out.body;
@@ -200,6 +127,7 @@ export class GateService {
     taskId: string,
     b: ReviewDecisionRequest,
     form?: FormSubmit,
+    onEvidence?: (evidenceId: string) => void,
   ): Promise<Outcome<TaskDetail>> {
     const { v, groupIds } = req;
     const task = await g.loadTask(tx, taskId);
@@ -213,7 +141,23 @@ export class GateService {
     ]);
     assertHeadGate(run, idx, task, req); // run không thấy ⇒ 404 · S1b · head_only (snapshot đã khoá)
     assertReviewAllowed(run, idx, v.userId, b); // N2-FR-05 403 · P-b2 422 BACK_TARGET_INVALID — trước khi đóng task
+    // CR-127 · E4 · bước bật "Ý kiến + chữ ký hoặc tệp" ⇒ Duyệt thiếu bằng chứng = 422 TRƯỚC khi đóng task (không ghi gì). Form: bỏ qua.
+    if (
+      !form &&
+      evidenceCheck({ result: b.result, mode: evidenceModeOf(run, idx), evidence: b.evidence }) !==
+        "ok"
+    )
+      throw claimError("EVIDENCE_REQUIRED");
     const gx: Gx = { d: this.d, tx };
+    // CR-127 · E5 · "Cần: tất cả": ghi phiếu (+ bằng chứng của phiếu); chưa đủ n ⇒ thẻ vẫn mở.
+    const vote = await allVoteStep(
+      gx,
+      { run, task, b },
+      { userId: v.userId, groupIds },
+      onEvidence,
+    );
+    if (vote.mode === "partial")
+      return allPartialOut(gx, run, taskId, { ...v, groupIds, recipients });
     const par = await parallelStep(gx, { run, idx, task, b }); // CR-125 · cùng duyệt (run đã khoá)
     if (par.partial) return partialOut(gx, { run, idx, task, b }, { ...v, groupIds, recipients });
     const pre = { run, idx, outputId: s?.current_output_id ?? null, taskId, v, form };
@@ -229,14 +173,32 @@ export class GateService {
         result: b.result,
         at: this.d.now(),
         decidedBy: v.userId,
+        // BR-26: `feedback` chỉ là lý do người dùng nhập; ý kiến của bằng chứng KHÔNG chép vào đây (sẽ lộ qua lịch sử run).
         feedback: b.feedback ?? null,
         sections: b.sections ?? null,
         answer,
       }),
       g.actorRef(tx, v.userId, run.tenantId), // đọc tên người quyết — gửi liền sau UPDATE (pipeline)
     ]);
-    if (!closed) throw processError("REVIEW_TASK_CLOSED");
+    if (!closed) {
+      // CR-127 · E2 · đua với Nhận việc (câu nhận không khoá run): `closeTask` chặn khi người khác vừa nhận ⇒ báo đúng lý do.
+      const now = await g.loadTask(tx, taskId);
+      if (now?.status === "open") assertNotClaimedByOther(now, v.userId);
+      throw processError("REVIEW_TASK_CLOSED");
+    }
     if (!t.ok) throw processError(t.code);
+    // CR-127 · E4 · bằng chứng CÙNG tx đóng task (rollback chung nếu lỗi); ý kiến Trả lại/Từ chối vẫn ở `feedback` như cũ.
+    // E5 · phiếu "Cần: tất cả" đã ghi bằng chứng của phiếu ⇒ không ghi lần hai.
+    const ev = vote.evidenceId ? null : b.evidence;
+    if (ev) {
+      const evId = await recordTaskEvidence(tx, {
+        tenantId: run.tenantId,
+        taskId,
+        userId: v.userId,
+        evidence: ev,
+      });
+      onEvidence?.(evId); // (không gọi `?.(await …)`: tham số không được đánh giá khi hook vắng)
+    }
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
     const { events, step, status, kick, cancel } = await reviewOut(gx, e, task, eb);
     // D9 · decision mở cũ nhất ∥ đọc thẻ task trả về: độc lập (`process_runs.decision` không thuộc `TaskDetail`) ⇒ pipeline.

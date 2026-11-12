@@ -11,6 +11,8 @@ import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
 import type { ProcessDeps } from "../core/ports";
+import { seedCompanyCopy } from "../testing/company-copy-seed";
+import { seedCompanyFlow } from "../testing/company-flow-seed";
 import { companyFlowsRoutes } from "./company-flows.routes";
 
 const W = tenantId(1271); // đã có dòng gán từ trước (kiểu prod), chưa áp dụng
@@ -96,18 +98,18 @@ afterAll(async () => {
 });
 
 describe("CR-125 · c2 · áp dụng / gán ⇒ đang dùng quy trình mới", () => {
-  it("công ty có sẵn dòng gán nhưng chưa áp dụng ⇒ cờ TẮT (như trước), sao chép để sửa cũng không bật", async () => {
+  it("công ty có sẵn dòng gán nhưng chưa áp dụng ⇒ cờ TẮT (như trước), bản công ty có sẵn cũng không bật", async () => {
     expect(await flag("AW", W)).toBe(false);
     const l = await call("AW", "GET", P(W));
     const orig = (l.json.items as Json[]).find((x) => x.flow_id === lib) as Json;
-    await call("AW", "POST", `${P(W)}/${orig.id}/clone`);
+    await seedCompanyCopy(o, { tenantId: W, srcFlowId: lib, actor: userId(1271) });
     expect(await flag("AW", W)).toBe(false);
   });
 
   it("Lưu và áp dụng ⇒ cờ BẬT cùng giao dịch + audit ghi flow_triggers, không cần bật công tắc riêng", async () => {
     const l = await call("AW", "GET", P(W));
     const copy = (l.json.items as Json[]).find((x) => x.kind === "company") as Json;
-    const a = await call("AW", "POST", `${P(W)}/apply`, { flow_id: copy.flow_id });
+    const a = await call("P", "POST", `${P(W)}/apply`, { flow_id: copy.flow_id });
     expect(a.status).toBe(200);
     expect(await flag("AW", W)).toBe(true);
     const [au] = await o<
@@ -123,13 +125,19 @@ describe("CR-125 · c2 · áp dụng / gán ⇒ đang dùng quy trình mới", (
     expect(await flag("AW", W)).toBe(false);
     const l = await call("AW", "GET", P(W));
     const copy = (l.json.items as Json[]).find((x) => x.kind === "company") as Json;
-    await call("AW", "POST", `${P(W)}/apply`, { flow_id: copy.flow_id });
+    await call("P", "POST", `${P(W)}/apply`, { flow_id: copy.flow_id });
     expect(await flag("AW", W)).toBe(true);
   });
 
-  it("platform gán quy trình cho công ty mới ⇒ BẬT, công ty không đụng tới ⇒ vẫn TẮT", async () => {
+  it("platform áp dụng quy trình công ty mới ⇒ BẬT, công ty không đụng tới ⇒ vẫn TẮT", async () => {
     expect(await flag("P", V)).toBe(false);
-    expect((await call("P", "POST", P(V), { flow_id: lib })).status).toBe(201);
+    const draft = await seedCompanyFlow(o, {
+      tenantId: V,
+      key: "c2-moi",
+      trigger: { event: "contract.submitted" },
+      applied: false,
+    });
+    expect((await call("P", "POST", `${P(V)}/apply`, { flow_id: draft.flowId })).status).toBe(200);
     expect(await flag("P", V)).toBe(true);
     expect(await flag("AZ", Z)).toBe(false);
   });

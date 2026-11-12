@@ -3,7 +3,7 @@
 // `PROCESS_DEF_INVALID` + `details.paths`/`details.rules` cùng chỉ số, plan D10) · lỗi hình dạng ⇒ 400 `VALIDATION_ERROR`
 // (mặc định readiness lần 2 #5) · `ensureHandoff` khi lưu (R10, G-5: bỏ qua `team`). DB tag `pb2_s0`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { OWNER_URL } from "../../H1/_fixtures";
+import { OWNER_URL, T as T_FIX } from "../../H1/_fixtures";
 import { fn, loadSeed } from "../../P-a/_support/modules";
 import { defInput, fixId, insertDef, type Res } from "../../P-a/_support/pa";
 import {
@@ -123,7 +123,7 @@ describe("DF · luật bước khi lưu [AC-PB2-04][HUB-FR-104]", () => {
       defBody("pb2-df03c", [s({ key: "a", step: 0, review: KT }), s({ key: "b", step: 1 })]),
     );
     expect(okr.status).toBe(201);
-    const put = await c.call("Adm", "PUT", `/process-defs/${okr.json.id}`, {
+    const put = await c.call("P", "PUT", `/process-defs/${okr.json.id}?tenant_id=${T_FIX.acme}`, {
       ...asInput(okr.json),
       stages: ord,
       version: okr.json.version,
@@ -157,7 +157,7 @@ describe("DF · luật bước khi lưu [AC-PB2-04][HUB-FR-104]", () => {
 });
 
 describe("DF · Bàn giao tự thêm khi lưu [AC-PB2-09][HUB-FR-136]", () => {
-  it("AC-PB2-09 · DF-06 · POST thiếu 'Bàn giao' ⇒ thêm cuối required_sections + '## Bàn giao\\n' cuối template; PUT lại không nhân đôi; copy mẫu có 'Bàn giao'", async () => {
+  it("AC-PB2-09 · DF-06 · POST thiếu 'Bàn giao' ⇒ thêm cuối required_sections + '## Bàn giao\\n' cuối template; PUT lại không nhân đôi", async () => {
     needPb2(c.pb2);
     const stages = [s({ key: "a", step: 0, review: KT }), s({ key: "b", step: 1 })];
     const r = await post(defBody("pb2-df06", stages));
@@ -168,7 +168,7 @@ describe("DF · Bàn giao tự thêm khi lưu [AC-PB2-09][HUB-FR-136]", () => {
         expect(lastSec(st0)).toBe("Bàn giao");
         expect(String(st0.output.template).endsWith("## Bàn giao\n")).toBe(true);
       }
-    const put = await c.call("Adm", "PUT", `/process-defs/${g.id}`, {
+    const put = await c.call("P", "PUT", `/process-defs/${g.id}?tenant_id=${T_FIX.acme}`, {
       ...asInput(g),
       version: g.version,
     });
@@ -178,9 +178,6 @@ describe("DF · Bàn giao tự thêm khi lưu [AC-PB2-09][HUB-FR-136]", () => {
     ).length;
     expect(n).toBe(1);
     expect((String(put.json.stages[0].output.template).match(/## Bàn giao/g) ?? []).length).toBe(1);
-    const cp = await c.call("Adm", "POST", `/process-defs/${TPL}/copy`, { key: "pb2-df06-copy" });
-    expect(cp.status).toBe(201);
-    for (const st0 of cp.json.stages as Json[]) expect(lastSec(st0)).toBe("Bàn giao");
   });
   it("AC-PB2-09 · DF-07 · mẫu platform (seed) KHÔNG bị thêm 'Bàn giao' (seed/migration không qua ensureHandoff)", async () => {
     needPb2(c.pb2);
@@ -197,7 +194,7 @@ describe("DF · Bàn giao tự thêm khi lưu [AC-PB2-09][HUB-FR-136]", () => {
     for (const st0 of (d?.stages ?? []) as Json[])
       expect((st0.output.required_sections as string[]).includes("Bàn giao")).toBe(false);
   });
-  it("HUB-BR-25 · DF-08 · tenant_admin beta PUT def acme ⇒ 404 (không lộ)", async () => {
+  it("HUB-BR-25 · DF-08 · tenant_admin beta PUT def acme ⇒ 403 FORBIDDEN_TENANT_ADMIN_WRITE (CR-127 E8: quản trị công ty không ghi quy trình)", async () => {
     needPb2(c.pb2);
     const r = await post(defBody("pb2-df08", [s({ key: "a", step: 0 })]));
     expect(r.status).toBe(201);
@@ -205,7 +202,10 @@ describe("DF · Bàn giao tự thêm khi lưu [AC-PB2-09][HUB-FR-136]", () => {
       ...asInput(r.json),
       version: r.json.version,
     });
-    expect(put.status).toBe(404);
+    expect({ status: put.status, code: put.json?.error?.code }).toEqual({
+      status: 403,
+      code: "FORBIDDEN_TENANT_ADMIN_WRITE",
+    });
   });
   it("HUB-FR-136 · DF-09 · G-5 · def có stage `team` + stage `agent` (đều thiếu) ⇒ chỉ stage agent được thêm 'Bàn giao'", async () => {
     needPb2(c.pb2);

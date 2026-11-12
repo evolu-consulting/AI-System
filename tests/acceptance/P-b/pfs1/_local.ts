@@ -12,6 +12,7 @@ import {
   api,
   type CtxPa,
   defInput,
+  defsWriteVia,
   type Json,
   PA,
   type Role,
@@ -71,7 +72,10 @@ export async function startPfs1(opts: { checkTimeoutMs?: number } = {}): Promise
     k,
     base,
     tok,
-    call: async (r, method, path, body) => api(hub, await tok(r), method, path, body),
+    call: async (r, method, path, body) => {
+      const w = defsWriteVia(r, method, path);
+      return api(hub, await tok(w.role as typeof r), method, w.path, body);
+    },
     stop: async () => {
       ac.abort();
       await server.stop(true);

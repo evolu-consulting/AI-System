@@ -23,7 +23,7 @@ export function sourcingRepo(tx: Tx, t: string): SourcingRepo {
         tx,
         sql`select concat_ws('|',
             (select count(*)::text || ':' || coalesce(max(c.updated_at)::text, '') || ':' || coalesce(sum(c.version), 0)::text
- || ':' || coalesce(sum(hashtext(c.id::text || c.status || coalesce(c.direction, ''))), 0)::text
+ || ':' || coalesce(sum(hashtext(c.id::text || c.status || coalesce(c.direction, '') || coalesce(c.effect, '') || coalesce(c.superseded_at::text, ''))), 0)::text
               from contracts.contracts c where c.tenant_id = ${t}::uuid and c.status in (${STATUSES}) and c.superseded_at is null),
             (select count(*)::text || ':' || coalesce(max(s.chosen_at)::text, '')
               from contracts.sourcing_choices s where s.tenant_id = ${t}::uuid)) as j`,
@@ -69,7 +69,7 @@ export function sourcingRepo(tx: Tx, t: string): SourcingRepo {
 /** HĐ đã duyệt (≤ MAX + 1 để biết bị cắt) + dòng hàng + lựa chọn nguồn — MỘT câu. */
 function loadQ(t: string) {
   return sql`with c as (
-            select c.id, c.kind, c.parent_id, ${contractNameSql("c")} as title, c.number, c.status, c.direction, c.end_date, c.created_at,
+            select c.id, c.kind, c.parent_id, ${contractNameSql("c")} as title, c.number, c.status, c.effect, c.direction, c.end_date, c.created_at,
               contracts.as_date(c.fields -> 'effective_date' ->> 'value') as eff,
               json_build_object('key', contracts.party_key(c.fields -> 'supplier_name' ->> 'value', c.fields -> 'supplier_tax_id' ->> 'value'),
                 'name', c.seller) as seller,
@@ -83,7 +83,7 @@ function loadQ(t: string) {
           select json_build_object(
             'n', (select count(*) from c),
             'contracts', coalesce((select json_agg(json_build_object('id', x.id, 'kind', x.kind, 'parent_id', x.parent_id,
-                'title', x.title, 'number', x.number, 'status', x.status, 'direction', x.direction, 'end_date', x.end_date,
+                'title', x.title, 'number', x.number, 'status', x.status, 'effect', x.effect, 'direction', x.direction, 'end_date', x.end_date,
                 'effective_date', x.eff, 'seller', x.seller, 'buyer', x.buyer,
                 'items', coalesce(it.items, '[]'::json)) order by (x.kind = 'appendix'), x.created_at, x.id)
               from cs x left join lateral (

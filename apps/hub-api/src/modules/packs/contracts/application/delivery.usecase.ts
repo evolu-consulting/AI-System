@@ -23,6 +23,7 @@ import type {
   StockCheckOut,
   StockCheckRequest,
 } from "../domain/delivery.types";
+import { fulfillQty, type QtyLine } from "../domain/ledger.rules";
 import { type DeliveryResult, fmtQty, StockError } from "../domain/stock.rules";
 import {
   DeliveryFail,
@@ -30,6 +31,7 @@ import {
   type DeliveryLoad,
   type DeliveryRepo,
 } from "./delivery.ports";
+import { LedgerFail } from "./ledger.ports";
 
 const toItem = (r: DeliveryItemRow): DItem => ({
   id: r.id,
@@ -60,6 +62,7 @@ const compsOf = (L: DeliveryLoad): DComp[] =>
   }));
 
 const failOf = (e: unknown): never => {
+  if (e instanceof LedgerFail) throw e;
   if (e instanceof DeliveryError) throw new DeliveryFail(e.code, e.detail);
   throw e;
 };
@@ -68,6 +71,8 @@ const failOf = (e: unknown): never => {
 export type DeliveredRow = { item_id: string; qty: string; planned: string | null };
 export type Confirmed = {
   rows: DeliveredRow[];
+  /** CR-127 X1: dòng còn thiếu (SL thật < kế hoạch) — hàng con phần còn lại chép sang `milestone_items`. */
+  left: { item_id: string; qty: string }[];
   outcome: DeliveryOutcome | null;
   /** gap-c #14: thông báo kho cho người phụ trách HĐ (null = không có thay đổi kho hoặc HĐ chưa giao ai). */
   notice: NotifyInput | null;
@@ -78,6 +83,7 @@ export async function confirmDelivery(
   r: DeliveryRepo,
   milestoneId: string,
   on: string,
+  actual: ReadonlyMap<string, bigint> | null = null,
 ): Promise<Confirmed> {
   const L = await r.load(milestoneId);
   if (!L) throw new DeliveryFail("not_found");
@@ -87,9 +93,27 @@ export async function confirmDelivery(
   const comps = compsOf(L);
   let lines: ReturnType<typeof deliveryLines> = [];
   let moves: ReturnType<typeof deliveryMoves> = [];
+  let left: QtyLine[] = [];
   try {
     lines = deliveryLines(items, plan, ctx);
-    moves = deliveryMoves(lines, items, comps, ctx);
+    // CR-127 X1: SL thật (giao thiếu) ⇒ dòng giao = SL thật, kế hoạch mốc gốc = SL thật; phần thiếu ⇒ hàng con (người gọi).
+    if (actual) {
+      const f = fulfillQty(lines, actual);
+      if (f === "over") throw new LedgerFail("over_plan");
+      left = f.left;
+      const got = new Map(f.given.map((g) => [g.itemId, g.qty]));
+      lines = lines.map((l) => ({
+        ...l,
+        qty: got.get(l.itemId) ?? 0n,
+        planned: got.get(l.itemId) ?? 0n,
+      }));
+    }
+    moves = deliveryMoves(
+      lines.filter((l) => l.qty > 0n),
+      items,
+      comps,
+      ctx,
+    );
   } catch (e) {
     failOf(e);
   }
@@ -98,11 +122,12 @@ export async function confirmDelivery(
     qty: fmtQty(l.qty),
     planned: l.planned === null ? null : fmtQty(l.planned),
   }));
+  const leftRows = left.map((l) => ({ item_id: l.itemId, qty: fmtQty(l.qty) }));
   const given = rows.filter((x) => x.qty !== "0").map(({ item_id, qty }) => ({ item_id, qty }));
-  if (given.length === 0) return { rows, outcome: null, notice: null };
+  if (given.length === 0) return { rows, left: leftRows, outcome: null, notice: null };
   const res = moves.length ? await applied(r, moves, on, comps) : null;
   const outcome = outcomeOf(given, res?.components ?? [], comps, res?.overdrawn ?? []);
-  return { rows, outcome, notice: deliveryNotice(outcome, L, milestoneId) };
+  return { rows, left: leftRows, outcome, notice: deliveryNotice(outcome, L, milestoneId) };
 }
 
 /** MS-impact: dòng nhập/xuất mà `confirmDelivery` SẼ ghi (xem trước, không ghi); bảng SL sai/vượt ⇒ [] (lệnh xác nhận báo lỗi). */

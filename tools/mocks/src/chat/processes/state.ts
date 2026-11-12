@@ -292,6 +292,7 @@ export class ProcessState {
       review: "review_requested",
       ask: "ask_requested",
       decision: "decision_requested",
+      milestone: "review_requested", // CR-127: mock không tạo việc mốc; giữ kiểu đủ
     } as const;
     for (const u of this.assignees(task)) this.notify(u, notice[task.kind], r, task);
     return task;
@@ -307,7 +308,10 @@ export class ProcessState {
     t.result = result;
     this.emit(this.assignees(t), "review_task.closed", { task_id: t.id, result });
     if (!actor) return;
-    r.history.push({ ...this.hist(r, t.kind, t, actor), ...extra });
+    r.history.push({
+      ...this.hist(r, t.kind === "milestone" ? "review" : t.kind, t, actor),
+      ...extra,
+    });
     this.post(r, {
       kind: "task_result",
       process_run_id: r.id,

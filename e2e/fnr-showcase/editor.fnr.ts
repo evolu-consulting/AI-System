@@ -3,11 +3,18 @@
 // `playwright.fnr.config.ts` (Hub thật + Runtime giả + admin-web). Mỗi ca tự dựng def riêng qua API (key ngẫu nhiên) ⇒ không phụ thuộc thứ tự.
 import { expect, type Page, test } from "@playwright/test";
 import { PA_E2E } from "../P-a/_pa-data";
-import { ADMIN_URL, adminLogin, hub, rtReset, settle, tok as tokOf } from "../P-a/_pa-support";
+import {
+  ACME,
+  ADMIN_URL,
+  hub,
+  platformLogin,
+  platTok,
+  rtReset,
+  settle,
+  tok,
+} from "../P-a/_pa-support";
 
 test.afterEach(() => settle());
-
-const tok = (_w: "Adm") => tokOf("Adm");
 
 // biome-ignore lint/suspicious/noExplicitAny: json theo contract
 type Json = any;
@@ -90,19 +97,19 @@ async function createDef(
     inputs,
     stages,
   };
-  const r = await hub(await tok("Adm"), "POST", "/process-defs", body);
+  const r = await hub(await platTok(), "POST", `/process-defs?tenant_id=${ACME}`, body);
   expect(r.status, `POST /process-defs ${JSON.stringify(r.json).slice(0, 400)}`).toBeLessThan(300);
   return { id: r.json.id as string, key, name };
 }
 const getDef = async (id: string): Promise<Json> => {
-  const r = await hub(await tok("Adm"), "GET", `/process-defs/${id}`);
+  const r = await hub(await platTok(), "GET", `/process-defs/${id}?tenant_id=${ACME}`);
   expect(r.status, `GET /process-defs/${id}: ${JSON.stringify(r.json).slice(0, 300)}`).toBe(200);
   return r.json;
 };
 
 async function openEditor(p: Page, id: string, login = true): Promise<void> {
-  if (login) await adminLogin(p);
-  await p.goto(`${ADMIN_URL}/processes/${id}`);
+  if (login) await platformLogin(p);
+  await p.goto(`${ADMIN_URL}/processes/${id}?company=${ACME}`);
   await expect(canvas(p)).toBeVisible();
 }
 const canvas = (p: Page) => p.getByRole("application", { name: "Canvas quy trình" });
@@ -123,15 +130,15 @@ async function save(p: Page): Promise<{ status: number; json: Json }> {
 test("CR-103 · editor · A · đổi node Hoàn tất từ Ghi giá trị sang agent ⇒ Lưu 200 ⇒ tải lại còn ⇒ chạy 50tr: stage chạy bằng agent và run xong", async ({
   page: p,
 }) => {
-  await adminLogin(p);
+  await platformLogin(p);
   // bản sao flow mẫu (seed `_seed.ts`)
-  const t = await tok("Adm");
-  const list = await hub(t, "GET", "/process-defs?kind=sample&limit=100");
+  const t = await platTok();
+  const list = await hub(t, "GET", `/process-defs?kind=sample&limit=100&tenant_id=${ACME}`);
   const row = ((list.json?.items ?? []) as Json[]).find(
     (d) => d.key === "flow-showcase" || /mẫu/.test(d.name),
   );
   expect(row, "def flow mẫu đã seed").toBeTruthy();
-  const src = (await hub(t, "GET", `/process-defs/${row.id}`)).json;
+  const src = (await hub(t, "GET", `/process-defs/${row.id}?tenant_id=${ACME}`)).json;
   const copy = await createDef("fnr-ed-a", src.stages, src.inputs, {
     description: src.description,
     input_hint: src.input_hint,
@@ -156,9 +163,10 @@ test("CR-103 · editor · A · đổi node Hoàn tất từ Ghi giá trị sang 
   const last = saved.stages.find((s: Json) => s.key === "hoan-tat");
   expect(last.executor).toMatchObject({ kind: "agent", agent_id: PA_E2E.agentPost });
 
+  const ta = await tok("Adm"); // người dùng công ty chạy (admin nền tảng chỉ soạn)
   // chạy 50 triệu + "mua sắm" ⇒ nhánh else ⇒ "Hoàn tất" (stage_idx 5) chạy bằng Runtime
   await rtReset();
-  const start = await hub(t, "POST", `/process-defs/${copy.id}/run`, {
+  const start = await hub(ta, "POST", `/process-defs/${copy.id}/run`, {
     input: "",
     inputs: [
       { type: "number", key: "amount", value: "50000000" },
@@ -169,7 +177,7 @@ test("CR-103 · editor · A · đổi node Hoàn tất từ Ghi giá trị sang 
   const runId = start.json.id as string;
   let lastView = "";
   const view = async (): Promise<Json> => {
-    const r = await hub(t, "GET", `/process-runs/${runId}`);
+    const r = await hub(ta, "GET", `/process-runs/${runId}`);
     if (r.json?.status === "needs_decision")
       throw new Error(
         `needs_decision: ${JSON.stringify(r.json?.decision)} stages=${JSON.stringify(r.json?.stages?.[5])}`,
@@ -183,7 +191,7 @@ test("CR-103 · editor · A · đổi node Hoàn tất từ Ghi giá trị sang 
         const v = await view();
         for (const task of (v.my_tasks ?? []) as Json[])
           if (task.can_act !== false)
-            await hub(t, "POST", `/review-tasks/${task.id}/decision`, { result: "pass" });
+            await hub(ta, "POST", `/review-tasks/${task.id}/decision`, { result: "pass" });
         return v.status;
       },
       { timeout: 60_000, intervals: [1_000] },
@@ -322,10 +330,10 @@ test("CR-103 · editor · D · đưa giai đoạn khác vào bước của node 
   // đặt "Phụ" vào bước 2 (bước của node Nếu): cùng thao tác chuyển bước như kéo sang cột đó
   await stepSpin(p).fill("2");
   await stepSpin(p).blur();
-  const r = await save(p).catch(() => null);
   const msg = "Điều kiện Nếu chưa hợp lệ";
-  await expect(p.getByRole("alert").filter({ hasText: msg }).first()).toBeVisible();
-  if (r) expect(r.status).toBeGreaterThanOrEqual(400);
+  // CR-127: lỗi chặn ngay ở trình soạn — nút Lưu tắt, không gửi PUT
+  await expect(p.getByRole("button", { name: "Lưu", exact: true })).toBeDisabled();
+  await expect(p.getByText(msg).first()).toBeVisible();
   const saved = await getDef(d.id);
   expect(saved.stages.find((s: Json) => s.key === "phu").step).toBe(3);
 });
@@ -359,7 +367,7 @@ test("CR-103 · editor · E · node Nếu trỏ tới bước có Hành động 
   await p.getByRole("option", { name: "Bước 3" }).click();
   const puts: string[] = [];
   p.on("request", (q) => q.method() === "PUT" && puts.push(q.url()));
-  await p.getByRole("button", { name: "Lưu", exact: true }).click();
+  await expect(p.getByRole("button", { name: "Lưu", exact: true })).toBeDisabled(); // CR-127: chặn ở trình soạn
   // lỗi hiện ngay trong khối "Nếu" (chặn ở client, không gửi PUT)
   await expect(ifx.getByText(/Điều kiện Nếu chưa hợp lệ/).first()).toBeVisible();
   expect(puts, "không gửi PUT").toEqual([]);

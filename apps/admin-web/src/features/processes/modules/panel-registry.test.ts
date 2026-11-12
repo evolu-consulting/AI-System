@@ -26,6 +26,10 @@ describe("CR-124 q4 · node Gửi đối tác xác nhận dùng panel chung từ
       "send_fields",
       "reply_days",
       "message",
+      "sign_together", // CR-127 · P2 · đề nghị ký cùng lúc
+      "sign_reason",
+      "accept_h",
+      "sign_h",
       "assignee_group",
     ]);
     expect(fs.find((f) => f.key === "importance")).toMatchObject({

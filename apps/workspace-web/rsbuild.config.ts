@@ -30,6 +30,8 @@ export const proxy = {
   "/attachments": HUB_URL,
   "/review-tasks": HUB_URL,
   "/me/review-tasks": HUB_URL,
+  // CR-127 · E3 · uỷ quyền của tôi (`/me/delegations`); `/tenants/:tid/delegations` đã đi qua `/tenants`.
+  "/me/delegations": HUB_URL,
   // CR-118 §11.2 · tenant_admin sửa luật chọn quy trình + đọc năng lực của công ty mình (`/hub-admin/tenants/:tid/…`).
   "/hub-admin": HUB_URL,
   "/tenants": HUB_URL,

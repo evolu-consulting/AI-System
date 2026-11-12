@@ -325,7 +325,11 @@ export { agentStage };
 
 /** `POST /process-defs` ⇒ đòi 201, trả def (json). */
 export async function createDef(c: CtxPf1, body: Json, r: Role = "Adm"): Promise<Json> {
-  const res = await c.call(r, "POST", "/process-defs", body);
+  // CR-127 E8: ghi `/process-defs` chỉ quản trị nền tảng (tenant_admin ⇒ 403 FORBIDDEN_TENANT_ADMIN_WRITE) ⇒ "Adm" đi bằng platform_admin + ?tenant_id.
+  const res =
+    r === "Adm"
+      ? await c.call("P", "POST", `/process-defs?tenant_id=${T.acme}`, body)
+      : await c.call(r, "POST", "/process-defs", body);
   expect({ status: res.status, code: res.json?.error?.code ?? null }).toEqual({
     status: 201,
     code: null,

@@ -1,6 +1,7 @@
 // Chọn người xem (D2, chủ quản): nhãn hiển thị + xem trước số công ty nhận được. Đối tác không có picker (chỉ ghi chú).
 import type { PartnerOrg, PostAudience, PostType } from "@ai/contracts/community";
 import { t } from "../i18n";
+import { catsSummary } from "./cat-pick";
 import { audienceIncludes, defaultAudience } from "./visibility";
 
 export const audienceLabel = (mode: PostAudience["mode"]): string =>
@@ -27,7 +28,7 @@ export function audienceSummary(a: PostAudience | undefined, type: PostType): st
   const aud = a ?? defaultAudience(type);
   if (aud.mode === "cats") {
     return aud.cats.length > 0
-      ? t("community.audience.catsList", { list: aud.cats.join(", ") })
+      ? t("community.audience.catsList", { list: catsSummary(aud.cats) })
       : type === "sell"
         ? t("community.audience.catsSell")
         : type === "buy"

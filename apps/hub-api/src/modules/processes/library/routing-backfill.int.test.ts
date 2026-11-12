@@ -14,17 +14,17 @@ import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
 import { setSlotDefault } from "../../../test-support/slot-default";
-import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/public";
-import { approvalSlotSpec } from "../../packs/contracts/testing";
+import { intakeSlotSpec } from "../../packs/contracts/testing";
 import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
 import type { ProcessDeps } from "../core/ports";
 import { libraryRoutes } from "./library.routes";
+import { INTAKE_DEFAULT_ID, INTAKE_SLOT, reviveIntakeDefault } from "./slot-generic.fixture";
 
-const SLOT = "contracts.approval";
+const SLOT = INTAKE_SLOT;
 const X = tenantId(1191);
 const Y = tenantId(1192);
 const Z = tenantId(1193);
-const DFLT = APPROVAL_DEFAULT_DEF.id;
+const DFLT = INTAKE_DEFAULT_ID;
 const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
   P: { userId: userId(1190), tenantId: X, role: "platform_admin" },
   AZ: { userId: userId(1193), tenantId: Z, role: "tenant_admin" },
@@ -76,10 +76,11 @@ beforeAll(async () => {
   await users(o, X, 1, { from: 1190 });
   await users(o, Z, 1, { from: 1193 });
   for (const t of [X, Y, Z]) await groups(o, t, ["contracts-editor", "contracts-owner"]);
+  await reviveIntakeDefault(o);
   lib.A = await libCopy("bf-a", "QT A");
   lib.B = await libCopy("bf-b", "QT B");
   lib.C = await libCopy("bf-c", "QT C");
-  slotRegistry.register(approvalSlotSpec);
+  slotRegistry.register(intakeSlotSpec);
   app = new Hono<AuthVars>();
   app.use("*", async (c, next) => {
     c.set("user", WHO[c.req.header("x-who") ?? ""] as never);
@@ -140,7 +141,10 @@ describe("hub-routing-backfill · gán cũ đồng bộ tập gán", () => {
     g = await call("AZ", "GET", ROUTING(Z));
     expect(g.json.rules.map((r: Json) => [r.def_id, r.is_default])).toEqual([[lib.C, true]]);
     // luật phòng ban dùng C ⇒ bỏ gán cũ (xoá luật mặc định) vẫn giữ C trong tập (FK luật), không luật khớp ⇒ mẫu khe
-    const put = await call("AZ", "PUT", ROUTING(Z), {
+    // CR-127 E8 · BR-10/11: ghi luật định tuyến chỉ quản trị nền tảng; quản trị công ty ⇒ 403
+    const denied = await call("AZ", "PUT", ROUTING(Z), { version: g.json.version, rules: [] });
+    expect([denied.status, denied.json.error?.code]).toEqual([403, "FORBIDDEN_TENANT_ADMIN_WRITE"]);
+    const put = await call("P", "PUT", ROUTING(Z), {
       version: g.json.version,
       rules: [
         { condition: { contractKinds: ["buy"] }, def_id: lib.C, is_default: false },

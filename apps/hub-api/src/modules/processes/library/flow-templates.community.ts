@@ -34,13 +34,13 @@ export const communityFlowDef = () => ({
 });
 
 /**
- * D7 · bật Community cho công ty ⇒ công ty có sẵn flow duyệt bài dùng được: ghi mẫu (idempotent, id cố định) + gán Bật cho công ty.
- * `hub` = pool vai hub_api (scope hệ thống). Chạy lại vô hại; dòng gán đã có (admin đã tắt/đổi) giữ nguyên.
+ * Ghi mẫu "Quản trị duyệt bài" (idempotent, id cố định). CR-127 Z9: KHÔNG còn gán cho công ty — công ty tự có quy trình riêng do quản trị nền tảng
+ * tạo từ sơ đồ trống. `hub` = pool vai hub_api (scope hệ thống). Chạy lại vô hại.
  */
 export async function ensureCommunityDefaultFlow(
   hub: Db,
-  tenantId: string,
-  actorId: string | null,
+  _tenantId: string,
+  _actorId: string | null,
 ): Promise<{ created: boolean }> {
   const t = COMMUNITY_FLOW_TEMPLATE;
   return withHubScope(hub, { kind: "system" }, async (tx) => {
@@ -56,8 +56,6 @@ export async function ensureCommunityDefaultFlow(
       await tx.execute(sql`insert into hub.process_def_releases (def_id, rel_version, name, stages, slot_body, note)
         select d.id, 1, d.name, d.stages, d.slot_body, 'seed mẫu Community CR-125 c5' from hub.process_defs d
         where d.id = ${t.id}::uuid on conflict (def_id, rel_version) do nothing`);
-    await tx.execute(sql`insert into hub.company_flows (tenant_id, flow_id, enabled, position, updated_by)
-      values (${tenantId}::uuid, ${t.id}::uuid, true, 0, ${actorId}::uuid) on conflict (tenant_id, flow_id) do nothing`);
     return { created: ins.length > 0 };
   });
 }

@@ -18,11 +18,10 @@ function fake(pathname: string, search = "") {
 
 describe("createRouterPort", () => {
   it("read đọc URL hiện tại; go/replace ghi URL chuẩn /community/*", () => {
-    const f = fake("/community/profile/abc/files", "?settings=1");
+    const f = fake("/community/profile/abc/files", "");
     const p = createRouterPort(f.low);
     expect(p.read()).toEqual({
       route: { name: "profile", orgId: "abc", section: "files" },
-      settings: true,
     });
     p.go({ name: "feed" });
     p.replace({ name: "profile", orgId: "x" });

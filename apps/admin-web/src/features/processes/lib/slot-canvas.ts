@@ -4,7 +4,6 @@
 // `slot`) thành bước duyệt mặc định; nhánh/quay lại do Hub biên dịch lại nên xoá ở đây (tránh luật nhánh sai sau khi đổi số bước).
 import { isDlcStep, normalizeDlcStages } from "./dlc-slot";
 import type { StageDraft } from "./draft-types";
-import { isSlotStep, isSystemStage } from "./system-nodes";
 
 /** `step` của stage engine cho bước người dùng thứ `i` (bước 0 chạy trước, route ở bước 1, các bước sau +1). */
 export const engineStepOf = (i: number): number => (i === 0 ? 0 : i + 1);
@@ -40,61 +39,11 @@ export const defaultSlotOf = (
       }
     : { kind, name, from: "end_date", offset_days: 0, time: "09:00" };
 
-const isTool = (s: StageDraft, key: string): boolean => isSystemStage(s) && s.tool.key === key;
-const isRouteTool = (s: StageDraft): boolean =>
-  s.executor === "tool" && s.tool.key === "contracts-route";
-
-function uniqueKey(want: unknown, taken: Set<string>, i: number): string {
-  let k = typeof want === "string" && want !== "" ? want : `s${i}`;
-  while (taken.has(k)) k = `${k}x`;
-  taken.add(k);
-  return k;
-}
-
 export function normalizeSlotStages(stages: readonly StageDraft[]): StageDraft[] {
   // dlc-engine · khe DLC (hoặc sơ đồ có bước DLC lẫn vào ⇒ `KIND_MIX` chặn lưu): không có nút hệ thống route/finalize.
   if (stages.some(isDlcStep)) return normalizeDlcStages(stages);
-  const route = stages.find((s) => isTool(s, "contracts-route"));
-  const finalize = stages.find((s) => isTool(s, "contracts-finalize"));
-  const user = stages.filter((s) => !isSystemStage(s));
-  // khung stage mẫu = bước duyệt (gọi route); Thông báo / Chờ tới / Dify không làm khung
-  const tmpl = user.find((s) => isSlotStep(s) && isRouteTool(s)) ?? user.find(isSlotStep);
-  if (!route || !finalize || !tmpl) return [...stages];
-  const taken = new Set<string>();
-  const steps = user.map((s, i): StageDraft => {
-    // Stage mới (kể cả đã gõ `slotRaw` ở form bước nhưng executor còn trống) ⇒ lấy khung stage từ bước mẫu; Dify giữ nguyên.
-    const keep = isSlotStep(s) && (s.slotRaw?.kind === "dify" || isRouteTool(s));
-    // CR-121 D-6b · Thông báo / Chờ tới tự sang bước kế (không cổng duyệt) như Dify.
-    const auto = s.slotRaw?.kind === "notify" || s.slotRaw?.kind === "wait_until";
-    const base = keep
-      ? s
-      : {
-          ...tmpl,
-          uid: s.uid,
-          uiY: s.uiY,
-          uiX: s.uiX,
-          ...(auto ? { after: "auto" as const } : {}),
-        };
-    const slot = {
-      ...(isSlotStep(s) ? s.slotRaw : defaultReviewSlot(s.name)),
-      name: s.name,
-    } as Record<string, unknown>;
-    slot.key = uniqueKey(slot.key, taken, i);
-    if (i === 0 && slot.kind === "review") slot.when = null; // bước đầu luôn chạy
-    return {
-      ...base,
-      name: s.name,
-      key: `s${i}`,
-      step: engineStepOf(i),
-      backTo: i === 0 ? [] : [0],
-      branch: [],
-      slotRaw: slot,
-    };
-  });
-  const [first, ...rest] = steps;
-  if (!first) return [...stages];
-  const sys = (s: StageDraft, step: number): StageDraft => ({ ...s, step, backTo: [], branch: [] });
-  return [{ ...first, step: 0 }, sys(route, 1), ...rest, sys(finalize, engineStepOf(steps.length))];
+  // CR-127 Z3b: khe duyệt kiểu cũ (`s0 → route → s1..sn → finalize`) đã gỡ ⇒ không còn dựng lại khung route/finalize.
+  return [...stages];
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -16,7 +16,7 @@ import { HUB_API_URL, type HubDeps, makeKeys, REDIS_TEST_URL, sign } from "../..
 import { testRedis } from "../../H1/_hub";
 import { ScriptRuntime } from "../../H1/_runtime";
 import { newJobToken, tokenHash } from "../../H2a/_runtime2";
-import { api, type CtxPa, type Json, PA, setupPa } from "../_support/pa";
+import { api, type CtxPa, defsWriteVia, type Json, PA, setupPa } from "../_support/pa";
 import { needSchema } from "../_support/schema";
 import {
   DEFS,
@@ -73,7 +73,10 @@ beforeAll(async () => {
     redis: rtRedis,
     rt: new ScriptRuntime(sql, rtRedis),
     tok,
-    call: async (r, method, path, body) => api(c.hub, await tok(r), method, path, body),
+    call: async (r, method, path, body) => {
+      const w = defsWriteVia(r, method, path);
+      return api(c.hub, await tok(w.role as typeof r), method, w.path, body);
+    },
     stop: async () => {
       ac.abort();
       await server.stop(true);

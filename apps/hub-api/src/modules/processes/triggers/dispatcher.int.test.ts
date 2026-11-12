@@ -8,7 +8,7 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { sql } from "drizzle-orm";
 import { connectDb, type Db } from "../../../lib/db";
-import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/public";
+import { INTAKE_DEFAULT_ID } from "../library/slot-generic.fixture";
 import { dispatchOnce, type FlowLaunch, FlowLaunchRefused } from "./dispatcher";
 import { insertFlowEvents } from "./dispatcher.repo";
 import { setFlowTriggers } from "./flags";
@@ -17,7 +17,7 @@ const X = tenantId(1221);
 const Y = tenantId(1222);
 const UX = userId(1221);
 const UY = userId(1222);
-const DFLT = APPROVAL_DEFAULT_DEF.id;
+const DFLT = INTAKE_DEFAULT_ID; // def mẫu (stages) để sao cột — khe `contracts.intake` còn sống
 /** Đồng hồ giả SAU giờ DB (`next_at` mặc định = now() của DB) ⇒ sự kiện vừa ghi đã tới hạn. */
 const T0 = new Date(Date.now() + 60_000);
 const SYS = { kind: "system" as const };
@@ -91,7 +91,11 @@ beforeAll(async () => {
   await flow(X, "e1-tai-a", 0, { event: "contract.uploaded" }); // decides — chỉ flow đầu
   await flow(X, "e1-tai-b", 1, { event: "contract.uploaded" });
   await flow(X, "e1-refuse", 0, { event: "contract.approved" });
-  await flow(Y, "e1-y", 0, { event: sub });
+  // CR-126 · flow bắt đầu bằng phiếu (stage đầu `core.start-form`) xếp TRƯỚC flow duyệt HĐ nhưng mang trigger_event contract.submitted
+  await flow(Y, "e1-phieu", 0, { event: sub });
+  await o`update hub.process_defs set stages = jsonb_set(stages, '{0,node}', '"core.start-form"')
+    where tenant_id = ${Y} and key = 'e1-phieu'`;
+  await flow(Y, "e1-y", 1, { event: sub });
   await withHubScope(db, SYS, (tx) => setFlowTriggers(tx, X, true));
 });
 
@@ -142,14 +146,14 @@ describe("CR-122 E1 · hàng đợi + bộ điều phối", () => {
     expect(new Set(launched).size).toBe(20);
   });
 
-  it("cờ FLOW_TRIGGERS tắt (Y) ⇒ bóng: không mở lượt, ghi would_run", async () => {
+  it("CR-127 K3 · app Hợp đồng luôn bật: cờ FLOW_TRIGGERS tắt (Y) vẫn mở lượt, không ghi bóng", async () => {
     launched.length = 0;
     await emit(Y, "y:1", "contract.submitted", "y-1", {}, UY);
     await run();
-    expect(launched).toEqual([]);
+    expect(launched).toEqual(["y-1|e1-y"]); // CR-126 · flow phiếu (position 0) không tranh việc duyệt HĐ
     const y = await row(Y, "y:1");
     expect(y?.processed).toBe(true);
-    expect(y?.outcome).toMatchObject({ shadow: true, would_run: [cf["e1-y"]] });
+    expect(y?.outcome).not.toMatchObject({ shadow: true });
   });
 
   it("lỗi tạm ⇒ thử lại sau lùi (chưa xong); lỗi cấu hình ⇒ refused, xong; quá 5 lần ⇒ lỗi, xong", async () => {

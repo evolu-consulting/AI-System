@@ -3,6 +3,7 @@
 // mỗi user nhập thấy ĐÚNG tập HĐ đã thấy ở mgmt-app (mgmt `orgs.Ctx.sees` ↔ RLS thật của gói với `app.user_id`).
 import type { Snapshot } from "../domain/context";
 import { targetId } from "../domain/ids.rules";
+import { stateOf } from "../domain/map-contracts.rules";
 import type { Membership } from "../domain/map-identity.rules";
 import type { MoneyKey, Plan, TableName, TenantPlan } from "../domain/plan";
 import { diffFields, type FieldDiff, mgmtVisible, sourceMoney } from "../domain/reconcile.rules";
@@ -131,7 +132,7 @@ const CONTRACT_DIFF: DiffSpec = {
     ["total_value", fv(c, "total_value"), r.value],
     ["end_date", fv(c, "end_date"), r.end_date],
     ["direction", c.direction, r.direction],
-    ["status", c.status, r.status],
+    ["status", stateOf(String(c.status), isObj(c.handled) ? c.handled : null).status, r.status],
     ["supplier_name", fv(c, "supplier_name"), r.seller],
     ["buyer_name", fv(c, "buyer_name"), r.buyer],
   ],

@@ -6,14 +6,8 @@
 import type { Page } from "@playwright/test";
 import { PURCHASE_TEMPLATES } from "../../apps/hub-api/src/modules/processes/library/purchase-templates";
 import { apiLogin } from "../_kit/api";
-import { createLibraryFlow, enableFlowTriggers } from "../_kit/flows";
-import {
-  assignFlowUi,
-  loginPlatformAdminUi,
-  openCompanyFlows,
-  openTenantPage,
-  safeReload,
-} from "../_kit/ui";
+import { createCompanyFlow, enableFlowTriggers } from "../_kit/flows";
+import { safeReload } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
 import { approveAs, confirmAndSave, type Env, loginCw, stepOf, U, uploadAndOpen } from "./_journey";
 import { expect, test } from "./_test";
@@ -62,13 +56,19 @@ async function approvePart(
   const first = page.waitForResponse(isApproval, { timeout: 30_000 });
   await page.goto(`${E.cw}/contracts/c/${id}`);
   await first;
+  const take = page.getByTestId("claim-take");
   const btn = page.locator("[data-approval=pass], [data-approval=approve]").first();
   let n = 0;
   await expect(async () => {
     if (n++ > 0) await safeReload(page, { boot: isApproval });
     await expect(stepOf(page, stepName)).toHaveAttribute("data-status", "open", { timeout: 4_000 });
-    await expect(btn).toBeVisible({ timeout: 4_000 });
+    await expect(take.or(btn).first()).toBeVisible({ timeout: 4_000 });
   }).toPass({ timeout: 60_000 });
+  // CR-127 U4: việc nhóm — nút Duyệt chỉ hiện sau «Nhận việc»
+  if (await take.isVisible()) {
+    await take.click();
+    await expect(page.getByTestId("claim-state")).toContainText("Bạn đang giữ");
+  }
   await btn.click();
   await expect(btn).toHaveCount(0, { timeout: 30_000 });
   await expect(stepOf(page, stepName)).toHaveAttribute("data-status", "open");
@@ -127,6 +127,38 @@ async function fillFormAs(
   for (const name of Object.values(o.files)) await expect(row).toContainText(name);
 }
 
+/** Mẫu ghi nhóm theo MÃ; quy trình công ty cần id nhóm của CÔNG TY (kể cả các nhóm trong bước «cùng duyệt»): đổi mã → id theo nhóm đã dựng ở trên. */
+async function withGroupIds(
+  tenantId: string,
+  stages: Record<string, unknown>[],
+): Promise<Record<string, unknown>[]> {
+  const ids = await withOwner(async (sql) => {
+    const rows = await sql<
+      { key: string; id: string }[]
+    >`select key, id::text from admin.groups where tenant_id = ${tenantId}::uuid`;
+    return new Map(rows.map((r) => [r.key, r.id]));
+  });
+  const fix = (g: Record<string, unknown>): Record<string, unknown> =>
+    typeof g.group_key === "string" && ids.has(g.group_key)
+      ? { ...g, group_id: ids.get(g.group_key) }
+      : g;
+  return stages.map((s) => {
+    const after = s.after as Record<string, unknown> | undefined;
+    if (!after) return s;
+    const par = after.parallel as { groups?: Record<string, unknown>[] } | undefined;
+    const groups = par?.groups?.map(fix);
+    // bước «cùng duyệt»: hub (`no_group`) đòi `after.group_id` ≠ rỗng với mọi bước duyệt ⇒ lấy nhóm đầu của dòng (nhóm còn lại trong `parallel`)
+    const head = groups?.[0]?.group_id;
+    return {
+      ...s,
+      after: {
+        ...fix(after),
+        ...(groups ? { parallel: { ...par, groups }, ...(head ? { group_id: head } : {}) } : {}),
+      },
+    };
+  });
+}
+
 test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm tệp làm trên giao diện, tới Kết thúc", async ({
   browser,
 }, testInfo) => {
@@ -137,16 +169,6 @@ test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm t�
     tenantKey: "platform",
     username: E.adminUser,
     password: E.adminPw,
-  });
-  await createLibraryFlow(need("JA_HUB_URL"), platform.token, {
-    key: `fsc-p1-${SFX}`,
-    name: FLOW,
-    app: "contracts",
-    // Mẫu Phần 1 của «Quy trình mua hàng» giờ là lượt con (NEVER_TRIGGER: điều kiện không bao giờ đúng, đầu vào = phiếu). Spec này chạy nó như quy
-    // trình theo sự kiện HĐ (thẻ HĐ): đặt lại «Bắt đầu khi» = khi gửi duyệt HĐ, đầu vào = mã HĐ.
-    trigger: { event: "contract.submitted" },
-    inputs: [{ key: "contract_id", type: "text", label: "Hợp đồng", required: false }],
-    stages: P1.stages as unknown as Record<string, unknown>[],
   });
   const tenantId = await enableFlowTriggers(E.tenantKey);
   await withOwner(async (sql) => {
@@ -162,12 +184,16 @@ test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm t�
     }
   });
 
-  // — platform admin gán mẫu cho công ty (UI) —
-  const admin = await ctxPage(browser);
-  await loginPlatformAdminUi(admin, E.admin, E.adminUser, E.adminPw);
-  await openTenantPage(admin, E.tenantName);
-  await assignFlowUi(await openCompanyFlows(admin), FLOW);
-  await admin.close();
+  // — platform admin dựng quy trình công ty từ SƠ ĐỒ TRỐNG (API) + áp dụng; nhóm đã có ở trên —
+  await createCompanyFlow(need("JA_HUB_URL"), platform.token, tenantId, {
+    name: FLOW,
+    app: "contracts",
+    // Mẫu Phần 1 của «Quy trình mua hàng» giờ là lượt con (NEVER_TRIGGER: điều kiện không bao giờ đúng, đầu vào = phiếu). Spec này chạy nó như quy
+    // trình theo sự kiện HĐ (thẻ HĐ): đặt lại «Bắt đầu khi» = khi gửi duyệt HĐ, đầu vào = mã HĐ.
+    event: "contract.submitted",
+    inputs: [{ key: "contract_id", type: "text", label: "Hợp đồng", required: false }],
+    stages: await withGroupIds(tenantId, P1.stages as unknown as Record<string, unknown>[]),
+  });
 
   // — nhân viên tải hợp đồng + «Gửi duyệt» ⇒ lượt chạy mở bước 1 «Đề xuất nhu cầu mua» (form) —
   const emp = await ctxPage(browser);
@@ -175,7 +201,12 @@ test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm t�
   const id = await uploadAndOpen(emp, E, Date.now().toString(36), 50_000_000);
   await confirmAndSave(emp);
   // chờ lượt chạy mở xong bước 1 trên chính thẻ này (không đóng trang khi «Gửi duyệt» còn bay)
-  await expect(emp.getByTestId(`flow-step-${stageKey(0)}`)).toBeVisible({ timeout: 90_000 });
+  // thẻ có thể báo «Dữ liệu vừa được người khác cập nhật» khi bấm Gửi duyệt ⇒ tải lại an toàn tới khi lượt chạy đã mở thẻ bước 1
+  let reloads = 0;
+  await expect(async () => {
+    if (reloads++ > 0) await safeReload(emp);
+    await expect(emp.getByTestId(`flow-step-${stageKey(0)}`)).toBeVisible({ timeout: 8_000 });
+  }).toPass({ timeout: 90_000 });
   await emp.close();
 
   const shot = (n: string) => testInfo.outputPath(`${n}.png`);

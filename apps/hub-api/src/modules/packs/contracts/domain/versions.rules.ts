@@ -1,6 +1,6 @@
 // CR-097 K2 · HD-FR-101 "Tải bản cập nhật" = phiên bản mới (nháp) cùng chuỗi · HD-FR-102 xác nhận v(n+1) ⇒ bản trước bị thay (giữ
-// ngày của nó) · HD-FR-103 cutover nghĩa vụ · X5 / CR-097b xoá trong chuỗi · UC-04 so sánh trường pháp lý. Thuần (không DB).
-// Phiên bản ≠ phụ lục ≠ gia hạn (decision 9). SQL theo tập ở migration 0049 (`contracts.k2_supersede`) làm đúng `cutoverPlan`.
+// ngày của nó) · BR-36b chuyển mốc mở (CR-127 K5) · X5 / CR-097b xoá trong chuỗi · UC-04 so sánh trường pháp lý. Thuần (không DB).
+// Phiên bản ≠ phụ lục ≠ gia hạn (decision 9). Chuyển mốc theo tập: `version-milestones.repo.ts`.
 
 export type ChainRow = {
   id: string;
@@ -48,27 +48,21 @@ export const deleteVerdict = (c: {
   draft: boolean;
 }): "ok" | "CONTRACT_HAS_VERSIONS" => (c.versions <= 1 || c.draft ? "ok" : "CONTRACT_HAS_VERSIONS");
 
-export type CutoverObligation = {
-  id: string;
-  status: string;
-  due_date: string;
-  has_stock: boolean;
-};
+export type MovableObligation = { id: string; status: string };
 
-/** HD-FR-103: nghĩa vụ `open` có hạn ≥ ngày hiệu lực v(n+1) ⇒ huỷ; có dòng kho ⇒ giữ (không đảo kho) + báo; khác ⇒ không đụng. */
-export function cutoverPlan(
-  obs: readonly CutoverObligation[],
-  effective: string,
-): { cancel: string[]; keep_stock: string[] } {
-  const hit = obs.filter((o) => o.status === "open" && o.due_date >= effective);
+/**
+ * CR-127 K5 · BR-36b: v(n+1) vào DONE ⇒ mốc `open` của bản trước chuyển sang v(n+1) (giữ id); mốc đã làm / huỷ / thay ở lại v(n)
+ * (giao dịch đã ghi giữ ở v(n)). Không còn huỷ + tạo lại. SQL theo tập: `adapters/version-milestones.repo.ts` làm đúng luật này.
+ */
+export function milestoneMovePlan(obs: readonly MovableObligation[]): {
+  move: string[];
+  stay: string[];
+} {
   return {
-    cancel: hit.filter((o) => !o.has_stock).map((o) => o.id),
-    keep_stock: hit.filter((o) => o.has_stock).map((o) => o.id),
+    move: obs.filter((o) => o.status === "open").map((o) => o.id),
+    stay: obs.filter((o) => o.status !== "open").map((o) => o.id),
   };
 }
-
-/** Lý do ghi trên nghĩa vụ bị huỷ (trùng chuỗi trong `contracts.k2_supersede`). */
-export const cutoverReason = (versionNo: number): string => `thay bằng phiên bản ${versionNo}`;
 
 /** Ngày hiệu lực v(n+1) = ngày bắt đầu trên văn bản; trống ⇒ hôm nay. */
 export const effectiveFrom = (startDate: string | null, today: string): string =>

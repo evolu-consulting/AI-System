@@ -1,10 +1,12 @@
 // CR-102 · com-c9 · luật thuần chuông Community (nghiep-vu §10): ai nhận loại nào, chữ + đường dẫn + khoá chống trùng của từng loại.
 // Lớp 1 — chỉ built-in. Visibility (người nhận có THẤY nội dung không) do SQL tính (cùng `community.audience_ok` của RLS) rồi đưa vào
 // đây dưới dạng `sees`; không ai nhận thông báo về thứ họ không thấy.
+import { canSeeComment } from "./comment-visibility.rules";
 
 export const NOTIFY_KIND_LIST = [
   "comment",
   "reply",
+  "mention",
   "newSell",
   "newBuy",
   "matchBuy",
@@ -36,34 +38,45 @@ export function wantsKind(
 
 export type Cand = { userId: string; kind: BellKind };
 
-/** Một ứng viên nhận bình luận: người đăng bài hoặc người từng bình luận trong luồng. */
+/** Một ứng viên nhận bình luận: người đăng bài, người từng bình luận trên bài, hoặc người của công ty được nhắc (@). */
 export type CommentCand = {
   userId: string;
   /** null = chủ quản. */
   org: string | null;
-  role: "author" | "commenter";
+  role: "author" | "commenter" | "mentioned";
   /** Người này THẤY bài (SQL: cùng luật RLS posts_visible, công ty còn hiệu lực). */
   sees: boolean;
 };
 
+const ROLE_KIND = { mentioned: "mention", author: "comment", commenter: "reply" } as const;
+const KIND_RANK: Record<string, number> = { mention: 3, comment: 2, reply: 1 };
+
 /**
- * Người nhận khi có bình luận mới trong luồng `threadOrg` của một bài:
- * - người đăng bài ⇒ `comment`; người từng bình luận trong luồng ⇒ `reply` (người đăng không nhận hai lần);
+ * Người nhận khi có bình luận mới trên một bài (CR-129, bình luận phẳng):
+ * - công ty được nhắc (`mentions`) ⇒ `mention`; người đăng bài ⇒ `comment`; người từng bình luận trên bài ⇒ `reply`;
+ *   một người một chuông mỗi bình luận, ưu tiên mention > comment > reply;
  * - không bao giờ gửi cho chính người viết;
- * - đối tác chỉ nhận khi luồng là của công ty mình VÀ còn thấy bài; chủ quản thấy mọi luồng nhưng chỉ khi CÒN quyền đọc gói
- *   (`sees` = false khi mất quyền — review Thấp-10).
+ * - chỉ người THẤY bài (`sees`) VÀ thấy bình luận mới (`canSeeComment`: bạn của người viết | bài của mình | được nhắc) — đối tác
+ *   không nhận chuông về bình luận của đối tác khác; chủ quản thấy mọi bình luận nhưng chỉ khi CÒN quyền đọc gói (`sees`).
  */
 export function commentRecipients(
   cands: readonly CommentCand[],
-  threadOrg: string,
+  c: { actorOrg: string | null; postAuthorOrg: string | null; mentions: readonly string[] },
   actorUserId: string,
 ): Cand[] {
   const out = new Map<string, Cand>();
-  for (const c of cands) {
-    if (c.userId === actorUserId) continue;
-    if (!c.sees || (c.org !== null && c.org !== threadOrg)) continue;
-    const kind: BellKind = c.role === "author" ? "comment" : "reply";
-    if (!out.has(c.userId) || kind === "comment") out.set(c.userId, { userId: c.userId, kind });
+  const ctx = {
+    authorOrg: c.actorOrg,
+    postAuthorOrg: c.postAuthorOrg,
+    mentions: c.mentions,
+    hidden: false,
+  };
+  for (const x of cands) {
+    if (x.userId === actorUserId || !x.sees || !canSeeComment(x.org, ctx)) continue;
+    const kind: BellKind = ROLE_KIND[x.role];
+    const cur = out.get(x.userId);
+    if (!cur || (KIND_RANK[kind] ?? 0) > (KIND_RANK[cur.kind] ?? 0))
+      out.set(x.userId, { userId: x.userId, kind });
   }
   return [...out.values()];
 }
@@ -86,27 +99,30 @@ const quote = (s: string) => (s.trim() === "" ? "(không tiêu đề)" : `"${s.t
 export type BellText = { title: string; body: string; link: string; dedup: string };
 
 /** Chữ + link + khoá trùng. `body` = tên người gây ra sự kiện (chuông hiển thị `actorName`). Tiêu đề bài luôn là bản đã che. */
-export function bellText(
-  k: BellKind,
-  p: PostRef,
-  o: { actor: string; threadOrg?: string; ref: string },
-): BellText {
-  const post = `/posts/${p.id}`;
+export function bellText(k: BellKind, p: PostRef, o: { actor: string; ref: string }): BellText {
+  const post = `/community?post=${p.id}`; // đường dẫn trong app (chuông chung của shell): Bảng tin cuộn tới đúng bài
   const t = quote(p.title);
   switch (k) {
     case "comment":
       return {
         title: `${o.actor} bình luận bài ${t}`,
         body: o.actor,
-        link: `${post}/threads/${o.threadOrg}`,
+        link: `${post}&comment=${o.ref}`,
         dedup: `c:${o.ref}:comment`,
       };
     case "reply":
       return {
         title: `${o.actor} trả lời bình luận của bạn trong bài ${t}`,
         body: o.actor,
-        link: `${post}/threads/${o.threadOrg}`,
+        link: `${post}&comment=${o.ref}`,
         dedup: `c:${o.ref}:reply`,
+      };
+    case "mention":
+      return {
+        title: `${o.actor} nhắc đến công ty bạn trong bài ${t}`,
+        body: o.actor,
+        link: `${post}&comment=${o.ref}`,
+        dedup: `c:${o.ref}:mention`,
       };
     case "newSell":
       return {
@@ -133,7 +149,7 @@ export function bellText(
       return {
         title: `${o.actor} sửa giá bài ${t} mà bạn đã lưu báo giá`,
         body: o.actor,
-        link: `${post}?quote=1`,
+        link: `${post}&quote=1`,
         dedup: `pe:${p.id}:${o.ref}`,
       };
     case "expiring":
@@ -144,33 +160,8 @@ export function bellText(
         dedup: `x:${p.id}:${o.ref}`,
       };
     case "digest":
-      return { title: o.actor, body: "", link: "/?digest=1", dedup: `d:${o.ref}` };
+      return { title: o.actor, body: "", link: "/community", dedup: `d:${o.ref}` };
   }
-}
-
-/** Chuông kit → hình `CommunityNotification` của contract (kind ngoài 8 loại ⇒ null, bỏ qua). */
-export function bellView(r: {
-  id: string;
-  kind: string;
-  title: string;
-  body: string;
-  link: string | null;
-  created_at: string;
-  read: boolean;
-}) {
-  const kind = kindOfBell(r.kind);
-  if (!kind) return null;
-  const m = /^\/posts\/([0-9a-f-]{36})(?:\/threads\/([0-9a-f-]{36}))?/i.exec(r.link ?? "");
-  return {
-    id: r.id,
-    kind,
-    actorName: r.body,
-    text: r.title,
-    ...(m?.[1] ? { postId: m[1] } : {}),
-    ...(m?.[2] ? { orgId: m[2] } : {}),
-    createdAt: r.created_at,
-    unread: !r.read,
-  };
 }
 
 /** Tổng hợp hằng ngày: gửi lúc `hour` giờ địa phương (mặc định 8). */

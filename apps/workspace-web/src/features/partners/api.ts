@@ -3,6 +3,8 @@
 import type {
   Company,
   GoodsCompare,
+  PartnerCommunity,
+  PartnerCommunityCandidate,
   PartnerContactPerson,
   PartnerContractCount,
   PartnerContractRow,
@@ -151,3 +153,17 @@ export const fetchRepRatings = (party: string, role: RepRole, signal?: AbortSign
   api<RepRatings>(`${REP}/ratings?party=${enc(party)}&role=${role}`, { signal });
 export const rateRep = (b: RepRatingIn) =>
   api<RepRatingRow>(`${REP}/ratings`, { method: "POST", body: b });
+
+// ---------- CR-130 · hồ sơ Bảng tin của đối tác: `/partners/community*` (nhóm hàng, khu vực, tài khoản đã mời) ----------
+export const communityKeys = {
+  one: (party: string) => ["partners", "community", party] as const,
+  candidates: ["partners", "community", "candidates"] as const,
+};
+export const fetchCommunity = (party: string, signal?: AbortSignal) =>
+  api<PartnerCommunity>(`${BASE}/partners/community?party=${enc(party)}`, { signal });
+export const fetchCommunityCandidates = (signal?: AbortSignal) =>
+  api<PartnerCommunityCandidate[]>(`${BASE}/partners/community/candidates`, { signal });
+export const saveCommunityProfile = (body: { party: string; cats: string[]; area: string }) =>
+  api<unknown>(`${BASE}/partners/community/profile`, { method: "PUT", body });
+export const saveCommunityAccount = (body: { party: string; ext_org_id: string | null }) =>
+  api<unknown>(`${BASE}/partners/community/account`, { method: "PUT", body });

@@ -72,7 +72,6 @@ const reviewBoxes = {
   heading: "main h1",
   save: 'main button:text-is("Gửi duyệt")',
   file: 'main a:has-text("Xem hợp đồng gốc")',
-  warnings: "main ul",
   firstField: "main input >> nth=0",
   quote: "main span.italic >> nth=0",
   items: "main table",
@@ -151,14 +150,12 @@ const HD2_SCENES: Scene[] = [
 ];
 
 // ---------- V2-F: chi tiết HĐ đã có hiệu lực (dòng thời gian mốc) + form nhập tay đã chọn loại Bán, có dòng hàng gắn SP ----------
+// CR-127 Q10b: dòng thời gian mốc + «Xác nhận xong» của máy cũ đã gỡ ⇒ cảnh chi tiết chỉ còn đầu trang + khối Thông tin.
 const detailBoxes = {
   heading: "main h1",
   info: "main section >> nth=0",
-  timeline: 'main section:has-text("Dòng thời gian") >> nth=0',
-  currentStep: 'main li[data-state="cur"]',
-  confirm: 'main li[data-state="cur"] button:has-text("Xác nhận xong")',
-  summary: 'main [data-testid="summary"]',
 };
+const detailReady = (p: Page) => p.getByRole("heading", { name: "Thông tin hợp đồng" });
 const V2F_SCENES: Scene[] = [
   ...(["light", "dark"] as const).map(
     (theme): Scene => ({
@@ -170,7 +167,7 @@ const V2F_SCENES: Scene[] = [
       text: ["main"],
       boxes: detailBoxes,
       mask: [],
-      ready: (p) => p.getByTestId("stage-now"),
+      ready: detailReady,
     }),
   ),
   {
@@ -180,28 +177,9 @@ const V2F_SCENES: Scene[] = [
     size: M,
     theme: "light",
     text: ["main"],
-    boxes: { heading: detailBoxes.heading, timeline: detailBoxes.timeline },
+    boxes: { heading: detailBoxes.heading },
     mask: [],
-    ready: (p) => p.getByTestId("stage-now"),
-  },
-  {
-    name: "v2f-detail-confirm-box",
-    signedIn: true,
-    path: `/contracts/c/${ACTIVE_ID}`,
-    size: D,
-    theme: "light",
-    text: ["main"],
-    boxes: {
-      heading: detailBoxes.heading,
-      timeline: detailBoxes.timeline,
-      box: 'main [data-testid="confirm-box"]',
-    },
-    mask: [],
-    ready: (p) => p.getByTestId("stage-now"),
-    act: async (p) => {
-      await p.getByRole("button", { name: "Xác nhận xong" }).click();
-      await expect(p.getByText("Mốc trễ 8 ngày — lỗi của ai?")).toBeVisible();
-    },
+    ready: detailReady,
   },
 ];
 

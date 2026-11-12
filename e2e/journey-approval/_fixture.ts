@@ -11,10 +11,13 @@ export type ContractDoc = {
   text: string;
   title: string;
   supplier: string;
-  line: Record<string, string>;
+  line: { title: string; supplier: string; buyer: string; term: string; total: string };
 };
 
 /** HĐ MUA mẫu (tenant là Bên mua). `run` làm tiêu đề duy nhất mỗi lượt chạy. */
+/** CR-127 · K7 · điều khoản phạt số mẫu (j04: thu trễ do đối tác ⇒ phạt ước tính). */
+const PENALTY_QUOTE = "Bên chậm thanh toán chịu phạt cố định 2.000.000 đồng.";
+
 export function buyContract(run: string, total = 11_500_000): ContractDoc {
   const vnd = String(total).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   const line = {
@@ -84,5 +87,15 @@ export function extractionFor(doc: ContractDoc): Record<string, unknown> {
     unsure: [],
     summary: null,
     milestones: [],
+    penalty_terms: [
+      {
+        party: "partner",
+        trigger: "late_payment",
+        rate_pct: null,
+        basis: "fixed",
+        cap_amount: 2_000_000,
+        quote: PENALTY_QUOTE,
+      },
+    ],
   };
 }

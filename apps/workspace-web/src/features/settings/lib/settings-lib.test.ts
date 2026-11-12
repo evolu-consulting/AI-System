@@ -27,12 +27,10 @@ const state = () =>
   buildState(
     {
       company: co,
-      approval_enabled: true,
       allow_negative_stock: false,
       legal_warn_threshold: 5_000_000,
       defaults: {
         ...co,
-        approval_enabled: true,
         allow_negative_stock: false,
         legal_warn_threshold: 5_000_000,
       },

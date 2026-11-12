@@ -35,6 +35,7 @@ export type ContractsReadUseCases = {
 
 const REPEATED = new Set([
   "status",
+  "effect",
   "owner",
   "category",
   "seller",

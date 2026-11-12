@@ -94,3 +94,29 @@ export type CommunityUploadGate = (who: {
   tenantId: string;
   userId: string;
 }) => Promise<() => Promise<void>>;
+
+/**
+ * CR-130 pha 2 · ADR-0043 · cổng GHI duy nhất community → SHT cho đối tác: duyệt yêu cầu tham gia ⇒ liên kết tài khoản công ty
+ * (`extOrgId`) với một đối tác SHT (vai `partner_roles` + hồ sơ `partner_profiles`). Chạy TRONG tx của người gọi (cùng lượt duyệt ⇒
+ * rollback cùng nhau). Chỉ người nội bộ/việc nền: `by.kind = "external"` ⇒ ném (route đã kiểm quyền duyệt, đây là chốt thứ hai).
+ * Idempotent: gọi lại không đổi gì (vai thêm, không gỡ). `tx` mờ với community; contracts đổi role gói trong chính tx đó.
+ */
+export type PartnerLinkInput = {
+  extOrgId: string;
+  /** Tên công ty (đã nhập ở form xin tham gia) — khoá đối tác `name:<fold>` khi chưa có đối tác trùng tên ở SHT. */
+  name: string;
+  roles: readonly ("supplier" | "customer")[];
+  /** Đối tác SHT do ADMIN chọn tường minh khi duyệt (`party_key`); vắng/null ⇒ luôn tạo đối tác MỚI (không tự khớp theo tên). */
+  partyKey?: string | null;
+};
+
+/** Lỗi cổng ghi (so khớp theo `kind`): `already_linked` (đối tác/tài khoản đã gắn nơi khác), `not_found` (khoá đối tác không có), `org_forbidden` (công ty không thuộc tenant). */
+export const PARTNER_LINK_FAIL_KINDS = ["already_linked", "not_found", "org_forbidden"] as const;
+export type PartnerLinkFailKind = (typeof PARTNER_LINK_FAIL_KINDS)[number];
+export type PartnerLinker = {
+  linkInTx(
+    tx: unknown,
+    by: { tenantId: string; kind: "internal" | "external" },
+    i: PartnerLinkInput,
+  ): Promise<{ partyKey: string; linked: boolean }>;
+};

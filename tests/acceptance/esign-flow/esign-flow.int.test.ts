@@ -13,7 +13,7 @@ import {
 } from "../../../apps/hub-api/src/modules/packs/contracts/esign.mount";
 import { fileboxClients } from "../../../apps/hub-api/src/modules/packs/packs.filebox";
 import { type EsignCtx, startEsign } from "../cf-esign/_support/esign";
-import { arrange, CBASE, insFile, P, pdf, T } from "../HD1/_support/hd1";
+import { arrange, CBASE, insFile, P, pdf, setLegacyStatus, T } from "../HD1/_support/hd1";
 
 let c: EsignCtx;
 let db: Db;
@@ -86,7 +86,7 @@ async function approved(steps: unknown[], o: { partner?: boolean } = {}): Promis
   const tax = o.partner === false ? "0301000099" : TAX;
   await c.sql`insert into contracts.contracts (id, tenant_id, kind, title, direction, deal, status, owner_user_id, created_by,
       fields, file_id)
-    values (${id}, ${T.acme}, 'contract', 'HĐ ký luồng', 'purchase', 'buy', 'needs_review', ${P.lan.id}, ${P.lan.id},
+    values (${id}, ${T.acme}, 'contract', 'HĐ ký luồng', 'purchase', 'buy', 'draft', ${P.lan.id}, ${P.lan.id},
       ${c.sql.json({
         number: fv(`EF-${id.slice(-4)}`),
         buyer_name: fv("Công ty Chúng Tôi"),
@@ -96,7 +96,8 @@ async function approved(steps: unknown[], o: { partner?: boolean } = {}): Promis
       } as never)}, ${rowId})`;
   await c.sql`insert into contracts.approvals (id, tenant_id, contract_id, status, started_by, mode, flow_steps)
     values (${aid}, ${T.acme}, ${id}, 'done', ${P.lan.id}, 'engine', ${c.sql.json(steps as never)})`;
-  await c.sql`update contracts.contracts set run_id = ${aid}, status = 'active' where id = ${id}`;
+  await c.sql`update contracts.contracts set run_id = ${aid} where id = ${id}`;
+  await setLegacyStatus(c.sql, id, "done"); // CR-127: qua cổng trạng thái
   return id;
 }
 
@@ -163,18 +164,5 @@ describe("esign-flow · duyệt xong ⇒ tự gửi ký", () => {
   });
 });
 
-describe("esign-flow · mở lại HĐ huỷ phong bì đang mở (HTTP)", () => {
-  it("gửi ký tay rồi mở lại HĐ ⇒ phong bì voided ở nhà cung cấp + hàng", async () => {
-    const id = await approved([review]);
-    const s = await c.hubCall(P.lan, "POST", `${CBASE}/${id}/esign`, {
-      signers: [{ role: "company" }, { role: "partner", name: "Chị Ký", email: PARTNER }],
-    });
-    expect(s.status).toBe(201);
-    const e = await envOf(id);
-    const r = await c.hubCall(P.lan, "POST", `${CBASE}/${id}/reopen`, { reason: "sửa giá" });
-    expect(r.status).toBe(200);
-    expect((await envOf(id))?.status).toBe("voided");
-    expect(c.ds.fake.envelopes.get(e?.env as string)?.status).toBe("voided");
-  });
-});
+// CR-127 K4: "Mở lại" đã gỡ ⇒ bỏ ca "mở lại HĐ huỷ phong bì đang mở".
 // CR-105 L4: bỏ "lưu mẫu: người cụ thể thuộc tenant + quyền gói" — PUT /approval-flow đã xoá (mẫu nay là quy trình thư viện, sửa ở ai-admin).

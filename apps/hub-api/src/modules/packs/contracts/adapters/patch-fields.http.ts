@@ -11,6 +11,7 @@ import type {
   PatchFieldsOk,
   PatchFieldsResult,
 } from "../application/patch-fields.usecase";
+import { lockedError } from "./manage.routes";
 
 const KEYS_MAX = 50;
 const KEY_LEN_MAX = 100;
@@ -45,19 +46,8 @@ export function patchBody(raw: unknown): PatchFieldsInput {
 export function patchReply(res: PatchFieldsResult): PatchFieldsOk {
   if (res.kind === "ok") return res.out;
   if (res.kind === "not_found") throw appError("NOT_FOUND");
-  // Review HD3 S1 · HĐ đang duyệt / đã duyệt ⇒ không sửa trường quyết định cấp duyệt.
-  if (res.kind === "in_approval")
-    throw new AppError(
-      "CONTRACT_IN_APPROVAL",
-      409,
-      "Contract is in approval; this field is locked",
-    );
-  if (res.kind === "locked")
-    throw new AppError(
-      "CONTRACT_LOCKED",
-      409,
-      "Confirmed contract is locked; only the owner can reopen it",
-    );
+  // CR-127 K4 · BR-39: HĐ đang duyệt / đã xong ⇒ nội dung khoá; sửa ⇒ Tải phiên bản mới.
+  if (res.kind === "locked") throw lockedError();
   if (res.kind !== "stale") throw appError("NOT_FOUND");
   throw new AppError("CONTRACT_STALE", CONTRACT_ERRORS.CONTRACT_STALE, "Contract was modified", {
     current: res.current,

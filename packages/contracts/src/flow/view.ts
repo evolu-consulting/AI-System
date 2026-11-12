@@ -3,6 +3,7 @@
 // (`FLOW_STEP_KINDS`); map renderer `FlowStepRenderers<R>` bắt buộc đủ mọi loại ⇒ thiếu renderer = lỗi typecheck. Loại lạ trong
 // snapshot cũ không có ở đây: server luôn chiếu về một loại đã biết (`system` khi không có renderer riêng).
 import { z } from "zod";
+import { EvidenceInputSchema, TASK_CLAIM_FIELDS } from "../chat/evidence";
 import { FlowFormSchema, FlowFormValueSchema, FlowFormValuesSchema } from "./form";
 import { FormPrefillSchema } from "./form-prefill";
 
@@ -131,6 +132,13 @@ export const FlowActionInputSchema = z.discriminatedUnion("kind", [
   }),
   z.strictObject({ kind: z.literal("form"), form: FlowFormSchema }),
   z.strictObject({ kind: z.literal("extension"), key: Key, required: z.boolean() }),
+  // CR-127 · E1 · bằng chứng khi quyết định: ô ý kiến + chữ ký/tệp (`EvidenceInput`); `required` = bước đòi "ý kiến + chữ ký hoặc tệp".
+  z.strictObject({
+    kind: z.literal("evidence"),
+    signature: z.boolean(),
+    files: z.boolean(),
+    required: z.boolean(),
+  }),
 ]);
 export type FlowActionInput = z.infer<typeof FlowActionInputSchema>;
 export const FlowActionDefSchema = z.strictObject({
@@ -148,6 +156,7 @@ export const FlowTaskSchema = z.strictObject({
   actions: z.array(FlowActionDefSchema).max(10),
   /** CR-126 · bước form: giá trị điền sẵn + danh sách chọn do máy chủ tính (vd «Chọn đối tác & người nhận»). */
   prefill: FormPrefillSchema.optional(),
+  ...TASK_CLAIM_FIELDS, // CR-127 · E1
 });
 export type FlowTask = z.infer<typeof FlowTaskSchema>;
 
@@ -193,6 +202,8 @@ export const FlowActionRequestSchema = z.strictObject({
     .optional(),
   values: FlowFormValuesSchema.optional(),
   extension: z.unknown().optional(),
+  /** CR-127 · E4 · bằng chứng của quyết định (hành động có `input.kind = 'evidence'`): ý kiến + chữ ký/tệp. */
+  evidence: EvidenceInputSchema.optional(),
 });
 export type FlowActionRequest = z.infer<typeof FlowActionRequestSchema>;
 export const FlowActionResultSchema = z.strictObject({ view: FlowViewSchema });

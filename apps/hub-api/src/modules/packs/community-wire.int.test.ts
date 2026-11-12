@@ -10,8 +10,10 @@ import { type Cast, seedCast } from "../../../../../tests/acceptance/com-c3/_sup
 import { mapError } from "../../lib/errors";
 import type { HostBookReader } from "./community/application/pack-ports";
 import { communityModule } from "./community/community.mount";
+import { kindOfBell } from "./community/domain/notify.rules";
 import { communityPorts } from "./community-wire.mount";
 import { pgExternalOrgResolver } from "./kit/adapters/ext-org.pg";
+import { packBell } from "./kit/adapters/pack-bell";
 import type { PackAccessView, PackGuardVars } from "./kit/adapters/pack-guard.middleware";
 
 let sql: Sql;
@@ -84,6 +86,16 @@ function build() {
   return h;
 }
 
+// Chuông chung của shell (`hub.notifications`, một nguồn): đọc qua packBell, dựng lại (kind, bài).
+const bellItems = async (w: Who) => {
+  const { items } = await packBell(db, "community").list({ tenantId: c.A, userId: c[w] }, 50);
+  return items.flatMap((r) => {
+    const kind = kindOfBell(r.kind);
+    if (!kind) return [];
+    const post = new URLSearchParams((r.link ?? "").split("?")[1] ?? "").get("post");
+    return { kind, ...(post ? { postId: post } : {}) };
+  });
+};
 const call = async (who: Who, method: string, path: string, body?: unknown) => {
   const res = await app.request(path, {
     method,
@@ -180,10 +192,7 @@ describe("Lưu báo giá + gợi ý SHT (C7b, C8)", () => {
     expect(u.status).toBe(200);
     expect(u.json.quotes).toBeUndefined();
     // C9 wire: người đã lưu (hA) nhận chuông priceEdited; NCC không nhận gì
-    const bellOf = async (w: Who) =>
-      ((await call(w, "GET", "/notifications")).json.items as { kind: string }[]).map(
-        (i) => i.kind,
-      );
+    const bellOf = async (w: Who) => (await bellItems(w)).map((i) => i.kind);
     expect(await bellOf("hA")).toContain("priceEdited");
     expect(await bellOf("s1a")).not.toContain("priceEdited");
     const host = (await call("hA", "GET", "/feed")).json.items.find(
@@ -217,7 +226,7 @@ describe("Lưu báo giá + gợi ý SHT (C7b, C8)", () => {
       text: "Em báo 11.000đ/cuộn",
     });
     expect(cm.status).toBe(201);
-    const commentId = cm.json.comments[0].id;
+    const commentId = cm.json.id; // CR-129: POST trả CommentView
     const r = await call(
       "hM",
       "POST",
@@ -238,7 +247,7 @@ describe("Lưu báo giá + gợi ý SHT (C7b, C8)", () => {
     // review Thấp-9: NCC xoá bình luận ⇒ dấu của chủ quản còn, hiện "bình luận đã xoá"
     expect(
       (await call("s1a", "DELETE", `/posts/${buy.json.id}/comments/${commentId}`)).status,
-    ).toBe(200);
+    ).toBe(204);
     const mark = (await call("hA", "GET", "/feed")).json.items.find(
       (i: { id: string }) => i.id === buy.json.id,
     ).quotes;
@@ -272,9 +281,7 @@ describe("Lưu báo giá + gợi ý SHT (C7b, C8)", () => {
     });
     expect(r.status).toBe(201);
     const kinds = async (w: Who) =>
-      ((await call(w, "GET", "/notifications")).json.items as { kind: string; postId?: string }[])
-        .filter((i) => i.postId === r.json.id)
-        .map((i) => i.kind);
+      (await bellItems(w)).filter((i) => i.postId === r.json.id).map((i) => i.kind);
     expect(await kinds("hA")).toEqual(["matchBuy"]);
     expect(await kinds("hM")).toEqual(["matchBuy"]);
   });

@@ -48,4 +48,10 @@ describe("V2-M · impactLines", () => {
     expect(blockedReason(base)).toBeNull();
     expect(blockedReason({ ...base, stock_blocked: "đã bán" })).toBe("đã bán");
   });
+  test("Z8 · nháp đã từng gửi duyệt ⇒ dòng nêu rõ đứng đầu; chưa gửi ⇒ không có", () => {
+    expect(
+      impactLines({ ...base, submitted_before: true, milestones: 1 }).map((l) => l.key),
+    ).toEqual(["submittedBefore", "milestones"]);
+    expect(impactLines({ ...base, submitted_before: false })).toEqual([]);
+  });
 });

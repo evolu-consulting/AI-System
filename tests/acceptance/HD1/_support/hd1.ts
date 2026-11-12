@@ -69,6 +69,7 @@ export const TABLES = [
   "contract_events",
   "files",
   "index_outbox",
+  "contract_submissions", // CR-127 K3: FK kép tới contracts (0102, ON DELETE CASCADE); liệt kê để rõ khi truncate
 ] as const;
 export async function hasContracts(sql: Sql): Promise<boolean> {
   const [r] = await sql<{ ok: boolean }[]>`select
@@ -106,15 +107,70 @@ export type CRow = {
   source?: string | null;
   handled?: unknown;
 };
+/** CR-127: ánh xạ trạng thái cũ (9 giá trị — test cũ còn dùng literal) ⇒ 4 trạng thái + `extract_state` + `effect` + `effect_outcome`.
+ *  `needs_review` ⇒ draft (HĐ chờ xác nhận); muốn "đang duyệt" truyền thẳng `processing`. Trạng thái mới truyền thẳng giữ nguyên. */
+export function stateOf(status: string | undefined): {
+  status: string;
+  extractState: string;
+  effect: string | null;
+  outcome: string | null;
+} {
+  const s = status ?? "done";
+  const done = (effect: string, outcome: string | null = null) => ({
+    status: "done",
+    extractState: "ready",
+    effect,
+    outcome,
+  });
+  if (s === "extracting")
+    return { status: "draft", extractState: "reading", effect: null, outcome: null };
+  if (s === "extract_failed")
+    return { status: "draft", extractState: "failed", effect: null, outcome: null };
+  if (s === "needs_review")
+    return { status: "draft", extractState: "ready", effect: null, outcome: null };
+  if (s === "rejected")
+    return { status: "reject", extractState: "ready", effect: null, outcome: null };
+  if (s === "active" || s === "expiring" || s === "expired") return done(s);
+  if (s === "renewed" || s === "terminated") return done(s, s);
+  return {
+    status: s,
+    extractState: "ready",
+    effect: s === "done" ? "active" : null,
+    outcome: null,
+  };
+}
+/** CR-127 K6: cột `handled` đã gỡ — `handled.outcome` (renewed/replaced) ⇒ `effect_outcome` (renewed/terminated). */
+function applyHandled(st: ReturnType<typeof stateOf>, handled: unknown): void {
+  const ho = (handled as { outcome?: string } | null | undefined)?.outcome;
+  if (ho !== "renewed" && ho !== "replaced") return;
+  st.outcome = ho === "renewed" ? "renewed" : "terminated";
+  st.effect = st.outcome;
+}
 export async function insContract(sql: Sql, r: CRow): Promise<void> {
+  const st = stateOf(r.status);
+  applyHandled(st, r.handled);
   await sql`insert into contracts.contracts
-    (id, tenant_id, kind, parent_id, title, direction, status, owner_user_id, created_by, created_at, updated_at, version,
-     fields, file_id, source_text, handled)
+    (id, tenant_id, kind, parent_id, title, direction, status, extract_state, effect, effect_outcome, owner_user_id, created_by,
+     created_at, updated_at, version, fields, file_id, source_text)
     values (${r.id}, ${r.tenant}, ${r.kind ?? "contract"}, ${r.parent ?? null}, ${r.title ?? "HĐ"},
-      ${r.direction ?? null}, ${r.status ?? "active"}, ${r.owner === undefined ? P.lan.id : r.owner}, ${r.createdBy ?? P.lan.id},
+      ${r.direction ?? null}, ${st.status}, ${st.extractState}, ${st.effect}, ${st.outcome},
+      ${r.owner === undefined ? P.lan.id : r.owner}, ${r.createdBy ?? P.lan.id},
       ${r.updatedAt ?? "2026-01-01T00:00:00Z"}, ${r.updatedAt ?? "2026-01-01T00:00:00Z"}, ${r.version ?? 1},
-      ${J(sql, r.fields ?? {})}, ${r.fileId ?? null}, ${r.source ?? null},
-      ${r.handled === undefined ? null : J(sql, r.handled)})`;
+      ${J(sql, r.fields ?? {})}, ${r.fileId ?? null}, ${r.source ?? null})`;
+}
+/** CR-127: đổi trạng thái HĐ trong test bằng literal cũ (ánh xạ `stateOf`) — qua cổng `contracts.state_gate` (trigger STATUS_GATE_ONLY chặn UPDATE thẳng). */
+export async function setLegacyStatus(
+  sql: Sql,
+  ids: string | string[],
+  status: string,
+): Promise<void> {
+  const st = stateOf(status);
+  const list = Array.isArray(ids) ? ids : [ids];
+  await sql.begin(async (tx) => {
+    await tx`select set_config('contracts.state_gate', 'bulk:' || txid_current()::text, true)`;
+    await tx`update contracts.contracts set status = ${st.status}, extract_state = ${st.extractState}, effect = ${st.effect},
+      effect_outcome = ${st.outcome} where id = any(${tx.array(list)}::uuid[])`;
+  });
 }
 /** lock-strict (qc): DB luôn khoá HĐ đã xác nhận (trigger K1) — test thao tác mốc/SP/HĐ gốc cần HĐ "mở" thì gỡ khoá bằng cách tắt trigger trong MỘT tx. */
 export async function unlockContract(sql: Sql, ...ids: string[]): Promise<void> {
@@ -330,58 +386,7 @@ export async function upload(
   return { status: res.status, headers: res.headers, text, json };
 }
 
-// ---------- byte mẫu ----------
-let seq = 0;
-const enc = new TextEncoder();
-/** PDF tối thiểu, mỗi lần nội dung khác nhau. */
-export const pdf = (extra = 0): Uint8Array =>
-  enc.encode(`%PDF-1.4\n% hd1 #${seq++}\n${"x".repeat(extra)}\n%%EOF\n`);
-export const jpeg = (): Uint8Array =>
-  new Uint8Array([
-    0xff,
-    0xd8,
-    0xff,
-    0xe0,
-    0,
-    16,
-    0x4a,
-    0x46,
-    0x49,
-    0x46,
-    0,
-    1,
-    seq++ & 255,
-    0xff,
-    0xd9,
-  ]);
-export const png = (): Uint8Array =>
-  new Uint8Array([
-    0x89,
-    0x50,
-    0x4e,
-    0x47,
-    0x0d,
-    0x0a,
-    0x1a,
-    0x0a,
-    0,
-    0,
-    0,
-    13,
-    0x49,
-    0x48,
-    0x44,
-    0x52,
-    seq++ & 255,
-  ]);
-export const exe = (): Uint8Array =>
-  new Uint8Array([0x4d, 0x5a, 0x90, 0, 3, 0, 0, 0, 4, 0, 0, 0, 0xff, 0xff, 0, 0, seq++ & 255]);
-/** Tệp `mb` MiB, mở đầu bằng `%PDF-` (qua kiểm magic bytes, vượt/không vượt trần). */
-export const bigPdf = (mb: number): Uint8Array => {
-  const b = new Uint8Array(Math.floor(mb * 1024 * 1024));
-  b.set(enc.encode("%PDF-1.4\n"), 0);
-  return b;
-};
+export * from "./bytes";
 
 // ---------- Redis: quota + đếm lệnh ----------
 export const QUOTA_PREFIX = "q:contracts:";

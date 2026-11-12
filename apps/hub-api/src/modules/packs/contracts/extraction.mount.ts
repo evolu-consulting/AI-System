@@ -7,19 +7,17 @@
 import { hostname } from "node:os";
 import type { Db } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { Hono } from "hono";
-import type { Redis } from "ioredis";
-import type { AiClient } from "../../../lib/ai-client/ai-client";
 import { safeErrorFields } from "../../../lib/errors";
 import { logger } from "../../../lib/logger";
-import type { PackAccessView, PackGuardVars, PackToolDef, PackUow, PackWho } from "../kit/public";
-import { createPackUow, packTenantOnly } from "../kit/public";
-import type { ActionQuota } from "./adapters/action-quota";
+import type { PackAccessView, PackUow } from "../kit/public";
+import { flowEngine, packTenantOnly } from "../kit/public";
+import { aiMilestonesDoneHook } from "./adapters/ai-milestones.repo";
 import { aiTransport, EXTRACT_MODEL } from "./adapters/ai-transport";
 import { approvalRoutes } from "./adapters/approval.routes";
+import { registerContractDoneHook } from "./adapters/contract-state.repo";
 import { createExtractStream } from "./adapters/extract-stream.redis";
 import { extractionRoutes } from "./adapters/extraction.routes";
-import { type AgentTransport, createExtractionAgent } from "./adapters/extraction-agent";
+import { createExtractionAgent } from "./adapters/extraction-agent";
 import { createExtractionVerifier } from "./adapters/extraction-verifier";
 import { withCreatorDepartments } from "./adapters/flow-facts.repo";
 import {
@@ -27,27 +25,18 @@ import {
   INPROC_DEFAULT_CONCURRENCY,
   type InprocLimiter,
 } from "./adapters/inproc-limit";
-import { platformAuditRepo } from "./adapters/platform-audit.repo";
 import { reviewRoutes } from "./adapters/review.routes";
-import type { FileContent } from "./adapters/source-file-text";
+import { submitRoutes } from "./adapters/submit.routes";
 import {
-  type ApprovalGroups,
   actApproval,
-  cancelReopenApproval,
-  type EngineStart,
   type ExtractJob,
   type ExtractJobs,
   getApproval,
-  patchGuard,
   readApprovalSettings,
-  reopenApproval,
-  retryApproval,
   saveApprovalSettings,
-  startApproval,
 } from "./application/approval.usecase";
-import type { ApprovalEngineBridge } from "./application/approval-engine.ports";
-import { flowCreateManual, flowRequestExtract, flowStarter } from "./application/approval-flow";
-import type { ApprovalFlowTxRepos, FlowGroups } from "./application/approval-flow.usecase";
+import { flowRequestExtract, flowStarter } from "./application/approval-flow";
+import type { ApprovalFlowTxRepos } from "./application/approval-flow.usecase";
 import {
   QUEUED_STALE_MINUTES,
   type SweepDeps,
@@ -58,77 +47,44 @@ import {
 import type { ContractFlowGate } from "./application/contract-flow.ports";
 import { createManual } from "./application/create-manual.usecase";
 import { handleExtractJob } from "./application/extract-job.usecase";
-import type { SourceFileText, TaxRegistry } from "./application/extraction.ports";
+import type { TaxRegistry } from "./application/extraction.ports";
 import { createExtractionQueue, type ExtractionQueue } from "./application/extraction-queue";
-import { withFlowResend } from "./application/flow-resend.usecase";
-import type { myApprovals } from "./application/mywork-approvals.usecase";
-import type { PatchApprovalGuard } from "./application/patch-fields.usecase";
 import {
   linkContractProducts,
   type ProductLinksTxRepos,
 } from "./application/product-links.usecase";
-import { platformOpAudit } from "./application/reopen-contract.usecase";
 import { requestExtract } from "./application/request-extract.usecase";
 import type { ReviewTxRepos } from "./application/review.ports";
 import { attachProduct, reviewSave } from "./application/review.usecase";
-import { createRunExtraction, type ExtractionOutcome } from "./application/run-extraction.usecase";
+import { createRunExtraction } from "./application/run-extraction.usecase";
+import {
+  recreateContract,
+  type SubmitTxRepos,
+  submitContract,
+  submitFlowOpen,
+  submitPreview,
+  withdrawContract,
+} from "./application/submit.usecase";
 import { createRefreshParties, type TaxRetryScheduler } from "./application/tax-parties";
 import type { ExtractionStarter } from "./application/upload-contract.ports";
-import { approvalEngine, type EsignHooks, flowTemplateRoutes } from "./approval.mount";
+import { approvalEngine, flowTemplateRoutes } from "./approval.mount";
+import { mountContractAccess } from "./contract-access.mount";
 import { DEFAULT_TENANT_TZ, localDate } from "./domain/local-time.rules";
+import type { ContractsAi, ContractsAiDeps, ContractsFlowDeps } from "./extraction.types";
 import { packUow } from "./extraction.uow";
 import { contractsFlowRoutes } from "./flow.mount";
 import { mountContractFlow } from "./flow-events.mount";
+import { bindUnsourcedContractEvents } from "./flow-unsourced-events.mount";
+import { safeTimeZone } from "./reminders.mount";
 
-const KEY = "contracts";
+// HD-FR-21…26 · HD-FR-31…37 · M3-decouple: nối trích + flow duyệt hợp đồng (lớp 4 của gói) — KHÔNG phụ thuộc engine quy trình.
+// - Lượt AI đọc = job trên hàng đợi bền Redis Streams (vắng Redis ⇒ chạy ngay trong tiến trình) → lời gọi model trực tiếp qua AI
+//   client chung (usage + trần theo tenant). Lời nhắc có rào + parse strict + kiểm trích dẫn của HD2 giữ nguyên.
+// - Duyệt = máy trạng thái của gói (`contracts.approvals`); vòng quét đóng HĐ `extracting` quá hạn (STALE).
+// - Seam `transport` (test HD2) ⇒ đường HD2: tải lên/trích lại chỉ xếp lượt đọc, không mở lượt duyệt (hành vi đã khoá).
+// Tra MST (`TaxRegistry`) do `packs.mount.ts` tiêm từ `lib/` (gói không gọi HTTP — PK-AC12).
 
-/** Seam `PacksDeps.contractsAi` (test ↔ hub-api). */
-export type ContractsAiDeps = {
-  /** HD2 · transport giả ⇒ đường HD2 (không mở lượt duyệt). Vắng ⇒ chế độ flow (AI client chung). */
-  transport?: AgentTransport;
-  /** Vắng ⇒ `packs.mount.ts` dựng theo env `CONTRACTS_TAX_LOOKUP_URL`; null ⇒ không tra. */
-  tax?: TaxRegistry | null;
-  concurrency?: number;
-  onSettled?: (contractId: string, outcome: ExtractionOutcome | "error") => void;
-  /** M3 · test gọi lượt quét / nhận lại job trực tiếp (vòng quét nền tắt khi có hook). */
-  onHandles?: (h: {
-    sweepOnce: () => ReturnType<typeof sweepApprovalsOnce>;
-    reclaimOnce: () => Promise<number>;
-  }) => void;
-  /** cr121-a2 · CHỈ TEST: `false` ⇒ lượt mới mở ở máy 2 bước cũ (hồi quy đường decide cũ cho lượt máy cũ còn dở — HD3/K1/K4);
-   *  vắng/`true` ⇒ engine (như chạy thật). Không có env nào bật được nhánh này; gỡ cùng máy cũ. */
-  approvalEngine?: boolean;
-};
-
-export type ContractsAi = {
-  starter: ExtractionStarter;
-  routes: Hono<PackGuardVars>;
-  approval: Hono<PackGuardVars>;
-  /** Review S1 · seam cho PATCH trường (HD1): giai đoạn lượt duyệt. */
-  guard: PatchApprovalGuard;
-  /** contract-flow S3a · tool engine (`contracts-route`/`contracts-finalize`) khi cờ engine bật; tắt ⇒ rỗng. */
-  tools: PackToolDef[];
-  /** contract-flow S3b · việc duyệt HĐ trên engine cho "Việc của tôi" (cờ bật); tắt ⇒ vắng. */
-  myApprovals?: ReturnType<typeof myApprovals>;
-  /** CR-101 DOC-deals-fix: mở lượt duyệt cấp 1 cho HĐ vừa về Chờ duyệt (nâng giao dịch khi bật duyệt). */
-  startReview?: (who: PackWho, id: string) => Promise<unknown>;
-};
-export type ContractsFlowDeps = EsignHooks & {
-  ai: AiClient;
-  /** M3 · D3-04 · PDF có lớp chữ ⇒ chữ (FileBox + unpdf); vắng ⇒ tệp đi thẳng agent (`AGENT_UNAVAILABLE`). */
-  fileText?: SourceFileText;
-  /** CR-122 p9 · bytes tệp gốc ở FileBox để đính kèm lượt AI (PDF scan / ảnh đọc bằng thị giác); vắng ⇒ `AGENT_UNAVAILABLE`. */
-  fileBytes?: FileContent;
-  groups: ApprovalGroups & Pick<FlowGroups, "existingIds" | "list">;
-  /** contract-flow S3a · cầu engine quy trình (`packRuns`, cổng gắn lúc engine mount); vắng ⇒ không chạy duyệt trên engine. */
-  engine?: ApprovalEngineBridge;
-  redis?: Redis;
-  quota: ActionQuota;
-  tenants: SweepDeps["tenants"];
-  signal?: AbortSignal;
-  /** V2-A · múi giờ tenant (ngày lịch cho mốc mặc định); vắng ⇒ múi mặc định. */
-  timeZoneOf?: (tenantId: string) => Promise<string>;
-};
+const _KEY = "contracts";
 
 /** `CONTRACTS_EXTRACT_TIMEOUT_S` (10–3600, mặc định 300) — trần một lượt AI (review Trung 2). */
 function agentTimeoutMs(): number {
@@ -206,13 +162,7 @@ export function withFallback(
 type AiDeps = Omit<ContractsAiDeps, "tax"> & { tax: TaxRegistry | null };
 
 /** Lượt trích (agent + kiểm trích dẫn + tra MST hẹn giờ) và handler job của hàng đợi. */
-function extractionRunner(
-  d: AiDeps,
-  flow: ContractsFlowDeps,
-  pack: ReturnType<typeof packUow>,
-  engine: EngineStart | undefined,
-  gate: ContractFlowGate,
-) {
+function extractionRunner(d: AiDeps, flow: ContractsFlowDeps, pack: ReturnType<typeof packUow>) {
   const uow = packTenantOnly(pack);
   // Tra lại MST hẹn giờ (cổng Cục Thuế) — hàng trong tiến trình, chỉ cho việc `tax`.
   let taxQueue: ExtractionQueue | null = null;
@@ -244,8 +194,6 @@ function extractionRunner(
     uow,
     log: logger,
     ...(d.onSettled ? { onSettled: d.onSettled } : {}),
-    ...(engine ? { engine } : {}),
-    flow: gate, // CR-122 A1
   });
   return { handle, schedule };
 }
@@ -260,10 +208,13 @@ export function contractsAiModule(
   const uow = packTenantOnly(pack);
   // cr121-a2 · lượt mới luôn engine (không env, không cổng "đã gán"); seam test `approvalEngine: false` giữ máy cũ.
   const engOpts = { hd2: d.transport !== undefined, legacyMachine: d.approvalEngine === false };
-  const gate = mountContractFlow(db); // CR-122 A1: cổng cờ + đăng ký FactsReader/OutcomeHandler
+  const gate = mountContractFlow(db, flow.timeZoneOf ? safeTimeZone(flow.timeZoneOf) : undefined); // CR-122 A1: cổng cờ + đăng ký FactsReader/OutcomeHandler
+  registerContractDoneHook(aiMilestonesDoneHook, "mốc-AI"); // CR-127 K7 · HĐ vào DONE ⇒ lập mốc từ AI (BR-43)
+  bindUnsourcedContractEvents(); // CR-127 B0: sự kiện manifest chưa có nguồn phát (tạm tới X2/X3/K6/E10)
+  mountContractAccess(db); // CR-127 E3b: cổng kit `ContractAccess` (uỷ quyền / giao việc)
   const engFlow = { ...flow, groups: withCreatorDepartments(flow.groups, db), flowGate: gate }; // CR-121 D-1
   const eng = approvalEngine(engOpts, engFlow, uow, view);
-  const { handle, schedule } = extractionRunner(d, flow, pack, eng?.start, gate);
+  const { handle, schedule } = extractionRunner(d, flow, pack);
   const ready = d.transport !== undefined || flow.ai.ready;
   const { jobs, reclaimOnce } = extractJobs(db, flow, handle, {
     concurrency: d.concurrency ?? 2,
@@ -274,20 +225,19 @@ export function contractsAiModule(
   const ad = {
     uow,
     groups: flow.groups,
-    jobs,
-    redo,
-    flow: gate,
     ...(eng
       ? {
-          engine: eng.start,
-          reopen: withFlowResend(eng.reopen, { uow, flow: gate, stalled: eng.stalled }), // CR-122 · P11b · lượt chờ flow ⇒ phát lại sự kiện
-          retry: eng.retry,
-          cancelReopen: eng.cancelReopen,
-          card: eng.card({ port: () => flow.engine?.port, uow, jobs, redo }),
+          card: eng.card({
+            port: () => flow.engine?.port,
+            uow,
+            jobs,
+            redo,
+            evidenceBytes: d.evidenceBytes, // CR-127 · E4b
+            evidenceNames: d.evidenceNames, // CR-127 · U4b-3
+          }),
         }
       : {}),
   };
-  const start = startApproval(ad);
   const tz = flow.timeZoneOf ?? (async () => DEFAULT_TENANT_TZ);
   const manual = createManual({
     uow,
@@ -301,24 +251,22 @@ export function contractsAiModule(
     start: (who, id) => jobs.enqueue({ ...who, contractId: id, approvalId: null }),
   };
   const starter = legacy ? legacyStarter : flowStarter({ jobs, log: logger });
-  startSweep(d, flow, pack, reclaimOnce, eng, gate);
+  startSweep(d, flow, pack, reclaimOnce, eng);
   const routes = extractionRoutes(view, {
     requestExtract: legacy
       ? requestExtract({ uow, starter, available: true })
       : flowRequestExtract({ uow, jobs, ready: flow.ai.ready }),
-    createManual: legacy ? manual : flowCreateManual(manual, start),
+    createManual: manual,
     quota: flow.quota,
   });
-  routes.route("/", reviewModule(view, uow, tz));
+  routes.route("/", reviewModule(view, uow, tz, gate));
   const approval = approvalModule(view, { ad, uow, flow, db });
   return {
+    submitFlowOpen: submitFlowOpen({ uow, gate, engine: flowEngine }), // CR-127 NF1
     starter,
     routes,
     approval,
     // CR-101 DOC-deals-fix: nâng giao dịch khi bật duyệt ⇒ mở lượt cấp 1 như nhập tay (engine nếu có entitlement, máy cũ nếu không).
-    startReview: (who: PackWho, id: string) => start(who, id, "level1"),
-    guard: patchGuard(ad),
-    tools: eng?.tools ?? [],
     ...(eng ? { myApprovals: eng.myApprovals } : {}),
   };
 }
@@ -338,12 +286,11 @@ function approvalModule(
   const approval = approvalRoutes(view, {
     get,
     act,
-    reopen: reopenApproval(ad),
-    retry: retryApproval(ad),
-    cancelReopen: cancelReopenApproval(ad),
     readSettings: readApprovalSettings(ad),
     saveSettings: saveApprovalSettings(ad),
-    audit: platformOpAudit({ uow: packTenantOnly(createPackUow(o.db, KEY, platformAuditRepo)) }),
+    record: async (w, i) => (await ad.card?.record(w, i)) ?? null, // CR-127 · E4
+    evidenceFile: async (w, i, e, f) => (await ad.card?.evidenceFile(w, i, e, f)) ?? null, // CR-127 · E4b
+    recordPdf: async (w, i) => (await ad.card?.recordPdf(w, i)) ?? null, // CR-127 · U4b-3
   });
   approval.route("/", flowTemplateRoutes(view, o.uow, flow));
   const fr = contractsFlowRoutes(o.db, view, { get, act }); // CR-120 · mặc định bật; HUB_FLOW_RUNTIME=off = tắt route (404, không còn rollback web)
@@ -354,14 +301,31 @@ function approvalModule(
 /** V2-G: Lưu màn xác nhận (tenant tắt duyệt ⇒ `active` ngay) + gắn lại SP cho dòng HĐ đã lưu. */
 function reviewModule(
   view: PackAccessView,
-  uow: PackUow<ReviewTxRepos & ProductLinksTxRepos>,
+  uow: PackUow<ReviewTxRepos & ProductLinksTxRepos & SubmitTxRepos>,
   tz: (tenantId: string) => Promise<string>,
+  gate: ContractFlowGate,
 ) {
-  return reviewRoutes(view, {
-    save: reviewSave({ uow, today: async (tid) => localDate(new Date(), await tz(tid)) }),
+  // CR-127 K3 · Gửi / Rút về / Tạo lại + "Xác nhận & lưu" = Gửi (cổng engine qua kit `flowEngine()`).
+  const sub = { uow, gate, engine: flowEngine };
+  const r = reviewRoutes(view, {
+    save: reviewSave({
+      uow,
+      today: async (tid) => localDate(new Date(), await tz(tid)),
+      submit: sub,
+    }),
     attach: attachProduct({ uow }),
     link: linkContractProducts({ uow }),
   });
+  r.route(
+    "/",
+    submitRoutes(view, {
+      submit: submitContract(sub),
+      withdraw: withdrawContract(sub),
+      recreate: recreateContract(sub),
+      preview: submitPreview(sub), // CR-127 · M4
+    }),
+  );
+  return r;
 }
 
 /** Vòng quét (D3-09): hook test ⇒ không chạy nền; ngược lại mỗi `CONTRACTS_SWEEP_S` (mặc định 60 s). */
@@ -370,16 +334,14 @@ function startSweep(
   flow: ContractsFlowDeps,
   pack: SweepDeps["uow"],
   reclaimOnce: () => Promise<number>,
-  eng: { start: EngineStart } | null,
-  gate: ContractFlowGate,
+  eng: object | null,
 ): void {
   const sd: SweepDeps = {
     uow: pack,
     tenants: flow.tenants,
     staleMinutes: staleMinutesFor(claimIdleMs()),
     queuedMinutes: envInt("CONTRACTS_QUEUE_STALE_MIN", QUEUED_STALE_MINUTES),
-    flow: gate,
-    ...(eng ? { engine: { port: () => flow.engine?.port, start: eng.start } } : {}),
+    ...(eng ? { engine: { port: () => flow.engine?.port } } : {}),
   };
   if (d.onHandles) {
     d.onHandles({ sweepOnce: () => sweepApprovalsOnce(sd), reclaimOnce });
@@ -392,3 +354,5 @@ function startSweep(
     warn: (m) => logger.warn(m, {}),
   });
 }
+
+export type { ContractsAi, ContractsAiDeps, ContractsFlowDeps } from "./extraction.types";

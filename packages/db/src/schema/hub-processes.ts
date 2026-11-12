@@ -1,8 +1,4 @@
-// HUB-FR-104 · HUB-FR-106 · HUB-FR-113 · HUB-BR-25 · kiểu Drizzle cho bảng quy trình P-a (plan §2.1, plan-thread §3).
-// CHỈ để truy vấn có kiểu: DDL thật, CHECK, FK kép tenant, RLS, GRANT và hàm SECURITY DEFINER (`is_process_trigger`,
-// `process_run_viewer`, `room_post_process_message`) ở `migrations-hub/0019_pa_process_engine.sql` (viết tay); P-b2 ở `0024`.
-// Người nhận `process.updated`: hàm SECURITY DEFINER `process_run_recipients` ở `0020_pa_process_recipients.sql`.
-// Enum lấy từ `@ai/contracts/chat` (một nguồn); đổi giá trị ⇒ cần migration mới sửa CHECK tương ứng.
+// HUB-FR-104 · HUB-FR-106 · HUB-FR-113 · HUB-BR-25 · kiểu Drizzle cho bảng quy trình P-a (plan §2.1, plan-thread §3): CHỈ truy vấn có kiểu; DDL/CHECK/FK/RLS/GRANT ở `migrations-hub` (0019, P-b2 0024, người nhận 0020, CR-127 0131); enum lấy từ `@ai/contracts/chat`, đổi giá trị ⇒ migration mới sửa CHECK.
 import {
   DECISION_REASONS,
   NOTICE_KINDS,
@@ -28,6 +24,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { reviewTaskClaimCols } from "./hub-evidence";
 import { DLC_STEP_AUDIT_ENTITIES, LIB_AUDIT_ACTIONS } from "./hub-process-library";
 import { hub } from "./hub-readonly";
 
@@ -44,8 +41,8 @@ export const TEAM_STOP_REASON_VALUES = [
   "member_failed",
   "cancelled",
 ] as const;
-/** P-d1 (0036) + `escalated` (PD-R20). */
-export const ASSIGNEE_VIA_VALUES = ["initial", "forward", "escalated"] as const;
+/** P-d1 (0036) + `escalated` (PD-R20) + `delegated` (CR-127 · 0131). */
+export const ASSIGNEE_VIA_VALUES = ["initial", "forward", "escalated", "delegated"] as const;
 export const THREAD_EVENT_OUTCOME_VALUES = ["posted", "skipped"] as const;
 export const THREAD_PLACEMENT_VALUES = ["main", "flow"] as const;
 /** audit P-a (0019 `hub_audit_log_action_check`/`_entity_check`) — trải vào `HUB_AUDIT_*_VALUES` (hub.ts). */
@@ -306,7 +303,10 @@ export const reviewTasks = hub.table("review_tasks", {
   escalateAt: ts("escalate_at"),
   /** admin.groups — không FK chéo schema; kiểm cùng tenant ở luật (S2). */
   escalateGroupId: uuid("escalate_group_id"),
+  /** CR-127 · E3c (0133) · chuyển cấp tới MỘT người (`after.escalate.user_id`); loại trừ `escalateGroupId`. */
+  escalateUserId: uuid("escalate_user_id"),
   escalatedAt: ts("escalated_at"),
+  ...reviewTaskClaimCols(), // CR-127 · E1 (0131) · need/claimed_*/subject_ref (hub-evidence.ts)
 });
 
 /** Grant xem/làm task: đúng một trong `userId`/`groupId` (CHECK). */
@@ -320,6 +320,7 @@ export const reviewTaskAssignees = hub.table("review_task_assignees", {
   fromUserId: uuid("from_user_id"),
   note: text("note"),
   depth: smallint("depth").notNull().default(0),
+  onBehalfOf: uuid("on_behalf_of"), // CR-127 · 0131 · chỉ via = delegated: người được giao thật (A) mà user_id (B) làm thay
   firstViewedAt: ts("first_viewed_at"),
   createdAt: createdAt(),
 });

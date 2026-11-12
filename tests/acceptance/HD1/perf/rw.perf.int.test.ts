@@ -48,8 +48,12 @@ function prepare(): Promise<void> {
     ).map((r) => r.id);
     expect(ids.length).toBe(4 * W);
     // CR-097 K1: HĐ đã xác nhận bị khoá (PATCH 409) ⇒ cửa sổ đo về Chờ duyệt (không khoá) để đo đường ghi.
-    await c.sql`update contracts.contracts set status = 'needs_review', locked_at = null, locked_by = null
-      where tenant_id = ${T.acme} and id = any(${ids}::uuid[])`;
+    // CR-127: `needs_review` ⇒ draft (đổi qua cổng `state_gate`, UPDATE thẳng bị trigger chặn).
+    await c.sql.begin(async (tx) => {
+      await tx`select set_config('contracts.state_gate', 'bulk:' || txid_current()::text, true)`;
+      await tx`update contracts.contracts set status = 'draft', extract_state = 'ready', effect = null, effect_outcome = null,
+        locked_at = null, locked_by = null where tenant_id = ${T.acme} and id = any(${tx.array(ids)}::uuid[])`;
+    });
   })();
   return ready;
 }

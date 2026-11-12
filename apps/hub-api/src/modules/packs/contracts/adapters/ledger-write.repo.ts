@@ -4,8 +4,15 @@
 import type { Obligation, PartnerEvent } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { LedgerWriteRepo, LockedObligation } from "../application/ledger.ports";
+import { pgFlowTaskSignal } from "../../kit/public";
+import type {
+  LedgerWriteRepo,
+  LockedContract,
+  LockedObligation,
+  SettleWrite,
+} from "../application/ledger.ports";
 import { auditCte, eventCte, evJson, json, obJson, one, seenEvent } from "./ledger-sql";
+import { uuidArrLit } from "./pg-array";
 
 export function ledgerWriteRepo(tx: Tx, t: string): LedgerWriteRepo {
   return {
@@ -20,27 +27,42 @@ export function ledgerWriteRepo(tx: Tx, t: string): LedgerWriteRepo {
 function ledgerLocks(
   tx: Tx,
   t: string,
-): Pick<LedgerWriteRepo, "lockContract" | "lockContractOf" | "lockObligation"> {
+): Pick<
+  LedgerWriteRepo,
+  "lockContract" | "lockContractOf" | "lockObligation" | "milestoneHolders" | "signalMilestone"
+> {
   const lockContract: LedgerWriteRepo["lockContract"] = async (id) => {
     const [r] = await tx.execute<{ id: string }>(sql`select id::text from contracts.contracts
       where id = ${id}::uuid and tenant_id = ${t}::uuid for no key update`);
     return r ?? null;
   };
   const lockContractOf: LedgerWriteRepo["lockContractOf"] = async (obId) => {
-    const [r] = await tx.execute<{ id: string }>(sql`select c.id::text from contracts.contracts c
+    // CR-127 X1: tạm khoá thực hiện đọc trong CÙNG câu khoá (chặn trong tx, chống đua — gap-c BR-41).
+    const [r] =
+      await tx.execute<LockedContract>(sql`select c.id::text, c.owner_user_id::text as owner, case when c.exec_hold_at is null then null
+        else jsonb_build_object('by', c.exec_hold_by, 'reason', c.exec_hold_reason) end as hold
+      from contracts.contracts c
       where c.tenant_id = ${t}::uuid and c.id = (select o.contract_id from contracts.obligations o
         where o.id = ${obId}::uuid and o.tenant_id = ${t}::uuid and o.status <> 'replaced')
       for no key update`);
-    return r ?? null;
+    return r ? { id: r.id, hold: r.hold ?? null, owner: r.owner ?? null } : null;
   };
   const lockObligation: LedgerWriteRepo["lockObligation"] = (id) =>
     one<LockedObligation | null>(
       tx,
-      sql`select ${obJson("o")} || jsonb_build_object('owner', o.owner, 'rep_cell', o.rep_cell) as j
+      sql`select ${obJson("o")} || jsonb_build_object('owner', o.owner, 'rep_cell', o.rep_cell, 'title', o.title,
+          'pending', exists (select 1 from contracts.exec_requests x where x.tenant_id = o.tenant_id
+            and x.obligation_id = o.id and x.status = 'pending')) as j
         from contracts.obligations o
         where o.id = ${id}::uuid and o.tenant_id = ${t}::uuid and o.status <> 'replaced' for update`,
     );
-  return { lockContract, lockContractOf, lockObligation };
+  // CR-127 X5 · cổng kit `FlowTaskSignal` (definer `hub.task_holder` / `hub.task_signal`, mỗi hàm 1 câu, cùng tx của gói).
+  const milestoneHolders: LedgerWriteRepo["milestoneHolders"] = (id) =>
+    pgFlowTaskSignal.holder(tx as never, { kind: "milestone", subjectRef: id });
+  const signalMilestone: LedgerWriteRepo["signalMilestone"] = async (id, result) => {
+    await pgFlowTaskSignal.complete(tx as never, { kind: "milestone", subjectRef: id }, result);
+  };
+  return { lockContract, lockContractOf, lockObligation, milestoneHolders, signalMilestone };
 }
 
 type ScheduleRows = Parameters<LedgerWriteRepo["replaceSchedule"]>[1];
@@ -86,22 +108,7 @@ function obligationWrites(
   t: string,
 ): Pick<LedgerWriteRepo, "settle" | "postpone" | "remind"> {
   const settle: LedgerWriteRepo["settle"] = (w) =>
-    one<Obligation>(
-      tx,
-      sql`with u as (
-        update contracts.obligations o set status = 'done', done_at = ${w.at}::date, done_by = ${w.by}::uuid,
-          fault = ${w.fault}::text, updated_at = now()
-        where o.tenant_id = ${t}::uuid and o.id = ${w.id}::uuid and o.status = 'open' returning o.*),
-      di as (
-        insert into contracts.milestone_items (tenant_id, contract_id, milestone_id, contract_item_id, qty, delivered)
-        select ${t}::uuid, u.contract_id, u.id, x.item_id, x.planned::numeric, x.qty::numeric
-        from u, jsonb_to_recordset(${json(w.delivered)}) as x(item_id uuid, qty text, planned text)
-        on conflict (tenant_id, milestone_id, contract_item_id) do update set delivered = excluded.delivered,
-          updated_at = now()),
-      ${eventCte(t, { role: w.role, type: w.type, at: w.at, by: w.by, late: w.late, amount: sql`${w.amount}::bigint`, data: { ...(w.fault ? { fault: w.fault } : {}), ...(w.impact ? { impact: w.impact } : {}) } })},
-      ${auditCte(t, "obligation_settled", w.by, sql`jsonb_build_object('obligation_id', u.id, 'at', ${w.at}::text, 'amount', ${w.amount}::bigint)`)}
-      select ${obJson("u")} as j from u`,
-    );
+    one<{ ob: Obligation; child: Obligation | null }>(tx, settleQ(t, w));
 
   const postpone: LedgerWriteRepo["postpone"] = (w) =>
     one<Obligation>(
@@ -207,4 +214,55 @@ function insertManualQ(t: string, w: Parameters<LedgerWriteRepo["insertManual"]>
                    contracts.party_key(k.fields -> 'supplier_name' ->> 'value', k.fields -> 'supplier_tax_id' ->> 'value')))
           returning *)
         select ${evJson("e", "x")} as j from e left join contracts.partner_event_voids x on false`;
+}
+
+/**
+ * CR-127 X1 · spec §2.2/§6: MỘT câu ghi thực hiện — bằng chứng (`hub.record_evidence`, chỉ khi có) → mốc đóng với số thật → hàng con phần
+ * còn lại (cùng HĐ, `seq` kế, `source='fulfill'`, `parent_obligation_id`) → `milestone_items` của mốc + của con → sổ đối tác → nhật ký
+ * `{before, after, evidence_id}` (BR-54). Văn bản cố định; dữ liệu lô qua tham số JSON (Luật 4c).
+ */
+function settleQ(t: string, w: SettleWrite) {
+  const ev = w.evidence ?? null;
+  const ch = w.child ?? null;
+  return sql`with ev as (
+        select hub.record_evidence('milestone', ${w.id}::uuid, ${ev?.note ?? null}::text,
+          ${ev?.signature_attachment_id ?? null}::uuid, ${uuidArrLit(ev?.attachment_ids)}::uuid[], null::uuid) as id
+        where ${ev !== null}::boolean),
+      b as (select o.amount from contracts.obligations o where o.tenant_id = ${t}::uuid and o.id = ${w.id}::uuid),
+      u as (
+        update contracts.obligations o set status = 'done', done_at = ${w.at}::date, done_by = ${w.by}::uuid,
+          fault = ${w.fault}::text, evidence_id = (select ev.id from ev),
+          amount = case when ${ch !== null}::boolean then ${w.amount}::bigint else o.amount end, updated_at = now()
+        where o.tenant_id = ${t}::uuid and o.id = ${w.id}::uuid and o.status = 'open' returning o.*),
+      ch as (
+        insert into contracts.obligations (tenant_id, contract_id, party_key, direction, kind, seq, due_date, amount, title,
+          owner, source, parent_obligation_id)
+        select ${t}::uuid, u.contract_id, u.party_key, u.direction, u.kind,
+          (select coalesce(max(z.seq), 0) + 1 from contracts.obligations z
+            where z.tenant_id = ${t}::uuid and z.contract_id = u.contract_id),
+          ${ch?.due_date ?? null}::date, ${ch?.amount ?? null}::bigint, coalesce(${ch?.title ?? null}::text, u.title), u.owner,
+          'fulfill', u.id
+        from u where ${ch !== null}::boolean
+        returning *),
+      di as (
+        insert into contracts.milestone_items (tenant_id, contract_id, milestone_id, contract_item_id, qty, delivered)
+        select ${t}::uuid, u.contract_id, u.id, x.item_id, x.planned::numeric, x.qty::numeric
+        from u, jsonb_to_recordset(${json(w.delivered)}) as x(item_id uuid, qty text, planned text)
+        on conflict (tenant_id, milestone_id, contract_item_id) do update set qty = excluded.qty,
+          delivered = excluded.delivered, updated_at = now()),
+      ci as (
+        insert into contracts.milestone_items (tenant_id, contract_id, milestone_id, contract_item_id, qty, delivered)
+        select ${t}::uuid, ch.contract_id, ch.id, x.item_id, x.qty::numeric, null
+        from ch, jsonb_to_recordset(${json(ch?.items ?? [])}) as x(item_id uuid, qty text)),
+      ${eventCte(t, { role: w.role, type: w.type, at: w.at, by: w.by, late: w.late, amount: sql`${w.amount}::bigint`, data: { ...(w.fault ? { fault: w.fault } : {}), ...(w.impact ? { impact: w.impact } : {}) } })},
+      ${auditCte(
+        t,
+        "obligation_settled",
+        w.by,
+        sql`jsonb_build_object('obligation_id', u.id, 'at', ${w.at}::text, 'amount', ${w.amount}::bigint,
+          'before', jsonb_build_object('status', 'open', 'amount', (select b.amount from b)),
+          'after', jsonb_build_object('status', 'done', 'amount', u.amount, 'child_id', (select ch.id from ch)),
+          'evidence_id', u.evidence_id)`,
+      )}
+      select jsonb_build_object('ob', ${obJson("u")}, 'child', (select ${obJson("ch")} from ch)) as j from u`;
 }

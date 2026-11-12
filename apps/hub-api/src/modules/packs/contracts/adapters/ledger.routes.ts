@@ -2,12 +2,15 @@
 // (viewer ghi ⇒ 403, 0 SQL); `:id` sai dạng ⇒ 400; tenant/người làm chỉ từ token; thân strict. `LedgerFail` ⇒ mã `LEDGER_ERRORS`;
 // tenant khác ⇒ 404 như không có. Chỉnh tay điểm cần quyền `admin` (mgmt `owner`).
 import {
+  FULFILL_ERRORS,
+  FulfillRequestSchema,
   LEDGER_ERRORS,
   type LedgerErrorCode,
   ObligationsQuerySchema,
   PartnerEventCreateSchema,
   PartnerEventsQuerySchema,
   PaymentsQuerySchema,
+  PostponeEvidenceSchema,
   PostponeRequestSchema,
   RemindRequestSchema,
   ScheduleRequestSchema,
@@ -26,14 +29,65 @@ import {
   packGuard,
 } from "../../kit/public";
 import { DeliveryFail } from "../application/delivery.ports";
+import type { ExecCommands } from "../application/exec-request.usecase";
 import { LedgerFail } from "../application/ledger.ports";
 import type { LedgerCommands, LedgerReads } from "../application/ledger.usecase";
 import type { RepEngine } from "../domain/rep-current.rules";
 import { deliveryError } from "./delivery.routes";
+import { execError, execWho } from "./exec-errors";
 
 const KEY = "contracts";
+/** CR-127 X1 · tasks §9: câu VI của đường ghi thực hiện. */
+function fulfillError(e: LedgerFail, byName: string | null = null): never {
+  if (e.kind === "on_hold") {
+    const h = e.detail;
+    throw new AppError(
+      "CONTRACT_ON_HOLD",
+      FULFILL_ERRORS.CONTRACT_ON_HOLD,
+      `Đang tạm khoá${h?.reason ? `: ${h.reason}` : ""} — chỉ ghi được tiền thu.`,
+      { by: h?.by ?? null, reason: h?.reason ?? null },
+    );
+  }
+  if (e.kind === "task_claimed")
+    throw new AppError(
+      "TASK_CLAIMED",
+      FULFILL_ERRORS.TASK_CLAIMED,
+      byName
+        ? `Mốc đang do ${byName} xử lý — nhờ họ xác nhận.`
+        : "Mốc đang do người khác xử lý — nhờ họ xác nhận.",
+      { by: e.detail?.by ?? null, by_name: byName },
+    );
+  if (e.kind === "task_not_claimed")
+    throw new AppError(
+      "TASK_NOT_CLAIMED",
+      FULFILL_ERRORS.TASK_NOT_CLAIMED,
+      "Bấm Nhận việc trước khi xác nhận mốc.",
+    );
+  if (e.kind === "over_plan")
+    throw new AppError(
+      "OVER_PLAN",
+      FULFILL_ERRORS.OVER_PLAN,
+      "Vượt phần còn lại của mốc. Giảm số hoặc chọn mốc khác.",
+    );
+  throw new AppError(
+    "CHANGE_PENDING",
+    FULFILL_ERRORS.CHANGE_PENDING,
+    "Mốc đang có yêu cầu thay đổi chờ duyệt.",
+  );
+}
+const FULFILL_KINDS: readonly LedgerFail["kind"][] = [
+  "on_hold",
+  "over_plan",
+  "change_pending",
+  "task_claimed",
+  "task_not_claimed",
+];
+
 const FAIL: Record<
-  Exclude<LedgerFail["kind"], "locked">,
+  Exclude<
+    LedgerFail["kind"],
+    "locked" | "on_hold" | "over_plan" | "change_pending" | "task_claimed" | "task_not_claimed"
+  >,
   LedgerErrorCode | "NOT_FOUND" | "FORBIDDEN" | "FLAG_ADMIN"
 > = {
   not_found: "NOT_FOUND",
@@ -56,11 +110,13 @@ const MESSAGES: Record<LedgerErrorCode, string> = {
   SEVERE_REASON: "Cờ đỏ (không giao, gian lận) phải ghi lý do",
 };
 
-function ledgerError(e: unknown): never {
+export function ledgerError(e: unknown): never {
   if (e instanceof DeliveryFail) deliveryError(e);
+  execError(e); // CR-127 X3: ExecFail ⇒ mã EXEC_ERRORS
   if (!(e instanceof LedgerFail)) throw e;
   if (e.kind === "locked") deliveryError(new DeliveryFail("locked"));
-  const code = FAIL[e.kind];
+  if (FULFILL_KINDS.includes(e.kind)) fulfillError(e);
+  const code = FAIL[e.kind as keyof typeof FAIL];
   if (code === "NOT_FOUND") throw appError("NOT_FOUND");
   if (code === "FLAG_ADMIN") throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản lý được gỡ cờ đỏ");
   if (code === "FORBIDDEN")
@@ -78,19 +134,52 @@ const eventId = (v: string | undefined) => parseWith(z.string().regex(/^[1-9][0-
 const body = async <S extends z.ZodType>(c: Context, s: S): Promise<z.output<S>> =>
   parseWith(s, await readJson(c));
 
+/** Tên hiển thị thành viên công ty (`id → tên`) — MỘT lần tra cho cả danh sách (không N+1). */
+export type MemberNames = (who: {
+  tenantId: string;
+  userId: string;
+}) => Promise<Map<string, string>>;
+
 export function ledgerRoutes(
   view: PackAccessView,
-  d: { cmd: LedgerCommands; reads: LedgerReads; engine?: () => RepEngine },
+  d: {
+    cmd: LedgerCommands;
+    reads: LedgerReads;
+    engine?: () => RepEngine;
+    exec?: ExecCommands;
+    names?: MemberNames;
+  },
 ): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
-  readRoutes(r, packGuard(view, KEY, "read"), d.reads);
-  writeRoutes(r, view, d.cmd, d.engine ?? (() => "hd8"));
+  readRoutes(r, packGuard(view, KEY, "read"), d.reads, d.names);
+  writeRoutes(r, view, d.cmd, d.engine ?? (() => "hd8"), d.exec, d.names);
   return r;
 }
 
 type R = Hono<PackGuardVars>;
 
-function readRoutes(r: R, read: ReturnType<typeof packGuard>, reads: LedgerReads): void {
+/** CR-127 SG1: gắn `task.claimed_by_name` cho mọi mốc đang có người giữ việc — chỉ tra khi có ít nhất một (một lần cho cả danh sách). */
+export async function withClaimerNames<T extends object>(
+  rows: T[],
+  who: { tenantId: string; userId: string },
+  names?: MemberNames,
+): Promise<T[]> {
+  type Tasked = { task?: { claimed_by: string | null } | null };
+  const claimer = (o: T) => (o as Tasked).task?.claimed_by ?? null;
+  if (!names || !rows.some(claimer)) return rows;
+  const map = await names(who);
+  return rows.map((o) => {
+    const by = claimer(o);
+    return by ? { ...o, task: { ...(o as Tasked).task, claimed_by_name: map.get(by) ?? null } } : o;
+  });
+}
+
+function readRoutes(
+  r: R,
+  read: ReturnType<typeof packGuard>,
+  reads: LedgerReads,
+  names?: MemberNames,
+): void {
   const d = { reads };
   r.get("/payments", read, async (c) => {
     const q = parseQuery(c, PaymentsQuerySchema);
@@ -101,7 +190,7 @@ function readRoutes(r: R, read: ReturnType<typeof packGuard>, reads: LedgerReads
   });
   r.get("/obligations", read, async (c) => {
     const q = parseQuery(c, ObligationsQuerySchema);
-    return c.json(await d.reads.obligations(who(c), q));
+    return c.json(await withClaimerNames(await d.reads.obligations(who(c), q), who(c), names));
   });
   r.get("/partner-events", read, async (c) => {
     const q = parseQuery(c, PartnerEventsQuerySchema);
@@ -123,6 +212,8 @@ function writeRoutes(
   view: PackAccessView,
   cmd: LedgerCommands,
   engine: () => RepEngine,
+  exec?: ExecCommands,
+  names?: MemberNames,
 ): void {
   const write = packGuard(view, KEY, "write");
   const d = { cmd };
@@ -135,9 +226,40 @@ function writeRoutes(
     const id = uuid(c.req.param("id"));
     return c.json(await run(d.cmd.settle(who(c), id, await body(c, SettleRequestSchema))));
   });
+  // CR-127 X1 · spec §4.1: ghi thực hiện (SL/tiền thật, phần còn lại, bằng chứng) — một đường với `settle`.
+  r.post("/obligations/:id/fulfill", write, async (c) => {
+    const id = uuid(c.req.param("id"));
+    const b = await body(c, FulfillRequestSchema);
+    // SG1: `TASK_CLAIMED` kèm tên người đang giữ việc (một lần tra, chỉ khi lỗi này xảy ra).
+    const out = d.cmd.fulfill(who(c), id, b).catch(async (e: unknown) => {
+      if (e instanceof LedgerFail && e.kind === "task_claimed") {
+        const by = e.detail?.by;
+        const name = by && names ? ((await names(who(c))).get(by) ?? null) : null;
+        fulfillError(e, name);
+      }
+      throw e;
+    });
+    return c.json(await run(out));
+  });
   r.post("/obligations/:id/postpone", write, async (c) => {
     const id = uuid(c.req.param("id"));
-    return c.json(await run(d.cmd.postpone(who(c), id, await body(c, PostponeRequestSchema))));
+    if (!exec)
+      return c.json(await run(d.cmd.postpone(who(c), id, await body(c, PostponeRequestSchema))));
+    // CR-127 X3 · BR-52: dời hạn = yêu cầu thay đổi có bằng chứng (áp ngay hoặc chờ duyệt). Trả mốc sau dời + `state`/`request_id`.
+    const b = await body(c, PostponeEvidenceSchema);
+    const payload = { to: b.to, ...(b.note ? { note: b.note } : {}) };
+    const out = await run(
+      exec.requestChange(await execWho(view, c), id, {
+        kind: "postpone",
+        payload,
+        evidence: b.evidence,
+      }),
+    );
+    const { obligation, ...rest } = out;
+    return c.json(
+      { ...(obligation as object | null), ...rest },
+      out.state === "pending" ? 202 : 200,
+    );
   });
   r.post("/obligations/:id/remind", write, async (c) => {
     const id = uuid(c.req.param("id"));

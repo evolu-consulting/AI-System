@@ -1,7 +1,7 @@
 // CR-105 · thanh trên của editor quy trình thư viện (UX): trạng thái (Nháp / vN), "Xuất bản" là nút chính, "Gán cho tenant",
 // "Xem trước đường đi"; Lịch sử · Nhân bản · Đặt mặc định là nút phụ. "Lưu nháp" nằm ở thanh lưu bên dưới — tách khỏi "Xuất bản".
 import { Link } from "@tanstack/react-router";
-import { Copy, History, Route, Upload } from "lucide-react";
+import { Copy, History, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { nextVersion } from "../../lib/step-limit";
 import type { LibraryDef } from "../../library-api";
 
 export type EditorMode = "canvas" | "form";
-export type LibraryAction = "publish" | "releases" | "preview" | "default" | "clone";
+export type LibraryAction = "publish" | "releases" | "default" | "clone";
 type Props = {
   def: LibraryDef;
   mode: EditorMode;
@@ -113,15 +113,6 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
           >
             <Upload aria-hidden className={ic} />
             {L("publish.buttonNext", { v: nextVersion(def.published_version) })}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={dirty}
-            onClick={() => onAction("preview")}
-          >
-            <Route aria-hidden className={ic} />
-            {L("preview.button")}
           </Button>
         </div>
       </div>

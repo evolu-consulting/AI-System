@@ -12,6 +12,6 @@ export function getContract<Detail>(d: {
 }): GetContract<Detail> {
   return async (who, id) => {
     const today = await (d.today?.(who.tenantId) ?? new Date().toISOString().slice(0, 10));
-    return d.uow.tenant(who, (r) => r.contracts.detail(id, today));
+    return d.uow.tenant(who, (r) => r.contracts.detail(id, today, who.userId));
   };
 }

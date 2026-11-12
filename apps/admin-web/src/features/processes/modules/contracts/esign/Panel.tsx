@@ -11,11 +11,13 @@ import {
   esignConfigIssues,
 } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useUserList } from "@/features/users/api";
-import { api } from "@/lib/http";
+import { useSession } from "@/lib/auth/use-session";
+import { ApiError, api } from "@/lib/http";
 import { hubUrl } from "@/lib/hub";
 import { SelectField, TextField } from "../../../components/editor/Fields";
 import { EsignSettingsLink } from "../../../components/flow/EsignSettingsLink";
@@ -28,6 +30,10 @@ import type { NodePanelProps } from "../../panel-registry";
 const DEFAULT = "default";
 const K = "process.admin.flow.esign.";
 const url = (p: string): string => hubUrl(p) ?? p;
+
+/** CR-127 · EO2: admin nền tảng soạn cho công ty đích ⇒ gửi `?tenant_id=`; mẫu thư viện (không công ty) ⇒ không gửi. */
+const withTenant = (path: string, tenantId: string | undefined): string =>
+  tenantId && path ? `${path}?tenant_id=${encodeURIComponent(tenantId)}` : path;
 
 function useOptions(path: string) {
   return useQuery({
@@ -107,17 +113,19 @@ function SignChoiceLine() {
   );
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CR-127 · U2 — form nhiều ô, tách ở đợt dọn sau
 export function EsignPanel(p: NodePanelProps) {
   const { t } = useTranslation();
   const flow = useFlowCtx();
+  const isPlatform = useSession((x) => x.me?.role) === "platform_admin";
   const { stage, readOnly, node } = p;
   const conf = node.config;
   const codec = ESIGN_CODEC;
   const cfg = codec.decode(constArgs(stage.tool, codec.keys));
-  const opts = useOptions(conf?.options_path ?? "");
+  const opts = useOptions(withTenant(conf?.options_path ?? "", flow?.tenantId));
   const hasCfg = Object.keys(cfg).length > 0;
   const check = useCheck(
-    checkPathOf(conf?.options_path ?? ""),
+    withTenant(checkPathOf(conf?.options_path ?? ""), flow?.tenantId),
     cfg,
     hasCfg && !!opts.data?.enabled,
   );
@@ -156,6 +164,22 @@ export function EsignPanel(p: NodePanelProps) {
     else p.onChange(own);
   };
   if (opts.isPending) return <p className="text-caption text-muted-foreground">…</p>;
+  if (opts.error instanceof ApiError && (opts.error.code as string) === "PACK_DISABLED")
+    return (
+      <p role="status" className="text-caption text-warning" data-testid="esign-pack-off">
+        {isPlatform ? t(`${K}packOffPlatform`) : t(`${K}packOff`)}{" "}
+        {flow?.tenantId && !isPlatform ? (
+          <Link
+            to="/tenants/$tenantId"
+            params={{ tenantId: flow.tenantId }}
+            search={{ tab: "apps" }}
+            className="underline"
+          >
+            {t(`${K}openApps`)}
+          </Link>
+        ) : null}
+      </p>
+    );
   if (opts.isError || !opts.data)
     return <p className="text-caption text-muted-foreground">{t(`${K}unavailable`)}</p>;
   const o = opts.data;

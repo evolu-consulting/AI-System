@@ -3,7 +3,7 @@
 // giữ con. Cách ly: tenant khác gắn/trỏ HĐ NT ⇒ 404 / FK kép 23503. Viết TRƯỚC code (làn đầy đủ: migration, RLS).
 // Hạ tầng HD1 (hub-api THẬT, FileBox giả, không AI: "AI đọc xong" giả bằng SQL). acme: lan = owner gói; beta: an = owner.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { CBASE, type Json, pdf } from "../HD1/_support/hd1";
+import { CBASE, type Json, pdf, setLegacyStatus } from "../HD1/_support/hd1";
 import { arrangeHd7, type CtxN1, d, deal, P, startHd1, T } from "../HD7/_support/hd7";
 
 let c: CtxN1;
@@ -37,17 +37,17 @@ async function upload(p: Person, path: string, form: Record<string, string>) {
 /** Giả "AI đọc xong + xác nhận" (tắt duyệt): bên bán = mình, bên mua = đối tác NT, hướng bán, hiệu lực d(-30)…d(300). */
 async function readAndConfirm(id: string, start = d(-30)): Promise<void> {
   const fv = (value: string) => ({ value, quote: "", verified: true, edited: true });
-  await c.sql`update contracts.contracts set direction = 'sale', status = 'active', fields = ${c.sql.json(
-    {
-      buyer_name: fv(PARTNER),
-      buyer_tax_id: fv(TAX),
-      supplier_name: fv("Công ty Chúng Tôi"),
-      supplier_tax_id: fv("0100000000"),
-      start_date: fv(start),
-      end_date: fv(d(300)),
-      number: fv(`NT-${id.slice(-4)}`),
-    },
-  )} where id = ${id}`;
+  await c.sql`update contracts.contracts set direction = 'sale', fields = ${c.sql.json({
+    buyer_name: fv(PARTNER),
+    buyer_tax_id: fv(TAX),
+    supplier_name: fv("Công ty Chúng Tôi"),
+    supplier_tax_id: fv("0100000000"),
+    start_date: fv(start),
+    end_date: fv(d(300)),
+    number: fv(`NT-${id.slice(-4)}`),
+  })} where id = ${id}`;
+  // CR-127: "xác nhận" = chuyển `done` qua cổng (khoá + thay bản cũ chạy khi vào done).
+  await setLegacyStatus(c.sql, id, "done");
 }
 
 async function child(o: { partner?: string; tax?: string | null; start?: string; value?: number }) {
@@ -58,13 +58,13 @@ async function child(o: { partner?: string; tax?: string | null; start?: string;
     start: o.start ?? d(0),
     value: o.value ?? 100_000_000,
   });
+  await setLegacyStatus(c.sql, id, "active"); // CR-127: qua cổng trạng thái (done + effect active)
   await c.sql`update contracts.contracts set locked_at = now() where id = ${id}`;
   return id;
 }
 
 async function approvalOff(): Promise<void> {
-  await c.sql`insert into contracts.approval_settings (tenant_id, approval_enabled) values (${T.acme}, false)
-    on conflict (tenant_id) do update set approval_enabled = false`;
+  // CR-127 Z1b: cờ duyệt đã gỡ ⇒ không còn bước chuẩn bị.
 }
 
 describe("CR-101 DOC-model · đường chính HĐ nguyên tắc", () => {

@@ -25,8 +25,13 @@ export async function escalateBatch(
   const audits: EscalateAuditRow[] = [];
   const notices: NoticeMetaRow[] = [];
   for (const t of tasks) {
+    // CR-127 · E3c · đích một người (tách hàm — giữ độ phức tạp).
+    if (!t.toGroupId && t.toUserId) {
+      userTarget(t, t.toUserId, { add, audits, notices });
+      continue;
+    }
     const act = escalateAction({
-      groupId: t.toGroupId,
+      groupId: t.toGroupId ?? "",
       groupExists: t.groupTenantId !== null,
       groupTenantId: t.groupTenantId,
       taskTenantId: t.tenantId,
@@ -50,12 +55,43 @@ function auditOf(t: ClaimedEscalation, action: EscalateAuditRow["action"]): Esca
     entityName: t.stageName ?? t.processName,
     fromGroupId: t.fromGroupId,
     toGroupId: t.toGroupId,
+    toUserId: t.toUserId ?? null,
   };
+}
+
+/** Đích một người: cùng tenant + còn hoạt động ⇒ thêm hàng người, báo người đó; không ⇒ bỏ qua (audit). */
+function userTarget(
+  t: ClaimedEscalation,
+  userId: string,
+  o: { add: EscalatedAssigneeRow[]; audits: EscalateAuditRow[]; notices: NoticeMetaRow[] },
+): void {
+  o.audits.push(auditOf(t, t.userOk ? "escalate" : "escalate_skipped"));
+  if (!t.userOk) return;
+  o.add.push({ tenantId: t.tenantId, taskId: t.taskId, userId });
+  o.notices.push(...userNotice(t, userId));
+}
+
+function userNotice(t: ClaimedEscalation, userId: string): NoticeMetaRow[] {
+  const afterH = t.afterH != null && t.afterH >= 1 ? t.afterH : undefined;
+  const payload = { process_name: t.processName, stage_name: t.stageName };
+  return [
+    {
+      tenantId: t.tenantId,
+      userId,
+      processRunId: t.processRunId,
+      taskId: t.taskId,
+      payload: { ...payload, ...(afterH !== undefined && { after_h: afterH }) },
+      processName: t.processName,
+      stageName: t.stageName,
+      ...(afterH !== undefined && { afterH }),
+    },
+  ];
 }
 
 /** D2-47 · payload `escalated` thêm `group` + `after_h` — ghi trong CÙNG câu chèn notice (không thêm câu SQL). */
 function noticeRows(t: ClaimedEscalation): NoticeMetaRow[] {
-  const group = { id: t.toGroupId, name: t.groupName || t.toGroupId };
+  const gid = t.toGroupId as string; // nhánh nhóm (đích người đã tách ở trên)
+  const group = { id: gid, name: t.groupName || gid };
   const afterH = t.afterH != null && t.afterH >= 1 ? t.afterH : undefined;
   return [...new Set(t.memberIds)].map((userId) => ({
     tenantId: t.tenantId,

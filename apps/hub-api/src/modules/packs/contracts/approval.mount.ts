@@ -1,18 +1,10 @@
 // contract-flow S2/S3 · nối duyệt HĐ trên engine + mẫu luồng (tách khỏi `extraction.mount.ts` giữ trần 400 dòng).
 import { logger } from "../../../lib/logger";
-import type { PackUow, PackWho, SlotSpec } from "../kit/public";
-import { checkPackAccess, type PackAccessView, packAccessInput, slotRegistry } from "../kit/public";
-import { approvalEngineTools } from "./adapters/approval-engine.tools";
+import type { PackUow, PackWho } from "../kit/public";
+import { checkPackAccess, type PackAccessView, packAccessInput } from "../kit/public";
 import { approvalFlowRoutes } from "./adapters/approval-flow.routes";
 import type { ApprovalEngineBridge, ApprovalEngineUow } from "./application/approval-engine.ports";
-import { startEngineApproval } from "./application/approval-engine.usecase";
 import { type EngineCardDeps, engineCard } from "./application/approval-engine-card.usecase";
-import {
-  cancelReopenEngineApproval,
-  engineRunStalled,
-  reopenEngineApproval,
-  retryEngineApproval,
-} from "./application/approval-engine-reopen.usecase";
 import {
   type ApprovalFlowTxRepos,
   type FlowGroups,
@@ -22,23 +14,6 @@ import {
 } from "./application/approval-flow.usecase";
 import type { ContractFlowGate } from "./application/contract-flow.ports";
 import { myApprovals } from "./application/mywork-approvals.usecase";
-import { FLOW_TOOL_KEYS } from "./domain/approval-flow.rules";
-import type { FlowDeal, FlowStep } from "./domain/approval-flow.types";
-import { notifyDefInputs } from "./domain/approval-flow-notify.rules";
-import {
-  conditionDepartmentKeys,
-  previewPath,
-  validateApprovalBody,
-} from "./domain/approval-flow-stages.rules";
-import {
-  APPROVAL_SLOT,
-  APPROVAL_SLOT_LABEL,
-  compileSlotStages,
-  slotBodyOf,
-  slotGroupKeys,
-} from "./domain/approval-slot.rules";
-import { APPROVAL_SLOT_FIELDS, APPROVAL_SLOT_NODES } from "./domain/approval-slot-catalog.rules";
-import { slotBodyFromStages } from "./domain/approval-slot-default.rules";
 
 /** esign-flow · bước Ký số sau "Đã duyệt" (tool finalize; vắng ⇒ không tự gửi ký); người cụ thể (duyệt/ký) thuộc tenant + quyền
  *  `write` gói (kiểm khi lưu mẫu). */
@@ -64,25 +39,12 @@ export function approvalEngine(
   view: PackAccessView,
 ) {
   if (!flow.engine || o.hd2 || o.legacyMachine) return null;
-  const ed = {
-    bridge: flow.engine,
-    uow,
-    groups: flow.groups,
-    warn: (m: string, meta: Record<string, unknown>) => logger.warn(m, meta),
-    afterApproved: flow.afterApproved,
-    flow: flow.flowGate,
-  };
+  const warn = (m: string, meta: Record<string, unknown>) => logger.warn(m, meta);
   const isAdmin = async (who: PackWho) => {
     const i = await packAccessInput(view, "contracts", who);
     return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
   };
   return {
-    start: startEngineApproval(ed),
-    reopen: reopenEngineApproval(ed),
-    stalled: engineRunStalled(ed), // p24 · "Mở lại" của công ty bật flow: chỉ mở lại khi run đã kẹt thật
-    retry: retryEngineApproval(ed), // CR-107
-    cancelReopen: cancelReopenEngineApproval(ed),
-    tools: approvalEngineTools(ed),
     myApprovals: myApprovals({ port: () => flow.engine?.port, uow }),
     // esign-flow-fix · thẻ duyệt engine; owner gói (quyền `admin`) cũng Gửi lại bước Ký số.
     // CR-113 · tên Group cho "chuyển cấp tới" + log lỗi ghi "duyệt thay".
@@ -90,7 +52,7 @@ export function approvalEngine(
       engineCard({
         ...c,
         isAdmin,
-        warn: ed.warn,
+        warn,
         ...(flow.groups.list
           ? { groupNames: async (t: string) => (await flow.groups.list?.(t)) ?? [] }
           : {}),
@@ -98,59 +60,13 @@ export function approvalEngine(
   };
 }
 
-/** CR-105 · khe `contracts.approval` ("Sổ Hợp Tác · Duyệt hợp đồng") cho thư viện quy trình: `compile` = `compileDef` trên mã Group. */
-export const approvalSlotSpec: SlotSpec = {
-  key: APPROVAL_SLOT,
-  label: APPROVAL_SLOT_LABEL,
-  packKey: "contracts",
-  fields: APPROVAL_SLOT_FIELDS,
-  nodes: APPROVAL_SLOT_NODES,
-  requiredInputs: ["contract_id"],
-  systemTools: [FLOW_TOOL_KEYS.route, FLOW_TOOL_KEYS.finalize],
-  validate: validateApprovalBody,
-  compile: compileSlotStages,
-  // CR-121 D-2 · mã phòng ban trong điều kiện cũng phải có ở công ty khi gán (cùng một câu kiểm Group).
-  groupKeys: (b) => {
-    const body = slotBodyOf(b);
-    if (!body) return [];
-    const steps = body.steps as unknown as FlowStep[];
-    return [...new Set([...slotGroupKeys(body), ...conditionDepartmentKeys(steps)])];
-  },
-  preview: (b, i) => {
-    const body = slotBodyOf(b);
-    if (!body) return null;
-    const steps = body.steps as unknown as FlowStep[];
-    const path = previewPath(
-      { steps },
-      {
-        contractType: (i.contractType ?? null) as FlowDeal | null,
-        value: i.value ?? null,
-        creatorDepartments: i.creatorDepartments,
-        newPartner: i.newPartner,
-      },
-    );
-    return path.map((p) => ({
-      key: p.key,
-      name: steps[p.index]?.name ?? p.key,
-      run: p.run,
-      state: p.state,
-    }));
-  },
-  fromStages: slotBodyFromStages,
-  // CR-121 D-6 · Thông báo (người phụ trách) / Chờ tới (ngày HĐ) đọc input run do gói điền lúc mở lượt.
-  inputs: (b) => {
-    const body = slotBodyOf(b);
-    return body ? notifyDefInputs(body.steps as unknown as FlowStep[]) : [];
-  },
-};
-
-/** CR-105 L4 · `GET /approval-flow` (chỉ đọc, quy trình đang dùng) + S3b `GET /groups` + `GET /dify-workflows`. */
+/** CR-127 Z3c · KHÔNG đăng ký khe `contracts.approval` (duyệt HĐ = flow công ty `contract.submitted`: một đường soạn duy nhất).
+ *  CR-105 L4 · `GET /approval-flow` (chỉ đọc, quy trình đang dùng) + S3b `GET /groups` + `GET /dify-workflows`. */
 export function flowTemplateRoutes(
   view: PackAccessView,
   uow: PackUow<ApprovalFlowTxRepos>,
   flow: FlowDeps,
 ) {
-  slotRegistry.register(approvalSlotSpec); // CR-105 · gói bật ⇒ khe đăng ký (đăng ký lại cùng khoá ⇒ thay)
   const fd = {
     uow,
     groups: flow.groups,

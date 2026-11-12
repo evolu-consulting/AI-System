@@ -34,8 +34,11 @@ describe("khoá lọc (D-14)", () => {
   });
 });
 describe("status", () => {
-  it("rejected hợp lệ, lạ thì không", () => {
-    expect(isContractStatus("rejected")).toBe(true);
+  it("CR-127 · 4 trạng thái (draft/processing/reject/done) hợp lệ; 9 trạng thái cũ và lạ thì không", () => {
+    for (const s of ["draft", "processing", "reject", "done"])
+      expect(isContractStatus(s)).toBe(true);
+    for (const s of ["rejected", "needs_review", "extracting", "active", "expiring"])
+      expect(isContractStatus(s)).toBe(false);
     expect(isContractStatus("deleted")).toBe(false);
   });
 });

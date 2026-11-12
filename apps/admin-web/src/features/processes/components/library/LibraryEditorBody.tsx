@@ -20,7 +20,6 @@ import { CloneDialog } from "./CloneDialog";
 import { FlowFormEditor } from "./FlowFormEditor";
 import { type EditorMode, type LibraryAction, LibraryToolbar } from "./LibraryToolbar";
 import { LibraryCanvasContext } from "./library-canvas-ctx";
-import { PreviewDialog } from "./PreviewDialog";
 import { PublishDialog } from "./PublishDialog";
 import { ReleasesDialog } from "./ReleasesDialog";
 
@@ -117,7 +116,6 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
         onIssues={setPubIssues}
       />
       <ReleasesDialog def={def} open={action === "releases"} onClose={close} />
-      <PreviewDialog def={def} open={action === "preview"} onClose={close} />
       <ConfirmDialog
         open={action === "default"}
         onOpenChange={(o) => !o && close()}

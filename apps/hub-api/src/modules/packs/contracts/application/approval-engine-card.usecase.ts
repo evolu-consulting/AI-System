@@ -6,66 +6,20 @@
 import { CONTRACTS_MANIFEST } from "@ai/contracts/app-manifest";
 import type { PackWho } from "../../kit/public";
 import { factsOf } from "../domain/approval-engine.rules";
-import {
-  type EngineAction,
-  type EngineAttention,
-  type EngineErrorCode,
-  engineCardView,
-  planEngineAct,
-} from "../domain/approval-engine-card.rules";
+import { planEngineAct } from "../domain/approval-engine-act.rules";
+import { type EngineAttention, engineCardView } from "../domain/approval-engine-card.rules";
 import { engineSteps, esignCard } from "../domain/approval-flow.rules";
 import { contractRunInputs, usesContractInputs } from "../domain/approval-run-inputs.rules";
 import type { ApprovalState } from "./approval.ports";
-import type { ApprovalEnginePort, ApprovalEngineRepo, EngineCaller } from "./approval-engine.ports";
+import type { ApprovalEnginePort, EngineCaller } from "./approval-engine.ports";
+import type { EngineActBody, EngineActResult, EngineCardDeps } from "./approval-engine-card.types";
+import { approvalEvidenceFile, approvalRecord, approvalRecordPdf } from "./approval-record.usecase";
 
-type Repos = {
-  approval: {
-    markRejected(
-      id: string,
-      runId: string,
-      e: { kind: "rejected"; feedback: string | null; actor: string },
-      o?: { reviewer?: boolean },
-    ): Promise<boolean>;
-    markExtracting(id: string, runId: string): Promise<boolean>;
-    /** CR-109 · khoá theo luật thấy cũ (không cờ duyệt): null ⇒ người gọi chỉ là người duyệt ngoài cây. */
-    state(id: string, o: { lock: boolean }): Promise<unknown>;
-  };
-  approvalEngine: Pick<
-    ApprovalEngineRepo,
-    "setPendingLinks" | "recordOverride" | "voidOverride" | "recordDecision"
-  > & {
-    difyFacts?: ApprovalEngineRepo["difyFacts"];
-  };
-  outbox: { enqueue(e: { entity: string; entity_id: string; op: "upsert" }[]): Promise<unknown> };
-};
-export type EngineCardDeps = {
-  port: () => ApprovalEnginePort | undefined;
-  /** esign-flow-fix · người xem là owner gói (quyền `admin`, cache — 0 SQL). */
-  isAdmin?: ((who: PackWho) => Promise<boolean>) | undefined;
-  uow: { tenant<T>(who: PackWho, fn: (r: Repos) => Promise<T>): Promise<T> };
-  jobs: {
-    enqueue(j: {
-      tenantId: string;
-      userId: string;
-      contractId: string;
-      approvalId: string | null;
-    }): Promise<void>;
-  };
-  redo?: { ready: boolean; quota: (tenantId: string) => Promise<void> } | undefined;
-  /** CR-113 · tên Group (cho `escalated_to`); vắng ⇒ không hiện tên. Chỉ gọi khi có bước đã chuyển cấp. */
-  groupNames?: ((tenantId: string) => Promise<{ id: string; name: string }[]>) | undefined;
-  /** CR-113 · giờ server (`overdue`); vắng ⇒ `new Date()`. */
-  now?: () => Date;
-  warn?: (msg: string, meta: Record<string, unknown>) => void;
-};
-export type EngineActBody = {
-  action: EngineAction;
-  feedback?: string | undefined;
-  products?: readonly unknown[] | undefined;
-  /** CR-120 · task người bấm thấy (FlowRuntime.act); khác task engine định quyết ⇒ APPROVAL_NOT_OPEN (bấm lại không quyết bước kế). */
-  expect?: { taskId: string } | undefined;
-};
-export type EngineActResult = "ok" | "unavailable" | { error: EngineErrorCode };
+// contract-flow S3b · thẻ duyệt + hành động cho lượt `mode = 'engine'`. Lớp 2: chỉ cổng.
+// - `view`: MỘT lần `stepsView` của engine (≤ 2 SQL, scope người xem — `can_act` do engine quyết) trên mẫu chụp + trạng thái lượt đã
+//   đọc ở câu `state` (không thêm SQL của gói).
+// - `act`: Đạt = `act` pass (duyệt cuối: lưu `pending_links` TRONG tx gói TRƯỚC khi act; tool `contracts-finalize` áp cùng tx khoá);
+//   Trả lại = fail + về bước 0; Từ chối = reject (cần lý do) rồi ghi HĐ rejected; Đọc lại = huỷ run (system) ⇒ `extracting` + job.
 
 const callerOf = (who: PackWho): EngineCaller => ({ ...who, role: "member" });
 
@@ -126,14 +80,30 @@ function withFactLabels(a: EngineAttention | null): EngineAttention | null {
   return { ...a, missing: a.missing.map((k) => FACT_LABEL.get(k) ?? k) };
 }
 
-type Ctx = { who: PackWho; id: string; st: ApprovalState; runId: string; b: EngineActBody };
+/** `ev.id` = id bằng chứng engine đã ghi (CR-127 · E4) — điền qua `onEvidence` khi engine nhận quyết. */
+type Ctx = {
+  who: PackWho;
+  id: string;
+  st: ApprovalState;
+  runId: string;
+  b: EngineActBody;
+  ev: { id: string | null };
+};
 async function decide(
   port: ApprovalEnginePort,
   c: Ctx,
   at: { task_id: string },
   r: { result: "pass" | "fail" | "reject"; feedback?: string; back_to_step?: number },
 ): Promise<EngineActResult> {
-  const out = await port.act(callerOf(c.who), c.runId, at, r);
+  const evidence = c.b.evidence
+    ? {
+        evidence: c.b.evidence,
+        onEvidence: (evId: string) => {
+          c.ev.id = evId;
+        },
+      }
+    : {};
+  const out = await port.act(callerOf(c.who), c.runId, at, { ...r, ...evidence });
   return out === "ok" ? "ok" : { error: "APPROVAL_NOT_OPEN" };
 }
 
@@ -157,7 +127,7 @@ async function redo(d: EngineCardDeps, port: ApprovalEnginePort, c: Ctx): Promis
 }
 
 async function reject(d: EngineCardDeps, port: ApprovalEnginePort, c: Ctx, taskId: string) {
-  const fb = c.b.feedback ?? null;
+  const fb = c.b.feedback ?? null; // ý kiến của bằng chứng ở `hub.evidence`, không chép sang lý do công khai
   const out = await decide(
     port,
     c,
@@ -199,11 +169,12 @@ export function engineAct(d: EngineCardDeps) {
       ...inp,
       action: b.action,
       feedback: b.feedback,
+      evidenceNote: b.evidence?.note,
       hasSource: st.hasSource,
     });
     if (plan.kind === "error") return { error: plan.code };
     if (b.expect && b.expect.taskId !== plan.taskId) return { error: "APPROVAL_NOT_OPEN" };
-    const c = { who, id, st, runId: a.engineRunId, b };
+    const c = { who, id, st, runId: a.engineRunId, b, ev: { id: null as string | null } };
     const note = plan.kind !== "redo" ? await noteOverride(d, c, inp.sv, plan.taskId) : null;
     if (note?.id) return execOrVoid(d, port, c, plan, note.id);
     const out = await exec(d, port, c, plan);
@@ -237,12 +208,14 @@ async function noteDecision(
   const step = sv?.steps.find((s) => s.task?.id === plan.taskId);
   const aid = (c.st.approval as NonNullable<ApprovalState["approval"]>).id;
   const action = plan.kind === "pass" ? "approve" : plan.kind === "reject" ? "reject" : "return";
+  const fbText = c.b.feedback?.trim() ?? "";
   const e = {
     taskId: plan.taskId,
     stageKey: step?.key ?? "",
     action,
-    feedback: c.b.feedback?.trim() ? c.b.feedback.trim().slice(0, 1000) : null,
+    feedback: fbText ? fbText.slice(0, 1000) : null, // CHỈ lý do người dùng nhập; ý kiến của bằng chứng KHÔNG chép vào đây (BR-26)
     actor: c.who.userId,
+    evidenceId: c.ev.id,
   } as const;
   await d.uow
     .tenant(c.who, async (r) => r.approvalEngine.recordDecision?.(c.id, aid, e))
@@ -354,22 +327,28 @@ async function exec(
   const back = p.kind === "fail_back" ? { back_to_step: p.backTo } : {};
   return decide(port, c, { task_id: p.taskId }, { result: "fail", ...fb, ...back });
 }
-/** fix-review · chỉ số bước người dùng ĐANG MỞ của run (null: không bước mở / run không thấy) — luật sửa trường: chỉ s0 mới sửa được. */
-export function openStepIdx(d: EngineCardDeps) {
-  return async (who: PackWho, runId: string): Promise<number | null> => {
-    const sv = await d.port()?.stepsView(callerOf(who), runId);
-    const open = sv?.steps.find((s) => s.status === "open" && /^s\d+$/.test(s.key));
-    return open ? Number(open.key.slice(1)) : null;
-  };
-}
-
 export type EngineCard = {
   view: ReturnType<typeof engineView>;
   act: ReturnType<typeof engineAct>;
-  openStepIdx: ReturnType<typeof openStepIdx>;
+  /** CR-127 · E4 · hồ sơ duyệt (BR-26). */
+  record: ReturnType<typeof approvalRecord>;
+  /** CR-127 · E4b · tải tệp/chữ ký của bằng chứng (BR-26). */
+  evidenceFile: ReturnType<typeof approvalEvidenceFile>;
+  /** CR-127 · U4b-3 · PDF Hồ sơ duyệt (cùng dữ liệu `record`). */
+  recordPdf: ReturnType<typeof approvalRecordPdf>;
 };
 export const engineCard = (d: EngineCardDeps): EngineCard => ({
   view: engineView(d),
   act: engineAct(d),
-  openStepIdx: openStepIdx(d),
+  record: approvalRecord(d),
+  evidenceFile: approvalEvidenceFile(d),
+  recordPdf: approvalRecordPdf(d),
 });
+
+export type {
+  EngineActBody,
+  EngineActResult,
+  EngineCardDeps,
+  EvidenceBytes,
+  EvidenceNames,
+} from "./approval-engine-card.types";

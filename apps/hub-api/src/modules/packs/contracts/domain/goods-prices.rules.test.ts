@@ -32,7 +32,8 @@ const buy = (
 ): PricedContract => ({
   id,
   kind: "contract",
-  status: "active",
+  status: "done",
+  effect: "active",
   parent: null,
   direction: "purchase",
   party,
@@ -72,7 +73,7 @@ describe("chênh giá NCC (_price_gaps)", () => {
     const lines = priceLines(
       [
         buy("a", "tax:1", [item("Thịt heo", 100_000)]),
-        buy("old", "tax:3", [item("Thịt heo", 50_000)], { status: "expired" }),
+        buy("old", "tax:3", [item("Thịt heo", 50_000)], { effect: "expired" }),
         buy("p", "tax:4", [item("Thịt heo", 40_000)]),
         buy("ap", "tax:4", [item("Thịt heo", 120_000)], {
           kind: "appendix",

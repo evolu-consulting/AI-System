@@ -219,7 +219,6 @@ describe("CR-125 · bước form trên thẻ HĐ", () => {
   it("thẻ: bước form mở với trường + nhóm làm; chỉ nhóm làm có task «Gửi»", async () => {
     const wa = { tenantId: T, userId: A };
     expect(await startApproval(ad())(wa, C, "level1")).toBe("ok");
-    expect(await actApproval(ad())(wa, C, { action: "approve" })).not.toHaveProperty("error");
     expect(await dispatchOnce({ db, launch: flowLaunchOf(deps()) })).toMatchObject({ launched: 1 });
 
     const mine = (await cardOf(M)) as Card;

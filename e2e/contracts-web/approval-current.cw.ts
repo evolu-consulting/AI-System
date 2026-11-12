@@ -109,7 +109,7 @@ test("Cài đặt hiện quy trình đang dùng, không có form sửa", async (
   // CR-125 · S2: không còn "mặc định của khe" / nhãn "liên hệ quản trị nền tảng"; lead nói quản trị công ty đổi ở trang Quy trình
   await expect(dlg.getByTestId("flow-default-badge")).toHaveCount(0);
   await expect(dlg.getByTestId("flow-readonly-lead")).not.toContainText("quản trị nền tảng");
-  await expect(page.getByRole("button", { name: "Lưu cài đặt" })).toHaveCount(0);
+  // CR-127 U4: khối «Thời gian tự trả việc / Người ký HĐ» có nút lưu riêng ⇒ chỉ kiểm thanh Lưu của hộp Cài đặt đã ẩn (Khôi phục tất cả + ghi chú)
   await expect(page.getByRole("button", { name: "Khôi phục tất cả" })).toHaveCount(0);
   await expect(page.getByTestId("settings-nosave-note")).toBeVisible();
   mkdirSync(SHOTS, { recursive: true });

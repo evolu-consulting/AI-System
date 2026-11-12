@@ -11,6 +11,7 @@ import {
 } from "./appendix-pricing.rules";
 import { contractCodeOf } from "./contract-name";
 import { foldVi } from "./fold.rules";
+import { effectiveStateOf, isPriceLive } from "./price-live.rules";
 import {
   type SaleLine,
   SOURCING_CANDIDATES_MAX,
@@ -19,9 +20,6 @@ import {
   type SourcingParty,
   type SupplierExposure,
 } from "./sourcing.types";
-
-/** Trạng thái HĐ còn hiệu lực cho giá (`products.LIVE`). */
-export const LIVE = new Set(["active", "expiring", "renewed"]);
 
 export type RawParty = SourcingParty;
 export type RawItem = PriceItem & { ord: number };
@@ -32,6 +30,8 @@ export type RawContract = {
   title: string;
   number: string | null;
   status: string;
+  /** Hiệu lực (`done` ⇒ active/expiring/…; K2a-1 nạp từ `contracts.effect`). */
+  effect?: string | null;
   direction: "sale" | "purchase" | null;
   end_date: string | null;
   effective_date: string | null;
@@ -118,10 +118,10 @@ function familyLines(
       number: contractCodeOf(c),
       line: item.ord,
       kind: c.kind,
-      status: c.status,
+      status: effectiveStateOf(c),
       end_date: c.end_date,
       role: sale ? "customer" : "supplier",
-      current: l.current && LIVE.has(c.status),
+      current: l.current && isPriceLive(c),
       party,
     });
   }
@@ -197,7 +197,7 @@ const at = (c: { contract_id: string; line: number }) => `${c.contract_id}#${c.l
 export function riskOf(src: PriceLine | undefined): SaleLine["risk"] {
   if (!src) return null;
   if (!src.current) return "source_ended";
-  return src.status === "expiring" ? "source_expiring" : null;
+  return src.status === "expiring" ? "source_expiring" : null; // `status` đã là hiệu lực (`effectiveStateOf`)
 }
 
 type Picked = { src: PriceLine; mode: "chosen" | "auto" } | null;

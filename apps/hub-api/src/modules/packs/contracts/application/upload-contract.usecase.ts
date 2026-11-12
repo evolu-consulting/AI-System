@@ -24,7 +24,7 @@ import {
   type UploadDays,
   type UploadDoc,
   UploadError,
-  type UploadStatus,
+  type UploadExtract,
   type UploadUow,
 } from "./upload-contract.ports";
 
@@ -76,13 +76,14 @@ export type UploadContractInput = {
   supersedes?: string;
   /** CR-101 DOC-model: loại chứng từ + HĐ NT cha (vắng ⇒ HĐ kinh tế đứng riêng). */
   doc?: UploadDoc;
-  /** CR-125 · cr125-contract-from-step · HĐ tạo từ bước quy trình: trường điền sẵn (từ phiếu) ⇒ ghi thẳng `needs_review`, không mở
+  /** CR-125 · cr125-contract-from-step · HĐ tạo từ bước quy trình: trường điền sẵn (từ phiếu) ⇒ ghi thẳng `draft` + `extract_state = ready`, không mở
    *  lượt duyệt, không xếp AI trích (người dùng đã nhập). Cùng đường ghi tệp + HĐ + quota với tải lên thường. */
   prefill?: { fields: ContractFields };
 };
 export type UploadContractResult = {
   id: string;
-  status: UploadStatus;
+  status: "draft";
+  extractState: UploadExtract;
   version: number;
   version_no?: number;
   root_id?: string;
@@ -199,7 +200,7 @@ function uploadedRow(
     kind: i.kind,
     parentId: i.parentId,
     title: i.title,
-    status: i.prefill ? "needs_review" : s.text.ok ? "extracting" : "extract_failed",
+    extractState: i.prefill ? "ready" : s.text.ok ? "reading" : "failed",
     error:
       i.prefill || s.text.ok ? null : s.type === "docx" ? "DOCX_UNREADABLE" : "TEXT_UNREADABLE",
     fields: i.prefill?.fields ?? fillFields({}),

@@ -69,49 +69,20 @@ async function open(
   await page.goto(`/contracts/c/${contract.id}`);
 }
 
-test("người duyệt thấy thẻ tóm tắt, form sửa gập lại", async ({ page }) => {
+test("người duyệt: form sửa gập lại, không còn thẻ Tóm tắt (đã thay bằng «Điều cần lưu ý»)", async ({
+  page,
+}) => {
   const s = engineCard(
     [step(0, "Trưởng phòng duyệt", "passed"), step(1, "Giám đốc duyệt", "open")],
     { can_act: true },
   );
-  await open(page, () => s, { status: "active" });
-  await expect(page.getByTestId("summary")).toBeVisible();
+  await open(page, () => s, { status: "processing" });
+  await expect(page.getByTestId("summary")).toHaveCount(0);
   const fold = page.getByTestId("detail-fold");
   await expect(fold).toBeVisible();
   await expect(fold).not.toHaveAttribute("open", "");
-  await expect(fold.getByTestId("owner-row")).toBeHidden();
   await fold.locator("summary").click();
-  await expect(fold.getByTestId("owner-row")).toBeVisible();
-  // chỉ MỘT khối tóm tắt (thẻ trên cùng), không lặp trong lưới bên dưới
-  await expect(page.getByTestId("summary")).toHaveCount(1);
-});
-
-test("gửi duyệt ⇒ 'Đã gửi <bước> · hạn N giờ'; bước hệ thống không hiện cho người thường", async ({
-  page,
-}) => {
-  let state = engineCard([step(0, "Gửi duyệt", "open"), step(1, "Phòng Kế toán duyệt", "pending")]);
-  const due = new Date(Date.now() + 24 * 3_600_000).toISOString();
-  const notify = (st: ApprovalCardStep["status"]) =>
-    step(2, "Thông báo người tạo", st, { kind: "notify" });
-  state = engineCard([...(state.steps ?? []), notify("pending")]);
-  await open(page, () => state, {
-    onAct: () => {
-      state = engineCard(
-        [
-          step(0, "Gửi duyệt", "passed"),
-          step(1, "Phòng Kế toán duyệt", "open", { due_at: due }),
-          notify("pending"),
-        ],
-        { can_act: false },
-      );
-      return state;
-    },
-  });
-  await expect(page.getByTestId("approval-step-2")).toHaveCount(0);
-  await page.getByRole("button", { name: "Gửi duyệt" }).click();
-  await expect(page.getByTestId("moved-to")).toHaveText(
-    /^Đã gửi Phòng Kế toán duyệt · hạn (23|24) giờ$/,
-  );
+  await expect(fold).toHaveAttribute("open", ""); // CR-127: «Phụ trách» chuyển sang khối quản lý ngoài fold
 });
 
 // Ảnh sau (desktop 1440 + điện thoại 390) cho docs/specs/cr125-ux-s4-contract-card/ — chỉ chạy khi đặt CR125_SHOTS=<thư mục>.
@@ -127,7 +98,7 @@ for (const [tag, size] of [
       [step(0, "Trưởng phòng duyệt", "passed"), step(1, "Giám đốc duyệt", "open")],
       { can_act: true },
     );
-    await open(page, () => s, { status: "active" });
+    await open(page, () => s, { status: "processing" });
     await expect(page.getByTestId("detail-fold")).toBeVisible();
     await page.screenshot({ path: `${SHOTS}/after-approver-card-${tag}.png`, fullPage: false });
   });

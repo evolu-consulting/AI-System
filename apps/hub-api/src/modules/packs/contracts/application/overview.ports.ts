@@ -11,6 +11,8 @@ export type OverviewRepo = { months(w: OverviewWindow): Promise<OverviewRaw> };
 export type TodoWindow = {
   today: string;
   horizon: string;
+  /** CR-127 X4b · #61: hạn xa nhất của nguồn mốc. Công ty CÓ quy trình `milestone.due` ⇒ nhắc trước hạn do quy trình (task) lo ⇒ chỉ còn mốc đã quá hạn; vắng ⇒ `horizon`. */
+  milestoneHorizon?: string;
   tz: string;
   quarter: { start: string; prevStart: string; prevEnd: string } | null;
   /** REP-v3 mục 7: nguồn "Đánh giá đối tác" (sau HĐ + sau quý) chỉ khi engine `v2e` (chấm sao mở); vắng ⇒ tắt. */

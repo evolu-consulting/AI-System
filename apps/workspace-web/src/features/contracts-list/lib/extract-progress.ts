@@ -13,6 +13,6 @@ export type ChipState = "done" | "active" | "todo";
 export const chipStates = (active: number): ChipState[] =>
   EXTRACT_STEPS.map((_, i) => (i < active ? "done" : i === active ? "active" : "todo"));
 
-/** Hộp mở khi đang tải lên hoặc HĐ còn `extracting`; đóng khi xong/lỗi (trạng thái khác). */
-export const dialogOpen = (o: { uploading: boolean; status?: string | undefined }): boolean =>
-  o.uploading || o.status === "extracting";
+/** Hộp mở khi đang tải lên hoặc AI còn đọc (`extract_state = reading`, không phải trạng thái HĐ); đóng khi xong/lỗi. */
+export const dialogOpen = (o: { uploading: boolean; extract?: string | undefined }): boolean =>
+  o.uploading || o.extract === "reading";

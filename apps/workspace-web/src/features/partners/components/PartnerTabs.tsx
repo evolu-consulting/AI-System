@@ -10,11 +10,14 @@ export function PartnerTabs({
   role,
   tab,
   contracts,
+  community = false,
 }: {
   party: string;
   role: RepRole | undefined;
   tab: Tab;
   contracts: number;
+  /** Gói Cộng đồng bật ⇒ có tab «Bảng tin». */
+  community?: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -23,7 +26,7 @@ export function PartnerTabs({
       aria-label={t("contracts.pv2.tabs")}
       className="mb-4 flex gap-1 overflow-x-auto border-b border-rule"
     >
-      {TABS.map((k) => (
+      {TABS.filter((k) => k !== "community" || community).map((k) => (
         <Link
           key={k}
           to="/contracts/partners"

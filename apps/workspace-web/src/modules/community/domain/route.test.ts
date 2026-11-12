@@ -1,4 +1,4 @@
-// CR-118 · COM-FR-31 · route Community dưới /community/*: routeToPath/parsePath round-trip, settings qua query.
+// CR-118 · COM-FR-31 · route Community dưới /community/*: routeToPath/parsePath round-trip, .
 import { describe, expect, it } from "bun:test";
 import { parsePath, routeToHref, routeToPath } from "./route";
 
@@ -12,9 +12,8 @@ describe("routeToPath", () => {
     );
     expect(routeToPath({ name: "profile", section: "files" })).toBe("/community/profile");
   });
-  it("mã hoá ký tự đặc biệt; routeToHref thêm ?settings=1", () => {
+  it("mã hoá ký tự đặc biệt; routeToHref = routeToPath", () => {
     expect(routeToPath({ name: "profile", orgId: "a b" })).toBe("/community/profile/a%20b");
-    expect(routeToHref({ name: "feed" }, true)).toBe("/community?settings=1");
     expect(routeToHref({ name: "feed" })).toBe("/community");
   });
 });
@@ -30,12 +29,8 @@ describe("parsePath", () => {
       expect(parsePath(routeToPath(r)).route).toEqual(r);
     }
   });
-  it("?settings=1 ⇒ settings; thiếu ⇒ false; `/` cuối và đường lạ về Bảng tin", () => {
-    expect(parsePath("/community", "?settings=1")).toEqual({
-      route: { name: "feed" },
-      settings: true,
-    });
-    expect(parsePath("/community/", "").settings).toBe(false);
+  it("`/` cuối và đường lạ về Bảng tin", () => {
+    expect(parsePath("/community/").route).toEqual({ name: "feed" });
     expect(parsePath("/community/feed").route).toEqual({ name: "feed" });
     expect(parsePath("/community/zzz/1").route).toEqual({ name: "feed" });
   });

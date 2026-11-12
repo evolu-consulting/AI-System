@@ -18,9 +18,10 @@ import { appError } from "../../../lib/errors";
 import { parseWith } from "../../../lib/http";
 import { clipEntityName, dbHubAudit, type HubAuditRow } from "../../../lib/hub-audit";
 import type { UserEvent } from "../../../lib/user-stream";
+import { releaseTask } from "../adapters/claim/claim.repo";
 import { settleStepTx } from "../adapters/runs/step.repo";
 import { closeTask, lockRun, type RunHead } from "../core/core.repo";
-import { processError } from "../core/errors";
+import { claimError, processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";
 import { enqueueThread } from "../core/thread";
@@ -246,6 +247,10 @@ export class AsksService {
     };
     const check = forwardCheck(t, to, user.userId);
     if (check !== "ok") throw processError(check);
+    // CR-127 · E3 · spec §5.2 · "Chuyển cho" phải ghi lý do (sau kiểm quyền: người ngoài vẫn nhận 404/403 như cũ).
+    if (!body.note?.trim()) throw claimError("FORWARD_REASON_REQUIRED");
+    // CR-127 · E2/E3 · "Chuyển cho" kết thúc Nhận việc của người chuyển (việc nhóm về trạng thái chưa ai nhận).
+    await releaseTask(tx, { taskId, tenantId: user.tenantId, userId: user.userId });
     const depth = Math.min(grants.forwards + 1, FORWARD_CHAIN_MAX);
     await repo.addForwardAssignee(tx, {
       tenantId: user.tenantId,

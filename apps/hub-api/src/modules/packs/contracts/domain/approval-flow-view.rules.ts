@@ -17,6 +17,7 @@ import type {
 import { FormPrefillSchema, moduleFlowStep } from "@ai/contracts/flow";
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import {
+  claimPart,
   type EngineStepsView,
   openStep,
   runCardSteps,
@@ -197,6 +198,7 @@ function tasksOf(card: Card): FlowTask[] {
         task_id: card.task_id,
         step_key: open.key,
         kind: "form",
+        ...claimPart(card),
         actions: submitActions(open.form),
         ...withPrefill(prefillOf(open.form)),
       },
@@ -206,6 +208,7 @@ function tasksOf(card: Card): FlowTask[] {
       task_id: card.task_id,
       step_key: open?.key ?? card.step ?? "level1",
       kind: "review",
+      ...claimPart(card),
       actions: actionsOf(card, open ? open.idx : null),
     },
   ];
@@ -260,6 +263,7 @@ export function flowViewOfRun(sv: EngineStepsView, ref: string): FlowView {
       task_id: task.id,
       step_key: open.key,
       kind: form ? "form" : "review",
+      ...claimPart(task),
       ...taskPrefill(form, task),
       actions: form
         ? submitActions(form as NonNullable<CardStep["form"]>)

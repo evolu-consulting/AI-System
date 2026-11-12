@@ -45,8 +45,11 @@ beforeAll(async () => {
   await sql`insert into admin.group_members (tenant_id, group_id, user_id) values (${T.acme}, ${GRP}, ${USERS.lan.id})`;
   await sql`insert into admin.feature_grants (tenant_id, feature_id, group_id, user_id)
     select ${T.acme}::uuid, f.id, ${GRP}::uuid, null from admin.features f where f.key in ('community-read', 'community-write')`;
-  await sql`insert into community.partner_companies (tenant_id, ext_org_id, labels, cats)
-    values (${T.acme}, ${ORG}, '{supplier}', '{dong-goi}')`;
+  // CR-130 (ADR-0043): đối tác = SHT `partner_roles` (vai) + `partner_profiles` (nhóm hàng + tài khoản)
+  await sql`insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from)
+    values (${T.acme}, 'name:ncc c3', 'supplier', 'NCC C3', 'manual')`;
+  await sql`insert into contracts.partner_profiles (tenant_id, party_key, cats, ext_org_id)
+    values (${T.acme}, 'name:ncc c3', '{dong-goi}', ${ORG})`;
   k = await makeKeys();
   hub = await startHubX(k);
   extToken = await sign(k, EXT, {

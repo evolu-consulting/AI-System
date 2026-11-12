@@ -6,7 +6,7 @@
 // khi dùng). Từ chối khi APP_ENV=production hoặc DB host ngoài localhost/test, trừ `--i-know-prod`.
 // Cạnh đó ghi `<out>.community.json`: ánh xạ công ty → party_key Sổ Hợp Tác + nhãn/nhóm hàng (C3/C12b áp bằng applyCommunityLabels).
 // DATABASE_URL: vai ứng dụng admin_api (RLS) hoặc chủ migration. KHÔNG chạy trên máy chủ production.
-// com-c12b: thêm bật gói community + nhãn/nhóm hàng (partner_companies) + bài/luồng mẫu qua service của gói. Cần HUB_DATABASE_URL
+// com-c12b: thêm bật gói community + vai/nhóm hàng đối tác (SHT partner_roles + partner_profiles) + bài/luồng mẫu qua service của gói. Cần HUB_DATABASE_URL
 // (vai hub_api, RLS gói); vắng thì dùng DATABASE_URL (chỉ chạy được khi vai đó SET ROLE được, vd chủ migration).
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
@@ -26,9 +26,12 @@ import {
   type CommunityCtx,
   enableCommunityDefaultFlow,
   enableCommunityPack,
+  resetCommunityData,
+  seedJoinRequests,
   seedPosts,
 } from "./seed-community-demo.apply";
 import {
+  JOIN_SEEDS,
   type MapRow,
   PARTNER_SEEDS,
   type PartnerSeed,
@@ -64,6 +67,8 @@ export type SeedOpts = {
   /** Username NỘI BỘ thêm vào Group community-owner / community-editor (sau enablePack, chỉ khi --apply). */
   grantOwner?: readonly string[];
   grantEditor?: readonly string[];
+  /** `--reset`: xoá dữ liệu Community + hồ sơ Bảng tin của tenant demo trước khi dựng lại (CHỈ tenant demo). */
+  reset?: boolean;
 };
 export type SeedResult = {
   orgs: { created: number; existing: number };
@@ -75,6 +80,7 @@ export type SeedResult = {
   /** Username đối tác mới tạo (không kèm mật khẩu). */
   createdUsers: string[];
   posts: { created: number; existing: number; comments: number };
+  joins: number;
 };
 
 /** Chặn cứng: chỉ `demo`, trừ khi `--force-tenant` (dùng cho DB test). */
@@ -108,9 +114,18 @@ async function resolveCall(db: Db, tenantKey: string): Promise<Call> {
   };
 }
 
+/** Khớp `contracts.fold(tên)` của khoá hồ sơ `name:` (chữ thường, bỏ dấu, chỉ chữ-số) — chỉ để xoá khi --reset. */
+const foldName = (n: string): string =>
+  n
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/gi, "d")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
 const partyKey = (p: PartnerSeed): string | null => (p.sht ? partyKeyOf(p.sht) : null);
 
-/** Ghi nhãn (supplier/buyer) + nhóm hàng + liên kết SHT vào `community.partner_companies` (một tx, upsert). */
+/** Ghi vai (supplier/customer) + nhóm hàng + tài khoản công ty vào SHT (`contracts.partner_roles`/`partner_profiles`, một câu, upsert). */
 export function applyCommunityLabels(c: CommunityCtx, rows: readonly MapRow[]): Promise<number> {
   return applyLabels(c, rows);
 }
@@ -122,7 +137,7 @@ async function findOrgId(c: Call, name: string): Promise<{ id: string; active: b
   return o ? { id: o.id, active: o.active } : null;
 }
 
-async function ensureOrg(c: Call, p: PartnerSeed): Promise<{ id: string; created: boolean }> {
+async function ensureOrg(c: Call, p: { name: string }): Promise<{ id: string; created: boolean }> {
   const found = await findOrgId(c, p.name);
   if (found) {
     if (!found.active) throw new Error(`seed-community-demo: công ty "${p.name}" đã bị vô hiệu`);
@@ -135,7 +150,7 @@ async function ensureOrg(c: Call, p: PartnerSeed): Promise<{ id: string; created
 async function ensureUser(
   c: Call,
   orgId: string,
-  p: PartnerSeed,
+  p: { username: string; displayName: string },
 ): Promise<{ id: string; temp: string | null }> {
   const { items } = await listUsersOfOrg(c, orgId, UserListQuerySchema.parse({}));
   const had = items.find((u) => u.username === p.username);
@@ -189,6 +204,28 @@ function writePasswords(o: SeedOpts, pw: Record<string, string>): string | null 
   return o.out;
 }
 
+/** `--reset`: chỉ tenant demo (kể cả khi có --force-tenant). */
+async function runReset(db: Db, o: SeedOpts, tenantId: string, log: (s: string) => void) {
+  if (o.tenantKey !== DEMO_KEY) throw new Error("seed-community-demo: --reset chỉ cho tenant demo");
+  const keys = PARTNER_SEEDS.map((p) => partyKey(p) ?? `name:${foldName(p.name)}`);
+  const r = await resetCommunityData(db, tenantId, keys);
+  log(
+    `seed-community-demo: --reset xoá ${r.community} dòng Community, ${r.profiles} hồ sơ Bảng tin, ${r.roles} vai thêm tay`,
+  );
+}
+
+/** Công ty + user của các đơn xin tham gia mẫu (chưa gắn SHT). */
+async function ensureJoiners(c: Call, pw: Record<string, string>) {
+  const out: { userId: string; orgId: string; seed: (typeof JOIN_SEEDS)[number] }[] = [];
+  for (const j of JOIN_SEEDS) {
+    const org = await ensureOrg(c, j);
+    const u = await ensureUser(c, org.id, j);
+    if (u.temp) pw[j.username] = u.temp;
+    out.push({ userId: u.id, orgId: org.id, seed: j });
+  }
+  return out;
+}
+
 export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
   const log = o.log ?? console.log;
   assertTenant(o.tenantKey, o.forceTenant);
@@ -200,12 +237,14 @@ export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
     granted: { owner: [], editor: [] },
     createdUsers: [],
     posts: { created: 0, existing: 0, comments: 0 },
+    joins: 0,
   };
   if (!o.apply) {
     for (const l of planLines(o.tenantKey, o)) log(l);
     return res;
   }
   const c = await resolveCall(db, o.tenantKey);
+  if (o.reset) await runReset(db, o, c.actor.tenantId, log);
   const rows: MapRow[] = [];
   const pw: Record<string, string> = {};
   const partners = new Map<string, { userId: string; orgId: string; orgName: string }>();
@@ -241,6 +280,9 @@ export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
     partners,
   };
   await applyCommunityLabels(cc, rows);
+  const joiners = await ensureJoiners(c, pw);
+  res.passwordsFile = writePasswords(o, pw);
+  res.joins = await seedJoinRequests(cc, joiners);
   const pr = await seedPosts(cc);
   res.posts = {
     created: pr.postsCreated,
@@ -256,7 +298,7 @@ const list = (a: readonly string[]) => a.join(", ") || "(không)";
 /** Dòng tóm tắt cuối — CHỈ username + đường dẫn file (không bao giờ có mật khẩu). */
 function summaryLine(res: SeedResult): string {
   const { posts: p, orgs, users, granted } = res;
-  return `seed-community-demo: bài +${p.created}/=${p.existing}, bình luận +${p.comments}; công ty +${orgs.created}/=${orgs.existing}, user +${users.created}/=${users.existing}; user mới: ${list(res.createdUsers)}; thêm owner: ${list(granted.owner)}; thêm editor: ${list(granted.editor)}; file mật khẩu (không in nội dung): ${res.passwordsFile ?? "(không có user mới)"}; ánh xạ: ${res.mapFile}`;
+  return `seed-community-demo: bài +${p.created}/=${p.existing}, bình luận +${p.comments}, đơn xin tham gia +${res.joins}; công ty +${orgs.created}/=${orgs.existing}, user +${users.created}/=${users.existing}; user mới: ${list(res.createdUsers)}; thêm owner: ${list(granted.owner)}; thêm editor: ${list(granted.editor)}; file mật khẩu (không in nội dung): ${res.passwordsFile ?? "(không có user mới)"}; ánh xạ: ${res.mapFile}`;
 }
 
 /** Sau enablePack: đưa user nội bộ vào Group owner/editor (idempotent). */
@@ -309,6 +351,7 @@ async function main(argv: readonly string[]): Promise<void> {
     tenantKey: arg("--tenant") ?? DEMO_KEY,
     apply: argv.includes("--apply"),
     forceTenant: argv.includes("--force-tenant"),
+    reset: argv.includes("--reset"),
     out: out as string,
     ...grantArgs(argv),
   };
@@ -339,6 +382,9 @@ async function main(argv: readonly string[]): Promise<void> {
 
 if (import.meta.main)
   main(process.argv.slice(2)).catch((e) => {
-    console.error(String(e instanceof Error ? e.message : e));
+    console.error(
+      String(e instanceof Error ? e.message : e),
+      (e as { cause?: unknown }).cause ?? "",
+    );
     process.exit(1);
   });

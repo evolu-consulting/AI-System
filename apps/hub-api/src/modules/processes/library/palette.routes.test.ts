@@ -52,11 +52,13 @@ describe("CR-122 N1 · bảng node", () => {
     const r = await keys("A");
     expect(r.status).toBe(200);
     expect(r.keys).toEqual([
-      "core.email",
-      "core.bell",
-      "core.wait-until",
-      "core.wait-for",
+      "core.notify",
+      "core.wait",
+      "core.subprocess",
+      "contracts.create-from-step",
       "contracts.esign",
+      "contracts.milestone-confirm",
+      "contracts.sign-together-accept",
     ]);
     expect((await keys("A", "?app=community")).keys).not.toContain("community.show-post");
   });

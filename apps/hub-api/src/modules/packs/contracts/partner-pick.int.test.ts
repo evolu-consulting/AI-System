@@ -35,7 +35,6 @@ import { partnerSendRepo } from "./adapters/partner-send.repo";
 import { partnerSendTool } from "./adapters/partner-send.tool";
 import { PARTNER_SEND_KEY } from "./nodes/partner-send/binding";
 import {
-  actApproval,
   approvalEngineRepo,
   approvalRepo,
   contractFlowRepo,
@@ -80,8 +79,15 @@ const codeOf = async (p: Promise<unknown>) => {
   }
 };
 
-async function contractWith(t: string, u: string, from: number, tax: string, email: string) {
-  const [id] = (await contracts(o, t, 1, { from, createdBy: u, status: "active" })) as [string];
+async function contractWith(
+  t: string,
+  u: string,
+  from: number,
+  tax: string,
+  email: string,
+  status = "active",
+) {
+  const [id] = (await contracts(o, t, 1, { from, createdBy: u, status })) as [string];
   const fid = crypto.randomUUID();
   await o`insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
     values (${fid}, ${t}, ${`t_${t}`}, ${`f${from}`}, ${`v${from}`}, 'hd.pdf', 'application/pdf', 16, ${u})`;
@@ -327,10 +333,11 @@ describe("CR-126 · trang chi tiết HĐ · thẻ duyệt/FlowView mang prefill 
     await visibility(o, [D], "org");
     await department(o, D, "pb-kd", { head: UAs, members: [UAs] });
     GM = await department(o, D, "pb-doi-tac", { head: UM, members: [UM] });
-    CD = await contractWith(D, UAs, 1380, TAX_D, "mac-dinh@doitacd.vn");
-    await o`update contracts.contracts set status = 'needs_review' where id = ${CD}`;
+    CD = await contractWith(D, UAs, 1380, TAX_D, "mac-dinh@doitacd.vn", "needs_review");
+    // CR-127 (MIGC 0092): sổ đối tác chỉ tự ghi từ HĐ `done`; HĐ này đang processing ⇒ đối tác D thêm tay như D2.
     await o`insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from, created_by)
-      values (${D}, ${`tax:${TAX_D2}`}, 'supplier', 'Đối tác D2', 'manual', ${UAs})`;
+      values (${D}, ${`tax:${TAX_D}`}, 'customer', 'Đối tác D', 'manual', ${UAs}),
+        (${D}, ${`tax:${TAX_D2}`}, 'supplier', 'Đối tác D2', 'manual', ${UAs})`;
     const st = JSON.stringify(STAGES());
     const [r] = await o<
       { id: string }[]
@@ -346,7 +353,6 @@ describe("CR-126 · trang chi tiết HĐ · thẻ duyệt/FlowView mang prefill 
     formPrefillRegistry.register(PARTNER_SEND_KEY, partnerPrefill(uow())); // như `mountPartnerSend`
     const wa = { tenantId: D, userId: UAs };
     expect(await startApproval(ad())(wa, CD, "level1")).toBe("ok");
-    expect(await actApproval(ad())(wa, CD, { action: "approve" })).not.toHaveProperty("error");
     expect(await dispatchOnce({ db: edb, launch: flowLaunchOf(deps()) })).toMatchObject({
       launched: 1,
     });

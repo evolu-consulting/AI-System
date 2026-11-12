@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
   bellText,
-  bellView,
   commentRecipients,
   digestDue,
   kindOfBell,
@@ -12,18 +11,26 @@ import {
 
 const T = "7e5d0000-0000-4000-8000-000000000001";
 const O2 = "7e5d0000-0000-4000-8000-000000000002";
-const cand = (userId: string, org: string | null, role: "author" | "commenter", sees = true) => ({
+type Role = "author" | "commenter" | "mentioned";
+const cand = (userId: string, org: string | null, role: Role, sees = true) => ({
   userId,
   org,
   role,
   sees,
+});
+/** Bình luận do `actorOrg` viết trên bài của chủ quản (mặc định), không nhắc ai. */
+const ctx = (more: Partial<Parameters<typeof commentRecipients>[1]> = {}) => ({
+  actorOrg: T,
+  postAuthorOrg: null,
+  mentions: [] as string[],
+  ...more,
 });
 
 describe("commentRecipients", () => {
   it("người đăng nhận comment, người từng bình luận nhận reply, không gửi cho chính người viết", () => {
     const r = commentRecipients(
       [cand("host1", null, "author"), cand("p1", T, "commenter"), cand("actor", T, "commenter")],
-      T,
+      ctx(),
       "actor",
     );
     expect(r).toEqual([
@@ -34,27 +41,67 @@ describe("commentRecipients", () => {
   it("người vừa là người đăng vừa từng bình luận chỉ nhận một thông báo: comment", () => {
     const r = commentRecipients(
       [cand("h", null, "commenter"), cand("h", null, "author")],
-      T,
+      ctx(),
       "actor",
     );
     expect(r).toEqual([{ userId: "h", kind: "comment" }]);
   });
-  it("đối tác không nhận khi hết thấy bài hoặc luồng không phải của công ty mình", () => {
+  it("đối tác không nhận khi hết thấy bài hoặc không thấy bình luận (đối tác khác viết)", () => {
     const r = commentRecipients(
       [
         cand("blind", T, "commenter", false),
         cand("other", O2, "commenter"),
         cand("host", null, "commenter"),
       ],
-      T,
+      ctx(),
       "actor",
     );
-    expect(r).toEqual([{ userId: "host", kind: "reply" }]); // chủ quản (còn quyền) thấy mọi luồng
+    expect(r).toEqual([{ userId: "host", kind: "reply" }]); // chủ quản (còn quyền) thấy mọi bình luận
+  });
+  it("CR-129: chủ quản trả lời ⇒ mọi người từng bình luận (đối tác) nhận reply, kể cả đối tác khác", () => {
+    const r = commentRecipients(
+      [cand("p1", T, "commenter"), cand("p2", O2, "commenter")],
+      ctx({ actorOrg: null }),
+      "host",
+    );
+    expect(r).toEqual([
+      { userId: "p1", kind: "reply" },
+      { userId: "p2", kind: "reply" },
+    ]);
+  });
+  it("CR-129: người của công ty được nhắc nhận mention (thắng comment/reply); công ty không được nhắc không nhận", () => {
+    const r = commentRecipients(
+      [
+        cand("a1", T, "mentioned"),
+        cand("a1", T, "commenter"),
+        cand("own", T, "author"),
+        cand("b1", O2, "commenter"),
+      ],
+      ctx({ actorOrg: null, postAuthorOrg: T, mentions: [T] }),
+      "host",
+    );
+    expect(r).toEqual([
+      { userId: "a1", kind: "mention" },
+      { userId: "own", kind: "comment" },
+      { userId: "b1", kind: "reply" },
+    ]);
+  });
+  it("CR-129: đối tác viết trên bài của chính công ty khác ⇒ chỉ chủ quản + chính công ty đăng bài nhận", () => {
+    const r = commentRecipients(
+      [cand("host", null, "author"), cand("o2", O2, "commenter"), cand("t1", T, "author")],
+      ctx({ actorOrg: O2, postAuthorOrg: T }),
+      "actor",
+    );
+    expect(r).toEqual([
+      { userId: "host", kind: "comment" },
+      { userId: "o2", kind: "reply" },
+      { userId: "t1", kind: "comment" },
+    ]);
   });
   it("review Thấp-10: chủ quản đã mất quyền gói (sees=false) không nhận", () => {
     const r = commentRecipients(
       [cand("lost", null, "author", false), cand("lost2", null, "commenter", false)],
-      T,
+      ctx(),
       "actor",
     );
     expect(r).toEqual([]);
@@ -80,7 +127,8 @@ describe("loại thông báo", () => {
     expect(priceChanged(null, "")).toBe(false);
     expect(priceChanged("10", "12")).toBe(true);
   });
-  it("kind chuông ↔ 8 loại; kind lạ bị bỏ", () => {
+  it("kind chuông ↔ 9 loại; kind lạ bị bỏ", () => {
+    expect(kindOfBell("community.mention")).toBe("mention");
     expect(kindOfBell("community.reply")).toBe("reply");
     expect(kindOfBell("community.price_edited")).toBe("priceEdited");
     expect(kindOfBell("contract.esign")).toBeNull();
@@ -89,29 +137,20 @@ describe("loại thông báo", () => {
 
 describe("chữ + link", () => {
   const post = { id: "11111111-1111-4111-8111-111111111111", title: "Token USB" };
-  it("bình luận mở đúng bài + luồng; bellView đọc ngược lại", () => {
-    const t = bellText("comment", post, { actor: "An", threadOrg: T, ref: "c1" });
-    expect(t.link).toBe(`/posts/${post.id}/threads/${T}`);
-    const v = bellView({
-      id: "n",
-      kind: "community.comment",
-      title: t.title,
-      body: t.body,
-      link: t.link,
-      created_at: "2026-01-01T00:00:00.000Z",
-      read: false,
+  it("bình luận mở đúng bài + bình luận (đường dẫn trong app); mention khoá trùng riêng", () => {
+    const t = bellText("comment", post, { actor: "An", ref: "c1" });
+    expect(t.link).toBe(`/community?post=${post.id}&comment=c1`);
+    expect(t.body).toBe("An");
+    const m = bellText("mention", post, { actor: "An", ref: "c1" });
+    expect({ link: m.link, dedup: m.dedup }).toEqual({
+      link: `/community?post=${post.id}&comment=c1`,
+      dedup: "c:c1:mention",
     });
-    expect(v).toMatchObject({
-      kind: "comment",
-      actorName: "An",
-      postId: post.id,
-      orgId: T,
-      unread: true,
-    });
+    expect(m.dedup).not.toBe(t.dedup);
   });
   it("sửa giá mở form Lưu báo giá; khoá trùng đổi theo giá mới", () => {
     expect(bellText("priceEdited", post, { actor: "A", ref: "12" }).link).toBe(
-      `/posts/${post.id}?quote=1`,
+      `/community?post=${post.id}&quote=1`,
     );
     expect(bellText("priceEdited", post, { actor: "A", ref: "12" }).dedup).not.toBe(
       bellText("priceEdited", post, { actor: "A", ref: "13" }).dedup,

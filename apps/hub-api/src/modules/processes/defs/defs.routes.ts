@@ -1,7 +1,6 @@
 // HUB-FR-104 · HUB-FR-114 · ADM-FR-65 · ADM-FR-67 · B3 (0c) · `/process-defs*`, `GET /agent-teams` (plan-contract §6). Không logic:
 // role (403 trước parse) → parse query/body (400) → phạm vi tenant MỘT lần (`defScopeOf`) → service.
 import {
-  CopyProcessDefRequestSchema,
   DeleteProcessDefQuerySchema,
   ProcessDefInputBaseSchema,
   ProcessDefListQuerySchema,
@@ -17,6 +16,7 @@ import type { AuthUser, AuthVars } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { parseAdminQuery, parseIdParam, parseJson } from "../../../lib/http";
 import type { ProcessDeps } from "../core/ports";
+import { tenantAdminReadOnly } from "../library/platform-write.middleware";
 import { type DefScope, defScopeOf } from "./def.rules";
 
 import { DefsService } from "./defs.service";
@@ -67,24 +67,21 @@ export function defsRoutes(d: ProcessDeps): Hono<AuthVars> {
 
 /** Route ghi: tạo / sao chép / sửa / xoá / chạy thử quy trình. */
 function writeRoutes(r: Hono<AuthVars>, svc: DefsService): void {
-  r.post("/process-defs", async (c) => {
+  // CR-127 · E8 · BR-10/11: ghi/xoá quy trình công ty (KHÔNG gồm `/run` — chạy thật một lượt) chỉ quản trị nền tảng (gắn TỪNG route, không dùng `/process-defs/*`
+  // để khỏi chặn nhầm `bridge-suggest`/`preview` của module khác cùng tiền tố).
+  const ro = tenantAdminReadOnly();
+  r.post("/process-defs", ro, async (c) => {
     const q = parseAdminQuery(c, ProcessDefTenantQuerySchema);
     const b = await parseJson(c, ProcessDefInputBaseSchema);
     return c.json(await svc.create(c.var.user, scopeOf(c.var.user, q.tenant_id), b), 201);
   });
-  r.post("/process-defs/:id/copy", async (c) => {
-    const q = parseAdminQuery(c, ProcessDefTenantQuerySchema);
-    const id = parseIdParam(c);
-    const b = await parseJson(c, CopyProcessDefRequestSchema);
-    return c.json(await svc.copy(c.var.user, scopeOf(c.var.user, q.tenant_id), id, b), 201);
-  });
-  r.put("/process-defs/:id", async (c) => {
+  r.put("/process-defs/:id", ro, async (c) => {
     const q = parseAdminQuery(c, ProcessDefTenantQuerySchema);
     const id = parseIdParam(c);
     const b = await parseJson(c, UpdateProcessDefRequestSchema);
     return c.json(await svc.update(c.var.user, scopeOf(c.var.user, q.tenant_id), id, b));
   });
-  r.delete("/process-defs/:id", async (c) => {
+  r.delete("/process-defs/:id", ro, async (c) => {
     const q = parseAdminQuery(c, DeleteProcessDefQuerySchema);
     const id = parseIdParam(c);
     await svc.remove(c.var.user, scopeOf(c.var.user, q.tenant_id), id, q.version);

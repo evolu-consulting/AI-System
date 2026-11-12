@@ -64,7 +64,7 @@ function ItemRow(p: {
   );
 }
 
-/** Một nút "Làm bước này" ⇒ đúng đường có sẵn (cấp tính năng · Gán mẫu · Tạo nhóm) hoặc chuyển tới màn làm việc. */
+/** Một nút "Làm bước này" ⇒ đúng đường có sẵn (cấp tính năng · Tạo nhóm) hoặc chuyển tới màn làm việc. */
 async function runFix(
   fix: PartnerFix,
   item: PartnerItem,
@@ -77,11 +77,9 @@ async function runFix(
   if (fix === "grant-feature") await ops.grant();
   else if (fix === "open-profile") ops.onOpen("profile");
   else if (fix === "open-flows") ops.onOpen("processes");
-  else if (fix === "assign-receive-flow")
-    await ops.fixer.mutateAsync({ fix, flowId: item.params?.template ?? "" });
   else
     for (const groupKey of item.params?.groups ?? [])
-      await ops.fixer.mutateAsync({ fix, groupKey });
+      await ops.fixer.mutateAsync({ fix: "create-group", groupKey });
 }
 
 export function PartnerConfirmCard({ tenantId, canEdit, onOpen }: Props) {

@@ -200,10 +200,8 @@ const companySigner = (signedAt: string | null) => ({
 describe("CR-125 · dấu vết duyệt HĐ theo sự kiện", () => {
   it("gửi duyệt → Đạt ở bước → Kết thúc Đã duyệt: trạng thái đúng + lịch sử có ai/lúc nào/gì", async () => {
     expect(await startApproval(ad())(wa(), C1, "level1")).toBe("ok");
-    expect(await statusOf(C1)).toEqual({ c: "needs_review", a: "level1" });
-    expect(await actApproval(ad())(wa(), C1, { action: "approve" })).not.toHaveProperty("error");
+    expect(await statusOf(C1)).toEqual({ c: "processing", a: "level1" });
     expect(await startApproval(ad())(wa(), C2, "level1")).toBe("ok");
-    expect(await actApproval(ad())(wa(), C2, { action: "approve" })).not.toHaveProperty("error");
     expect(await dispatchOnce({ db, launch: flowLaunchOf(deps()) })).toMatchObject({ launched: 2 });
     const card = (await getApproval(ad())(wb(), C1)) as { task_id: string | null };
     const out = await actApproval(ad())(wb(), C1, {
@@ -211,7 +209,7 @@ describe("CR-125 · dấu vết duyệt HĐ theo sự kiện", () => {
       expect: { taskId: card.task_id as string, step: null },
     });
     expect(out).not.toHaveProperty("error");
-    expect(await statusOf(C1)).toEqual({ c: "active", a: "done" });
+    expect(await statusOf(C1)).toEqual({ c: "done", a: "done" });
 
     const h = await history(C1);
     const types = h.map((e) => e.type);
@@ -241,7 +239,7 @@ describe("CR-125 · dấu vết duyệt HĐ theo sự kiện · từ chối", ()
       expect: { taskId: card.task_id as string, step: null },
     });
     expect(out).not.toHaveProperty("error");
-    expect((await statusOf(C2))?.c).toBe("rejected");
+    expect((await statusOf(C2))?.c).toBe("reject");
     const h = await history(C2);
     const dec = h.find((e) => e.type === "stage_decided");
     expect(dec).toMatchObject({

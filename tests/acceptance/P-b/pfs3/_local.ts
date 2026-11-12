@@ -21,6 +21,7 @@ import {
   api,
   type CtxPa,
   defInput,
+  defsWriteVia,
   type Json,
   PA,
   PA_FIX,
@@ -163,7 +164,10 @@ export async function start3(): Promise<Ctx3> {
     redis: rtRedis,
     rt: new ScriptRuntime(sql, rtRedis),
     tok,
-    call: async (r, method, path, body) => api(hub, await tok(r), method, path, body),
+    call: async (r, method, path, body) => {
+      const w = defsWriteVia(r, method, path);
+      return api(hub, await tok(w.role as typeof r), method, w.path, body);
+    },
     base,
     dir,
     clock,
@@ -251,7 +255,7 @@ export async function mkDef(
     sources: o.sources ?? [],
     inputs: o.inputs ?? [],
   };
-  const r = await c.call("Adm", "POST", "/process-defs", body);
+  const r = await c.call("P", "POST", `/process-defs?tenant_id=${T.acme}`, body);
   if (r.status !== 201)
     throw new Error(`FIXTURE SAI POST /process-defs ${key}: ${r.status} ${JSON.stringify(r.json)}`);
   return r.json.id as string;

@@ -35,7 +35,7 @@ export type Obligation = {
   contract_id: string;
   party: string | null;
   direction: Direction;
-  kind: DbKind;
+  kind: DbKind | "penalty"; // CR-127 X1: phạt ghi công nợ (X4)
   seq: number;
   due_date: string;
   amount: number | null;
@@ -44,7 +44,9 @@ export type Obligation = {
   postponed_to: string | null;
   postpones: number;
   reminders: number;
-  source: "manual" | "ai" | "default" | "cks";
+  source: "manual" | "ai" | "default" | "cks" | "fulfill";
+  /** CR-127 X1: hàng con phần còn lại ⇒ id mốc gốc. */
+  parent_obligation_id?: string | null;
   estimated: boolean;
   basis: string | null;
   contract_number?: string | null;

@@ -6,14 +6,12 @@ import type { PackSystemUow, PackWho } from "../../kit/public";
 import { reconcileOf } from "../domain/approval-engine.rules";
 import type { ApprovalRepo, ReconcileItem, SweepCounts, SweepRepo } from "./approval.ports";
 import type { ApprovalEnginePort } from "./approval-engine.ports";
-import type { ContractFlowGate, ContractFlowTxRepos } from "./contract-flow.ports";
+import type { ContractFlowTxRepos } from "./contract-flow.ports";
 
 export type SweepDeps = {
   uow: PackSystemUow<
     { sweep: SweepRepo } & ContractFlowTxRepos & { approval?: Pick<ApprovalRepo, "runOf"> }
   >;
-  /** CR-122 A1 · cờ flow bật ⇒ HĐ heal `extracting → level1` ghi `contract.submitted` (idempotent theo lượt) thay vì mở run. */
-  flow?: ContractFlowGate;
   /** Tenant đang bật gói (cache cấu hình, 0 SQL). */
   tenants: () => Promise<string[]>;
   /** Hạn job đã chạy (mặc định 15'). */
@@ -22,14 +20,12 @@ export type SweepDeps = {
   queuedMinutes?: number;
   /** Trần HĐ đọc/đóng mỗi tenant mỗi lượt. */
   limit?: number;
-  /** contract-flow S3b · duyệt trên engine (cờ bật): đồng bộ HĐ theo run đã kết thúc + heal mở run. Vắng ⇒ bỏ qua. */
+  /** contract-flow S3b · duyệt trên engine (cờ bật): đồng bộ HĐ theo run đã kết thúc + dọn run mồ côi. Vắng ⇒ bỏ qua. */
   engine?: {
     port: () =>
       | (Pick<ApprovalEnginePort, "outcomesOf"> &
           Partial<Pick<ApprovalEnginePort, "openPackRuns" | "cancelSys">>)
       | undefined;
-    /** `startEngineApproval` — mở run cho lượt vừa heal `extracting → level1` (không ném). */
-    start: (who: PackWho, contractId: string) => Promise<unknown>;
   };
   /** CR-107 · đồng hồ (test tiêm đồng hồ giả); vắng ⇒ giờ máy. */
   now?: () => Date;
@@ -53,7 +49,6 @@ export const ORPHAN_SAMPLE = 100;
 
 /** Lô đồng bộ run engine mỗi tenant mỗi lượt (1 select + 1 outcomesOf + 1 UPDATE). */
 export const RECONCILE_BATCH = 100;
-export const HEAL_OPEN_MAX = 20;
 
 const PARALLEL = 4;
 export const STALE_MINUTES = 15;
@@ -121,17 +116,6 @@ export async function cancelOrphans(d: SweepDeps, t: string): Promise<number> {
   return n;
 }
 
-/** S3b · heal `extracting → level1` chưa có run ⇒ mở run (`startEngineApproval` tự kiểm điều kiện, không ném). */
-async function openHealed(d: SweepDeps, t: string, healed: SweepCounts["healedLevel1"]) {
-  // Giới hạn số HĐ mở run mỗi tenant mỗi lượt (phần dư: lượt quét sau không còn `extracting` ⇒ do owner mở lại / đường nhập tay).
-  for (const h of (healed ?? []).slice(0, HEAL_OPEN_MAX)) {
-    const prep = d.flow ? await d.flow.prepare(t, h.userId) : null;
-    // CR-122 · P11d · cờ bật: heal về `level1` = nháp chờ rà soát; `contract.submitted` chỉ phát khi người dùng "Xác nhận và lưu".
-    if (prep?.on) continue;
-    await d.engine?.start({ tenantId: t, userId: h.userId }, h.contractId);
-  }
-}
-
 async function sweepTenant(d: SweepDeps, t: string, o: Parameters<SweepRepo["sweep"]>[0]) {
   const base = await d.uow.system(t, (r) => r.sweep.sweep(o));
   // Lỗi engine không làm hỏng lượt quét STALE của tenant (lượt sau thử lại; ghi có điều kiện).
@@ -139,7 +123,6 @@ async function sweepTenant(d: SweepDeps, t: string, o: Parameters<SweepRepo["swe
     rejected: 0,
     stalled: 0,
   }));
-  await openHealed(d, t, base.healedLevel1).catch(() => undefined);
   const orphans = await cancelOrphans(d, t).catch(() => 0);
   return { ...base, ...rc, orphans };
 }

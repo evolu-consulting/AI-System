@@ -18,7 +18,7 @@ beforeEach(async () => {
   await resetHd4(sql);
   await addContract(sql, { tenant: T.acme });
   await addContract(sql, { tenant: T.beta });
-  await addContract(sql, { tenant: T.acme, status: "needs_review" }); // chưa duyệt ⇒ không có hàng lịch
+  await addContract(sql, { tenant: T.acme, status: "draft" }); // chưa xác nhận ⇒ không có hàng lịch
 });
 const job = <R>(fn: (tx: Sql) => Promise<R>) => asRole(JOB_ROLE, null, fn, { rollback: true });
 
@@ -46,10 +46,9 @@ describe("HD4-NFR-02 · role contracts_job (D-12)", () => {
     );
     expect(rows.map((r) => r.tenant_id).sort()).toEqual([T.acme, T.beta].sort());
   });
-  it("không đọc bảng HĐ (mọi cột) và cột contract_id của lịch ⇒ 42501", async () => {
+  it("không đọc cột nội dung HĐ (title, *) và cột contract_id của lịch ⇒ 42501 (CR-127 0092: chỉ còn id, tenant_id, status, run_id, version cho failedBatch)", async () => {
     for (const col of [
       "title from contracts.contracts",
-      "tenant_id from contracts.contracts",
       "* from contracts.contracts",
       "contract_id from contracts.contract_schedule",
       "* from contracts.contract_schedule",

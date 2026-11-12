@@ -12,20 +12,6 @@ import { INSERTS } from "./target.sql";
 
 const run = async <T>(tx: Tx, q: SQL): Promise<T[]> => (await tx.execute(q)) as unknown as T[];
 const scope = (tenantId: string) => ({ packKey: "contracts", tenantId, userId: null });
-const uuids = (xs: readonly string[]) =>
-  sql`array(select x::uuid from jsonb_array_elements_text(${JSON.stringify(xs)}::jsonb) as x)`;
-
-/** ≡ HD4 `REMIND_MILESTONES` (hub-api `deadline.rules.ts`; admin-api không import được mã hub-api — depcruise). */
-const MILESTONES = sql`array[60, 30, 7, 1, 0]::int[]`;
-
-/** Mốc nhắc đã tới (hạn − mốc ≤ hôm nay theo múi tenant) của HĐ vừa chèn ⇒ hàng `contract_reminders` kênh `mgmt_import`. */
-const SUPPRESS = (tid: string, ids: string[], today: string) => sql`
-  insert into contracts.contract_reminders (tenant_id, contract_id, deadline, milestone, user_id, channel, sent_at)
-  select ${tid}::uuid, c.id, c.action_deadline, m, c.owner_user_id, 'mgmt_import', now()
-  from contracts.contracts c cross join unnest(${MILESTONES}) as m
-  where c.tenant_id = ${tid}::uuid and c.id = any(${uuids(ids)}) and c.kind = 'contract'
-    and c.action_deadline is not null and c.owner_user_id is not null and c.action_deadline - m <= ${today}::date
-  on conflict do nothing returning 1`;
 
 /** HĐ của lô (nhãn nguồn trên sự kiện `mgmt_import`). */
 const BATCH = (tid: string, source: string) => sql`(select c.id from contracts.contracts c
@@ -67,21 +53,14 @@ type StateRow = Omit<BatchState, "contracts" | "obligations_amount" | "partner_e
 
 export function createOwnerStore(db: Db): OwnerStore {
   return {
-    async writeUnit(tid, tables, today) {
+    async writeUnit(tid, tables, _today) {
       return withPackScope(db, scope(tid), async (tx) => {
         const out: Partial<Record<TableName, number>> = {};
         for (const [table, rows] of tables) {
           if (rows.length === 0) continue;
           out[table] = (await run(tx, INSERTS[table](tid, JSON.stringify(rows)))).length;
         }
-        const ids = (tables.find(([t]) => t === "contracts.contracts")?.[1] ?? []).map((r) =>
-          String(r.id),
-        );
-        // chỉ HĐ chèn MỚI trong tx này (chạy lại không đánh dấu thêm mốc tới hạn sau lần nhập)
-        if ((out["contracts.contracts"] ?? 0) > 0)
-          out["contracts.contract_reminders"] =
-            (out["contracts.contract_reminders"] ?? 0) +
-            (await run(tx, SUPPRESS(tid, ids, today))).length;
+        // CR-127 K6: hết chuông cứng ⇒ không còn đánh dấu mốc nhắc đã tới (`contract_reminders` kênh `mgmt_import`).
         return out;
       });
     },

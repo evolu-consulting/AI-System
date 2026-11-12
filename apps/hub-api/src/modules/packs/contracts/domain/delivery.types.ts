@@ -71,6 +71,8 @@ export type DeleteImpact = {
   frame_children?: number;
   has_cks: boolean;
   stock_blocked: string | null;
+  /** CR-127 · Z8: nháp đã từng gửi duyệt. */
+  submitted_before?: boolean;
 };
 
 export type DeleteResult = {

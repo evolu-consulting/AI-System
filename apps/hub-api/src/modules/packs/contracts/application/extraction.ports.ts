@@ -8,7 +8,7 @@ import type {
   RawExtraction,
   VerifiedExtraction,
 } from "../domain/extraction.rules";
-import type { AiRead } from "../domain/extraction.types";
+import type { AiRead, PenaltyTermInput } from "../domain/extraction.types";
 import type { ContractFields } from "../domain/fields.rules";
 import type { ManualItem } from "../domain/manual.rules";
 import type { Deal } from "../domain/milestones.rules";
@@ -70,6 +70,8 @@ export type TaxRegistry = { lookup(taxId: string, o: { fast: boolean }): Promise
 
 export type ExtractionSource = {
   status: string;
+  /** CR-127 K1b · tiến độ AI đọc (`reading` | `failed` | `ready`) — HĐ đang đọc là `status = draft` + `extractState = reading`. */
+  extractState: string;
   kind: "contract" | "appendix";
   text: string | null;
   file: SourceFile | null;
@@ -88,6 +90,8 @@ export type ExtractionResult = {
   warnings: Warning[];
   /** V2-G: phần AI đọc (null ⇒ bản trích cũ: giữ nguyên `ai_read` hiện có). */
   ai: AiRead | null;
+  /** CR-127 K7 · BR-56: phạt dạng số (`null`/vắng ⇒ không đụng `penalty_terms`; có ⇒ thay các hàng `source='ai'`). */
+  penaltyTerms?: PenaltyTermInput[] | null;
 };
 export type RequestExtractOutcome =
   | { kind: "ok"; version: number }
@@ -101,13 +105,13 @@ export type NewManualContract = {
   deal: Deal;
   commissionPct: number | null;
   commissionFixed: number | null;
-  /** V2-A · HD-01: mốc mặc định — chỉ ghi khi tenant TẮT duyệt (`contracts.approval_on()` trong cùng câu ⇒ HĐ `active`). */
+  /** V2-A · HD-01: mốc mặc định — luôn ghi (HĐ nhập tay vào DONE ngay, `initialState("create_manual")` — CR-127 R#2). */
   milestones: MilestoneWrite[];
   fields: ContractFields;
   items: ManualItem[];
   warnings: Warning[];
   userId: string;
-  /** CR-101 DOC-deals: giao dịch (`doc_type = 'deal'` + nguồn) ⇒ luôn `active` + mốc mặc định (không qua duyệt, không khoá). */
+  /** CR-101 DOC-deals: giao dịch (`doc_type = 'deal'` + nguồn) ⇒ `initialState("deal")` = DONE ngay + mốc mặc định (không qua duyệt). */
   deal_doc?: { source: "invoice" | "verbal" | "message" | "quote" | "other" };
 };
 
@@ -115,22 +119,20 @@ export type NewManualContract = {
 export type ExtractionRepo = {
   /** Văn bản + tệp + tóm tắt HĐ gốc (phụ lục) của HĐ; không có / tenant khác ⇒ null. */
   source(id: string): Promise<ExtractionSource | null>;
-  /** Một CTE có điều kiện `version = expected` ∧ `extracting` (không khoá trước): UPDATE HĐ + INSERT dòng hàng (lô JSON) +
-   * event `extracted`. `false` ⇒ hàng đã đổi (sửa tay mới hơn / trạng thái khác) ⇒ người gọi đọc lại rồi gộp lại. */
+  /** Một CTE có điều kiện `version = expected` ∧ `draft`/`reading` (không khoá trước): UPDATE nội dung + INSERT dòng hàng (lô JSON) +
+   * event `extracted`, rồi CỔNG `extracted` (draft→draft, `extract_state = ready`). `false` ⇒ hàng đã đổi (sửa tay mới hơn / trạng thái khác) ⇒ người gọi đọc lại rồi gộp lại. */
   saveResult(id: string, r: ExtractionResult & { expected: number }): Promise<boolean>;
-  /** Tra MST lại (`needs_review`, `version = expected`): chỉ thay `warnings`, không tăng version. */
+  /** Tra MST lại (HĐ draft/processing, `version = expected`): chỉ thay `warnings`, không tăng version. */
   saveWarnings(id: string, warnings: Warning[], expected: number): Promise<boolean>;
   /** V2-L: tên pháp nhân + MST của chính công ty (`company_settings.own_names/own_tax_ids` — cấu hình riêng của gói, KHÔNG phải
    * tên công ty `admin.tenants.name`; CR-121 c20 giữ `own_names`) để đoán Mua/Bán; vắng ⇒ rỗng. */
   ownParties?(): Promise<OwnParties>;
-  /** Còn `extracting` ⇒ UPDATE `extract_failed` + `error` (mã) + event; trả có ghi hay không. */
+  /** Còn `reading` ⇒ CỔNG `extract_failed` (`extract_state = failed`) + `error` (mã) + event; trả có ghi hay không. */
   saveFailure(id: string, code: string): Promise<boolean>;
-  /** Trích lại: khoá + kiểm trạng thái/nguồn + đặt `extracting` + event, một câu. */
+  /** Trích lại: khoá + kiểm trạng thái (draft, không đang đọc)/nguồn + `extract_state = reading` + event, một câu. */
   requestExtract(id: string, actor: string): Promise<RequestExtractOutcome>;
   /** Nhập tay: một CTE (HĐ + dòng hàng + event `created_manual`). */
-  insertManual(
-    c: NewManualContract,
-  ): Promise<{ id: string; version: number; status: "needs_review" | "active" }>;
+  insertManual(c: NewManualContract): Promise<{ id: string; version: number; status: "done" }>;
 };
 export type ExtractionTxRepos = { extraction: ExtractionRepo } & KitTxRepos;
 export type ExtractionUow = PackUow<ExtractionTxRepos>;

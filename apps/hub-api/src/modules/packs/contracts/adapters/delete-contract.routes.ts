@@ -1,6 +1,6 @@
 // V2-M · HD-07 · C7: `GET /contracts/:id/delete-preview` (hộp xác nhận liệt kê tác động) và `DELETE /contracts/:id` (xoá hẳn, một tx).
-// CHỈ quyền `admin` (vai contracts-owner): guard TRƯỚC đọc tham số ⇒ editor/viewer 403; id sai dạng 400; HĐ không có / tenant khác /
-// không thấy ⇒ 404; còn phụ lục / gắn CKS / kho không đảo được ⇒ 409 (không xoá gì).
+// CR-127 Z8: guard `read` TRƯỚC đọc tham số (không có gói / không đọc được ⇒ 403); id sai dạng 400; HĐ không có / tenant khác / không thấy ⇒ 404;
+// rồi use case kiểm `canDeleteContract` trong cùng tx (nháp: quản trị / người tạo / phụ trách; khác nháp: quản trị gói) ⇒ 403 `PACK_FORBIDDEN`; còn phụ lục / gắn CKS / kho không đảo được ⇒ 409 (không xoá gì).
 import {
   DELETE_CONTRACT_ERRORS,
   DeleteContractRequestSchema,
@@ -15,6 +15,7 @@ import {
   DeleteContractFail,
   type DeleteContractUsecases,
 } from "../application/delete-contract.usecase";
+import type { DeleteRole } from "../domain/delete-contract.rules";
 
 const who = (c: Context<PackGuardVars>) => {
   const u = c.get("user");
@@ -28,6 +29,7 @@ const run = <T>(p: Promise<T>): Promise<T> =>
   p.catch((e) => {
     if (!(e instanceof DeleteContractFail)) throw e;
     if (e.kind === "not_found") throw appError("NOT_FOUND");
+    if (e.kind === "forbidden") throw new AppError("PACK_FORBIDDEN", 403, "Forbidden");
     if (e.kind === "has_versions")
       throw new AppError(
         "CONTRACT_HAS_VERSIONS",
@@ -43,17 +45,19 @@ const run = <T>(p: Promise<T>): Promise<T> =>
 export function deleteContractRoutes(
   view: PackAccessView,
   uc: DeleteContractUsecases,
+  roleOf: (w: { tenantId: string; userId: string }) => Promise<DeleteRole>,
 ): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
-  const admin = packGuard(view, "contracts", "admin");
+  const read = packGuard(view, "contracts", "read");
   const id = (c: Context<PackGuardVars>) => parseWith(z.uuid(), c.req.param("id"));
-  r.get("/contracts/:id/delete-preview", admin, async (c) =>
-    c.json(await run(uc.preview(who(c), id(c)))),
-  );
-  r.delete("/contracts/:id", admin, async (c) => {
+  r.get("/contracts/:id/delete-preview", read, async (c) => {
+    const cid = id(c);
+    return c.json(await run(uc.preview(who(c), cid, await roleOf(who(c)))));
+  });
+  r.delete("/contracts/:id", read, async (c) => {
     const cid = id(c);
     const b = parseWith(DeleteContractRequestSchema, await readJson(c));
-    return c.json(await run(uc.remove(who(c), cid, b.remove_products ?? [])));
+    return c.json(await run(uc.remove(who(c), cid, b.remove_products ?? [], await roleOf(who(c)))));
   });
   return r;
 }

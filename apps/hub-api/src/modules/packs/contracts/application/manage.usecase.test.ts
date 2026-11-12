@@ -77,6 +77,36 @@ describe("editCommission", () => {
       (await editCommission({ uow: g.uow })(who, "c1", { version: 3, commission_pct: 1 })).kind,
     ).toBe("not_allowed");
   });
+  it("CR-127 K4 · BR-39: HĐ processing / done ⇒ locked (không ghi); draft ⇒ ok", async () => {
+    for (const status of ["processing", "done"]) {
+      const f = fake({
+        lockCommission: async () => ({
+          version: 3,
+          updated_at: "x",
+          deal: "referral",
+          status,
+          commission_pct: 5,
+        }),
+      });
+      const out = await editCommission({ uow: f.uow })(who, "c1", {
+        version: 3,
+        commission_pct: 1,
+      });
+      expect([status, out.kind, f.calls]).toEqual([status, "locked", []]);
+    }
+    const d = fake({
+      lockCommission: async () => ({
+        version: 3,
+        updated_at: "x",
+        deal: "referral",
+        status: "draft",
+        commission_pct: 5,
+      }),
+    });
+    expect(
+      (await editCommission({ uow: d.uow })(who, "c1", { version: 3, commission_pct: 1 })).kind,
+    ).toBe("ok");
+  });
 });
 
 describe("summarize", () => {

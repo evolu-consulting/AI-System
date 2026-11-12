@@ -1,8 +1,9 @@
 // HD-FR-07 · HD-AC03 · HD-AC04 · HD-AC05 · HD-BR-03 · D-03 · D-18 · HD1 plan §6: danh sách hợp đồng của tenant token —
 // lọc/sắp/phân trang `page/page_size/total` trong MỘT câu SQL (tx RLS `PackUow`). `signer` ⇒ khoá người, `q` ⇒ mẫu LIKE đã fold.
 import type { PackUow, PackWho } from "../../kit/public";
-import type { StepState } from "../domain/approval-step-label.rules";
+import type { DeleteRole } from "../domain/delete-contract.rules";
 import { likePattern, personKey } from "../domain/fold.rules";
+import type { StepInfo } from "./list-waiting";
 import type {
   ContractListFilter,
   ContractListInput,
@@ -41,6 +42,8 @@ export function toListFilter(q: ContractListInput, today?: string): ContractList
   const signer = arr(q.signer);
   return {
     status: arr(q.status),
+    effect: arr(q.effect),
+    source: arr(q.source),
     owner: arr(q.owner),
     category: arr(q.category),
     seller: arr(q.seller),
@@ -55,7 +58,7 @@ export function toListFilter(q: ContractListInput, today?: string): ContractList
     docs: q.nest === "1" || arr(q.doc_type) !== null,
     valueMin: q.value_min ?? null,
     valueMax: q.value_max ?? null,
-    dateField: q.date_field ?? "end_date",
+    dateField: "end_date",
     dateFrom: win.from,
     dateTo: win.to,
     like: q.q ? `%${likePattern(q.q)}%` : null,
@@ -70,9 +73,9 @@ type StepLabels = (
   who: PackWho,
   runIds: readonly string[],
   fromRuns: ReadonlySet<string>,
-) => Promise<Map<string, StepState | null>>;
+) => Promise<Map<string, StepInfo>>;
 
-/** CR-123 · u10 · thêm MỘT khoá `step_label` (CR-125: MÃ bước + tên, không phải chữ) vào từng hàng (null ⇒ giữ nhãn trạng thái); không có cầu ⇒ giữ nguyên hàng. */
+/** CR-123 · u10 · thêm khoá `step_label` (CR-125: MÃ bước + tên, không phải chữ) vào từng hàng (null ⇒ giữ nhãn trạng thái); không có cầu ⇒ giữ nguyên hàng. */
 async function withStepLabels<Row>(
   stepLabels: StepLabels | undefined,
   who: PackWho,
@@ -86,13 +89,15 @@ async function withStepLabels<Row>(
           runs.map((x) => x.run),
           new Set(runs.filter((x) => x.from_run === true).map((x) => x.run)),
         )
-      : new Map<string, StepState | null>();
+      : new Map<string, StepInfo>();
   const runOf = new Map(runs.map((x) => [x.id, x.run]));
+  const info = (it: unknown) => labels.get(runOf.get((it as { id: string }).id) ?? "");
   return items.map((it) =>
     typeof it === "object" && it !== null
       ? {
           ...it,
-          step_label: labels.get(runOf.get((it as unknown as { id: string }).id) ?? "") ?? null,
+          step_label: info(it)?.label ?? null,
+          waiting: info(it)?.waiting ?? null,
         }
       : it,
   );
@@ -104,6 +109,8 @@ export function listContracts<Row>(d: {
   today?: (tenantId: string) => Promise<string>;
   /** CR-123 · u10 · nhãn bước hiện tại theo id run engine (MỘT lô cho cả trang, cùng nguồn thẻ duyệt); vắng ⇒ không có `step_label`. */
   stepLabels?: StepLabels;
+  /** CR-128 L1 · vai của người gọi (cache cấu hình, 0 SQL) ⇒ `can_delete` mỗi hàng; vắng ⇒ false. */
+  roleOf?: (who: PackWho) => Promise<DeleteRole>;
 }): ListContracts<Row> {
   return async (who, q) => {
     const want = q.include === "progress";
@@ -112,7 +119,8 @@ export function listContracts<Row>(d: {
         ? await (d.today?.(who.tenantId) ?? new Date().toISOString().slice(0, 10))
         : undefined;
     const f = toListFilter(q, today);
-    const p = await d.uow.tenant(who, (r) => r.contracts.list(f, want ? today : undefined));
+    const del = d.roleOf ? { actor: who.userId, role: await d.roleOf(who) } : undefined;
+    const p = await d.uow.tenant(who, (r) => r.contracts.list(f, want ? today : undefined, del));
     const items = await withStepLabels(d.stepLabels, who, p.items, p.step_runs);
     return {
       items,

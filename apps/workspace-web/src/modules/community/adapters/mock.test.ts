@@ -1,6 +1,6 @@
 // C5 · adapter mock tuân hien-thi.md: phạm vi thấy, che liên hệ, không lộ cờ Lưu báo giá cho đối tác.
 import { describe, expect, test } from "bun:test";
-import { CommentViewSchema, FeedResponseSchema, ThreadSchema } from "@ai/contracts/community";
+import { CommentPageSchema, CommentViewSchema, FeedResponseSchema } from "@ai/contracts/community";
 import { createMockApi } from "./mock";
 
 const as = (id: string) => {
@@ -57,16 +57,29 @@ describe("mock · hành động, luồng, lộ dấu hiệu", () => {
     expect(an?.actions).toContain("saveQuote");
     expect(an?.actions).toContain("hide");
   });
-  test("luồng riêng: ABC chỉ thấy luồng của mình trên bài chủ quản (HT-42)", async () => {
-    const api = as("abc");
-    const tabs = await api.listThreads("p1");
-    expect(tabs.map((t) => t.orgId)).toEqual(["abc"]);
-    const t = await api.getThread("p1", "hungthinh"); // cố đọc luồng người khác ⇒ vẫn là của mình
-    expect(t.orgId).toBe("abc");
-    expect(t.comments.every((c) => c.authorOrgId === "abc" || c.authorOrgId === "host")).toBe(true);
-    expect(JSON.stringify(t)).not.toContain("HSM");
-    const host = await as("an").listThreads("p1");
-    expect(host.map((x) => x.orgId).sort()).toEqual(["abc", "hungthinh"]);
+  test("bình luận phẳng: ABC không thấy bình luận công ty khác; chủ quản thấy hết (HT-42)", async () => {
+    const abc = await as("abc").listComments("p1");
+    expect(abc.comments.every((c) => c.authorOrgId === "abc" || c.authorOrgId === "host")).toBe(
+      true,
+    );
+    expect(JSON.stringify(abc)).not.toContain("HSM");
+    const host = await as("an").listComments("p1");
+    expect(host.comments.map((c) => c.authorOrgId)).toContain("hungthinh");
+  });
+  test("nhắc @: chủ quản có gợi ý, đối tác rỗng; ngoài tập ⇒ 422; đối tác chỉ thấy nhắc tới mình", async () => {
+    expect((await as("an").listMentionables("p1", "abc")).map((m) => m.orgId)).toEqual(["abc"]);
+    expect(await as("abc").listMentionables("p1")).toEqual([]);
+    const m = createMockApi();
+    m.setPersona("an");
+    const an = m.api;
+    await expect(an.addComment("p1", { text: "x", mentions: ["host"] })).rejects.toMatchObject({
+      code: "MENTION_NOT_ALLOWED",
+    });
+    const c = await an.addComment("p1", { text: "@Công ty TNHH ABC ok", mentions: ["abc"] });
+    expect(c.mentions.map((m) => m.orgId)).toEqual(["abc"]);
+    m.setPersona("abc");
+    const seen = (await m.api.listComments("p1")).comments.find((x) => x.id === c.id);
+    expect(seen?.mentions).toEqual([{ orgId: "abc", name: "Công ty TNHH ABC" }]);
   });
   test("vòng đời bài: tạo → sửa (đã sửa) → lưu trữ → bỏ lưu trữ → xoá", async () => {
     const api = as("tp");
@@ -109,8 +122,6 @@ describe("mock · hành động, luồng, lộ dấu hiệu", () => {
       media: [],
       fields: { product: "A", qty: "1", area: "HCM", neededBy: "2026-12-01", budget: "" },
     });
-    m.setPersona("an");
-    expect((await m.api.listNotifications()).items[0]?.kind).toBe("newBuy");
   });
 });
 
@@ -122,8 +133,8 @@ describe("mock · khớp contract zod (strict)", () => {
       expect(() => FeedResponseSchema.parse(feed)).not.toThrow();
       const archived = await api.listFeed({ tab: "archived" });
       expect(() => FeedResponseSchema.parse(archived)).not.toThrow();
-      const t = ThreadSchema.parse(await api.getThread("p1", "abc"));
-      for (const c of t.comments) expect(() => CommentViewSchema.parse(c)).not.toThrow();
+      const page = CommentPageSchema.parse(await api.listComments("p1"));
+      for (const c of page.comments) expect(() => CommentViewSchema.parse(c)).not.toThrow();
     }
   });
 });

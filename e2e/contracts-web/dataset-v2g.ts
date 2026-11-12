@@ -1,6 +1,6 @@
 // V2-G · HD-02/HD-08 · BA §4.2: dữ liệu giả cho màn xác nhận sau AI đọc (HĐ `needs_review` có `ai`) và tóm tắt AI ở chi tiết.
 // Đồng hồ cố định 2026-10-18 (giờ VN), như `dataset-v2f.ts`.
-import { contractAsHub } from "./dataset-contract";
+import { contractAsHub, normOver } from "./dataset-contract";
 import { comp, prod } from "./dataset-v2f";
 
 export const REVIEW_ID = "c1000000-0000-4000-8000-0000000000c1";
@@ -77,7 +77,7 @@ export function reviewContract(o: Over = {}) {
       summary: AI_SUMMARY,
       milestones: AI_MILESTONES,
     },
-    ...o,
+    ...normOver(o),
   };
 }
 

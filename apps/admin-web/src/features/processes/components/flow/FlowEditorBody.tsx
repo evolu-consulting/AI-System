@@ -70,7 +70,10 @@ export function FlowEditorBody({
     const next = eventOf(meta.app, key);
     if (!next) return;
     const r = retargetEvent(trigger, stages, next);
-    onChange(r.trigger, r.stages);
+    // CR-127 · M16 · sự kiện theo lịch có N mặc định; sự kiện thường không mang N
+    const { params: _p, ...bare } = r.trigger;
+    const sch = next.schedule?.param;
+    onChange(sch ? { ...bare, params: { days: sch.default } } : bare, r.stages);
   };
   const groups = useMemo(
     () => groupProblems(problems, (uid) => stages.find((s) => s.uid === uid)?.name ?? ""),
@@ -146,6 +149,7 @@ export function FlowEditorBody({
             trigger={trigger}
             readOnly={readOnly}
             onEvent={onEvent}
+            onDays={(n) => onChange({ ...trigger, params: n === null ? {} : { days: n } })}
             onWhen={(when) => {
               const { when: _w, ...rest } = trigger;
               onChange(when ? { ...rest, when } : rest);

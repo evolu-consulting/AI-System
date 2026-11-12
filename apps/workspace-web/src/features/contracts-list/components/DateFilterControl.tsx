@@ -1,7 +1,7 @@
 // Gap #10 · lọc ngày trong thanh công cụ: cột (hiệu lực đến | hạn chót) + cửa sổ (quá hạn, 30/60/90 ngày, khoảng tuỳ chọn). Trạng thái do
 // trang giữ trên URL; component chỉ hiển thị và gọi `onChange`.
 
-import { CONTRACT_DUE_PRESETS } from "@ai/contracts/light";
+import { CONTRACT_DATE_FIELDS, CONTRACT_DUE_PRESETS } from "@ai/contracts/light";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,7 +15,7 @@ import {
 
 type Mode = "" | DuePreset | "range";
 const modeOf = (f: DateFilter): Mode => f.due ?? (f.from || f.to ? "range" : "");
-const FIELDS: DateField[] = ["end_date", "action_deadline"];
+const FIELDS: readonly DateField[] = CONTRACT_DATE_FIELDS;
 
 const SELECT =
   "h-9 rounded-full border border-field bg-panel px-3 text-[13.5px] text-ink focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none";
@@ -40,18 +40,20 @@ export function DateFilterControl({
   return (
     <fieldset className="m-0 flex min-w-0 flex-wrap items-center gap-2 border-0 p-0">
       <legend className="sr-only">{t("contracts.list.date.label")}</legend>
-      <select
-        aria-label={t("contracts.list.date.field")}
-        className={SELECT}
-        value={value.field ?? DEFAULT_DATE_FIELD}
-        onChange={(e) => onChange({ type: "field", field: e.target.value as DateField })}
-      >
-        {FIELDS.map((k) => (
-          <option key={k} value={k}>
-            {t(`contracts.list.date.fields.${k}`)}
-          </option>
-        ))}
-      </select>
+      {FIELDS.length > 1 && (
+        <select
+          aria-label={t("contracts.list.date.field")}
+          className={SELECT}
+          value={value.field ?? DEFAULT_DATE_FIELD}
+          onChange={(e) => onChange({ type: "field", field: e.target.value as DateField })}
+        >
+          {FIELDS.map((k) => (
+            <option key={k} value={k}>
+              {t(`contracts.list.date.fields.${k}`)}
+            </option>
+          ))}
+        </select>
+      )}
       <select
         aria-label={t("contracts.list.date.window")}
         className={SELECT}

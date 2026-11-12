@@ -3,8 +3,10 @@
 // chỉ bản hiện hành + `versions_count` · X5 xoá trong chuỗi · RLS: không thấy v1 ⇒ không thấy/không tạo v2 · chéo tenant 404.
 // Viết TRƯỚC code (làn đầy đủ: tiền/kho, RLS). Hạ tầng HD1 (hub-api THẬT, FileBox giả, không AI: bước "AI đọc xong" giả bằng SQL).
 // acme: lan = owner gói (người tải, phụ trách v1) · hoa = editor; beta: an = owner.
+
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { CBASE, type Json, pdf } from "../HD1/_support/hd1";
+import { withFlowEngine } from "../_support/flow-engine";
+import { CBASE, type Json, pdf, setLegacyStatus } from "../HD1/_support/hd1";
 import { arrangeHd7, type CtxN1, d, deal, P, startHd1, T } from "../HD7/_support/hd7";
 
 /** Fixture HD7 `deal` mở khoá HĐ đã xác nhận (lock-strict); K2 cần HĐ ĐÃ khoá (CONTRACT_NOT_LOCKED nếu không) ⇒ khoá lại như lúc xác nhận. */
@@ -23,7 +25,6 @@ beforeAll(async () => {
 afterAll(async () => {
   if (c) {
     await c.sql`delete from contracts.visibility_settings where tenant_id = ${T.acme}`;
-    await c.sql`delete from contracts.approval_settings where tenant_id = ${T.acme}`;
   }
   await c?.stop();
 });
@@ -46,7 +47,7 @@ const code = (r: { json: Json }) => r.json?.error?.code ?? null;
 
 /** Giả "AI đọc xong": v2 sang Chờ duyệt với ngày bắt đầu trên văn bản v2. */
 async function extracted(id: string, start: string): Promise<void> {
-  await c.sql`update contracts.contracts set status = 'needs_review', version = version + 1,
+  await c.sql`update contracts.contracts set extract_state = 'ready', version = version + 1,
     fields = jsonb_build_object('start_date', jsonb_build_object('value', ${start}::text, 'quote', ''),
       'number', jsonb_build_object('value', 'HĐ-V2', 'quote', ''),
       'total_value', jsonb_build_object('value', 120000000, 'quote', ''))
@@ -73,8 +74,7 @@ async function stockMove(contract: string, milestone: string): Promise<void> {
 }
 
 async function approvalOff(): Promise<void> {
-  await c.sql`insert into contracts.approval_settings (tenant_id, approval_enabled) values (${T.acme}, false)
-    on conflict (tenant_id) do update set approval_enabled = false`;
+  // CR-127 Z1b: cờ duyệt đã gỡ ⇒ không còn bước chuẩn bị (giữ hàm để test cũ gọi).
 }
 
 describe("HD-FR-101…103 · đường chính: tải v2 → xác nhận → v1 bị thay + cutover + danh sách", () => {
@@ -99,7 +99,7 @@ describe("HD-FR-101…103 · đường chính: tải v2 → xác nhận → v1 b
       root: up.json?.root_id,
     }).toEqual({
       status: 201,
-      s: "extracting",
+      s: "draft",
       no: 2,
       root: v1,
     });
@@ -124,8 +124,12 @@ describe("HD-FR-101…103 · đường chính: tải v2 → xác nhận → v1 b
 
     await extracted(v2, d(0));
     const dv2 = (await c.hubCall(P.lan, "GET", `${CBASE}/${v2}`)).json;
-    const conf = await c.hubCall(P.lan, "POST", `${CBASE}/${v2}/review`, { version: dv2.version });
-    expect({ status: conf.status, s: conf.json?.status }).toEqual({ status: 200, s: "active" });
+    // CR-127 NF1: có quy trình khớp (bộ tìm giả) ⇒ Xác nhận & lưu = Gửi ⇒ processing.
+    const conf = await withFlowEngine(() =>
+      c.hubCall(P.lan, "POST", `${CBASE}/${v2}/review`, { version: dv2.version }),
+    );
+    expect({ status: conf.status, s: conf.json?.status }).toEqual({ status: 200, s: "processing" });
+    await setLegacyStatus(c.sql, v2, "done"); // quy trình duyệt xong ⇒ done ⇒ v1 bị thay (K2 cutover)
 
     const [s1] = await c.sql<{ by: string; at: boolean; fields: Json; status: string }[]>`select
       superseded_by::text as by, superseded_at is not null as at, fields, status from contracts.contracts where id = ${v1}`;
@@ -138,17 +142,17 @@ describe("HD-FR-101…103 · đường chính: tải v2 → xác nhận → v1 b
       at: true,
       sameFields: true,
     });
+    // CR-127 K5 (BR-36b): bỏ cutover `replaced` — mốc MỞ chuyển sang phiên bản mới giữ nguyên id (kể cả mốc đã có phát sinh kho);
+    // mốc đã xong ở lại bản cũ. Không còn mốc nào bị huỷ "thay bằng phiên bản 2".
     const obs = await c.sql<
-      { id: string; status: string; reason: string | null }[]
-    >`select id::text, status,
-      cancel_reason as reason from contracts.obligations where contract_id = ${v1}`;
-    const by = Object.fromEntries(obs.map((o) => [o.id, { s: o.status, r: o.reason }]));
-    expect(by).toEqual({
-      [oPast]: { s: "open", r: null },
-      [oDone]: { s: "done", r: null },
-      [oFuture]: { s: "cancelled", r: "thay bằng phiên bản 2" },
-      [oStock]: { s: "open", r: null },
-    });
+      { id: string; contract_id: string; status: string; reason: string | null }[]
+    >`select id::text, contract_id::text, status, cancel_reason as reason
+      from contracts.obligations where id = any(${[oPast, oDone, oFuture, oStock]}::uuid[])`;
+    const by = Object.fromEntries(obs.map((o) => [o.id, [o.contract_id, o.status, o.reason]]));
+    // CR-127: việc CHUYỂN mốc mở sang v2 do cổng ứng dụng (K5) làm trước khi đổi trạng thái; fixture chuyển done bằng SQL chỉ chạy trigger
+    // (đánh dấu v1 bị thay + sự kiện) ⇒ ở đây chỉ kiểm: không mốc nào bị HUỶ (BR-36b), mốc đã xong ở lại v1.
+    expect(by[oDone]).toEqual([v1, "done", null]);
+    expect(Object.values(by).filter((o) => o[1] === "cancelled")).toEqual([]);
     const [ev] = await c.sql<{ data: Json }[]>`select data from contracts.contract_events
       where contract_id = ${v2} and type = 'version_cutover'`;
     expect({
@@ -156,8 +160,8 @@ describe("HD-FR-101…103 · đường chính: tải v2 → xác nhận → v1 b
       kept: ev?.data?.kept_stock,
       sup: ev?.data?.superseded,
     }).toEqual({
-      cancelled: [oFuture],
-      kept: [oStock],
+      cancelled: [],
+      kept: [],
       sup: [v1],
     });
 

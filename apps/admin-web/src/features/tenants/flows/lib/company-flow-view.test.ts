@@ -4,10 +4,8 @@ import {
   actionsOf,
   errorKey,
   groupByApp,
-  isReplacedOriginal,
   menuOf,
   reorderIds,
-  splitRows,
   statusKey,
 } from "./company-flow-view";
 
@@ -29,6 +27,8 @@ const row = (id: string, app: string, position: number, o: Partial<CompanyFlowRo
     rel_version: 1,
     library_newer: null,
     warnings: [],
+    def_version: 1,
+    deletable: false,
     ...o,
   }) as CompanyFlowRow;
 
@@ -49,51 +49,21 @@ describe("company-flow-view", () => {
     );
   });
   test("hành động theo loại dòng", () => {
-    expect(actionsOf(row("a", "x", 0, { kind: "assigned" })).clone).toBe(true);
     // CR-123 FR-10: bản công ty không có Xuất bản/Bật riêng — chỉ Tắt khi đang bật; chưa áp dụng ⇒ phải mở trình sửa
-    const own = (o: object) => actionsOf(row("a", "x", 0, { kind: "company", ...o }));
+    const own = (o: object) => actionsOf(row("a", "x", 0, o));
     expect(own({}).toggle).toBe(true);
     expect(own({ enabled: false, off_reason: "not_published" }).toggle).toBe(false);
     expect("publish" in own({})).toBe(false);
-    expect(actionsOf(row("a", "x", 0, { kind: "assigned", enabled: false })).toggle).toBe(true);
     expect(errorKey("FLOW_GROUP_MISSING")).toBe("groupMissing");
-    const src = { flow_key: "k1", version: 1, name: "Gốc" };
-    expect(actionsOf(row("a", "x", 0, { source: src })).revert).toBe(true);
-    expect(actionsOf(row("a", "x", 0, { source: src, enabled: false })).revert).toBe(false);
-  });
-  test("CR-125 · x7 · một dòng cho mỗi quy trình đang dùng: bản gốc đã bị thay vào mục Mẫu thư viện", () => {
-    const src = { flow_key: "k1", version: 1, name: "Gốc" };
-    const orig = row("o", "x", 0, { kind: "assigned", enabled: false, off_reason: "replaced" });
-    const copy = row("c", "x", 1, { kind: "company", source: src });
-    const other = row("a", "y", 0, { kind: "assigned" });
-    const { main, templates } = splitRows([orig, copy, other]);
-    expect(main.map((r) => r.id)).toEqual(["c", "a"]);
-    expect(templates.map((r) => r.id)).toEqual(["o"]);
-    // bản gốc Tắt vì lý do khác (tắt tay / quay về) vẫn là dòng chính — còn việc để làm
-    expect(
-      isReplacedOriginal(
-        row("t", "x", 0, { kind: "assigned", enabled: false, off_reason: "turned_off" }),
-      ),
-    ).toBe(false);
   });
 });
 
 describe("company-flow-view", () => {
-  test("menu …: Quay về bản gốc + Tắt cho bản công ty đang dùng, Bật cho flow được gán đang tắt, bản công ty chưa áp dụng không có gì", () => {
-    const src = { flow_key: "k1", version: 1, name: "Gốc" };
-    expect(menuOf(row("c", "x", 0, { kind: "company", source: src }))).toEqual({
-      revert: true,
-      toggle: "off",
+  test("menu …: Tắt cho quy trình đang dùng, quy trình chưa áp dụng không có gì", () => {
+    expect(menuOf(row("c", "x", 0))).toEqual({ toggle: "off" });
+    expect(menuOf(row("n", "x", 0, { enabled: false, off_reason: "not_published" }))).toEqual({
+      toggle: null,
     });
-    expect(
-      menuOf(row("a", "x", 0, { kind: "assigned", enabled: false, off_reason: "turned_off" })),
-    ).toEqual({
-      revert: false,
-      toggle: "on",
-    });
-    expect(
-      menuOf(row("n", "x", 0, { kind: "company", enabled: false, off_reason: "not_published" })),
-    ).toEqual({ revert: false, toggle: null });
   });
   test("kéo đổi thứ tự chỉ trong cùng app, giữ nguyên app khác", () => {
     const rows = [row("a", "x", 0), row("b", "x", 1), row("c", "x", 2), row("d", "y", 0)];
@@ -104,7 +74,6 @@ describe("company-flow-view", () => {
   });
   test("lỗi 409 ra câu nghiệp vụ", () => {
     expect(errorKey("FLOW_REQUIRED_LAST")).toBe("requiredLast");
-    expect(errorKey("FLOW_PAIR_ACTIVE")).toBe("pairActive");
     expect(errorKey("FLOW_NOT_PUBLISHED")).toBe("notPublished");
     expect(errorKey("X")).toBe("generic");
   });

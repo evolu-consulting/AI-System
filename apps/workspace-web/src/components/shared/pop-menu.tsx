@@ -8,6 +8,14 @@ export type PopItem = {
   disabled?: boolean;
   /** Thuộc tính `data-approval` để harness ẩn/nhận (giữ như nút cũ). */
   dataAttr?: string;
+  /** CR-128 (e): `data-testid` của mục. */
+  testId?: string;
+  /** Mục nguy hiểm (Xoá): chữ đỏ, có vạch ngăn phía trên. */
+  danger?: boolean;
+  /** Vạch ngăn phía trên mục. */
+  divider?: boolean;
+  /** Lý do khi mục bị khoá (dòng phụ + tooltip). */
+  why?: string;
 };
 
 export function PopMenu({
@@ -17,6 +25,7 @@ export function PopMenu({
   items,
   disabled,
   busy,
+  triggerTestId,
 }: {
   trigger: ReactNode;
   ariaLabel: string;
@@ -24,6 +33,7 @@ export function PopMenu({
   items: PopItem[];
   disabled?: boolean;
   busy?: boolean;
+  triggerTestId?: string;
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -49,6 +59,7 @@ export function PopMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-busy={busy}
+        data-testid={triggerTestId}
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
       >
@@ -57,23 +68,30 @@ export function PopMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-30 mt-1 min-w-[160px] rounded-lg border border-rule bg-panel py-1 text-sm shadow-lg"
+          className="absolute right-0 z-30 mt-1 min-w-[200px] rounded-lg border border-rule bg-panel py-1 text-sm shadow-lg"
         >
           {items.map((i) => (
-            <button
-              key={i.key}
-              type="button"
-              role="menuitem"
-              data-approval={i.dataAttr}
-              disabled={i.disabled}
-              className="block w-full px-3 py-2 text-left hover:bg-sunk disabled:text-dim"
-              onClick={() => {
-                setOpen(false);
-                i.onSelect();
-              }}
-            >
-              {i.label}
-            </button>
+            <div key={i.key} role="none">
+              {(i.divider || i.danger) && <hr className="my-1 border-rule" />}
+              <button
+                type="button"
+                role="menuitem"
+                data-approval={i.dataAttr}
+                data-testid={i.testId}
+                disabled={i.disabled}
+                title={i.why}
+                className={`block w-full px-3 py-2 text-left hover:bg-sunk disabled:text-dim ${
+                  i.danger ? "text-late" : ""
+                }`}
+                onClick={() => {
+                  setOpen(false);
+                  i.onSelect();
+                }}
+              >
+                {i.label}
+                {i.why && <span className="block text-caption text-dim">{i.why}</span>}
+              </button>
+            </div>
           ))}
         </div>
       )}

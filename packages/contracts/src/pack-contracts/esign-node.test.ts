@@ -27,6 +27,7 @@ describe("E5 · EsignNodeConfig", () => {
       partner_signs: true,
       order: "parallel" as const,
       due_days: 5,
+      due_hours: 12,
       remind_every_hours: 24,
     };
     const args = encodeEsignNodeArgs(c);
@@ -80,5 +81,16 @@ describe("E5 · EsignNodeConfig", () => {
   it("hạn ký ⇒ giờ chờ của stage chờ ký", () => {
     expect(esignWaitTimeoutH({ due_days: 7 })).toBe(168);
     expect(esignWaitTimeoutH({})).toBeNull();
+  });
+
+  it("due_hours: hạn 4 giờ ⇒ lượt chờ hết hạn sau 4 giờ; thắng due_days; args round-trip; ngoài trần ⇒ lỗi", () => {
+    expect(esignWaitTimeoutH({ due_hours: 4 })).toBe(4);
+    expect(esignWaitTimeoutH({ due_hours: 4, due_days: 7 })).toBe(4);
+    expect(decodeEsignNodeArgs({ due_hours: "4" })).toEqual({
+      ok: true,
+      config: { due_hours: 4 },
+    });
+    expect(encodeEsignNodeArgs({ due_hours: 4 })).toEqual({ due_hours: 4 });
+    expect(decodeEsignNodeArgs({ due_hours: "99999" }).ok).toBe(false);
   });
 });

@@ -77,7 +77,7 @@ async function install(page: Page, state: ContractApproval, role: Role = "editor
       return json(r, 200, { ...state, step: "done", can_act: false, task_id: null });
     }
     if (path.endsWith("/approval")) return json(r, 200, state);
-    return json(r, 200, contractAsHub());
+    return json(r, 200, contractAsHub("processing"));
   });
   // CR-120: hành động đi FlowRuntime.act (task đang mở của thẻ); dòng thời gian đọc FlowView của hub.
   await mockApprovalFlow(page, {
@@ -209,55 +209,7 @@ test("bước chỉ trưởng phòng, người xem không phải trưởng phòn
   await expect(page.locator("[data-approval=reject]")).toHaveCount(0);
 });
 
-// fix-review: run engine lỗi KHÔNG trả về máy cũ; lượt giữ engine + `needs_reopen`, nhãn lỗi + nút "Mở lại quy trình" cho owner.
-const STALLED = () =>
-  card([step(0, "Soạn & kiểm tra", "passed"), step(1, "Kế toán", "open")], {
-    run_status: "failed",
-    can_act: false,
-    task_id: null,
-    feedback: "ENGINE_RUN_FAILED",
-    needs_reopen: true,
-  } as Partial<ContractApproval>);
-
-test("run engine ENGINE_RUN_FAILED: nói rõ lý do, owner có nút Mở lại quy trình", async ({
-  page,
-}) => {
-  await install(page, STALLED(), "owner");
-  await page.goto(`/contracts/c/${contract.id}`);
-  await expect(page.locator("[data-approval=note]")).toContainText("gặp lỗi");
-  await expect(page.locator("[data-approval=reopen]")).toHaveText("Mở lại quy trình");
-});
-
-test("run engine ENGINE_RUN_FAILED: người không phải owner chỉ thấy lý do, không có nút Mở lại", async ({
-  page,
-}) => {
-  await install(page, STALLED(), "editor");
-  await page.goto(`/contracts/c/${contract.id}`);
-  await expect(page.locator("[data-approval=note]")).toContainText("gặp lỗi");
-  await expect(page.locator("[data-approval=reopen]")).toHaveCount(0);
-});
-
-// CR-107 · eng-card-ui: run chờ quyết ⇒ banner lý do + Thử lại / Huỷ & mở lại cho owner; người khác chỉ thấy câu báo chủ HĐ.
-const NEEDS_DECISION = () =>
-  card([step(0, "Soạn & kiểm tra", "passed"), step(1, "Kế toán", "failed")], {
-    can_act: false,
-    task_id: null,
-    attention: { kind: "needs_decision", reason: "tool_failed", since: "2026-11-01T08:00:00.000Z" },
-  });
-
-test("CR-107 needs_decision: banner và nút theo quyền", async ({ page }) => {
-  await install(page, NEEDS_DECISION(), "owner");
-  await page.goto(`/contracts/c/${contract.id}`);
-  const banner = page.locator("[data-approval=attention]");
-  await expect(banner).toContainText("Quy trình đang dừng");
-  await expect(page.locator("[data-approval=retry]")).toHaveText("Thử lại");
-  await expect(page.locator("[data-approval=cancel-reopen]")).toHaveText("Huỷ và mở lại quy trình");
-  await page.unroute("**/pack/contracts/contracts/**");
-  await install(page, NEEDS_DECISION(), "editor");
-  await page.reload();
-  await expect(page.locator("[data-approval=tell-owner]")).toBeVisible();
-  await expect(page.locator("[data-approval=retry]")).toHaveCount(0);
-});
+// CR-127 Q11: ca «Mở lại quy trình»/«Thử lại» (ENGINE_RUN_FAILED, needs_decision) đã xoá — retry/reopen đã gỡ.
 
 // CR-105: form chỉnh luồng đã bỏ khỏi contracts-web; thẻ duyệt chỉ có lối vào ai-admin cho platform_admin.
 for (const [role, shown] of [

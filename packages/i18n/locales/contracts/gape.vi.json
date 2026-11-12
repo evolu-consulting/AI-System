@@ -2,6 +2,10 @@
   "contracts": {
     "gape": {
       "status": {
+        "draft": "Nháp",
+        "processing": "Đang duyệt",
+        "reject": "Bị từ chối",
+        "done": "Đã xác nhận",
         "needs_review": "Chờ xác nhận",
         "extracting": "Đang đọc",
         "extract_failed": "Đọc lỗi",

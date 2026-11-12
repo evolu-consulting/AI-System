@@ -2,6 +2,7 @@
 // rủi ro nguồn sắp hết hạn, phụ lục thay giá, luật thấy M1, quyền gói (viewer không đổi nguồn), cách ly tenant, đầu vào xấu không 5xx,
 // số câu SQL cố định. Port `mgmt-app/api/tests/test_sourcing.py`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { setLegacyStatus } from "../HD1/_support/hd1";
 import {
   arrangeW1,
   type CtxN1,
@@ -139,7 +140,7 @@ describe("W1 · báo cáo nguồn hàng", () => {
     let r = await get();
     expect(r.json.lines[0]).toMatchObject({ name: A4, risk: "source_expiring" });
     expect(r.json.suppliers[0]).toMatchObject({ lines: 1, at_risk: 1 });
-    await c.sql`update contracts.contracts set status = 'expired' where id = ${w.m2}`;
+    await setLegacyStatus(c.sql, w.m2, "expired");
     r = await get();
     expect(row(r, A4)).toMatchObject({
       risk: "source_ended",
@@ -500,7 +501,7 @@ describe("W1 · bộ nhớ đệm dòng giá theo tenant (dấu vân tay) + lu�
     await c.sql`update contracts.contract_items set unit_price = 40000 where contract_id = ${w.m1} and ord = 0`;
     await c.sql`update contracts.contracts set version = version + 1, updated_at = now() where id = ${w.m1}`;
     expect(row(await get(), A4)).toMatchObject({ margin: 40_000, source: { price: 40_000 } });
-    await c.sql`update contracts.contracts set status = 'expired' where id = ${w.m1}`; // đổi trạng thái không đổi version
+    await setLegacyStatus(c.sql, w.m1, "expired"); // đổi trạng thái không đổi version
     expect(row(await get(), A4)).toMatchObject({ source: { contract_id: w.m2 } });
   });
   it("hai người xem chung một bộ nhớ đệm nhưng thấy khác nhau (chế độ org, xen kẽ); tenant khác không lẫn", async () => {

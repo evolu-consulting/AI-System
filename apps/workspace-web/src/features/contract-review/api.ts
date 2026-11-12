@@ -12,6 +12,7 @@ import type {
   PatchFieldsResponse,
   ReviewSaveRequest,
   ReviewSaveResponse,
+  SubmitPreviewResponse,
   SummaryResponse,
 } from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
@@ -139,4 +140,14 @@ export async function openOriginalFile(id: string): Promise<void> {
     tab?.close();
     throw e;
   }
+}
+
+/** M4 · các bước SẼ đi qua nếu Gửi ngay (theo dữ kiện đã lưu); HĐ không còn là nháp ⇒ 409 CONTRACT_NOT_DRAFT. */
+export const submitPreviewKey = (id: string, version: number) =>
+  ["contract", id, "submit-preview", version] as const;
+export function fetchSubmitPreview(
+  id: string,
+  signal?: AbortSignal,
+): Promise<SubmitPreviewResponse> {
+  return api<SubmitPreviewResponse>(`${BASE}/${encodeURIComponent(id)}/submit-preview`, { signal });
 }

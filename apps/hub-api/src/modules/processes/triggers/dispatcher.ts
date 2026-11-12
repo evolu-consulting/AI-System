@@ -14,7 +14,7 @@ import {
   type EventFinish,
   finishEvents,
 } from "./dispatcher.repo";
-import { flowTriggerTenants } from "./flags";
+import { appFlowOn, flowTriggerTenants } from "./flags";
 import { type EventPlan, FLOW_EVENT_ATTEMPTS_MAX, planEvent, retryDelayMs } from "./match.rules";
 import {
   NL_START_FAILED,
@@ -162,7 +162,7 @@ export async function dispatchOnce(d: DispatcherDeps): Promise<DispatchStats> {
   const nls: NotLaunched[] = [];
   let launched = 0;
   for (const e of evs) {
-    const r = await handle(d, e, cands, on.has(e.tenant_id), now);
+    const r = await handle(d, e, cands, appFlowOn(appOf(e.event), on.has(e.tenant_id)), now);
     done.push(r.f);
     launched += r.launched;
     if (r.nl) nls.push({ tenantId: e.tenant_id, event: e.event, ref: e.ref, reason: r.nl });

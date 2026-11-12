@@ -3,37 +3,20 @@
 // Bản nháp giữ khi đóng hộp thoại; tên/màu/giao diện nháp áp ngay lên sidebar, menu, nút (kho `brandStore`), đóng chưa lưu ⇒ trở về đã lưu.
 
 import { toast } from "@ai/web-kit/ui/toast";
-import { Building2, GitBranch, type LucideIcon, Search, Star, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  SettingsDialogFrame,
-  SettingsLayout,
-  type SettingsNavGroup,
-  SettingsSection,
-} from "~/shared/ui/settings-layout";
+import { SettingsDialogFrame, SettingsLayout } from "~/shared/ui/settings-layout";
+import { useShellPacks } from "~/shell/use-shell-packs";
 import { brandOf, useSaveSettings, useSettingsState } from "../hooks/use-settings";
 import { brandStore } from "../lib/brand";
 import { settingsBus, useSettingsOpen } from "../lib/bus";
 import { anyChanged, changedParts, firstIssue, same } from "../lib/data";
-import type { SectionId, SettingsData } from "../lib/types";
-import { BizPane } from "./BizPane";
-import { CompanyPane } from "./CompanyPane";
+import { pickNav } from "../lib/section-key";
+import type { SectionId, SettingsData, SettingsNavId } from "../lib/types";
 import { Dot } from "./controls";
-import { SectionPanes } from "./SectionPanes";
+import { SettingsBody } from "./SettingsBody";
 import { SettingsActions } from "./SettingsHeader";
-
-/** Mục dùng bản nháp chung + nút Lưu chung (công ty, điểm kinh doanh); còn lại lưu riêng. */
-const isDraftSection = (s: SectionId) => s === "co" || s === "biz";
-const SECTIONS: readonly SectionId[] = ["co", "rep", "biz", "scout", "flow"];
-
-const SECTION_ICON: Record<SectionId, LucideIcon> = {
-  co: Building2,
-  rep: Star,
-  biz: TrendingUp,
-  scout: Search,
-  flow: GitBranch,
-};
+import { buildNavGroups } from "./SettingsNav";
 
 /** CR-108 · mục chỉ xem và không có nháp chưa lưu ⇒ ẩn thanh Lưu (ký số trong mục này tự lưu khi bấm). */
 const noSaveFor = (s: SectionId, dirty: boolean) => s === "flow" && !dirty;
@@ -44,38 +27,19 @@ function sectionChanged(k: SectionId, vsDef: ReturnType<typeof changedParts> | n
   return k === "co" ? vsDef.company : vsDef.biz;
 }
 
-function LoadState({
-  loading,
-  error,
-  retry,
-}: {
-  loading: boolean;
-  error: unknown;
-  retry: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <>
-      {loading && <p className="text-dim">{t("contracts.common.loading")}</p>}
-      {error && (
-        <p role="alert" className="text-late">
-          {t("contracts.settings.loadFail")}{" "}
-          <button type="button" className="underline" onClick={retry}>
-            {t("contracts.common.retry")}
-          </button>
-        </p>
-      )}
-    </>
-  );
-}
-
 export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantName: string }) {
   const { t } = useTranslation();
   const saveSettings = useSaveSettings();
   const open = useSettingsOpen();
-  const { state, loading, error, retry } = useSettingsState(open);
+  // CR-130 · MỘT trang Cài đặt: nhóm Sổ Hợp Tác (gói contracts) + nhóm Bảng tin (gói Cộng đồng); người chỉ có Cộng đồng chỉ thấy Bảng tin.
+  const packs = useShellPacks();
+  const hasContracts = packs.contracts === true;
+  const hasFeed = packs.community === true;
+  const { state, loading, error, retry } = useSettingsState(open && hasContracts);
   const [draft, setDraft] = useState<SettingsData | null>(null);
-  const [sec, setSec] = useState<SectionId>("co");
+  const [picked, setSec] = useState<SettingsNavId>("co");
+  const sec = pickNav(picked, hasContracts, hasFeed);
+  const csec = sec === "feed" ? null : sec;
   const [saving, setSaving] = useState(false);
   const s = (k: string) => t(`contracts.settings.${k}`);
 
@@ -112,69 +76,49 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
     const want = settingsBus.takeSection();
     if (want) setSec(want);
   }, [open]);
-  const dot = (k: SectionId) => sectionChanged(k, vsDef);
 
-  const groups: SettingsNavGroup[] = [
-    {
-      id: "contracts",
-      items: SECTIONS.map((k) => ({
-        id: k,
-        label: s(`sec.${k}`),
-        hint: s(`sec.${k}Hint`),
-        icon: SECTION_ICON[k],
-        badge: dot(k) ? <Dot label={s("changed")} /> : undefined,
-      })),
-    },
-  ];
+  const groups = buildNavGroups({
+    hasContracts,
+    hasFeed,
+    s,
+    dot: (k) => (sectionChanged(k, vsDef) ? <Dot label={s("changed")} /> : undefined),
+  });
 
   return (
     <SettingsDialogFrame
       open={open}
       onOpenChange={(o) => settingsBus.set(o)}
       title={s("title")}
-      description={s("scope")}
+      description={csec ? s("scope") : undefined}
       actions={
-        <SettingsActions
-          owner={owner}
-          dirty={dirty}
-          isDefault={!vsDef || !anyChanged(vsDef)}
-          saving={saving}
-          issue={issue}
-          noSave={noSaveFor(sec, dirty)}
-          onReset={() => defaults && setDraft(structuredClone(defaults))}
-          onDiscard={() => saved && setDraft(structuredClone(saved))}
-          onSave={() => void save()}
-        />
+        csec && (
+          <SettingsActions
+            owner={owner}
+            dirty={dirty}
+            isDefault={!vsDef || !anyChanged(vsDef)}
+            saving={saving}
+            issue={issue}
+            noSave={noSaveFor(csec as SectionId, dirty)}
+            onReset={() => defaults && setDraft(structuredClone(defaults))}
+            onDiscard={() => saved && setDraft(structuredClone(saved))}
+            onSave={() => void save()}
+          />
+        )
       }
     >
       <SettingsLayout
         navLabel={s("sections")}
         groups={groups}
         active={sec}
-        onSelect={(id) => setSec(id as SectionId)}
+        onSelect={(id) => setSec(id as SettingsNavId)}
       >
-        <LoadState loading={loading} error={error} retry={retry} />
-        <SectionPanes sec={sec} owner={owner} />
-        {isDraftSection(sec) && draft && saved && defaults && (
-          <fieldset disabled={!owner || saving} className="min-w-0 border-0 p-0">
-            {sec === "co" && (
-              <SettingsSection title={s("sec.co")} description={s("sec.coHint")}>
-                <CompanyPane
-                  value={draft.company}
-                  tenantName={tenantName}
-                  set={(company) => setDraft({ ...draft, company })}
-                />
-              </SettingsSection>
-            )}
-            {sec === "biz" && (
-              <BizPane
-                value={draft.biz}
-                defaults={defaults.biz}
-                set={(biz) => setDraft({ ...draft, biz })}
-              />
-            )}
-          </fieldset>
-        )}
+        <SettingsBody
+          sec={sec}
+          owner={owner}
+          tenantName={tenantName}
+          load={{ loading, error, retry }}
+          form={draft && saved && defaults ? { draft, defaults, setDraft, saving } : null}
+        />
       </SettingsLayout>
     </SettingsDialogFrame>
   );

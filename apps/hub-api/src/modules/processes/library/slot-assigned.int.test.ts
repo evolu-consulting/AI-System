@@ -10,14 +10,14 @@ import { enablePack, tenantId } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../lib/db";
-import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/public";
 import { deleteAssignment, upsertAssignment, upsertSlotDefault } from "./slot-assign.repo";
 import { slotAssigned } from "./slot-assigned.repo";
 import { ensureSlotDefaults } from "./slot-defaults";
+import { GEN_DEFAULT_ID, GEN_FEATURE, GEN_PACK, GEN_SLOT } from "./slot-generic.fixture";
 
-const SLOT = "contracts.approval";
-const DFLT = APPROVAL_DEFAULT_DEF.id;
-const SLOTS = [{ slot: SLOT, feature: "contracts-read" }];
+const SLOT = GEN_SLOT;
+const DFLT = GEN_DEFAULT_ID;
+const SLOTS = [{ slot: SLOT, feature: GEN_FEATURE }];
 const A = tenantId(1401);
 const B = tenantId(1402);
 const C = tenantId(1403);
@@ -41,9 +41,7 @@ beforeAll(async () => {
   db = connectDb(urls().hubApi, 4);
   await o`insert into admin.tenants (id, key, name) values (${A}, 't1401', 'A'), (${B}, 't1402', 'B'),
     (${C}, 't1403', 'C'), (${D}, 't1404', 'D')`;
-  await enablePack(o, [A, B], "contracts");
-  await o`insert into hub.process_slots (slot, default_def_id) values (${SLOT}, ${DFLT})
-    on conflict (slot) do update set default_def_id = excluded.default_def_id`;
+  await enablePack(o, [A, B], GEN_PACK);
   const [r] = await o<
     { id: string }[]
   >`insert into hub.process_defs (tenant_id, key, name, description, input_hint,

@@ -14,7 +14,7 @@ type Props = ProcessCanvasProps;
 /** Tạo lại `lazy` mỗi lần thử (promise lỗi của `lazy` bị cache). */
 const loadCanvas = () => import(/* webpackChunkName: "canvas" */ "./ProcessCanvas");
 
-class Boundary extends Component<
+export class Boundary extends Component<
   { fallback: () => ReactNode; children: ReactNode },
   { failed: boolean }
 > {

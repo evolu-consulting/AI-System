@@ -22,7 +22,7 @@ type ChildValue = { value: number | null; status: string };
 /** Giá trị HĐ NT = Σ giá trị con (bỏ trống và con bị từ chối). */
 export function frameValue(children: readonly ChildValue[]): number {
   let s = 0;
-  for (const c of children) if (c.value !== null && c.status !== "rejected") s += c.value;
+  for (const c of children) if (c.value !== null && c.status !== "reject") s += c.value;
   return s;
 }
 

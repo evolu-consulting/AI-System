@@ -41,7 +41,6 @@ async function call(who: string, method: string, path: string, body?: unknown) {
   return { status: r.status, json: (text ? JSON.parse(text) : {}) as Json };
 }
 const P = (t: string) => `/tenants/${t}/company-flows`;
-const code = (r: { json: Json }) => r.json.error?.code ?? r.json.code;
 
 const end = {
   key: "xong",
@@ -73,7 +72,6 @@ async function libDef(key: string, stages: object[]): Promise<string> {
     values (${r?.id as string}, 1, ${key}, ${st}::text::jsonb)`;
   return r?.id as string;
 }
-const rowOf = (j: Json, id: string) => (j.items as Json[]).find((x) => x.id === id);
 
 beforeAll(async () => {
   await cloneDb("full");
@@ -114,57 +112,5 @@ describe("CR-125 c5 · mẫu dùng được ở công ty", () => {
     const ok = await call("A", "GET", `${P(X)}/readiness/${okTpl}`);
     expect(ok.json.ready).toBe(true);
     expect(ok.json.groupMap).toEqual({ "community-admin": "community-owner" });
-  });
-
-  it("gán mẫu chưa dùng được ⇒ 422 FLOW_TEMPLATE_NOT_READY nêu tính năng, không ghi gì", async () => {
-    const r = await call("P", "POST", P(X), { flow_id: needFeature });
-    expect([r.status, code(r)]).toEqual([422, "FLOW_TEMPLATE_NOT_READY"]);
-    expect(JSON.stringify(r.json)).toContain("community-write");
-    const [n] = await o<
-      { n: number }[]
-    >`select count(*)::int as n from hub.company_flows where tenant_id = ${X}`;
-    expect(n?.n).toBe(0);
-  });
-
-  it("sao chép mẫu chưa dùng được (dòng gán sẵn) ⇒ 422, công ty được dặn nhờ quản trị nền tảng bật", async () => {
-    const [cf] = await o<
-      { id: string }[]
-    >`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${X}, ${needFeature}, true) returning id::text as id`;
-    const r = await call("A", "POST", `${P(X)}/${cf?.id}/clone`);
-    expect([r.status, code(r)]).toEqual([422, "FLOW_TEMPLATE_NOT_READY"]);
-    expect(JSON.stringify(r.json)).toContain("READINESS_FEATURE_MISSING");
-    expect(JSON.stringify(r.json)).toContain('"audience":"company"');
-    await o`delete from hub.company_flows where tenant_id = ${X}`;
-  });
-});
-
-describe("CR-125 c5 · mẫu dùng được ở công ty · sao chép", () => {
-  it("mẫu dùng được: gán 201; công ty sao chép ⇒ nhóm duyệt = nhóm chủ gói của công ty, không cảnh báo thiếu nhóm", async () => {
-    const a = await call("P", "POST", P(X), { flow_id: okTpl });
-    expect(a.status).toBe(201);
-    const row = (a.json.items as Json[]).find((x) => x.flow_id === okTpl) as Json;
-    const c = await call("A", "POST", `${P(X)}/${row.id}/clone`);
-    expect(c.status).toBe(201);
-    expect(c.json.missing_group_keys).toBeUndefined();
-    const copy = rowOf(c.json, c.json.id) as Json;
-    const [d] = await o<
-      { stages: Json[] }[]
-    >`select stages from hub.process_defs where id = ${copy.flow_id}`;
-    expect(d?.stages[0]?.after.group_id).toBe(gOwner);
-    expect(d?.stages[0]?.after.group_key).toBeUndefined();
-  });
-
-  it("công ty chưa có nhóm khớp ⇒ sao chép được nhưng bước để trống + nêu nhóm thiếu (không gán nhầm nhóm khác)", async () => {
-    await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${Z}, ${okTpl}, true)`;
-    const l = await call("AZ", "GET", P(Z));
-    const row = (l.json.items as Json[]).find((x) => x.flow_id === okTpl) as Json;
-    const c = await call("AZ", "POST", `${P(Z)}/${row.id}/clone`);
-    expect(c.status).toBe(201);
-    expect(c.json.missing_group_keys).toEqual(["community-admin"]);
-    const copy = rowOf(c.json, c.json.id) as Json;
-    const [d] = await o<
-      { stages: Json[] }[]
-    >`select stages from hub.process_defs where id = ${copy.flow_id}`;
-    expect(d?.stages[0]?.after.group_id).toBeNull();
   });
 });

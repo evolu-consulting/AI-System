@@ -5,9 +5,9 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
   APPROVAL_SLOT,
   compileSlotStages,
-} from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules";
+} from "../../../apps/hub-api/src/modules/packs/contracts/testing";
 import { CBASE } from "../HD1/_support/hd1";
-import { approval, bump, groupId, seedContract, toLevel1 } from "../HD3/_hd3";
+import { bump, groupId, seedContract } from "../HD3/_hd3";
 import { packGroupKey, packsPath } from "../N1/_support/n1";
 import { type Json, PA, T } from "../P-d/_support/pd";
 import { type CtxCf, startCf } from "./_cf";
@@ -24,9 +24,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await c?.stop();
 });
-
-const modeOf = async (aid: string): Promise<unknown> =>
-  ((await c.sql<Json[]>`select mode from contracts.approvals where id = ${aid}`)[0] as Json).mode;
 
 /** Quy trình thư viện đã xuất bản của khe duyệt HĐ (một bước `stepName`), CHƯA gán cho công ty nào. */
 async function libDef(key: string, stepName: string): Promise<string> {
@@ -66,36 +63,9 @@ const defaultRule = async () => [
   ...(await c.sql`select def_id::text as d, source as s from hub.process_routing_rules
     where tenant_id = ${T.acme} and slot = ${APPROVAL_SLOT} and is_default`),
 ];
-const stepNames = async (id: string): Promise<string[]> =>
-  ((await approval(c, "A", id)).json?.steps ?? []).map((s: Json) => String(s.name));
-
-describe("CR-121 F-1 · gán quy trình ⇒ luật mặc định ⇒ engine chạy đúng quy trình", () => {
-  it("gán qua API ⇒ lượt mới chạy engine với quy trình đó, gán quy trình khác ⇒ đổi theo", async () => {
-    const [a, b] = [await libDef("cf-f1-a", NAME_A), await libDef("cf-f1-b", NAME_B)];
-
-    // cr121-a2 · chưa gán ⇒ vẫn engine (quy trình mặc định của khe), không còn máy cũ.
-    const before = await toLevel1(c, await seedContract(c, 731), 10_000_000);
-    expect(await modeOf(before.runId)).toBe("engine");
-
-    // Gán A: đúng một lời gọi như nút "Gán quy trình" ở admin-web.
-    expect((await c.call("P", "PUT", PROC(a))).status).toBe(200);
-    expect(await defaultRule()).toEqual([{ d: a, s: "admin" }]);
-    const idA = await seedContract(c, 732);
-    const first = await toLevel1(c, idA, 10_000_000);
-    expect(await modeOf(first.runId)).toBe("engine");
-    expect(await stepNames(idA)).toContain(NAME_A);
-
-    // Gán lại quy trình khác ⇒ luật mặc định đổi theo; lượt mới chạy B; lượt cũ chạy nốt A.
-    expect((await c.call("P", "PUT", PROC(b))).status).toBe(200);
-    expect(await defaultRule()).toEqual([{ d: b, s: "admin" }]);
-    const idB = await seedContract(c, 733);
-    const second = await toLevel1(c, idB, 10_000_000);
-    expect(await modeOf(second.runId)).toBe("engine");
-    expect(await stepNames(idB)).toContain(NAME_B);
-    expect(await stepNames(idB)).not.toContain(NAME_A);
-    expect(await stepNames(idA)).toContain(NAME_A);
-  }, 120_000);
-
+describe("CR-121 F-1 · gán quy trình ⇒ luật mặc định của khe = quy trình vừa gán", () => {
+  // CR-127 Z3b: máy duyệt cũ gỡ ⇒ lượt `/extract` chỉ là lượt đọc AI (mode 'machine'), KHÔNG còn chạy engine; HĐ vào quy trình qua "Gửi"
+  // (ca "lượt Gửi chạy đúng quy trình khớp" = CR-127/Q1/review-submit AC3b). Đã xoá phần kiểm `mode = 'engine'` + tên bước theo lượt extract.
   it("người công ty khác đọc HĐ / lượt duyệt của công ty này ⇒ 404 (không lộ tồn tại, không 400)", async () => {
     // Công ty thứ hai bật gói hợp đồng + người dùng có quyền đọc (cùng điều kiện hành trình 2 công ty của D-5).
     const en = await c.admin.call("PUT", packsPath(T.beta, "contracts"));

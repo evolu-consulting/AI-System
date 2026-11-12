@@ -31,7 +31,6 @@ function deps(open: string[], attached: string[]) {
           return id !== "gone";
         },
       }),
-      start: async () => undefined,
     },
   };
   return { d, calls };

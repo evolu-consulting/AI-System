@@ -1,8 +1,7 @@
 // CR-105 · L2a · route thư viện quy trình (readiness Chặn 2: mở rộng `/process-defs…`, không tiền tố `/process-library`) +
-// `/process-slots` + `/tenants/:tid/process-slots…`. Các route quản lý thư viện (`GATED`) chỉ platform_admin: 403 trước parse/đọc DB; ngoại lệ CR-121 c9: `clone-for-company` và đọc chỉ-xem theo công ty dùng `requireAdminRole` (vai chi tiết kiểm ở service). Không logic.
+// `/process-slots` + `/tenants/:tid/process-slots…`. Các route quản lý thư viện (`GATED`) chỉ platform_admin: 403 trước parse/đọc DB; ngoại lệ CR-121 c9: đọc chỉ-xem theo công ty dùng `requireAdminRole` (vai chi tiết kiểm ở service). Không logic.
 import {
   AssignSlotRequestSchema,
-  CloneForCompanyRequestSchema,
   CopyProcessDefRequestSchema,
   PublishProcessDefRequestSchema,
   RollbackProcessDefRequestSchema,
@@ -92,17 +91,8 @@ export function libraryRoutes(d: ProcessDeps): Hono<AuthVars> {
  * vai chi tiết (tenant_admin khác công ty ⇒ 404) kiểm ở service.
  */
 function companyRoutes(r: Hono<AuthVars>, svc: CompanyLibraryService): void {
-  const clone = "/tenants/:tid/process-defs/:id/clone-for-company";
   const view = "/tenants/:tid/process-library/:id";
-  r.use(clone, requireAdminRole());
   r.use(view, requireAdminRole());
-  r.post(clone, async (c) => {
-    const tid = tidOf(c).toLowerCase();
-    const id = parseIdParam(c);
-    await parseJson(c, CloneForCompanyRequestSchema);
-    const out = await svc.cloneForCompany(c.var.user, tid, id);
-    return c.json(out, out.created ? 201 : 200);
-  });
   r.get(view, async (c) =>
     c.json(await svc.view(c.var.user, tidOf(c).toLowerCase(), parseIdParam(c))),
   );

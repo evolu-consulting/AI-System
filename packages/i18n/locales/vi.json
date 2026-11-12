@@ -688,7 +688,6 @@
         "grant-feature": "Bật tính năng",
         "open-profile": "Mở Hồ sơ",
         "open-flows": "Mở Quy trình",
-        "assign-receive-flow": "Gán quy trình nhận",
         "create-group": "Tạo nhóm"
       },
       "item": {
@@ -739,86 +738,50 @@
       "newFlow": {
         "on": "Đang dùng quy trình mới: {record} từ giờ chạy theo quy trình đã áp dụng.",
         "idle": "Chưa dùng quy trình mới — mở một quy trình rồi bấm Lưu và áp dụng để bắt đầu. Từ giờ {record} vẫn chạy cách cũ.",
-        "none": "Chưa có quy trình nào được áp dụng cho công ty — liên hệ quản trị nền tảng để gán",
+        "none": "Chưa có quy trình nào được áp dụng cho công ty — liên hệ quản trị nền tảng để tạo quy trình",
         "pause": "Tạm dừng quy trình mới",
         "confirm": "Từ giờ {record} sẽ chạy theo cách cũ cho tới khi bạn Lưu và áp dụng lại một quy trình. Những {record} đang chạy không bị ảnh hưởng.",
         "ok": "Tạm dừng",
         "cancel": "Huỷ"
       },
-      "empty": "Công ty chưa có quy trình nào. Quản trị nền tảng gán quy trình từ Thư viện.",
+      "empty": "Công ty chưa có quy trình nào. Quản trị nền tảng tạo quy trình cho công ty từ sơ đồ trống.",
       "col": {
         "name": "Quy trình",
         "trigger": "Bắt đầu khi",
         "source": "Nguồn",
         "status": "Trạng thái"
       },
-      "readiness": {
-        "loading": "Đang kiểm tra mẫu có dùng được ở công ty này không…",
-        "ok": "Mẫu dùng được ngay ở công ty này.",
-        "okWarn": "Mẫu dùng được; còn lưu ý bên dưới.",
-        "blockedPlatform": "Chưa gán được: công ty thiếu những thứ sau.",
-        "blockedCompany": "Mẫu này chưa dùng được ở công ty bạn.",
-        "err": {
-          "READINESS_FEATURE_MISSING": "Bước «{stage}» cần tính năng {what} — công ty chưa được bật.",
-          "READINESS_TOOL_MISSING": "Bước «{stage}» dùng chức năng công ty chưa có.",
-          "READINESS_STEP_ORDER": "Bước «{stage}» phải đứng ngay sau một bước Duyệt.",
-          "READINESS_STEP_LOCKED": "Bước «{stage}» là bước cố định của nền tảng — không sửa được trên bản sao.",
-          "READINESS_ASSIGNEE_MISSING": "Bước «{stage}»: chọn {key}."
-        },
-        "loadFailed": {
-          "HUB_UNCONFIGURED": "Chưa kiểm được mẫu: chưa cấu hình kết nối tới Hub. Nhờ quản trị hệ thống kiểm tra rồi thử lại.",
-          "FORBIDDEN": "Chưa kiểm được mẫu: bạn không có quyền xem quy trình của công ty này.",
-          "NOT_FOUND": "Chưa kiểm được mẫu: mẫu này không còn trong Thư viện — chọn mẫu khác.",
-          "default": "Chưa kiểm được mẫu — kiểm tra kết nối rồi thử lại."
-        },
-        "retry": "Thử lại",
-        "fixError": {
-          "FEATURE_NOT_NEEDED": "Mẫu không còn cần tính năng này — bảng sẽ cập nhật lại, không cần bật thêm.",
-          "CORE_FEATURE_PROTECTED": "Tính năng lõi luôn bật theo gói của công ty — không bật riêng được.",
-          "HUB_UNREACHABLE": "Chưa nối được tới Hub — thử lại sau ít phút.",
-          "NOT_FOUND": "Tính năng hoặc mẫu không còn tồn tại — tải lại trang.",
-          "FORBIDDEN": "Chỉ quản trị nền tảng mới bật được — nhờ họ xử lý.",
-          "default": "Chưa sửa được. Thử lại hoặc kiểm tra quyền."
-        },
-        "group": "Công ty chưa có nhóm duyệt «{key}» — bước duyệt sẽ mở ra để bạn chọn người duyệt.",
-        "askPlatform": "Nhờ quản trị nền tảng bật tính năng cần thiết rồi quay lại sao chép.",
-        "level": {
-          "read": "Xem",
-          "write": "Sửa",
-          "admin": "Quản trị"
-        },
-        "fix": {
-          "enable-feature": "Bật tính năng cho công ty",
-          "create-group": "Tạo nhóm theo gợi ý"
-        }
-      },
-      "copy": {
-        "title": "Sao chép «{name}» để sửa",
-        "hint": "Bản sao là của riêng công ty; sửa xong bấm Lưu và áp dụng.",
-        "cancel": "Huỷ",
-        "confirm": "Sao chép"
-      },
-      "legacy": "Mẫu cũ — không sao chép được",
       "withCondition": "có điều kiện",
-      "assign": {
-        "pick": "Quy trình trong Thư viện",
-        "placeholder": "Chọn quy trình để gán cho công ty",
-        "dialogTitle": "Gán quy trình cho công ty",
-        "dialogHint": "Chọn quy trình trong Thư viện; công ty dùng được ngay sau khi gán.",
-        "add": "Gán"
+      "create": {
+        "company": "Công ty",
+        "open": "Tạo quy trình",
+        "title": "Tạo quy trình cho {company}",
+        "hint": "Đặt tên rồi tạo từ sơ đồ trống.",
+        "name": "Tên quy trình",
+        "from": "Bắt đầu từ",
+        "blank": "Sơ đồ trống",
+        "submit": "Tạo và mở sơ đồ",
+        "titleGeneric": "Tạo quy trình",
+        "companyPh": "Chọn công ty",
+        "summary": "{depts} phòng ban · {members} thành viên · ứng dụng đã bật: {apps}",
+        "noneOn": "chưa có",
+        "noApp": "Công ty chưa bật ứng dụng nào dùng quy trình — bật ở tab Ứng dụng.",
+        "openApps": "Mở tab Ứng dụng",
+        "appFor": "Quy trình cho",
+        "blankHint": "Tự thêm các bước",
+        "failed": "Chưa tạo được quy trình. Kiểm tra công ty, ứng dụng và tên rồi thử lại; nếu vẫn lỗi, báo quản trị nền tảng."
       },
       "source": {
-        "assigned": "Được gán · chỉ xem",
         "own": "Bản công ty",
         "copy": "Sao từ {name} · v{v}"
       },
       "status": {
         "on": "Đang dùng",
         "off": {
-          "replaced": "Đã thay bằng bản công ty",
-          "reverted": "Tắt · đã quay về bản gốc",
           "turned_off": "Tắt",
-          "not_published": "Tắt · chưa áp dụng (mở để sửa và Lưu và áp dụng)"
+          "not_published": "Tắt · chưa áp dụng (mở để sửa và Lưu và áp dụng)",
+          "replaced": "Đã thay bằng bản công ty",
+          "reverted": "Tắt · đã quay về bản gốc"
         }
       },
       "warn": {
@@ -827,20 +790,15 @@
       },
       "open": "Mở",
       "more": "Thao tác khác",
-      "templates": "Mẫu thư viện ({n})",
-      "templatesHint": "Bản gốc của thư viện đã được bản công ty thay. Mở để xem; muốn dùng lại bản gốc, chọn Quay về bản gốc ở dòng quy trình công ty.",
-      "clone": "Sao chép để sửa",
-      "revert": "Quay về bản gốc",
       "turnOn": "Bật",
       "turnOff": "Tắt",
       "orderHint": "Kéo để đổi thứ tự. Với sự kiện quyết định, chạy quy trình khớp đầu tiên.",
+      "readOnlyNote": "Quy trình do quản trị nền tảng soạn — liên hệ quản trị nền tảng để thay đổi.",
       "orderTitle": "Nâng cao: thứ tự khi nhiều quy trình cùng khớp",
       "err": {
         "requiredLast": "Cần ít nhất một quy trình đang bật, không điều kiện cho sự kiện bắt buộc. Bật quy trình khác trước khi tắt.",
-        "pairActive": "Bản gốc và bản công ty không bật cùng lúc. Tắt bản kia hoặc dùng Quay về bản gốc.",
         "notPublished": "Quy trình chưa áp dụng nên chưa bật được. Mở quy trình, sửa rồi bấm Lưu và áp dụng.",
         "groupMissing": "Còn bước duyệt chưa chọn nhóm. Chọn nhóm cho mọi bước duyệt rồi áp dụng lại.",
-        "notAssignable": "Quy trình chưa có Bắt đầu khi — chọn sự kiện bắt đầu rồi áp dụng lại.",
         "generic": "Không thực hiện được. Tải lại trang rồi thử lại."
       }
     },
@@ -866,11 +824,9 @@
         "canvas": "Sơ đồ",
         "list": "Danh sách bước"
       },
-      "libraryReadOnly": "Quy trình mẫu của Thư viện, chỉ xem.",
+      "libraryReadOnly": "Quy trình do quản trị nền tảng soạn — chỉ xem. Liên hệ quản trị nền tảng để thay đổi.",
       "hasCopy": "Công ty đã có bản riêng sao từ quy trình này.",
-      "copy": "Sao chép cho công ty này",
       "job": {
-        "contractsApproval": "Duyệt hợp đồng",
         "contractsIntake": "Nhận hợp đồng",
         "communityModeration": "Duyệt bài",
         "communityJoin": "Đối tác xin tham gia",
@@ -1596,7 +1552,8 @@
       "app_roles": "Vai theo ứng dụng",
       "tenant_profile": "Hồ sơ công ty",
       "notify_config": "Cấu hình gửi mail",
-      "flow_flag": "Cờ quy trình công ty"
+      "flow_flag": "Cờ quy trình công ty",
+      "contract_state_drift": "Trạng thái hợp đồng lệch"
     },
     "history": {
       "title": "Lịch sử (50 sự kiện gần nhất)",
