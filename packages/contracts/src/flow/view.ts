@@ -50,6 +50,10 @@ export const FlowAssigneeSchema = z.discriminatedUnion("kind", [
     id: z.uuid().nullable(),
     label: Text(200).nullable(),
     head_only: z.boolean(),
+    /** CR-139 · tên người duyệt đã được chọn (trưởng phòng của người gửi / trưởng phòng khi `head_only` / người đích danh). */
+    person: Text(200).nullable().optional(),
+    /** CR-139 · «Trưởng phòng của người đề xuất» không tìm được ai ⇒ quản trị công ty duyệt thay. */
+    person_missing: z.boolean().optional(),
   }),
   z.strictObject({ kind: z.literal("user"), id: z.uuid(), label: Text(200).nullable() }),
   z.strictObject({ kind: z.literal("system") }),

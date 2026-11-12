@@ -199,6 +199,7 @@ export function validateDraft(
       s.groupId === "" &&
       !s.groupKey &&
       !s.parallel &&
+      s.review?.approverMode !== "starter_head" &&
       !isMilestone(s) && // để trống = người phụ trách hợp đồng
       !slotHasReviewer(s)
     )

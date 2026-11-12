@@ -58,7 +58,12 @@ export function Row({ r, now }: { r: TimelineRow; now: number }) {
             </span>
           ) : null}
           {r.group ? <span className="text-caption text-dim">· {r.group}</span> : null}
-          {r.headOnly ? (
+          {r.person ? (
+            <span className="text-caption text-dim" data-testid="approval-person">
+              · {r.person}
+            </span>
+          ) : null}
+          {r.headOnly && !r.person ? (
             <span className="text-caption text-dim">
               · {t("contracts.approval.engine.headOnly")}
             </span>
@@ -85,6 +90,11 @@ export function Row({ r, now }: { r: TimelineRow; now: number }) {
             </span>
           ) : null}
         </div>
+        {r.personMissing && !r.decidedBy && r.status !== "passed" ? (
+          <p className="text-caption text-late" data-testid="approval-person-missing">
+            {t("contracts.approval.engine.starterHeadMissing")}
+          </p>
+        ) : null}
         {!r.skipWhen && <StatusLines lines={lines} alert={r.status === "failed"} />}
       </div>
     </li>

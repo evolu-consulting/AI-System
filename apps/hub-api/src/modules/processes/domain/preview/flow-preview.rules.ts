@@ -20,6 +20,8 @@ export type World = {
   groups: ReadonlyMap<string, PreviewGroup>;
   adminIds: readonly string[];
   delegations: readonly DelegationRow[];
+  /** CR-139 · công ty có ít nhất một phòng đã đặt trưởng phòng (vắng ⇒ không cảnh báo). */
+  anyDeptHead?: boolean;
 };
 
 export type HolderVia = "group" | "head" | "person" | "delegated" | "escalated";
@@ -34,6 +36,7 @@ export type WarnCode =
   | "group_missing"
   | "group_single"
   | "no_head"
+  | "no_dept_head"
   | "starter_only"
   | "all_zero"
   | "facts_missing"
@@ -102,6 +105,11 @@ function gateOf(c: Ctx, a: After): Gate {
     warn(
       "group_missing",
       `Bước «${stage.name}» chưa chọn phòng duyệt (hoặc phòng không còn ở công ty): chọn phòng cho bước này.`,
+    );
+  if (a.approver_mode === "starter_head" && w.anyDeptHead === false)
+    warn(
+      "no_dept_head",
+      `Bước «${stage.name}» dùng «Trưởng phòng của người đề xuất» nhưng công ty chưa đặt trưởng phòng nào: việc sẽ chuyển cho quản trị công ty.`,
     );
   const approver =
     a.approver_user_id && usableOf(w, a.approver_user_id) ? a.approver_user_id : null;

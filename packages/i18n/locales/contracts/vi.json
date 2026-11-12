@@ -221,6 +221,7 @@
     },
     "nav": {
       "overview": "Tổng quan",
+      "org": "Sơ đồ tổ chức",
       "waiting": "Việc của tôi",
       "contracts": "Hợp đồng & giao dịch",
       "partners": "Đối tác",
@@ -246,6 +247,21 @@
       "signTag": "Chờ bạn ký",
       "signSection": "Chờ bạn ký",
       "since": "gửi {{date}}"
+    },
+    "orgChart": {
+      "title": "Sơ đồ tổ chức",
+      "lead": "Phòng ban, trưởng phòng và thành viên của công ty. Chỉ để xem — người quản trị chỉnh ở Cài đặt › Thành viên.",
+      "people_one": "{{count}} người",
+      "people_other": "{{count}} người",
+      "head": "Trưởng phòng",
+      "noHead": "Chưa đặt",
+      "search": "Tìm phòng ban hoặc người",
+      "clear": "Xoá tìm",
+      "noMatch": "Không có phòng ban hay người nào khớp «{{q}}».",
+      "loadError": "Không tải được sơ đồ tổ chức. Thử lại sau ít phút.",
+      "retry": "Thử lại",
+      "emptyTitle": "Công ty chưa có phòng ban",
+      "emptyBody": "Quản trị công ty tạo phòng ban và đặt trưởng phòng ở Cài đặt › Thành viên."
     },
     "approvalsPage": {
       "title": "Việc của tôi",
@@ -578,6 +594,7 @@
       "engine": {
         "title": "Các bước duyệt",
         "editFlow": "Chỉnh quy trình duyệt",
+        "starterHeadMissing": "Chưa có trưởng phòng — quản trị công ty duyệt thay; hãy đặt trưởng phòng ở Phòng ban.",
         "headOnly": "chỉ trưởng phòng",
         "decidedBy": "Quyết bởi {{name}}",
         "overdue": "quá hạn {{n}} giờ",

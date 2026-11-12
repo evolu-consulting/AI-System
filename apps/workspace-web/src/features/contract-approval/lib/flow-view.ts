@@ -190,6 +190,8 @@ export function rowOfFlowStep(s: FlowStepView, idx: number): TimelineRow {
     name: s.name,
     group: g ? g.label : null,
     headOnly: g?.head_only ?? false,
+    person: g?.person ?? null,
+    personMissing: g?.person_missing === true,
     status: s.status as TimelineRow["status"],
     due: s.due_at ? { at: s.due_at, flag } : null,
     escalatedTo: s.escalated_to,

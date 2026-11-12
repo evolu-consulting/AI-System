@@ -153,6 +153,7 @@ function reviewExtraToDraft(
     ...(rv.evidence ? { evidence: rv.evidence } : {}),
     ...(rv.head_only ? { headOnly: true } : {}),
     ...(rv.approver_user_id ? { approverUserId: rv.approver_user_id } : {}),
+    ...(rv.approver_mode === "starter_head" ? { approverMode: "starter_head" as const } : {}),
     ...(rv.also_group_ids?.length ? { alsoGroupIds: [...rv.also_group_ids] } : {}),
     ...(rv.also_group_keys?.length ? { alsoGroupKeys: [...rv.also_group_keys] } : {}),
   };
@@ -165,6 +166,7 @@ const reviewExtraToDef = (r: ReviewExtra | undefined) =>
         ...(r.evidence ? { evidence: r.evidence } : {}),
         ...(r.headOnly ? { head_only: true } : {}),
         ...(r.approverUserId ? { approver_user_id: r.approverUserId } : {}),
+        ...(r.approverMode === "starter_head" ? { approver_mode: "starter_head" as const } : {}),
         ...(r.alsoGroupIds?.length ? { also_group_ids: r.alsoGroupIds } : {}),
         ...(r.alsoGroupKeys?.length ? { also_group_keys: r.alsoGroupKeys } : {}),
       }

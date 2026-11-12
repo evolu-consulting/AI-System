@@ -76,6 +76,10 @@ export type TimelineRow = {
   /** Tên phòng (null ở bước Dify); thiếu trong `/groups` ⇒ "" (UI ẩn, không lộ id). */
   group: string | null;
   headOnly: boolean;
+  /** CR-139 · tên người duyệt đã được chọn (trưởng phòng của người gửi / đích danh); null = cả phòng. */
+  person: string | null;
+  /** CR-139 · «Trưởng phòng của người đề xuất» không tìm được ai ⇒ quản trị công ty duyệt thay. */
+  personMissing: boolean;
   status: ApprovalCardStep["status"];
   /** Nhãn hạn: quá hạn (bước đang mở, qua `due_at`) hoặc đã chuyển cấp. */
   due: { at: string; flag: "overdue" | "escalated" | null } | null;
@@ -112,6 +116,8 @@ export function timelineRows(
       name: s.name,
       group: nameOf(groups, s.group_id),
       headOnly: s.head_only,
+      person: s.approver?.name ?? null,
+      personMissing: s.approver_missing === true,
       status: s.status,
       due: s.due_at ? { at: s.due_at, flag } : null,
       escalatedTo: s.escalated ? (s.escalated_to ?? nameOf(groups, s.escalated_group_id)) : null,

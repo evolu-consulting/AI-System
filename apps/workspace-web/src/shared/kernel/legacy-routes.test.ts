@@ -17,6 +17,9 @@ describe("cr120-handson-fixes · route gốc của app không bị coi là id H�
     expect(legacyTarget("/contracts/messages")).toBeNull();
     expect(legacyTarget("/contracts/messages?c=1")).toBeNull();
   });
+  test("/contracts/org là «Sơ đồ tổ chức», không phải id hợp đồng", () => {
+    expect(legacyTarget("/contracts/org")).toBeNull();
+  });
 });
 
 describe("legacyTarget · tuyến SHT cũ ở gốc → /contracts/…", () => {

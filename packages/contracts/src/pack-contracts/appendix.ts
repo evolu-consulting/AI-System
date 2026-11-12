@@ -118,3 +118,23 @@ export const ContractPricesResponseSchema = z.strictObject({
   total: CountSchema,
 });
 export type ContractPricesResponse = z.infer<typeof ContractPricesResponseSchema>;
+
+// ---------- CR-139 · sơ đồ tổ chức (chỉ xem) ----------
+export const ORG_DEPARTMENTS_MAX = 500;
+const ContractsOrgPerson = z.strictObject({ id: z.uuid(), name: z.string().min(1).max(200) });
+/** `GET /pack/contracts/org` · phòng ban phẳng (client dựng cây theo `parent_id`): trưởng phòng + thành viên đang dùng được. */
+export const ContractsOrgSchema = z.strictObject({
+  departments: z
+    .array(
+      z.strictObject({
+        id: z.uuid(),
+        name: z.string().min(1).max(200),
+        parent_id: z.uuid().nullable(),
+        head: ContractsOrgPerson.nullable(),
+        members: z.array(ContractsOrgPerson).max(MEMBERS_MAX),
+      }),
+    )
+    .max(ORG_DEPARTMENTS_MAX),
+});
+export type ContractsOrg = z.infer<typeof ContractsOrgSchema>;
+export type ContractsOrgDept = ContractsOrg["departments"][number];

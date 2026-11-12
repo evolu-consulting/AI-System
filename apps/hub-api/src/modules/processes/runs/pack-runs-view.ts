@@ -11,10 +11,10 @@ import type {
   PackStepsView,
   PackStepView,
 } from "../../packs/kit/public";
-import { approverSql, headGateSql } from "../core/head-gate.sql";
+import { approverSql } from "../core/head-gate.sql";
 import type { ProcessDeps } from "../core/ports";
 import { delegatedLive } from "../core/task-grants.sql";
-import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules";
+import { approverFieldsOf, dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules";
 import { alsoGroupsOf, canAct, headGate, overrideOnly } from "../domain/tasks/task-access.rules";
 import type { ProcessRunStatus } from "../domain/types";
 import { RESOLVE_SLOT_SQL } from "../library/slot-resolve.repo";
@@ -39,6 +39,8 @@ type StageSnap = Parameters<typeof stageMeta>[0] & {
     exclude_starter?: boolean;
     head_only?: boolean;
     also_group_ids?: string[];
+    approver_user_id?: string | null;
+    approver_mode?: string;
   } | null;
   executor?: { kind?: string; fields?: FormField[] } | null;
 };
@@ -66,6 +68,7 @@ type Row = {
   escalate_group_id: string | null;
   /** S1b · trưởng phòng của Group assignee task (null = không có). */
   group_head: string | null;
+  group_head_name: string | null;
   consumed_event: string | null; // CR-123 · u6 · sự kiện stage chờ đã tiêu thụ (null = không có)
   /** CR-125 · `process_outputs.fields` của output hiện hành của stage (chỉ dùng cho stage `form`). */
   form_values: unknown;
@@ -88,13 +91,15 @@ const rowsSql = (runIds: readonly string[], tenantId: string, gs = new Set<strin
     t.assignee_group_id, t.escalate_at, t.escalated_at, t.escalate_group_id, ${CLAIM_COLS},
     (select e.event from hub.process_run_events e where e.consumed_by = s.id and e.tenant_id = r.tenant_id limit 1) as consumed_event,
     o.fields as form_values,
-    coalesce(${approverSql("r.snapshot->'stages'->(s.stage_idx::int)", "r.tenant_id")}, (select d.head_user_id from admin.departments d where d.group_id = t.assignee_group_id
-      and d.tenant_id = r.tenant_id)) as group_head
+    h.id as group_head, coalesce(nullif(hu.display_name, ''), hu.username) as group_head_name
   from hub.process_runs r
   join hub.stage_runs s on s.process_run_id = r.id and s.tenant_id = r.tenant_id
   left join lateral (select t.* from hub.review_tasks t where t.stage_run_id = s.id and t.tenant_id = s.tenant_id and t.kind = 'review' -- CR-125 cùng duyệt: thẻ mở, của nhóm người xem trước
     order by (t.status = 'open') desc, (t.assignee_group_id = any(${`{${[...gs].filter((x) => UUID.test(x)).join(",")}}`}::uuid[])) desc, t.created_at desc, t.id desc limit 1) t on true
   left join admin.users du on du.id = t.decided_by and du.tenant_id = r.tenant_id
+  left join lateral (select coalesce(${approverSql("r.snapshot->'stages'->(s.stage_idx::int)", "r.tenant_id")}, (select d.head_user_id from admin.departments d
+    where d.group_id = t.assignee_group_id and d.tenant_id = r.tenant_id)) as id) h on true
+  left join admin.users hu on hu.id = h.id and hu.tenant_id = r.tenant_id
   left join hub.process_outputs o on o.id = s.current_output_id and o.tenant_id = s.tenant_id
   where r.id = any(${`{${runIds.join(",")}}`}::uuid[]) and r.tenant_id = ${tenantId}
   order by r.id, s.stage_idx`;
@@ -127,6 +132,7 @@ function stepOf(r: Row, canActOf: ActOf): PackStepView {
     task: r.task_id && r.task_status === "open" ? openTask(r.task_id, canActOf(r, stage)) : null,
     task_ref: r.task_id,
     back_to_steps: m.backTo,
+    ...approverFieldsOf(stage?.after, r.group_head, r.group_head_name),
     ...formOf(stage, r),
   };
 }

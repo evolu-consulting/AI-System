@@ -223,6 +223,7 @@
       "overview": "Overview",
       "contracts": "Contracts & transactions",
       "partners": "Partners",
+      "org": "Org chart",
       "waiting": "My tasks",
       "products": "Products & Prices",
       "community": "Community",
@@ -246,6 +247,21 @@
       "signTag": "Waiting for your signature",
       "signSection": "Waiting for your signature",
       "since": "sent {{date}}"
+    },
+    "orgChart": {
+      "title": "Org chart",
+      "lead": "The company departments, department heads and members. View only — admins edit them in Settings › Members.",
+      "people_one": "{{count}} person",
+      "people_other": "{{count}} people",
+      "head": "Department head",
+      "noHead": "Not set",
+      "search": "Search a department or person",
+      "clear": "Clear search",
+      "noMatch": "No department or person matches “{{q}}”.",
+      "loadError": "Could not load the org chart. Try again in a few minutes.",
+      "retry": "Try again",
+      "emptyTitle": "The company has no departments yet",
+      "emptyBody": "A company admin creates departments and sets department heads in Settings › Members."
     },
     "approvalsPage": {
       "title": "My tasks",
@@ -578,6 +594,7 @@
       "engine": {
         "title": "Approval steps",
         "editFlow": "Edit approval flow",
+        "starterHeadMissing": "No department head yet — the company admin approves instead; please set a department head.",
         "headOnly": "department head only",
         "decidedBy": "Decided by {{name}}",
         "overdue": "{{n}} h overdue",

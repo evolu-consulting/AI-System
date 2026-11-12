@@ -24,6 +24,7 @@ export {
   type NodeConfigValidator,
   nodeConfigRegistry,
 } from "./adapters/node-config-registry";
+export { packOrgRoutes } from "./adapters/org.route";
 export type { PackBell } from "./adapters/pack-bell";
 export { packBell } from "./adapters/pack-bell";
 export type { DirectoryRow } from "./adapters/pack-directory";

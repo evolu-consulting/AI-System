@@ -17,6 +17,7 @@ export const CONTRACTS_PAGES: ReadonlySet<string> = new Set([
   "requests", // CR-125 · cr125-manual-start-ui · «Tạo yêu cầu» (trang gốc, không phải id HĐ cũ)
   "approvals", // CR-121 C-7 · "Chờ tôi duyệt" (không được đổi thành `/contracts/c/approvals`)
   "messages", // CR-132 · «Tin nhắn» (không được đổi thành `/contracts/c/messages` ⇒ «Không tìm thấy hợp đồng»)
+  "org", // CR-139 · «Sơ đồ tổ chức» (không được đổi thành `/contracts/c/org`)
   "partner-inbox", // CR-124 · "Hợp đồng đối tác gửi" (trang gốc, không phải id HĐ cũ)
   // Route gốc của app (không phải id HĐ cũ): không được đổi thành `/contracts/c/login`; sau CR-131 chúng nằm ở GỐC — xem LEGACY_EXACT.
   "login",

@@ -24,6 +24,10 @@ export function approverLabel(s: StageDraft, refs: EditorRefs): string | undefin
   return s.groupId ? labelOf(refs.approverGroups ?? refs.groups, s.groupId) : undefined;
 }
 
+/** CR-139 · tiêu đề thẻ Duyệt: «trưởng phòng của người gửi» (kiểu mới) hoặc người / phòng đã chọn. */
+const approveTitle = (s: StageDraft, refs: EditorRefs, word: (k: string) => string) =>
+  s.review?.approverMode === "starter_head" ? word("starter_head") : approverLabel(s, refs);
+
 /** Tên người ký công ty của cụm Ký số (cấu hình ở `args` của stage gửi ký); vắng ⇒ undefined. */
 export function signerNames(cluster: readonly StageDraft[], refs: EditorRefs): string | undefined {
   for (const s of cluster) {
@@ -78,7 +82,7 @@ export function useCardText(refs: EditorRefs) {
     const kind = t(`process.admin.flow.node.${kindId}`);
     const sum = summaryOf(s, labels);
     if (kindId === "approve" && !s.parallel)
-      return { kindId, kind, title: approverLabel(s, refs) ?? name, summary: sum };
+      return { kindId, kind, title: approveTitle(s, refs, labels.word) ?? name, summary: sum };
     if (kindId === "if") return { kindId, kind, title: sum || name, summary: "" };
     return { kindId, kind, title: name, summary: sum };
   };

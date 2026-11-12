@@ -9,6 +9,7 @@ import { useApproverField } from "../../hooks/use-group-key-options";
 import {
   dueToValueOf,
   needOf,
+  STARTER_HEAD,
   whoPatch,
   whoValueOf,
   withDue,
@@ -32,9 +33,13 @@ export function StageApproveBasics(p: StageFormProps) {
   // CR-127 · Z2 · công ty chọn phòng HOẶC người (server nhận `approver_user_id` không phòng); mẫu Thư viện chỉ chọn phòng theo mã.
   const flow = useFlowCtx();
   const lib = !!flow && !flow.tenantId;
-  const whoOptions = lib
-    ? who.options
-    : [...who.options, ...refs.users.map((u) => ({ value: `u:${u.value}`, label: u.label }))];
+  const head = { value: STARTER_HEAD, label: t(`${K}approverStarterHead`) };
+  const whoOptions = [
+    head,
+    ...(lib
+      ? who.options
+      : [...who.options, ...refs.users.map((u) => ({ value: `u:${u.value}`, label: u.label }))]),
+  ];
   const whoValue = whoValueOf(stage, who.value);
   const pickWho = (v: string) => onChange(whoPatch(stage, v, who.patch));
   const gErr = errors[`stages.${index}.after.group_id`];
@@ -73,6 +78,7 @@ export function StageApproveBasics(p: StageFormProps) {
           readOnly={readOnly}
           alert
           placeholder={t(`${K}approverPh`)}
+          description={whoValue === STARTER_HEAD ? t(`${K}approverStarterHeadHint`) : undefined}
           error={gErr ? t(gErr) : undefined}
           options={whoOptions}
           onChange={pickWho}

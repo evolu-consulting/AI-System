@@ -466,6 +466,8 @@
         }
       },
       "approver": "Who approves",
+      "approverStarterHead": "Head of the proposer's department",
+      "approverStarterHeadHint": "The system picks the sender's department head; if the department has none, it goes up to the parent department.",
       "approverPh": "Choose an approver",
       "milestone": {
         "owner": "Contract owner",
@@ -1650,6 +1652,7 @@
       "word": {
         "owner": "Contract owner",
         "milestone": "Confirm milestone",
+        "starterHead": "the sender's department head",
         "needOne": "one person takes it",
         "needHead": "the head of department",
         "needAll": "everyone",

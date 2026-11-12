@@ -29,3 +29,18 @@ describe("panel Duyệt", () => {
     expect(dueToValueOf(g)).toBe("g:y");
   });
 });
+
+describe("CR-139 · Trưởng phòng của người đề xuất", () => {
+  const g = (id: string) => ({ groupId: id });
+  test("chọn kiểu mới ⇒ bỏ phòng + người, ghi approverMode; giá trị ô = starter_head", () => {
+    const p = whoPatch({ review: { approverUserId: "u1", need: "one" } }, "starter_head", g);
+    expect(p.groupId).toBe("");
+    expect(p.review).toEqual({ need: "one", approverMode: "starter_head" });
+    expect(whoValueOf({ review: p.review }, "")).toBe("starter_head");
+  });
+  test("chọn lại phòng / người ⇒ bỏ kiểu mới", () => {
+    const rv = { approverMode: "starter_head" as const };
+    expect(whoPatch({ review: rv }, "g1", g).review).toEqual({});
+    expect(whoPatch({ review: rv }, "u:u2", g).review).toEqual({ approverUserId: "u2" });
+  });
+});

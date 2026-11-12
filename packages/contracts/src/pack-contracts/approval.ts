@@ -106,6 +106,13 @@ export const ApprovalCardStepSchema = z.strictObject({
   overdue: z.boolean().optional(),
   /** CR-113 · tên Group nhận khi chuyển cấp đã xảy ra. */
   escalated_to: z.string().max(200).optional(),
+  /** CR-139 · người duyệt đã được chọn (đích danh · trưởng phòng của người gửi · trưởng phòng khi `head_only`); vắng ⇒ cả phòng. */
+  approver: z
+    .strictObject({ id: z.uuid(), name: z.string().max(200) })
+    .nullable()
+    .optional(),
+  /** CR-139 · bước «Trưởng phòng của người đề xuất» không tìm được ai ⇒ quản trị công ty duyệt thay. */
+  approver_missing: z.boolean().optional(),
   /** CR-123 U2 · bước Thông báo không có người nhận (bước vẫn xong): hub điền khi sẵn sàng; vắng ⇒ không cảnh báo. */
   warning: z.literal("NOTIFY_NO_RECIPIENT").optional(),
   /** CR-125 · cr125-form-step-card · bước «Điền thông tin» (`kind: form`): trường của form trong snapshot run + giá trị đã gửi (đóng bước xong mới có). */

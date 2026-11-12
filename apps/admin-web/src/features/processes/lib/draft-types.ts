@@ -36,6 +36,8 @@ export type ReviewExtra = {
   evidence?: "opinion" | "opinion_plus";
   headOnly?: boolean;
   approverUserId?: string;
+  /** CR-139 · «Trưởng phòng của người đề xuất» — engine tự chọn người lúc mở việc (không cần phòng). */
+  approverMode?: "starter_head";
   alsoGroupIds?: string[];
   alsoGroupKeys?: string[];
 };

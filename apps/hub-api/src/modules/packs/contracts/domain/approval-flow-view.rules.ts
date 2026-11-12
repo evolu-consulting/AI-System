@@ -81,6 +81,8 @@ function stepOf(s: CardStep): FlowStepView {
     id: g,
     label: s.escalated_to ?? null,
     head_only: s.head_only,
+    ...(s.approver ? { person: s.approver.name } : {}),
+    ...(s.approver_missing ? { person_missing: true } : {}),
   };
   // CR-125 · cr125-form-step-card · bước «Điền thông tin» (work): chiếu `form` kèm trường + giá trị đã gửi ⇒ thẻ vẽ ô nhập, không phải Duyệt/Trả lại.
   if (s.kind === "form" && s.form)

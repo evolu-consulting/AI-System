@@ -1,6 +1,7 @@
 // contract-flow S1a · luật thuần: trạng thái từng stage cho thẻ duyệt của gói (`PackRunsPort.stepsView`) từ hàng stage +
 // task review gần nhất của stage. Thứ tự ưu tiên: skipped → open (task mở) → passed (stage done) → rejected → returned
 // (Chưa đạt, hoặc stage bị quay lại: vòng > 1 chưa xong) → pending.
+import { headGate } from "../tasks/task-access.rules";
 
 export type PackStepStatus =
   | "pending"
@@ -55,4 +56,17 @@ export function stageMeta(stage: StageSnap, idx: number) {
 export function dueOf(escalateAt: Date | string | null): string | null {
   if (escalateAt === null) return null;
   return (escalateAt instanceof Date ? escalateAt : new Date(escalateAt)).toISOString();
+}
+
+/** CR-139 · người duyệt đã chọn của bước (cùng luật `headGate`: đích danh / trưởng phòng head_only) + «Trưởng phòng của người gửi» không ra ai. */
+export function approverFieldsOf(
+  after: (Parameters<typeof headGate>[0] & { approver_mode?: string }) | null | undefined,
+  head: string | null,
+  headName: string | null,
+): { approver?: { id: string; name: string }; approver_missing?: true } {
+  const gate = headGate(after, head);
+  if (gate) return { approver: { id: gate, name: headName ?? gate } };
+  return after?.kind === "review" && after.approver_mode === "starter_head"
+    ? { approver_missing: true }
+    : {};
 }

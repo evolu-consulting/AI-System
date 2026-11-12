@@ -78,6 +78,7 @@ function ifLine(s: StageDraft, l: SummaryLabels): string {
 const APPROVE_WORDS: Record<string, string> = {
   need_one: "một người nhận việc",
   need_head: "trưởng phòng",
+  starter_head: "trưởng phòng của người gửi",
   need_all: "tất cả",
   evidence_opinion_plus: "ý kiến + chữ ký hoặc tệp",
 };

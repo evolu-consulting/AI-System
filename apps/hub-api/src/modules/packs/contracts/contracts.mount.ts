@@ -20,6 +20,7 @@ import {
   memberNamesOf,
   packAccessInput,
   packMembersRoutes,
+  packOrgRoutes,
   packTenantOnly,
 } from "../kit/public";
 import { appendixRoutes } from "./adapters/appendix.routes";
@@ -164,6 +165,7 @@ export function contractsModule(
   );
   r.route("/", visibilityRoutes(view, CONTRACTS_KEY, db)); // M1D-FR-04: chế độ thấy (tenant|org)
   r.route("/", packMembersRoutes(view, CONTRACTS_KEY, db)); // HD5 · N1 Q8: danh bạ tên người phụ trách
+  r.route("/", packOrgRoutes(view, CONTRACTS_KEY, db)); // CR-139 · Q13: sơ đồ tổ chức chỉ xem
   // T10 (tải lên): `upload.mount.ts`, gắn ở `packs.mount.ts` (cần Redis + FileBox + múi tenant mà module này không nhận).
   return r;
 }

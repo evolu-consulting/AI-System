@@ -8,9 +8,17 @@ type Esc = StageDraft["escalate"];
 export const needOf = (s: Pick<StageDraft, "review">): "one" | "head" | "all" =>
   s.review?.need ?? (s.review?.headOnly ? "head" : "one");
 
-/** Giá trị ô «Ai duyệt»: `u:<id>` khi chọn người, ngược lại giá trị phòng. */
+export const STARTER_HEAD = "starter_head";
+export const isStarterHeadStage = (s: Pick<StageDraft, "review">): boolean =>
+  s.review?.approverMode === STARTER_HEAD;
+
+/** Giá trị ô «Ai duyệt»: `starter_head` (trưởng phòng của người gửi) | `u:<id>` khi chọn người | giá trị phòng. */
 export const whoValueOf = (s: Pick<StageDraft, "review">, groupValue: string): string =>
-  s.review?.approverUserId ? `u:${s.review.approverUserId}` : groupValue;
+  isStarterHeadStage(s)
+    ? STARTER_HEAD
+    : s.review?.approverUserId
+      ? `u:${s.review.approverUserId}`
+      : groupValue;
 
 /** Chọn người (`u:<id>`) ⇒ bỏ phòng; chọn phòng ⇒ bỏ người. `groupPatch` = patch phòng của `useApproverField`. */
 export function whoPatch(
@@ -18,7 +26,14 @@ export function whoPatch(
   v: string,
   groupPatch: (id: string) => Partial<StageDraft>,
 ): Partial<StageDraft> {
-  const { approverUserId: _drop, ...rest } = s.review ?? {};
+  const { approverUserId: _drop, approverMode: _mode, ...rest } = s.review ?? {};
+  if (v === STARTER_HEAD)
+    return {
+      groupId: "",
+      groupKey: "",
+      after: "review",
+      review: { ...rest, approverMode: STARTER_HEAD },
+    };
   if (v.startsWith("u:"))
     return { groupId: "", after: "review", review: { ...rest, approverUserId: v.slice(2) } };
   return { ...groupPatch(v), after: "review", review: rest as Review };

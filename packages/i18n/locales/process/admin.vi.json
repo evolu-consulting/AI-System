@@ -466,6 +466,8 @@
         }
       },
       "approver": "Ai duyệt",
+      "approverStarterHead": "Trưởng phòng của người đề xuất",
+      "approverStarterHeadHint": "Hệ thống chọn trưởng phòng của người gửi; phòng không có trưởng thì lên phòng cấp trên.",
       "approverPh": "Chọn người duyệt",
       "milestone": {
         "owner": "Người phụ trách hợp đồng",
@@ -1650,6 +1652,7 @@
       "word": {
         "owner": "Người phụ trách hợp đồng",
         "milestone": "Xác nhận mốc",
+        "starterHead": "trưởng phòng của người gửi",
         "needOne": "một người nhận việc",
         "needHead": "trưởng phòng",
         "needAll": "tất cả",

@@ -5,6 +5,7 @@ import {
   MESSAGES_NAV,
   NAV,
   type NavItem,
+  ORG_NAV,
   REQUESTS_NAV,
 } from "~/features/shell/lib/nav";
 import { basePathOf } from "~/shared/kernel/app-path";
@@ -27,5 +28,6 @@ export const contractsManifest: ModuleManifest<NavItem> = {
     APPROVALS_NAV,
     ...NAV.slice(2, 3),
     ...NAV.slice(3),
+    ORG_NAV,
   ],
 };

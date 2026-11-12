@@ -66,6 +66,9 @@ export type EngineStageView = {
   /** CR-122 · P11 · tên stage + Group (khớp `PackStepView`) — thẻ của lượt flow (không có mẫu chụp) dựng bước từ đây. */
   name?: string;
   group_id?: string | null;
+  /** CR-139 · khớp `PackStepView.approver` / `approver_missing`. */
+  approver?: { id: string; name: string } | null;
+  approver_missing?: boolean;
   /** P11f · vị trí stage trong run (khớp `PackStepView.idx`). */
   idx?: number;
   /** CR-123 · u6 · cụm node module đã gộp một dòng (khớp `PackStepView.module`). */
@@ -118,6 +121,9 @@ export type CardStep = {
   overdue?: boolean;
   /** CR-113 · tên Group nhận khi chuyển cấp đã xảy ra (vắng khi chưa chuyển cấp / không biết tên). */
   escalated_to?: string;
+  /** CR-139 · người duyệt đã chọn / không tìm được trưởng phòng của người gửi. */
+  approver?: { id: string; name: string } | null;
+  approver_missing?: boolean;
   /** CR-125 · bước «Điền thông tin»: trường của form + giá trị đã gửi (thẻ vẽ ô nhập / xem lại). */
   form?: { fields: unknown[] };
   values?: Record<string, unknown>;
@@ -234,6 +240,8 @@ function runCardStep(st: EngineStageView, x: CardExtras): CardStep {
     status: st.status,
     group_id: st.group_id ?? null,
     head_only: false,
+    ...(st.approver ? { approver: st.approver } : {}),
+    ...(st.approver_missing ? { approver_missing: true } : {}),
     ...(st.form
       ? {
           form: {

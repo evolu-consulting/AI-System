@@ -25,6 +25,7 @@ import { Route as AuthedContractsFeedbackRouteImport } from './routes/_authed/co
 import { Route as AuthedContractsListRouteImport } from './routes/_authed/contracts/list'
 import { Route as AuthedContractsMessagesRouteImport } from './routes/_authed/contracts/messages'
 import { Route as AuthedContractsNotificationsRouteImport } from './routes/_authed/contracts/notifications'
+import { Route as AuthedContractsOrgRouteImport } from './routes/_authed/contracts/org'
 import { Route as AuthedContractsPartnerInboxRouteImport } from './routes/_authed/contracts/partner-inbox'
 import { Route as AuthedContractsPartnersRouteImport } from './routes/_authed/contracts/partners'
 import { Route as AuthedContractsProductsRouteImport } from './routes/_authed/contracts/products'
@@ -117,6 +118,11 @@ const AuthedContractsNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthedContractsRoute,
   } as any)
+const AuthedContractsOrgRoute = AuthedContractsOrgRouteImport.update({
+  id: '/org',
+  path: '/org',
+  getParentRoute: () => AuthedContractsRoute,
+} as any)
 const AuthedContractsPartnerInboxRoute =
   AuthedContractsPartnerInboxRouteImport.update({
     id: '/partner-inbox',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/contracts/list': typeof AuthedContractsListRoute
   '/contracts/messages': typeof AuthedContractsMessagesRoute
   '/contracts/notifications': typeof AuthedContractsNotificationsRoute
+  '/contracts/org': typeof AuthedContractsOrgRoute
   '/contracts/partner-inbox': typeof AuthedContractsPartnerInboxRoute
   '/contracts/partners': typeof AuthedContractsPartnersRoute
   '/contracts/products': typeof AuthedContractsProductsRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/contracts/list': typeof AuthedContractsListRoute
   '/contracts/messages': typeof AuthedContractsMessagesRoute
   '/contracts/notifications': typeof AuthedContractsNotificationsRoute
+  '/contracts/org': typeof AuthedContractsOrgRoute
   '/contracts/partner-inbox': typeof AuthedContractsPartnerInboxRoute
   '/contracts/partners': typeof AuthedContractsPartnersRoute
   '/contracts/products': typeof AuthedContractsProductsRoute
@@ -242,6 +250,7 @@ export interface FileRoutesById {
   '/_authed/contracts/list': typeof AuthedContractsListRoute
   '/_authed/contracts/messages': typeof AuthedContractsMessagesRoute
   '/_authed/contracts/notifications': typeof AuthedContractsNotificationsRoute
+  '/_authed/contracts/org': typeof AuthedContractsOrgRoute
   '/_authed/contracts/partner-inbox': typeof AuthedContractsPartnerInboxRoute
   '/_authed/contracts/partners': typeof AuthedContractsPartnersRoute
   '/_authed/contracts/products': typeof AuthedContractsProductsRoute
@@ -271,6 +280,7 @@ export interface FileRouteTypes {
     | '/contracts/list'
     | '/contracts/messages'
     | '/contracts/notifications'
+    | '/contracts/org'
     | '/contracts/partner-inbox'
     | '/contracts/partners'
     | '/contracts/products'
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/contracts/list'
     | '/contracts/messages'
     | '/contracts/notifications'
+    | '/contracts/org'
     | '/contracts/partner-inbox'
     | '/contracts/partners'
     | '/contracts/products'
@@ -324,6 +335,7 @@ export interface FileRouteTypes {
     | '/_authed/contracts/list'
     | '/_authed/contracts/messages'
     | '/_authed/contracts/notifications'
+    | '/_authed/contracts/org'
     | '/_authed/contracts/partner-inbox'
     | '/_authed/contracts/partners'
     | '/_authed/contracts/products'
@@ -461,6 +473,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedContractsNotificationsRouteImport
       parentRoute: typeof AuthedContractsRoute
     }
+    '/_authed/contracts/org': {
+      id: '/_authed/contracts/org'
+      path: '/org'
+      fullPath: '/contracts/org'
+      preLoaderRoute: typeof AuthedContractsOrgRouteImport
+      parentRoute: typeof AuthedContractsRoute
+    }
     '/_authed/contracts/partner-inbox': {
       id: '/_authed/contracts/partner-inbox'
       path: '/partner-inbox'
@@ -554,6 +573,7 @@ interface AuthedContractsRouteChildren {
   AuthedContractsListRoute: typeof AuthedContractsListRoute
   AuthedContractsMessagesRoute: typeof AuthedContractsMessagesRoute
   AuthedContractsNotificationsRoute: typeof AuthedContractsNotificationsRoute
+  AuthedContractsOrgRoute: typeof AuthedContractsOrgRoute
   AuthedContractsPartnerInboxRoute: typeof AuthedContractsPartnerInboxRoute
   AuthedContractsPartnersRoute: typeof AuthedContractsPartnersRoute
   AuthedContractsProductsRoute: typeof AuthedContractsProductsRoute
@@ -573,6 +593,7 @@ const AuthedContractsRouteChildren: AuthedContractsRouteChildren = {
   AuthedContractsListRoute: AuthedContractsListRoute,
   AuthedContractsMessagesRoute: AuthedContractsMessagesRoute,
   AuthedContractsNotificationsRoute: AuthedContractsNotificationsRoute,
+  AuthedContractsOrgRoute: AuthedContractsOrgRoute,
   AuthedContractsPartnerInboxRoute: AuthedContractsPartnerInboxRoute,
   AuthedContractsPartnersRoute: AuthedContractsPartnersRoute,
   AuthedContractsProductsRoute: AuthedContractsProductsRoute,

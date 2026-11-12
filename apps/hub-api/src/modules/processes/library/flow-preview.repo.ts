@@ -76,8 +76,13 @@ export async function loadWorld(tx: Tx, tid: string, n: Need): Promise<World> {
     from hub.delegations where tenant_id = ${tid}::uuid and revoked_at is null
       and from_at <= ${n.at.toISOString()}::timestamptz and to_at > ${n.at.toISOString()}::timestamptz
     order by from_at desc limit 500`);
+  const [head] = await tx.execute<{
+    any_head: boolean;
+  }>(sql`select exists(select 1 from admin.departments
+    where tenant_id = ${tid}::uuid and head_user_id is not null) as any_head`);
   return {
     tenantId: tid,
+    anyDeptHead: head?.any_head ?? false,
     users: new Map<string, PreviewUser>(
       users.map((u) => [u.id, { id: u.id, name: u.name, usable: u.usable, role: u.role }]),
     ),

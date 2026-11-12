@@ -91,6 +91,10 @@ export type PackStepView = {
   group_id: string | null;
   /** Group chuyển cấp đã thêm (null khi chưa chuyển cấp). */
   escalated_group_id: string | null;
+  /** CR-139 · người duyệt đã được chọn của bước (cửa đích danh / trưởng phòng); vắng ⇒ cả phòng. */
+  approver?: { id: string; name: string } | null;
+  /** CR-139 · bước `starter_head` không tìm được trưởng phòng ⇒ quản trị công ty duyệt thay. */
+  approver_missing?: boolean;
   /** Hạn = mốc chuyển cấp của task duyệt gần nhất (`created_at + after_h`); null khi không có. */
   due_at: string | null;
   escalated: boolean;
