@@ -2,7 +2,7 @@
 // mới nhất, "Đánh dấu tất cả đã đọc", và chân luôn có "Xem tất cả" + "Cài đặt thông báo" (form tùy chọn luôn với tới được, kể cả khi chưa có
 // thông báo). Style nội tuyến + biến màu của app như `AppSwitcher`. Điều hướng: `onNavigate(href)` (router của app) hoặc <a href>.
 import { type CSSProperties, type ReactElement, useEffect, useMemo, useRef, useState } from "react";
-import { type NotifyTransport, notifyClient } from "../notify/client";
+import { type NotificationItem, type NotifyTransport, notifyClient } from "../notify/client";
 import { useBell } from "../notify/hooks";
 import { mergeLabels, type NotifyLabels } from "../notify/labels";
 
@@ -15,6 +15,12 @@ export type NotificationBellProps = {
   pollMs?: number;
   /** Client HTTP riêng của app (admin/studio); vắng ⇒ `http.ts` của kit. */
   transport?: NotifyTransport;
+  /** CR-130 · false ⇒ ẩn chân "Xem tất cả / Cài đặt" (workspace: đối tác không có trang Sổ Hợp Tác). Mặc định true. */
+  showFooter?: boolean;
+  /** CR-130 · true ⇒ hàng có `link` là <a href> thật (mở tab mới, đọc được bằng role link); mặc định nút bấm. */
+  linkRows?: boolean;
+  /** CR-130 · có ⇒ in thời điểm tạo dưới mỗi thông báo (app tự định dạng theo ngôn ngữ). */
+  formatTime?: (iso: string) => string;
 };
 
 const BTN: CSSProperties = {
@@ -100,6 +106,79 @@ function BellIcon(): ReactElement {
   );
 }
 
+type RowProps = {
+  n: NotificationItem;
+  bell: ReturnType<typeof useBell>;
+  go: (href: string) => void;
+  link: boolean;
+  time?: (iso: string) => string;
+  unreadDot: string;
+};
+
+export function NotificationRow({ n, bell, go, link, time, unreadDot }: RowProps): ReactElement {
+  const style = { ...ROW, fontWeight: n.read ? 400 : 600 };
+  const sub: CSSProperties = { display: "block", fontWeight: 400, fontSize: 12, opacity: 0.7 };
+  const content = (
+    <>
+      {!n.read && (
+        <span
+          role="img"
+          aria-label={unreadDot}
+          style={{
+            display: "inline-block",
+            width: 8,
+            height: 8,
+            marginRight: 8,
+            borderRadius: 4,
+            background: "var(--primary, #2563eb)",
+          }}
+        />
+      )}
+      {n.title}
+      {n.body !== "" && (
+        <span
+          style={{ ...sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+        >
+          {n.body}
+        </span>
+      )}
+      {time && <span style={sub}>{time(n.created_at)}</span>}
+    </>
+  );
+  const read = () => {
+    if (!n.read) void bell.readOne(n.id);
+  };
+  const href = n.link;
+  if (link && href) {
+    return (
+      <a
+        href={href}
+        style={{ ...style, textDecoration: "none" }}
+        onClick={(e) => {
+          read();
+          if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+          e.preventDefault();
+          go(href);
+        }}
+      >
+        {content}
+      </a>
+    );
+  }
+  return (
+    <button
+      type="button"
+      style={style}
+      onClick={() => {
+        read();
+        if (href) go(href);
+      }}
+    >
+      {content}
+    </button>
+  );
+}
+
 export function NotificationBell(p: NotificationBellProps): ReactElement {
   const L = mergeLabels(p.labels);
   const viewAll = p.viewAllHref ?? "/notifications";
@@ -140,6 +219,7 @@ export function NotificationBell(p: NotificationBellProps): ReactElement {
       {text}
     </a>
   );
+  const showFooter = p.showFooter ?? true;
   const label = bell.unread ? L.bellUnread(bell.unread) : L.bell;
   return (
     <div ref={root} style={{ position: "relative" }}>
@@ -192,53 +272,24 @@ export function NotificationBell(p: NotificationBellProps): ReactElement {
             >
               {bell.items.map((n) => (
                 <li key={n.id}>
-                  <button
-                    type="button"
-                    style={{ ...ROW, fontWeight: n.read ? 400 : 600 }}
-                    onClick={() => {
-                      if (!n.read) void bell.readOne(n.id);
-                      if (n.link) go(n.link);
-                    }}
-                  >
-                    {!n.read && (
-                      <span
-                        role="img"
-                        aria-label={L.unreadDot}
-                        style={{
-                          display: "inline-block",
-                          width: 8,
-                          height: 8,
-                          marginRight: 8,
-                          borderRadius: 4,
-                          background: "var(--primary, #2563eb)",
-                        }}
-                      />
-                    )}
-                    {n.title}
-                    {n.body !== "" && (
-                      <span
-                        style={{
-                          display: "block",
-                          fontWeight: 400,
-                          fontSize: 12,
-                          opacity: 0.7,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {n.body}
-                      </span>
-                    )}
-                  </button>
+                  <NotificationRow
+                    n={n}
+                    bell={bell}
+                    go={go}
+                    link={p.linkRows === true}
+                    time={p.formatTime}
+                    unreadDot={L.unreadDot}
+                  />
                 </li>
               ))}
             </ul>
           )}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 16px" }}>
-            {anchor(viewAll, L.viewAll)}
-            {anchor(settings, L.settings)}
-          </div>
+          {showFooter && (
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 16px" }}>
+              {anchor(viewAll, L.viewAll)}
+              {anchor(settings, L.settings)}
+            </div>
+          )}
         </div>
       )}
     </div>

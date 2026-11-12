@@ -1,3 +1,3 @@
-﻿# features/notifications (N3-FR-09)
-Chuông thông báo in-app S16: `api.ts` gọi `/notifications*` (hub-api), `hooks/use-notifications.ts` giữ danh sách + chưa đọc + tùy chọn kênh,
-`components/ConnectedBell.tsx` nối vào `NotificationBell` (shell, trình bày thuần). Đăng ký push (service worker) chưa làm ở lát N3.
+# features/notifications (N3-FR-09 · CR-130)
+Chuông = `NotificationBell` của `@ai/web-kit/ui/NotificationBell` (một component cho mọi app); `components/ConnectedBell.tsx` chỉ cấu hình riêng workspace
+(nhãn i18n, router, chân chỉ khi có gói Sổ Hợp Tác). Không còn api/hook riêng.
