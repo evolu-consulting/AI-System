@@ -803,18 +803,6 @@
       }
     },
     "flows": {
-      "appOffStatus": "Chưa dùng ứng dụng",
-      "err": {
-        "appOff": "Công ty chưa dùng {app}.",
-        "openApps": "Bật ở tab Ứng dụng",
-        "openGroups": "Mở Thành viên › Nhóm",
-        "openLibrary": "Mở Thư viện quy trình",
-        "groupsMissing": "Công ty chưa có nhóm {keys} mà quy trình này cần nên chưa gán được.",
-        "notPublished": "Quy trình này chưa xuất bản nên chưa gán được.",
-        "publishInvalid": "Quy trình này còn lỗi cấu hình nên chưa gán được.",
-        "refInvalid": "Quy trình nhắc tới người hoặc nhóm không thuộc công ty này nên chưa gán được.",
-        "unprocessable": "Chưa gán được quy trình này cho {app}. Có thể công ty chưa dùng {app} hoặc quy trình chưa sẵn sàng."
-      },
       "stepsMore": "+{n}",
       "runTitle": "{job} · bắt đầu {at}",
       "assign": "Gán",
@@ -3126,8 +3114,6 @@
       "flowRuns": "Chạy quy trình \"{name}\" (v{version}).",
       "flowFallback": "Dùng cách duyệt mặc định cũ."
     },
-    "listFilter": "Đang lọc quy trình theo app {app}.",
-    "listFilterClear": "Bỏ lọc",
     "flow": {
       "title": "Các bước của quy trình mặc định (chỉ xem)",
       "diagram": "Sơ đồ các bước",
