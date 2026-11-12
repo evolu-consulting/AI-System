@@ -37,21 +37,28 @@ const tooLarge = () =>
   new AppError("MSG_FILE_TOO_LARGE", MSG_ERRORS.MSG_FILE_TOO_LARGE, "MSG_FILE_TOO_LARGE");
 const storageOff = () => new AppError("FILE_STORAGE_UNAVAILABLE", 503, "FILE_STORAGE_UNAVAILABLE");
 
-export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Hono<PackGuardVars> {
-  const r = new Hono<PackGuardVars>();
-  const read = packGuard(view, "contracts", "read");
-  const who = (c: Context<PackGuardVars>) => {
+type Routes = Hono<PackGuardVars>;
+type Ctx = Context<PackGuardVars>;
+/** Phần dùng chung của mọi route: guard `read`, người gọi (đối tác ⇒ 403), tham số uuid, no-store. */
+type H = ReturnType<typeof helpers>;
+function helpers(view: PackAccessView) {
+  const who = (c: Ctx) => {
     const u = c.get("user");
     if (u.userKind === "external") throw forbidden(); // đối tác không nhắn tin nội bộ
     return { tenantId: u.tenantId, userId: u.userId, userKind: u.userKind };
   };
-  const uuid = (c: Context<PackGuardVars>, name: string) => {
+  const uuid = (c: Ctx, name: string) => {
     const v = z.uuid().safeParse(c.req.param(name));
     if (!v.success) throw notFound();
     return v.data;
   };
-  const noStore = (c: Context<PackGuardVars>) => c.header("cache-control", "no-store");
+  const noStore = (c: Ctx) => c.header("cache-control", "no-store");
+  return { read: packGuard(view, "contracts", "read"), who, uuid, noStore };
+}
 
+/** Hội thoại: danh sách, chưa đọc, tạo, chi tiết, đổi tên. */
+function conversationRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
+  const { read, who, uuid, noStore } = h;
   r.get("/messages/unread", read, async (c) => {
     const out = await uc.unread(who(c));
     noStore(c);
@@ -86,6 +93,11 @@ export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Hono
     const body = await parseJson(c, RenameConversationRequestSchema);
     return c.json(await run(uc.rename(w, cid, body.title)));
   });
+}
+
+/** Thành viên: thêm, bớt / rời. */
+function memberRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
+  const { read, who, uuid } = h;
   r.post("/messages/conversations/:id/members", read, async (c) => {
     const w = who(c);
     const cid = uuid(c, "id");
@@ -97,6 +109,11 @@ export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Hono
     await run(uc.removeMember(w, uuid(c, "id"), uuid(c, "userId")));
     return c.body(null, 204);
   });
+}
+
+/** Tin: danh sách, gửi, thu hồi, đã đọc. */
+function messageRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
+  const { read, who, uuid, noStore } = h;
   r.get("/messages/conversations/:id/messages", read, async (c) => {
     const w = who(c);
     const cid = uuid(c, "id");
@@ -124,7 +141,11 @@ export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Hono
     const body = await parseJson(c, MarkReadRequestSchema);
     return c.json(await run(uc.markRead(w, cid, body.seq)));
   });
-  // Tệp (M5): tải lên (multipart `file`, gắn `msg_files` ngay, chưa gửi) + tải xuống 302 tới FileBox. FileBox vắng ⇒ 503.
+}
+
+/** Tệp (M5): tải lên (multipart `file`, gắn `msg_files` ngay, chưa gửi) + tải xuống 302 tới FileBox. FileBox vắng ⇒ 503. */
+function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
+  const { read, who, uuid, noStore } = h;
   r.post(
     "/messages/conversations/:id/files",
     read,
@@ -154,5 +175,14 @@ export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Hono
     noStore(c);
     return c.redirect(url, 302);
   });
+}
+
+export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Routes {
+  const r = new Hono<PackGuardVars>();
+  const h = helpers(view);
+  conversationRoutes(r, h, uc);
+  memberRoutes(r, h, uc);
+  messageRoutes(r, h, uc);
+  fileRoutes(r, h, uc);
   return r;
 }

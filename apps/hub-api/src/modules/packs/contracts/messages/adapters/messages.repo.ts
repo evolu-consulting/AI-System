@@ -37,7 +37,11 @@ function summary(t: string, me: string, withMembers: boolean, pick: SQL) {
     order by c.last_at desc, c.id desc`;
 }
 
-export function messagesRepo(tx: Tx, t: string): MessagesRepo {
+/** Đọc hội thoại: danh sách, chi tiết, tổng chưa đọc, sự thật cho kiểm quyền, tìm 1-1. */
+function readRepo(
+  tx: Tx,
+  t: string,
+): Pick<MessagesRepo, "conversations" | "conversation" | "unread" | "facts" | "findDm"> {
   return {
     conversations: (me, cursor, limit) =>
       tx.execute<RawConversation>(
@@ -80,6 +84,18 @@ export function messagesRepo(tx: Tx, t: string): MessagesRepo {
         where tenant_id = ${t}::uuid and dm_key = ${key}`);
       return r?.id ?? null;
     },
+  };
+}
+
+/** Ghi hội thoại + thành viên. */
+function memberRepo(
+  tx: Tx,
+  t: string,
+): Pick<
+  MessagesRepo,
+  "createConversation" | "addMembers" | "rename" | "setOwner" | "removeMember" | "dropIfEmpty"
+> {
+  return {
     createConversation: async (c) => {
       await tx.execute(sql`insert into contracts.msg_conversations (tenant_id, id, kind, title, dm_key, created_by)
         values (${t}::uuid, ${c.id}::uuid, ${c.kind}, ${c.title}, ${c.dmKey}, ${c.createdBy}::uuid)`);
@@ -108,6 +124,9 @@ export function messagesRepo(tx: Tx, t: string): MessagesRepo {
       );
       return r?.r === true;
     },
-    ...messagesSendRepo(tx, t),
   };
+}
+
+export function messagesRepo(tx: Tx, t: string): MessagesRepo {
+  return { ...readRepo(tx, t), ...memberRepo(tx, t), ...messagesSendRepo(tx, t) };
 }

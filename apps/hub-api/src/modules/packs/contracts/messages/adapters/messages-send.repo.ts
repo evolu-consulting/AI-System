@@ -15,21 +15,10 @@ import { iso, uuidArr } from "./messages.sql";
 const FILE_JSON = sql`json_build_object('id', f.id, 'name', f.name, 'mime', f.mime, 'size', f.size_bytes::int)`;
 type FileRow = RawMessage["files"][number];
 
-export function messagesSendRepo(
-  tx: Tx,
-  t: string,
-): Pick<
-  MessagesRepo,
-  | "page"
-  | "send"
-  | "attach"
-  | "filesOf"
-  | "revoke"
-  | "markRead"
-  | "insertFile"
-  | "fileRef"
-  | "convFiles"
-> {
+type R<K extends keyof MessagesRepo> = Pick<MessagesRepo, K>;
+
+/** Đọc: trang tin + đánh dấu đã đọc. */
+function pageRepo(tx: Tx, t: string): R<"page" | "markRead"> {
   return {
     // Thành viên (1 dòng) + trang tin (tối đa limit+1, mới → cũ) + tệp từng tin (lateral theo index `msg_files (tenant,conv,seq)`).
     page: async (me, cid, before, limit) => {
@@ -49,6 +38,26 @@ export function messagesSendRepo(
         where m.tenant_id = ${t}::uuid and m.conversation_id = ${cid}::uuid and m.user_id = ${me}::uuid`);
       return r ? r.items : null;
     },
+    // Cùng công thức `clampRead(current, requested, lastSeq)` (domain): max(hiện tại, min(yêu cầu, tin cuối)).
+    markRead: async (me, cid, seq) => {
+      const [r] = await tx.execute<ReadRow>(sql`update contracts.msg_members m
+        set last_read_seq = greatest(m.last_read_seq, least(${seq}::bigint, c.last_seq))
+        from contracts.msg_conversations c
+        where m.tenant_id = ${t}::uuid and m.conversation_id = ${cid}::uuid and m.user_id = ${me}::uuid
+          and c.tenant_id = m.tenant_id and c.id = m.conversation_id
+        returning m.last_read_seq::int as seq,
+          (select p.last_read_seq from contracts.msg_members p where p.tenant_id = m.tenant_id
+            and p.conversation_id = m.conversation_id and p.user_id = m.user_id)::int as prev,
+          (select coalesce(array_agg(mm.user_id::text), '{}') from contracts.msg_members mm
+            where mm.tenant_id = m.tenant_id and mm.conversation_id = m.conversation_id) as member_ids`);
+      return r ?? null;
+    },
+  };
+}
+
+/** Gửi tin + gắn tệp vào tin. */
+function sendRepo(tx: Tx, t: string): R<"send" | "attach" | "filesOf"> {
+  return {
     send: async ({ me, cid, clientId, body }) => {
       const rows = await tx.execute<SentRow>(sql`with
         mem as (select 1 as x from contracts.msg_members where tenant_id = ${t}::uuid and conversation_id = ${cid}::uuid and user_id = ${me}::uuid),
@@ -85,6 +94,12 @@ export function messagesSendRepo(
         where mf.tenant_id = ${t}::uuid and mf.conversation_id = ${cid}::uuid and mf.seq = ${seq}::bigint order by f.created_at, f.id`);
       return [...rows];
     },
+  };
+}
+
+/** Thu hồi tin. */
+function revokeRepo(tx: Tx, t: string): R<"revoke"> {
+  return {
     // Thu hồi: chỉ người gửi, chưa thu hồi; xoá chữ + soft-delete tệp của tin trong CÙNG câu. Giữ hàng `msg_files` (policy tệp ở M5 còn chặn người ngoài).
     revoke: async ({ me, cid, seq }) => {
       const [r] = await tx.execute<RevokeRow>(sql`with
@@ -103,6 +118,12 @@ export function messagesSendRepo(
           (select coalesce(json_agg(json_build_object('org', fl.org, 'file_id', fl.file_id)), '[]'::json) from fl) as gone from m`);
       return r ?? null;
     },
+  };
+}
+
+/** Tệp tải lên / tải xuống / liệt kê. */
+function fileRepo(tx: Tx, t: string): R<"insertFile" | "fileRef" | "convFiles"> {
+  return {
     // HAI câu cùng tx (cố định): policy INSERT của `msg_files` kiểm `contracts.files` bằng subquery KHÔNG thấy hàng vừa chèn trong cùng câu (CTE).
     insertFile: async (f) => {
       await tx.execute(sql`insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
@@ -125,19 +146,22 @@ export function messagesSendRepo(
         where mf.tenant_id = ${t}::uuid and mf.conversation_id = ${cid}::uuid`);
       return [...rows];
     },
-    // Cùng công thức `clampRead(current, requested, lastSeq)` (domain): max(hiện tại, min(yêu cầu, tin cuối)).
-    markRead: async (me, cid, seq) => {
-      const [r] = await tx.execute<ReadRow>(sql`update contracts.msg_members m
-        set last_read_seq = greatest(m.last_read_seq, least(${seq}::bigint, c.last_seq))
-        from contracts.msg_conversations c
-        where m.tenant_id = ${t}::uuid and m.conversation_id = ${cid}::uuid and m.user_id = ${me}::uuid
-          and c.tenant_id = m.tenant_id and c.id = m.conversation_id
-        returning m.last_read_seq::int as seq,
-          (select p.last_read_seq from contracts.msg_members p where p.tenant_id = m.tenant_id
-            and p.conversation_id = m.conversation_id and p.user_id = m.user_id)::int as prev,
-          (select coalesce(array_agg(mm.user_id::text), '{}') from contracts.msg_members mm
-            where mm.tenant_id = m.tenant_id and mm.conversation_id = m.conversation_id) as member_ids`);
-      return r ?? null;
-    },
   };
+}
+
+export function messagesSendRepo(
+  tx: Tx,
+  t: string,
+): R<
+  | "page"
+  | "send"
+  | "attach"
+  | "filesOf"
+  | "revoke"
+  | "markRead"
+  | "insertFile"
+  | "fileRef"
+  | "convFiles"
+> {
+  return { ...pageRepo(tx, t), ...sendRepo(tx, t), ...revokeRepo(tx, t), ...fileRepo(tx, t) };
 }

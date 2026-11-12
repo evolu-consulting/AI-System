@@ -23,7 +23,7 @@ export function messagesModule(
   view: PackAccessView,
   deps: {
     redis?: Redis | undefined;
-    filebox?: ((org: string) => PackFileboxClient) | undefined;
+    filebox?: ((org: string) => PackFileboxClient) | null | undefined;
   } = {},
 ): Hono<PackGuardVars> {
   const { redis, filebox } = deps;

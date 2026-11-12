@@ -169,7 +169,6 @@ function mountContracts<E extends Env>(
   mountAssistantTools(d.db, d.packTools, { timeZoneOf: tenantTz(d), view }); // M2-chat Â· tool Ä‘á»c cá»§a trá»£ lÃ½
   mountContractsContext(d.db, d.packTools, { ...d, view, ...stepDeps(d) }); // + CR-120 khe contracts.intake (tool bước, esign.completed) // one-agent Â· nhÃ£n HÄ/Ä‘á»‘i tÃ¡c Ä‘ang xem (khá»‘i ngá»¯ cáº£nh dock)
 }
-
 type ContractsCtx = ReturnType<typeof contractsCtx>;
 
 /** Phá»¥ thuá»™c chung cá»§a gÃ³i contracts: AI client (M3), tra MST, tráº§n thao tÃ¡c, module trÃ­ch HD2/HD3. */
@@ -237,10 +236,7 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
         recordRunFiles(db, w, { packKey: CONTRACTS_KEY, recordId }),
       ),
     ); // CR-133 · «Tài liệu kèm» (FileBox vắng ⇒ không gắn)
-  app.route(
-    base,
-    messagesModule(db, view, { redis: d.redis, filebox: fb ? fileboxClients(fb) : undefined }),
-  ); // CR-132 · tin nhắn nhân viên (1-1 + nhóm), `msg.*` realtime (cần Redis), tệp (cần FileBox)
+  app.route(base, messagesModule(db, view, { redis: d.redis, filebox: fb && fileboxClients(fb) })); // CR-132 · tin nhắn (msg.* cần Redis, tệp cần FileBox)
   app.route(base, contractsRemind(d, view, db)); // HD4
   app.route(base, partnerModule(db, view)); // CR-124 q4 · hộp «Hợp đồng đối tác gửi» + ghi nhận thủ công
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9

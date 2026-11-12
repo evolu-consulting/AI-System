@@ -36,7 +36,7 @@ import {
   personIdsOf,
   summaryOf,
 } from "./messages.view";
-import { messagesFileOps } from "./messages-files.usecase";
+import { type MessagesFileOps, messagesFileOps } from "./messages-files.usecase";
 
 export { MsgFail };
 
@@ -65,9 +65,7 @@ async function lockGroupAsOwner(r: MessagesRepo, me: string, cid: string) {
   return f;
 }
 
-export type MessagesUsecases = ReturnType<typeof messagesUsecases>;
-
-export function messagesUsecases(d: {
+type Deps = {
   uow: PackUow<MessagesRepos>;
   people: PeopleLookup;
   newId: () => string;
@@ -75,8 +73,20 @@ export function messagesUsecases(d: {
   publish?: PackStreamPublishMany | undefined;
   /** Kho byte FileBox (M5); vắng ⇒ route tệp trả 503, tin chữ vẫn chạy. */
   files?: MsgFileStore | undefined;
-}) {
-  const fileOps = messagesFileOps(d);
+};
+type Ctx = {
+  d: Deps;
+  fileOps: MessagesFileOps;
+  emit: (frames: MsgFrame[]) => Promise<void>;
+  peopleOf: (who: PackWho, rows: readonly RawConversation[]) => Promise<People>;
+  detail: (who: PackWho, row: RawConversation | null) => Promise<ConversationDetail>;
+  active: (p: People, id: string) => boolean;
+};
+
+export type MessagesUsecases = ReturnType<typeof messagesUsecases>;
+
+/** Phần dùng chung của mọi nhóm use case: phát sự kiện sau commit, tra tên người, dựng chi tiết hội thoại. */
+function context(d: Deps): Ctx {
   const emit = async (frames: MsgFrame[]): Promise<void> => {
     if (d.publish && frames.length > 0) await d.publish(frames).catch(() => undefined);
   };
@@ -87,7 +97,12 @@ export function messagesUsecases(d: {
     return detailOf(row, await peopleOf(who, [row]));
   };
   const active = (p: People, id: string) => p.get(id)?.active === true;
+  return { d, fileOps: messagesFileOps(d), emit, peopleOf, detail, active };
+}
 
+/** Tạo hội thoại: 1-1 (tái dùng nếu đã có) và nhóm. */
+function creationOps(c: Ctx) {
+  const { d, emit, detail, active } = c;
   async function createDirect(who: PackWho, peer: string) {
     const me = who.userId;
     if (peer === me) throw new MsgFail("MSG_DM_SELF");
@@ -120,6 +135,21 @@ export function messagesUsecases(d: {
   }
 
   return {
+    create(
+      who: PackWho,
+      req: CreateConversationRequest,
+    ): Promise<{ detail: ConversationDetail; created: boolean }> {
+      return req.kind === "direct"
+        ? createDirect(who, req.user_id)
+        : createGroup(who, req.title, req.member_ids);
+    },
+  };
+}
+
+/** Hội thoại: danh sách, chưa đọc, chi tiết, đổi tên. */
+function conversationOps(c: Ctx) {
+  const { d, emit, peopleOf, detail } = c;
+  return {
     async list(
       who: PackWho,
       q: { cursor: { at: string; id: string } | null; limit: number },
@@ -145,15 +175,6 @@ export function messagesUsecases(d: {
       return detail(who, await d.uow.tenant(who, (r) => r.messages.conversation(who.userId, cid)));
     },
 
-    create(
-      who: PackWho,
-      req: CreateConversationRequest,
-    ): Promise<{ detail: ConversationDetail; created: boolean }> {
-      return req.kind === "direct"
-        ? createDirect(who, req.user_id)
-        : createGroup(who, req.title, req.member_ids);
-    },
-
     async rename(who: PackWho, cid: string, title: string): Promise<ConversationDetail> {
       const { row, members } = await d.uow.tenant(who, async (r) => {
         const f = await lockGroupAsOwner(r.messages, who.userId, cid);
@@ -163,7 +184,13 @@ export function messagesUsecases(d: {
       await emit(conversationFrames(cid, { rest: members.map((m) => m.user_id) }));
       return detail(who, row);
     },
+  };
+}
 
+/** Thành viên: thêm, bớt / rời. */
+function memberOps(c: Ctx) {
+  const { d, fileOps, emit, detail, active } = c;
+  return {
     /** Thêm người: chỉ chủ nhóm; người đã trong nhóm bỏ qua; người mới bắt đầu «đã đọc tới tin cuối» (không đỏ cả lịch sử cũ). */
     async addMembers(who: PackWho, cid: string, userIds: string[]): Promise<ConversationDetail> {
       const people = await d.people(who, userIds);
@@ -188,7 +215,13 @@ export function messagesUsecases(d: {
       await fileOps.dropBytes(out.gone); // người cuối rời ⇒ hội thoại + tệp đã xoá ở DB; gỡ byte SAU commit
       await emit(conversationFrames(cid, { removed: [targetId], rest: out.rest }));
     },
+  };
+}
 
+/** Đọc: trang tin, đánh dấu đã đọc. */
+function readOps(c: Ctx) {
+  const { d, emit } = c;
+  return {
     async messages(who: PackWho, cid: string, q: MsgListQuery): Promise<MessagePage> {
       const rows = await d.uow.tenant(who, (r) =>
         r.messages.page(who.userId, cid, q.before_seq ?? null, q.limit),
@@ -201,6 +234,24 @@ export function messagesUsecases(d: {
       return { items, has_more: rows.length > q.limit };
     },
 
+    async markRead(who: PackWho, cid: string, seq: number): Promise<{ unread_total: number }> {
+      const out = await d.uow.tenant(who, async (r) => {
+        const row = await r.messages.markRead(who.userId, cid, seq);
+        if (row === null) throw new MsgFail("MSG_NOT_FOUND");
+        return { row, unread_total: await r.messages.unread(who.userId) };
+      });
+      // Chỉ phát khi mốc đọc TIẾN (mở lại hội thoại đã đọc hết không sinh sự kiện).
+      if (out.row.seq > out.row.prev)
+        await emit(readFrames(cid, who.userId, out.row.seq, out.row.member_ids));
+      return { unread_total: out.unread_total };
+    },
+  };
+}
+
+/** Gửi và thu hồi tin. */
+function sendOps(c: Ctx) {
+  const { d, fileOps, emit, active } = c;
+  return {
     /** Gửi tin. Trùng `client_id` ⇒ bản cũ (`created=false`). 1-1 với người đã khoá ⇒ 409. */
     async send(
       who: PackWho,
@@ -232,21 +283,19 @@ export function messagesUsecases(d: {
         await emit(deletedFrames(cid, seq, r.member_ids));
       }
     },
+  };
+}
 
-    filesEnabled: fileOps.filesEnabled,
-    uploadFile: fileOps.upload,
-    fileLink: fileOps.link,
-
-    async markRead(who: PackWho, cid: string, seq: number): Promise<{ unread_total: number }> {
-      const out = await d.uow.tenant(who, async (r) => {
-        const row = await r.messages.markRead(who.userId, cid, seq);
-        if (row === null) throw new MsgFail("MSG_NOT_FOUND");
-        return { row, unread_total: await r.messages.unread(who.userId) };
-      });
-      // Chỉ phát khi mốc đọc TIẾN (mở lại hội thoại đã đọc hết không sinh sự kiện).
-      if (out.row.seq > out.row.prev)
-        await emit(readFrames(cid, who.userId, out.row.seq, out.row.member_ids));
-      return { unread_total: out.unread_total };
-    },
+export function messagesUsecases(d: Deps) {
+  const c = context(d);
+  return {
+    ...creationOps(c),
+    ...conversationOps(c),
+    ...memberOps(c),
+    ...readOps(c),
+    ...sendOps(c),
+    filesEnabled: c.fileOps.filesEnabled,
+    uploadFile: c.fileOps.upload,
+    fileLink: c.fileOps.link,
   };
 }
