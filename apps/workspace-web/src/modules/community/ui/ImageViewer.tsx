@@ -34,7 +34,7 @@ export function ImageViewer({ images, index, onIndex, onClose, onDownload }: Pro
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent
-        className="sm:max-w-[min(92vw,960px)]"
+        className="w-[min(92vw,1100px)] sm:max-w-[min(92vw,1100px)]"
         data-testid="image-viewer"
         aria-describedby={undefined}
       >

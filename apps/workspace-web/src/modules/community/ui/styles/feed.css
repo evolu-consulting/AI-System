@@ -217,8 +217,8 @@
   z-index: 25;
   background: var(--cm-feed-bg);
   padding-top: 10px;
-  padding-bottom: 4px;
-  margin-bottom: 10px;
+  /* Khe dưới thanh là padding (có nền), không phải margin trong suốt — bài cuộn qua không lộ ra ở khe. */
+  padding-bottom: 14px;
 }
 /* Composer mở rộng (~680px) mà vẫn dính thì chiếm gần hết màn 900px, che bài bên dưới ⇒ chỉ dính khi thu gọn. */
 [data-mod="community"] .stickytop:has(.feedcomposer:not(.collapsed)) {
@@ -670,13 +670,19 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 200px;
+  /* Khung cố định: bấm ‹ › không co/giãn hộp theo cỡ ảnh. */
+  height: min(70vh, 640px);
 }
 [data-mod="community"] .imgviewer .imgviewer-stage img {
-  max-width: 100%;
-  max-height: 70vh;
-  object-fit: contain;
+  flex: 1 1 0;
   min-width: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+[data-mod="community"] .imgviewer .imgviewer-stage > .muted {
+  flex: 1;
+  text-align: center;
 }
 [data-mod="community"] .imgviewer .imgnav {
   flex: none;
@@ -696,7 +702,4 @@
 }
 [data-mod="community"] .imgviewer .imgviewer-bar {
   gap: 16px;
-}
-[data-mod="community"] .imgviewer .imgviewer-stage img {
-  flex: 0 1 auto;
 }

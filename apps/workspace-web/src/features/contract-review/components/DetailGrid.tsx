@@ -43,60 +43,63 @@ export function DetailGrid({
   const confirm = info.confirm && canSave;
   const aiMs = info.confirm && (c.ai?.milestones.length ?? 0) > 0;
   return (
-    <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4 max-lg:grid-cols-1">
-      <div className="flex min-w-0 flex-col gap-4">
-        <InfoPanel
-          c={c}
-          f={f}
-          onSet={onSet}
-          disabled={!canSave}
-          lockedKeys={lockedKeys}
-          saveButton={saveButton}
-          confirm={
-            confirm
-              ? {
-                  onDeal: info.setDeal,
-                  unsure: info.unsure,
-                  dealUnsure: info.dealUnsure,
-                  invalid: info.invalid,
-                }
-              : undefined
-          }
-        />
-        {confirm ? (
-          <ReviewItemsPanel
-            items={f.items}
-            deal={f.deal}
-            products={info.products}
-            unlinked={info.unlinked}
-            onPatch={info.patchLine}
-            onAdd={info.addLine}
-            onRemove={info.removeLine}
-          />
-        ) : (
-          <ProductsPanel
-            items={c.items}
-            deal={dealOf(c)}
-            contractId={c.id}
-            write={write && !c.locked}
-            priceList={c.doc?.doc_type === "framework"}
-          />
-        )}
-      </div>
-      <div className="flex min-w-0 flex-col gap-4">
-        {aiMs ? (
-          <AiMilestonesPanel
-            rows={info.rows}
-            form={f}
-            today={today}
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4 max-lg:grid-cols-1">
+        <div className="flex min-w-0 flex-col gap-4">
+          <InfoPanel
+            c={c}
+            f={f}
+            onSet={onSet}
             disabled={!canSave}
-            onChange={info.setRow}
+            lockedKeys={lockedKeys}
+            saveButton={saveButton}
+            confirm={
+              confirm
+                ? {
+                    onDeal: info.setDeal,
+                    unsure: info.unsure,
+                    dealUnsure: info.dealUnsure,
+                    invalid: info.invalid,
+                  }
+                : undefined
+            }
           />
-        ) : c.doc?.doc_type === "framework" ? (
-          <FrameDiary c={c} partner={partner} write={write} today={today} />
-        ) : null}
-        {right}
+          {confirm ? null : (
+            <ProductsPanel
+              items={c.items}
+              deal={dealOf(c)}
+              contractId={c.id}
+              write={write && !c.locked}
+              priceList={c.doc?.doc_type === "framework"}
+            />
+          )}
+        </div>
+        <div className="flex min-w-0 flex-col gap-4">
+          {aiMs ? (
+            <AiMilestonesPanel
+              rows={info.rows}
+              form={f}
+              today={today}
+              disabled={!canSave}
+              onChange={info.setRow}
+            />
+          ) : c.doc?.doc_type === "framework" ? (
+            <FrameDiary c={c} partner={partner} write={write} today={today} />
+          ) : null}
+          {right}
+        </div>
       </div>
+      {confirm && (
+        <ReviewItemsPanel
+          items={f.items}
+          deal={f.deal}
+          products={info.products}
+          unlinked={info.unlinked}
+          onPatch={info.patchLine}
+          onAdd={info.addLine}
+          onRemove={info.removeLine}
+        />
+      )}
     </div>
   );
 }

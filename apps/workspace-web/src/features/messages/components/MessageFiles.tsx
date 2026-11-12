@@ -16,7 +16,16 @@ async function openFile(conv: string, f: FileRef, t: (k: string) => string): Pro
     if (tab) {
       tab.opener = null;
       tab.location.href = url;
-    } else window.location.assign(url);
+    } else {
+      // Tệp khác: thẻ a[download] (không điều hướng trang, không fetch theo 302 khác origin).
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = f.name;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
   } catch (e) {
     tab?.close();
     toast(t(errorKey(e)), "late");

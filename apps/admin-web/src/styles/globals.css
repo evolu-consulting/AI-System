@@ -20,6 +20,15 @@
 }
 
 @layer base {
+  /* Tailwind v4 bỏ con trỏ tay mặc định của button. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
   * {
     @apply border-border outline-ring/50;
   }

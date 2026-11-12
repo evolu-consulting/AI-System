@@ -731,7 +731,6 @@
       },
       "saving": "Saving…",
       "saveDraft": "Save draft",
-      "draftHint": "A draft is visible only to you — press Send for approval to pass it to the approvers",
       "foldEdit": "View and edit contract details",
       "notFound": "Contract not found — go back to the list and pick another one.",
       "notVisible": "This contract has not been sent for approval yet, or you do not have access. Ask its creator to confirm it.",

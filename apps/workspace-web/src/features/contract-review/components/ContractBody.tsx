@@ -165,11 +165,6 @@ export function ContractBody(p: {
               />
             }
           />
-          {confirm && (
-            <p data-testid="draft-hint" className="-mt-3 mb-3 text-caption text-dim">
-              {t("contracts.review.draftHint")}
-            </p>
-          )}
           {rule.submitBlocked && (
             <p role="status" data-testid="submit-blocked" className="mb-3 text-sm text-late">
               {t("contracts.u5.err.NO_APPROVAL_FLOW")}
