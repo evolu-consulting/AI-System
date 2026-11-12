@@ -6,6 +6,7 @@
 | File | Dùng khi |
 |---|---|
 | `../CLAUDE.md` | Luật làm việc (nạp mỗi phiên) |
+| `RULES-DETAIL.md` | Lý do, ngày chốt, ví dụ của từng luật cũ (bản `CLAUDE.md` tới 2026-11-09); bảng đối chiếu tên luật cũ → mới |
 | `WORKFLOW.md` | Vòng một mốc, đội agent, Gate, khoá test |
 | `platform/dlc-integration.md` | **DLC của Rowan**: ai sở hữu đường nào, luồng nhánh, số migration dành riêng, `bun run dlc:check` |
 | `platform/dev-flow.md` | **Sơ đồ dây chuyền hiện tại**: proposal OpenSpec → duyệt → lát song song theo model → merge/cổng → review + e2e → duyệt deploy → gộp current; so với AI SDLC |

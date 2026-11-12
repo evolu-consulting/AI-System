@@ -1,6 +1,7 @@
 // `bun run verify:predeploy [--ref platform/gd0] [--json]` — CHỈ ĐỌC: dòng đầu VERSION trên prod (ssh, như deploy.ps1), commit đó có là tổ tiên
 // của ref không, migration mới/mất (admin/hub/pack) giữa hai bản, biến mới trong env.template. Thoát 0 = có thể deploy, 1 = dừng, 2 = không đọc được prod.
 
+import { runEnvContract } from "./env-contract";
 import { repoRoot } from "./lib/git";
 import {
   listMigrationsByStatus,
@@ -62,6 +63,10 @@ function main(): number {
     envNew: known && prod ? newEnvVars(show(prod.commit), show(ref)) : [],
   };
   const v = predeployVerdict(`${head.out.trim()} (${ref})`, p);
+  // Hợp đồng env của kit (thiếu ⇒ cảnh báo, chưa chặn: prod còn thiếu HUB_NOTIFY_MODE/HUB_SMTP_*; bật chặn khi đã bù).
+  const ec = runEnvContract(root);
+  if (!ec.ok)
+    v.lines.push("cảnh báo env-contract:", ...ec.lines.filter((l) => l.startsWith("THIẾU")));
   console.log(
     render(json, { ref, ...p, ok: v.ok, verdict: v.lines }, [
       v.ok ? "predeploy: OK" : "predeploy: DỪNG",

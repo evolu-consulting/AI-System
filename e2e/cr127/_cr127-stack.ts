@@ -223,7 +223,7 @@ async function partnerPair(
       ],
     });
   }
-  await seedPartner(ea.tenantKey, TAX[b], `Công ty Nhận ${b} ${SFX}`);
+  await seedPartner(ea.tenantKey, TAX[b], `Công ty Nhận ${b} ${SFX}`, "e2e-ketoan"); // G3: kế toán thêm đối tác (người chọn = giám đốc)
   await enableFlowTriggers(ea.tenantKey);
   await companyFlow(p, idA, {
     name: `Gửi đối tác ${a} ${SFX}`,

@@ -1,0 +1,19 @@
+[
+  ["khe", "slot"],
+  ["lát", "slice"],
+  ["hộp thư đối tác", "partner inbox"],
+  ["quy trình", "flow", "process", "workflow"],
+  ["duyệt", "approve", "approval"],
+  ["ký số", "esign", "e-sign", "chữ ký số"],
+  ["đối tác", "partner"],
+  ["công ty", "tenant", "khách"],
+  ["quyền", "permission", "role", "vai trò"],
+  ["hợp đồng", "contract"],
+  ["người nhận", "recipient"],
+  ["phòng ban", "department"],
+  ["thẻ duyệt", "approval card"],
+  ["trợ lý", "agent"],
+  ["thông báo", "notification"],
+  ["gửi", "send"],
+  ["mẫu", "template"]
+]

@@ -270,6 +270,8 @@ export async function sendFromA(
   await pickPartnerAndSend(await newPage(browser), a, U.director, {
     partnerTaxCode: TAX[bKey],
     email: `chon-${run}@doitac.test`,
+    contractCreator: U.employee,
+    partnerAddedBy: U.accounting, // G3: người chọn (giám đốc) ≠ người tạo HĐ ≠ người thêm đối tác
   });
   return id;
 }

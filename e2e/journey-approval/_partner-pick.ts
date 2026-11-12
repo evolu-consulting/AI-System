@@ -2,6 +2,7 @@
 // Người thuộc «Nhóm phụ trách gửi đối tác» mở việc ở «Việc của tôi», thấy đối tác + email điền sẵn từ hợp đồng, đổi email, bấm «Gửi».
 // Bộ chọn: `form[data-flow="form"]`, ô `[data-flow-field=<khoá>]` (cùng FormStep với mọi bước điền). Khoá ô theo contract prefill của engine.
 import type { Page } from "@playwright/test";
+import { assertDistinctActors } from "../_roles";
 import { withOwner } from "../support/helpers";
 import { type Env, loginCw } from "./_journey";
 import { expect } from "./_test";
@@ -13,14 +14,25 @@ export const PICK = { partner: "partner_tax_code", email: "partner_email" } as c
  * Đối tác của công ty gửi trong sổ đối tác (nguồn của danh sách chọn `company_partners`). Người dùng thật có được dòng này khi HĐ có bên đối tác
  * hoặc thêm ở «Đối tác»; e2e dựng bằng SQL (đường giống `supplier-quote.repo`: vai `supplier`, nguồn `manual`) vì HĐ mẫu không mang MST của công ty nhận.
  */
-export async function seedPartner(tenantKey: string, tax: string, name: string): Promise<void> {
-  await withOwner(
-    (
-      sql,
-    ) => sql`insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from)
-      select t.id, ${`tax:${tax.replace(/\D/g, "")}`}, 'supplier', ${name}, 'manual' from admin.tenants t where t.key = ${tenantKey}
-      on conflict (tenant_id, party_key, role) do nothing`,
-  );
+export async function seedPartner(
+  tenantKey: string,
+  tax: string,
+  name: string,
+  addedBy: string,
+): Promise<void> {
+  // G3: dòng đối tác thuộc về MỘT người thêm (`created_by`) — RLS chỉ cho người đó thấy; người chọn phải là người khác.
+  await withOwner(async (sql) => {
+    const rows =
+      await sql`insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from, created_by)
+      select t.id, ${`tax:${tax.replace(/\D/g, "")}`}, 'supplier', ${name}, 'manual', u.id
+      from admin.tenants t join admin.users u on u.tenant_id = t.id and u.username = ${addedBy}
+      where t.key = ${tenantKey}
+      on conflict (tenant_id, party_key, role) do nothing returning 1`;
+    if (rows.length === 0)
+      throw new Error(
+        `[e2e-roles] seedPartner: không thêm được đối tác ${tax} bởi ${addedBy} ở ${tenantKey} (thiếu user hoặc đã có).`,
+      );
+  });
 }
 
 /**
@@ -31,8 +43,13 @@ export async function pickPartnerAndSend(
   page: Page,
   e: Env,
   user: string,
-  o: { partnerTaxCode: string; email: string },
+  o: { partnerTaxCode: string; email: string; contractCreator: string; partnerAddedBy: string },
 ): Promise<string> {
+  assertDistinctActors("Chọn đối tác & người nhận", {
+    creator: o.contractCreator,
+    actor: user,
+    dataOwner: o.partnerAddedBy,
+  });
   await loginCw(page, e, user);
   await page.goto(`${e.cw}/contracts/approvals`);
   const row = page.getByTestId(/^(requests-waiting-row|approval-task-row)$/).first();
