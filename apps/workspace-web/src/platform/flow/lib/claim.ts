@@ -55,6 +55,7 @@ export function claimView(i: ClaimInfo): ClaimView {
 /** Mã lỗi nhận việc/uỷ quyền/bằng chứng ⇒ khoá i18n + tham số (§9). `null` = không phải mã của lát này. */
 export const CR127_ERROR_CODES = [
   "TASK_CLAIMED",
+  "STARTER_CANNOT_REVIEW",
   "TASK_NOT_CLAIMABLE",
   "TASK_CLOSED",
   "TASK_NOT_CLAIMED",

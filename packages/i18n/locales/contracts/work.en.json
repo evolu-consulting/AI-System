@@ -108,6 +108,7 @@
         },
         "err": {
           "TASK_CLAIMED": "{{who}} just took this task.",
+          "STARTER_CANNOT_REVIEW": "You submitted this item, so you can't take its review — let someone else in the group take it.",
           "TASK_NOT_CLAIMABLE": "This task does not need to be taken.",
           "TASK_CLOSED": "This task is already done.",
           "TASK_NOT_CLAIMED": "Take the task before confirming the milestone.",

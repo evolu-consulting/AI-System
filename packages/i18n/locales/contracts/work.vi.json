@@ -108,6 +108,7 @@
         },
         "err": {
           "TASK_CLAIMED": "{{who}} vừa nhận việc này.",
+          "STARTER_CANNOT_REVIEW": "Bạn là người gửi hồ sơ này nên không nhận việc duyệt được — để người khác trong nhóm nhận.",
           "TASK_NOT_CLAIMABLE": "Việc này không cần nhận.",
           "TASK_CLOSED": "Việc đã xong.",
           "TASK_NOT_CLAIMED": "Bấm Nhận việc trước khi xác nhận mốc.",
