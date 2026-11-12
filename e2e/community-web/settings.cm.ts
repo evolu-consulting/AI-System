@@ -49,15 +49,4 @@ test("link cũ /community?settings=1 mở Cài đặt chung ở mục Bảng tin
   await expect(page.getByTestId("settings-nav-feed")).toHaveAttribute("aria-current", "true");
   await expect(page).toHaveURL(/\/community$/);
 });
-
-test("thành viên chủ quản không có quyền Sổ Hợp Tác mở Cài đặt: chỉ ngăn Bảng tin, không có câu «chưa có quyền», không mục Sổ Hợp Tác", async ({
-  page,
-}) => {
-  await page.goto("/community");
-  await as(page, "cuong");
-  await open(page, "Cài đặt");
-  await expect(page.getByTestId("settings-nav-feed")).toBeVisible();
-  for (const sec of ["co", "rep", "biz", "scout", "flow"])
-    await expect(page.getByTestId(`settings-nav-${sec}`)).toHaveCount(0);
-  expect(await page.locator("body").innerHTML()).not.toContain("chưa có quyền");
-});
+// CR-130 p3: ca «thành viên chủ quản không có quyền Sổ Hợp Tác» đã bỏ — Bảng tin = gói contracts + add-on nên không còn người dùng như vậy.

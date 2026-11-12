@@ -174,7 +174,7 @@ test("chứng từ con: liên kết «thuộc HĐ nguyên tắc»; không quyề
   await installV2f(page, { role: "editor", contract: () => base({ restricted: true }) });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("frame-ref-restricted")).toHaveText(
-    "· HĐ nguyên tắc (không có quyền xem)",
+    "HĐ nguyên tắc (không có quyền xem)", // CR-128: bỏ dấu «·» đầu nhãn (MetaLine)
   );
 });
 

@@ -1,5 +1,5 @@
 {
-  "text": "A Tổng quan Hợp đồng & giao dịch Yêu cầu Việc của tôi Đối tác Sản phẩm & Giá LN |",
+  "text": "A Tổng quan Hợp đồng & giao dịch Yêu cầu Tin nhắn Việc của tôi Đối tác Sản phẩm & Giá LN |",
   "boxes": {
     "sidebar": {
       "x": 0,
@@ -15,9 +15,9 @@
     },
     "bell": {
       "x": 1340,
-      "y": 3.5,
+      "y": 7.5,
       "w": 36,
-      "h": 44
+      "h": 36
     },
     "feedback": {
       "x": 1380,

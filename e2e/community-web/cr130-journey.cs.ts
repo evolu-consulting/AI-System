@@ -68,9 +68,10 @@ async function makePartner(name: string): Promise<string> {
   const tid = state.tid as string;
   return withOwner(async (sql) => {
     const [r] = await sql<{ pk: string }[]>`
-      insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from)
-      values (${tid}::uuid, 'name:' || contracts.fold(${name}), 'customer', ${name}, 'manual')
-      returning party_key as pk`;
+      insert into contracts.partner_roles (tenant_id, party_key, role, name, created_from, created_by)
+      select ${tid}::uuid, 'name:' || contracts.fold(${name}), 'customer', ${name}, 'manual', u.id
+      from admin.users u where u.tenant_id = ${tid}::uuid and u.username = ${USERNAME.host}
+      returning party_key as pk`; // G3/CR-130: đối tác thuộc MỘT người thêm — host (người duyệt đơn) là người thêm nên thấy trong «Chọn đối tác»
     return (r as { pk: string }).pk;
   });
 }
@@ -205,7 +206,14 @@ test("CR130-J2 · duyệt đơn tham gia «Gắn với đối tác có sẵn» �
     return item;
   };
   const link = async (item: ReturnType<Page["getByTestId"]>) => {
+    const listed = host.page.waitForResponse((r) => r.url().includes("/pack/contracts/partners"));
     await item.getByTestId("join-mode-link").click();
+    const lr = await listed;
+    const rows = (await lr.json().catch(() => [])) as { name?: string }[];
+    expect(
+      { status: lr.status(), hasP2: rows.some((x) => x.name === P2), n: rows.length },
+      "danh sách «Chọn đối tác» (GET /pack/contracts/partners)",
+    ).toMatchObject({ status: 200, hasP2: true });
     await item.getByLabel("Chọn đối tác").selectOption({ label: P2 });
     await expect(item.getByTestId("join-approve-summary")).toContainText(P2);
     await item.getByTestId("join-approve").click();

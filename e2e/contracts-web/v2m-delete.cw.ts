@@ -34,7 +34,11 @@ test("owner: xem trước tác động rồi xoá hẳn ⇒ một DELETE", async
   const url = `**/pack/contracts/contracts/${id}`;
   await page.route(
     (u) => u.pathname === "/pack/contracts/contracts",
-    (r) => json(r, 200, listAsHub()),
+    (r) => {
+      const list = listAsHub() as { items: Record<string, unknown>[] };
+      list.items = list.items.map((i) => ({ ...i, can_delete: true })); // CR-128 (c): thùng rác theo `can_delete` từng dòng
+      return json(r, 200, list);
+    },
   );
   await page.route(`${url}/delete-preview`, (r) => json(r, 200, impact));
   await page.route(url, (r) => {
@@ -59,11 +63,12 @@ test("owner: xem trước tác động rồi xoá hẳn ⇒ một DELETE", async
   ]);
 });
 
-const listRoute = (page: import("@playwright/test").Page, versions = 1) =>
+const listRoute = (page: import("@playwright/test").Page, versions = 1, canDelete = true) =>
   page.route(
     (u) => u.pathname === "/pack/contracts/contracts",
     (r) => {
       const list = listAsHub() as { items: Record<string, unknown>[] };
+      list.items = list.items.map((i) => ({ ...i, can_delete: canDelete })); // CR-128 (c): thùng rác theo `can_delete` từng dòng (máy chủ tính)
       list.items[0] = { ...list.items[0], versions_count: versions };
       return json(r, 200, list);
     },
@@ -80,7 +85,7 @@ test("owner: danh sách có mắt + thùng rác, không viền", async ({ page }
 
 test("editor: danh sách chỉ có mắt, không thùng rác", async ({ page }) => {
   await installV2f(page, { role: "editor" });
-  await listRoute(page);
+  await listRoute(page, 1, false);
   await page.goto("/contracts/list");
   await expect(page.getByTestId("row-view").first()).toBeVisible();
   await expect(page.getByTestId("row-delete")).toHaveCount(0);

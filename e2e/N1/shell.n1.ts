@@ -10,7 +10,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await installBackend(page, { session: true, role: "editor" });
   });
 
-  test("PK-FR-10 · nav-v2 · menu chính 4 mục đúng nhãn, thứ tự và đường dẫn: Tổng quan /contracts · Hợp đồng /contracts/list · Đối tác /contracts/partners · Sản phẩm & Giá /contracts/products", async ({
+  test("PK-FR-10 · nav-v2 · menu chính 7 mục (CR-132 thêm Tin nhắn) đúng nhãn, thứ tự và đường dẫn: Tổng quan /contracts · Hợp đồng /contracts/list · Đối tác /contracts/partners · Sản phẩm & Giá /contracts/products", async ({
     page,
   }) => {
     await page.goto("/contracts/list");
@@ -20,6 +20,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
       "Tổng quan",
       "Hợp đồng & giao dịch",
       "Yêu cầu",
+      "Tin nhắn",
       "Việc của tôi",
       "Đối tác",
       "Sản phẩm & Giá",
@@ -29,6 +30,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
       "Tổng quan",
       "Hợp đồng & giao dịch",
       "Yêu cầu",
+      "Tin nhắn",
       "Việc của tôi",
       "Đối tác",
       "Sản phẩm & Giá",
@@ -39,6 +41,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
       "Tổng quan": "/contracts",
       "Hợp đồng & giao dịch": "/contracts/list",
       "Yêu cầu": "/contracts/requests",
+      "Tin nhắn": "/contracts/messages",
       "Việc của tôi": "/contracts/approvals",
       "Đối tác": "/contracts/partners",
       "Sản phẩm & Giá": "/contracts/products",
@@ -64,13 +67,16 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     );
   });
 
-  test("PK-FR-10 · nav-v2 · '/' ⇒ /contracts (Tổng quan là trang đầu); đường dẫn lạ ⇒ /contracts (route *)", async ({
+  test("PK-FR-10 · nav-v2 · '/' ⇒ /contracts (Tổng quan là trang đầu); đường dẫn lạ ⇒ trang «Không tìm thấy» + nút về Tổng quan (CR-131)", async ({
     page,
   }) => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/contracts$/);
     await expect(page.getByRole("heading", { name: "Tổng quan", level: 1 })).toBeVisible();
     await page.goto("/khong-ton-tai/abc");
+    // CR-131: URL lạ không còn chuyển hướng âm thầm
+    await expect(page.getByRole("heading", { name: "Không tìm thấy trang này" })).toBeVisible();
+    await page.getByRole("link", { name: "Về Tổng quan" }).click();
     await expect(page).toHaveURL(/\/contracts$/);
   });
 
@@ -246,18 +252,19 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
 test.describe("PK-FR-10 · shell mobile (390×844)", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("PK-FR-10 · nav-v2 · thanh dưới 'Điều hướng' đúng 4 mục như menu trái; sidebar chính ẩn", async ({
+  test("PK-FR-10 · nav-v2 · thanh dưới 'Điều hướng' đúng 5 mục (CR-132 thêm Tin nhắn); sidebar chính ẩn", async ({
     page,
   }) => {
     await installBackend(page, { session: true, role: "editor" });
     await page.goto("/contracts/list");
     const bottom = page.getByRole("navigation", { name: "Điều hướng", exact: true });
     await expect(bottom).toBeVisible();
-    await expect(bottom.getByRole("link")).toHaveCount(4);
+    await expect(bottom.getByRole("link")).toHaveCount(5);
     // CR-126 · «Yêu cầu» là mục `more` (không chiếm cột); «Việc của tôi» là cột riêng; Hợp đồng (primary) đứng đầu
     await expect(bottom.getByRole("link")).toHaveText([
       "Hợp đồng & giao dịch",
       "Tổng quan",
+      "Tin nhắn",
       "Đối tác",
       "Việc của tôi",
     ]);

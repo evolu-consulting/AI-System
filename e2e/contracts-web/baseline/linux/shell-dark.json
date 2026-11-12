@@ -1,5 +1,5 @@
 {
-  "text": "A Acme Corp Sổ Hợp Tác SỔ HỢP TÁC Tổng quan Hợp đồng & giao dịch Yêu cầu Việc của tôi Đối tác Sản phẩm & Giá LN Lan Nguyễn Acme Corp · Nhân viên |",
+  "text": "A Acme Corp Sổ Hợp Tác SỔ HỢP TÁC Tổng quan Hợp đồng & giao dịch Yêu cầu Tin nhắn Việc của tôi Đối tác Sản phẩm & Giá LN Lan Nguyễn Acme Corp · Nhân viên |",
   "boxes": {
     "sidebar": {
       "x": 0,
@@ -15,9 +15,9 @@
     },
     "bell": {
       "x": 1340,
-      "y": 3.5,
+      "y": 7.5,
       "w": 36,
-      "h": 44
+      "h": 36
     },
     "feedback": {
       "x": 1380,

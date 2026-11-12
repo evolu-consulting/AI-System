@@ -1,9 +1,11 @@
 // V2-G · HD-02/HD-08 · BA §4.2 "Upload và xác nhận" · 5.5 · Luật 4b: màn xác nhận sau khi AI đọc — form V2-F điền sẵn, ô AI chưa chắc tô vàng, mốc AI
 // tìm thấy ở cột phải, gợi ý SP theo quy tắc nhận diện, Lưu = MỘT POST /review, Hủy không gửi gì; khối Sản phẩm của
 // HĐ đã lưu gắn lại SP (PUT) và (thẻ Tóm tắt AI đã gỡ ở chi tiết). Backend giả `page.route`; chờ phần tử/yêu cầu, không sleep. CR-127 Q10b: ca «tenant tắt duyệt» đã gỡ (mọi công ty đi quy trình; e2e/cr127 j06).
+
 import { expect, type Page, test } from "@playwright/test";
 import { ACTIVE_ID, P_TOKEN } from "./dataset-v2f";
 import { ITEM1, ITEM2, P_USB, REVIEW_ID } from "./dataset-v2g";
+import { mockContractFiles } from "./flow-mock";
 import type { Sent } from "./v2f-support";
 import { installV2g } from "./v2g-support";
 
@@ -16,6 +18,7 @@ const review = (sent: Sent[]) => sent.filter((s) => s.path.endsWith("/review"));
 
 async function openReview(page: Page, init: Parameters<typeof installV2g>[1] = {}) {
   const ctx = await installV2g(page, init);
+  await mockContractFiles(page); // CR-133: khối «Tài liệu kèm» gọi /files — không để catch-all trả HĐ
   await page.goto(`/contracts/c/${REVIEW_ID}`);
   await expect(page.getByTestId("review-items")).toBeVisible();
   // Gợi ý SP đến muộn: dòng 1 ("USB") được chọn sẵn theo quy tắc nhận diện, dòng 2 đề xuất tạo mới.

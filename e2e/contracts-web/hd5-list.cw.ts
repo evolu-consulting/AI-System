@@ -72,9 +72,11 @@ test.describe("HD-FR-51 · danh sách phía server", () => {
         }),
     );
     await page.goto("/contracts/list");
-    await expect(
-      page.getByText("PL01 · Phụ lục của Hợp đồng mua bán bao bì 2026").first(),
-    ).toBeVisible();
+    // CR-128 (b): «Số HĐ» là cột riêng ⇒ tên «Phụ lục của …» và số «PL01» nằm ở hai ô của cùng hàng.
+    const row = page.locator("main tbody tr", {
+      hasText: "Phụ lục của Hợp đồng mua bán bao bì 2026",
+    });
+    await expect(row.first()).toContainText("PL01");
     await expect(page.getByRole("button", { name: "Tải hợp đồng lên" })).toHaveCount(0);
   });
 });

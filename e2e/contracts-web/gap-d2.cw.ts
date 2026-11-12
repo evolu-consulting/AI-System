@@ -123,7 +123,9 @@ test("#24 · nhiều người liên hệ: hiện danh sách, thêm người, lư
   const list = page.getByRole("list", { name: "Điện thoại và người liên hệ" });
   await expect(list).toContainText("Chị Lan");
   await expect(list).toContainText("Phụ trách bên mình: Hoa");
-  await page.getByRole("button", { name: "Sửa", exact: true }).click();
+  // CR-128 (e): «Sửa liên hệ» nằm trong menu «Thao tác ▾» của đầu trang Đối tác
+  await page.getByRole("button", { name: /^Thao tác/ }).click();
+  await page.getByTestId("act-editContact").click();
   await page.getByRole("button", { name: "+ Thêm người liên hệ" }).click();
   await page.getByLabel("Họ tên 2").fill("Anh Minh");
   await page.getByLabel("Email 2").fill("minh@x.vn");

@@ -7,7 +7,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
 import { approvalAsHub } from "./dataset-approval";
 import { contract, contractAsHub } from "./dataset-contract";
-import { mockApprovalFlow } from "./flow-mock";
+import { mockApprovalFlow, mockContractFiles } from "./flow-mock";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
@@ -66,6 +66,7 @@ async function open(
       ? json(r, 200, state())
       : json(r, 200, o.status ? contractAsHub(o.status as never) : contractAsHub()),
   );
+  await mockContractFiles(page);
   await page.goto(`/contracts/c/${contract.id}`);
 }
 

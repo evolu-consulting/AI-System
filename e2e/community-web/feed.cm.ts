@@ -82,7 +82,6 @@ test("thông báo, cài đặt và hồ sơ qua user-menu", async ({ page }) => 
   await page.goto("/community");
   await page.getByTestId("topbar-bell").getByRole("button").first().click(); // chuông (khe thanh trên chung); chip lọc "Thông báo" cùng tên nên không dùng getByRole
   await expect(page.getByRole("dialog", { name: "Thông báo" })).toBeVisible();
-  await page.getByRole("button", { name: "Đánh dấu đã đọc" }).click();
   await page.getByTestId("topbar-bell").getByRole("button").first().click(); // bấm lại chuông để đóng popover (che user-menu)
   await expect(page.getByRole("dialog", { name: "Thông báo" })).toHaveCount(0);
   // cài đặt + hồ sơ nay nằm trong user-menu (avatar) của Shell

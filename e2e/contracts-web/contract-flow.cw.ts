@@ -6,7 +6,7 @@ import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { expect, type Page, test } from "@playwright/test";
 import { asHub, type Role } from "./dataset";
 import { contract, contractAsHub } from "./dataset-contract";
-import { mockApprovalFlow } from "./flow-mock";
+import { mockApprovalFlow, mockContractFiles } from "./flow-mock";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
@@ -89,6 +89,7 @@ async function install(page: Page, state: ContractApproval, role: Role = "editor
       return { ...state, step: "done", can_act: false, task_id: null };
     },
   });
+  await mockContractFiles(page);
   return posts;
 }
 
@@ -170,6 +171,7 @@ test("CR-121 · cờ flow.runtime tắt ⇒ vẫn MỘT đường: Đạt đi ro
 test("Trả lại: cần góp ý, gửi action return", async ({ page }) => {
   const posts = await install(page, AT_STEP1());
   await page.goto(`/contracts/c/${contract.id}`);
+  await page.getByTestId("head-actions-menu").click(); // CR-128 (e): Trả lại/Từ chối trong «Thao tác ▾»
   await page.locator("[data-approval=return]").click();
   const form = page.locator("[data-approval=reason]");
   await form.getByRole("button", { name: "Trả lại" }).click();
@@ -184,6 +186,7 @@ test("Trả lại: cần góp ý, gửi action return", async ({ page }) => {
 test("Từ chối: bắt buộc lý do, gửi action reject", async ({ page }) => {
   const posts = await install(page, AT_STEP1());
   await page.goto(`/contracts/c/${contract.id}`);
+  await page.getByTestId("head-actions-menu").click(); // CR-128 (e): Trả lại/Từ chối trong «Thao tác ▾»
   await page.locator("[data-approval=reject]").click();
   const form = page.locator("[data-approval=reason]");
   await form.getByRole("button", { name: "Từ chối" }).click();

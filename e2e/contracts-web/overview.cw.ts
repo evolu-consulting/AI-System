@@ -293,7 +293,7 @@ test.describe("điện thoại (390×844)", () => {
 
   // CR-097 G2 thêm «Giao dịch» vào menu ⇒ thanh dưới 5 mục (5 cột vừa 390 px, không cần drawer «Thêm»).
   // CR-126 · «Yêu cầu» là mục `more` (không chiếm cột) ⇒ 4 cột: Hợp đồng (primary) đứng đầu, rồi Tổng quan, Đối tác, Việc của tôi.
-  test("Tổng quan không cuộn ngang; thanh dưới đúng 4 mục, «Tổng quan» sáng", async ({ page }) => {
+  test("Tổng quan không cuộn ngang; thanh dưới đúng 5 mục, «Tổng quan» sáng", async ({ page }) => {
     await install(page);
     await page.goto("/contracts");
     await expect(page.getByTestId("review-partners")).toBeVisible();
@@ -305,6 +305,7 @@ test.describe("điện thoại (390×844)", () => {
     await expect(bottom.getByRole("link")).toHaveText([
       "Hợp đồng & giao dịch",
       "Tổng quan",
+      "Tin nhắn", // CR-132
       "Đối tác",
       "Việc của tôi",
     ]);

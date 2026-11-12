@@ -16,8 +16,10 @@ test("chỉ nút Upload (không còn Thêm thủ công) + cột theo mockup; kh�
   await expect(page.getByRole("link", { name: "Thêm thủ công" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Tải hợp đồng lên" })).toBeVisible();
   const heads = page.locator("main thead th");
+  // CR-128 (b/c): cột «Hợp đồng» tách «Tên» + «Số HĐ».
   await expect(heads).toHaveText([
-    "Hợp đồng",
+    "Tên",
+    "Số HĐ",
     "Đối tác",
     "Loại",
     "Giá trị",
@@ -36,19 +38,20 @@ test("hàng: tên + số, đối tác theo loại (Mua ⇒ bên bán), loại, g
   await installV2f(page);
   await page.goto("/contracts/list");
   const row = page.locator("main tbody tr", { hasText: first?.title });
-  await expect(row.locator("td").nth(0)).toContainText("01/2026/HĐMB-PN");
-  await expect(row.locator("td").nth(1)).toHaveText("Bao Bì Phương Nam");
-  await expect(row.locator("td").nth(2)).toHaveText("Mua");
-  await expect(row.locator("td").nth(3)).toHaveText("245.000.000 đ");
-  await expect(row.locator("td").nth(4)).toContainText("01/01/2026");
-  await expect(row.locator("td").nth(4)).toContainText("đến 31/12/2026");
+  await expect(row.locator("td").nth(0)).toContainText(first?.title ?? ""); // CR-128: «Tên» riêng, «Số HĐ» là cột kế
+  await expect(row.locator("td").nth(1)).toContainText("01/2026/HĐMB-PN");
+  await expect(row.locator("td").nth(2)).toHaveText("Bao Bì Phương Nam");
+  await expect(row.locator("td").nth(3)).toHaveText("Mua");
+  await expect(row.locator("td").nth(4)).toHaveText("245.000.000 đ");
+  await expect(row.locator("td").nth(5)).toContainText("01/01/2026");
+  await expect(row.locator("td").nth(5)).toContainText("đến 31/12/2026");
   // CR-127 Q10b: cột «Trạng thái» (4 trạng thái mới + hiệu lực) và «Đang chờ» (ai đang giữ bước) thay cột «Bước» của máy cũ.
   const cellOf = (title: string, n: number) =>
     page.locator("main tbody tr", { hasText: title }).locator("td").nth(n);
-  await expect(row.locator("td").nth(5)).toHaveText("Đã duyệt xongCòn hiệu lực");
-  await expect(cellOf("Hợp đồng cung cấp gia vị", 5)).toHaveText("Nháp");
-  await expect(cellOf("Hợp đồng vận chuyển quý 4", 5)).toContainText("Hết hạn sau 33 ngày");
-  await expect(row.locator("td").nth(6)).toHaveText("—");
+  await expect(row.locator("td").nth(6)).toHaveText("Đã duyệt xongCòn hiệu lực");
+  await expect(cellOf("Hợp đồng cung cấp gia vị", 6)).toHaveText("Nháp");
+  await expect(cellOf("Hợp đồng vận chuyển quý 4", 6)).toContainText("Hết hạn sau 33 ngày");
+  await expect(row.locator("td").nth(7)).toHaveText("—");
 });
 
 test("yêu cầu danh sách kèm include=progress", async ({ page }) => {

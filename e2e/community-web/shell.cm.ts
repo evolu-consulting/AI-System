@@ -1,3 +1,4 @@
+// CR-130 p3: không còn thành viên Bảng tin thiếu quyền contracts (Bảng tin = gói contracts + add-on) ⇒ bỏ persona «cuong» khỏi ca cách ly.
 // CR-110 · COM-FR-27..31, 43 · CR-120 · e2e lớp vỏ community-web (adapter mock + persona switcher) trong MỘT AppShell dùng chung với Sổ Hợp Tác.
 // Trọng tâm: cách ly đối tác (I1/I3, HT-75/76) — nhóm "Sổ Hợp Tác" và link contracts KHÔNG có trong DOM (không phải CSS ẩn); điều hướng
 // trong app không tải lại trang; khung (menu trái, thanh trên, menu tài khoản, công tắc sáng/tối) dùng chung, không còn khung riêng của Community.
@@ -13,6 +14,7 @@ const SHT_PATHS = [
   "/contracts",
   "/contracts/list",
   "/contracts/requests",
+  "/contracts/messages", // CR-132
   "/contracts/approvals",
   "/contracts/partners",
   "/contracts/products",
@@ -22,7 +24,6 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
   for (const [id, label] of [
     ["tp", "NCC (Tân Phát)"],
     ["abc", "người mua (ABC)"],
-    ["cuong", "thành viên chủ quản không có quyền contracts"],
   ] as const) {
     test(`${label}: không nhóm SHT, không sht-link, không chữ "${SHT}" ở trang, user-menu và Cài đặt`, async ({
       page,
@@ -47,7 +48,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
     });
   }
 
-  test("chủ quản có quyền (Admin): nhóm SHT + đúng 6 link TRONG app (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
+  test("chủ quản có quyền (Admin): nhóm SHT + đúng 7 link TRONG app (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
     page,
   }) => {
     await page.goto("/community");
@@ -56,11 +57,12 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
     await expect(g).toBeVisible();
     await expect(g).toContainText(SHT);
     const links = g.getByRole("link");
-    await expect(links).toHaveCount(6);
+    await expect(links).toHaveCount(7);
     await expect(g.locator(".ext")).toHaveCount(0); // không còn biểu tượng liên kết ngoài ↗
     const hrefs = await links.evaluateAll((els) => els.map((e) => e.getAttribute("href")));
     expect(hrefs).toEqual(SHT_PATHS);
     expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute("target")))).toEqual([
+      null,
       null,
       null,
       null,
@@ -102,7 +104,7 @@ test("MỘT khung: không còn header/sidebar riêng của Community; mục menu
   );
 });
 
-test("điều hướng trong app KHÔNG tải lại trang: Bảng tin ↔ Bài đăng của tôi, rồi sang Sổ Hợp Tác (không sự kiện load)", async ({
+test("điều hướng trong app KHÔNG tải lại trang: Bảng tin ↔ Hồ sơ của tôi, rồi sang Sổ Hợp Tác (không sự kiện load)", async ({
   page,
 }) => {
   await page.goto("/community");
@@ -116,7 +118,7 @@ test("điều hướng trong app KHÔNG tải lại trang: Bảng tin ↔ Bài �
   });
   const navEntries = await page.evaluate(() => performance.getEntriesByType("navigation").length);
   await nav.getByRole("link", { name: "Hồ sơ của tôi" }).click();
-  await expect(page).toHaveURL(/\/community\/profile$/);
+  await expect(page).toHaveURL(/\/community\/me$/); // CR-129: «Hồ sơ của tôi» = /community/me
   await nav.getByRole("link", { name: "Bảng tin" }).click();
   await expect(page).toHaveURL(/\/community$/);
   // sang Sổ Hợp Tác (mock không có phiên ⇒ router chuyển trong app tới /login; vẫn KHÔNG tải lại)
@@ -163,8 +165,9 @@ test("đổi ngôn ngữ qua menu tài khoản (VI → EN → VI): nhãn thanh t
   const lang = page.getByRole("radiogroup", { name: "Ngôn ngữ" });
   await lang.getByRole("radio", { name: "EN", exact: true }).click();
   await expect(page.getByRole("button", { name: "Account" })).toBeVisible();
-  await page.getByRole("button", { name: "Account" }).click();
   const en = page.getByRole("radio", { name: "EN", exact: true });
+  // CR-130: menu tài khoản của khung chung có thể còn mở sau khi đổi ngôn ngữ ⇒ chỉ mở lại khi chưa thấy lựa chọn
+  if (!(await en.isVisible())) await page.getByRole("button", { name: "Account" }).click();
   await expect(en).toHaveAttribute("aria-checked", "true");
   await page.getByRole("radio", { name: "VI", exact: true }).click();
   await expect(page.getByRole("button", { name: "Tài khoản" })).toBeVisible();
