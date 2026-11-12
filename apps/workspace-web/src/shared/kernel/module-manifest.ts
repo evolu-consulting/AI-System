@@ -26,6 +26,8 @@ export type NavEntry = {
   cap?: string;
   /** CR-126: mục «Việc của tôi» — số đỏ = số dòng hộp việc (đếm ở máy khách từ `/my-work` + `/me/review-tasks`), không theo `cap`. */
   inbox?: true;
+  /** CR-132: số đỏ = tổng tin nhắn chưa đọc (một query `GET /messages/unread`, cập nhật realtime). */
+  unread?: true;
 };
 
 /** Mục menu tài khoản do module đóng góp (vd Community: Tường nhà · Cài đặt chung). */

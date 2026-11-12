@@ -6,8 +6,9 @@ import type { Locale } from "./locales";
 import { expandPathTokens } from "./settings-paths";
 
 type Part = { default: { contracts: Record<string, unknown> } };
-/** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m, v2gaps, gapa1, gape, k3b, g2, esign, legal, doclist, msimpact, esign-anchor, esignflow, docframe, rep3 (rep3 luôn CUỐI: gộp sâu; esignflow gộp sâu vào flow + approval). */
+/** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m, v2gaps, gapa1, gape, k3b, g2, esign, legal, doclist, msimpact, messages, esign-anchor, esignflow, docframe, rep3 (rep3 luôn CUỐI: gộp sâu; esignflow gộp sâu vào flow + approval). */
 type Parts = readonly [
+  Part,
   Part,
   Part,
   Part,
@@ -63,6 +64,7 @@ const loadEn = (): Promise<Parts> =>
     import("../locales/contracts/legal.en.json"),
     import("../locales/contracts/doclist.en.json"),
     import("../locales/contracts/msimpact.en.json"),
+    import("../locales/contracts/messages.en.json"),
     import("../locales/contracts/esign-anchor.en.json"),
     import("../locales/contracts/esignflow.en.json"),
     import("../locales/contracts/docframe.en.json"),
@@ -95,6 +97,7 @@ const loadVi = (): Promise<Parts> =>
     import("../locales/contracts/legal.vi.json"),
     import("../locales/contracts/doclist.vi.json"),
     import("../locales/contracts/msimpact.vi.json"),
+    import("../locales/contracts/messages.vi.json"),
     import("../locales/contracts/esign-anchor.vi.json"),
     import("../locales/contracts/esignflow.vi.json"),
     import("../locales/contracts/docframe.vi.json"),

@@ -2,7 +2,7 @@
 // vai suy từ quyền gói (`write`/`owner`). CR-119 p2: mọi đường dẫn dưới `/contracts`; tuyến cũ chuyển hướng bằng shared/kernel/legacy-routes.
 import { ClipboardCheck, FilePlus2 } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
-import { IconBox, IconContract, IconOverview, IconPartners } from "~/components/icons";
+import { IconBox, IconContract, IconMessage, IconOverview, IconPartners } from "~/components/icons";
 import { basePathOf } from "~/shared/kernel/app-path";
 
 /** CR-119 phần 2: SHT dưới `/contracts` (basePath = `/${key}`). */
@@ -14,6 +14,7 @@ export type NavItem = {
     | "/contracts/list"
     | "/contracts/approvals"
     | "/contracts/requests"
+    | "/contracts/messages"
     | "/contracts/partners"
     | "/contracts/products";
   labelKey: string;
@@ -23,6 +24,8 @@ export type NavItem = {
   cap?: string;
   /** CR-126: số đỏ = số dòng hộp việc (xem NavEntry.inbox). */
   inbox?: true;
+  /** CR-132: số đỏ = tổng tin nhắn chưa đọc (`GET /messages/unread`, realtime cập nhật). */
+  unread?: true;
   /** Chỉ sáng khi path đúng bằng `to` (Tổng quan = gốc app, mọi trang khác nằm dưới nó). */
   exact?: true;
   /** Tiền tố con cũng thuộc mục này (chi tiết `/contracts/c/<id>` → "Hợp đồng"). */
@@ -60,6 +63,15 @@ export const REQUESTS_NAV: NavItem = {
   testId: "nav-contracts-requests",
   mobile: "more",
 };
+/** CR-132 · «Tin nhắn»: nhắn 1-1/nhóm giữa nhân viên; luôn hiện (module có gói contracts), số đỏ = chưa đọc. */
+export const MESSAGES_NAV: NavItem = {
+  to: `${B}/messages`,
+  labelKey: "contracts.nav.messages",
+  icon: IconMessage,
+  testId: "nav-contracts-messages",
+  unread: true,
+  mobile: "more",
+};
 export type Role = "owner" | "editor" | "viewer";
 
 export const roleOf = (p: { write: boolean; owner: boolean }): Role =>
@@ -87,7 +99,7 @@ export function activeNav(pathname: string): NavItem | undefined {
 /** Bố cục vùng nội dung: danh sách đầy cột (`board`, rộng 1600 px, tự giữ cuộn từ md), Tổng quan (`wide`), còn lại `reading`. */
 export type PageLayout = "board" | "wide" | "reading";
 export function layoutOf(pathname: string): PageLayout {
-  if (pathname === B) return "wide";
+  if (pathname === B || pathname === `${B}/messages`) return "wide";
   // CR-120: Community (Bảng tin 3 cột / Hồ sơ) trong cùng khung ⇒ khoang rộng như Tổng quan.
   if (pathname === "/community" || pathname.startsWith("/community/")) return "wide";
   return [`${B}/list`, `${B}/partners`, `${B}/products`].includes(pathname) ? "board" : "reading";

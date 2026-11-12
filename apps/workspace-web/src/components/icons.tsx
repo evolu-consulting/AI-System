@@ -86,6 +86,13 @@ export const IconFeedback = (p: P) => (
     <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </svg>
 );
+export const IconMessage = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />
+    <path d="M8.5 11h7M8.5 14.5h4" />
+  </svg>
+);
+
 export const IconBell = (p: P) => (
   <svg {...base(p)}>
     <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />

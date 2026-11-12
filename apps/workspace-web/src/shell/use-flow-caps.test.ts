@@ -42,8 +42,8 @@ describe("capsOf + nav Community", () => {
 describe("C-7 · cap Sổ Hợp Tác + badge", () => {
   const sht = (n: PackNavResponse | null) => labelsOf(contractsManifest, capsOf(n));
   it("CR-126 · «Việc của tôi» luôn hiện (không cần vai duyệt), đứng sau Hợp đồng + Yêu cầu", () => {
-    expect(sht(nav())?.indexOf("contracts.nav.approvals")).toBe(3);
-    expect(sht(nav(["contracts.review", 0]))?.indexOf("contracts.nav.approvals")).toBe(3);
+    expect(sht(nav())?.indexOf("contracts.nav.approvals")).toBe(4);
+    expect(sht(nav(["contracts.review", 0]))?.indexOf("contracts.nav.approvals")).toBe(4);
   });
   it("map cap → số: đúng số từng cap; cap vắng không có số", () => {
     const b = badgesOf(

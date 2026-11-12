@@ -4,6 +4,7 @@
 import { Link, useLinkProps } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useUnreadTotal } from "~/features/messages/hooks/use-unread";
 import { useInbox } from "~/features/overview/hooks/use-inbox";
 import { appNameOf, nameOf, useBrand } from "~/features/settings/lib/brand";
 import { cn } from "~/lib/utils";
@@ -94,6 +95,11 @@ function InboxLink(p: { n: NavEntry; wide: boolean; current: boolean }) {
   return <SideLink {...p} count={useInbox().count} />;
 }
 
+/** CR-132 · số đỏ «Tin nhắn» = tổng chưa đọc (cùng một query với nút khoang; mục chỉ có khi module có gói). */
+function UnreadLink(p: { n: NavEntry; wide: boolean; current: boolean }) {
+  return <SideLink {...p} count={useUnreadTotal()} />;
+}
+
 function Group({
   g,
   wide,
@@ -126,6 +132,8 @@ function Group({
       {g.items.map((n) =>
         n.inbox ? (
           <InboxLink key={n.to} n={n} wide={wide} current={on === n} />
+        ) : n.unread ? (
+          <UnreadLink key={n.to} n={n} wide={wide} current={on === n} />
         ) : (
           <SideLink
             key={n.to}
