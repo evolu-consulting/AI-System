@@ -1,8 +1,10 @@
 // CR-132 · W2 · khung chat của MỘT hội thoại: chi tiết, trang tin (tải thêm cũ), gửi (tin đang gửi mờ, lỗi bấm gửi lại), thu hồi,
 // đánh dấu đã đọc khi mở/tin tới, đổi tên / thêm / bớt / rời nhóm.
 import type { ConversationDetail, FileRef, Message } from "@ai/contracts/pack-contracts";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   addMembers,
   fetchConversation,
@@ -59,6 +61,7 @@ export type Outgoing = {
 /** Tin đang gửi (mờ; component phải `key={id}` để đổi hội thoại thì hàng chờ trống) / gửi lỗi (bấm gửi lại cùng `client_id` ⇒ server không tạo trùng). */
 export function useOutbox(id: string, myId: string) {
   const qc = useQueryClient();
+  const { t } = useTranslation();
   const [out, setOut] = useState<Outgoing[]>([]);
   const run = useCallback(
     (clientId: string, body: string, fileIds: string[], fileNames: string[]) => {
@@ -76,13 +79,15 @@ export function useOutbox(id: string, myId: string) {
           else void qc.invalidateQueries({ queryKey: msgKeys.list });
           setOut((o) => o.filter((x) => x.clientId !== clientId));
         })
-        .catch((e: unknown) =>
+        .catch((e: unknown) => {
+          // Tin lỗi GIỮ trong hàng (nút «Gửi lại», cùng client_id); chỉ thông báo lỗi chuẩn (tự tắt do toast chung), không timer riêng.
           setOut((o) =>
             o.map((x) => (x.clientId === clientId ? { ...x, failed: errorKey(e) } : x)),
-          ),
-        );
+          );
+          toast(t(errorKey(e)), "late");
+        });
     },
-    [id, qc, myId],
+    [id, qc, myId, t],
   );
   const send = useCallback(
     (body: string, files: readonly FileRef[] = []) =>

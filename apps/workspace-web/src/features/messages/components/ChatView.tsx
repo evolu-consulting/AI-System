@@ -161,7 +161,7 @@ function ChatBody({
     clientId: o.clientId,
     body: o.body,
     fileNames: o.fileNames,
-    failedText: o.failed ? t(o.failed) : null,
+    failed: o.failed ? t(o.failed) : null,
   }));
   if (!d || msgs.isPending)
     return (
