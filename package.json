@@ -142,6 +142,7 @@
     "combine:dev": "bun --env-file=.env.local tools/hub-dev/src/combine.ts",
     "demo:flows": "bun --env-file=.env.local tools/scripts/src/seed-cr128-flows.ts",
     "demo:org": "bun --env-file=.env.local tools/scripts/src/seed-demo-org.ts",
+    "demo:purchase": "bun --env-file=.env.local tools/scripts/src/seed-purchase-flow.ts",
     "seed:cr113": "bun --env-file=.env.local tools/scripts/src/seed-cr113-samples.ts",
     "pm:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-up.ps1 -SeedDemo",
     "pm:down": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-down.ps1",

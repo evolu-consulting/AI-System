@@ -1,4 +1,4 @@
-﻿# Dựng toàn bộ AI System trên máy dev bằng một lệnh: lõi (admin-api, hub-api) + 5 web (ai-admin, chat, studio,
+# Dựng toàn bộ AI System trên máy dev bằng một lệnh: lõi (admin-api, hub-api) + 5 web (ai-admin, chat, studio,
 # Sổ Hợp Tác, Community). Chạy lại an toàn: bước nào đã xong thì bỏ qua. Log + PID ở .data\dev-up\. Tắt: scripts\dev-down.ps1.
 #   scripts\dev-up.ps1              Postgres/Redis: dùng cái đang chạy, không có thì docker compose (hoặc dev-db.ps1)
 #   scripts\dev-up.ps1 -Only core   chỉ admin-api + hub-api
@@ -152,6 +152,9 @@ if ($SeedDemo) {
   "seed demo: công ty mẫu (phòng ban, 15 người, nhóm vai, quy trình duyệt theo trưởng phòng, HĐ mẫu) — demo:org…"
   bun --env-file=.env.local tools/scripts/src/seed-demo-org.ts
   if ($LASTEXITCODE) { throw "demo:org lỗi (cần admin-api + hub-api đang chạy; xem log phía trên)" }
+  "seed demo: «Quy trình mua hàng» 11 bước (1 cha + 3 con) — demo:purchase…"
+  bun --env-file=.env.local tools/scripts/src/seed-purchase-flow.ts
+  if ($LASTEXITCODE) { throw "demo:purchase lỗi (cần demo:org chạy trước; xem log phía trên)" }
 }
 
 # 5. web dev server — chỉ biến công khai + đích proxy (giống combine:dev, plan R2)

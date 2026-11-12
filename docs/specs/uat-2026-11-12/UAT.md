@@ -1,8 +1,8 @@
-# UAT đợt 2026-11-12 (CR-128e, CR-129, CR-130, CR-131, CR-132, CR-133, sửa bảo mật)
+# UAT đợt 2026-11-12 (CR-128e, CR-129, CR-130, CR-131, CR-132, CR-133, CR-140, sửa bảo mật)
 
 Môi trường: tenant **demo** (mã công ty `demo`). Không dùng tenant evolu.
 Mật khẩu: một mật khẩu dev chung = **DEMO_OWNER_PW** trong `.env.local` cho mọi tài khoản nội bộ bên dưới; admin nền tảng `admin` dùng `SEED_ADMIN_PASSWORD`; đối tác `doitac-*`: `.data/dev-up/demo-partners.txt`. KHÔNG ghi mật khẩu vào tài liệu.
-Dựng/chạy lại dữ liệu: `bun run demo:org` (lặp lại được; dev-up có -SeedDemo tự chạy). Có sẵn: quy trình «Duyệt hợp đồng», «Đề nghị mua hàng» (bước «Trưởng phòng duyệt» = trưởng phòng của người gửi); 4 HĐ mẫu «[Demo] …» đang chờ duyệt; HĐ «Hợp đồng mua văn phòng phẩm» (UAT-1) như cũ; Bảng tin đã bật, có bài mẫu.
+Dựng/chạy lại dữ liệu: `bun run demo:org`, rồi `bun run demo:purchase` cho «Quy trình mua hàng» (lặp lại được; dev-up có -SeedDemo tự chạy cả hai). Có sẵn: quy trình «Duyệt hợp đồng», «Đề nghị mua hàng» (bước «Trưởng phòng duyệt» = trưởng phòng của người gửi); 4 HĐ mẫu «[Demo] …» đang chờ duyệt; HĐ «Hợp đồng mua văn phòng phẩm» (UAT-1) như cũ; Bảng tin đã bật, có bài mẫu.
 
 ### Sơ đồ tổ chức công ty mẫu
 
@@ -120,3 +120,27 @@ Mở 2 trình duyệt (hoặc 1 thường + 1 ẩn danh): A = demo-owner, B = de
 | G1 | người gửi HĐ (thuộc nhóm duyệt) | Bấm «Nhận việc» ở bước duyệt HĐ của chính mình | Báo «Bạn là người gửi hồ sơ này nên không nhận việc duyệt được…» |
 | G2 | quản trị công ty | Uỷ quyền duyệt thay cho tài khoản đối tác | Không chọn được / bị từ chối |
 | G3 | người duyệt | Ghi bằng chứng duyệt kèm tệp | Chỉ dùng được tệp mình tải lên; trường hợp khác báo «Tệp hoặc chữ ký phải do chính bạn tải lên…» |
+
+## H. Quy trình mua hàng (CR-140)
+
+Dựng bằng `bun run demo:purchase` (1 quy trình cha «Mua hàng» + 3 con: A «Chọn nhà cung cấp và ngân sách», B «Hợp đồng», C «Nhận hàng và thanh toán»). Mở bằng đúng tài khoản; việc nằm ở «Chờ tôi duyệt». Mỗi bước duyệt cần ý kiến + một tệp (hoặc chữ ký).
+
+| UC | Người | Bước | Kỳ vọng |
+|---|---|---|---|
+| H1 | `cuong.le` | Tạo yêu cầu «Mua hàng»: tên hàng, số lượng, dự toán **600 triệu**, lý do, tệp | Yêu cầu hiện ở «Yêu cầu của tôi»; việc đầu về `binh.tran` (trưởng phòng của Cường), không về Cường/Dung |
+| H2 | `binh.tran` | Duyệt «Trưởng phòng đề xuất duyệt» | Việc «Tìm nhà cung cấp, lấy báo giá» về Phòng Mua hàng (Phúc/Tùng) |
+| H3 | `tung.mai`, `phuc.do` | Tùng điền báo giá + tải tệp; Phúc duyệt; Tùng điền bảng so sánh + nhà cung cấp đề xuất | Báo giá chỉ Phúc (trưởng phòng Mua hàng) duyệt được; sau so sánh hiện HAI thẻ cùng lúc: Phòng Mua hàng và Tài chính |
+| H4 | `phuc.do`, `giang.vu` | Mỗi người duyệt thẻ của mình | Cả hai đạt mới sang bước kế (một người chưa duyệt ⇒ yêu cầu vẫn dừng, thẻ hiện «1/2») |
+| H5 | `giang.vu` | Điền phương án ngân sách | Trên 500 triệu ⇒ việc «Giám đốc duyệt ngân sách» về `demo-owner`; dưới 500 triệu ⇒ về `phuc.do` |
+| H6 | `demo-owner`, `tung.mai`, `phuc.do` | Giám đốc duyệt; Tùng tạo PO; Phúc duyệt PO | Hết phần A, yêu cầu sang phần B «Hợp đồng» (dự toán từ 20 triệu) |
+| H7 | `huy.dang` | Soạn hợp đồng: số hợp đồng + tải bản thảo | Hợp đồng «<tên hàng>» xuất hiện ở Sổ Hợp Tác (nháp), tên/đối tác/giá trị lấy từ phần A |
+| H8 | `phuc.do`, `em.hoang` (hoặc người Kế toán), `huy.dang` | Duyệt song song: Pháp chế + Kế toán + Mua hàng | Ba thẻ cùng lúc; đủ cả ba mới sang Giám đốc; từ chối ở một thẻ ⇒ kết thúc «Không mua» |
+| H9 | `demo-owner` | Giám đốc duyệt hợp đồng | Sang phần C (demo chưa bật ký số nên bỏ bước Ký số) |
+| H10 | `khoa.bui` | Nhận hàng: ngày nhận, số lượng, biên bản; rồi duyệt nghiệm thu | Việc về Kho vận; xong sang Kế toán |
+| H11 | `ha.ly`, `em.hoang` | Kiểm hoá đơn (tệp) → Kế toán trưởng duyệt; Hà lập đề nghị thanh toán | Việc kiểm hoá đơn chỉ về nhóm «Kế toán thanh toán / mua hàng» (Hà) |
+| H12 | `em.hoang`, `demo-owner` | Duyệt song song Kế toán trưởng + Giám đốc | Đủ cả hai mới sang thanh toán |
+| H13 | `hung.dinh` (hoặc `ha.ly`), `em.hoang` | Thanh toán, hạch toán (ngày chi + chứng từ); Kế toán trưởng duyệt | Yêu cầu «Đã xong». Chưa có ghi sổ «Xác nhận mốc» tự động (khoảng trống trong `docs/specs/cr140-purchase/tasks.md`) |
+| H14 | `cuong.le` | Tạo yêu cầu thứ hai, dự toán **15 triệu** | Đi A → C, BỎ phần B (không có bước Hợp đồng); trưởng phòng Mua hàng duyệt ngân sách (không lên Giám đốc) |
+| H15 | `dung.pham` | Xem yêu cầu của Cường | Không thấy (chỉ người gửi và người nhận việc xem được) |
+
+Chạy thử tự động bằng API (không qua trình duyệt): `bun run demo:purchase --trial` (in bảng bước · người · kết quả).
