@@ -56,6 +56,7 @@ export function claimView(i: ClaimInfo): ClaimView {
 export const CR127_ERROR_CODES = [
   "TASK_CLAIMED",
   "STARTER_CANNOT_REVIEW",
+  "EVIDENCE_FILE_NOT_OWNED",
   "TASK_NOT_CLAIMABLE",
   "TASK_CLOSED",
   "TASK_NOT_CLAIMED",
