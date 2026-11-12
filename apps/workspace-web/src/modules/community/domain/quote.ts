@@ -165,7 +165,12 @@ export function hintLines(h: HostHint, type: PostView["type"]): { lead: string; 
     return { lead: t("community.quote.hintLead"), text: t("community.quote.hintNoMatch") };
   const parts: string[] = [];
   if (h.onHand !== null)
-    parts.push(t("community.quote.hintOnHand", { n: h.onHand, unit: h.match.unit ?? "" }).trim());
+    parts.push(
+      t("community.quote.hintOnHand", {
+        n: Number(h.onHand).toLocaleString(numLocale(), { maximumFractionDigits: 4 }),
+        unit: h.match.unit ?? "",
+      }).trim(),
+    );
   if (h.avgCost !== null) parts.push(t("community.quote.hintAvgCost", { price: vnd(h.avgCost) }));
   if (h.best)
     parts.push(

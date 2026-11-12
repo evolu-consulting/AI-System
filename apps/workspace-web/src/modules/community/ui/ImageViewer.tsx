@@ -38,42 +38,44 @@ export function ImageViewer({ images, index, onIndex, onClose, onDownload }: Pro
         data-testid="image-viewer"
         aria-describedby={undefined}
       >
-        <div data-mod="community" data-accent={brandAccent} className="imgviewer">
-          <DialogTitle className="imgviewer-title">{name}</DialogTitle>
-          <div className="imgviewer-stage">
-            {n > 1 && (
-              <button
-                type="button"
-                className="ghost icononly imgnav"
-                aria-label={t("community.post.imagePrev")}
-                onClick={() => onIndex(stepImage(index, -1, n))}
-              >
-                ‹
+        <div data-mod="community" data-accent={brandAccent}>
+          <div className="imgviewer">
+            <DialogTitle className="imgviewer-title">{name}</DialogTitle>
+            <div className="imgviewer-stage">
+              {n > 1 && (
+                <button
+                  type="button"
+                  className="ghost icononly imgnav"
+                  aria-label={t("community.post.imagePrev")}
+                  onClick={() => onIndex(stepImage(index, -1, n))}
+                >
+                  ‹
+                </button>
+              )}
+              {url ? (
+                <img src={url} alt={name} />
+              ) : (
+                <span className="muted">{failed ? t("community.post.downloadFailed") : "…"}</span>
+              )}
+              {n > 1 && (
+                <button
+                  type="button"
+                  className="ghost icononly imgnav"
+                  aria-label={t("community.post.imageNext")}
+                  onClick={() => onIndex(stepImage(index, 1, n))}
+                >
+                  ›
+                </button>
+              )}
+            </div>
+            <div className="imgviewer-bar">
+              <span className="muted tnum">
+                {index + 1} / {n}
+              </span>
+              <button type="button" className="ghost" onClick={() => onDownload(fileId, name)}>
+                {t("community.post.download")}
               </button>
-            )}
-            {url ? (
-              <img src={url} alt={name} />
-            ) : (
-              <span className="muted">{failed ? t("community.post.downloadFailed") : "…"}</span>
-            )}
-            {n > 1 && (
-              <button
-                type="button"
-                className="ghost icononly imgnav"
-                aria-label={t("community.post.imageNext")}
-                onClick={() => onIndex(stepImage(index, 1, n))}
-              >
-                ›
-              </button>
-            )}
-          </div>
-          <div className="imgviewer-bar">
-            <span className="muted tnum">
-              {index + 1} / {n}
-            </span>
-            <button type="button" className="ghost" onClick={() => onDownload(fileId, name)}>
-              {t("community.post.download")}
-            </button>
+            </div>
           </div>
         </div>
       </DialogContent>

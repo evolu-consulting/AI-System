@@ -1,6 +1,6 @@
 // Định dạng hiển thị (logic thuần).
 import type { PostView } from "@ai/contracts/community";
-import { t } from "../i18n";
+import { numLocale, t } from "../i18n";
 
 export function timeAgo(iso: string, now: number = Date.now()): string {
   const min = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60000));
@@ -34,6 +34,16 @@ export function tone(id: string, host: boolean): string {
   return `t${h + 2}`;
 }
 
+/**
+ * Số lượng có thể lẫn numeric DB dạng "320.0000 cuộn": số đầu có đúng 4 số lẻ ⇒ đọc là thập phân, in theo locale UI, bỏ số 0 thừa
+ * ("320 cuộn", "1.250,5 kg"). Chuỗi người dùng gõ ("1.250 kg", "8 tấn") giữ nguyên.
+ */
+export function formatQty(raw: string, locale: string = numLocale()): string {
+  return raw.replace(/^(d+.d{4})(?=s|$)/, (m) =>
+    Number(m).toLocaleString(locale, { maximumFractionDigits: 4 }),
+  );
+}
+
 const factLabel = (key: string): string =>
   ["product", "qty", "price", "area", "neededBy", "budget"].includes(key)
     ? t(`community.fact.${key}`)
@@ -59,7 +69,12 @@ export function factRows(p: Pick<PostView, "type" | "fields">): { k: string; v: 
       continue;
     }
     if (raw) {
-      const v = key === "neededBy" ? raw.split("-").reverse().join("/") : raw;
+      const v =
+        key === "neededBy"
+          ? raw.split("-").reverse().join("/")
+          : key === "qty"
+            ? formatQty(raw)
+            : raw;
       rows.push({ k: factLabel(key), v });
     }
   }
@@ -88,7 +103,10 @@ export function dealStrip(p: Pick<PostView, "type" | "fields"> & { title?: strin
     if (v?.trim()) cells.push({ k, v });
   };
   if (!p.title) add(t("community.fact.product"), f.product);
-  add(p.type === "sell" ? t("community.fact.qty") : t("community.fact.need"), f.qty);
+  add(
+    p.type === "sell" ? t("community.fact.qty") : t("community.fact.need"),
+    f.qty ? formatQty(f.qty) : f.qty,
+  );
   add(p.type === "sell" ? t("community.fact.area") : t("community.fact.deliverTo"), f.area);
   if (p.type === "buy")
     add(t("community.fact.neededBy"), f.neededBy?.split("-").reverse().join("/"));

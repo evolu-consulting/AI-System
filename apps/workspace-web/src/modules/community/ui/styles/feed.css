@@ -689,3 +689,14 @@
   align-items: center;
   justify-content: space-between;
 }
+[data-mod="community"] .imgviewer {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+[data-mod="community"] .imgviewer .imgviewer-bar {
+  gap: 16px;
+}
+[data-mod="community"] .imgviewer .imgviewer-stage img {
+  flex: 0 1 auto;
+}

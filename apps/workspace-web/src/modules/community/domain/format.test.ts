@@ -1,6 +1,6 @@
 // Dải deal bảng tin (community-feed-redesign): chọn ô hero + ô phụ theo loại bài.
 import { describe, expect, test } from "bun:test";
-import { dealStrip } from "./format";
+import { dealStrip, formatQty } from "./format";
 
 describe("dealStrip", () => {
   test("cần bán: hero = giá, ô phụ = số lượng + khu vực", () => {
@@ -36,5 +36,21 @@ describe("dealStrip", () => {
       v: "Keo",
     });
     expect(dealStrip({ type: "note", fields: {} })).toBeNull();
+  });
+});
+
+describe("formatQty", () => {
+  test("numeric DB 4 số lẻ ⇒ bỏ số 0 thừa theo locale vi", () => {
+    expect(formatQty("320.0000 cuộn", "vi-VN")).toBe("320 cuộn");
+    expect(formatQty("1250.5000 kg", "vi-VN")).toBe("1.250,5 kg");
+    expect(formatQty("12.5000", "en-US")).toBe("12.5");
+  });
+  test("chuỗi người dùng gõ giữ nguyên", () => {
+    expect(formatQty("8 tấn", "vi-VN")).toBe("8 tấn");
+    expect(formatQty("1.250 kg", "vi-VN")).toBe("1.250 kg");
+  });
+  test("dealStrip dùng formatQty", () => {
+    const d = dealStrip({ type: "sell", title: "A", fields: { qty: "320.0000 cuộn", price: "1" } });
+    expect(d?.cells[0]?.v).toBe("320 cuộn");
   });
 });

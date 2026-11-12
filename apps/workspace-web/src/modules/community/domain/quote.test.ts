@@ -83,6 +83,11 @@ describe("quote form logic", () => {
     } as never;
     expect(hintLines(h, "buy").lead).toBe("Khớp hàng đang có:");
     expect(hintLines(h, "sell").lead).toBe("Băng keo:");
+    const h2 = { ...h, onHand: "1250.5000" } as never;
+    expect(hintLines(h2, "buy").text).toContain("đang có 1.250,5 cuộn");
+    expect(hintLines({ ...h, onHand: "320.0000" } as never, "buy").text).toContain(
+      "đang có 320 cuộn",
+    );
     expect(hintLines({ match: null } as never, "sell").text).toContain("chưa có");
   });
 });
