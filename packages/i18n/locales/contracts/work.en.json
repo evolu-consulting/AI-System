@@ -374,13 +374,13 @@
         "waiting": "Waiting for {{step}} · {{who}}",
         "over": "overdue",
         "hoursLeft": "{{n}} h left",
-        "waitingHint": "Details are locked while in review. To edit, the submitter withdraws to DRAFT.",
+        "waitingHint": "Details are locked while in review. To edit, the submitter withdraws it to Draft.",
         "holdBy": "On hold by {{who}}",
         "holdHint": "No delivery/receipt notes and no milestone confirmation; collections can still be recorded. Releasing needs evidence."
       },
       "act": {
         "resubmit": "Resubmit",
-        "withdraw": "Withdraw to DRAFT",
+        "withdraw": "Withdraw to Draft",
         "recreate": "Create a new contract from this document",
         "newVersion": "Upload new version",
         "hold": "Put on hold",
@@ -388,7 +388,7 @@
       },
       "ask": {
         "withdraw": {
-          "title": "Withdraw to DRAFT",
+          "title": "Withdraw to Draft",
           "hint": "Give a reason so reviewers know.",
           "ok": "Withdraw"
         },
@@ -410,8 +410,8 @@
       },
       "toast": {
         "resubmitted": "Resubmitted for review.",
-        "recreated": "New DRAFT contract created.",
-        "withdrawn": "Withdrawn to DRAFT.",
+        "recreated": "New draft contract created.",
+        "withdrawn": "Withdrawn to Draft.",
         "held": "Execution put on hold.",
         "released": "Execution hold released."
       },

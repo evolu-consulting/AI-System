@@ -20,6 +20,8 @@ export type NavItem = {
   labelKey: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   testId?: string;
+  /** Nhãn ngắn cho thanh dưới điện thoại (xem NavEntry.shortLabelKey). */
+  shortLabelKey?: string;
   /** CR-121 C-7 · khoá quyền động (server tính, shell/use-flow-caps): có ⇒ chỉ hiện khi đúng. */
   cap?: string;
   /** CR-126: số đỏ = số dòng hộp việc (xem NavEntry.inbox). */
@@ -39,6 +41,7 @@ export const NAV: readonly NavItem[] = [
   {
     to: `${B}/list`,
     labelKey: "contracts.nav.contracts",
+    shortLabelKey: "contracts.nav.contractsShort",
     icon: IconContract,
     also: [`${B}/c`],
     mobile: "primary",
@@ -94,6 +97,10 @@ export function activeNav(pathname: string): NavItem | undefined {
       : under(pathname, n.to) || (n.also ?? []).some((a) => under(pathname, a)),
   );
 }
+
+/** Màn mà nút nổi «Mở trợ lý AI» bị ẩn: «Tin nhắn» toàn màn (nút nổi che nút Gửi của ô soạn). */
+export const fabHiddenOn = (pathname: string): boolean =>
+  pathname === `${B}/messages` || pathname.startsWith(`${B}/messages/`);
 
 /** Bố cục vùng nội dung: danh sách đầy cột (`board`, rộng 1600 px, tự giữ cuộn từ md), Tổng quan (`wide`), còn lại `reading`. */
 export type PageLayout = "board" | "wide" | "reading";

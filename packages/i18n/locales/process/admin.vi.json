@@ -1643,7 +1643,7 @@
       "kindStart": "Khi nào chạy",
       "change": "Đổi",
       "doneTitle": "{{Record}} ⇒ DONE",
-      "doneSub": "Từ chối ở bất kỳ bước ⇒ REJECT · Trả lại ⇒ DRAFT, gửi lại chạy từ đầu",
+      "doneSub": "Từ chối ở bất kỳ bước ⇒ Từ chối · Trả lại ⇒ Nháp, gửi lại chạy từ đầu",
       "signBy": "{{names}} ký",
       "loading": "Đang tải sơ đồ…",
       "approveNote": "Người duyệt có 3 nút: Duyệt · Trả lại · Từ chối. Không cần vẽ thêm bước Kết thúc.",

@@ -10,7 +10,7 @@ import type {
   SendMessageRequest,
   UnreadResponse,
 } from "@ai/contracts/pack-contracts";
-import { api, apiResponse } from "@ai/web-kit/http";
+import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/messages";
 const conv = (id: string) => `${BASE}/conversations/${encodeURIComponent(id)}`;
@@ -66,11 +66,13 @@ export function uploadFile(id: string, file: File): Promise<FileRef> {
   return api<FileRef>(`${conv(id)}/files`, { method: "POST", rawBody: form as unknown as Blob });
 }
 
-/** `GET …/files/:fileId` (Bearer; 302 tới FileBox) ⇒ blob. */
-export async function fetchFileBlob(
+/** `GET …/files/:fileId/link` (Bearer) ⇒ link ngắn hạn tới FileBox: dùng thẳng cho `<img src>` / mở tab (không fetch xuyên origin ⇒ không cần CORS). */
+export async function fetchFileLink(
   id: string,
   fileId: string,
   signal?: AbortSignal,
-): Promise<Blob> {
-  return (await apiResponse(fileBase(id, fileId), { signal })).blob();
+): Promise<string> {
+  const { url } = await api<{ url: string }>(`${fileBase(id, fileId)}/link`, { signal });
+  if (!/^https?:\/\//.test(url) && !/^\/(?!\/)/.test(url)) throw new Error("bad link");
+  return url;
 }

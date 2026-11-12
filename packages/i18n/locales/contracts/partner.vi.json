@@ -1,6 +1,10 @@
 {
   "contracts": {
-    "nav": { "partner-inbox": "Hợp đồng đối tác gửi", "messages": "Tin nhắn" },
+    "nav": {
+      "partner-inbox": "Hợp đồng đối tác gửi",
+      "messages": "Tin nhắn",
+      "contractsShort": "Hợp đồng"
+    },
     "approval": {
       "engine": {
         "attention": {

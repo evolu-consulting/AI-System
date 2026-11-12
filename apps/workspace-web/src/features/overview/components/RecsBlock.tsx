@@ -25,10 +25,16 @@ export function RecsBlock() {
       ) : (
         <div className="grid grid-cols-3 gap-3 p-4 max-sm:grid-cols-1" data-testid="recs">
           {cols.map((c) => (
-            <div key={c.key} data-col={c.key}>
+            <div key={c.key} data-col={c.key} className="min-w-0">
               <div className="mb-1.5 flex items-center gap-2">
-                <Tag tone={c.tone}>{t(`contracts.overview.recs.${c.key}`)}</Tag>
-                <span className="text-label text-dim">{c.rows.length}</span>
+                <Tag
+                  tone={c.tone}
+                  className="min-w-0 max-w-full"
+                  title={t(`contracts.overview.recs.${c.key}`)}
+                >
+                  <span className="truncate">{t(`contracts.overview.recs.${c.key}`)}</span>
+                </Tag>
+                <span className="shrink-0 text-label text-dim">{c.rows.length}</span>
               </div>
               {c.rows.length === 0 ? (
                 <p className="py-1.5 text-label text-dim">{t("contracts.overview.recs.none")}</p>

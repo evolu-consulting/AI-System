@@ -18,6 +18,8 @@ export type NavEntry = {
   /** Tiền tố con cũng thuộc mục này (vd chi tiết hợp đồng → "Hợp đồng"). */
   also?: readonly string[];
   testId?: string;
+  /** Nhãn NGẮN cho thanh dưới điện thoại (5 cột hẹp, nhãn dài bị cắt); vắng ⇒ `labelKey`. */
+  shortLabelKey?: string;
   /** CR-120: false ⇒ không đưa vào thanh dưới của điện thoại (tối đa 5 cột). */
   bottom?: false;
   /** CR-125: thanh dưới điện thoại — `primary` luôn xếp đầu, `more` không chiếm cột (vào menu Thêm / menu trái). */

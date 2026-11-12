@@ -25,11 +25,14 @@ export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
     : t("contracts.gapa1.owner.none");
   const opts = people.data?.items ?? [];
   return (
-    <span className="inline-flex flex-wrap items-center gap-2" data-testid="owner-row">
+    <span
+      className="inline-flex max-w-full flex-wrap items-center gap-2 max-sm:pr-4"
+      data-testid="owner-row"
+    >
       <span className="text-[13px] text-dim">{t("contracts.u5.owner.label")}</span>
       {write ? (
         <select
-          className="input w-auto [field-sizing:content]"
+          className="input w-auto max-w-full min-w-0 [field-sizing:content]"
           aria-label={t("contracts.u5.owner.label")}
           data-testid="owner-select"
           value={cur ?? ""}

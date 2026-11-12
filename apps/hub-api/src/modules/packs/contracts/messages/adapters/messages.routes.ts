@@ -143,7 +143,7 @@ function messageRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   });
 }
 
-/** Tệp (M5): tải lên (multipart `file`, gắn `msg_files` ngay, chưa gửi) + tải xuống 302 tới FileBox. FileBox vắng ⇒ 503. */
+/** Tệp (M5): tải lên (multipart `file`, gắn `msg_files` ngay, chưa gửi) + tải xuống 302 tới FileBox (+ `/link` JSON). FileBox vắng ⇒ 503. */
 function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   const { read, who, uuid, noStore } = h;
   r.post(
@@ -174,6 +174,16 @@ function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
     const url = await run(uc.fileLink(w, cid, fid));
     noStore(c);
     return c.redirect(url, 302);
+  });
+  // Link ngắn hạn dạng JSON `{url}` cho trình duyệt: `<img src>` / tab mới dùng thẳng (không fetch xuyên origin tới FileBox ⇒ không cần CORS, chứng chỉ do trình duyệt xử lý).
+  r.get("/messages/conversations/:id/files/:fileId/link", read, async (c) => {
+    const w = who(c);
+    const cid = uuid(c, "id");
+    const fid = uuid(c, "fileId");
+    if (!uc.filesEnabled) throw storageOff();
+    const url = await run(uc.fileLink(w, cid, fid));
+    noStore(c);
+    return c.json({ url });
   });
 }
 

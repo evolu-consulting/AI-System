@@ -19,7 +19,7 @@ import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import type { ShellUser } from "../components/UserMenu";
 import { useDock } from "../hooks/use-dock";
-import { layoutOf, roleOf } from "../lib/nav";
+import { fabHiddenOn, layoutOf, roleOf } from "../lib/nav";
 import { NAV_PINNED_KEY, useStoredBool } from "../lib/stored";
 
 type T = (k: string, o?: Record<string, unknown>) => string;
@@ -35,6 +35,20 @@ function useContractsSync(showAssistant: boolean): number {
   useBrandSync(hasContracts);
   return useUnreadTotal(showAssistant && hasContracts);
 }
+
+/** Lớp ẩn của nút nổi trợ lý: khoang đang mở / sheet / thẻ HĐ trên điện thoại / màn «Tin nhắn» (nút nổi che nút Gửi; tin nhắn đã có khoang riêng ở các trang khác). */
+const fabClass = (o: {
+  open: boolean;
+  sheet: boolean;
+  onCard: boolean;
+  pathname: string;
+}): string =>
+  cn(
+    o.open && "lg:hidden",
+    o.sheet && "hidden",
+    o.onCard && "max-md:hidden",
+    fabHiddenOn(o.pathname) && "hidden",
+  );
 
 export function Shell({ user, write, owner }: { user: ShellUser; write: boolean; owner: boolean }) {
   const { t } = useTranslation();
@@ -103,11 +117,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
           badge={unread}
           tooltip={t("contracts.shell.askAssistant")}
           icon={<IconRobot width={24} height={24} />}
-          className={cn(
-            dock.open && "lg:hidden",
-            dock.sheet && "hidden",
-            onCard && "max-md:hidden",
-          )}
+          className={fabClass({ open: dock.open, sheet: dock.sheet !== null, onCard, pathname })}
         />
       )}
       {dock.sheet && (

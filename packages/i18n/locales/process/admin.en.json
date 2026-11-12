@@ -1643,7 +1643,7 @@
       "kindStart": "When it runs",
       "change": "Change",
       "doneTitle": "{{Record}} ⇒ DONE",
-      "doneSub": "Rejected at any step ⇒ REJECT · Sent back ⇒ DRAFT, resubmit to start over",
+      "doneSub": "Rejected at any step ⇒ Rejected · Sent back ⇒ Draft, resubmit to start over",
       "signBy": "{{names}} to sign",
       "loading": "Loading the diagram…",
       "approveNote": "The approver has 3 buttons: Approve · Send back · Reject. No need to draw an extra End step.",

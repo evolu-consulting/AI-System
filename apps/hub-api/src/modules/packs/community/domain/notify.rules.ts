@@ -94,67 +94,85 @@ export function priceChanged(before: string | null | undefined, after: string | 
 }
 
 export type PostRef = { id: string; title: string };
-const quote = (s: string) => (s.trim() === "" ? "(không tiêu đề)" : `"${s.trim().slice(0, 60)}"`);
+/** Trích tiêu đề bài tối đa 60 ký tự Unicode: “…” (bài không tiêu đề ⇒ rỗng, câu dùng bản không trích — không in «(không tiêu đề)»). */
+export function titleQuote(s: string): string {
+  const t = Array.from(s.trim());
+  return t.length === 0 ? "" : `“${t.slice(0, 60).join("")}”`;
+}
 
 export type BellText = { title: string; body: string; link: string; dedup: string };
 
 /** Chữ + link + khoá trùng. `body` = tên người gây ra sự kiện (chuông hiển thị `actorName`). Tiêu đề bài luôn là bản đã che. */
 export function bellText(k: BellKind, p: PostRef, o: { actor: string; ref: string }): BellText {
   const post = `/community?post=${p.id}`; // đường dẫn trong app (chuông chung của shell): Bảng tin cuộn tới đúng bài
-  const t = quote(p.title);
+  const t = titleQuote(p.title);
+  /** Có trích ⇒ `<có>: “…”`; không ⇒ `<không>`. */
+  const q = (withT: string, without: string): string => (t ? `${withT}: ${t}` : without);
   switch (k) {
     case "comment":
       return {
-        title: `${o.actor} bình luận bài ${t}`,
-        body: o.actor,
+        title: q(`${o.actor} bình luận bài`, `${o.actor} bình luận một bài đăng`),
+        body: "",
         link: `${post}&comment=${o.ref}`,
         dedup: `c:${o.ref}:comment`,
       };
     case "reply":
       return {
-        title: `${o.actor} trả lời bình luận của bạn trong bài ${t}`,
-        body: o.actor,
+        title: q(
+          `${o.actor} trả lời bình luận của bạn trong bài`,
+          `${o.actor} trả lời bình luận của bạn`,
+        ),
+        body: "",
         link: `${post}&comment=${o.ref}`,
         dedup: `c:${o.ref}:reply`,
       };
     case "mention":
       return {
-        title: `${o.actor} nhắc đến công ty bạn trong bài ${t}`,
-        body: o.actor,
+        title: q(
+          `${o.actor} nhắc đến công ty bạn trong bài`,
+          `${o.actor} nhắc đến công ty bạn trong một bài đăng`,
+        ),
+        body: "",
         link: `${post}&comment=${o.ref}`,
         dedup: `c:${o.ref}:mention`,
       };
     case "newSell":
       return {
-        title: `${o.actor} đăng bài Cần bán ${t}`,
-        body: o.actor,
+        title: q(`${o.actor} đăng bài Cần bán`, `${o.actor} đăng một bài Cần bán`),
+        body: "",
         link: post,
         dedup: `p:${o.ref}:newSell`,
       };
     case "newBuy":
       return {
-        title: `${o.actor} đăng bài Cần mua ${t}`,
-        body: o.actor,
+        title: q(`${o.actor} đăng bài Cần mua`, `${o.actor} đăng một bài Cần mua`),
+        body: "",
         link: post,
         dedup: `p:${o.ref}:newBuy`,
       };
     case "matchBuy":
       return {
-        title: `Bài Cần mua ${t} khớp sản phẩm bạn đang có`,
-        body: o.actor,
+        title: q(
+          "Bài Cần mua khớp sản phẩm bạn đang có",
+          "Có bài Cần mua khớp sản phẩm bạn đang có",
+        ),
+        body: "",
         link: post,
         dedup: `p:${o.ref}:matchBuy`,
       };
     case "priceEdited":
       return {
-        title: `${o.actor} sửa giá bài ${t} mà bạn đã lưu báo giá`,
-        body: o.actor,
+        title: q(
+          `${o.actor} sửa giá bài bạn đã lưu báo giá`,
+          `${o.actor} sửa giá bài bạn đã lưu báo giá`,
+        ),
+        body: "",
         link: `${post}&quote=1`,
         dedup: `pe:${p.id}:${o.ref}`,
       };
     case "expiring":
       return {
-        title: `Bài ${t} sẽ tự hết hạn sau 3 ngày`,
+        title: q("Bài sắp tự hết hạn sau 3 ngày", "Bài của bạn sẽ tự hết hạn sau 3 ngày"),
         body: "",
         link: post,
         dedup: `x:${p.id}:${o.ref}`,

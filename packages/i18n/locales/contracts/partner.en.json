@@ -1,6 +1,10 @@
 {
   "contracts": {
-    "nav": { "partner-inbox": "Contracts from partners", "messages": "Messages" },
+    "nav": {
+      "partner-inbox": "Contracts from partners",
+      "messages": "Messages",
+      "contractsShort": "Contracts"
+    },
     "approval": {
       "engine": {
         "attention": {

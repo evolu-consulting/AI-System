@@ -63,7 +63,6 @@
       "openChat": "Message",
       "selectedN": "{{n}} selected",
       "groupFull": "A group has at most {{n}} people.",
-      "cancel": "Cancel",
       "close": "Close",
       "membersTitle": "Group members",
       "roleOwner": "Owner",

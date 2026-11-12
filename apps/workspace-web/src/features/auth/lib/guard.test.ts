@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { Me, TokenGrant } from "@ai/contracts/chat";
 import { isRedirect } from "@tanstack/react-router";
-import { homeRedirect, redirectIfAuthed, requireSession } from "./guard";
+import { bouncesHome, homeRedirect, redirectIfAuthed, requireSession } from "./guard";
 import { AUTH_CHANNEL_NAME, CONTRACTS_APP, REFRESH_LOCK_NAME, session } from "./session";
 
 const me = { id: "u1", username: "lan", tenant: { key: "acme" } } as unknown as Me;
@@ -117,5 +117,25 @@ describe("redirectIfAuthed", () => {
     await session.logout();
     expect(await caught(redirectIfAuthed())).toBeNull();
     expect(isRedirect(await caught(requireSession({ href: "/contracts/list" })))).toBe(true);
+  });
+});
+
+describe("bouncesHome · /community khi Bảng tin chưa bật (ADR-0044)", () => {
+  const internalNoFeed = { contracts: true, community: false };
+  test("nhân viên nội bộ vào /community khi chưa bật ⇒ KHÔNG đẩy về Tổng quan (trang nói rõ vì sao)", () => {
+    expect(bouncesHome("/community", internalNoFeed, "/contracts")).toBe(false);
+  });
+  test("module khác không mở được vẫn về home; đối tác (không có SHT) vào /contracts ⇒ về home", () => {
+    expect(
+      bouncesHome("/contracts/list", { contracts: false, community: true }, "/community"),
+    ).toBe(true);
+    expect(bouncesHome("/community", { contracts: false, community: false }, "/contracts")).toBe(
+      true,
+    );
+  });
+  test("mở được ⇒ không đẩy", () => {
+    expect(bouncesHome("/community", { contracts: true, community: true }, "/contracts")).toBe(
+      false,
+    );
   });
 });

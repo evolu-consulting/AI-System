@@ -13,7 +13,7 @@ import { MODULES } from "~/shell/modules";
 import { activeEntry, buildShellNav, type ShellNavGroup } from "~/shell/nav";
 import { badgeText, useFlowCaps } from "~/shell/use-flow-caps";
 import { useNavPath } from "~/shell/use-nav-path";
-import { useShellPacks } from "~/shell/use-shell-packs";
+import { useIsExternal, useShellPacks } from "~/shell/use-shell-packs";
 import type { Role } from "../lib/nav";
 import { BrandMark } from "./BrandMark";
 import { type ShellUser, UserMenu } from "./UserMenu";
@@ -162,8 +162,10 @@ export function Sidebar({
   const { t } = useTranslation();
   const pathname = useNavPath();
   const packs = useShellPacks();
+  const external = useIsExternal();
+  // user ngoài: `/pack/nav` bị Hub chặn (403) — không gọi.
   const { hasCap, badgeOf } = useFlowCaps(
-    packs.community === true || packs.contracts === true,
+    !external && (packs.community === true || packs.contracts === true),
     pathname,
   );
   const groups = useMemo(

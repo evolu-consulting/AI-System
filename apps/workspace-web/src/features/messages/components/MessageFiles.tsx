@@ -1,61 +1,77 @@
 // CR-132 · W3 · tệp trong tin: ảnh ⇒ ảnh thu nhỏ (tải qua Bearer ⇒ object URL, chỉ khi hiện), bấm mở ảnh đầy đủ ở tab mới; tệp khác ⇒ thẻ tên + cỡ, bấm để tải.
 import type { FileRef } from "@ai/contracts/pack-contracts";
 import { toast } from "@ai/web-kit/ui/toast";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconAttach } from "~/components/icons";
-import { fetchFileBlob } from "../api";
+import { fetchFileLink } from "../api";
 import { errorKey } from "../lib/errors";
 import { isImageMime, sizeLabel } from "../lib/files";
 
-async function openBlob(conv: string, f: FileRef, t: (k: string) => string): Promise<void> {
+/** Mở tệp: xin link ngắn hạn (Bearer) rồi mở ở tab đã mở sẵn (tránh chặn popup); ảnh xem tại chỗ, tệp khác tải về. */
+async function openFile(conv: string, f: FileRef, t: (k: string) => string): Promise<void> {
   const tab = f.mime.startsWith("image/") ? window.open("", "_blank") : null;
   try {
-    const url = URL.createObjectURL(await fetchFileBlob(conv, f.id));
+    const url = await fetchFileLink(conv, f.id);
     if (tab) {
       tab.opener = null;
       tab.location.href = url;
-    } else {
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = f.name;
-      a.click();
-    }
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } else window.location.assign(url);
   } catch (e) {
     tab?.close();
     toast(t(errorKey(e)), "late");
   }
 }
 
+/** Ảnh thu nhỏ: chỉ xin link khi ô hiện ra (lazy), dùng `<img src>` trực tiếp (không object URL ⇒ không cần thu hồi). */
 function Thumb({ conv, f }: { conv: string; f: FileRef }) {
   const { t } = useTranslation();
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const box = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    let alive = true;
-    let made: string | null = null;
-    fetchFileBlob(conv, f.id)
-      .then((b) => {
-        made = URL.createObjectURL(b);
-        if (alive) setUrl(made);
-      })
-      .catch(() => alive && setFailed(true));
+    const el = box.current;
+    if (!el) return;
+    const ac = new AbortController();
+    const load = () =>
+      fetchFileLink(conv, f.id, ac.signal)
+        .then(setUrl)
+        .catch(() => !ac.signal.aborted && setFailed(true));
+    if (typeof IntersectionObserver === "undefined") {
+      void load();
+      return () => ac.abort();
+    }
+    const io = new IntersectionObserver((es) => {
+      if (es.some((e) => e.isIntersecting)) {
+        io.disconnect();
+        void load();
+      }
+    });
+    io.observe(el);
     return () => {
-      alive = false;
-      if (made) URL.revokeObjectURL(made);
+      io.disconnect();
+      ac.abort();
     };
   }, [conv, f.id]);
   if (failed) return <FileCard conv={conv} f={f} />;
   return (
     <button
+      ref={box}
       type="button"
-      onClick={() => void openBlob(conv, f, t)}
+      onClick={() => void openFile(conv, f, t)}
       aria-label={t("contracts.messages.openImage", { name: f.name })}
       data-testid="msg-image"
       className="block h-32 w-40 overflow-hidden rounded-lg bg-sunk"
     >
-      {url && <img src={url} alt={f.name} className="h-full w-full object-cover" />}
+      {url && (
+        <img
+          src={url}
+          alt={f.name}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="h-full w-full object-cover"
+        />
+      )}
     </button>
   );
 }
@@ -65,7 +81,7 @@ function FileCard({ conv, f }: { conv: string; f: FileRef }) {
   return (
     <button
       type="button"
-      onClick={() => void openBlob(conv, f, t)}
+      onClick={() => void openFile(conv, f, t)}
       aria-label={t("contracts.messages.download", { name: f.name })}
       data-testid="msg-file"
       className="flex max-w-full items-center gap-2 rounded-lg border border-rule bg-panel px-3 py-2 text-left text-ink hover:bg-sunk"

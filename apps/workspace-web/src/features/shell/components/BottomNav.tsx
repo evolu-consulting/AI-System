@@ -78,7 +78,7 @@ export function BottomNav() {
           className={ITEM}
         >
           {n.unread ? <UnreadIcon icon={n.icon} /> : <n.icon width={19} height={19} />}
-          <span className="max-w-full truncate">{t(n.labelKey)}</span>
+          <span className="max-w-full truncate">{t(n.shortLabelKey ?? n.labelKey)}</span>
         </Link>
       ))}
       {contracts && <WaitingItem />}

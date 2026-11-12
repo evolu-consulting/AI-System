@@ -4,9 +4,27 @@ import { createPackMeSource } from "./lib/pack-me-source";
 
 export const FEATURE_DOMAIN = "platform";
 
+/**
+ * Có được mở `/me/stream` không (Hub chặn user ngoài ⇒ 403): mặc định có; phiên đối tác ⇒ không (cờ vẫn nạp lại theo lần tải/lấy lại tiêu điểm).
+ * Phiên đặt qua `setStreamGate` (guard đăng nhập) để lớp nền tảng này không phụ thuộc `platform/auth`.
+ */
+let streamAllowed: () => boolean = () => true;
+export const setStreamGate = (fn: () => boolean): void => {
+  streamAllowed = fn;
+};
+/** Chờ tới khi huỷ, không gọi mạng. */
+const idleUntilAbort = (signal: AbortSignal): Promise<void> =>
+  new Promise((resolve) => {
+    if (signal.aborted) return resolve();
+    signal.addEventListener("abort", () => resolve(), { once: true });
+  });
+
 export const source = createPackMeSource({
   fetch: fetchPackMe,
-  listen: listenConfigChanged,
+  listen: (signal, onChanged, onReconnected) =>
+    streamAllowed()
+      ? listenConfigChanged(signal, onChanged, onReconnected)
+      : idleUntilAbort(signal),
   focus: typeof window === "undefined" ? null : window,
 });
 

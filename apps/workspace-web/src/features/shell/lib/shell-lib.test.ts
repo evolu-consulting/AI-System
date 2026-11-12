@@ -1,6 +1,6 @@
 // PK-FR-10 · TF5 · luật thuần của Shell: vai theo quyền gói, mục menu đang chọn, giới hạn độ rộng khoang, giao diện.
 import { describe, expect, test } from "bun:test";
-import { activeNav, canSeeSettings, layoutOf, NAV, roleOf } from "./nav";
+import { activeNav, canSeeSettings, fabHiddenOn, layoutOf, NAV, roleOf } from "./nav";
 import {
   ASSISTANT_DEFAULT,
   ASSISTANT_MAX,
@@ -87,5 +87,22 @@ describe("theme", () => {
     expect(root.dataset.theme).toBe("light");
     applyTheme("auto", root);
     expect(root.dataset.theme).toBeUndefined();
+  });
+});
+
+describe("fabHiddenOn · nút nổi trợ lý không che nút Gửi của Tin nhắn", () => {
+  test("ẩn ở /contracts/messages (+ con); hiện ở trang khác", () => {
+    expect(fabHiddenOn("/contracts/messages")).toBe(true);
+    expect(fabHiddenOn("/contracts/messages/abc")).toBe(true);
+    expect(fabHiddenOn("/contracts")).toBe(false);
+    expect(fabHiddenOn("/contracts/list")).toBe(false);
+  });
+});
+
+describe("nhãn ngắn thanh dưới", () => {
+  test("«Hợp đồng & giao dịch» có nhãn ngắn riêng cho thanh dưới điện thoại", () => {
+    expect(NAV.find((n) => n.to.endsWith("/list"))?.shortLabelKey).toBe(
+      "contracts.nav.contractsShort",
+    );
   });
 });

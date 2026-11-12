@@ -374,13 +374,13 @@
         "waiting": "Đang chờ {{step}} · {{who}}",
         "over": "đã quá hạn",
         "hoursLeft": "còn {{n}} giờ",
-        "waitingHint": "Thông tin khoá trong lúc duyệt. Muốn sửa, người gửi Rút về DRAFT.",
+        "waitingHint": "Thông tin khoá trong lúc duyệt. Muốn sửa, người gửi Rút về Nháp.",
         "holdBy": "Đang tạm khoá bởi {{who}}",
         "holdHint": "Không tạo phiếu giao/nhận, không xác nhận mốc; thu tiền vẫn ghi được. Mở khoá cần bằng chứng."
       },
       "act": {
         "resubmit": "Gửi lại",
-        "withdraw": "Rút về DRAFT",
+        "withdraw": "Rút về Nháp",
         "recreate": "Tạo hợp đồng mới từ văn bản này",
         "newVersion": "Tải phiên bản mới",
         "hold": "Tạm khoá",
@@ -388,7 +388,7 @@
       },
       "ask": {
         "withdraw": {
-          "title": "Rút về DRAFT",
+          "title": "Rút về Nháp",
           "hint": "Ghi lý do rút về để người duyệt biết.",
           "ok": "Rút về"
         },
@@ -410,8 +410,8 @@
       },
       "toast": {
         "resubmitted": "Đã gửi lại để duyệt.",
-        "recreated": "Đã tạo hợp đồng mới ở DRAFT.",
-        "withdrawn": "Đã rút về DRAFT.",
+        "recreated": "Đã tạo hợp đồng mới ở trạng thái Nháp.",
+        "withdrawn": "Đã rút về Nháp.",
         "held": "Đã tạm khoá thực hiện.",
         "released": "Đã mở khoá thực hiện."
       },

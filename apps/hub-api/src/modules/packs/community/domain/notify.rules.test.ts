@@ -6,6 +6,7 @@ import {
   kindOfBell,
   newPostKind,
   priceChanged,
+  titleQuote,
   wantsKind,
 } from "./notify.rules";
 
@@ -135,12 +136,31 @@ describe("loại thông báo", () => {
   });
 });
 
+describe("chữ chuông gọn (UAT)", () => {
+  const id = "11111111-1111-4111-8111-111111111111";
+  it("bài không tiêu đề ⇒ không in «(không tiêu đề)», tên người không lặp", () => {
+    const t = bellText("comment", { id, title: "  " }, { actor: "Cường", ref: "c1" });
+    expect(t.title).toBe("Cường bình luận một bài đăng");
+    expect(t.title).not.toContain("không tiêu đề");
+    expect(t.body).toBe("");
+    expect(bellText("mention", { id, title: "" }, { actor: "An", ref: "c" }).title).toBe(
+      "An nhắc đến công ty bạn trong một bài đăng",
+    );
+  });
+  it("trích tiêu đề tối đa 60 KÝ TỰ Unicode (không cắt đôi emoji)", () => {
+    expect(titleQuote("😀".repeat(70))).toBe(`“${"😀".repeat(60)}”`);
+    expect(titleQuote("  ngắn  ")).toBe("“ngắn”");
+    expect(titleQuote("")).toBe("");
+  });
+});
+
 describe("chữ + link", () => {
   const post = { id: "11111111-1111-4111-8111-111111111111", title: "Token USB" };
   it("bình luận mở đúng bài + bình luận (đường dẫn trong app); mention khoá trùng riêng", () => {
     const t = bellText("comment", post, { actor: "An", ref: "c1" });
     expect(t.link).toBe(`/community?post=${post.id}&comment=c1`);
-    expect(t.body).toBe("An");
+    expect(t.body).toBe(""); // không lặp tên người gửi (đã có ở tiêu đề)
+    expect(t.title).toBe("An bình luận bài: “Token USB”");
     const m = bellText("mention", post, { actor: "An", ref: "c1" });
     expect({ link: m.link, dedup: m.dedup }).toEqual({
       link: `/community?post=${post.id}&comment=c1`,
