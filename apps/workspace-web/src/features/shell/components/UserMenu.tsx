@@ -24,6 +24,8 @@ export type ShellUser = {
   tenant: { name: string };
   /** Vai ở tenant (`tenant_admin` mở được Thành viên & phòng ban). */
   role?: string;
+  /** `external` = đối tác (không có trợ lý AI). */
+  kind?: string;
 } | null;
 
 const initials = (name: string): string =>

@@ -16,8 +16,9 @@ export const CONTRACTS_PAGES: ReadonlySet<string> = new Set([
   "feedback",
   "requests", // CR-125 · cr125-manual-start-ui · «Tạo yêu cầu» (trang gốc, không phải id HĐ cũ)
   "approvals", // CR-121 C-7 · "Chờ tôi duyệt" (không được đổi thành `/contracts/c/approvals`)
+  "messages", // CR-132 · «Tin nhắn» (không được đổi thành `/contracts/c/messages` ⇒ «Không tìm thấy hợp đồng»)
   "partner-inbox", // CR-124 · "Hợp đồng đối tác gửi" (trang gốc, không phải id HĐ cũ)
-  // Route gốc của app (không phải id HĐ cũ): `/contracts/login?sso=none…` là form đăng nhập, KHÔNG được đổi thành `/contracts/c/login`.
+  // Route gốc của app (không phải id HĐ cũ): không được đổi thành `/contracts/c/login`; sau CR-131 chúng nằm ở GỐC — xem LEGACY_EXACT.
   "login",
   "sso",
   "privacy",
@@ -28,6 +29,11 @@ type Exact = { to: string; drop?: true };
 
 /** Tuyến gốc cũ khớp chính xác (sau khi bỏ `/` cuối). `drop` = bỏ query/hash (đúng như redirect cũ của tuyến đó). */
 export const LEGACY_EXACT: Readonly<Record<string, Exact>> = {
+  // CR-131 · đích SSO/đăng xuất cũ `<url app contracts>/login?sso=none…`, `/sso#code=…` (web-kit `sso.ts`) nay ở gốc: giữ nguyên ?query#hash (mã SSO nằm ở hash).
+  "/contracts/login": { to: "/login" },
+  "/contracts/sso": { to: "/sso" },
+  "/contracts/privacy": { to: "/privacy" },
+  "/contracts/terms": { to: "/terms" },
   "/overview": { to: "/contracts" },
   "/my-work": { to: "/contracts", drop: true },
   "/partners": { to: "/contracts/partners" },

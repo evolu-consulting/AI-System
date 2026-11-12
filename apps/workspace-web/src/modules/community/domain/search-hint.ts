@@ -20,3 +20,7 @@ export function focusCommentId(search: string): string | null {
   const id = new URLSearchParams(search).get("comment");
   return id && UUID.test(id) ? id : null;
 }
+
+/** Thẻ bài `postId` phải mở sẵn bình luận khi URL là `?post=<postId>&comment=<id>` (bấm thông báo @nhắc/bình luận). */
+export const opensCommentThread = (search: string, postId: string): boolean =>
+  focusPostId(search) === postId && focusCommentId(search) !== null;

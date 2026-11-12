@@ -20,8 +20,12 @@ export const isCommunityPath = (pathname: string): boolean =>
 export const surfaceOf = (pathname: string): "contracts" | "community" =>
   isCommunityPath(pathname) ? "community" : "contracts";
 
-/** Đối tác (`partner`) không có trợ lý (Chat AI bị chặn phía Hub, C2): ẩn nút + khoang. */
-export const assistantVisible = (role: string | undefined): boolean => role !== "partner";
+/**
+ * Đối tác không có trợ lý (Chat AI bị chặn phía Hub, C2): ẩn nút + khoang. Đối tác = `role === "partner"` (nhân vật mock) hoặc user ngoài
+ * (`kind === "external"` của `/auth/me`; vai thật của họ không phải `partner`).
+ */
+export const assistantVisible = (role: string | undefined, kind?: string): boolean =>
+  role !== "partner" && kind !== "external";
 
 /** Ngữ cảnh ở Cộng đồng: `/feed` hoặc `/profile[/<org>]` + từ khoá đang tìm (`selection`, do trang cấp qua assistant-hint). */
 function communityContext(pathname: string, selection: string | null): MessageContext {

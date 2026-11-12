@@ -3,11 +3,11 @@ import type { AnyRouter } from "@tanstack/react-router";
 import { brandStore, DEFAULT_BRAND } from "~/features/settings/lib/brand";
 import { configureCommunityHost } from "~/modules/community/manifest";
 import { setDevIdentity } from "./dev-identity";
+import { COMMUNITY_MOCK } from "./mock-flag";
 import { topbarSlots } from "./topbar-slots";
 
 /** Hằng lúc build (rsbuild define): mock Community (dev/e2e không backend). */
-declare const __COMMUNITY_MOCK__: boolean | undefined;
-const MOCK = typeof __COMMUNITY_MOCK__ !== "undefined" && __COMMUNITY_MOCK__;
+const MOCK = COMMUNITY_MOCK;
 
 let installed: AnyRouter | undefined;
 

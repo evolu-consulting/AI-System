@@ -42,6 +42,8 @@ export type Ctx = {
   contractsHref: (path: string) => string;
   search: string;
   setSearch: (s: string) => void;
+  /** `location.search` hiện tại, cập nhật khi chỉ ?query đổi (bấm thông báo khi ĐÃ ở `/community` là điều hướng trong app, không tải lại trang). */
+  urlSearch: string;
   toast: (msg: string) => void;
   isHostViewer: boolean;
 };
@@ -68,6 +70,7 @@ export function AppProvider({
   const [route, setRoute] = useState<Route>(() => router.read().route);
   const [brandRaw, setBrandRaw] = useState<CommunityBrand | null>(null);
   const [search, setSearch] = useState("");
+  const [urlSearch, setUrlSearch] = useState(() => location.search);
   // CR-130 · một trợ lý chung: từ khoá đang tìm trên Bảng tin đi kèm câu hỏi (ngữ cảnh trang).
   useEffect(() => {
     const q = trimSearch(search);
@@ -81,6 +84,7 @@ export function AppProvider({
       router.subscribe(() => {
         const p = router.read();
         setRoute(p.route);
+        setUrlSearch(location.search);
       }),
     [router],
   );
@@ -146,10 +150,11 @@ export function AppProvider({
         contractsHref: host.contractsHref,
         search,
         setSearch,
+        urlSearch,
         toast: setMsg,
         isHostViewer: viewer.role !== "partner",
       },
-    [boot, router, host, viewer, rev, bump, route, search, brandRaw, brandAccent],
+    [boot, router, host, viewer, rev, bump, route, search, urlSearch, brandRaw, brandAccent],
   );
   if (!value)
     return (

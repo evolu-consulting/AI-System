@@ -4,8 +4,18 @@ import { appKeyOf, basePathOf, isUnderApp, pathOf } from "./app-path";
 import { canonicalHref, LEGACY_EXACT, legacyTarget } from "./legacy-routes";
 
 describe("cr120-handson-fixes · route gốc của app không bị coi là id HĐ cũ", () => {
-  test.each(["login", "sso", "privacy", "terms"])("/contracts/%s giữ nguyên", (p) => {
-    expect(legacyTarget(`/contracts/${p}?sso=none&next=%2Fcontracts`)).toBeNull();
+  test.each(["login", "sso", "privacy", "terms"])(
+    "/contracts/%s không thành /contracts/c/%s mà về route gốc, giữ ?query#hash",
+    (p) => {
+      expect(legacyTarget(`/contracts/${p}?sso=none&next=%2Fcontracts#code=abc`)).toBe(
+        `/${p}?sso=none&next=%2Fcontracts#code=abc`,
+      );
+      expect(legacyTarget(`/contracts/${p}`)).toBe(`/${p}`);
+    },
+  );
+  test("/contracts/messages là trang «Tin nhắn», không phải id hợp đồng", () => {
+    expect(legacyTarget("/contracts/messages")).toBeNull();
+    expect(legacyTarget("/contracts/messages?c=1")).toBeNull();
   });
 });
 

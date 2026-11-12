@@ -140,5 +140,9 @@ describe("CR-130 · một trợ lý cho cả Sổ Hợp Tác và Cộng đồng 
     expect(assistantVisible("partner")).toBe(false);
     expect(assistantVisible("tenant_admin")).toBe(true);
     expect(assistantVisible(undefined)).toBe(true);
+    // user ngoài (đối tác) vai thật không phải `partner` nhưng `kind = external` ⇒ vẫn không có trợ lý
+    expect(assistantVisible("member", "external")).toBe(false);
+    expect(assistantVisible("member", "internal")).toBe(true);
+    expect(assistantVisible("member")).toBe(true);
   });
 });

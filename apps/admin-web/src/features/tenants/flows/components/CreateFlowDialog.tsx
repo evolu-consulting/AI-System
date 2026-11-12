@@ -25,8 +25,9 @@ import {
 import { useAssignableTenants } from "@/features/processes/hooks/use-assignable-tenants";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
-import { useTenantCompanyProfile, useTenantPacks } from "../../api";
+import { useTenantCompanyProfile, useTenantFeatureStates, useTenantPacks } from "../../api";
 import { useCompanyFlowOp } from "../company-flows-api";
+import { flowAppsOf } from "../lib/flow-apps";
 
 /** `tenantId` vắng ⇒ hộp tự hỏi CÔNG TY trước (mở từ trang Quy trình); có ⇒ mở từ tab Quy trình của công ty đó. */
 type Props = {
@@ -52,18 +53,20 @@ export function CreateFlowDialog({ tenantId, tenantName, open, onOpenChange }: P
   const op = useCompanyFlowOp(tid);
   const packs = useTenantPacks(tid, open && tid !== "");
   const profile = useTenantCompanyProfile(tid, open && tid !== "");
+  const feats = useTenantFeatureStates(tid, open && tid !== "");
   const appName = (a: string) => tr(`featmeta.app.${a}.name`, { defaultValue: a });
   const apps = useMemo(() => {
     const on = new Set((packs.data?.items ?? []).filter((p) => p.enabled).map((p) => p.key));
-    return FLOW_APPS.filter((a) => on.has(a));
-  }, [packs.data]);
+    const granted = new Set((feats.data ?? []).filter((f) => f.entitled).map((f) => f.key));
+    return flowAppsOf(FLOW_APPS, on, granted); // Bảng tin = add-on của gói contracts (ADR-0044)
+  }, [packs.data, feats.data]);
   const [app, setApp] = useState("");
   useEffect(() => {
     if (!apps.includes(app)) setApp(apps[0] ?? "");
   }, [apps, app]);
   const [name, setName] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const noApp = tid !== "" && packs.isSuccess && apps.length === 0;
+  const noApp = tid !== "" && packs.isSuccess && feats.isSuccess && apps.length === 0;
   const depts = profile.data?.departments ?? [];
   const members = depts.reduce((n, d) => n + d.member_count, 0);
   const ready = tid !== "" && name.trim() !== "" && app !== "";

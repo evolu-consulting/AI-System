@@ -23,7 +23,7 @@ export function Thread({
   onChanged: () => void;
   extra?: (c: CommentView) => ReactNode;
 }) {
-  const { api, viewer, isHostViewer, rev, toast } = useApp();
+  const { api, viewer, isHostViewer, rev, toast, urlSearch } = useApp();
   const [comments, setComments] = useState<CommentView[]>([]);
   const [next, setNext] = useState<string | undefined>();
   const [loaded, setLoaded] = useState(false);
@@ -45,12 +45,12 @@ export function Thread({
   // Từ chuông `?post=&comment=`: cuộn tới đúng bình luận khi danh sách đã tải.
   useEffect(() => {
     if (!loaded) return;
-    const id = focusCommentId(location.search);
+    const id = focusCommentId(urlSearch);
     if (!id) return;
     const el = document.querySelector<HTMLElement>(`[data-comment-id="${id}"]`);
     el?.scrollIntoView({ block: "center" });
     el?.classList.add("focused");
-  }, [loaded]);
+  }, [loaded, urlSearch]);
 
   const more = async () => {
     if (!next) return;

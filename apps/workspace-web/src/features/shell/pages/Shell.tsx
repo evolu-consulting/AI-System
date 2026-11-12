@@ -43,7 +43,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
   // CR-125 · UX L1 · thẻ hợp đồng trên điện thoại: nút trợ lý nổi che nút Duyệt/Ký ⇒ ẩn (vẫn có ở desktop).
   const onCard = /^\/contracts\/c\/(?!new(?:\/|$))[^/]+\/?$/.test(pathname);
   const dock = useDock();
-  const showAssistant = assistantVisible(user?.role); // đối tác không có trợ lý (Chat AI bị chặn phía Hub)
+  const showAssistant = assistantVisible(user?.role, user?.kind); // đối tác không có trợ lý (Chat AI bị chặn phía Hub)
   const unread = useContractsSync(showAssistant);
   const [pinned, setPinned] = useStoredBool(NAV_PINNED_KEY, true);
   const role = roleOf({ write, owner });

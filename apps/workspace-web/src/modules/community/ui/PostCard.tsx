@@ -5,7 +5,7 @@ import { useApp } from "../application/ctx";
 import { draftFromFields } from "../domain/compose";
 import { dealStrip, expiryNote, initials, timeAgo, tone } from "../domain/format";
 import { hintLines, saveButtonLabel, savedText } from "../domain/quote";
-import { focusCommentId, focusPostId } from "../domain/search-hint";
+import { opensCommentThread } from "../domain/search-hint";
 import { numLocale, t } from "../i18n";
 import { DraftFields } from "./DraftFields";
 import { ModerationNote, ReportDialog } from "./flows/PostFlows";
@@ -79,7 +79,7 @@ function EditForm({ p, onClose }: { p: PostView; onClose: () => void }) {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: thẻ bài theo mockup: nhiều nhánh hiển thị có điều kiện, tách thêm sẽ chỉ chuyển prop
 export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationItem | undefined }) {
-  const { api, bump, toast, isHostViewer, viewer } = useApp();
+  const { api, bump, toast, isHostViewer, viewer, urlSearch } = useApp();
   const [reporting, setReporting] = useState(false);
   const canReport = p.authorOrgId !== viewer.orgId;
   const download = (id: string, name: string) =>
@@ -88,9 +88,12 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
   const [confirm, setConfirm] = useState(false);
   const [editing, setEditing] = useState(false);
   // Mở sẵn bình luận khi vào từ chuông `?post=<id>&comment=<id>` (CR-129).
-  const [open, setOpen] = useState(
-    () => focusPostId(location.search) === p.id && focusCommentId(location.search) !== null,
-  );
+  const fromBell = opensCommentThread(urlSearch, p.id);
+  const [open, setOpen] = useState(fromBell);
+  // Bấm thông báo khi đã ở Bảng tin (điều hướng trong app, thẻ bài không dựng lại) ⇒ mở bình luận khi ?comment đổi.
+  useEffect(() => {
+    if (fromBell) setOpen(true);
+  }, [fromBell]);
   const [quote, setQuote] = useState<{ supplier: string; commentId?: string; idx: number } | null>(
     null,
   );
