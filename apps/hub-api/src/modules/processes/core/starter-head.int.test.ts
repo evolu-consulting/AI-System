@@ -47,12 +47,19 @@ async function openFor(starter: string, after: Record<string, unknown> = MODE, t
   >`insert into hub.stage_runs (tenant_id, process_run_id, stage_idx, status)
     values (${tenant}, ${runId}, 0, 'waiting_review') returning id::text as id`;
   const stageRunId = s?.id as string;
+  const [out] = await o<
+    { id: string }[]
+  >`insert into hub.process_outputs (tenant_id, process_run_id, stage_run_id,
+      stage_idx, version, attempt, content, template_ok)
+    values (${tenant}, ${runId}, ${stageRunId}, 0, 1, 1, 'x', true) returning id::text as id`;
+  const outputId = out?.id as string;
   const taskId = await withHubScope(db, { kind: "system" }, (tx) =>
     insertTask(tx, {
       tenantId: tenant,
       runId,
       stageRunId,
       kind: "review",
+      outputId,
       remindAt: new Date(Date.now() + 24 * 3_600_000),
       userIds: [],
       groupId: null,
