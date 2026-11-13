@@ -33,8 +33,12 @@ export const RECORD_PAYMENT_NODE: FeatureNodeDecl = {
     {
       key: "paid_at",
       type: "string",
-      required: false,
+      required: true,
       label: { vi: "Ngày chi", en: "Payment date" },
+      fix: {
+        vi: "thêm bước Điền thông tin có ô Ngày chi trước.",
+        en: "add a Fill-in step with a Payment date field first.",
+      },
     },
   ],
   outputs: [

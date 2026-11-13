@@ -261,6 +261,14 @@ export type PackRunsPort = {
   ): Promise<number>;
   /** cr125-contract-from-step · bản ghi gói `pack` đã gắn vào lượt `runId` của `tenantId` (scope system, lọc tenant); chưa gắn ⇒ null. */
   recordOf?(tenantId: string, runId: string, pack: string): Promise<string | null>;
+  /** CR-140 · ngữ cảnh bước của lượt `runId`: các bản ghi `pack` gắn trong CÂY lượt (lượt cha + con, vd Quy trình con tạo HĐ), người đã hoàn tất bước gần nhất
+   *  của lượt (thủ quỹ — không phải người bắt đầu lượt), và lượt có bước dùng node `node` không. Scope system, lọc tenant. */
+  stepContext?(
+    tenantId: string,
+    runId: string,
+    pack: string,
+    node: string,
+  ): Promise<{ records: string[]; actor: string | null; hasNode: boolean }>;
   /** cr125-contract-from-step · KHOÁ hàng lượt rồi: đã gắn bản ghi `pack` ⇒ trả bản đó; chưa ⇒ `create()` (giữ khoá) rồi gắn. Hai lời gọi đồng thời ⇒ một bản ghi. */
   linkOnce?(
     tenantId: string,
