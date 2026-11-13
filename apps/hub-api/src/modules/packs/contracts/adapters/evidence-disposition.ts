@@ -15,13 +15,16 @@ export function evidenceHeaders(
   inline: boolean,
 ): Record<string, string> {
   const show = inline && canInline(f.mime);
-  return {
+  const h: Record<string, string> = {
     "content-type": show
-      ? f.mime.split(";")[0]?.trim().toLowerCase() || ""
+      ? (f.mime.split(";")[0]?.trim().toLowerCase() ?? "")
       : f.mime || "application/octet-stream",
     "content-length": String(f.size),
     "content-disposition": `${show ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(f.name)}`,
     "x-content-type-options": "nosniff",
     "cache-control": "private, no-store",
   };
+  // nội tuyến ⇒ cô lập (không script, không tải gì thêm); web chỉ nhúng qua blob URL nên khung PDF vẫn chạy
+  if (show) h["content-security-policy"] = "sandbox; default-src 'none'";
+  return h;
 }

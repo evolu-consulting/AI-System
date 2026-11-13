@@ -17,6 +17,12 @@ describe("CR-144 evidenceHeaders", () => {
       expect(evidenceHeaders(f(m), true)["content-disposition"]).toStartWith("attachment;");
     }
   });
+  it("inline ⇒ có CSP sandbox; attachment ⇒ không", () => {
+    expect(evidenceHeaders(f("application/pdf"), true)["content-security-policy"]).toBe(
+      "sandbox; default-src 'none'",
+    );
+    expect(evidenceHeaders(f("text/html"), true)["content-security-policy"]).toBeUndefined();
+  });
   it("không có inline ⇒ attachment như cũ", () => {
     expect(evidenceHeaders(f("image/png"), false)["content-disposition"]).toStartWith(
       "attachment;",

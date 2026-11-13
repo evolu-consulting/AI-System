@@ -35,7 +35,7 @@ describe("EvidenceView", () => {
       <EvidenceView
         line={line}
         u={{
-          urls: { [SIG]: "blob:s", [IMG]: "blob:i", [PDF]: "blob:p" },
+          urls: { [SIG]: "blob:s", [IMG]: "blob:i", [PDF]: "blob:p", [ZIP]: "blob:z" },
           failed: new Set(),
         }}
       />,
@@ -47,7 +47,8 @@ describe("EvidenceView", () => {
     expect(out).toMatch(/<img[^>]*src="blob:i"/);
     expect(out).toMatch(/<iframe[^>]*src="blob:p"/);
     expect(out).toContain("c.zip");
-    expect(out).not.toContain("blob:z");
+    expect(out.match(/data-testid="evidence-download"/g)?.length).toBe(1); // chỉ tệp lạ có «Tải về»
+    expect(out).toMatch(/<a[^>]*href="blob:z"/);
   });
 
   test("chưa tải xong ⇒ chưa có <img>; tải lỗi ⇒ báo lỗi", () => {

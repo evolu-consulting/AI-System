@@ -10,6 +10,26 @@ export type EvidenceUrls = {
   failed: ReadonlySet<string>;
 };
 
+/** Loại không xem trước được ⇒ link nhỏ «Tải về» (ảnh/PDF không có). Blob URL của tệp đó do hộp tải khi mở. */
+function OtherFile({ f, url }: { f: RecordLine["files"][number]; url: string | undefined }) {
+  const { t } = useTranslation();
+  return (
+    <p className="m-0 flex flex-wrap items-center gap-2 text-sm" data-testid="evidence-other">
+      <FileText size={16} aria-hidden /> {f.name}
+      {url && (
+        <a
+          href={url}
+          download={f.name}
+          className="text-caption text-act underline"
+          data-testid="evidence-download"
+        >
+          {t("contracts.work.u4.record.download")}
+        </a>
+      )}
+    </p>
+  );
+}
+
 function FileBlock({ f, u }: { f: RecordLine["files"][number]; u: EvidenceUrls }) {
   const { t } = useTranslation();
   const kind = evidenceKind(f.mime);
@@ -20,13 +40,7 @@ function FileBlock({ f, u }: { f: RecordLine["files"][number]; u: EvidenceUrls }
         {t("contracts.work.u4.record.fileError")}
       </p>
     );
-  if (kind === "other")
-    return (
-      <p className="m-0 flex items-center gap-2 text-sm" data-testid="evidence-other">
-        <FileText size={16} aria-hidden /> {f.name}
-        <span className="text-caption text-dim">{t("contracts.work.u4.record.fileOther")}</span>
-      </p>
-    );
+  if (kind === "other") return <OtherFile f={f} url={url} />;
   if (!url) return <p className="m-0 text-caption text-dim">{t("contracts.common.loading")}</p>;
   return kind === "image" ? (
     <img
@@ -46,7 +60,7 @@ function FileBlock({ f, u }: { f: RecordLine["files"][number]; u: EvidenceUrls }
 }
 
 export function EvidenceView({ line, u }: { line: RecordLine; u: EvidenceUrls }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const k = (s: string, o?: Record<string, string>) => t(`contracts.work.u4.record.${s}`, o);
   const sig = line.files.find((f) => f.id === line.signatureId);
   const rest = line.files.filter((f) => f.id !== line.signatureId);
@@ -68,7 +82,7 @@ export function EvidenceView({ line, u }: { line: RecordLine; u: EvidenceUrls })
       <dl className="m-0 grid gap-1">
         {row(k("by"), who)}
         {row(k("stage"), line.stage ?? k("stageFallback"))}
-        {row(k("at"), new Date(line.at).toLocaleString("vi-VN"))}
+        {row(k("at"), new Date(line.at).toLocaleString(i18n.language))}
         {row(k("decision"), k(`action.${line.action}`))}
         {line.note ? row(k("note"), line.note) : null}
       </dl>

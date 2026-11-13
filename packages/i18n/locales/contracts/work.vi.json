@@ -208,7 +208,7 @@
           "note": "Ý kiến",
           "signatureTitle": "Chữ ký",
           "fileError": "Không mở được tệp này.",
-          "fileOther": "Không xem trực tiếp được loại tệp này.",
+          "download": "Tải về",
           "stageFallback": "Bước duyệt"
         },
         "changes": {

@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { fetchEvidenceBlob } from "../api-record";
-import { evidenceKind } from "../lib/evidence-kind";
 import type { RecordLine } from "../lib/record-view";
 import { type EvidenceUrls, EvidenceView } from "./EvidenceView";
 
@@ -14,7 +13,7 @@ function useEvidenceUrls(contractId: string, line: RecordLine, open: boolean): E
     const ac = new AbortController();
     const made: string[] = [];
     const evId = line.evidenceId;
-    for (const f of line.files.filter((x) => evidenceKind(x.mime) !== "other")) {
+    for (const f of line.files) {
       fetchEvidenceBlob(contractId, evId, f.id, ac.signal)
         .then((b) => {
           if (ac.signal.aborted) return;

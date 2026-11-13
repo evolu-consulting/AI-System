@@ -208,7 +208,7 @@
           "note": "Comment",
           "signatureTitle": "Signature",
           "fileError": "Could not open this file.",
-          "fileOther": "This file type cannot be previewed.",
+          "download": "Download",
           "stageFallback": "Approval step"
         },
         "changes": {
