@@ -215,10 +215,11 @@ function overrideQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["recordO
 /** CR-125 · nhật ký quyết định của người duyệt (mỗi bước: ai, lúc nào [at], Đạt/Trả lại/Từ chối, góp ý). MỘT câu chèn, không returning. */
 function decisionQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["recordDecision"]> {
   return async (id, aid, e) => {
-    await tx.execute(sql`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+    await tx.execute(sql`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data, at)
       values (${tid}::uuid, ${id}::uuid, 'stage_decided', ${e.actor}::uuid,
         jsonb_strip_nulls(jsonb_build_object('run_id', ${aid}::text, 'task_id', ${e.taskId}::text, 'stage', ${e.stageKey}::text,
-          'action', ${e.action}::text, 'feedback', ${e.feedback}::text, 'evidence_id', ${e.evidenceId ?? null}::text)))
+          'action', ${e.action}::text, 'feedback', ${e.feedback}::text, 'evidence_id', ${e.evidenceId ?? null}::text)),
+        coalesce(${e.at ?? null}::timestamptz, now()))
       -- bấm đúp / thử lại cùng task ⇒ một dòng (index 0088)
       on conflict (tenant_id, (data ->> 'task_id')) where type = 'stage_decided' do nothing`);
   };
@@ -244,6 +245,7 @@ function decisionsOfQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["deci
       ev_by: string | null;
       ev_behalf: string | null;
       ev_at: string | null;
+      ov: boolean;
     }>(sql`with d as (
         select e.id, e.actor_user_id, e.at, e.data from contracts.contract_events e
         where e.tenant_id = ${tid}::uuid and e.contract_id = ${contractId}::uuid and e.type = 'stage_decided'
@@ -254,7 +256,11 @@ function decisionsOfQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["deci
         to_char(d.at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as at, d.actor_user_id::text as actor,
         d.data ->> 'feedback' as feedback, ev.id::text as ev_id, ev.note, ev.signature_attachment_id::text as sig,
         ev.attachment_ids::text[] as files, ev.by_user::text as ev_by, ev.on_behalf_of::text as ev_behalf,
-        to_char(ev.at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as ev_at
+        to_char(ev.at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as ev_at,
+        -- [AUDIT] · lượt bấm này là Toàn quyền «duyệt thay» (bản ghi write-ahead cùng task × người, cùng HĐ + tenant)
+        exists (select 1 from contracts.contract_events o where o.tenant_id = ${tid}::uuid
+          and o.contract_id = ${contractId}::uuid and o.type = ${OVERRIDE_EVENT}
+          and o.data ->> 'task_id' = d.data ->> 'task_id' and o.actor_user_id = d.actor_user_id) as ov
       from d left join ev on ev.id = (d.data ->> 'evidence_id')::uuid
       order by d.at, d.id`);
     return [...rows].map((r) => ({
@@ -264,6 +270,7 @@ function decisionsOfQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["deci
       at: r.at,
       actor: r.actor,
       feedback: r.feedback,
+      override: r.ov === true,
       evidence:
         r.ev_id && r.ev_by && r.ev_at
           ? {

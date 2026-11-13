@@ -23,7 +23,13 @@ import { asksRoutes } from "./asks/asks.routes";
 import { bridgeRoutes } from "./bridge/bridge.routes";
 import { type Clock, clockOf } from "./core/clock";
 import type { ProcessHandles } from "./core/handles";
-import type { ProcessBgDeps, ProcessDeps, ProcessStartPort, StageLauncher } from "./core/ports";
+import type {
+  PackDecidedEvent,
+  ProcessBgDeps,
+  ProcessDeps,
+  ProcessStartPort,
+  StageLauncher,
+} from "./core/ports";
 import { ThreadPoster } from "./core/thread-poster";
 import { defsRoutes } from "./defs/defs.routes";
 import { delegationsRoutes } from "./delegations/delegations.routes";
@@ -154,7 +160,18 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   };
   // Launcher thật nhận `ProcessDeps` (RunService/runner) để tạo `hub.runs` stage; test có thể thay `stageLauncher` giả.
   const launcher = m.stageLauncher ?? createStageLauncher(base);
-  const core: Omit<ProcessDeps, "start"> = { ...base, launcher };
+  // [AUDIT] · gói nghe «đã quyết» qua cầu `packRuns` (gói gắn `onDecided[packKey]` lúc mount, đọc lười mỗi lần gọi).
+  const bridge = m.packRuns;
+  const packDecided = bridge
+    ? async (e: PackDecidedEvent) => {
+        await bridge.onDecided?.[e.packKey]?.(e);
+      }
+    : undefined;
+  const core: Omit<ProcessDeps, "start"> = {
+    ...base,
+    launcher,
+    ...(packDecided ? { packDecided } : {}),
+  };
   const d: ProcessDeps = { ...core, start: conversationStart(core) };
   registerFlowEngine(flowEngineOf(d)); // CR-127 K3 · cổng engine cho gói (có quy trình khớp? · Rút về)
   // PB-R05 · nhận report resolve từ module nguồn (đã mount trước): ghim `pinned_sources`/`needs_decision` + kick.

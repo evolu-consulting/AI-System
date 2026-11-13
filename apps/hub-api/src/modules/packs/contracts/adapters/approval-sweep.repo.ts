@@ -110,6 +110,28 @@ export function sweepRepo(tx: Tx, tid: string): SweepRepo {
     },
     engineRuns: engineRunsQ(tx, tid),
     reconcile: reconcileQ(tx, tid),
+    // [AUDIT] · đối soát lịch sử quyết định: lượt engine còn mở / vừa đổi + task đã có dòng `stage_decided`.
+    async decisionRuns(limit) {
+      const rows = await tx.execute<{
+        id: string;
+        cid: string;
+        run: string;
+        have: string[] | null;
+      }>(sql`
+        select a.id, a.contract_id as cid, a.engine_run_id::text as run,
+          (select array_agg(e.data ->> 'task_id') from contracts.contract_events e
+            where e.tenant_id = a.tenant_id and e.contract_id = a.contract_id and e.type = 'stage_decided'
+              and e.data ->> 'run_id' = a.id::text) as have
+        from contracts.approvals a where a.tenant_id = ${tid}::uuid and a.mode = 'engine' and a.engine_run_id is not null
+          and (a.status = 'level1' or a.updated_at > now() - interval '1 day')
+        order by random() limit ${limit}::int`);
+      return rows.map((r) => ({
+        approvalId: r.id,
+        contractId: r.cid,
+        runId: r.run,
+        have: r.have ?? [],
+      }));
+    },
     // CR-107 · run engine đang gắn lượt (dọn run mồ côi): MỘT câu `= any` qua `approvals_engine_run_uq`.
     async attachedRuns(runIds) {
       if (runIds.length === 0) return [];

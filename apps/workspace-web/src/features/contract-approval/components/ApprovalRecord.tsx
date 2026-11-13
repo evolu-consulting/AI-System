@@ -12,7 +12,7 @@ import {
   fetchChangesSinceLast,
   recordKey,
 } from "../api-record";
-import { hasChanges, recordLines } from "../lib/record-view";
+import { hasChanges, recordLines, waitingOf } from "../lib/record-view";
 
 function Fold({
   title,
@@ -102,8 +102,15 @@ export function RecordBody({ id }: { id: string }) {
       </p>
     );
   const lines = recordLines(q.data, card.data?.steps);
-  if (lines.length === 0)
-    return <p className="text-sm text-dim">{t("contracts.work.u4.record.empty")}</p>;
+  if (lines.length === 0) {
+    const w = waitingOf(card.data?.steps);
+    const k = !w ? "empty" : w.who ? "waitingWho" : "waiting";
+    return (
+      <p className="text-sm text-dim" data-testid="record-empty">
+        {t(`contracts.work.u4.record.${k}`, { step: w?.step, who: w?.who })}
+      </p>
+    );
+  }
   return (
     <>
       <PdfButton id={id} />
@@ -115,7 +122,8 @@ export function RecordBody({ id }: { id: string }) {
             data-testid="record-line"
           >
             <b>{l.stage ?? t("contracts.work.u4.record.stageFallback")}</b> · {l.who}
-            {l.onBehalf ? ` (${t("contracts.work.u4.record.behalf", { who: l.onBehalf })})` : ""} ·{" "}
+            {l.onBehalf ? ` (${t("contracts.work.u4.record.behalf", { who: l.onBehalf })})` : ""}
+            {l.override ? ` (${t("contracts.work.u4.record.override")})` : ""} ·{" "}
             {t(`contracts.work.u4.record.action.${l.action}`)} ·{" "}
             <span className="text-dim">{new Date(l.at).toLocaleString("vi-VN")}</span>
             {l.note && <p className="m-0 mt-1 text-dim">“{l.note}”</p>}

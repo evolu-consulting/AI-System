@@ -219,6 +219,8 @@ export type PackRunsPort = {
     tenantIds: string | readonly string[],
     runIds: readonly string[],
   ): Promise<PackRunOutcomeSys[]>;
+  /** [AUDIT] · đối soát lịch sử: mọi task duyệt ĐÃ quyết (người, kết quả, bằng chứng, lúc quyết) của các run — scope system, MỘT câu. */
+  decidedTasksOf?(tenantId: string, runIds: readonly string[]): Promise<PackDecidedTask[]>;
   /** S1a · khoá stage đã `done` mà quyết gần nhất của stage là Đạt (`pass` / decision `use_current`). */
   passedStages(tenantId: string, runId: string): Promise<string[]>;
   /** S1a · người Đạt task duyệt gần nhất của run; không có ⇒ null. */
@@ -279,4 +281,23 @@ export type PackRunsPort = {
 };
 
 /** Cầu nối dựng ở `app.ts`, engine gắn khi mount (khuôn `ResolveBridge`). */
-export type PackRunsBridge = { port?: PackRunsPort };
+/** [AUDIT] · quyết task duyệt trên đường chung `/review-tasks/:id/decision` (đã COMMIT) — gói ghi lịch sử của bản ghi. */
+export type PackDecided = {
+  tenantId: string;
+  packKey: string;
+  /** id `hub.process_runs` (= `engine_run_id` của gói). */
+  runId: string;
+  taskId: string;
+  stageKey: string;
+  result: "pass" | "fail" | "reject";
+  feedback: string | null;
+  actor: string;
+  evidenceId: string | null;
+};
+/** [AUDIT] · một quyết định đã ghi ở engine (đối soát): như `PackDecided` + lúc quyết. */
+export type PackDecidedTask = Omit<PackDecided, "packKey"> & { at: string };
+export type PackRunsBridge = {
+  port?: PackRunsPort;
+  /** [AUDIT] · gói gắn lúc mount theo khoá gói; engine gọi sau COMMIT của quyết định đi đường chung. */
+  onDecided?: Partial<Record<string, (e: PackDecided) => Promise<void>>>;
+};

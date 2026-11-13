@@ -185,7 +185,10 @@
           "pdf": "Tải hồ sơ duyệt (PDF)",
           "pdfError": "Không tải được PDF hồ sơ duyệt. Bạn cần quyền xem hồ sơ này — kiểm tra rồi thử lại.",
           "loadError": "Không tải được hồ sơ duyệt. Tải lại trang rồi thử lại.",
-          "empty": "Chưa có bước duyệt nào được quyết.",
+          "empty": "Chưa ai duyệt bước nào.",
+          "waiting": "Chưa ai duyệt — đang chờ duyệt bước «{{step}}».",
+          "waitingWho": "Chưa ai duyệt — đang chờ {{who}} duyệt bước «{{step}}».",
+          "override": "duyệt thay người được giao",
           "behalf": "thay {{who}}",
           "action": {
             "approve": "Duyệt",

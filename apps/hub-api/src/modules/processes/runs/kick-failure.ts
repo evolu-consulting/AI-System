@@ -32,20 +32,28 @@ export async function kickOrFlag(
   d: KickFailureDeps,
   kick: (runId: string) => Promise<unknown>,
   runId: string,
+  o?: { afterDecision?: boolean },
 ): Promise<void> {
   try {
     await kick(runId);
   } catch (err) {
     const code = kickErrorCode(err);
     d.log.warn("process-kick-failed", { run_id: runId, code, ...safeErrorFields(err) });
-    await markStartFailed(d, runId, code).catch((e: unknown) =>
+    await markStartFailed(d, runId, code, o?.afterDecision === true).catch((e: unknown) =>
       d.log.warn("process-start-failed-mark-failed", { run_id: runId, ...safeErrorFields(e) }),
     );
   }
 }
 
 /** 2 câu, system scope: chỉ khi lượt `running` và chưa stage nào chạy (`pending`/`queued`) — CAS trong câu, không khoá dài. */
-async function markStartFailed(d: KickFailureDeps, runId: string, code: string): Promise<void> {
+/** [AUDIT] · `afterDecision`: kick ngay sau một quyết định (đã COMMIT) ⇒ chỉ xét stage HIỆN TẠI còn `pending`/`queued` (bước kế chưa
+ *  khởi động được) — thẻ «Cần xử lý» nói lý do, quyết định trước đó giữ nguyên. */
+async function markStartFailed(
+  d: KickFailureDeps,
+  runId: string,
+  code: string,
+  afterDecision = false,
+): Promise<void> {
   const decision = JSON.stringify({
     reason: "start_failed",
     code,
@@ -58,7 +66,8 @@ async function markStartFailed(d: KickFailureDeps, runId: string, code: string):
           decision = ${decision}::jsonb || jsonb_build_object('stage_idx', coalesce(pr.current_stage_idx, 0))
       where pr.id = ${runId} and pr.status = 'running'
         and not exists (select 1 from hub.stage_runs s where s.process_run_id = pr.id and s.tenant_id = pr.tenant_id
-          and s.status not in ('pending', 'queued'))
+          and s.status not in ('pending', 'queued')
+          and (${!afterDecision} or s.stage_idx = coalesce(pr.current_stage_idx, 0)))
       returning pr.tenant_id::text as tenant_id, coalesce(pr.current_stage_idx, 0)::int as idx`);
     if (!r) return;
     await tx.execute(sql`update hub.stage_runs set status = 'needs_decision', last_error_code = ${code},

@@ -73,6 +73,20 @@ export type ProcessNotifier = {
 /** Run vừa kết thúc trong lô (hàng nguồn mang `tenant_id` — K3 lô, A11). */
 export type FinishedRun = { id: string; tenantId: string; startedBy: string; processName: string };
 
+/** [AUDIT] · một quyết định của người trên task duyệt của run gắn gói (đã COMMIT). */
+export type PackDecidedEvent = {
+  tenantId: string;
+  packKey: string;
+  /** id `hub.process_runs` (= `engine_run_id` của gói). */
+  runId: string;
+  taskId: string;
+  stageKey: string;
+  result: "pass" | "fail" | "reject";
+  feedback: string | null;
+  actor: string;
+  evidenceId: string | null;
+};
+
 export const NOOP_LAUNCHER: StageLauncher = { kick: async () => {} };
 
 export const NOOP_NOTIFIER: ProcessNotifier = {
@@ -133,6 +147,9 @@ export type ProcessDeps = {
   toolDriver?: (link: { runId: string; stageRunId: string; tenantId: string }) => RunDriver;
   /** CR-122 · N2 · agent Hub `flow-bridge` (AI client chung) cho "Gợi ý cầu nối"; vắng ⇒ gợi ý trả `ok:false` (chưa nối AI). */
   bridgeAgent?: Pick<AgentCaller, "call">;
+  /** [AUDIT] · quyết task duyệt của run gắn gói đi đường chung `/review-tasks/:id/decision` ⇒ báo gói ghi lịch sử (HĐ:
+   *  `stage_decided`) SAU COMMIT, cùng hàm ghi của thẻ gói. Vắng ⇒ không gói nào nghe. */
+  packDecided?: (e: PackDecidedEvent) => Promise<void>;
 };
 
 /**

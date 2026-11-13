@@ -244,6 +244,8 @@ export const ApprovalRecordItemSchema = z.strictObject({
   at: IsoDateTime,
   actor: RecordPersonSchema,
   feedback: z.string().max(APPROVAL_FEEDBACK_MAX).nullable(),
+  /** [AUDIT] · Toàn quyền duyệt thay người/nhóm được giao của bước. */
+  override: z.boolean().optional(),
   evidence: ApprovalRecordEvidenceSchema.nullable(),
 });
 export const ApprovalRecordSchema = z.strictObject({

@@ -185,7 +185,10 @@
           "pdf": "Download approval record (PDF)",
           "pdfError": "Could not download the approval record PDF. You need permission to view this record — check and try again.",
           "loadError": "Could not load the approval record. Reload the page and try again.",
-          "empty": "No approval step has been decided yet.",
+          "empty": "No one has approved any step yet.",
+          "waiting": "No one has approved yet — waiting for step «{{step}}».",
+          "waitingWho": "No one has approved yet — waiting for {{who}} to approve step «{{step}}».",
+          "override": "approved on behalf of the assignee",
           "behalf": "for {{who}}",
           "action": {
             "approve": "Approved",

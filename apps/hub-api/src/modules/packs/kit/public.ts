@@ -130,6 +130,8 @@ export type { OwnedRunOutcome } from "./application/pack-run-outcome.usecase";
 export { ownedRunOutcome } from "./application/pack-run-outcome.usecase";
 export type {
   PackActTarget,
+  PackDecided,
+  PackDecidedTask,
   PackModuleOutcome,
   PackOpenRun,
   PackOpenTask,

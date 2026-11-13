@@ -5,6 +5,8 @@ import type {
   EventFlow,
   KitTxRepos,
   PackActTarget,
+  PackDecided,
+  PackDecidedTask,
   PackOpenRun,
   PackOpenTask,
   PackReviewAct,
@@ -100,6 +102,8 @@ export type ApprovalEnginePort = {
     tenantIds: string | readonly string[],
     runIds: readonly string[],
   ): Promise<PackRunOutcomeSys[]>;
+  /** [AUDIT] · đối soát lịch sử quyết định (vắng ⇒ bỏ qua). */
+  decidedTasksOf?(tenantId: string, runIds: readonly string[]): Promise<PackDecidedTask[]>;
   /** S3b · "Việc của tôi": task duyệt mở của run gói `packKey` mà người gọi quyết được. */
   openTasksOf(u: EngineCaller, packKey: string): Promise<PackOpenTask[]>;
   /** cf-dify · workflow catalog mà tenant được dùng (cho bước Dify). */
@@ -115,7 +119,11 @@ export type ApprovalEnginePort = {
   ): Promise<PackOpenRun[]>;
 };
 /** Cầu nối dựng lúc mount; engine tắt ⇒ `port` vắng. */
-export type ApprovalEngineBridge = { port?: ApprovalEnginePort };
+export type ApprovalEngineBridge = {
+  port?: ApprovalEnginePort;
+  /** [AUDIT] · cầu `packRuns`: gói HĐ gắn `onDecided.contracts` (ghi `stage_decided` cho quyết đi đường chung). */
+  onDecided?: Partial<Record<string, (e: PackDecided) => Promise<void>>>;
+};
 
 /** Lượt duyệt engine của HĐ đọc theo `engine_run_id` (tool) — HĐ + facts + mẫu chụp + gắn SP chờ. */
 export type EngineRunRow = {
@@ -172,6 +180,8 @@ export type DecisionEvent = {
   actor: string;
   /** CR-127 · E4 · id `hub.evidence` của quyết định (nếu có). */
   evidenceId?: string | null;
+  /** [AUDIT] · lúc quyết (ghi bù của vòng đối soát); vắng ⇒ now(). */
+  at?: string;
 };
 /** CR-127 · E4 · một dòng hồ sơ duyệt (chưa lọc BR-26 — usecase lọc). */
 export type DecisionRow = {
@@ -181,6 +191,8 @@ export type DecisionRow = {
   at: string;
   actor: string;
   feedback: string | null;
+  /** [AUDIT] · Toàn quyền duyệt thay (không phải người/nhóm được giao). */
+  override: boolean;
   evidence: {
     id: string;
     note: string;

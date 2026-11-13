@@ -16,8 +16,6 @@ import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
-import { safeErrorFields } from "../../../lib/errors";
-import { publishUserEvents } from "../../../lib/user-stream";
 import * as core from "../core/core.repo";
 import { claimError, processError } from "../core/errors";
 import { processUpdated } from "../core/events";
@@ -39,7 +37,7 @@ import { allPartialOut, allVoteStep } from "./all-vote";
 import { approveDecide } from "./approve-out";
 import { type FormSubmit, formPre, formReplayCheck } from "./form-out";
 import { evidenceCheck } from "./gate.rules";
-import { recordTaskEvidence } from "./gate-task.repo";
+import { decidedOf, notifyPack, postCommit, taskEvidence } from "./gates.audit";
 import {
   buildState,
   cancelEnd,
@@ -97,6 +95,8 @@ export class GateService {
       this.#review(tx, req, taskId, b, undefined, hooks?.onEvidence),
     );
     await this.#post(out);
+    // [AUDIT] · đường chung (Việc của tôi / chuông) trên run gắn gói ⇒ gói ghi lịch sử; từ thẻ gói (`hooks` có mặt) ⇒ thẻ tự ghi.
+    if (!hooks) await notifyPack(this.d, out);
     return out.body;
   }
 
@@ -156,10 +156,19 @@ export class GateService {
       { userId: v.userId, groupIds },
       onEvidence,
     );
+    const decided = (evidenceId: string | null) =>
+      decidedOf(run, idx, taskId, { b, userId: v.userId, evidenceId });
     if (vote.mode === "partial")
-      return allPartialOut(gx, run, taskId, { ...v, groupIds, recipients });
+      return {
+        ...(await allPartialOut(gx, run, taskId, { ...v, groupIds, recipients })),
+        decided: decided(vote.evidenceId ?? null),
+      };
     const par = await parallelStep(gx, { run, idx, task, b }); // CR-125 · cùng duyệt (run đã khoá)
-    if (par.partial) return partialOut(gx, { run, idx, task, b }, { ...v, groupIds, recipients });
+    if (par.partial)
+      return {
+        ...(await partialOut(gx, { run, idx, task, b }, { ...v, groupIds, recipients })),
+        decided: decided(null),
+      };
     const pre = { run, idx, outputId: s?.current_output_id ?? null, taskId, v, form };
     const answer = await formPre(tx, pre); // CR-118 · stage form chỉ quyết qua gửi form (ghi output cùng tx)
     const def = snapOf(run).stages[idx];
@@ -189,16 +198,12 @@ export class GateService {
     if (!t.ok) throw processError(t.code);
     // CR-127 · E4 · bằng chứng CÙNG tx đóng task (rollback chung nếu lỗi); ý kiến Trả lại/Từ chối vẫn ở `feedback` như cũ.
     // E5 · phiếu "Cần: tất cả" đã ghi bằng chứng của phiếu ⇒ không ghi lần hai.
-    const ev = vote.evidenceId ? null : b.evidence;
-    if (ev) {
-      const evId = await recordTaskEvidence(tx, {
-        tenantId: run.tenantId,
-        taskId,
-        userId: v.userId,
-        evidence: ev,
-      });
-      onEvidence?.(evId); // (không gọi `?.(await …)`: tham số không được đánh giá khi hook vắng)
-    }
+    const evIdOut = await taskEvidence(
+      tx,
+      { tenantId: run.tenantId, taskId, userId: v.userId, b },
+      vote.evidenceId,
+      onEvidence,
+    );
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
     const { events, step, status, kick, cancel } = await reviewOut(gx, e, task, eb);
     // D9 · decision mở cũ nhất ∥ đọc thẻ task trả về: độc lập (`process_runs.decision` không thuộc `TaskDetail`) ⇒ pipeline.
@@ -210,7 +215,15 @@ export class GateService {
     const detail = details[0];
     if (!detail) throw notFound();
     const cancelRun = cancelRunOf(run, status); // N2-FR-02 · Từ chối ⇒ huỷ `hub.runs` sau COMMIT
-    return { body: detail, events, kick, runId: run.id, cancel, cancelRun };
+    return {
+      body: detail,
+      events,
+      kick,
+      runId: run.id,
+      cancel,
+      cancelRun,
+      decided: decided(evIdOut),
+    };
   }
 
   // ── POST /process-runs/:id/decide ──
@@ -338,25 +351,6 @@ export class GateService {
   }
 
   async #post(out: Outcome<unknown>): Promise<void> {
-    const c = out.cancel;
-    const cr = out.cancelRun;
-    if (c || cr)
-      await withHubScope(this.d.db, { kind: "system" }, async (tx) => {
-        if (c) await g.cancelRunsByIds(tx, c.tenantId, c);
-        if (cr) await g.cancelStageRuns(tx, out.runId, cr.tenantId);
-      }).catch((err) =>
-        // Đã COMMIT: job muộn bị driver bỏ (`current_run_id` NULL); sweeps dọn `hub.runs` treo.
-        this.d.log.warn("process-back-cancel-failed", {
-          run_id: out.runId,
-          ...safeErrorFields(err),
-        }),
-      );
-    await publishUserEvents(this.d.redis, out.events, this.d.log);
-    // T19-perf · đăng tin thread ∥ kick (kết nối riêng): đăng idempotent theo id sự kiện, mỗi poster đi theo `created_at`
-    // ⇒ thứ tự tin giữ nguyên; sự kiện người dùng của gate đã phát TRƯỚC (kick có thể phát sự kiện mới hơn).
-    await Promise.all([
-      this.d.postThread(out.runId).catch(() => {}),
-      out.kick ? this.d.launcher.kick(out.runId) : undefined,
-    ]);
+    await postCommit(this.d, out); // [AUDIT] · sau COMMIT không ném (bước kế lỗi ⇒ «Cần xử lý», không báo như duyệt lỗi)
   }
 }

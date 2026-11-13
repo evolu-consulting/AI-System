@@ -35,6 +35,7 @@ import {
   readApprovalSettings,
   saveApprovalSettings,
 } from "./application/approval.usecase";
+import { recordEngineDecision } from "./application/approval-decided.usecase";
 import { flowRequestExtract, flowStarter } from "./application/approval-flow";
 import type { ApprovalFlowTxRepos } from "./application/approval-flow.usecase";
 import {
@@ -214,6 +215,9 @@ export function contractsAiModule(
   mountContractAccess(db); // CR-127 E3b: cổng kit `ContractAccess` (uỷ quyền / giao việc)
   const engFlow = { ...flow, groups: withCreatorDepartments(flow.groups, db), flowGate: gate }; // CR-121 D-1
   const eng = approvalEngine(engOpts, engFlow, uow, view);
+  // [AUDIT] · quyết bước duyệt HĐ qua đường chung (Việc của tôi / chuông) ⇒ vẫn có dòng «Hồ sơ duyệt».
+  if (eng && flow.engine)
+    flow.engine.onDecided = { ...flow.engine.onDecided, contracts: recordEngineDecision(pack) };
   const { handle, schedule } = extractionRunner(d, flow, pack);
   const ready = d.transport !== undefined || flow.ai.ready;
   const { jobs, reclaimOnce } = extractJobs(db, flow, handle, {

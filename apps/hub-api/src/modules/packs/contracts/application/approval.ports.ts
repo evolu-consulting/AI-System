@@ -108,6 +108,14 @@ export type SweepRepo = {
   sweep(o: SweepOptions): Promise<SweepCounts>;
   /** CR-107 · MỘT câu `= any`: trong `runIds`, run nào đang gắn vào một lượt của tenant (mọi trạng thái lượt). */
   attachedRuns(runIds: readonly string[]): Promise<string[]>;
+  /** [AUDIT] · MỘT câu: ≤ `limit` lượt engine (đang mở hoặc đổi trong 1 ngày) + task đã có `stage_decided` của lượt. */
+  decisionRuns?(limit: number): Promise<DecisionRunRef[]>;
+};
+export type DecisionRunRef = {
+  approvalId: string;
+  contractId: string;
+  runId: string;
+  have: string[];
 };
 
 /** `links` (products-confirm): gắn/tạo SP ở bước duyệt cuối; vắng (test cũ) ⇒ bỏ qua. */

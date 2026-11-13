@@ -8,6 +8,7 @@ import type {
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { UserEvent } from "../../../lib/user-stream";
 import { claimError, processError } from "../core/errors";
+import type { PackDecidedEvent } from "../core/ports";
 import type { Viewer } from "../domain/runs/run-access.rules";
 import { pickDecisionStage } from "../domain/runs/step.rules";
 import { claimBlocks, type TaskNeed } from "../domain/tasks/claim.rules";
@@ -76,6 +77,8 @@ export type Outcome<T> = {
   cancel?: CancelIds;
   /** HUB-FR-111 · run quy trình đã huỷ ⇒ huỷ mọi `hub.runs` còn chạy của nó SAU COMMIT ở scope system (TECH-DEBT #147). */
   cancelRun?: { tenantId: string };
+  /** [AUDIT] · quyết task duyệt của run gắn gói ⇒ báo gói ghi lịch sử sau COMMIT (đường chung, không qua thẻ gói). */
+  decided?: PackDecidedEvent;
 };
 
 /** Scope `user` của người thao tác; platform_admin + `?tenant_id` ⇒ tenant đích (plan §5, như ViewService). */

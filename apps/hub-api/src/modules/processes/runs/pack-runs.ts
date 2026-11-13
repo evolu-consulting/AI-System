@@ -8,6 +8,7 @@ import { ProcessDefInputBaseSchema, type ProcessInputValue } from "@ai/contracts
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type {
+  PackDecidedTask,
   PackOpenRun,
   PackRunCaller,
   PackRunOutcome,
@@ -176,6 +177,25 @@ export async function stampSlotRun(
   throw new Error("PackRunsPort.start: def khe đã đổi (source_ref lệch)");
 }
 
+/** [AUDIT] · task duyệt đã quyết của các run (đối soát lịch sử gói): người, kết quả, lý do, bằng chứng mới nhất, lúc quyết. */
+const DECIDED_TASKS = (
+  tenantId: string,
+  ids: readonly string[],
+) => sql`select t.process_run_id::text as "runId",
+    t.id::text as "taskId", coalesce(pr.snapshot -> 'stages' -> (s.stage_idx::int) ->> 'key', '') as "stageKey",
+    t.result, nullif(left(btrim(coalesce(t.feedback, '')), 1000), '') as feedback, t.decided_by::text as actor,
+    ev.id::text as "evidenceId", ${sql.raw(`to_char(t.decided_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`)} as at,
+    t.tenant_id::text as "tenantId"
+  from hub.review_tasks t
+  join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
+  join hub.process_runs pr on pr.id = t.process_run_id and pr.tenant_id = t.tenant_id
+  left join lateral (select e.id from hub.evidence e where e.tenant_id = t.tenant_id
+    and e.subject_kind = 'task_decision' and e.subject_id = t.id order by e.at desc limit 1) ev on true
+  where t.tenant_id = ${tenantId}::uuid and t.process_run_id = any(${`{${ids.join(",")}}`}::uuid[])
+    and t.kind = 'review' and t.status = 'closed' and t.decided_by is not null
+    and t.result in ('pass', 'fail', 'reject')
+  order by t.decided_at limit 500`;
+
 const PACK_OPEN = `{running,waiting_review,waiting_answer,needs_decision,waiting_timer}`;
 
 function sysReads(d: ProcessDeps) {
@@ -191,6 +211,11 @@ function sysReads(d: ProcessDeps) {
       if (!UUID.test(runId) || !UUID.test(tenantId)) return [];
       const rows = await read<{ k: string | null }>(PASSED(tenantId, runId));
       return rows.flatMap((r) => (r.k ? [r.k] : []));
+    },
+    async decidedTasksOf(tenantId: string, runIds: readonly string[]) {
+      const ids = runIds.filter((x) => UUID.test(x));
+      if (!UUID.test(tenantId) || ids.length === 0) return [];
+      return read<PackDecidedTask>(DECIDED_TASKS(tenantId, ids));
     },
     async lastApprover(tenantId: string, runId: string) {
       if (!UUID.test(runId) || !UUID.test(tenantId)) return null;

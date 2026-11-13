@@ -14,6 +14,8 @@ export type RecordItem = {
   at: string;
   actor: Person;
   feedback: string | null;
+  /** [AUDIT] · Toàn quyền duyệt thay. */
+  override?: boolean;
   evidence: {
     readable: boolean;
     note: string | null;
@@ -93,6 +95,8 @@ const when = (iso: string) => iso.replace("T", " ").slice(0, 16) + " UTC";
 function itemLines(w: Writer, it: RecordItem, n: number, i: Pick<RecordPdfInput, "fileNames">) {
   w.line(`${n}. ${it.stage || "Bước duyệt"} - ${ACTION[it.action]}`, { bold: true });
   w.line(`Người quyết: ${who(it.actor)} · Lúc: ${when(it.at)}`, { indent: 14 });
+  if (it.override)
+    w.line("Duyệt thay (Toàn quyền) - không phải người/nhóm được giao của bước", { indent: 14 });
   const ev = it.evidence;
   if (it.feedback) w.line(`Ý kiến: ${it.feedback}`, { indent: 14 });
   if (!ev) return w.line("", { gap: 2 });

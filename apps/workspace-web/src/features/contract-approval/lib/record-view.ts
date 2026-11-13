@@ -10,6 +10,8 @@ export type RecordLine = {
   who: string;
   /** «thay {người được giao}» khi làm thay. */
   onBehalf: string | null;
+  /** [AUDIT] · Toàn quyền duyệt thay (không phải người/nhóm được giao). */
+  override: boolean;
   at: string;
   /** Lý do (Trả lại/Từ chối) hoặc ý kiến; ẩn với người chỉ xem. */
   note: string | null;
@@ -47,6 +49,7 @@ export function recordLines(
       action: i.action,
       who: e?.by_user.display_name ?? i.actor.display_name ?? "",
       onBehalf: e?.on_behalf_of?.display_name ?? null,
+      override: i.override === true,
       at: i.at,
       note: readable ? (e?.note ?? i.feedback) : r.can_read_evidence ? i.feedback : null,
       hasEvidence: e !== null,
@@ -64,3 +67,11 @@ export const hasChanges = (c: {
   clauses: readonly unknown[];
   return_note: string | null;
 }): boolean => c.fields.length > 0 || c.clauses.length > 0 || c.return_note !== null;
+
+/** [AUDIT] · hồ sơ trống: bước đang mở (tên bước + người đã chọn duyệt nếu biết) ⇒ «Chưa ai duyệt — đang chờ …». */
+export function waitingOf(
+  steps?: readonly { name: string; status: string; approver?: { name: string } | null }[],
+): { step: string; who: string | null } | null {
+  const open = steps?.find((x) => x.status === "open");
+  return open ? { step: open.name, who: open.approver?.name ?? null } : null;
+}

@@ -5,12 +5,15 @@
 import type { PackSystemUow, PackWho } from "../../kit/public";
 import { reconcileOf } from "../domain/approval-engine.rules";
 import type { ApprovalRepo, ReconcileItem, SweepCounts, SweepRepo } from "./approval.ports";
-import type { ApprovalEnginePort } from "./approval-engine.ports";
+import { backfillDecisions } from "./approval-decided.usecase";
+import type { ApprovalEnginePort, ApprovalEngineRepo } from "./approval-engine.ports";
 import type { ContractFlowTxRepos } from "./contract-flow.ports";
 
 export type SweepDeps = {
   uow: PackSystemUow<
-    { sweep: SweepRepo } & ContractFlowTxRepos & { approval?: Pick<ApprovalRepo, "runOf"> }
+    { sweep: SweepRepo } & ContractFlowTxRepos & { approval?: Pick<ApprovalRepo, "runOf"> } & {
+        approvalEngine?: Pick<ApprovalEngineRepo, "recordDecision">;
+      }
   >;
   /** Tenant đang bật gói (cache cấu hình, 0 SQL). */
   tenants: () => Promise<string[]>;
@@ -24,7 +27,7 @@ export type SweepDeps = {
   engine?: {
     port: () =>
       | (Pick<ApprovalEnginePort, "outcomesOf"> &
-          Partial<Pick<ApprovalEnginePort, "openPackRuns" | "cancelSys">>)
+          Partial<Pick<ApprovalEnginePort, "openPackRuns" | "cancelSys" | "decidedTasksOf">>)
       | undefined;
   };
   /** CR-107 · đồng hồ (test tiêm đồng hồ giả); vắng ⇒ giờ máy. */
@@ -124,6 +127,9 @@ async function sweepTenant(d: SweepDeps, t: string, o: Parameters<SweepRepo["swe
     stalled: 0,
   }));
   const orphans = await cancelOrphans(d, t).catch(() => 0);
+  // [AUDIT] · quyết đã có ở engine mà thiếu dòng «Hồ sơ duyệt» ⇒ ghi bù (lỗi ⇒ lượt sau thử lại).
+  const port = d.engine?.port();
+  await backfillDecisions({ uow: d.uow, port }, t, RECONCILE_BATCH).catch(() => 0);
   return { ...base, ...rc, orphans };
 }
 
