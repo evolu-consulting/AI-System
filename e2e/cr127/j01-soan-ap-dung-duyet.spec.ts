@@ -92,7 +92,7 @@ test("quản trị nền tảng: Tạo quy trình từ sơ đồ trống, soạn
   await pick(/Kinh doanh/);
   // 5) Ký số
   await page.getByTestId("outline-add-main-3").click();
-  await page.getByRole("menuitem", { name: /Ký số/ }).click();
+  await page.getByRole("menuitem", { name: /Ký hợp đồng/ }).click();
   await expect(page.getByText(/Người ký phía công ty/)).toBeVisible();
   const signer = page.getByLabel(/^Phòng ban:/).first();
   if (await signer.count()) await signer.check();
@@ -111,7 +111,7 @@ test("quản trị nền tảng: Tạo quy trình từ sơ đồ trống, soạn
   await page.goto(editorUrl());
   await expect(page.getByTestId("outline-editor")).toBeVisible();
   await expect(page.getByText(/Giá trị hợp đồng.*500 triệu/).first()).toBeVisible();
-  await expect(page.getByText("Ký số", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Ký hợp đồng", { exact: true }).first()).toBeVisible();
   await expect(page.getByTestId("outline-chip-error")).toHaveCount(0);
 });
 

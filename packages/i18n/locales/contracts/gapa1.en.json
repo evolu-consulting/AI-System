@@ -32,7 +32,8 @@
         "title": "Change history",
         "loading": "Loading…",
         "empty": "No changes yet.",
-        "system": "System"
+        "system": "System",
+        "override": "approved on behalf"
       },
       "ev": {
         "field_edited": "edited fields",
@@ -58,6 +59,7 @@
         "task_escalate": "step escalated (overdue)",
         "esign_sent": "sent for e-signing",
         "esign_signed": "e-signing completed",
+        "esign_uploaded": "uploaded the signed copy ({{file}})",
         "esign_declined": "a signer declined to sign",
         "esign_voided": "voided the e-sign envelope",
         "esign_expired": "e-sign envelope expired",

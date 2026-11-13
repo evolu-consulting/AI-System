@@ -319,6 +319,11 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
             and ${prev}::text is distinct from u.status)
         select 1`);
     },
+    openSignWait: async (contractId, signers, by) => {
+      await tx.execute(sql`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+        select ${t}::uuid, c.id, 'sign_upload_open', ${by}::uuid, jsonb_build_object('signers', ${JSON.stringify(signers)}::jsonb)
+        from contracts.contracts c where c.id = ${contractId}::uuid and c.tenant_id = ${t}::uuid`);
+    },
     attachSigned: async (envelopeId, f) => {
       const [lock] = await tx.execute<{ has: boolean }>(sql`select signed_file_id is not null as has
         from contracts.esign_envelopes where tenant_id = ${t}::uuid and envelope_id = ${envelopeId} for update`);

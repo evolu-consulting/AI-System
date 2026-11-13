@@ -108,13 +108,6 @@ export async function loadWorld(tx: Tx, tid: string, n: Need): Promise<World> {
   };
 }
 
-/** CR-138b · công ty đã bật Ký số? Bảng của gói contracts ⇒ đọc bằng role gói (hub_api không có quyền schema contracts). */
-export async function esignOnOf(tx: Tx, tid: string): Promise<boolean> {
-  const [r] = await tx.execute<{ on: boolean }>(sql`select coalesce(s.esign_enabled, false) as on
-    from (select 1) one left join contracts.approval_settings s on s.tenant_id = ${tid}::uuid`);
-  return r?.on === true;
-}
-
 export type FlowRowNamed = FlowRow & { id: string; name: string };
 
 /** CR-127 · M4 · nhiều quy trình MỘT câu (`= any`): cùng luật chọn bản như `flowRowOf` (Thư viện ⇒ bản đã xuất bản; của công ty ⇒ bản đang dùng). */

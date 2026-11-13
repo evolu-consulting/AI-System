@@ -9,7 +9,7 @@
         "feed": "Feed"
       },
       "signPane": {
-        "esign": "Used by the E-sign step in the flow. Off ⇒ the E-sign step will report an error when it runs.",
+        "esign": "Off ⇒ the Sign contract step only accepts an uploaded signed copy.",
         "work": "Used by the E-sign step: only this group can sign; a claimed task left unhandled after the hours set here goes back to the queue.",
         "partner": "Used by the \"Send to partner for confirmation\" step (outgoing) and the Receive-contract flow (incoming). If not ready, those steps cannot run."
       },

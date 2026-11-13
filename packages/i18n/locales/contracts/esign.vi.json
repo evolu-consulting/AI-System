@@ -52,6 +52,21 @@
       "providerUnavailable": "Chưa cấu hình",
       "legal": "Có giá trị pháp lý",
       "notLegal": "Không có giá trị pháp lý",
+      "upload": {
+        "title": "Tải lên bản đã ký",
+        "hint": "Đã ký xong bên ngoài? Tải lên bản đã ký (PDF, JPG hoặc PNG) — bước Ký hợp đồng sẽ hoàn tất.",
+        "override": "Bạn đang duyệt thay người được giao ký.",
+        "choose": "Chọn tệp bản đã ký",
+        "submit": "Tải lên",
+        "done": "Đã tải lên bản đã ký",
+        "err": {
+          "FILE_TYPE": "Chưa nhận định dạng này — chỉ nhận PDF, JPG hoặc PNG.",
+          "FILE_TOO_LARGE": "Tệp quá lớn, hãy chọn tệp nhỏ hơn.",
+          "SIGN_UPLOAD_NOT_AWAITING": "Bước Ký hợp đồng không còn chờ bản đã ký (đã có người xử lý). Tải lại trang để xem.",
+          "PACK_FORBIDDEN": "Bạn không được giao bước ký này nên không tải lên được.",
+          "unknown": "Không tải lên được, thử lại sau."
+        }
+      },
       "err": {
         "ESIGN_PROVIDER_UNAVAILABLE": "Nhà cung cấp ký số này chưa khả dụng, chọn nhà cung cấp khác.",
         "ESIGN_RESEND_FAILED": "Gửi lại bản ký thất bại — bấm Ký ngay để thử lại.",

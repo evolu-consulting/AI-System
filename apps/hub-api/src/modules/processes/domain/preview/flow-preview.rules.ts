@@ -22,8 +22,6 @@ export type World = {
   delegations: readonly DelegationRow[];
   /** CR-139 · công ty có ít nhất một phòng đã đặt trưởng phòng (vắng ⇒ không cảnh báo). */
   anyDeptHead?: boolean;
-  /** CR-138b · công ty đã bật Ký số (`approval_settings.esign_enabled`); vắng ⇒ không rõ ⇒ không cảnh báo. */
-  esignOn?: boolean;
   /** CR-138b · tính năng Đối tác xác nhận (`contracts-partner-confirm`) đã cấp cho công ty; vắng ⇒ không cảnh báo. */
   partnerOn?: boolean;
 };
@@ -40,7 +38,6 @@ export type WarnCode =
   | "group_missing"
   | "group_single"
   | "no_head"
-  | "esign_off"
   | "partner_off"
   | "no_dept_head"
   | "starter_only"
@@ -146,20 +143,13 @@ function parallelNoHead(
   }
 }
 
-/** Node bước Ký số / Gửi đối tác xác nhận (khoá node của gói Sổ Hợp Tác). */
-export const ESIGN_NODE = "contracts.esign";
+/** Node bước «Gửi đối tác xác nhận» (khoá node của gói Sổ Hợp Tác). */
 export const PARTNER_SEND_NODE = "contracts.partner-send";
 
-/** CR-138b · bước Ký số mà công ty chưa bật ký số, bước «Gửi đối tác xác nhận» mà tính năng đối tác chưa sẵn ⇒ cảnh báo (không chặn). Thuần. */
+/** CR-138b · bước «Gửi đối tác xác nhận» mà tính năng đối tác chưa sẵn ⇒ cảnh báo (không chặn). Thuần. CR-141: bước Ký hợp đồng luôn chạy được (ký số hoặc tải bản đã ký) ⇒ không còn cảnh báo «chưa bật ký số». */
 export function setupWarnings(stages: readonly ProcessStageDef[], w: World): PreviewWarning[] {
   const out: PreviewWarning[] = [];
   for (const s of stages) {
-    if (s.node === ESIGN_NODE && w.esignOn === false)
-      out.push({
-        code: "esign_off",
-        step_key: s.key,
-        message: `Bước «${s.name}» là Ký số nhưng công ty chưa bật ký số: bước sẽ báo lỗi khi chạy. Bật ở Cài đặt › Ký & đối tác.`,
-      });
     if (s.node === PARTNER_SEND_NODE && w.partnerOn === false)
       out.push({
         code: "partner_off",

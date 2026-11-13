@@ -17,7 +17,7 @@ export const ESIGN_CONFIG_PORT: PortSchema = {
 
 export const ESIGN_NODE: FeatureNodeDecl = {
   key: "contracts.esign",
-  label: { vi: "Ký số", en: "E-signature" },
+  label: { vi: "Ký hợp đồng", en: "Sign contract" }, // CR-141 · ký số HOẶC tải lên bản đã ký
   group: "sign",
   menu: { section: "business", order: 30 },
   kind: "app",

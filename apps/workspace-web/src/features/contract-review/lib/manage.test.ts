@@ -1,7 +1,7 @@
 // gap-a1 · luật thuần khối "Quản lý": ô hoa hồng %, dòng lịch sử, câu lỗi.
 import { describe, expect, it } from "bun:test";
 import { ApiError } from "@ai/web-kit/http";
-import { historyLine, manageErrorKey, parsePct } from "./manage";
+import { historyLine, isVisibleEvent, manageErrorKey, parsePct } from "./manage";
 
 describe("parsePct", () => {
   it("trống ⇒ null; số hợp lệ ⇒ số; ngoài 0–100 hoặc quá 2 số lẻ ⇒ sai", () => {
@@ -31,6 +31,19 @@ describe("historyLine", () => {
     });
     expect([c.kind, c.from, c.to]).toEqual(["commission_edited", "5", "7.5"]);
     expect(historyLine({ type: "zzz_new", actor_user_id: null, at, data: {} }).kind).toBe("other");
+  });
+  it("CR-141 · esign_uploaded ⇒ tên tệp + duyệt thay; sign_upload_open bị ẩn", () => {
+    const u = historyLine({
+      type: "esign_uploaded",
+      actor_user_id: null,
+      at,
+      data: { file_name: "hd-ky.pdf", override: true },
+    });
+    expect([u.kind, u.fileName, u.override]).toEqual(["esign_uploaded", "hd-ky.pdf", true]);
+    const n = historyLine({ type: "esign_uploaded", actor_user_id: null, at, data: {} });
+    expect([n.fileName, n.override]).toEqual([null, false]);
+    expect(isVisibleEvent({ type: "sign_upload_open" })).toBe(false);
+    expect(isVisibleEvent({ type: "esign_uploaded" })).toBe(true);
   });
 });
 

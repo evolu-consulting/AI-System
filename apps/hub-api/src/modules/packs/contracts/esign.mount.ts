@@ -41,12 +41,14 @@ import { type EsignSweepDeps, startEsignSweeper } from "./application/esign-swee
 import { type EsignSyncDeps, esignSyncEnv } from "./application/esign-sync";
 import { voidForSession } from "./application/esign-void";
 import { sessionSignedOnEnvelope } from "./application/sign-session-esign";
+import type { SignUploadUsecase } from "./application/sign-upload.usecase";
 import { metaOf, providerEntriesOf } from "./domain/esign.providers";
 import { docusignConfigOf, isOpen } from "./domain/esign.rules";
 import { type ESignEvent, esignEventOf } from "./domain/esign-event.rules";
 import { esignOutputsOf } from "./domain/esign-outputs.rules";
 import { esignBindingChecks } from "./nodes/esign/binding";
 import { fileShaOf } from "./partner-mailbox.mount";
+import { signUploadOf, signUploadRoutesOf } from "./sign-upload.mount";
 
 type EnvMap = Record<string, string | undefined>;
 const repos = (tx: Tx, t: string) => ({
@@ -115,6 +117,8 @@ export type ESignModule = ESignUsecase & {
   /** CR-120 · G6 · CR-122 E3 · phong bì sang trạng thái CUỐI ⇒ gọi hook với khoá sự kiện (`esign.completed|declined|voided`) — gói bắn
    *  cho lượt đang chờ; lỗi hook không làm hỏng đồng bộ. */
   bindCompleted(fn: CompletedHook): void;
+  /** CR-141 · tải bản đã ký cho bước «Ký hợp đồng» (cần FileBox; vắng ⇒ null). */
+  signUpload: SignUploadUsecase | null;
   /** esign-sweep · bật vòng nền bước Ký số (một lần; tắt ngoài dev/prod hoặc `CONTRACTS_ESIGN_SWEEP=off`). */
   startSweep(view: PackAccessView): void;
   /** CR-127 · P2b · phiên ký chung kết thúc không ký ⇒ huỷ phong bì còn mở của HĐ (bộ chuyển hộp thư gọi). true = đã huỷ. */
@@ -246,8 +250,13 @@ export function esignModule(
   const bindWriters = (w: Writers) => {
     writers = w;
   };
+  const signUpload = signUploadOf(db, d.files, selfName, {
+    completed: async (...a) => void (await completed?.(...a)),
+    voidIt: (who, id) => u.voidIt(who, id, "signed-copy-uploaded").then(() => undefined),
+  });
   return {
     ...u,
+    signUpload,
     flow,
     invite,
     bindWriters,
@@ -347,6 +356,7 @@ export const esignUserRoutes = (view: PackAccessView, u: ESignModule): Hono<Pack
   u.bindView(view); // esign-flow-fix · người ký công ty còn quyền ghi gói (cổng quyền theo cache cấu hình)
   u.startSweep(view); // esign-sweep · kẹt gửi / nhắc / quá hạn bước Ký số (vòng nền, tắt được)
   const r = esignRoutes(view, u);
+  if (u.signUpload) r.route("/", signUploadRoutesOf(view, u.signUpload));
   if (u.anchors) r.route("/", esignAnchorRoutes(view, u.anchors));
   return r.route("/", esignFlowRoutes(view, u.flow));
 };

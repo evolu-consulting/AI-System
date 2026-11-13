@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { viDateTime } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { useHistory, useMemberNames } from "../hooks/use-manage";
-import { type HistoryLine, historyLine } from "../lib/manage";
+import { type HistoryLine, historyLine, isVisibleEvent } from "../lib/manage";
 
 const when = (iso: string): string => viDateTime(iso);
 
@@ -19,7 +19,8 @@ function Line({ h, nameOf }: { h: HistoryLine; nameOf: (id: string | null) => st
     <li className="border-b border-rule-soft py-2 last:border-0" data-testid="history-line">
       <p className="text-[13.5px]">
         <span className="font-medium">{who}</span>{" "}
-        {t(`contracts.gapa1.ev.${h.kind}`, { type: h.type })}
+        {t(`contracts.gapa1.ev.${h.kind}`, { type: h.type, file: h.fileName ?? "—" })}
+        {h.override && <span className="text-dim"> · {t("contracts.gapa1.hist.override")}</span>}
         {h.kind !== "field_edited" && (from !== null || to !== null) && (
           <span className="text-dim">
             {" "}
@@ -67,7 +68,7 @@ export function HistoryPanel({ id }: { id: string }) {
           )}
           {q.data && (
             <ul>
-              {q.data.items.map((h, i) => (
+              {q.data.items.filter(isVisibleEvent).map((h, i) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: sự kiện không có id trong phản hồi; danh sách chỉ đọc
                 <Line key={i} h={historyLine(h)} nameOf={nameOf} />
               ))}

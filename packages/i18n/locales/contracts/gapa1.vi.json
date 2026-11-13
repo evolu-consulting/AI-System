@@ -32,7 +32,8 @@
         "title": "Lịch sử thay đổi",
         "loading": "Đang tải…",
         "empty": "Chưa có thay đổi nào.",
-        "system": "Hệ thống"
+        "system": "Hệ thống",
+        "override": "duyệt thay"
       },
       "ev": {
         "field_edited": "đã sửa thông tin",
@@ -58,6 +59,7 @@
         "task_escalate": "tự chuyển cấp (bước quá hạn)",
         "esign_sent": "đã gửi ký số",
         "esign_signed": "đã ký số xong",
+        "esign_uploaded": "đã tải lên bản đã ký ({{file}})",
         "esign_declined": "người ký đã từ chối ký số",
         "esign_voided": "đã huỷ bản ký",
         "esign_expired": "bản ký hết hạn",

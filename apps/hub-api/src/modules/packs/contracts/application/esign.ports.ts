@@ -206,6 +206,8 @@ export type ESignRepo = {
     before: Record<string, unknown>,
     after: Record<string, unknown>,
   ): Promise<void>;
+  /** CR-141 · bước «Ký hợp đồng» mở: ghi người được giao tải bản đã ký (sự kiện nội bộ `sign_upload_open`, không hiện cho người dùng). */
+  openSignWait(contractId: string, signers: readonly string[], by: string | null): Promise<void>;
   /** Trùng envelope đang chờ của HĐ (index một phần) ⇒ false. */
   insert(r: {
     contractId: string;

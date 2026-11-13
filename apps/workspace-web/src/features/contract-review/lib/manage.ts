@@ -22,7 +22,14 @@ export type HistoryLine = {
   /** Cặp giá trị cho `owner_assigned` (id người) / `commission_edited` (%). */
   from: string | null;
   to: string | null;
+  /** CR-141 · `esign_uploaded`: tên tệp bản đã ký + có phải người Toàn quyền tải thay ("duyệt thay"). */
+  fileName: string | null;
+  override: boolean;
 };
+
+/** CR-141 · sự kiện nội bộ, không hiện cho người dùng (ví dụ `sign_upload_open`: bước ký mở chờ bản tải lên). */
+const HIDDEN = new Set(["sign_upload_open"]);
+export const isVisibleEvent = (h: { type: string }): boolean => !HIDDEN.has(h.type);
 
 const KNOWN = new Set([
   "field_edited",
@@ -50,6 +57,7 @@ const KNOWN = new Set([
   "task_escalate",
   "esign_sent",
   "esign_signed",
+  "esign_uploaded", // CR-141 · tải lên bản đã ký (data: file_name, override)
   "esign_declined",
   "esign_voided",
   "esign_expired",
@@ -87,9 +95,17 @@ function kindOf(h: HistoryItem): string {
 }
 
 export function historyLine(h: HistoryItem): HistoryLine {
-  const d = (h.data ?? {}) as { from?: unknown; to?: unknown };
+  const d = (h.data ?? {}) as {
+    from?: unknown;
+    to?: unknown;
+    file_name?: unknown;
+    override?: unknown;
+  };
   const pair = h.type === "owner_assigned" || h.type === "commission_edited";
+  const up = h.type === "esign_uploaded";
   return {
+    fileName: up && typeof d.file_name === "string" && d.file_name !== "" ? d.file_name : null,
+    override: up && d.override === true,
     kind: kindOf(h),
     type: h.type,
     actor: h.actor_user_id,

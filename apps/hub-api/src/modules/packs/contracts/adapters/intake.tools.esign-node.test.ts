@@ -2,6 +2,7 @@
 import { describe, expect, it } from "bun:test";
 import { ESIGN_NODE_PARAMS } from "@ai/contracts/pack-contracts";
 import type { PackToolCtx } from "../../kit/application/pack-tools.ports";
+import { ESignFail } from "../application/esign.usecase";
 import { INTAKE_TOOL_KEYS, intakeTools } from "./intake.tools";
 
 const ID = "11111111-1111-4111-8111-111111111111";
@@ -10,13 +11,14 @@ const U2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const G1 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const CTX: PackToolCtx = { tenantId: "t1", userId: "u1", runId: null };
 
-function make(email: string | null = "p@x.vn") {
+function make(email: string | null = "p@x.vn", sendErr?: Error) {
   const sent: unknown[][] = [];
   const asked: unknown[] = [];
   const repos = {
     extraction: { source: async () => null },
     esign: {
       lockForSign: async () => {},
+      openSignWait: async () => {},
       latest: async () => null,
       contract: async () => ({ number: "S1", title: "HĐ", partner: { name: "Đối tác", email } }),
     },
@@ -24,7 +26,10 @@ function make(email: string | null = "p@x.vn") {
   };
   const tools = intakeTools({
     uow: { tenant: async (_w, fn) => fn(repos as never) },
-    send: async (...a) => void sent.push(a),
+    send: async (...a) => {
+      if (sendErr) throw sendErr;
+      sent.push(a);
+    },
     // Group G1 ⇒ hai thành viên; người cụ thể ⇒ chính nó.
     nodeSigners: async (_t, entries) => {
       asked.push(entries);
@@ -98,5 +103,18 @@ describe("E5 · tool Ký số theo args của node", () => {
       send.run(CTX, { contract_id: ID, order: "random", company_signers: `user:${U1}` }),
     ).rejects.toThrow("ESIGN_NODE_CONFIG_INVALID:order");
     expect(sent).toEqual([]);
+  });
+});
+
+describe("CR-141 · công ty tắt ký số ⇒ bước chờ bản đã ký tải lên (không báo lỗi)", () => {
+  it("ESIGN_DISABLED ⇒ awaiting_upload, lỗi khác vẫn ném", async () => {
+    const off = make("p@x.vn", new ESignFail("ESIGN_DISABLED", "disabled"));
+    expect(await off.send.run(CTX, { contract_id: ID, company_signers: `user:${U1}` })).toEqual({
+      status: "awaiting_upload",
+    });
+    const boom = make("p@x.vn", new Error("boom"));
+    await expect(
+      boom.send.run(CTX, { contract_id: ID, company_signers: `user:${U1}` }),
+    ).rejects.toBeDefined();
   });
 });

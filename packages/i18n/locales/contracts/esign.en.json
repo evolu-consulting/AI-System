@@ -52,6 +52,21 @@
       "providerUnavailable": "Not configured",
       "legal": "Legally binding",
       "notLegal": "Not legally binding",
+      "upload": {
+        "title": "Upload the signed copy",
+        "hint": "Already signed elsewhere? Upload the signed copy (PDF, JPG or PNG) — the Sign contract step will complete.",
+        "override": "You are approving on behalf of the assigned signer.",
+        "choose": "Choose the signed file",
+        "submit": "Upload",
+        "done": "Signed copy uploaded",
+        "err": {
+          "FILE_TYPE": "This format is not accepted — only PDF, JPG or PNG.",
+          "FILE_TOO_LARGE": "The file is too large, choose a smaller one.",
+          "SIGN_UPLOAD_NOT_AWAITING": "The Sign contract step is no longer waiting for a signed copy (someone already handled it). Reload to see.",
+          "PACK_FORBIDDEN": "This signing step is not assigned to you, so you cannot upload.",
+          "unknown": "Could not upload, try again later."
+        }
+      },
       "err": {
         "ESIGN_PROVIDER_UNAVAILABLE": "This e-signature provider is unavailable, choose another one.",
         "ESIGN_RESEND_FAILED": "Re-sending the envelope failed — press Sign now to try again.",

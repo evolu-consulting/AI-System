@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { useEsign } from "../hooks/use-esign";
+import { useSignedUpload } from "../hooks/use-signed-upload";
 import {
   autoSignProvider,
   decideAutoSign,
@@ -29,6 +30,7 @@ import {
 } from "../lib/esign-view";
 import { EsignSendDialog } from "./EsignSendDialog";
 import { EsignSignMethodDialog } from "./EsignSignMethodDialog";
+import { SignedUploadBox } from "./SignedUploadBox";
 
 const fmt = (iso: string | null) => (iso ? viDateTime(iso) : "");
 const fmtDate = (iso: string) => viDate(iso);
@@ -259,9 +261,31 @@ function Headline({
     </span>
   );
 }
+const isFailed = (e: ESignEnvelopeOut | null): boolean =>
+  e !== null && (e.status === "declined" || e.status === "voided");
+/** CR-141 · đang chờ bản tải lên ⇒ bỏ gợi ý «chưa bật ký số / chưa gửi ký được» (không còn đúng: vẫn tải bản đã ký được). */
+const hintFor = (v: EsignView, uploading: boolean): string | null =>
+  uploading ? null : hintKey(v);
+
+/** CR-141 · chưa có phong bì ký số nhưng bước Ký hợp đồng đang chờ bản đã ký ⇒ thẻ chỉ có khối tải lên. */
+function UploadOnly({ up }: { up: ReturnType<typeof useSignedUpload> }) {
+  const { t } = useTranslation();
+  if (!up.show) return null;
+  return (
+    <section
+      id="esign-panel"
+      data-testid="esign-panel"
+      className="mb-3 rounded-lg border border-rule bg-sunk px-3 py-1.5 text-[13px]"
+    >
+      <b>{t("contracts.esign.title")}</b>
+      <SignedUploadBox up={up} />
+    </section>
+  );
+}
 export function EsignPanel({ id, locked, write }: { id: string; locked: boolean; write: boolean }) {
   const { t } = useTranslation();
   const es = useEsign(id);
+  const up = useSignedUpload(id);
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState(false);
   const s = es.q.data;
@@ -288,11 +312,11 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
       else signNowOf(s.providers, es, setMethod)();
     } else if (act === "focus") focusSignNow();
   }, [s]);
-  if (v.mode === "hidden" || !s) return null;
+  if (v.mode === "hidden" || !s) return <UploadOnly up={up} />;
   const e = s.envelope;
   const sk = statusKey(v, e?.status);
-  const hk = hintKey(v);
-  const failed = e !== null && (e.status === "declined" || e.status === "voided");
+  const hk = hintFor(v, up.show);
+  const failed = isFailed(e);
   return (
     <section
       id="esign-panel"
@@ -355,6 +379,7 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
         onClose={() => setOpen(false)}
         onSend={(rows, p) => void es.send(rows, p).then((ok) => ok && setOpen(false))}
       />
+      <SignedUploadBox up={up} />
       <MethodDialog s={s} e={e} es={es} open={method} onClose={() => setMethod(false)} />
     </section>
   );
