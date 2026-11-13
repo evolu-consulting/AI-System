@@ -64,6 +64,20 @@ defineRlsSuite({
         ),
     },
     {
+      name: "post_mentions",
+      seed: (o, t) =>
+        one(
+          o,
+          "insert into community.post_mentions (tenant_id, post_id, user_id, created_by) values ($1, $2, gen_random_uuid(), $3) returning id::text as id",
+          [t, post.get(t), who],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          "insert into community.post_mentions (id, tenant_id, post_id, user_id, created_by) values ($1, $2, $3, gen_random_uuid(), $4)",
+          [rnd(pk), t, post.get(t) as string, who],
+        ),
+    },
+    {
       name: "quote_saves",
       seed: (o, t) =>
         one(

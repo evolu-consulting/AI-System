@@ -269,6 +269,14 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       if (!visible(get(postId))) throw new Error("404 Không tìm thấy bài");
       return mentionables(q);
     },
+    mentionablePeople: async (q) =>
+      me.role === "partner"
+        ? []
+        : [
+            { userId: "u-lan", name: "Lan (Kế toán)" },
+            { userId: "u-minh", name: "Minh (Mua hàng)" },
+            { userId: "u-hung", name: "Hùng", orgName: "Hùng Thịnh" },
+          ].filter((x) => !q || x.name.toLowerCase().includes(q.toLowerCase())),
     addComment: async (postId, input) => {
       const p = get(postId);
       if (!visible(p)) throw new Error("404 Không tìm thấy bài");

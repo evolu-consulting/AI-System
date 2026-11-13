@@ -208,6 +208,13 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
               <Highlighted text={p.body} hits={p.hits} field="body" />
             </p>
           )}
+          {p.mentionedUsers && p.mentionedUsers.length > 0 && (
+            <p className="pmentions" data-testid="post-mentions">
+              {t("community.draft.mentionShown", {
+                names: p.mentionedUsers.map((m) => m.name).join(", "),
+              })}
+            </p>
+          )}
         </div>
       )}
       {deal && (

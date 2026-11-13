@@ -127,6 +127,13 @@
       "when": 1807000400000,
       "tag": "0018_cr130_p3b_into_contracts",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1807000500000,
+      "tag": "0019_cr145_post_mentions",
+      "breakpoints": true
     }
   ]
 }

@@ -11,8 +11,10 @@ import {
   type Cand,
   commentRecipients,
   newPostKind,
+  postMentionText,
 } from "../domain/notify.rules";
 import { commentCandidates, wantedOnly } from "./notify.repo";
+import { mentionedIds } from "./post-mention.repo";
 import { savedUsers } from "./quote.repo";
 
 /** Phần repo trong tx mà `PackUow` đưa cho gói (`notify` do bộ khung ghép sẵn). */
@@ -37,7 +39,13 @@ export type CommunityEventDeps = {
   warn?: (m: string, meta: Record<string, unknown>) => void;
 };
 
-type Item = { c: Cand; post: { id: string; title: string }; o: Parameters<typeof bellText>[2] };
+type Item = {
+  c: Cand;
+  post: { id: string; title: string };
+  o: Parameters<typeof bellText>[2];
+  /** Chữ riêng (CR-145 nhắc người trong bài); vắng ⇒ `bellText(kind)`. */
+  text?: ReturnType<typeof bellText>;
+};
 
 const CHUNK = 500; // trần lô của `notify.enqueue`
 
@@ -53,7 +61,7 @@ export async function deliver(r: EventTx, items: readonly Item[]): Promise<numbe
   const rows = items
     .filter((i) => want.has(key(i.c)))
     .map((i) => {
-      const t = bellText(i.c.kind, i.post, i.o);
+      const t = i.text ?? bellText(i.c.kind, i.post, i.o);
       return {
         user_id: i.c.userId,
         kind: bellKind(i.c.kind),
@@ -97,6 +105,14 @@ export type NewPostEvent = {
   actorName: string;
   titleMasked: string;
   product?: string;
+};
+/** CR-145: người được nhắc trong bài. `userIds` vắng ⇒ đọc `post_mentions` (bài vừa được duyệt). Người đăng không nhận. */
+export type PostMentionsEvent = {
+  tenantId: string;
+  postId: string;
+  actor: Actor;
+  titleMasked: string;
+  userIds?: readonly string[];
 };
 export type PriceEditedEvent = {
   tenantId: string;
@@ -190,6 +206,23 @@ export function communityEvents(d: CommunityEventDeps) {
           ),
         ];
         return d.uow.system(i.tenantId, (r) => deliver(r, items));
+      }),
+
+    /** CR-145 · nhắc NGƯỜI trong bài đăng (đã commit / đã duyệt) ⇒ «X nhắc bạn trong một bài»; một lô `notify.enqueue`, không báo chính người đăng. */
+    emitPostMentions: (i: PostMentionsEvent): Promise<number> =>
+      safely("postMentions", i, async () => {
+        if (i.userIds && i.userIds.length === 0) return 0;
+        return d.uow.system(i.tenantId, async (r) => {
+          const all = i.userIds ?? (await mentionedIds(r.tx, i.tenantId, i.postId));
+          const users = all.filter((u) => u !== i.actor.userId);
+          const post = { id: i.postId, title: i.titleMasked };
+          const o = { actor: i.actor.name, ref: i.postId };
+          const text = postMentionText(post, o);
+          return deliver(
+            r,
+            users.map((userId) => ({ c: { userId, kind: "mention" as const }, post, o, text })),
+          );
+        });
       }),
 
     /** NCC sửa giá bài đã lưu báo giá (đã commit) ⇒ CHỈ chủ quản đã lưu (R29: không gửi gì cho NCC). `price` = giá mới (khoá trùng). */

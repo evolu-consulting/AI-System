@@ -95,6 +95,18 @@ export function createHttpApi(): CommunityApi {
       api(`${BASE}/posts/${enc(postId)}/comments`, { query: { cursor, limit: 100 } }),
     listMentionables: (postId, q) =>
       api(`${BASE}/posts/${enc(postId)}/mentionables`, { query: { q: q || undefined, limit: 20 } }),
+    mentionablePeople: (q, scope) =>
+      api(`${BASE}/mentionable-people`, {
+        query: {
+          q: q || undefined,
+          limit: 20,
+          type: scope?.type,
+          mode: scope?.mode,
+          cats: scope?.cats?.join(",") || undefined,
+          audCats: scope?.audCats?.join(",") || undefined,
+          companies: scope?.companies?.join(",") || undefined,
+        },
+      }),
     addComment: (postId, input) =>
       api(`${BASE}/posts/${enc(postId)}/comments`, { method: "POST", body: input }),
     editComment: (postId, id, text) =>

@@ -33,6 +33,8 @@ export type PostRow = {
   cats: string[];
   aud: { mode: string; cats: string[]; companies: string[] } | null;
   media: MediaJson[];
+  /** CR-145: người được nhắc (đối tác chỉ nhận phần tử là chủ quản hoặc công ty mình — lọc ở SQL). */
+  mentions: { user_id: string; name: string }[] | null;
   comments: number;
   /** Chỉ chủ quản (host=true): dấu đã lưu báo giá + khoá đối tác SHT của bên đăng; đối tác: null. */
   quotes: QuoteMarkRow[] | null;
@@ -98,6 +100,9 @@ const itemJson: SQL = sql`json_build_object(
     then json_build_object('mode', v.aud_mode, 'cats', v.aud_cats, 'companies', v.aud_orgs) end,
   'media', coalesce((select json_agg(json_build_object('id', m.id, 'kind', m.kind, 'label', m.label, 'url', m.url,
       'file_id', m.file_id, 'name', m.name, 'mime', m.mime, 'size', m.size_bytes) order by m.position) from community.media m where m.post_id = v.id), '[]'::json),
+  'mentions', (select json_agg(json_build_object('user_id', mu.user_id, 'name', mu.user_name) order by mu.created_at, mu.user_name)
+    from community.post_mentions mu where mu.post_id = v.id
+      and ((select packs.viewer_ext_org()) is null or mu.user_org is null or mu.user_org = (select packs.viewer_ext_org()))),
   'comments', (select count(*)::int from community.comments c where c.post_id = v.id),
   'quotes', case when (select packs.viewer_ext_org()) is null then (select json_agg(json_build_object('item_idx', q.item_idx,
     'comment_id', q.comment_ref, 'comment_deleted', (q.comment_ref is not null and q.comment_id is null), 'by', q.saved_by_name, 'at', q.saved_at, 'product_id', q.product_id,

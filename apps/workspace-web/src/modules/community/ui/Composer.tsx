@@ -17,6 +17,7 @@ import { type Draft, draftErrors, emptyDraft, toCreateInput } from "../domain/co
 import { DEMO_PRODUCTS } from "../domain/demo-products";
 import { initials } from "../domain/format";
 import { formatSize } from "../domain/media";
+import { defaultPostType, mentionScope } from "../domain/mention";
 import { defaultAudience } from "../domain/visibility";
 import { numLocale, t } from "../i18n";
 import { CategoryDialog } from "./CategoryDialog";
@@ -30,6 +31,7 @@ import {
   IconTypeSell,
   IconX,
 } from "./icons";
+import { MentionPeople } from "./MentionPeople";
 
 const TYPE_ICON = { sell: IconTypeSell, buy: IconTypeBuy, note: IconTypeNote } as const;
 
@@ -99,7 +101,14 @@ function AudiencePicker({
 
 export function Composer({ onPosted }: { onPosted?: () => void }) {
   const { api, viewer, isHostViewer, bump, toast } = useApp();
-  const [draft, setDraft] = useState<Draft>(emptyDraft("sell"));
+  const types: PostType[] = isHostViewer
+    ? ["sell", "buy", "note"]
+    : ([
+        viewer.labels.includes("supplier") ? "sell" : null,
+        viewer.labels.includes("customer") ? "buy" : null,
+      ].filter(Boolean) as PostType[]);
+  // CR-145: chủ quản mặc định «Thông báo»; đối tác ⇒ loại đầu tiên được phép
+  const [draft, setDraft] = useState<Draft>(() => emptyDraft(defaultPostType(types)));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [partners, setPartners] = useState<PartnerOrg[]>([]);
   const [cats, setCats] = useState<string[]>([]);
@@ -119,15 +128,9 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
     api.listCats().then(setCats, () => undefined);
   }, [api]);
 
-  const types: PostType[] = isHostViewer
-    ? ["sell", "buy", "note"]
-    : ([
-        viewer.labels.includes("supplier") ? "sell" : null,
-        viewer.labels.includes("customer") ? "buy" : null,
-      ].filter(Boolean) as PostType[]);
   useEffect(() => {
-    const first = types[0];
-    if (first && !types.includes(draft.type)) setDraft(emptyDraft(first));
+    if (types.length > 0 && !types.includes(draft.type))
+      setDraft(emptyDraft(defaultPostType(types)));
   }, [types, draft.type]);
 
   const publish = async () => {
@@ -264,6 +267,11 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
           {draft.type !== "note" && (
             <DraftFields draft={draft} set={setDraft} errors={errors} cats={cats} />
           )}
+          <MentionPeople
+            mentions={draft.mentions}
+            onChange={(mentions) => setDraft({ ...draft, mentions })}
+            scope={mentionScope(draft)}
+          />
           {draft.media.length > 0 && (
             <div className="attachrow">
               {draft.media.map((m) => (

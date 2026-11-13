@@ -62,6 +62,9 @@ export function postView(a: Access, n: Names, r: PostRow, hint?: HostHint): Post
         : {}),
     })),
     commentCount: r.comments,
+    ...(r.mentions?.length
+      ? { mentionedUsers: r.mentions.map((m) => ({ userId: m.user_id, name: m.name })) }
+      : {}),
     actions: postActions(
       { type: r.type, authorOrg: r.author_org, status: r.status, hidden: r.hidden },
       { org: a.org },

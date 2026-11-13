@@ -102,6 +102,17 @@ export function titleQuote(s: string): string {
 
 export type BellText = { title: string; body: string; link: string; dedup: string };
 
+/** CR-145 · «{actor} nhắc bạn trong một bài» (nhắc NGƯỜI trong bài đăng). Cùng loại tuỳ chọn `mention` («Được nhắc»); một người một chuông mỗi bài. */
+export function postMentionText(p: PostRef, o: { actor: string }): BellText {
+  const t = titleQuote(p.title);
+  return {
+    title: t ? `${o.actor} nhắc bạn trong bài: ${t}` : `${o.actor} nhắc bạn trong một bài`,
+    body: "",
+    link: `/community?post=${p.id}`,
+    dedup: `pm:${p.id}`,
+  };
+}
+
 /** Chữ + link + khoá trùng. `body` = tên người gây ra sự kiện (chuông hiển thị `actorName`). Tiêu đề bài luôn là bản đã che. */
 export function bellText(k: BellKind, p: PostRef, o: { actor: string; ref: string }): BellText {
   const post = `/community?post=${p.id}`; // đường dẫn trong app (chuông chung của shell): Bảng tin cuộn tới đúng bài

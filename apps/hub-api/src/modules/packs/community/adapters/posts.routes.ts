@@ -3,6 +3,7 @@
 import {
   CreatePostInputSchema,
   FeedQuerySchema,
+  MentionablePeopleQuerySchema,
   PostActionInputSchema,
   type PostSource,
   UpdatePostInputSchema,
@@ -16,6 +17,7 @@ import { type Access, accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
 import * as posts from "./post.service";
 import type { FeedFilter } from "./post.sql";
+import { suggest as suggestPeople } from "./post-mention.service";
 import { quoteDeps } from "./quote.routes";
 import { hostHints } from "./quote.service";
 import { namesOf, postView } from "./views";
@@ -80,11 +82,29 @@ export function postsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
 
   r.get("/feed", async (c) => c.json(await feedJson(d, c, await access(c))));
 
+  /** CR-145: gợi ý người «Nhắc tên» (≤ 20, tìm `q`); phạm vi theo bài (`postId`) hoặc bản nháp. Không cấu hình ⇒ rỗng. */
+  r.get("/mentionable-people", async (c) => {
+    const a = await access(c);
+    const raw = withoutScopeKeys(c.req.query());
+    const q = parseWith(MentionablePeopleQuerySchema, {
+      ...raw,
+      ...(raw.limit === undefined ? {} : { limit: Number(raw.limit) }),
+    });
+    return c.json(d.mention ? await suggestPeople(d.uow, a, d.mention, q) : []);
+  });
+
   r.post("/posts", async (c) => {
     const a = await access(c, "write");
     const input = parseWith(CreatePostInputSchema, await readJson(c));
     if (a.org !== null && input.audience) throw audienceNotAllowed();
-    const { row, contactDetected } = await posts.create(d.uow, a, input, d.events, d.flows);
+    const { row, contactDetected } = await posts.create(
+      d.uow,
+      a,
+      input,
+      d.events,
+      d.flows,
+      d.mention,
+    );
     if (contactDetected) c.header("X-Contact-Detected", "1"); // HT-54: nhắc người đăng, không chặn
     return c.json(postView(a, namesOf(a), row), 201);
   });
@@ -95,7 +115,11 @@ export function postsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const input = parseWith(UpdatePostInputSchema, await readJson(c));
     if (a.org !== null && input.audience) throw audienceNotAllowed();
     return c.json(
-      postView(a, namesOf(a), await posts.update(d.uow, a, id, input, d.events, d.flows)),
+      postView(
+        a,
+        namesOf(a),
+        await posts.update(d.uow, a, id, input, d.events, d.flows, d.mention),
+      ),
     );
   });
 

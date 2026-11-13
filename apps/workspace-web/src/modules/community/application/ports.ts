@@ -1,6 +1,7 @@
 // CR-102 · C5 · giao diện API mà UI dùng. Hai adapter: `mock` (in-memory, chạy ngay) và `http` (C3 nối `/pack/community/*`).
 // Hình dữ liệu = `@ai/contracts/community`. UI không lọc quyền xem: mọi thứ do adapter/server quyết.
 import type {
+  AudienceMode,
   CommentPage,
   CommentView,
   CommunityBrand,
@@ -17,11 +18,13 @@ import type {
   JoinRequest,
   JoinRequestInput,
   Mention,
+  MentionablePerson,
   ModerationItem,
   ModerationList,
   PartnerOrg,
   PostActionInput,
   PostSource,
+  PostType,
   PostView,
   Profile,
   ProfileMedia,
@@ -33,6 +36,15 @@ import type {
   UpdatePostInput,
 } from "@ai/contracts/community";
 import type { Parsed, Route } from "../domain/route";
+
+/** Phạm vi bản nháp để server tính "ai thấy được bài" (đối tác: bỏ qua). */
+export type PeopleScope = {
+  type?: PostType;
+  mode?: AudienceMode;
+  cats?: string[];
+  audCats?: string[];
+  companies?: string[];
+};
 
 /** Cổng định tuyến do app chủ cấp (router gộp CR-118 hoặc vỏ mỏng tạm của community-web); module không biết `location`. */
 export interface RouterPort {
@@ -86,6 +98,8 @@ export interface CommunityApi {
   listComments(postId: string, cursor?: string): Promise<CommentPage>;
   /** `GET /pack/community/posts/:id/mentionables?q=` — công ty nhắc (@) được trên bài này (đối tác: rỗng). */
   listMentionables(postId: string, q?: string): Promise<Mention[]>;
+  /** CR-145 · `GET /pack/community/mentionable-people` — người «Nhắc tên» được trong bài (≤ 20, tìm `q`); phạm vi theo bản nháp. */
+  mentionablePeople(q: string, scope?: PeopleScope): Promise<MentionablePerson[]>;
   /** `POST /pack/community/posts/:id/comments` — `mentions` = id công ty (≤ 10); ngoài tập cho phép ⇒ 422 MENTION_NOT_ALLOWED. */
   addComment(postId: string, input: CreateCommentInput): Promise<CommentView>;
   /** `PATCH /pack/community/posts/:id/comments/:cid` — người viết sửa chữ. */

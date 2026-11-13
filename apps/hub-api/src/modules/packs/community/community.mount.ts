@@ -36,6 +36,7 @@ import type { CommunityEventDeps } from "./adapters/notify.events";
 import { communityEvents } from "./adapters/notify.events";
 import { startCommunitySweeper } from "./adapters/notify.sweep";
 import { orgRoutes } from "./adapters/org.routes";
+import { peopleReader } from "./adapters/people.reader";
 import { postsRoutes } from "./adapters/posts.routes";
 import { profileRoutes } from "./adapters/profile.routes";
 import { quoteRoutes } from "./adapters/quote.routes";
@@ -106,6 +107,13 @@ export function communityModule(
     partners: opts.partners,
     warn: (m, meta) => console.warn(m, meta),
     onApproved: async (p, tenantId) => {
+      // CR-145: bài được duyệt ⇒ báo người được nhắc (đọc `post_mentions`; dedup theo bài+người nên gọi lại vô hại)
+      await events.emitPostMentions({
+        tenantId,
+        postId: p.id,
+        actor: { userId: p.author_user_id, name: p.author_name },
+        titleMasked: p.title_masked,
+      });
       await events.emitNewPost({
         tenantId,
         postId: p.id,
@@ -129,6 +137,11 @@ export function communityModule(
     uow,
     events,
     flows,
+    mention: {
+      hosts,
+      orgMembers: (t, ids) => resolver.orgMembers(t, ids),
+      people: peopleReader(db),
+    },
     shtUrl: opts.shtUrl ?? "/",
     contact: selfContactOf(db),
     quotes: opts.quotes,

@@ -105,6 +105,11 @@ const Body = Text(5000);
 const Title = Text(200);
 const Cats = z.array(z.string().min(1).max(80)).max(10).default([]);
 
+/** CR-145 · nhắc NGƯỜI trong bài đăng: tối đa 10 (server chỉ nhận người thấy được bài — 422 `MENTION_USER_NOT_ALLOWED`). */
+export const POST_MENTIONS_MAX = 10;
+export const MENTION_PEOPLE_MAX = 20;
+const MentionUserIds = z.array(z.uuid()).max(POST_MENTIONS_MAX).optional();
+
 export const CreatePostInputSchema = z.discriminatedUnion("type", [
   z.strictObject({
     type: z.literal("sell"),
@@ -115,6 +120,7 @@ export const CreatePostInputSchema = z.discriminatedUnion("type", [
     media: z.array(MediaItemSchema).max(12).default([]),
     /** Chỉ chủ quản; bỏ trống ⇒ mặc định theo loại (D2). Đối tác gửi trường này ⇒ 422. */
     audience: PostAudienceSchema.optional(),
+    mentionUserIds: MentionUserIds,
   }),
   z.strictObject({
     type: z.literal("buy"),
@@ -124,6 +130,7 @@ export const CreatePostInputSchema = z.discriminatedUnion("type", [
     cats: Cats,
     media: z.array(MediaItemSchema).max(12).default([]),
     audience: PostAudienceSchema.optional(),
+    mentionUserIds: MentionUserIds,
   }),
   z.strictObject({
     type: z.literal("note"),
@@ -133,6 +140,7 @@ export const CreatePostInputSchema = z.discriminatedUnion("type", [
     cats: Cats,
     media: z.array(MediaItemSchema).max(12).default([]),
     audience: PostAudienceSchema.optional(),
+    mentionUserIds: MentionUserIds,
   }),
 ]);
 export type CreatePostInput = z.infer<typeof CreatePostInputSchema>;
@@ -145,6 +153,8 @@ export const UpdatePostInputSchema = z.strictObject({
   cats: Cats.optional(),
   media: z.array(MediaItemSchema).max(12).optional(),
   audience: PostAudienceSchema.optional(),
+  /** Có ⇒ THAY toàn bộ danh sách người được nhắc (rỗng = bỏ hết); vắng ⇒ giữ nguyên. */
+  mentionUserIds: MentionUserIds,
 });
 export type UpdatePostInput = z.infer<typeof UpdatePostInputSchema>;
 
@@ -153,6 +163,31 @@ export const PostActionInputSchema = z.strictObject({
   action: z.enum(["archive", "unarchive", "done", "delete", "hide", "unhide"]),
 });
 export type PostActionInput = z.infer<typeof PostActionInputSchema>;
+
+/** Người được nhắc trong bài. Đối tác chỉ nhận phần tử là chủ quản hoặc công ty mình. */
+export const PostMentionSchema = z.strictObject({ userId: z.string(), name: z.string() });
+export type PostMention = z.infer<typeof PostMentionSchema>;
+
+/** `GET /pack/community/mentionable-people`: gợi ý người nhắc được. `postId` (sửa bài) hoặc phạm vi bản nháp (`type`/`mode`/`cats`/`companies`, danh sách cách nhau dấu phẩy). */
+export const MentionablePeopleQuerySchema = z.strictObject({
+  q: z.string().max(80).optional(),
+  limit: z.number().int().min(1).max(MENTION_PEOPLE_MAX).default(MENTION_PEOPLE_MAX),
+  postId: z.uuid().optional(),
+  type: z.enum(POST_TYPES).optional(),
+  mode: z.enum(["all", "suppliers", "buyers", "cats", "companies"]).optional(),
+  cats: z.string().max(1000).optional(),
+  audCats: z.string().max(1000).optional(),
+  companies: z.string().max(1000).optional(),
+});
+export type MentionablePeopleQuery = z.input<typeof MentionablePeopleQuerySchema>;
+
+export const MentionablePersonSchema = z.strictObject({
+  userId: z.string(),
+  name: z.string(),
+  /** Tên công ty đối tác; chủ quản ⇒ vắng. */
+  orgName: z.string().optional(),
+});
+export type MentionablePerson = z.infer<typeof MentionablePersonSchema>;
 
 export const PostViewSchema = z.strictObject({
   id: z.string(),
@@ -175,6 +210,8 @@ export const PostViewSchema = z.strictObject({
   cats: z.array(z.string()),
   media: z.array(MediaItemSchema),
   commentCount: z.number().int().nonnegative(),
+  /** CR-145 · người được nhắc ("Nhắc: A, B"); vắng khi không ai. */
+  mentionedUsers: z.array(PostMentionSchema).optional(),
   /** Chỉ chủ quản nhận; user ngoài: không có trường này. */
   hidden: z.boolean().optional(),
   hits: z.array(ContentHitSchema).optional(),

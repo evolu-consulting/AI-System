@@ -38,6 +38,7 @@ import {
 import type { CommunityEvents } from "./notify.events";
 import { partnerRows } from "./org.repo";
 import { type FeedFilter, type FeedRaw, feedQuery, type PostRow, postById } from "./post.sql";
+import { type MentionDeps, resolvePeople, saveMentions } from "./post-mention.service";
 import {
   applyAction,
   editable,
@@ -133,6 +134,7 @@ export async function create(
   input: CreatePostInput,
   events?: CommunityEvents,
   flows?: FlowDeps,
+  mention?: MentionDeps,
 ): Promise<{ row: PostRow; contactDetected: boolean }> {
   const audience =
     a.org === null ? (checkAudience(a, input.audience) ?? defaultAudience(input.type)) : null;
@@ -140,6 +142,7 @@ export async function create(
     { title: input.title, body: input.body, fields: input.fields as Fields },
     otherOrgNames(a),
   );
+  const people = await resolvePeople(mention, a, input.mentionUserIds); // CR-145: danh bạ MỘT câu, ngoài tx
   const moderated = await moderationEnabled(flows, a.who.tenantId);
   const trig = await triggersEnabled(flows, a.who.tenantId); // CR-122: bật ⇒ sự kiện `post.created` thay agent screen của khe cũ
   const row = await uow.tenant(a.who, async ({ tx }) => {
@@ -164,6 +167,7 @@ export async function create(
       content.fields.raw,
       await withFiles(tx, a, safeMedia(a, input.media), null),
     );
+    if (people.length > 0) await saveMentions(tx, a, id, people); // CR-145: 422 ⇒ rollback cả bài
     // CR-120: khe duyệt bài có def ⇒ mở lượt trong CÙNG tx (bài ẩn với người khác tới khi duyệt)
     if (moderated) await openModeration(tx, id);
     if (emitsEvents(flows))
@@ -194,6 +198,14 @@ export async function create(
     titleMasked: content.title.masked,
     ...(content.fields.raw.product ? { product: content.fields.raw.product } : {}),
   });
+  // CR-145: chuông «nhắc bạn» sau commit (bài chờ duyệt: gửi lúc được duyệt — `onApproved`)
+  await events?.emitPostMentions({
+    tenantId: a.who.tenantId,
+    postId: post.id,
+    actor: { userId: a.who.userId, name: actorName(a) },
+    titleMasked: content.title.masked,
+    userIds: people.map((p) => p.id),
+  });
   return { row: post, contactDetected: content.contactDetected };
 }
 
@@ -204,48 +216,74 @@ export async function update(
   input: UpdatePostInput,
   events?: CommunityEvents,
   flows?: FlowDeps,
+  mention?: MentionDeps,
 ): Promise<PostRow> {
+  const people =
+    input.mentionUserIds === undefined
+      ? null
+      : await resolvePeople(mention, a, input.mentionUserIds);
   const moderated = await moderationEnabled(flows, a.who.tenantId);
-  const { row, priceEdit, reopened } = await uow.tenant(a.who, async ({ tx }) => {
-    const cur = await editable(tx, id, { org: a.org, userId: a.who.userId });
-    if (!cur) throw appError("NOT_FOUND");
-    const fields = mergedFields(cur.type, cur.fields_raw, input.fields);
-    const content = storeContent(
-      { title: input.title ?? cur.title_raw, body: input.body ?? cur.body_raw, fields },
-      otherOrgNames(a),
-    );
-    await updatePost(tx, id, content, {
-      cats: input.cats ?? null,
-      audience: checkAudience(a, input.audience),
-    });
-    await replaceChildren(
-      tx,
-      { tenantId: a.who.tenantId, postId: id },
-      content.fields.raw,
-      await withFiles(tx, a, input.media ? safeMedia(a, input.media) : null, id),
-    );
-    const priceEdit =
-      cur.type === "sell" && priceChanged(cur.fields_raw.price, content.fields.raw.price)
-        ? {
-            tenantId: a.who.tenantId,
-            postId: id,
-            authorOrg: cur.author_org,
-            actorName: actorName(a),
-            titleMasked: content.title.masked,
-            price: content.fields.raw.price ?? "",
-          }
-        : null;
-    // CR-120: sửa tiêu đề/nội dung/tệp khi khe duyệt bật ⇒ mở lại lượt duyệt trong CÙNG tx (không đi vòng qua duyệt)
-    const changed =
-      content.title.raw !== cur.title_raw ||
-      content.body.raw !== cur.body_raw ||
-      input.media != null;
-    const reopened = moderated && changed && (await reopenModeration(tx, id));
-    return { row: await postById(tx, id), priceEdit, reopened };
-  });
+  const { row, priceEdit, reopened, added, titleMasked } = await uow.tenant(
+    a.who,
+    async ({ tx }) => {
+      const cur = await editable(tx, id, { org: a.org, userId: a.who.userId });
+      if (!cur) throw appError("NOT_FOUND");
+      const fields = mergedFields(cur.type, cur.fields_raw, input.fields);
+      const content = storeContent(
+        { title: input.title ?? cur.title_raw, body: input.body ?? cur.body_raw, fields },
+        otherOrgNames(a),
+      );
+      await updatePost(tx, id, content, {
+        cats: input.cats ?? null,
+        audience: checkAudience(a, input.audience),
+      });
+      await replaceChildren(
+        tx,
+        { tenantId: a.who.tenantId, postId: id },
+        content.fields.raw,
+        await withFiles(tx, a, input.media ? safeMedia(a, input.media) : null, id),
+      );
+      const priceEdit =
+        cur.type === "sell" && priceChanged(cur.fields_raw.price, content.fields.raw.price)
+          ? {
+              tenantId: a.who.tenantId,
+              postId: id,
+              authorOrg: cur.author_org,
+              actorName: actorName(a),
+              titleMasked: content.title.masked,
+              price: content.fields.raw.price ?? "",
+            }
+          : null;
+      // CR-120: sửa tiêu đề/nội dung/tệp khi khe duyệt bật ⇒ mở lại lượt duyệt trong CÙNG tx (không đi vòng qua duyệt)
+      // CR-145: sửa danh sách người được nhắc (thay toàn bộ); chỉ người MỚI được báo
+      const added = people ? await saveMentions(tx, a, id, people) : [];
+      const changed =
+        content.title.raw !== cur.title_raw ||
+        content.body.raw !== cur.body_raw ||
+        input.media != null ||
+        added.length > 0;
+      const reopened = moderated && changed && (await reopenModeration(tx, id));
+      return {
+        row: await postById(tx, id),
+        priceEdit,
+        reopened,
+        added,
+        titleMasked: content.title.masked,
+      };
+    },
+  );
   if (reopened && flows) startScreen(flows, a.who, id);
   // review TB-2: chuông sửa giá phát SAU commit (không mở tx lồng khi đang giữ tx của bài)
   if (priceEdit) await events?.emitPriceEdited(priceEdit);
+  // CR-145: bài đang chờ duyệt (vừa mở lại lượt) ⇒ chuông gửi lúc được duyệt; bài đã đăng ⇒ báo ngay người mới
+  if (added.length > 0 && !reopened)
+    await events?.emitPostMentions({
+      tenantId: a.who.tenantId,
+      postId: id,
+      actor: { userId: a.who.userId, name: actorName(a) },
+      titleMasked,
+      userIds: added,
+    });
   return found(row);
 }
 

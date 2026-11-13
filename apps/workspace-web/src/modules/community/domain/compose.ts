@@ -7,6 +7,7 @@ import {
   type PostType,
 } from "@ai/contracts/community";
 import { t } from "../i18n";
+import { type DraftMention, mentionIds } from "./mention";
 
 export type Draft = {
   type: PostType;
@@ -20,6 +21,8 @@ export type Draft = {
   cats: string[];
   media: MediaItem[];
   audience?: PostAudience;
+  /** CR-145: «Nhắc tên» — người được nhắc (≤ 10), server chỉ nhận người thấy được bài. */
+  mentions: DraftMention[];
 };
 
 export const emptyDraft = (type: PostType = "sell"): Draft => ({
@@ -33,6 +36,7 @@ export const emptyDraft = (type: PostType = "sell"): Draft => ({
   budget: "",
   cats: [],
   media: [],
+  mentions: [],
 });
 
 /** Lỗi theo trường; rỗng = hợp lệ. */
@@ -64,6 +68,7 @@ export function toCreateInput(d: Draft, isHostViewer: boolean): CreatePostInput 
     cats: d.cats,
     media: d.media,
     ...(isHostViewer && d.audience ? { audience: d.audience } : {}),
+    ...(d.mentions.length > 0 ? { mentionUserIds: mentionIds(d.mentions) } : {}),
   };
   if (d.type === "sell") {
     const price = d.price.trim();
