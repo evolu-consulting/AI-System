@@ -22,18 +22,14 @@ const run = <T>(p: Promise<T>): Promise<T> =>
     if (e.kind === "not_found") throw appError("NOT_FOUND");
     if (e.kind === "forbidden") throw new AppError("PACK_FORBIDDEN", 403, "Forbidden");
     if (e.kind === "file_content")
-      throw new AppError(
-        "FILE_TYPE",
-        415,
-        `Tệp không đúng là PDF, JPG hoặc PNG thật — mở tệp kiểm tra lại rồi tải lên lần nữa`,
-      );
+      throw new AppError("SIGN_UPLOAD_CONTENT", 415, "File content is not a real PDF, JPG or PNG");
     if (e.kind === "not_awaiting")
       throw new AppError(
         "SIGN_UPLOAD_NOT_AWAITING",
         409,
         "Contract is not waiting for a signed copy",
       );
-    throw new AppError("FILE_TYPE", 415, `Định dạng chưa nhận — chỉ nhận ${SIGNED_UPLOAD_LABEL}`);
+    throw new AppError("FILE_TYPE", 415, `Unsupported file type — only ${SIGNED_UPLOAD_LABEL}`);
   });
 
 export function signUploadRoutes(

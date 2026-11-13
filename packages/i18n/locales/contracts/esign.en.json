@@ -61,6 +61,7 @@
         "done": "Signed copy uploaded",
         "err": {
           "FILE_TYPE": "This format is not accepted — only PDF, JPG or PNG.",
+          "SIGN_UPLOAD_CONTENT": "The file is not a real PDF, JPG or PNG — check the file and upload again.",
           "FILE_TOO_LARGE": "The file is too large, choose a smaller one.",
           "SIGN_UPLOAD_NOT_AWAITING": "The Sign contract step is no longer waiting for a signed copy (someone already handled it). Reload to see.",
           "PACK_FORBIDDEN": "This signing step is not assigned to you, so you cannot upload.",

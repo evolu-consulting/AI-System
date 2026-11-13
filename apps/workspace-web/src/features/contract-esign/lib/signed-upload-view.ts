@@ -16,6 +16,7 @@ export const isSignedFileName = (name: string): boolean => EXT.test(name);
 
 const ERR_CODES = new Set([
   "FILE_TYPE",
+  "SIGN_UPLOAD_CONTENT",
   "FILE_TOO_LARGE",
   "SIGN_UPLOAD_NOT_AWAITING",
   "PACK_FORBIDDEN",

@@ -2,23 +2,9 @@
 // `contracts.files` + `esign_envelopes.signed_file_id` (provider `upload`, đã `completed`) — một nguồn cho «Hồ sơ», chi tiết HĐ, tải về.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { SignedUploadRow, SignUploadRepo } from "../application/sign-upload.usecase";
 
-export type SignUploadRepo = ReturnType<typeof signUploadRepo>;
-export type SignedUploadRow = {
-  id: string;
-  contractId: string;
-  org: string;
-  fileId: string;
-  versionId: string;
-  name: string;
-  mime: string;
-  size: number;
-  by: string;
-  override: boolean;
-  signerName: string;
-};
-
-export function signUploadRepo(tx: Tx, t: string) {
+export function signUploadRepo(tx: Tx, t: string): SignUploadRepo {
   return {
     /** found=false ⇒ HĐ không thấy (404). Đang chờ = sự kiện mới nhất trong {mở chờ, đã tải, đã ký số} là «mở chờ». */
     async awaiting(

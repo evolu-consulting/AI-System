@@ -2,7 +2,6 @@
 // Ghi xong ⇒ `after` (bắn `esign.completed` thả bước chờ + huỷ phong bì ký số còn mở nếu có).
 import type { PackUow, PackWho } from "../../kit/public";
 import { orgForTenant } from "../../kit/public";
-import type { SignUploadRepo } from "../adapters/sign-upload.repo";
 import { checkSignedUpload, signedUploadVerdict } from "../domain/sign-upload.rules";
 
 export class SignUploadFail extends Error {
@@ -12,6 +11,26 @@ export class SignUploadFail extends Error {
     super(kind);
   }
 }
+export type SignedUploadRow = {
+  id: string;
+  contractId: string;
+  org: string;
+  fileId: string;
+  versionId: string;
+  name: string;
+  mime: string;
+  size: number;
+  by: string;
+  override: boolean;
+  signerName: string;
+};
+/** Cổng repo (cài ở `adapters/sign-upload.repo.ts`). */
+export type SignUploadRepo = {
+  /** found=false ⇒ HĐ không thấy. Đang chờ = sự kiện mới nhất trong {mở chờ, đã tải, đã ký số} là «mở chờ». */
+  awaiting(contractId: string): Promise<{ found: boolean; awaiting: boolean; signers: string[] }>;
+  /** Ghi tệp + phong bì «upload» đã hoàn tất + dòng lịch sử; bước đã xong ⇒ false. */
+  insertSigned(r: SignedUploadRow): Promise<boolean>;
+};
 type R = { signUpload: SignUploadRepo };
 
 export function signUploadUsecase(d: {

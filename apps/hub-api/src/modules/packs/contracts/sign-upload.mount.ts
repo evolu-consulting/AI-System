@@ -9,14 +9,23 @@ import { signUploadRepo } from "./adapters/sign-upload.repo";
 import { signUploadRoutes } from "./adapters/sign-upload.routes";
 import type { ESignFiles } from "./application/esign.ports";
 import { type SignUploadUsecase, signUploadUsecase } from "./application/sign-upload.usecase";
-import type { CompletedHook } from "./esign.mount";
+import type { ESignEvent } from "./domain/esign-event.rules";
+
+/** Hook thả bước chờ (cùng khuôn `CompletedHook` của `esign.mount`, khai ở đây để không import vòng). */
+type CompletedFn = (
+  tenantId: string,
+  contractId: string,
+  event: ESignEvent,
+  data: Record<string, string>,
+) => Promise<void>;
+
 import { contractsMaxBytes } from "./upload.mount";
 
 export function signUploadOf(
   db: Db,
   files: ESignFiles | null,
   me: (who: PackWho) => Promise<{ name: string }>,
-  hooks: { completed: CompletedHook; voidIt: (who: PackWho, id: string) => Promise<void> },
+  hooks: { completed: CompletedFn; voidIt: (who: PackWho, id: string) => Promise<void> },
 ): SignUploadUsecase | null {
   if (!files) return null;
   return signUploadUsecase({
@@ -31,7 +40,13 @@ export function signUploadOf(
     },
     me,
     newId: () => Bun.randomUUIDv7(),
-    voidOpen: (who, id) => hooks.voidIt(who, id).catch(() => undefined),
+    voidOpen: (who, id) =>
+      hooks.voidIt(who, id).catch((e: unknown) =>
+        logger.warn("sign-upload-void-open-failed", {
+          contract_id: id,
+          error: e instanceof Error ? e.name : "unknown",
+        }),
+      ),
     after: async (who, id, data) => {
       const warn = (m: string) => (e: unknown) =>
         logger.warn(m, { contract_id: id, error: e instanceof Error ? e.name : "unknown" });

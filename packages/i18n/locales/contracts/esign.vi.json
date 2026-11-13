@@ -61,6 +61,7 @@
         "done": "Đã tải lên bản đã ký",
         "err": {
           "FILE_TYPE": "Chưa nhận định dạng này — chỉ nhận PDF, JPG hoặc PNG.",
+          "SIGN_UPLOAD_CONTENT": "Tệp không đúng là PDF, JPG hoặc PNG thật — mở tệp kiểm tra lại rồi tải lên lần nữa.",
           "FILE_TOO_LARGE": "Tệp quá lớn, hãy chọn tệp nhỏ hơn.",
           "SIGN_UPLOAD_NOT_AWAITING": "Bước Ký hợp đồng không còn chờ bản đã ký (đã có người xử lý). Tải lại trang để xem.",
           "PACK_FORBIDDEN": "Bạn không được giao bước ký này nên không tải lên được.",
