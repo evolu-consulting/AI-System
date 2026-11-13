@@ -101,6 +101,7 @@ describe("M1D-FR-03 · phòng ban = Group + trưởng phòng", () => {
         key: "kd",
         name: "Kinh doanh",
         head_user_id: U1,
+        parent_group_id: null,
         member_ids: [U2, U3].sort(),
       },
     ]);
@@ -117,6 +118,64 @@ describe("M1D-FR-03 · phòng ban = Group + trưởng phòng", () => {
         "NOT_FOUND",
       ),
     ).toBe(true);
+  });
+});
+
+describe("CR-139d · cây phòng ban (đổi phòng cha)", () => {
+  const dept = async (tid: string, key: string) => {
+    const [g] = await owner<{ id: string }[]>`insert into admin.groups (tenant_id, key, name)
+      values (${tid}, ${key}, jsonb_build_object('vi', ${key}::text)) returning id`;
+    return g?.id as string;
+  };
+  const parentOf = async (gid: string) =>
+    (await getOrg(call, undefined)).departments.find((d) => d.group_id === gid)?.parent_group_id;
+  test("đặt cha, giữ nguyên khi bỏ qua, lên gốc bằng null; gỡ phòng giữa ⇒ con lên cha của nó", async () => {
+    const a = await dept(TID, "cty");
+    const b = await dept(TID, "kd");
+    const c = await dept(TID, "kd-hn");
+    await setDepartment(call, undefined, a, { head_user_id: null });
+    await setDepartment(call, undefined, b, { head_user_id: null, parent_group_id: a });
+    await setDepartment(call, undefined, c, { head_user_id: U1, parent_group_id: b });
+    expect([await parentOf(b), await parentOf(c)]).toEqual([a, b]);
+    await setDepartment(call, undefined, c, { head_user_id: U2 }); // bỏ qua parent ⇒ giữ
+    expect(await parentOf(c)).toBe(b);
+    await setDepartment(call, undefined, b, "remove");
+    expect(await parentOf(c)).toBe(a);
+    await setDepartment(call, undefined, c, { head_user_id: U2, parent_group_id: null });
+    expect(await parentOf(c)).toBeNull();
+  });
+  test("vòng cha–con (tự làm cha, cháu làm cha của tổ tiên) ⇒ VALIDATION_ERROR dept_cycle; không ghi", async () => {
+    const a = await dept(TID, "dp-a");
+    const b = await dept(TID, "dp-b");
+    const c = await dept(TID, "dp-c");
+    await setDepartment(call, undefined, a, { head_user_id: null });
+    await setDepartment(call, undefined, b, { head_user_id: null, parent_group_id: a });
+    await setDepartment(call, undefined, c, { head_user_id: null, parent_group_id: b });
+    const cyc = (g: string, p: string) =>
+      setDepartment(call, undefined, g, { head_user_id: null, parent_group_id: p }).then(
+        () => null,
+        (e) => (isAppError(e, "VALIDATION_ERROR") ? e : "other"),
+      );
+    expect(await cyc(a, a)).not.toBeNull();
+    expect(await cyc(a, c)).not.toBeNull();
+    expect(await cyc(b, c)).not.toBeNull();
+    expect(await parentOf(a)).toBeNull();
+    expect(await parentOf(b)).toBe(a);
+  });
+  test("cha ở công ty khác, hoặc Group chưa là phòng ban ⇒ NOT_FOUND; không ghi", async () => {
+    const mine = await dept(TID, "mine");
+    const foreign = await dept(OTHER, "foreign");
+    await owner`insert into admin.departments (tenant_id, group_id) values (${OTHER}, ${foreign})`;
+    const plain = await dept(TID, "plain");
+    await setDepartment(call, undefined, mine, { head_user_id: null });
+    for (const p of [foreign, plain])
+      expect(
+        await fails(
+          setDepartment(call, undefined, mine, { head_user_id: null, parent_group_id: p }),
+          "NOT_FOUND",
+        ),
+      ).toBe(true);
+    expect(await parentOf(mine)).toBeNull();
   });
 });
 

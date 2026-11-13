@@ -663,6 +663,26 @@
       "yesterday": "Yesterday {time}"
     }
   },
+  "orgEdit": {
+    "lead": "The company tree: add departments, rename, pick “Belongs to”, set the head, add or remove members. Contracts only shows this chart.",
+    "newName": "New department name",
+    "newParent": "Belongs to (new department)",
+    "parent": "Belongs to",
+    "rootCompany": "Company (top level)",
+    "head": "Department head",
+    "noHead": "Not set",
+    "members": "Department members",
+    "addMember": "Add member",
+    "removeMember": "Remove from department",
+    "add": "Add department",
+    "rename": "Rename",
+    "save": "Save",
+    "remove": "Remove from chart",
+    "removeConfirm": "Remove “{{name}}” from the chart? Its sub-departments move up to its parent. The group and its members stay under Groups.",
+    "cycle": "Cannot set: a department cannot belong to itself or to one of its own sub-departments.",
+    "empty": "The company has no departments yet. Type a name above and press “Add department”.",
+    "loadError": "Could not load the organisation. Try again in a few minutes."
+  },
   "tenants": {
     "partner": {
       "title": "Partner confirmation of contracts",
@@ -940,6 +960,7 @@
       "view": {
         "users": "Users",
         "groups": "Groups",
+        "org": "Structure",
         "partners": "Partners",
         "access": "Access",
         "agents": "Agents"

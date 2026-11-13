@@ -21,6 +21,8 @@ export const OrgDepartmentSchema = z.object({
   key: z.string(),
   name: z.string(),
   head_user_id: Uuid.nullable(),
+  /** CR-139d · phòng cha (null = trực thuộc công ty). */
+  parent_group_id: Uuid.nullable(),
   member_ids: z.array(Uuid),
 });
 export type OrgDepartment = z.infer<typeof OrgDepartmentSchema>;
@@ -35,6 +37,12 @@ export type OrgResponse = z.infer<typeof OrgResponseSchema>;
 export const ManagerSetRequestSchema = z.strictObject({ manager_id: Uuid.nullable() });
 export type ManagerSetRequest = z.infer<typeof ManagerSetRequestSchema>;
 
-/** `PUT /admin/org/departments/:group_id` — đánh dấu Group là phòng ban + trưởng phòng (null = chưa có). */
-export const DepartmentSetRequestSchema = z.strictObject({ head_user_id: Uuid.nullable() });
+/**
+ * `PUT /admin/org/departments/:group_id` — đánh dấu Group là phòng ban + trưởng phòng (null = chưa có).
+ * CR-139d · `parent_group_id`: bỏ qua = giữ nguyên; null = lên gốc; id = phòng cha (phải là phòng ban cùng công ty, không tạo vòng ⇒ 400 `dept_cycle`).
+ */
+export const DepartmentSetRequestSchema = z.strictObject({
+  head_user_id: Uuid.nullable(),
+  parent_group_id: Uuid.nullable().optional(),
+});
 export type DepartmentSetRequest = z.infer<typeof DepartmentSetRequestSchema>;

@@ -1,4 +1,5 @@
 // CR-139 · Q13 · «Sơ đồ tổ chức» (/contracts/org): cây phòng ban + trưởng phòng + thành viên, tìm người; ai trong công ty cũng xem, chỉ xem.
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -6,11 +7,14 @@ import { PageHead, Panel } from "~/components/shared/layout";
 import { TruncText } from "~/components/shared/TruncText";
 import { Btn } from "~/components/ui/Btn";
 import { Skeleton } from "~/components/ui/skeleton";
+import { useSession } from "~/features/auth/hooks/use-session";
 import { fetchOrgChart, orgChartKey } from "../api";
+import { canEditOrg, orgEditorUrl } from "../lib/org-editor-link";
 import { buildOrgTree, filterOrg, headcount, type OrgNode } from "../lib/org-tree";
 
 function Dept({ n, depth }: { n: OrgNode; depth: number }) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const others = n.members.filter((m) => m.id !== n.head?.id);
   return (
     <li
@@ -35,9 +39,22 @@ function Dept({ n, depth }: { n: OrgNode; depth: number }) {
           )}
         </p>
         {others.length > 0 ? (
-          <p className="mt-1 text-sm text-dim" data-testid="org-members">
-            {others.map((m) => m.name).join(" · ")}
-          </p>
+          <>
+            <button
+              type="button"
+              aria-expanded={open}
+              data-testid="org-members-toggle"
+              className="mt-1 text-caption text-act underline"
+              onClick={() => setOpen(!open)}
+            >
+              {open ? t("contracts.orgChart.hideMembers") : t("contracts.orgChart.showMembers")}
+            </button>
+            {open ? (
+              <p className="mt-1 text-sm text-dim" data-testid="org-members">
+                {others.map((m) => m.name).join(" · ")}
+              </p>
+            ) : null}
+          </>
         ) : null}
       </div>
       {n.children.length > 0 ? (
@@ -48,6 +65,25 @@ function Dept({ n, depth }: { n: OrgNode; depth: number }) {
         </ul>
       ) : null}
     </li>
+  );
+}
+
+function EditChartButton() {
+  const { t } = useTranslation();
+  const me = useSession((s) => s.me);
+  const [busy, setBusy] = useState(false);
+  if (!me || !canEditOrg(me.role)) return null;
+  const go = async () => {
+    setBusy(true);
+    const url = await orgEditorUrl(me.tenant.id);
+    setBusy(false);
+    if (url) window.location.assign(url);
+    else toast(t("contracts.orgChart.editFail"), "late");
+  };
+  return (
+    <Btn variant="outline" data-testid="org-edit" disabled={busy} onClick={() => void go()}>
+      {t("contracts.orgChart.edit")}
+    </Btn>
   );
 }
 
@@ -65,7 +101,11 @@ export function OrgChartPage() {
   const shown = useMemo(() => filterOrg(tree, deferred), [tree, deferred]);
   return (
     <div data-testid="org-chart">
-      <PageHead title={t("contracts.orgChart.title")} lead={t("contracts.orgChart.lead")} />
+      <PageHead
+        title={t("contracts.orgChart.title")}
+        lead={t("contracts.orgChart.lead")}
+        actions={<EditChartButton />}
+      />
       {q.isPending ? (
         <Skeleton className="h-24 w-full" />
       ) : q.isError ? (

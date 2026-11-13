@@ -7,7 +7,7 @@ import {
   ORG_MEMBERS_MAX,
   type OrgResponse,
 } from "@ai/contracts/org";
-import { type Db, type DbScope, withScope } from "@ai/db";
+import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
@@ -42,7 +42,7 @@ export function getOrg(c: OrgCall, q: string | undefined): Promise<OrgResponse> 
         left join admin.user_managers m on m.user_id = u.id and m.tenant_id = u.tenant_id), '[]'::json) as members,
       coalesce((select json_agg(json_build_object('group_id', g.id, 'key', g.key,
           'name', coalesce(g.name ->> 'vi', g.key), 'head_user_id', d.head_user_id,
-          'member_ids', coalesce((select json_agg(gm.user_id order by gm.user_id) from admin.group_members gm
+          'parent_group_id', d.parent_group_id, 'member_ids', coalesce((select json_agg(gm.user_id order by gm.user_id) from admin.group_members gm
             where gm.group_id = g.id and gm.tenant_id = g.tenant_id), '[]'::json)) order by g.key)
         from admin.departments d join admin.groups g on g.id = d.group_id and g.tenant_id = d.tenant_id
         where d.tenant_id = ${t}::uuid), '[]'::json) as departments`)) as unknown as OrgRow[];
@@ -106,6 +106,27 @@ export function setManager(
   });
 }
 
+const ORG_DEPTH_MAX = 32;
+
+/** Cha phải là phòng ban cùng công ty (NOT_FOUND nếu không), khác chính nó và không nằm dưới nó (400 `dept_cycle`). */
+async function assertParentOk(tx: Tx, t: string, groupId: string, parent: string): Promise<void> {
+  if (parent === groupId) throw appError("VALIDATION_ERROR", { reason: "dept_cycle" });
+  // Leo từ cha lên gốc trong MỘT câu; gặp `groupId` ⇒ vòng. `found` = cha có là phòng ban của công ty.
+  const r = (await tx.execute(sql`with recursive up(id, depth) as (
+      select ${parent}::uuid, 0
+      union all
+      select d.parent_group_id, up.depth + 1 from up join admin.departments d
+        on d.group_id = up.id and d.tenant_id = ${t}::uuid
+      where d.parent_group_id is not null and up.depth < ${ORG_DEPTH_MAX}::int)
+    select exists(select 1 from admin.departments where group_id = ${parent}::uuid and tenant_id = ${t}::uuid) as found,
+      exists(select 1 from up where id = ${groupId}::uuid) as cycle`)) as unknown as {
+    found: boolean;
+    cycle: boolean;
+  }[];
+  if (!r[0]?.found) throw appError("NOT_FOUND");
+  if (r[0].cycle) throw appError("VALIDATION_ERROR", { reason: "dept_cycle" });
+}
+
 /** Đánh dấu Group là phòng ban (upsert trưởng phòng); `remove` ⇒ bỏ đánh dấu (Group giữ nguyên). */
 export function setDepartment(
   c: OrgCall,
@@ -123,16 +144,27 @@ export function setDepartment(
       dept: boolean;
     }[];
     if (!g[0]) throw appError("NOT_FOUND");
+    // CR-139d · khoá theo công ty: hai lần đổi cha song song không cùng lúc qua được kiểm tra vòng.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`org-dept:${t}`}))`);
     if (input === "remove") {
+      // Con của phòng bị gỡ lên làm con của cha nó (không bỏ rơi cây con).
+      await tx.execute(sql`update admin.departments set parent_group_id =
+          (select parent_group_id from admin.departments where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid), updated_at = now()
+        where tenant_id = ${t}::uuid and parent_group_id = ${groupId}::uuid`);
       await tx.execute(
         sql`delete from admin.departments where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid`,
       );
     } else {
+      const setParent = input.parent_group_id !== undefined;
+      const parent = input.parent_group_id ?? null;
+      if (parent !== null) await assertParentOk(tx, t, groupId, parent);
       await tx
         .transaction((sp) =>
-          sp.execute(sql`insert into admin.departments (tenant_id, group_id, head_user_id)
-            values (${t}::uuid, ${groupId}::uuid, ${input.head_user_id}::uuid)
-            on conflict (group_id) do update set head_user_id = excluded.head_user_id, updated_at = now()`),
+          sp.execute(sql`insert into admin.departments (tenant_id, group_id, head_user_id, parent_group_id)
+            values (${t}::uuid, ${groupId}::uuid, ${input.head_user_id}::uuid, ${parent}::uuid)
+            on conflict (group_id) do update set head_user_id = excluded.head_user_id,
+              parent_group_id = case when ${setParent} then excluded.parent_group_id else admin.departments.parent_group_id end,
+              updated_at = now()`),
         )
         .catch((err) => {
           if (foreignKeyViolation(err) === "departments_head_fk") throw appError("NOT_FOUND");
@@ -151,7 +183,10 @@ export function setDepartment(
         before: null,
         after: null,
         summary: {
-          department: input === "remove" ? null : { head_user_id: input.head_user_id },
+          department:
+            input === "remove"
+              ? null
+              : { head_user_id: input.head_user_id, parent_group_id: input.parent_group_id },
           before: { department: g[0].dept ? { head_user_id: g[0].head_user_id } : null },
         },
       }),

@@ -5,10 +5,11 @@
 export type TenantTab = "profile" | "apps" | "processes" | "members" | "settings";
 
 /** Mục con của tab Thành viên (mặc định `users`). */
-export type MemberView = "users" | "groups" | "partners" | "access" | "agents";
+export type MemberView = "users" | "groups" | "org" | "partners" | "access" | "agents";
 export const MEMBER_VIEWS: readonly MemberView[] = [
   "users",
   "groups",
+  "org",
   "partners",
   "access",
   "agents",

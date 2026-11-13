@@ -251,7 +251,11 @@
     },
     "orgChart": {
       "title": "Org chart",
-      "lead": "The company departments, department heads and members. View only — company admins edit them on the Members & departments page.",
+      "lead": "The company tree: departments, department heads and members. View only — company admins press “Edit chart” to change it.",
+      "edit": "Edit chart",
+      "editFail": "Could not open the chart editor. Please try again.",
+      "showMembers": "Show members",
+      "hideMembers": "Hide members",
       "people_one": "{{count}} person",
       "people_other": "{{count}} people",
       "head": "Department head",
@@ -262,7 +266,7 @@
       "loadError": "Could not load the org chart. Try again in a few minutes.",
       "retry": "Try again",
       "emptyTitle": "The company has no departments yet",
-      "emptyBody": "A company admin creates departments and sets department heads on the Members & departments page."
+      "emptyBody": "A company admin presses “Edit chart” to create departments and set department heads."
     },
     "approvalsPage": {
       "title": "My tasks",

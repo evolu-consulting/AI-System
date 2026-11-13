@@ -663,6 +663,26 @@
       "yesterday": "Hôm qua {time}"
     }
   },
+  "orgEdit": {
+    "lead": "Sơ đồ cây của công ty: thêm phòng, đổi tên, chọn «Thuộc phòng», đặt trưởng phòng, thêm/bớt thành viên. Sổ Hợp Tác chỉ xem sơ đồ này.",
+    "newName": "Tên phòng mới",
+    "newParent": "Thuộc phòng của phòng mới",
+    "parent": "Thuộc phòng",
+    "rootCompany": "Công ty (cấp cao nhất)",
+    "head": "Trưởng phòng",
+    "noHead": "Chưa đặt",
+    "members": "Thành viên của phòng",
+    "addMember": "Thêm thành viên",
+    "removeMember": "Bỏ khỏi phòng",
+    "add": "Thêm phòng",
+    "rename": "Đổi tên",
+    "save": "Lưu",
+    "remove": "Xoá khỏi sơ đồ",
+    "removeConfirm": "Xoá phòng «{{name}}» khỏi sơ đồ? Các phòng con chuyển lên phòng cha. Nhóm và thành viên vẫn còn ở mục Nhóm.",
+    "cycle": "Không đặt được: phòng không thể thuộc chính nó hay phòng con của nó.",
+    "empty": "Công ty chưa có phòng ban. Nhập tên phòng ở trên rồi bấm «Thêm phòng».",
+    "loadError": "Không tải được cơ cấu tổ chức. Thử lại sau ít phút."
+  },
   "tenants": {
     "partner": {
       "title": "Đối tác xác nhận hợp đồng",
@@ -940,6 +960,7 @@
       "view": {
         "users": "Người dùng",
         "groups": "Nhóm",
+        "org": "Cơ cấu",
         "partners": "Đối tác",
         "access": "Phân quyền",
         "agents": "Agents"
