@@ -5,7 +5,7 @@ param([Parameter(Mandatory = $true)][string]$Ref, [switch]$DryRun, [string]$Key 
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
 $Server = "evoc@149.202.83.5"; $Dir = "~/workspace/sohoptac2-staging"
-$kit = @("docker-compose.yml", "gen-env.sh", "lib.sh", "build.sh", "up.sh", "down.sh", "edge.sh", "rollback.sh", "verify.sh", "stg-seed.ts", "README.md", "edge/sohoptac2-staging.conf")
+$kit = @("docker-compose.yml", "gen-env.sh", "lib.sh", "build.sh", "up.sh", "down.sh", "edge.sh", "rollback.sh", "verify.sh", "seed-demo.sh", "stg-seed.ts", "README.md", "edge/sohoptac2-staging.conf")
 function Assert-Exit([string]$What) { if ($LASTEXITCODE -ne 0) { throw "push: $What loi (exit $LASTEXITCODE)" } }
 if ($Ref -match "latest") { throw "push: ref khong hop le" }
 $commit = "$(git -C $Repo rev-parse --short $Ref)".Trim(); Assert-Exit "git rev-parse $Ref"

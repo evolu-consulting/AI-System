@@ -16,6 +16,33 @@ export function isLocalDbHost(url: string): boolean {
 }
 
 /**
+ * Môi trường env là STACK STAGING `stg-test` (cùng khuôn chặn của deploy/stg-test/stg-seed.ts): `S2_STACK=stg-test` + admin URL
+ * `https://ai-test-admin.*`, và KHÔNG phải `APP_ENV=production`. Prod không có hai biến này ⇒ không bao giờ khớp.
+ */
+export function isStagingStack(e: Record<string, string | undefined>): boolean {
+  return (
+    e.APP_ENV !== "production" &&
+    e.S2_STACK === "stg-test" &&
+    /^https:\/\/ai-test-admin\.[a-z0-9.-]+$/.test(e.S2_PUBLIC_ADMIN_URL ?? "")
+  );
+}
+
+/** Allowlist host DB cho các script `demo:*`: host dev/test, hoặc — CHỈ khi là stack staging stg-test — dịch vụ compose `pg`. */
+export function seedDbHost(
+  e: Record<string, string | undefined> = process.env,
+): (url: string) => boolean {
+  return (url) => {
+    if (isLocalDbHost(url)) return true;
+    if (!isStagingStack(e)) return false;
+    try {
+      return new URL(url).hostname.toLowerCase() === "pg";
+    } catch {
+      return false;
+    }
+  };
+}
+
+/**
  * Lý do TỪ CHỐI chạy (null = được chạy). Production (`APP_ENV=production`) hoặc DB host ngoài allowlist ⇒ từ chối, trừ khi
  * `--i-know-prod`. Thiếu `--out` ⇒ từ chối (file mật khẩu phải do người chạy chọn chỗ, rồi tự xoá).
  */

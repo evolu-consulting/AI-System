@@ -4,7 +4,7 @@
 //   1 người dùng (admin-api, mật khẩu dev chung = DEMO_OWNER_PW) · 2 phòng ban + trưởng phòng (use case tenant-onboard từ deploy/tenants/demo.yaml)
 //   3 nhóm gói (Toàn quyền/Nhân viên/Chỉ xem) + nhóm vai (Người ký HĐ…) · 4 quy trình duyệt (seed-cr128-flows) ·
 //   5 dọn: bản quy trình/HĐ trỏ nhóm trùng phòng ban, gỡ các nhóm đó · 6 HĐ mẫu do người ở các phòng khác nhau GỬI (hub) + kiểm ai nhận việc.
-// Từ chối APP_ENV=production / DB ngoài localhost. Cần admin-api (AUTH_URL :3001) + hub-api (HUB_URL :4000) đang chạy; mật khẩu lấy từ .env.local.
+// Từ chối APP_ENV=production / DB ngoài localhost (trừ stack staging stg-test, xem deploy/stg-test/seed-demo.sh). Cần admin-api (AUTH_URL :3001) + hub-api (HUB_URL :4000) đang chạy; mật khẩu lấy từ .env.local.
 import { createDb, hashPassword } from "@ai/db";
 import postgres, { type Sql } from "postgres";
 import { parseSpec } from "../../../apps/admin-api/src/modules/tenant-onboard/adapters/onboard.schema";
@@ -12,7 +12,7 @@ import type { OnboardSpec } from "../../../apps/admin-api/src/modules/tenant-onb
 import { onboardTenant } from "../../../apps/admin-api/src/modules/tenant-onboard/tenant-onboard.run";
 import { SKIP_TEMPLATE_GROUPS } from "../../../apps/hub-api/src/modules/seed/seed.cr125-members";
 import { type Api, adminToken, call, type Json } from "../../hub-dev/src/fixture";
-import { isLocalDbHost } from "./seed-community-demo.guard";
+import { seedDbHost } from "./seed-community-demo.guard";
 import {
   DEMO_PEOPLE,
   DEMO_TENANT_KEY,
@@ -276,7 +276,7 @@ async function main(): Promise<void> {
     appEnv: process.env.APP_ENV,
     urls: [url],
     iKnowProd: false,
-    isLocal: isLocalDbHost,
+    isLocal: seedDbHost(),
   });
   if (bad) fail(`từ chối — ${bad}`);
   const authUrl = process.env.AUTH_URL || process.env.ADMIN_API_URL || "http://localhost:3001";

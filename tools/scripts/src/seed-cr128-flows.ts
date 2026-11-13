@@ -18,7 +18,7 @@ import {
   type Stage,
 } from "../../../apps/hub-api/src/modules/processes/library/flow-templates.def";
 import { bindGroupKeys } from "../../../apps/hub-api/src/modules/processes/public";
-import { isLocalDbHost } from "./seed-community-demo.guard";
+import { seedDbHost } from "./seed-community-demo.guard";
 import { flowSeedGuard } from "./seed-flow-showcase.build";
 
 const TAG = "seed-cr128-flows";
@@ -273,7 +273,7 @@ async function main(): Promise<void> {
     appEnv: process.env.APP_ENV,
     urls: [url],
     iKnowProd: false,
-    isLocal: isLocalDbHost,
+    isLocal: seedDbHost(),
   });
   if (bad) fail(bad);
   const authUrl = process.env.AUTH_URL || process.env.ADMIN_API_URL || "http://localhost:3001";

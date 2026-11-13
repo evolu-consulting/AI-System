@@ -6,7 +6,7 @@
 //   bun run demo:purchase [--trial]   (= bun --env-file=.env.local tools/scripts/src/seed-purchase-flow.ts)
 import { parseArgs } from "node:util";
 import { bindGroupKeys } from "../../../apps/hub-api/src/modules/processes/public";
-import { isLocalDbHost } from "./seed-community-demo.guard";
+import { seedDbHost } from "./seed-community-demo.guard";
 import { flowSeedGuard } from "./seed-flow-showcase.build";
 import {
   type Call,
@@ -128,7 +128,7 @@ async function main(): Promise<void> {
     appEnv: process.env.APP_ENV,
     urls: [url],
     iKnowProd: false,
-    isLocal: isLocalDbHost,
+    isLocal: seedDbHost(),
   });
   if (bad) fail(bad);
   const u = urls();

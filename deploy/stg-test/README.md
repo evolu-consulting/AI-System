@@ -27,6 +27,8 @@ bash verify.sh     # SQL: tenant demo co «Quy trinh mua hang» + thanh vien nho
 Cap nhat ban moi: push → `build.sh` → `up.sh` (khong can lai `edge.sh`, tru khi `edge-proxy` bi recreate: chay lai `edge.sh` de noi lai mang).
 `--dry-run` o build/up/edge/rollback chi in lenh.
 
+Du lieu demo (13 nguoi + phong ban + quy trinh duyet HD / mua hang): `bash seed-demo.sh` (chay trong container `tool`, idempotent; xem dau file).
+
 Mat khau tai khoan: `ADMIN.pw` (platform admin `admin`), `DEMO_OWNER.pw` (`demo-owner`) trong thu muc kit (600); doi tac demo trong `out/partners.json`. Doc bang `cat` tren host, khong dan vao chat/commit.
 
 ## Edge (edge.sh) va hoan tac (rollback.sh)
