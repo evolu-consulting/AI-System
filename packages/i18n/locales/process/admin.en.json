@@ -1586,7 +1586,7 @@
         "PROVIDER_UNAVAILABLE": "This provider is not enabled for the company.",
         "SIGNER_NOT_IN_TENANT": "The signer is not in this company.",
         "NO_SIGNER": "This group has no usable signer.",
-        "NO_SIGNER_SELECTED": "no signer yet. Pick a person or a department to sign, then save again",
+        "NO_SIGNER_SELECTED": "no signer yet — pick a signer in the step, or set the Contract signers group in Settings › Signing & partners",
         "DIRECTORY_UNAVAILABLE": "Could not check the directory, try again later."
       },
       "signWith": "Sign with: {{name}}",

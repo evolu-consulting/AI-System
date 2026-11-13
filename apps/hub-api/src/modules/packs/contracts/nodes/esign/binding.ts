@@ -45,7 +45,8 @@ export const esignBindingBase: NodeBinding = {
 /** Phần cần use case: kiểm cấu hình lúc LƯU def, theo KHOÁ TOOL (def gọi thẳng tool không mang `node` cũng bị kiểm). */
 export const esignBindingChecks = (
   check: Parameters<typeof esignNodeValidator>[0],
+  hasDefault?: Parameters<typeof esignNodeValidator>[1],
 ): NodeBinding => ({
   key: ESIGN_NODE_KEY,
-  toolValidators: { [INTAKE_TOOL_KEYS.esignSend]: esignNodeValidator(check) },
+  toolValidators: { [INTAKE_TOOL_KEYS.esignSend]: esignNodeValidator(check, hasDefault) },
 });

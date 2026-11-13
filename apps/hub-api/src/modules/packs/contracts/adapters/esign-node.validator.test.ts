@@ -77,6 +77,35 @@ describe("CEO-review #2 · chưa chọn người ký", () => {
   });
 });
 
+describe("CR-141 · nhóm «Người ký HĐ» là người ký mặc định", () => {
+  const noSigner = {
+    kind: "tool",
+    tool_key: "contracts-esign-send",
+    args: { contract_id: c("x") },
+  };
+  it("có nhóm có thành viên ⇒ không chọn người ký vẫn hợp lệ (kiểm công ty vẫn chạy); chưa có ⇒ vẫn chặn", async () => {
+    const before = seen.length;
+    const withGroup = esignNodeValidator(
+      async (_t, cfg) => {
+        seen.push(cfg);
+        return [];
+      },
+      async () => true,
+    );
+    expect(await withGroup("t1", { index: 1, node: ESIGN_NODE_KEY, executor: noSigner })).toEqual(
+      [],
+    );
+    expect(seen.length).toBe(before + 1);
+    const noGroup = esignNodeValidator(
+      async () => [],
+      async () => false,
+    );
+    expect(await noGroup("t1", { index: 1, node: ESIGN_NODE_KEY, executor: noSigner })).toEqual([
+      { path: "stages.1.executor.args.company_signers", code: "NO_SIGNER_SELECTED" },
+    ]);
+  });
+});
+
 describe("E5d · validator theo khoá tool", () => {
   it("stage gọi thẳng tool không mang `node` vẫn bị kiểm, và không kiểm hai lần khi có cả node lẫn tool", async () => {
     nodeConfigRegistry.registerTool("contracts-esign-send", validator);

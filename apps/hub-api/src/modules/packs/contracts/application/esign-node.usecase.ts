@@ -39,6 +39,8 @@ export type EsignNodeDeps = {
   /** Nhà cung cấp khả dụng của khoá (cần FileBox) hoặc null. */
   avail: (key: string) => unknown;
   directory: NodeDirectory | undefined;
+  /** Nhóm «Người ký HĐ» của công ty (`partner_settings.signer_group_id`) hoặc null. */
+  signerGroup?: (tenantId: string) => Promise<string | null>;
 };
 
 export function esignNodeApi(d: EsignNodeDeps) {
@@ -75,6 +77,14 @@ export function esignNodeApi(d: EsignNodeDeps) {
     async checkNode(tenantId: string, c: EsignNodeConfig): Promise<Issues> {
       const b = c.company_signers?.length ? await signerIssue(tenantId, c.company_signers) : [];
       return [...b];
+    },
+
+    /** CR-141 · công ty đã đặt nhóm «Người ký HĐ» có ≥ 1 thành viên ⇒ node không chọn người ký vẫn lưu được (người ký mặc định = nhóm). */
+    async hasDefaultSigners(tenantId: string): Promise<boolean> {
+      const g = await d.signerGroup?.(tenantId);
+      if (!g) return false;
+      const r = await d.directory?.resolve(tenantId, [{ kind: "group", id: g }]);
+      return (r?.userIds.length ?? 0) > 0;
     },
 
     /** Người ký công ty của node: mục `user`/`group` ⇒ danh sách user (thứ tự khai, bỏ trùng, ≤ trần); mục lạ / rỗng ⇒ ném. */

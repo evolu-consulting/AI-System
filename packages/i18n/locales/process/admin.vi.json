@@ -1586,7 +1586,7 @@
         "PROVIDER_UNAVAILABLE": "Nhà cung cấp này chưa bật cho công ty.",
         "SIGNER_NOT_IN_TENANT": "Người ký không thuộc công ty.",
         "NO_SIGNER": "Nhóm này chưa có người ký dùng được.",
-        "NO_SIGNER_SELECTED": "chưa có người ký. Chọn người hoặc phòng ban ký rồi bấm lưu lại",
+        "NO_SIGNER_SELECTED": "chưa có người ký — chọn người ký trong bước, hoặc đặt nhóm Người ký HĐ ở Cài đặt › Ký & đối tác",
         "DIRECTORY_UNAVAILABLE": "Chưa kiểm được danh bạ, thử lại sau."
       },
       "signWith": "Ký bằng: {{name}}",

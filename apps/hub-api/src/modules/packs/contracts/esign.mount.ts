@@ -219,7 +219,7 @@ export function esignModule(
   });
   // CR-122 · E5b · lưu def có node Ký số ⇒ server tự kiểm cấu hình (validator theo node, `processes/defs` gọi).
   // E5d · theo KHOÁ TOOL (không chỉ theo node): def gọi thẳng `contracts-esign-send` không mang `node` cũng bị kiểm.
-  moduleRegistry.bindNode(esignBindingChecks(u.checkNode)); // CR-125 · m4 · binding Ký số (nodes/esign/binding.ts) — validator theo khoá tool
+  moduleRegistry.bindNode(esignBindingChecks(u.checkNode, u.hasDefaultSigners)); // CR-125 · m4 · binding Ký số (nodes/esign/binding.ts) — validator theo khoá tool
   // CR-125 · x12 · chuông "Mời ký" kèm thẻ HĐ + ảnh trang đầu (một nguồn cho đường cũ và bước Ký số của flow).
   const selfName = selfContactOf(db);
   const invite = inviteNotice({

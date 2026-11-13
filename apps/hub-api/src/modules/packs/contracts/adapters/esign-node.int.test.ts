@@ -12,6 +12,7 @@ import { nodeConfigRegistry } from "../../kit/public";
 import type { ESignFiles } from "../application/esign.ports";
 import { esignModule } from "../esign.mount";
 import { intakeWiring } from "../intake.mount";
+import { esignBindingChecks } from "../nodes/esign/binding";
 import { fakeESign } from "./esign.fake";
 import { esignRepo } from "./esign.repo";
 import { selfsignProvider } from "./esign.selfsign";
@@ -195,6 +196,33 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
       ]),
     ).toEqual([B, ...members2.filter((x) => x !== B)]);
     expect(await u.checkNode(T1, { company_signers: [{ kind: "group", id: G }] })).toEqual([]);
+  });
+
+  it("CR-141 · lưu def: node không chọn người ký ⇒ hợp lệ khi công ty đặt nhóm «Người ký HĐ» có thành viên, chưa đặt ⇒ NO_SIGNER_SELECTED", async () => {
+    const { u } = setup();
+    const v = esignBindingChecks(u.checkNode, u.hasDefaultSigners).toolValidators?.[
+      "contracts-esign-send"
+    ];
+    const st = {
+      index: 3,
+      node: "contracts.esign",
+      executor: {
+        kind: "tool",
+        tool_key: "contracts-esign-send",
+        args: { contract_id: { from: "const", value: "x" } },
+      },
+    };
+    expect(await v?.(T1, st)).toEqual([
+      { path: "stages.3.executor.args.company_signers", code: "NO_SIGNER_SELECTED" },
+    ]);
+    await o`insert into contracts.partner_settings (tenant_id, signer_group_id) values (${T1}::uuid, ${G}::uuid)
+      on conflict (tenant_id) do update set signer_group_id = excluded.signer_group_id`;
+    expect(await v?.(T1, st)).toEqual([]);
+    // nhóm trống ⇒ vẫn chặn
+    const empty = (await groups(o, T1, ["e5b-rong"])).get("e5b-rong") as string;
+    await o`update contracts.partner_settings set signer_group_id = ${empty}::uuid where tenant_id = ${T1}::uuid`;
+    expect(await v?.(T1, st)).toHaveLength(1);
+    await o`delete from contracts.partner_settings where tenant_id = ${T1}::uuid`;
   });
 
   it("Group của công ty khác ⇒ không thuộc công ty (kiểm lúc lưu + từ chối lúc gửi)", async () => {

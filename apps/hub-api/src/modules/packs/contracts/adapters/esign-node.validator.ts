@@ -12,7 +12,11 @@ type Check = (tenantId: string, c: EsignNodeConfig) => Promise<{ field: string; 
 
 export const ESIGN_NODE_KEY = "contracts.esign";
 
-export function esignNodeValidator(check: Check): NodeConfigValidator {
+/** `hasDefault`: công ty đã đặt nhóm «Người ký HĐ» có thành viên ⇒ node không chọn người ký vẫn hợp lệ (người ký mặc định = nhóm). */
+export function esignNodeValidator(
+  check: Check,
+  hasDefault?: (tenantId: string) => Promise<boolean>,
+): NodeConfigValidator {
   return async (tenantId, st) => {
     const args = constToolArgs(st.executor, INTAKE_TOOL_KEYS.esignSend);
     if (!args) return [];
@@ -20,7 +24,8 @@ export function esignNodeValidator(check: Check): NodeConfigValidator {
     const dec = decodeEsignNodeArgs(args);
     if (!dec.ok) return dec.issues.map((f) => ({ path: `${base}.${f}`, code: "INVALID" }));
     const own = esignConfigIssues(dec.config);
-    if (own.length > 0) return own.map((i) => ({ path: `${base}.${i.field}`, code: i.code }));
+    if (own.length > 0 && !(await hasDefault?.(tenantId)))
+      return own.map((i) => ({ path: `${base}.${i.field}`, code: i.code }));
     return (await check(tenantId, dec.config)).map((i) => ({
       path: `${base}.${i.field}`,
       code: i.code,

@@ -285,6 +285,7 @@ export function esignUsecase(d: ESignDeps) {
       settingsOf: async (tid) => out(await d.uow.system(tid, (r) => r.esign.settings())),
       avail,
       directory: d.directory,
+      signerGroup: (tid) => d.uow.system(tid, (r) => r.esign.signerGroup()),
     }),
     /** CR-122 · E5c · phong bì của node quá hạn ⇒ huỷ + bắn `esign.voided` (`esign-expire.ts`). */
     expireOpen: esignExpire({ ...d, avail, voidExpired }),
