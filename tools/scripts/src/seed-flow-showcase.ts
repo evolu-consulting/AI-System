@@ -11,7 +11,7 @@ import { sql } from "drizzle-orm";
 import { insertDef, keyTaken } from "../../../apps/hub-api/src/modules/processes/defs/defs.repo";
 import { loadDefRefs } from "../../../apps/hub-api/src/modules/processes/defs/teams.repo";
 import { grantGroup } from "./seed-community-demo.grant";
-import { isLocalDbHost } from "./seed-community-demo.guard";
+import { seedDbHost } from "./seed-community-demo.guard";
 import {
   buildShowcaseDef,
   DEFAULT_GROUPS,
@@ -127,7 +127,7 @@ async function main(argv: readonly string[]): Promise<void> {
     appEnv: process.env.APP_ENV,
     urls: [url, hubUrl],
     iKnowProd: argv.includes("--i-know-prod"),
-    isLocal: isLocalDbHost,
+    isLocal: seedDbHost(),
   });
   if (why) throw new Error(`${TAG}: từ chối — ${why}`);
   const db = createDb(url, { max: 2 });
