@@ -187,9 +187,25 @@ function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   });
 }
 
-export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Routes {
+export type Directory = (who: {
+  tenantId: string;
+  userId: string;
+  userKind?: "internal" | "external";
+}) => Promise<{ id: string; name: string }[]>;
+
+export function messagesRoutes(
+  view: PackAccessView,
+  uc: MessagesUsecases,
+  directory: Directory,
+): Routes {
   const r = new Hono<PackGuardVars>();
   const h = helpers(view);
+  // CR-132b · danh bạ «Thành viên»: đồng nghiệp nội bộ của công ty (không đối tác), dùng chung cho «Nhắn tin mới» và «Thêm người».
+  r.get("/messages/people", h.read, async (c) => {
+    const items = await directory(h.who(c));
+    h.noStore(c);
+    return c.json({ items });
+  });
   conversationRoutes(r, h, uc);
   memberRoutes(r, h, uc);
   messageRoutes(r, h, uc);

@@ -55,7 +55,7 @@ export const markRead = (id: string, seq: number) =>
 
 /** Người nội bộ chọn được (cùng nguồn «người có thể được giao»; tra MỘT lần, lọc ở máy khách). */
 export const fetchPeople = (signal?: AbortSignal) =>
-  api<{ items: { id: string; name: string }[] }>("/pack/contracts/assignees", { signal });
+  api<{ items: { id: string; name: string }[] }>(`${BASE}/people`, { signal });
 
 const fileBase = (id: string, fileId: string) => `${conv(id)}/files/${encodeURIComponent(fileId)}`;
 

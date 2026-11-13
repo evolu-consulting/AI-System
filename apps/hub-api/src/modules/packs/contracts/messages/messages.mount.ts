@@ -6,6 +6,7 @@ import { logger } from "../../../../lib/logger";
 import type { Redis } from "../../../../lib/redis";
 import {
   createPackUow,
+  internalDirectory,
   internalUsersAmong,
   type PackAccessView,
   type PackFileboxClient,
@@ -44,5 +45,5 @@ export function messagesModule(
         }
       : undefined,
   });
-  return messagesRoutes(view, uc);
+  return messagesRoutes(view, uc, internalDirectory(db));
 }

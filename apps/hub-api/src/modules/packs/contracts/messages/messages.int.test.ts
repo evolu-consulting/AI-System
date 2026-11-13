@@ -6,7 +6,7 @@ import { tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../../lib/db";
-import { internalUsersAmong } from "../../kit/adapters/member-names";
+import { internalDirectory, internalUsersAmong } from "../../kit/adapters/member-names";
 import { createPackUow } from "../../kit/adapters/pack-uow";
 import type { PackUow } from "../../kit/public";
 import { messagesRepo } from "./adapters/messages.repo";
@@ -220,5 +220,20 @@ describe("CR-132 M3 · người NGOÀI hội thoại / công ty khác", () => {
     }
     const mine = await o`select seq from contracts.msg_messages where conversation_id = ${id}`;
     expect(mine).toHaveLength(1);
+  });
+});
+
+describe("CR-132b · danh bạ «Thành viên»", () => {
+  it("đường chính: đồng nghiệp còn dùng được, trừ mình và người bị khoá", async () => {
+    const list = await internalDirectory(db)({ ...w(U1), userKind: "internal" });
+    const ids = list.map((x) => x.id).sort();
+    expect(ids).toEqual([U2, U3, U5].sort());
+  });
+  it("chặn chéo công ty và đối tác: không lộ người công ty khác; external ⇒ rỗng", async () => {
+    const other = await internalDirectory(db)({ ...w(V1, T2), userKind: "internal" });
+    expect(other.map((x) => x.id)).not.toContain(U2);
+    expect(other.map((x) => x.id)).not.toContain(V1);
+    const ext = await internalDirectory(db)({ ...w(U1), userKind: "external" });
+    expect(ext).toEqual([]);
   });
 });

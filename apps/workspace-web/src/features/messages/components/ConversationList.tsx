@@ -1,129 +1,83 @@
-// CR-132 · W2 · danh sách hội thoại (trình bày, không gọi mạng — dùng chung toàn màn và khoang hẹp ở W3): ô lọc, nút «Nhắn tin mới»,
-// dòng có avatar/tên/xem trước/giờ, chưa đọc ⇒ in đậm + số. Trạng thái: đang tải · lỗi · rỗng · không khớp.
+// CR-132 · W2 · danh sách hội thoại (trình bày, không gọi mạng — dùng chung toàn màn và khoang hẹp ở W3): ô lọc, nút «Nhắn tin mới».
+// CR-132b: hai mục «Nhóm» (nhóm mình ở trong) và «Thành viên» (đồng nghiệp cùng công ty; có 1-1 thì mang xem trước/chưa đọc, chưa có thì bấm là mở).
+// Trạng thái: đang tải · lỗi · rỗng · không khớp.
 import type { ConversationSummary } from "@ai/contracts/pack-contracts";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "~/components/ui/skeleton";
-import { cn } from "~/lib/utils";
-import {
-  convTitle,
-  filterConversations,
-  isUnread,
-  previewOf,
-  unreadLabel,
-} from "../lib/conversations";
-import { initialOf, listTime } from "../lib/format";
+import { buildDirectory, type Directory } from "../lib/directory";
+import type { Person } from "../lib/people";
+import { ConversationRow } from "./ConversationRow";
 
 export type ConversationListProps = {
   items: readonly ConversationSummary[];
+  people: readonly Person[];
   myId: string;
   activeId: string | null;
   status: "loading" | "error" | "ready";
   hasMore: boolean;
   loadingMore: boolean;
+  /** Người đang được mở 1-1 (khoá dòng trong lúc tạo). */
+  openingId: string | null;
   onSelect: (id: string) => void;
+  onPickPerson: (userId: string) => void;
   onNew: () => void;
   onMore: () => void;
   onRetry: () => void;
 };
 
-function Preview({ c, myId }: { c: ConversationSummary; myId: string }) {
-  const { t } = useTranslation();
-  const p = previewOf(c, myId);
-  const text =
-    p.kind === "deleted"
-      ? t("contracts.messages.previewDeleted")
-      : p.kind === "files"
-        ? t("contracts.messages.previewFiles")
-        : p.kind === "mine"
-          ? t("contracts.messages.previewMine", { text: p.text })
-          : p.kind === "other"
-            ? p.who
-              ? t("contracts.messages.previewOther", { who: p.who, text: p.text })
-              : p.text
-            : "";
-  return <span className="min-w-0 flex-1 truncate">{text}</span>;
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <section aria-label={label}>
+      <h3 className="m-0 px-4 pb-1 pt-3 text-micro font-semibold uppercase tracking-wide text-dim">
+        {label}
+      </h3>
+      <ul className="m-0 list-none p-0">{children}</ul>
+    </section>
+  );
 }
 
-function Row({
-  c,
-  myId,
-  active,
-  onSelect,
-}: {
-  c: ConversationSummary;
-  myId: string;
-  active: boolean;
-  onSelect: (id: string) => void;
-}) {
+function DirectorySections({ p, dir }: { p: ConversationListProps; dir: Directory }) {
   const { t } = useTranslation();
-  const unread = isUnread(c);
-  const n = unreadLabel(c.unread);
-  const title = convTitle(c);
   return (
-    <li>
-      <button
-        type="button"
-        data-testid="conv-row"
-        data-unread={unread ? "true" : "false"}
-        aria-current={active ? "true" : undefined}
-        onClick={() => onSelect(c.id)}
-        className={cn(
-          "flex w-full min-w-0 items-center gap-3 px-4 py-2.5 text-left hover:bg-sunk focus-visible:bg-sunk focus-visible:outline-none",
-          active && "bg-act-soft",
+    <>
+      <Section label={t("contracts.messages.groups")}>
+        {dir.groups.length === 0 ? (
+          <li className="px-4 py-2 text-label text-dim">{t("contracts.messages.groupsEmpty")}</li>
+        ) : (
+          dir.groups.map((c) => (
+            <ConversationRow
+              key={c.id}
+              c={c}
+              myId={p.myId}
+              active={c.id === p.activeId}
+              onOpen={() => p.onSelect(c.id)}
+            />
+          ))
         )}
-      >
-        <span
-          aria-hidden
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-act-soft text-[15px] font-semibold text-act"
-        >
-          {initialOf(title)}
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="flex items-baseline gap-2">
-            <span
-              className={cn(
-                "min-w-0 flex-1 truncate text-[14px]",
-                unread ? "font-bold" : "font-medium",
-              )}
-            >
-              {title}
-            </span>
-            {c.last_message && (
-              <time dateTime={c.last_message.at} className="shrink-0 text-micro text-dim">
-                {listTime(c.last_message.at)}
-              </time>
-            )}
-          </span>
-          <span
-            className={cn(
-              "flex items-center gap-2 text-label",
-              unread ? "font-semibold text-ink" : "text-dim",
-            )}
-          >
-            <Preview c={c} myId={myId} />
-            {n && (
-              <span
-                data-testid="conv-unread"
-                role="img"
-                aria-label={t("contracts.messages.unread", { n: c.unread })}
-                className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-late px-1 text-micro font-semibold text-panel"
-              >
-                {n}
-              </span>
-            )}
-          </span>
-        </span>
-      </button>
-    </li>
+      </Section>
+      <Section label={t("contracts.messages.membersSection")}>
+        {dir.members.map(({ person, conv }) => (
+          <ConversationRow
+            key={person.id}
+            c={conv}
+            name={person.name}
+            myId={p.myId}
+            active={conv !== null && conv.id === p.activeId}
+            busy={p.openingId === person.id}
+            onOpen={() => (conv ? p.onSelect(conv.id) : p.onPickPerson(person.id))}
+          />
+        ))}
+      </Section>
+    </>
   );
 }
 
 export function ConversationList(p: ConversationListProps) {
   const { t } = useTranslation();
   const [q, setQ] = useState("");
-  const shown = filterConversations(p.items, q);
+  const dir = buildDirectory(p.items, p.people, q);
   const newBtn = (
     <button type="button" onClick={p.onNew} className="btn btn-primary btn-sm">
       {t("contracts.messages.newChat")}
@@ -159,7 +113,7 @@ export function ConversationList(p: ConversationListProps) {
               </button>
             }
           />
-        ) : p.items.length === 0 ? (
+        ) : p.items.length === 0 && p.people.length === 0 ? (
           <EmptyState
             kind="empty"
             testId="conv-empty"
@@ -167,24 +121,14 @@ export function ConversationList(p: ConversationListProps) {
             hint={t("contracts.messages.emptyListHint")}
             action={newBtn}
           />
-        ) : shown.length === 0 ? (
+        ) : dir.groups.length === 0 && dir.members.length === 0 ? (
           <EmptyState
             kind="search"
             title={t("contracts.messages.noMatch")}
             hint={t("contracts.messages.noMatchHint")}
           />
         ) : (
-          <ul aria-label={t("contracts.messages.listLabel")} className="m-0 list-none p-0">
-            {shown.map((c) => (
-              <Row
-                key={c.id}
-                c={c}
-                myId={p.myId}
-                active={c.id === p.activeId}
-                onSelect={p.onSelect}
-              />
-            ))}
-          </ul>
+          <DirectorySections p={p} dir={dir} />
         )}
         {p.status === "ready" && p.hasMore && (
           <div className="p-3 text-center">

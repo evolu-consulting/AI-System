@@ -64,3 +64,26 @@ export const internalUsersAmong =
     );
     return new Map(rows.map((x) => [x.id, { name: x.name, active: x.active }]));
   };
+
+/** CR-132b · danh bạ «Thành viên» của Tin nhắn: nhân viên NỘI BỘ còn dùng được của CHÍNH công ty, trừ người gọi, theo tên. Một câu, lọc tenant tường minh.
+ *  Đối tác (external) ⇒ rỗng; công ty khác không bao giờ lọt vào. */
+export const internalDirectory =
+  (db: Db) =>
+  async (who: {
+    tenantId: string;
+    userId: string;
+    userKind?: "internal" | "external";
+  }): Promise<{ id: string; name: string }[]> => {
+    if (who.userKind === "external") return [];
+    const rows = await withHubScope(
+      db,
+      { kind: "user", tenantId: who.tenantId, userId: who.userId },
+      (tx) =>
+        tx.execute<{ id: string; name: string }>(sql`select u.id, u.display_name as name
+          from admin.users u
+          where u.tenant_id = ${who.tenantId}::uuid and u.kind = 'internal'
+            and u.active and not u.locked_by_tenant and u.id <> ${who.userId}::uuid
+          order by u.display_name, u.id limit ${MEMBERS_MAX}::int`),
+    );
+    return rows.map((x) => ({ id: x.id, name: x.name }));
+  };
