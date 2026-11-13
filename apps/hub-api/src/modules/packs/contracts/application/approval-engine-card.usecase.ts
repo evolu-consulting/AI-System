@@ -176,11 +176,14 @@ export function engineAct(d: EngineCardDeps) {
     if (b.expect && b.expect.taskId !== plan.taskId) return { error: "APPROVAL_NOT_OPEN" };
     const c = { who, id, st, runId: a.engineRunId, b, ev: { id: null as string | null } };
     const note = plan.kind !== "redo" ? await noteOverride(d, c, inp.sv, plan.taskId) : null;
-    if (note?.id) return execOrVoid(d, port, c, plan, note.id);
-    const out = await exec(d, port, c, plan);
+    // Duyệt thay mới chèn (`note.id`): engine từ chối ⇒ bù trừ xoá bản ghi; engine nhận ⇒ đi tiếp `afterOk` như mọi quyết định (ghi
+    // `stage_decided` kèm bằng chứng — «Hồ sơ duyệt» đọc từ đây). Không ghi lại override: bản ghi của chính lần bấm này đã có.
+    const out = note?.id
+      ? await execOrVoid(d, port, c, plan, note.id)
+      : await exec(d, port, c, plan);
     // W1 · hai lần bấm song song của CÙNG người: lần chèn bản ghi thua đua (bù trừ xoá) còn lần trùng (không chèn) thắng ⇒ ghi
     // lại sau khi engine nhận quyết (idempotent, `on conflict do nothing`) — quyết duyệt thay không bao giờ thiếu audit.
-    if (out === "ok") await afterOk(d, c, { sv: inp.sv, plan, note });
+    if (out === "ok") await afterOk(d, c, { sv: inp.sv, plan, rewrite: note !== null && !note.id });
     return out;
   };
 }
@@ -189,11 +192,11 @@ export function engineAct(d: EngineCardDeps) {
 async function afterOk(
   d: EngineCardDeps,
   c: Ctx,
-  o: { sv: Awaited<ReturnType<typeof input>>["sv"]; plan: Plan; note: unknown },
+  o: { sv: Awaited<ReturnType<typeof input>>["sv"]; plan: Plan; rewrite: boolean },
 ): Promise<void> {
-  const { sv, plan, note } = o;
+  const { sv, plan, rewrite } = o;
   // W1 · hai lần bấm song song của CÙNG người: lần chèn bản ghi thua đua (bù trừ xoá) còn lần trùng (không chèn) thắng.
-  if (note) await noteOverride(d, c, sv, plan.taskId);
+  if (rewrite) await noteOverride(d, c, sv, plan.taskId);
   if (plan.kind !== "redo") await noteDecision(d, c, sv, plan);
 }
 
