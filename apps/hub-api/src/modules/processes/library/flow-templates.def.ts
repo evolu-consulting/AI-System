@@ -69,7 +69,7 @@ export const approve = (
   after: reviewNew(group),
   ...o,
 });
-const esignSend = (step: number): Stage => ({
+export const esignSend = (step: number): Stage => ({
   ...base,
   key: "ky-so",
   name: "Ký số",
@@ -86,7 +86,7 @@ const esignSend = (step: number): Stage => ({
   after: auto,
 });
 /** Chờ ký xong; từ chối / huỷ / quá hạn chờ ⇒ bước `fail` (Kết thúc · Từ chối). */
-const esignWait = (step: number, fail: number): Stage => ({
+export const esignWait = (step: number, fail: number): Stage => ({
   ...base,
   key: "cho-ky",
   name: "Chờ ký xong",

@@ -142,6 +142,16 @@ async function reconcileGroups(c: Ctx, spec: OnboardSpec): Promise<void> {
   console.log(`${TAG}: nhóm — thêm ${added} thành viên, bớt ${removed}`);
 }
 
+// ── 3b. CR-141 · nhóm «Người ký HĐ» là người ký mặc định của bước Ký hợp đồng (`partner_settings.signer_group_id`, cũng hiện ở Cài đặt › Ký & đối tác) ──
+async function setSignerGroup(c: Ctx): Promise<void> {
+  const r = await c.sql`insert into contracts.partner_settings (tenant_id, signer_group_id)
+    select ${c.tid}::uuid, g.id from admin.groups g where g.tenant_id = ${c.tid}::uuid and g.key = 'nguoi-ky-hd'
+    on conflict (tenant_id) do update set signer_group_id = excluded.signer_group_id, updated_at = now()
+    returning 1`;
+  if (r.length === 0) fail("thiếu nhóm nguoi-ky-hd để đặt người ký mặc định");
+  console.log(`${TAG}: người ký HĐ mặc định = nhóm nguoi-ky-hd`);
+}
+
 // ── 4. quy trình duyệt (starter_head) ──
 async function flows(): Promise<void> {
   const p = Bun.spawn(["bun", "tools/scripts/src/seed-cr128-flows.ts", "--skip-check"], {
@@ -305,6 +315,7 @@ async function main(): Promise<void> {
     const spec = await loadSpec();
     await onboard(c, spec);
     await reconcileGroups(c, spec);
+    await setSignerGroup(c);
     await flows();
     await cleanup(c);
     await samples(c);

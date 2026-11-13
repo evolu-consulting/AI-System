@@ -1,6 +1,6 @@
 // CR-128 · L3 · dựng 2 quy trình cho tenant `demo` bằng ĐÚNG đường platform admin làm (API Hub như màn Quy trình gọi):
 //   POST /tenants/:tid/company-flows (sơ đồ trống) → PUT /process-defs/:id (vẽ bước) → POST …/company-flows/apply (Áp dụng cho công ty).
-//   1) «Duyệt hợp đồng»  : bắt đầu khi `contract.submitted`; Trưởng phòng duyệt; Nếu giá trị > 500 triệu ⇒ Giám đốc duyệt; Kết thúc.
+//   1) «Duyệt hợp đồng»  : bắt đầu khi `contract.submitted`; Trưởng phòng duyệt; Nếu giá trị > 500 triệu ⇒ Giám đốc duyệt; Ký hợp đồng (+ chờ ký, nhóm «Người ký HĐ» của công ty); Kết thúc.
 //   2) «Đề nghị mua hàng»: bắt đầu bằng phiếu Yêu cầu (mặt hàng, số lượng, giá trị dự kiến, lý do) → Trưởng phòng duyệt → Kết thúc.
 // LẶP LẠI ĐƯỢC: quy trình cùng tên đã có ⇒ ghi đè bước + áp dụng lại (không nhân bản). Cuối cùng tự kiểm (exit ≠ 0 khi sai):
 //   2 quy trình đang Bật; «Đề nghị mua hàng» hiện ở `/processes/startable`; gửi duyệt một HĐ thử (SQL nháp → `POST …/submit`) không 409
@@ -12,6 +12,8 @@ import { parseArgs } from "node:util";
 import postgres from "postgres";
 import {
   approve,
+  esignSend,
+  esignWait,
   finish,
   norm,
   reviewNew,
@@ -106,16 +108,19 @@ const directorApprove = (step: number, to: { reject: number; ret: number }) =>
     after: { ...reviewNew(DIRECTOR_DEPT), head_only: true, need: "head" },
   });
 
-/** Trưởng phòng duyệt → Nếu > 500 triệu → Giám đốc duyệt → Kết thúc · Đã duyệt (+ Từ chối, Trả lại). */
+/** Trưởng phòng duyệt → Nếu > 500 triệu → Giám đốc duyệt → Ký hợp đồng (CR-141: node không chọn người ký ⇒ nhóm «Người ký HĐ») → Chờ ký xong → Kết thúc · Đã duyệt (+ Từ chối, Trả lại).
+ *  Ký đứng NGAY SAU bước duyệt cuối (luật «hành động thật cần người duyệt liền trước»); nhánh ≤ 500 triệu rẽ thẳng tới Ký. */
 const contractStages = (): unknown[] => {
-  const to = { reject: 4, ret: 5 };
+  const to = { reject: 6, ret: 7 };
   return norm([
     headApprove(0, to),
     ifTotal(1, 2, 3),
     directorApprove(2, to),
-    finish(3, "approved", "Đã duyệt"),
-    finish(4, "rejected", "Từ chối"),
-    finish(5, "returned", "Trả lại"),
+    { ...esignSend(3), name: "Ký hợp đồng" },
+    esignWait(4, 6),
+    finish(5, "approved", "Đã duyệt"),
+    finish(6, "rejected", "Từ chối"),
+    finish(7, "returned", "Trả lại"),
   ]);
 };
 
