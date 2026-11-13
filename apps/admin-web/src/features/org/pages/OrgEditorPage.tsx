@@ -12,6 +12,8 @@ import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useOrgApi, useOrgData } from "../api";
 import { DeptCard } from "../components/DeptCard";
+import { OrgPreview } from "../components/OrgPreview";
+import { toChartDepts } from "../lib/org-chart-data";
 import { buildDeptTree, deptKey, flattenTree } from "../lib/org-edit";
 
 export function OrgEditor() {
@@ -23,8 +25,17 @@ export function OrgEditor() {
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState("");
   const [parent, setParent] = useState("");
+  const [selected, setSelected] = useState<string | null>(null);
   const depts = org.data?.departments ?? [];
   const rows = useMemo(() => flattenTree(buildDeptTree(depts)), [depts]);
+  const chart = useMemo(() => toChartDepts(org.data), [org.data]);
+  // CR-142 · bấm thẻ phòng trên sơ đồ ⇒ chọn + cuộn tới phòng đó ở form bên dưới
+  const pick = (id: string) => {
+    setSelected(id);
+    document
+      .querySelector(`[data-testid="org-dept-${id}"]`)
+      ?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+  };
 
   const act = (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -49,6 +60,7 @@ export function OrgEditor() {
   return (
     <section className="space-y-3" data-testid="org-editor">
       <p className="text-sm text-muted-foreground">{t("orgEdit.lead")}</p>
+      {chart.length > 0 ? <OrgPreview depts={chart} selectedId={selected} onSelect={pick} /> : null}
       <form
         className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3"
         onSubmit={(e) => {
@@ -106,6 +118,7 @@ export function OrgEditor() {
               depts={depts}
               members={org.data?.members ?? []}
               busy={busy}
+              selected={r.dept.group_id === selected}
               act={act}
               api={api}
             />

@@ -27,9 +27,16 @@ test("nhân viên xem cây, mở thành viên, không thấy «Chỉnh sơ đồ
   const page = await (await browser.newContext({ locale: "vi-VN" })).newPage();
   await login(page, "cuong.le");
   await page.goto(`${CW}/contracts/org`);
-  await expect(page.getByTestId("org-tree")).toContainText("Phòng Kinh doanh");
-  await page.getByTestId("org-members-toggle").first().click();
-  await expect(page.getByTestId("org-members").first()).toBeVisible();
+  // CR-142 · sơ đồ cây (xyflow): thẻ phòng có tên + trưởng phòng + số người; bấm thẻ ⇒ hộp thành viên.
+  const chart = page.getByTestId("org-tree");
+  await expect(chart).toContainText("Phòng Kinh doanh", { timeout: 30_000 });
+  await chart.locator("[data-testid^=org-node-]", { hasText: "Phòng Kinh doanh" }).click();
+  await expect(page.getByTestId("org-members-dialog")).toBeVisible();
+  await expect(page.getByTestId("org-members")).toBeVisible();
+  await page.keyboard.press("Escape");
+  // tìm ⇒ thẻ phòng được làm nổi
+  await page.getByLabel("Tìm phòng ban hoặc người").fill("Kinh doanh");
+  await expect(chart.locator("[data-lit=true]").first()).toBeVisible();
   await expect(page.getByTestId("org-edit")).toHaveCount(0);
 });
 
@@ -46,9 +53,17 @@ test("quản trị chỉnh sơ đồ ở admin ⇒ cây ở Sổ Hợp Tác đ�
   await page.getByLabel("Thuộc phòng của phòng mới").selectOption({ label: "Phòng Kinh doanh" });
   await page.getByRole("button", { name: "Thêm phòng" }).click();
   await expect(page.getByRole("heading", { name: NEW_DEPT })).toBeVisible();
+  // CR-142 · xem trước sơ đồ ở admin: bấm thẻ phòng mới ⇒ chọn phòng đó ở form.
+  await page
+    .getByTestId("org-preview")
+    .locator("[data-testid^=org-node-]", { hasText: NEW_DEPT })
+    .click();
+  await expect(page.locator("[data-testid^=org-dept-][data-selected=true]")).toContainText(
+    NEW_DEPT,
+  );
   // Phòng cha không được chọn chính con của nó: «Phòng Kinh doanh» không có phòng mới trong danh sách «Thuộc phòng».
   const parentOpts = page.getByLabel("Thuộc phòng · Phòng Kinh doanh").locator("option");
   await expect(parentOpts.filter({ hasText: NEW_DEPT })).toHaveCount(0);
   await page.goto(`${CW}/contracts/org`);
-  await expect(page.getByTestId("org-tree")).toContainText(NEW_DEPT);
+  await expect(page.getByTestId("org-tree")).toContainText(NEW_DEPT, { timeout: 30_000 });
 });

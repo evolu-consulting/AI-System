@@ -6,5 +6,6 @@ export * from "./layout/graph";
 export * from "./layout/settle";
 export * from "./layout/vertical";
 export * from "./mode";
+export * from "./org-chart/org-graph";
 export * from "./registry";
 export * from "./routing/orthogonal";

@@ -681,7 +681,18 @@
     "removeConfirm": "Xoá phòng «{{name}}» khỏi sơ đồ? Các phòng con chuyển lên phòng cha. Nhóm và thành viên vẫn còn ở mục Nhóm.",
     "cycle": "Không đặt được: phòng không thể thuộc chính nó hay phòng con của nó.",
     "empty": "Công ty chưa có phòng ban. Nhập tên phòng ở trên rồi bấm «Thêm phòng».",
-    "loadError": "Không tải được cơ cấu tổ chức. Thử lại sau ít phút."
+    "loadError": "Không tải được cơ cấu tổ chức. Thử lại sau ít phút.",
+    "company": "Công ty",
+    "chart": "Xem trước sơ đồ tổ chức",
+    "preview": "Bấm một phòng trên sơ đồ để sửa phòng đó ở bên dưới.",
+    "people_one": "{count} người",
+    "people_other": "{count} người",
+    "zoomIn": "Phóng to",
+    "zoomOut": "Thu nhỏ",
+    "fit": "Vừa khung",
+    "controls": "Điều khiển sơ đồ",
+    "chartLoading": "Đang tải sơ đồ…",
+    "chartFail": "Không tải được sơ đồ xem trước."
   },
   "tenants": {
     "partner": {

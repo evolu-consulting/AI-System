@@ -13,11 +13,13 @@ type Props = {
   depts: readonly OrgDepartment[];
   members: readonly OrgMember[];
   busy: boolean;
+  /** CR-142 · phòng được chọn từ sơ đồ xem trước. */
+  selected?: boolean;
   act: (fn: () => Promise<unknown>) => void;
   api: OrgActions;
 };
 
-export function DeptCard({ row, depts, members, busy, act, api }: Props) {
+export function DeptCard({ row, depts, members, busy, selected, act, api }: Props) {
   const { t } = useTranslation();
   const d = row.dept;
   const [editing, setEditing] = useState(false);
@@ -28,7 +30,8 @@ export function DeptCard({ row, depts, members, busy, act, api }: Props) {
     <li
       style={{ marginLeft: `${Math.min(row.depth, 6) * 1.25}rem` }}
       data-testid={`org-dept-${d.group_id}`}
-      className="rounded-lg border bg-card p-3"
+      data-selected={selected ? "true" : undefined}
+      className={`rounded-lg border bg-card p-3 ${selected ? "border-primary ring-2 ring-primary" : ""}`}
     >
       <div className="flex flex-wrap items-center gap-2">
         {editing ? (

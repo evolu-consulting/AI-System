@@ -681,7 +681,18 @@
     "removeConfirm": "Remove “{{name}}” from the chart? Its sub-departments move up to its parent. The group and its members stay under Groups.",
     "cycle": "Cannot set: a department cannot belong to itself or to one of its own sub-departments.",
     "empty": "The company has no departments yet. Type a name above and press “Add department”.",
-    "loadError": "Could not load the organisation. Try again in a few minutes."
+    "loadError": "Could not load the organisation. Try again in a few minutes.",
+    "company": "Company",
+    "chart": "Organization chart preview",
+    "preview": "Click a department on the chart to edit it below.",
+    "people_one": "{count} person",
+    "people_other": "{count} people",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Fit to view",
+    "controls": "Chart controls",
+    "chartLoading": "Loading chart…",
+    "chartFail": "Could not load the chart preview."
   },
   "tenants": {
     "partner": {
