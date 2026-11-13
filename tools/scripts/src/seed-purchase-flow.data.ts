@@ -156,8 +156,27 @@ export const C_INPUTS = [
   { key: "ten_hang", label: "Tên hàng", type: "text", required: false },
   { key: "du_toan", label: "Dự toán", type: "number", required: false },
 ];
+/** Bước 11 · «Ghi thanh toán vào HĐ» (CR-140): thủ quỹ xác nhận «Đã chi» ⇒ ghi một dòng «đã trả» vào sổ thanh toán của HĐ (số tiền = số đề nghị ở bước 10, ngày = ngày chi). Đơn không có HĐ (dưới 20 triệu) ⇒ bỏ qua. */
+const recordPayment = (step: number): Stage => ({
+  ...base,
+  key: "11-ghi-so-hd",
+  name: "11 Ghi khoản đã chi vào hợp đồng",
+  node: "contracts.record-payment",
+  step,
+  executor: {
+    kind: "tool",
+    tool_key: "contracts-record-payment",
+    args: {
+      contract_id: { from: "input", key: "contract_id" },
+      amount: { from: "field", stage_key: "10-de-nghi-tt", field: "so_tien_tt" },
+      paid_at: { from: "field", stage_key: "11-thanh-toan", field: "ngay_chi" },
+    },
+  },
+  output: out("11-ghi-so-hd.md", [{ key: "status", type: "string", required: false }]),
+  after: { kind: "auto", branch: [] },
+});
 export function stagesC(): unknown[] {
-  const to = { reject: 9, ret: 10 };
+  const to = { reject: 10, ret: 11 };
   return norm([
     work("8-nhan-hang", "8 Nhận hàng, nghiệm thu, biên bản", 0, G.kho, [
       date("ngay_nhan", "Ngày nhận hàng", true),
@@ -193,10 +212,11 @@ export function stagesC(): unknown[] {
       [date("ngay_chi", "Ngày chi", true), file("chung_tu", "Chứng từ thanh toán / hạch toán")],
       [G.ktThanhToan],
     ),
-    headOf("11-ktt-duyet", "11 Kế toán trưởng duyệt hạch toán", 7, G.keToan, to),
-    finish(8, "approved", "Đã duyệt"),
-    finish(9, "rejected", "Từ chối"),
-    finish(10, "returned", "Trả lại"),
+    recordPayment(7),
+    headOf("11-ktt-duyet", "11 Kế toán trưởng duyệt hạch toán", 8, G.keToan, to),
+    finish(9, "approved", "Đã duyệt"),
+    finish(10, "rejected", "Từ chối"),
+    finish(11, "returned", "Trả lại"),
   ]);
 }
 

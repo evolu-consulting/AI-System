@@ -40,6 +40,7 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
       "contracts.milestone-confirm", // CR-127 · E10 · «Xác nhận mốc» (nhóm Người làm)
       "form", // «Bổ sung thông tin» lên nhóm nghiệp vụ
       "core.wait", // «Chờ» gộp Hẹn giờ + Chờ khoảng
+      "contracts.record-payment", // CR-140 · «Ghi thanh toán vào HĐ»
       // CR-127 · Hoàn tất tự có cuối quy trình hợp đồng ⇒ không còn «Kết thúc» trên menu
     ]);
     expect(m.advanced).toEqual([]);

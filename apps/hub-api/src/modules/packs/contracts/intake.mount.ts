@@ -16,6 +16,7 @@ import { contractCodeLabel } from "./domain/contract-name";
 import type { CompletedHook, ESignModule } from "./esign.mount";
 import { esignBindingBase } from "./nodes/esign/binding";
 import { mountPartnerSend } from "./partner-mailbox.mount";
+import { mountRecordPayment } from "./record-payment.mount";
 
 const repos = (tx: Tx, t: string) => ({
   extraction: extractionRepo(tx, t),
@@ -108,6 +109,7 @@ export function mountIntake(
   for (const t of tools) moduleRegistry.bindTool(t);
   moduleRegistry.bindNode(esignBindingBase); // CR-125 · m4 · nodes/esign/binding.ts
   mountCreateFromStep(d, db); // cr125-contract-from-step · node «Tạo hợp đồng từ hồ sơ»
+  mountRecordPayment(d, db); // CR-140 · node «Ghi thanh toán vào HĐ»
   mountPartnerSend(d, db); // CR-124 · q3 · node «Gửi đối tác xác nhận» + cổng hộp thư liên công ty (bộ chuyển tắt mặc định)
   // CR-122 E3 · bắn đúng khoá theo trạng thái cuối (đã ký / từ chối / huỷ). Webhook + vòng đồng bộ trùng ⇒ `signalEvent` chỉ thả
   // stage đang chờ một lần (khoá run; lần sau stage đã xong ⇒ không còn chờ khoá đó).

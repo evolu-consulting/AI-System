@@ -58,6 +58,7 @@ describe("CR-122 N1 · bảng node", () => {
       "contracts.create-from-step",
       "contracts.esign",
       "contracts.milestone-confirm",
+      "contracts.record-payment",
       "contracts.sign-together-accept",
     ]);
     expect((await keys("A", "?app=community")).keys).not.toContain("community.show-post");

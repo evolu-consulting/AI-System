@@ -123,4 +123,18 @@ describe("demo:purchase · định nghĩa quy trình mua hàng", () => {
     expect(args.file_id?.stage_key).toBe("6-soan-hd");
     expect(args.amount?.from).toBe("input");
   });
+  it("CR-140 · bước 11: sau «Đã chi» ghi khoản đã chi vào sổ thanh toán của HĐ (số tiền bước 10, ngày chi bước 11)", () => {
+    const i = C.findIndex((s) => s.key === "11-thanh-toan");
+    const rec = C[i + 1] as St;
+    expect(rec.node).toBe("contracts.record-payment");
+    expect(rec.step).toBe((C[i] as St).step + 1);
+    expect(rec.executor.tool_key).toBe("contracts-record-payment");
+    const args = rec.executor.args as Record<
+      string,
+      { from: string; stage_key?: string; field?: string }
+    >;
+    expect(args.contract_id).toMatchObject({ from: "input", key: "contract_id" });
+    expect(args.amount).toMatchObject({ stage_key: "10-de-nghi-tt", field: "so_tien_tt" });
+    expect(args.paid_at).toMatchObject({ stage_key: "11-thanh-toan", field: "ngay_chi" });
+  });
 });

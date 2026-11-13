@@ -50,6 +50,7 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
       "contracts.esign",
       "contracts.partner-send",
       "contracts.milestone-confirm",
+      "contracts.record-payment",
       "contracts.sign-together-accept",
     ]);
     expect(APP_MANIFESTS.community?.nodes.map((n) => n.key)).toEqual(["community.show-post"]);
@@ -89,6 +90,7 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
         ["core.email", { tools: [], outputs: ["sent_to"] }], // CR-125 m9 · Thông báo ghi người nhận
         ["core.bell", { tools: [], outputs: ["sent_to"] }],
         ["contracts.milestone-confirm", { tools: [], outputs: ["event"] }], // CR-127 · E10
+        ["contracts.record-payment", { tools: ["contracts-record-payment"], outputs: ["status"] }], // CR-140
         ["contracts.sign-together-accept", { tools: [], outputs: ["event"] }], // CR-127 · P2
         ["community.show-post", { tools: [] }],
       ]),
@@ -96,6 +98,7 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
         "contracts-create-from-step",
         "contracts-esign-send",
         "contracts-partner-send",
+        "contracts-record-payment",
       ]),
     });
     expect(moduleIssues(MODULES, b)).toEqual([]);
