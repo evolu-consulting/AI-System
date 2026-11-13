@@ -177,8 +177,13 @@ const groupKeyDraft = (a: ProcessStageDef["after"]): { groupKey?: string } =>
   a.kind === "review" && a.group_key ? { groupKey: a.group_key } : {};
 
 /** Nhóm duyệt khi lưu: mã (mẫu Thư viện) thì không có id, và ngược lại. */
+// CR-140 · «cùng duyệt»: nhóm nằm trong `parallel.groups` ⇒ `group_id` của bước luôn null (máy chủ báo PARALLEL_RULE_INVALID nếu khác).
 const reviewGroupToDef = (s: StageDraft): { group_id: string | null; group_key?: string } =>
-  s.groupKey ? { group_id: null, group_key: s.groupKey } : { group_id: s.groupId || null };
+  s.parallel
+    ? { group_id: null }
+    : s.groupKey
+      ? { group_id: null, group_key: s.groupKey }
+      : { group_id: s.groupId || null };
 
 function executorDef(s: StageDraft): ProcessStageDef["executor"] {
   const kind = draftKindOf(s.executor);

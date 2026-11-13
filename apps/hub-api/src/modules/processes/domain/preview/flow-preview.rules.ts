@@ -100,7 +100,8 @@ function gateOf(c: Ctx, a: After): Gate {
   const { stage, w, warn } = c;
   const group = a.group_id ? (w.groups.get(a.group_id) ?? null) : null;
   const groupId = group ? (a.group_id as string) : null;
-  if (!group && !a.approver_user_id && a.approver_mode !== "starter_head")
+  if (a.parallel) parallelNoHead(c, a.parallel.groups); // CR-140 · nhánh head_only mà nhóm chưa có trưởng
+  if (!group && !a.parallel && !a.approver_user_id && a.approver_mode !== "starter_head")
     // CR-139
     warn(
       "group_missing",
@@ -123,8 +124,20 @@ function gateOf(c: Ctx, a: After): Gate {
     group,
     groupId,
     approver,
-    gate: headGate({ ...a, group_id: groupId }, approver ?? head),
+    gate: headGate({ ...a, group_id: groupId }, approver ?? head, groupId),
   };
+}
+
+/** CR-140 · «cùng duyệt»: nhánh bật «Chỉ trưởng phòng duyệt» mà nhóm chưa có trưởng ⇒ cảnh báo (không chặn; luật dự phòng = cả nhóm). */
+function parallelNoHead(
+  c: Ctx,
+  groups: readonly { group_id?: string | null; head_only?: boolean; label: string }[],
+): void {
+  for (const b of groups) {
+    const g = b.head_only === true && b.group_id ? c.w.groups.get(b.group_id) : undefined;
+    if (g && !g.headUserId)
+      c.warn("no_head", `Nhóm «${g.name}» chưa có trưởng phòng — cả nhóm sẽ duyệt được.`);
+  }
 }
 
 /** Người nhận theo nhánh luật: cửa duyệt · tất cả · việc nhóm. */

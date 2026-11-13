@@ -1,6 +1,6 @@
 // contract-flow S1a · luật thuần trạng thái stage cho thẻ duyệt của gói (`stepsView`).
 import { describe, expect, test } from "bun:test";
-import { dueOf, stageMeta, stepStatusOf } from "./pack-steps.rules";
+import { approverFieldsOf, dueOf, stageMeta, stepStatusOf } from "./pack-steps.rules";
 
 const open = { status: "open" as const, result: null };
 const closed = (result: string) => ({ status: "closed" as const, result });
@@ -52,5 +52,19 @@ describe("S1a · stageMeta / dueOf", () => {
     expect(dueOf(null)).toBeNull();
     expect(dueOf("2026-10-23T01:00:00Z")).toBe("2026-10-23T01:00:00.000Z");
     expect(dueOf(new Date("2026-10-23T01:00:00Z"))).toBe("2026-10-23T01:00:00.000Z");
+  });
+});
+
+describe("CR-140 · approverFieldsOf thẻ «cùng duyệt»", () => {
+  const after = {
+    kind: "review",
+    group_id: null,
+    parallel: { groups: [{ group_id: "kt", head_only: true }, { group_id: "mh" }] },
+  };
+  test("nhánh head_only ⇒ tên trưởng phòng nhóm của thẻ; nhánh không cờ ⇒ không tên", () => {
+    expect(approverFieldsOf(after, "em", "Em Hoàng", "kt")).toEqual({
+      approver: { id: "em", name: "Em Hoàng" },
+    });
+    expect(approverFieldsOf(after, "tp", "TP", "mh")).toEqual({});
   });
 });

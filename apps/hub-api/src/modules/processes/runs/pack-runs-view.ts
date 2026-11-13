@@ -132,7 +132,7 @@ function stepOf(r: Row, canActOf: ActOf): PackStepView {
     task: r.task_id && r.task_status === "open" ? openTask(r.task_id, canActOf(r, stage)) : null,
     task_ref: r.task_id,
     back_to_steps: m.backTo,
-    ...approverFieldsOf(stage?.after, r.group_head, r.group_head_name),
+    ...approverFieldsOf(stage?.after, r.group_head, r.group_head_name, r.assignee_group_id),
     ...formOf(stage, r),
   };
 }

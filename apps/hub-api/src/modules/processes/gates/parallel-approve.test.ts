@@ -57,6 +57,28 @@ describe("CR-125 · cùng duyệt — luật lưu def, mã nhóm", () => {
     );
   });
 
+  it("CR-140 · bước «cùng duyệt» còn `group_id` riêng ⇒ RULE_INVALID; `group_id: null` hợp lệ", () => {
+    const p = {
+      groups: [
+        { group_id: "a", label: "A" },
+        { group_id: "b", label: "B" },
+      ],
+      rule: "all",
+    };
+    const own = {
+      executor: { kind: "approve" },
+      after: { kind: "review", group_id: "a", parallel: p },
+    };
+    expect(parallelStageIssues([own])).toEqual([
+      { path: "stages.0.after.parallel.rule", rule: "PARALLEL_RULE_INVALID" },
+    ]);
+    const ok = {
+      executor: { kind: "approve" },
+      after: { kind: "review", group_id: null, parallel: p },
+    };
+    expect(parallelStageIssues([ok])).toEqual([]);
+  });
+
   it("mã nhóm của `parallel`: cần có (mẫu) và gắn id khi mở lượt / sao chép", () => {
     const st = [
       {

@@ -63,8 +63,9 @@ export function approverFieldsOf(
   after: (Parameters<typeof headGate>[0] & { approver_mode?: string }) | null | undefined,
   head: string | null,
   headName: string | null,
+  taskGroupId?: string | null,
 ): { approver?: { id: string; name: string }; approver_missing?: true } {
-  const gate = headGate(after, head);
+  const gate = headGate(after, head, taskGroupId); // CR-140 · thẻ «cùng duyệt»: cờ theo nhánh của nhóm thẻ
   if (gate) return { approver: { id: gate, name: headName ?? gate } };
   return after?.kind === "review" && after.approver_mode === "starter_head"
     ? { approver_missing: true }

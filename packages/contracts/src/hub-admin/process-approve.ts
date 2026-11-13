@@ -89,11 +89,16 @@ export const PARALLEL_KEY = "process.admin.parallel.err";
 
 type ParallelDraft = {
   executor: { kind: string };
-  after: { kind: string; parallel?: { groups: readonly unknown[]; rule: unknown } };
+  after: {
+    kind: string;
+    group_id?: string | null;
+    parallel?: { groups: readonly unknown[]; rule: unknown };
+  };
 };
 /**
  * PARALLEL_GROUPS_MIN2: cần ≥ 2 nhóm (1 nhóm = bước Duyệt thường). PARALLEL_RULE_INVALID: `min` vượt số nhóm, hoặc `parallel` ở bước
- * không phải Duyệt, hoặc trùng nhóm (cùng mã / cùng id).
+ * không phải Duyệt, hoặc trùng nhóm (cùng mã / cùng id), hoặc bước còn `group_id` riêng (CR-140: nhóm nằm trong `parallel.groups`,
+ * `group_id` của bước phải `null` — tránh cửa trưởng phòng đọc nhầm nhóm của bước).
  */
 export function parallelStageIssues(
   stages: readonly ParallelDraft[],
@@ -116,7 +121,9 @@ export function parallelStageIssues(
     const dup = new Set(ids.filter(Boolean)).size !== ids.filter(Boolean).length;
     const r = p.rule as ParallelRule;
     const badMin = typeof r === "object" && r.min > p.groups.length;
-    if (dup || badMin) out.push({ path: `${path}.rule`, rule: "PARALLEL_RULE_INVALID" });
+    const ownGroup = s.after.group_id != null;
+    if (dup || badMin || ownGroup)
+      out.push({ path: `${path}.rule`, rule: "PARALLEL_RULE_INVALID" });
   });
   return out;
 }

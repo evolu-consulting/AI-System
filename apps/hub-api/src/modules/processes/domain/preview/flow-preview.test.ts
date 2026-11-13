@@ -209,6 +209,29 @@ describe("E7 · người nhận việc + cảnh báo", () => {
     expect(all.path.at(-1)?.review?.voters_n).toBe(2);
   });
 
+  it("CR-140 · nhánh «cùng duyệt» head_only, nhóm chưa có trưởng ⇒ cảnh báo, không báo «chưa chọn phòng»", () => {
+    const w = world({
+      groups: new Map([
+        [G_KD, { name: "Ban GĐ", memberIds: [HEAD], headUserId: HEAD }],
+        [G_KT, { name: "KT", memberIds: [L1, L2], headUserId: null }],
+      ]),
+    });
+    const par = {
+      group_id: null,
+      parallel: {
+        groups: [
+          { group_id: G_KD, label: "GĐ", head_only: true },
+          { group_id: G_KT, label: "KT", head_only: true },
+        ],
+        rule: "all",
+      },
+    };
+    const r = walkFlow({ ...input(flow(par), { total_value: 1 }, w), decisions: [] });
+    const msgs = r.warnings.filter((x) => x.code === "no_head").map((x) => x.message);
+    expect(msgs).toEqual(["Nhóm «KT» chưa có trưởng phòng — cả nhóm sẽ duyệt được."]);
+    expect(r.warnings.some((x) => x.code === "group_missing" && x.step_key === "kd")).toBe(false);
+  });
+
   it("phòng 1 người / chưa có trưởng phòng / chưa chọn phòng", () => {
     const w = world({
       groups: new Map([
