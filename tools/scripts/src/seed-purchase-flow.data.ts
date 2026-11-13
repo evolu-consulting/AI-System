@@ -167,7 +167,8 @@ const recordPayment = (step: number): Stage => ({
     kind: "tool",
     tool_key: "contracts-record-payment",
     args: {
-      contract_id: { from: "input", key: "contract_id" },
+      // Không truyền contract_id: tool tự lấy HĐ theo liên kết lượt (đơn dưới 20 triệu không có HĐ ⇒ bỏ qua,
+      // còn binding từ input sẽ báo MISSING_ARG và kẹt bước).
       amount: { from: "field", stage_key: "10-de-nghi-tt", field: "so_tien_tt" },
       paid_at: { from: "field", stage_key: "11-thanh-toan", field: "ngay_chi" },
     },

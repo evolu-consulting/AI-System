@@ -33,7 +33,9 @@ export const RECORD_PAYMENT_NODE: FeatureNodeDecl = {
     {
       key: "paid_at",
       type: "string",
-      required: true,
+      // Không bắt buộc ở mức cạnh nối: seed gắn ngày chi bằng binding tường minh (field của bước trước, khác tên khoá);
+      // tool tự chặn ngày trống/sai bằng CONTRACT_PAYMENT_BAD_DATE.
+      required: false,
       label: { vi: "Ngày chi", en: "Payment date" },
       fix: {
         vi: "thêm bước Điền thông tin có ô Ngày chi trước.",

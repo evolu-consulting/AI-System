@@ -133,7 +133,7 @@ describe("demo:purchase · định nghĩa quy trình mua hàng", () => {
       string,
       { from: string; stage_key?: string; field?: string }
     >;
-    expect(args.contract_id).toMatchObject({ from: "input", key: "contract_id" });
+    expect(args.contract_id).toBeUndefined();
     expect(args.amount).toMatchObject({ stage_key: "10-de-nghi-tt", field: "so_tien_tt" });
     expect(args.paid_at).toMatchObject({ stage_key: "11-thanh-toan", field: "ngay_chi" });
   });
