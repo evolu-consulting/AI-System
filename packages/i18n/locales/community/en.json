@@ -521,7 +521,6 @@
       },
       "join": {
         "title": "Join requests",
-        "introHost": "Partner companies ask to join the community. Approving links the company with the labels it asked for; rejecting lets them send again.",
         "introPartner": "Send a request so your company is linked with the community. An admin will review and answer; each company can have one pending request.",
         "formTitle": "Company details",
         "company": "Company name",
@@ -565,7 +564,6 @@
       "reports": {
         "menu": "Report",
         "title": "Reported posts",
-        "intro": "Posts reported by members. The system suggests a category for reference; you decide to hide the post, warn the author or dismiss.",
         "empty": "No reports yet. When someone reports a post, it shows up here.",
         "reason": "Reason for the report",
         "triaging": "Being categorized",

@@ -220,9 +220,7 @@ export default function JoinRequestsPage() {
   return (
     <FlowPage
       title={t("community.flows.join.title")}
-      intro={t(
-        isHostViewer ? "community.flows.join.introHost" : "community.flows.join.introPartner",
-      )}
+      intro={isHostViewer ? undefined : t("community.flows.join.introPartner")}
       testId="join-page"
       bare={isHostViewer}
     >

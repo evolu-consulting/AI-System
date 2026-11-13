@@ -1,5 +1,6 @@
 // CR-105 L4 · nút/ liên kết "Chỉnh quy trình duyệt" → ai-admin; chỉ hiện cho người có quyền sửa (platform_admin).
 
+import { openInNewTab } from "@ai/web-kit/auth/open-tab";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,10 +17,9 @@ export function FlowEditorLink({ className, testId }: { className?: string; test
   if (!can) return null;
   const go = async () => {
     setBusy(true);
-    const url = await flowEditorUrl(flow.data?.defId);
+    const ok = await openInNewTab(() => flowEditorUrl(flow.data?.defId));
     setBusy(false);
-    if (url) window.location.assign(url);
-    else toast(t("contracts.flow.current.openFail"), "late");
+    if (!ok) toast(t("contracts.flow.current.openFail"), "late");
   };
   return (
     <button

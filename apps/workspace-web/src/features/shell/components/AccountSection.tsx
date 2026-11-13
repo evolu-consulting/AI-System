@@ -1,5 +1,6 @@
 // GAP-E #32/#30 · phần menu tài khoản: đổi mật khẩu + 2FA (trang của nền tảng qua SSO), Điều khoản + Bảo mật.
 
+import { openInNewTab } from "@ai/web-kit/auth/open-tab";
 import { toast } from "@ai/web-kit/ui/toast";
 import { Link } from "@tanstack/react-router";
 import { KeyRound, ShieldCheck } from "lucide-react";
@@ -14,11 +15,10 @@ export function AccountLinks({ role, close }: { role: string | undefined; close:
   const [busy, setBusy] = useState(false);
   const go = async (page: AccountPage) => {
     setBusy(true);
-    const url = await accountPageUrl(page);
+    const ok = await openInNewTab(() => accountPageUrl(page));
     setBusy(false);
     close();
-    if (url) window.location.assign(url);
-    else toast(t("contracts.gape.account.openFail"), "late");
+    if (!ok) toast(t("contracts.gape.account.openFail"), "late");
   };
   return (
     <>

@@ -40,7 +40,7 @@
       "sent": "Sent for signing",
       "signerDone": "signed",
       "settingLabel": "Contract e-signature",
-      "settingHint": "Allow sending approved contracts for e-signature.",
+      "settingHint": "On: sign electronically in the system. Off: upload the signed copy only.",
       "settingOwnerOnly": "Only the Contracts owner (Full access group) can switch this on or off. Ask them to open {{path:sign}}.",
       "settingSaved": "E-sign settings saved.",
       "inviteThumb": "Include the first-page image in signing invitation emails",

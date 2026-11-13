@@ -685,7 +685,7 @@
   },
   "tenants": {
     "partner": {
-      "title": "Đối tác xác nhận hợp đồng",
+      "title": "Gửi và nhận hợp đồng với đối tác",
       "switch": "Gửi và nhận hợp đồng với công ty đối tác",
       "hint": "Bật để công ty gửi hợp đồng cho đối tác xác nhận và nhận hợp đồng đối tác gửi tới. Cần đủ các điều kiện bên dưới.",
       "loadError": "Chưa đọc được các điều kiện của Đối tác xác nhận. Tải lại trang hoặc thử lại sau.",

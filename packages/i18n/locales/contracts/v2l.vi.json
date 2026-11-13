@@ -9,8 +9,8 @@
         "feed": "Bảng tin"
       },
       "signPane": {
-        "esign": "Tắt ⇒ bước Ký hợp đồng chỉ nhận bản đã ký tải lên.",
-        "work": "Dùng cho bước Ký số: chỉ nhóm này được ký; việc đã nhận mà không xử lý sau số giờ đặt ở đây sẽ tự trả về hàng chờ.",
+        "esign": "Áp dụng cho bước Ký hợp đồng của quy trình duyệt.",
+        "work": "Áp dụng cho bước Ký hợp đồng của quy trình duyệt.",
         "partner": "Dùng cho bước «Gửi đối tác xác nhận» (gửi đi) và quy trình Nhận HĐ (nhận về). Chưa đủ điều kiện ⇒ các bước này không chạy được."
       },
       "sec": {

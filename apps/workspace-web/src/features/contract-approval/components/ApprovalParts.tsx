@@ -84,7 +84,7 @@ export function ApprovalNote({ note, rejected }: { note: string | null; rejected
     );
   if (!note) return null;
   return (
-    <p data-approval="note" className="mb-3 text-sm text-muted">
+    <p data-approval="note" className="mb-3 text-sm text-dim">
       {t(note)}
     </p>
   );

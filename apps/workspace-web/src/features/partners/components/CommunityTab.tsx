@@ -1,6 +1,7 @@
 // CR-130 · tab «Bảng tin» của đối tác SHT: nhóm hàng + khu vực (sửa), tài khoản đã mời (tên, trạng thái), «Mời vào Bảng tin» chọn từ
 // tài khoản công ty chưa gắn (chưa có ⇒ hướng dẫn + link tạo ở Admin), «Gỡ khỏi Bảng tin» có xác nhận. Chỉ quản trị gói ghi; người khác xem.
 import type { PartnerCommunity } from "@ai/contracts/pack-contracts";
+import { openInNewTab } from "@ai/web-kit/auth/open-tab";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -82,9 +83,8 @@ function Invite({ party, name }: { party: string; name: string }) {
   const [pick, setPick] = useState("");
   const list = cands.data ?? [];
   const openAdmin = async () => {
-    const url = await adminUrl(adminPartnersNext(name));
-    if (url) window.open(url, "_blank", "noopener");
-    else toast(t("contracts.pcm.adminFail"), "late");
+    const ok = await openInNewTab(() => adminUrl(adminPartnersNext(name)));
+    if (!ok) toast(t("contracts.pcm.adminFail"), "late");
   };
   const invite = () =>
     setAccount.mutate(pick, {

@@ -39,7 +39,11 @@ function ReceiveGroup({ d, setD, members, issue, save }: GroupProps) {
   return (
     <SettingsGroup title={t("contracts.partner.settings.title")}>
       <div data-testid="partner-receive-settings">
-        <SettingsRow label={t("contracts.partner.settings.important")} htmlFor="prs-important">
+        <SettingsRow
+          label={t("contracts.partner.settings.important")}
+          hint={t("contracts.partner.settings.importantHint")}
+          htmlFor="prs-important"
+        >
           <Num
             id="prs-important"
             value={d.importantM}
@@ -59,7 +63,11 @@ function ReceiveGroup({ d, setD, members, issue, save }: GroupProps) {
             onChange={(v) => setD({ ...d, criticalM: v })}
           />
         </SettingsRow>
-        <SettingsRow label={t("contracts.partner.settings.owner")} htmlFor="prs-owner">
+        <SettingsRow
+          label={t("contracts.partner.settings.owner")}
+          hint={t("contracts.partner.settings.ownerHint")}
+          htmlFor="prs-owner"
+        >
           <select
             id="prs-owner"
             className="field h-10 w-full"

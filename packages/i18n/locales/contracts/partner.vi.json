@@ -40,13 +40,23 @@
       "level": { "normal": "Thường", "important": "Quan trọng", "critical": "Rất quan trọng" },
       "channel": { "platform": "nền tảng", "email": "email", "manual": "ghi nhận thủ công" },
       "confirm": {
-        "title": "Đối tác xác nhận hợp đồng",
+        "title": "Gửi và nhận hợp đồng với đối tác",
         "off": "Đang tắt. Công ty chưa gửi hoặc nhận hợp đồng với đối tác được. Nhờ quản trị nền tảng bật tính năng này.",
         "on": "Đang bật",
         "ready": "Đang bật · sẵn sàng gửi và nhận",
-        "missing": "Đang bật · còn {count} điều kiện chưa xong",
+        "missing": "Đang bật · còn thiếu: {{what}} · {{who}}",
         "state": { "ok": "Xong", "todo": "Còn thiếu", "unknown": "Chưa rõ" },
         "who": { "platform": "Nhờ quản trị nền tảng", "company": "Quản trị công ty làm" },
+        "short": {
+          "app": "Sổ Hợp Tác",
+          "feature": "tính năng",
+          "channel": "kênh gửi nhận",
+          "profile": "hồ sơ công ty",
+          "listed": "đăng ký đối tác",
+          "receive_flow": "quy trình Nhận HĐ",
+          "groups": "nhóm người xử lý",
+          "send_flow": "quy trình Gửi đối tác"
+        },
         "item": {
           "app": {
             "ok": "Công ty đã dùng Sổ Hợp Tác.",
@@ -93,9 +103,11 @@
       "settings": {
         "title": "Nhận hợp đồng từ đối tác",
         "important": "Mức «Quan trọng» từ giá trị",
+        "importantHint": "HĐ đối tác gửi có giá trị từ mức này trở lên được đánh dấu Quan trọng để đi nhánh duyệt riêng.",
         "critical": "Mức «Rất quan trọng» từ giá trị",
         "unit": "triệu đồng",
         "owner": "Người phụ trách hợp đồng nhận",
+        "ownerHint": "Người nhận HĐ đối tác gửi tới; để trống thì quản trị công ty xử lý.",
         "ownerNone": "Chưa chọn — quản trị công ty xử lý",
         "save": "Lưu",
         "issue": {

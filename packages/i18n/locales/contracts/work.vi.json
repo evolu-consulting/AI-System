@@ -171,11 +171,12 @@
           "row": "{{from}} → {{to}} · {{start}} – {{end}}"
         },
         "settings": {
-          "title": "Nhận việc và người ký",
+          "titleHours": "Nhận việc",
+          "titleSigners": "Người ký hợp đồng",
           "hours": "Thời gian tự trả việc đã nhận",
-          "hoursHint": "Việc đã nhận mà chưa quyết sau số giờ này sẽ tự về nhóm (1–168 giờ).",
+          "hoursHint": "Áp dụng cho mọi bước đã nhận việc: chưa quyết sau số giờ này thì việc tự về nhóm (1–168 giờ).",
           "signers": "Nhóm Người ký HĐ",
-          "signersHint": "Chỉ người trong nhóm này ký số và nhận uỷ quyền ký số được.",
+          "signersHint": "Người được ký hợp đồng khi bước Ký không chọn người cụ thể.",
           "signersNone": "Chưa chọn nhóm",
           "save": "Lưu cài đặt",
           "saved": "Đã lưu cài đặt."

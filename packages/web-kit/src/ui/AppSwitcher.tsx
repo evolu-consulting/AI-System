@@ -23,6 +23,7 @@ import {
   showsHome,
   withCurrent,
 } from "../app-catalog/apps";
+import { openInNewTab } from "../auth/open-tab";
 
 export type AppSwitcherProps = {
   /** Thường `() => session.myApps().then((r) => r.items)`. */
@@ -118,8 +119,7 @@ async function go(
 ): Promise<void> {
   if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0 || !it.hand) return;
   e.preventDefault();
-  const url = await p.handOff(it.target, it.next).catch(() => null);
-  window.location.assign(url ?? it.href);
+  await openInNewTab(() => p.handOff(it.target, it.next), it.href); // CR-143: app khác mở ở tab mới
 }
 
 /** Một dòng menu: `app` để hiển thị, `target` là app cần xin mã SSO (Trang chủ ⇒ Chat AI), `href` là link thường. */

@@ -1,4 +1,4 @@
-// CR-138b · Cài đặt › «Ký & đối tác»: các khối KHÔNG phải bước quy trình nhưng bước quy trình cần (Ký số, Người ký HĐ + tự trả việc, Đối tác xác nhận).
+// CR-138b · Cài đặt › «Ký & đối tác»: các khối KHÔNG phải bước quy trình nhưng bước quy trình cần (Ký số, Người ký HĐ, Đối tác xác nhận).
 // Mỗi khối có MỘT câu nói nó tác động bước nào của quy trình. Tab chỉ hiện với chủ sở hữu (mọi khối ở đây chỉ quản trị sửa — luật CR-138 ẩn tab chỉ đọc).
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,7 +26,7 @@ export function SignPartnerPane({ owner }: { owner: boolean }) {
         <EsignSetting owner={owner} />
       </Block>
       <Block id="work" note={n("work")}>
-        <FlowWorkSettings />
+        <FlowWorkSettings part="signers" />
       </Block>
       <Block id="partner" note={n("partner")}>
         <ReceiveSettings owner={owner} />

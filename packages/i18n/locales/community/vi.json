@@ -521,7 +521,6 @@
       },
       "join": {
         "title": "Yêu cầu tham gia",
-        "introHost": "Công ty đối tác xin tham gia cộng đồng. Duyệt thì công ty được liên kết với nhãn đã xin; từ chối thì họ có thể gửi lại.",
         "introPartner": "Gửi yêu cầu để công ty bạn được liên kết với cộng đồng. Quản trị sẽ xem và trả lời; mỗi công ty có một yêu cầu đang chờ.",
         "formTitle": "Thông tin công ty",
         "company": "Tên công ty",
@@ -565,7 +564,6 @@
       "reports": {
         "menu": "Báo cáo",
         "title": "Báo cáo vi phạm",
-        "intro": "Các bài bị thành viên báo cáo. Hệ thống gợi ý phân loại để bạn tham khảo; bạn quyết định ẩn bài, cảnh báo hay bỏ qua.",
         "empty": "Chưa có báo cáo nào. Khi có người báo cáo một bài, báo cáo sẽ hiện ở đây.",
         "reason": "Lý do báo cáo",
         "triaging": "Đang phân loại",

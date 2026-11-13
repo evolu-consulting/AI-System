@@ -105,7 +105,7 @@ export function EsignSetting({ owner }: { owner: boolean }) {
         {t("contracts.esign.settingHint")}
         {s.demo ? ` · ${t("contracts.esign.demo")}` : ""}
       </p>
-      {providers.length > 0 && (
+      {s.enabled && providers.length > 0 && (
         <ProviderSelect
           providers={providers}
           value={s.default_provider ?? ""}
@@ -113,18 +113,20 @@ export function EsignSetting({ owner }: { owner: boolean }) {
           onChange={(key) => save({ default_provider: key })}
         />
       )}
-      <div className="mt-3 text-[13px]" data-testid="esign-invite-thumb-setting">
-        <label className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            checked={s.invite_thumbnail}
-            disabled={m.isPending}
-            onChange={(e) => save({ invite_thumbnail: e.target.checked })}
-          />
-          <span className="font-semibold">{t("contracts.esign.inviteThumb")}</span>
-        </label>
-        <p className="mt-1 text-caption text-dim">{t("contracts.esign.inviteThumbHint")}</p>
-      </div>
+      {s.enabled && (
+        <div className="mt-3 text-[13px]" data-testid="esign-invite-thumb-setting">
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={s.invite_thumbnail}
+              disabled={m.isPending}
+              onChange={(e) => save({ invite_thumbnail: e.target.checked })}
+            />
+            <span className="font-semibold">{t("contracts.esign.inviteThumb")}</span>
+          </label>
+          <p className="mt-1 text-caption text-dim">{t("contracts.esign.inviteThumbHint")}</p>
+        </div>
+      )}
       <EsignAnchorSetting owner={owner} />
     </div>
   );

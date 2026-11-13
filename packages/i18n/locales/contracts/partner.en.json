@@ -40,13 +40,23 @@
       "level": { "normal": "Normal", "important": "Important", "critical": "Critical" },
       "channel": { "platform": "platform", "email": "email", "manual": "manual record" },
       "confirm": {
-        "title": "Partner confirmation of contracts",
+        "title": "Send and receive contracts with partners",
         "off": "Off. The company cannot send or receive contracts with partners yet. Ask a platform admin to turn this on.",
         "on": "On",
         "ready": "On · ready to send and receive",
-        "missing": "On · {count} conditions not done yet",
+        "missing": "On · missing: {{what}} · {{who}}",
         "state": { "ok": "Done", "todo": "Missing", "unknown": "Unknown" },
         "who": { "platform": "Ask a platform admin", "company": "A company admin does this" },
+        "short": {
+          "app": "Contracts app",
+          "feature": "feature",
+          "channel": "sending channel",
+          "profile": "company profile",
+          "listed": "partner listing",
+          "receive_flow": "Receive flow",
+          "groups": "handler groups",
+          "send_flow": "Send flow"
+        },
         "item": {
           "app": {
             "ok": "The company uses the Contracts book.",
@@ -93,9 +103,11 @@
       "settings": {
         "title": "Contracts received from partners",
         "important": "“Important” from value",
+        "importantHint": "Partner contracts received at or above this value are marked Important and take the separate approval branch.",
         "critical": "“Critical” from value",
         "unit": "million VND",
         "owner": "Owner of received contracts",
+        "ownerHint": "Who receives contracts partners send in; if empty, company admins handle them.",
         "ownerNone": "Not set — company admins handle them",
         "save": "Save",
         "issue": {

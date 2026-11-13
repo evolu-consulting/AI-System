@@ -14,19 +14,19 @@ export function AttentionBanner({ attention }: { attention: ApprovalAttention })
       role="alert"
       data-approval="attention"
       data-kind={attention.kind}
-      className="mb-3 rounded-xl border border-line bg-act-soft px-4 py-3 text-sm"
+      className="mb-3 rounded-xl border border-rule bg-act-soft px-4 py-3 text-sm"
     >
       <p className="font-medium text-late">
         {t("contracts.approval.engine.attention.title", { reason: t(text.key, text.vars) })}
       </p>
       {at && !Number.isNaN(at.getTime()) && (
-        <p className="mt-1 text-muted">
+        <p className="mt-1 text-dim">
           {t("contracts.approval.engine.attention.since", {
             time: viDateTime(at.toISOString()),
           })}
         </p>
       )}
-      <p data-approval="tell-owner" className="mt-2 text-muted">
+      <p data-approval="tell-owner" className="mt-2 text-dim">
         {t("contracts.approval.engine.attention.tellOwner")}
       </p>
     </div>

@@ -40,7 +40,7 @@
       "sent": "Đã gửi ký",
       "signerDone": "đã ký",
       "settingLabel": "Ký số hợp đồng",
-      "settingHint": "Cho phép gửi hợp đồng đã duyệt đi ký số.",
+      "settingHint": "Bật: ký số trên hệ thống. Tắt: chỉ tải lên bản đã ký.",
       "settingOwnerOnly": "Chỉ chủ gói Sổ Hợp Tác (nhóm Toàn quyền) bật hoặc tắt được. Nhờ người đó vào {{path:sign}}.",
       "settingSaved": "Đã lưu cài đặt ký số.",
       "inviteThumb": "Kèm ảnh trang đầu trong email mời ký",

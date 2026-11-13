@@ -93,12 +93,7 @@ export default function ReportsPage() {
     }
   };
   return (
-    <FlowPage
-      title={t("community.flows.reports.title")}
-      intro={t("community.flows.reports.intro")}
-      testId="reports-page"
-      bare
-    >
+    <FlowPage title={t("community.flows.reports.title")} testId="reports-page" bare>
       {(list.failed || !list.items) && (
         <ListState {...list} emptyKey="community.flows.reports.empty" />
       )}

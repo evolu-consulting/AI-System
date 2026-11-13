@@ -20,7 +20,8 @@ import {
 } from "../api-delegation";
 import { claimHoursIssue } from "../lib/delegation";
 
-export function FlowWorkSettings() {
+/** CR-143: `hours` (tab «Quy trình duyệt») và `signers` (tab «Ký & đối tác») tách hai khối, mỗi khối lưu trường của mình. */
+export function FlowWorkSettings({ part }: { part: "hours" | "signers" }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const me = useSession((s) => s.me);
@@ -52,8 +53,8 @@ export function FlowWorkSettings() {
   }, [partner.data]);
   const save = useMutation({
     mutationFn: async () => {
-      await saveFlowSettings(tid, { claim_release_h: hours });
-      if (partner.data)
+      if (part === "hours") await saveFlowSettings(tid, { claim_release_h: hours });
+      else if (partner.data)
         await savePartnerSettings({
           ...partner.data,
           signer_group_id: signer === "" ? null : signer,
@@ -73,53 +74,67 @@ export function FlowWorkSettings() {
   if (!admin) return null;
   const bad = claimHoursIssue(hours);
   return (
-    <SettingsGroup title={t("contracts.work.u4.settings.title")}>
+    <SettingsGroup
+      title={t(
+        part === "hours"
+          ? "contracts.work.u4.settings.titleHours"
+          : "contracts.work.u4.settings.titleSigners",
+      )}
+    >
       <div data-testid="flow-work-settings">
-        <SettingsRow
-          label={t("contracts.work.u4.settings.hours")}
-          hint={t("contracts.work.u4.settings.hoursHint")}
-          htmlFor="fw-hours"
-        >
-          <input
-            id="fw-hours"
-            type="number"
-            min={CLAIM_RELEASE_H.min}
-            max={CLAIM_RELEASE_H.max}
-            className="field h-10 w-28"
-            value={hours}
-            onChange={(e) => setHours(Number(e.target.value))}
-          />
-        </SettingsRow>
-        <SettingsRow
-          label={t("contracts.work.u4.settings.signers")}
-          hint={t("contracts.work.u4.settings.signersHint")}
-          htmlFor="fw-signers"
-        >
-          <select
-            id="fw-signers"
-            className="field h-10 w-full"
-            value={signer}
-            onChange={(e) => setSigner(e.target.value)}
+        {part === "hours" && (
+          <SettingsRow
+            label={t("contracts.work.u4.settings.hours")}
+            hint={t("contracts.work.u4.settings.hoursHint")}
+            htmlFor="fw-hours"
           >
-            <option value="">{t("contracts.work.u4.settings.signersNone")}</option>
-            {(groups.data ?? []).map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-        </SettingsRow>
+            <input
+              id="fw-hours"
+              type="number"
+              min={CLAIM_RELEASE_H.min}
+              max={CLAIM_RELEASE_H.max}
+              className="field h-10 w-28"
+              value={hours}
+              onChange={(e) => setHours(Number(e.target.value))}
+            />
+          </SettingsRow>
+        )}
+        {part === "signers" && (
+          <SettingsRow
+            label={t("contracts.work.u4.settings.signers")}
+            hint={t("contracts.work.u4.settings.signersHint")}
+            htmlFor="fw-signers"
+          >
+            <select
+              id="fw-signers"
+              className="field h-10 w-full"
+              value={signer}
+              onChange={(e) => setSigner(e.target.value)}
+            >
+              <option value="">{t("contracts.work.u4.settings.signersNone")}</option>
+              {(groups.data ?? []).map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </SettingsRow>
+        )}
         <div className="flex flex-col gap-2 border-t border-rule-soft px-5 py-3">
-          {(bad || err) && (
+          {((part === "hours" && bad) || err) && (
             <p role="alert" className="text-sm text-late" data-testid="flow-work-error">
-              {bad ? t("contracts.work.u4.err.CLAIM_HOURS_RANGE") : err}
+              {part === "hours" && bad ? t("contracts.work.u4.err.CLAIM_HOURS_RANGE") : err}
             </p>
           )}
           <button
             type="button"
             className="btn btn-primary w-fit"
             data-testid="flow-work-save"
-            disabled={bad || save.isPending || !flow.data}
+            disabled={
+              (part === "hours" && bad) ||
+              save.isPending ||
+              !(part === "hours" ? flow.data : partner.data)
+            }
             onClick={() => save.mutate()}
           >
             {t("contracts.work.u4.settings.save")}

@@ -685,7 +685,7 @@
   },
   "tenants": {
     "partner": {
-      "title": "Partner confirmation of contracts",
+      "title": "Send and receive contracts with partners",
       "switch": "Send and receive contracts with partner companies",
       "hint": "Turn on so the company can send contracts to partners for confirmation and receive contracts partners send. All conditions below are needed.",
       "loadError": "Could not read the partner confirmation conditions. Reload the page or try again later.",

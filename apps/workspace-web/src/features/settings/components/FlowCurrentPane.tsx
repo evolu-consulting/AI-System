@@ -1,6 +1,7 @@
 // CR-125 · S2 · Cài đặt › "Quy trình duyệt" = MỘT cửa (thay "Ứng dụng & quy trình"): quy trình ĐANG CHẠY của công ty, đọc từ cùng nguồn với trang
 // Quy trình ở admin (`company_flows`, "Duyệt 2 cấp"…), chỉ đọc; nút "Mở trang Quy trình" cho quản trị công ty; chưa có quy trình Bật ⇒ nói rõ
 // ai làm gì ở đâu (không đẩy sang "quản trị nền tảng"). CR-106: canvas chỉ đọc + công tắc "Sơ đồ | Danh sách".
+import { openInNewTab } from "@ai/web-kit/auth/open-tab";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -14,6 +15,7 @@ import { DelegationPane } from "./DelegationPane";
 import { FlowCanvasLazy } from "./FlowCanvasLazy";
 import { FlowLegend } from "./FlowLegend";
 import { FlowList } from "./FlowList";
+import { FlowWorkSettings } from "./FlowWorkSettings";
 
 type View = "canvas" | "list";
 
@@ -49,10 +51,9 @@ function OpenFlowsPage() {
   if (!isCompanyAdmin(role)) return null;
   const go = async () => {
     setBusy(true);
-    const url = await flowEditorUrl();
+    const ok = await openInNewTab(() => flowEditorUrl());
     setBusy(false);
-    if (url) window.location.assign(url);
-    else toast(t("contracts.flow.current.openFail"), "late");
+    if (!ok) toast(t("contracts.flow.current.openFail"), "late");
   };
   return (
     <button
@@ -137,6 +138,7 @@ export function FlowCurrentPane() {
   return (
     <div>
       <FlowBlock q={q} />
+      <FlowWorkSettings part="hours" />
       <DelegationPane />
     </div>
   );

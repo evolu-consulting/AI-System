@@ -151,7 +151,7 @@ export function useApprovalUi(o: {
       {attention && <AttentionBanner attention={attention} />}
       <ApprovalNote note={note} rejected={rejected} />
       {rejected && !attention && (
-        <p data-approval="rejected-next" className="mb-3 text-sm text-muted">
+        <p data-approval="rejected-next" className="mb-3 text-sm text-dim">
           {t("contracts.approval.rejectedNext")}
         </p>
       )}

@@ -171,11 +171,12 @@
           "row": "{{from}} → {{to}} · {{start}} – {{end}}"
         },
         "settings": {
-          "title": "Taking tasks and signers",
+          "titleHours": "Taking tasks",
+          "titleSigners": "Contract signers",
           "hours": "Time before a taken task returns",
-          "hoursHint": "A taken task not decided after this many hours returns to the team (1–168 hours).",
+          "hoursHint": "Applies to every step where a task is taken: if not decided after this many hours, the task returns to the team (1–168 hours).",
           "signers": "Contract signers group",
-          "signersHint": "Only members of this group can e-sign or receive e-sign delegation.",
+          "signersHint": "Who may sign contracts when the Sign step names no specific person.",
           "signersNone": "No group selected",
           "save": "Save settings",
           "saved": "Settings saved."

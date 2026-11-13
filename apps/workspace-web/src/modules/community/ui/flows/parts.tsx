@@ -39,7 +39,7 @@ export function FlowPage({
   children,
 }: {
   title: string;
-  intro: string;
+  intro?: string;
   testId: string;
   /** CR-137b: tiêu đề trần (không thẻ) cho màn bảng toàn chiều ngang. */
   bare?: boolean;
@@ -52,12 +52,12 @@ export function FlowPage({
           {bare ? (
             <div className="adminlist-head">
               <h1>{title}</h1>
-              <p className="muted">{intro}</p>
+              {intro ? <p className="muted">{intro}</p> : null}
             </div>
           ) : (
             <div className="card pcard">
               <h1>{title}</h1>
-              <p className="muted">{intro}</p>
+              {intro ? <p className="muted">{intro}</p> : null}
             </div>
           )}
           {children}
