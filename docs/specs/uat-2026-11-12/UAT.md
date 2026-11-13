@@ -134,13 +134,13 @@ Dựng bằng `bun run demo:purchase` (1 quy trình cha «Mua hàng» + 3 con: A
 | H5 | `giang.vu` | Điền phương án ngân sách | Trên 500 triệu ⇒ việc «Giám đốc duyệt ngân sách» về `demo-owner`; dưới 500 triệu ⇒ về `phuc.do` |
 | H6 | `demo-owner`, `tung.mai`, `phuc.do` | Giám đốc duyệt; Tùng tạo PO; Phúc duyệt PO | Hết phần A, yêu cầu sang phần B «Hợp đồng» (dự toán từ 20 triệu) |
 | H7 | `huy.dang` | Soạn hợp đồng: số hợp đồng + tải bản thảo | Hợp đồng «<tên hàng>» xuất hiện ở Sổ Hợp Tác (nháp), tên/đối tác/giá trị lấy từ phần A |
-| H8 | `phuc.do`, `em.hoang` (hoặc người Kế toán), `huy.dang` | Duyệt song song: Pháp chế + Kế toán + Mua hàng | Ba thẻ cùng lúc; đủ cả ba mới sang Giám đốc; từ chối ở một thẻ ⇒ kết thúc «Không mua» |
+| H8 | `phuc.do`, `em.hoang` (hoặc người Kế toán), `huy.dang` | Duyệt song song: Pháp chế + Kế toán + Mua hàng | Ba thẻ cùng lúc; đủ cả ba mới sang Giám đốc; từ chối ở một thẻ ⇒ kết thúc «Không mua». Thẻ Kế toán và Mua hàng chỉ trưởng phòng duyệt (thẻ hiện tên Em/Phúc); `giang.vu`, `hung.dinh`, `tung.mai` thấy «Cần: Trưởng phòng», không duyệt được |
 | H9 | `demo-owner` | Giám đốc duyệt hợp đồng | Sang phần C (demo chưa bật ký số nên bỏ bước Ký số) |
 | H10 | `khoa.bui` | Nhận hàng: ngày nhận, số lượng, biên bản; rồi duyệt nghiệm thu | Việc về Kho vận; xong sang Kế toán |
-| H11 | `ha.ly`, `em.hoang` | Kiểm hoá đơn (tệp) → Kế toán trưởng duyệt; Hà lập đề nghị thanh toán | Việc kiểm hoá đơn chỉ về nhóm «Kế toán thanh toán / mua hàng» (Hà) |
+| H11 | `ha.ly`, `em.hoang` | Kiểm hoá đơn (tệp) → Kế toán trưởng duyệt; Hà lập đề nghị thanh toán | Việc kiểm hoá đơn chỉ về nhóm «Kế toán thanh toán / mua hàng» (Hà). Tệp báo giá/PO/biên bản tải ở phần trước có sẵn ở phần sau, không phải tải lại |
 | H12 | `em.hoang`, `demo-owner` | Duyệt song song Kế toán trưởng + Giám đốc | Đủ cả hai mới sang thanh toán |
-| H13 | `hung.dinh` (hoặc `ha.ly`), `em.hoang` | Thanh toán, hạch toán (ngày chi + chứng từ); Kế toán trưởng duyệt | Yêu cầu «Đã xong». Chưa có ghi sổ «Xác nhận mốc» tự động (khoảng trống trong `docs/specs/cr140-purchase/tasks.md`) |
-| H14 | `cuong.le` | Tạo yêu cầu thứ hai, dự toán **15 triệu** | Đi A → C, BỎ phần B (không có bước Hợp đồng); trưởng phòng Mua hàng duyệt ngân sách (không lên Giám đốc) |
+| H13 | `hung.dinh` (hoặc `ha.ly`), `em.hoang` | Thanh toán, hạch toán (ngày chi + chứng từ); Kế toán trưởng duyệt | Yêu cầu «Đã xong». Sổ Hợp Tác → hợp đồng → phần Thanh toán có một dòng «Đã trả» đúng số đề nghị, ngày chi, người ghi = Hùng |
+| H14 | `cuong.le` | Tạo yêu cầu thứ hai, dự toán **15 triệu** | Đi A → C, BỎ phần B (không có bước Hợp đồng); trưởng phòng Mua hàng duyệt ngân sách (không lên Giám đốc); bước ghi sổ tự bỏ qua (không có hợp đồng) |
 | H15 | `dung.pham` | Xem yêu cầu của Cường | Không thấy (chỉ người gửi và người nhận việc xem được) |
 
 Chạy thử tự động bằng API (không qua trình duyệt): `bun run demo:purchase --trial` (in bảng bước · người · kết quả).
