@@ -36,8 +36,11 @@ export function signerInTurn(signers: readonly StoredSigner[], userId: string): 
   return me;
 }
 
+/** CR-141 · phong bì «upload» = bản đã ký do người dùng tải lên (không phải nhà cung cấp ký số, không nói «pháp lý» hay «ký thử»). */
+export const UPLOAD_PROVIDER = "upload";
 export const labelOf = (entries: readonly ESignProviderEntry[], key: string): string =>
-  entries.find((e) => e.key === key)?.label ?? metaOf(key).label;
+  entries.find((e) => e.key === key)?.label ??
+  (key === UPLOAD_PROVIDER ? "Bản đã ký tải lên" : metaOf(key).label);
 
 export const kindOf = (entries: readonly ESignProviderEntry[], key: string) =>
   entries.find((e) => e.key === key)?.kind ?? metaOf(key).kind;

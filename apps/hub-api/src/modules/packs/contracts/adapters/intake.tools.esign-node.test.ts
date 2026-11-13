@@ -11,14 +11,16 @@ const U2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const G1 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const CTX: PackToolCtx = { tenantId: "t1", userId: "u1", runId: null };
 
-function make(email: string | null = "p@x.vn", sendErr?: Error) {
+function make(email: string | null = "p@x.vn", sendErr?: Error, group: string | null = null) {
+  const waits: unknown[][] = [];
   const sent: unknown[][] = [];
   const asked: unknown[] = [];
   const repos = {
     extraction: { source: async () => null },
     esign: {
       lockForSign: async () => {},
-      openSignWait: async () => {},
+      openSignWait: async (...a: unknown[]) => void waits.push(a),
+      signerGroup: async () => group,
       latest: async () => null,
       contract: async () => ({ number: "S1", title: "HĐ", partner: { name: "Đối tác", email } }),
     },
@@ -38,7 +40,7 @@ function make(email: string | null = "p@x.vn", sendErr?: Error) {
     parsePartner: (name, e) => (e.includes("@") ? { name, email: e } : null),
   });
   const send = tools.find((t) => t.name === INTAKE_TOOL_KEYS.esignSend) as (typeof tools)[number];
-  return { send, sent, asked };
+  return { send, sent, asked, waits };
 }
 
 describe("E5 · tool Ký số theo args của node", () => {
@@ -116,5 +118,18 @@ describe("CR-141 · công ty tắt ký số ⇒ bước chờ bản đã ký t�
     await expect(
       boom.send.run(CTX, { contract_id: ID, company_signers: `user:${U1}` }),
     ).rejects.toBeDefined();
+  });
+});
+
+describe("CR-141 · người được giao tải bản ký (mặc định)", () => {
+  it("node không chọn người ký: có nhóm «Người ký HĐ» ⇒ thành viên nhóm được giao (không phải người bắt đầu)", async () => {
+    const g = make("p@x.vn", new ESignFail("ESIGN_DISABLED", "d"), G1);
+    expect(await g.send.run(CTX, { contract_id: ID })).toEqual({ status: "awaiting_upload" });
+    expect(g.waits[0]?.[1]).toEqual([U1, U2]);
+  });
+  it("chưa đặt nhóm ⇒ giữ cũ: thiếu người ký là lỗi nghiệp vụ, không ghi gì", async () => {
+    const n = make("p@x.vn", undefined, null);
+    await expect(n.send.run(CTX, { contract_id: ID })).rejects.toBeDefined();
+    expect(n.waits).toEqual([]);
   });
 });

@@ -8,6 +8,8 @@ import { connectDb, type Db } from "../../../../lib/db";
 import { createPackUow } from "../../kit/adapters/pack-uow";
 import type { PackUow } from "../../kit/public";
 import { type SignUploadFail, signUploadUsecase } from "../application/sign-upload.usecase";
+import { esignModule } from "../esign.mount";
+import { selfsignProvider } from "./esign.selfsign";
 import { signUploadRepo } from "./sign-upload.repo";
 
 let o: Sql;
@@ -32,10 +34,12 @@ const uc = () =>
     },
     me: async () => ({ name: "Người ký" }),
     newId: () => Bun.randomUUIDv7(),
+    voidOpen: async () => {},
     after: async (_w, id, data) => void after.push({ id, data }),
   });
 const w = (userId: string, tenantId = T) => ({ tenantId, userId });
-const pdf = (name = "hd-da-ky.pdf") => ({ name, bytes: new Uint8Array([37, 80, 68, 70]) });
+const pdf = (name = "hd-da-ky.pdf") => ({ name, bytes: new Uint8Array([37, 80, 68, 70, 45]) });
+const png = (name = "scan.png") => ({ name, bytes: new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1]) });
 const fail = async (p: Promise<unknown>) =>
   ((await p.catch((x: unknown) => x)) as SignUploadFail).kind;
 
@@ -102,7 +106,7 @@ describe("CR-141 · tải bản đã ký", () => {
     const [n] =
       await o`select count(*)::int as n from contracts.esign_envelopes where contract_id = ${id}::uuid`;
     expect(n?.n).toBe(0);
-    const out = await uc().upload(w(U1), id, pdf("scan.png"), true);
+    const out = await uc().upload(w(U1), id, png(), true);
     expect(out.override).toBe(true);
     const [ev] =
       await o`select data from contracts.contract_events where contract_id = ${id}::uuid and type = 'esign_uploaded'`;
@@ -118,6 +122,32 @@ describe("CR-141 · tải bản đã ký", () => {
     expect(await fail(uc().upload(w(U2), idle, pdf(), true))).toBe("not_awaiting");
   });
 
+  it("tệp đổi đuôi (nội dung không phải PDF/JPG/PNG) ⇒ file_content, không ghi gì", async () => {
+    const id = await mk([U2]);
+    expect(
+      await fail(
+        uc().upload(w(U2), id, { name: "hd.pdf", bytes: new Uint8Array([80, 75, 3, 4]) }, false),
+      ),
+    ).toBe("file_content");
+    const [n] =
+      await o`select count(*)::int as n from contracts.esign_envelopes where contract_id = ${id}::uuid`;
+    expect(n?.n).toBe(0);
+  });
+
+  it("hai lần tải song song ⇒ đúng 1 phong bì, 1 lần thả bước", async () => {
+    const id = await mk([U2]);
+    after.length = 0;
+    const r = await Promise.allSettled([
+      uc().upload(w(U2), id, pdf("a.pdf"), false),
+      uc().upload(w(U2), id, pdf("b.pdf"), false),
+    ]);
+    expect(r.filter((x) => x.status === "fulfilled").length).toBe(1);
+    const [n] =
+      await o`select count(*)::int as n from contracts.esign_envelopes where contract_id = ${id}::uuid and provider = 'upload'`;
+    expect(n?.n).toBe(1);
+    expect(after.filter((a) => a.id === id).length).toBe(1);
+  });
+
   it("chéo công ty ⇒ không thấy HĐ (not_found), không ghi gì", async () => {
     const id = await mk([U2]);
     expect(await fail(uc().upload(w(U3, T2), id, pdf(), true))).toBe("not_found");
@@ -125,5 +155,31 @@ describe("CR-141 · tải bản đã ký", () => {
     const [n] =
       await o`select count(*)::int as n from contracts.esign_envelopes where contract_id = ${id}::uuid`;
     expect(n?.n).toBe(0);
+  });
+});
+
+describe("CR-141 · phong bì ký số đang mở", () => {
+  it("tải bản ký ⇒ phong bì cũ bị huỷ, bước qua đúng 1 lần (không bắn completed lần hai)", async () => {
+    const files = () => ({
+      postFile: async () => ({ fileId: `fb-${++seq}`, versionId: "v" }),
+      deleteFile: async () => undefined,
+      getContent: async () => null,
+      getLink: async () => null,
+    });
+    const m = esignModule(db, { esign: { providers: [selfsignProvider()] }, files });
+    const fired: string[] = [];
+    m.bindCompleted(async (_t, _c, ev) => void fired.push(ev));
+    const id = await mk([U2]);
+    await o`insert into contracts.esign_envelopes (tenant_id, contract_id, provider, envelope_id, status, signers, sent_by)
+      values (${T}::uuid, ${id}::uuid, 'selfsign', ${`env-${id}`}, 'sent',
+        ${o.json([{ role: "company", name: "Người ký", client_user_id: U2 }] as never)}, ${U1}::uuid)`;
+    await m.signUpload?.upload(w(U2), id, pdf(), false);
+    const rows =
+      await o`select provider, status from contracts.esign_envelopes where contract_id = ${id}::uuid order by created_at, provider`;
+    expect(Object.fromEntries(rows.map((x) => [x.provider, x.status]))).toEqual({
+      selfsign: "voided",
+      upload: "completed",
+    });
+    expect(fired).toEqual(["esign.completed"]);
   });
 });

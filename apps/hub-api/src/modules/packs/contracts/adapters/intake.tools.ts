@@ -34,7 +34,7 @@ export const INTAKE_TOOL_KEYS = {
 
 type R = {
   extraction: Pick<ExtractionRepo, "source">;
-  esign: Pick<ESignRepo, "contract" | "lockForSign" | "latest" | "openSignWait">;
+  esign: Pick<ESignRepo, "contract" | "lockForSign" | "latest" | "openSignWait" | "signerGroup">;
 } & NotifyTxRepos;
 export type IntakeToolDeps = {
   uow: PackUow<R>;
@@ -120,6 +120,16 @@ async function companyUsers(
   if (users.length === 0) throw new Error("ESIGN_NODE_NO_SIGNER");
   return users;
 }
+/** CR-141 · node không chọn người ký ⇒ người ký = nhóm «Người ký HĐ» của công ty (Cài đặt › Ký & đối tác) nếu đã đặt; chưa đặt ⇒ giữ cũ (cấu hình thiếu người ký ⇒ lỗi nghiệp vụ). */
+async function withDefaultSigners(
+  d: IntakeToolDeps,
+  ctx: PackToolCtx,
+  cfg: EsignNodeConfig,
+): Promise<EsignNodeConfig> {
+  if (cfg.company_signers?.length) return cfg;
+  const g = await d.uow.tenant(who(ctx), (r) => r.esign.signerGroup());
+  return g ? { ...cfg, company_signers: [{ kind: "group", id: g }] } : cfg;
+}
 /** Gửi ký; công ty tắt ký số ⇒ không báo lỗi: bước chỉ còn cách tải lên bản đã ký (chờ `esign.completed` do route tải lên bắn). true = đang chờ tải lên. */
 async function sendOrAwaitUpload(
   d: IntakeToolDeps,
@@ -196,7 +206,7 @@ function rawIntakeTools(d: IntakeToolDeps): PackToolDef[] {
         const parsed = email
           ? d.parsePartner((c.partner?.name?.trim() || email).slice(0, 200), email)
           : null;
-        const p = await planSend(d, ctx, cfg, parsed);
+        const p = await planSend(d, ctx, await withDefaultSigners(d, ctx, cfg), parsed);
         // CR-141 · «Ký hợp đồng» = ký số HOẶC tải lên bản đã ký: ghi người được giao tải (trước khi gửi ký, để ký số xong sớm không bị tính nhầm là còn chờ).
         const assigned = p.node.companyUsers ?? [p.signer];
         await d.uow.tenant(who(ctx), (r) => r.esign.openSignWait(id, assigned, ctx.userId));

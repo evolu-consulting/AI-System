@@ -3,10 +3,12 @@
 import type { PackUow, PackWho } from "../../kit/public";
 import { orgForTenant } from "../../kit/public";
 import type { SignUploadRepo } from "../adapters/sign-upload.repo";
-import { signedUploadMime, signedUploadVerdict } from "../domain/sign-upload.rules";
+import { checkSignedUpload, signedUploadVerdict } from "../domain/sign-upload.rules";
 
 export class SignUploadFail extends Error {
-  constructor(readonly kind: "not_found" | "forbidden" | "not_awaiting" | "file_type") {
+  constructor(
+    readonly kind: "not_found" | "forbidden" | "not_awaiting" | "file_type" | "file_content",
+  ) {
     super(kind);
   }
 }
@@ -24,6 +26,8 @@ export function signUploadUsecase(d: {
   };
   me: (who: PackWho) => Promise<{ name: string }>;
   newId: () => string;
+  /** Huỷ phong bì ký số đang mở (nếu có) — TRƯỚC khi ghi bản tải lên (sau đó `latest` là phong bì «upload», không còn thấy phong bì mở). Lỗi ⇒ nuốt. */
+  voidOpen: (who: PackWho, contractId: string) => Promise<void>;
   /** Sau khi ghi: thả bước chờ (`signedAt` ISO) + dọn phong bì ký số còn mở. Lỗi ở đây không làm mất bản đã lưu. */
   after: (who: PackWho, contractId: string, data: Record<string, string>) => Promise<void>;
 }) {
@@ -41,8 +45,9 @@ export function signUploadUsecase(d: {
       return { awaiting: s.awaiting, can_upload: v.ok, override: v.ok && v.override };
     },
     async upload(who: PackWho, id: string, f: { name: string; bytes: Uint8Array }, admin: boolean) {
-      const mime = signedUploadMime(f.name);
-      if (!mime) throw new SignUploadFail("file_type");
+      const chk = checkSignedUpload(f.name, f.bytes);
+      if (!chk.ok) throw new SignUploadFail(chk.reason === "ext" ? "file_type" : "file_content");
+      const mime = chk.mime;
       const s = await d.uow.tenant(who, (r) => r.signUpload.awaiting(id));
       if (!s.found) throw new SignUploadFail("not_found");
       const v = signedUploadVerdict({
@@ -67,6 +72,7 @@ export function signUploadUsecase(d: {
         override: v.override,
         signerName: (await d.me(who)).name,
       };
+      await d.voidOpen(who, id);
       const ok = await d.uow
         .tenant(who, (r) => r.signUpload.insertSigned(row))
         .catch(async (e) => {

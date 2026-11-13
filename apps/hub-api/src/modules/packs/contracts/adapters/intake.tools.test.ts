@@ -29,6 +29,7 @@ function make(o: {
       contract: async () => (log.reads++, o.contract ?? null),
       lockForSign: async () => {},
       openSignWait: async () => {},
+      signerGroup: async () => null,
       latest: async () => ({ envelopeId: "env-1" }),
     },
     notify: {

@@ -40,6 +40,9 @@ export function signUploadRepo(tx: Tx, t: string) {
     },
     /** Ghi tệp + phong bì «upload» đã hoàn tất + một dòng lịch sử (ai tải, tên tệp). Chạy lại sau khi bước đã xong ⇒ false. */
     async insertSigned(r: SignedUploadRow): Promise<boolean> {
+      // Khoá hàng HĐ ở câu riêng (câu sau thấy snapshot mới): hai lần tải song song ⇒ lần hai chờ rồi thấy bước đã xong ⇒ false.
+      await tx.execute(sql`select id from contracts.contracts
+        where id = ${r.contractId}::uuid and tenant_id = ${t}::uuid for update`);
       const rows = await tx.execute<{ id: string }>(sql`with c as (
           select c.id from contracts.contracts c where c.id = ${r.contractId}::uuid and c.tenant_id = ${t}::uuid
             and (select e.type from contracts.contract_events e where e.tenant_id = ${t}::uuid and e.contract_id = c.id

@@ -34,3 +34,20 @@ export function signedUploadVerdict(a: {
   if (a.assigned.includes(a.userId)) return { ok: true, override: false };
   return a.admin ? { ok: true, override: true } : { ok: false, reason: "forbidden" };
 }
+
+const MAGIC: Readonly<Record<string, readonly number[]>> = {
+  "application/pdf": [0x25, 0x50, 0x44, 0x46],
+  "image/jpeg": [0xff, 0xd8, 0xff],
+  "image/png": [0x89, 0x50, 0x4e, 0x47],
+};
+
+export type UploadCheck = { ok: true; mime: string } | { ok: false; reason: "ext" | "content" };
+/** Đuôi tệp VÀ nội dung (chữ ký đầu tệp %PDF / FFD8FF / 89504E47) phải khớp: đổi đuôi một tệp khác không qua được. */
+export function checkSignedUpload(name: string, bytes: Uint8Array): UploadCheck {
+  const mime = signedUploadMime(name);
+  if (!mime) return { ok: false, reason: "ext" };
+  const sig = MAGIC[mime] ?? [];
+  return sig.every((b, i) => bytes[i] === b)
+    ? { ok: true, mime }
+    : { ok: false, reason: "content" };
+}

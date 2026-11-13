@@ -319,6 +319,11 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
             and ${prev}::text is distinct from u.status)
         select 1`);
     },
+    signerGroup: async () => {
+      const [r] = await tx.execute<{ g: string | null }>(sql`select signer_group_id::text as g
+        from contracts.partner_settings where tenant_id = ${t}::uuid`);
+      return r?.g ?? null;
+    },
     openSignWait: async (contractId, signers, by) => {
       await tx.execute(sql`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
         select ${t}::uuid, c.id, 'sign_upload_open', ${by}::uuid, jsonb_build_object('signers', ${JSON.stringify(signers)}::jsonb)

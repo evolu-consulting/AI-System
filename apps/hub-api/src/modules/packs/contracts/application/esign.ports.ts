@@ -208,6 +208,8 @@ export type ESignRepo = {
   ): Promise<void>;
   /** CR-141 · bước «Ký hợp đồng» mở: ghi người được giao tải bản đã ký (sự kiện nội bộ `sign_upload_open`, không hiện cho người dùng). */
   openSignWait(contractId: string, signers: readonly string[], by: string | null): Promise<void>;
+  /** CR-141 · nhóm «Người ký HĐ» của công ty (`partner_settings.signer_group_id`) hoặc null. */
+  signerGroup(): Promise<string | null>;
   /** Trùng envelope đang chờ của HĐ (index một phần) ⇒ false. */
   insert(r: {
     contractId: string;

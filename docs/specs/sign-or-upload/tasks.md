@@ -20,7 +20,8 @@ Người được giao tải = người ký của bước (`company_signers` ho�
 
 ## Quyết định trong lúc làm
 - Phong bì giả `provider='upload'` thay vì bảng/cột mới (một nguồn cho bản đã ký); phong bì ký số còn mở bị huỷ SAU khi thả bước (không bắn `esign.voided`).
-- «Người được giao» = người ký của node; nhóm «Người ký HĐ» (`signer_group_id`) chưa được cộng vào danh sách (nếu node không chọn người ký thì là người bắt đầu lượt).
+- «Người được giao» = người ký của node (`company_signers`); node không chọn người ký ⇒ nhóm «Người ký HĐ» của công ty (`signer_group_id`, Cài đặt › Ký & đối tác) nếu đã đặt (người gửi không tự tải bản ký khi công ty đã có nhóm ký); chưa đặt nhóm ⇒ giữ cũ (thiếu người ký là lỗi nghiệp vụ, CEO-review #2).
+- Soát lại: phong bì ký số mở bị huỷ TRƯỚC khi ghi bản tải lên (`latest` sau đó là phong bì upload); `insertSigned` khoá hàng HĐ `for update` ở câu riêng; kiểm chữ ký đầu tệp (%PDF, FFD8FF, 89504E47); nhãn phong bì `upload` = «Bản đã ký tải lên».
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp

@@ -1,5 +1,5 @@
 // CR-141 · nối use case tải bản đã ký (tách khỏi `esign.mount.ts` cho đủ ≤ 400 dòng). Cần FileBox; vắng ⇒ null (không có route).
-// Ghi xong ⇒ thả bước chờ `esign.completed` (cùng đường ký số xong) rồi huỷ phong bì ký số còn mở (không bắn `esign.voided`).
+// Ghi xong ⇒ thả bước chờ `esign.completed` (cùng đường ký số xong); phong bì ký số còn mở bị huỷ TRƯỚC khi ghi (không bắn `esign.voided`).
 import type { Db, Tx } from "@ai/db";
 import { logger } from "../../../lib/logger";
 import type { PackAccessView, PackWho } from "../kit/public";
@@ -31,13 +31,13 @@ export function signUploadOf(
     },
     me,
     newId: () => Bun.randomUUIDv7(),
+    voidOpen: (who, id) => hooks.voidIt(who, id).catch(() => undefined),
     after: async (who, id, data) => {
       const warn = (m: string) => (e: unknown) =>
         logger.warn(m, { contract_id: id, error: e instanceof Error ? e.name : "unknown" });
       await Promise.resolve(hooks.completed(who.tenantId, id, "esign.completed", data)).catch(
         warn("sign-upload-hook-failed"),
       );
-      await hooks.voidIt(who, id).catch(() => undefined);
     },
   });
 }
