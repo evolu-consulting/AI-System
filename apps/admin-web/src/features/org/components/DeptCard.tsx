@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { useOrgApi } from "../api";
-import { type DeptRow, parentChoices } from "../lib/org-edit";
+import { type DeptRow, type OrgActions, parentChoices } from "../lib/org-edit";
 
 const sel = "h-9 rounded-md border border-input bg-background px-2 text-sm";
 
@@ -15,7 +14,7 @@ type Props = {
   members: readonly OrgMember[];
   busy: boolean;
   act: (fn: () => Promise<unknown>) => void;
-  api: ReturnType<typeof useOrgApi>;
+  api: OrgActions;
 };
 
 export function DeptCard({ row, depts, members, busy, act, api }: Props) {

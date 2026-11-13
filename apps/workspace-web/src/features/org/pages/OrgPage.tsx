@@ -1,12 +1,12 @@
 // M1D-FR-02 · M1D-FR-03 · M1D-FR-04 · Cài đặt › Thành viên & phòng ban (theo màn "Thành viên" của mgmt-app): chế độ thấy, cấp quản
-// lý mỗi người, phòng ban (trưởng phòng + thành viên). Ghi qua admin-api (tenant_admin) + hub-api (owner gói); 403 ⇒ chỉ đọc lời nhắc.
+// lý mỗi người, phòng ban (chỉnh ở admin qua «Chỉnh sơ đồ»). Ghi qua admin-api (tenant_admin) + hub-api (owner gói); 403 ⇒ chỉ đọc lời nhắc.
 import type { OrgResponse } from "@ai/contracts/org";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { EditChartButton } from "~/features/org-chart/components/EditChartButton";
 import { fetchOrg, fetchVisibility, orgKeys, putVisibility, setManager } from "../api";
 import { managerOptions } from "../lib/org";
-import { DepartmentsCard } from "./DepartmentsCard";
 
 const field = "h-[34px] rounded-md border border-rule bg-panel px-2 text-body";
 
@@ -45,8 +45,6 @@ export function OrgPage() {
       </p>
     );
   const data: OrgResponse = org.data ?? { members: [], departments: [] };
-  const name = (id: string | null) =>
-    data.members.find((m) => m.user_id === id)?.display_name ?? t("contracts.org.none");
 
   return (
     <section className="flex flex-col gap-5">
@@ -118,7 +116,13 @@ export function OrgPage() {
           </tbody>
         </table>
       </div>
-      <DepartmentsCard data={data} name={name} busy={run.isPending} act={act} />
+      <div
+        className="flex flex-wrap items-center gap-3 rounded-lg border border-rule bg-panel px-4 py-3"
+        data-testid="org-depts-moved"
+      >
+        <p className="text-body text-dim">{t("contracts.org.deptsMoved")}</p>
+        <EditChartButton />
+      </div>
     </section>
   );
 }

@@ -1,5 +1,4 @@
 // CR-139 · Q13 · «Sơ đồ tổ chức» (/contracts/org): cây phòng ban + trưởng phòng + thành viên, tìm người; ai trong công ty cũng xem, chỉ xem.
-import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,9 +6,8 @@ import { PageHead, Panel } from "~/components/shared/layout";
 import { TruncText } from "~/components/shared/TruncText";
 import { Btn } from "~/components/ui/Btn";
 import { Skeleton } from "~/components/ui/skeleton";
-import { useSession } from "~/features/auth/hooks/use-session";
 import { fetchOrgChart, orgChartKey } from "../api";
-import { canEditOrg, orgEditorUrl } from "../lib/org-editor-link";
+import { EditChartButton } from "../components/EditChartButton";
 import { buildOrgTree, filterOrg, headcount, type OrgNode } from "../lib/org-tree";
 
 function Dept({ n, depth }: { n: OrgNode; depth: number }) {
@@ -65,25 +63,6 @@ function Dept({ n, depth }: { n: OrgNode; depth: number }) {
         </ul>
       ) : null}
     </li>
-  );
-}
-
-function EditChartButton() {
-  const { t } = useTranslation();
-  const me = useSession((s) => s.me);
-  const [busy, setBusy] = useState(false);
-  if (!me || !canEditOrg(me.role)) return null;
-  const go = async () => {
-    setBusy(true);
-    const url = await orgEditorUrl(me.tenant.id);
-    setBusy(false);
-    if (url) window.location.assign(url);
-    else toast(t("contracts.orgChart.editFail"), "late");
-  };
-  return (
-    <Btn variant="outline" data-testid="org-edit" disabled={busy} onClick={() => void go()}>
-      {t("contracts.orgChart.edit")}
-    </Btn>
   );
 }
 

@@ -1,5 +1,5 @@
 // M1D-FR-02 · M1D-FR-03 · M1D-FR-04 · e2e Cài đặt › Thành viên & phòng ban (/settings/members): chủ sở hữu đổi chế độ sang "theo
-// cơ cấu", đặt cấp quản lý, tạo phòng ban + trưởng phòng + thành viên; rồi đăng nhập lại bằng quản lý / trưởng phòng / người xem
+// cơ cấu", đặt cấp quản lý, phòng ban (dựng sẵn, chỉnh ở admin); rồi đăng nhập lại bằng quản lý / trưởng phòng / người xem
 // ⇒ danh sách HĐ đổi đúng theo luật thấy (người phụ trách, cấp dưới, thành viên phòng mình làm trưởng; HĐ của đồng nghiệp ẩn).
 // Backend giả CÓ TRẠNG THÁI bằng `page.route` (như `bell.cw.ts`): luật lọc ở đây phản chiếu RLS của hub-api (đã có int test riêng ở
 // `apps/hub-api`); spec này kiểm màn hình + các yêu cầu API đúng hình + danh sách đổi theo cơ cấu. Dữ liệu duy nhất mỗi lần chạy
@@ -30,6 +30,7 @@ type Dept = {
   key: string;
   name: string;
   head_user_id: string | null;
+  parent_group_id: string | null;
   member_ids: string[];
 };
 type Fake = {
@@ -125,31 +126,6 @@ async function install(page: Page): Promise<Fake> {
       return json(r, { ok: true });
     },
   );
-  await page.route(at("/admin/groups"), (r) => {
-    const b = r.request().postDataJSON() as { key: string; name: { vi: string } };
-    const d: Dept = {
-      group_id: uid(0xe0 + f.depts.length),
-      key: b.key,
-      name: b.name.vi,
-      head_user_id: null,
-      member_ids: [],
-    };
-    f.depts.push(d);
-    return json(r, { id: d.group_id }, 201);
-  });
-  await page.route(
-    (u) => /^\/admin\/groups\/[^/]+\/members$/.test(u.pathname),
-    (r) => {
-      const gid = new URL(r.request().url()).pathname.split("/")[3];
-      const b = r.request().postDataJSON() as { usernames: string[] };
-      const d = f.depts.find((x) => x.group_id === gid);
-      for (const n of b.usernames) {
-        const u = Object.values(USERS).find((x) => x.username === n);
-        if (d && u && !d.member_ids.includes(u.id)) d.member_ids.push(u.id);
-      }
-      return json(r, { ok: true });
-    },
-  );
   return f;
 }
 
@@ -194,16 +170,17 @@ test("M1D · đổi cơ cấu ở /settings/members ⇒ danh sách HĐ của qu�
   await expect.poll(() => f.mode).toBe("org");
   await page.getByLabel("Cấp quản lý · Chi Lê").selectOption({ label: "Bình Trần" });
   await expect.poll(() => f.managers.get(USERS.chi.id)).toBe(USERS.binh.id);
-  await page.getByLabel("Tên phòng").fill("Kinh doanh");
-  await page.getByLabel("Mã (a-z, 0-9, -)").fill("kd");
-  await page.getByRole("button", { name: "Tạo phòng ban" }).click();
-  await expect(page.getByRole("heading", { name: "Kinh doanh" })).toBeVisible();
-  await page.getByLabel("Trưởng phòng · Kinh doanh").selectOption({ label: "Dũng Phạm" });
-  await expect.poll(() => f.depts[0]?.head_user_id).toBe(USERS.dung.id);
-  await page.getByLabel("Thêm thành viên · Kinh doanh").selectOption({ label: "Bình Trần" });
-  await expect(
-    page.getByRole("list", { name: "Thành viên phòng" }).getByText("Bình Trần"),
-  ).toBeVisible();
+  // CR-139d · phòng ban không chỉnh ở màn này nữa (một khái niệm một màn): màn chỉ dẫn sang «Chỉnh sơ đồ» ở admin.
+  await expect(page.getByTestId("org-depts-moved")).toBeVisible();
+  // Dữ liệu phòng "Kinh doanh" do Dũng làm trưởng, Bình là thành viên được dựng thẳng ở backend giả (admin-web ghi qua API riêng; e2e cr139d-org-tree).
+  f.depts.push({
+    group_id: uid(0xe0),
+    key: "kd",
+    name: "Kinh doanh",
+    head_user_id: USERS.dung.id,
+    parent_group_id: null,
+    member_ids: [USERS.binh.id],
+  });
   expect(f.puts).toContainEqual({ path: "visibility", body: { mode: "org" } });
 
   // Sau: mỗi người chỉ thấy phần của mình.

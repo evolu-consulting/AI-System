@@ -15,7 +15,7 @@ const PAGES = {
     import("@/features/groups/pages/GroupsPage").then((m) => ({ default: m.GroupsPage })),
   ),
   org: lazy(() =>
-    import("@/features/org/components/OrgEditor").then((m) => ({ default: m.OrgEditor })),
+    import("@/features/org/pages/OrgEditorPage").then((m) => ({ default: m.OrgEditor })),
   ),
   partners: lazy(() =>
     import("@/features/partners/pages/PartnersPage").then((m) => ({ default: m.PartnersPage })),

@@ -119,12 +119,17 @@ async function assertParentOk(tx: Tx, t: string, groupId: string, parent: string
         on d.group_id = up.id and d.tenant_id = ${t}::uuid
       where d.parent_group_id is not null and up.depth < ${ORG_DEPTH_MAX}::int)
     select exists(select 1 from admin.departments where group_id = ${parent}::uuid and tenant_id = ${t}::uuid) as found,
-      exists(select 1 from up where id = ${groupId}::uuid) as cycle`)) as unknown as {
+      exists(select 1 from up where id = ${groupId}::uuid) as cycle,
+      exists(select 1 from up join admin.departments d on d.group_id = up.id and d.tenant_id = ${t}::uuid
+        where up.depth = ${ORG_DEPTH_MAX}::int and d.parent_group_id is not null) as too_deep`)) as unknown as {
     found: boolean;
     cycle: boolean;
+    too_deep: boolean;
   }[];
   if (!r[0]?.found) throw appError("NOT_FOUND");
   if (r[0].cycle) throw appError("VALIDATION_ERROR", { reason: "dept_cycle" });
+  // Chuỗi cha dài quá giới hạn dò ⇒ không chắc có vòng ⇒ không cho qua.
+  if (r[0].too_deep) throw appError("VALIDATION_ERROR", { reason: "dept_too_deep" });
 }
 
 /** Đánh dấu Group là phòng ban (upsert trưởng phòng); `remove` ⇒ bỏ đánh dấu (Group giữ nguyên). */
@@ -136,13 +141,15 @@ export function setDepartment(
 ): Promise<{ group_id: string; head_user_id: string | null } | null> {
   const t = tenantOf(c, q, "write");
   return configWrite(c, "group.save", async (tx, ch) => {
-    const g = (await tx.execute(sql`select g.key, d.head_user_id, d.group_id is not null as dept
+    const g =
+      (await tx.execute(sql`select g.key, d.head_user_id, d.parent_group_id, d.group_id is not null as dept
       from admin.groups g left join admin.departments d on d.group_id = g.id and d.tenant_id = g.tenant_id
       where g.id = ${groupId}::uuid and g.tenant_id = ${t}::uuid for no key update of g`)) as unknown as {
-      key: string;
-      head_user_id: string | null;
-      dept: boolean;
-    }[];
+        key: string;
+        head_user_id: string | null;
+        parent_group_id: string | null;
+        dept: boolean;
+      }[];
     if (!g[0]) throw appError("NOT_FOUND");
     // CR-139d · khoá theo công ty: hai lần đổi cha song song không cùng lúc qua được kiểm tra vòng.
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`org-dept:${t}`}))`);
@@ -187,7 +194,11 @@ export function setDepartment(
             input === "remove"
               ? null
               : { head_user_id: input.head_user_id, parent_group_id: input.parent_group_id },
-          before: { department: g[0].dept ? { head_user_id: g[0].head_user_id } : null },
+          before: {
+            department: g[0].dept
+              ? { head_user_id: g[0].head_user_id, parent_group_id: g[0].parent_group_id }
+              : null,
+          },
         },
       }),
     );

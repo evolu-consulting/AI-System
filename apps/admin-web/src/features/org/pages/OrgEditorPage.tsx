@@ -11,8 +11,8 @@ import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useOrgApi, useOrgData } from "../api";
+import { DeptCard } from "../components/DeptCard";
 import { buildDeptTree, deptKey, flattenTree } from "../lib/org-edit";
-import { DeptCard } from "./DeptCard";
 
 export function OrgEditor() {
   const { t } = useTranslation();

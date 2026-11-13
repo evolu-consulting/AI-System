@@ -16,30 +16,6 @@ export const setManager = (userId: string, managerId: string | null) =>
     method: "PUT",
     body: { manager_id: managerId },
   });
-export const setHead = (groupId: string, headUserId: string | null) =>
-  api(`/admin/org/departments/${encodeURIComponent(groupId)}`, {
-    method: "PUT",
-    body: { head_user_id: headUserId },
-  });
-export const removeDepartment = (groupId: string) =>
-  api(`/admin/org/departments/${encodeURIComponent(groupId)}`, { method: "DELETE" });
-/** Phòng ban mới = Group mới (`/admin/groups`) rồi đánh dấu phòng ban (chưa có trưởng phòng). */
-export async function createDepartment(key: string, name: string): Promise<void> {
-  const g = await api<{ id: string }>("/admin/groups", {
-    method: "POST",
-    body: { key, name: { vi: name }, description: null },
-  });
-  await setHead(g.id, null);
-}
-export const addDeptMember = (groupId: string, username: string) =>
-  api(`/admin/groups/${encodeURIComponent(groupId)}/members`, {
-    method: "POST",
-    body: { usernames: [username] },
-  });
-export const removeDeptMember = (groupId: string, userId: string) =>
-  api(`/admin/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`, {
-    method: "DELETE",
-  });
 export const fetchVisibility = (signal?: AbortSignal) =>
   api<{ mode: VisibilityMode }>("/pack/contracts/visibility", { signal });
 export const putVisibility = (mode: VisibilityMode) =>

@@ -2,6 +2,17 @@
 import type { OrgDepartment } from "@ai/contracts/org";
 
 export type DeptNode = OrgDepartment & { children: DeptNode[] };
+/** Các thao tác ghi mà thẻ phòng ban cần (cài đặt ở `api.ts`; component chỉ nhận qua props, không gọi API). */
+export type OrgActions = {
+  setDept: (
+    gid: string,
+    body: { head_user_id: string | null; parent_group_id?: string | null },
+  ) => Promise<unknown>;
+  removeDept: (gid: string) => Promise<unknown>;
+  rename: (gid: string, name: string) => Promise<unknown>;
+  addMember: (gid: string, username: string) => Promise<unknown>;
+  removeMember: (gid: string, uid: string) => Promise<unknown>;
+};
 export type DeptRow = { dept: OrgDepartment; depth: number };
 
 /** Từ `start` leo lên cha; true nếu gặp `target` (hoặc chính `start`). Dừng khi lặp (dữ liệu hỏng không treo UI). */

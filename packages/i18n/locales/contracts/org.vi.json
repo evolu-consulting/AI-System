@@ -13,17 +13,7 @@
       "manager": "Cấp quản lý",
       "none": "—",
       "cycle": "Không thể chọn: người này đang là cấp dưới (vòng quản lý).",
-      "departments": "Phòng ban",
-      "head": "Trưởng phòng",
-      "deptMembers": "Thành viên phòng",
-      "addMember": "Thêm thành viên",
-      "newDept": "Phòng ban mới",
-      "deptKey": "Mã (a-z, 0-9, -)",
-      "deptName": "Tên phòng",
-      "create": "Tạo phòng ban",
-      "removeDept": "Bỏ phòng ban",
-      "removeMember": "Gỡ khỏi phòng",
-      "empty": "Chưa có phòng ban."
+      "deptsMoved": "Phòng ban (thêm phòng, phòng cha, trưởng phòng, thành viên) chỉnh ở một nơi: sơ đồ tổ chức ở admin."
     }
   }
 }

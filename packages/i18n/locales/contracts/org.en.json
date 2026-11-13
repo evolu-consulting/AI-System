@@ -13,17 +13,7 @@
       "manager": "Manager",
       "none": "—",
       "cycle": "Not allowed: this person reports to them (management loop).",
-      "departments": "Departments",
-      "head": "Head",
-      "deptMembers": "Department members",
-      "addMember": "Add member",
-      "newDept": "New department",
-      "deptKey": "Key (a-z, 0-9, -)",
-      "deptName": "Name",
-      "create": "Create department",
-      "removeDept": "Remove department",
-      "removeMember": "Remove from department",
-      "empty": "No departments yet."
+      "deptsMoved": "Departments (add, parent, head, members) are edited in one place: the org chart in admin."
     }
   }
 }

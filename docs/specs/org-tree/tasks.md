@@ -8,7 +8,7 @@ phụ thuộc:
 ---
 ## Plan (ngắn)
 «Sơ đồ tổ chức nên là sơ đồ cây, chỉnh được ở admin.» Cột `admin.departments.parent_group_id` đã có (migration 0015) nhưng chưa API nào đặt.
-Admin-api `PUT /admin/org/departments/:id` nhận thêm `parent_group_id` (chặn vòng, chặn cha ngoài công ty); admin-web thêm mục con «Cơ cấu» ở Thành viên;
+Admin-api `PUT /admin/org/departments/:id` nhận thêm `parent_group_id` (chặn vòng, chuỗi cha quá 32 tầng ⇒ `dept_too_deep`, chặn cha ngoài công ty; audit `before` có phòng cha cũ); admin-web thêm mục con «Cơ cấu» ở Thành viên;
 Sổ Hợp Tác `/contracts/org` vẫn chỉ xem, thêm «Xem thành viên» + nút «Chỉnh sơ đồ» (SSO sang admin).
 
 ## Làm
@@ -18,7 +18,7 @@ Sổ Hợp Tác `/contracts/org` vẫn chỉ xem, thêm «Xem thành viên» + n
 - [x] workspace-web: mở/ẩn thành viên, nút «Chỉnh sơ đồ» (`org-editor-link.ts`).
 
 ## Không làm / Chạm
-Không kéo-thả, không migration. Màn «Thành viên & phòng ban» (workspace-web `/settings/members`) còn thẻ phòng ban cũ: trùng khái niệm, gỡ ở lát sau cùng e2e `org-visibility`.
+Không kéo-thả, không migration. Thẻ phòng ban cũ ở workspace-web `/settings/members` đã gỡ (G2), thay bằng một dòng + «Chỉnh sơ đồ»; e2e `org-visibility` dựng phòng ban ở backend giả.
 
 ## Test tối thiểu
 unit `org-edit.test.ts`, `org-editor-link.test.ts`; int `org.service.int.test.ts` (đường chính, vòng, chéo công ty); e2e `cr139d-org-tree.spec.ts` (viết, chưa chạy).

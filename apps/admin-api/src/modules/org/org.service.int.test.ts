@@ -162,6 +162,35 @@ describe("CR-139d · cây phòng ban (đổi phòng cha)", () => {
     expect(await parentOf(a)).toBeNull();
     expect(await parentOf(b)).toBe(a);
   });
+  test("chuỗi cha vượt giới hạn dò (32 tầng) ⇒ báo lỗi, không cho qua", async () => {
+    let prev: string | null = null;
+    for (let i = 0; i < 36; i++) {
+      const gid = await dept(TID, `ch-${i}`);
+      await owner`insert into admin.departments (tenant_id, group_id, parent_group_id) values (${TID}, ${gid}, ${prev})`;
+      prev = gid;
+    }
+    const leaf = await dept(TID, "leaf");
+    await setDepartment(call, undefined, leaf, { head_user_id: null });
+    expect(
+      await fails(
+        setDepartment(call, undefined, leaf, { head_user_id: null, parent_group_id: prev }),
+        "VALIDATION_ERROR",
+      ),
+    ).toBe(true);
+    expect(await parentOf(leaf)).toBeNull();
+  });
+  test("audit đổi cha ghi parent_group_id cũ trong before", async () => {
+    const a = await dept(TID, "au-a");
+    const b = await dept(TID, "au-b");
+    await setDepartment(call, undefined, a, { head_user_id: null });
+    await setDepartment(call, undefined, b, { head_user_id: null, parent_group_id: a });
+    await setDepartment(call, undefined, b, { head_user_id: null, parent_group_id: null });
+    const [r] = await owner<
+      { s: { before: { department: { parent_group_id: string | null } } } }[]
+    >`
+      select summary as s from admin.audit_log where tenant_id = ${TID} and entity_id = ${b} order by seq desc limit 1`;
+    expect(r?.s.before.department.parent_group_id).toBe(a);
+  });
   test("cha ở công ty khác, hoặc Group chưa là phòng ban ⇒ NOT_FOUND; không ghi", async () => {
     const mine = await dept(TID, "mine");
     const foreign = await dept(OTHER, "foreign");
@@ -201,7 +230,7 @@ describe("M1c · audit đổi quản lý / trưởng phòng ghi giá trị cũ (
     }).toEqual({
       mgr: { manager_id: null, before: { manager_id: U1 } },
       first: { department: null },
-      dept: { department: { head_user_id: U1 } },
+      dept: { department: { head_user_id: U1, parent_group_id: null } },
     });
   });
 });
