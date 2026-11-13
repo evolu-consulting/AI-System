@@ -167,9 +167,10 @@ Trạng thái run, ghi chú bước và dòng thời gian cùng dùng một nhã
 - Kịch bản: khi admin xem run waiting_review thì dòng trạng thái lấy từ khoá i18n [test: apps/admin-web/src/features/processes/lib/run-detail-view.test.ts » runStatusLine (CR-125 G2)]
 
 #### Yêu cầu: Tệp đính kèm của lượt mở được bởi người xem lượt (nguồn: cr125-run-attachments)
-Tệp người điền ở phiếu «Tạo yêu cầu» hoặc bước form được liên kết vào lượt; mọi người xem được lượt (người tạo, người được giao, quản trị công ty) mở tệp qua `/attachments/:id/content`; người khác cùng công ty và công ty khác nhận 404. Lượt con nhận tệp được truyền qua `input_map`.
+Tệp người điền ở phiếu «Tạo yêu cầu» hoặc bước form được liên kết vào lượt; mọi người xem được lượt (người tạo, người được giao, quản trị công ty) mở tệp qua `/attachments/:id/content`; người khác cùng công ty và công ty khác nhận 404. Lượt con nhận tệp được truyền qua `input_map`, và (CR-140) mọi tệp của các lượt con anh em cùng lượt cha đã mở trước đó (chỉ liên kết, không chép; lượt ngoài cây cha và công ty khác không lộ).
 - Kịch bản: khi người bước form tải tệp và gửi thì người duyệt bước sau mở được tệp, người ngoài cùng công ty và công ty khác nhận 404 [test: apps/hub-api/src/modules/processes/triggers/flow-form-step-card.int.test.ts » tệp bước form]
 - Kịch bản: khi lượt cha truyền tệp qua input_map thì lượt con kế thừa liên kết, tệp không truyền thì không [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » tệp truyền qua input_map]
+- Kịch bản: khi lượt con thứ hai của cùng lượt cha mở thì thấy tệp của lượt con thứ nhất, lượt ngoài cây và công ty khác thì không [test: apps/hub-api/src/modules/attachments/run-links.sibling.int.test.ts » con thứ 2 thấy tệp của con thứ 1]
 
 
 
