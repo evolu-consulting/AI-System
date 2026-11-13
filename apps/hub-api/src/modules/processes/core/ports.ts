@@ -16,7 +16,7 @@ import type { PackToolCatalog } from "../../packs/kit/public";
 import type { AgentRunner } from "../../runner/public";
 import type { RunDriver, RunService } from "../../runs/public";
 import type { HubSecretReader } from "../../secrets/public";
-import type { AppCtx, SystemUow, TenantUow } from "../application/ports";
+import type { AppCtx, PackTaskEventIn, SystemUow, TenantUow } from "../application/ports";
 import type { Bang } from "./bang.rules";
 import type { Clock } from "./clock";
 
@@ -91,19 +91,7 @@ export type PackDecidedEvent = {
   onBehalfOf?: string | null;
 };
 
-/** [AUDIT] · việc trên task duyệt (không phải quyết định). `key` idempotent (task × loại × lúc). */
-export type PackTaskEventKind = "claim" | "release" | "reassign" | "auto_release" | "escalate";
-export type PackTaskEventIn = {
-  tenantId: string;
-  taskId: string;
-  kind: PackTaskEventKind;
-  /** null = hệ thống (tự trả / chuyển cấp). */
-  actor: string | null;
-  /** người / Group nhận (giao lại · chuyển cấp). */
-  to: string | null;
-  reason: string | null;
-  at: string;
-};
+export type { PackTaskEventIn, PackTaskEventKind } from "../application/ports";
 export type PackTaskEvent = PackTaskEventIn & { runId: string; stageKey: string; key: string };
 
 export const NOOP_LAUNCHER: StageLauncher = { kick: async () => {} };

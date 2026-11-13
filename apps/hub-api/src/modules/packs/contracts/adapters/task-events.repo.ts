@@ -3,21 +3,9 @@
 // khớp ⇒ không ghi). Idempotent theo `key` (task × loại × lúc) — không cần index mới: lọc theo HĐ (index `contract_id`) rồi `data.key`.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { TaskEventsRepo } from "../application/approval-engine.ports";
 
 export const TASK_EVENT = "task_handled";
-
-export type TaskEventRow = {
-  runId: string;
-  taskId: string;
-  stageKey: string;
-  kind: string;
-  actor: string | null;
-  to: string | null;
-  reason: string | null;
-  key: string;
-  at: string;
-};
-export type TaskEventsRepo = { record(rows: readonly TaskEventRow[]): Promise<number> };
 
 export function taskEventsRepo(tx: Tx, tid: string): TaskEventsRepo {
   return {

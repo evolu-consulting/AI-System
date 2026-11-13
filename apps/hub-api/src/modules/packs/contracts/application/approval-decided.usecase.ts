@@ -2,9 +2,12 @@
 // chuông) không qua thẻ HĐ ⇒ engine báo `onDecided.contracts` SAU COMMIT ⇒ ghi `stage_decided` bằng CÙNG hàm repo của thẻ
 // (`recordDecision`, idempotent theo task). Scope system của tenant (người quyết có thể không đọc được HĐ sau khi task đóng).
 import type { PackDecided, PackDecidedTask, PackTaskEvent } from "../../kit/public";
-import type { TaskEventsRepo } from "../adapters/task-events.repo";
 import type { DecisionRunRef } from "./approval.ports";
-import type { ApprovalEnginePort, ApprovalEngineTxRepos } from "./approval-engine.ports";
+import type {
+  ApprovalEnginePort,
+  ApprovalEngineTxRepos,
+  TaskEventsRepo,
+} from "./approval-engine.ports";
 
 type SystemUow = {
   system<T>(

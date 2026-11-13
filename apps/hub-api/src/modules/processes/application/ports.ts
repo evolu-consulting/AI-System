@@ -396,3 +396,5 @@ export type EachResult<I, T> =
   | { item: I; ok: false; error: unknown };
 /** Adapter `createHubUow` dựng đủ cả hai; mount tách thành hai object riêng (`tenantOnly`/`systemOnly`). */
 export type UnitOfWork = TenantUow & SystemUow;
+
+export type { PackTaskEventIn, PackTaskEventKind } from "./pack-task-events.ports";

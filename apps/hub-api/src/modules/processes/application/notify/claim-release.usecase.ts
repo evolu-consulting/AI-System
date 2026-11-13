@@ -3,9 +3,14 @@
 // của nhóm; nhóm không có trưởng phòng ⇒ quản trị công ty (`releaseRecipients`). "Không thao tác" = quá `claim_deadline_at`; xem/mở
 // thẻ không gia hạn. Đồng hồ = tham số `now()` (seam) — test gọi `releaseClaims` trực tiếp với đồng hồ giả, không ngủ.
 
-import type { PackTaskEventIn } from "../../core/ports";
 import { releaseRecipients } from "../../domain/tasks/claim.rules";
-import type { BatchRepos, NoticeMetaRow, ReleasedClaim, SystemUow } from "../ports";
+import type {
+  BatchRepos,
+  NoticeMetaRow,
+  PackTaskEventIn,
+  ReleasedClaim,
+  SystemUow,
+} from "../ports";
 
 /** Mỗi lô ≤ 100 hàng (khuôn vòng nhắc). */
 export const CLAIM_RELEASE_BATCH = 100;

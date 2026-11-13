@@ -278,3 +278,17 @@ export type ApprovalEngineTxRepos = {
 } & KitTxRepos &
   ContractFlowTxRepos;
 export type ApprovalEngineUow = PackUow<ApprovalEngineTxRepos>;
+
+/** [AUDIT] · lịch sử HĐ cho việc trên task duyệt (`task_handled`) — repo ở `adapters/task-events.repo.ts`. */
+export type TaskEventRow = {
+  runId: string;
+  taskId: string;
+  stageKey: string;
+  kind: string;
+  actor: string | null;
+  to: string | null;
+  reason: string | null;
+  key: string;
+  at: string;
+};
+export type TaskEventsRepo = { record(rows: readonly TaskEventRow[]): Promise<number> };

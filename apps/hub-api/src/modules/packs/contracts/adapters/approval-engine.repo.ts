@@ -191,7 +191,7 @@ function pendingQ(tx: Tx, tid: string): ApprovalEngineRepo["setPendingLinks"] {
  *  `engine_run_id`) — chỉ còn `run_id` (lượt, như event duyệt khác), `stage`, `action`. `e` = bí danh bảng event (hằng). */
 export const eventDataOut = (e: "e") =>
   sql.raw(
-    `(case when ${e}.type = 'task_handled' then ${e}.data - 'task_id' - 'key' when ${e}.type in ('${OVERRIDE_EVENT}', 'stage_decided') then ${e}.data - 'task_id' - 'engine_run_id' - 'evidence_id' - (case when ${e}.data ? 'evidence_id' then 'feedback' else '' end) else ${e}.data end)`,
+    `(case when ${e}.type = 'task_handled' then ${e}.data - 'task_id' - 'key' - 'to' when ${e}.type in ('${OVERRIDE_EVENT}', 'stage_decided') then ${e}.data - 'task_id' - 'engine_run_id' - 'evidence_id' - (case when ${e}.data ? 'evidence_id' then 'feedback' else '' end) else ${e}.data end)`,
   );
 
 /** CR-113 · "duyệt thay": MỘT câu chèn (không `returning` — người duyệt ngoài cây không đọc được hàng; FK HĐ kiểm tồn tại). Review ·

@@ -4,9 +4,15 @@
 // (`dueReminder`/`nextRemind`/`noticeRecipients`) chạy trên mảng trong bộ nhớ. Một lượt xả = lặp lô tới khi lô < 100 /
 // hết hàng / hết ngân sách 60 s (A9); sự kiện qua outbox ⇒ phát SAU COMMIT mỗi lô. Đồng hồ = tham số `now()` (seam).
 
-import type { PackTaskEventIn } from "../../core/ports";
 import { dueReminder, nextRemind, noticeRecipients } from "../../domain/notify/remind.rules";
-import type { BatchRepos, ClaimedReminder, NoticeMetaRow, ReminderMark, SystemUow } from "../ports";
+import type {
+  BatchRepos,
+  ClaimedReminder,
+  NoticeMetaRow,
+  PackTaskEventIn,
+  ReminderMark,
+  SystemUow,
+} from "../ports";
 import { escalateBatch } from "./escalate-task.usecase";
 
 /** plan §11: mỗi lô ≤ 100 hàng. */

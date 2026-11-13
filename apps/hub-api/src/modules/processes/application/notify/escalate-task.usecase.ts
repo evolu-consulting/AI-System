@@ -2,7 +2,6 @@
 // cấp THEO TẬP trong tx lô của vòng nhắc: MỘT câu claim-update (SKIP LOCKED, đặt `escalated_at`); có hàng ⇒ luật lớp 1
 // `escalateAction` chọn thêm Group / bỏ qua trên mảng ⇒ assignee, audit, notice `escalated` mỗi loại MỘT câu nhiều hàng.
 // `tenant_id` mọi hàng ghi lấy từ hàng nguồn (task), không từ caller.
-import type { PackTaskEventIn } from "../../core/ports";
 import { escalateAction } from "../../domain/notify/escalate.rules";
 import type {
   BatchRepos,
@@ -10,6 +9,7 @@ import type {
   EscalateAuditRow,
   EscalatedAssigneeRow,
   NoticeMetaRow,
+  PackTaskEventIn,
 } from "../ports";
 
 export async function escalateBatch(

@@ -158,7 +158,7 @@ export class GateService {
       onEvidence,
     );
     const override = decidesByOverride(task, req); // [AUDIT] · Toàn quyền duyệt thay (đường chung)
-    const onBehalfOf = await delegatorOf(tx, task.tenant_id, taskId, v.userId); // [AUDIT] · uỷ quyền
+    const onBehalfOf = run.packKey ? await delegatorOf(tx, task.tenant_id, taskId, v.userId) : null; // [AUDIT] · uỷ quyền
     const decided = (evidenceId: string | null) =>
       decidedOf(run, idx, taskId, { b, userId: v.userId, evidenceId, override, onBehalfOf });
     if (vote.mode === "partial")
