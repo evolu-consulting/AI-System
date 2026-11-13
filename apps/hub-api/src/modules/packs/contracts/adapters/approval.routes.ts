@@ -23,6 +23,7 @@ import type {
 } from "../application/approval.usecase";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
 import type { ApprovalErrorCode } from "../domain/approval-run.rules";
+import { evidenceHeaders } from "./evidence-disposition";
 
 const KEY = "contracts";
 export type ApprovalRoutesDeps = {
@@ -102,16 +103,12 @@ export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hon
     const fileId = parseWith(z.uuid(), c.req.param("fileId"));
     const f = await d.evidenceFile?.(who(c.get("user")), id, evidenceId, fileId);
     if (!f) throw appError("NOT_FOUND");
-    // tệp người dùng tải lên ⇒ luôn tải xuống (không hiển thị nội tuyến), chặn đoán kiểu
-    return new Response(f.bytes as unknown as BodyInit, {
-      headers: {
-        "content-type": f.mime || "application/octet-stream",
-        "content-length": String(f.bytes.byteLength),
-        "content-disposition": `attachment; filename*=UTF-8''${encodeURIComponent(f.name)}`,
-        "x-content-type-options": "nosniff",
-        "cache-control": "private, no-store",
-      },
-    });
+    // tệp người dùng tải lên ⇒ mặc định tải xuống; `?inline=1` chỉ nội tuyến cho ảnh raster/PDF (CR-144), chặn đoán kiểu
+    const h = evidenceHeaders(
+      { name: f.name, mime: f.mime, size: f.bytes.byteLength },
+      c.req.query("inline") === "1",
+    );
+    return new Response(f.bytes as unknown as BodyInit, { headers: h });
   });
   r.post("/contracts/:id/approval", write, async (c) => {
     const id = parseWith(z.uuid(), c.req.param("id"));

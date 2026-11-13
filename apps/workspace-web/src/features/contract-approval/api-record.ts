@@ -12,27 +12,18 @@ export const fetchApprovalRecord = (id: string, signal?: AbortSignal) =>
 export const fetchChangesSinceLast = (id: string, signal?: AbortSignal) =>
   api<ChangesSinceLast>(`${BASE}/${enc(id)}/changes-since-last`, { signal });
 
-/** Tải tệp/chữ ký của một bằng chứng (kèm Bearer; người không đọc được ⇒ 404). */
-export async function downloadEvidenceFile(
+/** CR-144 · nội dung tệp/chữ ký của một bằng chứng để XEM trong hộp (`?inline=1`; kèm Bearer; người không đọc được ⇒ 404). */
+export async function fetchEvidenceBlob(
   id: string,
   evidenceId: string,
   fileId: string,
-  filename: string,
-): Promise<void> {
+  signal?: AbortSignal,
+): Promise<Blob> {
   const res = await apiResponse(
-    `${BASE}/${enc(id)}/approval-record/evidence/${enc(evidenceId)}/files/${enc(fileId)}`,
+    `${BASE}/${enc(id)}/approval-record/evidence/${enc(evidenceId)}/files/${enc(fileId)}?inline=1`,
+    { signal },
   );
-  const url = URL.createObjectURL(await res.blob());
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.append(a);
-  try {
-    a.click();
-  } finally {
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
+  return res.blob();
 }
 
 /** U4b-PDF · «Tải PDF» hồ sơ duyệt (cùng quyền xem hồ sơ; kèm Bearer ⇒ blob ⇒ lưu tệp). */

@@ -8,7 +8,11 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { extractText, getDocumentProxy } from "unpdf";
 import { evidenceFileBytesOf, evidenceFileNamesOf } from "../../../attachments/public";
-import { approvalEvidenceFile, approvalRecordPdf } from "../application/approval-record.usecase";
+import {
+  approvalEvidenceFile,
+  approvalRecord,
+  approvalRecordPdf,
+} from "../application/approval-record.usecase";
 import type { RecordRow } from "../domain/approval-record.rules";
 
 let o: Sql;
@@ -54,13 +58,13 @@ afterAll(async () => {
 const bytesOf = () => evidenceFileBytesOf(db, { blob: async () => new Blob([BYTES]) } as never);
 
 /** Hồ sơ duyệt giả của HĐ thuộc T1: người gửi SENDER, không ai khác trong quy trình; HĐ ở công ty khác ⇒ không thấy. */
-function deps(admin = false) {
+function deps(admin = false, actor = SENDER) {
   const row: RecordRow = {
     taskId: "t1",
     stage: "s0",
     action: "approve",
     at: "2026-11-10T01:00:00.000Z",
-    actor: SENDER,
+    actor,
     feedback: null,
     evidence: {
       id: EV,
@@ -134,6 +138,32 @@ describe("CR-127 E4b · GET approval-record/evidence/:evidenceId/files/:fileId (
 
   it("tệp không thuộc bằng chứng đó (kể cả cùng công ty) ⇒ null", async () => {
     expect(await usecase()({ tenantId: T1, userId: SENDER }, CONTRACT, EV, STRAY)).toBeNull();
+  });
+});
+
+describe("CR-144 · approvalRecord trả tên + loại tệp (files) cho hộp «Xem»", () => {
+  const rec = (who: { tenantId: string; userId: string }, actor = SENDER) =>
+    approvalRecord(deps(false, actor))(who, CONTRACT);
+
+  it("người gửi: files có chữ ký + tệp kèm name/mime", async () => {
+    const out = await rec({ tenantId: T1, userId: SENDER });
+    const files = out?.items[0]?.evidence?.files ?? [];
+    expect(files.map((x) => [x.id, x.name, x.mime])).toEqual([
+      [SIG, "ky.pdf", "application/pdf"],
+      [FILE, "tep.pdf", "application/pdf"],
+    ]);
+  });
+
+  it("người được giao duyệt không phải người tạo cũng thấy files", async () => {
+    const out = await rec({ tenantId: T1, userId: VIEWER }, VIEWER);
+    expect(out?.can_read_evidence).toBe(true);
+    expect(out?.items[0]?.evidence?.files?.length).toBe(2);
+  });
+
+  it("người chỉ xem không có files và công ty khác không thấy", async () => {
+    const out = await rec({ tenantId: T1, userId: VIEWER });
+    expect(out?.items[0]?.evidence?.files).toBeUndefined();
+    expect(await rec({ tenantId: T2, userId: OTHER })).toBeNull();
   });
 });
 

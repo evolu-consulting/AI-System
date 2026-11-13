@@ -198,7 +198,17 @@
           },
           "hidden": "An opinion/signature is attached — only people in the flow can view it.",
           "signature": "View signature",
-          "file": "Download file",
+          "file": "Attachments",
+          "view": "View",
+          "viewTitle": "Approval details",
+          "by": "Approver",
+          "stage": "Step",
+          "at": "Time",
+          "decision": "Decision",
+          "note": "Comment",
+          "signatureTitle": "Signature",
+          "fileError": "Could not open this file.",
+          "fileOther": "This file type cannot be previewed.",
           "stageFallback": "Approval step"
         },
         "changes": {

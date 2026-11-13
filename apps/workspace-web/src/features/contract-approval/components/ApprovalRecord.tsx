@@ -6,13 +6,13 @@ import { useTranslation } from "react-i18next";
 import { approvalKey, fetchApproval } from "../api";
 import {
   changesKey,
-  downloadEvidenceFile,
   downloadRecordPdf,
   fetchApprovalRecord,
   fetchChangesSinceLast,
   recordKey,
 } from "../api-record";
 import { hasChanges, recordLines, waitingOf } from "../lib/record-view";
+import { EvidenceDialog } from "./EvidenceDialog";
 
 function Fold({
   title,
@@ -132,27 +132,9 @@ export function RecordBody({ id }: { id: string }) {
                 {t("contracts.work.u4.record.hidden")}
               </p>
             )}
-            {l.evidenceId && (l.signatureId || l.fileIds.length > 0) && (
-              <p className="m-0 mt-1 flex flex-wrap gap-3 text-caption">
-                {[...(l.signatureId ? [l.signatureId] : []), ...l.fileIds].map((fid) => (
-                  <button
-                    key={fid}
-                    type="button"
-                    className="text-act underline"
-                    onClick={() =>
-                      void downloadEvidenceFile(
-                        id,
-                        l.evidenceId as string,
-                        fid,
-                        fid === l.signatureId ? "chu-ky.png" : fid,
-                      )
-                    }
-                  >
-                    {fid === l.signatureId
-                      ? t("contracts.work.u4.record.signature")
-                      : t("contracts.work.u4.record.file")}
-                  </button>
-                ))}
+            {l.evidenceId && l.files.length > 0 && (
+              <p className="m-0 mt-1 text-caption">
+                <EvidenceDialog contractId={id} line={l} />
               </p>
             )}
           </li>

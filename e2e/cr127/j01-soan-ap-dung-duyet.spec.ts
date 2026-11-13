@@ -154,6 +154,17 @@ test("Sổ Hợp Tác: xem trước các bước → Gửi duyệt → người 
   const bytes = fs.readFileSync(await dl.path());
   expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
   expect(bytes.length).toBeGreaterThan(1_000);
+
+  // CR-144 · hồ sơ duyệt cho XEM ngay (không tải về): thấy ai duyệt; có chữ ký/tệp ⇒ «Xem» mở hộp chi tiết, không còn nút tải tệp
+  await expect(emp.getByTestId("record-line").first()).toContainText("Giám đốc");
+  await expect(emp.getByRole("button", { name: "Tải tệp" })).toHaveCount(0);
+  const view = emp.getByTestId("record-view").first();
+  if (await view.count()) {
+    await view.click();
+    const box = emp.getByTestId("evidence-view");
+    await expect(box).toContainText("Giám đốc");
+    await expect(box.locator("img, iframe, [data-testid=evidence-other]").first()).toBeVisible();
+  }
 });
 
 test("quản trị công ty chỉ xem: thấy quy trình đã áp dụng, không có nút Tạo quy trình", async ({

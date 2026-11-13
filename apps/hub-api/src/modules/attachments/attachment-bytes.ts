@@ -80,21 +80,28 @@ export function evidenceFileBytesOf(db: Db, storage: AttachmentStorage) {
 }
 
 /**
- * CR-127 · U4b-3 · TÊN tệp/chữ ký của các bằng chứng (`fileId → filename`) cho PDF Hồ sơ duyệt — MỘT câu theo lô (`hub.evidence_get(ids)` DEFINER,
+ * CR-127 · U4b-3 + CR-144 · TÊN + loại (mime) tệp/chữ ký của các bằng chứng (`fileId → filename`) cho PDF Hồ sơ duyệt — MỘT câu theo lô (`hub.evidence_get(ids)` DEFINER,
  * chỉ tenant của tx; id bằng chứng tenant khác ⇒ không có dòng). Không đọc nội dung tệp.
  */
 export function evidenceFileNamesOf(db: Db) {
-  return async (tenantId: string, evidenceIds: readonly string[]): Promise<Map<string, string>> => {
+  return async (
+    tenantId: string,
+    evidenceIds: readonly string[],
+  ): Promise<Map<string, { name: string; mime: string }>> => {
     const ids = evidenceIds.filter((x) => isUuidName(x));
     if (!isUuidName(tenantId) || ids.length === 0) return new Map();
     const rows = await withHubScope(db, { kind: "system" }, async (tx) => {
       await setHubTenantInTx(tx, tenantId);
-      return tx.execute<{ id: string; filename: string }>(sql`select a.id::text as id, a.filename
+      return tx.execute<{
+        id: string;
+        filename: string;
+        mime: string;
+      }>(sql`select a.id::text as id, a.filename, a.mime
         from hub.evidence_get(${`{${ids.join(",")}}`}::uuid[]) e
         join hub.attachments a on a.tenant_id = e.tenant_id
           and (a.id = e.signature_attachment_id or a.id = any (e.attachment_ids))
         where a.tenant_id = ${tenantId}::uuid and a.purged_at is null`);
     });
-    return new Map([...rows].map((r) => [r.id, r.filename]));
+    return new Map([...rows].map((r) => [r.id, { name: r.filename, mime: r.mime }]));
   };
 }

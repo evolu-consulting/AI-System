@@ -19,6 +19,8 @@ export type RecordLine = {
   readable: boolean;
   signatureId: string | null;
   fileIds: readonly string[];
+  /** CR-144 · tên + loại của chữ ký/tệp (hộp «Xem»); rỗng khi không đọc được. */
+  files: readonly { id: string; name: string; mime: string }[];
   evidenceId: string | null;
 };
 
@@ -56,6 +58,7 @@ export function recordLines(
       readable,
       signatureId: readable ? (e?.signature_attachment_id ?? null) : null,
       fileIds: readable ? (e?.attachment_ids ?? []) : [],
+      files: readable ? (e?.files ?? []) : [],
       evidenceId: e?.id ?? null,
     };
   });

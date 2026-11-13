@@ -15,7 +15,7 @@ export type EvidenceBytes = (
 export type EvidenceNames = (
   tenantId: string,
   evidenceIds: readonly string[],
-) => Promise<Map<string, string>>;
+) => Promise<Map<string, { name: string; mime: string }>>;
 
 export type Repos = {
   approval: {

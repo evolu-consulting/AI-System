@@ -1,6 +1,7 @@
 // CR-127 · E4 · `GET /contracts/:id/approval-record` — hồ sơ duyệt: mọi quyết định + bằng chứng, lọc theo BR-26 (người chỉ xem không
 // thấy ý kiến/tệp). Lớp 2: chỉ cổng. Hai lần đọc: (1) tx gói: trạng thái lượt + `stage_decided` + bằng chứng (MỘT câu, DEFINER theo
 // tenant); (2) `stepsView` của engine (tên người, ai quyết được bước đang mở). HĐ không thấy / tenant khác ⇒ null (404).
+import type { ApprovalRecord } from "@ai/contracts/pack-contracts";
 import type { PackWho } from "../../kit/public";
 import { renderApprovalRecordPdf } from "../adapters/approval-record.pdf";
 import { buildApprovalRecord, canReadEvidence } from "../domain/approval-record.rules";
@@ -53,9 +54,29 @@ async function loadRecord(d: ApprovalRecordDeps, who: PackWho, id: string) {
 }
 
 export function approvalRecord(d: ApprovalRecordDeps) {
-  return async (who: PackWho, id: string) => {
+  return async (who: PackWho, id: string): Promise<ApprovalRecord | null> => {
     const rec = await loadRecord(d, who, id);
-    return rec ? buildApprovalRecord(rec.rows, rec.names, rec.readable) : null;
+    if (!rec) return null;
+    const out: ApprovalRecord = buildApprovalRecord(rec.rows, rec.names, rec.readable);
+    if (!rec.readable || !d.evidenceNames) return out;
+    // CR-144 · MỘT câu theo lô: tên + loại tệp của mọi bằng chứng đọc được (không truy vấn theo từng tệp).
+    const meta = await d.evidenceNames(
+      who.tenantId,
+      out.items.flatMap((x) => (x.evidence?.readable ? [x.evidence.id] : [])),
+    );
+    const items = out.items.map((x) => {
+      if (!x.evidence) return x;
+      const ids = [
+        ...(x.evidence.signature_attachment_id ? [x.evidence.signature_attachment_id] : []),
+        ...x.evidence.attachment_ids,
+      ];
+      const files = ids.flatMap((id) => {
+        const m = meta.get(id);
+        return m ? [{ id, name: m.name, mime: m.mime }] : [];
+      });
+      return { ...x, evidence: { ...x.evidence, files } };
+    });
+    return { ...out, items };
   };
 }
 
@@ -69,10 +90,9 @@ export function approvalRecordPdf(d: ApprovalRecordDeps, now: () => Date = () =>
     if (!rec) return null;
     const out = buildApprovalRecord(rec.rows, rec.names, rec.readable);
     const evIds = out.items.flatMap((x) => (x.evidence?.readable ? [x.evidence.id] : []));
-    const fileNames =
-      rec.readable && d.evidenceNames
-        ? await d.evidenceNames(who.tenantId, evIds)
-        : new Map<string, string>();
+    const fileNames = new Map<string, string>();
+    if (rec.readable && d.evidenceNames)
+      for (const [k, m] of await d.evidenceNames(who.tenantId, evIds)) fileNames.set(k, m.name);
     const bytes = await renderApprovalRecordPdf({
       contract: { name: rec.label?.title ?? "", number: rec.label?.number ?? null },
       items: out.items,

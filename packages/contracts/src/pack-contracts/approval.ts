@@ -232,6 +232,11 @@ export const ApprovalRecordEvidenceSchema = z.strictObject({
   note: z.string().max(4000).nullable(),
   signature_attachment_id: UuidSchema.nullable(),
   attachment_ids: z.array(UuidSchema).max(5),
+  /** CR-144 · tên + loại của chữ ký và tệp (một câu theo lô) để hộp «Xem» hiện đúng kiểu; vắng khi không đọc được. */
+  files: z
+    .array(z.strictObject({ id: UuidSchema, name: z.string().max(300), mime: z.string().max(200) }))
+    .max(6)
+    .optional(),
   by_user: RecordPersonSchema,
   on_behalf_of: RecordPersonSchema.nullable(),
   at: IsoDateTime,
