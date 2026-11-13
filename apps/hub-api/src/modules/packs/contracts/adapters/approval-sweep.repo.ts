@@ -124,7 +124,8 @@ export function sweepRepo(tx: Tx, tid: string): SweepRepo {
               and e.data ->> 'run_id' = a.id::text) as have
         from contracts.approvals a where a.tenant_id = ${tid}::uuid and a.mode = 'engine' and a.engine_run_id is not null
           and (a.status = 'level1' or a.updated_at > now() - interval '1 day')
-        order by random() limit ${limit}::int`);
+        -- mới đổi trước (quyết vừa xảy ra ⇒ lượt vừa chạm); không random ⇒ lượt sau đọc cùng tập gần nhất (TECH-DEBT: index thời gian)
+        order by a.updated_at desc, a.id limit ${limit}::int`);
       return rows.map((r) => ({
         approvalId: r.id,
         contractId: r.cid,

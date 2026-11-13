@@ -212,15 +212,29 @@ function overrideQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["recordO
   };
 }
 
-/** CR-125 · nhật ký quyết định của người duyệt (mỗi bước: ai, lúc nào [at], Đạt/Trả lại/Từ chối, góp ý). MỘT câu chèn, không returning. */
-function decisionQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["recordDecision"]> {
-  return async (id, aid, e) => {
+/** CR-125 · nhật ký quyết định của người duyệt (mỗi bước: ai, lúc nào [at], Đạt/Trả lại/Từ chối, góp ý). [AUDIT] · MỘT câu chèn theo tập
+ *  (`jsonb_to_recordset`) cho cả thẻ (1 dòng) lẫn ghi bù của vòng quét (lô); bấm đúp / thử lại / ghi bù cùng task ⇒ một dòng (index 0088). */
+function decisionsQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["recordDecisions"]> {
+  return async (items) => {
+    if (items.length === 0) return;
+    const rows = items.map((x) => ({
+      cid: x.contractId,
+      aid: x.approvalId,
+      task: x.taskId,
+      stage: x.stageKey,
+      action: x.action,
+      fb: x.feedback,
+      actor: x.actor,
+      ev: x.evidenceId ?? null,
+      at: x.at ?? null,
+    }));
     await tx.execute(sql`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data, at)
-      values (${tid}::uuid, ${id}::uuid, 'stage_decided', ${e.actor}::uuid,
-        jsonb_strip_nulls(jsonb_build_object('run_id', ${aid}::text, 'task_id', ${e.taskId}::text, 'stage', ${e.stageKey}::text,
-          'action', ${e.action}::text, 'feedback', ${e.feedback}::text, 'evidence_id', ${e.evidenceId ?? null}::text)),
-        coalesce(${e.at ?? null}::timestamptz, now()))
-      -- bấm đúp / thử lại cùng task ⇒ một dòng (index 0088)
+      select ${tid}::uuid, r.cid, 'stage_decided', r.actor,
+        jsonb_strip_nulls(jsonb_build_object('run_id', r.aid::text, 'task_id', r.task, 'stage', r.stage,
+          'action', r.action, 'feedback', r.fb, 'evidence_id', r.ev)),
+        coalesce(r.at, now())
+      from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(cid uuid, aid uuid, task text, stage text,
+        action text, fb text, actor uuid, ev text, at timestamptz)
       on conflict (tenant_id, (data ->> 'task_id')) where type = 'stage_decided' do nothing`);
   };
 }
@@ -359,7 +373,9 @@ export function approvalEngineRepo(tx: Tx, tenantId: string): ApprovalEngineRepo
     finalize: finalizeQ(tx, tenantId),
     recordOverride: overrideQ(tx, tenantId),
     voidOverride: voidOverrideQ(tx),
-    recordDecision: decisionQ(tx, tenantId),
+    recordDecisions: decisionsQ(tx, tenantId),
+    recordDecision: (id, aid, e) =>
+      decisionsQ(tx, tenantId)([{ ...e, contractId: id, approvalId: aid }]),
     decisionsOf: decisionsOfQ(tx, tenantId),
   };
 }

@@ -3,7 +3,7 @@
 ## Delta
 - ADDED · Quyết bước duyệt HĐ qua đường chung `POST /review-tasks/:id/decision` (Việc của tôi, chuông) ⇒ HĐ có dòng `stage_decided` (Hồ sơ duyệt) — cùng hàm `recordDecision` của thẻ HĐ. [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-decided.int.test.ts]
 - MODIFIED · Duyệt hợp lệ thì GIỮ: bước kế khởi động lỗi SAU khi quyết đã COMMIT ⇒ không trả lỗi cho người bấm (không báo như duyệt lỗi); lượt ⇒ «Cần xử lý» `start_failed` có mã lỗi (thẻ riêng: «không khởi động được — <lý do>», Thử lại / Huỷ). Kiểm điều kiện của chính quyết định (quyền, bằng chứng, đua) vẫn TRƯỚC khi đóng task ⇒ lỗi ⇒ không quyết. [test: apps/hub-api/src/modules/processes/gates/decision-after-commit.int.test.ts — đỏ khi bỏ sửa (0/2), xanh sau sửa]
-- ADDED · Đường bù lịch sử: vòng quét duyệt HĐ (`sweepApprovalsOnce`) so task đã quyết ở engine (`decidedTasksOf`, 1 câu) với `stage_decided` của lượt (1 câu) ⇒ ghi bù bằng cùng `recordDecision`, giữ lúc quyết thật; idempotent theo task. Lượt còn mở hoặc đổi trong 1 ngày. [test: approval-decided.int.test.ts ca «đường bù»]
+- ADDED · Đường bù lịch sử: vòng quét duyệt HĐ (`sweepApprovalsOnce`) so task đã quyết ở engine (`decidedTasksOf`, 1 câu) với `stage_decided` của lượt (1 câu) ⇒ ghi bù bằng cùng `recordDecision`, giữ lúc quyết thật; idempotent theo task. Lượt còn mở hoặc đổi trong 1 ngày, mới đổi trước; hub trả task mới quyết trước (≤ 500); chèn MỘT câu theo tập (`jsonb_to_recordset`, cùng câu với thẻ). [test: approval-decided.int.test.ts ca «đường bù»]
 - ADDED · Hồ sơ duyệt (JSON `override`, PDF, web) ghi rõ «duyệt thay người được giao» khi Toàn quyền quyết. [test: approval-decided.int.test.ts ca 3]
 - MODIFIED · Hồ sơ trống: «Chưa ai duyệt — đang chờ <người> duyệt bước «<bước>»» (biết bước đang mở), không thì «Chưa ai duyệt bước nào.»
 
@@ -36,5 +36,6 @@
 - Nhãn «duyệt thay» khi Toàn quyền quyết qua `/review-tasks`: hub chưa biết người quyết dùng Toàn quyền (cờ `override` chỉ thẻ gói tính) — cần engine trả cờ trong `PackDecided`.
 - Nhận việc / trả việc / giao lại / chuyển cấp ⇒ dòng lịch sử HĐ (hub đã có ở lịch sử lượt `loadHistory` mục `escalate`; HĐ chưa).
 - Index 0088 (một dòng/task) ⇒ «Cần: tất cả»/cùng duyệt chỉ ghi phiếu đầu — để sau (migration).
-- Lượt đã đóng > 1 ngày không được đối soát lịch sử.
+- Lượt đã đóng > 1 ngày không được đối soát lịch sử; `decisionRuns` chưa có index thời gian (TECH-DEBT #266).
+- Kick lỗi sau quyết: đã xác nhận vòng quét hub `sweeps.ts` `orphanCands` kick lại stage `queued` ≥ 60 s (nếu cờ start_failed chưa ghi được), và stage `running` bị ngắt (`interrupted`) được xử lý; khi đã cờ start_failed thì chờ người dùng Thử lại / Huỷ (đúng ý: lỗi bước sau hiện ở thẻ riêng). Không cần TECH-DEBT.
 - e2e hành trình: Việc của tôi duyệt HĐ ⇒ Hồ sơ duyệt có dòng.

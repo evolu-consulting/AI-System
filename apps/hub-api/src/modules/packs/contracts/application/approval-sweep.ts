@@ -12,7 +12,7 @@ import type { ContractFlowTxRepos } from "./contract-flow.ports";
 export type SweepDeps = {
   uow: PackSystemUow<
     { sweep: SweepRepo } & ContractFlowTxRepos & { approval?: Pick<ApprovalRepo, "runOf"> } & {
-        approvalEngine?: Pick<ApprovalEngineRepo, "recordDecision">;
+        approvalEngine?: Pick<ApprovalEngineRepo, "recordDecisions">;
       }
   >;
   /** Tenant đang bật gói (cache cấu hình, 0 SQL). */

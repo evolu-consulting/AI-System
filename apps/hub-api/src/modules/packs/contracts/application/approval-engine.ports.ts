@@ -245,6 +245,10 @@ export type ApprovalEngineRepo = {
   /** CR-125 · nhật ký MỖI quyết định của người duyệt trên bước của run engine (`contract_events` `stage_decided`: người, bước,
    *  approve|return|reject, góp ý) — hiện ở lịch sử HĐ. MỘT câu. */
   recordDecision?(contractId: string, approvalId: string, e: DecisionEvent): Promise<void>;
+  /** [AUDIT] · cùng câu với `recordDecision`, theo lô (ghi bù của vòng quét) — MỘT câu. */
+  recordDecisions?(
+    items: readonly (DecisionEvent & { contractId: string; approvalId: string })[],
+  ): Promise<void>;
   /** CR-127 · E4 · hồ sơ duyệt: mọi `stage_decided` của HĐ (≤ 200, theo thời gian) + bằng chứng qua `hub.evidence_get` — MỘT câu. */
   decisionsOf?(contractId: string): Promise<DecisionRow[]>;
   /** S3b · nhãn HĐ (số, tiêu đề) của các HĐ người dùng THẤY (RLS M1) — MỘT câu `= any`. */

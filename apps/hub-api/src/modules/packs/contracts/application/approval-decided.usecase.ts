@@ -36,13 +36,13 @@ type BackfillUow = {
     tenantId: string,
     fn: (r: {
       sweep: { decisionRuns?(limit: number): Promise<DecisionRunRef[]> };
-      approvalEngine?: Pick<ApprovalEngineTxRepos["approvalEngine"], "recordDecision">;
+      approvalEngine?: Pick<ApprovalEngineTxRepos["approvalEngine"], "recordDecisions">;
     }) => Promise<T>,
   ): Promise<T>;
 };
 
 /** [AUDIT] · đường bù (vòng quét duyệt HĐ): task đã quyết ở engine mà HĐ chưa có `stage_decided` (ghi sau COMMIT bị lỗi / sập giữa
- *  chừng) ⇒ ghi bù bằng CÙNG `recordDecision`, giữ lúc quyết thật; idempotent theo task. 1 câu gói + 1 câu engine + n chèn thiếu. */
+ *  chừng) ⇒ ghi bù bằng CÙNG `recordDecision`, giữ lúc quyết thật; idempotent theo task. 1 câu gói + 1 câu engine + 1 câu chèn theo tập. */
 export async function backfillDecisions(
   d: { uow: BackfillUow; port: Pick<ApprovalEnginePort, "decidedTasksOf"> | undefined },
   tenantId: string,
@@ -61,17 +61,17 @@ export async function backfillDecisions(
     return run && !run.have.includes(k.taskId) ? [{ run, k }] : [];
   });
   if (missing.length === 0) return 0;
-  await d.uow.system(tenantId, async (r) => {
-    for (const { run, k } of missing)
-      await r.approvalEngine?.recordDecision?.(run.contractId, run.approvalId, {
-        taskId: k.taskId,
-        stageKey: k.stageKey,
-        action: ACTION[k.result],
-        feedback: k.feedback,
-        actor: k.actor,
-        evidenceId: k.evidenceId,
-        at: k.at,
-      });
-  });
+  const items = missing.map(({ run, k }) => ({
+    contractId: run.contractId,
+    approvalId: run.approvalId,
+    taskId: k.taskId,
+    stageKey: k.stageKey,
+    action: ACTION[k.result],
+    feedback: k.feedback,
+    actor: k.actor,
+    evidenceId: k.evidenceId,
+    at: k.at,
+  }));
+  await d.uow.system(tenantId, async (r) => r.approvalEngine?.recordDecisions?.(items)); // MỘT câu cho cả lô
   return missing.length;
 }

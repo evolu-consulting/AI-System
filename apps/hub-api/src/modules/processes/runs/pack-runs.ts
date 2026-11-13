@@ -194,7 +194,7 @@ const DECIDED_TASKS = (
   where t.tenant_id = ${tenantId}::uuid and t.process_run_id = any(${`{${ids.join(",")}}`}::uuid[])
     and t.kind = 'review' and t.status = 'closed' and t.decided_by is not null
     and t.result in ('pass', 'fail', 'reject')
-  order by t.decided_at limit 500`;
+  order by t.decided_at desc limit 500`; // mới nhất trước: task vừa quyết không bị bỏ sót sau 500 dòng cũ
 
 const PACK_OPEN = `{running,waiting_review,waiting_answer,needs_decision,waiting_timer}`;
 
