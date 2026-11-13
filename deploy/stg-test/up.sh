@@ -55,6 +55,9 @@ for i in $(seq 1 60); do
 done
 [ $ok -eq 1 ] && echo "up: admin-api + hub-api /health OK" || { echo "up: /health CHUA len - xem docker compose -p $PROJECT logs"; exit 5; }
 # hang app_catalog: URL https -test (idempotent; cung script prod s2-app-urls.ts).
+# --community-url chi doi hang community; cac hang con lai (contracts/admin/chat/studio) can --base-domain, thieu thi nut chuyen app tro localhost.
+base=$(envv S2_PUBLIC_ADMIN_URL | sed -E 's#^https://ai-test-admin\.##; s#/.*$##')
+dc run --rm -T tool tools/scripts/src/s2-app-urls.ts --base-domain "$base" --hosts test --apply || echo "up: CANH BAO s2-app-urls (base) loi (khong chan)"
 dc run --rm -T tool tools/scripts/src/s2-app-urls.ts --community-url "$(envv S2_PUBLIC_COMMUNITY_URL)" --apply || echo "up: CANH BAO s2-app-urls loi (khong chan)"
 echo "up: kiem nhanh:"
 echo "  /community fallback (cong noi bo): $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:28541/community/profile/x/y) (mong 200)"
