@@ -1,6 +1,7 @@
-// CR-120 · CR-137 · Báo cáo vi phạm (người duyệt): BẢNG (bài · loại · ngày · trạng thái · lý do) + khung chi tiết; quyết Ẩn bài / Cảnh báo / Bỏ qua.
+// CR-120 · CR-137 · Báo cáo vi phạm (người duyệt): BẢNG toàn chiều ngang (bài · loại · ngày · trạng thái · lý do), bấm dòng ⇒ hộp thoại chi tiết; quyết Ẩn bài / Cảnh báo / Bỏ qua.
 // Gợi ý phân loại tự động chỉ để tham khảo.
 import type { Report } from "@ai/contracts/community";
+import { Btn } from "~/components/ui/Btn";
 import { useApp } from "../../application/ctx";
 import { shortDay } from "../../domain/admin-list";
 import { isConflict, reportKindKey, reportLevelKey } from "../../domain/flows";
@@ -61,15 +62,15 @@ function ReportDetail({
         <div className="cbar">
           <div className="sp" />
           {ACTIONS.map((a) => (
-            <button
+            <Btn
               key={a}
-              type="button"
-              className={a === "hide" ? "primary sm" : "ghost"}
+              variant={a === "hide" ? "primary" : "outline"}
+              size="sm"
               data-testid={`report-${a}`}
               onClick={() => onDecide(a)}
             >
               {t(`community.flows.reports.action.${a}`)}
-            </button>
+            </Btn>
           ))}
         </div>
       )}
@@ -96,6 +97,7 @@ export default function ReportsPage() {
       title={t("community.flows.reports.title")}
       intro={t("community.flows.reports.intro")}
       testId="reports-page"
+      bare
     >
       {(list.failed || !list.items) && (
         <ListState {...list} emptyKey="community.flows.reports.empty" />

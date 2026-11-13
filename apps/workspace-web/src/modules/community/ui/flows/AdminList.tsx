@@ -1,14 +1,10 @@
-// CR-137 · khuôn «bảng + khung chi tiết» cho màn quản trị Community (Yêu cầu tham gia, Báo cáo vi phạm): lọc trạng thái, bấm dòng ⇒ chi tiết
-// (ngăn bên phải trên màn rộng; thay danh sách + nút Quay lại trên điện thoại — thuần CSS). Rỗng ⇒ `EmptyState` web-kit.
+// CR-137 · CR-137b · khuôn «bảng + hộp thoại chi tiết» cho màn quản trị Community (Yêu cầu tham gia, Báo cáo vi phạm):
+// bảng chiếm hết chiều ngang, lọc trạng thái; bấm dòng ⇒ hộp thoại chi tiết + thao tác. Rỗng ⇒ `EmptyState` web-kit.
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
-import { type ReactNode, useEffect, useState } from "react";
-import {
-  countByStatus,
-  filterByStatus,
-  keepSelection,
-  type StatusFilter,
-  sortForReview,
-} from "../../domain/admin-list";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { useApp } from "../../application/ctx";
+import { filterByStatus, type StatusFilter, sortForReview } from "../../domain/admin-list";
 import { t } from "../../i18n";
 
 export type Column<T> = { key: string; head: string; cell: (row: T) => ReactNode };
@@ -22,28 +18,31 @@ type Props<T extends Row, S extends string> = {
   pendingStatus: S;
   statusLabel: (s: S) => string;
   columns: Column<T>[];
-  detail: (row: T) => ReactNode;
+  detail: (row: T, close: () => void) => ReactNode;
   detailTitle: string;
   emptyKey: string;
 };
 
-const WIDE = "(min-width: 900px)";
-
 export function AdminList<T extends Row, S extends string>(p: Props<T, S>) {
+  const { brandAccent } = useApp();
   const [filter, setFilter] = useState<StatusFilter<S>>("all");
   const [sel, setSel] = useState<string | null>(null);
+  const openedStatus = useRef<string | null>(null);
   const shown = sortForReview(filterByStatus(p.rows, filter), p.pendingStatus);
-  const counts = countByStatus(p.rows);
-  const current = keepSelection(shown, sel);
-  // Màn rộng: tự mở dòng đầu để khung chi tiết không trống; điện thoại: chỉ mở khi người dùng bấm.
+  const row = p.rows.find((r) => r.id === sel) ?? null;
+  // Xử lý xong (trạng thái đổi so với lúc mở) hoặc dòng biến mất ⇒ tự đóng hộp thoại.
   useEffect(() => {
-    if (current === null && shown[0] && window.matchMedia?.(WIDE).matches) setSel(shown[0].id);
-  }, [current, shown]);
+    if (sel !== null && (!row || (openedStatus.current && row.status !== openedStatus.current)))
+      setSel(null);
+  }, [sel, row]);
   if (p.rows.length === 0)
     return <EmptyState kind="empty" title={t(p.emptyKey)} testId={`${p.testId}-empty`} />;
-  const row = shown.find((r) => r.id === current);
+  const open = (r: T) => {
+    openedStatus.current = r.status;
+    setSel(r.id);
+  };
   return (
-    <div className={`adminlist${row ? " has-detail" : ""}`} data-testid={p.testId}>
+    <div className="adminlist" data-testid={p.testId}>
       <div className="adminlist-list card">
         <fieldset
           className="chips adminlist-filter"
@@ -58,8 +57,7 @@ export function AdminList<T extends Row, S extends string>(p: Props<T, S>) {
               data-testid={`${p.testId}-filter-${s}`}
               onClick={() => setFilter(s)}
             >
-              {s === "all" ? t("community.flows.common.filterAll") : p.statusLabel(s)}{" "}
-              <span className="muted tnum">{s === "all" ? p.rows.length : (counts[s] ?? 0)}</span>
+              {s === "all" ? t("community.flows.common.filterAll") : p.statusLabel(s)}
             </button>
           ))}
         </fieldset>
@@ -83,9 +81,7 @@ export function AdminList<T extends Row, S extends string>(p: Props<T, S>) {
                     key={r.id}
                     data-testid={p.rowTestId}
                     data-status={r.status}
-                    aria-selected={r.id === current}
-                    className={r.id === current ? "on" : undefined}
-                    onClick={() => setSel(r.id)}
+                    onClick={() => open(r)}
                   >
                     {p.columns.map((c, i) => (
                       <td key={c.key} className={`c-${c.key}`}>
@@ -95,7 +91,7 @@ export function AdminList<T extends Row, S extends string>(p: Props<T, S>) {
                             className="adminlist-open"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSel(r.id);
+                              open(r);
                             }}
                           >
                             {c.cell(r)}
@@ -112,21 +108,18 @@ export function AdminList<T extends Row, S extends string>(p: Props<T, S>) {
           </div>
         )}
       </div>
-      {row && (
-        <aside
-          className="adminlist-detail card"
-          aria-label={p.detailTitle}
-          data-testid={`${p.testId}-detail`}
-        >
-          <div className="adminlist-detailhead">
-            <button type="button" className="ghost adminlist-back" onClick={() => setSel(null)}>
-              {t("community.flows.common.back")}
-            </button>
-            <h2>{p.detailTitle}</h2>
-          </div>
-          {p.detail(row)}
-        </aside>
-      )}
+      <Dialog open={row !== null} onOpenChange={(o) => !o && setSel(null)}>
+        {row && (
+          <DialogContent aria-describedby={undefined} data-testid={`${p.testId}-detail`}>
+            <div data-mod="community" data-accent={brandAccent}>
+              <DialogHeader>
+                <DialogTitle>{p.detailTitle}</DialogTitle>
+              </DialogHeader>
+              {p.detail(row, () => setSel(null))}
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 }

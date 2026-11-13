@@ -198,9 +198,11 @@ test("CR130-J2 · duyệt đơn tham gia «Gắn với đối tác có sẵn» �
 
   const host = await openAs(browser, "host");
   const openItem = async (org: string) => {
-    const item = host.page.getByTestId("join-item").filter({ hasText: org });
+    const row = host.page.getByTestId("join-item").filter({ hasText: org });
+    const item = host.page.getByTestId("join-list-detail"); // CR-137b: bấm dòng ⇒ hộp thoại chi tiết
     await expect(async () => {
       await host.page.goto("/community/join");
+      await row.click({ timeout: 4_000 });
       await expect(item.getByTestId("join-approve")).toBeVisible({ timeout: 4_000 });
     }).toPass({ timeout: 240_000 }); // bước duyệt mở sau bước kiểm tra của hệ thống
     return item;
@@ -222,7 +224,7 @@ test("CR130-J2 · duyệt đơn tham gia «Gắn với đối tác có sẵn» �
   // ca 1: gắn thành công ⇒ hồ sơ SHT của đối tác hiện tài khoản đã gắn
   const a = await openItem(ORG_A);
   await link(a);
-  await expect(a.getByTestId("join-approve")).toHaveCount(0);
+  await expect(a).toHaveCount(0); // duyệt xong ⇒ hộp thoại tự đóng
   await host.page.goto(sht(state.pk2 as string));
   await host.page.getByRole("tab", { name: "Bảng tin" }).click();
   await expect(host.page.getByTestId("pcm-account")).toContainText(ORG_A);

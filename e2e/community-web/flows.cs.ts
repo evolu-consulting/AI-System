@@ -137,8 +137,10 @@ test("3 · đối tác báo cáo một bài ⇒ chủ quản Ẩn bài ở Báo 
     .getByTestId("report-item")
     .filter({ hasText: `Nội dung không phù hợp ${RUN}` });
   await expect(rep).toBeVisible();
-  await rep.getByTestId("report-hide").click();
-  await expect(rep.getByTestId("report-hide")).toHaveCount(0);
+  await rep.click(); // CR-137b: bấm dòng ⇒ hộp thoại chi tiết
+  const detail = host.page.getByTestId("reports-list-detail");
+  await detail.getByTestId("report-hide").click();
+  await expect(detail).toHaveCount(0); // xử lý xong ⇒ hộp thoại tự đóng
   await buyer.ctx.close();
   await host.ctx.close();
 });

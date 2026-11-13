@@ -35,21 +35,31 @@ export function FlowPage({
   title,
   intro,
   testId,
+  bare = false,
   children,
 }: {
   title: string;
   intro: string;
   testId: string;
+  /** CR-137b: tiêu đề trần (không thẻ) cho màn bảng toàn chiều ngang. */
+  bare?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className="ws">
       <main className="wsmain">
         <div className="wscenter" data-testid={testId}>
-          <div className="card pcard">
-            <h1>{title}</h1>
-            <p className="muted">{intro}</p>
-          </div>
+          {bare ? (
+            <div className="adminlist-head">
+              <h1>{title}</h1>
+              <p className="muted">{intro}</p>
+            </div>
+          ) : (
+            <div className="card pcard">
+              <h1>{title}</h1>
+              <p className="muted">{intro}</p>
+            </div>
+          )}
           {children}
         </div>
       </main>
