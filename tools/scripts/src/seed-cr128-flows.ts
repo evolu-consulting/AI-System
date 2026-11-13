@@ -102,25 +102,27 @@ const headApprove = (step: number, to: { reject: number; ret: number }, o: Stage
   });
 };
 /** CR-139c · «Giám đốc duyệt» = trưởng phòng Ban Giám đốc (chỉ trưởng phòng quyết). */
-const directorApprove = (step: number, to: { reject: number; ret: number }) =>
+const directorApprove = (step: number, to: { reject: number; ret: number }, next: number) =>
   approve("giam-doc", "Giám đốc duyệt", step, DIRECTOR_DEPT, to, {
-    next_step: 3,
+    next_step: next,
     after: { ...reviewNew(DIRECTOR_DEPT), head_only: true, need: "head" },
   });
 
-/** Trưởng phòng duyệt → Nếu > 500 triệu → Giám đốc duyệt → Ký hợp đồng (CR-141: node không chọn người ký ⇒ nhóm «Người ký HĐ») → Chờ ký xong → Kết thúc · Đã duyệt (+ Từ chối, Trả lại).
- *  Ký đứng NGAY SAU bước duyệt cuối (luật «hành động thật cần người duyệt liền trước»); nhánh ≤ 500 triệu rẽ thẳng tới Ký. */
-const contractStages = (): unknown[] => {
-  const to = { reject: 6, ret: 7 };
+/** Nếu > 500 triệu ⇒ Trưởng phòng → Giám đốc → Ký hợp đồng; ngược lại Trưởng phòng → Ký hợp đồng → Chờ ký → Kết thúc · Đã duyệt (+ Từ chối, Trả lại).
+ *  Luật engine: If KHÔNG nhảy thẳng tới bước hành động thật (PD2-R12) và Ký phải ngay sau bước duyệt ⇒ hai bước Trưởng phòng (khoá riêng), mỗi nhánh tự dẫn vào Ký.
+ *  CR-141: node Ký không chọn người ký ⇒ nhóm «Người ký HĐ» của công ty. */
+export const contractStages = (): unknown[] => {
+  const to = { reject: 7, ret: 8 };
   return norm([
-    headApprove(0, to),
-    ifTotal(1, 2, 3),
-    directorApprove(2, to),
-    { ...esignSend(3), name: "Ký hợp đồng" },
-    esignWait(4, 6),
-    finish(5, "approved", "Đã duyệt"),
-    finish(6, "rejected", "Từ chối"),
-    finish(7, "returned", "Trả lại"),
+    ifTotal(0, 1, 3),
+    headApprove(1, to),
+    directorApprove(2, to, 4),
+    headApprove(3, to, { key: "truong-phong-duoi-500", next_step: 4 }),
+    { ...esignSend(4), name: "Ký hợp đồng" },
+    esignWait(5, 7),
+    finish(6, "approved", "Đã duyệt"),
+    finish(7, "rejected", "Từ chối"),
+    finish(8, "returned", "Trả lại"),
   ]);
 };
 
@@ -311,7 +313,8 @@ async function main(): Promise<void> {
   console.log(`${TAG} OK`);
 }
 
-main().catch((e) => {
-  console.error(`${TAG} lỗi: ${(e as Error).message}`);
-  process.exit(1);
-});
+if (import.meta.main)
+  main().catch((e) => {
+    console.error(`${TAG} lỗi: ${(e as Error).message}`);
+    process.exit(1);
+  });
