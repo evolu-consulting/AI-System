@@ -3,7 +3,7 @@
     "esign": {
       "title": "E-signature",
       "notConfigured": "E-signature is not configured",
-      "notEnabled": "E-signature is off for your company ({{path:flow}}).",
+      "notEnabled": "E-signature is off for your company ({{path:sign}}).",
       "notReady": "Cannot be sent for signing yet: the contract must be approved and have a PDF file. If the current file is not a PDF, ask its creator to upload a PDF.",
       "demo": "Test signature – no legal effect",
       "demoHint": "Test signing is on. Turn on DocuSign or an e-signature provider in Settings for legal effect.",
@@ -41,7 +41,7 @@
       "signerDone": "signed",
       "settingLabel": "Contract e-signature",
       "settingHint": "Allow sending approved contracts for e-signature.",
-      "settingOwnerOnly": "Only the Contracts owner (Full access group) can switch this on or off. Ask them to open {{path:flow}}.",
+      "settingOwnerOnly": "Only the Contracts owner (Full access group) can switch this on or off. Ask them to open {{path:sign}}.",
       "settingSaved": "E-sign settings saved.",
       "inviteThumb": "Include the first-page image in signing invitation emails",
       "inviteThumbHint": "Signing invitations always carry a contract summary card; turn this on to add the first-page image (the contract itself is never attached).",

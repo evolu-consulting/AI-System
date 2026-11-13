@@ -11,7 +11,6 @@ const admin: PartnerAdminPart = {
 };
 const hub: PartnerHubPart = {
   channel: true,
-  receive_template_id: "tpl-1",
   receive_flow: true,
   send_flow: true,
   groups: [{ key: "phong-kinh-doanh", exists: true, members: 2 }],
@@ -51,7 +50,7 @@ describe("partnerChecklist", () => {
   });
   it("chưa có flow nhận ⇒ nút Mở Quy trình (tạo từ sơ đồ trống); chỉ chặn hướng nhận", () => {
     const c = partnerChecklist(admin, { ...hub, receive_flow: false });
-    expect(state(c, "receive_flow")).toMatchObject({ fix: "open-flows" });
+    expect(state(c, "receive_flow")).toMatchObject({ who: "company", fix: "open-flows" });
     expect(c.ready_to_receive).toBe(false);
     expect(c.ready_to_send).toBe(true);
   });

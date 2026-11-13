@@ -1,8 +1,30 @@
 // CR-125 · UX-S7 (H7) · Cài đặt › «Đối tác xác nhận hợp đồng»: công ty thấy trạng thái THẬT (đang bật hay tắt), điều kiện nào còn thiếu và AI phải làm
 // (nền tảng hay quản trị công ty). Chỉ xem: quyền cấp tính năng là của quản trị nền tảng. Cùng luật `partnerChecklist` với màn Quản trị nền tảng.
+import { toast } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
+import { flowEditorUrl } from "~/features/settings/lib/editor-link";
 import { SettingsGroup } from "~/shared/ui/settings-layout";
 import { usePartnerConfirmStatus } from "../hooks/use-partner-queries";
+
+/** CR-138b · thiếu quy trình Nhận/Gửi ⇒ nút mở trang Quy trình (cùng đường `flowEditorUrl` với Cài đặt › Quy trình duyệt). */
+function OpenFlowsButton() {
+  const { t } = useTranslation();
+  const go = async () => {
+    const url = await flowEditorUrl();
+    if (url) window.location.assign(url);
+    else toast(t("contracts.flow.current.openFail"), "late");
+  };
+  return (
+    <button
+      type="button"
+      data-testid="partner-open-flows"
+      className="btn btn-sm btn-outline"
+      onClick={() => void go()}
+    >
+      {t("contracts.flow.current.openPage")}
+    </button>
+  );
+}
 
 export function PartnerConfirmStatus({ owner }: { owner: boolean }) {
   const { t } = useTranslation();
@@ -35,6 +57,7 @@ export function PartnerConfirmStatus({ owner }: { owner: boolean }) {
               {i.state !== "ok" ? (
                 <span className="text-dim">{`· ${t(`contracts.partner.confirm.who.${i.who}`)}`}</span>
               ) : null}
+              {i.state !== "ok" && i.fix === "open-flows" ? <OpenFlowsButton /> : null}
             </li>
           ))}
         </ul>

@@ -11,8 +11,6 @@ import * as r from "./company-flows.repo";
 import { companyAccess } from "./library-company.service";
 import { readinessOf } from "./template-readiness";
 
-/** Mẫu mặc định cho sự kiện `contract.received` (hub 0121, key cố định). */
-export const RECEIVE_TEMPLATE_KEY = "hd-nhan-thuong";
 export const RECEIVE_EVENT = "contract.received";
 const PARTNER_NODE = "contracts.partner-send";
 
@@ -28,41 +26,38 @@ export class PartnerConfirmService {
   readiness(u: AuthUser, tid: string): Promise<PartnerHubPart> {
     companyAccess(u, tid);
     return withHubScope(this.db, { kind: "system" as const }, async (tx) => {
-      const [rows, tpl, send] = await Promise.all([
+      const [rows, send] = await Promise.all([
         r.listCompanyFlows(tx, tid),
-        tx.execute<{ id: string }>(sql`select d.id::text as id from hub.process_defs d
-          where d.tenant_id is null and d.key = ${RECEIVE_TEMPLATE_KEY} and d.deleted_at is null
-            and d.published_version is not null`),
         tx.execute<{ n: number }>(sql`select count(*)::int as n from hub.company_flows cf
           join hub.process_defs d on d.id = cf.flow_id and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
           where cf.tenant_id = ${tid}::uuid and cf.enabled and d.deleted_at is null
             and d.stages @> ${JSON.stringify([{ node: PARTNER_NODE }])}::jsonb`),
       ]);
-      const templateId = tpl[0]?.id ?? null;
-      const groups = templateId ? await this.#groups(tx, tid, templateId) : [];
+      // CR-138b: không còn mẫu Thư viện (CR-127, hub 0138) ⇒ nhóm xác nhận đọc từ quy trình NHẬN của chính công ty.
+      const recv = rows.find(
+        (x) => x.enabled && x.trigger_event === RECEIVE_EVENT && !x.has_condition,
+      );
+      const groups = recv ? await this.#groups(tx, tid, recv.flow_id) : [];
       return {
         channel: this.channelOn(),
-        receive_template_id: templateId,
-        receive_flow: rows.some(
-          (x) => x.enabled && x.trigger_event === RECEIVE_EVENT && !x.has_condition,
-        ),
+        receive_flow: recv !== undefined,
         send_flow: (send[0]?.n ?? 0) > 0,
         groups,
       };
     });
   }
 
-  /** Nhóm duyệt mà mẫu nhận trỏ tới: thiếu (chưa có nhóm) hoặc có nhưng chưa ai là thành viên. */
+  /** Nhóm duyệt mà quy trình nhận của công ty trỏ tới: thiếu (chưa có nhóm) hoặc có nhưng chưa ai là thành viên. */
   async #groups(
     tx: Parameters<typeof readinessOf>[0],
     tid: string,
-    templateId: string,
+    flowId: string,
   ): Promise<PartnerHubPart["groups"]> {
     const [def] = await tx.execute<{
       stages: unknown[];
     }>(sql`select rel.stages from hub.process_defs d
       join hub.process_def_releases rel on rel.def_id = d.id and rel.rel_version = d.published_version
-      where d.id = ${templateId}::uuid`);
+      where d.id = ${flowId}::uuid`);
     if (!def) return [];
     const rd = await readinessOf(tx, tid, def.stages, this.packTools);
     const mapped = Object.entries(rd.groupMap); // [mã mẫu, mã nhóm thật]

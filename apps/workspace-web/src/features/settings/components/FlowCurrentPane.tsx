@@ -1,12 +1,10 @@
 // CR-125 · S2 · Cài đặt › "Quy trình duyệt" = MỘT cửa (thay "Ứng dụng & quy trình"): quy trình ĐANG CHẠY của công ty, đọc từ cùng nguồn với trang
 // Quy trình ở admin (`company_flows`, "Duyệt 2 cấp"…), chỉ đọc; nút "Mở trang Quy trình" cho quản trị công ty; chưa có quy trình Bật ⇒ nói rõ
-// ai làm gì ở đâu (không đẩy sang "quản trị nền tảng"). CR-106: canvas chỉ đọc + công tắc "Sơ đồ | Danh sách". Ký số: `EsignSetting`.
+// ai làm gì ở đâu (không đẩy sang "quản trị nền tảng"). CR-106: canvas chỉ đọc + công tắc "Sơ đồ | Danh sách".
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "~/features/auth/hooks/use-session";
-import { EsignSetting } from "~/features/contract-esign/components/EsignSetting";
-import { ReceiveSettings } from "~/features/partner-inbox/components/ReceiveSettings";
 import { isCompanyAdmin } from "~/features/shell/lib/nav";
 import { ApiError } from "~/lib/api-error";
 import { useFlow } from "../hooks/use-flow";
@@ -16,7 +14,6 @@ import { DelegationPane } from "./DelegationPane";
 import { FlowCanvasLazy } from "./FlowCanvasLazy";
 import { FlowLegend } from "./FlowLegend";
 import { FlowList } from "./FlowList";
-import { FlowWorkSettings } from "./FlowWorkSettings";
 
 type View = "canvas" | "list";
 
@@ -109,7 +106,7 @@ function FlowLoaded({ flow }: { flow: CurrentFlow }) {
   );
 }
 
-/** Chưa có quy trình Bật (404) ⇒ nói rõ ai làm gì ở đâu; lỗi khác ⇒ báo + thử lại. KHÔNG che cài đặt khác của mục (ký số). */
+/** Chưa có quy trình Bật (404) ⇒ nói rõ ai làm gì ở đâu; lỗi khác ⇒ báo + thử lại. KHÔNG che «Uỷ quyền khi vắng». */
 function FlowBlock({ q }: { q: ReturnType<typeof useFlow> }) {
   const { t } = useTranslation();
   if (q.error instanceof ApiError && q.error.status === 404)
@@ -134,14 +131,12 @@ function FlowBlock({ q }: { q: ReturnType<typeof useFlow> }) {
   return <FlowLoaded flow={q.data} />;
 }
 
-export function FlowCurrentPane({ owner }: { owner: boolean }) {
+/** CR-138b · «Quy trình duyệt» chỉ còn quy trình đang áp dụng (chỉ xem) + «Uỷ quyền khi vắng»; ký số / đối tác ở tab «Ký & đối tác». */
+export function FlowCurrentPane() {
   const q = useFlow(true);
   return (
     <div>
       <FlowBlock q={q} />
-      <EsignSetting owner={owner} />
-      <ReceiveSettings owner={owner} />
-      <FlowWorkSettings />
       <DelegationPane />
     </div>
   );

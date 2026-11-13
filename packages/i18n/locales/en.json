@@ -718,7 +718,7 @@
         },
         "receive_flow": {
           "ok": "There is a flow handling contracts partners send.",
-          "todo": "No flow handles contracts partners send. Assign the template \"Nhận HĐ thường\".",
+          "todo": "No flow handles contracts partners send. Create a Receive-contract flow on the Flows page.",
           "unknown": "Could not check the flow (Hub did not answer)."
         },
         "groups": {

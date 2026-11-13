@@ -19,7 +19,6 @@ const dbs: ReturnType<typeof createDb>[] = [];
 
 const HUB_PART = {
   channel: true,
-  receive_template_id: "0c124000-0000-4000-8000-0000000000c2",
   receive_flow: false,
   send_flow: false,
   groups: [{ key: "phong-kinh-doanh", exists: false, members: 0 }],
@@ -108,6 +107,7 @@ describe("UX-S7 · Đối tác xác nhận hợp đồng (admin-api)", () => {
     expect(item(off.json, "channel")?.state).toBe("ok"); // phần Hub gộp vào
     expect(item(off.json, "receive_flow")).toMatchObject({
       state: "todo",
+      who: "company",
       fix: "open-flows",
     });
 

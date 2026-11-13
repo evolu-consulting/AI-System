@@ -18,6 +18,7 @@ import {
   type ReviewInfo,
   type ReviewView,
   resolveReview,
+  setupWarnings,
   type World,
 } from "./flow-preview.rules";
 
@@ -173,6 +174,7 @@ export function walkFlow(i: PreviewInput): PreviewResult {
   const warnings: PreviewWarning[] = [
     ...[...infos.values()].flatMap((x) => x.warnings),
     ...noEndWarnings(i.stages),
+    ...setupWarnings(i.stages, i.world),
   ];
   const w = (code: PreviewWarning["code"], key: string | null, message: string) =>
     warnings.push({ code, step_key: key, message });

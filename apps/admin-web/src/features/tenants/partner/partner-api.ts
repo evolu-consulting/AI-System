@@ -1,5 +1,5 @@
 // CR-125 · UX-S7 (H7) · client "Đối tác xác nhận hợp đồng": đọc danh sách điều kiện + bật/tắt (admin-api), và các nút "Làm bước này" dùng ĐÚNG đường có sẵn:
-// Gán mẫu Thư viện (Hub company-flows) và Tạo nhóm theo gợi ý (admin-api template-fixes) — không đường thứ hai.
+// Tạo nhóm theo gợi ý (admin-api template-fixes) — không đường thứ hai.
 import type { PartnerChecklist } from "@ai/contracts/modules";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";

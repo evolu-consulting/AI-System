@@ -1,4 +1,4 @@
-// CR-130 · nhóm menu Cài đặt chung: Sổ Hợp Tác (5 mục) + Bảng tin (1 mục), theo cờ gói; tắt cờ community ⇒ không có ngăn Bảng tin.
+// CR-130 · nhóm menu Cài đặt chung: Sổ Hợp Tác (6 mục) + Bảng tin (1 mục), theo cờ gói; tắt cờ community ⇒ không có ngăn Bảng tin.
 import { describe, expect, test } from "bun:test";
 import { buildNavGroups } from "./SettingsNav";
 
@@ -14,12 +14,12 @@ const ids = (c: boolean, f: boolean) =>
 describe("buildNavGroups", () => {
   test("cả hai gói ⇒ hai nhóm có tiêu đề", () => {
     expect(ids(true, true)).toEqual([
-      ["contracts", "group.contracts", 5],
+      ["contracts", "group.contracts", 6],
       ["feed", "group.feed", 1],
     ]);
   });
   test("cờ community tắt ⇒ không có nhóm Bảng tin", () => {
-    expect(ids(true, false)).toEqual([["contracts", undefined, 5]]);
+    expect(ids(true, false)).toEqual([["contracts", undefined, 6]]);
   });
   test("CR-138 Q6 · không phải chủ sở hữu ⇒ nhóm Sổ Hợp Tác chỉ còn «Quy trình duyệt» (chỉ xem)", () => {
     const g = buildNavGroups({ hasContracts: true, hasFeed: true, owner: false, s, dot });

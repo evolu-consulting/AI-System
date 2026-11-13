@@ -83,14 +83,14 @@
         "reason": {
           "NO_PARTNER_EMAIL": "Đối tác chưa có email. Thêm email ở thông tin đối tác rồi bấm Gửi lại.",
           "NO_SIGNER": "Chưa xác định người ký phía công ty. Chọn người ký trong Công ty › Quy trình rồi bấm Gửi lại.",
-          "SEND_FAILED": "Hệ thống ký số chưa nhận được bản ký. Kiểm tra {{path:flow}} rồi bấm Gửi lại.",
+          "SEND_FAILED": "Hệ thống ký số chưa nhận được bản ký. Kiểm tra {{path:sign}} rồi bấm Gửi lại.",
           "DECLINED": "Đối tác hoặc người ký đã từ chối ký. Hỏi lại họ, sửa hợp đồng nếu cần rồi bấm Gửi lại.",
           "VOIDED": "Bản ký đã bị huỷ. Bấm Gửi lại để tạo bản ký mới."
         },
         "resend": "Gửi lại",
         "resent": "Đã gửi ký lại.",
         "stillBlocked": "Chưa gửi được: sửa nguyên nhân ghi ở bước Ký số rồi bấm Gửi lại.",
-        "resendFail": "Không gửi lại được vì hệ thống ký số chưa trả lời. Thử lại sau ít phút; vẫn lỗi thì báo quản trị công ty kiểm tra {{path:flow}}.",
+        "resendFail": "Không gửi lại được vì hệ thống ký số chưa trả lời. Thử lại sau ít phút; vẫn lỗi thì báo quản trị công ty kiểm tra {{path:sign}}.",
         "dueAt": "Hạn ký: {{at}}",
         "overdue": "Quá hạn",
         "remindedAt": "Đã nhắc lúc {{at}}"

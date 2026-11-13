@@ -1580,7 +1580,7 @@
       "packOffPlatform": "Tài khoản quản trị nền tảng chưa xem được lựa chọn ký số của công ty. Người ký và cách ký đặt ở màn soạn khi đăng nhập bằng tài khoản của công ty.",
       "openApps": "Mở tab Ứng dụng",
       "unavailable": "Chưa tải được lựa chọn ký số. Mở bản của công ty để chỉnh cấu hình này.",
-      "disabled": "Công ty chưa bật ký số. Bật ở {{path:flow}}.",
+      "disabled": "Công ty chưa bật ký số. Bật ở {{path:sign}}.",
       "err": {
         "ESIGN_DISABLED": "Công ty chưa bật ký số.",
         "PROVIDER_UNAVAILABLE": "Nhà cung cấp này chưa bật cho công ty.",
@@ -1592,7 +1592,7 @@
       "signWith": "Ký bằng: {{name}}",
       "signChooses": "Cách ký: người ký chọn khi ký",
       "noProvider": "chưa chọn nhà cung cấp",
-      "change": "Đổi ở {{path:flow}}"
+      "change": "Đổi ở {{path:sign}}"
     },
     "advanced": "Nâng cao",
     "moduleNote": "Nhà cung cấp, người ký và các thiết lập khác của bước này lấy từ cài đặt của ứng dụng. Mở Nâng cao nếu cần chỉnh chi tiết.",

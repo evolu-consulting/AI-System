@@ -8,7 +8,7 @@ export function EsignSettingsLink() {
   const { t } = useTranslation();
   const open = async () => {
     const app = (await fetchMyApps()).find((a) => a.key === "contracts");
-    if (app) await openApp(app, "/settings?sec=flow", true); // mục "flow" của Cài đặt app Hợp đồng chứa công tắc/nhà cung cấp ký số (EsignSetting)
+    if (app) await openApp(app, "/settings?sec=sign", true); // mục "sign" («Ký & đối tác») của Cài đặt app Hợp đồng chứa công tắc/nhà cung cấp ký số (EsignSetting)
   };
   return (
     <Button

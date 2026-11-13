@@ -8,6 +8,11 @@
         "contracts": "Contracts & deals",
         "feed": "Feed"
       },
+      "signPane": {
+        "esign": "Used by the E-sign step in the flow. Off ⇒ the E-sign step will report an error when it runs.",
+        "work": "Used by the E-sign step: only this group can sign; a claimed task left unhandled after the hours set here goes back to the queue.",
+        "partner": "Used by the \"Send to partner for confirmation\" step (outgoing) and the Receive-contract flow (incoming). If not ready, those steps cannot run."
+      },
       "sec": {
         "feed": "Notifications",
         "feedHint": "When to notify you on the Feed",
@@ -20,7 +25,9 @@
         "scout": "Market price scouting",
         "flow": "Approval flow",
         "flowHint": "Steps, departments, deadlines, conditions",
-        "scoutHint": "Group defaults, monthly search cap"
+        "scoutHint": "Group defaults, monthly search cap",
+        "sign": "Signing & partners",
+        "signHint": "E-signing, signers, partner confirmation"
       },
       "unsaved": "Unsaved changes",
       "isDefault": "Using defaults",

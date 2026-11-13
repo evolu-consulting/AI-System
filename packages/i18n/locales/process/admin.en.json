@@ -1580,7 +1580,7 @@
       "packOffPlatform": "A platform admin account cannot load the company's e-sign options. Set signers and signing method in the editor while signed in as a company user.",
       "openApps": "Open the Apps tab",
       "unavailable": "Could not load e-sign options. Open the company copy to edit this.",
-      "disabled": "E-sign is not enabled for this company. Enable it in {{path:flow}}.",
+      "disabled": "E-sign is not enabled for this company. Enable it in {{path:sign}}.",
       "err": {
         "ESIGN_DISABLED": "E-sign is not enabled.",
         "PROVIDER_UNAVAILABLE": "This provider is not enabled for the company.",
@@ -1592,7 +1592,7 @@
       "signWith": "Sign with: {{name}}",
       "signChooses": "How to sign: the signer chooses when signing",
       "noProvider": "no provider chosen",
-      "change": "Change in {{path:flow}}"
+      "change": "Change in {{path:sign}}"
     },
     "advanced": "Advanced",
     "moduleNote": "The provider, signers and other settings of this step come from the app settings. Open Advanced to tweak details.",

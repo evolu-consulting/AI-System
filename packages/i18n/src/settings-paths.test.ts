@@ -6,6 +6,10 @@ describe("CR-125 c3 · settings-paths", () => {
     expect(settingsPath("vi", "flow")).toBe("Cài đặt › Quy trình duyệt");
     expect(settingsPath("en", "flow")).toBe("Settings › Approval flow");
   });
+  test("CR-138b · tab Ký & đối tác", () => {
+    expect(settingsPath("vi", "sign")).toBe("Cài đặt › Ký & đối tác");
+    expect(settingsPath("en", "sign")).toBe("Settings › Signing & partners");
+  });
   test("mục lạ hoặc khoá Hint ⇒ throw", () => {
     expect(() => settingsPath("vi", "esign")).toThrow();
     expect(() => settingsPath("vi", "flowHint")).toThrow();
@@ -22,6 +26,6 @@ describe("CR-125 c3 · settings-paths", () => {
     });
   });
   test("danh sách mục", () => {
-    expect(settingsSectionKeys()).toEqual(["co", "rep", "biz", "scout", "flow"]);
+    expect(settingsSectionKeys()).toEqual(["feed", "co", "rep", "biz", "scout", "flow", "sign"]);
   });
 });

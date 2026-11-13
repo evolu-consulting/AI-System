@@ -72,6 +72,12 @@ async function createCompanyApproval(): Promise<void> {
   });
 }
 
+/** CR-138b · ký số nằm ở tab «Ký & đối tác» (`?sec=sign`), không còn trong «Quy trình duyệt». */
+async function openSignSettings(page: Page): Promise<void> {
+  await page.goto(`${E.cw}/contracts/settings?sec=sign`);
+  await expect(page.getByTestId("sign-partner-pane")).toBeVisible({ timeout: 30_000 });
+}
+
 async function openFlowSettings(page: Page): Promise<void> {
   await page.goto(`${E.cw}/contracts/settings?sec=flow`);
   await expect(
@@ -134,7 +140,7 @@ test("3 · công tắc ký số trong Cài đặt bật được thật (lưu, t
 }, testInfo) => {
   const page = await ctxPage(browser);
   await loginCw(page, E, U.director);
-  await openFlowSettings(page);
+  await openSignSettings(page);
   const sw = page.getByTestId("esign-enabled");
   await expect(sw).toBeVisible();
   const was = await sw.isChecked();
@@ -142,7 +148,7 @@ test("3 · công tắc ký số trong Cài đặt bật được thật (lưu, t
   await expect(page.getByText("Đã lưu cài đặt ký số.")).toBeVisible();
   await expect(sw).toBeChecked({ checked: !was });
   await safeReload(page);
-  await openFlowSettings(page); // sau tải lại: mở lại hộp Cài đặt › Quy trình duyệt (trạng thái đọc từ máy chủ, không từ bộ nhớ trang)
+  await openSignSettings(page); // sau tải lại: mở lại hộp Cài đặt › Ký & đối tác (trạng thái đọc từ máy chủ, không từ bộ nhớ trang)
   await expect(page.getByTestId("esign-enabled")).toBeChecked({ checked: !was });
   await page.screenshot({ path: testInfo.outputPath("s2-after-esign.png") });
 });

@@ -647,8 +647,8 @@
             "job_timeout": "an automatic step ran past its time limit",
             "other": "the approval needs someone to decide what to do next",
             "tool": {
-              "ESIGN_DISABLED": "e-signing is not turned on for the company — turn it on in {{path:flow}}, then resubmit the contract for approval",
-              "ESIGN_PROVIDER_UNAVAILABLE": "the e-signing provider is not ready — check the connection in {{path:flow}}, then resubmit the contract for approval",
+              "ESIGN_DISABLED": "e-signing is not turned on for the company — turn it on in {{path:sign}}, then resubmit the contract for approval",
+              "ESIGN_PROVIDER_UNAVAILABLE": "the e-signing provider is not ready — check the connection in {{path:sign}}, then resubmit the contract for approval",
               "ESIGN_STATE": "the contract already has an unfinished signing envelope or cannot be sent for signing now — deal with the existing envelope, then resubmit the contract for approval",
               "ESIGN_UNSUPPORTED_FILE": "e-signing only accepts PDF files — upload a PDF version of the contract, then resubmit the contract for approval",
               "ESIGN_NOT_SIGNER": "the sender is not a company signer — ask a company signer to resubmit the contract for approval",
@@ -687,7 +687,7 @@
             "FLOW_REFUSED": "the approval process could not start for the sender (a feature of the process is off or the sender is inactive); an admin must check Company › Processes, then resubmit the contract for approval",
             "FLOW_START_FAILED": "the system could not start the approval process after several tries; resubmit the contract for approval, and tell an admin if it fails again",
             "FLOW_STARTING": "the approval process has not started after 2 minutes; wait a few minutes or tell an admin",
-            "RECEIVE_NO_OWNER": "nobody is in charge of received contracts yet — set one in {{path:flow}}, then resubmit the contract for approval"
+            "RECEIVE_NO_OWNER": "nobody is in charge of received contracts yet — set one in {{path:sign}}, then resubmit the contract for approval"
           }
         },
         "release": {

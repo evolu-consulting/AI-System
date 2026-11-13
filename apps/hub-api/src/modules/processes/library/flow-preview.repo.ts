@@ -76,13 +76,22 @@ export async function loadWorld(tx: Tx, tid: string, n: Need): Promise<World> {
     from hub.delegations where tenant_id = ${tid}::uuid and revoked_at is null
       and from_at <= ${n.at.toISOString()}::timestamptz and to_at > ${n.at.toISOString()}::timestamptz
     order by from_at desc limit 500`);
+  // CR-138b: cùng câu đọc thêm cờ Ký số + tính năng Đối tác xác nhận (cảnh báo «chưa sẵn» khi lưu quy trình).
   const [head] = await tx.execute<{
     any_head: boolean;
+    esign_on: boolean;
+    partner_on: boolean;
   }>(sql`select exists(select 1 from admin.departments
-    where tenant_id = ${tid}::uuid and head_user_id is not null) as any_head`);
+    where tenant_id = ${tid}::uuid and head_user_id is not null) as any_head,
+    coalesce((select s.esign_enabled from contracts.approval_settings s where s.tenant_id = ${tid}::uuid), false) as esign_on,
+    exists(select 1 from admin.features f
+      join admin.feature_entitlements en on en.feature_id = f.id and en.revoked_at is null and en.tenant_id = ${tid}::uuid
+      where f.status <> 'off' and f.key = 'contracts-partner-confirm') as partner_on`);
   return {
     tenantId: tid,
     anyDeptHead: head?.any_head ?? false,
+    esignOn: head?.esign_on ?? false,
+    partnerOn: head?.partner_on ?? false,
     users: new Map<string, PreviewUser>(
       users.map((u) => [u.id, { id: u.id, name: u.name, usable: u.usable, role: u.role }]),
     ),

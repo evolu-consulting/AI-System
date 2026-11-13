@@ -343,3 +343,32 @@ describe("E7 · 4 trường hợp", () => {
     expect(sc.some((s) => s.key === "approve_else")).toBe(false);
   });
 });
+
+describe("CR-138b · cảnh báo «chưa sẵn» của bước Ký số / Gửi đối tác xác nhận (không chặn)", () => {
+  const steps = (): ProcessStageDef[] => [
+    stage("start", 0, END, AUTO),
+    stage("ky", 1, END, AUTO, { node: "contracts.esign", name: "Ký số" }),
+    stage("gui", 2, END, AUTO, { node: "contracts.partner-send", name: "Gửi đối tác" }),
+    stage("done", 3, END, AUTO, { outcome: "approved" }),
+  ];
+  const codes = (w: World) =>
+    walkFlow({ ...input(steps(), { total_value: 1 }, w), decisions: [] }).warnings.map(
+      (x) => `${x.code}:${x.step_key}`,
+    );
+  it("công ty chưa bật ký số + chưa có tính năng đối tác ⇒ hai cảnh báo đúng bước", () => {
+    const c = codes(world({ esignOn: false, partnerOn: false }));
+    expect(c).toContain("esign_off:ky");
+    expect(c).toContain("partner_off:gui");
+  });
+  it("đã bật cả hai, hoặc không rõ (vắng cờ) ⇒ không cảnh báo", () => {
+    expect(codes(world({ esignOn: true, partnerOn: true }))).toEqual([]);
+    expect(codes(world())).toEqual([]);
+  });
+  it("quy trình không có bước đó ⇒ không cảnh báo dù công ty chưa bật", () => {
+    const r = walkFlow({
+      ...input(flow(), { total_value: 1 }, world({ esignOn: false, partnerOn: false })),
+      decisions: [],
+    });
+    expect(r.warnings.some((x) => x.code === "esign_off" || x.code === "partner_off")).toBe(false);
+  });
+});

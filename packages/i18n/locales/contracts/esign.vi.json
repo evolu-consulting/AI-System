@@ -3,7 +3,7 @@
     "esign": {
       "title": "Ký số",
       "notConfigured": "Chưa cấu hình ký số",
-      "notEnabled": "Công ty chưa bật ký số ({{path:flow}}).",
+      "notEnabled": "Công ty chưa bật ký số ({{path:sign}}).",
       "notReady": "Chưa gửi ký được: hợp đồng cần duyệt xong và có tệp PDF. Nếu tệp hiện tại không phải PDF, nhờ người tạo tải bản PDF lên.",
       "demo": "Ký thử – không có giá trị pháp lý",
       "demoHint": "Đang dùng ký thử. Bật DocuSign hoặc nhà cung cấp chữ ký số trong Cài đặt để có giá trị pháp lý.",
@@ -41,7 +41,7 @@
       "signerDone": "đã ký",
       "settingLabel": "Ký số hợp đồng",
       "settingHint": "Cho phép gửi hợp đồng đã duyệt đi ký số.",
-      "settingOwnerOnly": "Chỉ chủ gói Sổ Hợp Tác (nhóm Toàn quyền) bật hoặc tắt được. Nhờ người đó vào {{path:flow}}.",
+      "settingOwnerOnly": "Chỉ chủ gói Sổ Hợp Tác (nhóm Toàn quyền) bật hoặc tắt được. Nhờ người đó vào {{path:sign}}.",
       "settingSaved": "Đã lưu cài đặt ký số.",
       "inviteThumb": "Kèm ảnh trang đầu trong email mời ký",
       "inviteThumbHint": "Email mời ký luôn có thẻ tóm tắt hợp đồng; bật mục này để kèm thêm ảnh trang đầu (không đính kèm hợp đồng).",

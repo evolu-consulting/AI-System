@@ -647,8 +647,8 @@
             "job_timeout": "một bước tự động chạy quá thời gian cho phép",
             "other": "quy trình cần người quyết định tiếp",
             "tool": {
-              "ESIGN_DISABLED": "chưa bật ký số cho công ty — vào {{path:flow}} bật lên rồi gửi lại hợp đồng để duyệt",
-              "ESIGN_PROVIDER_UNAVAILABLE": "nhà cung cấp ký số chưa sẵn sàng — vào {{path:flow}} kiểm tra kết nối rồi gửi lại hợp đồng để duyệt",
+              "ESIGN_DISABLED": "chưa bật ký số cho công ty — vào {{path:sign}} bật lên rồi gửi lại hợp đồng để duyệt",
+              "ESIGN_PROVIDER_UNAVAILABLE": "nhà cung cấp ký số chưa sẵn sàng — vào {{path:sign}} kiểm tra kết nối rồi gửi lại hợp đồng để duyệt",
               "ESIGN_STATE": "hợp đồng đang có bản ký chưa xong hoặc chưa ở trạng thái gửi ký được — xử lý bản ký hiện có rồi gửi lại hợp đồng để duyệt",
               "ESIGN_UNSUPPORTED_FILE": "ký số chỉ nhận tệp PDF — tải bản PDF lên hợp đồng rồi gửi lại hợp đồng để duyệt",
               "ESIGN_NOT_SIGNER": "người gửi không phải người ký phía công ty — nhờ người ký công ty gửi lại hợp đồng để duyệt",
@@ -687,7 +687,7 @@
             "FLOW_REFUSED": "quy trình duyệt không mở được cho người gửi (tính năng của quy trình đang tắt hoặc người gửi không còn hoạt động) — quản trị kiểm tra ở Công ty › Quy trình, rồi gửi lại hợp đồng để duyệt",
             "FLOW_START_FAILED": "hệ thống chưa mở được quy trình duyệt sau nhiều lần thử — gửi lại hợp đồng để duyệt; vẫn lỗi thì báo quản trị",
             "FLOW_STARTING": "quy trình duyệt chưa mở được sau 2 phút — chờ ít phút hoặc báo quản trị",
-            "RECEIVE_NO_OWNER": "chưa có người phụ trách hợp đồng nhận — đặt ở {{path:flow}}, rồi gửi lại hợp đồng để duyệt"
+            "RECEIVE_NO_OWNER": "chưa có người phụ trách hợp đồng nhận — đặt ở {{path:sign}}, rồi gửi lại hợp đồng để duyệt"
           }
         },
         "release": {

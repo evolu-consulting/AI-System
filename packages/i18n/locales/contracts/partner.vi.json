@@ -75,7 +75,7 @@
           },
           "receive_flow": {
             "ok": "Có quy trình xử lý hợp đồng đối tác gửi tới.",
-            "todo": "Chưa có quy trình xử lý hợp đồng đối tác gửi tới.",
+            "todo": "Chưa có quy trình xử lý hợp đồng đối tác gửi tới. Tạo quy trình Nhận HĐ ở trang Quy trình.",
             "unknown": "Chưa kiểm tra được quy trình."
           },
           "groups": {

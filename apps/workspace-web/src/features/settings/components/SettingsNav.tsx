@@ -1,7 +1,8 @@
-// CR-130 · menu trái của hộp thoại Cài đặt chung: nhóm Sổ Hợp Tác (5 mục, cần gói contracts) + nhóm Bảng tin (Thông báo, cần gói Cộng đồng).
+// CR-130 · menu trái của hộp thoại Cài đặt chung: nhóm Sổ Hợp Tác (6 mục, cần gói contracts) + nhóm Bảng tin (Thông báo, cần gói Cộng đồng).
 import {
   Bell,
   Building2,
+  FileSignature,
   GitBranch,
   type LucideIcon,
   Search,
@@ -21,6 +22,7 @@ const SECTION_ICON: Record<SectionId, LucideIcon> = {
   biz: TrendingUp,
   scout: Search,
   flow: GitBranch,
+  sign: FileSignature,
 };
 
 export function buildNavGroups(p: {

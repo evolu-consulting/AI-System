@@ -19,11 +19,11 @@ import { SettingsActions } from "./SettingsHeader";
 import { buildNavGroups } from "./SettingsNav";
 
 /** CR-108 · mục chỉ xem và không có nháp chưa lưu ⇒ ẩn thanh Lưu (ký số trong mục này tự lưu khi bấm). */
-const noSaveFor = (s: SectionId, dirty: boolean) => s === "flow" && !dirty;
+const noSaveFor = (s: SectionId, dirty: boolean) => (s === "flow" || s === "sign") && !dirty;
 
 /** Mục có chấm cam "đã khác mặc định"? Điểm uy tín / dò giá / quy trình lưu riêng (không nằm trong bản nháp) ⇒ không chấm. */
 function sectionChanged(k: SectionId, vsDef: ReturnType<typeof changedParts> | null) {
-  if (!vsDef || k === "scout" || k === "flow" || k === "rep") return false;
+  if (!vsDef || k === "scout" || k === "flow" || k === "sign" || k === "rep") return false;
   return k === "co" ? vsDef.company : vsDef.biz;
 }
 

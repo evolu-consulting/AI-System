@@ -1,7 +1,8 @@
 // CR-125 · UX-S7 (H7) · MỘT luật THUẦN "công ty đã dùng được Đối tác xác nhận hợp đồng chưa": danh sách điều kiện, mỗi điều kiện có
 // trạng thái, AI phải làm (who) và nút làm hộ (fix) nếu nền tảng làm được. Dùng chung cho Quản trị nền tảng (Ứng dụng của công ty) và
 // Cài đặt của Sổ Hợp Tác (công ty chỉ xem). Phần dữ liệu: admin-api đọc `AdminPart`, Hub đọc `HubPart` (admin-api gộp lại).
-// Fix dùng đúng đường có sẵn: cấp tính năng (entitlement), Gán mẫu Thư viện (company-flows), Tạo nhóm theo gợi ý (template-fixes).
+// Fix dùng đúng đường có sẵn: cấp tính năng (entitlement), Tạo nhóm theo gợi ý (template-fixes); thiếu quy trình Nhận HĐ ⇒ mở trang Quy trình
+// (CR-127: không còn mẫu Thư viện để gán — CR-138b).
 
 /** Phần admin-api đọc được (hồ sơ công ty + entitlement). */
 export type PartnerAdminPart = {
@@ -19,8 +20,6 @@ export type PartnerAdminPart = {
 export type PartnerHubPart = {
   /** Kênh hộp thư liên công ty bật trên hệ thống (HUB_PARTNER_MAILBOX). */
   channel: boolean;
-  /** Mẫu Thư viện «Nhận HĐ thường» (id) để gán; null khi hệ thống chưa có mẫu. */
-  receive_template_id: string | null;
   /** Có flow nhận (sự kiện `contract.received`, bật, không điều kiện). */
   receive_flow: boolean;
   /** Có flow đang bật chứa bước «Gửi đối tác xác nhận». */
@@ -55,7 +54,7 @@ export type PartnerItem = {
   need: PartnerNeed;
   fix?: PartnerFix;
   /** Biến cho câu chữ (web dịch theo `key` + `state`): nhóm thiếu, tên tính năng… */
-  params?: { groups?: string[]; empty?: string[]; template?: string };
+  params?: { groups?: string[]; empty?: string[] };
 };
 
 export type PartnerChecklist = {
@@ -99,8 +98,8 @@ export function partnerChecklist(
       fix: "open-profile",
     }),
     item("listed", admin.listed, "company", "receive"),
-    // CR-127 Z7: không còn mẫu để gán ⇒ nút đi tới tab Quy trình (tạo quy trình nhận từ sơ đồ trống)
-    item("receive_flow", h ? h.receive_flow : null, "platform", "receive", { fix: "open-flows" }),
+    // CR-127 Z7 / CR-138b: không còn mẫu để gán ⇒ «Tạo quy trình Nhận HĐ ở trang Quy trình» (nút mở trang Quy trình)
+    item("receive_flow", h ? h.receive_flow : null, "company", "receive", { fix: "open-flows" }),
     item("groups", groupsOk, missingGroups.length ? "platform" : "company", "receive", {
       ...(missingGroups.length ? { fix: "create-group" as const } : {}),
       params: { groups: missingGroups, empty: emptyGroups },

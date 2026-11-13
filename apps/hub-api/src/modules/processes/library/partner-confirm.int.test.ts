@@ -3,7 +3,7 @@
 // Quyền: platform xem mọi công ty; quản trị công ty chỉ công ty mình (công ty khác ⇒ 404).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Role } from "@ai/contracts/common";
-import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
+import { tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
@@ -16,7 +16,6 @@ import { companyFlowsRoutes } from "./company-flows.routes";
 
 const X = tenantId(1281);
 const Z = tenantId(1282);
-const RECEIVE_TPL = "0c124000-0000-4000-8000-0000000000c2"; // «Nhận HĐ thường» (hub 0121)
 const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
   P: { userId: userId(1280), tenantId: X, role: "platform_admin" },
   A: { userId: userId(1281), tenantId: X, role: "tenant_admin" },
@@ -83,15 +82,14 @@ afterAll(async () => {
 });
 
 describe("CR-125 UX-S7 · điều kiện Đối tác xác nhận (phần Hub)", () => {
-  it("công ty trắng: có mẫu nhận để gán, chưa có flow, nhóm phong-kinh-doanh chưa có", async () => {
+  it("công ty trắng: chưa có quy trình nhận, chưa có nhóm nào để kiểm", async () => {
     const r = await get("P", X);
     expect(r.status).toBe(200);
     expect(r.json).toMatchObject({
       channel: true,
-      receive_template_id: RECEIVE_TPL,
       receive_flow: false,
       send_flow: false,
-      groups: [{ key: "phong-kinh-doanh", exists: false, members: 0 }],
+      groups: [], // CR-138b: chưa có quy trình nhận ⇒ chưa có nhóm nào để kiểm
     });
   });
 
@@ -101,16 +99,9 @@ describe("CR-125 UX-S7 · điều kiện Đối tác xác nhận (phần Hub)", 
     channelOn = true;
   });
 
-  it("làm từng bước bằng đúng đường có sẵn: tạo nhóm (trống → có người) và Gán mẫu nhận ⇒ từng điều kiện đổi", async () => {
-    const g = [...(await groups(o, X, ["phong-kinh-doanh"])).values()][0] as string;
-    expect((await get("A", X)).json.groups).toEqual([
-      { key: "phong-kinh-doanh", exists: true, members: 0 },
-    ]);
-    await o`insert into admin.group_members (tenant_id, group_id, user_id) values (${X}, ${g}, ${userId(1281)})`;
-    expect((await get("A", X)).json.groups).toEqual([
-      { key: "phong-kinh-doanh", exists: true, members: 1 },
-    ]);
-    expect((await assign(X, RECEIVE_TPL)).status).toBe(201);
+  it("tạo quy trình nhận của chính công ty ⇒ receive_flow=true (không còn Gán mẫu Thư viện)", async () => {
+    expect((await get("A", X)).json.receive_flow).toBe(false);
+    expect((await assign(X, "")).status).toBe(201);
     expect((await get("A", X)).json.receive_flow).toBe(true);
   });
 });
