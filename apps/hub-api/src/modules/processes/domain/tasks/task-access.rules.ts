@@ -45,17 +45,33 @@ export function headGate(
         group_id?: string | null;
         head_only?: boolean;
         approver_user_id?: string | null;
+        parallel?: { groups?: readonly { group_id?: string | null; head_only?: boolean }[] } | null;
       }
     | undefined
     | null,
   headUserId: string | null,
+  taskGroupId?: string | null,
 ): string | null {
   // esign-flow · người duyệt cụ thể thay cả Group duyệt (thắng head_only) — CHỈ khi SQL đã xác nhận hợp lệ (`headUserId` = người đó:
   // cùng tenant, active, không khoá); không hợp lệ ⇒ rơi về cửa trưởng phòng / cả Group như stage thường.
   if (after?.kind === "review" && after.approver_user_id && headUserId === after.approver_user_id)
     return headUserId;
+  // CR-140 · «cùng duyệt»: cờ `head_only` theo TỪNG nhánh (nhóm của thẻ); `headUserId` = trưởng phòng nhóm của thẻ.
+  if (after?.kind === "review" && after.parallel)
+    return parallelHeadGate(after.parallel, headUserId, taskGroupId);
   if (after?.kind !== "review" || after.head_only !== true || !after.group_id) return null;
   return headUserId ?? null;
+}
+
+/** CR-140 · nhánh của thẻ (`group_id` = nhóm của thẻ) bật `head_only` + nhóm có trưởng phòng ⇒ trưởng phòng; còn lại ⇒ null (cả nhóm). */
+export function parallelHeadGate(
+  parallel: { groups?: readonly { group_id?: string | null; head_only?: boolean }[] },
+  headUserId: string | null,
+  taskGroupId: string | null | undefined,
+): string | null {
+  if (!taskGroupId) return null;
+  const branch = parallel.groups?.find((g) => g.group_id === taskGroupId);
+  return branch?.head_only === true ? (headUserId ?? null) : null;
 }
 
 /**

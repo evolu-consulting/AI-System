@@ -69,7 +69,7 @@ export async function reviewTimingOf(tx: Tx, t: TimingInput) {
     from hub.stage_runs s
     join hub.process_runs pr on pr.id = s.process_run_id and pr.tenant_id = s.tenant_id
     cross join lateral (select pr.snapshot->'stages'->(s.stage_idx::int)->'after' as after) x
-    cross join lateral (select ${headGateSql("pr.snapshot->'stages'->(s.stage_idx::int)", "s.tenant_id")}::text
+    cross join lateral (select ${headGateSql("pr.snapshot->'stages'->(s.stage_idx::int)", "s.tenant_id", sql`${t.groupId}::uuid`)}::text
       as gate) g0
     cross join lateral (select g0.gate, (g0.gate is null and x.after->>'need' = 'all') as all_vote) gx
     where s.id = ${t.stageRunId} and s.tenant_id = ${t.tenantId}`);

@@ -37,6 +37,18 @@ describe("nháp ⇄ after.parallel", () => {
     expect(parallelFromDef(parallelToDef({ ...d, rule: "min", min: "1" })).rule).toBe("min");
   });
 
+  test("CR-140 · «Chỉ trưởng phòng duyệt» từng nhóm đi về `head_only`; không tick ⇒ không ghi cờ", () => {
+    const d = two();
+    const g0 = { ...(d.groups[0] as (typeof d.groups)[number]), headOnly: true };
+    const def = parallelToDef({ ...d, groups: [g0, d.groups[1] as (typeof d.groups)[number]] });
+    expect(def.groups).toEqual([
+      { group_id: G1, label: "Trưởng bộ phận", head_only: true },
+      { group_id: G2, label: "Tài chính" },
+    ]);
+    expect(parallelFromDef(def).groups[0]?.headOnly).toBe(true);
+    expect(parallelFromDef(def).groups[1]?.headOnly).toBeUndefined();
+  });
+
   test("mẫu Thư viện giữ group_key; nhóm chưa chọn ⇒ group_id null; nhãn trống ⇒ «Nhóm n»", () => {
     const def = parallelToDef({
       groups: [

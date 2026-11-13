@@ -4,14 +4,18 @@
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 
-/** `stage` = biểu thức jsonb stage của snapshot (vd `pr.snapshot->'stages'->(s.stage_idx::int)`), `tenant` = cột tenant. */
-export function headGateSql(stage: string, tenant: string): SQL {
+/** `stage` = biểu thức jsonb stage của snapshot (vd `pr.snapshot->'stages'->(s.stage_idx::int)`), `tenant` = cột tenant, `group` =
+ *  nhóm của thẻ (CR-140 · bước «cùng duyệt»: cờ `head_only` theo từng nhánh `parallel.groups[]`, khớp `group_id` = nhóm thẻ). */
+export function headGateSql(stage: string, tenant: string, group: SQL): SQL {
   const st = sql.raw(stage);
   const tid = sql.raw(tenant);
   // esign-flow · `after.approver_user_id` (người duyệt cụ thể) thắng cửa trưởng phòng.
   return sql`coalesce(${approverSql(stage, tenant)}, (select d.head_user_id from admin.departments d
-    where (${st}->'after'->>'kind') = 'review' and (${st}->'after'->>'head_only') = 'true'
-      and d.group_id = nullif(${st}->'after'->>'group_id', '')::uuid and d.tenant_id = ${tid}))`;
+    where (${st}->'after'->>'kind') = 'review' and d.tenant_id = ${tid} and case
+      when (${st}->'after'->'parallel') is null then (${st}->'after'->>'head_only') = 'true'
+        and d.group_id = nullif(${st}->'after'->>'group_id', '')::uuid
+      else d.group_id = ${group} and (${st}->'after'->'parallel'->'groups')
+        @> jsonb_build_array(jsonb_build_object('group_id', d.group_id::text, 'head_only', true)) end))`;
 }
 
 /** esign-flow · người duyệt cụ thể của stage review (`after.approver_user_id`) CHỈ khi là user cùng tenant, còn dùng được (active,

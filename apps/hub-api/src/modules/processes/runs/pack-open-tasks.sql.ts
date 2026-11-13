@@ -6,7 +6,7 @@ import type { ProcessDeps } from "../core/ports";
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export const OPEN_GATE = headGateSql("x.st", "t.tenant_id");
+export const OPEN_GATE = headGateSql("x.st", "t.tenant_id", sql`t.assignee_group_id`);
 
 /**
  * contract-flow S1b · "Việc của tôi": task review MỞ của run gói `packKey` mà `u` quyết được — cùng luật `canAct` (grant

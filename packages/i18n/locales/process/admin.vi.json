@@ -59,6 +59,7 @@
     },
     "summary": "Cùng duyệt: {{names}} · {{rule}}",
     "groupMissing": "Chọn nhóm cho mọi hàng, hoặc bỏ hàng chưa dùng.",
+    "headOnly": "Chỉ trưởng phòng duyệt",
     "err": {
       "PARALLEL_GROUPS_MIN2": "Duyệt cùng lúc cần ít nhất 2 nhóm. Thêm nhóm, hoặc bỏ «cùng duyệt» để dùng một nhóm.",
       "PARALLEL_RULE_INVALID": "Điều kiện duyệt chưa hợp lệ: số nhóm cần đồng ý không được lớn hơn số nhóm, mỗi nhóm chỉ chọn một lần, và chỉ bước Duyệt mới cùng duyệt được."

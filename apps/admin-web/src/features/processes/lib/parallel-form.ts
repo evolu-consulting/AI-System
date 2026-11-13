@@ -13,7 +13,13 @@ import {
 export { PARALLEL_GROUPS, PARALLEL_KEY, PARALLEL_LABEL_MAX };
 
 /** Một nhóm cùng duyệt ở bản nháp: `groupId` rỗng = chưa chọn nhóm; `groupKey` chỉ có ở mẫu Thư viện (giữ nguyên khi lưu). */
-export type ParallelGroupDraft = { groupId: string; groupKey?: string; label: string };
+/** CR-140 · `headOnly` = cờ `head_only` của nhánh: chỉ trưởng phòng nhóm đó duyệt. */
+export type ParallelGroupDraft = {
+  groupId: string;
+  groupKey?: string;
+  label: string;
+  headOnly?: boolean;
+};
 export type ParallelRuleKind = "all" | "any" | "min";
 export type ParallelDraft = { groups: ParallelGroupDraft[]; rule: ParallelRuleKind; min: string };
 
@@ -31,6 +37,7 @@ export function parallelFromDef(p: ApproveParallel): ParallelDraft {
       groupId: g.group_id ?? "",
       ...(g.group_key ? { groupKey: g.group_key } : {}),
       label: g.label,
+      ...(g.head_only ? { headOnly: true } : {}),
     })),
     rule: typeof rule === "object" ? "min" : rule,
     min: typeof rule === "object" ? String(rule.min) : String(Math.max(2, p.groups.length)),
@@ -48,6 +55,7 @@ export function parallelToDef(d: ParallelDraft): ApproveParallel {
       ...(g.groupKey && !g.groupId ? {} : { group_id: g.groupId || null }),
       // nhãn bắt buộc 1–80 ký tự: chưa gõ ⇒ «Nhóm n» (không để lưu hỏng vì ô trống)
       label: g.label.trim() === "" ? `Nhóm ${i + 1}` : g.label.trim().slice(0, PARALLEL_LABEL_MAX),
+      ...(g.headOnly ? { head_only: true } : {}),
     })),
     rule: ruleOf(d),
   } as ApproveParallel;

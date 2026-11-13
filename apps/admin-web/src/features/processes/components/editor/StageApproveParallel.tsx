@@ -73,6 +73,15 @@ function GroupRow(p: {
       ) : (
         <span />
       )}
+      <Label className="col-span-3 flex items-center gap-2 font-normal">
+        <Checkbox
+          checked={g.headOnly === true}
+          disabled={p.readOnly}
+          data-testid={`parallel-head-${p.n}`}
+          onCheckedChange={(v) => p.onChange({ ...g, headOnly: v === true })}
+        />
+        {t(`${K}headOnly`)}
+      </Label>
     </li>
   );
 }

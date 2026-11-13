@@ -179,7 +179,7 @@ const withStage = (r: TaskSql & { stage: StageSnap | string }): TaskSql => {
     review_group_id: st?.after?.group_id ?? null,
     back_steps: Array.isArray(back) ? back : null,
     starter_excluded: st?.after?.exclude_starter === true,
-    head_gate: headGate(st?.after, r.group_head ?? null), // contract-flow S1b
+    head_gate: headGate(st?.after, r.group_head ?? null, r.group_id), // contract-flow S1b
     also_group_ids: alsoGroupsOf(st?.after), // prod-fix2
     evidence_mode: evidenceModeOf(st?.after?.evidence), // CR-127 · E4
   };

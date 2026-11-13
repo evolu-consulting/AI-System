@@ -162,7 +162,7 @@ function canActFn(
       reviewGroupId: stageMeta(stage, 0).groupId,
       extraGroupIds: extra,
       starterExcluded: stage?.after?.exclude_starter === true,
-      headGate: headGate(stage?.after, r.group_head), // S1b
+      headGate: headGate(stage?.after, r.group_head, r.assignee_group_id), // S1b
       // CR-127 · FIX-OV · CỐ Ý không truyền need/claimedBy: thẻ cần `can_act=true` + `claim.state='other'` để hiện dải «X đang xử lý»
       // và khoá nút (ClaimBar); `can_act=false` ẩn cả khung việc (hồi quy j11). Quyết thử vẫn 409 `TASK_CLAIMED` ở máy chủ.
     };

@@ -59,7 +59,7 @@ export function stagesA(): unknown[] {
       "3 Mua hàng + Tài chính duyệt phương án",
       4,
       [
-        [G.muaHang, "Phòng Mua hàng"],
+        [G.muaHang, "Phòng Mua hàng", "head"],
         [G.taiChinh, "Tài chính"],
       ],
       to,
@@ -135,8 +135,8 @@ export function stagesB(): unknown[] {
       2,
       [
         [G.phapChe, "Pháp chế"],
-        [G.keToan, "Kế toán"],
-        [G.muaHang, "Phòng Mua hàng"],
+        [G.keToan, "Kế toán", "head"],
+        [G.muaHang, "Phòng Mua hàng", "head"],
       ],
       to,
     ),
@@ -180,8 +180,8 @@ export function stagesC(): unknown[] {
       "10 Kế toán trưởng + Giám đốc duyệt thanh toán",
       5,
       [
-        [G.keToan, "Kế toán"],
-        [G.giamDoc, "Giám đốc"],
+        [G.keToan, "Kế toán", "head"],
+        [G.giamDoc, "Giám đốc", "head"],
       ],
       to,
     ),

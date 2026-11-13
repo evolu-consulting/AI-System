@@ -11,7 +11,11 @@ import { delegatedLive } from "../core/task-grants.sql";
 import type { ViewerCtx } from "../core/task-view";
 
 /** contract-flow S1b · stage `head_only` + phòng có trưởng ⇒ người nhận phía Group duyệt chỉ là trưởng phòng. */
-const NOTICE_GATE = headGateSql("pr.snapshot->'stages'->(s.stage_idx::int)", "t.tenant_id");
+const NOTICE_GATE = headGateSql(
+  "pr.snapshot->'stages'->(s.stage_idx::int)",
+  "t.tenant_id",
+  sql`t.assignee_group_id`,
+);
 
 type Ts = Date | string;
 const uuidArray = (ids: readonly string[]): string => `{${ids.join(",")}}`;

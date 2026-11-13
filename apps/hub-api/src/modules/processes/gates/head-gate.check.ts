@@ -22,7 +22,7 @@ export function assertHeadGate(
 ): asserts run is Locked {
   if (!run) throw notFound();
   const after = snapOf(run).stages[idx]?.after;
-  const gate = headGate(after, task.group_head ?? null);
+  const gate = headGate(after, task.group_head ?? null, task.assignee_group_id);
   const esc = task.escalated_group_id;
   const ok =
     (task.user_ids ?? []).includes(v.userId) ||

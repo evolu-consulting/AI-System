@@ -58,7 +58,11 @@ type ReminderRow = {
  * `markRemindedMany` áp mốc kế do lớp 1 tính.
  */
 /** contract-flow S1b · stage `head_only` + phòng có trưởng ⇒ phía Group duyệt chỉ nhắc trưởng phòng (Group chuyển cấp giữ). */
-const REMIND_GATE = headGateSql("pr.snapshot->'stages'->(s.stage_idx::int)", "c.tenant_id");
+const REMIND_GATE = headGateSql(
+  "pr.snapshot->'stages'->(s.stage_idx::int)",
+  "c.tenant_id",
+  sql`c.assignee_group_id`,
+);
 
 export async function claimDueReminders(tx: Tx, now: Date, limit: number): Promise<ReminderBatch> {
   const q = sql`

@@ -161,3 +161,30 @@ describe("S1b · chuông gói", () => {
     ]);
   });
 });
+
+describe("CR-140 · headGate nhánh «cùng duyệt» (`parallel.groups[].head_only`)", () => {
+  const KT = "g-ke-toan";
+  const MH = "g-mua-hang";
+  const par = {
+    kind: "review",
+    group_id: null,
+    parallel: { groups: [{ group_id: KT, head_only: true }, { group_id: MH }] },
+  };
+  test("nhánh head_only + nhóm có trưởng ⇒ chỉ trưởng phòng nhóm của thẻ", () => {
+    expect(headGate(par, "kt-truong", KT)).toBe("kt-truong");
+    expect(inReviewGroup("giang", new Set([KT]), KT, headGate(par, "kt-truong", KT))).toBe(false);
+    expect(inReviewGroup("kt-truong", new Set(), KT, headGate(par, "kt-truong", KT))).toBe(true);
+  });
+  test("nhánh không cờ / nhóm không trưởng / thẻ không khớp nhánh ⇒ cả nhóm", () => {
+    expect(headGate(par, "tp-mh", MH)).toBeNull();
+    expect(headGate(par, null, KT)).toBeNull();
+    expect(headGate(par, "x", "g-khac")).toBeNull();
+    expect(headGate(par, "x", undefined)).toBeNull();
+  });
+  test("bước song song bỏ qua cờ head_only cấp bước (cờ theo nhánh)", () => {
+    expect(headGate({ ...par, head_only: true, group_id: MH }, "tp-mh", MH)).toBeNull();
+  });
+  test("người duyệt cụ thể vẫn thắng", () => {
+    expect(headGate({ ...par, approver_user_id: "u1" }, "u1", MH)).toBe("u1");
+  });
+});

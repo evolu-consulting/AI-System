@@ -22,6 +22,9 @@ let S = ""; // người gửi
 let A = "";
 let B = "";
 let C = "";
+let M = ""; // CR-140 · thành viên thường của pb-truong (không phải trưởng phòng)
+let X = ""; // CR-140 · người tenant khác
+let T2 = "";
 const G: Record<string, string> = {};
 const groupsOf = new Map<string, string[]>();
 const applied: string[] = [];
@@ -44,7 +47,7 @@ const end = (key: string, step: number, outcome: string) => ({
 });
 type Rule = "all" | "any" | { min: number };
 /** 0 Duyệt cùng lúc (Trả lại → 2) · 1 Kết thúc approved · 2 Kết thúc returned. Từ chối không đích ⇒ huỷ lượt. */
-const snap = (rule: Rule, keys: string[]) => ({
+const snap = (rule: Rule, keys: string[], heads: string[] = []) => ({
   key: "par",
   name: "Par",
   trigger: { event: EVENT },
@@ -61,7 +64,14 @@ const snap = (rule: Rule, keys: string[]) => ({
         escalate: null,
         branch: [],
         exclude_starter: false,
-        parallel: { groups: keys.map((k) => ({ group_id: G[k], label: k })), rule },
+        parallel: {
+          groups: keys.map((k) => ({
+            group_id: G[k],
+            label: k,
+            ...(heads.includes(k) ? { head_only: true } : {}),
+          })),
+          rule,
+        },
       },
     },
     end("ok", 1, "approved"),
@@ -92,12 +102,12 @@ function deps(): ProcessDeps {
   return d;
 }
 
-async function startRun(rule: Rule, keys: string[]): Promise<string> {
+async function startRun(rule: Rule, keys: string[], heads: string[] = []): Promise<string> {
   const [c] = await o<
     { id: string }[]
   >`insert into hub.conversations (tenant_id, user_id, title, title_norm)
     values (${T}, ${S}, 'c', 'c') returning id`;
-  const sn = snap(rule, keys);
+  const sn = snap(rule, keys, heads);
   const [d] = await o<{ id: string }[]>`insert into hub.process_defs (tenant_id, key, name, stages)
     values (${T}, ${`par-${crypto.randomUUID().slice(0, 8)}`}, 'par', ${o.json(sn.stages as never)}) returning id`;
   const [r] = await o<
@@ -136,7 +146,7 @@ const stateOf = async (runId: string) => {
     left join hub.process_outputs po on po.id = s.current_output_id where r.id = ${runId}`;
   return r;
 };
-const who = (userId: string) => ({ userId, tenantId: T, role: "member" as const });
+const who = (userId: string, tenantId = T) => ({ userId, tenantId, role: "member" as const });
 const decide = (u: string, taskId: string, result: "pass" | "reject" | "fail") =>
   new GateService(deps()).reviewDecision(who(u), taskId, {
     result,
@@ -149,15 +159,25 @@ beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
   [T] = (await tenants(o, 1, 1251)) as [string];
-  [S, A, B, C] = (await users(o, T, 4, { from: 125_100 })) as [string, string, string, string];
+  [S, A, B, C, M] = (await users(o, T, 5, { from: 125_100 })) as [
+    string,
+    string,
+    string,
+    string,
+    string,
+  ];
   for (const [k, u] of [
     ["pb-truong", A],
     ["pb-tai-chinh", B],
     ["pb-phap-che", C],
   ] as const) {
-    G[k] = await department(o, T, k, { head: u, members: [u] });
+    G[k] = await department(o, T, k, { head: u, members: k === "pb-truong" ? [u, M] : [u] });
     groupsOf.set(u, [G[k] as string]);
   }
+  groupsOf.set(M, [G["pb-truong"] as string]);
+  [T2] = (await tenants(o, 1, 1252)) as [string];
+  [X] = (await users(o, T2, 1, { from: 125_200 })) as [string];
+  groupsOf.set(X, [G["pb-truong"] as string]); // giả mạo: tenant khác khai cùng id nhóm
   db = connectDb(urls().hubApi, 6);
   registerOutcomeHandler({
     packKey: PACK,
@@ -313,5 +333,33 @@ describe("CR-125 · «A + B cùng duyệt» (đường thật) · đồng thời
     expect(out.every((x) => x.status === "fulfilled")).toBe(true);
     expect(await stateOf(runId)).toMatchObject({ run: "done", decision: "approved" });
     expect(applied.filter((x) => x === `${runId}:approved`)).toHaveLength(1);
+  });
+});
+
+describe("CR-140 · nhánh «cùng duyệt» chỉ trưởng phòng (`parallel.groups[].head_only`)", () => {
+  it("mặc định (không cờ): thành viên thường của nhóm vẫn quyết được thẻ nhóm", async () => {
+    const runId = await startRun("all", TWO);
+    expect(await myStep(M, runId)).toMatchObject({ task: { can_act: true } });
+  });
+
+  it("head_only: trưởng phòng quyết được; thành viên thường bị chặn ở máy chủ; tenant khác bị chặn", async () => {
+    const runId = await startRun("all", TWO, ["pb-truong"]);
+    const t = await tasksOf(runId);
+    const kt = t["pb-truong"]?.id as string;
+    const need = await o<{ need: string }[]>`select need from hub.review_tasks where id = ${kt}`;
+    expect(need[0]?.need).toBe("head"); // không «Nhận việc» cho cả nhóm
+    expect(await myStep(M, runId)).toMatchObject({ task: { can_act: false } });
+    const inboxM = await openTasksOf(deps(), who(M), PACK);
+    expect(inboxM.filter((x) => x.run_id === runId)).toEqual([]);
+    await expect(decide(M, kt, "pass")).rejects.toThrow();
+    await expect(
+      new GateService(deps()).reviewDecision(who(X, T2), kt, {
+        result: "pass",
+      } as never),
+    ).rejects.toThrow();
+    expect((await tasksOf(runId))["pb-truong"]?.status).toBe("open");
+    await decide(A, kt, "pass");
+    await decide(B, t["pb-tai-chinh"]?.id as string, "pass");
+    expect(await stateOf(runId)).toMatchObject({ run: "done", decision: "approved" });
   });
 });

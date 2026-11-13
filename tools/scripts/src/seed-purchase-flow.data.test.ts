@@ -15,6 +15,7 @@ import {
   stagesC,
   stagesParent,
 } from "./seed-purchase-flow.data";
+import { G } from "./seed-purchase-flow.kit";
 
 type St = {
   key: string;
@@ -72,6 +73,14 @@ describe("demo:purchase · định nghĩa quy trình mua hàng", () => {
     const par = [...A, ...B, ...C].filter((s) => s.after.parallel);
     expect(par.length).toBe(3);
     for (const s of par) expect((s.after.parallel as { rule: string }).rule).toBe("all");
+  });
+  it("CR-140 · nhánh song song Mua hàng / Kế toán / Giám đốc chỉ trưởng phòng duyệt (`head_only`)", () => {
+    type Br = { group_key: string; head_only?: boolean };
+    const brs = [...A, ...B, ...C].flatMap(
+      (s) => (s.after.parallel as { groups: Br[] } | undefined)?.groups ?? [],
+    );
+    const heads = new Set<string>([G.muaHang, G.keToan, G.giamDoc]);
+    for (const b of brs) expect(b.head_only === true).toBe(heads.has(b.group_key));
   });
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: một vòng kiểm đích rẽ
   it("nối bước: mọi đích rẽ trỏ vào bước có thật; bước cuối là Kết thúc", () => {

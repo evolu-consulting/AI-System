@@ -120,12 +120,12 @@ export function starterHead(key: string, name: string, step: number, to: To): St
   const { group_key: _k, ...after } = reviewNew("") as Record<string, unknown>;
   return approve(key, name, step, "", to, { after: { ...after, approver_mode: "starter_head" } });
 }
-/** Duyệt song song «tất cả»: mỗi nhóm một thẻ cùng lúc (engine: thẻ KHÔNG giới hạn trưởng phòng — xem «Khoảng trống»). */
+/** Duyệt song song «tất cả»: mỗi nhóm một thẻ cùng lúc; nhánh `"head"` ⇒ chỉ trưởng phòng nhóm đó (`head_only`, CR-140). */
 export function allOf(
   key: string,
   name: string,
   step: number,
-  groups: [string, string][],
+  groups: [string, string, "head"?][],
   to: To,
 ): Stage {
   const { group_key: _k, ...after } = reviewNew("") as Record<string, unknown>;
@@ -133,7 +133,14 @@ export function allOf(
     after: {
       ...after,
       group_id: null,
-      parallel: { groups: groups.map(([group_key, label]) => ({ group_key, label })), rule: "all" },
+      parallel: {
+        groups: groups.map(([group_key, label, head]) => ({
+          group_key,
+          label,
+          ...(head ? { head_only: true } : {}),
+        })),
+        rule: "all",
+      },
     },
   });
 }
