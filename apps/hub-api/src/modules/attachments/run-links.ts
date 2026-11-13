@@ -39,7 +39,7 @@ export async function linkRunFiles(
 
 /**
  * Lượt con kế thừa liên kết tệp (CHỈ liên kết, không chép tệp), MỘT câu SQL theo tập: (1) tệp `ids` ĐÃ liên kết với lượt cha (input_map);
- * (2) CR-140 · mọi tệp của các lượt con ANH EM đã mở trước (cùng `parent_run_id`, cùng công ty, trừ chính lượt này) — để bước sau của
+ * (2) CR-140 · mọi tệp CHƯA xoá của các lượt con ANH EM đã mở trước (cùng `parent_run_id`, cùng công ty, trừ chính lượt này; bỏ lượt lỗi / hết hạn / đã huỷ — thử lại mở lượt mới) — để bước sau của
  * dây chuyền nhiều quy trình con thấy tệp bước trước. Lượt ngoài cây của cha, công ty khác: không khớp điều kiện ⇒ không thấy.
  * Gọi TRƯỚC `linkChild` nên anh em = lượt khác có `parent_run_id` = cha. Trả số hàng mới.
  */
@@ -51,11 +51,13 @@ export async function inheritRunFiles(
     insert into hub.process_run_files (process_run_id, attachment_id, tenant_id, linked_by, source)
     select distinct on (f.attachment_id) ${o.childRunId}::uuid, f.attachment_id, f.tenant_id, f.linked_by, 'subprocess'
     from hub.process_run_files f
+    join hub.attachments a on a.id = f.attachment_id and a.tenant_id = f.tenant_id and a.purged_at is null
     where f.tenant_id = ${o.tenantId}::uuid
       and ((f.process_run_id = ${o.parentRunId}::uuid and f.attachment_id = any(${uuidArrayLiteral(o.ids)}::uuid[]))
         or f.process_run_id in (select s.id from hub.process_runs s
               where s.parent_run_id = ${o.parentRunId}::uuid and s.tenant_id = ${o.tenantId}::uuid
-                and s.id <> ${o.childRunId}::uuid))
+                and s.id <> ${o.childRunId}::uuid
+                and s.status not in ('failed', 'expired', 'cancelled')))
     order by f.attachment_id, f.created_at
     on conflict do nothing
     returning attachment_id`);

@@ -20,6 +20,8 @@ const FA = "0c140000-0000-4000-8000-0000000000a1"; // tệp của con 1 (báo gi
 const FB = "0c140000-0000-4000-8000-0000000000a2"; // tệp thứ hai của con 1
 const FP = "0c140000-0000-4000-8000-0000000000a3"; // tệp của cha, KHÔNG truyền qua input_map
 const FO = "0c140000-0000-4000-8000-0000000000b1"; // tệp của lượt ngoài cây (cùng công ty)
+const FD = "0c140000-0000-4000-8000-0000000000a4"; // tệp đã xoá nội dung
+const FF = "0c140000-0000-4000-8000-0000000000a5"; // tệp của anh em lỗi
 const FX = "0c140000-0000-4000-8000-0000000000c1"; // tệp của lượt công ty khác
 
 beforeAll(async () => {
@@ -36,11 +38,14 @@ beforeAll(async () => {
     [FA, T1, A],
     [FB, T1, A],
     [FP, T1, A],
+    [FD, T1, A],
+    [FF, T1, A],
     [FO, T1, A],
     [FX, T2, X],
   ] as const)
     await o`insert into hub.attachments (id, tenant_id, user_id, origin, filename, safe_name, mime, size, sha256, storage_key)
       values (${id}, ${t}, ${u}, 'upload', ${`${id}.pdf`}, ${`${id}.pdf`}, 'application/pdf', 5, ${"c".repeat(64)}, ${`${t}/${id}`})`;
+  await o`update hub.attachments set purged_at = now() where id = ${FD}`;
   db = connectDb(urls().hubApi, 4);
 }, 60_000);
 afterAll(async () => {
@@ -49,7 +54,12 @@ afterAll(async () => {
 });
 
 /** Lượt chạy (cha / con); `parent` ⇒ gắn cha (FK tắt trong tx vì không dựng stage cha). */
-async function mkRun(tenant: string, user: string, parent: string | null = null): Promise<string> {
+async function mkRun(
+  tenant: string,
+  user: string,
+  parent: string | null = null,
+  status = "running",
+): Promise<string> {
   const id = Bun.randomUUIDv7();
   const [c] = await o<
     { id: string }[]
@@ -57,8 +67,8 @@ async function mkRun(tenant: string, user: string, parent: string | null = null)
   await o.begin(async (tx) => {
     await tx`set local session_replication_role = replica`;
     await tx`insert into hub.process_runs (id, tenant_id, process_def_id, def_version, snapshot, started_by, origin_kind, input,
-        conversation_id, flow_id, expires_at, parent_run_id, parent_stage_run_id, parent_attempt, parent_round)
-      values (${id}, ${tenant}, ${DEF}, 1, '{}'::jsonb, ${user}, 'admin', ${`r${++seq}`}, ${c?.id as string}, gen_random_uuid(), now() + interval '1 day',
+        conversation_id, flow_id, expires_at, status, parent_run_id, parent_stage_run_id, parent_attempt, parent_round)
+      values (${id}, ${tenant}, ${DEF}, 1, '{}'::jsonb, ${user}, 'admin', ${`r${++seq}`}, ${c?.id as string}, gen_random_uuid(), now() + interval '1 day', ${status},
         ${parent}, ${parent ? Bun.randomUUIDv7() : null}, ${parent ? 1 : null}, ${parent ? 1 : null})`;
   });
   return id;
@@ -79,6 +89,18 @@ const inherit = (parent: string, child: string, ids: string[] = []) =>
   );
 
 describe("CR-140 · lượt con kế thừa tệp của lượt con anh em", () => {
+  it("bỏ tệp đã xoá và tệp của anh em lỗi / hết hạn / huỷ; giữ anh em đã xong", async () => {
+    const parent = await mkRun(T1, A);
+    const done = await mkRun(T1, A, parent, "done");
+    const bad = await mkRun(T1, A, parent, "failed");
+    await link(done, FA, T1, A);
+    await link(done, FD, T1, A);
+    await link(bad, FF, T1, A);
+    const c = await mkRun(T1, A);
+    expect(await inherit(parent, c)).toBe(1);
+    expect(await filesOf(c)).toEqual([`${FA}:subprocess`]);
+  });
+
   it("con thứ 2 thấy tệp của con thứ 1 (cùng cha), không trùng; tệp cha không truyền thì không", async () => {
     const parent = await mkRun(T1, A);
     const c1 = await mkRun(T1, A, parent);
