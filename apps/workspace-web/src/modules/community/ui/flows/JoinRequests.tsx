@@ -165,7 +165,7 @@ function JoinReview() {
           columns={joinColumns()}
           detailTitle={t("community.flows.join.detailTitle")}
           emptyKey="community.flows.join.empty"
-          detail={(j) => (
+          detail={(j, close) => (
             <div data-testid="join-detail">
               <div className="pbody">
                 <p>
@@ -189,7 +189,10 @@ function JoinReview() {
                   key={j.id}
                   j={j}
                   onApprove={(party) => void decide(j, "approve", undefined, party)}
-                  onReject={() => setRejecting(j)}
+                  onReject={() => {
+                    close();
+                    setRejecting(j);
+                  }}
                 />
               )}
             </div>
@@ -221,6 +224,7 @@ export default function JoinRequestsPage() {
         isHostViewer ? "community.flows.join.introHost" : "community.flows.join.introPartner",
       )}
       testId="join-page"
+      bare={isHostViewer}
     >
       {isHostViewer ? <JoinReview /> : <JoinForm />}
     </FlowPage>

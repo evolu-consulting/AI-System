@@ -2,6 +2,7 @@
 // sẽ gắn vào đối tác nào trước khi bấm Duyệt. Danh sách đối tác nạp khi mở ô chọn (lỗi/gói tắt ⇒ chỉ còn tạo mới).
 import type { JoinRequest } from "@ai/contracts/community";
 import { useState } from "react";
+import { Btn } from "~/components/ui/Btn";
 import { useApp } from "../../application/ctx";
 import { filterParties, PARTY_LIMIT, type Party } from "../../domain/join-approve";
 import { t } from "../../i18n";
@@ -93,18 +94,18 @@ export function JoinApprove({
       </span>
       <div className="cbar" style={{ padding: 0 }}>
         <div className="sp" />
-        <button type="button" className="ghost" data-testid="join-reject" onClick={onReject}>
+        <Btn variant="outline" size="sm" data-testid="join-reject" onClick={onReject}>
           {t("community.flows.join.reject")}
-        </button>
-        <button
-          type="button"
-          className="primary sm"
+        </Btn>
+        <Btn
+          variant="primary"
+          size="sm"
           data-testid="join-approve"
           disabled={link && !picked}
           onClick={() => onApprove(picked?.party)}
         >
           {t("community.flows.join.approve")}
-        </button>
+        </Btn>
       </div>
     </div>
   );
