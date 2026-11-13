@@ -2,6 +2,7 @@
 // cấp THEO TẬP trong tx lô của vòng nhắc: MỘT câu claim-update (SKIP LOCKED, đặt `escalated_at`); có hàng ⇒ luật lớp 1
 // `escalateAction` chọn thêm Group / bỏ qua trên mảng ⇒ assignee, audit, notice `escalated` mỗi loại MỘT câu nhiều hàng.
 // `tenant_id` mọi hàng ghi lấy từ hàng nguồn (task), không từ caller.
+import type { PackTaskEventIn } from "../../core/ports";
 import { escalateAction } from "../../domain/notify/escalate.rules";
 import type {
   BatchRepos,
@@ -15,12 +16,12 @@ export async function escalateBatch(
   r: BatchRepos,
   now: Date,
   limit: number,
-): Promise<{ n: number; more: boolean }> {
+): Promise<{ n: number; more: boolean; events: PackTaskEventIn[] }> {
   const { tasks, claimed, more } = await r.reviewTasks.claimDueEscalations(limit, now);
   // Lô đầy tính theo số đã khoá (gồm task bị bỏ vì run đang bị giữ — T12 #1) ⇒ không dừng xả sớm.
   // Khoá ≥ 1 mà giữ 0 (mọi run đang bị giữ, R2-1) ⇒ không xả tiếp trong lượt này, lượt kế thử lại.
   const full = more && claimed >= limit && !(claimed > 0 && tasks.length === 0);
-  if (tasks.length === 0) return { n: 0, more: full };
+  if (tasks.length === 0) return { n: 0, more: full, events: [] };
   const add: EscalatedAssigneeRow[] = [];
   const audits: EscalateAuditRow[] = [];
   const notices: NoticeMetaRow[] = [];
@@ -44,7 +45,7 @@ export async function escalateBatch(
   if (add.length > 0) await r.reviewTasks.addEscalatedGroups(add);
   await r.reviewTasks.auditEscalations(audits);
   if (notices.length > 0) await r.notices.notifyMany("escalated", notices);
-  return { n: add.length, more: full };
+  return { n: add.length, more: full, events: escalateEvents(add, now) };
 }
 
 function auditOf(t: ClaimedEscalation, action: EscalateAuditRow["action"]): EscalateAuditRow {
@@ -108,5 +109,19 @@ function noticeRows(t: ClaimedEscalation): NoticeMetaRow[] {
     stageName: t.stageName,
     group,
     ...(afterH !== undefined && { afterH }),
+  }));
+}
+
+/** [AUDIT] · mỗi task đã chuyển cấp THẬT (thêm Group / người) ⇒ một dòng lịch sử gói (hệ thống, lý do: quá hạn). */
+function escalateEvents(add: readonly EscalatedAssigneeRow[], now: Date): PackTaskEventIn[] {
+  const at = now.toISOString();
+  return add.map((a) => ({
+    tenantId: a.tenantId,
+    taskId: a.taskId,
+    kind: "escalate" as const,
+    actor: null,
+    to: a.groupId ?? a.userId ?? null,
+    reason: "overdue",
+    at,
   }));
 }

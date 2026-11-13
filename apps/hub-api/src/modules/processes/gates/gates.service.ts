@@ -37,7 +37,7 @@ import { allPartialOut, allVoteStep } from "./all-vote";
 import { approveDecide } from "./approve-out";
 import { type FormSubmit, formPre, formReplayCheck } from "./form-out";
 import { evidenceCheck } from "./gate.rules";
-import { decidedOf, notifyPack, postCommit, taskEvidence } from "./gates.audit";
+import { decidedOf, delegatorOf, notifyPack, postCommit, taskEvidence } from "./gates.audit";
 import {
   buildState,
   cancelEnd,
@@ -51,6 +51,7 @@ import {
   assertMayDecide,
   assertNotClaimedByOther,
   decideOut,
+  decidesByOverride,
   evidenceModeOf,
   type Outcome,
   PASS,
@@ -156,8 +157,10 @@ export class GateService {
       { userId: v.userId, groupIds },
       onEvidence,
     );
+    const override = decidesByOverride(task, req); // [AUDIT] · Toàn quyền duyệt thay (đường chung)
+    const onBehalfOf = await delegatorOf(tx, task.tenant_id, taskId, v.userId); // [AUDIT] · uỷ quyền
     const decided = (evidenceId: string | null) =>
-      decidedOf(run, idx, taskId, { b, userId: v.userId, evidenceId });
+      decidedOf(run, idx, taskId, { b, userId: v.userId, evidenceId, override, onBehalfOf });
     if (vote.mode === "partial")
       return {
         ...(await allPartialOut(gx, run, taskId, { ...v, groupIds, recipients })),

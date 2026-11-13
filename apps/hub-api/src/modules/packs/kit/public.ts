@@ -147,6 +147,7 @@ export type {
   PackStepsView,
   PackStepView,
   PackTaskClaim,
+  PackTaskEvent,
   PackWorkflow,
 } from "./application/pack-runs.ports";
 export type {

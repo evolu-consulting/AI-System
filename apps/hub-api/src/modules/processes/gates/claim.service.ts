@@ -8,16 +8,29 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import * as cr from "../adapters/claim/claim.repo";
 import type { NoticeRow } from "../application/ports";
 import { claimError, processN2Error } from "../core/errors";
-import type { ProcessDeps } from "../core/ports";
+import type { PackTaskEventIn, ProcessDeps } from "../core/ports";
 import { claimMissOutcome, reassignBlock } from "../domain/tasks/claim.rules";
 import { writeNotices } from "../notify/batch.repo";
+import { emitPackTaskEvents } from "../runs/pack-task-events";
 import { notFound } from "./gates.effects";
 
 type Ctx = { u: AuthUser; tenantId: string; groupIds: ReadonlySet<string> };
 const person = (id: string, name: string | null) => ({ id, display_name: name || id });
 
 export class ClaimService {
-  constructor(private readonly d: Pick<ProcessDeps, "db" | "config" | "now">) {}
+  constructor(
+    private readonly d: Pick<ProcessDeps, "db" | "config" | "now"> &
+      Partial<Pick<ProcessDeps, "log" | "packTaskEvents">>,
+  ) {}
+
+  /** [AUDIT] · đã COMMIT ⇒ báo gói một dòng lịch sử (run gắn gói). Không ném. */
+  async #emit(c: Ctx, taskId: string, kind: PackTaskEventIn["kind"], to: string | null = null) {
+    const { db, log, packTaskEvents } = this.d;
+    if (!packTaskEvents || !log) return;
+    const at = this.d.now().toISOString();
+    const e = { tenantId: c.tenantId, taskId, kind, actor: c.u.userId, to, reason: null, at };
+    await emitPackTaskEvents({ db, log, packTaskEvents }, [e]);
+  }
 
   async #ctx(u: AuthUser, tq?: string): Promise<Ctx> {
     const groupIds = (await this.d.config.user(u.userId))?.groupIds ?? new Set<string>();
@@ -32,9 +45,11 @@ export class ClaimService {
   // ── POST /review-tasks/:id/claim ──
   async claim(u: AuthUser, taskId: string, tq?: string): Promise<ClaimTaskResponse> {
     const c = await this.#ctx(u, tq);
-    return this.#tx(c, async (tx) => {
+    let won = false;
+    const out = await this.#tx(c, async (tx) => {
       const a = { taskId, tenantId: c.tenantId, groupIds: c.groupIds };
       const hit = await cr.claimTask(tx, { ...a, userId: u.userId, now: this.d.now() });
+      won = hit !== null;
       if (hit) return mine(u.userId, hit.byName, hit.claimedAt);
       const m = await cr.claimMiss(tx, { ...a, userId: u.userId });
       const out = claimMissOutcome(m, u.userId);
@@ -45,12 +60,14 @@ export class ClaimService {
         throw claimError("TASK_CLAIMED", { by: person(m.claimedBy as string, m.byName) });
       throw claimError(out);
     });
+    if (won) await this.#emit(c, taskId, "claim");
+    return out;
   }
 
   // ── POST /review-tasks/:id/release — chỉ người đang giữ ──
   async release(u: AuthUser, taskId: string, tq?: string): Promise<ClaimTaskResponse> {
     const c = await this.#ctx(u, tq);
-    return this.#tx(c, async (tx) => {
+    const out = await this.#tx<ClaimTaskResponse>(c, async (tx) => {
       const a = { taskId, tenantId: c.tenantId };
       if (await cr.releaseTask(tx, { ...a, userId: u.userId }))
         return { claim: { state: "unclaimed" } };
@@ -59,6 +76,8 @@ export class ClaimService {
       if (m.status !== "open") throw claimError("TASK_CLOSED");
       throw claimError("NOT_CLAIMER");
     });
+    await this.#emit(c, taskId, "release");
+    return out;
   }
 
   // ── POST /review-tasks/:id/reassign — trưởng phòng của nhóm / quản trị công ty giao cho một người trong nhóm ──
@@ -102,6 +121,7 @@ export class ClaimService {
       await withHubScope(this.d.db, { kind: "system" }, (tx) =>
         writeNotices(tx, "review_requested", [notice as NoticeRow]),
       );
+    await this.#emit(c, taskId, "reassign", b.to_user_id);
     return out;
   }
 }

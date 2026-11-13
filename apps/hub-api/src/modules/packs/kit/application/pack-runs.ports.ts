@@ -293,6 +293,23 @@ export type PackDecided = {
   feedback: string | null;
   actor: string;
   evidenceId: string | null;
+  /** [AUDIT] · Toàn quyền duyệt thay. */
+  override?: boolean;
+  /** [AUDIT] · quyết bằng uỷ quyền ⇒ người uỷ quyền. */
+  onBehalfOf?: string | null;
+};
+/** [AUDIT] · việc trên task duyệt (nhận / trả / giao lại / tự trả / chuyển cấp) của run gắn gói — `key` idempotent. */
+export type PackTaskEvent = {
+  tenantId: string;
+  taskId: string;
+  kind: "claim" | "release" | "reassign" | "auto_release" | "escalate";
+  actor: string | null;
+  to: string | null;
+  reason: string | null;
+  at: string;
+  runId: string;
+  stageKey: string;
+  key: string;
 };
 /** [AUDIT] · một quyết định đã ghi ở engine (đối soát): như `PackDecided` + lúc quyết. */
 export type PackDecidedTask = Omit<PackDecided, "packKey"> & { at: string };
@@ -300,4 +317,6 @@ export type PackRunsBridge = {
   port?: PackRunsPort;
   /** [AUDIT] · gói gắn lúc mount theo khoá gói; engine gọi sau COMMIT của quyết định đi đường chung. */
   onDecided?: Partial<Record<string, (e: PackDecided) => Promise<void>>>;
+  /** [AUDIT] · gói gắn theo khoá gói; engine gọi theo lô sau COMMIT. */
+  onTaskEvents?: Partial<Record<string, (rows: PackTaskEvent[]) => Promise<void>>>;
 };

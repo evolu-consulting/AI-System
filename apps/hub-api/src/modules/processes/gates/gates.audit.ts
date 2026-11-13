@@ -5,9 +5,11 @@
 import type { ReviewDecisionRequest } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
+import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../lib/errors";
 import { publishUserEvents } from "../../../lib/user-stream";
 import type { PackDecidedEvent, ProcessDeps } from "../core/ports";
+import { delegatedLive } from "../core/task-grants.sql";
 import { kickOrFlag } from "../runs/kick-failure";
 import { recordTaskEvidence } from "./gate-task.repo";
 import { snapOf } from "./gates.effects";
@@ -65,7 +67,13 @@ export function decidedOf(
   run: { tenantId: string; id: string; packKey?: string | null },
   idx: number,
   taskId: string,
-  o: { b: ReviewDecisionRequest; userId: string; evidenceId: string | null },
+  o: {
+    b: ReviewDecisionRequest;
+    userId: string;
+    evidenceId: string | null;
+    override?: boolean;
+    onBehalfOf?: string | null;
+  },
 ): PackDecidedEvent | undefined {
   if (!run.packKey) return undefined;
   const def = snapOf(run as never).stages[idx] as { key?: string } | undefined;
@@ -80,5 +88,21 @@ export function decidedOf(
     feedback: fb ? fb.slice(0, 1000) : null,
     actor: o.userId,
     evidenceId: o.evidenceId,
+    ...(o.override ? { override: true } : {}),
+    ...(o.onBehalfOf ? { onBehalfOf: o.onBehalfOf } : {}),
   };
+}
+
+/** [AUDIT] · người quyết đang làm THAY ai (hàng uỷ quyền `via='delegated'` còn hiệu lực của task — cùng luật `recordTaskEvidence`). 1 câu. */
+export async function delegatorOf(
+  tx: Tx,
+  tenantId: string,
+  taskId: string,
+  userId: string,
+): Promise<string | null> {
+  const [r] = await tx.execute<{ id: string | null }>(sql`select d.on_behalf_of::text as id
+    from hub.review_task_assignees d where d.tenant_id = ${tenantId}::uuid and d.task_id = ${taskId}::uuid
+      and d.user_id = ${userId}::uuid and d.via = 'delegated' and d.on_behalf_of is not null and ${delegatedLive("d")}
+    limit 1`);
+  return r?.id ?? null;
 }

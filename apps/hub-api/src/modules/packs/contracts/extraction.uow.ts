@@ -12,6 +12,7 @@ import { flowFactsRepo } from "./adapters/flow-facts.repo";
 import { productLinksRepo } from "./adapters/product-links.repo";
 import { reviewRepo } from "./adapters/review.repo";
 import { submissionsRepo } from "./adapters/submissions.repo";
+import { taskEventsRepo } from "./adapters/task-events.repo";
 import { CONTRACTS_PACK } from "./domain/contract-flow-events.rules";
 
 export const packUow = (db: Db) =>
@@ -21,6 +22,7 @@ export const packUow = (db: Db) =>
     approvalFlow: approvalFlowRepo(tx, tid),
     approvalEngine: approvalEngineRepo(tx, tid),
     sweep: sweepRepo(tx, tid),
+    taskEvents: taskEventsRepo(tx, tid), // [AUDIT]
     review: reviewRepo(tx, tid),
     links: productLinksRepo(tx, tid),
     flowFacts: flowFactsRepo(tx, tid), // CR-121 D-1

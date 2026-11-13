@@ -246,6 +246,8 @@ export const ApprovalRecordItemSchema = z.strictObject({
   feedback: z.string().max(APPROVAL_FEEDBACK_MAX).nullable(),
   /** [AUDIT] · Toàn quyền duyệt thay người/nhóm được giao của bước. */
   override: z.boolean().optional(),
+  /** [AUDIT] · quyết bằng uỷ quyền ⇒ người uỷ quyền (cả khi không có bằng chứng). */
+  on_behalf_of: RecordPersonSchema.nullable().optional(),
   evidence: ApprovalRecordEvidenceSchema.nullable(),
 });
 export const ApprovalRecordSchema = z.strictObject({

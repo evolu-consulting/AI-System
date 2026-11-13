@@ -137,3 +137,15 @@ export function assertNotClaimedByOther(
   const by = t.claimed_by as string;
   throw claimError("TASK_CLAIMED", { by: { id: by, display_name: t.claimer_name || by } });
 }
+
+/** [AUDIT] · người quyết CHỈ có quyền nhờ Group «cũng quyết» (Toàn quyền) — không được giao đích danh, không thuộc Group duyệt /
+ *  chuyển cấp, không là trưởng phòng của bước ⇒ «duyệt thay» (cùng ý `overrideOnly` của thẻ gói). */
+export function decidesByOverride(task: NonNullable<LoadedTask>, { v, groupIds }: Req): boolean {
+  const inGroup = (id: string | null) => id !== null && groupIds.has(id);
+  const own =
+    (task.user_ids ?? []).includes(v.userId) ||
+    inGroup(task.assignee_group_id) ||
+    inGroup(task.escalated_group_id) ||
+    (task.group_head != null && task.group_head === v.userId);
+  return !own && (task.also_group_ids ?? []).some(inGroup);
+}

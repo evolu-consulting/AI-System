@@ -3,6 +3,8 @@
 // người nhận; áp mốc kế; chèn notice + unread), rồi chuyển cấp (`escalateBatch`, 1 câu khi không có hàng). Luật lớp 1
 // (`dueReminder`/`nextRemind`/`noticeRecipients`) chạy trên mảng trong bộ nhớ. Một lượt xả = lặp lô tới khi lô < 100 /
 // hết hàng / hết ngân sách 60 s (A9); sự kiện qua outbox ⇒ phát SAU COMMIT mỗi lô. Đồng hồ = tham số `now()` (seam).
+
+import type { PackTaskEventIn } from "../../core/ports";
 import { dueReminder, nextRemind, noticeRecipients } from "../../domain/notify/remind.rules";
 import type { BatchRepos, ClaimedReminder, NoticeMetaRow, ReminderMark, SystemUow } from "../ports";
 import { escalateBatch } from "./escalate-task.usecase";
@@ -12,7 +14,13 @@ export const REMINDER_BATCH = 100;
 /** A9: một lượt xả tối đa 60 s rồi nhường lượt sau. */
 const DRAIN_BUDGET_MS = 60_000;
 
-export type RemindDeps = { sysUow: SystemUow; now(): Date; elapsedMs(): number };
+export type RemindDeps = {
+  sysUow: SystemUow;
+  now(): Date;
+  elapsedMs(): number;
+  /** [AUDIT] · sau COMMIT mỗi lô: báo gói các task vừa chuyển cấp. Vắng ⇒ bỏ qua. */
+  emit?: (rows: PackTaskEventIn[]) => Promise<void>;
+};
 
 /** Một lượt nhắc: trả tổng số task vừa nhắc (mọi lô). */
 export async function remindTasks(d: RemindDeps): Promise<number> {
@@ -22,6 +30,7 @@ export async function remindTasks(d: RemindDeps): Promise<number> {
     const now = d.now();
     const b = await d.sysUow.systemBatch((r) => remindBatch(r, now, REMINDER_BATCH));
     total += b.n;
+    if (d.emit && b.events.length > 0) await d.emit(b.events);
     if (!b.more || d.elapsedMs() - t0 >= DRAIN_BUDGET_MS) return total;
   }
 }
@@ -31,7 +40,7 @@ async function remindBatch(
   r: BatchRepos,
   now: Date,
   limit: number,
-): Promise<{ n: number; more: boolean }> {
+): Promise<{ n: number; more: boolean; events: PackTaskEventIn[] }> {
   const { tasks, claimed, more } = await r.reviewTasks.claimDueReminders(limit, now);
   const due = tasks.filter((t) => dueReminder({ ...t, status: "open" }, now));
   // CR-114 (review) · chỉ gộp hai câu ĐƠN độc lập (áp mốc, chèn notice — mỗi hàm đúng MỘT câu, bảng khác nhau) gửi cùng lúc
@@ -45,7 +54,11 @@ async function remindBatch(
   // Lô đầy tính theo `claimed` (gồm task bị bỏ vì run đang bị giữ — T12 #1) ⇒ không dừng xả sớm. Khoá ≥ 1 mà giữ 0 (mọi
   // run đang bị giữ, R2-1) ⇒ lô sau chỉ gặp lại đúng chúng: dừng phần nhắc của lượt, lượt kế thử lại.
   const stalled = claimed > 0 && tasks.length === 0;
-  return { n: due.length, more: (more && claimed >= limit && !stalled) || esc.more };
+  return {
+    n: due.length,
+    more: (more && claimed >= limit && !stalled) || esc.more,
+    events: esc.events,
+  };
 }
 
 /** Lặp ⇒ `nextRemind`; cũ ⇒ giữ `remindAt`/`remindCount` (chỉ đặt `reminded_at`). */

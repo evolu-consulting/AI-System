@@ -12,6 +12,7 @@ import type {
   PackReviewAct,
   PackRunOutcomeSys,
   PackStepsView,
+  PackTaskEvent,
   PackUow,
   PackWorkflow,
   ResolvedSlot,
@@ -123,6 +124,8 @@ export type ApprovalEngineBridge = {
   port?: ApprovalEnginePort;
   /** [AUDIT] · cầu `packRuns`: gói HĐ gắn `onDecided.contracts` (ghi `stage_decided` cho quyết đi đường chung). */
   onDecided?: Partial<Record<string, (e: PackDecided) => Promise<void>>>;
+  /** [AUDIT] · gói HĐ gắn `onTaskEvents.contracts` (nhận / trả / giao lại / tự trả / chuyển cấp ⇒ `task_handled`). */
+  onTaskEvents?: Partial<Record<string, (rows: PackTaskEvent[]) => Promise<void>>>;
 };
 
 /** Lượt duyệt engine của HĐ đọc theo `engine_run_id` (tool) — HĐ + facts + mẫu chụp + gắn SP chờ. */
@@ -182,6 +185,8 @@ export type DecisionEvent = {
   evidenceId?: string | null;
   /** [AUDIT] · lúc quyết (ghi bù của vòng đối soát); vắng ⇒ now(). */
   at?: string;
+  /** [AUDIT] · quyết bằng uỷ quyền ⇒ người uỷ quyền (hồ sơ: «thay X» cả khi không có bằng chứng). */
+  onBehalfOf?: string | null;
 };
 /** CR-127 · E4 · một dòng hồ sơ duyệt (chưa lọc BR-26 — usecase lọc). */
 export type DecisionRow = {
@@ -193,6 +198,8 @@ export type DecisionRow = {
   feedback: string | null;
   /** [AUDIT] · Toàn quyền duyệt thay (không phải người/nhóm được giao). */
   override: boolean;
+  /** [AUDIT] · uỷ quyền: người uỷ quyền ghi ở dòng quyết định (không phụ thuộc bằng chứng). */
+  onBehalfOf?: string | null;
   evidence: {
     id: string;
     note: string;

@@ -2,6 +2,8 @@
 // số câu cố định — trả về nhóm (1 câu `releaseDueClaims`) + chèn notice `task_released` (notifyMany). Người nhận báo: trưởng phòng
 // của nhóm; nhóm không có trưởng phòng ⇒ quản trị công ty (`releaseRecipients`). "Không thao tác" = quá `claim_deadline_at`; xem/mở
 // thẻ không gia hạn. Đồng hồ = tham số `now()` (seam) — test gọi `releaseClaims` trực tiếp với đồng hồ giả, không ngủ.
+
+import type { PackTaskEventIn } from "../../core/ports";
 import { releaseRecipients } from "../../domain/tasks/claim.rules";
 import type { BatchRepos, NoticeMetaRow, ReleasedClaim, SystemUow } from "../ports";
 
@@ -9,7 +11,13 @@ import type { BatchRepos, NoticeMetaRow, ReleasedClaim, SystemUow } from "../por
 export const CLAIM_RELEASE_BATCH = 100;
 const DRAIN_BUDGET_MS = 60_000;
 
-export type ClaimReleaseDeps = { sysUow: SystemUow; now(): Date; elapsedMs(): number };
+export type ClaimReleaseDeps = {
+  sysUow: SystemUow;
+  now(): Date;
+  elapsedMs(): number;
+  /** [AUDIT] · sau COMMIT mỗi lô: báo gói (lịch sử HĐ) các việc vừa tự trả. Vắng ⇒ bỏ qua. */
+  emit?: (rows: PackTaskEventIn[]) => Promise<void>;
+};
 
 /** Một lượt: trả tổng số việc vừa tự trả (mọi lô). */
 export async function releaseClaims(d: ClaimReleaseDeps): Promise<number> {
@@ -19,6 +27,7 @@ export async function releaseClaims(d: ClaimReleaseDeps): Promise<number> {
     const now = d.now();
     const b = await d.sysUow.systemBatch((r) => releaseBatch(r, now, CLAIM_RELEASE_BATCH));
     total += b.n;
+    if (d.emit && b.events.length > 0) await d.emit(b.events);
     if (!b.more || d.elapsedMs() - t0 >= DRAIN_BUDGET_MS) return total;
   }
 }
@@ -27,12 +36,23 @@ export async function releaseBatch(
   r: BatchRepos,
   now: Date,
   limit: number,
-): Promise<{ n: number; more: boolean }> {
+): Promise<{ n: number; more: boolean; events: PackTaskEventIn[] }> {
   const { tasks, claimed, more } = await r.reviewTasks.releaseDueClaims(limit, now);
+  const at = now.toISOString();
+  // [AUDIT] · lịch sử gói: «tự trả việc — quá giờ giữ» (người giữ = `to` để hiện «của X»).
+  const events = tasks.map((t) => ({
+    tenantId: t.tenantId,
+    taskId: t.taskId,
+    kind: "auto_release" as const,
+    actor: null,
+    to: t.claimedBy,
+    reason: "claim_expired",
+    at,
+  }));
   if (tasks.length > 0) await r.notices.notifyMany("task_released", tasks.flatMap(noticeRows));
   // Khoá ≥ 1 mà giữ 0 (mọi run đang bị giữ) ⇒ lô sau gặp lại đúng chúng: dừng lượt, lượt kế thử lại.
   const stalled = claimed > 0 && tasks.length === 0;
-  return { n: tasks.length, more: more && claimed >= limit && !stalled };
+  return { n: tasks.length, more: more && claimed >= limit && !stalled, events };
 }
 
 function noticeRows(t: ReleasedClaim): NoticeMetaRow[] {

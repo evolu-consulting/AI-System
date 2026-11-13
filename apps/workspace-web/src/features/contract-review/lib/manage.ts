@@ -42,6 +42,12 @@ const KNOWN = new Set([
   "stage_approve",
   "stage_return",
   "stage_reject",
+  // [AUDIT] · việc trên bước duyệt
+  "task_claim",
+  "task_release",
+  "task_reassign",
+  "task_auto_release",
+  "task_escalate",
   "esign_sent",
   "esign_signed",
   "esign_declined",
@@ -74,7 +80,9 @@ function kindOf(h: HistoryItem): string {
   const t =
     h.type === "stage_decided"
       ? `stage_${text((h.data as { action?: unknown } | null)?.action)}`
-      : h.type;
+      : h.type === "task_handled"
+        ? `task_${text((h.data as { kind?: unknown } | null)?.kind)}`
+        : h.type;
   return KNOWN.has(t) ? t : "other";
 }
 

@@ -191,7 +191,7 @@ function pendingQ(tx: Tx, tid: string): ApprovalEngineRepo["setPendingLinks"] {
  *  `engine_run_id`) — chỉ còn `run_id` (lượt, như event duyệt khác), `stage`, `action`. `e` = bí danh bảng event (hằng). */
 export const eventDataOut = (e: "e") =>
   sql.raw(
-    `(case when ${e}.type in ('${OVERRIDE_EVENT}', 'stage_decided') then ${e}.data - 'task_id' - 'engine_run_id' - 'evidence_id' - (case when ${e}.data ? 'evidence_id' then 'feedback' else '' end) else ${e}.data end)`,
+    `(case when ${e}.type = 'task_handled' then ${e}.data - 'task_id' - 'key' when ${e}.type in ('${OVERRIDE_EVENT}', 'stage_decided') then ${e}.data - 'task_id' - 'engine_run_id' - 'evidence_id' - (case when ${e}.data ? 'evidence_id' then 'feedback' else '' end) else ${e}.data end)`,
   );
 
 /** CR-113 · "duyệt thay": MỘT câu chèn (không `returning` — người duyệt ngoài cây không đọc được hàng; FK HĐ kiểm tồn tại). Review ·
@@ -226,15 +226,16 @@ function decisionsQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["record
       fb: x.feedback,
       actor: x.actor,
       ev: x.evidenceId ?? null,
+      behalf: x.onBehalfOf ?? null,
       at: x.at ?? null,
     }));
     await tx.execute(sql`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data, at)
       select ${tid}::uuid, r.cid, 'stage_decided', r.actor,
         jsonb_strip_nulls(jsonb_build_object('run_id', r.aid::text, 'task_id', r.task, 'stage', r.stage,
-          'action', r.action, 'feedback', r.fb, 'evidence_id', r.ev)),
+          'action', r.action, 'feedback', r.fb, 'evidence_id', r.ev, 'on_behalf_of', r.behalf)),
         coalesce(r.at, now())
       from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as r(cid uuid, aid uuid, task text, stage text,
-        action text, fb text, actor uuid, ev text, at timestamptz)
+        action text, fb text, actor uuid, ev text, behalf text, at timestamptz)
       on conflict (tenant_id, (data ->> 'task_id')) where type = 'stage_decided' do nothing`);
   };
 }
@@ -258,6 +259,7 @@ function decisionsOfQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["deci
       files: string[] | null;
       ev_by: string | null;
       ev_behalf: string | null;
+      behalf: string | null;
       ev_at: string | null;
       ov: boolean;
     }>(sql`with d as (
@@ -269,7 +271,7 @@ function decisionsOfQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["deci
       select d.data ->> 'task_id' as task_id, d.data ->> 'stage' as stage, d.data ->> 'action' as action,
         to_char(d.at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as at, d.actor_user_id::text as actor,
         d.data ->> 'feedback' as feedback, ev.id::text as ev_id, ev.note, ev.signature_attachment_id::text as sig,
-        ev.attachment_ids::text[] as files, ev.by_user::text as ev_by, ev.on_behalf_of::text as ev_behalf,
+        ev.attachment_ids::text[] as files, ev.by_user::text as ev_by, ev.on_behalf_of::text as ev_behalf, d.data ->> 'on_behalf_of' as behalf,
         to_char(ev.at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as ev_at,
         -- [AUDIT] · lượt bấm này là Toàn quyền «duyệt thay» (bản ghi write-ahead cùng task × người, cùng HĐ + tenant)
         exists (select 1 from contracts.contract_events o where o.tenant_id = ${tid}::uuid
@@ -285,6 +287,7 @@ function decisionsOfQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["deci
       actor: r.actor,
       feedback: r.feedback,
       override: r.ov === true,
+      onBehalfOf: r.behalf ?? r.ev_behalf ?? null,
       evidence:
         r.ev_id && r.ev_by && r.ev_at
           ? {

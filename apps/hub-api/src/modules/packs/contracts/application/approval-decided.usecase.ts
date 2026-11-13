@@ -1,7 +1,8 @@
 // [AUDIT] · «Ai duyệt làm gì đều phải có record»: quyết bước duyệt HĐ đi đường chung `POST /review-tasks/:id/decision` (Việc của tôi,
 // chuông) không qua thẻ HĐ ⇒ engine báo `onDecided.contracts` SAU COMMIT ⇒ ghi `stage_decided` bằng CÙNG hàm repo của thẻ
 // (`recordDecision`, idempotent theo task). Scope system của tenant (người quyết có thể không đọc được HĐ sau khi task đóng).
-import type { PackDecided, PackDecidedTask } from "../../kit/public";
+import type { PackDecided, PackDecidedTask, PackTaskEvent } from "../../kit/public";
+import type { TaskEventsRepo } from "../adapters/task-events.repo";
 import type { DecisionRunRef } from "./approval.ports";
 import type { ApprovalEnginePort, ApprovalEngineTxRepos } from "./approval-engine.ports";
 
@@ -20,6 +21,15 @@ export function recordEngineDecision(uow: SystemUow) {
     uow.system(e.tenantId, async (r) => {
       const run = await r.approvalEngine.byRun(e.runId, { lock: false });
       if (!run) return;
+      // [AUDIT] · Toàn quyền duyệt thay qua đường chung ⇒ cùng bản ghi `approval_override` như thẻ (idempotent lượt × task × người).
+      if (e.override)
+        await r.approvalEngine.recordOverride?.(run.contractId, run.approvalId, {
+          runId: e.runId,
+          taskId: e.taskId,
+          stageKey: e.stageKey,
+          action: ACTION[e.result],
+          actor: e.actor,
+        });
       await r.approvalEngine.recordDecision?.(run.contractId, run.approvalId, {
         taskId: e.taskId,
         stageKey: e.stageKey,
@@ -27,8 +37,20 @@ export function recordEngineDecision(uow: SystemUow) {
         feedback: e.feedback,
         actor: e.actor,
         evidenceId: e.evidenceId,
+        onBehalfOf: e.onBehalfOf ?? null,
       });
     });
+}
+
+/** [AUDIT] · nhận / trả / giao lại / tự trả / chuyển cấp (đã COMMIT ở engine) ⇒ `task_handled`, MỘT câu mỗi tenant của lô. */
+export function recordTaskEvents(uow: {
+  system<T>(tenantId: string, fn: (r: { taskEvents: TaskEventsRepo }) => Promise<T>): Promise<T>;
+}) {
+  return async (rows: PackTaskEvent[]): Promise<void> => {
+    const byTenant = new Map<string, PackTaskEvent[]>();
+    for (const x of rows) byTenant.set(x.tenantId, [...(byTenant.get(x.tenantId) ?? []), x]);
+    for (const [t, list] of byTenant) await uow.system(t, (r) => r.taskEvents.record(list));
+  };
 }
 
 type BackfillUow = {

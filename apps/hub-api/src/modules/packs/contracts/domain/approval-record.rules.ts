@@ -22,6 +22,8 @@ export type RecordRow = {
   feedback: string | null;
   /** [AUDIT] · Toàn quyền duyệt thay (không phải người/nhóm được giao). */
   override?: boolean;
+  /** [AUDIT] · uỷ quyền: người uỷ quyền. */
+  onBehalfOf?: string | null;
   evidence: {
     id: string;
     note: string;
@@ -71,6 +73,7 @@ export function buildApprovalRecord(
     at: r.at,
     actor: person(r.actor, names),
     override: r.override === true,
+    on_behalf_of: r.onBehalfOf ? person(r.onBehalfOf, names) : null,
     // `feedback` có thể trùng ý kiến của bằng chứng ⇒ người chỉ xem không nhận khi có bằng chứng kèm.
     feedback: readable || r.evidence === null ? r.feedback : null,
     evidence: r.evidence ? evidenceOf(r.evidence) : null,

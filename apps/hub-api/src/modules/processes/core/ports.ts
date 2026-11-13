@@ -85,7 +85,26 @@ export type PackDecidedEvent = {
   feedback: string | null;
   actor: string;
   evidenceId: string | null;
+  /** [AUDIT] · người quyết chỉ có quyền nhờ Group «cũng quyết» (Toàn quyền) ⇒ duyệt thay. */
+  override?: boolean;
+  /** [AUDIT] · quyết bằng uỷ quyền ⇒ người uỷ quyền (được giao thật). */
+  onBehalfOf?: string | null;
 };
+
+/** [AUDIT] · việc trên task duyệt (không phải quyết định). `key` idempotent (task × loại × lúc). */
+export type PackTaskEventKind = "claim" | "release" | "reassign" | "auto_release" | "escalate";
+export type PackTaskEventIn = {
+  tenantId: string;
+  taskId: string;
+  kind: PackTaskEventKind;
+  /** null = hệ thống (tự trả / chuyển cấp). */
+  actor: string | null;
+  /** người / Group nhận (giao lại · chuyển cấp). */
+  to: string | null;
+  reason: string | null;
+  at: string;
+};
+export type PackTaskEvent = PackTaskEventIn & { runId: string; stageKey: string; key: string };
 
 export const NOOP_LAUNCHER: StageLauncher = { kick: async () => {} };
 
@@ -150,6 +169,8 @@ export type ProcessDeps = {
   /** [AUDIT] · quyết task duyệt của run gắn gói đi đường chung `/review-tasks/:id/decision` ⇒ báo gói ghi lịch sử (HĐ:
    *  `stage_decided`) SAU COMMIT, cùng hàm ghi của thẻ gói. Vắng ⇒ không gói nào nghe. */
   packDecided?: (e: PackDecidedEvent) => Promise<void>;
+  /** [AUDIT] · nhận / trả / giao lại / tự trả / chuyển cấp task duyệt của run gắn gói (đã COMMIT) ⇒ gói ghi lịch sử, theo lô. */
+  packTaskEvents?: (packKey: string, rows: PackTaskEvent[]) => Promise<void>;
 };
 
 /**

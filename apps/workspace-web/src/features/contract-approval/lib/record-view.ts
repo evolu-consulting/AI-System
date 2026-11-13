@@ -48,7 +48,7 @@ export function recordLines(
       stage: stageName(i.stage, steps),
       action: i.action,
       who: e?.by_user.display_name ?? i.actor.display_name ?? "",
-      onBehalf: e?.on_behalf_of?.display_name ?? null,
+      onBehalf: e?.on_behalf_of?.display_name ?? i.on_behalf_of?.display_name ?? null,
       override: i.override === true,
       at: i.at,
       note: readable ? (e?.note ?? i.feedback) : r.can_read_evidence ? i.feedback : null,

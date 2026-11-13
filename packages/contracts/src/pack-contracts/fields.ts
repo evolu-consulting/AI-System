@@ -85,6 +85,8 @@ export const CONTRACT_EVENT_TYPES = [
   "approval_override",
   /** CR-125 · quyết định của người duyệt trên một bước (`data: {stage, action: approve|return|reject, feedback}`). */
   "stage_decided",
+  /** [AUDIT] · việc trên bước duyệt (`data: {stage, kind: claim|release|reassign|auto_release|escalate, to?, reason?}`). */
+  "task_handled",
   /** CR-125 · ký số: gửi / đã ký / từ chối / huỷ / hết hạn / đổi nhà cung cấp. */
   "esign_sent",
   "esign_signed",

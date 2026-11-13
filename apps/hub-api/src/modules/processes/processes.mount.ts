@@ -25,6 +25,7 @@ import { type Clock, clockOf } from "./core/clock";
 import type { ProcessHandles } from "./core/handles";
 import type {
   PackDecidedEvent,
+  PackTaskEvent,
   ProcessBgDeps,
   ProcessDeps,
   ProcessStartPort,
@@ -171,6 +172,14 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     ...base,
     launcher,
     ...(packDecided ? { packDecided } : {}),
+    // [AUDIT] · nhận / trả / giao lại / tự trả / chuyển cấp ⇒ gói ghi lịch sử (`onTaskEvents[packKey]`).
+    ...(bridge
+      ? {
+          packTaskEvents: async (pack: string, rows: PackTaskEvent[]) => {
+            await bridge.onTaskEvents?.[pack]?.(rows);
+          },
+        }
+      : {}),
   };
   const d: ProcessDeps = { ...core, start: conversationStart(core) };
   registerFlowEngine(flowEngineOf(d)); // CR-127 K3 · cổng engine cho gói (có quy trình khớp? · Rút về)
