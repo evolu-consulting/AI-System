@@ -3,9 +3,7 @@ import type { OrgChartDept } from "@ai/flow-canvas/pure";
 import { Component, lazy, type ReactNode, Suspense, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-const Chart = lazy(() =>
-  import("@ai/flow-canvas/org-chart").then((m) => ({ default: m.OrgChart })),
-);
+const Chart = lazy(() => import("@ai/flow-canvas").then((m) => ({ default: m.OrgChart })));
 
 class Boundary extends Component<
   { fallback: ReactNode; children: ReactNode },

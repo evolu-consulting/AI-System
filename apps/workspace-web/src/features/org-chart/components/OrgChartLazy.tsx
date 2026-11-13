@@ -1,9 +1,9 @@
 // CR-142 · nạp sơ đồ cây bằng React.lazy (chunk riêng: xyflow không phình trang khác). Lỗi nạp ⇒ báo + «Thử lại».
-import type { OrgChartProps } from "@ai/flow-canvas/org-chart";
+import type { OrgChartProps } from "@ai/flow-canvas";
 import { Component, lazy, type ReactNode, Suspense, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-const load = () => import("@ai/flow-canvas/org-chart").then((m) => ({ default: m.OrgChart }));
+const load = () => import("@ai/flow-canvas").then((m) => ({ default: m.OrgChart }));
 
 class Boundary extends Component<
   { fallback: () => ReactNode; children: ReactNode },

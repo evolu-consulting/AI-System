@@ -5,8 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./pure": "./src/pure.ts",
-    "./org-chart": "./src/org-chart/index.ts"
+    "./pure": "./src/pure.ts"
   },
   "scripts": {
     "test": "bun test src",
