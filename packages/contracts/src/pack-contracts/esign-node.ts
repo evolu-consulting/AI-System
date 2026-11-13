@@ -138,6 +138,8 @@ export type ESignNodeOptionsOut = {
   enabled: boolean;
   /** Group của công ty để chọn người ký (kind = "group"); người cụ thể chọn từ danh sách thành viên chung của shell. */
   groups: { id: string; key: string; name: string }[];
+  /** CR-141 · nhóm «Người ký HĐ» của công ty có thành viên (người ký mặc định khi node không chọn); null ⇒ chưa đặt / nhóm trống. */
+  default_signers: { name: string; count: number } | null;
   orders: typeof ESIGN_NODE_ORDERS;
   limits: { signers_max: number; due_days_max: number; remind_hours_max: number };
 };

@@ -218,10 +218,14 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
     await o`insert into contracts.partner_settings (tenant_id, signer_group_id) values (${T1}::uuid, ${G}::uuid)
       on conflict (tenant_id) do update set signer_group_id = excluded.signer_group_id`;
     expect(await v?.(T1, st)).toEqual([]);
+    expect((await u.nodeOptions({ tenantId: T1, userId: A })).default_signers).toMatchObject({
+      count: 2,
+    });
     // nhóm trống ⇒ vẫn chặn
     const empty = (await groups(o, T1, ["e5b-rong"])).get("e5b-rong") as string;
     await o`update contracts.partner_settings set signer_group_id = ${empty}::uuid where tenant_id = ${T1}::uuid`;
     expect(await v?.(T1, st)).toHaveLength(1);
+    expect((await u.nodeOptions({ tenantId: T1, userId: A })).default_signers).toBeNull();
     await o`delete from contracts.partner_settings where tenant_id = ${T1}::uuid`;
   });
 

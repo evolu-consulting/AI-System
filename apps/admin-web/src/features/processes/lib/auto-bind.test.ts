@@ -30,6 +30,6 @@ describe("autoBindNode", () => {
   it("không có nguồn ⇒ giữ nguyên + câu nghiệp vụ kèm cách khắc phục", () => {
     const r = autoBindNode(ESIGN_NODE, nodeToPatches(ESIGN_NODE), mapSources([], [], byKey), "vi");
     expect(r.patches[0]?.tool?.args.contract_id).toBeUndefined();
-    expect(r.asks).toEqual(["Bước «Ký số» cần «Hợp đồng» — thêm bước Tải hợp đồng trước."]);
+    expect(r.asks).toEqual(["Bước «Ký hợp đồng» cần «Hợp đồng» — thêm bước Tải hợp đồng trước."]);
   });
 });

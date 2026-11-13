@@ -137,7 +137,8 @@ export function EsignPanel(p: NodePanelProps) {
   // lỗi theo ô: kiểm trực tiếp (`node-config/check`) hoặc lỗi lưu của server (`stages.<i>.executor.args.<khoá>`)
   const issue = (f: string) => {
     const own = esignConfigIssues(cfg).find((x) => x.field === f); // CEO-review #2 · luật chung, hiện ngay tại ô
-    if (own) return t(`${K}err.${own.code}`);
+    if (own && !(f === "company_signers" && opts.data?.default_signers))
+      return t(`${K}err.${own.code}`);
     const i = check.data?.issues.find((x) => x.field === f);
     if (i) return t(`${K}err.${i.code}`, { defaultValue: i.code });
     const saved = p.errors[`stages.${p.index}.executor.args.${f}`];
@@ -269,7 +270,7 @@ export function EsignPanel(p: NodePanelProps) {
         choices={choices}
         max={o.limits.signers_max}
         readOnly={readOnly}
-        placeholder={dflt}
+        placeholder={o.default_signers ? t(`${K}defaultSigners`, o.default_signers) : dflt}
         error={issue("company_signers")}
         onToggle={toggle}
       />{" "}

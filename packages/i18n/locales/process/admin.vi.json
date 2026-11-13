@@ -1574,6 +1574,7 @@
       "no": "Không",
       "due": "Hạn (ngày)",
       "remind": "Nhắc mỗi (giờ)",
+      "defaultSigners": "Để trống: dùng nhóm Người ký HĐ ({{name}}, {{count}} người)",
       "signers": "Người ký phía công ty (tối đa {{max}})",
       "group": "Phòng ban",
       "packOff": "Công ty chưa bật Ký số — bật ở Công ty › Ứng dụng.",

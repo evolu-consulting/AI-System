@@ -1574,6 +1574,7 @@
       "no": "No",
       "due": "Due (days)",
       "remind": "Remind every (hours)",
+      "defaultSigners": "Leave empty: uses the Contract signers group ({{name}}, {{count}} people)",
       "signers": "Company signers (max {{max}})",
       "group": "Department",
       "packOff": "This company has not turned on E-sign — turn it on under Company › Apps.",

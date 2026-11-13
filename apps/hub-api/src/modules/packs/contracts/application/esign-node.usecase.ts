@@ -53,17 +53,31 @@ export function esignNodeApi(d: EsignNodeDeps) {
     if (r.unknown.length > 0) return [{ field: "company_signers", code: "SIGNER_NOT_IN_TENANT" }];
     return r.userIds.length === 0 ? [{ field: "company_signers", code: "NO_SIGNER" }] : [];
   };
+  /** Nhóm «Người ký HĐ» đã đặt và còn ≥ 1 thành viên dùng được ⇒ {tên, số người}; ngược lại null. */
+  const defaultGroup = async (
+    tenantId: string,
+    groups: readonly { id: string; name: string }[],
+  ): Promise<{ name: string; count: number } | null> => {
+    const g = await d.signerGroup?.(tenantId);
+    if (!g) return null;
+    const r = await d.directory?.resolve(tenantId, [{ kind: "group", id: g }]);
+    const count = r?.userIds.length ?? 0;
+    return count > 0 ? { name: groups.find((x) => x.id === g)?.name ?? "", count } : null;
+  };
   return {
     /** Lựa chọn cho panel node: nhà cung cấp ĐANG BẬT + Group (một lượt, không theo hàng). */
     async nodeOptions(who: PackWho): Promise<ESignNodeOptionsOut> {
       const s = await d.settings(who);
+      const groups = (await d.directory?.groups(who.tenantId)) ?? [];
+      const dg = await defaultGroup(who.tenantId, groups);
       return {
         providers: s.providers
           .filter((p) => p.available)
           .map(({ key, label, kind, legal }) => ({ key, label, kind, legal })),
         default_provider: s.default_provider,
         enabled: s.enabled,
-        groups: (await d.directory?.groups(who.tenantId)) ?? [],
+        groups,
+        default_signers: dg,
         orders: ESIGN_NODE_ORDERS,
         limits: {
           signers_max: ESIGN_NODE_SIGNERS_MAX,
@@ -81,10 +95,7 @@ export function esignNodeApi(d: EsignNodeDeps) {
 
     /** CR-141 · công ty đã đặt nhóm «Người ký HĐ» có ≥ 1 thành viên ⇒ node không chọn người ký vẫn lưu được (người ký mặc định = nhóm). */
     async hasDefaultSigners(tenantId: string): Promise<boolean> {
-      const g = await d.signerGroup?.(tenantId);
-      if (!g) return false;
-      const r = await d.directory?.resolve(tenantId, [{ kind: "group", id: g }]);
-      return (r?.userIds.length ?? 0) > 0;
+      return (await defaultGroup(tenantId, [])) !== null;
     },
 
     /** Người ký công ty của node: mục `user`/`group` ⇒ danh sách user (thứ tự khai, bỏ trùng, ≤ trần); mục lạ / rỗng ⇒ ném. */
