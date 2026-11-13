@@ -1,11 +1,20 @@
 # audit-trail — «Ai duyệt làm gì đều phải có record»
 
-## Delta
-- ADDED · Quyết bước duyệt HĐ qua đường chung `POST /review-tasks/:id/decision` (Việc của tôi, chuông) ⇒ HĐ có dòng `stage_decided` (Hồ sơ duyệt) — cùng hàm `recordDecision` của thẻ HĐ. [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-decided.int.test.ts]
-- MODIFIED · Duyệt hợp lệ thì GIỮ: bước kế khởi động lỗi SAU khi quyết đã COMMIT ⇒ không trả lỗi cho người bấm (không báo như duyệt lỗi); lượt ⇒ «Cần xử lý» `start_failed` có mã lỗi (thẻ riêng: «không khởi động được — <lý do>», Thử lại / Huỷ). Kiểm điều kiện của chính quyết định (quyền, bằng chứng, đua) vẫn TRƯỚC khi đóng task ⇒ lỗi ⇒ không quyết. [test: apps/hub-api/src/modules/processes/gates/decision-after-commit.int.test.ts — đỏ khi bỏ sửa (0/2), xanh sau sửa]
-- ADDED · Đường bù lịch sử: vòng quét duyệt HĐ (`sweepApprovalsOnce`) so task đã quyết ở engine (`decidedTasksOf`, 1 câu) với `stage_decided` của lượt (1 câu) ⇒ ghi bù bằng cùng `recordDecision`, giữ lúc quyết thật; idempotent theo task. Lượt còn mở hoặc đổi trong 1 ngày, mới đổi trước; hub trả task mới quyết trước (≤ 500); chèn MỘT câu theo tập (`jsonb_to_recordset`, cùng câu với thẻ). [test: approval-decided.int.test.ts ca «đường bù»]
-- ADDED · Hồ sơ duyệt (JSON `override`, PDF, web) ghi rõ «duyệt thay người được giao» khi Toàn quyền quyết. [test: approval-decided.int.test.ts ca 3]
-- MODIFIED · Hồ sơ trống: «Chưa ai duyệt — đang chờ <người> duyệt bước «<bước>»» (biết bước đang mở), không thì «Chưa ai duyệt bước nào.»
+## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
+
+### MODIFIED sht/duyet-ky-so.md
+#### Yêu cầu: Mọi quyết định duyệt HĐ có một dòng lịch sử
+Quyết bước duyệt HĐ qua thẻ HĐ hoặc qua «Việc của tôi»/chuông đều ghi `stage_decided` (Hồ sơ duyệt) bằng cùng một hàm; thiếu dòng thì vòng quét ghi bù đúng lúc quyết, idempotent theo task, chèn một câu theo tập. Hồ sơ ghi rõ «duyệt thay người được giao» khi Toàn quyền quyết. Hồ sơ trống ghi «Chưa ai duyệt — đang chờ <người> duyệt bước «<bước>»».
+- Kịch bản: khi người được giao quyết qua Việc của tôi thì HĐ có đúng một dòng lịch sử [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-decided.int.test.ts » người được giao]
+- Kịch bản: khi run của công ty khác gửi tới thì không ghi gì [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-decided.int.test.ts » chéo tenant]
+- Kịch bản: khi Toàn quyền duyệt thay thì hồ sơ có cờ duyệt thay [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-decided.int.test.ts » hồ sơ: có approval_override]
+- Kịch bản: khi engine đã quyết mà HĐ thiếu dòng thì vòng quét ghi bù đúng lúc quyết [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-decided.int.test.ts » đường bù]
+
+#### Yêu cầu: Duyệt hợp lệ thì giữ, lỗi bước sau hiện riêng
+Điều kiện của chính quyết định (quyền, bằng chứng, đua) kiểm trước khi đóng task — lỗi thì không quyết. Bước kế khởi động lỗi sau khi quyết đã commit ⇒ không trả lỗi cho người bấm; lượt sang «Cần xử lý» (start_failed, có lý do, Thử lại / Huỷ).
+- Kịch bản: khi kick bước kế ném lỗi sau khi quyết thì task vẫn đóng và lượt vào «Cần xử lý» [test: apps/hub-api/src/modules/processes/gates/decision-after-commit.int.test.ts » Đạt qua đường chung]
+- Kịch bản: khi quyết từ thẻ gói thì không báo gói hai lần và không ném [test: apps/hub-api/src/modules/processes/gates/decision-after-commit.int.test.ts » quyết từ thẻ gói]
 
 ## Bảng đường thay đổi HĐ / bước duyệt
 | Đường | Ghi event? | Thiếu / đã sửa |
