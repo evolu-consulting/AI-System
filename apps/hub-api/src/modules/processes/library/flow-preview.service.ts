@@ -4,9 +4,11 @@ import { APP_MANIFESTS } from "@ai/contracts/app-manifest";
 import type { ProcessStageDef } from "@ai/contracts/hub-admin";
 import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
+import { withPackScope } from "@ai/db/pack-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import type { FactValue } from "../domain/if/if.rules";
+import { ESIGN_NODE } from "../domain/preview/flow-preview.rules";
 import { type Scenario, scenariosOf } from "../domain/preview/flow-preview.scenarios";
 import {
   type Decision,
@@ -16,7 +18,7 @@ import {
   walkFlow,
 } from "../domain/preview/flow-preview.walk";
 import { bindGroupKeys, groupKeysOf } from "../triggers/group-keys.rules";
-import { flowRowOf, groupIdsByKeyOf, loadWorld } from "./flow-preview.repo";
+import { esignOnOf, flowRowOf, groupIdsByKeyOf, loadWorld } from "./flow-preview.repo";
 import { tenantOf } from "./slot-assign.repo";
 
 const EVENTS = new Map(
@@ -72,9 +74,19 @@ export class FlowPreviewService {
   async #load(u: AuthUser, tid: string, b: PreviewRequest) {
     if (u.role !== "platform_admin") throw appError("FORBIDDEN");
     const at = b.at ? new Date(b.at) : new Date();
-    return withHubScope(this.db, { kind: "system" }, (tx) => loadInput(tx, tid, b, at), {
+    const r = await withHubScope(this.db, { kind: "system" }, (tx) => loadInput(tx, tid, b, at), {
       accessMode: "read only", // Chạy thử không ghi gì
     });
+    // CR-138b: chỉ khi quy trình có bước Ký số mới hỏi công ty đã bật ký số chưa (đọc bảng gói bằng role gói).
+    if (r.input.stages.some((s) => s.node === ESIGN_NODE)) {
+      const esignOn = await withPackScope(
+        this.db,
+        { packKey: "contracts", tenantId: tid, userId: null },
+        (tx) => esignOnOf(tx, tid),
+      );
+      r.input.world = { ...r.input.world, esignOn };
+    }
+    return r;
   }
 }
 
