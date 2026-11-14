@@ -403,6 +403,8 @@ c2aa8df875ac123b7842105a8e1ec443374a781654858ee5ca4285ee802eedf8  e2e/contracts-
 6deb3cd0d6bc430d65e2069043d0e342e587e86ff7f95cdf482c4ef2f92be071  e2e/contracts-web/cr125-s4-card.cw.ts
 cbda35727ed2c39a1afd182de9d0c900d30682880415ee8fc9cba6f4e5e144ec  e2e/contracts-web/cr153-kinds-always.cw.ts
 c5178e5c78a1a19ad341168328485d573e94372385ff06468764e84886c59502  e2e/contracts-web/cr154-lock-attachments.cw.ts
+303261c6b04694ec7e33de078169178ab1a7cfb03a280042d50593e86d12bd3d  e2e/contracts-web/cr157-manual-fallback.cw.ts
+e39ed5c290ad3c4583ba783de5d191cf3523aabf61cfcc0a2125e899de1e5800  e2e/contracts-web/cr158-tenant-favicon.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 d351d4edda7e3772462619c8cbec6e9daa497718dff44acad1d117afc4998028  e2e/contracts-web/dataset-contract.ts
 0b445d3aeeb94128fe9107461082b07a0b2807b30dfa0c8930eb762e44068d85  e2e/contracts-web/dataset-list.ts
@@ -425,7 +427,7 @@ e3becf19b1f0a60264817812894bfb6ef3d0cafdc389416126d6790c1aba0a80  e2e/contracts-
 3455a2cd40c45199bc0e4d3f196c6b309aed98b19bc5aef769ce99f05acaeec3  e2e/contracts-web/gap-a2-source-ask.cw.ts
 6e18072e54cc211e42bf44dce4a1aeaf25c467aa78e966810f50bfdc09a36027  e2e/contracts-web/gap-b-list.cw.ts
 db435fac3580d430d371664dcf8079a9a6d8a27edb7844adbe5c8af20041b9fb  e2e/contracts-web/gap-d2.cw.ts
-111001b8cee27b6846e5dda2311603823603376e2825d9ebf2ab164fe69502b3  e2e/contracts-web/gapa1-manage.cw.ts
+6b3794e0451eb9b6f60fc56e9c342e895b3b98bc80ece399ea4d6e91a7c0884d  e2e/contracts-web/gapa1-manage.cw.ts
 36e7fe3ac18197bdef22b4da7ec76cf0725918565cc7ce19f32360fdfba0e96b  e2e/contracts-web/hd2-flow.cw.ts
 542bd5759aecb3160e68071af706fccfb93a069ab1660a69a2b6719beabb1103  e2e/contracts-web/hd4-deadline.cw.ts
 6dca64bfb30024cc5f652acee86b8a22d3d9e04f6de90ed4e2cd9a48fbc01c14  e2e/contracts-web/hd5-list.cw.ts
@@ -1143,7 +1145,8 @@ eae3ec629d8271beb7f8e783f49d8022f6762d1b870950f0a15830adf5fb4c0b  tests/acceptan
 97efd5dc0e8db2faff2fa8f81bfe987a4de31ed8ca6e8cde94ba4f4a7b6fd8de  tests/acceptance/NITI/attach.int.test.ts
 e73b6398a50622c51ee5b86d172cc268652a8a89438cb3c0dd43516f2946e1ae  tests/acceptance/NITI/extras-import.int.test.ts
 2c84b5bf108e3d697e1b065c7851c91ff93a9cb7399382f8e5a15776aba1aa74  tests/acceptance/NITI/filebox.int.test.ts
-c3f5fa014991fa1ef121eb4830b769358eec48bc57fcbcd5c4763593a5bc4c60  tests/acceptance/NITI/onboard.int.test.ts
+e5af00bae8bffb82850a5d23a4429046c2da33a7ab2f340a4fcca7e609855294  tests/acceptance/NITI/fixtures/nitigroup-23.yaml
+323dc2d9b850bb0474e4dcde5a940ac98ab39da4a3fb23e0178a2030db3e3775  tests/acceptance/NITI/onboard.int.test.ts
 ebcdcff6ff5bb761bf3d7f61185a05eae48be46b655be45c6990f01a246c57aa  tests/acceptance/NITI/owner-import.int.test.ts
 b7b3389dca5280f997b23fc7c57b296bb36829786b425293f35dbf9f64b595d7  tests/acceptance/P-a/_support/modules.ts
 f02cbfab4b6852c77b4481ee29949d975f85d90dbc0f392d0511d19f9ca88f80  tests/acceptance/P-a/_support/pa.ts

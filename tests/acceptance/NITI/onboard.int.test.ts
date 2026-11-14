@@ -1,4 +1,4 @@
-// niti-onboard · onboarding tenant NitiGroup (deploy/tenants/nitigroup.yaml) trên DB thật (role admin_api, RLS bật): tạo tenant +
+// niti-onboard · onboarding tenant NitiGroup (fixtures/nitigroup-23.yaml, bản chép 23 phòng + import) trên DB thật (role admin_api, RLS bật): tạo tenant +
 // hồ sơ + 23 phòng ban (cây dưới Phòng Giám đốc, vi/en) + gói contracts (entitlement, Group vai, trợ lý `assistant`) ·
 // chạy lại không ghi gì · RLS (tenant khác không thấy) · marker importer (ORG_REBIND/ORG_TAKEN) · importer `--into-tenant`
 // (I1, nguồn GIẢ): chỉ org đã gắn vào NitiGroup, org khác không tạo tenant, tiền khớp, chạy lại 0 hàng · gán phòng ban sau import.
@@ -18,7 +18,7 @@ import { fakeReader, fixtureSnapshot, ORG_A, ORG_B, SOURCE } from "../I1/_suppor
 import { type CtxI1, startI1 } from "../I1/_support/i1";
 import { ADMIN_API_URL } from "../N5/_support/n5";
 
-const YAML = readFileSync(join(import.meta.dir, "../../../deploy/tenants/nitigroup.yaml"), "utf8");
+const YAML = readFileSync(join(import.meta.dir, "fixtures/nitigroup-23.yaml"), "utf8");
 const specOf = (o: { mgmtOrg?: string } = {}, edit?: (raw: string) => string): OnboardSpec => {
   const p = parseSpec(edit ? edit(YAML) : YAML, o);
   if (!p.ok) throw new Error(JSON.stringify(p.issues));
