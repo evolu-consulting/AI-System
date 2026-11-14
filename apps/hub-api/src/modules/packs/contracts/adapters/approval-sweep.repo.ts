@@ -72,14 +72,16 @@ export function sweepRepo(tx: Tx, tid: string): SweepRepo {
         flow as (select id, run_id from contracts.contracts
           where tenant_id = ${tid}::uuid and status in ('draft', 'processing')
           order by updated_at, id limit ${limit}::int),
+        -- CR-155 · mốc hạn đọc = approvals.updated_at của lượt đọc (đặt lúc xếp hàng, đặt lại lúc worker nhận) — sửa HĐ khi đang đọc
+        -- (đổi contracts.updated_at) không kéo dài hạn.
         stale as (select c.id, c.run_id,
-            coalesce(c.updated_at < now() - make_interval(secs => ${tmo}::int), false) as timed_out
+            coalesce(coalesce(q.updated_at, c.updated_at) < now() - make_interval(secs => ${tmo}::int), false) as timed_out
           from contracts.contracts c
           left join contracts.approvals q on q.id = c.run_id and q.tenant_id = c.tenant_id and q.status = 'extracting'
           where c.tenant_id = ${tid}::uuid and c.status = 'draft' and c.extract_state = 'reading'
             and (case when q.queued_at is null then c.updated_at < now() - make_interval(mins => ${staleMinutes}::int)
               else q.queued_at < now() - make_interval(mins => ${queuedMinutes}::int) end
-              or c.updated_at < now() - make_interval(secs => ${tmo}::int))
+              or coalesce(q.updated_at, c.updated_at) < now() - make_interval(secs => ${tmo}::int))
           order by c.updated_at, c.id limit ${limit}::int for update of c skip locked),
         -- CR-127 K1b · HĐ vẫn draft: chỉ extract_state reading → failed (không đổi status ⇒ không qua cổng; UPDATE theo tập).
         -- CR-155 · đọc quá hạn đọc (AI không có / treo) ⇒ TIMEOUT (lý do người dùng thấy); còn lại giữ STALE.

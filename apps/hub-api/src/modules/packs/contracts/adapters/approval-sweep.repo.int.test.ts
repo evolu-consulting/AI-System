@@ -26,7 +26,7 @@ beforeAll(async () => {
   sql = openOwner(2);
   [T] = (await tenants(sql, 1, 871)) as [string];
   [A, B] = (await users(sql, T, 2, { from: 871 })) as [string, string];
-  ids = await contracts(sql, T, 11, { from: 871, createdBy: A, status: "draft" });
+  ids = await contracts(sql, T, 12, { from: 871, createdBy: A, status: "draft" });
   db = createDb(urls().hubApi, { max: 2 });
 }, 60_000);
 afterAll(async () => {
@@ -51,9 +51,9 @@ async function seed(
 ) {
   const id = ids[i] as string;
   const aid = crypto.randomUUID();
-  await sql`insert into contracts.approvals (id, tenant_id, contract_id, status, started_by, queued_at)
+  await sql`insert into contracts.approvals (id, tenant_id, contract_id, status, started_by, queued_at, updated_at)
     values (${aid}, ${T}, ${id}, ${o.aStatus}, ${o.by ?? A},
-      ${o.queuedAgo === null ? null : mins(o.queuedAgo)})`;
+      ${o.queuedAgo === null ? null : mins(o.queuedAgo)}, ${mins(o.ago)})`;
   // CR-127: trạng thái cũ ⇒ draft + extract_state (status không đổi ⇒ không qua cổng)
   const es =
     o.status === "extracting" ? "reading" : o.status === "extract_failed" ? "failed" : "ready";
@@ -146,8 +146,21 @@ describe("CR-155 · hạn đọc AI: `reading` quá hạn ⇒ failed/TIMEOUT, k�
       aStatus: "extracting",
       queuedAgo: 1,
     });
+    // sửa HĐ khi đang xếp hàng (contracts.updated_at mới) KHÔNG đặt lại hạn: mốc là lượt đọc (approvals.updated_at)
+    const qEdited = await seed(11, {
+      status: "extracting",
+      ago: 4,
+      aStatus: "extracting",
+      queuedAgo: 4,
+    });
+    await sql`update contracts.contracts set updated_at = now() where id = ${qEdited.id}`;
     const s = await sweepT();
-    expect(s.closed).toBeGreaterThanOrEqual(2); // gồm cả HĐ reading cũ của ca trước
+    expect(await row(qEdited.id)).toEqual({
+      status: "draft",
+      extract_state: "failed",
+      error: "TIMEOUT",
+    });
+    expect(s.closed).toBeGreaterThanOrEqual(3); // gồm cả HĐ reading cũ của ca trước
     expect(await row(qOld.id)).toEqual({
       status: "draft",
       extract_state: "failed",

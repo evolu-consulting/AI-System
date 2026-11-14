@@ -21,7 +21,7 @@ export type SweepDeps = {
   staleMinutes?: number;
   /** Hạn job còn xếp hàng (mặc định 6 giờ — entry Redis mất). */
   queuedMinutes?: number;
-  /** CR-155 · hạn đọc của AI, giây (mặc định `EXTRACT_READ_TIMEOUT_S` = 180). */
+  /** CR-155 · hạn đọc của AI, giây (mặc định `EXTRACT_READ_TIMEOUT_S` = 180; mount nâng lên theo `readTimeoutSecondsFor`). */
   readTimeoutS?: number;
   /** Trần HĐ đọc/đóng mỗi tenant mỗi lượt. */
   limit?: number;
@@ -60,6 +60,12 @@ export const STALE_MINUTES = 15;
 export const QUEUED_STALE_MINUTES = 360;
 /** CR-155 · AI đọc HĐ quá 3 phút (không có AI / treo) ⇒ coi như đọc lỗi `TIMEOUT`, giữ tệp, người dùng tự nhập. */
 export const EXTRACT_READ_TIMEOUT_S = 180;
+
+/** CR-155 · hạn đọc thực áp = max(cấu hình, trần một lượt AI + 30 s) — lượt AI hợp lệ (≤ `CONTRACTS_EXTRACT_TIMEOUT_S`) không bị đánh TIMEOUT.
+ *  Mặc định 300 + 30 = 330 s. Vẫn áp cho job còn xếp hàng (bản không có worker/AI: người dùng chờ như nhau). */
+export function readTimeoutSecondsFor(configuredS: number, agentTimeoutS: number): number {
+  return Math.max(configuredS, agentTimeoutS + 30);
+}
 
 /** Hạn STALE của job đang chạy: không dưới 15' và luôn quá `claimIdleMs` + 5' (job dài chưa bị instance khác nhận lại thì
  *  chưa bị coi là mất — review B #7, `CONTRACTS_EXTRACT_TIMEOUT_S` tới 3600 s). */

@@ -43,6 +43,7 @@ import type { ApprovalFlowTxRepos } from "./application/approval-flow.usecase";
 import {
   EXTRACT_READ_TIMEOUT_S,
   QUEUED_STALE_MINUTES,
+  readTimeoutSecondsFor,
   type SweepDeps,
   staleMinutesFor,
   startApprovalSweeper,
@@ -361,8 +362,11 @@ function startSweep(
     tenants: flow.tenants,
     staleMinutes: staleMinutesFor(claimIdleMs()),
     queuedMinutes: envInt("CONTRACTS_QUEUE_STALE_MIN", QUEUED_STALE_MINUTES),
-    // CR-155 · AI đọc quá hạn (mặc định 180 s) ⇒ `failed` mã `TIMEOUT`; kết quả AI về muộn bị bỏ (CAS `reading`).
-    readTimeoutS: envInt("CONTRACTS_EXTRACT_READ_TIMEOUT_S", EXTRACT_READ_TIMEOUT_S),
+    // CR-155 · AI đọc quá hạn (mặc định max(180, trần AI + 30) = 330 s) ⇒ `failed` mã `TIMEOUT`; kết quả AI về muộn bị bỏ (CAS `reading`).
+    readTimeoutS: readTimeoutSecondsFor(
+      envInt("CONTRACTS_EXTRACT_READ_TIMEOUT_S", EXTRACT_READ_TIMEOUT_S),
+      agentTimeoutMs() / 1000,
+    ),
     ...(eng ? { engine: { port: () => flow.engine?.port } } : {}),
   };
   if (d.onHandles) {
