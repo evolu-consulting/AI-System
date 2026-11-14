@@ -10,27 +10,15 @@ const pdf = (name: string) => ({
 test("bài có 3 bình luận: mặc định 2 mới nhất, «Xem thêm 1 bình luận» mở phần cũ", async ({
   page,
 }) => {
+  // mock ở trong bộ nhớ ⇒ không reload; dùng bài p1 của seed (3 bình luận: «Anh Hưng» cũ nhất, rồi 2 bình luận mới hơn)
   await page.goto("/community");
-  await page.getByTestId("composer").getByRole("button", { name: "Cần bán", exact: true }).click();
-  await page.getByLabel("Hàng hoá", { exact: true }).fill("Bài nhiều bình luận");
-  await page.getByLabel("Số lượng").fill("1 thùng");
-  await page.getByRole("button", { name: "Đăng bài" }).click();
-  const posted = page.getByTestId("post").filter({ hasText: "Bài nhiều bình luận" }).first();
-  const card = page.locator(`[data-post-id="${await posted.getAttribute("data-post-id")}"]`);
+  const card = page.locator('[data-post-id="p1"]');
   await card.getByRole("button", { name: /Bình luận/ }).click();
-  const box = card.getByRole("combobox", { name: "Viết bình luận" });
-  for (const txt of ["một", "hai", "ba"]) {
-    await box.fill(`bl ${txt}`);
-    await card.getByRole("button", { name: "Gửi bình luận" }).click();
-    await expect(card.getByText(`bl ${txt}`)).toBeVisible();
-  }
-  await page.reload();
-  await card.getByRole("button", { name: /Bình luận/ }).click();
-  await expect(card.getByText("bl hai")).toBeVisible();
-  await expect(card.getByText("bl ba")).toBeVisible();
-  await expect(card.getByText("bl một")).toHaveCount(0);
+  await expect(card.getByText("Gói 1 năm còn ưu đãi")).toBeVisible();
+  await expect(card.getByText("gửi báo giá qua đây trong hôm nay")).toBeVisible();
+  await expect(card.getByText("Bên mình cần thêm chữ ký HSM")).toHaveCount(0);
   await card.getByRole("button", { name: "Xem thêm 1 bình luận" }).click();
-  await expect(card.getByText("bl một")).toBeVisible();
+  await expect(card.getByText("Bên mình cần thêm chữ ký HSM")).toBeVisible();
   await expect(card.getByTestId("comments-more")).toHaveCount(0);
 });
 

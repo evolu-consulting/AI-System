@@ -18,6 +18,7 @@ const SHT_PATHS = [
   "/contracts/approvals",
   "/contracts/partners",
   "/contracts/products",
+  "/contracts/org", // CR-139 · Sơ đồ tổ chức
 ];
 
 test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
@@ -48,7 +49,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
     });
   }
 
-  test("chủ quản có quyền (Admin): nhóm SHT + đúng 7 link TRONG app (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
+  test("chủ quản có quyền (Admin): nhóm SHT + đúng 8 link TRONG app (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
     page,
   }) => {
     await page.goto("/community");
@@ -57,19 +58,13 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
     await expect(g).toBeVisible();
     await expect(g).toContainText(SHT);
     const links = g.getByRole("link");
-    await expect(links).toHaveCount(7);
+    await expect(links).toHaveCount(SHT_PATHS.length);
     await expect(g.locator(".ext")).toHaveCount(0); // không còn biểu tượng liên kết ngoài ↗
     const hrefs = await links.evaluateAll((els) => els.map((e) => e.getAttribute("href")));
     expect(hrefs).toEqual(SHT_PATHS);
-    expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute("target")))).toEqual([
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-      null,
-    ]);
+    expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute("target")))).toEqual(
+      SHT_PATHS.map(() => null),
+    );
   });
 });
 

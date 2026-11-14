@@ -56,6 +56,17 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
     >`select id::text from admin.users where tenant_id = ${tenantId}::uuid and username = ${U.employee}`;
     return u?.id as string;
   });
+  // CR-146b: lưu node Ký kiểm «Ký qua» đang bật của chính công ty (PROVIDER_NOT_ENABLED) ⇒ bật «Ký thử» TRƯỚC khi dựng quy trình
+  const enableSelfsign = (on: boolean) =>
+    withOwner(
+      (
+        sql,
+      ) => sql`insert into contracts.approval_settings (tenant_id, esign_enabled, esign_default_provider, updated_by)
+        select t.id, ${on}, 'selfsign', u.id from admin.tenants t
+        join admin.users u on u.tenant_id = t.id and u.username = ${U.employee} where t.key = ${E.tenantKey}
+        on conflict (tenant_id) do update set esign_enabled = ${on}, esign_default_provider = 'selfsign'`,
+    );
+  await enableSelfsign(true);
   // CR-127 Z7: quy trình công ty dựng từ SƠ ĐỒ TRỐNG qua API + áp dụng (không còn gán mẫu)
   await createCompanyFlow(need("JA_HUB_URL"), platform.token, tenantId, {
     name: FLOW,
@@ -95,6 +106,7 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
   // — nhân viên gửi HĐ; kế toán duyệt; HĐ tới node Ký số —
   const emp = await ctxPage(browser);
   await loginCw(emp, E, U.employee);
+  await enableSelfsign(false); // tải HĐ mẫu .md khi ký số đang tắt (bật lại ngay sau khi tải, trước khi gửi duyệt)
   const id = await uploadAndOpen(emp, E, Date.now().toString(36), 50_000_000);
   // Ký số chỉ nhận PDF (ESIGN_UNSUPPORTED_FILE): HĐ mẫu của stack là .md ⇒ đổi loại tệp của HĐ này (Ký thử không đọc nội dung tệp).
   await withOwner(
@@ -140,7 +152,8 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
   const dp = dir.getByTestId("esign-panel");
   await expect(dp.getByTestId("esign-status")).toContainText(`Đang chờ ${signer} ký`);
   // Người có quyền ghi (không phải người ký): "Cập nhật trạng thái ký" (9a11b235f) + nút "…" (Huỷ ký); không Ký ngay.
-  await expect(dp.getByRole("button")).toHaveCount(2);
+  // thẻ nay còn khối «Tải lên bản đã ký» (chọn tệp + «Tải lên») ⇒ không đếm cứng số nút; kiểm đúng nút cần có/không có
+  await expect(dp.getByRole("button", { name: "Tải lên", exact: true })).toBeDisabled();
   await expect(dp.getByRole("button", { name: "Cập nhật trạng thái ký" })).toHaveCount(1);
   await expect(dp.getByRole("button", { name: "Ký ngay" })).toHaveCount(0);
   await dp.screenshot({ path: testInfo.outputPath("x2-2-nguoi-khac.png") });

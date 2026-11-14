@@ -17,15 +17,18 @@ test("CR145-P1 · chủ quản: ô soạn mặc định «Thông báo»; nhắc 
   const host = await openAs(browser, "host");
   const p = host.page;
   await p.goto("/community");
-  await p.locator(".ctype.note").click();
-  await expect(p.locator(".ctype.note")).toHaveAttribute("aria-pressed", "true");
+  await p.locator(".ctype.note").click(); // ô soạn thu gọn: bấm nút loại «Thông báo» ⇒ mở ô soạn
+  // ô soạn đã mở: nút loại nằm trong .seg, loại đang chọn có class «on» (không còn .ctype / aria-pressed)
+  await expect(p.getByTestId("composer").locator('.seg button[data-type="note"]')).toHaveClass(
+    "on",
+  );
   await p
     .getByRole("textbox", { name: /nội dung|Nội dung/ })
     .first()
     .fill(TITLE);
   await p.getByRole("button", { name: "Nhắc tên" }).click(); // CR-147c: hộp chọn người
   await p.getByRole("searchbox", { name: "Tìm theo tên" }).fill("Tân Phát");
-  await p.getByTestId("mention-option").first().click();
+  await p.getByTestId("mention-option").filter({ hasText: ORG.supplier }).first().click();
   await p.getByTestId("mention-done").click();
   await expect(p.getByTestId("mention-chip")).toHaveCount(1);
   await p.getByRole("button", { name: /^Đăng/ }).click();

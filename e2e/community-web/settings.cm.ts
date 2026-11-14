@@ -35,7 +35,10 @@ test("Admin: hai nhóm trong cùng một hộp thoại (Hợp đồng & giao d�
   ).toHaveText("Bảng tin");
   for (const old of ["lang", "brand", "notify"])
     await expect(page.getByTestId(`settings-nav-${old}`)).toHaveCount(0);
-  for (const sec of ["co", "rep", "biz", "scout", "flow", "feed"]) {
+  // CR-138 Q6: người không phải chủ sở hữu (persona mock «Chỉ xem») chỉ thấy «Quy trình duyệt»; các mục co/rep/biz/scout/sign ẩn.
+  for (const hidden of ["co", "rep", "biz", "scout", "sign"])
+    await expect(page.getByTestId(`settings-nav-${hidden}`)).toHaveCount(0);
+  for (const sec of ["flow", "feed"]) {
     await page.getByTestId(`settings-nav-${sec}`).click();
     expect(new URL(page.url()).pathname).toBe("/community");
   }

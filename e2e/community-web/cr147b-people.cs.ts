@@ -16,6 +16,7 @@ const img = { name: "anh.png", mimeType: "image/png", buffer: PNG };
 test.describe.configure({ mode: "serial" });
 
 test("P1 · đổi + xoá ảnh đại diện ở hồ sơ cá nhân", async ({ browser }) => {
+  // PersonAvatar: chữ cái đầu = <span role="img">, ảnh = <img>; cùng data-testid «me-avatar»
   const { page } = await openAs(browser, "host");
   await page.goto("/community/me");
   await expect(page.getByTestId("me-page")).toBeVisible();
@@ -23,13 +24,13 @@ test("P1 · đổi + xoá ảnh đại diện ở hồ sơ cá nhân", async ({ 
     .getByTestId("me-avatar-edit-remove")
     .click({ timeout: 1_000 })
     .catch(() => undefined);
-  await expect(page.getByTestId("me-avatar-initials")).toBeVisible();
+  await expect(page.locator('span[data-testid="me-avatar"]')).toBeVisible();
   await page.getByTestId("me-avatar-edit-file").setInputFiles(img);
-  await expect(page.getByTestId("me-avatar-img")).toBeVisible();
+  await expect(page.locator('img[data-testid="me-avatar"]')).toBeVisible();
   await page.reload();
-  await expect(page.getByTestId("me-avatar-img")).toBeVisible();
+  await expect(page.locator('img[data-testid="me-avatar"]')).toBeVisible();
   await page.getByTestId("me-avatar-edit-remove").click();
-  await expect(page.getByTestId("me-avatar-initials")).toBeVisible();
+  await expect(page.locator('span[data-testid="me-avatar"]')).toBeVisible();
 });
 
 test("P2 · ảnh bìa cá nhân: đổi, tải lại còn, tệp sai định dạng bị từ chối", async ({
