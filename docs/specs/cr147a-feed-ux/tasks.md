@@ -28,7 +28,7 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED community/hien-thi.md
 
 #### Yêu cầu: Màn quản trị «Yêu cầu tham gia» và «Báo cáo vi phạm» không lặp tên tab bằng tiêu đề
-- Kịch bản: khi quản trị mở hai màn này thì không có dòng tiêu đề lặp tên tab [test: thủ công — soát UI; chưa có e2e, xem Việc còn lại]
+- Kịch bản: khi quản trị mở hai màn này thì không có dòng tiêu đề lặp tên tab [test: thủ công — chưa viết]
 
 #### Yêu cầu: Nút thu gọn ô đăng thẳng hàng với nút loại bài
 - Kịch bản: khi ô đăng mở thì nút thu gọn cùng hàng, cùng cao, căn giữa dọc [test: e2e/community-web/cr147-feed.cm.ts » ô đăng mở: nút thu gọn cùng hàng, cùng chiều cao và căn giữa dọc với nút loại bài]
