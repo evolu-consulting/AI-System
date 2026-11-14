@@ -80,6 +80,10 @@ export type UserPorts = {
   setJobTitle(tenantId: string, userId: string, title: string): Promise<void>;
   /** Ghi `email<TAB>mật khẩu` ngay khi sinh; vắng ⇒ không có `--pw-out`. */
   savePassword?: (email: string, password: string) => Promise<void>;
+  /** Thử ghi nơi chứa mật khẩu (lỗi ⇒ ném); vắng khi không có `--pw-out`. */
+  probeSink?: () => Promise<void>;
+  /** Chỉ đọc: khoá add-on đã đăng ký chưa. */
+  addonKnown(featureKey: string): Promise<boolean>;
   /** Cấp entitlement add-on (idempotent); true ⇒ vừa cấp/cấp lại; khoá chưa đăng ký ⇒ ném. */
   grantAddon(tenantId: string, featureKey: string): Promise<boolean>;
 };

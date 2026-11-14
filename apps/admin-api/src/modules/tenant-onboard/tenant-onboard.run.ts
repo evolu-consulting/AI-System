@@ -23,6 +23,7 @@ export function onboardPorts(
   db: Db,
   actorId: string,
   savePassword?: (email: string, password: string) => Promise<void>,
+  probeSink?: () => Promise<void>,
 ): OnboardPorts {
   const scope = { kind: "platform" } as const;
   const call = { ctx: { db }, scope, actor: { userId: actorId } };
@@ -47,6 +48,9 @@ export function onboardPorts(
     }));
   return {
     ...(savePassword ? { savePassword } : {}),
+    ...(probeSink ? { probeSink } : {}),
+    addonKnown: async (key) =>
+      (await withScope(db, scope, (tx) => featureIdByKey(tx, key))) !== null,
     readUsers: async (key, emails) => {
       await asUser();
       return emails.length === 0 ? [] : withScope(db, scope, (tx) => readUsers(tx, key, emails));
@@ -99,4 +103,5 @@ export const onboardTenant = (
   s: OnboardSpec,
   actorId: string,
   savePassword?: (email: string, password: string) => Promise<void>,
-): Promise<OnboardReport> => run(onboardPorts(db, actorId, savePassword), s, actorId);
+  probeSink?: () => Promise<void>,
+): Promise<OnboardReport> => run(onboardPorts(db, actorId, savePassword, probeSink), s, actorId);

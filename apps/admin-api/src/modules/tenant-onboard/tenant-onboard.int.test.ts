@@ -10,6 +10,7 @@ import { cloneMigratedTestDb, migrateFullTest } from "@ai/db/test-db";
 import postgres from "postgres";
 import { isAppError } from "../../lib/errors";
 import { parseSpec } from "./adapters/onboard.schema";
+import { passwordFile } from "./adapters/password-file";
 import { onboardTenant } from "./tenant-onboard.run";
 
 const OWNER = process.env.TEST_DATABASE_URL;
@@ -176,5 +177,27 @@ describe("CR-159 · onboarding users + add-on", () => {
       (e: unknown) => e,
     );
     expect(JSON.stringify((err as { details?: unknown }).details)).toContain("ADDON_UNKNOWN");
+  });
+
+  test("thư mục của --pw-out không ghi được ⇒ PW_OUT_NOT_WRITABLE, chưa ghi gì vào DB", async () => {
+    const pw = passwordFile(join(tmpdir(), "cr159-khong-co-thu-muc", "pw.tsv"));
+    const err = await onboardTenant(db, spec({ key: "cr159-w" }), PA, pw.save, pw.probe).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(JSON.stringify((err as { details?: unknown }).details)).toContain("PW_OUT_NOT_WRITABLE");
+    expect(await owner`select 1 from admin.tenants where key = 'cr159-w'`).toHaveLength(0);
+  });
+
+  test("add-on sai ⇒ ADDON_UNKNOWN trước khi tạo gì (không có tenant, không có user, không có mật khẩu)", async () => {
+    const s = { ...spec({ key: "cr159-z" }), addons: ["khong-co-addon"] };
+    const n = (await lines()).length;
+    const err = await onboardTenant(db, s, PA, sink).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(JSON.stringify((err as { details?: unknown }).details)).toContain("ADDON_UNKNOWN");
+    expect(await owner`select 1 from admin.tenants where key = 'cr159-z'`).toHaveLength(0);
+    expect(await lines()).toHaveLength(n);
   });
 });

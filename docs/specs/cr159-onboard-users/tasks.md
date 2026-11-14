@@ -19,6 +19,9 @@ CLI `tenant-onboard` thêm `users:` (email, tên, chức vụ, vai `admin|member
 - Add-on chưa đăng ký ⇒ `VALIDATION_ERROR ADDON_UNKNOWN` (bước này sau bước người dùng; chạy lại an toàn).
 - `nitigroup.yaml` bỏ `import`; test cũ đọc file này đã chỉnh theo (5 phòng). `tests/acceptance/NITI/onboard.int.test.ts` (đã khoá) còn kỳ vọng 23 phòng + import ⇒ QC cần cập nhật.
 
+- Trước khi ghi DB, `precheck` (chỉ đọc) kiểm: phòng ban hợp lệ, mọi add-on đã đăng ký (`ADDON_UNKNOWN`), có `--pw-out` (`PW_OUT_REQUIRED`) và thư mục của nó ghi được (`PW_OUT_NOT_WRITABLE`, thử tạo rồi xoá một file).
+- Người quản trị phải đứng ĐẦU `users:` (tạo trước). Mất mật khẩu tạm ⇒ đặt lại trên trang quản trị, không chạy lại CLI.
+
 ## Việc còn lại
 - Tắt email theo tenant (evolu, preschool): KHÔNG có công tắc theo tenant (`HUB_NOTIFY_MODE` chung toàn hệ thống) ⇒ chưa khai `notify_email`; cần CR riêng. Tới khi có: giữ mail chung ở chế độ tắt hoặc chỉ bật sau khi xác nhận domain.
 - Đổi mật khẩu lần đầu: ĐÃ có (`must_change_password=true` mọi user tạo qua users.service).

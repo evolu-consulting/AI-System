@@ -3,6 +3,8 @@
 # Chạy (idempotent): bun --env-file=.env.local apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts \
 #   --file deploy/tenants/evolu.yaml --actor <uuid platform admin> --pw-out <file mật khẩu tạm, quyền 600>
 # `users:` mới ⇒ bắt buộc --pw-out; người đã có chỉ cập nhật tên/chức vụ/vai (không đổi mật khẩu). `admin` = quản trị công ty.
+# Quản trị công ty phải đứng ĐẦU `users:` (tạo trước, tránh lỗi "quản trị cuối cùng" khi đổi vai).
+# Mất mật khẩu tạm: đặt lại trên trang quản trị (Người dùng ⇒ Đặt lại mật khẩu); không chạy lại CLI để lấy.
 key: evolu
 name: Evolu
 timezone: Asia/Ho_Chi_Minh

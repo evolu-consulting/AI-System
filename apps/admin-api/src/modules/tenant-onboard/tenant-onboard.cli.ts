@@ -5,11 +5,12 @@
 // CR-159: `users:` có người MỚI ⇒ bắt buộc `--pw-out <file>` (quyền 600, `email<TAB>mật khẩu`, chỉ người mới; không bao giờ in ra
 // stdout/stderr/báo cáo); thiếu cờ ⇒ lỗi PW_OUT_REQUIRED trước khi ghi DB. `--dry-run`: chỉ đọc + kiểm file (không cần DB/actor).
 // Env: ADMIN_API_DATABASE_URL (admin_api, NOBYPASSRLS). stdout = báo cáo JSON; exit 0 xong · 1 lỗi (stderr chỉ mã + lý do).
-import { appendFile, chmod, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import { createDb } from "@ai/db";
 import { AppError } from "../../lib/errors";
 import { parseSpec } from "./adapters/onboard.schema";
+import { passwordFile } from "./adapters/password-file";
 import { deptRows, type OnboardSpec, planUsers } from "./domain/onboard.rules";
 import { onboardTenant } from "./tenant-onboard.run";
 
@@ -18,15 +19,6 @@ const fail = (error: string, extra: Record<string, unknown> = {}): never => {
   process.exit(1);
 };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Ghi mật khẩu từng người ngay khi sinh (append, quyền 600); không có `--pw-out` ⇒ undefined (use case dừng nếu cần). */
-function passwordSink(path: string | undefined) {
-  if (!path) return undefined;
-  return async (email: string, password: string): Promise<void> => {
-    await appendFile(path, `${email}\t${password}\n`, { mode: 0o600 });
-    await chmod(path, 0o600);
-  };
-}
 
 function dryRun(spec: OnboardSpec): void {
   const { rows, issues } = deptRows(spec);
@@ -66,7 +58,8 @@ async function main(): Promise<void> {
   const url = process.env.ADMIN_API_DATABASE_URL ?? fail("MISSING_ADMIN_API_DATABASE_URL");
   const db = createDb(url, { max: 2 });
   try {
-    const report = await onboardTenant(db, p.spec, v.actor as string, passwordSink(v["pw-out"]));
+    const pw = v["pw-out"] ? passwordFile(v["pw-out"]) : undefined;
+    const report = await onboardTenant(db, p.spec, v.actor as string, pw?.save, pw?.probe);
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } catch (err) {
     if (err instanceof AppError) fail(err.code, { details: err.details });

@@ -164,6 +164,9 @@ async function usersStep(p: OnboardPorts, tid: string, plan: UserPlan) {
 async function precheck(p: OnboardPorts, s: OnboardSpec): Promise<UserPlan> {
   const { issues } = deptRows(s);
   if (issues.length > 0) throw p.fail("VALIDATION_ERROR", { reason: "DEPARTMENTS", issues });
+  for (const k of s.addons)
+    if (!(await p.addonKnown(k)))
+      throw p.fail("VALIDATION_ERROR", { reason: "ADDON_UNKNOWN", addon: k });
   const now = await p.readUsers(
     s.key,
     s.users.map((u) => u.email),
@@ -171,6 +174,13 @@ async function precheck(p: OnboardPorts, s: OnboardSpec): Promise<UserPlan> {
   const plan = planUsers(s.users, now);
   if (plan.create.length > 0 && !p.savePassword)
     throw p.fail("VALIDATION_ERROR", { reason: "PW_OUT_REQUIRED", new_users: plan.create.length });
+  if (plan.create.length > 0 && p.probeSink) {
+    try {
+      await p.probeSink();
+    } catch {
+      throw p.fail("VALIDATION_ERROR", { reason: "PW_OUT_NOT_WRITABLE" });
+    }
+  }
   return plan;
 }
 
