@@ -84,6 +84,19 @@ export const isConflict = (e: unknown): boolean =>
   typeof e === "object" && e !== null && (e as { status?: unknown }).status === 409;
 
 /** Gộp bài của tôi theo id (MỘT lần gọi cho cả danh sách, không gọi theo từng bài). */
+/** CR-151 · gom mọi trang «bài của tôi» (mỗi trang một lời gọi, theo `nextOffset`) — chỉ để đối chiếu trạng thái duyệt với bài trong bảng tin. */
+export async function loadAllMine(
+  page: (offset: number) => Promise<{ items: ModerationItem[]; nextOffset: number | null }>,
+): Promise<ModerationItem[]> {
+  const all: ModerationItem[] = [];
+  for (let o: number | null = 0; o !== null; ) {
+    const r = await page(o);
+    all.push(...r.items);
+    o = r.nextOffset;
+  }
+  return all;
+}
+
 export const byPostId = (items: readonly ModerationItem[]): ReadonlyMap<string, ModerationItem> =>
   new Map(items.map((i) => [i.id, i]));
 

@@ -2,10 +2,10 @@
 // parse (400) → service (tenant = JWT). Bắt đầu mới ⇒ 201; gửi lại cùng `request_id` ⇒ 200 + `created: false`.
 
 import { UuidSchema } from "@ai/contracts/common";
-import { StartProcessRequestSchema } from "@ai/contracts/hub-admin";
+import { MyRequestsQuerySchema, StartProcessRequestSchema } from "@ai/contracts/hub-admin";
 import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
-import { parseJson } from "../../../lib/http";
+import { parseJson, parseQuery } from "../../../lib/http";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { ManualRequestService } from "./manual-request.service";
@@ -18,7 +18,9 @@ export function manualStartRoutes(d: ProcessDeps): Hono<AuthVars> {
   const mine = new MyRequestsService(d);
   const r = new Hono<AuthVars>();
   r.get("/processes/startable", async (c) => c.json({ items: await svc.startable(c.var.user) }));
-  r.get("/processes/requests/mine", async (c) => c.json(await mine.list(c.var.user))); // trước `:run_id`
+  r.get("/processes/requests/mine", async (c) =>
+    c.json(await mine.list(c.var.user, parseQuery(c, MyRequestsQuerySchema))),
+  ); // trước `:run_id`
   r.get("/processes/requests/:run_id", async (c) => {
     const id = c.req.param("run_id");
     if (!UuidSchema.safeParse(id).success)

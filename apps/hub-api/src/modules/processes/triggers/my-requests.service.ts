@@ -1,4 +1,4 @@
-// CR-126 · cr126-requests-mine · `GET /processes/requests/mine` — yêu cầu (lượt bắt đầu bằng phiếu) MÌNH đã gửi, mới nhất trước, ≤ 50.
+// CR-126 · cr126-requests-mine · `GET /processes/requests/mine` — yêu cầu (lượt bắt đầu bằng phiếu) MÌNH đã gửi, mới nhất trước, phân trang `limit`(≤ 50)/`offset` (CR-151).
 // MỘT câu SQL cố định (tên người chờ + kết quả âm gần nhất là subquery theo hàng, không vòng lặp); scope user (RLS tenant) +
 // `started_by = me` (index `process_runs_started_by_idx`). Lượt con và lượt chạy thử bị loại.
 
@@ -9,7 +9,6 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { ProcessDeps } from "../core/ports";
 
-export const MY_REQUESTS_LIMIT = 50;
 const ACTIVE = new Set([
   "running",
   "waiting_review",
@@ -38,7 +37,8 @@ type Row = {
 export class MyRequestsService {
   constructor(private readonly d: ProcessDeps) {}
 
-  async list(u: AuthUser): Promise<MyRequestsResponse> {
+  /** MỘT câu SQL mỗi trang: kéo limit+1 dòng để biết còn trang sau. */
+  async list(u: AuthUser, page: { limit: number; offset: number }): Promise<MyRequestsResponse> {
     const rows = await withHubScope(
       this.d.db,
       { kind: "user", tenantId: u.tenantId, userId: u.userId },
@@ -58,9 +58,10 @@ export class MyRequestsService {
           from hub.process_runs r
           where r.tenant_id = ${u.tenantId}::uuid and r.started_by = ${u.userId}::uuid and r.parent_run_id is null
             and not r.is_test and r.snapshot -> 'stages' -> 0 ->> 'node' = ${START_FORM_NODE_KEY}
-          order by r.started_at desc, r.id desc limit ${MY_REQUESTS_LIMIT}`),
+          order by r.started_at desc, r.id desc limit ${page.limit + 1} offset ${page.offset}`),
     );
-    const items: MyRequestItem[] = rows.map((r) => {
+    const more = rows.length > page.limit;
+    const items: MyRequestItem[] = rows.slice(0, page.limit).map((r) => {
       const word = requestWord(r.status, r.last_negative);
       return {
         run_id: r.id,
@@ -70,6 +71,6 @@ export class MyRequestsService {
         waiting_for: word === "waiting" ? r.waiting_for : null,
       };
     });
-    return { items };
+    return { items, next_offset: more ? page.offset + page.limit : null };
   }
 }

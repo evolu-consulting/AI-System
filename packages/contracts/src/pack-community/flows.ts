@@ -25,8 +25,18 @@ export const ModerationItemSchema = z.strictObject({
   feedback: Txt(4000).nullable(),
 });
 export type ModerationItem = z.infer<typeof ModerationItemSchema>;
+/** CR-151 · phân trang 3 danh sách người duyệt + «bài của tôi»: `limit` ≤ FLOW_PAGE_MAX (mặc định 50), `offset`; `nextOffset` null ⇒ hết. */
+export const FLOW_PAGE_MAX = 100;
+export const FlowPageQuerySchema = z.strictObject({
+  limit: z.coerce.number().int().min(1).max(FLOW_PAGE_MAX).default(50),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+  pending: z.enum(["1"]).optional(),
+});
+export type FlowPageQuery = z.infer<typeof FlowPageQuerySchema>;
+const NextOffset = z.number().int().min(0).nullable();
 export const ModerationListSchema = z.strictObject({
-  items: z.array(ModerationItemSchema).max(100),
+  items: z.array(ModerationItemSchema).max(FLOW_PAGE_MAX),
+  nextOffset: NextOffset,
 });
 export type ModerationList = z.infer<typeof ModerationListSchema>;
 
@@ -62,7 +72,11 @@ export const JoinRequestSchema = z.strictObject({
   feedback: Txt(4000).nullable(),
 });
 export type JoinRequest = z.infer<typeof JoinRequestSchema>;
-export const JoinRequestListSchema = z.strictObject({ items: z.array(JoinRequestSchema).max(100) });
+export const JoinRequestListSchema = z.strictObject({
+  items: z.array(JoinRequestSchema).max(FLOW_PAGE_MAX),
+  nextOffset: NextOffset,
+});
+export type JoinRequestList = z.infer<typeof JoinRequestListSchema>;
 
 export const ReportInputSchema = z.strictObject({ reason: Txt(1000).min(1) });
 export const ReportSchema = z.strictObject({
@@ -81,7 +95,11 @@ export const ReportSchema = z.strictObject({
   decidedBy: Txt(200).nullable(),
 });
 export type Report = z.infer<typeof ReportSchema>;
-export const ReportListSchema = z.strictObject({ items: z.array(ReportSchema).max(100) });
+export const ReportListSchema = z.strictObject({
+  items: z.array(ReportSchema).max(FLOW_PAGE_MAX),
+  nextOffset: NextOffset,
+});
+export type ReportList = z.infer<typeof ReportListSchema>;
 
 /** Màn nào của 3 luồng người xem này được dùng (nav shell): tính ở server theo vai + khe đã bật, UI không đoán. */
 export const FlowNavSchema = z.strictObject({

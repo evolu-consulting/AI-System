@@ -9,16 +9,19 @@ import {
   ReviewTaskListResponseSchema,
 } from "@ai/contracts/chat";
 import { api } from "@ai/web-kit/http";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { processKeys } from "../shared/keys";
 
 const REVIEW_TASKS_LIMIT = 50;
 const INBOX_LIMIT = 50;
 
-async function fetchReviewTasks(signal?: AbortSignal): Promise<ReviewTaskListResponse> {
+async function fetchReviewTasks(
+  cursor: string | undefined,
+  signal?: AbortSignal,
+): Promise<ReviewTaskListResponse> {
   return ReviewTaskListResponseSchema.parse(
     await api<unknown>("/me/review-tasks", {
-      query: { status: "open", limit: REVIEW_TASKS_LIMIT },
+      query: { status: "open", limit: REVIEW_TASKS_LIMIT, cursor },
       signal,
     }),
   );
@@ -26,9 +29,16 @@ async function fetchReviewTasks(signal?: AbortSignal): Promise<ReviewTaskListRes
 
 /** FD8 · "Chờ tôi kiểm": task mở của tôi. Realtime `review_task.*` invalidate key này (shared, B0). */
 export function useReviewTasks(enabled = true) {
-  return useQuery({
+  // CR-151: tải dần theo `next_cursor` (trang 50); `data` giữ dạng phẳng {items, open_count} cho nơi dùng cũ.
+  return useInfiniteQuery({
     queryKey: processKeys.tasks,
-    queryFn: ({ signal }) => fetchReviewTasks(signal),
+    queryFn: ({ pageParam, signal }) => fetchReviewTasks(pageParam, signal),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
+    select: (d) => ({
+      items: d.pages.flatMap((p) => p.items),
+      open_count: d.pages[0]?.open_count ?? 0,
+    }),
     enabled,
     staleTime: 10_000,
   });

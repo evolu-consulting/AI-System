@@ -876,6 +876,7 @@
       "open": "Tạo",
       "mineTitle": "Đã gửi của tôi",
       "mineEmpty": "Bạn chưa gửi yêu cầu nào.",
+      "mineMore": "Xem thêm",
       "mineWaitingFor": "Đang chờ {{who}}",
       "mine": {
         "waiting": "Đang chờ duyệt",

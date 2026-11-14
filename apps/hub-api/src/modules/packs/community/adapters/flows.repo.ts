@@ -65,10 +65,10 @@ export async function modRows(tx: Tx, ids: readonly string[]): Promise<ModPostRo
 }
 
 /** Hàng đợi duyệt (chủ quản): bài đang chờ, cũ trước. */
-export async function modQueue(tx: Tx, limit: number): Promise<ModPostRow[]> {
+export async function modQueue(tx: Tx, limit: number, offset = 0): Promise<ModPostRow[]> {
   return [
     ...(await tx.execute<ModPostRow>(sql`select ${MOD_COLS} from community.posts p
-      where p.moderation = 'pending' order by p.mod_at asc nulls last, p.id limit ${limit}::int`)),
+      where p.moderation = 'pending' order by p.mod_at asc nulls last, p.id limit ${limit}::int offset ${offset}::int`)),
   ];
 }
 
@@ -89,11 +89,16 @@ export async function pendingCounts(
 }
 
 /** Bài của chính người xem đang/đã qua duyệt (mới trước). */
-export async function myModeration(tx: Tx, userId: string, limit: number): Promise<ModPostRow[]> {
+export async function myModeration(
+  tx: Tx,
+  userId: string,
+  limit: number,
+  offset = 0,
+): Promise<ModPostRow[]> {
   return [
     ...(await tx.execute<ModPostRow>(sql`select ${MOD_COLS} from community.posts p
       where p.author_user_id = ${userId}::uuid and p.moderation <> 'none'
-      order by p.created_at desc, p.id desc limit ${limit}::int`)),
+      order by p.created_at desc, p.id desc limit ${limit}::int offset ${offset}::int`)),
   ];
 }
 
@@ -154,11 +159,16 @@ export async function joinRows(tx: Tx, ids: readonly string[]): Promise<JoinRow[
 }
 
 /** Danh sách (RLS: chủ quản mọi yêu cầu; đối tác yêu cầu của công ty mình). `pending` ⇒ chỉ đang chờ. */
-export async function joinList(tx: Tx, pendingOnly: boolean, limit: number): Promise<JoinRow[]> {
+export async function joinList(
+  tx: Tx,
+  pendingOnly: boolean,
+  limit: number,
+  offset = 0,
+): Promise<JoinRow[]> {
   return [
     ...(await tx.execute<JoinRow>(sql`select ${JOIN_COLS} from community.join_requests j
       where (not ${pendingOnly}::boolean or j.status = 'pending')
-      order by j.created_at desc, j.id desc limit ${limit}::int`)),
+      order by j.created_at desc, j.id desc limit ${limit}::int offset ${offset}::int`)),
   ];
 }
 
@@ -223,11 +233,12 @@ export async function reportList(
   tx: Tx,
   pendingOnly: boolean,
   limit: number,
+  offset = 0,
 ): Promise<ReportRow[]> {
   return [
     ...(await tx.execute<ReportRow>(sql`select ${REPORT_COLS} from community.reports r
       where (not ${pendingOnly}::boolean or r.status = 'pending')
-      order by r.created_at desc, r.id desc limit ${limit}::int`)),
+      order by r.created_at desc, r.id desc limit ${limit}::int offset ${offset}::int`)),
   ];
 }
 

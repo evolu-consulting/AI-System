@@ -7,7 +7,7 @@ import type {
 } from "@ai/contracts/community";
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "../../application/ctx";
-import { byPostId, hasOpenModeration } from "../../domain/flows";
+import { byPostId, hasOpenModeration, loadAllMine } from "../../domain/flows";
 import { hasReputation } from "../../domain/profile-sections";
 import { t } from "../../i18n";
 import { Composer } from "../Composer";
@@ -63,8 +63,8 @@ export function PostsSection({ own, orgId }: { own: boolean; orgId: string }) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại khi dữ liệu đổi (rev)
   useEffect(() => {
     if (!own) return;
-    api.flows.myModeration().then(
-      (r) => setMods(byPostId(r.items)),
+    loadAllMine((o) => api.flows.myModeration(o)).then(
+      (r) => setMods(byPostId(r)),
       () => setMods(undefined),
     );
   }, [api, own, rev]);
@@ -73,8 +73,8 @@ export function PostsSection({ own, orgId }: { own: boolean; orgId: string }) {
   useEffect(() => {
     if (!own || !open) return;
     const id = setInterval(() => {
-      api.flows.myModeration().then(
-        (r) => setMods(byPostId(r.items)),
+      loadAllMine((o) => api.flows.myModeration(o)).then(
+        (r) => setMods(byPostId(r)),
         () => undefined,
       );
     }, 15_000);

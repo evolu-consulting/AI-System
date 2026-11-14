@@ -491,6 +491,7 @@
       "common": {
         "loadError": "Không tải được danh sách. Kiểm tra kết nối mạng rồi bấm Tải lại.",
         "retry": "Tải lại",
+        "more": "Xem thêm",
         "cancel": "Hủy",
         "reasonNeeded": "Hãy nhập lý do để người nhận biết cần làm gì tiếp.",
         "submitError": "Chưa gửi được. Kiểm tra kết nối rồi thử lại; nội dung bạn nhập vẫn còn nguyên.",

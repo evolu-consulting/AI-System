@@ -876,6 +876,7 @@
       "open": "Create",
       "mineTitle": "Sent by me",
       "mineEmpty": "You have not sent any request yet.",
+      "mineMore": "Load more",
       "mineWaitingFor": "Waiting for {{who}}",
       "mine": {
         "waiting": "Waiting for approval",

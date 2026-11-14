@@ -61,7 +61,13 @@ export type MyRequestItem = {
   /** Tên người/nhóm đang chờ (chỉ khi `word = waiting`); null ⇒ chưa rõ. */
   waiting_for: string | null;
 };
-export type MyRequestsResponse = { items: MyRequestItem[] };
+/** CR-151 · `GET /processes/requests/mine?limit&offset`: trang ≤ MY_REQUESTS_PAGE_MAX (mặc định 50); `next_offset` null ⇒ hết. */
+export const MY_REQUESTS_PAGE_MAX = 50;
+export const MyRequestsQuerySchema = z.strictObject({
+  limit: z.coerce.number().int().min(1).max(MY_REQUESTS_PAGE_MAX).default(MY_REQUESTS_PAGE_MAX),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+});
+export type MyRequestsResponse = { items: MyRequestItem[]; next_offset: number | null };
 
 /** Đọc lại cấu hình từ jsonb stage (bản lưu cũ/hỏng ⇒ null: flow không bắt đầu bằng phiếu được). */
 export function startFormOf(stage: unknown): StartFormConfig | null {

@@ -18,6 +18,7 @@ import type {
   FlowNav,
   JoinRequest,
   JoinRequestInput,
+  JoinRequestList,
   Mention,
   MentionablePerson,
   ModerationItem,
@@ -34,6 +35,7 @@ import type {
   QuotePreview,
   QuoteSaved,
   Report,
+  ReportList,
   UpdatePostInput,
 } from "@ai/contracts/community";
 import type { MyPeopleProfile, PeopleResponse } from "@ai/contracts/people";
@@ -68,16 +70,17 @@ export interface RouterPort {
 /** CR-120 · 3 luồng Community (`/pack/community/{moderation,join-requests,reports,posts/:id/report,flows/nav}`). Mỗi danh sách = MỘT yêu cầu (server giới hạn 100). */
 export interface FlowsApi {
   nav(): Promise<FlowNav>;
-  modQueue(): Promise<ModerationList>;
-  myModeration(): Promise<ModerationList>;
+  /** CR-151 · mọi danh sách phân trang theo `offset` (trang ≤ 50); `nextOffset` null ⇒ hết. */
+  modQueue(offset?: number): Promise<ModerationList>;
+  myModeration(offset?: number): Promise<ModerationList>;
   decideModeration(id: string, input: FlowDecideInput): Promise<ModerationItem>;
   createJoin(input: JoinRequestInput): Promise<JoinRequest>;
-  listJoins(pendingOnly: boolean): Promise<JoinRequest[]>;
+  listJoins(pendingOnly: boolean, offset?: number): Promise<JoinRequestList>;
   decideJoin(id: string, input: FlowDecideInput): Promise<JoinRequest>;
   /** Đối tác SHT để gắn khi duyệt yêu cầu tham gia (`GET /pack/contracts/partners/search`, sổ đối tác — gồm cả đối tác chưa có HĐ); lỗi/gói tắt ⇒ chỉ còn «Tạo đối tác mới». */
   listParties(q?: string): Promise<{ party: string; name: string }[]>;
   reportPost(postId: string, reason: string): Promise<Report>;
-  listReports(pendingOnly: boolean): Promise<Report[]>;
+  listReports(pendingOnly: boolean, offset?: number): Promise<ReportList>;
   decideReport(id: string, input: FlowDecideInput): Promise<Report>;
 }
 

@@ -22,8 +22,11 @@ export const requestKeys = {
 
 export const fetchStartable = (signal?: AbortSignal) =>
   api<StartableResponse>("/processes/startable", { signal });
-export const fetchMyRequests = (signal?: AbortSignal) =>
-  api<MyRequestsResponse>("/processes/requests/mine", { signal });
+export const fetchMyRequests = (offset = 0, signal?: AbortSignal) =>
+  api<MyRequestsResponse>("/processes/requests/mine", {
+    query: offset > 0 ? { offset } : undefined,
+    signal,
+  });
 export const startRequest = (body: StartProcessRequest) =>
   api<StartProcessResponse>("/processes/start", { method: "POST", body });
 export const fetchRequest = (id: string, signal?: AbortSignal) =>

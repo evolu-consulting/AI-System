@@ -491,6 +491,7 @@
       "common": {
         "loadError": "Could not load the list. Check your connection, then press Reload.",
         "retry": "Reload",
+        "more": "Load more",
         "cancel": "Cancel",
         "reasonNeeded": "Enter a reason so the recipient knows what to do next.",
         "submitError": "Not sent yet. Check your connection and try again; what you typed is kept.",
