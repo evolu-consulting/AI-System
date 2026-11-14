@@ -56,6 +56,9 @@ export const BizTabSchema = z.enum(["all", ...PRODUCT_GROUPS]);
 export const BizListQuerySchema = z.strictObject({
   group: z.enum(PRODUCT_GROUPS).optional(),
   q: z.string().max(100).optional(),
+  /** CR-151: có `limit` ⇒ trang (≤ 100) + `total`; không có ⇒ cả danh sách (Tổng quan đề xuất). */
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
 });
 export type BizListQuery = z.infer<typeof BizListQuerySchema>;
 
@@ -96,7 +99,12 @@ export type BizProductRow = {
   sold_3m: number;
   business: BizScore;
 };
-export type BizListOut = { items: BizProductRow[]; counts: Record<"all" | ProductGroup, number> };
+export type BizListOut = {
+  items: BizProductRow[];
+  counts: Record<"all" | ProductGroup, number>;
+  /** Chế độ trang: số SP của nhóm đang xem (sau tìm kiếm). */
+  total?: number;
+};
 
 export type BizLotOut = {
   id: string;

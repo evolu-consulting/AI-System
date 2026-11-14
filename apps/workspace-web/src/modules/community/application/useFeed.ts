@@ -93,7 +93,8 @@ export function usePartners(enabled = true): PartnerOrg[] {
   const { api } = useApp();
   const [partners, setPartners] = useState<PartnerOrg[]>([]);
   useEffect(() => {
-    if (enabled) api.listPartners().then(setPartners, () => undefined);
+    // CR-151: cột bên chỉ hiện 50 công ty đầu; danh sách đầy đủ ở hồ sơ › Đối tác (Xem thêm).
+    if (enabled) api.listPartners({ limit: 50, offset: 0 }).then(setPartners, () => undefined);
   }, [api, enabled]);
   return partners;
 }

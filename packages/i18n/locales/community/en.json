@@ -91,6 +91,7 @@
         "areaAll": "Area: all",
         "author": "Posted by",
         "authorAll": "Posted by: all",
+        "authorSearch": "Search company",
         "host": "Host",
         "clear": "Clear filters"
       },
@@ -352,7 +353,8 @@
         "colCats": "Product groups",
         "colRep": "Reputation",
         "empty": "No partners yet.",
-        "left": "left"
+        "left": "left",
+        "more": "Show more"
       },
       "rep": {
         "good": "Good",

@@ -41,3 +41,16 @@ export const PartnerReputationSchema = z.strictObject({
   score: z.number().nullable(),
 });
 export type PartnerReputation = z.infer<typeof PartnerReputationSchema>;
+
+/** CR-151 · `GET /partners?q&limit&offset` — trang đối tác (≤ 50/trang). Không `limit` ⇒ danh sách cũ. Bỏ qua tham số lạ (`rep`). */
+export const PARTNERS_PAGE_MAX = 50;
+export const PartnersPageQuerySchema = z.object({
+  q: z
+    .string()
+    .trim()
+    .max(100)
+    .transform((v) => (v === "" ? undefined : v))
+    .optional(),
+  limit: z.coerce.number().int().min(1).max(PARTNERS_PAGE_MAX).optional(),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+});

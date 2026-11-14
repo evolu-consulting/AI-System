@@ -97,13 +97,20 @@ export function businessUsecase(d: BizDeps) {
     /** Cấu hình rồi MỘT câu gom cho cả danh sách: số câu cố định theo số SP. */
     async list(who: PackWho, q: BizListQuery): Promise<BizListOut> {
       const [day, cfg] = await Promise.all([today(who), cfgOf(who)]);
+      const paged = q.limit !== undefined;
+      // Chế độ trang: lọc nhóm + cắt trang ở đây (cùng MỘT câu gom); đếm nhóm tính trên kết quả tìm kiếm.
       const rows = await tx(who, (r) =>
-        r.rows(day, { ...(q.group ? { group: q.group } : {}), ...(q.q ? { q: q.q } : {}) }),
+        r.rows(day, {
+          ...(q.group && !paged ? { group: q.group } : {}),
+          ...(q.q ? { q: q.q } : {}),
+        }),
       );
-      const items = rows.map((r) => rowOut(r, cfg));
-      const counts = { all: items.length, service: 0, goods: 0, referral: 0 };
-      for (const i of items) counts[i.group]++;
-      return { items, counts };
+      const all = rows.map((r) => rowOut(r, cfg));
+      const counts = { all: all.length, service: 0, goods: 0, referral: 0 };
+      for (const i of all) counts[i.group]++;
+      if (q.limit === undefined) return { items: all, counts };
+      const inGroup = q.group ? all.filter((i) => i.group === q.group) : all;
+      return { items: inGroup.slice(q.offset, q.offset + q.limit), counts, total: inGroup.length };
     },
     async detail(who: PackWho, id: string): Promise<BizDetailOut> {
       const [day, cfg] = await Promise.all([today(who), cfgOf(who)]);

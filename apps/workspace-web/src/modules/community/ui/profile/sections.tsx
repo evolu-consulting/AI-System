@@ -97,14 +97,36 @@ export function PostsSection({ own, orgId }: { own: boolean; orgId: string }) {
   );
 }
 
+const PARTNERS_PAGE = 50;
+
 /** Đối tác (chỉ chủ quản; đối tác không bao giờ render mục này). Cột uy tín chỉ khi server trả `reputation`. */
 export function PartnersSection() {
   const { api, rev } = useApp();
   const [list, setList] = useState<PartnerOrg[] | null>(null);
+  const [more, setMore] = useState(false);
+  const [busy, setBusy] = useState(false);
+  // CR-151: tải dần 50 đối tác/lần («Xem thêm»); trang đầy ⇒ coi là còn.
   // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại khi dữ liệu đổi (rev)
   useEffect(() => {
-    api.listPartners({ rep: true }).then(setList, () => setList([]));
+    api.listPartners({ rep: true, limit: PARTNERS_PAGE, offset: 0 }).then(
+      (r) => {
+        setList(r);
+        setMore(r.length === PARTNERS_PAGE);
+      },
+      () => setList([]),
+    );
   }, [api, rev]);
+  const loadMore = () => {
+    if (!list || busy) return;
+    setBusy(true);
+    api
+      .listPartners({ rep: true, limit: PARTNERS_PAGE, offset: list.length })
+      .then((r) => {
+        setList([...list, ...r]);
+        setMore(r.length === PARTNERS_PAGE);
+      })
+      .finally(() => setBusy(false));
+  };
   if (!list) return <div className="card pcard" aria-busy="true" />;
   if (list.length === 0)
     return <div className="card empty">{t("community.profile.partners.empty")}</div>;
@@ -143,6 +165,17 @@ export function PartnersSection() {
           ))}
         </tbody>
       </table>
+      {more && (
+        <button
+          type="button"
+          className="btn btn-sm"
+          data-testid="partners-more"
+          disabled={busy}
+          onClick={loadMore}
+        >
+          {t("community.profile.partners.more")}
+        </button>
+      )}
     </div>
   );
 }

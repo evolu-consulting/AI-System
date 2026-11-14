@@ -91,6 +91,7 @@
         "areaAll": "Khu vực: tất cả",
         "author": "Người đăng",
         "authorAll": "Người đăng: tất cả",
+        "authorSearch": "Tìm công ty",
         "host": "Chủ quản",
         "clear": "Xoá lọc"
       },
@@ -352,7 +353,8 @@
         "colCats": "Nhóm sản phẩm",
         "colRep": "Uy tín",
         "empty": "Chưa có đối tác.",
-        "left": "đã rời"
+        "left": "đã rời",
+        "more": "Xem thêm"
       },
       "rep": {
         "good": "Tốt",

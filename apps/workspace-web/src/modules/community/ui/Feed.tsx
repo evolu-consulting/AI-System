@@ -7,7 +7,7 @@ import type {
   ModerationItem,
   PartnerOrg,
 } from "@ai/contracts/community";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "../application/ctx";
 import { useFocusPost } from "../application/focus-post";
 import { useFeed, useFeedFilters, usePartners } from "../application/useFeed";
@@ -36,16 +36,58 @@ type Props = {
   mods?: ReadonlyMap<string, ModerationItem>;
 };
 
+/** CR-151 · chọn người đăng = công ty: ô tìm ở máy chủ (50 công ty/lần), giữ công ty đang chọn. */
+function AuthorSelect({ f }: { f: Filters }) {
+  const { api } = useApp();
+  const [qRaw, setQRaw] = useState("");
+  const [list, setList] = useState<PartnerOrg[]>([]);
+  const [picked, setPicked] = useState<PartnerOrg | null>(null);
+  useEffect(() => {
+    const h = setTimeout(() => {
+      api.listPartners({ q: qRaw.trim(), limit: 50, offset: 0 }).then(setList, () => undefined);
+    }, 250);
+    return () => clearTimeout(h);
+  }, [api, qRaw]);
+  const shown = picked && !list.some((p) => p.id === picked.id) ? [picked, ...list] : list;
+  return (
+    <>
+      <input
+        type="search"
+        className="field"
+        value={qRaw}
+        placeholder={t("community.feed.filters.authorSearch")}
+        aria-label={t("community.feed.filters.authorSearch")}
+        onChange={(e) => setQRaw(e.target.value)}
+      />
+      <select
+        className="field"
+        aria-label={t("community.feed.filters.author")}
+        value={f.author}
+        onChange={(e) => {
+          f.setAuthor(e.target.value);
+          setPicked(list.find((p) => p.id === e.target.value) ?? null);
+        }}
+      >
+        <option value="">{t("community.feed.filters.authorAll")}</option>
+        <option value="host">{t("community.feed.filters.host")}</option>
+        {shown.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+}
+
 /** Ba ô chọn nhóm hàng / khu vực / người đăng + nút Xoá lọc. */
 export function FeedFilters({
   f,
   data,
-  partners,
   className,
 }: {
   f: Filters;
   data: FeedResponse;
-  partners: PartnerOrg[];
   className: string;
 }) {
   const { isHostViewer } = useApp();
@@ -73,22 +115,7 @@ export function FeedFilters({
           <option key={c}>{c}</option>
         ))}
       </select>
-      {isHostViewer && (
-        <select
-          className="field"
-          aria-label={t("community.feed.filters.author")}
-          value={f.author}
-          onChange={(e) => f.setAuthor(e.target.value)}
-        >
-          <option value="">{t("community.feed.filters.authorAll")}</option>
-          <option value="host">{t("community.feed.filters.host")}</option>
-          {partners.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      )}
+      {isHostViewer && <AuthorSelect f={f} />}
       {hasActiveFilter({
         tab: f.tab,
         cat: f.cat,
@@ -170,10 +197,8 @@ export function FeedList({
   withFilters = true,
   mods,
 }: Props) {
-  const { isHostViewer } = useApp();
   const f = useFeedFilters(fixed);
   const { data, error, more } = useFeed(f.query);
-  const partners = usePartners(isHostViewer);
   return (
     <>
       <fieldset className="chips" aria-label={t("community.feed.filterAria")}>
@@ -189,9 +214,7 @@ export function FeedList({
           </button>
         ))}
       </fieldset>
-      {withFilters && data && (
-        <FeedFilters f={f} data={data} partners={partners} className="selrow" />
-      )}
+      {withFilters && data && <FeedFilters f={f} data={data} className="selrow" />}
       <FeedBody data={data} error={error} mods={mods} more={more} />
     </>
   );
@@ -228,9 +251,7 @@ export function FeedPage() {
         <FeedBody data={data} error={error} more={more} />
       </div>
       <FeedRail
-        filters={
-          data ? <FeedFilters f={f} data={data} partners={partners} className="rfilter" /> : null
-        }
+        filters={data ? <FeedFilters f={f} data={data} className="rfilter" /> : null}
         partners={partners}
       />
     </div>

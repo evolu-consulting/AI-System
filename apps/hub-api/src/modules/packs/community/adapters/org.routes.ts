@@ -10,6 +10,7 @@ import {
   type CommunityViewer,
   DEFAULT_BRAND_ACCENT,
   DEFAULT_SETTINGS,
+  PartnersPageQuerySchema,
   type Profile,
 } from "@ai/contracts/community";
 import { type Context, Hono } from "hono";
@@ -116,7 +117,12 @@ function viewerAndPartners(r: R, d: CommunityDeps, access: Acc): void {
   });
   r.get("/partners", async (c) => {
     const a = await access(c);
-    const list = partnerViews(a, await orgs.partners(d.uow, a));
+    const all = partnerViews(a, await orgs.partners(d.uow, a));
+    // CR-151: `?limit=` (≤ 50) ⇒ trang (tìm theo tên + offset ở máy chủ); không có ⇒ danh sách cũ.
+    const pg = parseWith(PartnersPageQuerySchema, c.req.query());
+    const needle = pg.q?.toLowerCase();
+    const named = needle ? all.filter((p) => p.name.toLowerCase().includes(needle)) : all;
+    const list = pg.limit === undefined ? all : named.slice(pg.offset, pg.offset + pg.limit);
     // CR-110 · COM-FR-37: tab Đối tác của hồ sơ — cột uy tín chỉ chủ quản (cổng HostBookReader), `?rep=1` để feed không trả phí
     return c.json(c.req.query("rep") === "1" ? await withReputation(d, a, list) : list);
   });

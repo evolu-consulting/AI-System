@@ -130,7 +130,14 @@ export function createHttpApi(): CommunityApi {
         body: { hidden },
       }),
     listPartners: (opts) =>
-      api(`${BASE}/partners`, opts?.rep ? { query: { rep: "1" } } : undefined),
+      api(`${BASE}/partners`, {
+        query: {
+          rep: opts?.rep ? "1" : undefined,
+          q: opts?.q || undefined,
+          limit: opts?.limit,
+          offset: opts?.offset,
+        },
+      }),
     getProfileMedia: (orgId, q) =>
       api(`${BASE}/profile/${enc(orgId)}/media`, { query: { cursor: q?.cursor, limit: q?.limit } }),
     listCats: () => api(`${BASE}/cats`),

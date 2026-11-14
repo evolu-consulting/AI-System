@@ -122,7 +122,13 @@ export interface CommunityApi {
   /** `POST /pack/community/posts/:id/comments/:cid/hide` — chủ quản ẩn/hiện (bài của mình). */
   hideComment(postId: string, commentId: string, hidden: boolean): Promise<CommentView>;
   /** `GET /pack/community/partners` — chủ quản: bạn bè; đối tác: [công ty mình]. */
-  listPartners(opts?: { rep?: boolean }): Promise<PartnerOrg[]>;
+  listPartners(opts?: {
+    rep?: boolean;
+    /** CR-151: có `limit` ⇒ một trang (≤ 50), tìm theo tên ở máy chủ. */
+    q?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<PartnerOrg[]>;
   /** `GET /pack/community/profile/:orgId/media` — ảnh & tệp của bài người xem được thấy (CR-110 COM-FR-37). */
   getProfileMedia(orgId: string, q?: { cursor?: string; limit?: number }): Promise<ProfileMedia>;
   /** `GET /pack/community/cats` — nhóm hàng để gắn bài / chọn người xem. */

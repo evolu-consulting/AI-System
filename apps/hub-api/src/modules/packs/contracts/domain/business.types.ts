@@ -84,8 +84,17 @@ export type BizDetailOut = {
   contracts_count: number;
 };
 
-export type BizListOut = { items: BizProductRow[]; counts: Record<"all" | ProductGroup, number> };
-export type BizListQuery = { group?: ProductGroup | undefined; q?: string | undefined };
+export type BizListOut = {
+  items: BizProductRow[];
+  counts: Record<"all" | ProductGroup, number>;
+  total?: number;
+};
+export type BizListQuery = {
+  group?: ProductGroup | undefined;
+  q?: string | undefined;
+  limit?: number | undefined;
+  offset: number;
+};
 
 export type BizConfigOut = {
   config: BizConfig;

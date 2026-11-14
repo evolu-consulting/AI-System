@@ -23,6 +23,16 @@ export const bizKeys = {
 
 export const fetchBizProducts = (signal?: AbortSignal) =>
   api<BizListOut>(`${BASE}/products`, { signal });
+/** CR-151 · một trang (tìm + lọc nhóm ở máy chủ). */
+export const fetchBizPage = (
+  o: { group?: string; q: string; offset: number; limit: number },
+  signal?: AbortSignal,
+) => {
+  const qs = new URLSearchParams({ limit: String(o.limit), offset: String(o.offset) });
+  if (o.group) qs.set("group", o.group);
+  if (o.q) qs.set("q", o.q);
+  return api<BizListOut>(`${BASE}/products?${qs}`, { signal });
+};
 export const fetchBizDetail = (id: string, signal?: AbortSignal) =>
   api<BizDetailOut>(`${BASE}/products/${id}`, { signal });
 export const fetchBizContracts = (id: string, signal?: AbortSignal) =>
