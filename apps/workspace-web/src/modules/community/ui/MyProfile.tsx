@@ -55,7 +55,7 @@ export function MyProfilePage() {
       <main className="wsmain">
         <div className="wscenter" data-testid="me-page">
           <div className="card">
-            <div style={{ position: "relative" }}>
+            <div className="imgedit-host" style={{ position: "relative" }}>
               {cover ? (
                 <img
                   src={cover}
@@ -67,17 +67,23 @@ export function MyProfilePage() {
               ) : (
                 <div className="cover pcover" data-testid="me-cover-default" />
               )}
-              <div style={{ position: "absolute", right: 12, bottom: 12 }}>
-                <ImagePick
-                  kind="cover"
-                  testId="me-cover-edit"
-                  hasImage={cover !== null}
-                  onSave={save("cover")}
-                />
-              </div>
+              <ImagePick
+                kind="cover"
+                testId="me-cover-edit"
+                hasImage={cover !== null}
+                onSave={save("cover")}
+              />
             </div>
             <div className="phero">
-              <PersonAvatar name={viewer.name} src={mine?.avatar} size={72} testId="me-avatar" />
+              <div className="imgedit-host imgedit-avatar">
+                <PersonAvatar name={viewer.name} src={mine?.avatar} size={72} testId="me-avatar" />
+                <ImagePick
+                  kind="avatar"
+                  testId="me-avatar-edit"
+                  hasImage={!!mine?.avatar}
+                  onSave={save("avatar")}
+                />
+              </div>
               <div className="pname">
                 <h1>{viewer.name}</h1>
                 <div className="sub">{t(meRoleKey(viewer.role))}</div>
@@ -91,14 +97,6 @@ export function MyProfilePage() {
                     {t("community.me.department")}: {dept}
                   </div>
                 )}
-                <div style={{ marginTop: 6 }}>
-                  <ImagePick
-                    kind="avatar"
-                    testId="me-avatar-edit"
-                    hasImage={!!mine?.avatar}
-                    onSave={save("avatar")}
-                  />
-                </div>
                 {viewer.email && (
                   <div className="sub" data-testid="me-email">
                     {t("community.me.email")}: {viewer.email}

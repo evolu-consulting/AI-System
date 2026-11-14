@@ -2,8 +2,8 @@
 // Người dùng tự đổi ảnh đại diện + ảnh bìa ở hồ sơ cá nhân `/community/me`, xoá avatar ⇒ về chữ cái đầu; chủ sở hữu đổi ảnh bìa công ty
 // ngay ở trang công ty (cùng nguồn CR-138). Ảnh là PNG 1×1 dựng tại chỗ (đúng định dạng), tệp sai định dạng bị từ chối bằng nhãn nghiệp vụ.
 //  P1 · /community/me: chưa có avatar ⇒ chữ cái đầu; chọn ảnh ⇒ hiện ảnh; tải lại trang ⇒ vẫn còn; «Xoá ảnh» ⇒ chữ cái đầu.
-//  P2 · Đổi ảnh bìa cá nhân ⇒ hiện ảnh bìa; tải lại vẫn còn; tệp .gif ⇒ «Chỉ nhận ảnh JPG, PNG hoặc WebP», không lưu.
-//  P3 · Trang công ty: chủ sở hữu thấy «Đổi ảnh bìa» ⇒ đổi ⇒ ảnh bìa công ty hiện; xoá ⇒ về nền màu chủ đạo.
+//  P2 · Đổi ảnh bìa cá nhân (icon bút, hiện khi hover) ⇒ hiện ảnh bìa; tải lại vẫn còn; tệp .gif ⇒ «Chỉ nhận ảnh JPG, PNG hoặc WebP», không lưu.
+//  P3 · Trang công ty: chủ sở hữu thấy icon bút đổi ảnh bìa ⇒ đổi ⇒ ảnh bìa công ty hiện; xoá ⇒ về nền màu chủ đạo.
 import { expect, test } from "@playwright/test";
 import { openAs } from "./_stack";
 
@@ -39,6 +39,12 @@ test("P2 · ảnh bìa cá nhân: đổi, tải lại còn, tệp sai định d�
   const { page } = await openAs(browser, "host");
   await page.goto("/community/me");
   await expect(page.getByTestId("me-cover-default")).toBeVisible();
+  // CR-156 · nút đổi ảnh là icon bút (nhãn aria), chỉ hiện khi rê chuột lên ảnh bìa
+  const change = page.getByTestId("me-cover-edit-change");
+  await expect(change).toHaveAttribute("aria-label", "Đổi ảnh bìa");
+  await expect(change).toHaveCSS("opacity", "0");
+  await page.getByTestId("me-cover-default").hover();
+  await expect(change).toHaveCSS("opacity", "1");
   await page
     .getByTestId("me-cover-edit-file")
     .setInputFiles({ name: "a.gif", mimeType: "image/gif", buffer: PNG });

@@ -160,3 +160,67 @@
   white-space: normal;
   padding: 10px 12px;
 }
+
+/* CR-156 · nút icon bút đổi ảnh: chỉ hiện khi hover/focus vùng ảnh (cover: giữa ảnh; avatar: trên avatar). Cảm ứng không có hover ⇒ luôn hiện. */
+[data-mod="community"] .imgedit-host {
+  position: relative;
+}
+[data-mod="community"] .imgedit-avatar {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+}
+[data-mod="community"] .imgpick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+[data-mod="community"] .imgedit-host:hover .imgpick,
+[data-mod="community"] .imgpick:focus-within {
+  opacity: 1;
+}
+@media (hover: none) {
+  [data-mod="community"] .imgpick {
+    opacity: 1;
+  }
+}
+[data-mod="community"] .imgpick-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--cm-line);
+  background: var(--cm-surface-2);
+  color: var(--cm-ink-3);
+  cursor: pointer;
+}
+[data-mod="community"] .imgpick-btn:hover:not(:disabled),
+[data-mod="community"] .imgpick-btn:focus-visible {
+  background: var(--cm-accent-soft);
+  color: var(--cm-accent-ink);
+}
+[data-mod="community"] .imgpick-err {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  text-align: center;
+  font-size: 12px;
+}
+[data-mod="community"] .imgedit-avatar .imgpick-err {
+  top: 100%;
+  bottom: auto;
+  width: max-content;
+  max-width: 200px;
+  right: auto;
+  text-align: left;
+}

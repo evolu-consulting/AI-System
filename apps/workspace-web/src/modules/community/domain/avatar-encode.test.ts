@@ -40,8 +40,6 @@ describe("encodeAvatar", () => {
   });
   test("không bản nào đạt ⇒ ném lỗi có lý do (để hiện + console)", async () => {
     const cv = { toBlob: (cb: (b: Blob | null) => void) => cb(null), toDataURL: () => "data:," };
-    await expect(encodeAvatar(cv, read)).rejects.toThrow(
-      /avatar-encode: .*webp:không phải data URL/,
-    );
+    await expect(encodeAvatar(cv, read)).rejects.toThrow(/avatar-encode: .*webp:not-data-url/);
   });
 });

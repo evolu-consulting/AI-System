@@ -45,7 +45,7 @@ export async function encodeAvatar(
     const url = await tryOnce(cv, readBlob, type, q, log);
     const m = url ? DATA_URL.exec(url) : null;
     if (!url || !m) {
-      log.push(`${type}:không phải data URL`);
+      log.push(`${type}:not-data-url`);
       continue;
     }
     const cand = { type: m[1] as string, size: bytesOf(m[2] as string), url };

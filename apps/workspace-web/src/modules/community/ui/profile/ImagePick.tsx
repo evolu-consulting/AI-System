@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { checkImage, type ImageKind, maxBytesOf } from "../../domain/image";
 import { t } from "../../i18n";
+import { IconEdit, IconTrash } from "../icons";
 import { avatarDataUrl, coverDataUrl } from "./image-file";
 
 export function ImagePick({
@@ -25,7 +26,7 @@ export function ImagePick({
       await fn();
     } catch (e) {
       // lỗi thật (message) ra console + hậu tố trong thông báo chung để lần sau có bằng chứng (CR-147 fix-e2e-community)
-      console.error("[community] lưu ảnh hồ sơ lỗi", e);
+      console.error("[community] save profile image failed", e);
       const why = e instanceof Error ? e.message : String(e);
       setErr(`${t("community.me.imgFail")} (${why})`);
     } finally {
@@ -41,46 +42,49 @@ export function ImagePick({
   };
   const label = kind === "avatar" ? "avatar" : "cover";
   return (
-    <span
-      className="imgpick"
-      data-testid={testId}
-      style={{ display: "inline-flex", gap: 8, alignItems: "center" }}
-    >
-      <input
-        ref={file}
-        type="file"
-        hidden
-        accept="image/png,image/jpeg,image/webp"
-        data-testid={`${testId}-file`}
-        onChange={(e) => {
-          pick(e.target.files?.[0]);
-          e.target.value = "";
-        }}
-      />
-      <button
-        type="button"
-        className="btn sm"
-        disabled={busy}
-        onClick={() => file.current?.click()}
-      >
-        {t(`community.me.${label}Change`)}
-      </button>
-      {hasImage && (
+    <>
+      <span className={`imgpick imgpick-${kind}`} data-testid={testId}>
+        <input
+          ref={file}
+          type="file"
+          hidden
+          accept="image/png,image/jpeg,image/webp"
+          data-testid={`${testId}-file`}
+          onChange={(e) => {
+            pick(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
         <button
           type="button"
-          className="btn sm quiet"
+          className="imgpick-btn"
           disabled={busy}
-          data-testid={`${testId}-remove`}
-          onClick={() => void run(() => onSave(null))}
+          aria-label={t(`community.me.${label}Change`)}
+          title={t(`community.me.${label}Change`)}
+          data-testid={`${testId}-change`}
+          onClick={() => file.current?.click()}
         >
-          {t(`community.me.${label}Remove`)}
+          <IconEdit size={16} />
         </button>
-      )}
+        {hasImage && (
+          <button
+            type="button"
+            className="imgpick-btn"
+            disabled={busy}
+            aria-label={t(`community.me.${label}Remove`)}
+            title={t(`community.me.${label}Remove`)}
+            data-testid={`${testId}-remove`}
+            onClick={() => void run(() => onSave(null))}
+          >
+            <IconTrash size={16} />
+          </button>
+        )}
+      </span>
       {err && (
-        <span role="alert" className="muted" data-testid={`${testId}-err`}>
+        <span role="alert" className="imgpick-err muted" data-testid={`${testId}-err`}>
           {err}
         </span>
       )}
-    </span>
+    </>
   );
 }
