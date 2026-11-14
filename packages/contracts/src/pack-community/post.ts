@@ -2,6 +2,7 @@
 // Quy tắc hiển thị: `docs/current/community/hien-thi.md`. "Không thấy" = 404/0 hàng từ API, không phải ẩn ở UI.
 // Nội dung đối tác đến user ngoài đã được che (D4); chủ quản nhận raw + `hits` (khoảng ký tự bị che nếu là user ngoài).
 import { z } from "zod";
+import { CommentViewSchema } from "./comment";
 import { HostHintSchema, QuoteMarkSchema } from "./quote";
 
 export const POST_TYPES = ["sell", "buy", "note"] as const;
@@ -172,6 +173,11 @@ export type PostMention = z.infer<typeof PostMentionSchema>;
 export const MentionablePeopleQuerySchema = z.strictObject({
   q: z.string().max(80).optional(),
   limit: z.number().int().min(1).max(MENTION_PEOPLE_MAX).default(MENTION_PEOPLE_MAX),
+  /** CR-147c · tải dần: vị trí bắt đầu (số nguyên dạng chuỗi) = tổng số đã nhận; đủ `limit` người ⇒ có thể còn. */
+  cursor: z
+    .string()
+    .regex(/^\d{1,6}$/)
+    .optional(),
   postId: z.uuid().optional(),
   type: z.enum(POST_TYPES).optional(),
   mode: z.enum(["all", "suppliers", "buyers", "cats", "companies"]).optional(),
@@ -210,6 +216,8 @@ export const PostViewSchema = z.strictObject({
   cats: z.array(z.string()),
   media: z.array(MediaItemSchema),
   commentCount: z.number().int().nonnegative(),
+  /** CR-147c · 2 bình luận MỚI NHẤT (cũ → mới; đã lọc theo người xem như `GET …/comments`); `commentCount` = tổng. Xem thêm: `GET …/comments?dir=desc&before=<id cũ nhất đang hiện>`. */
+  recentComments: z.array(z.lazy(() => CommentViewSchema)).default([]),
   /** CR-145 · người được nhắc ("Nhắc: A, B"); vắng khi không ai. */
   mentionedUsers: z.array(PostMentionSchema).optional(),
   /** Chỉ chủ quản nhận; user ngoài: không có trường này. */

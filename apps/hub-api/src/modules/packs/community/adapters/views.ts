@@ -62,6 +62,8 @@ export function postView(a: Access, n: Names, r: PostRow, hint?: HostHint): Post
         : {}),
     })),
     commentCount: r.comments,
+    // CR-147c: DB trả mới → cũ; hiển thị cũ → mới
+    recentComments: [...(r.recent ?? [])].reverse().map((x) => commentView(a, n, x)),
     ...(r.mentions?.length
       ? { mentionedUsers: r.mentions.map((m) => ({ userId: m.user_id, name: m.name })) }
       : {}),

@@ -9,7 +9,7 @@ export type Person = { id: string; name: string; org: string | null };
 export type PeopleReader = (
   tenantId: string,
   ids: readonly string[],
-  o?: { q?: string | undefined; limit?: number | undefined },
+  o?: { q?: string | undefined; limit?: number | undefined; offset?: number | undefined },
 ) => Promise<Person[]>;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -28,7 +28,7 @@ export function peopleReader(db: Db): PeopleReader {
           and ((u.kind = 'internal' and u.active and not u.locked_by_tenant)
             or (u.kind = 'external' and u.deactivated_at is null))
           and (${q} = '' or u.display_name ilike ${`%${q}%`})
-        order by u.display_name, u.id limit ${o.limit ?? 500}::int`),
+        order by u.display_name, u.id limit ${o.limit ?? 500}::int offset ${o.offset ?? 0}::int`),
     );
     return rows.map((r) => ({ id: r.id, name: r.name, org: r.org }));
   };

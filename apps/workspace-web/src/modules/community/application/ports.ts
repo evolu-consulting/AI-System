@@ -39,6 +39,9 @@ import type {
 import type { MyPeopleProfile, PeopleResponse } from "@ai/contracts/people";
 import type { Parsed, Route } from "../domain/route";
 
+/** CR-147c · tải dần bình luận CŨ HƠN: `dir:"desc"` (mới → cũ) + `before` = id bình luận cũ nhất đang hiện (trang đầu) / `cursor` (trang sau). */
+export type CommentPageOpts = { dir?: "asc" | "desc"; before?: string; limit?: number };
+
 /** Phạm vi bản nháp để server tính "ai thấy được bài" (đối tác: bỏ qua). */
 export type PeopleScope = {
   type?: PostType;
@@ -105,11 +108,11 @@ export interface CommunityApi {
   /** `GET /pack/community/posts/:id/source` — bản gốc cho chính người đăng (HT-52), dùng khi sửa. */
   getPostSource(id: string): Promise<PostSource>;
   /** `GET /pack/community/posts/:id/comments` — danh sách phẳng cũ → mới, server lọc theo người xem; `cursor` = trang kế. */
-  listComments(postId: string, cursor?: string): Promise<CommentPage>;
+  listComments(postId: string, cursor?: string, opts?: CommentPageOpts): Promise<CommentPage>;
   /** `GET /pack/community/posts/:id/mentionables?q=` — công ty nhắc (@) được trên bài này (đối tác: rỗng). */
   listMentionables(postId: string, q?: string): Promise<Mention[]>;
   /** CR-145 · `GET /pack/community/mentionable-people` — người «Nhắc tên» được trong bài (≤ 20, tìm `q`); phạm vi theo bản nháp. */
-  mentionablePeople(q: string, scope?: PeopleScope): Promise<MentionablePerson[]>;
+  mentionablePeople(q: string, scope?: PeopleScope, cursor?: string): Promise<MentionablePerson[]>;
   /** `POST /pack/community/posts/:id/comments` — `mentions` = id công ty (≤ 10); ngoài tập cho phép ⇒ 422 MENTION_NOT_ALLOWED. */
   addComment(postId: string, input: CreateCommentInput): Promise<CommentView>;
   /** `PATCH /pack/community/posts/:id/comments/:cid` — người viết sửa chữ. */

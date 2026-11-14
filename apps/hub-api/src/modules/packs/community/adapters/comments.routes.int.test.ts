@@ -275,3 +275,48 @@ describe("CR-129 bình luận phẳng theo bạn bè + nhắc đối tác", () =
     expect((await call("hA", "GET", `/posts/${post}/comments?cursor=xx`)).status).toBe(400);
   });
 });
+
+describe("CR-147c · bảng tin trả kèm 2 bình luận mới nhất + tổng số; tải dần phần cũ hơn", () => {
+  const feedItem = async (who: Who, id: string) => {
+    const r = await call(who, "GET", "/feed?tab=all&limit=50");
+    expect(r.status).toBe(200);
+    return (
+      r.json.items as { id: string; commentCount: number; recentComments: { id: string }[] }[]
+    ).find((x) => x.id === id);
+  };
+
+  it("recentComments = 2 cuối của danh sách người xem được (bình luận riêng tư không lộ qua 2 bình luận mới nhất); commentCount = tổng nhìn thấy", async () => {
+    await add("s1a", post, "r1 S1");
+    await add("s2", post, "r1 S2 riêng");
+    await add("hA", post, "r1 chủ quản");
+    for (const who of ["hA", "s1a", "s2"] as const) {
+      const all = (await list(who, post, "?limit=100")).comments.map((x) => x.id);
+      const it = await feedItem(who, post);
+      expect(it?.commentCount).toBe(all.length);
+      expect(it?.recentComments.map((x) => x.id)).toEqual(all.slice(-2));
+    }
+    // S1 không thấy bình luận riêng của S2 ở bất kỳ chỗ nào trong feed
+    const s1 = await feedItem("s1a", post);
+    const s2Own = (await list("s2", post, "?limit=100")).comments.find(
+      (x) => x.text === "r1 S2 riêng",
+    );
+    expect(s1?.recentComments.some((x) => x.id === s2Own?.id)).toBe(false);
+  });
+
+  it("GET /comments?dir=desc&before=<id>: trang theo cursor, mới → cũ, ghép với recentComments ra đủ danh sách", async () => {
+    const all = (await list("hA", post, "?limit=100")).comments.map((x) => x.id);
+    const it = await feedItem("hA", post);
+    const oldestShown = it?.recentComments[0]?.id as string;
+    const older: string[] = [];
+    let cursor: string | undefined;
+    for (let i = 0; i < 100; i++) {
+      const qs = cursor ? `&cursor=${cursor}` : `&before=${oldestShown}`;
+      const p = await list("hA", post, `?dir=desc&limit=2${qs}`);
+      older.push(...p.comments.map((x) => x.id));
+      cursor = p.nextCursor;
+      if (!cursor) break;
+    }
+    expect([...older.reverse(), ...(it?.recentComments.map((x) => x.id) ?? [])]).toEqual(all);
+    expect((await call("hA", "GET", `/posts/${post}/comments?dir=sideways`)).status).toBe(400);
+  });
+});

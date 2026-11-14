@@ -31,7 +31,7 @@ import {
   IconTypeSell,
   IconX,
 } from "./icons";
-import { MentionPeople } from "./MentionPeople";
+import { MentionChips, MentionPicker } from "./MentionPicker";
 
 const TYPE_ICON = { sell: IconTypeSell, buy: IconTypeBuy, note: IconTypeNote } as const;
 
@@ -267,10 +267,9 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
           {draft.type !== "note" && (
             <DraftFields draft={draft} set={setDraft} errors={errors} cats={cats} />
           )}
-          <MentionPeople
+          <MentionChips
             mentions={draft.mentions}
             onChange={(mentions) => setDraft({ ...draft, mentions })}
-            scope={mentionScope(draft)}
           />
           {draft.media.length > 0 && (
             <div className="attachrow">
@@ -313,6 +312,11 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
             >
               <IconAttach size={18} />
             </button>
+            <MentionPicker
+              mentions={draft.mentions}
+              onChange={(mentions) => setDraft({ ...draft, mentions })}
+              scope={mentionScope(draft)}
+            />
             {isHostViewer && (
               <button
                 type="button"

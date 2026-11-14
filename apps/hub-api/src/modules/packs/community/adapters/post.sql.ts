@@ -2,6 +2,7 @@
 // Cột raw/hits/audience chỉ khi DB nói người xem là chủ quản (`packs.viewer_ext_org() is null`, không theo token — review TB1). Văn bản SQL cố định; mọi lọc là tham số.
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
+import { type CommentRow, commentJson } from "./comment-list.repo";
 
 /** Media của bài (CR-118: `file_id`/`name`/`mime`/`size` khi là tệp tải lên). */
 export type MediaJson = {
@@ -36,6 +37,8 @@ export type PostRow = {
   /** CR-145: người được nhắc (đối tác chỉ nhận phần tử là chủ quản hoặc công ty mình — lọc ở SQL). */
   mentions: { user_id: string; name: string }[] | null;
   comments: number;
+  /** CR-147c: 2 bình luận mới nhất (mới → cũ), cùng RLS với `comments`; một subquery tương quan trong CÙNG câu feed. */
+  recent: CommentRow[] | null;
   /** Chỉ chủ quản (host=true): dấu đã lưu báo giá + khoá đối tác SHT của bên đăng; đối tác: null. */
   quotes: QuoteMarkRow[] | null;
   party_key: string | null;
@@ -104,6 +107,8 @@ const itemJson: SQL = sql`json_build_object(
     from community.post_mentions mu where mu.post_id = v.id
       and ((select packs.viewer_ext_org()) is null or mu.user_org is null or mu.user_org = (select packs.viewer_ext_org()))),
   'comments', (select count(*)::int from community.comments c where c.post_id = v.id),
+  'recent', (select json_agg(${commentJson("r")} order by r.created_at desc, r.id desc) from
+    (select c.* from community.comments c where c.post_id = v.id order by c.created_at desc, c.id desc limit 2) r),
   'quotes', case when (select packs.viewer_ext_org()) is null then (select json_agg(json_build_object('item_idx', q.item_idx,
     'comment_id', q.comment_ref, 'comment_deleted', (q.comment_ref is not null and q.comment_id is null), 'by', q.saved_by_name, 'at', q.saved_at, 'product_id', q.product_id,
     'supplier', q.supplier_name, 'price', q.price, 'unit', q.unit, 'edited', coalesce(v.edited_at > q.saved_at, false),

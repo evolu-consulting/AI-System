@@ -80,13 +80,3 @@ export const filterMentionables = (list: Mention[], q: string): Mention[] => {
 /** Gợi ý đang chọn sau phím ↑/↓ (vòng tròn). */
 export const moveIndex = (cur: number, dir: 1 | -1, len: number): number =>
   len === 0 ? 0 : (cur + dir + len) % len;
-
-/** CR-147: mặc định hiện `recent` bình luận MỚI NHẤT (danh sách cũ → mới); phần cũ hơn nằm sau «Xem thêm {hidden} bình luận». */
-export function visibleComments<T>(
-  all: readonly T[],
-  recent: number,
-  showAll: boolean,
-): { shown: T[]; hidden: number } {
-  const hidden = showAll ? 0 : Math.max(0, all.length - recent);
-  return { shown: hidden > 0 ? all.slice(-recent) : [...all], hidden };
-}

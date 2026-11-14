@@ -75,6 +75,7 @@
       "deliverTo": "Deliver to"
     },
     "feed": {
+      "more": "Show more posts",
       "filterAria": "Filter posts",
       "tabs": {
         "all": "All",
@@ -179,6 +180,12 @@
       "cat": "Category",
       "catPlaceholder": "Category…",
       "mentionLabel": "Mention people",
+      "mentionSearch": "Search by name",
+      "mentionScopeHint": "Only people who can see this post · up to {{max}}.",
+      "mentionFull": "You have picked {{max}} people. Remove one to pick another.",
+      "mentionError": "Could not load the list, please try again.",
+      "mentionMore": "Show more people",
+      "mentionDone": "Done ({{count}} people)",
       "mentionPlaceholder": "Type a name to mention…",
       "mentionEmpty": "No one to mention",
       "mentionRemove": "Remove {{name}}",

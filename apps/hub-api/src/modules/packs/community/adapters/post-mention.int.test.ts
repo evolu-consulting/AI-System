@@ -225,4 +225,21 @@ describe("CR-145 nhắc người trong bài", () => {
     const byPost = await call("hA", "GET", `/mentionable-people?postId=${postId}`);
     expect(byPost.json.map((p: { userId: string }) => p.userId)).not.toContain(c.b1);
   });
+
+  it("CR-147c · tải dần theo cursor: limit=1 từng người ghép lại = danh sách đủ, không lặp, không lọt người ngoài phạm vi; cursor sai ⇒ 400", async () => {
+    const scope = "type=note&mode=suppliers";
+    const full = (await call("hA", "GET", `/mentionable-people?${scope}`)).json.map(
+      (p: { userId: string }) => p.userId,
+    );
+    expect(full.length).toBeGreaterThanOrEqual(2);
+    const got: string[] = [];
+    for (let at = 0; at < full.length + 1; at++) {
+      const r = await call("hA", "GET", `/mentionable-people?${scope}&limit=1&cursor=${at}`);
+      expect(r.status).toBe(200);
+      got.push(...r.json.map((p: { userId: string }) => p.userId));
+    }
+    expect(got).toEqual(full);
+    expect(got).not.toContain(c.b1);
+    expect((await call("hA", "GET", `/mentionable-people?${scope}&cursor=abc`)).status).toBe(400);
+  });
 });

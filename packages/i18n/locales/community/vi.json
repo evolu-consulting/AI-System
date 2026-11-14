@@ -75,6 +75,7 @@
       "deliverTo": "Giao tại"
     },
     "feed": {
+      "more": "Xem thêm bài",
       "filterAria": "Lọc bài đăng",
       "tabs": {
         "all": "Tất cả",
@@ -179,6 +180,12 @@
       "cat": "Nhóm hàng",
       "catPlaceholder": "Nhóm hàng…",
       "mentionLabel": "Nhắc tên",
+      "mentionSearch": "Tìm theo tên",
+      "mentionScopeHint": "Chỉ hiện người xem được bài này · tối đa {{max}} người.",
+      "mentionFull": "Đã chọn đủ {{max}} người. Bỏ chọn bớt để chọn người khác.",
+      "mentionError": "Chưa tải được danh sách, vui lòng thử lại.",
+      "mentionMore": "Xem thêm người",
+      "mentionDone": "Xong ({{count}} người)",
       "mentionPlaceholder": "Gõ tên người cần nhắc…",
       "mentionEmpty": "Không có ai để nhắc",
       "mentionRemove": "Bỏ nhắc {{name}}",

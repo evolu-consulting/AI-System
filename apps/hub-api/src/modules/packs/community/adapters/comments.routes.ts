@@ -52,6 +52,8 @@ export function commentsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const { rows, more } = await list.list(d.uow, a, postId, {
       cursor: cursorOf(q.cursor),
       limit: q.limit,
+      dir: q.dir,
+      beforeId: q.before,
     });
     const n = namesOf(a);
     const last = rows.at(-1);

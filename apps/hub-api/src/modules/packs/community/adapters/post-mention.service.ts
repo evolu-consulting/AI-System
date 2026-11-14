@@ -106,7 +106,7 @@ export async function suggest(
   const rows = await d.people(
     tenant,
     ids.filter((i) => i !== a.who.userId),
-    { q: q.q, limit: q.limit },
+    { q: q.q, limit: q.limit, offset: q.cursor ? Number(q.cursor) : 0 },
   );
   const by = new Map(a.dir.orgs.map((o) => [o.id, o.name]));
   return rows.map((p) => ({

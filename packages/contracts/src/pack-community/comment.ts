@@ -35,6 +35,9 @@ export type CommentView = z.infer<typeof CommentViewSchema>;
 export const CommentListQuerySchema = z.strictObject({
   cursor: z.string().max(200).optional(),
   limit: z.number().int().min(1).max(COMMENT_PAGE_MAX).default(50),
+  /** CR-147c · `desc` = mới → cũ (tải dần phần cũ hơn); `before` = id bình luận: chỉ lấy các bình luận CŨ HƠN nó. */
+  dir: z.enum(["asc", "desc"]).default("asc"),
+  before: z.uuid().optional(),
 });
 export type CommentListQuery = z.input<typeof CommentListQuerySchema>;
 

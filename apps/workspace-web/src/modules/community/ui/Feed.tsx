@@ -1,4 +1,5 @@
 // Bảng tin: FeedPage (2 cột: composer + thanh tab sticky + bài | rail lọc/đối tác) và FeedList (Profile: chip + lọc gọn).
+
 import type {
   FeedQuery,
   FeedResponse,
@@ -6,6 +7,7 @@ import type {
   ModerationItem,
   PartnerOrg,
 } from "@ai/contracts/community";
+import { useEffect, useRef } from "react";
 import { useApp } from "../application/ctx";
 import { useFocusPost } from "../application/focus-post";
 import { useFeed, useFeedFilters, usePartners } from "../application/useFeed";
@@ -101,13 +103,46 @@ export function FeedFilters({
   );
 }
 
+type MoreFeed = ReturnType<typeof useFeed>["more"];
+
+/** Tải dần: chạm cuối danh sách (IntersectionObserver) ⇒ nạp trang kế; nút «Xem thêm bài» là đường dự phòng (bàn phím / không có observer). */
+function FeedMore({ more }: { more: MoreFeed }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const { has, loading, load } = more;
+  useEffect(() => {
+    const el = ref.current;
+    if (!has || !el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver((e) => e.some((x) => x.isIntersecting) && void load(), {
+      rootMargin: "300px",
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [has, load]);
+  if (!has) return null;
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className="clink"
+      data-testid="feed-more"
+      disabled={loading}
+      aria-busy={loading}
+      onClick={() => void load()}
+    >
+      {t("community.feed.more")}
+    </button>
+  );
+}
+
 function FeedBody({
   data,
   error,
   mods,
+  more,
 }: {
   data: FeedResponse | null;
   error: string | null;
+  more: MoreFeed;
   mods?: ReadonlyMap<string, ModerationItem> | undefined;
 }) {
   return (
@@ -123,6 +158,7 @@ function FeedBody({
       {data?.items.map((p) => (
         <PostCard key={p.id} post={p} mod={mods?.get(p.id)} />
       ))}
+      <FeedMore more={more} />
     </>
   );
 }
@@ -136,7 +172,7 @@ export function FeedList({
 }: Props) {
   const { isHostViewer } = useApp();
   const f = useFeedFilters(fixed);
-  const { data, error } = useFeed(f.query);
+  const { data, error, more } = useFeed(f.query);
   const partners = usePartners(isHostViewer);
   return (
     <>
@@ -156,14 +192,14 @@ export function FeedList({
       {withFilters && data && (
         <FeedFilters f={f} data={data} partners={partners} className="selrow" />
       )}
-      <FeedBody data={data} error={error} mods={mods} />
+      <FeedBody data={data} error={error} mods={mods} more={more} />
     </>
   );
 }
 
 export function FeedPage() {
   const f = useFeedFilters();
-  const { data, error } = useFeed(f.query);
+  const { data, error, more } = useFeed(f.query);
   const partners = usePartners();
   useFocusPost(!!data);
   return (
@@ -189,7 +225,7 @@ export function FeedPage() {
             </div>
           </div>
         </div>
-        <FeedBody data={data} error={error} />
+        <FeedBody data={data} error={error} more={more} />
       </div>
       <FeedRail
         filters={

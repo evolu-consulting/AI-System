@@ -99,15 +99,18 @@ export function createHttpApi(): CommunityApi {
     postAction: async (id, input) =>
       (await api(`${BASE}/posts/${enc(id)}/actions`, { method: "POST", body: input })) ?? null,
     getPostSource: (id) => api(`${BASE}/posts/${enc(id)}/source`),
-    listComments: (postId, cursor) =>
-      api(`${BASE}/posts/${enc(postId)}/comments`, { query: { cursor, limit: 100 } }),
+    listComments: (postId, cursor, o) =>
+      api(`${BASE}/posts/${enc(postId)}/comments`, {
+        query: { cursor, limit: o?.limit ?? 100, dir: o?.dir, before: o?.before },
+      }),
     listMentionables: (postId, q) =>
       api(`${BASE}/posts/${enc(postId)}/mentionables`, { query: { q: q || undefined, limit: 20 } }),
-    mentionablePeople: (q, scope) =>
+    mentionablePeople: (q, scope, cursor) =>
       api(`${BASE}/mentionable-people`, {
         query: {
           q: q || undefined,
           limit: 20,
+          cursor,
           type: scope?.type,
           mode: scope?.mode,
           cats: scope?.cats?.join(",") || undefined,
