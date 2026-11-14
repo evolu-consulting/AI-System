@@ -2,7 +2,8 @@
 -- Một luồng duy nhất cho cặp (tenant_lo < tenant_hi), tạo lười ở tin/tệp đầu. Đọc: A thuộc cặp (kể cả đã ngắt). Gửi/tải lên: chỉ khi connected (0145).
 -- Bốn bảng chỉ có policy `app.scope='system'` (như `partner_links` 0117, RLS bật KHÔNG FORCE: chủ hàm DEFINER đi qua); người dùng/gói chỉ đi qua hàm DEFINER.
 -- Luồng LUÔN suy từ (app.tenant_id, p_other) — không nhận id luồng từ ngoài ⇒ công ty thứ ba không thể trỏ tới luồng của cặp khác.
--- Mỗi hàm theo người dùng gọi `hub.cc_ctx(p_user)`: có app.tenant_id, p_user = app.user_id (nếu đã đặt) và là người Toàn quyền (R1) của công ty — nếu không ⇒ 42501.
+-- Mỗi hàm theo người dùng gọi `hub.cc_ctx()`: BẮT BUỘC có app.tenant_id và app.user_id (đặt bởi scope người dùng) và user đó là người Toàn quyền (R1) của công ty — nếu không ⇒ 42501.
+-- Người dùng KHÔNG nhận từ tham số (không ai đứng tên thay người khác cùng công ty): mọi hàm đọc `app.user_id`.
 -- Mã lỗi: CC409 (MESSAGE CONNECT_READ_ONLY) · CC404 (CONNECT_NO_THREAD) · CC422 (MSG_EMPTY | MSG_FILE_INVALID) · 22023 (đầu vào sai, MSG_TOO_LONG | MSG_TOO_MANY_FILES).
 -- Khoá: pg_advisory_xact_lock theo cặp (cùng khoá với cc_invite/cc_disconnect của 0145 ⇒ gửi và ngắt tuần tự) rồi `cc_threads … FOR UPDATE`.
 -- Luật thuần trùng `connect.rules.ts` (validateChatMessage, ccDedupKey, pairOf).
@@ -80,6 +81,8 @@ CREATE INDEX IF NOT EXISTS cc_files_thread_ix ON hub.cc_files (thread_id, seq);
 -- Việc nền dọn tệp chưa gắn tin sau 24 h (R11).
 CREATE INDEX IF NOT EXISTS cc_files_unbound_ix ON hub.cc_files (created_at) WHERE seq IS NULL AND deleted_at IS NULL;
 --> statement-breakpoint
+CREATE INDEX IF NOT EXISTS cc_files_pending_user_ix ON hub.cc_files (user_id) WHERE seq IS NULL AND deleted_at IS NULL;
+--> statement-breakpoint
 ALTER TABLE hub.cc_threads ENABLE ROW LEVEL SECURITY;
 --> statement-breakpoint
 ALTER TABLE hub.cc_messages ENABLE ROW LEVEL SECURITY;
@@ -103,8 +106,8 @@ END $$;
 --> statement-breakpoint
 
 -- ── Nội bộ (KHÔNG GRANT cho ai; chỉ hàm DEFINER khác gọi) ──────────────────────────────────────────────────────────────────
--- Bối cảnh người dùng: trả app.tenant_id nếu p_user là người Toàn quyền của nó (và khớp app.user_id khi đã đặt); ngược lại 42501.
-CREATE OR REPLACE FUNCTION hub.cc_ctx(p_user uuid)
+-- Bối cảnh người dùng: trả app.tenant_id nếu app.user_id (bắt buộc đã đặt) là người Toàn quyền của nó; ngược lại 42501.
+CREATE OR REPLACE FUNCTION hub.cc_ctx()
 RETURNS uuid
 LANGUAGE plpgsql
 STABLE
@@ -115,11 +118,10 @@ DECLARE
   v_tid uuid := NULLIF(current_setting('app.tenant_id', true), '')::uuid;
   v_uid uuid := NULLIF(current_setting('app.user_id', true), '')::uuid;
 BEGIN
-  IF v_tid IS NULL THEN
-    RAISE EXCEPTION 'cc_ctx: chưa đặt tenant' USING ERRCODE = '42501';
+  IF v_tid IS NULL OR v_uid IS NULL THEN
+    RAISE EXCEPTION 'cc_ctx: chưa đặt tenant/người dùng' USING ERRCODE = '42501';
   END IF;
-  IF p_user IS NULL OR (v_uid IS NOT NULL AND v_uid <> p_user)
-     OR NOT EXISTS (SELECT 1 FROM hub.cc_owners_raw(ARRAY[v_tid]) w WHERE w.user_id = p_user) THEN
+  IF NOT EXISTS (SELECT 1 FROM hub.cc_owners_raw(ARRAY[v_tid]) w WHERE w.user_id = v_uid) THEN
     RAISE EXCEPTION 'cc_ctx: chỉ người Toàn quyền được dùng trò chuyện công ty' USING ERRCODE = '42501';
   END IF;
   RETURN v_tid;
@@ -155,9 +157,9 @@ $$;
 --> statement-breakpoint
 
 -- ── Công khai (hub_rw, contracts_rw — GRANT ở 0147) ──────────────────────────────────────────────────────────────────────────
--- Một trang tin (seq giảm dần, p_limit kẹp 1..101 — route xin limit+1 để biết còn trang). Một dòng: read_only, last_read_seq của p_user, items (mảng CcMessage).
+-- Một trang tin (seq giảm dần, p_limit kẹp 1..101 — route xin limit+1 để biết còn trang). Một dòng: read_only, last_read_seq của người dùng, items (mảng CcMessage).
 -- Chưa có luồng: đang connected ⇒ trống; chưa từng kết nối ⇒ CC404 CONNECT_NO_THREAD.
-CREATE OR REPLACE FUNCTION hub.cc_thread_page(p_other uuid, p_user uuid, p_before bigint, p_limit integer)
+CREATE OR REPLACE FUNCTION hub.cc_thread_page(p_other uuid, p_before bigint, p_limit integer)
 RETURNS TABLE (read_only boolean, last_read_seq bigint, items jsonb)
 LANGUAGE plpgsql
 STABLE
@@ -167,10 +169,12 @@ AS $$
 #variable_conflict use_column
 DECLARE
   v_tid uuid;
+  v_uid uuid;
   v_th uuid;
   v_lim integer := LEAST(GREATEST(COALESCE(p_limit, 50), 1), 101);
 BEGIN
-  v_tid := hub.cc_ctx(p_user);
+  v_tid := hub.cc_ctx();
+  v_uid := NULLIF(current_setting('app.user_id', true), '')::uuid;
   IF p_other IS NULL OR p_other = v_tid THEN
     RAISE EXCEPTION 'cc_thread_page: công ty không hợp lệ' USING ERRCODE = '22023';
   END IF;
@@ -186,7 +190,7 @@ BEGIN
   END IF;
   read_only := NOT hub.cc_connected_raw(v_tid, p_other);
   SELECT COALESCE(max(r.last_read_seq), 0) INTO last_read_seq FROM hub.cc_reads r
-   WHERE r.thread_id = v_th AND r.user_id = p_user;
+   WHERE r.thread_id = v_th AND r.user_id = v_uid;
   SELECT COALESCE(jsonb_agg(j.obj ORDER BY j.s DESC), '[]'::jsonb) INTO items
     FROM (SELECT m.seq AS s, hub.cc_msg_json(m, COALESCE(t.legal_name, t.name), v_tid) AS obj
             FROM hub.cc_messages m
@@ -200,9 +204,9 @@ END $$;
 -- R8 · gửi tin: MỘT lần gọi. Trả (thread_id, seq, created, message, notify). created=false ⇒ gửi lặp cùng client_id: tin cũ, không tăng seq, không chuông, notify=[].
 -- notify = [{tenant_id, user_id}] mọi người Toàn quyền của CẢ HAI công ty (route phát `cc.msg` /me/stream, gồm tab khác của người gửi).
 -- Chuông (R9) chèn thẳng cho người Toàn quyền công ty nhận, dedup 'cc.msg:<thread>:<last_read_seq của họ>' (fanout_at = now() ⇒ không email/push).
--- Tệp: chỉ tệp của chính p_user, cùng luồng, chưa gắn tin, chưa xoá, không trùng id; sai ⇒ CC422 MSG_FILE_INVALID.
+-- Tệp: chỉ tệp của chính người gửi, cùng luồng, chưa gắn tin, chưa xoá, không trùng id; sai ⇒ CC422 MSG_FILE_INVALID.
 CREATE OR REPLACE FUNCTION hub.cc_send(
-  p_other uuid, p_client_id uuid, p_user uuid, p_user_name text, p_body text, p_file_ids uuid[]
+  p_other uuid, p_client_id uuid, p_user_name text, p_body text, p_file_ids uuid[]
 ) RETURNS TABLE (thread_id uuid, seq bigint, created boolean, message jsonb, notify jsonb)
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -211,6 +215,7 @@ AS $$
 #variable_conflict use_column
 DECLARE
   v_tid uuid;
+  v_uid uuid;
   v_ids uuid[] := COALESCE(p_file_ids, '{}'::uuid[]);
   v_body text := COALESCE(p_body, '');
   v_name text := COALESCE(NULLIF(left(btrim(COALESCE(p_user_name, '')), 200), ''), 'Người dùng');
@@ -221,7 +226,8 @@ DECLARE
   th hub.cc_threads;
   m hub.cc_messages;
 BEGIN
-  v_tid := hub.cc_ctx(p_user);
+  v_tid := hub.cc_ctx();
+  v_uid := NULLIF(current_setting('app.user_id', true), '')::uuid;
   IF p_other IS NULL OR p_other = v_tid OR p_client_id IS NULL THEN
     RAISE EXCEPTION 'cc_send: đầu vào không hợp lệ' USING ERRCODE = '22023';
   END IF;
@@ -241,7 +247,7 @@ BEGIN
   th := hub.cc_thread_ensure(v_tid, p_other);
   SELECT COALESCE(t.legal_name, t.name) INTO v_company FROM admin.tenants t WHERE t.id = v_tid;
   -- Gửi lặp: trả tin cũ.
-  SELECT * INTO m FROM hub.cc_messages x WHERE x.thread_id = th.id AND x.sender_user = p_user AND x.client_id = p_client_id;
+  SELECT * INTO m FROM hub.cc_messages x WHERE x.thread_id = th.id AND x.sender_user = v_uid AND x.client_id = p_client_id;
   IF FOUND THEN
     thread_id := th.id; seq := m.seq; created := false;
     message := hub.cc_msg_json(m, v_company, v_tid); notify := '[]'::jsonb;
@@ -257,7 +263,7 @@ BEGIN
            count(*)::integer
       INTO v_files, v_nf
       FROM unnest(v_ids) WITH ORDINALITY AS u(fid, ord)
-      JOIN hub.cc_files f ON f.id = u.fid AND f.thread_id = th.id AND f.tenant_id = v_tid AND f.user_id = p_user
+      JOIN hub.cc_files f ON f.id = u.fid AND f.thread_id = th.id AND f.tenant_id = v_tid AND f.user_id = v_uid
                          AND f.seq IS NULL AND f.deleted_at IS NULL;
     IF v_nf <> cardinality(v_ids) THEN
       RAISE EXCEPTION 'MSG_FILE_INVALID' USING ERRCODE = 'CC422';
@@ -265,12 +271,12 @@ BEGIN
   END IF;
   v_seq := th.last_seq + 1;
   INSERT INTO hub.cc_messages (thread_id, seq, sender_tenant, sender_user, sender_name, body, files, client_id)
-  VALUES (th.id, v_seq, v_tid, p_user, v_name, v_body, v_files, p_client_id)
+  VALUES (th.id, v_seq, v_tid, v_uid, v_name, v_body, v_files, p_client_id)
   RETURNING * INTO m;
   UPDATE hub.cc_threads t SET last_seq = v_seq, last_at = now() WHERE t.id = th.id;
   UPDATE hub.cc_files f SET seq = v_seq WHERE f.id = ANY (v_ids) AND f.thread_id = th.id;
   -- Người gửi coi như đã đọc tới tin của mình.
-  INSERT INTO hub.cc_reads AS r (thread_id, user_id, tenant_id, last_read_seq) VALUES (th.id, p_user, v_tid, v_seq)
+  INSERT INTO hub.cc_reads AS r (thread_id, user_id, tenant_id, last_read_seq) VALUES (th.id, v_uid, v_tid, v_seq)
   ON CONFLICT ON CONSTRAINT cc_reads_pkey DO UPDATE SET last_read_seq = GREATEST(r.last_read_seq, EXCLUDED.last_read_seq);
   -- Chuông cho người Toàn quyền công ty nhận + danh sách người nhận stream của cả hai công ty: MỘT câu.
   WITH own AS MATERIALIZED (
@@ -292,7 +298,7 @@ BEGIN
 END $$;
 --> statement-breakpoint
 -- Đánh dấu đã đọc: chỉ tiến, kẹp ≤ last_seq. Chưa có luồng ⇒ 0. Đọc được cả khi đã ngắt. Trả last_read_seq mới.
-CREATE OR REPLACE FUNCTION hub.cc_mark_read(p_other uuid, p_user uuid, p_seq bigint)
+CREATE OR REPLACE FUNCTION hub.cc_mark_read(p_other uuid, p_seq bigint)
 RETURNS bigint
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -300,11 +306,13 @@ SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE
   v_tid uuid;
+  v_uid uuid;
   v_th uuid;
   v_last bigint;
   v_cur bigint;
 BEGIN
-  v_tid := hub.cc_ctx(p_user);
+  v_tid := hub.cc_ctx();
+  v_uid := NULLIF(current_setting('app.user_id', true), '')::uuid;
   IF p_other IS NULL OR p_other = v_tid OR p_seq IS NULL OR p_seq < 0 THEN
     RAISE EXCEPTION 'cc_mark_read: đầu vào không hợp lệ' USING ERRCODE = '22023';
   END IF;
@@ -313,7 +321,7 @@ BEGIN
   IF v_th IS NULL THEN
     RETURN 0;
   END IF;
-  INSERT INTO hub.cc_reads AS r (thread_id, user_id, tenant_id, last_read_seq) VALUES (v_th, p_user, v_tid, LEAST(p_seq, v_last))
+  INSERT INTO hub.cc_reads AS r (thread_id, user_id, tenant_id, last_read_seq) VALUES (v_th, v_uid, v_tid, LEAST(p_seq, v_last))
   ON CONFLICT ON CONSTRAINT cc_reads_pkey DO UPDATE SET last_read_seq = GREATEST(r.last_read_seq, EXCLUDED.last_read_seq)
   RETURNING r.last_read_seq INTO v_cur;
   RETURN v_cur;
@@ -321,7 +329,7 @@ END $$;
 --> statement-breakpoint
 -- R11 · ghi tệp tải lên (route đã lưu nội dung; id + storage_key do route sinh, key = '<tenant bên tải>/<id>'). Chỉ khi connected, ngược lại CC409.
 CREATE OR REPLACE FUNCTION hub.cc_file_add(
-  p_other uuid, p_user uuid, p_id uuid, p_name text, p_mime text, p_size bigint, p_storage_key text
+  p_other uuid, p_id uuid, p_name text, p_mime text, p_size bigint, p_storage_key text
 ) RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -329,9 +337,11 @@ SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE
   v_tid uuid;
+  v_uid uuid;
   th hub.cc_threads;
 BEGIN
-  v_tid := hub.cc_ctx(p_user);
+  v_tid := hub.cc_ctx();
+  v_uid := NULLIF(current_setting('app.user_id', true), '')::uuid;
   IF p_other IS NULL OR p_other = v_tid OR p_id IS NULL THEN
     RAISE EXCEPTION 'cc_file_add: đầu vào không hợp lệ' USING ERRCODE = '22023';
   END IF;
@@ -339,15 +349,24 @@ BEGIN
   IF NOT hub.cc_connected_raw(v_tid, p_other) THEN
     RAISE EXCEPTION 'CONNECT_READ_ONLY' USING ERRCODE = 'CC409';
   END IF;
+  -- Kiểm tệp trong hàm (lỗi nghiệp vụ CC422, không phải 23514): tên 1..255, mime 1..100, 1 ≤ size ≤ 20 MB, khoá = '<tenant>/<id>'.
+  IF p_name IS NULL OR char_length(btrim(p_name)) NOT BETWEEN 1 AND 255 OR p_mime IS NULL OR char_length(p_mime) NOT BETWEEN 1 AND 100
+     OR p_size IS NULL OR p_size NOT BETWEEN 1 AND 20971520 OR p_storage_key IS DISTINCT FROM v_tid::text || '/' || p_id::text THEN
+    RAISE EXCEPTION 'MSG_FILE_INVALID' USING ERRCODE = 'CC422';
+  END IF;
+  -- Trần tệp chưa gắn tin mỗi người (chống nhồi dung lượng): 50.
+  IF (SELECT count(*) FROM hub.cc_files f WHERE f.user_id = v_uid AND f.seq IS NULL AND f.deleted_at IS NULL) >= 50 THEN
+    RAISE EXCEPTION 'MSG_FILE_INVALID' USING ERRCODE = 'CC422';
+  END IF;
   th := hub.cc_thread_ensure(v_tid, p_other);
   INSERT INTO hub.cc_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key)
-  VALUES (p_id, th.id, v_tid, p_user, p_name, p_mime, p_size, p_storage_key);
-  RETURN jsonb_build_object('id', p_id, 'name', p_name, 'mime', p_mime, 'size', p_size);
+  VALUES (p_id, th.id, v_tid, v_uid, btrim(p_name), p_mime, p_size, p_storage_key);
+  RETURN jsonb_build_object('id', p_id, 'name', btrim(p_name), 'mime', p_mime, 'size', p_size);
 END $$;
 --> statement-breakpoint
 -- R11 · khoá lưu trữ của tệp: chỉ người Toàn quyền của một trong hai công ty trong cặp; tệp chưa gắn tin chỉ người tải thấy. Không thấy ⇒ NULL (route 404, không lộ).
 -- Đã ngắt vẫn tải được tệp của tin cũ (chỉ đọc).
-CREATE OR REPLACE FUNCTION hub.cc_file_get(p_file_id uuid, p_user uuid)
+CREATE OR REPLACE FUNCTION hub.cc_file_get(p_file_id uuid)
 RETURNS text
 LANGUAGE plpgsql
 STABLE
@@ -356,18 +375,20 @@ SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE
   v_tid uuid;
+  v_uid uuid;
   v_key text;
 BEGIN
-  v_tid := hub.cc_ctx(p_user);
+  v_tid := hub.cc_ctx();
+  v_uid := NULLIF(current_setting('app.user_id', true), '')::uuid;
   SELECT f.storage_key INTO v_key
     FROM hub.cc_files f JOIN hub.cc_threads t ON t.id = f.thread_id
    WHERE f.id = p_file_id AND f.deleted_at IS NULL AND v_tid IN (t.tenant_lo, t.tenant_hi)
-     AND (f.seq IS NOT NULL OR f.user_id = p_user);
+     AND (f.seq IS NOT NULL OR f.user_id = v_uid);
   RETURN v_key;
 END $$;
 --> statement-breakpoint
 -- Chưa đọc cho cc_links: MỘT câu theo lô công ty (≤ 100), = last_seq − last_read_seq (không đếm tin). Tin của chính mình đã tính vào last_read_seq.
-CREATE OR REPLACE FUNCTION hub.cc_unread(p_others uuid[], p_user uuid)
+CREATE OR REPLACE FUNCTION hub.cc_unread(p_others uuid[])
 RETURNS TABLE (other_tenant uuid, unread integer)
 LANGUAGE plpgsql
 STABLE
@@ -377,8 +398,10 @@ AS $$
 #variable_conflict use_column
 DECLARE
   v_tid uuid;
+  v_uid uuid;
 BEGIN
-  v_tid := hub.cc_ctx(p_user);
+  v_tid := hub.cc_ctx();
+  v_uid := NULLIF(current_setting('app.user_id', true), '')::uuid;
   IF p_others IS NULL OR cardinality(p_others) > 100 THEN
     RAISE EXCEPTION 'cc_unread: mảng công ty không hợp lệ' USING ERRCODE = '22023';
   END IF;
@@ -389,7 +412,7 @@ BEGIN
           UNION ALL
           SELECT th.id, th.last_seq, th.tenant_lo FROM hub.cc_threads th
            WHERE th.tenant_hi = v_tid AND th.tenant_lo = ANY (p_others)) x
-    LEFT JOIN hub.cc_reads rd ON rd.thread_id = x.tid AND rd.user_id = p_user;
+    LEFT JOIN hub.cc_reads rd ON rd.thread_id = x.tid AND rd.user_id = v_uid;
 END $$;
 --> statement-breakpoint
 -- Thay thân `hub.cc_links` (0145) cùng chữ ký: `unread` thật theo app.user_id (đặt bởi scope người dùng; chưa đặt ⇒ 0). Một câu, không đếm tin.
@@ -447,20 +470,45 @@ BEGIN
    ORDER BY p.ts DESC, p.other DESC;
 END $$;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION hub.cc_ctx(uuid) FROM PUBLIC;
+-- R11 · dọn tệp chưa gắn tin quá p_older (việc nền, CHỈ scope system): soft delete + trả khoá lưu trữ để xoá nội dung. Không đụng tệp đã gắn tin.
+CREATE OR REPLACE FUNCTION hub.cc_files_sweep(p_older interval)
+RETURNS TABLE (file_id uuid, storage_key text)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, pg_temp
+AS $$
+#variable_conflict use_column
+BEGIN
+  IF current_setting('app.scope', true) IS DISTINCT FROM 'system' THEN
+    RAISE EXCEPTION 'cc_files_sweep: chỉ việc nền (scope system)' USING ERRCODE = '42501';
+  END IF;
+  IF p_older IS NULL OR p_older < interval '1 hour' THEN
+    RAISE EXCEPTION 'cc_files_sweep: khoảng thời gian không hợp lệ' USING ERRCODE = '22023';
+  END IF;
+  RETURN QUERY
+  WITH u AS (
+    UPDATE hub.cc_files f SET deleted_at = now()
+     WHERE f.seq IS NULL AND f.deleted_at IS NULL AND f.created_at < now() - p_older
+    RETURNING f.id AS fid, f.storage_key AS skey)
+  SELECT u.fid, u.skey FROM u;
+END $$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION hub.cc_ctx() FROM PUBLIC;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION hub.cc_thread_ensure(uuid, uuid) FROM PUBLIC;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION hub.cc_msg_json(hub.cc_messages, text, uuid) FROM PUBLIC;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION hub.cc_thread_page(uuid, uuid, bigint, integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION hub.cc_thread_page(uuid, bigint, integer) FROM PUBLIC;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION hub.cc_send(uuid, uuid, uuid, text, text, uuid[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION hub.cc_send(uuid, uuid, text, text, uuid[]) FROM PUBLIC;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION hub.cc_mark_read(uuid, uuid, bigint) FROM PUBLIC;
+REVOKE ALL ON FUNCTION hub.cc_mark_read(uuid, bigint) FROM PUBLIC;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION hub.cc_file_add(uuid, uuid, uuid, text, text, bigint, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION hub.cc_file_add(uuid, uuid, text, text, bigint, text) FROM PUBLIC;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION hub.cc_file_get(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION hub.cc_file_get(uuid) FROM PUBLIC;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION hub.cc_unread(uuid[], uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION hub.cc_unread(uuid[]) FROM PUBLIC;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION hub.cc_files_sweep(interval) FROM PUBLIC;
