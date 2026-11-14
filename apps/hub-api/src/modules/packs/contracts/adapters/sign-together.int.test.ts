@@ -14,6 +14,7 @@ import { mountContractAccess } from "../contract-access.mount";
 import { receiveInbox } from "../partner-mailbox.mount";
 import { assertOwnerOrAdmin } from "../sign-session.routes";
 import { type SignSessionRepo, signSessionRepo } from "./sign-session.repo";
+import { receiveFlowFixture } from "./test/receive-flow.fixture";
 
 let o: Sql;
 let db: Db;
@@ -102,8 +103,7 @@ describe("CR-127 P2 · bên nhận đề nghị ký cùng lúc", () => {
     const [g] = await o<{ id: string }[]>`insert into admin.groups (tenant_id, key, name)
       values (${B}, 'signers', ${o.json({ vi: "Người ký HĐ" })}) returning id::text as id`;
     await o`insert into admin.group_members (tenant_id, group_id, user_id) values (${B}, ${g?.id as string}, ${UB})`;
-    await o`insert into contracts.partner_settings (tenant_id, signer_group_id) values (${B}, ${g?.id as string}::uuid)
-      on conflict (tenant_id) do update set signer_group_id = excluded.signer_group_id`;
+    await receiveFlowFixture(o, B, { signers: `group:${g?.id as string}` }); // CR-146b · bước Ký của quy trình Nhận HĐ
     const { s } = await scenario();
     expect(await sessionStatus(s)).toBe("proposed");
     expect(await as(B, UB, (r) => r.accept(s, "Bà B"))).toBe("accepted");

@@ -75,7 +75,13 @@ describe("CR-146b · receiveFlowOf", () => {
   });
 
   it("quy trình Nhận HĐ không có bước Ký ⇒ signers null; người ký ≠ người phụ trách; người ký công ty khác không lọt vào danh sách", async () => {
-    await flow(B, "cr146b-nhan-b", { owner_user_id: UB[0] }, [], 0);
+    await flow(
+      B,
+      "cr146b-nhan-b",
+      { owner_user_id: UB[0] },
+      [{ key: "nhan", executor: { tool_key: "x" } }],
+      0,
+    );
     expect((await receiveFlowOf(db, B)).signers).toBeNull();
     const ms = await signerMembersOf(db, A, [
       { kind: "user", id: UA[1] as string },

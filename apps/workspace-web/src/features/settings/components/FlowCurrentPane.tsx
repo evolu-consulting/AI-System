@@ -178,7 +178,7 @@ export function FlowCurrentPane() {
   return (
     <div>
       <FlowBlock q={q} />
-      <FlowWorkSettings part="hours" />
+      <FlowWorkSettings />
       <DelegationPane />
     </div>
   );

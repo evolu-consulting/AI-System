@@ -235,7 +235,6 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
     ];
     expect(await v?.(T1, st)).toEqual(want);
     expect(await v?.(T1, st)).toEqual(want);
-    await o`delete from contracts.partner_settings where tenant_id = ${T1}::uuid`;
   });
 
   it("Group của công ty khác ⇒ không thuộc công ty (kiểm lúc lưu + từ chối lúc gửi)", async () => {

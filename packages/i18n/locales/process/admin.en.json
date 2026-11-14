@@ -1619,7 +1619,14 @@
     "add": "Add step",
     "moreActions": "More actions",
     "scheduleDays": "Days (N)",
-    "scheduleDaysRange": "Enter a number of days from {{min}} to {{max}}.",
+    "scheduleDaysRange": "Enter a number of days between {{min}} and {{max}}.",
+    "receive": {
+      "important": "Important from (million VND)",
+      "critical": "Very important from (million VND)",
+      "owner": "Owner of received contracts",
+      "ownerNone": "Not set — company admin handles them",
+      "range": "The «Very important» threshold must be higher than «Important»."
+    },
     "testRun": {
       "button": "Test run",
       "title": "Test run · {{name}}",

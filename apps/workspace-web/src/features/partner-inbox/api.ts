@@ -2,7 +2,6 @@
 import type { PartnerChecklist } from "@ai/contracts/modules";
 import { api } from "@ai/web-kit/http";
 import type { InboxItem, Invite, Round } from "./lib/partner-view";
-import type { ReceiveSettings } from "./lib/receive-settings";
 
 const BASE = "/pack/contracts/partner";
 export const partnerKeys = {
@@ -37,7 +36,3 @@ export const recordResult = (mailboxId: string, body: RecordIn) =>
 /** CR-125 · UX-S7 · điều kiện «Đối tác xác nhận hợp đồng» của công ty mình (admin-api, quản trị công ty xem được). */
 export const fetchPartnerConfirm = (tenantId: string) =>
   api<PartnerChecklist>(`/admin/tenants/${encodeURIComponent(tenantId)}/partner-confirm`);
-
-export const fetchReceiveSettings = () => api<ReceiveSettings>(`${BASE}/settings`);
-export const saveReceiveSettings = (s: ReceiveSettings) =>
-  api<{ ok: true }>(`${BASE}/settings`, { method: "PUT", body: s });

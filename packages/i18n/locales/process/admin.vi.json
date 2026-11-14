@@ -1620,6 +1620,13 @@
     "moreActions": "Thao tác khác",
     "scheduleDays": "Số ngày (N)",
     "scheduleDaysRange": "Nhập số ngày từ {{min}} đến {{max}}.",
+    "receive": {
+      "important": "Quan trọng từ (triệu đồng)",
+      "critical": "Rất quan trọng từ (triệu đồng)",
+      "owner": "Người phụ trách hợp đồng nhận",
+      "ownerNone": "Chưa chọn — quản trị công ty phụ trách",
+      "range": "Ngưỡng «Rất quan trọng» phải lớn hơn «Quan trọng»."
+    },
     "testRun": {
       "button": "Chạy thử",
       "title": "Chạy thử · {{name}}",

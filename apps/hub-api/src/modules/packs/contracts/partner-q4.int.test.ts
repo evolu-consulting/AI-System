@@ -13,6 +13,7 @@ import { reviewerReason } from "./adapters/partner-inbox.repo";
 import { partnerSendRepo } from "./adapters/partner-send.repo";
 import { partnerSendTool } from "./adapters/partner-send.tool";
 import { partnerUiRepo } from "./adapters/partner-ui.repo";
+import { receiveFlowFixture } from "./adapters/test/receive-flow.fixture";
 import { onPartnerReplies, receiveInbox } from "./partner-mailbox.mount";
 
 let o: Sql;
@@ -207,28 +208,12 @@ describe("CR-124 q4 · lý do gửi đối tác chỉ lấy từ bước quyết
   });
 });
 
-describe("CR-124 q4 · cài đặt nhận theo công ty", () => {
-  it("người phụ trách không thuộc công ty ⇒ không lưu (hàm DEFINER, một EXISTS)", async () => {
-    const save = (owner: string | null) =>
-      uow().tenant({ tenantId: B, userId: UB }, (x) =>
-        x.ui.saveSettings(
-          { important_min: 100_000_000, critical_min: 500_000_000, owner_user_id: owner },
-          UB,
-        ),
-      );
-    expect(await save(UA)).toBe(false); // UA thuộc công ty A
-    expect(await save(crypto.randomUUID())).toBe(false);
-    expect(await save(UB)).toBe(true);
-    expect(await save(null)).toBe(true);
-  });
-
+describe("CR-146b · cấu hình nhận theo quy trình Nhận HĐ", () => {
   it("ngưỡng riêng + người phụ trách: 600 triệu với ngưỡng Rất quan trọng 500 triệu ⇒ critical, owner = người được đặt", async () => {
-    await uow().tenant({ tenantId: B, userId: UB }, (x) =>
-      x.ui.saveSettings(
-        { important_min: 100_000_000, critical_min: 500_000_000, owner_user_id: UB },
-        UB,
-      ),
-    );
+    // CR-146b · ngưỡng + người phụ trách = trigger.params của quy trình Nhận HĐ đang bật
+    await receiveFlowFixture(o, B, {
+      params: { important_min_m: 100, critical_min_m: 500, owner_user_id: UB },
+    });
     const r = await send(C[2] as string); // tới B, đã nối
     expect(r).toMatchObject({ status: "sent" });
     expect(await receiveInbox(db)(B, 100)).toBe(1);

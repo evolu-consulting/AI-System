@@ -80,3 +80,15 @@ describe("CR-127 E6b · triggerParamIssue (luật lưu)", () => {
     expect(triggerParamIssue({ event: "milestone.due", params: { days: 2.5 } })).toEqual(want);
   });
 });
+
+describe("CR-146b · triggerParamIssue của quy trình Nhận HĐ", () => {
+  it("Rất quan trọng ≤ Quan trọng ⇒ lỗi khoảng ở critical_min_m; hợp lệ ⇒ null", () => {
+    const t = (im: number, cr: number) => ({
+      event: "contract.received",
+      params: { important_min_m: im, critical_min_m: cr },
+    });
+    expect(triggerParamIssue(t(500, 500))?.path).toEqual(["trigger", "params", "critical_min_m"]);
+    expect(triggerParamIssue(t(500, 400))?.min).toBe(501);
+    expect(triggerParamIssue(t(500, 2000))).toBeNull();
+  });
+});

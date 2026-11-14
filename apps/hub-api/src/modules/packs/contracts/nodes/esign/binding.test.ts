@@ -62,7 +62,12 @@ describe("binding contracts.esign", () => {
     expect(await v?.("t1", { index: 0, node: "contracts.esign", executor })).toEqual([]);
     expect(seen).toEqual([parsed.data]);
     const saved = encodeEsignNodeArgs(parsed.data as EsignNodeConfig);
-    expect(saved).toEqual({ company_signers: `user:${U}`, order: "parallel", due_days: 3 });
+    expect(saved).toEqual({
+      provider: "docusign",
+      company_signers: `user:${U}`,
+      order: "parallel",
+      due_days: 3,
+    });
     expect(esignArgsSchema.safeParse(saved).success).toBe(true);
   });
 });

@@ -28,7 +28,7 @@ let A = "";
 let B = "";
 let UA = "";
 let UB = ""; // quản trị B
-let OWN = ""; // người phụ trách HĐ nhận của B
+let OWN = ""; // quản trị đầu tiên của B = người phụ trách HĐ nhận (CR-146b: chưa có quy trình nhận ⇒ không có người đặt)
 let MEM = ""; // thành viên B khác
 let C: string[] = [];
 const TAX_B = "0101234568";
@@ -81,10 +81,10 @@ beforeAll(async () => {
   o = openOwner(2);
   [A, B] = (await tenants(o, 2, 1427)) as [string, string];
   [UA] = (await users(o, A, 1, { from: 1427 })) as [string];
-  [UB, OWN, MEM] = (await users(o, B, 3, { from: 1428 })) as [string, string, string];
+  [OWN, UB, MEM] = (await users(o, B, 3, { from: 1428 })) as [string, string, string];
   await o`update admin.tenants set legal_name = 'Công ty A', tax_code = '0109999998' where id = ${A}`;
   await o`update admin.tenants set legal_name = 'Công ty B', tax_code = ${TAX_B}, directory_listed = true where id = ${B}`;
-  await o`update admin.users set role = 'tenant_admin' where id = ${UB}`;
+  await o`update admin.users set role = 'tenant_admin' where id in (${OWN}, ${UB})`; // CR-146b · OWN = quản trị đầu tiên ⇒ người phụ trách mặc định
   // B CHƯA có quy trình nhận (không company_flows cho contract.received) ⇒ người phụ trách = quản trị công ty (UB).
   C = await contracts(o, A, 2, { from: 1427, createdBy: UA, status: "active" });
   for (const [i, id] of C.entries()) {
