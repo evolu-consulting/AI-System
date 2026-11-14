@@ -9,9 +9,8 @@
         "feed": "Feed"
       },
       "signPane": {
-        "esign": "Applies to the Sign contract step of the approval flow.",
-        "work": "Applies to the Sign contract step of the approval flow.",
-        "partner": "Used by the \"Send to partner for confirmation\" step (outgoing) and the Receive-contract flow (incoming). If not ready, those steps cannot run."
+        "esign": "Shared company account. How to sign, who signs and how partners are sent: set in each process.",
+        "partner": "Partner confirmation status, used by the «Send to partner» step and the Receive contract process. Not ready ⇒ those steps cannot run."
       },
       "sec": {
         "feed": "Notifications",
@@ -26,8 +25,8 @@
         "flow": "Approval flow",
         "flowHint": "Steps, departments, deadlines, conditions",
         "scoutHint": "Group defaults, monthly search cap",
-        "sign": "Signing & partners",
-        "signHint": "E-signing, signers, partner confirmation"
+        "sign": "Connections",
+        "signHint": "E-signing, partner confirmation"
       },
       "unsaved": "Unsaved changes",
       "isDefault": "Using defaults",
@@ -194,12 +193,43 @@
     },
     "flow": {
       "current": {
+        "listLead": "A contract follows the FIRST process whose condition matches, checked from top to bottom.",
+        "always": "All remaining contracts",
+        "startWhen": "Starts when: {{when}}",
+        "stepCount": "{{count}} step(s)",
+        "listLabel": "Approval processes switched on",
+        "pick": "View diagram",
+        "and": " and ",
+        "or": " or ",
+        "cond": {
+          "value": "Value {{op}} {{v}} million",
+          "deal": "Contract type = {{v}}",
+          "dept": "Department = {{v}}",
+          "importance": "Importance = {{v}}",
+          "newPartner": "New partner",
+          "oldPartner": "Partner with existing contracts",
+          "other": "{{fact}} {{op}} {{v}}",
+          "deals": { "buy": "Purchase", "sell": "Sales", "referral": "Referral" },
+          "levels": { "normal": "Normal", "important": "Important", "critical": "Very important" }
+        },
+        "signBlock": {
+          "title": "Signing and partners in this process",
+          "noEsign": "This process has no Sign step.",
+          "signers": "Our signers: {{names}}",
+          "noSigners": "Our signers: not chosen",
+          "unnamed": "person who left or lost access",
+          "partnerSigns": "Partner signs: yes",
+          "partnerNoSign": "Partner signs: no, only the company signs",
+          "partnerAuto": "Partner signs: per contract (partner signs when an email exists)",
+          "sequential": "Order: one after another",
+          "parallel": "Order: at the same time",
+          "send": "Send to partner for confirmation: yes",
+          "noSend": "Send to partner for confirmation: no"
+        },
         "title": "Approval process in effect: {{name}} · v{{version}}",
-        "lead": "This is the process that runs for your company's contracts, from the same data as the Processes page. A company admin changes it on the Processes page.",
         "noFlow": "Your company has no contract approval process switched on. A company admin adds and switches one on in the Processes page.",
         "openPage": "Open the Processes page",
         "branches": "This process branches on conditions: the steps below are the ones that may run; see the full diagram on the Processes page.",
-        "others": "{{count}} more process(es) are also on, checked in the order shown on the Processes page.",
         "saveNote": "This section is view-only, so there is nothing to save.",
         "editLink": "Edit approval process",
         "openFail": "Could not open the process editor.",

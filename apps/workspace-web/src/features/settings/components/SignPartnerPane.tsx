@@ -1,10 +1,9 @@
-// CR-138b · Cài đặt › «Ký & đối tác»: các khối KHÔNG phải bước quy trình nhưng bước quy trình cần (Ký số, Người ký HĐ, Đối tác xác nhận).
+// CR-138b · Cài đặt › «Kết nối» (CR-146): chỉ kết nối cấp công ty — Ký số (nhà cung cấp/công tắc) + trạng thái «Đối tác xác nhận». Ký thế nào, ai ký, ngưỡng: đặt trong từng quy trình.
 // Mỗi khối có MỘT câu nói nó tác động bước nào của quy trình. Tab chỉ hiện với chủ sở hữu (mọi khối ở đây chỉ quản trị sửa — luật CR-138 ẩn tab chỉ đọc).
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { EsignSetting } from "~/features/contract-esign/components/EsignSetting";
-import { ReceiveSettings } from "~/features/partner-inbox/components/ReceiveSettings";
-import { FlowWorkSettings } from "./FlowWorkSettings";
+import { PartnerConfirmStatus } from "~/features/partner-inbox/components/PartnerConfirmStatus";
 
 function Block({ id, note, children }: { id: string; note: string; children: ReactNode }) {
   return (
@@ -25,11 +24,8 @@ export function SignPartnerPane({ owner }: { owner: boolean }) {
       <Block id="esign" note={n("esign")}>
         <EsignSetting owner={owner} />
       </Block>
-      <Block id="work" note={n("work")}>
-        <FlowWorkSettings part="signers" />
-      </Block>
       <Block id="partner" note={n("partner")}>
-        <ReceiveSettings owner={owner} />
+        <PartnerConfirmStatus owner={owner} />
       </Block>
     </div>
   );

@@ -1,6 +1,6 @@
-// CR-125 · S2 · "quy trình đang chạy" của công ty cho một sự kiện (vd `contract.submitted`) — đọc ĐÚNG nguồn mà tab Quy trình ở admin và bộ
+// CR-146 · danh sách MỌI flow Bật (thay đọc một flow). Gốc CR-125 · S2 · "quy trình đang chạy" của công ty cho một sự kiện (vd `contract.submitted`) — đọc ĐÚNG nguồn mà tab Quy trình ở admin và bộ
 // điều phối đọc: `hub.company_flows` (Bật) ⨝ def (Thư viện được gán hoặc bản của chính công ty). Một câu SQL cố định (Luật 4c), scope system,
-// tenant từ ngữ cảnh gói. Xét theo `position, id` như `candidatesOf`; flow đầu = flow hiển thị, còn lại đếm vào `others`.
+// tenant từ ngữ cảnh gói. Xét theo `position, id` như `candidatesOf` (CÙNG thứ tự bộ điều phối); trả MỌI flow, một câu SQL không đổi theo số flow.
 // Stage: def Thư viện (dữ liệu cũ) lấy từ BẢN XUẤT BẢN (`process_def_releases`); quy trình CỦA CÔNG TY (CR-127 Z9) lấy `d.stages` hiện hành —
 // «Lưu và áp dụng» không tạo bản xuất bản, bộ điều phối (`candidatesOf`) cũng chạy def công ty theo `d.stages` ⇒ MỘT nguồn "quy trình đang bật".
 import { withHubScope } from "@ai/db/hub-scope";
@@ -17,13 +17,15 @@ type Row = {
   name: string;
   rel_version: number;
   stages: unknown[];
-  n: number;
+  position: number;
+  when: unknown | null;
 };
 
 /** Câu tra (xuất cho test đếm câu). Flow Bật + def chưa xoá + đúng sự kiện + (def công ty, hoặc def Thư viện đã xuất bản). */
 export const EVENT_FLOW_SQL = (tenantId: string, event: string) => sql`
   select d.id as def_id, d.name, coalesce(d.published_version, d.version) as rel_version,
-    case when d.tenant_id is null then coalesce(r.stages, d.stages) else d.stages end as stages, count(*) over ()::int as n
+    case when d.tenant_id is null then coalesce(r.stages, d.stages) else d.stages end as stages,
+    cf.position, d.trigger -> 'when' as "when"
   from hub.company_flows cf
   join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null
     and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
@@ -31,23 +33,19 @@ export const EVENT_FLOW_SQL = (tenantId: string, event: string) => sql`
   where cf.tenant_id = ${tenantId}::uuid and cf.enabled and d.trigger_event = ${event}
     and (d.tenant_id is not null or d.published_version is not null)
     and d.trigger is distinct from ${JSON.stringify(NEVER_TRIGGER)}::text::jsonb
-  order by cf.position, cf.id limit 1`;
+  order by cf.position, cf.id`;
 
-export async function eventFlowOf(
-  db: Db,
-  tenantId: string,
-  event: string,
-): Promise<EventFlow | null> {
-  if (!UUID.test(tenantId) || !EVENT.test(event)) return null;
-  const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
+export async function eventFlowsOf(db: Db, tenantId: string, event: string): Promise<EventFlow[]> {
+  if (!UUID.test(tenantId) || !EVENT.test(event)) return [];
+  const rows = await withHubScope(db, { kind: "system" }, (tx) =>
     tx.execute<Row>(EVENT_FLOW_SQL(tenantId, event)),
   );
-  if (!r) return null;
-  return {
+  return [...rows].map((r) => ({
     defId: r.def_id,
     name: r.name,
     relVersion: Number(r.rel_version),
     stages: Array.isArray(r.stages) ? r.stages : [],
-    others: Math.max(0, Number(r.n) - 1),
-  };
+    position: Number(r.position),
+    when: r.when ?? null,
+  }));
 }

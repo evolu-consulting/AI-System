@@ -7,6 +7,8 @@ import { z } from "zod";
 import { ESCALATE_AFTER_H, ProcessKeySchema, REMIND_EVERY_H } from "../chat/processes";
 import { INPUT_NAME_RE, INPUT_SCHEMA_MAX, IsoDateTime, UuidSchema } from "../common";
 import { GROUP_KEY_RE } from "../groups";
+import { FactWhenSchema } from "../hub-admin/process-trigger";
+import { ESIGN_NODE_ORDERS, ESIGN_NODE_SIGNERS_MAX } from "./esign-node";
 import { CONTRACT_DEALS } from "./milestones";
 
 /** CR-121 D-1 · tối đa 20 bước người dùng thấy (engine ≤ 22 stage: + `route` + `finalize`); migration hub 0097 nới CHECK
@@ -287,14 +289,38 @@ export const ApprovalFlowCurrentSchema = z.strictObject({
   steps: z.array(ApprovalFlowCurrentStepSchema).max(APPROVAL_FLOW_STEPS_MAX),
   /** CR-125 · S2 · flow có node Nếu (rẽ nhánh theo điều kiện) ⇒ danh sách là các bước CÓ THỂ chạy. */
   has_branches: z.boolean().optional(),
-  /** CR-125 · S2 · số flow Bật khác cùng sự kiện (xét sau flow hiển thị). */
-  other_flows: z.number().int().min(0).optional(),
+  /** CR-146 · thứ tự xét (`company_flows.position`; nhỏ = xét trước). */
+  position: z.number().int().min(0).optional(),
+  /** CR-146 · «Bắt đầu khi» (cùng dạng `match.rules.ts`); vắng/null ⇒ «Mọi hợp đồng còn lại». */
+  start_when: FactWhenSchema.nullable().optional(),
+  /** CR-146 · mã Group trong `start_when` ⇒ tên phòng (UI không lộ mã). */
+  group_names: z.record(z.string(), z.string().max(200)).optional(),
+  /** CR-146 · khối chỉ xem «Ký và đối tác của quy trình này», đọc từ args stage Ký / Gửi đối tác của CHÍNH flow. */
+  sign: z
+    .strictObject({
+      company_signers: z
+        .array(
+          z.strictObject({ kind: z.enum(["user", "group"]), name: z.string().max(200).nullable() }),
+        )
+        .max(ESIGN_NODE_SIGNERS_MAX),
+      partner_signs: z.boolean().nullable(),
+      order: z.enum(ESIGN_NODE_ORDERS).nullable(),
+    })
+    .nullable()
+    .optional(),
+  /** CR-146 · flow có bước Gửi đối tác xác nhận. */
+  partner_send: z.boolean().optional(),
   /** CR-113 · chủ gói (Toàn quyền) duyệt thay được mọi bước — ghi rõ "duyệt thay" trên thẻ. */
   owner_can_override: z.literal(true).optional(),
   /** CR-113 · tên Group Toàn quyền (đích chuyển cấp mặc định); không có ở tenant ⇒ null. */
   owner_group_name: z.string().max(200).nullable().optional(),
 });
 export type ApprovalFlowCurrent = z.infer<typeof ApprovalFlowCurrentSchema>;
+/** CR-146 · `GET /pack/contracts/approval-flow` = MỌI flow Bật cho `contract.submitted`, đúng thứ tự xét (rỗng ⇒ chưa bật flow nào). */
+export const ApprovalFlowListSchema = z.strictObject({
+  items: z.array(ApprovalFlowCurrentSchema).max(50),
+});
+export type ApprovalFlowList = z.infer<typeof ApprovalFlowListSchema>;
 
 /** cf-dify · `GET /pack/contracts/dify-workflows`: workflow Dify tenant được dùng làm bước Dify (đã bật ở catalog). */
 export const DifyWorkflowInputSchema = z.strictObject({

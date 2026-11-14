@@ -102,14 +102,15 @@ export function createSlotRegistry(): SlotRegistry {
   };
 }
 
-/** CR-125 · S2 · flow đang chạy của công ty cho một sự kiện (hub.company_flows Bật, nguồn duy nhất — cùng dữ liệu tab Quy trình ở admin):
- *  tên + bản xuất bản + các stage đã xuất bản; others = số flow Bật khác cùng sự kiện (xét theo thứ tự, flow có điều kiện). */
+/** CR-146 · một flow Bật của công ty cho một sự kiện (hub.company_flows, nguồn duy nhất — cùng dữ liệu tab Quy trình ở admin):
+ *  tên + bản xuất bản + stage + thứ tự xét (`position`) + «Bắt đầu khi» (`trigger.when`, cùng nguồn `match.rules.ts`). */
 export type EventFlow = {
   defId: string;
   name: string;
   relVersion: number;
   stages: unknown[];
-  others: number;
+  position: number;
+  when: unknown | null;
 };
 
 /** CR-105 · tra quy trình đang chạy của khe cho tenant: gán, không có ⇒ mặc định; bản xuất bản hiện hành. */

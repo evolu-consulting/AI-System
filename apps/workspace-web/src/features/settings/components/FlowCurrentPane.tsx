@@ -7,14 +7,15 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "~/features/auth/hooks/use-session";
 import { isCompanyAdmin } from "~/features/shell/lib/nav";
-import { ApiError } from "~/lib/api-error";
 import { useFlow } from "../hooks/use-flow";
 import type { CurrentFlow } from "../lib/current-flow";
 import { flowEditorUrl } from "../lib/editor-link";
+import { whenText } from "../lib/start-when";
 import { DelegationPane } from "./DelegationPane";
 import { FlowCanvasLazy } from "./FlowCanvasLazy";
 import { FlowLegend } from "./FlowLegend";
 import { FlowList } from "./FlowList";
+import { FlowSignBlock } from "./FlowSignBlock";
 import { FlowWorkSettings } from "./FlowWorkSettings";
 
 type View = "canvas" | "list";
@@ -68,30 +69,21 @@ function OpenFlowsPage() {
   );
 }
 
-/** Khối quy trình đã tải: tiêu đề (tên + bản), ghi chú rẽ nhánh / quy trình khác, sơ đồ (canvas/danh sách). */
-function FlowLoaded({ flow }: { flow: CurrentFlow }) {
+/** Sơ đồ / danh sách bước của MỘT quy trình + khối ký, đối tác (chỉ xem). */
+function FlowDetail({ flow }: { flow: CurrentFlow }) {
   const { t } = useTranslation();
   const [view, setView] = useState<View>("canvas");
   const run = flow.steps.map(() => true);
   return (
-    <>
+    <div data-testid="flow-detail">
       <h2 className="mb-2 text-lg font-semibold" data-testid="flow-current-title">
         {t("contracts.flow.current.title", { name: flow.name, version: flow.version })}
       </h2>
-      <p className="mb-3 text-dim" data-testid="flow-readonly-lead">
-        {t("contracts.flow.current.lead")}
-      </p>
       {flow.hasBranches && (
         <p className="mb-2 text-caption text-dim" data-testid="flow-branches-note">
           {t("contracts.flow.current.branches")}
         </p>
       )}
-      {flow.otherFlows > 0 && (
-        <p className="mb-2 text-caption text-dim" data-testid="flow-others-note">
-          {t("contracts.flow.current.others", { count: flow.otherFlows })}
-        </p>
-      )}
-      <OpenFlowsPage />
       <div>
         <ViewToggle view={view} onChange={setView} />
       </div>
@@ -103,22 +95,61 @@ function FlowLoaded({ flow }: { flow: CurrentFlow }) {
       ) : (
         <FlowList flow={flow} />
       )}
+      <FlowSignBlock flow={flow} />
+    </div>
+  );
+}
+
+/** CR-146 · danh sách MỌI quy trình đang bật, đúng thứ tự xét; bấm một dòng ⇒ xem sơ đồ của nó. */
+function FlowLoaded({ flows }: { flows: CurrentFlow[] }) {
+  const { t } = useTranslation();
+  const [sel, setSel] = useState(0);
+  const cur = flows[Math.min(sel, flows.length - 1)] as CurrentFlow;
+  return (
+    <>
+      <p className="mb-3 text-dim" data-testid="flow-readonly-lead">
+        {t("contracts.flow.current.listLead")}
+      </p>
+      <OpenFlowsPage />
+      <ol
+        aria-label={t("contracts.flow.current.listLabel")}
+        data-testid="flow-list-items"
+        className="mb-4 space-y-2"
+      >
+        {flows.map((f, i) => (
+          <li key={f.defId}>
+            <button
+              type="button"
+              data-testid={`flow-item-${i}`}
+              aria-pressed={i === sel}
+              className={`w-full rounded-lg border p-3 text-left ${
+                i === sel ? "border-act bg-act-soft" : "border-rule"
+              }`}
+              onClick={() => setSel(i)}
+            >
+              <span className="font-semibold">
+                {i + 1}. {f.name}
+              </span>
+              <span className="ml-2 text-caption text-dim">
+                {t("contracts.flow.current.stepCount", { count: f.steps.length })}
+              </span>
+              <span className="block text-caption text-dim" data-testid={`flow-when-${i}`}>
+                {t("contracts.flow.current.startWhen", {
+                  when: whenText(f.startWhen, f.groupNames, t),
+                })}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ol>
+      <FlowDetail key={cur.defId} flow={cur} />
     </>
   );
 }
 
-/** Chưa có quy trình Bật (404) ⇒ nói rõ ai làm gì ở đâu; lỗi khác ⇒ báo + thử lại. KHÔNG che «Uỷ quyền khi vắng». */
+/** Chưa có quy trình Bật (danh sách rỗng) ⇒ nói rõ ai làm gì ở đâu; lỗi khác ⇒ báo + thử lại. KHÔNG che «Uỷ quyền khi vắng». */
 function FlowBlock({ q }: { q: ReturnType<typeof useFlow> }) {
   const { t } = useTranslation();
-  if (q.error instanceof ApiError && q.error.status === 404)
-    return (
-      <>
-        <p className="mb-3 text-body" data-testid="flow-none">
-          {t("contracts.flow.current.noFlow")}
-        </p>
-        <OpenFlowsPage />
-      </>
-    );
   if (q.isError)
     return (
       <p role="alert" className="mb-4 text-late">
@@ -129,10 +160,19 @@ function FlowBlock({ q }: { q: ReturnType<typeof useFlow> }) {
       </p>
     );
   if (!q.data) return <p className="mb-4 text-dim">{t("contracts.common.loading")}</p>;
-  return <FlowLoaded flow={q.data} />;
+  if (q.data.length === 0)
+    return (
+      <>
+        <p className="mb-3 text-body" data-testid="flow-none">
+          {t("contracts.flow.current.noFlow")}
+        </p>
+        <OpenFlowsPage />
+      </>
+    );
+  return <FlowLoaded flows={q.data} />;
 }
 
-/** CR-138b · «Quy trình duyệt» chỉ còn quy trình đang áp dụng (chỉ xem) + «Uỷ quyền khi vắng»; ký số / đối tác ở tab «Ký & đối tác». */
+/** CR-138b · «Quy trình duyệt» chỉ còn danh sách quy trình đang bật (chỉ xem, thứ tự xét + «Bắt đầu khi») + «Uỷ quyền khi vắng»; kết nối ký số / đối tác ở tab «Kết nối». */
 export function FlowCurrentPane() {
   const q = useFlow(true);
   return (

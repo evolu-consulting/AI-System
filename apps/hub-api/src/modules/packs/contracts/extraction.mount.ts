@@ -25,6 +25,7 @@ import {
   INPROC_DEFAULT_CONCURRENCY,
   type InprocLimiter,
 } from "./adapters/inproc-limit";
+import { packAssignees } from "./adapters/manage.members";
 import { reviewRoutes } from "./adapters/review.routes";
 import { submitRoutes } from "./adapters/submit.routes";
 import {
@@ -298,7 +299,17 @@ function approvalModule(
     evidenceFile: async (w, i, e, f) => (await ad.card?.evidenceFile(w, i, e, f)) ?? null, // CR-127 · E4b
     recordPdf: async (w, i) => (await ad.card?.recordPdf(w, i)) ?? null, // CR-127 · U4b-3
   });
-  approval.route("/", flowTemplateRoutes(view, o.uow, flow));
+  approval.route(
+    "/",
+    flowTemplateRoutes(view, o.uow, flow, async (w, ids) => {
+      const want = new Set(ids);
+      return new Map(
+        (await packAssignees(o.db, view, "contracts").list(w))
+          .filter((m) => want.has(m.id))
+          .map((m) => [m.id, m.name]),
+      );
+    }),
+  );
   const fr = contractsFlowRoutes(o.db, view, { get, act }); // CR-120 · mặc định bật; HUB_FLOW_RUNTIME=off = tắt route (404, không còn rollback web)
   if (fr) approval.route("/", fr);
   return approval;

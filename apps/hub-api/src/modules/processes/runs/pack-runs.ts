@@ -22,7 +22,7 @@ import type { SystemUow } from "../application/ports";
 import type { ProcessDeps } from "../core/ports";
 import { DefsService } from "../defs/defs.service";
 import { GateService } from "../gates/gates.service";
-import { eventFlowOf } from "../library/event-flow.repo";
+import { eventFlowsOf } from "../library/event-flow.repo";
 import { resolveSlot, resolveSlotDef } from "../library/slot-resolve.repo";
 import { routeSlot } from "../library/slot-route.repo";
 import { defSourceRef } from "../library/source-ref";
@@ -292,7 +292,7 @@ export function packRunsOf(d: ProcessDeps, sys?: Pick<SystemUow, "system">): Pac
       return { runId: s.id, kick: () => d.launcher.kick(s.id) };
     },
     resolveSlot: (tenantId, slot) => resolveSlot(d.db, tenantId, slot),
-    eventFlow: (tenantId, event) => eventFlowOf(d.db, tenantId, event),
+    eventFlows: (tenantId, event) => eventFlowsOf(d.db, tenantId, event),
     resolveSlotDef: (slot, key) => resolveSlotDef(d.db, slot, key),
     routeSlot: (tenantId, slot, userId, facts) => routeSlot(d.db, tenantId, slot, userId, facts),
     sourceRefOf: defSourceRef,

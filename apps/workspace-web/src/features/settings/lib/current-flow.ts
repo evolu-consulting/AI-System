@@ -1,8 +1,11 @@
 // CR-105 L4 · quy trình duyệt ĐANG DÙNG (chỉ đọc): `GET /pack/contracts/approval-flow` = `ApprovalFlowCurrent`
 // `{def_id, name, rel_version, is_default, steps:[{name, department_name, kind, when?}]}` (@ai/contracts). `when` dùng cho
 // "Xem trước đường đi" (luật như server: giá trị trống ⇒ điều kiện đúng).
+import type { FactWhen } from "@ai/contracts/hub-admin";
 import {
+  type ApprovalFlowCurrent,
   ApprovalFlowCurrentSchema,
+  ApprovalFlowListSchema,
   type FlowCond,
   type FlowCondGroup,
   type FlowWhen,
@@ -35,8 +38,17 @@ export type CurrentFlow = {
   version: number;
   /** CR-125 · S2 · flow có rẽ nhánh theo điều kiện (danh sách bước = các bước có thể chạy). */
   hasBranches: boolean;
-  /** CR-125 · S2 · số quy trình khác cùng Bật. */
-  otherFlows: number;
+  /** CR-146 · thứ tự xét (0 = đầu); «Bắt đầu khi» (null ⇒ mọi hợp đồng còn lại); tên Group trong điều kiện. */
+  position: number;
+  startWhen: FactWhen | null;
+  groupNames: Record<string, string>;
+  /** CR-146 · khối chỉ xem ký / đối tác; `sign` null ⇒ quy trình không có bước Ký. */
+  sign: {
+    signers: { kind: "user" | "group"; name: string | null }[];
+    partnerSigns: boolean | null;
+    order: "parallel" | "sequential" | null;
+  } | null;
+  partnerSend: boolean;
   /** CR-113 · Toàn quyền duyệt thay được mọi bước (vắng ⇒ true: luật chung). */
   ownerCanOverride: boolean;
   ownerGroupName: string | null;
@@ -44,17 +56,31 @@ export type CurrentFlow = {
 };
 export type Facts = { deal: DealKind; value: number | null };
 
-/** Thân `GET /approval-flow` ⇒ `CurrentFlow`; sai hình ⇒ null (UI báo lỗi tải). */
+/** Thân `GET /approval-flow` (`{items}`) ⇒ danh sách theo thứ tự xét; sai hình ⇒ null (UI báo lỗi tải). */
+export function toCurrentFlows(raw: unknown): CurrentFlow[] | null {
+  const p = ApprovalFlowListSchema.safeParse(raw);
+  return p.success ? p.data.items.map(fromApi) : null;
+}
+
+/** Một phần tử của danh sách ⇒ `CurrentFlow`; sai hình ⇒ null. */
 export function toCurrentFlow(raw: unknown): CurrentFlow | null {
   const p = ApprovalFlowCurrentSchema.safeParse(raw);
-  if (!p.success) return null;
-  const d = p.data;
+  return p.success ? fromApi(p.data) : null;
+}
+
+function fromApi(d: ApprovalFlowCurrent): CurrentFlow {
   return {
     defId: d.def_id,
     name: d.name,
     version: d.rel_version,
     hasBranches: d.has_branches ?? false,
-    otherFlows: d.other_flows ?? 0,
+    position: d.position ?? 0,
+    startWhen: d.start_when ?? null,
+    groupNames: d.group_names ?? {},
+    sign: d.sign
+      ? { signers: d.sign.company_signers, partnerSigns: d.sign.partner_signs, order: d.sign.order }
+      : null,
+    partnerSend: d.partner_send ?? false,
     ownerCanOverride: d.owner_can_override ?? true,
     ownerGroupName: d.owner_group_name ?? null,
     steps: d.steps.map((s, i) => ({

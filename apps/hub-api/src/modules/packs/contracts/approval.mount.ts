@@ -10,7 +10,7 @@ import {
   type FlowGroups,
   type FlowMembers,
   listDifyWorkflows,
-  readCurrentFlow,
+  readCurrentFlows,
 } from "./application/approval-flow.usecase";
 import type { ContractFlowGate } from "./application/contract-flow.ports";
 import { myApprovals } from "./application/mywork-approvals.usecase";
@@ -66,6 +66,7 @@ export function flowTemplateRoutes(
   view: PackAccessView,
   uow: PackUow<ApprovalFlowTxRepos>,
   flow: FlowDeps,
+  names?: (who: PackWho, ids: readonly string[]) => Promise<ReadonlyMap<string, string>>,
 ) {
   const fd = {
     uow,
@@ -79,7 +80,7 @@ export function flowTemplateRoutes(
   };
   const list = flow.groups.list?.bind(flow.groups);
   return approvalFlowRoutes(view, {
-    read: readCurrentFlow(fd),
+    read: readCurrentFlows({ ...fd, ...(names ? { userNames: names } : {}) }),
     difyWorkflows: listDifyWorkflows(fd),
     ...(list ? { groups: list } : {}),
   });

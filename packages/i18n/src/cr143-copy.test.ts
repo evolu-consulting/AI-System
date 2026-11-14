@@ -28,7 +28,7 @@ describe("CR-143 chữ hiển thị", () => {
       get(partnerEn as Obj, "contracts.partner.confirm.title"),
     );
   });
-  test("Mô tả cài đặt Ký & đối tác đúng lời đã chốt", () => {
+  test("Mô tả cài đặt tab Kết nối đúng lời đã chốt", () => {
     expect(get(esignVi as Obj, "contracts.esign.settingHint")).toBe(
       "Bật: ký số trên hệ thống. Tắt: chỉ tải lên bản đã ký.",
     );
