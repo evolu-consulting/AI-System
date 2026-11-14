@@ -146,6 +146,7 @@ Thực thi: luật Biome · `bun run check:size` (đỏ khi > 400 dòng) · `dep
 |---|---|
 | API CRUD p95 | < 300 ms với 5.000 bản ghi/bảng |
 | Mọi list | có `limit` (mặc định 50, tối đa 200) |
+| Mọi danh sách người dùng thấy (CR-151, người dùng 2026-11-14) | API có cursor/`limit`+`offset` + trần; UI tải dần («Xem thêm» / cuộn) hoặc phân trang PHÍA MÁY CHỦ; tìm/lọc ở máy chủ; KHÔNG cắt im lặng ở trần; số câu SQL cố định mỗi trang (lấy `limit+1` để biết còn trang). Rà soát: `docs/specs/cr151-list-paging/audit.md` |
 | Query mới lọc/sort | có index tương ứng |
 | JS ban đầu của app web | < 250 KB gzip; route tách chunk |
 | LCP trang danh sách | < 2 s trên máy dev |
