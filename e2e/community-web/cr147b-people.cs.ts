@@ -45,7 +45,8 @@ test("P2 · ảnh bìa cá nhân: đổi, tải lại còn, tệp sai định d�
   // độ mờ đặt ở vỏ `me-cover-edit` (cha của nút), không ở chính nút
   const wrap = page.getByTestId("me-cover-edit");
   await expect(wrap).toHaveCSS("opacity", "0");
-  await page.getByTestId("me-cover-default").hover();
+  // rê vào góc ảnh bìa (giữa ảnh là chính nút bút, Playwright không hover được vào chỗ bị che)
+  await page.getByTestId("me-cover-default").hover({ position: { x: 10, y: 10 } });
   await expect(wrap).toHaveCSS("opacity", "1");
   await page
     .getByTestId("me-cover-edit-file")
