@@ -1,7 +1,7 @@
 // CR-150 · hành trình 2 công ty (bản đối chiếu với UAT `docs/uat/hop-dong-2-cong-ty.md`): A (nhân viên tạo) → Giám đốc A duyệt → chọn đối tác B (người chọn ≠ người tạo ≠ người thêm đối tác)
 // → B nhận (lời mời nối lần đầu) → B duyệt nội bộ → A thấy kết quả; nhánh B Trả lại / Từ chối → A thấy lý do. N2: mỗi bước đúng vai, khác người tạo.
 // Dùng cặp d5a → d5b và quy trình dựng bởi `e2e/cr127/_cr127-stack.ts` (đã có Gửi đối tác + Nhận HĐ). VIẾT, CHƯA CHẠY (điều phối chạy cuối đợt trên evotest);
-// cần đưa spec này vào `testMatch` của `e2e/cr127/playwright.cr127.config.ts` (xem tasks.md «Việc còn lại»).
+// chạy qua `e2e/cr127/playwright.cr127.config.ts` (testMatch có spec này); A thấy kết quả B ở thẻ `partner-round` (khối «Gửi đối tác»).
 import { safeReload } from "../_kit/ui";
 import {
   contractRows,
@@ -57,7 +57,9 @@ test("B duyệt nội bộ (Giám đốc B) ⇒ A (nhân viên tạo) thấy đ�
   await loginCw(a, EA, U.employee);
   await a.goto("/contracts/list");
   await rowOf(a, `${RUN}ok`).click();
-  await expect(a.getByTestId("partner-status")).toContainText(/xác nhận/i, { timeout: 90_000 });
+  await expect(a.getByTestId("partner-round").first()).toContainText(/xác nhận/i, {
+    timeout: 90_000,
+  });
 });
 
 test("B Trả lại có lý do ⇒ A (nhân viên) thấy trả lại + lý do", async ({ browser }) => {
@@ -75,7 +77,9 @@ test("B Trả lại có lý do ⇒ A (nhân viên) thấy trả lại + lý do",
   await loginCw(a, EA, U.employee);
   await a.goto("/contracts/list");
   await rowOf(a, `${RUN}tl`).click();
-  await expect(a.getByTestId("partner-status")).toContainText(/trả lại/i, { timeout: 90_000 });
+  await expect(a.getByTestId("partner-round").first()).toContainText(/trả lại/i, {
+    timeout: 90_000,
+  });
   await expect(a.getByText("Sửa điều 4 về thời hạn thanh toán")).toBeVisible();
 });
 
@@ -94,6 +98,8 @@ test("B Từ chối có lý do ⇒ A (nhân viên) thấy từ chối + lý do",
   await loginCw(a, EA, U.employee);
   await a.goto("/contracts/list");
   await rowOf(a, `${RUN}tc`).click();
-  await expect(a.getByTestId("partner-status")).toContainText(/từ chối/i, { timeout: 90_000 });
+  await expect(a.getByTestId("partner-round").first()).toContainText(/từ chối/i, {
+    timeout: 90_000,
+  });
   await expect(a.getByText("Giá cao hơn thoả thuận")).toBeVisible();
 });

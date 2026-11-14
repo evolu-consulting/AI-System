@@ -18,6 +18,7 @@ import { defsRoutes } from "./defs.routes";
 const X = tenantId(1231);
 const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
   A: { userId: userId(1231), tenantId: X, role: "tenant_admin" },
+  P: { userId: userId(1231), tenantId: X, role: "platform_admin" },
 };
 // biome-ignore lint/suspicious/noExplicitAny: JSON response trong test
 type Json = Record<string, any>;
@@ -28,10 +29,17 @@ let app: Hono<AuthVars>;
 let id = "";
 let contractsOff = false; // N2 · tắt tính năng `contracts-write` của công ty giữa chừng (đường chạy tay)
 
-async function call(method: string, path: string, body?: unknown) {
-  const r = await app.request(path, {
+/**
+ * CR-127 · E8: ghi/xoá quy trình công ty chỉ platform_admin (qua `?tenant_id=`); đọc và chạy thật (`/run`) quản trị công ty vẫn làm được.
+ * `who` mặc định theo luật đó; truyền `"A"` để kiểm quản trị công ty bị chặn ghi.
+ */
+async function call(method: string, path: string, body?: unknown, who?: "A" | "P") {
+  const writes = method !== "GET" && !path.endsWith("/run");
+  const by = who ?? (writes ? "P" : "A");
+  const url = by === "P" ? `${path}${path.includes("?") ? "&" : "?"}tenant_id=${X}` : path;
+  const r = await app.request(url, {
     method,
-    headers: { "content-type": "application/json", "x-who": "A" },
+    headers: { "content-type": "application/json", "x-who": by },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   const text = await r.text();
@@ -120,6 +128,7 @@ beforeAll(async () => {
         sideEffect: false,
         params: [
           { name: "contract_id", type: "string", required: true },
+          { name: "provider", type: "string", required: false },
           { name: "company_signers", type: "text", required: false },
         ],
       },
@@ -131,6 +140,27 @@ beforeAll(async () => {
 afterAll(async () => {
   await db?.close();
   await o?.end({ timeout: 2 });
+});
+
+describe("CR-127 E8 · quản trị công ty chỉ xem quy trình", () => {
+  it("BR-10 · tenant_admin POST/PUT quy trình ⇒ 403, không ghi; platform_admin ghi được", async () => {
+    const denied = await call("POST", "/process-defs", body(), "A");
+    expect(denied.status).toBe(403);
+    const made = await call(
+      "POST",
+      "/process-defs",
+      body({ key: "e8-flow-ro", name: "Do platform tạo" }),
+    );
+    expect(made.status).toBe(201);
+    const putA = await call(
+      "PUT",
+      `/process-defs/${made.json.id}`,
+      { ...body({ name: "Admin công ty sửa" }), version: made.json.version },
+      "A",
+    );
+    expect(putA.status).toBe(403);
+    expect((await call("GET", `/process-defs/${made.json.id}`)).json.name).toBe("Do platform tạo");
+  });
 });
 
 describe("CR-122 E1 · lưu def có trigger", () => {

@@ -89,8 +89,9 @@ test("Xem PDF và Word trong hộp; loại khác chỉ có Tải về", async ({
   await page.keyboard.press("Escape");
 
   await row("phu-luc.docx").getByRole("button", { name: "Xem" }).click();
-  await expect(dlg.getByTestId("docx-viewer")).toContainText("Điều khoản thanh toán CR149", {
-    timeout: 30_000,
-  });
+  await expect(dlg.frameLocator('[data-testid="docx-frame"]').locator("body")).toContainText(
+    "Điều khoản thanh toán CR149",
+    { timeout: 30_000 },
+  );
   await expect(dlg.getByTestId("fview-download")).toBeVisible();
 });

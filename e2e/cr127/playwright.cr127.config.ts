@@ -12,8 +12,8 @@ process.env.CR127_READY_PORT = String(READY);
 
 export default defineConfig({
   ...base,
-  testDir: ".",
-  testMatch: ["**/j*.spec.ts"],
+  testDir: "..",
+  testMatch: ["**/cr127/j*.spec.ts", "**/journey-approval/cr150-two-companies.spec.ts"],
   testIgnore: [],
   preserveOutput: "always",
   outputDir: "../../test-results/cr127",
