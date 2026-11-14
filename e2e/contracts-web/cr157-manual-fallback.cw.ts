@@ -191,7 +191,10 @@ test("CR-162 · thẻ Không đọc được: Nhập tay là nút chính, Thử 
 
 // CR-162 (3) menu «Thao tác» chỉ một mục ⇒ không vạch kẻ phía trên mục đó.
 test("CR-162 · menu Thao tác chỉ một mục thì không có vạch kẻ", async ({ page }) => {
-  await installV2f(page, { contract: () => failed() });
+  // Chỉ «Xoá hợp đồng» (can.delete) ⇒ menu hiện và có đúng một mục; không có can.delete thì menu không hiện.
+  await installV2f(page, {
+    contract: () => ({ ...failed(), can: { ...failed().can, delete: true } }),
+  });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("head-actions-menu").click();
   const items = page.getByRole("menuitem");
@@ -203,7 +206,7 @@ test("CR-162 · menu Thao tác chỉ một mục thì không có vạch kẻ", a
 test("CR-162 · Xem hợp đồng gốc là nút icon có chú thích khi rê chuột", async ({ page }) => {
   await installV2f(page, { contract: () => failed() });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
-  const link = page.getByRole("link", { name: "Xem hợp đồng gốc" });
+  const link = page.getByTestId("page-head").getByRole("link", { name: "Xem hợp đồng gốc" }); // thẻ «Không đọc được» cũng có một nút cùng nhãn
   await expect(link).toHaveText("");
   await link.hover();
   await expect(page.getByRole("tooltip", { name: "Xem hợp đồng gốc" })).toBeVisible();
