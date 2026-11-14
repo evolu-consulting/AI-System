@@ -23,7 +23,7 @@ const envOf = (side: "a" | "b"): Env => ({
   tenantName: CO[side].name,
 });
 const [EA, EB] = [envOf("a"), envOf("b")];
-const RUN = Date.now().toString(36);
+const RUN = need("CR161_RUN");
 const NOTE = `Mong hai bên hợp tác ${RUN}`;
 const HELLO = `Chào Preschool, gửi báo giá ${RUN}`;
 const HELLO_FILE = `Gửi kèm báo giá ${RUN}`;
@@ -184,8 +184,22 @@ test("CR161-J6 · Vy (nhân viên NitiGroup): không nút «Tìm công ty», kh�
   await expect(page.getByRole("button", { name: "Tìm công ty" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Gửi lời mời kết nối" })).toHaveCount(0);
   await expect(page.getByTestId("connected-list")).toHaveCount(0);
+  // API cũng chặn: nhân viên gọi danh sách kết nối ⇒ 403 (R1), và trang đối tác không có tab «Trò chuyện» / «Bảng tin công ty»
+  const s = await apiLogin({
+    base: need("JA_API_URL"),
+    tenantKey: EA.tenantKey,
+    username: WHO.vy,
+    password: EA.pw,
+    app: "contracts",
+  });
+  const r = await fetch(
+    `${need("JA_HUB_URL")}/pack/contracts/connect/links?status=connected&limit=50`,
+    {
+      headers: s.headers,
+    },
+  );
+  expect(r.status).toBe(403);
   await page.goto(partnerUrl(tenantB, "b"));
-  await expect(page.getByRole("tablist")).toBeVisible();
   await expect(tabOf(page, "Trò chuyện")).toHaveCount(0);
   await expect(tabOf(page, "Bảng tin công ty")).toHaveCount(0);
   await expect(page.getByTestId("cc-message")).toHaveCount(0);

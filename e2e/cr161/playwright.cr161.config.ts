@@ -7,6 +7,8 @@ import base from "../journey-approval/playwright.journey.config";
 const SH = Number(process.env.E2E_PORT_SHIFT ?? 0);
 const READY = 3445 + SH;
 process.env.CR161_READY_PORT = String(READY);
+// một mã lượt chạy cho MỌI worker (worker khởi động lại sau ca đỏ sẽ nạp lại spec — mã tính trong spec sẽ khác nhau)
+process.env.CR161_RUN ||= Date.now().toString(36);
 
 export default defineConfig({
   ...base,
