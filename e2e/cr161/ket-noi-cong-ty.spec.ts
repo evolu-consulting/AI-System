@@ -6,7 +6,7 @@ import { apiLogin, tenantIdByKey } from "../_kit/api";
 import { CO, POST_BODY, WHO } from "../_kit/two-companies";
 import { type Env, loginCw } from "../journey-approval/_journey";
 
-test.describe.configure({ mode: "serial" });
+// Mặc định (không serial) + 1 worker: ca đỏ không làm các ca sau bị bỏ qua — ca tệp (J3b/J4b) tách riêng để lỗi kho tệp không che phần còn lại.
 
 const need = (n: string): string => {
   const v = process.env[n];
@@ -26,6 +26,7 @@ const [EA, EB] = [envOf("a"), envOf("b")];
 const RUN = Date.now().toString(36);
 const NOTE = `Mong hai bên hợp tác ${RUN}`;
 const HELLO = `Chào Preschool, gửi báo giá ${RUN}`;
+const HELLO_FILE = `Gửi kèm báo giá ${RUN}`;
 const REPLY = `NitiGroup nhận được, cảm ơn ${RUN}`;
 const FILE = `bao-gia-${RUN}.pdf`;
 const PDF = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
@@ -94,7 +95,7 @@ test("CR161-J2 · Dung (Preschool, Toàn quyền, không phải người mời) 
   await ctx.close();
 });
 
-test("CR161-J3 · Tiên thấy Preschool «Đã kết nối», mở tab «Trò chuyện», nhắn kèm tệp PDF", async ({
+test("CR161-J3 · Tiên thấy Preschool «Đã kết nối», mở tab «Trò chuyện», nhắn", async ({
   browser,
 }) => {
   const { ctx, page } = await open(browser, EA, WHO.tien);
@@ -105,6 +106,16 @@ test("CR161-J3 · Tiên thấy Preschool «Đã kết nối», mở tab «Trò c
   await list.getByRole("link", { name: "Mở trang đối tác" }).click();
   await tabOf(page, "Trò chuyện").click();
   await page.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(HELLO);
+  await page.getByRole("button", { name: "Gửi", exact: true }).click();
+  const msg = page.getByTestId("cc-message").filter({ hasText: HELLO });
+  await expect(msg).toBeVisible();
+  await ctx.close();
+});
+
+test("CR161-J3b · Tiên đính kèm tệp PDF vào tin trong tab «Trò chuyện»", async ({ browser }) => {
+  const { ctx, page } = await open(browser, EA, WHO.tien);
+  await page.goto(partnerUrl(tenantB, "b"));
+  await page.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(HELLO_FILE);
   await page.getByTestId("cc-file-input").setInputFiles({
     name: FILE,
     mimeType: "application/pdf",
@@ -115,23 +126,19 @@ test("CR161-J3 · Tiên thấy Preschool «Đã kết nối», mở tab «Trò c
   await expect(drafts).toContainText(FILE);
   await expect(drafts).not.toContainText("Đang tải lên…");
   await page.getByRole("button", { name: "Gửi", exact: true }).click();
-  const msg = page.getByTestId("cc-message").filter({ hasText: HELLO });
+  const msg = page.getByTestId("cc-message").filter({ hasText: HELLO_FILE });
   await expect(msg).toBeVisible();
   await expect(msg).toContainText(FILE);
   await ctx.close();
 });
 
-test("CR161-J4 · Dung mở chuông «Tin nhắn mới…», thấy tin + tệp, tải được tệp, trả lời, tab «Bảng tin công ty» thấy bài công khai của NitiGroup", async ({
+test("CR161-J4 · Dung mở chuông «Tin nhắn mới…», thấy tin, trả lời, tab «Bảng tin công ty» thấy bài công khai của NitiGroup", async ({
   browser,
 }) => {
   const { ctx, page } = await open(browser, EB, WHO.dung);
   await (await bell(page, `Tin nhắn mới từ ${CO.a.name}`)).click();
   const msg = page.getByTestId("cc-message").filter({ hasText: HELLO });
   await expect(msg).toBeVisible();
-  await expect(msg).toContainText(FILE);
-  const down = page.waitForEvent("download");
-  await msg.getByTestId("file-download").first().click();
-  expect((await down).suggestedFilename()).toBe(FILE);
   await page.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(REPLY);
   await page.getByRole("button", { name: "Gửi", exact: true }).click();
   await expect(page.getByTestId("cc-message").filter({ hasText: REPLY })).toBeVisible();
@@ -140,6 +147,17 @@ test("CR161-J4 · Dung mở chuông «Tin nhắn mới…», thấy tin + tệp,
     page.getByText(`Bạn đang xem bài công khai của công ty đã kết nối: ${CO.a.name}.`),
   ).toBeVisible();
   await expect(page.getByTestId("cc-post").filter({ hasText: POST_BODY })).toBeVisible();
+  await ctx.close();
+});
+
+test("CR161-J4b · Dung thấy tin kèm tệp PDF và tải được tệp", async ({ browser }) => {
+  const { ctx, page } = await open(browser, EB, WHO.dung);
+  await page.goto(partnerUrl(tenantA, "a"));
+  const msg = page.getByTestId("cc-message").filter({ hasText: HELLO_FILE });
+  await expect(msg).toContainText(FILE);
+  const down = page.waitForEvent("download");
+  await msg.getByTestId("file-download").first().click();
+  expect((await down).suggestedFilename()).toBe(FILE);
   await ctx.close();
 });
 
