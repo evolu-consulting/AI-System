@@ -57,7 +57,10 @@ async function company(c: Ctx, key: string, listed: boolean): Promise<void> {
       fail(`không có tính năng ${PARTNER_FEATURE}`),
   );
   await call(c.api, "PUT", `/admin/features/${fid}/entitlements/${tid}`);
-  if (listed) await call(c.api, "PUT", `/admin/tenants/${tid}/directory`, { listed: true });
+  // «Cho phép tìm thấy» chỉ quản trị CHÍNH công ty bật qua API (tenants.directory.service.ts:28); seed dùng token nền tảng ⇒ ghi DB, chỉ BẬT (hồ sơ đã đủ tên pháp lý + MST ở trên).
+  if (listed)
+    await c.sql`update admin.tenants set directory_listed = true, version = version + 1, updated_at = now()
+      where id = ${tid}::uuid and directory_listed = false`;
   // chỉ BẬT (không tắt) — công ty đã bật sẵn giữ nguyên
   await c.sql`insert into hub.tenant_flow_settings (tenant_id, flow_triggers) values (${tid}::uuid, true)
     on conflict (tenant_id) do update set flow_triggers = true, updated_at = now() where hub.tenant_flow_settings.flow_triggers = false`;
