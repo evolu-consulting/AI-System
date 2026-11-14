@@ -1,5 +1,12 @@
 {
   "contracts": {
+    "paging": {
+      "search": "Tìm theo tên",
+      "more": "Xem thêm",
+      "loading": "Đang tải…",
+      "none": "Không có kết quả",
+      "error": "Không tải được danh sách"
+    },
     "plink": {
       "title": "Gắn sản phẩm cho các dòng hợp đồng",
       "desc": "Hợp đồng sắp được xác nhận. Mỗi dòng: dùng sản phẩm có sẵn hoặc tạo sản phẩm mới. Sản phẩm chỉ được tạo/gắn khi bạn xác nhận.",
@@ -217,7 +224,6 @@
       "rows": "{{n}} dòng",
       "perPage": "Mỗi trang",
       "pageSizeAria": "Số dòng mỗi trang",
-      "prev": "Trang trước",
       "next": "Trang sau"
     },
     "nav": {

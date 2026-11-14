@@ -130,6 +130,39 @@ describe("com-c2 · danh bạ + người phụ trách không lộ đối tác ch
   });
 });
 
+describe("CR-151 · /pack/contracts/members trang + tìm ở máy chủ", () => {
+  const get = async (qs: string) =>
+    call(hub, "GET", `/pack/contracts/members${qs}`, { token: await sign(k, USERS.lan) });
+  const items = (r: { json: Record<string, unknown> }) =>
+    r.json.items as { id: string; name: string }[];
+
+  it("trang 1 + trang 2 không trùng, next_offset đúng, hết trang thì null, không limit thì không có next_offset", async () => {
+    const a = await get("?limit=2&offset=0");
+    const b = await get("?limit=2&offset=2");
+    expect(items(a)).toHaveLength(2);
+    expect(a.json.next_offset).toBe(2);
+    expect(items(b).length).toBeGreaterThan(0);
+    expect(
+      items(b)
+        .map((x) => x.id)
+        .filter((id) => items(a).some((y) => y.id === id)),
+    ).toEqual([]);
+    const last = await get("?limit=50&offset=0");
+    expect(last.json.next_offset).toBeNull();
+    const full = await get("");
+    expect(full.json.next_offset).toBeUndefined();
+  });
+
+  it("tìm theo tên + chéo tenant (user tenant beta không bao giờ có) + trần limit 50", async () => {
+    const hit = await get("?limit=50&q=lan");
+    expect(items(hit).map((x) => x.id)).toEqual([USERS.lan.id]);
+    const all = await get("?limit=50");
+    expect(items(all).map((x) => x.id)).not.toContain(USERS.an.id);
+    const over = await get("?limit=51");
+    expect(over.status).toBe(400);
+  });
+});
+
 describe("com-c2 · RLS phòng thủ gói contracts (0067 ext_deny)", () => {
   const count = (userId: string) =>
     withPackScope(db, { packKey: "contracts", tenantId: T.acme, userId }, async (tx) => {

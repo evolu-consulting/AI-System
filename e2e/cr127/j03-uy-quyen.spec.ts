@@ -20,7 +20,9 @@ test("A đặt uỷ quyền cho B từ Cài đặt › Quy trình duyệt", asyn
   // thiếu người làm thay ⇒ nói rõ cách sửa, không gọi server
   await page.getByTestId("delegation-save").click();
   await expect(page.getByTestId("delegation-issue")).toContainText("Chọn người làm thay");
-  await pane.getByLabel("Người làm thay").selectOption({ label: B_NAME });
+  // CR-151: hộp chọn người tìm ở máy chủ — gõ tên rồi bấm kết quả.
+  await pane.locator("#dg-to").fill(B_NAME);
+  await pane.getByRole("button", { name: B_NAME, exact: true }).click();
   await pane.getByLabel("Từ ngày").fill(day(-1));
   await pane.getByLabel("Tới hết ngày").fill(day(3));
   await page.getByTestId("delegation-save").click();

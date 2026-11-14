@@ -53,3 +53,11 @@ export async function exportContracts(qs: string, signal?: AbortSignal): Promise
     truncated: res.headers.get("x-export-truncated") === "1",
   };
 }
+
+/** CR-151 · một trang người cho hộp chọn (tìm ở máy chủ, ≤ MEMBERS_PAGE_MAX/trang). */
+export async function fetchMembersPage(q: string, offset: number, signal?: AbortSignal) {
+  const qs = new URLSearchParams({ limit: "50", offset: String(offset) });
+  if (q) qs.set("q", q);
+  const r = await api<MembersResponse>(`${BASE}/members?${qs}`, { signal });
+  return { items: r.items, next: r.next_offset ?? null };
+}

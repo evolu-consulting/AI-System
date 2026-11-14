@@ -98,6 +98,23 @@ async function install(page: Page): Promise<Fake> {
     }
     return json(r, { mode: f.mode });
   });
+  await page.route(at("/admin/org/members"), (r) => {
+    const q = new URL(r.request().url()).searchParams.get("q")?.toLowerCase() ?? "";
+    const items = Object.values(USERS)
+      .filter((u) => u.name.toLowerCase().includes(q))
+      .map((u) => {
+        const mid = f.managers.get(u.id) ?? null;
+        const m = Object.values(USERS).find((x) => x.id === mid);
+        return {
+          user_id: u.id,
+          username: u.username,
+          display_name: u.name,
+          manager_id: mid,
+          manager_name: m?.name ?? null,
+        };
+      });
+    return json(r, { items, total: items.length });
+  });
   await page.route(at("/admin/org"), (r) =>
     json(r, {
       members: Object.values(USERS).map((u) => ({
@@ -168,7 +185,10 @@ test("M1D · đổi cơ cấu ở /settings/members ⇒ danh sách HĐ của qu�
   await page.goto("/contracts/settings/members");
   await page.getByLabel("Phạm vi xem hợp đồng").selectOption("org");
   await expect.poll(() => f.mode).toBe("org");
-  await page.getByLabel("Cấp quản lý · Chi Lê").selectOption({ label: "Bình Trần" });
+  // CR-151: chọn quản lý qua hộp tìm ở máy chủ (không còn select nạp cả công ty).
+  await page.getByLabel("Cấp quản lý · Chi Lê").click();
+  await page.getByLabel("Tìm theo tên").fill("Bình");
+  await page.getByRole("button", { name: "Bình Trần" }).click();
   await expect.poll(() => f.managers.get(USERS.chi.id)).toBe(USERS.binh.id);
   // CR-139d · phòng ban không chỉnh ở màn này nữa (một khái niệm một màn): màn chỉ dẫn sang «Chỉnh sơ đồ» ở admin.
   await expect(page.getByTestId("org-depts-moved")).toBeVisible();

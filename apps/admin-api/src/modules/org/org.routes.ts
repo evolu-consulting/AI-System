@@ -4,13 +4,21 @@ import {
   DepartmentSetRequestSchema,
   JobTitleSetRequestSchema,
   ManagerSetRequestSchema,
+  OrgMembersQuerySchema,
   OrgQuerySchema,
 } from "@ai/contracts/org";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";
 import type { TestHooks } from "../../lib/test-hooks";
-import { getOrg, type OrgCall, setDepartment, setJobTitle, setManager } from "./org.service";
+import {
+  getOrg,
+  listOrgMembers,
+  type OrgCall,
+  setDepartment,
+  setJobTitle,
+  setManager,
+} from "./org.service";
 
 export function orgRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> {
   const r = new Hono<AppVars>();
@@ -23,6 +31,10 @@ export function orgRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> {
   r.use("*", requireAuth(d), requireRole("platform_admin", "tenant_admin"));
 
   r.get("/", async (c) => c.json(await getOrg(call(c), tenant(c))));
+  r.get("/members", async (c) => {
+    const q = parseQuery(c, OrgMembersQuerySchema);
+    return c.json(await listOrgMembers(call(c), q));
+  });
   r.put("/managers/:id", async (c) => {
     const id = parseIdParam(c);
     const body = await parseJson(c, ManagerSetRequestSchema);

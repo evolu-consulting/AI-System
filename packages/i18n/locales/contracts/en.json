@@ -1,5 +1,12 @@
 {
   "contracts": {
+    "paging": {
+      "search": "Search by name",
+      "more": "Show more",
+      "loading": "Loading…",
+      "none": "No results",
+      "error": "Could not load the list"
+    },
     "plink": {
       "title": "Link products to contract lines",
       "desc": "The contract is about to be confirmed. For each line: use an existing product or create a new one. Products are only created/linked when you confirm.",
@@ -217,7 +224,6 @@
       "rows": "{{n}} rows",
       "perPage": "Per page",
       "pageSizeAria": "Rows per page",
-      "prev": "Previous page",
       "next": "Next page"
     },
     "nav": {

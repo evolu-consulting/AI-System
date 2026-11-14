@@ -9,9 +9,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "~/features/auth/hooks/use-session";
-import { fetchMembers, MEMBERS_KEY } from "~/features/contracts-list/api";
+import { fetchMembersPage } from "~/features/contracts-list/api";
 import { isCompanyAdmin } from "~/features/shell/lib/nav";
 import { cr127ErrorKey } from "~/platform/flow/lib/claim";
+import { PersonSearchSelect } from "~/shared/ui/PersonSearchSelect";
 import { SettingsGroup, SettingsRow } from "~/shared/ui/settings-layout";
 import {
   createDelegation,
@@ -45,11 +46,7 @@ export function DelegationPane() {
     queryKey: delegationKeys.mine,
     queryFn: ({ signal }) => fetchMyDelegations(signal),
   });
-  const members = useQuery({
-    queryKey: MEMBERS_KEY,
-    queryFn: ({ signal }) => fetchMembers(signal),
-  });
-  const people = members.data?.items ?? [];
+  const [names, setNames] = useState<Record<string, string>>({});
   const issue = delegationIssue(f, me?.id ?? null);
   const save = useMutation({
     mutationFn: () => createDelegation(me?.tenant.id ?? null, delegationBody(f)),
@@ -76,19 +73,18 @@ export function DelegationPane() {
       <div data-testid="delegation-pane">
         {admin && (
           <SettingsRow label={t("contracts.work.u4.deleg.forUser")} htmlFor="dg-for">
-            <select
+            <PersonSearchSelect
               id="dg-for"
-              className="field h-10 w-full"
+              source="contracts-members"
+              fetchPage={fetchMembersPage}
               value={f.forUserId}
-              onChange={(e) => setF({ ...f, forUserId: e.target.value })}
-            >
-              <option value="">{t("contracts.work.u4.deleg.forMe")}</option>
-              {people.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
+              valueName={names[f.forUserId]}
+              noneLabel={t("contracts.work.u4.deleg.forMe")}
+              onChange={(id, name) => {
+                setNames({ ...names, [id]: name });
+                setF({ ...f, forUserId: id });
+              }}
+            />
           </SettingsRow>
         )}
         <SettingsRow
@@ -96,21 +92,19 @@ export function DelegationPane() {
           hint={t("contracts.work.u4.deleg.personHint")}
           htmlFor="dg-to"
         >
-          <select
+          <PersonSearchSelect
             id="dg-to"
-            className="field h-10 w-full"
+            source="contracts-members"
+            fetchPage={fetchMembersPage}
             value={f.toUserId}
-            onChange={(e) => setF({ ...f, toUserId: e.target.value })}
-          >
-            <option value="">{t("contracts.work.u4.deleg.pick")}</option>
-            {people
-              .filter((m) => m.id !== (f.forUserId || me?.id))
-              .map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-          </select>
+            valueName={names[f.toUserId]}
+            excludeId={f.forUserId || me?.id}
+            noneLabel={t("contracts.work.u4.deleg.pick")}
+            onChange={(id, name) => {
+              setNames({ ...names, [id]: name });
+              setF({ ...f, toUserId: id });
+            }}
+          />
         </SettingsRow>
         <SettingsRow label={t("contracts.work.u4.deleg.from")} htmlFor="dg-from">
           <DateInput

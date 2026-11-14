@@ -7,7 +7,14 @@ import { runHubMigrations } from "@ai/db/migrate-hub";
 import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";
 import { isAppError } from "../../lib/errors";
-import { getOrg, type OrgCall, setDepartment, setJobTitle, setManager } from "./org.service";
+import {
+  getOrg,
+  listOrgMembers,
+  type OrgCall,
+  setDepartment,
+  setJobTitle,
+  setManager,
+} from "./org.service";
 
 const OWNER = process.env.TEST_DATABASE_URL;
 const API = process.env.TEST_ADMIN_API_DATABASE_URL;
@@ -278,5 +285,27 @@ describe("CR-147b · chức vụ nhân viên (hub.people_profiles.job_title, adm
     ).toBe(true);
     expect(await titleOf(U1)).toBeNull();
     expect(await titleOf(X)).toBeNull();
+  });
+});
+
+describe("CR-151 · trang thành viên (listOrgMembers)", () => {
+  test("trang 2 đúng, tổng đúng, tìm theo tên, chéo tenant không lộ, kèm tên quản lý", async () => {
+    await setManager(call, undefined, U2, { manager_id: U1 });
+    const p1 = await listOrgMembers(call, { limit: 2, offset: 0 });
+    const p2 = await listOrgMembers(call, { limit: 2, offset: 2 });
+    expect(p1.total).toBe(4);
+    expect(p1.items.map((m) => m.username)).toEqual(["binh", "lan"]);
+    expect(p2.items.map((m) => m.username)).toEqual(["tam", "thu"]);
+    expect(p2.items[1]?.manager_name).toBe("lan");
+    const hit = await listOrgMembers(call, { q: "TH", limit: 50, offset: 0 });
+    expect(hit.items.map((m) => m.username)).toEqual(["thu"]);
+    expect(hit.total).toBe(1);
+    const all = await listOrgMembers(call, { limit: 50, offset: 0 });
+    expect(all.items.some((m) => m.user_id === X)).toBe(false);
+  });
+  test("limit quá trần bị chặn ở schema (200)", async () => {
+    const { OrgMembersQuerySchema } = await import("@ai/contracts/org");
+    expect(OrgMembersQuerySchema.safeParse({ limit: "201" }).success).toBe(false);
+    expect(OrgMembersQuerySchema.parse({}).limit).toBe(50);
   });
 });
