@@ -29,6 +29,7 @@ import { EditLogPanel } from "~/features/promote-deal/components/EditLogPanel";
 import { PromoteDeal } from "~/features/promote-deal/components/PromoteDeal";
 import { contractKey, fileHref, patchContractFields } from "../api";
 import type { useInfoForm } from "../hooks/use-info-form";
+import { useMemberNames } from "../hooks/use-manage";
 import { headRule } from "../lib/head-rule";
 import { saveLabelKey } from "../lib/review";
 import { saveErrorText } from "../lib/save-error";
@@ -42,6 +43,7 @@ import { HistoryPanel } from "./HistoryPanel";
 import { KindSummary } from "./KindSummary";
 import { LegalBanner } from "./LegalBanner";
 import { ManagePanel, OwnerRow } from "./ManagePanel";
+import { ManualBanner } from "./ManualBanner";
 import { OriginalFileHost } from "./OriginalFileDialog";
 import { ExtractFailed, FileLink, SaveNotice } from "./ReviewParts";
 import { SubmitPreview } from "./SubmitPreview";
@@ -78,6 +80,7 @@ export function ContractBody(p: {
   const nav = useNavigate();
   const { sup, write } = versionGate(c, me);
   const [origOpen, setOrigOpen] = useState(false);
+  const memberName = useMemberNames();
   const lock = lockView(c);
   const today = todayIso();
   const partner = partnerOf(c);
@@ -194,6 +197,7 @@ export function ContractBody(p: {
             <SubmitPreview id={id} version={c.version} />
           )}
           <HeadBanner kind={rule.banner} c={c} partner={partner} />
+          <ManualBanner c={c} write={write && sup === null} file={file} nameOf={memberName} />
           <ExtractDialog open={reading} name={c.file?.name ?? c.title} />
           <PartnerSendPanel id={id} write={write} />
           <SignSessionCard id={id} write={write} />

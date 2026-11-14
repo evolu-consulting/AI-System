@@ -108,7 +108,7 @@ test("editor: đọc hết giờ (TIMEOUT) ⇒ nêu «AI đọc quá lâu», có
 }) => {
   await open(page, "editor", { status: "draft", extract_state: "failed", error: "TIMEOUT" });
   await expect(page.getByText(/AI đọc quá lâu/).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Nhập tay" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Nhập tay" })).toBeVisible(); // CR-157: nút (không còn link /contracts/c/new)
   await expect(page.getByTestId("reextract").first()).toBeVisible();
 });
 

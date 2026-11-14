@@ -441,6 +441,7 @@
         "FILE_REQUIRED": "Upload the contract document before submitting.",
         "WITHDRAW_NOT_ALLOWED": "Cannot withdraw: a reviewer already decided, only the submitter can withdraw, or the contract is no longer in review.",
         "CONTRACT_NOT_REJECTED": "Only a rejected contract can be recreated.",
+        "RECONCILE_REQUIRED": "Manual entry — tick “I have checked this against the original file” before Save or Submit.",
         "NO_APPROVAL_FLOW": "Your company has no contract approval process yet — ask an admin to create one under Processes.",
         "USE_NEW_VERSION": "Changing value, prices, parties or terms needs Upload new version.",
         "HOLD_EXISTS": "The contract is already on hold.",

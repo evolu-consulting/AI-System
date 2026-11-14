@@ -27,6 +27,7 @@ import {
 } from "./adapters/inproc-limit";
 import { kindScheduleDoneHook } from "./adapters/kind-schedule.hook";
 import { packAssignees } from "./adapters/manage.members";
+import { manualEntryRoutes } from "./adapters/manual-entry.routes";
 import { reviewRoutes } from "./adapters/review.routes";
 import { submitRoutes } from "./adapters/submit.routes";
 import {
@@ -54,6 +55,7 @@ import { createManual } from "./application/create-manual.usecase";
 import { handleExtractJob } from "./application/extract-job.usecase";
 import type { TaxRegistry } from "./application/extraction.ports";
 import { createExtractionQueue, type ExtractionQueue } from "./application/extraction-queue";
+import { reconcileEntry, startManualEntry } from "./application/manual-entry.usecase";
 import {
   linkContractProducts,
   type ProductLinksTxRepos,
@@ -346,6 +348,13 @@ function reviewModule(
       preview: submitPreview(sub), // CR-127 · M4
     }),
   );
+  r.route(
+    "/",
+    manualEntryRoutes(view, {
+      start: startManualEntry({ uow }),
+      reconcile: reconcileEntry({ uow }),
+    }),
+  ); // CR-157
   return r;
 }
 

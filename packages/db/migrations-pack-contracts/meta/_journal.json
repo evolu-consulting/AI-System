@@ -750,6 +750,13 @@
       "when": 1807000430000,
       "tag": "0113_cr152c_kinds_score",
       "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1807000440000,
+      "tag": "0114_cr157_manual_entry",
+      "breakpoints": true
     }
   ]
 }

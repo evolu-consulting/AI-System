@@ -178,7 +178,7 @@ function requestExtractQ(tx: Tx, tenantId: string): ExtractionRepo["requestExtra
         select id, status, extract_state, (source_text is not null or file_id is not null) as has_src
         from contracts.contracts where id = ${id}::uuid and tenant_id = ${tenantId}::uuid for update),
       u as (
-        update contracts.contracts t set extract_state = 'reading', error = null, version = t.version + 1,
+        update contracts.contracts t set extract_state = 'reading', error = null, reconciled_by = null, reconciled_at = null, version = t.version + 1,
           updated_at = now()
         from c where t.id = c.id and t.tenant_id = ${tenantId}::uuid and c.has_src
           and c.status = 'draft' and c.extract_state in ('ready', 'failed')

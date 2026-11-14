@@ -441,6 +441,7 @@
         "FILE_REQUIRED": "Tải văn bản hợp đồng lên trước khi gửi.",
         "WITHDRAW_NOT_ALLOWED": "Không rút về được: người duyệt đã quyết, chỉ người gửi được rút, hoặc hợp đồng không còn đang duyệt.",
         "CONTRACT_NOT_REJECTED": "Chỉ tạo lại từ hợp đồng bị từ chối.",
+        "RECONCILE_REQUIRED": "Hợp đồng nhập tay — tích “Tôi đã đối chiếu với tệp gốc” trước khi Lưu hoặc Gửi duyệt.",
         "NO_APPROVAL_FLOW": "Công ty chưa có quy trình duyệt hợp đồng — nhờ quản trị soạn ở mục Quy trình.",
         "USE_NEW_VERSION": "Đổi giá trị, đơn giá, các bên hoặc điều khoản cần Tải phiên bản mới.",
         "HOLD_EXISTS": "Hợp đồng đang tạm khoá.",

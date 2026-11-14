@@ -781,6 +781,14 @@
       "failedTitle": "Không đọc được hợp đồng này.",
       "failedBody": "AI chưa trích được thông tin từ file (có thể do ảnh mờ, bản quét, hoặc định dạng lạ). Bạn có thể xem lại file gốc, xoá rồi tải lên bản rõ hơn, hoặc nhập tay.",
       "manual": "Nhập tay",
+      "manualStarted": "Đã chuyển sang nhập tay. Xem tệp gốc để đối chiếu.",
+      "manualHint": "Nhập các ô còn trống theo tệp gốc. Tích ô dưới đây trước khi Lưu hoặc Gửi duyệt.",
+      "manualCheck": "Tôi đã đối chiếu với tệp gốc",
+      "manualTag": {
+        "pending": "Nhập tay · cần đối chiếu",
+        "done": "Nhập tay · đã đối chiếu",
+        "doneBy": "Nhập tay · đã đối chiếu bởi {{name}}"
+      },
       "failReason": {
         "unreadable": "Tệp bị hỏng hoặc không mở được. Hãy tải lên bản khác, hoặc bấm “Nhập tay”.",
         "tooLarge": "Tệp quá lớn để AI đọc. Hãy tách nhỏ tệp, hoặc bấm “Nhập tay”.",

@@ -121,6 +121,9 @@ export const ContractDetailSchema = ContractListRowSchema.omit({
   effect_outcome_at: IsoDateTime.nullable(),
   submit_round: z.number().int().min(0),
   submitted_by: z.uuid().nullable(),
+  /** CR-157: chỉ có khi HĐ nhập tay — người + lúc xác nhận đối chiếu (null = chưa; vắng = HĐ do AI đọc). */
+  reconciled_by: z.uuid().nullable().optional(),
+  reconciled_at: IsoDateTime.nullable().optional(),
   can: ContractCanSchema,
   /** NF1 · HĐ DRAFT mà Gửi sẽ bị chặn ⇒ lý do (`no_flow` = công ty chưa có quy trình duyệt khớp; khi đó `can.submit = false`); gửi được / không phải DRAFT ⇒ null.
    *  Tính bằng CÙNG hàm "có quy trình khớp" của lệnh Gửi (`submitFlowOpen`). Chỉ chi tiết, không có ở danh sách. */

@@ -31,6 +31,7 @@ export * from "./ledger";
 export * from "./list";
 export * from "./lock";
 export * from "./manage";
+export * from "./manual-entry";
 export * from "./messages";
 export * from "./milestones";
 export * from "./mywork";

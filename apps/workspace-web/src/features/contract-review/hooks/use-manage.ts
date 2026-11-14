@@ -16,6 +16,7 @@ import {
   generateSummary,
   historyKey,
 } from "../api";
+import { reconcileContract, startManualEntry } from "../api-exec";
 import { manageErrorKey } from "../lib/manage";
 
 function useAction<A>(
@@ -39,6 +40,21 @@ function useAction<A>(
 
 export const useReextract = (id: string, after?: () => void) =>
   useAction(id, () => extractContract(id), "contracts.gapa1.reextract.started", after);
+
+/** CR-157: «Nhập tay» khi AI đọc lỗi/hết giờ — chuyển HĐ sang nhập tay (ô trống), tệp gốc để đối chiếu. */
+export const useStartManual = (id: string) =>
+  useAction(id, () => startManualEntry(id), "contracts.review.manualStarted");
+
+/** CR-157: tích/bỏ «Tôi đã đối chiếu với tệp gốc» — không toast (mỗi lần tích một toast là ồn). */
+export function useReconcile(id: string) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: boolean) => reconcileContract(id, v),
+    onSuccess: () => qc.invalidateQueries({ queryKey: contractKey(id) }),
+    onError: (e) => toast(t(manageErrorKey(e)), "late"),
+  });
+}
 
 export const useAssignOwner = (id: string) =>
   useAction(id, (owner: string | null) => assignOwner(id, owner), "contracts.gapa1.owner.saved");

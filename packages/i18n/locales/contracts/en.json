@@ -781,6 +781,14 @@
       "failedTitle": "This contract could not be read.",
       "failedBody": "AI could not extract information from the file (it may be blurry, a scan, or an unusual format). You can review the original file, delete it and upload a clearer copy, or enter it manually.",
       "manual": "Enter manually",
+      "manualStarted": "Switched to manual entry. Open the original file to compare.",
+      "manualHint": "Fill the empty fields from the original file. Tick the box below before Save or Submit.",
+      "manualCheck": "I have checked this against the original file",
+      "manualTag": {
+        "pending": "Manual entry · needs checking",
+        "done": "Manual entry · checked",
+        "doneBy": "Manual entry · checked by {{name}}"
+      },
       "failReason": {
         "unreadable": "The file is damaged or cannot be opened. Upload another copy, or press “Enter manually”.",
         "tooLarge": "The file is too large for AI to read. Split it, or press “Enter manually”.",

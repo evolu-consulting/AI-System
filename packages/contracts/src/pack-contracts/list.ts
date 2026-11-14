@@ -172,6 +172,9 @@ export const ContractListRowSchema = z.strictObject({
   can_delete: z.boolean().optional(),
   /** CR-127 K8 · BR-59: nguồn HĐ (vắng ở hàng cũ/fake ⇒ coi như `upload`). */
   source: ContractSourceSchema.optional(),
+  /** CR-157: chỉ có khi HĐ nhập tay (vắng ⇒ AI đọc); `reconciled` = người nhập đã tích "đã đối chiếu với tệp gốc". */
+  entry_source: z.literal("manual").optional(),
+  reconciled: z.boolean().optional(),
 });
 export type ContractListRow = z.infer<typeof ContractListRowSchema>;
 

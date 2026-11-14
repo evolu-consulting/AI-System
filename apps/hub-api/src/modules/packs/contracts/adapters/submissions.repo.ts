@@ -20,6 +20,9 @@ export type SubmitHead = {
   /** Trường + văn bản y hệt lần gửi trước (so trong DB, jsonb =). */
   same: boolean;
   returnNote: string | null;
+  /** CR-157: nhập tay + lúc người nhập xác nhận đã đối chiếu (null = chưa). */
+  entrySource: string;
+  reconciledAt: string | null;
 };
 
 type HeadRow = {
@@ -39,6 +42,8 @@ type HeadRow = {
   has_last: boolean;
   same: boolean;
   return_note: string | null;
+  entry_source: string;
+  reconciled_at: string | null;
 };
 const json = (v: unknown) => (typeof v === "string" ? JSON.parse(v) : v);
 
@@ -51,7 +56,7 @@ export function submissionsRepo(tx: Tx, tid: string) {
     ): Promise<SubmitHead | null> {
       const [r] =
         await tx.execute<HeadRow>(sql`select c.status, c.extract_state, c.submit_round, c.submitted_by,
-          c.created_by, c.owner_user_id, c.run_id, (c.renews_id is not null and c.file_id is null) as needs_file, c.fields,
+          c.created_by, c.owner_user_id, c.run_id, c.entry_source, c.reconciled_at::text as reconciled_at, (c.renews_id is not null and c.file_id is null) as needs_file, c.fields,
           case when c.source_text is null then null else encode(sha256(convert_to(c.source_text, 'UTF8')), 'hex') end as sha,
           c.source_text, s.fields as last_fields, s.text_sha256 as last_sha, (s.id is not null) as has_last,
           (s.id is not null and s.fields = c.fields and s.text_sha256 is not distinct from
@@ -78,7 +83,33 @@ export function submissionsRepo(tx: Tx, tid: string) {
         last: r.has_last ? { fields: json(r.last_fields), textSha: r.last_sha } : null,
         same: r.same === true,
         returnNote: r.return_note,
+        entrySource: r.entry_source,
+        reconciledAt: r.reconciled_at,
       };
+    },
+    /** CR-157 · DRAFT + failed ⇒ nhập tay trên chính HĐ: `entry_source = manual`, `extract_state = ready` (form sửa được), bỏ xác nhận cũ. */
+    async startManual(id: string, actor: string): Promise<number> {
+      const [r] = await tx.execute<{
+        version: number;
+      }>(sql`with u as (update contracts.contracts set entry_source = 'manual',
+          extract_state = 'ready', error = null, reconciled_by = null, reconciled_at = null, version = version + 1, updated_at = now()
+        where id = ${id}::uuid and tenant_id = ${tid}::uuid and status = 'draft' and extract_state = 'failed' returning id, version),
+        e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+          select ${tid}::uuid, u.id, 'manual_entry_started', ${actor}::uuid, '{}'::jsonb from u)
+        select version from u`);
+      if (!r) throw new Error("manual-entry: contract not in failed state");
+      return Number(r.version);
+    },
+    /** CR-157 · ghi / bỏ xác nhận đối chiếu (người gọi). Không đổi `version`. Trả lúc xác nhận (null khi bỏ). */
+    async setReconciled(id: string, actor: string | null): Promise<string | null> {
+      const [r] = await tx.execute<{ at: string | null }>(sql`with u as (update contracts.contracts
+          set reconciled_by = ${actor}::uuid, reconciled_at = case when ${actor}::uuid is null then null else now() end, updated_at = now()
+        where id = ${id}::uuid and tenant_id = ${tid}::uuid and entry_source = 'manual' and status = 'draft' returning reconciled_at),
+        e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+          select ${tid}::uuid, ${id}::uuid, case when ${actor}::uuid is null then 'reconcile_cleared' else 'reconciled' end,
+            ${actor}::uuid, '{}'::jsonb from u)
+        select (select reconciled_at::text from u) as at`);
+      return r?.at ?? null;
     },
     /**
      * Có quy trình: lượt duyệt chờ flow (`mode engine`, chưa run, `FLOW_STARTING`) — dùng lại lượt sống (lượt đọc AI sau tải lên) hoặc mở

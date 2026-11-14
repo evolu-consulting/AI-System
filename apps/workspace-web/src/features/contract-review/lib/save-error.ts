@@ -14,6 +14,7 @@ const SERVER_TEXT = new Set([
 ]);
 const KEYED: Record<string, string> = {
   NO_APPROVAL_FLOW: "contracts.u5.err.NO_APPROVAL_FLOW",
+  RECONCILE_REQUIRED: "contracts.u5.err.RECONCILE_REQUIRED",
   CONTRACT_LOCKED: "contracts.lock.errLocked",
   OBLIGATION_DONE: "contracts.errors.alreadyDone",
   MILESTONE_CONFIRMED: "contracts.errors.alreadyDone",
