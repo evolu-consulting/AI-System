@@ -10,6 +10,8 @@ import {
   MSG_ERRORS,
   MsgConversationsQuerySchema,
   MsgListQuerySchema,
+  type MsgPeoplePage,
+  MsgPeopleQuerySchema,
   RenameConversationRequestSchema,
   SendMessageRequestSchema,
 } from "@ai/contracts/pack-contracts";
@@ -187,11 +189,10 @@ function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   });
 }
 
-export type Directory = (who: {
-  tenantId: string;
-  userId: string;
-  userKind?: "internal" | "external";
-}) => Promise<{ id: string; name: string }[]>;
+export type Directory = (
+  who: { tenantId: string; userId: string; userKind?: "internal" | "external" },
+  opt: { cursor?: string | undefined; limit: number; q?: string | undefined },
+) => Promise<MsgPeoplePage>;
 
 export function messagesRoutes(
   view: PackAccessView,
@@ -200,11 +201,20 @@ export function messagesRoutes(
 ): Routes {
   const r = new Hono<PackGuardVars>();
   const h = helpers(view);
-  // CR-132b · danh bạ «Thành viên»: đồng nghiệp nội bộ của công ty (không đối tác), dùng chung cho «Nhắn tin mới» và «Thêm người».
+  // CR-132b/CR-148 · danh bạ «Thành viên» TẢI DẦN (30/lần, trần 50, theo phòng ban rồi tên): đồng nghiệp nội bộ của công ty (không đối tác).
   r.get("/messages/people", h.read, async (c) => {
-    const items = await directory(h.who(c));
-    h.noStore(c);
-    return c.json({ items });
+    const q = parseQuery(c, MsgPeopleQuerySchema);
+    try {
+      const out = await directory(h.who(c), q);
+      h.noStore(c);
+      return c.json(out);
+    } catch (e) {
+      if (e instanceof Error && e.message === "BAD_CURSOR")
+        throw appError("VALIDATION_ERROR", {
+          issues: [{ path: ["cursor"], code: "invalid", message: "cursor" }],
+        });
+      throw e;
+    }
   });
   conversationRoutes(r, h, uc);
   memberRoutes(r, h, uc);

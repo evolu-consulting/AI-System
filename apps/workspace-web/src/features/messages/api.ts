@@ -7,9 +7,11 @@ import type {
   FileRef,
   Message,
   MessagePage,
+  MsgPeoplePage,
   SendMessageRequest,
   UnreadResponse,
 } from "@ai/contracts/pack-contracts";
+import type { PeopleResponse, PersonCard } from "@ai/contracts/people";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/messages";
@@ -21,14 +23,16 @@ export const msgKeys = {
   list: ["messages", "list"] as const,
   detail: (id: string) => ["messages", "detail", id] as const,
   msgs: (id: string) => ["messages", "msgs", id] as const,
-  people: ["messages", "people"] as const,
+  people: (q: string) => ["messages", "people", q] as const,
 };
 
 export const fetchUnread = (signal?: AbortSignal) =>
   api<UnreadResponse>(`${BASE}/unread`, { signal });
+/** CR-148 · mọi danh sách tải dần 30 dòng/lần (cursor; server giữ trần). */
+export const MSG_LIST_PAGE = 30;
 export const fetchConversations = (cursor: string | null, signal?: AbortSignal) =>
   api<ConversationPage>(`${BASE}/conversations`, {
-    query: cursor ? { cursor } : undefined,
+    query: { limit: MSG_LIST_PAGE, ...(cursor ? { cursor } : {}) },
     signal,
   });
 export const fetchConversation = (id: string, signal?: AbortSignal) =>
@@ -43,7 +47,7 @@ export const removeMember = (id: string, userId: string) =>
   api<void>(`${conv(id)}/members/${encodeURIComponent(userId)}`, { method: "DELETE" });
 export const fetchMessages = (id: string, beforeSeq: number | null, signal?: AbortSignal) =>
   api<MessagePage>(`${conv(id)}/messages`, {
-    query: beforeSeq ? { before_seq: beforeSeq } : undefined,
+    query: { limit: MSG_LIST_PAGE, ...(beforeSeq ? { before_seq: beforeSeq } : {}) },
     signal,
   });
 export const sendMessage = (id: string, body: SendMessageRequest) =>
@@ -53,9 +57,19 @@ export const revokeMessage = (id: string, seq: number) =>
 export const markRead = (id: string, seq: number) =>
   api<{ unread_total: number }>(`${conv(id)}/read`, { method: "POST", body: { seq } });
 
-/** Người nội bộ chọn được (cùng nguồn «người có thể được giao»; tra MỘT lần, lọc ở máy khách). */
-export const fetchPeople = (signal?: AbortSignal) =>
-  api<{ items: { id: string; name: string }[] }>(`${BASE}/people`, { signal });
+/** Danh bạ nội bộ TẢI DẦN (theo phòng ban rồi tên; `q` lọc tên không dấu ở server). */
+export const fetchPeople = (cursor: string | null, q: string, signal?: AbortSignal) =>
+  api<MsgPeoplePage>(`${BASE}/people`, {
+    query: { limit: MSG_LIST_PAGE, ...(cursor ? { cursor } : {}), ...(q ? { q } : {}) },
+    signal,
+  });
+
+/** Thẻ người (avatar, phòng ban, chức vụ) THEO LÔ ≤ 50 id: hub `GET /people?ids=` — một lời gọi cho cả lô, không gọi từng người. */
+export const fetchPersonCards = async (
+  ids: readonly string[],
+  signal?: AbortSignal,
+): Promise<PersonCard[]> =>
+  (await api<PeopleResponse>("/people", { query: { ids: ids.join(",") }, signal })).items;
 
 const fileBase = (id: string, fileId: string) => `${conv(id)}/files/${encodeURIComponent(fileId)}`;
 

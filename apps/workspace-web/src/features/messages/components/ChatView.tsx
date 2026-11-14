@@ -4,7 +4,7 @@ import type { ConversationDetail } from "@ai/contracts/pack-contracts";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconChevronLeft } from "~/components/icons";
 import { confirmDialog } from "~/components/shared/dialog-bus";
@@ -12,6 +12,7 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { cn } from "~/lib/utils";
 import { msgKeys } from "../api";
 import { useConversation, useMarkRead, useMessages, useOutbox, useRevoke } from "../hooks/use-chat";
+import { usePersonCards } from "../hooks/use-person-cards";
 import { convTitle } from "../lib/conversations";
 import { errorKey, isGone } from "../lib/errors";
 import { lastMineSeq, seenCount } from "../lib/message-pages";
@@ -157,6 +158,9 @@ function ChatBody({
 }) {
   const { t } = useTranslation();
   const doRevoke = useRevokeAction(d?.id ?? "");
+  // CR-148 · avatar người gửi: thẻ người đọc THEO LÔ cho cả thành viên (≤ 50 ⇒ một lời gọi).
+  const memberIds = useMemo(() => d?.members.map((m) => m.user_id) ?? [], [d?.members]);
+  const cards = usePersonCards(memberIds);
   const outgoing = box.outgoing.map((o) => ({
     clientId: o.clientId,
     body: o.body,
@@ -187,6 +191,7 @@ function ChatBody({
       myId={myId}
       group={d.kind === "group"}
       nameOf={(uid) => d.members.find((m) => m.user_id === uid)?.name ?? ""}
+      cardOf={(uid) => cards.get(uid)}
       seenN={seenCount(lastMineSeq(msgs.items, myId), d.members, myId)}
       hasOlder={msgs.hasNextPage}
       loadingOlder={msgs.isFetchingNextPage}

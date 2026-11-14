@@ -6,7 +6,8 @@ import { tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../../lib/db";
-import { internalDirectory, internalUsersAmong } from "../../kit/adapters/member-names";
+import { internalDirectoryPage } from "../../kit/adapters/directory-page";
+import { internalUsersAmong } from "../../kit/adapters/member-names";
 import { createPackUow } from "../../kit/adapters/pack-uow";
 import type { PackUow } from "../../kit/public";
 import { messagesRepo } from "./adapters/messages.repo";
@@ -223,17 +224,40 @@ describe("CR-132 M3 · người NGOÀI hội thoại / công ty khác", () => {
   });
 });
 
-describe("CR-132b · danh bạ «Thành viên»", () => {
+describe("CR-132b/CR-148 · danh bạ «Thành viên» tải dần", () => {
+  const dir = () => internalDirectoryPage(db);
   it("đường chính: đồng nghiệp còn dùng được, trừ mình và người bị khoá", async () => {
-    const list = await internalDirectory(db)({ ...w(U1), userKind: "internal" });
-    const ids = list.map((x) => x.id).sort();
-    expect(ids).toEqual([U2, U3, U5].sort());
+    const list = await dir()({ ...w(U1), userKind: "internal" }, { limit: 30 });
+    expect(list.items.map((x) => x.id).sort()).toEqual([U2, U3, U5].sort());
+    expect(list.next_cursor).toBeNull();
+    expect(list.items[0]?.department).toBeNull(); // chưa gán phòng ⇒ null
   });
-  it("chặn chéo công ty và đối tác: không lộ người công ty khác; external ⇒ rỗng", async () => {
-    const other = await internalDirectory(db)({ ...w(V1, T2), userKind: "internal" });
-    expect(other.map((x) => x.id)).not.toContain(U2);
-    expect(other.map((x) => x.id)).not.toContain(V1);
-    const ext = await internalDirectory(db)({ ...w(U1), userKind: "external" });
-    expect(ext).toEqual([]);
+  it("tải dần: trang 1 người, con trỏ nối tiếp không trùng không sót, trang cuối hết con trỏ", async () => {
+    const seen: string[] = [];
+    let cursor: string | undefined;
+    for (let i = 0; i < 5; i++) {
+      const p = await dir()({ ...w(U1), userKind: "internal" }, { limit: 1, cursor });
+      expect(p.items.length).toBeLessThanOrEqual(1);
+      seen.push(...p.items.map((x) => x.id));
+      if (!p.next_cursor) break;
+      cursor = p.next_cursor;
+    }
+    expect(seen.sort()).toEqual([U2, U3, U5].sort());
+  });
+  it("con trỏ hỏng ⇒ BAD_CURSOR, q lọc tên không dấu", async () => {
+    await expect(
+      dir()({ ...w(U1), userKind: "internal" }, { limit: 5, cursor: "@@" }),
+    ).rejects.toThrow("BAD_CURSOR");
+    const none = await dir()({ ...w(U1), userKind: "internal" }, { limit: 5, q: "zzzkhongco" });
+    expect(none.items).toEqual([]);
+    const all = await dir()({ ...w(U1), userKind: "internal" }, { limit: 5, q: "" });
+    expect(all.items.length).toBe(3);
+  });
+  it("chặn chéo công ty và đối tác: không lộ người công ty khác, external ⇒ rỗng", async () => {
+    const other = await dir()({ ...w(V1, T2), userKind: "internal" }, { limit: 50 });
+    expect(other.items.map((x) => x.id)).not.toContain(U2);
+    expect(other.items.map((x) => x.id)).not.toContain(V1);
+    const ext = await dir()({ ...w(U1), userKind: "external" }, { limit: 50 });
+    expect(ext.items).toEqual([]);
   });
 });

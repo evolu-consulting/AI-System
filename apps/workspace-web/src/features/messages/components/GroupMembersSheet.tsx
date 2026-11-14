@@ -8,7 +8,6 @@ import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { useGroupActions } from "../hooks/use-chat";
-import { usePeople } from "../hooks/use-conversations";
 import { errorKey } from "../lib/errors";
 import { canLeave, canManage, canRemoveMember } from "../lib/perms";
 import { PeoplePicker } from "./PeoplePicker";
@@ -29,7 +28,6 @@ export function GroupMembersSheet({
   const { t } = useTranslation();
   const act = useGroupActions(detail.id);
   const owner = canManage(detail);
-  const people = usePeople(open && owner);
   const [title, setTitle] = useState(detail.title ?? "");
   const [adding, setAdding] = useState<ReadonlySet<string>>(new Set());
   const fail = (e: unknown) => toast(t(errorKey(e)), "late");
@@ -143,8 +141,7 @@ export function GroupMembersSheet({
           <section aria-label={t("contracts.messages.addPeople")} className="grid gap-2">
             <h3 className="m-0 text-label font-semibold">{t("contracts.messages.addPeople")}</h3>
             <PeoplePicker
-              people={people.data?.items ?? []}
-              status={people.isPending ? "loading" : people.isError ? "error" : "ready"}
+              enabled={open && owner}
               selected={adding}
               onToggle={(id) =>
                 setAdding((s) => {
@@ -153,7 +150,6 @@ export function GroupMembersSheet({
                   return n;
                 })
               }
-              onRetry={() => void people.refetch()}
               disabledIds={detail.members.map((m) => m.user_id)}
             />
             <button

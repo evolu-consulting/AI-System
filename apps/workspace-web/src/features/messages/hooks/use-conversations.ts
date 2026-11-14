@@ -1,6 +1,11 @@
 // CR-132 · W2 · danh sách hội thoại (MỘT query phân trang; không gọi lại theo từng hội thoại) + người nội bộ chọn được + tạo mới.
 import type { ConversationDetail, CreateConversationRequest } from "@ai/contracts/pack-contracts";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useMemo } from "react";
 import { createConversation, fetchConversations, fetchPeople, msgKeys } from "../api";
 import { flattenList, type ListPages, sortConversations } from "../lib/conversations";
@@ -23,15 +28,20 @@ export function useConversations() {
   return { ...q, items };
 }
 
-/** Người nội bộ để nhắn (tra MỘT lần khi mở hộp «Nhắn tin mới» / «Thêm người»). */
-export function usePeople(enabled: boolean) {
-  return useQuery({
-    queryKey: msgKeys.people,
-    queryFn: ({ signal }) => fetchPeople(signal),
+/** Danh bạ nội bộ TẢI DẦN 30/lần (theo phòng ban rồi tên); `q` lọc ở server. Bật khi mở hộp «Nhắn tin mới» / «Thêm người» hoặc cột trái. */
+export function usePeople(enabled: boolean, q = "") {
+  const r = useInfiniteQuery({
+    queryKey: msgKeys.people(q),
+    queryFn: ({ pageParam, signal }) => fetchPeople(pageParam, q, signal),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.next_cursor,
     enabled,
     staleTime: 5 * 60_000,
     retry: false,
+    placeholderData: keepPreviousData,
   });
+  const items = useMemo(() => r.data?.pages.flatMap((p) => p.items) ?? [], [r.data]);
+  return { ...r, items };
 }
 
 export function useCreateConversation() {

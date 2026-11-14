@@ -1,7 +1,9 @@
 // CR-132 · W2 · dòng tin theo ngày (trình bày): tin của mình bên phải, tin đang gửi mờ, gửi lỗi bấm gửi lại, thu hồi tin của mình,
-// «Đã xem» dưới tin cuối của mình, nút «Xem tin cũ hơn» (tải thêm 50).
+// «Đã xem» dưới tin cuối của mình, nút tải dần 30 tin/lần: cuộn lên gần đầu ⇒ tự tải tin cũ hơn, giữ nguyên vị trí đang đọc (CR-148); nút «Xem tin cũ hơn» là đường dự phòng.
 import type { Message } from "@ai/contracts/pack-contracts";
-import { useEffect, useRef, useState } from "react";
+import type { PersonCard } from "@ai/contracts/people";
+import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconTrash } from "~/components/icons";
 import { cn } from "~/lib/utils";
@@ -20,6 +22,8 @@ export type MessageListProps = {
   myId: string;
   group: boolean;
   nameOf: (userId: string) => string;
+  /** Thẻ người theo lô (avatar người gửi); chưa về ⇒ chữ cái đầu. */
+  cardOf?: (userId: string) => PersonCard | undefined;
   seenN: number;
   hasOlder: boolean;
   loadingOlder: boolean;
@@ -32,6 +36,7 @@ type BubbleProps = {
   row: Row;
   mine: boolean;
   name: string;
+  avatar?: { name: string; src: string | null | undefined } | undefined;
   revokable: boolean;
   onRevoke: () => void;
   onRetry: () => void;
@@ -126,7 +131,7 @@ const bubbleTone = (deleted: boolean, state: string, mine: boolean): string =>
  * MỘT bubble cho cả tin đang gửi / lỗi / đã gửi (cùng cấu trúc, cùng khoá client_id ⇒ không remount, độ mờ chuyển mượt).
  * Chữ tin không xê dịch khi hover (lớp phủ tuyệt đối).
  */
-function Bubble({ row, mine, name, revokable, onRevoke, onRetry }: BubbleProps) {
+function Bubble({ row, mine, name, avatar, revokable, onRevoke, onRetry }: BubbleProps) {
   const { t } = useTranslation();
   const state = stateOf(row);
   const [tapped, setTapped] = useState(false);
@@ -138,24 +143,31 @@ function Bubble({ row, mine, name, revokable, onRevoke, onRetry }: BubbleProps) 
       data-mine={mine ? "true" : "false"}
       data-state={state}
     >
-      {name && !mine && <span className="mb-0.5 px-1 text-micro text-dim">{name}</span>}
-      <div className="relative max-w-[85%]">
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: chạm vào tin để hiện giờ/thao tác trên cảm ứng; bàn phím dùng nút trong lớp phủ */}
-        {/* biome-ignore lint/a11y/useKeyWithClickEvents: xem trên */}
-        <div
-          onClick={() => setTapped((v) => !v)}
-          className={cn(
-            "min-w-0 rounded-2xl px-3.5 py-2 text-[13.5px] leading-relaxed transition-opacity duration-300 [overflow-wrap:anywhere]",
-            bubbleTone(m?.deleted === true, state, mine),
-            state === "sending" && "opacity-60",
-          )}
-        >
-          <BubbleContent row={row} />
-          {state === "sending" && (
-            <span className="sr-only"> {t("contracts.messages.sending")}</span>
+      {name && !mine && <span className="mb-0.5 px-8 text-micro text-dim">{name}</span>}
+      <div className="flex max-w-[85%] items-end gap-1.5">
+        {!mine && avatar && (
+          <PersonAvatar name={avatar.name} src={avatar.src} size={24} testId="msg-avatar" />
+        )}
+        <div className="relative min-w-0">
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: chạm vào tin để hiện giờ/thao tác trên cảm ứng; bàn phím dùng nút trong lớp phủ */}
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: xem trên */}
+          <div
+            onClick={() => setTapped((v) => !v)}
+            className={cn(
+              "min-w-0 rounded-2xl px-3.5 py-2 text-[13.5px] leading-relaxed transition-opacity duration-300 [overflow-wrap:anywhere]",
+              bubbleTone(m?.deleted === true, state, mine),
+              state === "sending" && "opacity-60",
+            )}
+          >
+            <BubbleContent row={row} />
+            {state === "sending" && (
+              <span className="sr-only"> {t("contracts.messages.sending")}</span>
+            )}
+          </div>
+          {m && (
+            <Tools m={m} mine={mine} shown={tapped} revokable={revokable} onRevoke={onRevoke} />
           )}
         </div>
-        {m && <Tools m={m} mine={mine} shown={tapped} revokable={revokable} onRevoke={onRevoke} />}
       </div>
       {state === "failed" && row.kind === "pending" && (
         <RetryLine reason={row.p.failed} onRetry={onRetry} />
@@ -191,23 +203,44 @@ function DayBar({ iso }: { iso: string }) {
 export function MessageList(p: MessageListProps) {
   const { t } = useTranslation();
   const end = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLDivElement>(null);
+  const firstSeq = p.items[0]?.seq ?? 0;
+  const keep = useRef<{ seq: number; h: number } | null>(null);
+  // CR-148 · tải tin cũ hơn: chèn lên đầu ⇒ giữ nguyên vị trí đang đọc (bù đúng phần chiều cao mới thêm).
+  useLayoutEffect(() => {
+    const el = box.current;
+    const k = keep.current;
+    if (el && k && firstSeq && firstSeq < k.seq) el.scrollTop += el.scrollHeight - k.h;
+    keep.current = el ? { seq: firstSeq, h: el.scrollHeight } : null;
+  }, [firstSeq]);
+  const older = () => {
+    const el = box.current;
+    if (el) keep.current = { seq: firstSeq, h: el.scrollHeight };
+    p.onOlder();
+  };
   const lastSeq = p.items[p.items.length - 1]?.seq ?? 0;
   const failedN = p.outgoing.filter((o) => o.failed).length;
   // biome-ignore lint/correctness/useExhaustiveDependencies: cuộn xuống khi có tin mới/đang gửi/gửi lỗi (hiện «Gửi lại»), KHÔNG cuộn khi tải tin cũ
   useEffect(() => {
     end.current?.scrollIntoView?.({ block: "end" });
   }, [lastSeq, p.outgoing.length, failedN]);
+  const avatarOf = (m: Message | null) =>
+    m && m.sender_id !== p.myId
+      ? { name: p.nameOf(m.sender_id), src: p.cardOf?.(m.sender_id)?.avatar }
+      : undefined;
   const groups = mergeRows(p.items, p.outgoing, dayKey(new Date().toISOString()));
   return (
-    <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-4 py-3" data-testid="msg-list">
+    <div
+      ref={box}
+      onScroll={(e) => {
+        if (e.currentTarget.scrollTop < 80 && p.hasOlder && !p.loadingOlder) older();
+      }}
+      className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-4 py-3"
+      data-testid="msg-list"
+    >
       {p.hasOlder && (
         <div className="text-center">
-          <button
-            type="button"
-            disabled={p.loadingOlder}
-            onClick={p.onOlder}
-            className="btn btn-sm"
-          >
+          <button type="button" disabled={p.loadingOlder} onClick={older} className="btn btn-sm">
             {t("contracts.messages.loadOlder")}
           </button>
         </div>
@@ -223,6 +256,7 @@ export function MessageList(p: MessageListProps) {
                 row={r}
                 mine={m ? m.sender_id === p.myId : true}
                 name={m && p.group ? p.nameOf(m.sender_id) : ""}
+                avatar={avatarOf(m)}
                 revokable={m ? canRevoke(m, p.myId) : false}
                 onRevoke={() => m && p.onRevoke(m.seq)}
                 onRetry={() => r.kind === "pending" && p.onRetry(r.p.clientId)}

@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { useCreateConversation, usePeople } from "../hooks/use-conversations";
+import { useCreateConversation } from "../hooks/use-conversations";
 import { errorKey } from "../lib/errors";
 import { pickMode } from "../lib/people";
 import { PeoplePicker } from "./PeoplePicker";
@@ -56,7 +56,6 @@ export function NewConversationDialog({
   onOpened: (id: string) => void;
 }) {
   const { t } = useTranslation();
-  const people = usePeople(open);
   const create = useCreateConversation();
   const [sel, setSel] = useState<ReadonlySet<string>>(new Set());
   const [title, setTitle] = useState("");
@@ -110,14 +109,7 @@ export function NewConversationDialog({
           <DialogTitle>{t("contracts.messages.newTitle")}</DialogTitle>
           <DialogDescription>{t("contracts.messages.pickHint")}</DialogDescription>
         </DialogHeader>
-        <PeoplePicker
-          people={people.data?.items ?? []}
-          status={people.isPending ? "loading" : people.isError ? "error" : "ready"}
-          selected={sel}
-          onToggle={toggle}
-          onRetry={() => void people.refetch()}
-          disabledIds={[myId]}
-        />
+        <PeoplePicker enabled={open} selected={sel} onToggle={toggle} disabledIds={[myId]} />
         {sel.size > 0 && (
           <p className="m-0 text-label text-dim">
             {t("contracts.messages.selectedN", { n: sel.size })}

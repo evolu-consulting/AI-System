@@ -1,9 +1,13 @@
 // CR-132 · W2 · một dòng danh sách: avatar/tên/xem trước/giờ, chưa đọc ⇒ in đậm + số. CR-132b: dòng «Thành viên» chưa có 1-1 (`c` null) bấm là mở/tạo.
+
 import type { ConversationSummary } from "@ai/contracts/pack-contracts";
+import type { PersonCard } from "@ai/contracts/people";
+import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
 import { convTitle, isUnread, previewOf, unreadLabel } from "../lib/conversations";
-import { initialOf, listTime } from "../lib/format";
+import { listTime } from "../lib/format";
+import { PersonTip, usePersonTip } from "./PersonTip";
 
 function Preview({ c, myId }: { c: ConversationSummary; myId: string }) {
   const { t } = useTranslation();
@@ -23,6 +27,7 @@ function Preview({ c, myId }: { c: ConversationSummary; myId: string }) {
   return <span className="min-w-0 flex-1 truncate">{text}</span>;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: một dòng trình bày (nhãn xem trước/chưa đọc/thẻ người), tách thêm chỉ làm khó đọc
 export function ConversationRow({
   c,
   name,
@@ -30,6 +35,7 @@ export function ConversationRow({
   active,
   onOpen,
   busy = false,
+  card,
 }: {
   c: ConversationSummary | null;
   /** Tên hiện khi chưa có hội thoại (thành viên chưa nhắn). */
@@ -38,14 +44,20 @@ export function ConversationRow({
   active: boolean;
   onOpen: () => void;
   busy?: boolean;
+  /** Thẻ người đã đọc theo lô (avatar + thẻ rê chuột); chưa về ⇒ chữ cái đầu. */
+  card?: PersonCard | undefined;
 }) {
   const { t } = useTranslation();
   const unread = c ? isUnread(c) : false;
   const n = c ? unreadLabel(c.unread) : null;
   const title = c ? convTitle(c) : (name ?? "");
+  const isPerson = !c || c.kind === "direct";
+  const tip = usePersonTip();
+  const hv = isPerson ? tip.hover : {};
   return (
-    <li>
+    <li className="relative">
       <button
+        {...tip.focus}
         type="button"
         data-testid="conv-row"
         data-unread={unread ? "true" : "false"}
@@ -57,15 +69,18 @@ export function ConversationRow({
           active && "bg-act-soft",
         )}
       >
-        <span
-          aria-hidden
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-act-soft text-[15px] font-semibold text-act"
-        >
-          {initialOf(title)}
+        <span {...hv} className="shrink-0">
+          <PersonAvatar
+            name={title}
+            src={isPerson ? card?.avatar : null}
+            size={40}
+            testId="conv-avatar"
+          />
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline gap-2">
             <span
+              {...hv}
               className={cn(
                 "min-w-0 flex-1 truncate text-[14px]",
                 unread ? "font-bold" : "font-medium",
@@ -99,6 +114,7 @@ export function ConversationRow({
           </span>
         </span>
       </button>
+      {isPerson && tip.open && <PersonTip name={title} card={card} />}
     </li>
   );
 }

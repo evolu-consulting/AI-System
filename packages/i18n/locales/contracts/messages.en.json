@@ -31,6 +31,8 @@
       "back": "Back to list",
       "emptyChat": "Send the first greeting.",
       "loadOlder": "Show older messages",
+      "noDept": "No department",
+      "loadingMore": "Loading…",
       "composer": "Type a message",
       "placeholder": "Type a message…",
       "send": "Send",

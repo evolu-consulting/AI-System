@@ -2,7 +2,9 @@
 import { MSG_GROUP_MAX } from "@ai/contracts/pack-contracts";
 import { foldText } from "./format";
 
-export type Person = { id: string; name: string };
+export type Dept = { id: string; name: string };
+/** `department` (CR-148): phòng ban đầu tiên theo khoá; chưa thuộc phòng nào ⇒ null/vắng. */
+export type Person = { id: string; name: string; department?: Dept | null };
 
 /** Lọc theo tên; `excludeIds` (mình, người đã trong nhóm) không hiện. */
 export function filterPeople(

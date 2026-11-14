@@ -31,6 +31,8 @@
       "back": "Về danh sách",
       "emptyChat": "Hãy gửi lời chào đầu tiên.",
       "loadOlder": "Xem tin cũ hơn",
+      "noDept": "Chưa có phòng",
+      "loadingMore": "Đang tải…",
       "composer": "Nhập tin nhắn",
       "placeholder": "Nhập tin nhắn…",
       "send": "Gửi",

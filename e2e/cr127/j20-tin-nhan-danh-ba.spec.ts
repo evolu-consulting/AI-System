@@ -22,3 +22,24 @@ test("Bấm thành viên ⇒ nhắn ngay", async ({ browser }) => {
   await expect(a.getByTestId("msg-row").filter({ hasText: HELLO })).toBeVisible();
   await ctx.close();
 });
+
+// CR-148 · danh bạ chia nhóm theo phòng ban (thu gọn/mở), rê chuột lên tên ⇒ thẻ người (chưa chạy trong lát).
+test("Danh bạ theo phòng ban: thu gọn, thẻ người", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const ctx = await browser.newContext();
+  const a = await ctx.newPage();
+  await loginCw(a, E, U.employee);
+  await a.goto("/contracts/messages");
+  const members = a.getByRole("region", { name: "Thành viên" });
+  const group = members.getByTestId("dept-group").first();
+  await expect(group).toBeVisible();
+  const toggle = group.getByRole("button", { expanded: true }).first();
+  await toggle.click();
+  await expect(group.getByRole("button", { expanded: false }).first()).toBeVisible();
+  await expect(group.getByTestId("conv-row")).toHaveCount(0);
+  await group.getByRole("button", { expanded: false }).first().click();
+  await group.getByTestId("conv-row").first().hover();
+  await expect(a.getByTestId("person-tip")).toBeVisible();
+  await expect(a.getByTestId("person-tip-dept")).toBeVisible();
+  await ctx.close();
+});

@@ -16,7 +16,7 @@ export const MSG_UNREAD_CONV_CAP = MSG_UNREAD_CONV_MAX + 1;
 export const MSG_UNREAD_TOTAL_MAX = 999;
 export const MSG_CONV_PAGE_DEFAULT = 30;
 export const MSG_CONV_PAGE_MAX = 50;
-export const MSG_PAGE_DEFAULT = 50;
+export const MSG_PAGE_DEFAULT = 30;
 export const MSG_PAGE_MAX = 100;
 
 /** Mã lỗi riêng → HTTP. Không phải thành viên / không có / tenant khác ⇒ cùng `MSG_NOT_FOUND` (không lộ hội thoại có tồn tại). */
@@ -235,3 +235,25 @@ export function parseMeStreamMsgEvent(event: string, data: unknown): MeStreamMsg
   const r = MeStreamMsgEventSchema.safeParse({ event, data: json });
   return r.success ? r.data : null;
 }
+
+// CR-148 · danh bạ «Thành viên» tải dần (thay mảng đầy đủ của CR-132b): 30 dòng/lần, trần 50; `q` lọc tên không dấu.
+export const MSG_PEOPLE_PAGE_DEFAULT = 30;
+export const MSG_PEOPLE_PAGE_MAX = 50;
+export const MsgPeopleQuerySchema = z.object({
+  cursor: z.string().max(300).optional(),
+  q: z.string().trim().max(80).optional(),
+  limit: z.coerce.number().int().min(1).max(MSG_PEOPLE_PAGE_MAX).default(MSG_PEOPLE_PAGE_DEFAULT),
+});
+export type MsgPeopleQuery = z.infer<typeof MsgPeopleQuerySchema>;
+export const MsgPersonSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  /** Phòng ban (đầu tiên theo khoá); chưa thuộc phòng nào ⇒ null (giao diện hiện «Chưa có phòng»). */
+  department: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
+});
+export type MsgPerson = z.infer<typeof MsgPersonSchema>;
+export const MsgPeoplePageSchema = z.object({
+  items: z.array(MsgPersonSchema),
+  next_cursor: z.string().max(300).nullable(),
+});
+export type MsgPeoplePage = z.infer<typeof MsgPeoplePageSchema>;

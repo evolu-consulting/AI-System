@@ -2,25 +2,30 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "~/components/ui/skeleton";
-import { filterPeople, type Person } from "../lib/people";
+import { usePeople } from "../hooks/use-conversations";
+import { useDebounced } from "../hooks/use-debounced";
+import { filterPeople } from "../lib/people";
+import { LoadSentinel } from "./LoadSentinel";
 
 export function PeoplePicker({
-  people,
-  status,
+  enabled,
   selected,
   onToggle,
-  onRetry,
   disabledIds = [],
 }: {
-  people: readonly Person[];
-  status: "loading" | "error" | "ready";
+  /** Chỉ tải danh bạ khi hộp đang mở. */
+  enabled: boolean;
   selected: ReadonlySet<string>;
   onToggle: (id: string) => void;
-  onRetry: () => void;
   disabledIds?: readonly string[];
 }) {
   const { t } = useTranslation();
   const [q, setQ] = useState("");
+  const dq = useDebounced(q.trim(), 250);
+  // CR-148 · tải dần 30/lần; `q` lọc ở server, cuộn tới cuối (hoặc «Xem thêm») tải trang kế.
+  const res = usePeople(enabled, dq);
+  const people = res.items;
+  const status = res.isPending ? "loading" : res.isError ? "error" : "ready";
   const shown = filterPeople(people, q, disabledIds);
   return (
     <div className="min-w-0">
@@ -38,7 +43,7 @@ export function PeoplePicker({
         ) : status === "error" ? (
           <p role="alert" className="m-0 p-3 text-label text-late">
             {t("contracts.messages.peopleError")}{" "}
-            <button type="button" className="underline" onClick={onRetry}>
+            <button type="button" className="underline" onClick={() => void res.refetch()}>
               {t("contracts.messages.retry")}
             </button>
           </p>
@@ -62,6 +67,9 @@ export function PeoplePicker({
               </li>
             ))}
           </ul>
+        )}
+        {status === "ready" && res.hasNextPage && (
+          <LoadSentinel loading={res.isFetchingNextPage} onMore={() => void res.fetchNextPage()} />
         )}
       </div>
     </div>
