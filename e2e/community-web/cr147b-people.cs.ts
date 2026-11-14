@@ -42,9 +42,11 @@ test("P2 · ảnh bìa cá nhân: đổi, tải lại còn, tệp sai định d�
   // CR-156 · nút đổi ảnh là icon bút (nhãn aria), chỉ hiện khi rê chuột lên ảnh bìa
   const change = page.getByTestId("me-cover-edit-change");
   await expect(change).toHaveAttribute("aria-label", "Đổi ảnh bìa");
-  await expect(change).toHaveCSS("opacity", "0");
+  // độ mờ đặt ở vỏ `me-cover-edit` (cha của nút), không ở chính nút
+  const wrap = page.getByTestId("me-cover-edit");
+  await expect(wrap).toHaveCSS("opacity", "0");
   await page.getByTestId("me-cover-default").hover();
-  await expect(change).toHaveCSS("opacity", "1");
+  await expect(wrap).toHaveCSS("opacity", "1");
   await page
     .getByTestId("me-cover-edit-file")
     .setInputFiles({ name: "a.gif", mimeType: "image/gif", buffer: PNG });
