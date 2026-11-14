@@ -39,6 +39,8 @@ export const proxy = {
   "/me/stream": HUB_URL,
   "/notifications": spaNavigation,
   // M2-chat · trợ lý: hội thoại (E6/E12 SSE) + dừng run (E15) của Agent Hub.
+  // CR-147b · hồ sơ người (`/people`: avatar, ảnh bìa, thẻ người theo lô); route SPA không dùng tiền tố này.
+  "/people": HUB_URL,
   "/conversations": HUB_URL,
   "/runs": HUB_URL,
 };

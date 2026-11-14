@@ -1,5 +1,6 @@
 // CR-102 · C5 · giao diện API mà UI dùng. Hai adapter: `mock` (in-memory, chạy ngay) và `http` (C3 nối `/pack/community/*`).
 // Hình dữ liệu = `@ai/contracts/community`. UI không lọc quyền xem: mọi thứ do adapter/server quyết.
+
 import type {
   AudienceMode,
   CommentPage,
@@ -35,6 +36,7 @@ import type {
   Report,
   UpdatePostInput,
 } from "@ai/contracts/community";
+import type { MyPeopleProfile, PeopleResponse } from "@ai/contracts/people";
 import type { Parsed, Route } from "../domain/route";
 
 /** Phạm vi bản nháp để server tính "ai thấy được bài" (đối tác: bỏ qua). */
@@ -84,6 +86,14 @@ export interface CommunityApi {
   getBrand(): Promise<CommunityBrand>;
   /** `GET /pack/community/brand/cover` — ảnh bìa công ty chủ quản (data URL) hoặc null (CR-138 Q9). */
   getBrandCover(): Promise<CommunityBrandCover>;
+  /** CR-147b · `GET /people/me` — ảnh đại diện, ảnh bìa, chức vụ của chính mình. */
+  getMyPeople(): Promise<MyPeopleProfile>;
+  /** CR-147b · `PUT /people/me/avatar|cover` — chỉ của chính mình; `null` = xoá. */
+  setMyImage(kind: "avatar" | "cover", value: string | null): Promise<void>;
+  /** CR-147b · `GET /people?ids=` — thẻ người theo lô (tên, chức vụ, avatar, phòng ban). */
+  getPeople(ids: readonly string[]): Promise<PeopleResponse>;
+  /** CR-147b · `PUT /pack/community/brand/cover` — chỉ chủ sở hữu công ty (`viewer.caps.companyAdmin`). */
+  setCompanyCover(cover: string | null): Promise<void>;
   /** `GET /pack/community/feed` */
   listFeed(q: FeedQuery): Promise<FeedResponse>;
   /** `POST /pack/community/posts` */

@@ -664,6 +664,10 @@
     }
   },
   "orgEdit": {
+    "titlesHeading": "Staff job titles",
+    "titleLabel": "Job title",
+    "titlePlaceholder": "e.g. Sales team lead",
+    "titleSave": "Save job title",
     "lead": "The company tree: add departments, rename, pick “Belongs to”, set the head, add or remove members. Contracts only shows this chart.",
     "newName": "New department name",
     "newParent": "Belongs to (new department)",

@@ -3,10 +3,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import type { ErrorCode } from "@ai/contracts/common";
 import { createDb, runMigrations } from "@ai/db";
+import { runHubMigrations } from "@ai/db/migrate-hub";
 import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";
 import { isAppError } from "../../lib/errors";
-import { getOrg, type OrgCall, setDepartment, setManager } from "./org.service";
+import { getOrg, type OrgCall, setDepartment, setJobTitle, setManager } from "./org.service";
 
 const OWNER = process.env.TEST_DATABASE_URL;
 const API = process.env.TEST_ADMIN_API_DATABASE_URL;
@@ -35,6 +36,7 @@ const fails = async (p: Promise<unknown>, code: ErrorCode) =>
 beforeAll(async () => {
   await resetTestDb(OWNER);
   await runMigrations({ url: OWNER, appEnv: "test" });
+  await runHubMigrations({ url: OWNER, appEnv: "test" }); // CR-147b: `getOrg` đọc chức vụ ở hub.people_profiles
 });
 beforeEach(async () => {
   await owner`truncate admin.refresh_tokens, admin.users, admin.tenants cascade`;
@@ -232,5 +234,49 @@ describe("M1c · audit đổi quản lý / trưởng phòng ghi giá trị cũ (
       first: { department: null },
       dept: { department: { head_user_id: U1, parent_group_id: null } },
     });
+  });
+});
+
+describe("CR-147b · chức vụ nhân viên (hub.people_profiles.job_title, admin_rw chỉ cột này)", () => {
+  const titleOf = async (id: string) =>
+    (
+      await owner<
+        { job_title: string | null }[]
+      >`select job_title from hub.people_profiles where user_id = ${id}`
+    )[0]?.job_title ?? null;
+  beforeEach(async () => {
+    await owner`truncate hub.people_profiles`;
+  });
+  test("đặt, đọc lại ở getOrg, sửa, rỗng/null ⇒ xoá; không đụng avatar/ảnh bìa", async () => {
+    await owner`insert into hub.people_profiles (tenant_id, user_id, avatar) values (${TID}, ${U1}, 'data:image/png;base64,AAAA')`;
+    await setJobTitle(call, undefined, U1, { job_title: "Trưởng nhóm bán hàng" });
+    const m = (await getOrg(call, undefined)).members;
+    expect(m.find((x) => x.user_id === U1)?.job_title).toBe("Trưởng nhóm bán hàng");
+    expect(m.find((x) => x.user_id === U2)?.job_title).toBeNull();
+    await setJobTitle(call, undefined, U1, { job_title: "Giám đốc" });
+    expect(await titleOf(U1)).toBe("Giám đốc");
+    await setJobTitle(call, undefined, U1, { job_title: null });
+    expect(await titleOf(U1)).toBeNull();
+    const row = await owner<
+      { avatar: string | null }[]
+    >`select avatar from hub.people_profiles where user_id = ${U1}`;
+    expect(row[0]?.avatar).toBe("data:image/png;base64,AAAA");
+  });
+  test("chéo tenant: quản trị công ty khác ⇒ NOT_FOUND và không ghi; (403 cho người không phải quản trị do requireRole cấp router, xem external-deny)", async () => {
+    const other: OrgCall = {
+      ctx: { db },
+      actor: { userId: X, tenantId: OTHER, role: "tenant_admin" },
+      scope: { kind: "tenant", tenantId: OTHER },
+    };
+    expect(await fails(setJobTitle(other, undefined, U1, { job_title: "Giả" }), "NOT_FOUND")).toBe(
+      true,
+    );
+    // tenant_id khác ở query: tenant_admin không vượt tenant mình.
+    expect(
+      (await fails(setJobTitle(call, OTHER, X, { job_title: "Giả" }), "NOT_FOUND")) ||
+        (await fails(setJobTitle(call, OTHER, X, { job_title: "Giả" }), "FORBIDDEN")),
+    ).toBe(true);
+    expect(await titleOf(U1)).toBeNull();
+    expect(await titleOf(X)).toBeNull();
   });
 });

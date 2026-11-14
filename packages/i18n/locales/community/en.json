@@ -620,6 +620,16 @@
     "me": {
       "company": "Company",
       "companyPage": "View company page",
+      "avatarChange": "Change photo",
+      "avatarRemove": "Remove photo",
+      "coverChange": "Change cover",
+      "coverRemove": "Remove cover",
+      "imgType": "Only JPG, PNG or WebP images",
+      "imgBig": "Image up to {{mb}} MB",
+      "imgFail": "Could not save the image, try again",
+      "jobTitle": "Job title",
+      "department": "Department",
+      "avatarAlt": "Profile photo",
       "role": {
         "host_admin": "Admin",
         "host_member": "Member",

@@ -26,6 +26,13 @@ export function useOrgApi(tenantId: string | undefined) {
       gid: string,
       body: { head_user_id: string | null; parent_group_id?: string | null },
     ) => api(`/admin/org/departments/${id(gid)}`, { method: "PUT", body, ...q(tenantId) }),
+    /** CR-147b ý 9 · chức vụ nhân viên (rỗng = xoá). */
+    setTitle: (uid: string, job_title: string | null) =>
+      api(`/admin/org/members/${id(uid)}/title`, {
+        method: "PUT",
+        body: { job_title },
+        ...q(tenantId),
+      }),
     removeDept: (gid: string) =>
       api(`/admin/org/departments/${id(gid)}`, { method: "DELETE", ...q(tenantId) }),
     /** Phòng mới = Group mới rồi đánh dấu phòng ban (kèm phòng cha). */

@@ -65,6 +65,14 @@ export function createHttpApi(): CommunityApi {
     getViewer: () => api(`${BASE}/viewer`),
     getBrand: () => api(`${BASE}/brand`),
     getBrandCover: () => api(`${BASE}/brand/cover`),
+    getMyPeople: () => api("/people/me"),
+    setMyImage: async (kind, value) => {
+      await api(`/people/me/${kind}`, { method: "PUT", body: { [kind]: value } });
+    },
+    getPeople: (ids) => api("/people", { query: { ids: ids.join(",") } }),
+    setCompanyCover: async (cover) => {
+      await api(`${BASE}/brand/cover`, { method: "PUT", body: { cover } });
+    },
     listFeed: (q) => api(`${BASE}/feed`, { query: feedQueryString(q) }),
     uploadFile: (file) =>
       api(`${BASE}/files`, {

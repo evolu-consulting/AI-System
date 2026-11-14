@@ -163,6 +163,10 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
     getViewer: async () => me,
     getBrand: async () => ({ name: HOST_ORG.name, appName: null, logo: null, accent: "indigo" }),
     getBrandCover: async () => ({ cover: null }),
+    getMyPeople: async () => ({ avatar: null, cover: null, job_title: null }),
+    setMyImage: async () => undefined,
+    getPeople: async () => ({ items: [] }),
+    setCompanyCover: async () => undefined,
     ...profileMock(
       () => me,
       () => ({ posts, comments }),

@@ -12,6 +12,7 @@ import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useOrgApi, useOrgData } from "../api";
 import { DeptCard } from "../components/DeptCard";
+import { MemberTitles } from "../components/MemberTitles";
 import { OrgPreview } from "../components/OrgPreview";
 import { toChartDepts } from "../lib/org-chart-data";
 import { buildDeptTree, deptKey, flattenTree } from "../lib/org-edit";
@@ -125,6 +126,9 @@ export function OrgEditor() {
           ))}
         </ul>
       )}
+      {(org.data?.members.length ?? 0) > 0 ? (
+        <MemberTitles members={org.data?.members ?? []} busy={busy} act={act} save={api.setTitle} />
+      ) : null}
     </section>
   );
 }

@@ -620,6 +620,16 @@
     "me": {
       "company": "Công ty",
       "companyPage": "Xem trang công ty",
+      "avatarChange": "Đổi ảnh đại diện",
+      "avatarRemove": "Xoá ảnh",
+      "coverChange": "Đổi ảnh bìa",
+      "coverRemove": "Xoá ảnh bìa",
+      "imgType": "Chỉ nhận ảnh JPG, PNG hoặc WebP",
+      "imgBig": "Ảnh tối đa {{mb}} MB",
+      "imgFail": "Chưa lưu được ảnh, thử lại",
+      "jobTitle": "Chức vụ",
+      "department": "Phòng ban",
+      "avatarAlt": "Ảnh đại diện",
       "role": {
         "host_admin": "Quản trị",
         "host_member": "Thành viên",
