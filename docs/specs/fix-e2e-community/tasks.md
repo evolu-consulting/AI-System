@@ -8,7 +8,7 @@ QC phân loại «b» (lỗi sản phẩm) ở `docs/specs/qc-e2e-community-jour
 |---|---|---|
 | 1 | Ô đăng: nút thu gọn nằm tuyệt đối ở góc phải hàng 1 của `.ctop` (mọi vai); «Điền từ» của chủ quản cao 34px, tự xuống dòng bên trái nút (`feed.css`, `extras.css`) | xong (CSS; chứng minh bằng e2e `cr147-feed.cm.ts`) |
 | 2 | Bảng tin: đổi người xem/vai/bộ lọc ⇒ bỏ danh sách cũ, trang đầu thay hẳn (`domain/feed-merge.ts` + `useFeed.ts`) | xong (unit `feed-merge.test.ts`) |
-| 3 | Hồ sơ cá nhân: avatar xuất WebP→JPEG ≤ 150 KB, không gửi tệp gốc (`domain/image.ts`, `image-file.ts`) | xong (unit; lỗi e2e P1 thật là nhãn test, QC đã sửa e2e) |
+| 3 | Hồ sơ cá nhân: chọn ảnh đại diện báo «Chưa lưu được ảnh» (e2e P1). Trace: KHÔNG có request PUT ⇒ client lỗi trước khi gọi API (không phải trần 150 KB, ảnh test 1×1). Sửa phòng thủ: `encodeAvatar` (WebP→JPEG, `toBlob` null/ném lỗi ⇒ `toDataURL`), giải mã dự phòng `<img>` khi `createImageBitmap` không có/lỗi, lỗi thật hiện trong thông báo + `console.error` (`domain/avatar-encode.ts`, `ui/profile/image-file.ts`, `ImagePick.tsx`) | unit xong; e2e P1 chưa xác nhận xanh (xem Quyết định) |
 
 ## Không làm / Chạm
 Không đổi contract, hub, e2e. Chạm: `modules/community` (application, domain, ui/profile, ui/styles).
@@ -18,7 +18,7 @@ Không đổi contract, hub, e2e. Chạm: `modules/community` (application, doma
 - e2e (evotest, theo tên việc): `community-web community-web-stack`.
 
 ## Quyết định trong lúc làm
-- (3) Nguyên nhân e2e P1 KHÔNG phải trần 150 KB mà là selector `me-avatar-initials/-img` (QC đã đổi sang `span/img[data-testid="me-avatar"]`, khớp `PersonAvatar` hiện có; tôi hoàn lại thay đổi testid). Thêm rào phòng thủ: avatar xuất tới ≤ 150 KB (`pickAvatarBlob`), không được ⇒ báo «Chưa lưu được ảnh»; trước đây rơi về tệp gốc ≤ 2 MB bị server từ chối.
+- (3) Selector `me-avatar` của e2e P1 đã được QC sửa khớp `PersonAvatar` (tôi hoàn lại thay đổi testid). Nguyên nhân thật của «Chưa lưu được ảnh» CHƯA xác định: không tái hiện được local; unit chỉ giả lập `toBlob` null/ném lỗi/PNG to. Thông báo lỗi nay kèm message thật + `console.error` ⇒ lần chạy e2e kế đọc `error-context.md` để biết nguyên nhân. Tạm thời hậu tố message trong UI là bằng chứng gỡ lỗi; bỏ sau khi P1 xanh.
 - (2) Khoá phạm vi gồm `userId/orgId/role` của người xem + bộ lọc; đổi ⇒ `setData(null)` ngay (không giữ bài cũ trong lúc chờ). Cùng phạm vi (đăng/thích) vẫn gộp để giữ phần đã tải dần.
 - (1) Dùng `position:absolute` thay vì chỉnh thứ tự flex: nút luôn ở hàng 1 bất kể số control (chủ quản có «Điền từ» + nút 👤+).
 
@@ -32,7 +32,7 @@ Trạng thái gộp: chưa gộp
 
 #### Yêu cầu: Ảnh đại diện nén tới ≤ 150 KB
 Ảnh đại diện cắt vuông ≤ 256 px, xuất WebP rồi JPEG nhẹ dần tới ≤ 150 KB; không đạt thì báo «Chưa lưu được ảnh», không gửi tệp gốc.
-- Kịch bản: khi trình duyệt chỉ trả PNG to thì chọn bản JPEG ≤ 150 KB, không có thì không lưu [test: apps/workspace-web/src/modules/community/domain/image.test.ts » pickAvatarBlob]
+- Kịch bản: khi trình duyệt chỉ trả PNG to thì chọn bản JPEG ≤ 150 KB, không có thì không lưu [test: apps/workspace-web/src/modules/community/domain/avatar-encode.test.ts » encodeAvatar]; [test: apps/workspace-web/src/modules/community/domain/image.test.ts » pickAvatarBlob]
 
 #### Yêu cầu: Nút thu gọn ô đăng luôn ở hàng đầu
 Nút thu gọn đứng ở góc phải hàng đầu của ô đăng, cùng cao với nút loại bài, với mọi vai.

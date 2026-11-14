@@ -23,8 +23,11 @@ export function ImagePick({
     setErr(null);
     try {
       await fn();
-    } catch {
-      setErr(t("community.me.imgFail"));
+    } catch (e) {
+      // lỗi thật (message) ra console + hậu tố trong thông báo chung để lần sau có bằng chứng (CR-147 fix-e2e-community)
+      console.error("[community] lưu ảnh hồ sơ lỗi", e);
+      const why = e instanceof Error ? e.message : String(e);
+      setErr(`${t("community.me.imgFail")} (${why})`);
     } finally {
       setBusy(false);
     }
