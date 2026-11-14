@@ -11,7 +11,7 @@ const U2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const G1 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const CTX: PackToolCtx = { tenantId: "t1", userId: "u1", runId: null };
 
-function make(email: string | null = "p@x.vn", sendErr?: Error, group: string | null = null) {
+function make(email: string | null = "p@x.vn", sendErr?: Error) {
   const waits: unknown[][] = [];
   const sent: unknown[][] = [];
   const asked: unknown[] = [];
@@ -20,7 +20,6 @@ function make(email: string | null = "p@x.vn", sendErr?: Error, group: string | 
     esign: {
       lockForSign: async () => {},
       openSignWait: async (...a: unknown[]) => void waits.push(a),
-      signerGroup: async () => group,
       latest: async () => null,
       contract: async () => ({ number: "S1", title: "HĐ", partner: { name: "Đối tác", email } }),
     },
@@ -49,13 +48,24 @@ describe("E5 · tool Ký số theo args của node", () => {
     const names = send.params.map((p) => p.name);
     for (const k of ESIGN_NODE_PARAMS) expect(names).toContain(k);
     expect(send.params.filter((p) => p.required).map((p) => p.name)).toEqual(["contract_id"]);
+    expect(names).toContain("provider");
   });
 
   it("CEO-review #2 · không chọn người ký công ty ⇒ lỗi nghiệp vụ ESIGN_NODE_NO_SIGNER, không gửi", async () => {
     const { send, sent, asked } = make();
-    await expect(send.run(CTX, { contract_id: ID })).rejects.toThrow("ESIGN_NODE_NO_SIGNER");
+    await expect(send.run(CTX, { contract_id: ID, provider: "docusign" })).rejects.toThrow(
+      "ESIGN_NODE_NO_SIGNER",
+    );
     expect(sent).toEqual([]);
     expect(asked).toEqual([]);
+  });
+
+  it("CR-146b · không chọn «Ký qua» ⇒ lỗi nghiệp vụ, không gửi, không mặc định cấp công ty", async () => {
+    const { send, sent } = make();
+    await expect(send.run(CTX, { contract_id: ID, company_signers: `user:${U1}` })).rejects.toThrow(
+      "ESIGN_NODE_CONFIG_INVALID:provider",
+    );
+    expect(sent).toEqual([]);
   });
 
   it("args ghi đè: nhà cung cấp, thứ tự song song, Group ⇒ nhiều người ký công ty, đối tác ký", async () => {
@@ -77,7 +87,7 @@ describe("E5 · tool Ký số theo args của node", () => {
           { role: "company" },
           { role: "partner", name: "Đối tác", email: "p@x.vn" },
         ],
-        undefined, // CR-125 m4: `provider` cũ trong args bị bỏ qua (người ký chọn cách ký lúc ký)
+        "docusign",
         { companyUsers: [U1, U2], order: "parallel" },
       ],
     ]);
@@ -87,6 +97,7 @@ describe("E5 · tool Ký số theo args của node", () => {
     const a = make();
     await a.send.run(CTX, {
       contract_id: ID,
+      provider: "selfsign",
       partner_signs: false,
       order: "sequential",
       company_signers: `user:${U1}`,
@@ -94,7 +105,12 @@ describe("E5 · tool Ký số theo args của node", () => {
     expect(a.sent[0]?.[3]).toEqual([{ role: "company" }]);
     const b = make(null);
     await expect(
-      b.send.run(CTX, { contract_id: ID, partner_signs: true, company_signers: `user:${U1}` }),
+      b.send.run(CTX, {
+        contract_id: ID,
+        provider: "selfsign",
+        partner_signs: true,
+        company_signers: `user:${U1}`,
+      }),
     ).rejects.toThrow("NO_PARTNER_EMAIL");
     expect(b.sent).toEqual([]);
   });
@@ -102,34 +118,39 @@ describe("E5 · tool Ký số theo args của node", () => {
   it("cấu hình sai ⇒ lỗi rõ theo khoá, không gửi", async () => {
     const { send, sent } = make();
     await expect(
-      send.run(CTX, { contract_id: ID, order: "random", company_signers: `user:${U1}` }),
+      send.run(CTX, {
+        contract_id: ID,
+        provider: "selfsign",
+        order: "random",
+        company_signers: `user:${U1}`,
+      }),
     ).rejects.toThrow("ESIGN_NODE_CONFIG_INVALID:order");
     expect(sent).toEqual([]);
   });
 });
 
-describe("CR-141 · công ty tắt ký số ⇒ bước chờ bản đã ký tải lên (không báo lỗi)", () => {
-  it("ESIGN_DISABLED ⇒ awaiting_upload, lỗi khác vẫn ném", async () => {
+describe("CR-146b · «Ký qua» của node", () => {
+  it("upload ⇒ không gửi ký số, chờ tải lên; người được giao = người ký đã chọn", async () => {
+    const u = make();
+    expect(
+      await u.send.run(CTX, {
+        contract_id: ID,
+        provider: "upload",
+        company_signers: `group:${G1}`,
+      }),
+    ).toEqual({ status: "awaiting_upload" });
+    expect(u.sent).toEqual([]);
+    expect(u.waits[0]?.[1]).toEqual([U1, U2]);
+  });
+  it("nhà cung cấp mà công ty đã tắt ký số ⇒ ESIGN_DISABLED (lỗi rõ, KHÔNG tự chờ tải lên); lỗi khác vẫn ném", async () => {
     const off = make("p@x.vn", new ESignFail("ESIGN_DISABLED", "disabled"));
-    expect(await off.send.run(CTX, { contract_id: ID, company_signers: `user:${U1}` })).toEqual({
-      status: "awaiting_upload",
-    });
+    await expect(
+      off.send.run(CTX, { contract_id: ID, provider: "docusign", company_signers: `user:${U1}` }),
+    ).rejects.toMatchObject({ code: "ESIGN_DISABLED" });
+    expect(off.sent).toEqual([]);
     const boom = make("p@x.vn", new Error("boom"));
     await expect(
-      boom.send.run(CTX, { contract_id: ID, company_signers: `user:${U1}` }),
+      boom.send.run(CTX, { contract_id: ID, provider: "docusign", company_signers: `user:${U1}` }),
     ).rejects.toBeDefined();
-  });
-});
-
-describe("CR-141 · người được giao tải bản ký (mặc định)", () => {
-  it("node không chọn người ký: có nhóm «Người ký HĐ» ⇒ thành viên nhóm được giao (không phải người bắt đầu)", async () => {
-    const g = make("p@x.vn", new ESignFail("ESIGN_DISABLED", "d"), G1);
-    expect(await g.send.run(CTX, { contract_id: ID })).toEqual({ status: "awaiting_upload" });
-    expect(g.waits[0]?.[1]).toEqual([U1, U2]);
-  });
-  it("chưa đặt nhóm ⇒ giữ cũ: thiếu người ký là lỗi nghiệp vụ, không ghi gì", async () => {
-    const n = make("p@x.vn", undefined, null);
-    await expect(n.send.run(CTX, { contract_id: ID })).rejects.toBeDefined();
-    expect(n.waits).toEqual([]);
   });
 });

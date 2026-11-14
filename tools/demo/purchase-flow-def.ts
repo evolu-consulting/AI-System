@@ -186,6 +186,8 @@ export function purchaseStages(signerGroupId?: string): {
       tool_key: "contracts-esign-send",
       args: {
         contract_id: { key: "contract_id", from: "input" },
+        // CR-146b · «Ký qua» bắt buộc trong node (không còn mặc định công ty); demo = tải lên bản đã ký (luôn hợp lệ)
+        provider: { from: "const", value: "upload" },
         partner_signs: { from: "const", value: false },
         ...(signerGroupId
           ? { company_signers: { from: "const", value: `group:${signerGroupId}` } }

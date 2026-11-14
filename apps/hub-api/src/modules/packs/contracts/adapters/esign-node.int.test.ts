@@ -114,16 +114,24 @@ describe("E5 · args của node ghi đè cài đặt ký số của app", () => 
 
     // (1) không cấu hình node ⇒ như trước: mặc định công ty (selfsign), người ký = người bắt đầu (A), tuần tự
     // CEO-review #2 · không chọn người ký công ty ⇒ lỗi nghiệp vụ, không tạo phong bì
-    await expect(send.run(CTX(A), { contract_id: K[0] as string })).rejects.toThrow(
-      "ESIGN_NODE_NO_SIGNER",
-    );
+    await expect(
+      send.run(CTX(A), { contract_id: K[0] as string, provider: "selfsign" }),
+    ).rejects.toThrow("ESIGN_NODE_NO_SIGNER");
+    // CR-146b · không chọn «Ký qua» ⇒ lỗi nghiệp vụ, không lùi về nhà cung cấp mặc định của công ty
+    await expect(
+      send.run(CTX(A), { contract_id: K[0] as string, company_signers: `user:${A}` }),
+    ).rejects.toThrow("ESIGN_NODE_CONFIG_INVALID:provider");
     expect(await envelope(K[0] as string)).toBeUndefined();
-    await send.run(CTX(A), { contract_id: K[0] as string, company_signers: `user:${A}` });
+    await send.run(CTX(A), {
+      contract_id: K[0] as string,
+      provider: "selfsign",
+      company_signers: `user:${A}`,
+    });
     const base = await envelope(K[0] as string);
     expect(base?.provider).toBe("selfsign");
     expect(base?.signers).toMatchObject([{ role: "company", order: 1, client_user_id: A }]);
 
-    // (2) args ghi đè (kèm `provider` cũ ⇒ bỏ qua): người ký công ty = B (không phải người bắt đầu A), song song
+    // (2) args ghi đè («Ký qua» = misa): người ký công ty = B (không phải người bắt đầu A), song song
     await send.run(CTX(A), {
       contract_id: K[1] as string,
       provider: "misa",
@@ -132,7 +140,7 @@ describe("E5 · args của node ghi đè cài đặt ký số của app", () => 
       order: "parallel",
     });
     const over = await envelope(K[1] as string);
-    expect(over?.provider).toBe("selfsign"); // CR-125 m4: `provider` cũ trong args bị bỏ qua — nhà cung cấp = mặc định công ty
+    expect(over?.provider).toBe("misa"); // CR-146b: «Ký qua» của node được dùng đúng (không phải mặc định công ty selfsign)
     expect(over?.signers).toMatchObject([{ role: "company", order: 1, client_user_id: B }]);
   });
 
@@ -144,10 +152,14 @@ describe("E5 · args của node ghi đè cài đặt ký số của app", () => 
     );
     const id = K[2] as string;
     await expect(
-      send.run(CTX(A), { contract_id: id, company_signers: `user:${X}` }),
+      send.run(CTX(A), { contract_id: id, provider: "selfsign", company_signers: `user:${X}` }),
     ).rejects.toThrow();
     await expect(
-      send.run(CTX(A), { contract_id: id, company_signers: `group:${crypto.randomUUID()}` }),
+      send.run(CTX(A), {
+        contract_id: id,
+        provider: "selfsign",
+        company_signers: `group:${crypto.randomUUID()}`,
+      }),
     ).rejects.toThrow();
     expect(await envelope(id)).toBeUndefined();
   });
@@ -165,8 +177,13 @@ describe("E5 · args của node ghi đè cài đặt ký số của app", () => 
       default_provider: "selfsign",
       orders: ["parallel", "sequential"],
     });
-    expect(await u.checkNode(T1, { company_signers: [{ kind: "user", id: B }] })).toEqual([]);
-    expect(await u.checkNode(T1, { company_signers: [{ kind: "user", id: X }] })).toEqual([
+    const ok = { provider: "selfsign", company_signers: [{ kind: "user" as const, id: B }] };
+    expect(await u.checkNode(T1, ok)).toEqual([]);
+    expect(await u.checkNode(T1, { ...ok, provider: "upload" })).toEqual([]);
+    expect(await u.checkNode(T1, { ...ok, provider: "docusign" })).toEqual([
+      { field: "provider", code: "PROVIDER_NOT_ENABLED" }, // chưa bật ở công ty ⇒ lỗi theo trường
+    ]);
+    expect(await u.checkNode(T1, { ...ok, company_signers: [{ kind: "user", id: X }] })).toEqual([
       { field: "company_signers", code: "SIGNER_NOT_IN_TENANT" },
     ]);
   });
@@ -195,14 +212,14 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
         { kind: "group", id: G },
       ]),
     ).toEqual([B, ...members2.filter((x) => x !== B)]);
-    expect(await u.checkNode(T1, { company_signers: [{ kind: "group", id: G }] })).toEqual([]);
+    expect(
+      await u.checkNode(T1, { provider: "upload", company_signers: [{ kind: "group", id: G }] }),
+    ).toEqual([]);
   });
 
-  it("CR-141 · lưu def: node không chọn người ký ⇒ hợp lệ khi công ty đặt nhóm «Người ký HĐ» có thành viên, chưa đặt ⇒ NO_SIGNER_SELECTED", async () => {
+  it("CR-146b · lưu def: thiếu «Ký qua»/người ký ⇒ lỗi theo trường dù công ty có nhóm «Người ký HĐ» (không còn mặc định cấp công ty)", async () => {
     const { u } = setup();
-    const v = esignBindingChecks(u.checkNode, u.hasDefaultSigners).toolValidators?.[
-      "contracts-esign-send"
-    ];
+    const v = esignBindingChecks(u.checkNode).toolValidators?.["contracts-esign-send"];
     const st = {
       index: 3,
       node: "contracts.esign",
@@ -212,20 +229,14 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
         args: { contract_id: { from: "const", value: "x" } },
       },
     };
-    expect(await v?.(T1, st)).toEqual([
+    const want = [
+      { path: "stages.3.executor.args.provider", code: "NO_PROVIDER_SELECTED" },
       { path: "stages.3.executor.args.company_signers", code: "NO_SIGNER_SELECTED" },
-    ]);
+    ];
+    expect(await v?.(T1, st)).toEqual(want);
     await o`insert into contracts.partner_settings (tenant_id, signer_group_id) values (${T1}::uuid, ${G}::uuid)
       on conflict (tenant_id) do update set signer_group_id = excluded.signer_group_id`;
-    expect(await v?.(T1, st)).toEqual([]);
-    expect((await u.nodeOptions({ tenantId: T1, userId: A })).default_signers).toMatchObject({
-      count: 2,
-    });
-    // nhóm trống ⇒ vẫn chặn
-    const empty = (await groups(o, T1, ["e5b-rong"])).get("e5b-rong") as string;
-    await o`update contracts.partner_settings set signer_group_id = ${empty}::uuid where tenant_id = ${T1}::uuid`;
-    expect(await v?.(T1, st)).toHaveLength(1);
-    expect((await u.nodeOptions({ tenantId: T1, userId: A })).default_signers).toBeNull();
+    expect(await v?.(T1, st)).toEqual(want);
     await o`delete from contracts.partner_settings where tenant_id = ${T1}::uuid`;
   });
 
@@ -235,11 +246,15 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
       { tenantId: T1, userId: A },
       { enabled: true, default_provider: "selfsign" },
     );
-    expect(await u.checkNode(T1, { company_signers: [{ kind: "group", id: GX }] })).toEqual([
-      { field: "company_signers", code: "SIGNER_NOT_IN_TENANT" },
-    ]);
+    expect(
+      await u.checkNode(T1, { provider: "upload", company_signers: [{ kind: "group", id: GX }] }),
+    ).toEqual([{ field: "company_signers", code: "SIGNER_NOT_IN_TENANT" }]);
     await expect(
-      send.run(CTX(A), { contract_id: K[3] as string, company_signers: `group:${GX}` }),
+      send.run(CTX(A), {
+        contract_id: K[3] as string,
+        provider: "selfsign",
+        company_signers: `group:${GX}`,
+      }),
     ).rejects.toThrow();
     expect(await envelope(K[3] as string)).toBeUndefined();
   });
@@ -263,7 +278,11 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
     expect(e?.signers.map((s) => s.order)).toEqual([1, 2]);
     expect([e?.due_h, e?.remind_every_h]).toEqual([72, 12]);
     // không cấu hình node ⇒ cột trống (sweep dùng bước Ký số cũ)
-    await send.run(CTX(A), { contract_id: K[4] as string, company_signers: `user:${A}` });
+    await send.run(CTX(A), {
+      contract_id: K[4] as string,
+      provider: "selfsign",
+      company_signers: `user:${A}`,
+    });
     const base = await envelope(K[4] as string);
     expect([base?.due_h, base?.remind_every_h]).toEqual([null, null]);
   });
@@ -285,7 +304,12 @@ describe("CR-122 · bước Ký số của flow báo chuông người ký", () =
     );
     const w = intakeWiring(db, u);
     const send = w.tools.find((t) => t.name === "contracts-esign-send") as (typeof w.tools)[number];
-    await send.run(CTX(A), { contract_id: id, company_signers: `user:${C}`, partner_signs: false });
+    await send.run(CTX(A), {
+      contract_id: id,
+      provider: "selfsign",
+      company_signers: `user:${C}`,
+      partner_signs: false,
+    });
     const bells = await o<{ title: string }[]>`select title from hub.notifications
       where tenant_id = ${T1} and user_id = ${C} and link = ${`/contracts/c/${id}?ky=1#esign-panel`}`;
     expect(bells.map((b) => b.title)).toEqual([expect.stringMatching(/^Mời ký số HĐ/)]);
@@ -308,7 +332,7 @@ describe("CR-122 · Ký số giữa flow: HĐ chưa xác nhận", () => {
         run_id = gen_random_uuid(), root_id = ${v1}, version_no = 2, supersedes_id = ${v1}
       where id = ${v2}`,
     );
-    await send.run(CTX(B), { contract_id: v2, company_signers: `user:${B}` });
+    await send.run(CTX(B), { contract_id: v2, provider: "selfsign", company_signers: `user:${B}` });
     expect((await envelope(v2))?.provider).toBe("selfsign");
     const st = async (id: string) =>
       (
@@ -319,7 +343,7 @@ describe("CR-122 · Ký số giữa flow: HĐ chưa xác nhận", () => {
     expect((await st(v1))?.superseded_at).toBeNull(); // khoá sớm KHÔNG thay bản cũ
     // chạy lại (Thử lại của bước) ⇒ không đổi người khoá
     await o`update contracts.esign_envelopes set status = 'voided' where contract_id = ${v2}`;
-    await send.run(CTX(A), { contract_id: v2, company_signers: `user:${A}` });
+    await send.run(CTX(A), { contract_id: v2, provider: "selfsign", company_signers: `user:${A}` });
     expect((await st(v2))?.locked_by).toBe(B);
     // "Kết thúc · Đã duyệt" xác nhận ⇒ lúc này mới thay bản cũ
     await gated(

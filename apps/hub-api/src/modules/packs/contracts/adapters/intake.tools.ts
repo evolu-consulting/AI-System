@@ -7,6 +7,7 @@
 import {
   decodeEsignNodeArgs,
   ESIGN_NODE_ORDERS,
+  ESIGN_NODE_UPLOAD,
   type ESignSignerIn,
   type EsignNodeConfig,
   type EsignNodeSigner,
@@ -21,7 +22,7 @@ import type {
   PackUow,
 } from "../../kit/public";
 import type { ESignRepo } from "../application/esign.ports";
-import { ESignFail, type SendNodeOpts } from "../application/esign.usecase";
+import type { SendNodeOpts } from "../application/esign.usecase";
 import type { ExtractionRepo } from "../application/extraction.ports";
 import { contractCodeLabel } from "../domain/contract-name";
 import { withBusinessCodes } from "./intake.errors";
@@ -34,7 +35,7 @@ export const INTAKE_TOOL_KEYS = {
 
 type R = {
   extraction: Pick<ExtractionRepo, "source">;
-  esign: Pick<ESignRepo, "contract" | "lockForSign" | "latest" | "openSignWait" | "signerGroup">;
+  esign: Pick<ESignRepo, "contract" | "lockForSign" | "latest" | "openSignWait">;
 } & NotifyTxRepos;
 export type IntakeToolDeps = {
   uow: PackUow<R>;
@@ -62,7 +63,7 @@ const ESIGN_NODE_PARAM_DEFS: readonly PackToolDef["params"][number][] = [
     name: "provider",
     type: "text",
     required: false,
-    description: "Đã bỏ — người ký chọn cách ký lúc ký (giá trị cũ bị bỏ qua)",
+    description: "Ký qua: khoá nhà cung cấp ký số hoặc «upload» (tải lên bản đã ký)",
   },
   { name: "company_signers", type: "text", required: false, description: "Người ký phía công ty" },
   { name: "partner_signs", type: "boolean", required: false, description: "Đối tác ký" },
@@ -85,8 +86,11 @@ async function planSend(
   cfg: EsignNodeConfig,
   parsed: { name: string; email: string } | null,
 ) {
-  // CEO-review #2 · chưa chọn người ký ⇒ lỗi nghiệp vụ rõ (không dừng im lặng ở «Báo chủ hợp đồng»)
-  if (esignConfigIssues(cfg).length > 0) throw new Error("ESIGN_NODE_NO_SIGNER");
+  // CR-146b · chưa chọn «Ký qua» / người ký ⇒ lỗi nghiệp vụ rõ (không dừng im lặng, không lùi về mặc định cấp công ty)
+  const bad = esignConfigIssues(cfg);
+  if (bad.some((i) => i.field === "provider"))
+    throw new Error("ESIGN_NODE_CONFIG_INVALID:provider");
+  if (bad.length > 0) throw new Error("ESIGN_NODE_NO_SIGNER");
   const partner = cfg.partner_signs === false ? null : parsed;
   if (cfg.partner_signs === true && !partner) throw new Error("NO_PARTNER_EMAIL");
   const users = cfg.company_signers
@@ -106,7 +110,7 @@ async function planSend(
     signers,
     node,
     signer: users?.[0] ?? ctx.userId,
-    custom: Object.keys(node).length > 0,
+    provider: cfg.provider as string,
   };
 }
 
@@ -120,32 +124,17 @@ async function companyUsers(
   if (users.length === 0) throw new Error("ESIGN_NODE_NO_SIGNER");
   return users;
 }
-/** CR-141 · node không chọn người ký ⇒ người ký = nhóm «Người ký HĐ» của công ty (Cài đặt › Ký & đối tác) nếu đã đặt; chưa đặt ⇒ giữ cũ (cấu hình thiếu người ký ⇒ lỗi nghiệp vụ). */
-async function withDefaultSigners(
-  d: IntakeToolDeps,
-  ctx: PackToolCtx,
-  cfg: EsignNodeConfig,
-): Promise<EsignNodeConfig> {
-  if (cfg.company_signers?.length) return cfg;
-  const g = await d.uow.tenant(who(ctx), (r) => r.esign.signerGroup());
-  return g ? { ...cfg, company_signers: [{ kind: "group", id: g }] } : cfg;
-}
-/** Gửi ký; công ty tắt ký số ⇒ không báo lỗi: bước chỉ còn cách tải lên bản đã ký (chờ `esign.completed` do route tải lên bắn). true = đang chờ tải lên. */
-async function sendOrAwaitUpload(
+/** CR-146b · «Ký qua» = tải lên bản đã ký ⇒ không tạo phong bì, bước chờ người được giao tải lên (`esign.completed` do route tải lên bắn).
+ *  Ký qua nhà cung cấp mà công ty đã tắt / không còn nhà cung cấp đó ⇒ `ESIGN_DISABLED` (lỗi nghiệp vụ rõ, không tự chuyển sang tải lên). */
+async function sendIfProvider(
   d: IntakeToolDeps,
   ctx: PackToolCtx,
   id: string,
   p: Awaited<ReturnType<typeof planSend>>,
 ): Promise<boolean> {
-  try {
-    // E5 · args GHI ĐÈ cài đặt app; không có cấu hình node ⇒ đúng đường cũ (4 tham số).
-    if (p.custom) await d.send(ctx.tenantId, p.signer, id, p.signers, undefined, p.node);
-    else await d.send(ctx.tenantId, p.signer, id, p.signers);
-    return false;
-  } catch (e) {
-    if (e instanceof ESignFail && e.code === "ESIGN_DISABLED") return true;
-    throw e;
-  }
+  if (p.provider === ESIGN_NODE_UPLOAD) return true;
+  await d.send(ctx.tenantId, p.signer, id, p.signers, p.provider, p.node);
+  return false;
 }
 /** `recordOfRun` có (máy chủ thật) ⇒ bắt buộc có lượt và HĐ là bản ghi của lượt, nếu không `ESIGN_CONTRACT_NOT_IN_RUN`. Vắng (test dựng tool trực tiếp) ⇒ false. */
 async function ownsContract(d: IntakeToolDeps, ctx: PackToolCtx, id: string): Promise<boolean> {
@@ -206,11 +195,11 @@ function rawIntakeTools(d: IntakeToolDeps): PackToolDef[] {
         const parsed = email
           ? d.parsePartner((c.partner?.name?.trim() || email).slice(0, 200), email)
           : null;
-        const p = await planSend(d, ctx, await withDefaultSigners(d, ctx, cfg), parsed);
+        const p = await planSend(d, ctx, cfg, parsed);
         // CR-141 · «Ký hợp đồng» = ký số HOẶC tải lên bản đã ký: ghi người được giao tải (trước khi gửi ký, để ký số xong sớm không bị tính nhầm là còn chờ).
         const assigned = p.node.companyUsers ?? [p.signer];
         await d.uow.tenant(who(ctx), (r) => r.esign.openSignWait(id, assigned, ctx.userId));
-        if (await sendOrAwaitUpload(d, ctx, id, p)) return { status: "awaiting_upload" };
+        if (await sendIfProvider(d, ctx, id, p)) return { status: "awaiting_upload" };
         // CR-125 m9 · mã phong bì vừa tạo (đầu ra `envelope_id` của stage gửi; stage chờ cũng ghi khi phong bì xong).
         const e = await d.uow.tenant(who(ctx), (r) => r.esign.latest(id));
         return e ? { status: "sent", envelope_id: e.envelopeId } : { status: "sent" };

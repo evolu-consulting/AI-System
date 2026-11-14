@@ -6,7 +6,7 @@ import { INTAKE_TOOL_KEYS, intakeTools } from "./intake.tools";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 const SU = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-const SIGNER = { company_signers: `user:${SU}` }; // CEO-review #2: Ký số phải chọn người ký công ty (không còn «người bắt đầu» ngầm)
+const SIGNER = { provider: "selfsign", company_signers: `user:${SU}` }; // CEO-review #2: Ký số phải chọn người ký công ty (không còn «người bắt đầu» ngầm)
 const CTX: PackToolCtx = { tenantId: "t1", userId: "u1", runId: null };
 
 function make(o: {
@@ -29,7 +29,6 @@ function make(o: {
       contract: async () => (log.reads++, o.contract ?? null),
       lockForSign: async () => {},
       openSignWait: async () => {},
-      signerGroup: async () => null,
       latest: async () => ({ envelopeId: "env-1" }),
     },
     notify: {
@@ -90,7 +89,7 @@ describe("CR-120 · intakeTools", () => {
         SU,
         ID,
         [{ role: "company" }, { role: "partner", name: "Đối tác A", email: "a@x.vn" }],
-        undefined,
+        "selfsign",
         { companyUsers: [SU] },
       ],
     ]);
@@ -99,7 +98,7 @@ describe("CR-120 · intakeTools", () => {
     });
     await noP.tool("contracts-esign-send").run(CTX, { contract_id: ID, ...SIGNER });
     expect(noP.log.sent).toEqual([
-      ["t1", SU, ID, [{ role: "company" }], undefined, { companyUsers: [SU] }],
+      ["t1", SU, ID, [{ role: "company" }], "selfsign", { companyUsers: [SU] }],
     ]);
   });
 
