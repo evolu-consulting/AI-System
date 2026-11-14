@@ -1,0 +1,123 @@
+{
+  "id": "cr152-contract-kinds",
+  "title": "Hợp đồng nhượng quyền và Thỏa thuận hợp tác",
+  "roles": [
+    { "key": "sale", "label": "Nhân viên kinh doanh" },
+    { "key": "ketoan", "label": "Kế toán" }
+  ],
+  "screens": [
+    {
+      "id": "chon-loai",
+      "title": "Tạo hợp đồng › Chọn loại",
+      "role": "sale",
+      "blocks": [
+        { "type": "text", "text": "Tải file hợp đồng lên, AI đọc và điền sẵn. Bạn kiểm lại rồi gửi duyệt." },
+        { "type": "field", "label": "Loại hợp đồng", "kind": "select", "value": "Nhượng quyền", "options": ["Mua hàng", "Bán hàng", "Giới thiệu", "Nhượng quyền", "Thỏa thuận hợp tác"], "required": true },
+        { "type": "cards", "items": [
+          { "title": "Nhượng quyền", "text": "Cho phép bên kia dùng thương hiệu, thu phí ban đầu và phí định kỳ", "tone": "info", "goto": "nq-form" },
+          { "title": "Thỏa thuận hợp tác", "text": "Hai bên cùng góp và chia kết quả, hoặc chỉ ghi nhớ hợp tác", "tone": "info", "goto": "ht-form" }
+        ] }
+      ]
+    },
+    {
+      "id": "nq-form",
+      "title": "Hợp đồng nhượng quyền › Thông tin",
+      "role": "sale",
+      "blocks": [
+        { "type": "banner", "kind": "info", "text": "AI đã điền từ file. Ô viền vàng là chỗ AI chưa chắc, bạn kiểm lại." },
+        { "type": "tabs", "tabs": [
+          { "key": "chung", "label": "Chung", "blocks": [
+            { "type": "field", "label": "Công ty mình là", "kind": "select", "value": "Bên nhượng quyền", "options": ["Bên nhượng quyền", "Bên nhận quyền"], "required": true },
+            { "type": "field", "label": "Đối tác", "kind": "select", "value": "Công ty Mẫu Cà Phê Xanh", "options": ["Công ty Mẫu Cà Phê Xanh", "Công ty Mẫu B"], "required": true },
+            { "type": "field", "label": "Thương hiệu được nhượng", "kind": "text", "value": "Cà Phê Mẫu", "required": true },
+            { "type": "field", "label": "Khu vực", "kind": "text", "value": "Quận 7, TP.HCM" },
+            { "type": "field", "label": "Độc quyền trong khu vực", "kind": "checkbox", "value": "true" },
+            { "type": "field", "label": "Hiệu lực từ", "kind": "date", "value": "2026-12-01", "required": true },
+            { "type": "field", "label": "Đến", "kind": "date", "value": "2029-11-30", "required": true }
+          ] },
+          { "key": "phi", "label": "Phí", "blocks": [
+            { "type": "field", "label": "Phí nhượng quyền ban đầu (đồng)", "kind": "number", "value": "300000000", "required": true },
+            { "type": "field", "label": "Phí định kỳ tính theo", "kind": "select", "value": "% doanh thu", "options": ["% doanh thu", "Số tiền cố định"], "required": true },
+            { "type": "field", "label": "Tỷ lệ (% doanh thu)", "kind": "number", "value": "5" },
+            { "type": "field", "label": "Kỳ thu", "kind": "select", "value": "Hằng tháng", "options": ["Hằng tháng", "Hằng quý"] },
+            { "type": "field", "label": "Phí quảng cáo (% doanh thu, nếu có)", "kind": "number", "value": "1" },
+            { "type": "field", "label": "Tiền ký quỹ (đồng, nếu có)", "kind": "number", "value": "50000000" }
+          ] },
+          { "key": "phaply", "label": "Pháp lý", "blocks": [
+            { "type": "field", "label": "Bên nhượng quyền ở nước ngoài", "kind": "checkbox", "value": "" },
+            { "type": "text", "text": "Nếu tick: hiện thêm ô «Đã đăng ký với Bộ Công Thương» và ngày đăng ký." }
+          ] }
+        ] },
+        { "type": "button", "label": "Xem mốc sẽ tạo", "goto": "nq-chitiet" }
+      ]
+    },
+    {
+      "id": "nq-chitiet",
+      "title": "Hợp đồng nhượng quyền › Chi tiết",
+      "role": "ketoan",
+      "blocks": [
+        { "type": "stats", "items": [{ "label": "Phí ban đầu", "value": "300 triệu" }, { "label": "Phí định kỳ", "value": "5% doanh thu / tháng" }, { "label": "Còn hiệu lực", "value": "36 tháng" }] },
+        { "type": "steps", "items": [
+          { "label": "Thu phí nhượng quyền ban đầu · 300 triệu · hạn 05/12/2026", "status": "open", "who": "Kế toán" },
+          { "label": "Đối tác báo doanh thu tháng 12/2026 · hạn 05/01/2027", "status": "waiting", "who": "Đối tác" },
+          { "label": "Thu phí tháng 12/2026 · = 5% doanh thu đã báo", "status": "waiting", "who": "Kế toán" },
+          { "label": "… lặp mỗi tháng tới 11/2029", "status": "waiting", "who": "" },
+          { "label": "Nhắc gia hạn · 30/09/2029", "status": "waiting", "who": "Người phụ trách" }
+        ] },
+        { "type": "modal", "trigger": "Ghi doanh thu tháng 12/2026", "title": "Doanh thu tháng 12/2026", "text": "Nhập doanh thu đối tác đã báo: 820.000.000 đồng ⇒ phí kỳ này 41.000.000 đồng.", "confirm": "Lưu và tạo mốc thu phí", "cancel": "Để sau" }
+      ]
+    },
+    {
+      "id": "ht-form",
+      "title": "Thỏa thuận hợp tác › Thông tin",
+      "role": "sale",
+      "blocks": [
+        { "type": "field", "label": "Đối tác", "kind": "select", "value": "Công ty Mẫu Logistics", "options": ["Công ty Mẫu Logistics", "Công ty Mẫu B"], "required": true },
+        { "type": "field", "label": "Mục tiêu, phạm vi hợp tác", "kind": "text", "value": "Cùng khai thác tuyến giao hàng miền Tây", "required": true },
+        { "type": "field", "label": "Phần đóng góp của mình", "kind": "text", "value": "Kho bãi Cần Thơ, 2 xe tải" },
+        { "type": "field", "label": "Phần đóng góp của đối tác", "kind": "text", "value": "Đội giao hàng, phần mềm điều phối" },
+        { "type": "field", "label": "Cách chia", "kind": "select", "value": "% lợi nhuận", "options": ["% lợi nhuận", "% doanh thu", "Không chia tiền (ghi nhớ hợp tác)"], "required": true },
+        { "type": "field", "label": "Phần của mình (%)", "kind": "number", "value": "60" },
+        { "type": "field", "label": "Kỳ đối soát", "kind": "select", "value": "Hằng quý", "options": ["Hằng tháng", "Hằng quý", "Hằng năm"] },
+        { "type": "field", "label": "Hiệu lực từ", "kind": "date", "value": "2027-01-01", "required": true },
+        { "type": "field", "label": "Đến", "kind": "date", "value": "2028-12-31" },
+        { "type": "states", "variants": [
+          { "key": "chia", "label": "Có chia tiền", "blocks": [{ "type": "banner", "kind": "info", "text": "Mốc tự tạo: đối soát và chia tiền mỗi quý, nhắc gia hạn. Tính vào doanh thu và điểm đối tác." }] },
+          { "key": "khongchia", "label": "Không chia tiền", "blocks": [{ "type": "banner", "kind": "info", "text": "Ghi nhớ hợp tác: chỉ nhắc gia hạn, không tính doanh thu, không tính điểm đối tác." }] }
+        ] },
+        { "type": "button", "label": "Gửi duyệt", "goto": "ht-chitiet" }
+      ]
+    },
+    {
+      "id": "ht-chitiet",
+      "title": "Thỏa thuận hợp tác › Chi tiết",
+      "role": "ketoan",
+      "blocks": [
+        { "type": "badge", "text": "Đang chờ duyệt · quy trình «Duyệt 2 cấp»", "tone": "wait" },
+        { "type": "steps", "items": [
+          { "label": "Đối soát quý 1/2027 · hạn 10/04/2027", "status": "waiting", "who": "Kế toán" },
+          { "label": "Chia tiền quý 1/2027 · mình 60% lợi nhuận", "status": "waiting", "who": "Kế toán" },
+          { "label": "… lặp mỗi quý tới 12/2028", "status": "waiting", "who": "" },
+          { "label": "Nhắc gia hạn · 01/11/2028", "status": "waiting", "who": "Người phụ trách" }
+        ] },
+        { "type": "modal", "trigger": "Ghi đối soát quý 1/2027", "title": "Đối soát quý 1/2027", "text": "Lợi nhuận chung: 500.000.000 đồng ⇒ phần mình 300.000.000 đồng, phần đối tác 200.000.000 đồng.", "confirm": "Lưu đối soát", "cancel": "Để sau" }
+      ]
+    }
+  ],
+  "flow": [
+    { "from": "chon-loai", "action": "Chọn «Nhượng quyền», tải file, AI điền", "to": "nq-form", "by": "sale" },
+    { "from": "nq-form", "action": "Kiểm thông tin, gửi duyệt; sau khi ký có mốc phí", "to": "nq-chitiet", "by": "sale" },
+    { "from": "nq-chitiet", "action": "Ghi doanh thu đối tác báo ⇒ ra phí kỳ", "to": "nq-chitiet", "by": "ketoan" },
+    { "from": "chon-loai", "action": "Chọn «Thỏa thuận hợp tác»", "to": "ht-form", "by": "sale" },
+    { "from": "ht-form", "action": "Gửi duyệt; sau khi ký có mốc đối soát", "to": "ht-chitiet", "by": "sale" },
+    { "from": "ht-chitiet", "action": "Ghi đối soát quý ⇒ ra phần chia mỗi bên", "to": "ht-chitiet", "by": "ketoan" }
+  ],
+  "questions": [
+    { "id": "q1", "screen": "nq-chitiet", "text": "Doanh thu kỳ do ai nhập?", "options": ["Kế toán bên mình nhập theo số đối tác báo", "Đối tác tự nhập qua cổng đối tác"], "default": "Kế toán bên mình nhập theo số đối tác báo" },
+    { "id": "q2", "screen": "ht-form", "text": "Thỏa thuận hợp tác có cần bảng chi phí chung (mỗi bên chi bao nhiêu) khi đối soát không?", "options": ["Chưa cần, chỉ nhập số lợi nhuận/doanh thu chung", "Cần"], "default": "Chưa cần, chỉ nhập số lợi nhuận/doanh thu chung" }
+  ],
+  "notes": [
+    "Hai loại mới nằm cùng ô «Loại hợp đồng» với Mua/Bán/Giới thiệu, dùng được trong «Bắt đầu khi» của quy trình.",
+    "Không kho, không bảng sản phẩm. Đi qua quy trình duyệt và ký như hợp đồng khác."
+  ]
+}
