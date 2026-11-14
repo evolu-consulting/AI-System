@@ -60,6 +60,14 @@ export const PartnerNoteCreateSchema = z.strictObject({
 export type PartnerNoteCreate = z.infer<typeof PartnerNoteCreateSchema>;
 /** V2-I: hồ sơ / hợp đồng / tìm internet của một đối tác (`?party=`). */
 export const PartnerPartyQuerySchema = z.strictObject({ party: Party });
+/** CR-151d mục 12: tab «Hợp đồng» của đối tác — `limit` mặc định 50, trần 200 (quá trần ⇒ 400); `next_offset` null = hết. */
+export const PARTNER_CONTRACTS_PAGE = 50;
+export const PARTNER_CONTRACTS_MAX = 200;
+export const PartnerContractsQuerySchema = z.strictObject({
+  party: Party,
+  limit: z.coerce.number().int().min(1).max(PARTNER_CONTRACTS_MAX).optional(),
+  offset: z.coerce.number().int().min(0).max(100_000).optional(),
+});
 /** V2-GAPS · DT-01: sửa điện thoại + người liên hệ của đối tác (rỗng ⇒ xoá; liên hệ rỗng ⇒ rơi về người đại diện ở HĐ mới nhất). */
 const Contact = (max: number) =>
   noNul(0, max)
@@ -160,6 +168,7 @@ export type PartnerContractRow = {
   stage: "not_started" | "in_progress" | "done";
   next: { title: string; due_date: string; overdue: boolean } | null;
 };
+export type PartnerContractsPage = { items: PartnerContractRow[]; next_offset: number | null };
 export type PartnerContractCount = { party: string; n: number };
 /** V2-I · DT-07 · Q8: một dòng kết quả tìm web — chỉ chữ thuần, người dùng chọn dòng để lưu vào ghi chú. */
 export type PartnerWebLine = { title: string; summary: string; source: string | null };

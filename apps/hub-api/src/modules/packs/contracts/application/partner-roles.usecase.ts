@@ -2,6 +2,7 @@
 // sẽ tạo khi lưu"), ghi chú đối tác. Mọi đọc/ghi trong tx người dùng (RLS M1); đối tác ngoài phạm vi ⇒ như chưa có (không lộ).
 // Tạo đối tác/vai khi lưu HĐ là trigger DB (0024), không ở đây.
 
+import type { PartnerContractsPage } from "@ai/contracts/pack-contracts";
 import type { PackUow, PackWho } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import {
@@ -14,7 +15,6 @@ import type {
   PartnerContactIn,
   PartnerContactsPut,
   PartnerContractCount,
-  PartnerContractRow,
   PartnerDeal,
   PartnerLookup,
   PartnerNote,
@@ -103,12 +103,15 @@ async function partnerContracts(
   d: PartnerRolesDeps,
   who: PackWho,
   party: string,
-): Promise<PartnerContractRow[]> {
-  const [raw, today] = await Promise.all([
-    d.uow.tenant(who, (x) => x.roles.contracts(party)),
+  limit: number,
+  offset: number,
+): Promise<PartnerContractsPage> {
+  const [all, today] = await Promise.all([
+    d.uow.tenant(who, (x) => x.roles.contracts(party, limit + 1, offset)), // limit+1 ⇒ biết còn trang
     todayOf(d, who),
   ]);
-  return raw.map((r) => {
+  const raw = all.slice(0, limit);
+  const items = raw.map((r) => {
     const p = toProgress(r, today);
     return {
       id: r.id,
@@ -122,6 +125,7 @@ async function partnerContracts(
       next: p.next && { title: p.next.title, due_date: p.next.due_date, overdue: p.next.overdue },
     };
   });
+  return { items, next_offset: all.length > limit ? offset + limit : null };
 }
 
 /** DT-01: MST / liên hệ đầu trang; đối tác ngoài phạm vi ⇒ 404. */
@@ -217,8 +221,12 @@ export function partnerRolesUsecase(d: PartnerRolesDeps) {
     saveContact: (who: PackWho, b: PartnerContactIn) => saveContact(d, who, b),
     contacts: (who: PackWho, party: string) => contactsOf(d, who, party),
     saveContacts: (who: PackWho, b: PartnerContactsPut) => saveContacts(d, who, b),
-    contracts: (who: PackWho, party: string): Promise<PartnerContractRow[]> =>
-      partnerContracts(d, who, party),
+    contracts: (
+      who: PackWho,
+      party: string,
+      limit: number,
+      offset: number,
+    ): Promise<PartnerContractsPage> => partnerContracts(d, who, party, limit, offset),
     contractCounts: (who: PackWho): Promise<PartnerContractCount[]> =>
       d.uow.tenant(who, (x) => x.roles.contractCounts()),
     internetSearch: (who: PackWho, party: string, signal: AbortSignal) =>

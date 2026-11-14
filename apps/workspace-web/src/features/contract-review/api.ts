@@ -69,8 +69,12 @@ export function extractContract(id: string): Promise<{ id: string; status: strin
 }
 
 /** gap-a1 #4: lịch sử thay đổi (theo luật thấy của người gọi). */
-export function fetchHistory(id: string, signal?: AbortSignal): Promise<HistoryResponse> {
-  return api<HistoryResponse>(`${one(id)}/history`, { signal });
+export function fetchHistory(
+  id: string,
+  offset = 0,
+  signal?: AbortSignal,
+): Promise<HistoryResponse> {
+  return api<HistoryResponse>(`${one(id)}/history${offset ? `?offset=${offset}` : ""}`, { signal });
 }
 
 /** gap-a1 #7: người có thể được giao (thành viên có quyền xem gói) + giao / bỏ giao. */

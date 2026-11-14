@@ -1,7 +1,7 @@
 // V2-I · truy vấn/ghi uy tín đối tác (chi tiết · cấu hình · đánh giá · lịch sử · hợp đồng · ghi chú · liên hệ · tìm internet).
 import type { PartnerWebLine } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addNote,
   createCompany,
@@ -31,10 +31,13 @@ export const useRepMine = (days: number) =>
     queryFn: ({ signal }) => fetchRepMine(days, signal),
   });
 
+/** CR-151d mục 12: tải dần theo trang (`next_offset`), «Xem thêm» ở tab. */
 export const usePartnerContracts = (party: string) =>
-  useQuery({
-    queryKey: partnerKeys.contracts(party),
-    queryFn: ({ signal }) => fetchPartnerContracts(party, signal),
+  useInfiniteQuery({
+    queryKey: [...partnerKeys.contracts(party), "paged"],
+    initialPageParam: 0,
+    queryFn: ({ pageParam, signal }) => fetchPartnerContracts(party, pageParam, signal),
+    getNextPageParam: (last) => last.next_offset ?? undefined,
   });
 
 export const useNotes = (party: string) =>

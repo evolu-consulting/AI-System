@@ -78,6 +78,7 @@ async function record(
   tid: string,
   ref: { id: string | null; number: string | null },
   limit: number,
+  offset = 0,
 ): Promise<RecordHistory[]> {
   const rows = await tx.execute<RecRaw>(sql`with k as (
       select c.id, ${contractNameSql("c")} as title, c.number, c.created_at from contracts.contracts c
@@ -88,7 +89,7 @@ async function record(
       (select json_agg(json_build_object('at', ${iso(sql`e.at`)}, 'action', e.type, 'actor_id', e.actor_user_id,
           'detail', e.data) order by e.id desc)::text
         from (select e.id, e.type, e.at, e.actor_user_id, ${eventDataOut("e")} as data from contracts.contract_events e
-          where e.contract_id = k.id and e.tenant_id = ${tid}::uuid order by e.id desc limit ${limit}::int) e) as events
+          where e.contract_id = k.id and e.tenant_id = ${tid}::uuid order by e.id desc limit ${limit}::int offset ${offset}::int) e) as events
     from k order by k.created_at desc`);
   return [...rows].map((r) => ({
     id: r.id,
@@ -115,7 +116,7 @@ async function record(
 export const activityRepo = (tx: Tx, tenantId: string) => ({
   activity: {
     mine: (uid: string, w: ActivityWindow) => mine(tx, tenantId, uid, w),
-    record: (ref: { id: string | null; number: string | null }, limit: number) =>
-      record(tx, tenantId, ref, limit),
+    record: (ref: { id: string | null; number: string | null }, limit: number, offset = 0) =>
+      record(tx, tenantId, ref, limit, offset),
   },
 });

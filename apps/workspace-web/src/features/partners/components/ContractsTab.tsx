@@ -63,7 +63,7 @@ export function ContractsTab({ party }: { party: string }) {
   const q = usePartnerContracts(party);
   if (q.isLoading) return <Loading />;
   if (q.error) return <ErrorLine error={q.error} />;
-  const rows = q.data ?? [];
+  const rows = q.data?.pages.flatMap((p) => p.items) ?? [];
   const cnt = stageCounts(rows);
   const shown = byStage(rows, filter);
   return (
@@ -107,6 +107,18 @@ export function ContractsTab({ party }: { party: string }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {q.hasNextPage && (
+        <div className="border-t border-rule-soft px-5 py-2.5">
+          <button
+            type="button"
+            className="text-[12.5px] text-dim hover:underline"
+            disabled={q.isFetchingNextPage}
+            onClick={() => void q.fetchNextPage()}
+          >
+            {L("loadMore")}
+          </button>
         </div>
       )}
     </section>

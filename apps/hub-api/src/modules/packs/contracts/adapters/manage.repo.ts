@@ -16,8 +16,8 @@ export function manageRepo(tx: Tx, tenantId: string): { manage: ManageRepo } {
   const act = activityRepo(tx, tenantId).activity;
   return {
     manage: {
-      history: async (id, limit): Promise<HistoryItem[] | null> => {
-        const [h] = await act.record({ id, number: null }, limit);
+      history: async (id, limit, offset): Promise<HistoryItem[] | null> => {
+        const [h] = await act.record({ id, number: null }, limit, offset);
         if (!h) return null;
         return h.events.map((e) => ({
           type: e.action,

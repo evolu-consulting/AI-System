@@ -30,6 +30,7 @@
       },
       "hist": {
         "title": "Lịch sử thay đổi",
+        "loadMore": "Xem thêm",
         "loading": "Đang tải…",
         "empty": "Chưa có thay đổi nào.",
         "system": "Hệ thống",

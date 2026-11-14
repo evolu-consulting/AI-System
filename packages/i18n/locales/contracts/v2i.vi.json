@@ -95,6 +95,7 @@
         "emptyTitle": "Không có hợp đồng",
         "emptyBody": "Đối tác này chưa có hợp đồng đã xác nhận.",
         "emptyFilter": "Không có hợp đồng ở bước này.",
+        "loadMore": "Xem thêm",
         "col": {
           "contract": "Hợp đồng",
           "deal": "Loại",

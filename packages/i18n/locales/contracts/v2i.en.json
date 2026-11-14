@@ -95,6 +95,7 @@
         "emptyTitle": "No contracts",
         "emptyBody": "This partner has no confirmed contracts yet.",
         "emptyFilter": "No contracts at this step.",
+        "loadMore": "Show more",
         "col": {
           "contract": "Contract",
           "deal": "Type",

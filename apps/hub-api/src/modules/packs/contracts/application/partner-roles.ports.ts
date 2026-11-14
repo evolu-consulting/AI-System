@@ -40,7 +40,7 @@ export type PartnerSearchHit = {
 export type PartnerRolesRepo = {
   addNote(party: string, body: string, source?: "manual" | "internet"): Promise<PartnerNote | null>;
   deleteNote(id: string, any: boolean): Promise<NoteDelete>;
-  contracts(party: string): Promise<PartnerContractRaw[]>;
+  contracts(party: string, limit: number, offset: number): Promise<PartnerContractRaw[]>;
   contractCounts(): Promise<PartnerContractCount[]>;
   notes(party: string): Promise<PartnerNote[]>;
   profile(party: string): Promise<PartnerProfile | null>;

@@ -2,7 +2,7 @@
 // xong thì làm mới chi tiết (kéo theo lịch sử) và báo toast; lỗi ⇒ toast câu theo mã máy chủ.
 
 import { toast } from "@ai/web-kit/ui/toast";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { fetchMembers, MEMBERS_KEY } from "~/features/contracts-list/api";
 import {
@@ -75,9 +75,11 @@ export function useMemberNames(): (id: string | null) => string | null {
 }
 
 export function useHistory(id: string, enabled: boolean) {
-  return useQuery({
-    queryKey: historyKey(id),
-    queryFn: ({ signal }) => fetchHistory(id, signal),
+  return useInfiniteQuery({
+    queryKey: [...historyKey(id), "paged"],
+    initialPageParam: 0,
+    queryFn: ({ pageParam, signal }) => fetchHistory(id, pageParam, signal),
+    getNextPageParam: (last) => last.next_offset ?? undefined,
     enabled,
   });
 }

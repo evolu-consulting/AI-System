@@ -55,8 +55,15 @@ export const HistoryItemSchema = z.strictObject({
   data: z.unknown(),
 });
 export type HistoryItem = z.infer<typeof HistoryItemSchema>;
+/** CR-151d mục 21: `limit` mặc định 50, trần `HISTORY_MAX` (quá trần ⇒ 400); `next_offset` null = hết. */
+export const HISTORY_PAGE = 50;
+export const HistoryQuerySchema = z.strictObject({
+  limit: z.coerce.number().int().min(1).max(HISTORY_MAX).optional(),
+  offset: z.coerce.number().int().min(0).max(100_000).optional(),
+});
 export const HistoryResponseSchema = z.strictObject({
   items: z.array(HistoryItemSchema).max(HISTORY_MAX),
+  next_offset: z.number().int().nullable(),
 });
 export type HistoryResponse = z.infer<typeof HistoryResponseSchema>;
 

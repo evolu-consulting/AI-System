@@ -7,7 +7,7 @@ import type {
   PartnerCommunityCandidate,
   PartnerContactPerson,
   PartnerContractCount,
-  PartnerContractRow,
+  PartnerContractsPage,
   PartnerNote,
   PartnerProfile,
   PartnerRole,
@@ -97,8 +97,11 @@ export const fetchProfile = (party: string, signal?: AbortSignal) =>
   api<PartnerProfile>(`${BASE}/partners/profile?party=${enc(party)}`, { signal });
 export const fetchRoles = (party: string, signal?: AbortSignal) =>
   api<PartnerRoleRow[]>(`${BASE}/partners/roles?party=${enc(party)}`, { signal });
-export const fetchPartnerContracts = (party: string, signal?: AbortSignal) =>
-  api<PartnerContractRow[]>(`${BASE}/partners/contracts?party=${enc(party)}`, { signal });
+export const fetchPartnerContracts = (party: string, offset = 0, signal?: AbortSignal) =>
+  api<PartnerContractsPage>(
+    `${BASE}/partners/contracts?party=${enc(party)}${offset ? `&offset=${offset}` : ""}`,
+    { signal },
+  );
 export const fetchContractCounts = (signal?: AbortSignal) =>
   api<PartnerContractCount[]>(`${BASE}/partners/contract-counts`, { signal });
 export const fetchNotes = (party: string, signal?: AbortSignal) =>
