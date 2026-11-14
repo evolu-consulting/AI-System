@@ -36,10 +36,17 @@ export function rolesOf(
       (r === "customer" && known.includes("commission_payer")),
   );
 }
-export const TABS = ["overview", "contracts", "review", "community"] as const;
+export const TABS = ["overview", "contracts", "review", "community", "chat", "feed"] as const;
 export type Tab = (typeof TABS)[number];
 
-export type PartnersSearch = { party?: string; role?: RepRole; tab?: Tab; range?: Range };
+export type PartnersSearch = {
+  party?: string;
+  /** CR-161 · công ty đã kết nối (mã tenant) — có thì hiện tab Trò chuyện / Bảng tin công ty. */
+  tenant?: string;
+  role?: RepRole;
+  tab?: Tab;
+  range?: Range;
+};
 const text = (v: unknown, max: number): string | undefined =>
   typeof v === "string" && v.length > 0 && v.length <= max ? v : undefined;
 
@@ -51,7 +58,15 @@ export function parsePartnersSearch(s: Record<string, unknown>): PartnersSearch 
   const tab = TABS.find((k) => k === s.tab && k !== "overview");
   const range =
     s.range === 3 || s.range === "3" ? 3 : s.range === 6 || s.range === "6" ? 6 : undefined;
-  return { party, ...(role ? { role } : {}), ...(tab ? { tab } : {}), ...(range ? { range } : {}) };
+  const tenant =
+    typeof s.tenant === "string" && /^[0-9a-f-]{36}$/i.test(s.tenant) ? s.tenant : undefined;
+  return {
+    party,
+    ...(tenant ? { tenant } : {}),
+    ...(role ? { role } : {}),
+    ...(tab ? { tab } : {}),
+    ...(range ? { range } : {}),
+  };
 }
 // ---------- HĐ (DT-06) ----------
 export const STAGES = ["all", "not_started", "in_progress", "done"] as const;
@@ -76,4 +91,19 @@ export const byStage = (
 export function noteOfLine(l: PartnerWebLine): string {
   const body = l.summary ? `${l.title}: ${l.summary}` : l.title;
   return (l.source ? `${body} (${l.source})` : body).slice(0, 2000);
+}
+
+/**
+ * Tab hiển thị: «Bảng tin» (gói Cộng đồng) cần gói bật; «Trò chuyện» cần công ty đã kết nối (`tenant`, chỉ Toàn quyền);
+ * «Bảng tin công ty» cần còn kết nối — ngắt ⇒ về «Trò chuyện» (chỉ đọc).
+ */
+export function resolveTab(
+  asked: Tab | undefined,
+  o: { community: boolean; tenant: string | undefined; feedOk: boolean },
+): Tab {
+  const tab = asked ?? "overview";
+  if (tab === "community" && !o.community) return "overview";
+  if ((tab === "chat" || tab === "feed") && !o.tenant) return "overview";
+  if (tab === "feed" && !o.feedOk) return "chat";
+  return tab;
 }

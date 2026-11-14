@@ -11,6 +11,8 @@ export function PartnerTabs({
   tab,
   contracts,
   community = false,
+  tenant,
+  feed = false,
 }: {
   party: string;
   role: RepRole | undefined;
@@ -18,6 +20,10 @@ export function PartnerTabs({
   contracts: number;
   /** Gói Cộng đồng bật ⇒ có tab «Bảng tin». */
   community?: boolean;
+  /** CR-161 · công ty đã kết nối: có tab «Trò chuyện». */
+  tenant?: string;
+  /** Còn kết nối ⇒ có tab «Bảng tin công ty» (ngắt ⇒ ẩn). */
+  feed?: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -26,11 +32,21 @@ export function PartnerTabs({
       aria-label={t("contracts.pv2.tabs")}
       className="mb-4 flex gap-1 overflow-x-auto border-b border-rule"
     >
-      {TABS.filter((k) => k !== "community" || community).map((k) => (
+      {TABS.filter(
+        (k) =>
+          (k !== "community" || community) &&
+          (k !== "chat" || !!tenant) &&
+          (k !== "feed" || (!!tenant && feed)),
+      ).map((k) => (
         <Link
           key={k}
           to="/contracts/partners"
-          search={{ party, ...(role ? { role } : {}), ...(k === "overview" ? {} : { tab: k }) }}
+          search={{
+            party,
+            ...(tenant ? { tenant } : {}),
+            ...(role ? { role } : {}),
+            ...(k === "overview" ? {} : { tab: k }),
+          }}
           role="tab"
           id={`partner-tab-${k}`}
           aria-selected={tab === k}

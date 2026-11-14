@@ -38,3 +38,11 @@ const ERR_OF: Record<string, ConnectErr> = {
 };
 /** Mã lỗi API ⇒ khoá câu báo `contracts.connect.err.<khoá>`. */
 export const connectErrKey = (code: string): ConnectErr => ERR_OF[code] ?? "failed";
+
+/** «Mở trang đối tác» của công ty đã kết nối: khoá đối tác theo MST (`tax:<MST>`) + mã công ty để hiện Trò chuyện / Bảng tin. */
+export const partnerSearchOf = (c: {
+  tax_code: string;
+  tenant_id: string;
+}): { party: string; tenant: string } => ({ party: `tax:${c.tax_code}`, tenant: c.tenant_id });
+/** Nhãn số chưa đọc: 0 ⇒ rỗng, > 99 ⇒ «99+». */
+export const unreadLabel = (n: number): string => (n <= 0 ? "" : n > 99 ? "99+" : String(n));

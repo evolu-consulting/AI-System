@@ -1,9 +1,12 @@
 // CR-161 · khối «Công ty đã kết nối» ở trang Đối tác: mỗi dòng = tên + nhãn «Đã kết nối» + «Ngắt kết nối» (công ty chưa có hợp đồng vẫn có dòng).
 // Nhân viên không Toàn quyền: không gọi API, chỉ thấy băng giải thích (không có nút mời / ngắt / đồng ý).
+import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
+import { btnClass } from "~/components/ui/Btn";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { useLinks } from "../hooks/use-connect";
+import { partnerSearchOf, unreadLabel } from "../lib/connect";
 import { ConnectStatusBadge } from "./ConnectStatusBadge";
 import { DisconnectButton } from "./DisconnectButton";
 
@@ -41,6 +44,22 @@ export function ConnectedPanel() {
           >
             <span className="min-w-0 flex-1 basis-56 truncate font-semibold">{l.legal_name}</span>
             <ConnectStatusBadge status="connected" />
+            {l.unread > 0 && (
+              <span
+                data-testid="connect-unread"
+                title={t("contracts.connect.chat.unread", { n: l.unread })}
+                className="inline-flex min-w-5 items-center justify-center rounded-full bg-act px-1.5 text-[12px] font-semibold text-on-act"
+              >
+                {unreadLabel(l.unread)}
+              </span>
+            )}
+            <Link
+              to="/contracts/partners"
+              search={{ ...partnerSearchOf(l), tab: "chat" }}
+              className={btnClass("outline", "sm")}
+            >
+              {t("contracts.connect.openPartner")}
+            </Link>
             <DisconnectButton tenant={l.tenant_id} name={l.legal_name} />
           </li>
         ))}

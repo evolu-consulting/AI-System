@@ -54,7 +54,7 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 | 5 | API kết nối + bài | cr161-link-api | [x] |
 | 6 | API trò chuyện + perf | cr161-chat-api | [x] |
 | 7 | Web kết nối [test: apps/workspace-web/src/features/partners/lib/connect.test.ts » mã lỗi ⇒ câu dễ hiểu] | cr161-web-link | [x] |
-| 8 | Web trò chuyện + Bảng tin | cr161-web-chat | [ ] |
+| 8 | Web trò chuyện + Bảng tin [test: apps/workspace-web/src/features/partners/lib/cc-chat.test.ts » gộp trang tin; apps/workspace-web/src/features/partners/lib/partner-v2.test.ts » resolveTab] | cr161-web-chat | [x] |
 | 9 | e2e hành trình | cr161-e2e | [ ] |
 
 ## Quyết định trong lúc làm
@@ -136,3 +136,6 @@ Ngoại lệ có chủ ý với «không kết nối trực tiếp giữa công 
 - Kịch bản: khi Dung mở tab Bảng tin của NitiGroup thì thấy bài công khai còn hạn, không thấy bài giới hạn người xem, bài ẩn hay hết hạn [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R10 bài công khai]
 - Kịch bản: khi chưa hoặc đã ngắt kết nối thì xem bài bị 404 [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R10 bài công khai; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R6 ngắt kết nối + audit]
 - Kịch bản: khi bài có số điện thoại thì công ty kết nối chỉ thấy bản đã che [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R10 bài công khai]
+- (lát 8) Tab mới ở trang đối tác: `chat` «Trò chuyện» và `feed` «Bảng tin công ty» (tên khác tab `community` «Bảng tin» của CR-130 để giữ G2, một tên một khái niệm). URL `?party=tax:<MST>&tenant=<uuid>&tab=chat`; chỉ người Toàn quyền thấy; `feed` ẩn khi không còn trong danh sách «đã kết nối» (ngắt ⇒ về «Trò chuyện» chỉ đọc).
+- (lát 8) Tệp: `GET /connect/files/:id` trả 302 ⇒ web `apiResponse` theo chuyển hướng rồi dùng `res.url` làm link (không đọc thân). Nếu kho FileBox không cho CORS trên link ký sẵn thì ảnh/tải sẽ lỗi — lát 9 e2e kiểm; sửa thì đổi route sang JSON `{url}` như tin nhắn SHT.
+- (lát 8) Chưa đọc: số hiện ở khối «Công ty đã kết nối» từ `unread` của `/links`; `cc.msg` và «đã đọc» làm mới `connect` ⇒ số tự cập nhật.

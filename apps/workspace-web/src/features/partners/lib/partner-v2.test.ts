@@ -1,7 +1,14 @@
 // V2-I · U3 · luật thuần Đối tác UI: URL, lọc HĐ theo giai đoạn, ghi chú từ tìm internet.
 import { describe, expect, test } from "bun:test";
 import type { PartnerContractRow } from "@ai/contracts/pack-contracts";
-import { byStage, noteOfLine, parsePartnersSearch, rolesOf, stageCounts } from "./partner-v2";
+import {
+  byStage,
+  noteOfLine,
+  parsePartnersSearch,
+  resolveTab,
+  rolesOf,
+  stageCounts,
+} from "./partner-v2";
 
 describe("V2-I URL", () => {
   test("chỉ giữ tham số hợp lệ; không có party ⇒ danh sách; vai: khách hàng, nhà cung cấp, bên trả hoa hồng (V2-E)", () => {
@@ -49,5 +56,29 @@ describe("V2-I HĐ theo giai đoạn", () => {
   test("dòng tìm internet ⇒ nội dung ghi chú", () => {
     expect(noteOfLine({ title: "T", summary: "S", source: "x.vn" })).toBe("T: S (x.vn)");
     expect(noteOfLine({ title: "T", summary: "", source: null })).toBe("T");
+  });
+});
+
+describe("CR-161 · tham số tenant và tab kết nối", () => {
+  const T = "11111111-1111-4111-8111-111111111111";
+  test("giữ tenant hợp lệ cùng party, bỏ khi lạ hoặc không có party", () => {
+    expect(parsePartnersSearch({ party: "tax:1", tenant: T, tab: "chat" })).toEqual({
+      party: "tax:1",
+      tenant: T,
+      tab: "chat",
+    });
+    expect(parsePartnersSearch({ party: "tax:1", tenant: "x" })).toEqual({ party: "tax:1" });
+    expect(parsePartnersSearch({ tenant: T })).toEqual({});
+  });
+});
+
+describe("CR-161 · resolveTab", () => {
+  const o = { community: true, tenant: "t", feedOk: true };
+  test("chat/feed cần tenant; feed cần còn kết nối; community cần gói", () => {
+    expect(resolveTab("chat", o)).toBe("chat");
+    expect(resolveTab("chat", { ...o, tenant: undefined })).toBe("overview");
+    expect(resolveTab("feed", { ...o, feedOk: false })).toBe("chat");
+    expect(resolveTab("community", { ...o, community: false })).toBe("overview");
+    expect(resolveTab(undefined, o)).toBe("overview");
   });
 });

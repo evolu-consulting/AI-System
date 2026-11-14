@@ -2,10 +2,11 @@
 // «Gửi lời mời kết nối» có hộp xác nhận + lời nhắn tuỳ chọn. Chỉ mở cho người Toàn quyền.
 import type { ConnectCompany } from "@ai/contracts/pack-contracts";
 import { toast } from "@ai/web-kit/ui/toast";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { promptDialog } from "~/components/shared/dialog-bus";
-import { Btn } from "~/components/ui/Btn";
+import { Btn, btnClass } from "~/components/ui/Btn";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +17,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { errCodeOf, useCompanySearch, useConnectWrites } from "../hooks/use-connect";
-import { connectErrKey, noteOf, searchReady } from "../lib/connect";
+import { connectErrKey, noteOf, partnerSearchOf, searchReady } from "../lib/connect";
 import { ConnectStatusBadge } from "./ConnectStatusBadge";
 
 function Line({ c }: { c: ConnectCompany }) {
@@ -55,6 +56,15 @@ function Line({ c }: { c: ConnectCompany }) {
         )}
       </div>
       <ConnectStatusBadge status={c.status} />
+      {c.status === "connected" && (
+        <Link
+          to="/contracts/partners"
+          search={partnerSearchOf(c)}
+          className={btnClass("outline", "sm")}
+        >
+          {t("contracts.connect.openPartner")}
+        </Link>
+      )}
       {c.status === "none" && (
         <Btn size="sm" variant="primary" loading={invite.isPending} onClick={() => void send()}>
           {t("contracts.connect.send.button")}
