@@ -38,6 +38,7 @@ export * from "./obligation-impact";
 export * from "./overview";
 export * from "./partner-community";
 export * from "./partner-deleted";
+export * from "./partner-party";
 export * from "./partner-roles";
 export * from "./partners";
 export * from "./penalty";

@@ -2,6 +2,7 @@
 // mặc định TẮT trên prod). Cờ đọc MỖI lần gọi (đổi env không cần dựng lại module; test bật/tắt giữa hai yêu cầu). Nguồn điểm dùng
 // chung cho tab "NCC & giá" (`supplierScores`), gợi ý đối tác (V2-C `scoreOf`) và xem trước "N đối tác đổi mức nếu bật" (chỉ đọc).
 // Không import `partners.mount`/`reputation.mount` (tránh vòng phụ thuộc) — tự dựng hai use case đọc từ adapter.
+import { fromRep, type ScoreRow } from "@ai/contracts/pack-contracts";
 import type { Db } from "@ai/db";
 import type { PackWho } from "../kit/public";
 import { createPackUow, packTenantOnly } from "../kit/public";
@@ -90,6 +91,19 @@ export function repCurrent(db: Db, d: RepCurrentDeps) {
     return { engine: engine(), ...switchDiff(h, v) };
   };
 
-  return { engine, supplierScores, scoreOf, switchPreview };
+  /**
+   * CR-151e · trang Đối tác: MỌI dòng đối tác × vai của engine hiện hành, MỘT nguồn với `supplierScores`/`scoreOf` (G1). HD8: ba câu song
+   * song (`byRole`); V2-E: hai câu chấm + một câu cờ đỏ. Số câu cố định, không theo số đối tác.
+   */
+  const scoreRows = async (who: PackWho): Promise<ScoreRow[]> => {
+    if (engine() === "v2e") return (await v2e.listFlagged(who, "all")).map(fromRep);
+    const h = await hd8.byRole(who);
+    return [
+      ...h.supplier.map((r) => ({ ...r, role: "supplier" as const })),
+      ...h.customer.map((r) => ({ ...r, role: "customer" as const })),
+    ];
+  };
+
+  return { engine, supplierScores, scoreOf, switchPreview, scoreRows };
 }
 export type RepCurrent = ReturnType<typeof repCurrent>;

@@ -257,6 +257,17 @@ function contractReads(tx: Tx, t: string) {
               and c.superseded_at is null
             group by c.partner_key) x`,
       ),
+
+    /** CR-151e: số HĐ đã xác nhận của CHỈ các đối tác trong trang (≤ 200 khoá, một tham số JSON, `partner_key` có index) — một câu cố định. */
+    contractCountsOf: (parties: readonly string[]) =>
+      one<PartnerContractCount[]>(
+        tx,
+        sql`select coalesce(json_agg(json_build_object('party', x.k, 'n', x.n)), '[]'::json) as j
+          from (select c.partner_key as k, count(*)::int as n from contracts.contracts c
+            where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.status in (${CONFIRMED}) and c.superseded_at is null
+              and c.partner_key in (select jsonb_array_elements_text(${JSON.stringify(parties)}::jsonb))
+            group by c.partner_key) x`,
+      ),
   };
 }
 

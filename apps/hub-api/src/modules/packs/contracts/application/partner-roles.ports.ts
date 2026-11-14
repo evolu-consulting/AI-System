@@ -42,6 +42,7 @@ export type PartnerRolesRepo = {
   deleteNote(id: string, any: boolean): Promise<NoteDelete>;
   contracts(party: string, limit: number, offset: number): Promise<PartnerContractRaw[]>;
   contractCounts(): Promise<PartnerContractCount[]>;
+  contractCountsOf(parties: readonly string[]): Promise<PartnerContractCount[]>;
   notes(party: string): Promise<PartnerNote[]>;
   profile(party: string): Promise<PartnerProfile | null>;
   setContact(

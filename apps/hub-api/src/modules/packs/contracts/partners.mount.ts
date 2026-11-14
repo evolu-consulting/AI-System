@@ -12,6 +12,7 @@ import { companiesRoutes } from "./adapters/companies.routes";
 import { createInspect } from "./adapters/link-check.http";
 import { LINK_CHECKS_PER_MINUTE, linkCheckLimit } from "./adapters/link-check-limit.redis";
 import { partnerCommunityRoutes } from "./adapters/partner-community.routes";
+import { partnerPageRoutes } from "./adapters/partner-page.routes";
 import { partnerProfileRepo } from "./adapters/partner-profile.repo";
 import { partnerRolesRepo } from "./adapters/partner-roles.repo";
 import { partnerRolesRoutes } from "./adapters/partner-roles.routes";
@@ -22,6 +23,7 @@ import { partnerDataOf } from "./adapters/partners-data.repo";
 import { companiesUsecase } from "./application/companies.usecase";
 import type { TaxRegistry } from "./application/extraction.ports";
 import { partnerCommunityUsecase } from "./application/partner-community.usecase";
+import { partnerPageUsecase } from "./application/partner-page.usecase";
 import { partnerRolesUsecase } from "./application/partner-roles.usecase";
 import { partnersUsecase } from "./application/partners.usecase";
 import type { Inspect } from "./domain/link-check.rules";
@@ -96,6 +98,14 @@ export function partnersModule(
     webSearch: search,
   });
   r.route("/", partnerRolesRoutes(view, roles, limit));
+  // CR-151e · danh sách Đối tác phân trang ở máy chủ (cả hai engine): `GET /partners/page`.
+  r.route(
+    "/",
+    partnerPageRoutes(
+      view,
+      partnerPageUsecase({ rows: cur.scoreRows, counts: roles.contractCountsOf }),
+    ),
+  );
   // CR-130 L3 · hồ sơ Bảng tin của đối tác (nhóm hàng/khu vực/tài khoản).
   r.route(
     "/",

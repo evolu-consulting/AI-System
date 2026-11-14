@@ -8,7 +8,7 @@ Bảng rà soát `audit.md`. Lát này làm mục Cao 2, 3, 5, 6. Mục 1 (Bản
 |---|---|---|---|
 | 2 | `GET /admin/org/members?q&limit&offset` (limit ≤ 200, mặc định 50; MỘT câu SQL/trang gồm tổng + tên quản lý); màn Thành viên & phòng ban tìm + phân trang ở máy chủ, đổi quản lý bằng hộp tìm | contracts `org.ts`, `org.routes.ts`, `org.service.ts`, `OrgPage.tsx` | [x] |
 | 3 | `GET /pack/contracts/members?q&limit&offset` (limit ≤ 50 ⇒ trang + `next_offset`; không `limit` ⇒ danh bạ đầy đủ như cũ, để tra tên); hộp chọn người dùng chung `PersonSearchSelect` (tìm máy chủ + «Xem thêm») cho Ủy quyền, Người phụ trách HĐ nhận, ô «Người» của phiếu yêu cầu | `appendix.ts`, `members.route.ts`, `PersonSearchSelect.tsx`, `DelegationPane.tsx`, `ReceiveSettings.tsx`, `RequestField.tsx` | [x] |
-| 4 | Danh sách đối tác (điểm uy tín) | chỉ đề xuất, xem «Việc còn lại» | [ ] |
+| 4 | Danh sách đối tác (điểm uy tín) | đã làm ở lát cr151e-partners-paging (`docs/specs/cr151e-partners-paging/tasks.md`) | [x] |
 | 5 | `GET /business/products?limit&offset&group&q` (limit ≤ 100; `total`; đếm nhóm giữ nguyên); trang Sản phẩm dùng `Pager` + tìm máy chủ | `business.ts`, `business.types.ts`, `business.usecase.ts`, `ProductList.tsx`, `use-business.ts` | [x] |
 | 6 | `GET /pack/community/partners?limit&offset&q` (limit ≤ 50); tab «Đối tác» hồ sơ tải dần («Xem thêm»); ô chọn công ty lọc bài tìm ở máy chủ; cột bên chỉ 50 công ty đầu | `profile.ts`, `org.routes.ts`, `sections.tsx`, `Feed.tsx`, `useFeed.ts` | [x] |
 

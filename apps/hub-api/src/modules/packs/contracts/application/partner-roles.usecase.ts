@@ -229,6 +229,9 @@ export function partnerRolesUsecase(d: PartnerRolesDeps) {
     ): Promise<PartnerContractsPage> => partnerContracts(d, who, party, limit, offset),
     contractCounts: (who: PackWho): Promise<PartnerContractCount[]> =>
       d.uow.tenant(who, (x) => x.roles.contractCounts()),
+    /** CR-151e: số HĐ của các đối tác trong trang (rỗng ⇒ không gọi DB). */
+    contractCountsOf: async (who: PackWho, parties: readonly string[]) =>
+      parties.length ? d.uow.tenant(who, (x) => x.roles.contractCountsOf(parties)) : [],
     internetSearch: (who: PackWho, party: string, signal: AbortSignal) =>
       internetSearch(d, who, party, signal),
   };

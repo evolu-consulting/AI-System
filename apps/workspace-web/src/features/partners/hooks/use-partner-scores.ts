@@ -1,9 +1,9 @@
 // U3 · REP-v3-ui · điểm đối tác theo engine hiện hành (`GET /reputation/config` → `engine`): HD8 đọc `GET /partners` (hai vai), V2-E đọc
 // `GET /reputation/partners` (vai × nhóm SP, gồm bên trả hoa hồng, kèm cờ đỏ). Cả hai về cùng dòng `ScoreRow` cho danh sách/Tổng quan.
 import type { PartnerRole, RepEngine } from "@ai/contracts/pack-contracts";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { fetchPartnerScore, fetchPartners, partnerKeys } from "../api";
+import { fetchPartnerScore, fetchPartners, fetchPartyPage, partnerKeys } from "../api";
 import { fromRep, roleRows, type ScoreRow } from "../lib/partner-score";
 import { useEngine, useRepPartners } from "./use-rep-v2e";
 
@@ -50,4 +50,18 @@ export const usePartnerScore = (party: string, role: PartnerRole) =>
     queryKey: partnerKeys.score(party, role),
     queryFn: ({ signal }) => fetchPartnerScore(party, role, signal),
     retry: false,
+  });
+
+/** CR-151e · trang Đối tác: một trang (đã gộp vai, điểm, số HĐ) từ máy chủ; giữ trang cũ khi đổi trang/tìm để không nháy. */
+export const usePartyPage = (o: {
+  filter: string;
+  q: string;
+  sort?: string;
+  limit: number;
+  offset: number;
+}) =>
+  useQuery({
+    queryKey: partnerKeys.page(o),
+    queryFn: ({ signal }) => fetchPartyPage(o, signal),
+    placeholderData: keepPreviousData,
   });
