@@ -99,6 +99,8 @@ beforeAll(async () => {
   await mk(F, "f_pub");
   await mk(D, "d_pub");
   await mk(C, "c_pub");
+  await o`insert into admin.tenants (id, key, name)
+    select t, 'cp-' || substr(t::text, 1, 8), 'cp' from unnest(${o.array([A, B, C, D, E, F, G])}::uuid[]) t`;
   await o`insert into admin.feature_entitlements (feature_id, tenant_id)
     select f.id, t from admin.features f, unnest(${o.array([A, B, C, D, E, F, G])}::uuid[]) t where f.key = 'contracts-community'
     on conflict (feature_id, tenant_id) do update set revoked_at = null`;
