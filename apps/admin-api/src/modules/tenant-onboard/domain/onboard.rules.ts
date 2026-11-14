@@ -12,12 +12,34 @@ export type DeptIn = {
   members: string[];
 };
 
+/** CR-159 · người dùng khai trong yaml: `admin` = quản trị công ty (tenant_admin), `member` = thành viên thường. */
+export type UserIn = { email: string; name: string; title: string; role: "admin" | "member" };
+/** Người dùng hiện có (tra theo email) — chỉ các trường onboarding được phép cập nhật. */
+export type UserNow = {
+  id: string;
+  email: string;
+  display_name: string;
+  role: string;
+  version: number;
+  job_title: string | null;
+};
+export type UserUpdate = {
+  id: string;
+  email: string;
+  version: number;
+  set: { display_name?: string; role?: "tenant_admin" | "member" };
+  title?: string;
+};
+
 export type OnboardSpec = {
   key: string;
   name: string;
   timezone: string;
   profile: Record<string, unknown>;
   packs: string[];
+  /** CR-159 · add-on (khoá tính năng) bật qua entitlement, vd `contracts-community` (Bảng tin). */
+  addons: string[];
+  users: UserIn[];
   root: Omit<DeptIn, "parent">;
   departments: DeptIn[];
   /** Gắn tenant với org mgmt-app cho importer I1 (marker `settings.mgmt_source/mgmt_org_id`); org null ⇒ chưa gắn. */
@@ -30,6 +52,45 @@ export type DeptRow = {
   sort: number;
 };
 export type SpecIssue = { code: "DUP_DEPT_KEY" | "PARENT_UNKNOWN"; ref: string };
+
+export const roleOf = (r: UserIn["role"]): "tenant_admin" | "member" =>
+  r === "admin" ? "tenant_admin" : "member";
+
+/** Tên đăng nhập = phần trước `@` của email (đã chữ thường). */
+export const usernameOf = (email: string): string => email.slice(0, email.indexOf("@"));
+
+/**
+ * Kế hoạch người dùng: chưa có (theo email) ⇒ tạo; đã có ⇒ chỉ cập nhật tên/vai/chức vụ khi khác. Không đụng mật khẩu.
+ * Hàm thuần — `now` là kết quả tra một lần theo email.
+ */
+export function planUsers(
+  want: readonly UserIn[],
+  now: readonly UserNow[],
+): { create: UserIn[]; update: UserUpdate[]; unchanged: number } {
+  const byEmail = new Map(now.map((u) => [u.email.toLowerCase(), u]));
+  const create: UserIn[] = [];
+  const update: UserUpdate[] = [];
+  for (const w of want) {
+    const cur = byEmail.get(w.email);
+    if (!cur) {
+      create.push(w);
+      continue;
+    }
+    const set: UserUpdate["set"] = {};
+    if (cur.display_name !== w.name) set.display_name = w.name;
+    if (cur.role !== roleOf(w.role)) set.role = roleOf(w.role);
+    const titleChanged = cur.job_title !== w.title;
+    if (Object.keys(set).length === 0 && !titleChanged) continue;
+    update.push({
+      id: cur.id,
+      email: w.email,
+      version: cur.version,
+      set,
+      ...(titleChanged ? { title: w.title } : {}),
+    });
+  }
+  return { create, update, unchanged: want.length - create.length - update.length };
+}
 
 /** Hàng phòng ban theo thứ tự khai (sort = vị trí); cha phải là gốc hoặc phòng khai trước ⇒ cây không vòng. */
 export function deptRows(s: OnboardSpec): { rows: DeptRow[]; issues: SpecIssue[] } {

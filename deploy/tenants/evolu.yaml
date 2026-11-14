@@ -1,0 +1,26 @@
+# CR-159 · tenant evolu (công ty chủ). Prod dựng sạch 2026-11. Email tắt tới khi xác nhận domain: chưa có công tắc theo tenant
+# (HUB_NOTIFY_MODE là chung toàn hệ thống) ⇒ ghi "Việc còn lại" ở docs/specs/cr159-onboard-users/tasks.md, KHÔNG khai notify_email.
+# Chạy (idempotent): bun --env-file=.env.local apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts \
+#   --file deploy/tenants/evolu.yaml --actor <uuid platform admin> --pw-out <file mật khẩu tạm, quyền 600>
+# `users:` mới ⇒ bắt buộc --pw-out; người đã có chỉ cập nhật tên/chức vụ/vai (không đổi mật khẩu). `admin` = quản trị công ty.
+key: evolu
+name: Evolu
+timezone: Asia/Ho_Chi_Minh
+
+packs: [contracts]
+addons: [contracts-community] # Bảng tin
+
+users:
+  - { email: thomas.tran@evolu.com, name: Thomas Tran, title: Giám đốc, role: admin }
+  - { email: julian.bui@evolu.com, name: Julian Bui, title: Trưởng phòng kinh doanh, role: admin }
+  - { email: rowan.hoang@evolu.com, name: Rowan Hoang, title: Trưởng phòng chăm sóc khách hàng, role: member }
+  - { email: vio.ngo@evolu.com, name: Vio Ngo, title: Trưởng phòng kĩ thuật, role: member }
+  - { email: edgar.nguyen@evolu.com, name: Edgar Nguyen, title: "Trưởng phòng Research & development", role: member }
+
+# Người dùng có TRƯỚC phòng ban ⇒ trưởng/thành viên gán ngay, không còn pending.
+root: { key: pb-ban-giam-doc, vi: Ban Giám đốc, en: Board of Directors, head: thomas.tran@evolu.com }
+departments:
+  - { key: pb-kinh-doanh, vi: Phòng Kinh doanh, en: Sales, head: julian.bui@evolu.com }
+  - { key: pb-cskh, vi: Phòng Chăm sóc khách hàng, en: Customer Care, head: rowan.hoang@evolu.com }
+  - { key: pb-ky-thuat, vi: Phòng Kỹ thuật, en: Engineering, head: vio.ngo@evolu.com }
+  - { key: pb-rd, vi: "Phòng R&D", en: R&D, head: edgar.nguyen@evolu.com }

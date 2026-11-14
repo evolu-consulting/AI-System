@@ -1,21 +1,74 @@
 // niti-onboard · nối use case onboarding với hạ tầng: `configWrite` (một tx + audit + NOTIFY sau COMMIT), repo SQL,
 // `enablePack` của module packs, AppError. Test/CLI gọi `onboardTenant(db, spec, actorId)`.
-import type { Db } from "@ai/db";
+import { type Db, withScope } from "@ai/db";
 import { auditOf } from "../../lib/audit/audit.write";
+import type { Actor as AuthActor } from "../../lib/auth-middleware";
 import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
+import { featureIdByKey, grantEntitlement } from "../features/features.entitlements";
+import { setJobTitle } from "../org/org.service";
 import { enablePack } from "../packs/packs.service";
+import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
 import { NEW_TENANT_SETTINGS } from "../tenants/tenants.service";
-import { onboardRepo } from "./adapters/onboard.repo";
+import type { Actor as UserActor } from "../users/users.rules";
+import { createUser, updateUser } from "../users/users.service";
+import { actorTenant, hasEntitlement, onboardRepo, readUsers } from "./adapters/onboard.repo";
 import { type OnboardReport, onboardTenant as run } from "./application/onboard.usecase";
 import type { OnboardPorts } from "./application/ports";
 import type { OnboardSpec } from "./domain/onboard.rules";
 
 export type { OnboardReport };
 
-export function onboardPorts(db: Db, actorId: string): OnboardPorts {
-  const call = { ctx: { db }, scope: { kind: "platform" } as const, actor: { userId: actorId } };
+export function onboardPorts(
+  db: Db,
+  actorId: string,
+  savePassword?: (email: string, password: string) => Promise<void>,
+): OnboardPorts {
+  const scope = { kind: "platform" } as const;
+  const call = { ctx: { db }, scope, actor: { userId: actorId } };
+  /** Actor đầy đủ cho users.service (tenant của platform admin); tra một lần, nhớ lại. */
+  let ucall:
+    | Promise<{ ctx: { db: Db }; scope: typeof scope; actor: UserActor & AuthActor }>
+    | undefined;
+  const asUser = () =>
+    (ucall ??= withScope(db, scope, (tx) => actorTenant(tx, actorId)).then((tenantId) => {
+      if (!tenantId) throw appError("FORBIDDEN");
+      return {
+        ctx: { db },
+        scope,
+        actor: {
+          userId: actorId,
+          tenantId,
+          role: "platform_admin",
+          tenantKey: PLATFORM_TENANT_KEY,
+          sid: null,
+        },
+      };
+    }));
   return {
+    ...(savePassword ? { savePassword } : {}),
+    readUsers: async (key, emails) => {
+      await asUser();
+      return emails.length === 0 ? [] : withScope(db, scope, (tx) => readUsers(tx, key, emails));
+    },
+    createUser: async (tenantId, u) => {
+      const r = await createUser(await asUser(), tenantId, { ...u, locale: "vi" });
+      return { id: r.user.id, tempPassword: r.temp_password };
+    },
+    updateUser: async (id, version, set) => {
+      await updateUser(await asUser(), id, { version, ...set });
+    },
+    setJobTitle: async (tenantId, userId, title) => {
+      await setJobTitle(await asUser(), tenantId, userId, { job_title: title });
+    },
+    grantAddon: async (tenantId, key) => {
+      const c = await asUser();
+      const fid = await withScope(db, scope, (tx) => featureIdByKey(tx, key));
+      if (!fid) throw appError("VALIDATION_ERROR", { reason: "ADDON_UNKNOWN", addon: key });
+      const had = await withScope(db, scope, (tx) => hasEntitlement(tx, fid, tenantId));
+      await grantEntitlement(c, fid, tenantId);
+      return !had;
+    },
     write: (fn) =>
       configWrite(call, "tenant.save", (tx, ch) =>
         fn(onboardRepo(tx), {
@@ -41,5 +94,9 @@ export function onboardPorts(db: Db, actorId: string): OnboardPorts {
   };
 }
 
-export const onboardTenant = (db: Db, s: OnboardSpec, actorId: string): Promise<OnboardReport> =>
-  run(onboardPorts(db, actorId), s, actorId);
+export const onboardTenant = (
+  db: Db,
+  s: OnboardSpec,
+  actorId: string,
+  savePassword?: (email: string, password: string) => Promise<void>,
+): Promise<OnboardReport> => run(onboardPorts(db, actorId, savePassword), s, actorId);

@@ -1,6 +1,6 @@
 // niti-onboard · cổng của use case onboarding (ADR-0023): lớp 2 chỉ biết các cổng này; `tenant-onboard.run.ts` nối với
 // configWrite (một tx + audit + NOTIFY), repo SQL, `enablePack` của module packs và AppError.
-import type { DeptRow } from "../domain/onboard.rules";
+import type { DeptRow, UserNow } from "../domain/onboard.rules";
 
 export type TenantNow = {
   id: string;
@@ -63,7 +63,28 @@ export type OnboardSink = {
 
 export type OnboardErrorCode = "FORBIDDEN" | "KEY_TAKEN" | "VALIDATION_ERROR";
 
-export type OnboardPorts = {
+/** CR-159 · cổng người dùng/add-on: gọi đúng usecase của admin-api (users.service, org.service, features), không INSERT tay. */
+export type UserPorts = {
+  /** Một câu SQL, chỉ đọc: người dùng của tenant `key` theo email (tenant chưa có ⇒ rỗng). Ném FORBIDDEN nếu actor không phải platform admin. */
+  readUsers(key: string, emails: readonly string[]): Promise<UserNow[]>;
+  /** `users.service.createUser` (must_change_password=true); trả id + mật khẩu tạm (CHỈ để `savePassword`). */
+  createUser(
+    tenantId: string,
+    u: { username: string; display_name: string; email: string; role: "tenant_admin" | "member" },
+  ): Promise<{ id: string; tempPassword: string }>;
+  updateUser(
+    id: string,
+    version: number,
+    set: { display_name?: string; role?: "tenant_admin" | "member" },
+  ): Promise<void>;
+  setJobTitle(tenantId: string, userId: string, title: string): Promise<void>;
+  /** Ghi `email<TAB>mật khẩu` ngay khi sinh; vắng ⇒ không có `--pw-out`. */
+  savePassword?: (email: string, password: string) => Promise<void>;
+  /** Cấp entitlement add-on (idempotent); true ⇒ vừa cấp/cấp lại; khoá chưa đăng ký ⇒ ném. */
+  grantAddon(tenantId: string, featureKey: string): Promise<boolean>;
+};
+
+export type OnboardPorts = UserPorts & {
   /** Một tx `configWrite`; ném trong `fn` ⇒ rollback. */
   write<T>(fn: (repo: OnboardRepo, sink: OnboardSink) => Promise<T>): Promise<T>;
   /** Bật gói (PK-FR-05, cùng đường admin-web); trả số Group vai. */

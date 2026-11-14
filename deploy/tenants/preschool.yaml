@@ -1,0 +1,13 @@
+# CR-159 · tenant preschool. Email tắt tới khi xác nhận domain: chưa có công tắc theo tenant ⇒ xem "Việc còn lại" ở
+# docs/specs/cr159-onboard-users/tasks.md. Chạy: như deploy/tenants/evolu.yaml (cần --pw-out).
+key: preschool
+name: Preschool
+timezone: Asia/Ho_Chi_Minh
+
+packs: [contracts]
+addons: [contracts-community] # Bảng tin
+
+users:
+  - { email: dung.dang@preschool.com, name: Dung Dang, title: Giám đốc, role: admin }
+
+root: { key: pb-ban-giam-doc, vi: Ban Giám đốc, en: Board of Directors, head: dung.dang@preschool.com }
