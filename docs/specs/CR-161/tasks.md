@@ -49,7 +49,7 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 |---|---|---|---|
 | 1 | Contract zod + luật thuần | cr161-contract | [x] |
 | 2 | Migration 0145 + int link | cr161-link-db | [x] |
-| 3 | Migration 0146/0147 + int chat | cr161-chat-db | [ ] |
+| 3 | Migration 0146/0147 + int chat | cr161-chat-db | [x] |
 | 4 | Migration community 0020 + int | cr161-posts-db | [x] |
 | 5 | API kết nối + bài | cr161-link-api | [ ] |
 | 6 | API trò chuyện + perf | cr161-chat-api | [ ] |
@@ -68,6 +68,13 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 - (lát 2) Kịch bản dòng «ngắt ⇒ gửi tin 409» và «Vy gọi API ⇒ 403» mới phủ phần DB; lát 3/5/6 thêm đường dẫn test route/chat vào cùng dòng khi viết.
 - (lát 2) Gọi `cc_notify` từ route: truyền lô bằng `${JSON.stringify(rows)}::text::jsonb` (postgres.js mã hoá chuỗi `::jsonb` thành chuỗi JSON ⇒ lỗi «lô phải là mảng»).
 - (lát 4) `community.cc_posts(p_owner, p_cur_t, p_cur_id, p_limit)` → cột `file_count`; GRANT `community_rw` + `contracts_rw` (khối DO, chỉ cấp khi role đã có — role tạo sau thì pack contracts phải cấp lại); `app.user_kind=external` ⇒ 42501; bên đăng phải có add-on `contracts-community` chưa thu hồi (không ⇒ rỗng). Lệch spec: thêm tham số/ý ngoài §4 không có; không thêm index (posts_feed_idx đủ, lọc công khai trên (tenant_id, created_at)).
+- (lát 3) Hàm trò chuyện nhận `p_user` và gọi `hub.cc_ctx(p_user)`: có `app.tenant_id`, p_user = `app.user_id` (nếu đã đặt) và là người Toàn quyền ⇒ không thì 42501 (nhân viên bị chặn cả ở DB, không chỉ ở route). Chữ ký lệch spec §4 chỉ ở chỗ thêm `p_user`: `cc_thread_page(p_other, p_user, p_before, p_limit)`, `cc_file_get(p_file_id, p_user)`. Luồng luôn suy từ (tenant, p_other), không nhận id luồng.
+- (lát 3) Mã lỗi DB: `CC409` MESSAGE `CONNECT_READ_ONLY` (gửi/tải lên khi chưa connected), `CC404` `CONNECT_NO_THREAD` (đọc khi chưa từng kết nối), `CC422` `MSG_EMPTY`/`MSG_FILE_INVALID`, `22023` `MSG_TOO_LONG`/`MSG_TOO_MANY_FILES`. Route lát 6 ánh xạ: CC409⇒409, CC404⇒404, CC422⇒422, 22023⇒400. Thân chỉ khoảng trắng/xuống dòng tính là rỗng.
+- (lát 3) RLS bật KHÔNG FORCE (như `partner_links` 0117) — spec §4 ghi FORCE nhưng chủ hàm DEFINER sẽ bị chính policy hub_rw chặn; policy duy nhất `app.scope='system'`. 0147 cấp `SELECT` 4 bảng + `UPDATE(deleted_at)` cc_files cho hub_rw (việc nền dọn tệp), không INSERT/DELETE; `contracts_rw` chỉ EXECUTE hàm. `cc.msg` đã hợp CHECK `notifications_ck` ⇒ không đổi CHECK.
+- (lát 3) `cc_send` trả `notify` = [{tenant_id, user_id}] mọi người Toàn quyền của CẢ HAI công ty (route phát `cc.msg` cho từng người, `tenant_id` khung = công ty kia); chuông chèn thẳng trong hàm, dedup `cc.msg:<thread>:<last_read_seq người nhận>`, `fanout_at=now()`. `message.created_at` là ISO của Postgres (`...+00:00`); `seq`, `size` trong jsonb là số, còn cột `seq`/`last_read_seq` bigint ra postgres.js là chuỗi ⇒ route `Number()`.
+- (lát 3) `cc_file_add(p_other, p_user, p_id, p_name, p_mime, p_size, p_storage_key)`: route sinh id, `storage_key` bắt buộc = `<tenant bên tải>/<id>` (CHECK `cc_files_key_ck`); mime/đuôi/413/415 do route kiểm (DB chỉ kiểm tên 1..255, size 1..20 MB). Truyền `uuid[]` cho `cc_send`/`cc_unread`: dùng `array(select x::uuid from jsonb_array_elements_text(${JSON.stringify(ids)}::text::jsonb) x)` (như cách `::text::jsonb` của cc_notify).
+- (lát 3) `hub.cc_links` thay thân (0146, cùng chữ ký): `unread` tính theo `app.user_id` (chưa đặt ⇒ 0), một câu, không đếm tin. Chưa đọc = `last_seq − last_read_seq`; người gửi tự coi là đã đọc tới tin mình (gửi trả lời cũng xoá chưa đọc cũ — chấp nhận).
+- (lát 3) Việc nền dọn tệp chưa gắn sau 24 h (R11) chưa viết: index `cc_files_unbound_ix` + quyền `UPDATE(deleted_at)` đã sẵn; job thuộc lát 6.
 - (PLAN) Kết nối suy ra từ `hub.partner_links` hai chiều, không bảng mới (G1). Ngắt = xoá 2 dòng chưa chặn.
 - (PLAN) Số migration: hub 0145–0147 (hiện có tới 0144), community 0020 (hiện có tới 0019); community 0021 trả lại.
 
@@ -91,7 +98,7 @@ Ngoài đường cũ (gửi HĐ lần đầu tự kèm lời mời, một chiề
 
 #### Yêu cầu: Ngắt kết nối
 Một trong hai bên ngắt ⇒ mất quyền gửi HĐ đi thẳng cả hai chiều, mất xem bài của nhau; tin nhắn cũ giữ, chỉ đọc; nối lại phải mời mới.
-- Kịch bản: khi Tiên ngắt kết nối thì cả hai thấy «Chưa kết nối», trò chuyện chỉ đọc, gửi tin bị 409 [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
+- Kịch bản: khi Tiên ngắt kết nối thì cả hai thấy «Chưa kết nối», trò chuyện chỉ đọc, gửi tin bị 409 [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » sau ngắt chỉ đọc]
 - Kịch bản: khi chưa kết nối mà gọi ngắt thì 409 không đổi dữ liệu [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
 
 #### Yêu cầu: Chỉ người Toàn quyền thao tác kết nối
@@ -102,10 +109,10 @@ Tìm, mời, đồng ý, từ chối, ngắt chỉ cho người có việc `admi
 ### ADDED sht/tro-chuyen-cong-ty.md
 #### Yêu cầu: Trò chuyện giữa hai công ty đã kết nối
 Mỗi cặp công ty một luồng chung trong tab «Trò chuyện» của trang đối tác; chỉ người Toàn quyền hai công ty thấy và nhắn; tin ≤ 4000 ký tự, ≤ 10 tệp ≤ 20 MB; tin mới báo chuông (một chuông chưa đọc mỗi luồng), không email.
-- Kịch bản: khi Tiên nhắn kèm tệp thì Dung thấy tin + tệp tức thì và nhận một chuông [test: thủ công — chưa viết]
-- Kịch bản: khi gửi lặp cùng mã thì chỉ có một tin và một chuông [test: thủ công — chưa viết]
-- Kịch bản: khi công ty thứ ba hoặc nhân viên thường đọc, gửi, tải tệp của luồng thì 404/403 và không thấy dòng nào [test: thủ công — chưa viết]
-- Kịch bản: khi đã ngắt kết nối thì vẫn đọc được tin cũ, không gửi/tải lên được [test: thủ công — chưa viết]
+- Kịch bản: khi Tiên nhắn kèm tệp thì Dung thấy tin + tệp tức thì và nhận một chuông [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » R8 gửi tin, R9 chuông; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » R11 tệp]
+- Kịch bản: khi gửi lặp cùng mã thì chỉ có một tin và một chuông [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » R8 gửi tin, R9 chuông; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » đồng thời]
+- Kịch bản: khi công ty thứ ba hoặc nhân viên thường đọc, gửi, tải tệp của luồng thì 404/403 và không thấy dòng nào [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » công ty thứ ba không đọc/ghi luồng A–B; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » kiểm đầu vào và quyền]
+- Kịch bản: khi đã ngắt kết nối thì vẫn đọc được tin cũ, không gửi/tải lên được [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » sau ngắt chỉ đọc, kết nối lại dùng chính luồng cũ]
 - Kịch bản: khi luồng có 100.000 tin thì trang 50 tin p95 ≤ 20 ms và gửi tin p95 ≤ 40 ms [test: thủ công — chưa viết]
 
 ### MODIFIED community/nghiep-vu.md
