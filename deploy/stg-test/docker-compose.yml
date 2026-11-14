@@ -148,14 +148,15 @@ services:
     cpus: 0.5
     mem_limit: 512m
 
-  # Agent Runtime: chi de image chay len duoc; khong co Claude CLI/dang nhap => khong chay job AI that (chat AI khong dung duoc o staging).
+  # Agent Runtime: Claude CLI that, DANG NHAP RIENG cua ban test (./claude-home cua staging, KHONG dung chung prod de khoi tranh refresh token).
+  # Dang nhap mot lan tren host: bash claude-login.sh
   agent-runtime:
     image: ${S2_RUNTIME_IMAGE:-sohoptac2-runtime:latest}
     restart: unless-stopped
     user: "${S2_UID:-1002}:${S2_GID:-1002}"
     init: true
     environment:
-      HOME: /tmp
+      HOME: /claude-home
       APP_ENV: development
       LOG_FORMAT: ${LOG_FORMAT:-json}
       LOG_LEVEL: info
@@ -166,6 +167,10 @@ services:
       AGENT_RT_HUB_URL: http://hub-api:4000
       AGENT_RT_WORK_DIR: /tmp/work
       AGENT_RT_LOG_DIR: /tmp/logs
+      AGENT_RT_CLI_PATH: /opt/claude/claude
+    volumes:
+      - ./claude-home:/claude-home
+      - ./claude-bin/claude:/opt/claude/claude:ro
     depends_on:
       pg: { condition: service_healthy }
       redis: { condition: service_healthy }

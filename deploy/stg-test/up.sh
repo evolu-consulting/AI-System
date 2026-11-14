@@ -17,6 +17,10 @@ else
   bash ./gen-env.sh
   docker image inspect "$IMG_APP" "$IMG_WEB" >/dev/null 2>&1 || { echo "up: thieu image $IMG_APP/$IMG_WEB - chay build.sh"; exit 3; }
   [ -x minio-bin/minio ] || { mkdir -p minio-bin; cp -p "$HOME/workspace/sohoptac2/minio-bin/minio" minio-bin/minio; }
+  # Claude CLI: chep NHI PHAN tu prod (KHONG chep dang nhap); dang nhap rieng bang claude-login.sh
+  [ -x claude-bin/claude ] || { mkdir -p claude-bin; cp -p "$HOME/workspace/sohoptac2/claude-bin/claude" claude-bin/claude; }
+  mkdir -p claude-home
+  [ -s claude-home/.claude/.credentials.json ] || echo "up: CANH BAO ban test chua dang nhap Claude => AI khong chay. Chay: bash claude-login.sh"
   # tu choi neu cong dang bi chiem boi cai KHAC (khong phai web cua chinh project nay)
   for p in $PORTS; do
     if ss -ltn | awk '{print $4}' | grep -q ":$p$" && ! dc ps --format '{{.Service}}' 2>/dev/null | grep -q web; then echo "up: cong $p dang bi chiem"; exit 3; fi
