@@ -18,6 +18,7 @@ import {
 } from "../../../apps/hub-api/src/modules/processes/library/flow-templates.def";
 import { partnerSend } from "./seed-demo-partner.data";
 import { date, money, note, txt, work } from "./seed-purchase-flow.kit";
+import { type Org, readOrg, shapeOf } from "./tenant-flows.org";
 
 export type FlowDef = {
   name: string;
@@ -51,8 +52,6 @@ export const PICK_GROUP = {
   nitigroup: "pb-giam-doc",
   preschool: "pb-ban-giam-doc",
 } as const;
-/** Mã phòng ban không có trưởng ở nitigroup.yaml; người tạo thuộc phòng này ⇒ Ngân duyệt thay «trưởng phòng». */
-export const NITI_HEADLESS_DEPT = "pb-kinh-doanh";
 /** Luật không bao giờ đúng: quy trình chỉ mở bằng phiếu, không tranh quyền duyệt HĐ (như `seed-purchase-flow.kit`). */
 export const NEVER_TRIGGER = {
   event: "contract.submitted",
@@ -138,9 +137,10 @@ const partner = (
           }
         : s,
   );
-const ifDept = (step: number, dept: string, then: number, otherwise: number): Stage => ({
+/** «Người tạo thuộc một phòng con?» — người thuộc phòng con đi qua trưởng phòng, trưởng gốc (chỉ ở phòng gốc) đi nhánh không duyệt. */
+const ifDept = (step: number, depts: string[], then: number, otherwise: number): Stage => ({
   key: "re-nhanh",
-  name: "Người tạo thuộc Phòng Kinh doanh?",
+  name: "Người tạo là cấp cao nhất?",
   step,
   instruction: "",
   real_action: false,
@@ -153,8 +153,12 @@ const ifDept = (step: number, dept: string, then: number, otherwise: number): St
   executor: {
     kind: "if",
     when: {
-      op: "and",
-      conds: [{ from: { kind: "fact", key: "creator_department" }, op: "eq", value: dept }],
+      op: "or",
+      conds: depts.map((d) => ({
+        from: { kind: "fact", key: "creator_department" },
+        op: "eq",
+        value: d,
+      })),
     },
     then_step: then,
     else_step: otherwise,
@@ -206,126 +210,112 @@ const paid = (step: number, uid: string): Stage =>
     note("ghi_chu", "Ghi chú"),
   ]);
 
-function evolu(u: Uid): FlowDef[] {
-  const T = u(WHO.evolu.thomas);
-  const J = u(WHO.evolu.julian);
-  const send = norm([
-    byPerson("thomas-duyet", "Thomas duyệt", 0, T, J, { reject: 7, ret: 8 }),
-    sign(1, T),
-    esignWait(2, 7),
-    ...partner(3, T, PICK_GROUP.evolu, { returned: 8, declined: 7 }),
-    ...finishes(6, ["approved", "Đã xác nhận"]),
-  ]);
-  const recv = norm([
-    byPerson("thomas-duyet", "Thomas duyệt", 0, T, J, { reject: 4, ret: 5 }),
-    sign(1, T),
-    esignWait(2, 4),
-    ...finishes(3, ["confirmed", "Đồng ý"]),
-  ]);
-  const buy = norm([
-    phieu(),
-    byPerson("thomas-duyet", "Thomas duyệt", 1, T, J, { reject: 4, ret: 5 }),
-    paid(2, T),
-    ...finishes(3, ["approved", "Đã chi"]),
-  ]);
-  return [
-    { name: FLOW_NAMES.send, trigger: SEND_TRIGGER, stages: send, inputs },
-    {
-      name: FLOW_NAMES.receive,
-      trigger: { event: "contract.received", params: { owner_user_id: J } },
-      stages: recv,
-      inputs,
-    },
-    { name: FLOW_NAMES.buy, trigger: NEVER_TRIGGER, stages: buy, inputs: [] },
-  ];
+type Gate = { stages: Stage[]; next: number };
+/**
+ * Bước duyệt đầu (luật chung): trưởng phòng của người tạo (`starter_head`, tự leo cấp). `top` = trưởng gốc, người ký.
+ * `none` ⇒ chỉ bước «Chuẩn bị ký» (engine buộc bước Ký/Gửi đứng sau MỘT bước kiểu duyệt: `REAL_ACTION`, bước đầu không được).
+ * `branch` + `skip` (chỉ HĐ gửi đi, có dữ kiện phòng) ⇒ `if` tách trưởng gốc sang «Chuẩn bị ký» thay vì duyệt chính mình.
+ */
+function gate(org: Org, step: number, to: To, top: string, skip: boolean): Gate {
+  const shape = shapeOf(org);
+  const prep = (s: number) =>
+    workBy("chuan-bi-ky", "Chuẩn bị ký", s, top, [txt("ghi_chu", "Ghi chú (nếu có)")]);
+  if (shape === "none") return { stages: [prep(step)], next: step + 1 };
+  if (shape === "chain" || !skip)
+    return { stages: [headOfStarter(step, undefined, to)], next: step + 1 };
+  return {
+    stages: [
+      ifDept(step, org.deptKeys, step + 1, step + 2),
+      headOfStarter(step + 1, undefined, to, { next_step: step + 3 }),
+      prep(step + 2),
+    ],
+    next: step + 3,
+  };
 }
+const topOf = (org: Org, uid: Uid): string => uid(org.rootHead as string);
+/** HĐ gửi đi: [duyệt đầu] → Ký (trưởng gốc) → Gửi đối tác xác nhận → Kết thúc. */
+function sendFlow(org: Org, uid: Uid, group: string): Stage[] {
+  const top = topOf(org, uid);
+  const width = shapeOf(org) === "branch" ? 3 : 1;
+  const end = width + 2 + 3; // duyệt + Ký + Chờ ký + 3 bước Gửi đối tác
+  const g = gate(org, 0, { reject: end + 1, ret: end + 2 }, top, true);
+  return norm([
+    ...g.stages,
+    sign(g.next, top),
+    esignWait(g.next + 1, end + 1),
+    ...partner(g.next + 2, top, group, { returned: end + 2, declined: end + 1 }),
+    ...finishes(end, ["approved", "Đã xác nhận"]),
+  ]);
+}
+/** Nhận HĐ: [duyệt đầu từ người phụ trách] → Ký (trưởng gốc) → Kết thúc (Đồng ý / Từ chối / Trả lại). */
+function receiveFlow(org: Org, uid: Uid): Stage[] {
+  const top = topOf(org, uid);
+  const end = 3; // duyệt đầu (1 bước) + Ký + Chờ ký
+  const gg = gate(org, 0, { reject: end + 1, ret: end + 2 }, top, false);
+  return norm([
+    ...gg.stages,
+    sign(gg.next, top),
+    esignWait(gg.next + 1, end + 1),
+    ...finishes(end, ["confirmed", "Đồng ý"]),
+  ]);
+}
+/** Phiếu: phiếu → [duyệt đầu] → (nitigroup: Phương kiểm → Tiên?) → ghi đã chi → Kết thúc. `check` = người kiểm (kế toán) nếu có. */
+function buyFlow(org: Org, uid: Uid, payer: string, check?: string): Stage[] {
+  const top = topOf(org, uid);
+  const mid = check ? 1 : 0;
+  const end = 1 + 1 + mid + 1; // phiếu + duyệt đầu + [kiểm] + ghi đã chi
+  const to = { reject: end + 1, ret: end + 2 };
+  const g = gate(org, 1, to, top, false);
+  const checkStage = check
+    ? [byPerson("ke-toan-kiem", "Kế toán kiểm", g.next, check, undefined, to)]
+    : [];
+  return norm([
+    phieu(),
+    ...g.stages,
+    ...checkStage,
+    paid(g.next + mid, payer),
+    ...finishes(g.next + mid + 1, ["approved", "Đã chi"]),
+  ]);
+}
+const SEND_TRIGGER_DEF = (stages: Stage[]): Pick<FlowDef, "trigger" | "stages"> => ({
+  trigger: SEND_TRIGGER,
+  stages,
+});
+const recvTrigger = (owner: string) => ({
+  event: "contract.received",
+  params: { owner_user_id: owner },
+});
 
-function nitigroup(u: Uid): FlowDef[] {
-  const [tien, ngan, vy, phuong] = [
-    u(WHO.nitigroup.tien),
-    u(WHO.nitigroup.ngan),
-    u(WHO.nitigroup.vy),
-    u(WHO.nitigroup.phuong),
-  ] as [string, string, string, string];
-  const send = norm([
-    ifDept(0, NITI_HEADLESS_DEPT, 1, 2),
-    byPerson(
-      "ngan-thay-truong-phong",
-      "Ngân duyệt (thay trưởng phòng)",
-      1,
-      ngan,
-      tien,
+/** Quy trình của một công ty; `uid` đổi email → id người dùng của công ty đó (thiếu ⇒ ném lỗi); `org` = cây phòng ban từ yaml. */
+export function flowsFor(key: TenantKey, uid: Uid, org: Org = readOrg(key)): FlowDef[] {
+  const owner = uid(
+    key === "evolu"
+      ? WHO.evolu.julian
+      : key === "nitigroup"
+        ? WHO.nitigroup.vy
+        : WHO.preschool.dung,
+  );
+  const buy = (): FlowDef[] => {
+    if (key === "preschool") return [];
+    const payer = uid(key === "evolu" ? (org.rootHead as string) : WHO.nitigroup.phuong);
+    const check = key === "nitigroup" ? payer : undefined;
+    return [
       {
-        reject: 10,
-        ret: 11,
+        name: FLOW_NAMES.buy,
+        trigger: NEVER_TRIGGER,
+        stages: buyFlow(org, uid, payer, check),
+        inputs: [],
       },
-      { next_step: 3 },
-    ),
-    headOfStarter(2, ngan, { reject: 10, ret: 11 }, { next_step: 3 }),
-    byPerson("tien-duyet", "Tiên duyệt", 3, tien, ngan, { reject: 10, ret: 11 }),
-    sign(4, tien),
-    esignWait(5, 10),
-    ...partner(6, tien, PICK_GROUP.nitigroup, { returned: 11, declined: 10 }),
-    ...finishes(9, ["approved", "Đã xác nhận"]),
-  ]);
-  const recv = norm([
-    byPerson("ngan-duyet", "Ngân duyệt", 0, ngan, tien, { reject: 5, ret: 6 }),
-    byPerson("tien-duyet", "Tiên duyệt", 1, tien, ngan, { reject: 5, ret: 6 }),
-    sign(2, tien),
-    esignWait(3, 5),
-    ...finishes(4, ["confirmed", "Đồng ý"]),
-  ]);
-  const to = { reject: 6, ret: 7 };
-  const buy = norm([
-    phieu(),
-    headOfStarter(1, ngan, to),
-    byPerson("ke-toan-kiem", "Kế toán kiểm", 2, phuong, ngan, to),
-    byPerson("tien-duyet", "Tiên duyệt", 3, tien, ngan, to),
-    paid(4, phuong),
-    ...finishes(5, ["approved", "Đã chi"]),
-  ]);
+    ];
+  };
   return [
-    { name: FLOW_NAMES.send, trigger: SEND_TRIGGER, stages: send, inputs },
+    { name: FLOW_NAMES.send, ...SEND_TRIGGER_DEF(sendFlow(org, uid, PICK_GROUP[key])), inputs },
     {
       name: FLOW_NAMES.receive,
-      trigger: { event: "contract.received", params: { owner_user_id: vy } },
-      stages: recv,
+      trigger: recvTrigger(owner),
+      stages: receiveFlow(org, uid),
       inputs,
     },
-    { name: FLOW_NAMES.buy, trigger: NEVER_TRIGGER, stages: buy, inputs: [] },
+    ...buy(),
   ];
-}
-
-/** Engine buộc bước hành động thật (Ký, Gửi đối tác) phải đứng ngay sau MỘT bước kiểu duyệt (`REAL_ACTION`) ⇒ preschool («không bước duyệt») chèn bước làm việc «Chuẩn bị ký» của Dung (không duyệt/từ chối). */
-function preschool(u: Uid): FlowDef[] {
-  const D = u(WHO.preschool.dung);
-  const prep = (name: string) =>
-    workBy("chuan-bi-ky", name, 0, D, [txt("ghi_chu", "Ghi chú (nếu có)")]);
-  const send = norm([
-    prep("Chuẩn bị ký"),
-    sign(1, D),
-    esignWait(2, 7),
-    ...partner(3, D, PICK_GROUP.preschool, { returned: 8, declined: 7 }),
-    ...finishes(6, ["approved", "Đã xác nhận"]),
-  ]);
-  const recv = norm([
-    prep("Xem hợp đồng nhận"),
-    sign(1, D),
-    esignWait(2, 4),
-    ...finishes(3, ["confirmed", "Đồng ý"]),
-  ]);
-  return [
-    { name: FLOW_NAMES.send, trigger: SEND_TRIGGER, stages: send, inputs },
-    {
-      name: FLOW_NAMES.receive,
-      trigger: { event: "contract.received", params: { owner_user_id: D } },
-      stages: recv,
-      inputs,
-    },
-  ];
-}
-
-/** Quy trình của một công ty; `uid` đổi email → id người dùng của công ty đó (thiếu ⇒ ném lỗi). */
-export function flowsFor(key: TenantKey, uid: Uid): FlowDef[] {
-  return key === "evolu" ? evolu(uid) : key === "nitigroup" ? nitigroup(uid) : preschool(uid);
 }

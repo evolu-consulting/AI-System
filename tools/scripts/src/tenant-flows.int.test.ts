@@ -22,6 +22,7 @@ import {
   type TenantKey,
   WHO,
 } from "./tenant-flows.data";
+import { departmentsOf, headOfCreator, type Org, readOrg } from "./tenant-flows.org";
 
 const T: Record<TenantKey, string> = {
   evolu: tenantId(1591),
@@ -59,11 +60,6 @@ const defOf = async (k: TenantKey, name: string): Promise<Json> => {
   return must(await hub("GET", `/process-defs/${row.flow_id}?tenant_id=${T[k]}`), [200], "def");
 };
 type St = Json;
-const approvers = (d: Json): string[] =>
-  (d.stages as St[])
-    .filter((s) => s.executor.kind === "approve")
-    .map((s) => String(s.after.approver_user_id ?? `mode:${s.after.approver_mode}`));
-
 beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
@@ -116,6 +112,35 @@ afterAll(async () => {
   await o?.end({ timeout: 2 });
 });
 
+const FALLBACK = "(đích dự phòng)";
+/** Đi theo def ĐÃ LƯU qua API: nhánh `if` theo phòng người tạo (dữ kiện như engine), `starter_head` theo luật engine; trả danh sách người duyệt tới bước Ký / Ghi đã chi. */
+async function chain(k: TenantKey, flow: string, org: Org, creator: string): Promise<string[]> {
+  const def = await defOf(k, flow);
+  const byEmail = new Map([...(ids.get(k) as Map<string, string>)].map(([e, id]) => [id, e]));
+  const stages = def.stages as St[];
+  const depts = departmentsOf(org, creator);
+  const out: string[] = [];
+  let st = stages.find((s) => s.step === 0);
+  for (let n = 0; st && n < 40 && !isStop(st); n++) {
+    if (st.executor.kind === "approve") {
+      const id = st.after.approver_user_id;
+      out.push((id ? byEmail.get(id) : headOfCreator(org, creator)) ?? FALLBACK);
+    }
+    const to = nextStep(st, depts);
+    st = stages.find((s) => s.step === to);
+  }
+  return out;
+}
+const isStop = (st: St) =>
+  st.executor.tool_key === "contracts-esign-send" || st.key === "ghi-da-chi";
+/** Bước kế: `if` theo phòng người tạo (dữ kiện như engine), còn lại `next_step` hoặc bước liền sau. */
+function nextStep(st: St, depts: string[]): number {
+  const ex = st.executor;
+  if (ex.kind !== "if") return st.next_step ?? st.step + 1;
+  const hit = (ex.when.conds as Json[]).some((c) => depts.includes(c.value));
+  return hit ? ex.then_step : ex.else_step;
+}
+
 describe("CR-159 · quy trình 3 công ty", () => {
   it("dry-run: nói sẽ tạo, không ghi gì", async () => {
     const rep = await applyTenantFlows(ctx("evolu"), flowsFor("evolu", uidOf("evolu")), opt(true));
@@ -139,26 +164,25 @@ describe("CR-159 · quy trình 3 công ty", () => {
     }
   });
 
-  it("evolu: bước đúng người, Ký qua tải bản đã ký, trigger Nhận HĐ có người phụ trách", async () => {
+  it("evolu: Ký qua tải bản đã ký (Thomas), trigger Nhận HĐ có người phụ trách, phiếu đủ ô", async () => {
     const [thomas, julian] = [WHO.evolu.thomas, WHO.evolu.julian].map(uidOf("evolu")) as [
       string,
       string,
     ];
     const send = await defOf("evolu", FLOW_NAMES.send);
-    expect(approvers(send)).toEqual([thomas]);
     const ky = (send.stages as St[]).find((s) => s.executor.tool_key === "contracts-esign-send");
     expect(ky?.executor.args.provider.value).toBe("upload");
     expect(ky?.executor.args.company_signers.value).toBe(`user:${thomas}`);
-    expect(send.stages.map((s: St) => s.name)).toContain("Gửi đối tác xác nhận");
-    expect(send.stages.map((s: St) => s.name)).toContain("Chọn đối tác & người nhận");
+    const names = send.stages.map((s: St) => s.name);
+    expect(names).toContain("Gửi đối tác xác nhận");
+    expect(names).toContain("Chọn đối tác & người nhận");
     const recv = await defOf("evolu", FLOW_NAMES.receive);
     expect(recv.trigger.event).toBe("contract.received");
     expect(recv.trigger.params.owner_user_id).toBe(julian);
-    expect(approvers(recv)).toEqual([thomas]);
     const buy = await defOf("evolu", FLOW_NAMES.buy);
-    expect(approvers(buy)).toEqual([thomas]);
-    const paid = (buy.stages as St[]).find((s) => s.key === "ghi-da-chi");
-    expect(paid?.after.approver_user_id).toBe(thomas);
+    expect((buy.stages as St[]).find((s) => s.key === "ghi-da-chi")?.after.approver_user_id).toBe(
+      thomas,
+    );
     expect((buy.stages as St[])[0]?.start_form.fields.map((f: Json) => f.key)).toEqual([
       "noi_dung",
       "so_tien",
@@ -167,44 +191,47 @@ describe("CR-159 · quy trình 3 công ty", () => {
     ]);
   });
 
-  it("nitigroup: Kinh doanh ⇒ Ngân, còn lại trưởng phòng người tạo; rồi Tiên; nhận HĐ Ngân → Tiên; phiếu qua Phương", async () => {
-    const id = uidOf("nitigroup");
-    const [tien, ngan, vy, phuong] = [
-      WHO.nitigroup.tien,
-      WHO.nitigroup.ngan,
-      WHO.nitigroup.vy,
-      WHO.nitigroup.phuong,
-    ].map(id) as [string, string, string, string];
+  it("evolu: chuỗi người duyệt theo người tạo — Julian/Rowan/Vio/Edgar → Thomas; Thomas tạo HĐ → không duyệt", async () => {
+    const org = readOrg("evolu");
+    const th = WHO.evolu.thomas;
+    for (const c of ["julian.bui", "rowan.hoang", "vio.ngo", "edgar.nguyen"].map(
+      (n) => `${n}@evolu.com`,
+    )) {
+      expect(await chain("evolu", FLOW_NAMES.send, org, c)).toEqual([th]);
+      expect(await chain("evolu", FLOW_NAMES.buy, org, c)).toEqual([th]);
+    }
+    expect(await chain("evolu", FLOW_NAMES.send, org, th)).toEqual([]);
+    // phiếu không có dữ kiện phòng ⇒ không rẽ được: Thomas tạo phiếu ⇒ engine giao đích dự phòng (không treo)
+    expect(await chain("evolu", FLOW_NAMES.buy, org, th)).toEqual([FALLBACK]);
+    expect(await chain("evolu", FLOW_NAMES.receive, org, WHO.evolu.julian)).toEqual([th]);
+  });
+
+  it("nitigroup: Vy (KD không trưởng), Ngân, hr, admin, Phương → Tiên; phiếu thêm Phương kiểm; Tiên/Phương tạo", async () => {
+    const org = readOrg("nitigroup");
+    const { tien, phuong, vy, ngan } = WHO.nitigroup;
+    for (const c of [vy, ngan, "hr@nitigroupvn.com", "admin@nitigroupvn.com", phuong]) {
+      expect(await chain("nitigroup", FLOW_NAMES.send, org, c)).toEqual([tien]);
+      expect(await chain("nitigroup", FLOW_NAMES.buy, org, c)).toEqual([tien, phuong]);
+    }
+    // Tiên (cấp cao nhất) tạo: dữ kiện phòng không tách được Tiên khỏi Ngân ⇒ không bỏ được bước, engine giao đích dự phòng
+    expect(await chain("nitigroup", FLOW_NAMES.send, org, tien)).toEqual([FALLBACK]);
+    expect(await chain("nitigroup", FLOW_NAMES.buy, org, tien)).toEqual([FALLBACK, phuong]);
+    expect(await chain("nitigroup", FLOW_NAMES.receive, org, vy)).toEqual([tien]);
     const send = await defOf("nitigroup", FLOW_NAMES.send);
-    expect(approvers(send)).toEqual([ngan, "mode:starter_head", tien]);
-    const cond = (send.stages as St[])[0]?.executor.when.conds[0];
-    expect([cond.from.key, cond.op, cond.value]).toEqual([
-      "creator_department",
-      "eq",
-      "pb-kinh-doanh",
-    ]);
-    const recv = await defOf("nitigroup", FLOW_NAMES.receive);
-    expect(approvers(recv)).toEqual([ngan, tien]);
-    expect(recv.trigger.params.owner_user_id).toBe(vy);
-    const buy = await defOf("nitigroup", FLOW_NAMES.buy);
-    expect(approvers(buy)).toEqual(["mode:starter_head", phuong, tien]);
-    expect((buy.stages as St[]).find((s) => s.key === "ghi-da-chi")?.after.approver_user_id).toBe(
-      phuong,
-    );
-    // người duyệt trùng người tạo ⇒ có người thay (không treo)
-    const tienStep = (send.stages as St[]).find((s) => s.key === "tien-duyet");
-    expect(tienStep?.after.escalate.user_id).toBe(ngan);
+    const ky = (send.stages as St[]).find((s) => s.executor.tool_key === "contracts-esign-send");
+    expect(ky?.executor.args.company_signers.value).toBe(`user:${uidOf("nitigroup")(tien)}`);
+    expect(JSON.stringify(send.stages)).not.toContain('escalate":{"after_h');
   });
 
   it("preschool: không bước Duyệt nào, Dung ký, có Gửi đối tác; Nhận HĐ Dung ký; không phiếu", async () => {
-    const dung = uidOf("preschool")(WHO.preschool.dung);
+    const org = readOrg("preschool");
+    const dung = WHO.preschool.dung;
+    expect(await chain("preschool", FLOW_NAMES.send, org, dung)).toEqual([]);
+    expect(await chain("preschool", FLOW_NAMES.receive, org, dung)).toEqual([]);
     const send = await defOf("preschool", FLOW_NAMES.send);
-    expect(approvers(send)).toEqual([]);
     const ky = (send.stages as St[]).find((s) => s.executor.tool_key === "contracts-esign-send");
-    expect(ky?.executor.args.company_signers.value).toBe(`user:${dung}`);
+    expect(ky?.executor.args.company_signers.value).toBe(`user:${uidOf("preschool")(dung)}`);
     expect(send.stages.map((s: St) => s.name)).toContain("Gửi đối tác xác nhận");
-    const recv = await defOf("preschool", FLOW_NAMES.receive);
-    expect(approvers(recv)).toEqual([]);
     expect((await list("preschool")).map((r) => r.name)).not.toContain(FLOW_NAMES.buy);
   });
 
