@@ -5,11 +5,15 @@
 | cr146a-flow-list | API danh sách flow Bật + UI Quy trình duyệt dạng danh sách + tab «Kết nối» | decisions.md mục 1–5, 8 | [x] |
 | cr146b | Panel node Ký bắt buộc, bỏ signer_group_id, ngưỡng/người phụ trách vào quy trình Nhận HĐ | decisions.md mục 6–7 | [ ] |
 
-## Delta (thay yêu cầu ở `docs/current/sht/cai-dat-va-quyen.md:90-93`)
+## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
+
+### MODIFIED sht/cai-dat-va-quyen.md
+(thay yêu cầu «Quy trình duyệt chỉ chọn ở một nơi», `cai-dat-va-quyen.md:90-93`)
 
 #### Yêu cầu: Cài đặt › Quy trình duyệt liệt kê MỌI quy trình đang bật (thay «một quy trình đang chạy»)
 Cài đặt liệt kê mọi quy trình Bật cho hợp đồng theo thứ tự xét (`company_flows.position`), mỗi dòng có «Bắt đầu khi» bằng chữ nghiệp vụ (không điều kiện ⇒ «Mọi hợp đồng còn lại») và số bước; hợp đồng đi theo quy trình ĐẦU TIÊN khớp (luật `match.rules.ts`). Bấm một dòng ⇒ sơ đồ (công tắc Sơ đồ | Danh sách) + khối chỉ xem «Ký và đối tác của quy trình này». Mọi nhân viên xem được; «Mở trang Quy trình» chỉ quản trị. Chưa có quy trình Bật ⇒ `GET` trả `{items: []}` (200, không còn 404); đường một-flow `other_flows` đã gỡ.
-- Kịch bản: khi có 3 flow Bật và 1 Tắt thì trả đúng 3 theo `position` kèm đúng «Bắt đầu khi», tenant khác không thấy [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-current.int.test.ts » CR-146 · 3 flow Bật + 1 Tắt ⇒ đúng 3, đúng thứ tự `position`, đúng «Bắt đầu khi»; tenant khác không thấy; số câu SQL cố định]
+- Kịch bản: khi có 3 flow Bật và 1 Tắt thì trả đúng 3 theo `position` kèm đúng «Bắt đầu khi», tenant khác không thấy [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-current.int.test.ts » CR-146 · 3 flow Bật + 1 Tắt ⇒ đúng 3, đúng thứ tự `position`, đúng «Bắt đầu khi», tenant khác không thấy, số câu SQL cố định]
 - Kịch bản: khi chỉ có flow Tắt thì trả danh sách rỗng [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-current.int.test.ts » công ty chỉ có flow Tắt ⇒ 200 `items: []`, PUT không còn route]
 - Kịch bản: khi đọc args stage Ký / Gửi đối tác thì dựng khối ký, đối tác của chính flow [test: apps/hub-api/src/modules/packs/contracts/domain/event-flow-steps.rules.test.ts » CR-146 · signPartnerOf (khối ký / đối tác chỉ xem)]
 - Kịch bản: khi hiển thị «Bắt đầu khi» thì dùng chữ nghiệp vụ, phòng theo tên [test: apps/workspace-web/src/features/settings/lib/start-when.test.ts » start-when · chữ nghiệp vụ]

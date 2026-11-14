@@ -231,7 +231,7 @@ it("CR-127 Z9 · quy trình CỦA CÔNG TY (tạo trống → lưu → «Lưu v�
   }
 });
 
-it("CR-146 · 3 flow Bật + 1 Tắt ⇒ đúng 3, đúng thứ tự `position`, đúng «Bắt đầu khi»; tenant khác không thấy; số câu SQL cố định", async () => {
+it("CR-146 · 3 flow Bật + 1 Tắt ⇒ đúng 3, đúng thứ tự `position`, đúng «Bắt đầu khi», tenant khác không thấy, số câu SQL cố định", async () => {
   const st = JSON.stringify(STAGES);
   const when = (v: number) => ({ op: "and", conds: [{ fact: "total_value", op: "ge", value: v }] });
   const mk = async (key: string, trig: object | null, on: boolean, pos: number) => {
