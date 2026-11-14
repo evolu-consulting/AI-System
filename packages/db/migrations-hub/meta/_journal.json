@@ -897,6 +897,13 @@
       "when": 1806901800000,
       "tag": "0144_fix_review_avatar_cap",
       "breakpoints": true
+    },
+    {
+      "idx": 128,
+      "version": "7",
+      "when": 1806901900000,
+      "tag": "0145_cr161_connect_links",
+      "breakpoints": true
     }
   ]
 }
