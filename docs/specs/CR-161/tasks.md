@@ -48,7 +48,7 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 | # | Việc | Lát | Trạng thái |
 |---|---|---|---|
 | 1 | Contract zod + luật thuần | cr161-contract | [x] |
-| 2 | Migration 0145 + int link | cr161-link-db | [ ] |
+| 2 | Migration 0145 + int link | cr161-link-db | [x] |
 | 3 | Migration 0146/0147 + int chat | cr161-chat-db | [ ] |
 | 4 | Migration community 0020 + int | cr161-posts-db | [ ] |
 | 5 | API kết nối + bài | cr161-link-api | [ ] |
@@ -58,6 +58,15 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 | 9 | e2e hành trình | cr161-e2e | [ ] |
 
 ## Quyết định trong lúc làm
+- (lát 2) Lỗi nghiệp vụ DB dùng SQLSTATE riêng: `CC422` (CONNECT_NOT_LISTED → 422), `CC409` (MESSAGE `CONNECT_DECLINED` | `CONNECT_NOT_CONNECTED` → 409); `42501` → 403/404 như cũ; `22023` → 400.
+- (lát 2) `cc_invite` buộc `p_user` là người Toàn quyền của tenant đang thao tác (42501 nếu không); các hàm khác chỉ kiểm tenant, cổng người dùng là `packGuard` ở route (R1).
+- (lát 2) B chặn A TRƯỚC khi A từng mời ⇒ `cc_invite` trả `pending_out` im lặng, không đổi dòng (giữ «không lộ» của 0118); R3 `CONNECT_DECLINED` chỉ khi A đã xin (`requested_at` có).
+- (lát 2) Audit «ngắt kết nối» do route ghi (CHECK `hub.audit_log.action` không có giá trị phù hợp, hàm DB không biết người thao tác). Lát 5 làm.
+- (lát 2) Chuông viết thẳng trong hàm DEFINER (`hub.cc_bell`, `fanout_at = now()` ⇒ không email/push); tiêu đề VI cố định ở DB. `cc.accepted` ⇒ người mời nếu còn Toàn quyền, không thì mọi người Toàn quyền bên mời; `cc.invite`/`cc.disconnected` ⇒ mọi người Toàn quyền. Route/stream (`cc.link`) lát 5 phát.
+- (lát 2) `hub.cc_links` trả `unread = 0` ở 0145; lát 3 (0146) `CREATE OR REPLACE` cùng chữ ký để tính chưa đọc. `p_limit` kẹp 1..101 (route xin limit+1).
+- (lát 2) Thêm index `partner_links_to_ix (to_tenant)` (phía «in» của cc_links/cc_search; PK chỉ phủ from_tenant) ngoài index một phần của spec.
+- (lát 2) Kịch bản dòng «ngắt ⇒ gửi tin 409» và «Vy gọi API ⇒ 403» mới phủ phần DB; lát 3/5/6 thêm đường dẫn test route/chat vào cùng dòng khi viết.
+- (lát 2) Gọi `cc_notify` từ route: truyền lô bằng `${JSON.stringify(rows)}::text::jsonb` (postgres.js mã hoá chuỗi `::jsonb` thành chuỗi JSON ⇒ lỗi «lô phải là mảng»).
 - (PLAN) Kết nối suy ra từ `hub.partner_links` hai chiều, không bảng mới (G1). Ngắt = xoá 2 dòng chưa chặn.
 - (PLAN) Số migration: hub 0145–0147 (hiện có tới 0144), community 0020 (hiện có tới 0019); community 0021 trả lại.
 
@@ -72,22 +81,22 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED platform/partner-links.md
 #### Yêu cầu: Lời mời kết nối độc lập, không cần hợp đồng (CR-161)
 Ngoài đường cũ (gửi HĐ lần đầu tự kèm lời mời, một chiều), người Toàn quyền Sổ Hợp Tác tìm công ty đã bật Danh bạ và gửi lời mời kết nối kèm lời nhắn. Bên nhận đồng ý ⇒ hai công ty kết nối hai chiều (gửi HĐ đi thẳng cả hai phía); từ chối = chặn có sẵn, bên mời không gửi lại được. Kết nối = có quyền gửi cả hai chiều, không chặn.
-- Kịch bản: khi Tiên mời Preschool đã bật Danh bạ thì Preschool có lời mời chờ và người Toàn quyền của Preschool nhận chuông, mời lại không tạo thêm [test: thủ công — chưa viết]
-- Kịch bản: khi công ty chưa bật Danh bạ thì mời bị từ chối 422 [test: thủ công — chưa viết]
-- Kịch bản: khi Dung đồng ý lời mời thì hai bên đều thấy «Đã kết nối» và gửi HĐ cho nhau không cần hỏi lại [test: thủ công — chưa viết]
-- Kịch bản: khi Dung từ chối thì Tiên thấy «Preschool đã từ chối lời mời» và mời lại bị 409 [test: thủ công — chưa viết]
-- Kịch bản: khi hai công ty mời chéo nhau thì lời mời thứ hai thành đồng ý ngay [test: apps/hub-api/src/modules/packs/contracts/connect/domain/connect.rules.test.ts » có lời mời ngược chờ ⇒ accept_reverse]
-- Kịch bản: khi lời mời tới từ đường gửi HĐ cũ thì đồng ý vẫn chỉ mở một chiều như trước [test: thủ công — chưa viết]
+- Kịch bản: khi Tiên mời Preschool đã bật Danh bạ thì Preschool có lời mời chờ và người Toàn quyền của Preschool nhận chuông, mời lại không tạo thêm [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
+- Kịch bản: khi công ty chưa bật Danh bạ thì mời bị từ chối 422 [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
+- Kịch bản: khi Dung đồng ý lời mời thì hai bên đều thấy «Đã kết nối» và gửi HĐ cho nhau không cần hỏi lại [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
+- Kịch bản: khi Dung từ chối thì Tiên thấy «Preschool đã từ chối lời mời» và mời lại bị 409 [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
+- Kịch bản: khi hai công ty mời chéo nhau thì lời mời thứ hai thành đồng ý ngay [test: apps/hub-api/src/modules/packs/contracts/connect/domain/connect.rules.test.ts » có lời mời ngược chờ ⇒ accept_reverse; apps/hub-api/src/modules/partners/connect-links.int.test.ts]
+- Kịch bản: khi lời mời tới từ đường gửi HĐ cũ thì đồng ý vẫn chỉ mở một chiều như trước [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
 
 #### Yêu cầu: Ngắt kết nối
 Một trong hai bên ngắt ⇒ mất quyền gửi HĐ đi thẳng cả hai chiều, mất xem bài của nhau; tin nhắn cũ giữ, chỉ đọc; nối lại phải mời mới.
-- Kịch bản: khi Tiên ngắt kết nối thì cả hai thấy «Chưa kết nối», trò chuyện chỉ đọc, gửi tin bị 409 [test: thủ công — chưa viết]
-- Kịch bản: khi chưa kết nối mà gọi ngắt thì 409 không đổi dữ liệu [test: thủ công — chưa viết]
+- Kịch bản: khi Tiên ngắt kết nối thì cả hai thấy «Chưa kết nối», trò chuyện chỉ đọc, gửi tin bị 409 [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
+- Kịch bản: khi chưa kết nối mà gọi ngắt thì 409 không đổi dữ liệu [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
 
 #### Yêu cầu: Chỉ người Toàn quyền thao tác kết nối
 Tìm, mời, đồng ý, từ chối, ngắt chỉ cho người có việc `admin` gói Sổ Hợp Tác; nhân viên thấy tình trạng nhưng không có nút.
-- Kịch bản: khi Vy (nhân viên) gọi API mời/đồng ý/ngắt thì 403 và không đổi dữ liệu [test: thủ công — chưa viết]
-- Kịch bản: khi người Toàn quyền không phải người tạo công ty đồng ý lời mời thì thành công [test: thủ công — chưa viết]
+- Kịch bản: khi Vy (nhân viên) gọi API mời/đồng ý/ngắt thì 403 và không đổi dữ liệu [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
+- Kịch bản: khi người Toàn quyền không phải người tạo công ty đồng ý lời mời thì thành công [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
 
 ### ADDED sht/tro-chuyen-cong-ty.md
 #### Yêu cầu: Trò chuyện giữa hai công ty đã kết nối

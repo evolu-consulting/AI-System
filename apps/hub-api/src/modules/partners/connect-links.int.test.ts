@@ -424,7 +424,7 @@ describe("CR-161 · hàm chuông + người Toàn quyền, cách ly", () => {
     });
     const call = (t: string, u: string, rows: object[]) =>
       as(t, u, (tx) =>
-        tx`select hub.cc_notify(${batch(rows)}::jsonb) as n`.then((r) => r[0]?.n as number),
+        tx`select hub.cc_notify(${batch(rows)}::text::jsonb) as n`.then((r) => r[0]?.n as number),
       );
     // A → C (kết nối): Cường nhận; Vy sai công ty; kind lạ; chính công ty mình.
     expect(
