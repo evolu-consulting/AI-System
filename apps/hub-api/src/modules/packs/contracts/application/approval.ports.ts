@@ -85,6 +85,8 @@ export type SweepOptions = {
   staleMinutes: number;
   /** Job còn xếp hàng (lượt `queued_at` có giá trị, worker chưa nhận): chỉ đóng khi chờ quá mức này (entry Redis bị mất). */
   queuedMinutes: number;
+  /** CR-155 · HĐ `reading` quá số giây này (tính từ `updated_at`: lúc yêu cầu, hoặc lúc worker nhận) ⇒ `failed` mã `TIMEOUT`. Vắng ⇒ không áp. */
+  readTimeoutSeconds?: number;
   limit: number;
 };
 export type SweepCounts = {

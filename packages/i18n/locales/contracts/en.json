@@ -785,7 +785,8 @@
         "unreadable": "The file is damaged or cannot be opened. Upload another copy, or press “Enter manually”.",
         "tooLarge": "The file is too large for AI to read. Split it, or press “Enter manually”.",
         "unsupported": "This file format cannot be read automatically. Upload a PDF, DOCX or JPG/PNG image, or press “Enter manually”.",
-        "cap": "Your company has used all AI reads for today. Try again tomorrow, or press “Enter manually”."
+        "cap": "Your company has used all AI reads for today. Try again tomorrow, or press “Enter manually”.",
+        "timeout": "AI took too long to read this file. The file is kept — press “Try again”, or press “Enter manually” to fill in the details yourself."
       },
       "toList": "Back to list"
     },

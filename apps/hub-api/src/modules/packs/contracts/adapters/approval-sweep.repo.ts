@@ -61,7 +61,8 @@ function reconcileQ(tx: Tx, tid: string): SweepRepo["reconcile"] {
 }
 export function sweepRepo(tx: Tx, tid: string): SweepRepo {
   return {
-    async sweep({ staleMinutes, queuedMinutes, limit }) {
+    async sweep({ staleMinutes, queuedMinutes, readTimeoutSeconds, limit }) {
+      const tmo = readTimeoutSeconds ?? null; // CR-155 · null ⇒ không áp hạn đọc
       const [r] = await tx.execute<{
         read: number;
         closed: number;
@@ -71,23 +72,28 @@ export function sweepRepo(tx: Tx, tid: string): SweepRepo {
         flow as (select id, run_id from contracts.contracts
           where tenant_id = ${tid}::uuid and status in ('draft', 'processing')
           order by updated_at, id limit ${limit}::int),
-        stale as (select c.id, c.run_id from contracts.contracts c
+        stale as (select c.id, c.run_id,
+            coalesce(c.updated_at < now() - make_interval(secs => ${tmo}::int), false) as timed_out
+          from contracts.contracts c
           left join contracts.approvals q on q.id = c.run_id and q.tenant_id = c.tenant_id and q.status = 'extracting'
           where c.tenant_id = ${tid}::uuid and c.status = 'draft' and c.extract_state = 'reading'
-            and case when q.queued_at is null then c.updated_at < now() - make_interval(mins => ${staleMinutes}::int)
+            and (case when q.queued_at is null then c.updated_at < now() - make_interval(mins => ${staleMinutes}::int)
               else q.queued_at < now() - make_interval(mins => ${queuedMinutes}::int) end
+              or c.updated_at < now() - make_interval(secs => ${tmo}::int))
           order by c.updated_at, c.id limit ${limit}::int for update of c skip locked),
         -- CR-127 K1b · HĐ vẫn draft: chỉ extract_state reading → failed (không đổi status ⇒ không qua cổng; UPDATE theo tập).
-        u as (update contracts.contracts c set extract_state = 'failed', error = 'STALE', version = c.version + 1,
+        -- CR-155 · đọc quá hạn đọc (AI không có / treo) ⇒ TIMEOUT (lý do người dùng thấy); còn lại giữ STALE.
+        u as (update contracts.contracts c set extract_state = 'failed',
+            error = case when stale.timed_out then 'TIMEOUT' else 'STALE' end, version = c.version + 1,
             updated_at = now()
           from stale where c.id = stale.id and c.tenant_id = ${tid}::uuid and c.status = 'draft'
             and c.extract_state = 'reading'
-          returning c.id, c.run_id),
+          returning c.id, c.run_id, c.error as code),
         a as (update contracts.approvals x set status = 'failed', queued_at = null, updated_at = now()
           from u where x.id = u.run_id and x.tenant_id = ${tid}::uuid and x.status = 'extracting'),
         e as (insert into contracts.contract_events (tenant_id, contract_id, type, data)
           select ${tid}::uuid, u.id, 'extract_failed',
-            jsonb_build_object('run_id', u.run_id::text, 'code', 'STALE') from u),
+            jsonb_build_object('run_id', u.run_id::text, 'code', u.code) from u),
         done as (select x.id, c.extract_state as st from contracts.approvals x
           join contracts.contracts c on c.id = x.contract_id and c.tenant_id = x.tenant_id and c.run_id = x.id
           where x.tenant_id = ${tid}::uuid and x.status = 'extracting' and c.status = 'draft'

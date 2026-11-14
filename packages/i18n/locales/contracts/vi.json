@@ -785,7 +785,8 @@
         "unreadable": "Tệp bị hỏng hoặc không mở được. Hãy tải lên bản khác, hoặc bấm “Nhập tay”.",
         "tooLarge": "Tệp quá lớn để AI đọc. Hãy tách nhỏ tệp, hoặc bấm “Nhập tay”.",
         "unsupported": "Định dạng tệp này chưa hỗ trợ đọc tự động. Hãy tải lên PDF, DOCX hoặc ảnh JPG/PNG, hoặc bấm “Nhập tay”.",
-        "cap": "Hôm nay đã hết lượt AI đọc của công ty. Hãy thử lại ngày mai, hoặc bấm “Nhập tay”."
+        "cap": "Hôm nay đã hết lượt AI đọc của công ty. Hãy thử lại ngày mai, hoặc bấm “Nhập tay”.",
+        "timeout": "AI đọc quá lâu. Tệp vẫn được giữ — bạn có thể bấm “Thử lại”, hoặc bấm “Nhập tay” để tự nhập thông tin."
       },
       "toList": "Về danh sách"
     },

@@ -102,6 +102,16 @@ test("editor: đọc lỗi ⇒ nút Thử lại gọi POST /extract", async ({ p
   await expect.poll(() => sent.filter((s) => s.path.endsWith("/extract")).length).toBe(1);
 });
 
+// CR-155: AI đọc quá lâu (máy chủ đổi `reading` → failed/TIMEOUT) ⇒ màn nói lý do + giữ tệp + đường tự nhập (Nhập tay) và Thử lại.
+test("editor: đọc hết giờ (TIMEOUT) ⇒ nêu «AI đọc quá lâu», có Nhập tay và Thử lại", async ({
+  page,
+}) => {
+  await open(page, "editor", { status: "draft", extract_state: "failed", error: "TIMEOUT" });
+  await expect(page.getByText(/AI đọc quá lâu/).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Nhập tay" })).toBeVisible();
+  await expect(page.getByTestId("reextract").first()).toBeVisible();
+});
+
 // CR-127 Q11: ca «Tạo tóm tắt bằng AI» đã xoá — thẻ Tóm tắt đã thay bằng «Điều cần lưu ý».
 
 test("viewer: không có ô giao, nút đọc lại, hoa hồng, tạo tóm tắt", async ({ page }) => {

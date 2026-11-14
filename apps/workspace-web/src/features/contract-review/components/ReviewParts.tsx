@@ -3,6 +3,7 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
+import { failReasonKey } from "../lib/fail-reason";
 import { ReextractButton } from "./ReextractButton";
 
 export type FileRef = { href: string; name: string; onOpen: () => void };
@@ -40,17 +41,6 @@ export function SaveNotice({ err }: { err: string | null }) {
   );
 }
 
-/** CR-122 p9 · FLOW2-FR-27: mã lỗi đọc ⇒ lý do nghiệp vụ (tệp hỏng / quá lớn / định dạng chưa hỗ trợ / hết hạn mức AI) kèm gợi ý "Nhập tay". */
-const FAIL_REASON: Record<string, string> = {
-  PDF_UNREADABLE: "unreadable",
-  DOCX_UNREADABLE: "unreadable",
-  TEXT_UNREADABLE: "unreadable",
-  SOURCE_UNAVAILABLE: "unreadable",
-  PDF_TOO_LARGE: "tooLarge",
-  AGENT_UNAVAILABLE: "unsupported",
-  AI_CAP_EXCEEDED: "cap",
-};
-
 export function ExtractFailed({
   file,
   id,
@@ -65,7 +55,7 @@ export function ExtractFailed({
   error?: string | null;
 }) {
   const { t } = useTranslation();
-  const reason = error ? FAIL_REASON[error] : undefined;
+  const reason = failReasonKey(error);
   return (
     <Panel className="mb-4 p-5">
       <p className="font-medium text-late">{t("contracts.review.failedTitle")}</p>
