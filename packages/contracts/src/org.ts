@@ -13,6 +13,8 @@ export const OrgMemberSchema = z.object({
   username: z.string(),
   display_name: z.string(),
   manager_id: Uuid.nullable(),
+  /** CR-147b: chức vụ (null = chưa nhập). */
+  job_title: z.string().nullable().optional(),
 });
 export type OrgMember = z.infer<typeof OrgMemberSchema>;
 
@@ -46,3 +48,14 @@ export const DepartmentSetRequestSchema = z.strictObject({
   parent_group_id: Uuid.nullable().optional(),
 });
 export type DepartmentSetRequest = z.infer<typeof DepartmentSetRequestSchema>;
+
+/** CR-147b ý 9 · `PUT /admin/org/members/:user_id/title` — chức vụ nhân viên (null/rỗng = xoá). Hiện ở hồ sơ cá nhân + thẻ người (`/people`). */
+export const JobTitleSetRequestSchema = z.strictObject({
+  job_title: z
+    .string()
+    .trim()
+    .max(80)
+    .nullable()
+    .transform((v) => (v ? v : null)),
+});
+export type JobTitleSetRequest = z.infer<typeof JobTitleSetRequestSchema>;

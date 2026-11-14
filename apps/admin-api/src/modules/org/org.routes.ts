@@ -2,6 +2,7 @@
 // trước khi tra thực thể hay parse body (như `/admin/groups`).
 import {
   DepartmentSetRequestSchema,
+  JobTitleSetRequestSchema,
   ManagerSetRequestSchema,
   OrgQuerySchema,
 } from "@ai/contracts/org";
@@ -9,7 +10,7 @@ import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";
 import type { TestHooks } from "../../lib/test-hooks";
-import { getOrg, type OrgCall, setDepartment, setManager } from "./org.service";
+import { getOrg, type OrgCall, setDepartment, setJobTitle, setManager } from "./org.service";
 
 export function orgRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> {
   const r = new Hono<AppVars>();
@@ -26,6 +27,11 @@ export function orgRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> {
     const id = parseIdParam(c);
     const body = await parseJson(c, ManagerSetRequestSchema);
     return c.json(await setManager(call(c), tenant(c), id, body));
+  });
+  r.put("/members/:id/title", async (c) => {
+    const id = parseIdParam(c);
+    const body = await parseJson(c, JobTitleSetRequestSchema);
+    return c.json(await setJobTitle(call(c), tenant(c), id, body));
   });
   r.put("/departments/:id", async (c) => {
     const id = parseIdParam(c);

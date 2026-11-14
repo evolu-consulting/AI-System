@@ -876,6 +876,13 @@
       "when": 1806901500000,
       "tag": "0141_sec_evidence_owner_code",
       "breakpoints": true
+    },
+    {
+      "idx": 125,
+      "version": "7",
+      "when": 1806901600000,
+      "tag": "0142_cr147b_people_profiles",
+      "breakpoints": true
     }
   ]
 }

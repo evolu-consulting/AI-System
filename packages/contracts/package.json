@@ -39,6 +39,7 @@
     "./modules": "./src/modules/index.ts",
     "./notify": "./src/notify.ts",
     "./org": "./src/org.ts",
+    "./people": "./src/people.ts",
     "./overview": "./src/overview.ts",
     "./pack-contracts": "./src/pack-contracts/index.ts",
     "./packs": "./src/packs.ts",

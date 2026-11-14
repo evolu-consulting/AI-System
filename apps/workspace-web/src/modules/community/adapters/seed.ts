@@ -48,7 +48,7 @@ const host = (id: string, name: string, label: string): Persona => ({
   labels: [],
   cats: [],
   // ADR-0044: không còn admin chủ quản — mọi nhân viên nội bộ vào được Sổ Hợp Tác.
-  caps: { contracts: true },
+  caps: { contracts: true, companyAdmin: false },
   contractsUrl: "/",
   label,
 });
@@ -64,7 +64,7 @@ const partner = (id: string, name: string, orgId: string, label: string): Person
     orgName: o.name,
     labels: o.labels,
     cats: o.cats,
-    caps: { contracts: false },
+    caps: { contracts: false, companyAdmin: false },
     contractsUrl: null,
     label,
   };

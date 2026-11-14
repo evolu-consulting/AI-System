@@ -3,6 +3,7 @@
 // tenant_admin chỉ tenant mình; platform cần `?tenant_id` khi ghi. Ghi qua `configWrite` (một tx + audit).
 import {
   type DepartmentSetRequest,
+  type JobTitleSetRequest,
   type ManagerSetRequest,
   ORG_MEMBERS_MAX,
   type OrgResponse,
@@ -36,10 +37,11 @@ export function getOrg(c: OrgCall, q: string | undefined): Promise<OrgResponse> 
   return withScope(c.ctx.db, c.scope, async (tx) => {
     const rows = (await tx.execute(sql`select
       coalesce((select json_agg(json_build_object('user_id', u.id, 'username', u.username,
-          'display_name', u.display_name, 'manager_id', m.manager_id) order by lower(u.display_name), u.id)
+          'display_name', u.display_name, 'manager_id', m.manager_id, 'job_title', pp.job_title) order by lower(u.display_name), u.id)
         from (select * from admin.users where tenant_id = ${t}::uuid and active
               order by lower(display_name), id limit ${ORG_MEMBERS_MAX}::int) u
-        left join admin.user_managers m on m.user_id = u.id and m.tenant_id = u.tenant_id), '[]'::json) as members,
+        left join admin.user_managers m on m.user_id = u.id and m.tenant_id = u.tenant_id
+        left join hub.people_profiles pp on pp.user_id = u.id and pp.tenant_id = u.tenant_id), '[]'::json) as members,
       coalesce((select json_agg(json_build_object('group_id', g.id, 'key', g.key,
           'name', coalesce(g.name ->> 'vi', g.key), 'head_user_id', d.head_user_id,
           'parent_group_id', d.parent_group_id, 'member_ids', coalesce((select json_agg(gm.user_id order by gm.user_id) from admin.group_members gm
@@ -203,5 +205,42 @@ export function setDepartment(
       }),
     );
     return input === "remove" ? null : { group_id: groupId, head_user_id: input.head_user_id };
+  });
+}
+
+/**
+ * CR-147b ý 9 · chức vụ nhân viên (quản trị công ty nhập ở «Cơ cấu»; hiện ở hồ sơ cá nhân + thẻ người `/people`). Lưu ở
+ * `hub.people_profiles.job_title` (admin_rw chỉ có quyền cột này). User ngoài tenant ⇒ 404; null/rỗng ⇒ xoá.
+ */
+export function setJobTitle(
+  c: OrgCall,
+  q: string | undefined,
+  userId: string,
+  input: JobTitleSetRequest,
+): Promise<{ user_id: string; job_title: string | null }> {
+  const t = tenantOf(c, q, "write");
+  return configWrite(c, "group.save", async (tx, ch) => {
+    const u = (await tx.execute(sql`select u.username, pp.job_title from admin.users u
+      left join hub.people_profiles pp on pp.user_id = u.id and pp.tenant_id = u.tenant_id
+      where u.id = ${userId}::uuid and u.tenant_id = ${t}::uuid for no key update of u`)) as unknown as {
+      username: string;
+      job_title: string | null;
+    }[];
+    if (!u[0]) throw appError("NOT_FOUND");
+    await tx.execute(sql`insert into hub.people_profiles (tenant_id, user_id, job_title)
+      values (${t}::uuid, ${userId}::uuid, ${input.job_title})
+      on conflict (tenant_id, user_id) do update set job_title = excluded.job_title, updated_at = now()`);
+    ch.changed({ entity: "user", tenantId: t });
+    ch.audit(
+      auditOf("update", "user", {
+        entityId: userId,
+        entityName: u[0].username,
+        tenantId: t,
+        before: null,
+        after: null,
+        summary: { job_title: input.job_title, before: { job_title: u[0].job_title } },
+      }),
+    );
+    return { user_id: userId, job_title: input.job_title };
   });
 }

@@ -24,6 +24,7 @@ import { companyBrandModule } from "./contracts/brand.mount";
 import { hostBookModule } from "./contracts/host-book.mount";
 import { supplierScores } from "./contracts/partners.mount";
 import {
+  checkPackAccess,
   createPackUow,
   orgForTenant,
   type PackAccessView,
@@ -75,6 +76,12 @@ export function communityPorts(
     contracts: async (who) =>
       who.userKind !== "external" &&
       packActionsFor(await packAccessInput(view, KEY, who)).includes("read"),
+    // CR-147b: chủ sở hữu = cùng điều kiện `PUT /pack/contracts/company` (nhóm có quyền `admin` của gói).
+    admin: async (who) => {
+      if (who.userKind === "external") return false;
+      const i = await packAccessInput(view, KEY, who);
+      return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
+    },
   };
   return { quotes, hostBook, brand: companyBrandModule(db), caps, partners: partnerLinker() };
 }

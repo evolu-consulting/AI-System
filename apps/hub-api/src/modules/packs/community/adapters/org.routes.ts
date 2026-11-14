@@ -3,6 +3,7 @@
 // quản ở SHT › Đối tác (CR-130, ADR-0043) — không còn `PUT /partners/:orgId`. Thông báo = C9 (ở đây trả rỗng).
 import {
   COMMUNITY_BRAND_ACCENTS,
+  CommunityBrandCoverSetSchema,
   type CommunitySettings,
   CommunitySettingsInputSchema,
   CommunitySettingsSchema,
@@ -54,13 +55,14 @@ async function profileOf(d: CommunityDeps, a: Access, orgId: string | undefined)
 /** `GET /viewer`: người xem + vai + công ty + quyền gói; `email` chỉ của chính người xem. */
 async function viewerOf(d: CommunityDeps, a: Access): Promise<CommunityViewer> {
   const isPartner = a.org !== null;
-  const [me, hasContracts, self] = await Promise.all([
+  const [me, hasContracts, isAdmin, self] = await Promise.all([
     orgs.own(d.uow, a),
     !isPartner && d.caps ? d.caps.contracts(a.who) : false,
+    !isPartner && d.caps ? d.caps.admin(a.who) : false,
     d.contact ? d.contact(a.who) : null,
   ]);
   return {
-    ...viewerCaps(isPartner, hasContracts, d.shtUrl),
+    ...viewerCaps(isPartner, hasContracts, d.shtUrl, isAdmin),
     userId: a.who.userId,
     name: a.dir.userName,
     email: self?.email ?? null,
@@ -97,11 +99,20 @@ function viewerAndPartners(r: R, d: CommunityDeps, access: Acc): void {
     const cover = d.brand ? await d.brand.cover(a.who.tenantId) : null;
     const body = JSON.stringify({ cover });
     const etag = `"${new Bun.CryptoHasher("sha256").update(body).digest("hex")}"`;
-    const cache = { ETag: etag, "Cache-Control": "private, max-age=300" };
+    const cache = { ETag: etag, "Cache-Control": "private, no-cache" };
     const inm = c.req.header("if-none-match");
     if (inm?.split(",").some((t) => t.trim() === etag || t.trim() === `W/${etag}`))
       return c.body(null, 304, cache);
     return c.body(body, 200, { ...cache, "Content-Type": "application/json" });
+  });
+  // CR-147b: chủ sở hữu công ty đổi/xoá ảnh bìa ngay ở hồ sơ công ty — cùng cột `company_settings.cover` (CR-138), cùng luật PNG/JPG/WebP ≤ 3 MB.
+  r.put("/brand/cover", async (c) => {
+    const a = await access(c);
+    if (a.org !== null || !d.brand || !d.caps || !(await d.caps.admin(a.who)))
+      throw appError("FORBIDDEN");
+    const { cover } = parseWith(CommunityBrandCoverSetSchema, await readJson(c));
+    await d.brand.setCover(a.who.tenantId, cover);
+    return c.json({ cover });
   });
   r.get("/partners", async (c) => {
     const a = await access(c);
