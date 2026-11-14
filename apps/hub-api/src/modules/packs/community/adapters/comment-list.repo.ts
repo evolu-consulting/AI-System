@@ -63,13 +63,13 @@ async function listOlder(
   const before = page.beforeId ?? null;
   const rows = await tx.execute<{ r: { post: boolean; comments: CommentRow[] } }>(sql`
     select json_build_object(
-      post, exists (select 1 from community.posts p where p.id = ${postId}::uuid),
-      comments, coalesce((select json_agg(${commentJson("s")} order by s.created_at desc, s.id desc)
+      'post', exists (select 1 from community.posts p where p.id = ${postId}::uuid),
+      'comments', coalesce((select json_agg(${commentJson("s")} order by s.created_at desc, s.id desc)
         from (select c.* from community.comments c where c.post_id = ${postId}::uuid
             and (${at}::timestamptz is null or (c.created_at, c.id) < (${at}::timestamptz, ${id}::uuid))
             and (${before}::uuid is null or (c.created_at, c.id) <
               (select b.created_at, b.id from community.comments b where b.id = ${before}::uuid and b.post_id = ${postId}::uuid))
-          order by c.created_at desc, c.id desc limit ${page.limit}::int) s), []::json)) as r`);
+          order by c.created_at desc, c.id desc limit ${page.limit}::int) s), '[]'::json)) as r`);
   return rows[0]?.r ?? { post: false, comments: [] };
 }
 

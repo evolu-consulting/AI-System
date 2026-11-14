@@ -11,7 +11,7 @@ Hộp chọn «Nhắc tên» theo bản mẫu `docs/specs/cr147-mention-picker/p
 | 3 | `PostView.recentComments`; `GET …/comments?dir=desc&before=` | contracts `post.ts` `comment.ts`, `post.sql.ts`, `views.ts`, `comment-list.repo.ts` | [x] |
 | 4 | Thread dùng `recentComments`, «Xem thêm N bình luận» tải trang cũ hơn | `ui/Thread.tsx` | [x] |
 | 5 | Bảng tin tải dần (IntersectionObserver + nút dự phòng) | `application/useFeed.ts`, `ui/Feed.tsx` | [x] |
-| 6 | Int + e2e | `comments.routes.int.test.ts`, `post-mention.int.test.ts` | [ ] int chưa chạy được; e2e chưa viết |
+| 6 | Int + e2e (hộp Nhắc tên, Xem thêm bình luận; cuộn bảng tin CHƯA có e2e — mock không có cursor, stack cần seed > 20 bài) | `comments.routes.int.test.ts`, `post-mention.int.test.ts`, `e2e/community-web/cr147-feed.cm.ts` | [x] int sửa lỗi nháy SQL, chờ chạy lại |
 
 ## Quyết định trong lúc làm
 - Ảnh đại diện: chưa có `PersonAvatar` trên nhánh ⇒ chữ cái đầu. Phòng ban · chức vụ: API chưa trả ⇒ chỉ tên công ty.

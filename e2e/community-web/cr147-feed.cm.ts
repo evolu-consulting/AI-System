@@ -76,3 +76,23 @@ test("ô đăng mở: nút thu gọn cùng hàng, cùng chiều cao và căn gi�
     1,
   );
 });
+
+test("hộp Nhắc tên: nút chỉ biểu tượng, tìm, chọn 2 người, «Xong (2 người)» ⇒ chip ở ô đăng; Huỷ không đổi", async ({
+  page,
+}) => {
+  await page.goto("/community");
+  await page.getByTestId("composer").getByRole("button", { name: "Cần bán", exact: true }).click();
+  await expect(page.getByTestId("mention-people")).toHaveCount(0); // không còn ô gõ tên cũ
+  await page.getByRole("button", { name: "Nhắc tên" }).click();
+  const dlg = page.getByTestId("mention-dialog");
+  await dlg.getByRole("searchbox", { name: "Tìm theo tên" }).fill("Lan");
+  await expect(dlg.getByTestId("mention-option")).toHaveCount(1);
+  await dlg.getByRole("searchbox", { name: "Tìm theo tên" }).fill("");
+  await dlg.getByTestId("mention-option").filter({ hasText: "Lan" }).getByRole("checkbox").check();
+  await dlg.getByTestId("mention-option").filter({ hasText: "Minh" }).getByRole("checkbox").check();
+  await dlg.getByRole("button", { name: "Xong (2 người)" }).click();
+  await expect(page.getByTestId("mention-chip")).toHaveCount(2);
+  await page.getByRole("button", { name: "Nhắc tên" }).click();
+  await page.getByTestId("mention-dialog").getByRole("button", { name: "Huỷ" }).click();
+  await expect(page.getByTestId("mention-chip")).toHaveCount(2);
+});
