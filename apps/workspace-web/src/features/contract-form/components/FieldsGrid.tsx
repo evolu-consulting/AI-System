@@ -10,6 +10,7 @@ import { Tag } from "~/components/shared/tag";
 import { QuoteLine } from "~/features/contract-source/components/QuoteLine";
 import { cn } from "~/lib/utils";
 import { autoTotal, type FormState, type RequiredKey, type TextKey } from "../lib/form-model";
+import { isKind } from "../lib/kind-terms";
 import { idKind, type PartnerSearchHit } from "../lib/partner-match";
 import { PartnerField } from "./PartnerField";
 export type FieldBadge = { kind: "warn" | "quote"; text: string };
@@ -253,6 +254,7 @@ export function FieldsGrid({
     />
   );
   const referral = f.deal === "referral";
+  const kind = isKind(f.deal);
   return (
     <div
       className={cn(
@@ -295,7 +297,7 @@ export function FieldsGrid({
             ph: L("commissionFixedPh"),
           })}
         </>
-      ) : (
+      ) : kind ? null : (
         text("total_value", L("totalValue"), {
           mono: true,
           suffix: "đ",
@@ -307,10 +309,14 @@ export function FieldsGrid({
         bad: invalid.has("start_date"),
         type: "date",
       })}
-      {!dealMode && text("end_date", L("endDate"), { type: "date" })}
-      {!dealMode && text("notice_days", L("noticeDays"), { mono: true, suffix: L("days") })}
-      {!dealMode && text("our_signer", L("ourSigner"), { ph: L("signerPlaceholder") })}
-      {!dealMode && text("partner_signer", L("partnerSigner"), { ph: L("signerPlaceholder") })}
+      {!dealMode && (
+        <>
+          {text("end_date", L("endDate"), { type: "date" })}
+          {text("notice_days", L("noticeDays"), { mono: true, suffix: L("days") })}
+          {text("our_signer", L("ourSigner"), { ph: L("signerPlaceholder") })}
+          {text("partner_signer", L("partnerSigner"), { ph: L("signerPlaceholder") })}
+        </>
+      )}
       {text("payment_terms", referral ? L("paymentTermsRef") : L("paymentTerms"), {
         span: cols === 2,
         ph: referral ? L("paymentTermsRefPh") : L("paymentTermsPh"),

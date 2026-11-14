@@ -1,5 +1,125 @@
 {
   "contracts": {
+    "kinds": {
+      "pick": "Chọn…",
+      "title": {
+        "franchise": "Thông tin nhượng quyền",
+        "cooperation": "Thông tin hợp tác"
+      },
+      "tab": {
+        "general": "Chung",
+        "fee": "Phí",
+        "legal": "Pháp lý"
+      },
+      "unsureHint": "Ô viền vàng là chỗ AI chưa chắc, bạn kiểm lại.",
+      "badNumbers": "Số chưa đúng ở: {{list}}",
+      "f": {
+        "role": "Công ty mình là",
+        "brand": "Thương hiệu được nhượng",
+        "territory": "Khu vực",
+        "exclusive": "Độc quyền trong khu vực",
+        "initial_fee": "Phí nhượng quyền ban đầu (đồng)",
+        "fee_basis": "Phí định kỳ tính theo",
+        "fee_pct": "Tỷ lệ (% doanh thu)",
+        "fee_fixed": "Số tiền mỗi kỳ (đồng)",
+        "period": "Kỳ thu",
+        "ad_fee_pct": "Phí quảng cáo (% doanh thu, nếu có)",
+        "deposit": "Tiền ký quỹ (đồng, nếu có)",
+        "foreign_franchisor": "Bên nhượng quyền ở nước ngoài",
+        "moit_registered": "Đã đăng ký với Bộ Công Thương",
+        "moit_registered_on": "Ngày đăng ký",
+        "scope": "Mục tiêu, phạm vi hợp tác",
+        "our_contribution": "Phần đóng góp của mình",
+        "partner_contribution": "Phần đóng góp của đối tác",
+        "split_basis": "Cách chia",
+        "our_share_pct": "Phần của mình (%)",
+        "settle_period": "Kỳ đối soát"
+      },
+      "opt": {
+        "role": {
+          "franchisor": "Bên nhượng quyền",
+          "franchisee": "Bên nhận quyền"
+        },
+        "fee_basis": {
+          "revenue_pct": "% doanh thu",
+          "fixed": "Số tiền cố định"
+        },
+        "period": {
+          "month": "Hằng tháng",
+          "quarter": "Hằng quý"
+        },
+        "split_basis": {
+          "profit": "% lợi nhuận",
+          "revenue": "% doanh thu",
+          "none": "Không chia tiền (ghi nhớ hợp tác)"
+        },
+        "settle_period": {
+          "month": "Hằng tháng",
+          "quarter": "Hằng quý",
+          "year": "Hằng năm"
+        }
+      },
+      "banner": {
+        "split": "Mốc tự tạo: đối soát và chia tiền mỗi kỳ, nhắc gia hạn. Tính vào doanh thu.",
+        "nosplit": "Ghi nhớ hợp tác: chỉ nhắc gia hạn, không tính doanh thu."
+      },
+      "sum": {
+        "loading": "Đang tải…",
+        "error": "Chưa tải được thông tin kỳ. Tải lại trang để thử lại.",
+        "title": {
+          "franchise": "Nhượng quyền",
+          "cooperation": "Hợp tác"
+        },
+        "recordFranchise": "Ghi doanh thu kỳ…",
+        "recordCoop": "Ghi đối soát kỳ…",
+        "initialFee": "Phí ban đầu",
+        "recurringFee": "Phí định kỳ",
+        "inForce": "Còn hiệu lực",
+        "feeFixed": "{{v}} / {{per}}",
+        "feePct": "{{v}}% doanh thu / {{per}}",
+        "monthsLeft": "{{n}} tháng",
+        "splitBasis": "Cách chia",
+        "shares": "Mình / đối tác",
+        "settlePeriod": "Kỳ đối soát",
+        "noSplit": "Ghi nhớ hợp tác: không chia tiền, chỉ nhắc gia hạn.",
+        "notRecorded": "Chưa ghi số",
+        "fee": "Phí: {{v}}",
+        "ourShare": "Mình {{our}} đ · đối tác {{partner}} đ",
+        "per": {
+          "month": "tháng",
+          "quarter": "quý",
+          "year": "năm"
+        },
+        "basis": {
+          "profit": "% lợi nhuận",
+          "revenue": "% doanh thu",
+          "none": "Không chia"
+        }
+      },
+      "period": {
+        "titleFranchise": "Doanh thu của kỳ",
+        "titleCoop": "Đối soát kỳ",
+        "hintFranchise": "Nhập doanh thu đối tác đã báo; phí kỳ này tính ra bên dưới.",
+        "hintCoop": "Nhập số của kỳ; phần mình và phần đối tác tính ra bên dưới.",
+        "period": "Kỳ",
+        "figureRevenue": "Doanh thu (đồng)",
+        "figureProfit": "Lợi nhuận chung (đồng)",
+        "bad": "Số tiền chưa đúng.",
+        "previewFranchise": "Phí kỳ này: {{fee}} đ",
+        "previewCoop": "Phần mình {{our}} đ · phần đối tác {{partner}} đ",
+        "later": "Để sau",
+        "saveFranchise": "Lưu và tạo mốc thu phí",
+        "saveCoop": "Lưu đối soát",
+        "savedFranchise": "Đã ghi doanh thu kỳ",
+        "savedCoop": "Đã ghi đối soát kỳ"
+      },
+      "err": {
+        "incomplete": "Còn thiếu thông tin của loại hợp đồng này. Ô viền đỏ là chỗ cần điền.",
+        "locked": "Chỉ sửa được khi hợp đồng còn nháp.",
+        "periodLocked": "Kỳ này đã xác nhận thu/trả, không ghi lại được.",
+        "notApplicable": "Kỳ này không có mốc báo cáo hoặc đối soát."
+      }
+    },
     "cform": {
       "newTitle": "Thêm hợp đồng",
       "infoTitle": "Thông tin hợp đồng",
@@ -9,14 +129,23 @@
       "saveChanges": "Lưu thay đổi",
       "saved": "Đã lưu hợp đồng",
       "deal": "Loại hợp đồng",
-      "dealName": { "buy": "Mua", "sell": "Bán", "referral": "Giới thiệu" },
+      "dealName": {
+        "buy": "Mua",
+        "sell": "Bán",
+        "referral": "Giới thiệu",
+        "franchise": "Nhượng quyền",
+        "cooperation": "Thỏa thuận hợp tác"
+      },
       "dealHint": {
         "buy": "Mình mua từ nhà cung cấp",
         "sell": "Mình bán cho khách",
-        "referral": "Hưởng hoa hồng"
+        "referral": "Hưởng hoa hồng",
+        "franchise": "Cho dùng thương hiệu, thu phí",
+        "cooperation": "Cùng góp và chia kết quả"
       },
       "dealLocked": "Loại hợp đồng không đổi được sau khi lưu; cần đổi thì tạo hợp đồng mới.",
       "partnerRole": {
+        "partner": "Đối tác",
         "supplier": "Nhà cung cấp",
         "customer": "Khách hàng",
         "payer": "Bên trả hoa hồng"

@@ -4,6 +4,7 @@ import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import type { ReactNode } from "react";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import type { FormState, TextKey } from "~/features/contract-form/lib/form-model";
+import { isKind } from "~/features/contract-form/lib/kind-terms";
 import { FrameDiary } from "~/features/frame-panel/components/FrameDiary";
 import type { useInfoForm } from "../hooks/use-info-form";
 import { AiMilestonesPanel } from "./AiMilestonesPanel";
@@ -53,6 +54,7 @@ export function DetailGrid({
             disabled={!canSave}
             lockedKeys={lockedKeys}
             saveButton={saveButton}
+            kind={{ onTerm: info.setTerm, unsure: info.kindUnsure, invalid: info.kindInvalid }}
             confirm={
               confirm
                 ? {
@@ -64,7 +66,7 @@ export function DetailGrid({
                 : undefined
             }
           />
-          {confirm ? null : (
+          {confirm || isKind(dealOf(c)) ? null : (
             <ProductsPanel
               items={c.items}
               deal={dealOf(c)}
@@ -89,7 +91,7 @@ export function DetailGrid({
           {right}
         </div>
       </div>
-      {confirm && (
+      {confirm && !isKind(f.deal) && (
         <ReviewItemsPanel
           items={f.items}
           deal={f.deal}

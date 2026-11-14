@@ -3,7 +3,8 @@ import type { ContractDeal } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { SegButton } from "~/components/shared/seg-button";
 import { cn } from "~/lib/utils";
-import { DEALS } from "../lib/deal";
+import { ALL_DEALS, DEALS } from "../lib/deal";
+import { isKind } from "../lib/kind-terms";
 
 const tile = (on: boolean, locked: boolean) =>
   cn(
@@ -18,7 +19,10 @@ export function DealTiles({
   onChange,
   locked = false,
   unsure = false,
+  kinds = false,
 }: {
+  /** Hiện thêm 2 loại Nhượng quyền / Thỏa thuận hợp tác. */
+  kinds?: boolean;
   value: ContractDeal;
   onChange: (d: ContractDeal) => void;
   locked?: boolean;
@@ -27,6 +31,8 @@ export function DealTiles({
 }) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.cform.${k}`);
+  // CR-152: Nhượng quyền / Hợp tác chỉ chọn được ở bước xác nhận sau khi AI đọc (HĐ nhập tay vẫn 3 loại cơ bản).
+  const deals = kinds || isKind(value) ? ALL_DEALS : DEALS;
   return (
     <div className="flex flex-col gap-1.5">
       <span id="deal-label" className="text-[13px]">
@@ -37,11 +43,11 @@ export function DealTiles({
         aria-labelledby="deal-label"
         data-unsure={unsure || undefined}
         className={cn(
-          "grid grid-cols-3 gap-2.5",
+          "grid grid-cols-3 gap-2.5 max-sm:grid-cols-2",
           unsure && "rounded-xl border border-soon-line bg-soon-bg p-1.5",
         )}
       >
-        {DEALS.map((d) => (
+        {deals.map((d) => (
           <SegButton
             key={d}
             checked={d === value}

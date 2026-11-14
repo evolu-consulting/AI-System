@@ -7,8 +7,10 @@ import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { DealTiles } from "~/features/contract-form/components/DealTiles";
 import { FieldsGrid } from "~/features/contract-form/components/FieldsGrid";
+import { KindTermsFields } from "~/features/contract-form/components/KindTermsFields";
 import { badgesOf, LOCKED_AFTER_SAVE } from "~/features/contract-form/lib/detail-form";
 import type { FormState, RequiredKey, TextKey } from "~/features/contract-form/lib/form-model";
+import { isKind } from "~/features/contract-form/lib/kind-terms";
 
 const NONE: ReadonlySet<never> = new Set();
 
@@ -19,6 +21,13 @@ export type ConfirmProps = {
   invalid: ReadonlySet<RequiredKey>;
 };
 
+/** CR-152: ghi trường riêng của Nhượng quyền / Hợp tác (sửa được khi HĐ còn nháp). */
+export type KindProps = {
+  onTerm: (k: string, v: string) => void;
+  unsure: ReadonlySet<string>;
+  invalid: ReadonlySet<string>;
+};
+
 export function InfoPanel({
   c,
   f,
@@ -27,7 +36,9 @@ export function InfoPanel({
   saveButton,
   confirm,
   lockedKeys,
+  kind,
 }: {
+  kind?: KindProps | undefined;
   /** K3a: HĐ đã khoá ⇒ ô pháp lý chỉ đọc (chỉ `notice_days` sửa được). */
   lockedKeys?: ReadonlySet<TextKey> | undefined;
   c: ContractDetail;
@@ -49,6 +60,7 @@ export function InfoPanel({
         <DealTiles
           value={f.deal}
           onChange={confirm ? confirm.onDeal : () => undefined}
+          kinds={!!confirm}
           locked={!confirm || disabled}
           unsure={confirm?.dealUnsure ?? false}
         />
@@ -63,6 +75,16 @@ export function InfoPanel({
           unsure={confirm?.unsure}
           numberSaved={confirm ? undefined : String(c.fields.number?.value ?? "")}
         />
+        {kind && isKind(f.deal) && (
+          <KindTermsFields
+            deal={f.deal}
+            terms={f.terms}
+            onTerm={kind.onTerm}
+            unsure={kind.unsure}
+            invalid={kind.invalid}
+            disabled={disabled || c.status !== "draft"}
+          />
+        )}
       </div>
     </Panel>
   );

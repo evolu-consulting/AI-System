@@ -22,6 +22,10 @@ const KEYED: Record<string, string> = {
   EVIDENCE_REQUIRED: "contracts.u6.trade.err.evidence",
   LINK_MIXED: "contracts.u6.trade.err.mixed",
   OVER_PLAN: "contracts.u6.trade.err.overPlan",
+  KIND_TERMS_INCOMPLETE: "contracts.kinds.err.incomplete",
+  KIND_TERMS_LOCKED: "contracts.kinds.err.locked",
+  PERIOD_LOCKED: "contracts.kinds.err.periodLocked",
+  KIND_TERMS_NOT_APPLICABLE: "contracts.kinds.err.notApplicable",
   TASK_CLAIMED: "contracts.u6.trade.err.claimed",
 };
 

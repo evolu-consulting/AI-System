@@ -3,15 +3,16 @@ import type { ContractDeal, ContractStage } from "@ai/contracts/pack-contracts";
 import type { TagTone } from "~/components/shared/tag";
 
 export const DEALS: readonly ContractDeal[] = ["buy", "sell", "referral"] as const;
+/** CR-152: thêm 2 loại HĐ kinh tế (chỉ chọn ở bước xác nhận sau AI đọc). */
+export const ALL_DEALS: readonly ContractDeal[] = [...DEALS, "franchise", "cooperation"] as const;
 
 /** Vai của đối tác theo loại (BA 5.6): Mua ⇒ Nhà cung cấp; Bán ⇒ Khách hàng; Giới thiệu ⇒ Bên trả hoa hồng. */
-export const PARTNER_ROLE: Record<ContractDeal, "supplier" | "customer" | "payer"> = {
+export const PARTNER_ROLE: Record<ContractDeal, "supplier" | "customer" | "payer" | "partner"> = {
   buy: "supplier",
   sell: "customer",
   referral: "payer",
-  // CR-152 (UI đầy đủ ở cr152b): hai loại mới không phải NCC / khách; tạm dùng "customer" cho nhãn.
-  franchise: "customer",
-  cooperation: "customer",
+  franchise: "partner",
+  cooperation: "partner",
 };
 
 /** Nhãn kho: Mua nhập, Bán xuất, Giới thiệu không ảnh hưởng kho (BA 5.7). */
@@ -35,8 +36,8 @@ export const DEAL_TONE: Record<ContractDeal, TagTone> = {
   buy: "act",
   sell: "ok",
   referral: "grey",
-  franchise: "grey",
-  cooperation: "grey",
+  franchise: "act",
+  cooperation: "act",
 };
 
 /** HĐ cũ (trước V2) chưa có `deal`: suy từ hướng (mua vào ⇒ Mua, còn lại ⇒ Bán). */

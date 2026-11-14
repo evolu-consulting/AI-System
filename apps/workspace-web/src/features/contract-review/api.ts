@@ -8,8 +8,11 @@ import type {
   HistoryResponse,
   ItemProductRequest,
   ItemProductResponse,
+  KindTermsPut,
+  KindTermsView,
   OwnerAssignResponse,
   PatchFieldsResponse,
+  Period,
   ReviewSaveRequest,
   ReviewSaveResponse,
   SubmitPreviewResponse,
@@ -150,4 +153,25 @@ export function fetchSubmitPreview(
   signal?: AbortSignal,
 ): Promise<SubmitPreviewResponse> {
   return api<SubmitPreviewResponse>(`${BASE}/${encodeURIComponent(id)}/submit-preview`, { signal });
+}
+
+// ---------- CR-152: trường riêng Nhượng quyền / Hợp tác + kỳ doanh thu / đối soát ----------
+export const kindTermsKey = (id: string) => ["contract", id, "kind-terms"] as const;
+
+export function fetchKindTerms(id: string, signal?: AbortSignal): Promise<KindTermsView> {
+  return api<KindTermsView>(`${BASE}/${encodeURIComponent(id)}/kind-terms`, { signal });
+}
+
+export function putKindTerms(id: string, terms: KindTermsPut["terms"]): Promise<unknown> {
+  return api<unknown>(`${BASE}/${encodeURIComponent(id)}/kind-terms`, {
+    method: "PUT",
+    body: { terms },
+  });
+}
+
+export function putPeriod(id: string, key: string, figure: number): Promise<Period> {
+  return api<Period>(`${BASE}/${encodeURIComponent(id)}/periods/${encodeURIComponent(key)}`, {
+    method: "PUT",
+    body: { figure },
+  });
 }

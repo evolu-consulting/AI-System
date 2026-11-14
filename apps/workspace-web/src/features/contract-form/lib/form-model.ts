@@ -2,6 +2,7 @@
 // giá trị tự cộng khi để trống, đọc số kiểu Việt ("91.500.000", SL "1,5"), thân `POST /contracts/manual`. Không React, không fetch.
 import type { ContractDeal, ManualContractRequest } from "@ai/contracts/pack-contracts";
 import { parseMoney, parseQty } from "~/components/shared/format";
+import type { TermsState } from "./kind-terms";
 
 export type LineState = {
   /** V2-G: id dòng đã lưu (AI đọc) — màn xác nhận sửa tại chỗ, không xoá. */
@@ -37,8 +38,10 @@ export type FormState = {
   partner_signer: string;
   our_signer: string;
   items: LineState[];
+  /** CR-152: trường riêng Nhượng quyền / Hợp tác (chỉ dùng khi `deal` là một trong hai). */
+  terms: TermsState;
 };
-export type TextKey = Exclude<keyof FormState, "items" | "deal">;
+export type TextKey = Exclude<keyof FormState, "items" | "deal" | "terms">;
 
 export const EMPTY_LINE: LineState = {
   name: "",
@@ -67,6 +70,7 @@ export const EMPTY_FORM: FormState = {
   partner_signer: "",
   our_signer: "",
   items: [EMPTY_LINE],
+  terms: {},
 };
 
 export const named = (items: readonly LineState[]) => items.filter((i) => i.name.trim());

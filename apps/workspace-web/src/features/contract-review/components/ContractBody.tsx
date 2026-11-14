@@ -39,6 +39,7 @@ import { EffectCard, NoticeCards, StatsRow } from "./DetailSections";
 import { HeadActions } from "./HeadActions";
 import { HeadBanner } from "./HeadBanner";
 import { HistoryPanel } from "./HistoryPanel";
+import { KindSummary } from "./KindSummary";
 import { LegalBanner } from "./LegalBanner";
 import { ManagePanel, OwnerRow } from "./ManagePanel";
 import { OriginalFileHost } from "./OriginalFileDialog";
@@ -201,6 +202,7 @@ export function ContractBody(p: {
           <ContractFilesPanel id={id} />
           <SaveNotice err={info.err ?? ap.err} />
           <StatsRow c={c} today={today} />
+          <KindSummary c={c} write={write && sup === null} today={today} />
           {c.doc?.doc_type !== "framework" && (
             <MilestoneList
               c={c}
