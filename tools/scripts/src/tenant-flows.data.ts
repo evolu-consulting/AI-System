@@ -3,6 +3,7 @@
 // Mỗi công ty tối đa 3 quy trình, KHÔNG ngưỡng tiền; mọi bước Duyệt có Duyệt / Trả lại về người tạo / Từ chối (bước Kết thúc riêng):
 //   «Duyệt hợp đồng gửi đi» (contract.submitted) · «Nhận hợp đồng từ đối tác» (contract.received + người phụ trách ở trigger.params)
 //   · «Đề nghị mua hàng / thanh toán» (mở bằng phiếu; luật mở không bao giờ đúng nên không tranh quyền duyệt HĐ).
+// CR-160: HĐ gửi đi và phiếu mở bằng nhánh `if starter_is_top` (người gửi là trưởng phòng gốc ⇒ bỏ duyệt) thay nhánh theo phòng; không còn đích dự phòng cho cấp cao nhất.
 // Người duyệt cụ thể = `after.approver_user_id` (người dùng thật của công ty, không tạo nhóm). «Quá hạn chuyển cho» (escalate.user_id) = người
 // thay thế khi người duyệt CHÍNH LÀ người tạo (STARTER_CANNOT_REVIEW / R#15): việc giao thêm cho người đó thay vì treo.
 import { APPROVAL_FLOW_DUE_DEFAULT_H } from "@ai/contracts/pack-contracts";
@@ -137,10 +138,10 @@ const partner = (
           }
         : s,
   );
-/** «Người tạo thuộc một phòng con?» — người thuộc phòng con đi qua trưởng phòng, trưởng gốc (chỉ ở phòng gốc) đi nhánh không duyệt. */
-const ifDept = (step: number, depts: string[], then: number, otherwise: number): Stage => ({
+/** «Người gửi là cấp cao nhất?» (CR-160, dữ kiện `starter_is_top`: người gửi là trưởng phòng gốc): Đúng ⇒ bỏ bước duyệt (`skip`), Sai ⇒ trưởng phòng (`head`). */
+const ifTop = (step: number, skip: number, head: number): Stage => ({
   key: "re-nhanh",
-  name: "Người tạo là cấp cao nhất?",
+  name: "Người gửi là cấp cao nhất?",
   step,
   instruction: "",
   real_action: false,
@@ -153,15 +154,11 @@ const ifDept = (step: number, depts: string[], then: number, otherwise: number):
   executor: {
     kind: "if",
     when: {
-      op: "or",
-      conds: depts.map((d) => ({
-        from: { kind: "fact", key: "creator_department" },
-        op: "eq",
-        value: d,
-      })),
+      op: "and",
+      conds: [{ from: { kind: "fact", key: "starter_is_top" }, op: "eq", value: true }],
     },
-    then_step: then,
-    else_step: otherwise,
+    then_step: skip,
+    else_step: head,
   },
   output: { filename: "re-nhanh.md", template: "x", required_sections: ["x"], fields: [] },
   after: { kind: "auto", branch: [] },
@@ -211,21 +208,30 @@ const paid = (step: number, uid: string): Stage =>
   ]);
 
 type Gate = { stages: Stage[]; next: number };
+type Kind = "send" | "receive" | "buy";
+/** Số bước của khối duyệt đầu (để tính đích Từ chối / Trả lại trước khi dựng). */
+const gateWidth = (org: Org, kind: Kind): number =>
+  shapeOf(org) === "none" ? (kind === "buy" ? 0 : 1) : kind === "send" ? 3 : kind === "buy" ? 2 : 1;
 /**
  * Bước duyệt đầu (luật chung): trưởng phòng của người tạo (`starter_head`, tự leo cấp). `top` = trưởng gốc, người ký.
- * `none` ⇒ chỉ bước «Chuẩn bị ký» (engine buộc bước Ký/Gửi đứng sau MỘT bước kiểu duyệt: `REAL_ACTION`, bước đầu không được).
- * `branch` + `skip` (chỉ HĐ gửi đi, có dữ kiện phòng) ⇒ `if` tách trưởng gốc sang «Chuẩn bị ký» thay vì duyệt chính mình.
+ * `none` (chỉ có trưởng gốc) ⇒ chỉ bước «Chuẩn bị ký» (engine buộc bước Ký đứng sau MỘT bước kiểu duyệt: `REAL_ACTION`); phiếu không có bước nào.
+ * HĐ gửi đi / phiếu ⇒ `if starter_is_top`: Đúng bỏ duyệt (HĐ: sang «Chuẩn bị ký»; phiếu: sang bước sau duyệt). Nhận HĐ: người tạo là người
+ * phụ trách ở trigger (không phải người gửi ngoài), không rẽ.
  */
-function gate(org: Org, step: number, to: To, top: string, skip: boolean): Gate {
-  const shape = shapeOf(org);
+function gate(org: Org, step: number, to: To, top: string, kind: Kind): Gate {
   const prep = (s: number) =>
     workBy("chuan-bi-ky", "Chuẩn bị ký", s, top, [txt("ghi_chu", "Ghi chú (nếu có)")]);
-  if (shape === "none") return { stages: [prep(step)], next: step + 1 };
-  if (shape === "chain" || !skip)
-    return { stages: [headOfStarter(step, undefined, to)], next: step + 1 };
+  if (shapeOf(org) === "none")
+    return kind === "buy" ? { stages: [], next: step } : { stages: [prep(step)], next: step + 1 };
+  if (kind === "receive") return { stages: [headOfStarter(step, undefined, to)], next: step + 1 };
+  if (kind === "buy")
+    return {
+      stages: [ifTop(step, step + 2, step + 1), headOfStarter(step + 1, undefined, to)],
+      next: step + 2,
+    };
   return {
     stages: [
-      ifDept(step, org.deptKeys, step + 1, step + 2),
+      ifTop(step, step + 2, step + 1),
       headOfStarter(step + 1, undefined, to, { next_step: step + 3 }),
       prep(step + 2),
     ],
@@ -236,9 +242,8 @@ const topOf = (org: Org, uid: Uid): string => uid(org.rootHead as string);
 /** HĐ gửi đi: [duyệt đầu] → Ký (trưởng gốc) → Gửi đối tác xác nhận → Kết thúc. */
 function sendFlow(org: Org, uid: Uid, group: string): Stage[] {
   const top = topOf(org, uid);
-  const width = shapeOf(org) === "branch" ? 3 : 1;
-  const end = width + 2 + 3; // duyệt + Ký + Chờ ký + 3 bước Gửi đối tác
-  const g = gate(org, 0, { reject: end + 1, ret: end + 2 }, top, true);
+  const end = gateWidth(org, "send") + 2 + 3; // duyệt + Ký + Chờ ký + 3 bước Gửi đối tác
+  const g = gate(org, 0, { reject: end + 1, ret: end + 2 }, top, "send");
   return norm([
     ...g.stages,
     sign(g.next, top),
@@ -250,8 +255,8 @@ function sendFlow(org: Org, uid: Uid, group: string): Stage[] {
 /** Nhận HĐ: [duyệt đầu từ người phụ trách] → Ký (trưởng gốc) → Kết thúc (Đồng ý / Từ chối / Trả lại). */
 function receiveFlow(org: Org, uid: Uid): Stage[] {
   const top = topOf(org, uid);
-  const end = 3; // duyệt đầu (1 bước) + Ký + Chờ ký
-  const gg = gate(org, 0, { reject: end + 1, ret: end + 2 }, top, false);
+  const end = gateWidth(org, "receive") + 2; // duyệt đầu + Ký + Chờ ký
+  const gg = gate(org, 0, { reject: end + 1, ret: end + 2 }, top, "receive");
   return norm([
     ...gg.stages,
     sign(gg.next, top),
@@ -259,13 +264,13 @@ function receiveFlow(org: Org, uid: Uid): Stage[] {
     ...finishes(end, ["confirmed", "Đồng ý"]),
   ]);
 }
-/** Phiếu: phiếu → [duyệt đầu] → (nitigroup: Phương kiểm → Tiên?) → ghi đã chi → Kết thúc. `check` = người kiểm (kế toán) nếu có. */
+/** Phiếu: phiếu → [`if starter_is_top` ⇒ bỏ duyệt | trưởng phòng duyệt] → (nitigroup: Phương kiểm) → ghi đã chi → Kết thúc. `check` = người kiểm (kế toán) nếu có. */
 function buyFlow(org: Org, uid: Uid, payer: string, check?: string): Stage[] {
   const top = topOf(org, uid);
   const mid = check ? 1 : 0;
-  const end = 1 + 1 + mid + 1; // phiếu + duyệt đầu + [kiểm] + ghi đã chi
+  const end = 1 + gateWidth(org, "buy") + mid + 1; // phiếu + duyệt đầu + [kiểm] + ghi đã chi
   const to = { reject: end + 1, ret: end + 2 };
-  const g = gate(org, 1, to, top, false);
+  const g = gate(org, 1, to, top, "buy");
   const checkStage = check
     ? [byPerson("ke-toan-kiem", "Kế toán kiểm", g.next, check, undefined, to)]
     : [];

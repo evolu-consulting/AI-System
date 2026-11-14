@@ -41,7 +41,7 @@ export function parseOrg(text: string): Org {
 export const readOrg = (key: string, dir = join(import.meta.dir, "../../../deploy/tenants")): Org =>
   parseOrg(readFileSync(join(dir, `${key}.yaml`), "utf8"));
 
-/** Phòng của người (trực tiếp) + toàn bộ phòng cha = dữ kiện `creator_department` mà engine đưa vào nhánh `if`. */
+/** Phòng của người (trực tiếp) + toàn bộ phòng cha (đúng cách engine leo cấp ở `headOfCreator`). */
 export function departmentsOf(org: Org, email: string): string[] {
   const own = [...org.members].filter(([, m]) => m.includes(email)).map(([k]) => k);
   return own.length > 0 && !own.includes(org.rootKey) ? [...own, org.rootKey] : own;
@@ -60,16 +60,10 @@ export function headOfCreator(org: Org, email: string): string | null {
 }
 
 /**
- * Cách dựng bước duyệt đầu cho người tạo:
+ * Cách dựng bước duyệt đầu (CR-160, MỘT luật cho mọi người tạo, không rẽ theo phòng):
  *  `none`   — không còn ai ngoài trưởng gốc (preschool) ⇒ không bước duyệt;
- *  `branch` — mọi người khác đều thuộc ≥ 1 phòng KHÔNG phải gốc ⇒ nhánh `if creator_department ∈ phòng con` tách «cấp cao nhất» khỏi người còn lại;
- *  `chain`  — có người chỉ thuộc phòng gốc mà không phải trưởng gốc (nitigroup: Ngân) nên dữ kiện phòng không tách được ⇒ chỉ `starter_head`.
+ *  `tiered` — còn người khác ⇒ nhánh `if starter_is_top` (Đúng ⇒ bỏ duyệt) rồi trưởng phòng của người tạo (`starter_head`, tự leo cấp).
  */
-export type Shape = "none" | "branch" | "chain";
-export function shapeOf(org: Org): Shape {
-  const others = org.users.filter((e) => e !== org.rootHead);
-  if (others.length === 0) return "none";
-  return others.every((e) => departmentsOf(org, e).some((d) => d !== org.rootKey))
-    ? "branch"
-    : "chain";
-}
+export type Shape = "none" | "tiered";
+export const shapeOf = (org: Org): Shape =>
+  org.users.some((e) => e !== org.rootHead) ? "tiered" : "none";

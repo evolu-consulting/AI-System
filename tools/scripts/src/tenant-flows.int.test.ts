@@ -22,7 +22,7 @@ import {
   type TenantKey,
   WHO,
 } from "./tenant-flows.data";
-import { departmentsOf, headOfCreator, type Org, readOrg } from "./tenant-flows.org";
+import { headOfCreator, type Org, readOrg } from "./tenant-flows.org";
 
 const T: Record<TenantKey, string> = {
   evolu: tenantId(1591),
@@ -113,12 +113,12 @@ afterAll(async () => {
 });
 
 const FALLBACK = "(đích dự phòng)";
-/** Đi theo def ĐÃ LƯU qua API: nhánh `if` theo phòng người tạo (dữ kiện như engine), `starter_head` theo luật engine; trả danh sách người duyệt tới bước Ký / Ghi đã chi. */
+/** Đi theo def ĐÃ LƯU qua API: nhánh `if starter_is_top` (Đúng ⇔ người tạo là trưởng gốc, như engine), `starter_head` theo luật engine; trả danh sách người duyệt tới bước Ký / Ghi đã chi. */
 async function chain(k: TenantKey, flow: string, org: Org, creator: string): Promise<string[]> {
   const def = await defOf(k, flow);
   const byEmail = new Map([...(ids.get(k) as Map<string, string>)].map(([e, id]) => [id, e]));
   const stages = def.stages as St[];
-  const depts = departmentsOf(org, creator);
+  const isTop = creator === org.rootHead;
   const out: string[] = [];
   let st = stages.find((s) => s.step === 0);
   for (let n = 0; st && n < 40 && !isStop(st); n++) {
@@ -126,19 +126,41 @@ async function chain(k: TenantKey, flow: string, org: Org, creator: string): Pro
       const id = st.after.approver_user_id;
       out.push((id ? byEmail.get(id) : headOfCreator(org, creator)) ?? FALLBACK);
     }
-    const to = nextStep(st, depts);
+    const to = nextStep(st, isTop);
     st = stages.find((s) => s.step === to);
   }
   return out;
 }
 const isStop = (st: St) =>
   st.executor.tool_key === "contracts-esign-send" || st.key === "ghi-da-chi";
-/** Bước kế: `if` theo phòng người tạo (dữ kiện như engine), còn lại `next_step` hoặc bước liền sau. */
-function nextStep(st: St, depts: string[]): number {
+/** Bước kế: `if starter_is_top` theo người tạo (chỉ nhận vế đó), còn lại `next_step` hoặc bước liền sau. */
+function nextStep(st: St, isTop: boolean): number {
   const ex = st.executor;
   if (ex.kind !== "if") return st.next_step ?? st.step + 1;
-  const hit = (ex.when.conds as Json[]).some((c) => depts.includes(c.value));
-  return hit ? ex.then_step : ex.else_step;
+  const cond = (ex.when.conds as Json[])[0];
+  expect(ex.when.conds).toHaveLength(1);
+  expect(cond?.from).toEqual({ kind: "fact", key: "starter_is_top" });
+  return isTop ? ex.then_step : ex.else_step;
+}
+
+/** Mỗi người tạo của công ty: HĐ gửi đi + phiếu đúng chuỗi (cấp cao nhất bỏ duyệt, người khác qua trưởng phòng; nitigroup phiếu thêm Phương kiểm). */
+async function expectChains(k: TenantKey): Promise<void> {
+  const org = readOrg(k);
+  const hasBuy = (await list(k)).some((r) => r.name === FLOW_NAMES.buy);
+  const check = k === "nitigroup" ? [WHO.nitigroup.phuong] : [];
+  for (const u of org.users) {
+    const head = u === org.rootHead ? [] : [headOfCreator(org, u) as string];
+    expect(await chain(k, FLOW_NAMES.send, org, u)).toEqual(head);
+    if (hasBuy) expect(await chain(k, FLOW_NAMES.buy, org, u)).toEqual([...head, ...check]);
+  }
+}
+/** Không còn nhánh theo phòng (`creator_department`) hay đích dự phòng ở bước nào. */
+async function expectNoOldBranch(k: TenantKey): Promise<void> {
+  for (const r of await list(k)) {
+    const text = JSON.stringify((await defOf(k, r.name as string)).stages);
+    expect(text).not.toContain("creator_department");
+    expect(text).not.toContain(FALLBACK);
+  }
 }
 
 describe("CR-159 · quy trình 3 công ty", () => {
@@ -191,7 +213,7 @@ describe("CR-159 · quy trình 3 công ty", () => {
     ]);
   });
 
-  it("evolu: chuỗi người duyệt theo người tạo — Julian/Rowan/Vio/Edgar → Thomas; Thomas tạo HĐ → không duyệt", async () => {
+  it("evolu: chuỗi người duyệt theo người tạo, Thomas tạo thì không duyệt", async () => {
     const org = readOrg("evolu");
     const th = WHO.evolu.thomas;
     for (const c of ["julian.bui", "rowan.hoang", "vio.ngo", "edgar.nguyen"].map(
@@ -201,21 +223,21 @@ describe("CR-159 · quy trình 3 công ty", () => {
       expect(await chain("evolu", FLOW_NAMES.buy, org, c)).toEqual([th]);
     }
     expect(await chain("evolu", FLOW_NAMES.send, org, th)).toEqual([]);
-    // phiếu không có dữ kiện phòng ⇒ không rẽ được: Thomas tạo phiếu ⇒ engine giao đích dự phòng (không treo)
-    expect(await chain("evolu", FLOW_NAMES.buy, org, th)).toEqual([FALLBACK]);
+    // CR-160 · phiếu cũng rẽ theo `starter_is_top`: Thomas tạo phiếu ⇒ bỏ duyệt (không còn đích dự phòng)
+    expect(await chain("evolu", FLOW_NAMES.buy, org, th)).toEqual([]);
     expect(await chain("evolu", FLOW_NAMES.receive, org, WHO.evolu.julian)).toEqual([th]);
   });
 
-  it("nitigroup: Vy (KD không trưởng), Ngân, hr, admin, Phương → Tiên; phiếu thêm Phương kiểm; Tiên/Phương tạo", async () => {
+  it("nitigroup: mọi người trừ Tiên đi qua Tiên, phiếu thêm Phương kiểm, Tiên tạo thì bỏ duyệt", async () => {
     const org = readOrg("nitigroup");
     const { tien, phuong, vy, ngan } = WHO.nitigroup;
     for (const c of [vy, ngan, "hr@nitigroupvn.com", "admin@nitigroupvn.com", phuong]) {
       expect(await chain("nitigroup", FLOW_NAMES.send, org, c)).toEqual([tien]);
       expect(await chain("nitigroup", FLOW_NAMES.buy, org, c)).toEqual([tien, phuong]);
     }
-    // Tiên (cấp cao nhất) tạo: dữ kiện phòng không tách được Tiên khỏi Ngân ⇒ không bỏ được bước, engine giao đích dự phòng
-    expect(await chain("nitigroup", FLOW_NAMES.send, org, tien)).toEqual([FALLBACK]);
-    expect(await chain("nitigroup", FLOW_NAMES.buy, org, tien)).toEqual([FALLBACK, phuong]);
+    // CR-160 · Tiên (cấp cao nhất) tạo: bỏ duyệt (Ngân, cùng phòng gốc, vẫn → Tiên ở vòng trên); phiếu vẫn Phương kiểm
+    expect(await chain("nitigroup", FLOW_NAMES.send, org, tien)).toEqual([]);
+    expect(await chain("nitigroup", FLOW_NAMES.buy, org, tien)).toEqual([phuong]);
     expect(await chain("nitigroup", FLOW_NAMES.receive, org, vy)).toEqual([tien]);
     const send = await defOf("nitigroup", FLOW_NAMES.send);
     const ky = (send.stages as St[]).find((s) => s.executor.tool_key === "contracts-esign-send");
@@ -223,7 +245,7 @@ describe("CR-159 · quy trình 3 công ty", () => {
     expect(JSON.stringify(send.stages)).not.toContain('escalate":{"after_h');
   });
 
-  it("preschool: không bước Duyệt nào, Dung ký, có Gửi đối tác; Nhận HĐ Dung ký; không phiếu", async () => {
+  it("preschool: không bước Duyệt nào, Dung ký, có Gửi đối tác, Nhận HĐ Dung ký, không phiếu", async () => {
     const org = readOrg("preschool");
     const dung = WHO.preschool.dung;
     expect(await chain("preschool", FLOW_NAMES.send, org, dung)).toEqual([]);
@@ -233,6 +255,16 @@ describe("CR-159 · quy trình 3 công ty", () => {
     expect(ky?.executor.args.company_signers.value).toBe(`user:${uidOf("preschool")(dung)}`);
     expect(send.stages.map((s: St) => s.name)).toContain("Gửi đối tác xác nhận");
     expect((await list("preschool")).map((r) => r.name)).not.toContain(FLOW_NAMES.buy);
+  });
+
+  it("CR-160 · mỗi người tạo của mỗi công ty ⇒ đúng chuỗi, cấp cao nhất bỏ duyệt, không còn nhánh theo phòng hay đích dự phòng", async () => {
+    for (const k of TENANT_KEYS) {
+      await expectChains(k);
+      await expectNoOldBranch(k);
+    }
+    // phiếu có nhánh `starter_is_top` (Đúng ⇒ bỏ duyệt) ở evolu + nitigroup; không phiếu ở preschool
+    for (const k of ["evolu", "nitigroup"] as const)
+      expect(JSON.stringify((await defOf(k, FLOW_NAMES.buy)).stages)).toContain("starter_is_top");
   });
 
   it("không có ngưỡng tiền ở bước nào", async () => {

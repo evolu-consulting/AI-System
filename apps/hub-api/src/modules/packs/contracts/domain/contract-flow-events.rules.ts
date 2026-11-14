@@ -22,6 +22,7 @@ export const FACT_KEYS: Record<ContractEvent, readonly string[]> = {
     "submitter_group_ids",
     "partner_score",
     "product_ids",
+    "starter_is_top", // CR-160 · dữ kiện lõi: engine đọc (`core-facts.rules`), reader gói không trả
   ],
   [EV_APPROVED]: ["total_value", "deal", "creator_department", "new_partner"],
   [EV_UPLOADED]: ["file_type", "uploader_department"],

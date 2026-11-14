@@ -6,6 +6,7 @@
 // đọc `fields`; luật khớp (đánh giá trong bộ nhớ) ⇒ +3 câu theo tập (nhảy stage, huỷ hẹn, audit + thread) — không phụ
 // thuộc số bước bị nhảy (plan-d2 §9, PD2-P04).
 import { evaluateBranch, skippedStages } from "../../domain/branch/branch.rules";
+import { mergeFacts, splitFactKeys } from "../../domain/if/core-facts.rules";
 import { evaluateWhen, factKeysOf, ifTarget, missingKeysOf } from "../../domain/if/if.rules";
 import { driftedIf, mergeTarget, outcomeOfStep, stagesAfter } from "../../domain/runs/finish.rules";
 import {
@@ -53,11 +54,17 @@ export async function ifContext(r: StepRepos, runId: string, load: StepJoinLoad,
     const f = facts.fieldsByIdx[String(i)];
     if (f) byKey[k] = f;
   });
+  // CR-160 · khoá lõi (`starter_is_top`) do engine đọc từ chính lượt — có cả lượt không có bản ghi app (bắt đầu bằng phiếu); khoá còn lại giao app.
+  const split = splitFactKeys(keys);
   const app =
-    keys.length > 0 && load.pack && r.steps.readFacts
-      ? await r.steps.readFacts(load.pack, keys)
+    split.app.length > 0 && load.pack && r.steps.readFacts
+      ? await r.steps.readFacts(load.pack, split.app)
       : null;
-  return { fieldsByStageKey: byKey, inputs: facts.inputs, facts: app };
+  const core =
+    split.core.length > 0 && r.steps.readCoreFacts
+      ? await r.steps.readCoreFacts(runId, split.core)
+      : null;
+  return { fieldsByStageKey: byKey, inputs: facts.inputs, facts: mergeFacts(app, core) };
 }
 
 /** CR-103 · node If: Đúng ⇒ luật 1 (`then_step`); Sai + có `else_step` ⇒ luật 2; Sai không `else_step` ⇒ null (bước kế). */
