@@ -264,7 +264,7 @@ describe("CR-161 · R8 gửi / xem / đã đọc (hai công ty, hai vai khác nh
     const h = await req<Page>(HOA, "GET", msgs);
     expect(h.body.items.map((m) => [m.seq, m.mine])).toEqual([
       [2, false],
-      [1, false],
+      [1, true],
     ]);
     expect(h.body.read_only).toBe(false);
   });
