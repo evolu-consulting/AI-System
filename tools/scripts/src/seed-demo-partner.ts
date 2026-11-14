@@ -30,6 +30,7 @@ import {
   RECEIVE,
   receiveFlow,
   SIGN_GROUP_DEMO,
+  seedInputs,
   withEsign,
 } from "./seed-demo-partner.data";
 
@@ -166,7 +167,7 @@ async function ensureFlow(
     token_budget: cur.token_budget ?? null,
     enabled: true,
     sources: cur.sources ?? [],
-    inputs: cur.inputs ?? [],
+    inputs: seedInputs(cur.inputs),
     trigger: def.trigger,
     app: "contracts",
     version: cur.version,

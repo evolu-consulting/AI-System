@@ -49,7 +49,11 @@ export async function call(api: Api, method: string, path: string, body?: Json):
   const json = (text ? JSON.parse(text) : {}) as Json;
   if (!res.ok) {
     const err = (json.error ?? {}) as Json;
-    throw new Error(`${method} ${path} → ${res.status} ${String(err.code ?? text.slice(0, 120))}`);
+    // kèm chi tiết theo trường (paths/rules/issues) để biết trường nào sai; body lỗi không chứa token/mật khẩu
+    const det = err.details === undefined ? "" : ` ${JSON.stringify(err.details).slice(0, 400)}`;
+    throw new Error(
+      `${method} ${path} → ${res.status} ${String(err.code ?? text.slice(0, 120))}${det}`,
+    );
   }
   return json;
 }

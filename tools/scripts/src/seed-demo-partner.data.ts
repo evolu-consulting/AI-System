@@ -4,6 +4,7 @@ import {
   approve,
   esignSend,
   esignWait,
+  FLOW_TEMPLATE_INPUTS,
   finish,
   norm,
   reviewNew,
@@ -204,6 +205,8 @@ export function partnerSend(
   return [
     partnerStage("chon-doi-tac", "Chọn đối tác & người nhận", step, {
       executor: { kind: "form", fields: PICK_FIELDS },
+      // bước người làm của node ⇒ có người duyệt (nhóm chọn đối tác): luật REAL_ACTION đòi bước ngay trước «Gửi» là bước duyệt
+      after: reviewNew(PARTNER_PICK_GROUP),
     }),
     partnerStage("gui-doi-tac", "Gửi đối tác xác nhận", step + 1, {
       executor: {
@@ -361,3 +364,10 @@ export function flowOrder(
 
 /** Người dùng UAT tạo mới: mật khẩu từ biến môi trường `UAT_EVOLU_PW` (file trên máy chủ, không in). */
 export const evoluEmail = (username: string): string => `${username}@example.invalid`;
+
+/** Đầu vào của quy trình: bước Ký số lấy `contract_id` từ đầu vào ⇒ def PHẢI khai nó (sơ đồ trống không có ⇒ 422 PROCESS_DEF_INVALID, TOOL_INVALID ở `args.contract_id`). Giữ đầu vào đang có, thêm cái thiếu. THUẦN. */
+export function seedInputs(cur: unknown): unknown[] {
+  const have = Array.isArray(cur) ? (cur as { key?: string }[]) : [];
+  const miss = FLOW_TEMPLATE_INPUTS.filter((i) => !have.some((h) => h.key === i.key));
+  return [...have, ...miss];
+}
