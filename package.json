@@ -113,6 +113,7 @@
     "check:size": "bun tools/scripts/src/check-size.ts",
     "check:case": "bun tools/scripts/src/check-case.ts",
     "check:fn": "bun tools/scripts/src/check-fn.ts",
+    "check:button-gap": "bun tools/scripts/src/check-button-gap.ts",
     "dlc:check": "bun tools/scripts/src/dlc-sync-check.ts",
     "db:test:create": "bun --env-file=.env.local packages/db/src/test-db-cli.ts create",
     "db:test:drop": "bun --env-file=.env.local packages/db/src/test-db-cli.ts drop",
