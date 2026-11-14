@@ -1,6 +1,7 @@
 # qc-4b-e2e · sửa e2e đỏ sau đợt 4b
 
 ## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: chỉ sửa mock /partners/page, baseline ảnh theo CR-153, test hover ảnh bìa CR-156).
 
 ## Tasks
