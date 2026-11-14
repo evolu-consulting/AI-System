@@ -67,6 +67,7 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 - (lát 2) Thêm index `partner_links_to_ix (to_tenant)` (phía «in» của cc_links/cc_search; PK chỉ phủ from_tenant) ngoài index một phần của spec.
 - (lát 2) Kịch bản dòng «ngắt ⇒ gửi tin 409» và «Vy gọi API ⇒ 403» mới phủ phần DB; lát 3/5/6 thêm đường dẫn test route/chat vào cùng dòng khi viết.
 - (lát 2) Gọi `cc_notify` từ route: truyền lô bằng `${JSON.stringify(rows)}::text::jsonb` (postgres.js mã hoá chuỗi `::jsonb` thành chuỗi JSON ⇒ lỗi «lô phải là mảng»).
+- (lát 4) `community.cc_posts(p_owner, p_cur_t, p_cur_id, p_limit)` → cột `file_count`; GRANT `community_rw` + `contracts_rw` (khối DO, chỉ cấp khi role đã có — role tạo sau thì pack contracts phải cấp lại); `app.user_kind=external` ⇒ 42501; bên đăng phải có add-on `contracts-community` chưa thu hồi (không ⇒ rỗng). Lệch spec: thêm tham số/ý ngoài §4 không có; không thêm index (posts_feed_idx đủ, lọc công khai trên (tenant_id, created_at)).
 - (PLAN) Kết nối suy ra từ `hub.partner_links` hai chiều, không bảng mới (G1). Ngắt = xoá 2 dòng chưa chặn.
 - (PLAN) Số migration: hub 0145–0147 (hiện có tới 0144), community 0020 (hiện có tới 0019); community 0021 trả lại.
 

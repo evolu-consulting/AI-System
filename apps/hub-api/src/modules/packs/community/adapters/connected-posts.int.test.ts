@@ -26,7 +26,7 @@ type Row = {
   edited: boolean;
   created_at: Date;
   expires_at: Date;
-  media_count: number;
+  file_count: number;
 };
 const view = (
   t: string,
@@ -36,7 +36,7 @@ const view = (
   id: string | null = null,
 ) =>
   inPackAs(
-    "community",
+    "contracts", // route kết nối nằm ở gói contracts
     t,
     TIEN,
     (tx) =>
@@ -99,6 +99,9 @@ beforeAll(async () => {
   await mk(F, "f_pub");
   await mk(D, "d_pub");
   await mk(C, "c_pub");
+  await o`insert into admin.feature_entitlements (feature_id, tenant_id)
+    select f.id, t from admin.features f, unnest(${o.array([A, B, C, D, E, F, G])}::uuid[]) t where f.key = 'contracts-community'
+    on conflict (feature_id, tenant_id) do update set revoked_at = null`;
   await o`insert into community.media (tenant_id, post_id, kind, position, label, url)
     values (${B}, ${ids.new as string}, 'image', 0, 'a', 'https://x/1'), (${B}, ${ids.new as string}, 'image', 1, 'b', 'https://x/2')`;
 }, 60_000);
@@ -110,7 +113,7 @@ describe("CR-161 · R10 xem bài Bảng tin công ty đã kết nối", () => {
   it("đã kết nối ⇒ thấy đúng bài công khai (mới → cũ), kèm số tệp; không lộ bài không công khai/đối tác/ẩn/hết hạn/lưu trữ", async () => {
     const rows = await view(A, B);
     expect(titles(rows)).toEqual(["pub_new", "pub_old"]);
-    expect(rows.map((r) => r.media_count)).toEqual([2, 0]);
+    expect(rows.map((r) => r.file_count)).toEqual([2, 0]);
   });
 
   it("che trường nội bộ: chỉ cột đã che, không có *_raw/hits/tác giả/audience/status; nội dung là bản che", async () => {
@@ -124,7 +127,7 @@ describe("CR-161 · R10 xem bài Bảng tin công ty đã kết nối", () => {
         "expires_at",
         "fields_masked",
         "id",
-        "media_count",
+        "file_count",
         "title_masked",
         "type",
       ].sort(),
@@ -162,6 +165,36 @@ describe("CR-161 · R10 xem bài Bảng tin công ty đã kết nối", () => {
     expect((await view(A, G)).length).toBe(0);
     expect(await pgCode(() => view(A, A))).toBe("22023");
     expect(await pgCode(() => view("", B))).toBe("42501");
+  });
+
+  it("người dùng ngoài (app.user_kind=external) ⇒ 42501 dù đã kết nối", async () => {
+    const code = await pgCode(() =>
+      inPackAs("contracts", A, TIEN, async (tx) => {
+        await tx`select set_config('app.user_kind', 'external', true)`;
+        return tx`select * from community.cc_posts(${B}::uuid, null, null, 20)`;
+      }),
+    );
+    expect(code).toBe("42501");
+  });
+
+  it("B tắt Bảng tin (add-on contracts-community thu hồi) ⇒ rỗng, không lỗi; bật lại ⇒ thấy", async () => {
+    const set = (v: string) =>
+      o`update admin.feature_entitlements e set revoked_at = ${v === "off" ? new Date() : null}
+        from admin.features f where f.id = e.feature_id and f.key = 'contracts-community' and e.tenant_id = ${B}`;
+    await set("off");
+    expect((await view(A, B)).length).toBe(0);
+    await set("on");
+    expect(titles(await view(A, B))).toHaveLength(2);
+  });
+
+  it("community_rw (đường cũ) cũng gọi được hàm", async () => {
+    const r = await inPackAs(
+      "community",
+      A,
+      TIEN,
+      (tx) => tx`select title_masked from community.cc_posts(${B}::uuid, null, null, 20)`,
+    );
+    expect(r.length).toBe(2);
   });
 
   it("RLS bảng không đổi: truy vấn trực tiếp community.posts/media của A không thấy dòng của B", async () => {
