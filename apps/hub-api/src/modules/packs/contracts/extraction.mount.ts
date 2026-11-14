@@ -15,6 +15,7 @@ import { aiMilestonesDoneHook } from "./adapters/ai-milestones.repo";
 import { aiTransport, EXTRACT_MODEL } from "./adapters/ai-transport";
 import { approvalRoutes } from "./adapters/approval.routes";
 import { registerContractDoneHook } from "./adapters/contract-state.repo";
+import { kindScheduleDoneHook } from "./adapters/kind-schedule.hook";
 import { createExtractStream } from "./adapters/extract-stream.redis";
 import { extractionRoutes } from "./adapters/extraction.routes";
 import { createExtractionAgent } from "./adapters/extraction-agent";
@@ -212,6 +213,7 @@ export function contractsAiModule(
   const engOpts = { hd2: d.transport !== undefined, legacyMachine: d.approvalEngine === false };
   const gate = mountContractFlow(db, flow.timeZoneOf ? safeTimeZone(flow.timeZoneOf) : undefined); // CR-122 A1: cổng cờ + đăng ký FactsReader/OutcomeHandler
   registerContractDoneHook(aiMilestonesDoneHook, "mốc-AI"); // CR-127 K7 · HĐ vào DONE ⇒ lập mốc từ AI (BR-43)
+  registerContractDoneHook(kindScheduleDoneHook, "mốc-loại-HĐ"); // CR-152 · Nhượng quyền / Hợp tác vào DONE ⇒ bộ mốc theo kỳ
   bindUnsourcedContractEvents(); // CR-127 B0: sự kiện manifest chưa có nguồn phát (tạm tới X2/X3/K6/E10)
   mountContractAccess(db); // CR-127 E3b: cổng kit `ContractAccess` (uỷ quyền / giao việc)
   const engFlow = { ...flow, groups: withCreatorDepartments(flow.groups, db), flowGate: gate }; // CR-121 D-1

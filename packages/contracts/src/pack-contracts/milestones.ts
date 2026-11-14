@@ -6,8 +6,20 @@ import { nfcText } from "./fields";
 import { IsoDay, LedgerMoney } from "./ledger";
 import { RepDeltaSchema } from "./obligation-impact";
 
-export const CONTRACT_DEALS = ["buy", "sell", "referral"] as const;
+/** CR-152: thêm Nhượng quyền + Thỏa thuận hợp tác — CHỈ HĐ kinh tế (`doc_type = contract`), giao dịch dùng `BASIC_CONTRACT_DEALS`. */
+export const BASIC_CONTRACT_DEALS = ["buy", "sell", "referral"] as const;
+export const KIND_DEALS = ["franchise", "cooperation"] as const;
+export const CONTRACT_DEALS = [...BASIC_CONTRACT_DEALS, ...KIND_DEALS] as const;
 export const ContractDealSchema = z.enum(CONTRACT_DEALS);
+export const BasicContractDealSchema = z.enum(BASIC_CONTRACT_DEALS);
+export type BasicContractDeal = z.infer<typeof BasicContractDealSchema>;
+export const CONTRACT_DEAL_LABELS = {
+  buy: "Mua hàng",
+  sell: "Bán hàng",
+  referral: "Giới thiệu",
+  franchise: "Nhượng quyền",
+  cooperation: "Thỏa thuận hợp tác",
+} as const;
 export type ContractDeal = z.infer<typeof ContractDealSchema>;
 export const MILESTONE_KINDS = [
   "delivery",

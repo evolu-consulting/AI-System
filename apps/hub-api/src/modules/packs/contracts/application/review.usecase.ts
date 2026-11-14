@@ -50,6 +50,7 @@ export type ReviewResult =
         | "not_reviewable"
         | "commission_kind"
         | "milestone_invalid"
+        | "kind_terms_incomplete"
         | "item_unknown"
         | "component_invalid";
     };

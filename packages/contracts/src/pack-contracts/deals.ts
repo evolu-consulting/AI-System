@@ -7,7 +7,7 @@ import { EvidenceInputSchema } from "../chat/evidence";
 import { VersionSchema } from "../common";
 import { ManualContractRequestSchema } from "./extract";
 import { CONTRACT_TEXT_MAX, nfcText } from "./fields";
-import { ContractDealSchema } from "./milestones";
+import { BasicContractDealSchema } from "./milestones";
 
 export const DEAL_SOURCES = ["invoice", "verbal", "message", "quote", "other"] as const;
 export const DealSourceSchema = z.enum(DEAL_SOURCES);
@@ -56,7 +56,8 @@ export type DealLink = z.infer<typeof DealLinkSchema>;
 export const DealCreateRequestSchema = z
   .strictObject({
     ...manual,
-    deal: ContractDealSchema,
+    /** CR-152: giao dịch chỉ 3 loại cơ bản (Nhượng quyền/Hợp tác là HĐ kinh tế). */
+    deal: BasicContractDealSchema,
     source: DealSourceSchema,
     settled_now: z.boolean().optional(),
     link: DealLinkSchema.optional(),

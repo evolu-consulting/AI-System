@@ -31,6 +31,7 @@ export * from "./list";
 export * from "./lock";
 export * from "./manage";
 export * from "./messages";
+export * from "./kind-terms";
 export * from "./milestones";
 export * from "./mywork";
 export * from "./obligation-impact";

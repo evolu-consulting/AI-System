@@ -28,7 +28,7 @@ export type PartnerContractRow = {
   id: string;
   title: string;
   number: string | null;
-  deal: "buy" | "sell" | "referral" | null;
+  deal: "buy" | "sell" | "referral" | "franchise" | "cooperation" | null;
   value: number | null;
   start_date: string | null;
   end_date: string | null;

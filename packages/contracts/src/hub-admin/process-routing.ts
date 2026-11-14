@@ -28,7 +28,13 @@ export type HubAdminRoutingErrorCode = keyof typeof HUB_ADMIN_ROUTING_ERRORS;
 
 /** cr118-route-kind · loại HĐ (= `CONTRACT_DEALS` của pack-contracts: Mua / Bán / Giới thiệu; giữ bản sao để hub-admin không
  *  kéo zod của gói hợp đồng). */
-export const ROUTING_CONTRACT_KINDS = ["buy", "sell", "referral"] as const;
+export const ROUTING_CONTRACT_KINDS = [
+  "buy",
+  "sell",
+  "referral",
+  "franchise",
+  "cooperation",
+] as const;
 export const RoutingContractKindSchema = z.enum(ROUTING_CONTRACT_KINDS);
 export type RoutingContractKind = z.infer<typeof RoutingContractKindSchema>;
 

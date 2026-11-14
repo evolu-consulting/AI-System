@@ -12,6 +12,7 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { OverviewRaw, OverviewWindow } from "../application/overview.ports";
 import { CONFIRMED_STATUSES, one } from "./ledger-sql";
+import { countsMoneySql } from "./kind-filter.sql";
 
 const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
 
@@ -42,6 +43,7 @@ function moneyCtes(t: string, w: OverviewWindow) {
         from contracts.contracts c
         where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.status in (${CONFIRMED})
           and c.doc_type <> 'framework' -- CR-101: HĐ NT không tính doanh thu/đếm HĐ
+          and ${countsMoneySql("c")} -- CR-152: Hợp tác không chia tiền cũng không
           and c.deal is not null and c.id in (select contract_id from w)),
       -- 5.4a: mốc chính của HĐ trong k — MỘT lượt cửa sổ (Σ số tiền đã ghi, số mốc trống, hạng mốc trống); tách gom/sắp thành CTE
       -- riêng (đo: ước lượng 1 hàng ⇒ nested loop, 4 s) nên giữ một câu con.

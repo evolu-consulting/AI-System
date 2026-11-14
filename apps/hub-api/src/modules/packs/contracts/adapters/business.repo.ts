@@ -10,6 +10,7 @@ import type { BizInput } from "../domain/business-score.rules";
 import { likePattern } from "../domain/fold.rules";
 import { contractNameSql } from "./contract-name.sql";
 import { CONFIRMED_STATUSES, one } from "./ledger-sql";
+import { countsMoneySql } from "./kind-filter.sql";
 
 export type { BizExtras, BizFilter, BizRow, StoredBiz };
 
@@ -164,7 +165,7 @@ function referralCtes(t: string) {
           join contracts.contracts r on r.tenant_id = c.tenant_id and r.id = c.root_id
         where i.tenant_id = ${t}::uuid and i.product_id in (select id from p where grp = 'referral')
           and c.deal = 'referral' and c.kind = 'contract' and c.status in (${CONFIRMED}) and c.superseded_at is null
-          and c.doc_type <> 'framework'),
+          and c.doc_type <> 'framework' and ${countsMoneySql("c")}),
       rf as (select rc.product_id, count(*) filter (where rc.dt > d.t - 365)::float8 as sold12,
           count(*) filter (where rc.dt > d.t - 91)::float8 as l3,
           count(*) filter (where rc.dt <= d.t - 91 and rc.dt > d.t - 182)::float8 as p3,

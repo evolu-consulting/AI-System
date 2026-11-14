@@ -68,22 +68,27 @@ export const FLOW_DEAL_LABELS = {
   buy: ["mua", "mua hang", "buy", "purchase"],
   sell: ["ban", "ban hang", "sell", "sale"],
   referral: ["gioi thieu", "referral"],
+  franchise: ["nhuong quyen", "franchise"],
+  cooperation: ["thoa thuan hop tac", "hop tac", "cooperation"],
 } as const;
+/** Ba loại cơ bản bắt buộc có nhãn khớp; Nhượng quyền / Hợp tác (CR-152) có thì ánh xạ, không có thì bỏ qua (workflow cũ vẫn dùng được). */
+export type FlowDealOptionMap = Record<"buy" | "sell" | "referral", string> &
+  Partial<Record<"franchise" | "cooperation", string>>;
 const normLabel = (s: string) =>
   s.normalize("NFD").replace(/\p{M}/gu, "").replace(/đ/gi, "d").trim().toLowerCase();
 /** Loại HĐ ⇒ lựa chọn tương ứng của tham số `select`; thiếu một loại ⇒ null (không ánh xạ được). Mirror ở domain hub-api. */
 export function flowDealOptionMap(
   options: readonly string[] | undefined,
-): Record<"buy" | "sell" | "referral", string> | null {
-  const out: Partial<Record<"buy" | "sell" | "referral", string>> = {};
-  for (const d of ["buy", "sell", "referral"] as const) {
+): FlowDealOptionMap | null {
+  const out: Partial<Record<keyof typeof FLOW_DEAL_LABELS, string>> = {};
+  for (const d of ["buy", "sell", "referral", "franchise", "cooperation"] as const) {
     const hit = (options ?? []).find((o) =>
       (FLOW_DEAL_LABELS[d] as readonly string[]).includes(normLabel(o)),
     );
-    if (hit === undefined) return null;
-    out[d] = hit;
+    if (hit !== undefined) out[d] = hit;
+    else if (d === "buy" || d === "sell" || d === "referral") return null;
   }
-  return out as Record<"buy" | "sell" | "referral", string>;
+  return out as FlowDealOptionMap;
 }
 
 const StepKeySchema = z.string().regex(/^[a-z0-9-]{1,24}$/);

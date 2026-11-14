@@ -168,11 +168,11 @@ export function submissionsRepo(tx: Tx, tid: string) {
         src as (select * from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid and c.status = 'reject'),
         n as (insert into contracts.contracts (id, tenant_id, kind, parent_id, title, direction, status, owner_user_id, created_by,
             fields, file_id, source_text, clauses, warnings, category_ids, visibility_owner_id, deal, commission_pct,
-            commission_fixed, product_group, doc_type, frame_root_id, source, extract_state, renews_id)
+            commission_fixed, product_group, doc_type, frame_root_id, source, extract_state, renews_id, kind_terms)
           select ${nid}::uuid, s.tenant_id, s.kind, s.parent_id, s.title, s.direction, 'draft', s.owner_user_id, ${actor}::uuid,
             s.fields, s.file_id, s.source_text, s.clauses, s.warnings, s.category_ids, s.visibility_owner_id, s.deal,
             s.commission_pct, s.commission_fixed, s.product_group, s.doc_type, s.frame_root_id, s.source, 'ready',
-            s.renews_id
+            s.renews_id, s.kind_terms
           from src s returning id),
         it as (insert into contracts.contract_items (tenant_id, contract_id, ord, name, unit, qty, unit_price, verified, edited,
             product_id, component_ids)

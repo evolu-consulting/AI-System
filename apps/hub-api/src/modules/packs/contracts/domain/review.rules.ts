@@ -10,6 +10,7 @@ import {
   type FieldValue,
 } from "./fields.rules";
 import { asDate } from "./fold.rules";
+import { directionOfKind, isKindDeal, kindTermsMissing, type Terms } from "./kind-terms.rules";
 import {
   checkMilestone,
   type Deal,
@@ -43,6 +44,8 @@ export type ReviewCur = {
   approvalOn: boolean;
   commissionPct: number | null;
   commissionFixed: number | null;
+  /** CR-152: trường riêng Nhượng quyền / Hợp tác (`contracts.kind_terms`; người dùng ghi qua `PUT /kind-terms`). */
+  kindTerms?: Terms | null | undefined;
 };
 
 /** Hàng mốc cần ghi (cột `contracts.obligations` ngoài khoá/ngày hệ thống). */
@@ -67,7 +70,11 @@ export type ReviewPlan = {
   milestones: PlannedMilestone[] | null;
   activate: boolean;
 };
-export type ReviewError = "not_reviewable" | "commission_kind" | "milestone_invalid";
+export type ReviewError =
+  | "not_reviewable"
+  | "commission_kind"
+  | "milestone_invalid"
+  | "kind_terms_incomplete";
 
 /** Loại HĐ chưa chọn (HĐ tải lên chưa có AI) ⇒ Bán, như `dealOf` của màn hình. */
 export const DEFAULT_DEAL: Deal = "sell";
@@ -134,6 +141,10 @@ export function planReview(
   if (!referral && (input.commission_pct != null || input.commission_fixed != null))
     return "commission_kind";
   const { fields, changes } = applyEdits(cur.fields, input.fields ?? {});
+  const kindTerms = cur.kindTerms ?? {};
+  // CR-152: gửi/xác nhận (không nháp) mà thiếu trường bắt buộc của loại ⇒ chặn; bộ mốc do hook DONE sinh (không sinh ở đây).
+  if (isKindDeal(deal) && input.draft !== true && kindTermsMissing(deal, kindTerms).length > 0)
+    return "kind_terms_incomplete";
   const holdOn = cur.approvalOn || input.draft === true; // nháp ⇒ chưa sinh mốc mặc định (chưa xác nhận)
   const milestones = plannedMilestones({ deal, fields, approvalOn: holdOn, today }, input);
   if (milestones === "invalid") return "milestone_invalid";
@@ -141,7 +152,7 @@ export function planReview(
     fields,
     changes,
     deal,
-    direction: directionOfDeal(deal),
+    direction: isKindDeal(deal) ? directionOfKind(deal, kindTerms) : directionOfDeal(deal),
     commissionPct: referral ? pct : null,
     commissionFixed: referral ? fixed : null,
     milestones,

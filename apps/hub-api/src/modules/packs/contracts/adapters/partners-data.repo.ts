@@ -20,6 +20,7 @@ import type { Role } from "../domain/scoring-config.rules";
 import { contractNameSql } from "./contract-name.sql";
 import { one } from "./ledger-sql";
 import { groupsJson, pendJson, ratedJson, winCtes } from "./partners-ledger.sql";
+import { countsMoneySql } from "./kind-filter.sql";
 
 export type { Market, PartnerData, StoredConfig, WindowOverride };
 
@@ -41,7 +42,7 @@ const bCte = sql`b as (
       c.fields -> 'supplier_name' ->> 'value' as pname, c.fields -> 'supplier_tax_id' ->> 'value' as ptax, c.effect
     from contracts.contracts c
     where ${confirmed("c")} and c.kind = 'contract' and c.direction is distinct from 'sale' and c.superseded_at is null
-      and c.doc_type <> 'framework' -- CR-101: HĐ NT không là nguồn giá/điểm
+      and c.doc_type <> 'framework' and ${countsMoneySql("c")} -- CR-101: HĐ NT không là nguồn giá/điểm; CR-152: Hợp tác không chia tiền
     union all
     select a.id, a.kind, a.status, a.parent_id, ${contractNameSql("a")} as title, a.created_at, coalesce(a.direction, par.direction),
       a.fields -> 'effective_date' ->> 'value',
@@ -65,7 +66,7 @@ const factsJson = sql`coalesce((select json_agg(json_build_array(g.role, g.pname
         coalesce(case when c.fields -> 'start_date' ->> 'value' ~ ${ISO} then c.fields -> 'start_date' ->> 'value' end,
           case when c.fields -> 'signed_date' ->> 'value' ~ ${ISO} then c.fields -> 'signed_date' ->> 'value' end) as st,
         c.created_at, c.root_id
-      from contracts.contracts c where ${confirmed("c")} and c.kind = 'contract' and c.doc_type <> 'framework') x
+      from contracts.contracts c where ${confirmed("c")} and c.kind = 'contract' and c.doc_type <> 'framework' and ${countsMoneySql("c")}) x
     group by 1, 2, 3) g), '[]'::json)`;
 
 // Luật 4c: các tập lớn đi dạng CỘT (`array_agg` từng cột, một `to_json` mỗi mảng) — không dựng một mảng json cho từng hàng.

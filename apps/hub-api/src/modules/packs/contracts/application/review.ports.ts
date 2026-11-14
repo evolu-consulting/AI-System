@@ -15,6 +15,7 @@ export type ReviewLocked = {
   approvalOn: boolean;
   commissionPct: number | null;
   commissionFixed: number | null;
+  kindTerms?: Record<string, unknown> | null;
 };
 
 export type ReviewItemWrite = {

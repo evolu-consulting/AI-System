@@ -6,6 +6,7 @@
 import {
   CONTRACT_ERRORS,
   ItemProductRequestSchema,
+  KIND_ERRORS,
   MILESTONE_ERRORS,
   PRODUCT_ERRORS,
   PRODUCT_LINK_ERRORS,
@@ -89,6 +90,12 @@ function replyOf(res: ReviewResult) {
       "MILESTONE_INVALID",
       MILESTONE_ERRORS.MILESTONE_INVALID,
       "Số tiền chỉ cho Thu tiền, Thanh toán, Nhận hoa hồng",
+    );
+  if (res.kind === "kind_terms_incomplete")
+    throw new AppError(
+      "KIND_TERMS_INCOMPLETE",
+      KIND_ERRORS.KIND_TERMS_INCOMPLETE,
+      "Franchise/cooperation terms are incomplete (see GET kind-terms .missing)",
     );
   if (res.kind === "component_invalid") throw productInvalid();
   // `commission_kind` (hoa hồng chỉ cho Giới thiệu) · `item_unknown` (dòng không thuộc HĐ): lỗi dữ liệu gửi lên.

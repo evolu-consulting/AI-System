@@ -18,6 +18,8 @@ const CONTRACT_FACTS: readonly AppFactDecl[] = [
       { value: "buy", label: "Mua hàng" },
       { value: "sell", label: "Bán hàng" },
       { value: "referral", label: "Giới thiệu" },
+      { value: "franchise", label: "Nhượng quyền" },
+      { value: "cooperation", label: "Thỏa thuận hợp tác" },
     ],
   },
   { key: "creator_department", label: "Phòng ban người tạo", type: "department" },

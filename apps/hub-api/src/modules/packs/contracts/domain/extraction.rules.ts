@@ -12,6 +12,7 @@ import type {
   PenaltyTermInput,
 } from "./extraction.types";
 import { type ContractFieldKey, type ContractFields, mergeFields } from "./fields.rules";
+import { isKindDeal, sanitizeKindTerms } from "./kind-terms.rules";
 import type { Deal } from "./milestones.rules";
 import {
   itemVerified,
@@ -53,6 +54,8 @@ export type RawExtraction = {
   notes?: readonly AiNote[] | undefined;
   risks?: readonly AiRisk[] | undefined;
   penalty_terms?: readonly PenaltyTermInput[] | undefined;
+  /** CR-152: trường riêng khi `deal` = franchise | cooperation (lỏng ở biên; `aiReadOf` giữ khoá hợp lệ). */
+  kind_terms?: Record<string, unknown> | null | undefined;
 };
 export type ExtractedItemRow = RawItem & { ord: number; verified: boolean; edited: false };
 export type Clause = { number: string; topic: string };
@@ -98,6 +101,7 @@ export function aiReadOf(
     !raw.milestones &&
     !raw.notes &&
     !raw.risks &&
+    !raw.kind_terms &&
     raw.doc_type_suggest === undefined
   )
     return null;
@@ -106,7 +110,11 @@ export function aiReadOf(
     (k) => said.has(k) || (fields[k].value !== null && !fields[k].verified),
   );
   const deal = raw.deal ?? null;
-  if (deal !== null && (deal !== "referral" || said.has("deal"))) unsure.push("deal");
+  const kindTerms = sanitizeKindTerms(deal, raw.kind_terms);
+  if (deal !== null && (isKindDeal(deal) ? said.has("deal") : deal !== "referral" || said.has("deal")))
+    unsure.push("deal");
+  // CR-152: ô riêng chưa chắc = AI tự báo (`terms.<khoá>`), chỉ khoá còn giá trị hợp lệ sau `sanitizeKindTerms`.
+  for (const k of said) if (k.startsWith("terms.") && kindTerms?.[k.slice(6)] !== undefined) unsure.push(k);
   return {
     deal,
     unsure,
@@ -120,6 +128,7 @@ export function aiReadOf(
       : {}),
     ...(raw.notes ? { notes: [...raw.notes] } : {}),
     ...(raw.risks ? { risks: [...raw.risks] } : {}),
+    ...(kindTerms ? { kind_terms: kindTerms } : {}),
   };
 }
 
@@ -159,7 +168,9 @@ export function mergeExtraction(
   // Trường người đã sửa tay thì không còn "chưa chắc".
   const ai = v.ai && {
     ...v.ai,
-    unsure: v.ai.unsure.filter((k) => k === "deal" || !fields[k].edited),
+    unsure: v.ai.unsure.filter(
+      (k) => k === "deal" || k.startsWith("terms.") || !fields[k as ContractFieldKey].edited,
+    ),
   };
   return {
     fields,

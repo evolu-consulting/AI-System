@@ -94,10 +94,10 @@ export async function applyExpiringOutcome(
         ${ev.atts}::uuid[], null::uuid) as id),
     n as (insert into contracts.contracts (id, tenant_id, kind, title, direction, status, owner_user_id, created_by, fields,
         category_ids, visibility_owner_id, deal, commission_pct, commission_fixed, product_group, doc_type, frame_root_id, source,
-        extract_state, renews_id)
+        extract_state, renews_id, kind_terms)
       select ${nid}::uuid, s.tenant_id, s.kind, s.title, s.direction, 'draft', s.owner_user_id, ${actor}::uuid,
         s.fields - 'end_date' - 'start_date' - 'signed_date', s.category_ids, s.visibility_owner_id, s.deal, s.commission_pct,
-        s.commission_fixed, s.product_group, s.doc_type, s.frame_root_id, s.source, 'ready', s.id
+        s.commission_fixed, s.product_group, s.doc_type, s.frame_root_id, s.source, 'ready', s.id, s.kind_terms
       from contracts.contracts s where s.id = ${c.id}::uuid and s.tenant_id = ${tid}::uuid returning id),
     it as (insert into contracts.contract_items (tenant_id, contract_id, ord, name, unit, qty, unit_price, verified, edited,
         product_id, component_ids)
