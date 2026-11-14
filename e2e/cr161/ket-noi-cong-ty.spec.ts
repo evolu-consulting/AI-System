@@ -110,6 +110,10 @@ test("CR161-J3 · Tiên thấy Preschool «Đã kết nối», mở tab «Trò c
     mimeType: "application/pdf",
     buffer: PDF,
   });
+  // tệp tải lên ngay khi chọn: chờ thẻ «Tệp sẽ gửi» có tên tệp và hết «Đang tải lên…» rồi mới bấm Gửi
+  const drafts = page.getByLabel("Tệp sẽ gửi");
+  await expect(drafts).toContainText(FILE);
+  await expect(drafts).not.toContainText("Đang tải lên…");
   await page.getByRole("button", { name: "Gửi", exact: true }).click();
   const msg = page.getByTestId("cc-message").filter({ hasText: HELLO });
   await expect(msg).toBeVisible();
