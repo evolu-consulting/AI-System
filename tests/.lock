@@ -253,10 +253,10 @@ c496b5549c45def5a88b1b26364d8b3cd2efcf9726e33098da8965ea07c00715  e2e/contracts-
 1b7fb3dfe96736cfe2cc73c49e74b5c1775b1d68d9d5ae3227e2120e46d53401  e2e/contracts-web/baseline/linux/s05-contract-log.png
 382fa132fb2f023d395379a65c18b75c8cd2cc0ec5bc944daae64fff9a7fa014  e2e/contracts-web/baseline/linux/s05-failed-light.json
 4927dbfb662702e028b0a223909b33c3d7345e7038481b4a07bbe661592366fe  e2e/contracts-web/baseline/linux/s05-failed-light.png
-99cb6eefb3c9bb2dcc6050a9ba1e21d9611ee30c8461836a7b6df44de994830c  e2e/contracts-web/baseline/linux/s05-review-dark.json
-50b18cbab05a1d2d03fbace813975fe868761fe2a1c420400fe59000c0b64919  e2e/contracts-web/baseline/linux/s05-review-dark.png
-99cb6eefb3c9bb2dcc6050a9ba1e21d9611ee30c8461836a7b6df44de994830c  e2e/contracts-web/baseline/linux/s05-review-light.json
-50b18cbab05a1d2d03fbace813975fe868761fe2a1c420400fe59000c0b64919  e2e/contracts-web/baseline/linux/s05-review-light.png
+e7b4ba5c3428d08dc8408be0de09a66b93012aa0a362c4229ddaf2954f7ea244  e2e/contracts-web/baseline/linux/s05-review-dark.json
+491e5643062629cfdfa481221490038b986026d0c7978a3c16d8fabe6d500d47  e2e/contracts-web/baseline/linux/s05-review-dark.png
+e7b4ba5c3428d08dc8408be0de09a66b93012aa0a362c4229ddaf2954f7ea244  e2e/contracts-web/baseline/linux/s05-review-light.json
+491e5643062629cfdfa481221490038b986026d0c7978a3c16d8fabe6d500d47  e2e/contracts-web/baseline/linux/s05-review-light.png
 6e0e0f10637d2f57646b02ea36d891d6f42137f4ad4757873510bef57212cfc2  e2e/contracts-web/baseline/linux/s05-review-mobile.json
 7bc24fb0fbd48516fcb38279d7d2a89da512b70af66505ce529c8524e260afb2  e2e/contracts-web/baseline/linux/s05-review-mobile.png
 5e77a086ccffdb36852ec8a3f367106edbe2d5db0929488cc3be80b54a5c254e  e2e/contracts-web/baseline/linux/s08-prices-dark.json
@@ -402,7 +402,7 @@ c2aa8df875ac123b7842105a8e1ec443374a781654858ee5ca4285ee802eedf8  e2e/contracts-
 49db602f2600bc929065a90a89bd6831d08738c7f744ab9f0d927329985309ec  e2e/contracts-web/cr120-intake-flow.cw.ts
 6deb3cd0d6bc430d65e2069043d0e342e587e86ff7f95cdf482c4ef2f92be071  e2e/contracts-web/cr125-s4-card.cw.ts
 cbda35727ed2c39a1afd182de9d0c900d30682880415ee8fc9cba6f4e5e144ec  e2e/contracts-web/cr153-kinds-always.cw.ts
-1118c8fc24c3d68ef46b5cc2bf39c813be8472e9e55454a1f4fe68cd1cf31614  e2e/contracts-web/cr154-lock-attachments.cw.ts
+c5178e5c78a1a19ad341168328485d573e94372385ff06468764e84886c59502  e2e/contracts-web/cr154-lock-attachments.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 d351d4edda7e3772462619c8cbec6e9daa497718dff44acad1d117afc4998028  e2e/contracts-web/dataset-contract.ts
 0b445d3aeeb94128fe9107461082b07a0b2807b30dfa0c8930eb762e44068d85  e2e/contracts-web/dataset-list.ts
