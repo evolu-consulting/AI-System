@@ -13,7 +13,13 @@ export function sourceKey(source: string): string {
   return source === "form" || source === "subprocess" ? source : "start";
 }
 
-const ERR = new Set(["FILE_TYPE", "FILE_TOO_LARGE", "CONTRACT_FILES_FULL", "PACK_FORBIDDEN"]);
+const ERR = new Set([
+  "FILE_TYPE",
+  "FILE_TOO_LARGE",
+  "CONTRACT_FILES_FULL",
+  "PACK_FORBIDDEN",
+  "CONTRACT_NOT_DRAFT",
+]);
 /** Mã lỗi API ⇒ khoá chuỗi nói cách khắc phục; lạ ⇒ `generic`. */
 export const errorKey = (code: string | undefined): string =>
   code && ERR.has(code) ? code : "generic";

@@ -5,7 +5,15 @@ import type { DeleteRole } from "./delete-contract.rules";
 /** Trần số tệp gắn thẳng vào một HĐ (chặn lạm dụng kho; số khác ⇒ sửa ở đây). */
 export const MAX_CONTRACT_FILES = 20;
 
-export type ContractFileFacts = { created_by: string; owner_user_id: string | null };
+export type ContractFileFacts = {
+  created_by: string;
+  owner_user_id: string | null;
+  status: string;
+};
+
+/** CR-154 · MỘT chỗ kiểm: HĐ chỉ nhận/gỡ tệp kèm khi còn Nháp; ngoài Nháp = đang khoá (đang duyệt / đã ký / từ chối…). */
+export const isContractFilesLocked = (f: Pick<ContractFileFacts, "status">): boolean =>
+  f.status !== "draft";
 
 /** MIME theo đuôi tên tệp (danh sách `ATTACH_ALLOWED`, không tin MIME khai báo); đuôi lạ / không có ⇒ null (415). */
 export function mimeByName(name: string): string | null {
@@ -29,6 +37,7 @@ export function canEditContractFiles(
   actor: string,
   role: DeleteRole,
 ): boolean {
+  if (isContractFilesLocked(f)) return false;
   if (role.admin) return true;
   return role.write && (actor === f.created_by || actor === f.owner_user_id);
 }
@@ -41,6 +50,7 @@ export function canRemoveContractFile(
   actor: string,
   role: DeleteRole,
 ): boolean {
+  if (isContractFilesLocked(f)) return false;
   if (canEditContractFiles(f, actor, role)) return true;
   return role.write && actor === addedBy;
 }

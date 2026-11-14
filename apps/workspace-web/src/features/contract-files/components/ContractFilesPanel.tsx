@@ -195,6 +195,11 @@ export function ContractFilesPanel({ id }: { id: string }) {
           </>
         )}
       </div>
+      {data.locked && (
+        <p className="mt-1 text-sm text-dim" data-testid="cfiles-locked">
+          {t("contracts.cfiles.locked")}
+        </p>
+      )}
       {err && (
         <p role="alert" data-testid="cfiles-error" className="mt-2 text-sm text-late">
           {err}
@@ -202,7 +207,13 @@ export function ContractFilesPanel({ id }: { id: string }) {
       )}
       {empty && (
         <p className="mt-2 text-sm text-dim" data-testid="cfiles-empty">
-          {t(data.can_add ? "contracts.cfiles.empty" : "contracts.cfiles.emptyReadOnly")}
+          {t(
+            data.locked
+              ? "contracts.cfiles.emptyLocked"
+              : data.can_add
+                ? "contracts.cfiles.empty"
+                : "contracts.cfiles.emptyReadOnly",
+          )}
         </p>
       )}
       {data.files.length > 0 && (

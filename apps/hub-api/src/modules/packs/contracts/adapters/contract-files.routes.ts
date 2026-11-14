@@ -29,6 +29,12 @@ const run = <T>(p: Promise<T>): Promise<T> =>
     if (!(e instanceof ContractFilesFail)) throw e;
     if (e.kind === "not_found") throw appError("NOT_FOUND");
     if (e.kind === "forbidden") throw new AppError("PACK_FORBIDDEN", 403, "Forbidden");
+    if (e.kind === "locked")
+      throw new AppError(
+        "CONTRACT_NOT_DRAFT",
+        409,
+        "Contract is no longer a draft — attachments are locked",
+      );
     if (e.kind === "full")
       throw new AppError("CONTRACT_FILES_FULL", 409, "Too many attached files on this contract");
     throw new AppError(

@@ -35,6 +35,8 @@ export const ContractFilesResponseSchema = z.object({
   steps: z.array(ContractStepFileSchema),
   /** Người gọi thêm được tệp vào HĐ này (quyền sửa HĐ). */
   can_add: z.boolean(),
+  /** CR-154 · HĐ không còn Nháp ⇒ khoá thêm/gỡ tệp kèm (xem vẫn được). `can_add`/`can_remove` đã tính sẵn. */
+  locked: z.boolean(),
 });
 export type ContractFilesResponse = z.infer<typeof ContractFilesResponseSchema>;
 export type ContractOwnFile = z.infer<typeof ContractOwnFileSchema>;

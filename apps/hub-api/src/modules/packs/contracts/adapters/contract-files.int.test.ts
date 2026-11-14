@@ -55,12 +55,18 @@ const docx = (name = "phu-luc.docx") => ({ name, bytes: new Uint8Array([1, 2, 3]
 const fail = async (p: Promise<unknown>) =>
   ((await p.catch((x: unknown) => x)) as ContractFilesFail).kind;
 
-async function mk(): Promise<string> {
+/** Đổi status ngoài cổng (trigger chặn UPDATE) — chỉ cho test: tắt trigger trong một tx. */
+const setStatus = (id: string, status: string) =>
+  o.begin(async (tx) => {
+    await tx`set local session_replication_role = replica`;
+    await tx`update contracts.contracts set status = ${status} where id = ${id}`;
+  });
+async function mk(status = "draft"): Promise<string> {
   const [r] = await o<{ id: string }[]>`insert into contracts.contracts ${o({
     tenant_id: T,
     title: "HĐ CR133",
     created_by: U1,
-    status: "draft",
+    status,
   } as never)} returning id`;
   return (r as { id: string }).id;
 }
@@ -134,5 +140,54 @@ describe("CR-133 · chặn đọc chéo công ty (contracts.contract_files)", ()
     expect((await o`select 1 from contracts.contract_files where contract_id = ${id}`).length).toBe(
       1,
     );
+  });
+});
+
+describe("CR-154 · HĐ không còn Nháp ⇒ khoá thêm/gỡ tệp kèm", () => {
+  it("nháp: người được giao (không phải người tạo) thêm/gỡ được; đang duyệt / đã ký / từ chối ⇒ locked, xem + link vẫn được", async () => {
+    const id = await mk();
+    await o`update contracts.contracts set owner_user_id = ${U2} where id = ${id}`;
+    const added = await uc().add(w(U2), id, editor, docx("giao.docx"));
+    const keep = await uc().add(w(U2), id, editor, docx("giu.docx"));
+    expect((await uc().list(w(U2), id, editor))?.locked).toBe(false);
+    for (const status of ["processing", "done", "reject"]) {
+      await setStatus(id, status);
+      const l = await uc().list(w(U2), id, editor);
+      expect(l?.locked).toBe(true);
+      expect(l?.can_add).toBe(false);
+      expect(l?.files.length).toBe(2);
+      expect(l?.files.every((x) => x.can_remove === false)).toBe(true);
+      const gone = removed.length;
+      const before = seq;
+      expect(await fail(uc().add(w(U2), id, editor, docx("moi.docx")))).toBe("locked");
+      expect(await fail(uc().add(w(U1), id, admin, docx("moi.docx")))).toBe("locked");
+      expect(seq).toBe(before); // chặn trước khi đưa lên kho
+      expect(removed.length).toBe(gone);
+      expect(await fail(uc().remove(w(U2), id, keep.id, editor))).toBe("locked");
+      expect(await fail(uc().remove(w(U1), id, keep.id, admin))).toBe("locked");
+      expect(await uc().link(w(U2), id, keep.id)).toContain("fb-");
+    }
+    await setStatus(id, "draft");
+    await uc().remove(w(U2), id, added.id, editor);
+  });
+  it("đua: HĐ rời Nháp sau bước kiểm ⇒ câu ghi từ chối, byte vừa đưa lên bị gỡ, báo locked", async () => {
+    const id = await mk();
+    const racing = contractFilesUsecases({
+      uow: uow(),
+      files: {
+        put: async () => {
+          await setStatus(id, "processing");
+          return { fileId: `fb-${++seq}`, versionId: `v-${seq}` };
+        },
+        remove: async (_org, fid) => void removed.push(fid),
+      },
+      stepFiles: async () => [],
+      link: null,
+      newId: () => Bun.randomUUIDv7(),
+    });
+    const gone = removed.length;
+    expect(await fail(racing.add(w(U1), id, editor, docx()))).toBe("locked");
+    expect(removed.length).toBe(gone + 1);
+    expect((await uc().list(w(U1), id, editor))?.files.length).toBe(0);
   });
 });
