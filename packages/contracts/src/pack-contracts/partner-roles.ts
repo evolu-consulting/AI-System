@@ -3,7 +3,14 @@
 import { z } from "zod";
 import type { ScoreBand } from "./partners";
 
-export const PARTNER_ROLES_V2 = ["supplier", "customer", "commission_payer"] as const;
+export const PARTNER_ROLES_V2 = [
+  "supplier",
+  "customer",
+  "commission_payer",
+  "franchisee",
+  "franchisor",
+  "cooperator",
+] as const;
 export type PartnerRoleV2 = (typeof PARTNER_ROLES_V2)[number];
 /** Loại HĐ của BA v2 (§2): Mua / Bán / Giới thiệu. */
 export const PARTNER_DEALS = ["buy", "sell", "referral"] as const;

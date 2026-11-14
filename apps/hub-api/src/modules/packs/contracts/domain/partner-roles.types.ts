@@ -2,7 +2,13 @@
 // chiều kiểm ở `dto-mirror.test.ts`.
 
 export type PartnerDeal = "referral" | "buy" | "sell";
-export type PartnerRoleV2 = "customer" | "supplier" | "commission_payer";
+export type PartnerRoleV2 =
+  | "customer"
+  | "supplier"
+  | "commission_payer"
+  | "franchisee"
+  | "franchisor"
+  | "cooperator";
 export type ScoreBand = "good" | "fair" | "watch";
 export const NEW_PARTNER_LABEL = "Đối tác mới · sẽ tạo khi lưu";
 

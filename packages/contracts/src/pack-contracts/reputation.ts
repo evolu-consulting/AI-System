@@ -4,8 +4,16 @@ import { z } from "zod";
 import { nfcText } from "./fields";
 import { IsoDay } from "./ledger";
 
-export const REP_GROUPS = ["service", "goods", "referral"] as const;
-export const REP_ROLES = ["supplier", "customer", "commission_payer"] as const;
+export const REP_GROUPS = ["service", "goods", "referral", "franchise", "cooperation"] as const;
+export const REP_ROLES = [
+  "supplier",
+  "customer",
+  "commission_payer",
+  // CR-152: Nhượng quyền (đối tác = bên nhận / bên nhượng quyền) + Hợp tác có chia tiền (đối tác hợp tác).
+  "franchisee",
+  "franchisor",
+  "cooperator",
+] as const;
 export const REP_LEVELS = ["good", "fair", "watch", "new"] as const;
 export type RepLevel = (typeof REP_LEVELS)[number];
 
@@ -39,7 +47,7 @@ export const RepCriterionInSchema = z.strictObject({
   key: Key.nullish(),
   label: nfcText(60),
   kind: z.enum(["ontime", "jobs", "bad_count", "manual"]),
-  milestone: z.enum(["delivery", "payment", "serial", "commission"]).nullish(),
+  milestone: z.enum(["delivery", "payment", "serial", "commission", "report"]).nullish(),
   penalty: Int(1, 100).nullish(),
   weight: Int(0, 100),
   enabled: z.boolean(),

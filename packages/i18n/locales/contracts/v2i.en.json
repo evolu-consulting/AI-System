@@ -15,12 +15,18 @@
       "roleWord": {
         "supplier": "Supplier",
         "customer": "Customer",
-        "commission_payer": "Commission payer"
+        "commission_payer": "Commission payer",
+        "franchisee": "Franchisee",
+        "franchisor": "Franchisor",
+        "cooperator": "Cooperation partner"
       },
       "roleShort": {
         "supplier": "Supplier",
         "customer": "Customer",
-        "commission_payer": "Commission"
+        "commission_payer": "Commission",
+        "franchisee": "Franchisee",
+        "franchisor": "Franchisor",
+        "cooperator": "Partner"
       },
       "badge": {
         "new": "NEW · provisional"

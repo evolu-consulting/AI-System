@@ -9,7 +9,14 @@ import type {
 /** Hai vai có điểm (engine HD8). Vai "bên trả hoa hồng" tính như Khách hàng (CR-097 Q3). */
 export const ROLES: readonly PartnerRole[] = ["supplier", "customer"];
 /** Thứ tự vai khi gộp dòng đối tác (V2-E thêm bên trả hoa hồng). */
-export const REP_ROLE_ORDER: readonly RepRole[] = ["supplier", "customer", "commission_payer"];
+export const REP_ROLE_ORDER: readonly RepRole[] = [
+  "supplier",
+  "customer",
+  "commission_payer",
+  "franchisee",
+  "franchisor",
+  "cooperator",
+];
 export const RANGES = [3, 6, 12] as const;
 export type Range = (typeof RANGES)[number];
 /**

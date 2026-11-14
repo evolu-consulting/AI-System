@@ -1,4 +1,4 @@
-// REP-v3-ui · V2-E (BA v2.0 §5.1) · hình dữ liệu cấu hình điểm uy tín khi `engine = v2e`: 5 ô (nhóm SP × vai) + "Mức & đánh giá" + Loại việc.
+// REP-v3-ui · V2-E (BA v2.0 §5.1) · hình dữ liệu cấu hình điểm uy tín khi `engine = v2e`: 8 ô (nhóm SP × vai; CR-152: + Nhượng quyền ×2, Hợp tác) + "Mức & đánh giá" + Loại việc.
 // Kiểu theo `GET /pack/contracts/reputation/config`; thân PUT strict nên có hàm chuyển riêng ở `rep-data.ts`. Lưu riêng ở `RepPane`
 // (không nằm trong bản nháp chung của hộp thoại Cài đặt).
 import type { RepEngine, RepJobTypesIn, RepSettingsIn } from "@ai/contracts/pack-contracts";
@@ -9,12 +9,15 @@ export const CELL_KEYS = [
   "goods:supplier",
   "goods:customer",
   "referral:commission_payer",
+  "franchise:franchisee",
+  "franchise:franchisor",
+  "cooperation:cooperator",
 ] as const;
 export type CellKey = (typeof CELL_KEYS)[number];
 export const MAX_CUSTOM = 8;
 
 export type CriterionKind = "ontime" | "jobs" | "bad_count" | "manual";
-export type Milestone = "delivery" | "payment" | "serial" | "commission";
+export type Milestone = "delivery" | "payment" | "serial" | "commission" | "report";
 export type Criterion = {
   key: string;
   label: string;

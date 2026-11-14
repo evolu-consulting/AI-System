@@ -13,7 +13,7 @@ import { rowsOf } from "./adapters/rep.sql";
 import type { ScoreOf } from "./application/partner-roles.usecase";
 import { PartnersFail, partnersUsecase } from "./application/partners.usecase";
 import { reputationUsecase } from "./application/reputation.usecase";
-import { type RepEngine, repEngineOf, switchDiff } from "./domain/rep-current.rules";
+import { hd8RoleOf, type RepEngine, repEngineOf, switchDiff } from "./domain/rep-current.rules";
 import { safeTimeZone } from "./reminders.mount";
 
 const KEY = "contracts";
@@ -77,12 +77,10 @@ export function repCurrent(db: Db, d: RepCurrentDeps) {
       const p = await v2e.scoreOne(who, party, role);
       return p ? { score: p.score, band: bandOf(p.level) } : null;
     }
-    const p = await hd8
-      .one(who, party, role === "commission_payer" ? "customer" : role)
-      .catch((e: unknown) => {
-        if (e instanceof PartnersFail && e.kind === "not_found") return null;
-        throw e;
-      });
+    const p = await hd8.one(who, party, hd8RoleOf(role)).catch((e: unknown) => {
+      if (e instanceof PartnersFail && e.kind === "not_found") return null;
+      throw e;
+    });
     return p ? { score: p.score, band: p.band } : null;
   };
 

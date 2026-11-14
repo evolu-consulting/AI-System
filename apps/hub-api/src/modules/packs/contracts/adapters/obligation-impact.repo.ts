@@ -13,7 +13,7 @@ export function obligationImpactRepo(tx: Tx, t: string) {
         tx,
         sql`select jsonb_build_object('id', o.id, 'contract_id', o.contract_id, 'status', o.status, 'kind', o.kind,
             'direction', o.direction, 'owner', o.owner, 'due_date', o.due_date, 'amount', o.amount, 'party', o.party_key,
-            'rep_cell', o.rep_cell,
+            'rep_cell', o.rep_cell, 'period_key', o.period_key,
             'debt_open', coalesce((select sum(coalesce(d.amount, 0)) from contracts.obligations d
               where d.tenant_id = o.tenant_id and d.contract_id = o.contract_id and d.status = 'open'
                 and d.direction = o.direction and d.kind in ('payment', 'commission')), 0),

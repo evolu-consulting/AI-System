@@ -21,7 +21,14 @@ export type RepPoint = z.infer<typeof RepPointSchema>;
 /** Delta uy tín của MỘT mốc (lưu trên dòng sổ khi xác nhận; xem trước trả cùng hình). */
 export const RepDeltaSchema = z.strictObject({
   engine: z.enum(["v2e", "hd8"]),
-  role: z.enum(["supplier", "customer", "commission_payer"]),
+  role: z.enum([
+    "supplier",
+    "customer",
+    "commission_payer",
+    "franchisee",
+    "franchisor",
+    "cooperator",
+  ]),
   before: RepPointSchema,
   after: RepPointSchema,
 });

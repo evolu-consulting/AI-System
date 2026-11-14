@@ -15,12 +15,18 @@
       "roleWord": {
         "supplier": "Nhà cung cấp",
         "customer": "Khách hàng",
-        "commission_payer": "Bên trả hoa hồng"
+        "commission_payer": "Bên trả hoa hồng",
+        "franchisee": "Bên nhận quyền",
+        "franchisor": "Bên nhượng quyền",
+        "cooperator": "Đối tác hợp tác"
       },
       "roleShort": {
         "supplier": "NCC",
         "customer": "Khách",
-        "commission_payer": "Hoa hồng"
+        "commission_payer": "Hoa hồng",
+        "franchisee": "Nhận quyền",
+        "franchisor": "Nhượng quyền",
+        "cooperator": "Hợp tác"
       },
       "badge": {
         "new": "MỚI · tạm tính"

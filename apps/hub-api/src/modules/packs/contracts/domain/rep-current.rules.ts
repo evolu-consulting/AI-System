@@ -9,6 +9,13 @@ export type RepEngine = "v2e" | "hd8";
 export const repEngineOf = (v: string | undefined | null): RepEngine =>
   v?.trim().toLowerCase() === "v2e" ? "v2e" : "hd8";
 
+/**
+ * HD8 chỉ có 2 vai: bên TRẢ tiền cho mình tính như Khách hàng (bên trả hoa hồng, bên nhận quyền khi mình nhượng quyền, đối tác hợp tác
+ * chuyển phần chia cho mình); mình trả tiền cho đối tác tính như Nhà cung cấp (bên nhượng quyền khi mình nhận quyền). CR-152.
+ */
+export const hd8RoleOf = (role: RepRole): "customer" | "supplier" =>
+  role === "supplier" || role === "franchisor" ? "supplier" : "customer";
+
 export type SevereFlag = { type: "no_delivery" | "fraud"; n: number };
 /** Cờ đỏ theo đối tác (cộng mọi vai), hàng thô `[party, type, n]`. */
 export function flagsByParty(rows: readonly [string, string, number][]): Map<string, SevereFlag[]> {
@@ -117,9 +124,9 @@ export function switchDiff(
       v2e: { score: v?.score ?? null, level: v?.level ?? "new" },
     });
   for (const v of v2e) {
-    const hdRole = v.role === "commission_payer" ? "customer" : v.role;
+    const hdRole = hd8RoleOf(v.role);
     const k = `${v.party}\u0001${hdRole}`;
-    if (v.role !== "commission_payer") seen.add(k);
+    if (v.role === hdRole) seen.add(k);
     push(v.party, v.name, v.role, hd.get(k), v);
   }
   for (const [k, h] of hd) {

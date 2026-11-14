@@ -1,17 +1,30 @@
 // V2-E · BA v2 §5.1 (bảng "Tiêu chí mặc định theo vai trò", "Thời gian và mức") · CD-02..05 · CR-096 Q1: cấu hình uy tín v2 theo
 // ô nhóm SP × vai — tiêu chí (bật/tắt, trọng số, ≤ 8 tự thêm theo 3 kiểu), khoảng tính + giảm bậc thang theo độ cũ, ngưỡng mức,
 // đánh giá thủ công, danh mục "Loại việc". Mặc định = số trong BA; kiểm hợp lệ trả câu lỗi tiếng Việt (422). Thuần.
-export const REP_GROUPS = ["service", "goods", "referral"] as const;
+export const REP_GROUPS = ["service", "goods", "referral", "franchise", "cooperation"] as const;
 export type RepGroup = (typeof REP_GROUPS)[number];
-export const REP_ROLES = ["supplier", "customer", "commission_payer"] as const;
+export const REP_ROLES = [
+  "supplier",
+  "customer",
+  "commission_payer",
+  "franchisee",
+  "franchisor",
+  "cooperator",
+] as const;
 export type RepRole = (typeof REP_ROLES)[number];
-/** 5 ô hợp lệ (BA: Giới thiệu chỉ có bên trả hoa hồng). */
+/**
+ * 8 ô hợp lệ (BA: Giới thiệu chỉ có bên trả hoa hồng). CR-152: ô 6–7 Nhượng quyền (đối tác = bên nhận quyền khi mình nhượng quyền;
+ * bên nhượng quyền khi mình nhận quyền), ô 8 Hợp tác CÓ chia tiền (≡ SQL `contracts.rep_cell_of`).
+ */
 export const REP_CELLS = [
   ["service", "supplier"],
   ["service", "customer"],
   ["goods", "supplier"],
   ["goods", "customer"],
   ["referral", "commission_payer"],
+  ["franchise", "franchisee"],
+  ["franchise", "franchisor"],
+  ["cooperation", "cooperator"],
 ] as const satisfies readonly (readonly [RepGroup, RepRole])[];
 export type CellKey = `${RepGroup}:${RepRole}`;
 export const cellKey = (g: RepGroup, r: RepRole): CellKey => `${g}:${r}`;
@@ -19,7 +32,26 @@ export const isCell = (g: string, r: string): boolean =>
   REP_CELLS.some(([a, b]) => a === g && b === r);
 
 /** Loại mốc ⇒ tiêu chí đúng hạn (BA §2: Giao hàng → Giao đúng hạn, Thu tiền → Thanh toán…, Cấp serial, Nhận hoa hồng). */
-export const SCORED_MILESTONES = ["delivery", "payment", "serial", "commission"] as const;
+export const SCORED_MILESTONES = ["delivery", "payment", "serial", "commission", "report"] as const;
+/** Mốc BA có tính điểm theo loại mốc của đối tác (`report` KHÔNG là loại mốc: xem `scoreSource`). */
+export const PLAIN_SCORED_KINDS = ["delivery", "payment", "serial", "commission"] as const;
+/** Ô Hợp tác (chỉ số 1-based): mốc «Đối soát» do mình ghi nhưng là việc chung ⇒ tính cho đối tác (`scoreSource`). */
+export const COOPERATION_CELL = 8;
+
+/**
+ * Nguồn điểm của MỘT mốc đã xác nhận (≡ `rep.sql.ts` ms0): `m:<loại>` (việc của đối tác, loại có tính điểm) · `m:report` (mốc kỳ
+ * «Báo cáo doanh thu» / «Đối soát»: việc của đối tác, riêng ô Hợp tác tính cả khi mình ghi) · `tx` (còn lại — chỉ đếm giao dịch).
+ */
+export function scoreSource(
+  o: { owner: string | null; kind: string; period_key?: string | null },
+  cell: number | null,
+): string {
+  if (o.owner === "partner" && (PLAIN_SCORED_KINDS as readonly string[]).includes(o.kind))
+    return `m:${o.kind}`;
+  if (o.kind === "other" && o.period_key && (o.owner === "partner" || cell === COOPERATION_CELL))
+    return "m:report";
+  return "tx";
+}
 export type ScoredMilestone = (typeof SCORED_MILESTONES)[number];
 /** ontime = tỷ lệ đúng hạn một loại mốc · jobs = bình quân điểm việc ghi tay · bad_count = đếm việc xấu / 10 giao dịch · manual = sao × 20. */
 export type CriterionKind = "ontime" | "jobs" | "bad_count" | "manual";
@@ -87,6 +119,19 @@ export const BUILTIN: Record<string, Omit<Criterion, "weight" | "enabled" | "cus
     kind: "ontime",
     milestone: "commission",
   },
+  // CR-152: nhượng quyền / hợp tác (mốc kỳ: báo cáo doanh thu, đối soát, thu-trả phí).
+  report_on_time: {
+    key: "report_on_time",
+    label: "Báo cáo doanh thu / đối soát đúng hạn",
+    kind: "ontime",
+    milestone: "report",
+  },
+  fee_on_time: {
+    key: "fee_on_time",
+    label: "Trả phí / phần chia đúng hạn",
+    kind: "ontime",
+    milestone: "payment",
+  },
   reconcile: { key: "reconcile", label: "Gửi đối soát đầy đủ", kind: "jobs" },
   referral_support: { key: "referral_support", label: "Hỗ trợ khách giới thiệu", kind: "jobs" },
 };
@@ -123,11 +168,29 @@ const DEFAULT_WEIGHTS: Partial<Record<CellKey, [string, number][]>> = {
     ["reconcile", 25],
     ["referral_support", 15],
   ],
+  "franchise:franchisee": [
+    ["report_on_time", 50],
+    ["fee_on_time", 50],
+  ],
+  "franchise:franchisor": [
+    ["report_on_time", 50],
+    ["fee_on_time", 50],
+  ],
+  "cooperation:cooperator": [
+    ["report_on_time", 50],
+    ["fee_on_time", 50],
+  ],
 };
 
 export const DEFAULT_DECAY: Decay = { months: [6, 12], factors: [1, 0.5, 0.2] };
 /** BA: Dịch vụ có hạn 24 tháng (chứa ≥ 2 lần gia hạn); hàng hoá 12; giới thiệu 12. */
-export const DEFAULT_WINDOW: Record<RepGroup, number> = { service: 24, goods: 12, referral: 12 };
+export const DEFAULT_WINDOW: Record<RepGroup, number> = {
+  service: 24,
+  goods: 12,
+  referral: 12,
+  franchise: 12,
+  cooperation: 12,
+};
 export const DEFAULT_SETTINGS: Settings = {
   good_from: 85,
   fair_from: 70,

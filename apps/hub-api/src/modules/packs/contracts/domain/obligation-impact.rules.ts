@@ -1,6 +1,6 @@
 // MS-impact · CR-101b (R18, R19, R34; Câu 11): luật THUẦN xem trước tác động khi xác nhận một mốc — dựng đúng phần "sau" mà lệnh
 // `settle` sẽ ghi, rồi để engine hiện hành chấm lại (không công thức riêng):
-//  · V2-E: mốc xác nhận ⇒ một việc vào nguồn `m:<loại>` (mốc việc của đối tác, loại có tính điểm) hoặc `tx` (còn lại) của ô `rep_cell`,
+//  · V2-E: mốc xác nhận ⇒ một việc vào nguồn `m:<loại>` (mốc việc của đối tác, loại có tính điểm; CR-152: `m:report` mốc kỳ) hoặc `tx` của ô `rep_cell`,
 //    h = bậc thang độ cũ, điểm việc = `milestoneScore` (≡ `rep.sql.ts` ms0: chỉ lỗi ĐỐI TÁC trừ `late_per_day`/ngày).
 //  · HD8: dòng sổ `delivered|received|paid` (trễ = `days_late`) ≡ `addGroup` + dòng "Quá hạn" treo của đợt thành "đã trả lời".
 //  · Kho: dòng nhập/xuất của mốc giao ⇒ tồn trước → sau theo thành phần. Công nợ: Σ mốc tiền mở cùng chiều trước → sau.
@@ -8,7 +8,7 @@
 import { daysLate, roleOf, settledType } from "./ledger.rules";
 import { daysBetween } from "./local-time.rules";
 import type { CellConfig, RepRole } from "./rep-config.rules";
-import { SCORED_MILESTONES } from "./rep-config.rules";
+import { scoreSource } from "./rep-config.rules";
 import {
   type CellInput,
   decayAt,
@@ -34,6 +34,8 @@ export type ImpactHead = {
   amount: number | null;
   party: string | null;
   rep_cell: number | null;
+  /** CR-152: khoá kỳ của mốc «Báo cáo doanh thu» / «Đối soát» (null ⇒ không phải mốc kỳ). */
+  period_key?: string | null;
   /** Σ số tiền các mốc tiền ĐANG MỞ cùng chiều của HĐ (gồm chính mốc). */
   debt_open: number;
   /** Dòng "Quá hạn" treo (chưa trả lời, chưa huỷ, lỗi đối tác, đúng loại của vai) của chính đợt. */
@@ -51,7 +53,13 @@ export type V2eAdd = { src: string; h: number; hs: number };
 
 /** Phần một mốc góp vào ô (≡ `rep.sql.ts` ms0); ngoài khoảng tính / ngày sau hôm nay ⇒ null (câu chấm không thấy). */
 export function v2eContribution(
-  o: { owner: string | null; kind: string; due_date: string },
+  o: {
+    owner: string | null;
+    kind: string;
+    due_date: string;
+    period_key?: string | null;
+    rep_cell?: number | null;
+  },
   at: string,
   fault: string | null,
   today: string,
@@ -59,10 +67,9 @@ export function v2eContribution(
 ): V2eAdd | null {
   if (at > today || at <= monthsBefore(today, cell.window_months)) return null;
   const h = decayAt(at, today, cell.decay);
-  const scored = o.owner === "partner" && (SCORED_MILESTONES as readonly string[]).includes(o.kind);
   const late = Math.max(0, daysBetween(o.due_date, at));
   return {
-    src: scored ? `m:${o.kind}` : "tx",
+    src: scoreSource(o, o.rep_cell ?? null),
     h,
     hs: h * milestoneScore(late, fault, cell.late_per_day),
   };

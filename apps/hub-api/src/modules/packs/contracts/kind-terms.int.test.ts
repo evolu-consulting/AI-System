@@ -153,7 +153,7 @@ describe("CR-152 · quyền + RLS của kind-terms", () => {
     const ok = await call("hA", "PUT", base, { terms: FR });
     expect(ok.status).toBe(200);
     expect(ok.json.missing).toEqual([]);
-    const [{ direction }] = await o<
+    const [{ direction } = { direction: "" }] = await o<
       { direction: string }[]
     >`select direction from contracts.contracts where id = ${id}`;
     expect(direction).toBe("sale");
@@ -161,7 +161,7 @@ describe("CR-152 · quyền + RLS của kind-terms", () => {
       terms: { role: "franchisee", moit_registered: true },
     });
     expect(back.json.terms.role).toBe("franchisee");
-    const [{ d2 }] = await o<
+    const [{ d2 } = { d2: "" }] = await o<
       { d2: string }[]
     >`select direction as d2 from contracts.contracts where id = ${id}`;
     expect(d2).toBe("purchase");
