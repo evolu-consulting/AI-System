@@ -127,7 +127,7 @@ describe("CR-155 · hạn đọc AI: `reading` quá hạn ⇒ failed/TIMEOUT, k�
       } as never),
     );
 
-  it("xếp hàng 4' / đang chạy 4' ⇒ TIMEOUT (lượt failed, event code TIMEOUT); xếp hàng 1' / chạy 1' ⇒ giữ", async () => {
+  it("đọc quá 3 phút (xếp hàng hoặc đang chạy) ⇒ TIMEOUT, lượt failed, event code TIMEOUT, đọc 1 phút ⇒ giữ", async () => {
     const qOld = await seed(8, {
       status: "extracting",
       ago: 4,
@@ -168,7 +168,7 @@ describe("CR-155 · hạn đọc AI: `reading` quá hạn ⇒ failed/TIMEOUT, k�
     expect((await sweepT()).closed).toBe(0);
   });
 
-  it("kết quả AI về sau hết giờ ⇒ BỎ (CAS extract_state = reading): HĐ vẫn failed/TIMEOUT", async () => {
+  it("kết quả AI về sau hết giờ ⇒ BỎ (CAS extract_state = reading): HĐ vẫn failed, mã TIMEOUT", async () => {
     const id = ids[8] as string;
     const [cur] = await sql<
       { version: number }[]
