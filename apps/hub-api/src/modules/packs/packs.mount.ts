@@ -65,7 +65,7 @@ import {
   packTenantOnly,
 } from "./kit/public";
 import { afterPacksMounted } from "./packs.after-mount";
-import { mountContractAttachments } from "./packs.contracts-attachments";
+import { connectDeps, mountContractAttachments } from "./packs.contracts-attachments";
 import { fileboxClients, type PackFb, packFilebox } from "./packs.filebox";
 import { mountedApps, verifyPackModules } from "./packs.modules-check";
 import { envInt, evidenceDeps, stepDeps, tenantLimits, tenantTz } from "./packs.tenant-config";
@@ -231,7 +231,7 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
   else app.route(base, uploadUnavailableRoutes(view)); // FileBox váº¯ng â‡’ 503 FILE_STORAGE_UNAVAILABLE (khÃ´ng 404)
   mountContractAttachments(app, base, { db, view, fb, redis: d.redis }); // CR-133 «Tài liệu kèm» + CR-132 tin nhắn
   app.route(base, contractsRemind(d, view, db)); // HD4
-  app.route(base, partnerModule(db, view, { redis: d.redis })); // CR-124 q4 · hộp «Hợp đồng đối tác gửi» + ghi nhận thủ công
+  app.route(base, partnerModule(db, view, connectDeps(d, fb))); // CR-124 q4 · hộp «Hợp đồng đối tác gửi» + ghi nhận thủ công
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9
   app.route(base, contractsLedger(d, view, db)); // HD7
   app.route(
