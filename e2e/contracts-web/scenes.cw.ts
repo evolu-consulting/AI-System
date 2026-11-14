@@ -117,7 +117,7 @@ const HD2_SCENES: Scene[] = [
     text: ["main"],
     boxes: {
       heading: "main h1",
-      manual: 'main a:text-is("Nhập tay")',
+      manual: 'main button:text-is("Nhập tay")',
       panel: "main section >> nth=0",
     },
     mask: [],

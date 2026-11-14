@@ -251,8 +251,8 @@ da45efb20a86724f44751bb85ee9f110150d4f60481c3c76cf6b547e6d05ab2b  e2e/contracts-
 196e3ce9ecd7650968c5e4848e5eb00fc31c92e4a239bcb131cda84d5ad30a2d  e2e/contracts-web/baseline/linux/s04-new-mobile.png
 c496b5549c45def5a88b1b26364d8b3cd2efcf9726e33098da8965ea07c00715  e2e/contracts-web/baseline/linux/s05-contract-log.json
 1b7fb3dfe96736cfe2cc73c49e74b5c1775b1d68d9d5ae3227e2120e46d53401  e2e/contracts-web/baseline/linux/s05-contract-log.png
-382fa132fb2f023d395379a65c18b75c8cd2cc0ec5bc944daae64fff9a7fa014  e2e/contracts-web/baseline/linux/s05-failed-light.json
-4927dbfb662702e028b0a223909b33c3d7345e7038481b4a07bbe661592366fe  e2e/contracts-web/baseline/linux/s05-failed-light.png
+e173254938f82e568c21756b023a7e7dbb23d77f5fb646086f2030798772c50e  e2e/contracts-web/baseline/linux/s05-failed-light.json
+80932a25f99932c8ef67e764d9ee9a0b38883133c13be932408e508eab01cfdc  e2e/contracts-web/baseline/linux/s05-failed-light.png
 e7b4ba5c3428d08dc8408be0de09a66b93012aa0a362c4229ddaf2954f7ea244  e2e/contracts-web/baseline/linux/s05-review-dark.json
 491e5643062629cfdfa481221490038b986026d0c7978a3c16d8fabe6d500d47  e2e/contracts-web/baseline/linux/s05-review-dark.png
 e7b4ba5c3428d08dc8408be0de09a66b93012aa0a362c4229ddaf2954f7ea244  e2e/contracts-web/baseline/linux/s05-review-light.json
@@ -403,8 +403,8 @@ c2aa8df875ac123b7842105a8e1ec443374a781654858ee5ca4285ee802eedf8  e2e/contracts-
 6deb3cd0d6bc430d65e2069043d0e342e587e86ff7f95cdf482c4ef2f92be071  e2e/contracts-web/cr125-s4-card.cw.ts
 cbda35727ed2c39a1afd182de9d0c900d30682880415ee8fc9cba6f4e5e144ec  e2e/contracts-web/cr153-kinds-always.cw.ts
 c5178e5c78a1a19ad341168328485d573e94372385ff06468764e84886c59502  e2e/contracts-web/cr154-lock-attachments.cw.ts
-303261c6b04694ec7e33de078169178ab1a7cfb03a280042d50593e86d12bd3d  e2e/contracts-web/cr157-manual-fallback.cw.ts
-e39ed5c290ad3c4583ba783de5d191cf3523aabf61cfcc0a2125e899de1e5800  e2e/contracts-web/cr158-tenant-favicon.cw.ts
+202816085fa4859fdd1cb4220ec35b82c8ec29c89b2327c360738ebe95f540b4  e2e/contracts-web/cr157-manual-fallback.cw.ts
+2cb884898d7c2028fdf73a4e8ec8c2f76a2c1104eb6f9fba54c994ead1c228a4  e2e/contracts-web/cr158-tenant-favicon.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 d351d4edda7e3772462619c8cbec6e9daa497718dff44acad1d117afc4998028  e2e/contracts-web/dataset-contract.ts
 0b445d3aeeb94128fe9107461082b07a0b2807b30dfa0c8930eb762e44068d85  e2e/contracts-web/dataset-list.ts
@@ -441,7 +441,7 @@ ad47f01b35967d9386c4e4722ec135b4370d6e455b465f23152a4caf4eaafa2c  e2e/contracts-
 55b57ba282263d1631663697bca3be9c4bf657f91067afe6edcaa0ef234cf084  e2e/contracts-web/overview.cw.ts
 ebb860458e023f120e9305ba36e0a05a69da1fbcf1d65372f64d89c09f314f74  e2e/contracts-web/playwright.config.ts
 13f6fa4f714f98de07d57420def78a25c595f48282694993eea6566ad64ca0cd  e2e/contracts-web/rep3-engine.cw.ts
-31f92e50a5f256f1bf0d1bf0a20d4e54ef1fefe32324273244937ac052c0f5b2  e2e/contracts-web/scenes.cw.ts
+3c4af32ee5d97e760e78721d455df703b5adc81099f64fb613fbaaea467ccd9a  e2e/contracts-web/scenes.cw.ts
 66fc771c8337d6738fc926e953c3427a607da19e1416eb376d4aa4481e8e2d89  e2e/contracts-web/transactions.cw.ts
 61f0905bb8612e46c29a6caf4431f49eda77f202ab22894cba915662fcdc5c09  e2e/contracts-web/ui-gating.cw.ts
 b8344a3f753bf0eeca6a2896786da64b8f793baada5b04c8e88f0b75a1ef1dcc  e2e/contracts-web/v2f-detail.cw.ts
