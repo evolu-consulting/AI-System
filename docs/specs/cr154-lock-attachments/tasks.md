@@ -8,10 +8,10 @@ lane: Sonnet (khoá thêm/gỡ «Tài liệu kèm» khi HĐ không còn Nháp; k
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-### MODIFIED sht/tai-lieu-kem.md
+### MODIFIED pack-contracts/tai-lieu-kem.md
 #### Yêu cầu: Tệp kèm chỉ thêm/gỡ được khi HĐ còn Nháp
 HĐ ở bất kỳ trạng thái khác Nháp (đang duyệt, đã ký, từ chối…) là đang khoá: thêm hoặc gỡ tệp kèm trả 409 `CONTRACT_NOT_DRAFT`, kể cả quản trị. Danh sách tệp trả `locked`, `can_add=false`, `can_remove=false`; xem và tải vẫn được. Màn «Tài liệu kèm» ẩn nút Thêm/Gỡ và nói lý do. Luật ở MỘT chỗ (`isContractFilesLocked`); kiểm cùng giao dịch với ghi (câu ghi lọc `status='draft'`).
-- Kịch bản: khi HĐ nháp thì người được giao (không phải người tạo) thêm/gỡ được; khi đang duyệt, đã ký, từ chối thì thêm/gỡ bị từ chối (locked → 409), xem/link vẫn được [test: apps/hub-api/src/modules/packs/contracts/adapters/contract-files.int.test.ts » người được giao (không phải người tạo) thêm/gỡ được; đang duyệt / đã ký / từ chối ⇒ locked]
+- Kịch bản: khi HĐ nháp thì người được giao (không phải người tạo) thêm/gỡ được; khi đang duyệt, đã ký, từ chối thì thêm/gỡ bị từ chối (locked → 409), xem/link vẫn được [test: apps/hub-api/src/modules/packs/contracts/adapters/contract-files.int.test.ts » nháp cho người được giao thêm gỡ, ngoài nháp thì khoá nhưng vẫn xem được]
 - Kịch bản: khi HĐ rời Nháp giữa lúc đưa tệp lên thì câu ghi từ chối, byte vừa đưa lên bị gỡ [test: apps/hub-api/src/modules/packs/contracts/adapters/contract-files.int.test.ts » đua: HĐ rời Nháp]
 - Kịch bản: khi trạng thái khác Nháp thì luật thuần không cho gắn/gỡ kể cả quản trị [test: apps/hub-api/src/modules/packs/contracts/domain/contract-files.rules.test.ts » CR-154 khoá tệp kèm]
 - Kịch bản: khi HĐ đang duyệt thì UI ẩn nút Thêm tệp và hiện lý do [test: e2e/contracts-web/cr154-lock-attachments.cw.ts » HĐ đang duyệt: không có nút Thêm tệp]

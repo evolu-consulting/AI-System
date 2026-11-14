@@ -144,7 +144,7 @@ describe("CR-133 · chặn đọc chéo công ty (contracts.contract_files)", ()
 });
 
 describe("CR-154 · HĐ không còn Nháp ⇒ khoá thêm/gỡ tệp kèm", () => {
-  it("nháp: người được giao (không phải người tạo) thêm/gỡ được; đang duyệt / đã ký / từ chối ⇒ locked, xem + link vẫn được", async () => {
+  it("nháp cho người được giao thêm gỡ, ngoài nháp thì khoá nhưng vẫn xem được", async () => {
     const id = await mk();
     await o`update contracts.contracts set owner_user_id = ${U2} where id = ${id}`;
     const added = await uc().add(w(U2), id, editor, docx("giao.docx"));
