@@ -239,8 +239,10 @@ export function parseMeStreamMsgEvent(event: string, data: unknown): MeStreamMsg
 // CR-148 · danh bạ «Thành viên» tải dần (thay mảng đầy đủ của CR-132b): 30 dòng/lần, trần 50; `q` lọc tên không dấu.
 export const MSG_PEOPLE_PAGE_DEFAULT = 30;
 export const MSG_PEOPLE_PAGE_MAX = 50;
+/** fix-review-r1 · con trỏ = base64url(JSON[cờ, tên phòng ≤ 64, tên ≤ 64, id]) ≤ ~600 ký tự với tên tiếng Việt dài nhất (3 byte/ký tự); trần 1024. */
+export const MSG_PEOPLE_CURSOR_MAX = 1024;
 export const MsgPeopleQuerySchema = z.object({
-  cursor: z.string().max(300).optional(),
+  cursor: z.string().max(MSG_PEOPLE_CURSOR_MAX).optional(),
   q: z.string().trim().max(80).optional(),
   limit: z.coerce.number().int().min(1).max(MSG_PEOPLE_PAGE_MAX).default(MSG_PEOPLE_PAGE_DEFAULT),
 });
@@ -254,6 +256,6 @@ export const MsgPersonSchema = z.object({
 export type MsgPerson = z.infer<typeof MsgPersonSchema>;
 export const MsgPeoplePageSchema = z.object({
   items: z.array(MsgPersonSchema),
-  next_cursor: z.string().max(300).nullable(),
+  next_cursor: z.string().max(MSG_PEOPLE_CURSOR_MAX).nullable(),
 });
 export type MsgPeoplePage = z.infer<typeof MsgPeoplePageSchema>;

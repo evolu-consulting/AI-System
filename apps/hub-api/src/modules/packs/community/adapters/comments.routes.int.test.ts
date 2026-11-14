@@ -319,4 +319,13 @@ describe("CR-147c · bảng tin trả kèm 2 bình luận mới nhất + tổng 
     expect([...older.reverse(), ...(it?.recentComments.map((x) => x.id) ?? [])]).toEqual(all);
     expect((await call("hA", "GET", `/posts/${post}/comments?dir=sideways`)).status).toBe(400);
   });
+
+  it("fix-review-r1 · before không tồn tại / thuộc bài khác ⇒ 400 mã COMMENT_BEFORE_NOT_FOUND (không trả [] im lặng)", async () => {
+    const other = await add("s1a", s1Post, "Bình luận bài khác");
+    for (const bad of ["00000000-0000-4000-8000-0000000000ee", other.id]) {
+      const r = await call("hA", "GET", `/posts/${post}/comments?dir=desc&before=${bad}`);
+      expect(r.status).toBe(400);
+      expect(JSON.stringify(r.json)).toContain("COMMENT_BEFORE_NOT_FOUND");
+    }
+  });
 });

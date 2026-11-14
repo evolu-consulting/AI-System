@@ -107,6 +107,7 @@
       "title": "View file",
       "download": "Download",
       "loading": "Opening file…",
+      "docxTitle": "Word file content",
       "error": "Could not open this file.",
       "noPreview": "This file type cannot be previewed. Click “Download” to open it on your computer.",
       "zoomIn": "Zoom in",

@@ -112,7 +112,7 @@ function viewerAndPartners(r: R, d: CommunityDeps, access: Acc): void {
     if (a.org !== null || !d.brand || !d.caps || !(await d.caps.admin(a.who)))
       throw appError("FORBIDDEN");
     const { cover } = parseWith(CommunityBrandCoverSetSchema, await readJson(c));
-    await d.brand.setCover(a.who.tenantId, cover);
+    await d.brand.setCover(a.who.tenantId, a.who.userId, cover); // ghi người đổi vào company_settings.updated_by
     return c.json({ cover });
   });
   r.get("/partners", async (c) => {

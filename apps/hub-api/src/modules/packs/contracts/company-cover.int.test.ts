@@ -204,6 +204,12 @@ describe("CR-147b · PUT /brand/cover (đổi ảnh bìa công ty ngay ở hồ 
     expect((await call("hA", "/c/company/cover")).json).toEqual({ cover: COVER });
   });
 
+  it("fix-review-r1 · ghi người đổi: company_settings.updated_by = chủ sở hữu vừa đổi (không phải người cũ / rỗng)", async () => {
+    await call("hA", "/brand/cover", { body: { cover: null } });
+    const r = await sql`select updated_by from contracts.company_settings where tenant_id = ${c.A}`;
+    expect(r[0]?.updated_by).toBe(c.hA);
+  });
+
   it("chéo tenant: chủ sở hữu B chỉ đổi bìa của B; A mang tenant B ⇒ 403", async () => {
     const before = await A_COVER();
     expect((await call("hB", "/brand/cover", { body: { cover: COVER } })).status).toBe(200);

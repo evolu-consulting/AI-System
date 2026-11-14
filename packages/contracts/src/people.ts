@@ -4,7 +4,9 @@ import { z } from "zod";
 import { UuidSchema as Uuid } from "./common";
 import { COMPANY_COVER_MAX_BYTES, coverBytes } from "./pack-contracts/company";
 
-export const AVATAR_MAX_BYTES = 2_097_152;
+/** fix-review-r1 · server chỉ nhận avatar đã cắt vuông ~256 px WebP (vài chục KB): trần 150 KB (≤ 205 000 ký tự base64 + tiền tố). */
+export const AVATAR_MAX_BYTES = 153_600;
+export const AVATAR_MAX_CHARS = 205_000;
 /** Ảnh bìa cá nhân cùng luật với ảnh bìa công ty (PNG/JPG/WebP ≤ 3 MB). */
 export const PERSON_COVER_MAX_BYTES = COMPANY_COVER_MAX_BYTES;
 export const JOB_TITLE_MAX = 80;
@@ -20,8 +22,8 @@ const image = (maxBytes: number, chars: number, msg: string) =>
 export const AvatarSetSchema = z.strictObject({
   avatar: image(
     AVATAR_MAX_BYTES,
-    2_800_000,
-    "Ảnh đại diện phải là PNG, JPG hoặc WebP, tối đa 2 MB",
+    AVATAR_MAX_CHARS,
+    "Ảnh đại diện phải là PNG, JPG hoặc WebP, tối đa 150 KB",
   ).nullable(),
 });
 export type AvatarSet = z.infer<typeof AvatarSetSchema>;

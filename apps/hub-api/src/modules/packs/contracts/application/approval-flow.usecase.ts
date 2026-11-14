@@ -2,7 +2,7 @@
 // phòng ban theo TÊN (mã Group ⇒ id theo tenant ⇒ tên). Không còn lưu mẫu (PUT bỏ; sửa ở ai-admin). Cũng giữ `GET /dify-workflows`
 // và các kiểu cổng dùng chung (`FlowGroups`, `FlowMembers`). Lớp 2: chỉ cổng.
 
-import type { FactWhen } from "@ai/contracts/hub-admin";
+import { type FactWhen, FactWhenSchema } from "@ai/contracts/hub-admin";
 import type { EventFlow, PackUow, PackWho } from "../../kit/public";
 import { PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
 import type { DifyWorkflow } from "../domain/approval-flow.rules";
@@ -89,6 +89,8 @@ export type CurrentFlow = {
   /** CR-146 · thứ tự xét, «Bắt đầu khi» (FactWhen), tên Group trong điều kiện, khối ký / đối tác (chỉ xem). */
   position: number;
   start_when: FactWhen | null;
+  /** fix-review-r1 · điều kiện đã lưu không đọc được (sai dạng) ⇒ `start_when` = null + cờ này (UI hiện «Không đọc được điều kiện»). */
+  start_when_unreadable?: true;
   group_names: Record<string, string>;
   sign: {
     company_signers: { kind: "user" | "group"; name: string | null }[];
@@ -232,6 +234,16 @@ export function readCurrentFlows(
   };
 }
 
+/** `when` lưu trong flow → `FactWhen`. Vắng ⇒ null (mọi hợp đồng còn lại); sai dạng ⇒ null + cờ (KHÔNG ép kiểu, KHÔNG nói «mọi hợp đồng»). */
+export function readStartWhen(raw: unknown): {
+  start_when: FactWhen | null;
+  start_when_unreadable?: true;
+} {
+  if (raw === null || raw === undefined) return { start_when: null };
+  const r = FactWhenSchema.safeParse(raw);
+  return r.success ? { start_when: r.data } : { start_when: null, start_when_unreadable: true };
+}
+
 function currentOf(
   p: { f: EventFlow; steps: EventStep[]; branches: boolean; sp: SignPartnerView; codes: string[] },
   lk: FlowLookups,
@@ -261,7 +273,7 @@ function currentOf(
     steps,
     has_branches: p.branches,
     position: p.f.position,
-    start_when: (p.f.when as FactWhen | null) ?? null,
+    ...readStartWhen(p.f.when),
     group_names,
     sign: e
       ? {

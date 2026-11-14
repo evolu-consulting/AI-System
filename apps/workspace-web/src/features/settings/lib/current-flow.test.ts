@@ -36,6 +36,12 @@ describe("current-flow · toCurrentFlow", () => {
       [null, "dify"],
     ]);
   });
+  test("fix-review-r1: start_when_unreadable ⇒ startWhenBad (UI hiện «Không đọc được điều kiện»)", () => {
+    expect(
+      toCurrentFlow(raw([], { start_when: null, start_when_unreadable: true }))?.startWhenBad,
+    ).toBe(true);
+    expect(toCurrentFlow(raw([], {}))?.startWhenBad).toBe(false);
+  });
   test("CR-125 · S2: rẽ nhánh; bước kỹ thuật ẩn ⇒ có thể rỗng; CR-146 điều kiện + khối ký", () => {
     const f = toCurrentFlow(
       raw([], {

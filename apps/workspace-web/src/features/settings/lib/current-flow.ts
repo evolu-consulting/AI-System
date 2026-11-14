@@ -41,6 +41,8 @@ export type CurrentFlow = {
   /** CR-146 · thứ tự xét (0 = đầu); «Bắt đầu khi» (null ⇒ mọi hợp đồng còn lại); tên Group trong điều kiện. */
   position: number;
   startWhen: FactWhen | null;
+  /** fix-review-r1 · điều kiện lưu không đọc được ⇒ hiện «Không đọc được điều kiện», không hiện «Mọi hợp đồng còn lại». */
+  startWhenBad: boolean;
   groupNames: Record<string, string>;
   /** CR-146 · khối chỉ xem ký / đối tác; `sign` null ⇒ quy trình không có bước Ký. */
   sign: {
@@ -76,6 +78,7 @@ function fromApi(d: ApprovalFlowCurrent): CurrentFlow {
     hasBranches: d.has_branches ?? false,
     position: d.position ?? 0,
     startWhen: d.start_when ?? null,
+    startWhenBad: d.start_when_unreadable ?? false,
     groupNames: d.group_names ?? {},
     sign: d.sign
       ? { signers: d.sign.company_signers, partnerSigns: d.sign.partner_signs, order: d.sign.order }

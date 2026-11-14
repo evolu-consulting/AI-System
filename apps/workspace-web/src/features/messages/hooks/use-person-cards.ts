@@ -1,48 +1,39 @@
 // CR-148 · thẻ người (avatar, phòng ban, chức vụ) cho cả trang danh sách/khung chat: đọc THEO LÔ ≤ 50 id những người chưa có; lưu trong phiên
 // (5 phút), không gọi từng người. Lỗi ⇒ không có thẻ (giao diện rơi về chữ cái đầu, vẫn dùng được).
+// fix-review-r1 · kho theo phiên (tenant + user, xoá khi đổi phiên) + bộ đếm phiên bản (`lib/person-card-store.ts`).
 import type { PersonCard } from "@ai/contracts/people";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useSession } from "~/features/auth/hooks/use-session";
 import { fetchPersonCards } from "../api";
 import { missingBatches } from "../lib/cards";
+import { createCardStore } from "../lib/person-card-store";
 
-const TTL = 5 * 60_000;
-const store = new Map<string, { card: PersonCard; at: number }>();
-const inflight = new Set<string>();
-const subs = new Set<() => void>();
+const store = createCardStore(5 * 60_000);
 
 export function usePersonCards(ids: readonly string[]): ReadonlyMap<string, PersonCard> {
-  const [, bump] = useState(0);
+  const scope = useSession((s) => (s.me ? `${s.me.tenant.id}:${s.me.id}` : ""));
+  store.ensure(scope); // idempotent: đổi phiên ⇒ kho trống TRƯỚC khi đọc version/thẻ
   const key = useMemo(() => [...new Set(ids)].sort().join(","), [ids]);
+  const version = useSyncExternalStore(store.subscribe, store.version, store.version);
   useEffect(() => {
-    const now = Date.now();
-    const have = (id: string) => inflight.has(id) || (store.get(id)?.at ?? 0) > now - TTL;
-    const batches = missingBatches(key ? key.split(",") : [], have);
-    const poke = () => bump((n) => n + 1);
-    subs.add(poke);
+    if (!scope) return;
+    const batches = missingBatches(key ? key.split(",") : [], (id) => store.have(scope, id));
     for (const b of batches) {
-      for (const id of b) inflight.add(id);
+      const epoch = store.begin(scope, b);
       fetchPersonCards(b)
-        .then((cards) => {
-          for (const c of cards) store.set(c.user_id, { card: c, at: Date.now() });
-        })
+        .then((cards) => store.put(scope, epoch, cards))
         .catch(() => undefined)
-        .finally(() => {
-          for (const id of b) inflight.delete(id);
-          for (const fn of subs) fn();
-        });
+        .finally(() => store.done(scope, epoch, b));
     }
-    return () => {
-      subs.delete(poke);
-    };
-  }, [key]);
-  const version = store.size; // thẻ mới về ⇒ tính lại
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `version` chỉ để kích hoạt tính lại
+  }, [key, scope]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `version` chỉ để kích hoạt tính lại khi thẻ mới về / phiên đổi
   return useMemo(() => {
     const m = new Map<string, PersonCard>();
+    if (!scope) return m;
     for (const id of key ? key.split(",") : []) {
-      const e = store.get(id);
-      if (e) m.set(id, e.card);
+      const c = store.get(scope, id);
+      if (c) m.set(id, c);
     }
     return m;
-  }, [key, version]);
+  }, [key, scope, version]);
 }

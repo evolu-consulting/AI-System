@@ -107,6 +107,7 @@
       "title": "Xem tệp",
       "download": "Tải về",
       "loading": "Đang mở tệp…",
+      "docxTitle": "Nội dung tệp Word",
       "error": "Không mở được tệp này.",
       "noPreview": "Loại tệp này chưa xem trước được. Bấm «Tải về» để mở bằng phần mềm trên máy.",
       "zoomIn": "Phóng to",

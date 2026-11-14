@@ -70,7 +70,7 @@ export type CompanyBrandReader = {
   /** CR-138 Q9: ảnh bìa công ty chủ quản (data URL PNG/JPG/WebP ≤ 3 MB) hoặc null. */
   cover(tenantId: string): Promise<string | null>;
   /** CR-147b: chủ sở hữu đổi/xoá ảnh bìa công ty (cùng cột `cover` của CR-138; gọi sau khi route đã kiểm `caps.admin`). */
-  setCover(tenantId: string, cover: string | null): Promise<void>;
+  setCover(tenantId: string, actorUserId: string, cover: string | null): Promise<void>;
 };
 
 /** CR-110 · COM-FR-43 (I3): người gọi có quyền đọc gói contracts? Từ cache cấu hình (0 SQL khi nóng). User ngoài ⇒ false. */

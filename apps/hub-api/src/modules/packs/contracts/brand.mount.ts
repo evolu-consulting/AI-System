@@ -21,7 +21,7 @@ type BrandReader = {
   /** CR-138 Q9: ảnh bìa công ty (data URL) hoặc null — tách khỏi `brand` để không kéo ảnh to vào mỗi lần tải app. */
   cover(tenantId: string): Promise<string | null>;
   /** CR-147b: chủ sở hữu đổi/xoá ảnh bìa (cùng cột CR-138; gọi sau khi route đã kiểm `caps.admin`). */
-  setCover(tenantId: string, cover: string | null): Promise<void>;
+  setCover(tenantId: string, actorUserId: string, cover: string | null): Promise<void>;
 };
 
 const brandOf = (tx: Tx, tid: string): Promise<BrandRow | null> =>
@@ -31,11 +31,17 @@ const brandOf = (tx: Tx, tid: string): Promise<BrandRow | null> =>
       from contracts.company_settings s where s.tenant_id = ${tid}::uuid`,
   );
 
-/** Chỉ cột `cover`; chưa có hàng ⇒ tạo hàng với mặc định cột (accent indigo, theme auto) — như lần lưu đầu. */
-const setCoverOf = async (tx: Tx, tid: string, cover: string | null): Promise<void> => {
+/** Chỉ cột `cover` (+ `updated_by` = người đổi, cùng cơ chế nhật ký của company_settings); chưa có hàng ⇒ tạo hàng với mặc định cột (accent indigo, theme auto) — như lần lưu đầu. */
+const setCoverOf = async (
+  tx: Tx,
+  tid: string,
+  actor: string,
+  cover: string | null,
+): Promise<void> => {
   await tx.execute(
-    sql`insert into contracts.company_settings as s (tenant_id, cover) values (${tid}::uuid, ${cover})
-      on conflict (tenant_id) do update set cover = excluded.cover, version = s.version + 1, updated_at = now()`,
+    sql`insert into contracts.company_settings as s (tenant_id, cover, updated_by) values (${tid}::uuid, ${cover}, ${actor}::uuid)
+      on conflict (tenant_id) do update set cover = excluded.cover, version = s.version + 1,
+        updated_by = excluded.updated_by, updated_at = now()`,
   );
 };
 
@@ -49,11 +55,11 @@ export function companyBrandModule(db: Db): BrandReader {
   const uow = createPackUow(db, KEY, (tx, t) => ({
     brand: () => brandOf(tx, t),
     cover: () => coverOf(tx, t),
-    setCover: (cover: string | null) => setCoverOf(tx, t, cover),
+    setCover: (actor: string, cover: string | null) => setCoverOf(tx, t, actor, cover),
   }));
   return {
     brand: (tenantId) => uow.system(tenantId, (r) => r.brand()),
     cover: (tenantId) => uow.system(tenantId, (r) => r.cover()),
-    setCover: (tenantId, cover) => uow.system(tenantId, (r) => r.setCover(cover)),
+    setCover: (tenantId, actor, cover) => uow.system(tenantId, (r) => r.setCover(actor, cover)),
   };
 }

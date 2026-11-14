@@ -12,7 +12,18 @@ import { PeopleService } from "./people.service";
 
 const PNG = `data:image/png;base64,${"iVBORw0KGgo".repeat(8)}AAAA`;
 const T = { a: tenantId(1471), b: tenantId(1472) };
-const U = { a1: userId(1471), a2: userId(1472), b1: userId(1473) };
+const U = {
+  a1: userId(1471),
+  a2: userId(1472),
+  b1: userId(1473),
+  e1: userId(1474),
+  e2: userId(1475),
+  e3: userId(1476),
+};
+const ORG = {
+  x: "00000000-0000-4000-8000-0000000014a1",
+  y: "00000000-0000-4000-8000-0000000014a2",
+};
 let o: Sql;
 let db: Db;
 let svc: PeopleService;
@@ -40,6 +51,11 @@ beforeAll(async () => {
   await users(o, T.a, 2, { from: 1471 });
   await users(o, T.b, 1, { from: 1473 });
   await department(o, T.a, "sales", { head: null, members: [U.a2] });
+  await o`insert into admin.external_orgs (id, tenant_id, name) values (${ORG.x}, ${T.a}, 'NCC X'), (${ORG.y}, ${T.a}, 'NCC Y') on conflict do nothing`;
+  await o`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, kind, external_org_id, must_change_password) values
+    (${U.e1}, ${T.a}, 'ncc-e1', 'x', 'Đối tác E1', 'member', 'external', ${ORG.x}, false),
+    (${U.e2}, ${T.a}, 'ncc-e2', 'x', 'Đối tác E2', 'member', 'external', ${ORG.x}, false),
+    (${U.e3}, ${T.a}, 'ncc-e3', 'x', 'Đối tác E3', 'member', 'external', ${ORG.y}, false) on conflict do nothing`;
   db = createDb(urls().hubApi, { max: 2 });
   svc = new PeopleService(db);
 }, 120_000);
@@ -125,5 +141,28 @@ describe("CR-147b · people_profiles", () => {
       await code(() => svc.setMine(au("a1", T.a), "avatar", "data:image/svg+xml;base64,AAAA")),
     ).toBe("23514");
     expect(await code(() => svc.setMine(au("a1", T.a), "avatar", big))).toBe("23514");
+  });
+
+  it("fix-review-r1 · avatar 200 KB bị CHECK 0144 chặn; 100 KB vẫn được", async () => {
+    const kb200 = `data:image/webp;base64,${"A".repeat(273_000)}`;
+    const kb100 = `data:image/webp;base64,${"A".repeat(136_000)}`;
+    expect(await code(() => svc.setMine(au("a1", T.a), "avatar", kb200))).toBe("23514");
+    expect(await code(() => svc.setMine(au("a1", T.a), "avatar", kb100))).toBe("ok");
+  });
+
+  it("fix-review-r1 · đối tác chỉ thấy thẻ người cùng tổ chức đối tác, không lộ nhân viên chủ quản (cờ lấy từ DB, không tin token)", async () => {
+    await o`insert into hub.people_profiles (tenant_id, user_id, job_title, avatar) values (${T.a}, ${U.a2}, 'Trưởng nhóm bán hàng', ${PNG})
+      on conflict (tenant_id, user_id) do update set job_title = excluded.job_title, avatar = excluded.avatar`;
+    const ids = [U.a1, U.a2, U.e1, U.e2, U.e3, U.b1];
+    const ext = { ...au("e1", T.a), userKind: "external" } as AuthUser;
+    const r = await svc.cards(ext, ids);
+    expect(r.items.map((x) => x.user_id).sort()).toEqual([U.e1, U.e2].sort());
+    expect(JSON.stringify(r)).not.toContain("Trưởng nhóm");
+    // Token khai "internal" nhưng DB là external ⇒ vẫn bị chặn như đối tác.
+    expect((await svc.cards(au("e1", T.a), [U.a1, U.a2, U.e3])).items).toEqual([]);
+    // Nhân viên vẫn thấy cả đối tác lẫn nhân viên (không đổi hành vi).
+    expect((await svc.cards(au("a1", T.a), [U.a2, U.e1])).items.length).toBe(2);
+    // Chéo tenant: đối tác của A xin id của B ⇒ rỗng.
+    expect((await svc.cards(ext, [U.b1])).items).toEqual([]);
   });
 });

@@ -293,6 +293,8 @@ export const ApprovalFlowCurrentSchema = z.strictObject({
   position: z.number().int().min(0).optional(),
   /** CR-146 · «Bắt đầu khi» (cùng dạng `match.rules.ts`); vắng/null ⇒ «Mọi hợp đồng còn lại». */
   start_when: FactWhenSchema.nullable().optional(),
+  /** fix-review-r1 · điều kiện đã lưu không đọc được ⇒ `start_when` null + cờ này; UI hiện «Không đọc được điều kiện» (không hiện «Mọi hợp đồng còn lại»). */
+  start_when_unreadable: z.boolean().optional(),
   /** CR-146 · mã Group trong `start_when` ⇒ tên phòng (UI không lộ mã). */
   group_names: z.record(z.string(), z.string().max(200)).optional(),
   /** CR-146 · khối chỉ xem «Ký và đối tác của quy trình này», đọc từ args stage Ký / Gửi đối tác của CHÍNH flow. */

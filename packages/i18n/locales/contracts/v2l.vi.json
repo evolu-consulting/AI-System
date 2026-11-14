@@ -194,6 +194,7 @@
     "flow": {
       "current": {
         "listLead": "Hợp đồng đi theo quy trình ĐẦU TIÊN có điều kiện khớp, xét từ trên xuống.",
+        "unreadable": "Không đọc được điều kiện",
         "always": "Mọi hợp đồng còn lại",
         "startWhen": "Bắt đầu khi: {{when}}",
         "stepCount": "{{count}} bước",

@@ -135,7 +135,9 @@ function FlowLoaded({ flows }: { flows: CurrentFlow[] }) {
               </span>
               <span className="block text-caption text-dim" data-testid={`flow-when-${i}`}>
                 {t("contracts.flow.current.startWhen", {
-                  when: whenText(f.startWhen, f.groupNames, t),
+                  when: f.startWhenBad
+                    ? t("contracts.flow.current.unreadable")
+                    : whenText(f.startWhen, f.groupNames, t),
                 })}
               </span>
             </button>

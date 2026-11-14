@@ -20,7 +20,10 @@ export class PeopleService {
   }
 
   async cards(u: AuthUser, ids: readonly string[]): Promise<PeopleResponse> {
-    const items = await withHubScope(this.db, scopeOf(u), (tx) => cardsOf(tx, u.tenantId, ids));
+    const external = u.userKind === "external";
+    const items = await withHubScope(this.db, scopeOf(u), (tx) =>
+      cardsOf(tx, u.tenantId, u.userId, external, ids),
+    );
     return { items };
   }
 }

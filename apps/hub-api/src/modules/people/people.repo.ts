@@ -13,16 +13,23 @@ type CardRow = {
   dept_name: string | null;
 };
 
-/** Thẻ người theo lô: MỘT câu cho cả danh sách (tên + chức vụ + avatar + phòng ban đầu tiên theo khoá). Id ngoài tenant ⇒ bị bỏ. */
+/** Thẻ người theo lô: MỘT câu cho cả danh sách (tên + chức vụ + avatar + phòng ban đầu tiên theo khoá). Id ngoài tenant ⇒ bị bỏ.
+ *  fix-review-r1 · cờ nội bộ/đối tác của NGƯỜI GỌI lấy từ DB (`me`), không tin token: đối tác (DB hoặc token) chỉ thấy người CÙNG tổ chức
+ *  đối tác của mình (không lộ nhân viên chủ quản); người gọi không còn trong tenant ⇒ rỗng. */
 export async function cardsOf(
   tx: Tx,
   tenantId: string,
+  callerId: string,
+  tokenExternal: boolean,
   ids: readonly string[],
 ): Promise<PersonCard[]> {
   const rows = await tx.execute<CardRow>(sql`
+    with me as (select kind, external_org_id from admin.users where id = ${callerId}::uuid and tenant_id = ${tenantId}::uuid)
     select u.id as user_id, u.display_name, pp.job_title, pp.avatar, d.group_id as dept_id, d.name as dept_name
     from jsonb_array_elements_text(${JSON.stringify(ids)}::jsonb) as i(id)
     join admin.users u on u.id = i.id::uuid and u.tenant_id = ${tenantId}::uuid
+    join me on ((me.kind = 'internal' and not ${tokenExternal}::boolean)
+      or (u.kind = 'external' and u.external_org_id is not null and u.external_org_id = me.external_org_id))
     left join hub.people_profiles pp on pp.tenant_id = u.tenant_id and pp.user_id = u.id
     left join lateral (
       select g.id as group_id, coalesce(g.name ->> 'vi', g.key) as name

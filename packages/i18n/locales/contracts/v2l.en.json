@@ -194,6 +194,7 @@
     "flow": {
       "current": {
         "listLead": "A contract follows the FIRST process whose condition matches, checked from top to bottom.",
+        "unreadable": "Cannot read the condition",
         "always": "All remaining contracts",
         "startWhen": "Starts when: {{when}}",
         "stepCount": "{{count}} step(s)",
