@@ -10,6 +10,7 @@ const SENTENCE = {
   review: "process.thread.wait.review",
   ask: "process.thread.wait.ask",
   decision: "process.thread.wait.decide",
+  milestone: "process.thread.wait.milestone",
 } as const;
 
 export const TaskWaitingNote = memo(function TaskWaitingNote({ open }: { open: OpenTask }) {

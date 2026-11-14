@@ -77,6 +77,8 @@ export {
   partnerMailboxPort,
 } from "./adapters/partner-mailbox-port";
 export { createPdfConverter } from "./adapters/pdf/index";
+export type { PeopleReader, Person } from "./adapters/people-reader";
+export { peopleReader } from "./adapters/people-reader";
 export { recordLabelRegistry } from "./adapters/record-label-registry";
 export { shadowEmit } from "./adapters/shadow-emit";
 export { checkSlotContract, flowAdapterSlots } from "./adapters/slot-contract.check";

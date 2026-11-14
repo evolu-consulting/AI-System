@@ -1,8 +1,8 @@
 // CR-145 · SQL nhắc người trong bài: MỘT câu mỗi việc, theo tập (không vòng lặp từng người).
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { Person } from "../../kit/public";
 import type { PostType } from "../domain/audience.rules";
-import type { Person } from "./people.reader";
 
 const arr = (x: readonly string[]) => JSON.stringify([...x]);
 

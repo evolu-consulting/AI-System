@@ -4,11 +4,10 @@
 import type { MentionablePeopleQuery, MentionablePerson } from "@ai/contracts/community";
 import type { Tx } from "@ai/db";
 import { AppError, appError } from "../../../../lib/errors";
-import type { PackUow } from "../../kit/public";
+import type { PackUow, PeopleReader, Person } from "../../kit/public";
 import { type Audience, defaultAudience, type PostType } from "../domain/audience.rules";
 import { orgsSeeingPost } from "./comment-list.repo";
 import type { Access } from "./community-access";
-import type { PeopleReader, Person } from "./people.reader";
 import { type DraftScope, orgsSeeingDraft, replaceMentions } from "./post-mention.repo";
 import { postState } from "./post-write.repo";
 
