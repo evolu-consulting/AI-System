@@ -2,7 +2,7 @@
 // (`ContractPage.tsx:125-139`). Chỉ trình bày. (V2-F: cảnh báo chuyển vào "Tóm tắt", bảng hàng vào "Sản phẩm".)
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
-import { useStartManual } from "../hooks/use-manage";
+import { useReplaceFile, useStartManual } from "../hooks/use-manage";
 import { failReasonKey } from "../lib/fail-reason";
 import { ReextractButton } from "./ReextractButton";
 
@@ -56,6 +56,7 @@ export function ExtractFailed({
 }) {
   const { t } = useTranslation();
   const reason = failReasonKey(error);
+  const replace = useReplaceFile(id); // CR-157b: tải tệp khác ⇒ AI đọc lại
   const manual = useStartManual(id); // CR-157: nhập tay ngay trên HĐ này (không còn dẫn sang trang tạo trống)
   return (
     <Panel className="mb-4 p-5">
@@ -67,6 +68,22 @@ export function ExtractFailed({
         {write && <ReextractButton id={id} retry />}
         {file && <FileLink file={file} />}
 
+        {write && (
+          <label className="btn btn-outline cursor-pointer" data-testid="replace-file">
+            {t("contracts.review.replaceFile")}
+            <input
+              type="file"
+              hidden
+              accept=".pdf,.docx,.jpg,.jpeg,.png,.md"
+              disabled={replace.isPending}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) replace.mutate(f);
+              }}
+            />
+          </label>
+        )}
         {write && (
           <button
             type="button"

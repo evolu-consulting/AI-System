@@ -104,7 +104,8 @@ export function submissionsRepo(tx: Tx, tid: string) {
     async setReconciled(id: string, actor: string | null): Promise<string | null> {
       const [r] = await tx.execute<{ at: string | null }>(sql`with u as (update contracts.contracts
           set reconciled_by = ${actor}::uuid, reconciled_at = case when ${actor}::uuid is null then null else now() end, updated_at = now()
-        where id = ${id}::uuid and tenant_id = ${tid}::uuid and entry_source = 'manual' and status = 'draft' returning reconciled_at),
+        where id = ${id}::uuid and tenant_id = ${tid}::uuid and entry_source = 'manual' and status = 'draft'
+          and extract_state = 'ready' returning reconciled_at),
         e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
           select ${tid}::uuid, ${id}::uuid, case when ${actor}::uuid is null then 'reconcile_cleared' else 'reconciled' end,
             ${actor}::uuid, '{}'::jsonb from u)

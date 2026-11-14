@@ -784,6 +784,10 @@
       "manualStarted": "Đã chuyển sang nhập tay. Xem tệp gốc để đối chiếu.",
       "manualHint": "Nhập các ô còn trống theo tệp gốc. Tích ô dưới đây trước khi Lưu hoặc Gửi duyệt.",
       "manualCheck": "Tôi đã đối chiếu với tệp gốc",
+      "manualDirty": "Có sửa chưa lưu — bấm Lưu nháp rồi tích lại.",
+      "manualBlockWhy": "Tích “Tôi đã đối chiếu với tệp gốc” (sau khi lưu nháp nếu vừa sửa) để tiếp tục.",
+      "replaceFile": "Tải tệp khác",
+      "replaceStarted": "Đã thay tệp. AI đang đọc lại.",
       "manualTag": {
         "pending": "Nhập tay · cần đối chiếu",
         "done": "Nhập tay · đã đối chiếu",

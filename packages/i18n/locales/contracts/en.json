@@ -784,6 +784,10 @@
       "manualStarted": "Switched to manual entry. Open the original file to compare.",
       "manualHint": "Fill the empty fields from the original file. Tick the box below before Save or Submit.",
       "manualCheck": "I have checked this against the original file",
+      "manualDirty": "Unsaved edits — save the draft, then tick again.",
+      "manualBlockWhy": "Tick “I have checked this against the original file” (after saving the draft if you just edited) to continue.",
+      "replaceFile": "Upload another file",
+      "replaceStarted": "File replaced. AI is reading it again.",
       "manualTag": {
         "pending": "Manual entry · needs checking",
         "done": "Manual entry · checked",

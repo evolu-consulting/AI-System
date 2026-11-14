@@ -23,7 +23,12 @@ import { redisUploadCounter, unavailableUploadCounter } from "./adapters/upload-
 import { zipNames } from "./adapters/zip-names";
 import { createPromoteContract } from "./application/promote-contract.usecase";
 import type { ContractFileStore, ExtractionStarter } from "./application/upload-contract.ports";
-import { createUploadContract, takeQuota } from "./application/upload-contract.usecase";
+import {
+  createReplaceFile,
+  createUploadContract,
+  takeQuota,
+  type UploadContractDeps,
+} from "./application/upload-contract.usecase";
 import { uploadDay } from "./domain/upload.rules";
 import { contractFlowGate } from "./flow-events.mount";
 
@@ -84,13 +89,17 @@ function quotaDeps(d: UploadMountDeps) {
  * quy trình đang chạy không được mở thêm một quy trình tiếp nhận khác. Mặc định như route tải lên.
  */
 export function uploadContractFor(d: UploadMountDeps, o: { flow?: boolean } = {}) {
+  return createUploadContract(uploadDepsFor(d, o));
+}
+
+function uploadDepsFor(d: UploadMountDeps, o: { flow?: boolean }): UploadContractDeps {
   const uow = packTenantOnly(
     createPackUow(d.db, KEY, (tx, tid) => ({
       upload: uploadContractRepo(tx, tid),
       contractFlow: contractFlowRepo(tx, tid), // CR-122 A1
     })),
   );
-  return createUploadContract({
+  return {
     uow,
     ...quotaDeps(d),
     files: fileStore(d.filebox),
@@ -103,12 +112,13 @@ export function uploadContractFor(d: UploadMountDeps, o: { flow?: boolean } = {}
     log: logger,
     ...(d.esignOn ? { esignOn: d.esignOn } : {}),
     ...(o.flow === false ? {} : { flow: contractFlowGate(d.db) }), // CR-122 A1
-  });
+  };
 }
 
 export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
   const q = quotaDeps(d);
   const upload = uploadContractFor(d);
+  const replace = createReplaceFile(uploadDepsFor(d, { flow: false })); // CR-157b
   const maxBytes = contractsMaxBytes();
   // CR-101 DOC-deals · R10: nâng giao dịch thành HĐ (file ký + số), cùng kho tệp + kiểm loại tệp với tải lên.
   const promote = createPromoteContract({
@@ -124,5 +134,5 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
       return () => q.counter.refund(who.tenantId, days);
     },
   });
-  return uploadRoutes(d.view, { upload, promote, maxBytes, timeZoneOf: d.timeZoneOf });
+  return uploadRoutes(d.view, { upload, replace, promote, maxBytes, timeZoneOf: d.timeZoneOf });
 }

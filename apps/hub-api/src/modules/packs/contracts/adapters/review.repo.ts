@@ -167,6 +167,9 @@ async function bumpHead(
 ): Promise<number | "not_draft" | "stale"> {
   const p = w.plan;
   const head = await tx.execute<{ version: number }>(sql`update contracts.contracts set
+        -- CR-157b · M3: trường đổi so với bản đã đối chiếu ⇒ bỏ xác nhận (trường y cũ ⇒ giữ, để «Xác nhận & lưu» sau khi tích không tự xoá)
+        reconciled_by = case when fields is distinct from ${JSON.stringify(p.fields)}::jsonb then null else reconciled_by end,
+        reconciled_at = case when fields is distinct from ${JSON.stringify(p.fields)}::jsonb then null else reconciled_at end,
         fields = ${JSON.stringify(p.fields)}::jsonb, deal = ${p.deal}, direction = ${p.direction},
         commission_pct = ${p.commissionPct}::numeric, commission_fixed = ${p.commissionFixed}::bigint,
         kind_terms = case when ${p.deal} in ('franchise', 'cooperation') then kind_terms end,

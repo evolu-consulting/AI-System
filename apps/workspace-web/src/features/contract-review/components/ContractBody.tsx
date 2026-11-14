@@ -44,6 +44,7 @@ import { KindSummary } from "./KindSummary";
 import { LegalBanner } from "./LegalBanner";
 import { ManagePanel, OwnerRow } from "./ManagePanel";
 import { ManualBanner } from "./ManualBanner";
+import { ManualSide } from "./ManualSide";
 import { OriginalFileHost } from "./OriginalFileDialog";
 import { ExtractFailed, FileLink, SaveNotice } from "./ReviewParts";
 import { SubmitPreview } from "./SubmitPreview";
@@ -103,6 +104,8 @@ export function ContractBody(p: {
     submitBlock: c.submit_block ?? null,
     awaitingDecision: (c as { awaiting_decision?: boolean }).awaiting_decision,
   });
+  // CR-157b: HĐ nhập tay chưa đối chiếu (hoặc sửa chưa lưu) ⇒ tắt «Xác nhận & lưu» / Gửi duyệt.
+  const manualBlock = c.entry_source === "manual" && (!c.reconciled_at || info.edited);
   const confirm = c.status === "draft" && c.submit_round === 0 && !ap.submitted;
   const { canSave } = rule;
   const reviewer = decideOnly(ap.view, c.status);
@@ -177,6 +180,7 @@ export function ContractBody(p: {
                 saveFirst={info.saveFirst}
                 onChanged={refresh}
                 canDelete={c.can.delete === true}
+                reconcileBlock={manualBlock}
                 approval={{
                   ...ap.act,
                   view: ap.view,
@@ -197,7 +201,13 @@ export function ContractBody(p: {
             <SubmitPreview id={id} version={c.version} />
           )}
           <HeadBanner kind={rule.banner} c={c} partner={partner} />
-          <ManualBanner c={c} write={write && sup === null} file={file} nameOf={memberName} />
+          <ManualBanner
+            c={c}
+            write={write && sup === null}
+            file={file}
+            nameOf={memberName}
+            dirty={info.edited}
+          />
           <ExtractDialog open={reading} name={c.file?.name ?? c.title} />
           <PartnerSendPanel id={id} write={write} />
           <SignSessionCard id={id} write={write} />
@@ -263,6 +273,7 @@ export function ContractBody(p: {
           {c.doc?.doc_type === "deal" && <EditLogPanel id={id} />}
         </div>
       </div>
+      <ManualSide c={c} show={write && sup === null} />
     </div>
   );
 }

@@ -11,6 +11,8 @@ export const MANUAL_ENTRY_ERRORS = {
   MANUAL_NOT_ALLOWED: 409,
   /** `reconcile` trên HĐ không phải nhập tay. */
   NOT_MANUAL: 409,
+  /** CR-157b · thay tệp: chỉ HĐ DRAFT + AI đọc lỗi. */
+  REPLACE_NOT_ALLOWED: 409,
 } as const;
 export type ManualEntryErrorCode = keyof typeof MANUAL_ENTRY_ERRORS;
 

@@ -44,8 +44,11 @@ export function HeadActions({
   onChanged,
   approval,
   canDelete,
+  reconcileBlock = false,
 }: {
   id: string;
+  /** CR-157b: HĐ nhập tay chưa tích đối chiếu (hoặc có sửa chưa lưu) ⇒ «Xác nhận & lưu» / Gửi duyệt tắt. */
+  reconcileBlock?: boolean;
   rule: HeadRule;
   approval: HeadApprovalActs;
   canDelete: boolean;
@@ -163,6 +166,8 @@ export function HeadActions({
       testId: "act-release",
     },
   };
+  const gated = (k: string | null) =>
+    reconcileBlock && (k === "approvalConfirm" || k === "pageConfirm" || k === "resubmit");
   const items: PopItem[] = acts.menu
     .filter((m) => m.key !== "delete")
     .map((m) => {
@@ -173,6 +178,7 @@ export function HeadActions({
         testId: a.testId,
         ...(a.attr ? { dataAttr: a.attr } : {}),
         ...(m.whyKey ? { disabled: true, why: t(m.whyKey) } : {}),
+        ...(gated(m.key) ? { disabled: true, why: t("contracts.review.manualBlockWhy") } : {}),
         onSelect: a.run,
       };
     });
@@ -185,7 +191,8 @@ export function HeadActions({
           size="sm"
           data-testid={main.testId}
           data-approval={main.attr}
-          disabled={off}
+          disabled={off || gated(acts.primary)}
+          title={gated(acts.primary) ? t("contracts.review.manualBlockWhy") : undefined}
           onClick={main.run}
         >
           {approval.busy && main.attr === "approve"

@@ -37,6 +37,7 @@ async function reconcileTx(r: Repos, who: PackWho, id: string, on: boolean): Pro
   const can = canReconcile(h, who.userId);
   if (can === "forbidden") return { error: "forbidden" };
   if (can !== "ok") return { error: "NOT_MANUAL" };
+  if (h.extractState !== "ready") return { error: "MANUAL_NOT_ALLOWED" }; // CR-157b · M5: AI đang đọc/lỗi ⇒ chưa đối chiếu
   const at = await r.sub.setReconciled(id, on ? who.userId : null);
   return { by: on ? who.userId : null, at };
 }

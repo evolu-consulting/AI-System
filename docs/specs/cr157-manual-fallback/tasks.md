@@ -22,11 +22,28 @@ Người nhập tích «Tôi đã đối chiếu với tệp gốc» ⇒ `PUT /c
 - Danh sách/chi tiết chỉ thêm khoá khi HĐ manual ⇒ bộ khoá HĐ do AI đọc không đổi (test khoá cũ giữ xanh).
 - Tên «đối chiếu bởi X» tra ở web qua `useMemberNames` (API chỉ trả id).
 
+## CR-157b (làm tiếp sau soát Opus)
+| # | Việc | Xong |
+|---|---|---|
+| M1 | «Trích lại» ở lượt duyệt (`approval.repo.ts` markQ) xoá `reconciled_*` | [x] |
+| M3 | Lưu sửa trường HĐ manual (PATCH trường; `/review` khi trường đổi) xoá `reconciled_*` ⇒ tích lại | [x] |
+| M2 | Đọc lại bằng AI GIỮ `entry_source = manual` (điều phối chốt) | [x] |
+| M4 | Sửa comment `submit.usecase.ts`, `manual-entry.rules.ts` (Lưu nháp không bị chặn) | [x] |
+| M5 | `setReconciled` + `reconcileTx` chỉ khi `extract_state = ready` (409 `MANUAL_NOT_ALLOWED`) | [x] |
+| UI | Gửi duyệt / «Xác nhận & lưu» tắt khi chưa tích (hoặc có sửa chưa lưu); tệp gốc cạnh form (desktop 2 cột, `ManualSide` dùng `Viewer` CR-149; mobile giữ nút xem) | [x] |
+| Q1 | `POST /contracts/:id/replace-file` (`createReplaceFile`: dùng lại kiểm tệp/quota/FileBox/đổi chữ của tải lên; người tạo ∪ phụ trách; DRAFT + failed) + nút «Tải tệp khác» | [x] |
+| Q4 | Gợi ý theo từng trường khi AI đọc lại HĐ manual | chưa (xem Việc còn lại) |
+
+### Quyết định trong lúc làm (b)
+- M2: đọc lại bằng AI không đổi `entry_source` (HĐ vẫn «nhập tay», phải đối chiếu lại vì `reconciled_*` bị xoá).
+- M3 ở `/review`: chỉ xoá khi `fields` đổi so với DB (`is distinct from`), để «Xác nhận & lưu» ngay sau khi tích không tự xoá tích.
+- Q1: thay tệp = một câu CTE (khoá HĐ → `files` → UPDATE `file_id`/`source_text`/`extract_state`/`error`, xoá `reconciled_*`, version +1 → event `file_replaced`); sau commit `starter.start` như tải lên (`flow: false`, không phát `contract.uploaded`). Tệp cũ giữ trong `files` (lịch sử). Quota tải lên tính như một lượt tải.
+- Form có sửa chưa lưu ⇒ ô tích bị khoá + nút tắt (vì lưu sửa xoá tích): người dùng Lưu nháp rồi tích lại.
+- Cột tệp gốc cạnh form vẫn dựng (CSS ẩn) trên điện thoại ⇒ có thể tải tệp thừa; chấp nhận, ghi nợ nếu thấy chậm.
+
 ## Việc còn lại
-- Q1 «Tải tệp khác» (thay tệp rồi AI đọc lại): chưa có route thay tệp của HĐ DRAFT (chỉ xoá + tải mới) ⇒ cần route mới, > 10 phút ⇒ không làm.
-- Q4 gợi ý theo từng trường (AI đọc lại, người dùng chọn giữ/thay): chưa có so sánh; hiện ô đã sửa được giữ, ô trống được AI điền.
-- «Hiện tệp gốc cạnh form»: hiện bằng nút «Xem file gốc» mở khung xem sẵn có (CR-149), chưa dàn hai cột.
-- Nút Lưu/Gửi chưa tắt khi chưa tích (máy chủ chặn 422, màn hiện câu rõ); có thể tắt nút ở lượt sau.
+- Q4 gợi ý theo từng trường (AI đọc lại HĐ manual, người dùng bấm «Dùng» hoặc bỏ qua): chưa làm (cần lưu kết quả AI riêng + UI từng ô); hiện ô đã sửa được giữ, ô trống được AI điền.
+- Test `/review` đổi trường xoá đối chiếu chưa có int riêng (chỉ PATCH trường); logic cùng mẫu SQL.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
@@ -45,3 +62,12 @@ Trạng thái gộp: chưa gộp
 - Kịch bản: khi tích ô đã đối chiếu với tệp gốc thì ghi xác nhận [test: e2e/contracts-web/cr157-manual-fallback.cw.ts » Nhập tay chưa đối chiếu: tích ô]
 - Kịch bản: khi đã đối chiếu thì nhãn nêu người đối chiếu và người duyệt chỉ thấy nhãn [test: e2e/contracts-web/cr157-manual-fallback.cw.ts » Nhập tay đã đối chiếu: nhãn có tên người đối chiếu]
 - Kịch bản: khi hợp đồng đã đối chiếu thì nhãn nêu tên người đối chiếu, chưa đối chiếu thì nêu cần đối chiếu [test: apps/workspace-web/src/features/contract-review/lib/manual-entry.test.ts » đã đối chiếu có tên ⇒ bởi X]
+- Kịch bản: khi HĐ nhập tay đã đối chiếu mà người dùng sửa trường rồi lưu thì xoá đối chiếu, phải tích lại [test: apps/hub-api/src/modules/packs/contracts/adapters/manual-entry-b.int.test.ts » sửa trường HĐ manual đã đối chiếu ⇒ xoá đối chiếu]
+- Kịch bản: khi bấm Trích lại lúc HĐ đang ở lượt duyệt thì xoá đối chiếu [test: apps/hub-api/src/modules/packs/contracts/adapters/manual-entry-b.int.test.ts » Trích lại khi HĐ đang ở lượt duyệt ⇒ xoá reconciled_by và reconciled_at]
+- Kịch bản: khi AI đang đọc hoặc đọc lỗi thì không đối chiếu được [test: apps/hub-api/src/modules/packs/contracts/adapters/manual-entry-b.int.test.ts » extract_state khác ready (đang đọc hoặc lỗi) ⇒ MANUAL_NOT_ALLOWED]
+- Kịch bản: khi HĐ nháp đọc lỗi thì người tạo hoặc người được giao tải tệp khác, AI đọc lại và bỏ đối chiếu [test: apps/hub-api/src/modules/packs/contracts/adapters/manual-entry-b.int.test.ts » DRAFT + failed, người được giao (không phải người tạo) ⇒ thay tệp]
+- Kịch bản: khi người ngoài hoặc công ty khác gọi thay tệp thì bị từ chối hoặc không thấy hợp đồng [test: apps/hub-api/src/modules/packs/contracts/adapters/manual-entry-b.int.test.ts » người ngoài ⇒ FORBIDDEN, tenant khác ⇒ NOT_FOUND]
+- Kịch bản: khi hợp đồng đang đọc, đã đọc xong hoặc không còn nháp thì không thay tệp được [test: apps/hub-api/src/modules/packs/contracts/adapters/manual-entry-b.int.test.ts » sai trạng thái (đang đọc, đã đọc xong, không còn nháp) ⇒ REPLACE_NOT_ALLOWED]
+- Kịch bản: khi nhập tay chưa tích đối chiếu thì nút Xác nhận và lưu tắt, tích xong thì bật [test: e2e/contracts-web/cr157-manual-fallback.cw.ts » Nhập tay chưa đối chiếu: nút Xác nhận và lưu tắt]
+- Kịch bản: khi nhập tay trên màn rộng thì tệp gốc hiện cạnh form [test: e2e/contracts-web/cr157-manual-fallback.cw.ts » Nhập tay trên màn rộng: tệp gốc hiện cạnh form]
+- Kịch bản: khi đọc lỗi thì bấm Tải tệp khác gửi tệp để thay [test: e2e/contracts-web/cr157-manual-fallback.cw.ts » Đọc lỗi: Tải tệp khác gửi tệp tới replace-file]

@@ -162,6 +162,86 @@ export function createUploadContract(d: UploadContractDeps): UploadContract {
   };
 }
 
+export type ReplaceFileInput = {
+  who: PackWho;
+  id: string;
+  timeZone: string;
+  bytes: Uint8Array;
+  name: string;
+};
+export type ReplaceContractFile = (
+  i: ReplaceFileInput,
+) => Promise<{ extractState: UploadExtract; version: number }>;
+
+/**
+ * CR-157b · «Tải tệp khác»: HĐ DRAFT + `extract_state = failed`, chỉ người tạo ∪ phụ trách. Cổng kiểm TRƯỚC quota/FileBox ⇒ cùng đường
+ * tải lên (kiểm loại tệp, trần trang, quota, FileBox, đổi chữ) ⇒ MỘT câu thay tệp + chữ + `reading|failed` ⇒ sau commit xếp AI đọc lại.
+ */
+/** Cổng thay tệp (thứ tự = ưu tiên mã lỗi): thấy ⇒ người tạo ∪ phụ trách ⇒ DRAFT + failed. */
+async function replaceGate(d: UploadContractDeps, i: ReplaceFileInput): Promise<void> {
+  const g = await d.uow.tenant(i.who, (r) => r.upload.replaceGate(i.id));
+  if (!g) throw new UploadError("NOT_FOUND");
+  if (g.createdBy !== i.who.userId && g.ownerId !== i.who.userId)
+    throw new UploadError("FORBIDDEN");
+  if (g.status !== "draft" || g.extractState !== "failed")
+    throw new UploadError("REPLACE_NOT_ALLOWED");
+}
+
+/** Lưu tệp mới (FileBox) + MỘT câu thay tệp/chữ; lỗi ⇒ ném (người gọi hoàn quota + gỡ tệp). */
+async function replaceWrite(
+  d: UploadContractDeps,
+  i: ReplaceFileInput,
+  u: UploadContractInput,
+  type: SniffedType,
+  set: (s: { org: string; fileId: string }) => void,
+) {
+  const text = await toText(d, type, u);
+  const org = orgForTenant(i.who.tenantId);
+  const up = await d.files.put(org, i.name, i.bytes);
+  set({ org, fileId: up.fileId });
+  const row = uploadedRow(d, u, { type, text, org, ...up, approvalId: null });
+  const out = await d.uow.tenant(i.who, async (r) => {
+    const o = await r.upload.replaceFile(row, i.id);
+    if (o) await r.outbox.enqueue([{ entity: "contract", entity_id: i.id, op: "upsert" }]);
+    return o;
+  });
+  if (!out) throw new UploadError("REPLACE_NOT_ALLOWED");
+  return { row, version: out.version };
+}
+
+export function createReplaceFile(d: UploadContractDeps): ReplaceContractFile {
+  const now = d.now ?? (() => new Date());
+  return async (i) => {
+    await replaceGate(d, i);
+    const u: UploadContractInput = {
+      who: i.who,
+      timeZone: i.timeZone,
+      bytes: i.bytes,
+      name: i.name,
+      title: "",
+      kind: "contract",
+      parentId: null,
+    };
+    const type = await precheck(d, u);
+    const at = now();
+    const days: UploadDays = { tenant: uploadDay(at, i.timeZone), global: uploadDay(at, "UTC") };
+    await takeQuota(d, u, days, at);
+    let stored: { org: string; fileId: string } | null = null;
+    try {
+      const { row, version } = await replaceWrite(d, i, u, type, (s) => {
+        stored = s;
+      });
+      if (row.extractState === "reading") await startExtraction(d, i.who, i.id, null);
+      return { extractState: row.extractState, version };
+    } catch (e) {
+      await d.counter.refund(i.who.tenantId, days).catch(() => undefined);
+      const s = stored as { org: string; fileId: string } | null;
+      if (s) await d.files.remove(s.org, s.fileId).catch(() => undefined);
+      throw e;
+    }
+  };
+}
+
 /** Sau commit: HĐ đã tồn tại ⇒ lỗi (kể cả ném ĐỒNG BỘ) chỉ log, KHÔNG hoàn quota, KHÔNG xoá tệp (review m-08). */
 async function startExtraction(
   d: UploadContractDeps,

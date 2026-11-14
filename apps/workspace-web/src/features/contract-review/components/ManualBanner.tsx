@@ -19,11 +19,14 @@ export function ManualBanner({
   write,
   file,
   nameOf,
+  dirty,
 }: {
   c: View;
   write: boolean;
   file: FileRef | null;
   nameOf: (id: string | null) => string | null;
+  /** Form có sửa chưa lưu ⇒ phải Lưu nháp rồi tích lại (lưu sửa xoá đối chiếu). */
+  dirty: boolean;
 }) {
   const { t } = useTranslation();
   const rec = useReconcile(c.id);
@@ -45,14 +48,23 @@ export function ManualBanner({
             <input
               type="checkbox"
               data-testid="manual-reconciled"
-              checked={done}
-              disabled={rec.isPending}
+              checked={done && !dirty}
+              disabled={rec.isPending || dirty}
               onChange={(e) => rec.mutate(e.target.checked)}
             />
             {t("contracts.review.manualCheck")}
           </label>
+          {dirty && (
+            <span className="text-sm text-late" data-testid="manual-dirty">
+              {t("contracts.review.manualDirty")}
+            </span>
+          )}
           {file && (
-            <button type="button" className="btn btn-outline btn-sm" onClick={file.onOpen}>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm lg:hidden"
+              onClick={file.onOpen}
+            >
               {t("contracts.review.viewFile")}
             </button>
           )}

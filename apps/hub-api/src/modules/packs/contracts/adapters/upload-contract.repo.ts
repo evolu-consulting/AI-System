@@ -116,6 +116,41 @@ async function insertVersion(tx: Tx, tenantId: string, r: NewUploadedContract, b
 
 export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo {
   return {
+    // CR-157b · «Tải tệp khác»: đọc không khoá (cổng trước quota/FileBox).
+    replaceGate: async (id) => {
+      const [r] = await tx.execute<{
+        status: string;
+        extract_state: string;
+        created_by: string;
+        owner_user_id: string | null;
+      }>(sql`select status, extract_state, created_by, owner_user_id from contracts.contracts
+        where id = ${id}::uuid and tenant_id = ${tenantId}::uuid`);
+      return r
+        ? {
+            status: r.status,
+            extractState: r.extract_state,
+            createdBy: r.created_by,
+            ownerId: r.owner_user_id,
+          }
+        : null;
+    },
+    // MỘT câu: khoá HĐ → điều kiện DRAFT + failed → files → đổi tệp/chữ/trạng thái đọc, bỏ xác nhận đối chiếu → event. Chưa có lượt duyệt mới.
+    replaceFile: async (r, id) => {
+      const data = JSON.stringify({ name: r.name, mime: r.mime, size: r.size });
+      const [o] = await tx.execute<{ version: number }>(sql`with b as (
+          select c.id from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid
+            and c.status = 'draft' and c.extract_state = 'failed' for update),
+        f as (insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
+          select ${r.fileRowId}::uuid, ${tenantId}::uuid, ${r.org}, ${r.fileId}, ${r.versionId}, ${r.name}, ${r.mime},
+            ${r.size}, ${r.userId}::uuid from b returning id),
+        u as (update contracts.contracts t set file_id = f.id, source_text = ${r.sourceText}, extract_state = ${r.extractState},
+            error = ${r.error}, reconciled_by = null, reconciled_at = null, version = t.version + 1, updated_at = now()
+          from f where t.id = ${id}::uuid and t.tenant_id = ${tenantId}::uuid returning t.id, t.version),
+        e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+          select ${tenantId}::uuid, u.id, 'file_replaced', ${r.userId}::uuid, ${data}::jsonb from u)
+        select version from u`);
+      return o ? { version: Number(o.version) } : null;
+    },
     insertVersion: (r, base) => insertVersion(tx, tenantId, r, base),
     insert: async (r: NewUploadedContract) => {
       const data = JSON.stringify({ name: r.name, mime: r.mime, size: r.size });

@@ -46,7 +46,7 @@ function precheck(h: Head, who: PackWho, o: SubmitOpts): SubmitErr | null {
   if (h.status !== "draft") return "CONTRACT_NOT_DRAFT";
   if (h.extractState !== "ready") return "EXTRACT_NOT_READY";
   if (h.needsFile) return "FILE_REQUIRED";
-  // CR-157: HĐ nhập tay phải được người nhập tích "đã đối chiếu với tệp gốc" trước Lưu/Gửi.
+  // CR-157: HĐ nhập tay phải được người nhập tích "đã đối chiếu với tệp gốc" trước «Xác nhận & lưu» / Gửi duyệt (Lưu nháp không bị chặn).
   if (needsReconcile({ entrySource: h.entrySource, reconciledAt: h.reconciledAt }))
     return "RECONCILE_REQUIRED";
   if (h.round > 0 && h.same && !o.unchangedReason && !o.evidence)

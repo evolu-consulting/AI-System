@@ -23,6 +23,8 @@ function setup(starter: ExtractionStarter) {
               extractState: r.extractState,
               version: 1,
             }),
+            replaceGate: async () => null,
+            replaceFile: async () => null,
             insertVersion: async () => {
               throw new Error("not used");
             },

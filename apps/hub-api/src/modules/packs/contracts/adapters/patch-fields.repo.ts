@@ -37,7 +37,9 @@ export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo
     save: async (id, s): Promise<SavedContract> => {
       // HD-NFR-02: PATCH đúng 4 câu. CR-097 K1: D3-13 (sửa ⇒ mở lại duyệt cùng câu) bỏ — mở lại là thao tác owner riêng.
       const rows = await tx.execute<Raw>(sql`with u as (
-          update contracts.contracts set fields = ${JSON.stringify(s.fields)}::jsonb, version = version + 1, updated_at = now()
+          update contracts.contracts set fields = ${JSON.stringify(s.fields)}::jsonb, version = version + 1, updated_at = now(),
+            -- CR-157b · M3: HĐ nhập tay đã đối chiếu mà sửa trường ⇒ bỏ xác nhận, phải tích lại
+            reconciled_by = null, reconciled_at = null
           where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and version = ${s.expected}::int
           returning id, version, updated_at),
         e as (

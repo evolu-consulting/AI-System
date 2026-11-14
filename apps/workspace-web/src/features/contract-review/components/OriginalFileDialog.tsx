@@ -79,7 +79,7 @@ function NoPreview({ entry }: { entry: OriginalEntry }) {
   );
 }
 
-function Viewer({ entry }: { entry: OriginalEntry }) {
+export function Viewer({ entry }: { entry: OriginalEntry }) {
   const { t } = useTranslation();
   const q = useQuery({
     queryKey: ["original-file", entry.id],

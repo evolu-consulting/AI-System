@@ -9,7 +9,7 @@ export function canStartManual(f: ManualFacts): ManualStart {
   return f.extractState === "failed" ? "ok" : "not_allowed";
 }
 
-/** HĐ nhập tay mà chưa có `reconciled_at` ⇒ chặn Lưu/Gửi duyệt (`RECONCILE_REQUIRED`). */
+/** HĐ nhập tay mà chưa có `reconciled_at` ⇒ chặn «Xác nhận & lưu» / Gửi duyệt (`RECONCILE_REQUIRED`); Lưu nháp không bị chặn. */
 export function needsReconcile(f: { entrySource: string; reconciledAt: string | null }): boolean {
   return f.entrySource === "manual" && f.reconciledAt === null;
 }

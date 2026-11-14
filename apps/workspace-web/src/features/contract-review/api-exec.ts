@@ -19,6 +19,15 @@ export const startManualEntry = (id: string) =>
   api<ManualEntryResponse>(one(id, "manual-entry"), { method: "POST", body: {} });
 export const reconcileContract = (id: string, reconciled: boolean) =>
   api<ReconcileResponse>(one(id, "reconcile"), { method: "PUT", body: { reconciled } });
+/** CR-157b «Tải tệp khác»: HĐ nháp + AI đọc lỗi ⇒ thay tệp (multipart `file`) rồi AI đọc lại. */
+export const replaceContractFile = (id: string, file: File) => {
+  const form = new FormData();
+  form.append("file", file);
+  return api<{ id: string; extract_state: string; version: number }>(one(id, "replace-file"), {
+    method: "POST",
+    rawBody: form as unknown as Blob,
+  });
+};
 export const withdrawContract = (id: string, body: WithdrawRequest) =>
   api<{ status: "draft" }>(one(id, "withdraw"), { method: "POST", body });
 export const recreateContract = (id: string) =>
