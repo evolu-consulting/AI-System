@@ -264,6 +264,7 @@
         "source_ended": "Nguồn hết hiệu lực"
       },
       "cardSale": "Nguồn hàng & lãi",
+      "loadMore": "Xem thêm",
       "cardPurchase": "Hàng bán đang mua từ hợp đồng này",
       "auto": "Tự chọn: giá mua thấp nhất đang áp dụng",
       "sourceOf": "Nguồn của {{name}}",

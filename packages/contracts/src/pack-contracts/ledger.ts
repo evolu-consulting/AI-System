@@ -108,6 +108,9 @@ export const ObligationsQuerySchema = z.strictObject({
   status: z.enum(OBLIGATION_STATUSES).optional(),
   direction: z.enum(["pay", "receive"]).optional(),
   due_before: IsoDay.optional(),
+  /** CR-151 mục 11: tải dần. Bỏ trống = tối đa LEDGER_LIST_MAX như trước; UI xin `limit` = cỡ trang + 1 để biết còn trang. */
+  limit: z.coerce.number().int().min(1).max(LEDGER_LIST_MAX).optional(),
+  offset: z.coerce.number().int().min(0).max(100_000).optional(),
 });
 export const PartnerEventsQuerySchema = z.strictObject({
   party: keyStr(300),

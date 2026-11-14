@@ -140,6 +140,8 @@ export type LedgerReadRepo = {
     status?: string;
     direction?: string;
     due_before?: string;
+    limit?: number;
+    offset?: number;
   }): Promise<Obligation[]>;
   events(party: string, role: string | null): Promise<PartnerEvent[]>;
   contractPartner(contractId: string): Promise<ContractPartner | null>;

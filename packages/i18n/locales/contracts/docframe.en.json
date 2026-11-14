@@ -50,6 +50,7 @@
         "done": "Promoted to contract"
       },
       "log": {
+        "loadMore": "Show more",
         "title": "Edit history",
         "field": {
           "title": "Title",

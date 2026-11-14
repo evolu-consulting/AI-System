@@ -4,7 +4,7 @@ import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 
-import { type SourcingParams, useContractSourcing } from "../hooks/use-sourcing";
+import { useContractSourcingPaged } from "../hooks/use-sourcing";
 import { SaleLines } from "./SaleLines";
 
 type Props = { c: Pick<ContractDetail, "id" | "kind" | "status" | "direction">; write: boolean };
@@ -13,8 +13,7 @@ export function ContractSourcing({ c, write }: Props) {
   const id = c.id;
   const sale = c.direction === "sale";
   const { t } = useTranslation();
-  const params: SourcingParams = { contract: id, page: 1, page_size: 100 };
-  const q = useContractSourcing(params, c.status === "done"); // chỉ HĐ đã duyệt có dòng giá
+  const q = useContractSourcingPaged(id, 50, c.status === "done"); // chỉ HĐ đã duyệt có dòng giá
   if (c.status !== "done" || !q.data?.lines.length) return null;
   return (
     <Panel className="mb-4">
@@ -32,6 +31,18 @@ export function ContractSourcing({ c, write }: Props) {
           showContract={!sale}
         />
       </div>
+      {q.hasNextPage && (
+        <div className="border-t border-rule px-5 py-2.5">
+          <button
+            type="button"
+            className="text-[12.5px] text-dim hover:underline"
+            disabled={q.isFetchingNextPage}
+            onClick={() => void q.fetchNextPage()}
+          >
+            {t("contracts.sourcing.loadMore")}
+          </button>
+        </div>
+      )}
     </Panel>
   );
 }

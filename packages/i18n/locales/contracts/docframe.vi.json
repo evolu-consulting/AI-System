@@ -50,6 +50,7 @@
         "done": "Đã nâng thành hợp đồng"
       },
       "log": {
+        "loadMore": "Xem thêm",
         "title": "Lịch sử sửa",
         "field": {
           "title": "Tên",

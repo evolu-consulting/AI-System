@@ -83,18 +83,30 @@ export function PartnerLog({ party, role, contractId, onChange }: Props) {
     if (obs.error) return <ErrorLine error={obs.error} />;
     if (!obs.data?.length) return <p className="text-[13px] text-dim">{L("openEmpty")}</p>;
     return (
-      <ul className="space-y-1.5">
-        {obs.data.map((o) => (
-          <InstalmentRow
-            key={o.id}
-            o={o}
-            write={write}
-            busy={busy}
-            act={act}
-            showContract={!contractId}
-          />
-        ))}
-      </ul>
+      <>
+        <ul className="space-y-1.5">
+          {obs.data.map((o) => (
+            <InstalmentRow
+              key={o.id}
+              o={o}
+              write={write}
+              busy={busy}
+              act={act}
+              showContract={!contractId}
+            />
+          ))}
+        </ul>
+        {obs.hasNextPage && (
+          <button
+            type="button"
+            className="mt-1.5 text-[12.5px] text-dim hover:underline"
+            disabled={obs.isFetchingNextPage}
+            onClick={() => void obs.fetchNextPage()}
+          >
+            {L("loadMore")}
+          </button>
+        )}
+      </>
     );
   };
   return (

@@ -17,5 +17,12 @@ export function promoteDeal(id: string, file: File, number: string): Promise<Pro
   });
 }
 
-export const fetchEditLog = (id: string, signal?: AbortSignal): Promise<EditLogResponse> =>
-  api<EditLogResponse>(`${BASE}/${encodeURIComponent(id)}/edit-log`, { signal });
+export const fetchEditLog = (
+  id: string,
+  offset = 0,
+  signal?: AbortSignal,
+): Promise<EditLogResponse> =>
+  api<EditLogResponse>(
+    `${BASE}/${encodeURIComponent(id)}/edit-log${offset ? `?offset=${offset}` : ""}`,
+    { signal },
+  );

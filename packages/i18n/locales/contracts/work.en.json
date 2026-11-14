@@ -264,6 +264,7 @@
         "source_ended": "Source no longer valid"
       },
       "cardSale": "Sources and margin",
+      "loadMore": "Show more",
       "cardPurchase": "Sale lines bought from this contract",
       "auto": "Automatic: lowest purchase price in force",
       "sourceOf": "Source of {{name}}",

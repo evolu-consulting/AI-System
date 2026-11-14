@@ -75,7 +75,7 @@ export function transactionsModule(
     openMilestones: (w, q) => link.uow.tenant(w, (r) => r.om.list(q)),
     settle: (w, id) => cmd.settle(w, id, {}),
     milestones: (w, id) => uow.tenant(w, (r) => r.deals.milestones(id)),
-    editLog: (w, id, n) => uow.tenant(w, (r) => r.deals.editLog(id, n)),
+    editLog: (w, id, n, o) => uow.tenant(w, (r) => r.deals.editLog(id, n, o)),
     legacyList: (w, q) => uow.tenant(w, (r) => r.deals.legacyList(q)),
     legacyDetail: (w, id) => uow.tenant(w, (r) => r.deals.legacyDetail(id)),
   });

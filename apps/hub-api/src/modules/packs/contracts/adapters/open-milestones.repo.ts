@@ -43,7 +43,7 @@ export function openMilestonesRepo(tx: Tx, t: string): OpenMilestonesRepo {
     async list(q) {
       const rows = await tx.execute<{
         j: OpenMilestone[];
-      }>(sql`select coalesce(jsonb_agg(x.o order by x.due_date, x.seq), '[]'::jsonb) as j
+      }>(sql`select coalesce(jsonb_agg(x.o order by x.due_date, x.seq, x.o->>'obligation_id'), '[]'::jsonb) as j
         from (select o.due_date, o.seq, jsonb_build_object('contract_id', c.id, 'contract_name', ${contractLabelSql("c")},
             'obligation_id', o.id, 'kind', o.kind, 'title', o.title, 'due_date', o.due_date::text,
             'remaining', case when o.kind = 'delivery' then
@@ -58,7 +58,7 @@ export function openMilestonesRepo(tx: Tx, t: string): OpenMilestonesRepo {
             and (${q.product_id ?? null}::uuid is null
               or (o.kind = 'delivery' and exists (select 1 from contracts.contract_items i
                 where i.tenant_id = c.tenant_id and i.contract_id = c.id and i.product_id = ${q.product_id ?? null}::uuid)))
-          order by o.due_date, o.seq limit 500) x`);
+          order by o.due_date, o.seq, o.id limit ${q.limit ?? 500}::int offset ${q.offset ?? 0}::int) x`);
       return rows[0]?.j ?? [];
     },
     async partnerHasOpen(q) {

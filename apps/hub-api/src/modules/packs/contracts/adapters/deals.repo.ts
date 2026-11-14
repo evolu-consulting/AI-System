@@ -62,7 +62,7 @@ export function promoteRepo(tx: Tx, t: string): PromoteRepo {
 export type DealsRepo = {
   milestones(id: string): Promise<DealMilestone[]>;
   /** null ⇒ chứng từ không có / không thấy. */
-  editLog(id: string, limit: number): Promise<unknown[] | null>;
+  editLog(id: string, limit: number, offset: number): Promise<unknown[] | null>;
   legacyList(q: TransactionListQuery): Promise<unknown>;
   legacyDetail(id: string): Promise<unknown | null>;
   /** CR-127 X2: lý do "Không theo hợp đồng" ⇒ nhật ký chứng từ (cùng tx tạo). */
@@ -77,14 +77,14 @@ export function dealsRepo(tx: Tx, t: string): DealsRepo {
       return tx.execute<DealMilestone>(sql`select o.id::text, o.kind, o.status from contracts.obligations o
         where o.tenant_id = ${t}::uuid and o.contract_id = ${id}::uuid order by o.seq, o.created_at`);
     },
-    async editLog(id, limit) {
+    async editLog(id, limit, offset) {
       const j = await one(sql`select case when exists (select 1 from contracts.contracts c
             where c.tenant_id = ${t}::uuid and c.id = ${id}::uuid)
           then coalesce((select jsonb_agg(s.x order by s.n desc) from (
             select l.id as n, jsonb_build_object('id', l.id::text, 'at', l.at, 'actor_user_id', l.actor_user_id,
               'field', l.field, 'old_value', l.old_value, 'new_value', l.new_value) as x
             from contracts.contract_edit_log l where l.tenant_id = ${t}::uuid and l.contract_id = ${id}::uuid
-            order by l.id desc limit ${limit}::int) s(n, x)), '[]'::jsonb) end as j`);
+            order by l.id desc limit ${limit + 1}::int offset ${offset}::int) s(n, x)), '[]'::jsonb) end as j`);
       return j as unknown[] | null;
     },
     unlinkedNote: (id, by, reason) => insertUnlinkedNote(tx, t, id, by, reason),

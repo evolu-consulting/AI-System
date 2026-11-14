@@ -12,7 +12,8 @@ import {
   DealCreateRequestSchema,
   type DealCreateResponse,
   type DealLinkedResponse,
-  EDIT_LOG_MAX,
+  EDIT_LOG_PAGE,
+  EditLogQuerySchema,
   type OpenMilestone,
   OpenMilestonesQuerySchema,
   TransactionListQuerySchema,
@@ -57,7 +58,7 @@ export type DealsRoutesDeps = {
   ): Promise<OpenMilestone[]>;
   settle(who: PackWho, milestoneId: string): Promise<unknown>;
   milestones(who: PackWho, id: string): Promise<DealMilestone[]>;
-  editLog(who: PackWho, id: string, limit: number): Promise<unknown[] | null>;
+  editLog(who: PackWho, id: string, limit: number, offset: number): Promise<unknown[] | null>;
   legacyList(who: PackWho, q: z.infer<typeof TransactionListQuerySchema>): Promise<unknown>;
   legacyDetail(who: PackWho, id: string): Promise<unknown | null>;
 };
@@ -170,9 +171,15 @@ export function dealsRoutes(view: PackAccessView, d: DealsRoutesDeps): Hono<Pack
     c.json(await d.openMilestones(who(c), parseQuery(c, OpenMilestonesQuerySchema))),
   );
   r.get("/contracts/:id/edit-log", read, async (c) => {
-    const items = await d.editLog(who(c), idOf(c), EDIT_LOG_MAX);
-    if (items === null) throw appError("NOT_FOUND");
-    return c.json({ items });
+    const q = parseQuery(c, EditLogQuerySchema);
+    const limit = q.limit ?? EDIT_LOG_PAGE;
+    const offset = q.offset ?? 0;
+    const rows = await d.editLog(who(c), idOf(c), limit, offset); // limit+1 ⇒ biết còn trang
+    if (rows === null) throw appError("NOT_FOUND");
+    return c.json({
+      items: rows.slice(0, limit),
+      next_offset: rows.length > limit ? offset + limit : null,
+    });
   });
   r.get("/transactions", read, async (c) =>
     c.json(await d.legacyList(who(c), parseWith(TransactionListQuerySchema, c.req.query()))),

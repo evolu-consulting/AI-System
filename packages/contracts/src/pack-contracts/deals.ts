@@ -107,6 +107,9 @@ export const OpenMilestonesQuerySchema = z.strictObject({
   product_id: z.uuid().optional(),
   /** Hướng của HĐ: `sale` (bán) | `purchase` (mua/nhập). */
   direction: z.enum(["sale", "purchase"]),
+  /** CR-151 mục 16: tải dần; bỏ trống = tối đa 500 như trước (UI gom mọi trang, không cắt im lặng). */
+  limit: z.coerce.number().int().min(1).max(500).optional(),
+  offset: z.coerce.number().int().min(0).max(100_000).optional(),
 });
 export type OpenMilestonesQuery = z.infer<typeof OpenMilestonesQuerySchema>;
 export const OpenMilestoneSchema = z.strictObject({
@@ -149,8 +152,15 @@ export const EditLogEntrySchema = z.strictObject({
   new_value: z.unknown(),
 });
 export type EditLogEntry = z.infer<typeof EditLogEntrySchema>;
-/** `GET /contracts/:id/edit-log` — mới nhất trước, tối đa `EDIT_LOG_MAX`. */
+/** CR-151 mục 20: `limit` mặc định 50, trần `EDIT_LOG_MAX`; quá trần ⇒ 400. */
+export const EDIT_LOG_PAGE = 50;
+export const EditLogQuerySchema = z.strictObject({
+  limit: z.coerce.number().int().min(1).max(EDIT_LOG_MAX).optional(),
+  offset: z.coerce.number().int().min(0).max(100_000).optional(),
+});
+/** `GET /contracts/:id/edit-log?limit&offset` — mới nhất trước; `next_offset` null = hết. */
 export const EditLogResponseSchema = z.strictObject({
   items: z.array(EditLogEntrySchema).max(EDIT_LOG_MAX),
+  next_offset: z.number().int().nullable(),
 });
 export type EditLogResponse = z.infer<typeof EditLogResponseSchema>;
