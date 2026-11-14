@@ -2,7 +2,7 @@
 // chủ quản thấy tất cả; đối tác thấy bình luận của chủ quản + công ty mình + trên bài của mình + bình luận nhắc (@) tới mình.
 // Nhắc công ty đối tác = `mentions` (id công ty); chỉ chủ quản nhắc được (hôm nay). Danh sách gợi ý: `GET /posts/:id/mentionables`.
 import { z } from "zod";
-import { ContentHitSchema } from "./post";
+import { ContentHitSchema } from "./content-hit";
 
 /** Công ty được nhắc (@) trong bình luận. User ngoài chỉ nhận phần tử là công ty MÌNH. */
 export const MentionSchema = z.strictObject({ orgId: z.string(), name: z.string() });

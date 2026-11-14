@@ -3,6 +3,7 @@
 // Nội dung đối tác đến user ngoài đã được che (D4); chủ quản nhận raw + `hits` (khoảng ký tự bị che nếu là user ngoài).
 import { z } from "zod";
 import { CommentViewSchema } from "./comment";
+import { ContentHitSchema } from "./content-hit";
 import { HostHintSchema, QuoteMarkSchema } from "./quote";
 
 export const POST_TYPES = ["sell", "buy", "note"] as const;
@@ -71,15 +72,7 @@ export const CommunityFileSchema = z.strictObject({
 });
 export type CommunityFile = z.infer<typeof CommunityFileSchema>;
 
-/** Khoảng bị che (chỉ chủ quản nhận, dùng tô đậm raw). `field`: trường chứa khoảng này. */
-export const CONTACT_HIT_KINDS = ["phone", "email", "link", "taxId", "company"] as const;
-export const ContentHitSchema = z.strictObject({
-  field: z.enum(["title", "body"]),
-  start: z.number().int().nonnegative(),
-  end: z.number().int().positive(),
-  kind: z.enum(CONTACT_HIT_KINDS),
-});
-export type ContentHit = z.infer<typeof ContentHitSchema>;
+export { CONTACT_HIT_KINDS, type ContentHit, ContentHitSchema } from "./content-hit";
 
 const Text = (max: number) => z.string().trim().max(max);
 const Req = (max: number) => z.string().trim().min(1).max(max);
