@@ -36,7 +36,7 @@ Relock `tests/.lock` sau các lát CR-146..152; sửa e2e/int lệch theo hành 
 - Chạy e2e cuối đợt (điều phối):
   `powershell -File deploy/evotest/run-tests.ps1 -Step e2e -Filter "e2e/community-web/cr130-journey.cs.ts e2e/community-web/flows.cs.ts e2e/community-web/cr145-post-mention.cs.ts e2e/community-web/cr147-feed.cm.ts e2e/community-web/cr147b-people.cs.ts e2e/contracts-web/org-visibility.cw.ts e2e/contracts-web/v2j1-products.cw.ts e2e/cr127/j01-soan-ap-dung-duyet.spec.ts e2e/cr127/j03-uy-quyen.spec.ts e2e/cr127/j08-ky-cung-luc.spec.ts e2e/cr127/j20-tin-nhan-danh-ba.spec.ts e2e/cr149/file-preview.spec.ts e2e/cr152/kinds-ui.spec.ts e2e/journey-approval/cr123-u6-run-card.spec.ts e2e/journey-approval/cr125-s2-settings-flow.spec.ts e2e/journey-approval/cr139b-starter-head.spec.ts e2e/journey-approval/cr139d-org-tree.spec.ts e2e/journey-approval/cr141-sign-or-upload.spec.ts e2e/journey-approval/cr150-two-companies.spec.ts"`
 
-## Delta
+## Delta (so với docs/current)
 Không thay đổi hành vi (lý do: QC relock + sửa e2e)
 
 Trạng thái gộp: chưa gộp
