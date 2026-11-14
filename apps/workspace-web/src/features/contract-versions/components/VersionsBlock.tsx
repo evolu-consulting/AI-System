@@ -9,9 +9,11 @@ import { KIND_ICON, versionKind } from "../lib/versions";
 export function VersionsBlock({
   currentId,
   versions,
+  total,
 }: {
   currentId: string;
   versions: readonly ContractVersionRef[];
+  total: number;
 }) {
   const { t } = useTranslation();
   const nav = useNavigate();
@@ -22,6 +24,11 @@ export function VersionsBlock({
       className="mb-3 rounded-lg border border-rule bg-panel p-4"
     >
       <h3 className="mb-2 font-semibold">{t("contracts.versions.title")}</h3>
+      {total > versions.length && (
+        <p data-testid="versions-older" className="mb-2 text-xs text-dim">
+          {t("contracts.versions.older", { n: total - versions.length })}
+        </p>
+      )}
       <ul className="divide-y divide-rule">
         {versions.map((v) => {
           const kind = versionKind(v, versions);

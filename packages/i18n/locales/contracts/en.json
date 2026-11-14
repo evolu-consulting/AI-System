@@ -832,6 +832,7 @@
         "buy": "Purchases",
         "sell": "Sales",
         "noLots": "No lots received yet.",
+        "more": "Showing the newest {{shown}} of {{total}} rows.",
         "noSales": "Nothing sold yet.",
         "lot": {
           "date": "Received",

@@ -81,6 +81,8 @@ export type BizDetailOut = {
   margin_pct: number | null;
   lots: BizLotOut[];
   sales: BizSaleOut[];
+  lots_total?: number;
+  sales_total?: number;
   contracts_count: number;
 };
 

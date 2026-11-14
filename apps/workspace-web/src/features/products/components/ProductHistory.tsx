@@ -97,6 +97,17 @@ function Sales({ sales }: { sales: BizDetailOut["sales"] }) {
   );
 }
 
+/** CR-151: danh sách chỉ có phần mới nhất ⇒ nói rõ còn bao nhiêu dòng cũ hơn (không cắt im lặng). */
+function HistMore({ shown, total }: { shown: number; total: number | undefined }) {
+  const { t } = useTranslation();
+  if (total === undefined || total <= shown) return null;
+  return (
+    <p data-testid="hist-more" className="px-4 py-2 text-[12px] text-dim">
+      {t("contracts.catalog.hist.more", { shown, total })}
+    </p>
+  );
+}
+
 export function ProductHistory({ d }: { d: BizDetailOut }) {
   const { t } = useTranslation();
   const [view, setView] = useState<"buy" | "sell">("buy");
@@ -121,6 +132,10 @@ export function ProductHistory({ d }: { d: BizDetailOut }) {
       <div className="overflow-x-auto">
         {view === "buy" ? <Lots lots={d.lots} /> : <Sales sales={d.sales} />}
       </div>
+      <HistMore
+        shown={view === "buy" ? d.lots.length : d.sales.length}
+        total={view === "buy" ? d.lots_total : d.sales_total}
+      />
     </div>
   );
 }

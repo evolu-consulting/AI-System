@@ -250,12 +250,13 @@ const milestonesOf = sql`(select json_agg(m.j order by m.due_date, m.seq, m.id) 
       where o.contract_id = c.id and o.tenant_id = c.tenant_id and o.status <> 'replaced'
       order by o.due_date, o.seq, o.id limit ${MILESTONES_MAX}::int) m)`;
 
-/** CR-097 K2: các phiên bản thấy được của chuỗi (RLS), tăng dần, tới trần. */
+/** CR-097 K2: các phiên bản thấy được của chuỗi (RLS), tới trần. CR-151: lấy các bản MỚI NHẤT (desc) rồi xếp tăng dần; bản cũ hơn
+ *  bị bỏ thì UI báo «còn N bản cũ hơn» theo `versions_count`. */
 const versionsOf = sql`(select json_agg(json_build_object('id', v.id, 'version_no', v.version_no, 'status', v.status,
       'superseded_at', v.superseded_at, 'number', v.number, 'effective_from', v.start_date, 'effective_to', v.end_date,
       'total_value', v.value) order by v.version_no)
     from (select v.* from contracts.contracts v where v.tenant_id = c.tenant_id and v.root_id = c.root_id
-      order by v.version_no limit ${CONTRACT_VERSIONS_MAX}::int) v)`;
+      order by v.version_no desc limit ${CONTRACT_VERSIONS_MAX}::int) v)`;
 
 /** HD-NFR-02 · plan §6 Chi tiết: MỘT câu — hàng (PK, lọc `tenant_id` tường minh) + items `(contract_id, tenant_id, ord)` ≤ 500
  *  + 50 event mới nhất `(contract_id, id DESC)` + tệp (PK `files`, chưa xoá mềm). Không đọc `source_text` (chỉ `is not null`,

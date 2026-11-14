@@ -138,6 +138,9 @@ export type BizDetailOut = {
   margin_pct: number | null;
   lots: BizLotOut[];
   sales: BizSaleOut[];
+  /** CR-151: tổng lô / dòng bán (danh sách chỉ trả 100 gần nhất). */
+  lots_total?: number;
+  sales_total?: number;
   contracts_count: number;
 };
 export type BizContractOut = {

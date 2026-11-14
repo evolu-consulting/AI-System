@@ -198,7 +198,7 @@ export function ContractBody(p: {
           <PartnerSendPanel id={id} write={write} />
           <SignSessionCard id={id} write={write} />
           <EsignPanel id={id} locked={c.status === "done"} write={write} />
-          <VersionsPanels id={id} versions={c.versions} sup={sup} />
+          <VersionsPanels id={id} versions={c.versions} total={c.versions_count} sup={sup} />
           <ContractFilesPanel id={id} />
           <SaveNotice err={info.err ?? ap.err} />
           <StatsRow c={c} today={today} />

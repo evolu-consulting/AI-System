@@ -3,6 +3,7 @@
     "versions": {
       "title": "Contract versions",
       "view": "View",
+      "older": "Showing the newest versions only; {{n}} older versions not shown.",
       "kind": { "superseded": "superseded", "draft": "draft", "current": "current" },
       "superseded": "Superseded by version {{n}}",
       "supersededNoNo": "Superseded by a newer version",

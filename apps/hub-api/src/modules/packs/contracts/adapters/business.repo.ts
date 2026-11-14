@@ -216,6 +216,7 @@ function extrasQ(t: string, id: string, today: string) {
             'customer', s.buyer, 'qty', s.qty::float8, 'unit_price', s.unit_price, 'cost', s.cost,
             'profit', case when s.unit_price is null or s.cost is null then null else (s.qty * s.unit_price)::bigint - s.cost end)
             order by s.done_at desc, s.cid) from (select * from sales order by done_at desc limit 100) s), '[]'::jsonb),
+        'lots_total', (select count(*)::int from lots), 'sales_total', (select count(*)::int from sales),
         'contracts_count', (select count(*)::int from contracts.contracts k where k.tenant_id = ${t}::uuid and k.kind = 'contract'
           and k.doc_type <> 'framework' and exists (select 1 from contracts.contract_items i where i.tenant_id = k.tenant_id and i.contract_id = k.id
             and i.product_id = ${id}::uuid))) as j`;

@@ -832,6 +832,7 @@
         "buy": "Mua",
         "sell": "Bán",
         "noLots": "Chưa nhập lô nào.",
+        "more": "Hiện {{shown}} dòng mới nhất trong tổng {{total}} dòng.",
         "noSales": "Chưa bán lần nào.",
         "lot": {
           "date": "Ngày nhập",

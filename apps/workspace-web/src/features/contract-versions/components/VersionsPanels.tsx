@@ -7,11 +7,14 @@ import { VersionsBlock } from "./VersionsBlock";
 export function VersionsPanels({
   id,
   versions: raw,
+  total,
   sup,
 }: {
   id: string;
   /** Thiếu (Hub cũ / DTO một phần) ⇒ coi như một bản duy nhất. */
   versions: readonly ContractVersionRef[] | undefined;
+  /** Tổng số bản của chuỗi (`versions_count`); lớn hơn số bản trả về ⇒ báo còn bản cũ. */
+  total?: number | undefined;
   sup: { byNo: number | null; currentId: string | null } | null;
 }) {
   const versions = raw ?? [];
@@ -20,7 +23,7 @@ export function VersionsPanels({
       {sup && <SupersededBanner byNo={sup.byNo} currentId={sup.currentId} />}
       {versions.length >= 2 && (
         <>
-          <VersionsBlock currentId={id} versions={versions} />
+          <VersionsBlock currentId={id} versions={versions} total={total ?? versions.length} />
           <VersionDiff contractId={id} versions={versions} />
         </>
       )}
