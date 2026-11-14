@@ -14,6 +14,7 @@ import {
 import { CONTRACTS_PARTNER_CONFIRM_FEATURE as PARTNER_FEATURE } from "@ai/contracts/tenants";
 import type { Db, Tx } from "@ai/db";
 import { Hono } from "hono";
+import type { Redis } from "ioredis";
 import { z } from "zod";
 import { AppError, appError } from "../../../lib/errors";
 import { parseWith, readJson } from "../../../lib/http";
@@ -29,6 +30,7 @@ import {
 } from "../kit/public";
 import { decideInbox, InboxReplyClosed } from "./adapters/partner-inbox-decision.repo";
 import { type PartnerUiRepo, partnerUiRepo } from "./adapters/partner-ui.repo";
+import { connectModule } from "./connect/connect.mount";
 import { signSessionRoutes } from "./sign-session.routes";
 
 const KEY = "contracts";
@@ -142,7 +144,11 @@ function inboxDecisionRoute(r: PartnerRouter, view: PackAccessView, uow: Partner
   });
 }
 
-export function partnerModule(db: Db, view: PackAccessView): Hono<PackGuardVars> {
+export function partnerModule(
+  db: Db,
+  view: PackAccessView,
+  deps: { redis?: Redis | undefined } = {},
+): Hono<PackGuardVars> {
   const uow: PartnerUow = createPackUow(db, KEY, (tx: Tx, t: string) => ({
     ui: partnerUiRepo(tx, t),
     tx,
@@ -179,5 +185,6 @@ export function partnerModule(db: Db, view: PackAccessView): Hono<PackGuardVars>
   sendRoutes(r, view, uow);
   inboxDecisionRoute(r, view, uow);
   r.route("/", signSessionRoutes(db, view, uow)); // CR-127 · P2 · phiên ký chung
+  r.route("/", connectModule(db, view, deps)); // CR-161 · kết nối hai công ty + bài công khai (`/connect/*`)
   return r;
 }
