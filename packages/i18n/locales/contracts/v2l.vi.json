@@ -219,8 +219,8 @@
         "signBlock": {
           "title": "Ký và đối tác của quy trình này",
           "noEsign": "Quy trình này không có bước Ký.",
-          "signers": "Người ký bên mình: {{names}}",
-          "noSigners": "Người ký bên mình: chưa chọn",
+          "signers": "Người ký phía công ty: {{names}}",
+          "noSigners": "Người ký phía công ty: chưa chọn",
           "unnamed": "người đã nghỉ hoặc không còn quyền",
           "partnerSigns": "Đối tác ký: có",
           "partnerNoSign": "Đối tác ký: không, chỉ công ty ký",
