@@ -17,6 +17,7 @@ import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
 import { appError, extOrgError } from "../../lib/errors";
 import { checkViolation, foreignKeyViolation } from "../../lib/pg-errors";
+import { likeArg } from "../../lib/sql";
 import type { TestHooks } from "../../lib/test-hooks";
 import { type Actor, resolveTenantScope } from "../users/users.rules";
 
@@ -60,7 +61,7 @@ export function getOrg(c: OrgCall, q: string | undefined): Promise<OrgResponse> 
 /** CR-151 · MỘT câu/trang: thành viên đang hoạt động (tìm tên/tên đăng nhập, limit/offset) + tên quản lý + tổng số. */
 export function listOrgMembers(c: OrgCall, q: OrgMembersQuery): Promise<OrgMembersResponse> {
   const t = tenantOf(c, q.tenant_id, "read");
-  const like = q.q ? `%${q.q.replace(/[%_]/g, "/** Gán (upsert) hoặc bỏ (null) quản lý")}%` : null;
+  const like = q.q ? likeArg(q.q) : null; // thoát `\ % _` ⇒ khớp đúng ký tự (như danh bạ thành viên)
   return withScope(c.ctx.db, c.scope, async (tx) => {
     const rows =
       (await tx.execute(sql`select u.id as user_id, u.username, u.display_name, m.manager_id,

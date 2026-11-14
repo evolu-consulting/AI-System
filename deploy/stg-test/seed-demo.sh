@@ -5,6 +5,7 @@
 # Mat khau: 13 nguoi dung chung DEMO_OWNER.pw (doc tu file, khong in). Lap lai duoc (idempotent). Chay lai: bash seed-demo.sh [--trial]
 # Ma nguon script: neu image :staging chua co ban moi, chep file vao ./seed-src/<ten>.ts — chung duoc mount de len /app/tools/scripts/src (xoa thu muc sau khi build lai).
 # CR-150: buoc `partner` (UAT 2 cong ty: demo gui → evolu nhan) CHI THEM du lieu o evolu (nguoi/nhom `uat-nhan-*`, 1 quy trinh Nhan HD), khong xoa/sua; mat khau nguoi UAT evolu o file UAT_EVOLU.pw (tu sinh lan dau, khong in).
+#   Stack stg-test chua co cong ty `evolu` ⇒ buoc partner TAO cong ty Evolu (+ goi Hop dong + quan tri uat-nhan-admin); co san thi chi them.
 #   bash seed-demo.sh [--org-only | --showcase-only | --purchase-only | --partner-only] [--trial] [--dry-run]
 set -euo pipefail
 cd "$(dirname "$0")"

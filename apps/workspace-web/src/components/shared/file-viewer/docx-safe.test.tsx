@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { DocxFrame } from "./DocxFrame";
-import { buildSrcdoc, type DomEl, safeHref, sanitizeDocxDom } from "./docx-safe";
+import { buildSrcdoc, type DomEl, safeHref, safeStyles, sanitizeDocxDom } from "./docx-safe";
 
 /** DOM giả tối thiểu: phần tử có tên thẻ + thuộc tính; `querySelectorAll` chỉ hiểu danh sách thẻ, "*" và "a". */
 class El implements DomEl {
@@ -81,9 +81,9 @@ describe("sanitizeDocxDom", () => {
 });
 
 describe("khung xem Word", () => {
-  test("iframe sandbox rỗng: không allow-scripts, không allow-same-origin", () => {
+  test("iframe sandbox chỉ allow-popups (+ escape): không allow-scripts, không allow-same-origin", () => {
     const html = renderToStaticMarkup(<DocxFrame srcDoc="<p>x</p>" title="Word" />);
-    expect(html).toContain('sandbox=""');
+    expect(html).toContain('sandbox="allow-popups allow-popups-to-escape-sandbox"');
     expect(html).not.toContain("allow-scripts");
     expect(html).not.toContain("allow-same-origin");
     expect(html).toContain("srcDoc");
@@ -94,5 +94,26 @@ describe("khung xem Word", () => {
     expect(d).toContain("default-src 'none'");
     expect(d).not.toContain("script-src");
     expect(d.indexOf("Content-Security-Policy")).toBeLessThan(d.indexOf("<style>"));
+  });
+});
+
+describe("safeStyles (phần styles của docx-preview)", () => {
+  const styleRoot = (texts: (string | null)[]) => ({
+    querySelectorAll: (sel: string) =>
+      sel === "style" ? texts.map((textContent) => ({ textContent })) : [],
+  });
+  test("chỉ lấy văn bản <style>, gộp thành MỘT <style>", () => {
+    expect(safeStyles(styleRoot(["p{color:red}", "b{x:y}"]))).toBe(
+      `<style>p{color:red}${String.fromCharCode(10)}b{x:y}</style>`,
+    );
+    expect(safeStyles(styleRoot([]))).toBe("");
+    expect(safeStyles(styleRoot([null]))).toBe("");
+  });
+  test("CSS cố đóng thẻ để chèn HTML/script: mọi `<` bị thoát ⇒ không thể thoát khỏi <style>", () => {
+    const out = safeStyles(styleRoot(["a{font-family:x}</style><script>alert(1)</script><style>"]));
+    expect(out.startsWith("<style>")).toBe(true);
+    expect(out.endsWith("</style>")).toBe(true);
+    expect(out.slice(7, -8)).not.toContain("<");
+    expect(out).not.toContain("<script");
   });
 });

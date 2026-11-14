@@ -6,7 +6,7 @@ Mỗi ca: làm đúng vai, đúng tài khoản, đánh dấu Đạt hoặc Khôn
 ## 0. Chuẩn bị (điều phối làm một lần)
 | Việc | Cách làm |
 |---|---|
-| Nạp dữ liệu | `bash seed-demo.sh --org-only` rồi `bash seed-demo.sh --partner-only` (chạy trên máy chủ bản test). Chạy lại được, không trùng; phía evolu chỉ thêm, không xoá. |
+| Nạp dữ liệu | `bash seed-demo.sh --org-only` rồi `bash seed-demo.sh --partner-only` (chạy trên máy chủ bản test). Chạy lại được, không trùng; phía evolu chỉ thêm, không xoá. Bản test chưa có công ty evolu (chỉ demo, platform) ⇒ seed TẠO công ty «Evolu» (mã `evolu`) + gói Hợp đồng + quản trị `uat-nhan-admin` (mật khẩu file `UAT_EVOLU.pw`); có sẵn thì chỉ thêm. Seed cũng BẬT «cho phép tìm thấy» (danh bạ) và «chạy quy trình theo sự kiện» (flow_triggers) trên evolu; chỉ bật, không tắt. Quy trình trùng tên mà sơ đồ trống ⇒ seed dựng lại sơ đồ. |
 | Ký số thật (tuỳ chọn) | Quản trị Demo: Cài đặt › Kết nối bật nhà cung cấp ký thử; trang Quy trình, mở quy trình «UAT · HĐ từ 500 triệu», bước «Ký hợp đồng», đổi «Ký qua» sang nhà cung cấp đó. |
 | Tệp hợp đồng | Chuẩn bị 3 tệp PDF hợp đồng có chữ (một tệp ghi giá trị khoảng 150 triệu, một khoảng 400 triệu, một khoảng 1,2 tỷ). |
 
@@ -21,6 +21,7 @@ Mỗi ca: làm đúng vai, đúng tài khoản, đánh dấu Đạt hoặc Khôn
 | Demo | `ha.ly` | Kế toán, người đã thêm đối tác evolu vào sổ đối tác |
 | Demo | `huy.dang` | Trưởng phòng Pháp chế, người chọn đối tác khi gửi |
 | Demo | `demo-viewer` | Chỉ xem (kiểm không có nút duyệt) |
+| evolu | `uat-nhan-admin` | Quản trị công ty (chỉ có khi seed tạo công ty evolu) |
 | evolu | `uat-nhan-gd` | Giám đốc nhận (Toàn quyền), nhận lời mời nối |
 | evolu | `uat-nhan-phutrach` | Người phụ trách hợp đồng nhận |
 | evolu | `uat-nhan-duyet` | Người duyệt hợp đồng nhận |

@@ -1,10 +1,10 @@
 // CR-149 · Word .docx bằng docx-preview (nạp lười). Chỉ chạy trên bytes đã tải qua route có kiểm quyền.
 // fix-review-r1 (XSS): docx-preview dựng HTML trong phần tử TẠM ngoài DOM của app ⇒ `sanitizeDocxDom` ⇒ đưa vào `<iframe sandbox="" srcdoc>`
-// (không script, không same-origin). Liên kết chỉ http(s)/mailto/#.
+// (không script, không same-origin; allow-popups cho liên kết). Liên kết chỉ http(s)/mailto/#; styles chỉ lấy văn bản <style> (`safeStyles`).
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DocxFrame } from "./DocxFrame";
-import { buildSrcdoc, sanitizeDocxDom } from "./docx-safe";
+import { buildSrcdoc, safeStyles, sanitizeDocxDom } from "./docx-safe";
 
 export default function DocxPane({ blob, onError }: { blob: Blob; onError: () => void }) {
   const { t } = useTranslation();
@@ -26,7 +26,7 @@ export default function DocxPane({ blob, onError }: { blob: Blob; onError: () =>
       });
       if (dead) return;
       sanitizeDocxDom(body);
-      setDoc(buildSrcdoc(body.innerHTML, styles.innerHTML));
+      setDoc(buildSrcdoc(body.innerHTML, safeStyles(styles)));
     })().catch(() => !dead && onError());
     return () => {
       dead = true;

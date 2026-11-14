@@ -67,6 +67,18 @@ export const EVOLU_GROUPS: readonly { key: string; vi: string; members: readonly
   },
   { key: "uat-nhan-ky", vi: "UAT · Ký hợp đồng nhận", members: ["uat-nhan-ky", "uat-nhan-gd"] },
 ];
+/** Công ty evolu của bản test: stg-test chỉ có `demo` + `platform` ⇒ seed TẠO «Evolu» (key `evolu`) khi chưa có; có sẵn thì không đụng. */
+export const EVOLU_TENANT = { key: EVOLU_KEY, name: "Evolu" } as const;
+/** Quản trị công ty UAT (chỉ tạo cùng công ty mới): mật khẩu = file UAT_EVOLU.pw, không in. */
+export const EVOLU_ADMIN = { username: "uat-nhan-admin", name: "Quản trị Evolu (UAT)" } as const;
+export type EvoluTenantStep = "create_tenant" | "set_admin_password" | "enable_contracts_pack";
+/** Bước dựng công ty evolu: đã có công ty ⇒ không bước nào (chỉ THÊM như cũ); chưa có ⇒ tạo + đặt mật khẩu quản trị + bật gói Hợp đồng. */
+export function planEvoluTenant(exists: boolean): EvoluTenantStep[] {
+  return exists ? [] : ["create_tenant", "set_admin_password", "enable_contracts_pack"];
+}
+/** Sơ đồ quy trình «trống» (mới tạo từ `blank`, chưa có bước) ⇒ ensureFlow phải dựng lại thay vì bỏ qua. */
+export const isBlankStages = (stages: unknown): boolean =>
+  !Array.isArray(stages) || stages.length === 0;
 export const PACK_GROUP_OF = { owner: "contracts-owner", editor: "contracts-editor" } as const;
 /** Ngưỡng + tên quy trình Nhận HĐ (triệu đồng): 150 triệu = Thường, 400 triệu = Quan trọng, 1,2 tỷ = Rất quan trọng. */
 export const RECEIVE = {

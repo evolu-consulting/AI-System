@@ -40,6 +40,9 @@ export type FactWhen = z.infer<typeof FactWhenSchema>;
 export const FLOW_TRIGGER_DAYS = { min: 1, max: 365 } as const;
 /** CR-146b · trần ngưỡng (triệu đồng) = 1 triệu tỷ... đủ lớn cho cột bigint VND. */
 export const FLOW_RECEIVE_MILLION_MAX = 1_000_000_000;
+/** Mặc định (triệu đồng) khi quy trình «Nhận HĐ từ đối tác» chưa đặt ngưỡng: 500 triệu = Quan trọng, 2 tỷ = Rất quan trọng — MỘT nguồn cho luật lưu + bên nhận. */
+export const FLOW_RECEIVE_DEFAULT_IMPORTANT_M = 500;
+export const FLOW_RECEIVE_DEFAULT_CRITICAL_M = 2000;
 export const FlowTriggerParamsSchema = z.strictObject({
   days: z.number().int().min(FLOW_TRIGGER_DAYS.min).max(FLOW_TRIGGER_DAYS.max).optional(),
   /** CR-146b · quy trình «Nhận HĐ từ đối tác» (`contract.received`): ngưỡng «Quan trọng» / «Rất quan trọng» (triệu đồng) + người phụ trách HĐ nhận. */

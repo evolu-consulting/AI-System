@@ -6,8 +6,10 @@ import {
   EVOLU_USERS,
   type EvoluState,
   flowOrder,
+  isBlankStages,
   partnerGuard,
   planEvolu,
+  planEvoluTenant,
   receiveFlow,
   withEsign,
 } from "./seed-demo-partner.data";
@@ -126,5 +128,23 @@ describe("CR-150 · quy trình", () => {
   it("flowOrder: quy trình UAT lên đầu, phần còn lại giữ thứ tự", () => {
     expect(flowOrder(["x", "a", "y", "b"], ["a", "b"])).toEqual(["a", "b", "x", "y"]);
     expect(flowOrder(["x"], [])).toEqual(["x"]);
+  });
+});
+
+describe("công ty evolu của bản test (stg-test chỉ có demo + platform)", () => {
+  it("thiếu công ty ⇒ có bước tạo + đặt mật khẩu quản trị + bật gói Hợp đồng", () => {
+    expect(planEvoluTenant(false)).toEqual([
+      "create_tenant",
+      "set_admin_password",
+      "enable_contracts_pack",
+    ]);
+  });
+  it("có sẵn ⇒ không bước nào (chỉ thêm như cũ)", () => {
+    expect(planEvoluTenant(true)).toEqual([]);
+  });
+  it("sơ đồ quy trình trống ⇒ dựng lại; có bước ⇒ giữ", () => {
+    expect(isBlankStages([])).toBe(true);
+    expect(isBlankStages(undefined)).toBe(true);
+    expect(isBlankStages([{ key: "a" }])).toBe(false);
   });
 });

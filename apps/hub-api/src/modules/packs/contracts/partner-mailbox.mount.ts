@@ -29,7 +29,7 @@ import { type InboxItem, partnerInboxRepo } from "./adapters/partner-inbox.repo"
 import { partnerPrefill } from "./adapters/partner-prefill";
 import { type PartnerSendRepo, partnerSendRepo } from "./adapters/partner-send.repo";
 import { type PartnerToolDeps, partnerSendTool } from "./adapters/partner-send.tool";
-import { receiveFlowOf } from "./adapters/receive-flow.repo";
+import { receiveFlowOf, receiveOwnerOf } from "./adapters/receive-flow.repo";
 import { signSessionRepo } from "./adapters/sign-session.repo";
 import { FLOW_STARTING } from "./application/contract-flow.ports";
 import type { ESignFiles } from "./application/esign.ports";
@@ -122,7 +122,7 @@ export function receiveInbox(db: Db) {
       // quản trị công ty (cùng luật chọn `actor`) — ghi vào `owner_user_id` của HĐ nhận để "Việc của tôi" + quyền quyết đọc MỘT cột.
       const n = await repo.insertBatch(
         items,
-        actor ?? s.ownerId,
+        receiveOwnerOf(s.ownerId, actor),
         armed ? (actor ? FLOW_STARTING : RECEIVE_NO_OWNER) : null,
         !armed,
       );

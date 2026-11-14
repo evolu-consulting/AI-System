@@ -303,6 +303,18 @@ describe("CR-151 · trang thành viên (listOrgMembers)", () => {
     const all = await listOrgMembers(call, { limit: 50, offset: 0 });
     expect(all.items.some((m) => m.user_id === X)).toBe(false);
   });
+  test("fix-review-r2 · tìm tên có `_` và `%` khớp ĐÚNG ký tự đó (không là ký tự đại diện)", async () => {
+    const named = (id: string, uname: string, display: string) =>
+      owner`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, email)
+        values (${id}, ${TID}, ${uname}, 'x', ${display}, 'member', ${`${uname}@x.test`})`;
+    await named("01900000-0000-7000-8000-0000000f1031", "wild1", "Cty a_b");
+    await named("01900000-0000-7000-8000-0000000f1032", "wild2", "Cty a%b");
+    await named("01900000-0000-7000-8000-0000000f1033", "wild3", "Cty axb");
+    const names = async (q: string) =>
+      (await listOrgMembers(call, { q, limit: 50, offset: 0 })).items.map((m) => m.username);
+    expect(await names("a_b")).toEqual(["wild1"]);
+    expect(await names("a%b")).toEqual(["wild2"]);
+  });
   test("limit quá trần bị chặn ở schema (200)", async () => {
     const { OrgMembersQuerySchema } = await import("@ai/contracts/org");
     expect(OrgMembersQuerySchema.safeParse({ limit: "201" }).success).toBe(false);

@@ -11,18 +11,22 @@ import { type Api, adminToken, call, type Json } from "../../hub-dev/src/fixture
 import {
   DEMO_KEY,
   demoFlows,
+  EVOLU_ADMIN,
   EVOLU_GROUPS,
   EVOLU_KEY,
+  EVOLU_TENANT,
   EVOLU_USERS,
   type EvoluState,
   evoluEmail,
   type FlowDef,
   flowOrder,
+  isBlankStages,
   PARTNER_ADDED_BY,
   PARTNER_FEATURE,
   PROFILES,
   partnerGuard,
   planEvolu,
+  planEvoluTenant,
   RECEIVE,
   receiveFlow,
   SIGN_GROUP_DEMO,
@@ -132,7 +136,11 @@ async function ensureFlow(
 ): Promise<{ flowId: string; created: boolean }> {
   const base = `/tenants/${tid}/company-flows`;
   let row = items(await call(c.hub, "GET", base)).find((x) => x.name === def.name);
-  if (row && !o.overwrite) return { flowId: String(row.flow_id), created: false };
+  if (row && !o.overwrite) {
+    // Minor 12: trùng tên mà sơ đồ trống (tạo dở lần trước) ⇒ dựng lại sơ đồ, không bỏ qua
+    const have = await call(c.hub, "GET", `/process-defs/${String(row.flow_id)}?tenant_id=${tid}`);
+    if (!isBlankStages(have.stages)) return { flowId: String(row.flow_id), created: false };
+  }
   if (!row) {
     const made = await call(c.hub, "POST", base, {
       name: def.name,
@@ -238,6 +246,33 @@ async function partnerRow(c: Ctx): Promise<void> {
   console.log(`${TAG}: demo — đối tác evolu trong sổ đối tác ${r.length ? "đã thêm" : "đã có"}`);
 }
 
+/** stg-test không có công ty `evolu` (chỉ demo + platform) ⇒ TẠO qua API admin (như tạo công ty ở màn Công ty), bật gói Hợp đồng, đặt mật khẩu quản trị UAT từ file (không in). Có sẵn ⇒ không làm gì. */
+async function ensureEvoluTenant(api: Api, sql: Sql, found: string | undefined): Promise<string> {
+  const steps = planEvoluTenant(found !== undefined);
+  if (found !== undefined || steps.length === 0) return found ?? fail("thiếu công ty evolu");
+  const made = await call(api, "POST", "/admin/tenants", {
+    key: EVOLU_TENANT.key,
+    name: EVOLU_TENANT.name,
+    first_admin: {
+      username: EVOLU_ADMIN.username,
+      display_name: EVOLU_ADMIN.name,
+      email: evoluEmail(EVOLU_ADMIN.username),
+      locale: "vi",
+    },
+  });
+  const tid = String(
+    (made.tenant as Json | undefined)?.id ?? fail("tạo công ty evolu không trả id"),
+  );
+  const hash = await hashPassword(env("UAT_EVOLU_PW"));
+  await sql`update admin.users set password_hash = ${hash}, must_change_password = false, locale = 'vi', updated_at = now()
+    where tenant_id = ${tid}::uuid and username = ${EVOLU_ADMIN.username}`;
+  await call(api, "PUT", `/admin/tenants/${tid}/packs/contracts`);
+  console.log(
+    `${TAG}: evolu — đã TẠO công ty «${EVOLU_TENANT.name}» + gói Hợp đồng + quản trị ${EVOLU_ADMIN.username} (mật khẩu: file UAT_EVOLU.pw)`,
+  );
+  return tid;
+}
+
 async function main(): Promise<void> {
   const url = env("DATABASE_URL");
   const bad = partnerGuard(process.env, url);
@@ -253,7 +288,10 @@ async function main(): Promise<void> {
       const hit = items(await call(api, "GET", `/admin/tenants?q=${k}&limit=50`)).find(
         (t) => t.key === k,
       );
-      tid[k] = String(hit?.id ?? fail(`không có công ty ${k}`));
+      tid[k] =
+        k === EVOLU_KEY
+          ? await ensureEvoluTenant(api, sql, hit ? String(hit.id) : undefined)
+          : String(hit?.id ?? fail(`không có công ty ${k}`));
     }
     const c: Ctx = { api, hub: { base: hubUrl, token }, sql, tid };
     await company(c, DEMO_KEY, false);
