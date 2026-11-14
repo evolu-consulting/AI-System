@@ -1,0 +1,224 @@
+{
+  "id": "cr147-mention-picker",
+  "title": "Nhắc tên người trong bài viết",
+  "roles": [
+    {
+      "key": "nguoiviet",
+      "label": "Người viết bài"
+    },
+    {
+      "key": "duocnhac",
+      "label": "Người được nhắc"
+    }
+  ],
+  "screens": [
+    {
+      "id": "dangbai",
+      "title": "Bảng tin › Viết bài",
+      "role": "nguoiviet",
+      "blocks": [
+        {
+          "type": "field",
+          "label": "Nội dung",
+          "kind": "text",
+          "value": "Mời mọi người xem báo giá mới tháng 12."
+        },
+        {
+          "type": "text",
+          "text": "Thanh công cụ chỉ có biểu tượng: [🖼] [📎] [👤+] [⌃] — rê chuột lên 👤+ hiện chữ «Nhắc tên»."
+        },
+        {
+          "type": "button",
+          "label": "👤+",
+          "goto": "hopchon",
+          "variant": "secondary"
+        },
+        {
+          "type": "states",
+          "variants": [
+            {
+              "key": "chua",
+              "label": "Chưa nhắc ai",
+              "blocks": [
+                {
+                  "type": "text",
+                  "text": "Chưa nhắc ai."
+                }
+              ]
+            },
+            {
+              "key": "co",
+              "label": "Đã nhắc 2 người",
+              "blocks": [
+                {
+                  "type": "text",
+                  "text": "Nhắc: [Trần Bình ×] [Lê Mai ×]"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "toast",
+          "trigger": "Đăng bài",
+          "kind": "success",
+          "text": "Đã đăng. Trần Bình và Lê Mai nhận được thông báo."
+        }
+      ]
+    },
+    {
+      "id": "hopchon",
+      "title": "Hộp «Nhắc tên»",
+      "role": "nguoiviet",
+      "blocks": [
+        {
+          "type": "field",
+          "label": "Tìm theo tên",
+          "kind": "text",
+          "value": ""
+        },
+        {
+          "type": "text",
+          "text": "Chỉ hiện người xem được bài này · tối đa 10 người."
+        },
+        {
+          "type": "states",
+          "variants": [
+            {
+              "key": "list",
+              "label": "Danh sách",
+              "blocks": [
+                {
+                  "type": "table",
+                  "cols": [
+                    "Ảnh",
+                    "Tên",
+                    "Phòng ban · Chức vụ",
+                    "Chọn"
+                  ],
+                  "rows": [
+                    [
+                      "(TB)",
+                      "Trần Bình",
+                      "Mua hàng · Trưởng phòng",
+                      "☑"
+                    ],
+                    [
+                      "(LM)",
+                      "Lê Mai",
+                      "Kế toán · Kế toán trưởng",
+                      "☑"
+                    ],
+                    [
+                      "(NH)",
+                      "Nguyễn Hà",
+                      "Kinh doanh · Nhân viên",
+                      "☐"
+                    ],
+                    [
+                      "(PT)",
+                      "Phạm Tâm",
+                      "Kho · Thủ kho",
+                      "☐"
+                    ]
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": "Đang tải thêm… (cuộn xuống tải 20 người tiếp theo)"
+                }
+              ]
+            },
+            {
+              "key": "khongthay",
+              "label": "Tìm không thấy",
+              "blocks": [
+                {
+                  "type": "empty",
+                  "title": "Không có ai tên «Hoà»",
+                  "text": "Chỉ nhắc được người xem được bài này."
+                }
+              ]
+            },
+            {
+              "key": "du10",
+              "label": "Đã đủ 10 người",
+              "blocks": [
+                {
+                  "type": "banner",
+                  "kind": "warn",
+                  "text": "Đã chọn đủ 10 người. Bỏ bớt để chọn người khác."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "button",
+          "label": "Xong (2 người)",
+          "goto": "dangbai"
+        },
+        {
+          "type": "button",
+          "label": "Huỷ",
+          "goto": "dangbai",
+          "variant": "secondary"
+        }
+      ]
+    },
+    {
+      "id": "chuong",
+      "title": "Chuông thông báo",
+      "role": "duocnhac",
+      "blocks": [
+        {
+          "type": "cards",
+          "items": [
+            {
+              "title": "Nguyễn Hà nhắc bạn trong một bài",
+              "text": "«Mời mọi người xem báo giá mới tháng 12.»",
+              "badge": "Mới",
+              "tone": "info"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "flow": [
+    {
+      "from": "dangbai",
+      "action": "Bấm biểu tượng 👤+",
+      "to": "hopchon",
+      "by": "nguoiviet"
+    },
+    {
+      "from": "hopchon",
+      "action": "Tìm, tick người, bấm Xong",
+      "to": "dangbai",
+      "by": "nguoiviet"
+    },
+    {
+      "from": "dangbai",
+      "action": "Đăng bài ⇒ người được nhắc nhận chuông",
+      "to": "chuong",
+      "by": "duocnhac"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q2",
+      "screen": "hopchon",
+      "text": "Danh sách hiện chức vụ cạnh phòng ban?",
+      "options": [
+        "Có",
+        "Chỉ phòng ban"
+      ],
+      "default": "Có"
+    }
+  ],
+  "notes": [
+    "Danh sách tải 20 người mỗi lần khi cuộn; tìm kiếm trên máy chủ.",
+    "Chốt 2026-11-14: Nhắc tên = một biểu tượng, bấm mở hộp; bỏ ô gõ tên hiện tại."
+  ]
+}
