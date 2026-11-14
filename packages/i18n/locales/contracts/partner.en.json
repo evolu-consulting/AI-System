@@ -85,7 +85,7 @@
           },
           "receive_flow": {
             "ok": "There is a flow handling contracts partners send.",
-            "todo": "No flow handles contracts partners send. Create a Receive-contract flow on the Flows page.",
+            "todo": "No flow handles contracts partners send. The platform admin creates and assigns a Receive-contract flow to the company.",
             "unknown": "Could not check the flow."
           },
           "groups": {

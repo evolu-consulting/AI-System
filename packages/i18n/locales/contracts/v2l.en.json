@@ -236,7 +236,7 @@
           "noSend": "Send to partner for confirmation: no"
         },
         "title": "Approval process in effect: {{name}} · v{{version}}",
-        "noFlow": "Your company has no contract approval process switched on. A company admin adds and switches one on in the Processes page.",
+        "noFlow": "Your company has no contract approval process switched on. The platform admin builds and assigns processes to your company — contact the platform admin.",
         "openPage": "Open the Processes page",
         "branches": "This process branches on conditions: the steps below are the ones that may run; see the full diagram on the Processes page.",
         "saveNote": "This section is view-only, so there is nothing to save.",

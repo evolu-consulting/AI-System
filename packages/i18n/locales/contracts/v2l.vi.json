@@ -236,7 +236,7 @@
           "noSend": "Gửi đối tác xác nhận: không"
         },
         "title": "Quy trình duyệt đang áp dụng: {{name}} · v{{version}}",
-        "noFlow": "Công ty chưa có quy trình duyệt hợp đồng nào đang bật. Quản trị công ty thêm và bật quy trình ở trang Quy trình.",
+        "noFlow": "Công ty chưa có quy trình duyệt hợp đồng nào đang bật. Quản trị nền tảng soạn và gán quy trình cho công ty — liên hệ quản trị nền tảng.",
         "openPage": "Mở trang Quy trình",
         "branches": "Quy trình có rẽ nhánh theo điều kiện: các bước dưới đây là những bước có thể chạy; xem sơ đồ đầy đủ ở trang Quy trình.",
         "saveNote": "Mục này chỉ để xem nên không có gì cần lưu.",
