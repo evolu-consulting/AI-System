@@ -23,6 +23,7 @@ const EXPECTED = [
   "e2e/community-web/playwright.stack.config.ts",
   "e2e/contracts-web/playwright.config.ts",
   "e2e/cr127/playwright.cr127.config.ts",
+  "e2e/cr161/playwright.cr161.config.ts",
   "e2e/fnr-showcase/playwright.fnr.config.ts",
   "e2e/journey-approval/playwright.journey-fsc.config.ts",
   "e2e/journey-approval/playwright.journey-purchase.config.ts",
@@ -35,10 +36,10 @@ const EXPECTED = [
   "playwright.config.ts",
 ];
 
-it("findE2eConfigs: đúng 28 cấu hình (gốc + 27 dưới e2e/; CR-127 gỡ journey-ms), không thừa không thiếu", async () => {
+it("findE2eConfigs: đúng 29 cấu hình (gốc + 28 dưới e2e/; CR-127 gỡ journey-ms, CR-161 thêm cr161), không thừa không thiếu", async () => {
   const found = (await findE2eConfigs(resolve(import.meta.dir, "../../.."))).map((f) =>
     f.replaceAll("\\", "/"),
   );
   expect(found.sort()).toEqual([...EXPECTED].sort());
-  expect(found).toHaveLength(28);
+  expect(found).toHaveLength(29);
 });
