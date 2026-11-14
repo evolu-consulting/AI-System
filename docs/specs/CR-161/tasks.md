@@ -51,7 +51,7 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 | 2 | Migration 0145 + int link | cr161-link-db | [x] |
 | 3 | Migration 0146/0147 + int chat | cr161-chat-db | [x] |
 | 4 | Migration community 0020 + int | cr161-posts-db | [x] |
-| 5 | API kết nối + bài | cr161-link-api | [ ] |
+| 5 | API kết nối + bài | cr161-link-api | [x] |
 | 6 | API trò chuyện + perf | cr161-chat-api | [ ] |
 | 7 | Web kết nối | cr161-web-link | [ ] |
 | 8 | Web trò chuyện + Bảng tin | cr161-web-chat | [ ] |
@@ -78,6 +78,13 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 - (lát 3) `cc_file_add(p_other, p_user, p_id, p_name, p_mime, p_size, p_storage_key)`: route sinh id, `storage_key` bắt buộc = `<tenant bên tải>/<id>` (CHECK `cc_files_key_ck`); mime/đuôi/413/415 do route kiểm (DB chỉ kiểm tên 1..255, size 1..20 MB). Truyền `uuid[]` cho `cc_send`/`cc_unread`: dùng `array(select x::uuid from jsonb_array_elements_text(${JSON.stringify(ids)}::text::jsonb) x)` (như cách `::text::jsonb` của cc_notify).
 - (lát 3) `hub.cc_links` thay thân (0146, cùng chữ ký): `unread` tính theo `app.user_id` (chưa đặt ⇒ 0), một câu, không đếm tin. Chưa đọc = `last_seq − last_read_seq`; người gửi tự coi là đã đọc tới tin mình (gửi trả lời cũng xoá chưa đọc cũ — chấp nhận).
 - (lát 3) Hàm dọn `hub.cc_files_sweep('24 hours')` (trả `storage_key` để xoá nội dung) đã có; job nền gọi nó (scope system) và xoá nội dung thuộc lát 6.
+- (lát 5) Đồng ý / từ chối có route riêng `POST /connect/links/:tenant_id/accept|decline` (cùng hàm DB `partner_link_accept/block`), không dùng `/partner/invites/:from/:act` của spec §3: route cũ nằm sau cổng `contracts-partner-confirm` (403 `PARTNER_FEATURE_OFF`) nên công ty nhận lời mời chưa bật Gửi đối tác xác nhận sẽ không đồng ý được. Route cũ giữ nguyên.
+- (lát 5) Mọi route `/connect/*` = `packGuard(view,"contracts","admin")` trước khi đọc tham số/thân (R1). 42501 từ DB ⇒ 404 `NOT_FOUND` (bài ⇒ 404 `CONNECT_NOT_CONNECTED` đúng spec §3 dù bảng `CC_ERRORS` ghi 409); CC422/CC409/CC404 ⇒ mã `CC_ERRORS` (message DB = mã); 22023 ⇒ 400.
+- (lát 5) Audit «ngắt kết nối» ghi ở route vào `contracts.approval_settings_audit` (`before/after = {kind:"cc_link", other_tenant, status}`) cùng tx với `cc_disconnect` (audit lỗi ⇒ rollback ngắt): `hub.audit_log` có CHECK action không nhận giá trị này và role gói không có quyền ghi; bảng này chỉ-thêm và chưa có chỗ đọc nào.
+- (lát 5) Minor #1 lát 2 (chặn-trước, `cc_invite` trả `pending_out` im lặng): giữ nguyên hành vi, ghi vào spec R3. Không lưu trạng thái phía A (cần bảng/cột mới, lộ cách khác). Hệ quả: API trả `pending_out` nhưng tải lại A thấy «chưa kết nối»; web hiển thị «Đã gửi lời mời» từ phản hồi của lần gửi.
+- (lát 5) `cc.link` phát SAU commit qua `packStreamPublishMany` (một pipeline); người nhận = `hub.cc_owner_users` (chỉ trả công ty đang kết nối/có lời mời chờ ⇒ bên chặn-trước không bao giờ nhận). Từ chối chỉ làm tươi tab công ty từ chối (Q3). `partnerModule(db, view, {redis})` thêm tham số tuỳ chọn; `packs.mount.ts` truyền `d.redis`.
+- (lát 5) Tên người mời lấy từ `admin.users.display_name` (`selfContactOf`), không nhận từ thân request. `repo.notify` (cc_notify) có sẵn cho lát 6, từ chối link không dạng `/contracts/...` trước khi chạm DB.
+- (lát 5) Migration pack-contracts `0116_cr161_cc_grants.sql`: GRANT USAGE schema hub + EXECUTE mọi hàm công khai 0145/0146 (kể cả partner_link_accept/block) cho `contracts_rw` không điều kiện; `community.cc_posts` + USAGE schema community cấp trong khối DO có `to_regprocedure` (thứ tự áp dụng gói community/contracts không cố định).
 - (PLAN) Kết nối suy ra từ `hub.partner_links` hai chiều, không bảng mới (G1). Ngắt = xoá 2 dòng chưa chặn.
 - (PLAN) Số migration: hub 0145–0147 (hiện có tới 0144), community 0020 (hiện có tới 0019); community 0021 trả lại.
 
@@ -92,22 +99,22 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED platform/partner-links.md
 #### Yêu cầu: Lời mời kết nối độc lập, không cần hợp đồng (CR-161)
 Ngoài đường cũ (gửi HĐ lần đầu tự kèm lời mời, một chiều), người Toàn quyền Sổ Hợp Tác tìm công ty đã bật Danh bạ và gửi lời mời kết nối kèm lời nhắn. Bên nhận đồng ý ⇒ hai công ty kết nối hai chiều (gửi HĐ đi thẳng cả hai phía); từ chối = chặn có sẵn, bên mời không gửi lại được. Kết nối = có quyền gửi cả hai chiều, không chặn.
-- Kịch bản: khi Tiên mời Preschool đã bật Danh bạ thì Preschool có lời mời chờ và người Toàn quyền của Preschool nhận chuông, mời lại không tạo thêm [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
-- Kịch bản: khi công ty chưa bật Danh bạ thì mời bị từ chối 422 [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
-- Kịch bản: khi Dung đồng ý lời mời thì hai bên đều thấy «Đã kết nối» và gửi HĐ cho nhau không cần hỏi lại [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
-- Kịch bản: khi Dung từ chối thì Tiên thấy «Preschool đã từ chối lời mời» và mời lại bị 409 [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
+- Kịch bản: khi Tiên mời Preschool đã bật Danh bạ thì Preschool có lời mời chờ và người Toàn quyền của Preschool nhận chuông, mời lại không tạo thêm [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R2 tìm + R3 mời + R4 đồng ý]
+- Kịch bản: khi công ty chưa bật Danh bạ thì mời bị từ chối 422 [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R3/R5 mã lỗi, không lộ]
+- Kịch bản: khi Dung đồng ý lời mời thì hai bên đều thấy «Đã kết nối» và gửi HĐ cho nhau không cần hỏi lại [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R2 tìm + R3 mời + R4 đồng ý]
+- Kịch bản: khi Dung từ chối thì Tiên thấy «Preschool đã từ chối lời mời» và mời lại bị 409 [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R3/R5 mã lỗi, không lộ]
 - Kịch bản: khi hai công ty mời chéo nhau thì lời mời thứ hai thành đồng ý ngay [test: apps/hub-api/src/modules/packs/contracts/connect/domain/connect.rules.test.ts » có lời mời ngược chờ ⇒ accept_reverse; apps/hub-api/src/modules/partners/connect-links.int.test.ts]
 - Kịch bản: khi lời mời tới từ đường gửi HĐ cũ thì đồng ý vẫn chỉ mở một chiều như trước [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
 
 #### Yêu cầu: Ngắt kết nối
 Một trong hai bên ngắt ⇒ mất quyền gửi HĐ đi thẳng cả hai chiều, mất xem bài của nhau; tin nhắn cũ giữ, chỉ đọc; nối lại phải mời mới.
-- Kịch bản: khi Tiên ngắt kết nối thì cả hai thấy «Chưa kết nối», trò chuyện chỉ đọc, gửi tin bị 409 [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » sau ngắt chỉ đọc]
-- Kịch bản: khi chưa kết nối mà gọi ngắt thì 409 không đổi dữ liệu [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
+- Kịch bản: khi Tiên ngắt kết nối thì cả hai thấy «Chưa kết nối», trò chuyện chỉ đọc, gửi tin bị 409 [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » sau ngắt chỉ đọc; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R6 ngắt kết nối + audit]
+- Kịch bản: khi chưa kết nối mà gọi ngắt thì 409 không đổi dữ liệu [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R6 ngắt kết nối + audit]
 
 #### Yêu cầu: Chỉ người Toàn quyền thao tác kết nối
 Tìm, mời, đồng ý, từ chối, ngắt chỉ cho người có việc `admin` gói Sổ Hợp Tác; nhân viên thấy tình trạng nhưng không có nút.
-- Kịch bản: khi Vy (nhân viên) gọi API mời/đồng ý/ngắt thì 403 và không đổi dữ liệu [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
-- Kịch bản: khi người Toàn quyền không phải người tạo công ty đồng ý lời mời thì thành công [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts]
+- Kịch bản: khi Vy (nhân viên) gọi API mời/đồng ý/ngắt thì 403 và không đổi dữ liệu [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R1 cổng Toàn quyền ở route]
+- Kịch bản: khi người Toàn quyền không phải người tạo công ty đồng ý lời mời thì thành công [test: apps/hub-api/src/modules/partners/connect-links.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R2 tìm + R3 mời + R4 đồng ý]
 
 ### ADDED sht/tro-chuyen-cong-ty.md
 #### Yêu cầu: Trò chuyện giữa hai công ty đã kết nối
@@ -121,6 +128,6 @@ Mỗi cặp công ty một luồng chung trong tab «Trò chuyện» của trang
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Công ty đã kết nối xem bài công khai của nhau (CR-161)
 Ngoại lệ có chủ ý với «không kết nối trực tiếp giữa công ty»: người Toàn quyền của công ty đã kết nối (CR-161) xem được mọi bài chủ quản đang hiệu lực có người xem «tất cả» của công ty kia, bản đã che liên hệ, chỉ đọc; ngắt kết nối thì mất ngay.
-- Kịch bản: khi Dung mở tab Bảng tin của NitiGroup thì thấy bài công khai còn hạn, không thấy bài giới hạn người xem, bài ẩn hay hết hạn [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts]
-- Kịch bản: khi chưa hoặc đã ngắt kết nối thì xem bài bị 404 [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts]
-- Kịch bản: khi bài có số điện thoại thì công ty kết nối chỉ thấy bản đã che [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts]
+- Kịch bản: khi Dung mở tab Bảng tin của NitiGroup thì thấy bài công khai còn hạn, không thấy bài giới hạn người xem, bài ẩn hay hết hạn [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R10 bài công khai]
+- Kịch bản: khi chưa hoặc đã ngắt kết nối thì xem bài bị 404 [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R10 bài công khai; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R6 ngắt kết nối + audit]
+- Kịch bản: khi bài có số điện thoại thì công ty kết nối chỉ thấy bản đã che [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts; apps/hub-api/src/modules/packs/contracts/connect/connect.routes.int.test.ts » R10 bài công khai]
