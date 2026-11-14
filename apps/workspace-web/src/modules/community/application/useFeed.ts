@@ -2,6 +2,7 @@
 // FeedList (Profile) và FeedPage (2 cột) dùng chung để chia state giữa thanh tab và bộ lọc.
 import type { FeedQuery, FeedResponse, FeedTab, PartnerOrg } from "@ai/contracts/community";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { applyFirstPage, feedScopeKey } from "../domain/feed-merge";
 import { t } from "../i18n";
 import { useApp } from "./ctx";
 
@@ -29,32 +30,24 @@ export function useFeedFilters(
   return { tab, setTab, cat, setCat, area, setArea, author, setAuthor, query, clear };
 }
 
-/** Gộp trang đầu mới nạp (sau khi dữ liệu đổi) vào danh sách đã tải dần: bài trong cửa sổ trang đầu lấy bản mới, bài đã tải ở trang sau giữ nguyên. */
-export function mergeFirstPage(old: FeedResponse, fresh: FeedResponse): FeedResponse {
-  const ids = new Set(fresh.items.map((p) => p.id));
-  const tail = old.items.slice(fresh.items.length).filter((p) => !ids.has(p.id));
-  const next = tail.length > 0 ? old.nextCursor : fresh.nextCursor;
-  const { nextCursor: _drop, ...rest } = fresh;
-  return { ...rest, items: [...fresh.items, ...tail], ...(next ? { nextCursor: next } : {}) };
-}
-
-/** CR-147c · nạp trang đầu (20 bài) rồi tải dần theo `nextCursor` (gọi `more.load` khi cuộn tới cuối). Đổi bộ lọc ⇒ về trang đầu. */
+/** CR-147c · nạp trang đầu (20 bài) rồi tải dần theo `nextCursor` (gọi `more.load` khi cuộn tới cuối). Đổi bộ lọc hoặc người xem ⇒ về trang đầu, bỏ danh sách cũ. */
 export function useFeed(query: FeedQuery) {
-  const { api, rev } = useApp();
+  const { api, rev, viewer } = useApp();
   const [data, setData] = useState<FeedResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
-  const key = JSON.stringify(query);
+  const key = feedScopeKey(query, viewer);
   const keyRef = useRef(key);
   // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại khi bộ lọc hoặc dữ liệu đổi
   useEffect(() => {
     let live = true;
-    const sameQuery = keyRef.current === key;
+    const sameScope = keyRef.current === key;
     keyRef.current = key;
+    if (!sameScope) setData(null); // đổi người xem/bộ lọc: không để bài cũ lại trên màn trong lúc chờ trang đầu
     api.listFeed(query).then(
       (r) => {
         if (!live) return;
-        setData((old) => (old && sameQuery ? mergeFirstPage(old, r) : r));
+        setData((old) => applyFirstPage(old, r, sameScope));
         setError(null);
       },
       (e) => live && setError(e instanceof Error ? e.message : t("community.feed.loadError")),

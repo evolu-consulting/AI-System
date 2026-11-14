@@ -11,6 +11,12 @@ export function avatarInitials(name: string): string {
   return (first + last).toLocaleUpperCase("vi");
 }
 
+/** testId của avatar: có `base` ⇒ `<base>-img` (có ảnh) hoặc `<base>-initials` (chữ cái đầu) để test/e2e phân biệt hai trạng thái. */
+export function avatarTestId(base: string | undefined, hasImage: boolean): string {
+  const kind = hasImage ? "img" : "initials";
+  return base ? `${base}-${kind}` : `person-avatar-${kind}`;
+}
+
 export function PersonAvatar({
   name,
   src,
@@ -36,7 +42,7 @@ export function PersonAvatar({
       <img
         src={src}
         alt={name}
-        data-testid={testId ?? "person-avatar-img"}
+        data-testid={avatarTestId(testId, true)}
         className={className}
         style={{ ...box, objectFit: "cover", display: "block" }}
       />
@@ -45,7 +51,7 @@ export function PersonAvatar({
     <span
       role="img"
       aria-label={name}
-      data-testid={testId ?? "person-avatar-initials"}
+      data-testid={avatarTestId(testId, false)}
       className={className}
       style={{
         ...box,

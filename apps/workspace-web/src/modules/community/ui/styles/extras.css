@@ -105,11 +105,12 @@
   position: relative;
 }
 [data-mod="community"] .composer-collapse {
-  /* CR-147: nằm trong hàng .ctop, cùng cao 34px với nút loại bài, căn giữa dọc */
-  flex: none;
+  /* CR-147: góc phải hàng 1 của .ctop, cùng cao 34px với nút loại bài (kể cả khi chủ quản có thêm «Điền từ» làm hàng wrap) */
+  position: absolute;
+  top: 0;
+  right: 0;
   width: 34px;
   height: 34px;
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;

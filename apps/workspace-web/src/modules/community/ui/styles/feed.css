@@ -71,17 +71,20 @@
   gap: 10px;
 }
 [data-mod="community"] .feedcomposer .ctop {
+  /* nút thu gọn đứng tuyệt đối ở góc phải hàng 1 (mọi vai); loại bài + «Điền từ» của chủ quản tự xuống dòng bên trái nó */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  padding-right: 44px;
 }
 [data-mod="community"] .feedcomposer .ctop .prefillsel {
   flex: 1 1 200px;
   width: auto;
   min-width: 0;
   max-width: 320px;
-  height: 36px;
+  height: 34px;
   margin-left: auto;
   font-size: 13px;
 }
