@@ -1,6 +1,8 @@
 // CR-133 · khối «Tài liệu kèm» trên trang chi tiết HĐ — MỘT chỗ cho mọi tệp của HĐ ngoài file chính:
 // (1) tệp gắn vào HĐ (thêm / gỡ / mở-tải), (2) tệp kèm các bước duyệt (chỉ đọc). Không đem đi ký (file chính vẫn theo luật PDF khi bật ký số).
+
 import type { ContractOwnFile, ContractStepFile } from "@ai/contracts/pack-contracts";
+import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { lazy, Suspense, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";
@@ -195,26 +197,23 @@ export function ContractFilesPanel({ id }: { id: string }) {
           </>
         )}
       </div>
-      {data.locked && (
-        <p className="mt-1 text-sm text-dim" data-testid="cfiles-locked">
-          {t("contracts.cfiles.locked")}
-        </p>
-      )}
       {err && (
         <p role="alert" data-testid="cfiles-error" className="mt-2 text-sm text-late">
           {err}
         </p>
       )}
       {empty && (
-        <p className="mt-2 text-sm text-dim" data-testid="cfiles-empty">
-          {t(
+        <EmptyState
+          kind="empty"
+          testId="cfiles-empty"
+          title={t(
             data.locked
               ? "contracts.cfiles.emptyLocked"
               : data.can_add
                 ? "contracts.cfiles.empty"
                 : "contracts.cfiles.emptyReadOnly",
           )}
-        </p>
+        />
       )}
       {data.files.length > 0 && (
         <ul className="mt-2 divide-y divide-rule" data-testid="cfiles-own">

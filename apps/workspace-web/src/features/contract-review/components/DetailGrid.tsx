@@ -46,7 +46,10 @@ export function DetailGrid({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4 max-lg:grid-cols-1">
-        <div className="flex min-w-0 flex-col gap-4">
+        <div
+          data-testid="detail-left"
+          className="flex min-w-0 flex-col gap-4 lg:[&:has(+div:empty)]:col-span-2"
+        >
           <InfoPanel
             c={c}
             f={f}
@@ -76,7 +79,8 @@ export function DetailGrid({
             />
           )}
         </div>
-        <div className="flex min-w-0 flex-col gap-4">
+        {/* CR-154b · cột phải không có gì (không mốc, không lưu ý) ⇒ ẩn, cột Thông tin chiếm full (desktop). */}
+        <div data-testid="detail-right" className="flex min-w-0 flex-col gap-4 empty:hidden">
           {aiMs ? (
             <AiMilestonesPanel
               rows={info.rows}

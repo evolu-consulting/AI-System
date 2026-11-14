@@ -85,7 +85,6 @@
       "remove": "Remove",
       "empty": "No attachments yet. Add a Word, Excel or image file so everyone can see it — these files are not sent for signing.",
       "emptyReadOnly": "No attachments yet. Only the contract owner or an admin can add files.",
-      "locked": "This contract has been sent for approval, so files can no longer be added or removed. You can still view and download them.",
       "emptyLocked": "This contract has no attachments.",
       "steps": "Files attached to approval steps",
       "loadErr": "Could not load attachments. Reload the page or try again in a few minutes.",

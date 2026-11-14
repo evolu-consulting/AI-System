@@ -85,7 +85,6 @@
       "remove": "Gỡ",
       "empty": "Chưa có tài liệu kèm. Thêm bản Word, Excel hoặc ảnh để mọi người cùng xem — các tệp này không đem đi ký.",
       "emptyReadOnly": "Chưa có tài liệu kèm. Chỉ người phụ trách hợp đồng hoặc quản trị mới thêm được tệp.",
-      "locked": "Hợp đồng đã gửi duyệt nên không thêm hoặc gỡ tệp được nữa. Vẫn xem và tải được.",
       "emptyLocked": "Hợp đồng không có tài liệu kèm.",
       "steps": "Tệp kèm các bước duyệt",
       "loadErr": "Chưa tải được tài liệu kèm. Tải lại trang hoặc thử lại sau ít phút.",
