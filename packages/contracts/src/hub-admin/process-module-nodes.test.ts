@@ -45,9 +45,14 @@ describe("moduleClusterIssues", () => {
   });
   test("stage lạ chen giữa ⇒ split, chỉ rõ bước + câu nghiệp vụ", () => {
     const [i] = moduleClusterIssues([send, other, wait]);
-    expect(i).toMatchObject({ node: "contracts.esign", label: "Ký số", rule: "split", index: 0 });
+    expect(i).toMatchObject({
+      node: "contracts.esign",
+      label: "Ký hợp đồng",
+      rule: "split",
+      index: 0,
+    });
     expect(clusterIssueMessage(i as never)).toBe(
-      "Bước Ký số bị tách rời — xoá rồi thêm lại bước Ký số",
+      "Bước Ký hợp đồng bị tách rời — xoá rồi thêm lại bước Ký hợp đồng",
     );
   });
   test("thiếu một nửa ⇒ incomplete", () => {
