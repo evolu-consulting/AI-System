@@ -25,6 +25,18 @@ export function nodesOfApp(mods: readonly FeatureModule[], app: string): AppNode
     .map(toAppNode);
 }
 
+/**
+ * Node cũ còn trong sổ để def đã lưu đọc được (không stage mẫu ⇒ không vào bảng node / menu) nhưng VẪN có giao diện vào/ra
+ * (`inputs`/`outputs`). Kiểm cạnh khi lưu phải nhìn thấy chúng: def mang `stage.node` cũ (vd `core.wait-until`) không được lọt cảnh báo.
+ */
+export function legacyNodesOfApp(mods: readonly FeatureModule[], app: string): AppNodeDecl[] {
+  return mods
+    .filter((m) => m.app === app)
+    .flatMap((m) => m.nodes)
+    .filter((n) => n.stages.length === 0 && (n.inputs.length > 0 || n.outputs.length > 0))
+    .map(toAppNode);
+}
+
 /** Tra khai báo node đầy đủ theo khoá. */
 export function featureNodeByKey(
   mods: readonly FeatureModule[],
