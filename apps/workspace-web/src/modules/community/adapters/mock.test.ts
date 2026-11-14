@@ -125,6 +125,28 @@ describe("mock · hành động, luồng, lộ dấu hiệu", () => {
   });
 });
 
+describe("mock · sửa bài thay danh sách tệp (CR-147)", () => {
+  test("PATCH media thay toàn bộ: bớt một tệp, thêm một tệp; vắng media ⇒ giữ nguyên", async () => {
+    const m = createMockApi();
+    m.setPersona("abc");
+    const mk = (label: string) => ({ kind: "file" as const, label, fileId: crypto.randomUUID() });
+    const post = await m.api.createPost({
+      type: "buy",
+      title: "A",
+      body: "",
+      cats: [],
+      media: [mk("a.pdf"), mk("b.pdf")],
+      fields: { product: "A", qty: "1", area: "HCM", neededBy: "2026-12-01", budget: "" },
+    });
+    expect(post.media.map((x) => x.label)).toEqual(["a.pdf", "b.pdf"]);
+    const kept = post.media.filter((x) => x.label === "b.pdf").map((x) => ({ ...x }));
+    const next = await m.api.updatePost(post.id, { media: [...kept, mk("c.pdf")] });
+    expect(next.media.map((x) => x.label)).toEqual(["b.pdf", "c.pdf"]);
+    const same = await m.api.updatePost(post.id, { body: "x" });
+    expect(same.media.map((x) => x.label)).toEqual(["b.pdf", "c.pdf"]);
+  });
+});
+
 describe("mock · khớp contract zod (strict)", () => {
   test("feed + luồng của mọi persona parse được", async () => {
     for (const id of ["an", "cuong", "tp", "ncca", "abc", "ht"]) {

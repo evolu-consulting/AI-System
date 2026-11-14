@@ -105,9 +105,14 @@
   position: relative;
 }
 [data-mod="community"] .composer-collapse {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+  /* CR-147: nằm trong hàng .ctop, cùng cao 34px với nút loại bài, căn giữa dọc */
+  flex: none;
+  width: 34px;
+  height: 34px;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transform: rotate(180deg);
 }
 [data-mod="community"] .attach .fsize,

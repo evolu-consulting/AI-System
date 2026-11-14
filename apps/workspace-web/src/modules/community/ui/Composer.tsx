@@ -204,15 +204,6 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
 
   return (
     <div className="card pad composer feedcomposer" data-testid="composer">
-      <button
-        type="button"
-        className="iconbtn composer-collapse"
-        data-testid="composer-collapse"
-        aria-label={t("community.composer.collapse")}
-        onClick={() => setOpen(false)}
-      >
-        <IconChevron size={16} />
-      </button>
       {isHostViewer && prefill && (
         <div className="prefill">
           <IconLock size={14} />
@@ -253,6 +244,15 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
                 ))}
               </select>
             )}
+            <button
+              type="button"
+              className="iconbtn composer-collapse"
+              data-testid="composer-collapse"
+              aria-label={t("community.composer.collapse")}
+              onClick={() => setOpen(false)}
+            >
+              <IconChevron size={16} />
+            </button>
           </div>
           <label htmlFor="draft-body" style={{ position: "absolute", left: -9999 }}>
             {t("community.composer.bodyLabel")}

@@ -75,7 +75,6 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  padding-right: 32px; /* chừa chỗ nút thu gọn */
 }
 [data-mod="community"] .feedcomposer .ctop .prefillsel {
   flex: 1 1 200px;

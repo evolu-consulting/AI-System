@@ -5,12 +5,15 @@ import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { useApp } from "../application/ctx";
 import { initials } from "../domain/format";
 import { focusCommentId } from "../domain/search-hint";
-import { commentActions, mentionIds } from "../domain/thread";
+import { commentActions, mentionIds, visibleComments } from "../domain/thread";
 import { t } from "../i18n";
 import { CommentItem } from "./CommentItem";
 import { IconLock, IconSend } from "./icons";
 import { MentionBox } from "./MentionBox";
 
+/** Số bình luận mới nhất hiện mặc định; phần cũ hơn nằm sau «Xem thêm». */
+const RECENT = 2;
+const MAX_PAGES = 20;
 const errCode = (e: unknown): string | undefined => (e as { code?: string } | null)?.code;
 
 /** `extra`: nút việc gắn thêm trên từng bình luận (vd Lưu báo giá của NCC, C7b) — vào slot `action` của CommentItem. */
@@ -25,16 +28,21 @@ export function Thread({
 }) {
   const { api, viewer, isHostViewer, rev, toast, urlSearch } = useApp();
   const [comments, setComments] = useState<CommentView[]>([]);
-  const [next, setNext] = useState<string | undefined>();
   const [loaded, setLoaded] = useState(false);
   const [text, setText] = useState("");
   const [picked, setPicked] = useState<Mention[]>([]);
   const [busy, setBusy] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const load = useCallback(async () => {
-    const page = await api.listComments(post.id);
-    setComments(page.comments);
-    setNext(page.nextCursor);
+    // CR-147: mặc định chỉ hiện `RECENT` bình luận MỚI NHẤT ⇒ phải có đủ danh sách (cũ → mới) để cắt đuôi; nạp hết các trang.
+    let page = await api.listComments(post.id);
+    const all = [...page.comments];
+    for (let i = 0; page.nextCursor && i < MAX_PAGES; i++) {
+      page = await api.listComments(post.id, page.nextCursor);
+      all.push(...page.comments);
+    }
+    setComments(all);
     setLoaded(true);
   }, [api, post.id]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại khi dữ liệu đổi (rev)
@@ -47,17 +55,13 @@ export function Thread({
     if (!loaded) return;
     const id = focusCommentId(urlSearch);
     if (!id) return;
+    if (!showAll && comments.some((c, i) => c.id === id && i < comments.length - RECENT))
+      return setShowAll(true); // bình luận cần cuộn tới đang bị thu gọn ⇒ mở hết rồi chạy lại
     const el = document.querySelector<HTMLElement>(`[data-comment-id="${id}"]`);
     el?.scrollIntoView({ block: "center" });
     el?.classList.add("focused");
-  }, [loaded, urlSearch]);
+  }, [loaded, urlSearch, showAll, comments]);
 
-  const more = async () => {
-    if (!next) return;
-    const page = await api.listComments(post.id, next);
-    setComments((c) => [...c, ...page.comments]);
-    setNext(page.nextCursor);
-  };
   const send = async () => {
     if (!text.trim() || busy) return;
     setBusy(true);
@@ -82,6 +86,7 @@ export function Thread({
     await load();
     onChanged();
   };
+  const { shown, hidden } = visibleComments(comments, RECENT, showAll);
   const ctx = { isHost: isHostViewer, postByHost: post.authorSide === "host" };
 
   return (
@@ -95,7 +100,17 @@ export function Thread({
           {t("community.thread.empty")}
         </div>
       )}
-      {comments.map((c) => (
+      {hidden > 0 && (
+        <button
+          type="button"
+          className="clink"
+          data-testid="comments-more"
+          onClick={() => setShowAll(true)}
+        >
+          {t("community.thread.more", { count: hidden })}
+        </button>
+      )}
+      {shown.map((c) => (
         <CommentItem
           key={c.id}
           comment={c}
@@ -106,11 +121,6 @@ export function Thread({
           onHide={(h) => after(api.hideComment(post.id, c.id, h))}
         />
       ))}
-      {next && (
-        <button type="button" className="clink" data-testid="comments-more" onClick={more}>
-          {t("community.thread.more")}
-        </button>
-      )}
       <div className="cinput">
         <span className="av sm t1">{initials(viewer.orgName)}</span>
         <MentionBox

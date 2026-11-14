@@ -234,6 +234,19 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         ...(input.cats ? { cats: input.cats } : {}),
         ...(input.audience ? { audience: input.audience } : {}),
         ...(input.fields ? { fields: { ...p.fields, ...input.fields } } : {}),
+        // CR-147: media thay TOÀN BỘ danh sách (như server)
+        ...(input.media
+          ? {
+              media: input.media.map((m) => ({
+                kind: m.kind,
+                label: m.label,
+                fileId: m.fileId,
+                name: m.name,
+                size: m.size,
+                mime: m.mime,
+              })),
+            }
+          : {}),
         edited: true,
       });
       return toView(p);

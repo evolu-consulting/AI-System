@@ -50,10 +50,12 @@ export function FlowPage({
       <main className="wsmain">
         <div className="wscenter" data-testid={testId}>
           {bare ? (
-            <div className="adminlist-head">
-              <h1>{title}</h1>
-              {intro ? <p className="muted">{intro}</p> : null}
-            </div>
+            // CR-147: tab/menu đã nói tên màn ⇒ không lặp tiêu đề; chỉ hiện đoạn dẫn nếu có.
+            intro ? (
+              <div className="adminlist-head">
+                <p className="muted">{intro}</p>
+              </div>
+            ) : null
           ) : (
             <div className="card pcard">
               <h1>{title}</h1>

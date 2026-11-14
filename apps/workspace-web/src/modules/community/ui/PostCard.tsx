@@ -1,5 +1,5 @@
 // Thẻ bài (mockup `.post`): ⋯ menu (Sửa / Lưu trữ / Đã xong / Xoá + xác nhận đỏ), nhãn đã sửa / lưu trữ / ẩn, bình luận theo luồng.
-import type { ModerationItem, PostAction, PostView } from "@ai/contracts/community";
+import type { MediaItem, ModerationItem, PostAction, PostView } from "@ai/contracts/community";
 import { useEffect, useState } from "react";
 import { useApp } from "../application/ctx";
 import { draftFromFields } from "../domain/compose";
@@ -7,6 +7,7 @@ import { dealStrip, expiryNote, initials, timeAgo, tone } from "../domain/format
 import { hintLines, saveButtonLabel, savedText } from "../domain/quote";
 import { opensCommentThread } from "../domain/search-hint";
 import { numLocale, t } from "../i18n";
+import { AttachEditor } from "./AttachEditor";
 import { DraftFields } from "./DraftFields";
 import { ModerationNote, ReportDialog } from "./flows/PostFlows";
 import { Highlighted } from "./Highlighted";
@@ -28,9 +29,16 @@ import { has, PostMenu } from "./PostMenu";
 import { QuoteForm } from "./QuoteForm";
 import { Thread } from "./Thread";
 
+/** Mục media giữ lại khi sửa: tệp tải lên ⇒ chỉ cần `fileId` (server điền lại, bỏ `url`); mục ngoài (url) giữ nguyên. */
+const keepRef = (m: MediaItem): MediaItem =>
+  m.fileId ? { id: m.id, kind: m.kind, label: m.label, fileId: m.fileId } : m;
+
 function EditForm({ p, onClose }: { p: PostView; onClose: () => void }) {
   const { api, bump, toast } = useApp();
   const [d, setD] = useState(() => draftFromFields(p.type, p.body, p.fields, p.cats));
+  // CR-147: tệp đính kèm — chỉ gửi `media` khi người dùng đổi (giữ nguyên ⇒ không mở lại lượt duyệt); server thay TOÀN BỘ danh sách.
+  const [media, setMedia] = useState<MediaItem[]>(() => p.media.map(keepRef));
+  const [mediaDirty, setMediaDirty] = useState(false);
   // HT-52: đối tác chỉ nhận bản đã che; người đăng sửa trên bản gốc (raw) — không có (không phải người đăng) ⇒ giữ bản đang xem.
   useEffect(() => {
     let live = true;
@@ -51,6 +59,7 @@ function EditForm({ p, onClose }: { p: PostView; onClose: () => void }) {
       body: d.body,
       fields,
       ...(p.type !== "note" ? { title: d.product } : {}),
+      ...(mediaDirty ? { media } : {}),
     });
     toast(t("community.post.saved"));
     bump();
@@ -64,6 +73,13 @@ function EditForm({ p, onClose }: { p: PostView; onClose: () => void }) {
         onChange={(e) => setD({ ...d, body: e.target.value })}
       />
       {p.type !== "note" && <DraftFields draft={d} set={setD} errors={{}} />}
+      <AttachEditor
+        media={media}
+        onChange={(m) => {
+          setMedia(m);
+          setMediaDirty(true);
+        }}
+      />
       <div className="cbar">
         <div className="sp" />
         <button type="button" className="ghost" onClick={onClose}>

@@ -235,7 +235,7 @@
       "note": "All comments appear in one shared list under the post. Type @ to mention a partner company.",
       "notePartner": "You see the host's comments, your company's comments and comments that mention you.",
       "empty": "No comments yet.",
-      "more": "Show more comments",
+      "more": "Show {{count}} more comments",
       "writeComment": "Write a comment",
       "writeCommentPlaceholder": "Write a comment… type @ to mention a company",
       "send": "Send comment",
