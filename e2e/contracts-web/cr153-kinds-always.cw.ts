@@ -8,7 +8,7 @@ test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
 const FIVE = [/^Mua/, /^Bán/, /^Giới thiệu/, /^Nhượng quyền/, /^Thỏa thuận hợp tác/];
 
-test("Thêm giao dịch: đủ 5 loại; chọn Nhượng quyền hiện khối trường riêng", async ({ page }) => {
+test("Thêm giao dịch: đủ 5 loại, chọn Nhượng quyền hiện khối trường riêng", async ({ page }) => {
   await installV2f(page);
   await page.goto("/contracts/c/new?type=deal");
   for (const n of FIVE) await expect(page.getByRole("radio", { name: n })).toBeVisible();

@@ -17,8 +17,8 @@ Bỏ nhánh 3 loại trong `DealTiles` (G1): luôn 5 loại. «Thêm giao dịch
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-### MODIFIED sht/hop-dong-loai-kinh-te.md
+### ADDED sht/hop-dong-loai-kinh-te.md
 
 #### Yêu cầu: Hai loại Nhượng quyền và Thỏa thuận hợp tác luôn hiện
-- Kịch bản: khi mở «Thêm giao dịch» thì thấy đủ 5 loại và chọn Nhượng quyền hiện khối trường riêng [test: e2e/contracts-web/cr153-kinds-always.cw.ts » Thêm giao dịch: đủ 5 loại; chọn Nhượng quyền hiện khối trường riêng]
+- Kịch bản: khi mở «Thêm giao dịch» thì thấy đủ 5 loại và chọn Nhượng quyền hiện khối trường riêng [test: e2e/contracts-web/cr153-kinds-always.cw.ts » Thêm giao dịch: đủ 5 loại, chọn Nhượng quyền hiện khối trường riêng]
 - Kịch bản: khi xem chi tiết HĐ đang hiệu lực thì khối Thông tin hợp đồng hiện đủ 5 loại, chỉ đọc [test: e2e/contracts-web/cr153-kinds-always.cw.ts » Chi tiết HĐ đang hiệu lực: khối Thông tin hợp đồng vẫn hiện đủ 5 loại (khoá, chỉ đọc)]
