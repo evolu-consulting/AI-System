@@ -166,3 +166,27 @@ export function applyBrandDom(b: Brand, appName: string, doc: Document = documen
   st.textContent = brandCss(b.accent);
   doc.title = b.name ? `${appName} · ${b.name}` : appName;
 }
+
+/** CR-158: icon tab = logo công ty. Có logo ⇒ đặt/thay `href` của `<link rel="icon">` (tạo nếu chưa có, nhớ href gốc); không có ⇒ trả về icon gốc (hoặc gỡ link do ta tạo). */
+export function applyFavicon(logo: string | null, doc: Document = document): void {
+  let l = doc.querySelector<HTMLLinkElement>('link[rel~="icon"]');
+  if (logo) {
+    if (!l) {
+      l = doc.createElement("link");
+      l.rel = "icon";
+      l.dataset.brandIcon = "1";
+      doc.head.appendChild(l);
+    } else if (l.dataset.origHref === undefined) {
+      l.dataset.origHref = l.getAttribute("href") ?? "";
+    }
+    l.removeAttribute("type");
+    l.href = logo;
+    return;
+  }
+  if (!l) return;
+  if (l.dataset.brandIcon) l.remove();
+  else if (l.dataset.origHref !== undefined) {
+    l.setAttribute("href", l.dataset.origHref);
+    delete l.dataset.origHref;
+  }
+}
