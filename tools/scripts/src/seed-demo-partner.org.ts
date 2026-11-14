@@ -134,3 +134,10 @@ export function planOrg(s: OrgState): { actions: OrgAction[]; missingPackGroups:
   ];
   return { actions, missingPackGroups: Object.values(PACK_GROUP).filter((k) => !s.groups.has(k)) };
 }
+
+/** Id người dùng từ phản hồi `POST /admin/users` (`{ user: { id }, temp_password }`; KHÔNG phải `{ id }`). */
+export function createdUserId(resp: unknown): string {
+  const id = (resp as { user?: { id?: unknown } }).user?.id;
+  if (typeof id !== "string") throw new Error("phản hồi tạo người dùng không có user.id");
+  return id;
+}

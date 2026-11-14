@@ -1,13 +1,22 @@
 // CR-150b · kế hoạch sơ đồ tổ chức evolu: chỉ thêm, idempotent, cây + vai quy trình đúng người.
 import { describe, expect, it } from "bun:test";
+import { GroupCreateRequestSchema } from "@ai/contracts/groups";
+import {
+  DepartmentSetRequestSchema,
+  JobTitleSetRequestSchema,
+  ManagerSetRequestSchema,
+} from "@ai/contracts/org";
+import { UserCreateRequestSchema } from "@ai/contracts/users";
 import { RECEIVE, receiveFlow } from "./seed-demo-partner.data";
 import {
+  createdUserId,
   ORG_DEPTS,
   ORG_PEOPLE,
   ORG_RECEIVE,
   ORG_ROOT,
   type OrgAction,
   type OrgState,
+  orgEmail,
   planOrg,
 } from "./seed-demo-partner.org";
 
@@ -124,5 +133,41 @@ describe("sơ đồ tổ chức evolu (CR-150b)", () => {
     const s = JSON.stringify(receiveFlow("u1").stages);
     expect(s).toContain("pb-kinh-doanh");
     expect(s).not.toContain("uat-nhan-duyet");
+  });
+});
+
+describe("thân gửi lên API admin hợp lệ theo zod của @ai/contracts", () => {
+  const U = "11111111-1111-4111-8111-111111111111";
+  it("tạo người, tạo nhóm, phòng ban, quản lý, chức vụ", () => {
+    for (const p of ORG_PEOPLE)
+      expect(
+        UserCreateRequestSchema.safeParse({
+          username: p.username,
+          display_name: p.name,
+          role: "member",
+          locale: "vi",
+          email: orgEmail(p.username),
+        }).success,
+      ).toBe(true);
+    for (const d of ORG_DEPTS)
+      expect(GroupCreateRequestSchema.safeParse({ key: d.key, name: { vi: d.vi } }).success).toBe(
+        true,
+      );
+    expect(
+      DepartmentSetRequestSchema.safeParse({ head_user_id: U, parent_group_id: null }).success,
+    ).toBe(true);
+    expect(
+      DepartmentSetRequestSchema.safeParse({ head_user_id: U, parent_group_id: U }).success,
+    ).toBe(true);
+    expect(ManagerSetRequestSchema.safeParse({ manager_id: U }).success).toBe(true);
+    for (const p of ORG_PEOPLE)
+      expect(JobTitleSetRequestSchema.safeParse({ job_title: p.title }).success).toBe(true);
+  });
+  it("id người từ phản hồi tạo là user.id (lỗi cũ: lấy .id ⇒ 'undefined' ⇒ 400)", () => {
+    expect(createdUserId({ user: { id: U }, temp_password: "x" })).toBe(U);
+    expect(() => createdUserId({ id: U })).toThrow();
+    expect(DepartmentSetRequestSchema.safeParse({ head_user_id: String(undefined) }).success).toBe(
+      false,
+    );
   });
 });

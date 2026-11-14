@@ -3,6 +3,7 @@ import { hashPassword } from "@ai/db";
 import type { Sql } from "postgres";
 import { type Api, call, type Json } from "../../hub-dev/src/fixture";
 import {
+  createdUserId,
   ORG_PEOPLE,
   type OrgAction,
   type OrgState,
@@ -69,7 +70,7 @@ async function apply(api: Api, tid: string, r: Read, a: OrgAction): Promise<void
       locale: "vi",
       email: orgEmail(a.username),
     });
-    r.uid.set(a.username, String(u.id));
+    r.uid.set(a.username, createdUserId(u));
   } else if (a.op === "create_group") {
     const g = await call(api, "POST", `/admin/groups?${q}`, { key: a.key, name: { vi: a.name } });
     r.gid.set(a.key, String(g.id));
