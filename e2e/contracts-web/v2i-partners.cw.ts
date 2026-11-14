@@ -4,6 +4,7 @@
 // internet". Không còn ô sao / ghi `/reputation/*`. Mỗi nút gửi đúng API / thân.
 import { expect, type Page, test } from "@playwright/test";
 import { asHub, type Role } from "./dataset";
+import { partyPageAsHub } from "./dataset-partners";
 
 const CAPTURE = process.env.CW_MODE === "capture";
 const A = "tax:0301000001";
@@ -145,6 +146,7 @@ async function install(page: Page, o: Opts = {}): Promise<Sent[]> {
       const table: Record<string, unknown> = {
         "/me": d.packMe,
         "/partners": byRole,
+        "/partners/page": partyPageAsHub(rows, url.searchParams),
         "/partners/score": { ...(o.score ?? rows[0] ?? ROW), breakdown: BREAKDOWN },
         "/partner-events": o.events ?? [],
         "/partners/contract-counts": [{ party: A, n: 3 }],

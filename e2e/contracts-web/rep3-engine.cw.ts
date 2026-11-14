@@ -3,6 +3,8 @@
 //  - v2e (BA v2.0 §5.1): Đối tác đọc `/reputation/partners` (vai × nhóm SP, mức 85/70, cờ đỏ giữ), chi tiết có bảng Góp + các bước + biểu đồ 3/6/12
 //    tháng + sao; Cài đặt = 5 ô × 3 tab, không còn chỉnh tay ±10 / cấu hình HD8; Tổng quan "Cần chú ý" (TQ-04).
 // Chạy riêng: `bun tools/scripts/src/run-playwright.ts e2e/contracts-web/playwright.config.ts rep3-engine.cw.ts`.
+
+import { fromRep } from "@ai/contracts/pack-contracts";
 import { expect, type Page, type Route, test } from "@playwright/test";
 import { asHub, type Role } from "./dataset";
 import { facetsAsHub } from "./dataset-list";
@@ -13,6 +15,7 @@ import {
   partnersForOverview,
   todoAsHub,
 } from "./dataset-overview";
+import { partyPageAsHub } from "./dataset-partners";
 
 test.skip(process.env.CW_MODE === "capture", "chỉ kiểm hành vi contracts-web");
 
@@ -270,6 +273,10 @@ function tableOf(
       : q.get("role") === "supplier"
         ? [HD8_ROW]
         : [],
+    "/partners/page": partyPageAsHub(
+      engine === "v2e" ? REP_ROWS.map((x) => ({ ...fromRep(x), contracts: 0 })) : [HD8_ROW],
+      q,
+    ),
     "/partners/contract-counts": [{ party: A, n: 3 }],
     "/partners/profile": {
       party: A,

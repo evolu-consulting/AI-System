@@ -1,6 +1,15 @@
 // HD7-AC09 · HD8 · D-02: dữ liệu giả CHUNG cho so màn đối tác (/partners + Ghi việc + Chấm điểm), Cách tính điểm (/settings/scoring),
 // so giá hàng hoá (/prices?product=) và khối "Ghi việc" của trang HĐ — một bộ dữ liệu, hai bộ chuyển: `partnersAsMgmt()` (hình
 // `mgmt-app/web/src/api/{partners,prices}.ts`, khoá `company_id`) và `partnersAsHub()` (hình `@ai/contracts`, khoá `party`).
+import {
+  filterParties,
+  type PartyFilter,
+  type PartySort,
+  pageParties,
+  partiesOf,
+  type ScoreRow,
+  sortParties,
+} from "@ai/contracts/pack-contracts";
 import { contract } from "./dataset-contract";
 
 const BV = "tax:0312340001";
@@ -266,9 +275,24 @@ export const partnerData = {
   compare,
 };
 
+/** CR-151e: `GET /partners/page` — cùng luật thuần của máy chủ (`@ai/contracts`), nhận dòng điểm đối tác × vai. */
+export function partyPageAsHub(
+  rows: readonly { party: string; contracts?: number }[],
+  s: URLSearchParams,
+): unknown {
+  const counts = new Map(rows.map((r) => [r.party, r.contracts ?? 0]));
+  const items = partiesOf(rows as unknown as ScoreRow[], counts);
+  const sorted = sortParties(
+    filterParties(items, (s.get("filter") ?? "all") as PartyFilter, s.get("q") ?? undefined),
+    (s.get("sort") ?? "attention") as PartySort,
+  );
+  return pageParties(sorted, Number(s.get("limit") ?? 20), Number(s.get("offset") ?? 0));
+}
+
 /** Hình hub: `/pack/contracts/{partners,scoring,obligations,partner-events,prices,contracts/:id/partner}`. */
 export function partnersAsHub(path: string, s: URLSearchParams): unknown {
   const p = path.replace(/^.*\/pack\/contracts/, "");
+  if (p === "/partners/page") return partyPageAsHub(partners, s);
   if (p === "/partners")
     return partners.filter(
       (x) => s.get("role") === "all" || !s.get("role") || x.role === s.get("role"),
