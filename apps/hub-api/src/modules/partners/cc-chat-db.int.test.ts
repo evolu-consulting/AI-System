@@ -475,7 +475,7 @@ describe("CR-161 · R6/R8 sau ngắt chỉ đọc, kết nối lại dùng chín
     expect((await as(A, TIEN, (tx) => page(tx, B))).read_only).toBe(false);
     const r = await as(B, DUNG, (tx) => send(tx, A, "Dung", randomUUID(), "Kết nối lại"));
     expect(Number(r.seq)).toBe(n + 1);
-    expect(r.thread_id).toBe(id);
+    expect(r.thread_id).toBe(id as string);
     expect(await thread(A, B)).toHaveLength(1);
   });
 });

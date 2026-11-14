@@ -3,9 +3,10 @@
 import type { CcPost } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { PostsRepo } from "../application/connect.ports";
 import type { Cursor } from "../domain/connect.codec";
 
-export function postsRepo(tx: Tx) {
+export function postsRepo(tx: Tx): PostsRepo {
   return {
     async page(owner: string, cur: Cursor | null, limit: number): Promise<CcPost[]> {
       const rows = await tx.execute<{
@@ -33,4 +34,3 @@ export function postsRepo(tx: Tx) {
     },
   };
 }
-export type PostsRepo = ReturnType<typeof postsRepo>;

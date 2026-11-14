@@ -8,9 +8,8 @@ import type {
   ConnectStatus,
 } from "@ai/contracts/pack-contracts";
 import type { PackStreamFrame, PackStreamPublishMany, PackUow, PackWho } from "../../../kit/public";
-import type { ConnectRepo } from "../adapters/connect.repo";
-import type { PostsRepo } from "../adapters/posts.repo";
 import { type Cursor, encodeCursor } from "../domain/connect.codec";
+import type { CcOwner, ConnectRepo, PostsRepo } from "./connect.ports";
 
 export type ConnectRepos = { connect: ConnectRepo; posts: PostsRepo };
 export type ConnectDeps = {
@@ -22,11 +21,9 @@ export type ConnectDeps = {
 };
 export type Page<T> = { items: T[]; next_cursor: string | null };
 
-type Owner = { tenant_id: string; user_id: string };
-
 /** `cc.link`: mỗi công ty nhận trạng thái NHÌN TỪ PHÍA MÌNH về công ty kia; người nhận = người Toàn quyền (tab khác của người thao tác cũng nhận). */
 function linkFrames(
-  owners: readonly Owner[],
+  owners: readonly CcOwner[],
   a: string,
   b: string,
   statusOf: { a: ConnectStatus; b: ConnectStatus },

@@ -2,8 +2,8 @@
 // ngắt lấy người nhận TRƯỚC khi ngắt + ghi audit cùng tx; trang danh sách xin limit+1.
 import { describe, expect, it } from "bun:test";
 import type { PackStreamFrame, PackUow } from "../../../kit/public";
-import type { ConnectRepo } from "../adapters/connect.repo";
 import { decodeCursor } from "../domain/connect.codec";
+import type { ConnectRepo } from "./connect.ports";
 import { type ConnectRepos, connectUsecases } from "./connect.usecase";
 
 const A = "7e5d00a1-0000-4000-8000-000000000001";

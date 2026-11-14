@@ -4,22 +4,13 @@
 import type { ConnectCompany, ConnectLink, ConnectStatus } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { CcBell, CcOwner, ConnectRepo } from "../application/connect.ports";
 import type { Cursor } from "../domain/connect.codec";
 import { isContractsLink } from "../domain/connect.codec";
 
 const ISO = sql.raw(`'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'`);
-type Owner = { tenant_id: string; user_id: string };
-export type CcBell = {
-  tenant_id: string;
-  user_id: string;
-  kind: string;
-  title: string;
-  body?: string;
-  link: string;
-  dedup_key: string;
-};
 
-export function connectRepo(tx: Tx, tid: string) {
+export function connectRepo(tx: Tx, tid: string): ConnectRepo {
   return {
     /** R2 · một câu (`hub.cc_search`), ≤ 20 dòng, kèm trạng thái R7. */
     async search(q: string): Promise<ConnectCompany[]> {
@@ -91,8 +82,8 @@ export function connectRepo(tx: Tx, tid: string) {
       }));
     },
     /** Người Toàn quyền của các công ty (≤ 100) đang liên quan tới tenant hiện tại — nguồn người nhận `cc.link`. Một câu. */
-    owners(tenants: readonly string[]): Promise<Owner[]> {
-      return tx.execute<Owner>(sql`select tenant_id::text, user_id::text
+    owners(tenants: readonly string[]): Promise<CcOwner[]> {
+      return tx.execute<CcOwner>(sql`select tenant_id::text, user_id::text
         from hub.cc_owner_users(array(select x::uuid from jsonb_array_elements_text(${JSON.stringify(tenants)}::text::jsonb) x))`);
     },
     /** Chuông cho công ty khác (≤ 500, một câu). Link phải dạng `/contracts/...`, không thì ném — không bao giờ gửi link lạ. */
@@ -114,4 +105,3 @@ export function connectRepo(tx: Tx, tid: string) {
     },
   };
 }
-export type ConnectRepo = ReturnType<typeof connectRepo>;
