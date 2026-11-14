@@ -17,7 +17,10 @@ Mỗi dòng (tệp gắn vào HĐ và tệp kèm bước duyệt) có MỘT nút
 - Kịch bản: e2e bấm «Xem» mở PDF (trang + phóng to) và DOCX (chữ trong tệp) [test: thủ công — e2e/cr149/file-preview.spec.ts viết sẵn, chạy một lần cuối đợt]
 
 ### MODIFIED sht/duyet-ky-so.md
+
+#### Yêu cầu: Hồ sơ duyệt cho xem chữ ký và tệp ngay trên trang
 Hộp «Xem» hồ sơ duyệt: PDF dựng bằng pdf.js (không còn khung iframe), thêm Word .docx; giữ `?inline=1` + CSP sandbox của CR-144 (bytes vẫn lấy qua route có kiểm quyền, Bearer, không route mới).
+- Kịch bản: khi xem tệp PDF/Word trong hồ sơ duyệt thì hiện trong hộp, tệp lạ chỉ «Tải về» [test: apps/workspace-web/src/features/contract-approval/components/EvidenceView.test.tsx » hộp Xem hiện người duyệt và chữ ký ngay, ảnh, PDF và tệp lạ]
 
 ## Tasks
 - [x] thêm `pdfjs-dist@6.4.299`, `docx-preview@0.4.1` (người dùng đồng ý; ≥ 2 tuần tuổi, ghim đúng phiên bản)
