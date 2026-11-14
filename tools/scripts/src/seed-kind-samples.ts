@@ -112,6 +112,40 @@ async function create(c: Ctx, s: KindSample): Promise<void> {
     on conflict (id) do nothing`;
 }
 
+/** Nhận việc (nếu cần) rồi Duyệt; bước Bằng chứng ⇒ ý kiến + tệp mẫu. "form" = bước phiếu (vd. «Chọn đối tác & người nhận», CR-150) ⇒ người dùng làm tiếp. */
+async function decideTask(
+  c: Ctx,
+  s: KindSample,
+  tok: string,
+  t: { task: string; uid: string },
+): Promise<"ok" | "form"> {
+  const id = sampleId(s.n);
+  const code = (r: { json: Json }) => (r.json.error as Json | undefined)?.code;
+  // việc giao thẳng một người / «cần tất cả» ⇒ không cần nhận (409 TASK_NOT_CLAIMABLE)
+  const cl = await hub(c, tok, "POST", `/review-tasks/${t.task}/claim`, {});
+  if (code(cl) !== "TASK_NOT_CLAIMABLE") ok(cl, "nhận việc duyệt");
+  const decide = (evidence?: unknown) =>
+    hub(c, tok, "POST", `${BASE}/${id}/approval`, {
+      action: "approve",
+      feedback: "Duyệt (dữ liệu mẫu CR-152)",
+      ...(evidence ? { evidence } : {}),
+    });
+  let r = await decide();
+  if (r.status === 422 && code(r) === "EVIDENCE_REQUIRED") {
+    const att = crypto.randomUUID();
+    await c.sql`insert into hub.attachments (id, tenant_id, user_id, origin, filename, safe_name, mime, size, sha256, storage_key)
+      values (${att}::uuid, ${c.tid}::uuid, ${t.uid}::uuid, 'upload', 'bien-ban-mau.pdf', 'bien-ban-mau.pdf', 'application/pdf', 1,
+        ${"0".repeat(64)}, ${`${c.tid}/${att}`})`;
+    r = await decide({ note: "Duyệt (dữ liệu mẫu CR-152)", attachment_ids: [att] });
+  }
+  if (code(r) === "TASK_KIND_MISMATCH") {
+    console.log(`seed-kind-samples: ${s.title} dừng ở bước phiếu (người dùng làm tiếp)`);
+    return "form";
+  }
+  ok(r, "duyệt");
+  return "ok";
+}
+
 /** Người duyệt = quản trị công ty (Toàn quyền): nhận việc → Duyệt (bước Bằng chứng ⇒ ý kiến + tệp mẫu) → bước Ký ⇒ tải bản đã ký, tới DONE. */
 async function approveAll(c: Ctx, s: KindSample): Promise<void> {
   const id = sampleId(s.n);
@@ -129,22 +163,7 @@ async function approveAll(c: Ctx, s: KindSample): Promise<void> {
         order by r.started_at desc limit 1`,
     );
     if (t) {
-      ok(await hub(c, tok, "POST", `/review-tasks/${t.task}/claim`, {}), "nhận việc duyệt");
-      const decide = (evidence?: unknown) =>
-        hub(c, tok, "POST", `${BASE}/${id}/approval`, {
-          action: "approve",
-          feedback: "Duyệt (dữ liệu mẫu CR-152)",
-          ...(evidence ? { evidence } : {}),
-        });
-      let r = await decide();
-      if (r.status === 422 && (r.json.error as Json | undefined)?.code === "EVIDENCE_REQUIRED") {
-        const att = crypto.randomUUID();
-        await c.sql`insert into hub.attachments (id, tenant_id, user_id, origin, filename, safe_name, mime, size, sha256, storage_key)
-          values (${att}::uuid, ${c.tid}::uuid, ${t.uid}::uuid, 'upload', 'bien-ban-mau.pdf', 'bien-ban-mau.pdf', 'application/pdf', 1,
-            ${"0".repeat(64)}, ${`${c.tid}/${att}`})`;
-        r = await decide({ note: "Duyệt (dữ liệu mẫu CR-152)", attachment_ids: [att] });
-      }
-      ok(r, "duyệt");
+      if ((await decideTask(c, s, tok, t)) === "form") return;
       continue;
     }
     // không còn việc duyệt mở: bước Ký (tải bản đã ký) hoặc engine đang chuyển bước
