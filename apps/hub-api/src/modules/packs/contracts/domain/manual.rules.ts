@@ -12,6 +12,8 @@ export type ManualInput = {
   /** V2-A: một trong hai (zod bắt buộc ≥ 1 và khớp nhau); xem `dealAndDirection`. */
   direction?: "purchase" | "sale" | undefined;
   deal?: Deal | undefined;
+  /** CR-152d: trường riêng Nhượng quyền / Hợp tác (zod đã bắt buộc đủ). */
+  kind_terms?: Record<string, unknown> | undefined;
   commission_pct?: number | null | undefined;
   commission_fixed?: number | null | undefined;
   number?: string | null;

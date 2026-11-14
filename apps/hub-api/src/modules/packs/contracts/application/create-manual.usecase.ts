@@ -4,6 +4,7 @@
 // mốc mặc định theo loại (ngày lịch tenant); tenant bật duyệt ⇒ `needs_review` như cũ (mốc HD7 sinh khi duyệt).
 import type { PackWho } from "../../kit/public";
 import { asDate } from "../domain/fold.rules";
+import { directionOfKind, isKindDeal, normalizeKindTerms } from "../domain/kind-terms.rules";
 import {
   dealAndDirection,
   type ManualInput,
@@ -57,7 +58,12 @@ export function createManual(d: {
   /** CR-127 X2: việc ghi thêm CÙNG tx với chứng từ giao dịch vừa tạo (nhật ký lý do không theo HĐ). */
   onDeal?: (r: ExtractionTxRepos, id: string, who: PackWho, reason: string) => Promise<void>;
 }): CreateManual {
-  return async (who, input, dealDoc) => {
+  return async (who, raw, dealDoc) => {
+    // CR-152d: Nhượng quyền / Hợp tác — hướng tiền theo vai trong trường riêng (một nguồn), không theo `direction` gửi lên.
+    const kind = isKindDeal(raw.deal) ? raw.deal : null;
+    const kindTerms = kind ? normalizeKindTerms(kind, raw.kind_terms ?? {}) : null;
+    const input: ManualInput =
+      kind && kindTerms ? { ...raw, direction: directionOfKind(kind, kindTerms) } : raw;
     const fields = manualFields(input);
     const items = manualItems(input.items);
     const { deal, direction } = dealAndDirection(input);
@@ -72,6 +78,7 @@ export function createManual(d: {
         deal,
         commissionPct: deal === "referral" ? (input.commission_pct ?? null) : null,
         commissionFixed: deal === "referral" ? (input.commission_fixed ?? null) : null,
+        kindTerms,
         milestones,
         fields,
         items,

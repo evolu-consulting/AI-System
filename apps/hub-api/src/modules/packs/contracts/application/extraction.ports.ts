@@ -105,6 +105,8 @@ export type NewManualContract = {
   deal: Deal;
   commissionPct: number | null;
   commissionFixed: number | null;
+  /** CR-152d: trường riêng đã chuẩn hoá (Nhượng quyền / Hợp tác) ⇒ ghi cùng HĐ + sinh mốc kỳ; loại khác null. */
+  kindTerms: Record<string, unknown> | null;
   /** V2-A · HD-01: mốc mặc định — luôn ghi (HĐ nhập tay vào DONE ngay, `initialState("create_manual")` — CR-127 R#2). */
   milestones: MilestoneWrite[];
   fields: ContractFields;

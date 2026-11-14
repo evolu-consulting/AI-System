@@ -87,6 +87,23 @@ export const KIND_TERM_UNSURE_KEYS = [
   ...Object.keys(CooperationTermsSchema.shape),
 ].map((k) => `terms.${k}`) as [`terms.${string}`, ...`terms.${string}`[]];
 
+/** Khoá còn thiếu để gửi duyệt / xác nhận / nhập tay (rỗng = đủ) — MỘT nguồn cho hub-api và zod nhập tay. */
+export function kindTermsMissing(deal: KindDeal, t: Record<string, unknown>): string[] {
+  const nul = (v: unknown) => v === undefined || v === null || v === "";
+  const miss = (...keys: string[]) => keys.filter((k) => nul(t[k]));
+  if (deal === "franchise") {
+    const m = miss("role", "brand", "fee_basis", "period");
+    if (t.fee_basis === "revenue_pct") m.push(...miss("fee_pct"));
+    if (t.fee_basis === "fixed") m.push(...miss("fee_fixed"));
+    if (t.foreign_franchisor === true) m.push(...miss("moit_registered"));
+    return m;
+  }
+  const m = miss("scope", "split_basis");
+  if (t.split_basis === "profit" || t.split_basis === "revenue")
+    m.push(...miss("our_share_pct", "settle_period"));
+  return m;
+}
+
 // ---------- API ----------
 export const KIND_ERRORS = {
   /** HĐ không phải Nhượng quyền / Hợp tác (hoặc Hợp tác «không chia» khi ghi kỳ). */

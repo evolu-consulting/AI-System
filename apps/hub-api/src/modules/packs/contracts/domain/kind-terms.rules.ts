@@ -1,6 +1,10 @@
 // CR-152 · Lớp 1 (không I/O): trường riêng của «Nhượng quyền» / «Thỏa thuận hợp tác» — chuẩn hoá, thiếu gì thì chưa gửi duyệt được,
 // hướng tiền theo vai, và «có tính vào doanh thu / điểm / business không» (Hợp tác «không chia tiền» thì không, như HĐ nguyên tắc).
-import { CooperationTermsSchema, FranchiseTermsSchema } from "@ai/contracts/pack-contracts";
+import {
+  CooperationTermsSchema,
+  FranchiseTermsSchema,
+  kindTermsMissing,
+} from "@ai/contracts/pack-contracts";
 
 export type KindDealKey = "franchise" | "cooperation";
 export type Terms = Record<string, unknown>;
@@ -43,21 +47,8 @@ export function normalizeKindTerms(deal: KindDealKey, t: Terms): Terms {
   return o;
 }
 
-/** Khoá còn thiếu để gửi duyệt / xác nhận (rỗng = đủ). */
-export function kindTermsMissing(deal: KindDealKey, t: Terms): string[] {
-  const miss = (...keys: string[]) => keys.filter((k) => nul(t[k]));
-  if (deal === "franchise") {
-    const m = miss("role", "brand", "fee_basis", "period");
-    if (t.fee_basis === "revenue_pct") m.push(...miss("fee_pct"));
-    if (t.fee_basis === "fixed") m.push(...miss("fee_fixed"));
-    if (t.foreign_franchisor === true) m.push(...miss("moit_registered"));
-    return m;
-  }
-  const m = miss("scope", "split_basis");
-  if (t.split_basis === "profit" || t.split_basis === "revenue")
-    m.push(...miss("our_share_pct", "settle_period"));
-  return m;
-}
+/** Khoá còn thiếu để gửi duyệt / xác nhận (rỗng = đủ) — một nguồn ở `@ai/contracts` (zod nhập tay dùng chung). */
+export { kindTermsMissing };
 
 /** Hướng tiền của HĐ (cột `direction`): bên nhượng quyền thu phí (`sale`), bên nhận quyền trả (`purchase`); Hợp tác: `sale`. */
 export function directionOfKind(deal: KindDealKey, t: Terms): "sale" | "purchase" {

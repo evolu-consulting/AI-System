@@ -34,7 +34,7 @@ export const DEAL_ERRORS = {
 } as const;
 export type DealErrorCode = keyof typeof DEAL_ERRORS;
 
-const { direction: _d, deal: _deal, ...manual } = ManualContractRequestSchema.shape;
+const { direction: _d, deal: _deal, kind_terms: _k, ...manual } = ManualContractRequestSchema.shape;
 
 /**
  * `POST /pack/contracts/contracts/deals` — tạo giao dịch (JSON, không file). Trường như nhập tay (`ManualContractRequestSchema`)

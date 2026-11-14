@@ -18,8 +18,8 @@ import {
   IsoDateSchema,
   nfcText,
 } from "./fields";
-import { KIND_TERM_UNSURE_KEYS } from "./kind-terms";
-import { BasicContractDealSchema, ContractDealSchema, MilestoneKindSchema } from "./milestones";
+import { KIND_TERM_UNSURE_KEYS, KIND_TERMS_BY_DEAL } from "./kind-terms";
+import { ContractDealSchema, MilestoneKindSchema } from "./milestones";
 
 export const EXTRACT_ITEMS_MAX = 500;
 export const EXTRACT_CLAUSES_MAX = 200;
@@ -287,7 +287,9 @@ const pct = z
  *  chỉ cho Giới thiệu. */
 export const ManualContractRequestSchema = z
   .strictObject({
-    deal: BasicContractDealSchema.optional(),
+    deal: ContractDealSchema.optional(),
+    /** CR-152d: trường riêng Nhượng quyền / Hợp tác (đủ trường bắt buộc: route kiểm ⇒ 422 KIND_TERMS_INCOMPLETE; loại khác ⇒ không được gửi). */
+    kind_terms: z.record(z.string(), z.unknown()).optional(),
     commission_pct: pct.nullable().optional(),
     commission_fixed: money().nullable().optional(),
     direction: ContractDirectionSchema.optional(),
@@ -321,6 +323,24 @@ export const ManualContractRequestSchema = z
       ((b.commission_pct ?? null) === null && (b.commission_fixed ?? null) === null),
     { message: "hoa hồng chỉ cho HĐ Giới thiệu", path: ["commission_pct"] },
   )
+  .superRefine((b, ctx) => {
+    const d = b.deal;
+    if (d !== "franchise" && d !== "cooperation") {
+      if (b.kind_terms !== undefined)
+        ctx.addIssue({
+          code: "custom",
+          path: ["kind_terms"],
+          message: "chỉ cho Nhượng quyền / Hợp tác",
+        });
+      return;
+    }
+    const r = KIND_TERMS_BY_DEAL[d].safeParse(b.kind_terms ?? {});
+    if (!r.success) {
+      for (const i of r.error.issues)
+        ctx.addIssue({ code: "custom", path: ["kind_terms", ...i.path], message: i.message });
+      return;
+    }
+  })
   .refine((b) => (b.commission_pct ?? null) === null || (b.commission_fixed ?? null) === null, {
     message: "chọn % hoặc số tiền cố định",
     path: ["commission_fixed"],

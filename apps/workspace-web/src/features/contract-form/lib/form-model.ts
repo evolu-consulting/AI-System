@@ -2,7 +2,7 @@
 // giá trị tự cộng khi để trống, đọc số kiểu Việt ("91.500.000", SL "1,5"), thân `POST /contracts/manual`. Không React, không fetch.
 import type { ContractDeal, ManualContractRequest } from "@ai/contracts/pack-contracts";
 import { parseMoney, parseQty } from "~/components/shared/format";
-import type { TermsState } from "./kind-terms";
+import { isKind, type TermsState, termsToPut } from "./kind-terms";
 
 export type LineState = {
   /** V2-G: id dòng đã lưu (AI đọc) — màn xác nhận sửa tại chỗ, không xoá. */
@@ -160,6 +160,16 @@ export function readNumbers(f: FormState): Numbers {
 
 const orNull = (s: string): string | null => (s.trim() === "" ? null : s.trim());
 
+/** CR-152d: `kind_terms` của nhập tay Nhượng quyền / Hợp tác — bỏ ô rỗng/ẩn (server chuẩn hoá + bắt buộc đủ trường); loại khác ⇒ không gửi. */
+export function kindTermsBody(f: Pick<FormState, "deal" | "terms">): {
+  kind_terms?: Record<string, string | number | boolean>;
+} {
+  if (!isKind(f.deal)) return {};
+  const out: Record<string, string | number | boolean> = {};
+  for (const [k, v] of Object.entries(termsToPut(f.deal, f.terms).body)) if (v !== null) out[k] = v;
+  return { kind_terms: out };
+}
+
 /** Thân gửi API (chỉ gọi khi `bad` rỗng). `productIds`: id SP theo dòng có tên (đã tạo SP mới nếu cần). */
 export function toRequest(
   f: FormState,
@@ -169,7 +179,8 @@ export function toRequest(
   const referral = f.deal === "referral";
   const total = referral ? null : (n.total_value ?? autoTotal(f.items));
   return {
-    deal: f.deal as ManualContractRequest["deal"], // cr152b: nhập tay chỉ 3 loại cơ bản
+    deal: f.deal,
+    ...kindTermsBody(f),
     number: orNull(f.number),
     title: f.title.trim(),
     partner_name: f.partner_name.trim(),
