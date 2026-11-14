@@ -60,7 +60,6 @@ export function InfoPanel({
         <DealTiles
           value={f.deal}
           onChange={confirm ? confirm.onDeal : () => undefined}
-          kinds={!!confirm}
           locked={!confirm || disabled}
           unsure={confirm?.dealUnsure ?? false}
         />

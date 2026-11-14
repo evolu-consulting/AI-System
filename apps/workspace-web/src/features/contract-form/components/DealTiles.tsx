@@ -1,10 +1,9 @@
-// V2-F · HD-01 · mockup `.kindpick`: ba ô chọn loại hợp đồng Mua / Bán / Giới thiệu (radiogroup). `locked` ⇒ không đổi được (HĐ đã lưu, HD-09).
+// V2-F · HD-01 · mockup `.kindpick`: năm ô chọn loại hợp đồng Mua / Bán / Giới thiệu / Nhượng quyền / Hợp tác (radiogroup). `locked` ⇒ không đổi được (HĐ đã lưu, HD-09).
 import type { ContractDeal } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { SegButton } from "~/components/shared/seg-button";
 import { cn } from "~/lib/utils";
-import { ALL_DEALS, DEALS } from "../lib/deal";
-import { isKind } from "../lib/kind-terms";
+import { ALL_DEALS } from "../lib/deal";
 
 const tile = (on: boolean, locked: boolean) =>
   cn(
@@ -19,10 +18,7 @@ export function DealTiles({
   onChange,
   locked = false,
   unsure = false,
-  kinds = false,
 }: {
-  /** Hiện thêm 2 loại Nhượng quyền / Thỏa thuận hợp tác. */
-  kinds?: boolean;
   value: ContractDeal;
   onChange: (d: ContractDeal) => void;
   locked?: boolean;
@@ -31,8 +27,8 @@ export function DealTiles({
 }) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.cform.${k}`);
-  // CR-152: Nhượng quyền / Hợp tác chỉ chọn được ở bước xác nhận sau khi AI đọc (HĐ nhập tay vẫn 3 loại cơ bản).
-  const deals = kinds || isKind(value) ? ALL_DEALS : DEALS;
+  // CR-153: 5 loại luôn hiện (Thêm giao dịch, xác nhận sau AI, chi tiết HĐ mọi trạng thái).
+  const deals = ALL_DEALS;
   return (
     <div className="flex flex-col gap-1.5">
       <span id="deal-label" className="text-[13px]">

@@ -3,7 +3,7 @@ import type { ContractDeal, ContractStage } from "@ai/contracts/pack-contracts";
 import type { TagTone } from "~/components/shared/tag";
 
 export const DEALS: readonly ContractDeal[] = ["buy", "sell", "referral"] as const;
-/** CR-152: thêm 2 loại HĐ kinh tế (chỉ chọn ở bước xác nhận sau AI đọc). */
+/** CR-152/153: đủ 5 loại, luôn hiện ở mọi chỗ chọn/xem loại HĐ. */
 export const ALL_DEALS: readonly ContractDeal[] = [...DEALS, "franchise", "cooperation"] as const;
 
 /** Vai của đối tác theo loại (BA 5.6): Mua ⇒ Nhà cung cấp; Bán ⇒ Khách hàng; Giới thiệu ⇒ Bên trả hoa hồng. */

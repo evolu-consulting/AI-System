@@ -15,11 +15,13 @@ import { FieldsGrid } from "~/features/contract-form/components/FieldsGrid";
 import { FormBar } from "~/features/contract-form/components/FormBar";
 import { FramePicker } from "~/features/contract-form/components/FramePicker";
 import { ItemTable } from "~/features/contract-form/components/ItemTable";
+import { KindTermsFields } from "~/features/contract-form/components/KindTermsFields";
 import { useContractForm } from "~/features/contract-form/hooks/use-contract-form";
 import { STOCK_EFFECT } from "~/features/contract-form/lib/deal";
 import { DEAL_SOURCES, settleErrorKey } from "~/features/contract-form/lib/deal-form";
 import { linkIssue } from "~/features/contract-form/lib/deal-link";
 import { autoTotal, readNumbers } from "~/features/contract-form/lib/form-model";
+import { isKind } from "~/features/contract-form/lib/kind-terms";
 import { legalTotal, showLegalWarning } from "~/features/contract-form/lib/legal-warn";
 import { stockTone } from "~/features/contract-form/lib/stock-label";
 import { contractKey, fetchContract } from "~/features/contract-review/api";
@@ -150,6 +152,9 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
           <div className="flex flex-col gap-4 px-5 py-4">
             <DealTiles value={f.deal} onChange={form.setDeal} />
             <FieldsGrid f={f} onSet={form.set} invalid={form.invalid} cols={3} dealMode />
+            {isKind(f.deal) && (
+              <KindTermsFields deal={f.deal} terms={f.terms} onTerm={form.setTerm} />
+            )}
             <div className="grid grid-cols-3 gap-x-4 gap-y-3.5 text-[13px] max-lg:grid-cols-2 max-sm:grid-cols-1">
               <div className="flex flex-col gap-1">
                 <label htmlFor="cf-source">

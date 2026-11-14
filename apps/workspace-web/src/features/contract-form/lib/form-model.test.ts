@@ -140,3 +140,10 @@ describe("CR-152d · kind_terms của nhập tay", () => {
     expect("kind_terms" in toRequest(base({ deal: "sell" }), readNumbers(base()), [])).toBe(false);
   });
 });
+
+describe("CR-153 · đủ 5 loại luôn hiện", () => {
+  it("ALL_DEALS có Nhượng quyền + Hợp tác sau 3 loại cơ bản", async () => {
+    const { ALL_DEALS } = await import("./deal");
+    expect(ALL_DEALS).toEqual(["buy", "sell", "referral", "franchise", "cooperation"]);
+  });
+});

@@ -74,6 +74,10 @@ function useFormEditors(setF: SetForm) {
     },
     [setF],
   );
+  const setTerm = useCallback(
+    (k: string, v: string) => setF((s) => ({ ...s, terms: { ...s.terms, [k]: v } })),
+    [setF],
+  );
   const patchLine = useCallback(
     (i: number, p: Partial<LineState>) =>
       setF((s) => ({ ...s, items: s.items.map((l, j) => (j === i ? patchOneLine(l, p) : l)) })),
@@ -87,7 +91,7 @@ function useFormEditors(setF: SetForm) {
     (i: number) => setF((s) => ({ ...s, items: s.items.filter((_, j) => j !== i) })),
     [setF],
   );
-  return { set, setDeal, patchLine, addLine, removeLine };
+  return { set, setDeal, setTerm, patchLine, addLine, removeLine };
 }
 
 /** Tạo Giao dịch, gắn HĐ nguyên tắc (nếu chọn; lỗi gắn không làm mất giao dịch đã lưu), gắn SP mới. */
