@@ -1,5 +1,5 @@
 // CR-161 · lát 6 · tệp trò chuyện (R11): `POST /connect/threads/:tenant_id/files` (multipart `file`; đuôi theo danh sách chung của tin nhắn SHT ⇒ 415,
-// > 20 MB ⇒ 413, chưa kết nối ⇒ 409) và `GET /connect/files/:file_id` (302 tới link FileBox hạn ngắn; không thấy ⇒ 404 không lộ có/không).
+// > 20 MB ⇒ 413, chưa kết nối ⇒ 409) và `GET /connect/files/:file_id` (JSON `{ url }` — link FileBox hạn ngắn; không thấy ⇒ 404 không lộ có/không).
 // `packGuard` Toàn quyền TRƯỚC mọi việc (nhân viên ⇒ 403, 0 SQL, 0 byte). Kho vắng ⇒ 503 `FILE_STORAGE_UNAVAILABLE`.
 import { ATTACH_MAX_BYTES } from "@ai/contracts/attach";
 import { MSG_ERRORS } from "@ai/contracts/pack-contracts";
@@ -55,7 +55,7 @@ export function chatFilesRoutes(view: PackAccessView, uc: ChatUsecases): Hono<Pa
     const url = await uc.fileLink(whoOf(c), id).catch(ccError);
     if (!url) throw appError("NOT_FOUND");
     c.header("cache-control", "no-store");
-    return c.redirect(url, 302);
+    return c.json({ url }, 200);
   });
   return r;
 }

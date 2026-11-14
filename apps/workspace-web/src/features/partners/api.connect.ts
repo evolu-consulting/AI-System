@@ -9,7 +9,7 @@ import type {
   ConnectListQuery,
   ConnectSearchResponseSchema,
 } from "@ai/contracts/pack-contracts";
-import { api, apiResponse } from "@ai/web-kit/http";
+import { api } from "@ai/web-kit/http";
 import type { z } from "zod";
 
 const BASE = "/pack/contracts/connect";
@@ -69,13 +69,9 @@ export function uploadThreadFile(other: string, file: File): Promise<CcFile> {
     rawBody: form as unknown as Blob,
   }).then((r) => r.file);
 }
-/** `GET /connect/files/:id` trả 302 tới link FileBox ngắn hạn: theo chuyển hướng rồi lấy địa chỉ cuối (không đọc thân tệp). */
-export async function fetchThreadFileUrl(fileId: string, signal?: AbortSignal): Promise<string> {
-  const res = await apiResponse(`${BASE}/files/${enc(fileId)}`, { signal });
-  void res.body?.cancel();
-  if (!res.url) throw new Error("no link");
-  return res.url;
-}
+/** `GET /connect/files/:id` trả JSON `{ url }` (link FileBox ngắn hạn; không để trình duyệt theo 302 sang origin khác với Authorization). */
+export const fetchThreadFileUrl = (fileId: string, signal?: AbortSignal): Promise<string> =>
+  api<{ url: string }>(`${BASE}/files/${enc(fileId)}`, { signal }).then((r) => r.url);
 
 export const fetchPosts = (other: string, cursor: string | null, signal?: AbortSignal) =>
   api<{ items: CcPost[]; next_cursor: string | null }>(`${BASE}/posts/${enc(other)}`, {

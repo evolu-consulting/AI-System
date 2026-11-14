@@ -4,7 +4,17 @@ import type { CcOwner } from "./connect.ports";
 
 export type ChatPage = { read_only: boolean; last_read_seq: number; items: CcMessage[] };
 export type ChatSent = { seq: number; created: boolean; message: CcMessage; notify: CcOwner[] };
-export type ChatFileNew = { id: string; name: string; mime: string; size: number; key: string };
+/** `id` = uuid dòng `cc_files` (route sinh, khoá `<tenant>/<id>`); `boxId` = `file_id` FileBox (16 hex thật, không phải uuid). */
+export type ChatFileNew = {
+  id: string;
+  boxId: string;
+  name: string;
+  mime: string;
+  size: number;
+  key: string;
+};
+/** Nơi lưu nội dung: khoá (`<tenant bên tải>/<id>` ⇒ org FileBox) + id FileBox. */
+export type ChatFileRef = { key: string; boxId: string };
 
 /** Mỗi hàm = MỘT câu gọi hàm DEFINER hub 0146 (người dùng = `app.user_id` do scope đặt). */
 export interface ChatRepo {
@@ -19,8 +29,8 @@ export interface ChatRepo {
   markRead(other: string, seq: number): Promise<number>;
   connected(other: string): Promise<boolean>;
   fileAdd(other: string, f: ChatFileNew): Promise<CcFile>;
-  /** Khoá lưu trữ; người ngoài cặp / tệp đã xoá / chưa gắn của người khác ⇒ null. */
-  fileKey(fileId: string): Promise<string | null>;
+  /** Nơi lưu nội dung; người ngoài cặp / tệp đã xoá / chưa gắn của người khác ⇒ null. */
+  fileRef(fileId: string): Promise<ChatFileRef | null>;
 }
 
 /** Kho nội dung (FileBox, org theo công ty bên tải). */
@@ -30,6 +40,6 @@ export type ChatFileStore = {
   link(org: string, fileId: string): Promise<string | null>;
 };
 
-export type SweptFile = { id: string; key: string };
-/** Việc nền (scope system): soft-delete tệp chưa gắn tin quá hạn, trả khoá để xoá nội dung. */
+export type SweptFile = { id: string; key: string; boxId: string };
+/** Việc nền (scope system): soft-delete tệp chưa gắn tin quá hạn, trả khoá + id FileBox để xoá nội dung. */
 export type ChatSweepClaim = () => Promise<SweptFile[]>;

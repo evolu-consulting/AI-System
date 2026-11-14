@@ -5,7 +5,7 @@ import type { CcFile } from "@ai/contracts/pack-contracts";
 import type { PackStreamFrame, PackStreamPublishMany, PackUow, PackWho } from "../../../kit/public";
 import { orgForTenant } from "../../../kit/public";
 import { ChatFail } from "../domain/chat.errors";
-import { fileKeyOf, fileKeyParts, isUuid } from "../domain/chat.files";
+import { fileKeyOf, fileKeyParts } from "../domain/chat.files";
 import type { ChatFileStore, ChatPage, ChatRepo, ChatSweepClaim } from "./chat.ports";
 import type { CcOwner } from "./connect.ports";
 
@@ -93,20 +93,21 @@ export function chatUsecases(d: ChatDeps) {
       if (!(await d.uow.tenant(who, (r) => r.chat.connected(other))))
         throw new ChatFail("CONNECT_READ_ONLY");
       const org = orgForTenant(who.tenantId);
-      const { fileId } = await store.put(org, f.name, f.bytes);
+      const { fileId: boxId } = await store.put(org, f.name, f.bytes);
       try {
-        if (!isUuid(fileId)) throw new Error("filebox: file_id không phải uuid");
+        const id = crypto.randomUUID();
         return await d.uow.tenant(who, (r) =>
           r.chat.fileAdd(other, {
-            id: fileId,
+            id,
+            boxId,
             name: f.name,
             mime: f.mime,
             size: f.bytes.byteLength,
-            key: fileKeyOf(who.tenantId, fileId),
+            key: fileKeyOf(who.tenantId, id),
           }),
         );
       } catch (e) {
-        await store.remove(org, fileId).catch(() => undefined);
+        await store.remove(org, boxId).catch(() => undefined);
         throw e;
       }
     },
@@ -115,9 +116,9 @@ export function chatUsecases(d: ChatDeps) {
     async fileLink(who: PackWho, fileId: string): Promise<string | null> {
       const store = d.files;
       if (!store) throw new Error("filebox not configured");
-      const key = await d.uow.tenant(who, (r) => r.chat.fileKey(fileId));
-      const p = key ? fileKeyParts(key) : null;
-      return p ? store.link(orgForTenant(p.tenant), p.id) : null;
+      const ref = await d.uow.tenant(who, (r) => r.chat.fileRef(fileId));
+      const p = ref ? fileKeyParts(ref.key) : null;
+      return ref && p ? store.link(orgForTenant(p.tenant), ref.boxId) : null;
     },
   };
 }
@@ -132,7 +133,7 @@ export function chatFileSweep(d: { claim: ChatSweepClaim; store: ChatFileStore }
       await Promise.allSettled(
         rows.slice(i, i + SWEEP_PARALLEL).map((r) => {
           const p = fileKeyParts(r.key);
-          return p ? d.store.remove(orgForTenant(p.tenant), p.id) : Promise.resolve();
+          return p ? d.store.remove(orgForTenant(p.tenant), r.boxId) : Promise.resolve();
         }),
       );
     return rows.length;

@@ -13,6 +13,8 @@ const U1 = "7e5d00a2-0000-4000-8000-000000000001";
 const U2 = "7e5d00a2-0000-4000-8000-000000000002";
 const U3 = "7e5d00a2-0000-4000-8000-000000000003";
 const FILE = "7e5d00a3-0000-4000-8000-000000000001";
+/** `file_id` FileBox THẬT: 16 ký tự hex (không phải uuid). */
+const BOX = "0f3a9c5e7b1d2468";
 const who = { tenantId: A, userId: U1 };
 const msg = (seq: number): CcMessage => ({
   seq,
@@ -25,7 +27,7 @@ const msg = (seq: number): CcMessage => ({
   mine: true,
 });
 
-function setup(over: Partial<ChatRepo> = {}, putId = FILE) {
+function setup(over: Partial<ChatRepo> = {}, putId = BOX) {
   const log: string[] = [];
   const frames: PackStreamFrame[][] = [];
   const chat = { ...over } as unknown as ChatRepo;
@@ -125,7 +127,7 @@ describe("CR-161 · tải lên / lấy tệp", () => {
     expect(e.code).toBe("CONNECT_READ_ONLY");
     expect(log.some((l) => l.startsWith("put"))).toBe(false);
   });
-  it("kết nối ⇒ put org t_<tenant>, ghi DB với id = file_id FileBox và khoá <tenant>/<id>", async () => {
+  it("kết nối ⇒ put org t_<tenant>; id dòng = uuid route sinh, khoá <tenant>/<id>, boxId = file_id FileBox (16 hex)", async () => {
     let row: unknown;
     const { uc, log } = setup({
       connected: async () => true,
@@ -135,13 +137,15 @@ describe("CR-161 · tải lên / lấy tệp", () => {
       },
     });
     const out = await uc.uploadFile(who, B, f);
-    expect(out).toEqual({ id: FILE, name: "bao-gia.pdf", mime: "application/pdf", size: 3 });
+    expect(out.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(out).toEqual({ id: out.id, name: "bao-gia.pdf", mime: "application/pdf", size: 3 });
     expect(row).toEqual({
-      id: FILE,
+      id: out.id,
+      boxId: BOX,
       name: "bao-gia.pdf",
       mime: "application/pdf",
       size: 3,
-      key: `${A}/${FILE}`,
+      key: `${A}/${out.id}`,
     });
     expect(log).toContain(`put:t_${A}:bao-gia.pdf`);
     expect(log.some((l) => l.startsWith("remove"))).toBe(false);
@@ -155,38 +159,24 @@ describe("CR-161 · tải lên / lấy tệp", () => {
     });
     const e = (await uc.uploadFile(who, B, f).catch((x: unknown) => x)) as ChatFail;
     expect(e.code).toBe("MSG_FILE_INVALID");
-    expect(log).toContain(`remove:t_${A}:${FILE}`);
-  });
-  it("kho trả id không phải uuid ⇒ xoá byte, không ghi DB", async () => {
-    let added = false;
-    const { uc, log } = setup(
-      {
-        connected: async () => true,
-        fileAdd: async () => {
-          added = true;
-          return {} as never;
-        },
-      },
-      "fb-1",
-    );
-    await uc.uploadFile(who, B, f).catch(() => undefined);
-    expect(added).toBe(false);
-    expect(log).toContain(`remove:t_${A}:fb-1`);
+    expect(log).toContain(`remove:t_${A}:${BOX}`);
   });
   it("lấy tệp: khoá của công ty bên tải (không phải người gọi) ⇒ link theo org bên tải; không thấy ⇒ null", async () => {
-    const { uc } = setup({ fileKey: async (id) => (id === FILE ? `${B}/${FILE}` : null) });
-    expect(await uc.fileLink(who, FILE)).toBe(`https://fb.test/t_${B}/${FILE}`);
+    const { uc } = setup({
+      fileRef: async (id) => (id === FILE ? { key: `${B}/${FILE}`, boxId: BOX } : null),
+    });
+    expect(await uc.fileLink(who, FILE)).toBe(`https://fb.test/t_${B}/${BOX}`);
     expect(await uc.fileLink(who, U2)).toBeNull();
   });
 });
 
 describe("CR-161 · việc nền dọn tệp", () => {
-  it("xoá nội dung theo khoá đã soft-delete (bỏ khoá hỏng), trả số hàng", async () => {
+  it("xoá nội dung (org từ khoá, id FileBox) đã soft-delete (bỏ khoá hỏng), trả số hàng", async () => {
     const removed: string[] = [];
     const run = chatFileSweep({
       claim: async () => [
-        { id: FILE, key: `${A}/${FILE}` },
-        { id: U2, key: "rac" },
+        { id: FILE, key: `${A}/${FILE}`, boxId: BOX },
+        { id: U2, key: "rac", boxId: "x" },
       ],
       store: {
         put: async () => ({ fileId: "", versionId: "" }),
@@ -195,6 +185,6 @@ describe("CR-161 · việc nền dọn tệp", () => {
       },
     });
     expect(await run()).toBe(2);
-    expect(removed).toEqual([`t_${A}:${FILE}`]);
+    expect(removed).toEqual([`t_${A}:${BOX}`]);
   });
 });

@@ -7,6 +7,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type {
   ChatFileNew,
+  ChatFileRef,
   ChatPage,
   ChatRepo,
   ChatSent,
@@ -72,20 +73,20 @@ export function chatRepo(tx: Tx, tid: string): ChatRepo {
       );
       return r?.c === true;
     },
-    /** R11 · ghi dòng tệp (id = `file_id` FileBox, khoá `<tenant>/<id>`). Kiểm trong hàm: CC409 / CC422 `MSG_FILE_INVALID`. */
+    /** R11 · ghi dòng tệp (id = uuid route sinh, khoá `<tenant>/<id>`, `boxId` = `file_id` FileBox). Kiểm trong hàm: CC409 / CC422 `MSG_FILE_INVALID`. */
     async fileAdd(other, f: ChatFileNew): Promise<CcFile> {
       const [r] = await tx.execute<{ f: CcFile | string }>(
-        sql`select hub.cc_file_add(${other}::uuid, ${f.id}::uuid, ${f.name}, ${f.mime}, ${f.size}::bigint, ${f.key}) as f`,
+        sql`select hub.cc_file_add(${other}::uuid, ${f.id}::uuid, ${f.boxId}, ${f.name}, ${f.mime}, ${f.size}::bigint, ${f.key}) as f`,
       );
       if (!r) throw new Error("cc_file_add: không có kết quả");
       const file = jsonOf(r.f);
       return { ...file, size: Number(file.size) };
     },
-    async fileKey(fileId): Promise<string | null> {
-      const [r] = await tx.execute<{ k: string | null }>(
-        sql`select hub.cc_file_get(${fileId}::uuid) as k`,
+    async fileRef(fileId): Promise<ChatFileRef | null> {
+      const [r] = await tx.execute<{ storage_key: string; box_file_id: string }>(
+        sql`select storage_key, box_file_id from hub.cc_file_get(${fileId}::uuid)`,
       );
-      return r?.k ?? null;
+      return r ? { key: r.storage_key, boxId: r.box_file_id } : null;
     },
   };
 }
@@ -94,9 +95,9 @@ export function chatRepo(tx: Tx, tid: string): ChatRepo {
 export function ccFilesSweepClaim(db: Db, older = "24 hours"): ChatSweepClaim {
   return () =>
     withHubScope(db, { kind: "system" }, async (tx) => {
-      const rows = await tx.execute<{ file_id: string; storage_key: string }>(
-        sql`select file_id::text, storage_key from hub.cc_files_sweep(${older}::interval)`,
+      const rows = await tx.execute<{ file_id: string; storage_key: string; box_file_id: string }>(
+        sql`select file_id::text, storage_key, box_file_id from hub.cc_files_sweep(${older}::interval)`,
       );
-      return rows.map((r) => ({ id: r.file_id, key: r.storage_key }));
+      return rows.map((r) => ({ id: r.file_id, key: r.storage_key, boxId: r.box_file_id }));
     });
 }

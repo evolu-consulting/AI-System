@@ -84,10 +84,12 @@ const fileAdd = (
   key: string,
   over: { name?: string; size?: number } = {},
 ) =>
-  tx`select hub.cc_file_add(${other}::uuid, ${id}::uuid, ${over.name ?? "hop-dong.pdf"},
+  tx`select hub.cc_file_add(${other}::uuid, ${id}::uuid, ${id.replaceAll("-", "").slice(0, 16)}, ${over.name ?? "hop-dong.pdf"},
     'application/pdf', ${over.size ?? 1000}::bigint, ${key}) as f`.then((r) => r[0]?.f as CcFile);
 const fileGet = (tx: Sql, id: string) =>
-  tx`select hub.cc_file_get(${id}::uuid) as k`.then((r) => r[0]?.k as string | null);
+  tx`select storage_key as k from hub.cc_file_get(${id}::uuid)`.then(
+    (r) => (r[0]?.k as string) ?? null,
+  );
 const unread = (tx: Sql, others: string[]) =>
   tx<{ other_tenant: string; unread: number }[]>`
     select * from hub.cc_unread(array(select x::uuid from jsonb_array_elements_text(${JSON.stringify(others)}::text::jsonb) x))`.then(
@@ -505,8 +507,8 @@ describe("CR-161 · R11 trần tệp chưa gắn + dọn tệp (cc_files_sweep)"
   it("mỗi người tối đa 50 tệp chưa gắn tin ⇒ CC422; kiểm tên/mime/kích cỡ trong hàm (CC422, không 23514)", async () => {
     const th = (await thread(A, C))[0]?.id as string;
     await o`with g as (select gen_random_uuid() as id from generate_series(1, 50))
-      insert into hub.cc_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key)
-      select id, ${th}::uuid, ${C}::uuid, ${CUONG}::uuid, 'x.pdf', 'application/pdf', 10, ${C}::text || '/' || id::text from g`;
+      insert into hub.cc_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key, box_file_id)
+      select id, ${th}::uuid, ${C}::uuid, ${CUONG}::uuid, 'x.pdf', 'application/pdf', 10, ${C}::text || '/' || id::text, left(replace(id::text, '-', ''), 16) from g`;
     const id = randomUUID();
     const add = (over: { name?: string; size?: number } = {}, key = `${C}/${id}`) =>
       fail(() => as(C, CUONG, (tx) => fileAdd(tx, A, id, key, over)));
@@ -527,7 +529,7 @@ describe("CR-161 · R11 trần tệp chưa gắn + dọn tệp (cc_files_sweep)"
   it("cc_files_sweep: chỉ scope system; chỉ tệp chưa gắn quá hạn; tệp đã gắn tin không đụng; xong thì dưới trần lại tải lên được", async () => {
     const sweep = (older = "24 hours") =>
       inHub({ kind: "system" }, (tx) =>
-        tx<{ file_id: string; storage_key: string }[]>`
+        tx<{ file_id: string; storage_key: string; box_file_id: string }[]>`
           select * from hub.cc_files_sweep(${older}::interval)`.then((r) =>
           r.map((x) => ({ ...x })),
         ),

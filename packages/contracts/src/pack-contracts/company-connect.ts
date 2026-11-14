@@ -103,6 +103,8 @@ export const CcFileSchema = z.strictObject({
 });
 export type CcFile = z.infer<typeof CcFileSchema>;
 export const CcFileUploadResponseSchema = z.strictObject({ file: CcFileSchema });
+/** `GET /connect/files/:file_id` → link tải ngắn hạn (JSON như tin nhắn SHT; web mở tab mới, không fetch có Authorization sang origin khác). */
+export const CcFileLinkResponseSchema = z.strictObject({ url: z.string().min(1) });
 
 export const CcMessageSchema = z.strictObject({
   seq: z.number().int(),

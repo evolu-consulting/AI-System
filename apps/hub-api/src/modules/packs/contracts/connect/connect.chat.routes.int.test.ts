@@ -39,7 +39,7 @@ const sent: { key: string; event: string; data: unknown }[] = [];
 
 const filebox = (org: string) => ({
   postFile: async (name: string) => {
-    const id = Bun.randomUUIDv7();
+    const id = crypto.randomUUID().replaceAll("-", "").slice(0, 16); // FileBox thật: 16 hex, không phải uuid
     puts.push({ org, name, id });
     return { fileId: id, versionId: Bun.randomUUIDv7() };
   },
@@ -156,6 +156,7 @@ type Page = {
 const msgs = `/connect/threads/${B}/messages`;
 const msgsA = `/connect/threads/${A}/messages`;
 let fileId = "";
+let boxId = ""; // file_id FileBox của fileId
 
 beforeAll(async () => {
   await cloneDb("full");
@@ -332,7 +333,7 @@ describe("CR-161 · R8 gửi / xem / đã đọc (hai công ty, hai vai khác nh
 });
 
 describe("CR-161 · R11 tệp", () => {
-  it("tải lên ⇒ 200 CcFile, id = file_id FileBox, khoá <tenant bên tải>/<id>, org FileBox của bên tải; đuôi lạ / rỗng ⇒ 415; > 20 MB ⇒ 413; thiếu phần file ⇒ 400 (không byte nào lên kho)", async () => {
+  it("tải lên ⇒ 200 CcFile, id = uuid route sinh (khoá <tenant bên tải>/<id>), id FileBox 16 hex lưu ở box_file_id, org FileBox của bên tải; đuôi lạ / rỗng ⇒ 415; > 20 MB ⇒ 413; thiếu phần file ⇒ 400 (không byte nào lên kho)", async () => {
     const r = await req<{ file: { id: string; name: string; mime: string; size: number } }>(
       TIEN,
       "POST",
@@ -343,11 +344,14 @@ describe("CR-161 · R11 tệp", () => {
     expect(CcFileUploadResponseSchema.safeParse(r.body).success).toBe(true);
     fileId = r.body.file.id;
     expect([r.body.file.name, r.body.file.mime]).toEqual(["bao-gia.pdf", "application/pdf"]);
-    expect(puts).toEqual([{ org: `t_${A}`, name: "bao-gia.pdf", id: fileId }]);
+    expect(fileId).not.toBe(puts[0]?.id);
+    expect(puts).toEqual([{ org: `t_${A}`, name: "bao-gia.pdf", id: puts[0]?.id as string }]);
+    boxId = puts[0]?.id as string;
+    expect(boxId).toMatch(/^[0-9a-f]{16}$/);
     const [row] = await o<
-      { storage_key: string; seq: string | null }[]
-    >`select storage_key, seq from hub.cc_files where id = ${fileId}`;
-    expect([row?.storage_key, row?.seq]).toEqual([`${A}/${fileId}`, null]);
+      { storage_key: string; seq: string | null; box_file_id: string }[]
+    >`select storage_key, seq, box_file_id from hub.cc_files where id = ${fileId}`;
+    expect([row?.storage_key, row?.seq, row?.box_file_id]).toEqual([`${A}/${fileId}`, null, boxId]);
     const up = (f: FormData) => req(TIEN, "POST", `/connect/threads/${B}/files`, f);
     expect((await up(form("virus.exe"))).status).toBe(415);
     expect((await up(form("a.pdf", ""))).status).toBe(415);
@@ -356,9 +360,9 @@ describe("CR-161 · R11 tệp", () => {
     expect(puts).toHaveLength(1);
   });
 
-  it("tệp chưa gắn tin: chỉ người tải tải được (Hoa cùng công ty, Dung, công ty C ⇒ 404 không lộ); gửi kèm file_ids ⇒ gắn tin, rồi Dung tải được (302 tới org bên tải)", async () => {
+  it("tệp chưa gắn tin: chỉ người tải tải được (Hoa cùng công ty, Dung, công ty C ⇒ 404 không lộ); gửi kèm file_ids ⇒ gắn tin, rồi Dung tải được ({ url } tới org bên tải + id FileBox)", async () => {
     const dl = (u: string) => req(u, "GET", `/connect/files/${fileId}`);
-    expect((await dl(TIEN)).status).toBe(302);
+    expect((await dl(TIEN)).status).toBe(200);
     for (const u of [HOA, DUNG, CUONG]) expect([u, (await dl(u)).status]).toEqual([u, 404]);
     const s = await req<{ message: { seq: number; files: { id: string }[] } }>(TIEN, "POST", msgs, {
       client_id: Bun.randomUUIDv7(),
@@ -368,8 +372,12 @@ describe("CR-161 · R11 tệp", () => {
     expect(s.status).toBe(200);
     expect(s.body.message.files.map((f) => f.id)).toEqual([fileId]);
     const d = await dl(DUNG);
-    expect([d.status, d.location]).toEqual([302, `https://fb.test/t_${A}/${fileId}`]);
-    expect((await dl(HOA)).status).toBe(302); // đã gắn tin ⇒ người Toàn quyền của hai công ty
+    expect([d.status, d.body, d.location]).toEqual([
+      200,
+      { url: `https://fb.test/t_${A}/${boxId}` },
+      null,
+    ]);
+    expect((await dl(HOA)).status).toBe(200); // đã gắn tin ⇒ người Toàn quyền của hai công ty
     expect((await dl(CUONG)).status).toBe(404);
     expect((await req(TIEN, "GET", "/connect/files/khong-phai-uuid")).status).toBe(400);
     // dùng lại tệp đã gắn / tệp của người khác trong tin mới ⇒ 422 MSG_FILE_INVALID
@@ -382,8 +390,8 @@ describe("CR-161 · R11 tệp", () => {
   });
 
   it("DB từ chối (đủ 50 tệp chưa gắn) ⇒ 422 MSG_FILE_INVALID và byte vừa lên bị xoá khỏi kho", async () => {
-    await o`insert into hub.cc_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key)
-      select i, t.id, ${A}::uuid, ${HOA}::uuid, 'x.pdf', 'application/pdf', 10, ${A}::text || '/' || i::text
+    await o`insert into hub.cc_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key, box_file_id)
+      select i, t.id, ${A}::uuid, ${HOA}::uuid, 'x.pdf', 'application/pdf', 10, ${A}::text || '/' || i::text, left(replace(i::text, '-', ''), 16)
       from hub.cc_threads t, (select gen_random_uuid() as i from generate_series(1, 50)) g`;
     const r = await req(HOA, "POST", `/connect/threads/${B}/files`, form("them.pdf"));
     expect([r.status, code(r)]).toEqual([422, "MSG_FILE_INVALID"]);
@@ -447,7 +455,7 @@ describe("CR-161 · R8 sau khi ngắt kết nối: chỉ đọc", () => {
     const up = await req(TIEN, "POST", `/connect/threads/${B}/files`, form("sau-ngat.pdf"));
     expect([up.status, code(up)]).toEqual([409, "CONNECT_READ_ONLY"]);
     expect(puts).toHaveLength(putsBefore);
-    expect((await req(DUNG, "GET", `/connect/files/${fileId}`)).status).toBe(302);
+    expect((await req(DUNG, "GET", `/connect/files/${fileId}`)).status).toBe(200);
     expect(
       (
         await req<{ last_read_seq: number }>(DUNG, "POST", `/connect/threads/${A}/read`, {
@@ -462,9 +470,9 @@ describe("CR-161 · R11 việc nền dọn tệp chưa gắn > 24 h", () => {
   it("chỉ soft-delete + xoá nội dung tệp chưa gắn quá hạn; tệp đã gắn tin / chưa quá hạn giữ nguyên; lượt sau không còn gì", async () => {
     const [old, fresh] = [Bun.randomUUIDv7(), Bun.randomUUIDv7()];
     const [th] = await o<{ id: string }[]>`select id from hub.cc_threads limit 1`;
-    await o`insert into hub.cc_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key, created_at)
-      values (${old}, ${th?.id as string}, ${A}, ${TIEN}, 'cu.pdf', 'application/pdf', 5, ${`${A}/${old}`}, now() - interval '25 hours'),
-             (${fresh}, ${th?.id as string}, ${A}, ${TIEN}, 'moi.pdf', 'application/pdf', 5, ${`${A}/${fresh}`}, now() - interval '2 hours')`;
+    await o`insert into hub.cc_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key, box_file_id, created_at)
+      values (${old}, ${th?.id as string}, ${A}, ${TIEN}, 'cu.pdf', 'application/pdf', 5, ${`${A}/${old}`}, 'aaaaaaaaaaaaaaaa', now() - interval '25 hours'),
+             (${fresh}, ${th?.id as string}, ${A}, ${TIEN}, 'moi.pdf', 'application/pdf', 5, ${`${A}/${fresh}`}, 'bbbbbbbbbbbbbbbb', now() - interval '2 hours')`;
     await o`update hub.cc_files set created_at = now() - interval '30 hours' where id = ${fileId}`; // đã gắn tin ⇒ không dọn
     const run = chatFileSweep({
       claim: ccFilesSweepClaim(db),
@@ -475,7 +483,9 @@ describe("CR-161 · R11 việc nền dọn tệp chưa gắn > 24 h", () => {
       },
     });
     expect(await run()).toBe(1);
-    expect(removed.filter((r) => r.startsWith("sweep:"))).toEqual([`sweep:t_${A}:${old}`]);
+    expect(removed.filter((r) => r.startsWith("sweep:"))).toEqual([
+      `sweep:t_${A}:aaaaaaaaaaaaaaaa`,
+    ]);
     const rows = await o<
       { id: string; gone: boolean }[]
     >`select id, deleted_at is not null as gone from hub.cc_files where id in (${old}, ${fresh}, ${fileId})`;
