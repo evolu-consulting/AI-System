@@ -1,6 +1,6 @@
 // CR-152 · CR-150 · HĐ mẫu «Nhượng quyền» + «Thỏa thuận hợp tác» trên tenant demo của stg-test (UAT mốc kỳ, duyệt, Điểm uy tín). Chạy qua
 // `deploy/stg-test/seed-demo.sh --kinds-only` (chạy SAU `--org-only` + `--partner-only`). Lặp lại được (nhận diện theo tiêu đề); CHỈ stg-test (guard).
-// Đường đi: hàng nháp (như seed-demo-org «HĐ mẫu») → PUT kind-terms → tải PDF mẫu → Lưu (review) → Gửi duyệt (người tạo) → HĐ 1: quản trị công ty
+// Đường đi: hàng nháp (như seed-demo-org «HĐ mẫu») → PUT kind-terms → tải PDF mẫu → Lưu+Gửi duyệt (một lệnh review, người tạo) → HĐ 1: quản trị công ty
 // nhận việc + duyệt thay + tải bản đã ký tới DONE (hook sinh mốc kỳ); HĐ 2 dừng ở «đang duyệt».
 import postgres, { type Sql } from "postgres";
 import { type Api, adminToken, call, type Json } from "../../hub-dev/src/fixture";
@@ -179,13 +179,10 @@ async function review(c: Ctx, tok: string, s: KindSample, now: Date): Promise<vo
     fields: sampleFields(s, now),
     milestones: [],
   };
-  ok(await hub(c, tok, "POST", `${BASE}/${id}/review`, body), "lưu (review)");
-}
-
-async function submit(c: Ctx, tok: string, s: KindSample): Promise<void> {
-  const body = { unchanged_reason: "HĐ mẫu CR-152" };
-  const r = ok(await hub(c, tok, "POST", `${BASE}/${sampleId(s.n)}/submit`, body), "gửi duyệt");
+  // Không `draft:true` ⇒ «Lưu» = gửi duyệt (người tạo): draft → processing (có quy trình) / done (không có).
+  const r = ok(await hub(c, tok, "POST", `${BASE}/${id}/review`, body), "lưu + gửi duyệt");
   if (r.json.no_flow) fail(`«${s.title}»: không có quy trình khớp (no_flow)`);
+  if (r.json.status === "draft") fail(`«${s.title}»: gửi duyệt xong vẫn ở nháp`);
 }
 
 async function runStep(
@@ -208,7 +205,6 @@ async function runStep(
       "tải PDF mẫu",
     );
   if (step === "review") return review(c, tok, s, now);
-  if (step === "submit") return submit(c, tok, s);
   return approveAll(c, s);
 }
 

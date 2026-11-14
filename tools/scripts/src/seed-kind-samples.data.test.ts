@@ -75,15 +75,8 @@ describe("ngày hiệu lực", () => {
 
 describe("kế hoạch idempotent", () => {
   it("chưa có ⇒ tạo đủ bước; Nhượng quyền thêm duyệt+ký, Hợp tác dừng ở chờ duyệt", () => {
-    expect(planSample(fr, none)).toEqual([
-      "create",
-      "kind_terms",
-      "file",
-      "review",
-      "submit",
-      "approve_all",
-    ]);
-    expect(planSample(co, none)).toEqual(["create", "kind_terms", "file", "review", "submit"]);
+    expect(planSample(fr, none)).toEqual(["create", "kind_terms", "file", "review", "approve_all"]);
+    expect(planSample(co, none)).toEqual(["create", "kind_terms", "file", "review"]);
   });
   it("nháp đã đủ dữ liệu ⇒ chỉ lưu + gửi", () => {
     const st: SampleState = {
@@ -93,7 +86,7 @@ describe("kế hoạch idempotent", () => {
       hasKindTerms: true,
       hasFile: true,
     };
-    expect(planSample(co, st)).toEqual(["review", "submit"]);
+    expect(planSample(co, st)).toEqual(["review"]);
   });
   it("đang duyệt: Nhượng quyền duyệt tiếp, Hợp tác giữ nguyên (không gửi lại)", () => {
     const st: SampleState = {

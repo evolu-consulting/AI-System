@@ -99,12 +99,12 @@ export type SampleState = {
   hasFile: boolean;
   hasRun: boolean;
 };
-export type SampleStep = "create" | "kind_terms" | "file" | "review" | "submit" | "approve_all";
+export type SampleStep = "create" | "kind_terms" | "file" | "review" | "approve_all";
 
 /**
  * Kế hoạch một HĐ mẫu (idempotent): đã `done`/bị từ chối ⇒ [] (người dùng đã thao tác, không làm lại).
  * Đang duyệt: đích `done` ⇒ duyệt + ký tiếp, đích `processing` ⇒ giữ nguyên.
- * Nháp ⇒ làm bước còn thiếu rồi gửi; đích `done` thì thêm `approve_all` (duyệt + ký tới DONE).
+ * Nháp ⇒ làm bước còn thiếu rồi Lưu+gửi (một lệnh review); đích `done` thì thêm `approve_all` (duyệt + ký tới DONE).
  */
 export function planSample(s: KindSample, st: SampleState): SampleStep[] {
   if (st.status === "done" || st.status === "reject") return [];
@@ -113,7 +113,7 @@ export function planSample(s: KindSample, st: SampleState): SampleStep[] {
   if (!st.exists) steps.push("create");
   if (!st.hasKindTerms) steps.push("kind_terms");
   if (!st.hasFile) steps.push("file");
-  steps.push("review", "submit");
+  steps.push("review"); // «Lưu» không `draft:true` = gửi duyệt luôn (người tạo); KHÔNG có lệnh submit riêng (409 CONTRACT_NOT_DRAFT)
   if (s.target === "done") steps.push("approve_all");
   return steps;
 }
