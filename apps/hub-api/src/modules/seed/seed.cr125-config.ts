@@ -242,10 +242,10 @@ export function withEsignSigner(stages: readonly unknown[], groupId: string): un
     const hasProv =
       typeof (ex.args?.provider as { value?: unknown } | undefined)?.value === "string";
     if (typeof cur?.value === "string" && cur.value.trim() !== "" && hasProv) return s;
-    // CR-146b · «Ký qua» bắt buộc trong node: seed dùng «Tải lên bản đã ký» (luôn hợp lệ, không cần nối nhà cung cấp)
+    // CR-146b · «Ký qua» bắt buộc trong node: seed dùng «Ký thử» (`selfsign`) — CÙNG nhà cung cấp mà `writeCr125Config` bật cho công ty; «upload» chỉ chờ người tải bản đã ký lên (hẹn hạn 7 ngày ⇒ lượt kẹt `waiting_timer`)
     const args = {
       ...ex.args,
-      provider: ex.args?.provider ?? { from: "const", value: "upload" },
+      provider: ex.args?.provider ?? { from: "const", value: DEMO_ESIGN_PROVIDER },
       company_signers: { from: "const", value: `group:${groupId}` },
     };
     return { ...(s as object), executor: { ...ex, args } };

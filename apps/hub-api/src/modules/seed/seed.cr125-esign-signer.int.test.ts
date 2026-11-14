@@ -44,7 +44,7 @@ describe("CR-126 · seed người ký Phần 2 «Hợp đồng»", () => {
       ?.value;
     expect(signers).toBe(`group:${g?.id}`);
     const prov = (esign?.executor?.args?.provider as { value: string } | undefined)?.value;
-    expect(prov).toBe("upload"); // CR-146b
+    expect(prov).toBe("selfsign"); // CR-146b · «Ký thử» = nhà cung cấp seed bật cho công ty (không «upload»: lượt kẹt chờ tải lên 7 ngày)
     const dec = decodeEsignNodeArgs({ provider: prov ?? "", company_signers: signers ?? "" });
     expect(dec.ok && esignConfigIssues(dec.config)).toEqual([]);
     const [s] =
