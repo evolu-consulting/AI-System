@@ -12,7 +12,7 @@ name: Evolu
 timezone: Asia/Ho_Chi_Minh
 
 packs: [contracts]
-addons: [contracts-community] # Bảng tin
+addons: [contracts-community, contracts-partner-confirm] # Bảng tin
 
 users:
   - { email: thomas.tran@evolu.com, name: Thomas Tran, title: Giám đốc, role: admin }

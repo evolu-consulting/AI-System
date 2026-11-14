@@ -24,7 +24,7 @@ profile:
 
 # Bật gói qua đường admin-web (PK-FR-05) + add-on Bảng tin (CR-130, entitlement `contracts-community`).
 packs: [contracts]
-addons: [contracts-community]
+addons: [contracts-community, contracts-partner-confirm]
 
 users:
   - { email: thuytien.le@nitigroupvn.com, name: Lê Thị Thủy Tiên, title: Giám đốc, role: admin }
