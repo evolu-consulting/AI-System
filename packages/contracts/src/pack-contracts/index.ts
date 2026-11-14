@@ -6,6 +6,7 @@ export * from "./business";
 export * from "./cks";
 export * from "./company";
 export * from "./company-accent";
+export * from "./company-connect";
 export * from "./contract-files";
 export * from "./deals";
 export * from "./delete-contract";

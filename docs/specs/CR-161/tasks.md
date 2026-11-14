@@ -47,7 +47,7 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 ## Việc
 | # | Việc | Lát | Trạng thái |
 |---|---|---|---|
-| 1 | Contract zod + luật thuần | cr161-contract | [ ] |
+| 1 | Contract zod + luật thuần | cr161-contract | [x] |
 | 2 | Migration 0145 + int link | cr161-link-db | [ ] |
 | 3 | Migration 0146/0147 + int chat | cr161-chat-db | [ ] |
 | 4 | Migration community 0020 + int | cr161-posts-db | [ ] |
@@ -60,6 +60,8 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 ## Quyết định trong lúc làm
 - (PLAN) Kết nối suy ra từ `hub.partner_links` hai chiều, không bảng mới (G1). Ngắt = xoá 2 dòng chưa chặn.
 - (PLAN) Số migration: hub 0145–0147 (hiện có tới 0144), community 0020 (hiện có tới 0019); community 0021 trả lại.
+
+- (lát 1) Sự kiện `cc.msg`/`cc.link` thêm vào union `MeStreamMsgEventSchema` + `ME_STREAM_MSG_EVENTS` (messages.ts, cùng họ tin nhắn; chat-gate cho đi qua) thay vì union `MeStreamEvent` của rooms; schema dữ liệu định nghĩa ở company-connect.ts.
 
 ## Tranh chấp test
 (trống)
@@ -74,7 +76,7 @@ Ngoài đường cũ (gửi HĐ lần đầu tự kèm lời mời, một chiề
 - Kịch bản: khi công ty chưa bật Danh bạ thì mời bị từ chối 422 [test: thủ công — chưa viết]
 - Kịch bản: khi Dung đồng ý lời mời thì hai bên đều thấy «Đã kết nối» và gửi HĐ cho nhau không cần hỏi lại [test: thủ công — chưa viết]
 - Kịch bản: khi Dung từ chối thì Tiên thấy «Preschool đã từ chối lời mời» và mời lại bị 409 [test: thủ công — chưa viết]
-- Kịch bản: khi hai công ty mời chéo nhau thì lời mời thứ hai thành đồng ý ngay [test: thủ công — chưa viết]
+- Kịch bản: khi hai công ty mời chéo nhau thì lời mời thứ hai thành đồng ý ngay [test: apps/hub-api/src/modules/packs/contracts/connect/domain/connect.rules.test.ts » có lời mời ngược chờ ⇒ accept_reverse]
 - Kịch bản: khi lời mời tới từ đường gửi HĐ cũ thì đồng ý vẫn chỉ mở một chiều như trước [test: thủ công — chưa viết]
 
 #### Yêu cầu: Ngắt kết nối
