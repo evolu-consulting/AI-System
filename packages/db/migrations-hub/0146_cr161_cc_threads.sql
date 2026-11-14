@@ -231,7 +231,7 @@ BEGIN
   IF cardinality(v_ids) > 10 THEN
     RAISE EXCEPTION 'MSG_TOO_MANY_FILES' USING ERRCODE = '22023';
   END IF;
-  IF btrim(v_body) = '' AND cardinality(v_ids) = 0 THEN
+  IF v_body ~ '^[[:space:]]*$' AND cardinality(v_ids) = 0 THEN
     RAISE EXCEPTION 'MSG_EMPTY' USING ERRCODE = 'CC422';
   END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended(least(v_tid::text, p_other::text) || greatest(v_tid::text, p_other::text), 161));

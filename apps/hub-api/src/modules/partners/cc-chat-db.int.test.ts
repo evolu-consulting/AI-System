@@ -240,7 +240,9 @@ describe("CR-161 · R8 gửi tin, R9 chuông", () => {
     const bs = await bells(A);
     expect(bs).toHaveLength(1);
     expect(bs[0]).toMatchObject({ user_id: TIEN, title: "Tin nhắn mới từ Preschool Việt" });
-    expect((await as(A, TIEN, (tx) => links(tx)))[0]).toMatchObject({ tenant_id: B, unread: 1 });
+    const aLinks = await as(A, TIEN, (tx) => links(tx));
+    expect(aLinks.find((l) => l.tenant_id === B)?.unread).toBe(1);
+    expect(aLinks.find((l) => l.tenant_id === C)?.unread).toBe(0);
     const p1 = await as(B, DUNG, (tx) => page(tx, A, DUNG, null, 2));
     expect(p1.items.map((m) => [m.seq, m.mine])).toEqual([
       [4, true],
