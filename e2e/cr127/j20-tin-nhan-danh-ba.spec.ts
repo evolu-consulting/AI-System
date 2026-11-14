@@ -38,7 +38,8 @@ test("Danh bạ theo phòng ban: thu gọn, thẻ người", async ({ browser })
   await expect(group.getByRole("button", { expanded: false }).first()).toBeVisible();
   await expect(group.getByTestId("conv-row")).toHaveCount(0);
   await group.getByRole("button", { expanded: false }).first().click();
-  await group.getByTestId("conv-row").first().hover();
+  // thẻ chỉ bật khi rê lên ẢNH hoặc TÊN (spec CR-148), không phải giữa dòng
+  await group.getByTestId("conv-row").first().getByTestId("conv-avatar").hover();
   await expect(a.getByTestId("person-tip")).toBeVisible();
   await expect(a.getByTestId("person-tip-dept")).toBeVisible();
   await ctx.close();

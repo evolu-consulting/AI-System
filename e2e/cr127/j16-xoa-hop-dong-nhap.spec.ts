@@ -64,7 +64,14 @@ test("Người khác (không phải người tạo/phụ trách) không thấy �
     ).toBeVisible({
       timeout: 60_000,
     });
-    await expect(menu(other)).toHaveCount(0);
+    // CR-135 Q2: «Thao tác ▾» nay luôn có trên nháp lần đầu (Lưu nháp · Huỷ) ⇒ không đòi menu vắng, chỉ đòi mục «Xoá hợp đồng» vắng
+    if ((await menu(other).count()) > 0) await menu(other).click();
+    await expect(del(other)).toHaveCount(0);
+    // bằng chứng quyết định ở API (không phụ thuộc thời điểm vẽ menu): hợp đồng báo người này không được xoá
+    const g = await apiAs(E, user);
+    const res = await fetch(`${HUB}/pack/contracts/contracts/${id}`, { headers: g.headers });
+    if (res.status === 200)
+      expect(((await res.json()) as { can: { delete: boolean } }).can.delete).toBe(false);
   }
   const s = await apiAs(E, U.accounting);
   const r = await fetch(`${HUB}/pack/contracts/contracts/${id}`, {

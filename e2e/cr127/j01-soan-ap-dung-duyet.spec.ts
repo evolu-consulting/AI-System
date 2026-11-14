@@ -96,6 +96,9 @@ test("quản trị nền tảng: Tạo quy trình từ sơ đồ trống, soạn
   await expect(page.getByText(/Người ký phía công ty/)).toBeVisible();
   const signer = page.getByLabel(/^Phòng ban:/).first();
   if (await signer.count()) await signer.check();
+  // CR-146b: «Ký qua» BẮT BUỘC trong node Ký (thiếu ⇒ nút «Áp dụng cho công ty» khoá) ⇒ chọn «Tải lên bản đã ký» (luôn hợp lệ, không cần nối nhà cung cấp)
+  await page.getByRole("combobox", { name: /Ký qua/ }).click();
+  await page.getByRole("option", { name: /Tải lên bản đã ký/ }).click();
   await expect(page.getByTestId("outline-chip-error")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Áp dụng cho công ty" }).click();
@@ -111,7 +114,8 @@ test("quản trị nền tảng: Tạo quy trình từ sơ đồ trống, soạn
   await page.goto(editorUrl());
   await expect(page.getByTestId("outline-editor")).toBeVisible();
   await expect(page.getByText(/Giá trị hợp đồng.*500 triệu/).first()).toBeVisible();
-  await expect(page.getByText("Ký hợp đồng", { exact: true }).first()).toBeVisible();
+  // thẻ bước Ký trên sơ đồ ghi «Ký số» + người ký đã lưu (CR-141 chỉ đổi nhãn trong menu thêm bước; «Ký hợp đồng» còn là tên bước/lựa chọn ẩn)
+  await expect(page.getByRole("button", { name: /^Ký số Ban Giám đốc ký/ })).toBeVisible();
   await expect(page.getByTestId("outline-chip-error")).toHaveCount(0);
 });
 

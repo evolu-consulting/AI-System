@@ -465,7 +465,7 @@ f84e4e9faf2e5417e9526675fa71271c1e74afe603cdb89de76bea8431e2b4a0  e2e/cr121-shel
 d3e546a0438df688fc74b62232b3e8e851a5e030d90a2a4dc9f351c37d5b11eb  e2e/cr121-tenants-list.spec.ts
 9025f93e621b30db29614fc7d779dc672e526e08f2ef88e90e1fa1f7c5859053  e2e/cr127/_cr127-kit.ts
 820c39bde85d3eda2b7c27fb0dcf7f9a04d59f1cc01cb8c2b92081a21135d838  e2e/cr127/_cr127-stack.ts
-b7170bfcaecb490a9fe5fcf754987ef04d6c7a6529587a56938818de138db861  e2e/cr127/j01-soan-ap-dung-duyet.spec.ts
+65f192b7e1e4f0a531fde1d8b685dea70b5147487f6f00908920c308d8a23e75  e2e/cr127/j01-soan-ap-dung-duyet.spec.ts
 63edfcff610c61e7ec1cb73242874155aaf1bf03527a119ba8da7b6e90ff7590  e2e/cr127/j03-uy-quyen.spec.ts
 a37befb266ee80f79ce503ffb6f9035c7bdba4d7e25c30bfa156392df5f6dc85  e2e/cr127/j04-thuc-hien-giao-thieu-phat.spec.ts
 563f1b281a04fee302afccc551e2c2d4f0a404966b7784e0b2e3e33749946530  e2e/cr127/j05-tam-khoa.spec.ts
@@ -477,11 +477,11 @@ e941fef97fcb9125defcbc8ef9b9ef5ef79aa0a1ab0235a9e651b4fc0b1ccbbb  e2e/cr127/j10-
 f6d7283896604237e091c95a404086eea656b0cddd094c6e2ff0a065b6965d69  e2e/cr127/j13-nhan-khong-quy-trinh.spec.ts
 1d8d93434a20ac0138a29cda81c3647c11e9a72b7797450802f9462f5d24eac5  e2e/cr127/j14-chua-co-quy-trinh.spec.ts
 d917894b2823cbaec37b1e4872d521fa556828a68611c1e0c33537af209e5051  e2e/cr127/j15-xoa-quy-trinh-nhap.spec.ts
-71afad7feb9485ea1b14e74d97bb7a49e4098e471a99acdd0df3e83be8af60c6  e2e/cr127/j16-xoa-hop-dong-nhap.spec.ts
+70eb84626d36436ff0eba2671ecd61365da3658f714f5b38efb94776e2d498d3  e2e/cr127/j16-xoa-hop-dong-nhap.spec.ts
 83a780d963b041fd270283e1c8dd0dba368f42f1aac33491478d9ffadf377322  e2e/cr127/j17-tai-lieu-kem.spec.ts
-f940b4f7a10f95993beabc788714abb20d3486d30e524daa7a6fcaf0adfe3cc4  e2e/cr127/j18-tin-nhan.spec.ts
-a8d53bed091d1121d8b8f4b3d89701366f90c9bc07537f956d2a1a7f31d2030f  e2e/cr127/j19-tin-nhan-khoang.spec.ts
-b13526e6a9463493bc4f2ecba130dfb50797863b01cdb4f4b71c4c08c9dc6784  e2e/cr127/j20-tin-nhan-danh-ba.spec.ts
+f40b501226ff118299f0ed5d04f700918c2fb33e51a6ccfa16f0fef2f6f85c2b  e2e/cr127/j18-tin-nhan.spec.ts
+1805476a59a2aff553a284634fa40a2ff401b0d75045f6fde54262a68616284b  e2e/cr127/j19-tin-nhan-khoang.spec.ts
+e3a0d1ad01136bd461a797627fc3b093383f75f2c5879d01a73a8f8cc785772e  e2e/cr127/j20-tin-nhan-danh-ba.spec.ts
 ebdfcafe3f4232adfdc128482923de761e4b2f4a4dac145ec2ceea8b8f231385  e2e/cr127/playwright.cr127.config.ts
 089b17c879399e94195134ba93e5baa40e9142fa01feed77b0179dba74588013  e2e/cr149/file-preview.spec.ts
 353db2bc9a5f46c18eaccb94a1d37f79ba49a3ed998d2cdc468e7dd41bc91a3c  e2e/cr152/kinds-ui.spec.ts
@@ -534,7 +534,7 @@ b7ba4bd583e645a8b745a99958166f99c38da209c6a897b753465aa2936b5cb3  e2e/journey-ap
 28609e8def51805edd8cfb42975642b97641d9b868f8e94c0798d209645ad1a3  e2e/journey-approval/cr139b-starter-head.spec.ts
 21269a27138d5846f37fb6c8fb6f2e28b0ac61458660f03ee2e7e54f251a11e3  e2e/journey-approval/cr139d-org-tree.spec.ts
 a55e1877f9a13b9c477a4a0b8d2afdb289874e8fde52c2c75aeb33a27c0c4b9a  e2e/journey-approval/cr141-sign-or-upload.spec.ts
-bd2ec195f2da3f0e17d7a96b4084389b0822cf22ff74b2a5696ef99082f120fb  e2e/journey-approval/cr150-two-companies.spec.ts
+651b56b6e0228767ea8d6c5d566f60924786c97d6c5671de4ad8c1d89eca548e  e2e/journey-approval/cr150-two-companies.spec.ts
 c2d62f0cc4b59951322ae7f26356cc9fd70ccf492ecb6f5ea12f45c37f09966f  e2e/journey-approval/playwright.journey-fsc.config.ts
 ced9d865f4c4d4347cef1cf9ad8c8df18c1ac354fff7eb6aa8b9353167c7e21a  e2e/journey-approval/playwright.journey-purchase.config.ts
 c8234625a6c1f712e24d78995ea58e649548bff800617a295ab86e71210282de  e2e/journey-approval/playwright.journey.config.ts

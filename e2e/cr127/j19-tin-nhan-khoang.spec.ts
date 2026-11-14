@@ -6,6 +6,8 @@ import { test } from "../journey-approval/_test";
 import { envOf, expect, loginCw, SPEC_TENANT, U } from "./_cr127-kit";
 
 const E = envOf(SPEC_TENANT.j01);
+// CR-148: danh bạ chia nhóm theo phòng ban (không còn «hội thoại mới nhất ở đầu») ⇒ tìm dòng của A theo tên người gửi
+const FROM = "E2E Nhân viên Kinh doanh";
 const HELLO = `Chào B khoang ${Date.now().toString(36)}`;
 
 test("Khoang: A gửi chữ + PDF, B thấy chấm đỏ ở nút khoang và tab, mở thì hết", async ({
@@ -44,7 +46,7 @@ test("Khoang: A gửi chữ + PDF, B thấy chấm đỏ ở nút khoang và tab
   await b.getByTestId("assistant-fab").click();
   await expect(b.getByTestId("dock-tab-messages").getByTestId("unread-badge")).toHaveText("1");
   await b.getByTestId("dock-tab-messages").click();
-  const first = b.getByTestId("conv-row").first();
+  const first = b.getByTestId("conv-row").filter({ hasText: FROM });
   await expect(first).toHaveAttribute("data-unread", "true");
 
   // B mở hội thoại ⇒ chấm mất ở tab; A thấy «Đã xem»; ‹ về danh sách không đóng khoang
