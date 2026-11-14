@@ -314,8 +314,13 @@ export const ManualContractRequestSchema = z
     (b) =>
       b.deal === undefined ||
       b.direction === undefined ||
+      b.deal === "franchise" ||
+      b.deal === "cooperation" ||
       (b.deal === "buy") === (b.direction === "purchase"),
-    { message: "deal và direction lệch nhau", path: ["direction"] },
+    {
+      message: "deal và direction lệch nhau (franchise/cooperation: direction bị bỏ qua)",
+      path: ["direction"],
+    },
   )
   .refine(
     (b) =>

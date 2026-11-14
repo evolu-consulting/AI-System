@@ -114,13 +114,14 @@ async function reviewTx(
   let out: Extract<ReviewResult, { kind: "ok" }>["out"] = { id, ...saved };
   if (viaSubmit && submit) {
     // CR-127 BR-02 · SP gắn khi HĐ còn DRAFT (sửa được), cùng tx, TRƯỚC khi chuyển — sau khi processing/done K4 khoá gắn SP.
+    // CR-127 §148: gửi qua "Lưu" chỉ người tạo ∪ phụ trách (checkRole) — vai `write` thuần ⇒ forbidden ⇒ ROLLBACK cả lệnh.
     // Lỗi dòng lạ / kho ⇒ ném ⇒ ROLLBACK (HĐ giữ Nháp). Đã gắn xong ⇒ không giữ `pending_links` ở lượt (không gắn lần hai khi duyệt).
     await linkProducts(r, who, id, input.products, true);
     const s = await submitInTx(
       r as SubmitTxRepos,
       who,
       id,
-      { links: null, checkRole: false },
+      { links: null, checkRole: true },
       submit,
     );
     if ("error" in s) throw new SubmitRollback(s.error);

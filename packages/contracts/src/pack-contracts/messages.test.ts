@@ -51,11 +51,11 @@ describe("SendMessageRequest · AddMembers · MsgListQuery", () => {
     expect(send("", [U(1), U(1)])).toBe(false);
     expect(SendMessageRequestSchema.safeParse({ client_id: "x", body: "a" }).success).toBe(false);
   });
-  test("thêm người 1..20; phân trang tin mặc định 50, tối đa 100", () => {
+  test("thêm người 1..20; phân trang tin mặc định 30 (CR-148), tối đa 100", () => {
     expect(AddMembersRequestSchema.safeParse({ user_ids: [] }).success).toBe(false);
     expect(AddMembersRequestSchema.safeParse({ user_ids: ids(20) }).success).toBe(true);
     expect(AddMembersRequestSchema.safeParse({ user_ids: ids(21) }).success).toBe(false);
-    expect(MsgListQuerySchema.parse({})).toEqual({ limit: 50 });
+    expect(MsgListQuerySchema.parse({})).toEqual({ limit: 30 });
     expect(MsgListQuerySchema.parse({ before_seq: "9", limit: "100" })).toEqual({
       before_seq: 9,
       limit: 100,

@@ -21,6 +21,8 @@ Bảng rà soát `audit.md`. Lát này làm mục Cao 2, 3, 5, 6. Mục 1 (Bản
 - Người đang chọn không nằm trong trang hiện tại: Ủy quyền giữ tên lúc chọn; Người phụ trách tra tên qua `/people?ids=`.
 - `/admin/org` (cả cơ cấu) giữ nguyên cho sơ đồ tổ chức; không còn dùng cho danh sách chọn người.
 
+- (fix-review-r3) `pack-community` dùng `nextOffset` (camelCase) vì các schema của gói đó viết camelCase toàn bộ (`flows.ts`); các gói khác dùng `next_offset` (snake_case theo quy ước API chung). Hai tên cùng nghĩa (null ⇒ hết); KHÔNG đổi tên API để khỏi vỡ client đã dùng.
+
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 

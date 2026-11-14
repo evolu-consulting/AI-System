@@ -120,7 +120,9 @@ describe("NF1 · công ty chưa có quy trình duyệt (submit_block=no_flow)", 
     expect(r.confirmSave).toBe(false);
     expect(r.draftSave).toBe(true);
     expect(r.submitBlocked).toBe(true);
-    expect(headRule({ ...base, submitBlock: null }).confirmSave).toBe(true);
+    expect(
+      headRule({ ...base, can: { submit: true }, submitBlock: null } as never).confirmSave,
+    ).toBe(true);
   });
   test("sau khi bị trả lại: Gửi lại hiện nhưng khoá kèm lý do", () => {
     const r = headRule({ ...base, round: 1, submitBlock: "no_flow" });
@@ -198,5 +200,18 @@ describe("headActs (CR-128 e)", () => {
     expect(headRule({ ...base, write: false }).rename).toBe(false);
     expect(headRule({ ...base, status: "processing" }).rename).toBe(false);
     expect(headRule({ ...base, superseded: true }).rename).toBe(false);
+  });
+});
+
+describe("CR-127 §148 · gửi duyệt chỉ người tạo/phụ trách (can.submit), Lưu nháp theo write", () => {
+  const noSubmit = { ...can, submit: false };
+  test("vai write nhưng không phải người tạo/phụ trách ⇒ có Lưu nháp, KHÔNG có Xác nhận và lưu", () => {
+    expect(r({ can: noSubmit })).toMatchObject({ draftSave: true, confirmSave: false });
+  });
+  test("sau khi bị trả lại ⇒ không có Gửi lại", () => {
+    expect(r({ round: 1, can: noSubmit })).toMatchObject({ resubmit: false });
+  });
+  test("người tạo/phụ trách (can.submit) ⇒ Xác nhận và lưu", () => {
+    expect(r({})).toMatchObject({ draftSave: true, confirmSave: true });
   });
 });

@@ -42,3 +42,18 @@ export async function receiveOwnerCheck(
     where u.id = ${owner}::uuid and u.tenant_id = ${tenantId}::uuid and u.kind = 'internal' and u.active and not u.locked_by_tenant) as ok`);
   if (r?.ok !== true) throw defError("PROCESS_DEF_INVALID", { paths: [RECEIVE_OWNER_PATH] });
 }
+
+/**
+ * fix-review-r3 · MỘT cổng kiểm cho mọi đường lưu def: `flowRules` (đường thường) ⇒ luật FlowDef (kèm người phụ trách);
+ * đường khe / bản sao thư viện (không áp luật FlowDef) ⇒ vẫn kiểm người phụ trách nhận HĐ.
+ */
+export async function checkOnSave(
+  tx: Tx,
+  input: ProcessDefInput,
+  tenantId: string | null,
+  cur: repo.DefRow | null,
+  flowRules: boolean,
+): Promise<void> {
+  if (flowRules) await flowCheck(tx, input, tenantId, cur);
+  else await receiveOwnerCheck(tx, tenantId, input);
+}

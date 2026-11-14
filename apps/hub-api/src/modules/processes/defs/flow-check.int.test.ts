@@ -7,7 +7,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
-import { RECEIVE_OWNER_PATH, receiveOwnerCheck } from "./flow-check";
+import { checkOnSave, RECEIVE_OWNER_PATH, receiveOwnerCheck } from "./flow-check";
 
 let o: Sql;
 let db: Db;
@@ -75,5 +75,19 @@ describe("fix-review-r2 · người phụ trách của quy trình Nhận HĐ khi
     expect(await code(check(X, input(undefined)))).toBe("ok");
     expect(await code(check(X, input(other, "contract.submitted")))).toBe("ok");
     expect(await code(check(null, input(other)))).toBe("ok");
+  });
+});
+
+describe("fix-review-r3 · người phụ trách kiểm ở MỌI đường lưu có trigger (kể cả theo khe / bản sao thư viện)", () => {
+  const save = (via: boolean, i: ProcessDefInput) =>
+    withHubScope(db, { kind: "user", tenantId: X, userId: ok }, (tx) =>
+      checkOnSave(tx, i, X, null, via),
+    );
+  it("đường bản sao / khe (không áp luật FlowDef) vẫn 422 với người phụ trách sai", async () => {
+    expect(await code(save(false, input(other)))).toBe(`PROCESS_DEF_INVALID:${RECEIVE_OWNER_PATH}`);
+    expect(await code(save(false, input(ok)))).toBe("ok");
+  });
+  it("đường FlowDef thường: vẫn chặn (luật FlowDef + người phụ trách)", async () => {
+    expect(await code(save(true, input(other)))).toStartWith("PROCESS_DEF_INVALID");
   });
 });

@@ -90,7 +90,7 @@ export function headRule(i: HeadRuleIn): HeadRule {
     sticky: first,
     rename: canSave,
     draftSave: first && !i.approvalConfirm,
-    confirmSave: first && off && !i.approvalConfirm && !blocked,
+    confirmSave: first && off && !i.approvalConfirm && !blocked && i.can.submit,
     resubmit: canSave && i.round > 0 && (i.can.submit || blocked),
     withdraw: i.can.withdraw,
     recreate: i.can.recreate,

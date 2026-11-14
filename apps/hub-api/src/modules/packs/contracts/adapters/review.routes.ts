@@ -71,6 +71,7 @@ function replyOf(res: ReviewResult) {
   // CR-127 K3 · "Xác nhận & lưu" = Gửi: lỗi của Gửi (EXTRACT_NOT_READY, FILE_REQUIRED, …) theo bảng mã §9.
   if (res.kind === "submit") {
     if (res.code === "not_found") throw appError("NOT_FOUND");
+    if (res.code === "forbidden") throw appError("FORBIDDEN");
     const http = ((SUBMIT_ERRORS as Record<string, number>)[res.code] ?? 409) as 409 | 422;
     throw new AppError(res.code, http, res.code);
   }

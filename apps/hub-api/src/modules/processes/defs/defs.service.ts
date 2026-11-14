@@ -57,7 +57,7 @@ import {
 } from "./defs.map";
 import * as repo from "./defs.repo";
 import { edgeCheck, subprocessCheck, withWarnings } from "./edge-check";
-import { flowCheck } from "./flow-check";
+import { checkOnSave, flowCheck } from "./flow-check";
 import { nodeFeatureError, nodeFeatureMiss } from "./node-features";
 import { assertStagesWithinLimit } from "./platform-limits";
 import { listTeams, loadDefRefs } from "./teams.repo";
@@ -321,7 +321,7 @@ export class DefsService {
       const input = await bindIfCompany(tx, cur.tenant_id, slot !== null || copy !== null, i0);
       await guardInUse(tx, cur, { key: input.key, slot, enabled: input.enabled });
       // def khe / bản riêng lưu theo khe (kể cả đã backfill trigger) theo đường khe, không áp luật FlowDef.
-      if (slot === null && copy === null) await flowCheck(tx, input, cur.tenant_id, cur);
+      await checkOnSave(tx, input, cur.tenant_id, cur, slot === null && copy === null);
       await nodeCheck(this.d, cur.tenant_id, input);
       warnings = await edgeCheck(this.d, cur.tenant_id, input);
       // bản riêng sao từ thư viện: stage dùng khoá nhóm/tool của khe (không phải id nhóm) ⇒ kiểm tham chiếu như def thư viện

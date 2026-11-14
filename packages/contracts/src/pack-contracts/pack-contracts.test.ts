@@ -10,6 +10,7 @@ import {
   CooperationTermsSchema,
   FranchiseTermsSchema,
   fieldValueSchema,
+  ManualContractRequestSchema,
   PatchFieldsRequestSchema,
   PeriodKeySchema,
   UploadContractFormSchema,
@@ -117,5 +118,29 @@ describe("CR-152 · loại HĐ Nhượng quyền / Hợp tác", () => {
     expect(FranchiseTermsSchema.safeParse({ brand: "A", fee_pct: 5 }).success).toBe(true);
     expect(FranchiseTermsSchema.safeParse({ lạ: 1 }).success).toBe(false);
     expect(CooperationTermsSchema.safeParse({ our_share_pct: 101 }).success).toBe(false);
+  });
+});
+
+describe("CR-152d · nhập tay: direction của HĐ Nhượng quyền / Hợp tác bị bỏ qua", () => {
+  const base = { title: "HĐ", partner_name: "Đối tác" };
+  test("franchise/cooperation + direction bất kỳ ⇒ hợp lệ (direction lấy theo vai trong kind_terms)", () => {
+    for (const deal of ["franchise", "cooperation"] as const)
+      for (const direction of ["purchase", "sale"] as const)
+        expect(ManualContractRequestSchema.safeParse({ ...base, deal, direction }).success).toBe(
+          true,
+        );
+  });
+  test("buy/sell vẫn phải khớp direction", () => {
+    expect(
+      ManualContractRequestSchema.safeParse({ ...base, deal: "buy", direction: "sale" }).success,
+    ).toBe(false);
+    expect(
+      ManualContractRequestSchema.safeParse({ ...base, deal: "sell", direction: "purchase" })
+        .success,
+    ).toBe(false);
+    expect(
+      ManualContractRequestSchema.safeParse({ ...base, deal: "buy", direction: "purchase" })
+        .success,
+    ).toBe(true);
   });
 });

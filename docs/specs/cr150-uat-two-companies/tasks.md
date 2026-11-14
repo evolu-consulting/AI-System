@@ -29,6 +29,8 @@ Deploy, chạy seed trên staging, sửa code tính năng.
 - Mật khẩu người UAT evolu chỉ đặt cho người MỚI tạo; người có sẵn không đụng. Chỉ BẬT `flow_triggers` (không tắt).
 - Chọn đối tác: nhóm Pháp chế (`pb-phap-che`, huy.dang) làm; người thêm đối tác vào sổ = `ha.ly` (G3). Ký: «Ký qua» = `upload`, người ký = nhóm `nguoi-ky-hd` (demo) / `uat-nhan-ky` (evolu).
 
+- (fix-review-r3) Seed bật «cho phép tìm thấy» (`directory_listed`) bằng SQL trực tiếp nên KHÔNG ghi audit; rào an toàn chỉ ở stg-test (`partnerGuard` của seed). Không chạy được trên prod/môi trường khác.
+
 ## Việc còn lại
 1. HĐ mẫu + ca cho 2 loại CR-152 (`franchise`/`cooperation`): enum chưa có trên nhánh này (grep rỗng) — thêm khi CR-152 vào.
 2. e2e: spec ở `e2e/journey-approval/` nhưng cần stack cặp d5a→d5b của `e2e/cr127/_cr127-stack.ts` — phải thêm vào `testMatch` của `playwright.cr127.config.ts` (testDir `.` không với tới thư mục khác); selector `partner-status`, `[data-approval=return|reject]`, ô lý do chưa đối chiếu với UI thật. `_cr127-stack.ts` flow Nhận HĐ vẫn thiếu bước Ký (nợ cr146b).
