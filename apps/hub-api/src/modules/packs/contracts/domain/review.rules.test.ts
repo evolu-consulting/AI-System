@@ -239,3 +239,20 @@ describe("V2-G · aiReadOf (verify + merge)", () => {
     expect(m.fields.penalty.value).toBe("1%");
   });
 });
+
+describe("CR-152 · Lưu HĐ Nhượng quyền / Hợp tác", () => {
+  it("thiếu trường riêng bắt buộc thì chặn khi không phải nháp, nháp thì cho qua", () => {
+    const c = cur({ deal: "franchise", kindTerms: { role: "franchisor" } });
+    expect(planReview(c, {}, "2026-11-10")).toBe("kind_terms_incomplete");
+    expect(planReview(c, { draft: true }, "2026-11-10")).toMatchObject({ deal: "franchise" });
+  });
+  it("đủ trường: hướng theo vai và không sinh mốc mặc định (hook DONE sinh)", () => {
+    const t = { role: "franchisee", brand: "X", fee_basis: "fixed", fee_fixed: 1, period: "month" };
+    const p = planReview(
+      cur({ deal: "franchise", kindTerms: t, approvalOn: false }),
+      {},
+      "2026-11-10",
+    );
+    expect(p).toMatchObject({ direction: "purchase", milestones: [] });
+  });
+});

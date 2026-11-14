@@ -11,7 +11,7 @@ import {
   type FlowWhen,
 } from "@ai/contracts/pack-contracts";
 
-export type DealKind = "buy" | "sell" | "referral";
+export type DealKind = "buy" | "sell" | "referral" | "franchise" | "cooperation";
 export type CurrentStep = {
   key: string;
   name: string;

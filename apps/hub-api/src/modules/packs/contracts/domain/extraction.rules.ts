@@ -89,6 +89,13 @@ export type VerifiedExtraction = {
 
 /** V2-G: "chưa chắc" = AI tự báo ∪ có giá trị mà trích dẫn không có trong văn bản (chưa kiểm chứng). Loại Mua/Bán luôn chưa chắc
  *  (AI không biết bên nào là của mình); Giới thiệu thì tin AI. Giữ thứ tự khoá của `fields`. */
+/** Loại HĐ luôn chưa chắc, trừ Giới thiệu và hai loại mới (AI chắc thì tin). */
+const dealUnsure = (deal: string | null, said: ReadonlySet<AiUnsureKey>): boolean =>
+  deal !== null && (isKindDeal(deal) || deal === "referral" ? said.has("deal") : true);
+/** CR-152: ô riêng chưa chắc = AI tự báo (`terms.<khoá>`), chỉ khoá còn giá trị hợp lệ sau `sanitizeKindTerms`. */
+const kindTermsUnsure = (said: ReadonlySet<AiUnsureKey>, t: Record<string, unknown> | null) =>
+  [...said].filter((k) => k.startsWith("terms.") && t?.[k.slice(6)] !== undefined);
+
 export function aiReadOf(
   raw: RawExtraction,
   fields: Record<ContractFieldKey, VerifiedField>,
@@ -111,10 +118,8 @@ export function aiReadOf(
   );
   const deal = raw.deal ?? null;
   const kindTerms = sanitizeKindTerms(deal, raw.kind_terms);
-  if (deal !== null && (isKindDeal(deal) ? said.has("deal") : deal !== "referral" || said.has("deal")))
-    unsure.push("deal");
-  // CR-152: ô riêng chưa chắc = AI tự báo (`terms.<khoá>`), chỉ khoá còn giá trị hợp lệ sau `sanitizeKindTerms`.
-  for (const k of said) if (k.startsWith("terms.") && kindTerms?.[k.slice(6)] !== undefined) unsure.push(k);
+  if (dealUnsure(deal, said)) unsure.push("deal");
+  unsure.push(...kindTermsUnsure(said, kindTerms));
   return {
     deal,
     unsure,

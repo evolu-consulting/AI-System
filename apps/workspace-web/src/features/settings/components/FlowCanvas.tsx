@@ -47,7 +47,10 @@ export default function FlowCanvas({ steps, run }: FlowCanvasProps) {
       value: t("contracts.flow.valueCond"),
       deal: t("contracts.flow.dealKind"),
       dealNames: Object.fromEntries(
-        (["buy", "sell", "referral"] as const).map((d) => [d, t(`contracts.flow.deal.${d}`)]),
+        (["buy", "sell", "referral", "franchise", "cooperation"] as const).map((d) => [
+          d,
+          t(`contracts.flow.deal.${d}`),
+        ]),
       ) as Record<DealKind, string>,
       and: t("contracts.flow.opAnd").toLowerCase(),
       or: t("contracts.flow.opOr").toLowerCase(),

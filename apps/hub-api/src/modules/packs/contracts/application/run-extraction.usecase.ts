@@ -12,9 +12,9 @@ import {
   type VerifiedExtraction,
 } from "../domain/extraction.rules";
 import { fillFields } from "../domain/fields.rules";
+import { isKindDeal } from "../domain/kind-terms.rules";
 import { NO_OWN, type OwnParties, ownDeal } from "../domain/own-side.rules";
 import { prefillVersionNumber } from "../domain/version-number.rules";
-import { isKindDeal } from "../domain/kind-terms.rules";
 import { ruleWarnings } from "../domain/warnings.rules";
 import type {
   ExtractionAgent,

@@ -210,7 +210,11 @@
           "newPartner": "Đối tác mới",
           "oldPartner": "Đối tác đã có hợp đồng",
           "other": "{{fact}} {{op}} {{v}}",
-          "deals": { "buy": "Mua", "sell": "Bán", "referral": "Giới thiệu" },
+          "deals": {
+            "buy": "Mua",
+            "sell": "Bán",
+            "referral": "Giới thiệu"
+          },
           "levels": {
             "normal": "Bình thường",
             "important": "Quan trọng",
@@ -325,7 +329,9 @@
       "deal": {
         "buy": "Mua",
         "sell": "Bán",
-        "referral": "Giới thiệu"
+        "referral": "Giới thiệu",
+        "franchise": "Nhượng quyền",
+        "cooperation": "Thỏa thuận hợp tác"
       },
       "op": "Cách kết hợp",
       "opAnd": "VÀ",

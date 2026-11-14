@@ -47,6 +47,8 @@ const DEAL_TONE: Record<NonNullable<PartnerContractRow["deal"]>, TagTone> = {
   buy: "act",
   sell: "ok",
   referral: "grey",
+  franchise: "grey",
+  cooperation: "grey",
 };
 const STAGE_TONE: Record<PartnerContractRow["stage"], TagTone> = {
   not_started: "grey",

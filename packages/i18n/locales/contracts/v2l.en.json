@@ -210,8 +210,16 @@
           "newPartner": "New partner",
           "oldPartner": "Partner with existing contracts",
           "other": "{{fact}} {{op}} {{v}}",
-          "deals": { "buy": "Purchase", "sell": "Sales", "referral": "Referral" },
-          "levels": { "normal": "Normal", "important": "Important", "critical": "Very important" }
+          "deals": {
+            "buy": "Purchase",
+            "sell": "Sales",
+            "referral": "Referral"
+          },
+          "levels": {
+            "normal": "Normal",
+            "important": "Important",
+            "critical": "Very important"
+          }
         },
         "signBlock": {
           "title": "Signing and partners in this process",
@@ -321,7 +329,9 @@
       "deal": {
         "buy": "Purchase",
         "sell": "Sale",
-        "referral": "Referral"
+        "referral": "Referral",
+        "franchise": "Franchise",
+        "cooperation": "Cooperation agreement"
       },
       "op": "Combine with",
       "opAnd": "AND",

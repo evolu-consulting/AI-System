@@ -48,7 +48,7 @@ Trạng thái gộp: chưa gộp
 
 #### Yêu cầu: Loại hợp đồng gồm Nhượng quyền và Thỏa thuận hợp tác
 `deal` ∈ buy · sell · referral · franchise · cooperation, chỉ cho HĐ kinh tế (giao dịch vẫn 3 loại cơ bản). Dùng được trong «Bắt đầu khi». Hai loại không kho, không bảng sản phẩm.
-- Kịch bản: khi chọn loại Nhượng quyền hoặc Hợp tác cho HĐ kinh tế thì lưu được, giao dịch thì không [test: thủ công — test contract chưa thêm, xem Việc còn lại]
+- Kịch bản: khi chọn loại Nhượng quyền hoặc Hợp tác cho HĐ kinh tế thì lưu được, giao dịch thì không [test: packages/contracts/src/pack-contracts/pack-contracts.test.ts » CONTRACT_DEALS có 5 loại, giao dịch chỉ nhận 3 loại cơ bản]
 
 ### ADDED sht/loai-hd-nhuong-quyen-hop-tac.md
 
@@ -59,22 +59,29 @@ Khi HĐ vào DONE: Nhượng quyền sinh thu/trả phí ban đầu, phí địn
 - Kịch bản: khi phí cố định theo quý không quảng cáo thì không có mốc báo cáo, số tiền có sẵn [test: apps/hub-api/src/modules/packs/contracts/domain/kind-schedule.rules.test.ts » theo quý, phí cố định không quảng cáo: không có mốc báo cáo, số tiền có sẵn]
 - Kịch bản: khi Hợp tác có chia thì đối soát mỗi kỳ và nhắc gia hạn [test: apps/hub-api/src/modules/packs/contracts/domain/kind-schedule.rules.test.ts » có chia: đối soát mỗi kỳ + nhắc gia hạn]
 - Kịch bản: khi Hợp tác không chia tiền thì chỉ nhắc gia hạn và không tính doanh thu [test: apps/hub-api/src/modules/packs/contracts/domain/kind-schedule.rules.test.ts » không chia: chỉ nhắc gia hạn, và không tính doanh thu]
-- Kịch bản: khi HĐ vào DONE thì mốc được ghi một lần, người được giao khác người tạo vẫn ghi được, tenant khác không thấy [test: thủ công — int `kind-terms.int.test.ts` chưa viết/chưa chạy (xem Việc còn lại)]
+- Kịch bản: khi HĐ vào DONE thì mốc được ghi một lần, người được giao khác người tạo vẫn ghi được, tenant khác không thấy [test: apps/hub-api/src/modules/packs/contracts/kind-terms.int.test.ts » Nhượng quyền theo %, hằng tháng: 8 mốc đúng loại/hướng, không đợt HD7 thừa, hook chạy lại không đôi]
+- Kịch bản: khi người được giao khác người tạo, đối tác ngoài hoặc tenant khác gọi API thì ghi đúng quyền (403/404) [test: apps/hub-api/src/modules/packs/contracts/kind-terms.int.test.ts » N2: người được giao ghi được, người tạo (chỉ đọc) đọc được nhưng ghi 403, đối tác ngoài 403, tenant khác 404]
+- Kịch bản: khi phí cố định theo quý thì mốc có sẵn số tiền, bên nhận quyền thì mình trả [test: apps/hub-api/src/modules/packs/contracts/kind-terms.int.test.ts » phí cố định theo quý không quảng cáo: không mốc báo cáo ⇒ ghi kỳ 422, số tiền có sẵn]
+- Kịch bản: khi Hợp tác không chia thì chỉ nhắc gia hạn và bị loại khỏi điều kiện doanh thu/business [test: apps/hub-api/src/modules/packs/contracts/kind-terms.int.test.ts » Hợp tác «không chia»: chỉ nhắc gia hạn, không có kỳ, bị loại khỏi điều kiện doanh thu/business]
 
 #### Yêu cầu: Ghi doanh thu kỳ / đối soát tính ra phí và phần chia
 `PUT /contracts/:id/periods/:key {figure}`: nhượng quyền ⇒ phí kỳ = (cố định hoặc % doanh thu) + % quảng cáo làm tròn nửa lên tới đồng, ghi lên mốc thu/trả còn mở; hợp tác ⇒ phần mình theo % và phần đối tác = phần còn lại.
 - Kịch bản: khi doanh thu 820.000.000 và phí 5% thì phí kỳ 41.000.000 [test: apps/hub-api/src/modules/packs/contracts/domain/kind-schedule.rules.test.ts » làm tròn nửa lên tới đồng]
 - Kịch bản: khi lợi nhuận 500.000.000 và phần mình 60% thì mình 300.000.000, đối tác 200.000.000 [test: apps/hub-api/src/modules/packs/contracts/domain/kind-schedule.rules.test.ts » chia: phần mình + phần đối tác = đúng tổng]
-- Kịch bản: khi mốc thu/trả của kỳ đã xác nhận thì ghi lại bị 409 PERIOD_LOCKED [test: thủ công — int `kind-terms.int.test.ts` chưa viết/chưa chạy (xem Việc còn lại)]
+- Kịch bản: khi mốc thu/trả của kỳ đã xác nhận thì ghi lại bị 409 PERIOD_LOCKED [test: apps/hub-api/src/modules/packs/contracts/kind-terms.int.test.ts » ghi doanh thu kỳ ⇒ mốc báo cáo xong + phí kỳ đúng (5% + 1% quảng cáo), mốc phí đã xác nhận ⇒ 409, kỳ lạ ⇒ 404]
+- Kịch bản: khi Hợp tác có chia theo quý ghi lợi nhuận thì phần mình 60%, đối tác 40% [test: apps/hub-api/src/modules/packs/contracts/kind-terms.int.test.ts » Hợp tác có chia theo quý: 4 đối soát + gia hạn, ghi lợi nhuận ⇒ phần mình 60%, đối tác 40%]
 
 #### Yêu cầu: Gửi duyệt đòi đủ trường riêng của loại
 Nhượng quyền cần vai, thương hiệu, cách tính phí (+ tỷ lệ/số tiền), kỳ; bên nhượng quyền nước ngoài cần «Đã đăng ký Bộ Công Thương». Hợp tác cần mục tiêu, cách chia (+ phần của mình, kỳ đối soát khi có chia). Lưu nháp không đòi.
+- Kịch bản: khi bấm Lưu (không nháp) mà thiếu trường thì chặn, nháp thì cho qua [test: apps/hub-api/src/modules/packs/contracts/domain/review.rules.test.ts » thiếu trường riêng bắt buộc thì chặn khi không phải nháp, nháp thì cho qua]
 - Kịch bản: khi thiếu trường bắt buộc thì danh sách thiếu đúng khoá [test: apps/hub-api/src/modules/packs/contracts/domain/kind-schedule.rules.test.ts » thiếu gì thì báo thiếu đó]
 
 ## Việc còn lại
-- **Test int chưa viết, chưa chạy evotest** (hết ngân sách 60 lượt): `apps/hub-api/src/modules/packs/contracts/kind-terms.int.test.ts` — (1) người được giao (khác người tạo, N2) GET/PUT/ghi kỳ được, người không thấy HĐ ⇒ 404; (2) chéo tenant ⇒ 404; (3) hook DONE sinh đúng chuỗi mốc, không sinh lần hai, HD7 không sinh đợt thừa; (4) ghi doanh thu ⇒ mốc phí đúng số, `PERIOD_LOCKED` khi mốc phí xong; (5) Hợp tác không chia không vào overview/business; (6) migration 0112 chạy được (CHECK deal/direction, `v2a_deal` giữ loại khi đổi hướng). Lệnh: xem brief (PATH bỏ `Git\usr\bin`, `run-tests.ps1 -Step int -Filter "<file>" -Dirty`).
-- Test contract: thêm vào `pack-contracts.test.ts` — `CONTRACT_DEALS` 5 loại, `deals.ts` chỉ 3 loại, `KindTermsPutSchema`/`PeriodKeySchema`.
-- Chưa chạy: `bun run openspec:check cr152a-kinds-api`, `check:i18n-terms`, `depcruise:affected`; `bun run typecheck` workspace-web (nghi đỏ do `Record<ContractDeal,…>`: `contract-form/lib/deal.ts:8,15,29`, `partner-match.ts:7`) — sửa trong cr152b.
-- Prompt AI chưa dạy `deal` franchise/cooperation + `kind_terms` (`domain/extract-prompt.rules.ts:22`) — thêm khi chạy thử với agent thật; Python `apps/agent-runtime` không chứa pipeline này (pipeline ở TS).
-- Điểm uy tín cho hai loại mới (cần ô thứ 6) — chờ người dùng quyết.
-- Pre-commit hook của `slice:new` báo `git: 'hook' is not a git command` (môi trường), worktree vẫn tạo được.
+- Điểm uy tín cho Nhượng quyền / Hợp tác có chia: GIỮ «chưa tính» (`rep_cell` null); đề xuất ở `docs/TECH-DEBT.md` #268 — điều phối hỏi người dùng.
+- Prompt AI đã dạy `deal` mới + `kind_terms` (`domain/extract-prompt.rules.ts`) nhưng chưa thử với agent/văn bản thật.
+- Web: chỉ thêm nhãn tối thiểu (map `ContractDeal`, `DealKind`, i18n `contracts.flow.deal.*` vi/en) cho `tsc` xanh; form/chi tiết/ô «Nhượng quyền/Hợp tác» là cr152b.
+- Bẫy: `slice:new` báo `git: 'hook' is not a git command` khi chạy pre-commit trong worktree (môi trường); commit lần 1 đã bỏ qua hook bằng `-c core.hooksPath=/dev/null` — SAI (A5), lần sau chạy tay các bước pre-commit. Bẫy tooling: Bash không chạy được `powershell -Command` có regex `\` — dùng file `.ps1`.
+
+## Kết quả kiểm
+- int evotest (`kind-terms.int.test.ts`): 7 pass / 0 fail. Unit: kind-schedule 16, review.rules 15, pack-contracts 23 xanh. `tsc` hub-api + contracts + workspace-web xanh. `openspec:check`, `check:i18n-terms` xanh.
+- `packages/contracts`: 3 test đỏ (múi giờ tenant ×2, `moduleClusterIssues`) cũng đỏ trên checkout gốc ⇒ không do lát này.

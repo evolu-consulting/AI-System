@@ -15,7 +15,6 @@ import { aiMilestonesDoneHook } from "./adapters/ai-milestones.repo";
 import { aiTransport, EXTRACT_MODEL } from "./adapters/ai-transport";
 import { approvalRoutes } from "./adapters/approval.routes";
 import { registerContractDoneHook } from "./adapters/contract-state.repo";
-import { kindScheduleDoneHook } from "./adapters/kind-schedule.hook";
 import { createExtractStream } from "./adapters/extract-stream.redis";
 import { extractionRoutes } from "./adapters/extraction.routes";
 import { createExtractionAgent } from "./adapters/extraction-agent";
@@ -26,6 +25,7 @@ import {
   INPROC_DEFAULT_CONCURRENCY,
   type InprocLimiter,
 } from "./adapters/inproc-limit";
+import { kindScheduleDoneHook } from "./adapters/kind-schedule.hook";
 import { packAssignees } from "./adapters/manage.members";
 import { reviewRoutes } from "./adapters/review.routes";
 import { submitRoutes } from "./adapters/submit.routes";

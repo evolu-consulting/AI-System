@@ -11,8 +11,8 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { OverviewRaw, OverviewWindow } from "../application/overview.ports";
-import { CONFIRMED_STATUSES, one } from "./ledger-sql";
 import { countsMoneySql } from "./kind-filter.sql";
+import { CONFIRMED_STATUSES, one } from "./ledger-sql";
 
 const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
 

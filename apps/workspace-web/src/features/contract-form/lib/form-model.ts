@@ -165,7 +165,7 @@ export function toRequest(
   const referral = f.deal === "referral";
   const total = referral ? null : (n.total_value ?? autoTotal(f.items));
   return {
-    deal: f.deal,
+    deal: f.deal as ManualContractRequest["deal"], // cr152b: nhập tay chỉ 3 loại cơ bản
     number: orNull(f.number),
     title: f.title.trim(),
     partner_name: f.partner_name.trim(),

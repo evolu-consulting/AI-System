@@ -18,9 +18,9 @@ import { aggKey, type PartyEv } from "../domain/partners.rules";
 import { type Agg, addGroup, emptyAgg } from "../domain/scoring-agg.rules";
 import type { Role } from "../domain/scoring-config.rules";
 import { contractNameSql } from "./contract-name.sql";
+import { countsMoneySql } from "./kind-filter.sql";
 import { one } from "./ledger-sql";
 import { groupsJson, pendJson, ratedJson, winCtes } from "./partners-ledger.sql";
-import { countsMoneySql } from "./kind-filter.sql";
 
 export type { Market, PartnerData, StoredConfig, WindowOverride };
 

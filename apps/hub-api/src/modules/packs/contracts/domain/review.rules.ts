@@ -123,6 +123,26 @@ function plannedMilestones(
   }));
 }
 
+/** Hoa hồng không gửi lên ⇒ giữ giá trị đã lưu (nếu vẫn là HĐ Giới thiệu); gửi tay thì thắng (kể cả null); chỉ một trong hai (CHECK DB). */
+function commissionOf(
+  referral: boolean,
+  cur: ReviewCur,
+  input: ReviewIn,
+): { pct: number | null; fixed: number | null } | "commission_kind" {
+  let pct = input.commission_pct !== undefined ? input.commission_pct : cur.commissionPct;
+  let fixed = input.commission_fixed !== undefined ? input.commission_fixed : cur.commissionFixed;
+  if (input.commission_fixed != null) pct = null;
+  else if (input.commission_pct != null) fixed = null;
+  if (!referral && (input.commission_pct != null || input.commission_fixed != null))
+    return "commission_kind";
+  return referral ? { pct, fixed } : { pct: null, fixed: null };
+}
+
+const kindIncomplete = (deal: Deal, t: Terms): boolean =>
+  isKindDeal(deal) && kindTermsMissing(deal, t).length > 0;
+const directionOf = (deal: Deal, t: Terms): "purchase" | "sale" =>
+  isKindDeal(deal) ? directionOfKind(deal, t) : directionOfDeal(deal);
+
 export function planReview(
   cur: ReviewCur,
   input: ReviewIn,
@@ -132,19 +152,12 @@ export function planReview(
   if (cur.status !== "draft") return "not_reviewable";
   const deal = input.deal ?? cur.deal ?? DEFAULT_DEAL;
   const referral = deal === "referral";
-  // Hoa hồng không gửi lên ⇒ giữ giá trị đã lưu (nếu vẫn là HĐ Giới thiệu); gửi tay thì thắng (kể cả null).
-  let pct = input.commission_pct !== undefined ? input.commission_pct : cur.commissionPct;
-  let fixed = input.commission_fixed !== undefined ? input.commission_fixed : cur.commissionFixed;
-  // Chỉ một trong hai (CHECK DB): gửi mới một bên thì bên kia bỏ.
-  if (input.commission_fixed != null) pct = null;
-  else if (input.commission_pct != null) fixed = null;
-  if (!referral && (input.commission_pct != null || input.commission_fixed != null))
-    return "commission_kind";
+  const comm = commissionOf(referral, cur, input);
+  if (comm === "commission_kind") return comm;
   const { fields, changes } = applyEdits(cur.fields, input.fields ?? {});
   const kindTerms = cur.kindTerms ?? {};
   // CR-152: gửi/xác nhận (không nháp) mà thiếu trường bắt buộc của loại ⇒ chặn; bộ mốc do hook DONE sinh (không sinh ở đây).
-  if (isKindDeal(deal) && input.draft !== true && kindTermsMissing(deal, kindTerms).length > 0)
-    return "kind_terms_incomplete";
+  if (input.draft !== true && kindIncomplete(deal, kindTerms)) return "kind_terms_incomplete";
   const holdOn = cur.approvalOn || input.draft === true; // nháp ⇒ chưa sinh mốc mặc định (chưa xác nhận)
   const milestones = plannedMilestones({ deal, fields, approvalOn: holdOn, today }, input);
   if (milestones === "invalid") return "milestone_invalid";
@@ -152,9 +165,9 @@ export function planReview(
     fields,
     changes,
     deal,
-    direction: isKindDeal(deal) ? directionOfKind(deal, kindTerms) : directionOfDeal(deal),
-    commissionPct: referral ? pct : null,
-    commissionFixed: referral ? fixed : null,
+    direction: directionOf(deal, kindTerms),
+    commissionPct: comm.pct,
+    commissionFixed: comm.fixed,
     milestones,
     activate: !cur.approvalOn && input.draft !== true,
   };
