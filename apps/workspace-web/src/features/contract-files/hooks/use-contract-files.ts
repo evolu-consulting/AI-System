@@ -1,9 +1,15 @@
 // Cổng hook cho component (component-no-fetch): danh sách + thêm + gỡ + mở «Tài liệu kèm» của một HĐ.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { addFile, fetchFiles, filesKey, openOwnFile, openStepFile, removeFile } from "../api";
+import {
+  addFile,
+  fetchFiles,
+  fetchOwnFileBlob,
+  fetchStepFileBlob,
+  filesKey,
+  removeFile,
+} from "../api";
 
-export { isPreviewable } from "../api";
-export { openOwnFile, openStepFile };
+export { fetchOwnFileBlob, fetchStepFileBlob };
 
 export function useContractFiles(id: string) {
   const qc = useQueryClient();

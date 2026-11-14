@@ -35,7 +35,12 @@ describe("EvidenceView", () => {
       <EvidenceView
         line={line}
         u={{
-          urls: { [SIG]: "blob:s", [IMG]: "blob:i", [PDF]: "blob:p", [ZIP]: "blob:z" },
+          blobs: {
+            [SIG]: new Blob(["s"], { type: "image/png" }),
+            [IMG]: new Blob(["i"], { type: "image/jpeg" }),
+            [PDF]: new Blob(["p"], { type: "application/pdf" }),
+            [ZIP]: new Blob(["z"], { type: "application/zip" }),
+          },
           failed: new Set(),
         }}
       />,
@@ -43,17 +48,17 @@ describe("EvidenceView", () => {
     expect(out).toContain("Hoa");
     expect(out).toContain("Kế toán");
     expect(out).toContain("Đã đối chiếu");
-    expect(out).toMatch(/<img[^>]*src="blob:s"/);
-    expect(out).toMatch(/<img[^>]*src="blob:i"/);
-    expect(out).toMatch(/<iframe[^>]*src="blob:p"/);
+    expect(out.match(/data-testid="fview-image"/g)?.length).toBe(2); // chữ ký + ảnh
+    expect(out).not.toContain("<iframe"); // PDF dựng bằng pdf.js (nạp lười), không còn khung
+    expect(out.match(/data-testid="evidence-file"/g)?.length).toBe(3); // chữ ký, ảnh, PDF
     expect(out).toContain("c.zip");
-    expect(out.match(/data-testid="evidence-download"/g)?.length).toBe(1); // chỉ tệp lạ có «Tải về»
-    expect(out).toMatch(/<a[^>]*href="blob:z"/);
+    expect(out.match(/data-testid="fview-download"/g)?.length).toBe(1); // chỉ tệp lạ có «Tải về»
+    expect(out).toMatch(/<a[^>]*href="blob:[^"]*"[^>]*download="c.zip"|<a[^>]*download="c.zip"/);
   });
 
   test("chưa tải xong ⇒ chưa có <img>; tải lỗi ⇒ báo lỗi", () => {
     const out = renderToStaticMarkup(
-      <EvidenceView line={line} u={{ urls: {}, failed: new Set([SIG]) }} />,
+      <EvidenceView line={line} u={{ blobs: {}, failed: new Set([SIG]) }} />,
     );
     expect(out).not.toContain("<img");
     expect(out).toContain('role="alert"');

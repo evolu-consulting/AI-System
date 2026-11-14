@@ -77,6 +77,19 @@ export default defineConfig({
               chunks: "async",
               enforce: true,
             },
+            // CR-149: pdf.js / docx-preview chỉ nằm ở chunk lười của hộp «Xem» (nạp khi mở PDF/Word) ⇒ bundle chính không tăng.
+            viewerPdf: {
+              test: /[\\/]node_modules[\\/]pdfjs-dist[\\/]/,
+              name: "viewer-pdf",
+              chunks: "async",
+              enforce: true,
+            },
+            viewerDocx: {
+              test: /[\\/]node_modules[\\/](docx-preview|jszip)[\\/]/,
+              name: "viewer-docx",
+              chunks: "async",
+              enforce: true,
+            },
             // CR-118 bundle: React Compiler làm chunk route chi tiết HĐ > 50 KB gz ⇒ tách phần duyệt/mốc/ký số/phiên bản ra chunk song song (tải cùng lúc, không đổi thời điểm render).
             contractDetailParts: {
               test: /[\\/]src[\\/]features[\\/](contract-approval|contract-milestones|contract-esign|contract-versions)[\\/]/,

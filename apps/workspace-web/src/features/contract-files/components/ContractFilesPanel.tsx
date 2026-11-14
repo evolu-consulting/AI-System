@@ -1,35 +1,70 @@
 // CR-133 · khối «Tài liệu kèm» trên trang chi tiết HĐ — MỘT chỗ cho mọi tệp của HĐ ngoài file chính:
 // (1) tệp gắn vào HĐ (thêm / gỡ / mở-tải), (2) tệp kèm các bước duyệt (chỉ đọc). Không đem đi ký (file chính vẫn theo luật PDF khi bật ký số).
 import type { ContractOwnFile, ContractStepFile } from "@ai/contracts/pack-contracts";
-import { useRef, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { Skeleton } from "~/components/ui/skeleton";
 import { FileRecordButton } from "~/features/contract-file-record/components/FileRecordButton";
 import { ApiError } from "~/lib/api-error";
-import {
-  isPreviewable,
-  openOwnFile,
-  openStepFile,
-  useContractFiles,
-} from "../hooks/use-contract-files";
+import { fetchOwnFileBlob, fetchStepFileBlob, useContractFiles } from "../hooks/use-contract-files";
 import { errorKey, sizeLabel, sourceKey } from "../lib/files-view";
 
-const OpenLabel = ({ mime }: { mime: string }) => {
+// Hộp xem nạp lười: chỉ tải khi bấm «Xem» lần đầu (giữ chunk chi tiết HĐ trong ngân sách).
+const FileViewerDialog = lazy(() =>
+  import("~/components/shared/file-viewer/FileViewerDialog").then((m) => ({
+    default: m.FileViewerDialog,
+  })),
+);
+
+/** CR-149 · nút «Xem» + hộp xem chung (ảnh / PDF / Word; loại khác ⇒ tên + «Tải về» trong hộp). */
+function ViewButton({
+  f,
+  cacheKey,
+  load,
+}: {
+  f: { name: string; mime: string; size: number; added_at: string };
+  cacheKey: readonly unknown[];
+  load: (signal: AbortSignal) => Promise<Blob>;
+}) {
   const { t } = useTranslation();
-  return <>{t(isPreviewable(mime) ? "contracts.cfiles.view" : "contracts.cfiles.download")}</>;
-};
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        className="btn btn-outline btn-sm"
+        data-testid="cfile-view"
+        onClick={() => setOpen(true)}
+      >
+        {t("contracts.cfiles.view")}
+      </button>
+      {open && (
+        <Suspense fallback={null}>
+          <FileViewerDialog
+            open={open}
+            onClose={() => setOpen(false)}
+            name={f.name}
+            mime={f.mime}
+            size={sizeLabel(f.size)}
+            uploadedAt={f.added_at}
+            cacheKey={cacheKey}
+            load={load}
+          />
+        </Suspense>
+      )}
+    </>
+  );
+}
 
 function OwnRow({
   id,
   f,
-  onOpen,
   onRemove,
   busy,
 }: {
   id: string;
   f: ContractOwnFile;
-  onOpen: () => void;
   onRemove: () => void;
   busy: boolean;
 }) {
@@ -43,9 +78,11 @@ function OwnRow({
         {f.name}
       </span>
       <span className="text-dim tabular-nums">{sizeLabel(f.size)}</span>
-      <button type="button" className="btn btn-outline btn-sm" onClick={onOpen}>
-        <OpenLabel mime={f.mime} />
-      </button>
+      <ViewButton
+        f={f}
+        cacheKey={["own-file", id, f.id]}
+        load={(signal) => fetchOwnFileBlob(id, f.id, f.mime, signal)}
+      />
       <FileRecordButton target={{ kind: "attachment", contractId: id, file: f }} />
       {f.can_remove && (
         <button type="button" className="btn btn-quiet btn-sm" disabled={busy} onClick={onRemove}>
@@ -56,7 +93,7 @@ function OwnRow({
   );
 }
 
-function StepRow({ id, f, onOpen }: { id: string; f: ContractStepFile; onOpen: () => void }) {
+function StepRow({ id, f }: { id: string; f: ContractStepFile }) {
   const { t } = useTranslation();
   return (
     <li
@@ -68,9 +105,11 @@ function StepRow({ id, f, onOpen }: { id: string; f: ContractStepFile; onOpen: (
       </span>
       <span className="text-dim">{t(`contracts.cfiles.source.${sourceKey(f.source)}`)}</span>
       <span className="text-dim tabular-nums">{sizeLabel(f.size)}</span>
-      <button type="button" className="btn btn-outline btn-sm" onClick={onOpen}>
-        <OpenLabel mime={f.mime} />
-      </button>
+      <ViewButton
+        f={f}
+        cacheKey={["step-file", id, f.id]}
+        load={(signal) => fetchStepFileBlob(f.id, f.mime, signal)}
+      />
       <FileRecordButton target={{ kind: "step", contractId: id, file: f }} />
     </li>
   );
@@ -174,7 +213,6 @@ export function ContractFilesPanel({ id }: { id: string }) {
               id={id}
               f={f}
               busy={remove.isPending}
-              onOpen={() => run(openOwnFile(id, f.id))}
               onRemove={() => void askRemove(f)}
             />
           ))}
@@ -185,7 +223,7 @@ export function ContractFilesPanel({ id }: { id: string }) {
           <h4 className="mt-3 text-sm font-semibold text-dim">{t("contracts.cfiles.steps")}</h4>
           <ul className="divide-y divide-rule" data-testid="cfiles-steps">
             {data.steps.map((f) => (
-              <StepRow key={f.id} id={id} f={f} onOpen={() => run(openStepFile(f))} />
+              <StepRow key={f.id} id={id} f={f} />
             ))}
           </ul>
         </>

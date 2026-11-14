@@ -102,6 +102,19 @@
       "removeTitle": "Remove attachment?",
       "removeBody": "Remove “{{name}}” from this contract. You can add the file again later."
     },
+    "fview": {
+      "view": "View",
+      "title": "View file",
+      "download": "Download",
+      "loading": "Opening file…",
+      "error": "Could not open this file.",
+      "noPreview": "This file type cannot be previewed. Click “Download” to open it on your computer.",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "page": "Page {{n}}",
+      "uploadedBy": "Uploaded by {{who}}",
+      "uploadedAt": "at {{at}}"
+    },
     "frec": {
       "open": "Record",
       "title": "File record",

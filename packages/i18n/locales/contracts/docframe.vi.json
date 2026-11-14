@@ -102,6 +102,19 @@
       "removeTitle": "Gỡ tài liệu kèm?",
       "removeBody": "Gỡ «{{name}}» khỏi hợp đồng. Bạn có thể thêm lại tệp này sau."
     },
+    "fview": {
+      "view": "Xem",
+      "title": "Xem tệp",
+      "download": "Tải về",
+      "loading": "Đang mở tệp…",
+      "error": "Không mở được tệp này.",
+      "noPreview": "Loại tệp này chưa xem trước được. Bấm «Tải về» để mở bằng phần mềm trên máy.",
+      "zoomIn": "Phóng to",
+      "zoomOut": "Thu nhỏ",
+      "page": "Trang {{n}}",
+      "uploadedBy": "Tải lên bởi {{who}}",
+      "uploadedAt": "lúc {{at}}"
+    },
     "frec": {
       "open": "Hồ sơ",
       "title": "Hồ sơ file",

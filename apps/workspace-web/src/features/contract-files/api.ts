@@ -19,35 +19,28 @@ export function addFile(id: string, file: File): Promise<{ id: string; name: str
 export const removeFile = (id: string, fileId: string): Promise<void> =>
   api<void>(`${base(id)}/${encodeURIComponent(fileId)}`, { method: "DELETE" });
 
-/** Mở tệp gắn vào HĐ: xin link FileBox ngắn hạn rồi mở ở tab đã mở sẵn (tránh bị chặn popup); PDF/ảnh hiện tại chỗ, tệp khác tải về. */
-export async function openOwnFile(id: string, fileId: string): Promise<void> {
-  const tab = window.open("", "_blank");
-  try {
-    const { url } = await api<{ url: string }>(`${base(id)}/${encodeURIComponent(fileId)}/link`);
-    if (!/^https?:\/\//.test(url) && !/^\/(?!\/)/.test(url)) throw new Error("bad link");
-    if (tab) {
-      tab.opener = null;
-      tab.location.href = url;
-    } else window.location.assign(url);
-  } catch (e) {
-    tab?.close();
-    throw e;
-  }
+/** CR-149 · bytes tệp gắn vào HĐ để XEM trong hộp: xin link FileBox ngắn hạn (kiểm quyền ở server) rồi tải về Blob. */
+export async function fetchOwnFileBlob(
+  id: string,
+  fileId: string,
+  mime: string,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const { url } = await api<{ url: string }>(`${base(id)}/${encodeURIComponent(fileId)}/link`, {
+    signal,
+  });
+  if (!/^https?:\/\//.test(url) && !/^\/(?!\/)/.test(url)) throw new Error("bad link");
+  const res = await fetch(url, { signal, credentials: "omit" });
+  if (!res.ok) throw new Error(`file ${res.status}`);
+  return new Blob([await res.arrayBuffer()], { type: mime });
 }
 
-/** Tệp kèm bước duyệt: `GET /attachments/:id/content` (Hub, Bearer) ⇒ blob ⇒ mở / tải. */
-export async function openStepFile(f: { id: string; name: string; mime: string }): Promise<void> {
-  const blob = await (await apiResponse(`/attachments/${encodeURIComponent(f.id)}/content`)).blob();
-  const url = URL.createObjectURL(new Blob([blob], { type: f.mime }));
-  const a = document.createElement("a");
-  a.href = url;
-  if (isPreviewable(f.mime)) a.target = "_blank";
-  else a.download = f.name;
-  a.rel = "noopener";
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+/** CR-149 · bytes tệp kèm bước duyệt: `GET /attachments/:id/content` (Hub, Bearer). */
+export async function fetchStepFileBlob(
+  fileId: string,
+  mime: string,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const res = await apiResponse(`/attachments/${encodeURIComponent(fileId)}/content`, { signal });
+  return new Blob([await res.blob()], { type: mime });
 }
-
-/** Xem được tại chỗ trong trình duyệt: PDF hoặc ảnh. */
-export const isPreviewable = (mime: string): boolean =>
-  mime === "application/pdf" || /^image\/(png|jpe?g|gif|webp)$/.test(mime);
