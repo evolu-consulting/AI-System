@@ -29,7 +29,7 @@ test("một nút Đính kèm thay Ảnh và Video: tải PDF lên, đăng bài v
     mimeType: "application/pdf",
     buffer: Buffer.alloc(2048, 1),
   });
-  const chip = composer(page).locator(".attach", { hasText: "bao-gia.pdf" });
+  const chip = composer(page).getByTestId("draft-file").filter({ hasText: "bao-gia.pdf" });
   await expect(chip).toBeVisible();
   await expect(chip).toContainText("2 KB");
   await page.getByLabel("Hàng hoá", { exact: true }).fill("Keo kèm PDF");
@@ -39,5 +39,6 @@ test("một nút Đính kèm thay Ảnh và Video: tải PDF lên, đăng bài v
   await expect(posted).toBeVisible();
   const card = posted.getByTestId("file-card");
   await expect(card).toContainText("bao-gia.pdf");
-  await expect(card).toContainText("Tải về");
+  await expect(card.getByRole("button", { name: "Tải về bao-gia.pdf" })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Xem" })).toBeVisible();
 });

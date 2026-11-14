@@ -133,7 +133,7 @@ test("Community: đăng bài kèm PDF, thẻ tệp + tải về (thật)", async
     mimeType: "application/pdf",
     buffer: PDF,
   });
-  await expect(c.locator(".attach", { hasText: "bao-gia-uat.pdf" })).toBeVisible({
+  await expect(c.getByTestId("draft-file").filter({ hasText: "bao-gia-uat.pdf" })).toBeVisible({
     timeout: 30_000,
   });
   await page.getByLabel("Hàng hoá", { exact: true }).fill("Keo UAT kèm PDF");
@@ -142,10 +142,10 @@ test("Community: đăng bài kèm PDF, thẻ tệp + tải về (thật)", async
   const posted = page.getByTestId("post").filter({ hasText: "Keo UAT kèm PDF" }).first();
   const card = posted.getByTestId("file-card");
   await expect(card).toContainText("bao-gia-uat.pdf", { timeout: 30_000 });
-  await expect(card).toContainText("Tải về");
+  await expect(card.getByRole("button", { name: "Tải về bao-gia-uat.pdf" })).toBeVisible();
   const [dl] = await Promise.all([
     page.waitForEvent("download", { timeout: 30_000 }),
-    card.click(),
+    card.getByRole("button", { name: "Tải về bao-gia-uat.pdf" }).click(),
   ]);
   expect(dl.suggestedFilename()).toBe("bao-gia-uat.pdf");
   const p = await dl.path();

@@ -284,6 +284,12 @@
     "unavailable": "File no longer available",
     "download": "Download {{filename}}",
     "waitUpload": "Wait for uploads to finish",
+    "downloadShort": "Download",
+    "view": "View",
+    "close": "Close",
+    "prev": "Previous image",
+    "next": "Next image",
+    "openImage": "Enlarge image {{name}}",
     "downloadFailed": "Couldn't download the file.",
     "err": {
       "tooLarge": "File is larger than 20 MB.",

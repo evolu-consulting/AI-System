@@ -16,12 +16,12 @@ import {
 import { type Draft, draftErrors, emptyDraft, toCreateInput } from "../domain/compose";
 import { DEMO_PRODUCTS } from "../domain/demo-products";
 import { initials } from "../domain/format";
-import { formatSize } from "../domain/media";
 import { defaultPostType, mentionScope } from "../domain/mention";
 import { defaultAudience } from "../domain/visibility";
 import { numLocale, t } from "../i18n";
 import { CategoryDialog } from "./CategoryDialog";
 import { CompanyPicker } from "./CompanyPicker";
+import { DraftAttachments } from "./DraftAttachments";
 import { DraftFields } from "./DraftFields";
 import {
   IconAttach,
@@ -30,7 +30,6 @@ import {
   IconTypeBuy,
   IconTypeNote,
   IconTypeSell,
-  IconX,
 } from "./icons";
 import { MentionChips, MentionPicker } from "./MentionPicker";
 
@@ -277,27 +276,11 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
             mentions={draft.mentions}
             onChange={(mentions) => setDraft({ ...draft, mentions })}
           />
-          {draft.media.length > 0 && (
-            <div className="attachrow">
-              {draft.media.map((m) => (
-                <span className="attach" key={m.id}>
-                  {m.label}
-                  {m.size !== undefined && (
-                    <i className="fsize">{formatSize(m.size, numLocale())}</i>
-                  )}
-                  <button
-                    type="button"
-                    aria-label={t("community.composer.removeAttachment")}
-                    onClick={() =>
-                      setDraft({ ...draft, media: draft.media.filter((x) => x.id !== m.id) })
-                    }
-                  >
-                    <IconX size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
+          <DraftAttachments
+            media={draft.media}
+            busy={uploading}
+            onChange={(media) => setDraft({ ...draft, media })}
+          />
           <div className="cbar">
             <input
               ref={fileInput}

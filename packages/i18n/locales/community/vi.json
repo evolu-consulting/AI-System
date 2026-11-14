@@ -146,6 +146,8 @@
       "prefillBanner": "Điền sẵn từ Sổ Hợp Tác · {{product}}",
       "prefillOption": "Gợi ý mẫu…",
       "typeLabel": "Loại bài",
+      "uploading": "Đang tải lên",
+      "retry": "Thử lại",
       "removeAttachment": "Bỏ tệp đính kèm",
       "image": "Ảnh",
       "video": "Video",
@@ -203,6 +205,8 @@
       "errNeededBy": "Chọn ngày cần"
     },
     "post": {
+      "view": "Xem",
+      "downloadOf": "Tải về {{name}}",
       "download": "Tải về",
       "imageViewer": "Xem ảnh",
       "imagePrev": "Ảnh trước",

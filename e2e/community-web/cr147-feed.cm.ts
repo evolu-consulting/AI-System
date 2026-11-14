@@ -35,14 +35,14 @@ test("sửa bài: bớt một tệp, thêm một tệp, lưu ⇒ thẻ tệp đ�
   await card.getByRole("button", { name: "Tuỳ chọn bài đăng" }).click();
   await page.getByRole("menuitem", { name: "Sửa bài" }).click();
   const edit = card.getByTestId("edit-attach");
-  await expect(edit.getByTestId("edit-attach-item")).toHaveCount(2);
+  await expect(edit.getByTestId("draft-file")).toHaveCount(2);
   await edit
-    .getByTestId("edit-attach-item")
+    .getByTestId("draft-file")
     .filter({ hasText: "cu.pdf" })
-    .getByRole("button")
+    .getByTestId("draft-remove")
     .click();
   await card.getByTestId("edit-attach-input").setInputFiles(pdf("moi.pdf"));
-  await expect(edit.getByTestId("edit-attach-item")).toHaveCount(2);
+  await expect(edit.getByTestId("draft-file")).toHaveCount(2);
   await card.getByRole("button", { name: "Lưu thay đổi" }).click();
   const files = card.getByTestId("file-card");
   await expect(files).toHaveCount(2);

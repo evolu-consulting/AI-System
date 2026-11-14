@@ -1,15 +1,6 @@
 // CR-118 · COM-FR-37 · mục media từ tệp đã tải, ánh xạ lỗi upload, dung lượng hiển thị.
 import { describe, expect, it } from "bun:test";
-import {
-  acceptedTypes,
-  formatResetTime,
-  formatSize,
-  imageGrid,
-  mediaItemOf,
-  splitMedia,
-  stepImage,
-  uploadNotice,
-} from "./media";
+import { acceptedTypes, formatResetTime, formatSize, mediaItemOf, uploadNotice } from "./media";
 
 const file = (mime: string) => ({
   id: "9b1c1f7e-8c2a-4d6e-9c0a-3f1f0a1b2c3d",
@@ -79,33 +70,7 @@ describe("formatSize", () => {
   });
 });
 
-describe("CR-129 lưới ảnh", () => {
-  it("1 ảnh rộng, 2 đôi, 3 ô, ≥4 ⇒ 3 ô + «+N» ở ô cuối", () => {
-    expect(imageGrid(0)).toEqual({ shown: 0, extra: 0, cols: 1 });
-    expect(imageGrid(1)).toEqual({ shown: 1, extra: 0, cols: 1 });
-    expect(imageGrid(2)).toEqual({ shown: 2, extra: 0, cols: 2 });
-    expect(imageGrid(3)).toEqual({ shown: 3, extra: 0, cols: 3 });
-    expect(imageGrid(4)).toEqual({ shown: 3, extra: 1, cols: 3 });
-    expect(imageGrid(9).extra).toBe(6);
-  });
-  it("splitMedia: ảnh có fileId vào lưới, tệp và mục mẫu ở phần còn lại", () => {
-    const m = (id: string, kind: "image" | "file" | "video", fileId?: string) =>
-      ({ id, kind, label: id, ...(fileId ? { fileId } : {}) }) as never;
-    const r = splitMedia([
-      m("a", "image", "f1"),
-      m("b", "file", "f2"),
-      m("c", "image"),
-      m("d", "video"),
-    ]);
-    expect(r.images.map((x: { id: string }) => x.id)).toEqual(["a"]);
-    expect(r.others.length).toBe(3);
-  });
-  it("stepImage đi vòng tròn", () => {
-    expect(stepImage(0, -1, 4)).toBe(3);
-    expect(stepImage(3, 1, 4)).toBe(0);
-    expect(stepImage(1, 1, 4)).toBe(2);
-    expect(stepImage(0, 1, 0)).toBe(0);
-  });
+describe("CR-129 loại tệp nhận", () => {
   it("415 nêu định dạng nhận được, không có video", () => {
     const n = uploadNotice({ status: 415 });
     expect(n.params?.types).toBe(acceptedTypes());

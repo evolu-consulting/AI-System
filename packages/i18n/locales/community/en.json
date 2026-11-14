@@ -146,6 +146,8 @@
       "prefillBanner": "Prefilled from Sổ Hợp Tác · {{product}}",
       "prefillOption": "Sample suggestions…",
       "typeLabel": "Post type",
+      "uploading": "Uploading",
+      "retry": "Retry",
       "removeAttachment": "Remove attachment",
       "image": "Photo",
       "video": "Video",
@@ -203,6 +205,8 @@
       "errNeededBy": "Pick the needed-by date"
     },
     "post": {
+      "view": "View",
+      "downloadOf": "Download {{name}}",
       "download": "Download",
       "imageViewer": "Image viewer",
       "imagePrev": "Previous image",
