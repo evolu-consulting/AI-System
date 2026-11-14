@@ -165,7 +165,7 @@ async function install(page: Page, o: Opts = {}): Promise<Sent[]> {
             is_new: false,
           },
         ],
-        "/partners/contracts": CONTRACTS,
+        "/partners/contracts": { items: CONTRACTS, next_offset: null }, // CR-151d mục 12: trang {items, next_offset}
         "/partners/notes": [NOTE],
         "/reputation/mine": {
           total: 0,

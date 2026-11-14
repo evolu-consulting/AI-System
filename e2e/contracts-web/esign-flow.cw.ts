@@ -55,7 +55,7 @@ async function install(page: Page) {
   );
   await page.route("**/pack/contracts/approval-flow", (r) => {
     if (r.request().method() !== "GET") writes.push(r.request().method());
-    return json(r, 200, FLOW);
+    return json(r, 200, { items: [FLOW] });
   });
   return writes;
 }

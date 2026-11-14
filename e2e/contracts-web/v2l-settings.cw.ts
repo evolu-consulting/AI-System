@@ -221,16 +221,13 @@ test("HD8-FR-03: máy chủ 422 khi lưu cách tính ⇒ hiện đúng câu, b�
   await expect(dlg.getByTestId("scoring-supplier")).toBeVisible();
 });
 
-test("người không phải chủ sở hữu: cách tính điểm chỉ xem (ô khoá, không có nút Lưu & tính lại)", async ({
+test("người không phải chủ sở hữu: không có mục Điểm uy tín (CR-138 Q6) ⇒ không có ô cách tính, không có nút Lưu & tính lại", async ({
   page,
 }) => {
   await install(page, "editor");
   const dlg = await open(page);
-  await dlg
-    .getByRole("button", { name: /Điểm uy tín/ })
-    .first()
-    .click();
-  await expect(dlg.getByLabel("Trọng số Đúng hạn")).toBeDisabled();
+  await expect(dlg.getByRole("button", { name: /Điểm uy tín/ })).toHaveCount(0);
+  await expect(dlg.getByLabel("Trọng số Đúng hạn")).toHaveCount(0);
   await expect(dlg.getByTestId("scoring-save")).toHaveCount(0);
 });
 test("điểm kinh doanh: thử tính hiện điểm + đề xuất từ API", async ({ page }) => {
@@ -243,12 +240,16 @@ test("điểm kinh doanh: thử tính hiện điểm + đề xuất từ API", a
   await expect(dlg.getByTestId("try-result")).toContainText("74");
 });
 
-test("người không phải chủ sở hữu: xem được nhưng không có nút Lưu, ô khoá", async ({ page }) => {
+test("người không phải chủ sở hữu: chỉ còn mục Quy trình duyệt (CR-138 Q6), không có nút Lưu, không có ô Công ty", async ({
+  page,
+}) => {
   await install(page, "editor");
   const dlg = await open(page);
-  await expect(dlg.getByText("Chỉ chủ sở hữu hợp đồng được sửa cài đặt")).toBeVisible();
+  await expect(dlg.getByRole("button", { name: /Quy trình duyệt/ })).toBeVisible();
+  for (const n of [/^Công ty/, /Điểm uy tín/, /Điểm kinh doanh/, /Dò giá thị trường/, /^Kết nối/])
+    await expect(dlg.getByRole("button", { name: n })).toHaveCount(0);
   await expect(dlg.getByRole("button", { name: "Lưu cài đặt" })).toHaveCount(0);
-  await expect(dlg.getByLabel("Tên công ty")).toBeDisabled();
+  await expect(dlg.getByLabel("Tên công ty")).toHaveCount(0);
 });
 
 test("CR-110: /settings?sec=biz mở thẳng hộp thoại ở mục Điểm kinh doanh, khoá lạ ⇒ mục Công ty", async ({

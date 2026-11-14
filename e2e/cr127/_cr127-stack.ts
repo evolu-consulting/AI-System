@@ -194,10 +194,14 @@ async function partnerPair(
     // CR-146b · người ký bên nhận = bước Ký của quy trình Nhận HĐ (không còn nhóm cấp công ty): nhóm này là «Người ký phía công ty» của bước Ký.
   }
   if (o.recv) {
+    // CR-146: «Ký qua» chỉ nhận nhà cung cấp ĐANG BẬT của chính công ty nhận (chưa bật ⇒ 422 PROVIDER_NOT_ENABLED khi lưu quy trình)
+    if (o.sign) await enableEsign(b);
     await enableFlowTriggers(eb.tenantKey);
     await companyFlow(p, idB, {
       name: `Nhận HĐ đối tác ${b}`,
       event: "contract.received",
+      // bước Ký đọc `contract_id` từ đầu vào của quy trình (tool `contracts-esign-send`: nguồn input phải được khai ở def)
+      ...(signers ? { inputs: CONTRACT_INPUT } : {}),
       stages: signers
         ? [
             approve("nhan", "Giám đốc nhận duyệt", 0, "pb-giam-doc", {

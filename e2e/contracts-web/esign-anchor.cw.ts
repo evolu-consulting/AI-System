@@ -1,4 +1,4 @@
-// esign-anchor · Luật 4b: (a) Cài đặt › Quy trình duyệt hiện danh sách cụm Bên A/B, owner sửa ⇒ PUT /esign/anchors {a[], b[]};
+// esign-anchor · Luật 4b: (a) Cài đặt › Kết nối hiện danh sách cụm Bên A/B, owner sửa ⇒ PUT /esign/anchors {a[], b[]};
 // (b) hộp Gửi ký hiện "Vị trí ký: trong văn bản" theo GET /esign/placement. Backend giả `page.route`; không sleep.
 import { expect, type Route, test } from "@playwright/test";
 import { asHub } from "./dataset";
@@ -41,15 +41,8 @@ test("Cài đặt: danh sách cụm Bên A/B, owner sửa ⇒ PUT /esign/anchors
   await page.route("**/pack/contracts/me", (r) => json(r, d.packMe));
   await page.route("**/pack/contracts/groups", (r) => json(r, []));
   await page.route("**/pack/contracts/dify-workflows", (r) => json(r, { items: [] }));
-  await page.route("**/pack/contracts/approval-flow", (r) =>
-    json(r, {
-      def_id: "11111111-1111-4111-8111-111111111111",
-      name: "Quy trình HĐ mặc định",
-      rel_version: 1,
-      is_default: true,
-      steps: [{ name: "Soạn & kiểm tra", department_name: "Kinh doanh", kind: "review" }],
-    }),
-  );
+  // CR-146: ký số ở tab «Kết nối»; tab «Quy trình duyệt» đọc `{items}` (danh sách quy trình Bật).
+  await page.route("**/pack/contracts/approval-flow", (r) => json(r, { items: [] }));
   await page.route("**/pack/contracts/esign/settings", (r) => json(r, settings));
   const puts: unknown[] = [];
   await page.route("**/pack/contracts/esign/anchors", (r) => {
@@ -67,7 +60,7 @@ test("Cài đặt: danh sách cụm Bên A/B, owner sửa ⇒ PUT /esign/anchors
     .click();
   await page.getByRole("menuitem", { name: "Cài đặt" }).first().click();
   const dlg = page.getByRole("dialog", { name: "Cài đặt" });
-  await dlg.getByRole("button", { name: /Quy trình duyệt/ }).click();
+  await dlg.getByRole("button", { name: /^Kết nối/ }).click();
   const box = dlg.getByTestId("esign-anchor-setting");
   await expect(box.getByTestId("esign-anchor-a")).toHaveValue("ĐẠI DIỆN BÊN A\nBÊN A");
   await expect(box.getByTestId("esign-anchor-b")).toHaveValue("ĐẠI DIỆN BÊN B\nBÊN B");

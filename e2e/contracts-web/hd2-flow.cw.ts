@@ -123,7 +123,17 @@ test.skip("HD-FR-26 · S04 · số không đọc được ⇒ báo tên ô, khô
   expect(sent).toEqual([]);
 });
 
-test("HD2 #220 · S05 · «Xem hợp đồng gốc» xin link qua API (Bearer) rồi xem tại chỗ trong hộp thoại (khung PDF + nút tải)", async ({
+// CR-149: hộp «Xem» dùng chung vẽ PDF bằng pdf.js (không còn khung iframe) ⇒ tệp giả phải là PDF đọc được (một trang trắng).
+const MINI_PDF = [
+  "%PDF-1.4",
+  "1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj",
+  "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj",
+  "3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj",
+  "trailer<</Root 1 0 R/Size 4>>",
+  "%%EOF",
+].join("\n");
+
+test("HD2 #220 · S05 · «Xem hợp đồng gốc» xin link qua API (Bearer) rồi xem tại chỗ trong hộp thoại (trang PDF + nút tải)", async ({
   page,
   context,
 }) => {
@@ -133,7 +143,7 @@ test("HD2 #220 · S05 · «Xem hợp đồng gốc» xin link qua API (Bearer) r
       status: 200,
       contentType: "application/pdf",
       headers: { "access-control-allow-origin": "*" },
-      body: "%PDF-1.4",
+      body: MINI_PDF,
     }),
   );
   await page.goto(`/contracts/c/${contract.id}`);
@@ -143,6 +153,6 @@ test("HD2 #220 · S05 · «Xem hợp đồng gốc» xin link qua API (Bearer) r
   await page.getByRole("link", { name: "📄 Xem hợp đồng gốc" }).click();
   expect((await linkReq).headers().authorization).toBe("Bearer e2e.access.token");
   const dlg = page.getByRole("dialog", { name: "Hợp đồng gốc" });
-  await expect(dlg.locator("iframe")).toBeVisible();
+  await expect(dlg.getByTestId("pdf-page").first()).toBeVisible();
   await expect(dlg.getByRole("link", { name: "Tải xuống" })).toBeVisible();
 });

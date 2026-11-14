@@ -58,15 +58,8 @@ test("Cài đặt: hiện 2 nhà cung cấp (pháp lý / không) và đổi mặ
   await page.route("**/pack/contracts/me", (r) => json(r, d.packMe));
   await page.route("**/pack/contracts/groups", (r) => json(r, []));
   await page.route("**/pack/contracts/dify-workflows", (r) => json(r, { items: [] }));
-  await page.route("**/pack/contracts/approval-flow", (r) =>
-    json(r, {
-      def_id: "11111111-1111-4111-8111-111111111111",
-      name: "Quy trình HĐ mặc định",
-      rel_version: 1,
-      is_default: true,
-      steps: [{ name: "Soạn & kiểm tra", department_name: "Kinh doanh", kind: "review" }],
-    }),
-  );
+  // CR-146: ký số ở tab «Kết nối»; tab «Quy trình duyệt» đọc `{items}` (danh sách quy trình Bật).
+  await page.route("**/pack/contracts/approval-flow", (r) => json(r, { items: [] }));
   const puts: unknown[] = [];
   await page.route("**/pack/contracts/esign/settings", (r) => {
     if (r.request().method() === "PUT") {
@@ -83,7 +76,7 @@ test("Cài đặt: hiện 2 nhà cung cấp (pháp lý / không) và đổi mặ
     .click();
   await page.getByRole("menuitem", { name: "Cài đặt" }).first().click();
   const dlg = page.getByRole("dialog", { name: "Cài đặt" });
-  await dlg.getByRole("button", { name: /Quy trình duyệt/ }).click();
+  await dlg.getByRole("button", { name: /^Kết nối/ }).click();
   const box = dlg.getByTestId("esign-provider-setting");
   await expect(box.getByTestId("esign-prov-docusign")).toContainText("Có giá trị pháp lý");
   await expect(box.getByTestId("esign-prov-selfsign")).toContainText("Không có giá trị pháp lý");

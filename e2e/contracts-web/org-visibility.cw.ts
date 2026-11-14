@@ -187,8 +187,8 @@ test("M1D · đổi cơ cấu ở /settings/members ⇒ danh sách HĐ của qu�
   await expect.poll(() => f.mode).toBe("org");
   // CR-151: chọn quản lý qua hộp tìm ở máy chủ (không còn select nạp cả công ty).
   await page.getByLabel("Cấp quản lý · Chi Lê").click();
-  await page.getByLabel("Tìm theo tên").fill("Bình");
-  await page.getByRole("button", { name: "Bình Trần" }).click();
+  await page.getByTestId("person-search").getByLabel("Tìm theo tên").fill("Bình");
+  await page.getByTestId("person-search").getByRole("button", { name: "Bình Trần" }).click();
   await expect.poll(() => f.managers.get(USERS.chi.id)).toBe(USERS.binh.id);
   // CR-139d · phòng ban không chỉnh ở màn này nữa (một khái niệm một màn): màn chỉ dẫn sang «Chỉnh sơ đồ» ở admin.
   await expect(page.getByTestId("org-depts-moved")).toBeVisible();
@@ -212,7 +212,8 @@ test("M1D · đổi cơ cấu ở /settings/members ⇒ danh sách HĐ của qu�
   // Bỏ quản lý của Chi ⇒ Bình mất HĐ của Chi, chỉ còn HĐ của mình.
   f.who = "lan";
   await page.goto("/contracts/settings/members");
-  await page.getByLabel("Cấp quản lý · Chi Lê").selectOption({ label: "—" });
+  await page.getByLabel("Cấp quản lý · Chi Lê").click();
+  await page.getByTestId("person-search").getByRole("button", { name: "—", exact: true }).click();
   await expect.poll(() => f.managers.get(USERS.chi.id)).toBeNull();
   expect(await listAs(page, f, "binh")).toEqual([VAN_CHUYEN]);
 });

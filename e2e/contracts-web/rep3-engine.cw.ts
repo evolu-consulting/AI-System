@@ -53,6 +53,10 @@ const CELLS = Object.fromEntries(
     "goods:supplier",
     "goods:customer",
     "referral:commission_payer",
+    // CR-152c: + Nhượng quyền ×2, Hợp tác (8 ô)
+    "franchise:franchisee",
+    "franchise:franchisor",
+    "cooperation:cooperator",
   ].map((k) => [k, CELL]),
 );
 const CONFIG = (engine: Engine) => ({
@@ -330,7 +334,8 @@ function hd8Scoring(role: string) {
   };
 }
 
-const openSettings = async (page: Page) => {
+/** `section=false`: chỉ mở hộp thoại (CR-138 Q6 · người không phải chủ sở hữu không có mục «Điểm uy tín»). */
+const openSettings = async (page: Page, section = true) => {
   await page.goto("/contracts");
   await page
     .getByRole("button", { name: /tài khoản|account/i })
@@ -338,6 +343,7 @@ const openSettings = async (page: Page) => {
     .click();
   await page.getByRole("menuitem", { name: "Cài đặt" }).first().click();
   const dlg = page.getByRole("dialog", { name: "Cài đặt" });
+  if (!section) return dlg;
   await dlg
     .getByRole("button", { name: /Điểm uy tín/ })
     .first()
@@ -433,13 +439,16 @@ test("hd8 · Cài đặt: cách tính HD8 theo vai (có chỉnh tay ±10); quả
 
 test("hd8 · người không phải quản lý: không có màn xem trước", async ({ page }) => {
   const { asked } = await install(page, "hd8", "editor");
-  const dlg = await openSettings(page);
-  await expect(dlg.getByRole("radio", { name: "Khách hàng" })).toBeVisible();
+  // CR-138 Q6: không phải chủ sở hữu ⇒ nhóm Sổ Hợp Tác chỉ còn «Quy trình duyệt»; mục «Điểm uy tín» (và xem trước đổi mức) bị ẩn.
+  const dlg = await openSettings(page, false);
+  await expect(dlg.getByRole("button", { name: /Quy trình duyệt/ })).toBeVisible();
+  await expect(dlg.getByRole("button", { name: /Điểm uy tín/ })).toHaveCount(0);
+  await expect(dlg.getByRole("radio", { name: "Khách hàng" })).toHaveCount(0);
   await expect(dlg.getByTestId("switch-preview")).toHaveCount(0);
   expect(asked.includes("/reputation/switch-preview")).toBe(false);
 });
 
-test("v2e · Cài đặt: 5 ô nhóm × vai, 3 tab mỗi ô; ẩn cấu hình HD8 + chỉnh tay ±10; lưu mức gửi PUT /reputation/config/settings", async ({
+test("v2e · Cài đặt: 8 ô nhóm × vai (CR-152c), 3 tab mỗi ô; ẩn cấu hình HD8 + chỉnh tay ±10; lưu mức gửi PUT /reputation/config/settings", async ({
   page,
 }) => {
   const { sent } = await install(page, "v2e", "owner");
@@ -468,13 +477,15 @@ test("v2e · Cài đặt: 5 ô nhóm × vai, 3 tab mỗi ô; ẩn cấu hình HD
   expect(sent.some((s) => s.path.startsWith("/scoring/"))).toBe(false);
 });
 
-test("v2e · người không phải chủ sở hữu: cấu hình chỉ xem (ô khoá, không có Lưu)", async ({
+test("v2e · người không phải chủ sở hữu: không có mục Điểm uy tín (CR-138 Q6), không có ô cấu hình/Lưu", async ({
   page,
 }) => {
   await install(page, "v2e", "editor");
-  const dlg = await openSettings(page);
-  await expect(dlg.getByText("Chỉ chủ sở hữu hợp đồng được sửa cài đặt").first()).toBeVisible();
-  await expect(dlg.getByLabel("Trọng số Giao đúng hạn")).toBeDisabled();
+  const dlg = await openSettings(page, false);
+  await expect(dlg.getByRole("button", { name: /Quy trình duyệt/ })).toBeVisible();
+  await expect(dlg.getByRole("button", { name: /Điểm uy tín/ })).toHaveCount(0);
+  await expect(dlg.getByTestId("rep-v2e")).toHaveCount(0);
+  await expect(dlg.getByLabel("Trọng số Giao đúng hạn")).toHaveCount(0);
   await expect(dlg.getByTestId("rep-save")).toHaveCount(0);
 });
 
