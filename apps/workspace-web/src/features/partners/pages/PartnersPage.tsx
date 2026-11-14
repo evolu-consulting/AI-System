@@ -12,6 +12,9 @@ import { useMe } from "~/features/pack-state/hooks/use-me";
 import { Pager, TableTools } from "~/features/table";
 import { cn } from "~/lib/utils";
 import { AddCompanyDialog } from "../components/AddCompanyDialog";
+import { ConnectedPanel } from "../components/ConnectedPanel";
+import { ConnectSearchDialog } from "../components/ConnectSearchDialog";
+import { InviteBanner } from "../components/InviteBanner";
 import { MineBanner } from "../components/MineBanner";
 import { RedFlagTag } from "../components/RedFlagTag";
 import { RepBadge } from "../components/RepBadge";
@@ -103,7 +106,8 @@ export function PartnersPage() {
   const [pageSize, setPageSize] = useState(20);
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const { write } = useMe();
+  const [finding, setFinding] = useState(false);
+  const { write, owner } = useMe();
   // tìm gõ trễ 250 ms rồi gọi máy chủ; đổi tìm/lọc ⇒ về trang 1
   useEffect(() => {
     const h = setTimeout(() => {
@@ -156,18 +160,34 @@ export function PartnersPage() {
         title={L("title")}
         lead={L("lead")}
         actions={
-          write && (
-            <button
-              type="button"
-              className="btn btn-outline h-9 text-[13px]"
-              onClick={() => setAdding(true)}
-            >
-              {t("contracts.vgaps.company.add")}
-            </button>
+          (write || owner) && (
+            <div className="flex gap-2">
+              {owner && (
+                <button
+                  type="button"
+                  className="btn btn-outline h-9 text-[13px]"
+                  onClick={() => setFinding(true)}
+                >
+                  {t("contracts.connect.find")}
+                </button>
+              )}
+              {write && (
+                <button
+                  type="button"
+                  className="btn btn-outline h-9 text-[13px]"
+                  onClick={() => setAdding(true)}
+                >
+                  {t("contracts.vgaps.company.add")}
+                </button>
+              )}
+            </div>
           )
         }
       />
       {adding && <AddCompanyDialog onClose={() => setAdding(false)} />}
+      {finding && <ConnectSearchDialog onClose={() => setFinding(false)} />}
+      <InviteBanner />
+      <ConnectedPanel />
       <MineBanner />
       <TableTools q={qRaw} setQ={setQRaw} total={total} placeholder={L("search")}>
         <fieldset

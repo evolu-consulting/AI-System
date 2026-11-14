@@ -6,9 +6,20 @@
       "role": "Vai trò",
       "bandFilter": "Mức điểm",
       "noBand": "Chưa có điểm",
-      "roleWord": { "customer": "Khách hàng", "supplier": "Nhà cung cấp" },
-      "band": { "good": "Tốt", "fair": "Khá", "watch": "Chú ý" },
-      "badge": { "good": "TỐT", "fair": "KHÁ", "watch": "CHÚ Ý" },
+      "roleWord": {
+        "customer": "Khách hàng",
+        "supplier": "Nhà cung cấp"
+      },
+      "band": {
+        "good": "Tốt",
+        "fair": "Khá",
+        "watch": "Chú ý"
+      },
+      "badge": {
+        "good": "TỐT",
+        "fair": "KHÁ",
+        "watch": "CHÚ Ý"
+      },
       "noScore": "Chưa đủ dữ liệu để chấm",
       "emptyTitle": "Chưa có đối tác",
       "emptyBody": "Đối tác tự xuất hiện khi có hợp đồng.",
@@ -142,6 +153,71 @@
         "VALIDATION_ERROR": "Kiểm lại thông tin báo giá (đơn giá là số đồng lớn hơn 0)",
         "NOT_FOUND": "Mặt hàng này không còn để so",
         "PACK_FORBIDDEN": "Bạn không có quyền thêm báo giá"
+      }
+    },
+    "connect": {
+      "find": "Tìm công ty",
+      "staffNote": "Chỉ người có quyền Toàn quyền mới gửi hoặc nhận lời mời kết nối.",
+      "connectedTitle": "Công ty đã kết nối",
+      "verified": "Đã xác minh",
+      "unverified": "Chưa xác minh",
+      "tax": "MST {{tax}}",
+      "cannotResend": "Bạn không thể gửi lại lời mời cho công ty này.",
+      "status": {
+        "connected": "Đã kết nối",
+        "pending_out": "Đã gửi lời mời — chờ trả lời",
+        "pending_in": "Chờ bạn trả lời",
+        "declined": "Bị từ chối",
+        "none": "Chưa kết nối"
+      },
+      "search": {
+        "title": "Tìm công ty để kết nối",
+        "hint": "Chỉ hiện những công ty đã bật Danh bạ.",
+        "label": "Tên công ty hoặc mã số thuế",
+        "short": "Gõ ít nhất 3 ký tự.",
+        "loading": "Đang tìm…",
+        "none": "Không thấy công ty nào. Chỉ hiện những công ty đã bật Danh bạ."
+      },
+      "send": {
+        "button": "Gửi lời mời kết nối",
+        "title": "Gửi lời mời cho {{name}}?",
+        "body": "Công ty {{name}} sẽ nhận lời mời và chọn Đồng ý hoặc Từ chối.",
+        "note": "Lời nhắn kèm lời mời (tuỳ chọn)",
+        "confirm": "Gửi lời mời",
+        "later": "Để sau",
+        "done": "Đã gửi lời mời cho {{name}}."
+      },
+      "invite": {
+        "title": "{{name}} muốn kết nối với bạn",
+        "by": "người mời: {{who}}",
+        "note": "Lời nhắn: «{{note}}»",
+        "accept": "Đồng ý",
+        "decline": "Từ chối",
+        "accepted": "Đã kết nối với {{name}}."
+      },
+      "decline": {
+        "title": "Từ chối lời mời của {{name}}?",
+        "body": "{{name}} sẽ không thể gửi lại lời mời cho bạn.",
+        "confirm": "Từ chối",
+        "keep": "Giữ lại"
+      },
+      "disconnect": {
+        "button": "Ngắt kết nối",
+        "aria": "Ngắt kết nối với {{name}}",
+        "title": "Ngắt kết nối với {{name}}?",
+        "body": "Muốn nối lại, hai bên phải gửi lời mời mới. Tin nhắn cũ được giữ lại, chỉ xem được.",
+        "confirm": "Ngắt kết nối",
+        "keep": "Giữ kết nối",
+        "done": "Đã ngắt kết nối với {{name}}."
+      },
+      "err": {
+        "notListed": "Công ty này chưa bật Danh bạ nên chưa nhận được lời mời.",
+        "declined": "Công ty này đã từ chối. Bạn không thể gửi lại lời mời.",
+        "notConnected": "Hai công ty hiện chưa kết nối.",
+        "forbidden": "Chỉ người có quyền Toàn quyền làm được việc này.",
+        "invalid": "Nội dung chưa hợp lệ — kiểm tra lại rồi thử lại.",
+        "gone": "Lời mời không còn nữa. Tải lại trang để xem tình trạng mới.",
+        "failed": "Chưa làm được. Kiểm tra mạng rồi thử lại."
       }
     }
   }

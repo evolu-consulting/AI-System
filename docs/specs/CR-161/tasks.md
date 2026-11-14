@@ -53,7 +53,7 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 | 4 | Migration community 0020 + int | cr161-posts-db | [x] |
 | 5 | API kết nối + bài | cr161-link-api | [x] |
 | 6 | API trò chuyện + perf | cr161-chat-api | [ ] |
-| 7 | Web kết nối | cr161-web-link | [ ] |
+| 7 | Web kết nối [test: apps/workspace-web/src/features/partners/lib/connect.test.ts » mã lỗi ⇒ câu dễ hiểu] | cr161-web-link | [x] |
 | 8 | Web trò chuyện + Bảng tin | cr161-web-chat | [ ] |
 | 9 | e2e hành trình | cr161-e2e | [ ] |
 

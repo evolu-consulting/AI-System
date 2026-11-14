@@ -1,0 +1,34 @@
+// CR-161 · gọi API kết nối hai công ty (`/pack/contracts/connect/**`). Chỉ người Toàn quyền gọi được (khác ⇒ 403 PACK_FORBIDDEN).
+import type {
+  ConnectInviteResponseSchema,
+  ConnectLink,
+  ConnectListQuery,
+  ConnectSearchResponseSchema,
+} from "@ai/contracts/pack-contracts";
+import { api } from "@ai/web-kit/http";
+import type { z } from "zod";
+
+const BASE = "/pack/contracts/connect";
+const enc = encodeURIComponent;
+
+export const connectKeys = {
+  all: ["connect"] as const,
+  search: (q: string) => ["connect", "search", q] as const,
+  links: (status: string) => ["connect", "links", status] as const,
+};
+
+export const searchCompanies = (q: string, signal?: AbortSignal) =>
+  api<z.infer<typeof ConnectSearchResponseSchema>>(`${BASE}/search?q=${enc(q)}`, { signal });
+export const inviteCompany = (b: { tenant_id: string; note?: string }) =>
+  api<z.infer<typeof ConnectInviteResponseSchema>>(`${BASE}/invites`, { method: "POST", body: b });
+export const fetchLinks = (status: NonNullable<ConnectListQuery["status"]>, signal?: AbortSignal) =>
+  api<{ items: ConnectLink[]; next_cursor: string | null }>(
+    `${BASE}/links?status=${status}&limit=50`,
+    { signal },
+  );
+export const acceptLink = (tenant: string) =>
+  api<{ ok: true }>(`${BASE}/links/${enc(tenant)}/accept`, { method: "POST" });
+export const declineLink = (tenant: string) =>
+  api<{ ok: true }>(`${BASE}/links/${enc(tenant)}/decline`, { method: "POST" });
+export const disconnectLink = (tenant: string) =>
+  api<{ ok: true }>(`${BASE}/links/${enc(tenant)}`, { method: "DELETE" });

@@ -6,9 +6,20 @@
       "role": "Role",
       "bandFilter": "Score band",
       "noBand": "No score yet",
-      "roleWord": { "customer": "Customer", "supplier": "Supplier" },
-      "band": { "good": "Good", "fair": "Fair", "watch": "Watch" },
-      "badge": { "good": "GOOD", "fair": "FAIR", "watch": "WATCH" },
+      "roleWord": {
+        "customer": "Customer",
+        "supplier": "Supplier"
+      },
+      "band": {
+        "good": "Good",
+        "fair": "Fair",
+        "watch": "Watch"
+      },
+      "badge": {
+        "good": "GOOD",
+        "fair": "FAIR",
+        "watch": "WATCH"
+      },
       "noScore": "Not enough data to score",
       "emptyTitle": "No partners yet",
       "emptyBody": "Partners appear once there are contracts.",
@@ -142,6 +153,71 @@
         "VALIDATION_ERROR": "Check the quote (unit price must be a whole number above 0)",
         "NOT_FOUND": "This product can no longer be compared",
         "PACK_FORBIDDEN": "You are not allowed to add quotes"
+      }
+    },
+    "connect": {
+      "find": "Find a company",
+      "staffNote": "Only people with Full access can send or receive connection invites.",
+      "connectedTitle": "Connected companies",
+      "verified": "Verified",
+      "unverified": "Not verified",
+      "tax": "Tax ID {{tax}}",
+      "cannotResend": "You cannot send this company another invite.",
+      "status": {
+        "connected": "Connected",
+        "pending_out": "Invite sent — waiting for reply",
+        "pending_in": "Waiting for your reply",
+        "declined": "Declined",
+        "none": "Not connected"
+      },
+      "search": {
+        "title": "Find a company to connect with",
+        "hint": "Only companies that turned on the Directory are shown.",
+        "label": "Company name or tax ID",
+        "short": "Type at least 3 characters.",
+        "loading": "Searching…",
+        "none": "No company found. Only companies that turned on the Directory are shown."
+      },
+      "send": {
+        "button": "Send connection invite",
+        "title": "Send an invite to {{name}}?",
+        "body": "{{name}} will get the invite and choose Accept or Decline.",
+        "note": "Message with the invite (optional)",
+        "confirm": "Send invite",
+        "later": "Not now",
+        "done": "Invite sent to {{name}}."
+      },
+      "invite": {
+        "title": "{{name}} wants to connect with you",
+        "by": "invited by {{who}}",
+        "note": "Message: “{{note}}”",
+        "accept": "Accept",
+        "decline": "Decline",
+        "accepted": "Connected with {{name}}."
+      },
+      "decline": {
+        "title": "Decline the invite from {{name}}?",
+        "body": "{{name}} will not be able to send you another invite.",
+        "confirm": "Decline",
+        "keep": "Keep it"
+      },
+      "disconnect": {
+        "button": "Disconnect",
+        "aria": "Disconnect from {{name}}",
+        "title": "Disconnect from {{name}}?",
+        "body": "To connect again, both sides must send a new invite. Old messages are kept and can only be read.",
+        "confirm": "Disconnect",
+        "keep": "Stay connected",
+        "done": "Disconnected from {{name}}."
+      },
+      "err": {
+        "notListed": "This company has not turned on the Directory, so it cannot get invites yet.",
+        "declined": "This company declined. You cannot send another invite.",
+        "notConnected": "The two companies are not connected.",
+        "forbidden": "Only people with Full access can do this.",
+        "invalid": "Something is not valid — check and try again.",
+        "gone": "The invite no longer exists. Reload the page to see the latest status.",
+        "failed": "Could not do that. Check your connection and try again."
       }
     }
   }
