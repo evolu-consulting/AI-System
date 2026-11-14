@@ -182,6 +182,7 @@ export function FileCard({
 }) {
   const off = item.disabled === true;
   return (
+    // button-gap-ok: khoảng cách nằm trong `cardStyle` (gap: 8, attach-parts.tsx)
     <li
       data-testid="file-card"
       title={off ? labels.unavailable : item.name}
