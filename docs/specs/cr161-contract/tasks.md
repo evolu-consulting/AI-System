@@ -1,0 +1,6 @@
+# cr161-contract — lát 1 của CR-161
+
+Trạng thái gộp: chưa gộp
+
+## Delta (so với docs/current)
+Không thay đổi hành vi (lý do: Delta và kịch bản của cả CR nằm ở docs/specs/CR-161/tasks.md)
