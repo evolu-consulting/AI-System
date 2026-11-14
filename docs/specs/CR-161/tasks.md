@@ -50,7 +50,7 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 | 1 | Contract zod + luật thuần | cr161-contract | [x] |
 | 2 | Migration 0145 + int link | cr161-link-db | [x] |
 | 3 | Migration 0146/0147 + int chat | cr161-chat-db | [ ] |
-| 4 | Migration community 0020 + int | cr161-posts-db | [ ] |
+| 4 | Migration community 0020 + int | cr161-posts-db | [x] |
 | 5 | API kết nối + bài | cr161-link-api | [ ] |
 | 6 | API trò chuyện + perf | cr161-chat-api | [ ] |
 | 7 | Web kết nối | cr161-web-link | [ ] |
@@ -110,6 +110,6 @@ Mỗi cặp công ty một luồng chung trong tab «Trò chuyện» của trang
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Công ty đã kết nối xem bài công khai của nhau (CR-161)
 Ngoại lệ có chủ ý với «không kết nối trực tiếp giữa công ty»: người Toàn quyền của công ty đã kết nối (CR-161) xem được mọi bài chủ quản đang hiệu lực có người xem «tất cả» của công ty kia, bản đã che liên hệ, chỉ đọc; ngắt kết nối thì mất ngay.
-- Kịch bản: khi Dung mở tab Bảng tin của NitiGroup thì thấy bài công khai còn hạn, không thấy bài giới hạn người xem, bài ẩn hay hết hạn [test: thủ công — chưa viết]
-- Kịch bản: khi chưa hoặc đã ngắt kết nối thì xem bài bị 404 [test: thủ công — chưa viết]
-- Kịch bản: khi bài có số điện thoại thì công ty kết nối chỉ thấy bản đã che [test: thủ công — chưa viết]
+- Kịch bản: khi Dung mở tab Bảng tin của NitiGroup thì thấy bài công khai còn hạn, không thấy bài giới hạn người xem, bài ẩn hay hết hạn [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts (phần DB; route + web: lát 5, 7)]
+- Kịch bản: khi chưa hoặc đã ngắt kết nối thì xem bài bị 404 [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts (42501 ⇒ 404 ở route: lát 5)]
+- Kịch bản: khi bài có số điện thoại thì công ty kết nối chỉ thấy bản đã che [test: apps/hub-api/src/modules/packs/community/adapters/connected-posts.int.test.ts]
