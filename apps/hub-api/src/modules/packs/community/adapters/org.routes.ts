@@ -22,7 +22,7 @@ import { type Access, accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
 import * as orgs from "./org.service";
 import { profileTarget, withReputation } from "./profile.routes";
-import { partnerViews } from "./views";
+import { pageOrgIds, partnerViews } from "./views";
 
 type R = Hono<PackGuardVars>;
 type Acc = (c: Context<PackGuardVars>, need?: "read" | "write") => Promise<Access>;
@@ -117,12 +117,11 @@ function viewerAndPartners(r: R, d: CommunityDeps, access: Acc): void {
   });
   r.get("/partners", async (c) => {
     const a = await access(c);
-    const all = partnerViews(a, await orgs.partners(d.uow, a));
-    // CR-151: `?limit=` (≤ 50) ⇒ trang (tìm theo tên + offset ở máy chủ); không có ⇒ danh sách cũ.
+    // CR-151 · #269: `?limit=` (≤ 50) ⇒ trang. Tên công ty ở danh bạ (cache, 0 SQL) ⇒ lọc `q` + cắt trang ở đó, rồi
+    // MỘT câu đọc hồ sơ đối tác CHỈ của công ty trong trang (chi phí theo trang, không theo tổng). Không `limit` ⇒ danh sách cũ.
     const pg = parseWith(PartnersPageQuerySchema, c.req.query());
-    const needle = pg.q?.toLowerCase();
-    const named = needle ? all.filter((p) => p.name.toLowerCase().includes(needle)) : all;
-    const list = pg.limit === undefined ? all : named.slice(pg.offset, pg.offset + pg.limit);
+    const ids = pageOrgIds(a, pg);
+    const list = partnerViews(a, await orgs.partners(d.uow, a, ids), ids);
     // CR-110 · COM-FR-37: tab Đối tác của hồ sơ — cột uy tín chỉ chủ quản (cổng HostBookReader), `?rep=1` để feed không trả phí
     return c.json(c.req.query("rep") === "1" ? await withReputation(d, a, list) : list);
   });

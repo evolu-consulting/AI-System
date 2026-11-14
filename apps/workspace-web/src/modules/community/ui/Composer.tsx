@@ -21,6 +21,7 @@ import { defaultPostType, mentionScope } from "../domain/mention";
 import { defaultAudience } from "../domain/visibility";
 import { numLocale, t } from "../i18n";
 import { CategoryDialog } from "./CategoryDialog";
+import { CompanyPicker } from "./CompanyPicker";
 import { DraftFields } from "./DraftFields";
 import {
   IconAttach,
@@ -43,11 +44,14 @@ function AudiencePicker({
   draft,
   set,
   partners,
+  partnersMore,
   cats,
 }: {
   draft: Draft;
   set: (d: Draft) => void;
   partners: PartnerOrg[];
+  /** #269: danh sách mới là trang đầu (còn công ty khác) ⇒ xem trước không đếm được đủ. */
+  partnersMore: boolean;
   cats: string[];
 }) {
   const aud = draft.audience ?? defaultAudience(draft.type);
@@ -77,23 +81,18 @@ function AudiencePicker({
         </div>
       )}
       {aud.mode === "companies" && (
-        <div className="chips">
-          {partners
-            .filter((p) => !p.left)
-            .map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={aud.companies.includes(p.id) ? "chip on" : "chip"}
-                onClick={() => upd({ companies: toggle(aud.companies, p.id) })}
-              >
-                {p.name}
-              </button>
-            ))}
-        </div>
+        <CompanyPicker
+          selected={aud.companies}
+          onToggle={(id) => upd({ companies: toggle(aud.companies, id) })}
+        />
       )}
       <div className="audprev" data-testid="audience-preview">
-        {audienceError(aud) ?? previewText(recipients)}
+        {audienceError(aud) ??
+          (partnersMore
+            ? aud.mode === "companies"
+              ? audienceSummary(aud, draft.type)
+              : t("community.audience.previewPartial")
+            : previewText(recipients))}
       </div>
     </div>
   );
@@ -111,6 +110,7 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
   const [draft, setDraft] = useState<Draft>(() => emptyDraft(defaultPostType(types)));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [partners, setPartners] = useState<PartnerOrg[]>([]);
+  const [partnersMore, setPartnersMore] = useState(false);
   const [cats, setCats] = useState<string[]>([]);
   const [prefill, setPrefill] = useState("");
   const [busy, setBusy] = useState(false);
@@ -124,7 +124,13 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
   };
 
   useEffect(() => {
-    api.listPartners().then(setPartners, () => undefined);
+    api.listPartners({ limit: 50, offset: 0 }).then(
+      (r) => {
+        setPartners(r);
+        setPartnersMore(r.length === 50);
+      },
+      () => undefined,
+    );
     api.listCats().then(setCats, () => undefined);
   }, [api]);
 
@@ -341,7 +347,13 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
             </button>
           </div>
           {isHostViewer && audOpen && (
-            <AudiencePicker draft={draft} set={setDraft} partners={partners} cats={cats} />
+            <AudiencePicker
+              draft={draft}
+              set={setDraft}
+              partners={partners}
+              partnersMore={partnersMore}
+              cats={cats}
+            />
           )}
           {errors.audience && <div className="ferr">{errors.audience}</div>}
         </div>
