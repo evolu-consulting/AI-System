@@ -4,8 +4,8 @@
 //   «Duyệt hợp đồng gửi đi» (contract.submitted) · «Nhận hợp đồng từ đối tác» (contract.received + người phụ trách ở trigger.params)
 //   · «Đề nghị mua hàng / thanh toán» (mở bằng phiếu; luật mở không bao giờ đúng nên không tranh quyền duyệt HĐ).
 // CR-160: HĐ gửi đi và phiếu mở bằng nhánh `if starter_is_top` (người gửi là trưởng phòng gốc ⇒ bỏ duyệt) thay nhánh theo phòng; không còn đích dự phòng cho cấp cao nhất.
-// Người duyệt cụ thể = `after.approver_user_id` (người dùng thật của công ty, không tạo nhóm). «Quá hạn chuyển cho» (escalate.user_id) = người
-// thay thế khi người duyệt CHÍNH LÀ người tạo (STARTER_CANNOT_REVIEW / R#15): việc giao thêm cho người đó thay vì treo.
+// Người duyệt cụ thể = `after.approver_user_id` (người dùng thật của công ty, không tạo nhóm). Không còn «Quá hạn chuyển cho» (người thay thế): chỉ trưởng phòng
+// (`starter_head`, engine tự leo cấp) hoặc người cụ thể ở bước làm việc.
 import { APPROVAL_FLOW_DUE_DEFAULT_H } from "@ai/contracts/pack-contracts";
 import {
   approve,

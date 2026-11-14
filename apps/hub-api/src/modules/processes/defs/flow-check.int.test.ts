@@ -91,3 +91,37 @@ describe("fix-review-r3 · người phụ trách kiểm ở MỌI đường lưu
     expect(await code(save(true, input(other)))).toStartWith("PROCESS_DEF_INVALID");
   });
 });
+
+describe("CR-160 · «Bắt đầu khi» dùng dữ kiện lõi bị chặn khi lưu", () => {
+  const withWhen = (when: unknown) =>
+    ({
+      key: "c160",
+      name: "c160",
+      app: "contracts",
+      stages: [],
+      trigger: { event: "contract.submitted", when },
+    }) as unknown as ProcessDefInput;
+  const save = (i: ProcessDefInput) =>
+    withHubScope(db, { kind: "user", tenantId: X, userId: ok }, (tx) =>
+      checkOnSave(tx, i, X, null, true),
+    ).then(
+      () => "ok",
+      (e: { code?: string; status?: number; details?: { paths?: string[] } }) =>
+        `${e.code}:${e.status}:${(e.details?.paths ?? []).join(",")}`,
+    );
+  it("vế starter_is_top ở Bắt đầu khi ⇒ 422 TRIGGER_FACT_CORE kèm đường lỗi", async () => {
+    const when = { op: "and", conds: [{ fact: "starter_is_top", op: "eq", value: true }] };
+    expect(await save(withWhen(when))).toBe("TRIGGER_FACT_CORE:422:trigger.when.conds.0");
+  });
+  it("vế trong nhóm cũng bị chặn", async () => {
+    const when = {
+      op: "and",
+      conds: [{ op: "or", conds: [{ fact: "starter_is_top", op: "eq", value: true }] }],
+    };
+    expect(await save(withWhen(when))).toBe("TRIGGER_FACT_CORE:422:trigger.when.conds.0.conds.0");
+  });
+  it("dữ kiện thường (không phải lõi) không bị chặn bởi luật này", async () => {
+    const when = { op: "and", conds: [{ fact: "total_value", op: "gt", value: 1 }] };
+    expect(await save(withWhen(when))).not.toContain("TRIGGER_FACT_CORE");
+  });
+});

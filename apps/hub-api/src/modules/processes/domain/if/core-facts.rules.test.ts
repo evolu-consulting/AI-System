@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mergeFacts, splitFactKeys, starterIsTop } from "./core-facts.rules";
+import { mergeFacts, splitFactKeys, starterIsTop, triggerCoreFactPaths } from "./core-facts.rules";
 
 const ROOT = "11111111-1111-4111-8111-111111111111";
 const CHILD = "22222222-2222-4222-8222-222222222222";
@@ -44,5 +44,20 @@ describe("CR-160 · tách khoá + gộp dữ kiện", () => {
       starter_is_top: true,
       a: 1,
     });
+  });
+});
+
+describe("CR-160 · «Bắt đầu khi» không dùng được khoá lõi", () => {
+  it("vế đơn và vế trong nhóm dùng starter_is_top ⇒ đường lỗi, dữ kiện khác ⇒ hợp lệ", () => {
+    expect(triggerCoreFactPaths(undefined)).toEqual([]);
+    expect(triggerCoreFactPaths({ conds: [{ fact: "total_value" }] })).toEqual([]);
+    expect(
+      triggerCoreFactPaths({
+        conds: [
+          { fact: "starter_is_top" },
+          { conds: [{ fact: "deal" }, { fact: "starter_is_top" }] },
+        ],
+      }),
+    ).toEqual(["trigger.when.conds.0", "trigger.when.conds.1.conds.1"]);
   });
 });

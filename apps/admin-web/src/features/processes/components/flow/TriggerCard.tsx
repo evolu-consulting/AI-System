@@ -1,4 +1,5 @@
 // CR-122 · U1 · FLOW2-FR-02/16: node "Bắt đầu khi" — luôn là node đầu của flow: chọn sự kiện app khai + điều kiện trên dữ kiện của sự kiện.
+import { triggerFactsOf } from "@ai/contracts/app-manifest";
 import type { FlowTrigger } from "@ai/contracts/hub-admin";
 import { Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -96,7 +97,7 @@ export function TriggerCard({
           <FactWhenEditor
             id="trigger"
             when={trigger.when}
-            facts={ev.facts}
+            facts={triggerFactsOf(ev.facts)}
             disabled={readOnly}
             onChange={onWhen}
           />

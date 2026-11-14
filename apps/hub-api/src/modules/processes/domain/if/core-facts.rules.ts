@@ -2,15 +2,13 @@
 // (không có bản ghi app ⇒ không có `FactsReader`). App chỉ KHAI khoá ở manifest `events[].facts` để trình sửa cho chọn và lưu def kiểm kiểu.
 // Luật thuần (bản SQL ở `adapters/runs/core-facts.repo.ts`): `starter_is_top` Đúng ⇔ người bắt đầu lượt đang là trưởng của một phòng GỐC.
 
-/** Khoá dữ kiện lõi (khớp `AppFactDecl.key` ở manifest). */
-export const CORE_FACT_KEYS = ["starter_is_top"] as const;
-export type CoreFactKey = (typeof CORE_FACT_KEYS)[number];
+import { CORE_FACT_KEYS, type CoreFactKey, isCoreFact } from "@ai/contracts/app-manifest";
 
-const isCore = (k: string): k is CoreFactKey => (CORE_FACT_KEYS as readonly string[]).includes(k);
+export { CORE_FACT_KEYS, type CoreFactKey };
 
 /** Tách khoá được hỏi: `core` do engine đọc, `app` giao `FactsReader` của app (khoá lạ đi về app, như trước). */
 export function splitFactKeys(keys: readonly string[]): { core: CoreFactKey[]; app: string[] } {
-  return { core: keys.filter(isCore), app: keys.filter((k) => !isCore(k)) };
+  return { core: keys.filter(isCoreFact), app: keys.filter((k) => !isCoreFact(k)) };
 }
 
 /**
@@ -32,4 +30,20 @@ export function mergeFacts<V>(
 ): Record<string, V> | null {
   if (!app && !core) return null;
   return { ...(app ?? {}), ...(core ?? {}) };
+}
+
+type WhenLike = { conds: readonly ({ fact: string } | { conds: readonly { fact: string }[] })[] };
+/** Luật lưu: đường (`trigger.when.conds.i[.conds.j]`) của vế «Bắt đầu khi» dùng khoá lõi (không đọc được lúc khớp sự kiện); rỗng = hợp lệ. */
+export function triggerCoreFactPaths(when: WhenLike | null | undefined): string[] {
+  const out: string[] = [];
+  (when?.conds ?? []).forEach((c, i) => {
+    const base = `trigger.when.conds.${i}`;
+    if ("fact" in c) {
+      if (splitFactKeys([c.fact]).core.length > 0) out.push(base);
+    } else
+      c.conds.forEach((g, j) => {
+        if (splitFactKeys([g.fact]).core.length > 0) out.push(`${base}.conds.${j}`);
+      });
+  });
+  return out;
 }

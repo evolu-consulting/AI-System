@@ -3,6 +3,7 @@ import type { ProcessDefInput } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { claimError } from "../core/errors";
+import { triggerCoreFactPaths } from "../domain/if/core-facts.rules";
 import { triggerParamIssue } from "../triggers/schedule.rules";
 import { defError } from "./defs.map";
 import type * as repo from "./defs.repo";
@@ -17,6 +18,9 @@ export async function flowCheck(
 ): Promise<void> {
   const range = triggerParamIssue(input.trigger); // CR-127 · E6b · N ngày ngoài khoảng manifest ⇒ 422
   if (range) throw claimError("TRIGGER_PARAM_RANGE", range);
+  // CR-160 · «Bắt đầu khi» dùng dữ kiện lõi (`starter_is_top`) sẽ không bao giờ khớp ⇒ 422 rõ, không để quy trình im lặng không chạy
+  const core = triggerCoreFactPaths(input.trigger?.when);
+  if (core.length > 0) throw claimError("TRIGGER_FACT_CORE", { paths: core });
   const paths = flowDefPaths(input, tenantId, cur);
   if (paths.length > 0) throw defError("PROCESS_DEF_INVALID", { paths });
   await receiveOwnerCheck(tx, tenantId, input);

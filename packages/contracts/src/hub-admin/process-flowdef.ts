@@ -4,6 +4,7 @@
 // Không import vào `./processes` (file này import nó) ⇒ không vòng import; export qua `hub-admin/index.ts`.
 import { z } from "zod";
 import { APP_KEY_RE } from "../app-catalog";
+import { triggerFactsOf } from "../app-manifest/core-facts";
 import type { AppEventDecl, AppFactType } from "../app-manifest/manifest";
 import { PROCESS_NAME_MAX, PROCESS_STAGES_CEILING, ProcessKeySchema } from "../chat/processes";
 
@@ -103,7 +104,8 @@ function condOk(c: FactCond, type: AppFactType): boolean {
 }
 
 function whenIssues(w: FactWhen, ev: AppEventDecl, add: (p: string, r: FlowDefRule) => void) {
-  const types = new Map(ev.facts.map((f) => [f.key, f.type]));
+  // CR-160 · khoá lõi (`starter_is_top`) engine đọc từ lượt, không có trong sự kiện ⇒ «Bắt đầu khi» không dùng được (chỉ node Nếu).
+  const types = new Map(triggerFactsOf(ev.facts).map((f) => [f.key, f.type]));
   const check = (c: FactCond, path: string) => {
     const t = types.get(c.fact);
     if (t === undefined || !condOk(c, t)) add(path, "FLOW_WHEN_INVALID");

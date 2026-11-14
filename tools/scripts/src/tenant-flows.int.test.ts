@@ -243,6 +243,11 @@ describe("CR-159 · quy trình 3 công ty", () => {
     const ky = (send.stages as St[]).find((s) => s.executor.tool_key === "contracts-esign-send");
     expect(ky?.executor.args.company_signers.value).toBe(`user:${uidOf("nitigroup")(tien)}`);
     expect(JSON.stringify(send.stages)).not.toContain('escalate":{"after_h');
+    // phiếu: sau duyệt (hoặc bỏ qua) bước «Ghi đã chi» do Phương làm
+    const buy = await defOf("nitigroup", FLOW_NAMES.buy);
+    expect((buy.stages as St[]).find((s) => s.key === "ghi-da-chi")?.after.approver_user_id).toBe(
+      uidOf("nitigroup")(phuong),
+    );
   });
 
   it("preschool: không bước Duyệt nào, Dung ký, có Gửi đối tác, Nhận HĐ Dung ký, không phiếu", async () => {
