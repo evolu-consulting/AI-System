@@ -113,6 +113,17 @@ Evolu: quy trình **Nhận HĐ từ đối tác (UAT)**: Duyệt → Ký → Đ�
 | C08 | Demo · `demo-owner` | Trang Quy trình › quy trình bất kỳ › xoá «Ký qua» (hoặc người ký phía công ty) ở bước Ký › Lưu | Báo lỗi theo từng ô («Chọn ký qua…», «Chọn người ký phía công ty»); chưa lưu được. Khôi phục lại rồi Lưu OK. | |
 | C09 | Demo · `demo-owner` | Tắt quy trình «UAT · HĐ phòng Kinh doanh gửi đối tác» rồi gửi duyệt hợp đồng khác của Kinh doanh | Hợp đồng đi theo quy trình khớp kế tiếp («Duyệt hợp đồng»). Bật lại sau khi thử. | |
 
+## 10. HĐ mẫu Nhượng quyền và Thỏa thuận hợp tác (CR-152)
+Nạp thêm: `bash seed-demo.sh --kinds-only` (chạy sau `--org-only` và `--partner-only`; chạy lại không trùng). Có 2 hợp đồng mẫu trên Demo, đối tác là Evolu có sẵn trong sổ đối tác.
+| Mã | Vai + tài khoản | Bước bấm | Kết quả mong đợi | Đạt/Không |
+|---|---|---|---|---|
+| K01 | Demo · `cuong.le` | Hợp đồng › mở «HĐ mẫu · Nhượng quyền Cà Phê Mẫu» | Loại Nhượng quyền, mình là bên nhượng quyền, phí ban đầu 300 triệu, phí 5% doanh thu hằng tháng, hiệu lực 3 năm từ tháng sau; đã có hiệu lực (Đã xong); có tệp PDF mẫu. | |
+| K02 | `cuong.le` | Cùng hợp đồng › Mốc kỳ | Có mốc phí ban đầu, mỗi tháng một mốc «Báo cáo doanh thu kỳ» và một mốc thu phí, kèm nhắc gia hạn. | |
+| K03 | `em.hoang` | Mốc kỳ đầu › «Ghi doanh thu kỳ…» nhập 820.000.000 | Phí kỳ ra 41.000.000 (5%) trên mốc thu phí; ghi lại sau khi đã xác nhận thu thì báo kỳ đã khoá. | |
+| K04 | `dung.pham` | Mở «HĐ mẫu · Thỏa thuận hợp tác Logistics miền Tây» | Loại Thỏa thuận hợp tác, chia 60% lợi nhuận phần mình, đối soát hằng quý; trạng thái Đang chờ duyệt. | |
+| K05 | `demo-owner` (khác người tạo `dung.pham`) | Việc cần duyệt › duyệt thỏa thuận hợp tác | Duyệt được; xong thì có mốc «Đối soát» mỗi quý và nhắc gia hạn. Người tạo không tự duyệt được hợp đồng của mình. | |
+| K06 | `demo-owner` | Cài đặt › Điểm uy tín | Có nhóm Nhượng quyền và nhóm Hợp tác; hai hợp đồng mẫu không làm sai điểm của đối tác Evolu. | |
+
 ## 9. Ghi chú còn thiếu
 - Hai loại hợp đồng mới của CR-152 (Nhượng quyền, Thỏa thuận hợp tác) chưa có trên bản này, chưa có hợp đồng mẫu và chưa có ca; thêm khi CR-152 vào nhánh.
 - Ca K03 cần nhà cung cấp ký thử; nếu chưa có thì ghi «Bỏ qua». Ca N08 cần tệp PDF có chữ.

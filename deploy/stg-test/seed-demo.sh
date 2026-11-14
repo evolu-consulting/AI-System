@@ -6,13 +6,14 @@
 # Ma nguon script: neu image :staging chua co ban moi, chep file vao ./seed-src/<ten>.ts — chung duoc mount de len /app/tools/scripts/src (xoa thu muc sau khi build lai).
 # CR-150: buoc `partner` (UAT 2 cong ty: demo gui → evolu nhan) CHI THEM du lieu o evolu (nguoi/nhom `uat-nhan-*`, 1 quy trinh Nhan HD), khong xoa/sua; mat khau nguoi UAT evolu o file UAT_EVOLU.pw (tu sinh lan dau, khong in).
 #   Stack stg-test chua co cong ty `evolu` ⇒ buoc partner TAO cong ty Evolu (+ goi Hop dong + quan tri uat-nhan-admin); co san thi chi them.
-#   bash seed-demo.sh [--org-only | --showcase-only | --purchase-only | --partner-only] [--trial] [--dry-run]
+# CR-152: buoc `kinds` (--kinds-only) them 2 HD mau tren demo: «Nhuong quyen Ca Phe Mau» (DONE, co moc ky) + «Thoa thuan hop tac Logistics mien Tay» (dang cho duyet). Chay SAU org + partner; khong nam trong mac dinh.
+#   bash seed-demo.sh [--org-only | --showcase-only | --purchase-only | --partner-only | --kinds-only] [--trial] [--dry-run]
 set -euo pipefail
 cd "$(dirname "$0")"
 . ./lib.sh
 [ "$PROJECT" = "sohoptac2-staging" ] || { echo "seed-demo: sai project"; exit 4; }
 STEPS="org showcase purchase partner"; TRIAL=""
-for a in "$@"; do case "$a" in --org-only) STEPS=org;; --showcase-only) STEPS=showcase;; --purchase-only) STEPS=purchase;; --partner-only) STEPS=partner;; --trial) TRIAL="--trial";; esac; done
+for a in "$@"; do case "$a" in --org-only) STEPS=org;; --showcase-only) STEPS=showcase;; --purchase-only) STEPS=purchase;; --partner-only) STEPS=partner;; --kinds-only) STEPS=kinds;; --trial) TRIAL="--trial";; esac; done
 MOUNTS=()
 for f in seed-src/*.ts; do [ -e "$f" ] && MOUNTS+=(-v "$PWD/$f:/app/tools/scripts/src/$(basename "$f"):ro"); done
 if [ "$DRY" = 1 ]; then echo "[dry-run] project $PROJECT, buoc: $STEPS $TRIAL, mount ${#MOUNTS[@]} file"; exit 0; fi
@@ -26,6 +27,7 @@ for s in $STEPS; do
     showcase) tool tools/scripts/src/seed-flow-showcase.ts --apply ;;
     purchase) tool tools/scripts/src/seed-purchase-flow.ts $TRIAL ;;
     partner) tool tools/scripts/src/seed-demo-partner.ts ;;
+    kinds) tool tools/scripts/src/seed-kind-samples.ts ;;
   esac
 done
 unset SEED_ADMIN_PASSWORD DEMO_OWNER_PW UAT_EVOLU_PW
