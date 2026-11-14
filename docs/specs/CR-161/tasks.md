@@ -52,7 +52,7 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 | 3 | Migration 0146/0147 + int chat | cr161-chat-db | [x] |
 | 4 | Migration community 0020 + int | cr161-posts-db | [x] |
 | 5 | API kết nối + bài | cr161-link-api | [x] |
-| 6 | API trò chuyện + perf | cr161-chat-api | [ ] |
+| 6 | API trò chuyện + perf | cr161-chat-api | [x] |
 | 7 | Web kết nối [test: apps/workspace-web/src/features/partners/lib/connect.test.ts » mã lỗi ⇒ câu dễ hiểu] | cr161-web-link | [x] |
 | 8 | Web trò chuyện + Bảng tin | cr161-web-chat | [ ] |
 | 9 | e2e hành trình | cr161-e2e | [ ] |
@@ -85,6 +85,11 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 - (lát 5) `cc.link` phát SAU commit qua `packStreamPublishMany` (một pipeline); người nhận = `hub.cc_owner_users` (chỉ trả công ty đang kết nối/có lời mời chờ ⇒ bên chặn-trước không bao giờ nhận). Từ chối chỉ làm tươi tab công ty từ chối (Q3). `partnerModule(db, view, {redis})` thêm tham số tuỳ chọn; `packs.mount.ts` truyền `d.redis`.
 - (lát 5) Tên người mời lấy từ `admin.users.display_name` (`selfContactOf`), không nhận từ thân request. `repo.notify` (cc_notify) có sẵn cho lát 6, từ chối link không dạng `/contracts/...` trước khi chạm DB.
 - (lát 5) Migration pack-contracts `0116_cr161_cc_grants.sql`: GRANT USAGE schema hub + EXECUTE mọi hàm công khai 0145/0146 (kể cả partner_link_accept/block) cho `contracts_rw` không điều kiện; `community.cc_posts` + USAGE schema community cấp trong khối DO có `to_regprocedure` (thứ tự áp dụng gói community/contracts không cố định).
+- (lát 6) Tệp: `cc_files.id` = `file_id` uuid của FileBox và `storage_key` = `<tenant bên tải>/<id>` ⇒ org `t_<tenant>` + id suy từ khoá, không cột phụ, không migration 0148. Tải lên: kiểm đang kết nối (409) TRƯỚC khi đưa byte lên kho; DB từ chối (trần 50, ngắt giữa chừng) ⇒ xoá byte vừa lên. 413/415 dùng mã `MSG_FILE_TOO_LARGE`/`MSG_FILE_TYPE` của tin nhắn SHT (đuôi theo `mimeByName`, ≤ 20 MB).
+- (lát 6) Công ty thứ ba (không có luồng/kết nối với `:tenant_id`): đọc ⇒ 404 `CONNECT_NO_THREAD`, gửi/tải lên ⇒ 409 `CONNECT_READ_ONLY`, đã đọc ⇒ `last_read_seq` 0, tệp ⇒ 404; không tạo dòng nào (DB suy luồng từ công ty người gọi). `mine` của tin tính theo CÔNG TY (người cùng công ty với người gửi thấy `mine=true`).
+- (lát 6) `cc.msg` chỉ phát khi `created=true` (gửi lặp không phát), SAU commit, một pipeline cho cả hai công ty; đánh dấu đã đọc không phát (chưa có sự kiện trong spec). Gửi tốn thêm 1 câu NGOÀI tx để lấy tên người gửi (`selfContactOf`).
+- (lát 6) Việc nền dọn tệp: vòng `cc-files-sweep` mỗi 1 giờ, bật cùng cờ worker với nhắc hạn (`connectDeps` ở `packs.contracts-attachments.ts`, giữ `packs.mount.ts` ≤ 400 dòng; `partnerModule` nhận `ConnectModuleDeps`). DB một câu `hub.cc_files_sweep('24 hours')` (scope system), xoá FileBox song song ≤ 20 mỗi nhóm, lỗi nuốt.
+- (lát 6) Perf thật (evotest, `connect.perf.int.test.ts`, p95 / câu SQL repo): tìm tên 19,2 ms · MST 2,7 ms · danh sách + chưa đọc 24,1 ms · trang 50 tin (100.000 tin) 6,6 ms (trang sâu 5,0) · gửi 5,6 ms · bài công khai 3,8 ms; đều 1 câu.
 - (PLAN) Kết nối suy ra từ `hub.partner_links` hai chiều, không bảng mới (G1). Ngắt = xoá 2 dòng chưa chặn.
 - (PLAN) Số migration: hub 0145–0147 (hiện có tới 0144), community 0020 (hiện có tới 0019); community 0021 trả lại.
 
@@ -119,11 +124,11 @@ Tìm, mời, đồng ý, từ chối, ngắt chỉ cho người có việc `admi
 ### ADDED sht/tro-chuyen-cong-ty.md
 #### Yêu cầu: Trò chuyện giữa hai công ty đã kết nối
 Mỗi cặp công ty một luồng chung trong tab «Trò chuyện» của trang đối tác; chỉ người Toàn quyền hai công ty thấy và nhắn; tin ≤ 4000 ký tự, ≤ 10 tệp ≤ 20 MB; tin mới báo chuông (một chuông chưa đọc mỗi luồng), không email.
-- Kịch bản: khi Tiên nhắn kèm tệp thì Dung thấy tin + tệp tức thì và nhận một chuông [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » R8 gửi tin, R9 chuông; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » R11 tệp]
-- Kịch bản: khi gửi lặp cùng mã thì chỉ có một tin và một chuông [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » R8 gửi tin, R9 chuông; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » đồng thời]
-- Kịch bản: khi công ty thứ ba hoặc nhân viên thường đọc, gửi, tải tệp của luồng thì 404/403 và không thấy dòng nào [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » công ty thứ ba không đọc/ghi luồng A–B; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » kiểm đầu vào và quyền]
-- Kịch bản: khi đã ngắt kết nối thì vẫn đọc được tin cũ, không gửi/tải lên được [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » sau ngắt chỉ đọc, kết nối lại dùng chính luồng cũ]
-- Kịch bản: khi luồng có 100.000 tin thì trang 50 tin p95 ≤ 20 ms và gửi tin p95 ≤ 40 ms [test: thủ công — chưa viết]
+- Kịch bản: khi Tiên nhắn kèm tệp thì Dung thấy tin + tệp tức thì và nhận một chuông [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » R8 gửi tin, R9 chuông; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » R11 tệp; apps/hub-api/src/modules/packs/contracts/connect/connect.chat.routes.int.test.ts » R8 gửi / xem / đã đọc; apps/hub-api/src/modules/packs/contracts/connect/connect.chat.routes.int.test.ts » R11 tệp]
+- Kịch bản: khi gửi lặp cùng mã thì chỉ có một tin và một chuông [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » R8 gửi tin, R9 chuông; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » đồng thời; apps/hub-api/src/modules/packs/contracts/connect/connect.chat.routes.int.test.ts » R8 gửi / xem / đã đọc]
+- Kịch bản: khi công ty thứ ba hoặc nhân viên thường đọc, gửi, tải tệp của luồng thì 404/403 và không thấy dòng nào [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » công ty thứ ba không đọc/ghi luồng A–B; apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » kiểm đầu vào và quyền; apps/hub-api/src/modules/packs/contracts/connect/connect.chat.routes.int.test.ts » công ty thứ ba; apps/hub-api/src/modules/packs/contracts/connect/connect.chat.routes.int.test.ts » R1 cổng Toàn quyền ở route trò chuyện]
+- Kịch bản: khi đã ngắt kết nối thì vẫn đọc được tin cũ, không gửi/tải lên được [test: apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts » sau ngắt chỉ đọc, kết nối lại dùng chính luồng cũ; apps/hub-api/src/modules/packs/contracts/connect/connect.chat.routes.int.test.ts » R8 sau khi ngắt kết nối]
+- Kịch bản: khi luồng có 100.000 tin thì trang 50 tin p95 ≤ 20 ms và gửi tin p95 ≤ 40 ms [test: apps/hub-api/src/modules/packs/contracts/connect/connect.perf.int.test.ts » perf kết nối + trò chuyện]
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Công ty đã kết nối xem bài công khai của nhau (CR-161)
