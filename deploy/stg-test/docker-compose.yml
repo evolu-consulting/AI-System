@@ -91,6 +91,7 @@ services:
       CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL}
       HUB_OPS_WATCH: "off"
       CONTRACTS_APPROVAL_ENGINE: "on"
+      HUB_PARTNER_MAILBOX: "on"
     command: ["bun", "--env-file=/run/s2/app.env", "apps/hub-api/src/server.ts"]
     volumes:
       - ./.env:/run/s2/app.env:ro
