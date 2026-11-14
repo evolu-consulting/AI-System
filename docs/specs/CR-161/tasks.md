@@ -58,6 +58,7 @@ Mỗi lát ≤ 20 phút; lát 3 và 6 sát trần — nếu quá, tách «tệp�
 | 9 | e2e hành trình [test: e2e/cr161/ket-noi-cong-ty.spec.ts » CR161-J1 · Tiên (NitiGroup) tìm Preschool, gửi lời mời kèm lời nhắn ⇒ thấy «Đã gửi lời mời — chờ trả lời»] | cr161-e2e | [x] |
 
 ## Quyết định trong lúc làm
+- (sửa id tệp) Sửa pack-contracts 0116 (đã gộp) sang chữ ký mới của cc_file_add: 0116 CHỈ mới áp trên evotest (bản test chạy b9a8fcd9d, prod chưa có) — ngoại lệ, không lấy làm tiền lệ sửa migration đã áp.
 - (lát 2) Lỗi nghiệp vụ DB dùng SQLSTATE riêng: `CC422` (CONNECT_NOT_LISTED → 422), `CC409` (MESSAGE `CONNECT_DECLINED` | `CONNECT_NOT_CONNECTED` → 409); `42501` → 403/404 như cũ; `22023` → 400.
 - (lát 2) `cc_invite` buộc `p_user` là người Toàn quyền của tenant đang thao tác (42501 nếu không); các hàm khác chỉ kiểm tenant, cổng người dùng là `packGuard` ở route (R1).
 - (lát 2) B chặn A TRƯỚC khi A từng mời ⇒ `cc_invite` trả `pending_out` im lặng, không đổi dòng (giữ «không lộ» của 0118); R3 `CONNECT_DECLINED` chỉ khi A đã xin (`requested_at` có).
