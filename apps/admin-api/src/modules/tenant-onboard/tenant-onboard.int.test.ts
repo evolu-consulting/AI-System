@@ -2,10 +2,10 @@
 // users.service), chạy lại không đổi gì và không sinh mật khẩu, trưởng/thành viên gán đúng (không pending), thiếu nơi ghi mật khẩu
 // ⇒ lỗi trước khi ghi DB, mật khẩu không có trong báo cáo, đổi tên/chức vụ/vai không đụng mật khẩu.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, stat } from "node:fs/promises";
+import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createDb } from "@ai/db";
+import { createDb, verifyPassword } from "@ai/db";
 import { cloneMigratedTestDb, migrateFullTest } from "@ai/db/test-db";
 import postgres from "postgres";
 import { isAppError } from "../../lib/errors";
@@ -41,9 +41,9 @@ const spec = (o?: Parameters<typeof yaml>[0]) => {
   if (!p.ok) throw new Error(JSON.stringify(p.issues));
   return p.spec;
 };
-const sink = async (email: string, pw: string) => {
+const sink = async (email: string, pw?: string) => {
   const { appendFile } = await import("node:fs/promises");
-  await appendFile(pwFile, `${email}\t${pw}\n`, { mode: 0o600 });
+  await appendFile(pwFile, pw === undefined ? `${email}\n` : `${email}\t${pw}\n`, { mode: 0o600 });
 };
 const lines = async () =>
   (await readFile(pwFile, "utf8").catch(() => "")).split("\n").filter((l) => l !== "");
@@ -76,7 +76,7 @@ afterAll(async () => {
 
 describe("CR-159 · onboarding users + add-on", () => {
   test("tạo mới: user qua users.service (must_change_password), chức vụ, vai, add-on, trưởng và thành viên gán ngay (không pending), mật khẩu chỉ trong file", async () => {
-    const r = await onboardTenant(db, spec(), PA, sink);
+    const r = await onboardTenant(db, spec(), PA, { savePassword: sink });
     expect(r.users).toEqual({
       created: 3,
       updated: 0,
@@ -123,7 +123,7 @@ describe("CR-159 · onboarding users + add-on", () => {
 
   test("chạy lại lần 2: không đổi gì (version, audit, config_version, mật khẩu), không sinh mật khẩu mới", async () => {
     const before = await snap();
-    const r = await onboardTenant(db, spec(), PA, sink);
+    const r = await onboardTenant(db, spec(), PA, { savePassword: sink });
     expect(r.users).toEqual({ created: 0, updated: 0, unchanged: 3, created_emails: [] });
     expect(r.addons).toEqual([{ key: "contracts-community", granted: false }]);
     expect(r.members).toEqual({ added: 0, heads_set: 0, pending_emails: [] });
@@ -137,7 +137,7 @@ describe("CR-159 · onboarding users + add-on", () => {
       db,
       spec({ name: "Sếp Mới", title: "Tổng giám đốc", role: "admin" }),
       PA,
-      sink,
+      { savePassword: sink },
     );
     expect(r.users).toMatchObject({ created: 0, updated: 2, unchanged: 1 });
     const [u] = await owner<
@@ -172,7 +172,7 @@ describe("CR-159 · onboarding users + add-on", () => {
 
   test("add-on chưa đăng ký ⇒ lỗi rõ, không im lặng", async () => {
     const s = { ...spec({ key: "cr159-y" }), addons: ["khong-co-addon"] };
-    const err = await onboardTenant(db, s, PA, sink).then(
+    const err = await onboardTenant(db, s, PA, { savePassword: sink }).then(
       () => null,
       (e: unknown) => e,
     );
@@ -181,7 +181,10 @@ describe("CR-159 · onboarding users + add-on", () => {
 
   test("thư mục của --pw-out không ghi được ⇒ PW_OUT_NOT_WRITABLE, chưa ghi gì vào DB", async () => {
     const pw = passwordFile(join(tmpdir(), "cr159-khong-co-thu-muc", "pw.tsv"));
-    const err = await onboardTenant(db, spec({ key: "cr159-w" }), PA, pw.save, pw.probe).then(
+    const err = await onboardTenant(db, spec({ key: "cr159-w" }), PA, {
+      savePassword: pw.save,
+      probeSink: pw.probe,
+    }).then(
       () => null,
       (e: unknown) => e,
     );
@@ -192,12 +195,91 @@ describe("CR-159 · onboarding users + add-on", () => {
   test("add-on sai ⇒ ADDON_UNKNOWN trước khi tạo gì (không có tenant, không có user, không có mật khẩu)", async () => {
     const s = { ...spec({ key: "cr159-z" }), addons: ["khong-co-addon"] };
     const n = (await lines()).length;
-    const err = await onboardTenant(db, s, PA, sink).then(
+    const err = await onboardTenant(db, s, PA, { savePassword: sink }).then(
       () => null,
       (e: unknown) => e,
     );
     expect(JSON.stringify((err as { details?: unknown }).details)).toContain("ADDON_UNKNOWN");
     expect(await owner`select 1 from admin.tenants where key = 'cr159-z'`).toHaveLength(0);
     expect(await lines()).toHaveLength(n);
+  });
+
+  const SHARED = "Chung-Mot-Mat-Khau-9!";
+  const hashes = async (key: string) =>
+    owner<
+      { username: string; hash: string; must: boolean }[]
+    >`select u.username, u.password_hash as hash,
+      u.must_change_password as must from admin.users u join admin.tenants t on t.id = u.tenant_id
+      where t.key = ${key} order by u.username`;
+
+  test("mật khẩu chung: user mới đăng nhập được bằng nó, mặc định vẫn ép đổi, chạy lại không đổi mật khẩu, không ghi mật khẩu ra báo cáo hay file", async () => {
+    const out = join(await mkdtemp(join(tmpdir(), "cr159s-")), "emails.txt");
+    const f = passwordFile(out);
+    const o = { sharedPassword: SHARED, savePassword: f.save, probeSink: f.probe };
+    const r = await onboardTenant(db, spec({ key: "cr159-s" }), PA, o);
+    expect(r.users.created).toBe(3);
+    expect(JSON.stringify(r)).not.toContain(SHARED);
+    expect(await readFile(out, "utf8")).not.toContain(SHARED);
+    expect((await readFile(out, "utf8")).trim().split("\n")).toHaveLength(3);
+    const hs = await hashes("cr159-s");
+    for (const h of hs) {
+      expect(await verifyPassword(SHARED, h.hash)).toBe(true);
+      expect(h.must).toBe(true);
+    }
+    // chạy lại với mật khẩu KHÁC: user đã có giữ nguyên mật khẩu
+    const r2 = await onboardTenant(db, spec({ key: "cr159-s" }), PA, {
+      sharedPassword: "Mat-Khau-Khac-777",
+    });
+    expect(r2.users).toMatchObject({ created: 0, unchanged: 3 });
+    expect((await hashes("cr159-s")).map((h) => h.hash)).toEqual(hs.map((h) => h.hash));
+  });
+
+  test("mật khẩu chung sai độ dài ⇒ lỗi trước khi ghi DB, thông báo không chứa mật khẩu", async () => {
+    const err = await onboardTenant(db, spec({ key: "cr159-l" }), PA, {
+      sharedPassword: "ngan",
+    }).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(isAppError(err) && err.code).toBe("VALIDATION_ERROR");
+    expect(JSON.stringify((err as { details?: unknown }).details)).toContain("PASSWORD_LENGTH");
+    expect(JSON.stringify(err)).not.toContain('ngan"');
+    expect(await owner`select 1 from admin.tenants where key = 'cr159-l'`).toHaveLength(0);
+  });
+
+  test("CLI --password-env --no-force-change: stdout và stderr không chứa mật khẩu, user mới must_change_password=false, đăng nhập được và biến rỗng báo lỗi", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "cr159c-"));
+    const file = join(dir, "t.yaml");
+    await writeFile(file, yaml({ key: "cr159-n" }));
+    const cli = join(import.meta.dir, "tenant-onboard.cli.ts");
+    const run = async (env: Record<string, string>, ...flags: string[]) => {
+      const pr = Bun.spawn(
+        ["bun", cli, "--file", file, "--actor", PA, "--password-env", "ONBOARD_PASSWORD", ...flags],
+        {
+          env: { ...process.env, ADMIN_API_DATABASE_URL: API, ...env },
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      );
+      const [out, err] = await Promise.all([
+        new Response(pr.stdout).text(),
+        new Response(pr.stderr).text(),
+      ]);
+      return { code: await pr.exited, out, err };
+    };
+    const empty = await run({ ONBOARD_PASSWORD: "" });
+    expect(empty.code).toBe(1);
+    expect(empty.err).toContain("PASSWORD_ENV_EMPTY");
+    expect(await owner`select 1 from admin.tenants where key = 'cr159-n'`).toHaveLength(0);
+
+    const ok = await run({ ONBOARD_PASSWORD: SHARED }, "--no-force-change");
+    expect(ok.code).toBe(0);
+    expect(ok.out + ok.err).not.toContain(SHARED);
+    const hs = await hashes("cr159-n");
+    expect(hs).toHaveLength(3);
+    for (const h of hs) {
+      expect(await verifyPassword(SHARED, h.hash)).toBe(true);
+      expect(h.must).toBe(false);
+    }
   });
 });

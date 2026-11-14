@@ -152,8 +152,11 @@ export function getUser(c: Call, id: string): Promise<User> {
   return withScope(c.ctx.db, c.scope, async (tx) => toUser(await mustFindUser(tx, c.actor, id)));
 }
 
-async function newTempPassword(): Promise<{ pw: string; hash: string }> {
-  const pw = generateTempPassword((n) => randomBytes(n));
+/** CR-159: onboarding có thể truyền mật khẩu chung (`password`) và bỏ ép đổi (`mustChange=false`); API công khai không dùng. */
+export type CreateOpts = { password?: string; mustChange?: boolean };
+
+async function newTempPassword(given?: string): Promise<{ pw: string; hash: string }> {
+  const pw = given ?? generateTempPassword((n) => randomBytes(n));
   return { pw, hash: await hashPassword(pw) };
 }
 
@@ -162,10 +165,11 @@ export async function createUser(
   c: Call,
   queryTenantId: string | undefined,
   input: UserCreateRequest,
+  opts?: CreateOpts,
 ): Promise<UserCreateResponse> {
   const r = resolveTenantScope(c.actor, queryTenantId, "write");
   if ("code" in r) throw appError(r.code);
-  return createUserIn(c, r.tenantId as string, input);
+  return createUserIn(c, r.tenantId as string, input, undefined, opts);
 }
 
 /**
@@ -189,8 +193,9 @@ async function createUserIn(
   tenantId: string,
   input: UserCreateRequest,
   ext?: ExtCreate,
+  opts?: CreateOpts,
 ): Promise<UserCreateResponse> {
-  const temp = await newTempPassword();
+  const temp = await newTempPassword(opts?.password);
   const user = await configWrite(c, "user.save", async (tx, ch) => {
     // FOR SHARE: tenant không bị khoá/mở khoá giữa lúc đọc `active` và lúc chèn user (locked_by_tenant đúng).
     const t = await repo.findTenantBrief(tx, tenantId, { lock: "share" });
@@ -210,6 +215,7 @@ async function createUserIn(
       passwordHash: temp.hash,
       lockedByTenant: !t.active,
       updatedBy: c.actor.userId,
+      ...(opts?.mustChange === false ? { mustChangePassword: false } : {}),
       ...(ext ? { kind: "external" as const, externalOrgId: ext.orgId } : {}),
     });
     ch.changed({ entity: "user", tenantId });

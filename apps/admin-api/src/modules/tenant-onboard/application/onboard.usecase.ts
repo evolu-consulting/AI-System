@@ -138,14 +138,22 @@ type UserPlan = ReturnType<typeof planUsers>;
 /** Người dùng: tạo mới (mật khẩu tạm ghi file ngay khi sinh) rồi cập nhật tên/vai/chức vụ; không đổi mật khẩu người đã có. */
 async function usersStep(p: OnboardPorts, tid: string, plan: UserPlan) {
   for (const u of plan.create) {
-    const r = await p.createUser(tid, {
-      username: usernameOf(u.email),
-      display_name: u.name,
-      email: u.email,
-      role: roleOf(u.role),
-    });
-    // savePassword đã được kiểm có mặt ở bước đọc; ghi ngay để lỗi sau đó không làm mất mật khẩu.
-    await (p.savePassword as NonNullable<typeof p.savePassword>)(u.email, r.tempPassword);
+    const r = await p.createUser(
+      tid,
+      {
+        username: usernameOf(u.email),
+        display_name: u.name,
+        email: u.email,
+        role: roleOf(u.role),
+      },
+      {
+        ...(p.sharedPassword ? { password: p.sharedPassword } : {}),
+        mustChange: p.forceChange !== false,
+      },
+    );
+    // Ghi ngay để lỗi sau đó không làm mất mật khẩu; mật khẩu chung => chỉ ghi email (không bao giờ ghi mật khẩu chung).
+    if (p.sharedPassword) await p.savePassword?.(u.email);
+    else await (p.savePassword as NonNullable<typeof p.savePassword>)(u.email, r.tempPassword);
     await p.setJobTitle(tid, r.id, u.title);
   }
   for (const u of plan.update) {
@@ -172,9 +180,9 @@ async function precheck(p: OnboardPorts, s: OnboardSpec): Promise<UserPlan> {
     s.users.map((u) => u.email),
   );
   const plan = planUsers(s.users, now);
-  if (plan.create.length > 0 && !p.savePassword)
+  if (plan.create.length > 0 && !p.savePassword && !p.sharedPassword)
     throw p.fail("VALIDATION_ERROR", { reason: "PW_OUT_REQUIRED", new_users: plan.create.length });
-  if (plan.create.length > 0 && p.probeSink) {
+  if (plan.create.length > 0 && p.probeSink && p.savePassword) {
     try {
       await p.probeSink();
     } catch {

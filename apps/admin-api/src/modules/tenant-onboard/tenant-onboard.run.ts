@@ -1,5 +1,6 @@
 // niti-onboard · nối use case onboarding với hạ tầng: `configWrite` (một tx + audit + NOTIFY sau COMMIT), repo SQL,
 // `enablePack` của module packs, AppError. Test/CLI gọi `onboardTenant(db, spec, actorId)`.
+import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts/common";
 import { type Db, withScope } from "@ai/db";
 import { auditOf } from "../../lib/audit/audit.write";
 import type { Actor as AuthActor } from "../../lib/auth-middleware";
@@ -19,12 +20,17 @@ import type { OnboardSpec } from "./domain/onboard.rules";
 
 export type { OnboardReport };
 
-export function onboardPorts(
-  db: Db,
-  actorId: string,
-  savePassword?: (email: string, password: string) => Promise<void>,
-  probeSink?: () => Promise<void>,
-): OnboardPorts {
+export type OnboardOpts = {
+  savePassword?: (email: string, password?: string) => Promise<void>;
+  probeSink?: () => Promise<void>;
+  /** CR-159: mật khẩu chung cho user mới (từ `--password-env`). */
+  sharedPassword?: string;
+  /** false => `--no-force-change`. */
+  forceChange?: boolean;
+};
+
+export function onboardPorts(db: Db, actorId: string, o: OnboardOpts = {}): OnboardPorts {
+  const { savePassword, probeSink } = o;
   const scope = { kind: "platform" } as const;
   const call = { ctx: { db }, scope, actor: { userId: actorId } };
   /** Actor đầy đủ cho users.service (tenant của platform admin); tra một lần, nhớ lại. */
@@ -49,14 +55,16 @@ export function onboardPorts(
   return {
     ...(savePassword ? { savePassword } : {}),
     ...(probeSink ? { probeSink } : {}),
+    ...(o.sharedPassword ? { sharedPassword: o.sharedPassword } : {}),
+    forceChange: o.forceChange !== false,
     addonKnown: async (key) =>
       (await withScope(db, scope, (tx) => featureIdByKey(tx, key))) !== null,
     readUsers: async (key, emails) => {
       await asUser();
       return emails.length === 0 ? [] : withScope(db, scope, (tx) => readUsers(tx, key, emails));
     },
-    createUser: async (tenantId, u) => {
-      const r = await createUser(await asUser(), tenantId, { ...u, locale: "vi" });
+    createUser: async (tenantId, u, opts) => {
+      const r = await createUser(await asUser(), tenantId, { ...u, locale: "vi" }, opts);
       return { id: r.user.id, tempPassword: r.temp_password };
     },
     updateUser: async (id, version, set) => {
@@ -98,10 +106,21 @@ export function onboardPorts(
   };
 }
 
-export const onboardTenant = (
+/** Mật khẩu chung sai độ dài => lỗi TRƯỚC mọi câu ghi (thông báo không chứa mật khẩu). */
+export const sharedPasswordIssue = (pw: string): boolean =>
+  pw.length < PASSWORD_MIN_LEN || pw.length > PASSWORD_MAX_LEN;
+
+export async function onboardTenant(
   db: Db,
   s: OnboardSpec,
   actorId: string,
-  savePassword?: (email: string, password: string) => Promise<void>,
-  probeSink?: () => Promise<void>,
-): Promise<OnboardReport> => run(onboardPorts(db, actorId, savePassword, probeSink), s, actorId);
+  o: OnboardOpts = {},
+): Promise<OnboardReport> {
+  if (o.sharedPassword !== undefined && sharedPasswordIssue(o.sharedPassword))
+    throw appError("VALIDATION_ERROR", {
+      reason: "PASSWORD_LENGTH",
+      min: PASSWORD_MIN_LEN,
+      max: PASSWORD_MAX_LEN,
+    });
+  return run(onboardPorts(db, actorId, o), s, actorId);
+}

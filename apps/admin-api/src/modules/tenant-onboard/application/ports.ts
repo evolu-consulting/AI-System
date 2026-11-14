@@ -71,6 +71,7 @@ export type UserPorts = {
   createUser(
     tenantId: string,
     u: { username: string; display_name: string; email: string; role: "tenant_admin" | "member" },
+    opts?: { password?: string; mustChange?: boolean },
   ): Promise<{ id: string; tempPassword: string }>;
   updateUser(
     id: string,
@@ -79,7 +80,11 @@ export type UserPorts = {
   ): Promise<void>;
   setJobTitle(tenantId: string, userId: string, title: string): Promise<void>;
   /** Ghi `email<TAB>mật khẩu` ngay khi sinh; vắng ⇒ không có `--pw-out`. */
-  savePassword?: (email: string, password: string) => Promise<void>;
+  savePassword?: (email: string, password?: string) => Promise<void>;
+  /** CR-159 · mật khẩu chung cho user MỚI (đã kiểm độ dài; không bao giờ ghi log/báo cáo). */
+  sharedPassword?: string;
+  /** false => user mới `must_change_password=false` (cờ `--no-force-change`); mặc định true. */
+  forceChange?: boolean;
   /** Thử ghi nơi chứa mật khẩu (lỗi ⇒ ném); vắng khi không có `--pw-out`. */
   probeSink?: () => Promise<void>;
   /** Chỉ đọc: khoá add-on đã đăng ký chưa. */

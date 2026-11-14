@@ -5,8 +5,10 @@ import { dirname, join } from "node:path";
 
 export function passwordFile(path: string) {
   return {
-    save: async (email: string, password: string): Promise<void> => {
-      await appendFile(path, `${email}\t${password}\n`, { mode: 0o600 });
+    save: async (email: string, password?: string): Promise<void> => {
+      await appendFile(path, password === undefined ? `${email}\n` : `${email}\t${password}\n`, {
+        mode: 0o600,
+      });
       await chmod(path, 0o600);
     },
     probe: async (): Promise<void> => {

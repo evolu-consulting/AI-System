@@ -1,7 +1,9 @@
 # CR-159 · nitigroup trên prod dựng SẠCH (không import sohoptac): 5 phòng có người, người dùng khai ở `users:`. Email BẬT.
-# Chạy (idempotent, chạy lại an toàn):
-#   bun --env-file=.env.local apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts \n#     --file deploy/tenants/nitigroup.yaml --actor <uuid platform admin> --pw-out <file mật khẩu tạm, quyền 600>
-# `users:` mới ⇒ bắt buộc --pw-out (email<TAB>mật khẩu, chỉ người mới, không in ra); người đã có chỉ cập nhật tên/chức vụ/vai.
+# Chạy (idempotent) với MỘT mật khẩu chung lấy từ biến môi trường (KHÔNG ghi giá trị vào repo/yaml/log):
+#   ONBOARD_PASSWORD=<mật khẩu> bun --env-file=.env.local apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts \
+#     --file deploy/tenants/nitigroup.yaml --actor <uuid platform admin> --password-env ONBOARD_PASSWORD [--no-force-change]
+# Hoặc mật khẩu tạm ngẫu nhiên từng người: thay `--password-env …` bằng `--pw-out <file, quyền 600>`. Mặc định user mới bị ép đổi mật khẩu.
+# `users:` mới ⇒ cần --password-env hoặc --pw-out (email<TAB>mật khẩu, chỉ người mới, không in ra); người đã có chỉ cập nhật tên/chức vụ/vai.
 # Quản trị công ty phải đứng ĐẦU `users:` (tạo trước, tránh lỗi "quản trị cuối cùng" khi đổi vai).
 # Mất mật khẩu tạm: đặt lại trên trang quản trị (Người dùng ⇒ Đặt lại mật khẩu); không chạy lại CLI để lấy.
 key: nitigroup
