@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAgentUserOptions } from "@/features/agents/api";
+import { useUserOptions } from "../../hooks/use-user-options";
 import { eventsOfApp } from "../../lib/flow-def";
 import { FactWhenEditor } from "./FactWhenEditor";
 
@@ -183,7 +183,7 @@ function ReceiveParams(p: {
   tenantId: string | undefined;
 }) {
   const { t } = useTranslation();
-  const users = useAgentUserOptions(
+  const { users } = useUserOptions(
     p.tenantId,
     !p.readOnly || p.trigger.params?.owner_user_id !== undefined,
   );
@@ -242,7 +242,7 @@ function ReceiveParams(p: {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">{t("process.admin.flow.receive.ownerNone")}</SelectItem>
-            {(users.data ?? []).map((u) => (
+            {users.map((u) => (
               <SelectItem key={u.id} value={u.id}>
                 {u.name || u.username}
               </SelectItem>

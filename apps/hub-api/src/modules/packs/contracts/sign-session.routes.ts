@@ -17,13 +17,13 @@ import {
   packActionsFor,
   packGuard,
 } from "../kit/public";
-import { receiveFlowOf, signerMembersOf } from "./adapters/receive-flow.repo";
 import { type SignSessionView, signSessionRepo } from "./adapters/sign-session.repo";
 import {
   SIGN_SESSION_HTTP,
   type SignSessionError,
   signSessionErrorOf,
 } from "./domain/sign-session.rules";
+import { receiveSignerMembers } from "./receive-signers.service";
 
 const KEY = "contracts";
 const UUID = z.uuid();
@@ -110,9 +110,9 @@ export function signSessionRoutes(db: Db, view: PackAccessView, uow: Uow): Hono<
     c: { get(k: "user"): { tenantId: string; userId: string } },
     required: boolean,
   ) => {
-    const { signers } = await receiveFlowOf(db, who(c).tenantId);
-    if (!signers) return required ? fail("NO_SIGN_NODE", 422) : [];
-    return signerMembersOf(db, who(c).tenantId, signers);
+    const members = await receiveSignerMembers(db, who(c).tenantId);
+    if (!members) return required ? fail("NO_SIGN_NODE", 422) : [];
+    return members;
   };
 
   r.get("/contracts/:id/sign-session", packGuard(view, KEY, "read"), async (c) => {
