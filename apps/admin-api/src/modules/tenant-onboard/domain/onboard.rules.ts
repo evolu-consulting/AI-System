@@ -13,7 +13,14 @@ export type DeptIn = {
 };
 
 /** CR-159 · người dùng khai trong yaml: `admin` = quản trị công ty (tenant_admin), `member` = thành viên thường. */
-export type UserIn = { email: string; name: string; title: string; role: "admin" | "member" };
+export type PackRole = "owner" | "editor" | "viewer";
+export type UserIn = {
+  email: string;
+  name: string;
+  title: string;
+  role: "admin" | "member";
+  pack_role?: PackRole | undefined;
+};
 /** Người dùng hiện có (tra theo email) — chỉ các trường onboarding được phép cập nhật. */
 export type UserNow = {
   id: string;
@@ -55,6 +62,12 @@ export type SpecIssue = { code: "DUP_DEPT_KEY" | "PARENT_UNKNOWN"; ref: string }
 
 export const roleOf = (r: UserIn["role"]): "tenant_admin" | "member" =>
   r === "admin" ? "tenant_admin" : "member";
+
+/** CR-159 · người THƯỜNG vào nhóm vai nào của gói: khai `pack_role` hoặc mặc định `editor`. Quản trị do `enablePack` lo (Chủ gói). */
+export const packRoleRows = (users: readonly UserIn[]): { username: string; role: PackRole }[] =>
+  users
+    .filter((u) => u.role === "member")
+    .map((u) => ({ username: usernameOf(u.email), role: u.pack_role ?? "editor" }));
 
 /** Tên đăng nhập = phần trước `@` của email (đã chữ thường). */
 export const usernameOf = (email: string): string => email.slice(0, email.indexOf("@"));

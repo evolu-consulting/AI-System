@@ -2,12 +2,14 @@
 // importer) + Group phòng ban (vi/en) + cây phòng ban + thành viên/trưởng phòng theo email; (2) mỗi gói: `enablePack` (PK-FR-05,
 // cùng đường admin-web — entitlement + 3 Group vai + grant + trợ lý gói `packs.grant_agents`). Không đổi ⇒ không ghi, không audit.
 // CR-159: thứ tự = đọc người dùng (chỉ đọc, kiểm `--pw-out`) → tx tenant → người dùng (usecase users.service) → gói → add-on → tx phòng ban
-// (trưởng/thành viên) — người dùng có TRƯỚC phòng ban nên không còn `pending`; gói sau người dùng nên quản trị mới thành Chủ gói.
+// (trưởng/thành viên) — người dùng có TRƯỚC phòng ban nên không còn `pending`; gói sau người dùng nên quản trị mới thành Chủ gói
+// (`enablePack` + `grantTenantAdmins`, đúng đường wizard) và người thường vào nhóm vai khai trong yaml (`addPackMembers`).
 import {
   bindDecision,
   deptRows,
   memberPairs,
   type OnboardSpec,
+  packRoleRows,
   planUsers,
   profileSame,
   roleOf,
@@ -206,7 +208,9 @@ export async function onboardTenant(
   });
   const users = await usersStep(p, st.tid, plan);
   const packs: OnboardReport["packs"] = [];
-  for (const k of s.packs) packs.push({ key: k, groups: (await p.enablePack(st.tid, k)).groups });
+  const roles = packRoleRows(s.users);
+  for (const k of s.packs)
+    packs.push({ key: k, groups: (await p.enablePack(st.tid, k, roles)).groups });
   const addons: OnboardReport["addons"] = [];
   for (const k of s.addons) addons.push({ key: k, granted: await p.grantAddon(st.tid, k) });
   const o = await p.write(async (repo, ch) => {

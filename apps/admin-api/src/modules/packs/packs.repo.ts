@@ -129,6 +129,40 @@ export async function addTenantAdminsToOwner(
 }
 
 /**
+ * CR-159: người dùng (theo username) vào Group vai `<k>-<vai>` — một câu SQL, tham số JSON; trùng ⇒ bỏ qua; chỉ người đang hoạt động,
+ * không khoá bởi công ty, cùng tenant. Trả số người mới vào theo Group (để ghi vết).
+ */
+export async function addUsersToRoleGroups(
+  tx: Tx,
+  g: { tenantId: string; actorId: string; rows: readonly { groupKey: string; username: string }[] },
+): Promise<{ groupId: string; groupKey: string; usernames: string[] }[]> {
+  if (g.rows.length === 0) return [];
+  const rows = await run<{ group_id: string; key: string; username: string }>(
+    tx,
+    sql`with ins as (
+        insert into admin.group_members (tenant_id, group_id, user_id, added_by)
+        select ${g.tenantId}::uuid, gr.id, u.id, ${g.actorId}::uuid
+        from jsonb_to_recordset(${JSON.stringify(g.rows)}::jsonb) as p("groupKey" text, username text)
+        join admin.groups gr on gr.tenant_id = ${g.tenantId}::uuid and gr.key = p."groupKey"
+        join admin.users u on u.tenant_id = gr.tenant_id and u.username = p.username
+          and u.kind = 'internal' and u.active and u.deactivated_at is null and not u.locked_by_tenant
+        order by gr.id, u.id
+        on conflict (group_id, user_id) do nothing
+        returning group_id, user_id)
+      select ins.group_id, gr.key, u.username from ins
+        join admin.groups gr on gr.id = ins.group_id join admin.users u on u.id = ins.user_id
+        order by gr.key, u.username`,
+  );
+  const by = new Map<string, { groupId: string; groupKey: string; usernames: string[] }>();
+  for (const r of rows) {
+    const e = by.get(r.group_id) ?? { groupId: r.group_id, groupKey: r.key, usernames: [] };
+    e.usernames.push(r.username);
+    by.set(r.group_id, e);
+  }
+  return [...by.values()];
+}
+
+/**
  * UAT B4 · trợ lý AI của gói (`packs.pack_agents`): entitlement + grant 3 Group vai cho tenant — hàm SECURITY DEFINER
  * (`migrations-packs/0005`), cùng tx bật gói. Có đổi ⇒ đã khoá + bump `hub.config_meta`, trả version mới để NOTIFY
  * `hub_config_changed` trong tx (giao khi commit); không đổi ⇒ null.

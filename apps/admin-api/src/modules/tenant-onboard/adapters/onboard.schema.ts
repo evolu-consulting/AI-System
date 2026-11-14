@@ -27,15 +27,19 @@ const DeptSchema = z.strictObject({
 });
 
 /** CR-159 · tên đăng nhập suy từ email nên phần trước `@` phải hợp lệ làm username. */
-const UserSchema = z.strictObject({
-  email: EmailSchema.refine(
-    (e) => USERNAME_RE.test(e.slice(0, e.indexOf("@"))),
-    "USERNAME_FROM_EMAIL",
-  ),
-  name: DisplayNameSchema,
-  title: z.string().trim().min(1).max(JOB_TITLE_MAX),
-  role: z.enum(["admin", "member"]).default("member"),
-});
+const UserSchema = z
+  .strictObject({
+    email: EmailSchema.refine(
+      (e) => USERNAME_RE.test(e.slice(0, e.indexOf("@"))),
+      "USERNAME_FROM_EMAIL",
+    ),
+    name: DisplayNameSchema,
+    title: z.string().trim().min(1).max(JOB_TITLE_MAX),
+    role: z.enum(["admin", "member"]).default("member"),
+    /** Nhóm vai của gói cho người thường (mặc định `editor`); quản trị luôn là Chủ gói nên không được khai. */
+    pack_role: z.enum(["owner", "editor", "viewer"]).optional(),
+  })
+  .refine((u) => !(u.role === "admin" && u.pack_role), "PACK_ROLE_ADMIN");
 const AddonKey = z.string().regex(/^[a-z0-9][a-z0-9-]{1,62}$/);
 
 export const OnboardSpecSchema = z.strictObject({

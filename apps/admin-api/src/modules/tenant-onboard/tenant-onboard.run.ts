@@ -8,7 +8,7 @@ import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { featureIdByKey, grantEntitlement } from "../features/features.entitlements";
 import { setJobTitle } from "../org/org.service";
-import { enablePack } from "../packs/packs.service";
+import { addPackMembers, enablePack } from "../packs/packs.service";
 import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
 import { NEW_TENANT_SETTINGS } from "../tenants/tenants.service";
 import type { Actor as UserActor } from "../users/users.rules";
@@ -98,9 +98,11 @@ export function onboardPorts(db: Db, actorId: string, o: OnboardOpts = {}): Onbo
             ),
         }),
       ),
-    enablePack: async (tenantId, packKey) => ({
-      groups: (await enablePack(call, tenantId, packKey)).groups.length,
-    }),
+    enablePack: async (tenantId, packKey, members) => {
+      const st = await enablePack(call, tenantId, packKey, undefined, { grantTenantAdmins: true });
+      await addPackMembers(call, tenantId, packKey, members);
+      return { groups: st.groups.length };
+    },
     newTenantSettings: NEW_TENANT_SETTINGS,
     fail: (code, details) => appError(code, details),
   };

@@ -97,7 +97,11 @@ export type OnboardPorts = UserPorts & {
   /** Một tx `configWrite`; ném trong `fn` ⇒ rollback. */
   write<T>(fn: (repo: OnboardRepo, sink: OnboardSink) => Promise<T>): Promise<T>;
   /** Bật gói (PK-FR-05, cùng đường admin-web); trả số Group vai. */
-  enablePack(tenantId: string, packKey: string): Promise<{ groups: number }>;
+  enablePack(
+    tenantId: string,
+    packKey: string,
+    members: readonly { username: string; role: "owner" | "editor" | "viewer" }[],
+  ): Promise<{ groups: number }>;
   /** Settings mặc định của tenant mới. */
   newTenantSettings: Readonly<Record<string, unknown>>;
   fail(code: OnboardErrorCode, details?: unknown): Error;
