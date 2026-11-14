@@ -44,7 +44,7 @@ import { KindSummary } from "./KindSummary";
 import { LegalBanner } from "./LegalBanner";
 import { ManagePanel, OwnerRow } from "./ManagePanel";
 import { ManualBanner } from "./ManualBanner";
-import { ManualSide } from "./ManualSide";
+import { ManualSide, showManualSide } from "./ManualSide";
 import { OriginalFileHost } from "./OriginalFileDialog";
 import { ExtractFailed, FileLink, SaveNotice } from "./ReviewParts";
 import { SubmitPreview } from "./SubmitPreview";
@@ -148,7 +148,7 @@ export function ContractBody(p: {
       file={
         file ? (
           <span className="inline-flex items-center gap-2">
-            <FileLink file={file} title={file.name} />
+            <FileLink file={file} />
             <FileRecordButton target={{ kind: "main", contractId: id }} />
           </span>
         ) : null
@@ -162,9 +162,12 @@ export function ContractBody(p: {
       <EffectCard c={c} today={today} />
     </>
   );
+  const manualSide = showManualSide(c, write && sup === null);
   const reading = c.extract_state === "reading" && c.status === "draft" && c.submit_round === 0;
   return (
-    <div className="flex items-start gap-4 max-lg:flex-col">
+    <div
+      className={`w-full gap-4 ${manualSide ? "grid items-start lg:grid-cols-2" : "flex items-start max-lg:flex-col"}`}
+    >
       <div className="min-w-0 flex-1 max-lg:w-full">
         <div className="text-base leading-[1.55]">
           <ContractHead

@@ -757,7 +757,8 @@
       "back": "← Hợp đồng",
       "reading": "Đang đọc hợp đồng…",
       "checkLead": "Kiểm tra lại các trường rồi xác nhận.",
-      "viewFile": "📄 Xem hợp đồng gốc",
+      "viewFile": "Xem hợp đồng gốc",
+      "moreChoices": "Thêm lựa chọn",
       "orig": {
         "title": "Hợp đồng gốc",
         "main": "Hợp đồng gốc",

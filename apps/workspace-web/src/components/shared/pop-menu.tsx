@@ -18,6 +18,12 @@ export type PopItem = {
   why?: string;
 };
 
+/** Vạch ngăn phía trên mục thứ `idx`: chỉ khi mục đòi vạch (divider/danger) VÀ đã có mục phía trước (mục đầu không có vạch). */
+export function showDivider(items: Pick<PopItem, "divider" | "danger">[], idx: number): boolean {
+  const i = items[idx];
+  return idx > 0 && !!i && !!(i.divider || i.danger);
+}
+
 export function PopMenu({
   trigger,
   ariaLabel,
@@ -70,9 +76,9 @@ export function PopMenu({
           role="menu"
           className="absolute right-0 z-30 mt-1 min-w-[200px] rounded-lg border border-rule bg-panel py-1 text-sm shadow-lg"
         >
-          {items.map((i) => (
+          {items.map((i, idx) => (
             <div key={i.key} role="none">
-              {(i.divider || i.danger) && <hr className="my-1 border-rule" />}
+              {showDivider(items, idx) && <hr className="my-1 border-rule" />}
               <button
                 type="button"
                 role="menuitem"

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { useReconcile } from "../hooks/use-manage";
 import { manualTagKey } from "../lib/manual-entry";
-import type { FileRef } from "./ReviewParts";
+import { FileLink, type FileRef } from "./ReviewParts";
 
 type View = {
   id: string;
@@ -59,15 +59,7 @@ export function ManualBanner({
               {t("contracts.review.manualDirty")}
             </span>
           )}
-          {file && (
-            <button
-              type="button"
-              className="btn btn-outline btn-sm lg:hidden"
-              onClick={file.onOpen}
-            >
-              {t("contracts.review.viewFile")}
-            </button>
-          )}
+          {file && <FileLink file={file} className="lg:hidden" />}
         </div>
       )}
     </Panel>

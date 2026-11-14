@@ -150,7 +150,7 @@ test("HD2 #220 · S05 · «Xem hợp đồng gốc» xin link qua API (Bearer) r
   const linkReq = page.waitForRequest((q) =>
     q.url().endsWith(`/contracts/${contract.id}/file-link`),
   );
-  await page.getByRole("link", { name: "📄 Xem hợp đồng gốc" }).click();
+  await page.getByRole("link", { name: "Xem hợp đồng gốc" }).click();
   expect((await linkReq).headers().authorization).toBe("Bearer e2e.access.token");
   const dlg = page.getByRole("dialog", { name: "Hợp đồng gốc" });
   await expect(dlg.getByTestId("pdf-page").first()).toBeVisible();

@@ -12,20 +12,38 @@ import {
 } from "~/components/ui/dialog";
 import { useReextract } from "../hooks/use-manage";
 
-export function ReextractButton({ id, retry = false }: { id: string; retry?: boolean }) {
+export function ReextractButton({ id }: { id: string }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const run = useReextract(id, () => setOpen(false));
   return (
     <>
       <button
         type="button"
-        className={retry ? "btn btn-primary" : "btn btn-outline"}
+        className="btn btn-outline"
         data-testid="reextract"
         onClick={() => setOpen(true)}
       >
-        {t(retry ? "contracts.gapa1.reextract.retry" : "contracts.gapa1.reextract.button")}
+        {t("contracts.gapa1.reextract.button")}
       </button>
+      <ReextractDialog id={id} open={open} onOpenChange={setOpen} />
+    </>
+  );
+}
+
+/** Hộp xác nhận đọc lại — dùng cho nút «AI đọc lại» và mục «Thử lại» trong cụm của thẻ «Không đọc được». */
+export function ReextractDialog({
+  id,
+  open,
+  onOpenChange: setOpen,
+}: {
+  id: string;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const run = useReextract(id, () => setOpen(false));
+  return (
+    <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>

@@ -160,3 +160,51 @@ test("Đọc lỗi: Tải tệp khác gửi tệp tới replace-file", async ({ 
     });
   await expect.poll(() => calls.length).toBe(1);
 });
+
+// CR-162 (1) màn nhập tay 2 cột ngang nhau full chiều rộng.
+test("CR-162 · màn nhập tay: form và tệp gốc 2 cột full chiều rộng", async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await installV2f(page, { contract: () => manual() });
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
+  const side = await page.getByTestId("manual-side").boundingBox();
+  const form = await page.getByTestId("manual-banner").boundingBox();
+  expect(side && form && side.x > form.x).toBe(true);
+  expect(side ? side.x + side.width : 0).toBeGreaterThan(1400 - 64); // chạm lề phải vùng nội dung, không chừa trống
+  expect(Math.abs((side?.width ?? 0) - 1400 / 2)).toBeLessThan(200); // ~ nửa
+  await page.setViewportSize({ width: 800, height: 900 });
+  await expect(page.getByTestId("manual-side")).toBeHidden(); // hẹp ⇒ xếp dọc, dùng nút icon xem tệp
+});
+
+// CR-162 (2) thẻ «Không đọc được»: một cụm — Nhập tay chính + menu ⋯ (Thử lại · Tải tệp khác).
+test("CR-162 · thẻ Không đọc được: Nhập tay là nút chính, Thử lại và Tải tệp khác nằm trong một menu", async ({
+  page,
+}) => {
+  await installV2f(page, { contract: () => failed() });
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
+  const box = page.getByTestId("failed-actions");
+  await expect(box.getByRole("button", { name: "Nhập tay" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Thử lại" })).toHaveCount(0);
+  await box.getByRole("button", { name: "Thêm lựa chọn" }).click();
+  await expect(page.getByRole("menuitem", { name: "Thử lại" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Tải tệp khác" })).toBeVisible();
+});
+
+// CR-162 (3) menu «Thao tác» chỉ một mục ⇒ không vạch kẻ phía trên mục đó.
+test("CR-162 · menu Thao tác chỉ một mục thì không có vạch kẻ", async ({ page }) => {
+  await installV2f(page, { contract: () => failed() });
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
+  await page.getByTestId("head-actions-menu").click();
+  const items = page.getByRole("menuitem");
+  if ((await items.count()) === 1)
+    await expect(page.getByRole("menu").locator("hr")).toHaveCount(0);
+});
+
+// CR-162 (4) «Xem hợp đồng gốc» = nút icon + chú thích khi rê chuột.
+test("CR-162 · Xem hợp đồng gốc là nút icon có chú thích khi rê chuột", async ({ page }) => {
+  await installV2f(page, { contract: () => failed() });
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
+  const link = page.getByRole("link", { name: "Xem hợp đồng gốc" });
+  await expect(link).toHaveText("");
+  await link.hover();
+  await expect(page.getByRole("tooltip", { name: "Xem hợp đồng gốc" })).toBeVisible();
+});

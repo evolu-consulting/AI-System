@@ -757,7 +757,8 @@
       "back": "← Contracts",
       "reading": "Reading the contract…",
       "checkLead": "Check the fields, then confirm.",
-      "viewFile": "📄 View original contract",
+      "viewFile": "View original contract",
+      "moreChoices": "More options",
       "orig": {
         "title": "Original contract",
         "main": "Original contract",
