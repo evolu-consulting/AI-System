@@ -29,6 +29,7 @@ import { type InboxItem, partnerInboxRepo } from "./adapters/partner-inbox.repo"
 import { partnerPrefill } from "./adapters/partner-prefill";
 import { type PartnerSendRepo, partnerSendRepo } from "./adapters/partner-send.repo";
 import { type PartnerToolDeps, partnerSendTool } from "./adapters/partner-send.tool";
+import { receiveFlowOf } from "./adapters/receive-flow.repo";
 import { signSessionRepo } from "./adapters/sign-session.repo";
 import { FLOW_STARTING } from "./application/contract-flow.ports";
 import type { ESignFiles } from "./application/esign.ports";
@@ -98,7 +99,7 @@ async function linkSignSessions(
   if (st.length === 0) return;
   const repo = signSessionRepo(tx, tenantId);
   await repo.linkReceived(st.map((i) => ({ mailboxId: i.row.id, contractId: i.contractId })));
-  // BR-61 · chưa có nhóm «Người ký HĐ» ⇒ không ai chọn người ký được ⇒ tự «Xử lý bình thường» (MỘT câu cho cả lô).
+  // BR-61 · quy trình Nhận HĐ chưa có bước Ký (người ký) ⇒ không ai chọn người ký được ⇒ tự «Xử lý bình thường» (MỘT câu cho cả lô).
   if (!hasSignerGroup) await repo.fallbackByMailbox(st.map((i) => i.row.id));
 }
 
@@ -125,7 +126,8 @@ export function receiveInbox(db: Db) {
         armed ? (actor ? FLOW_STARTING : RECEIVE_NO_OWNER) : null,
         !armed,
       );
-      const hasGroup = s.signerGroupId !== null;
+      // CR-146b · người ký bên nhận = «Người ký phía công ty» của bước Ký trong quy trình Nhận HĐ (không có ⇒ hasGroup=false ⇒ ký cùng lúc về xử lý bình thường).
+      const hasGroup = (await receiveFlowOf(db, tenantId)).signers !== null;
       if (!armed || actor) await repo.emitReceived(items, actor, hasGroup);
       await linkSignSessions(tx, tenantId, items, hasGroup);
       return n;

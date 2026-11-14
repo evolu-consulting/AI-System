@@ -275,12 +275,18 @@ describe("CR-124 q4 · ghi nhận kết quả thủ công + cách ly", () => {
     );
     expect(rounds[0]).toMatchObject({ round: 1, status: "returned" });
   });
-  it("partner_settings: tenant khác không đọc được cài đặt", async () => {
-    expect(
-      await inPack("contracts", D, (tx) => tx`select 1 from contracts.partner_settings`),
-    ).toHaveLength(0);
-    expect(
-      (await inPack("contracts", B, (tx) => tx`select 1 from contracts.partner_settings`)).length,
-    ).toBe(1);
+  it("CR-146b · hub.contract_received_params: tenant khác không đọc được cấu hình nhận của công ty mình", async () => {
+    const own = await inPack(
+      "contracts",
+      B,
+      (tx) => tx`select hub.contract_received_params(${B}::uuid) as p`,
+    );
+    expect(own).toHaveLength(1);
+    const other = await inPack(
+      "contracts",
+      D,
+      (tx) => tx`select hub.contract_received_params(${B}::uuid) as p`,
+    );
+    expect(other[0]?.p).toBeNull();
   });
 });

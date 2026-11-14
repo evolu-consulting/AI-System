@@ -85,8 +85,7 @@ beforeAll(async () => {
   await o`update admin.tenants set legal_name = 'Công ty A', tax_code = '0109999998' where id = ${A}`;
   await o`update admin.tenants set legal_name = 'Công ty B', tax_code = ${TAX_B}, directory_listed = true where id = ${B}`;
   await o`update admin.users set role = 'tenant_admin' where id = ${UB}`;
-  // B CHƯA có quy trình nhận (không company_flows cho contract.received) + người phụ trách HĐ nhận = OWN.
-  await o`insert into contracts.partner_settings (tenant_id, owner_user_id) values (${B}, ${OWN})`;
+  // B CHƯA có quy trình nhận (không company_flows cho contract.received) ⇒ người phụ trách = quản trị công ty (UB).
   C = await contracts(o, A, 2, { from: 1427, createdBy: UA, status: "active" });
   for (const [i, id] of C.entries()) {
     const fid = crypto.randomUUID();

@@ -123,7 +123,6 @@ describe("CR-124 q6 · S2 · người gây sự kiện của flow nhận (một 
 
 describe("CR-124 q6 · chưa có người gây sự kiện", () => {
   it("sẵn sàng nhưng không có người phụ trách/quản trị ⇒ lượt kẹt RECEIVE_NO_OWNER, KHÔNG phát sự kiện", async () => {
-    await o`update contracts.partner_settings set owner_user_id = null where tenant_id = ${B}`;
     await send(C[2] as string);
     expect(await receive()).toBe(1);
     const id = await inboxOf();

@@ -76,7 +76,6 @@ describe("CR-126 · demo chạy trọn «Quy trình mua hàng» ngay sau seed", 
       libraryReleases: 0,
       flowFlags: 0,
       esignSigners: 0,
-      partnerSigners: 0,
     });
   });
 });

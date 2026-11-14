@@ -73,6 +73,7 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
                 ...(s.executor as object),
                 args: {
                   contract_id: { from: "input", key: "contract_id" },
+                  provider: { from: "const", value: "selfsign" }, // CR-146b · «Ký qua» bắt buộc
                   company_signers: { from: "const", value: `user:${uid}` },
                 },
               },

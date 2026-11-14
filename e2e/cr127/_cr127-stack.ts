@@ -190,25 +190,7 @@ async function partnerPair(
       name: "Người ký HĐ",
       usernames: members,
     });
-    const url = `${HUB}/pack/contracts/partner/settings`;
-    const bContracts = await apiLogin({
-      base: API,
-      tenantKey: eb.tenantKey,
-      username: U.director,
-      password: PW,
-      app: "contracts",
-    });
-    const cur = (await (await fetch(url, { headers: bContracts.headers })).json()) as Record<
-      string,
-      unknown
-    >;
-    const put = await fetch(url, {
-      method: "PUT",
-      headers: { ...bContracts.headers, "content-type": "application/json" },
-      body: JSON.stringify({ ...cur, signer_group_id: signers }),
-    });
-    if (put.status >= 300)
-      throw new Error(`đặt nhóm Người ký HĐ: ${put.status} ${(await put.text()).slice(0, 200)}`);
+    void signers; // CR-146b · người ký bên nhận = bước Ký của quy trình Nhận HĐ (không còn nhóm cấp công ty)
   }
   if (o.recv) {
     await enableFlowTriggers(eb.tenantKey);

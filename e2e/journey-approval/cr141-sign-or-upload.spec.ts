@@ -78,6 +78,7 @@ test("CR-141 · ký hợp đồng bằng tải lên: người được giao (kh�
                 ...(s.executor as object),
                 args: {
                   contract_id: { from: "input", key: "contract_id" },
+                  provider: { from: "const", value: "upload" }, // CR-146b · «Ký qua» bắt buộc: tải lên bản đã ký
                   company_signers: { from: "const", value: `user:${signerId}` },
                 },
               },

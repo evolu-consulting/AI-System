@@ -200,6 +200,7 @@ const toolArgs = (ex: object): object =>
         ...ex,
         args: {
           contract_id: { from: "const", value: "x" },
+          provider: { from: "const", value: "selfsign" },
           company_signers: { from: "const", value: `user:${userId(1231)}` }, // CEO-review #2 · người ký thật của công ty
         },
       }

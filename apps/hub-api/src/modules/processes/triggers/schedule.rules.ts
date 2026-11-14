@@ -56,8 +56,19 @@ export const isIsoDate = (s: unknown): s is string =>
 /** CR-127 · E6b · luật lưu: `trigger.params.days` có mà ngoài khoảng manifest của sự kiện theo lịch ⇒ lỗi (422 `TRIGGER_PARAM_RANGE`);
  *  vắng ⇒ dùng mặc định (hợp lệ); sự kiện không theo lịch ⇒ bỏ qua (zod đã chặn 1..365). */
 export function triggerParamIssue(
-  trigger: { event: string; params?: { days?: unknown } | null } | null | undefined,
+  trigger:
+    | {
+        event: string;
+        params?: { days?: unknown; important_min_m?: number; critical_min_m?: number } | null;
+      }
+    | null
+    | undefined,
 ): { path: string[]; min: number; max: number } | null {
+  // CR-146b · «Nhận HĐ từ đối tác»: ngưỡng «Rất quan trọng» phải lớn hơn «Quan trọng» (triệu đồng).
+  const im = trigger?.params?.important_min_m;
+  const cr = trigger?.params?.critical_min_m;
+  if (trigger?.event === "contract.received" && im !== undefined && cr !== undefined && cr <= im)
+    return { path: ["trigger", "params", "critical_min_m"], min: im + 1, max: 1_000_000_000 };
   const s = trigger ? SCHEDULED_EVENTS.get(trigger.event) : undefined;
   const raw = trigger?.params?.days;
   if (!s || raw === undefined || raw === null) return null;

@@ -729,6 +729,13 @@
       "when": 1807000220000,
       "tag": "0110_cr138_company_cover",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1807000320000,
+      "tag": "0111_cr146b_drop_signer_group",
+      "breakpoints": true
     }
   ]
 }

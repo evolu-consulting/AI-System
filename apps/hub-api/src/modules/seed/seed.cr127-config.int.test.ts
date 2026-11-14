@@ -31,25 +31,18 @@ const flowIds = (t: string) =>
     where tenant_id = ${t} and enabled order by position, flow_id`;
 
 describe("CR-127 · Z0 · seed công ty mới", () => {
-  it("công ty mới: không có flow Hợp đồng sẵn, nhóm Người ký HĐ được chọn; chạy lại không nhân đôi", async () => {
+  it("công ty mới: không có flow Hợp đồng sẵn, không còn nhóm Người ký mặc định cấp công ty (CR-146b); chạy lại không nhân đôi", async () => {
     const r1 = await o.begin((tx) => writeCr125Config(tx as never, [NEW_K]));
-    expect(r1.partnerSigners).toBe(1);
     // CR-127 Z9: seed KHÔNG gán flow nào cho công ty (quản trị nền tảng tạo quy trình riêng từ sơ đồ trống).
     const rows = await flowIds(NEW_T);
     expect(rows.length).toBe(0);
-    const [s] =
-      await o`select g.key from contracts.partner_settings p join admin.groups g on g.id = p.signer_group_id
-      where p.tenant_id = ${NEW_T}`;
-    expect(s?.key).toBe(SIGNER_GROUP_KEY);
     const r2 = await o.begin((tx) => writeCr125Config(tx as never, [NEW_K]));
-    expect(r2.partnerSigners).toBe(0);
+    expect(r2).toBeDefined();
     expect((await flowIds(NEW_T)).length).toBe(0);
   });
 
   it("công ty đang có (ngoài danh sách keys) không bị gán mẫu hay nhóm người ký", async () => {
     expect((await flowIds(OLD_T)).length).toBe(0);
-    const ps = await o`select 1 from contracts.partner_settings where tenant_id = ${OLD_T}`;
-    expect(ps.length).toBe(0);
     const g =
       await o`select 1 from admin.groups where tenant_id = ${OLD_T} and key = ${SIGNER_GROUP_KEY}`;
     expect(g.length).toBe(0);

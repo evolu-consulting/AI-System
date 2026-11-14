@@ -38,12 +38,6 @@ const CALLS: [string, string, unknown?][] = [
   ["POST", `/pack/contracts/partner/invites/${ID}/accept`],
   ["GET", `/pack/contracts/partner/sends/${ID}`],
   ["POST", `/pack/contracts/partner/sends/${ID}/record`, { outcome: "confirmed", by_name: "A" }],
-  ["GET", "/pack/contracts/partner/settings"],
-  [
-    "PUT",
-    "/pack/contracts/partner/settings",
-    { important_min: 1, critical_min: 2, owner_user_id: null },
-  ],
 ];
 
 describe("CR-124 q7 · cổng tính năng contracts-partner-confirm trên /partner/*", () => {

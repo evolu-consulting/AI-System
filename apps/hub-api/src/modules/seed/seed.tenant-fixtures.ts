@@ -83,7 +83,6 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
       libraryReleases: 0,
       flowFlags: 0,
       esignSigners: 0,
-      partnerSigners: 0,
     },
   };
   if (t.length > 0) {

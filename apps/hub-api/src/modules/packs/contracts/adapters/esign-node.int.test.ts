@@ -234,8 +234,6 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
       { path: "stages.3.executor.args.company_signers", code: "NO_SIGNER_SELECTED" },
     ];
     expect(await v?.(T1, st)).toEqual(want);
-    await o`insert into contracts.partner_settings (tenant_id, signer_group_id) values (${T1}::uuid, ${G}::uuid)
-      on conflict (tenant_id) do update set signer_group_id = excluded.signer_group_id`;
     expect(await v?.(T1, st)).toEqual(want);
     await o`delete from contracts.partner_settings where tenant_id = ${T1}::uuid`;
   });
@@ -267,6 +265,7 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
     );
     await send.run(CTX(A), {
       contract_id: K[3] as string,
+      provider: "selfsign",
       company_signers: `group:${G}`,
       partner_signs: false,
       order: "sequential",

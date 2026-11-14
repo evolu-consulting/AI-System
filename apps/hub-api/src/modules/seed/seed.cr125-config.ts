@@ -18,7 +18,7 @@ import {
   PURCHASE_TEMPLATES,
 } from "../processes/public";
 import { TEMPLATE_GROUP_MEMBERS } from "./seed.cr125-members";
-import { SIGNER_GROUP, writeSignerGroup } from "./seed.cr127-config";
+import { SIGNER_GROUP } from "./seed.cr127-config";
 import type { Tx } from "./seed.repo";
 
 /** Ứng dụng có tính năng được cấp tự động (khi công ty đã có `<app>-read`). */
@@ -59,7 +59,6 @@ export type Cr125ConfigResult = {
   flowFlags: number;
   esignSigners: number;
   /** CR-127 Z0: công ty được chọn nhóm «Người ký HĐ». */
-  partnerSigners: number;
 };
 
 const ZERO: Cr125ConfigResult = {
@@ -71,7 +70,6 @@ const ZERO: Cr125ConfigResult = {
   libraryReleases: 0,
   flowFlags: 0,
   esignSigners: 0,
-  partnerSigners: 0,
 };
 
 /** Mẫu Thư viện do seed ghi (id cố định): mẫu Community + 3 mẫu «Quy trình mua hàng». */
@@ -119,7 +117,6 @@ export async function writeCr125Config(
   r.libraryReleases = l.releases;
   r.flowFlags = await enableFlowTriggers(tx, keys);
   r.esignSigners = await writePurchaseEsignSigners(tx, keys);
-  r.partnerSigners = await writeSignerGroup(tx, keys);
   await bumpIfChanged(tx, r, keys);
   return r;
 }
@@ -242,8 +239,15 @@ export function withEsignSigner(stages: readonly unknown[], groupId: string): un
     const ex = (s as { executor?: { tool_key?: string; args?: Record<string, unknown> } }).executor;
     if (ex?.tool_key !== "contracts-esign-send") return s;
     const cur = ex.args?.company_signers as { value?: unknown } | undefined;
-    if (typeof cur?.value === "string" && cur.value.trim() !== "") return s;
-    const args = { ...ex.args, company_signers: { from: "const", value: `group:${groupId}` } };
+    const hasProv =
+      typeof (ex.args?.provider as { value?: unknown } | undefined)?.value === "string";
+    if (typeof cur?.value === "string" && cur.value.trim() !== "" && hasProv) return s;
+    // CR-146b · «Ký qua» bắt buộc trong node: seed dùng «Tải lên bản đã ký» (luôn hợp lệ, không cần nối nhà cung cấp)
+    const args = {
+      ...ex.args,
+      provider: ex.args?.provider ?? { from: "const", value: "upload" },
+      company_signers: { from: "const", value: `group:${groupId}` },
+    };
     return { ...(s as object), executor: { ...ex, args } };
   });
 }
@@ -286,14 +290,8 @@ async function writePurchaseEsignSigners(tx: Tx, keys: readonly string[]): Promi
 
 /** Entitlement/nhóm/flow mới ghi bằng SQL ⇒ báo cache cấu hình (admin + hub); chạy lại không đổi gì ⇒ không báo. */
 async function bumpIfChanged(tx: Tx, r: Cr125ConfigResult, keys: readonly string[]): Promise<void> {
-  const touched =
-    r.features +
-    r.groups +
-    r.groupMembers +
-    r.flowFlags +
-    r.esign +
-    r.esignSigners +
-    r.partnerSigners;
+  const touched = r.features + r.groups + r.groupMembers + r.flowFlags + r.esign + r.esignSigners;
+
   if (touched === 0 && r.libraryDefs === 0) return;
   await notifyConfigChanged(tx, keys);
 }

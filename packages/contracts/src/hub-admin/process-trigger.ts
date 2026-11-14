@@ -38,8 +38,14 @@ export type FactWhen = z.infer<typeof FactWhenSchema>;
 /** Node Bắt đầu khi: sự kiện trong `AppManifest.events` + điều kiện tuỳ chọn trên dữ kiện lúc sự kiện. */
 /** CR-127 · E1 · tham số của sự kiện theo lịch (`AppEventDecl.schedule`): N ngày; ngoài 1..365 ⇒ 422 TRIGGER_PARAM_RANGE ở luật (E6). */
 export const FLOW_TRIGGER_DAYS = { min: 1, max: 365 } as const;
+/** CR-146b · trần ngưỡng (triệu đồng) = 1 triệu tỷ... đủ lớn cho cột bigint VND. */
+export const FLOW_RECEIVE_MILLION_MAX = 1_000_000_000;
 export const FlowTriggerParamsSchema = z.strictObject({
   days: z.number().int().min(FLOW_TRIGGER_DAYS.min).max(FLOW_TRIGGER_DAYS.max).optional(),
+  /** CR-146b · quy trình «Nhận HĐ từ đối tác» (`contract.received`): ngưỡng «Quan trọng» / «Rất quan trọng» (triệu đồng) + người phụ trách HĐ nhận. */
+  important_min_m: z.number().int().min(0).max(FLOW_RECEIVE_MILLION_MAX).optional(),
+  critical_min_m: z.number().int().min(1).max(FLOW_RECEIVE_MILLION_MAX).optional(),
+  owner_user_id: z.uuid().optional(),
 });
 export type FlowTriggerParams = z.infer<typeof FlowTriggerParamsSchema>;
 export const FlowTriggerSchema = z.strictObject({

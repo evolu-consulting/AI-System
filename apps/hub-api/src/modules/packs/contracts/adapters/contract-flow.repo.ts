@@ -39,13 +39,13 @@ const FACTS = (depts: string | null) => sql`jsonb_strip_nulls(jsonb_build_object
       select 1 from contracts.contracts o where o.tenant_id = c.tenant_id and o.partner_key = c.partner_key
         and o.kind = 'contract' and o.id <> c.id and o.confirmed_at is not null) end,
     -- CR-127 E1 · dữ kiện thêm của contract.submitted (spec §4.1), vẫn MỘT câu (scalar subquery, không N+1):
-    -- mức quan trọng theo giá trị + ngưỡng công ty (mặc định 500 triệu / 2 tỷ), phòng người gửi, điểm đối tác (chụp mới nhất theo vai), SP đã gắn.
+    -- mức quan trọng theo giá trị + ngưỡng công ty (CR-146b: params của trigger quy trình Nhận HĐ qua hàm hub 0143; mặc định 500 triệu / 2 tỷ), phòng người gửi, điểm đối tác (chụp mới nhất theo vai), SP đã gắn.
     'importance', case
       when jsonb_typeof(c.fields -> 'total_value' -> 'value') <> 'number' then 'normal'
-      when (c.fields -> 'total_value' ->> 'value')::numeric >= coalesce((select s.critical_min from contracts.partner_settings s
-        where s.tenant_id = c.tenant_id), 2000000000) then 'critical'
-      when (c.fields -> 'total_value' ->> 'value')::numeric >= coalesce((select s.important_min from contracts.partner_settings s
-        where s.tenant_id = c.tenant_id), 500000000) then 'important'
+      when (c.fields -> 'total_value' ->> 'value')::numeric >= coalesce(
+        (hub.contract_received_params(c.tenant_id) ->> 'critical_min_m')::numeric * 1000000, 2000000000) then 'critical'
+      when (c.fields -> 'total_value' ->> 'value')::numeric >= coalesce(
+        (hub.contract_received_params(c.tenant_id) ->> 'important_min_m')::numeric * 1000000, 500000000) then 'important'
       else 'normal' end,
     'submitter_group_ids', ${depts}::jsonb,
     'partner_score', (select s.score from contracts.score_snapshots s where s.tenant_id = c.tenant_id
