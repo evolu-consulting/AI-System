@@ -20,3 +20,8 @@ Trạng thái gộp: chưa gộp
 | 9 | cr125-form-step-card (job journey + fsc) | a | CR-140/127 Z9: bước «cùng duyệt» cấm `after.group_id` riêng (`PARALLEL_RULE_INVALID` tại `stages.5.after.parallel.rule`). Fixture `withGroupIds` bỏ việc gán nhóm đầu vào `group_id`, đặt `null`. |
 | 10 | cr125-purchase-full «2 · Phần 1→2→3» | b (nghi) | Phần 2 kẹt ở bước idx 5 `waiting_timer`: `hub.process_timers` có hẹn `wait_until` đến +7 ngày, trong khi mẫu Phần 2 (`tools/demo/purchase-templates.def.ts:165`) bước này chỉ là duyệt «Giám đốc…» — không có node chờ. Lượt cha `waiting_timer` vì con chưa xong. Chưa khoanh được file:dòng (nghi nhánh duyệt/ủy quyền hoặc node mới thêm sau CR-146 chen `core.wait-until`). Lượt 2 vẫn đỏ y hệt. Không sửa test; cần dev xem `[dump] timers` trong `out.log` của job. |
 | 11 | flows.menu.cs.ts, contracts-web ×32, cr127 | ngoài phạm vi | Không phân loại ở lát này. |
+
+## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
+
+Không thay đổi hành vi (lý do: QC sửa e2e theo hành vi đã chốt + relock; lỗi sản phẩm ghi ở bảng, giao lát fix-e2e-community / fix-purchase-timer)
