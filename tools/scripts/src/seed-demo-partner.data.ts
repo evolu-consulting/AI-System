@@ -11,6 +11,7 @@ import {
   type Stage,
 } from "../../../apps/hub-api/src/modules/processes/library/flow-templates.def";
 import { isStagingStack, seedDbHost } from "./seed-community-demo.guard";
+import { ORG_RECEIVE } from "./seed-demo-partner.org";
 import { flowSeedGuard } from "./seed-flow-showcase.build";
 
 export const DEMO_KEY = "demo";
@@ -86,7 +87,8 @@ export const RECEIVE = {
   name: "Nhận HĐ từ đối tác (UAT)",
   important_min_m: 300,
   critical_min_m: 1000,
-  owner: "uat-nhan-phutrach",
+  /** CR-150b: người phụ trách hợp đồng nhận = Julian Bui (sơ đồ tổ chức evolu). */
+  owner: ORG_RECEIVE.owner,
 } as const;
 
 export type EvoluState = {
@@ -328,11 +330,12 @@ export function demoFlows(): FlowDef[] {
   ];
 }
 
-/** Quy trình «Nhận HĐ từ đối tác» của evolu: Duyệt (nhóm UAT) → Ký (nhóm UAT, tải bản đã ký) → Đồng ý; Từ chối / Trả lại. Ngưỡng + người phụ trách ở `trigger.params` (CR-146b). */
+/** Quy trình «Nhận HĐ từ đối tác» của evolu: Trưởng phòng Kinh doanh duyệt → Ký (nhóm ký chứa Thomas Tran, tải bản đã ký) → Đồng ý; Từ chối / Trả lại. Ngưỡng + người phụ trách ở `trigger.params` (CR-146b). */
 export function receiveFlow(ownerUserId: string): FlowDef {
   const to = { reject: 4, ret: 5 };
   const stages = norm([
-    approve("nhan-duyet", "Duyệt hợp đồng nhận", 0, "uat-nhan-duyet", to),
+    // CR-150b: một bước duyệt = trưởng phòng Kinh doanh (Julian Bui) duyệt; bước Ký do nhóm ký (chứa Thomas Tran) làm
+    deptHeadApprove("nhan-duyet", "Duyệt hợp đồng nhận", 0, ORG_RECEIVE.approveDept, to, 1),
     { ...esignSend(1), name: "Ký hợp đồng" },
     esignWait(2, 4),
     finish(3, "confirmed", "Đồng ý"),

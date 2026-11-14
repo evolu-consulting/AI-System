@@ -22,10 +22,10 @@ Mỗi ca: làm đúng vai, đúng tài khoản, đánh dấu Đạt hoặc Khôn
 | Demo | `huy.dang` | Trưởng phòng Pháp chế, người chọn đối tác khi gửi |
 | Demo | `demo-viewer` | Chỉ xem (kiểm không có nút duyệt) |
 | evolu | `uat-nhan-admin` | Quản trị công ty (chỉ có khi seed tạo công ty evolu) |
-| evolu | `uat-nhan-gd` | Giám đốc nhận (Toàn quyền), nhận lời mời nối |
-| evolu | `uat-nhan-phutrach` | Người phụ trách hợp đồng nhận |
-| evolu | `uat-nhan-duyet` | Người duyệt hợp đồng nhận |
-| evolu | `uat-nhan-ky` | Người ký bên nhận |
+| evolu | `thomas.tran` | Giám đốc (Ban Giám đốc), Toàn quyền, người ký bên nhận, nhận lời mời nối |
+| evolu | `julian.bui` | Trưởng phòng Kinh doanh: người phụ trách hợp đồng nhận, người duyệt hợp đồng nhận |
+| evolu | `vio.ngo` / `rowan.hoang` / `edgar.nguyen` | Trưởng phòng Kỹ thuật / Chăm sóc khách hàng / R&D (không duyệt hợp đồng nhận; kiểm không có việc) |
+| evolu | `uat-nhan-gd`, `uat-nhan-phutrach`, `uat-nhan-duyet`, `uat-nhan-ky` | Tài khoản UAT cũ, còn nguyên (không dùng theo vai nữa) |
 
 Quy trình duyệt của Demo (xét từ trên xuống, hợp đồng đi theo quy trình đầu tiên khớp):
 1. **UAT · HĐ từ 500 triệu**: Trưởng phòng → Giám đốc → Ký → Gửi đối tác (đề nghị ký cùng lúc).
@@ -33,7 +33,7 @@ Quy trình duyệt của Demo (xét từ trên xuống, hợp đồng đi theo q
 3. **UAT · HĐ phòng Kinh doanh gửi đối tác**: Trưởng phòng → Ký → Gửi đối tác.
 4. «Duyệt hợp đồng» (mọi hợp đồng còn lại, có sẵn).
 
-Evolu: quy trình **Nhận HĐ từ đối tác (UAT)**: Duyệt → Ký → Đồng ý. Mức quan trọng: dưới 300 triệu = Thường, từ 300 triệu = Quan trọng, từ 1 tỷ = Rất quan trọng. Người phụ trách: `uat-nhan-phutrach`.
+Evolu: quy trình **Nhận HĐ từ đối tác (UAT)**: Duyệt → Ký → Đồng ý. Mức quan trọng: dưới 300 triệu = Thường, từ 300 triệu = Quan trọng, từ 1 tỷ = Rất quan trọng. Người phụ trách: `julian.bui`; duyệt: trưởng phòng Kinh doanh (`julian.bui`); ký: nhóm ký có `thomas.tran`.
 
 ## 2. Tạo hợp đồng và chọn quy trình
 | Mã | Vai + tài khoản | Bước bấm | Kết quả mong đợi | Đạt/Không |
@@ -74,21 +74,21 @@ Evolu: quy trình **Nhận HĐ từ đối tác (UAT)**: Duyệt → Ký → Đ�
 | G01 | `huy.dang` | Việc của tôi › «Chọn đối tác & người nhận» | Danh sách có công ty evolu (tên + mã số thuế); không phải gõ tay. | |
 | G02 | `huy.dang` | Nhập email sai dạng rồi bấm Gửi | Báo cách sửa; chưa gửi. | |
 | G03 | `huy.dang` | Nhập email đúng, bấm Gửi | Trạng thái «Chờ đối tác xác nhận»; lần gửi đầu giữ chờ evolu nhận lời mời nối. | |
-| G04 | evolu · `uat-nhan-gd` | Đăng nhập › Hợp đồng › băng lời mời đầu danh sách › Nhận | Băng biến mất; hợp đồng của Demo hiện ở danh sách. | |
+| G04 | evolu · `thomas.tran` | Đăng nhập › Hợp đồng › băng lời mời đầu danh sách › Nhận | Băng biến mất; hợp đồng của Demo hiện ở danh sách. | |
 | G05 | `cuong.le` | Mở hợp đồng ở Demo | Thấy «Đã gửi đối tác», ghi rõ bên nhận là evolu; không lộ người duyệt nội bộ của evolu. | |
 
 ## 6. Evolu nhận và xử lý
 | Mã | Vai + tài khoản | Bước bấm | Kết quả mong đợi | Đạt/Không |
 |---|---|---|---|---|
-| N01 | evolu · `uat-nhan-phutrach` | Hợp đồng › lọc Nguồn = Đối tác gửi | Thấy hợp đồng của Demo; `uat-nhan-phutrach` là người phụ trách. | |
-| N02 | `uat-nhan-phutrach` | Mở hợp đồng 400 triệu | Mức «Quan trọng» (từ 300 triệu); hợp đồng 1,2 tỷ là «Rất quan trọng»; hợp đồng dưới 300 triệu là «Thường». | |
-| N03 | evolu · `uat-nhan-duyet` | Việc của tôi › mở › Đồng ý | Việc chuyển sang bước Ký. | |
-| N04 | evolu · `uat-nhan-ky` | Việc Ký › Tải lên bản đã ký | Hợp đồng ở evolu «Đã đồng ý». | |
+| N01 | evolu · `julian.bui` | Hợp đồng › lọc Nguồn = Đối tác gửi | Thấy hợp đồng của Demo; `julian.bui` là người phụ trách. | |
+| N02 | `julian.bui` | Mở hợp đồng 400 triệu | Mức «Quan trọng» (từ 300 triệu); hợp đồng 1,2 tỷ là «Rất quan trọng»; hợp đồng dưới 300 triệu là «Thường». | |
+| N03 | evolu · `julian.bui` | Việc của tôi › mở › Đồng ý | Việc chuyển sang bước Ký. | |
+| N04 | evolu · `thomas.tran` | Việc Ký › Tải lên bản đã ký | Hợp đồng ở evolu «Đã đồng ý». | |
 | N05 | Demo · `cuong.le` | Mở hợp đồng; xem chuông | Thấy «Đối tác đã xác nhận» + chuông; trạng thái xong. | |
-| N06 | evolu · `uat-nhan-duyet` | Hợp đồng khác: bấm Trả lại, ghi lý do | Demo thấy «Đối tác trả lại» kèm lý do; hợp đồng về người tạo sửa; chuông báo. | |
-| N07 | evolu · `uat-nhan-duyet` | Hợp đồng khác: bấm Từ chối, ghi lý do | Demo thấy «Đối tác từ chối» kèm lý do; chuông báo. | |
-| N08 **[cùng lúc]** | evolu · `uat-nhan-gd` | Hợp đồng 1,2 tỷ (bên gửi đề nghị ký cùng lúc): Đồng ý ký cùng lúc, chọn người ký | Hai bên cùng thấy hai dòng ký; Demo không thấy người duyệt nội bộ của evolu. | |
-| N09 | evolu · `uat-nhan-gd` | Hợp đồng ký cùng lúc khác: Xử lý bình thường | Quay về quy trình nhận bình thường (không ký cùng lúc). | |
+| N06 | evolu · `julian.bui` | Hợp đồng khác: bấm Trả lại, ghi lý do | Demo thấy «Đối tác trả lại» kèm lý do; hợp đồng về người tạo sửa; chuông báo. | |
+| N07 | evolu · `julian.bui` | Hợp đồng khác: bấm Từ chối, ghi lý do | Demo thấy «Đối tác từ chối» kèm lý do; chuông báo. | |
+| N08 **[cùng lúc]** | evolu · `thomas.tran` | Hợp đồng 1,2 tỷ (bên gửi đề nghị ký cùng lúc): Đồng ý ký cùng lúc, chọn người ký | Hai bên cùng thấy hai dòng ký; Demo không thấy người duyệt nội bộ của evolu. | |
+| N09 | evolu · `thomas.tran` | Hợp đồng ký cùng lúc khác: Xử lý bình thường | Quay về quy trình nhận bình thường (không ký cùng lúc). | |
 | N10 | Demo · `cuong.le` | Hợp đồng ký cùng lúc: Huỷ phiên ký, không ghi lý do | Nút Huỷ khoá tới khi có lý do; có lý do thì phiên ký chuyển «Đã huỷ». | |
 
 ## 7. Kết quả, hồ sơ duyệt, mốc
@@ -98,7 +98,7 @@ Evolu: quy trình **Nhận HĐ từ đối tác (UAT)**: Duyệt → Ký → Đ�
 | H02 | `demo-owner` | Mở hợp đồng › Hồ sơ duyệt | Lịch sử đủ: ai duyệt cấp nào, lúc nào, ý kiến; xem được tệp PDF/Word của hợp đồng ngay trong trang. | |
 | H03 | `binh.tran` | Hồ sơ duyệt của hợp đồng đã duyệt | Thấy cả bản đã duyệt và các lần trả lại trước đó. | |
 | H04 | `ha.ly` | Hợp đồng đã xong › Mốc thực hiện | Có mốc theo hợp đồng (giao, thu, nhắc hết hạn); thêm một mốc tay được. | |
-| H05 | evolu · `uat-nhan-phutrach` | Hợp đồng nhận đã xong | Thấy kết quả «Đã đồng ý»; hồ sơ duyệt của evolu chỉ evolu thấy. | |
+| H05 | evolu · `julian.bui` | Hợp đồng nhận đã xong | Thấy kết quả «Đã đồng ý»; hồ sơ duyệt của evolu chỉ evolu thấy. | |
 
 ## 8. Cài đặt
 | Mã | Vai + tài khoản | Bước bấm | Kết quả mong đợi | Đạt/Không |
@@ -107,9 +107,9 @@ Evolu: quy trình **Nhận HĐ từ đối tác (UAT)**: Duyệt → Ký → Đ�
 | C02 | `demo-owner` | Bấm một quy trình | Xem được sơ đồ và danh sách bước; có khối «Ký và đối tác của quy trình này» (ký qua gì, ai ký, gửi đối tác). | |
 | C03 | `cuong.le` (nhân viên) | Cài đặt › Quy trình duyệt | Xem được danh sách và sơ đồ, nhưng không có nút bật/tắt/đổi thứ tự. | |
 | C04 | `demo-owner` | Cài đặt › Kết nối | Chỉ còn kết nối cấp công ty: ký số (nhà cung cấp nào) và «Đối tác xác nhận» đang Bật. | |
-| C05 | evolu · `uat-nhan-gd` | Cài đặt › Kết nối | «Đối tác xác nhận» Bật; công ty cho phép được tìm thấy. | |
-| C06 | evolu · `uat-nhan-gd` | Trang Quy trình › «Nhận HĐ từ đối tác (UAT)» | Panel có 3 ô: «Quan trọng từ» (300), «Rất quan trọng từ» (1000), «Người phụ trách hợp đồng nhận» (`uat-nhan-phutrach`). | |
-| C07 | evolu · `uat-nhan-gd` | Đổi «Rất quan trọng từ» thành 200 (nhỏ hơn 300) rồi Lưu | Báo lỗi khoảng giá trị ngay ở ô, chưa lưu. | |
+| C05 | evolu · `thomas.tran` | Cài đặt › Kết nối | «Đối tác xác nhận» Bật; công ty cho phép được tìm thấy. | |
+| C06 | evolu · `thomas.tran` | Trang Quy trình › «Nhận HĐ từ đối tác (UAT)» | Panel có 3 ô: «Quan trọng từ» (300), «Rất quan trọng từ» (1000), «Người phụ trách hợp đồng nhận» (`julian.bui`). | |
+| C07 | evolu · `thomas.tran` | Đổi «Rất quan trọng từ» thành 200 (nhỏ hơn 300) rồi Lưu | Báo lỗi khoảng giá trị ngay ở ô, chưa lưu. | |
 | C08 | Demo · `demo-owner` | Trang Quy trình › quy trình bất kỳ › xoá «Ký qua» (hoặc người ký phía công ty) ở bước Ký › Lưu | Báo lỗi theo từng ô («Chọn ký qua…», «Chọn người ký phía công ty»); chưa lưu được. Khôi phục lại rồi Lưu OK. | |
 | C09 | Demo · `demo-owner` | Tắt quy trình «UAT · HĐ phòng Kinh doanh gửi đối tác» rồi gửi duyệt hợp đồng khác của Kinh doanh | Hợp đồng đi theo quy trình khớp kế tiếp («Duyệt hợp đồng»). Bật lại sau khi thử. | |
 

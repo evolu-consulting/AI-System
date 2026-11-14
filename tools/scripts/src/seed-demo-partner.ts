@@ -1,7 +1,7 @@
 // CR-150 · UAT hợp đồng 2 công ty trên bản test (staging stg-test): demo = bên gửi, evolu = bên đối tác. Chạy qua `deploy/stg-test/seed-demo.sh --partner-only`.
 //   demo : 3 quy trình duyệt có «Bắt đầu khi» khác nhau (xét trước «Duyệt hợp đồng»), bước Ký («Ký qua» + người ký), «Gửi đối tác xác nhận» tới evolu,
 //          hồ sơ công ty (MST) + tính năng «Đối tác xác nhận» + dòng đối tác evolu trong sổ đối tác. Ghi đè quy trình UAT của chính ta (lặp lại được).
-//   evolu: CHỈ THÊM — người dùng `uat-nhan-*`, nhóm `uat-nhan-*`, MỘT quy trình «Nhận HĐ từ đối tác (UAT)» (ngưỡng + người phụ trách + bước Ký), bật «cho phép tìm thấy»,
+//   evolu: CHỈ THÊM — sơ đồ tổ chức (CR-150b: 5 người, phòng ban, trưởng phòng, quản lý, chức vụ), người dùng `uat-nhan-*`, nhóm `uat-nhan-*`, MỘT quy trình «Nhận HĐ từ đối tác (UAT)» (ngưỡng + người phụ trách + bước Ký), bật «cho phép tìm thấy»,
 //          tính năng «Đối tác xác nhận», hồ sơ công ty NẾU còn trống. KHÔNG xoá/sửa gì có sẵn (luật ở `planEvolu`, test ở seed-demo-partner.data.test.ts).
 // Mật khẩu người UAT evolu: biến `UAT_EVOLU_PW` (file UAT_EVOLU.pw trên máy chủ) — chỉ đặt cho người MỚI tạo; không in ra log.
 import { hashPassword } from "@ai/db";
@@ -33,6 +33,8 @@ import {
   seedInputs,
   withEsign,
 } from "./seed-demo-partner.data";
+import { ORG_PEOPLE } from "./seed-demo-partner.org";
+import { evoluOrg } from "./seed-demo-partner.org.io";
 
 const TAG = "seed-demo-partner";
 const fail = (m: string): never => {
@@ -224,11 +226,9 @@ async function evoluFlowStep(c: Ctx, groups: Map<string, string>): Promise<void>
     tid,
     groups,
     { ...def, stages: withEsign(def.stages, signers) },
-    { overwrite: false },
+    { overwrite: true }, // CR-150b: chỉ quy trình do seed tạo (nhận diện theo tên) — cập nhật người/nhóm theo sơ đồ tổ chức
   );
-  console.log(
-    `${TAG}: evolu — «${def.name}» ${created ? "đã tạo" : "đã có (giữ nguyên, không ghi đè)"}`,
-  );
+  console.log(`${TAG}: evolu — «${def.name}» ${created ? "đã áp dụng" : "đã có"}`);
   // CẢNH BÁO nếu evolu có quy trình Nhận HĐ khác đang bật xét trước (ta không đụng thứ tự của evolu)
   const rows = items(await call(c.hub, "GET", `/tenants/${tid}/company-flows`));
   const first = rows.find((r) => r.trigger_event === "contract.received" && r.enabled === true);
@@ -300,12 +300,13 @@ async function main(): Promise<void> {
     const c: Ctx = { api, hub: { base: hubUrl, token }, sql, tid };
     await company(c, DEMO_KEY, false);
     await company(c, EVOLU_KEY, true);
-    const evoluGroups = await evolu(c);
-    await evoluFlowStep(c, evoluGroups);
+    await evolu(c);
+    await evoluOrg(c.api, c.sql, tid[EVOLU_KEY] ?? "");
+    await evoluFlowStep(c, await groupMap(c, tid[EVOLU_KEY] ?? ""));
     await demoFlowsStep(c);
     await partnerRow(c);
     console.log(
-      `${TAG} OK — người UAT evolu: ${EVOLU_USERS.map((u) => u.username).join(", ")} (mật khẩu: file UAT_EVOLU.pw)`,
+      `${TAG} OK — người UAT evolu: ${[...EVOLU_USERS, ...ORG_PEOPLE].map((u) => u.username).join(", ")} (mật khẩu: file UAT_EVOLU.pw)`,
     );
   } finally {
     await sql.end();
