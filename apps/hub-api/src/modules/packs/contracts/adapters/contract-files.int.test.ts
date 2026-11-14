@@ -191,3 +191,54 @@ describe("CR-154 · HĐ không còn Nháp ⇒ khoá thêm/gỡ tệp kèm", () =
     expect((await uc().list(w(U1), id, editor))?.files.length).toBe(0);
   });
 });
+
+describe("CR-154 · đua thật: lệnh đổi trạng thái chưa commit giữ khoá dòng HĐ", () => {
+  /** Tx A đổi status (chưa commit) → chạy `act` song song → chứng minh `act` bị chặn → A commit → `act` phải ra `locked`. */
+  async function underUncommitted(id: string, act: () => Promise<unknown>) {
+    let release: () => void = () => {};
+    let held: () => void = () => {};
+    const heldP = new Promise<void>((r) => {
+      held = r;
+    });
+    const a = o.begin(async (tx) => {
+      await tx`set local session_replication_role = replica`;
+      await tx`update contracts.contracts set status = 'processing' where id = ${id}`;
+      held();
+      await new Promise<void>((r) => {
+        release = r;
+      });
+    });
+    await heldP;
+    const p = act().then(
+      () => "ok",
+      (e: ContractFilesFail) => e.kind,
+    );
+    // Có khoá ⇒ `act` còn treo khi A chưa commit; không khoá ⇒ đã xong "ok" ngay.
+    const early = await Promise.race([
+      p,
+      new Promise<string>((r) => setTimeout(() => r("pending"), 400)),
+    ]);
+    release();
+    await a;
+    return { early, final: await p };
+  }
+
+  it("thêm tệp trong lúc HĐ đang bị chuyển sang đang duyệt (chưa commit) thì bị chặn rồi ra locked", async () => {
+    const id = await mk();
+    const r = await underUncommitted(id, () => uc().add(w(U1), id, editor, docx("dua.docx")));
+    expect(r.early).toBe("pending");
+    expect(r.final).toBe("locked");
+    await setStatus(id, "draft");
+    expect((await uc().list(w(U1), id, editor))?.files.length).toBe(0);
+  });
+
+  it("gỡ tệp trong lúc HĐ đang bị chuyển sang đang duyệt (chưa commit) thì bị chặn rồi không gỡ được", async () => {
+    const id = await mk();
+    const f = await uc().add(w(U1), id, editor, docx("giu.docx"));
+    const r = await underUncommitted(id, () => uc().remove(w(U1), id, f.id, editor));
+    expect(r.early).toBe("pending");
+    expect(["locked", "not_found"]).toContain(r.final);
+    await setStatus(id, "draft");
+    expect((await uc().list(w(U1), id, editor))?.files.length).toBe(1);
+  });
+});

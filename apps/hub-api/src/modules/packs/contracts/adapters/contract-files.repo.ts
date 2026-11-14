@@ -37,7 +37,7 @@ export function contractFilesRepo(tx: Tx, tenantId: string): ContractFilesRepo {
     },
     insert: async (r: NewContractFile, by) => {
       const rows = await tx.execute<{ file_id: string }>(sql`with c as (
-          select c.id from contracts.contracts c where c.id = ${r.contractId}::uuid and c.tenant_id = ${tenantId}::uuid and c.status = 'draft'),
+          select c.id from contracts.contracts c where c.id = ${r.contractId}::uuid and c.tenant_id = ${tenantId}::uuid and c.status = 'draft' for share),
         n as (select count(*)::int as n from contracts.contract_files cf
           join contracts.files f on f.id = cf.file_id and f.tenant_id = cf.tenant_id and f.deleted_at is null
           where cf.contract_id = ${r.contractId}::uuid and cf.tenant_id = ${tenantId}::uuid),
@@ -62,7 +62,7 @@ export function contractFilesRepo(tx: Tx, tenantId: string): ContractFilesRepo {
     remove: async (id, fileId) => {
       const rows = await tx.execute<{ file_id: string }>(sql`with c as (
           select c.id from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid
-            and c.status = 'draft'),
+            and c.status = 'draft' for share),
         d as (
           delete from contracts.contract_files where contract_id in (select id from c) and file_id = ${fileId}::uuid
             and tenant_id = ${tenantId}::uuid returning file_id)
