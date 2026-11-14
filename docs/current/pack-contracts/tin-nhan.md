@@ -69,7 +69,7 @@ Tệp gắn vào hội thoại phải do chính người gửi tải lên và ch
 «Tin nhắn» (sau «Yêu cầu») có số đỏ tổng chưa đọc; hội thoại chưa đọc in đậm kèm số (hiện đúng đến 99, «99+» khi nhiều hơn; server đếm tối đa 100), lên đầu khi có tin mới; tìm theo tên không phân biệt hoa/dấu; nói rõ đang tải/lỗi («Thử lại»)/rỗng. Xem trước một dòng ≤ 120 ký tự Unicode (không cắt đôi emoji), giống server và khi nhận tin mới. Thu hồi tin chưa đọc thì số cập nhật.
 - Kịch bản: tin mới của người khác ⇒ lên đầu, tăng chưa đọc (kẹp 99), tin mình/đang xem không tăng [test: apps/workspace-web/src/features/messages/lib/messages-lib.test.ts » msg.new của người khác]
 - Kịch bản: lọc theo tên [test: apps/workspace-web/src/features/messages/lib/messages-lib.test.ts » lọc theo tên]
-- Kịch bản: menu «Tin nhắn» sau «Yêu cầu» [test: apps/workspace-web/src/shell/nav.test.ts » đủ 7 + 2 mục]
+- Kịch bản: menu «Tin nhắn» sau «Yêu cầu» [test: apps/workspace-web/src/shell/nav.test.ts » đủ 8 + 2 mục]
 - Kịch bản: A nhắn B ⇒ B thấy số, mở thì hết, A thấy «Đã xem» [test: e2e/cr127/j18-tin-nhan.spec.ts » A nhắn B]
 - Kịch bản: nhãn 99+, thu hồi tin chưa đọc [test: apps/workspace-web/src/features/messages/lib/messages-fix.test.ts » thu hồi tin chưa đọc]
 - Kịch bản: xem trước không cắt đôi emoji [test: apps/workspace-web/src/features/messages/lib/messages-fix.test.ts » xem trước dùng chung]

@@ -10,7 +10,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await installBackend(page, { session: true, role: "editor" });
   });
 
-  test("PK-FR-10 · nav-v2 · menu chính 7 mục (CR-132 thêm Tin nhắn) đúng nhãn, thứ tự và đường dẫn: Tổng quan /contracts · Hợp đồng /contracts/list · Đối tác /contracts/partners · Sản phẩm & Giá /contracts/products", async ({
+  test("PK-FR-10 · nav-v2 · menu chính 8 mục (CR-132 thêm Tin nhắn, CR-142 Sơ đồ tổ chức) đúng nhãn, thứ tự và đường dẫn: Tổng quan /contracts · Hợp đồng /contracts/list · Đối tác /contracts/partners · Sản phẩm & Giá /contracts/products", async ({
     page,
   }) => {
     await page.goto("/contracts/list");
@@ -24,6 +24,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
       "Việc của tôi",
       "Đối tác",
       "Sản phẩm & Giá",
+      "Sơ đồ tổ chức",
     ]);
     const hrefs: Record<string, string | null> = {};
     for (const name of [
@@ -34,6 +35,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
       "Việc của tôi",
       "Đối tác",
       "Sản phẩm & Giá",
+      "Sơ đồ tổ chức",
     ]) {
       hrefs[name] = await nav.getByRole("link", { name, exact: true }).getAttribute("href");
     }
@@ -45,6 +47,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
       "Việc của tôi": "/contracts/approvals",
       "Đối tác": "/contracts/partners",
       "Sản phẩm & Giá": "/contracts/products",
+      "Sơ đồ tổ chức": "/contracts/org",
     });
     // Không còn mục riêng cho So sánh giá / Sản phẩm CKS / Mua hàng.
     for (const gone of ["So sánh giá", "Mua hàng"]) {

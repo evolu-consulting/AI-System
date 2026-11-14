@@ -61,7 +61,7 @@ dd825133ab18bc62f767467ce64746ab8d307810a3d2a2678f31319cea9dcd7f  e2e/K1/playwri
 0208e9181393ca569eaa958420ac862efa1218abd52f7616b1c28e6f2970c030  e2e/N1/_support.ts
 f9a31a227e49e354959bbcfc983e61593e23ab0e6582a4cb9a3c4ed71920e368  e2e/N1/login.n1.ts
 c1ddea86a757d4445bebf5f5f28c84c1e599f26e4aa864dbe7ab37e49492271e  e2e/N1/playwright.config.ts
-d1dca462b623570fd56227a35fa9d29fb99b439961df43e9f9ae12a2398b28f7  e2e/N1/shell.n1.ts
+ddf7b810e5e00530eed3a04f891a12ad5f0e90faeb00842cf239f6244f939da6  e2e/N1/shell.n1.ts
 87a3880053a0a615ddc8d91f6ab6cb35b7af839a39d3bf425323e00232bbf9c4  e2e/N1/states.n1.ts
 3963b9b20a88c63598855cbcfbb4d29a14b0d996d3dd2e4f9731205683a69858  e2e/N2/admin-n2.n2.ts
 263b799fcef70a7bf7973746821c7d7e169a847f3e934fab178666f673972285  e2e/N2/admin-popover.n2.ts
@@ -161,7 +161,7 @@ ef43752158e1ab0efeed4e03d9c19a801b9814957398e2629bd92573de07289b  e2e/chat/playw
 7c8cf30a3ac8362d089d661090bca04a6278a8563402c528eff585b3842d17c6  e2e/chat/send.chat.ts
 faef5d41ef3e220495e6bffbbbe98f49484347d366c320c1965245ad93e4e59b  e2e/chat/states.chat.ts
 2afce6def09da9ebd0f33977672b719ae9924869eab3416081b5394cf599a75e  e2e/chat/x1-agents.chat.ts
-0bcbeb3fa8f852093cb5b832104d1edf68d6f5dfd24f198b362ed9cfce06a787  e2e/chat/x1-attachments.chat.ts
+e154a3ee98b88c3953b90d9cce8716b99215690855116428873c805bec3399c1  e2e/chat/x1-attachments.chat.ts
 17f7cd9a6be02dd7657308140b12fda85f796f8b78b55cdd0283db6423474b5e  e2e/chat/x1-commands.chat.ts
 2280115aeebee2f68f1b20d5ca1bd541f87105af0bea693d10ae6294fd5c0943  e2e/chat/x1-confirm.chat.ts
 99dd9bf9a3706537fcd5ce28dff73726dfca9a6ab5b1c5482d0852fd264ef4ae  e2e/chat/x1-proxy.chat.ts
@@ -184,13 +184,13 @@ c25949b06ecb3b9b0c6b47b82cafb9274ae685d4dce40a67c0ff4771dc2d63b0  e2e/community-
 d908ab596256c0bb1bf1fa07675acb8c2cab3f6ed7e8b91b2860cbe00ce89bb0  e2e/community-web/_flow.ts
 d95da2900357ab68912fb9cc05e0577b20bc05c006f4bf4f42564445dfb1cb9c  e2e/community-web/_nav.ts
 a9fcf1f4d01c89abe4ff5c54208af3446aa534987a818c60f64e16a626177dc9  e2e/community-web/_stack.ts
-7701abf77a410dd04e212de279cc49f3cf5d65deff7ef3aeaa4e89786e25d4f6  e2e/community-web/composer.cm.ts
+cc26b734affa47aa2e79e20e0fc96288a44a6c58284bf47d8646286d28201133  e2e/community-web/composer.cm.ts
 727ca5551b7f762039d98f0dc4dea292c4b42d05ded4a605400ec3ed3ed2f769  e2e/community-web/contrast.cm.ts
-befc2e4a6c92ab45bafd6c03e928d3d1f763d3ecb2959796f2b73cfe1911299b  e2e/community-web/cr129-media.cm.ts
+0e192732d6a94fb63225416078821a90fb7bba11d6c1b36a0661ef763036832f  e2e/community-web/cr129-media.cm.ts
 affeb3bd773ebad7c486891c832a10ba323a1974d9790b519f293c7c3eb1b302  e2e/community-web/cr129-mention.cs.ts
 c99300ed8367597e22981722d1f5177baf4088fe442a2d3fee3d544460cdd1c9  e2e/community-web/cr130-journey.cs.ts
 2a63eff390989c44a5a11f6ba373e9ef529109745f7d13a2e0fe7e7fbabb9dde  e2e/community-web/cr145-post-mention.cs.ts
-682de7d78f3714049e2e363404de4872b7ab1aedf3cacc80220e782b0bbc05ae  e2e/community-web/cr147-feed.cm.ts
+1db2238f360f601dc947bbd764a4620869f978925adbdf7a2b6e993e629abdbe  e2e/community-web/cr147-feed.cm.ts
 a2a899a51ab0600cd39333ed6b106361690de2c2459fcacc81e4e1a33dd8c325  e2e/community-web/cr147b-people.cs.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts
 0b944635ac2d66b63687bb946f56f9dd8024fd9ddab4d7caa125705adeb0526c  e2e/community-web/feed.cm.ts
@@ -534,7 +534,7 @@ e291dd61977b492905982bee43c0e24457bbfe4b4c9036521b0617533304b330  e2e/journey-ap
 4b2c2d77e69ee702646d6c40e91f30cb902e2a269d0e745e2f498c96cd9c07ba  e2e/journey-approval/cr125-form-step-card.spec.ts
 a6c6954ea28c2e4d0d8b644a5ec7b6dd12b72dacddebe01ab7f489bf07eace36  e2e/journey-approval/cr125-purchase-full.spec.ts
 b7ba4bd583e645a8b745a99958166f99c38da209c6a897b753465aa2936b5cb3  e2e/journey-approval/cr125-s1-onboard.spec.ts
-6d9ed7732e76f9c3545597bfc435db8812c54a72b8ca718e624af16655e7a31c  e2e/journey-approval/cr125-s2-settings-flow.spec.ts
+8ecf608276a484b2466496e222cc0759594dbb2abc07dec106fe8316fce8e28f  e2e/journey-approval/cr125-s2-settings-flow.spec.ts
 28609e8def51805edd8cfb42975642b97641d9b868f8e94c0798d209645ad1a3  e2e/journey-approval/cr139b-starter-head.spec.ts
 21269a27138d5846f37fb6c8fb6f2e28b0ac61458660f03ee2e7e54f251a11e3  e2e/journey-approval/cr139d-org-tree.spec.ts
 a55e1877f9a13b9c477a4a0b8d2afdb289874e8fde52c2c75aeb33a27c0c4b9a  e2e/journey-approval/cr141-sign-or-upload.spec.ts
@@ -565,7 +565,7 @@ d2b4a5ea412e75c211bd082ccd13abef72c2e34a4954c499a13feeef2a46aecb  e2e/secrets.sp
 a986fe2719dba3380150e349edbf79d7532428dadce20860c1e7986b1eed6e8e  e2e/stg/smoke.stg.ts
 0305b4c17114edb3996edc41314c1295b16c96ebd386cc90fdeeb497392620eb  e2e/stg/stg.config.ts
 1c58186617ce55927574791a92404444803aeaac4f7bd2b86ef31c91469708b3  e2e/stg/uat-cr118.config.ts
-f5d1c45c08f65c1764c90a657586e0ea4a09fa8e63433e5bc6b32d4658c35c26  e2e/stg/uat-cr118.stg.ts
+e111f46239f37795e1900dfd57d9cd2d15a728cd5039f3875dfef0af219ae50c  e2e/stg/uat-cr118.stg.ts
 5e7d57500308564cf59e4f7f23f5737a7b59a40eb8aeb23185868c3bceaf27ab  e2e/studio/_h4b2.ts
 0c133f40d6ff9a28c5085851fc01c8ff093fc482932e13f8775db5cf8d50f1ea  e2e/studio/_k1-kh.ts
 6ff1182600ea6fa08e6edd7c449a47ef085bab20e38491e20d37bb64c1626061  e2e/studio/_support.ts

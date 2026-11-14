@@ -85,7 +85,7 @@ async function openFlowSettings(page: Page): Promise<void> {
   });
 }
 
-test("1 · chưa có quy trình Bật: Cài đặt nói rõ ai làm gì, không đẩy sang quản trị nền tảng, chỉ MỘT mục quy trình", async ({
+test("1 · chưa có quy trình Bật: Cài đặt nói rõ ai làm gì (quản trị nền tảng soạn và gán), chỉ MỘT mục quy trình", async ({
   browser,
 }, testInfo) => {
   const page = await ctxPage(browser);
@@ -93,8 +93,8 @@ test("1 · chưa có quy trình Bật: Cài đặt nói rõ ai làm gì, không 
   await openFlowSettings(page);
   const none = page.getByTestId("flow-none");
   await expect(none).toContainText("chưa có quy trình duyệt hợp đồng nào đang bật");
-  // Phạm vi = khối quy trình duyệt. Khối "Đối tác xác nhận" (S7) cùng mục Cài đặt có hợp lệ nhãn "Quản trị nền tảng làm" cho từng điều kiện.
-  await expect(none.getByText(/quản trị nền tảng/i)).toHaveCount(0);
+  // Người dùng chốt 2026-11-14 (d8e8831c3): quy trình do quản trị nền tảng soạn và gán ⇒ câu nói rõ liên hệ quản trị nền tảng.
+  await expect(none).toContainText("liên hệ quản trị nền tảng");
   await expect(page.getByTestId("flow-open-page")).toBeVisible();
   const dlg = page.getByRole("dialog");
   await expect(dlg.getByRole("button", { name: /Ứng dụng & quy trình/ })).toHaveCount(0);
