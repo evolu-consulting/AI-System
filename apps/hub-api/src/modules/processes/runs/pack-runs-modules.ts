@@ -52,6 +52,7 @@ function exitKey(node: string, consumed: string | null): PackModuleOutcome {
 
 const STATUS: Record<PackModuleOutcome, PackStepView["status"]> = {
   pending: "pending",
+  skipped: "skipped",
   waiting: "running",
   done: "passed",
   declined: "rejected",
@@ -59,8 +60,19 @@ const STATUS: Record<PackModuleOutcome, PackStepView["status"]> = {
   failed: "failed",
 };
 
-function outcomeOf(node: string, facts: readonly StageFact[]): PackModuleOutcome {
+/** CR-174 · lượt đã kết thúc: bước chưa tới sẽ không bao giờ chạy. */
+export const RUN_ENDED: ReadonlySet<string> = new Set(["done", "cancelled", "failed", "expired"]);
+
+export function outcomeOf(
+  node: string,
+  facts: readonly StageFact[],
+  ended = false,
+): PackModuleOutcome {
   const wait = facts.at(-1) as StageFact;
+  // CR-174 · nhánh KHÔNG đi vào (stage `skipped`), hoặc lượt đã xong mà bước chưa từng chạy ⇒ «Bỏ qua» (không phải «Đang chờ»).
+  if (wait.stageStatus === "skipped") return "skipped";
+  if (ended && facts.every((f) => f.stageStatus === "pending" || f.stageStatus === "queued"))
+    return "skipped";
   // Gửi/chờ lỗi hết lượt (run chờ người quyết) ⇒ KHÔNG nói "Đang chờ ký": việc chưa chạy được, cần xử lý.
   if (facts.some((f) => f.stageStatus === "needs_decision" || f.stageStatus === "failed"))
     return "failed";
@@ -86,6 +98,7 @@ export function collapseModuleSteps(
   stages: readonly ClusterStage[],
   facts: readonly StageFact[],
   signerNames: ReadonlyMap<string, string> = new Map(),
+  ended = false,
 ): PackStepView[] {
   const clusters = moduleClusters(stages);
   if (clusters.length === 0) return [...steps];
@@ -107,7 +120,7 @@ export function collapseModuleSteps(
       i = c.end;
       continue;
     }
-    const outcome = outcomeOf(c.node, facts.slice(c.start, c.end));
+    const outcome = outcomeOf(c.node, facts.slice(c.start, c.end), ended);
     const signer = signerRefs(stages[c.start])
       .flatMap((k) => signerNames.get(k) ?? [])
       .join(", ")

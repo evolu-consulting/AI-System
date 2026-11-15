@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 type Outcome = NonNullable<FlowStepView["outcome"]>;
 const DOT: Record<Outcome, string> = {
   pending: "border-rule bg-transparent",
+  skipped: "border-rule bg-sunk",
   waiting: "border-act bg-act-soft animate-pulse",
   done: "border-ok bg-ok",
   declined: "border-late bg-late",
@@ -30,7 +31,7 @@ export function ModuleStepRow({
     <li
       data-testid="approval-step-module"
       data-outcome={outcome}
-      className="flex gap-3 border-b border-rule-soft py-2 last:border-b-0"
+      className={`flex gap-3 border-b border-rule-soft py-2 last:border-b-0 ${outcome === "skipped" ? "opacity-60" : ""}`}
     >
       <span
         aria-hidden="true"
@@ -47,14 +48,16 @@ export function ModuleStepRow({
           data-module="outcome"
         >
           {t(
-            kind === "partner"
-              ? `contracts.approval.module.partner.outcome.${outcome}`
-              : outcome === "waiting"
-                ? "contracts.esign.pending" // một nhãn "Đang chờ ký" (CR-125 G6, #8)
-                : `contracts.approval.module.outcome.${outcome}`,
+            outcome === "skipped"
+              ? "contracts.approval.module.outcome.skipped" // CR-174 · nhánh không đi vào: «Bỏ qua», không «đang chờ»
+              : kind === "partner"
+                ? `contracts.approval.module.partner.outcome.${outcome}`
+                : outcome === "waiting"
+                  ? "contracts.esign.pending" // một nhãn "Đang chờ ký" (CR-125 G6, #8)
+                  : `contracts.approval.module.outcome.${outcome}`,
           )}
         </p>
-        {signer ? (
+        {signer && outcome !== "skipped" ? (
           <p className="text-caption text-dim" data-module="signer">
             {t("contracts.approval.module.signer", { who: signer })}
           </p>

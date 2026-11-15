@@ -74,7 +74,14 @@ export type PackStepStatus =
   | "running" // cf-dify · bước Dify đang chạy
   | "failed"; // cf-dify · bước Dify lỗi hết lượt (needs_decision)
 /** CR-123 · u6 · trạng thái nghiệp vụ của một node module (Ký số): chưa tới · đang chờ · xong · từ chối · hết hạn. */
-export type PackModuleOutcome = "pending" | "waiting" | "done" | "declined" | "expired" | "failed";
+export type PackModuleOutcome =
+  | "pending"
+  | "skipped"
+  | "waiting"
+  | "done"
+  | "declined"
+  | "expired"
+  | "failed";
 /** CR-127 · RA2 · nhận việc của task mở theo người xem (cùng `TASK_CLAIM_FIELDS` của `TaskDetail`): đi tới `FlowTask`. */
 export type PackTaskClaim = Pick<
   TaskDetail,

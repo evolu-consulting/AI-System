@@ -76,7 +76,14 @@ export type EngineStageView = {
   /** CR-125 · cr125-form-step-card · stage `form` (khớp `PackStepView.form`). */
   form?: { fields: unknown[]; values: Record<string, unknown> | null; prefill?: FormPrefill };
 };
-export type ModuleOutcome = "pending" | "waiting" | "done" | "declined" | "expired" | "failed";
+export type ModuleOutcome =
+  | "pending"
+  | "skipped"
+  | "waiting"
+  | "done"
+  | "declined"
+  | "expired"
+  | "failed";
 export type EngineStepsView = {
   status: string;
   started_by: string;

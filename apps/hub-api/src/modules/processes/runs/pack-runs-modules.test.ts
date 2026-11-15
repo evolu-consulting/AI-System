@@ -102,3 +102,27 @@ describe("collapseModuleSteps · CR-126 bước người làm trong node Gửi �
     expect(out[1]?.form?.fields).toHaveLength(1);
   });
 });
+
+// CR-174 · phân loại bước module: xong / đang chờ / chưa tới / bỏ qua.
+describe("collapseModuleSteps · CR-174 bỏ qua", () => {
+  const mod = (out: PackStepView[]) => out[1]?.module?.outcome;
+  test("nhánh không đi vào (stage skipped) ⇒ skipped, không 'waiting'", () => {
+    const out = run(f("skipped", "skipped"));
+    expect(mod(out)).toBe("skipped");
+    expect(out[1]?.status).toBe("skipped");
+  });
+  test("lượt đã kết thúc mà bước chưa từng chạy ⇒ skipped", () => {
+    const out = collapseModuleSteps(steps, stages, f("pending", "pending"), new Map(), true);
+    expect(mod(out)).toBe("skipped");
+  });
+  test("lượt còn chạy: bước tương lai vẫn 'pending'; đang chờ vẫn 'waiting'; xong vẫn 'done'", () => {
+    expect(mod(run(f("pending", "pending")))).toBe("pending");
+    expect(mod(run(f("done", "waiting_timer")))).toBe("waiting");
+    expect(mod(run(f("done", "done", "x")))).toBe("done");
+  });
+  test("lượt đã kết thúc không đổi bước đã xong", () => {
+    expect(mod(collapseModuleSteps(steps, stages, f("done", "done", "x"), new Map(), true))).toBe(
+      "done",
+    );
+  });
+});

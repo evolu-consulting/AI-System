@@ -29,7 +29,7 @@ import {
   openTask,
 } from "./pack-runs-claim";
 import { decisionOf, formOf, nodeKeyOf, stageCode, withFormPrefill } from "./pack-runs-extra";
-import { collapseModuleSteps, signerNamesOf, signerRefs } from "./pack-runs-modules";
+import { collapseModuleSteps, RUN_ENDED, signerNamesOf, signerRefs } from "./pack-runs-modules";
 
 type Ts = Date | string;
 type StageSnap = Parameters<typeof stageMeta>[0] & {
@@ -221,6 +221,7 @@ export async function stepsView(
           snaps,
           rows.map((r) => ({ stageStatus: r.stage_status, consumed: r.consumed_event })),
           names,
+          RUN_ENDED.has(head.run_status),
         ),
         decision:
           head.run_status === "needs_decision"
@@ -267,6 +268,7 @@ export async function stepsViewMany(
             consumed: (rows[i] as Row).consumed_event,
           })),
           names,
+          RUN_ENDED.has(head.run_status),
         ),
         decision: null,
       });

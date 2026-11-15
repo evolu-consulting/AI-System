@@ -5,6 +5,7 @@
         "signer": "Signer: {{who}}",
         "outcome": {
           "pending": "Not started",
+          "skipped": "Skipped",
           "done": "Signed",
           "declined": "Declined",
           "expired": "Expired",

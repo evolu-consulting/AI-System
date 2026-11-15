@@ -5,6 +5,7 @@
         "signer": "Người ký: {{who}}",
         "outcome": {
           "pending": "Chưa tới lượt",
+          "skipped": "Bỏ qua",
           "done": "Đã ký",
           "declined": "Từ chối",
           "expired": "Hết hạn",
