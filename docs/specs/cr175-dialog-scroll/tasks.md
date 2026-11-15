@@ -37,7 +37,7 @@ Tổng: 10 hộp tự dựng gom về shadcn (5 div + 4 `<dialog>` + ReasonDialo
 - Esc / bấm nền = Hủy (hành vi Radix) cho các hộp vừa gom.
 
 ## Việc còn lại
-- Không có.
+- Không có. evotest `-Ref 65e184a87 -Wave`: chat 75 · community-web-stack 25 · community-web 47 · cr127 44 · contracts-web 254 — xanh ngay lượt 1, không lệch baseline.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
