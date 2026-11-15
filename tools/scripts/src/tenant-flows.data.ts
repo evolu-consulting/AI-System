@@ -43,7 +43,7 @@ export const WHO = {
   nitigroup: {
     tien: "thuytien.le@nitigroupvn.com",
     ngan: "thuyngan.le@nitigroupvn.com",
-    vy: "thuyvy.trang@nitigroupvn.com",
+    vy: "thuyvy.trang@nitigroupvn.com", // CR-165b: không còn là người phụ trách nhận HĐ (là Tiên)
     phuong: "thuphuong.pham@nitigroupvn.com",
   },
   preschool: { dung: "dung.dang@preschool.com" },
@@ -53,6 +53,12 @@ export const PICK_GROUP = {
   evolu: "pb-ban-giam-doc",
   nitigroup: "pb-giam-doc",
   preschool: "pb-ban-giam-doc",
+} as const;
+/** CR-165b · người phụ trách «Nhận hợp đồng từ đối tác»: Julian ⇒ Thomas duyệt + ký; Tiên / Dung là cấp cao nhất ⇒ Chuẩn bị ký → Ký (không bước duyệt treo). */
+export const RECV_OWNER = {
+  evolu: WHO.evolu.julian,
+  nitigroup: WHO.nitigroup.tien,
+  preschool: WHO.preschool.dung,
 } as const;
 export const emailsOf = (key: TenantKey): string[] => Object.values(WHO[key]);
 
@@ -225,12 +231,13 @@ const gateWidth = (org: Org, kind: Kind): number =>
  * Bước duyệt đầu (luật chung): trưởng phòng của người tạo (`starter_head`, tự leo cấp). `top` = trưởng gốc, người ký.
  * `none` (chỉ có trưởng gốc) ⇒ chỉ bước «Chuẩn bị ký» (engine buộc bước Ký đứng sau MỘT bước kiểu duyệt: `REAL_ACTION`); phiếu không có bước nào.
  * HĐ gửi đi / phiếu ⇒ `if starter_is_top`: Đúng bỏ duyệt (HĐ: sang «Chuẩn bị ký»; phiếu: sang bước sau duyệt). Nhận HĐ: người tạo là người
- * phụ trách ở trigger (không phải người gửi ngoài), không rẽ.
+ * phụ trách ở trigger (không phải người gửi ngoài), không rẽ; người phụ trách là cấp cao nhất (`ownerIsTop`) ⇒ chỉ «Chuẩn bị ký» (CR-165b).
  */
-function gate(org: Org, step: number, to: To, top: string, kind: Kind): Gate {
+function gate(org: Org, step: number, to: To, top: string, kind: Kind, ownerIsTop = false): Gate {
   const prep = (s: number) =>
     workBy("chuan-bi-ky", "Chuẩn bị ký", s, top, [txt("ghi_chu", "Ghi chú (nếu có)")]);
-  if (shapeOf(org) === "none") return { stages: [prep(step)], next: step + 1 };
+  if (shapeOf(org) === "none" || (kind === "receive" && ownerIsTop))
+    return { stages: [prep(step)], next: step + 1 };
   if (kind === "receive") return { stages: [headOfStarter(step, undefined, to)], next: step + 1 };
   return {
     stages: [
@@ -263,10 +270,10 @@ function sendFlow(org: Org, uid: Uid, group: string): Stage[] {
   ]);
 }
 /** Nhận HĐ: [duyệt đầu từ người phụ trách] → Ký (trưởng gốc) → Kết thúc (Đồng ý / Từ chối / Trả lại). */
-function receiveFlow(org: Org, uid: Uid): Stage[] {
+function receiveFlow(org: Org, uid: Uid, owner: string): Stage[] {
   const top = topOf(org, uid);
   const end = gateWidth(org, "receive") + 2; // duyệt đầu + Ký + Chờ ký
-  const gg = gate(org, 0, { reject: end + 1, ret: end + 2 }, top, "receive");
+  const gg = gate(org, 0, { reject: end + 1, ret: end + 2 }, top, "receive", owner === top);
   return norm([
     ...gg.stages,
     sign(gg.next, top),
@@ -285,19 +292,13 @@ const recvTrigger = (owner: string) => ({
 
 /** Quy trình của một công ty; `uid` đổi email → id người dùng của công ty đó (thiếu ⇒ ném lỗi); `org` = cây phòng ban từ yaml. */
 export function flowsFor(key: TenantKey, uid: Uid, org: Org = readOrg(key)): FlowDef[] {
-  const owner = uid(
-    key === "evolu"
-      ? WHO.evolu.julian
-      : key === "nitigroup"
-        ? WHO.nitigroup.vy
-        : WHO.preschool.dung,
-  );
+  const owner = uid(RECV_OWNER[key]);
   return [
     { name: FLOW_NAMES.send, ...SEND_TRIGGER_DEF(sendFlow(org, uid, PICK_GROUP[key])), inputs },
     {
       name: FLOW_NAMES.receive,
       trigger: recvTrigger(owner),
-      stages: receiveFlow(org, uid),
+      stages: receiveFlow(org, uid, owner),
       inputs,
     },
   ];

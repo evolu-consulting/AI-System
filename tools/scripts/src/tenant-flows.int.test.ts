@@ -273,7 +273,8 @@ describe("CR-159 · quy trình 3 công ty", () => {
     }
     // CR-160 · Tiên (cấp cao nhất) tạo: bỏ duyệt (Ngân, cùng phòng gốc, vẫn → Tiên ở vòng trên)
     expect(await chain("nitigroup", FLOW_NAMES.send, org, tien)).toEqual([]);
-    expect(await chain("nitigroup", FLOW_NAMES.receive, org, vy)).toEqual([tien]);
+    // CR-165b · Nhận HĐ: người phụ trách là Tiên (cấp cao nhất) ⇒ không bước duyệt treo
+    expect(await chain("nitigroup", FLOW_NAMES.receive, org, tien)).toEqual([]);
     const send = await defOf("nitigroup", FLOW_NAMES.send);
     const ky = (send.stages as St[]).find((s) => s.executor.tool_key === "contracts-esign-send");
     expect(ky?.executor.args.company_signers.value).toBe(`user:${uidOf("nitigroup")(tien)}`);
@@ -383,9 +384,23 @@ describe("CR-159 · quy trình 3 công ty", () => {
   });
 
   it("CR-165: Nhận hợp đồng từ đối tác không có bước «Nhờ đối tác ký?» và vẫn kết thúc Đồng ý", async () => {
-    const r = await walk("nitigroup", FLOW_NAMES.receive, WHO.nitigroup.vy);
+    const r = await walk("nitigroup", FLOW_NAMES.receive, WHO.nitigroup.tien);
     expect(keysOf(r)).not.toContain("nho-doi-tac");
     expect(r.end.outcome).toBe("confirmed");
+  });
+
+  it("CR-165b nhận HĐ · Tiên phụ trách ⇒ Chuẩn bị ký rồi Ký không bước duyệt · Julian ⇒ Thomas duyệt", async () => {
+    const t = await defOf("nitigroup", FLOW_NAMES.receive);
+    expect(t.trigger.params.owner_user_id).toBe(uidOf("nitigroup")(WHO.nitigroup.tien));
+    const n = await walk("nitigroup", FLOW_NAMES.receive, WHO.nitigroup.tien);
+    expect(keysOf(n)).not.toContain("truong-phong");
+    expect(keysOf(n).slice(0, 1)).toEqual(["chuan-bi-ky"]);
+    expect(whoAt(n, "chuan-bi-ky")).toBe(WHO.nitigroup.tien);
+    expect(n.end.outcome).toBe("confirmed");
+    const e = await walk("evolu", FLOW_NAMES.receive, WHO.evolu.julian);
+    expect(keysOf(e)[0]).toBe("truong-phong");
+    expect(whoAt(e, "truong-phong")).toBe(WHO.evolu.thomas);
+    expect(e.end.outcome).toBe("confirmed");
   });
 
   it("CR-165: chạy lại trên công ty có quy trình cũ ⇒ thay sơ đồ cùng tên (không trùng), tắt quy trình thừa (không xoá), lần sau không đổi", async () => {

@@ -10,6 +10,7 @@ import {
   type OnboardSpec,
   planUsers,
   sameJson,
+  splitProfile,
   usernameOf,
 } from "./onboard.rules";
 
@@ -67,6 +68,19 @@ describe("niti-onboard · file deploy/tenants/nitigroup.yaml", () => {
   test("--mgmt-org ghi đè org_id, giữ source (file có import)", () => {
     const p = parseSpec(readFileSync(join(NITI, "../demo.yaml"), "utf8"), { mgmtOrg: "org-123" });
     expect(p.ok && p.spec.import).toEqual({ source: "mgmt-prod", org_id: "org-123" });
+  });
+});
+
+describe("CR-165b · hồ sơ công ty evolu / preschool trong yaml", () => {
+  const dir = join(NITI, "..");
+  test.each([
+    ["evolu", "Công ty EvoluConsultants", "8888888888"],
+    ["preschool", "Công ty preschool", "9999999999"],
+  ])("%s: CLI nhận hồ sơ, tách đúng cột legal_name + tax_code", (key, legal, tax) => {
+    const p = parseSpec(readFileSync(join(dir, `${key}.yaml`), "utf8"));
+    if (!p.ok) throw new Error(JSON.stringify(p.issues));
+    expect(p.spec.profile).toMatchObject({ legal_name: legal, tax_id: tax });
+    expect(splitProfile(p.spec.profile).cols).toEqual({ legal_name: legal, tax_code: tax });
   });
 });
 

@@ -11,6 +11,11 @@ key: evolu
 name: Evolu
 timezone: Asia/Ho_Chi_Minh
 
+# CR-165b · hồ sơ công ty. MST tạm 10 số (hệ thống buộc 10 chữ số: TENANT_PROFILE_TAX_CODE_RE) — chờ người dùng xác nhận MST 10 số (đã đưa 88888888).
+profile:
+  legal_name: Công ty EvoluConsultants
+  tax_id: "8888888888"
+
 packs: [contracts]
 addons: [contracts-community, contracts-partner-confirm] # Bảng tin
 
