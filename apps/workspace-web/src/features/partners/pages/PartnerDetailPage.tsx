@@ -1,15 +1,11 @@
 // V2-I · DT-01…07 · `/partners?party=` — trang chi tiết đối tác theo mockup NITI: đầu trang (tên, điểm từng vai, MST · điện thoại · liên hệ,
-// "Tìm trên internet") + 3 tab: Tổng quan · Hợp đồng · n · Đánh giá & ghi chú. Tab / vai / khoảng biểu đồ nằm trên URL.
+// "Tìm trên internet") + 3 tab: Tổng quan · Hợp đồng · n · Sổ việc & ghi chú. Tab / vai / khoảng biểu đồ nằm trên URL.
 import type { PartnerRole, RepRole } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
-import { useShellPacks } from "~/shell/use-shell-packs";
 import { fetchContractCounts, fetchProfile, fetchRoles, partnerKeys } from "../api";
-import { ChatTab } from "../components/ChatTab";
-import { CommunityTab } from "../components/CommunityTab";
-import { ConnectedFeedTab } from "../components/ConnectedFeedTab";
 import { ContractsTab } from "../components/ContractsTab";
 import { OverviewTab } from "../components/OverviewTab";
 import { OverviewTabV2E } from "../components/OverviewTabV2E";
@@ -23,33 +19,16 @@ import { type PartnersSearch, type Range, resolveTab, rolesOf, type Tab } from "
 
 type PanelProps = {
   party: string;
-  canEditCommunity: boolean;
   tab: Tab;
   role: RepRole | null;
   roles: RepRole[];
   range: Range;
   v2e: boolean;
-  /** CR-161 · công ty đã kết nối (chỉ người Toàn quyền) + tên hiển thị. */
-  tenant?: string | undefined;
-  name: string;
 };
 
 /** Thân tab theo engine: HD8 (bảng tiêu chí, sổ việc) hoặc V2-E (vai × nhóm SP, biểu đồ, sao). */
-function PartnerPanel({
-  party,
-  tab,
-  role,
-  roles,
-  range,
-  v2e,
-  canEditCommunity,
-  tenant,
-  name,
-}: PanelProps) {
+function PartnerPanel({ party, tab, role, roles, range, v2e }: PanelProps) {
   const { t } = useTranslation();
-  if (tab === "chat" && tenant) return <ChatTab other={tenant} name={name} />;
-  if (tab === "feed" && tenant) return <ConnectedFeedTab other={tenant} name={name} />;
-  if (tab === "community") return <CommunityTab party={party} canEdit={canEditCommunity} />;
   if (tab === "contracts") return <ContractsTab party={party} />;
   if (tab === "review")
     return v2e ? (
@@ -66,13 +45,11 @@ function PartnerPanel({
 }
 export function PartnerDetailPage({ search }: { search: PartnersSearch & { party: string } }) {
   const { write, owner } = useMe();
-  const community = useShellPacks().community === true;
   const { party } = search;
   const tenant = owner ? search.tenant : undefined;
   const links = useLinks("connected", !!tenant);
   const link = links.data?.items.find((l) => l.tenant_id === tenant);
-  const feedOk = !!tenant && (links.isLoading || !!link);
-  const tab = resolveTab(search.tab, { community, tenant, feedOk });
+  const tab = resolveTab(search.tab);
   const list = usePartnerRows();
   const profile = useQuery({
     queryKey: partnerKeys.profile(party),
@@ -111,9 +88,7 @@ export function PartnerDetailPage({ search }: { search: PartnersSearch & { party
         party={party}
         role={search.role}
         tab={tab}
-        community={community}
         tenant={tenant}
-        feed={feedOk}
         contracts={counts.data?.find((c) => c.party === party)?.n ?? 0}
       />
       <div
@@ -124,14 +99,11 @@ export function PartnerDetailPage({ search }: { search: PartnersSearch & { party
       >
         <PartnerPanel
           party={party}
-          canEditCommunity={owner}
           tab={tab}
           role={role}
           roles={roles}
           range={search.range ?? 12}
           v2e={v2e}
-          tenant={tenant}
-          name={name}
         />
       </div>
     </div>

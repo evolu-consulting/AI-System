@@ -5,7 +5,6 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHead } from "~/components/shared/layout";
-import { PopMenu } from "~/components/shared/pop-menu";
 import { Loading } from "~/components/shared/states";
 import { searchErrorKey, useContacts, useInternetSearch } from "../hooks/use-partner-rep";
 import { flagsOf, type ScoreRow } from "../lib/partner-score";
@@ -69,38 +68,32 @@ export function PartnerHeader({
         }
         actions={
           write && (
-            <>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                disabled={search.isPending}
-                onClick={() => {
-                  setShow(true);
-                  search.mutate();
-                }}
-              >
-                {search.isPending ? L("web.searching") : L("web.button")}
-              </button>
-              <PopMenu
-                trigger={<>{t("contracts.del.menu")} ▾</>}
-                ariaLabel={t("contracts.del.menu")}
-                triggerClass="btn btn-sm"
-                triggerTestId="head-actions-menu"
-                items={[
-                  {
-                    key: "editContact",
-                    label: t("contracts.vgaps.contact.edit"),
-                    testId: "act-editContact",
-                    onSelect: () => setEditing((v) => !v),
-                  },
-                ]}
-              />
-            </>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              disabled={search.isPending}
+              onClick={() => {
+                setShow(true);
+                search.mutate();
+              }}
+            >
+              {search.isPending ? L("web.searching") : L("web.button")}
+            </button>
           )
         }
       />{" "}
       {editing && contacts.data && (
         <ContactEditor party={party} contacts={contacts.data} onClose={() => setEditing(false)} />
+      )}
+      {!editing && write && contacts.data && (
+        <button
+          type="button"
+          data-testid="act-editContact"
+          className="btn btn-sm mb-2"
+          onClick={() => setEditing(true)}
+        >
+          {t("contracts.vgaps.contact.edit")}
+        </button>
       )}
       {!editing && !!contacts.data?.length && (
         <ul

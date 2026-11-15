@@ -1,13 +1,6 @@
 // CR-161 · lát 7 · luật thuần của kết nối công ty (nhãn, lỗi, ô tìm, lời nhắn).
 import { describe, expect, it } from "bun:test";
-import {
-  connectErrKey,
-  noteOf,
-  partnerSearchOf,
-  searchReady,
-  statusTone,
-  unreadLabel,
-} from "./connect";
+import { connectErrKey, noteOf, partnerSearchOf, searchReady, statusTone } from "./connect";
 
 describe("tình trạng kết nối", () => {
   it("tone theo từng trạng thái", () => {
@@ -43,16 +36,11 @@ describe("mã lỗi ⇒ câu dễ hiểu", () => {
   });
 });
 
-describe("mở trang đối tác và số chưa đọc", () => {
+describe("mở trang đối tác", () => {
   it("khoá đối tác theo MST + tenant", () => {
     expect(partnerSearchOf({ tax_code: "0300111222", tenant_id: "t1" })).toEqual({
       party: "tax:0300111222",
       tenant: "t1",
     });
-  });
-  it("nhãn chưa đọc", () => {
-    expect(unreadLabel(0)).toBe("");
-    expect(unreadLabel(7)).toBe("7");
-    expect(unreadLabel(120)).toBe("99+");
   });
 });

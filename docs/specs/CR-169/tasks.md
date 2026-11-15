@@ -37,7 +37,7 @@ Viết tắt: `H` = `apps/hub-api/src/modules/packs/contracts`, `W` = `apps/work
 | 5a | `cr169-web-pkg-lib` | Sonnet | tạo `packages/messages-web`, chuyển `lib/`, `api.ts` (transport tiêm), `hooks/` + test; W gắn lại; hành vi không đổi | — | — | không | thường | `W/features/messages/**`, `packages/web-kit/src/notify/client.ts` |
 | 5b | `cr169-web-pkg-ui` | Sonnet | chuyển `components/`, i18n; W trang + khoang dùng gói; unit + j18/j19 vẫn chạy được (không chạy e2e) | 5a | — | không | thường | như 5a |
 | 6 | `cr169-web-partner` | Sonnet | lọc công ty, tìm người tải dần, dòng/khung `partner`, chỉ đọc, Bảng tin công ty + unit lib | 1, 3b, 5b | — | không | thường | spec §8 |
-| 7 | `cr169-web-partner-page` | Sonnet | trang đối tác 3 tab, bỏ «Thao tác», «Nhắn tin» ở khối kết nối, xoá UI trò chuyện + unit `partner-v2.test.ts` | 1 | — | không | thường | spec §8 hàng «Trang đối tác» |
+| 7 | `cr169-web-partner-page` | Sonnet | trang đối tác 3 tab, bỏ «Thao tác», «Nhắn tin» ở khối kết nối, xoá UI trò chuyện + unit `partner-v2.test.ts` | 1 | — | không | thường | spec §8 hàng «Trang đối tác» | [x] [test: apps/workspace-web/src/features/partners/lib/partner-v2.test.ts » CR-169 · 3 tab] |
 | 8 | `cr169-chat-web` | Sonnet | chat-web mục «Tin nhắn» (gắn gói, badge, stream), ẩn khi không quyền SHT, không vào ngữ cảnh trợ lý + unit | 6 | — | không | thường | spec §7–8, P12; `CW/features/realtime/event-router.ts` |
 | 9 | `cr169-e2e` | Sonnet | fixture + e2e hành trình (chỉ viết; điều phối chạy cuối đợt) + sửa e2e CR-161 | 6, 7, 8 | — | không | thường | mục e2e dưới |
 
@@ -64,7 +64,7 @@ Fixture: NitiGroup (Tiên Toàn quyền, Vy nhân viên, Lan nhân viên), Presc
 | 7 | Gói `messages-web` (lib/api/hooks) | cr169-web-pkg-lib | [ ] |
 | 8 | Gói `messages-web` (components) | cr169-web-pkg-ui | [ ] |
 | 9 | Web Tin nhắn với công ty kết nối | cr169-web-partner | [ ] |
-| 10 | Trang đối tác 3 tab | cr169-web-partner-page | [ ] |
+| 10 | Trang đối tác 3 tab | cr169-web-partner-page | [x] |
 | 11 | chat-web «Tin nhắn» | cr169-chat-web | [ ] |
 | 12 | e2e hành trình | cr169-e2e | [ ] |
 
@@ -142,3 +142,4 @@ Tab: Tổng quan · Hợp đồng · Sổ việc & ghi chú. Không còn «Bản
 - Kịch bản: khi mở `?tab=chat` hoặc `?tab=community` thì về Tổng quan [test: thủ công — chưa viết]
 - Kịch bản: khi người có quyền ghi bấm «Sửa liên hệ» thì mở khung sửa liên hệ [test: thủ công — chưa viết]
 - (lát 4) Purge theo luật người dùng chốt (thay câu spec §5 «tin xoá mềm»): tin của A GIỮ chữ, `sender_user`→tombstone, `files='[]'`, `client_id` đổi mới; mốc đọc A→0; thread giữ cho B; bên kia đã xoá ⇒ xoá thread. Nhiều thread cùng (người B) gộp vào (tombstone,B) đã có hoặc thread nhỏ nhất (seq dời cộng dồn). Số liệu audit đổi tên `pmsg*`. `scrubChatBells` giữ (chuông `cc.*` kết nối còn dùng).
+- (lát 7) «Nhắn tin» dẫn `/contracts/messages?company=<tenant_id>` (route chưa có `company` — `search` ép kiểu, lát 6 phải nhận tham số); xoá luôn tab/hook Bảng tin (CommunityTab, use-partner-community, community-block), số chưa đọc ở khối kết nối. e2e cần sửa (lát 9): `e2e/cr161/ket-noi-cong-ty.spec.ts:48` (tab=chat, ChatTab/Bảng tin công ty), `e2e/_kit/two-companies.seed.ts`, `e2e/community-web/cr130-journey.cs.ts` (tab Bảng tin), nút «Mở trang đối tác»/`connect-unread` ở khối kết nối; `act-editContact` nay là nút chữ (không qua menu «Thao tác»).

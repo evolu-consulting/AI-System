@@ -36,12 +36,13 @@ export function rolesOf(
       (r === "customer" && known.includes("commission_payer")),
   );
 }
-export const TABS = ["overview", "contracts", "review", "community", "chat", "feed"] as const;
+/** CR-169 · chỉ 3 tab; `?tab=chat|feed|community` cũ không nhận ⇒ Tổng quan. */
+export const TABS = ["overview", "contracts", "review"] as const;
 export type Tab = (typeof TABS)[number];
 
 export type PartnersSearch = {
   party?: string;
-  /** CR-161 · công ty đã kết nối (mã tenant) — có thì hiện tab Trò chuyện / Bảng tin công ty. */
+  /** CR-161 · công ty đã kết nối (mã tenant) — chỉ để lấy tên khi chưa có hợp đồng. */
   tenant?: string;
   role?: RepRole;
   tab?: Tab;
@@ -93,17 +94,5 @@ export function noteOfLine(l: PartnerWebLine): string {
   return (l.source ? `${body} (${l.source})` : body).slice(0, 2000);
 }
 
-/**
- * Tab hiển thị: «Bảng tin» (gói Cộng đồng) cần gói bật; «Trò chuyện» cần công ty đã kết nối (`tenant`, chỉ Toàn quyền);
- * «Bảng tin công ty» cần còn kết nối — ngắt ⇒ về «Trò chuyện» (chỉ đọc).
- */
-export function resolveTab(
-  asked: Tab | undefined,
-  o: { community: boolean; tenant: string | undefined; feedOk: boolean },
-): Tab {
-  const tab = asked ?? "overview";
-  if (tab === "community" && !o.community) return "overview";
-  if ((tab === "chat" || tab === "feed") && !o.tenant) return "overview";
-  if (tab === "feed" && !o.feedOk) return "chat";
-  return tab;
-}
+/** Tab hiển thị: mặc định Tổng quan (tab lạ đã bị `parsePartnersSearch` bỏ). */
+export const resolveTab = (asked: Tab | undefined): Tab => asked ?? "overview";

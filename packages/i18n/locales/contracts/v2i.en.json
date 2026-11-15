@@ -55,10 +55,7 @@
       "tab": {
         "overview": "Overview",
         "contracts": "Contracts · {{n}}",
-        "review": "Log & notes",
-        "community": "Feed",
-        "chat": "Chat",
-        "feed": "Company feed"
+        "review": "Log & notes"
       },
       "roleSeg": "Choose role",
       "noScoreYet": "No jobs or contracts to score this role yet.",

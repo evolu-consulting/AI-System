@@ -219,51 +219,8 @@
         "gone": "The invite no longer exists. Reload the page to see the latest status.",
         "failed": "Could not do that. Check your connection and try again."
       },
-      "openPartner": "Open partner page",
-      "chat": {
-        "banner": "One shared conversation with {{name}}. Full-access people of both companies can see it.",
-        "noThread": "There is no conversation with {{name}} yet.",
-        "empty": "No messages yet",
-        "emptyHint": "Send the first greeting to {{name}}.",
-        "readOnly": "Disconnected — you can only review old messages. To chat again, send a new connection invite.",
-        "older": "Show older messages",
-        "list": "Messages",
-        "input": "Type a message",
-        "attach": "Attach file",
-        "send": "Send",
-        "retryHint": "Press Send to try again.",
-        "unread": "{{n}} unread",
-        "err": {
-          "type": "File “{{name}}” is not an accepted type. Choose PDF, image, Word or Excel.",
-          "size": "File “{{name}}” is larger than 20 MB. Choose a smaller file.",
-          "readOnly": "The two companies are disconnected, so nothing more can be sent.",
-          "forbidden": "Only people with Full access can use this chat.",
-          "empty": "Type a message or attach a file.",
-          "storage": "File storage is busy. Try again in a few minutes.",
-          "failed": "Could not send. Check your connection and try again."
-        },
-        "file": {
-          "list": "Attachments",
-          "drafts": "Files to send",
-          "openImage": "View image {{name}}",
-          "prev": "Previous image",
-          "next": "Next image",
-          "close": "Close",
-          "download": "Download",
-          "downloadOf": "Download {{name}}",
-          "view": "View",
-          "failed": "Could not open the file. Try again later.",
-          "uploading": "Uploading…",
-          "retry": "Retry",
-          "remove": "Remove file {{name}}"
-        }
-      },
-      "feed": {
-        "banner": "You are viewing public posts of the connected company: {{name}}.",
-        "empty": "{{name}} has not posted anything public yet.",
-        "more": "Show more posts",
-        "files": "{{n}} file(s)"
-      }
+      "message": "Message",
+      "openPartner": "Open partner page"
     }
   }
 }

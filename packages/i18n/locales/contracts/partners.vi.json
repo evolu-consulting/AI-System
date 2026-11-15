@@ -219,51 +219,8 @@
         "gone": "Lời mời không còn nữa. Tải lại trang để xem tình trạng mới.",
         "failed": "Chưa làm được. Kiểm tra mạng rồi thử lại."
       },
-      "openPartner": "Mở trang đối tác",
-      "chat": {
-        "banner": "Một cuộc trò chuyện chung với {{name}}. Người có quyền Toàn quyền của hai công ty đều thấy.",
-        "noThread": "Chưa có cuộc trò chuyện nào với {{name}}.",
-        "empty": "Chưa có tin nhắn",
-        "emptyHint": "Hãy nhắn lời chào đầu tiên cho {{name}}.",
-        "readOnly": "Đã ngắt kết nối — chỉ xem lại tin cũ. Muốn nhắn tiếp, hãy gửi lời mời kết nối mới.",
-        "older": "Xem tin cũ hơn",
-        "list": "Tin nhắn",
-        "input": "Nhập tin nhắn",
-        "attach": "Đính kèm tệp",
-        "send": "Gửi",
-        "retryHint": "Bấm Gửi để thử lại.",
-        "unread": "{{n}} tin chưa đọc",
-        "err": {
-          "type": "Tệp «{{name}}» không đúng loại được nhận. Chọn PDF, ảnh, Word hoặc Excel.",
-          "size": "Tệp «{{name}}» lớn hơn 20 MB. Chọn tệp nhỏ hơn.",
-          "readOnly": "Hai công ty đã ngắt kết nối nên không gửi thêm được.",
-          "forbidden": "Chỉ người có quyền Toàn quyền dùng được trò chuyện này.",
-          "empty": "Hãy nhập nội dung hoặc đính kèm tệp.",
-          "storage": "Kho tệp đang bận. Thử lại sau ít phút.",
-          "failed": "Chưa gửi được. Kiểm tra mạng rồi thử lại."
-        },
-        "file": {
-          "list": "Tệp đính kèm",
-          "drafts": "Tệp sẽ gửi",
-          "openImage": "Xem ảnh {{name}}",
-          "prev": "Ảnh trước",
-          "next": "Ảnh kế",
-          "close": "Đóng",
-          "download": "Tải",
-          "downloadOf": "Tải {{name}}",
-          "view": "Xem",
-          "failed": "Không mở được tệp. Thử lại sau.",
-          "uploading": "Đang tải lên…",
-          "retry": "Thử lại",
-          "remove": "Bỏ tệp {{name}}"
-        }
-      },
-      "feed": {
-        "banner": "Bạn đang xem bài công khai của công ty đã kết nối: {{name}}.",
-        "empty": "{{name}} chưa đăng bài công khai nào.",
-        "more": "Xem thêm bài",
-        "files": "{{n}} tệp"
-      }
+      "message": "Nhắn tin",
+      "openPartner": "Mở trang đối tác"
     }
   }
 }

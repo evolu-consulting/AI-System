@@ -44,5 +44,3 @@ export const partnerSearchOf = (c: {
   tax_code: string;
   tenant_id: string;
 }): { party: string; tenant: string } => ({ party: `tax:${c.tax_code}`, tenant: c.tenant_id });
-/** Nhãn số chưa đọc: 0 ⇒ rỗng, > 99 ⇒ «99+». */
-export const unreadLabel = (n: number): string => (n <= 0 ? "" : n > 99 ? "99+" : String(n));

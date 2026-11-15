@@ -55,10 +55,7 @@
       "tab": {
         "overview": "Tổng quan",
         "contracts": "Hợp đồng · {{n}}",
-        "review": "Sổ việc & ghi chú",
-        "community": "Bảng tin",
-        "chat": "Trò chuyện",
-        "feed": "Bảng tin công ty"
+        "review": "Sổ việc & ghi chú"
       },
       "roleSeg": "Chọn vai trò",
       "noScoreYet": "Chưa có việc hoặc hợp đồng nào để chấm điểm vai trò này.",

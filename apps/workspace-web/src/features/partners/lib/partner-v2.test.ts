@@ -8,6 +8,7 @@ import {
   resolveTab,
   rolesOf,
   stageCounts,
+  TABS,
 } from "./partner-v2";
 
 describe("V2-I URL", () => {
@@ -59,26 +60,27 @@ describe("V2-I HĐ theo giai đoạn", () => {
   });
 });
 
-describe("CR-161 · tham số tenant và tab kết nối", () => {
+describe("tham số tenant", () => {
   const T = "11111111-1111-4111-8111-111111111111";
   test("giữ tenant hợp lệ cùng party, bỏ khi lạ hoặc không có party", () => {
-    expect(parsePartnersSearch({ party: "tax:1", tenant: T, tab: "chat" })).toEqual({
+    expect(parsePartnersSearch({ party: "tax:1", tenant: T, tab: "contracts" })).toEqual({
       party: "tax:1",
       tenant: T,
-      tab: "chat",
+      tab: "contracts",
     });
     expect(parsePartnersSearch({ party: "tax:1", tenant: "x" })).toEqual({ party: "tax:1" });
     expect(parsePartnersSearch({ tenant: T })).toEqual({});
   });
 });
 
-describe("CR-161 · resolveTab", () => {
-  const o = { community: true, tenant: "t", feedOk: true };
-  test("chat/feed cần tenant; feed cần còn kết nối; community cần gói", () => {
-    expect(resolveTab("chat", o)).toBe("chat");
-    expect(resolveTab("chat", { ...o, tenant: undefined })).toBe("overview");
-    expect(resolveTab("feed", { ...o, feedOk: false })).toBe("chat");
-    expect(resolveTab("community", { ...o, community: false })).toBe("overview");
-    expect(resolveTab(undefined, o)).toBe("overview");
+describe("CR-169 · 3 tab", () => {
+  test("chỉ Tổng quan · Hợp đồng · Sổ việc & ghi chú; tab cũ chat/feed/community ⇒ Tổng quan", () => {
+    expect(TABS).toEqual(["overview", "contracts", "review"]);
+    for (const old of ["chat", "feed", "community"]) {
+      const s = parsePartnersSearch({ party: "tax:1", tab: old });
+      expect(s).toEqual({ party: "tax:1" });
+      expect(resolveTab(s.tab)).toBe("overview");
+    }
+    expect(resolveTab("review")).toBe("review");
   });
 });

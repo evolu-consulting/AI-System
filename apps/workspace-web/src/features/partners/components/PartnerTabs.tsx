@@ -1,4 +1,4 @@
-// V2-I · thanh tab của trang chi tiết đối tác (liên kết `?tab=`, giữ vai): Tổng quan · Hợp đồng · n · Đánh giá & ghi chú.
+// V2-I · thanh tab của trang chi tiết đối tác (liên kết `?tab=`, giữ vai): Tổng quan · Hợp đồng · n · Sổ việc & ghi chú.
 
 import type { RepRole } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
@@ -10,20 +10,14 @@ export function PartnerTabs({
   role,
   tab,
   contracts,
-  community = false,
   tenant,
-  feed = false,
 }: {
   party: string;
   role: RepRole | undefined;
   tab: Tab;
   contracts: number;
-  /** Gói Cộng đồng bật ⇒ có tab «Bảng tin». */
-  community?: boolean;
-  /** CR-161 · công ty đã kết nối: có tab «Trò chuyện». */
+  /** Công ty đã kết nối (giữ trên URL). */
   tenant?: string;
-  /** Còn kết nối ⇒ có tab «Bảng tin công ty» (ngắt ⇒ ẩn). */
-  feed?: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -32,12 +26,7 @@ export function PartnerTabs({
       aria-label={t("contracts.pv2.tabs")}
       className="mb-4 flex gap-1 overflow-x-auto border-b border-rule"
     >
-      {TABS.filter(
-        (k) =>
-          (k !== "community" || community) &&
-          (k !== "chat" || !!tenant) &&
-          (k !== "feed" || (!!tenant && feed)),
-      ).map((k) => (
+      {TABS.map((k) => (
         <Link
           key={k}
           to="/contracts/partners"
