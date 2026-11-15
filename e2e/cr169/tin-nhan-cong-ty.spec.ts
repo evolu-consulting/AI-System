@@ -244,6 +244,12 @@ test("CR169-J6 · N2 cách ly: Lan (cùng công ty, ngoài cuộc) không thấy
 
   // Nam: mất nhóm gói ⇒ hoặc không đăng nhập được app Sổ Hợp Tác, hoặc mọi route tin nhắn trả 403
   const nam = await apiOf(EA, WHO.nam).catch(() => null);
+  test.info().annotations.push({
+    type: "nam",
+    description: nam
+      ? "đăng nhập được ⇒ mọi route tin nhắn 403"
+      : "đăng nhập app Sổ Hợp Tác bị từ chối",
+  });
   if (nam) {
     const r = await fetch(`${HUB}/pack/contracts/messages/partner/${convId}`, {
       headers: nam.headers,
