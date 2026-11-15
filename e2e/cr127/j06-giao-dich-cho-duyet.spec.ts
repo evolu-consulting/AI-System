@@ -12,15 +12,14 @@ test.beforeAll(async ({ browser }) => {
 
 const fillDeal = async (page: import("@playwright/test").Page) => {
   await page.goto("/contracts/c/new?type=deal");
-  await page
-    .getByLabel(/Nhà cung cấp/)
-    .first()
-    .fill("E2E-JOURNEY Bên Bán");
-  // danh sách gợi ý dựng lại khi kết quả tra về ⇒ thử lại đến khi bấm trúng
+  const supplier = page.getByLabel(/Nhà cung cấp/).first();
   const opt = page.getByTestId("partner-option").filter({ hasText: "E2E-JOURNEY Bên Bán" }).first();
+  // tra đối tác là bất đồng bộ (debounce + mạng): kết quả chưa về/bị bỏ khi tải nặng ⇒ gõ lại cả ô rồi bấm gợi ý
   await expect(async () => {
-    await opt.click({ timeout: 3000 });
-  }).toPass({ timeout: 20_000 });
+    await supplier.fill("");
+    await supplier.fill("E2E-JOURNEY Bên Bán");
+    await opt.click({ timeout: 6000 });
+  }).toPass({ timeout: 40_000 });
   await page.getByLabel(/Tên giao dịch/).fill("Bán thùng phi 200L");
   await page.getByLabel(/Ngày giao dịch/).fill("2026-11-11");
   await page.locator("#cf-source").selectOption("invoice");
