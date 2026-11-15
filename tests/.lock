@@ -478,7 +478,7 @@ a0d025e4d7d8b3538652952b994d959875b037262293a4a78aa36645106a71d7  e2e/cr127/j01-
 63edfcff610c61e7ec1cb73242874155aaf1bf03527a119ba8da7b6e90ff7590  e2e/cr127/j03-uy-quyen.spec.ts
 a37befb266ee80f79ce503ffb6f9035c7bdba4d7e25c30bfa156392df5f6dc85  e2e/cr127/j04-thuc-hien-giao-thieu-phat.spec.ts
 563f1b281a04fee302afccc551e2c2d4f0a404966b7784e0b2e3e33749946530  e2e/cr127/j05-tam-khoa.spec.ts
-753b3ad2908b4193bf175ef22741038100cf4d2e788711efac3ffa1622160ebe  e2e/cr127/j06-giao-dich-cho-duyet.spec.ts
+a827df8a252848da0365f8d5c7494ce2fa84a5b19896ab7697541f78beb0a45c  e2e/cr127/j06-giao-dich-cho-duyet.spec.ts
 3d21f4ed26b3b2346569c08df0bd74fdcc8958cc0a843582031a3d3c7d3bd4d5  e2e/cr127/j07-hai-cong-ty-gui-nhan.spec.ts
 5eaa089bd52ba65a5c3ffc3c5997b79e54afd1adc309aa4a381acedb087719c3  e2e/cr127/j08-ky-cung-luc.spec.ts
 e941fef97fcb9125defcbc8ef9b9ef5ef79aa0a1ab0235a9e651b4fc0b1ccbbb  e2e/cr127/j10-phien-ban-chuyen-moc.spec.ts
@@ -554,7 +554,7 @@ b7ba4bd583e645a8b745a99958166f99c38da209c6a897b753465aa2936b5cb3  e2e/journey-ap
 28609e8def51805edd8cfb42975642b97641d9b868f8e94c0798d209645ad1a3  e2e/journey-approval/cr139b-starter-head.spec.ts
 21269a27138d5846f37fb6c8fb6f2e28b0ac61458660f03ee2e7e54f251a11e3  e2e/journey-approval/cr139d-org-tree.spec.ts
 a55e1877f9a13b9c477a4a0b8d2afdb289874e8fde52c2c75aeb33a27c0c4b9a  e2e/journey-approval/cr141-sign-or-upload.spec.ts
-651b56b6e0228767ea8d6c5d566f60924786c97d6c5671de4ad8c1d89eca548e  e2e/journey-approval/cr150-two-companies.spec.ts
+3ab456a3319400787d3399cc156621263a8ae78206a18353685068035f8d1348  e2e/journey-approval/cr150-two-companies.spec.ts
 c2d62f0cc4b59951322ae7f26356cc9fd70ccf492ecb6f5ea12f45c37f09966f  e2e/journey-approval/playwright.journey-fsc.config.ts
 ced9d865f4c4d4347cef1cf9ad8c8df18c1ac354fff7eb6aa8b9353167c7e21a  e2e/journey-approval/playwright.journey-purchase.config.ts
 c8234625a6c1f712e24d78995ea58e649548bff800617a295ab86e71210282de  e2e/journey-approval/playwright.journey.config.ts
