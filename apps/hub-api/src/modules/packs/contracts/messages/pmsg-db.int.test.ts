@@ -130,9 +130,12 @@ beforeAll(async () => {
     values (${A}, 'pm-a', 'A', 'NitiGroup', '0100000301', true), (${B}, 'pm-b', 'B', 'Preschool Việt', '0100000302', true),
            (${C}, 'pm-c', 'C', 'Công ty Cờ', '0100000303', true), (${E}, 'pm-e', 'E', 'Công ty Ê', '0100000304', true)`;
   await users(o, A, 4, { from: 1690 }); // Tiên, Vy, Lan, NoGrant
-  await users(o, B, 4, { from: 1694 }); // Dung, Hà, Hb, Ext (Ext sửa thành external bên dưới)
+  await users(o, B, 3, { from: 1694 }); // Dung, Hà, Hb (Ext là user external, tạo bên dưới)
   await users(o, C, 1, { from: 1698 });
   await users(o, E, 1, { from: 1699 });
+  await o`insert into admin.external_orgs (id, tenant_id, name) values (${ORG}, ${B}, 'NCC Ngoài')`;
+  await o`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, kind, external_org_id, must_change_password)
+    values (${EXT}, ${B}, 'ncc-ext', 'x', 'NCC', 'member', 'external', ${ORG}, false)`;
   const g = await enablePack(o, [A, B, C, E], "contracts");
   await members(o, A, g.get(A)?.owner as string, [TIEN]);
   await members(o, A, g.get(A)?.editor as string, [VY]);
@@ -141,8 +144,6 @@ beforeAll(async () => {
   await members(o, B, g.get(B)?.viewer as string, [HA, HB, EXT]);
   await members(o, C, g.get(C)?.owner as string, [CUONG]);
   await members(o, E, g.get(E)?.owner as string, [EVA]);
-  await o`insert into admin.external_orgs (id, tenant_id, name) values (${ORG}, ${B}, 'NCC Ngoài')`;
-  await o`update admin.users set kind = 'external', external_org_id = ${ORG}, role = 'member' where id = ${EXT}`;
   await o`insert into hub.people_profiles (tenant_id, user_id, job_title) values (${B}, ${HA}, 'Kế toán trưởng')`;
   // A–B và A–C đã kết nối (Tiên mời — Dung/Cường đồng ý).
   expect(await as(A, TIEN, (tx) => invite(tx, B, TIEN))).toBe("pending_out");
