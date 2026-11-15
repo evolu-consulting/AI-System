@@ -3,7 +3,7 @@ id: fix-int-batch
 lát: fix-int-batch
 cr: CR-161
 làn: nhanh
-migration: không (sửa idempotent hub 0142 tại chỗ)
+migration: không mới (sửa idempotent hub 0142, 0146 tại chỗ)
 phụ thuộc:
 ---
 # fix-int-batch — ca int đỏ lượt toàn bộ cuối đợt 20261115-063944-6236-all
@@ -12,14 +12,15 @@ phụ thuộc:
 | Ca đỏ | Loại | Xử lý |
 |---|---|---|
 | tenant-purge.int ×3, tenant-purge.partner.int ×2 | a | hub.cc_threads / cc_messages (không có tenant_id) chưa khai ⇒ `PurgeRefused`. Khai ở IGNORED_TABLES + `anonymizeChat` (tenant-purge.partner.ts): giữ luồng cho bên còn lại, ẩn danh bên bị xoá, xoá luồng khi bên kia cũng đã xoá |
-| hub-h2c / h3a / h3b.int, migrate-hub.int (ca 2: DB có stub cũng cùng nguyên nhân) | a | hub 0142 (CR-147) `CREATE POLICY` không idempotent ⇒ áp lại sau khi gỡ journal vỡ 42710. Thêm `DROP POLICY IF EXISTS` trước mỗi CREATE (hash không đổi vai trò: migrator chỉ so `created_at`) |
+| hub-h2c / h3a / h3b.int, migrate-hub.int (ca 2: DB có stub cũng cùng nguyên nhân) | a | hub 0142 (CR-147) `CREATE POLICY` không idempotent ⇒ áp lại sau khi gỡ journal vỡ 42710. Thêm `DROP POLICY IF EXISTS` trước mỗi CREATE (hash không đổi vai trò: migrator chỉ so `created_at`). Lần chạy lại lộ thêm: hub 0146 `CREATE OR REPLACE cc_file_get/cc_files_sweep` vỡ 42P13 khi DB đã có 0148 (đổi kiểu trả về) ⇒ thêm `DROP FUNCTION IF EXISTS` trước (no-op trên DB đã áp) |
 | migrate-hub.int (ca DB sạch) | b | danh sách bảng hub thiếu cc_* (0146) và people_profiles (0142) |
 | hub-cr127-e1.int | b | hub 0141 (SEC): tệp/chữ ký không của chính người ghi ⇒ `EK422`, không còn 42501 |
 | V2-I/partner-ui.int | b | CR-151d: `/partners/contracts` trả `{items,next_offset}` |
 | V2-L/company.int ×2 | b | CR-138 thêm `company.has_cover`; mặc định uy tín có thêm ô cooperation/franchise |
 | DOC-legal/legal.int | b | PUT /company strict, không nhận `has_cover` (CR-138) ⇒ test bỏ trường khi gửi lại |
 | esign-invite.int ×2 | b | CR-146: node ký bắt buộc `provider` ⇒ test truyền `provider: "selfsign"` |
-| category-ids (perf), H4b1/boot, M2/concurrency, «(unhandled)» (V2-D/perf ECONNRESET) | c | chạy lại riêng (xem Quyết định) |
+| category-ids (perf), H4b1/boot, M2/concurrency, «(unhandled)» (V2-D/perf ECONNRESET) | c | chạy lại riêng trên evotest ⇒ xanh (lượt 1, 94 pass) ⇒ chập chờn/tải máy, không sửa |
+| K2/readers.int («due_soon» thay «overdue», thấy trong int-s1.log, không nằm trong 24 đỏ mới) | d | hành vi theo ngày chạy, không thuộc đợt này; chưa chạy lại, ngoài phạm vi |
 
 ## Quyết định trong lúc làm
 - Luồng trò chuyện khi xoá công ty A: tin của A giữ chữ nhưng `sender_tenant`→tombstone, `sender_user`→uuid ngẫu nhiên, `sender_name`→«Công ty đã xoá», `files`→[] (cc_files của A bị xoá theo tenant_id). Khoá cặp duy nhất ⇒ nếu bên B đã có luồng (tombstone,B) từ lần xoá trước thì luồng của A bị xoá (không gộp; cùng khuôn anonymizeLinks).
