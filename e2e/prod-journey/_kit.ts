@@ -55,7 +55,7 @@ async function loginCw(page: Page, side: Side, email: string): Promise<void> {
   if (!(await tenant.isVisible())) await change.click();
   const fill = async (pw: string): Promise<void> => {
     await tenant.fill(CO[side].key);
-    await page.getByRole("textbox", { name: "Email" }).fill(email);
+    await page.getByRole("textbox", { name: "Email" }).fill(email.split("@")[0] as string); // đăng nhập theo TÊN đăng nhập (phần trước @), không nhận email
     await page.getByLabel("Mật khẩu", { exact: true }).fill(pw);
     await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   };
@@ -138,8 +138,8 @@ export async function createAndSubmit(p: Page, tag: string): Promise<string> {
     name: `hop-dong-${tagOf(tag)}.pdf`,
     mimeType: "application/pdf",
     buffer: await pdfOf([
-      `Hop dong mua van phong pham so ${tagOf(tag)}/HDMB`,
-      "HOP DONG MUA BAN HANG HOA",
+      `HOP DONG MUA BAN HANG HOA ${tagOf(tag)}`,
+      `So hop dong: ${tagOf(tag)}/HDMB`,
       "Ngay ky: 15/11/2026. Hieu luc 12 thang.",
       "Ben ban (Ben A): Cong ty TNHH Ben Ban Pj",
       "Ben mua (Ben B): Cong ty Mua Pj",
@@ -158,9 +158,13 @@ export async function createAndSubmit(p: Page, tag: string): Promise<string> {
   await expect(p.getByRole("textbox", { name: /^Tên hợp đồng/ })).not.toHaveValue("", {
     timeout: 120_000,
   });
-  await expect(p.getByRole("textbox", { name: /^Nhà cung cấp/ })).not.toHaveValue("", {
+  await expect(p.getByRole("textbox", { name: /^(Nhà cung cấp|Khách hàng)/ })).not.toHaveValue("", {
     timeout: 60_000,
   });
+  // «Hiệu lực từ» AI điền kèm «chưa chắc, kiểm tra lại» ⇒ người dùng xác nhận bằng cách nhập lại ngày (không thì «Thiếu: Hiệu lực từ»).
+  const from = p.getByRole("textbox", { name: /^Hiệu lực từ/ });
+  await from.fill("15/11/2026");
+  await from.press("Tab");
   await submit(p);
   return id;
 }
