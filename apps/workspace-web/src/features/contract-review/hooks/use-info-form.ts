@@ -32,13 +32,7 @@ import {
   unlinkedLines,
   withNoticeDefault,
 } from "~/features/contract-form/lib/form-model";
-import {
-  isKind,
-  termsDirty,
-  termsOfServer,
-  termsToPut,
-  unsureTerms,
-} from "~/features/contract-form/lib/kind-terms";
+import { isKind, termsOfServer } from "~/features/contract-form/lib/kind-terms";
 import {
   dealUnsure,
   formOfConfirm,
@@ -50,18 +44,12 @@ import {
 } from "~/features/contract-form/lib/review-model";
 import { suggestionPatch } from "~/features/contract-form/lib/suggest";
 import { todayIso } from "~/features/contract-shared/lib/date";
-import {
-  contractKey,
-  fetchKindTerms,
-  kindTermsKey,
-  patchContractFields,
-  putKindTerms,
-  saveReview,
-} from "../api";
+import { contractKey, patchContractFields, saveReview } from "../api";
 import { firstSaveMode } from "../lib/confirm-save";
 import { savedNoticeKey } from "../lib/review";
 import { saveErrorText } from "../lib/save-error";
 import { useConfirmSave } from "./use-confirm-save";
+import { useKindTerms } from "./use-kind-terms";
 
 const SUGGEST_MAX = 50;
 
@@ -214,7 +202,10 @@ function useSaveConfirm(x: SaveCtx, rows: MsRow[], setTried: (v: boolean) => voi
   return useCallback(
     async (draft: boolean) => {
       if (!c || !f) return null;
-      const stop = blockerMessage(f, t, () => setTried(true));
+      // CR-171: dòng chưa gắn SP KHÔNG chặn ở đây — hộp «Gắn sản phẩm» (sau khi lưu nháp) mới là nơi gắn; chặn sớm làm người dùng kẹt.
+      const stop = blockerMessage(f, t, () => setTried(true), undefined, undefined, {
+        lines: false,
+      });
       if (stop) {
         toast(stop, "late");
         throw new Error(stop);
@@ -294,51 +285,6 @@ function useInfoSave(
     msg,
     err: err ?? cs.err,
   };
-}
-
-/** CR-152: trường riêng đã lưu (GET kind-terms) nạp vào form; ghi lại bằng PUT khi HĐ còn nháp. */
-function useKindTerms(c: ContractDetail | undefined, id: string, L: Load) {
-  const { t } = useTranslation();
-  const qc = useQueryClient();
-  const q = useQuery({
-    queryKey: kindTermsKey(id),
-    queryFn: ({ signal }) => fetchKindTerms(id, signal),
-    enabled: !!c && isKind(c.deal),
-    staleTime: Number.POSITIVE_INFINITY,
-    refetchOnWindowFocus: false,
-    retry: false,
-  });
-  const saved = useMemo(() => termsOfServer(q.data?.terms), [q.data]);
-  const { setF, sug, f } = L;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại mỗi lần form nạp lại (`sug`) hoặc dữ liệu đã lưu đổi
-  useEffect(() => {
-    if (q.data) setF((s) => (s ? { ...s, terms: saved } : s));
-  }, [saved, sug]);
-  const deal = f?.deal;
-  const draft = c?.status === "draft";
-  const changed = !!f && isKind(deal) && draft && termsDirty(deal, f.terms, saved);
-  const save = useCallback(async () => {
-    if (!f || !isKind(f.deal) || !draft) return;
-    const { body, bad } = termsToPut(f.deal, f.terms);
-    if (bad.length) {
-      const msg = t("contracts.kinds.badNumbers", {
-        list: bad.map((k) => t(`contracts.kinds.f.${k}`)).join(", "),
-      });
-      toast(msg, "late");
-      throw new Error(msg);
-    }
-    await putKindTerms(id, body);
-    await qc.invalidateQueries({ queryKey: kindTermsKey(id) });
-  }, [f, draft, id, qc, t]);
-  const unsure = useMemo(
-    () => (f && isKind(f.deal) ? unsureTerms(c?.ai?.unsure, f.terms, saved) : new Set<string>()),
-    [c, f, saved],
-  );
-  const invalid = useMemo(
-    () => (L.tried ? new Set(q.data?.missing ?? []) : new Set<string>()),
-    [L.tried, q.data],
-  );
-  return { save, changed, unsure, invalid };
 }
 
 export function useInfoForm(c: ContractDetail | undefined, id: string) {

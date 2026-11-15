@@ -39,6 +39,7 @@ import {
   unlinkedLines,
   withNoticeDefault,
 } from "../lib/form-model";
+import { isKind, termsMissing } from "../lib/kind-terms";
 import { useNoticeDefault } from "./use-notice-default";
 import { usePartnerLookup } from "./use-partner-lookup";
 
@@ -231,6 +232,11 @@ export function useContractForm(mode: "contract" | "deal" = "contract", frameId?
     () => (tried ? new Set(unlinkedLines(f)) : new Set()),
     [tried, f],
   );
+  // CR-171: ô riêng của Nhượng quyền / Hợp tác còn thiếu ⇒ viền đỏ (cùng luật máy chủ).
+  const kindInvalid = useMemo<Set<string>>(
+    () => (tried && isKind(f.deal) ? new Set(termsMissing(f.deal, f.terms)) : new Set()),
+    [tried, f],
+  );
   const editors = useFormEditors(setF);
   const open = useOpenMilestones(mode === "deal", f);
   const { err, busy, submit } = useSubmit(
@@ -244,6 +250,7 @@ export function useContractForm(mode: "contract" | "deal" = "contract", frameId?
     f,
     ...editors,
     invalid,
+    kindInvalid,
     unlinked,
     err,
     busy,

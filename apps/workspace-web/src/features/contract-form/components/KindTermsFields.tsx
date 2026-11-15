@@ -1,7 +1,7 @@
 // CR-152 · bản mẫu `cr152-contract-kinds` (nq-form, ht-form): trường riêng của HĐ Nhượng quyền (3 tab Chung / Phí / Pháp lý) và Thỏa thuận hợp tác.
 // Ô «Đã đăng ký Bộ Công Thương» + ngày chỉ hiện khi tick «Bên nhượng quyền ở nước ngoài». Ô AI chưa chắc (`terms.<khoá>`) viền vàng như ô khác.
 import { DateInput } from "@ai/web-kit/ui/DateInput";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Tag } from "~/components/shared/tag";
 import { cn } from "~/lib/utils";
@@ -176,6 +176,12 @@ export function KindTermsFields(p: Props) {
   const [tab, setTab] = useState(0);
   const show = visibleKeys(p.deal, p.terms);
   const cur = tabs[Math.min(tab, tabs.length - 1)];
+  // CR-171: có ô thiếu (viền đỏ) ở tab khác ⇒ mở tab đầu tiên chứa ô đó, để người dùng thấy ngay chỗ cần điền.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ khi tập ô thiếu đổi
+  useEffect(() => {
+    const i = tabs.findIndex((x) => x.fields.some((s) => show.has(s.k) && p.invalid?.has(s.k)));
+    if (i >= 0) setTab(i);
+  }, [p.invalid]);
   const noSplit = p.deal === "cooperation" && p.terms.split_basis === "none";
   return (
     <section aria-label={t(`contracts.kinds.title.${p.deal}`)} className="flex flex-col gap-3">

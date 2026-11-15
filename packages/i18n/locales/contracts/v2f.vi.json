@@ -115,6 +115,7 @@
       },
       "err": {
         "incomplete": "Còn thiếu thông tin của loại hợp đồng này. Ô viền đỏ là chỗ cần điền.",
+        "red": "Ô viền đỏ là chỗ cần điền.",
         "locked": "Chỉ sửa được khi hợp đồng còn nháp.",
         "periodLocked": "Kỳ này đã xác nhận thu/trả, không ghi lại được.",
         "notApplicable": "Kỳ này không có mốc báo cáo hoặc đối soát."

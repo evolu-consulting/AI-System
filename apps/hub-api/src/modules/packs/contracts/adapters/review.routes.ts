@@ -97,6 +97,7 @@ function replyOf(res: ReviewResult) {
       "KIND_TERMS_INCOMPLETE",
       KIND_ERRORS.KIND_TERMS_INCOMPLETE,
       "Franchise/cooperation terms are incomplete (see GET kind-terms .missing)",
+      { missing: res.missing },
     );
   if (res.kind === "component_invalid") throw productInvalid();
   // `commission_kind` (hoa hồng chỉ cho Giới thiệu) · `item_unknown` (dòng không thuộc HĐ): lỗi dữ liệu gửi lên.

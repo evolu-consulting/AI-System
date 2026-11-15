@@ -2,7 +2,7 @@
 import { describe, expect, it } from "bun:test";
 import { aiReadOf, mergeExtraction, verifyExtraction } from "./extraction.rules";
 import { fillFields } from "./fields.rules";
-import { planReview, type ReviewCur } from "./review.rules";
+import { missingKindTerms, planReview, type ReviewCur } from "./review.rules";
 import { norm, prepareSource } from "./verify.rules";
 
 const cur = (o: Partial<ReviewCur> = {}): ReviewCur => ({
@@ -237,6 +237,19 @@ describe("V2-G · aiReadOf (verify + merge)", () => {
     const m = mergeExtraction(v, old, false);
     expect(m.ai?.unsure).toEqual(["deal"]);
     expect(m.fields.penalty.value).toBe("1%");
+  });
+});
+
+describe("CR-171 · khoá riêng còn thiếu (để màn hình chỉ đúng ô)", () => {
+  it("Nhượng quyền phí % thiếu mức ⇒ chỉ fee_pct; phí cố định đủ ⇒ không thiếu; loại khác ⇒ rỗng", () => {
+    const base = { role: "franchisor", brand: "X", period: "month" };
+    expect(missingKindTerms("franchise", { ...base, fee_basis: "revenue_pct" })).toEqual([
+      "fee_pct",
+    ]);
+    expect(missingKindTerms("franchise", { ...base, fee_basis: "fixed", fee_fixed: 5 })).toEqual(
+      [],
+    );
+    expect(missingKindTerms("sell", {})).toEqual([]);
   });
 });
 

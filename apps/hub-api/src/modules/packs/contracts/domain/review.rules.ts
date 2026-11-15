@@ -140,6 +140,11 @@ function commissionOf(
 
 const kindIncomplete = (deal: Deal, t: Terms): boolean =>
   isKindDeal(deal) && kindTermsMissing(deal, t).length > 0;
+/** CR-171: khoá riêng còn thiếu của loại (rỗng nếu không phải Nhượng quyền / Hợp tác) — cùng luật `kindIncomplete`. */
+export const missingKindTerms = (
+  deal: Deal | null | undefined,
+  t: Terms | null | undefined,
+): string[] => (isKindDeal(deal) ? kindTermsMissing(deal, t ?? {}) : []);
 const directionOf = (deal: Deal, t: Terms): "purchase" | "sale" =>
   isKindDeal(deal) ? directionOfKind(deal, t) : directionOfDeal(deal);
 

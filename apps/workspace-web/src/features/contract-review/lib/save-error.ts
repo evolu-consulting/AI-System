@@ -3,7 +3,7 @@
 // dòng/tồn (delivery.routes), hiện nguyên văn kèm gợi ý. 409 KHÔNG phải xung đột phiên bản thì không báo "người khác cập nhật".
 import { ApiError } from "@ai/web-kit/http";
 
-type T = (key: string) => string;
+type T = (key: string, o?: { list: string }) => string;
 
 /** Lỗi giao hàng / kho: thông điệp máy chủ là câu tiếng Việt do mình soạn (an toàn để hiện). */
 const SERVER_TEXT = new Set([
@@ -30,9 +30,20 @@ const KEYED: Record<string, string> = {
   TASK_CLAIMED: "contracts.u6.trade.err.claimed",
 };
 
+/** CR-171: lỗi thiếu trường riêng của loại ⇒ nêu đúng tên ô còn thiếu (máy chủ trả `details.missing`); không có danh sách ⇒ null. */
+function incompleteText(e: ApiError, t: T): string | null {
+  const miss = (e.details as { missing?: unknown } | null | undefined)?.missing;
+  if ((e.code as string) !== "KIND_TERMS_INCOMPLETE" || !Array.isArray(miss) || !miss.length)
+    return null;
+  const list = miss.map((k) => t(`contracts.kinds.f.${k}`)).join(", ");
+  return `${t("contracts.cform.missing", { list })}. ${t("contracts.kinds.err.red")}`;
+}
+
 export function saveErrorText(e: unknown, t: T): string {
   if (e instanceof ApiError) {
     const code = e.code as string;
+    const inc = incompleteText(e, t);
+    if (inc) return inc;
     if (KEYED[code]) return t(KEYED[code]);
     if (SERVER_TEXT.has(code) && e.message) {
       return code === "STOCK_INSUFFICIENT"

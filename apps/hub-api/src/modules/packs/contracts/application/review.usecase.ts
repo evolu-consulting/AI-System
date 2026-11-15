@@ -5,7 +5,12 @@ import type { ProductLink } from "@ai/contracts/pack-contracts";
 import type { PackUow, PackWho } from "../../kit/public";
 import type { ContractFieldKey, FieldValue } from "../domain/fields.rules";
 import type { Deal } from "../domain/milestones.rules";
-import { planReview, type ReviewMilestoneIn } from "../domain/review.rules";
+import {
+  missingKindTerms,
+  planReview,
+  type ReviewError,
+  type ReviewMilestoneIn,
+} from "../domain/review.rules";
 import type { AttachOutcome, ReviewItemWrite, ReviewTxRepos } from "./review.ports";
 import { type SubmitDeps, SubmitRollback, type SubmitTxRepos, submitInTx } from "./submit.usecase";
 
@@ -50,10 +55,22 @@ export type ReviewResult =
         | "not_reviewable"
         | "commission_kind"
         | "milestone_invalid"
-        | "kind_terms_incomplete"
         | "item_unknown"
         | "component_invalid";
-    };
+    }
+  // CR-171: nêu khoá còn thiếu để màn hình chỉ đúng ô (G3).
+  | { kind: "kind_terms_incomplete"; missing: string[] };
+
+/** Lỗi của `planReview` ⇒ kết quả trả về (CR-171: thiếu trường riêng thì kèm khoá thiếu). */
+function failOf(
+  err: ReviewError,
+  input: ReviewInput,
+  cur: { deal: Deal | null; kindTerms?: Record<string, unknown> | null },
+): ReviewResult {
+  return err === "kind_terms_incomplete"
+    ? { kind: err, missing: missingKindTerms(input.deal ?? cur.deal, cur.kindTerms) }
+    : { kind: err };
+}
 
 export type ReviewSave = (who: PackWho, id: string, input: ReviewInput) => Promise<ReviewResult>;
 export type AttachProduct = (
@@ -102,7 +119,7 @@ async function reviewTx(
   if (!cur) return { kind: "not_found" };
   if (cur.version !== input.version) return stale(cur);
   const planned = planReview(cur, input, today);
-  if (typeof planned === "string") return { kind: planned };
+  if (typeof planned === "string") return failOf(planned, input, cur);
   const viaSubmit = submit !== undefined && r.sub && r.st && r.contractFlow && input.draft !== true;
   // CR-127 K3 · cổng đổi trạng thái do `submitInTx` làm (có quy trình ⇒ PROCESSING, không ⇒ DONE) — câu lưu không tự kích hoạt.
   const plan = viaSubmit ? { ...planned, activate: false } : planned;

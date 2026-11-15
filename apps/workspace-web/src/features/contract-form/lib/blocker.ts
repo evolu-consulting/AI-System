@@ -3,6 +3,7 @@ import { isValidDocNumber } from "@ai/contracts/pack-contracts";
 import type { TFunction } from "i18next";
 import { PARTNER_ROLE } from "./deal";
 import { type FormState, missingRequired, readNumbers, unlinkedLines } from "./form-model";
+import { isKind, termsMissing } from "./kind-terms";
 
 /** `onChecked` chạy sau khi số đọc được (đánh dấu đã thử lưu); `onMissing` chỉ khi thiếu ô/dòng (kèm câu báo). */
 export function blockerMessage(
@@ -12,6 +13,8 @@ export function blockerMessage(
   onMissing?: (msg: string) => void,
   /** Số chứng từ đã lưu: chưa sửa ⇒ không chặn (CR-135 Q3). */
   savedNumber?: string,
+  /** `lines: false` ⇒ không đòi gắn SP (bước xác nhận: hộp «Gắn sản phẩm» làm việc đó SAU khi lưu nháp). */
+  opts: { lines?: boolean } = {},
 ): string | null {
   if (form.number !== savedNumber && !isValidDocNumber(form.number.trim()))
     return t("contracts.cform.numberBad");
@@ -24,7 +27,11 @@ export function blockerMessage(
   const role = t(`contracts.cform.partnerRole.${PARTNER_ROLE[form.deal]}`);
   const parts = [
     ...missingRequired(form).map((k) => t(`contracts.cform.required.${k}`, { role })),
-    ...unlinkedLines(form).map((i) =>
+    // CR-171: Nhượng quyền / Hợp tác thiếu ô ⇒ nêu đúng tên ô (cùng luật máy chủ), thay vì câu chung sau khi gửi.
+    ...(isKind(form.deal) ? termsMissing(form.deal, form.terms) : []).map((k) =>
+      t(`contracts.kinds.f.${k}`),
+    ),
+    ...(opts.lines === false ? [] : unlinkedLines(form)).map((i) =>
       t("contracts.cform.lineUnlinked", { name: form.items[i]?.name.trim() }),
     ),
   ];

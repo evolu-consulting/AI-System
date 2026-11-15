@@ -115,6 +115,7 @@
       },
       "err": {
         "incomplete": "Some details of this contract type are missing. Red fields need filling in.",
+        "red": "Red fields need filling in.",
         "locked": "Can only be edited while the contract is a draft.",
         "periodLocked": "This period's payment is already confirmed and cannot be recorded again.",
         "notApplicable": "This period has no report or settlement milestone."

@@ -153,7 +153,12 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
             <DealTiles value={f.deal} onChange={form.setDeal} />
             <FieldsGrid f={f} onSet={form.set} invalid={form.invalid} cols={3} dealMode />
             {isKind(f.deal) && (
-              <KindTermsFields deal={f.deal} terms={f.terms} onTerm={form.setTerm} />
+              <KindTermsFields
+                deal={f.deal}
+                terms={f.terms}
+                onTerm={form.setTerm}
+                invalid={form.kindInvalid}
+              />
             )}
             <div className="grid grid-cols-3 gap-x-4 gap-y-3.5 text-[13px] max-lg:grid-cols-2 max-sm:grid-cols-1">
               <div className="flex flex-col gap-1">

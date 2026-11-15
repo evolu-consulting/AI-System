@@ -1,6 +1,6 @@
 // CR-152 · luật thuần của trường riêng «Nhượng quyền» / «Thỏa thuận hợp tác»: trạng thái form (chuỗi) ↔ thân PUT kind-terms,
 // ô nào hiện, tiền tính ra khi ghi doanh thu / đối soát kỳ (khớp máy chủ: % qua BigInt, làm tròn nửa lên tới đồng). Không React, không fetch.
-import type { ContractDeal } from "@ai/contracts/pack-contracts";
+import { type ContractDeal, kindTermsMissing } from "@ai/contracts/pack-contracts";
 import { parseMoney } from "~/components/shared/format";
 
 export type KindDeal = "franchise" | "cooperation";
@@ -91,11 +91,20 @@ export function termsToPut(deal: KindDeal, t: TermsState): TermsPut {
   const body: TermsPut["body"] = {};
   const bad: string[] = [];
   for (const k of KEYS_OF[deal]) {
-    const v = show.has(k) ? putValue(k, (t[k] ?? "").trim()) : null;
+    // CR-171: «Đã đăng ký Bộ Công Thương» là ô tick — không tick = chưa đăng ký (máy chủ đòi có giá trị khi bên nhượng ở nước ngoài).
+    const raw = (t[k] ?? "").trim();
+    const v = show.has(k) ? putValue(k, k === "moit_registered" && raw === "" ? "0" : raw) : null;
     if (v === BAD) bad.push(k);
     body[k] = v === BAD ? null : v;
   }
   return { body, bad };
+}
+
+/** CR-171: khoá còn thiếu để gửi/xác nhận — CÙNG luật với máy chủ (`kindTermsMissing` ở `@ai/contracts`), tính trên thân sẽ gửi. */
+export function termsMissing(deal: KindDeal, t: TermsState): string[] {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(termsToPut(deal, t).body)) if (v !== null) out[k] = v;
+  return kindTermsMissing(deal, out);
 }
 
 /** Form khác bản đã lưu ở máy chủ? (so theo thân PUT, nên "rỗng" và "vắng" như nhau). */
