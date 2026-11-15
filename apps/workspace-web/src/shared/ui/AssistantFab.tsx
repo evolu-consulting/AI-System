@@ -1,7 +1,8 @@
 // CR-121 C-6 · nút nổi trợ lý AI DUY NHẤT của mọi module (Sổ Hợp Tác, Community): nút tròn chỉ có biểu tượng, nhãn hiện khi di chuột /
 // tập trung bàn phím (tooltip). Module truyền nhãn + hành động; kích cỡ, vị trí, màu do component này quyết định.
+
+import { UnreadBadge } from "@ai/messages-web/components/UnreadBadge";
 import type { ReactNode } from "react";
-import { UnreadBadge } from "~/features/messages/components/UnreadBadge";
 import { cn } from "~/lib/utils";
 
 export function AssistantFab({

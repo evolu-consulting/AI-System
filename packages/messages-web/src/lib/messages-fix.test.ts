@@ -20,6 +20,8 @@ const group = (o: Partial<ConversationSummary> = {}): ConversationSummary => ({
   last_message: null,
   unread: 0,
   last_at: "2026-11-05T10:00:00.000Z",
+  company: null,
+  read_only: false,
   ...o,
 });
 const list = (...c: ConversationSummary[]): ListPages => ({
@@ -40,7 +42,11 @@ describe("đang xem theo id (mục 6)", () => {
 
 describe("tên người gửi từ dữ liệu sẵn có (mục 9)", () => {
   it("1-1 ⇒ tên người kia; nhóm ⇒ thành viên trong chi tiết đã tải; rồi tin cuối cùng người gửi; không biết ⇒ rỗng", () => {
-    const direct = group({ id: id(2), kind: "direct", peer: { id: U, name: "Lan", active: true } });
+    const direct = group({
+      id: id(2),
+      kind: "direct",
+      peer: { id: U, name: "Lan", active: true, job_title: null },
+    });
     const withLast = group({
       last_message: {
         seq: 3,

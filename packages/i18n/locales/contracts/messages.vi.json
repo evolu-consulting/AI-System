@@ -100,6 +100,7 @@
         "file": "Không gửi được tệp này. Nhận PDF, Word, Excel, ảnh…, tối đa 20 MB.",
         "directFixed": "Cuộc trò chuyện riêng không đổi tên hay thêm người được. Hãy tạo nhóm mới.",
         "peerInactive": "Người này không còn dùng hệ thống nên không nhận được tin.",
+        "notConnected": "Công ty của bạn chưa kết nối với công ty của người này nên chưa nhắn được. Nhờ quản trị hai bên kết nối trước.",
         "rate": "Bạn thao tác quá nhanh. Chờ vài giây rồi thử lại.",
         "load": "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.",
         "generic": "Chưa thực hiện được. Thử lại sau ít phút; nếu vẫn lỗi, báo quản trị công ty."

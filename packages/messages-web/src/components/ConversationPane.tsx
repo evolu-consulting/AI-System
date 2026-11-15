@@ -1,13 +1,9 @@
 // CR-132 · W2 · khối danh sách hội thoại ĐÃ NỐI dữ liệu + hộp «Nhắn tin mới» (toàn màn và khoang hẹp ở W3 dùng cùng khối này).
 
-import {
-  useConversations,
-  useCreateConversation,
-  usePeople,
-} from "@ai/messages-web/hooks/use-conversations";
-import { useDebounced } from "@ai/messages-web/hooks/use-debounced";
-import { usePersonCards } from "@ai/messages-web/hooks/use-person-cards";
 import { useMemo, useState } from "react";
+import { useConversations, useCreateConversation, usePeople } from "../hooks/use-conversations";
+import { useDebounced } from "../hooks/use-debounced";
+import { usePersonCards } from "../hooks/use-person-cards";
 import { ConversationList } from "./ConversationList";
 import { NewConversationDialog } from "./NewConversationDialog";
 

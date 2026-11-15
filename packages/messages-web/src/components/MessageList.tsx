@@ -2,21 +2,15 @@
 // «Đã xem» dưới tin cuối của mình, nút tải dần 30 tin/lần: cuộn lên gần đầu ⇒ tự tải tin cũ hơn, giữ nguyên vị trí đang đọc (CR-148); nút «Xem tin cũ hơn» là đường dự phòng.
 import type { Message } from "@ai/contracts/pack-contracts";
 import type { PersonCard } from "@ai/contracts/people";
-import { dayLabel, timeLabel } from "@ai/messages-web/lib/format";
-import { dayKey } from "@ai/messages-web/lib/message-pages";
-import { canRevoke } from "@ai/messages-web/lib/perms";
-import {
-  type DayRows,
-  mergeRows,
-  type PendingMsg,
-  type Row,
-  stateOf,
-} from "@ai/messages-web/lib/rows";
 import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { IconTrash } from "~/components/icons";
-import { cn } from "~/lib/utils";
+import { IconTrash } from "../icons";
+import { dayLabel, timeLabel } from "../lib/format";
+import { dayKey } from "../lib/message-pages";
+import { canRevoke } from "../lib/perms";
+import { type DayRows, mergeRows, type PendingMsg, type Row, stateOf } from "../lib/rows";
+import { cn } from "../ui";
 import { MessageFiles } from "./MessageFiles";
 
 /** Tin đang gửi: `failed` = câu lỗi đã dịch (null = đang gửi). */

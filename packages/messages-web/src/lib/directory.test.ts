@@ -26,8 +26,8 @@ describe("CR-132b · buildDirectory", () => {
   const people = [P("u1", "Bình"), P("u2", "An"), P("u3", "Châu")];
   const items = [
     conv({ id: "g1", kind: "group", title: "Kinh doanh" }),
-    conv({ id: "d3", peer: { id: "u3", name: "Châu", active: true } }),
-    conv({ id: "d1", peer: { id: "u1", name: "Bình", active: true } }),
+    conv({ id: "d3", peer: { id: "u3", name: "Châu", active: true, job_title: null } }),
+    conv({ id: "d1", peer: { id: "u1", name: "Bình", active: true, job_title: null } }),
   ];
   it("nhóm riêng; thành viên có hội thoại lên trước theo thứ tự mới nhất, còn lại theo tên", () => {
     const d = buildDirectory(items, people, "");
@@ -57,7 +57,9 @@ describe("CR-148 · danh bạ theo phòng ban", () => {
     expect(d.sections[2]?.key).toBe("none");
   });
   it("1-1 với người chưa tải trang danh bạ: lấy phòng từ thẻ, thiếu thẻ ⇒ Chưa có phòng", () => {
-    const items = [conv({ id: "dx", peer: { id: "ux", name: "Xuân", active: true } })];
+    const items = [
+      conv({ id: "dx", peer: { id: "ux", name: "Xuân", active: true, job_title: null } }),
+    ];
     expect(buildDirectory(items, [], "", () => kd).sections[0]?.name).toBe("Kinh doanh");
     expect(buildDirectory(items, [], "").sections[0]?.name).toBeNull();
   });

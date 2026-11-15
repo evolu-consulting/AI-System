@@ -1,28 +1,20 @@
 // CR-132 · W2 · khung chat một hội thoại (toàn màn và khoang hẹp ở W3): đầu (‹ về danh sách khi có `onBack`, tên, «n thành viên»),
 // dòng tin, ô soạn. `compact` ⇒ đầu gọn, không viền ngoài. Không còn trong hội thoại (404) ⇒ câu «Bạn không còn trong cuộc trò chuyện này.».
 import type { ConversationDetail } from "@ai/contracts/pack-contracts";
-import { msgKeys } from "@ai/messages-web/api";
-import {
-  useConversation,
-  useMarkRead,
-  useMessages,
-  useOutbox,
-  useRevoke,
-} from "@ai/messages-web/hooks/use-chat";
-import { usePersonCards } from "@ai/messages-web/hooks/use-person-cards";
-import { convTitle } from "@ai/messages-web/lib/conversations";
-import { errorKey, isGone } from "@ai/messages-web/lib/errors";
-import { lastMineSeq, seenCount } from "@ai/messages-web/lib/message-pages";
-import { composerLocked } from "@ai/messages-web/lib/perms";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { IconChevronLeft } from "~/components/icons";
-import { confirmDialog } from "~/components/shared/dialog-bus";
-import { Skeleton } from "~/components/ui/skeleton";
-import { cn } from "~/lib/utils";
+import { msgKeys } from "../api";
+import { useConversation, useMarkRead, useMessages, useOutbox, useRevoke } from "../hooks/use-chat";
+import { usePersonCards } from "../hooks/use-person-cards";
+import { IconChevronLeft } from "../icons";
+import { convTitle } from "../lib/conversations";
+import { errorKey, isGone } from "../lib/errors";
+import { lastMineSeq, seenCount } from "../lib/message-pages";
+import { composerLocked } from "../lib/perms";
+import { cn, confirmDialog, Skeleton } from "../ui";
 import { GroupMembersSheet } from "./GroupMembersSheet";
 import { MessageComposer } from "./MessageComposer";
 import { MessageList } from "./MessageList";

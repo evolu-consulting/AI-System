@@ -40,10 +40,12 @@ const conv = (n: number, o: Partial<ConversationSummary> = {}): ConversationSumm
   id: id(n),
   kind: "direct",
   title: null,
-  peer: { id: B, name: `Người ${n}`, active: true },
+  peer: { id: B, name: `Người ${n}`, active: true, job_title: null },
   member_count: 2,
   last_message: null,
   unread: 0,
+  company: null,
+  read_only: false,
   last_at: `2026-11-0${n}T10:00:00.000Z`,
   ...o,
 });
@@ -83,7 +85,7 @@ describe("danh sách hội thoại", () => {
   });
   it("lọc theo tên không phân biệt dấu/hoa thường", () => {
     const items = [
-      conv(1, { peer: { id: B, name: "Đặng Thị Hoa", active: true } }),
+      conv(1, { peer: { id: B, name: "Đặng Thị Hoa", active: true, job_title: null } }),
       conv(2, { kind: "group", title: "Kế toán", peer: null }),
     ];
     expect(filterConversations(items, "dang").map((c) => c.id)).toEqual([id(1)]);
@@ -260,12 +262,15 @@ describe("quyền hiện nút", () => {
     expect(canRevoke({ sender_id: ME, deleted: false }, ME)).toBe(true);
     expect(canRevoke({ sender_id: B, deleted: false }, ME)).toBe(false);
     expect(canRevoke({ sender_id: ME, deleted: true }, ME)).toBe(false);
-    expect(composerLocked({ kind: "direct", peer: { id: B, name: "B", active: false } })).toBe(
-      true,
-    );
-    expect(composerLocked({ kind: "direct", peer: { id: B, name: "B", active: true } })).toBe(
-      false,
-    );
+    expect(
+      composerLocked({
+        kind: "direct",
+        peer: { id: B, name: "B", active: false, job_title: null },
+      }),
+    ).toBe(true);
+    expect(
+      composerLocked({ kind: "direct", peer: { id: B, name: "B", active: true, job_title: null } }),
+    ).toBe(false);
     expect(composerLocked({ kind: "group", peer: null })).toBe(false);
   });
   it("chọn người: 1 ⇒ nhắn riêng, ≥ 2 ⇒ nhóm, quá 49 ⇒ đầy; lọc bỏ người loại trừ", () => {

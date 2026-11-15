@@ -1,6 +1,34 @@
 // CR-169 · lát 5a · cổng tiêm của gói: mỗi app gắn transport có xác thực/base URL, luồng sự kiện và danh tính người dùng.
 // Gói không import code app; app gọi `configureMessagesHost` một lần lúc khởi động (trước khi render mục Tin nhắn).
 import type { RequestOptions } from "@ai/web-kit/http";
+import type { ComponentType, ReactNode } from "react";
+
+/** Bộ giao diện nền của app (shadcn/theme của app) — gói không chép lại để mỗi app giữ đúng giao diện của mình. */
+export type MessagesUi = {
+  cn: (...classes: Array<string | false | null | undefined>) => string;
+  Skeleton: ComponentType<{ className?: string }>;
+  Dialog: ComponentType<{
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    children?: ReactNode;
+  }>;
+  DialogContent: ComponentType<{
+    className?: string;
+    children?: ReactNode;
+    "data-testid"?: string;
+  }>;
+  DialogHeader: ComponentType<{ className?: string; children?: ReactNode }>;
+  DialogTitle: ComponentType<{ className?: string; children?: ReactNode }>;
+  DialogDescription: ComponentType<{ className?: string; children?: ReactNode }>;
+  /** Hộp xác nhận kiểu lệnh (như `confirmDialog` của app). */
+  confirm: (o: {
+    title: string;
+    body?: ReactNode;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    danger?: boolean;
+  }) => Promise<boolean>;
+};
 
 export type StreamFrame = { event: string; data: string };
 
@@ -17,6 +45,7 @@ export type MessagesHost = {
   myId: () => string | undefined;
   /** Hook (gọi như hook React): khoá phạm vi `tenant:user` ("" khi chưa đăng nhập). */
   useScope: () => string;
+  ui: MessagesUi;
 };
 
 let host: MessagesHost | null = null;

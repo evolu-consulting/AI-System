@@ -15,6 +15,7 @@ const KEY: Record<keyof typeof MSG_ERRORS, string> = {
   MSG_PEER_INACTIVE: "contracts.messages.err.peerInactive",
   MSG_FILE_TOO_LARGE: "contracts.messages.err.file",
   MSG_FILE_TYPE: "contracts.messages.err.file",
+  MSG_NOT_CONNECTED: "contracts.messages.err.notConnected",
 };
 
 const isMsgCode = (c: string): c is keyof typeof MSG_ERRORS => c in MSG_ERRORS;

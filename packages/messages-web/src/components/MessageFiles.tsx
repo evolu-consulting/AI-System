@@ -1,12 +1,12 @@
 // CR-132 · W3 · tệp trong tin: ảnh ⇒ ảnh thu nhỏ (tải qua Bearer ⇒ object URL, chỉ khi hiện), bấm mở ảnh đầy đủ ở tab mới; tệp khác ⇒ thẻ tên + cỡ, bấm để tải.
 import type { FileRef } from "@ai/contracts/pack-contracts";
-import { fetchFileLink } from "@ai/messages-web/api";
-import { errorKey } from "@ai/messages-web/lib/errors";
-import { isImageMime, sizeLabel } from "@ai/messages-web/lib/files";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { IconAttach } from "~/components/icons";
+import { fetchFileLink } from "../api";
+import { IconAttach } from "../icons";
+import { errorKey } from "../lib/errors";
+import { isImageMime, sizeLabel } from "../lib/files";
 
 /** Mở tệp: xin link ngắn hạn (Bearer) rồi mở ở tab đã mở sẵn (tránh chặn popup); ảnh xem tại chỗ, tệp khác tải về. */
 async function openFile(conv: string, f: FileRef, t: (k: string) => string): Promise<void> {

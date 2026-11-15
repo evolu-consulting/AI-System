@@ -100,6 +100,7 @@
         "file": "This file cannot be sent. PDF, Word, Excel, images… are accepted, up to 20 MB.",
         "directFixed": "A direct conversation cannot be renamed or extended. Create a new group instead.",
         "peerInactive": "This person no longer uses the system and cannot receive messages.",
+        "notConnected": "Your company is not connected to this person's company, so you cannot message them yet. Ask both companies' admins to connect first.",
         "rate": "You are going too fast. Wait a few seconds and try again.",
         "load": "Cannot reach the server. Check your network and try again.",
         "generic": "Could not complete this. Try again in a few minutes; if it keeps failing, tell your company admin."

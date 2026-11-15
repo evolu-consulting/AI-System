@@ -1,8 +1,9 @@
 // CR-132 · W3 · ruột tab «Tin nhắn» của khoang trợ lý (hẹp): danh sách ⇄ hội thoại (nút ‹ về danh sách, không đóng khoang).
 // Hội thoại đang mở do khoang giữ (`convId`) nên đóng/mở khoang vẫn ở đúng chỗ. Nạp lazy (chunk riêng, chỉ khi mở tab).
+
+import { ChatView } from "@ai/messages-web/components/ChatView";
+import { ConversationPane } from "@ai/messages-web/components/ConversationPane";
 import { useSession } from "~/features/auth/hooks/use-session";
-import { ChatView } from "./ChatView";
-import { ConversationPane } from "./ConversationPane";
 
 export default function MessagesDockPanel({
   convId,

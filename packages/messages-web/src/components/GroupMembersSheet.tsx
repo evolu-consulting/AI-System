@@ -2,14 +2,13 @@
 // Người không phải chủ thấy lý do vì sao không có nút («Chỉ chủ nhóm…») — không để thao tác ẩn.
 import type { ConversationDetail } from "@ai/contracts/pack-contracts";
 import { MSG_GROUP_MAX, MSG_TITLE_MAX } from "@ai/contracts/pack-contracts";
-import { useGroupActions } from "@ai/messages-web/hooks/use-chat";
-import { errorKey } from "@ai/messages-web/lib/errors";
-import { canLeave, canManage, canRemoveMember } from "@ai/messages-web/lib/perms";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { confirmDialog } from "~/components/shared/dialog-bus";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { useGroupActions } from "../hooks/use-chat";
+import { errorKey } from "../lib/errors";
+import { canLeave, canManage, canRemoveMember } from "../lib/perms";
+import { confirmDialog, Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui";
 import { PeoplePicker } from "./PeoplePicker";
 
 export function GroupMembersSheet({
