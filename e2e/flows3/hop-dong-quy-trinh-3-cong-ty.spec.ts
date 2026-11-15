@@ -47,6 +47,12 @@ test("FL3-1 · Nhân viên Kế toán tạo ⇒ Trưởng phòng duyệt (ý ki�
   await signAndAsk(tien, EN, id, "Không", false); // trưởng phòng đã duyệt ⇒ Ký luôn, không «Chuẩn bị ký»
   await expectStatus(hoa, EN, id, "done");
   await expect(hoa.getByText("Đã duyệt").first()).toBeVisible();
+  // CR-174: nhánh «Không» ⇒ khối «Các bước duyệt» nói rõ bước «Chọn đối tác & người nhận» được BỎ QUA (không còn «Đang chờ đối tác trả lời»)
+  const skipped = hoa
+    .getByTestId("approval-step-module")
+    .filter({ hasText: "Chọn đối tác & người nhận" });
+  await expect(skipped).toHaveAttribute("data-outcome", "skipped");
+  await expect(skipped).toContainText("Bỏ qua");
 });
 
 test("FL3-2 · Nhân viên phòng Kinh doanh KHÔNG có trưởng ⇒ leo cấp, Giám đốc duyệt ⇒ Ký ⇒ Không ⇒ «Đã duyệt»", async ({
