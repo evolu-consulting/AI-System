@@ -69,8 +69,29 @@ async function approve(p: Page, id: string, name: string): Promise<void> {
     await take.click();
     await expect(p.getByTestId("claim-state")).toContainText("Bạn đang giữ");
   }
+  const posts: string[] = [];
+  p.on("response", async (r) => {
+    if (r.request().method() !== "GET" && r.url().includes("/contracts/"))
+      posts.push(
+        `${r.request().method()} ${r.url().split("/contracts/")[1]?.slice(0, 50)} → ${r.status()} ${(await r.text().catch(() => "")).slice(0, 120)}`,
+      );
+  });
   await btn.click();
-  await expect(stepOf(p, name)).toHaveAttribute("data-status", "passed");
+  const ev = p.locator("[data-approval=evidence]");
+  if (await ev.isVisible({ timeout: 3_000 }).catch(() => false))
+    await ev.getByRole("button").last().click(); // hộp minh chứng (nếu quy tắc đòi)
+  // Máy duyệt chạy bất đồng bộ sau khi bấm: có thể qua «running» trước «passed».
+  await expect(stepOf(p, name))
+    .toHaveAttribute("data-status", "passed", { timeout: 60_000 })
+    .catch(async (e) => {
+      const st = await stepOf(p, name).getAttribute("data-status");
+      const dlg = await p
+        .locator("[role=dialog],[data-approval=evidence],[role=alert]")
+        .allInnerTexts();
+      throw new Error(
+        `bước «${name}» sau khi bấm Duyệt: data-status=${st}; mạng: ${posts.join(" ; ")}; hộp/cảnh báo: ${dlg.join(" | ").slice(0, 200)}`,
+      );
+    });
 }
 
 test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối, tin nhắn, AI đọc", async ({
@@ -251,7 +272,11 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
         await gan.getByRole("button", { name: "Xác nhận", exact: true }).click();
         await expect(gan, "hộp «Gắn sản phẩm» còn đó sau Xác nhận").toBeHidden({ timeout: 30_000 });
       }
-      await expect(stepOf(p, "Trưởng phòng duyệt")).toBeVisible({ timeout: 120_000 });
+      // Đã gửi: băng «Thông tin khoá trong lúc duyệt…» (ảnh lượt 183903); danh sách bước nạp sau ⇒ chờ ĐƯỢC NẠP (có trong trang) chứ không đòi đang nằm trong khung nhìn.
+      await reloadUntil(p, async () => {
+        await expect(p.getByText(/Thông tin khoá trong lúc duyệt/)).toBeVisible({ timeout: 4_000 });
+        await expect(stepOf(p, "Trưởng phòng duyệt")).toHaveCount(1, { timeout: 4_000 });
+      });
     },
     ["S6"],
   );
