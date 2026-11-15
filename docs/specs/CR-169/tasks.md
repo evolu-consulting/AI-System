@@ -28,6 +28,7 @@ Viết tắt: `H` = `apps/hub-api/src/modules/packs/contracts`, `W` = `apps/work
 |---|---|---|---|---|---|---|---|---|
 | 1 | `cr169-contract` | Sonnet | zod §4 + `partner.rules.ts` + unit | — | — | không | thường | spec §3–4 | [x] [test: packages/contracts/src/pack-contracts/messages.test.ts » CR-169 · partner] [test: apps/hub-api/src/modules/packs/contracts/messages/domain/partner.rules.test.ts » partnerSendError (P4)]
 | 2a | `cr169-db-core` | Sonnet `high` | 0149 (gỡ `cc_*`, bảng `pmsg_*`, hàm open/inbox/detail/page/send/delete/read/unread) + int `H/messages/pmsg-db.int.test.ts` (công ty thứ ba, external, chỉ đọc sau ngắt, N2, idempotent) | — (song song 1) | hub 0149 | **có** (RLS, DEFINER) | cao | spec §3, §5; `migrations-hub/0146_cr161_cc_threads.sql` |
+| 2a ✅ | `cr169-db-core` | Sonnet `high` | 0149 (gỡ `cc_*`, bảng `pmsg_*`, hàm open/inbox/detail/page/send/delete/read/unread) + int `H/messages/pmsg-db.int.test.ts` (công ty thứ ba, external, chỉ đọc sau ngắt, N2, idempotent) | — (song song 1) | hub 0149 | **có** (RLS, DEFINER) | cao | spec §3, §5; `migrations-hub/0146_cr161_cc_threads.sql` |
 | 2b | `cr169-db-files` | Sonnet `high` | 0150 + 0151 + pack-contracts 0118 + int (tệp, danh bạ ∩ kết nối, role khác không EXECUTE — P12) | 2a | hub 0150, 0151; pc 0118 | **có** | cao | spec §5; `0148_cr161_cc_files_box_id.sql`, `kit/adapters/directory-page.ts`, `migrations-pack-contracts/0116_cr161_cc_grants.sql` |
 | 3a | `cr169-api-list` | Sonnet `high` | **đo trước** perf CR-132; danh sách union, unread, people/companies, create partner, `posts` guard, `cc_links` bỏ unread + int route + perf | 1, 2b | — | **có** (quyền) | cao | spec §4, §6; `messages.repo.ts`, `messages.perf.int.test.ts` |
 | 3b | `cr169-api-partner` | Sonnet `high` | `/messages/partner/:id/*` + tệp + stream + gỡ trò chuyện CR-161 + int + `pmsg.perf.int.test.ts` | 3a (chung `messages.routes.ts`/mount) | — | **có** | cao | spec §4, §7; `connect/adapters/chat-files.routes.ts` |
@@ -54,7 +55,7 @@ Fixture: NitiGroup (Tiên Toàn quyền, Vy nhân viên, Lan nhân viên), Presc
 | # | Việc | Lát | Trạng thái |
 |---|---|---|---|
 | 1 | Contract zod + luật thuần | cr169-contract | [x] |
-| 2 | Migration 0149 + int | cr169-db-core | [ ] |
+| 2 | Migration 0149 + int | cr169-db-core | [x] |
 | 3 | Migration 0150/0151 + pc 0118 + int | cr169-db-files | [ ] |
 | 4 | API danh sách/danh bạ/công ty + perf (đo trước) | cr169-api-list | [ ] |
 | 5 | API cuộc partner + tệp + stream, gỡ trò chuyện CR-161 | cr169-api-partner | [ ] |
@@ -71,6 +72,17 @@ Fixture: NitiGroup (Tiên Toàn quyền, Vy nhân viên, Lan nhân viên), Presc
 - (PLAN) Số migration thật: hub 0149–0151, pack-contracts 0118 (đã kiểm: cuối hiện có hub 0148, pc 0117).
 - (PLAN) Delta CR-161 chưa gộp: khối «ADDED sht/tro-chuyen-cong-ty.md» của `docs/specs/CR-161/tasks.md` bị CR-169 thay ⇒ khi gộp đợt KHÔNG tạo file đó; hai yêu cầu CR-161 khác (Ngắt kết nối, Bảng tin) được CR-169 sửa ở Delta dưới — gộp CR-161 trước rồi CR-169.
 
+- (lát 2a) Mã lỗi DB hàm `pmsg_*`: SQLSTATE riêng, MESSAGE = mã nghiệp vụ — `CC404` MSG_NOT_FOUND · `CC403` MSG_NOT_SENDER · `CC409` MSG_NOT_CONNECTED/MSG_PEER_INACTIVE · `CC422` MSG_USER_INVALID/MSG_FILE_INVALID · `CC400` MSG_EMPTY/MSG_TOO_LONG/MSG_TOO_MANY_FILES · `22023` đầu vào sai · `42501` không được dùng (P1). Route ánh xạ theo MESSAGE.
+- (lát 2a) Chữ ký thật: `pmsg_open(p_tenant,p_user)→(id,created)`; `pmsg_inbox(p_company,p_cur_t,p_cur_id,p_limit)` (cột `last` jsonb có thêm `sender_name`; `last_at` timestamptz, route đổi sang ISO µs cho con trỏ); `pmsg_detail(p_id)` = cột inbox + `my_read_seq`,`peer_read_seq`; `pmsg_page(p_id,p_before,p_limit)→(items,has_more)` (items đã là Message jsonb, seq giảm dần, has_more tính trong hàm — route KHÔNG xin limit+1); `pmsg_send(p_id,p_client_id,p_body,p_file_ids)→(seq,created,message,notify)`; `pmsg_delete(p_id,p_seq)→text[]` (id FileBox cần gỡ byte); `pmsg_mark_read(p_id,p_seq)→bigint`; `pmsg_unread()→int`. Hàm nội bộ không cấp: `pmsg_ctx`, `pmsg_eligible_raw`, `pmsg_view`, `pmsg_msg_json`.
+- (lát 2a) `eligible` = active, không `locked_by_tenant`, `kind<>external`, thuộc Group có grant contracts-read/write/admin (entitlement còn, feature ≠ off); `peer_active` = eligible của người kia; `read_only` = NOT(connected AND eligible).
+- (lát 2a) Khoá: advisory SHARED theo cặp (cùng khoá 161 của cc_invite/cc_disconnect) ở open/send ⇒ gửi song song được nhưng tuần tự với ngắt/mời; rồi FOR UPDATE thread. Người gửi tiến mốc đọc tới tin vừa gửi (tin đối phương trước đó coi như đã đọc — như CR-161).
+- (lát 2a) SỬA migration đã áp pack-contracts 0116/0117 (bỏ GRANT các hàm trò chuyện chung đã gỡ): hub luôn chạy trước gói ⇒ DB dựng sạch lỗi «function does not exist» nếu giữ. DB đã áp không ảnh hưởng. Lát 2b: pack 0118 chỉ cấp hàm `pmsg_*` (+ cc_links nếu cần: 0116 vẫn cấp cc_links không điều kiện, chạy sau hub 0149 nên còn nguyên).
+- (lát 2a) 0149 đã tự cấp `pmsg_*` + cc_links cho hub_rw và (khối DO) contracts_rw — để int chạy bằng role thật ở lát này; 0151 (lát 2b) chỉ cần cấp lại/đối chiếu cho hàm 0150.
+- (lát 2a) `cc_links` bỏ cột `unread` (DROP + CREATE theo thân 0145) ⇒ `connect.repo.ts:62-81` (`unread` trong SELECT) và `connect-links.int.test.ts:63,197` vỡ cho tới lát 3a/3b (spec §4: «CcLink bỏ unread»). Ghi để lát đó xử lý.
+- (lát 2a) Đã sửa `packages/db/src/migrate-hub.int.test.ts` (danh sách bảng: bỏ cc_*, thêm pmsg_*; kiểm quyền hàm mới + cc_* đã gỡ).
+- (lát 2a) Chạy lại 0149 được (DO-loop DROP theo tên, DROP … IF EXISTS, CREATE … IF NOT EXISTS, CREATE OR REPLACE; cc_links DROP + CREATE + cấp lại quyền) — int phủ.
+- (lát 2a) Còn trỏ `cc_*` (chỉ ghi, lát 4/3a/3b xử): `tools/scripts/src/tenant-purge.partner.ts` + `.int.test.ts`; `apps/hub-api/src/modules/partners/cc-chat-db.int.test.ts`, `cc-chat-files-db.int.test.ts`, `connect-links.int.test.ts`; `packs/contracts/connect/**` (chat.repo/chat.routes/chat-files.routes/chat.usecase/chat.ports/chat.files/connect.chat.routes.int.test/connect.perf.int.test/connect.rules `canSendChat`…); web `partners/hooks/use-cc-chat.ts`, `lib/cc-chat.ts`; `packages/contracts` (`cc.msg`, `Cc*` thread schema).
+
 ## Tranh chấp test
 
 ## Delta (so với docs/current)
@@ -80,17 +92,17 @@ Trạng thái gộp: chưa gộp
 #### Yêu cầu: Nhắn 1-1 với người của công ty đã kết nối (CR-169)
 Ngoài 1-1/nhóm trong công ty, nhân viên nội bộ có quyền Sổ Hợp Tác nhắn 1-1 với nhân viên của công ty đang kết nối (CR-161); cùng màn, cùng khung chat, đính kèm, thu hồi, «Đã xem», realtime như tin nội bộ. Không chuông, không email. Nhóm nhiều công ty không có.
 - Kịch bản: khi Vy (NitiGroup) nhắn Hà (Preschool) kèm PDF thì Hà thấy số chưa đọc, mở thấy tin, tải được tệp và Vy thấy «Đã xem» [test: thủ công — chưa viết]
-- Kịch bản: khi mở lại 1-1 với cùng người thì ra đúng cuộc cũ, gửi lặp cùng mã chỉ một tin [test: thủ công — chưa viết]
-- Kịch bản: khi người gửi thu hồi tin thì nội dung và tệp biến mất ở cả hai công ty [test: thủ công — chưa viết]
+- Kịch bản: khi mở lại 1-1 với cùng người thì ra đúng cuộc cũ, gửi lặp cùng mã chỉ một tin [test: apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P2 mở 1–1; apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P4 gửi]
+- Kịch bản: khi người gửi thu hồi tin thì nội dung và tệp biến mất ở cả hai công ty [test: apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P5 thu hồi]
 
 #### Yêu cầu: Cách ly tin giữa công ty kết nối
 Chỉ hai người trong cuộc đọc được; đồng nghiệp khác, công ty thứ ba, user đối tác (external), người không có quyền Sổ Hợp Tác không thấy, không gửi, không tải tệp; người ngoài nhận «không tìm thấy».
-- Kịch bản: khi công ty thứ ba hoặc đồng nghiệp ngoài cuộc gọi đọc/gửi/tải tệp thì 404 và không thấy dòng nào [test: thủ công — chưa viết]
-- Kịch bản: khi gọi thẳng hàm cơ sở dữ liệu mà không có công ty/người dùng hoặc bằng vai không được cấp thì bị từ chối [test: thủ công — chưa viết]
+- Kịch bản: khi công ty thứ ba hoặc đồng nghiệp ngoài cuộc gọi đọc/gửi/tải tệp thì 404 và không thấy dòng nào [test: apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P3 chỉ hai đầu thấy]
+- Kịch bản: khi gọi thẳng hàm cơ sở dữ liệu mà không có công ty/người dùng hoặc bằng vai không được cấp thì bị từ chối [test: apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P1 chỉ người hợp lệ]
 
 #### Yêu cầu: Ngắt kết nối thì cuộc trò chuyện chỉ đọc
 Hai công ty không còn kết nối (hoặc người kia không còn dùng Sổ Hợp Tác) ⇒ vẫn xem tin cũ và tệp, không gửi, không tải lên; màn nói lý do. Kết nối lại dùng đúng cuộc cũ.
-- Kịch bản: khi Tiên ngắt kết nối thì Vy mở cuộc với Hà thấy tin cũ, câu chỉ đọc, gửi bị 409 `MSG_NOT_CONNECTED` [test: thủ công — chưa viết]
+- Kịch bản: khi Tiên ngắt kết nối thì Vy mở cuộc với Hà thấy tin cũ, câu chỉ đọc, gửi bị 409 `MSG_NOT_CONNECTED` [test: apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P7 chỉ đọc sau ngắt]
 
 #### Yêu cầu: Danh sách lọc theo công ty, tìm người, tải dần
 Danh sách cuộc gần đây trước; chip Tất cả / công ty mình / từng công ty đã kết nối; tìm người theo tên hoặc chức vụ (không phân biệt hoa/dấu), tải dần; người công ty kia hiện tên, chức vụ, tên công ty — không email, điện thoại, phòng ban.
