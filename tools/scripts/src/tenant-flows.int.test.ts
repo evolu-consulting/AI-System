@@ -325,14 +325,12 @@ describe("CR-159 · quy trình 3 công ty", () => {
     expect(keysOf(r)).toEqual([
       "re-nhanh",
       "truong-phong",
-      "chuan-bi-ky",
       "ky-so",
       "cho-ky",
       "nho-doi-tac",
       "re-doi-tac",
     ]);
     expect(whoAt(r, "truong-phong")).toBe(tien); // người duyệt khác người tạo
-    expect(whoAt(r, "chuan-bi-ky")).toBe(tien);
     expect(whoAt(r, "nho-doi-tac")).toBe(tien); // người ký quyết
     expect(r.end.key).toBe("ket-thuc-noi-bo");
     expect(r.end.outcome).toBe("approved");
@@ -395,14 +393,19 @@ describe("CR-159 · quy trình 3 công ty", () => {
     const dung = WHO.preschool.dung;
     const [send, recv] = flowsFor(k, uidOf(k)) as [FlowDef, FlowDef];
     const phieu: FlowDef = {
-      ...recv,
+      ...send,
       name: "Đề nghị mua hàng / thanh toán",
       trigger: NEVER_TRIGGER,
     };
-    const oldSend: FlowDef = { ...send, stages: recv.stages }; // sơ đồ cũ: chưa có bước «Nhờ đối tác ký?»
+    const legacy = (send.stages as St[]).map((x) =>
+      x.key === "ky-so" ? { ...x, name: "Ký số (bản cũ)" } : x,
+    );
+    const oldSend: FlowDef = { ...send, stages: legacy }; // sơ đồ cũ cùng tên
     await applyTenantFlows(ctx(k), [oldSend, recv, phieu], opt(false));
     expect(await list(k)).toHaveLength(3);
-    expect(keysOf(await walk(k, FLOW_NAMES.send, dung))).not.toContain("nho-doi-tac");
+    const nameOfSign = async () =>
+      ((await defOf(k, FLOW_NAMES.send)).stages as St[]).find((x) => x.key === "ky-so")?.name;
+    expect(await nameOfSign()).toBe("Ký số (bản cũ)");
 
     const dry = await applyTenantFlows(ctx(k), flowsFor(k, uidOf(k)), opt(true));
     const got = dry.map((r) => `${r.name}:${r.action}`).sort();
@@ -421,6 +424,7 @@ describe("CR-159 · quy trình 3 công ty", () => {
     const on = rows.filter((r) => r.enabled === true).map((r) => r.name);
     expect(on.sort()).toEqual([FLOW_NAMES.send, FLOW_NAMES.receive].sort());
     expect(rows.find((r) => r.name === phieu.name)?.enabled).toBe(false);
+    expect(await nameOfSign()).toBe("Ký hợp đồng"); // sơ đồ đã thay
     expect(keysOf(await walk(k, FLOW_NAMES.send, dung, YES))).toContain("nho-doi-tac");
 
     const snap = (xs: Json[]) =>
