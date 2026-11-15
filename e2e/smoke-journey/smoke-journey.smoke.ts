@@ -240,15 +240,17 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
       }
       const btn = p.getByRole("button", { name: "Gửi duyệt" });
       await expect(btn).toBeVisible({ timeout: 60_000 });
-      await expect(async () => {
-        // Hộp «Gắn sản phẩm cho các dòng hợp đồng» (dòng hàng hoá AI đọc ra) hiện sau khi bấm Gửi duyệt: giữ mặc định «Tạo sản phẩm mới» ⇒ Xác nhận.
-        const gan = p.getByRole("dialog", { name: /Gắn sản phẩm/ });
-        if (await gan.isVisible())
-          await gan.getByRole("button", { name: "Xác nhận", exact: true }).click();
-        else if (await btn.isVisible()) await btn.click({ timeout: 5_000 });
-        await expect(btn.or(gan)).toBeVisible({ timeout: 10_000 });
-        await expect(btn).toBeHidden({ timeout: 6_000 });
-      }).toPass({ timeout: 60_000 });
+      // Gửi duyệt ⇒ (HĐ có dòng hàng) hộp «Gắn sản phẩm» ⇒ Xác nhận (mặc định «Tạo sản phẩm mới») ⇒ hộp đóng. Không dùng «nút Gửi duyệt
+      // ẩn» làm dấu xong: hộp mở ra khiến nền bị aria-hidden ⇒ nút «ẩn» dù hộp chưa được xác nhận (lỗi S7 ngày 2026-11-15: không có POST nào sau hộp).
+      const gan = p.getByRole("dialog", { name: /Gắn sản phẩm/ });
+      await btn.click();
+      await expect(gan.or(stepOf(p, "Trưởng phòng duyệt")).first()).toBeVisible({
+        timeout: 60_000,
+      });
+      if (await gan.isVisible()) {
+        await gan.getByRole("button", { name: "Xác nhận", exact: true }).click();
+        await expect(gan, "hộp «Gắn sản phẩm» còn đó sau Xác nhận").toBeHidden({ timeout: 30_000 });
+      }
       await expect(stepOf(p, "Trưởng phòng duyệt")).toBeVisible({ timeout: 120_000 });
     },
     ["S6"],
