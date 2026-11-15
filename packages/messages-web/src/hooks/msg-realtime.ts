@@ -9,9 +9,8 @@ import {
   MsgReadEventDataSchema,
 } from "@ai/contracts/pack-contracts";
 import type { QueryClient } from "@tanstack/react-query";
-import { session } from "~/features/auth/lib/session";
-import { meStream, type StreamFrame } from "~/platform/stream/me-stream";
 import { msgKeys } from "../api";
+import { messagesHost, type StreamFrame } from "../host";
 import {
   applyDeletedToList,
   applyNewToList,
@@ -62,7 +61,7 @@ const parse = <T>(
 
 function onNew(qc: QueryClient, f: StreamFrame): void {
   const d = parse(f, MsgNewEventDataSchema);
-  const myId = session.getState().me?.id;
+  const myId = messagesHost().myId();
   if (!d || !myId) return;
   const m = d.message;
   qc.setQueryData<MsgPages>(msgKeys.msgs(d.conversation_id), (old) =>
@@ -87,7 +86,7 @@ function onNew(qc: QueryClient, f: StreamFrame): void {
 
 function onRead(qc: QueryClient, f: StreamFrame): void {
   const d = parse(f, MsgReadEventDataSchema);
-  const myId = session.getState().me?.id;
+  const myId = messagesHost().myId();
   if (!d || !myId) return;
   if (d.user_id === myId) {
     // Tab khác của mình đã đọc ⇒ xoá chấm; tổng lấy lại (đúng hơn tự trừ).
@@ -129,10 +128,10 @@ export function retain(qc: QueryClient): () => void {
   if (users++ === 0) {
     const refetchAll = () => void qc.invalidateQueries({ queryKey: msgKeys.all });
     const offs = [
-      meStream.subscribe("msg.new", (f) => onNew(qc, f), refetchAll),
-      meStream.subscribe("msg.read", (f) => onRead(qc, f)),
-      meStream.subscribe("msg.deleted", (f) => onDeleted(qc, f)),
-      meStream.subscribe("msg.conversation", (f) => onConversation(qc, f)),
+      messagesHost().subscribe("msg.new", (f) => onNew(qc, f), refetchAll),
+      messagesHost().subscribe("msg.read", (f) => onRead(qc, f)),
+      messagesHost().subscribe("msg.deleted", (f) => onDeleted(qc, f)),
+      messagesHost().subscribe("msg.conversation", (f) => onConversation(qc, f)),
     ];
     stop = () => {
       for (const off of offs) off();

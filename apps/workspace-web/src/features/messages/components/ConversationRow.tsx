@@ -2,11 +2,11 @@
 
 import type { ConversationSummary } from "@ai/contracts/pack-contracts";
 import type { PersonCard } from "@ai/contracts/people";
+import { convTitle, isUnread, previewOf, unreadLabel } from "@ai/messages-web/lib/conversations";
+import { listTime } from "@ai/messages-web/lib/format";
 import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
-import { convTitle, isUnread, previewOf, unreadLabel } from "../lib/conversations";
-import { listTime } from "../lib/format";
 import { PersonTip, usePersonTip } from "./PersonTip";
 
 function Preview({ c, myId }: { c: ConversationSummary; myId: string }) {

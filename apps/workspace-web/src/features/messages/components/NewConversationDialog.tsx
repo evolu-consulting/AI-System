@@ -1,5 +1,8 @@
 // CR-132 · W2 · «Nhắn tin mới»: chọn 1 người ⇒ mở 1-1; chọn ≥ 2 ⇒ hiện «Tên nhóm» (bắt buộc) + «Tạo nhóm».
 import { MSG_GROUP_MAX, MSG_TITLE_MAX } from "@ai/contracts/pack-contracts";
+import { useCreateConversation } from "@ai/messages-web/hooks/use-conversations";
+import { errorKey } from "@ai/messages-web/lib/errors";
+import { pickMode } from "@ai/messages-web/lib/people";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -9,9 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { useCreateConversation } from "../hooks/use-conversations";
-import { errorKey } from "../lib/errors";
-import { pickMode } from "../lib/people";
 import { PeoplePicker } from "./PeoplePicker";
 
 function GroupNameField({

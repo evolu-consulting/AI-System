@@ -1,11 +1,11 @@
 // CR-132 · W2/W3 · ô soạn tin: Enter gửi, Shift+Enter xuống dòng; nút ghim chọn tệp (tải lên ngay, hiện chip, gỡ được trước khi gửi).
 // `lockedReason` ⇒ ô khoá kèm lý do (vd người kia đã khoá). Có tệp mà chưa có chữ vẫn gửi được; đang tải tệp ⇒ chờ.
 import { type FileRef, MSG_BODY_MAX } from "@ai/contracts/pack-contracts";
+import { useStagedFiles } from "@ai/messages-web/hooks/use-staged-files";
+import { ATTACH_ACCEPT } from "@ai/messages-web/lib/files";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconAttach, IconClose, IconSend } from "~/components/icons";
-import { useStagedFiles } from "../hooks/use-staged-files";
-import { ATTACH_ACCEPT } from "../lib/files";
 
 export function MessageComposer({
   conversationId,

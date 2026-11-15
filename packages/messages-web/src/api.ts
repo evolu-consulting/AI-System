@@ -12,7 +12,10 @@ import type {
   UnreadResponse,
 } from "@ai/contracts/pack-contracts";
 import type { PeopleResponse, PersonCard } from "@ai/contracts/people";
-import { api } from "@ai/web-kit/http";
+import { messagesHost } from "./host";
+
+const api = <T>(...a: Parameters<ReturnType<typeof messagesHost>["api"]>) =>
+  messagesHost().api<T>(...a);
 
 const BASE = "/pack/contracts/messages";
 const conv = (id: string) => `${BASE}/conversations/${encodeURIComponent(id)}`;

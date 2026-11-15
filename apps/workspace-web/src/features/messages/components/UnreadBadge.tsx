@@ -1,7 +1,8 @@
 // CR-132 · W3 · chấm đỏ + số chưa đọc dùng chung (nút mở khoang, tab «Tin nhắn», thanh dưới điện thoại). 0 ⇒ không hiện; trên 99 ⇒ «99+».
+
+import { unreadLabel } from "@ai/messages-web/lib/conversations";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
-import { unreadLabel } from "../lib/conversations";
 
 export function UnreadBadge({ count, className }: { count: number; className?: string }) {
   const { t } = useTranslation();

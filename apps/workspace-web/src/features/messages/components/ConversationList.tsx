@@ -5,13 +5,13 @@
 
 import type { ConversationSummary } from "@ai/contracts/pack-contracts";
 import type { PersonCard } from "@ai/contracts/people";
+import { readCollapsed, toggleCollapsed, writeCollapsed } from "@ai/messages-web/lib/collapse";
+import { buildDirectory, type DeptSection, type Directory } from "@ai/messages-web/lib/directory";
+import type { Person } from "@ai/messages-web/lib/people";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "~/components/ui/skeleton";
-import { readCollapsed, toggleCollapsed, writeCollapsed } from "../lib/collapse";
-import { buildDirectory, type DeptSection, type Directory } from "../lib/directory";
-import type { Person } from "../lib/people";
 import { ConversationRow } from "./ConversationRow";
 import { LoadSentinel } from "./LoadSentinel";
 

@@ -3,15 +3,15 @@
 // fix-review-r1 · kho theo phiên (tenant + user, xoá khi đổi phiên) + bộ đếm phiên bản (`lib/person-card-store.ts`).
 import type { PersonCard } from "@ai/contracts/people";
 import { useEffect, useMemo, useSyncExternalStore } from "react";
-import { useSession } from "~/features/auth/hooks/use-session";
 import { fetchPersonCards } from "../api";
+import { messagesHost } from "../host";
 import { missingBatches } from "../lib/cards";
 import { createCardStore } from "../lib/person-card-store";
 
 const store = createCardStore(5 * 60_000);
 
 export function usePersonCards(ids: readonly string[]): ReadonlyMap<string, PersonCard> {
-  const scope = useSession((s) => (s.me ? `${s.me.tenant.id}:${s.me.id}` : ""));
+  const scope = messagesHost().useScope();
   store.ensure(scope); // idempotent: đổi phiên ⇒ kho trống TRƯỚC khi đọc version/thẻ
   const key = useMemo(() => [...new Set(ids)].sort().join(","), [ids]);
   const version = useSyncExternalStore(store.subscribe, store.version, store.version);

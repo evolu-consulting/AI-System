@@ -15,6 +15,7 @@
     "@ai/contracts": "workspace:*",
     "@ai/flow-canvas": "workspace:*",
     "@ai/i18n": "workspace:*",
+    "@ai/messages-web": "workspace:*",
     "@ai/web-kit": "workspace:*",
     "@fontsource/be-vietnam-pro": "5.3.0",
     "@fontsource/roboto-mono": "5.3.0",

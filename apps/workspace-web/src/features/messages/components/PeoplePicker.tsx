@@ -1,10 +1,11 @@
 // CR-132 · W2 · chọn người nội bộ (dùng cho «Nhắn tin mới» và «Thêm người»): ô tìm + danh sách tích chọn; nói rõ khi đang tải / lỗi / rỗng.
+
+import { usePeople } from "@ai/messages-web/hooks/use-conversations";
+import { useDebounced } from "@ai/messages-web/hooks/use-debounced";
+import { filterPeople } from "@ai/messages-web/lib/people";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "~/components/ui/skeleton";
-import { usePeople } from "../hooks/use-conversations";
-import { useDebounced } from "../hooks/use-debounced";
-import { filterPeople } from "../lib/people";
 import { LoadSentinel } from "./LoadSentinel";
 
 export function PeoplePicker({
