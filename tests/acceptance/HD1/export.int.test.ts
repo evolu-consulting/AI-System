@@ -150,7 +150,7 @@ describe("Gap #9 · tải lên Markdown", () => {
       join contracts.files f on f.id = c.file_id where c.id = ${r.json.id}`;
     expect(row).toMatchObject({
       status: "draft",
-      extract_state: "reading",
+      extract_state: "failed", // stack int không có AI ⇒ lượt đọc đóng ngay AGENT_UNAVAILABLE (fix-ai-unready-msg)
       source_text: md,
       mime: "text/markdown",
       title: "hd-moi",

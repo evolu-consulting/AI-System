@@ -203,8 +203,12 @@ describe("HD-NFR-03 · tải lên: kiểm quota 1 pipeline Redis, ghi 1 tx 4 câ
       [c.fb.origin],
     );
     expect(h.r.r.status).toBe(201);
+    // fix-int-r3 · stack int không có AI ⇒ (fix-ai-unready-msg) sau commit lượt đọc đóng NGAY AGENT_UNAVAILABLE bằng
+    // giao dịch RIÊNG. Đo đúng giao dịch GHI của tải lên = đoạn trước `set_config('role'…)` thứ hai.
+    const starts = h.queries.flatMap((q, i) => (/set_config\('role'/i.test(q) ? [i] : []));
+    const uploadSql = starts[1] ?? h.sql;
     expect({
-      sql: h.sql,
+      sql: uploadSql,
       http: h.http,
       ext: h.httpExt.length,
       pipelines: h.r.pipelines.length,

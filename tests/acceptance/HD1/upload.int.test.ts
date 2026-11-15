@@ -49,6 +49,8 @@ async function expectNothingWritten() {
   expect((await c.sql`select count(*)::int as n from contracts.index_outbox`)[0]?.n).toBe(0);
 }
 
+// fix-int-r3 · stack int KHÔNG có AI (không khoá/CLI/seam) ⇒ từ fix-ai-unready-msg lượt đọc đóng NGAY `extract_failed
+// AGENT_UNAVAILABLE` (không chờ vòng quét STALE): tải lên vẫn 201, HĐ hiện ra, trạng thái đọc = `failed` (+ error, +1 version).
 describe("HD-AC11 · tải DOCX/PDF/ảnh thành công", () => {
   it("HD-AC11 · DOCX mẫu ⇒ 201 HĐ 'extracting', source_text có 'Điều 1', event uploaded, file org=t_<tenant>, 1 outbox", async () => {
     needAdr0024Accepted();
@@ -63,12 +65,12 @@ describe("HD-AC11 · tải DOCX/PDF/ảnh thành công", () => {
       tenant_id: T.acme,
       kind: "contract",
       status: "draft",
-      extract_state: "reading",
-      version: 1,
+      extract_state: "failed",
+      version: 2,
       title: "HD-bao-bi-Minh-Phat",
       owner_user_id: P.hoa.id,
       created_by: P.hoa.id,
-      error: null,
+      error: "AGENT_UNAVAILABLE",
     });
     expect(row?.source_text).toMatch(/Điều\s*1/);
     expect(Object.keys(row?.fields ?? {})).toHaveLength(23);
@@ -81,7 +83,7 @@ describe("HD-AC11 · tải DOCX/PDF/ảnh thành công", () => {
       tenant_id: T.acme,
     });
     expect(Number(f?.size_bytes)).toBe(bytes.length);
-    const ev = await eventsOf(r.json.id);
+    const ev = (await eventsOf(r.json.id)).filter((e) => e.type === "uploaded");
     expect(ev).toHaveLength(1);
     expect(ev[0]).toMatchObject({ type: "uploaded", actor_user_id: P.hoa.id });
     expect(ev[0]?.data).toMatchObject({
@@ -90,7 +92,7 @@ describe("HD-AC11 · tải DOCX/PDF/ảnh thành công", () => {
       size: bytes.length,
     });
     expect([
-      ...(await c.sql`select entity, op, entity_id, tenant_id from contracts.index_outbox`),
+      ...(await c.sql`select distinct entity, op, entity_id, tenant_id from contracts.index_outbox`),
     ]).toEqual([{ entity: "contract", op: "upsert", entity_id: r.json.id, tenant_id: T.acme }]);
     // Hợp đồng Hub: chỉ cần FileBox trả 2xx (thật 200, giả 201); mã thô không thuộc hành vi Hub.
     const post = c.fb.callsTo("post");
@@ -168,7 +170,7 @@ describe("HD-AC11 · tải DOCX/PDF/ảnh thành công", () => {
         i.status,
         i.extract_state,
       ]),
-    ).toEqual([[r.json.id, "draft", "reading"]]);
+    ).toEqual([[r.json.id, "draft", "failed"]]);
   });
 });
 
@@ -194,7 +196,7 @@ describe("HD-AC10 · loại tệp (magic bytes) và kích thước", () => {
     const b = await upload(c, P.hoa, { bytes: jpeg(), name: "y.pdf", type: "application/pdf" });
     expect([a.status, b.status]).toEqual([201, 201]);
     const evs =
-      await c.sql`select data->>'mime' as mime from contracts.contract_events order by id`;
+      await c.sql`select data->>'mime' as mime from contracts.contract_events where type = 'uploaded' order by id`;
     expect(evs.map((e) => e.mime)).toEqual(["application/pdf", "image/jpeg"]);
   });
   // CR-122 p9: xlsx/pptx/odt nay là "office" (lấy chữ) — chỉ zip không có phần nhận dạng nào mới bị 415.
