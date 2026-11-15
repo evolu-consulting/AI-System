@@ -10,7 +10,8 @@
     "./community-locales": "./src/community-locales.ts",
     "./contracts-locales": "./src/contracts-locales.ts",
     "./studio-locales": "./src/studio-locales.ts",
-    "./process-locales": "./src/process-locales.ts"
+    "./process-locales": "./src/process-locales.ts",
+    "./messages-locales": "./src/messages-locales.ts"
   },
   "scripts": {
     "test": "bun test",

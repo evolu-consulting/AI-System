@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
 import { initI18n } from "./app/i18n";
+import "./app/messages-host";
 import { startPrefs } from "./app/prefs";
 import { Providers } from "./app/providers";
 

@@ -68,6 +68,8 @@
     "expandSidebar": "Expand sidebar",
     "apps": "Apps",
     "appSwitching": "Switching app…",
+    "messages": "Messages",
+    "messagesConfirm": "Confirm",
     "newGroup": "New group"
   },
   "group": {

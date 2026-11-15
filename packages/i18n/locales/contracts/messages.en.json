@@ -1,6 +1,7 @@
 {
   "contracts": {
     "messages": {
+      "cancel": "Cancel",
       "title": "Messages",
       "unread": "{{n}} unread",
       "search": "Search people by name or job title",

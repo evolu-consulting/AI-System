@@ -1,6 +1,7 @@
 // CHAT-AC-36 · khởi tạo i18next cho chat-web: chuỗi `chat/*` nạp động; CR-052: `ai.locale` đã lưu, không có thì en (không dò trình duyệt).
 import { loadChatLocale } from "@ai/i18n/chat-locales";
 import { DEFAULT_LOCALE, type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
+import { loadMessagesLocale } from "@ai/i18n/messages-locales";
 import { loadProcessLocale } from "@ai/i18n/process-locales";
 import { setRequestLanguage } from "@ai/web-kit/http";
 import { LOCALE_KEY, resolvePrefs } from "@ai/web-kit/prefs/prefs";
@@ -68,6 +69,22 @@ export function ensureProcessLocale(lng: string): Promise<void> {
     });
     p.catch(() => processLoaded.delete(lng));
     processLoaded.set(lng, p);
+  }
+  return p;
+}
+
+const messagesLoaded = new Map<string, Promise<void>>();
+
+/** CR-169: nạp chuỗi «Tin nhắn» (`contracts.messages.*`) khi mở mục này lần đầu; gọi lại cùng ngôn ngữ ⇒ dùng lần nạp cũ. */
+export function ensureMessagesLocale(lng: string): Promise<void> {
+  if (!isSupported(lng)) return Promise.resolve();
+  let p = messagesLoaded.get(lng);
+  if (!p) {
+    p = loadMessagesLocale(lng).then((bundle) => {
+      i18next.addResourceBundle(lng, "translation", bundle, true, true);
+    });
+    p.catch(() => messagesLoaded.delete(lng));
+    messagesLoaded.set(lng, p);
   }
   return p;
 }

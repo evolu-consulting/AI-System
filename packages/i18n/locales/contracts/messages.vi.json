@@ -1,6 +1,7 @@
 {
   "contracts": {
     "messages": {
+      "cancel": "Huỷ",
       "title": "Tin nhắn",
       "unread": "{{n}} tin chưa đọc",
       "search": "Tìm người theo tên, chức vụ",

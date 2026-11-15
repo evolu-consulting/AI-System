@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { BrandLogo } from "~/components/shared/BrandLogo";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { MessagesNavLink } from "~/features/messages/components/MessagesNavLink";
 import { ProcessDmRow } from "~/features/processes/inbox/components/ProcessDmRow";
 import { TodoGroup } from "~/features/processes/inbox/components/TodoGroup";
 import { useProcessEngineOn } from "~/features/processes/shared/engine";
@@ -88,6 +89,7 @@ export function Sidebar(p: Props) {
         <Plus className="size-[18px] shrink-0" aria-hidden />
         <span className="truncate">{t("shell.newChat")}</span>
       </Link>
+      <MessagesNavLink onNavigate={p.onNavigate} />
       <Input
         ref={p.searchRef}
         type="search"

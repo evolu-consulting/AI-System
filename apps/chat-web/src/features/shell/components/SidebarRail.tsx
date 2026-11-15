@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
 import { useConversationList } from "~/features/conversations/hooks/use-conversations";
+import { MessagesNavLink } from "~/features/messages/components/MessagesNavLink";
 import { useRoomList } from "~/features/rooms/hooks/use-room-list";
 import { roomTitle } from "~/features/rooms/lib/room-logic";
 import { cn } from "~/lib/utils";
@@ -86,6 +87,7 @@ export function SidebarRail(p: Props) {
             <Plus className="size-[18px]" aria-hidden />
           </Link>
         </Tip>
+        <MessagesNavLink rail />
         <ul className="flex min-h-0 w-full flex-1 flex-col items-center gap-1 overflow-x-hidden overflow-y-auto py-1">
           {rooms.items.map((r) => {
             const title = roomTitle(r);

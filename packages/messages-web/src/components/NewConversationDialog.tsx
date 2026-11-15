@@ -214,7 +214,7 @@ export function NewConversationDialog({
         )}
         <div className="flex justify-end gap-2">
           <button type="button" className="btn" onClick={close}>
-            {t("contracts.common.cancel")}
+            {t("contracts.messages.cancel")}
           </button>
           <button
             type="button"
