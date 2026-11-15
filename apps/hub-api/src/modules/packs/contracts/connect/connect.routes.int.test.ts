@@ -398,7 +398,6 @@ describe("CR-161 · quyền DB cho role gói (migration 0116)", () => {
       "community.cc_posts(uuid,timestamptz,uuid,integer)",
     ];
     const internal = [
-      "hub.cc_ctx()",
       "hub.cc_bell(uuid,uuid[],text,text,text,text,text)",
       "hub.cc_owners_raw(uuid[])",
       "hub.cc_connected_raw(uuid,uuid)",
