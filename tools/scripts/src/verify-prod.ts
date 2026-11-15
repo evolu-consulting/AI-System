@@ -34,9 +34,9 @@ for t in $(${PSQL} -c "select table_schema||'.'||table_name from information_sch
 done
 # Cấu hình prod ĐỒNG BỘ bản test (người dùng 2026-11-16). So mọi khoá cấu hình thường; bỏ bí mật + khoá theo môi trường. Chỉ in tên
 # khoá + ok/lệch — KHÔNG in giá trị .env (CLAUDE.md §2). Ngoại lệ có chủ ý: APP_ENV, FILEBOX_ORG (nhãn kho), AI_SUB_MAX_CONCURRENCY
-# (bản test dùng chung đăng nhập AI của prod ⇒ test 1 lượt để không giành lượt của prod).
+# (bản test dùng chung đăng nhập AI của prod ⇒ test 1 lượt để không giành lượt của prod), TRELLO_* (góp ý vào Trello chỉ ở prod — người dùng 2026-11-16).
 STG=../sohoptac2-staging/.env
-SKIP='PASSWORD|SECRET|TOKEN|KEY|_URL|DATABASE|HOST|ORIGIN|DOMAIN|COOKIE|JWT|PEPPER|SALT|CORS|PUBLIC|UID|PORT|PROJECT|_USER|DOCUSIGN|DIFY|DLC_|SEED|^S2_|^APP_ENV$|^FILEBOX_ORG$|^AI_SUB_MAX_CONCURRENCY$'
+SKIP='PASSWORD|SECRET|TOKEN|KEY|_URL|DATABASE|HOST|ORIGIN|DOMAIN|COOKIE|JWT|PEPPER|SALT|CORS|PUBLIC|UID|PORT|PROJECT|_USER|DOCUSIGN|DIFY|DLC_|SEED|^S2_|^APP_ENV$|^FILEBOX_ORG$|^AI_SUB_MAX_CONCURRENCY$|^TRELLO_'
 if [ -f "$STG" ]; then
   for k in $(grep -oE '^[A-Z][A-Z0-9_]*' .env | grep -vE "$SKIP" | sort -u); do
     [ "$(grep -m1 "^$k=" .env | cut -d= -f2-)" = "$(grep -m1 "^$k=" "$STG" | cut -d= -f2-)" ] && echo "CFG:$k:ok" || echo "CFG:$k:lệch"
