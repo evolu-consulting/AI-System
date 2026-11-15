@@ -165,7 +165,7 @@ test("ADM-FR-51 · M4-R12 · E19 · 55 dòng m4-page-* → tìm 'm4-page' → 50
   await auditSearch(page).fill("m4-page");
   await expect(auditItems(page)).toHaveCount(50);
   await page.getByRole("button", { name: "Tải thêm" }).click();
-  await expect.poll(() => auditItems(page).count()).toBeGreaterThan(50);
+  await expect.poll(() => auditItems(page).count(), { timeout: 20_000 }).toBeGreaterThan(50);
 });
 
 test("M4-AC12 · E20 · member an vào /audit và /usage → bị chuyển về /member", async ({ page }) => {

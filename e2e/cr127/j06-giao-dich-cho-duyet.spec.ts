@@ -16,7 +16,11 @@ const fillDeal = async (page: import("@playwright/test").Page) => {
     .getByLabel(/Nhà cung cấp/)
     .first()
     .fill("E2E-JOURNEY Bên Bán");
-  await page.getByTestId("partner-option").first().click();
+  // danh sách gợi ý dựng lại khi kết quả tra về ⇒ thử lại đến khi bấm trúng
+  const opt = page.getByTestId("partner-option").filter({ hasText: "E2E-JOURNEY Bên Bán" }).first();
+  await expect(async () => {
+    await opt.click({ timeout: 3000 });
+  }).toPass({ timeout: 20_000 });
   await page.getByLabel(/Tên giao dịch/).fill("Bán thùng phi 200L");
   await page.getByLabel(/Ngày giao dịch/).fill("2026-11-11");
   await page.locator("#cf-source").selectOption("invoice");

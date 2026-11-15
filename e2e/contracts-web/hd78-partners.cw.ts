@@ -114,6 +114,9 @@ async function installHub(page: Page) {
     (r) => {
       const url = new URL(r.request().url());
       if (r.request().method() !== "GET") return r.fallback();
+      // CR-161: «Công ty đã kết nối» / băng lời mời gọi /connect/links — chưa kết nối công ty nào
+      if (url.pathname === "/pack/contracts/connect/links")
+        return json(r, 200, { items: [], next_cursor: null });
       const got = partnersAsHub(url.pathname, url.searchParams);
       if (got !== undefined) return json(r, 200, got);
       if (url.pathname === `/pack/contracts/contracts/${contract.id}`)
