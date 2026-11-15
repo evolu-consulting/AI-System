@@ -10,6 +10,10 @@ export type Staged = {
   name: string;
   status: "uploading" | "ready";
   ref: FileRef | null;
+  /** CR-164 · để ô soạn hiện ảnh xem trước cục bộ + thẻ tệp (bộ chung `AttachDraftList`). */
+  mime: string;
+  size: number;
+  file: File;
 };
 
 export function useStagedFiles(conversationId: string) {
@@ -30,7 +34,18 @@ export function useStagedFiles(conversationId: string) {
           continue;
         }
         const key = crypto.randomUUID();
-        setItems((s) => [...s, { key, name: f.name, status: "uploading", ref: null }]);
+        setItems((s) => [
+          ...s,
+          {
+            key,
+            name: f.name,
+            status: "uploading",
+            ref: null,
+            mime: f.type || "application/octet-stream",
+            size: f.size,
+            file: f,
+          },
+        ]);
         uploadFile(conversationId, f)
           .then((ref) =>
             setItems((s) => s.map((x) => (x.key === key ? { ...x, status: "ready", ref } : x))),

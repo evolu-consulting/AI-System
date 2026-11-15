@@ -2,6 +2,7 @@
 import type { ConversationDetail, Message } from "@ai/contracts/pack-contracts";
 
 type Conv = Pick<ConversationDetail, "kind" | "my_role" | "peer">;
+type PartnerView = Pick<ConversationDetail, "kind" | "read_only" | "peer">;
 
 /** Đổi tên, thêm người: chủ nhóm; 1-1 cố định. */
 export const canManage = (c: Pick<Conv, "kind" | "my_role">): boolean =>
@@ -19,3 +20,12 @@ export const canRevoke = (m: Pick<Message, "sender_id" | "deleted">, myId: strin
 /** 1-1 mà người kia đã khoá ⇒ khoá ô gửi. */
 export const composerLocked = (c: Pick<Conv, "kind" | "peer">): boolean =>
   c.kind === "direct" && c.peer !== null && !c.peer.active;
+
+/**
+ * CR-169 · cuộc `partner` chỉ đọc: `peerGone` = người kia không còn dùng Sổ Hợp Tác (còn kết nối); `disconnected` = hai công ty đã ngắt.
+ * Không chỉ đọc ⇒ null. Server là nơi quyết định (`read_only`); đây chỉ chọn câu giải thích.
+ */
+export function readOnlyReason(c: PartnerView): "disconnected" | "peerGone" | null {
+  if (c.kind !== "partner" || !c.read_only) return null;
+  return c.peer && !c.peer.active ? "peerGone" : "disconnected";
+}

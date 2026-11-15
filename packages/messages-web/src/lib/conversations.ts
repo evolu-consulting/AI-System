@@ -31,13 +31,21 @@ export const sortConversations = (items: readonly ConversationSummary[]): Conver
 export const convTitle = (c: Pick<ConversationSummary, "kind" | "title" | "peer">): string =>
   c.kind === "group" ? (c.title ?? "") : (c.peer?.name ?? "");
 
-/** Lọc theo tên người/nhóm, không phân biệt hoa thường và dấu. */
+/** CR-169 · nhãn phụ cuộc `partner`: «Chức vụ · Công ty» (thiếu phần nào bỏ phần đó); nội bộ ⇒ "". */
+export function partnerSubtitle(c: Pick<ConversationSummary, "kind" | "peer" | "company">): string {
+  if (c.kind !== "partner") return "";
+  return [c.peer?.job_title, c.company?.name].filter(Boolean).join(" · ");
+}
+
+/** Lọc theo tên người/nhóm (và chức vụ, tên công ty của cuộc `partner`), không phân biệt hoa thường và dấu. */
 export function filterConversations(
   items: readonly ConversationSummary[],
   q: string,
 ): ConversationSummary[] {
   const needle = foldText(q.trim());
-  return needle ? items.filter((c) => foldText(convTitle(c)).includes(needle)) : [...items];
+  return needle
+    ? items.filter((c) => foldText(`${convTitle(c)} ${partnerSubtitle(c)}`).includes(needle))
+    : [...items];
 }
 
 export type PreviewKind = "deleted" | "files" | "mine" | "other" | "none";
@@ -53,8 +61,8 @@ export function previewOf(
   const mine = m.sender_id === myId;
   return {
     kind: mine ? "mine" : "other",
-    // 1-1: tin của người kia không cần ghi tên; nhóm thì ghi.
-    who: mine || c.kind === "direct" ? "" : m.sender_name,
+    // 1-1 (nội bộ hoặc partner): tin của người kia không cần ghi tên; nhóm thì ghi.
+    who: mine || c.kind !== "group" ? "" : m.sender_name,
     text: m.preview,
   };
 }
@@ -165,7 +173,7 @@ export function senderNameFrom(
   senderId: string,
 ): string {
   const c = flattenList(list).find((x) => x.id === convId);
-  if (c?.kind === "direct") return c.peer?.name ?? "";
+  if (c && c.kind !== "group") return c.peer?.name ?? "";
   const fromMember = members?.find((m) => m.user_id === senderId)?.name;
   if (fromMember) return fromMember;
   return c?.last_message?.sender_id === senderId ? c.last_message.sender_name : "";

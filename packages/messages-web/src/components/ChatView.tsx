@@ -10,7 +10,7 @@ import { msgKeys } from "../api";
 import { useConversation, useMarkRead, useMessages, useOutbox, useRevoke } from "../hooks/use-chat";
 import { usePersonCards } from "../hooks/use-person-cards";
 import { IconChevronLeft } from "../icons";
-import { convTitle } from "../lib/conversations";
+import { convTitle, partnerSubtitle } from "../lib/conversations";
 import { errorKey, isGone } from "../lib/errors";
 import { lastMineSeq, seenCount } from "../lib/message-pages";
 import { composerLocked } from "../lib/perms";
@@ -18,6 +18,7 @@ import { cn, confirmDialog, Skeleton } from "../ui";
 import { GroupMembersSheet } from "./GroupMembersSheet";
 import { MessageComposer } from "./MessageComposer";
 import { MessageList } from "./MessageList";
+import { ReadOnlyNotice } from "./ReadOnlyNotice";
 
 export type ChatViewProps = {
   conversationId: string;
@@ -70,6 +71,7 @@ function ChatError({
 
 function ChatHeader({
   title,
+  subtitle,
   members,
   onBack,
   backClass,
@@ -77,6 +79,8 @@ function ChatHeader({
   onMembers,
 }: {
   title: string;
+  /** CR-169 · cuộc `partner`: «Chức vụ · Công ty». */
+  subtitle: string;
   members: number | null;
   onBack?: () => void;
   backClass?: string;
@@ -106,12 +110,16 @@ function ChatHeader({
           <IconChevronLeft width={18} height={18} />
         </button>
       )}
-      <h2
-        className="m-0 min-w-0 flex-1 truncate text-[14.5px] font-semibold"
-        data-testid="chat-title"
-      >
-        {title}
-      </h2>
+      <div className="min-w-0 flex-1">
+        <h2 className="m-0 truncate text-[14.5px] font-semibold" data-testid="chat-title">
+          {title}
+        </h2>
+        {subtitle && (
+          <p className="m-0 truncate text-micro text-dim" data-testid="chat-company">
+            {subtitle}
+          </p>
+        )}
+      </div>
       {members !== null && (
         <button type="button" className="btn btn-sm" onClick={onMembers} data-testid="chat-members">
           {t("contracts.messages.members", { n: members })}
@@ -200,6 +208,19 @@ function ChatBody({
   );
 }
 
+/** Chân khung: ô soạn; cuộc `partner` chỉ đọc ⇒ câu giải thích thay ô soạn (CR-169). */
+function ChatFooter({ d, onSend }: { d: ConversationDetail; onSend: Box["send"] }) {
+  const { t } = useTranslation();
+  if (d.kind === "partner" && d.read_only) return <ReadOnlyNotice d={d} />;
+  return (
+    <MessageComposer
+      conversationId={d.id}
+      onSend={onSend}
+      lockedReason={composerLocked(d) ? t("contracts.messages.peerGone") : null}
+    />
+  );
+}
+
 export function ChatView({ conversationId: id, myId, onBack, compact, backClass }: ChatViewProps) {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -231,6 +252,7 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
     >
       <ChatHeader
         title={d ? convTitle(d) : ""}
+        subtitle={d ? partnerSubtitle(d) : ""}
         members={d?.kind === "group" ? d.member_count : null}
         onBack={onBack}
         backClass={backClass}
@@ -238,13 +260,7 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
         onMembers={() => setSheet(true)}
       />
       <ChatBody d={d} msgs={msgs} box={box} myId={myId} />
-      {d && (
-        <MessageComposer
-          conversationId={id}
-          onSend={box.send}
-          lockedReason={composerLocked(d) ? t("contracts.messages.peerGone") : null}
-        />
-      )}
+      {d && <ChatFooter d={d} onSend={box.send} />}
       {d?.kind === "group" && (
         <GroupMembersSheet
           open={sheet}

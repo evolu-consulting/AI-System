@@ -1,28 +1,30 @@
-// CR-132 · W2 · danh sách hội thoại (trình bày, không gọi mạng — dùng chung toàn màn và khoang hẹp ở W3): ô lọc, nút «Nhắn tin mới».
-// CR-148: «Thành viên» chia nhóm theo phòng ban (thu gọn/mở, nhớ trong phiên; không phòng ⇒ «Chưa có phòng»), mọi phần tải dần 30/lần.
-// CR-132b: hai mục «Nhóm» (nhóm mình ở trong) và «Thành viên» (đồng nghiệp cùng công ty; có 1-1 thì mang xem trước/chưa đọc, chưa có thì bấm là mở).
-// Trạng thái: đang tải · lỗi · rỗng · không khớp.
+// CR-132 · W2 · danh sách hội thoại (trình bày, không gọi mạng — dùng chung toàn màn và khoang hẹp ở W3): thanh lọc công ty, ô tìm, «Nhắn tin mới».
+// CR-169 · lát 6 · «Tất cả» và «<công ty khác>»: cuộc gần đây (mới nhất trước, tải dần) + khi tìm có mục «Người»; «<Công ty mình>»: danh bạ nội bộ
+// theo phòng ban (CR-148). Lọc một công ty ⇒ nút «Bảng tin <Công ty>». Trạng thái: đang tải · lỗi · rỗng · không khớp.
 
-import type { ConversationSummary } from "@ai/contracts/pack-contracts";
+import type { ConversationSummary, MsgCompany, MsgPerson } from "@ai/contracts/pack-contracts";
 import type { PersonCard } from "@ai/contracts/people";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
-import { useState } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { readCollapsed, toggleCollapsed, writeCollapsed } from "../lib/collapse";
-import { buildDirectory, type DeptSection, type Directory } from "../lib/directory";
-import type { Person } from "../lib/people";
+import { type CompanyFilter, isCompanyFilter } from "../lib/company-filter";
+import { filterConversations } from "../lib/conversations";
+import { buildDirectory } from "../lib/directory";
 import { Skeleton } from "../ui";
 import { ConversationRow } from "./ConversationRow";
+import { DirectorySections } from "./DirectorySections";
 import { LoadSentinel } from "./LoadSentinel";
+import { PeopleSearch } from "./PeopleSearch";
 
 export type ConversationListProps = {
   items: readonly ConversationSummary[];
-  people: readonly Person[];
-  /** Thẻ người đã đọc theo lô (avatar, phòng ban). */
+  people: readonly MsgPerson[];
+  /** Thẻ người đã đọc theo lô (avatar, phòng ban) — chỉ đồng nghiệp cùng công ty. */
   cards: ReadonlyMap<string, PersonCard>;
   /** Ô tìm do cha giữ (lọc ở server cho danh bạ). */
   q: string;
   onQ: (q: string) => void;
+  peopleStatus: "loading" | "error" | "ready";
   peopleHasMore: boolean;
   peopleLoadingMore: boolean;
   onMorePeople: () => void;
@@ -33,118 +35,118 @@ export type ConversationListProps = {
   loadingMore: boolean;
   /** Người đang được mở 1-1 (khoá dòng trong lúc tạo). */
   openingId: string | null;
+  filter: CompanyFilter;
+  /** Thanh chip lọc công ty (do cha nối dữ liệu). */
+  filterBar: ReactNode;
+  /** Công ty đang lọc (để nói trong câu rỗng, nút «Bảng tin»). */
+  company: MsgCompany | null;
+  onFeed: () => void;
   onSelect: (id: string) => void;
-  onPickPerson: (userId: string) => void;
+  onPickPerson: (userId: string, company?: MsgCompany) => void;
   onNew: () => void;
   onMore: () => void;
   onRetry: () => void;
 };
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <section aria-label={label}>
-      <h3 className="m-0 px-4 pb-1 pt-3 text-micro font-semibold uppercase tracking-wide text-dim">
-        {label}
-      </h3>
-      {children}
-    </section>
-  );
-}
-
-/** Một phòng ban: tiêu đề bấm thu gọn/mở (aria-expanded), đếm người đã tải. */
-function DeptGroup({
-  s,
+function RecentRows({
   p,
-  open,
-  onToggle,
+  rows,
 }: {
-  s: DeptSection;
   p: ConversationListProps;
-  open: boolean;
-  onToggle: () => void;
+  rows: readonly ConversationSummary[];
 }) {
-  const { t } = useTranslation();
-  const name = s.name ?? t("contracts.messages.noDept");
   return (
-    <div data-testid="dept-group" data-dept={s.key}>
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={onToggle}
-        className="flex w-full items-center gap-2 px-4 py-1.5 text-left text-label font-semibold text-dim hover:bg-sunk focus-visible:bg-sunk focus-visible:outline-none"
-      >
-        <span aria-hidden>{open ? "▾" : "▸"}</span>
-        <span className="min-w-0 flex-1 truncate">{name}</span>
-        <span className="shrink-0 font-normal">{s.rows.length}</span>
-      </button>
-      {open && (
-        <ul className="m-0 list-none p-0">
-          {s.rows.map(({ person, conv }) => (
-            <ConversationRow
-              key={person.id}
-              c={conv}
-              name={person.name}
-              myId={p.myId}
-              card={p.cards.get(conv?.peer?.id ?? person.id)}
-              active={conv !== null && conv.id === p.activeId}
-              busy={p.openingId === person.id}
-              onOpen={() => (conv ? p.onSelect(conv.id) : p.onPickPerson(person.id))}
-            />
-          ))}
-        </ul>
-      )}
-    </div>
+    <ul className="m-0 list-none p-0" data-testid="recent-list">
+      {rows.map((c) => (
+        <ConversationRow
+          key={c.id}
+          c={c}
+          myId={p.myId}
+          card={c.kind === "direct" ? p.cards.get(c.peer?.id ?? "") : undefined}
+          active={c.id === p.activeId}
+          onOpen={() => p.onSelect(c.id)}
+        />
+      ))}
+    </ul>
   );
 }
 
-function DirectorySections({ p, dir }: { p: ConversationListProps; dir: Directory }) {
+/** «Tất cả» / công ty khác: cuộc gần đây; có chữ tìm ⇒ cuộc khớp + mục «Người» (chưa có cuộc). */
+function RecentView({ p, newBtn }: { p: ConversationListProps; newBtn: ReactNode }) {
   const { t } = useTranslation();
-  const [collapsed, setCollapsed] = useState(() => readCollapsed());
-  const toggle = (key: string) =>
-    setCollapsed((c) => {
-      const n = toggleCollapsed(c, key);
-      writeCollapsed(n);
-      return n;
-    });
+  const searching = p.q.trim() !== "";
+  const rows = filterConversations(p.items, p.q);
+  const have = new Set(p.items.flatMap((c) => (c.peer ? [c.peer.id] : [])));
+  const fresh = p.people.filter((x) => !have.has(x.id) && x.id !== p.myId);
+  if (!searching && rows.length === 0)
+    return (
+      <EmptyState
+        kind="empty"
+        testId="conv-empty"
+        title={
+          p.company
+            ? t("contracts.messages.emptyCompany", { company: p.company.name })
+            : t("contracts.messages.emptyList")
+        }
+        hint={p.company ? undefined : t("contracts.messages.emptyListHint")}
+        action={newBtn}
+      />
+    );
+  const nothing =
+    searching && rows.length === 0 && fresh.length === 0 && p.peopleStatus === "ready";
   return (
     <>
-      <Section label={t("contracts.messages.groups")}>
-        <ul className="m-0 list-none p-0">
-          {dir.groups.length === 0 ? (
-            <li className="px-4 py-2 text-label text-dim">{t("contracts.messages.groupsEmpty")}</li>
-          ) : (
-            dir.groups.map((c) => (
-              <ConversationRow
-                key={c.id}
-                c={c}
-                myId={p.myId}
-                active={c.id === p.activeId}
-                onOpen={() => p.onSelect(c.id)}
-              />
-            ))
-          )}
-        </ul>
-        {p.hasMore && <LoadSentinel loading={p.loadingMore} onMore={p.onMore} />}
-      </Section>
-      <Section label={t("contracts.messages.membersSection")}>
-        {dir.sections.map((s) => (
-          <DeptGroup
-            key={s.key}
-            s={s}
-            p={p}
-            open={!collapsed.has(s.key) || p.q.trim() !== ""}
-            onToggle={() => toggle(s.key)}
-          />
-        ))}
-        {p.peopleHasMore && <LoadSentinel loading={p.peopleLoadingMore} onMore={p.onMorePeople} />}
-      </Section>
+      {rows.length > 0 && <RecentRows p={p} rows={rows} />}
+      {!searching && p.hasMore && <LoadSentinel loading={p.loadingMore} onMore={p.onMore} />}
+      {searching && (
+        <PeopleSearch
+          people={fresh}
+          status={p.peopleStatus}
+          hasMore={p.peopleHasMore}
+          loadingMore={p.peopleLoadingMore}
+          openingId={p.openingId}
+          onPick={(x) => p.onPickPerson(x.id, x.company)}
+          onMore={p.onMorePeople}
+          onRetry={p.onRetry}
+        />
+      )}
+      {nothing && (
+        <EmptyState
+          kind="search"
+          title={t("contracts.messages.noMatch")}
+          hint={t("contracts.messages.noMatchHint")}
+        />
+      )}
     </>
   );
 }
 
-export function ConversationList(p: ConversationListProps) {
+function OwnView({ p, newBtn }: { p: ConversationListProps; newBtn: ReactNode }) {
   const { t } = useTranslation();
   const dir = buildDirectory(p.items, p.people, p.q, (id) => p.cards.get(id)?.department);
+  if (p.items.length === 0 && p.people.length === 0 && p.q.trim() === "")
+    return (
+      <EmptyState
+        kind="empty"
+        testId="conv-empty"
+        title={t("contracts.messages.emptyList")}
+        hint={t("contracts.messages.emptyListHint")}
+        action={newBtn}
+      />
+    );
+  if (dir.groups.length === 0 && dir.sections.length === 0)
+    return (
+      <EmptyState
+        kind="search"
+        title={t("contracts.messages.noMatch")}
+        hint={t("contracts.messages.noMatchHint")}
+      />
+    );
+  return <DirectorySections p={p} dir={dir} />;
+}
+
+export function ConversationList(p: ConversationListProps) {
+  const { t } = useTranslation();
   const newBtn = (
     <button type="button" onClick={p.onNew} className="btn btn-primary btn-sm">
       {t("contracts.messages.newChat")}
@@ -152,7 +154,7 @@ export function ConversationList(p: ConversationListProps) {
   );
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="conv-list">
-      <div className="flex shrink-0 items-center gap-2 px-3 py-3">
+      <div className="flex shrink-0 items-center gap-2 px-3 pt-3 pb-2">
         <input
           type="search"
           value={p.q}
@@ -163,6 +165,19 @@ export function ConversationList(p: ConversationListProps) {
         />
         {newBtn}
       </div>
+      {p.filterBar}
+      {p.company && isCompanyFilter(p.filter) && (
+        <div className="shrink-0 px-3 pb-2">
+          <button
+            type="button"
+            data-testid="open-feed"
+            onClick={p.onFeed}
+            className="btn btn-sm w-full justify-start truncate"
+          >
+            {t("contracts.messages.feed.open", { company: p.company.name })}
+          </button>
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {p.status === "loading" ? (
           <div className="space-y-3 p-4">
@@ -180,22 +195,10 @@ export function ConversationList(p: ConversationListProps) {
               </button>
             }
           />
-        ) : p.items.length === 0 && p.people.length === 0 && p.q.trim() === "" ? (
-          <EmptyState
-            kind="empty"
-            testId="conv-empty"
-            title={t("contracts.messages.emptyList")}
-            hint={t("contracts.messages.emptyListHint")}
-            action={newBtn}
-          />
-        ) : dir.groups.length === 0 && dir.sections.length === 0 ? (
-          <EmptyState
-            kind="search"
-            title={t("contracts.messages.noMatch")}
-            hint={t("contracts.messages.noMatchHint")}
-          />
+        ) : p.filter === "own" ? (
+          <OwnView p={p} newBtn={newBtn} />
         ) : (
-          <DirectorySections p={p} dir={dir} />
+          <RecentView p={p} newBtn={newBtn} />
         )}
       </div>
     </div>

@@ -7,15 +7,23 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { createConversation, fetchConversations, fetchPeople, msgKeys } from "../api";
+import {
+  createConversation,
+  fetchCompanies,
+  fetchConversations,
+  fetchPeople,
+  msgKeys,
+} from "../api";
+import type { CompanyFilter } from "../lib/company-filter";
 import { flattenList, type ListPages, sortConversations } from "../lib/conversations";
 import { useMsgRealtime } from "./use-unread";
 
-export function useConversations() {
+/** Danh sách cuộc (mới nhất trước), tải dần; `filter` = «Tất cả» / công ty mình / một công ty đã kết nối. */
+export function useConversations(filter: CompanyFilter = "all") {
   useMsgRealtime();
   const q = useInfiniteQuery({
-    queryKey: msgKeys.list,
-    queryFn: ({ pageParam, signal }) => fetchConversations(pageParam, signal),
+    queryKey: msgKeys.listBy(filter),
+    queryFn: ({ pageParam, signal }) => fetchConversations(pageParam, filter, signal),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.next_cursor,
     staleTime: 30_000,
@@ -29,16 +37,31 @@ export function useConversations() {
 }
 
 /** Danh bạ nội bộ TẢI DẦN 30/lần (theo phòng ban rồi tên); `q` lọc ở server. Bật khi mở hộp «Nhắn tin mới» / «Thêm người» hoặc cột trái. */
-export function usePeople(enabled: boolean, q = "") {
+export function usePeople(enabled: boolean, q = "", filter: CompanyFilter = "own") {
   const r = useInfiniteQuery({
-    queryKey: msgKeys.people(q),
-    queryFn: ({ pageParam, signal }) => fetchPeople(pageParam, q, signal),
+    queryKey: msgKeys.people(q, filter),
+    queryFn: ({ pageParam, signal }) => fetchPeople(pageParam, q, signal, filter),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.next_cursor,
     enabled,
     staleTime: 5 * 60_000,
     retry: false,
     placeholderData: keepPreviousData,
+  });
+  const items = useMemo(() => r.data?.pages.flatMap((p) => p.items) ?? [], [r.data]);
+  return { ...r, items };
+}
+
+/** Công ty đã kết nối (chip lọc, «Công ty khác»), tải dần 30/lần; làm mới khi `cc.link` (kết nối/ngắt). */
+export function useCompanies(enabled = true) {
+  const r = useInfiniteQuery({
+    queryKey: msgKeys.companies,
+    queryFn: ({ pageParam, signal }) => fetchCompanies(pageParam, signal),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.next_cursor,
+    enabled,
+    staleTime: 60_000,
+    retry: false,
   });
   const items = useMemo(() => r.data?.pages.flatMap((p) => p.items) ?? [], [r.data]);
   return { ...r, items };

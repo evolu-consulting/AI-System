@@ -44,10 +44,9 @@ export function ConnectedPanel() {
           >
             <span className="min-w-0 flex-1 basis-56 truncate font-semibold">{l.legal_name}</span>
             <ConnectStatusBadge status="connected" />
-            {/* Spec §8: `/messages?company=<id>`. Route thật là `/contracts/messages`; lọc theo công ty do lát 6 nhận `company`. */}
             <Link
               to="/contracts/messages"
-              search={{ company: l.tenant_id } as never}
+              search={{ company: l.tenant_id }}
               className={btnClass("outline", "sm")}
             >
               {t("contracts.connect.message")}

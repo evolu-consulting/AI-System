@@ -45,6 +45,8 @@ export type MessagesHost = {
   myId: () => string | undefined;
   /** Hook (gọi như hook React): khoá phạm vi `tenant:user` ("" khi chưa đăng nhập). */
   useScope: () => string;
+  /** Hook: công ty của người dùng (chip «<Tên công ty mình>», nhận diện nhắn nội bộ hay `partner`); chưa đăng nhập ⇒ null. */
+  useOwnCompany: () => { id: string; name: string } | null;
   ui: MessagesUi;
 };
 

@@ -16,7 +16,6 @@ import {
   applyNewToList,
   bumpTotal,
   clearUnread,
-  type ListPages,
   senderNameFrom,
   unreadOf,
 } from "../lib/conversations";
@@ -27,6 +26,7 @@ import {
   type MsgPages,
 } from "../lib/message-pages";
 import { createViewing } from "../lib/viewing";
+import { mergedList, patchLists } from "./list-cache";
 
 const viewing = createViewing();
 /** Khung chat mở / đóng hội thoại `id` (đóng chỉ xoá khi vẫn là `id`): tin tới khi đang xem không cộng chưa đọc. */
@@ -69,15 +69,17 @@ function onNew(qc: QueryClient, f: StreamFrame): void {
   );
   const mine = m.sender_id === myId;
   const viewingNow = isViewing(d.conversation_id);
-  const list = qc.getQueryData<ListPages>(msgKeys.list);
+  const merged = mergedList(qc);
   const detail = qc.getQueryData<ConversationDetail>(msgKeys.detail(d.conversation_id));
-  const name = senderNameFrom(list, detail?.members, d.conversation_id, m.sender_id);
-  const res = list
-    ? applyNewToList(list, m, { myId, viewing: viewingNow, senderName: mine ? "" : name })
-    : null;
-  if (res?.known) qc.setQueryData(msgKeys.list, res.data);
+  const name = senderNameFrom(merged, detail?.members, d.conversation_id, m.sender_id);
+  let known = false;
+  patchLists(qc, (l) => {
+    const res = applyNewToList(l, m, { myId, viewing: viewingNow, senderName: mine ? "" : name });
+    known ||= res.known;
+    return res.data;
+  });
   // Hội thoại mới (chưa có trong cache) hoặc nhóm chưa biết tên người gửi ⇒ tải lại danh sách, GỘP (tên lấy từ dữ liệu có sẵn trước).
-  if (!res?.known || (!mine && !name)) scheduleListRefresh(qc);
+  if (!known || (!mine && !name)) scheduleListRefresh(qc);
   if (!mine && !viewingNow)
     qc.setQueryData<{ total: number }>(msgKeys.unread, (u) =>
       u ? { total: bumpTotal(u.total, 1) } : u,
@@ -90,7 +92,7 @@ function onRead(qc: QueryClient, f: StreamFrame): void {
   if (!d || !myId) return;
   if (d.user_id === myId) {
     // Tab khác của mình đã đọc ⇒ xoá chấm; tổng lấy lại (đúng hơn tự trừ).
-    qc.setQueryData<ListPages>(msgKeys.list, (l) => (l ? clearUnread(l, d.conversation_id) : l));
+    patchLists(qc, (l) => clearUnread(l, d.conversation_id));
     void qc.invalidateQueries({ queryKey: msgKeys.unread });
     return;
   }
@@ -104,11 +106,8 @@ function onDeleted(qc: QueryClient, f: StreamFrame): void {
   if (!d) return;
   qc.setQueryData<MsgPages>(msgKeys.msgs(d.conversation_id), (o) => applyDeleted(o, d.seq));
   // Tin bị thu hồi có thể là tin chưa đọc của mình ⇒ số chưa đọc của hội thoại đổi (client không biết mốc đọc) ⇒ tải lại danh sách gộp.
-  if (unreadOf(qc.getQueryData<ListPages>(msgKeys.list), d.conversation_id) > 0)
-    scheduleListRefresh(qc);
-  qc.setQueryData<ListPages>(msgKeys.list, (l) =>
-    l ? applyDeletedToList(l, d.conversation_id, d.seq) : l,
-  );
+  if (unreadOf(mergedList(qc), d.conversation_id) > 0) scheduleListRefresh(qc);
+  patchLists(qc, (l) => applyDeletedToList(l, d.conversation_id, d.seq));
   void qc.invalidateQueries({ queryKey: msgKeys.unread });
 }
 
@@ -117,6 +116,14 @@ function onConversation(qc: QueryClient, f: StreamFrame): void {
   if (!d) return;
   void qc.invalidateQueries({ queryKey: msgKeys.list });
   void qc.invalidateQueries({ queryKey: msgKeys.detail(d.conversation_id) });
+  void qc.invalidateQueries({ queryKey: msgKeys.unread });
+}
+
+/** `cc.link` (kết nối/ngắt giữa hai công ty): chip công ty, danh sách và khung chat (`read_only`) đổi theo. */
+function onLink(qc: QueryClient): void {
+  void qc.invalidateQueries({ queryKey: msgKeys.companies });
+  void qc.invalidateQueries({ queryKey: msgKeys.list });
+  void qc.invalidateQueries({ queryKey: ["messages", "detail"] });
   void qc.invalidateQueries({ queryKey: msgKeys.unread });
 }
 
@@ -132,6 +139,7 @@ export function retain(qc: QueryClient): () => void {
       messagesHost().subscribe("msg.read", (f) => onRead(qc, f)),
       messagesHost().subscribe("msg.deleted", (f) => onDeleted(qc, f)),
       messagesHost().subscribe("msg.conversation", (f) => onConversation(qc, f)),
+      messagesHost().subscribe("cc.link", () => onLink(qc)),
     ];
     stop = () => {
       for (const off of offs) off();

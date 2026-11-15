@@ -1,9 +1,11 @@
 // CR-132 · W2 · chọn người nội bộ (dùng cho «Nhắn tin mới» và «Thêm người»): ô tìm + danh sách tích chọn; nói rõ khi đang tải / lỗi / rỗng.
 
+import type { MsgPerson } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePeople } from "../hooks/use-conversations";
 import { useDebounced } from "../hooks/use-debounced";
+import type { CompanyFilter } from "../lib/company-filter";
 import { filterPeople } from "../lib/people";
 import { Skeleton } from "../ui";
 import { LoadSentinel } from "./LoadSentinel";
@@ -13,21 +15,25 @@ export function PeoplePicker({
   selected,
   onToggle,
   disabledIds = [],
+  company = "own",
 }: {
   /** Chỉ tải danh bạ khi hộp đang mở. */
   enabled: boolean;
   selected: ReadonlySet<string>;
-  onToggle: (id: string) => void;
+  onToggle: (id: string, person: MsgPerson) => void;
   disabledIds?: readonly string[];
+  /** CR-169 · `own` (mặc định, đồng nghiệp) hoặc id công ty đã kết nối (người của công ty đó: tên · chức vụ). */
+  company?: CompanyFilter;
 }) {
   const { t } = useTranslation();
   const [q, setQ] = useState("");
   const dq = useDebounced(q.trim(), 250);
   // CR-148 · tải dần 30/lần; `q` lọc ở server, cuộn tới cuối (hoặc «Xem thêm») tải trang kế.
-  const res = usePeople(enabled, dq);
+  const res = usePeople(enabled, dq, company);
   const people = res.items;
   const status = res.isPending ? "loading" : res.isError ? "error" : "ready";
-  const shown = filterPeople(people, q, disabledIds);
+  const shown = filterPeople(people, company === "own" ? q : "", disabledIds);
+  const byId = new Map(people.map((x) => [x.id, x]));
   return (
     <div className="min-w-0">
       <input
@@ -60,10 +66,20 @@ export function PeoplePicker({
                   <input
                     type="checkbox"
                     checked={selected.has(p.id)}
-                    onChange={() => onToggle(p.id)}
+                    onChange={() => {
+                      const full = byId.get(p.id);
+                      if (full) onToggle(p.id, full);
+                    }}
                     className="h-4 w-4"
                   />
-                  <span className="min-w-0 flex-1 truncate text-[13.5px]">{p.name}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13.5px]">{p.name}</span>
+                    {company !== "own" && byId.get(p.id)?.job_title && (
+                      <span className="block truncate text-micro text-dim">
+                        {byId.get(p.id)?.job_title}
+                      </span>
+                    )}
+                  </span>
                 </label>
               </li>
             ))}

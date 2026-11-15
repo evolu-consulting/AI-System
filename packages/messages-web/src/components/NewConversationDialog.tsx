@@ -1,8 +1,8 @@
 // CR-132 · W2 · «Nhắn tin mới»: chọn 1 người ⇒ mở 1-1; chọn ≥ 2 ⇒ hiện «Tên nhóm» (bắt buộc) + «Tạo nhóm».
-import { MSG_GROUP_MAX, MSG_TITLE_MAX } from "@ai/contracts/pack-contracts";
+import { MSG_GROUP_MAX, MSG_TITLE_MAX, type MsgPerson } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useCreateConversation } from "../hooks/use-conversations";
+import { useCompanies, useCreateConversation } from "../hooks/use-conversations";
 import { errorKey } from "../lib/errors";
 import { pickMode } from "../lib/people";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui";
@@ -37,14 +37,64 @@ function GroupNameField({
   );
 }
 
+/** CR-169 · «Người của công ty»: công ty mình (nhắn riêng/nhóm) hoặc một công ty đã kết nối (nhắn riêng 1 người). */
+function ScopeField({
+  value,
+  onChange,
+  ownId,
+  ownName,
+  enabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  ownId: string;
+  ownName: string;
+  enabled: boolean;
+}) {
+  const { t } = useTranslation();
+  const companies = useCompanies(enabled);
+  if (companies.items.length === 0 && !companies.hasNextPage) return null;
+  return (
+    <label className="grid gap-1 text-label">
+      <span className="font-medium">{t("contracts.messages.scopeLabel")}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        data-testid="new-conv-scope"
+        className="h-9 rounded-lg border border-field bg-panel px-2 text-[13.5px] outline-none focus-visible:border-act-line"
+      >
+        <option value="own">{ownName || ownId}</option>
+        {companies.items.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+      {companies.hasNextPage && (
+        <button
+          type="button"
+          className="justify-self-start text-label underline"
+          onClick={() => void companies.fetchNextPage()}
+        >
+          {t("contracts.messages.loadMore")}
+        </button>
+      )}
+    </label>
+  );
+}
+
 export function NewConversationDialog({
   open,
   myId,
+  ownId,
+  ownName,
   onClose,
   onOpened,
 }: {
   open: boolean;
   myId: string;
+  ownId: string;
+  ownName: string;
   onClose: () => void;
   /** Mở hội thoại vừa tạo / đã có. */
   onOpened: (id: string) => void;
@@ -54,28 +104,52 @@ export function NewConversationDialog({
   const [sel, setSel] = useState<ReadonlySet<string>>(new Set());
   const [title, setTitle] = useState("");
   const [touched, setTouched] = useState(false);
-  const mode = pickMode(sel.size);
+  const [scope, setScope] = useState("own");
+  const [pickedPerson, setPickedPerson] = useState<MsgPerson | null>(null);
+  const partner = scope !== "own";
+  const mode = partner ? (sel.size > 0 ? "direct" : "none") : pickMode(sel.size);
   const nameMissing = mode === "group" && title.trim() === "";
   const reset = () => {
     setSel(new Set());
     setTitle("");
     setTouched(false);
+    setScope("own");
+    setPickedPerson(null);
     create.reset();
   };
-  const toggle = (id: string) =>
+  const changeScope = (v: string) => {
+    setScope(v);
+    setSel(new Set());
+    setPickedPerson(null);
+    create.reset();
+  };
+  const toggle = (id: string, person: MsgPerson) => {
+    if (partner) {
+      // Công ty khác: nhắn riêng 1 người, chọn người khác thì thay.
+      setSel((s) => (s.has(id) ? new Set() : new Set([id])));
+      setPickedPerson((p) => (p?.id === id ? null : person));
+      return;
+    }
     setSel((s) => {
       const n = new Set(s);
       if (!n.delete(id)) n.add(id);
       return n;
     });
+  };
   const submit = () => {
     setTouched(true);
     const ids = [...sel];
     if (mode === "none" || mode === "full" || nameMissing || create.isPending) return;
     const body =
-      mode === "direct" && ids[0]
-        ? ({ kind: "direct", user_id: ids[0] } as const)
-        : ({ kind: "group", title: title.trim(), member_ids: ids } as const);
+      partner && pickedPerson
+        ? ({
+            kind: "partner",
+            tenant_id: pickedPerson.company.id,
+            user_id: pickedPerson.id,
+          } as const)
+        : mode === "direct" && ids[0]
+          ? ({ kind: "direct", user_id: ids[0] } as const)
+          : ({ kind: "group", title: title.trim(), member_ids: ids } as const);
     create.mutate(body, {
       onSuccess: (d) => {
         reset();
@@ -101,9 +175,25 @@ export function NewConversationDialog({
       <DialogContent data-testid="new-conv-dialog">
         <DialogHeader>
           <DialogTitle>{t("contracts.messages.newTitle")}</DialogTitle>
-          <DialogDescription>{t("contracts.messages.pickHint")}</DialogDescription>
+          <DialogDescription>
+            {partner ? t("contracts.messages.pickHintPartner") : t("contracts.messages.pickHint")}
+          </DialogDescription>
         </DialogHeader>
-        <PeoplePicker enabled={open} selected={sel} onToggle={toggle} disabledIds={[myId]} />
+        <ScopeField
+          value={scope}
+          onChange={changeScope}
+          ownId={ownId}
+          ownName={ownName}
+          enabled={open}
+        />
+        <PeoplePicker
+          key={scope}
+          enabled={open}
+          selected={sel}
+          onToggle={toggle}
+          disabledIds={[myId]}
+          company={scope}
+        />
         {sel.size > 0 && (
           <p className="m-0 text-label text-dim">
             {t("contracts.messages.selectedN", { n: sel.size })}

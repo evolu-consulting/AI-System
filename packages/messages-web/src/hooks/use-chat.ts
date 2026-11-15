@@ -16,7 +16,7 @@ import {
   revokeMessage,
   sendMessage,
 } from "../api";
-import { applyNewToList, clearUnread, type ListPages } from "../lib/conversations";
+import { applyNewToList, clearUnread } from "../lib/conversations";
 import { errorKey } from "../lib/errors";
 import {
   applyDeleted,
@@ -25,6 +25,7 @@ import {
   type MsgPages,
   nextBefore,
 } from "../lib/message-pages";
+import { patchLists } from "./list-cache";
 import { enterViewing, leaveViewing } from "./msg-realtime";
 import { useMsgRealtime } from "./use-unread";
 
@@ -73,10 +74,13 @@ export function useOutbox(id: string, myId: string) {
       sendMessage(id, { client_id: clientId, body, file_ids: fileIds })
         .then((m: Message) => {
           qc.setQueryData<MsgPages>(msgKeys.msgs(id), (old) => applyNewMessage(old, m));
-          const list = qc.getQueryData<ListPages>(msgKeys.list);
-          const r = list && applyNewToList(list, m, { myId, viewing: true, senderName: "" });
-          if (r?.known) qc.setQueryData(msgKeys.list, r.data);
-          else void qc.invalidateQueries({ queryKey: msgKeys.list });
+          let known = false;
+          patchLists(qc, (l) => {
+            const r = applyNewToList(l, m, { myId, viewing: true, senderName: "" });
+            known ||= r.known;
+            return r.data;
+          });
+          if (!known) void qc.invalidateQueries({ queryKey: msgKeys.list });
           setOut((o) => o.filter((x) => x.clientId !== clientId));
         })
         .catch((e: unknown) => {
@@ -137,7 +141,7 @@ export function useMarkRead(id: string, lastSeq: number | null, myId: string) {
       sent.current = lastSeq;
       markRead(id, lastSeq)
         .then((r) => {
-          qc.setQueryData<ListPages>(msgKeys.list, (l) => (l ? clearUnread(l, id) : l));
+          patchLists(qc, (l) => clearUnread(l, id));
           qc.setQueryData(msgKeys.unread, { total: r.unread_total });
           qc.setQueryData<ConversationDetail>(msgKeys.detail(id), (c) =>
             c

@@ -3,7 +3,7 @@
     "messages": {
       "title": "Messages",
       "unread": "{{n}} unread",
-      "search": "Search people or groups",
+      "search": "Search people by name or job title",
       "newChat": "New message",
       "groups": "Groups",
       "groupsEmpty": "You are not in any group yet. Press \"New message\" to create one.",
@@ -104,6 +104,42 @@
         "rate": "You are going too fast. Wait a few seconds and try again.",
         "load": "Cannot reach the server. Check your network and try again.",
         "generic": "Could not complete this. Try again in a few minutes; if it keeps failing, tell your company admin."
+      },
+      "peopleSection": "People",
+      "emptyCompany": "No chats with anyone at {{company}} yet. Search for a person to start.",
+      "scopeLabel": "People at",
+      "pickHintPartner": "Pick 1 person at this company to message directly.",
+      "stagedFiles": "Files to send",
+      "sentFiles": "Files in this message",
+      "filter": {
+        "label": "Filter by company",
+        "all": "All",
+        "other": "Other companies",
+        "search": "Search companies",
+        "none": "No matching company."
+      },
+      "feed": {
+        "open": "{{company}} board",
+        "title": "{{company}} board",
+        "hint": "Public posts from a company connected with you. View only.",
+        "empty": "{{company}} has no public posts yet.",
+        "error": "Could not load the board. Check your connection and press Retry.",
+        "files": "{{n}} files",
+        "sell": "Sell",
+        "buy": "Buy",
+        "note": "Note"
+      },
+      "readOnly": {
+        "disconnected": "{{company}} is no longer connected with your company. You can still read the old messages.",
+        "peerGone": "{{name}} no longer uses Contracts at {{company}}."
+      },
+      "attachUi": {
+        "prev": "Previous image",
+        "next": "Next image",
+        "close": "Close image",
+        "download": "Download",
+        "view": "View",
+        "failed": "Could not load the file. Try again later."
       }
     }
   }

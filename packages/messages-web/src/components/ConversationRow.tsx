@@ -4,7 +4,7 @@ import type { ConversationSummary } from "@ai/contracts/pack-contracts";
 import type { PersonCard } from "@ai/contracts/people";
 import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
 import { useTranslation } from "react-i18next";
-import { convTitle, isUnread, previewOf, unreadLabel } from "../lib/conversations";
+import { convTitle, isUnread, partnerSubtitle, previewOf, unreadLabel } from "../lib/conversations";
 import { listTime } from "../lib/format";
 import { cn } from "../ui";
 import { PersonTip, usePersonTip } from "./PersonTip";
@@ -52,6 +52,8 @@ export function ConversationRow({
   const n = c ? unreadLabel(c.unread) : null;
   const title = c ? convTitle(c) : (name ?? "");
   const isPerson = !c || c.kind === "direct";
+  // CR-169 · cuộc `partner`: nhãn phụ «Chức vụ · Công ty»; thẻ người (avatar/phòng ban) chỉ có cho đồng nghiệp cùng công ty.
+  const sub = c ? partnerSubtitle(c) : "";
   const tip = usePersonTip();
   const hv = isPerson ? tip.hover : {};
   return (
@@ -94,6 +96,11 @@ export function ConversationRow({
               </time>
             )}
           </span>
+          {sub && (
+            <span data-testid="conv-company" className="block truncate text-micro text-dim">
+              {sub}
+            </span>
+          )}
           <span
             className={cn(
               "flex items-center gap-2 text-label",

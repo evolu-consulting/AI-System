@@ -36,7 +36,7 @@ Viết tắt: `H` = `apps/hub-api/src/modules/packs/contracts`, `W` = `apps/work
 | 5a | `cr169-web-pkg-lib` | Sonnet | tạo `packages/messages-web`, chuyển `lib/`, `api.ts` (transport tiêm), `hooks/` + test; W gắn lại; hành vi không đổi | — | — | không | thường | `W/features/messages/**`, `packages/web-kit/src/notify/client.ts` | | [x] [test: packages/messages-web/src/lib/messages-lib.test.ts » CR-169 · chuyển gói]
 | 5a | `cr169-web-pkg-lib` | Sonnet | tạo `packages/messages-web`, chuyển `lib/`, `api.ts` (transport tiêm), `hooks/` + test; W gắn lại; hành vi không đổi | — | — | không | thường | `W/features/messages/**`, `packages/web-kit/src/notify/client.ts` |
 | 5b | `cr169-web-pkg-ui` | Sonnet | chuyển `components/`, i18n; W trang + khoang dùng gói; unit + j18/j19 vẫn chạy được (không chạy e2e) | 5a | — | không | thường | như 5a | | [x] [test: packages/messages-web/src/lib/errors.test.ts » CR-169 · chuyển gói]
-| 6 | `cr169-web-partner` | Sonnet | lọc công ty, tìm người tải dần, dòng/khung `partner`, chỉ đọc, Bảng tin công ty + unit lib | 1, 3b, 5b | — | không | thường | spec §8 |
+| 6 | `cr169-web-partner` | Sonnet | lọc công ty, tìm người tải dần, dòng/khung `partner`, chỉ đọc, Bảng tin công ty + unit lib | 1, 3b, 5b | — | không | thường | spec §8 | [x] [test: packages/messages-web/src/lib/partner-web.test.ts » CR-169 · bộ lọc công ty] [test: packages/messages-web/src/lib/partner-web.test.ts » CR-169 · cuộc partner trong danh sách] [test: packages/messages-web/src/lib/partner-web.test.ts » CR-169 · chỉ đọc sau ngắt] [test: packages/messages-web/src/lib/attach-view.test.ts » CR-169 · attach-view]
 | 7 | `cr169-web-partner-page` | Sonnet | trang đối tác 3 tab, bỏ «Thao tác», «Nhắn tin» ở khối kết nối, xoá UI trò chuyện + unit `partner-v2.test.ts` | 1 | — | không | thường | spec §8 hàng «Trang đối tác» | [x] [test: apps/workspace-web/src/features/partners/lib/partner-v2.test.ts » CR-169 · 3 tab] |
 | 8 | `cr169-chat-web` | Sonnet | chat-web mục «Tin nhắn» (gắn gói, badge, stream), ẩn khi không quyền SHT, không vào ngữ cảnh trợ lý + unit | 6 | — | không | thường | spec §7–8, P12; `CW/features/realtime/event-router.ts` |
 | 9 | `cr169-e2e` | Sonnet | fixture + e2e hành trình (chỉ viết; điều phối chạy cuối đợt) + sửa e2e CR-161 | 6, 7, 8 | — | không | thường | mục e2e dưới |
@@ -63,7 +63,7 @@ Fixture: NitiGroup (Tiên Toàn quyền, Vy nhân viên, Lan nhân viên), Presc
 | 6 | Purge công ty | cr169-purge | [x] |
 | 7 | Gói `messages-web` (lib/api/hooks) | cr169-web-pkg-lib | [ ] |
 | 8 | Gói `messages-web` (components) | cr169-web-pkg-ui | [ ] |
-| 9 | Web Tin nhắn với công ty kết nối | cr169-web-partner | [ ] |
+| 9 | Web Tin nhắn với công ty kết nối | cr169-web-partner | [x] |
 | 10 | Trang đối tác 3 tab | cr169-web-partner-page | [x] |
 | 11 | chat-web «Tin nhắn» | cr169-chat-web | [ ] |
 | 12 | e2e hành trình | cr169-e2e | [ ] |
@@ -89,6 +89,10 @@ Fixture: NitiGroup (Tiên Toàn quyền, Vy nhân viên, Lan nhân viên), Presc
 - (lát 2b) Minor 2a đã xử trong 0150 (`CREATE OR REPLACE pmsg_send`, không sửa 0149): gửi lặp cùng client_id kiểm sau FOR UPDATE, trước kiểm kết nối ⇒ sau ngắt vẫn trả tin cũ (created=false, notify rỗng); client_id mới ⇒ CC409. UPDATE gắn tệp lọc thêm tenant_id/user_id/seq IS NULL. Thứ tự khoá vẫn advisory → hàng thread; gửi bị từ chối vì ngắt nay cũng giữ FOR UPDATE ngắn.
 - (lát 2b) 0151 cấp lại cả hàm 0149 + 0150 cho hub_rw/contracts_rw (khối DO); pack 0118 cấp không điều kiện (kèm `cc_links`, vì hub 0149 DROP+CREATE). Cả ba đã vào `_journal.json` (hub idx 133/134, pack 114).
 - (lát 2b) Đã sửa `packages/db/src/migrate-hub.int.test.ts` (quyền hàm 0150 trên DB dựng sạch). Int chạy evotest: pmsg-files-db + pmsg-db + migrate-hub → 41 pass, 0 fail (1 lượt).
+- (lát 6) Mặc định «Tất cả» = cuộc gần đây (union, tải dần); danh bạ theo phòng ban (CR-148) chỉ còn ở chip «<Công ty mình>» ⇒ j18/j19 (mặc định thấy nhóm phòng ban) phải chọn chip công ty mình trước (lát 9). Ô tìm đổi chữ «Tìm người theo tên, chức vụ»; ô soạn dùng `AttachDraftList`, tệp trong tin dùng `AttachGallery` (testid mới `draft-list`/`draft-remove`, gallery của web-kit thay `msg-image`/`msg-file`/`composer-files`) ⇒ lát 9 chỉnh selector.
+- (lát 6) Loại cuộc theo id (`lib/kinds.ts`): `partner` đi `/messages/partner/:id/*`, nội bộ `/messages/conversations/:id/*`; id lạ (mở thẳng `?c=`) thử nội bộ rồi `partner` khi 404. Host gói thêm `useOwnCompany()` (chip «<Tên công ty mình>», chọn `direct`/`partner`) ⇒ lát 8 (chat-web) phải tiêm (`me.tenant`).
+- (lát 6) «Bảng tin <Công ty>» là hộp thoại mở từ nút đầu danh sách khi lọc một công ty (testid `open-feed`, `feed-dialog`, `feed-post`); `?company=` nhận uuid hoặc `own` (route `/contracts/messages`). Xoá `fetchPosts`/thread ở `partners/api.connect.ts` (3 lỗi kiểu hết). `use-cc-chat.ts`, `lib/cc-chat.ts`, phần chat ở `ConnectedPanel` đã gỡ từ lát 7.
+- (lát 6) workspace-web `bun test` còn 2 fail + 1 lỗi có sẵn, không dính lát (`use-flow-caps.test.ts:45`, `table.test.tsx:112`, `search-hint.test.ts`).
 
 ## Tranh chấp test
 

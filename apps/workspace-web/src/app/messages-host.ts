@@ -20,6 +20,10 @@ configureMessagesHost({
   subscribe: (event, handler, onReconnected) => meStream.subscribe(event, handler, onReconnected),
   myId: () => session.getState().me?.id,
   useScope: () => useSession((s) => (s.me ? `${s.me.tenant.id}:${s.me.id}` : "")),
+  useOwnCompany: () => {
+    const t = useSession((s) => s.me?.tenant);
+    return t ? { id: t.id, name: t.name } : null;
+  },
   ui: {
     cn,
     Skeleton,

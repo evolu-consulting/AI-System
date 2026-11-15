@@ -9,7 +9,14 @@ import { useTranslation } from "react-i18next";
 import { useSession } from "~/features/auth/hooks/use-session";
 import { cn } from "~/lib/utils";
 
-export function MessagesPage({ conversationId }: { conversationId: string | null }) {
+export function MessagesPage({
+  conversationId,
+  company,
+}: {
+  conversationId: string | null;
+  /** `?company=`: mở sẵn bộ lọc công ty (CR-169). */
+  company?: string | undefined;
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const myId = useSession((s) => s.me?.id) ?? "";
@@ -27,7 +34,7 @@ export function MessagesPage({ conversationId }: { conversationId: string | null
           conversationId && "max-md:hidden",
         )}
       >
-        <ConversationPane myId={myId} activeId={conversationId} onSelect={open} />
+        <ConversationPane myId={myId} activeId={conversationId} onSelect={open} company={company} />
       </aside>
       <div className={cn("min-w-0 flex-1", !conversationId && "max-md:hidden")}>
         {conversationId ? (
