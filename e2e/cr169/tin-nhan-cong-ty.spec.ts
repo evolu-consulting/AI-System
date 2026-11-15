@@ -279,6 +279,10 @@ test("CR169-J7 · Chat AI app: Hà vào mục «Tin nhắn» thấy cùng cuộc
   await page.getByRole("textbox", { name: "Tên đăng nhập" }).fill(WHO.ha);
   await page.getByLabel("Mật khẩu").fill(EB.pw);
   await page.getByRole("button", { name: "Đăng nhập" }).click();
+  // đăng nhập hạ cánh ở trang chủ cổng ứng dụng: vào Chat AI rồi chờ phiên xong (ô hỏi trợ lý hiện) mới tới thanh bên
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await page.goto(`${need("JA_CHAT_URL")}/c/new`);
+  await expect(page.getByRole("textbox", { name: "Tin nhắn", exact: true })).toBeVisible();
   await page.getByTestId("nav-messages").click();
   await rowOf(page, VY).click();
   await expect(msgOf(page, HELLO)).toBeVisible(); // cùng dữ liệu với Sổ Hợp Tác
