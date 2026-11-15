@@ -32,8 +32,9 @@ Viết tắt: `H` = `apps/hub-api/src/modules/packs/contracts`, `W` = `apps/work
 | 2b | `cr169-db-files` | Sonnet `high` | 0150 + 0151 + pack-contracts 0118 + int (tệp, danh bạ ∩ kết nối, role khác không EXECUTE — P12) | 2a | hub 0150, 0151; pc 0118 | **có** | cao | spec §5; `0148_cr161_cc_files_box_id.sql`, `kit/adapters/directory-page.ts`, `migrations-pack-contracts/0116_cr161_cc_grants.sql` |
 | 3a | `cr169-api-list` | Sonnet `high` | **đo trước** perf CR-132; danh sách union, unread, people/companies, create partner, `posts` guard, `cc_links` bỏ unread + int route + perf | 1, 2b | — | **có** (quyền) | cao | spec §4, §6; `messages.repo.ts`, `messages.perf.int.test.ts` |
 | 3b | `cr169-api-partner` | Sonnet `high` | `/messages/partner/:id/*` + tệp + stream + gỡ trò chuyện CR-161 + int + `pmsg.perf.int.test.ts` | 3a (chung `messages.routes.ts`/mount) | — | **có** | cao | spec §4, §7; `connect/adapters/chat-files.routes.ts` |
-| 4 | `cr169-purge` | Sonnet | `purgePartnerMessages` + rules + int purge | 2a | — | **có** (dữ liệu khách) | cao | spec §5 cuối |
+| 4 | `cr169-purge` | Sonnet | `purgePartnerMessages` + rules + int purge | 2a | — | **có** (dữ liệu khách) | cao | spec §5 cuối | [x] [test: tools/scripts/src/tenant-purge.partner.int.test.ts » CR-169 · nhắn tin] |
 | 5a | `cr169-web-pkg-lib` | Sonnet | tạo `packages/messages-web`, chuyển `lib/`, `api.ts` (transport tiêm), `hooks/` + test; W gắn lại; hành vi không đổi | — | — | không | thường | `W/features/messages/**`, `packages/web-kit/src/notify/client.ts` | | [x] [test: packages/messages-web/src/lib/messages-lib.test.ts » CR-169 · chuyển gói]
+| 5a | `cr169-web-pkg-lib` | Sonnet | tạo `packages/messages-web`, chuyển `lib/`, `api.ts` (transport tiêm), `hooks/` + test; W gắn lại; hành vi không đổi | — | — | không | thường | `W/features/messages/**`, `packages/web-kit/src/notify/client.ts` |
 | 5b | `cr169-web-pkg-ui` | Sonnet | chuyển `components/`, i18n; W trang + khoang dùng gói; unit + j18/j19 vẫn chạy được (không chạy e2e) | 5a | — | không | thường | như 5a |
 | 6 | `cr169-web-partner` | Sonnet | lọc công ty, tìm người tải dần, dòng/khung `partner`, chỉ đọc, Bảng tin công ty + unit lib | 1, 3b, 5b | — | không | thường | spec §8 |
 | 7 | `cr169-web-partner-page` | Sonnet | trang đối tác 3 tab, bỏ «Thao tác», «Nhắn tin» ở khối kết nối, xoá UI trò chuyện + unit `partner-v2.test.ts` | 1 | — | không | thường | spec §8 hàng «Trang đối tác» |
@@ -59,7 +60,7 @@ Fixture: NitiGroup (Tiên Toàn quyền, Vy nhân viên, Lan nhân viên), Presc
 | 3 | Migration 0150/0151 + pc 0118 + int | cr169-db-files | [ ] |
 | 4 | API danh sách/danh bạ/công ty + perf (đo trước) | cr169-api-list | [ ] |
 | 5 | API cuộc partner + tệp + stream, gỡ trò chuyện CR-161 | cr169-api-partner | [ ] |
-| 6 | Purge công ty | cr169-purge | [ ] |
+| 6 | Purge công ty | cr169-purge | [x] |
 | 7 | Gói `messages-web` (lib/api/hooks) | cr169-web-pkg-lib | [ ] |
 | 8 | Gói `messages-web` (components) | cr169-web-pkg-ui | [ ] |
 | 9 | Web Tin nhắn với công ty kết nối | cr169-web-partner | [ ] |
@@ -134,3 +135,4 @@ Như CR-161 nhưng mọi nhân viên nội bộ có quyền Sổ Hợp Tác (kh�
 Tab: Tổng quan · Hợp đồng · Sổ việc & ghi chú. Không còn «Bảng tin», «Trò chuyện», «Bảng tin công ty», không có nút «Thao tác»; «Sửa liên hệ» là nút chữ cạnh khối liên hệ cho người có quyền ghi. Đường dẫn tab cũ về Tổng quan.
 - Kịch bản: khi mở `?tab=chat` hoặc `?tab=community` thì về Tổng quan [test: thủ công — chưa viết]
 - Kịch bản: khi người có quyền ghi bấm «Sửa liên hệ» thì mở khung sửa liên hệ [test: thủ công — chưa viết]
+- (lát 4) Purge theo luật người dùng chốt (thay câu spec §5 «tin xoá mềm»): tin của A GIỮ chữ, `sender_user`→tombstone, `files='[]'`, `client_id` đổi mới; mốc đọc A→0; thread giữ cho B; bên kia đã xoá ⇒ xoá thread. Nhiều thread cùng (người B) gộp vào (tombstone,B) đã có hoặc thread nhỏ nhất (seq dời cộng dồn). Số liệu audit đổi tên `pmsg*`. `scrubChatBells` giữ (chuông `cc.*` kết nối còn dùng).
