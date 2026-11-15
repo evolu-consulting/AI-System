@@ -59,7 +59,8 @@ export const APPROVALS_NAV: NavItem = {
   inbox: true,
   mobile: "more",
 };
-/** CR-125 · «Yêu cầu» (CR-126 đổi tên từ «Tạo yêu cầu»): bắt đầu quy trình bằng phiếu (đề xuất mua hàng…); luôn hiện, rỗng thì trang nói vì sao. */
+/** CR-167: TẠM GỠ khỏi menu (manifest contracts không dùng nữa); giữ route/trang để bật lại sau.
+ * CR-125 · «Yêu cầu» (CR-126 đổi tên từ «Tạo yêu cầu»): bắt đầu quy trình bằng phiếu (đề xuất mua hàng…); luôn hiện, rỗng thì trang nói vì sao. */
 export const REQUESTS_NAV: NavItem = {
   to: `${B}/requests`,
   labelKey: "contracts.nav.requests",

@@ -10,7 +10,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await installBackend(page, { session: true, role: "editor" });
   });
 
-  test("PK-FR-10 · nav-v2 · menu chính 8 mục (CR-132 thêm Tin nhắn, CR-142 Sơ đồ tổ chức) đúng nhãn, thứ tự và đường dẫn: Tổng quan /contracts · Hợp đồng /contracts/list · Đối tác /contracts/partners · Sản phẩm & Giá /contracts/products", async ({
+  test("PK-FR-10 · nav-v2 · menu chính 7 mục (CR-132 thêm Tin nhắn, CR-142 Sơ đồ tổ chức, CR-167 gỡ Yêu cầu) đúng nhãn, thứ tự và đường dẫn: Tổng quan /contracts · Hợp đồng /contracts/list · Đối tác /contracts/partners · Sản phẩm & Giá /contracts/products", async ({
     page,
   }) => {
     await page.goto("/contracts/list");
@@ -19,7 +19,6 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await expect(links).toHaveText([
       "Tổng quan",
       "Hợp đồng & giao dịch",
-      "Yêu cầu",
       "Tin nhắn",
       "Việc của tôi",
       "Đối tác",
@@ -30,7 +29,6 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     for (const name of [
       "Tổng quan",
       "Hợp đồng & giao dịch",
-      "Yêu cầu",
       "Tin nhắn",
       "Việc của tôi",
       "Đối tác",
@@ -42,7 +40,6 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     expect(hrefs).toEqual({
       "Tổng quan": "/contracts",
       "Hợp đồng & giao dịch": "/contracts/list",
-      "Yêu cầu": "/contracts/requests",
       "Tin nhắn": "/contracts/messages",
       "Việc của tôi": "/contracts/approvals",
       "Đối tác": "/contracts/partners",
@@ -263,7 +260,7 @@ test.describe("PK-FR-10 · shell mobile (390×844)", () => {
     const bottom = page.getByRole("navigation", { name: "Điều hướng", exact: true });
     await expect(bottom).toBeVisible();
     await expect(bottom.getByRole("link")).toHaveCount(5);
-    // CR-126 · «Yêu cầu» là mục `more` (không chiếm cột); «Việc của tôi» là cột riêng; Hợp đồng (primary) đứng đầu
+    // CR-167 · «Yêu cầu» đã gỡ khỏi menu; «Việc của tôi» là cột riêng; Hợp đồng (primary) đứng đầu
     await expect(bottom.getByRole("link")).toHaveText([
       "Hợp đồng",
       "Tổng quan",

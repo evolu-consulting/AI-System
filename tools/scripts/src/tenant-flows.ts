@@ -7,7 +7,7 @@ import { parseArgs } from "node:util";
 import { seedDbHost } from "./seed-community-demo.guard";
 import { flowSeedGuard } from "./seed-flow-showcase.build";
 import { applyTenantFlows, type Call, type Json, must, type Res } from "./tenant-flows.core";
-import { emailsOf, FLOW_NAMES, flowsFor, TENANT_KEYS, type TenantKey } from "./tenant-flows.data";
+import { emailsOf, flowsFor, TENANT_KEYS, type TenantKey } from "./tenant-flows.data";
 
 const TAG = "tenant-flows";
 const fail = (msg: string): never => {
@@ -58,11 +58,7 @@ async function runTenant(admin: Call, hub: Call, key: TenantKey, dryRun: boolean
     fail(msg);
   }
   const defs = flowsFor(key, (e) => byEmail.get(e.toLowerCase()) as string);
-  const rep = await applyTenantFlows({ hub, tid: String(tid), groups }, defs, {
-    dryRun,
-    buyName: FLOW_NAMES.buy,
-    sendName: FLOW_NAMES.send,
-  });
+  const rep = await applyTenantFlows({ hub, tid: String(tid), groups }, defs, { dryRun });
   for (const r of rep)
     console.log(`${TAG}: ${key} — «${r.name}» ${dryRun ? "sẽ" : "đã"} ${r.action}`);
 }

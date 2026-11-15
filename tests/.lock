@@ -61,7 +61,7 @@ dd825133ab18bc62f767467ce64746ab8d307810a3d2a2678f31319cea9dcd7f  e2e/K1/playwri
 0208e9181393ca569eaa958420ac862efa1218abd52f7616b1c28e6f2970c030  e2e/N1/_support.ts
 f9a31a227e49e354959bbcfc983e61593e23ab0e6582a4cb9a3c4ed71920e368  e2e/N1/login.n1.ts
 c1ddea86a757d4445bebf5f5f28c84c1e599f26e4aa864dbe7ab37e49492271e  e2e/N1/playwright.config.ts
-ddf7b810e5e00530eed3a04f891a12ad5f0e90faeb00842cf239f6244f939da6  e2e/N1/shell.n1.ts
+780e61d34de98b007de36ccbbebad059550fe727c85e3a360001a8bd364c0f21  e2e/N1/shell.n1.ts
 87a3880053a0a615ddc8d91f6ab6cb35b7af839a39d3bf425323e00232bbf9c4  e2e/N1/states.n1.ts
 3963b9b20a88c63598855cbcfbb4d29a14b0d996d3dd2e4f9731205683a69858  e2e/N2/admin-n2.n2.ts
 263b799fcef70a7bf7973746821c7d7e169a847f3e934fab178666f673972285  e2e/N2/admin-popover.n2.ts
@@ -537,7 +537,7 @@ b84338e27f1ea3b3f4a5f83955b3086e4b51761115f47b6687c57f1fab3adcaa  e2e/journey-ap
 e291dd61977b492905982bee43c0e24457bbfe4b4c9036521b0617533304b330  e2e/journey-approval/_test.ts
 4ea0ca628b9186ce26fe4610346f27c3e30020dec434898afb3a303bf3c45553  e2e/journey-approval/cr123-u6-run-card.spec.ts
 4b2c2d77e69ee702646d6c40e91f30cb902e2a269d0e745e2f498c96cd9c07ba  e2e/journey-approval/cr125-form-step-card.spec.ts
-a6c6954ea28c2e4d0d8b644a5ec7b6dd12b72dacddebe01ab7f489bf07eace36  e2e/journey-approval/cr125-purchase-full.spec.ts
+de5e69d2b4fcb2d183d0307260a33b2517f256fa88b5de4c487aaf6e95059a5c  e2e/journey-approval/cr125-purchase-full.spec.ts
 b7ba4bd583e645a8b745a99958166f99c38da209c6a897b753465aa2936b5cb3  e2e/journey-approval/cr125-s1-onboard.spec.ts
 8ecf608276a484b2466496e222cc0759594dbb2abc07dec106fe8316fce8e28f  e2e/journey-approval/cr125-s2-settings-flow.spec.ts
 28609e8def51805edd8cfb42975642b97641d9b868f8e94c0798d209645ad1a3  e2e/journey-approval/cr139b-starter-head.spec.ts

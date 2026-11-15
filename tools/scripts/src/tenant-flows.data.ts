@@ -1,9 +1,9 @@
 // CR-159 · dữ liệu + luật THUẦN của `bun run tenant:flows`: quy trình cho 3 công ty evolu / nitigroup / preschool. KHÔNG I/O.
 // Người = email trong `deploy/tenants/<key>.yaml` (script tra id người dùng thật ở công ty đó rồi truyền vào `flowsFor`).
 // Mỗi công ty tối đa 3 quy trình, KHÔNG ngưỡng tiền; mọi bước Duyệt có Duyệt / Trả lại về người tạo / Từ chối (bước Kết thúc riêng):
-//   «Duyệt hợp đồng gửi đi» (contract.submitted) · «Nhận hợp đồng từ đối tác» (contract.received + người phụ trách ở trigger.params)
-//   · «Đề nghị mua hàng / thanh toán» (mở bằng phiếu; luật mở không bao giờ đúng nên không tranh quyền duyệt HĐ).
-// CR-160: HĐ gửi đi và phiếu mở bằng nhánh `if starter_is_top` (người gửi là trưởng phòng gốc ⇒ bỏ duyệt) thay nhánh theo phòng; không còn đích dự phòng cho cấp cao nhất.
+//   «Duyệt hợp đồng gửi đi» (contract.submitted) · «Nhận hợp đồng từ đối tác» (contract.received + người phụ trách ở trigger.params).
+// CR-167: bỏ quy trình phiếu «Đề nghị mua hàng / thanh toán» (định nghĩa lại sau); công ty chỉ còn 2 quy trình.
+// CR-160: HĐ gửi đi mở bằng nhánh `if starter_is_top` (người gửi là trưởng phòng gốc ⇒ bỏ duyệt) thay nhánh theo phòng; không còn đích dự phòng cho cấp cao nhất.
 // Người duyệt cụ thể = `after.approver_user_id` (người dùng thật của công ty, không tạo nhóm). Không còn «Quá hạn chuyển cho» (người thay thế): chỉ trưởng phòng
 // (`starter_head`, engine tự leo cấp) hoặc người cụ thể ở bước làm việc.
 import { APPROVAL_FLOW_DUE_DEFAULT_H } from "@ai/contracts/pack-contracts";
@@ -18,7 +18,7 @@ import {
   type Stage,
 } from "../../../apps/hub-api/src/modules/processes/library/flow-templates.def";
 import { partnerSend } from "./seed-demo-partner.data";
-import { date, money, note, txt, work } from "./seed-purchase-flow.kit";
+import { txt, work } from "./seed-purchase-flow.kit";
 import { type Org, readOrg, shapeOf } from "./tenant-flows.org";
 
 export type FlowDef = {
@@ -34,7 +34,6 @@ export type TenantKey = (typeof TENANT_KEYS)[number];
 export const FLOW_NAMES = {
   send: "Duyệt hợp đồng gửi đi",
   receive: "Nhận hợp đồng từ đối tác",
-  buy: "Đề nghị mua hàng / thanh toán",
 } as const;
 /** Email người của từng công ty (khớp `deploy/tenants/*.yaml`). */
 export const WHO = {
@@ -53,11 +52,6 @@ export const PICK_GROUP = {
   nitigroup: "pb-giam-doc",
   preschool: "pb-ban-giam-doc",
 } as const;
-/** Luật không bao giờ đúng: quy trình chỉ mở bằng phiếu, không tranh quyền duyệt HĐ (như `seed-purchase-flow.kit`). */
-export const NEVER_TRIGGER = {
-  event: "contract.submitted",
-  when: { op: "and", conds: [{ fact: "total_value", op: "lt", value: -1 }] },
-};
 export const emailsOf = (key: TenantKey): string[] => Object.values(WHO[key]);
 
 type To = { reject: number; ret: number };
@@ -73,16 +67,6 @@ const personAfter = (uid: string, backup?: string, o: Record<string, unknown> = 
     ...o,
   };
 };
-/** Bước Duyệt do MỘT người cụ thể làm (Duyệt / Trả lại / Từ chối). `backup` = người thay khi người duyệt là người tạo. */
-const byPerson = (
-  key: string,
-  name: string,
-  step: number,
-  uid: string,
-  backup: string | undefined,
-  to: To,
-  o: Stage = {},
-): Stage => approve(key, name, step, "", to, { after: personAfter(uid, backup), ...o });
 /** «Trưởng phòng của người tạo duyệt» (`starter_head`; phòng không trưởng ⇒ engine leo lên phòng cha). */
 const headOfStarter = (step: number, backup: string | undefined, to: To, o: Stage = {}): Stage => {
   const { group_key: _k, ...after } = reviewNew("") as Record<string, unknown>;
@@ -171,47 +155,11 @@ const finishes = (at: number, ok: [string, string]) => [
 const SEND_TRIGGER = { event: "contract.submitted" };
 const inputs = FLOW_TEMPLATE_INPUTS as unknown[];
 
-/** Phiếu «Đề nghị mua hàng / thanh toán»: nội dung, số tiền, nhà cung cấp, tệp. */
-const phieu = (): Stage => ({
-  key: "phieu-de-nghi",
-  name: "Đề nghị mua hàng / thanh toán",
-  step: 0,
-  node: "core.start-form",
-  instruction: "",
-  real_action: false,
-  answerer: { kind: "starter" },
-  timeout_s: 120,
-  token_budget: null,
-  sources: [],
-  must_know: [],
-  autofix: null,
-  executor: { kind: "set", values: [] },
-  output: { filename: "phieu.md", template: "x", required_sections: ["x"], fields: [] },
-  after: { kind: "auto", branch: [] },
-  start_form: {
-    fields: [
-      { key: "noi_dung", label: "Nội dung", type: "longtext", required: true },
-      { key: "so_tien", label: "Số tiền (đồng)", type: "money", required: true },
-      { key: "nha_cung_cap", label: "Nhà cung cấp", type: "text", required: true },
-      { key: "tep_dinh_kem", label: "Tệp đính kèm", type: "attachments", required: false },
-    ],
-    starters: { kind: "everyone" },
-    title_template: "Đề nghị: {{nha_cung_cap}}",
-  },
-});
-/** «Ghi đã chi»: một bước làm việc (node `contracts.record-payment` cần HĐ gắn lượt — phiếu không có HĐ ⇒ không dùng được). */
-const paid = (step: number, uid: string): Stage =>
-  workBy("ghi-da-chi", "Ghi đã chi", step, uid, [
-    money("so_tien_da_chi", "Số tiền đã chi (đồng)", true),
-    date("ngay_chi", "Ngày chi", true),
-    note("ghi_chu", "Ghi chú"),
-  ]);
-
 type Gate = { stages: Stage[]; next: number };
-type Kind = "send" | "receive" | "buy";
+type Kind = "send" | "receive";
 /** Số bước của khối duyệt đầu (để tính đích Từ chối / Trả lại trước khi dựng). */
 const gateWidth = (org: Org, kind: Kind): number =>
-  shapeOf(org) === "none" ? (kind === "buy" ? 0 : 1) : kind === "send" ? 3 : kind === "buy" ? 2 : 1;
+  shapeOf(org) === "none" ? 1 : kind === "send" ? 3 : 1;
 /**
  * Bước duyệt đầu (luật chung): trưởng phòng của người tạo (`starter_head`, tự leo cấp). `top` = trưởng gốc, người ký.
  * `none` (chỉ có trưởng gốc) ⇒ chỉ bước «Chuẩn bị ký» (engine buộc bước Ký đứng sau MỘT bước kiểu duyệt: `REAL_ACTION`); phiếu không có bước nào.
@@ -221,14 +169,8 @@ const gateWidth = (org: Org, kind: Kind): number =>
 function gate(org: Org, step: number, to: To, top: string, kind: Kind): Gate {
   const prep = (s: number) =>
     workBy("chuan-bi-ky", "Chuẩn bị ký", s, top, [txt("ghi_chu", "Ghi chú (nếu có)")]);
-  if (shapeOf(org) === "none")
-    return kind === "buy" ? { stages: [], next: step } : { stages: [prep(step)], next: step + 1 };
+  if (shapeOf(org) === "none") return { stages: [prep(step)], next: step + 1 };
   if (kind === "receive") return { stages: [headOfStarter(step, undefined, to)], next: step + 1 };
-  if (kind === "buy")
-    return {
-      stages: [ifTop(step, step + 2, step + 1), headOfStarter(step + 1, undefined, to)],
-      next: step + 2,
-    };
   return {
     stages: [
       ifTop(step, step + 2, step + 1),
@@ -264,24 +206,6 @@ function receiveFlow(org: Org, uid: Uid): Stage[] {
     ...finishes(end, ["confirmed", "Đồng ý"]),
   ]);
 }
-/** Phiếu: phiếu → [`if starter_is_top` ⇒ bỏ duyệt | trưởng phòng duyệt] → (nitigroup: Phương kiểm) → ghi đã chi → Kết thúc. `check` = người kiểm (kế toán) nếu có. */
-function buyFlow(org: Org, uid: Uid, payer: string, check?: string): Stage[] {
-  const top = topOf(org, uid);
-  const mid = check ? 1 : 0;
-  const end = 1 + gateWidth(org, "buy") + mid + 1; // phiếu + duyệt đầu + [kiểm] + ghi đã chi
-  const to = { reject: end + 1, ret: end + 2 };
-  const g = gate(org, 1, to, top, "buy");
-  const checkStage = check
-    ? [byPerson("ke-toan-kiem", "Kế toán kiểm", g.next, check, undefined, to)]
-    : [];
-  return norm([
-    phieu(),
-    ...g.stages,
-    ...checkStage,
-    paid(g.next + mid, payer),
-    ...finishes(g.next + mid + 1, ["approved", "Đã chi"]),
-  ]);
-}
 const SEND_TRIGGER_DEF = (stages: Stage[]): Pick<FlowDef, "trigger" | "stages"> => ({
   trigger: SEND_TRIGGER,
   stages,
@@ -300,19 +224,6 @@ export function flowsFor(key: TenantKey, uid: Uid, org: Org = readOrg(key)): Flo
         ? WHO.nitigroup.vy
         : WHO.preschool.dung,
   );
-  const buy = (): FlowDef[] => {
-    if (key === "preschool") return [];
-    const payer = uid(key === "evolu" ? (org.rootHead as string) : WHO.nitigroup.phuong);
-    const check = key === "nitigroup" ? payer : undefined;
-    return [
-      {
-        name: FLOW_NAMES.buy,
-        trigger: NEVER_TRIGGER,
-        stages: buyFlow(org, uid, payer, check),
-        inputs: [],
-      },
-    ];
-  };
   return [
     { name: FLOW_NAMES.send, ...SEND_TRIGGER_DEF(sendFlow(org, uid, PICK_GROUP[key])), inputs },
     {
@@ -321,6 +232,5 @@ export function flowsFor(key: TenantKey, uid: Uid, org: Org = readOrg(key)): Flo
       stages: receiveFlow(org, uid),
       inputs,
     },
-    ...buy(),
   ];
 }

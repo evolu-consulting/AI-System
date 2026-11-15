@@ -98,31 +98,15 @@ async function ensureOne(c: Ctx, def: FlowDef, dryRun: boolean): Promise<Action>
   return action;
 }
 
-/** Phiếu mở bằng tay (luật mở «không bao giờ đúng») phải đứng TRƯỚC quy trình HĐ không điều kiện, nếu không bị báo «bị che». Chỉ đổi khi đang sai. */
-async function ensureOrder(c: Ctx, buy: string, send: string): Promise<void> {
-  const base = `/tenants/${c.tid}/company-flows`;
-  const rows = (must(await c.hub("GET", base), [200], "đọc thứ tự").items as Json[]).sort(
-    (a, b) => a.position - b.position,
-  );
-  const b = rows.find((r) => r.name === buy);
-  const s = rows.find((r) => r.name === send);
-  if (!b || !s || b.position < s.position) return;
-  const ids = rows.map((r) => String(r.id)).filter((id) => id !== b.id);
-  ids.splice(ids.indexOf(String(s.id)), 0, String(b.id));
-  must(await c.hub("PUT", `${base}/order`, { ids }), [200], "xếp thứ tự quy trình");
-}
-
 /** Dựng/cập nhật mọi quy trình của công ty; xong tự kiểm: tất cả Bật + đã áp dụng (trừ dry-run). */
 export async function applyTenantFlows(
   c: Ctx,
   defs: readonly FlowDef[],
-  o: { dryRun: boolean; buyName?: string; sendName?: string },
+  o: { dryRun: boolean },
 ): Promise<Report[]> {
   const out: Report[] = [];
   for (const d of defs) out.push({ name: d.name, action: await ensureOne(c, d, o.dryRun) });
   if (o.dryRun) return out;
-  if (o.buyName && o.sendName && defs.some((d) => d.name === o.buyName))
-    await ensureOrder(c, o.buyName, o.sendName);
   const rows = must(await c.hub("GET", `/tenants/${c.tid}/company-flows`), [200], "kiểm")
     .items as Json[];
   for (const d of defs) {
