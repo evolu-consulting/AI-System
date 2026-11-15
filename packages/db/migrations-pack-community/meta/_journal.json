@@ -141,6 +141,13 @@
       "when": 1807000600000,
       "tag": "0020_cr161_connected_posts",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1807000610000,
+      "tag": "0021_regrant_cc_connected",
+      "breakpoints": true
     }
   ]
 }

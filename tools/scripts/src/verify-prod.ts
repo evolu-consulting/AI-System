@@ -15,7 +15,13 @@ import {
 import { git, PROD_DIR, sshRead } from "./verify-lib";
 
 const DOMAIN = "evoluconsulting.com";
-const HOSTS = ["ai-admin", "ai", "app", "community"];
+// CR-119: Community không còn host riêng (community.<d> đã gỡ) — nằm ở app.<d>/community/.
+const TARGETS: ReadonlyArray<readonly [string, string]> = [
+  ["ai-admin", `https://ai-admin.${DOMAIN}`],
+  ["ai", `https://ai.${DOMAIN}`],
+  ["app", `https://app.${DOMAIN}`],
+  ["community", `https://app.${DOMAIN}/community/`],
+];
 const PSQL = "docker compose -p sohoptac2 exec -T pg psql -U s2_owner -d ai_system -X -At";
 
 // Chỉ đọc: head/psql select/logs. Chạy qua `bash -s`; không ghi file, không `up/down/exec` ngoài psql select.
@@ -30,9 +36,9 @@ docker compose -p sohoptac2 logs --since 10m --no-color 2>&1 | grep -iE 'error|f
 
 async function health(): Promise<Health[]> {
   return Promise.all(
-    HOSTS.map(async (h) => {
+    TARGETS.map(async ([h, url]) => {
       try {
-        const r = await fetch(`https://${h}.${DOMAIN}`, {
+        const r = await fetch(url, {
           signal: AbortSignal.timeout(15_000),
           redirect: "follow",
         });
