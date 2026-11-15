@@ -15,6 +15,9 @@ if [ -s ADMIN.pw ]; then SEED_ADMIN_PASSWORD="$(tr -d '\r\n' < ADMIN.pw)"
 else SEED_ADMIN_PASSWORD="$(grep -E '^password:' ADMIN_CREDENTIALS.txt | head -1 | sed 's/^password:[[:space:]]*//' | tr -d '\r\n')"; fi
 export SEED_ADMIN_PASSWORD
 tool() {
+  # Chống tái diễn: mount file chưa có ⇒ docker tạo THƯ MỤC thuộc root (không xoá được). Thiếu ⇒ báo lỗi, không mount.
+  [ -f "$SRC/smoke-flows.ts" ] || { echo "smoke-server: thiếu $SRC/smoke-flows.ts (chép chưa xong?) — không mount" >&2; return 1; }
+  [ -d "$SRC/tenants" ] || { echo "smoke-server: thiếu thư mục $SRC/tenants — không mount" >&2; return 1; }
   docker compose -p "$PROJ" run --rm -T -e SEED_ADMIN_PASSWORD -e SMOKE_PW -e AUTH_URL=http://admin-api:3001 -e HUB_URL=http://hub-api:4000 \
     -v "$SRC/smoke-flows.ts:/app/tools/scripts/src/smoke-flows.ts:ro" -v "$SRC/tenants:/app/deploy/smoke/tenants:ro" tool "$@" </dev/null
 }

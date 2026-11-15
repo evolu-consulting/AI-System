@@ -358,6 +358,32 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
     },
     ["S9"],
   );
+  // Đối tác chỉ chọn được khi ĐÃ kết nối (FL3-4) ⇒ S17 chạy trước S12; sau đó B không còn băng lời mời.
+  await S.run(
+    "S17",
+    "Kết nối công ty: A «Tìm công ty» mời B, B đồng ý (trước khi gửi hợp đồng)",
+    async () => {
+      const a = await as("a", "gd");
+      await a.goto(`${E.cw}/contracts/partners`);
+      await a.getByRole("button", { name: "Tìm công ty" }).click();
+      const dlg = a.getByRole("dialog", { name: "Tìm công ty để kết nối" });
+      await dlg.getByLabel("Tên công ty hoặc mã số thuế").fill(NAME.b);
+      const row = dlg.getByTestId("connect-results").getByRole("listitem").first();
+      await expect(row).toContainText(NAME.b, { timeout: 30_000 });
+      await row.getByRole("button", { name: "Gửi lời mời kết nối" }).click();
+      await a
+        .getByRole("dialog", { name: /^Gửi lời mời cho/ })
+        .getByRole("button", { name: "Gửi lời mời", exact: true })
+        .click();
+      const b = await as("b", "gd");
+      await b.goto(`${E.cw}/contracts/partners`);
+      const band = b.getByTestId("connect-invite").filter({ hasText: NAME.a });
+      await reloadUntil(b, async () => expect(band).toBeVisible({ timeout: 4_000 }));
+      await band.getByRole("button", { name: "Đồng ý", exact: true }).click();
+      await expect(b.getByTestId("connected-list")).toContainText(NAME.a);
+    },
+    ["S11"],
+  );
   await S.run(
     "S12",
     "Giám đốc A chọn đối tác Smoke B + người nhận ⇒ Gửi",
@@ -375,18 +401,20 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
           .fill("smoke-b-gd@smoke.invalid");
       });
     },
-    ["S11"],
+    ["S17"],
   );
 
   await S.run(
     "S13",
-    "Giám đốc B nhận lời mời (băng «Nhận»)",
+    "Giám đốc B: đã kết nối ⇒ KHÔNG còn băng lời mời; thấy hợp đồng ở «Đối tác gửi»",
     async () => {
       const p = await as("b", "gd");
-      await p.goto(`${E.cw}/contracts/list`);
-      const invite = p.getByTestId("partner-invite").first();
-      await reloadUntil(p, async () => expect(invite).toBeVisible({ timeout: 4_000 }));
-      await invite.getByRole("button", { name: /Nhận/ }).click();
+      await p.goto(`${E.cw}/contracts/list?source=partner`);
+      const row = p
+        .getByRole("row")
+        .filter({ has: p.getByTestId("row-view") })
+        .first();
+      await reloadUntil(p, async () => expect(row).toBeVisible({ timeout: 4_000 }));
       await expect(p.getByTestId("partner-invite")).toHaveCount(0);
     },
     ["S12"],
@@ -437,27 +465,6 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
     ["S15"],
   );
 
-  await S.run("S17", "Kết nối công ty: A «Tìm công ty» mời B, B đồng ý", async () => {
-    const a = await as("a", "gd");
-    await a.goto(`${E.cw}/contracts/partners`);
-    await a.getByRole("button", { name: "Tìm công ty" }).click();
-    const dlg = a.getByRole("dialog", { name: "Tìm công ty để kết nối" });
-    await dlg.getByLabel("Tên công ty hoặc mã số thuế").fill(NAME.b);
-    const row = dlg.getByTestId("connect-results").getByRole("listitem").first();
-    await expect(row).toContainText(NAME.b, { timeout: 30_000 });
-    await row.getByRole("button", { name: "Gửi lời mời kết nối" }).click();
-    await a
-      .getByRole("dialog", { name: /^Gửi lời mời cho/ })
-      .getByRole("button", { name: "Gửi lời mời", exact: true })
-      .click();
-    const b = await as("b", "gd");
-    await b.goto(`${E.cw}/contracts/partners`);
-    const band = b.getByTestId("connect-invite").filter({ hasText: NAME.a });
-    await reloadUntil(b, async () => expect(band).toBeVisible({ timeout: 4_000 }));
-    await band.getByRole("button", { name: "Đồng ý", exact: true }).click();
-    await expect(b.getByTestId("connected-list")).toContainText(NAME.a);
-  });
-
   if (!E.cr169) {
     S.skip(
       "S18",
@@ -494,13 +501,12 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
         await expect(a.getByTestId("msg-row").filter({ hasText: `Xin chào ${RUN}` })).toBeVisible();
         const b = await as("b", "nv");
         await b.goto(`${E.cw}/contracts/messages`);
-        // CR-172: Tin nhắn mặc định lọc công ty MÌNH ⇒ chọn chip công ty A (người gửi) mới thấy cuộc.
-        await b
-          .getByTestId("company-filter")
-          .getByRole("button", { name: /Smoke A/ })
-          .click({ timeout: 60_000 });
         const conv = b.getByTestId("conv-row").filter({ hasText: "Nhân viên Smoke A" });
-        await reloadUntil(b, async () => expect(conv).toBeVisible({ timeout: 4_000 }));
+        // chip «Tất cả» (sau mỗi lần tải lại, vì mặc định về công ty mình)
+        await reloadUntil(b, async () => {
+          await b.getByTestId("company-chip").first().click({ timeout: 4_000 });
+          await expect(conv).toBeVisible({ timeout: 4_000 });
+        });
         await conv.click();
         await expect(b.getByText(`Xin chào ${RUN}`).first()).toBeVisible({ timeout: 30_000 });
         await b.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(`Đã nhận ${RUN}`);
