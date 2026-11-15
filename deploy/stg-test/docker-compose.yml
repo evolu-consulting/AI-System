@@ -85,6 +85,7 @@ services:
     environment:
       HOME: /tmp
       HUB_FAST_ROUTE: "on"
+      HUB_STICKY_AGENT: "on" # giống prod: tin tiếp theo ở lại agent vừa trả lời
       HUB_FLOW_RUNTIME: "on"
       HUB_ADMIN_API_URL: http://admin-api:3001
       COMMUNITY_WEB_URL: ${S2_PUBLIC_COMMUNITY_URL}

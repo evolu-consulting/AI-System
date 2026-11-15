@@ -2,7 +2,8 @@
 import { existsSync } from "node:fs";
 
 const SERVER = "evoc@149.202.83.5";
-const KEY = "F:\\workspace\\id_evoc_key";
+// Khoá ssh: biến EVOTEST_KEY (máy hiện tại dùng ~/.ssh/evoc_key) trước, rồi đường dẫn cũ.
+const KEY = process.env.EVOTEST_KEY ?? "F:\\workspace\\id_evoc_key";
 export const PROD_DIR = "~/workspace/sohoptac2";
 
 /** Chạy script bash (chỉ lệnh đọc) trên máy chủ; trả stdout hoặc ném lỗi KHÔNG chứa đường dẫn khoá. */
