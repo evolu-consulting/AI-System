@@ -1,8 +1,8 @@
 // Hook nạp bảng tin: `useFeedFilters` giữ state lọc (tab, nhóm hàng, khu vực, người đăng), `useFeed` nạp bài + facets.
 // FeedList (Profile) và FeedPage (2 cột) dùng chung để chia state giữa thanh tab và bộ lọc.
 import type { FeedQuery, FeedResponse, FeedTab, PartnerOrg } from "@ai/contracts/community";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { applyFirstPage, feedScopeKey } from "../domain/feed-merge";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { applyFirstPage, feedScopeKey, withoutGone } from "../domain/feed-merge";
 import { t } from "../i18n";
 import { useApp } from "./ctx";
 
@@ -32,7 +32,7 @@ export function useFeedFilters(
 
 /** CR-147c · nạp trang đầu (20 bài) rồi tải dần theo `nextCursor` (gọi `more.load` khi cuộn tới cuối). Đổi bộ lọc hoặc người xem ⇒ về trang đầu, bỏ danh sách cũ. */
 export function useFeed(query: FeedQuery) {
-  const { api, rev, viewer } = useApp();
+  const { api, rev, viewer, gone } = useApp();
   const [data, setData] = useState<FeedResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -78,7 +78,8 @@ export function useFeed(query: FeedQuery) {
       setLoadingMore(false);
     }
   }, [api, query, cursor, loadingMore]);
-  return { data, error, more: { has: !!cursor, loading: loadingMore, load } };
+  const shown = useMemo(() => withoutGone(data, gone), [data, gone]);
+  return { data: shown, error, more: { has: !!cursor, loading: loadingMore, load } };
 }
 
 /** Danh sách công ty: chủ quản thấy tất cả đối tác; đối tác thấy công ty của mình. */

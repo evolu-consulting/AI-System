@@ -27,8 +27,16 @@ test("chủ quản: đăng Cần bán, sửa (đã sửa), lưu trữ, xoá có 
   await expect(card.getByText("đã sửa")).toBeVisible();
   await card.getByRole("button", { name: "Tuỳ chọn bài đăng" }).click();
   await page.getByRole("menuitem", { name: "Xoá bài" }).click();
-  await expect(card.getByText("Xoá vĩnh viễn bài đăng này?")).toBeVisible();
-  await card.getByRole("button", { name: "Xoá", exact: true }).click();
+  // CR-175: xác nhận là hộp thoại (không inline trong thẻ bài); Huỷ ⇒ bài còn; Xoá ⇒ bài mất ngay, không tải lại.
+  const dlg = page.getByRole("dialog");
+  await expect(dlg.getByText("Xoá vĩnh viễn bài đăng này?")).toBeVisible();
+  await expect(card.getByText("Xoá vĩnh viễn bài đăng này?")).toHaveCount(0);
+  await dlg.getByRole("button", { name: "Huỷ" }).click();
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "Tuỳ chọn bài đăng" }).click();
+  await page.getByRole("menuitem", { name: "Xoá bài" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Xoá", exact: true }).click();
+  await expect(card).toHaveCount(0);
   await expect(page.getByText("Keo dán thử")).toHaveCount(0);
 });
 

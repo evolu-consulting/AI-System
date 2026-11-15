@@ -246,6 +246,8 @@
         "delete": "Xoá bài"
       },
       "confirmDelete": "Xoá vĩnh viễn bài đăng này? Bình luận cũng sẽ bị xoá.",
+      "deleteTitle": "Xoá bài đăng?",
+      "deleteFailed": "Chưa xoá được bài, vui lòng thử lại.",
       "editBodyLabel": "Sửa nội dung",
       "saveChanges": "Lưu thay đổi",
       "saved": "Đã lưu thay đổi",
@@ -275,6 +277,9 @@
       "edit": "Sửa bình luận",
       "editShort": "Sửa",
       "delete": "Xoá bình luận",
+      "deleteTitle": "Xoá bình luận?",
+      "confirmDelete": "Xoá vĩnh viễn bình luận này?",
+      "deleteFailed": "Chưa xoá được bình luận, vui lòng thử lại.",
       "deleteShort": "Xoá",
       "hide": "Ẩn bình luận",
       "hideShort": "Ẩn",

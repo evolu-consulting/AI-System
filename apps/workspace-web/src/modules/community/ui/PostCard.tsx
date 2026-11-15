@@ -1,6 +1,7 @@
 // Thẻ bài (mockup `.post`): ⋯ menu (Sửa / Lưu trữ / Đã xong / Xoá + xác nhận đỏ), nhãn đã sửa / lưu trữ / ẩn, bình luận theo luồng.
 import type { MediaItem, ModerationItem, PostAction, PostView } from "@ai/contracts/community";
 import { useEffect, useState } from "react";
+import { confirmDialog } from "~/components/shared/dialog-bus";
 import { useApp } from "../application/ctx";
 import { draftFromFields } from "../domain/compose";
 import { dealStrip, expiryNote, initials, timeAgo, tone } from "../domain/format";
@@ -95,13 +96,12 @@ function EditForm({ p, onClose }: { p: PostView; onClose: () => void }) {
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: thẻ bài theo mockup: nhiều nhánh hiển thị có điều kiện, tách thêm sẽ chỉ chuyển prop
 export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationItem | undefined }) {
-  const { api, bump, toast, isHostViewer, viewer, urlSearch } = useApp();
+  const { api, bump, toast, isHostViewer, viewer, urlSearch, dropPost } = useApp();
   const [reporting, setReporting] = useState(false);
   const canReport = p.authorOrgId !== viewer.orgId;
   const download = (id: string, name: string) =>
     api.downloadFile(id, name).catch(() => toast(t("community.post.downloadFailed")));
   const [menu, setMenu] = useState(false);
-  const [confirm, setConfirm] = useState(false);
   const [editing, setEditing] = useState(false);
   // Mở sẵn bình luận khi vào từ chuông `?post=<id>&comment=<id>` (CR-129).
   const fromBell = opensCommentThread(urlSearch, p.id);
@@ -118,10 +118,34 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
     setQuote({ supplier, ...(commentId ? { commentId } : {}), idx: 0 });
   const act = async (a: "archive" | "unarchive" | "done" | "hide" | "unhide" | "delete") => {
     setMenu(false);
-    setConfirm(false);
+    if (a === "delete") {
+      // Xoá lạc quan: bài mất ngay; lỗi ⇒ khôi phục + báo.
+      dropPost(p.id, true);
+      try {
+        await api.postAction(p.id, { action: a });
+      } catch {
+        dropPost(p.id, false);
+        toast(t("community.post.deleteFailed"));
+        return;
+      }
+      toast(t("community.post.deleted"));
+      bump();
+      return;
+    }
     await api.postAction(p.id, { action: a });
-    toast(a === "delete" ? t("community.post.deleted") : t("community.post.updated"));
+    toast(t("community.post.updated"));
     bump();
+  };
+  const askDelete = async () => {
+    setMenu(false);
+    const ok = await confirmDialog({
+      title: t("community.post.deleteTitle"),
+      body: t("community.post.confirmDelete"),
+      confirmLabel: t("community.common.delete"),
+      cancelLabel: t("community.common.cancel"),
+      danger: true,
+    });
+    if (ok) await act("delete");
   };
   const deal = dealStrip(p);
   const muted = p.status === "archived" || p.status === "done" || p.status === "expired";
@@ -182,8 +206,7 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
             setEditing(true);
           }}
           onAsk={() => {
-            setMenu(false);
-            setConfirm(true);
+            void askDelete();
           }}
           onDo={act}
           onReport={
@@ -198,18 +221,6 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
       )}
       {reporting && <ReportDialog postId={p.id} onClose={() => setReporting(false)} />}
       {mod && <ModerationNote item={mod} />}
-      {confirm && (
-        <div className="confirm" role="alertdialog">
-          <span>{t("community.post.confirmDelete")}</span>
-          <span className="sp" />
-          <button type="button" className="ghost" onClick={() => setConfirm(false)}>
-            {t("community.common.cancel")}
-          </button>
-          <button type="button" className="danger" onClick={() => act("delete")}>
-            {t("community.common.delete")}
-          </button>
-        </div>
-      )}
       {editing ? (
         <EditForm p={p} onClose={() => setEditing(false)} />
       ) : (

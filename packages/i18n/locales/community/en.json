@@ -246,6 +246,8 @@
         "delete": "Delete post"
       },
       "confirmDelete": "Permanently delete this post? Its comments will be deleted too.",
+      "deleteTitle": "Delete this post?",
+      "deleteFailed": "Could not delete the post, please try again.",
       "editBodyLabel": "Edit content",
       "saveChanges": "Save changes",
       "saved": "Changes saved",
@@ -275,6 +277,9 @@
       "edit": "Edit comment",
       "editShort": "Edit",
       "delete": "Delete comment",
+      "deleteTitle": "Delete this comment?",
+      "confirmDelete": "Permanently delete this comment?",
+      "deleteFailed": "Could not delete the comment, please try again.",
       "deleteShort": "Delete",
       "hide": "Hide comment",
       "hideShort": "Hide",

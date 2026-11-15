@@ -1,7 +1,7 @@
 // [CR-147] Gộp trang đầu bảng tin: đổi người xem/bộ lọc ⇒ bỏ danh sách cũ (không giữ bài người xem mới không được thấy).
 import { describe, expect, test } from "bun:test";
 import type { FeedResponse } from "@ai/contracts/community";
-import { applyFirstPage, feedScopeKey, mergeFirstPage } from "./feed-merge";
+import { applyFirstPage, feedScopeKey, mergeFirstPage, withoutGone } from "./feed-merge";
 
 const post = (id: string) => ({ id }) as unknown as FeedResponse["items"][number];
 const page = (ids: string[], next?: string): FeedResponse =>
@@ -46,5 +46,20 @@ describe("mergeFirstPage", () => {
     const r = mergeFirstPage(page(["a", "b"], "c0"), page(["a", "b"]));
     expect(r.items.map((p) => p.id)).toEqual(["a", "b"]);
     expect(r.nextCursor).toBeUndefined();
+  });
+});
+
+describe("withoutGone", () => {
+  test("xoá bài ở trang sau: nạp lại trang đầu vẫn giữ bài cũ trong đuôi, nhưng bài đã xoá bị bỏ ngay", () => {
+    const old = page(["a", "b", "c", "d"], "cur");
+    const merged = mergeFirstPage(old, page(["a", "b"], "cur"));
+    expect(merged.items.map((p) => p.id)).toContain("d"); // ghost nếu không lọc
+    const r = withoutGone(merged, new Set(["d"]));
+    expect(r?.items.map((p) => p.id)).toEqual(["a", "b", "c"]);
+  });
+  test("không có bài xoá ⇒ trả nguyên đối tượng; null ⇒ null", () => {
+    const d = page(["a"]);
+    expect(withoutGone(d, new Set(["zz"]))).toBe(d);
+    expect(withoutGone(null, new Set(["a"]))).toBeNull();
   });
 });

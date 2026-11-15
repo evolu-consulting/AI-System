@@ -2,6 +2,7 @@
 import type { OrgDepartment, OrgMember } from "@ai/contracts/org";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type DeptRow, type OrgActions, parentChoices } from "../lib/org-edit";
@@ -23,6 +24,7 @@ export function DeptCard({ row, depts, members, busy, selected, act, api }: Prop
   const { t } = useTranslation();
   const d = row.dept;
   const [editing, setEditing] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [name, setName] = useState(d.name);
   const who = (id: string) => members.find((m) => m.user_id === id)?.display_name ?? id;
   const head = d.head_user_id;
@@ -75,13 +77,19 @@ export function DeptCard({ row, depts, members, busy, selected, act, api }: Prop
           variant="outline"
           className="ml-auto"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(t("orgEdit.removeConfirm", { name: d.name })))
-              act(() => api.removeDept(d.group_id));
-          }}
+          onClick={() => setRemoving(true)}
         >
           {t("orgEdit.remove")}
         </Button>
+        <ConfirmDialog
+          open={removing}
+          onOpenChange={setRemoving}
+          title={t("orgEdit.remove")}
+          description={t("orgEdit.removeConfirm", { name: d.name })}
+          confirmLabel={t("orgEdit.remove")}
+          destructive
+          onConfirm={() => act(() => api.removeDept(d.group_id))}
+        />
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
         <label className="flex items-center gap-2">

@@ -26,3 +26,12 @@ export function applyFirstPage(
 ): FeedResponse {
   return old && sameScope ? mergeFirstPage(old, fresh) : fresh;
 }
+
+/** Bài vừa xoá (lạc quan) ⇒ bỏ khỏi danh sách ngay, kể cả bài ở trang sau đã tải dần mà lần nạp lại trang đầu không đụng tới. */
+export function withoutGone(
+  data: FeedResponse | null,
+  gone: ReadonlySet<string>,
+): FeedResponse | null {
+  if (!data || gone.size === 0 || !data.items.some((p) => gone.has(p.id))) return data;
+  return { ...data, items: data.items.filter((p) => !gone.has(p.id)) };
+}

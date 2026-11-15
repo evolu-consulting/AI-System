@@ -32,6 +32,9 @@ export type Ctx = {
   /** Tăng sau mỗi thay đổi dữ liệu: các màn nạp lại. */
   rev: number;
   bump: () => void;
+  /** Bài vừa xoá: ẩn ngay khỏi mọi danh sách (lạc quan). `dropPost(id, false)` = khôi phục khi xoá lỗi. */
+  gone: ReadonlySet<string>;
+  dropPost: (id: string, gone: boolean) => void;
   route: Route;
   go: (r: Route) => void;
   href: (r: Route) => string;
@@ -67,6 +70,17 @@ export function AppProvider({
   const router: RouterPort = host.router;
   const [viewer, setViewer] = useState<CommunityViewer | null>(null);
   const [rev, setRev] = useState(0);
+  const [gone, setGone] = useState<ReadonlySet<string>>(new Set());
+  const dropPost = useCallback(
+    (id: string, on: boolean) =>
+      setGone((g) => {
+        const n = new Set(g);
+        if (on) n.add(id);
+        else n.delete(id);
+        return n;
+      }),
+    [],
+  );
   const [route, setRoute] = useState<Route>(() => router.read().route);
   const [brandRaw, setBrandRaw] = useState<CommunityBrand | null>(null);
   const [search, setSearch] = useState("");
@@ -141,6 +155,8 @@ export function AppProvider({
         },
         rev,
         bump,
+        gone,
+        dropPost,
         route,
         go: router.go,
         href: router.href,
@@ -154,7 +170,21 @@ export function AppProvider({
         toast: setMsg,
         isHostViewer: viewer.role !== "partner",
       },
-    [boot, router, host, viewer, rev, bump, route, search, urlSearch, brandRaw, brandAccent],
+    [
+      boot,
+      router,
+      host,
+      viewer,
+      rev,
+      bump,
+      gone,
+      dropPost,
+      route,
+      search,
+      urlSearch,
+      brandRaw,
+      brandAccent,
+    ],
   );
   if (!value)
     return (

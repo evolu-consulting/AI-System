@@ -2,6 +2,7 @@
 // Gõ `@` nhắc tên công ty đối tác (chỉ chủ quản có gợi ý); gửi kèm `mentions` (id công ty).
 import type { CommentView, Mention, PostView } from "@ai/contracts/community";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { confirmDialog } from "~/components/shared/dialog-bus";
 import { useApp } from "../application/ctx";
 import { initials } from "../domain/format";
 import { focusCommentId } from "../domain/search-hint";
@@ -138,7 +139,21 @@ export function Thread({
           action={extra?.(c)}
           actions={commentActions(c, ctx)}
           onEdit={(txt) => after(api.editComment(post.id, c.id, txt))}
-          onDelete={() => after(api.deleteComment(post.id, c.id), c.id)}
+          onDelete={async () => {
+            const ok = await confirmDialog({
+              title: t("community.comment.deleteTitle"),
+              body: t("community.comment.confirmDelete"),
+              confirmLabel: t("community.common.delete"),
+              cancelLabel: t("community.common.cancel"),
+              danger: true,
+            });
+            if (!ok) return;
+            try {
+              await after(api.deleteComment(post.id, c.id), c.id);
+            } catch {
+              toast(t("community.comment.deleteFailed"));
+            }
+          }}
           onHide={(h) => after(api.hideComment(post.id, c.id, h))}
         />
       ))}
