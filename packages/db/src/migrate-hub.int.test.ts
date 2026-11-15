@@ -196,13 +196,19 @@ describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
     const fn = await sql<{ f: string; rw: boolean; pub: boolean }[]>`
       select f, has_function_privilege('hub_rw', f, 'execute') as rw, has_function_privilege('public', f, 'execute') as pub
       from unnest(array['hub.pmsg_send(uuid, uuid, text, uuid[])', 'hub.pmsg_inbox(uuid, timestamptz, uuid, integer)',
-        'hub.cc_links(text, timestamptz, uuid, integer)', 'hub.pmsg_ctx()', 'hub.pmsg_eligible_raw(uuid, uuid)']) as f`;
+        'hub.cc_links(text, timestamptz, uuid, integer)', 'hub.pmsg_ctx()', 'hub.pmsg_eligible_raw(uuid, uuid)',
+        'hub.pmsg_file_add(uuid, uuid, text, text, text, bigint, text)', 'hub.pmsg_people(uuid[], text, text, uuid, integer)',
+        'hub.pmsg_files_sweep(interval)', 'hub.pmsg_connected(uuid)']) as f`;
     expect(fn.map((x) => [x.f, x.rw, x.pub])).toEqual([
       ["hub.pmsg_send(uuid, uuid, text, uuid[])", true, false],
       ["hub.pmsg_inbox(uuid, timestamptz, uuid, integer)", true, false],
       ["hub.cc_links(text, timestamptz, uuid, integer)", true, false],
       ["hub.pmsg_ctx()", false, false],
       ["hub.pmsg_eligible_raw(uuid, uuid)", false, false],
+      ["hub.pmsg_file_add(uuid, uuid, text, text, text, bigint, text)", true, false],
+      ["hub.pmsg_people(uuid[], text, text, uuid, integer)", true, false],
+      ["hub.pmsg_files_sweep(interval)", true, false],
+      ["hub.pmsg_connected(uuid)", false, false],
     ]);
     // CR-169: không còn hàm trò chuyện chung cc_* (thread/send/file/unread/ctx) sau 0149.
     const gone = await sql<{ n: string }[]>`
