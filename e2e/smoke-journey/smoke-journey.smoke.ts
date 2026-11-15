@@ -202,23 +202,52 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
     async () => {
       const p = await as("a", "nv");
       if (manual) {
+        const resp = p.waitForResponse((r) => r.url().includes("manual-entry"), {
+          timeout: 30_000,
+        });
         await p.getByTestId("manual-entry").click();
+        const r = await resp;
+        const body = (await r.text()).slice(0, 200);
+        await expect(
+          p.getByTestId("manual-banner"),
+          `manual-entry → ${r.status()} ${body}`,
+        ).toBeVisible({ timeout: 30_000 });
         await p.getByRole("textbox", { name: /^Tên hợp đồng/ }).fill(TITLE);
-        await p.getByTestId("manual-reconciled").click();
+        const eff = p.getByLabel(/^Hiệu lực từ/);
+        if ((await eff.count()) && (await eff.inputValue()) === "") await eff.fill("2026-11-15");
+        // CR-157: ô «Tôi đã đối chiếu…» bị khoá khi form còn sửa chưa lưu (lưu sửa xoá đối chiếu) ⇒ điền → Lưu nháp → mới tích.
         const kind = p.getByRole("group", { name: /Loại/ }).getByRole("radio").first();
         if (await kind.count()) await kind.click();
-        const save = p.getByRole("button", { name: /^(Xác nhận và lưu|Lưu thay đổi)/ }).first();
-        if (await save.isEnabled()) await save.click();
+        await p.getByRole("button", { name: "Thao tác" }).click();
+        await p.getByRole("menuitem", { name: "Lưu nháp" }).click();
+        const tick = p.getByTestId("manual-reconciled");
+        await expect(tick).toBeEnabled({ timeout: 30_000 });
+        await tick.click();
+        await expect(tick).toBeChecked({ timeout: 30_000 });
       } else {
         await expect(p.getByRole("textbox", { name: /^Nhà cung cấp/ }))
           .not.toHaveValue("", { timeout: 60_000 })
           .catch(() => undefined);
       }
+      // «Hiệu lực từ» bắt buộc: AI không luôn điền được (ảnh S7: «Thiếu: Hiệu lực từ») ⇒ người dùng điền tay như thật.
+      const from = p.getByLabel(/^Hiệu lực từ/);
+      if (await from.count()) {
+        if ((await from.inputValue()) === "") {
+          await from.fill("2026-11-15");
+          await p.getByRole("button", { name: "Thao tác" }).click();
+          await p.getByRole("menuitem", { name: "Lưu nháp" }).click();
+        }
+      }
       const btn = p.getByRole("button", { name: "Gửi duyệt" });
       await expect(btn).toBeVisible({ timeout: 60_000 });
       await expect(async () => {
-        if (await btn.isVisible()) await btn.click({ timeout: 5_000 });
-        await expect(btn).toBeHidden({ timeout: 10_000 });
+        // Hộp «Gắn sản phẩm cho các dòng hợp đồng» (dòng hàng hoá AI đọc ra) hiện sau khi bấm Gửi duyệt: giữ mặc định «Tạo sản phẩm mới» ⇒ Xác nhận.
+        const gan = p.getByRole("dialog", { name: /Gắn sản phẩm/ });
+        if (await gan.isVisible())
+          await gan.getByRole("button", { name: "Xác nhận", exact: true }).click();
+        else if (await btn.isVisible()) await btn.click({ timeout: 5_000 });
+        await expect(btn.or(gan)).toBeVisible({ timeout: 10_000 });
+        await expect(btn).toBeHidden({ timeout: 6_000 });
       }).toPass({ timeout: 60_000 });
       await expect(stepOf(p, "Trưởng phòng duyệt")).toBeVisible({ timeout: 120_000 });
     },
@@ -366,22 +395,38 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
       "S18",
       "Tin nhắn: nhân viên A nhắn 1 người B kèm tệp, B thấy + trả lời",
       async () => {
+        // Nhân viên (không Toàn quyền) không thấy khối «Công ty đã kết nối»: đi đường «Tin nhắn» › chip công ty › tìm người.
         const a = await as("a", "nv");
-        await a.goto(`${E.cw}/contracts/partners`);
-        await a.getByRole("button", { name: "Nhắn tin" }).first().click();
-        await a.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(`Xin chào ${RUN}`);
-        await a.getByTestId("cc-file-input").setInputFiles({
+        await a.goto(`${E.cw}/contracts/messages`);
+        await a
+          .getByTestId("company-filter")
+          .getByRole("button", { name: /Smoke B/ })
+          .click({ timeout: 60_000 });
+        await a
+          .getByRole("searchbox", { name: "Tìm người theo tên, chức vụ" })
+          .fill("Nhân viên Smoke B");
+        await a.getByTestId("people-results").getByTestId("person-row").first().click();
+        const files = a.getByTestId("composer-file-input");
+        await files.setInputFiles({
           name: "kem-theo.pdf",
           mimeType: "application/pdf",
           buffer: await pdfOf(["TEP KEM THEO"]),
         });
+        const drafts = a.getByTestId("draft-list");
+        await expect(drafts).toContainText("kem-theo.pdf");
+        await expect(drafts).not.toContainText("Đang tải");
+        await a.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(`Xin chào ${RUN}`);
         await a.getByRole("button", { name: "Gửi", exact: true }).click();
+        await expect(a.getByTestId("msg-row").filter({ hasText: `Xin chào ${RUN}` })).toBeVisible();
         const b = await as("b", "nv");
         await b.goto(`${E.cw}/contracts/messages`);
-        const msg = b.getByText(`Xin chào ${RUN}`).first();
-        await reloadUntil(b, async () => expect(msg).toBeVisible({ timeout: 4_000 }));
+        const conv = b.getByTestId("conv-row").filter({ hasText: "Nhân viên Smoke A" });
+        await reloadUntil(b, async () => expect(conv).toBeVisible({ timeout: 4_000 }));
+        await conv.click();
+        await expect(b.getByText(`Xin chào ${RUN}`).first()).toBeVisible({ timeout: 30_000 });
         await b.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(`Đã nhận ${RUN}`);
         await b.getByRole("button", { name: "Gửi", exact: true }).click();
+        await expect(b.getByTestId("msg-row").filter({ hasText: `Đã nhận ${RUN}` })).toBeVisible();
       },
       ["S17"],
     );

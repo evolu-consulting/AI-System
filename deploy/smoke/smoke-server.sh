@@ -23,6 +23,16 @@ purge() {
     tool tools/scripts/src/tenant-purge.ts --tenant "smoke-$k" --apply --confirm "Smoke $(echo "$k" | tr a-z A-Z)" --state "/tmp/smoke-purge-$k.json" 2>&1 | tail -3 || true
   done
 }
+# Gỡ khoá đăng nhập (đếm sai mật khẩu) của CHÍNH các tài khoản tạm smoke-a/smoke-b: lượt hỏng trước không làm khoá lượt sau.
+# Khoá Redis: rl:auth:a:<sha256(tenant_key NUL username)> và rl:auth:p:<cùng băm> (limit.redis.ts). Chỉ đúng 6 tài khoản tạm.
+unlock() {
+  local keys=() k r u h
+  for k in a b; do for r in gd tp nv; do for u in "smoke-$k-$r" "smoke-$k-$r@smoke.invalid"; do
+    h="$(printf 'smoke-%s\0%s' "$k" "$u" | sha256sum | cut -d' ' -f1)"
+    keys+=("rl:auth:a:$h" "rl:auth:p:$h")
+  done; done; done
+  docker compose -p "$PROJ" exec -T redis redis-cli DEL "${keys[@]}" </dev/null 2>&1 | sed 's/^/gỡ khoá đăng nhập tạm (số khoá xoá): /' || true
+}
 case "$MODE" in
   purge) purge ;;
   probe) # in 1 nếu image có CR-169 (pmsg_send), ngược lại 0 (bài kiểm tin nhắn chỉ chạy khi có)
@@ -30,6 +40,7 @@ case "$MODE" in
   setup)
     [ -n "$SMOKE_PW" ] || { echo "thiếu mật khẩu tạm (dòng đầu stdin)"; exit 2; }
     purge
+    unlock
     ACTOR="$(tool tools/scripts/src/smoke-flows.ts actor | tail -1 | tr -d '\r')"
     for k in a b; do
       tool apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts --file "/app/deploy/smoke/tenants/smoke-$k.yaml" \
