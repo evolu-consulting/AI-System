@@ -39,7 +39,7 @@ Viết tắt: `H` = `apps/hub-api/src/modules/packs/contracts`, `W` = `apps/work
 | 6 | `cr169-web-partner` | Sonnet | lọc công ty, tìm người tải dần, dòng/khung `partner`, chỉ đọc, Bảng tin công ty + unit lib | 1, 3b, 5b | — | không | thường | spec §8 | [x] [test: packages/messages-web/src/lib/partner-web.test.ts » CR-169 · bộ lọc công ty] [test: packages/messages-web/src/lib/partner-web.test.ts » CR-169 · cuộc partner trong danh sách] [test: packages/messages-web/src/lib/partner-web.test.ts » CR-169 · chỉ đọc sau ngắt] [test: packages/messages-web/src/lib/attach-view.test.ts » CR-169 · attach-view]
 | 7 | `cr169-web-partner-page` | Sonnet | trang đối tác 3 tab, bỏ «Thao tác», «Nhắn tin» ở khối kết nối, xoá UI trò chuyện + unit `partner-v2.test.ts` | 1 | — | không | thường | spec §8 hàng «Trang đối tác» | [x] [test: apps/workspace-web/src/features/partners/lib/partner-v2.test.ts » CR-169 · 3 tab] |
 | 8 | `cr169-chat-web` | Sonnet | chat-web mục «Tin nhắn» (gắn gói, badge, stream), ẩn khi không quyền SHT, không vào ngữ cảnh trợ lý + unit | 6 | — | không | thường | spec §7–8, P12; `CW/features/realtime/event-router.ts` | [x] [test: apps/chat-web/src/features/messages/lib/access.test.ts » CR-169 · canUseMessages] [test: apps/chat-web/src/features/messages/lib/confirm-bus.test.ts » CR-169 · confirm-bus] [test: apps/chat-web/src/features/realtime/msg-frames.test.ts » CR-169 · msg-frames] [test: apps/chat-web/src/features/messages/lib/assistant-isolation.test.ts » CR-169 · tin nhắn tách khỏi trợ lý AI]
-| 9 | `cr169-e2e` | Sonnet | fixture + e2e hành trình (chỉ viết; điều phối chạy cuối đợt) + sửa e2e CR-161 | 6, 7, 8 | — | không | thường | mục e2e dưới |
+| 9 | `cr169-e2e` | Sonnet | fixture + e2e hành trình (chỉ viết; điều phối chạy cuối đợt) + sửa e2e CR-161 | 6, 7, 8 | — | không | thường | mục e2e dưới | [x] [test: e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J1] [test: e2e/cr161/ket-noi-cong-ty.spec.ts » CR161-J3] |
 
 Thứ tự: {1, 2a, 5a} song song → {2b, 4, 5b, 7} → 3a → 3b → 6 → 8 → 9. Tối đa 4 agent cùng lúc (A1). 3a/3b chung `messages.routes.ts` ⇒ nối tiếp. 2a sát trần 20 phút — quá thì tách `pmsg_delete`/`pmsg_unread` sang 2b.
 
@@ -66,7 +66,7 @@ Fixture: NitiGroup (Tiên Toàn quyền, Vy nhân viên, Lan nhân viên), Presc
 | 9 | Web Tin nhắn với công ty kết nối | cr169-web-partner | [x] |
 | 10 | Trang đối tác 3 tab | cr169-web-partner-page | [x] |
 | 11 | chat-web «Tin nhắn» | cr169-chat-web | [ ] |
-| 12 | e2e hành trình | cr169-e2e | [ ] |
+| 12 | e2e hành trình | cr169-e2e | [x] |
 
 ## Quyết định trong lúc làm
 - (PLAN) Lưu `partner` ở `hub.pmsg_*` (xuyên tenant, DEFINER), giữ `contracts.msg_*` cho nội bộ; một contract/một UI/một họ sự kiện `msg.*` — lý do spec §2.
@@ -94,6 +94,10 @@ Fixture: NitiGroup (Tiên Toàn quyền, Vy nhân viên, Lan nhân viên), Presc
 - (lát 6) «Bảng tin <Công ty>» là hộp thoại mở từ nút đầu danh sách khi lọc một công ty (testid `open-feed`, `feed-dialog`, `feed-post`); `?company=` nhận uuid hoặc `own` (route `/contracts/messages`). Xoá `fetchPosts`/thread ở `partners/api.connect.ts` (3 lỗi kiểu hết). `use-cc-chat.ts`, `lib/cc-chat.ts`, phần chat ở `ConnectedPanel` đã gỡ từ lát 7.
 - (lát 6) workspace-web `bun test` còn 2 fail + 1 lỗi có sẵn, không dính lát (`use-flow-caps.test.ts:45`, `table.test.tsx:112`, `search-hint.test.ts`).
 
+- (lát 9) e2e hành trình ở `e2e/cr169/tin-nhan-cong-ty.spec.ts` (8 ca, nối tiếp; job `cr169` = `playwright.cr169.config.ts`, cổng dịch 130, dùng lại `e2e/cr161/_cr161-stack.ts`); tên file khác dự kiến (`tin-nhan-cong-ty`, không `nhan-tin-cong-ty`). Fixture `e2e/_kit/two-companies*.ts` thêm Lan + Nam (NitiGroup), Hà (Preschool), bài công khai cho cả hai công ty; Nam bị gỡ khỏi nhóm `contracts-editor` qua API (`removeGroupMember`). Ca «công ty thứ ba tìm người» của mục e2e dưới: để int (`pmsg-files-db` danh bạ ∩ kết nối) — không có công ty thứ ba trong fixture e2e.
+- (lát 9) `CR169-J7` (Chat AI app) đánh `test.fixme`: stack journey chưa có chat-web. Điều phối bật sau khi gộp lát 8: thêm webServer chat-web vào `playwright.cr169.config.ts` + đặt `JA_CHAT_URL`, bỏ `test.fixme`, chỉnh nhãn ô hỏi trợ lý theo chat-web thật (đang đoán `/Nhập|Hỏi|Nhắn/`).
+- (lát 9) Sửa e2e cũ theo bẫy lát 6: CR-161 (`ket-noi-cong-ty.spec.ts`: bỏ trò chuyện/Bảng tin công ty ở trang đối tác; thêm kiểm 3 tab, nút «Nhắn tin», Bảng tin trong Tin nhắn, chip biến mất sau ngắt); j19 (`draft-list`, `msg-files`); j20 (chọn chip «<Công ty mình>» trước khi tìm «Nhóm»/«Thành viên»); j18 không đổi. `test-all.discover.test.ts` đếm 31 cấu hình (thêm cr169 + smoke-journey có sẵn trước đó, test cũ đã đỏ).
+
 ## Tranh chấp test
 
 ## Delta (so với docs/current)
@@ -102,48 +106,49 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED pack-contracts/tin-nhan.md
 #### Yêu cầu: Nhắn 1-1 với người của công ty đã kết nối (CR-169)
 Ngoài 1-1/nhóm trong công ty, nhân viên nội bộ có quyền Sổ Hợp Tác nhắn 1-1 với nhân viên của công ty đang kết nối (CR-161); cùng màn, cùng khung chat, đính kèm, thu hồi, «Đã xem», realtime như tin nội bộ. Không chuông, không email. Nhóm nhiều công ty không có.
-- Kịch bản: khi Vy (NitiGroup) nhắn Hà (Preschool) kèm PDF thì Hà thấy số chưa đọc, mở thấy tin, tải được tệp và Vy thấy «Đã xem» [test: thủ công — chưa viết]
+- Kịch bản: khi Vy (NitiGroup) nhắn Hà (Preschool) kèm PDF thì Hà thấy số chưa đọc, mở thấy tin, tải được tệp và Vy thấy «Đã xem» [test: e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J1; e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J2]
 - Kịch bản: khi mở lại 1-1 với cùng người thì ra đúng cuộc cũ, gửi lặp cùng mã chỉ một tin [test: apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P2 mở 1–1; apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P4 gửi]
 - Kịch bản: khi người gửi thu hồi tin thì nội dung và tệp biến mất ở cả hai công ty [test: apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P5 thu hồi]
 
 #### Yêu cầu: Cách ly tin giữa công ty kết nối
 Chỉ hai người trong cuộc đọc được; đồng nghiệp khác, công ty thứ ba, user đối tác (external), người không có quyền Sổ Hợp Tác không thấy, không gửi, không tải tệp; người ngoài nhận «không tìm thấy».
+- Kịch bản: khi người ngoài cuộc hoặc người không còn quyền Sổ Hợp Tác mở cuộc thì 404/403 và danh sách của họ không có cuộc đó [test: e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J6]
 - Kịch bản: khi công ty thứ ba hoặc đồng nghiệp ngoài cuộc gọi đọc/gửi/tải tệp thì 404 và không thấy dòng nào [test: apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P3 chỉ hai đầu thấy]
 - Kịch bản: khi gọi thẳng hàm cơ sở dữ liệu mà không có công ty/người dùng hoặc bằng vai không được cấp thì bị từ chối [test: apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P1 chỉ người hợp lệ]
 
 #### Yêu cầu: Ngắt kết nối thì cuộc trò chuyện chỉ đọc
 Hai công ty không còn kết nối (hoặc người kia không còn dùng Sổ Hợp Tác) ⇒ vẫn xem tin cũ và tệp, không gửi, không tải lên; màn nói lý do. Kết nối lại dùng đúng cuộc cũ.
-- Kịch bản: khi Tiên ngắt kết nối thì Vy mở cuộc với Hà thấy tin cũ, câu chỉ đọc, gửi bị 409 `MSG_NOT_CONNECTED` [test: apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P7 chỉ đọc sau ngắt]
+- Kịch bản: khi Tiên ngắt kết nối thì Vy mở cuộc với Hà thấy tin cũ, câu chỉ đọc, gửi bị 409 `MSG_NOT_CONNECTED` [test: apps/hub-api/src/modules/packs/contracts/messages/pmsg-db.int.test.ts » P7 chỉ đọc sau ngắt; e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J8]
 
 #### Yêu cầu: Danh sách lọc theo công ty, tìm người, tải dần
 Danh sách cuộc gần đây trước; chip Tất cả / công ty mình / từng công ty đã kết nối; tìm người theo tên hoặc chức vụ (không phân biệt hoa/dấu), tải dần; người công ty kia hiện tên, chức vụ, tên công ty — không email, điện thoại, phòng ban.
-- Kịch bản: khi chọn chip «Preschool» thì chỉ thấy cuộc với người Preschool và tìm «kế toán» ra người Preschool có chức vụ đó [test: thủ công — chưa viết]
+- Kịch bản: khi chọn chip «Preschool» thì chỉ thấy cuộc với người Preschool và tìm «kế toán» ra người Preschool có chức vụ đó [test: e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J1; e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J3]
 - Kịch bản: khi lọc theo công ty chưa kết nối thì danh sách rỗng, không lỗi [test: thủ công — chưa viết]
 - Kịch bản: khi có 200 cuộc mỗi loại và 100.000 tin thì danh sách 30 cuộc p95 ≤ 50 ms một câu SQL, tổng chưa đọc ≤ 20 ms [test: thủ công — chưa viết]
 
 #### Yêu cầu: Xem Bảng tin công ty kết nối trong Tin nhắn
 Khi lọc theo một công ty đã kết nối, nút «Bảng tin <Công ty>» mở bài công khai của công ty đó (bản đã che, chỉ đọc) cho mọi nhân viên nội bộ; ngắt kết nối ⇒ mất ngay.
-- Kịch bản: khi Vy bấm «Bảng tin Preschool» thì thấy bài công khai còn hạn, đã che liên hệ [test: thủ công — chưa viết]
+- Kịch bản: khi Vy bấm «Bảng tin Preschool» thì thấy bài công khai còn hạn, đã che liên hệ [test: e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J5]
 
 #### Yêu cầu: Tin nhắn trong ứng dụng Chat AI, trợ lý AI không truy cập
 Ứng dụng Chat AI có mục «Tin nhắn» (khi người dùng có quyền Sổ Hợp Tác) cùng dữ liệu và cùng màn với Sổ Hợp Tác. Trợ lý AI không đọc, không gửi, không tóm tắt tin nhắn ở bất kỳ app nào.
-- Kịch bản: khi Hà gửi tin trong Chat AI thì Vy thấy ngay trong Sổ Hợp Tác [test: thủ công — chưa viết]
-- Kịch bản: khi hỏi trợ lý về tin nhắn thì trợ lý không có dữ liệu tin nhắn [test: thủ công — chưa viết]
+- Kịch bản: khi Hà gửi tin trong Chat AI thì Vy thấy ngay trong Sổ Hợp Tác [test: e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J7]
+- Kịch bản: khi hỏi trợ lý về tin nhắn thì trợ lý không có dữ liệu tin nhắn [test: e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J7]
 
 ### MODIFIED platform/partner-links.md
 #### Yêu cầu: Ngắt kết nối (CR-169)
 Ngắt kết nối như CR-161 (mất gửi HĐ đi thẳng, mất xem bài); mọi cuộc tin nhắn 1-1 giữa người hai công ty thành chỉ đọc. Danh sách «Công ty đã kết nối» không còn số chưa đọc; mỗi công ty có nút «Nhắn tin» mở Tin nhắn lọc theo công ty đó.
-- Kịch bản: khi bấm «Nhắn tin» ở công ty đã kết nối thì mở Tin nhắn với chip công ty đó [test: thủ công — chưa viết]
+- Kịch bản: khi bấm «Nhắn tin» ở công ty đã kết nối thì mở Tin nhắn với chip công ty đó [test: e2e/cr161/ket-noi-cong-ty.spec.ts » CR161-J3]
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Công ty đã kết nối xem bài công khai của nhau (CR-169)
 Như CR-161 nhưng mọi nhân viên nội bộ có quyền Sổ Hợp Tác (không chỉ Toàn quyền) xem được, và xem trong «Tin nhắn» thay vì trang đối tác.
-- Kịch bản: khi nhân viên thường gọi xem bài công ty đã kết nối thì 200 bản đã che; user external thì 403 [test: thủ công — chưa viết]
+- Kịch bản: khi nhân viên thường gọi xem bài công ty đã kết nối thì 200 bản đã che; user external thì 403 [test: e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J5]
 
 ### ADDED sht/trang-doi-tac.md
 #### Yêu cầu: Trang chi tiết đối tác chỉ còn ba tab
 Tab: Tổng quan · Hợp đồng · Sổ việc & ghi chú. Không còn «Bảng tin», «Trò chuyện», «Bảng tin công ty», không có nút «Thao tác»; «Sửa liên hệ» là nút chữ cạnh khối liên hệ cho người có quyền ghi. Đường dẫn tab cũ về Tổng quan.
-- Kịch bản: khi mở `?tab=chat` hoặc `?tab=community` thì về Tổng quan [test: thủ công — chưa viết]
+- Kịch bản: khi mở `?tab=chat` hoặc `?tab=community` thì về Tổng quan [test: e2e/cr161/ket-noi-cong-ty.spec.ts » CR161-J3b]
 - Kịch bản: khi người có quyền ghi bấm «Sửa liên hệ» thì mở khung sửa liên hệ [test: thủ công — chưa viết]
 - (lát 4) Purge theo luật người dùng chốt (thay câu spec §5 «tin xoá mềm»): tin của A GIỮ chữ, `sender_user`→tombstone, `files='[]'`, `client_id` đổi mới; mốc đọc A→0; thread giữ cho B; bên kia đã xoá ⇒ xoá thread. Nhiều thread cùng (người B) gộp vào (tombstone,B) đã có hoặc thread nhỏ nhất (seq dời cộng dồn). Số liệu audit đổi tên `pmsg*`. `scrubChatBells` giữ (chuông `cc.*` kết nối còn dùng).
 - (lát 7) «Nhắn tin» dẫn `/contracts/messages?company=<tenant_id>` (route chưa có `company` — `search` ép kiểu, lát 6 phải nhận tham số); xoá luôn tab/hook Bảng tin (CommunityTab, use-partner-community, community-block), số chưa đọc ở khối kết nối. e2e cần sửa (lát 9): `e2e/cr161/ket-noi-cong-ty.spec.ts:48` (tab=chat, ChatTab/Bảng tin công ty), `e2e/_kit/two-companies.seed.ts`, `e2e/community-web/cr130-journey.cs.ts` (tab Bảng tin), nút «Mở trang đối tác»/`connect-unread` ở khối kết nối; `act-editContact` nay là nút chữ (không qua menu «Thao tác»).
