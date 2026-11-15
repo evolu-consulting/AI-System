@@ -65,6 +65,9 @@ const contractAndFile = (tx: Tx, tid: string) => ({
   },
 });
 
+/** Công ty ĐÃ KẾT NỐI với tenant hiện tại (`hub.cc_links`, DEFINER, theo `app.tenant_id`; trần 101 của hàm). */
+const CONNECTED = sql`hub.cc_links('connected', null::timestamptz, null::uuid, 101)`;
+
 const routing = (tx: Tx, tid: string) => ({
   /** Lần gửi gần nhất của HĐ (mở trước, rồi vòng cao nhất). */
   async latest(id: string): Promise<SendRow | null> {
@@ -87,20 +90,29 @@ const routing = (tx: Tx, tid: string) => ({
         }
       : null;
   },
-  /** CR-126 · MST có phải đối tác CỦA công ty này không (sổ vai đối tác `partner_roles`, khoá `tax:<chữ số>`). MỘT câu, theo index. */
+  /** CR-126 · MST có phải đối tác CỦA công ty này không: sổ vai đối tác `partner_roles` (khoá `tax:<chữ số>`) HOẶC công ty ĐÃ KẾT NỐI (CR-161,
+   * `hub.cc_links('connected')` — hàm DEFINER đọc `app.tenant_id`). MỘT câu. */
   async isPartner(tax: string): Promise<boolean> {
     const [r] = await tx.execute<{
       ok: boolean;
-    }>(sql`select exists (select 1 from contracts.partner_roles p
-        where p.tenant_id = ${tid}::uuid and p.party_key = 'tax:' || regexp_replace(${tax}, '[^0-9]', '', 'g')) as ok`);
+    }>(sql`with d as (select regexp_replace(${tax}, '[^0-9]', '', 'g') as v)
+      select exists (select 1 from contracts.partner_roles p, d
+          where p.tenant_id = ${tid}::uuid and p.party_key = 'tax:' || d.v)
+        or exists (select 1 from ${CONNECTED} c, d
+          where d.v <> '' and regexp_replace(coalesce(c.tax_code, ''), '[^0-9]', '', 'g') = d.v) as ok`);
     return r?.ok === true;
   },
-  /** CR-126 · danh sách đối tác có MST của công ty (lựa chọn `company_partners`), ≤ `limit`, MỘT câu. */
+  /** CR-126 · danh sách đối tác có MST của công ty (lựa chọn `company_partners`), ≤ `limit`, MỘT câu: sổ đối tác + công ty ĐÃ KẾT NỐI có MST
+   * (CR-161 «Đã kết nối: hiện trong Đối tác, gửi HĐ đi thẳng»; trùng MST ⇒ giữ tên trong sổ đối tác). */
   async partners(limit: number): Promise<{ tax: string; name: string }[]> {
     const rows = await tx.execute<{ tax: string; name: string }>(sql`select k.tax, k.name from (
-        select distinct on (p.party_key) substr(p.party_key, 5) as tax, coalesce(nullif(btrim(p.name), ''), substr(p.party_key, 5)) as name
-        from contracts.partner_roles p where p.tenant_id = ${tid}::uuid and p.party_key like 'tax:%'
-        order by p.party_key, p.name nulls last) k order by k.name, k.tax limit ${limit}`);
+        select distinct on (u.tax) u.tax, u.name from (
+          select substr(p.party_key, 5) as tax, coalesce(nullif(btrim(p.name), ''), substr(p.party_key, 5)) as name, 0 as src
+          from contracts.partner_roles p where p.tenant_id = ${tid}::uuid and p.party_key like 'tax:%'
+          union all
+          select x.tax, coalesce(nullif(btrim(c.legal_name), ''), x.tax), 1 from ${CONNECTED} c
+          cross join lateral (select regexp_replace(coalesce(c.tax_code, ''), '[^0-9]', '', 'g') as tax) x where x.tax <> ''
+        ) u order by u.tax, u.src, u.name nulls last) k order by k.name, k.tax limit ${limit}`);
     return [...rows];
   },
   /** Công ty nhận theo MST khớp đúng (chỉ công ty bật "cho phép tìm thấy") + trạng thái nối. */
