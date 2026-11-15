@@ -1,3 +1,12 @@
 {
-  "entries": []
+  "entries": [
+    {
+      "id": "K2 · màn đọc bỏ bản đã bị thay",
+      "suite": "int",
+      "reason": "Test phụ thuộc ngày: cố định ngày hiệu lực v2 = mùng 15 tháng hiện tại (monthDay(14)); chạy đúng/sau ngày 15 thì mốc ngày 21 ra 'due_soon'. Có từ CR-127 (4b88899b4), không do đợt CR-159..164. Việc: đổi test sang ngày tương đối với hôm nay.",
+      "owner": "điều phối",
+      "expires": "2026-11-20",
+      "since": "2026-11-15"
+    }
+  ]
 }
