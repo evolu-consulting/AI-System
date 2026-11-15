@@ -366,6 +366,9 @@ END $$;
 --> statement-breakpoint
 -- R11 · khoá lưu trữ của tệp: chỉ người Toàn quyền của một trong hai công ty trong cặp; tệp chưa gắn tin chỉ người tải thấy. Không thấy ⇒ NULL (route 404, không lộ).
 -- Đã ngắt vẫn tải được tệp của tin cũ (chỉ đọc).
+-- Chạy lại trên DB đã có 0148 (đổi kiểu trả về): DROP trước để áp lại 0146 không vỡ 42P13 (0148 tạo lại bản mới).
+DROP FUNCTION IF EXISTS hub.cc_file_get(uuid);
+--> statement-breakpoint
 CREATE OR REPLACE FUNCTION hub.cc_file_get(p_file_id uuid)
 RETURNS text
 LANGUAGE plpgsql
@@ -471,6 +474,9 @@ BEGIN
 END $$;
 --> statement-breakpoint
 -- R11 · dọn tệp chưa gắn tin quá p_older (việc nền, CHỈ scope system): soft delete + trả khoá lưu trữ để xoá nội dung. Không đụng tệp đã gắn tin.
+-- Chạy lại trên DB đã có 0148 (đổi kiểu trả về): DROP trước để áp lại 0146 không vỡ 42P13 (0148 tạo lại bản mới).
+DROP FUNCTION IF EXISTS hub.cc_files_sweep(interval);
+--> statement-breakpoint
 CREATE OR REPLACE FUNCTION hub.cc_files_sweep(p_older interval)
 RETURNS TABLE (file_id uuid, storage_key text)
 LANGUAGE plpgsql
