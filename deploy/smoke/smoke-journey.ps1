@@ -1,5 +1,6 @@
 # CR-159 · BAI KIEM HANH TRINH THAT tren moi truong da deploy (ban test / prod): "ban giao la dung duoc, khong phai tu cau hinh gi".
 #   powershell -File deploy/smoke/smoke-journey.ps1 -Env test
+#   powershell -File deploy/smoke/smoke-journey.ps1 -Env test -Keep        # chan doan: giu 2 cong ty tam (lan chay sau tu don)
 #   powershell -File deploy/smoke/smoke-journey.ps1 -Env prod -IKnowProd     # prod BAT BUOC co co -IKnowProd (nguoi dung dong y tung lan)
 # Cach lam: SSH vao may chu -> xoa sach smoke-a/smoke-b con sot -> tao 2 cong ty TAM smoke-a / smoke-b (tenant-onboard + quy trinh) voi MAT KHAU TAM
 # ngau nhien (chi o bo nho tien trinh nay + bien moi truong cua tien trinh con; KHONG ghi dia/log) -> chay Playwright tu may nay toi URL cong khai ->
@@ -11,7 +12,8 @@ param(
   [switch]$IKnowProd,
   [string]$Key = "$HOME\.ssh\evoc_key",
   [string]$Server = "evoc@149.202.83.5",
-  [string]$Grep = ""
+  [string]$Grep = "",
+  [switch]$Keep  # chan doan: GIU smoke-a/smoke-b sau bai (khong purge cuoi); lan chay thuong ke tiep tu xoa sach luc dau
 )
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -86,8 +88,8 @@ catch {
 }
 finally {
   $env:SMOKE_PW = $null; $env:SMOKE_CR169 = $null; $env:SMOKE_DIR_A = $null; $env:SMOKE_DIR_B = $null
-  Write-Host "== don cong ty tam (smoke-a, smoke-b)"
-  $rc = Invoke-Remote "purge"
+  if ($Keep) { Write-Host "== -Keep: GIU smoke-a/smoke-b de chan doan - chay lai bai khong co -Keep de don"; $rc = 0 }
+  else { Write-Host "== don cong ty tam (smoke-a, smoke-b)"; $rc = Invoke-Remote "purge" }
   if ($rc -ne 0) { Write-Host "CANH BAO: don smoke-a/smoke-b chua xong (exit $rc) - chay lai: powershell -File deploy/smoke/smoke-journey.ps1 -Env $Env (tu xoa sach luc dau)"; if ($code -eq 0) { $code = 2 } }
   & ssh @sshOpt $Server "rm -rf ~/$dir/smoke-src" 2>$null
   $pw = $null
