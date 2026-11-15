@@ -1,5 +1,5 @@
 {
-  "text": "← Hợp đồng Thêm hợp đồng Hợp đồng phải tải lên từ văn bản đã ký Tải lên tệp PDF, DOCX hoặc ảnh; AI sẽ đọc để bạn kiểm tra và xác nhận. Tải hợp đồng lên",
+  "text": "← Hợp đồng Thêm hợp đồng Hợp đồng phải tải lên từ văn bản đã ký Tải lên tệp PDF, DOCX hoặc ảnh; AI sẽ đọc để bạn kiểm tra và xác nhận. Kéo thả tệp vào đây hoặc Chọn tệp Hỗ trợ PDF, DOCX, PNG, JPG, JPEG, WEBP, GIF, HEIC, HEIF, MD, MARKDOWN, TXT, CSV, TSV, HTML, HTM, RTF, XML, JSON, XLSX, PPTX, ODT · tối đa 20 MB mỗi tệp",
   "boxes": {
     "heading": {
       "x": 16,
@@ -16,8 +16,8 @@
     "upload": {
       "x": 37,
       "y": 270.34375,
-      "w": 145,
-      "h": 44
+      "w": 316,
+      "h": 172.515625
     }
   }
 }
