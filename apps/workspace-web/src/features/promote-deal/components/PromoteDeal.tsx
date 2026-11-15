@@ -4,6 +4,7 @@ import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AttachField, fileToDraft } from "~/components/shared/AttachField";
 import {
   Dialog,
   DialogContent,
@@ -46,16 +47,18 @@ function PromoteDialog({ id, onClose }: { id: string; onClose: () => void }) {
           <DialogTitle>{L("title")}</DialogTitle>
           <DialogDescription>{L("hint")}</DialogDescription>
         </DialogHeader>
-        <label className="flex flex-col gap-1 text-[13px]" htmlFor="promote-file">
-          {L("file")}
-          <input
-            id="promote-file"
-            type="file"
-            data-testid="promote-file"
+        <div className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium">{L("file")}</span>
+          <AttachField
+            multiple={false}
             accept=".pdf,.docx,.jpg,.jpeg,.png,.md"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            inputId="promote-file"
+            inputTestId="promote-file"
+            items={file ? [fileToDraft(file)] : []}
+            onFiles={(fs) => setFile(fs[0] ?? null)}
+            onRemove={() => setFile(null)}
           />
-        </label>
+        </div>
         <label className="flex flex-col gap-1 text-[13px]" htmlFor="promote-number">
           {L("number")}
           <input

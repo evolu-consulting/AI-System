@@ -1,7 +1,9 @@
 // Ô soạn bài (mockup `.composer`): loại bài, trường theo loại, nhóm hàng, ảnh/video, người xem (chủ quản) / ghi chú (đối tác).
 
 import type { AudienceMode, PartnerOrg, PostType } from "@ai/contracts/community";
-import { useEffect, useRef, useState } from "react";
+import { attachPickLabels } from "@ai/web-kit/attach-layout";
+import { AttachPickButton } from "@ai/web-kit/ui/AttachDropzone";
+import { useEffect, useState } from "react";
 import { uploadFiles } from "../application/attach";
 import { loadComposerOpen, saveComposerOpen } from "../application/composer-pref";
 import { useApp } from "../application/ctx";
@@ -18,19 +20,12 @@ import { DEMO_PRODUCTS } from "../domain/demo-products";
 import { initials } from "../domain/format";
 import { defaultPostType, mentionScope } from "../domain/mention";
 import { defaultAudience } from "../domain/visibility";
-import { numLocale, t } from "../i18n";
+import { t } from "../i18n";
 import { CategoryDialog } from "./CategoryDialog";
 import { CompanyPicker } from "./CompanyPicker";
 import { DraftAttachments } from "./DraftAttachments";
 import { DraftFields } from "./DraftFields";
-import {
-  IconAttach,
-  IconChevron,
-  IconLock,
-  IconTypeBuy,
-  IconTypeNote,
-  IconTypeSell,
-} from "./icons";
+import { IconChevron, IconLock, IconTypeBuy, IconTypeNote, IconTypeSell } from "./icons";
 import { MentionChips, MentionPicker } from "./MentionPicker";
 
 const TYPE_ICON = { sell: IconTypeSell, buy: IconTypeBuy, note: IconTypeNote } as const;
@@ -116,7 +111,6 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
   const [audOpen, setAudOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [open, setOpenState] = useState<boolean>(() => loadComposerOpen(viewer.userId) ?? false);
-  const fileInput = useRef<HTMLInputElement>(null);
   const setOpen = (v: boolean) => {
     setOpenState(v);
     saveComposerOpen(viewer.userId, v);
@@ -161,17 +155,16 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
   };
   // Gộp Ảnh + Video thành "Đính kèm": MỖI tệp tải lên `POST /pack/community/files` (server quét MIME, cỡ, loại); bài gửi
   // `media:[{id,kind,label,fileId}]`. Quá hạn mức / lỗi upload ⇒ báo Việt hoá (`uploadFiles`).
-  const attach = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+  const attach = async (files: File[]) => {
+    if (files.length === 0) return;
     setUploading(true);
     try {
-      const r = await uploadFiles(api, Array.from(files), draft.media);
+      const r = await uploadFiles(api, files, draft.media);
       for (const n of r.notices)
         toast(t(n.key, n.params) + (n.retry ? ` ${t(n.retry.key, n.retry.params)}` : ""));
       setDraft((d) => ({ ...d, media: r.media }));
     } finally {
       setUploading(false);
-      if (fileInput.current) fileInput.current.value = "";
     }
   };
 
@@ -282,25 +275,15 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
             onChange={(media) => setDraft({ ...draft, media })}
           />
           <div className="cbar">
-            <input
-              ref={fileInput}
-              type="file"
-              multiple
-              hidden
-              data-testid="attach-input"
-              onChange={(e) => void attach(e.target.files)}
-            />
-            <button
-              type="button"
+            <AttachPickButton
+              labels={attachPickLabels(t, "community.composer.attachPick")}
+              check={false}
               className="ghost icononly"
-              data-testid="attach-btn"
-              aria-label={t("community.composer.attach")}
-              title={t("community.composer.attach")}
+              testId="attach-btn"
+              inputTestId="attach-input"
               disabled={uploading}
-              onClick={() => fileInput.current?.click()}
-            >
-              <IconAttach size={18} />
-            </button>
+              onFiles={(files) => void attach(files)}
+            />
             <MentionPicker
               mentions={draft.mentions}
               onChange={(mentions) => setDraft({ ...draft, mentions })}

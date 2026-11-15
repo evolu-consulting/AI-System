@@ -66,6 +66,35 @@ export function KindIcon({ mime, name, size = 22 }: { mime: string; name: string
   return <Ic size={size} aria-hidden="true" data-kind={kind} style={{ flex: "none" }} />;
 }
 
+/** CR-173 · màu theo theme sáng/tối có sẵn (token `--primary`, `--danger`; app khác tên ⇒ rơi về `currentColor`). */
+export const ACCENT = "var(--primary, currentColor)";
+export const DANGER = "var(--danger, var(--destructive, currentColor))";
+export const tint = (color: string, pct: number) =>
+  `color-mix(in srgb, ${color} ${pct}%, transparent)`;
+
+/** Ô vuông chứa biểu tượng loại tệp (thẻ tệp, hàng chọn tệp). */
+export function KindTile({ mime, name, size = 36 }: { mime: string; name: string; size?: number }) {
+  return (
+    <span
+      data-testid="kind-tile"
+      data-kind={fileKind(mime, name)}
+      style={{
+        flex: "none",
+        width: size,
+        height: size,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 8,
+        background: tint(ACCENT, 12),
+        color: ACCENT,
+      }}
+    >
+      <KindIcon mime={mime} name={name} size={Math.round(size * 0.55)} />
+    </span>
+  );
+}
+
 export const DownloadIcon = Download;
 export const SpinIcon = Loader2;
 

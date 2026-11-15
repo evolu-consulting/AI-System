@@ -1,15 +1,23 @@
 // HUB-FR-124 · AC-H37 · một trường của form `!key`, rẽ theo `type`: text / select / file / source_ref.
 
+import { ATTACH_ALLOWED, ATTACH_MAX_BYTES } from "@ai/contracts/chat";
 import type { ProcessInputDef } from "@ai/contracts/hub-admin";
+import { attachPickLabels } from "@ai/web-kit/attach-layout";
+import { AttachDraftList, type DraftItem } from "@ai/web-kit/ui/AttachDraft";
+import { AttachDropzone } from "@ai/web-kit/ui/AttachDropzone";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
-import { useRef } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
+import { attachLabels } from "~/features/attachments/lib/attachView";
 import { DATE_INPUT_INVALID_KEY } from "../../domain/date-input";
 import { NUMBER_INPUT_INVALID_KEY } from "../../domain/number-input";
 import type { FieldError, FieldValue } from "../lib/inputs-rules";
 import { type ChipsState, SELECT_CLASS, SourceRefField } from "./SourceRefField";
+
+const ATTACH_ACCEPT = Object.keys(ATTACH_ALLOWED)
+  .map((ext) => `.${ext}`)
+  .join(",");
 
 export type FieldFile = { uploading: boolean; failed: boolean };
 
@@ -151,64 +159,46 @@ function DateControl(p: Props) {
 }
 
 function FileControl({ def, value, file, disabled, onChange, onFile }: Props) {
-  const { t } = useTranslation();
-  const ref = useRef<HTMLInputElement>(null);
+  const { t, i18n } = useTranslation();
+  const [picked, setPicked] = useState("");
+  const name = file.uploading || file.failed ? picked : value.fileName;
+  const items: DraftItem[] = name
+    ? [
+        {
+          id: "file",
+          name,
+          mime: "",
+          status: file.uploading ? "uploading" : file.failed ? "error" : "ready",
+          ...(file.failed ? { errorText: t("process.inputs.field.file.error") } : {}),
+        },
+      ]
+    : [];
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={disabled || file.uploading}
-          onClick={() => ref.current?.click()}
-        >
-          {t("process.inputs.field.file.pick", { label: def.label })}
-        </Button>
-        {value.fileName && (
-          <>
-            <span className="truncate text-sm">{value.fileName}</span>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              disabled={disabled}
-              onClick={() => onChange({ value: "", fileName: "" })}
-            >
-              {t("process.inputs.field.file.remove")}
-            </Button>
-          </>
-        )}
-      </div>
-      <input
-        ref={ref}
-        type="file"
-        tabIndex={-1}
-        aria-hidden
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          e.target.value = "";
-          if (f) onFile(f);
+    <fieldset className="m-0 flex min-w-0 flex-col gap-1.5 border-0 p-0">
+      <legend className="sr-only">{def.label}</legend>
+      <AttachDropzone
+        variant={items.length > 0 ? "compact" : "full"}
+        multiple={false}
+        labels={attachPickLabels(t, "attach.pick")}
+        accept={ATTACH_ACCEPT}
+        maxBytes={ATTACH_MAX_BYTES}
+        disabled={disabled}
+        busy={file.uploading}
+        locale={i18n.language}
+        onFiles={(fs) => {
+          const f = fs[0];
+          if (!f) return;
+          setPicked(f.name);
+          onFile(f);
         }}
       />
-      {file.uploading && (
-        <div className="flex flex-col gap-1" aria-live="polite">
-          <div
-            role="progressbar"
-            aria-label={t("process.inputs.field.file.uploading")}
-            className="h-1 w-full animate-pulse rounded bg-primary/40"
-          />
-          <p className="text-caption text-muted-foreground">
-            {t("process.inputs.field.file.uploading")}
-          </p>
-        </div>
-      )}
-      {file.failed && (
-        <p role="alert" className="text-caption text-destructive">
-          {t("process.inputs.field.file.error")}
-        </p>
-      )}
-    </div>
+      <AttachDraftList
+        items={items}
+        labels={attachLabels(t)}
+        layout="stack"
+        locale={i18n.language}
+        onRemove={() => onChange({ value: "", fileName: "" })}
+      />
+    </fieldset>
   );
 }

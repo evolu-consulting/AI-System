@@ -1,8 +1,9 @@
 // gap-d1 #21 · "Tải báo giá lên": chọn tệp PDF/văn bản ⇒ AI đọc (chỉ khi bấm "Đọc báo giá"; tệp gửi để đọc, không lưu) ⇒ dòng giá CHƯA
 // LƯU, người dùng tick dòng cần rồi "Lưu làm giá tham khảo" (nguồn Báo giá).
 import type { QuoteReadOut } from "@ai/contracts/pack-contracts";
-import { type RefObject, useRef, useState } from "react";
+import { type RefObject, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AttachField, fileToDraft } from "~/components/shared/AttachField";
 import { viDate, vnd } from "~/components/shared/format";
 import { Spinner } from "~/components/shared/states";
 import { quoteSaveItems, useReadQuote, useSavePrices } from "../hooks/use-quote";
@@ -19,8 +20,7 @@ export function QuoteDialog({
 }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.gapd1.quote.${k}`, o);
-  const file = useRef<HTMLInputElement>(null);
-  const [name, setName] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<QuoteReadOut | null>(null);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [err, setErr] = useState<string | null>(null);
@@ -38,13 +38,12 @@ export function QuoteDialog({
   };
   const close = () => {
     setResult(null);
-    setName("");
+    setFile(null);
     setErr(null);
-    if (file.current) file.current.value = "";
     dlg.current?.close();
   };
   const run = () => {
-    const f = file.current?.files?.[0];
+    const f = file;
     if (!f) return;
     setErr(null);
     read.mutate(f, {
@@ -68,16 +67,15 @@ export function QuoteDialog({
         {!result && (
           <>
             <p className="text-sm">{L("privacy", { name: productName })}</p>
-            <label htmlFor="gd1-q-file" className="text-label text-ink-2">
-              {L("file")}
-            </label>
-            <input
-              ref={file}
-              id="gd1-q-file"
-              data-testid="gd1-q-file"
-              type="file"
+            <span className="text-label text-ink-2">{L("file")}</span>
+            <AttachField
+              multiple={false}
               accept=".pdf,.txt,.csv,application/pdf,text/plain"
-              onChange={(e) => setName(e.target.files?.[0]?.name ?? "")}
+              inputId="gd1-q-file"
+              inputTestId="gd1-q-file"
+              items={file ? [fileToDraft(file)] : []}
+              onFiles={(fs) => setFile(fs[0] ?? null)}
+              onRemove={() => setFile(null)}
             />
             <p className="text-xs text-dim">{L("hint")}</p>
           </>
@@ -138,7 +136,7 @@ export function QuoteDialog({
               type="button"
               className="btn btn-primary"
               data-testid="gd1-q-run"
-              disabled={!name || read.isPending}
+              disabled={!file || read.isPending}
               onClick={run}
             >
               {L("run")}

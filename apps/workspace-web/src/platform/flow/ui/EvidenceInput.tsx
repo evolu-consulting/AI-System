@@ -3,6 +3,7 @@
 import { EVIDENCE_FILES_MAX, EVIDENCE_NOTE_MAX } from "@ai/contracts/chat";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AttachField } from "~/components/shared/AttachField";
 import { uploadAttachment } from "~/components/shared/attachments";
 import type { EvidenceDraft, EvidenceIssue, EvidenceRule } from "../lib/evidence";
 import { SignaturePad } from "./SignaturePad";
@@ -43,13 +44,13 @@ export function EvidenceInput({
       setBusy(false);
     }
   };
-  const addFiles = async (list: FileList | null) => {
-    if (!list || list.length === 0) return;
+  const addFiles = async (list: File[]) => {
+    if (list.length === 0) return;
     setBusy(true);
     setFailed(false);
     try {
       const room = EVIDENCE_FILES_MAX - value.fileIds.length;
-      const up = await Promise.all([...list].slice(0, Math.max(room, 0)).map((f) => upload(f)));
+      const up = await Promise.all(list.slice(0, Math.max(room, 0)).map((f) => upload(f)));
       setNames((n) => ({ ...n, ...Object.fromEntries(up.map((a) => [a.id, a.filename])) }));
       onChange({ ...value, fileIds: [...value.fileIds, ...up.map((a) => a.id)] });
     } catch {
@@ -88,37 +89,24 @@ export function EvidenceInput({
       )}
       {rule.files && (
         <div>
-          <label htmlFor="evidence-files" className="mb-1 block text-sm font-medium">
-            {t("contracts.work.u4.evidence.files")}
-          </label>
-          <input
-            id="evidence-files"
-            type="file"
-            multiple
-            disabled={off || value.fileIds.length >= EVIDENCE_FILES_MAX}
-            onChange={(e) => {
-              void addFiles(e.target.files);
-              e.target.value = "";
-            }}
+          <p className="mb-1 text-sm font-medium">{t("contracts.work.u4.evidence.files")}</p>
+          <AttachField
+            inputId="evidence-files"
+            listTestId="evidence-file-list"
+            items={value.fileIds.map((id) => ({
+              id,
+              name: names[id] ?? id,
+              mime: "",
+              status: "ready" as const,
+            }))}
+            maxFiles={EVIDENCE_FILES_MAX}
+            busy={busy}
+            disabled={disabled || value.fileIds.length >= EVIDENCE_FILES_MAX}
+            onFiles={(fs) => void addFiles(fs)}
+            onRemove={(id) =>
+              onChange({ ...value, fileIds: value.fileIds.filter((x) => x !== id) })
+            }
           />
-          {value.fileIds.length > 0 && (
-            <ul className="mt-1 text-caption text-dim" data-testid="evidence-file-list">
-              {value.fileIds.map((id) => (
-                <li key={id} className="flex items-center gap-2">
-                  <span>{names[id] ?? id}</span>
-                  <button
-                    type="button"
-                    className="underline"
-                    onClick={() =>
-                      onChange({ ...value, fileIds: value.fileIds.filter((x) => x !== id) })
-                    }
-                  >
-                    {t("contracts.work.u4.evidence.remove")}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       )}
       {(issue || failed) && (

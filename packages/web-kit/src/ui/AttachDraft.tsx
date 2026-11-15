@@ -3,7 +3,16 @@
 import { AlertCircle, X } from "lucide-react";
 import { type CSSProperties, useEffect, useState } from "react";
 import { type AttachLabels, fileKind, formatBytes, truncateMiddle } from "../attach-layout";
-import { cardStyle, iconBtn, KindIcon, mix, useLazyUrl } from "./attach-parts";
+import {
+  cardStyle,
+  DANGER,
+  iconBtn,
+  KindIcon,
+  KindTile,
+  mix,
+  tint,
+  useLazyUrl,
+} from "./attach-parts";
 
 export type DraftItem = {
   id: string;
@@ -30,6 +39,13 @@ type Props = {
   ariaLabel?: string;
   /** Đang tải lên mà chưa có mục (vd tải lần lượt): hiện một thanh chạy. */
   busy?: boolean;
+  /** CR-173 · `stack` = thẻ xếp dọc, rộng hết hàng (dưới vùng kéo-thả); mặc định xếp lưới. */
+  layout?: "grid" | "stack";
+  /** CR-173 · bản gọn cho ô soạn: thẻ nhỏ, ảnh 56 px. */
+  compact?: boolean;
+  /** Giữ `data-testid` cũ của màn (mặc định `draft-file` / `draft-list`). */
+  itemTestId?: string;
+  listTestId?: string;
 };
 
 const KEYFRAMES =
@@ -70,7 +86,7 @@ function useFileUrl(file: File | undefined): string | null {
   return url;
 }
 
-const xStyle: CSSProperties = { ...iconBtn, padding: 2, borderRadius: 999 };
+const xStyle: CSSProperties = { ...iconBtn, padding: 3, borderRadius: 999, border: 0 };
 
 function RemoveBtn({
   item,
@@ -109,7 +125,13 @@ function RemoveBtn({
   );
 }
 
-function ImageTile({ item, labels, onRemove, getUrl }: Omit<Props, "items"> & { item: DraftItem }) {
+function ImageTile({
+  item,
+  labels,
+  onRemove,
+  getUrl,
+  compact,
+}: Omit<Props, "items"> & { item: DraftItem }) {
   const local = useFileUrl(item.file);
   const remote = useLazyUrl(
     getUrl ?? (() => Promise.reject(new Error("no source"))),
@@ -124,8 +146,8 @@ function ImageTile({ item, labels, onRemove, getUrl }: Omit<Props, "items"> & { 
       style={{
         position: "relative",
         listStyle: "none",
-        width: 72,
-        height: 72,
+        width: compact ? 56 : 72,
+        height: compact ? 56 : 72,
         borderRadius: 10,
         overflow: "hidden",
         background: mix(8),
@@ -160,43 +182,82 @@ function ImageTile({ item, labels, onRemove, getUrl }: Omit<Props, "items"> & { 
   );
 }
 
+/** «PDF · 1,5 MB»: đuôi (trừ loại lạ) + dung lượng. */
+function fileMeta(item: DraftItem, locale: string | undefined): string {
+  const ext = item.name.includes(".") ? (item.name.split(".").pop() ?? "").toUpperCase() : "";
+  const size = item.size !== undefined ? formatBytes(item.size, locale) : "";
+  return [fileKind(item.mime, item.name) === "other" ? "" : ext, size].filter(Boolean).join(" · ");
+}
+
+function FileMeta({
+  item,
+  labels,
+  locale,
+  meta,
+}: {
+  item: DraftItem;
+  labels: AttachLabels;
+  locale: string | undefined;
+  meta: string;
+}) {
+  const failed = item.status === "error";
+  if (item.status === "uploading") {
+    const size = item.size !== undefined ? formatBytes(item.size, locale) : "";
+    return (
+      <>
+        <span style={{ opacity: 0.7, fontSize: 12 }}>
+          {[labels.uploading, size].filter(Boolean).join(" · ")}
+        </span>
+        <Bar value={item.progress} label={labels.uploading} />
+      </>
+    );
+  }
+  return (
+    <span
+      data-testid={failed ? "draft-file-error" : undefined}
+      style={{ opacity: failed ? 1 : 0.7, fontSize: 12, color: failed ? DANGER : undefined }}
+    >
+      {failed ? (item.errorText ?? labels.failed) : meta}
+    </span>
+  );
+}
+
 function FileRow({
   item,
   labels,
   onRemove,
   onRetry,
   locale,
+  layout,
+  compact,
+  itemTestId,
 }: Omit<Props, "items"> & { item: DraftItem }) {
   const failed = item.status === "error";
+  const meta = fileMeta(item, locale);
   return (
     <li
-      data-testid="draft-file"
+      data-testid={itemTestId ?? "draft-file"}
+      data-status={item.status}
       style={{
         ...cardStyle,
         listStyle: "none",
-        borderColor: failed ? "currentColor" : undefined,
-        width: 260,
+        borderColor: failed ? DANGER : undefined,
+        background: failed ? tint(DANGER, 6) : undefined,
+        width: layout === "stack" ? "100%" : compact ? 220 : 280,
+        padding: compact ? "4px 8px" : "8px 10px",
+        gap: compact ? 6 : 10,
       }}
     >
-      <KindIcon mime={item.mime} name={item.name} size={20} />
-      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-        <span title={item.name} style={{ fontWeight: 600 }}>
-          {truncateMiddle(item.name, 26)}
+      {compact ? (
+        <KindIcon mime={item.mime} name={item.name} size={16} />
+      ) : (
+        <KindTile mime={item.mime} name={item.name} />
+      )}
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+        <span title={item.name} style={{ fontWeight: 600, overflowWrap: "anywhere" }}>
+          {truncateMiddle(item.name, compact ? 22 : 30)}
         </span>
-        {item.status === "uploading" ? (
-          <>
-            <span style={{ opacity: 0.7, fontSize: 12 }}>{labels.uploading}</span>
-            <Bar value={item.progress} label={labels.uploading} />
-          </>
-        ) : (
-          <span style={{ opacity: 0.7, fontSize: 12 }}>
-            {failed
-              ? (item.errorText ?? labels.failed)
-              : item.size !== undefined
-                ? formatBytes(item.size, locale)
-                : ""}
-          </span>
-        )}
+        <FileMeta item={item} labels={labels} locale={locale} meta={meta} />
       </span>
       {item.retryable && onRetry && (
         <button type="button" style={iconBtn} onClick={() => onRetry(item.id)}>
@@ -214,12 +275,25 @@ export function AttachDraftList(props: Props) {
   return (
     <ul
       aria-label={ariaLabel}
-      data-testid="draft-list"
-      style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: 0, padding: 0 }}
+      data-testid={props.listTestId ?? "draft-list"}
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        flexDirection: props.layout === "stack" ? "column" : "row",
+        gap: 8,
+        margin: 0,
+        padding: 0,
+      }}
     >
       <style>{KEYFRAMES}</style>
       {busy && (
-        <li style={{ ...cardStyle, listStyle: "none", width: 260 }}>
+        <li
+          style={{
+            ...cardStyle,
+            listStyle: "none",
+            width: props.layout === "stack" ? "100%" : 260,
+          }}
+        >
           <span style={{ flex: 1 }}>
             <Bar label={labels.uploading} />
           </span>

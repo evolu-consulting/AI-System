@@ -277,7 +277,17 @@
     "sendFailed": "Couldn't send. Your text is still in the input."
   },
   "attach": {
-    "button": "Attach files",
+    "pick": {
+      "drop": "Drag and drop files here or",
+      "choose": "Choose files",
+      "dropActive": "Drop files to attach",
+      "image": "images",
+      "attach": "Attach a file",
+      "hint": "Supports {{types}} · up to {{size}} per file",
+      "tooBig": "“{{name}}” is over {{max}}; pick a smaller file.",
+      "badType": "“{{name}}” is not an accepted file type.",
+      "tooMany": "You can attach at most {{max}} files."
+    },
     "list": "Attachments",
     "messageList": "Files in message",
     "uploading": "Uploading…",

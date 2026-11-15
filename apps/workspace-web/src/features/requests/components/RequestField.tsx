@@ -4,6 +4,7 @@
 import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AttachField } from "~/components/shared/AttachField";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { fetchOrgPeoplePage } from "~/features/org/api";
@@ -27,14 +28,13 @@ function Files({ field, value, onChange }: Pick<Props, "field" | "value" | "onCh
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(false);
   const ids = value as string[];
-  const add = async (list: FileList | null) => {
-    if (!list?.length) return;
+  const add = async (list: File[]) => {
+    if (!list.length) return;
     setBusy(true);
     setErr(false);
     try {
       const up: Picked[] = [];
-      for (const file of Array.from(list))
-        up.push({ id: (await uploadAttachment(file)).id, name: file.name });
+      for (const file of list) up.push({ id: (await uploadAttachment(file)).id, name: file.name });
       setNames((n) => [...n, ...up]);
       onChange([...ids, ...up.map((u) => u.id)]);
     } catch {
@@ -44,44 +44,22 @@ function Files({ field, value, onChange }: Pick<Props, "field" | "value" | "onCh
     }
   };
   return (
-    <div className="flex flex-col gap-2">
-      <input
-        id={`req-${field.key}`}
-        data-testid={`req-file-${field.key}`}
-        type="file"
-        multiple
-        disabled={busy}
-        aria-label={field.label}
-        onChange={(e) => {
-          void add(e.target.files);
-          e.target.value = "";
-        }}
-      />
-      {busy && <span className="text-label text-dim">{t("contracts.requests.uploading")}</span>}
-      {err && (
-        <span role="alert" className="text-label text-late">
-          {t("contracts.requests.err.generic")}
-        </span>
-      )}
-      <ul className="m-0 flex list-none flex-col gap-1 p-0">
-        {ids.map((id) => {
-          const name = names.find((n) => n.id === id)?.name ?? id;
-          return (
-            <li key={id} className="flex items-center gap-2 text-sm" data-testid="req-file-item">
-              <span className="min-w-0 truncate">{name}</span>
-              <button
-                type="button"
-                className="text-label text-act hover:underline"
-                aria-label={t("contracts.requests.removeFile", { name })}
-                onClick={() => onChange(ids.filter((x) => x !== id))}
-              >
-                ×
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+    <AttachField
+      inputId={`req-${field.key}`}
+      inputTestId={`req-file-${field.key}`}
+      itemTestId="req-file-item"
+      ariaLabel={field.label}
+      busy={busy}
+      error={err ? t("contracts.requests.err.generic") : undefined}
+      items={ids.map((id) => ({
+        id,
+        name: names.find((n) => n.id === id)?.name ?? id,
+        mime: "",
+        status: "ready" as const,
+      }))}
+      onFiles={(fs) => void add(fs)}
+      onRemove={(id) => onChange(ids.filter((x) => x !== id))}
+    />
   );
 }
 

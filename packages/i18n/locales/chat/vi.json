@@ -277,7 +277,17 @@
     "sendFailed": "Không gửi được tin. Nội dung vẫn còn trong ô nhập."
   },
   "attach": {
-    "button": "Đính kèm tệp",
+    "pick": {
+      "drop": "Kéo thả tệp vào đây hoặc",
+      "choose": "Chọn tệp",
+      "dropActive": "Thả tệp để đính kèm",
+      "image": "ảnh",
+      "attach": "Đính kèm tệp",
+      "hint": "Hỗ trợ {{types}} · tối đa {{size}} mỗi tệp",
+      "tooBig": "«{{name}}» quá {{max}}, hãy chọn tệp nhỏ hơn.",
+      "badType": "«{{name}}» không đúng loại tệp được nhận.",
+      "tooMany": "Chỉ đính kèm được tối đa {{max}} tệp."
+    },
     "list": "Tệp đính kèm",
     "messageList": "Tệp trong tin",
     "uploading": "Đang tải lên…",

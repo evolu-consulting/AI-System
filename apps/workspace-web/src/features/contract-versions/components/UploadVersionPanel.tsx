@@ -2,8 +2,9 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AttachField, fileToDraft } from "~/components/shared/AttachField";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
 import { ApiError } from "~/lib/api-error";
 import { uploadVersion } from "../hooks/use-versions-api";
@@ -21,7 +22,6 @@ export function UploadVersionPanel({
   const { t } = useTranslation();
   const nav = useNavigate();
   const qc = useQueryClient();
-  const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const up = useMutation({
     mutationFn: (f: File) => uploadVersion(contractId, f),
@@ -52,14 +52,16 @@ export function UploadVersionPanel({
             {t("contracts.versions.upload.signedOnly")}
           </p>
           <p className="mt-1 text-sm text-dim">{t("contracts.versions.upload.hint")}</p>
-          <input
-            ref={input}
-            type="file"
-            data-testid="upload-version-file"
-            accept=".pdf,.docx,.jpg,.jpeg,.png,.md"
-            className="mt-4 block w-full text-sm"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
+          <div className="mt-4">
+            <AttachField
+              multiple={false}
+              accept=".pdf,.docx,.jpg,.jpeg,.png,.md"
+              inputTestId="upload-version-file"
+              items={file ? [fileToDraft(file)] : []}
+              onFiles={(fs) => setFile(fs[0] ?? null)}
+              onRemove={() => setFile(null)}
+            />
+          </div>
           {err && (
             <p role="alert" data-testid="upload-version-error" className="mt-3 text-sm text-late">
               {err}

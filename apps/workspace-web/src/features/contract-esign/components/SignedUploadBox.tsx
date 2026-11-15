@@ -1,13 +1,13 @@
 // CR-141 · khối «Tải lên bản đã ký» ở thẻ Ký số: chọn tệp (PDF/JPG/PNG) ⇒ Tải lên ⇒ bước Ký hợp đồng xong. Chỉ hiện khi bước đang chờ và người xem được tải.
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AttachField, fileToDraft } from "~/components/shared/AttachField";
 import type { useSignedUpload } from "../hooks/use-signed-upload";
 import { SIGNED_ACCEPT } from "../lib/signed-upload-view";
 
 export function SignedUploadBox({ up }: { up: ReturnType<typeof useSignedUpload> }) {
   const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
-  const input = useRef<HTMLInputElement>(null);
   if (!up.show) return null;
   return (
     <div
@@ -21,29 +21,22 @@ export function SignedUploadBox({ up }: { up: ReturnType<typeof useSignedUpload>
           {t("contracts.esign.upload.override")}
         </span>
       )}
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          ref={input}
-          type="file"
-          accept={SIGNED_ACCEPT}
-          aria-label={t("contracts.esign.upload.choose")}
-          data-testid="signed-upload-input"
-          className="max-w-full text-[13px]"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-        />
+      <AttachField
+        multiple={false}
+        accept={SIGNED_ACCEPT}
+        inputTestId="signed-upload-input"
+        busy={up.busy}
+        items={file ? [fileToDraft(file)] : []}
+        onFiles={(fs) => setFile(fs[0] ?? null)}
+        onRemove={() => setFile(null)}
+      />
+      <div>
         <button
           type="button"
           className="btn btn-sm btn-primary"
           data-testid="signed-upload-submit"
           disabled={up.busy || !file}
-          onClick={() =>
-            file &&
-            void up.upload(file).then((ok) => {
-              if (!ok) return;
-              setFile(null);
-              if (input.current) input.current.value = "";
-            })
-          }
+          onClick={() => file && void up.upload(file).then((ok) => ok && setFile(null))}
         >
           {t("contracts.esign.upload.submit")}
         </button>

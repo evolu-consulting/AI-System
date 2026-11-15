@@ -1,20 +1,22 @@
 // CR-097 K3a · HD-FR-26 (ngừng): /contracts/new không còn form nhập tay — HĐ phải tải lên từ văn bản đã ký. Hiện câu giải thích + nút Upload
 // (cùng hàng đợi như danh sách). Form nhập tay giữ ở `ManualContractForm` cho việc Giao dịch sau này.
+
+import { AttachDropzone } from "@ai/web-kit/ui/AttachDropzone";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { useAttachPickLabels } from "~/components/shared/AttachField";
 import { PageHead, Panel } from "~/components/shared/layout";
 import { QueueExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
 import { UploadPanel } from "~/features/contracts-list/components/UploadPanel";
 import { useUploadQueue } from "~/features/contracts-list/hooks/use-upload-queue";
-import { UPLOAD_ACCEPT } from "~/features/contracts-list/lib/upload-queue";
+import { UPLOAD_ACCEPT, UPLOAD_MAX_BYTES } from "~/features/contracts-list/lib/upload-queue";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 
 export function NewContractPage() {
   const { t } = useTranslation();
   const { write } = useMe();
   const nav = useNavigate();
-  const file = useRef<HTMLInputElement>(null);
+  const pick = useAttachPickLabels();
   const queue = useUploadQueue((id) => void nav({ to: "/contracts/c/$id", params: { id } }));
   return (
     <div className="text-base leading-[1.55]">
@@ -33,27 +35,16 @@ export function NewContractPage() {
           <p className="text-[15px] font-medium">{t("contracts.lock.uploadOnly")}</p>
           <p className="text-sm text-dim">{t("contracts.lock.uploadOnlyHint")}</p>
           {write && (
-            <>
-              <input
-                ref={file}
-                type="file"
-                hidden
-                multiple
+            <div className="w-full">
+              <AttachDropzone
+                labels={pick}
                 accept={UPLOAD_ACCEPT}
-                onChange={(e) => {
-                  const picked = Array.from(e.target.files ?? []);
-                  e.target.value = "";
-                  queue.enqueue(picked);
-                }}
+                maxBytes={UPLOAD_MAX_BYTES}
+                check={false}
+                inputTestId="new-upload-input"
+                onFiles={(fs) => queue.enqueue(fs)}
               />
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => file.current?.click()}
-              >
-                {t("contracts.list.add")}
-              </button>
-            </>
+            </div>
           )}
         </div>
       </Panel>

@@ -2,9 +2,11 @@
 // (1) tệp gắn vào HĐ (thêm / gỡ / mở-tải), (2) tệp kèm các bước duyệt (chỉ đọc). Không đem đi ký (file chính vẫn theo luật PDF khi bật ký số).
 
 import type { ContractOwnFile, ContractStepFile } from "@ai/contracts/pack-contracts";
+import { AttachDropzone } from "@ai/web-kit/ui/AttachDropzone";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
-import { lazy, Suspense, useRef, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAttachPickLabels } from "~/components/shared/AttachField";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { Skeleton } from "~/components/ui/skeleton";
 import { FileRecordButton } from "~/features/contract-file-record/components/FileRecordButton";
@@ -120,7 +122,7 @@ function StepRow({ id, f }: { id: string; f: ContractStepFile }) {
 export function ContractFilesPanel({ id }: { id: string }) {
   const { t } = useTranslation();
   const { list, add, remove } = useContractFiles(id);
-  const input = useRef<HTMLInputElement>(null);
+  const pick = useAttachPickLabels();
   const [err, setErr] = useState<string | null>(null);
   const data = list.data;
   if (list.isError)
@@ -172,31 +174,20 @@ export function ContractFilesPanel({ id }: { id: string }) {
     <section data-testid="cfiles" className="mb-3 rounded-lg border border-rule bg-panel p-4">
       <div className="flex items-center gap-3">
         <h3 className="flex-1 font-semibold">{t("contracts.cfiles.title")}</h3>
-        {data.can_add && (
-          <>
-            <input
-              ref={input}
-              type="file"
-              hidden
-              data-testid="cfiles-input"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (f) run(add.mutateAsync(f));
-              }}
-            />
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              data-testid="cfiles-add"
-              disabled={add.isPending}
-              onClick={() => input.current?.click()}
-            >
-              {add.isPending ? t("contracts.cfiles.uploading") : t("contracts.cfiles.add")}
-            </button>
-          </>
-        )}
       </div>
+      {data.can_add && (
+        <div className="mt-2">
+          <AttachDropzone
+            variant="compact"
+            multiple={false}
+            labels={pick}
+            busy={add.isPending}
+            inputTestId="cfiles-input"
+            chooseTestId="cfiles-add"
+            onFiles={(fs) => fs[0] && run(add.mutateAsync(fs[0]))}
+          />
+        </div>
+      )}
       {err && (
         <p role="alert" data-testid="cfiles-error" className="mt-2 text-sm text-late">
           {err}

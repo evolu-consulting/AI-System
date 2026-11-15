@@ -101,3 +101,107 @@ export type AttachLabels = {
   remove: (name: string) => string;
   unavailable: string;
 };
+
+/** CR-173 · chữ của ô chọn tệp dùng chung (app truyền — web-kit không phụ thuộc i18n). */
+export type AttachPickLabels = {
+  /** «Kéo thả tệp vào đây hoặc» (đứng trước nút). */
+  drop: string;
+  /** Nút «Chọn tệp». */
+  choose: string;
+  /** Khi đang rê tệp vào vùng: «Thả tệp để đính kèm». */
+  dropActive: string;
+  /** Từ chỉ nhóm ảnh trong dòng gợi ý («ảnh»). */
+  image: string;
+  /** Tên nút icon kẹp giấy (bản gọn). */
+  attach: string;
+  /** Dòng gợi ý: `types` = «PDF, DOCX», `size` = «20 MB». */
+  hint: (types: string, size: string) => string;
+  tooBig: (name: string, max: string) => string;
+  badType: (name: string) => string;
+  tooMany: (max: number) => string;
+};
+
+/** Luật chọn tệp: `accept` kiểu thuộc tính HTML (`.pdf,.docx,image/*`), tối đa `maxBytes` mỗi tệp, tối đa `maxFiles` tệp. */
+export type PickRule = { accept?: string; maxBytes?: number; maxFiles?: number };
+
+export type PickReject = { name: string; reason: "type" | "size" | "count" };
+
+const acceptTokens = (accept: string): string[] =>
+  accept
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
+/** Một tệp có khớp `accept`? (đuôi `.pdf`, MIME đủ `image/png` hoặc nhóm `image/*`). Không `accept` ⇒ nhận hết. */
+export function matchesAccept(file: { name: string; type: string }, accept?: string): boolean {
+  const toks = accept ? acceptTokens(accept) : [];
+  if (toks.length === 0) return true;
+  const name = file.name.toLowerCase();
+  const mime = file.type.toLowerCase();
+  return toks.some((t) =>
+    t.startsWith(".")
+      ? name.endsWith(t)
+      : t.endsWith("/*")
+        ? mime.startsWith(t.slice(0, -1))
+        : mime === t,
+  );
+}
+
+/** Tách tệp hợp lệ khỏi tệp bị từ chối (sai loại ⇒ quá cỡ ⇒ quá số lượng). `existing` = số tệp đã có. */
+export function validateFiles(
+  files: readonly File[],
+  rule: PickRule,
+  existing = 0,
+): { ok: File[]; rejects: PickReject[] } {
+  const ok: File[] = [];
+  const rejects: PickReject[] = [];
+  for (const f of files) {
+    if (!matchesAccept(f, rule.accept)) rejects.push({ name: f.name, reason: "type" });
+    else if (rule.maxBytes !== undefined && f.size > rule.maxBytes)
+      rejects.push({ name: f.name, reason: "size" });
+    else if (rule.maxFiles !== undefined && existing + ok.length >= rule.maxFiles)
+      rejects.push({ name: f.name, reason: "count" });
+    else ok.push(f);
+  }
+  return { ok, rejects };
+}
+
+/** `.pdf,.docx,image/*` ⇒ «PDF, DOCX» (nhóm ảnh ⇒ «ảnh» do app đặt qua `imageWord`). */
+export function acceptTypesLabel(accept: string | undefined, imageWord = "image"): string {
+  const seen: string[] = [];
+  for (const t of accept ? acceptTokens(accept) : []) {
+    const v = t.startsWith(".") ? t.slice(1).toUpperCase() : t === "image/*" ? imageWord : null;
+    if (v && !seen.includes(v)) seen.push(v);
+  }
+  return seen.join(", ");
+}
+
+/** Câu lỗi của một tệp bị từ chối. */
+export function rejectText(
+  r: PickReject,
+  labels: AttachPickLabels,
+  rule: PickRule,
+  locale?: string,
+) {
+  if (r.reason === "type") return labels.badType(r.name);
+  if (r.reason === "size") return labels.tooBig(r.name, formatBytes(rule.maxBytes ?? 0, locale));
+  return labels.tooMany(rule.maxFiles ?? 0);
+}
+
+/** Dựng nhãn từ hàm dịch + tiền tố khoá (`contracts.attachPick` / `attach.pick`): MỘT bộ khoá, hai bản dịch ở app. */
+export function attachPickLabels(
+  t: (key: string, opts?: Record<string, string | number>) => string,
+  prefix: string,
+): AttachPickLabels {
+  return {
+    drop: t(`${prefix}.drop`),
+    choose: t(`${prefix}.choose`),
+    dropActive: t(`${prefix}.dropActive`),
+    image: t(`${prefix}.image`),
+    attach: t(`${prefix}.attach`),
+    hint: (types, size) => t(`${prefix}.hint`, { types, size }),
+    tooBig: (name, max) => t(`${prefix}.tooBig`, { name, max }),
+    badType: (name) => t(`${prefix}.badType`, { name }),
+    tooMany: (max) => t(`${prefix}.tooMany`, { max }),
+  };
+}

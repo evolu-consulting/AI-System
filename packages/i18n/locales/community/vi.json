@@ -140,6 +140,17 @@
       "catsCancel": "Huỷ"
     },
     "composer": {
+      "attachPick": {
+        "drop": "Kéo thả tệp vào đây hoặc",
+        "choose": "Chọn tệp",
+        "dropActive": "Thả tệp để đính kèm",
+        "image": "ảnh",
+        "attach": "Đính kèm",
+        "hint": "Hỗ trợ {{types}} · tối đa {{size}} mỗi tệp",
+        "tooBig": "«{{name}}» quá {{max}}, hãy chọn tệp nhỏ hơn.",
+        "badType": "«{{name}}» không đúng loại tệp được nhận.",
+        "tooMany": "Chỉ đính kèm được tối đa {{max}} tệp."
+      },
       "prompt": "{{org}} đang có hàng cần bán hay nhu cầu cần mua?",
       "bodyLabel": "Nội dung bài đăng",
       "prefillFrom": "Gợi ý mẫu (chưa phải sản phẩm của công ty)",

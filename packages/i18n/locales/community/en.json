@@ -140,6 +140,17 @@
       "catsCancel": "Cancel"
     },
     "composer": {
+      "attachPick": {
+        "drop": "Drag and drop files here or",
+        "choose": "Choose files",
+        "dropActive": "Drop files to attach",
+        "image": "images",
+        "attach": "Attach",
+        "hint": "Supports {{types}} · up to {{size}} per file",
+        "tooBig": "“{{name}}” is over {{max}}; pick a smaller file.",
+        "badType": "“{{name}}” is not an accepted file type.",
+        "tooMany": "You can attach at most {{max}} files."
+      },
       "prompt": "Does {{org}} have goods to sell or something to buy?",
       "bodyLabel": "Post content",
       "prefillFrom": "Sample suggestions (not your company products)",

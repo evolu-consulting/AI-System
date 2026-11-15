@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AttachField } from "~/components/shared/AttachField";
 import { TruncText } from "~/components/shared/TruncText";
 import { downloadAttachment, fetchAttachment, uploadAttachment } from "./attachments";
 
@@ -27,13 +28,13 @@ export function FileUploadField({
   const [names, setNames] = useState<Picked[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(false);
-  const add = async (list: FileList | null) => {
-    if (!list?.length) return;
+  const add = async (list: File[]) => {
+    if (!list.length) return;
     setBusy(true);
     setErr(false);
     try {
       const up: Picked[] = [];
-      for (const file of Array.from(multiple ? list : [list[0] as File]))
+      for (const file of multiple ? list : [list[0] as File])
         up.push({ id: (await uploadAttachment(file)).id, name: file.name });
       setNames((n) => [...n, ...up]);
       onChange(multiple ? [...ids, ...up.map((u) => u.id)] : up.map((u) => u.id));
@@ -44,46 +45,23 @@ export function FileUploadField({
     }
   };
   return (
-    <div className="flex flex-col gap-2">
-      <input
-        id={id}
-        data-testid={testId}
-        type="file"
-        multiple={multiple}
-        disabled={busy}
-        aria-label={label}
-        onChange={(e) => {
-          void add(e.target.files);
-          e.target.value = "";
-        }}
-      />
-      {busy && (
-        <span className="text-caption text-dim">{t("contracts.flowPanel.file.uploading")}</span>
-      )}
-      {err && (
-        <span role="alert" className="text-caption text-late">
-          {t("contracts.flowPanel.file.failed")}
-        </span>
-      )}
-      <ul className="m-0 flex list-none flex-col gap-1 p-0">
-        {ids.map((fid) => {
-          const name = names.find((n) => n.id === fid)?.name ?? fid;
-          return (
-            <li key={fid} className="flex items-center gap-2 text-sm" data-testid="file-item">
-              <TruncText>{name}</TruncText>
-              <button
-                type="button"
-                className="text-caption text-act hover:underline"
-                aria-label={t("contracts.flowPanel.file.remove", { name })}
-                onClick={() => onChange(ids.filter((x) => x !== fid))}
-              >
-                ×
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+    <AttachField
+      inputId={id}
+      inputTestId={testId}
+      itemTestId="file-item"
+      ariaLabel={label}
+      multiple={multiple}
+      busy={busy}
+      error={err ? t("contracts.flowPanel.file.failed") : undefined}
+      items={ids.map((fid) => ({
+        id: fid,
+        name: names.find((n) => n.id === fid)?.name ?? fid,
+        mime: "",
+        status: "ready" as const,
+      }))}
+      onFiles={(fs) => void add(fs)}
+      onRemove={(fid) => onChange(ids.filter((x) => x !== fid))}
+    />
   );
 }
 

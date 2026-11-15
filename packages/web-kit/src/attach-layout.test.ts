@@ -72,3 +72,54 @@ describe("fileKind / isPdfItem / stepIndex / formatBytes", () => {
     expect(formatBytes(1536, "en-US")).toBe("1.5 KB");
   });
 });
+
+// CR-173 · luật chọn tệp dùng chung.
+import {
+  acceptTypesLabel,
+  attachPickLabels,
+  matchesAccept,
+  rejectText,
+  validateFiles,
+} from "./attach-layout";
+
+const f = (name: string, type: string, size = 10) =>
+  new File([new Uint8Array(size)], name, { type });
+
+describe("CR-173 · validateFiles", () => {
+  test("accept theo đuôi, MIME đủ và nhóm image/*", () => {
+    expect(matchesAccept(f("a.PDF", ""), ".pdf,.docx")).toBe(true);
+    expect(matchesAccept(f("a.png", "image/png"), "image/*")).toBe(true);
+    expect(matchesAccept(f("a.exe", "application/x-msdownload"), ".pdf,image/*")).toBe(false);
+    expect(matchesAccept(f("a.exe", ""), undefined)).toBe(true);
+  });
+  test("tách sai loại, quá cỡ, quá số lượng theo thứ tự", () => {
+    const r = validateFiles(
+      [
+        f("a.pdf", "application/pdf"),
+        f("b.exe", ""),
+        f("c.pdf", "", 100),
+        f("d.pdf", ""),
+        f("e.pdf", ""),
+      ],
+      { accept: ".pdf", maxBytes: 50, maxFiles: 2 },
+      0,
+    );
+    expect(r.ok.map((x) => x.name)).toEqual(["a.pdf", "d.pdf"]);
+    expect(r.rejects).toEqual([
+      { name: "b.exe", reason: "type" },
+      { name: "c.pdf", reason: "size" },
+      { name: "e.pdf", reason: "count" },
+    ]);
+  });
+  test("tệp đã có tính vào số lượng tối đa", () => {
+    const r = validateFiles([f("a.pdf", "")], { maxFiles: 1 }, 1);
+    expect(r.ok).toEqual([]);
+    expect(r.rejects[0]?.reason).toBe("count");
+  });
+  test("nhãn loại tệp + câu lỗi", () => {
+    expect(acceptTypesLabel(".pdf,.docx,.pdf,image/*", "ảnh")).toBe("PDF, DOCX, ảnh");
+    const labels = attachPickLabels((k, o) => `${k}${o ? JSON.stringify(o) : ""}`, "p");
+    expect(rejectText({ name: "x", reason: "size" }, labels, { maxBytes: 2048 })).toContain("2 KB");
+    expect(rejectText({ name: "x", reason: "type" }, labels, {})).toBe('p.badType{"name":"x"}');
+  });
+});

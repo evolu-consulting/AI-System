@@ -1,11 +1,13 @@
 // CR-132 · W2/W3 · ô soạn tin: Enter gửi, Shift+Enter xuống dòng; nút ghim chọn tệp (tải lên ngay, hiện chip, gỡ được trước khi gửi).
 // `lockedReason` ⇒ ô khoá kèm lý do (vd người kia đã khoá). Có tệp mà chưa có chữ vẫn gửi được; đang tải tệp ⇒ chờ.
 import { type FileRef, MSG_BODY_MAX } from "@ai/contracts/pack-contracts";
+import { attachPickLabels } from "@ai/web-kit/attach-layout";
 import { AttachDraftList } from "@ai/web-kit/ui/AttachDraft";
+import { AttachPickButton } from "@ai/web-kit/ui/AttachDropzone";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useStagedFiles } from "../hooks/use-staged-files";
-import { IconAttach, IconSend } from "../icons";
+import { IconSend } from "../icons";
 import { attachLabels, toDraftItem } from "../lib/attach-view";
 import { ATTACH_ACCEPT } from "../lib/files";
 
@@ -21,7 +23,6 @@ export function MessageComposer({
   const { t, i18n } = useTranslation();
   const [text, setText] = useState("");
   const box = useRef<HTMLTextAreaElement>(null);
-  const pick = useRef<HTMLInputElement>(null);
   const staged = useStagedFiles(conversationId);
   // biome-ignore lint/correctness/useExhaustiveDependencies: cao theo nội dung mỗi lần gõ
   useEffect(() => {
@@ -65,32 +66,20 @@ export function MessageComposer({
           items={staged.items.map(toDraftItem)}
           labels={attachLabels(t)}
           ariaLabel={t("contracts.messages.stagedFiles")}
+          compact
           onRemove={staged.remove}
           locale={i18n.language}
         />
       </div>
       <div className="flex items-center gap-1 rounded-2xl border border-rule bg-panel focus-within:border-act-line">
-        <input
-          ref={pick}
-          type="file"
-          multiple
-          hidden
+        <AttachPickButton
+          labels={attachPickLabels(t, "contracts.messages.attachPick")}
           accept={ATTACH_ACCEPT}
-          data-testid="composer-file-input"
-          onChange={(e) => {
-            staged.add([...(e.target.files ?? [])]);
-            e.target.value = "";
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => pick.current?.click()}
-          aria-label={t("contracts.messages.attach")}
-          title={t("contracts.messages.attach")}
+          check={false}
+          inputTestId="composer-file-input"
+          onFiles={staged.add}
           className="my-0 ml-2 grid h-8 w-8 shrink-0 place-items-center rounded-xl text-dim hover:bg-sunk hover:text-ink"
-        >
-          <IconAttach width={17} height={17} />
-        </button>
+        />
         <textarea
           ref={box}
           rows={1}

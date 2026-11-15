@@ -1,5 +1,16 @@
 {
   "contracts": {
+    "attachPick": {
+      "drop": "Kéo thả tệp vào đây hoặc",
+      "choose": "Chọn tệp",
+      "dropActive": "Thả tệp để đính kèm",
+      "image": "ảnh",
+      "attach": "Đính kèm tệp",
+      "hint": "Hỗ trợ {{types}} · tối đa {{size}} mỗi tệp",
+      "tooBig": "«{{name}}» quá {{max}}, hãy chọn tệp nhỏ hơn.",
+      "badType": "«{{name}}» không đúng loại tệp được nhận.",
+      "tooMany": "Chỉ đính kèm được tối đa {{max}} tệp."
+    },
     "paging": {
       "search": "Tìm theo tên",
       "more": "Xem thêm",

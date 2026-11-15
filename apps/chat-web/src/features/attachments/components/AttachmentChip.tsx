@@ -21,6 +21,7 @@ export function AttachBar({
     <div className="mb-2">
       <AttachDraftList
         items={items}
+        compact
         ariaLabel={t("attach.list")}
         labels={attachLabels(t)}
         locale={i18n.language}
