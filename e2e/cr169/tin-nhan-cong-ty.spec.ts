@@ -318,6 +318,7 @@ test("CR169-J7 · Chat AI app: Hà vào mục «Tin nhắn» thấy cùng cuộc
   await page.goto(`${need("JA_CHAT_URL")}/c/new`);
   await expect(page.getByRole("textbox", { name: "Tin nhắn", exact: true })).toBeVisible();
   await page.getByTestId("nav-messages").click();
+  await expect(page.getByTestId("user-chip")).toBeVisible(); // CR-172: Chat AI cũng hiện avatar + tên ở thanh trên
   await page.getByTestId("company-chip").first().click(); // CR-172: mặc định là công ty mình; cuộc với Vy (khác công ty) ở «Tất cả»
   await rowOf(page, VY).click();
   await expect(msgOf(page, HELLO)).toBeVisible(); // cùng dữ liệu với Sổ Hợp Tác
