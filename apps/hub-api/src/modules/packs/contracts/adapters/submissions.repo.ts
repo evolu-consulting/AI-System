@@ -98,6 +98,7 @@ export function submissionsRepo(tx: Tx, tid: string) {
         u as (update contracts.contracts set entry_source = 'manual',
           -- Loại HĐ đang hiện trên màn hình (mặc định theo hướng, như dealOf bên web) ghi vào dữ liệu — trước đây NULL dù UI hiện «Bán».
           deal = coalesce(deal, case when direction = 'purchase' then 'buy' else 'sell' end),
+          direction = coalesce(direction, 'sale'), -- CHECK contracts_deal_ck: có deal thì phải có hướng, deal = buy ⇔ purchase
           extract_state = 'ready', error = null, run_id = null, reconciled_by = null, reconciled_at = null, version = version + 1, updated_at = now()
         where id = ${id}::uuid and tenant_id = ${tid}::uuid and status = 'draft' and extract_state = 'failed' returning id, version),
         e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
