@@ -122,6 +122,9 @@ grep -q '^HUB_PROCESS_ENGINE=' .env || setkv HUB_PROCESS_ENGINE on
 grep -q '^HUB_PROCESS_ROUTES=' .env || setkv HUB_PROCESS_ROUTES all
 # Mail: tắt tường minh (mặc định code cũng là off). Bật thật = người dùng cấp SMTP rồi đặt HUB_NOTIFY_MODE=live tay; giá trị đã có giữ nguyên.
 grep -q '^HUB_NOTIFY_MODE=' .env || setkv HUB_NOTIFY_MODE off
+# Ký số: chỉ «Ký thử» (selfsign) như bản test — DocuSign đang là sandbox, ký số thật chưa bật. Người dùng 2026-11-16: test và prod
+# phải đồng bộ ⇒ ép giá trị (không chỉ đặt khi vắng). Bật ký số thật = đổi cả hai môi trường cùng lúc.
+setkv ESIGN_PROVIDERS selfsign
 # FileBox riêng của sohoptac2: token + khoá MinIO riêng, đặt HUB_ATTACH_DRIVER=filebox (idempotent).
 bash ./filebox-env.sh
 

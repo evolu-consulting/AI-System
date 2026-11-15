@@ -32,8 +32,16 @@ echo "VERSION:$(head -n 1 VERSION 2>/dev/null)"
 for t in $(${PSQL} -c "select table_schema||'.'||table_name from information_schema.tables where table_name like '\\_\\_drizzle\\_migrations%' order by 1"); do
   echo "MIG:$t:$(${PSQL} -c "select count(*) from $t")"
 done
-# Cấu hình bắt buộc khớp bản test — chỉ in ok/lệch, KHÔNG in giá trị .env (CLAUDE.md §2).
-grep -qx 'HUB_PROCESS_ROUTES=all' .env && echo "CFG:HUB_PROCESS_ROUTES:ok" || echo "CFG:HUB_PROCESS_ROUTES:lệch"
+# Cấu hình prod ĐỒNG BỘ bản test (người dùng 2026-11-16). So mọi khoá cấu hình thường; bỏ bí mật + khoá theo môi trường. Chỉ in tên
+# khoá + ok/lệch — KHÔNG in giá trị .env (CLAUDE.md §2). Ngoại lệ có chủ ý: APP_ENV, FILEBOX_ORG (nhãn kho), AI_SUB_MAX_CONCURRENCY
+# (bản test dùng chung đăng nhập AI của prod ⇒ test 1 lượt để không giành lượt của prod).
+STG=../sohoptac2-staging/.env
+SKIP='PASSWORD|SECRET|TOKEN|KEY|_URL|DATABASE|HOST|ORIGIN|DOMAIN|COOKIE|JWT|PEPPER|SALT|CORS|PUBLIC|UID|PORT|PROJECT|_USER|DOCUSIGN|DIFY|DLC_|SEED|^S2_|^APP_ENV$|^FILEBOX_ORG$|^AI_SUB_MAX_CONCURRENCY$'
+if [ -f "$STG" ]; then
+  for k in $(grep -oE '^[A-Z][A-Z0-9_]*' .env | grep -vE "$SKIP" | sort -u); do
+    [ "$(grep -m1 "^$k=" .env | cut -d= -f2-)" = "$(grep -m1 "^$k=" "$STG" | cut -d= -f2-)" ] && echo "CFG:$k:ok" || echo "CFG:$k:lệch"
+  done
+else echo "CFG:BAN_TEST_ENV:lệch"; fi
 echo "LOGS-BEGIN"
 docker compose -p sohoptac2 logs --since 10m --no-color 2>&1 | grep -iE 'error|fatal|exception|unhandled|panic' | tail -n 300
 `;
@@ -89,7 +97,7 @@ async function main(): Promise<number> {
   const mig = compareMigrations(applied, expected);
   const logs = errorLogSummary(out.split("LOGS-BEGIN")[1] ?? "");
   const hs = await health();
-  // 2026-11-16: prod còn HUB_PROCESS_ROUTES=admin từ CR-103 ⇒ «Việc của tôi» (/me/review-tasks) 404; bản test = all.
+  // 2026-11-16: prod còn HUB_PROCESS_ROUTES=admin, ESIGN_PROVIDERS có docusign sandbox, HUB_ATTACH_DRIVER khác bản test ⇒ so toàn bộ.
   const cfg = [...out.matchAll(/^CFG:(\w+):(\S+)$/gm)].map((m) => ({
     key: m[1],
     ok: m[2] === "ok",
@@ -104,7 +112,14 @@ async function main(): Promise<number> {
     `prod: VERSION ${version ? `${version.commit} (${version.ref})` : "?? không đọc được"}`,
     `migration: ${mig.map((m) => `${m.table.split(".").pop()?.replace("__drizzle_migrations", "main") || "main"}=${m.applied}${m.expected === null ? "" : m.ok ? "✓" : `≠${m.expected}`}`).join(" ")}`,
     `health: ${hs.map((h) => `${h.host}=${h.status}`).join(" ")}`,
-    `cấu hình: ${cfg.map((c) => `${c.key}=${c.ok ? "đúng" : "LỆCH (phải là all)"}`).join(" ") || "?? không đọc được"}`,
+    `cấu hình so với bản test: ${
+      cfg.length
+        ? cfg
+            .filter((c) => !c.ok)
+            .map((c) => `${c.key} LỆCH`)
+            .join(" ") || `${cfg.length} khoá khớp`
+        : "?? không đọc được"
+    }`,
     `log lỗi 10 phút: ${logs.total}${
       logs.total
         ? ` (${Object.entries(logs.byService)
