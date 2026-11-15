@@ -181,6 +181,28 @@ test("CR169-J3 · Vy: lọc chip công ty (Preschool / công ty mình) và tìm 
   await ctx.close();
 });
 
+test("CR172-J1 · Tin nhắn: nút Gửi và Đính kèm căn giữa theo chiều dọc với ô soạn, Sổ Hợp Tác và Chat AI cùng gói", async ({
+  browser,
+}) => {
+  const v = await open(browser, EA, WHO.vy);
+  await v.page.goto("/contracts/messages?company=all");
+  await rowOf(v.page, NAME.ha).click();
+  const box = v.page.getByRole("textbox", { name: "Nhập tin nhắn" });
+  const mid = async (l: import("@playwright/test").Locator) => {
+    const b = await l.boundingBox();
+    if (!b) throw new Error("không có khung");
+    return b.y + b.height / 2;
+  };
+  const m = await mid(box);
+  expect(
+    Math.abs((await mid(v.page.getByRole("button", { name: "Gửi", exact: true }))) - m),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs((await mid(v.page.getByRole("button", { name: "Đính kèm tệp" }))) - m),
+  ).toBeLessThanOrEqual(1);
+  await v.ctx.close();
+});
+
 test("CR169-J4 · Vy gửi nhầm một tin rồi thu hồi ⇒ cả hai bên chỉ còn «Tin nhắn đã được thu hồi»", async ({
   browser,
 }) => {
@@ -358,28 +380,6 @@ test("CR169-J8 · Tiên (người mời) › Đối tác › Preschool: 3 tab, k
   await expect(h.page.getByTestId("read-only-notice")).toBeVisible();
   await expect(h.page.getByRole("textbox", { name: "Nhập tin nhắn" })).toHaveCount(0);
   await h.ctx.close();
-});
-
-test("CR172-J1 · Tin nhắn: nút Gửi và Đính kèm căn giữa theo chiều dọc với ô soạn, Sổ Hợp Tác và Chat AI cùng gói", async ({
-  browser,
-}) => {
-  const v = await open(browser, EA, WHO.vy);
-  await v.page.goto("/contracts/messages?company=all");
-  await rowOf(v.page, NAME.ha).click();
-  const box = v.page.getByRole("textbox", { name: "Nhập tin nhắn" });
-  const mid = async (l: import("@playwright/test").Locator) => {
-    const b = await l.boundingBox();
-    if (!b) throw new Error("không có khung");
-    return b.y + b.height / 2;
-  };
-  const m = await mid(box);
-  expect(
-    Math.abs((await mid(v.page.getByRole("button", { name: "Gửi", exact: true }))) - m),
-  ).toBeLessThanOrEqual(1);
-  expect(
-    Math.abs((await mid(v.page.getByRole("button", { name: "Đính kèm tệp" }))) - m),
-  ).toBeLessThanOrEqual(1);
-  await v.ctx.close();
 });
 
 test("CR172-J2 · thanh trên hiện avatar + tên người đăng nhập ở Sổ Hợp Tác", async ({
