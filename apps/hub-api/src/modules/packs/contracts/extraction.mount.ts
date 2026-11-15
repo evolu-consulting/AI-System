@@ -93,7 +93,6 @@ import { safeTimeZone } from "./reminders.mount";
 // Tra MST (`TaxRegistry`) do `packs.mount.ts` tiêm từ `lib/` (gói không gọi HTTP — PK-AC12).
 
 const _KEY = "contracts";
-
 /** `CONTRACTS_EXTRACT_TIMEOUT_S` (10–3600, mặc định 300) — trần một lượt AI (review Trung 2). */
 function agentTimeoutMs(): number {
   const n = Number(process.env.CONTRACTS_EXTRACT_TIMEOUT_S);
@@ -190,6 +189,7 @@ function extractionRunner(d: AiDeps, flow: ContractsFlowDeps, pack: ReturnType<t
     tax: d.tax,
     scheduleTaxRetry: schedule,
     log: logger,
+    errorFields: safeErrorFields,
     // Seam HD2 (`transport`) giữ hành vi đã khoá: tệp đi thẳng agent. Chế độ flow: PDF có lớp chữ ⇒ chữ (D3-04).
     ...(flow.fileText && !d.transport ? { fileText: flow.fileText } : {}),
   });

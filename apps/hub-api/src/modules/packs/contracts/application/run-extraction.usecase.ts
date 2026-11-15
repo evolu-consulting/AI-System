@@ -4,7 +4,6 @@
 // tay mới hơn) ⇒ đọc lại, gộp lại (≤ 3 lần). Không gọi mạng/CPU nặng trong tx; số câu cố định, không phụ thuộc số dòng hàng.
 // MST chưa tra được vì cổng hẹn giờ (khe 2 s / 429) ⇒ hẹn `refreshParties` (Trung 4). Chiều mua/bán: không cảnh báo khi chưa có
 // pháp nhân của mình (khớp mgmt-app `enrich.py:105`, review Thấp 5).
-import { safeErrorFields } from "../../../../lib/errors";
 import type { PackWho } from "../../kit/public";
 import { aiDealWrite } from "../domain/deal-direction.rules";
 import {
@@ -46,7 +45,18 @@ export type RunExtractionDeps = {
   fileText?: SourceFileText;
   /** Ghi vết khi ghi kết quả hỏng (mã/loại lỗi, không nội dung HĐ). */
   log?: { warn(msg: string, fields?: Record<string, unknown>): void };
+  /** Rút mã/loại lỗi an toàn để ghi vết (adapter tiêm `safeErrorFields`); vắng ⇒ chỉ tên lỗi. */
+  errorFields?: (err: unknown) => Record<string, unknown>;
 };
+/** Mã/loại lỗi để ghi vết: adapter tiêm `errorFields`; vắng ⇒ tên + thông điệp lỗi. */
+const errorFieldsOf = (
+  d: { errorFields?: (err: unknown) => Record<string, unknown> },
+  err: unknown,
+): Record<string, unknown> =>
+  d.errorFields?.(err) ??
+  (err instanceof Error
+    ? { error_name: err.name, error: err.message }
+    : { error_name: typeof err });
 export type ExtractionOutcome = "needs_review" | "extract_failed" | "skipped";
 export type RunExtraction = (who: PackWho, contractId: string) => Promise<ExtractionOutcome>;
 
@@ -90,7 +100,7 @@ export function createRunExtraction(d: RunExtractionDeps): RunExtraction {
       );
       return await save(d, { who, id, verified, hits, cur: src, own });
     } catch (err) {
-      d.log?.warn("contract-extract-save-failed", safeErrorFields(err)); // chỉ mã/loại lỗi, không nội dung HĐ
+      d.log?.warn("contract-extract-save-failed", errorFieldsOf(d, err)); // chỉ mã/loại lỗi, không nội dung HĐ
       return fail(d, who, id, "SAVE_FAILED");
     }
   };
