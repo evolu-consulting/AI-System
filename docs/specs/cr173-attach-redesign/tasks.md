@@ -51,7 +51,7 @@ Trạng thái gộp: chưa gộp
 - [x] i18n: khoá `attachPick` (contracts, contracts/messages, community) và `attach.pick` (chat); bỏ `attach.button`
 - [x] Thay các chỗ ở bảng kiểm kê (cột «thay»)
 - [x] Test: unit web-kit + markup (chat-web) + e2e `cr173-attach-dropzone.cw.ts`
-- [ ] Chạy e2e job liên quan (contracts-web, cr127, cr169, community-web, chat) và chụp lại baseline lệch — xem «Việc còn lại»
+- [x] e2e: contracts-web + cr127 + journey-approval + community-web + chat + cr161 + workspace-web xanh (481+336 ca); baseline s04-new chụp lại
 
 ## Quyết định trong lúc làm
 - Test markup đặt ở chat-web (web-kit chưa có react-dom), như CR-164.
