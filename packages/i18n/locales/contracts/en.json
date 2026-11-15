@@ -754,6 +754,7 @@
       }
     },
     "review": {
+      "lead": { "number": "Contract no.", "type": "Type", "partner": "Partner" },
       "back": "← Contracts",
       "reading": "Reading the contract…",
       "checkLead": "Check the fields, then confirm.",

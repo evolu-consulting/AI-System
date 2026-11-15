@@ -57,6 +57,7 @@ export function DetailGrid({
             disabled={!canSave}
             lockedKeys={lockedKeys}
             saveButton={saveButton}
+            onDeal={c.entry_source === "manual" && canSave ? info.setDeal : undefined}
             kind={{ onTerm: info.setTerm, unsure: info.kindUnsure, invalid: info.kindInvalid }}
             confirm={
               confirm

@@ -37,16 +37,18 @@ function Titled({
 }) {
   const left = daysUntil(c.end_date, new Date().toISOString().slice(0, 10));
   return (
-    <span className="flex flex-wrap items-center gap-2" data-testid="head-title">
+    <span className="flex min-w-0 items-center gap-2" data-testid="head-title">
       <DocTypeIcon kind={(c.doc?.doc_type ?? "contract") as DocKind} />
       <TitleEdit
         value={title}
         editable={rename?.enabled === true}
         onSave={rename?.onSave ?? (async () => null)}
       />
-      <StatusChip status={c.status} />
-      {c.effect && c.status === "done" && <EffectChip effect={c.effect} daysLeft={left} />}
-      {c.hold && <ContractLockChip reason={c.hold.reason} />}
+      <span className="flex shrink-0 flex-wrap items-center gap-2">
+        <StatusChip status={c.status} />
+        {c.effect && c.status === "done" && <EffectChip effect={c.effect} daysLeft={left} />}
+        {c.hold && <ContractLockChip reason={c.hold.reason} />}
+      </span>
     </span>
   );
 }

@@ -37,8 +37,11 @@ export function InfoPanel({
   confirm,
   lockedKeys,
   kind,
+  onDeal,
 }: {
   kind?: KindProps | undefined;
+  /** CR-168: HĐ nhập tay còn nháp ⇒ Loại chọn được (lưu cùng PATCH nháp). */
+  onDeal?: ((d: ContractDeal) => void) | undefined;
   /** K3a: HĐ đã khoá ⇒ ô pháp lý chỉ đọc (chỉ `notice_days` sửa được). */
   lockedKeys?: ReadonlySet<TextKey> | undefined;
   c: ContractDetail;
@@ -59,8 +62,8 @@ export function InfoPanel({
       <div className="flex flex-col gap-4 px-5 py-4">
         <DealTiles
           value={f.deal}
-          onChange={confirm ? confirm.onDeal : () => undefined}
-          locked={!confirm || disabled}
+          onChange={confirm ? confirm.onDeal : (onDeal ?? (() => undefined))}
+          locked={(!confirm && !onDeal) || disabled}
           unsure={confirm?.dealUnsure ?? false}
         />
         <FieldsGrid

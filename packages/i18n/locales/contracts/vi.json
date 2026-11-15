@@ -754,6 +754,7 @@
       }
     },
     "review": {
+      "lead": { "number": "Số HĐ", "type": "Loại", "partner": "Đối tác" },
       "back": "← Hợp đồng",
       "reading": "Đang đọc hợp đồng…",
       "checkLead": "Kiểm tra lại các trường rồi xác nhận.",

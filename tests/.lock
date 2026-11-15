@@ -405,7 +405,7 @@ c2aa8df875ac123b7842105a8e1ec443374a781654858ee5ca4285ee802eedf8  e2e/contracts-
 6deb3cd0d6bc430d65e2069043d0e342e587e86ff7f95cdf482c4ef2f92be071  e2e/contracts-web/cr125-s4-card.cw.ts
 cbda35727ed2c39a1afd182de9d0c900d30682880415ee8fc9cba6f4e5e144ec  e2e/contracts-web/cr153-kinds-always.cw.ts
 c5178e5c78a1a19ad341168328485d573e94372385ff06468764e84886c59502  e2e/contracts-web/cr154-lock-attachments.cw.ts
-54b7dd13103f726257f3eda4b2fc57fc588b2ff35defde87bef3bdc137e34fc0  e2e/contracts-web/cr157-manual-fallback.cw.ts
+d8cb0334a8eb0dc6f5634a902a9b06670d65b57abd64973383fdc99e34051410  e2e/contracts-web/cr157-manual-fallback.cw.ts
 4069eeaba8f6cb918b0b4cecd436bbaba40d9029ce3efc57ed605895b718a03f  e2e/contracts-web/cr158-tenant-favicon.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 d351d4edda7e3772462619c8cbec6e9daa497718dff44acad1d117afc4998028  e2e/contracts-web/dataset-contract.ts
@@ -471,7 +471,7 @@ f84e4e9faf2e5417e9526675fa71271c1e74afe603cdb89de76bea8431e2b4a0  e2e/cr121-shel
 d3e546a0438df688fc74b62232b3e8e851a5e030d90a2a4dc9f351c37d5b11eb  e2e/cr121-tenants-list.spec.ts
 9025f93e621b30db29614fc7d779dc672e526e08f2ef88e90e1fa1f7c5859053  e2e/cr127/_cr127-kit.ts
 820c39bde85d3eda2b7c27fb0dcf7f9a04d59f1cc01cb8c2b92081a21135d838  e2e/cr127/_cr127-stack.ts
-65f192b7e1e4f0a531fde1d8b685dea70b5147487f6f00908920c308d8a23e75  e2e/cr127/j01-soan-ap-dung-duyet.spec.ts
+a0d025e4d7d8b3538652952b994d959875b037262293a4a78aa36645106a71d7  e2e/cr127/j01-soan-ap-dung-duyet.spec.ts
 63edfcff610c61e7ec1cb73242874155aaf1bf03527a119ba8da7b6e90ff7590  e2e/cr127/j03-uy-quyen.spec.ts
 a37befb266ee80f79ce503ffb6f9035c7bdba4d7e25c30bfa156392df5f6dc85  e2e/cr127/j04-thuc-hien-giao-thieu-phat.spec.ts
 563f1b281a04fee302afccc551e2c2d4f0a404966b7784e0b2e3e33749946530  e2e/cr127/j05-tam-khoa.spec.ts
@@ -481,7 +481,7 @@ a37befb266ee80f79ce503ffb6f9035c7bdba4d7e25c30bfa156392df5f6dc85  e2e/cr127/j04-
 e941fef97fcb9125defcbc8ef9b9ef5ef79aa0a1ab0235a9e651b4fc0b1ccbbb  e2e/cr127/j10-phien-ban-chuyen-moc.spec.ts
 3b21a9406dff8a0c7ed530a8fa30f3982a93544ecc0ebbe4bc64e2df85534a64  e2e/cr127/j11-nhan-viec-tat-ca.spec.ts
 f6d7283896604237e091c95a404086eea656b0cddd094c6e2ff0a065b6965d69  e2e/cr127/j13-nhan-khong-quy-trinh.spec.ts
-1d8d93434a20ac0138a29cda81c3647c11e9a72b7797450802f9462f5d24eac5  e2e/cr127/j14-chua-co-quy-trinh.spec.ts
+b963f50500a1ce7f570ad0fa23476239a71e25aefa2a990c7b3a674b1c187e35  e2e/cr127/j14-chua-co-quy-trinh.spec.ts
 d917894b2823cbaec37b1e4872d521fa556828a68611c1e0c33537af209e5051  e2e/cr127/j15-xoa-quy-trinh-nhap.spec.ts
 70eb84626d36436ff0eba2671ecd61365da3658f714f5b38efb94776e2d498d3  e2e/cr127/j16-xoa-hop-dong-nhap.spec.ts
 83a780d963b041fd270283e1c8dd0dba368f42f1aac33491478d9ffadf377322  e2e/cr127/j17-tai-lieu-kem.spec.ts

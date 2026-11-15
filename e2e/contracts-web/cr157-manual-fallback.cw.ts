@@ -211,3 +211,40 @@ test("CR-162 · Xem hợp đồng gốc là nút icon có chú thích khi rê ch
   await link.hover();
   await expect(page.getByRole("tooltip", { name: "Xem hợp đồng gốc" })).toBeVisible();
 });
+
+// CR-168 (3) trang chi tiết HĐ nháp không còn khối «Khi gửi, hợp đồng sẽ đi qua».
+test("CR-168 · không còn khối xem trước luồng duyệt trên trang HĐ nháp", async ({ page }) => {
+  await installV2f(page, { contract: () => manual(true) });
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
+  await expect(page.getByTestId("manual-banner")).toBeVisible();
+  await expect(page.getByTestId("submit-preview")).toHaveCount(0);
+  await expect(page.getByText("Khi gửi, hợp đồng sẽ đi qua")).toHaveCount(0);
+});
+
+// CR-168 (5) nhập tay: «Loại hợp đồng» chọn được, lưu cùng PATCH nháp (server đặt direction theo loại).
+test("CR-168 · nhập tay: chọn Loại hợp đồng rồi Lưu nháp gửi deal trong PATCH", async ({
+  page,
+}) => {
+  const sent = await installV2f(page, { contract: () => manual() });
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
+  const tile = page.getByRole("radio", { name: /^Giới thiệu/ });
+  await expect(tile).toBeEnabled();
+  await tile.click();
+  await page.getByRole("button", { name: "Lưu nháp" }).first().click();
+  await expect
+    .poll(() => sent.find((s) => s.method === "PATCH" && s.path.endsWith("/fields"))?.body)
+    .toMatchObject({ deal: "referral" });
+});
+
+// CR-168 (1)(2) đầu trang gọn: nút chính + «Thao tác» cùng hàng với tên; dòng thông tin có nhãn rõ.
+test("CR-168 · đầu trang: nút cùng hàng với tên, dòng thông tin có nhãn", async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await installV2f(page, { contract: () => manual(true) });
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
+  const title = await page.getByTestId("head-title").boundingBox();
+  const menu = await page.getByTestId("head-actions-menu").boundingBox();
+  expect(title && menu && Math.abs(title.y - menu.y) < 40).toBe(true);
+  const head = page.getByTestId("form-bar");
+  await expect(head).toContainText("Loại");
+  await expect(head).toContainText("Phụ trách");
+});

@@ -19,8 +19,17 @@ export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo
   return {
     lock: async (id): Promise<LockedContract | null> => {
       // CR-127 K4 · BR-39: khoá nội dung theo `status` (processing/done) — đọc cùng câu khoá hàng.
-      const rows = await tx.execute<Raw & { fields: unknown; status: string; doc_type: string }>(
-        sql`select c.version, c.updated_at, c.fields, c.status, c.doc_type
+      const rows = await tx.execute<
+        Raw & {
+          fields: unknown;
+          status: string;
+          doc_type: string;
+          deal: string | null;
+          direction: string | null;
+          entry_source: string | null;
+        }
+      >(
+        sql`select c.version, c.updated_at, c.fields, c.status, c.doc_type, c.deal, c.direction, c.entry_source
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid for update`,
       );
       const r = rows[0];
@@ -31,15 +40,23 @@ export function contractFieldsRepo(tx: Tx, tenantId: string): ContractFieldsRepo
             fields: json(r.fields),
             status: r.status,
             doc_type: r.doc_type,
+            deal: r.deal,
+            direction: r.direction,
+            entry_source: r.entry_source,
           }
         : null;
     },
     save: async (id, s): Promise<SavedContract> => {
       // HD-NFR-02: PATCH đúng 4 câu. CR-097 K1: D3-13 (sửa ⇒ mở lại duyệt cùng câu) bỏ — mở lại là thao tác owner riêng.
+      // CR-168: đổi Loại HĐ nhập tay — `direction` theo loại (buy ⇒ purchase, còn lại ⇒ sale) đúng `contracts_deal_ck`; trường riêng (kind_terms) chỉ giữ khi loại còn là Nhượng quyền / Hợp tác.
+      const dealSet = s.deal
+        ? sql`, deal = ${s.deal}, direction = ${s.deal === "buy" ? "purchase" : "sale"},
+            kind_terms = case when ${s.deal} in ('franchise', 'cooperation') then kind_terms else null end`
+        : sql``;
       const rows = await tx.execute<Raw>(sql`with u as (
           update contracts.contracts set fields = ${JSON.stringify(s.fields)}::jsonb, version = version + 1, updated_at = now(),
             -- CR-157b · M3: HĐ nhập tay đã đối chiếu mà sửa trường ⇒ bỏ xác nhận, phải tích lại
-            reconciled_by = null, reconciled_at = null
+            reconciled_by = null, reconciled_at = null${dealSet}
           where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and version = ${s.expected}::int
           returning id, version, updated_at),
         e as (

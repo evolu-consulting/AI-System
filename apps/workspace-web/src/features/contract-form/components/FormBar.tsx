@@ -35,12 +35,12 @@ export function FormBar({
     >
       <nav className="text-label text-dim">{crumb}</nav>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h1 className="min-w-0 flex-[1_1_20rem] text-[26px] font-semibold tracking-[-0.01em] max-sm:text-[22px]">
+        <h1 className="min-w-0 flex-[1_1_14rem] text-[26px] font-semibold tracking-[-0.01em] max-sm:text-[22px]">
           {title}
         </h1>
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-6 gap-y-2">
-          <div className="flex flex-wrap items-center gap-2.5">{cancel}</div>
-          <div className="flex flex-wrap items-center gap-2.5">{save}</div>
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+          {cancel ? <div className="flex flex-wrap items-center gap-2">{cancel}</div> : null}
+          <div className="flex flex-wrap items-center gap-2">{save}</div>
         </div>
       </div>
       {lead && <p className="text-sm text-dim">{lead}</p>}

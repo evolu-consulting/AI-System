@@ -47,7 +47,6 @@ import { ManualBanner } from "./ManualBanner";
 import { ManualSide, showManualSide } from "./ManualSide";
 import { OriginalFileHost } from "./OriginalFileDialog";
 import { ExtractFailed, FileLink, SaveNotice } from "./ReviewParts";
-import { SubmitPreview } from "./SubmitPreview";
 
 type Info = ReturnType<typeof useInfoForm>;
 
@@ -166,10 +165,10 @@ export function ContractBody(p: {
   const reading = c.extract_state === "reading" && c.status === "draft" && c.submit_round === 0;
   return (
     <div
-      className={`w-full gap-4 ${manualSide ? "grid items-start lg:grid-cols-2" : "flex items-start max-lg:flex-col"}`}
+      className={`w-full gap-4 ${manualSide ? "grid items-start lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" : "flex items-start max-lg:flex-col"}`}
     >
       <div className="min-w-0 flex-1 max-lg:w-full">
-        <div className="text-base leading-[1.55]">
+        <div className="flex flex-col gap-4 text-base leading-[1.55] [&>*]:mb-0!">
           <ContractHead
             c={c}
             title={c.title}
@@ -199,9 +198,6 @@ export function ContractBody(p: {
             <p role="status" data-testid="submit-blocked" className="mb-3 text-sm text-late">
               {t("contracts.u5.err.NO_APPROVAL_FLOW")}
             </p>
-          )}
-          {(rule.confirmSave || rule.draftSave || rule.resubmit) && !rule.submitBlocked && (
-            <SubmitPreview id={id} version={c.version} />
           )}
           <HeadBanner kind={rule.banner} c={c} partner={partner} />
           <ManualBanner

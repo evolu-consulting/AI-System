@@ -2,7 +2,7 @@
 // CR-127 · J01 · U2 · hành trình SOẠN → ÁP DỤNG → DUYỆT (stack journey thật, công ty `e2e-c22-<hậu tố>` CHƯA có quy trình, cờ chạy theo sự kiện đã bật):
 // quản trị nền tảng ở ai-admin «Tạo quy trình» (công ty → tên → «Tạo và mở sơ đồ») → màn soạn VẼ THEO KHỐI: «+» Duyệt (Ban Giám đốc) → Nếu (Giá trị hợp đồng > 500 triệu,
 // nhánh Đúng: Duyệt Kế toán) → Duyệt (Kinh doanh) → Ký số → «Áp dụng cho công ty» → mở lại đúng. Rồi Sổ Hợp Tác: nhân viên tải HĐ 600 triệu → thấy khối
-// «Khi gửi, hợp đồng sẽ đi qua» → Gửi duyệt → Giám đốc nhận việc và duyệt → hồ sơ duyệt tải được PDF. Quản trị công ty chỉ xem. Dữ liệu tạo đúng đường sản phẩm (D5).
+// Gửi duyệt → Giám đốc nhận việc và duyệt → hồ sơ duyệt tải được PDF. Quản trị công ty chỉ xem. Dữ liệu tạo đúng đường sản phẩm (D5).
 import fs from "node:fs";
 import { apiLogin, companyFlows } from "../_kit/api";
 import { loginTenantAdminUi } from "../_kit/ui";
@@ -138,10 +138,10 @@ test("Sổ Hợp Tác: xem trước các bước → Gửi duyệt → người 
   const emp = await newPage(browser);
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, `j01-${Date.now().toString(36)}`, 600_000_000, textPdf);
-  const preview = emp.getByTestId("submit-preview");
-  await expect(preview).toBeVisible({ timeout: 60_000 });
-  await expect(preview).toContainText("Khi gửi, hợp đồng sẽ đi qua");
-  await expect(preview).toContainText(/Giám đốc/);
+  // CR-168: trang chi tiết không còn khối «Khi gửi, hợp đồng sẽ đi qua».
+  await expect(emp.getByTestId("confirm-save")).toBeVisible({ timeout: 60_000 });
+  await expect(emp.getByTestId("submit-preview")).toHaveCount(0);
+  await expect(emp.getByText("Khi gửi, hợp đồng sẽ đi qua")).toHaveCount(0);
   await confirmAndSave(emp);
 
   await approveAs(await newPage(browser), E, U.director, id, "Giám đốc");

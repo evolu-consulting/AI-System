@@ -3,6 +3,7 @@
 import type {
   AssigneesResponse,
   CommissionEditResponse,
+  ContractDeal,
   ContractDetail,
   ContractFieldKey,
   HistoryResponse,
@@ -32,10 +33,11 @@ export function patchContractFields(
   id: string,
   version: number,
   fields: Partial<Record<ContractFieldKey, string | number | null>>,
+  deal?: ContractDeal,
 ): Promise<PatchFieldsResponse> {
   return api<PatchFieldsResponse>(`${BASE}/${encodeURIComponent(id)}/fields`, {
     method: "PATCH",
-    body: { version, fields },
+    body: deal ? { version, fields, deal } : { version, fields },
   });
 }
 

@@ -19,6 +19,7 @@ import { fetchProducts, matchProduct, PRODUCTS_KEY } from "~/features/contract-f
 import { patchOneLine, productIdsOf } from "~/features/contract-form/hooks/use-contract-form";
 import { useNoticeDefault } from "~/features/contract-form/hooks/use-notice-default";
 import { blockerMessage } from "~/features/contract-form/lib/blocker";
+import { dealOf } from "~/features/contract-form/lib/deal";
 import { formOfDetail, patchOfForm } from "~/features/contract-form/lib/detail-form";
 import {
   EMPTY_LINE,
@@ -231,7 +232,12 @@ function useSaveConfirm(x: SaveCtx, rows: MsRow[], setTried: (v: boolean) => voi
 }
 
 /** Lưu + trạng thái (busy/msg/err) + hủy. `saveFirst` chỉ ghi khi có gì để ghi (luồng "Xác nhận"). */
-function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
+function useInfoSave(
+  x: SaveCtx,
+  L: Load,
+  patch: Record<string, unknown>,
+  dealTo: ContractDeal | undefined,
+) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { c, id, confirm } = x;
@@ -249,10 +255,11 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
   const saveFirst = useCallback(async () => {
     if (firstSaveMode(confirm) === "draft") await saveConfirm(true);
     else {
-      if (c && Object.keys(patch).length) await patchContractFields(id, c.version, patch);
+      if (c && (Object.keys(patch).length || dealTo))
+        await patchContractFields(id, c.version, patch, dealTo);
       if (x.termsChanged) await x.saveTerms();
     }
-  }, [confirm, saveConfirm, c, patch, id, x.termsChanged, x.saveTerms]);
+  }, [confirm, saveConfirm, c, patch, dealTo, id, x.termsChanged, x.saveTerms]);
   const save = useCallback(async () => {
     setErr(null);
     setMsg(null);
@@ -347,7 +354,10 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
   useProductSuggest(confirm, L.f, L.setF, L.sug);
   const patch = useMemo(() => (c && L.f && !confirm ? patchOfForm(c, L.f) : {}), [c, L.f, confirm]);
   const kind = useKindTerms(c, id, L);
-  const dirty = confirm ? true : Object.keys(patch).length > 0 || kind.changed;
+  // CR-168: nhập tay còn nháp chọn được Loại; khác loại đã lưu ⇒ gửi cùng PATCH nháp.
+  const manualDeal = c && L.f && !confirm && c.entry_source === "manual" && L.f.deal !== dealOf(c);
+  const dealTo = manualDeal && L.f ? L.f.deal : undefined;
+  const dirty = confirm ? true : Object.keys(patch).length > 0 || kind.changed || !!dealTo;
   const raw = useInfoEditors(c, L);
   // Mỗi thao tác sửa đánh dấu "đã sửa" (cho nút Huỷ).
   const mark =
@@ -370,6 +380,7 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
     { c, id, confirm, f: L.f, saveTerms: kind.save, termsChanged: kind.changed },
     L,
     patch,
+    dealTo,
   );
   return {
     f: L.f,
