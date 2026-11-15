@@ -448,7 +448,7 @@ dd370427c140f53cf145b4bacb6b4df86d10fb96bed9c3a2c35a671bd3cf9c59  e2e/contracts-
 66fc771c8337d6738fc926e953c3427a607da19e1416eb376d4aa4481e8e2d89  e2e/contracts-web/transactions.cw.ts
 61f0905bb8612e46c29a6caf4431f49eda77f202ab22894cba915662fcdc5c09  e2e/contracts-web/ui-gating.cw.ts
 b8344a3f753bf0eeca6a2896786da64b8f793baada5b04c8e88f0b75a1ef1dcc  e2e/contracts-web/v2f-detail.cw.ts
-d519f1758064b6fc06b7a1458ee10c52edc9bb3ea7528c274d991c1a7e55a260  e2e/contracts-web/v2f-form.cw.ts
+6a0ee02995a57d651a107f5090f5017019c9d6a12dd3272841f28f7fa8ccef9b  e2e/contracts-web/v2f-form.cw.ts
 a009e1212075fc73c1f6efec1e8132e2f438acd6c121e32bfddd0b2b111b0b91  e2e/contracts-web/v2f-list.cw.ts
 76923895e99c36c2e44dd374b9a872f5681b8e143d6db6837dec9bcb988cdf26  e2e/contracts-web/v2f-support.ts
 a74a817c473d26cb31bf9084fcd320ee70e89f93511fc44dd29dcd50c509ede4  e2e/contracts-web/v2g-review.cw.ts

@@ -282,7 +282,7 @@
       "choose": "Choose files",
       "dropActive": "Drop files to attach",
       "image": "images",
-      "attach": "Attach a file",
+      "attach": "Attach files",
       "hint": "Supports {{types}} · up to {{size}} per file",
       "tooBig": "“{{name}}” is over {{max}}; pick a smaller file.",
       "badType": "“{{name}}” is not an accepted file type.",

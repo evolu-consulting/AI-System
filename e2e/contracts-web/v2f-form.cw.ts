@@ -341,7 +341,9 @@ test("CR-097 K3a · /contracts/new chỉ báo phải tải lên từ văn bản 
   await installV2f(page);
   await page.goto("/contracts/c/new");
   await expect(page.getByText("Hợp đồng phải tải lên từ văn bản đã ký")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Tải hợp đồng lên" })).toBeVisible();
+  await expect(
+    page.getByTestId("new-upload-only").getByRole("button", { name: "Chọn tệp" }),
+  ).toBeVisible();
   await expect(page.getByLabel("Tên hợp đồng")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Lưu hợp đồng" })).toHaveCount(0);
 });
