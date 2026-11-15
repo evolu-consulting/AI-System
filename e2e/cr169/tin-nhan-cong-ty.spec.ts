@@ -71,6 +71,13 @@ test.beforeAll(async () => {
   });
   tenantA = await tenantIdByKey(need("JA_API_URL"), p, EA.tenantKey);
   tenantB = await tenantIdByKey(need("JA_API_URL"), p, EB.tenantKey);
+  // Danh mục app của stack test để URL rỗng ⇒ `/auth/me/apps` không liệt kê Sổ Hợp Tác ⇒ chat-web ẩn mục «Tin nhắn». Đặt URL (DB riêng của job này).
+  const patch = await fetch(`${need("JA_API_URL")}/admin/apps/contracts`, {
+    method: "PATCH",
+    headers: { ...p.headers, "content-type": "application/json" },
+    body: JSON.stringify({ url: need("JA_CW_URL"), enabled: true }),
+  });
+  expect(patch.status).toBe(200);
   // Kết nối dựng qua API (đã có e2e UI ở CR-161): Tiên (Toàn quyền) mời, Dung (Toàn quyền) đồng ý.
   const [tien, dung] = [await apiOf(EA, WHO.tien), await apiOf(EB, WHO.dung)];
   const inv = await fetch(`${HUB}/pack/contracts/connect/invites`, {
