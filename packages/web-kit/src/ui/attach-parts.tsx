@@ -41,6 +41,15 @@ export const iconBtn: CSSProperties = {
   cursor: "pointer",
 };
 
+/** Nút tròn trên nền tối của hộp phóng to. */
+export const navBtn: CSSProperties = {
+  ...iconBtn,
+  padding: 8,
+  color: "white",
+  border: 0,
+  background: "rgb(255 255 255 / 0.15)",
+};
+
 const ICONS: Record<FileKind, typeof File> = {
   pdf: FileText,
   image: FileImage,

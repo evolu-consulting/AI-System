@@ -60,10 +60,10 @@
         "pending": "Chưa tính điểm"
       },
       "mine": {
-        "title": "Uy tín của mình",
-        "none": "Chưa có việc nào của mình hoàn thành trong {{days}} ngày qua.",
-        "allOnTime": "Cả {{total}} việc của mình trong {{days}} ngày qua đều đúng hạn.",
-        "someLate": "{{late}} trong {{total}} việc của mình bị trễ trong {{days}} ngày qua ({{pct}}% đúng hạn). Lỗi do mình {{ours}}, do đối tác {{partner}}, chưa rõ {{unknown}}. Lỗi của mình không trừ điểm đối tác.",
+        "title": "Mình giữ hẹn với đối tác này",
+        "none": "Chưa có mốc nào của công ty mình (thanh toán, giao hàng…) với đối tác này tới hạn trong {{days}} ngày qua, nên chưa chấm.",
+        "allOnTime": "Công ty mình giữ hẹn cả {{total}} mốc (thanh toán, giao hàng…) trong {{days}} ngày qua.",
+        "someLate": "Công ty mình trễ {{late}}/{{total}} mốc trong {{days}} ngày qua ({{pct}}% đúng hạn). Lỗi do mình {{ours}}, do đối tác {{partner}}, chưa rõ {{unknown}}. Lỗi của mình không trừ điểm đối tác.",
         "blamed": "Đối tác bị ghi lỗi: {{list}}."
       }
     }

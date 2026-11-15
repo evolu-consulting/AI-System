@@ -1,6 +1,5 @@
-// CR-164 · hiển thị ảnh + tệp đính kèm DÙNG CHUNG (Community, Chat, trò chuyện công ty): lưới ảnh 1/2/3/≥4 (+N), bấm ⇒ phóng to
-// qua lại; thẻ tệp xếp dọc (icon theo loại, tên cắt giữa, dung lượng, «Tải»; PDF thêm «Xem» trong trang).
-// Nguồn ảnh qua `getUrl(id)` (mỗi app tự lấy blob URL có xác thực); component tự thu hồi blob. Chữ qua `labels`.
+// CR-164 · ảnh + tệp đính kèm DÙNG CHUNG (Community, Chat, công ty): lưới ảnh 1/2/3/≥4 (+N), bấm ⇒ phóng to; thẻ tệp xếp dọc.
+// Nguồn ảnh qua `getUrl(id)` (blob URL có xác thực, tự thu hồi). Chữ qua `labels`.
 import { ChevronLeft, ChevronRight, ImageOff, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { type CSSProperties, useEffect, useState } from "react";
@@ -20,6 +19,7 @@ import {
   iconBtn,
   KindIcon,
   mix,
+  navBtn,
   SpinIcon,
   useLazyUrl,
   useVisible,
@@ -33,6 +33,8 @@ export type AttachGalleryProps = {
   locale?: string;
   /** Nhãn danh sách thẻ tệp (a11y). */
   ariaLabel?: string;
+  /** CR-166: `center` ⇒ căn giữa khung chứa (Community); mặc định `start` (chat). */
+  align?: "start" | "center";
 };
 
 const GRID: Record<string, CSSProperties> = {
@@ -131,11 +133,13 @@ export function ImageGrid({
   getUrl,
   labels,
   onOpen,
+  center,
 }: {
   images: readonly AttachItem[];
   getUrl: AttachGalleryProps["getUrl"];
   labels: AttachLabels;
   onOpen: (i: number) => void;
+  center?: boolean;
 }) {
   const { variant, shown, extra } = imageLayout(images.length);
   if (variant === "none") return null;
@@ -148,6 +152,7 @@ export function ImageGrid({
         display: big ? "flex" : "grid",
         gap: 8,
         maxWidth: big ? 420 : 480,
+        ...(center ? { marginInline: "auto", justifyContent: "center" } : null),
         ...GRID[variant],
       }}
     >
@@ -219,15 +224,6 @@ export function FileCard({
   );
 }
 
-const navBtn: CSSProperties = {
-  ...iconBtn,
-  padding: 8,
-  color: "white",
-  border: 0,
-  background: "rgb(255 255 255 / 0.15)",
-};
-
-/** Hộp phóng to: ảnh (qua lại ←/→) hoặc PDF trong khung. */
 function Viewer({
   list,
   index,
@@ -345,9 +341,9 @@ function Viewer({
 }
 
 export function AttachGallery(props: AttachGalleryProps) {
-  const { items, getUrl, labels, locale, onDownload, ariaLabel } = props;
+  const { items, getUrl, labels, locale, onDownload, ariaLabel, align } = props;
+  const center = align === "center";
   const { images, files } = splitAttachments(items);
-  // Đang xem: danh sách + vị trí. Ảnh ⇒ qua lại giữa ảnh; PDF ⇒ một tệp.
   const [view, setView] = useState<{ list: readonly AttachItem[]; index: number } | null>(null);
   if (images.length === 0 && files.length === 0) return null;
   return (
@@ -357,6 +353,7 @@ export function AttachGallery(props: AttachGalleryProps) {
         getUrl={getUrl}
         labels={labels}
         onOpen={(i) => setView({ list: images, index: i })}
+        center={center}
       />
       {files.length > 0 && (
         <ul
@@ -367,7 +364,9 @@ export function AttachGallery(props: AttachGalleryProps) {
             gap: 8,
             margin: 0,
             padding: 0,
+            width: "100%",
             maxWidth: 420,
+            ...(center ? { marginInline: "auto" } : null),
           }}
         >
           {files.map((f) => (

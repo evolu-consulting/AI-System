@@ -495,7 +495,7 @@ ebdfcafe3f4232adfdc128482923de761e4b2f4a4dac145ec2ceea8b8f231385  e2e/cr127/play
 4d2eb09e53b7a0937d3308128d421df2406a4cba8c466cf9ca387c92eac65746  e2e/cr161/ket-noi-cong-ty.spec.ts
 2247df12ef35c5679797557ce21b085ad59726db9beb552323c4714227f133b9  e2e/cr161/playwright.cr161.config.ts
 5f6463f2cf998ff7a41248b28166addc2fbd6cbeffe6e4b328a3d810dab1e87f  e2e/deployed/01-login-sso.deployed.ts
-22752a5188da24c037b6ba6708d203c3e8a8ed53b9d3a3336f089f657127840b  e2e/deployed/02-contracts-pages.deployed.ts
+7671e3ce615d2e20806ad65ccd88452ff42b0594de768a2d88522caa0cebd1af  e2e/deployed/02-contracts-pages.deployed.ts
 b767faf467e5231cd37c48d9286e7f452faded6fd33f402a4998987e38cd190c  e2e/deployed/03-chat.deployed.ts
 8ca4b839a1ebbf00977c9709befedec11cafe10b5eca026e0eb4bd25ec7d8ad5  e2e/deployed/04-ai-system.deployed.ts
 6c9309958daa688fbd06dcbf78ef606c0a997adfb7d665cf539b3a84d0185304  e2e/deployed/05-ai-tiers-rag.deployed.ts
