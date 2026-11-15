@@ -56,7 +56,27 @@ async function uploadSigned(p: Page, id: string): Promise<void> {
   await expect(p.getByTestId("signed-upload-box")).toHaveCount(0, { timeout: 60_000 });
 }
 
-/** Người duyệt: mở HĐ, bước `name` đang mở ⇒ (Nhận việc) ⇒ Duyệt/Đạt ⇒ bước «passed». */
+/**
+ * Bước Duyệt «Ý kiến + chữ ký hoặc tệp» (reviewNew: evidence opinion_plus) ⇒ bấm Duyệt chỉ MỞ ô bằng chứng: ghi ý kiến + đính 1 tệp
+ * ⇒ bấm nút Duyệt của ô (`request-approve-confirm`). Không có ô ⇒ bỏ qua. (Trước đây bấm nút cuối = «Huỷ» ⇒ không gửi gì.)
+ */
+async function giveEvidence(p: Page): Promise<void> {
+  const ev = p.locator("[data-approval=evidence]");
+  if (!(await ev.isVisible({ timeout: 3_000 }).catch(() => false))) return;
+  await ev.locator("#evidence-note").fill(`Đồng ý (smoke ${RUN})`);
+  const files = ev.locator("#evidence-files");
+  if (await files.count()) {
+    await files.setInputFiles({
+      name: `y-kien-${RUN}.pdf`,
+      mimeType: "application/pdf",
+      buffer: await pdfOf([`Y KIEN DUYET ${RUN}`]),
+    });
+    await expect(ev.getByTestId("evidence-file-list")).toBeVisible({ timeout: 30_000 });
+  }
+  await ev.getByTestId(/^request-(approve|pass)-confirm$/).click();
+}
+
+/** Người duyệt: mở HĐ, bước `name` đang mở ⇒ (Nhận việc) ⇒ Duyệt/Đạt (+ ô bằng chứng) ⇒ bước «passed». */
 async function approve(p: Page, id: string, name: string): Promise<void> {
   await p.goto(`${E.cw}/contracts/c/${id}`);
   const btn = p.getByTestId(/^act-(approve|pass)$/); // nút chính trên đầu trang (HeadActions)
@@ -92,13 +112,14 @@ async function approve(p: Page, id: string, name: string): Promise<void> {
   });
   p.on("pageerror", (e) => posts.push(`PAGEERR ${String(e.message).slice(0, 100)}`));
   await btn.click();
-  const ev = p.locator("[data-approval=evidence]");
-  if (await ev.isVisible({ timeout: 3_000 }).catch(() => false))
-    await ev.getByRole("button").last().click(); // hộp minh chứng (nếu quy tắc đòi)
+  await giveEvidence(p);
+  // Bước xác nhận HĐ (finalizes_on_approve) ⇒ hộp «Gắn sản phẩm»: giữ lựa chọn sẵn, xác nhận.
+  const plink = p.getByTestId("product-link-confirm");
+  if (await plink.isVisible({ timeout: 3_000 }).catch(() => false)) await plink.click();
   // Máy duyệt chạy bất đồng bộ sau khi bấm: có thể qua «running» trước «passed».
   await expect(stepOf(p, name))
     .toHaveAttribute("data-status", "passed", { timeout: 60_000 })
-    .catch(async (e) => {
+    .catch(async () => {
       const st = await stepOf(p, name).getAttribute("data-status");
       const dlg = await p
         .locator("[role=dialog],[data-approval=evidence],[role=alert]")
