@@ -1,6 +1,7 @@
 // HD-FR-21 · HD-FR-24 · HD-FR-25 · HD-FR-26 · D2-01 · HD2 plan: cổng của trích hợp đồng. Lớp 2 — chỉ kiểu.
 
 import type { KitTxRepos, PackUow, PackWho } from "../../kit/public";
+import type { DealWrite } from "../domain/deal-direction.rules";
 import type { ParentFacts } from "../domain/extract-prompt.rules";
 import type {
   Clause,
@@ -82,6 +83,10 @@ export type ExtractionSource = {
   items: ItemNumbers[];
   /** CR-101a · R14: phiên bản trong chuỗi (số gốc của v1) — điền sẵn "số gốc-SĐn" khi AI không đọc được số; vắng ⇒ không điền. */
   chain?: VersionChain | null;
+  /** fix-extract-save: loại + hướng + loại chứng từ hiện có của HĐ — đầu vào của `aiDealWrite` (vắng ⇒ chưa có loại, chứng từ 'contract'). */
+  deal?: string | null;
+  direction?: string | null;
+  docType?: string;
 };
 export type ExtractionResult = {
   fields: ContractFields;
@@ -92,6 +97,8 @@ export type ExtractionResult = {
   ai: AiRead | null;
   /** CR-127 K7 · BR-56: phạt dạng số (`null`/vắng ⇒ không đụng `penalty_terms`; có ⇒ thay các hàng `source='ai'`). */
   penaltyTerms?: PenaltyTermInput[] | null;
+  /** fix-extract-save: `deal`/`direction` hợp lệ (`aiDealWrite`) lấp vào ô còn trống; vắng ⇒ không đụng hai cột. */
+  dealWrite?: DealWrite;
 };
 export type RequestExtractOutcome =
   | { kind: "ok"; version: number }

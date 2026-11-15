@@ -12,6 +12,7 @@ import { connectDb, type Db } from "../../../../lib/db";
 import { createPackUow } from "../../kit/adapters/pack-uow";
 import { withSystemScope } from "../../kit/testing/system-scope";
 import { cksWriteRepo } from "../cks/adapters/cks-write.repo";
+import { aiDealWrite } from "../domain/deal-direction.rules";
 import { approvalRepo } from "./approval.repo";
 import { sweepRepo } from "./approval-sweep.repo";
 import { applyContractOutcome } from "./contract-flow.repo";
@@ -102,6 +103,47 @@ describe("K1b · đường ghi trạng thái qua cổng", () => {
     const [ev] = await o<{ n: string }[]>`select count(*)::text as n from contracts.contract_events
       where contract_id = ${id} and type = 'status_changed' and data->>'ev' = 'extracted'`;
     expect(ev?.n).toBe("1");
+  });
+
+  it("fix-extract-save · AI đoán Nhượng quyền / Hợp tác ⇒ lưu được (contracts_deal_ck), hướng suy ra; tổ hợp sai ⇒ bỏ deal", async () => {
+    const mk = (deal: "franchise" | "cooperation", docType: "contract" | "framework") => ({
+      id: crypto.randomUUID(),
+      deal,
+      docType,
+    });
+    const cases = [mk("franchise", "contract"), mk("cooperation", "framework")];
+    for (const c of cases) {
+      await uow().tenant(who(), async (r) => {
+        await r.up.insert(uploadRow(c.id, "reading") as never);
+        await r.tx.execute(
+          sql`update contracts.contracts set doc_type = ${c.docType} where id = ${c.id}::uuid`,
+        );
+        const src = await r.ex.source(c.id);
+        const ai = { deal: c.deal, unsure: [], summary: null, milestones: [] } as never;
+        const ok = await r.ex.saveResult(c.id, {
+          fields: {},
+          items: [],
+          clauses: [],
+          warnings: [],
+          ai,
+          dealWrite: aiDealWrite(
+            {
+              deal: src?.deal ?? null,
+              direction: src?.direction ?? null,
+              docType: src?.docType ?? "contract",
+            },
+            ai,
+          ),
+          expected: src?.version ?? 0,
+        } as never);
+        expect(ok).toBe(true);
+      });
+    }
+    const rows = await o<{ id: string; deal: string | null; direction: string | null }[]>`
+      select id, deal, direction from contracts.contracts where id in ${o(cases.map((c) => c.id))}`;
+    const by = Object.fromEntries(rows.map((x) => [x.id, x]));
+    expect(by[cases[0]?.id ?? ""]).toMatchObject({ deal: "franchise", direction: "sale" });
+    expect(by[cases[1]?.id ?? ""]).toMatchObject({ deal: null }); // Hợp tác chỉ hợp lệ với doc_type 'contract'
   });
 
   it("nhập tay / giao dịch ⇒ DONE ngay + effect + mốc mặc định (created_done)", async () => {

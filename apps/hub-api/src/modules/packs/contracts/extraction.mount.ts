@@ -189,6 +189,7 @@ function extractionRunner(d: AiDeps, flow: ContractsFlowDeps, pack: ReturnType<t
     verifier,
     tax: d.tax,
     scheduleTaxRetry: schedule,
+    log: logger,
     // Seam HD2 (`transport`) giữ hành vi đã khoá: tệp đi thẳng agent. Chế độ flow: PDF có lớp chữ ⇒ chữ (D3-04).
     ...(flow.fileText && !d.transport ? { fileText: flow.fileText } : {}),
   });
