@@ -262,13 +262,11 @@ test("CR169-J6 · N2 cách ly: Lan (cùng công ty, ngoài cuộc) không thấy
   }
 });
 
-// Chat AI app (lát 8 `cr169-chat-web`): stack journey chưa dựng chat-web ⇒ cần thêm webServer chat-web vào `playwright.cr169.config.ts` + `JA_CHAT_URL` khi gộp lát 8.
-// Nhãn «Tin nhắn» theo spec §8; ô hỏi trợ lý do chat-web quy định. Điều phối bật (bỏ `test.fixme`) sau khi gộp lát 8.
-const chatUrl = (): string => need("JA_CHAT_URL");
+// Chat AI app (lát 8 `cr169-chat-web`): chat-web cùng stack (`playwright.cr169.config.ts` dựng, `JA_CHAT_URL`). Mục «Tin nhắn» ở thanh bên chat-web
+// dùng cùng gói `messages-web`; ô hỏi trợ lý của chat-web là textbox «Tin nhắn» (khác ô soạn «Nhập tin nhắn» của cuộc người–người).
 test("CR169-J7 · Chat AI app: Hà vào mục «Tin nhắn» thấy cùng cuộc với Vy, gửi một tin ⇒ Vy (Sổ Hợp Tác) nhận tức thì; trợ lý AI không trích tin nhắn", async ({
   browser,
 }) => {
-  test.fixme(true, "chờ lát 8 (chat-web «Tin nhắn») gộp + stack có chat-web (JA_CHAT_URL)");
   const NEW = `Tin từ Chat AI ${RUN}`;
   const v = await open(browser, EA, WHO.vy);
   await v.page.goto("/contracts/messages");
@@ -276,27 +274,29 @@ test("CR169-J7 · Chat AI app: Hà vào mục «Tin nhắn» thấy cùng cuộc
 
   const ctx = await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
-  await page.goto(`${chatUrl()}/login`);
+  await page.goto(`${need("JA_CHAT_URL")}/login`);
   await page.getByRole("textbox", { name: "Mã công ty" }).fill(EB.tenantKey);
-  await page.getByRole("textbox", { name: "Email" }).fill(WHO.ha);
-  await page.getByLabel("Mật khẩu", { exact: true }).fill(EB.pw);
-  await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
-  await page.getByRole("link", { name: "Tin nhắn" }).click();
+  await page.getByRole("textbox", { name: "Tên đăng nhập" }).fill(WHO.ha);
+  await page.getByLabel("Mật khẩu").fill(EB.pw);
+  await page.getByRole("button", { name: "Đăng nhập" }).click();
+  await page.getByTestId("nav-messages").click();
   await rowOf(page, VY).click();
   await expect(msgOf(page, HELLO)).toBeVisible(); // cùng dữ liệu với Sổ Hợp Tác
   await page.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(NEW);
   await page.getByRole("button", { name: "Gửi", exact: true }).click();
-  await expect(msgOf(v.page, NEW)).toBeVisible();
+  await expect(msgOf(page, NEW)).toBeVisible();
+  await expect(msgOf(v.page, NEW)).toBeVisible(); // Vy nhận tức thì
 
-  // trợ lý AI: không có dữ liệu tin nhắn (không trích nội dung tin)
-  await page.goto(chatUrl());
+  // trợ lý AI: hỏi về tin nhắn ⇒ khung trợ lý không có nội dung các tin (trợ lý không đọc tin nhắn)
+  await page.goto(`${need("JA_CHAT_URL")}/c/new`);
   await page
-    .getByRole("textbox", { name: /Nhập|Hỏi|Nhắn/ })
-    .first()
+    .getByRole("textbox", { name: "Tin nhắn", exact: true })
     .fill("tóm tắt tin nhắn của Vy");
   await page.keyboard.press("Enter");
-  await expect(page.getByText(HELLO)).toHaveCount(0);
-  await expect(page.getByText(REPLY)).toHaveCount(0);
+  const log = page.getByRole("log", { name: "Nội dung hội thoại" });
+  await expect(log).toContainText("tóm tắt tin nhắn của Vy");
+  await expect(log).not.toContainText(HELLO);
+  await expect(log).not.toContainText(REPLY);
   await v.ctx.close();
   await ctx.close();
 });
