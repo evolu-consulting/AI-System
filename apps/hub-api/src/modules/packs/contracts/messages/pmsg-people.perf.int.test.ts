@@ -56,15 +56,15 @@ beforeAll(async () => {
   o = openOwner(2);
   const ts = Array.from({ length: COMPANIES }, (_, k) => tenantId(1700 + k));
   await o`insert into admin.tenants (id, key, name, legal_name)
-    select t, 'pp' || i, 'Cty ' || i, 'Công ty số ' || i from unnest(${o.array(ts)}::uuid[]) with ordinality as x(t, i)`;
+    select t::uuid, 'pp' || i, 'Cty ' || i, 'Công ty số ' || i from jsonb_array_elements_text(${JSON.stringify(ts)}::text::jsonb) with ordinality as x(t, i)`;
   const g = await enablePack(o, ts, "contracts");
   for (const [k, t] of ts.entries()) {
     const ids = await users(o, t, PER, { from: 170000 + k * PER });
     await members(o, t, g.get(t)?.viewer as string, ids);
   }
   await o`insert into hub.partner_links (from_tenant, to_tenant, accepted_at)
-    select a, b, now() from (select ${A}::uuid as a, t as b from unnest(${o.array(ts.slice(1))}::uuid[]) t
-                             union all select t, ${A}::uuid from unnest(${o.array(ts.slice(1))}::uuid[]) t) x`;
+    select a, b, now() from (select ${A}::uuid as a, t::uuid as b from jsonb_array_elements_text(${JSON.stringify(ts.slice(1))}::text::jsonb) t
+                             union all select t::uuid, ${A}::uuid from jsonb_array_elements_text(${JSON.stringify(ts.slice(1))}::text::jsonb) t) x`;
   await o`analyze admin.users`;
   await o`analyze admin.group_members`;
   await o`analyze admin.feature_grants`;
