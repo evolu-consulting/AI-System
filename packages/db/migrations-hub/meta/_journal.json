@@ -946,6 +946,13 @@
       "when": 1806902500000,
       "tag": "0151_cr169_pmsg_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 135,
+      "version": "7",
+      "when": 1806902600000,
+      "tag": "0152_cr169_pmsg_people_set",
+      "breakpoints": true
     }
   ]
 }

@@ -87,7 +87,6 @@ export const ConnectLinkSchema = ConnectCompanySchema.extend({
   note: z.string().nullable(),
   invited_by_name: z.string().nullable(),
   since: iso,
-  unread: z.number().int().min(0),
 });
 export type ConnectLink = z.infer<typeof ConnectLinkSchema>;
 export const ConnectListResponseSchema = z.strictObject({

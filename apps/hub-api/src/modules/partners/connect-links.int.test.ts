@@ -60,7 +60,6 @@ const links = (
       note: string | null;
       invited_by_name: string | null;
       since: Date;
-      unread: number;
     }[]
   >`
     select * from hub.cc_links(${status}, ${t}::timestamptz, ${id}::uuid, ${limit}::int)`;
@@ -194,7 +193,6 @@ describe("CR-161 · R3 gửi lời mời + R9 chuông", () => {
       status: "pending_in",
       note: "Mong hợp tác",
       invited_by_name: "Tiên",
-      unread: 0,
     });
     expect((await as(A, TIEN, (tx) => links(tx, "pending_out")))[0]?.tenant_id).toBe(B);
     expect(await as(A, TIEN, (tx) => links(tx, "connected"))).toHaveLength(0);

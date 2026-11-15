@@ -15,6 +15,19 @@ export type RawLast = {
   has_files: boolean;
   deleted: boolean;
   at: string;
+  /** Chỉ cuộc `partner` (tên người gửi tra sẵn trong DB; `direct`/`group` tra qua cổng `people`). */
+  sender_name?: string;
+};
+/** CR-169 · phần riêng của cuộc `partner` (người + công ty đầu kia, tính sẵn trong hàm `pmsg_*`). `my_read_seq`/`peer_read_seq` chỉ ở chi tiết. */
+export type RawPartner = {
+  peer_name: string;
+  peer_title: string | null;
+  peer_active: boolean;
+  company_id: string;
+  company_name: string;
+  read_only: boolean;
+  my_read_seq?: number;
+  peer_read_seq?: number;
 };
 /** Một dòng hội thoại của người gọi (danh sách / chi tiết). `last_at` là chuỗi ISO µs của PG (làm con trỏ). */
 export type RawConversation = {
@@ -29,6 +42,15 @@ export type RawConversation = {
   my_role: MemberRole;
   /** Chỉ có ở chi tiết. */
   members: RawMember[] | null;
+  /** CR-169 · chỉ `kind = 'partner'`. */
+  partner: RawPartner | null;
+};
+/** CR-169 · nguồn của danh sách hợp nhất (P9): nội bộ (`msg_*`) và/hoặc `partner` (`pmsg_*`); `company` = công ty lọc (chỉ nguồn partner). */
+export type ListQuery = {
+  cursor: { at: string; id: string } | null;
+  limit: number;
+  source: { internal: boolean; partner: boolean };
+  company: string | null;
 };
 /** Sự thật cần cho kiểm quyền thao tác nhóm (khoá hàng hội thoại khi `lock`). */
 export type MsgFacts = {
@@ -80,13 +102,10 @@ export type MsgFileStore = {
 export type ReadRow = { seq: number; prev: number; member_ids: string[] };
 
 export type MessagesRepo = {
-  conversations(
-    me: string,
-    cursor: { at: string; id: string } | null,
-    limit: number,
-  ): Promise<RawConversation[]>;
+  /** MỘT câu: nội bộ `UNION ALL` `pmsg_inbox`, mỗi nguồn LIMIT `limit`, sắp/LIMIT ngoài. */
+  conversations(me: string, q: ListQuery): Promise<RawConversation[]>;
   conversation(me: string, cid: string): Promise<RawConversation | null>;
-  /** Tổng chưa đọc (đã kẹp 999) của người gọi — MỘT câu. */
+  /** Tổng chưa đọc (nội bộ + `partner`, đã kẹp 999) của người gọi — MỘT câu. */
   unread(me: string): Promise<number>;
   facts(me: string, cid: string, lock: boolean): Promise<MsgFacts | null>;
   findDm(key: string): Promise<string | null>;
@@ -136,7 +155,33 @@ export type MessagesRepo = {
   /** null = không phải thành viên. Trả mốc đọc mới + cũ + mọi thành viên (đã kẹp theo `clampRead`: không lùi, không vượt tin cuối). */
   markRead(me: string, cid: string, seq: number): Promise<ReadRow | null>;
 };
-export type MessagesRepos = { messages: MessagesRepo };
+export type PartnerPersonRow = {
+  user_id: string;
+  name: string;
+  job_title: string | null;
+  tenant_id: string;
+  company_name: string;
+  department_id: string | null;
+  department_name: string | null;
+  sort_key: string;
+};
+export type PartnerCompanyRow = { company_id: string; name: string; sort_key: string };
+/** CR-169 · cuộc `partner` + danh bạ/công ty (hàm `hub.pmsg_*` DEFINER; người dùng lấy từ `app.user_id`, không là tham số). */
+export type PartnerRepo = {
+  /** `pmsg_open` — tạo/lấy cuộc với (tenant, user). */
+  open(tenant: string, user: string): Promise<{ id: string; created: boolean }>;
+  /** `pmsg_detail` — null ⇒ không là đầu cuộc (DB ném CC404 nên thực tế không bao giờ null). */
+  detail(id: string): Promise<RawConversation | null>;
+  /** `pmsg_people` — `tenants` null = A ∪ kết nối; keyset (sort_key, user_id); xin `limit` dòng (route xin +1). */
+  people(q: {
+    tenants: string[] | null;
+    q: string | null;
+    cur: { key: string; id: string } | null;
+    limit: number;
+  }): Promise<PartnerPersonRow[]>;
+  companies(cur: { key: string; id: string } | null, limit: number): Promise<PartnerCompanyRow[]>;
+};
+export type MessagesRepos = { messages: MessagesRepo; partner: PartnerRepo };
 
 export type PeopleLookup = (
   who: { tenantId: string; userId: string },

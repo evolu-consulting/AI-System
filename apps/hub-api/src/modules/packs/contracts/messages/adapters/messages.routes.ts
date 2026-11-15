@@ -8,9 +8,9 @@ import {
   CreateConversationRequestSchema,
   MarkReadRequestSchema,
   MSG_ERRORS,
+  MsgCompaniesQuerySchema,
   MsgConversationsQuerySchema,
   MsgListQuerySchema,
-  type MsgPeoplePage,
   MsgPeopleQuerySchema,
   RenameConversationRequestSchema,
   SendMessageRequestSchema,
@@ -24,15 +24,27 @@ import { type PackAccessView, type PackGuardVars, packGuard } from "../../../kit
 import { cleanFileName, fileNameOf } from "../../adapters/upload.routes";
 import { type MessagesUsecases, MsgFail } from "../application/messages.usecase";
 import { decodeCursor } from "../application/messages.view";
+import { type CompanyFilter, parseCompanyFilter } from "../domain/partner.rules";
+import { pmsgError } from "./partner.errors";
 
 const notFound = () => new AppError("MSG_NOT_FOUND", MSG_ERRORS.MSG_NOT_FOUND, "MSG_NOT_FOUND");
 const forbidden = () => new AppError("PACK_FORBIDDEN", 403, "Forbidden");
-/** `MsgFail` ⇒ AppError(mã, HTTP theo `MSG_ERRORS`). */
+/** `MsgFail` ⇒ AppError(mã, HTTP theo `MSG_ERRORS`); lỗi hàm DB `pmsg_*` (CC*, 42501) ⇒ `pmsgError`. */
 const run = <T>(p: Promise<T>): Promise<T> =>
   p.catch((e) => {
     if (e instanceof MsgFail) throw new AppError(e.code, MSG_ERRORS[e.code], e.code);
-    throw e;
+    return pmsgError(e);
   });
+/** `company` sai dạng ⇒ 400 `VALIDATION_ERROR` (path `company`). */
+function companyFilter(raw: string | undefined, tenantId: string): CompanyFilter {
+  try {
+    return parseCompanyFilter(raw, tenantId);
+  } catch {
+    throw appError("VALIDATION_ERROR", {
+      issues: [{ path: ["company"], code: "invalid", message: "company" }],
+    });
+  }
+}
 const SeqSchema = z.coerce.number().int().min(1);
 const MULTIPART_SLACK = 64 * 1024;
 const tooLarge = () =>
@@ -62,7 +74,7 @@ function helpers(view: PackAccessView) {
 function conversationRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   const { read, who, uuid, noStore } = h;
   r.get("/messages/unread", read, async (c) => {
-    const out = await uc.unread(who(c));
+    const out = await run(uc.unread(who(c)));
     noStore(c);
     return c.json(out);
   });
@@ -74,7 +86,8 @@ function conversationRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
       throw appError("VALIDATION_ERROR", {
         issues: [{ path: ["cursor"], code: "invalid", message: "cursor" }],
       });
-    const out = await uc.list(w, { cursor, limit: q.limit });
+    const filter = companyFilter(q.company, w.tenantId);
+    const out = await run(uc.list(w, { cursor, limit: q.limit, filter }));
     noStore(c);
     return c.json(out);
   });
@@ -189,23 +202,15 @@ function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   });
 }
 
-export type Directory = (
-  who: { tenantId: string; userId: string; userKind?: "internal" | "external" },
-  opt: { cursor?: string | undefined; limit: number; q?: string | undefined },
-) => Promise<MsgPeoplePage>;
-
-export function messagesRoutes(
-  view: PackAccessView,
-  uc: MessagesUsecases,
-  directory: Directory,
-): Routes {
-  const r = new Hono<PackGuardVars>();
-  const h = helpers(view);
-  // CR-132b/CR-148 · danh bạ «Thành viên» TẢI DẦN (30/lần, trần 50, theo phòng ban rồi tên): đồng nghiệp nội bộ của công ty (không đối tác).
+/** Danh bạ + công ty (CR-148 tải dần; CR-169: lọc công ty, người công ty kết nối, chip công ty). */
+function peopleRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
+  // Danh bạ «Thành viên» TẢI DẦN (30/lần, trần 50): `own` theo phòng ban rồi tên (CR-148); `all`/công ty theo tên, người có quyền Sổ Hợp Tác.
   r.get("/messages/people", h.read, async (c) => {
+    const w = h.who(c);
     const q = parseQuery(c, MsgPeopleQuerySchema);
+    const filter = companyFilter(q.company, w.tenantId);
     try {
-      const out = await directory(h.who(c), q);
+      const out = await run(uc.people(w, q, filter));
       h.noStore(c);
       return c.json(out);
     } catch (e) {
@@ -216,6 +221,27 @@ export function messagesRoutes(
       throw e;
     }
   });
+  r.get("/messages/companies", h.read, async (c) => {
+    const w = h.who(c);
+    const q = parseQuery(c, MsgCompaniesQuerySchema);
+    try {
+      const out = await run(uc.companies(w, q));
+      h.noStore(c);
+      return c.json(out);
+    } catch (e) {
+      if (e instanceof Error && e.message === "BAD_CURSOR")
+        throw appError("VALIDATION_ERROR", {
+          issues: [{ path: ["cursor"], code: "invalid", message: "cursor" }],
+        });
+      throw e;
+    }
+  });
+}
+
+export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Routes {
+  const r = new Hono<PackGuardVars>();
+  const h = helpers(view);
+  peopleRoutes(r, h, uc);
   conversationRoutes(r, h, uc);
   memberRoutes(r, h, uc);
   messageRoutes(r, h, uc);

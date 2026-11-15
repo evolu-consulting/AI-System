@@ -2,7 +2,7 @@
 // người nhận là mọi thành viên (cả A cho tab khác); thu hồi/đọc/đổi thành viên phát đúng khung. DB thật. KHÔNG sleep: `publish` được await trước khi use case
 // trả về ⇒ đọc XRANGE ngay sau `await` là tín hiệu đủ (không chờ mốc giờ).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { tenants, users } from "@ai/test-kit/builders";
+import { enablePack, members, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../../lib/db";
@@ -47,6 +47,9 @@ beforeAll(async () => {
   db = connectDb(urls().hubApi, 3);
   [T] = (await tenants(o, 1, 9401)) as [string];
   [A, B, C, D] = (await users(o, T, 4, { from: 9401 })) as [string, string, string, string];
+  // CR-169: tổng chưa đọc/danh sách gộp cuộc `partner` (hàm pmsg_* đòi người gọi có quyền Sổ Hợp Tác) ⇒ cấp quyền đọc cho người dùng của test.
+  const g = await enablePack(o, [T], "contracts");
+  await members(o, T, g.get(T)?.viewer as string, [A, B, C, D]);
   redis = createRedis(REDIS_TEST_URL);
   await redis.connect();
   await clear();

@@ -59,7 +59,7 @@ export function connectRepo(tx: Tx, tid: string): ConnectRepo {
       );
       return r?.c === true;
     },
-    /** Danh sách (một câu, keyset `(since, tenant_id)` DESC, kèm `unread` theo người gọi). Xin `limit` dòng (route xin limit+1). */
+    /** Danh sách (một câu, keyset `(since, tenant_id)` DESC; CR-169: không còn `unread` — tin chưa đọc nằm ở Tin nhắn). Xin `limit` dòng (route xin limit+1). */
     async links(status: string | null, cur: Cursor | null, limit: number): Promise<ConnectLink[]> {
       const rows = await tx.execute<{
         tenant_id: string;
@@ -70,15 +70,13 @@ export function connectRepo(tx: Tx, tid: string): ConnectRepo {
         note: string | null;
         invited_by_name: string | null;
         since: string;
-        unread: number;
       }>(sql`select tenant_id::text, legal_name, tax_code, verified, status, note, invited_by_name,
-          to_char(since at time zone 'UTC', ${ISO}) as since, unread
+          to_char(since at time zone 'UTC', ${ISO}) as since
         from hub.cc_links(${status}, ${cur?.t ?? null}::timestamptz, ${cur?.id ?? null}::uuid, ${limit}::int)`);
       return rows.map((r) => ({
         ...r,
         legal_name: r.legal_name ?? "",
         tax_code: r.tax_code ?? "",
-        unread: Number(r.unread),
       }));
     },
     /** Người Toàn quyền của các công ty (≤ 100) đang liên quan tới tenant hiện tại — nguồn người nhận `cc.link`. Một câu. */

@@ -2,7 +2,12 @@
 // (từ token) ngoài RLS; mọi câu tham số, văn bản hằng; số câu mỗi thao tác cố định (không vòng theo hàng). Không phải thành viên ⇒ không dòng ⇒ use case 404.
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
-import type { MessagesRepo, MsgFacts, RawConversation } from "../application/messages.ports";
+import type {
+  ListQuery,
+  MessagesRepo,
+  MsgFacts,
+  RawConversation,
+} from "../application/messages.ports";
 import { iso } from "./messages.sql";
 import { messagesSendRepo } from "./messages-send.repo";
 
@@ -15,7 +20,7 @@ const MEMBERS_JSON = sql`(select coalesce(json_agg(json_build_object('user_id', 
  * thành viên) ⇒ chỉ tính cho trang được chọn, không cho cả 200 hội thoại. Tin cuối (lateral theo PK), chưa đọc (lateral trần 99, bỏ qua khi đã đọc hết).
  */
 function summary(t: string, me: string, withMembers: boolean, pick: SQL) {
-  return sql`select c.id, c.kind, c.title, ${iso("c.last_at")} as last_at, c.my_role,
+  return sql`select c.id, c.kind, c.title, ${iso("c.last_at")} as last_at, c.last_at as last_ts, null::json as partner, c.my_role,
       (select count(*)::int from contracts.msg_members mm where mm.tenant_id = c.tenant_id and mm.conversation_id = c.id) as member_count,
       (select mm.user_id from contracts.msg_members mm where mm.tenant_id = c.tenant_id and mm.conversation_id = c.id
          and mm.user_id <> c.me_id and c.kind = 'direct' limit 1) as peer_id,
@@ -37,38 +42,61 @@ function summary(t: string, me: string, withMembers: boolean, pick: SQL) {
     order by c.last_at desc, c.id desc`;
 }
 
+/** Cuộc `partner` của người gọi (`pmsg_inbox`, MỘT lần gọi hàm) về cùng dạng cột với `summary` để `UNION ALL`. Tên/công ty/«chỉ đọc» đã tính trong hàm. */
+function partnerPick(q: ListQuery): SQL {
+  return sql`select pm.id, 'partner'::text as kind, null::text as title, ${iso("pm.last_at")} as last_at, pm.last_at as last_ts,
+      'member'::text as my_role, 2 as member_count, pm.peer_user as peer_id, pm.unread, pm.last::json as last, null::json as members,
+      json_build_object('peer_name', pm.peer_name, 'peer_title', pm.peer_title, 'peer_active', pm.peer_active, 'company_id', pm.company_id,
+        'company_name', pm.company_name, 'read_only', pm.read_only) as partner
+    from hub.pmsg_inbox(${q.company}::uuid, ${q.cursor?.at ?? null}::timestamptz, ${q.cursor?.id ?? null}::uuid, ${q.limit}::int) pm`;
+}
+
+/** Danh sách hợp nhất (P9) — MỘT câu: mỗi nguồn LIMIT n (keyset `(last_at, id)` DESC dùng chung), rồi sắp + LIMIT n ngoài. */
+function listSql(t: string, me: string, q: ListQuery): SQL {
+  const cur = q.cursor;
+  const internal = summary(
+    t,
+    me,
+    false,
+    sql`${cur ? sql`and (c.last_at, c.id) < (${cur.at}::timestamptz, ${cur.id}::uuid)` : sql``}
+      order by c.last_at desc, c.id desc limit ${q.limit}::int`,
+  );
+  const cols = sql`x.id, x.kind, x.title, x.last_at, x.my_role, x.member_count, x.peer_id, x.unread, x.last, x.members, x.partner`;
+  const im = sql`select i.id, i.kind, i.title, i.last_at, i.last_ts, i.my_role, i.member_count, i.peer_id, i.unread, i.last, i.members, i.partner from im i`;
+  const pm = sql`select p.id, p.kind, p.title, p.last_at, p.last_ts, p.my_role, p.member_count, p.peer_id, p.unread, p.last, p.members, p.partner from pm p`;
+  const body =
+    q.source.internal && q.source.partner ? sql`${im} union all ${pm}` : q.source.partner ? pm : im;
+  const ctes = [
+    q.source.internal ? sql`im as (${internal})` : null,
+    q.source.partner ? sql`pm as (${partnerPick(q)})` : null,
+  ].filter((x): x is SQL => x !== null);
+  return sql`with ${sql.join(ctes, sql`, `)}
+    select ${cols} from (${body}) x order by x.last_ts desc, x.id desc limit ${q.limit}::int`;
+}
+
 /** Đọc hội thoại: danh sách, chi tiết, tổng chưa đọc, sự thật cho kiểm quyền, tìm 1-1. */
 function readRepo(
   tx: Tx,
   t: string,
 ): Pick<MessagesRepo, "conversations" | "conversation" | "unread" | "facts" | "findDm"> {
   return {
-    conversations: (me, cursor, limit) =>
-      tx.execute<RawConversation>(
-        summary(
-          t,
-          me,
-          false,
-          sql`${cursor ? sql`and (c.last_at, c.id) < (${cursor.at}::timestamptz, ${cursor.id}::uuid)` : sql``}
-            order by c.last_at desc, c.id desc limit ${limit}::int`,
-        ),
-      ),
+    conversations: (me, q) => tx.execute<RawConversation>(listSql(t, me, q)),
     conversation: async (me, cid) => {
       const [r] = await tx.execute<RawConversation>(
         summary(t, me, true, sql`and c.id = ${cid}::uuid`),
       );
       return r ?? null;
     },
-    // Tổng chưa đọc — MỘT câu (spec §6): bỏ hội thoại đã đọc hết, quét khoảng PK `msg_messages` trần 100/hội thoại, kẹp 999. Dòng chưa đọc
-    // chảy qua vòng lặp lồng và `LIMIT 999` dừng sớm ⇒ chi phí theo trần 999, không theo tổng số tin chưa đọc (cùng kết quả `least(sum, 999)`).
+    // Tổng chưa đọc — MỘT câu (spec §6): nội bộ (bỏ hội thoại đã đọc hết, quét khoảng PK `msg_messages` trần 100/hội thoại, dừng sớm ở 999) cộng `pmsg_unread()`
+    // (cùng luật đếm cho cuộc `partner`), kẹp 999. Chi phí theo trần 999, không theo tổng số tin chưa đọc.
     unread: async (me) => {
       const [r] = await tx.execute<{ total: number }>(sql`
-        select count(*)::int as total from (select 1 from contracts.msg_members m
+        select least((select count(*)::int from (select 1 from contracts.msg_members m
           join contracts.msg_conversations c on c.tenant_id = m.tenant_id and c.id = m.conversation_id and c.last_seq > m.last_read_seq
           cross join lateral (select 1 from contracts.msg_messages x
             where x.tenant_id = m.tenant_id and x.conversation_id = m.conversation_id and x.seq > m.last_read_seq
               and x.sender_id <> m.user_id and x.deleted_at is null limit 100) u
-          where m.tenant_id = ${t}::uuid and m.user_id = ${me}::uuid limit 999) s`);
+          where m.tenant_id = ${t}::uuid and m.user_id = ${me}::uuid limit 999) s) + hub.pmsg_unread(), 999)::int as total`);
       return r?.total ?? 0;
     },
     facts: async (me, cid, lock) => {

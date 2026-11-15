@@ -20,6 +20,7 @@ import {
   readFrames,
 } from "../domain/messages.events";
 import { canEditGroup, dmKey, groupSizeOk, messageEmpty } from "../domain/messages.rules";
+import { type CompanyFilter, sourcesOf } from "../domain/partner.rules";
 import { leaveOrRemove, MsgFail, openDirect, openGroup, sendInTx } from "./messages.ops";
 import type {
   MessagesRepo,
@@ -37,6 +38,7 @@ import {
   summaryOf,
 } from "./messages.view";
 import { type MessagesFileOps, messagesFileOps } from "./messages-files.usecase";
+import { type DirectoryFn, partnerOps } from "./partner.usecase";
 
 export { MsgFail };
 
@@ -68,6 +70,8 @@ async function lockGroupAsOwner(r: MessagesRepo, me: string, cid: string) {
 type Deps = {
   uow: PackUow<MessagesRepos>;
   people: PeopleLookup;
+  /** CR-169 · danh bạ `own` (đồng nghiệp, CR-148); vắng ⇒ `own` trả rỗng (test không dùng danh bạ). */
+  directory?: DirectoryFn | undefined;
   newId: () => string;
   /** Phát `msg.*` tới `/me/stream` SAU commit (một pipeline Redis cho cả lô khung); vắng (không Redis) ⇒ không phát. Lỗi Redis chỉ log, không ném. */
   publish?: PackStreamPublishMany | undefined;
@@ -101,7 +105,7 @@ function context(d: Deps): Ctx {
 }
 
 /** Tạo hội thoại: 1-1 (tái dùng nếu đã có) và nhóm. */
-function creationOps(c: Ctx) {
+function creationOps(c: Ctx, partner: ReturnType<typeof partnerOps>) {
   const { d, emit, detail, active } = c;
   async function createDirect(who: PackWho, peer: string) {
     const me = who.userId;
@@ -139,6 +143,7 @@ function creationOps(c: Ctx) {
       who: PackWho,
       req: CreateConversationRequest,
     ): Promise<{ detail: ConversationDetail; created: boolean }> {
+      if (req.kind === "partner") return partner.createPartner(who, req);
       return req.kind === "direct"
         ? createDirect(who, req.user_id)
         : createGroup(who, req.title, req.member_ids);
@@ -152,10 +157,16 @@ function conversationOps(c: Ctx) {
   return {
     async list(
       who: PackWho,
-      q: { cursor: { at: string; id: string } | null; limit: number },
+      q: { cursor: { at: string; id: string } | null; limit: number; filter?: CompanyFilter },
     ): Promise<ConversationPage> {
+      const filter: CompanyFilter = q.filter ?? { kind: "all" };
       const rows = await d.uow.tenant(who, (r) =>
-        r.messages.conversations(who.userId, q.cursor, q.limit + 1),
+        r.messages.conversations(who.userId, {
+          cursor: q.cursor,
+          limit: q.limit + 1,
+          source: sourcesOf(filter),
+          company: filter.kind === "company" ? filter.tenantId : null,
+        }),
       );
       const page = rows.slice(0, q.limit);
       const people = await peopleOf(who, page);
@@ -288,8 +299,16 @@ function sendOps(c: Ctx) {
 
 export function messagesUsecases(d: Deps) {
   const c = context(d);
+  const partner = partnerOps({
+    uow: d.uow,
+    people: d.people,
+    directory: d.directory ?? (async () => ({ items: [], next_cursor: null })),
+    emit: c.emit,
+  });
   return {
-    ...creationOps(c),
+    ...creationOps(c, partner),
+    people: partner.people,
+    companies: partner.companies,
     ...conversationOps(c),
     ...memberOps(c),
     ...readOps(c),

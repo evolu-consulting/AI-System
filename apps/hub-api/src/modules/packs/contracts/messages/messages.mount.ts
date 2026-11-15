@@ -16,6 +16,7 @@ import {
 } from "../../kit/public";
 import { messagesRepo } from "./adapters/messages.repo";
 import { messagesRoutes } from "./adapters/messages.routes";
+import { partnerRepo } from "./adapters/partner.repo";
 import { messagesUsecases } from "./application/messages.usecase";
 
 /** `redis` vắng ⇒ không phát `msg.*` (`/me/stream`, sau commit); `filebox` vắng ⇒ route tệp 503, tin chữ vẫn chạy. */
@@ -30,9 +31,13 @@ export function messagesModule(
   const { redis, filebox } = deps;
   const uc = messagesUsecases({
     uow: packTenantOnly(
-      createPackUow(db, "contracts", (tx, t) => ({ messages: messagesRepo(tx, t) })),
+      createPackUow(db, "contracts", (tx, t) => ({
+        messages: messagesRepo(tx, t),
+        partner: partnerRepo(tx),
+      })),
     ),
     people: internalUsersAmong(db),
+    directory: internalDirectoryPage(db),
     newId: () => Bun.randomUUIDv7(),
     publish: redis ? packStreamPublishMany(redis, logger) : undefined,
     files: filebox
@@ -45,5 +50,5 @@ export function messagesModule(
         }
       : undefined,
   });
-  return messagesRoutes(view, uc, internalDirectoryPage(db));
+  return messagesRoutes(view, uc);
 }

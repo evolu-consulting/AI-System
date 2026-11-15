@@ -6,7 +6,7 @@ import {
   messagePreview,
 } from "@ai/contracts/pack-contracts";
 import { capUnread } from "../domain/messages.rules";
-import type { RawConversation, RawMessage } from "./messages.ports";
+import type { RawConversation, RawMessage, RawPartner } from "./messages.ports";
 
 export type PersonInfo = { name: string; active: boolean };
 export type People = ReadonlyMap<string, PersonInfo>;
@@ -19,6 +19,7 @@ export const previewOf = messagePreview;
 export function personIdsOf(rows: readonly RawConversation[]): string[] {
   const ids = new Set<string>();
   for (const r of rows) {
+    if (r.kind === "partner") continue; // tên người/công ty đầu kia đã tính trong DB (`pmsg_*`), không tra nội bộ
     if (r.peer_id) ids.add(r.peer_id);
     if (r.last) ids.add(r.last.sender_id);
     for (const m of r.members ?? []) ids.add(m.user_id);
@@ -26,7 +27,36 @@ export function personIdsOf(rows: readonly RawConversation[]): string[] {
   return [...ids];
 }
 
+/** Cuộc `partner`: người + công ty đầu kia từ DB; `read_only` tính lúc đọc (P7). */
+function partnerSummaryOf(r: RawConversation, p: RawPartner): ConversationSummary {
+  return {
+    id: r.id,
+    kind: "partner",
+    title: null,
+    peer: r.peer_id
+      ? { id: r.peer_id, name: p.peer_name, active: p.peer_active, job_title: p.peer_title }
+      : null,
+    member_count: 2,
+    last_message: r.last
+      ? {
+          seq: r.last.seq,
+          sender_id: r.last.sender_id,
+          sender_name: r.last.sender_name ?? "",
+          preview: r.last.deleted ? "" : previewOf(r.last.preview),
+          has_files: r.last.has_files && !r.last.deleted,
+          deleted: r.last.deleted,
+          at: isoOf(r.last.at),
+        }
+      : null,
+    unread: capUnread(r.unread, "conversation"),
+    last_at: isoOf(r.last_at),
+    company: { id: p.company_id, name: p.company_name },
+    read_only: p.read_only,
+  };
+}
+
 export function summaryOf(r: RawConversation, people: People): ConversationSummary {
+  if (r.kind === "partner" && r.partner) return partnerSummaryOf(r, r.partner);
   const peer = r.peer_id ? people.get(r.peer_id) : undefined;
   return {
     id: r.id,
@@ -34,7 +64,7 @@ export function summaryOf(r: RawConversation, people: People): ConversationSumma
     title: r.title,
     peer:
       r.kind === "direct" && r.peer_id
-        ? { id: r.peer_id, name: peer?.name ?? "", active: peer?.active ?? false }
+        ? { id: r.peer_id, name: peer?.name ?? "", active: peer?.active ?? false, job_title: null }
         : null,
     member_count: r.member_count,
     last_message: r.last
@@ -50,6 +80,41 @@ export function summaryOf(r: RawConversation, people: People): ConversationSumma
       : null,
     unread: capUnread(r.unread, "conversation"),
     last_at: isoOf(r.last_at),
+    company: null,
+    read_only: false,
+  };
+}
+
+/** Chi tiết cuộc `partner`: đúng hai thành viên (mình + người kia), `my_role` luôn `member`; mốc đọc từ DB. */
+export function partnerDetailOf(
+  r: RawConversation,
+  self: { id: string; name: string },
+): ConversationDetail {
+  const p = r.partner;
+  if (!p) throw new Error("partnerDetailOf: không phải cuộc partner");
+  return {
+    ...partnerSummaryOf(r, p),
+    my_role: "member",
+    members: [
+      {
+        user_id: self.id,
+        name: self.name,
+        role: "member",
+        last_read_seq: p.my_read_seq ?? 0,
+        active: true,
+      },
+      ...(r.peer_id
+        ? [
+            {
+              user_id: r.peer_id,
+              name: p.peer_name,
+              role: "member" as const,
+              last_read_seq: p.peer_read_seq ?? 0,
+              active: p.peer_active,
+            },
+          ]
+        : []),
+    ],
   };
 }
 

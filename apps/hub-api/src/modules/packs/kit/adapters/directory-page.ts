@@ -8,6 +8,9 @@ export type DirectoryEntry = {
   id: string;
   name: string;
   department: { id: string; name: string } | null;
+  /** CR-169 · chức vụ (hồ sơ) và công ty của người (luôn là công ty người gọi ở nguồn này). */
+  job_title: string | null;
+  company: { id: string; name: string };
 };
 export type DirectoryPage = { items: DirectoryEntry[]; next_cursor: string | null };
 type Key = [number, string, string, string];
@@ -40,6 +43,8 @@ type Row = {
   k2: string;
   dept_id: string | null;
   dept_name: string | null;
+  job_title: string | null;
+  company_name: string;
 };
 
 /** `q` lọc tên không dấu (`unaccent`). Đối tác (external) ⇒ rỗng; công ty khác không bao giờ lọt vào. `cursor` hỏng ⇒ ném `BAD_CURSOR`. */
@@ -65,8 +70,10 @@ export const internalDirectoryPage =
       (tx) =>
         tx.execute<Row>(sql`select * from (
             select u.id, u.display_name as name, (d.name is null)::int as k1, coalesce(d.name, '') as k2,
-                   d.group_id as dept_id, d.name as dept_name
+                   d.group_id as dept_id, d.name as dept_name, pp.job_title, coalesce(tn.legal_name, tn.name) as company_name
             from admin.users u
+            join admin.tenants tn on tn.id = u.tenant_id
+            left join hub.people_profiles pp on pp.tenant_id = u.tenant_id and pp.user_id = u.id
             left join lateral (
               select g.id as group_id, coalesce(g.name ->> 'vi', g.key) as name
               from admin.group_members gm
@@ -86,6 +93,8 @@ export const internalDirectoryPage =
         id: r.id,
         name: r.name,
         department: r.dept_id && r.dept_name ? { id: r.dept_id, name: r.dept_name } : null,
+        job_title: r.job_title,
+        company: { id: who.tenantId, name: r.company_name },
       })),
       next_cursor:
         rows.length > opt.limit && last

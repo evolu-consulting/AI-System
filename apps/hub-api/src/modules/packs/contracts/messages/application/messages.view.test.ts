@@ -1,14 +1,20 @@
 // CR-132 M3 · HD-MSG-01..12 · luật thuần dựng DTO tin nhắn: con trỏ phân trang, xem trước, tóm tắt hội thoại, tin đã thu hồi.
 import { describe, expect, it } from "bun:test";
-import { ConversationDetailSchema, MessageSchema } from "@ai/contracts/pack-contracts";
+import {
+  ConversationDetailSchema,
+  ConversationSummarySchema,
+  MessageSchema,
+} from "@ai/contracts/pack-contracts";
 import type { RawConversation } from "./messages.ports";
 import {
   decodeCursor,
   detailOf,
   encodeCursor,
   messageOf,
+  partnerDetailOf,
   personIdsOf,
   previewOf,
+  summaryOf,
 } from "./messages.view";
 
 const A = "a0000000-0000-4000-8000-000000000001";
@@ -36,6 +42,7 @@ const raw = (o: Partial<RawConversation> = {}): RawConversation => ({
     { user_id: A, role: "member", joined_at: "2026-11-12T09:00:00Z", last_read_seq: 1 },
     { user_id: B, role: "member", joined_at: "2026-11-12T09:00:00Z", last_read_seq: 3 },
   ],
+  partner: null,
   ...o,
 });
 
@@ -66,7 +73,7 @@ describe("messages.view · previewOf / tóm tắt / chi tiết / tin", () => {
     ]);
     const d = detailOf(raw(), people);
     expect(ConversationDetailSchema.safeParse(d).success).toBe(true);
-    expect(d.peer).toEqual({ id: B, name: "Bình", active: false });
+    expect(d.peer).toEqual({ id: B, name: "Bình", active: false, job_title: null });
     expect(d.unread).toBe(100);
     expect(d.last_message?.preview).toBe("xin chào bạn");
     expect(d.last_message?.sender_name).toBe("Bình");
@@ -104,5 +111,59 @@ describe("messages.view · previewOf / tóm tắt / chi tiết / tin", () => {
     expect(MessageSchema.safeParse(m).success).toBe(true);
     expect(m).toMatchObject({ body: "", files: [], deleted: true });
     expect(personIdsOf([raw()]).sort()).toEqual([A, B]);
+  });
+});
+
+describe("CR-169 · cuộc partner (view)", () => {
+  const partner = raw({
+    kind: "partner",
+    member_count: 2,
+    unread: 3,
+    members: null,
+    last: {
+      seq: 2,
+      sender_id: B,
+      sender_name: "Hà",
+      preview: "Báo giá  đây",
+      has_files: false,
+      deleted: false,
+      at: "2026-11-12T10:00:00.123456Z",
+    },
+    partner: {
+      peer_name: "Hà",
+      peer_title: "Kế toán trưởng",
+      peer_active: true,
+      company_id: B,
+      company_name: "Preschool Việt",
+      read_only: true,
+      my_read_seq: 1,
+      peer_read_seq: 2,
+    },
+  });
+  it("tóm tắt: peer + chức vụ, công ty, read_only, người gửi lấy từ DB (không tra nội bộ)", () => {
+    const s = summaryOf(partner, new Map());
+    expect(ConversationSummarySchema.safeParse(s).success).toBe(true);
+    expect(s.kind).toBe("partner");
+    expect(s.peer).toEqual({ id: B, name: "Hà", active: true, job_title: "Kế toán trưởng" });
+    expect(s.company).toEqual({ id: B, name: "Preschool Việt" });
+    expect(s.read_only).toBe(true);
+    expect(s.member_count).toBe(2);
+    expect(s.last_message?.sender_name).toBe("Hà");
+    expect(s.last_message?.preview).toBe("Báo giá đây");
+  });
+  it("direct/group: company null, read_only false; personIdsOf bỏ cuộc partner", () => {
+    const s = summaryOf(raw(), new Map());
+    expect(s.company).toBeNull();
+    expect(s.read_only).toBe(false);
+    expect(personIdsOf([partner])).toEqual([]);
+  });
+  it("chi tiết partner: đúng 2 thành viên, my_role member, mốc đọc từ DB", () => {
+    const d = partnerDetailOf(partner, { id: A, name: "An" });
+    expect(ConversationDetailSchema.safeParse(d).success).toBe(true);
+    expect(d.my_role).toBe("member");
+    expect(d.members.map((m) => [m.user_id, m.last_read_seq])).toEqual([
+      [A, 1],
+      [B, 2],
+    ]);
   });
 });

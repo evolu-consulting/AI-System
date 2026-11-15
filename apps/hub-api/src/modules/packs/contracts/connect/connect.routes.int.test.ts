@@ -156,11 +156,10 @@ const ROUTES: [string, string, unknown?][] = [
   ["POST", `/connect/links/${B}/accept`],
   ["POST", `/connect/links/${B}/decline`],
   ["DELETE", `/connect/links/${B}`],
-  ["GET", `/connect/posts/${B}`],
 ];
 
 describe("CR-161 · R1 cổng Toàn quyền ở route", () => {
-  it("nhân viên (Vy) gọi MỌI route (mời, đồng ý, từ chối, ngắt, bài, tìm, danh sách) ⇒ 403 PACK_FORBIDDEN, không đổi dòng nào", async () => {
+  it("nhân viên (Vy) gọi MỌI route (mời, đồng ý, từ chối, ngắt, tìm, danh sách) ⇒ 403 PACK_FORBIDDEN, không đổi dòng nào", async () => {
     const before = await nLinks();
     for (const [m, p, b] of ROUTES) {
       const r = await call(VY, m, p, b);
@@ -323,6 +322,7 @@ describe("CR-161 · R10 bài công khai của công ty đã kết nối", () => 
     expect((await call(TIEN, "GET", `/connect/posts/${B}?cursor=@@`)).status).toBe(400);
     const c = await call(CUONG, "GET", `/connect/posts/${B}`);
     expect([c.status, code(c)]).toEqual([404, "CONNECT_NOT_CONNECTED"]);
+    expect((await call(VY, "GET", `/connect/posts/${B}?limit=1`)).status).toBe(200); // CR-169: guard `read` — Vy (nhân viên, không Toàn quyền, không phải người mời) xem được
     expect((await call(DUNG, "GET", `/connect/posts/${B}`)).status).toBe(400); // chính công ty mình: không đi đường này (22023)
   });
 });

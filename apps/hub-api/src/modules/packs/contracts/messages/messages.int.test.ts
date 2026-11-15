@@ -2,7 +2,7 @@
 // đường chính mỗi endpoint (tạo 1-1 lặp ⇒ cùng id · nhóm · gửi + idempotent · danh sách + chưa đọc · đọc · thu hồi · đổi tên · thêm/bớt · chủ rời ⇒ chuyển chủ ·
 // người cuối rời ⇒ xoá) và một ca người NGOÀI hội thoại / công ty khác ⇒ cùng 404 `MSG_NOT_FOUND` ở mọi thao tác.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { tenants, users } from "@ai/test-kit/builders";
+import { enablePack, members, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../../lib/db";
@@ -50,6 +50,10 @@ beforeAll(async () => {
     string,
   ];
   [V1] = (await users(o, T2, 1, { from: 9370 })) as [string];
+  // CR-169: tổng chưa đọc/danh sách gộp cuộc `partner` (hàm pmsg_* đòi người gọi có quyền Sổ Hợp Tác) ⇒ cấp quyền đọc cho người dùng của test.
+  const g = await enablePack(o, [T, T2], "contracts");
+  await members(o, T, g.get(T)?.viewer as string, [U1, U2, U3, U4, U5]);
+  await members(o, T2, g.get(T2)?.viewer as string, [V1]);
   await o`update admin.users set active = false where id = ${U4}`;
 }, 120_000);
 afterAll(async () => {
