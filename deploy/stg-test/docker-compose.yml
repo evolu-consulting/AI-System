@@ -1,7 +1,8 @@
 # sohoptac2-staging · STAGING that cho ten mien -test (app-test / ai-test / ai-test-admin / ai-test-hub .evoluconsulting.com), tren host prod (149.202.83.5) nhung CO LAP:
 # project Docker `sohoptac2-staging` (mang, container, volume rieng), image tag `staging` (sohoptac2-app:staging, sohoptac2-web:staging - KHONG BAO GIO :latest),
 # cong 127.0.0.1:28541..28544, DU LIEU BEN (volume ten: pgdata, redisdata, fbdata, fbminio -> song qua restart/up), bi mat sinh MOI boi gen-env.sh,
-# khong mount ./claude-home hay volume/.env prod. filebox + agent-runtime dung lai image prod (chi doc; down.sh KHONG xoa).
+# khong mount volume/.env prod. NGOAI LE DUY NHAT (quyet dinh 2026-11-15): AI dung CHUNG dang nhap Claude cua prod - hub-api + agent-runtime
+# mount cung thu muc /home/evoc/workspace/sohoptac2/claude-home (khong bao gio sao chep). filebox + agent-runtime dung lai image prod (chi doc; down.sh KHONG xoa).
 # Quy trinh: bash build.sh -> bash up.sh -> bash edge.sh (tro CHI host -test vao stack nay) ; hoan tac: bash rollback.sh. Xem README.md.
 
 name: sohoptac2-staging
@@ -83,7 +84,7 @@ services:
   hub-api:
     <<: *app
     environment:
-      HOME: /tmp
+      HOME: /claude-home # nhu prod: AI client chung (ai-sub) doc dang nhap Claude o ~/.claude
       HUB_FAST_ROUTE: "on"
       HUB_STICKY_AGENT: "on" # giống prod: tin tiếp theo ở lại agent vừa trả lời
       HUB_FLOW_RUNTIME: "on"
@@ -96,6 +97,8 @@ services:
     volumes:
       - ./.env:/run/s2/app.env:ro
       - ./data/attachments:/data/attachments
+      - /home/evoc/workspace/sohoptac2/claude-home:/claude-home # CHUNG voi prod (quyet dinh 2026-11-15), khong sao chep
+      - ./claude-bin/claude:/opt/claude/claude:ro
     depends_on:
       pg: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -149,8 +152,8 @@ services:
     cpus: 0.5
     mem_limit: 512m
 
-  # Agent Runtime: Claude CLI that, DANG NHAP RIENG cua ban test (./claude-home cua staging, KHONG dung chung prod de khoi tranh refresh token).
-  # Dang nhap mot lan tren host: bash claude-login.sh
+  # Agent Runtime: Claude CLI that, DUNG CHUNG dang nhap Claude cua prod (mount thang thu muc claude-home cua prod, quyet dinh 2026-11-15;
+  # khong sao chep, khong dang nhap rieng). Dang nhap/gia han lam o prod.
   agent-runtime:
     image: ${S2_RUNTIME_IMAGE:-sohoptac2-runtime:latest}
     restart: unless-stopped
@@ -170,7 +173,7 @@ services:
       AGENT_RT_LOG_DIR: /tmp/logs
       AGENT_RT_CLI_PATH: /opt/claude/claude
     volumes:
-      - ./claude-home:/claude-home
+      - /home/evoc/workspace/sohoptac2/claude-home:/claude-home
       - ./claude-bin/claude:/opt/claude/claude:ro
     depends_on:
       pg: { condition: service_healthy }

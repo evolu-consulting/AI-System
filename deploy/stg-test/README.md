@@ -10,7 +10,7 @@ Chay tren cung may `149.202.83.5` nhung la mot stack rieng; chi 4 host `-test` t
 | Du lieu | volume ten **ben**: `pgdata`, `redisdata`, `fbdata`, `fbminio` (+ `./data/attachments`); song qua restart/up. Bi mat sinh moi (`gen-env.sh`), khong copy gi cua prod |
 | Dung lai (chi doc) | `sohoptac2-filebox:latest`, `sohoptac2-runtime:latest`, mot file `minio-bin/minio`; `down.sh` khong xoa |
 | URL | https://app-test.evoluconsulting.com (web gop) · https://ai-test… · https://ai-test-admin… · https://ai-test-hub… |
-| Cau hinh | `APP_ENV=development` (de seed fixture), `ESIGN_PROVIDERS=selfsign`, `HUB_NOTIFY_MODE=off` + khong SMTP ⇒ **khong gui mail that**; khong DocuSign; khong Claude CLI ⇒ chat AI that khong chay |
+| Cau hinh | `APP_ENV=development` (de seed fixture), `ESIGN_PROVIDERS=selfsign`, `HUB_NOTIFY_MODE=off` + khong SMTP ⇒ **khong gui mail that**; khong DocuSign; **AI dung CHUNG dang nhap Claude cua prod** (hub-api + agent-runtime mount `/home/evoc/workspace/sohoptac2/claude-home`, quyet dinh 2026-11-15; khong sao chep) |
 | Thu muc tren host | `~/workspace/sohoptac2-staging` |
 
 ## Cap nhat (build → up)
@@ -48,7 +48,7 @@ Luu y: `deploy/prod-sohoptac2/enable-domain.sh` / `cutover.sh` ve lai `sohoptac2
 
 ## Chong nham prod (tu kiem)
 - Ten project + tag co dinh trong `lib.sh` (khong doc env); `guard_tag` thoat khi gap `:latest`; `build.sh` so `docker compose config --images` phai dung hai image staging.
-- Cong chi `127.0.0.1:2854x`; khong mount `claude-home`, `.env` hay volume prod.
+- Cong chi `127.0.0.1:2854x`; khong mount `.env` hay volume prod (tru `claude-home` cua prod, dung chung dang nhap AI).
 - `stg-seed.ts` tu choi khi `APP_ENV=production` hoac `.env` khong co `S2_STACK=stg-test` + admin URL `https://ai-test-admin.*`.
 
 ## Tạo công ty (CR-159) — một lệnh, xong là dùng được
