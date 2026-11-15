@@ -1,11 +1,18 @@
-// CR-155 · mã lỗi đọc ⇒ khoá lý do; hết giờ đọc (TIMEOUT/STALE) ⇒ "timeout".
+// CR-155 · mã lỗi đọc ⇒ khoá lý do; hết giờ đọc (TIMEOUT/STALE) ⇒ "timeout"; AI tạm ngưng ⇒ "aiDown".
 import { describe, expect, it } from "bun:test";
+import vi from "../../../../../../packages/i18n/locales/contracts/vi.json";
 import { failReasonKey } from "./fail-reason";
 
 describe("failReasonKey", () => {
   it("TIMEOUT và STALE ⇒ timeout (AI đọc quá lâu)", () => {
     expect(failReasonKey("TIMEOUT")).toBe("timeout");
     expect(failReasonKey("STALE")).toBe("timeout");
+  });
+  it("AGENT_UNAVAILABLE ⇒ câu riêng 'AI đang tạm ngưng', không phải 'định dạng' hay timeout", () => {
+    expect(failReasonKey("AGENT_UNAVAILABLE")).toBe("aiDown");
+    const r = vi.contracts.review.failReason as Record<string, string>;
+    expect(r.aiDown).toContain("AI đang tạm ngưng");
+    expect(r.aiDown).toContain("Thử lại");
   });
   it("mã cũ giữ nguyên; mã lạ / vắng ⇒ undefined", () => {
     expect(failReasonKey("PDF_TOO_LARGE")).toBe("tooLarge");

@@ -754,7 +754,11 @@
       }
     },
     "review": {
-      "lead": { "number": "Contract no.", "type": "Type", "partner": "Partner" },
+      "lead": {
+        "number": "Contract no.",
+        "type": "Type",
+        "partner": "Partner"
+      },
       "back": "← Contracts",
       "reading": "Reading the contract…",
       "checkLead": "Check the fields, then confirm.",
@@ -800,7 +804,8 @@
         "tooLarge": "The file is too large for AI to read. Split it, or press “Enter manually”.",
         "unsupported": "This file format cannot be read automatically. Upload a PDF, DOCX or JPG/PNG image, or press “Enter manually”.",
         "cap": "Your company has used all AI reads for today. Try again tomorrow, or press “Enter manually”.",
-        "timeout": "AI took too long to read this file. The file is kept — press “Try again”, or press “Enter manually” to fill in the details yourself."
+        "timeout": "AI took too long to read this file. The file is kept — press “Try again”, or press “Enter manually” to fill in the details yourself.",
+        "aiDown": "The AI is temporarily unavailable, so the file could not be read. The file is kept — press “Retry” in a few minutes, or “Enter manually” to type the details yourself. If it still fails, tell your system administrator."
       },
       "toList": "Back to list"
     },

@@ -754,7 +754,11 @@
       }
     },
     "review": {
-      "lead": { "number": "Số HĐ", "type": "Loại", "partner": "Đối tác" },
+      "lead": {
+        "number": "Số HĐ",
+        "type": "Loại",
+        "partner": "Đối tác"
+      },
       "back": "← Hợp đồng",
       "reading": "Đang đọc hợp đồng…",
       "checkLead": "Kiểm tra lại các trường rồi xác nhận.",
@@ -800,7 +804,8 @@
         "tooLarge": "Tệp quá lớn để AI đọc. Hãy tách nhỏ tệp, hoặc bấm “Nhập tay”.",
         "unsupported": "Định dạng tệp này chưa hỗ trợ đọc tự động. Hãy tải lên PDF, DOCX hoặc ảnh JPG/PNG, hoặc bấm “Nhập tay”.",
         "cap": "Hôm nay đã hết lượt AI đọc của công ty. Hãy thử lại ngày mai, hoặc bấm “Nhập tay”.",
-        "timeout": "AI đọc quá lâu. Tệp vẫn được giữ — bạn có thể bấm “Thử lại”, hoặc bấm “Nhập tay” để tự nhập thông tin."
+        "timeout": "AI đọc quá lâu. Tệp vẫn được giữ — bạn có thể bấm “Thử lại”, hoặc bấm “Nhập tay” để tự nhập thông tin.",
+        "aiDown": "AI đang tạm ngưng nên chưa đọc được. Tệp vẫn được giữ — bấm “Thử lại” sau ít phút, hoặc “Nhập tay” để tự nhập thông tin. Nếu vẫn lỗi, báo quản trị hệ thống."
       },
       "toList": "Về danh sách"
     },
