@@ -26,7 +26,7 @@ Viết tắt: `H` = `apps/hub-api/src/modules/packs/contracts`, `W` = `apps/work
 ### Lát
 | # | Lát | Model | Phạm vi | Phụ thuộc | Migration | Opus soát | Rủi ro | Đọc |
 |---|---|---|---|---|---|---|---|---|
-| 1 | `cr169-contract` | Sonnet | zod §4 + `partner.rules.ts` + unit | — | — | không | thường | spec §3–4 |
+| 1 | `cr169-contract` | Sonnet | zod §4 + `partner.rules.ts` + unit | — | — | không | thường | spec §3–4 | [x] [test: packages/contracts/src/pack-contracts/messages.test.ts » CR-169 · partner] [test: apps/hub-api/src/modules/packs/contracts/messages/domain/partner.rules.test.ts » partnerSendError (P4)]
 | 2a | `cr169-db-core` | Sonnet `high` | 0149 (gỡ `cc_*`, bảng `pmsg_*`, hàm open/inbox/detail/page/send/delete/read/unread) + int `H/messages/pmsg-db.int.test.ts` (công ty thứ ba, external, chỉ đọc sau ngắt, N2, idempotent) | — (song song 1) | hub 0149 | **có** (RLS, DEFINER) | cao | spec §3, §5; `migrations-hub/0146_cr161_cc_threads.sql` |
 | 2b | `cr169-db-files` | Sonnet `high` | 0150 + 0151 + pack-contracts 0118 + int (tệp, danh bạ ∩ kết nối, role khác không EXECUTE — P12) | 2a | hub 0150, 0151; pc 0118 | **có** | cao | spec §5; `0148_cr161_cc_files_box_id.sql`, `kit/adapters/directory-page.ts`, `migrations-pack-contracts/0116_cr161_cc_grants.sql` |
 | 3a | `cr169-api-list` | Sonnet `high` | **đo trước** perf CR-132; danh sách union, unread, people/companies, create partner, `posts` guard, `cc_links` bỏ unread + int route + perf | 1, 2b | — | **có** (quyền) | cao | spec §4, §6; `messages.repo.ts`, `messages.perf.int.test.ts` |
@@ -53,7 +53,7 @@ Fixture: NitiGroup (Tiên Toàn quyền, Vy nhân viên, Lan nhân viên), Presc
 ## Việc
 | # | Việc | Lát | Trạng thái |
 |---|---|---|---|
-| 1 | Contract zod + luật thuần | cr169-contract | [ ] |
+| 1 | Contract zod + luật thuần | cr169-contract | [x] |
 | 2 | Migration 0149 + int | cr169-db-core | [ ] |
 | 3 | Migration 0150/0151 + pc 0118 + int | cr169-db-files | [ ] |
 | 4 | API danh sách/danh bạ/công ty + perf (đo trước) | cr169-api-list | [ ] |

@@ -53,6 +53,7 @@ export const CcMessagesQuerySchema = z.strictObject({
   before: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(CC_MSG_MAX).default(CC_MSG_DEFAULT),
 });
+/** @deprecated CR-169: gỡ ở lát cr169-api-partner. */
 export const CcSendBodySchema = z.strictObject({
   client_id: z.uuid(),
   body: z.string().max(CC_BODY_MAX).default(""),
@@ -106,6 +107,7 @@ export const CcFileUploadResponseSchema = z.strictObject({ file: CcFileSchema })
 /** `GET /connect/files/:file_id` → link tải ngắn hạn (JSON như tin nhắn SHT; web mở tab mới, không fetch có Authorization sang origin khác). */
 export const CcFileLinkResponseSchema = z.strictObject({ url: z.string().min(1) });
 
+/** @deprecated CR-169: gỡ cùng trò chuyện CR-161 ở lát cr169-api-partner (còn vì hub/web cũ import). */
 export const CcMessageSchema = z.strictObject({
   seq: z.number().int(),
   sender_tenant: z.uuid(),

@@ -2,9 +2,16 @@
 import { describe, expect, test } from "bun:test";
 import {
   AddMembersRequestSchema,
+  ConvKindSchema,
   CreateConversationRequestSchema,
   MeStreamMsgEventSchema,
+  MSG_ERRORS,
+  MsgCompaniesQuerySchema,
+  MsgCompanyPageSchema,
+  MsgConversationsQuerySchema,
   MsgListQuerySchema,
+  MsgPeopleQuerySchema,
+  MsgPersonSchema,
   parseMeStreamMsgEvent,
   SendMessageRequestSchema,
 } from "./messages";
@@ -99,5 +106,41 @@ describe("parseMeStreamMsgEvent", () => {
     expect(parseMeStreamMsgEvent("msg.conversation", "{hỏng")).toBeNull();
     expect(parseMeStreamMsgEvent("process.updated", data)).toBeNull();
     expect(parseMeStreamMsgEvent("msg.conversation", { ...data, x: 1 })).toBeNull();
+  });
+});
+
+describe("CR-169 · partner", () => {
+  const T = U(9);
+  test("tạo cuộc partner: strict, cần tenant_id + user_id uuid", () => {
+    const p = (o: object) =>
+      CreateConversationRequestSchema.safeParse({ kind: "partner", ...o }).success;
+    expect(p({ tenant_id: T, user_id: U(1) })).toBe(true);
+    expect(p({ user_id: U(1) })).toBe(false);
+    expect(p({ tenant_id: "x", user_id: U(1) })).toBe(false);
+    expect(p({ tenant_id: T, user_id: U(1), extra: 1 })).toBe(false);
+  });
+  test("company ≤ 40 ký tự ở danh sách cuộc và danh bạ", () => {
+    expect(MsgConversationsQuerySchema.safeParse({ company: "own" }).success).toBe(true);
+    expect(MsgConversationsQuerySchema.safeParse({ company: "a".repeat(41) }).success).toBe(false);
+    expect(MsgPeopleQuerySchema.safeParse({ company: T }).success).toBe(true);
+    expect(MsgPeopleQuerySchema.safeParse({ company: "a".repeat(41) }).success).toBe(false);
+  });
+  test("danh sách công ty: limit 1..50 mặc định 30; strict", () => {
+    expect(MsgCompaniesQuerySchema.parse({}).limit).toBe(30);
+    expect(MsgCompaniesQuerySchema.safeParse({ limit: "51" }).success).toBe(false);
+    expect(MsgCompaniesQuerySchema.safeParse({ limit: "0" }).success).toBe(false);
+    expect(MsgCompaniesQuerySchema.safeParse({ x: 1 }).success).toBe(false);
+    const page = { items: [{ id: T, name: "A" }], next_cursor: null };
+    expect(MsgCompanyPageSchema.safeParse(page).success).toBe(true);
+  });
+  test("người danh bạ cần job_title (null được) + company; MSG_NOT_CONNECTED = 409", () => {
+    const base = { id: U(1), name: "Hà", department: null };
+    const co = { id: T, name: "P" };
+    expect(MsgPersonSchema.safeParse({ ...base, job_title: null, company: co }).success).toBe(true);
+    const long = { ...base, job_title: "x".repeat(81), company: co };
+    expect(MsgPersonSchema.safeParse(long).success).toBe(false);
+    expect(MsgPersonSchema.safeParse({ ...base, job_title: null }).success).toBe(false);
+    expect(MSG_ERRORS.MSG_NOT_CONNECTED).toBe(409);
+    expect(ConvKindSchema.safeParse("partner").success).toBe(true);
   });
 });
