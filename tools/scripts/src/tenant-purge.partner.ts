@@ -17,10 +17,10 @@ export type PartnerStats = {
   linksDeleted: number;
   linksAnonymized: number;
   copiesAnonymized: number;
-  chatThreadsDeleted: number;
-  chatThreadsMerged: number;
-  chatThreadsAnonymized: number;
-  chatMessagesAnonymized: number;
+  pmsgThreadsDeleted: number;
+  pmsgThreadsMerged: number;
+  pmsgThreadsAnonymized: number;
+  pmsgMessagesAnonymized: number;
 };
 export const NO_PARTNER: PartnerStats = {
   mailboxDeleted: 0,
@@ -28,10 +28,10 @@ export const NO_PARTNER: PartnerStats = {
   linksDeleted: 0,
   linksAnonymized: 0,
   copiesAnonymized: 0,
-  chatThreadsDeleted: 0,
-  chatThreadsMerged: 0,
-  chatThreadsAnonymized: 0,
-  chatMessagesAnonymized: 0,
+  pmsgThreadsDeleted: 0,
+  pmsgThreadsMerged: 0,
+  pmsgThreadsAnonymized: 0,
+  pmsgMessagesAnonymized: 0,
 };
 
 const X = `'${PARTNER_DELETED_TENANT_ID}'::uuid`;
@@ -110,7 +110,7 @@ export async function anonymizePartner(tx: Tx, tenantId: string): Promise<Partne
   await deleteDoomed(tx, tenantId, out, DOOMED);
   await anonymizeMailbox(tx, tenantId, out);
   await anonymizeLinks(tx, tenantId, out);
-  await anonymizeChat(tx, tenantId, out);
+  await purgePartnerMessages(tx, tenantId, out);
   return out;
 }
 
@@ -228,59 +228,82 @@ async function anonymizeLinks(tx: Tx, tenantId: string, out: PartnerStats): Prom
 }
 
 /**
- * CR-161 (hub 0146) · trò chuyện hai công ty (hub.cc_threads / cc_messages — không có tenant_id; cc_reads / cc_files có ⇒ xoá theo tenant_id ở
- * bước sau, kể cả id FileBox `box_file_id` — `tenantFileIds` đọc trước khi xoá). Luồng theo cặp (tenant_lo < tenant_hi): GIỮ lịch sử cho công
- * ty còn lại, ẩn danh bên bị xoá (id → tombstone; tin của nó: người gửi → tombstone, tên «Công ty đã xoá», bỏ tệp vì cc_files của nó bị xoá;
- * chuông `cc.*` của bên kia có tên nó → «Công ty đã xoá»). Khoá cặp duy nhất ⇒ nếu bên kia đã có luồng (tombstone, bên kia) từ lần xoá trước thì
- * GỘP luồng này vào đó (dời seq tin / tệp / đã-đọc của bên kia theo `last_seq` luồng đích), rồi xoá luồng cũ. Bên kia cũng đã xoá ⇒ xoá luồng.
+ * CR-169 (hub 0149) · nhắn tin người–người giữa hai công ty (hub.pmsg_threads / pmsg_messages — không có tenant_id; pmsg_files có ⇒ xoá theo
+ * tenant_id ở bước sau, kể cả id FileBox `box_file_id` — `tenantFileIds` đọc trước khi xoá). Luật đã chốt: GIỮ lịch sử cho công ty còn lại (B),
+ * ẩn danh người của A (tenant + user → tombstone `X`, một uuid cố định cho cả công ty): tin của A GIỮ chữ, người gửi → X, bỏ tệp đính kèm
+ * (byte đã xoá ở kho), `client_id` đổi mới; mốc đọc của A về 0. Thread bên kia cũng đã xoá ⇒ xoá thread (cascade tin/tệp). Khoá thread duy nhất
+ * theo cặp ⇒ nhiều thread (A1,B1), (A2,B1) (hoặc đã có (X,B1) từ lần xoá trước) GỘP vào một thread đích: dời seq tin/tệp của nguồn theo
+ * `last_seq` đích cộng dồn, mốc đọc của B dời theo (0 giữ nguyên), rồi xoá thread nguồn. Tất cả theo tập (kế hoạch = một bảng tạm). Idempotent.
+ * Chuông `cc.*` (lời mời/đồng ý kết nối) còn nhắc tên A ⇒ `scrubChatBells`.
  */
-async function anonymizeChat(tx: Tx, tenantId: string, out: PartnerStats): Promise<void> {
-  if (!(await has(tx, "hub.cc_threads"))) return;
-  const mine = "(t.tenant_lo = $1::uuid or t.tenant_hi = $1::uuid)";
-  const other = "(case when t.tenant_lo = $1::uuid then t.tenant_hi else t.tenant_lo end)";
-  out.chatMessagesAnonymized = await count(
+async function purgePartnerMessages(tx: Tx, tenantId: string, out: PartnerStats): Promise<void> {
+  if (!(await has(tx, "hub.pmsg_threads"))) return;
+  const mine = "(t.a_tenant = $1::uuid or t.b_tenant = $1::uuid)";
+  // Bên kia đã xoá (tombstone) ⇒ không còn ai giữ: xoá thread (cascade tin + tệp).
+  out.pmsgThreadsDeleted = await count(
     tx,
-    `update hub.cc_messages m set sender_tenant = ${X}, sender_user = ${X}, sender_name = '${PARTNER_DELETED_NAME}', files = '[]'::jsonb
-     where m.sender_tenant = $1::uuid`,
+    `delete from hub.pmsg_threads t where ${mine} and (t.a_tenant = ${X} or t.b_tenant = ${X})`,
+    tenantId,
+  );
+  out.pmsgMessagesAnonymized = await count(
+    tx,
+    `update hub.pmsg_messages m set sender_user = ${X}, files = '[]'::jsonb, client_id = gen_random_uuid()
+     from hub.pmsg_threads t where m.thread_id = t.id
+       and ((t.a_tenant = $1::uuid and m.sender_user = t.a_user) or (t.b_tenant = $1::uuid and m.sender_user = t.b_user))`,
     tenantId,
   );
   await scrubChatBells(tx, tenantId);
-  // Cặp (luồng của A, luồng đích (tombstone, bên kia)); off = last_seq đích TRƯỚC khi gộp ⇒ tính lại mỗi câu, câu cập nhật last_seq chạy CUỐI.
-  const pairs = `select t.id as sid, d.id as did, d.last_seq as off, t.last_seq as sn, t.last_at as sat
-    from hub.cc_threads t join hub.cc_threads d on d.id <> t.id
-      and d.tenant_lo = least(${X}, ${other}) and d.tenant_hi = greatest(${X}, ${other})
-    where ${mine} and ${other} <> ${X}`;
+  // Kế hoạch gộp: đích = thread (X, người kia) đã có, nếu không thì thread nguồn nhỏ nhất của nhóm (giữ tại chỗ, off = 0).
+  await tx.unsafe("drop table if exists pg_temp._pmsg_plan");
   await tx.unsafe(
-    `with p as (${pairs}) update hub.cc_messages m set thread_id = p.did, seq = m.seq + p.off from p where m.thread_id = p.sid`,
+    `create temp table _pmsg_plan on commit drop as
+     with src as (select t.id, t.last_seq, t.last_at,
+         case when t.a_tenant = $1::uuid then t.b_tenant else t.a_tenant end as ot,
+         case when t.a_tenant = $1::uuid then t.b_user else t.a_user end as ou,
+         case when t.a_tenant = $1::uuid then t.b_read_seq else t.a_read_seq end as oread
+       from hub.pmsg_threads t where ${mine}),
+     dst as (select d.id, d.last_seq,
+         case when d.a_tenant = ${X} then d.b_tenant else d.a_tenant end as ot,
+         case when d.a_tenant = ${X} then d.b_user else d.a_user end as ou
+       from hub.pmsg_threads d where d.a_tenant = ${X} or d.b_tenant = ${X}),
+     g as (select s.*, x.id as xid, coalesce(x.last_seq, 0) as base,
+         row_number() over (partition by s.ot, s.ou order by s.id) as rn,
+         first_value(s.id) over (partition by s.ot, s.ou order by s.id) as first_id,
+         coalesce(sum(s.last_seq) over (partition by s.ot, s.ou order by s.id rows between unbounded preceding and 1 preceding), 0) as prior
+       from src s left join dst x on x.ot = s.ot and x.ou = s.ou)
+     select id as sid, coalesce(xid, first_id) as did,
+       case when xid is null and rn = 1 then 0 else base + prior end as off,
+       last_seq as sn, last_at as sat, ot, ou, oread, (${X}, ${X}) < (ot, ou) as lt from g`,
     [tenantId],
   );
+  const moved = "from _pmsg_plan p where p.sid <> p.did";
   await tx.unsafe(
-    `with p as (${pairs}) update hub.cc_files f set thread_id = p.did, seq = case when f.seq is null then null else f.seq + p.off end
-     from p where f.thread_id = p.sid`,
-    [tenantId],
+    `update hub.pmsg_messages m set thread_id = p.did, seq = m.seq + p.off ${moved} and m.thread_id = p.sid`,
   );
-  // Đã-đọc của bên kia: 0 giữ nguyên (chưa đọc gì ở luồng cũ ⇒ giữ mốc đích), >0 dời theo off. Dòng của A bỏ (xoá theo tenant_id ở bước sau).
   await tx.unsafe(
-    `with p as (${pairs}) insert into hub.cc_reads (thread_id, user_id, tenant_id, last_read_seq)
-     select p.did, r.user_id, r.tenant_id, case when r.last_read_seq = 0 then 0 else r.last_read_seq + p.off end
-     from hub.cc_reads r join p on r.thread_id = p.sid where r.tenant_id <> $1::uuid
-     on conflict (thread_id, user_id) do update set last_read_seq = greatest(hub.cc_reads.last_read_seq, excluded.last_read_seq)`,
-    [tenantId],
+    `update hub.pmsg_files f set thread_id = p.did, seq = case when f.seq is null then null else f.seq + p.off end ${moved} and f.thread_id = p.sid`,
   );
-  out.chatThreadsMerged = await count(
+  // Đích: cộng last_seq/last_at của các nguồn dời vào; mốc đọc của B (cạnh không phải A/tombstone): 0 giữ, >0 dời theo off.
+  out.pmsgThreadsMerged = await count(
     tx,
-    `with p as (${pairs}) update hub.cc_threads d set last_seq = d.last_seq + p.sn, last_at = greatest(d.last_at, p.sat) from p where d.id = p.did`,
+    `update hub.pmsg_threads d set last_seq = d.last_seq + a.sn, last_at = greatest(d.last_at, a.sat),
+       a_read_seq = case when d.a_tenant not in ($1::uuid, ${X}) then greatest(d.a_read_seq, a.rd) else d.a_read_seq end,
+       b_read_seq = case when d.a_tenant in ($1::uuid, ${X}) then greatest(d.b_read_seq, a.rd) else d.b_read_seq end
+     from (select did, sum(sn) as sn, max(sat) as sat, max(case when oread = 0 then 0 else oread + off end) as rd
+           ${moved} group by did) a where d.id = a.did`,
     tenantId,
   );
-  out.chatThreadsDeleted = await count(
-    tx,
-    `delete from hub.cc_threads t where ${mine} and (${other} = ${X} or exists (
-       select 1 from hub.cc_threads d where d.id <> t.id and d.tenant_lo = least(${X}, ${other}) and d.tenant_hi = greatest(${X}, ${other})))`,
-    tenantId,
+  await tx.unsafe(
+    "delete from hub.pmsg_threads t using _pmsg_plan p where t.id = p.sid and p.sid <> p.did",
   );
-  out.chatThreadsAnonymized = await count(
+  // Thread còn lại: A → tombstone (giữ thứ tự khoá (a) < (b)), mốc đọc của A về 0, mốc của B theo bên mới.
+  out.pmsgThreadsAnonymized = await count(
     tx,
-    `update hub.cc_threads t set tenant_lo = least(${X}, ${other}), tenant_hi = greatest(${X}, ${other}) where ${mine}`,
+    `update hub.pmsg_threads t set
+       a_tenant = case when p.lt then ${X} else p.ot end, a_user = case when p.lt then ${X} else p.ou end,
+       b_tenant = case when p.lt then p.ot else ${X} end, b_user = case when p.lt then p.ou else ${X} end,
+       a_read_seq = case when p.lt then 0 else p.oread end, b_read_seq = case when p.lt then p.oread else 0 end
+     from _pmsg_plan p where t.id = p.sid and p.sid = p.did`,
     tenantId,
   );
 }

@@ -35,8 +35,17 @@ const store: FileStore = {
     return "deleted";
   },
 };
-const C = "00000000-0000-4000-8000-0000000000cc"; // công ty thứ ba (không có dòng tenant): đối tác chat của A, đã có luồng (tombstone, C)
+const C = "00000000-0000-4000-8000-0000000000cc"; // công ty thứ ba (không có dòng tenant): đối tác nhắn tin của A, đã có thread (tombstone, uC)
+const D = "00000000-0000-4000-8000-0000000000dd"; // công ty thứ tư: chưa có thread đích
 const TH = (n: number) => `00000000-0000-4000-8000-0000000c000${n}`;
+const U = (n: number) => `00000000-0000-4000-8000-0000000b000${n}`;
+const [uA, uA2, uB, uC, uD] = [U(1), U(2), U(3), U(4), U(5)];
+type Side = [tenant: string, user: string];
+/** Dòng pmsg_threads: hai đầu xếp theo (tenant,user) tăng (CHECK), mốc đọc đi theo từng đầu. */
+function th(n: number, p: Side, q: Side, last: number, rp: number, rq: number) {
+  const [a, b, ra, rb] = `${p[0]}${p[1]}` < `${q[0]}${q[1]}` ? [p, q, rp, rq] : [q, p, rq, rp];
+  return [TH(n), a[0], a[1], b[0], b[1], last, ra, rb];
+}
 const deps = (): PurgeDeps => ({
   files: store,
   log: () => {},
@@ -127,31 +136,32 @@ beforeAll(async () => {
   const ubId0 = (
     await one("select id::text as id from admin.users where tenant_id = $1::uuid", [B])
   )?.id as string;
-  // CR-161: luồng trò chuyện A–B (tin của cả hai, tin của A có tệp, đã-đọc của cả hai).
-  await sql`insert into hub.cc_threads (id, tenant_lo, tenant_hi, last_seq) values
-    ('00000000-0000-4000-8000-0000000c0001', least(${A}::uuid, ${B}::uuid), greatest(${A}::uuid, ${B}::uuid), 2)`;
-  await sql`insert into hub.cc_messages (thread_id, seq, sender_tenant, sender_user, sender_name, body, files, client_id) values
-    ('00000000-0000-4000-8000-0000000c0001', 1, ${A}::uuid, ${A}::uuid, 'Nguyễn Văn A', 'xin chào từ A', '[{"id":"f1","name":"a.pdf","mime":"application/pdf","size":1}]'::jsonb, gen_random_uuid()),
-    ('00000000-0000-4000-8000-0000000c0001', 2, ${B}::uuid, ${B}::uuid, 'Trần B', 'chào lại', '[]'::jsonb, gen_random_uuid())`;
-  await sql`insert into hub.cc_reads (thread_id, user_id, tenant_id, last_read_seq) values
-    ('00000000-0000-4000-8000-0000000c0001', ${A}::uuid, ${A}::uuid, 1), ('00000000-0000-4000-8000-0000000c0001', ${B}::uuid, ${B}::uuid, 2)`;
-  // Tệp của A ở luồng A–B (id FileBox 'boxA1' phải bị xoá ở kho).
-  await sql`insert into hub.cc_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key, box_file_id, seq) values
-    (${TH(9)}::uuid, ${TH(1)}::uuid, ${A}::uuid, ${A}::uuid, 'a.pdf', 'application/pdf', 10, ${`${A}/${TH(9)}`}, 'boxA1', 1)`;
-  // Gộp: luồng đích (tombstone, C) đã có từ lần xoá trước (3 tin, last_seq 3) + luồng A–C (2 tin) ⇒ A–C dời vào đích (seq 4, 5).
-  await sql`insert into hub.cc_threads (id, tenant_lo, tenant_hi, last_seq) values
-    (${TH(2)}::uuid, least(${X}::uuid, ${C}::uuid), greatest(${X}::uuid, ${C}::uuid), 3),
-    (${TH(3)}::uuid, least(${A}::uuid, ${C}::uuid), greatest(${A}::uuid, ${C}::uuid), 2)`;
-  await sql`insert into hub.cc_messages (thread_id, seq, sender_tenant, sender_user, sender_name, body, client_id) values
-    (${TH(2)}::uuid, 1, ${X}::uuid, ${X}::uuid, ${PARTNER_DELETED_NAME}, 'cũ 1', gen_random_uuid()),
-    (${TH(2)}::uuid, 2, ${C}::uuid, ${C}::uuid, 'Người C', 'cũ 2', gen_random_uuid()),
-    (${TH(2)}::uuid, 3, ${X}::uuid, ${X}::uuid, ${PARTNER_DELETED_NAME}, 'cũ 3', gen_random_uuid()),
-    (${TH(3)}::uuid, 1, ${A}::uuid, ${A}::uuid, 'Nguyễn Văn A', 'A gửi C', gen_random_uuid()),
-    (${TH(3)}::uuid, 2, ${C}::uuid, ${C}::uuid, 'Người C', 'C trả lời', gen_random_uuid())`;
-  await sql`insert into hub.cc_reads (thread_id, user_id, tenant_id, last_read_seq) values
-    (${TH(2)}::uuid, ${C}::uuid, ${C}::uuid, 1), (${TH(3)}::uuid, ${C}::uuid, ${C}::uuid, 2)`;
-  await sql`insert into hub.cc_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key, box_file_id, seq) values
-    (${TH(8)}::uuid, ${TH(3)}::uuid, ${C}::uuid, ${C}::uuid, 'c.pdf', 'application/pdf', 10, ${`${C}/${TH(8)}`}, 'boxC1', 2)`;
+  // CR-169: nhắn tin người–người. TH1 A–B (tin của cả hai, tin A có tệp, mốc đọc cả hai); TH2 (tombstone, C) đã có từ lần xoá trước + TH3 (uA, C) và
+  // TH4 (uA2, C) ⇒ cả hai gộp vào TH2; TH5 (uA, D) và TH6 (uA2, D) chưa có đích ⇒ TH6 gộp vào TH5 (nhỏ nhất, giữ tại chỗ).
+  await sql`insert into hub.pmsg_threads (id, a_tenant, a_user, b_tenant, b_user, last_seq, a_read_seq, b_read_seq)
+    values ${sql([
+      th(1, [A, uA], [B, uB], 2, 1, 2),
+      th(2, [X, X], [C, uC], 3, 0, 1),
+      th(3, [A, uA], [C, uC], 2, 1, 2),
+      th(4, [A, uA2], [C, uC], 1, 1, 0),
+      th(5, [A, uA], [D, uD], 1, 1, 1),
+      th(6, [A, uA2], [D, uD], 1, 1, 0),
+    ] as never)}`;
+  await sql`insert into hub.pmsg_messages (thread_id, seq, sender_user, body, files, client_id) values
+    (${TH(1)}::uuid, 1, ${uA}::uuid, 'xin chào từ A', '[{"id":"f1","name":"a.pdf","mime":"application/pdf","size":1}]'::jsonb, gen_random_uuid()),
+    (${TH(1)}::uuid, 2, ${uB}::uuid, 'chào lại', '[]'::jsonb, gen_random_uuid()),
+    (${TH(2)}::uuid, 1, ${X}::uuid, 'cũ 1', '[]'::jsonb, gen_random_uuid()),
+    (${TH(2)}::uuid, 2, ${uC}::uuid, 'cũ 2', '[]'::jsonb, gen_random_uuid()),
+    (${TH(2)}::uuid, 3, ${X}::uuid, 'cũ 3', '[]'::jsonb, gen_random_uuid()),
+    (${TH(3)}::uuid, 1, ${uA}::uuid, 'A gửi C', '[]'::jsonb, gen_random_uuid()),
+    (${TH(3)}::uuid, 2, ${uC}::uuid, 'C trả lời', '[]'::jsonb, gen_random_uuid()),
+    (${TH(4)}::uuid, 1, ${uA2}::uuid, 'A2 gửi C', '[]'::jsonb, gen_random_uuid()),
+    (${TH(5)}::uuid, 1, ${uA}::uuid, 'A gửi D', '[]'::jsonb, gen_random_uuid()),
+    (${TH(6)}::uuid, 1, ${uA2}::uuid, 'A2 gửi D', '[]'::jsonb, gen_random_uuid())`;
+  // Tệp của A ở TH1 (id FileBox 'boxA1' phải bị xoá ở kho); tệp của C ở TH3 (seq 2) phải theo tin sang TH2.
+  await sql`insert into hub.pmsg_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key, box_file_id, seq) values
+    (${TH(9)}::uuid, ${TH(1)}::uuid, ${A}::uuid, ${uA}::uuid, 'a.pdf', 'application/pdf', 10, ${`${A}/${TH(9)}`}, 'boxA1', 1),
+    (${TH(8)}::uuid, ${TH(3)}::uuid, ${C}::uuid, ${uC}::uuid, 'c.pdf', 'application/pdf', 10, ${`${C}/${TH(8)}`}, 'boxC1', 2)`;
   // Chuông của B (hub.cc_bell) nhắc tên A: lời mời, và «đồng ý» có link party=<tên>&tenant=<A>.
   await sql`insert into hub.notifications (tenant_id, user_id, source, kind, title, body, link, dedup_key, fanout_at) values
     (${B}::uuid, ${ubId0}::uuid, 'contracts', 'cc.invite', 'Tenant 7301 muốn kết nối với bạn', '', '/contracts/partners?invites=1', 'cc.invite:x:1', now()),
@@ -257,58 +267,72 @@ describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn dan
       mailboxDeleted: 2,
       mailboxAnonymized: 3,
       copiesAnonymized: 3,
-      chatThreadsAnonymized: 1,
-      chatThreadsMerged: 1,
-      chatThreadsDeleted: 1,
-      chatMessagesAnonymized: 2,
+      pmsgThreadsAnonymized: 2,
+      pmsgThreadsMerged: 2,
+      pmsgThreadsDeleted: 0,
+      pmsgMessagesAnonymized: 5,
     });
   });
 
-  it("CR-161 · trò chuyện: luồng A–B còn cho B (tin A ẩn danh, bỏ tệp), tin/đã-đọc của B y nguyên", async () => {
-    const th =
-      await sql`select id::text as id, tenant_lo::text as lo, tenant_hi::text as hi from hub.cc_threads where id = ${TH(1)}::uuid`;
-    expect(th.length).toBe(1);
-    expect([th[0]?.lo, th[0]?.hi].sort()).toEqual([B, X].sort());
-    expect((th[0]?.lo as string) < (th[0]?.hi as string)).toBe(true);
+  it("CR-169 · nhắn tin: thread A–B còn cho B (tin A giữ chữ, người gửi → tombstone, bỏ tệp), tin/mốc đọc của B y nguyên", async () => {
+    const [th1] =
+      await sql`select a_tenant::text as at, a_user::text as au, b_tenant::text as bt, b_user::text as bu, a_read_seq::int as ar, b_read_seq::int as br from hub.pmsg_threads where id = ${TH(1)}::uuid`;
+    expect(new Set([th1?.at, th1?.bt])).toEqual(new Set([X, B]));
+    expect(`${th1?.at}${th1?.au}` < `${th1?.bt}${th1?.bu}`).toBe(true); // CHECK (a) < (b)
+    const aIsX = th1?.at === X;
+    expect(aIsX ? th1?.au : th1?.bu).toBe(X);
+    expect(aIsX ? th1?.bu : th1?.au).toBe(uB);
+    expect([aIsX ? th1?.ar : th1?.br, aIsX ? th1?.br : th1?.ar]).toEqual([0, 2]); // mốc A về 0, B giữ
     const msgs =
-      await sql`select seq::int as seq, sender_tenant::text as t, sender_user::text as u, sender_name, body, files from hub.cc_messages where thread_id = ${TH(1)}::uuid order by seq`;
-    expect(msgs.map((m) => [m.seq, m.t, m.sender_name, m.files])).toEqual([
-      [1, X, PARTNER_DELETED_NAME, []],
-      [2, B, "Trần B", []],
+      await sql`select seq::int as seq, sender_user::text as u, body, files from hub.pmsg_messages where thread_id = ${TH(1)}::uuid order by seq`;
+    expect(msgs.map((m) => [m.seq, m.u, m.body, m.files])).toEqual([
+      [1, X, "xin chào từ A", []],
+      [2, uB, "chào lại", []],
     ]);
-    expect(msgs[0]?.u).toBe(X); // một id cố định cho cả công ty bị xoá
-    expect(msgs[0]?.body).toBe("xin chào từ A");
-    expect(JSON.stringify(msgs).includes(A)).toBe(false);
-    const rd =
-      await sql`select tenant_id::text as t from hub.cc_reads where thread_id = ${TH(1)}::uuid`;
-    expect(rd.map((r) => r.t)).toEqual([B]);
+    expect(JSON.stringify(msgs).includes(uA)).toBe(false);
   });
 
-  it("CR-161 · tệp trò chuyện của A: id FileBox bị xoá ở kho, tệp của công ty khác không", async () => {
+  it("CR-169 · tệp nhắn tin của A: id FileBox bị xoá ở kho, tệp của công ty khác không", async () => {
     expect(removed).toContain("boxA1");
     expect(removed).not.toContain("boxC1");
-    expect((await sql`select 1 from hub.cc_files where tenant_id = ${A}::uuid`).length).toBe(0);
+    expect((await sql`select 1 from hub.pmsg_files where tenant_id = ${A}::uuid`).length).toBe(0);
   });
 
-  it("CR-161 · trò chuyện: bên kia đã có luồng (tombstone, C) ⇒ GỘP luồng A–C vào đó, C không mất tin/tệp/đã-đọc, last_seq cộng dồn", async () => {
-    expect((await sql`select 1 from hub.cc_threads where id = ${TH(3)}::uuid`).length).toBe(0);
-    const [d] = await sql`select last_seq::int as n from hub.cc_threads where id = ${TH(2)}::uuid`;
-    expect(d?.n).toBe(5);
+  it("CR-169 · nhắn tin: đã có thread (tombstone, C) ⇒ GỘP TH3, TH4 vào đó, C không mất tin/tệp/mốc đọc, last_seq cộng dồn", async () => {
+    expect(
+      (await sql`select 1 from hub.pmsg_threads where id in (${TH(3)}::uuid, ${TH(4)}::uuid)`)
+        .length,
+    ).toBe(0);
+    const [d] =
+      await sql`select last_seq::int as n, case when a_tenant = ${C}::uuid then a_read_seq else b_read_seq end::int as cr from hub.pmsg_threads where id = ${TH(2)}::uuid`;
+    expect([d?.n, d?.cr]).toEqual([6, 5]);
     const msgs =
-      await sql`select seq::int as seq, sender_tenant::text as t, body from hub.cc_messages where thread_id = ${TH(2)}::uuid order by seq`;
-    expect(msgs.map((m) => [m.seq, m.t, m.body])).toEqual([
+      await sql`select seq::int as seq, sender_user::text as u, body from hub.pmsg_messages where thread_id = ${TH(2)}::uuid order by seq`;
+    expect(msgs.map((m) => [m.seq, m.u, m.body])).toEqual([
       [1, X, "cũ 1"],
-      [2, C, "cũ 2"],
+      [2, uC, "cũ 2"],
       [3, X, "cũ 3"],
       [4, X, "A gửi C"],
-      [5, C, "C trả lời"],
+      [5, uC, "C trả lời"],
+      [6, X, "A2 gửi C"],
     ]);
     const f =
-      await sql`select thread_id::text as th, seq::int as seq from hub.cc_files where box_file_id = 'boxC1'`;
+      await sql`select thread_id::text as th, seq::int as seq from hub.pmsg_files where box_file_id = 'boxC1'`;
     expect(f.map((x) => [x.th, x.seq])).toEqual([[TH(2), 5]]);
-    const rd =
-      await sql`select last_read_seq::int as n from hub.cc_reads where thread_id = ${TH(2)}::uuid and tenant_id = ${C}::uuid`;
-    expect(rd.map((r) => r.n)).toEqual([5]);
+  });
+
+  it("CR-169 · nhắn tin: chưa có đích ⇒ thread nhỏ nhất giữ tại chỗ, thread kia gộp vào, mốc đọc A về 0", async () => {
+    expect((await sql`select 1 from hub.pmsg_threads where id = ${TH(6)}::uuid`).length).toBe(0);
+    const [t] =
+      await sql`select last_seq::int as n, a_tenant::text as at, a_read_seq::int as ar, b_read_seq::int as br from hub.pmsg_threads where id = ${TH(5)}::uuid`;
+    expect(t?.n).toBe(2);
+    expect((t?.ar as number) + (t?.br as number)).toBe(1); // mốc đọc của D giữ, của A về 0
+    const msgs =
+      await sql`select seq::int as seq, sender_user::text as u, body from hub.pmsg_messages where thread_id = ${TH(5)}::uuid order by seq`;
+    expect(msgs.map((m) => [m.seq, m.u, m.body])).toEqual([
+      [1, X, "A gửi D"],
+      [2, X, "A2 gửi D"],
+    ]);
   });
 
   it("CR-161 · chuông cc.* của B nhắc tên A ⇒ «Công ty đã xoá», link không còn tên/tenant A", async () => {
@@ -341,12 +365,11 @@ describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn dan
     expect((await sql`select 1 from hub.partner_mailbox`).length).toBe(0);
     expect((await sql`select 1 from hub.partner_links`).length).toBe(0);
     expect((await sql`select 1 from hub.partner_email_events`).length).toBe(0);
-    // CR-161: bên kia cũng đã xoá ⇒ luồng trò chuyện (tin, đã-đọc) bị xoá hẳn.
-    expect((await sql`select 1 from hub.cc_threads where id = ${TH(1)}::uuid`).length).toBe(0);
-    expect((await sql`select 1 from hub.cc_messages where thread_id = ${TH(1)}::uuid`).length).toBe(
-      0,
-    );
-    expect((await sql`select 1 from hub.cc_reads where thread_id = ${TH(1)}::uuid`).length).toBe(0);
-    expect((await sql`select 1 from hub.cc_threads where id = ${TH(2)}::uuid`).length).toBe(1); // luồng (tombstone, C) còn cho C
+    // CR-169: bên kia cũng đã xoá ⇒ thread (tin) bị xoá hẳn; thread (tombstone, C) còn cho C.
+    expect((await sql`select 1 from hub.pmsg_threads where id = ${TH(1)}::uuid`).length).toBe(0);
+    expect(
+      (await sql`select 1 from hub.pmsg_messages where thread_id = ${TH(1)}::uuid`).length,
+    ).toBe(0);
+    expect((await sql`select 1 from hub.pmsg_threads where id = ${TH(2)}::uuid`).length).toBe(1);
   });
 });

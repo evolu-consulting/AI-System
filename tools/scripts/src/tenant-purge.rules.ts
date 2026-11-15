@@ -56,10 +56,10 @@ export const IGNORED_TABLES: readonly IgnoredTable[] = [
     rel: "hub.partner_sign_sessions",
     reason: "hai bên: ẩn danh bên bị xoá, xoá cùng hộp thư (tenant-purge.partner.ts)",
   },
-  // CR-161 (hub 0146): luồng trò chuyện hai công ty (tenant_lo/tenant_hi; tin có sender_tenant) — giữ cho bên còn lại, ẩn danh bên bị xoá
-  // (`anonymizeChat`, tenant-purge.partner.ts). cc_reads / cc_files có `tenant_id` ⇒ xoá theo tenant_id như bảng thường.
-  { rel: "hub.cc_threads", reason: "hai bên: ẩn danh bên bị xoá (tenant-purge.partner.ts)" },
-  { rel: "hub.cc_messages", reason: "tin thuộc luồng hai bên: ẩn danh người gửi bên bị xoá" },
+  // CR-169 (hub 0149): thread nhắn tin người–người (a_tenant/b_tenant; tin có sender_user, không có tenant_id) — giữ cho bên còn lại, ẩn danh bên bị xoá
+  // (`purgePartnerMessages`, tenant-purge.partner.ts). pmsg_files có `tenant_id` ⇒ xoá theo tenant_id như bảng thường.
+  { rel: "hub.pmsg_threads", reason: "hai bên: ẩn danh bên bị xoá (tenant-purge.partner.ts)" },
+  { rel: "hub.pmsg_messages", reason: "tin thuộc thread hai bên: ẩn danh người gửi bên bị xoá" },
 ];
 
 /**
