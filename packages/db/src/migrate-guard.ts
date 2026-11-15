@@ -70,6 +70,18 @@ export const ACCEPTED_EDITS: readonly AcceptedEdit[] = [
     dbHash: "51dc94141053338579a32fd33f681b0c1625c0ec811782442bf98a5a70a4abfa",
     why: "fix-int-batch: bản đã áp ở stg-test (04c527b49/b9a8fcd9d); chỉ thêm DROP POLICY IF EXISTS trước mỗi CREATE POLICY (chạy lại được), lần đầu áp tương đương",
   },
+  {
+    table: "__drizzle_migrations_pack_contracts",
+    tag: "0116_cr161_cc_grants",
+    dbHash: "044313b23558166e500c7a35974d61acc3a0be4369b7795846b87ba7de5f404b",
+    why: "CR-169 lát 2a: bản đã áp ở stg-test (4b0824d9f); chỉ bỏ GRANT các hàm trò chuyện chung cc_* đã gỡ ở hub 0149 (DB dựng sạch lỗi nếu giữ), lần đầu áp tương đương",
+  },
+  {
+    table: "__drizzle_migrations_pack_contracts",
+    tag: "0117_cr161_cc_files_box_id",
+    dbHash: "79b0ddb00a5776030c1275db110b4501f464ad7b0829c2edd6835907b4d24ca0",
+    why: "CR-169 lát 2a: bản đã áp ở stg-test (4b0824d9f); chỉ bỏ GRANT các hàm trò chuyện chung cc_* đã gỡ ở hub 0149 (DB dựng sạch lỗi nếu giữ), lần đầu áp tương đương",
+  },
 ];
 
 type Journal = { entries: { tag: string; when: number }[] };
