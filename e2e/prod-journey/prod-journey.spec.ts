@@ -27,7 +27,7 @@ import {
 } from "./_kit";
 
 test.setTimeout(900_000);
-test.afterEach(async (_fx, info) => {
+test.afterEach(async ({ browser: _b }, info) => {
   await shootAll(info.title.split(" ")[0] ?? "ca");
 });
 
