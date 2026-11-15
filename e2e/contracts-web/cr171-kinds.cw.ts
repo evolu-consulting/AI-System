@@ -42,7 +42,7 @@ type Opt = {
   deal: Deal;
   mode: "ai" | "manual";
   aiTerms?: Terms;
-  lines?: boolean;
+  lines?: boolean | string;
   match?: "none" | "new";
 };
 type Fake = { sent: Sent[]; terms: Terms; confirmed: () => boolean; drafts: () => number };
@@ -104,7 +104,7 @@ async function setup(page: Page, o: Opt): Promise<Fake> {
       version: S.version,
       deal: S.deal,
       direction: S.deal === "buy" ? "purchase" : "sale",
-      items: o.lines ? [LINE(ITEM1, "nuoc suoi")] : [],
+      items: o.lines ? [LINE(ITEM1, typeof o.lines === "string" ? o.lines : "nuoc suoi")] : [],
       ...(S.deal === "referral" ? { commission_pct: 5 } : {}),
     });
     if (o.mode === "ai")
@@ -135,6 +135,14 @@ async function setup(page: Page, o: Opt): Promise<Fake> {
       S.version++;
     }
     return json(r, 200, contract());
+  });
+  // Nhập tay (không có phần AI đọc): Lưu nháp = PATCH /fields (kèm deal khi đổi Loại).
+  await page.route(`**/pack/contracts/contracts/${REVIEW_ID}/fields`, (r) => {
+    const b = rec(r);
+    if (typeof b?.deal === "string") S.deal = b.deal as Deal;
+    S.version++;
+    S.drafts++;
+    return json(r, 200, { id: REVIEW_ID, version: S.version, status: "draft" });
   });
   await page.route(`**/pack/contracts/contracts/${REVIEW_ID}/kind-terms`, (r) => {
     if (r.request().method() === "PUT") {
@@ -264,8 +272,8 @@ for (const c of KIND_CASES) {
     await expect(page.getByText(NOT_INCOMPLETE)).toHaveCount(0);
   });
 
-  // CR-171 việc dở: màn nhập tay Lưu nháp không đi qua menu `act-saveDraft` (chưa dò nút) ⇒ fixme, chưa phủ.
-  test.fixme(`Nhập tay · ${c.name}: chọn Loại, điền hết, Lưu nháp + Gửi`, async ({ page }) => {
+  // Nhập tay: «Gửi duyệt» là nút chính, «Lưu nháp» nằm trong «Thao tác ▾» (head-rule.ts); Lưu nháp = PATCH /fields.
+  test(`Nhập tay · ${c.name}: chọn Loại, điền hết, Lưu nháp + Gửi`, async ({ page }) => {
     const f = await open(page, { deal: c.deal, mode: "manual" });
     await page
       .getByRole("radio", {
@@ -282,12 +290,12 @@ for (const c of KIND_CASES) {
 }
 
 for (const deal of PLAIN) {
-  test.fixme(`Nhập tay · ${deal}: Lưu nháp gửi PATCH, không ghi trường riêng`, async ({ page }) => {
+  test(`Nhập tay · ${deal}: Lưu nháp gửi PATCH, không ghi trường riêng`, async ({ page }) => {
     const f = await open(page, { deal, mode: "manual" });
-    if (deal !== "sell")
-      await page.getByRole("radio", { name: deal === "buy" ? /^Mua/ : /^Giới thiệu/ }).click();
+    if (deal === "sell") await page.locator("#cf-title").fill("Tên đã sửa");
+    else await page.getByRole("radio", { name: deal === "buy" ? /^Mua/ : /^Giới thiệu/ }).click();
     await saveDraft(page);
-    await expect.poll(() => writes(f.sent, "", "PATCH").length).toBe(1);
+    await expect.poll(() => writes(f.sent, "/fields", "PATCH").length).toBe(1);
     expect(writes(f.sent, "/kind-terms", "PUT")).toHaveLength(0);
   });
 }
@@ -305,6 +313,11 @@ test("Nhượng quyền thiếu ô ở tab Phí: câu báo nêu đúng tên ô, 
   await expect(page.locator("#kt-fee_basis")).toHaveAttribute("aria-invalid", "true");
   await expect(page.locator("#kt-period")).toHaveAttribute("aria-invalid", "true");
   expect(writes(f.sent, "/review")).toHaveLength(0);
+  const msg = page.getByTestId("act-error");
+  await expect(msg).toContainText("Thiếu:");
+  await expect(msg).toContainText("Phí định kỳ tính theo");
+  await expect(msg).toContainText("Kỳ thu");
+  await expect(msg).not.toContainText("Thương hiệu được nhượng");
   await pick(page, "fee_basis", "fixed");
   await fill(page, "fee_fixed", "5.000.000");
   await pick(page, "period", "month");
@@ -329,7 +342,7 @@ test("Nhượng quyền bên nước ngoài, không tick «Đã đăng ký Bộ 
 });
 
 // ---- Lỗi 2: dòng hàng chưa gắn SP không chặn; hộp «Gắn sản phẩm» hiện, tạo mới / dùng có sẵn, gửi được ----
-for (const deal of ["sell", "buy"] as const) {
+for (const deal of ["sell", "buy", "franchise"] as const) {
   test(`AI đọc · ${deal}: dòng «nuoc suoi» chưa gắn SP ⇒ không báo thiếu, hộp Gắn sản phẩm hiện và gửi được`, async ({
     page,
   }) => {
@@ -353,9 +366,14 @@ for (const deal of ["sell", "buy"] as const) {
   });
 }
 
-// CR-171 việc dở: ca «dùng sản phẩm có sẵn» (cần ứng viên trong hộp) chưa chạy được ⇒ fixme.
-test.fixme("AI đọc · bán: hộp Gắn sản phẩm — dùng sản phẩm có sẵn", async ({ page }) => {
-  const f = await open(page, { deal: "sell", mode: "ai", lines: true, match: "none" });
+// Dòng trùng tên SP có sẵn ⇒ hộp có ứng viên, chọn «Dùng sản phẩm có sẵn».
+test("AI đọc · bán: hộp Gắn sản phẩm — dùng sản phẩm có sẵn", async ({ page }) => {
+  const f = await open(page, {
+    deal: "sell",
+    mode: "ai",
+    lines: "Chữ ký số DN – USB Token",
+    match: "none",
+  });
   await go(page).click();
   const row = page.getByTestId("plink-row-0");
   await expect(row).toBeVisible();

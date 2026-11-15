@@ -136,12 +136,24 @@ test("Huỷ khi chưa sửa gì ⇒ về danh sách hợp đồng (không gửi 
   expect(writes(sent)).toEqual([]);
 });
 
-test("dòng chưa gắn SP chặn Lưu (5.5a) — không gửi /review", async ({ page }) => {
+// CR-171: Lưu nháp không chặn dòng chưa gắn SP; việc gắn diễn ra ở hộp «Gắn sản phẩm» khi Xác nhận/Gửi duyệt (chưa gắn ⇒ chưa gửi xác nhận).
+test("dòng chưa gắn SP vẫn Lưu nháp được (CR-171); gửi ⇒ hộp Gắn sản phẩm hiện, chưa gắn thì chưa gửi", async ({
+  page,
+}) => {
   const { sent } = await openReview(page);
   await page.getByLabel("Gắn dòng 2 với sản phẩm").selectOption("");
   await headAct(page, "act-saveDraft");
-  await expect(page.getByRole("alert").first()).toContainText("chưa gắn sản phẩm");
-  expect(review(sent)).toHaveLength(0);
+  await expect(toast(page)).toContainText("Đã lưu nháp");
+  expect(review(sent)).toHaveLength(1);
+  expect(review(sent)[0]?.body).toMatchObject({ draft: true });
+  await page
+    .getByTestId(/^(confirm-save|act-approvalConfirm)$/)
+    .first()
+    .click();
+  await expect(page.getByTestId("product-link-dialog")).toBeVisible();
+  expect(review(sent).filter((s) => (s.body as { draft?: boolean }).draft !== true)).toHaveLength(
+    0,
+  );
 });
 
 test("chi tiết đã lưu: gắn lại SP cho dòng (PUT) + 409 ITEM_LOCKED báo câu riêng", async ({
