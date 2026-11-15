@@ -35,11 +35,15 @@ async function doTask(
   const form = p.locator('form[data-flow="form"]').first();
   await expect(form).toBeVisible({ timeout: 60_000 });
   await fill?.(form);
+  // Ô của form mang id `flow-<bước>-<trường>` (FormStep.tsx): bước kế cùng người có thể hiện form NGAY chỗ cũ ⇒ chờ ô của
+  // ĐÚNG bước này biến mất, không chờ «form nào đó» ẩn.
+  const own = await form.locator("[id^=flow-]").first().getAttribute("id");
   const submit = form
     .locator("button[type=submit]")
     .or(form.getByRole("button", { name: "Gửi", exact: true }));
   await submit.first().click();
-  await expect(form).toBeHidden({ timeout: 60_000 });
+  if (own) await expect(p.locator(`[id="${own}"]`)).toHaveCount(0, { timeout: 60_000 });
+  else await expect(form).toBeHidden({ timeout: 60_000 });
 }
 
 /** Trang HĐ: bước ký ⇒ «tải bản đã ký» (ký qua = tải bản đã ký). */
@@ -328,17 +332,13 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
     async () => approve(await as("a", "tp"), cid, "Trưởng phòng duyệt"),
     ["S7"],
   );
+  // CR-165 (tenant-flows.data.ts `gate`): nhánh có trưởng phòng duyệt nhảy thẳng tới «Ký hợp đồng» (`next_step`);
+  // «Chuẩn bị ký» chỉ ở nhánh người gửi là cấp cao nhất ⇒ sau S8 giám đốc A Ký luôn (không có S10 riêng).
   await S.run(
     "S9",
-    "Giám đốc A «Chuẩn bị ký»",
-    async () => doTask(await as("a", "gd"), "Chuẩn bị ký"),
-    ["S8"],
-  );
-  await S.run(
-    "S10",
-    "Giám đốc A Ký (tải bản đã ký)",
+    "Giám đốc A Ký (tải bản đã ký) · không qua «Chuẩn bị ký»",
     async () => uploadSigned(await as("a", "gd"), cid),
-    ["S9"],
+    ["S8"],
   );
   await S.run(
     "S11",
@@ -350,7 +350,7 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
         else await form.getByLabel("Có", { exact: true }).check();
       });
     },
-    ["S10"],
+    ["S9"],
   );
   await S.run(
     "S12",
