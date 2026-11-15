@@ -62,6 +62,26 @@ afterAll(async () => {
 });
 
 describe("CR-157 chuyển sang nhập tay", () => {
+  it("lượt đọc AI đã hỏng không còn gắn HĐ (thẻ duyệt không báo «huỷ» làm mất Gửi duyệt); lượt cũ giữ làm lịch sử; Gửi được", async () => {
+    const id = await contract();
+    const run = crypto.randomUUID();
+    await o`insert into contracts.approvals (id, tenant_id, contract_id, status, started_by) values (${run}, ${T}, ${id}, 'failed', ${creator})`;
+    await o`update contracts.contracts set run_id = ${run} where id = ${id}`;
+    await startManualEntry({ uow: uow() })(who(creator), id);
+    const [r] = await o<
+      { run_id: string | null }[]
+    >`select run_id from contracts.contracts where id = ${id}`;
+    expect(r?.run_id).toBeNull();
+    const [a] = await o<
+      { n: number }[]
+    >`select count(*)::int n from contracts.approvals where id = ${run}`;
+    expect(a?.n).toBe(1);
+    await reconcileEntry({ uow: uow() })(who(creator), id, true);
+    expect(
+      await submitContract({ uow: uow(), gate, engine } as never)(who(creator), id, {}),
+    ).toMatchObject({ status: "processing" });
+  });
+
   it("DRAFT + failed, người được giao (không phải người tạo) ⇒ manual + ready, version tăng, chưa đối chiếu", async () => {
     const id = await contract();
     const out = await startManualEntry({ uow: uow() })(who(assignee), id);

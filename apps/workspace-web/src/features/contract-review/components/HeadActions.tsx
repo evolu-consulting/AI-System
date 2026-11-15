@@ -183,6 +183,8 @@ export function HeadActions({
       };
     });
   const main = acts.primary && acts.primary !== "delete" ? act[acts.primary] : null;
+  // Nút chính khoá (không Gửi duyệt được) ⇒ lý do hiện NGAY cạnh nút, không chỉ trong tooltip.
+  const primaryWhy = acts.primaryWhyKey ? t(acts.primaryWhyKey) : null;
   return (
     <>
       {main && (
@@ -191,8 +193,10 @@ export function HeadActions({
           size="sm"
           data-testid={main.testId}
           data-approval={main.attr}
-          disabled={off || gated(acts.primary)}
-          title={gated(acts.primary) ? t("contracts.review.manualBlockWhy") : undefined}
+          disabled={off || gated(acts.primary) || primaryWhy !== null}
+          title={
+            primaryWhy ?? (gated(acts.primary) ? t("contracts.review.manualBlockWhy") : undefined)
+          }
           onClick={main.run}
         >
           {approval.busy && main.attr === "approve"
@@ -200,6 +204,12 @@ export function HeadActions({
             : t(main.label)}
         </Btn>
       )}
+      {primaryWhy &&
+        !rule.submitBlocked && ( // «chưa có quy trình»: dòng lý do NF1 của trang đã nói
+          <span role="status" className="text-sm text-late" data-testid="submit-why">
+            {primaryWhy}
+          </span>
+        )}
       <ContractActionsMenu id={id} canDelete={canDelete} items={items} busy={off} />
       {err && !ask && (
         <span role="alert" className="text-sm text-late" data-testid="act-error">

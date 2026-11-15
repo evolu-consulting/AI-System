@@ -87,12 +87,12 @@ export function submissionsRepo(tx: Tx, tid: string) {
         reconciledAt: r.reconciled_at,
       };
     },
-    /** CR-157 · DRAFT + failed ⇒ nhập tay trên chính HĐ: `entry_source = manual`, `extract_state = ready` (form sửa được), bỏ xác nhận cũ. */
+    /** CR-157 · DRAFT + failed ⇒ nhập tay trên chính HĐ: `entry_source = manual`, `extract_state = ready` (form sửa được), bỏ xác nhận cũ + bỏ lượt đọc AI đã hỏng (`run_id = null`; lượt cũ giữ làm lịch sử) — còn dính thì thẻ duyệt báo bước «huỷ» và đầu trang mất «Gửi duyệt». */
     async startManual(id: string, actor: string): Promise<number> {
       const [r] = await tx.execute<{
         version: number;
       }>(sql`with u as (update contracts.contracts set entry_source = 'manual',
-          extract_state = 'ready', error = null, reconciled_by = null, reconciled_at = null, version = version + 1, updated_at = now()
+          extract_state = 'ready', error = null, run_id = null, reconciled_by = null, reconciled_at = null, version = version + 1, updated_at = now()
         where id = ${id}::uuid and tenant_id = ${tid}::uuid and status = 'draft' and extract_state = 'failed' returning id, version),
         e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
           select ${tid}::uuid, u.id, 'manual_entry_started', ${actor}::uuid, '{}'::jsonb from u)

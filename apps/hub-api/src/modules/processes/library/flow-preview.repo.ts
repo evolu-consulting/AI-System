@@ -108,6 +108,15 @@ export async function loadWorld(tx: Tx, tid: string, n: Need): Promise<World> {
   };
 }
 
+/** CR-160 · «Người gửi là cấp cao nhất» cho xem trước luồng: trưởng các phòng GỐC (MỘT câu; cùng nghĩa `adapters/runs/core-facts.repo.ts`). */
+export async function rootHeadIdsOf(tx: Tx, tid: string): Promise<string[]> {
+  const rows = await tx.execute<{
+    head: string;
+  }>(sql`select head_user_id::text as head from admin.departments
+    where tenant_id = ${tid}::uuid and parent_group_id is null and head_user_id is not null`);
+  return rows.map((r) => r.head);
+}
+
 export type FlowRowNamed = FlowRow & { id: string; name: string };
 
 /** CR-127 · M4 · nhiều quy trình MỘT câu (`= any`): cùng luật chọn bản như `flowRowOf` (Thư viện ⇒ bản đã xuất bản; của công ty ⇒ bản đang dùng). */

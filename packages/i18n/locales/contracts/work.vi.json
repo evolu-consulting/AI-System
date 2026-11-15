@@ -433,6 +433,10 @@
         "held": "Đã tạm khoá thực hiện.",
         "released": "Đã mở khoá thực hiện."
       },
+      "why": {
+        "notSubmitter": "Chỉ người tạo hoặc người phụ trách hợp đồng mới gửi duyệt được.",
+        "stepOpen": "Hợp đồng còn một bước duyệt đang mở — tải lại trang; nếu vẫn vậy, nhờ quản trị đóng bước đó."
+      },
       "err": {
         "STATE_CONFLICT": "Hợp đồng vừa đổi trạng thái. Tải lại trang rồi thử lại.",
         "CONTRACT_NOT_DRAFT": "Chỉ gửi được hợp đồng ở DRAFT.",

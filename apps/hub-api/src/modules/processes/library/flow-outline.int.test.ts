@@ -140,3 +140,62 @@ describe("CR-127 M4 · outline", () => {
     expect(await eng().hasFlowFor(null, q(T0, {}))).toBe(false);
   });
 });
+
+// CR-160 · xem trước phải đi đúng nhánh `starter_is_top` (dữ kiện LÕI, engine tự đọc lúc chạy): người gửi là trưởng phòng GỐC ⇒ bỏ bước duyệt.
+describe("CR-160 · outline · starter_is_top", () => {
+  const eng = () => flowEngineOf({ db } as never).availability;
+  const TOP_STAGES = [
+    stage(
+      "top",
+      "Gui la cap cao nhat?",
+      0,
+      {
+        kind: "if",
+        when: {
+          op: "and",
+          conds: [{ from: { kind: "fact", key: "starter_is_top" }, op: "eq", value: true }],
+        },
+        then_step: 2,
+        else_step: 1,
+      },
+      { kind: "auto", branch: [] },
+    ),
+    stage("tp", "Truong phong duyet", 1, APPROVE, review("pb-kd3")),
+    stage(
+      "ky",
+      "Ky so",
+      2,
+      { kind: "tool", tool_key: "contracts-esign", args: {} },
+      { kind: "auto", branch: [] },
+      { node: "contracts.esign" },
+    ),
+    stage("xong", "Xong", 3, { kind: "notify" }, { kind: "auto" }, { outcome: "approved" }),
+  ];
+  let T3 = "";
+  let boss = "";
+  let staff = "";
+  beforeAll(async () => {
+    [T3] = (await tenants(o, 1, 1291)) as [string];
+    [boss, staff] = (await users(o, T3, 2, { from: 1291 })) as [string, string];
+    await department(o, T3, "pb-kd3", { head: boss, members: [boss, staff] });
+    const st = JSON.stringify(TOP_STAGES);
+    const [r] = await o<
+      { id: string }[]
+    >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app, published_version, enabled)
+      values (null, 'cr160-outline', 'Duyet gui di', ${st}::text::jsonb, '{"event":"contract.submitted"}'::jsonb, 'contracts', 1, true)
+      returning id::text as id`;
+    await o`insert into hub.process_def_releases (def_id, rel_version, name, stages) values (${r?.id as string}, 1, 'Duyet gui di', ${st}::text::jsonb)`;
+    await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${T3}, ${r?.id as string}, true)`;
+  }, 60_000);
+
+  it("người gửi là trưởng phòng gốc ⇒ bỏ bước «Trưởng phòng duyệt»", async () => {
+    const out = await eng().outline?.(q(T3, { total_value: 211 }), { starterId: boss });
+    expect(out?.steps.map((s) => s.label)).toEqual(["Ky so"]);
+  });
+
+  it("người gửi thường ⇒ vẫn có bước duyệt, nói rõ ai (tên trưởng phòng)", async () => {
+    const out = await eng().outline?.(q(T3, { total_value: 211 }), { starterId: staff });
+    expect(out?.steps.map((s) => s.label)).toEqual(["Truong phong duyet", "Ky so"]);
+    expect(out?.steps[0]?.whoLabel).not.toBe("Chưa chọn người duyệt");
+  });
+});

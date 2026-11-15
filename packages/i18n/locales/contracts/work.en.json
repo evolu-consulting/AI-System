@@ -433,6 +433,10 @@
         "held": "Execution put on hold.",
         "released": "Execution hold released."
       },
+      "why": {
+        "notSubmitter": "Only the creator or the owner can submit this contract.",
+        "stepOpen": "An approval step is still open on this contract. Reload the page; if it stays, ask an admin to close it."
+      },
       "err": {
         "STATE_CONFLICT": "The contract just changed state. Reload the page and try again.",
         "CONTRACT_NOT_DRAFT": "Only a DRAFT contract can be submitted.",

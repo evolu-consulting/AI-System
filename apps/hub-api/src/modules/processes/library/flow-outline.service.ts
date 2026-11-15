@@ -5,11 +5,12 @@ import type { ProcessStageDef } from "@ai/contracts/hub-admin";
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { FlowOutline } from "../../packs/kit/public";
+import { starterIsTop } from "../domain/if/core-facts.rules";
 import type { FactValue } from "../domain/if/if.rules";
 import { outlineSteps } from "../domain/preview/flow-outline";
 import { bindGroupKeys, groupKeysOf } from "../triggers/group-keys.rules";
 import type { FlowCandidate } from "../triggers/match.rules";
-import { flowRowsOf, groupIdsByKeyOf, loadWorld } from "./flow-preview.repo";
+import { flowRowsOf, groupIdsByKeyOf, loadWorld, rootHeadIdsOf } from "./flow-preview.repo";
 
 type Obj = Record<string, unknown>;
 /** Id nhóm + người dùng mà các bước Duyệt nhắc tới (sau khi đổi mã nhóm → id). */
@@ -60,10 +61,16 @@ export async function outlineOfRun(
         userIds: [...refs.userIds, starterId],
         at,
       });
+      // CR-160 · dữ kiện LÕI mà engine tự đọc lúc chạy (không nằm trong `readFacts` của app): thiếu ⇒ node Nếu rẽ sai nhánh
+      // (vẫn hiện bước duyệt cho người đứng đầu).
+      const facts = {
+        ...(q.facts as Record<string, FactValue>),
+        starter_is_top: starterIsTop(starterId, await rootHeadIdsOf(tx, q.tenantId)),
+      };
       const steps = flows.flatMap((f) =>
         outlineSteps({
           stages: f.stages,
-          facts: q.facts as Record<string, FactValue>,
+          facts,
           starterId,
           at,
           world,

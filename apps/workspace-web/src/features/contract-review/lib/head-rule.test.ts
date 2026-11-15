@@ -140,6 +140,7 @@ describe("headActs (CR-128 e)", () => {
     resubmit: false,
     submitBlocked: false,
     confirmSave: false,
+    pageConfirmWhy: null,
     withdraw: false,
     recreate: false,
     newVersion: false,
@@ -213,5 +214,49 @@ describe("CR-127 §148 · gửi duyệt chỉ người tạo/phụ trách (can.s
   });
   test("người tạo/phụ trách (can.submit) ⇒ Xác nhận và lưu", () => {
     expect(r({})).toMatchObject({ draftSave: true, confirmSave: true });
+  });
+});
+
+// Lỗi bản test (HĐ nhập tay chuyển từ AI đọc hỏng): lượt đọc 'failed' còn dính HĐ ⇒ thẻ báo bước 'cancelled' ⇒ trước đây mất «Gửi duyệt», không giải thích.
+describe("CR-157 · nháp lần đầu luôn có «Gửi duyệt» (hoặc lý do)", () => {
+  test("thẻ duyệt báo bước đã kết thúc (cancelled/rejected/done) ⇒ như không có lượt: Gửi duyệt bấm được", () => {
+    for (const approvalStep of ["cancelled", "rejected", "done"])
+      expect(r({ approvalStep })).toMatchObject({ confirmSave: true, pageConfirmWhy: null });
+  });
+  test("còn bước duyệt đang mở (level1) mà người này không xác nhận ⇒ khoá + lý do step_open", () => {
+    expect(r({ approvalStep: "level1" })).toMatchObject({
+      confirmSave: false,
+      pageConfirmWhy: "step_open",
+    });
+  });
+  test("chưa có quy trình ⇒ khoá + lý do no_flow; không phải người tạo/phụ trách ⇒ not_submitter", () => {
+    expect(r({ submitBlock: "no_flow", can: { ...can, submit: false } })).toMatchObject({
+      pageConfirmWhy: "no_flow",
+    });
+    expect(r({ can: { ...can, submit: false } }).pageConfirmWhy).toBe("not_submitter");
+  });
+  test("bật duyệt cấp 1 (nút của thẻ) hoặc không phải nháp lần đầu ⇒ không có lý do của nút trang", () => {
+    expect(r({ approvalStep: "level1", approvalConfirm: true }).pageConfirmWhy).toBeNull();
+    expect(r({ round: 1, submitBlock: "no_flow" }).pageConfirmWhy).toBeNull();
+  });
+  test("headActs: không Gửi duyệt được ⇒ «Gửi duyệt» là nút chính KHOÁ kèm lý do, Lưu nháp + Huỷ vào menu", () => {
+    const rule = r({ submitBlock: "no_flow" });
+    const a = headActs({
+      rule,
+      view: { confirm: false, approve: false, reject: false },
+      canDelete: false,
+    });
+    expect(a.primary).toBe("pageConfirm");
+    expect(a.primaryWhyKey).toBe("contracts.u5.err.NO_APPROVAL_FLOW");
+    expect(a.menu.map((m) => m.key)).toEqual(["saveDraft", "cancel"]);
+  });
+  test("headActs: Gửi duyệt bấm được ⇒ nút chính không có lý do khoá", () => {
+    const a = headActs({
+      rule: r({}),
+      view: { confirm: false, approve: false, reject: false },
+      canDelete: false,
+    });
+    expect(a).toMatchObject({ primary: "pageConfirm" });
+    expect(a.primaryWhyKey).toBeUndefined();
   });
 });
