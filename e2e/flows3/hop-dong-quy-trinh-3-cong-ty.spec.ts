@@ -241,8 +241,8 @@ test("FL3-6 · Quyền: người khác (không được giao) không có nút Du
       timeout: 4_000,
     });
   });
-  // người tạo + đồng nghiệp cùng phòng + Phó giám đốc + Giám đốc (chưa tới bước của mình): không nút Duyệt
-  for (const u of [WHO.n.ktNv, WHO.n.ktNv2, WHO.n.phogd, WHO.n.giamdoc]) {
+  // người tạo + đồng nghiệp cùng phòng + Phó giám đốc: không nút Duyệt. (Giám đốc là Toàn quyền ⇒ «duyệt thay» theo CR-113, không đưa vào ca này.)
+  for (const u of [WHO.n.ktNv, WHO.n.ktNv2, WHO.n.phogd]) {
     const p = await as(browser, "n", u);
     await p.goto(`${EN.cw}/contracts/c/${id}`);
     await settled(p);

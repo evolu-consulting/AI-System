@@ -182,6 +182,16 @@ export async function declineStep(
       await expect(ev.getByTestId("evidence-issue")).toBeVisible();
     }
     await ev.locator("#evidence-note").fill(reason);
+    // lượt 4 trên evotest: chỉ có ý kiến thì ô vẫn mở (Trả lại/Từ chối cũng cần «ý kiến + tệp») ⇒ đính tệp như lúc Duyệt
+    const files = ev.locator("#evidence-files");
+    if (await files.count()) {
+      await files.setInputFiles({
+        name: `ly-do-${RUN}.pdf`,
+        mimeType: "application/pdf",
+        buffer: await pdfOf([`LY DO ${RUN}`]),
+      });
+      await expect(ev.getByTestId("evidence-file-list")).toBeVisible({ timeout: 30_000 });
+    }
     await ok.click();
     await expect(ev).toBeHidden({ timeout: 60_000 });
     return;
