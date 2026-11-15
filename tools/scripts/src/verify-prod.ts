@@ -22,7 +22,9 @@ const TARGETS: ReadonlyArray<readonly [string, string]> = [
   ["app", `https://app.${DOMAIN}`],
   ["community", `https://app.${DOMAIN}/community/`],
 ];
-const PSQL = "docker compose -p sohoptac2 exec -T pg psql -U s2_owner -d ai_system -X -At";
+// `</dev/null`: script đi qua stdin (`bash -s`) — `exec` không được nuốt phần còn lại của script (lỗi cũ: mọi dòng sau vòng MIG không chạy).
+const PSQL =
+  "docker compose -p sohoptac2 exec -T pg psql -U s2_owner -d ai_system -X -At </dev/null";
 
 // Chỉ đọc: head/psql select/logs. Chạy qua `bash -s`; không ghi file, không `up/down/exec` ngoài psql select.
 const SCRIPT = `cd ${PROD_DIR} || exit 3
@@ -30,6 +32,8 @@ echo "VERSION:$(head -n 1 VERSION 2>/dev/null)"
 for t in $(${PSQL} -c "select table_schema||'.'||table_name from information_schema.tables where table_name like '\\_\\_drizzle\\_migrations%' order by 1"); do
   echo "MIG:$t:$(${PSQL} -c "select count(*) from $t")"
 done
+# Cấu hình bắt buộc khớp bản test — chỉ in ok/lệch, KHÔNG in giá trị .env (CLAUDE.md §2).
+grep -qx 'HUB_PROCESS_ROUTES=all' .env && echo "CFG:HUB_PROCESS_ROUTES:ok" || echo "CFG:HUB_PROCESS_ROUTES:lệch"
 echo "LOGS-BEGIN"
 docker compose -p sohoptac2 logs --since 10m --no-color 2>&1 | grep -iE 'error|fatal|exception|unhandled|panic' | tail -n 300
 `;
@@ -85,13 +89,22 @@ async function main(): Promise<number> {
   const mig = compareMigrations(applied, expected);
   const logs = errorLogSummary(out.split("LOGS-BEGIN")[1] ?? "");
   const hs = await health();
-  const bad = [!version, ...mig.map((m) => !m.ok), ...hs.map((h) => !healthOk(h))].filter(
-    Boolean,
-  ).length;
+  // 2026-11-16: prod còn HUB_PROCESS_ROUTES=admin từ CR-103 ⇒ «Việc của tôi» (/me/review-tasks) 404; bản test = all.
+  const cfg = [...out.matchAll(/^CFG:(\w+):(\S+)$/gm)].map((m) => ({
+    key: m[1],
+    ok: m[2] === "ok",
+  }));
+  const bad = [
+    !version,
+    ...mig.map((m) => !m.ok),
+    ...hs.map((h) => !healthOk(h)),
+    ...cfg.map((c) => !c.ok),
+  ].filter(Boolean).length;
   const lines = [
     `prod: VERSION ${version ? `${version.commit} (${version.ref})` : "?? không đọc được"}`,
     `migration: ${mig.map((m) => `${m.table.split(".").pop()?.replace("__drizzle_migrations", "main") || "main"}=${m.applied}${m.expected === null ? "" : m.ok ? "✓" : `≠${m.expected}`}`).join(" ")}`,
     `health: ${hs.map((h) => `${h.host}=${h.status}`).join(" ")}`,
+    `cấu hình: ${cfg.map((c) => `${c.key}=${c.ok ? "đúng" : "LỆCH (phải là all)"}`).join(" ") || "?? không đọc được"}`,
     `log lỗi 10 phút: ${logs.total}${
       logs.total
         ? ` (${Object.entries(logs.byService)
