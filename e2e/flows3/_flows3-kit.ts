@@ -171,8 +171,21 @@ export async function declineStep(
   await openStep(p, e, id, name);
   await p.getByRole("button", { name: "Thao tác" }).click(); // Trả lại / Từ chối nằm trong menu «Thao tác»
   await p.getByTestId(kind === "return" ? "act-return" : "act-reject").click();
+  // bước có «Ý kiến + chữ ký/tệp» (reviewNew) ⇒ Trả lại / Từ chối mở ô bằng chứng: ý kiến (= lý do) BẮT BUỘC; bước thường ⇒ ô lý do
+  const ev = p.locator("[data-approval=evidence]");
   const form = p.locator("form[data-approval=reason]");
-  await expect(form).toBeVisible();
+  await expect(ev.or(form).first()).toBeVisible({ timeout: 15_000 });
+  if (await ev.isVisible()) {
+    const ok = ev.locator('[data-testid^="request-"][data-testid$="-confirm"]');
+    if (await ok.isEnabled()) {
+      await ok.click(); // chưa ghi ý kiến ⇒ báo, chưa gửi
+      await expect(ev.getByTestId("evidence-issue")).toBeVisible();
+    }
+    await ev.locator("#evidence-note").fill(reason);
+    await ok.click();
+    await expect(ev).toBeHidden({ timeout: 60_000 });
+    return;
+  }
   await form.locator("button[type=submit]").click();
   await expect(form.getByRole("alert")).toBeVisible();
   await form.locator("#approval-reason").fill(reason);
@@ -230,7 +243,12 @@ export async function openReceived(p: Page, e: Env, tag: string): Promise<string
   await reloadUntil(p, async () => {
     // lời mời nối lần đầu hiện ở băng đầu danh sách «Hợp đồng» (không ở bộ lọc Đối tác gửi)
     await p.goto(`${e.cw}/contracts/list`);
-    if (await invite.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    if (
+      await invite.waitFor({ state: "visible", timeout: 5_000 }).then(
+        () => true,
+        () => false,
+      )
+    ) {
       await invite.getByRole("button", { name: /Nhận/ }).click();
       await expect(p.getByTestId("partner-invite")).toHaveCount(0);
     }
@@ -246,12 +264,7 @@ export async function openReceived(p: Page, e: Env, tag: string): Promise<string
 export async function settled(p: Page): Promise<void> {
   await expect(
     statusOf(p)
-      .first()
-      .or(
-        p
-          .locator("main")
-          .getByText(/quyền|không tìm thấy|không có/i)
-          .first(),
-      ),
+      .or(p.locator("main").getByText(/không có quyền|không tìm thấy/i))
+      .first(),
   ).toBeVisible({ timeout: 45_000 });
 }
