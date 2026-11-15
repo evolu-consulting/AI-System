@@ -4,7 +4,7 @@ import type { MsgPerson } from "@ai/contracts/pack-contracts";
 import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../ui";
-import { Section } from "./DirectorySections";
+import { Section } from "./ListSection";
 import { LoadSentinel } from "./LoadSentinel";
 
 export type PeopleSearchProps = {

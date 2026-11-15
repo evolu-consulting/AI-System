@@ -4,20 +4,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { readCollapsed, toggleCollapsed, writeCollapsed } from "../lib/collapse";
 import type { DeptSection, Directory } from "../lib/directory";
-import type { ConversationListProps } from "./ConversationList";
 import { ConversationRow } from "./ConversationRow";
+import { Section } from "./ListSection";
 import { LoadSentinel } from "./LoadSentinel";
-
-export function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <section aria-label={label}>
-      <h3 className="m-0 px-4 pb-1 pt-3 text-micro font-semibold uppercase tracking-wide text-dim">
-        {label}
-      </h3>
-      {children}
-    </section>
-  );
-}
+import type { ConversationListProps } from "./list-types";
 
 /** Một phòng ban: tiêu đề bấm thu gọn/mở (aria-expanded), đếm người đã tải. */
 function DeptGroup({
