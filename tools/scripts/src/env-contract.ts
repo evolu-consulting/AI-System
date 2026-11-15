@@ -5,11 +5,17 @@ import { join } from "node:path";
 import {
   type Contract,
   checkContract,
+  parseComposeNames,
   parseShNames,
   parseTemplateNames,
   renderResult,
 } from "./env-contract.rules";
 import { repoRoot } from "./lib/git";
+
+function parserFor(file: string): (text: string) => Set<string> {
+  if (file.endsWith(".template")) return parseTemplateNames;
+  return file.endsWith(".yml") ? parseComposeNames : parseShNames;
+}
 
 export function runEnvContract(root = repoRoot()): { ok: boolean; lines: string[] } {
   const c = JSON.parse(readFileSync(join(root, "deploy/env-contract.json"), "utf8")) as Contract;
@@ -20,8 +26,7 @@ export function runEnvContract(root = repoRoot()): { ok: boolean; lines: string[
       const p = join(root, f);
       if (!existsSync(p)) continue;
       const text = readFileSync(p, "utf8");
-      for (const n of f.endsWith(".template") ? parseTemplateNames(text) : parseShNames(text))
-        names.add(n);
+      for (const n of parserFor(f)(text)) names.add(n);
     }
     byKit[kit] = names;
   }

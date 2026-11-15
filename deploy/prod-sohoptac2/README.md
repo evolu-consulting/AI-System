@@ -368,7 +368,7 @@ e2e: `e2e-deployed.ps1 -Domain evoluconsulting.com -Hosts prod` (hoac `DEP_DOMAI
 
 
 ## Deploy CR-118 (web gộp + 301 community) — rollout / rollback
-Chỉ chạy khi người dùng xác nhận deploy. **UAT trước** trên host qua `deploy/stg-cr118/` (project `sohoptac2-cr118`, image `:cr118`, cổng 2853x, tunnel; xem README ở đó) — **không** build/tag `sohoptac2-app:latest` ngoài `deploy.ps1`.
+Chỉ chạy khi người dùng xác nhận deploy. **UAT trước** trên staging `deploy/stg-test/` (xem README ở đó; kit UAT `stg-cr118` đã gỡ) — **không** build/tag `sohoptac2-app:latest` ngoài `deploy.ps1`.
 
 **Thay đổi trong kit:** Dockerfile bỏ build/copy `community-web` (web = `workspace-web` gộp + `admin-web` + `chat-web`; `studio-web` vẫn build cho hub); nginx `8081` thêm `/me/stream` → hub, `/community/*` rơi vào `try_files … /index.html`; `8085` (community.<d>) = 301 HTML → `https://app.<d>/community` (`community-test.<d>` → `app-test.<d>`; CR-119: host sohoptac đã bỏ; `/sso` → `/sso`; fragment `#/…` do trình duyệt giữ và web gộp ánh xạ), **proxy `/auth`,`/pack`,`/conversations`,`/runs`,`/me/stream` giữ 30 ngày** (mốc ghi trong `nginx.conf`); `gen-env.sh`: `S2_PUBLIC_COMMUNITY_URL` = `<SHT>/community` ⇒ hub `COMMUNITY_WEB_URL` + `APP_URL_COMMUNITY`; hub `quote.service` dựng link `/community` (không `#/feed`). Edge không đổi (server community cũ vẫn forward `:8085`).
 

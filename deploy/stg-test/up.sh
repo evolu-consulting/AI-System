@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # sohoptac2-staging · dung/cap nhat STAGING (project `sohoptac2-staging`, image tag staging, cong 127.0.0.1:28541..28544, DU LIEU BEN trong volume ten).
 # KHONG dung project `sohoptac2`: chi chep MOT file nhi phan minio (chi doc) neu thieu. Idempotent: chay lai sau build.sh de cap nhat ban moi (migrate + seed
-# idempotent). Seed = cung duong voi stg-sohoptac2/up.sh: migrate -> ALTER ROLE -> platform seed -> hub seed -> stg-seed (tenant demo) -> seed.tenant-fixtures.
+# idempotent). Seed = tuan tu: migrate -> ALTER ROLE -> platform seed -> hub seed -> stg-seed (tenant demo) -> seed.tenant-fixtures.
 # Sau up: bash edge.sh (tro host -test vao stack nay) neu chua lam; bash verify.sh de kiem tenant demo.
 #   bash up.sh [--dry-run]
 set -euo pipefail
