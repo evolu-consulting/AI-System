@@ -115,6 +115,14 @@ beforeAll(async () => {
     values (${B}::uuid, ${cB}::uuid, ${ids.m4}::uuid, 'platform', ${`tax:${MST_A}`}, 'Tenant 7301', 'confirmed', ${(await one("select id::text as id from admin.users where tenant_id = $1::uuid", [B]))?.id as string}::uuid)`;
   await sql`insert into hub.partner_links (from_tenant, to_tenant, requested_at, accepted_at) values (${A}::uuid, ${B}::uuid, now(), now())`;
   await sql`insert into hub.partner_links (from_tenant, to_tenant, requested_at) values (${B}::uuid, ${A}::uuid, now())`;
+  // CR-161: luồng trò chuyện A–B (tin của cả hai, tin của A có tệp, đã-đọc của cả hai).
+  await sql`insert into hub.cc_threads (id, tenant_lo, tenant_hi, last_seq) values
+    ('00000000-0000-4000-8000-0000000c0001', least(${A}::uuid, ${B}::uuid), greatest(${A}::uuid, ${B}::uuid), 2)`;
+  await sql`insert into hub.cc_messages (thread_id, seq, sender_tenant, sender_user, sender_name, body, files, client_id) values
+    ('00000000-0000-4000-8000-0000000c0001', 1, ${A}::uuid, ${A}::uuid, 'Nguyễn Văn A', 'xin chào từ A', '[{"id":"f1","name":"a.pdf","mime":"application/pdf","size":1}]'::jsonb, gen_random_uuid()),
+    ('00000000-0000-4000-8000-0000000c0001', 2, ${B}::uuid, ${B}::uuid, 'Trần B', 'chào lại', '[]'::jsonb, gen_random_uuid())`;
+  await sql`insert into hub.cc_reads (thread_id, user_id, tenant_id, last_read_seq) values
+    ('00000000-0000-4000-8000-0000000c0001', ${A}::uuid, ${A}::uuid, 1), ('00000000-0000-4000-8000-0000000c0001', ${B}::uuid, ${B}::uuid, 2)`;
 });
 afterAll(async () => {
   await sql.end();
@@ -212,7 +220,30 @@ describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn dan
       "select summary -> 'partner' as p from admin.audit_log where entity_id = $1::uuid and action = 'delete'",
       [A],
     );
-    expect(au?.p).toMatchObject({ mailboxDeleted: 2, mailboxAnonymized: 3, copiesAnonymized: 3 });
+    expect(au?.p).toMatchObject({
+      mailboxDeleted: 2,
+      mailboxAnonymized: 3,
+      copiesAnonymized: 3,
+      chatThreadsAnonymized: 1,
+      chatMessagesAnonymized: 1,
+    });
+  });
+
+  it("CR-161 · trò chuyện: luồng A–B còn cho B; tin của A ẩn danh (tombstone, tên «Công ty đã xoá», bỏ tệp); tin của B và đã-đọc của B y nguyên", async () => {
+    const th = await sql`select tenant_lo::text as lo, tenant_hi::text as hi from hub.cc_threads`;
+    expect(th.length).toBe(1);
+    expect([th[0]?.lo, th[0]?.hi].sort()).toEqual([B, X].sort());
+    expect((th[0]?.lo as string) < (th[0]?.hi as string)).toBe(true);
+    const msgs =
+      await sql`select seq::int as seq, sender_tenant::text as t, sender_name, body, files from hub.cc_messages order by seq`;
+    expect(msgs.map((m) => [m.seq, m.t, m.sender_name, m.files])).toEqual([
+      [1, X, PARTNER_DELETED_NAME, []],
+      [2, B, "Trần B", []],
+    ]);
+    expect(msgs[0]?.body).toBe("xin chào từ A");
+    expect(JSON.stringify(msgs).includes(A)).toBe(false);
+    const rd = await sql`select tenant_id::text as t from hub.cc_reads`;
+    expect(rd.map((r) => r.t)).toEqual([B]);
   });
 });
 
@@ -232,5 +263,9 @@ describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn dan
     expect((await sql`select 1 from hub.partner_mailbox`).length).toBe(0);
     expect((await sql`select 1 from hub.partner_links`).length).toBe(0);
     expect((await sql`select 1 from hub.partner_email_events`).length).toBe(0);
+    // CR-161: bên kia cũng đã xoá ⇒ luồng trò chuyện (tin, đã-đọc) bị xoá hẳn.
+    expect((await sql`select 1 from hub.cc_threads`).length).toBe(0);
+    expect((await sql`select 1 from hub.cc_messages`).length).toBe(0);
+    expect((await sql`select 1 from hub.cc_reads`).length).toBe(0);
   });
 });

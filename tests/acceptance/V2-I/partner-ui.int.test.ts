@@ -108,15 +108,18 @@ describe("V2-I · API Đối tác UI v2", () => {
     });
 
     // DT-06 HĐ của đối tác + giai đoạn; DT-01 số HĐ mỗi đối tác
-    const ca = (await ok(call(c, P.hoa, "GET", `/partners/contracts?party=${enc(A)}`))) as {
-      id: string;
-      stage: string;
-    }[];
+    // CR-151d: trang {items, next_offset} (không còn mảng trần).
+    const ca = (
+      (await ok(call(c, P.hoa, "GET", `/partners/contracts?party=${enc(A)}`))) as {
+        items: { id: string; stage: string }[];
+      }
+    ).items;
     expect(ca.map((x) => [x.id, x.stage])).toEqual([[a, "done"]]);
-    const cb = (await ok(call(c, P.hoa, "GET", `/partners/contracts?party=${enc(B)}`))) as {
-      stage: string;
-      next: { title: string; overdue: boolean } | null;
-    }[];
+    const cb = (
+      (await ok(call(c, P.hoa, "GET", `/partners/contracts?party=${enc(B)}`))) as {
+        items: { stage: string; next: { title: string; overdue: boolean } | null }[];
+      }
+    ).items;
     expect(cb[0]?.stage).toBe("in_progress");
     expect(cb[0]?.next).toMatchObject({ title: "Thanh toán đợt 2", overdue: true });
     const counts = (await ok(call(c, P.hoa, "GET", "/partners/contract-counts"))) as {

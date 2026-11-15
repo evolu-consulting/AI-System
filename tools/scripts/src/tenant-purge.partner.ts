@@ -17,6 +17,9 @@ export type PartnerStats = {
   linksDeleted: number;
   linksAnonymized: number;
   copiesAnonymized: number;
+  chatThreadsDeleted: number;
+  chatThreadsAnonymized: number;
+  chatMessagesAnonymized: number;
 };
 export const NO_PARTNER: PartnerStats = {
   mailboxDeleted: 0,
@@ -24,6 +27,9 @@ export const NO_PARTNER: PartnerStats = {
   linksDeleted: 0,
   linksAnonymized: 0,
   copiesAnonymized: 0,
+  chatThreadsDeleted: 0,
+  chatThreadsAnonymized: 0,
+  chatMessagesAnonymized: 0,
 };
 
 const X = `'${PARTNER_DELETED_TENANT_ID}'::uuid`;
@@ -102,6 +108,7 @@ export async function anonymizePartner(tx: Tx, tenantId: string): Promise<Partne
   await deleteDoomed(tx, tenantId, out, DOOMED);
   await anonymizeMailbox(tx, tenantId, out);
   await anonymizeLinks(tx, tenantId, out);
+  await anonymizeChat(tx, tenantId, out);
   return out;
 }
 
@@ -214,6 +221,36 @@ async function anonymizeLinks(tx: Tx, tenantId: string, out: PartnerStats): Prom
     `update hub.partner_links l set from_tenant = case when l.from_tenant = $1::uuid then ${X} else l.from_tenant end,
        to_tenant = case when l.to_tenant = $1::uuid then ${X} else l.to_tenant end
      where l.from_tenant = $1::uuid or l.to_tenant = $1::uuid`,
+    tenantId,
+  );
+}
+
+/**
+ * CR-161 (hub 0146) · trò chuyện hai công ty (hub.cc_threads / cc_messages — không có tenant_id; cc_reads / cc_files có ⇒ xoá theo tenant_id ở
+ * bước sau). Luồng theo cặp (tenant_lo < tenant_hi): GIỮ luồng cho công ty còn lại, ẩn danh bên bị xoá (id → tombstone, tin của nó: người gửi
+ * → tombstone + id ngẫu nhiên + tên «Công ty đã xoá», tệp đính kèm bỏ vì cc_files của nó bị xoá). Nội dung chữ giữ (là lịch sử bên kia đã nhận).
+ * Bỏ cả luồng khi bên kia cũng đã xoá (đã tombstone) hoặc khi đã có luồng (tombstone, bên kia) từ lần xoá trước (khoá cặp duy nhất ⇒ không gộp được).
+ */
+async function anonymizeChat(tx: Tx, tenantId: string, out: PartnerStats): Promise<void> {
+  if (!(await has(tx, "hub.cc_threads"))) return;
+  const mine = "(t.tenant_lo = $1::uuid or t.tenant_hi = $1::uuid)";
+  const other = "(case when t.tenant_lo = $1::uuid then t.tenant_hi else t.tenant_lo end)";
+  out.chatThreadsDeleted = await count(
+    tx,
+    `delete from hub.cc_threads t where ${mine} and (${other} = ${X} or exists (
+       select 1 from hub.cc_threads d where d.id <> t.id and d.tenant_lo = least(${X}, ${other}) and d.tenant_hi = greatest(${X}, ${other})))`,
+    tenantId,
+  );
+  out.chatMessagesAnonymized = await count(
+    tx,
+    `update hub.cc_messages m set sender_tenant = ${X}, sender_user = gen_random_uuid(), sender_name = '${PARTNER_DELETED_NAME}',
+       files = '[]'::jsonb
+     where m.sender_tenant = $1::uuid`,
+    tenantId,
+  );
+  out.chatThreadsAnonymized = await count(
+    tx,
+    `update hub.cc_threads t set tenant_lo = least(${X}, ${other}), tenant_hi = greatest(${X}, ${other}) where ${mine}`,
     tenantId,
   );
 }

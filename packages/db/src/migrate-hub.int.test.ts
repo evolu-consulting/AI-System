@@ -68,6 +68,10 @@ const HUB_TABLES = [
   "audit_log",
   "autofix_applies",
   "autofix_results",
+  "cc_files", // CR-161 · hub 0146 · tệp trò chuyện hai công ty
+  "cc_messages", // CR-161 · hub 0146
+  "cc_reads", // CR-161 · hub 0146
+  "cc_threads", // CR-161 · hub 0146
   "cli_sessions",
   "company_flows", // CR-122 hub 0106 · flow công ty
   "config_meta",
@@ -97,6 +101,7 @@ const HUB_TABLES = [
   "partner_links",
   "partner_mailbox",
   "partner_sign_sessions", // CR-127 · P1 hub 0132 · phiên ký chung
+  "people_profiles", // CR-147b · hub 0142 · avatar, ảnh bìa, chức vụ
   "platform_settings", // CR-122 p22 hub 0115 · cài đặt nền tảng (process.stages_max)
   "process_back_events",
   "process_def_releases", // hub 0068 · thư viện quy trình / CR-118 hub 0087 (routing, slot)

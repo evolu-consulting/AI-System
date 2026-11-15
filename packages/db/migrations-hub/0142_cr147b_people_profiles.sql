@@ -27,14 +27,20 @@ GRANT INSERT (tenant_id, user_id, avatar, cover, updated_at), UPDATE (avatar, co
 GRANT SELECT (tenant_id, user_id, job_title), INSERT (tenant_id, user_id, job_title, updated_at),
   UPDATE (job_title, updated_at) ON hub.people_profiles TO admin_rw;
 --> statement-breakpoint
+DROP POLICY IF EXISTS people_profiles_hub_sel ON hub.people_profiles;
+--> statement-breakpoint
 CREATE POLICY people_profiles_hub_sel ON hub.people_profiles FOR SELECT TO hub_rw
   USING (current_setting('app.scope', true) = 'system'
     OR (current_setting('app.scope', true) = 'user' AND tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid));
+--> statement-breakpoint
+DROP POLICY IF EXISTS people_profiles_hub_ins ON hub.people_profiles;
 --> statement-breakpoint
 CREATE POLICY people_profiles_hub_ins ON hub.people_profiles FOR INSERT TO hub_rw
   WITH CHECK (current_setting('app.scope', true) = 'system'
     OR (current_setting('app.scope', true) = 'user' AND tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid
         AND user_id = NULLIF(current_setting('app.user_id', true), '')::uuid));
+--> statement-breakpoint
+DROP POLICY IF EXISTS people_profiles_hub_upd ON hub.people_profiles;
 --> statement-breakpoint
 CREATE POLICY people_profiles_hub_upd ON hub.people_profiles FOR UPDATE TO hub_rw
   USING (current_setting('app.scope', true) = 'system'
@@ -43,6 +49,8 @@ CREATE POLICY people_profiles_hub_upd ON hub.people_profiles FOR UPDATE TO hub_r
   WITH CHECK (current_setting('app.scope', true) = 'system'
     OR (current_setting('app.scope', true) = 'user' AND tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid
         AND user_id = NULLIF(current_setting('app.user_id', true), '')::uuid));
+--> statement-breakpoint
+DROP POLICY IF EXISTS people_profiles_admin ON hub.people_profiles;
 --> statement-breakpoint
 CREATE POLICY people_profiles_admin ON hub.people_profiles FOR ALL TO admin_rw
   USING (current_setting('app.scope', true) = 'platform'
