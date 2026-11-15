@@ -73,7 +73,7 @@ test("CR-170: Duyệt ở đầu trang ⇒ ô bằng chứng trong khung nhìn, 
 }) => {
   await loginCw(page, EALL, A);
   await page.goto(`/contracts/c/${allContract}`);
-  await page.getByTestId("act-approve").click();
+  await page.getByRole("button", { name: "Duyệt", exact: true }).first().click();
   const box = page.getByTestId("request-evidence");
   await expect(box).toBeInViewport();
   await expect(page.getByTestId("evidence-ask-hint")).toContainText(
