@@ -56,7 +56,7 @@ beforeAll(async () => {
   >`insert into hub.model_profiles (key, steps) values ('fake-ai-setup',
     ${o.json([{ provider_key: "fake-cli", model: null, on: [] }])}) returning id`;
   await o`insert into hub.agents (key, name, description, runtime, profile_id)
-    values ('assistant', ${o.json({ vi: "Trợ lý", en: "Assistant" })}, 'Trợ lý chung.', 'agentic-cli', ${p?.id as string})
+    values ('assistant', ${o.json({ vi: "Trợ lý", en: "Assistant" })}, 'Trợ lý chung của công ty, dùng thử.', 'agentic-cli', ${p?.id as string})
     on conflict (key) do nothing`;
 });
 afterAll(async () => {
