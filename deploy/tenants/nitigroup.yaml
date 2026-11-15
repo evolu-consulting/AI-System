@@ -9,6 +9,7 @@
 key: nitigroup
 name: CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ NITIGROUP
 timezone: Asia/Ho_Chi_Minh
+directory: listed # CR-159: bật danh bạ (cần legal_name + tax_id)
 profile:
   legal_name: CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ NITIGROUP
   address: 83 đường 48, khu phố 6, Phường Hiệp Bình, TP Hồ Chí Minh, Việt Nam

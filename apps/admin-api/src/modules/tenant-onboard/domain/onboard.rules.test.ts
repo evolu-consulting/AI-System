@@ -12,6 +12,7 @@ import {
   sameJson,
   splitProfile,
   usernameOf,
+  wantDirectory,
 } from "./onboard.rules";
 
 const NITI = join(import.meta.dir, "../../../../../../deploy/tenants/nitigroup.yaml");
@@ -242,5 +243,17 @@ describe("CR-159 · users: parse + validate", () => {
       },
       { id: "3", email: "c@x.test", version: 2, set: {}, title: "TP" },
     ]);
+  });
+});
+
+describe("CR-159 · wantDirectory", () => {
+  const full = { legal_name: "Cty", tax_id: "0312345678" };
+  test("đủ tên pháp lý + MST ⇒ bật; thiếu một ⇒ không; unlisted ⇒ không", () => {
+    expect(wantDirectory({ profile: full })).toBe(true);
+    expect(wantDirectory({ profile: full, directory: "listed" })).toBe(true);
+    expect(wantDirectory({ profile: { legal_name: "Cty" } })).toBe(false);
+    expect(wantDirectory({ profile: { tax_id: "0312345678" } })).toBe(false);
+    expect(wantDirectory({ profile: {} })).toBe(false);
+    expect(wantDirectory({ profile: full, directory: "unlisted" })).toBe(false);
   });
 });

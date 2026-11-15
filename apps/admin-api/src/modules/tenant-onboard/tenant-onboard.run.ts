@@ -9,15 +9,25 @@ import { appError } from "../../lib/errors";
 import { featureIdByKey, grantEntitlement } from "../features/features.entitlements";
 import { setJobTitle } from "../org/org.service";
 import { addPackMembers, enablePack } from "../packs/packs.service";
+import { setDirectoryListed } from "../tenants/tenants.directory.service";
 import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
 import { NEW_TENANT_SETTINGS } from "../tenants/tenants.service";
 import type { Actor as UserActor } from "../users/users.rules";
 import { createUser, updateUser } from "../users/users.service";
-import { actorTenant, hasEntitlement, onboardRepo, readUsers } from "./adapters/onboard.repo";
+import {
+  actorTenant,
+  directoryOn,
+  hasEntitlement,
+  onboardRepo,
+  readUsers,
+} from "./adapters/onboard.repo";
 import { type OnboardReport, onboardTenant as run } from "./application/onboard.usecase";
 import type { OnboardPorts } from "./application/ports";
-import type { OnboardSpec } from "./domain/onboard.rules";
+import { type OnboardSpec, wantDirectory } from "./domain/onboard.rules";
 
+/** `listed` = đang bật (đổi hoặc đã bật sẵn); `skipped` = không bật (khai `unlisted` hoặc thiếu tên pháp lý/MST). */
+export type DirectoryState = { state: "listed" | "skipped"; changed: boolean };
+export type OnboardRunReport = OnboardReport & { directory: DirectoryState };
 export type { OnboardReport };
 
 export type OnboardOpts = {
@@ -112,17 +122,40 @@ export function onboardPorts(db: Db, actorId: string, o: OnboardOpts = {}): Onbo
 export const sharedPasswordIssue = (pw: string): boolean =>
   pw.length < PASSWORD_MIN_LEN || pw.length > PASSWORD_MAX_LEN;
 
+/**
+ * Bật danh bạ bằng đúng `setDirectoryListed` của dịch vụ (cùng audit/NOTIFY như nút trên UI). Dịch vụ chỉ nhận quản trị CHÍNH
+ * công ty ⇒ người vận hành khai `directory` trong file (đồng ý của công ty) và đóng vai quản trị công ty ở bước này. Idempotent:
+ * đã bật ⇒ dịch vụ không ghi, không audit.
+ */
+async function directoryStep(
+  db: Db,
+  s: OnboardSpec,
+  tenantId: string,
+  actorId: string,
+): Promise<DirectoryState> {
+  if (!wantDirectory(s)) return { state: "skipped", changed: false };
+  const call = {
+    ctx: { db },
+    scope: { kind: "platform" } as const,
+    actor: { userId: actorId, role: "tenant_admin" as const, tenantId },
+  };
+  const before = await withScope(db, call.scope, async (tx) => directoryOn(tx, tenantId));
+  await setDirectoryListed(call, tenantId, true);
+  return { state: "listed", changed: !before };
+}
+
 export async function onboardTenant(
   db: Db,
   s: OnboardSpec,
   actorId: string,
   o: OnboardOpts = {},
-): Promise<OnboardReport> {
+): Promise<OnboardRunReport> {
   if (o.sharedPassword !== undefined && sharedPasswordIssue(o.sharedPassword))
     throw appError("VALIDATION_ERROR", {
       reason: "PASSWORD_LENGTH",
       min: PASSWORD_MIN_LEN,
       max: PASSWORD_MAX_LEN,
     });
-  return run(onboardPorts(db, actorId, o), s, actorId);
+  const report = await run(onboardPorts(db, actorId, o), s, actorId);
+  return { ...report, directory: await directoryStep(db, s, report.tenant.id, actorId) };
 }

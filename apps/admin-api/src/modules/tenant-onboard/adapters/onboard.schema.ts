@@ -47,6 +47,8 @@ export const OnboardSpecSchema = z.strictObject({
   name: TenantNameSchema,
   timezone: TimezoneInputSchema.default(TENANT_TZ_DEFAULT),
   profile: TenantProfileSchema.default({}),
+  /** CR-159 · vắng ⇒ bật danh bạ khi đủ `profile.legal_name` + `tax_id`; `unlisted` ⇒ không bật. */
+  directory: z.enum(["listed", "unlisted"]).optional(),
   packs: z.array(PackKeySchema).max(10).default([]),
   addons: z.array(AddonKey).max(20).default([]),
   users: z.array(UserSchema).max(500).default([]),

@@ -51,7 +51,16 @@ export type OnboardSpec = {
   departments: DeptIn[];
   /** Gắn tenant với org mgmt-app cho importer I1 (marker `settings.mgmt_source/mgmt_org_id`); org null ⇒ chưa gắn. */
   import?: { source: string; org_id: string | null } | undefined;
+  /** CR-159 · danh bạ công ty: `listed` bật, `unlisted` không bật; vắng ⇒ bật khi hồ sơ có `legal_name` + `tax_id`. */
+  directory?: "listed" | "unlisted" | undefined;
 };
+
+/** Thuần: có cần bật danh bạ cho công ty này không (bật cần tên pháp lý + MST — giống luật của dịch vụ danh bạ). */
+export function wantDirectory(s: Pick<OnboardSpec, "profile" | "directory">): boolean {
+  if (s.directory === "unlisted") return false;
+  const filled = (k: string) => typeof s.profile[k] === "string" && s.profile[k] !== "";
+  return filled("legal_name") && filled("tax_id");
+}
 export type DeptRow = {
   key: string;
   name: { vi: string; en?: string };

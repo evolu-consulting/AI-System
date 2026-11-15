@@ -227,3 +227,12 @@ export const onboardRepo = (tx: Tx): OnboardRepo => ({
   addMembers: (t, p, a) => addMembers(tx, t, p, a),
   setHeads: (t, h) => setHeads(tx, t, h),
 });
+
+/** Danh bạ công ty đang bật chưa (CR-159). */
+export async function directoryOn(tx: Tx, tenantId: string): Promise<boolean> {
+  const rows = await run<{ on: boolean }>(
+    tx,
+    sql`select directory_listed as on from admin.tenants where id = ${tenantId}::uuid`,
+  );
+  return rows[0]?.on === true;
+}

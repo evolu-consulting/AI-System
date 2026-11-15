@@ -6,6 +6,8 @@
 // stdout/stderr/báo cáo); thiếu cờ ⇒ lỗi PW_OUT_REQUIRED trước khi ghi DB. `--dry-run`: chỉ đọc + kiểm file (không cần DB/actor).
 // `--password-env <TÊN>`: một mật khẩu chung (đọc từ biến môi trường, không nằm trong repo/yaml/log/báo cáo) cho user MỚI; khi đó
 // `--pw-out` không bắt buộc (nếu truyền thì chỉ ghi email). `--no-force-change`: user mới không bị ép đổi mật khẩu (mặc định có ép).
+// CR-159: đủ `profile.legal_name` + `tax_id` ⇒ bật danh bạ công ty (qua tenants.directory.service, có audit); `directory: unlisted` trong
+// file ⇒ không bật. AI (assistant/knowledge) cài ở bước sau bằng `deploy/tenants/onboard-all.sh` (khác vai DB — xem README).
 // Env: ADMIN_API_DATABASE_URL (admin_api, NOBYPASSRLS). stdout = báo cáo JSON; exit 0 xong · 1 lỗi (stderr chỉ mã + lý do).
 import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
