@@ -1,5 +1,5 @@
-// CR-161 · lát 6 · tệp trò chuyện (R11), luật thuần. `cc_files.id` = uuid do route sinh, `storage_key` = `<tenant bên tải>/<id>` (CHECK `cc_files_key_ck`)
-// ⇒ từ khoá suy ra org FileBox (`t_<tenant>`). `file_id` của FileBox (THẬT: 16 hex, không phải uuid) lưu riêng ở `cc_files.box_file_id` (hub 0148).
+// CR-169 · tệp tin nhắn `partner` (luật thuần). `hub.pmsg_files.storage_key` = `<tenant bên tải>/<id tệp>` (DB kiểm khi `pmsg_file_add`) ⇒ suy ra org FileBox
+// (`t_<tenant>`) của bên tải. `file_id` FileBox THẬT (16 hex, không phải uuid) lưu riêng ở `box_file_id`.
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const KEY_RE = new RegExp(`^(${UUID})/(${UUID})$`, "i");
 

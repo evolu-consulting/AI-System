@@ -229,7 +229,7 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
   if (fb)
     app.route(base, contractsUpload(d, view, { db, fb, starter: ai.starter })); // HD1 T10 + HD2 starter
   else app.route(base, uploadUnavailableRoutes(view)); // FileBox váº¯ng â‡’ 503 FILE_STORAGE_UNAVAILABLE (khÃ´ng 404)
-  mountContractAttachments(app, base, { db, view, fb, redis: d.redis }); // CR-133 «Tài liệu kèm» + CR-132 tin nhắn
+  mountContractAttachments(app, base, { db, view, fb, ...connectDeps(d, fb) }); // CR-133 «Tài liệu kèm» + CR-132/169 tin nhắn (+ vòng nền dọn tệp)
   app.route(base, contractsRemind(d, view, db)); // HD4
   app.route(base, partnerModule(db, view, connectDeps(d, fb))); // CR-124 q4 · hộp «Hợp đồng đối tác gửi» + ghi nhận thủ công
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9

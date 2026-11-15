@@ -1,7 +1,6 @@
 // CR-161 · schema zod kết nối hai công ty (spec §3).
 import { describe, expect, test } from "bun:test";
 import {
-  CcSendBodySchema,
   ConnectInviteBodySchema,
   ConnectListQuerySchema,
   ConnectSearchQuerySchema,
@@ -32,32 +31,21 @@ describe("vào", () => {
     expect(ConnectListQuerySchema.safeParse({ status: "declined" }).success).toBe(false);
     expect(ConnectListQuerySchema.safeParse({ cursor: "a".repeat(201) }).success).toBe(false);
   });
-  test("send: mặc định body rỗng, file_ids [], ≤ 4000, ≤ 10 tệp", () => {
-    const r = CcSendBodySchema.parse({ client_id: U });
-    expect(r.body).toBe("");
-    expect(r.file_ids).toEqual([]);
-    expect(CcSendBodySchema.safeParse({ client_id: U, body: "a".repeat(4001) }).success).toBe(
-      false,
-    );
-    expect(CcSendBodySchema.safeParse({ client_id: U, file_ids: Array(11).fill(U) }).success).toBe(
-      false,
-    );
-    expect(CcSendBodySchema.safeParse({ body: "x" }).success).toBe(false);
-  });
 });
 
 describe("sự kiện /me/stream", () => {
-  test("cc.msg và cc.link nằm trong union MeStreamMsgEvent", () => {
+  test("cc.link nằm trong union MeStreamMsgEvent; cc.msg (CR-161) đã bỏ", () => {
     const ok = (event: string, data: unknown) =>
       MeStreamMsgEventSchema.safeParse({ event, data }).success;
-    expect(ok("cc.msg", { tenant_id: U, seq: 3 })).toBe(true);
     expect(ok("cc.link", { tenant_id: U, status: "connected" })).toBe(true);
     expect(ok("cc.link", { tenant_id: U, status: "x" })).toBe(false);
+    expect(ok("cc.msg", { tenant_id: U, seq: 3 })).toBe(false);
   });
   test("parse chuỗi JSON; khoá thừa ⇒ null", () => {
-    expect(parseMeStreamMsgEvent("cc.msg", JSON.stringify({ tenant_id: U, seq: 1 }))?.event).toBe(
-      "cc.msg",
-    );
-    expect(parseMeStreamMsgEvent("cc.msg", { tenant_id: U, seq: 1, extra: 1 })).toBeNull();
+    expect(
+      parseMeStreamMsgEvent("cc.link", JSON.stringify({ tenant_id: U, status: "none" }))?.event,
+    ).toBe("cc.link");
+    expect(parseMeStreamMsgEvent("cc.link", { tenant_id: U, status: "none", extra: 1 })).toBeNull();
+    expect(parseMeStreamMsgEvent("cc.msg", { tenant_id: U, seq: 1 })).toBeNull();
   });
 });

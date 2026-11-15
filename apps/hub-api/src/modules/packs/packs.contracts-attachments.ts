@@ -14,7 +14,15 @@ import { fileboxClients, type PackFb } from "./packs.filebox";
 export function mountContractAttachments<E extends Env>(
   app: Hono<E>,
   base: string,
-  d: { db: Db; view: PackAccessView; fb: PackFb | null; redis?: Redis | undefined },
+  d: {
+    db: Db;
+    view: PackAccessView;
+    fb: PackFb | null;
+    redis?: Redis | undefined;
+    /** CR-169 · bật vòng nền dọn tệp tin nhắn chưa gắn (server); test gọi thẳng `partnerFileSweep`. */
+    worker?: boolean | undefined;
+    signal?: AbortSignal | undefined;
+  },
 ): void {
   const { db, view, fb } = d;
   if (fb) {
@@ -22,10 +30,18 @@ export function mountContractAttachments<E extends Env>(
       recordRunFiles(db, w, { packKey: CONTRACTS_KEY, recordId });
     app.route(base, contractFilesModule(db, view, fileboxClients(fb), stepFiles)); // CR-133 (FileBox vắng ⇒ không gắn)
   }
-  app.route(base, messagesModule(db, view, { redis: d.redis, filebox: fb && fileboxClients(fb) })); // CR-132
+  app.route(
+    base,
+    messagesModule(db, view, {
+      redis: d.redis,
+      filebox: fb && fileboxClients(fb),
+      worker: d.worker,
+      signal: d.signal,
+    }),
+  ); // CR-132/169
 }
 
-/** CR-161 · phụ thuộc module kết nối hai công ty: Redis (`cc.*`), FileBox (tệp trò chuyện), vòng nền dọn tệp (cùng cờ với vòng nhắc hạn). */
+/** CR-161/169 · phụ thuộc module kết nối + tin nhắn: Redis (`cc.link`/`msg.*`), FileBox (tệp tin nhắn), vòng nền dọn tệp (cùng cờ với vòng nhắc hạn). */
 export function connectDeps(
   d: {
     redis?: Redis | undefined;

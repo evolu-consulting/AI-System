@@ -44,7 +44,7 @@ const counting = (tx: Tx): Tx =>
 const uow = () =>
   createPackUow(db, "contracts", (tx, t) => ({
     messages: messagesRepo(counting(tx), t),
-    partner: partnerRepo(counting(tx)),
+    partner: partnerRepo(counting(tx), t),
   })) as never as PackUow<MessagesRepos>;
 const uc = () =>
   messagesUsecases({ uow: uow(), people: internalUsersAmong(db), newId: () => Bun.randomUUIDv7() });

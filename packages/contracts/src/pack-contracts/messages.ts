@@ -2,7 +2,7 @@
 // `/pack/contracts/messages/**` + sự kiện `/me/stream` (`msg.*`). Không import I/O: chạy được ở trình duyệt. Spec: docs/specs/CR-132/spec.md §4–5.
 import { z } from "zod";
 import { AttachMimeSchema } from "../attach";
-import { CcLinkEventDataSchema, CcMsgEventDataSchema } from "./company-connect";
+import { CcLinkEventDataSchema } from "./company-connect";
 
 /** Nhóm tối đa 50 người (cả chủ). */
 export const MSG_GROUP_MAX = 50;
@@ -224,7 +224,6 @@ export const ME_STREAM_MSG_EVENTS = [
   "msg.deleted",
   "msg.read",
   "msg.conversation",
-  "cc.msg", // CR-161 · @deprecated CR-169: bỏ ở lát cr169-api-partner (không còn chuông/trò chuyện cũ)
   "cc.link",
 ] as const;
 export type MeStreamMsgEventName = (typeof ME_STREAM_MSG_EVENTS)[number];
@@ -259,7 +258,6 @@ export const MeStreamMsgEventSchema = z.discriminatedUnion("event", [
   z.strictObject({ event: z.literal("msg.deleted"), data: MsgDeletedEventDataSchema }),
   z.strictObject({ event: z.literal("msg.read"), data: MsgReadEventDataSchema }),
   z.strictObject({ event: z.literal("msg.conversation"), data: MsgConversationEventDataSchema }),
-  z.strictObject({ event: z.literal("cc.msg"), data: CcMsgEventDataSchema }),
   z.strictObject({ event: z.literal("cc.link"), data: CcLinkEventDataSchema }),
 ]);
 export type MeStreamMsgEvent = z.infer<typeof MeStreamMsgEventSchema>;

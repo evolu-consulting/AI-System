@@ -106,7 +106,8 @@ export type MessagesRepo = {
   conversations(me: string, q: ListQuery): Promise<RawConversation[]>;
   conversation(me: string, cid: string): Promise<RawConversation | null>;
   /** Tổng chưa đọc (nội bộ + `partner`, đã kẹp 999) của người gọi — MỘT câu. */
-  unread(me: string): Promise<number>;
+  /** `withPartner=false` ⇒ chỉ nội bộ (người không có quyền Sổ Hợp Tác: `pmsg_unread` ném 42501 — use case chạy lại không có phần đối tác). */
+  unread(me: string, withPartner?: boolean): Promise<number>;
   facts(me: string, cid: string, lock: boolean): Promise<MsgFacts | null>;
   findDm(key: string): Promise<string | null>;
   /** Chèn hội thoại KHÔNG RETURNING (người tạo chưa là thành viên nên SELECT policy chặn); 1-1 trùng khoá ⇒ 23505 (use case chạy lại một lần; `ON CONFLICT` cần cả policy SELECT nên không dùng). */
@@ -180,6 +181,32 @@ export type PartnerRepo = {
     limit: number;
   }): Promise<PartnerPersonRow[]>;
   companies(cur: { key: string; id: string } | null, limit: number): Promise<PartnerCompanyRow[]>;
+  /** `pmsg_page` — trang tin mới → cũ (hàm tự tính `has_more`; limit kẹp 1..100). Không là đầu cuộc ⇒ DB ném CC404. */
+  page(
+    id: string,
+    before: number | null,
+    limit: number,
+  ): Promise<{ items: RawMessage[]; has_more: boolean }>;
+  /** `pmsg_send` — idempotent theo `clientId`; `notify` = hai đầu (tenant,user), rỗng khi gửi lặp. */
+  send(m: { id: string; clientId: string; body: string; fileIds: string[] }): Promise<{
+    seq: number;
+    created: boolean;
+    message: RawMessage;
+    notify: { tenant_id: string; user_id: string }[];
+  }>;
+  /** `pmsg_delete` — thu hồi tin của mình; trả id FileBox cần gỡ byte (rỗng khi đã thu hồi trước đó). */
+  remove(id: string, seq: number): Promise<string[]>;
+  /** `pmsg_mark_read` — mốc đọc mới của người gọi (chỉ tiến, kẹp ≤ last_seq). */
+  markRead(id: string, seq: number): Promise<number>;
+  /** `hub.cc_connected(tenant người gọi, company)` — còn kết nối không (chọn mã 409 khi chặn tải lên sớm). */
+  connected(company: string): Promise<boolean>;
+  /** `pmsg_file_add` — ghi tệp tải lên (id/khoá do route sinh; `boxId` = id FileBox). CC404/CC409/CC422 do DB. */
+  fileAdd(
+    id: string,
+    f: { fileId: string; boxId: string; name: string; mime: string; size: number; key: string },
+  ): Promise<{ id: string; name: string; mime: string; size: number }>;
+  /** `pmsg_file_get` — nơi lưu nội dung tệp của cuộc (khoá `<tenant>/<id>` + id FileBox); không thấy ⇒ null. */
+  fileGet(id: string, fileId: string): Promise<{ key: string; boxId: string } | null>;
 };
 export type MessagesRepos = { messages: MessagesRepo; partner: PartnerRepo };
 

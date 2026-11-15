@@ -39,6 +39,7 @@ import {
 } from "./messages.view";
 import { type MessagesFileOps, messagesFileOps } from "./messages-files.usecase";
 import { type DirectoryFn, partnerOps } from "./partner.usecase";
+import { partnerChatOps } from "./partner-chat.usecase";
 
 export { MsgFail };
 
@@ -54,6 +55,19 @@ async function retryOnRace<T>(run: () => Promise<T>): Promise<T> {
   } catch (e) {
     const c = pgCodeOf(e);
     if (c && RACE_CODES.has(c)) return run();
+    throw e;
+  }
+}
+
+/**
+ * CR-169 · lỗi quyền PHẦN ĐỐI TÁC (`pmsg_ctx` ném 42501: người qua guard gói bằng quyền khác, không thuộc nhóm có contracts-read/write/admin) không được làm hỏng phần nội bộ:
+ * chạy lại bản chỉ-nội-bộ (tx mới; tx cũ đã huỷ). Lỗi khác ném lại.
+ */
+async function internalOnPartnerDenied<T>(full: () => Promise<T>, internalOnly: () => Promise<T>) {
+  try {
+    return await full();
+  } catch (e) {
+    if (pgCodeOf(e) === "42501") return internalOnly();
     throw e;
   }
 }
@@ -160,14 +174,23 @@ function conversationOps(c: Ctx) {
       q: { cursor: { at: string; id: string } | null; limit: number; filter?: CompanyFilter },
     ): Promise<ConversationPage> {
       const filter: CompanyFilter = q.filter ?? { kind: "all" };
-      const rows = await d.uow.tenant(who, (r) =>
-        r.messages.conversations(who.userId, {
-          cursor: q.cursor,
-          limit: q.limit + 1,
-          source: sourcesOf(filter),
-          company: filter.kind === "company" ? filter.tenantId : null,
-        }),
-      );
+      const source = sourcesOf(filter);
+      const fetch = (src: typeof source) =>
+        d.uow.tenant(who, (r) =>
+          r.messages.conversations(who.userId, {
+            cursor: q.cursor,
+            limit: q.limit + 1,
+            source: src,
+            company: filter.kind === "company" ? filter.tenantId : null,
+          }),
+        );
+      // Chỉ lọc công ty (nguồn partner thuần) mới để lỗi quyền đi lên (403); `all`/`own` còn phần nội bộ.
+      const rows = source.internal
+        ? await internalOnPartnerDenied(
+            () => fetch(source),
+            () => fetch({ internal: true, partner: false }),
+          )
+        : await fetch(source);
       const page = rows.slice(0, q.limit);
       const people = await peopleOf(who, page);
       const last = page[page.length - 1];
@@ -179,7 +202,11 @@ function conversationOps(c: Ctx) {
     },
 
     async unread(who: PackWho): Promise<UnreadResponse> {
-      return { total: await d.uow.tenant(who, (r) => r.messages.unread(who.userId)) };
+      const total = await internalOnPartnerDenied(
+        () => d.uow.tenant(who, (r) => r.messages.unread(who.userId)),
+        () => d.uow.tenant(who, (r) => r.messages.unread(who.userId, false)),
+      );
+      return { total };
     },
 
     async get(who: PackWho, cid: string): Promise<ConversationDetail> {
@@ -246,11 +273,16 @@ function readOps(c: Ctx) {
     },
 
     async markRead(who: PackWho, cid: string, seq: number): Promise<{ unread_total: number }> {
-      const out = await d.uow.tenant(who, async (r) => {
-        const row = await r.messages.markRead(who.userId, cid, seq);
-        if (row === null) throw new MsgFail("MSG_NOT_FOUND");
-        return { row, unread_total: await r.messages.unread(who.userId) };
-      });
+      const mark = (withPartner: boolean) =>
+        d.uow.tenant(who, async (r) => {
+          const row = await r.messages.markRead(who.userId, cid, seq);
+          if (row === null) throw new MsgFail("MSG_NOT_FOUND");
+          return { row, unread_total: await r.messages.unread(who.userId, withPartner) };
+        });
+      const out = await internalOnPartnerDenied(
+        () => mark(true),
+        () => mark(false),
+      );
       // Chỉ phát khi mốc đọc TIẾN (mở lại hội thoại đã đọc hết không sinh sự kiện).
       if (out.row.seq > out.row.prev)
         await emit(readFrames(cid, who.userId, out.row.seq, out.row.member_ids));
@@ -305,7 +337,16 @@ export function messagesUsecases(d: Deps) {
     directory: d.directory ?? (async () => ({ items: [], next_cursor: null })),
     emit: c.emit,
   });
+  const partnerChat = partnerChatOps({
+    uow: d.uow,
+    people: d.people,
+    emit: c.emit,
+    files: d.files,
+    fileOps: c.fileOps,
+    newId: d.newId,
+  });
   return {
+    ...partnerChat,
     ...creationOps(c, partner),
     people: partner.people,
     companies: partner.companies,

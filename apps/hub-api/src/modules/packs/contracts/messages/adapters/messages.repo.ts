@@ -89,14 +89,14 @@ function readRepo(
     },
     // Tổng chưa đọc — MỘT câu (spec §6): nội bộ (bỏ hội thoại đã đọc hết, quét khoảng PK `msg_messages` trần 100/hội thoại, dừng sớm ở 999) cộng `pmsg_unread()`
     // (cùng luật đếm cho cuộc `partner`), kẹp 999. Chi phí theo trần 999, không theo tổng số tin chưa đọc.
-    unread: async (me) => {
+    unread: async (me, withPartner = true) => {
       const [r] = await tx.execute<{ total: number }>(sql`
         select least((select count(*)::int from (select 1 from contracts.msg_members m
           join contracts.msg_conversations c on c.tenant_id = m.tenant_id and c.id = m.conversation_id and c.last_seq > m.last_read_seq
           cross join lateral (select 1 from contracts.msg_messages x
             where x.tenant_id = m.tenant_id and x.conversation_id = m.conversation_id and x.seq > m.last_read_seq
               and x.sender_id <> m.user_id and x.deleted_at is null limit 100) u
-          where m.tenant_id = ${t}::uuid and m.user_id = ${me}::uuid limit 999) s) + hub.pmsg_unread(), 999)::int as total`);
+          where m.tenant_id = ${t}::uuid and m.user_id = ${me}::uuid limit 999) s) + ${withPartner ? sql`hub.pmsg_unread()` : sql`0`}, 999)::int as total`);
       return r?.total ?? 0;
     },
     facts: async (me, cid, lock) => {

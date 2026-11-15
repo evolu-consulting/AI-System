@@ -21,9 +21,6 @@ describe("CR-161 · ccError", () => {
       ["CC422", "CONNECT_NOT_LISTED", 422],
       ["CC409", "CONNECT_DECLINED", 409],
       ["CC409", "CONNECT_NOT_CONNECTED", 409],
-      ["CC409", "CONNECT_READ_ONLY", 409],
-      ["CC404", "CONNECT_NO_THREAD", 404],
-      ["CC422", "MSG_EMPTY", 422],
     ] as const) {
       for (const e of [pg(c, m), wrapped(c, m)]) {
         const r = run(e) as AppError;

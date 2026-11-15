@@ -1,14 +1,6 @@
 // CR-161 · unit luật thuần kết nối (spec §2 R3, R7–R9).
 import { describe, expect, test } from "bun:test";
-import {
-  canSendChat,
-  ccDedupKey,
-  connectStatusOf,
-  inviteOutcome,
-  type LinkRow,
-  pairOf,
-  validateChatMessage,
-} from "./connect.rules";
+import { connectStatusOf, inviteOutcome, type LinkRow, pairOf } from "./connect.rules";
 
 const T = "2026-11-15T00:00:00.000Z";
 const row = (o: Partial<LinkRow> = {}): LinkRow => ({
@@ -80,37 +72,7 @@ describe("inviteOutcome (R3)", () => {
   });
 });
 
-describe("canSendChat (R8)", () => {
-  test("chỉ connected", () => {
-    expect(canSendChat("connected")).toBe(true);
-    for (const s of ["pending_out", "pending_in", "declined", "none"] as const) {
-      expect(canSendChat(s)).toBe(false);
-    }
-  });
-});
-
-describe("validateChatMessage (R8)", () => {
-  test("hợp lệ", () => {
-    expect(validateChatMessage("xin chào", 0)).toBeNull();
-    expect(validateChatMessage("", 1)).toBeNull();
-    expect(validateChatMessage("   ", 2)).toBeNull();
-    expect(validateChatMessage("a".repeat(4000), 10)).toBeNull();
-  });
-  test("rỗng không tệp ⇒ MSG_EMPTY", () => {
-    expect(validateChatMessage("", 0)).toBe("MSG_EMPTY");
-    expect(validateChatMessage("  \n ", 0)).toBe("MSG_EMPTY");
-  });
-  test("quá dài / quá nhiều tệp", () => {
-    expect(validateChatMessage("a".repeat(4001), 0)).toBe("MSG_TOO_LONG");
-    expect(validateChatMessage("x", 11)).toBe("MSG_TOO_MANY_FILES");
-  });
-});
-
-describe("ccDedupKey · pairOf (R8, R9)", () => {
-  test("khoá chuông theo luồng và mốc đã đọc", () => {
-    expect(ccDedupKey("t1", 7)).toBe("cc.msg:t1:7");
-    expect(ccDedupKey("t1", 8)).not.toBe(ccDedupKey("t1", 7));
-  });
+describe("pairOf (R8)", () => {
   test("pairOf không phụ thuộc thứ tự, chuẩn hoá chữ thường", () => {
     const a = "AAAAAAAA-0000-4000-8000-000000000001";
     const b = "bbbbbbbb-0000-4000-8000-000000000002";
