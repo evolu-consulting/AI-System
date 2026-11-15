@@ -85,3 +85,19 @@ BEGIN
     END;
   END IF;
 END $$;
+--> statement-breakpoint
+-- Tên công ty của CHÍNH người gọi (`app.tenant_id`) cho danh bạ `own` (hub_rw không đọc được admin.tenants). Chỉ công ty mình; không có tham số ⇒ không dò công ty khác.
+CREATE OR REPLACE FUNCTION hub.pmsg_self_company()
+RETURNS TABLE (id uuid, name text)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, pg_temp
+AS $$
+  SELECT t.id, COALESCE(t.legal_name, t.name) FROM admin.tenants t
+   WHERE t.id = NULLIF(current_setting('app.tenant_id', true), '')::uuid
+$$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION hub.pmsg_self_company() FROM PUBLIC;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION hub.pmsg_self_company() TO hub_rw;

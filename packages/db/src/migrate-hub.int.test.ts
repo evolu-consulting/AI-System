@@ -99,6 +99,7 @@ const HUB_TABLES = [
   "partner_sign_sessions", // CR-127 · P1 hub 0132 · phiên ký chung
   "people_profiles", // CR-147b · hub 0142 · avatar, ảnh bìa, chức vụ
   "platform_settings", // CR-122 p22 hub 0115 · cài đặt nền tảng (process.stages_max)
+  "pmsg_eligible_v", // CR-169 · hub 0152 · VIEW «người hợp lệ» (chỉ hàm DEFINER đọc)
   "pmsg_files", // CR-169 · hub 0149 · tệp tin nhắn người–người giữa công ty kết nối
   "pmsg_messages", // CR-169 · hub 0149
   "pmsg_threads", // CR-169 · hub 0149
@@ -210,6 +211,10 @@ describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
       ["hub.pmsg_files_sweep(interval)", true, false],
       ["hub.pmsg_connected(uuid)", false, false],
     ]);
+    // CR-169 0152: view «người hợp lệ» không ai đọc trực tiếp (chỉ hàm DEFINER, quyền chủ sở hữu).
+    const [v] = await sql<{ rw: boolean; pub: boolean }[]>`
+      select has_table_privilege('hub_rw', 'hub.pmsg_eligible_v', 'select') as rw, has_table_privilege('public', 'hub.pmsg_eligible_v', 'select') as pub`;
+    expect(v).toEqual({ rw: false, pub: false });
     // CR-169: không còn hàm trò chuyện chung cc_* (thread/send/file/unread/ctx) sau 0149.
     const gone = await sql<{ n: string }[]>`
       select p.proname as n from pg_proc p join pg_namespace s on s.oid = p.pronamespace

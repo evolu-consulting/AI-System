@@ -70,9 +70,9 @@ export const internalDirectoryPage =
       (tx) =>
         tx.execute<Row>(sql`select * from (
             select u.id, u.display_name as name, (d.name is null)::int as k1, coalesce(d.name, '') as k2,
-                   d.group_id as dept_id, d.name as dept_name, pp.job_title, coalesce(tn.legal_name, tn.name) as company_name
+                   d.group_id as dept_id, d.name as dept_name, pp.job_title, tn.name as company_name
             from admin.users u
-            join admin.tenants tn on tn.id = u.tenant_id
+            cross join hub.pmsg_self_company() tn
             left join hub.people_profiles pp on pp.tenant_id = u.tenant_id and pp.user_id = u.id
             left join lateral (
               select g.id as group_id, coalesce(g.name ->> 'vi', g.key) as name
@@ -81,7 +81,7 @@ export const internalDirectoryPage =
               join admin.groups g on g.id = gm.group_id and g.tenant_id = gm.tenant_id
               where gm.user_id = u.id and gm.tenant_id = u.tenant_id
               order by g.key limit 1) d on true
-            where u.tenant_id = ${who.tenantId}::uuid and u.kind = 'internal'
+            where u.tenant_id = ${who.tenantId}::uuid and u.kind = 'internal' and tn.id = u.tenant_id
               and u.active and not u.locked_by_tenant and u.id <> ${who.userId}::uuid) x
           where true ${after} ${like}
           order by x.k1, x.k2, x.name, x.id::text limit ${opt.limit + 1}::int`),
