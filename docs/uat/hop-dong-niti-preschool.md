@@ -11,15 +11,16 @@ Ký: dùng «Tải lên bản đã ký» (chọn một PDF bất kỳ), không c
 ## 1. Quy trình đang chạy
 | Công ty | Gửi HĐ đi | Nhận HĐ từ đối tác |
 |---|---|---|
-| NitiGroup | Người tạo → Tiên duyệt (Tiên tự gửi ⇒ bỏ duyệt) → Chuẩn bị ký (Tiên) → Ký (Tiên) → Chọn đối tác & người nhận (Tiên) → chờ đối tác trả lời | Phụ trách `thuyvy.trang` → Tiên duyệt → Ký (Tiên) → Đồng ý |
-| Preschool | Chuẩn bị ký (Dung) → Ký (Dung) → Chọn đối tác & người nhận (Dung) → chờ đối tác trả lời | Chuẩn bị ký (Dung) → Ký (Dung) → Đồng ý |
+| NitiGroup | Nhân viên tạo ⇒ trưởng phòng duyệt (leo cấp tới Tiên); Tiên tự tạo ⇒ «Chuẩn bị ký» → Ký (Tiên) → **«Nhờ đối tác ký / xác nhận trên hệ thống?»** (Tiên): Có ⇒ Chọn đối tác & người nhận → gửi → chờ đối tác; Không ⇒ kết thúc «Đã duyệt» (nội bộ) | Phụ trách `thuyvy.trang` → Tiên duyệt → Ký (Tiên) → Đồng ý |
+| Preschool | Chuẩn bị ký (Dung) → Ký (Dung) → **«Nhờ đối tác ký / xác nhận trên hệ thống?»**: Có ⇒ chọn đối tác → gửi → chờ; Không ⇒ kết thúc nội bộ | Chuẩn bị ký (Dung) → Ký (Dung) → Đồng ý |
 
 ## 2. Chiều NitiGroup → Preschool
 | Mã | Ai (mã công ty · tên đăng nhập) | Bấm gì | Mong đợi | Đạt? |
 |---|---|---|---|---|
 | A01 | `nitigroup` · `thuyvy.trang` | Hợp đồng › tải PDF › chờ AI đọc (lỗi thì «Nhập tay») › điền đối tác Preschool › Gửi duyệt | HĐ «Đang duyệt», chờ Tiên | |
 | A02 | `nitigroup` · `thuytien.le` | Việc của tôi › Duyệt | Sang «Chuẩn bị ký» rồi «Ký hợp đồng» của Tiên | |
-| A03 | `thuytien.le` | Chuẩn bị ký › Xong; Ký › Tải lên bản đã ký | Sang «Chọn đối tác & người nhận» | |
+| A03 | `thuytien.le` | Ký › Tải lên bản đã ký; bước «Nhờ đối tác ký / xác nhận trên hệ thống?» › chọn **Có** | Sang «Chọn đối tác & người nhận» | |
+| A03b | `thuytien.le` | (HĐ khác) tới bước «Nhờ đối tác ký…» › chọn **Không** | HĐ «Đã duyệt», không gửi đối tác | |
 | A04 | `thuytien.le` | Chọn đối tác: tìm «Preschool» trong danh sách, email người nhận `dung.dang@preschool.com` › Gửi | «Chờ đối tác xác nhận»; lần đầu chờ Preschool nhận lời mời | |
 | A05 | `preschool` · `dung.dang` | Hợp đồng › băng lời mời đầu danh sách › Nhận | Băng mất; HĐ của NitiGroup hiện, chạy quy trình Nhận HĐ | |
 | A06 | `dung.dang` | Việc của tôi › Chuẩn bị ký › Ký (tải bản đã ký) › Đồng ý | HĐ Preschool «Đã xác nhận» | |
@@ -29,7 +30,7 @@ Ký: dùng «Tải lên bản đã ký» (chọn một PDF bất kỳ), không c
 | Mã | Ai | Bấm gì | Mong đợi | Đạt? |
 |---|---|---|---|---|
 | B01 | `preschool` · `dung.dang` | Tạo HĐ (đối tác NitiGroup) › Gửi duyệt | Không có bước duyệt; sang «Chuẩn bị ký» của Dung | |
-| B02 | `dung.dang` | Chuẩn bị ký › Ký (tải bản đã ký) › Chọn đối tác NitiGroup, email `thuyvy.trang@nitigroupvn.com` › Gửi | Gửi thẳng, không chờ lời mời | |
+| B02 | `dung.dang` | Chuẩn bị ký › Ký (tải bản đã ký) › «Nhờ đối tác ký…» chọn Có › Chọn đối tác NitiGroup, email `thuyvy.trang@nitigroupvn.com` › Gửi | Gửi thẳng, không chờ lời mời | |
 | B03 | `nitigroup` · `thuyvy.trang` | Hợp đồng | HĐ Preschool gửi hiện; Vy là người phụ trách | |
 | B04 | `nitigroup` · `thuytien.le` | Việc của tôi › Duyệt › Ký (tải bản đã ký) | HĐ NitiGroup «Đồng ý»; Preschool thấy «Đối tác đã xác nhận» | |
 
