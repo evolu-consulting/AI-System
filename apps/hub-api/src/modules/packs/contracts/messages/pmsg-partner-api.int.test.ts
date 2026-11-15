@@ -131,6 +131,7 @@ beforeAll(async () => {
   o = openOwner(2);
   db = connectDb(urls().hubApi, 3);
   redis = createRedis(REDIS_TEST_URL);
+  await redis.connect();
   await o`insert into admin.tenants (id, key, name, legal_name, tax_code, directory_listed)
     values (${A}, 'pa-a', 'A', 'NitiGroup', '0100000501', true), (${B}, 'pa-b', 'B', 'Preschool Việt', '0100000502', true),
            (${C}, 'pa-c', 'C', 'Công ty Cờ', '0100000503', true), (${E}, 'pa-e', 'E', 'Công ty Ê', '0100000504', true)`;
@@ -390,8 +391,8 @@ describe("CR-169 3b · ngắt kết nối: đọc được, không gửi, không
     const before = box.puts;
     const pg = await call<{ items: unknown[] }>(HA, "GET", `${P(vyHa)}/messages`);
     expect([pg.status, pg.body.items.length > 0]).toEqual([200, true]);
-    const d = await call<{ partner: { read_only: boolean } }>(VY, "GET", P(vyHa));
-    expect(d.body.partner.read_only).toBe(true);
+    const d = await call<{ read_only: boolean }>(VY, "GET", P(vyHa));
+    expect(d.body.read_only).toBe(true);
     const s = await send(VY, vyHa, "sau ngắt");
     expect([s.status, code(s)]).toEqual([409, "MSG_NOT_CONNECTED"]);
     const up = await upload(HA, vyHa, "sau.pdf", PDF);
