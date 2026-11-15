@@ -113,7 +113,7 @@ export class Steps {
         .split("\n")
         .slice(0, 3)
         .join(" ")
-        .slice(0, 400);
+        .slice(0, 900);
       this.rows.push({ id, name, status: "Khong dat", note: msg });
     }
     await this.shot(id);

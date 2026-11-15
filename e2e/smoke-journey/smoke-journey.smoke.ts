@@ -59,7 +59,7 @@ async function uploadSigned(p: Page, id: string): Promise<void> {
 /** Người duyệt: mở HĐ, bước `name` đang mở ⇒ (Nhận việc) ⇒ Duyệt/Đạt ⇒ bước «passed». */
 async function approve(p: Page, id: string, name: string): Promise<void> {
   await p.goto(`${E.cw}/contracts/c/${id}`);
-  const btn = p.locator("[data-approval=pass], [data-approval=approve]").first();
+  const btn = p.getByTestId(/^act-(approve|pass)$/); // nút chính trên đầu trang (HeadActions)
   const take = p.getByTestId("claim-take");
   await reloadUntil(p, async () => {
     await expect(stepOf(p, name)).toHaveAttribute("data-status", "open", { timeout: 4_000 });
@@ -70,12 +70,27 @@ async function approve(p: Page, id: string, name: string): Promise<void> {
     await expect(p.getByTestId("claim-state")).toContainText("Bạn đang giữ");
   }
   const posts: string[] = [];
-  p.on("response", async (r) => {
-    if (r.request().method() !== "GET" && r.url().includes("/contracts/"))
-      posts.push(
-        `${r.request().method()} ${r.url().split("/contracts/")[1]?.slice(0, 50)} → ${r.status()} ${(await r.text().catch(() => "")).slice(0, 120)}`,
-      );
+  const onRes = async (r: import("@playwright/test").Response) => {
+    const u = new URL(r.url());
+    if (/.(js|css|png|svg|woff2?|map)$/.test(u.pathname)) return;
+    const body =
+      r.request().method() === "GET" ? "" : (await r.text().catch(() => "")).slice(0, 120);
+    posts.push(`${r.request().method()} ${u.pathname.slice(0, 60)} ${r.status()} ${body}`);
+  };
+  p.on("response", onRes);
+  p.on("request", (r) => {
+    if (r.method() !== "GET")
+      posts.push(`REQ ${r.method()} ${new URL(r.url()).pathname.slice(0, 60)}`);
   });
+  p.on("requestfailed", (r) =>
+    posts.push(
+      `FAILED ${r.method()} ${new URL(r.url()).pathname.slice(0, 60)} ${r.failure()?.errorText}`,
+    ),
+  );
+  p.on("console", (m) => {
+    if (m.type() === "error") posts.push(`CONSOLE ${m.text().slice(0, 100)}`);
+  });
+  p.on("pageerror", (e) => posts.push(`PAGEERR ${String(e.message).slice(0, 100)}`));
   await btn.click();
   const ev = p.locator("[data-approval=evidence]");
   if (await ev.isVisible({ timeout: 3_000 }).catch(() => false))
@@ -89,7 +104,12 @@ async function approve(p: Page, id: string, name: string): Promise<void> {
         .locator("[role=dialog],[data-approval=evidence],[role=alert]")
         .allInnerTexts();
       throw new Error(
-        `bước «${name}» sau khi bấm Duyệt: data-status=${st}; mạng: ${posts.join(" ; ")}; hộp/cảnh báo: ${dlg.join(" | ").slice(0, 200)}`,
+        `bước «${name}» sau khi bấm Duyệt: data-status=${st}; mạng: ${
+          posts
+            .filter((x) => !x.startsWith("GET"))
+            .slice(0, 8)
+            .join(" ; ") || `(không có yêu cầu ghi; ${posts.length} GET)`
+        }; hộp/cảnh báo: ${dlg.join(" | ").slice(0, 200)}`,
       );
     });
 }
