@@ -51,14 +51,19 @@ BEGIN
     SELECT x.tid FROM (SELECT v_tid AS tid UNION SELECT k.tid FROM hub.pmsg_connected(v_tid) k) x
      WHERE p_tenants IS NULL OR x.tid = ANY (p_tenants)),
   pg AS (
-    SELECT e.user_id AS uid, COALESCE(e.display_name, '') AS nm, hub.fold(COALESCE(e.display_name, '')) AS k, e.tenant_id AS tid, pp.job_title AS jt
+    -- Mỗi công ty lấy TOP v_lim theo khoá sắp (LATERAL + index `users_tenant_fold_idx` ⇒ dừng sớm, KHÔNG tính fold cho cả 5.000 người), rồi gộp + cắt v_lim.
+    SELECT t.uid, t.nm, t.k, t.tid, t.jt
       FROM ts
-      JOIN hub.pmsg_eligible_v e ON e.tenant_id = ts.tid
-      LEFT JOIN hub.people_profiles pp ON pp.tenant_id = e.tenant_id AND pp.user_id = e.user_id
-     WHERE e.user_id <> v_uid
-       AND (v_q = '' OR hub.fold(COALESCE(e.display_name, '')) LIKE '%' || v_q || '%' OR hub.fold(COALESCE(pp.job_title, '')) LIKE '%' || v_q || '%')
-       AND (p_cur_name IS NULL OR p_cur_id IS NULL OR (hub.fold(COALESCE(e.display_name, '')), e.user_id) > (p_cur_name, p_cur_id))
-     ORDER BY hub.fold(COALESCE(e.display_name, '')), e.user_id
+      CROSS JOIN LATERAL (
+        SELECT e.user_id AS uid, COALESCE(e.display_name, '') AS nm, hub.fold(COALESCE(e.display_name, '')) AS k, e.tenant_id AS tid, pp.job_title AS jt
+          FROM hub.pmsg_eligible_v e
+          LEFT JOIN hub.people_profiles pp ON pp.tenant_id = e.tenant_id AND pp.user_id = e.user_id
+         WHERE e.tenant_id = ts.tid AND e.user_id <> v_uid
+           AND (v_q = '' OR hub.fold(COALESCE(e.display_name, '')) LIKE '%' || v_q || '%' OR hub.fold(COALESCE(pp.job_title, '')) LIKE '%' || v_q || '%')
+           AND (p_cur_name IS NULL OR p_cur_id IS NULL OR (hub.fold(COALESCE(e.display_name, '')), e.user_id) > (p_cur_name, p_cur_id))
+         ORDER BY hub.fold(COALESCE(e.display_name, '')), e.user_id
+         LIMIT v_lim) t
+     ORDER BY t.k, t.uid
      LIMIT v_lim)
   SELECT pg.uid, pg.nm, pg.jt, pg.tid, COALESCE(tn.legal_name, tn.name), d.gid, d.gname, pg.k
     FROM pg
@@ -72,6 +77,9 @@ BEGIN
        ORDER BY g.key LIMIT 1) d ON true
    ORDER BY pg.k, pg.uid;
 END $$;
+--> statement-breakpoint
+-- Index sắp theo tên không dấu trong từng công ty: danh bạ lấy top-N mỗi công ty theo thứ tự index (không sắp lại 5.000 người).
+CREATE INDEX IF NOT EXISTS users_tenant_fold_name_idx ON admin.users (tenant_id, (hub.fold(COALESCE(display_name, ''))), id);
 --> statement-breakpoint
 -- Trigram cho tìm theo tên (nếu pg_trgm có sẵn; thiếu/không đủ quyền ⇒ bỏ qua, hàm vẫn đúng — chỉ chậm hơn khi lọc `q` trên nhiều người). Cùng khuôn 0038.
 DO $$

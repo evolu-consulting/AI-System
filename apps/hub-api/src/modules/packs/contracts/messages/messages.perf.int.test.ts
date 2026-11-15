@@ -112,14 +112,14 @@ async function seedPartner(): Promise<void> {
   await o`insert into hub.pmsg_threads (id, a_tenant, a_user, b_tenant, b_user, last_seq, last_at, a_read_seq, b_read_seq)
     select x.id, case when x.p_first then ${T}::uuid else x.pt end, case when x.p_first then ${P}::uuid else x.pu end,
            case when x.p_first then x.pt else ${T}::uuid end, case when x.p_first then x.pu else ${P}::uuid end,
-           ${PER_CONV}, now() - ((x.i + 0.5) || ' minutes')::interval,
-           case when x.p_first then ${PER_CONV / 2} else ${PER_CONV} end, case when x.p_first then ${PER_CONV} else ${PER_CONV / 2} end
+           ${PER_CONV}::bigint, now() - ((x.i + 0.5) || ' minutes')::interval,
+           case when x.p_first then ${PER_CONV / 2}::bigint else ${PER_CONV}::bigint end, case when x.p_first then ${PER_CONV}::bigint else ${PER_CONV / 2}::bigint end
       from (select gen_random_uuid() as id, u.tenant_id as pt, u.id as pu, row_number() over (order by u.id) as i,
                    (${T}::uuid, ${P}::uuid) < (u.tenant_id, u.id) as p_first
               from admin.users u where u.tenant_id = any(${peers}::uuid[])) x`;
   await o`insert into hub.pmsg_messages (thread_id, seq, sender_user, body, client_id)
     select t.id, s, case when s % 2 = 0 then ${P}::uuid else (case when t.a_user = ${P}::uuid then t.b_user else t.a_user end) end, 'tin số ' || s, gen_random_uuid()
-      from hub.pmsg_threads t cross join generate_series(1, ${PER_CONV}) as s`;
+      from hub.pmsg_threads t cross join generate_series(1, ${PER_CONV}::int) as s`;
 }
 afterAll(async () => {
   await db?.close();

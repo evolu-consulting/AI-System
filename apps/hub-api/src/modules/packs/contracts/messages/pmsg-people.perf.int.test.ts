@@ -32,6 +32,22 @@ const companies = (limit = 30) =>
       tx<{ company_id: string }[]>`select * from hub.pmsg_companies(null, null, ${limit}::int)`,
   );
 
+/** Chi phí cố định của `inHub` (mở tx + đặt ngữ cảnh + đóng) đo bằng `select 1`: ngưỡng spec tính thời gian SQL, không tính vòng đi-về mở giao dịch của test. */
+let overhead: number | null = null;
+async function txOverhead(): Promise<number> {
+  if (overhead !== null) return overhead;
+  const ms: number[] = [];
+  for (let i = 0; i < RUNS + 1; i++) {
+    const t0 = performance.now();
+    await inHub({ kind: "user", tenantId: A, userId: ME }, (tx) => tx`select 1`);
+    ms.push(performance.now() - t0);
+  }
+  ms.shift();
+  ms.sort((a, b) => a - b);
+  overhead = ms[Math.ceil(RUNS * 0.95) - 1] ?? 0;
+  return overhead;
+}
+
 async function measure(
   name: string,
   fn: () => Promise<unknown>,
@@ -47,8 +63,12 @@ async function measure(
   ms.sort((a, b) => a - b);
   const p95 = ms[Math.ceil(RUNS * 0.95) - 1] ?? 0;
   const per = statements / RUNS;
-  console.log(`[perf CR-169 3a] ${name}: p95 ${p95.toFixed(1)} ms · ${per} câu SQL / thao tác`);
-  return { p95, sql: per };
+  const base = await txOverhead();
+  const net = Math.max(0, p95 - base);
+  console.log(
+    `[perf CR-169 3a] ${name}: p95 ${p95.toFixed(1)} ms (tx trống ${base.toFixed(1)} ms ⇒ thuần SQL ${net.toFixed(1)} ms) · ${per} câu SQL / thao tác`,
+  );
+  return { p95: net, sql: per };
 }
 
 beforeAll(async () => {
