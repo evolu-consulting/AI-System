@@ -19,7 +19,7 @@ const NOGRANT = userId(1693); // A · không có quyền gói contracts
 const DUNG = userId(1694); // B · Toàn quyền (người đồng ý)
 const HA = userId(1695); // B · nhân viên (viewer)
 const HB = userId(1696); // B · nhân viên (viewer), sẽ bị khoá ở ca «người kia không còn hợp lệ»
-const EXT = userId(1697); // B · user external (có Group đọc nhưng bị chặn)
+const EXT = userId(1697); // B · user external (DB đã cấm vào Group; hàm vẫn chặn theo kind)
 const CUONG = userId(1698); // C · Toàn quyền
 const EVA = userId(1699); // E · Toàn quyền
 const ORG = "a1690000-0000-4000-8000-000000000001";
@@ -141,7 +141,7 @@ beforeAll(async () => {
   await members(o, A, g.get(A)?.editor as string, [VY]);
   await members(o, A, g.get(A)?.viewer as string, [LAN]);
   await members(o, B, g.get(B)?.owner as string, [DUNG]);
-  await members(o, B, g.get(B)?.viewer as string, [HA, HB, EXT]);
+  await members(o, B, g.get(B)?.viewer as string, [HA, HB]);
   await members(o, C, g.get(C)?.owner as string, [CUONG]);
   await members(o, E, g.get(E)?.owner as string, [EVA]);
   await o`insert into hub.people_profiles (tenant_id, user_id, job_title) values (${B}, ${HA}, 'Kế toán trưởng')`;
