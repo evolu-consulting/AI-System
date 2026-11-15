@@ -444,7 +444,7 @@ ad47f01b35967d9386c4e4722ec135b4370d6e455b465f23152a4caf4eaafa2c  e2e/contracts-
 55b57ba282263d1631663697bca3be9c4bf657f91067afe6edcaa0ef234cf084  e2e/contracts-web/overview.cw.ts
 ebb860458e023f120e9305ba36e0a05a69da1fbcf1d65372f64d89c09f314f74  e2e/contracts-web/playwright.config.ts
 13f6fa4f714f98de07d57420def78a25c595f48282694993eea6566ad64ca0cd  e2e/contracts-web/rep3-engine.cw.ts
-dd370427c140f53cf145b4bacb6b4df86d10fb96bed9c3a2c35a671bd3cf9c59  e2e/contracts-web/scenes.cw.ts
+25161e31a48487136a12d4be33eec7c051a0d97e461d72776a57e7b46d60bbdb  e2e/contracts-web/scenes.cw.ts
 66fc771c8337d6738fc926e953c3427a607da19e1416eb376d4aa4481e8e2d89  e2e/contracts-web/transactions.cw.ts
 61f0905bb8612e46c29a6caf4431f49eda77f202ab22894cba915662fcdc5c09  e2e/contracts-web/ui-gating.cw.ts
 b8344a3f753bf0eeca6a2896786da64b8f793baada5b04c8e88f0b75a1ef1dcc  e2e/contracts-web/v2f-detail.cw.ts

@@ -80,7 +80,7 @@ const reviewBoxes = {
 const newBoxes = {
   heading: "main h1",
   lead: "main p >> nth=0",
-  upload: 'main button:text-is("Tải hợp đồng lên")',
+  upload: 'main [data-testid="attach-dropzone"]',
 };
 const mainReady = (p: Page) => p.locator("main h1");
 const HD2_SCENES: Scene[] = [
