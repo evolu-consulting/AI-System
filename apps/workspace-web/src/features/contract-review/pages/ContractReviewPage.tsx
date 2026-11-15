@@ -11,6 +11,7 @@ import { contractKey, fetchContract } from "../api";
 import { ContractBody } from "../components/ContractBody";
 import { useInfoForm } from "../hooks/use-info-form";
 import { detailErrorKey } from "../lib/load-error";
+import { saveErrorText } from "../lib/save-error";
 
 const READING_REFRESH_MS = 2000;
 
@@ -55,6 +56,7 @@ export function ContractReviewPage({ id }: { id: string }) {
         }
       />
     );
-  if (q.error || !q.data || !info.f) return <ErrorLine error={q.error} />;
+  if (q.error || !q.data || !info.f)
+    return <ErrorLine error={q.error ? new Error(saveErrorText(q.error, t)) : q.error} />;
   return <ContractBody id={id} c={q.data} info={{ ...info, f: info.f }} ap={ap} />;
 }

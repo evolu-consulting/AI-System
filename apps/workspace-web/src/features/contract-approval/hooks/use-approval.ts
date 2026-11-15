@@ -7,6 +7,7 @@ import { ApiError } from "@ai/web-kit/http";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { isStale } from "~/features/contract-shared/lib/error-text";
 import { flowRuntime } from "~/platform/flow";
 import { notifyFlowNavChanged } from "~/shared/kernel/flow-nav-event";
 import { approvalKey, fetchApproval } from "../api";
@@ -97,6 +98,7 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
         return { ok: true, step: out.view.phase };
       } catch (e) {
         setErr(approvalErrorText(e, t));
+        if (isStale(e)) await refresh(); // bản HĐ trên màn đã cũ ⇒ nạp lại bản mới (câu lỗi đã nói rõ)
         return { ok: false, code: codeOf(e) };
       }
     })) ?? { ok: false, code: "IN_FLIGHT" };
@@ -107,6 +109,7 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
         return await f();
       } catch (e) {
         setErr(approvalErrorText(e, t));
+        if (isStale(e)) await refresh();
         return null;
       }
     });

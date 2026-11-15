@@ -24,7 +24,7 @@ describe("S05 · màn HĐ", () => {
       "contracts.errors.alreadyDone",
     );
     expect(saveErrorText(new ApiError(409, "CONTRACT_STALE" as never, "stale"), t)).toBe(
-      "contracts.errors.conflict",
+      "contracts.errors.stale",
     );
   });
   it("câu lỗi lưu: 409 ⇒ conflict, mạng ⇒ network, còn lại ⇒ unknown (không lộ thông điệp máy chủ)", () => {
@@ -36,6 +36,11 @@ describe("S05 · màn HĐ", () => {
       "contracts.errors.network",
     );
     expect(saveErrorText(new Error("SELECT * secret"), t)).toBe("contracts.errors.unknown");
+    // mã lạ ⇒ câu chung + mã (không thông điệp thô)
+    const tt = (k: string, o?: unknown) => (o ? `${k}:${JSON.stringify(o)}` : k);
+    expect(saveErrorText(new ApiError(500, "WEIRD" as never, "Contract was modified"), tt)).toBe(
+      'contracts.errors.unknownCode:{"code":"WEIRD"}',
+    );
   });
 });
 

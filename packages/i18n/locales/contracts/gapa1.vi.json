@@ -84,8 +84,7 @@
         "summaryNotAllowed": "Hợp đồng đã có tóm tắt hoặc chưa có văn bản để tóm tắt.",
         "cap": "Đã hết lượt dùng AI hôm nay, thử lại ngày mai.",
         "ownerInvalid": "Người này không có quyền xem hợp đồng nên không giao được.",
-        "commissionNotAllowed": "Chỉ sửa hoa hồng cho hợp đồng Giới thiệu đã đọc xong.",
-        "stale": "Hợp đồng vừa được cập nhật, tải lại trang rồi thử lại."
+        "commissionNotAllowed": "Chỉ sửa hoa hồng cho hợp đồng Giới thiệu đã đọc xong."
       }
     }
   }

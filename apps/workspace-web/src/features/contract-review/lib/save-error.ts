@@ -2,8 +2,9 @@
 // Không hiện thông điệp thô của máy chủ (tiếng Anh, có thể lộ chi tiết) — trừ lỗi giao/kho: máy chủ soạn sẵn câu tiếng Việt nêu
 // dòng/tồn (delivery.routes), hiện nguyên văn kèm gợi ý. 409 KHÔNG phải xung đột phiên bản thì không báo "người khác cập nhật".
 import { ApiError } from "@ai/web-kit/http";
+import { isStale, STALE_KEY, unknownErrorText } from "~/features/contract-shared/lib/error-text";
 
-type T = (key: string, o?: { list: string }) => string;
+type T = (key: string, o?: Record<string, unknown>) => string;
 
 /** Lỗi giao hàng / kho: thông điệp máy chủ là câu tiếng Việt do mình soạn (an toàn để hiện). */
 const SERVER_TEXT = new Set([
@@ -39,19 +40,26 @@ function incompleteText(e: ApiError, t: T): string | null {
   return `${t("contracts.cform.missing", { list })}. ${t("contracts.kinds.err.red")}`;
 }
 
+/** Lỗi giao/kho: câu tiếng Việt máy chủ soạn sẵn (kèm gợi ý nhập kho); khác ⇒ null. */
+function serverText(e: ApiError, t: T): string | null {
+  const code = e.code as string;
+  if (!SERVER_TEXT.has(code) || !e.message) return null;
+  return code === "STOCK_INSUFFICIENT"
+    ? `${e.message}. ${t("contracts.errors.stockHint")}`
+    : e.message;
+}
+
 export function saveErrorText(e: unknown, t: T): string {
   if (e instanceof ApiError) {
     const code = e.code as string;
     const inc = incompleteText(e, t);
     if (inc) return inc;
+    if (isStale(e)) return t(STALE_KEY);
     if (KEYED[code]) return t(KEYED[code]);
-    if (SERVER_TEXT.has(code) && e.message) {
-      return code === "STOCK_INSUFFICIENT"
-        ? `${e.message}. ${t("contracts.errors.stockHint")}`
-        : e.message;
-    }
+    const srv = serverText(e, t);
+    if (srv) return srv;
     if (e.status === 409) return t("contracts.errors.conflict");
     if (e.code === "NETWORK_ERROR") return t("contracts.errors.network");
   }
-  return t("contracts.errors.unknown");
+  return unknownErrorText(e, t);
 }

@@ -1,6 +1,7 @@
 // gap-a1 · luật thuần của khối "Quản lý" trên trang chi tiết HĐ: đọc ô hoa hồng %, dựng dòng lịch sử, chọn câu lỗi theo mã máy chủ.
 import type { HistoryItem } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
+import { isStale, STALE_KEY } from "~/features/contract-shared/lib/error-text";
 
 /** Ô hoa hồng: trống ⇒ xoá (null); số 0–100, tối đa 2 chữ số thập phân (dấu phẩy hoặc chấm). */
 export function parsePct(text: string): { ok: true; value: number | null } | { ok: false } {
@@ -133,6 +134,7 @@ export function historyLine(h: HistoryItem): HistoryLine {
 
 /** Khoá i18n (`contracts.gapa1.err.*`) theo mã lỗi máy chủ; 409 cũ ⇒ "vừa được cập nhật". */
 export function manageErrorKey(e: unknown): string {
+  if (isStale(e)) return STALE_KEY;
   if (e instanceof ApiError) {
     const byCode: Record<string, string> = {
       EXTRACT_BUSY: "busy",
@@ -145,7 +147,6 @@ export function manageErrorKey(e: unknown): string {
       UPLOAD_QUOTA: "cap",
       OWNER_INVALID: "ownerInvalid",
       COMMISSION_NOT_ALLOWED: "commissionNotAllowed",
-      CONTRACT_STALE: "stale",
     };
     const k = e.code ? byCode[e.code] : undefined;
     if (k) return `contracts.gapa1.err.${k}`;

@@ -4,6 +4,7 @@
 import { toast } from "@ai/web-kit/ui/toast";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { isStale } from "~/features/contract-shared/lib/error-text";
 import { fetchMembers, MEMBERS_KEY } from "~/features/contracts-list/api";
 import {
   ASSIGNEES_KEY,
@@ -34,7 +35,10 @@ function useAction<A>(
       after?.();
       await qc.invalidateQueries({ queryKey: contractKey(id) });
     },
-    onError: (e) => toast(t(manageErrorKey(e)), "late"),
+    onError: (e) => {
+      toast(t(manageErrorKey(e)), "late");
+      if (isStale(e)) void qc.invalidateQueries({ queryKey: contractKey(id) });
+    },
   });
 }
 

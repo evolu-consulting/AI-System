@@ -92,7 +92,11 @@ describe("approvalErrorText", () => {
     expect(approvalErrorText(e("TOO_MANY_PROCESS_RUNS", { max: 7 }), t)).toBe(
       'contracts.approval.errors.runLimit:{"max":7}',
     );
-    expect(approvalErrorText(e("WHATEVER"), t)).toBe("contracts.errors.unknown");
+    // fix-stale-resubmit: mã chưa có câu riêng ⇒ câu chung kèm mã; bản HĐ cũ ⇒ câu «vừa được cập nhật» (không thông điệp thô)
+    expect(approvalErrorText(e("WHATEVER"), t)).toBe(
+      'contracts.errors.unknownCode:{"code":"WHATEVER"}',
+    );
+    expect(approvalErrorText(e("CONTRACT_STALE"), t)).toBe("contracts.errors.stale");
   });
 });
 

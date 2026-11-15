@@ -16,6 +16,7 @@ import { dealOf } from "~/features/contract-form/lib/deal";
 import { lockView } from "~/features/contract-lock/lib/lock-view";
 import { MilestoneList } from "~/features/contract-milestones/components/MilestoneList";
 import { todayIso } from "~/features/contract-shared/lib/date";
+import { isStale } from "~/features/contract-shared/lib/error-text";
 import { VersionsPanels } from "~/features/contract-versions/components/VersionsPanels";
 import { versionGate } from "~/features/contract-versions/lib/versions";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
@@ -136,6 +137,7 @@ export function ContractBody(p: {
       await qc.invalidateQueries({ queryKey: ["contracts", "list"] });
       return null;
     } catch (e) {
+      if (isStale(e)) await qc.invalidateQueries({ queryKey: contractKey(id) });
       return saveErrorText(e, t);
     }
   };

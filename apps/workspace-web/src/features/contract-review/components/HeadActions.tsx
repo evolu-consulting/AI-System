@@ -8,8 +8,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PopItem } from "~/components/shared/pop-menu";
 import { Btn } from "~/components/ui/Btn";
+import { approvalKey } from "~/features/contract-approval/api";
 import type { ApprovalView } from "~/features/contract-approval/lib/approval";
 import { ContractActionsMenu } from "~/features/contract-delete/components/ContractActionsMenu";
+import { isStale, STALE_KEY, unknownErrorText } from "~/features/contract-shared/lib/error-text";
 import { UploadVersionPanel } from "~/features/contract-versions/components/UploadVersionPanel";
 import { evidenceBody } from "~/platform/flow";
 import {
@@ -36,6 +38,17 @@ export type HeadApprovalActs = {
   saveDraft: () => void;
   cancel: () => void;
 };
+
+/** Câu lỗi của thao tác đầu trang: mã có câu riêng ⇒ câu đó; bản HĐ cũ ⇒ «vừa được cập nhật»; còn lại ⇒ câu chung kèm mã. */
+function failText(
+  e: unknown,
+  code: string | undefined,
+  t: (k: string, o?: Record<string, unknown>) => string,
+): string {
+  if (isStale(e)) return t(STALE_KEY);
+  const k = execErrorKey(code);
+  return k ? t(k, { who: "", status: "" }) : unknownErrorText(e, t);
+}
 
 export function HeadActions({
   id,
@@ -65,9 +78,16 @@ export function HeadActions({
   const done = async (msg: string) => {
     setAsk(null);
     toast(msg);
-    await qc.invalidateQueries({ queryKey: ["contract", id] });
-    await qc.invalidateQueries({ queryKey: ["contracts", "list"] });
+    await reload();
     onChanged();
+  };
+  /** Sau mọi thao tác đổi trạng thái (rút về, trả lại…) nạp lại chi tiết (version mới) + thẻ duyệt, để lần bấm kế dùng đúng bản hiện hành. */
+  const reload = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["contract", id] }),
+      qc.invalidateQueries({ queryKey: approvalKey(id) }),
+      qc.invalidateQueries({ queryKey: ["contracts", "list"] }),
+    ]);
   };
   const run = async (f: () => Promise<unknown>, okMsg: string) => {
     setBusy(true);
@@ -78,8 +98,12 @@ export function HeadActions({
     } catch (e) {
       const code = e instanceof ApiError ? (e.code as string) : undefined;
       if (code === "UNCHANGED_REASON_REQUIRED") setAsk("unchanged");
-      const k = execErrorKey(code);
-      setErr(k ? t(k, { who: "", status: "" }) : t("contracts.errors.unknown"));
+      setErr(failText(e, code, t));
+      // Bản trên màn đã cũ: nạp lại bản mới rồi báo rõ — người dùng kiểm tra và bấm lại (không tự gửi lại thay họ).
+      if (isStale(e)) {
+        setAsk(null);
+        await reload();
+      }
     } finally {
       setBusy(false);
     }
@@ -87,6 +111,9 @@ export function HeadActions({
   const resubmit = (reason?: string) =>
     run(async () => {
       await saveFirst();
+      // «Gửi lại» ở màn xác nhận luôn ghi nháp (tăng version): nạp lại bản mới TRƯỚC khi Gửi — nếu hub đòi lý do «không đổi» thì lần
+      // bấm kế (kèm lý do) ghi nháp với đúng version, không 409 CONTRACT_STALE.
+      await qc.invalidateQueries({ queryKey: ["contract", id] });
       await submitContract(id, reason ? { unchanged_reason: reason } : {});
     }, t("contracts.u5.toast.resubmitted"));
   const acts = headActs({ rule, view: approval.view, canDelete });

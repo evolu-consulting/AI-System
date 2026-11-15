@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchProducts } from "~/features/contract-form/api";
+import { isStale } from "~/features/contract-shared/lib/error-text";
 import type { ProductLinkTarget } from "~/features/product-links/components/ProductLinkDialog";
 import { contractKey, fetchContract, saveReview } from "../api";
 import { afterConfirmSave, confirmSaveBody, needsLinkDialog } from "../lib/confirm-save";
@@ -37,6 +38,7 @@ export function useConfirmSave(id: string, prepare: () => Promise<void>) {
     } catch (e) {
       r = { ok: false, code: codeOf(e) };
       setErr(errText(e));
+      if (isStale(e)) await reload();
     }
     const next = afterConfirmSave(r);
     if (next.close) setTarget(null);
@@ -56,6 +58,7 @@ export function useConfirmSave(id: string, prepare: () => Promise<void>) {
       else await confirmWith(c.version, []);
     } catch (e) {
       setErr(errText(e));
+      if (isStale(e)) await reload();
     } finally {
       setBusy(false);
     }

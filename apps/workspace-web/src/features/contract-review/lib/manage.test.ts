@@ -71,3 +71,11 @@ describe("manageErrorKey", () => {
     expect(manageErrorKey(new Error("x"))).toBe("contracts.errors.unknown");
   });
 });
+
+describe("fix-stale-resubmit · manageErrorKey", () => {
+  it("CONTRACT_STALE ⇒ câu «vừa được cập nhật» chung (contracts.errors.stale)", () => {
+    expect(
+      manageErrorKey(new ApiError(409, "CONTRACT_STALE" as never, "Contract was modified")),
+    ).toBe("contracts.errors.stale");
+  });
+});

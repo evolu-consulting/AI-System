@@ -84,8 +84,7 @@
         "summaryNotAllowed": "The contract already has a summary or has no text to summarise.",
         "cap": "Today's AI allowance is used up, try again tomorrow.",
         "ownerInvalid": "This person cannot view contracts, so they cannot be assigned.",
-        "commissionNotAllowed": "Commission can only be edited on a read Referral contract.",
-        "stale": "The contract was just updated; reload the page and try again."
+        "commissionNotAllowed": "Commission can only be edited on a read Referral contract."
       }
     }
   }

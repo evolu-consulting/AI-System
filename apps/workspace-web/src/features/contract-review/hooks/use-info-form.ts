@@ -44,6 +44,7 @@ import {
 } from "~/features/contract-form/lib/review-model";
 import { suggestionPatch } from "~/features/contract-form/lib/suggest";
 import { todayIso } from "~/features/contract-shared/lib/date";
+import { isStale } from "~/features/contract-shared/lib/error-text";
 import { contractKey, patchContractFields, saveReview } from "../api";
 import { firstSaveMode } from "../lib/confirm-save";
 import { savedNoticeKey } from "../lib/review";
@@ -270,6 +271,7 @@ function useInfoSave(
       }
     } catch (e) {
       setErr(e instanceof Error && !("status" in e) ? e.message : saveErrorText(e, t));
+      if (isStale(e)) await qc.invalidateQueries({ queryKey: contractKey(id) });
     } finally {
       setBusy(false);
     }

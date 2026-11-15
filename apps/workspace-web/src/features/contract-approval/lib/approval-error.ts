@@ -1,5 +1,6 @@
 // HD-FR-34 · HD-FR-35 · S05: câu lỗi của thao tác duyệt (không hiện thông điệp thô máy chủ). Mã lạ ⇒ câu chung của trang.
 import { ApiError } from "@ai/web-kit/http";
+import { isStale, STALE_KEY, unknownErrorText } from "~/features/contract-shared/lib/error-text";
 
 type T = (key: string, o?: Record<string, unknown>) => string;
 
@@ -24,6 +25,7 @@ const KEYS: Record<string, string> = {
 export function approvalErrorText(e: unknown, t: T): string {
   if (!(e instanceof ApiError)) return t("contracts.errors.unknown");
   const code: string = e.code; // mã gói hợp đồng không nằm trong `ApiErrorCode` (chat)
+  if (isStale(e)) return t(STALE_KEY);
   const k = KEYS[code];
   if (k) return t(k);
   if (code === "ACTION_QUOTA") {
@@ -35,5 +37,5 @@ export function approvalErrorText(e: unknown, t: T): string {
     return t("contracts.approval.errors.runLimit", { max: max ?? "" });
   }
   if (code === "NETWORK_ERROR") return t("contracts.errors.network");
-  return t("contracts.errors.unknown");
+  return unknownErrorText(e, t);
 }
