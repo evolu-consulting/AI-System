@@ -15,10 +15,10 @@ import {
   pickPartner,
   RUN,
   reloadUntil,
+  resubmit,
   settled,
   signAndAsk,
   statusOf,
-  submit,
   uploadSigned,
 } from "./_flows3-kit";
 import { CO, WHO } from "./_flows3-who";
@@ -160,12 +160,13 @@ test("FL3-5a · Trưởng phòng Trả lại (lý do bắt buộc) ⇒ HĐ về 
     "Điều 3 thiếu hạn thanh toán, xin bổ sung",
   );
   await expectStatus(hoa, EN, id, "draft");
-  await expect(hoa.getByText("Điều 3 thiếu hạn thanh toán, xin bổ sung").first()).toBeVisible();
+  // G3: người tạo phải thấy LÝ DO ngay ở băng đầu trang (không chỉ «đã trả lại»)
+  await expect
+    .soft(hoa.getByTestId("head-banner"))
+    .toContainText("Điều 3 thiếu hạn thanh toán, xin bổ sung");
   // người tạo sửa (đổi tên) → Lưu nháp → Gửi duyệt lại
   await hoa.getByRole("textbox", { name: /^Tên hợp đồng/ }).fill(`Hợp đồng đã sửa ${RUN}`);
-  await hoa.getByRole("button", { name: "Thao tác" }).click();
-  await hoa.getByRole("menuitem", { name: "Lưu nháp" }).click();
-  await submit(hoa);
+  await resubmit(hoa); // vòng > 0: nút chính «Gửi lại» tự lưu chỗ vừa sửa rồi gửi (không có «Lưu nháp»)
   await approveStep(truong, EN, id, "Trưởng phòng duyệt"); // vòng 2: bước mở lại cho đúng trưởng phòng
 });
 
@@ -181,7 +182,10 @@ test("FL3-5b · Trưởng phòng Từ chối (lý do bắt buộc) ⇒ HĐ «T�
     "Không phù hợp chính sách mua hàng",
   );
   await expectStatus(hoa, EN, id, "reject");
-  await expect(hoa.getByText("Không phù hợp chính sách mua hàng").first()).toBeVisible();
+  // G3: người tạo phải thấy LÝ DO ngay ở băng đầu trang (không chỉ «đã trả lại»)
+  await expect
+    .soft(hoa.getByTestId("head-banner"))
+    .toContainText("Không phù hợp chính sách mua hàng");
 });
 
 test("FL3-5c · Bên nhận (Thomas) Trả lại ⇒ Niti thấy lý do, HĐ về Nháp; gửi lại ⇒ vòng 2 có «Chuẩn bị ký» mới", async ({
@@ -200,15 +204,11 @@ test("FL3-5c · Bên nhận (Thomas) Trả lại ⇒ Niti thấy lý do, HĐ v�
     "Giá trị chưa khớp báo giá, xin sửa",
   );
   await expectStatus(tien, EN, id, "draft");
-  await reloadUntil(tien, async () =>
-    expect(tien.getByText("Giá trị chưa khớp báo giá, xin sửa").first()).toBeVisible({
-      timeout: 4_000,
-    }),
-  );
+  await expect
+    .soft(tien.getByTestId("head-banner"))
+    .toContainText("Giá trị chưa khớp báo giá, xin sửa");
   await tien.getByRole("textbox", { name: /^Tên hợp đồng/ }).fill(`Hợp đồng gửi lại ${RUN}`);
-  await tien.getByRole("button", { name: "Thao tác" }).click();
-  await tien.getByRole("menuitem", { name: "Lưu nháp" }).click();
-  await submit(tien);
+  await resubmit(tien); // vòng > 0: nút chính «Gửi lại» tự lưu chỗ vừa sửa rồi gửi (không có «Lưu nháp»)
   // vòng 2: người gửi là cấp cao nhất ⇒ lại «Chuẩn bị ký»
   await doTask(tien, EN, "Chuẩn bị ký");
 });

@@ -278,3 +278,11 @@ export async function settled(p: Page): Promise<void> {
       .first(),
   ).toBeVisible({ timeout: 45_000 });
 }
+
+/** Vòng > 0 (HĐ bị trả lại về Nháp): nút chính «Gửi lại» (`act-resubmit`) lưu chỗ người tạo vừa sửa rồi gửi lại; xong ⇒ nút biến mất. */
+export async function resubmit(p: Page): Promise<void> {
+  const btn = p.getByTestId("act-resubmit");
+  await expect(btn).toBeVisible({ timeout: 30_000 });
+  await btn.click();
+  await expect(btn).toBeHidden({ timeout: 60_000 });
+}
