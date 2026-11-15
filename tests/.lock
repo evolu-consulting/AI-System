@@ -479,7 +479,7 @@ a37befb266ee80f79ce503ffb6f9035c7bdba4d7e25c30bfa156392df5f6dc85  e2e/cr127/j04-
 3d21f4ed26b3b2346569c08df0bd74fdcc8958cc0a843582031a3d3c7d3bd4d5  e2e/cr127/j07-hai-cong-ty-gui-nhan.spec.ts
 5eaa089bd52ba65a5c3ffc3c5997b79e54afd1adc309aa4a381acedb087719c3  e2e/cr127/j08-ky-cung-luc.spec.ts
 e941fef97fcb9125defcbc8ef9b9ef5ef79aa0a1ab0235a9e651b4fc0b1ccbbb  e2e/cr127/j10-phien-ban-chuyen-moc.spec.ts
-3b21a9406dff8a0c7ed530a8fa30f3982a93544ecc0ebbe4bc64e2df85534a64  e2e/cr127/j11-nhan-viec-tat-ca.spec.ts
+a87087548b167c78db765c8461cfad23577da8d70eb85816e14a5ea66b91c01c  e2e/cr127/j11-nhan-viec-tat-ca.spec.ts
 f6d7283896604237e091c95a404086eea656b0cddd094c6e2ff0a065b6965d69  e2e/cr127/j13-nhan-khong-quy-trinh.spec.ts
 b963f50500a1ce7f570ad0fa23476239a71e25aefa2a990c7b3a674b1c187e35  e2e/cr127/j14-chua-co-quy-trinh.spec.ts
 d917894b2823cbaec37b1e4872d521fa556828a68611c1e0c33537af209e5051  e2e/cr127/j15-xoa-quy-trinh-nhap.spec.ts
@@ -568,9 +568,9 @@ f000be1b92208458058de509b7e25c13396acb7738d1192e8812c0894fd1334d  e2e/pm-checkli
 595e1bee2adb7f31daef9e4189a94122a25aa68407824b9cb661eb1720ef4208  e2e/pm-checklist/cw-cr113.pm.ts
 585553890a7d9dd632f4b340de1ed9387af36f69a40b4ffb6a29f7b3143ba5d9  e2e/pm-checklist/playwright.pm.config.ts
 d2b4a5ea412e75c211bd082ccd13abef72c2e34a4954c499a13feeef2a46aecb  e2e/secrets.spec.ts
-1a0d112bff8aeff81cb84010bb6e98ef9fd6cc9463ac72e25c7ddc73addf50da  e2e/smoke-journey/_kit.ts
+c112ee578cc7fec40f180eed28020d678d58de2921f60aa05a3eadc692b230cd  e2e/smoke-journey/_kit.ts
 b8409f2030bc0415c2912122b831fc07c210f4f2a9672e1d852cdf450fbcd296  e2e/smoke-journey/playwright.smoke.config.ts
-a2b8875455cbfa2fc4184e8f3557a4708edfa443f24353ccff72fbeedd8493c1  e2e/smoke-journey/smoke-journey.smoke.ts
+7369d355148509e41bab650d983b35a609856d2784c9f4620864103521bee61f  e2e/smoke-journey/smoke-journey.smoke.ts
 4d981c522670bcef4dda52aa84f2b194dccff6ae435d90e202cf77052ba5fdd9  e2e/smoke.spec.ts
 5e7d57500308564cf59e4f7f23f5737a7b59a40eb8aeb23185868c3bceaf27ab  e2e/studio/_h4b2.ts
 0c133f40d6ff9a28c5085851fc01c8ff093fc482932e13f8775db5cf8d50f1ea  e2e/studio/_k1-kh.ts
