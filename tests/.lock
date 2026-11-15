@@ -186,7 +186,7 @@ c25949b06ecb3b9b0c6b47b82cafb9274ae685d4dce40a67c0ff4771dc2d63b0  e2e/community-
 d908ab596256c0bb1bf1fa07675acb8c2cab3f6ed7e8b91b2860cbe00ce89bb0  e2e/community-web/_flow.ts
 d95da2900357ab68912fb9cc05e0577b20bc05c006f4bf4f42564445dfb1cb9c  e2e/community-web/_nav.ts
 a9fcf1f4d01c89abe4ff5c54208af3446aa534987a818c60f64e16a626177dc9  e2e/community-web/_stack.ts
-cc26b734affa47aa2e79e20e0fc96288a44a6c58284bf47d8646286d28201133  e2e/community-web/composer.cm.ts
+0869f7718025774bb7bc28db6a5783cca87091e307ada090a7980aeb94d182c1  e2e/community-web/composer.cm.ts
 727ca5551b7f762039d98f0dc4dea292c4b42d05ded4a605400ec3ed3ed2f769  e2e/community-web/contrast.cm.ts
 0e192732d6a94fb63225416078821a90fb7bba11d6c1b36a0661ef763036832f  e2e/community-web/cr129-media.cm.ts
 affeb3bd773ebad7c486891c832a10ba323a1974d9790b519f293c7c3eb1b302  e2e/community-web/cr129-mention.cs.ts
@@ -495,7 +495,7 @@ ebdfcafe3f4232adfdc128482923de761e4b2f4a4dac145ec2ceea8b8f231385  e2e/cr127/play
 a303f2c35037acff780c65977d783db4f6892beb30c3cc19e4920baeac88e404  e2e/cr161/ket-noi-cong-ty.spec.ts
 2247df12ef35c5679797557ce21b085ad59726db9beb552323c4714227f133b9  e2e/cr161/playwright.cr161.config.ts
 8d7b6ea81cee9f7547e96bf25e3dd374e08f7ff19f1625689e4bdef3ac2195b3  e2e/cr169/playwright.cr169.config.ts
-21039607a9ea69e40bdf91400dc76c1a5b94715426222e8eb5ede8b2b89d4839  e2e/cr169/tin-nhan-cong-ty.spec.ts
+833168b7fc4a24673c56650ffbcd902bc8701daa6c14f79eadf3ef75d503b3ed  e2e/cr169/tin-nhan-cong-ty.spec.ts
 5f6463f2cf998ff7a41248b28166addc2fbd6cbeffe6e4b328a3d810dab1e87f  e2e/deployed/01-login-sso.deployed.ts
 7671e3ce615d2e20806ad65ccd88452ff42b0594de768a2d88522caa0cebd1af  e2e/deployed/02-contracts-pages.deployed.ts
 b767faf467e5231cd37c48d9286e7f452faded6fd33f402a4998987e38cd190c  e2e/deployed/03-chat.deployed.ts
