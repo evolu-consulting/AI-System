@@ -13,7 +13,6 @@ const SHT = "Sổ Hợp Tác";
 const SHT_PATHS = [
   "/contracts",
   "/contracts/list",
-  "/contracts/requests",
   "/contracts/messages", // CR-132
   "/contracts/approvals",
   "/contracts/partners",
@@ -49,7 +48,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
     });
   }
 
-  test("chủ quản có quyền (Admin): nhóm SHT + đúng 8 link TRONG app (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
+  test("chủ quản có quyền (Admin): nhóm SHT + đúng 7 link TRONG app (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
     page,
   }) => {
     await page.goto("/community");
