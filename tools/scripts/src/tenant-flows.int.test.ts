@@ -360,7 +360,7 @@ describe("CR-159 · quy trình 3 công ty", () => {
     expect(gui.executor.args.sign_reason.value.length).toBeGreaterThan(0);
   });
 
-  it("CR-165 (c) preschool: Dung tạo ⇒ chuẩn bị ký ⇒ ký ⇒ chọn Có ⇒ tới bước chọn đối tác; evolu: Julian tạo ⇒ Thomas duyệt ⇒ chọn Không", async () => {
+  it("CR-165 (c) preschool: Dung tạo ⇒ chuẩn bị ký ⇒ ký ⇒ chọn Có ⇒ tới bước chọn đối tác · evolu: Julian tạo ⇒ Thomas duyệt ⇒ chọn Không", async () => {
     const { dung } = WHO.preschool;
     const r = await walk("preschool", FLOW_NAMES.send, dung, YES);
     expect(keysOf(r)).toEqual([
