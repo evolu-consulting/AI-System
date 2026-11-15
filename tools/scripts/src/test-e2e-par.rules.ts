@@ -86,10 +86,10 @@ export const META: Record<string, Meta> = {
   "e2e/journey-approval/playwright.journey-purchase.config.ts": JA_SUB("japur", "80"),
   // CR-127 · 10 hành trình U2–U6 (cùng stack journey + `_cr127-stack.ts`): việc riêng, cổng 3550..
   "e2e/cr127/playwright.cr127.config.ts": JA_SUB("cr127", "110"),
-  // CR-161 · hành trình kết nối hai công ty (cùng stack journey + `_cr161-stack.ts`): việc riêng, cổng 3560..
+  // CR-161 kết nối 2 công ty (cổng 3560..) · CR-169 nhắn tin (3570..) · CR-165 flows3 quy trình thật 3 công ty (`_flows3-stack.ts`, 3580..): cùng stack journey, việc riêng.
   "e2e/cr161/playwright.cr161.config.ts": JA_SUB("cr161", "120"),
-  // CR-169 · hành trình nhắn tin giữa hai công ty đã kết nối (cùng stack journey + `_cr161-stack.ts`): việc riêng, cổng 3570..
   "e2e/cr169/playwright.cr169.config.ts": JA_SUB("cr169", "130"),
+  "e2e/flows3/playwright.flows3.config.ts": JA_SUB("flows3", "140"),
   "e2e/contracts-web/playwright.config.ts": { cost: 22 },
   // Mock thuần (không DB). Cổng web mặc định 3410 TRÙNG web của workspace-web stack (3410) ⇒ riêng 3470 để hai việc chạy cùng lúc trong một slot.
   "e2e/community-web/playwright.config.ts": { env: { COMMUNITY_E2E_PORT: "3470" }, cost: 25 },
