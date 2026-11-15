@@ -1,6 +1,15 @@
 // CR-127 · U5: hộp lý do / bằng chứng của Rút về · Tạm khoá · Mở khoá · "Không đổi gì" (tách khỏi HeadActions).
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { EMPTY_EVIDENCE, type EvidenceDraft, EvidenceInput, evidenceIssue } from "~/platform/flow";
 
 export type Ask = "withdraw" | "hold" | "release" | "unchanged" | null;
@@ -21,39 +30,42 @@ export function AskDialog(p: {
   const issue = needsProof ? evidenceIssue({ ...ev, note: ev.note || reason }, RULE) : null;
   const L = (k: string) => t(`contracts.u5.ask.${p.kind}.${k}`);
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
+    <Dialog open onOpenChange={(o) => !o && p.onCancel()}>
+      <DialogContent
         aria-label={L("title")}
         data-testid={`ask-${p.kind}`}
-        className="my-auto flex w-full max-w-md flex-col gap-3 rounded-xl border border-rule bg-panel p-5 shadow-xl"
+        showCloseButton={false}
+        className="sm:max-w-md"
       >
-        <h2 className="text-lg font-semibold">{L("title")}</h2>
-        <p className="text-caption text-dim">{L("hint")}</p>
-        {needsProof ? (
-          <EvidenceInput
-            rule={RULE}
-            value={ev}
-            onChange={setEv}
-            issue={tried ? issue : null}
-            disabled={p.busy}
-          />
-        ) : (
-          <textarea
-            aria-label={L("title")}
-            rows={3}
-            className="w-full rounded-md border border-rule bg-panel px-3 py-2 text-sm"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-        )}
-        {p.err && (
-          <p role="alert" className="text-sm text-late" data-testid="ask-error">
-            {p.err}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
+        <DialogHeader>
+          <DialogTitle>{L("title")}</DialogTitle>
+          <DialogDescription className="text-caption text-dim">{L("hint")}</DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          {needsProof ? (
+            <EvidenceInput
+              rule={RULE}
+              value={ev}
+              onChange={setEv}
+              issue={tried ? issue : null}
+              disabled={p.busy}
+            />
+          ) : (
+            <textarea
+              aria-label={L("title")}
+              rows={3}
+              className="w-full rounded-md border border-rule bg-panel px-3 py-2 text-sm"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+          )}
+          {p.err && (
+            <p role="alert" className="text-sm text-late" data-testid="ask-error">
+              {p.err}
+            </p>
+          )}
+        </DialogBody>
+        <DialogFooter className="flex-row justify-end">
           <button type="button" className="btn btn-quiet btn-sm" onClick={p.onCancel}>
             {t("contracts.common.cancel")}
           </button>
@@ -70,8 +82,8 @@ export function AskDialog(p: {
           >
             {L("ok")}
           </button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

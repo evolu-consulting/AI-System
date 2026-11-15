@@ -1,7 +1,7 @@
 // V2-J2 · tab "Nhà cung cấp & giá" của chi tiết sản phẩm (BA v2 §3.3 SP-04/05/06). CỔNG TAB cho trang chi tiết (V2-J1): gắn
 // `<SupplierPricesTab productId={id} />` vào slot tab "Nhà cung cấp & giá" khi `supplierTabVisible(group)`; SP Giới thiệu ⇒ không hiện
 // (component tự trả null khi máy chủ báo nhóm Giới thiệu). Chưa có trang chi tiết ⇒ route tối thiểu `/products/$productId/suppliers`.
-import { useRef } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
@@ -18,9 +18,9 @@ import { SearchDialog } from "./SearchDialog";
 export function SupplierPricesTab({ productId }: { productId: string }) {
   const { t } = useTranslation();
   const { write } = useMe();
-  const dlg = useRef<HTMLDialogElement>(null);
-  const manualDlg = useRef<HTMLDialogElement>(null);
-  const quoteDlg = useRef<HTMLDialogElement>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [quoteOpen, setQuoteOpen] = useState(false);
   const q = useSupplierOverview(productId);
   const del = useDeleteSupplierPrice(productId);
   if (q.isLoading) return <Loading />;
@@ -33,17 +33,27 @@ export function SupplierPricesTab({ productId }: { productId: string }) {
       <ComparePanel
         data={data}
         write={write}
-        onSearch={() => dlg.current?.showModal()}
-        onManual={() => manualDlg.current?.showModal()}
-        onQuote={() => quoteDlg.current?.showModal()}
+        onSearch={() => setSearchOpen(true)}
+        onManual={() => setManualOpen(true)}
+        onQuote={() => setQuoteOpen(true)}
         onDelete={(id) => del.mutate(id)}
       />
       <PricingPanel pricing={data.pricing} />
       <EvalPanel suppliers={data.suppliers} />
       <ScoutConfigPanel productId={productId} write={write} />
-      <SearchDialog dlg={dlg} productId={productId} productName={data.product.name} />
-      <ManualPriceDialog dlg={manualDlg} productId={productId} />
-      <QuoteDialog dlg={quoteDlg} productId={productId} productName={data.product.name} />
+      <SearchDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        productId={productId}
+        productName={data.product.name}
+      />
+      <ManualPriceDialog open={manualOpen} onOpenChange={setManualOpen} productId={productId} />
+      <QuoteDialog
+        open={quoteOpen}
+        onOpenChange={setQuoteOpen}
+        productId={productId}
+        productName={data.product.name}
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 // giữ · Đã bán · Điểm kinh doanh (+ đề xuất). Một yêu cầu lấy cả danh sách; tab lọc phía trình duyệt. Bấm hàng mở chi tiết (`?sp=`).
 import type { BizProductRow } from "@ai/contracts/pack-contracts";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
@@ -63,7 +63,7 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: đổi nhóm ⇒ về trang 1
   useEffect(() => setPage(1), [tab]);
   const { write } = useMe();
-  const addDlg = useRef<HTMLDialogElement>(null);
+  const [addOpen, setAddOpen] = useState(false);
   const list = useBizPage({
     ...(tab === "all" ? {} : { group: tab }),
     q,
@@ -108,13 +108,13 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
             type="button"
             className="btn btn-primary btn-sm"
             data-testid="gd1-add-product"
-            onClick={() => addDlg.current?.showModal()}
+            onClick={() => setAddOpen(true)}
           >
             {t("contracts.gapd1.add.open")}
           </button>
         )}
       </div>
-      <AddProductDialog dlg={addDlg} />
+      <AddProductDialog open={addOpen} onOpenChange={setAddOpen} />
       <Panel>
         {rows.length === 0 ? (
           <Empty title={t("contracts.catalog.emptyTitle")}>

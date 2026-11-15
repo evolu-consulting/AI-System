@@ -3,6 +3,15 @@
 // TODO(AI): `ai_read.doc_type_suggest` (gợi ý tô vàng, chọn lại) chỉ có SAU khi AI đọc; cần API đổi loại sau khi đọc + hiển thị ở màn kiểm HĐ.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { FramePicker } from "~/features/contract-form/components/FramePicker";
 import { cn } from "~/lib/utils";
 import {
@@ -32,80 +41,85 @@ export function UploadTypeDialog({
     setErr(t(`contracts.doclist.upload.err.${r.error}`));
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
+    <Dialog open onOpenChange={(o) => !o && onCancel()}>
+      <DialogContent
         aria-label={t("contracts.doclist.upload.title")}
-        className="flex w-full max-w-lg flex-col gap-4 rounded-xl border border-rule bg-panel p-6 shadow-xl"
+        showCloseButton={false}
+        className="sm:max-w-lg"
       >
-        <h2 className="text-lg font-semibold">{t("contracts.doclist.upload.title")}</h2>
-        <p className="text-sm text-dim">{t("contracts.doclist.upload.files", { count })}</p>
-        <div
-          role="radiogroup"
-          aria-label={t("contracts.doclist.filterLabel")}
-          className="flex flex-col gap-2"
-        >
-          {UPLOAD_DOC_TYPES.map((ty) => (
-            <label
-              key={ty}
-              className={cn(
-                "flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2",
-                d.docType === ty ? "border-act bg-act-soft" : "border-rule",
-              )}
-            >
-              <input
-                type="radio"
-                name="upload-doc-type"
-                className="mt-1"
-                checked={d.docType === ty}
-                onChange={() => setD({ ...d, docType: ty })}
-              />
-              <span>
-                <span className="font-medium">{t(`contracts.doclist.upload.type.${ty}`)}</span>
-                <span className="block text-[12.5px] text-dim">
-                  {t(`contracts.doclist.upload.hint.${ty}`)}
+        <DialogHeader>
+          <DialogTitle>{t("contracts.doclist.upload.title")}</DialogTitle>
+          <DialogDescription className="text-sm text-dim">
+            {t("contracts.doclist.upload.files", { count })}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody className="gap-4">
+          <div
+            role="radiogroup"
+            aria-label={t("contracts.doclist.filterLabel")}
+            className="flex flex-col gap-2"
+          >
+            {UPLOAD_DOC_TYPES.map((ty) => (
+              <label
+                key={ty}
+                className={cn(
+                  "flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2",
+                  d.docType === ty ? "border-act bg-act-soft" : "border-rule",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="upload-doc-type"
+                  className="mt-1"
+                  checked={d.docType === ty}
+                  onChange={() => setD({ ...d, docType: ty })}
+                />
+                <span>
+                  <span className="font-medium">{t(`contracts.doclist.upload.type.${ty}`)}</span>
+                  <span className="block text-[12.5px] text-dim">
+                    {t(`contracts.doclist.upload.hint.${ty}`)}
+                  </span>
                 </span>
-              </span>
-            </label>
-          ))}
-        </div>
-        {d.docType === "contract" ? (
-          <div className="flex flex-col gap-1 text-[13px]">
-            <label htmlFor="cf-frame">{t("contracts.doclist.frame")}</label>
-            <FramePicker value={frame} onChange={setFrame} />
+              </label>
+            ))}
           </div>
-        ) : (
-          <div className="flex flex-col gap-3 text-[13px]">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="up-credit">{t("contracts.doclist.upload.credit")}</label>
-              <input
-                id="up-credit"
-                className="field font-mono"
-                inputMode="decimal"
-                value={d.creditLimit}
-                placeholder={t("contracts.doclist.upload.creditPh")}
-                onChange={(e) => setD({ ...d, creditLimit: e.target.value })}
-              />
+          {d.docType === "contract" ? (
+            <div className="flex flex-col gap-1 text-[13px]">
+              <label htmlFor="cf-frame">{t("contracts.doclist.frame")}</label>
+              <FramePicker value={frame} onChange={setFrame} />
             </div>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="up-terms">{t("contracts.doclist.upload.terms")}</label>
-              <textarea
-                id="up-terms"
-                className="field min-h-[72px]"
-                value={d.orderTerms}
-                placeholder={t("contracts.doclist.upload.termsPh")}
-                onChange={(e) => setD({ ...d, orderTerms: e.target.value })}
-              />
+          ) : (
+            <div className="flex flex-col gap-3 text-[13px]">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="up-credit">{t("contracts.doclist.upload.credit")}</label>
+                <input
+                  id="up-credit"
+                  className="field font-mono"
+                  inputMode="decimal"
+                  value={d.creditLimit}
+                  placeholder={t("contracts.doclist.upload.creditPh")}
+                  onChange={(e) => setD({ ...d, creditLimit: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="up-terms">{t("contracts.doclist.upload.terms")}</label>
+                <textarea
+                  id="up-terms"
+                  className="field min-h-[72px]"
+                  value={d.orderTerms}
+                  placeholder={t("contracts.doclist.upload.termsPh")}
+                  onChange={(e) => setD({ ...d, orderTerms: e.target.value })}
+                />
+              </div>
             </div>
-          </div>
-        )}
-        {err && (
-          <p role="alert" className="text-sm text-late">
-            {err}
-          </p>
-        )}
-        <div className="flex justify-end gap-2.5">
+          )}
+          {err && (
+            <p role="alert" className="text-sm text-late">
+              {err}
+            </p>
+          )}
+        </DialogBody>
+        <DialogFooter className="flex-row justify-end gap-2.5">
           <button type="button" className="btn btn-quiet" onClick={onCancel}>
             {t("contracts.common.cancel")}
           </button>
@@ -117,9 +131,9 @@ export function UploadTypeDialog({
           >
             {t("contracts.doclist.upload.go")}
           </button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

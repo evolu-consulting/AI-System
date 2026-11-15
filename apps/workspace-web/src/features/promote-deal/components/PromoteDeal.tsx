@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { AttachField, fileToDraft } from "~/components/shared/AttachField";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -47,33 +48,35 @@ function PromoteDialog({ id, onClose }: { id: string; onClose: () => void }) {
           <DialogTitle>{L("title")}</DialogTitle>
           <DialogDescription>{L("hint")}</DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{L("file")}</span>
-          <AttachField
-            multiple={false}
-            accept=".pdf,.docx,.jpg,.jpeg,.png,.md"
-            inputId="promote-file"
-            inputTestId="promote-file"
-            items={file ? [fileToDraft(file)] : []}
-            onFiles={(fs) => setFile(fs[0] ?? null)}
-            onRemove={() => setFile(null)}
-          />
-        </div>
-        <label className="flex flex-col gap-1 text-[13px]" htmlFor="promote-number">
-          {L("number")}
-          <input
-            id="promote-number"
-            className="field"
-            value={number}
-            maxLength={200}
-            onChange={(e) => setNumber(e.target.value)}
-          />
-        </label>
-        {err && (
-          <p role="alert" className="text-sm text-late" data-testid="promote-error">
-            {err}
-          </p>
-        )}
+        <DialogBody>
+          <div className="flex flex-col gap-1 text-[13px]">
+            <span className="font-medium">{L("file")}</span>
+            <AttachField
+              multiple={false}
+              accept=".pdf,.docx,.jpg,.jpeg,.png,.md"
+              inputId="promote-file"
+              inputTestId="promote-file"
+              items={file ? [fileToDraft(file)] : []}
+              onFiles={(fs) => setFile(fs[0] ?? null)}
+              onRemove={() => setFile(null)}
+            />
+          </div>
+          <label className="flex flex-col gap-1 text-[13px]" htmlFor="promote-number">
+            {L("number")}
+            <input
+              id="promote-number"
+              className="field"
+              value={number}
+              maxLength={200}
+              onChange={(e) => setNumber(e.target.value)}
+            />
+          </label>
+          {err && (
+            <p role="alert" className="text-sm text-late" data-testid="promote-error">
+              {err}
+            </p>
+          )}
+        </DialogBody>
         <DialogFooter>
           <button type="button" className="btn btn-quiet" onClick={onClose}>
             {t("contracts.common.cancel")}

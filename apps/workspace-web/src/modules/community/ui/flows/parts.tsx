@@ -1,8 +1,15 @@
 // CR-120 · phần dùng chung của 3 màn luồng Community: khung trang, tải danh sách MỘT yêu cầu (có lỗi + tải lại), hộp thoại nhập lý do.
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { useApp } from "../../application/ctx";
 import { t } from "../../i18n";
-import { IconX } from "../icons";
 
 type Page<T> = { items: T[]; nextOffset: number | null };
 
@@ -154,17 +161,10 @@ type DialogProps = {
 
 /** Hộp thoại nhập lý do (từ chối bài / từ chối yêu cầu / báo cáo bài). Lỗi hiện ngay trong hộp thoại kèm cách sửa. */
 export function ReasonDialog(p: DialogProps) {
+  const { brandAccent } = useApp();
   const [text, setText] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const box = useRef<HTMLDivElement>(null);
-  const { onClose } = p;
-  useEffect(() => {
-    box.current?.focus();
-    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", key);
-    return () => document.removeEventListener("keydown", key);
-  }, [onClose]);
   const submit = async () => {
     if (p.required && text.trim() === "") return setErr(t("community.flows.common.reasonNeeded"));
     setBusy(true);
@@ -176,56 +176,38 @@ export function ReasonDialog(p: DialogProps) {
     }
   };
   return (
-    <div className="dlg-scrim">
-      <button
-        type="button"
-        className="dlg-bg"
-        tabIndex={-1}
-        aria-label={t("community.flows.common.cancel")}
-        onClick={onClose}
-      />
-      <div
-        ref={box}
-        className="dlg"
-        style={{ width: "min(480px, 100%)" }}
-        role="dialog"
-        aria-modal="true"
+    <Dialog open onOpenChange={(o) => !o && p.onClose()}>
+      <DialogContent
         aria-label={p.title}
-        tabIndex={-1}
+        aria-describedby={undefined}
         data-testid={p.testId}
+        className="sm:max-w-[480px]"
       >
-        <header className="dlg-head">
-          <h2>{p.title}</h2>
-          <button
-            type="button"
-            className="iconbtn"
-            aria-label={t("community.flows.common.cancel")}
-            onClick={onClose}
-          >
-            <IconX size={18} />
-          </button>
-        </header>
-        <div className="dlg-body" style={{ padding: 20 }}>
-          <p className="muted">{p.intro}</p>
-          <label>
-            <b>{p.label}</b>
-            <textarea
-              className="field"
-              rows={4}
-              value={text}
-              maxLength={1000}
-              data-testid="reason-input"
-              onChange={(e) => setText(e.target.value)}
-            />
-          </label>
-          {err && (
-            <p className="muted" role="alert" data-testid="reason-error">
-              {err}
-            </p>
-          )}
-          <div className="cbar">
-            <div className="sp" />
-            <button type="button" className="ghost" onClick={onClose}>
+        <div data-mod="community" data-accent={brandAccent} className="flex min-h-0 flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>{p.title}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <p className="muted">{p.intro}</p>
+            <label>
+              <b>{p.label}</b>
+              <textarea
+                className="field"
+                rows={4}
+                value={text}
+                maxLength={1000}
+                data-testid="reason-input"
+                onChange={(e) => setText(e.target.value)}
+              />
+            </label>
+            {err && (
+              <p className="muted" role="alert" data-testid="reason-error">
+                {err}
+              </p>
+            )}
+          </DialogBody>
+          <DialogFooter className="flex-row justify-end">
+            <button type="button" className="ghost" onClick={p.onClose}>
               {t("community.flows.common.cancel")}
             </button>
             <button
@@ -237,9 +219,9 @@ export function ReasonDialog(p: DialogProps) {
             >
               {p.submitLabel}
             </button>
-          </div>
+          </DialogFooter>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -23,11 +23,14 @@ function DialogOverlay({
   );
 }
 
+// CR-175: hộp cao tối đa ~90vh (màn nhỏ ~100dvh), cột flex: Header + Footer cố định, `DialogBody` là phần DUY NHẤT cuộn.
+// Nội dung không bọc Body vẫn dùng được: Content tự cuộn (overflow-y-auto). Radix Modal đã khoá cuộn nền — đừng override `overflow` của body.
 function DialogContent({
   className,
   children,
+  showCloseButton = true,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & { showCloseButton?: boolean }) {
   const { t } = useTranslation();
   return (
     <DialogPrimitive.Portal>
@@ -35,28 +38,51 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-xl border bg-background p-5 shadow-dialog duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-[520px]",
+          "fixed top-[50%] left-[50%] z-50 flex max-h-[90vh] w-full flex-col overflow-y-auto max-sm:max-h-[100dvh] max-sm:rounded-none max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-xl border bg-background p-5 shadow-dialog duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-[520px]",
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&_svg]:size-4">
-          <XIcon aria-hidden />
-          <span className="sr-only">{t("contracts.common.close")}</span>
-        </DialogPrimitive.Close>
+        {showCloseButton && (
+          <DialogPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&_svg]:size-4">
+            <XIcon aria-hidden />
+            <span className="sr-only">{t("contracts.common.close")}</span>
+          </DialogPrimitive.Close>
+        )}
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   );
 }
 
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("flex flex-col gap-2 text-left", className)} {...props} />;
+  return (
+    <div
+      data-slot="dialog-header"
+      className={cn("flex shrink-0 flex-col gap-2 text-left", className)}
+      {...props}
+    />
+  );
+}
+
+/** Thân cuộn riêng (CR-175): chỉ phần này cuộn, Header/Footer đứng yên. `-mx-5 px-5` để thanh cuộn nằm sát mép hộp. */
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-body"
+      className={cn("-mx-5 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5", className)}
+      {...props}
+    />
+  );
 }
 
 function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)} {...props} />
+    <div
+      data-slot="dialog-footer"
+      className={cn("flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}
+      {...props}
+    />
   );
 }
 
@@ -83,4 +109,4 @@ function DialogDescription({
   );
 }
 
-export { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle };
+export { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle };

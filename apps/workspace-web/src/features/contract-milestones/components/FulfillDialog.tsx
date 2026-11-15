@@ -9,6 +9,15 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { parseMoney } from "~/components/shared/format";
 import { PillRadio } from "~/components/shared/seg-button";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { saveErrorText } from "~/features/contract-review/lib/save-error";
 import {
   cr127ErrorKey,
@@ -138,90 +147,95 @@ export function FulfillDialog(p: {
         { title: m.title },
       );
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
+    <Dialog open onOpenChange={(o) => !o && p.onClose()}>
+      <DialogContent
         aria-label={title}
         data-testid="fulfill-dialog"
-        className="my-auto flex w-full max-w-xl flex-col gap-3 rounded-xl border border-rule bg-panel p-5 shadow-xl"
+        showCloseButton={false}
+        className="sm:max-w-xl"
       >
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <p className="text-caption text-dim">{L("lead", { date: m.due_date })}</p>
-        <div className="flex flex-col gap-1 text-[13px]">
-          <label htmlFor="fulfill-at">
-            {post ? L("newDue") : L(m.kind === "delivery" ? "atDelivery" : "atMoney")}
-          </label>
-          <DateInput
-            id="fulfill-at"
-            value={at}
-            onChange={(e) => setAt(e.target.value)}
-            className="field w-[170px] font-mono"
-          />
-        </div>
-        {!post && m.kind === "delivery" && p.deal && (
-          <DeliveryLines id={m.id} deal={p.deal} editable onEdit={setLines} />
-        )}
-        {!post && money && (
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="text-caption text-dim">
+            {L("lead", { date: m.due_date })}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
           <div className="flex flex-col gap-1 text-[13px]">
-            <label htmlFor="fulfill-amount">{L("amount")}</label>
-            <input
-              id="fulfill-amount"
-              className="field w-[200px] font-mono"
-              inputMode="numeric"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+            <label htmlFor="fulfill-at">
+              {post ? L("newDue") : L(m.kind === "delivery" ? "atDelivery" : "atMoney")}
+            </label>
+            <DateInput
+              id="fulfill-at"
+              value={at}
+              onChange={(e) => setAt(e.target.value)}
+              className="field w-[170px] font-mono"
             />
           </div>
-        )}
-        {late > 0 && (
-          <fieldset className="flex flex-col gap-1 text-[13px]" data-testid="fault-ask">
-            <legend className="mb-1">{L("late", { n: late })}</legend>
-            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={L("faultAsk")}>
-              {FAULTS.map((f) => (
-                <PillRadio key={f} checked={fault === f} onClick={() => setFault(f)}>
-                  {t(`contracts.cdetail.fault.${f}`, { partner: p.partner })}
+          {!post && m.kind === "delivery" && p.deal && (
+            <DeliveryLines id={m.id} deal={p.deal} editable onEdit={setLines} />
+          )}
+          {!post && money && (
+            <div className="flex flex-col gap-1 text-[13px]">
+              <label htmlFor="fulfill-amount">{L("amount")}</label>
+              <input
+                id="fulfill-amount"
+                className="field w-[200px] font-mono"
+                inputMode="numeric"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
+          )}
+          {late > 0 && (
+            <fieldset className="flex flex-col gap-1 text-[13px]" data-testid="fault-ask">
+              <legend className="mb-1">{L("late", { n: late })}</legend>
+              <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={L("faultAsk")}>
+                {FAULTS.map((f) => (
+                  <PillRadio key={f} checked={fault === f} onClick={() => setFault(f)}>
+                    {t(`contracts.cdetail.fault.${f}`, { partner: p.partner })}
+                  </PillRadio>
+                ))}
+              </div>
+            </fieldset>
+          )}
+          {!post && (short || lines?.items.some((x) => x.qty === 0)) && (
+            <fieldset className="flex flex-col gap-1 text-[13px]" data-testid="remainder-ask">
+              <legend className="mb-1">{L("short")}</legend>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <PillRadio checked={keep === "keep"} onClick={() => setKeep("keep")}>
+                  {L("keep")}
                 </PillRadio>
-              ))}
-            </div>
-          </fieldset>
-        )}
-        {!post && (short || lines?.items.some((x) => x.qty === 0)) && (
-          <fieldset className="flex flex-col gap-1 text-[13px]" data-testid="remainder-ask">
-            <legend className="mb-1">{L("short")}</legend>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <PillRadio checked={keep === "keep"} onClick={() => setKeep("keep")}>
-                {L("keep")}
-              </PillRadio>
-              <PillRadio checked={keep === "split"} onClick={() => setKeep("split")}>
-                {L("split")}
-              </PillRadio>
-              {keep === "split" && (
-                <DateInput
-                  value={due2}
-                  onChange={(e) => setDue2(e.target.value)}
-                  className="field w-[150px] font-mono"
-                />
-              )}
-            </div>
-          </fieldset>
-        )}
-        <div>
-          <p className="mb-1 text-sm font-medium">{L("evidence")}</p>
-          <EvidenceInput
-            rule={RULE}
-            value={ev}
-            onChange={setEv}
-            issue={tried ? issue : null}
-            disabled={busy}
-          />
-        </div>
-        {err && (
-          <p role="alert" className="text-sm text-late" data-testid="fulfill-error">
-            {err}
-          </p>
-        )}
-        <div className="flex justify-end gap-2">
+                <PillRadio checked={keep === "split"} onClick={() => setKeep("split")}>
+                  {L("split")}
+                </PillRadio>
+                {keep === "split" && (
+                  <DateInput
+                    value={due2}
+                    onChange={(e) => setDue2(e.target.value)}
+                    className="field w-[150px] font-mono"
+                  />
+                )}
+              </div>
+            </fieldset>
+          )}
+          <div>
+            <p className="mb-1 text-sm font-medium">{L("evidence")}</p>
+            <EvidenceInput
+              rule={RULE}
+              value={ev}
+              onChange={setEv}
+              issue={tried ? issue : null}
+              disabled={busy}
+            />
+          </div>
+          {err && (
+            <p role="alert" className="text-sm text-late" data-testid="fulfill-error">
+              {err}
+            </p>
+          )}
+        </DialogBody>
+        <DialogFooter className="flex-row justify-end">
           <button type="button" className="btn btn-quiet btn-sm" onClick={p.onClose}>
             {t("contracts.common.cancel")}
           </button>
@@ -234,8 +248,8 @@ export function FulfillDialog(p: {
           >
             {post ? L("postponeOk") : L("ok")}
           </button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

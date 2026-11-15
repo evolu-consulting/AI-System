@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -57,37 +58,39 @@ export function AttachDialog({ frameId, attachedIds, onClose, onDone }: Props) {
           <DialogTitle>{L("attachTitle")}</DialogTitle>
           <DialogDescription>{L("attachHint")}</DialogDescription>
         </DialogHeader>
-        <input
-          className="field"
-          aria-label={L("attachSearch")}
-          placeholder={L("attachSearch")}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <ul className="max-h-64 overflow-y-auto" data-testid="attach-list">
-          {rows.map((r) => (
-            <li key={r.id}>
-              <label className="flex items-center gap-2 px-1 py-1.5 text-sm">
-                <input
-                  type="checkbox"
-                  checked={picked.has(r.id)}
-                  onChange={() => toggle(r.id)}
-                  aria-label={r.title}
-                />
-                <span className="min-w-0 flex-1 truncate">{r.title}</span>
-                <span className="text-dim">{r.number ?? ""}</span>
-              </label>
-            </li>
-          ))}
-          {list.data && rows.length === 0 && (
-            <li className="px-1 py-2 text-sm text-dim">{L("attachNone")}</li>
+        <DialogBody>
+          <input
+            className="field"
+            aria-label={L("attachSearch")}
+            placeholder={L("attachSearch")}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          <ul data-testid="attach-list">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <label className="flex items-center gap-2 px-1 py-1.5 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={picked.has(r.id)}
+                    onChange={() => toggle(r.id)}
+                    aria-label={r.title}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{r.title}</span>
+                  <span className="text-dim">{r.number ?? ""}</span>
+                </label>
+              </li>
+            ))}
+            {list.data && rows.length === 0 && (
+              <li className="px-1 py-2 text-sm text-dim">{L("attachNone")}</li>
+            )}
+          </ul>
+          {err && (
+            <p role="alert" className="text-sm text-late" data-testid="attach-error">
+              {err}
+            </p>
           )}
-        </ul>
-        {err && (
-          <p role="alert" className="text-sm text-late" data-testid="attach-error">
-            {err}
-          </p>
-        )}
+        </DialogBody>
         <DialogFooter>
           <button type="button" className="btn btn-quiet" onClick={onClose}>
             {t("contracts.common.cancel")}

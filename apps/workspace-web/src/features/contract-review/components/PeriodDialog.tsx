@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { parseMoney, vnd } from "~/components/shared/format";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -94,45 +95,47 @@ export function PeriodDialog({
           <DialogTitle>{L(franchise ? "titleFranchise" : "titleCoop")}</DialogTitle>
           <DialogDescription>{L(franchise ? "hintFranchise" : "hintCoop")}</DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-3 text-[13px]">
-          <label className="flex flex-col gap-1" htmlFor="pd-period">
-            {L("period")}
-            <select
-              id="pd-period"
-              className="field"
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-            >
-              {list.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1" htmlFor="pd-figure">
-            {L(cur?.figure_kind === "profit" ? "figureProfit" : "figureRevenue")}
-            <input
-              id="pd-figure"
-              inputMode="numeric"
-              className="field font-mono"
-              value={raw}
-              placeholder={cur?.figure != null ? vnd(cur.figure) : ""}
-              onChange={(e) => setRaw(e.target.value)}
-            />
-          </label>
-          {badNum && (
-            <p role="alert" className="text-late">
-              {L("bad")}
-            </p>
-          )}
-          {ok && <Preview view={view} figure={figure} L={L} />}
-          {err && (
-            <p role="alert" className="text-late">
-              {err}
-            </p>
-          )}
-        </div>
+        <DialogBody>
+          <div className="flex flex-col gap-3 text-[13px]">
+            <label className="flex flex-col gap-1" htmlFor="pd-period">
+              {L("period")}
+              <select
+                id="pd-period"
+                className="field"
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+              >
+                {list.map((p) => (
+                  <option key={p.key} value={p.key}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1" htmlFor="pd-figure">
+              {L(cur?.figure_kind === "profit" ? "figureProfit" : "figureRevenue")}
+              <input
+                id="pd-figure"
+                inputMode="numeric"
+                className="field font-mono"
+                value={raw}
+                placeholder={cur?.figure != null ? vnd(cur.figure) : ""}
+                onChange={(e) => setRaw(e.target.value)}
+              />
+            </label>
+            {badNum && (
+              <p role="alert" className="text-late">
+                {L("bad")}
+              </p>
+            )}
+            {ok && <Preview view={view} figure={figure} L={L} />}
+            {err && (
+              <p role="alert" className="text-late">
+                {err}
+              </p>
+            )}
+          </div>
+        </DialogBody>
         <DialogFooter className="gap-2">
           <button type="button" className="btn btn-quiet btn-sm" onClick={onClose}>
             {L("later")}

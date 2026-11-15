@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -44,11 +45,13 @@ export function ProductLinkDialog(o: {
           <DialogTitle>{t("contracts.plink.title")}</DialogTitle>
           <DialogDescription>{t("contracts.plink.desc")}</DialogDescription>
         </DialogHeader>
-        <ul className="max-h-[60vh] space-y-3 overflow-y-auto text-[14px]">
-          {cs.map((c, i) => (
-            <ChoiceRow key={c.item_id} c={c} i={i} patch={patch} />
-          ))}
-        </ul>
+        <DialogBody>
+          <ul className="space-y-3 text-[14px]">
+            {cs.map((c, i) => (
+              <ChoiceRow key={c.item_id} c={c} i={i} patch={patch} />
+            ))}
+          </ul>
+        </DialogBody>
         <DialogFooter>
           <button type="button" className="btn btn-quiet" onClick={o.onCancel}>
             {t("contracts.plink.cancel")}

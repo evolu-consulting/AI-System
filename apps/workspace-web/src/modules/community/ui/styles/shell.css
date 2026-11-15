@@ -1,64 +1,12 @@
-/* CR-120 · lớp vỏ Community còn lại sau khi dùng AppShell chung: nội dung chính + khung hộp thoại Cài đặt. Menu trái / thanh trên /
+/* CR-120 · lớp vỏ Community còn lại sau khi dùng AppShell chung: nội dung chính + (hộp thoại → dialog shadcn dùng chung, CR-175). Menu trái / thanh trên /
    menu tài khoản KHÔNG còn ở module (shell cấp). Màu theo token chung (var(--card)…); màu nhấn --cm-accent* (accent.css). */
 [data-mod="community"] .shellmain {
   min-width: 0;
-}
-
-/* ---------- hộp thoại Cài đặt (khung) ---------- */
-[data-mod="community"] .dlg-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-}
-[data-mod="community"] .dlg-bg {
-  position: absolute;
-  inset: 0;
-  border: 0;
-  background: var(--shadow-color-dialog);
-}
-[data-mod="community"] .dlg {
-  position: relative;
-  width: min(920px, 100%);
-  max-height: calc(100vh - 32px);
-  display: flex;
-  flex-direction: column;
-  background: var(--card);
-  color: var(--ink);
-  border-radius: 16px;
-  box-shadow: 0 24px 60px var(--shadow-color-dialog);
-  overflow: hidden;
-}
-[data-mod="community"] .dlg-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px 10px 20px;
-  border-bottom: 1px solid var(--rule-soft);
-}
-[data-mod="community"] .dlg-head h2 {
-  margin: 0;
-  font-size: 16px;
-}
-[data-mod="community"] .dlg-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
 }
 
 /* ---------- đáp ứng ---------- */
 @media (max-width: 640px) {
   [data-mod="community"] .cmslot .persona {
     display: none;
-  }
-  [data-mod="community"] .dlg-scrim {
-    padding: 0;
-  }
-  [data-mod="community"] .dlg {
-    max-height: 100vh;
-    height: 100%;
-    border-radius: 0;
   }
 }

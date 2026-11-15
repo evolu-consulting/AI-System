@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -116,60 +117,62 @@ export function EsignSendDialog({
           <DialogTitle>{t("contracts.esign.dialogTitle")}</DialogTitle>
           <DialogDescription>{t("contracts.esign.dialogHint")}</DialogDescription>
         </DialogHeader>
-        {picker && <ProviderPick providers={providers} value={prov} onChange={setProv} />}
-        <PlacementNote id={contractId} open={open} />
+        <DialogBody>
+          {picker && <ProviderPick providers={providers} value={prov} onChange={setProv} />}
+          <PlacementNote id={contractId} open={open} />
 
-        {cur && !cur.legal && (
-          <p className="text-[12.5px] text-soon" data-testid="esign-dialog-demo">
-            {t("contracts.esign.demo")}
-          </p>
-        )}
-        <ol className="flex flex-col gap-3">
-          {rows.map((r, i) => (
-            <li
-              key={r.role}
-              className="flex flex-col gap-1 text-[13px]"
-              data-testid={`esign-signer-${i}`}
-            >
-              <b>
-                {i + 1}.{" "}
-                {t(
-                  r.role === "company"
-                    ? "contracts.esign.roleCompany"
-                    : "contracts.esign.rolePartner",
+          {cur && !cur.legal && (
+            <p className="text-[12.5px] text-soon" data-testid="esign-dialog-demo">
+              {t("contracts.esign.demo")}
+            </p>
+          )}
+          <ol className="flex flex-col gap-3">
+            {rows.map((r, i) => (
+              <li
+                key={r.role}
+                className="flex flex-col gap-1 text-[13px]"
+                data-testid={`esign-signer-${i}`}
+              >
+                <b>
+                  {i + 1}.{" "}
+                  {t(
+                    r.role === "company"
+                      ? "contracts.esign.roleCompany"
+                      : "contracts.esign.rolePartner",
+                  )}
+                </b>
+                {r.role === "company" ? (
+                  <span data-testid="esign-company-readonly">
+                    {r.name} &lt;{r.email}&gt;
+                  </span>
+                ) : (
+                  <div className="flex gap-2 max-sm:flex-col">
+                    <input
+                      className="field flex-1"
+                      aria-label={`${t("contracts.esign.name")} ${i + 1}`}
+                      value={r.name}
+                      maxLength={100}
+                      onChange={(e) => set(i, "name", e.target.value)}
+                    />
+                    <input
+                      className="field flex-1"
+                      type="email"
+                      aria-label={`${t("contracts.esign.email")} ${i + 1}`}
+                      value={r.email}
+                      maxLength={200}
+                      onChange={(e) => set(i, "email", e.target.value)}
+                    />
+                  </div>
                 )}
-              </b>
-              {r.role === "company" ? (
-                <span data-testid="esign-company-readonly">
-                  {r.name} &lt;{r.email}&gt;
-                </span>
-              ) : (
-                <div className="flex gap-2 max-sm:flex-col">
-                  <input
-                    className="field flex-1"
-                    aria-label={`${t("contracts.esign.name")} ${i + 1}`}
-                    value={r.name}
-                    maxLength={100}
-                    onChange={(e) => set(i, "name", e.target.value)}
-                  />
-                  <input
-                    className="field flex-1"
-                    type="email"
-                    aria-label={`${t("contracts.esign.email")} ${i + 1}`}
-                    value={r.email}
-                    maxLength={200}
-                    onChange={(e) => set(i, "email", e.target.value)}
-                  />
-                </div>
-              )}
-            </li>
-          ))}
-        </ol>
-        {err && (
-          <p role="alert" className="text-sm text-late">
-            {err}
-          </p>
-        )}
+              </li>
+            ))}
+          </ol>
+          {err && (
+            <p role="alert" className="text-sm text-late">
+              {err}
+            </p>
+          )}
+        </DialogBody>
         <DialogFooter>
           <button type="button" className="btn btn-quiet" onClick={onClose}>
             {t("contracts.esign.close")}

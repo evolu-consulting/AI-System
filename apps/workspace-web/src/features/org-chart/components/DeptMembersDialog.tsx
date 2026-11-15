@@ -2,6 +2,7 @@
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -27,27 +28,29 @@ export function DeptMembersDialog({
             {dept ? t("contracts.orgChart.people", { count: headcount(dept) }) : null}
           </DialogDescription>
         </DialogHeader>
-        {dept ? (
-          <div className="space-y-2 text-sm">
-            <p data-testid="org-head">
-              <span className="text-dim">{t("contracts.orgChart.head")}: </span>
-              {dept.head ? (
-                <b>{dept.head.name}</b>
+        <DialogBody>
+          {dept ? (
+            <div className="space-y-2 text-sm">
+              <p data-testid="org-head">
+                <span className="text-dim">{t("contracts.orgChart.head")}: </span>
+                {dept.head ? (
+                  <b>{dept.head.name}</b>
+                ) : (
+                  <span className="text-dim">{t("contracts.orgChart.noHead")}</span>
+                )}
+              </p>
+              {others.length > 0 ? (
+                <ul className="space-y-1" data-testid="org-members">
+                  {others.map((m) => (
+                    <li key={m.id}>{m.name}</li>
+                  ))}
+                </ul>
               ) : (
-                <span className="text-dim">{t("contracts.orgChart.noHead")}</span>
+                <p className="text-dim">{t("contracts.orgChart.noMembers")}</p>
               )}
-            </p>
-            {others.length > 0 ? (
-              <ul className="max-h-64 space-y-1 overflow-y-auto" data-testid="org-members">
-                {others.map((m) => (
-                  <li key={m.id}>{m.name}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-dim">{t("contracts.orgChart.noMembers")}</p>
-            )}
-          </div>
-        ) : null}
+            </div>
+          ) : null}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

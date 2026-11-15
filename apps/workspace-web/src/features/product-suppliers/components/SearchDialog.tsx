@@ -1,19 +1,29 @@
 // V2-J2 · SP-05: "Tìm giá trên thị trường". AI tìm web CHỈ khi người dùng bấm "Tìm" (hộp thoại nói rõ chỉ gửi tên sản phẩm); kết quả
 // là gợi ý chưa lưu — người dùng tick dòng cần rồi "Lưu vào bảng so sánh". Thay `/cks/scans`.
 import type { SupplierSearchOut } from "@ai/contracts/pack-contracts";
-import { type RefObject, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { Spinner } from "~/components/shared/states";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { useProductScout } from "../hooks/use-scout";
 import { knownSupplierError, useSaveSuppliers, useSupplierSearch } from "../hooks/use-suppliers";
 
 export function SearchDialog({
-  dlg,
+  open,
+  onOpenChange,
   productId,
   productName,
 }: {
-  dlg: RefObject<HTMLDialogElement | null>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   productId: string;
   productName: string;
 }) {
@@ -34,7 +44,7 @@ export function SearchDialog({
   const close = () => {
     setResult(null);
     setErr(null);
-    dlg.current?.close();
+    onOpenChange(false);
   };
   const search = useSupplierSearch(productId, {
     onStart: () => setErr(null),
@@ -56,67 +66,83 @@ export function SearchDialog({
       return n;
     });
   return (
-    <dialog ref={dlg} className="sheet" onClose={() => setResult(null)}>
-      <div className="flex min-w-[min(560px,90vw)] flex-col gap-3 p-5">
-        <h2 className="text-lg font-semibold">{L("dlgTitle")}</h2>
-        {!result && (
-          <>
-            <p className="text-sm">{L("dlgPrivacy", { name: productName })}</p>
-            <p className="text-xs text-dim">{L("dlgHint")}</p>
-          </>
-        )}
-        {search.isPending && (
-          <p className="flex items-center gap-2 text-sm text-dim">
-            <Spinner className="h-4 w-4" /> {L("searching")}
-          </p>
-        )}
-        {result && result.items.length === 0 && <p className="text-sm text-dim">{L("noResult")}</p>}
-        {result && result.items.length > 0 && (
-          <ul className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">
-            {result.items.map((i, n) => (
-              <li
-                key={`${i.supplier_name}:${i.kind}`}
-                className="rounded-lg border border-rule-soft p-3"
-              >
-                <label className="flex items-start gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={picked.has(n)}
-                    onChange={() => toggle(n)}
-                    className="mt-1"
-                  />
-                  <span className="flex-1">
-                    <b>{i.supplier_name}</b>{" "}
-                    <span className="tag text-[11px]">{L(`kind.${i.kind}`)}</span>
-                    <span className="block font-mono tnum">
-                      {vnd(i.price)}{" "}
-                      <span className="font-sans text-xs text-dim">{L("exVat")}</span>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) setResult(null);
+        onOpenChange(o);
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        aria-describedby={undefined}
+        className="sm:max-w-[560px]"
+      >
+        <DialogHeader>
+          <DialogTitle>{L("dlgTitle")}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          {!result && (
+            <>
+              <p className="text-sm">{L("dlgPrivacy", { name: productName })}</p>
+              <p className="text-xs text-dim">{L("dlgHint")}</p>
+            </>
+          )}
+          {search.isPending && (
+            <p className="flex items-center gap-2 text-sm text-dim">
+              <Spinner className="h-4 w-4" /> {L("searching")}
+            </p>
+          )}
+          {result && result.items.length === 0 && (
+            <p className="text-sm text-dim">{L("noResult")}</p>
+          )}
+          {result && result.items.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {result.items.map((i, n) => (
+                <li
+                  key={`${i.supplier_name}:${i.kind}`}
+                  className="rounded-lg border border-rule-soft p-3"
+                >
+                  <label className="flex items-start gap-3 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={picked.has(n)}
+                      onChange={() => toggle(n)}
+                      className="mt-1"
+                    />
+                    <span className="flex-1">
+                      <b>{i.supplier_name}</b>{" "}
+                      <span className="tag text-[11px]">{L(`kind.${i.kind}`)}</span>
+                      <span className="block font-mono tnum">
+                        {vnd(i.price)}{" "}
+                        <span className="font-sans text-xs text-dim">{L("exVat")}</span>
+                      </span>
+                      {i.url && (
+                        <a
+                          href={i.url}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="link text-xs break-all"
+                        >
+                          {i.url}
+                        </a>
+                      )}
+                      {i.seen_on && (
+                        <span className="block text-xs text-dim">{viDate(i.seen_on)}</span>
+                      )}
                     </span>
-                    {i.url && (
-                      <a
-                        href={i.url}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        className="link text-xs break-all"
-                      >
-                        {i.url}
-                      </a>
-                    )}
-                    {i.seen_on && (
-                      <span className="block text-xs text-dim">{viDate(i.seen_on)}</span>
-                    )}
-                  </span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        )}
-        {err && (
-          <p role="alert" className="text-sm text-late">
-            {err}
-          </p>
-        )}
-        <div className="mt-1 flex justify-end gap-2">
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+          {err && (
+            <p role="alert" className="text-sm text-late">
+              {err}
+            </p>
+          )}
+        </DialogBody>
+        <DialogFooter className="flex-row justify-end">
           <button type="button" className="btn btn-quiet" onClick={close}>
             {L("close")}
           </button>
@@ -141,8 +167,8 @@ export function SearchDialog({
               {L("saveSel", { n: picked.size })}
             </button>
           )}
-        </div>
-      </div>
-    </dialog>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

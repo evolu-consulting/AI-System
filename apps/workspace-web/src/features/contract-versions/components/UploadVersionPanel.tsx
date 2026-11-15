@@ -5,6 +5,15 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AttachField, fileToDraft } from "~/components/shared/AttachField";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
 import { ApiError } from "~/lib/api-error";
 import { uploadVersion } from "../hooks/use-versions-api";
@@ -39,20 +48,23 @@ export function UploadVersionPanel({
   return (
     <>
       <ExtractDialog open={up.isPending} name={file?.name ?? ""} />
-      <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-        <div
-          role="dialog"
-          aria-modal="true"
+      <Dialog open onOpenChange={(o) => !o && onClose()}>
+        <DialogContent
           aria-label={t("contracts.versions.upload.title")}
           data-testid="upload-version"
-          className="w-full max-w-md rounded-xl border border-rule bg-panel p-6 shadow-xl"
+          showCloseButton={false}
+          className="sm:max-w-md"
         >
-          <h2 className="text-lg font-semibold">{t("contracts.versions.upload.title")}</h2>
-          <p className="mt-2 text-sm font-semibold text-soon" data-testid="upload-version-signed">
-            {t("contracts.versions.upload.signedOnly")}
-          </p>
-          <p className="mt-1 text-sm text-dim">{t("contracts.versions.upload.hint")}</p>
-          <div className="mt-4">
+          <DialogHeader>
+            <DialogTitle>{t("contracts.versions.upload.title")}</DialogTitle>
+            <DialogDescription className="text-sm text-dim">
+              {t("contracts.versions.upload.hint")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody>
+            <p className="text-sm font-semibold text-soon" data-testid="upload-version-signed">
+              {t("contracts.versions.upload.signedOnly")}
+            </p>
             <AttachField
               multiple={false}
               accept=".pdf,.docx,.jpg,.jpeg,.png,.md"
@@ -61,13 +73,13 @@ export function UploadVersionPanel({
               onFiles={(fs) => setFile(fs[0] ?? null)}
               onRemove={() => setFile(null)}
             />
-          </div>
-          {err && (
-            <p role="alert" data-testid="upload-version-error" className="mt-3 text-sm text-late">
-              {err}
-            </p>
-          )}
-          <div className="mt-5 flex justify-end gap-2">
+            {err && (
+              <p role="alert" data-testid="upload-version-error" className="text-sm text-late">
+                {err}
+              </p>
+            )}
+          </DialogBody>
+          <DialogFooter className="flex-row justify-end">
             <button type="button" className="btn btn-quiet btn-sm" onClick={onClose}>
               {t("contracts.versions.upload.cancel")}
             </button>
@@ -80,9 +92,9 @@ export function UploadVersionPanel({
             >
               {t("contracts.versions.upload.submit")}
             </button>
-          </div>
-        </div>
-      </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

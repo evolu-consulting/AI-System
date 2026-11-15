@@ -3,6 +3,15 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import {
   activeStep,
   type ChipState,
   chipStates,
@@ -35,38 +44,40 @@ export function ExtractDialog({ open, name }: { open: boolean; name: string }) {
   useEffect(() => {
     if (!open) setHidden(false);
   }, [open]);
-  if (!open || hidden) return null;
   const chips = chipStates(activeStep(elapsed));
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div
-        role="dialog"
-        aria-modal="true"
+    <Dialog open={open && !hidden} onOpenChange={(o) => !o && setHidden(true)}>
+      <DialogContent
         aria-label={t("contracts.list.upload.dialog.title")}
-        className="w-full max-w-md rounded-xl border border-rule bg-panel p-6 shadow-xl"
+        showCloseButton={false}
+        className="sm:max-w-md"
       >
-        <h2 className="text-lg font-semibold">{t("contracts.list.upload.dialog.title")}</h2>
-        <p role="status" className="mt-2 truncate text-sm text-dim" title={name}>
-          {t("contracts.list.upload.dialog.reading", { name })}
-        </p>
-        <ul className="mt-4 flex flex-wrap gap-2">
-          {EXTRACT_STEPS.map((s, i) => (
-            <li
-              key={s}
-              data-state={chips[i]}
-              className={`rounded-full border px-3 py-1 text-[13px] ${TONE[chips[i] ?? "todo"]}`}
-            >
-              {t(`contracts.list.upload.dialog.steps.${s}`)}
-            </li>
-          ))}
-        </ul>
-        <div className="mt-5 flex justify-end">
+        <DialogHeader>
+          <DialogTitle>{t("contracts.list.upload.dialog.title")}</DialogTitle>
+          <DialogDescription role="status" className="truncate text-sm text-dim" title={name}>
+            {t("contracts.list.upload.dialog.reading", { name })}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          <ul className="flex flex-wrap gap-2">
+            {EXTRACT_STEPS.map((s, i) => (
+              <li
+                key={s}
+                data-state={chips[i]}
+                className={`rounded-full border px-3 py-1 text-[13px] ${TONE[chips[i] ?? "todo"]}`}
+              >
+                {t(`contracts.list.upload.dialog.steps.${s}`)}
+              </li>
+            ))}
+          </ul>
+        </DialogBody>
+        <DialogFooter className="flex-row justify-end">
           <button type="button" className="btn btn-quiet btn-sm" onClick={() => setHidden(true)}>
             {t("contracts.list.upload.dialog.hide")}
           </button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

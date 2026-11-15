@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -138,89 +139,93 @@ export function DlcStepDialog({ initial, agents, groups, onClose, onSubmit }: Pr
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{f(initial ? "edit" : "create")}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
-          <TextField
-            id="dlc-step-name"
-            label={f("field.name")}
-            value={d.name}
-            error={err("name")}
-            onChange={(v) => set(withName(d, v))}
-          />
-          <TextField
-            id="dlc-step-key"
-            label={f("field.key")}
-            description={f("field.keyHint")}
-            mono
-            value={d.key}
-            error={err("key")}
-            onChange={(v) => set({ ...d, key: v.trim().toLowerCase(), keyAuto: false })}
-          />
-          <SelectField
-            id="dlc-step-action"
-            label={t("process.admin.library.dlc.actionLabel")}
-            value={d.action}
-            options={actions}
-            description={t(`process.admin.library.dlc.actionHint.${d.action}`)}
-            onChange={(v) =>
-              set({
-                ...d,
-                action: v as DlcStepDraft["action"],
-                agent_key: dlcUsesAgent(v) ? d.agent_key : null,
-              })
-            }
-          />
-          {dlcUsesAgent(d.action) ? (
-            <SelectField
-              id="dlc-step-agent"
-              label={f("field.agent")}
-              value={d.agent_key ?? (d.action === "agent" ? "" : DEFAULT)}
-              options={agentOpts}
-              error={err("agent_key")}
-              onChange={(v) => set({ ...d, agent_key: v === DEFAULT ? null : v })}
+        <DialogBody>
+          <div className="space-y-3">
+            <TextField
+              id="dlc-step-name"
+              label={f("field.name")}
+              value={d.name}
+              error={err("name")}
+              onChange={(v) => set(withName(d, v))}
             />
-          ) : null}
-          <TextField
-            id="dlc-step-instruction"
-            label={t(`process.admin.library.dlc.${d.action === "agent" ? "task" : "instruction"}`)}
-            value={d.instruction}
-            multiline
-            rows={4}
-            error={err("instruction")}
-            onChange={(v) => set({ ...d, instruction: v })}
-          />
-          <GateBlock d={d} set={set} groups={groups} err={err} />
-          <div className="grid grid-cols-2 gap-3">
-            {dlcUsesRounds(d.action) ? (
-              <TextField
-                id="dlc-step-rounds"
-                label={t(
-                  `process.admin.library.dlc.${d.action === "build" ? "roundsBuild" : "roundsVerify"}`,
-                )}
-                type="number"
-                value={String(d.max_rounds)}
-                error={err("max_rounds")}
-                onChange={(v) => set({ ...d, max_rounds: num(v) })}
+            <TextField
+              id="dlc-step-key"
+              label={f("field.key")}
+              description={f("field.keyHint")}
+              mono
+              value={d.key}
+              error={err("key")}
+              onChange={(v) => set({ ...d, key: v.trim().toLowerCase(), keyAuto: false })}
+            />
+            <SelectField
+              id="dlc-step-action"
+              label={t("process.admin.library.dlc.actionLabel")}
+              value={d.action}
+              options={actions}
+              description={t(`process.admin.library.dlc.actionHint.${d.action}`)}
+              onChange={(v) =>
+                set({
+                  ...d,
+                  action: v as DlcStepDraft["action"],
+                  agent_key: dlcUsesAgent(v) ? d.agent_key : null,
+                })
+              }
+            />
+            {dlcUsesAgent(d.action) ? (
+              <SelectField
+                id="dlc-step-agent"
+                label={f("field.agent")}
+                value={d.agent_key ?? (d.action === "agent" ? "" : DEFAULT)}
+                options={agentOpts}
+                error={err("agent_key")}
+                onChange={(v) => set({ ...d, agent_key: v === DEFAULT ? null : v })}
               />
             ) : null}
             <TextField
-              id="dlc-step-timeout"
-              label={f("field.timeout")}
-              type="number"
-              value={String(d.timeout_min)}
-              error={err("timeout_min")}
-              onChange={(v) => set({ ...d, timeout_min: num(v) })}
+              id="dlc-step-instruction"
+              label={t(
+                `process.admin.library.dlc.${d.action === "agent" ? "task" : "instruction"}`,
+              )}
+              value={d.instruction}
+              multiline
+              rows={4}
+              error={err("instruction")}
+              onChange={(v) => set({ ...d, instruction: v })}
             />
+            <GateBlock d={d} set={set} groups={groups} err={err} />
+            <div className="grid grid-cols-2 gap-3">
+              {dlcUsesRounds(d.action) ? (
+                <TextField
+                  id="dlc-step-rounds"
+                  label={t(
+                    `process.admin.library.dlc.${d.action === "build" ? "roundsBuild" : "roundsVerify"}`,
+                  )}
+                  type="number"
+                  value={String(d.max_rounds)}
+                  error={err("max_rounds")}
+                  onChange={(v) => set({ ...d, max_rounds: num(v) })}
+                />
+              ) : null}
+              <TextField
+                id="dlc-step-timeout"
+                label={f("field.timeout")}
+                type="number"
+                value={String(d.timeout_min)}
+                error={err("timeout_min")}
+                onChange={(v) => set({ ...d, timeout_min: num(v) })}
+              />
+            </div>
+            {fail ? (
+              <p role="alert" className="text-label text-destructive">
+                {fail}
+              </p>
+            ) : null}
           </div>
-          {fail ? (
-            <p role="alert" className="text-label text-destructive">
-              {fail}
-            </p>
-          ) : null}
-        </div>
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             {f("cancel")}

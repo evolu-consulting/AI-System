@@ -9,6 +9,7 @@ import { promptDialog } from "~/components/shared/dialog-bus";
 import { Btn, btnClass } from "~/components/ui/Btn";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -105,7 +106,7 @@ function Results({ q, raw }: { q: string; raw: string }) {
   if (!items.length)
     return <p className="text-[13px] text-dim">{t("contracts.connect.search.none")}</p>;
   return (
-    <ul data-testid="connect-results" className="max-h-80 overflow-auto">
+    <ul data-testid="connect-results">
       {items.map((c) => (
         <Line key={c.tenant_id} c={c} />
       ))}
@@ -128,17 +129,19 @@ export function ConnectSearchDialog({ onClose }: { onClose: () => void }) {
           <DialogTitle>{t("contracts.connect.search.title")}</DialogTitle>
           <DialogDescription>{t("contracts.connect.search.hint")}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-1.5">
-          <Label htmlFor="connect-q">{t("contracts.connect.search.label")}</Label>
-          <Input
-            id="connect-q"
-            value={raw}
-            maxLength={120}
-            autoComplete="off"
-            onChange={(e) => setRaw(e.target.value)}
-          />
-        </div>
-        <Results q={q} raw={raw} />
+        <DialogBody>
+          <div className="space-y-1.5">
+            <Label htmlFor="connect-q">{t("contracts.connect.search.label")}</Label>
+            <Input
+              id="connect-q"
+              value={raw}
+              maxLength={120}
+              autoComplete="off"
+              onChange={(e) => setRaw(e.target.value)}
+            />
+          </div>
+          <Results q={q} raw={raw} />
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

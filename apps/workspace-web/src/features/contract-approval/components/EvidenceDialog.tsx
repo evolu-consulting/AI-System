@@ -1,7 +1,13 @@
 // CR-144/149 · «Xem» một dòng hồ sơ duyệt: mở hộp, tải chữ ký/tệp (route `?inline=1` có kiểm quyền) thành Blob; hiển thị bằng hộp xem chung (ảnh / PDF / Word).
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { fetchEvidenceBlob } from "../api-record";
 import type { RecordLine } from "../lib/record-view";
 import { type EvidenceUrls, EvidenceView } from "./EvidenceView";
@@ -45,11 +51,13 @@ export function EvidenceDialog({ contractId, line }: { contractId: string; line:
         {t("contracts.work.u4.record.view")}
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{t("contracts.work.u4.record.viewTitle")}</DialogTitle>
           </DialogHeader>
-          <EvidenceView line={line} u={u} />
+          <DialogBody>
+            <EvidenceView line={line} u={u} />
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </>
