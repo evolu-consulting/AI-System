@@ -27,7 +27,16 @@ let cB2 = "";
 let cA = "";
 const ids = { m1: "", m2: "", m3: "", m4: "", m5: "" };
 
-const store: FileStore = { list: async () => [], remove: async () => "missing" };
+const removed: string[] = [];
+const store: FileStore = {
+  list: async () => [],
+  remove: async (id) => {
+    removed.push(id);
+    return "deleted";
+  },
+};
+const C = "00000000-0000-4000-8000-0000000000cc"; // công ty thứ ba (không có dòng tenant): đối tác chat của A, đã có luồng (tombstone, C)
+const TH = (n: number) => `00000000-0000-4000-8000-0000000c000${n}`;
 const deps = (): PurgeDeps => ({
   files: store,
   log: () => {},
@@ -115,6 +124,9 @@ beforeAll(async () => {
     values (${B}::uuid, ${cB}::uuid, ${ids.m4}::uuid, 'platform', ${`tax:${MST_A}`}, 'Tenant 7301', 'confirmed', ${(await one("select id::text as id from admin.users where tenant_id = $1::uuid", [B]))?.id as string}::uuid)`;
   await sql`insert into hub.partner_links (from_tenant, to_tenant, requested_at, accepted_at) values (${A}::uuid, ${B}::uuid, now(), now())`;
   await sql`insert into hub.partner_links (from_tenant, to_tenant, requested_at) values (${B}::uuid, ${A}::uuid, now())`;
+  const ubId0 = (
+    await one("select id::text as id from admin.users where tenant_id = $1::uuid", [B])
+  )?.id as string;
   // CR-161: luồng trò chuyện A–B (tin của cả hai, tin của A có tệp, đã-đọc của cả hai).
   await sql`insert into hub.cc_threads (id, tenant_lo, tenant_hi, last_seq) values
     ('00000000-0000-4000-8000-0000000c0001', least(${A}::uuid, ${B}::uuid), greatest(${A}::uuid, ${B}::uuid), 2)`;
@@ -123,6 +135,27 @@ beforeAll(async () => {
     ('00000000-0000-4000-8000-0000000c0001', 2, ${B}::uuid, ${B}::uuid, 'Trần B', 'chào lại', '[]'::jsonb, gen_random_uuid())`;
   await sql`insert into hub.cc_reads (thread_id, user_id, tenant_id, last_read_seq) values
     ('00000000-0000-4000-8000-0000000c0001', ${A}::uuid, ${A}::uuid, 1), ('00000000-0000-4000-8000-0000000c0001', ${B}::uuid, ${B}::uuid, 2)`;
+  // Tệp của A ở luồng A–B (id FileBox 'boxA1' phải bị xoá ở kho).
+  await sql`insert into hub.cc_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key, box_file_id, seq) values
+    (${TH(9)}::uuid, ${TH(1)}::uuid, ${A}::uuid, ${A}::uuid, 'a.pdf', 'application/pdf', 10, ${`${A}/${TH(9)}`}, 'boxA1', 1)`;
+  // Gộp: luồng đích (tombstone, C) đã có từ lần xoá trước (3 tin, last_seq 3) + luồng A–C (2 tin) ⇒ A–C dời vào đích (seq 4, 5).
+  await sql`insert into hub.cc_threads (id, tenant_lo, tenant_hi, last_seq) values
+    (${TH(2)}::uuid, least(${X}::uuid, ${C}::uuid), greatest(${X}::uuid, ${C}::uuid), 3),
+    (${TH(3)}::uuid, least(${A}::uuid, ${C}::uuid), greatest(${A}::uuid, ${C}::uuid), 2)`;
+  await sql`insert into hub.cc_messages (thread_id, seq, sender_tenant, sender_user, sender_name, body, client_id) values
+    (${TH(2)}::uuid, 1, ${X}::uuid, ${X}::uuid, ${PARTNER_DELETED_NAME}, 'cũ 1', gen_random_uuid()),
+    (${TH(2)}::uuid, 2, ${C}::uuid, ${C}::uuid, 'Người C', 'cũ 2', gen_random_uuid()),
+    (${TH(2)}::uuid, 3, ${X}::uuid, ${X}::uuid, ${PARTNER_DELETED_NAME}, 'cũ 3', gen_random_uuid()),
+    (${TH(3)}::uuid, 1, ${A}::uuid, ${A}::uuid, 'Nguyễn Văn A', 'A gửi C', gen_random_uuid()),
+    (${TH(3)}::uuid, 2, ${C}::uuid, ${C}::uuid, 'Người C', 'C trả lời', gen_random_uuid())`;
+  await sql`insert into hub.cc_reads (thread_id, user_id, tenant_id, last_read_seq) values
+    (${TH(2)}::uuid, ${C}::uuid, ${C}::uuid, 1), (${TH(3)}::uuid, ${C}::uuid, ${C}::uuid, 2)`;
+  await sql`insert into hub.cc_files (id, thread_id, tenant_id, user_id, name, mime, size, storage_key, box_file_id, seq) values
+    (${TH(8)}::uuid, ${TH(3)}::uuid, ${C}::uuid, ${C}::uuid, 'c.pdf', 'application/pdf', 10, ${`${C}/${TH(8)}`}, 'boxC1', 2)`;
+  // Chuông của B (hub.cc_bell) nhắc tên A: lời mời, và «đồng ý» có link party=<tên>&tenant=<A>.
+  await sql`insert into hub.notifications (tenant_id, user_id, source, kind, title, body, link, dedup_key, fanout_at) values
+    (${B}::uuid, ${ubId0}::uuid, 'contracts', 'cc.invite', 'Tenant 7301 muốn kết nối với bạn', '', '/contracts/partners?invites=1', 'cc.invite:x:1', now()),
+    (${B}::uuid, ${ubId0}::uuid, 'contracts', 'cc.accepted', 'Tenant 7301 đã đồng ý kết nối', '', ${`/contracts/partners?party=Tenant%207301&tenant=${A}&tab=chat`}, 'cc.accepted:x:1', now())`;
 });
 afterAll(async () => {
   await sql.end();
@@ -225,25 +258,70 @@ describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn dan
       mailboxAnonymized: 3,
       copiesAnonymized: 3,
       chatThreadsAnonymized: 1,
-      chatMessagesAnonymized: 1,
+      chatThreadsMerged: 1,
+      chatThreadsDeleted: 1,
+      chatMessagesAnonymized: 2,
     });
   });
 
-  it("CR-161 · trò chuyện: luồng A–B còn cho B; tin của A ẩn danh (tombstone, tên «Công ty đã xoá», bỏ tệp); tin của B và đã-đọc của B y nguyên", async () => {
-    const th = await sql`select tenant_lo::text as lo, tenant_hi::text as hi from hub.cc_threads`;
+  it("CR-161 · trò chuyện: luồng A–B còn cho B (tin A ẩn danh, bỏ tệp), tin/đã-đọc của B y nguyên", async () => {
+    const th =
+      await sql`select id::text as id, tenant_lo::text as lo, tenant_hi::text as hi from hub.cc_threads where id = ${TH(1)}::uuid`;
     expect(th.length).toBe(1);
     expect([th[0]?.lo, th[0]?.hi].sort()).toEqual([B, X].sort());
     expect((th[0]?.lo as string) < (th[0]?.hi as string)).toBe(true);
     const msgs =
-      await sql`select seq::int as seq, sender_tenant::text as t, sender_name, body, files from hub.cc_messages order by seq`;
+      await sql`select seq::int as seq, sender_tenant::text as t, sender_user::text as u, sender_name, body, files from hub.cc_messages where thread_id = ${TH(1)}::uuid order by seq`;
     expect(msgs.map((m) => [m.seq, m.t, m.sender_name, m.files])).toEqual([
       [1, X, PARTNER_DELETED_NAME, []],
       [2, B, "Trần B", []],
     ]);
+    expect(msgs[0]?.u).toBe(X); // một id cố định cho cả công ty bị xoá
     expect(msgs[0]?.body).toBe("xin chào từ A");
     expect(JSON.stringify(msgs).includes(A)).toBe(false);
-    const rd = await sql`select tenant_id::text as t from hub.cc_reads`;
+    const rd =
+      await sql`select tenant_id::text as t from hub.cc_reads where thread_id = ${TH(1)}::uuid`;
     expect(rd.map((r) => r.t)).toEqual([B]);
+  });
+
+  it("CR-161 · tệp trò chuyện của A: id FileBox bị xoá ở kho, tệp của công ty khác không", async () => {
+    expect(removed).toContain("boxA1");
+    expect(removed).not.toContain("boxC1");
+    expect((await sql`select 1 from hub.cc_files where tenant_id = ${A}::uuid`).length).toBe(0);
+  });
+
+  it("CR-161 · trò chuyện: bên kia đã có luồng (tombstone, C) ⇒ GỘP luồng A–C vào đó, C không mất tin/tệp/đã-đọc, last_seq cộng dồn", async () => {
+    expect((await sql`select 1 from hub.cc_threads where id = ${TH(3)}::uuid`).length).toBe(0);
+    const [d] = await sql`select last_seq::int as n from hub.cc_threads where id = ${TH(2)}::uuid`;
+    expect(d?.n).toBe(5);
+    const msgs =
+      await sql`select seq::int as seq, sender_tenant::text as t, body from hub.cc_messages where thread_id = ${TH(2)}::uuid order by seq`;
+    expect(msgs.map((m) => [m.seq, m.t, m.body])).toEqual([
+      [1, X, "cũ 1"],
+      [2, C, "cũ 2"],
+      [3, X, "cũ 3"],
+      [4, X, "A gửi C"],
+      [5, C, "C trả lời"],
+    ]);
+    const f =
+      await sql`select thread_id::text as th, seq::int as seq from hub.cc_files where box_file_id = 'boxC1'`;
+    expect(f.map((x) => [x.th, x.seq])).toEqual([[TH(2), 5]]);
+    const rd =
+      await sql`select last_read_seq::int as n from hub.cc_reads where thread_id = ${TH(2)}::uuid and tenant_id = ${C}::uuid`;
+    expect(rd.map((r) => r.n)).toEqual([5]);
+  });
+
+  it("CR-161 · chuông cc.* của B nhắc tên A ⇒ «Công ty đã xoá», link không còn tên/tenant A", async () => {
+    const bells =
+      await sql`select title, link from hub.notifications where tenant_id = ${B}::uuid and kind like 'cc.%' order by kind`;
+    expect(bells.map((b) => b.title)).toEqual([
+      `${PARTNER_DELETED_NAME} đã đồng ý kết nối`,
+      `${PARTNER_DELETED_NAME} muốn kết nối với bạn`,
+    ]);
+    expect(bells.map((b) => b.link)).toEqual([
+      "/contracts/partners",
+      "/contracts/partners?invites=1",
+    ]);
   });
 });
 
@@ -264,8 +342,11 @@ describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn dan
     expect((await sql`select 1 from hub.partner_links`).length).toBe(0);
     expect((await sql`select 1 from hub.partner_email_events`).length).toBe(0);
     // CR-161: bên kia cũng đã xoá ⇒ luồng trò chuyện (tin, đã-đọc) bị xoá hẳn.
-    expect((await sql`select 1 from hub.cc_threads`).length).toBe(0);
-    expect((await sql`select 1 from hub.cc_messages`).length).toBe(0);
-    expect((await sql`select 1 from hub.cc_reads`).length).toBe(0);
+    expect((await sql`select 1 from hub.cc_threads where id = ${TH(1)}::uuid`).length).toBe(0);
+    expect((await sql`select 1 from hub.cc_messages where thread_id = ${TH(1)}::uuid`).length).toBe(
+      0,
+    );
+    expect((await sql`select 1 from hub.cc_reads where thread_id = ${TH(1)}::uuid`).length).toBe(0);
+    expect((await sql`select 1 from hub.cc_threads where id = ${TH(2)}::uuid`).length).toBe(1); // luồng (tombstone, C) còn cho C
   });
 });

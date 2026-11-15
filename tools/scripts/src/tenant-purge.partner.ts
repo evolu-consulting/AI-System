@@ -18,6 +18,7 @@ export type PartnerStats = {
   linksAnonymized: number;
   copiesAnonymized: number;
   chatThreadsDeleted: number;
+  chatThreadsMerged: number;
   chatThreadsAnonymized: number;
   chatMessagesAnonymized: number;
 };
@@ -28,6 +29,7 @@ export const NO_PARTNER: PartnerStats = {
   linksAnonymized: 0,
   copiesAnonymized: 0,
   chatThreadsDeleted: 0,
+  chatThreadsMerged: 0,
   chatThreadsAnonymized: 0,
   chatMessagesAnonymized: 0,
 };
@@ -227,25 +229,53 @@ async function anonymizeLinks(tx: Tx, tenantId: string, out: PartnerStats): Prom
 
 /**
  * CR-161 (hub 0146) · trò chuyện hai công ty (hub.cc_threads / cc_messages — không có tenant_id; cc_reads / cc_files có ⇒ xoá theo tenant_id ở
- * bước sau). Luồng theo cặp (tenant_lo < tenant_hi): GIỮ luồng cho công ty còn lại, ẩn danh bên bị xoá (id → tombstone, tin của nó: người gửi
- * → tombstone + id ngẫu nhiên + tên «Công ty đã xoá», tệp đính kèm bỏ vì cc_files của nó bị xoá). Nội dung chữ giữ (là lịch sử bên kia đã nhận).
- * Bỏ cả luồng khi bên kia cũng đã xoá (đã tombstone) hoặc khi đã có luồng (tombstone, bên kia) từ lần xoá trước (khoá cặp duy nhất ⇒ không gộp được).
+ * bước sau, kể cả id FileBox `box_file_id` — `tenantFileIds` đọc trước khi xoá). Luồng theo cặp (tenant_lo < tenant_hi): GIỮ lịch sử cho công
+ * ty còn lại, ẩn danh bên bị xoá (id → tombstone; tin của nó: người gửi → tombstone, tên «Công ty đã xoá», bỏ tệp vì cc_files của nó bị xoá;
+ * chuông `cc.*` của bên kia có tên nó → «Công ty đã xoá»). Khoá cặp duy nhất ⇒ nếu bên kia đã có luồng (tombstone, bên kia) từ lần xoá trước thì
+ * GỘP luồng này vào đó (dời seq tin / tệp / đã-đọc của bên kia theo `last_seq` luồng đích), rồi xoá luồng cũ. Bên kia cũng đã xoá ⇒ xoá luồng.
  */
 async function anonymizeChat(tx: Tx, tenantId: string, out: PartnerStats): Promise<void> {
   if (!(await has(tx, "hub.cc_threads"))) return;
   const mine = "(t.tenant_lo = $1::uuid or t.tenant_hi = $1::uuid)";
   const other = "(case when t.tenant_lo = $1::uuid then t.tenant_hi else t.tenant_lo end)";
+  out.chatMessagesAnonymized = await count(
+    tx,
+    `update hub.cc_messages m set sender_tenant = ${X}, sender_user = ${X}, sender_name = '${PARTNER_DELETED_NAME}', files = '[]'::jsonb
+     where m.sender_tenant = $1::uuid`,
+    tenantId,
+  );
+  await scrubChatBells(tx, tenantId);
+  // Cặp (luồng của A, luồng đích (tombstone, bên kia)); off = last_seq đích TRƯỚC khi gộp ⇒ tính lại mỗi câu, câu cập nhật last_seq chạy CUỐI.
+  const pairs = `select t.id as sid, d.id as did, d.last_seq as off, t.last_seq as sn, t.last_at as sat
+    from hub.cc_threads t join hub.cc_threads d on d.id <> t.id
+      and d.tenant_lo = least(${X}, ${other}) and d.tenant_hi = greatest(${X}, ${other})
+    where ${mine} and ${other} <> ${X}`;
+  await tx.unsafe(
+    `with p as (${pairs}) update hub.cc_messages m set thread_id = p.did, seq = m.seq + p.off from p where m.thread_id = p.sid`,
+    [tenantId],
+  );
+  await tx.unsafe(
+    `with p as (${pairs}) update hub.cc_files f set thread_id = p.did, seq = case when f.seq is null then null else f.seq + p.off end
+     from p where f.thread_id = p.sid`,
+    [tenantId],
+  );
+  // Đã-đọc của bên kia: 0 giữ nguyên (chưa đọc gì ở luồng cũ ⇒ giữ mốc đích), >0 dời theo off. Dòng của A bỏ (xoá theo tenant_id ở bước sau).
+  await tx.unsafe(
+    `with p as (${pairs}) insert into hub.cc_reads (thread_id, user_id, tenant_id, last_read_seq)
+     select p.did, r.user_id, r.tenant_id, case when r.last_read_seq = 0 then 0 else r.last_read_seq + p.off end
+     from hub.cc_reads r join p on r.thread_id = p.sid where r.tenant_id <> $1::uuid
+     on conflict (thread_id, user_id) do update set last_read_seq = greatest(hub.cc_reads.last_read_seq, excluded.last_read_seq)`,
+    [tenantId],
+  );
+  out.chatThreadsMerged = await count(
+    tx,
+    `with p as (${pairs}) update hub.cc_threads d set last_seq = d.last_seq + p.sn, last_at = greatest(d.last_at, p.sat) from p where d.id = p.did`,
+    tenantId,
+  );
   out.chatThreadsDeleted = await count(
     tx,
     `delete from hub.cc_threads t where ${mine} and (${other} = ${X} or exists (
        select 1 from hub.cc_threads d where d.id <> t.id and d.tenant_lo = least(${X}, ${other}) and d.tenant_hi = greatest(${X}, ${other})))`,
-    tenantId,
-  );
-  out.chatMessagesAnonymized = await count(
-    tx,
-    `update hub.cc_messages m set sender_tenant = ${X}, sender_user = gen_random_uuid(), sender_name = '${PARTNER_DELETED_NAME}',
-       files = '[]'::jsonb
-     where m.sender_tenant = $1::uuid`,
     tenantId,
   );
   out.chatThreadsAnonymized = await count(
@@ -253,4 +283,24 @@ async function anonymizeChat(tx: Tx, tenantId: string, out: PartnerStats): Promi
     `update hub.cc_threads t set tenant_lo = least(${X}, ${other}), tenant_hi = greatest(${X}, ${other}) where ${mine}`,
     tenantId,
   );
+}
+
+/** Chuông `cc.*` (hub.cc_bell / cc_send) của công ty khác nhắc tên bên bị xoá (tên hoặc tên pháp lý) ⇒ «Công ty đã xoá»; link bỏ tham số tên/tenant. */
+async function scrubChatBells(tx: Tx, tenantId: string): Promise<void> {
+  const rows = (await tx.unsafe(
+    "select t.name, t.legal_name from admin.tenants t where t.id = $1::uuid",
+    [tenantId],
+  )) as unknown as { name: string | null; legal_name: string | null }[];
+  const names = [...new Set([rows[0]?.legal_name, rows[0]?.name].filter((n): n is string => !!n))];
+  const link = "'/contracts/partners'";
+  for (const name of names)
+    await tx.unsafe(
+      `update hub.notifications n set title = replace(n.title, $2::text, '${PARTNER_DELETED_NAME}'),
+         body = replace(n.body, $2::text, '${PARTNER_DELETED_NAME}'),
+         link = case when n.link like '%tenant=' || $1::uuid::text || '%' or n.link like '%party=' || hub.cc_urlenc($2::text) || '%' then ${link} else n.link end
+       where n.kind like 'cc.%' and n.tenant_id <> $1::uuid
+         and (strpos(n.title, $2::text) > 0 or strpos(n.body, $2::text) > 0
+              or n.link like '%tenant=' || $1::uuid::text || '%' or n.link like '%party=' || hub.cc_urlenc($2::text) || '%')`,
+      [tenantId, name],
+    );
 }

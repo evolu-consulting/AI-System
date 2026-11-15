@@ -192,6 +192,14 @@ describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
       hubDev: 0,
     });
     expect(await hubTables()).toEqual(HUB_TABLES);
+    // CR-161: hàm tệp trò chuyện (0146 DROP + tạo lại, 0148 đổi chữ ký) vẫn có quyền đúng trên DB dựng sạch: hub_rw gọi được, PUBLIC thì không.
+    const fn = await sql<{ f: string; rw: boolean; pub: boolean }[]>`
+      select f, has_function_privilege('hub_rw', f, 'execute') as rw, has_function_privilege('public', f, 'execute') as pub
+      from unnest(array['hub.cc_file_get(uuid)', 'hub.cc_files_sweep(interval)']) as f`;
+    expect(fn.map((x) => [x.f, x.rw, x.pub])).toEqual([
+      ["hub.cc_file_get(uuid)", true, false],
+      ["hub.cc_files_sweep(interval)", true, false],
+    ]);
     expect(await runHubMigrations({ url: URL, appEnv: "production" })).toEqual({
       hub: 0,
       hubDev: 0,
