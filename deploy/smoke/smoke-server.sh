@@ -9,6 +9,7 @@ cd "$DIR"
 SRC="$PWD/smoke-src"
 IFS= read -r SMOKE_PW || true
 SMOKE_PW="${SMOKE_PW%$'\r'}"
+SMOKE_PW="${SMOKE_PW#$'\xEF\xBB\xBF'}" # PowerShell 5.1 gắn BOM UTF-8 khi pipe sang ssh
 export SMOKE_PW
 if [ -s ADMIN.pw ]; then SEED_ADMIN_PASSWORD="$(tr -d '\r\n' < ADMIN.pw)"
 else SEED_ADMIN_PASSWORD="$(grep -E '^password:' ADMIN_CREDENTIALS.txt | head -1 | sed 's/^password:[[:space:]]*//' | tr -d '\r\n')"; fi

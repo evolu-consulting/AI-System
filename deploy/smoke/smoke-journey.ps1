@@ -15,6 +15,7 @@ param(
 )
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
+$OutputEncoding = New-Object System.Text.UTF8Encoding $false  # khong BOM khi pipe sang ssh
 if ($Env -eq "prod" -and -not $IKnowProd) { Write-Host "prod: bat buoc co co -IKnowProd (xin nguoi dung dong y truoc)."; exit 2 }
 $root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 if ($Env -eq "test") {
@@ -59,7 +60,7 @@ try {
     @((Join-Path $PSScriptRoot "tenants/smoke-a.yaml"), "tenants/smoke-a.yaml"),
     @((Join-Path $PSScriptRoot "tenants/smoke-b.yaml"), "tenants/smoke-b.yaml"))
   foreach ($f in $files) {
-    [Convert]::ToBase64String([IO.File]::ReadAllBytes($f[0])) | & ssh @sshOpt $Server "tr -d '\r\n ' | base64 -d > ~/$dir/smoke-src/$($f[1])"
+    [Convert]::ToBase64String([IO.File]::ReadAllBytes($f[0])) | & ssh @sshOpt $Server "tr -cd 'A-Za-z0-9+/=' | base64 -d > ~/$dir/smoke-src/$($f[1])"
     if ($LASTEXITCODE -ne 0) { throw "chep $($f[1]) len may chu loi" }
   }
   $rc = Invoke-Remote "setup"
