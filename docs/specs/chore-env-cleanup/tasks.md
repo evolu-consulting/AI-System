@@ -5,9 +5,8 @@ Trạng thái gộp: chưa gộp
 
 ### REMOVED deploy/cr118-rollout.md
 #### Yêu cầu: UW-DEP-02 UAT web gộp trên host prod cô lập khỏi prod
-Lý do: kit UAT `deploy/stg-cr118/` đã gỡ khỏi repo (UAT CR-118 xong, máy chủ không còn container/volume của kit; staging dùng `deploy/stg-test/`); test tương ứng trong `cr118-deploy-kit.test.ts` đã bỏ.
+Lý do (dọn cấu hình môi trường, không đổi hành vi người dùng): kit UAT `deploy/stg-cr118/` đã gỡ khỏi repo (UAT CR-118 xong, máy chủ không còn container/volume của kit; staging dùng `deploy/stg-test/`); test tương ứng trong `cr118-deploy-kit.test.ts` đã bỏ.
 
-Không thay đổi hành vi (lý do: dọn cấu hình môi trường)
 
 ## Việc làm
 - [x] Kiểm kê biến ở env-contract, env.template, 2 gen-env.sh, 2 docker-compose.yml, filebox-env.sh, `.env.example`, `.env.production.example`; đối chiếu nơi code đọc.
