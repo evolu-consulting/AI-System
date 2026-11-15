@@ -45,6 +45,21 @@ describe("historyLine", () => {
     expect(isVisibleEvent({ type: "sign_upload_open" })).toBe(false);
     expect(isVisibleEvent({ type: "esign_uploaded" })).toBe(true);
   });
+  it("fix-return-reason · Trả lại / Từ chối / đối tác trả lời ⇒ dòng kèm lý do; kết quả Đạt không có", () => {
+    const d = (type: string, data: Record<string, unknown>) =>
+      historyLine({ type, actor_user_id: null, at, data }).note;
+    expect(d("stage_decided", { action: "return", feedback: " Thiếu Điều 3 " })).toBe(
+      "Thiếu Điều 3",
+    );
+    expect(d("stage_decided", { action: "reject", feedback: "Không phù hợp" })).toBe(
+      "Không phù hợp",
+    );
+    expect(d("partner_replied", { outcome: "returned", reason: "Giá chưa khớp" })).toBe(
+      "Giá chưa khớp",
+    );
+    expect(d("stage_decided", { action: "approve", feedback: "ok" })).toBeNull();
+    expect(d("stage_decided", { action: "return" })).toBeNull();
+  });
 });
 
 describe("manageErrorKey", () => {

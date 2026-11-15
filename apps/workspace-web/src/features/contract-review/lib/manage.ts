@@ -25,6 +25,8 @@ export type HistoryLine = {
   /** CR-141 · `esign_uploaded`: tên tệp bản đã ký + có phải người Toàn quyền tải thay ("duyệt thay"). */
   fileName: string | null;
   override: boolean;
+  /** Lý do kèm quyết định Trả lại / Từ chối (người duyệt nhập) hoặc lời đối tác trả lời. Ý kiến đi theo bằng chứng (BR-26) nằm ở «Hồ sơ duyệt», không ở đây. */
+  note: string | null;
 };
 
 /** CR-141 · sự kiện nội bộ, không hiện cho người dùng (ví dụ `sign_upload_open`: bước ký mở chờ bản tải lên). */
@@ -94,6 +96,18 @@ function kindOf(h: HistoryItem): string {
   return KNOWN.has(t) ? t : "other";
 }
 
+/** Lý do hiện dưới dòng lịch sử: `stage_decided` Trả lại/Từ chối ⇒ `feedback`; `partner_replied` ⇒ `reason`; còn lại không có. */
+function noteOf(h: HistoryItem): string | null {
+  const d = (h.data ?? {}) as { action?: unknown; feedback?: unknown; reason?: unknown };
+  const v =
+    h.type === "stage_decided" && (d.action === "return" || d.action === "reject")
+      ? d.feedback
+      : h.type === "partner_replied"
+        ? d.reason
+        : null;
+  return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
+}
+
 export function historyLine(h: HistoryItem): HistoryLine {
   const d = (h.data ?? {}) as {
     from?: unknown;
@@ -106,6 +120,7 @@ export function historyLine(h: HistoryItem): HistoryLine {
   return {
     fileName: up && typeof d.file_name === "string" && d.file_name !== "" ? d.file_name : null,
     override: up && d.override === true,
+    note: noteOf(h),
     kind: kindOf(h),
     type: h.type,
     actor: h.actor_user_id,

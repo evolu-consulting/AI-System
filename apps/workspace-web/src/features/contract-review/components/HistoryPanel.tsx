@@ -28,6 +28,11 @@ function Line({ h, nameOf }: { h: HistoryLine; nameOf: (id: string | null) => st
           </span>
         )}
       </p>
+      {h.note && (
+        <p className="text-[12.5px]" data-testid="history-note">
+          “{h.note}”
+        </p>
+      )}
       <p className="text-[12px] text-dim">{when(h.at)}</p>
       {h.diffs.length > 0 && (
         <ul className="mt-1 space-y-0.5 text-[12.5px]">

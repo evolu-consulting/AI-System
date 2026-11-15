@@ -385,6 +385,7 @@
       "banner": {
         "reading": "AI đang đọc văn bản — vài chục giây nữa các trường sẽ được điền sẵn để bạn kiểm tra.",
         "readFailed": "AI chưa đọc được văn bản. Bấm “AI đọc lại từ đầu” hoặc nhập tay các trường.",
+        "partner": "đối tác",
         "returnedBy": "{{who}} trả lại · {{at}}",
         "rejectedBy": "{{who}} từ chối · {{at}}",
         "withdrawnBy": "{{who}} rút về · {{at}}",

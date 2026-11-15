@@ -385,6 +385,7 @@
       "banner": {
         "reading": "AI is reading the document — fields will be pre-filled in a moment for you to check.",
         "readFailed": "AI could not read the document. Press “Re-read” or enter the fields by hand.",
+        "partner": "the partner",
         "returnedBy": "Returned by {{who}} · {{at}}",
         "rejectedBy": "Rejected by {{who}} · {{at}}",
         "withdrawnBy": "Withdrawn by {{who}} · {{at}}",

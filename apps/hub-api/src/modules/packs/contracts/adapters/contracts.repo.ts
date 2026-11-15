@@ -314,11 +314,12 @@ async function detail(
       -- CR-127 SG1 · K8: HĐ nhận chờ người phụ trách quyết (chỉ HĐ có bản ghi nhận; chỉ mục partial 0094)
       'awaiting_decision', exists (select 1 from contracts.partner_inbox p where p.tenant_id = c.tenant_id
         and p.contract_id = c.id and p.awaiting_decision and p.status = 'pending'),
-      -- CR-127 SG1 · U5: lý do Trả lại gần nhất (chỉ HĐ DRAFT) = lý do người duyệt nhập, không có ⇒ ý kiến bằng chứng; lọc BR-26 ở mapper
-      'return_reason', case when c.status = 'draft' then (select coalesce(nullif(btrim(r.data ->> 'feedback'), ''),
+      -- CR-127 SG1 · U5: lý do của lần Trả lại (HĐ DRAFT) / Từ chối (HĐ REJECT) gần nhất = lý do người duyệt nhập, không có ⇒ ý kiến bằng chứng
+      -- (bằng chứng opinion_plus ghi ý kiến ở bằng chứng, không chép vào feedback); lọc BR-26 ở mapper
+      'return_reason', case when c.status in ('draft', 'reject') then (select coalesce(nullif(btrim(r.data ->> 'feedback'), ''),
           (select ev.note from hub.evidence_get(array[(r.data ->> 'evidence_id')::uuid]) ev limit 1))
         from contracts.contract_events r where r.tenant_id = c.tenant_id and r.contract_id = c.id and r.type = 'stage_decided'
-          and r.data ->> 'action' = 'return' order by r.id desc limit 1) end,
+          and r.data ->> 'action' = case when c.status = 'reject' then 'reject' else 'return' end order by r.id desc limit 1) end,
       'return_involved', ${actor ?? null}::uuid is not null and exists (select 1 from contracts.contract_events r
         where r.tenant_id = c.tenant_id and r.contract_id = c.id and r.type = 'stage_decided' and r.actor_user_id = ${actor ?? null}::uuid))) as d
     from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);

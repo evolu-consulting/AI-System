@@ -152,7 +152,7 @@ export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
   submitted_by?: string | null;
   reconciled_by?: string | null;
   reconciled_at?: string | null;
-  /** CR-127 SG1: HĐ nhận chờ người phụ trách quyết (K8); lý do Trả lại gần nhất (HĐ DRAFT) + người gọi đã quyết ở một bước (BR-26). */
+  /** CR-127 SG1: HĐ nhận chờ người phụ trách quyết (K8); lý do Trả lại (HĐ DRAFT) / Từ chối (HĐ REJECT) gần nhất + người gọi đã quyết ở một bước (BR-26). */
   awaiting_decision?: boolean;
   return_reason?: string | null;
   return_involved?: boolean;
@@ -210,7 +210,7 @@ function legalOf(r: DetailRaw, v: ReturnType<typeof v2aOf>) {
   });
 }
 
-/** CR-127 SG1 · BR-26: lý do Trả lại chỉ cho người gửi / người phụ trách / người đã quyết ở một bước (luật `canReadEvidence`; quản trị đọc ở hồ sơ duyệt). */
+/** CR-127 SG1 · BR-26: lý do Trả lại / Từ chối chỉ cho người gửi / người phụ trách / người đã quyết ở một bước (luật `canReadEvidence`; quản trị đọc ở hồ sơ duyệt). */
 function returnReasonOf(r: DetailRaw, actor?: string): string | null {
   if (!r.return_reason || !actor) return null;
   const ok = canReadEvidence(

@@ -28,7 +28,7 @@ export function HeadBanner({
   const name = useMemberNames();
   if (!kind || kind === "superseded") return null;
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.u5.banner.${k}`, o);
-  const dec = lastDecision(c.events);
+  const dec = lastDecision(c.events, c.return_reason ?? null);
   const who = (id: string | null) => name(id) ?? t("contracts.work.u4.someone");
   let body: React.ReactNode = null;
   if (kind === "reading") body = L("reading");
@@ -53,7 +53,10 @@ export function HeadBanner({
               : dec.action === "withdraw"
                 ? "withdrawnBy"
                 : "returnedBy",
-            { who: who(dec.by), at: viDateTime(dec.at) },
+            {
+              who: dec.viaPartner ? (dec.partnerName ?? (partner || L("partner"))) : who(dec.by),
+              at: viDateTime(dec.at),
+            },
           )}
         </b>
         {dec.note && <span> · “{dec.note}”</span>}

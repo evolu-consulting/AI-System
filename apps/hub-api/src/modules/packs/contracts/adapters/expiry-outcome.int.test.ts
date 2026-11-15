@@ -167,4 +167,25 @@ describe("CR-127 SG1 · chi tiết: awaiting_decision + return_reason", () => {
     });
     expect((await detail(OTHER, id))?.return_reason).toBeNull();
   });
+
+  it("fix-return-reason · Từ chối ⇒ return_reason = lý do của lần Từ chối (HĐ reject); ý kiến đi theo bằng chứng cũng đọc được", async () => {
+    const id = await expiring({ status: "reject", submitted_by: OTHER });
+    const ev = crypto.randomUUID();
+    await o.begin(async (tx) => {
+      await tx`set local session_replication_role = replica`;
+      await tx`insert into hub.evidence (id, tenant_id, subject_kind, subject_id, note, by_user)
+        values (${ev}, ${T}, 'task_decision', ${crypto.randomUUID()}, 'Không phù hợp chính sách mua hàng', ${ADM})`;
+    });
+    // `stage_decided` Trả lại cũ (đã qua) + Từ chối mới nhất có bằng chứng, feedback trống (BR-26: ý kiến không chép vào feedback)
+    await o`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+      values (${T}, ${id}, 'stage_decided', ${ADM}, jsonb_build_object('action', 'return', 'task_id', gen_random_uuid()::text,
+        'feedback', 'Lý do của lần Trả lại cũ'))`;
+    await o`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+      values (${T}, ${id}, 'stage_decided', ${ADM}, jsonb_build_object('action', 'reject', 'task_id', gen_random_uuid()::text,
+        'evidence_id', ${ev}::text))`;
+    expect((await detail(OTHER, id))?.return_reason).toBe("Không phù hợp chính sách mua hàng"); // người gửi
+    expect((await detail(ADM, id))?.return_reason).toBe("Không phù hợp chính sách mua hàng"); // người đã quyết
+    const [third] = (await users(o, T, 1, { from: 9499 })) as [string];
+    expect((await detail(third as string, id))?.return_reason).toBeNull(); // BR-26: người ngoài quy trình không đọc
+  });
 });
