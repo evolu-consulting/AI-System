@@ -145,7 +145,7 @@ beforeAll(async () => {
       th(3, [A, uA], [C, uC], 2, 1, 2),
       th(4, [A, uA2], [C, uC], 1, 1, 0),
       th(5, [A, uA], [D, uD], 1, 1, 1),
-      th(6, [A, uA2], [D, uD], 1, 1, 0),
+      th(6, [A, uA2], [D, uD], 1, 1, 1),
     ] as never)}`;
   await sql`insert into hub.pmsg_messages (thread_id, seq, sender_user, body, files, client_id) values
     (${TH(1)}::uuid, 1, ${uA}::uuid, 'xin chào từ A', '[{"id":"f1","name":"a.pdf","mime":"application/pdf","size":1}]'::jsonb, gen_random_uuid()),
@@ -326,7 +326,7 @@ describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn dan
     const [t] =
       await sql`select last_seq::int as n, a_tenant::text as at, a_read_seq::int as ar, b_read_seq::int as br from hub.pmsg_threads where id = ${TH(5)}::uuid`;
     expect(t?.n).toBe(2);
-    expect((t?.ar as number) + (t?.br as number)).toBe(1); // mốc đọc của D giữ, của A về 0
+    expect((t?.ar as number) + (t?.br as number)).toBe(2); // mốc đọc của D: max(1, 1 + off 1) = 2 (B đã đọc ở thread thứ hai), của A về 0
     const msgs =
       await sql`select seq::int as seq, sender_user::text as u, body from hub.pmsg_messages where thread_id = ${TH(5)}::uuid order by seq`;
     expect(msgs.map((m) => [m.seq, m.u, m.body])).toEqual([

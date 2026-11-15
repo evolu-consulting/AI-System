@@ -142,3 +142,5 @@ Câu mở (mặc định đề xuất — dùng nếu không trả lời):
 6. Gói web chung `packages/messages-web` (nội bộ, không thư viện mới) thay vì chép UI sang chat-web — **Có**.
 7. Bỏ «Thao tác» thì «Sửa liên hệ» ở đâu? — **Nút chữ cạnh khối liên hệ**.
 8. Chip «Công ty cũ» (đã ngắt) để lọc? — **Không ở v1**; cuộc cũ vẫn ở «Tất cả».
+
+**Lệch §5 ở lát 4 (người dùng chốt):** khi xoá công ty A, tin của A trong thread với B **giữ chữ** (không xoá mềm như đoạn «Purge công ty» ở trên): người gửi → tombstone, `files='[]'`, `client_id` đổi mới, mốc đọc A về 0. Lưu ý: chữ của tin có thể chứa thông tin cá nhân của người A (tên, số điện thoại…) — hệ thống không lọc; chỉ danh tính (id người gửi) được ẩn danh.

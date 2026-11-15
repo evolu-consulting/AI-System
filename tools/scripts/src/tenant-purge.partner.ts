@@ -302,8 +302,9 @@ async function purgePartnerMessages(tx: Tx, tenantId: string, out: PartnerStats)
     `update hub.pmsg_threads t set
        a_tenant = case when p.lt then ${X} else p.ot end, a_user = case when p.lt then ${X} else p.ou end,
        b_tenant = case when p.lt then p.ot else ${X} end, b_user = case when p.lt then p.ou else ${X} end,
-       a_read_seq = case when p.lt then 0 else p.oread end, b_read_seq = case when p.lt then p.oread else 0 end
-     from _pmsg_plan p where t.id = p.sid and p.sid = p.did and $1::uuid is not null`,
+       a_read_seq = case when p.lt then 0 else (case when t.a_tenant = $1::uuid then t.b_read_seq else t.a_read_seq end) end, b_read_seq = case when p.lt then (case when t.a_tenant = $1::uuid then t.b_read_seq else t.a_read_seq end) else 0 end
+     from _pmsg_plan p
+     where t.id = p.sid and p.sid = p.did`,
     tenantId,
   );
 }
