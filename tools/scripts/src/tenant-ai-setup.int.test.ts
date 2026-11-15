@@ -46,7 +46,7 @@ beforeAll(async () => {
     "knowledge-admin",
   ])
     await o`insert into admin.features (key, name, app) values (${k}, ${o.json({ vi: k, en: k })},
-      ${k.split("-")[0]}) on conflict (key) do nothing`;
+      ${k.split("-")[0] ?? k}) on conflict (key) do nothing`;
   await o`insert into admin.feature_grants (tenant_id, feature_id, group_id)
     select ${T}, id, ${G} from admin.features where key = 'contracts-read'`;
   await o`insert into hub.providers (key, kind, vendor, max_concurrency, enabled, dev_only)
