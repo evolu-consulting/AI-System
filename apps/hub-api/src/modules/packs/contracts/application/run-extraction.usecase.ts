@@ -4,7 +4,9 @@
 // tay mới hơn) ⇒ đọc lại, gộp lại (≤ 3 lần). Không gọi mạng/CPU nặng trong tx; số câu cố định, không phụ thuộc số dòng hàng.
 // MST chưa tra được vì cổng hẹn giờ (khe 2 s / 429) ⇒ hẹn `refreshParties` (Trung 4). Chiều mua/bán: không cảnh báo khi chưa có
 // pháp nhân của mình (khớp mgmt-app `enrich.py:105`, review Thấp 5).
+import { safeErrorFields } from "../../../../lib/errors";
 import type { PackWho } from "../../kit/public";
+import { aiDealWrite } from "../domain/deal-direction.rules";
 import {
   type ApplyOutput,
   mergeExtraction,
@@ -42,6 +44,8 @@ export type RunExtractionDeps = {
   scheduleTaxRetry?: TaxRetryScheduler;
   /** M3 · PDF có lớp chữ ⇒ chữ (vắng ⇒ tệp đi thẳng agent như trước). */
   fileText?: SourceFileText;
+  /** Ghi vết khi ghi kết quả hỏng (mã/loại lỗi, không nội dung HĐ). */
+  log?: { warn(msg: string, fields?: Record<string, unknown>): void };
 };
 export type ExtractionOutcome = "needs_review" | "extract_failed" | "skipped";
 export type RunExtraction = (who: PackWho, contractId: string) => Promise<ExtractionOutcome>;
@@ -85,7 +89,8 @@ export function createRunExtraction(d: RunExtractionDeps): RunExtraction {
         (r) => r.extraction.ownParties?.() ?? Promise.resolve(NO_OWN),
       );
       return await save(d, { who, id, verified, hits, cur: src, own });
-    } catch {
+    } catch (err) {
+      d.log?.warn("contract-extract-save-failed", safeErrorFields(err)); // chỉ mã/loại lỗi, không nội dung HĐ
       return fail(d, who, id, "SAVE_FAILED");
     }
   };
@@ -146,8 +151,11 @@ async function save(d: RunExtractionDeps, s: SaveInput): Promise<ExtractionOutco
     const items = out.items ?? cur.items;
     const warnings = ruleWarnings(out.fields, items, null, partiesOf(out.fields, s.hits));
     const expected = cur.version;
+    // fix-extract-save: cặp deal/direction AI đoán luôn hợp lệ với `contracts_deal_ck` (sai ⇒ bỏ deal, người chọn ở màn kiểm).
+    const cur0 = { deal: cur.deal ?? null, direction: cur.direction ?? null };
+    const dealWrite = aiDealWrite({ ...cur0, docType: cur.docType ?? "contract" }, out.ai);
     const ok = await d.uow.tenant(s.who, async (r) => {
-      const saved = await r.extraction.saveResult(s.id, { ...out, warnings, expected });
+      const saved = await r.extraction.saveResult(s.id, { ...out, warnings, expected, dealWrite });
       if (saved) await r.outbox.enqueue([{ entity: "contract", entity_id: s.id, op: "upsert" }]);
       return saved;
     });

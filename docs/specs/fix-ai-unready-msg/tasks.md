@@ -19,7 +19,7 @@ Trạng thái gộp: chưa gộp
 #### Yêu cầu: Lý do không đọc được hợp đồng
 Khối "Không đọc được hợp đồng này" nêu lý do nghiệp vụ (tệp hỏng / quá lớn / định dạng chưa hỗ trợ / hết lượt AI / AI đang tạm ngưng) kèm gợi ý "Nhập tay". Khi AI chưa cấu hình trên máy chủ, lượt đọc kết thúc ngay với mã AGENT_UNAVAILABLE (không chờ vòng quét STALE); câu «AI đang tạm ngưng…» khuyên "Thử lại" sau ít phút hoặc "Nhập tay", và báo quản trị nếu vẫn lỗi. Timeout thật giữ câu cũ.
 - Kịch bản: khi AI chưa cấu hình và người dùng tải hợp đồng lên thì hợp đồng sang đọc-lỗi AGENT_UNAVAILABLE ngay, không chờ quét STALE [test: apps/hub-api/src/modules/packs/contracts/application/extraction-ai-unready.test.ts » enqueue khi ready=false]
-- Kịch bản: khi mã lỗi là AGENT_UNAVAILABLE thì trang rà soát hiện câu «AI đang tạm ngưng…», còn TIMEOUT giữ câu chung [test: apps/workspace-web/src/features/contract-review/lib/fail-reason.test.ts » AGENT_UNAVAILABLE]
+- Kịch bản: khi mã lỗi là AGENT_UNAVAILABLE thì trang rà soát hiện câu «AI đang tạm ngưng…», còn TIMEOUT giữ câu «AI đọc quá lâu» [test: apps/workspace-web/src/features/contract-review/lib/fail-reason.test.ts » AGENT_UNAVAILABLE]
 
 ## Quyết định trong lúc làm
 - Dùng lại `createRunExtraction` + agent giả trả `AGENT_UNAVAILABLE` thay vì thêm trạng thái/đường ghi mới.

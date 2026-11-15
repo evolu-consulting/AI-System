@@ -30,6 +30,9 @@ type SourceRow = {
   p_items: unknown;
   version_no: number | null;
   root_number: string | null;
+  deal: string | null;
+  direction: string | null;
+  doc_type: string;
 };
 
 function toSource(r: SourceRow): ExtractionSource {
@@ -42,6 +45,9 @@ function toSource(r: SourceRow): ExtractionSource {
   const items = (json(r.items) ?? []) as { qty: unknown; unit_price: unknown }[];
   return {
     status: r.status,
+    deal: r.deal,
+    direction: r.direction,
+    docType: r.doc_type,
     extractState: r.extract_state,
     version: r.version,
     items: items.map((i) => ({ qty: num(i.qty), unit_price: num(i.unit_price) })),
@@ -69,7 +75,7 @@ const ITEMS_JSON = sql`(code text, name text, spec text, unit text, qty numeric,
 function sourceQ(tx: Tx, tenantId: string): ExtractionRepo["source"] {
   return async (id) => {
     const rows =
-      await tx.execute<SourceRow>(sql`select c.status, c.extract_state, c.version, c.kind, c.source_text as text, c.fields,
+      await tx.execute<SourceRow>(sql`select c.status, c.extract_state, c.version, c.kind, c.source_text as text, c.fields, c.deal, c.direction, c.doc_type,
         (select coalesce(jsonb_agg(jsonb_build_object('qty', i.qty, 'unit_price', i.unit_price)), '[]'::jsonb)
           from contracts.contract_items i where i.contract_id = c.id and i.tenant_id = ${tenantId}::uuid) as items,
         f.org, f.file_id, f.mime, p.fields as p_fields,
@@ -92,15 +98,14 @@ function saveResultQ(tx: Tx, tenantId: string): ExtractionRepo["saveResult"] {
     const items = res.items ?? [];
     const aiJson = res.ai ? JSON.stringify(res.ai) : null;
     const terms = res.penaltyTerms ?? null; // K7 · null ⇒ bản trích cũ: không đụng penalty_terms
-    // V2-G: loại HĐ AI đoán chỉ điền khi HĐ chưa có loại (người đã chọn/lưu thì giữ); Giới thiệu = tiền vào ⇒ hướng "sale".
-    const aiDeal = res.ai?.deal ?? null;
+    // V2-G: loại HĐ AI đoán chỉ điền khi HĐ chưa có loại (người đã chọn/lưu thì giữ). Cặp deal/direction do luật domain
+    // `aiDealWrite` chốt (fix-extract-save: hợp lệ với `contracts_deal_ck`); vắng ⇒ không đụng hai cột.
+    const dw = res.dealWrite ?? { deal: null, direction: null };
     const rows = await tx.execute<{ id: string }>(sql`with u as (
         update contracts.contracts set fields = ${JSON.stringify(res.fields)}::jsonb,
           clauses = ${JSON.stringify(res.clauses)}::jsonb, warnings = ${JSON.stringify(res.warnings)}::jsonb,
           ai_read = coalesce(${aiJson}::jsonb, ai_read),
-          deal = coalesce(deal, ${aiDeal}::text),
-          direction = coalesce(direction, case ${aiDeal}::text when 'buy' then 'purchase' when 'sell' then 'sale'
-            when 'referral' then 'sale' end),
+          deal = coalesce(deal, ${dw.deal}::text), direction = coalesce(direction, ${dw.direction}::text),
           error = null, updated_at = now()
         where id = ${id}::uuid and tenant_id = ${tenantId}::uuid and status = 'draft' and extract_state = 'reading'
           and version = ${res.expected}::int
