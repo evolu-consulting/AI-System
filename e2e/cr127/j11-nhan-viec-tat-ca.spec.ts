@@ -8,10 +8,11 @@ const E = envOf(SPEC_TENANT.j11);
 const EALL = envOf(SPEC_TENANT.j11All);
 const A = "e2e-ketoan";
 const B = "e2e-kd-truong";
+let allContract = "";
 test.beforeAll(async ({ browser }) => {
   test.setTimeout(400_000);
   await submitContract(browser, E, `j11a-${Date.now().toString(36)}`);
-  await submitContract(browser, EALL, `j11b-${Date.now().toString(36)}`);
+  allContract = await submitContract(browser, EALL, `j11b-${Date.now().toString(36)}`);
 });
 
 test("Chưa ai nhận → A nhận → B thấy «A đang xử lý» và không duyệt được", async ({
@@ -64,4 +65,24 @@ test("Cần tất cả: Duyệt đòi ý kiến", async ({ page }) => {
   await page.getByTestId("request-approve").click();
   await page.getByTestId("request-approve-confirm").click();
   await expect(page.getByTestId("evidence-issue")).toContainText("Ghi ý kiến");
+});
+
+// CR-170 · nút chính «Duyệt» ở đầu trang HĐ: ô bằng chứng hiện trong khung nhìn + con trỏ ở ô ý kiến; thiếu ⇒ báo thiếu; đủ ⇒ duyệt xong.
+test("CR-170: Duyệt ở đầu trang ⇒ ô bằng chứng trong khung nhìn, con trỏ ở ô ý kiến, thiếu ý kiến báo thiếu, đủ thì duyệt xong", async ({
+  page,
+}) => {
+  await loginCw(page, EALL, A);
+  await page.goto(`/contracts/c/${allContract}`);
+  await page.getByTestId("act-approve").click();
+  const box = page.getByTestId("request-evidence");
+  await expect(box).toBeInViewport();
+  await expect(page.getByTestId("evidence-ask-hint")).toContainText(
+    "Ghi ý kiến và đính chữ ký hoặc tệp để duyệt",
+  );
+  await expect(page.locator("#evidence-note")).toBeFocused();
+  await page.getByTestId("request-approve-confirm").click();
+  await expect(page.getByTestId("evidence-issue")).toContainText("Ghi ý kiến");
+  await page.locator("#evidence-note").fill("Đã xem, đồng ý");
+  await page.getByTestId("request-approve-confirm").click();
+  await expect(page.getByTestId("request-evidence")).toHaveCount(0);
 });

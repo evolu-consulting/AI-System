@@ -170,6 +170,7 @@ export function useApprovalUi(o: {
       {ev && ruleOf(ev) && (
         <div data-approval="evidence" className="mb-4 rounded-xl border border-line p-4">
           <EvidenceAsk
+            key={ev}
             action={
               task?.actions.find((a) => a.key === ev) ?? {
                 key: ev,
@@ -181,6 +182,7 @@ export function useApprovalUi(o: {
             }
             rule={ruleOf(ev) as NonNullable<ReturnType<typeof ruleOf>>}
             busy={ap.busy !== null}
+            reveal
             onCancel={() => setEv(null)}
             onSend={async (body: EvidenceInput) => {
               const r =

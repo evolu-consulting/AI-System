@@ -73,6 +73,8 @@
         },
         "evidence": {
           "note": "Your opinion",
+          "askHint": "Write your opinion and attach a signature or file to approve",
+          "askHintReason": "Write your reason and attach a signature or file if this step requires it",
           "plusHint": "This step needs an opinion plus a handwritten signature or at least one file.",
           "signature": "Handwritten signature",
           "files": "Attachments (up to 5)",

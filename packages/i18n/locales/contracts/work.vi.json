@@ -73,6 +73,8 @@
         },
         "evidence": {
           "note": "Ý kiến của bạn",
+          "askHint": "Ghi ý kiến và đính chữ ký hoặc tệp để duyệt",
+          "askHintReason": "Ghi lý do và đính chữ ký hoặc tệp nếu bước này yêu cầu",
           "plusHint": "Bước này cần ý kiến và chữ ký tay hoặc ít nhất một tệp đính kèm.",
           "signature": "Chữ ký tay",
           "files": "Tệp đính kèm (tối đa 5)",
