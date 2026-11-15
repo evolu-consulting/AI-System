@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # sohoptac2-staging · dang nhap Claude CLI MOT LAN cho ban test (tuong tac: mo link, dan ma).
-# Luu vao ./claude-home cua staging (KHONG dung chung prod). Sau do: bash up.sh (hoac restart agent-runtime).
+# KHONG con dung mac dinh (2026-11-15): compose mount claude-home cua PROD (dung chung dang nhap) - dang nhap/gia han lam o prod.
+# Chi dung neu quay lai dang nhap rieng: luu vao ./claude-home local, va doi mount trong docker-compose.yml.
 #   bash claude-login.sh
 set -euo pipefail
 cd "$(dirname "$0")"
