@@ -9,11 +9,13 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Số chip công ty hiện thẳng; từ công ty thứ 6 trở đi ⇒ gộp vào «Công ty khác ▾» (spec §8). */
 export const CHIP_COMPANIES_MAX = 5;
 
-/** Tham số `?company=` (nút «Nhắn tin» ở trang đối tác) ⇒ bộ lọc: rỗng/sai dạng ⇒ `all`; trúng công ty mình ⇒ `own`. */
+/** Tham số `?company=` (nút «Nhắn tin» ở trang đối tác) ⇒ bộ lọc. CR-172: rỗng/sai dạng ⇒ `own` (công ty mình; chưa biết công ty mình ⇒ `all`);
+ * `all` chỉ khi chọn «Tất cả» hoặc `?company=all`; trúng công ty mình ⇒ `own`. */
 export function parseFilter(raw: string | null | undefined, ownId: string): CompanyFilter {
   const v = (raw ?? "").trim().toLowerCase();
+  if (v === "all") return "all";
   if (v === "own") return "own";
-  if (!UUID.test(v)) return "all";
+  if (!UUID.test(v)) return ownId ? "own" : "all";
   return v === ownId.toLowerCase() ? "own" : v;
 }
 

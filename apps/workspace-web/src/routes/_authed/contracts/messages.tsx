@@ -13,7 +13,8 @@ export const Route = createFileRoute("/_authed/contracts/messages")({
   // CR-169 · `company` = id công ty đã kết nối (nút «Nhắn tin» ở trang đối tác) hoặc `all`/`own`: mở sẵn bộ lọc công ty.
   validateSearch: (s: Record<string, unknown>): { c?: string; company?: string } => ({
     ...(typeof s.c === "string" && UUID.test(s.c) ? { c: s.c } : {}),
-    ...(typeof s.company === "string" && (UUID.test(s.company) || s.company === "own")
+    ...(typeof s.company === "string" &&
+    (UUID.test(s.company) || s.company === "own" || s.company === "all")
       ? { company: s.company }
       : {}),
   }),

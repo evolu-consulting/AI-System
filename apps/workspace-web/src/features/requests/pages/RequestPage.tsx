@@ -99,6 +99,7 @@ export function RequestPage({
         <PageHead title={t("contracts.requests.statusTitle")} crumb={back} />
         <EmptyState
           kind="notFound"
+          full
           title={t("contracts.requests.notFound")}
           action={
             <Link to="/contracts/requests" className="text-act hover:underline">

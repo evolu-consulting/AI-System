@@ -41,9 +41,11 @@ const partnerConv = (over: Partial<ConversationSummary> = {}): ConversationSumma
 });
 
 describe("CR-169 · bộ lọc công ty", () => {
-  test("parseFilter: rỗng/sai ⇒ all; công ty mình ⇒ own; công ty khác ⇒ uuid thường", () => {
-    expect(parseFilter(undefined, OWN)).toBe("all");
-    expect(parseFilter("xyz", OWN)).toBe("all");
+  test("parseFilter: rỗng/sai ⇒ own (CR-172); chưa biết công ty mình ⇒ all; `all` rõ ràng ⇒ all; công ty khác ⇒ uuid thường", () => {
+    expect(parseFilter(undefined, OWN)).toBe("own");
+    expect(parseFilter("xyz", OWN)).toBe("own");
+    expect(parseFilter(undefined, "")).toBe("all");
+    expect(parseFilter("all", OWN)).toBe("all");
     expect(parseFilter(OWN.toUpperCase(), OWN)).toBe("own");
     expect(parseFilter("own", OWN)).toBe("own");
     expect(parseFilter(B.toUpperCase(), OWN)).toBe(B);

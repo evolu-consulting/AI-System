@@ -220,6 +220,9 @@
   z-index: 25;
   background: var(--cm-feed-bg);
   padding-top: 38px;
+  /* CR-172: khối dính không có đệm ngang ⇒ ô đăng bài, thanh tab và thẻ bài cùng mép trái/phải cột (thẳng hàng với khối «Bộ lọc»). */
+  padding-left: 0;
+  padding-right: 0;
   /* Khe dưới thanh là padding (có nền), không phải margin trong suốt — bài cuộn qua không lộ ra ở khe. */
   padding-bottom: 14px;
 }
@@ -228,7 +231,9 @@
   position: static;
 }
 [data-mod="community"] .stickytop .feedcomposer {
-  margin-bottom: 10px;
+  margin: 0 0 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 [data-mod="community"] .feedcomposer.collapsed {
   display: flex;

@@ -4,6 +4,7 @@ import { splitHref } from "@ai/web-kit/notify/href";
 import { FeedbackButton } from "@ai/web-kit/ui/FeedbackButton";
 import { NotificationBell } from "@ai/web-kit/ui/NotificationBell";
 import { TopShell } from "@ai/web-kit/ui/TopShell";
+import { UserChip } from "@ai/web-kit/ui/UserChip";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 import { lazy, Suspense, useCallback, useRef, useState } from "react";
@@ -125,6 +126,7 @@ export function AppShell() {
             />
           }
           feedback={<FeedbackButton app="chat" lang={i18n.language} />}
+          end={<UserChip name={settings.displayName || settings.username} />}
         />
         {conn.kind && <ConnectionBanner kind={conn.kind} onRetry={conn.retry} />}
         <main id="main" className="flex min-h-0 flex-1 flex-col overflow-hidden">

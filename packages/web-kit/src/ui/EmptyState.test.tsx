@@ -24,6 +24,18 @@ describe("EmptyState", () => {
       expect(el.props["data-testid"]).toBe(`x-${kind}`);
     }
   });
+  test("CR-172 · full ⇒ phủ 100% rộng + cao vùng nội dung, căn giữa cả ngang lẫn dọc; mặc định không phủ", () => {
+    const full = EmptyState({ kind: "off", title: "T", full: true }) as El;
+    const st = full.props.style as Record<string, unknown>;
+    expect([st.width, st.height, st.alignItems, st.justifyContent]).toEqual([
+      "100%",
+      "100%",
+      "center",
+      "center",
+    ]);
+    const inline = EmptyState({ kind: "empty", title: "T" }) as El;
+    expect((inline.props.style as Record<string, unknown>).height).toBeUndefined();
+  });
   test("title, hint, action đều hiện; error có role=alert", () => {
     const el = EmptyState({
       kind: "error",

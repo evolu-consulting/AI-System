@@ -36,7 +36,7 @@ export function MessagesPage({
       >
         <ConversationPane myId={myId} activeId={conversationId} onSelect={open} company={company} />
       </aside>
-      <div className={cn("min-w-0 flex-1", !conversationId && "max-md:hidden")}>
+      <div className={cn("flex min-w-0 flex-1 flex-col", !conversationId && "max-md:hidden")}>
         {conversationId ? (
           <ChatView
             key={conversationId}
@@ -49,6 +49,7 @@ export function MessagesPage({
         ) : (
           <EmptyState
             kind="empty"
+            full
             testId="chat-pick"
             title={t("contracts.messages.pickOne")}
             hint={t("contracts.messages.pickOneHint")}

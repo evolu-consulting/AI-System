@@ -45,6 +45,7 @@ export function ContractReviewPage({ id }: { id: string }) {
     return (
       <EmptyState
         kind="notFound"
+        full
         title={t(hidden)}
         titleTestId="contract-not-visible"
         action={

@@ -69,7 +69,7 @@ export function MessageComposer({
           locale={i18n.language}
         />
       </div>
-      <div className="flex items-end gap-1 rounded-2xl border border-rule bg-panel focus-within:border-act-line">
+      <div className="flex items-center gap-1 rounded-2xl border border-rule bg-panel focus-within:border-act-line">
         <input
           ref={pick}
           type="file"
@@ -87,7 +87,7 @@ export function MessageComposer({
           onClick={() => pick.current?.click()}
           aria-label={t("contracts.messages.attach")}
           title={t("contracts.messages.attach")}
-          className="m-2 mr-0 grid h-8 w-8 shrink-0 place-items-center rounded-xl text-dim hover:bg-sunk hover:text-ink"
+          className="my-0 ml-2 grid h-8 w-8 shrink-0 place-items-center rounded-xl text-dim hover:bg-sunk hover:text-ink"
         >
           <IconAttach width={17} height={17} />
         </button>
@@ -105,13 +105,13 @@ export function MessageComposer({
               send();
             }
           }}
-          className="block max-h-40 min-h-[44px] min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[13.5px] leading-relaxed outline-none placeholder:text-dim"
+          className="block max-h-40 min-h-12 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[13.5px] leading-relaxed outline-none placeholder:text-dim"
         />
         <button
           type="submit"
           disabled={!canSend}
           aria-label={t("contracts.messages.send")}
-          className="m-2 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-act text-on-act hover:bg-act-hover active:scale-95 disabled:opacity-35"
+          className="my-0 mr-2 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-act text-on-act hover:bg-act-hover active:scale-95 disabled:opacity-35"
         >
           <IconSend width={17} height={17} strokeWidth={2.2} />
         </button>

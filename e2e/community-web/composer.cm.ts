@@ -42,3 +42,31 @@ test("một nút Đính kèm thay Ảnh và Video: tải PDF lên, đăng bài v
   await expect(card.getByRole("button", { name: "Tải về bao-gia.pdf" })).toBeVisible();
   await expect(card.getByRole("button", { name: "Xem" })).toBeVisible();
 });
+
+// CR-172 · ô đăng bài không có đệm ngang riêng: mép trái/phải thẳng hàng với thanh tab và thẻ bài cùng cột.
+test("CR172 · ô đăng bài thẳng mép trái/phải với thanh tab của bảng tin", async ({ page }) => {
+  await page.goto("/community");
+  const c = await composer(page).boundingBox();
+  const bar = await page.locator(".feedbar").boundingBox();
+  if (!c || !bar) throw new Error("không có khung");
+  expect(Math.abs(c.x - bar.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(c.x + c.width - (bar.x + bar.width))).toBeLessThanOrEqual(1);
+});
+
+// CR-172 · trang không tìm thấy: khối căn giữa ngang + dọc, phủ rộng 100% vùng nội dung.
+test("CR172 · trang lạ: khối «không tìm thấy» căn giữa ngang và dọc vùng nội dung", async ({
+  page,
+}) => {
+  await page.goto("/khong-co-trang-nay");
+  const box = page.getByTestId("not-found-page");
+  await expect(box).toBeVisible();
+  const b = await box.boundingBox();
+  const vp = page.viewportSize();
+  if (!b || !vp) throw new Error("không có khung");
+  expect(b.width).toBeGreaterThan(vp.width * 0.5); // phủ rộng vùng nội dung, không co về trái
+  const title = await box.locator("h1").boundingBox();
+  if (!title) throw new Error("không có tiêu đề");
+  expect(Math.abs(title.x + title.width / 2 - (b.x + b.width / 2))).toBeLessThanOrEqual(2);
+  expect(title.y).toBeGreaterThan(b.y + b.height * 0.2); // không dồn lên đầu
+  expect(title.y + title.height).toBeLessThan(b.y + b.height * 0.8);
+});

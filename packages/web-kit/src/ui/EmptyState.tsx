@@ -13,7 +13,7 @@ export type EmptyStateProps = {
   testId?: string;
   /** data-testid riêng cho dòng tiêu đề (e2e so khớp nguyên văn câu, không kèm nút). */
   titleTestId?: string;
-  /** `page` ⇒ căn giữa cả khung (trang lạ); mặc định ⇒ khối trong trang. */
+  /** `full` ⇒ chiếm 100% rộng + cao vùng nội dung, căn giữa cả ngang lẫn dọc (CR-172; trang lạ / không có quyền / chưa chọn gì); mặc định ⇒ khối trong trang. */
   full?: boolean;
 };
 
@@ -25,7 +25,16 @@ const WRAP: CSSProperties = {
   padding: "48px 24px",
   gap: 6,
 };
-const FULL: CSSProperties = { ...WRAP, flex: 1, minHeight: "60vh", justifyContent: "center" };
+const FULL: CSSProperties = {
+  ...WRAP,
+  flex: "1 1 auto",
+  alignSelf: "stretch",
+  boxSizing: "border-box",
+  width: "100%",
+  height: "100%",
+  minHeight: "min(60vh, 100%)",
+  justifyContent: "center",
+};
 
 export function EmptyState({
   kind,

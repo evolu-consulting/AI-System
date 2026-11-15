@@ -1,5 +1,7 @@
 // PK-FR-10 · TF5 · nav-v2 · CR-120 · thanh trên 52 px DÙNG CHUNG mọi module: nút thu/mở thanh trái (desktop) hoặc nhận diện công ty (điện
 // thoại), KHE tìm kiếm của module đang mở (Community vẽ ô tìm vào đây), chuông (của module đang mở), công tắc sáng/tối, góp ý, tài khoản.
+
+import { UserChip } from "@ai/web-kit/ui/UserChip";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconFeedback, IconSidebar } from "~/components/icons";
@@ -90,6 +92,11 @@ export function Header({
           >
             <IconFeedback />
           </button>
+        )}
+        {user && (
+          <span className="max-md:hidden">
+            <UserChip name={user.display_name || user.username} />
+          </span>
         )}
         <span className="md:hidden">
           <UserMenu user={user} role={role} onLogout={onLogout} />
