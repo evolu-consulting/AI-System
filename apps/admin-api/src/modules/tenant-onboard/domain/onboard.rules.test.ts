@@ -44,7 +44,7 @@ describe("niti-onboard · file deploy/tenants/nitigroup.yaml", () => {
     expect(rows.slice(1).every((r) => r.parent === "pb-giam-doc")).toBe(true);
     expect(rows[4]?.name).toEqual({ vi: "Phòng Kế toán", en: "Accounting" });
     expect(s.packs).toEqual(["contracts"]);
-    expect(s.addons).toEqual(["contracts-community"]);
+    expect(s.addons).toEqual(["contracts-community", "contracts-partner-confirm"]);
     expect(s.users).toHaveLength(6);
     expect(s.users.filter((u) => u.role === "admin").map((u) => u.email)).toEqual([
       "thuytien.le@nitigroupvn.com",
@@ -62,7 +62,7 @@ describe("niti-onboard · file deploy/tenants/nitigroup.yaml", () => {
       expect(members.length).toBeGreaterThan(0);
       for (const m of members) expect(emails.has(m.email)).toBe(true);
       expect(deptRows(p.spec).issues).toEqual([]);
-      expect(p.spec.addons).toEqual(["contracts-community"]);
+      expect(p.spec.addons).toEqual(["contracts-community", "contracts-partner-confirm"]);
     }
   });
 
