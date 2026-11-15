@@ -41,7 +41,7 @@ export type HeadRuleIn = {
 
 export type PageConfirmWhy = "no_flow" | "not_submitter" | "step_open" | null;
 
-/** Bước của thẻ duyệt đã kết thúc (lượt đọc hỏng / huỷ / xong): không còn lượt đang mở ⇒ coi như không có thẻ duyệt. */
+/** Bước thẻ duyệt đã kết thúc (huỷ / từ chối / xong): không còn lượt đang mở ⇒ coi như không có thẻ duyệt. Máy chủ ánh xạ lượt `failed` (đọc AI hỏng) ⇒ `cancelled` (`approval-run.rules` STEP, `cardStepOf`) nên không cần khoá riêng. */
 const ENDED_STEPS: ReadonlySet<string> = new Set(["cancelled", "rejected", "done"]);
 
 export type HeadRule = {

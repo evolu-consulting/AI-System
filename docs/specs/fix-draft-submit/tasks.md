@@ -16,7 +16,8 @@ Nháp lần đầu: lượt duyệt đã kết thúc (đọc AI hỏng / huỷ /
 - Kịch bản: khi nháp lần đầu không gửi duyệt được thì «Gửi duyệt» là nút chính bị khoá kèm lý do [test: apps/workspace-web/src/features/contract-review/lib/head-rule.test.ts » headActs: không Gửi duyệt được; e2e/cr127/j14-chua-co-quy-trinh.spec.ts]
 
 #### Yêu cầu: Chuyển sang nhập tay bỏ lượt đọc AI đã hỏng
-Khi chuyển HĐ nháp đọc lỗi sang nhập tay, HĐ không còn gắn lượt đọc hỏng (lượt cũ giữ làm lịch sử) để thẻ duyệt không báo bước «huỷ».
+Khi chuyển HĐ nháp đọc lỗi sang nhập tay, HĐ không còn gắn lượt đọc hỏng (lượt cũ giữ làm lịch sử) để thẻ duyệt không báo bước «huỷ». Lượt còn đang đọc (đua với job đọc) bị đóng luôn, để Gửi duyệt không báo bận mãi. Loại HĐ đang hiện trên màn hình (mặc định theo hướng) được ghi vào dữ liệu.
+- Kịch bản: khi bấm Nhập tay đúng lúc lượt đọc chưa đóng thì lượt bị đóng, Gửi duyệt mở được lượt mới và deal được ghi [test: apps/hub-api/src/modules/packs/contracts/adapters/manual-entry.int.test.ts » lượt đọc còn extracting]
 - Kịch bản: khi người dùng chuyển sang nhập tay thì HĐ không còn gắn lượt đọc hỏng và Gửi duyệt được [test: apps/hub-api/src/modules/packs/contracts/adapters/manual-entry.int.test.ts » lượt đọc AI đã hỏng không còn gắn HĐ]
 
 #### Yêu cầu: Xem trước luồng đi đúng nhánh theo người gửi
@@ -26,4 +27,4 @@ Khi chuyển HĐ nháp đọc lỗi sang nhập tay, HĐ không còn gắn lư�
 
 ## Việc còn lại / báo
 - HĐ đã hỏng sẵn trên bản test (run_id còn dính) hết lỗi nhờ sửa phía web, không cần backfill.
-- `deal` NULL khi lưu nháp nhập tay (UI hiện «Bán» mặc định): chưa sửa, ngoài phạm vi.
+- `deal` NULL: `startManual` ghi `deal` mặc định theo hướng (như `dealOf` web). Chọn loại khác khi nhập tay vẫn bị khoá (ô Loại chỉ sửa được ở màn xác nhận AI) — báo.

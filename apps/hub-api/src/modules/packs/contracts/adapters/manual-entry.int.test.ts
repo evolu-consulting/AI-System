@@ -62,6 +62,25 @@ afterAll(async () => {
 });
 
 describe("CR-157 chuyển sang nhập tay", () => {
+  it("lượt đọc còn extracting (đua với job đọc) bị đóng khi Nhập tay; Gửi duyệt mở được lượt mới; deal ghi theo màn hình", async () => {
+    const id = await contract({ direction: "purchase" });
+    const run = crypto.randomUUID();
+    await o`insert into contracts.approvals (id, tenant_id, contract_id, status, started_by) values (${run}, ${T}, ${id}, 'extracting', ${creator})`;
+    await o`update contracts.contracts set run_id = ${run} where id = ${id}`;
+    await startManualEntry({ uow: uow() })(who(creator), id);
+    const [a] = await o<
+      { status: string }[]
+    >`select status from contracts.approvals where id = ${run}`;
+    expect(a?.status).toBe("failed");
+    const [c] = await o<
+      { deal: string | null }[]
+    >`select deal from contracts.contracts where id = ${id}`;
+    expect(c?.deal).toBe("buy");
+    await reconcileEntry({ uow: uow() })(who(creator), id, true);
+    const sub = submitContract({ uow: uow(), gate, engine });
+    expect(await sub(who(creator), id, {})).toMatchObject({ status: "processing" });
+  });
+
   it("lượt đọc AI đã hỏng không còn gắn HĐ (thẻ duyệt không báo «huỷ» làm mất Gửi duyệt); lượt cũ giữ làm lịch sử; Gửi được", async () => {
     const id = await contract();
     const run = crypto.randomUUID();

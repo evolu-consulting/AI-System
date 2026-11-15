@@ -91,7 +91,13 @@ export function submissionsRepo(tx: Tx, tid: string) {
     async startManual(id: string, actor: string): Promise<number> {
       const [r] = await tx.execute<{
         version: number;
-      }>(sql`with u as (update contracts.contracts set entry_source = 'manual',
+      }>(sql`with old as (select run_id from contracts.contracts where id = ${id}::uuid and tenant_id = ${tid}::uuid),
+        -- Đua với job đọc (ghi extract_state = failed trước, đóng lượt sau): bỏ run_id mà lượt còn extracting ⇒ không ai đóng nữa ⇒ Gửi duyệt báo busy mãi. Đóng lượt cũ ngay đây.
+        a as (update contracts.approvals set status = 'failed', queued_at = null, updated_at = now()
+          where id = (select run_id from old) and tenant_id = ${tid}::uuid and status = 'extracting'),
+        u as (update contracts.contracts set entry_source = 'manual',
+          -- Loại HĐ đang hiện trên màn hình (mặc định theo hướng, như dealOf bên web) ghi vào dữ liệu — trước đây NULL dù UI hiện «Bán».
+          deal = coalesce(deal, case when direction = 'purchase' then 'buy' else 'sell' end),
           extract_state = 'ready', error = null, run_id = null, reconciled_by = null, reconciled_at = null, version = version + 1, updated_at = now()
         where id = ${id}::uuid and tenant_id = ${tid}::uuid and status = 'draft' and extract_state = 'failed' returning id, version),
         e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
