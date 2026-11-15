@@ -70,11 +70,17 @@ async function giveEvidence(p: Page): Promise<void> {
   await ev.locator("#evidence-note").fill(`Đồng ý (smoke ${RUN})`);
   const files = ev.locator("#evidence-files");
   if (await files.count()) {
+    // Thẻ tệp hiện NGAY khi chọn, trước khi POST /attachments xong ⇒ bấm Duyệt sớm = tệp chưa vào bản nháp ⇒ báo thiếu bằng chứng (S8 lượt 231927).
+    const uploaded = p.waitForResponse(
+      (r) => r.request().method() === "POST" && /\/attachments$/.test(new URL(r.url()).pathname),
+      { timeout: 30_000 },
+    );
     await files.setInputFiles({
       name: `y-kien-${RUN}.pdf`,
       mimeType: "application/pdf",
       buffer: await pdfOf([`Y KIEN DUYET ${RUN}`]),
     });
+    expect((await uploaded).status(), "đính tệp bằng chứng").toBeLessThan(300);
     await expect(ev.getByTestId("evidence-file-list")).toBeVisible({ timeout: 30_000 });
   }
   await ev.getByTestId(/^request-(approve|pass)-confirm$/).click();
@@ -488,6 +494,11 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
         await expect(a.getByTestId("msg-row").filter({ hasText: `Xin chào ${RUN}` })).toBeVisible();
         const b = await as("b", "nv");
         await b.goto(`${E.cw}/contracts/messages`);
+        // CR-172: Tin nhắn mặc định lọc công ty MÌNH ⇒ chọn chip công ty A (người gửi) mới thấy cuộc.
+        await b
+          .getByTestId("company-filter")
+          .getByRole("button", { name: /Smoke A/ })
+          .click({ timeout: 60_000 });
         const conv = b.getByTestId("conv-row").filter({ hasText: "Nhân viên Smoke A" });
         await reloadUntil(b, async () => expect(conv).toBeVisible({ timeout: 4_000 }));
         await conv.click();
