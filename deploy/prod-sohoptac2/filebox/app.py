@@ -95,6 +95,15 @@ def health():
 
 
 
+def _disposition(name: str) -> str:
+    """attachment; filename="<ASCII>"; filename*=UTF-8''<tên gốc> — header chỉ nhận latin-1."""
+    import unicodedata
+
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii")
+    plain = "".join(c if c.isprintable() and c not in '"\\' else "_" for c in plain) or "file"
+    return f"attachment; filename=\"{plain}\"; filename*=UTF-8''{urllib.parse.quote(name)}"
+
+
 @app.get("/files/{file_id}/content", summary="Download (Range for parallel parts; ?compress=; ?version=)")
 def download(file_id: str, request: Request, compress: str | None = None, version: str | None = None):
     row = _row(file_id)
@@ -114,7 +123,8 @@ def download(file_id: str, request: Request, compress: str | None = None, versio
     name = row["name"] + {"zstd": ".zst", "gzip": ".gz"}.get(compress, "")
     headers = {
         "Accept-Ranges": "bytes",
-        "Content-Disposition": f'attachment; filename="{name}"',
+        # Tên có dấu (tiếng Việt) không mã hoá được latin-1 ⇒ 500: tên ASCII dự phòng + filename* UTF-8 (RFC 6266/5987).
+        "Content-Disposition": _disposition(name),
         "X-File-Encoding": obj.get("Metadata", {}).get("encoding", "identity"),
         "X-Version-Id": obj.get("VersionId") or "",
     }
