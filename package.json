@@ -143,6 +143,7 @@
     "combine:dev": "bun --env-file=.env.local tools/hub-dev/src/combine.ts",
     "demo:flows": "bun --env-file=.env.local tools/scripts/src/seed-cr128-flows.ts",
     "tenant:ai-setup": "bun --env-file=.env.local tools/scripts/src/tenant-ai-setup.ts",
+    "tenant:connect": "bun --env-file=.env.local tools/scripts/src/tenant-connect.ts",
     "tenant:flows": "bun --env-file=.env.local tools/scripts/src/tenant-flows.ts",
     "demo:org": "bun --env-file=.env.local tools/scripts/src/seed-demo-org.ts",
     "demo:purchase": "bun --env-file=.env.local tools/scripts/src/seed-purchase-flow.ts",
