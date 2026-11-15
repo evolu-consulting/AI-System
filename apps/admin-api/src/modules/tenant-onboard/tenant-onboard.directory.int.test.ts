@@ -51,7 +51,7 @@ afterAll(async () => {
 });
 
 describe("CR-159 · onboarding bật danh bạ", () => {
-  test("đủ tên pháp lý + MST ⇒ bật danh bạ; chạy lại không đổi (version, audit)", async () => {
+  test("đủ tên pháp lý + MST ⇒ bật danh bạ, chạy lại không đổi (version, audit)", async () => {
     const r = await onboardTenant(db, spec("dir-full", FULL), PA);
     expect(r.directory).toEqual({ state: "listed", changed: true });
     const a = await state("dir-full");

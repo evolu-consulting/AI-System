@@ -64,7 +64,7 @@ afterAll(async () => {
 });
 
 describe("CR-159 · tenant-ai-setup", () => {
-  it("chạy thử không ghi; --apply cài đủ; chạy lại không đổi", async () => {
+  it("chạy thử không ghi, --apply cài đủ, chạy lại không đổi", async () => {
     const dry = await run(o, "ai-new", false);
     expect(dry.entitlement).toBe(true);
     expect((await counts())?.ent).toBe(0);
