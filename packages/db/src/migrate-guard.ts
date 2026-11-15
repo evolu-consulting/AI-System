@@ -82,6 +82,12 @@ export const ACCEPTED_EDITS: readonly AcceptedEdit[] = [
     dbHash: "79b0ddb00a5776030c1275db110b4501f464ad7b0829c2edd6835907b4d24ca0",
     why: "CR-169 lát 2a: bản đã áp ở stg-test (4b0824d9f); chỉ bỏ GRANT các hàm trò chuyện chung cc_* đã gỡ ở hub 0149 (DB dựng sạch lỗi nếu giữ), lần đầu áp tương đương",
   },
+  {
+    table: "__drizzle_migrations_hub",
+    tag: "0145_cr161_connect_links",
+    dbHash: "c05ec6646185507c2543775ad721687b35c78ae5cdf25cedc5888d56a35c0290",
+    why: "fix-int-final: bản đã áp ở stg-test (e610e35c8); chỉ thêm DROP FUNCTION IF EXISTS hub.cc_links trước CREATE OR REPLACE (chạy lại được sau 0149), lần đầu áp tương đương",
+  },
 ];
 
 type Journal = { entries: { tag: string; when: number }[] };

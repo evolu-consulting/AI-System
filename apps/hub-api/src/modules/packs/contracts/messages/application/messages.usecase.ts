@@ -175,7 +175,7 @@ function conversationOps(c: Ctx) {
     ): Promise<ConversationPage> {
       const filter: CompanyFilter = q.filter ?? { kind: "all" };
       const source = sourcesOf(filter);
-      const fetch = (src: typeof source) =>
+      const loadPage = (src: typeof source) =>
         d.uow.tenant(who, (r) =>
           r.messages.conversations(who.userId, {
             cursor: q.cursor,
@@ -187,10 +187,10 @@ function conversationOps(c: Ctx) {
       // Chỉ lọc công ty (nguồn partner thuần) mới để lỗi quyền đi lên (403); `all`/`own` còn phần nội bộ.
       const rows = source.internal
         ? await internalOnPartnerDenied(
-            () => fetch(source),
-            () => fetch({ internal: true, partner: false }),
+            () => loadPage(source),
+            () => loadPage({ internal: true, partner: false }),
           )
-        : await fetch(source);
+        : await loadPage(source);
       const page = rows.slice(0, q.limit);
       const people = await peopleOf(who, page);
       const last = page[page.length - 1];

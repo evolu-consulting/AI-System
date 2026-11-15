@@ -411,6 +411,9 @@ BEGIN
   RETURN true;
 END $$;
 --> statement-breakpoint
+-- Chạy lại trên DB đã qua hub 0149 (cc_links bỏ cột `unread` ⇒ kiểu trả về khác): DROP trước, quyền cấp lại ở cuối file.
+DROP FUNCTION IF EXISTS hub.cc_links(text, timestamptz, uuid, integer);
+--> statement-breakpoint
 -- Danh sách kết nối (connected / pending_in / pending_out) của A, keyset `(since, tenant_id) DESC`, 1 câu. p_limit kẹp 1..101
 -- (route xin limit+1 để biết còn trang). `unread` = 0 ở 0145; hub 0146 (luồng trò chuyện) thay thân để tính chưa đọc.
 CREATE OR REPLACE FUNCTION hub.cc_links(p_status text, p_cur_t timestamptz, p_cur_id uuid, p_limit integer)
