@@ -3,6 +3,7 @@
 // Khác flows3: yaml thật không có nhân viên Kế toán (Hoa/Lan) và Minh (Evolu) ⇒ người tạo thay bằng người thật (xem từng ca). Ca độc lập (không serial).
 import { expect, test } from "@playwright/test";
 import {
+  agreeSignTogether,
   approveStep,
   as,
   BTN,
@@ -90,8 +91,7 @@ test("FL3-3 · Tiên (Niti) tự tạo ⇒ Chuẩn bị ký ⇒ Ký ⇒ Có ⇒ 
   await expect(julian.getByTestId(BTN)).toHaveCount(0);
   await approveStep(thomas, bid, "Trưởng phòng duyệt");
   await uploadSigned(thomas, bid);
-  const co = thomas.getByRole("button", { name: /Đồng ý ký cùng lúc|Đồng ý/ }).first();
-  if (await co.isVisible().catch(() => false)) await co.click();
+  await agreeSignTogether(thomas);
 
   await tien.goto(`${E.cw}/contracts/c/${id}`);
   await reloadUntil(
@@ -116,8 +116,7 @@ test("FL3-4 · Công ty MỘT người (Dung, Preschool) gửi: Chuẩn bị ký
   // người phụ trách của Niti là Giám đốc (cấp cao nhất) ⇒ KHÔNG bước duyệt: Chuẩn bị ký → Ký → Đồng ý
   await doTask(tien, "Chuẩn bị ký");
   await uploadSigned(tien, bid);
-  const co = tien.getByRole("button", { name: /Đồng ý ký cùng lúc|Đồng ý/ }).first();
-  if (await co.isVisible().catch(() => false)) await co.click();
+  await agreeSignTogether(tien);
 
   await dung.goto(`${E.cw}/contracts/c/${id}`);
   await reloadUntil(

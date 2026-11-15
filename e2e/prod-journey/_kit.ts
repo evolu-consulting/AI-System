@@ -412,3 +412,19 @@ export async function ensureConnected(from: Page, a: Side, to: Page, b: Side): P
   }
   linked.add(k);
 }
+
+/** Bên nhận: khối «Ký cùng lúc» ⇒ chọn người ký (nhóm «Người ký HĐ») ⇒ «Đồng ý ký cùng lúc». */
+export async function agreeSignTogether(p: Page): Promise<void> {
+  const btn = p.getByRole("button", { name: "Đồng ý ký cùng lúc" });
+  await reloadUntil(p, async () => expect(btn).toBeVisible({ timeout: 4_000 }), 180_000);
+  const pick = p.getByRole("combobox").filter({ hasText: /Chọn người ký/ });
+  await expect(pick.locator("option"), "nhóm «Người ký HĐ» không có ai để chọn").not.toHaveCount(
+    1,
+    {
+      timeout: 15_000,
+    },
+  );
+  await pick.selectOption({ index: 1 });
+  await btn.click();
+  await expect(btn).toBeHidden({ timeout: 60_000 });
+}
