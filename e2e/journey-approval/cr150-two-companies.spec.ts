@@ -93,7 +93,7 @@ test("B Trả lại có lý do ⇒ A (nhân viên) thấy trả lại + lý do",
   await expect(a.getByTestId("partner-round").first()).toContainText(/trả lại/i, {
     timeout: 90_000,
   });
-  await expect(a.getByText("Sửa điều 4 về thời hạn thanh toán")).toBeVisible();
+  await expect(a.getByText("Sửa điều 4 về thời hạn thanh toán").first()).toBeVisible();
 });
 
 test("B Từ chối có lý do ⇒ A (nhân viên) thấy từ chối + lý do", async ({ browser }) => {
@@ -115,5 +115,5 @@ test("B Từ chối có lý do ⇒ A (nhân viên) thấy từ chối + lý do",
   await expect(a.getByTestId("partner-round").first()).toContainText(/từ chối/i, {
     timeout: 90_000,
   });
-  await expect(a.getByText("Giá cao hơn thoả thuận")).toBeVisible();
+  await expect(a.getByText("Giá cao hơn thoả thuận").first()).toBeVisible();
 });
