@@ -13,6 +13,7 @@ import type { PackAccessView, PackUow } from "../kit/public";
 import { flowEngine, packTenantOnly } from "../kit/public";
 import { aiMilestonesDoneHook } from "./adapters/ai-milestones.repo";
 import { aiTransport, EXTRACT_MODEL } from "./adapters/ai-transport";
+import { unavailableAgent } from "./adapters/ai-unavailable";
 import { approvalRoutes } from "./adapters/approval.routes";
 import { registerContractDoneHook } from "./adapters/contract-state.repo";
 import { createExtractStream } from "./adapters/extract-stream.redis";
@@ -100,15 +101,15 @@ const envInt = (k: string, def: number): number => {
 };
 
 /** Hàng đợi lượt đọc: Redis Streams (bền) hoặc, vắng Redis, chạy ngay trong tiến trình. AI chưa cấu hình (không khoá, không
- *  seam) ⇒ không xếp, không mở worker: HĐ giữ `extracting` tới vòng quét STALE (như HD1 khi chưa có AI). */
-function extractJobs(
+ *  seam) ⇒ không mở worker; lượt đọc kết thúc NGAY `extract_failed AGENT_UNAVAILABLE` (`down`), không chờ vòng quét STALE. */
+export function extractJobs(
   db: Db,
   flow: ContractsFlowDeps,
   handle: (j: ExtractJob) => Promise<void>,
-  o: { concurrency: number; ready: boolean },
+  o: { concurrency: number; ready: boolean; down: (j: ExtractJob) => Promise<void> },
 ) {
   if (!o.ready) {
-    const jobs: ExtractJobs = { enqueue: async () => undefined };
+    const jobs: ExtractJobs = { enqueue: o.down };
     return { jobs, reclaimOnce: async () => 0 };
   }
   // TD #242 · job chạy trong tiến trình (vắng Redis / Redis sập) dùng chung một semaphore, cùng trần với worker.
@@ -196,7 +197,15 @@ function extractionRunner(d: AiDeps, flow: ContractsFlowDeps, pack: ReturnType<t
     log: logger,
     ...(d.onSettled ? { onSettled: d.onSettled } : {}),
   });
-  return { handle, schedule };
+  // AI chưa sẵn sàng: cùng use case, agent luôn trả AGENT_UNAVAILABLE ⇒ đường ghi lỗi sẵn có đóng lượt đọc.
+  const downRun = createRunExtraction({
+    uow,
+    agent: unavailableAgent,
+    verifier,
+    tax: null,
+  });
+  const down = handleExtractJob({ run: downRun, uow, log: logger });
+  return { handle, schedule, down };
 }
 
 export function contractsAiModule(
@@ -220,11 +229,18 @@ export function contractsAiModule(
     flow.engine.onDecided = { ...flow.engine.onDecided, contracts: recordEngineDecision(pack) };
   if (eng && flow.engine)
     flow.engine.onTaskEvents = { ...flow.engine.onTaskEvents, contracts: recordTaskEvents(pack) };
-  const { handle, schedule } = extractionRunner(d, flow, pack);
+  const { handle, schedule, down } = extractionRunner(d, flow, pack);
   const ready = d.transport !== undefined || flow.ai.ready;
+  if (!ready)
+    logger.warn("contracts-extraction-ai-not-ready", {
+      feature: "contracts.extraction",
+      mode: flow.redis ? "queue" : "inproc",
+      effect: "extract_failed AGENT_UNAVAILABLE",
+    });
   const { jobs, reclaimOnce } = extractJobs(db, flow, handle, {
     concurrency: d.concurrency ?? 2,
     ready,
+    down,
   });
   // Review B #27/#28: quota + kiểm AI sẵn sàng của "Trích lại" chạy SAU `decide`, chỉ khi thật sự trích lại.
   const redo = { ready, quota: flow.quota };
