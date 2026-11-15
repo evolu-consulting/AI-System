@@ -20,8 +20,8 @@ Sửa: MỘT luật thiếu-trường dùng chung `kindTermsMissing` (@ai/contra
 - e2e dùng backend giả nhưng gọi ĐÚNG `kindTermsMissing` thật (import từ packages/contracts) để giả 422 như máy chủ.
 
 ## Việc còn lại
-- e2e nhập tay (9 ca) và «dùng sản phẩm có sẵn» đang `test.fixme`: màn nhập tay Lưu nháp không qua menu `act-saveDraft`; cần dò nút rồi bật. Câu báo «Thiếu: …» chưa có ca e2e (aria-invalid đã có).
 - Ca e2e «Gửi duyệt» đi hết engine duyệt (bước kế) chưa phủ: backend giả dừng ở lệnh xác nhận.
+- Đã bật lại ca nhập tay (Lưu nháp = PATCH /fields; «Lưu nháp» trong «Thao tác ▾»), «dùng sản phẩm có sẵn» (dòng trùng tên SP), Nhượng quyền có dòng hàng, câu «Thiếu: <tên ô>»; ca 5.5a ở v2g-review đổi theo hành vi mới.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp

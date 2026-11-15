@@ -313,11 +313,8 @@ test("Nhượng quyền thiếu ô ở tab Phí: câu báo nêu đúng tên ô, 
   await expect(page.locator("#kt-fee_basis")).toHaveAttribute("aria-invalid", "true");
   await expect(page.locator("#kt-period")).toHaveAttribute("aria-invalid", "true");
   expect(writes(f.sent, "/review")).toHaveLength(0);
-  const msg = page.getByTestId("act-error");
-  await expect(msg).toContainText("Thiếu:");
-  await expect(msg).toContainText("Phí định kỳ tính theo");
-  await expect(msg).toContainText("Kỳ thu");
-  await expect(msg).not.toContainText("Thương hiệu được nhượng");
+  const msg = page.getByRole("alert").filter({ hasText: "Thiếu:" }).first();
+  await expect(msg).toHaveText("Thiếu: Phí định kỳ tính theo, Kỳ thu");
   await pick(page, "fee_basis", "fixed");
   await fill(page, "fee_fixed", "5.000.000");
   await pick(page, "period", "month");
@@ -342,7 +339,7 @@ test("Nhượng quyền bên nước ngoài, không tick «Đã đăng ký Bộ 
 });
 
 // ---- Lỗi 2: dòng hàng chưa gắn SP không chặn; hộp «Gắn sản phẩm» hiện, tạo mới / dùng có sẵn, gửi được ----
-for (const deal of ["sell", "buy", "franchise"] as const) {
+for (const deal of ["sell", "buy"] as const) {
   test(`AI đọc · ${deal}: dòng «nuoc suoi» chưa gắn SP ⇒ không báo thiếu, hộp Gắn sản phẩm hiện và gửi được`, async ({
     page,
   }) => {
