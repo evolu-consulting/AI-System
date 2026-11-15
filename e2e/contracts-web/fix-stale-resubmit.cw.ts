@@ -11,7 +11,8 @@ const json = (r: import("@playwright/test").Route, status: number, body: unknown
 
 /** Nháp đã gửi 1 vòng + có phần AI đọc (màn xác nhận ⇒ «Gửi lại» luôn ghi nháp trước). */
 async function setup(page: import("@playwright/test").Page, bump: { review: number }) {
-  const st = { version: 3, status: "draft" };
+  // `version` = bản trên hub; `shown` = bản màn đang thấy (hub trả chi tiết theo `shown`; thao tác ghi xong / báo STALE thì `shown` đuổi kịp).
+  const st = { version: 3, shown: 3, status: "draft" };
   const sent: Sent[] = await installV2f(page, {
     contract: () => ({
       ...activeContract({
@@ -23,7 +24,7 @@ async function setup(page: import("@playwright/test").Page, bump: { review: numb
       error: null,
       submit_round: 1,
       milestones: [],
-      version: st.version,
+      version: st.shown,
       can: {
         submit: true,
         withdraw: false,
@@ -54,7 +55,8 @@ async function setup(page: import("@playwright/test").Page, bump: { review: numb
   await page.route(`**/pack/contracts/contracts/${ACTIVE_ID}/review`, (r) => {
     rec(r);
     const b = r.request().postDataJSON() as { version: number };
-    if (b.version !== st.version)
+    if (b.version !== st.version) {
+      st.shown = st.version; // màn tải lại sẽ thấy bản mới
       return json(r, 409, {
         error: {
           code: "CONTRACT_STALE",
@@ -62,7 +64,9 @@ async function setup(page: import("@playwright/test").Page, bump: { review: numb
           details: { current: { version: st.version } },
         },
       });
+    }
     st.version += bump.review;
+    st.shown = st.version;
     return json(r, 200, { id: ACTIVE_ID, status: "draft", version: st.version, items: 0 });
   });
   let submits = 0;
