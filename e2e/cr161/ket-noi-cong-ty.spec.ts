@@ -1,12 +1,12 @@
 // biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
-// CR-161 · hành trình «kết nối hai công ty, không cần hợp đồng» (G4, N2: mỗi bước đúng vai, khác người tạo). VIẾT trong lát, chạy trên evotest.
+// CR-161 · hành trình «kết nối hai công ty, không cần hợp đồng» (CR-169: trò chuyện chuyển sang Tin nhắn — phần nhắn tin ở e2e/cr169; G4, N2: mỗi bước đúng vai, khác người tạo). VIẾT trong lát, chạy trên evotest.
 // Công ty/người: `e2e/_kit/two-companies.ts`. Nhãn nguyên văn theo spec §8 + i18n `contracts.connect.*`. Không sleep: chờ theo điều kiện (stream đẩy chuông/tin).
 import { type Browser, expect, type Page, test } from "@playwright/test";
 import { apiLogin, tenantIdByKey } from "../_kit/api";
-import { CO, POST_BODY, WHO } from "../_kit/two-companies";
+import { CO, POST_BODY, POST_BODY_B, WHO } from "../_kit/two-companies";
 import { type Env, loginCw } from "../journey-approval/_journey";
 
-// Mặc định (không serial) + 1 worker: ca đỏ không làm các ca sau bị bỏ qua — ca tệp (J3b/J4b) tách riêng để lỗi kho tệp không che phần còn lại.
+// Mặc định (không serial) + 1 worker: ca đỏ không làm các ca sau bị bỏ qua.
 
 const need = (n: string): string => {
   const v = process.env[n];
@@ -25,11 +25,6 @@ const envOf = (side: "a" | "b"): Env => ({
 const [EA, EB] = [envOf("a"), envOf("b")];
 const RUN = need("CR161_RUN");
 const NOTE = `Mong hai bên hợp tác ${RUN}`;
-const HELLO = `Chào Preschool, gửi báo giá ${RUN}`;
-const HELLO_FILE = `Gửi kèm báo giá ${RUN}`;
-const REPLY = `NitiGroup nhận được, cảm ơn ${RUN}`;
-const FILE = `bao-gia-${RUN}.pdf`;
-const PDF = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
 
 const open = async (browser: Browser, e: Env, user: string) => {
   const ctx = await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } });
@@ -45,7 +40,10 @@ const bell = async (page: Page, text: string) => {
   return item;
 };
 const partnerUrl = (tenantId: string, other: "a" | "b") =>
-  `/contracts/partners?party=${encodeURIComponent(`tax:${CO[other].tax}`)}&tenant=${tenantId}&tab=chat`;
+  `/contracts/partners?party=${encodeURIComponent(`tax:${CO[other].tax}`)}&tenant=${tenantId}&tab=chat`; // đường dẫn cũ: CR-169 đổi về Tổng quan
+/** Chip lọc công ty ở Tin nhắn (khớp một phần tên: tên công ty hoặc tên pháp lý). */
+const chipOf = (page: Page, name: string) =>
+  page.getByTestId("company-filter").getByRole("button", { name: new RegExp(name) });
 const tabOf = (page: Page, name: string) => page.getByRole("tab", { name, exact: true });
 let tenantA = "";
 let tenantB = "";
@@ -95,7 +93,7 @@ test("CR161-J2 · Dung (Preschool, Toàn quyền, không phải người mời) 
   await ctx.close();
 });
 
-test("CR161-J3 · Tiên thấy Preschool «Đã kết nối», mở tab «Trò chuyện», nhắn", async ({
+test("CR161-J3 · Tiên thấy Preschool «Đã kết nối», bấm «Nhắn tin» ⇒ Tin nhắn lọc đúng công ty (chip bật)", async ({
   browser,
 }) => {
   const { ctx, page } = await open(browser, EA, WHO.tien);
@@ -103,77 +101,60 @@ test("CR161-J3 · Tiên thấy Preschool «Đã kết nối», mở tab «Trò c
   const list = page.getByTestId("connected-list");
   await expect(list).toContainText(CO.b.name);
   await expect(list).toContainText("Đã kết nối");
-  await list.getByRole("link", { name: "Mở trang đối tác" }).click();
-  await tabOf(page, "Trò chuyện").click();
-  await page.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(HELLO);
-  await page.getByRole("button", { name: "Gửi", exact: true }).click();
-  const msg = page.getByTestId("cc-message").filter({ hasText: HELLO });
-  await expect(msg).toBeVisible();
+  await list.getByRole("link", { name: "Nhắn tin", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/contracts/messages?.*company=${tenantB}`));
+  await expect(chipOf(page, CO.b.name)).toHaveAttribute("aria-pressed", "true");
   await ctx.close();
 });
 
-test("CR161-J3b · Tiên đính kèm tệp PDF vào tin trong tab «Trò chuyện»", async ({ browser }) => {
+test("CR161-J3b · Tiên mở trang đối tác của công ty đã kết nối: chỉ 3 tab, không «Trò chuyện» / «Bảng tin công ty» / «Thao tác»", async ({
+  browser,
+}) => {
   const { ctx, page } = await open(browser, EA, WHO.tien);
+  await page.goto("/contracts/partners");
+  await page.getByTestId("connected-list").getByRole("link", { name: "Mở trang đối tác" }).click();
+  await expect(page.getByRole("tablist", { name: "Thông tin đối tác" })).toBeVisible();
+  await expect(page.getByRole("tab")).toHaveText([
+    /^Tổng quan$/,
+    /^Hợp đồng/,
+    /^Sổ việc & ghi chú$/,
+  ]);
+  await expect(tabOf(page, "Trò chuyện")).toHaveCount(0);
+  await expect(tabOf(page, "Bảng tin công ty")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Thao tác", exact: true })).toHaveCount(0);
+  // đường dẫn cũ `?tab=chat` ⇒ về Tổng quan
   await page.goto(partnerUrl(tenantB, "b"));
-  await page.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(HELLO_FILE);
-  await page.getByTestId("cc-file-input").setInputFiles({
-    name: FILE,
-    mimeType: "application/pdf",
-    buffer: PDF,
-  });
-  // tệp tải lên ngay khi chọn: chờ thẻ «Tệp sẽ gửi» có tên tệp và hết «Đang tải lên…» rồi mới bấm Gửi
-  const drafts = page.getByLabel("Tệp sẽ gửi");
-  await expect(drafts).toContainText(FILE);
-  await expect(drafts).not.toContainText("Đang tải lên…");
-  await page.getByRole("button", { name: "Gửi", exact: true }).click();
-  const msg = page.getByTestId("cc-message").filter({ hasText: HELLO_FILE });
-  await expect(msg).toBeVisible();
-  await expect(msg).toContainText(FILE);
+  await expect(tabOf(page, "Tổng quan")).toHaveAttribute("aria-selected", "true");
   await ctx.close();
 });
 
-test("CR161-J4 · Dung mở chuông «Tin nhắn mới…», thấy tin, trả lời, tab «Bảng tin công ty» thấy bài công khai của NitiGroup", async ({
+test("CR161-J4 · Dung (Preschool) › Tin nhắn › chip NitiGroup › «Bảng tin NitiGroup-test» thấy bài công khai của NitiGroup", async ({
   browser,
 }) => {
   const { ctx, page } = await open(browser, EB, WHO.dung);
-  await (await bell(page, `Tin nhắn mới từ ${CO.a.name}`)).click();
-  const msg = page.getByTestId("cc-message").filter({ hasText: HELLO });
-  await expect(msg).toBeVisible();
-  await page.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(REPLY);
-  await page.getByRole("button", { name: "Gửi", exact: true }).click();
-  await expect(page.getByTestId("cc-message").filter({ hasText: REPLY })).toBeVisible();
-  await tabOf(page, "Bảng tin công ty").click();
-  await expect(
-    page.getByText(`Bạn đang xem bài công khai của công ty đã kết nối: ${CO.a.name}.`),
-  ).toBeVisible();
-  await expect(page.getByTestId("cc-post").filter({ hasText: POST_BODY })).toBeVisible();
+  await page.goto(`/contracts/messages?company=${tenantA}`);
+  await expect(chipOf(page, CO.a.name)).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("open-feed").click();
+  const dlg = page.getByTestId("feed-dialog");
+  await expect(dlg.getByTestId("feed-post").filter({ hasText: POST_BODY })).toBeVisible();
   await ctx.close();
 });
 
-test("CR161-J4b · Dung thấy tin kèm tệp PDF và tải được tệp", async ({ browser }) => {
-  const { ctx, page } = await open(browser, EB, WHO.dung);
-  await page.goto(partnerUrl(tenantA, "a"));
-  const msg = page.getByTestId("cc-message").filter({ hasText: HELLO_FILE });
-  await expect(msg).toContainText(FILE);
-  const down = page.waitForEvent("download");
-  await msg.getByTestId("file-download").first().click();
-  expect((await down).suggestedFilename()).toBe(FILE);
-  await ctx.close();
-});
-
-test("CR161-J5 · N2: Thanh (Toàn quyền khác của NitiGroup, không phải người mời) cũng thấy cuộc trò chuyện và câu trả lời của Dung", async ({
+test("CR161-J5 · N2: Thanh (Toàn quyền khác của NitiGroup, không phải người mời) cũng thấy Preschool đã kết nối và Bảng tin Preschool", async ({
   browser,
 }) => {
   const { ctx, page } = await open(browser, EA, WHO.thanh);
   await page.goto("/contracts/partners");
   await expect(page.getByTestId("connected-list")).toContainText(CO.b.name);
-  await page.goto(partnerUrl(tenantB, "b"));
-  await expect(page.getByTestId("cc-message").filter({ hasText: HELLO })).toBeVisible();
-  await expect(page.getByTestId("cc-message").filter({ hasText: REPLY })).toBeVisible();
+  await page.goto(`/contracts/messages?company=${tenantB}`);
+  await page.getByTestId("open-feed").click();
+  await expect(
+    page.getByTestId("feed-dialog").getByTestId("feed-post").filter({ hasText: POST_BODY_B }),
+  ).toBeVisible();
   await ctx.close();
 });
 
-test("CR161-J6 · Vy (nhân viên NitiGroup): không nút «Tìm công ty», không tab «Trò chuyện» / «Bảng tin công ty», chỉ băng giải thích", async ({
+test("CR161-J6 · Vy (nhân viên NitiGroup): không nút «Tìm công ty», chỉ băng giải thích", async ({
   browser,
 }) => {
   const { ctx, page } = await open(browser, EA, WHO.vy);
@@ -184,7 +165,7 @@ test("CR161-J6 · Vy (nhân viên NitiGroup): không nút «Tìm công ty», kh�
   await expect(page.getByRole("button", { name: "Tìm công ty" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Gửi lời mời kết nối" })).toHaveCount(0);
   await expect(page.getByTestId("connected-list")).toHaveCount(0);
-  // API cũng chặn: nhân viên gọi danh sách kết nối ⇒ 403 (R1), và trang đối tác không có tab «Trò chuyện» / «Bảng tin công ty»
+  // API cũng chặn: nhân viên gọi danh sách kết nối ⇒ 403 (R1); nhưng CR-169: vẫn thấy chip công ty đã kết nối trong Tin nhắn
   const s = await apiLogin({
     base: need("JA_API_URL"),
     tenantKey: EA.tenantKey,
@@ -199,14 +180,12 @@ test("CR161-J6 · Vy (nhân viên NitiGroup): không nút «Tìm công ty», kh�
     },
   );
   expect(r.status).toBe(403);
-  await page.goto(partnerUrl(tenantB, "b"));
-  await expect(tabOf(page, "Trò chuyện")).toHaveCount(0);
-  await expect(tabOf(page, "Bảng tin công ty")).toHaveCount(0);
-  await expect(page.getByTestId("cc-message")).toHaveCount(0);
+  await page.goto("/contracts/messages");
+  await expect(chipOf(page, CO.b.name)).toBeVisible();
   await ctx.close();
 });
 
-test("CR161-J7 · Tiên ngắt kết nối ⇒ Dung thấy tin cũ, không có ô soạn, tab «Bảng tin công ty» ẩn", async ({
+test("CR161-J7 · Tiên ngắt kết nối ⇒ chip NitiGroup biến mất ở Tin nhắn của Dung", async ({
   browser,
 }) => {
   const a = await open(browser, EA, WHO.tien);
@@ -220,12 +199,8 @@ test("CR161-J7 · Tiên ngắt kết nối ⇒ Dung thấy tin cũ, không có �
   await a.ctx.close();
 
   const b = await open(browser, EB, WHO.dung);
-  await b.page.goto(partnerUrl(tenantA, "a"));
-  await expect(b.page.getByTestId("cc-readonly")).toContainText(
-    "Đã ngắt kết nối — chỉ xem lại tin cũ.",
-  );
-  await expect(b.page.getByTestId("cc-message").filter({ hasText: HELLO })).toBeVisible();
-  await expect(b.page.getByRole("textbox", { name: "Nhập tin nhắn" })).toHaveCount(0);
-  await expect(tabOf(b.page, "Bảng tin công ty")).toHaveCount(0);
+  await b.page.goto("/contracts/messages");
+  await expect(b.page.getByTestId("company-filter")).toBeVisible();
+  await expect(chipOf(b.page, CO.a.name)).toHaveCount(0);
   await b.ctx.close();
 });

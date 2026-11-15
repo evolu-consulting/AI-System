@@ -6,7 +6,7 @@ import { test } from "../journey-approval/_test";
 import { envOf, expect, loginCw, SPEC_TENANT, U } from "./_cr127-kit";
 
 const E = envOf(SPEC_TENANT.j01);
-// CR-148: danh bạ chia nhóm theo phòng ban (không còn «hội thoại mới nhất ở đầu») ⇒ tìm dòng của A theo tên người gửi
+// CR-148: tìm dòng của A theo tên người gửi. CR-169: «Tất cả» = cuộc gần đây; tệp đính kèm dùng gallery chung (`draft-list` / `msg-files`)
 const FROM = "E2E Nhân viên Kinh doanh";
 const HELLO = `Chào B khoang ${Date.now().toString(36)}`;
 
@@ -35,11 +35,11 @@ test("Khoang: A gửi chữ + PDF, B thấy chấm đỏ ở nút khoang và tab
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4 bao gia"),
   });
-  await expect(a.getByTestId("composer-files").getByText("bao-gia.pdf")).toBeVisible();
+  await expect(a.getByTestId("draft-list").getByText("bao-gia.pdf")).toBeVisible();
   await a.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(HELLO);
   await a.getByRole("button", { name: "Gửi", exact: true }).click();
   await expect(a.getByTestId("msg-row").filter({ hasText: HELLO })).toBeVisible();
-  await expect(a.getByTestId("msg-file").filter({ hasText: "bao-gia.pdf" })).toBeVisible();
+  await expect(a.getByTestId("msg-files").filter({ hasText: "bao-gia.pdf" })).toBeVisible();
 
   // B: chấm đỏ «1» ở nút mở khoang; mở khoang ⇒ chấm ở tab; hội thoại in đậm ở đầu
   await expect(b.getByTestId("assistant-fab").getByTestId("unread-badge")).toHaveText("1");
@@ -51,7 +51,7 @@ test("Khoang: A gửi chữ + PDF, B thấy chấm đỏ ở nút khoang và tab
 
   // B mở hội thoại ⇒ chấm mất ở tab; A thấy «Đã xem»; ‹ về danh sách không đóng khoang
   await first.click();
-  await expect(b.getByTestId("msg-file").filter({ hasText: "bao-gia.pdf" })).toBeVisible();
+  await expect(b.getByTestId("msg-files").filter({ hasText: "bao-gia.pdf" })).toBeVisible();
   await expect(b.getByTestId("dock-tab-messages").getByTestId("unread-badge")).toHaveCount(0);
   await expect(a.getByTestId("msg-seen")).toHaveText("Đã xem");
   await b.getByRole("button", { name: "Về danh sách" }).click();

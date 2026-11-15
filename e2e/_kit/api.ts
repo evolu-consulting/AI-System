@@ -467,3 +467,29 @@ export async function createGroupWith(
   });
   return made.json.id;
 }
+
+/** CR-169 · gỡ một người khỏi nhóm theo khoá (vd `contracts-editor` ⇒ mất quyền Sổ Hợp Tác). Platform admin; nhóm/người không có ⇒ ném lỗi rõ. */
+export async function removeGroupMember(
+  admin: string,
+  s: Session,
+  tenantId: string,
+  groupKey: string,
+  username: string,
+): Promise<void> {
+  const gs = await call<{ items?: { id: string; key: string }[] }>(
+    `${admin}/admin/groups?tenant_id=${tenantId}&limit=200&q=${encodeURIComponent(groupKey)}`,
+    { method: "GET", token: s.token },
+  );
+  const g = gs.json.items?.find((x) => x.key === groupKey);
+  if (!g) throw new Error(`removeGroupMember: không thấy nhóm "${groupKey}"`);
+  const ms = await call<{ items?: { user_id: string; username: string }[] }>(
+    `${admin}/admin/groups/${g.id}/members?limit=200&q=${encodeURIComponent(username)}`,
+    { method: "GET", token: s.token },
+  );
+  const m = ms.json.items?.find((x) => x.username === username);
+  if (!m) throw new Error(`removeGroupMember: "${username}" không ở nhóm "${groupKey}"`);
+  await call(`${admin}/admin/groups/${g.id}/members/${m.user_id}`, {
+    method: "DELETE",
+    token: s.token,
+  });
+}

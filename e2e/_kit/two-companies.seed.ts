@@ -12,12 +12,13 @@ import {
   createPost,
   featureIdByKey,
   grantFeature,
+  removeGroupMember,
   type Session,
   setCompanyProfile,
   setDirectoryListed,
   tenantIdByKey,
 } from "./api";
-import { CO, POST_BODY, WHO } from "./two-companies";
+import { CO, NAME, POST_BODY, POST_BODY_B, WHO } from "./two-companies";
 
 const byName = (u: string): Person => {
   const p = JOURNEY_SPEC.people.find((x) => x.username === u);
@@ -25,14 +26,23 @@ const byName = (u: string): Person => {
   return p;
 };
 
-/** Người của từng công ty: Tiên (Toàn quyền), Thanh (Toàn quyền thứ hai, KHÔNG phải người mời), Vy (nhân viên). */
+/** Người của từng công ty: Tiên (Toàn quyền), Thanh (Toàn quyền thứ hai, KHÔNG phải người mời), Vy + Lan + Nam (nhân viên) · Dung (Toàn quyền) + Hà (nhân viên). */
 function peopleOf(side: "a" | "b"): Person[] {
   const tien = byName(WHO.tien);
-  if (side === "b") return [tien];
+  const vy = byName(WHO.vy);
+  const staff = (username: string, display: string): Person => ({
+    ...vy,
+    username,
+    display,
+    title: display,
+  });
+  if (side === "b") return [tien, staff(WHO.ha, NAME.ha)];
   return [
     tien,
     { ...tien, username: WHO.thanh, display: "E2E Thanh", title: "E2E Thanh", head: false },
-    byName(WHO.vy),
+    vy,
+    staff(WHO.lan, NAME.lan),
+    staff(WHO.nam, NAME.nam),
   ];
 }
 
@@ -61,7 +71,7 @@ export async function provisionPair(admin: Db, hub: Db, pw: string): Promise<voi
   }
 }
 
-/** Bước API: hồ sơ pháp lý + MST, add-on Bảng tin, Danh bạ bật, một bài công khai của NitiGroup (cho tab «Bảng tin công ty»). */
+/** Bước API: hồ sơ pháp lý + MST, add-on Bảng tin, Danh bạ bật, một bài công khai mỗi công ty (cho «Bảng tin <Công ty>» trong Tin nhắn), gỡ quyền Sổ Hợp Tác của Nam. */
 export async function configurePair(o: {
   api: string;
   hub: string;
@@ -86,6 +96,7 @@ export async function configurePair(o: {
       app: "contracts",
     });
     await setDirectoryListed(o.api, boss, id, true);
-    if (side === "a") await createPost(o.hub, boss, { type: "note", body: POST_BODY });
+    await createPost(o.hub, boss, { type: "note", body: side === "a" ? POST_BODY : POST_BODY_B });
+    if (side === "a") await removeGroupMember(o.api, o.platform, id, "contracts-editor", WHO.nam);
   }
 }
