@@ -25,6 +25,7 @@ type LockRow = {
   approval: boolean;
   commission_pct: number | string | null;
   commission_fixed: number | string | null;
+  kind_terms: unknown;
 };
 const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v);
 const num = (v: number | string | null): number | null => (v === null ? null : Number(v));
@@ -36,7 +37,7 @@ function lockQ(tx: Tx, t: string): ReviewRepo["lock"] {
   return async (id) => {
     const rows =
       await tx.execute<LockRow>(sql`select c.version, c.updated_at, c.status, c.deal, c.fields,
-        false as approval, c.commission_pct, c.commission_fixed
+        false as approval, c.commission_pct, c.commission_fixed, c.kind_terms
       from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid for update`);
     const r = rows[0];
     if (!r) return null;
@@ -49,6 +50,7 @@ function lockQ(tx: Tx, t: string): ReviewRepo["lock"] {
       approvalOn: r.approval,
       commissionPct: num(r.commission_pct),
       commissionFixed: num(r.commission_fixed),
+      kindTerms: (json(r.kind_terms) ?? null) as Record<string, unknown> | null,
     };
   };
 }
@@ -165,8 +167,12 @@ async function bumpHead(
 ): Promise<number | "not_draft" | "stale"> {
   const p = w.plan;
   const head = await tx.execute<{ version: number }>(sql`update contracts.contracts set
+        -- CR-157b · M3: trường đổi so với bản đã đối chiếu ⇒ bỏ xác nhận (trường y cũ ⇒ giữ, để «Xác nhận & lưu» sau khi tích không tự xoá)
+        reconciled_by = case when fields is distinct from ${JSON.stringify(p.fields)}::jsonb then null else reconciled_by end,
+        reconciled_at = case when fields is distinct from ${JSON.stringify(p.fields)}::jsonb then null else reconciled_at end,
         fields = ${JSON.stringify(p.fields)}::jsonb, deal = ${p.deal}, direction = ${p.direction},
         commission_pct = ${p.commissionPct}::numeric, commission_fixed = ${p.commissionFixed}::bigint,
+        kind_terms = case when ${p.deal} in ('franchise', 'cooperation') then kind_terms end,
         -- activate ⇒ cổng (submit không quy trình) tăng version đúng MỘT lần; không activate ⇒ câu này tăng.
         version = version + ${p.activate ? 0 : 1}::int, updated_at = now()
       where id = ${id}::uuid and tenant_id = ${t}::uuid and version = ${w.expected}::int and status = 'draft'

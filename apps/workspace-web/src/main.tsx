@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
 import { initI18n } from "./app/i18n";
 import { startPrefs } from "./app/prefs";
+import "./app/messages-host";
 import { Providers } from "./app/providers";
 
 startPrefs();

@@ -49,7 +49,10 @@ export function ProfilePage() {
       <main className="wsmain">
         <div className="wscenter" data-testid="profile-page">
           <div className="card">
-            <ProfileCover isHost={p.org.isHost} />
+            <ProfileCover
+              isHost={p.org.isHost}
+              canEdit={own && p.org.isHost && viewer.caps.companyAdmin}
+            />
             <div className="phero">
               <span className="biglogo">{initials(p.org.name)}</span>
               <div className="pname">

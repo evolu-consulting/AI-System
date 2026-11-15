@@ -2,7 +2,7 @@
 // CR-127 · J01 · U2 · hành trình SOẠN → ÁP DỤNG → DUYỆT (stack journey thật, công ty `e2e-c22-<hậu tố>` CHƯA có quy trình, cờ chạy theo sự kiện đã bật):
 // quản trị nền tảng ở ai-admin «Tạo quy trình» (công ty → tên → «Tạo và mở sơ đồ») → màn soạn VẼ THEO KHỐI: «+» Duyệt (Ban Giám đốc) → Nếu (Giá trị hợp đồng > 500 triệu,
 // nhánh Đúng: Duyệt Kế toán) → Duyệt (Kinh doanh) → Ký số → «Áp dụng cho công ty» → mở lại đúng. Rồi Sổ Hợp Tác: nhân viên tải HĐ 600 triệu → thấy khối
-// «Khi gửi, hợp đồng sẽ đi qua» → Gửi duyệt → Giám đốc nhận việc và duyệt → hồ sơ duyệt tải được PDF. Quản trị công ty chỉ xem. Dữ liệu tạo đúng đường sản phẩm (D5).
+// Gửi duyệt → Giám đốc nhận việc và duyệt → hồ sơ duyệt tải được PDF. Quản trị công ty chỉ xem. Dữ liệu tạo đúng đường sản phẩm (D5).
 import fs from "node:fs";
 import { apiLogin, companyFlows } from "../_kit/api";
 import { loginTenantAdminUi } from "../_kit/ui";
@@ -96,6 +96,9 @@ test("quản trị nền tảng: Tạo quy trình từ sơ đồ trống, soạn
   await expect(page.getByText(/Người ký phía công ty/)).toBeVisible();
   const signer = page.getByLabel(/^Phòng ban:/).first();
   if (await signer.count()) await signer.check();
+  // CR-146b: «Ký qua» BẮT BUỘC trong node Ký (thiếu ⇒ nút «Áp dụng cho công ty» khoá) ⇒ chọn «Tải lên bản đã ký» (luôn hợp lệ, không cần nối nhà cung cấp)
+  await page.getByRole("combobox", { name: /Ký qua/ }).click();
+  await page.getByRole("option", { name: /Tải lên bản đã ký/ }).click();
   await expect(page.getByTestId("outline-chip-error")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Áp dụng cho công ty" }).click();
@@ -111,7 +114,8 @@ test("quản trị nền tảng: Tạo quy trình từ sơ đồ trống, soạn
   await page.goto(editorUrl());
   await expect(page.getByTestId("outline-editor")).toBeVisible();
   await expect(page.getByText(/Giá trị hợp đồng.*500 triệu/).first()).toBeVisible();
-  await expect(page.getByText("Ký hợp đồng", { exact: true }).first()).toBeVisible();
+  // thẻ bước Ký trên sơ đồ ghi «Ký số» + người ký đã lưu (CR-141 chỉ đổi nhãn trong menu thêm bước; «Ký hợp đồng» còn là tên bước/lựa chọn ẩn)
+  await expect(page.getByRole("button", { name: /^Ký số Ban Giám đốc ký/ })).toBeVisible();
   await expect(page.getByTestId("outline-chip-error")).toHaveCount(0);
 });
 
@@ -134,10 +138,10 @@ test("Sổ Hợp Tác: xem trước các bước → Gửi duyệt → người 
   const emp = await newPage(browser);
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, `j01-${Date.now().toString(36)}`, 600_000_000, textPdf);
-  const preview = emp.getByTestId("submit-preview");
-  await expect(preview).toBeVisible({ timeout: 60_000 });
-  await expect(preview).toContainText("Khi gửi, hợp đồng sẽ đi qua");
-  await expect(preview).toContainText(/Giám đốc/);
+  // CR-168: trang chi tiết không còn khối «Khi gửi, hợp đồng sẽ đi qua».
+  await expect(emp.getByTestId("confirm-save")).toBeVisible({ timeout: 60_000 });
+  await expect(emp.getByTestId("submit-preview")).toHaveCount(0);
+  await expect(emp.getByText("Khi gửi, hợp đồng sẽ đi qua")).toHaveCount(0);
   await confirmAndSave(emp);
 
   await approveAs(await newPage(browser), E, U.director, id, "Giám đốc");

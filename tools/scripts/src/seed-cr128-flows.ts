@@ -110,7 +110,7 @@ const directorApprove = (step: number, to: { reject: number; ret: number }, next
 
 /** Nếu > 500 triệu ⇒ Trưởng phòng → Giám đốc → Ký hợp đồng; ngược lại Trưởng phòng → Ký hợp đồng → Chờ ký → Kết thúc · Đã duyệt (+ Từ chối, Trả lại).
  *  Luật engine: If KHÔNG nhảy thẳng tới bước hành động thật (PD2-R12) và Ký phải ngay sau bước duyệt ⇒ hai bước Trưởng phòng (khoá riêng), mỗi nhánh tự dẫn vào Ký.
- *  CR-141: node Ký không chọn người ký ⇒ nhóm «Người ký HĐ» của công ty. */
+ *  CR-146b: người ký + «Ký qua» điền ở `withSigner` khi áp dụng. */
 export const contractStages = (): unknown[] => {
   const to = { reject: 7, ret: 8 };
   return norm([
@@ -221,6 +221,20 @@ async function groupIds(admin: Call, tid: string): Promise<Map<string, string>> 
   return new Map((j.items as Json[]).map((g) => [String(g.key), String(g.id)]));
 }
 
+/** CR-146b · bước Ký bắt buộc «Ký qua» + người ký phía công ty: demo = tải lên bản đã ký + nhóm «Người ký HĐ» (`nguoi-ky-hd`) của công ty. */
+function withSigner(stages: unknown[], signerGroupId: string): unknown[] {
+  return stages.map((s) => {
+    const ex = (s as { executor?: { tool_key?: string; args?: Record<string, unknown> } }).executor;
+    if (ex?.tool_key !== "contracts-esign-send") return s;
+    const args = {
+      ...ex.args,
+      provider: { from: "const", value: "upload" },
+      company_signers: { from: "const", value: `group:${signerGroupId}` },
+    };
+    return { ...(s as object), executor: { ...ex, args } };
+  });
+}
+
 // ── tự kiểm ──
 async function verify(c: Ctx, authUrl: string, hubUrl: string, sql: ReturnType<typeof postgres>) {
   const list = must(await c.hub("GET", `/tenants/${c.tid}/company-flows`), [200], "kiểm danh sách");
@@ -299,9 +313,13 @@ async function main(): Promise<void> {
       fail(`không có công ty ${TENANT}`),
   );
   const c: Ctx = { hub, tid, groups: await groupIds(admin, tid) };
-  await ensureFlow(c, CONTRACT_FLOW, contractStages(), { event: "contract.submitted" });
+  const signers =
+    c.groups.get("nguoi-ky-hd") ?? fail("thiếu nhóm nguoi-ky-hd (người ký phía công ty)");
+  await ensureFlow(c, CONTRACT_FLOW, withSigner(contractStages(), signers), {
+    event: "contract.submitted",
+  });
   console.log(`${TAG}: «${CONTRACT_FLOW}» đã áp dụng`);
-  await ensureFlow(c, BUY_FLOW, buyStages(), { event: "contract.submitted" });
+  await ensureFlow(c, BUY_FLOW, withSigner(buyStages(), signers), { event: "contract.submitted" });
   console.log(`${TAG}: «${BUY_FLOW}» đã áp dụng`);
   if (v["skip-check"]) return;
   const sql = postgres(url, { max: 1, onnotice: () => {} });

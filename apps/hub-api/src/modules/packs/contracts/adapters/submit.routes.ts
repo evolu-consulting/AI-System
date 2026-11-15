@@ -27,6 +27,7 @@ const MSG: Record<SubmitErrorCode, string> = {
   FILE_REQUIRED: "Tải văn bản hợp đồng lên trước khi gửi.",
   WITHDRAW_NOT_ALLOWED: "Không rút về được.",
   CONTRACT_NOT_REJECTED: "Chỉ tạo lại từ hợp đồng bị từ chối.",
+  RECONCILE_REQUIRED: 'Hợp đồng nhập tay — tích "Tôi đã đối chiếu với tệp gốc" trước khi gửi.',
   NO_APPROVAL_FLOW: "Công ty chưa có quy trình duyệt hợp đồng — nhờ quản trị soạn ở mục Quy trình.",
 };
 function fail(code: string, details?: Record<string, unknown>): never {

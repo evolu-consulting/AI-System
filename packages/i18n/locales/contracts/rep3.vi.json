@@ -2,13 +2,18 @@
   "contracts": {
     "pv2": {
       "filter": {
-        "commission_payer": "Bên trả hoa hồng"
+        "commission_payer": "Bên trả hoa hồng",
+        "franchisee": "Bên nhận quyền",
+        "franchisor": "Bên nhượng quyền",
+        "cooperator": "Đối tác hợp tác"
       },
       "jobsTotal": "{{n}} việc có tính điểm",
       "group": {
         "service": "Dịch vụ",
         "goods": "Hàng hoá",
-        "referral": "Giới thiệu"
+        "referral": "Giới thiệu",
+        "franchise": "Nhượng quyền",
+        "cooperation": "Hợp tác"
       },
       "table": {
         "weight": "Trọng số",
@@ -97,11 +102,16 @@
           "service": "Dịch vụ có hạn",
           "goods": "Hàng hoá",
           "referral": "Giới thiệu",
-          "common": "Chung"
+          "common": "Chung",
+          "franchise": "Nhượng quyền",
+          "cooperation": "Hợp tác"
         },
         "role": {
           "supplier": "Nhà cung cấp",
-          "customer": "Khách hàng"
+          "customer": "Khách hàng",
+          "franchisee": "Bên nhận quyền",
+          "franchisor": "Bên nhượng quyền",
+          "cooperator": "Đối tác hợp tác"
         },
         "tab": {
           "crit": "Tiêu chí",
@@ -132,7 +142,9 @@
           "complaints": "Ít khiếu nại vô lý: trừ điểm theo số lần trên 10 giao dịch.",
           "on_time_commission": "% lần trả hoa hồng đúng hạn.",
           "reconcile": "Điểm các lần gửi đối soát đã ghi.",
-          "referral_support": "Điểm các việc hỗ trợ khách giới thiệu đã ghi."
+          "referral_support": "Điểm các việc hỗ trợ khách giới thiệu đã ghi.",
+          "report_on_time": "Tỷ lệ báo cáo doanh thu / đối soát kỳ đúng hạn (mốc kỳ đã xác nhận).",
+          "fee_on_time": "Tỷ lệ trả phí / phần chia đúng hạn (mốc thu, trả của kỳ đã xác nhận)."
         },
         "newName": "Tên tiêu chí mới",
         "newKind": "Kiểu tiêu chí",
@@ -144,7 +156,8 @@
           "delivery": "Giao hàng",
           "payment": "Thanh toán",
           "serial": "Cấp serial",
-          "commission": "Hoa hồng"
+          "commission": "Hoa hồng",
+          "report": "Báo cáo / đối soát"
         },
         "perTen": "điểm / lần",
         "add": "Thêm",

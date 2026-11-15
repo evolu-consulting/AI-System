@@ -150,13 +150,8 @@ test("X1-AC07 · 409 ATTACHMENT_QUOTA_EXCEEDED ⇒ 'Đã hết dung lượng lư
   ).toBeVisible();
 });
 
-test("X1-AC07 · lịch sử: list 'Tệp trong tin' có 'Tải a.txt' (fetch kèm Authorization); tệp đã xoá aria-disabled", async ({
-  page,
-}) => {
-  const atts = [
-    { id: UUID_A, filename: "a.txt", mime: "text/plain", size: 1024, available: true },
-    { id: UUID_B, filename: "cu.pdf", mime: "application/pdf", size: 2048, available: false },
-  ];
+/** Vá lịch sử/flow để tin user đầu có `attachments` (luồng chính hiển thị từ E10 `flows[].preview`; E11 khi mở khung flow). */
+async function patchHistoryAttachments(page: Page, atts: unknown[]) {
   // Tranh chấp #2 (test-plan §7): luồng chính hiển thị từ E10 `flows[].preview` (FlowBlock); E11 chỉ khi mở khung flow.
   // Vá cả hai để tin user đầu có `attachments` dù UI đọc nguồn nào.
   await page.route(FLOWS_GET, async (route) => {
@@ -177,6 +172,16 @@ test("X1-AC07 · lịch sử: list 'Tệp trong tin' có 'Tải a.txt' (fetch k�
     if (first) first.attachments = atts;
     await route.fulfill({ status: res.status(), headers: stripLength(res.headers()), json: body });
   });
+}
+
+test("X1-AC07 · lịch sử: list 'Tệp trong tin' có 'Tải a.txt' (fetch kèm Authorization); tệp đã xoá aria-disabled", async ({
+  page,
+}) => {
+  const atts = [
+    { id: UUID_A, filename: "a.txt", mime: "text/plain", size: 1024, available: true },
+    { id: UUID_B, filename: "cu.pdf", mime: "application/pdf", size: 2048, available: false },
+  ];
+  await patchHistoryAttachments(page, atts);
   let auth: string | undefined;
   await page.route(`**/attachments/${UUID_A}/content`, async (route) => {
     auth = route.request().headers().authorization;
@@ -193,10 +198,66 @@ test("X1-AC07 · lịch sử: list 'Tệp trong tin' có 'Tải a.txt' (fetch k�
   await inMsg.getByRole("button", { name: "Tải a.txt" }).click();
   await dl;
   expect(auth).toMatch(/^Bearer .+/);
-  await expect(inMsg.getByRole("button", { name: "Tải cu.pdf" })).toHaveAttribute(
-    "aria-disabled",
-    "true",
-  );
+  // CR-164 · tệp đã xoá = thẻ xám, không có nút tải.
+  const gone = inMsg.getByTestId("file-card").filter({ hasText: "cu.pdf" });
+  await expect(gone).toHaveAttribute("aria-disabled", "true");
+  await expect(gone.getByRole("button")).toHaveCount(0);
+});
+
+test("CR-164 · lịch sử: 3 ảnh ⇒ lưới 1 lớn + 2 nhỏ, bấm phóng to qua lại, thẻ PDF có 'Xem'", async ({
+  page,
+}) => {
+  const img = (id: string, n: number) => ({
+    id,
+    filename: `anh-${n}.png`,
+    mime: "image/png",
+    size: 100,
+    available: true,
+  });
+  await patchHistoryAttachments(page, [
+    img(UUID_A, 1),
+    img(UUID_B, 2),
+    img(UUID_C, 3),
+    {
+      id: "00000000-0000-4000-8000-0000000000d4",
+      filename: "hop-dong.pdf",
+      mime: "application/pdf",
+      size: 2048,
+      available: true,
+    },
+  ]);
+  // Ảnh xem trước đi qua fetch có Authorization (blob URL).
+  const auth: string[] = [];
+  await page.route("**/attachments/*/content", async (route) => {
+    auth.push(route.request().headers().authorization ?? "");
+    await route.fulfill({
+      status: 200,
+      headers: { "content-type": "image/png" },
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+        "base64",
+      ),
+    });
+  });
+  await openConversation(page, "Soạn email báo giá Minh Phát");
+  const grid = page.getByTestId("image-grid").first();
+  await expect(grid).toHaveAttribute("data-layout", "three");
+  await expect(grid.getByTestId("post-image")).toHaveCount(3);
+  await expect.poll(() => auth.length).toBeGreaterThan(0);
+  expect(auth.every((a) => /^Bearer .+/.test(a))).toBe(true);
+  await expect(
+    page
+      .getByTestId("file-card")
+      .filter({ hasText: "hop-dong.pdf" })
+      .getByRole("button", { name: "Xem" }),
+  ).toBeVisible();
+  await grid.getByTestId("post-image").first().click();
+  const viewer = page.getByTestId("image-viewer");
+  await expect(viewer).toContainText("1 / 3");
+  await viewer.getByRole("button", { name: "Ảnh sau" }).click();
+  await expect(viewer).toContainText("2 / 3");
+  await page.keyboard.press("Escape");
+  await expect(viewer).toHaveCount(0);
 });
 
 test("X1-AC07 · English: nhãn đính kèm và lỗi bằng tiếng Anh", async ({ page }) => {

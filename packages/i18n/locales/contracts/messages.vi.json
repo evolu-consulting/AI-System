@@ -1,9 +1,10 @@
 {
   "contracts": {
     "messages": {
+      "cancel": "Huỷ",
       "title": "Tin nhắn",
       "unread": "{{n}} tin chưa đọc",
-      "search": "Tìm người hoặc nhóm",
+      "search": "Tìm người theo tên, chức vụ",
       "newChat": "Nhắn tin mới",
       "groups": "Nhóm",
       "groupsEmpty": "Bạn chưa ở nhóm nào. Bấm «Nhắn tin mới» để tạo nhóm.",
@@ -31,6 +32,8 @@
       "back": "Về danh sách",
       "emptyChat": "Hãy gửi lời chào đầu tiên.",
       "loadOlder": "Xem tin cũ hơn",
+      "noDept": "Chưa có phòng",
+      "loadingMore": "Đang tải…",
       "composer": "Nhập tin nhắn",
       "placeholder": "Nhập tin nhắn…",
       "send": "Gửi",
@@ -98,9 +101,46 @@
         "file": "Không gửi được tệp này. Nhận PDF, Word, Excel, ảnh…, tối đa 20 MB.",
         "directFixed": "Cuộc trò chuyện riêng không đổi tên hay thêm người được. Hãy tạo nhóm mới.",
         "peerInactive": "Người này không còn dùng hệ thống nên không nhận được tin.",
+        "notConnected": "Công ty của bạn chưa kết nối với công ty của người này nên chưa nhắn được. Nhờ quản trị hai bên kết nối trước.",
         "rate": "Bạn thao tác quá nhanh. Chờ vài giây rồi thử lại.",
         "load": "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.",
         "generic": "Chưa thực hiện được. Thử lại sau ít phút; nếu vẫn lỗi, báo quản trị công ty."
+      },
+      "peopleSection": "Người",
+      "emptyCompany": "Chưa nhắn với ai ở {{company}}. Tìm người để bắt đầu.",
+      "scopeLabel": "Người của công ty",
+      "pickHintPartner": "Chọn 1 người của công ty này để nhắn riêng.",
+      "stagedFiles": "Tệp sẽ gửi",
+      "sentFiles": "Tệp trong tin nhắn",
+      "filter": {
+        "label": "Lọc theo công ty",
+        "all": "Tất cả",
+        "other": "Công ty khác",
+        "search": "Tìm công ty",
+        "none": "Không có công ty nào khớp."
+      },
+      "feed": {
+        "open": "Bảng tin {{company}}",
+        "title": "Bảng tin {{company}}",
+        "hint": "Bài công khai của công ty đã kết nối với bạn. Chỉ để xem.",
+        "empty": "{{company}} chưa có bài công khai nào.",
+        "error": "Không tải được Bảng tin. Kiểm tra kết nối rồi bấm Thử lại.",
+        "files": "{{n}} tệp",
+        "sell": "Bán",
+        "buy": "Mua",
+        "note": "Ghi chú"
+      },
+      "readOnly": {
+        "disconnected": "{{company}} không còn kết nối với công ty bạn. Bạn vẫn xem được tin cũ.",
+        "peerGone": "{{name}} không còn dùng Sổ Hợp Tác ở {{company}}."
+      },
+      "attachUi": {
+        "prev": "Ảnh trước",
+        "next": "Ảnh sau",
+        "close": "Đóng ảnh",
+        "download": "Tải về",
+        "view": "Xem",
+        "failed": "Không tải được tệp. Thử lại sau."
       }
     }
   }

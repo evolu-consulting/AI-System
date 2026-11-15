@@ -1,0 +1,21 @@
+# CR-159 · tenant preschool. Email tắt tới khi xác nhận domain: chưa có công tắc theo tenant ⇒ xem "Việc còn lại" ở
+# docs/specs/cr159-onboard-users/tasks.md. Chạy: như deploy/tenants/evolu.yaml (--password-env hoặc --pw-out).
+# Quản trị công ty phải đứng ĐẦU `users:` (tạo trước, tránh lỗi "quản trị cuối cùng" khi đổi vai).
+# Mất mật khẩu tạm: đặt lại trên trang quản trị (Người dùng ⇒ Đặt lại mật khẩu); không chạy lại CLI để lấy.
+key: preschool
+name: Preschool
+timezone: Asia/Ho_Chi_Minh
+
+# CR-165b · hồ sơ công ty. MST tạm 10 số (hệ thống buộc 10 chữ số: TENANT_PROFILE_TAX_CODE_RE) — chờ người dùng xác nhận MST 10 số (đã đưa 99999999).
+directory: listed # CR-159: bật danh bạ (cần legal_name + tax_id)
+profile:
+  legal_name: Công ty preschool
+  tax_id: "9999999999"
+
+packs: [contracts]
+addons: [contracts-community, contracts-partner-confirm] # Bảng tin
+
+users:
+  - { email: dung.dang@preschool.com, name: Dung Dang, title: Giám đốc, role: admin }
+
+root: { key: pb-ban-giam-doc, vi: Ban Giám đốc, en: Board of Directors, head: dung.dang@preschool.com }

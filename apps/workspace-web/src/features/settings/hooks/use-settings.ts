@@ -13,7 +13,14 @@ import {
   saveChanged,
   settingsKeys,
 } from "../api";
-import { applyBrandDom, type Brand, brandStore, effectiveTheme, useBrand } from "../lib/brand";
+import {
+  applyBrandDom,
+  applyFavicon,
+  type Brand,
+  brandStore,
+  effectiveTheme,
+  useBrand,
+} from "../lib/brand";
 import { buildState, type Changed } from "../lib/data";
 import type { SettingsData } from "../lib/types";
 
@@ -50,6 +57,9 @@ export function useBrandSync(enabled = true): void {
     applyBrandDom(b, b.app_name ?? t("contracts.app.name"));
     applyTheme(effectiveTheme(b, brandStore.isPreview(), ownTheme()));
   }, [b, t]);
+  useEffect(() => {
+    applyFavicon(b.logo);
+  }, [b.logo]);
   useEffect(() => {
     if (typeof matchMedia !== "function") return;
     const m = matchMedia("(prefers-color-scheme: dark)");

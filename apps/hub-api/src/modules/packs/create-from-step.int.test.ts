@@ -172,6 +172,7 @@ describe("contracts-create-from-step", () => {
     );
     await send?.run(ctx(T1, A, run), {
       contract_id: r.contract_id,
+      provider: "selfsign",
       company_signers: `user:${A}`,
       partner_signs: false,
     });
@@ -252,7 +253,12 @@ describe("contracts-create-from-step · tệp đính kèm, Ký số", () => {
       { tenantId: T1, userId: A },
       { enabled: true, default_provider: "selfsign" },
     );
-    const args = { contract_id: id as string, company_signers: `user:${A}`, partner_signs: false };
+    const args = {
+      contract_id: id as string,
+      provider: "selfsign",
+      company_signers: `user:${A}`,
+      partner_signs: false,
+    };
     await expect(send?.run(ctx(T1, A, run), args)).rejects.toThrow("ESIGN_CONTRACT_NOT_IN_RUN");
     await expect(send?.run(ctx(T1, A, null), args)).rejects.toThrow("ESIGN_CONTRACT_NOT_IN_RUN");
     const [l] =

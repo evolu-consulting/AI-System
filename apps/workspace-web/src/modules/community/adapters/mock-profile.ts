@@ -52,8 +52,16 @@ export function profileMock(
     listPartners: async (opts): Promise<PartnerOrg[]> => {
       const v = me();
       if (!isHost(v)) return PARTNERS.filter((p) => p.id === v.orgId);
-      if (!opts?.rep || !v.caps.contracts) return PARTNERS;
-      return PARTNERS.map((p) => ({ ...p, reputation: reputationOf(p.id) }));
+      const needle = opts?.q?.toLowerCase();
+      const named = needle
+        ? PARTNERS.filter((p) => p.name.toLowerCase().includes(needle))
+        : PARTNERS;
+      const page =
+        opts?.limit === undefined
+          ? PARTNERS
+          : named.slice(opts.offset ?? 0, (opts.offset ?? 0) + opts.limit);
+      if (!opts?.rep || !v.caps.contracts) return page;
+      return page.map((p) => ({ ...p, reputation: reputationOf(p.id) }));
     },
     getProfile: async (orgId) => {
       const v = me();

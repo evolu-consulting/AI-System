@@ -1,6 +1,11 @@
 // CR-127 · E6 · spec §5.5 (R#12) · luật THUẦN của trigger theo lịch: N của quy trình (`trigger.params.days`, vắng ⇒ mặc định manifest),
 // khoá idempotent `<event>:<ref>:<dueKey>:<N>`, ngày hôm nay theo múi giờ công ty.
 import { APP_MANIFESTS } from "@ai/contracts/app-manifest";
+import {
+  FLOW_RECEIVE_DEFAULT_CRITICAL_M,
+  FLOW_RECEIVE_DEFAULT_IMPORTANT_M,
+  FLOW_RECEIVE_MILLION_MAX,
+} from "@ai/contracts/hub-admin";
 
 type Sched = { app: string; min: number; max: number; def: number };
 
@@ -56,8 +61,26 @@ export const isIsoDate = (s: unknown): s is string =>
 /** CR-127 · E6b · luật lưu: `trigger.params.days` có mà ngoài khoảng manifest của sự kiện theo lịch ⇒ lỗi (422 `TRIGGER_PARAM_RANGE`);
  *  vắng ⇒ dùng mặc định (hợp lệ); sự kiện không theo lịch ⇒ bỏ qua (zod đã chặn 1..365). */
 export function triggerParamIssue(
-  trigger: { event: string; params?: { days?: unknown } | null } | null | undefined,
+  trigger:
+    | {
+        event: string;
+        params?: { days?: unknown; important_min_m?: number; critical_min_m?: number } | null;
+      }
+    | null
+    | undefined,
 ): { path: string[]; min: number; max: number } | null {
+  // CR-146b · «Nhận HĐ từ đối tác»: ngưỡng «Rất quan trọng» phải lớn hơn «Quan trọng» (triệu đồng).
+  // Một bên vắng ⇒ so với MẶC ĐỊNH (500 triệu / 2 tỷ) — không để mặc định đảo thứ tự ngưỡng.
+  if (trigger?.event === "contract.received") {
+    const im = trigger.params?.important_min_m ?? FLOW_RECEIVE_DEFAULT_IMPORTANT_M;
+    const cr = trigger.params?.critical_min_m ?? FLOW_RECEIVE_DEFAULT_CRITICAL_M;
+    if (cr <= im)
+      return {
+        path: ["trigger", "params", "critical_min_m"],
+        min: im + 1,
+        max: FLOW_RECEIVE_MILLION_MAX,
+      };
+  }
   const s = trigger ? SCHEDULED_EVENTS.get(trigger.event) : undefined;
   const raw = trigger?.params?.days;
   if (!s || raw === undefined || raw === null) return null;

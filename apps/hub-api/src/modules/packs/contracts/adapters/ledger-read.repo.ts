@@ -131,7 +131,7 @@ export function ledgerReadRepo(tx: Tx, t: string): LedgerReadRepo {
             and (${q.status ?? null}::text is null or o.status = ${q.status ?? null}::text)
             and (${q.direction ?? null}::text is null or o.direction = ${q.direction ?? null}::text)
             and (${q.due_before ?? null}::date is null or o.due_date <= ${q.due_before ?? null}::date)
-          order by o.due_date, o.seq, o.id limit ${LEDGER_LIST_MAX}::int)
+          order by o.due_date, o.seq, o.id limit ${q.limit ?? LEDGER_LIST_MAX}::int offset ${q.offset ?? 0}::int)
         select coalesce(jsonb_agg(${obJson("o")} || jsonb_build_object('contract_number',
             ${contractCodeSql("c")}, 'task', ${taskOf("o", q.contract_id ?? null)})
             order by o.due_date, o.seq, o.id),

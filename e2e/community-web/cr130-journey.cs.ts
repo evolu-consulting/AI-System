@@ -116,26 +116,14 @@ test("CR130-J1 · quản trị gói mời đối tác chưa mời vào Bảng ti
 }) => {
   test.setTimeout(240_000);
   const host = await openAs(browser, "host");
+  // CR-169: trang đối tác chỉ còn 3 tab (Tổng quan · Hợp đồng · Sổ việc & ghi chú) — không còn tab «Bảng tin» ở trang này;
+  // URL `?tab=community` cũ ⇒ về Tổng quan. Mời đối tác vào Bảng tin đi bằng API gói (route còn nguyên), phần đối tác vẫn đi bằng giao diện.
   await host.page.goto(sht(state.pk1 as string));
-  await host.page.getByRole("tab", { name: "Bảng tin" }).click();
-  const box = host.page.getByTestId("partner-community");
-  await expect(box).toBeVisible();
-  await expect(host.page.getByRole("button", { name: "Mời vào Bảng tin" })).toBeVisible(); // chưa mời
-  // sửa nhóm hàng ⇒ lưu hồ sơ
-  await box.getByLabel("Nhóm hàng").fill(CATS);
-  await box.getByRole("button", { name: "Lưu hồ sơ" }).click();
-  await expect(host.page.getByText("Đã lưu hồ sơ Bảng tin")).toBeVisible();
-  await host.page.reload();
-  await host.page.getByRole("tab", { name: "Bảng tin" }).click();
-  await expect(host.page.getByLabel("Nhóm hàng")).toHaveValue(CATS);
-  // mời: chọn tài khoản công ty ngoài chưa gắn
-  await host.page.getByLabel("Chọn tài khoản công ty").selectOption({ label: ORG1 });
-  await host.page.getByRole("button", { name: "Mời vào Bảng tin" }).click();
-  await expect(host.page.getByText("Đã mời đối tác vào Bảng tin")).toBeVisible();
-  await expect(host.page.getByTestId("pcm-account")).toContainText(ORG1);
-  await expect(host.page.getByRole("button", { name: "Gỡ khỏi Bảng tin" })).toBeVisible();
-
-  // chủ quản đăng bài cho «Khách hàng» (đường API như người dùng bấm Đăng; kiểm luồng thấy bài, không kiểm ô soạn)
+  await expect(host.page.getByRole("tab", { name: "Tổng quan" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(host.page.getByRole("tab", { name: "Bảng tin" })).toHaveCount(0);
   const api = await apiLogin({
     fx: pageFetch(host.page),
     base: "",
@@ -144,6 +132,24 @@ test("CR130-J1 · quản trị gói mời đối tác chưa mời vào Bảng ti
     password: process.env.DEMO_OWNER_PW ?? "",
     app: "contracts",
   });
+  const hdr = { ...api.headers, "content-type": "application/json" };
+  const put = (path: string, body: unknown) =>
+    pageFetch(host.page)(`/pack/contracts/partners/community/${path}`, {
+      method: "PUT",
+      headers: hdr,
+      body: JSON.stringify(body),
+    });
+  expect(
+    (await put("profile", { party: state.pk1, cats: CATS.split(", "), area: "" })).status,
+  ).toBe(200);
+  const cand = (await (
+    await pageFetch(host.page)("/pack/contracts/partners/community/candidates", { headers: hdr })
+  ).json()) as { id: string; name: string }[];
+  const org = cand.find((c) => c.name === ORG1);
+  expect(org, "tài khoản công ty chưa gắn").toBeTruthy();
+  expect((await put("account", { party: state.pk1, ext_org_id: org?.id })).status).toBe(200);
+
+  // chủ quản đăng bài cho «Khách hàng» (đường API như người dùng bấm Đăng; kiểm luồng thấy bài, không kiểm ô soạn)
   await createPost("", api, { type: "note", body: POST, audience: { mode: "buyers" } });
 
   const ctx = await browser.newContext({ baseURL: process.env.COMMUNITY_URL });
@@ -225,9 +231,21 @@ test("CR130-J2 · duyệt đơn tham gia «Gắn với đối tác có sẵn» �
   const a = await openItem(ORG_A);
   await link(a);
   await expect(a).toHaveCount(0); // duyệt xong ⇒ hộp thoại tự đóng
+  // CR-169: hồ sơ SHT không còn tab «Bảng tin» ⇒ đọc tài khoản đã gắn qua route gói (nguồn của khối cũ)
   await host.page.goto(sht(state.pk2 as string));
-  await host.page.getByRole("tab", { name: "Bảng tin" }).click();
-  await expect(host.page.getByTestId("pcm-account")).toContainText(ORG_A);
+  const hostApi = await apiLogin({
+    fx: pageFetch(host.page),
+    base: "",
+    tenantKey: TENANT,
+    username: USERNAME.host,
+    password: process.env.DEMO_OWNER_PW ?? "",
+    app: "contracts",
+  });
+  const got = await pageFetch(host.page)(
+    `/pack/contracts/partners/community?party=${encodeURIComponent(state.pk2 as string)}`,
+    { headers: hostApi.headers },
+  );
+  expect(((await got.json()) as { account: { name: string } | null }).account?.name).toBe(ORG_A);
 
   // ca 2: đối tác đã gắn tài khoản khác ⇒ câu hướng dẫn nói cách sửa; đơn vẫn chờ (còn nút Duyệt)
   const b = await openItem(ORG_B);

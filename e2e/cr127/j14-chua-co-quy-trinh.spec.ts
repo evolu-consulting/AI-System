@@ -31,15 +31,13 @@ test("Chưa có quy trình ⇒ nút Gửi khoá, nói lý do và việc cần l�
   await expect(why).toBeVisible({ timeout: 60_000 });
   await expect(why).toContainText("Công ty chưa có quy trình duyệt hợp đồng");
   await expect(why).toContainText("Quy trình");
-  const send = page.getByRole("button", { name: "Gửi duyệt" });
-  await expect(async () => {
-    expect((await send.count()) === 0 || (await send.first().isDisabled())).toBe(true);
-  }).toPass({ timeout: 10_000 });
-  await expect(page.getByTestId("confirm-save")).toHaveCount(0);
+  // «Gửi duyệt» vẫn hiện (nút chính) nhưng KHOÁ; lý do ở dòng trên (không im lặng).
+  await expect(page.getByTestId("confirm-save")).toBeDisabled();
 
   // Lưu nháp: sửa tên, lưu, tải lại ⇒ còn nguyên
   await title.fill(NAME);
-  await page.getByRole("button", { name: "Lưu nháp" }).click();
+  await page.getByTestId("head-actions-menu").click();
+  await page.getByTestId("act-saveDraft").click();
   await page.reload();
   await expect(page.getByRole("textbox", { name: /^Tên hợp đồng/ })).toHaveValue(NAME, {
     timeout: 60_000,

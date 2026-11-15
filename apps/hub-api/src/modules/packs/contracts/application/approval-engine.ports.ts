@@ -57,8 +57,8 @@ export type ApprovalEnginePort = {
   ): Promise<unknown>;
   /** CR-105 · quy trình đang chạy của khe cho tenant (gán ⇒ mặc định ⇒ bản xuất bản); vắng/không có ⇒ đường cũ `readFlow`. */
   resolveSlot?(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
-  /** CR-125 · S2 · flow Bật của công ty cho sự kiện (cùng nguồn tab Quy trình). */
-  eventFlow?(tenantId: string, event: string): Promise<EventFlow | null>;
+  /** CR-146 · mọi flow Bật của công ty cho sự kiện theo `position` (cùng nguồn tab Quy trình + bộ điều phối). */
+  eventFlows?(tenantId: string, event: string): Promise<EventFlow[]>;
   /** CR-118 §11.2 · chọn quy trình theo luật phòng ban của người khởi tạo; vắng ⇒ `resolveSlot`. */
   routeSlot?(
     tenantId: string,

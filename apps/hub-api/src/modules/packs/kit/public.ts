@@ -2,6 +2,7 @@
 
 export type { ContractAccess } from "./adapters/contract-access.registry";
 export { contractAccess, registerContractAccess } from "./adapters/contract-access.registry";
+export { internalDirectoryPage } from "./adapters/directory-page";
 export { createDocxConverter } from "./adapters/docx/index";
 export { pgExternalOrgResolver } from "./adapters/ext-org.pg";
 export { externalFirewall } from "./adapters/external-firewall.middleware";
@@ -16,7 +17,6 @@ export {
 } from "./adapters/form-prefill-registry";
 export { packMeRoutes } from "./adapters/me.route";
 export {
-  internalDirectory,
   internalUsersAmong,
   memberNamesOf,
   selfContactOf,
@@ -77,6 +77,8 @@ export {
   partnerMailboxPort,
 } from "./adapters/partner-mailbox-port";
 export { createPdfConverter } from "./adapters/pdf/index";
+export type { PeopleReader, Person } from "./adapters/people-reader";
+export { peopleReader } from "./adapters/people-reader";
 export { recordLabelRegistry } from "./adapters/record-label-registry";
 export { shadowEmit } from "./adapters/shadow-emit";
 export { checkSlotContract, flowAdapterSlots } from "./adapters/slot-contract.check";

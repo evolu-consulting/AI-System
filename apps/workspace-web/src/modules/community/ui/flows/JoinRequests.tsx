@@ -9,7 +9,7 @@ import { approveErrorKey } from "../../domain/join-approve";
 import { numLocale, t } from "../../i18n";
 import { AdminList, type Column } from "./AdminList";
 import { JoinApprove } from "./JoinApprove";
-import { FlowPage, ListState, ReasonDialog, useFlowList } from "./parts";
+import { FlowPage, ListState, LoadMore, ReasonDialog, usePagedFlowList } from "./parts";
 
 const TONE: Record<JoinRequest["status"], string> = {
   pending: "tag soon sm",
@@ -120,7 +120,7 @@ function JoinForm() {
 
 function JoinReview() {
   const { api, toast, bump } = useApp();
-  const list = useFlowList(() => api.flows.listJoins(false));
+  const list = usePagedFlowList((o) => api.flows.listJoins(false, o));
   const [rejecting, setRejecting] = useState<JoinRequest | null>(null);
   const decide = async (
     j: JoinRequest,
@@ -199,6 +199,7 @@ function JoinReview() {
           )}
         />
       )}
+      <LoadMore more={list.more} busy={list.busy} onMore={() => void list.loadMore()} />
       {rejecting && (
         <ReasonDialog
           testId="join-reject-dialog"

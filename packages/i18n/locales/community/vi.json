@@ -75,6 +75,7 @@
       "deliverTo": "Giao tại"
     },
     "feed": {
+      "more": "Xem thêm bài",
       "filterAria": "Lọc bài đăng",
       "tabs": {
         "all": "Tất cả",
@@ -90,6 +91,7 @@
         "areaAll": "Khu vực: tất cả",
         "author": "Người đăng",
         "authorAll": "Người đăng: tất cả",
+        "authorSearch": "Tìm công ty",
         "host": "Chủ quản",
         "clear": "Xoá lọc"
       },
@@ -124,6 +126,10 @@
       "previewMore": " và {{n}} công ty khác",
       "preview": "Sẽ hiện với {{n}} công ty: {{names}}{{more}}",
       "errorPickOne": "Chọn ít nhất một công ty",
+      "companySearch": "Tìm công ty",
+      "companyMore": "Xem thêm công ty",
+      "companyNone": "Không có công ty khớp",
+      "previewPartial": "Xem trước theo danh sách đang tải — còn công ty khác",
       "choose": "Chọn người xem",
       "catsPick": "Chọn nhóm hàng",
       "catsTitle": "Chọn nhóm hàng",
@@ -140,6 +146,8 @@
       "prefillBanner": "Điền sẵn từ Sổ Hợp Tác · {{product}}",
       "prefillOption": "Gợi ý mẫu…",
       "typeLabel": "Loại bài",
+      "uploading": "Đang tải lên",
+      "retry": "Thử lại",
       "removeAttachment": "Bỏ tệp đính kèm",
       "image": "Ảnh",
       "video": "Video",
@@ -179,6 +187,12 @@
       "cat": "Nhóm hàng",
       "catPlaceholder": "Nhóm hàng…",
       "mentionLabel": "Nhắc tên",
+      "mentionSearch": "Tìm theo tên",
+      "mentionScopeHint": "Chỉ hiện người xem được bài này · tối đa {{max}} người.",
+      "mentionFull": "Đã chọn đủ {{max}} người. Bỏ chọn bớt để chọn người khác.",
+      "mentionError": "Chưa tải được danh sách, vui lòng thử lại.",
+      "mentionMore": "Xem thêm người",
+      "mentionDone": "Xong ({{count}} người)",
       "mentionPlaceholder": "Gõ tên người cần nhắc…",
       "mentionEmpty": "Không có ai để nhắc",
       "mentionRemove": "Bỏ nhắc {{name}}",
@@ -191,6 +205,8 @@
       "errNeededBy": "Chọn ngày cần"
     },
     "post": {
+      "view": "Xem",
+      "downloadOf": "Tải về {{name}}",
       "download": "Tải về",
       "imageViewer": "Xem ảnh",
       "imagePrev": "Ảnh trước",
@@ -235,7 +251,7 @@
       "note": "Mọi bình luận hiện ở một danh sách chung dưới bài. Gõ @ để nhắc tên một công ty đối tác.",
       "notePartner": "Bạn thấy bình luận của chủ quản, của công ty bạn và các bình luận nhắc tên bạn.",
       "empty": "Chưa có bình luận nào.",
-      "more": "Xem thêm bình luận",
+      "more": "Xem thêm {{count}} bình luận",
       "writeComment": "Viết bình luận",
       "writeCommentPlaceholder": "Viết bình luận… gõ @ để nhắc tên công ty",
       "send": "Gửi bình luận",
@@ -345,7 +361,8 @@
         "colCats": "Nhóm sản phẩm",
         "colRep": "Uy tín",
         "empty": "Chưa có đối tác.",
-        "left": "đã rời"
+        "left": "đã rời",
+        "more": "Xem thêm"
       },
       "rep": {
         "good": "Tốt",
@@ -482,6 +499,7 @@
       "common": {
         "loadError": "Không tải được danh sách. Kiểm tra kết nối mạng rồi bấm Tải lại.",
         "retry": "Tải lại",
+        "more": "Xem thêm",
         "cancel": "Hủy",
         "reasonNeeded": "Hãy nhập lý do để người nhận biết cần làm gì tiếp.",
         "submitError": "Chưa gửi được. Kiểm tra kết nối rồi thử lại; nội dung bạn nhập vẫn còn nguyên.",
@@ -620,6 +638,16 @@
     "me": {
       "company": "Công ty",
       "companyPage": "Xem trang công ty",
+      "avatarChange": "Đổi ảnh đại diện",
+      "avatarRemove": "Xoá ảnh",
+      "coverChange": "Đổi ảnh bìa",
+      "coverRemove": "Xoá ảnh bìa",
+      "imgType": "Chỉ nhận ảnh JPG, PNG hoặc WebP",
+      "imgBig": "Ảnh tối đa {{mb}} MB",
+      "imgFail": "Chưa lưu được ảnh, thử lại",
+      "jobTitle": "Chức vụ",
+      "department": "Phòng ban",
+      "avatarAlt": "Ảnh đại diện",
       "role": {
         "host_admin": "Quản trị",
         "host_member": "Thành viên",

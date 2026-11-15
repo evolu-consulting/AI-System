@@ -12,6 +12,8 @@ export const SUBMIT_ERRORS = {
   CONTRACT_NOT_REJECTED: 409,
   /** NF1 (người dùng chốt 2026-11-10): công ty chưa có quy trình duyệt khớp ⇒ CHẶN Gửi (không còn đi thẳng DONE); HĐ giữ DRAFT. */
   NO_APPROVAL_FLOW: 409,
+  /** CR-157: HĐ nhập tay chưa tích "đã đối chiếu với tệp gốc" ⇒ không Lưu/Gửi duyệt được. */
+  RECONCILE_REQUIRED: 422,
 } as const;
 export type SubmitErrorCode = keyof typeof SUBMIT_ERRORS;
 

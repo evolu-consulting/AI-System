@@ -59,6 +59,24 @@ describe("V2-J1 · điểm kinh doanh", () => {
     expect(f[0].business.suggestion).toBeNull(); // chưa bán, không giữ ⇒ chưa có dữ liệu
   });
 
+  it("CR-151 · GET /business/products?limit= trả trang: trang 2 đúng, total theo nhóm, đếm nhóm giữ nguyên, quá trần 100 bị từ chối", async () => {
+    await seed();
+    const p1 = await ok(call(c, P.hoa, "GET", `${B}/products?limit=1&offset=0`));
+    const p2 = await ok(call(c, P.hoa, "GET", `${B}/products?limit=1&offset=1`));
+    expect(p1.items).toHaveLength(1);
+    expect(p2.items).toHaveLength(1);
+    expect(p1.items[0].id).not.toBe(p2.items[0].id);
+    expect(p1.total).toBe(2);
+    expect(p1.counts).toEqual({ all: 2, service: 1, goods: 1, referral: 0 });
+    const g = await ok(call(c, P.hoa, "GET", `${B}/products?limit=10&group=goods`));
+    expect(g.total).toBe(1);
+    expect(g.counts.all).toBe(2);
+    const n = await ok(call(c, P.hoa, "GET", `${B}/products?limit=10&q=zzzkhongco`));
+    expect(n.items).toHaveLength(0);
+    const over = await call(c, P.hoa, "GET", `${B}/products?limit=101`);
+    expect(over.status).toBe(400);
+  });
+
   it("GET /business/products/:id: tóm tắt, lô (chênh giá + còn lại), bán (giá vốn + lãi); tenant khác ⇒ 404", async () => {
     const s = await seed();
     const r = await ok(call(c, P.hoa, "GET", `${B}/products/${s.g}`));

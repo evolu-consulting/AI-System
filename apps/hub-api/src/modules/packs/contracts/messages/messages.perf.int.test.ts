@@ -1,8 +1,9 @@
 // CR-132 M3 · HD-MSG-01..12 · Luật 4c · đo đường nóng tin nhắn (spec §6) trên DB thật: 1 người trong 200 hội thoại (nhóm 50 người), 100.000 tin, một nửa chưa đọc.
+// CR-169 lát 3a: thêm nguồn `partner` — 200 cuộc `pmsg_*` với 200 người của 20 công ty đã kết nối, 100.000 tin ⇒ danh sách/chưa đọc là HỢP NHẤT hai nguồn (vẫn 1 câu).
 // (1) số câu SQL mỗi thao tác CỐ ĐỊNH (đếm ở `tx.execute`, không phụ thuộc số hàng); (2) p95 theo ngưỡng spec. In số thật ra console (trước → sau ghi ở tasks.md).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Tx } from "@ai/db";
-import { tenants, users } from "@ai/test-kit/builders";
+import { enablePack, members, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../../lib/db";
@@ -10,6 +11,7 @@ import { internalUsersAmong } from "../../kit/adapters/member-names";
 import { createPackUow } from "../../kit/adapters/pack-uow";
 import type { PackUow } from "../../kit/public";
 import { messagesRepo } from "./adapters/messages.repo";
+import { partnerRepo } from "./adapters/partner.repo";
 import type { MessagesRepos } from "./application/messages.ports";
 import { messagesUsecases } from "./application/messages.usecase";
 
@@ -42,6 +44,7 @@ const counting = (tx: Tx): Tx =>
 const uow = () =>
   createPackUow(db, "contracts", (tx, t) => ({
     messages: messagesRepo(counting(tx), t),
+    partner: partnerRepo(counting(tx), t),
   })) as never as PackUow<MessagesRepos>;
 const uc = () =>
   messagesUsecases({ uow: uow(), people: internalUsersAmong(db), newId: () => Bun.randomUUIDv7() });
@@ -86,10 +89,38 @@ beforeAll(async () => {
   await o`insert into contracts.msg_messages (tenant_id, conversation_id, seq, sender_id, client_id, body)
     select ${T}::uuid, c::uuid, s, case when s % 2 = 0 then ${P}::uuid else ${others[0] as string}::uuid end, gen_random_uuid(), 'tin số ' || s
     from unnest(${cids}::text[]) as c cross join generate_series(1, ${PER_CONV}) as s`;
+  await seedPartner();
   await o`analyze contracts.msg_messages`;
   await o`analyze contracts.msg_members`;
   await o`analyze contracts.msg_conversations`;
+  await o`analyze hub.pmsg_threads`;
+  await o`analyze hub.pmsg_messages`;
 }, 300_000);
+
+/** CR-169: P (có quyền Sổ Hợp Tác) kết nối 20 công ty × 10 người = 200 cuộc `partner` × 500 tin (P đọc tới nửa chừng), xen kẽ về thời gian với 200 cuộc nhóm. */
+async function seedPartner(): Promise<void> {
+  const peers = (await tenants(o, 20, 9500)) as string[];
+  const g = await enablePack(o, [T, ...peers], "contracts");
+  await members(o, T, g.get(T)?.viewer as string, [P]);
+  for (const [k, pt] of peers.entries()) {
+    const us = (await users(o, pt, 10, { from: 9600 + k * 10 })) as string[];
+    await members(o, pt, g.get(pt)?.viewer as string, us);
+  }
+  await o`insert into hub.partner_links (from_tenant, to_tenant, accepted_at)
+    select ${T}::uuid, p::uuid, now() from unnest(${peers}::text[]) p
+    union all select p::uuid, ${T}::uuid, now() from unnest(${peers}::text[]) p`;
+  await o`insert into hub.pmsg_threads (id, a_tenant, a_user, b_tenant, b_user, last_seq, last_at, a_read_seq, b_read_seq)
+    select x.id, case when x.p_first then ${T}::uuid else x.pt end, case when x.p_first then ${P}::uuid else x.pu end,
+           case when x.p_first then x.pt else ${T}::uuid end, case when x.p_first then x.pu else ${P}::uuid end,
+           ${PER_CONV}::bigint, now() - ((x.i + 0.5) || ' minutes')::interval,
+           case when x.p_first then ${PER_CONV / 2}::bigint else ${PER_CONV}::bigint end, case when x.p_first then ${PER_CONV}::bigint else ${PER_CONV / 2}::bigint end
+      from (select gen_random_uuid() as id, u.tenant_id as pt, u.id as pu, row_number() over (order by u.id) as i,
+                   (${T}::uuid, ${P}::uuid) < (u.tenant_id, u.id) as p_first
+              from admin.users u where u.tenant_id = any(${peers}::uuid[])) x`;
+  await o`insert into hub.pmsg_messages (thread_id, seq, sender_user, body, client_id)
+    select t.id, s, case when s % 2 = 0 then ${P}::uuid else (case when t.a_user = ${P}::uuid then t.b_user else t.a_user end) end, 'tin số ' || s, gen_random_uuid()
+      from hub.pmsg_threads t cross join generate_series(1, ${PER_CONV}::int) as s`;
+}
 afterAll(async () => {
   await db?.close();
   await o?.end({ timeout: 2 });
@@ -100,7 +131,7 @@ describe("CR-132 M3 · perf tin nhắn (200 hội thoại × 500 tin = 100.000 t
     const r = await measure("GET /messages/unread", () => uc().unread(w()));
     expect(r.sql).toBe(1);
     expect(r.p95).toBeLessThanOrEqual(20);
-    expect((await uc().unread(w())).total).toBe(999); // 200 × 125 chưa đọc, trần 999
+    expect((await uc().unread(w())).total).toBe(999); // (200 nhóm + 200 partner) × 125 chưa đọc, trần 999
   });
 
   it("danh sách 30 hội thoại: 1 câu repo (+1 tra tên), p95 ≤ 50 ms", async () => {
@@ -113,6 +144,10 @@ describe("CR-132 M3 · perf tin nhắn (200 hội thoại × 500 tin = 100.000 t
     expect(page.items).toHaveLength(30);
     expect(page.next_cursor).not.toBeNull();
     expect(page.items[0]?.unread).toBe(100);
+    // CR-169: hai nguồn xen kẽ theo thời gian (nhóm i phút, partner i + 0,5 phút) ⇒ trang 30 chứa cả hai loại, mới nhất trước.
+    expect(new Set(page.items.map((x) => x.kind))).toEqual(new Set(["group", "partner"]));
+    const at = page.items.map((x) => x.last_at);
+    expect(at).toEqual([...at].sort().reverse());
   });
 
   it("50 tin gần nhất: 1 câu, p95 ≤ 30 ms", async () => {

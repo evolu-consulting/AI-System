@@ -11,7 +11,7 @@ export type LegalWarning = { threshold: number; reason: string };
 export type LegalInput = {
   doc_type: string;
   frame_root_id: string | null;
-  deal: "buy" | "sell" | "referral" | null;
+  deal: "buy" | "sell" | "referral" | "franchise" | "cooperation" | null;
   value: number | null;
   commission_pct: number | string | null;
   commission_fixed: number | null;

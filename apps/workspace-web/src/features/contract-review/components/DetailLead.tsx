@@ -33,6 +33,16 @@ function FrameRef({ doc }: { doc: ContractDetail["doc"] }) {
   );
 }
 
+/** CR-168: mỗi mục dòng thông tin có nhãn rõ («Số HĐ 1», «Loại Bán», «Đối tác …»). */
+function Labeled({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-baseline gap-1">
+      <span className="shrink-0">{label}</span>
+      <span className="min-w-0 font-medium text-ink">{children}</span>
+    </span>
+  );
+}
+
 export function DetailLead({
   c,
   partner,
@@ -55,11 +65,17 @@ export function DetailLead({
   );
   return (
     <MetaLine>
-      {typeof n === "string" && n ? <span>{n}</span> : null}
-      <span className="inline-flex flex-wrap items-center gap-2">
+      {typeof n === "string" && n ? (
+        <Labeled label={t("contracts.review.lead.number")}>{n}</Labeled>
+      ) : null}
+      <Labeled label={t("contracts.review.lead.type")}>
         <Tag tone={DEAL_TONE[deal]}>{t(`contracts.cform.dealName.${deal}`)}</Tag>
-      </span>
-      {partner ? <TruncText maxWidth="20rem">{partner}</TruncText> : null}
+      </Labeled>
+      {partner ? (
+        <Labeled label={t("contracts.review.lead.partner")}>
+          <TruncText maxWidth="16rem">{partner}</TruncText>
+        </Labeled>
+      ) : null}
       {frameLinkOf(c.doc) ? <FrameRef doc={c.doc} /> : null}
       {c.doc && type !== "framework" ? (
         <span

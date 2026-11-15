@@ -97,7 +97,12 @@ const HUB_TABLES = [
   "partner_links",
   "partner_mailbox",
   "partner_sign_sessions", // CR-127 · P1 hub 0132 · phiên ký chung
+  "people_profiles", // CR-147b · hub 0142 · avatar, ảnh bìa, chức vụ
   "platform_settings", // CR-122 p22 hub 0115 · cài đặt nền tảng (process.stages_max)
+  "pmsg_eligible_v", // CR-169 · hub 0152 · VIEW «người hợp lệ» (chỉ hàm DEFINER đọc)
+  "pmsg_files", // CR-169 · hub 0149 · tệp tin nhắn người–người giữa công ty kết nối
+  "pmsg_messages", // CR-169 · hub 0149
+  "pmsg_threads", // CR-169 · hub 0149
   "process_back_events",
   "process_def_releases", // hub 0068 · thư viện quy trình / CR-118 hub 0087 (routing, slot)
   "process_defs",
@@ -187,6 +192,35 @@ describe("HUB-FR-75 · runHubMigrations (int, ai_system_h1_test)", () => {
       hubDev: 0,
     });
     expect(await hubTables()).toEqual(HUB_TABLES);
+    // CR-169: hàm tin nhắn công ty kết nối (0149) + cc_links (DROP + tạo lại ở 0149) có quyền đúng trên DB dựng sạch: hub_rw gọi được, PUBLIC thì không;
+    // hàm nội bộ (ctx/eligible) không ai gọi được; hàm trò chuyện chung CR-161 đã gỡ.
+    const fn = await sql<{ f: string; rw: boolean; pub: boolean }[]>`
+      select f, has_function_privilege('hub_rw', f, 'execute') as rw, has_function_privilege('public', f, 'execute') as pub
+      from unnest(array['hub.pmsg_send(uuid, uuid, text, uuid[])', 'hub.pmsg_inbox(uuid, timestamptz, uuid, integer)',
+        'hub.cc_links(text, timestamptz, uuid, integer)', 'hub.pmsg_ctx()', 'hub.pmsg_eligible_raw(uuid, uuid)',
+        'hub.pmsg_file_add(uuid, uuid, text, text, text, bigint, text)', 'hub.pmsg_people(uuid[], text, text, uuid, integer)',
+        'hub.pmsg_files_sweep(interval)', 'hub.pmsg_connected(uuid)']) as f`;
+    expect(fn.map((x) => [x.f, x.rw, x.pub])).toEqual([
+      ["hub.pmsg_send(uuid, uuid, text, uuid[])", true, false],
+      ["hub.pmsg_inbox(uuid, timestamptz, uuid, integer)", true, false],
+      ["hub.cc_links(text, timestamptz, uuid, integer)", true, false],
+      ["hub.pmsg_ctx()", false, false],
+      ["hub.pmsg_eligible_raw(uuid, uuid)", false, false],
+      ["hub.pmsg_file_add(uuid, uuid, text, text, text, bigint, text)", true, false],
+      ["hub.pmsg_people(uuid[], text, text, uuid, integer)", true, false],
+      ["hub.pmsg_files_sweep(interval)", true, false],
+      ["hub.pmsg_connected(uuid)", false, false],
+    ]);
+    // CR-169 0152: view «người hợp lệ» không ai đọc trực tiếp (chỉ hàm DEFINER, quyền chủ sở hữu).
+    const [v] = await sql<{ rw: boolean; pub: boolean }[]>`
+      select has_table_privilege('hub_rw', 'hub.pmsg_eligible_v', 'select') as rw, has_table_privilege('public', 'hub.pmsg_eligible_v', 'select') as pub`;
+    expect(v).toEqual({ rw: false, pub: false });
+    // CR-169: không còn hàm trò chuyện chung cc_* (thread/send/file/unread/ctx) sau 0149.
+    const gone = await sql<{ n: string }[]>`
+      select p.proname as n from pg_proc p join pg_namespace s on s.oid = p.pronamespace
+      where s.nspname = 'hub' and p.proname in ('cc_thread_page', 'cc_send', 'cc_mark_read', 'cc_file_add', 'cc_file_get',
+        'cc_unread', 'cc_files_sweep', 'cc_thread_ensure', 'cc_msg_json', 'cc_ctx')`;
+    expect(gone).toEqual([]);
     expect(await runHubMigrations({ url: URL, appEnv: "production" })).toEqual({
       hub: 0,
       hubDev: 0,

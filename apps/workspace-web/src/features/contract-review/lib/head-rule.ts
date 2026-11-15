@@ -39,6 +39,11 @@ export type HeadRuleIn = {
   submitBlock?: "no_flow" | null | undefined;
 };
 
+export type PageConfirmWhy = "no_flow" | "not_submitter" | "step_open" | null;
+
+/** Bước thẻ duyệt đã kết thúc (huỷ / từ chối / xong): không còn lượt đang mở ⇒ coi như không có thẻ duyệt. Máy chủ ánh xạ lượt `failed` (đọc AI hỏng) ⇒ `cancelled` (`approval-run.rules` STEP, `cardStepOf`) nên không cần khoá riêng. */
+const ENDED_STEPS: ReadonlySet<string> = new Set(["cancelled", "rejected", "done"]);
+
 export type HeadRule = {
   /** Ô thông tin sửa được (chỉ DRAFT, AI đã đọc xong). */
   canSave: boolean;
@@ -59,6 +64,8 @@ export type HeadRule = {
   /** HĐ nhận chờ người phụ trách quyết: 3 nút Đồng ý / Trả lại để sửa / Từ chối. */
   inboxDecision: boolean;
   banner: HeadBanner;
+  /** Nháp lần đầu mà «Gửi duyệt» KHÔNG bấm được ⇒ nút vẫn hiện, khoá, kèm lý do (G3, không im lặng): chưa có quy trình · không phải người tạo/phụ trách · còn lượt duyệt đang mở. */
+  pageConfirmWhy: PageConfirmWhy;
   /** NF1 · lý do + bước kế hiện cạnh nút chính khi không Gửi duyệt được (chưa có quy trình): nút chính là "Lưu nháp"; "Gửi lại" bị khoá. */
   submitBlocked: boolean;
   /** Nút bị khoá vì sao (hiện cạnh nút); null = không khoá. */
@@ -78,19 +85,33 @@ function bannerOf(i: HeadRuleIn): HeadBanner {
   return null;
 }
 
+/** Tenant tắt duyệt / chưa có lượt đang mở. Lượt đã kết thúc (vd lượt đọc AI hỏng còn dính HĐ nhập tay) KHÔNG phải «bật duyệt cấp 1» — trước đây bước «cancelled» làm mất Gửi duyệt. */
+function approvalOff(i: HeadRuleIn): boolean {
+  return i.approvalLoaded && (i.approvalStep === null || ENDED_STEPS.has(i.approvalStep));
+}
+
+/** Vì sao «Gửi duyệt» của trang khoá (nháp lần đầu, không phải nút của thẻ duyệt). */
+function whyOf(i: HeadRuleIn, blocked: boolean, off: boolean): PageConfirmWhy {
+  if (blocked) return "no_flow";
+  if (!i.can.submit) return "not_submitter";
+  return i.approvalLoaded && !off ? "step_open" : null;
+}
+
 export function headRule(i: HeadRuleIn): HeadRule {
   const draft = i.status === "draft";
   const ready = i.extractState === "ready";
   const canSave = draft && i.write && !i.superseded && ready;
   const first = canSave && i.round === 0 && !i.submitted;
   const blocked = canSave && i.submitBlock === "no_flow";
-  const off = i.approvalLoaded && i.approvalStep === null;
+  const off = approvalOff(i);
+  const confirmSave = first && off && !i.approvalConfirm && !blocked && i.can.submit;
   return {
     canSave,
     sticky: first,
     rename: canSave,
     draftSave: first && !i.approvalConfirm,
-    confirmSave: first && off && !i.approvalConfirm && !blocked,
+    confirmSave,
+    pageConfirmWhy: first && !i.approvalConfirm && !confirmSave ? whyOf(i, blocked, off) : null,
     resubmit: canSave && i.round > 0 && (i.can.submit || blocked),
     withdraw: i.can.withdraw,
     recreate: i.can.recreate,
@@ -130,6 +151,7 @@ export type HeadActIn = {
     | "resubmit"
     | "submitBlocked"
     | "confirmSave"
+    | "pageConfirmWhy"
     | "withdraw"
     | "recreate"
     | "newVersion"
@@ -148,7 +170,18 @@ export type HeadMenuEntry = {
   whyKey?: string;
 };
 
-export type HeadActs = { primary: HeadActKey | null; menu: HeadMenuEntry[] };
+export type HeadActs = {
+  primary: HeadActKey | null;
+  menu: HeadMenuEntry[];
+  /** Nút chính đang khoá ⇒ khoá i18n lý do (hiện cạnh nút). */
+  primaryWhyKey?: string;
+};
+
+const WHY_KEY: Record<NonNullable<PageConfirmWhy>, string> = {
+  no_flow: "contracts.u5.err.NO_APPROVAL_FLOW",
+  not_submitter: "contracts.u5.why.notSubmitter",
+  step_open: "contracts.u5.why.stepOpen",
+};
 
 /** Ưu tiên nút chính: Duyệt/Xác nhận > Gửi lại > Mở khoá > Tải phiên bản mới > Tạo lại. Còn lại vào menu; Xoá cuối. */
 export function headActs(i: HeadActIn): HeadActs {
@@ -177,12 +210,18 @@ export function headActs(i: HeadActIn): HeadActs {
     .map((key) => (blocked(key) ? { key, whyKey: "contracts.u5.err.NO_APPROVAL_FLOW" } : { key }));
   // CR-135 Q2: nháp lần đầu — «Lưu nháp» + «Huỷ» vào menu (đầu danh sách); không có nút chính ⇒ «Lưu nháp» lên làm nút chính.
   let main = primary;
+  let primaryWhyKey: string | undefined;
   if (r.sticky) {
+    // Nháp lần đầu không Gửi duyệt được ⇒ «Gửi duyệt» vẫn là nút chính (khoá + lý do), «Lưu nháp» xuống menu.
+    if (main === null && r.pageConfirmWhy) {
+      main = "pageConfirm";
+      primaryWhyKey = WHY_KEY[r.pageConfirmWhy];
+    }
     if (main === null) main = "saveDraft";
     menu.unshift(...(main === "saveDraft" ? [] : [{ key: "saveDraft" as const }]), {
       key: "cancel" as const,
     });
   }
   if (i.canDelete) menu.push({ key: "delete", danger: true });
-  return { primary: main, menu };
+  return { primary: main, menu, ...(primaryWhyKey ? { primaryWhyKey } : {}) };
 }

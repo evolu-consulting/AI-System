@@ -1,5 +1,6 @@
 // CR-122 · N2 · FLOW2-FR-26 · kiểm tất định các cạnh của flow khi LƯU def: bước sau thiếu trường BẮT BUỘC ⇒ 422 `FLOW_EDGE_MISSING`
 // (`details.edges`); lệch nhẹ (sai kiểu) ⇒ trả danh sách để gắn `warnings` vào response. Không có node bảng nào ⇒ không làm gì.
+import { withLegacyCoreNodes } from "@ai/contracts/app-manifest";
 import {
   blockingEdgeIssues,
   clusterIssueMessage,
@@ -23,7 +24,8 @@ export async function edgeCheck(
 ): Promise<FlowEdgeIssue[]> {
   clusterCheck(input); // CR-123 · u3a · FR-14: cụm node module trước (thuần, 0 SQL)
   if (!d.config || !input.stages.some((x) => x.node)) return [];
-  const issues = flowEdgeIssues(input, await paletteOf(d.config, tenantId));
+  // CR-127 E9: node cũ (`core.wait-until`…) không còn trên bảng node nhưng def đã lưu còn mang khoá ⇒ vẫn kiểm cạnh.
+  const issues = flowEdgeIssues(input, withLegacyCoreNodes(await paletteOf(d.config, tenantId)));
   const block = blockingEdgeIssues(issues);
   if (block.length > 0) throw defError("FLOW_EDGE_MISSING", { edges: block });
   return issues;

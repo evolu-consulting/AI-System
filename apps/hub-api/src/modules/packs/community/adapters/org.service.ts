@@ -18,8 +18,12 @@ type Uow = PackUow<{ tx: Tx }>;
 /** Công ty người xem được thấy hồ sơ: chủ quản = mọi công ty đối tác trong danh bạ; đối tác = chỉ công ty mình (hàm cổng cũng ép lại). */
 const orgIds = (a: Access): string[] => (a.org === null ? a.dir.orgs.map((o) => o.id) : [a.org]);
 
-export const partners = (uow: Uow, a: Access): Promise<PartnerRow[]> =>
-  uow.tenant(a.who, ({ tx }) => partnerRows(tx, orgIds(a)));
+/** `only` (trang) ⇒ chỉ các công ty đó, và luôn giao với phạm vi người xem được thấy. */
+export const partners = (uow: Uow, a: Access, only?: readonly string[]): Promise<PartnerRow[]> => {
+  const seen = orgIds(a);
+  const ids = only === undefined ? seen : seen.filter((id) => only.includes(id));
+  return uow.tenant(a.who, ({ tx }) => partnerRows(tx, ids));
+};
 
 /** Hàng vai/nhóm hàng của công ty người xem (đối tác); chủ quản ⇒ undefined. */
 export async function own(uow: Uow, a: Access): Promise<PartnerRow | undefined> {

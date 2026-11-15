@@ -30,11 +30,29 @@ export function fetchOpenMilestones(
   q: { party_key: string; direction: "sale" | "purchase"; product_id?: string },
   signal?: AbortSignal,
 ): Promise<OpenMilestone[]> {
-  const u = new URLSearchParams({ party_key: q.party_key, direction: q.direction });
-  if (q.product_id) u.set("product_id", q.product_id);
-  return api<OpenMilestone[]>(`/pack/contracts/open-milestones?${u}`, {
-    ...(signal ? { signal } : {}),
-  });
+  return fetchAllOpenMilestones(q, signal);
+}
+
+/** CR-151 mục 16: gom mọi trang (mỗi trang ≤ 500, một lời gọi) — không cắt im lặng ở 500. */
+const MILESTONE_PAGE = 500;
+const MILESTONE_PAGES_MAX = 20;
+async function fetchAllOpenMilestones(
+  q: { party_key: string; direction: "sale" | "purchase"; product_id?: string },
+  signal?: AbortSignal,
+): Promise<OpenMilestone[]> {
+  const all: OpenMilestone[] = [];
+  for (let page = 0; page < MILESTONE_PAGES_MAX; page++) {
+    const u = new URLSearchParams({ party_key: q.party_key, direction: q.direction });
+    if (q.product_id) u.set("product_id", q.product_id);
+    u.set("limit", String(MILESTONE_PAGE));
+    u.set("offset", String(page * MILESTONE_PAGE));
+    const rows = await api<OpenMilestone[]>(`/pack/contracts/open-milestones?${u}`, {
+      ...(signal ? { signal } : {}),
+    });
+    all.push(...rows);
+    if (rows.length < MILESTONE_PAGE) break;
+  }
+  return all;
 }
 
 /** `:frameId` = HĐ nguyên tắc (bản bất kỳ của chuỗi). Cùng đối tác + cùng hướng, nếu không ⇒ 422 `FRAME_PARTNER_MISMATCH`. */

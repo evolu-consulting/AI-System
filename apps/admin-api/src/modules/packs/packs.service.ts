@@ -129,6 +129,30 @@ export function enablePack(
   });
 }
 
+/**
+ * CR-159 · onboarding yaml: người dùng thường vào Group vai của gói đã bật (`<k>-owner|editor|viewer`) — một tx, lặp lại không đổi,
+ * không xoá ai; có người mới ⇒ bump `group` + một dòng nhật ký thành viên mỗi Group (như gán tay).
+ */
+export function addPackMembers(
+  c: PacksCall,
+  tenantId: string,
+  k: string,
+  members: readonly { username: string; role: "owner" | "editor" | "viewer" }[],
+): Promise<void> {
+  if (members.length === 0) return Promise.resolve();
+  return configWrite(c, "group.save", async (tx, ch) => {
+    const added = await repo.addUsersToRoleGroups(tx, {
+      tenantId,
+      actorId: c.actor.userId,
+      rows: members.map((m) => ({ groupKey: packGroupKey(k, m.role), username: m.username })),
+    });
+    if (added.length === 0) return;
+    ch.changed({ entity: "group", tenantId });
+    for (const g of added)
+      ch.audit(membersAudit({ id: g.groupId, tenantId, key: g.groupKey }, { added: g.usernames }));
+  });
+}
+
 /** Đã tắt ⇒ no-op (204, không bump, không audit). */
 export function disablePack(c: PacksCall, tenantId: string, k: string): Promise<void> {
   return configWrite(c, "entitlement.save", async (tx, ch) => {

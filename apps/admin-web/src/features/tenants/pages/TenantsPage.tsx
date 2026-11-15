@@ -8,13 +8,14 @@ import { useTranslation } from "react-i18next";
 import { SearchBox } from "@/components/shared/form/SearchBox";
 import { ListEmpty, ListPage } from "@/components/shared/list/ListPage";
 import type { FilterGroup } from "@/components/shared/list/list-filter";
+import { Pagination } from "@/components/shared/Pagination";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
-import { useTenantList } from "../api";
+import { TENANTS_PAGE_SIZE, useTenantList } from "../api";
 import { TenantDrawer } from "../components/TenantDrawer";
 import { TenantTable } from "../components/TenantTable";
 import { useLockFlow } from "../hooks/use-lock-flow";
@@ -32,7 +33,8 @@ export function TenantsPage() {
   const [status, setStatus] = useState<Status | undefined>();
   const [app, setApp] = useState<TenantApp | undefined>();
   const [openId, setOpenId] = useState<string | null>(null);
-  const query = useTenantList({ q, status, app }, allowed);
+  const [offset, setOffset] = useState(0);
+  const query = useTenantList({ q, status, app, offset }, allowed);
   const { requestLock, requestUnlock, dialogs } = useLockFlow();
 
   if (!allowed) return <ForbiddenState />;
@@ -45,6 +47,7 @@ export function TenantsPage() {
     setQ("");
     setStatus(undefined);
     setApp(undefined);
+    setOffset(0);
   };
   const create = (
     <Button asChild>
@@ -81,11 +84,22 @@ export function TenantsPage() {
       count={counts?.all}
       primary={create}
       groups={groups}
-      onChange={(id, v) =>
-        id === "app" ? setApp(isApp(v) ? v : undefined) : setStatus(isStatus(v) ? v : undefined)
-      }
+      onChange={(id, v) => {
+        setOffset(0);
+        if (id === "app") setApp(isApp(v) ? v : undefined);
+        else setStatus(isStatus(v) ? v : undefined);
+      }}
       onClear={clear}
-      search={<SearchBox label={t("common.search")} value={q} onChange={setQ} />}
+      search={
+        <SearchBox
+          label={t("common.search")}
+          value={q}
+          onChange={(v) => {
+            setQ(v);
+            setOffset(0);
+          }}
+        />
+      }
       shown={query.data?.items.length}
       total={counts?.all}
     >
@@ -100,6 +114,12 @@ export function TenantsPage() {
         onUnlock={requestUnlock}
         onOpen={(row) => setOpenId(row.id)}
         activeId={openId}
+      />
+      <Pagination
+        offset={offset}
+        limit={TENANTS_PAGE_SIZE}
+        total={query.data?.total ?? 0}
+        onOffsetChange={setOffset}
       />
       <TenantDrawer tenant={opened} onClose={() => setOpenId(null)} />
       {dialogs}

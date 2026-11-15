@@ -19,6 +19,8 @@ export const APPROVAL_SLOT_FIELDS = [
       { value: "buy", label: "Mua hàng" },
       { value: "sell", label: "Bán hàng" },
       { value: "referral", label: "Giới thiệu" },
+      { value: "franchise", label: "Nhượng quyền" },
+      { value: "cooperation", label: "Thỏa thuận hợp tác" },
     ],
   },
   {

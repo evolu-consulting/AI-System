@@ -2,22 +2,16 @@
 // giữ · Đã bán · Điểm kinh doanh (+ đề xuất). Một yêu cầu lấy cả danh sách; tab lọc phía trình duyệt. Bấm hàng mở chi tiết (`?sp=`).
 import type { BizProductRow } from "@ai/contracts/pack-contracts";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
 import { useMe } from "~/features/pack-state/hooks/use-me";
-import { useBizProducts } from "../hooks/use-business";
-import {
-  CATALOG_TABS,
-  type CatalogTab,
-  filterTab,
-  GROUP_TAG,
-  heldView,
-  SUGGEST_TONE,
-} from "../lib/business";
+import { Pager } from "~/features/table";
+import { useBizPage } from "../hooks/use-business";
+import { CATALOG_TABS, type CatalogTab, GROUP_TAG, heldView, SUGGEST_TONE } from "../lib/business";
 import { AddProductDialog } from "./AddProductDialog";
 
 export function HeldCell({ p }: { p: BizProductRow }) {
@@ -54,15 +48,32 @@ export function ScoreCell({ p }: { p: BizProductRow }) {
 export function ProductList({ tab }: { tab: CatalogTab }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [qRaw, setQRaw] = useState("");
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  // CR-151: tìm, lọc nhóm và cắt trang ở máy chủ.
+  useEffect(() => {
+    const h = setTimeout(() => {
+      setQ(qRaw.trim());
+      setPage(1);
+    }, 250);
+    return () => clearTimeout(h);
+  }, [qRaw]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: đổi nhóm ⇒ về trang 1
+  useEffect(() => setPage(1), [tab]);
   const { write } = useMe();
   const addDlg = useRef<HTMLDialogElement>(null);
-  const list = useBizProducts();
+  const list = useBizPage({
+    ...(tab === "all" ? {} : { group: tab }),
+    q,
+    offset: (page - 1) * pageSize,
+    limit: pageSize,
+  });
   if (list.isLoading) return <Loading />;
   if (list.error) return <ErrorLine error={list.error} />;
-  const all = list.data?.items ?? [];
-  const needle = q.trim().toLowerCase();
-  const rows = filterTab(all, tab).filter((p) => !needle || p.name.toLowerCase().includes(needle));
+  const rows = list.data?.items ?? [];
+  const total = list.data?.total ?? 0;
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -86,8 +97,8 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
         </div>
         <input
           type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
+          value={qRaw}
+          onChange={(e) => setQRaw(e.target.value)}
           placeholder={t("contracts.catalog.search")}
           aria-label={t("contracts.catalog.search")}
           className="ml-auto h-9 w-56 rounded-lg border border-field bg-panel px-3 text-[14px]"
@@ -155,6 +166,19 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
             </table>
           </div>
         )}
+        <Pager
+          t={{
+            page,
+            pages: Math.max(1, Math.ceil(total / pageSize)),
+            setPage,
+            total,
+            pageSize,
+            setPageSize: (n) => {
+              setPageSize(n);
+              setPage(1);
+            },
+          }}
+        />
       </Panel>
     </div>
   );

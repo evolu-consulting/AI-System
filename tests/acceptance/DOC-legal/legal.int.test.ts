@@ -85,9 +85,11 @@ describe("CR-101 DOC-legal · đường chính", () => {
   it("ngưỡng ở Cài đặt: owner sửa ⇒ đổi cảnh báo; non-owner 403; chéo tenant không thấy", async () => {
     const cfg = (await ok(call(c, P.lan, "GET", "/company"))) as Json;
     expect(cfg.legal_warn_threshold).toBe(5_000_000);
+    // CR-138: `company.has_cover` chỉ để đọc; thân PUT strict nên bỏ ra.
+    const { has_cover: _hasCover, ...company } = cfg.company as Json;
     const put = (p: typeof P.lan, v: number) =>
       call(c, p, "PUT", "/company", {
-        ...cfg.company,
+        ...company,
         approval_enabled: cfg.approval_enabled,
         legal_warn_threshold: v,
       });

@@ -1,10 +1,13 @@
 // CR-132b · e2e «Tin nhắn» có cột trái «Nhóm» + «Thành viên» (chưa chạy trong lát — chạy một lần cuối đợt):
 // nhân viên thấy đồng nghiệp ở «Thành viên», bấm một người chưa từng nhắn ⇒ khung chat mở ngay (không qua «Nhắn tin mới»), nhắn được.
 
+import type { Page } from "@playwright/test";
 import { test } from "../journey-approval/_test";
 import { envOf, expect, loginCw, SPEC_TENANT, U } from "./_cr127-kit";
 
 const E = envOf(SPEC_TENANT.j01);
+// CR-169: chip thứ hai của thanh lọc công ty = «<Công ty mình>» (sau «Tất cả»)
+const ownChip = (p: Page) => p.getByTestId("company-chip").nth(1);
 const HELLO = `Danh bạ ${Date.now().toString(36)}`;
 
 test("Bấm thành viên ⇒ nhắn ngay", async ({ browser }) => {
@@ -13,6 +16,7 @@ test("Bấm thành viên ⇒ nhắn ngay", async ({ browser }) => {
   const a = await ctx.newPage();
   await loginCw(a, E, U.employee);
   await a.goto("/contracts/messages");
+  await ownChip(a).click(); // CR-169: danh bạ theo phòng ban chỉ còn ở chip «<Công ty mình>»
   await expect(a.getByRole("region", { name: "Nhóm" })).toBeVisible();
   const members = a.getByRole("region", { name: "Thành viên" });
   await expect(members).toBeVisible();
@@ -20,5 +24,28 @@ test("Bấm thành viên ⇒ nhắn ngay", async ({ browser }) => {
   await a.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(HELLO);
   await a.getByRole("button", { name: "Gửi", exact: true }).click();
   await expect(a.getByTestId("msg-row").filter({ hasText: HELLO })).toBeVisible();
+  await ctx.close();
+});
+
+// CR-148 · danh bạ chia nhóm theo phòng ban (thu gọn/mở), rê chuột lên tên ⇒ thẻ người (chưa chạy trong lát).
+test("Danh bạ theo phòng ban: thu gọn, thẻ người", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const ctx = await browser.newContext();
+  const a = await ctx.newPage();
+  await loginCw(a, E, U.employee);
+  await a.goto("/contracts/messages");
+  await ownChip(a).click();
+  const members = a.getByRole("region", { name: "Thành viên" });
+  const group = members.getByTestId("dept-group").first();
+  await expect(group).toBeVisible();
+  const toggle = group.getByRole("button", { expanded: true }).first();
+  await toggle.click();
+  await expect(group.getByRole("button", { expanded: false }).first()).toBeVisible();
+  await expect(group.getByTestId("conv-row")).toHaveCount(0);
+  await group.getByRole("button", { expanded: false }).first().click();
+  // thẻ chỉ bật khi rê lên ẢNH hoặc TÊN (spec CR-148), không phải giữa dòng
+  await group.getByTestId("conv-row").first().getByTestId("conv-avatar").hover();
+  await expect(a.getByTestId("person-tip")).toBeVisible();
+  await expect(a.getByTestId("person-tip-dept")).toBeVisible();
   await ctx.close();
 });

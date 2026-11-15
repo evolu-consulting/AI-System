@@ -2,13 +2,18 @@
   "contracts": {
     "pv2": {
       "filter": {
-        "commission_payer": "Commission payer"
+        "commission_payer": "Commission payer",
+        "franchisee": "Franchisee",
+        "franchisor": "Franchisor",
+        "cooperator": "Cooperation partner"
       },
       "jobsTotal": "{{n}} scored jobs",
       "group": {
         "service": "Services",
         "goods": "Goods",
-        "referral": "Referral"
+        "referral": "Referral",
+        "franchise": "Franchise",
+        "cooperation": "Cooperation"
       },
       "table": {
         "weight": "Weight",
@@ -97,11 +102,16 @@
           "service": "Term services",
           "goods": "Goods",
           "referral": "Referral",
-          "common": "General"
+          "common": "General",
+          "franchise": "Franchise",
+          "cooperation": "Cooperation"
         },
         "role": {
           "supplier": "Supplier",
-          "customer": "Customer"
+          "customer": "Customer",
+          "franchisee": "Franchisee",
+          "franchisor": "Franchisor",
+          "cooperator": "Cooperation partner"
         },
         "tab": {
           "crit": "Criteria",
@@ -132,7 +142,9 @@
           "complaints": "Few unreasonable complaints: points lost per case per 10 transactions.",
           "on_time_commission": "% of commissions paid on time.",
           "reconcile": "Score of logged reconciliation reports.",
-          "referral_support": "Score of logged referred-customer support jobs."
+          "referral_support": "Score of logged referred-customer support jobs.",
+          "report_on_time": "Share of revenue reports / reconciliations confirmed on time (period milestones).",
+          "fee_on_time": "Share of fees / profit shares paid on time (period collect/pay milestones)."
         },
         "newName": "New criterion name",
         "newKind": "Criterion type",
@@ -144,7 +156,8 @@
           "delivery": "Delivery",
           "payment": "Payment",
           "serial": "Serial",
-          "commission": "Commission"
+          "commission": "Commission",
+          "report": "Report / reconcile"
         },
         "perTen": "points / case",
         "add": "Add",

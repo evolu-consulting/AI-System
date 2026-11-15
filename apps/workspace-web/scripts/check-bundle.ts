@@ -11,12 +11,16 @@ export const CANVAS_CHUNK_BUDGET_BYTES = 80 * 1024;
 /** CR-118: chunk `cm*` (= community; tên ngắn để bundle đầu nhỏ hơn: module Community, tải lười dưới /community/*): JS ≤ 60 KB gz, CSS ≤ 15 KB gz. */
 export const COMMUNITY_CHUNK_BUDGET_BYTES = 60 * 1024;
 export const COMMUNITY_CSS_BUDGET_BYTES = 15 * 1024;
+/** CR-149: chunk `viewer-*` (pdf.js, docx-preview; chỉ nạp khi mở hộp «Xem» PDF/Word): trần riêng, không nằm trong bundle đầu. */
+export const VIEWER_CHUNK_BUDGET_BYTES = 520 * 1024;
 export const chunkBudget = (name: string): number =>
-  /^canvas[.\-_]/.test(name)
-    ? CANVAS_CHUNK_BUDGET_BYTES
-    : /^(community|cm)[.\-_]/.test(name)
-      ? COMMUNITY_CHUNK_BUDGET_BYTES
-      : CHUNK_BUDGET_BYTES;
+  /^viewer-/.test(name)
+    ? VIEWER_CHUNK_BUDGET_BYTES
+    : /^canvas[.\-_]/.test(name)
+      ? CANVAS_CHUNK_BUDGET_BYTES
+      : /^(community|cm)[.\-_]/.test(name)
+        ? COMMUNITY_CHUNK_BUDGET_BYTES
+        : CHUNK_BUDGET_BYTES;
 /** Chuỗi mã lỗi chỉ có trong runtime zod (không có trong code app). */
 const ZOD_MARKER = "invalid_type";
 /** Chunk bất đồng bộ (route, lazy) do Rsbuild tách vào `static/js/async`. */

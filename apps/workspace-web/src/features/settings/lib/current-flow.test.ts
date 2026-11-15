@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { previewPath, ruleFacts, toCurrentFlow } from "./current-flow";
+import { previewPath, ruleFacts, toCurrentFlow, toCurrentFlows } from "./current-flow";
 
 const DEF = "11111111-1111-4111-8111-111111111111";
 const raw = (steps: unknown[], extra: Record<string, unknown> = {}) => ({
@@ -28,16 +28,41 @@ describe("current-flow · toCurrentFlow", () => {
     expect(f?.name).toBe("Quy trình HĐ mặc định");
     expect(f?.version).toBe(4);
     expect(f?.hasBranches).toBe(false);
-    expect(f?.otherFlows).toBe(0);
+    expect(f?.position).toBe(0);
+    expect(f?.startWhen).toBeNull();
+    expect(f?.sign).toBeNull();
     expect(f?.steps.map((s) => [s.department, s.kind])).toEqual([
       ["Kinh doanh", "review"],
       [null, "dify"],
     ]);
   });
-  test("CR-125 · S2: rẽ nhánh + số quy trình khác; bước kỹ thuật ẩn ⇒ có thể rỗng", () => {
-    const f = toCurrentFlow(raw([], { has_branches: true, other_flows: 2 }));
+  test("fix-review-r1: start_when_unreadable ⇒ startWhenBad (UI hiện «Không đọc được điều kiện»)", () => {
+    expect(
+      toCurrentFlow(raw([], { start_when: null, start_when_unreadable: true }))?.startWhenBad,
+    ).toBe(true);
+    expect(toCurrentFlow(raw([], {}))?.startWhenBad).toBe(false);
+  });
+  test("CR-125 · S2: rẽ nhánh; bước kỹ thuật ẩn ⇒ có thể rỗng; CR-146 điều kiện + khối ký", () => {
+    const f = toCurrentFlow(
+      raw([], {
+        has_branches: true,
+        position: 3,
+        start_when: { op: "and", conds: [{ fact: "total_value", op: "ge", value: 5e8 }] },
+        sign: {
+          company_signers: [{ kind: "group", name: "Ban giám đốc" }],
+          partner_signs: true,
+          order: null,
+        },
+        partner_send: true,
+      }),
+    );
     expect(f?.hasBranches).toBe(true);
-    expect(f?.otherFlows).toBe(2);
+    expect([
+      f?.position,
+      f?.startWhen?.conds.length,
+      f?.sign?.signers[0]?.name,
+      f?.partnerSend,
+    ]).toEqual([3, 1, "Ban giám đốc", true]);
     expect(f?.steps).toEqual([]);
   });
   test("sai hình (bản cũ có version / bước dạng chuỗi / thiếu def_id) ⇒ null", () => {
@@ -45,6 +70,20 @@ describe("current-flow · toCurrentFlow", () => {
     expect(toCurrentFlow(raw(["Kinh doanh"]))).toBeNull();
     expect(toCurrentFlow({ ...raw([GD]), def_id: undefined })).toBeNull();
     expect(toCurrentFlow(null)).toBeNull();
+  });
+});
+
+describe("current-flow · CR-146 danh sách", () => {
+  test("{items} ⇒ giữ thứ tự; sai hình ⇒ null", () => {
+    const l = toCurrentFlows({
+      items: [raw([], { position: 1 }), { ...raw([], { position: 2 }), name: "B" }],
+    });
+    expect(l?.map((x) => [x.name, x.position])).toEqual([
+      ["Quy trình HĐ mặc định", 1],
+      ["B", 2],
+    ]);
+    expect(toCurrentFlows({ items: [] })).toEqual([]);
+    expect(toCurrentFlows(raw([]))).toBeNull();
   });
 });
 

@@ -9,6 +9,7 @@ import type { ContractStateRepo } from "../adapters/contract-state.repo";
 import type { SubmissionsRepo } from "../adapters/submissions.repo";
 import { CONTRACTS_PACK, EV_SUBMITTED } from "../domain/contract-flow-events.rules";
 import { transition } from "../domain/contract-state.rules";
+import { needsReconcile } from "../domain/manual-entry.rules";
 import type { ContractFlowGate, ContractFlowRepo } from "./contract-flow.ports";
 
 export type SubmitTxRepos = {
@@ -24,7 +25,8 @@ export type SubmitErr =
   | "FILE_REQUIRED"
   | "UNCHANGED_REASON_REQUIRED"
   | "STATE_CONFLICT"
-  | "NO_APPROVAL_FLOW";
+  | "NO_APPROVAL_FLOW"
+  | "RECONCILE_REQUIRED";
 export type SubmitOk = { status: "processing" | "done"; no_flow: boolean; round: number };
 export type SubmitOpts = {
   unchangedReason?: string | undefined;
@@ -44,6 +46,9 @@ function precheck(h: Head, who: PackWho, o: SubmitOpts): SubmitErr | null {
   if (h.status !== "draft") return "CONTRACT_NOT_DRAFT";
   if (h.extractState !== "ready") return "EXTRACT_NOT_READY";
   if (h.needsFile) return "FILE_REQUIRED";
+  // CR-157: HĐ nhập tay phải được người nhập tích "đã đối chiếu với tệp gốc" trước «Xác nhận & lưu» / Gửi duyệt (Lưu nháp không bị chặn).
+  if (needsReconcile({ entrySource: h.entrySource, reconciledAt: h.reconciledAt }))
+    return "RECONCILE_REQUIRED";
   if (h.round > 0 && h.same && !o.unchangedReason && !o.evidence)
     return "UNCHANGED_REASON_REQUIRED";
   return null;

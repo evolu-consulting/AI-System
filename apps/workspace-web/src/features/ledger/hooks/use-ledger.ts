@@ -1,9 +1,10 @@
 // HD7-FR-04…12: truy vấn + lệnh ghi của sổ đối tác — component không gọi api.ts trực tiếp.
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   fetchContractPartner,
   fetchInstalments,
   fetchPartnerEvents,
+  INSTALMENT_PAGE,
   ledgerKeys,
   postponeInstalment,
   recordEvent,
@@ -30,9 +31,14 @@ export function useContractPartner(contractId: string, enabled: boolean) {
 
 /** Các đợt chưa xong + sổ sự kiện của một đối tác. */
 export function usePartnerLedger(party: string, contractId?: string) {
-  const obs = useQuery({
+  const obs = useInfiniteQuery({
     queryKey: ledgerKeys.instalments(party, contractId),
-    queryFn: ({ signal }) => fetchInstalments(party, contractId, signal),
+    initialPageParam: 0,
+    queryFn: ({ pageParam, signal }) => fetchInstalments(party, contractId, pageParam, signal),
+    // limit+1: đủ cỡ trang + 1 hàng ⇒ còn trang sau.
+    getNextPageParam: (last, all) =>
+      last.length > INSTALMENT_PAGE ? all.length * INSTALMENT_PAGE : undefined,
+    select: (d) => d.pages.flatMap((p) => p.slice(0, INSTALMENT_PAGE)),
   });
   const evs = useQuery({
     queryKey: ledgerKeys.events(party),

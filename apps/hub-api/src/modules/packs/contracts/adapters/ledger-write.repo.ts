@@ -50,7 +50,7 @@ function ledgerLocks(
   const lockObligation: LedgerWriteRepo["lockObligation"] = (id) =>
     one<LockedObligation | null>(
       tx,
-      sql`select ${obJson("o")} || jsonb_build_object('owner', o.owner, 'rep_cell', o.rep_cell, 'title', o.title,
+      sql`select ${obJson("o")} || jsonb_build_object('owner', o.owner, 'rep_cell', o.rep_cell, 'period_key', o.period_key, 'title', o.title,
           'pending', exists (select 1 from contracts.exec_requests x where x.tenant_id = o.tenant_id
             and x.obligation_id = o.id and x.status = 'pending')) as j
         from contracts.obligations o

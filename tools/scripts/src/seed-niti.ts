@@ -71,6 +71,8 @@ function onboardSpec(
     packs: s.packs,
     root: dept(s.root),
     departments: s.departments.map(dept),
+    addons: [],
+    users: [],
   };
 }
 

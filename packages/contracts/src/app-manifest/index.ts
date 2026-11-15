@@ -7,6 +7,7 @@ import { startOutputsOf } from "./start-outputs";
 export { COMMUNITY_MANIFEST } from "./community.manifest";
 export { CONTRACTS_MANIFEST } from "./contracts.manifest";
 export * from "./core.nodes";
+export * from "./core-facts";
 export * from "./events.rules";
 export * from "./manifest";
 export * from "./nodes.rules";

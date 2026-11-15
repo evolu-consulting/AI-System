@@ -6,6 +6,8 @@
 import { z } from "zod";
 import type { ESignProviderOut } from "./esign";
 
+/** CR-146b · giá trị «Ký qua» = tải lên bản đã ký, không ký số (đường chờ tải lên). */
+export const ESIGN_NODE_UPLOAD = "upload";
 export const ESIGN_NODE_ORDERS = ["parallel", "sequential"] as const;
 export type EsignNodeOrder = (typeof ESIGN_NODE_ORDERS)[number];
 export const ESIGN_NODE_SIGNERS_MAX = 3;
@@ -21,7 +23,11 @@ export const EsignNodeSignerSchema = z.strictObject({
 export type EsignNodeSigner = z.infer<typeof EsignNodeSignerSchema>;
 
 export const EsignNodeConfigSchema = z.strictObject({
-  // CR-125 · m4 · MOD-FR-11: node KHÔNG còn nhà cung cấp — người ký chọn cách ký lúc ký; `provider` cũ trong def đã lưu bị bỏ qua khi đọc.
+  /** CR-146b · «Ký qua»: khoá nhà cung cấp ký số đang bật của công ty, hoặc `upload` = «Tải lên bản đã ký (không ký số)». BẮT BUỘC (esignConfigIssues). */
+  provider: z
+    .string()
+    .regex(/^[a-z0-9_-]{1,32}$/)
+    .optional(),
   /** Người ký phía công ty: người cụ thể hoặc Group (mọi thành viên còn dùng được). Vắng ⇒ người bắt đầu lượt như trước. */
   company_signers: z.array(EsignNodeSignerSchema).min(1).max(ESIGN_NODE_SIGNERS_MAX).optional(),
   /** `true` ⇒ bắt buộc có đối tác ký (thiếu email ⇒ lỗi); `false` ⇒ chỉ công ty ký; vắng ⇒ có email thì đối tác ký như trước. */
@@ -39,6 +45,7 @@ export type EsignNodeConfig = z.infer<typeof EsignNodeConfigSchema>;
 
 /** Khoá tham số của tool `contracts-esign-send` (ngoài `contract_id`) — khớp `EsignNodeConfig`. */
 export const ESIGN_NODE_PARAMS = [
+  "provider",
   "company_signers",
   "partner_signs",
   "order",
@@ -55,6 +62,7 @@ const SIGNER_RE = /^(user|group):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4
 /** Cấu hình logic ⇒ `args` (giá trị đơn). Trường vắng không xuất hiện. */
 export function encodeEsignNodeArgs(c: EsignNodeConfig): EsignNodeArgs {
   const out: EsignNodeArgs = {};
+  if (c.provider) out.provider = c.provider;
   if (c.company_signers)
     out.company_signers = c.company_signers.map((s) => `${s.kind}:${s.id}`).join(",");
   if (c.partner_signs !== undefined) out.partner_signs = c.partner_signs;
@@ -111,14 +119,17 @@ function signersOf(s: string): unknown {
 }
 
 /**
- * CR-125 · m4 · CEO-review #2 · MỘT luật cho cấu hình node Ký số (panel, validator lúc lưu, tool lúc chạy): phải chọn người ký phía công ty
- * (người hoặc phòng ban) — không còn «người bắt đầu lượt» ngầm (bước tự chạy sau duyệt không có người bắt đầu ⇒ dừng im lặng).
+ * CR-125 · m4 · CEO-review #2 · CR-146b · MỘT luật cho cấu hình node Ký số (panel, validator lúc lưu, tool lúc chạy): phải chọn «Ký qua»
+ * (nhà cung cấp hoặc tải lên bản đã ký) VÀ người ký phía công ty (người hoặc phòng ban) — không còn mặc định cấp công ty / người bắt đầu lượt.
  */
 export const ESIGN_NODE_NO_SIGNER_SELECTED = "NO_SIGNER_SELECTED";
+export const ESIGN_NODE_NO_PROVIDER_SELECTED = "NO_PROVIDER_SELECTED";
 export function esignConfigIssues(c: EsignNodeConfig): { field: string; code: string }[] {
-  return c.company_signers?.length
-    ? []
-    : [{ field: "company_signers", code: ESIGN_NODE_NO_SIGNER_SELECTED }];
+  const out: { field: string; code: string }[] = [];
+  if (!c.provider) out.push({ field: "provider", code: ESIGN_NODE_NO_PROVIDER_SELECTED });
+  if (!c.company_signers?.length)
+    out.push({ field: "company_signers", code: ESIGN_NODE_NO_SIGNER_SELECTED });
+  return out;
 }
 
 /** Hạn ký (giờ): `due_hours` thắng `due_days × 24`; vắng ⇒ null. MỘT luật cho stage chờ và tool gửi ký. */
@@ -138,8 +149,6 @@ export type ESignNodeOptionsOut = {
   enabled: boolean;
   /** Group của công ty để chọn người ký (kind = "group"); người cụ thể chọn từ danh sách thành viên chung của shell. */
   groups: { id: string; key: string; name: string }[];
-  /** CR-141 · nhóm «Người ký HĐ» của công ty có thành viên (người ký mặc định khi node không chọn); null ⇒ chưa đặt / nhóm trống. */
-  default_signers: { name: string; count: number } | null;
   orders: typeof ESIGN_NODE_ORDERS;
   limits: { signers_max: number; due_days_max: number; remind_hours_max: number };
 };

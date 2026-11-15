@@ -114,3 +114,36 @@ describe("đọc số kiểu Việt + thân gửi", () => {
     expect("commission_pct" in body).toBe(false);
   });
 });
+
+describe("CR-152d · kind_terms của nhập tay", () => {
+  it("Nhượng quyền: gửi ô có giá trị (số/đúng kiểu), bỏ ô rỗng, loại khác không gửi", () => {
+    const f = base({
+      deal: "franchise",
+      terms: {
+        role: "franchisor",
+        brand: "Cà Phê",
+        fee_basis: "revenue_pct",
+        fee_pct: "5",
+        period: "month",
+        fee_fixed: "9",
+      },
+    });
+    const body = toRequest(f, readNumbers(f), []);
+    expect(body.deal).toBe("franchise");
+    expect(body.kind_terms).toEqual({
+      role: "franchisor",
+      brand: "Cà Phê",
+      fee_basis: "revenue_pct",
+      fee_pct: 5,
+      period: "month",
+    });
+    expect("kind_terms" in toRequest(base({ deal: "sell" }), readNumbers(base()), [])).toBe(false);
+  });
+});
+
+describe("CR-153 · đủ 5 loại luôn hiện", () => {
+  it("ALL_DEALS có Nhượng quyền + Hợp tác sau 3 loại cơ bản", async () => {
+    const { ALL_DEALS } = await import("./deal");
+    expect(ALL_DEALS).toEqual(["buy", "sell", "referral", "franchise", "cooperation"]);
+  });
+});

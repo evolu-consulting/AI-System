@@ -3,6 +3,7 @@
 // `:id` sai dạng ⇒ 400; tenant khác ⇒ 404 như không có; thân strict (khoá lạ như `tenant_id` ⇒ 400).
 import {
   CONTRACT_ERRORS,
+  KIND_ERRORS,
   LOCK_ERRORS,
   ManualContractRequestSchema,
   PRODUCT_ERRORS,
@@ -15,6 +16,7 @@ import { parseWith, readJson } from "../../../../lib/http";
 import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import type { CreateManual } from "../application/create-manual.usecase";
 import type { RequestExtract } from "../application/request-extract.usecase";
+import { isKindDeal, kindTermsMissing, normalizeKindTerms } from "../domain/kind-terms.rules";
 import type { ManualInput } from "../domain/manual.rules";
 
 const KEY = "contracts";
@@ -98,6 +100,20 @@ export function extractionRoutes(
     bodyLimit({ maxSize: MANUAL_BODY_MAX_BYTES, onError: () => Promise.reject(tooLarge()) }),
     async (c) => {
       const body = parseWith(ManualContractRequestSchema, await readJson(c));
+      // CR-152d: thiếu trường bắt buộc của loại ⇒ 422 + danh sách khoá thiếu (chưa tốn lượt AI, chưa ghi gì).
+      if (isKindDeal(body.deal)) {
+        const missing = kindTermsMissing(
+          body.deal,
+          normalizeKindTerms(body.deal, body.kind_terms ?? {}),
+        );
+        if (missing.length > 0)
+          throw new AppError(
+            "KIND_TERMS_INCOMPLETE",
+            KIND_ERRORS.KIND_TERMS_INCOMPLETE,
+            "Franchise/cooperation terms are incomplete",
+            { missing },
+          );
+      }
       await d.quota?.(c.get("user").tenantId);
       const out = await d
         .createManual(whoOf(c.get("user")), body as ManualInput)

@@ -49,6 +49,7 @@ async function twoSessions(browser: Browser) {
   await a.getByRole("textbox", { name: "Mô tả", exact: true }).fill("Mô tả của A");
   await a.getByRole("textbox", { name: "Alias" }).fill("tr2");
   await a.getByRole("button", { name: "Thêm alias" }).click();
+  await expect(a.getByText("tr2")).toBeVisible(); // alias đã vào danh sách rồi mới Lưu (tránh đua)
   await a.getByRole("button", { name: "Lưu", exact: true }).click();
   return { a, ctxA, ctxB };
 }

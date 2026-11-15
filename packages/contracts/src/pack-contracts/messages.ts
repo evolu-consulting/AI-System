@@ -2,6 +2,7 @@
 // `/pack/contracts/messages/**` + sự kiện `/me/stream` (`msg.*`). Không import I/O: chạy được ở trình duyệt. Spec: docs/specs/CR-132/spec.md §4–5.
 import { z } from "zod";
 import { AttachMimeSchema } from "../attach";
+import { CcLinkEventDataSchema } from "./company-connect";
 
 /** Nhóm tối đa 50 người (cả chủ). */
 export const MSG_GROUP_MAX = 50;
@@ -16,7 +17,7 @@ export const MSG_UNREAD_CONV_CAP = MSG_UNREAD_CONV_MAX + 1;
 export const MSG_UNREAD_TOTAL_MAX = 999;
 export const MSG_CONV_PAGE_DEFAULT = 30;
 export const MSG_CONV_PAGE_MAX = 50;
-export const MSG_PAGE_DEFAULT = 50;
+export const MSG_PAGE_DEFAULT = 30;
 export const MSG_PAGE_MAX = 100;
 
 /** Mã lỗi riêng → HTTP. Không phải thành viên / không có / tenant khác ⇒ cùng `MSG_NOT_FOUND` (không lộ hội thoại có tồn tại). */
@@ -31,12 +32,14 @@ export const MSG_ERRORS = {
   MSG_FILE_INVALID: 422,
   MSG_DIRECT_FIXED: 409,
   MSG_PEER_INACTIVE: 409,
+  /** CR-169 · hai công ty chưa/không còn kết nối (gửi, tải tệp, mở cuộc `partner`). */
+  MSG_NOT_CONNECTED: 409,
   MSG_FILE_TOO_LARGE: 413,
   MSG_FILE_TYPE: 415,
 } as const;
 export type MsgErrorCode = keyof typeof MSG_ERRORS;
 
-export const ConvKindSchema = z.enum(["direct", "group"]);
+export const ConvKindSchema = z.enum(["direct", "group", "partner"]);
 export type ConvKind = z.infer<typeof ConvKindSchema>;
 export const MemberRoleSchema = z.enum(["owner", "member"]);
 export type MemberRole = z.infer<typeof MemberRoleSchema>;
@@ -59,6 +62,8 @@ export function messagePreview(body: string): string {
 export const MsgConversationsQuerySchema = z.object({
   cursor: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(MSG_CONV_PAGE_MAX).default(MSG_CONV_PAGE_DEFAULT),
+  /** CR-169 · `all` (mặc định) | `own` | uuid công ty kết nối; kiểm dạng bằng `parseCompanyFilter` (hub `partner.rules.ts`). */
+  company: z.string().max(40).optional(),
 });
 export type MsgConversationsQuery = z.infer<typeof MsgConversationsQuerySchema>;
 
@@ -70,6 +75,8 @@ export const CreateConversationRequestSchema = z.discriminatedUnion("kind", [
     title: z.string().trim().min(1).max(MSG_TITLE_MAX),
     member_ids: UniqueIds(MSG_GROUP_MAX - 1),
   }),
+  /** CR-169 · 1-1 với người của công ty đã kết nối (`tenant_id` = công ty kia). */
+  z.strictObject({ kind: z.literal("partner"), tenant_id: z.uuid(), user_id: z.uuid() }),
 ]);
 export type CreateConversationRequest = z.infer<typeof CreateConversationRequestSchema>;
 
@@ -125,7 +132,34 @@ export type Message = z.infer<typeof MessageSchema>;
 export const MessagePageSchema = z.object({ items: z.array(MessageSchema), has_more: z.boolean() });
 export type MessagePage = z.infer<typeof MessagePageSchema>;
 
-export const PeerSchema = z.object({ id: z.uuid(), name: z.string(), active: z.boolean() });
+/** CR-169 · công ty đang kết nối (chip lọc, đầu kia của cuộc `partner`). */
+export const MsgCompanySchema = z.strictObject({ id: z.uuid(), name: z.string().max(200) });
+export type MsgCompany = z.infer<typeof MsgCompanySchema>;
+export const MSG_COMPANIES_PAGE_DEFAULT = 30;
+export const MSG_COMPANIES_PAGE_MAX = 50;
+export const MsgCompaniesQuerySchema = z.strictObject({
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(MSG_COMPANIES_PAGE_MAX)
+    .default(MSG_COMPANIES_PAGE_DEFAULT),
+});
+export type MsgCompaniesQuery = z.infer<typeof MsgCompaniesQuerySchema>;
+export const MsgCompanyPageSchema = z.strictObject({
+  items: z.array(MsgCompanySchema),
+  next_cursor: z.string().max(200).nullable(),
+});
+export type MsgCompanyPage = z.infer<typeof MsgCompanyPageSchema>;
+
+export const PeerSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  active: z.boolean(),
+  /** CR-169 · chức vụ (≤ 80); chưa có ⇒ null. */
+  job_title: z.string().max(80).nullable(),
+});
 export const LastMessageSchema = z.object({
   seq: z.number().int().min(1),
   sender_id: z.uuid(),
@@ -147,6 +181,10 @@ export const ConversationSummarySchema = z.object({
   /** 0..100: ≤ 99 hiển thị đúng số, 100 hiển thị «99+». */
   unread: z.number().int().min(0).max(MSG_UNREAD_CONV_CAP),
   last_at: z.iso.datetime(),
+  /** CR-169 · chỉ `partner`: công ty đầu kia; còn lại null. */
+  company: MsgCompanySchema.nullable(),
+  /** CR-169 · `partner` ngắt kết nối / người kia hết hợp lệ ⇒ true (tính lúc đọc); `direct`/`group` luôn false. */
+  read_only: z.boolean(),
 });
 export type ConversationSummary = z.infer<typeof ConversationSummarySchema>;
 
@@ -186,6 +224,7 @@ export const ME_STREAM_MSG_EVENTS = [
   "msg.deleted",
   "msg.read",
   "msg.conversation",
+  "cc.link",
 ] as const;
 export type MeStreamMsgEventName = (typeof ME_STREAM_MSG_EVENTS)[number];
 
@@ -219,6 +258,7 @@ export const MeStreamMsgEventSchema = z.discriminatedUnion("event", [
   z.strictObject({ event: z.literal("msg.deleted"), data: MsgDeletedEventDataSchema }),
   z.strictObject({ event: z.literal("msg.read"), data: MsgReadEventDataSchema }),
   z.strictObject({ event: z.literal("msg.conversation"), data: MsgConversationEventDataSchema }),
+  z.strictObject({ event: z.literal("cc.link"), data: CcLinkEventDataSchema }),
 ]);
 export type MeStreamMsgEvent = z.infer<typeof MeStreamMsgEventSchema>;
 
@@ -235,3 +275,32 @@ export function parseMeStreamMsgEvent(event: string, data: unknown): MeStreamMsg
   const r = MeStreamMsgEventSchema.safeParse({ event, data: json });
   return r.success ? r.data : null;
 }
+
+// CR-148 · danh bạ «Thành viên» tải dần (thay mảng đầy đủ của CR-132b): 30 dòng/lần, trần 50; `q` lọc tên không dấu.
+export const MSG_PEOPLE_PAGE_DEFAULT = 30;
+export const MSG_PEOPLE_PAGE_MAX = 50;
+/** fix-review-r1 · con trỏ = base64url(JSON[cờ, tên phòng ≤ 64, tên ≤ 64, id]) ≤ ~600 ký tự với tên tiếng Việt dài nhất (3 byte/ký tự); trần 1024. */
+export const MSG_PEOPLE_CURSOR_MAX = 1024;
+export const MsgPeopleQuerySchema = z.object({
+  cursor: z.string().max(MSG_PEOPLE_CURSOR_MAX).optional(),
+  q: z.string().trim().max(80).optional(),
+  limit: z.coerce.number().int().min(1).max(MSG_PEOPLE_PAGE_MAX).default(MSG_PEOPLE_PAGE_DEFAULT),
+  /** CR-169 · cùng kiểu với `MsgConversationsQuery.company`. */
+  company: z.string().max(40).optional(),
+});
+export type MsgPeopleQuery = z.infer<typeof MsgPeopleQuerySchema>;
+export const MsgPersonSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  /** Phòng ban (đầu tiên theo khoá); chưa thuộc phòng nào ⇒ null (giao diện hiện «Chưa có phòng»). */
+  department: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
+  /** CR-169 · chức vụ (≤ 80); người công ty kia chỉ lộ tên, chức vụ, công ty (không email/điện thoại/phòng ban). */
+  job_title: z.string().max(80).nullable(),
+  company: MsgCompanySchema,
+});
+export type MsgPerson = z.infer<typeof MsgPersonSchema>;
+export const MsgPeoplePageSchema = z.object({
+  items: z.array(MsgPersonSchema),
+  next_cursor: z.string().max(MSG_PEOPLE_CURSOR_MAX).nullable(),
+});
+export type MsgPeoplePage = z.infer<typeof MsgPeoplePageSchema>;

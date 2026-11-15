@@ -62,7 +62,7 @@ async function install(page: Page, role: "tenant_admin" | "platform_admin") {
   const puts: string[] = [];
   await page.route("**/pack/contracts/approval-flow", (r) => {
     if (r.request().method() !== "GET") puts.push(r.request().method());
-    return json(r, 200, FLOW);
+    return json(r, 200, { items: [FLOW] });
   });
   return puts;
 }

@@ -198,7 +198,8 @@ function markQ(tx: Tx, tid: string): ApprovalRepo["markExtracting"] {
     });
     if (!o.ok) return false;
     const rows = await tx.execute<{ id: string }>(sql`update contracts.contracts
-      set extract_state = 'reading', error = null, version = version + 1, updated_at = now()
+      set extract_state = 'reading', error = null, reconciled_by = null, reconciled_at = null, version = version + 1,
+        updated_at = now()
       where id = ${id}::uuid and tenant_id = ${tid}::uuid and status = 'draft' and run_id = ${runId}::uuid
       returning id`);
     if (rows.length === 0) return false;

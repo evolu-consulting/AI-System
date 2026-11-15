@@ -8,6 +8,7 @@
 import {
   FlowDecideInputSchema,
   type FlowNav,
+  FlowPageQuerySchema,
   type JoinRequest,
   JoinRequestInputSchema,
   type ModerationItem,
@@ -70,7 +71,7 @@ export function flowsRoutes(d: CommunityDeps, f: svc.FlowDeps): Hono<PackGuardVa
   const access = (c: Context<PackGuardVars>, need: "read" | "write" = "read") =>
     accessOf(d.view, d.resolver, c, need);
   const now = () => (f.now ? f.now() : Date.now());
-  const pending = (c: Context<PackGuardVars>) => c.req.query("pending") === "1";
+  const pageOf = (c: Context<PackGuardVars>) => parseWith(FlowPageQuerySchema, c.req.query());
   const decideBody = async (c: Context<PackGuardVars>) =>
     parseWith(FlowDecideInputSchema, await readJson(c));
 
@@ -88,12 +89,12 @@ export function flowsRoutes(d: CommunityDeps, f: svc.FlowDeps): Hono<PackGuardVa
     return c.json(nav);
   });
   r.get("/moderation/queue", async (c) => {
-    const rows = await svc.modQueue(f, await access(c));
-    return c.json({ items: rows.map((x) => modItem(x, now())) });
+    const { rows, nextOffset } = await svc.modQueue(f, await access(c), pageOf(c));
+    return c.json({ items: rows.map((x) => modItem(x, now())), nextOffset });
   });
   r.get("/moderation/mine", async (c) => {
-    const rows = await svc.myModeration(f, await access(c));
-    return c.json({ items: rows.map((x) => modItem(x, now())) });
+    const { rows, nextOffset } = await svc.myModeration(f, await access(c), pageOf(c));
+    return c.json({ items: rows.map((x) => modItem(x, now())), nextOffset });
   });
   r.post("/moderation/:id/decide", async (c) => {
     const a = await access(c, "write");
@@ -107,8 +108,9 @@ export function flowsRoutes(d: CommunityDeps, f: svc.FlowDeps): Hono<PackGuardVa
     return c.json(joinItem(await svc.createJoin(f, a, input)), 201);
   });
   r.get("/join-requests", async (c) => {
-    const rows = await svc.joinList(f, await access(c), pending(c));
-    return c.json({ items: rows.map(joinItem) });
+    const q = pageOf(c);
+    const { rows, nextOffset } = await svc.joinList(f, await access(c), q.pending === "1", q);
+    return c.json({ items: rows.map(joinItem), nextOffset });
   });
   r.post("/join-requests/:id/decide", async (c) => {
     const a = await access(c, "write");
@@ -122,8 +124,9 @@ export function flowsRoutes(d: CommunityDeps, f: svc.FlowDeps): Hono<PackGuardVa
     return c.json(reportItem(await svc.createReport(f, a, id, reason)), 201);
   });
   r.get("/reports", async (c) => {
-    const rows = await svc.reportList(f, await access(c), pending(c));
-    return c.json({ items: rows.map(reportItem) });
+    const q = pageOf(c);
+    const { rows, nextOffset } = await svc.reportList(f, await access(c), q.pending === "1", q);
+    return c.json({ items: rows.map(reportItem), nextOffset });
   });
   r.post("/reports/:id/decide", async (c) => {
     const a = await access(c, "write");

@@ -4,6 +4,7 @@ import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import type { ReactNode } from "react";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import type { FormState, TextKey } from "~/features/contract-form/lib/form-model";
+import { isKind } from "~/features/contract-form/lib/kind-terms";
 import { FrameDiary } from "~/features/frame-panel/components/FrameDiary";
 import type { useInfoForm } from "../hooks/use-info-form";
 import { AiMilestonesPanel } from "./AiMilestonesPanel";
@@ -45,7 +46,10 @@ export function DetailGrid({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-[1.15fr_1fr] items-start gap-4 max-lg:grid-cols-1">
-        <div className="flex min-w-0 flex-col gap-4">
+        <div
+          data-testid="detail-left"
+          className="flex min-w-0 flex-col gap-4 lg:[&:has(+div:empty)]:col-span-2"
+        >
           <InfoPanel
             c={c}
             f={f}
@@ -53,6 +57,8 @@ export function DetailGrid({
             disabled={!canSave}
             lockedKeys={lockedKeys}
             saveButton={saveButton}
+            onDeal={c.entry_source === "manual" && canSave ? info.setDeal : undefined}
+            kind={{ onTerm: info.setTerm, unsure: info.kindUnsure, invalid: info.kindInvalid }}
             confirm={
               confirm
                 ? {
@@ -64,7 +70,7 @@ export function DetailGrid({
                 : undefined
             }
           />
-          {confirm ? null : (
+          {confirm || isKind(dealOf(c)) ? null : (
             <ProductsPanel
               items={c.items}
               deal={dealOf(c)}
@@ -74,7 +80,8 @@ export function DetailGrid({
             />
           )}
         </div>
-        <div className="flex min-w-0 flex-col gap-4">
+        {/* CR-154b · cột phải không có gì (không mốc, không lưu ý) ⇒ ẩn, cột Thông tin chiếm full (desktop). */}
+        <div data-testid="detail-right" className="flex min-w-0 flex-col gap-4 empty:hidden">
           {aiMs ? (
             <AiMilestonesPanel
               rows={info.rows}
@@ -89,7 +96,7 @@ export function DetailGrid({
           {right}
         </div>
       </div>
-      {confirm && (
+      {confirm && !isKind(f.deal) && (
         <ReviewItemsPanel
           items={f.items}
           deal={f.deal}

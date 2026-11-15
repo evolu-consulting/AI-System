@@ -3,13 +3,17 @@
 import type {
   AssigneesResponse,
   CommissionEditResponse,
+  ContractDeal,
   ContractDetail,
   ContractFieldKey,
   HistoryResponse,
   ItemProductRequest,
   ItemProductResponse,
+  KindTermsPut,
+  KindTermsView,
   OwnerAssignResponse,
   PatchFieldsResponse,
+  Period,
   ReviewSaveRequest,
   ReviewSaveResponse,
   SubmitPreviewResponse,
@@ -29,10 +33,11 @@ export function patchContractFields(
   id: string,
   version: number,
   fields: Partial<Record<ContractFieldKey, string | number | null>>,
+  deal?: ContractDeal,
 ): Promise<PatchFieldsResponse> {
   return api<PatchFieldsResponse>(`${BASE}/${encodeURIComponent(id)}/fields`, {
     method: "PATCH",
-    body: { version, fields },
+    body: deal ? { version, fields, deal } : { version, fields },
   });
 }
 
@@ -66,8 +71,12 @@ export function extractContract(id: string): Promise<{ id: string; status: strin
 }
 
 /** gap-a1 #4: lịch sử thay đổi (theo luật thấy của người gọi). */
-export function fetchHistory(id: string, signal?: AbortSignal): Promise<HistoryResponse> {
-  return api<HistoryResponse>(`${one(id)}/history`, { signal });
+export function fetchHistory(
+  id: string,
+  offset = 0,
+  signal?: AbortSignal,
+): Promise<HistoryResponse> {
+  return api<HistoryResponse>(`${one(id)}/history${offset ? `?offset=${offset}` : ""}`, { signal });
 }
 
 /** gap-a1 #7: người có thể được giao (thành viên có quyền xem gói) + giao / bỏ giao. */
@@ -150,4 +159,25 @@ export function fetchSubmitPreview(
   signal?: AbortSignal,
 ): Promise<SubmitPreviewResponse> {
   return api<SubmitPreviewResponse>(`${BASE}/${encodeURIComponent(id)}/submit-preview`, { signal });
+}
+
+// ---------- CR-152: trường riêng Nhượng quyền / Hợp tác + kỳ doanh thu / đối soát ----------
+export const kindTermsKey = (id: string) => ["contract", id, "kind-terms"] as const;
+
+export function fetchKindTerms(id: string, signal?: AbortSignal): Promise<KindTermsView> {
+  return api<KindTermsView>(`${BASE}/${encodeURIComponent(id)}/kind-terms`, { signal });
+}
+
+export function putKindTerms(id: string, terms: KindTermsPut["terms"]): Promise<unknown> {
+  return api<unknown>(`${BASE}/${encodeURIComponent(id)}/kind-terms`, {
+    method: "PUT",
+    body: { terms },
+  });
+}
+
+export function putPeriod(id: string, key: string, figure: number): Promise<Period> {
+  return api<Period>(`${BASE}/${encodeURIComponent(id)}/periods/${encodeURIComponent(key)}`, {
+    method: "PUT",
+    body: { figure },
+  });
 }

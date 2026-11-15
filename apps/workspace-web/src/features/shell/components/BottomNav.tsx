@@ -1,12 +1,13 @@
 // PK-FR-10 · TF5 · nav-v2 · CR-120 · điện thoại: cùng các mục của menu trái (sinh từ manifest) ở thanh dưới, tầm ngón cái; tối đa 5 cột.
 // CR-125 · x1: mục "Chờ tôi" (số đỏ = HĐ chờ chính mình ký + duyệt, cùng đọc `GET /my-work` với thẻ Tổng quan) thế chỗ "Sản phẩm & Giá" —
 // giám đốc ra ngoài vẫn biết vào đâu để ký. Chỉ khi gói Sổ Hợp Tác bật.
+
+import { UnreadBadge } from "@ai/messages-web/components/UnreadBadge";
+import { useUnreadTotal } from "@ai/messages-web/hooks/use-unread";
 import { Link } from "@tanstack/react-router";
 import { ClipboardCheck } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { UnreadBadge } from "~/features/messages/components/UnreadBadge";
-import { useUnreadTotal } from "~/features/messages/hooks/use-unread";
 import { useInbox } from "~/features/overview/hooks/use-inbox";
 import { waitingBadge } from "~/features/overview/lib/waiting";
 import type { NavEntry } from "~/shared/kernel/module-manifest";

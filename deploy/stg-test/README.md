@@ -50,3 +50,11 @@ Luu y: `deploy/prod-sohoptac2/enable-domain.sh` / `cutover.sh` ve lai `sohoptac2
 - Ten project + tag co dinh trong `lib.sh` (khong doc env); `guard_tag` thoat khi gap `:latest`; `build.sh` so `docker compose config --images` phai dung hai image staging.
 - Cong chi `127.0.0.1:2854x`; khong mount `claude-home`, `.env` hay volume prod.
 - `stg-seed.ts` tu choi khi `APP_ENV=production` hoac `.env` khong co `S2_STACK=stg-test` + admin URL `https://ai-test-admin.*`.
+
+## Tạo công ty (CR-159) — một lệnh, xong là dùng được
+File khai báo `deploy/tenants/<key>.yaml` (công ty, người, phòng ban, gói, add-on, `directory: listed`). Một lệnh chạy 3 bước, lặp lại an toàn:
+`ACTOR=<uuid platform admin> PW='<mật khẩu chung>' bash deploy/tenants/onboard-all.sh --tenant <key> [--no-flows] [--dry-run]`
+1. **Onboarding** (`tenant-onboard.cli.ts`, role admin_api, `ADMIN_API_DATABASE_URL`): công ty + người (mật khẩu chung từ biến `PW`, bắt đổi lần đầu) + gói + add-on + **danh bạ công ty bật** (đủ `legal_name` + `tax_id`; ghi audit như nút trên UI; `directory: unlisted` để không bật).
+2. **Cài AI** (`tenant-ai-setup.ts --apply`, chủ migration, `DATABASE_URL`): agent `assistant`, cấp cho nhóm có quyền contracts, gói knowledge, agent mặc định. Chỉ ghi SQL, không cần đăng nhập Claude trước.
+3. **Quy trình** (`tenant-flows.ts`, chỉ evolu/nitigroup/preschool; cần admin-api + hub-api chạy và `SEED_ADMIN_USERNAME/PASSWORD`).
+Mật khẩu chỉ qua biến môi trường, không vào file/log. Trên máy chủ chạy trong container `tool` (cùng biến môi trường).

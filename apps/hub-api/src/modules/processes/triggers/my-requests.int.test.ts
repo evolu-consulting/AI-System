@@ -148,4 +148,26 @@ describe("CR-126 · GET /processes/requests/mine", () => {
     ).toEqual([]);
     expect((await mine("O")).items).toEqual([]);
   });
+
+  it("CR-151 · phân trang limit/offset: trang 2 đúng, không trùng, hết trang ⇒ next_offset null, trần 50, người khác không thấy", async () => {
+    const page = async (who: string, qs: string) => {
+      const r = await app.request(`/processes/requests/mine?${qs}`, { headers: { "x-who": who } });
+      return {
+        status: r.status,
+        json: (await r.json()) as { items: { run_id: string }[]; next_offset: number | null },
+      };
+    };
+    const p1 = await page("A", "limit=1");
+    const p2 = await page("A", "limit=1&offset=1");
+    expect(p1.json.items).toHaveLength(1);
+    expect(p1.json.next_offset).toBe(1);
+    expect(p2.json.items).toHaveLength(1);
+    expect(p2.json.next_offset).toBeNull();
+    expect([p1.json.items[0]?.run_id, p2.json.items[0]?.run_id].sort()).toEqual(
+      [mineWaiting, mineDone].sort(),
+    );
+    expect((await page("A", "limit=51")).status).toBe(400);
+    expect((await page("B", "limit=1")).json.items.map((i) => i.run_id)).not.toContain(mineDone);
+    expect((await page("O", "limit=1")).json).toEqual({ items: [], next_offset: null });
+  });
 });

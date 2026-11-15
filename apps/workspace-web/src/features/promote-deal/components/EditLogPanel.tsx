@@ -1,5 +1,5 @@
 // CR-101 DOC-ui-frame · R5: dòng thời gian "Sửa trực tiếp" của giao dịch (máy ghi, không bắt lý do) từ `GET /contracts/:id/edit-log`.
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { editLogKey, fetchEditLog } from "../hooks/use-promote-api";
@@ -7,11 +7,13 @@ import { logRows } from "../lib/edit-log";
 
 export function EditLogPanel({ id }: { id: string }) {
   const { t } = useTranslation();
-  const q = useQuery({
-    queryKey: editLogKey(id),
-    queryFn: ({ signal }) => fetchEditLog(id, signal),
+  const q = useInfiniteQuery({
+    queryKey: [...editLogKey(id), "paged"],
+    initialPageParam: 0,
+    queryFn: ({ pageParam, signal }) => fetchEditLog(id, pageParam, signal),
+    getNextPageParam: (last) => last.next_offset ?? undefined,
   });
-  const rows = logRows(q.data?.items ?? []);
+  const rows = logRows(q.data?.pages.flatMap((p) => p.items) ?? []);
   if (q.isLoading || q.error || rows.length === 0) return null;
   return (
     <Panel className="mt-4">
@@ -29,6 +31,18 @@ export function EditLogPanel({ id }: { id: string }) {
           </li>
         ))}
       </ul>
+      {q.hasNextPage && (
+        <div className="border-t border-rule-soft px-5 py-2.5">
+          <button
+            type="button"
+            className="text-[12.5px] text-dim hover:underline"
+            disabled={q.isFetchingNextPage}
+            onClick={() => void q.fetchNextPage()}
+          >
+            {t("contracts.docframe.log.loadMore")}
+          </button>
+        </div>
+      )}
     </Panel>
   );
 }

@@ -1,11 +1,18 @@
 // HD-FR-02 · HD-FR-07 · HD-FR-08 · D-03 · D-18 · HD1 plan §1: ListQuery, PATCH, tải lên, lỗi — unit (biên zod).
 import { describe, expect, test } from "bun:test";
 import {
+  BasicContractDealSchema,
+  CONTRACT_DEALS,
+  ContractDealSchema,
   ContractErrorCode,
   ContractListQuerySchema,
   ContractStaleDetailsSchema,
+  CooperationTermsSchema,
+  FranchiseTermsSchema,
   fieldValueSchema,
+  ManualContractRequestSchema,
   PatchFieldsRequestSchema,
+  PeriodKeySchema,
   UploadContractFormSchema,
 } from "./index";
 
@@ -92,5 +99,48 @@ describe("HD-FR-08 · tải lên + mã lỗi", () => {
       expect(ContractErrorCode.safeParse(c).success).toBe(true);
     const d = { current: { version: 2 }, updated_at: "2026-10-19T00:00:00Z" };
     expect(ContractStaleDetailsSchema.safeParse(d).success).toBe(true);
+  });
+});
+
+describe("CR-152 · loại HĐ Nhượng quyền / Hợp tác", () => {
+  test("CONTRACT_DEALS có 5 loại, giao dịch chỉ nhận 3 loại cơ bản", () => {
+    expect(CONTRACT_DEALS).toEqual(["buy", "sell", "referral", "franchise", "cooperation"]);
+    expect(ContractDealSchema.safeParse("franchise").success).toBe(true);
+    expect(BasicContractDealSchema.safeParse("franchise").success).toBe(false);
+  });
+  test("khoá kỳ: tháng / quý / năm hợp lệ, khoá sai bị từ chối", () => {
+    for (const k of ["2026-12", "2027-Q1", "2027"])
+      expect(PeriodKeySchema.safeParse(k).success).toBe(true);
+    for (const k of ["2026-13", "2027-Q5", "12-2026"])
+      expect(PeriodKeySchema.safeParse(k).success).toBe(false);
+  });
+  test("trường riêng strict: khoá lạ và % ngoài 0-100 bị từ chối", () => {
+    expect(FranchiseTermsSchema.safeParse({ brand: "A", fee_pct: 5 }).success).toBe(true);
+    expect(FranchiseTermsSchema.safeParse({ lạ: 1 }).success).toBe(false);
+    expect(CooperationTermsSchema.safeParse({ our_share_pct: 101 }).success).toBe(false);
+  });
+});
+
+describe("CR-152d · nhập tay: direction của HĐ Nhượng quyền / Hợp tác bị bỏ qua", () => {
+  const base = { title: "HĐ", partner_name: "Đối tác" };
+  test("franchise/cooperation + direction bất kỳ ⇒ hợp lệ (direction lấy theo vai trong kind_terms)", () => {
+    for (const deal of ["franchise", "cooperation"] as const)
+      for (const direction of ["purchase", "sale"] as const)
+        expect(ManualContractRequestSchema.safeParse({ ...base, deal, direction }).success).toBe(
+          true,
+        );
+  });
+  test("buy/sell vẫn phải khớp direction", () => {
+    expect(
+      ManualContractRequestSchema.safeParse({ ...base, deal: "buy", direction: "sale" }).success,
+    ).toBe(false);
+    expect(
+      ManualContractRequestSchema.safeParse({ ...base, deal: "sell", direction: "purchase" })
+        .success,
+    ).toBe(false);
+    expect(
+      ManualContractRequestSchema.safeParse({ ...base, deal: "buy", direction: "purchase" })
+        .success,
+    ).toBe(true);
   });
 });

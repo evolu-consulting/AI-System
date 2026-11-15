@@ -43,7 +43,9 @@ describe("CR-126 · seed người ký Phần 2 «Hợp đồng»", () => {
     const signers = (esign?.executor?.args?.company_signers as { value: string } | undefined)
       ?.value;
     expect(signers).toBe(`group:${g?.id}`);
-    const dec = decodeEsignNodeArgs({ company_signers: signers ?? "" });
+    const prov = (esign?.executor?.args?.provider as { value: string } | undefined)?.value;
+    expect(prov).toBe("selfsign"); // CR-146b · «Ký thử» = nhà cung cấp seed bật cho công ty (không «upload»: lượt kẹt chờ tải lên 7 ngày)
+    const dec = decodeEsignNodeArgs({ provider: prov ?? "", company_signers: signers ?? "" });
     expect(dec.ok && esignConfigIssues(dec.config)).toEqual([]);
     const [s] =
       await o`select esign_enabled, esign_default_provider from contracts.approval_settings where tenant_id = ${T}`;

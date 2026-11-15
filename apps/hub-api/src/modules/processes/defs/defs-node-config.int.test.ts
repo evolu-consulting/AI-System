@@ -66,6 +66,7 @@ const esignStage = (args: Record<string, unknown>, withNode = true) =>
       tool_key: "contracts-esign-send",
       args: {
         contract_id: { from: "const", value: "x" },
+        provider: { from: "const", value: "selfsign" },
         company_signers: { from: "const", value: "user:11111111-1111-4111-8111-111111111111" },
         ...args,
       },

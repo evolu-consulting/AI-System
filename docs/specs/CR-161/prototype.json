@@ -1,0 +1,127 @@
+{
+  "id": "CR-161",
+  "title": "Kết nối hai công ty, không cần hợp đồng",
+  "roles": [
+    { "key": "tien", "label": "Tiên (NitiGroup, Toàn quyền)" },
+    { "key": "dung", "label": "Dung (Preschool, Toàn quyền)" },
+    { "key": "vy", "label": "Vy (NitiGroup, nhân viên)" }
+  ],
+  "screens": [
+    {
+      "id": "tim", "title": "Đối tác › Tìm công ty", "role": "tien",
+      "blocks": [
+        { "type": "heading", "text": "Tìm công ty để kết nối" },
+        { "type": "text", "text": "Chỉ hiện những công ty đã bật Danh bạ." },
+        { "type": "field", "label": "Tên công ty hoặc mã số thuế", "kind": "text", "value": "Preschool" },
+        { "type": "field", "label": "Lời nhắn kèm lời mời (tuỳ chọn)", "kind": "text", "value": "Chào chị Dung, bên em muốn kết nối để trao đổi hợp đồng." },
+        { "type": "states", "variants": [
+          { "key": "chua", "label": "Chưa kết nối", "blocks": [
+            { "type": "table", "cols": ["Công ty", "Mã số thuế", "Xác minh"], "rows": [["Trường mầm non Preschool", "0312345678", "Đã xác minh"], ["Preschool Kids Academy", "0398765432", "Chưa xác minh"]] },
+            { "type": "modal", "trigger": "Gửi lời mời kết nối", "title": "Gửi lời mời cho Preschool?", "text": "Công ty Preschool sẽ nhận lời mời và chọn Đồng ý hoặc Từ chối.", "confirm": "Gửi lời mời", "cancel": "Để sau", "goto": "loi-moi" }
+          ] },
+          { "key": "cho", "label": "Đã gửi lời mời", "blocks": [
+            { "type": "table", "cols": ["Công ty", "Mã số thuế", "Xác minh"], "rows": [["Trường mầm non Preschool", "0312345678", "Đã xác minh"]] },
+            { "type": "badge", "text": "Đã gửi lời mời — chờ Preschool trả lời", "tone": "wait" }
+          ] },
+          { "key": "ok", "label": "Đã kết nối", "blocks": [
+            { "type": "table", "cols": ["Công ty", "Mã số thuế", "Xác minh"], "rows": [["Trường mầm non Preschool", "0312345678", "Đã xác minh"]] },
+            { "type": "badge", "text": "Đã kết nối", "tone": "ok" },
+            { "type": "button", "label": "Mở trang đối tác", "goto": "ds", "variant": "secondary" }
+          ] },
+          { "key": "tuchoi", "label": "Bị từ chối", "blocks": [
+            { "type": "table", "cols": ["Công ty", "Mã số thuế", "Xác minh"], "rows": [["Trường mầm non Preschool", "0312345678", "Đã xác minh"]] },
+            { "type": "badge", "text": "Preschool đã từ chối lời mời", "tone": "error" },
+            { "type": "text", "text": "Bạn không thể gửi lại lời mời cho công ty này." }
+          ] }
+        ] }
+      ]
+    },
+    {
+      "id": "loi-moi", "title": "Đối tác — lời mời đến", "role": "dung",
+      "blocks": [
+        { "type": "cards", "items": [{ "title": "Chuông: NitiGroup muốn kết nối với bạn", "text": "Vừa xong", "badge": "Mới", "tone": "info" }] },
+        { "type": "banner", "kind": "info", "text": "NitiGroup (MST 0300111222, Đã xác minh) mời kết nối. Lời nhắn: «Chào chị Dung, bên em muốn kết nối để trao đổi hợp đồng.»" },
+        { "type": "button", "label": "Đồng ý", "goto": "ds", "variant": "primary" },
+        { "type": "modal", "trigger": "Từ chối", "title": "Từ chối lời mời của NitiGroup?", "text": "NitiGroup sẽ không thể gửi lại lời mời cho bạn.", "confirm": "Từ chối", "cancel": "Giữ lại", "danger": true, "goto": "tim" }
+      ]
+    },
+    {
+      "id": "ds", "title": "Danh sách Đối tác", "role": "tien",
+      "blocks": [
+        { "type": "button", "label": "Tìm công ty", "goto": "tim", "variant": "secondary" },
+        { "type": "table", "cols": ["Công ty", "Tình trạng", "Hợp đồng"], "rows": [
+          ["Trường mầm non Preschool", "Đã kết nối", "2 hợp đồng"],
+          ["Công ty Mẫu B", "Chưa kết nối", "1 hợp đồng"]
+        ] },
+        { "type": "text", "text": "Công ty có hợp đồng nhưng chưa kết nối vẫn hiện như trước." },
+        { "type": "badge", "text": "Preschool — Đã kết nối", "tone": "ok" },
+        { "type": "button", "label": "Trò chuyện", "goto": "chat", "variant": "primary" },
+        { "type": "button", "label": "Xem bài Bảng tin", "goto": "bai", "variant": "secondary", "role": "dung" },
+        { "type": "modal", "trigger": "Ngắt kết nối", "title": "Ngắt kết nối với Preschool?", "text": "Muốn nối lại, hai bên phải gửi lời mời mới.", "confirm": "Ngắt kết nối", "cancel": "Giữ kết nối", "danger": true, "goto": "tim" }
+      ]
+    },
+    {
+      "id": "chat", "title": "Trò chuyện NitiGroup ↔ Preschool", "role": "tien",
+      "blocks": [
+        { "type": "tabs", "tabs": [
+          { "key": "tc", "label": "Trò chuyện", "blocks": [
+            { "type": "banner", "kind": "info", "text": "Một cuộc trò chuyện chung. Người Toàn quyền của hai công ty đều thấy." },
+            { "type": "empty", "title": "Chưa có tin nhắn", "text": "Hãy nhắn lời chào đầu tiên cho Preschool." },
+            { "type": "table", "cols": ["Người gửi", "Tin nhắn", "Lúc"], "rows": [
+              ["Tiên (NitiGroup)", "Chào chị Dung, em gửi bản hợp đồng nháp.", "09:10"],
+              ["Tiên (NitiGroup)", "Đính kèm: HD-nhap-v1.pdf", "09:11"],
+              ["Dung (Preschool)", "Chị đã nhận, chiều nay chị phản hồi.", "09:25"]
+            ] },
+            { "type": "field", "label": "Nhập tin nhắn", "kind": "text", "value": "" },
+            { "type": "button", "label": "Đính kèm tệp", "variant": "secondary" },
+            { "type": "toast", "trigger": "Gửi", "text": "Đã gửi tin nhắn." }
+          ] },
+          { "key": "hd", "label": "Hợp đồng", "blocks": [{ "type": "text", "text": "2 hợp đồng với Preschool." }] }
+        ] }
+      ]
+    },
+    {
+      "id": "bai", "title": "Bảng tin của NitiGroup", "role": "dung",
+      "blocks": [
+        { "type": "banner", "kind": "info", "text": "Bạn đang xem bài của công ty đã kết nối: NitiGroup." },
+        { "type": "cards", "items": [
+          { "title": "Khai trương văn phòng mới", "text": "NitiGroup · 12/11", "badge": "Công khai", "tone": "info" },
+          { "title": "Tuyển nhân viên kinh doanh", "text": "NitiGroup · 08/11", "badge": "Công khai", "tone": "info" }
+        ] },
+        { "type": "button", "label": "Quay lại trò chuyện", "goto": "chat", "variant": "secondary", "role": "tien" }
+      ]
+    },
+    {
+      "id": "vy", "title": "Đối tác — góc nhìn nhân viên", "role": "vy",
+      "blocks": [
+        { "type": "states", "variants": [
+          { "key": "ds", "label": "Danh sách", "blocks": [
+            { "type": "banner", "kind": "info", "text": "Chỉ người có quyền Toàn quyền mới gửi hoặc nhận lời mời kết nối." },
+            { "type": "table", "cols": ["Công ty", "Tình trạng"], "rows": [["Trường mầm non Preschool", "Đã kết nối"]] }
+          ] },
+          { "key": "tim", "label": "Tìm công ty", "blocks": [
+            { "type": "text", "text": "Bạn có thể xem công ty, nhưng không có nút «Gửi lời mời kết nối»." },
+            { "type": "table", "cols": ["Công ty", "Mã số thuế"], "rows": [["Công ty Mẫu C", "0311222333"]] }
+          ] }
+        ] }
+      ]
+    }
+  ],
+  "flow": [
+    { "from": "tim", "action": "Tìm công ty và gửi lời mời kết nối", "to": "loi-moi", "by": "tien" },
+    { "from": "loi-moi", "action": "Nhận chuông, bấm Đồng ý", "to": "ds", "by": "dung" },
+    { "from": "ds", "action": "Cả hai bên thấy «Đã kết nối»", "to": "chat", "by": "tien" },
+    { "from": "chat", "action": "Nhắn tin và đính kèm tệp", "to": "chat", "by": "tien" },
+    { "from": "chat", "action": "Trả lời tin nhắn", "to": "chat", "by": "dung" },
+    { "from": "chat", "action": "Xem bài Bảng tin của NitiGroup", "to": "bai", "by": "dung" },
+    { "from": "ds", "action": "Nhánh: Ngắt kết nối", "to": "tim", "by": "tien" }
+  ],
+  "questions": [
+    { "id": "q-a", "screen": "chat", "text": "Ai trong công ty được thấy và nhắn trong trò chuyện?", "options": ["Chỉ người Toàn quyền", "Mọi nhân viên", "Chọn từng người"], "default": "Chỉ người Toàn quyền" },
+    { "id": "q-b", "screen": "bai", "text": "Công ty đã kết nối xem được bài nào trên Bảng tin?", "options": ["Mọi bài công khai", "Chỉ bài chọn chia sẻ cho đối tác"], "default": "Mọi bài công khai" },
+    { "id": "q-c", "screen": "ds", "text": "Khi ngắt kết nối, tin nhắn cũ thì sao?", "options": ["Giữ lại, chỉ đọc", "Ẩn đi"], "default": "Giữ lại, chỉ đọc" },
+    { "id": "q-d", "screen": "chat", "text": "Trò chuyện đặt ở đâu?", "options": ["Tab «Trò chuyện» trong trang đối tác", "Mục riêng trên menu"], "default": "Tab «Trò chuyện» trong trang đối tác" },
+    { "id": "q-e", "screen": "chat", "text": "Có báo email khi có tin nhắn mới không?", "options": ["Không, chỉ chuông", "Có"], "default": "Không, chỉ chuông" }
+  ],
+  "notes": ["Dữ liệu giả. Chỉ người Toàn quyền gửi và nhận lời mời."]
+}

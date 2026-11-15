@@ -6,6 +6,7 @@
 import {
   CONTRACT_ERRORS,
   ItemProductRequestSchema,
+  KIND_ERRORS,
   MILESTONE_ERRORS,
   PRODUCT_ERRORS,
   PRODUCT_LINK_ERRORS,
@@ -70,6 +71,7 @@ function replyOf(res: ReviewResult) {
   // CR-127 K3 · "Xác nhận & lưu" = Gửi: lỗi của Gửi (EXTRACT_NOT_READY, FILE_REQUIRED, …) theo bảng mã §9.
   if (res.kind === "submit") {
     if (res.code === "not_found") throw appError("NOT_FOUND");
+    if (res.code === "forbidden") throw appError("FORBIDDEN");
     const http = ((SUBMIT_ERRORS as Record<string, number>)[res.code] ?? 409) as 409 | 422;
     throw new AppError(res.code, http, res.code);
   }
@@ -89,6 +91,12 @@ function replyOf(res: ReviewResult) {
       "MILESTONE_INVALID",
       MILESTONE_ERRORS.MILESTONE_INVALID,
       "Số tiền chỉ cho Thu tiền, Thanh toán, Nhận hoa hồng",
+    );
+  if (res.kind === "kind_terms_incomplete")
+    throw new AppError(
+      "KIND_TERMS_INCOMPLETE",
+      KIND_ERRORS.KIND_TERMS_INCOMPLETE,
+      "Franchise/cooperation terms are incomplete (see GET kind-terms .missing)",
     );
   if (res.kind === "component_invalid") throw productInvalid();
   // `commission_kind` (hoa hồng chỉ cho Giới thiệu) · `item_unknown` (dòng không thuộc HĐ): lỗi dữ liệu gửi lên.

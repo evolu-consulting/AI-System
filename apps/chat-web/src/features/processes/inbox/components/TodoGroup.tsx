@@ -74,12 +74,17 @@ export function TodoGroup() {
             {shown.map((it) => (
               <TodoItem key={it.task.id} item={it} now={now} />
             ))}
-            {!expanded && items.length > VISIBLE && (
+            {(!expanded ? items.length > VISIBLE || q.hasNextPage : q.hasNextPage) && (
               <li>
                 <button
                   type="button"
+                  data-testid="process-todo-more"
+                  disabled={q.isFetchingNextPage}
                   className="w-full rounded-md px-2 py-1 text-left text-caption text-muted-foreground underline hover:text-foreground"
-                  onClick={() => setExpanded(true)}
+                  onClick={() => {
+                    if (!expanded && items.length > VISIBLE) setExpanded(true);
+                    else void q.fetchNextPage();
+                  }}
                 >
                   {t("process.inbox.todo.more")}
                 </button>

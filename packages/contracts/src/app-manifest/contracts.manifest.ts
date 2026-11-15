@@ -18,6 +18,8 @@ const CONTRACT_FACTS: readonly AppFactDecl[] = [
       { value: "buy", label: "Mua hàng" },
       { value: "sell", label: "Bán hàng" },
       { value: "referral", label: "Giới thiệu" },
+      { value: "franchise", label: "Nhượng quyền" },
+      { value: "cooperation", label: "Thỏa thuận hợp tác" },
     ],
   },
   { key: "creator_department", label: "Phòng ban người tạo", type: "department" },
@@ -40,6 +42,13 @@ const CONTRACT_SUBMITTED_FACTS: readonly AppFactDecl[] = [
   { key: "submitter_group_ids", label: "Phòng của người gửi", type: "department" },
   { key: "partner_score", label: "Điểm đối tác", type: "number" },
   { key: "product_ids", label: "Sản phẩm trong hợp đồng", type: "string" },
+  // CR-160 · dữ kiện LÕI (engine đọc từ lượt + sơ đồ tổ chức, `processes/domain/if/core-facts.rules`): có cả khi lượt bắt đầu bằng phiếu.
+  {
+    key: "starter_is_top",
+    label: "Người gửi là cấp cao nhất",
+    label_en: "Sender is the top level",
+    type: "boolean",
+  },
 ];
 
 /** CR-127 · E1 · mốc thực hiện: bản ghi của sự kiện `milestone.*` (= `ref`). */

@@ -5,6 +5,7 @@
 import { isApproverGroup } from "@ai/contracts/groups";
 import {
   ESIGN_NODE_ORDERS,
+  ESIGN_NODE_UPLOAD,
   type ESignNodeCheckOut,
   type ESignNodeOptionsOut,
   type EsignNodeConfig,
@@ -99,20 +100,6 @@ function SignerPicker(p: {
     </div>
   );
 }
-/** CR-125 · m4 · MOD-FR-11: node không chọn nhà cung cấp — người ký chọn cách ký lúc ký; cách khả dụng đặt ở Cài đặt › Ký số. */
-function SignChoiceLine() {
-  const { t } = useTranslation();
-  return (
-    <div
-      className="flex flex-wrap items-center gap-x-2 text-body"
-      data-testid="esign-provider-line"
-    >
-      <span>{t(`${K}signChooses`)}</span>
-      <EsignSettingsLink />
-    </div>
-  );
-}
-
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CR-127 · U2 — form nhiều ô, tách ở đợt dọn sau
 export function EsignPanel(p: NodePanelProps) {
   const { t } = useTranslation();
@@ -127,7 +114,7 @@ export function EsignPanel(p: NodePanelProps) {
   const check = useCheck(
     withTenant(checkPathOf(conf?.options_path ?? ""), flow?.tenantId),
     cfg,
-    hasCfg && !!opts.data?.enabled,
+    hasCfg,
   );
   const people = useUserList(
     { ...(flow?.tenantId ? { tenantId: flow.tenantId } : {}), q: "", offset: 0 },
@@ -136,9 +123,8 @@ export function EsignPanel(p: NodePanelProps) {
   if (!conf) return null;
   // lỗi theo ô: kiểm trực tiếp (`node-config/check`) hoặc lỗi lưu của server (`stages.<i>.executor.args.<khoá>`)
   const issue = (f: string) => {
-    const own = esignConfigIssues(cfg).find((x) => x.field === f); // CEO-review #2 · luật chung, hiện ngay tại ô
-    if (own && !(f === "company_signers" && opts.data?.default_signers))
-      return t(`${K}err.${own.code}`);
+    const own = esignConfigIssues(cfg).find((x) => x.field === f); // CR-146b · luật chung (Ký qua + người ký bắt buộc), hiện ngay tại ô
+    if (own) return t(`${K}err.${own.code}`);
     const i = check.data?.issues.find((x) => x.field === f);
     if (i) return t(`${K}err.${i.code}`, { defaultValue: i.code });
     const saved = p.errors[`stages.${p.index}.executor.args.${f}`];
@@ -184,12 +170,6 @@ export function EsignPanel(p: NodePanelProps) {
   if (opts.isError || !opts.data)
     return <p className="text-caption text-muted-foreground">{t(`${K}unavailable`)}</p>;
   const o = opts.data;
-  if (!o.enabled)
-    return (
-      <p role="status" className="text-caption text-warning" data-testid="esign-disabled">
-        {t(`${K}disabled`)}
-      </p>
-    );
   const dflt = t(`${K}default`);
   const signers = cfg.company_signers ?? [];
   const toggle = (s: { kind: "user" | "group"; id: string }) => {
@@ -213,7 +193,26 @@ export function EsignPanel(p: NodePanelProps) {
   const toNum = (v: string) => (v.trim() === "" ? undefined : Math.trunc(Number(v)));
   return (
     <fieldset className="space-y-3" data-testid="node-config" aria-label={t(`${K}title`)}>
-      <SignChoiceLine />
+      <div className="flex flex-wrap items-start gap-x-3" data-testid="esign-provider-line">
+        <SelectField
+          id={`${stage.uid}-provider`}
+          label={t(`${K}provider`)}
+          value={cfg.provider ?? DEFAULT}
+          readOnly={readOnly}
+          error={issue("provider")}
+          options={[
+            { value: DEFAULT, label: t(`${K}providerPick`) },
+            ...o.providers.map((x) => ({ value: x.key, label: x.label })),
+            { value: ESIGN_NODE_UPLOAD, label: t(`${K}providerUpload`) },
+          ]}
+          onChange={(v) => set({ provider: v === DEFAULT ? undefined : v })}
+        />
+        {o.enabled ? null : (
+          <p role="status" className="text-caption text-warning" data-testid="esign-disabled">
+            {t(`${K}disabled`)} <EsignSettingsLink />
+          </p>
+        )}
+      </div>
       <div className="grid grid-cols-2 items-start gap-3">
         <SelectField
           id={`${stage.uid}-order`}
@@ -270,7 +269,7 @@ export function EsignPanel(p: NodePanelProps) {
         choices={choices}
         max={o.limits.signers_max}
         readOnly={readOnly}
-        placeholder={o.default_signers ? t(`${K}defaultSigners`, o.default_signers) : dflt}
+        placeholder={t(`${K}signersPick`)}
         error={issue("company_signers")}
         onToggle={toggle}
       />{" "}

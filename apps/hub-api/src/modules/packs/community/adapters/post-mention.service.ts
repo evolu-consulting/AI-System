@@ -4,11 +4,10 @@
 import type { MentionablePeopleQuery, MentionablePerson } from "@ai/contracts/community";
 import type { Tx } from "@ai/db";
 import { AppError, appError } from "../../../../lib/errors";
-import type { PackUow } from "../../kit/public";
+import type { PackUow, PeopleReader, Person } from "../../kit/public";
 import { type Audience, defaultAudience, type PostType } from "../domain/audience.rules";
 import { orgsSeeingPost } from "./comment-list.repo";
 import type { Access } from "./community-access";
-import type { PeopleReader, Person } from "./people.reader";
 import { type DraftScope, orgsSeeingDraft, replaceMentions } from "./post-mention.repo";
 import { postState } from "./post-write.repo";
 
@@ -106,7 +105,7 @@ export async function suggest(
   const rows = await d.people(
     tenant,
     ids.filter((i) => i !== a.who.userId),
-    { q: q.q, limit: q.limit },
+    { q: q.q, limit: q.limit, offset: q.cursor ? Number(q.cursor) : 0 },
   );
   const by = new Map(a.dir.orgs.map((o) => [o.id, o.name]));
   return rows.map((p) => ({

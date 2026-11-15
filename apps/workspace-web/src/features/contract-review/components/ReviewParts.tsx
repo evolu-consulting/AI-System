@@ -1,29 +1,42 @@
-// HD-FR-23 · HD-FR-26 · S05 · D-02: phần phụ của màn kiểm/sửa — nút "Xem file gốc", thông báo sau Lưu, khối "Không đọc được"
+// HD-FR-23 · HD-FR-26 · S05 · D-02: phần phụ của màn kiểm/sửa — nút xem hợp đồng gốc, thông báo sau Lưu, khối "Không đọc được"
 // (`ContractPage.tsx:125-139`). Chỉ trình bày. (V2-F: cảnh báo chuyển vào "Tóm tắt", bảng hàng vào "Sản phẩm".)
-import { Link } from "@tanstack/react-router";
+import { FileText } from "lucide-react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
-import { ReextractButton } from "./ReextractButton";
+import { useReplaceFile, useStartManual } from "../hooks/use-manage";
+import { failReasonKey } from "../lib/fail-reason";
+import { FailedActions } from "./FailedActions";
+import { ReextractDialog } from "./ReextractButton";
 
 export type FileRef = { href: string; name: string; onOpen: () => void };
 
-/** "📄 Xem file gốc": giữ `<a>` như mgmt-app (khung/ảnh), bấm ⇒ `onOpen` (xin link có Bearer, #220). */
-export function FileLink({ file, title }: { file: FileRef; title?: string }) {
+/** «Xem hợp đồng gốc» (CR-162): nút chỉ icon + chú thích khi rê/focus + nhãn đọc màn hình. Giữ `<a>` (khung/ảnh), bấm ⇒ `onOpen` (xin link có Bearer, #220). */
+export function FileLink({ file, className = "" }: { file: FileRef; className?: string }) {
   const { t } = useTranslation();
+  const label = t("contracts.review.viewFile");
   return (
-    <a
-      href={file.href}
-      target="_blank"
-      rel="noreferrer"
-      className="text-[13px] font-medium text-act hover:underline"
-      title={title}
-      onClick={(e) => {
-        e.preventDefault();
-        file.onOpen();
-      }}
-    >
-      {t("contracts.review.viewFile")}
-    </a>
+    <span className={`group relative inline-flex ${className}`}>
+      <a
+        href={file.href}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={label}
+        className="btn-icon-ghost text-act"
+        onClick={(e) => {
+          e.preventDefault();
+          file.onOpen();
+        }}
+      >
+        <FileText size={18} aria-hidden />
+      </a>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute top-full left-1/2 z-30 mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-caption text-panel group-focus-within:block group-hover:block"
+      >
+        {label}
+      </span>
+    </span>
   );
 }
 
@@ -40,17 +53,6 @@ export function SaveNotice({ err }: { err: string | null }) {
   );
 }
 
-/** CR-122 p9 · FLOW2-FR-27: mã lỗi đọc ⇒ lý do nghiệp vụ (tệp hỏng / quá lớn / định dạng chưa hỗ trợ / hết hạn mức AI) kèm gợi ý "Nhập tay". */
-const FAIL_REASON: Record<string, string> = {
-  PDF_UNREADABLE: "unreadable",
-  DOCX_UNREADABLE: "unreadable",
-  TEXT_UNREADABLE: "unreadable",
-  SOURCE_UNAVAILABLE: "unreadable",
-  PDF_TOO_LARGE: "tooLarge",
-  AGENT_UNAVAILABLE: "unsupported",
-  AI_CAP_EXCEEDED: "cap",
-};
-
 export function ExtractFailed({
   file,
   id,
@@ -65,21 +67,47 @@ export function ExtractFailed({
   error?: string | null;
 }) {
   const { t } = useTranslation();
-  const reason = error ? FAIL_REASON[error] : undefined;
+  const reason = failReasonKey(error);
+  const replace = useReplaceFile(id); // CR-157b: tải tệp khác ⇒ AI đọc lại
+  const manual = useStartManual(id); // CR-157: nhập tay ngay trên HĐ này (không còn dẫn sang trang tạo trống)
+  const [retry, setRetry] = useState(false);
+  const pick = useRef<HTMLInputElement>(null);
   return (
     <Panel className="mb-4 p-5">
       <p className="font-medium text-late">{t("contracts.review.failedTitle")}</p>
       <p className="mt-1 text-sm text-dim">
         {t(reason ? `contracts.review.failReason.${reason}` : "contracts.review.failedBody")}
       </p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {write && <ReextractButton id={id} retry />}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {write && (
+          <FailedActions
+            pending={manual.isPending}
+            onManual={() => manual.mutate(undefined)}
+            onRetry={() => setRetry(true)}
+            onPickFile={() => pick.current?.click()}
+          />
+        )}
         {file && <FileLink file={file} />}
-
-        <Link to="/contracts/c/new" className="btn btn-primary">
-          {t("contracts.review.manual")}
-        </Link>
       </div>
+      {write && (
+        <>
+          <span data-testid="replace-file" hidden>
+            <input
+              ref={pick}
+              type="file"
+              hidden
+              accept=".pdf,.docx,.jpg,.jpeg,.png,.md"
+              disabled={replace.isPending}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) replace.mutate(f);
+              }}
+            />
+          </span>
+          <ReextractDialog id={id} open={retry} onOpenChange={setRetry} />
+        </>
+      )}
     </Panel>
   );
 }

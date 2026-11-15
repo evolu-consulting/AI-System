@@ -110,12 +110,14 @@ export type NewUser = {
   /** CR-102a: vắng ⇒ internal (DB default). */
   kind?: UserKind;
   externalOrgId?: string | null;
+  /** CR-159: vắng => true (M1-R17); chỉ onboarding cố ý đặt false. */
+  mustChangePassword?: boolean;
 };
 
 /** Luôn `must_change_password=true` (M1-R17). 23505 do service dịch theo tên constraint. */
 export async function insertUser(tx: Tx, u: NewUser): Promise<string> {
   const id = Bun.randomUUIDv7();
-  await tx.insert(users).values({ id, ...u, mustChangePassword: true });
+  await tx.insert(users).values({ id, ...u, mustChangePassword: u.mustChangePassword ?? true });
   return id;
 }
 

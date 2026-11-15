@@ -12,6 +12,7 @@ import type {
   PenaltyTermInput,
 } from "./extraction.types";
 import { type ContractFieldKey, type ContractFields, mergeFields } from "./fields.rules";
+import { isKindDeal, sanitizeKindTerms } from "./kind-terms.rules";
 import type { Deal } from "./milestones.rules";
 import {
   itemVerified,
@@ -53,6 +54,8 @@ export type RawExtraction = {
   notes?: readonly AiNote[] | undefined;
   risks?: readonly AiRisk[] | undefined;
   penalty_terms?: readonly PenaltyTermInput[] | undefined;
+  /** CR-152: trường riêng khi `deal` = franchise | cooperation (lỏng ở biên; `aiReadOf` giữ khoá hợp lệ). */
+  kind_terms?: Record<string, unknown> | null | undefined;
 };
 export type ExtractedItemRow = RawItem & { ord: number; verified: boolean; edited: false };
 export type Clause = { number: string; topic: string };
@@ -86,6 +89,13 @@ export type VerifiedExtraction = {
 
 /** V2-G: "chưa chắc" = AI tự báo ∪ có giá trị mà trích dẫn không có trong văn bản (chưa kiểm chứng). Loại Mua/Bán luôn chưa chắc
  *  (AI không biết bên nào là của mình); Giới thiệu thì tin AI. Giữ thứ tự khoá của `fields`. */
+/** Loại HĐ luôn chưa chắc, trừ Giới thiệu và hai loại mới (AI chắc thì tin). */
+const dealUnsure = (deal: string | null, said: ReadonlySet<AiUnsureKey>): boolean =>
+  deal !== null && (isKindDeal(deal) || deal === "referral" ? said.has("deal") : true);
+/** CR-152: ô riêng chưa chắc = AI tự báo (`terms.<khoá>`), chỉ khoá còn giá trị hợp lệ sau `sanitizeKindTerms`. */
+const kindTermsUnsure = (said: ReadonlySet<AiUnsureKey>, t: Record<string, unknown> | null) =>
+  [...said].filter((k) => k.startsWith("terms.") && t?.[k.slice(6)] !== undefined);
+
 export function aiReadOf(
   raw: RawExtraction,
   fields: Record<ContractFieldKey, VerifiedField>,
@@ -98,6 +108,7 @@ export function aiReadOf(
     !raw.milestones &&
     !raw.notes &&
     !raw.risks &&
+    !raw.kind_terms &&
     raw.doc_type_suggest === undefined
   )
     return null;
@@ -106,7 +117,9 @@ export function aiReadOf(
     (k) => said.has(k) || (fields[k].value !== null && !fields[k].verified),
   );
   const deal = raw.deal ?? null;
-  if (deal !== null && (deal !== "referral" || said.has("deal"))) unsure.push("deal");
+  const kindTerms = sanitizeKindTerms(deal, raw.kind_terms);
+  if (dealUnsure(deal, said)) unsure.push("deal");
+  unsure.push(...kindTermsUnsure(said, kindTerms));
   return {
     deal,
     unsure,
@@ -120,6 +133,7 @@ export function aiReadOf(
       : {}),
     ...(raw.notes ? { notes: [...raw.notes] } : {}),
     ...(raw.risks ? { risks: [...raw.risks] } : {}),
+    ...(kindTerms ? { kind_terms: kindTerms } : {}),
   };
 }
 
@@ -159,7 +173,9 @@ export function mergeExtraction(
   // Trường người đã sửa tay thì không còn "chưa chắc".
   const ai = v.ai && {
     ...v.ai,
-    unsure: v.ai.unsure.filter((k) => k === "deal" || !fields[k].edited),
+    unsure: v.ai.unsure.filter(
+      (k) => k === "deal" || k.startsWith("terms.") || !fields[k as ContractFieldKey].edited,
+    ),
   };
   return {
     fields,

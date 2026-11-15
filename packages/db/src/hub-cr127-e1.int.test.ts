@@ -157,8 +157,9 @@ describe("CR-127 E1 · evidence (0131, int)", () => {
     expect(await code(owner`delete from hub.evidence where id = ${evA}`)).toBe("42501");
   });
   test("CR-127 E1 · record_evidence: tệp tenant khác / chữ ký sai loại / quá 5 tệp / việc tenant khác ⇒ lỗi; không scope ⇒ 42501", async () => {
-    expect(await code(record(A, "milestone", TASK_A, sigB, [], null))).toBe("42501");
-    expect(await code(record(A, "milestone", TASK_A, null, [sigB], null))).toBe("42501");
+    // 0141: tệp/chữ ký không do chính người ghi tải lên ⇒ EK422 (route trả 422 EVIDENCE_FILE_NOT_OWNED), không còn 42501.
+    expect(await code(record(A, "milestone", TASK_A, sigB, [], null))).toBe("EK422");
+    expect(await code(record(A, "milestone", TASK_A, null, [sigB], null))).toBe("EK422");
     const jpg = await attachment(TA, 51, "image/jpeg");
     expect(await code(record(A, "milestone", TASK_A, jpg, [], null))).toBe("42501");
     const many = await Promise.all(

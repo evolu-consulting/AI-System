@@ -15,7 +15,7 @@ import {
   setDirectoryListed,
   tenantIdByKey,
 } from "../_kit/api";
-import { approve, enableFlowTriggers, finish, partnerSendNode } from "../_kit/flows";
+import { approve, enableFlowTriggers, esignNode, finish, partnerSendNode } from "../_kit/flows";
 import { seedPartner } from "../journey-approval/_partner-pick";
 import { API, envOf, GROUP, HUB, PW, SFX, SPEC_TENANT, TAX, U } from "./_cr127-kit";
 
@@ -184,43 +184,56 @@ async function partnerPair(
     ["giam-doc", "Giám đốc"],
   ] as const)
     await createGroupWith(API, bAdmin, { key, name, usernames: members });
+  let signers: string | null = null;
   if (o.sign) {
-    const signers = await createGroupWith(API, bAdmin, {
+    signers = await createGroupWith(API, bAdmin, {
       key: GROUP.signers,
       name: "Người ký HĐ",
       usernames: members,
     });
-    const url = `${HUB}/pack/contracts/partner/settings`;
-    const bContracts = await apiLogin({
-      base: API,
-      tenantKey: eb.tenantKey,
-      username: U.director,
-      password: PW,
-      app: "contracts",
-    });
-    const cur = (await (await fetch(url, { headers: bContracts.headers })).json()) as Record<
-      string,
-      unknown
-    >;
-    const put = await fetch(url, {
-      method: "PUT",
-      headers: { ...bContracts.headers, "content-type": "application/json" },
-      body: JSON.stringify({ ...cur, signer_group_id: signers }),
-    });
-    if (put.status >= 300)
-      throw new Error(`đặt nhóm Người ký HĐ: ${put.status} ${(await put.text()).slice(0, 200)}`);
+    // CR-146b · người ký bên nhận = bước Ký của quy trình Nhận HĐ (không còn nhóm cấp công ty): nhóm này là «Người ký phía công ty» của bước Ký.
   }
   if (o.recv) {
+    // CR-146: «Ký qua» chỉ nhận nhà cung cấp ĐANG BẬT của chính công ty nhận (chưa bật ⇒ 422 PROVIDER_NOT_ENABLED khi lưu quy trình)
+    if (o.sign) await enableEsign(b);
     await enableFlowTriggers(eb.tenantKey);
     await companyFlow(p, idB, {
       name: `Nhận HĐ đối tác ${b}`,
       event: "contract.received",
-      stages: [
-        approve("nhan", "Giám đốc nhận duyệt", 0, "pb-giam-doc", { reject: 2, ret: 3 }),
-        finish("dong-y", "Đồng ý", 1, "confirmed"),
-        finish("tu-choi", "Từ chối", 2, "declined"),
-        finish("tra-lai", "Trả lại", 3, "returned"),
-      ],
+      // bước Ký đọc `contract_id` từ đầu vào của quy trình (tool `contracts-esign-send`: nguồn input phải được khai ở def)
+      ...(signers ? { inputs: CONTRACT_INPUT } : {}),
+      stages: signers
+        ? [
+            approve("nhan", "Giám đốc nhận duyệt", 0, "pb-giam-doc", {
+              reject: 4,
+              ret: 5,
+              next: 1,
+            }),
+            ...esignNode(1).map((s, i) =>
+              i === 0
+                ? {
+                    ...s,
+                    executor: {
+                      ...(s.executor as object),
+                      args: {
+                        contract_id: { from: "input", key: "contract_id" },
+                        provider: { from: "const", value: "selfsign" },
+                        company_signers: { from: "const", value: `group:${signers}` },
+                      },
+                    },
+                  }
+                : s,
+            ),
+            finish("dong-y", "Đồng ý", 3, "confirmed"),
+            finish("tu-choi", "Từ chối", 4, "declined"),
+            finish("tra-lai", "Trả lại", 5, "returned"),
+          ]
+        : [
+            approve("nhan", "Giám đốc nhận duyệt", 0, "pb-giam-doc", { reject: 2, ret: 3 }),
+            finish("dong-y", "Đồng ý", 1, "confirmed"),
+            finish("tu-choi", "Từ chối", 2, "declined"),
+            finish("tra-lai", "Trả lại", 3, "returned"),
+          ],
     });
   }
   await seedPartner(ea.tenantKey, TAX[b], `Công ty Nhận ${b} ${SFX}`, "e2e-ketoan"); // G3: kế toán thêm đối tác (người chọn = giám đốc)

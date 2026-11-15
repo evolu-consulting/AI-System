@@ -16,6 +16,7 @@ import {
   type PartnerOutcome,
 } from "../domain/partner-send.rules";
 import { contractStateRepo } from "./contract-state.repo";
+import { receiveParamsOf } from "./receive-flow.repo";
 
 export type TakenRow = {
   id: string;
@@ -62,27 +63,14 @@ export type InboxSettings = {
   importantMin: number;
   criticalMin: number;
   ownerId: string | null;
-  /** CR-127 · P2 · nhóm «Người ký HĐ» (null ⇒ chưa có ⇒ đề nghị ký cùng lúc tự về xử lý bình thường). */
-  signerGroupId: string | null;
 };
 
+/** CR-146b · ngưỡng + người phụ trách = `trigger.params` của quy trình Nhận HĐ đang bật (hàm hub 0143; chưa có ⇒ mặc định 500 triệu / 2 tỷ). MỘT câu. */
 async function settingsOf(tx: Tx, tid: string): Promise<InboxSettings> {
-  const [r] = await tx.execute<{
-    imp: string | number;
-    cri: string | number;
-    owner: string | null;
-    sg: string | null;
-  }>(sql`
-    select important_min as imp, critical_min as cri, owner_user_id::text as owner, signer_group_id::text as sg
-    from contracts.partner_settings where tenant_id = ${tid}::uuid`);
-  return r
-    ? {
-        importantMin: Number(r.imp),
-        criticalMin: Number(r.cri),
-        ownerId: r.owner,
-        signerGroupId: r.sg,
-      }
-    : { importantMin: 500_000_000, criticalMin: 2_000_000_000, ownerId: null, signerGroupId: null };
+  const [r] = await tx.execute<{ p: Parameters<typeof receiveParamsOf>[0] }>(
+    sql`select hub.contract_received_params(${tid}::uuid) as p`,
+  );
+  return receiveParamsOf(r?.p);
 }
 
 async function takeRows(tx: Tx, limit: number): Promise<TakenRow[]> {

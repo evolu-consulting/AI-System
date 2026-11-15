@@ -1,0 +1,21 @@
+# CR-159 · công ty TẠM của bài kiểm hành trình (deploy/smoke/smoke-journey.ps1): tạo trước bài, XOÁ SẠCH sau bài (tenant-purge). Dữ liệu giả.
+# Email chỉ ở smoke.invalid (không gửi được tới người thật). Quản trị công ty đứng đầu `users:`. Khoá phòng gốc giữ pb-ban-giam-doc
+# để tools/scripts/src/smoke-flows.ts dùng lại bộ quy trình của preschool (cùng hình: 1 gốc + 1 phòng).
+key: smoke-b
+name: Smoke B
+timezone: Asia/Ho_Chi_Minh
+profile:
+  legal_name: Công ty Smoke B
+  tax_id: "9900000022"
+
+packs: [contracts]
+addons: [contracts-community, contracts-partner-confirm]
+
+users:
+  - { email: smoke-b-gd@smoke.invalid, name: Giám đốc Smoke B, title: Giám đốc, role: admin }
+  - { email: smoke-b-tp@smoke.invalid, name: Trưởng phòng Smoke B, title: Trưởng phòng kinh doanh, role: member }
+  - { email: smoke-b-nv@smoke.invalid, name: Nhân viên Smoke B, title: Nhân viên kinh doanh, role: member }
+
+root: { key: pb-ban-giam-doc, vi: Ban Giám đốc, en: Board of Directors, head: smoke-b-gd@smoke.invalid }
+departments:
+  - { key: pb-kinh-doanh, vi: Phòng Kinh doanh, en: Sales, head: smoke-b-tp@smoke.invalid, members: [smoke-b-nv@smoke.invalid] }

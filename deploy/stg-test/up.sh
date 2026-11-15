@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # sohoptac2-staging · dung/cap nhat STAGING (project `sohoptac2-staging`, image tag staging, cong 127.0.0.1:28541..28544, DU LIEU BEN trong volume ten).
 # KHONG dung project `sohoptac2`: chi chep MOT file nhi phan minio (chi doc) neu thieu. Idempotent: chay lai sau build.sh de cap nhat ban moi (migrate + seed
-# idempotent). Seed = cung duong voi stg-sohoptac2/up.sh: migrate -> ALTER ROLE -> platform seed -> hub seed -> stg-seed (tenant demo) -> seed.tenant-fixtures.
+# idempotent). Seed = tuan tu: migrate -> ALTER ROLE -> platform seed -> hub seed -> stg-seed (tenant demo) -> seed.tenant-fixtures.
 # Sau up: bash edge.sh (tro host -test vao stack nay) neu chua lam; bash verify.sh de kiem tenant demo.
 #   bash up.sh [--dry-run]
 set -euo pipefail
@@ -17,6 +17,10 @@ else
   bash ./gen-env.sh
   docker image inspect "$IMG_APP" "$IMG_WEB" >/dev/null 2>&1 || { echo "up: thieu image $IMG_APP/$IMG_WEB - chay build.sh"; exit 3; }
   [ -x minio-bin/minio ] || { mkdir -p minio-bin; cp -p "$HOME/workspace/sohoptac2/minio-bin/minio" minio-bin/minio; }
+  # Claude CLI: chep NHI PHAN tu prod (KHONG chep dang nhap); dang nhap rieng bang claude-login.sh
+  [ -x claude-bin/claude ] || { mkdir -p claude-bin; cp -p "$HOME/workspace/sohoptac2/claude-bin/claude" claude-bin/claude; }
+  mkdir -p claude-home
+  [ -s claude-home/.claude/.credentials.json ] || echo "up: CANH BAO ban test chua dang nhap Claude => AI khong chay. Chay: bash claude-login.sh"
   # tu choi neu cong dang bi chiem boi cai KHAC (khong phai web cua chinh project nay)
   for p in $PORTS; do
     if ss -ltn | awk '{print $4}' | grep -q ":$p$" && ! dc ps --format '{{.Service}}' 2>/dev/null | grep -q web; then echo "up: cong $p dang bi chiem"; exit 3; fi

@@ -29,6 +29,7 @@ import { EditLogPanel } from "~/features/promote-deal/components/EditLogPanel";
 import { PromoteDeal } from "~/features/promote-deal/components/PromoteDeal";
 import { contractKey, fileHref, patchContractFields } from "../api";
 import type { useInfoForm } from "../hooks/use-info-form";
+import { useMemberNames } from "../hooks/use-manage";
 import { headRule } from "../lib/head-rule";
 import { saveLabelKey } from "../lib/review";
 import { saveErrorText } from "../lib/save-error";
@@ -39,11 +40,13 @@ import { EffectCard, NoticeCards, StatsRow } from "./DetailSections";
 import { HeadActions } from "./HeadActions";
 import { HeadBanner } from "./HeadBanner";
 import { HistoryPanel } from "./HistoryPanel";
+import { KindSummary } from "./KindSummary";
 import { LegalBanner } from "./LegalBanner";
 import { ManagePanel, OwnerRow } from "./ManagePanel";
+import { ManualBanner } from "./ManualBanner";
+import { ManualSide, showManualSide } from "./ManualSide";
 import { OriginalFileHost } from "./OriginalFileDialog";
 import { ExtractFailed, FileLink, SaveNotice } from "./ReviewParts";
-import { SubmitPreview } from "./SubmitPreview";
 
 type Info = ReturnType<typeof useInfoForm>;
 
@@ -77,6 +80,7 @@ export function ContractBody(p: {
   const nav = useNavigate();
   const { sup, write } = versionGate(c, me);
   const [origOpen, setOrigOpen] = useState(false);
+  const memberName = useMemberNames();
   const lock = lockView(c);
   const today = todayIso();
   const partner = partnerOf(c);
@@ -99,6 +103,8 @@ export function ContractBody(p: {
     submitBlock: c.submit_block ?? null,
     awaitingDecision: (c as { awaiting_decision?: boolean }).awaiting_decision,
   });
+  // CR-157b: HĐ nhập tay chưa đối chiếu (hoặc sửa chưa lưu) ⇒ tắt «Xác nhận & lưu» / Gửi duyệt.
+  const manualBlock = c.entry_source === "manual" && (!c.reconciled_at || info.edited);
   const confirm = c.status === "draft" && c.submit_round === 0 && !ap.submitted;
   const { canSave } = rule;
   const reviewer = decideOnly(ap.view, c.status);
@@ -141,7 +147,7 @@ export function ContractBody(p: {
       file={
         file ? (
           <span className="inline-flex items-center gap-2">
-            <FileLink file={file} title={file.name} />
+            <FileLink file={file} />
             <FileRecordButton target={{ kind: "main", contractId: id }} />
           </span>
         ) : null
@@ -155,11 +161,14 @@ export function ContractBody(p: {
       <EffectCard c={c} today={today} />
     </>
   );
+  const manualSide = showManualSide(c, write && sup === null);
   const reading = c.extract_state === "reading" && c.status === "draft" && c.submit_round === 0;
   return (
-    <div className="flex items-start gap-4 max-lg:flex-col">
+    <div
+      className={`w-full gap-4 ${manualSide ? "grid items-start lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" : "flex items-start max-lg:flex-col"}`}
+    >
       <div className="min-w-0 flex-1 max-lg:w-full">
-        <div className="text-base leading-[1.55]">
+        <div className="flex flex-col gap-4 text-base leading-[1.55] [&>*]:mb-0!">
           <ContractHead
             c={c}
             title={c.title}
@@ -173,6 +182,7 @@ export function ContractBody(p: {
                 saveFirst={info.saveFirst}
                 onChanged={refresh}
                 canDelete={c.can.delete === true}
+                reconcileBlock={manualBlock}
                 approval={{
                   ...ap.act,
                   view: ap.view,
@@ -189,18 +199,23 @@ export function ContractBody(p: {
               {t("contracts.u5.err.NO_APPROVAL_FLOW")}
             </p>
           )}
-          {(rule.confirmSave || rule.draftSave || rule.resubmit) && !rule.submitBlocked && (
-            <SubmitPreview id={id} version={c.version} />
-          )}
           <HeadBanner kind={rule.banner} c={c} partner={partner} />
+          <ManualBanner
+            c={c}
+            write={write && sup === null}
+            file={file}
+            nameOf={memberName}
+            dirty={info.edited}
+          />
           <ExtractDialog open={reading} name={c.file?.name ?? c.title} />
           <PartnerSendPanel id={id} write={write} />
           <SignSessionCard id={id} write={write} />
           <EsignPanel id={id} locked={c.status === "done"} write={write} />
-          <VersionsPanels id={id} versions={c.versions} sup={sup} />
+          <VersionsPanels id={id} versions={c.versions} total={c.versions_count} sup={sup} />
           <ContractFilesPanel id={id} />
           <SaveNotice err={info.err ?? ap.err} />
           <StatsRow c={c} today={today} />
+          <KindSummary c={c} write={write && sup === null} today={today} />
           {c.doc?.doc_type !== "framework" && (
             <MilestoneList
               c={c}
@@ -257,6 +272,7 @@ export function ContractBody(p: {
           {c.doc?.doc_type === "deal" && <EditLogPanel id={id} />}
         </div>
       </div>
+      <ManualSide c={c} show={write && sup === null} />
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
   flowRuntimeOn,
   packHosts,
   packNavRegistry,
+  peopleReader,
   pgExternalOrgResolver,
   selfContactOf,
   slotRegistry,
@@ -36,7 +37,6 @@ import type { CommunityEventDeps } from "./adapters/notify.events";
 import { communityEvents } from "./adapters/notify.events";
 import { startCommunitySweeper } from "./adapters/notify.sweep";
 import { orgRoutes } from "./adapters/org.routes";
-import { peopleReader } from "./adapters/people.reader";
 import { postsRoutes } from "./adapters/posts.routes";
 import { profileRoutes } from "./adapters/profile.routes";
 import { quoteRoutes } from "./adapters/quote.routes";

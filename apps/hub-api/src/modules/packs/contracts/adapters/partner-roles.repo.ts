@@ -226,8 +226,8 @@ function contactWrites(tx: Tx, t: string) {
 
 function contractReads(tx: Tx, t: string) {
   return {
-    /** V2-I · DT-06: HĐ đã xác nhận của đối tác (mới nhất trước, ≤ 200) kèm đếm mốc + mốc mở sớm nhất để suy giai đoạn. */
-    contracts: (party: string) =>
+    /** V2-I · DT-06: HĐ đã xác nhận của đối tác (mới nhất trước, phân trang offset — CR-151d) kèm đếm mốc + mốc mở sớm nhất để suy giai đoạn. */
+    contracts: (party: string, limit: number, offset: number) =>
       one<PartnerContractRaw[]>(
         tx,
         sql`select coalesce(json_agg(json_build_object('id', c.id, 'title', ${contractNameSql("c")}, 'number', c.number, 'deal', c.deal,
@@ -235,7 +235,7 @@ function contractReads(tx: Tx, t: string) {
             'n_done', a.n_done, 'next', nx.j) order by c.updated_at desc, c.id desc), '[]'::json) as j
           from (select * from contracts.contracts c where c.tenant_id = ${t}::uuid and c.kind = 'contract'
               and c.partner_key = ${party}::text and c.status in (${CONFIRMED}) and c.superseded_at is null
-            order by c.updated_at desc, c.id desc limit 200) c
+            order by c.updated_at desc, c.id desc limit ${limit} offset ${offset}) c
           left join lateral (select count(*) filter (where o.kind <> 'renewal' and o.status <> 'cancelled')::int as n_req,
               count(*) filter (where o.kind <> 'renewal' and o.status = 'done')::int as n_req_done,
               count(*) filter (where o.status = 'done')::int as n_done
@@ -255,6 +255,17 @@ function contractReads(tx: Tx, t: string) {
           from (select c.partner_key as k, count(*)::int as n from contracts.contracts c
             where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.partner_key is not null and c.status in (${CONFIRMED})
               and c.superseded_at is null
+            group by c.partner_key) x`,
+      ),
+
+    /** CR-151e: số HĐ đã xác nhận của CHỈ các đối tác trong trang (≤ 200 khoá, một tham số JSON, `partner_key` có index) — một câu cố định. */
+    contractCountsOf: (parties: readonly string[]) =>
+      one<PartnerContractCount[]>(
+        tx,
+        sql`select coalesce(json_agg(json_build_object('party', x.k, 'n', x.n)), '[]'::json) as j
+          from (select c.partner_key as k, count(*)::int as n from contracts.contracts c
+            where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.status in (${CONFIRMED}) and c.superseded_at is null
+              and c.partner_key in (select jsonb_array_elements_text(${JSON.stringify(parties)}::jsonb))
             group by c.partner_key) x`,
       ),
   };

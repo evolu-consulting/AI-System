@@ -147,13 +147,12 @@ async function withGroupIds(
     if (!after) return s;
     const par = after.parallel as { groups?: Record<string, unknown>[] } | undefined;
     const groups = par?.groups?.map(fix);
-    // bước «cùng duyệt»: hub (`no_group`) đòi `after.group_id` ≠ rỗng với mọi bước duyệt ⇒ lấy nhóm đầu của dòng (nhóm còn lại trong `parallel`)
-    const head = groups?.[0]?.group_id;
+    // bước «cùng duyệt» (CR-140/CR-127 Z9): nhóm nằm trong `parallel.groups`, `group_id` của bước PHẢI null (PARALLEL_RULE_INVALID nếu có)
     return {
       ...s,
       after: {
         ...fix(after),
-        ...(groups ? { parallel: { ...par, groups }, ...(head ? { group_id: head } : {}) } : {}),
+        ...(groups ? { parallel: { ...par, groups }, group_id: null } : {}),
       },
     };
   });

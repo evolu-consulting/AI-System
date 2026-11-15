@@ -3,12 +3,16 @@ import type { ContractDeal, ContractStage } from "@ai/contracts/pack-contracts";
 import type { TagTone } from "~/components/shared/tag";
 
 export const DEALS: readonly ContractDeal[] = ["buy", "sell", "referral"] as const;
+/** CR-152/153: đủ 5 loại, luôn hiện ở mọi chỗ chọn/xem loại HĐ. */
+export const ALL_DEALS: readonly ContractDeal[] = [...DEALS, "franchise", "cooperation"] as const;
 
 /** Vai của đối tác theo loại (BA 5.6): Mua ⇒ Nhà cung cấp; Bán ⇒ Khách hàng; Giới thiệu ⇒ Bên trả hoa hồng. */
-export const PARTNER_ROLE: Record<ContractDeal, "supplier" | "customer" | "payer"> = {
+export const PARTNER_ROLE: Record<ContractDeal, "supplier" | "customer" | "payer" | "partner"> = {
   buy: "supplier",
   sell: "customer",
   referral: "payer",
+  franchise: "partner",
+  cooperation: "partner",
 };
 
 /** Nhãn kho: Mua nhập, Bán xuất, Giới thiệu không ảnh hưởng kho (BA 5.7). */
@@ -16,6 +20,8 @@ export const STOCK_EFFECT: Record<ContractDeal, "in" | "out" | "none"> = {
   buy: "in",
   sell: "out",
   referral: "none",
+  franchise: "none",
+  cooperation: "none",
 };
 
 /** Sắc thái nhãn giai đoạn (danh sách + dòng thời gian): chưa bắt đầu xám, đang thực hiện tím, đã xong xanh. */
@@ -30,6 +36,8 @@ export const DEAL_TONE: Record<ContractDeal, TagTone> = {
   buy: "act",
   sell: "ok",
   referral: "grey",
+  franchise: "act",
+  cooperation: "act",
 };
 
 /** HĐ cũ (trước V2) chưa có `deal`: suy từ hướng (mua vào ⇒ Mua, còn lại ⇒ Bán). */

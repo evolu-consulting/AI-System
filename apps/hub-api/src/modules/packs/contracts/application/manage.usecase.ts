@@ -27,7 +27,7 @@ export type CommissionLock = {
 };
 
 export type ManageRepo = {
-  history(id: string, limit: number): Promise<HistoryItem[] | null>;
+  history(id: string, limit: number, offset: number): Promise<HistoryItem[] | null>;
   setOwner(
     id: string,
     owner: string | null,
@@ -144,8 +144,13 @@ export const summarize =
     return saved ? { kind: "ok", summary } : { kind: "not_allowed" };
   };
 
-export type GetHistory = (who: PackWho, id: string, limit: number) => Promise<HistoryItem[] | null>;
+export type GetHistory = (
+  who: PackWho,
+  id: string,
+  limit: number,
+  offset?: number,
+) => Promise<HistoryItem[] | null>;
 export const getHistory =
   (d: { uow: ManageUow }): GetHistory =>
-  (who, id, limit) =>
-    d.uow.tenant(who, (r) => r.manage.history(id, limit));
+  (who, id, limit, offset = 0) =>
+    d.uow.tenant(who, (r) => r.manage.history(id, limit, offset));

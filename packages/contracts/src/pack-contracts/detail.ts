@@ -121,6 +121,9 @@ export const ContractDetailSchema = ContractListRowSchema.omit({
   effect_outcome_at: IsoDateTime.nullable(),
   submit_round: z.number().int().min(0),
   submitted_by: z.uuid().nullable(),
+  /** CR-157: chỉ có khi HĐ nhập tay — người + lúc xác nhận đối chiếu (null = chưa; vắng = HĐ do AI đọc). */
+  reconciled_by: z.uuid().nullable().optional(),
+  reconciled_at: IsoDateTime.nullable().optional(),
   can: ContractCanSchema,
   /** NF1 · HĐ DRAFT mà Gửi sẽ bị chặn ⇒ lý do (`no_flow` = công ty chưa có quy trình duyệt khớp; khi đó `can.submit = false`); gửi được / không phải DRAFT ⇒ null.
    *  Tính bằng CÙNG hàm "có quy trình khớp" của lệnh Gửi (`submitFlowOpen`). Chỉ chi tiết, không có ở danh sách. */
@@ -150,12 +153,17 @@ const PATCH_SHAPE = Object.fromEntries(
 ) as PatchShape;
 
 /** Khoá lạ ⇒ route trả 422 `FIELD_UNKNOWN`, sai kiểu ⇒ 422 `FIELD_INVALID` (plan §1). */
-export const PatchFieldsRequestSchema = z.strictObject({
-  version: VersionSchema,
-  fields: z
-    .strictObject(PATCH_SHAPE)
-    .refine((f) => Object.keys(f).length >= 1, { message: "cần ≥ 1 khoá" }),
-});
+export const PatchFieldsRequestSchema = z
+  .strictObject({
+    version: VersionSchema,
+    fields: z.strictObject(PATCH_SHAPE),
+    /** CR-168: đổi Loại HĐ (chỉ HĐ nhập tay còn nháp; server đặt `direction` theo loại, đúng `contracts_deal_ck`). */
+    deal: ContractDealSchema.optional(),
+  })
+  .refine((b) => Object.keys(b.fields).length >= 1 || b.deal !== undefined, {
+    message: "cần ≥ 1 khoá",
+    path: ["fields"],
+  });
 export type PatchFieldsRequest = z.infer<typeof PatchFieldsRequestSchema>;
 
 export const PatchFieldsResponseSchema = z.strictObject({

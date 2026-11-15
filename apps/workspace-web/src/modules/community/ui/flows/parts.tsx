@@ -4,21 +4,26 @@ import { useApp } from "../../application/ctx";
 import { t } from "../../i18n";
 import { IconX } from "../icons";
 
-/** Tải danh sách bằng MỘT lời gọi; đổi dữ liệu chung (`rev`) hoặc `reload()` ⇒ nạp lại. Lỗi giữ lại để hiện cách khắc phục. */
-export function useFlowList<T>(load: () => Promise<T[]>) {
+type Page<T> = { items: T[]; nextOffset: number | null };
+
+/** CR-151 · tải danh sách dần: trang đầu + `loadMore()` nối trang kế theo `nextOffset` (một lời gọi mỗi trang). */
+export function usePagedFlowList<T>(load: (offset: number) => Promise<Page<T>>) {
   const { rev } = useApp();
   const [items, setItems] = useState<T[] | null>(null);
+  const [next, setNext] = useState<number | null>(null);
   const [failed, setFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [tick, setTick] = useState(0);
   const loadRef = useRef(load);
   loadRef.current = load;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại theo rev + tick
+  // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại (về trang đầu) theo rev + tick
   useEffect(() => {
     let live = true;
-    loadRef.current().then(
+    loadRef.current(0).then(
       (r) => {
         if (!live) return;
-        setItems(r);
+        setItems(r.items);
+        setNext(r.nextOffset);
         setFailed(false);
       },
       () => live && setFailed(true),
@@ -28,7 +33,48 @@ export function useFlowList<T>(load: () => Promise<T[]>) {
     };
   }, [rev, tick]);
   const reload = useCallback(() => setTick((n) => n + 1), []);
-  return { items, failed, reload };
+  const loadMore = useCallback(async () => {
+    if (next === null || busy) return;
+    setBusy(true);
+    try {
+      const r = await loadRef.current(next);
+      setItems((cur) => [...(cur ?? []), ...r.items]);
+      setNext(r.nextOffset);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }, [next, busy]);
+  return { items, failed, reload, more: next !== null, busy, loadMore };
+}
+
+/** Nút «Xem thêm» cuối danh sách tải dần (chỉ hiện khi còn trang sau). */
+export function LoadMore({
+  more,
+  busy,
+  onMore,
+}: {
+  more: boolean;
+  busy: boolean;
+  onMore: () => void;
+}) {
+  if (!more) return null;
+  return (
+    <div className="cbar">
+      <div className="sp" />
+      <button
+        type="button"
+        className="outline"
+        disabled={busy}
+        data-testid="flow-more"
+        onClick={onMore}
+      >
+        {t("community.flows.common.more")}
+      </button>
+      <div className="sp" />
+    </div>
+  );
 }
 
 export function FlowPage({
@@ -50,10 +96,12 @@ export function FlowPage({
       <main className="wsmain">
         <div className="wscenter" data-testid={testId}>
           {bare ? (
-            <div className="adminlist-head">
-              <h1>{title}</h1>
-              {intro ? <p className="muted">{intro}</p> : null}
-            </div>
+            // CR-147: tab/menu đã nói tên màn ⇒ không lặp tiêu đề; chỉ hiện đoạn dẫn nếu có.
+            intro ? (
+              <div className="adminlist-head">
+                <p className="muted">{intro}</p>
+              </div>
+            ) : null
           ) : (
             <div className="card pcard">
               <h1>{title}</h1>

@@ -13,7 +13,7 @@ const PARAMS = new Set<string>(ESIGN_NODE_PARAMS);
 const isScalar = (x: unknown): x is Scalar =>
   typeof x === "string" || typeof x === "number" || typeof x === "boolean";
 
-/** Def ĐÃ LƯU ⇒ dạng logic: bỏ khoá ngoài cấu hình (`provider` cũ — người ký chọn cách ký lúc ký; `contract_id`…), giải dạng args
+/** Def ĐÃ LƯU ⇒ dạng logic: bỏ khoá ngoài cấu hình (`contract_id`…), giải dạng args
  *  (`company_signers` = chuỗi `user:<uuid>,…`, "true"/"3"). Giá trị dạng logic (mảng) giữ nguyên. */
 function storedToConfig(v: unknown): unknown {
   if (!v || typeof v !== "object" || Array.isArray(v)) return v;
@@ -28,7 +28,7 @@ function storedToConfig(v: unknown): unknown {
   return d.ok ? { ...d.config, ...rest } : { ...scalars, ...rest };
 }
 
-/** Schema args của tool: cùng hình dạng vào với `configPort` (so `MOD_PORT_MISMATCH`), nhận cả def đã lưu (có `provider`, chuỗi người ký). */
+/** Schema args của tool: cùng hình dạng vào với `configPort` (so `MOD_PORT_MISMATCH`), nhận cả def đã lưu (chuỗi người ký). */
 export const esignArgsSchema = z.preprocess(storedToConfig, ESIGN_CONFIG_PORT.schema);
 
 /** Phần tĩnh: tool + schema args + đường lựa chọn. */
@@ -45,8 +45,7 @@ export const esignBindingBase: NodeBinding = {
 /** Phần cần use case: kiểm cấu hình lúc LƯU def, theo KHOÁ TOOL (def gọi thẳng tool không mang `node` cũng bị kiểm). */
 export const esignBindingChecks = (
   check: Parameters<typeof esignNodeValidator>[0],
-  hasDefault?: Parameters<typeof esignNodeValidator>[1],
 ): NodeBinding => ({
   key: ESIGN_NODE_KEY,
-  toolValidators: { [INTAKE_TOOL_KEYS.esignSend]: esignNodeValidator(check, hasDefault) },
+  toolValidators: { [INTAKE_TOOL_KEYS.esignSend]: esignNodeValidator(check) },
 });

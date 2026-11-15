@@ -127,6 +127,11 @@ describe("ADM-NFR-06 · M2 · ngân sách chunk route", () => {
     expect(checkBundle(big).errors).toEqual([expect.stringContaining("> 80 KB")]);
   });
 
+  test("CR-149: chunk viewer-* (pdf.js/docx) được 520 KB; chunk khác vẫn 53 KB", () => {
+    const ok = withChunks({ "static/js/async/viewer-pdf.a1.js": noise(120) });
+    expect(checkBundle(ok).errors).toEqual([]);
+  });
+
   test("không có thư mục async → bỏ qua; chỉ đọc file .js", () => {
     expect(asyncChunkSizes(withChunks({}))).toEqual([]);
     const dir = withChunks({ "static/js/async/a.js.LICENSE.txt": noise(80) });

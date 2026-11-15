@@ -7,7 +7,7 @@ import { shortDay } from "../../domain/admin-list";
 import { isConflict, reportKindKey, reportLevelKey } from "../../domain/flows";
 import { numLocale, t } from "../../i18n";
 import { AdminList, type Column } from "./AdminList";
-import { FlowPage, ListState, useFlowList } from "./parts";
+import { FlowPage, ListState, LoadMore, usePagedFlowList } from "./parts";
 
 const ACTIONS = ["hide", "warn", "dismiss"] as const;
 const STATUSES = ["pending", "resolved"] as const;
@@ -80,7 +80,7 @@ function ReportDetail({
 
 export default function ReportsPage() {
   const { api, toast, bump } = useApp();
-  const list = useFlowList(() => api.flows.listReports(false));
+  const list = usePagedFlowList((o) => api.flows.listReports(false, o));
   const decide = async (r: Report, action: (typeof ACTIONS)[number]) => {
     try {
       await api.flows.decideReport(r.id, { action, taskId: r.taskId });
@@ -111,6 +111,7 @@ export default function ReportsPage() {
           detail={(r) => <ReportDetail r={r} onDecide={(a) => void decide(r, a)} />}
         />
       )}
+      <LoadMore more={list.more} busy={list.busy} onMore={() => void list.loadMore()} />
     </FlowPage>
   );
 }

@@ -31,8 +31,15 @@ const arr = (xs: readonly string[]) => JSON.stringify(xs);
 export async function listComments(
   tx: Tx,
   postId: string,
-  page: { cursor: { at: string; id: string } | null; limit: number },
-): Promise<{ post: boolean; comments: CommentRow[] }> {
+  page: {
+    cursor: { at: string; id: string } | null;
+    limit: number;
+    /** CR-147c: `desc` = mới → cũ (cursor/`beforeId` lấy phần CŨ HƠN). */
+    dir?: "asc" | "desc";
+    beforeId?: string | undefined;
+  },
+): Promise<{ post: boolean; comments: CommentRow[]; beforeOk?: boolean }> {
+  if (page.dir === "desc") return listOlder(tx, postId, page);
   const at = page.cursor?.at ?? null;
   const id = page.cursor?.id ?? null;
   const rows = await tx.execute<{ r: { post: boolean; comments: CommentRow[] } }>(sql`
@@ -43,6 +50,33 @@ export async function listComments(
             and (${at}::timestamptz is null or (c.created_at, c.id) > (${at}::timestamptz, ${id}::uuid))
           order by c.created_at, c.id limit ${page.limit}::int) s), '[]'::json)) as r`);
   return rows[0]?.r ?? { post: false, comments: [] };
+}
+
+/** Phần CŨ HƠN (mới → cũ): sau `cursor` hoặc trước bình luận `beforeId`. Một câu. */
+async function listOlder(
+  tx: Tx,
+  postId: string,
+  page: { cursor: { at: string; id: string } | null; limit: number; beforeId?: string | undefined },
+): Promise<{ post: boolean; comments: CommentRow[]; beforeOk: boolean }> {
+  const at = page.cursor?.at ?? null;
+  const id = page.cursor?.id ?? null;
+  const before = page.beforeId ?? null;
+  const rows = await tx.execute<{
+    r: { post: boolean; comments: CommentRow[]; before_ok: boolean };
+  }>(sql`
+    select json_build_object(
+      'post', exists (select 1 from community.posts p where p.id = ${postId}::uuid),
+      'before_ok', (${before}::uuid is null or exists (select 1 from community.comments b where b.id = ${before}::uuid and b.post_id = ${postId}::uuid)),
+      'comments', coalesce((select json_agg(${commentJson("s")} order by s.created_at desc, s.id desc)
+        from (select c.* from community.comments c where c.post_id = ${postId}::uuid
+            and (${at}::timestamptz is null or (c.created_at, c.id) < (${at}::timestamptz, ${id}::uuid))
+            and (${before}::uuid is null or (c.created_at, c.id) <
+              (select b.created_at, b.id from community.comments b where b.id = ${before}::uuid and b.post_id = ${postId}::uuid))
+          order by c.created_at desc, c.id desc limit ${page.limit}::int) s), '[]'::json)) as r`);
+  const r = rows[0]?.r;
+  return r
+    ? { post: r.post, comments: r.comments, beforeOk: r.before_ok }
+    : { post: false, comments: [], beforeOk: true };
 }
 
 export type NewComment = {

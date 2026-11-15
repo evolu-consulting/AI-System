@@ -14,6 +14,7 @@ const SERVER_TEXT = new Set([
 ]);
 const KEYED: Record<string, string> = {
   NO_APPROVAL_FLOW: "contracts.u5.err.NO_APPROVAL_FLOW",
+  RECONCILE_REQUIRED: "contracts.u5.err.RECONCILE_REQUIRED",
   CONTRACT_LOCKED: "contracts.lock.errLocked",
   OBLIGATION_DONE: "contracts.errors.alreadyDone",
   MILESTONE_CONFIRMED: "contracts.errors.alreadyDone",
@@ -22,6 +23,10 @@ const KEYED: Record<string, string> = {
   EVIDENCE_REQUIRED: "contracts.u6.trade.err.evidence",
   LINK_MIXED: "contracts.u6.trade.err.mixed",
   OVER_PLAN: "contracts.u6.trade.err.overPlan",
+  KIND_TERMS_INCOMPLETE: "contracts.kinds.err.incomplete",
+  KIND_TERMS_LOCKED: "contracts.kinds.err.locked",
+  PERIOD_LOCKED: "contracts.kinds.err.periodLocked",
+  KIND_TERMS_NOT_APPLICABLE: "contracts.kinds.err.notApplicable",
   TASK_CLAIMED: "contracts.u6.trade.err.claimed",
 };
 

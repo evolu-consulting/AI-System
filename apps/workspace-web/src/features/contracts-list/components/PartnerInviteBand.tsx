@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { answerInvite, fetchInbox, partnerKeys } from "~/features/partner-inbox/api";
 import type { Invite } from "~/features/partner-inbox/lib/partner-view";
+import { InviteBanner } from "~/features/partners/components/InviteBanner";
 
 function InviteRow({ inv }: { inv: Invite }) {
   const { t } = useTranslation();
@@ -52,7 +53,15 @@ export function PartnerInviteBand() {
     staleTime: 30_000,
   });
   const invites = q.data?.invites ?? [];
-  if (invites.length === 0) return null;
+  return (
+    <>
+      <InviteBanner />
+      {invites.length > 0 && <HdInvites invites={invites} />}
+    </>
+  );
+}
+
+function HdInvites({ invites }: { invites: Invite[] }) {
   return (
     <div className="mb-3 flex flex-col gap-2">
       {invites.map((i) => (

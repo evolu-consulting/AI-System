@@ -1563,7 +1563,10 @@
     "esign": {
       "title": "E-sign settings",
       "default": "Default",
-      "provider": "Provider",
+      "provider": "Sign via",
+      "providerPick": "Pick how to sign",
+      "providerUpload": "Upload the signed copy (no e-signature)",
+      "signersPick": "Pick signers",
       "order": "Signing order",
       "orders": {
         "parallel": "In parallel",
@@ -1574,7 +1577,6 @@
       "no": "No",
       "due": "Due (days)",
       "remind": "Remind every (hours)",
-      "defaultSigners": "Leave empty: uses the Contract signers group ({{name}}, {{count}} people)",
       "signers": "Company signers (max {{max}})",
       "group": "Department",
       "packOff": "This company has not turned on E-sign — turn it on under Company › Apps.",
@@ -1584,14 +1586,15 @@
       "disabled": "E-sign is not enabled for this company. Enable it in {{path:sign}}.",
       "err": {
         "ESIGN_DISABLED": "E-sign is not enabled.",
+        "NO_PROVIDER_SELECTED": "no \"Sign via\" yet — pick how to sign in the flow's Sign step",
+        "PROVIDER_NOT_ENABLED": "This provider is not turned on for the company — turn it on in Settings › Connections, or pick another.",
         "PROVIDER_UNAVAILABLE": "This provider is not enabled for the company.",
         "SIGNER_NOT_IN_TENANT": "The signer is not in this company.",
         "NO_SIGNER": "This group has no usable signer.",
-        "NO_SIGNER_SELECTED": "no signer yet — pick a signer in the step, or set the Contract signers group in Settings › Signing & partners",
+        "NO_SIGNER_SELECTED": "no signer yet — pick the company signer in the Sign step of the flow",
         "DIRECTORY_UNAVAILABLE": "Could not check the directory, try again later."
       },
       "signWith": "Sign with: {{name}}",
-      "signChooses": "How to sign: the signer chooses when signing",
       "noProvider": "no provider chosen",
       "change": "Change in {{path:sign}}"
     },
@@ -1616,7 +1619,14 @@
     "add": "Add step",
     "moreActions": "More actions",
     "scheduleDays": "Days (N)",
-    "scheduleDaysRange": "Enter a number of days from {{min}} to {{max}}.",
+    "scheduleDaysRange": "Enter a number of days between {{min}} and {{max}}.",
+    "receive": {
+      "important": "Important from (million VND)",
+      "critical": "Very important from (million VND)",
+      "owner": "Owner of received contracts",
+      "ownerNone": "Not set — company admin handles them",
+      "range": "The «Very important» threshold must be higher than «Important»."
+    },
     "testRun": {
       "button": "Test run",
       "title": "Test run · {{name}}",

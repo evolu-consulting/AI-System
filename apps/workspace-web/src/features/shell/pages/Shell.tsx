@@ -1,11 +1,12 @@
 // PK-FR-10 · TF5 · khung app trong `_authed`: sidebar · header · nội dung · khoang phải (trợ lý lazy) · thanh dưới (điện thoại) ·
 // nút nổi "Mở trợ lý AI" · sheet ở điện thoại. Layout từ mgmt-app Shell.tsx; quyền (`write`/`owner`) do PackFrame truyền vào.
+
+import { useUnreadTotal } from "@ai/messages-web/hooks/use-unread";
 import { Outlet } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconRobot } from "~/components/icons";
 import { assistantVisible } from "~/features/assistant/lib/chat.rules";
 import { logout } from "~/features/auth/api";
-import { useUnreadTotal } from "~/features/messages/hooks/use-unread";
 import { SettingsDialogLazy } from "~/features/settings/components/SettingsDialogLazy";
 import { useBrandSync } from "~/features/settings/hooks/use-settings";
 import { cn } from "~/lib/utils";

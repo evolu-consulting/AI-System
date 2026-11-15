@@ -16,6 +16,7 @@ import type { PackRunsBridge, PartnerMailboxPort } from "../../kit/public";
 import { signSessionErrorOf } from "../domain/sign-session.rules";
 import { onSignSessions, receiveInbox } from "../partner-mailbox.mount";
 import { type SignSessionRepo, signSessionRepo } from "./sign-session.repo";
+import { receiveFlowFixture } from "./test/receive-flow.fixture";
 
 let o: Sql;
 let db: Db;
@@ -104,8 +105,8 @@ beforeAll(async () => {
   await o`update admin.tenants set legal_name = 'Công ty A' where id = ${A}`;
   await o`update admin.tenants set legal_name = 'Công ty B' where id = ${B}`;
   await o`insert into hub.partner_links (from_tenant, to_tenant, requested_at, accepted_at) values (${A}, ${B}, now(), now())`;
-  // P2 · bên nhận có nhóm «Người ký HĐ» (không có ⇒ đề nghị tự về xử lý bình thường)
-  await o`insert into contracts.partner_settings (tenant_id, signer_group_id) values (${B}, gen_random_uuid())`;
+  // P2 · bên nhận có quy trình Nhận HĐ với bước Ký (không có ⇒ đề nghị tự về xử lý bình thường)
+  await receiveFlowFixture(o, B, { signers: `group:${crypto.randomUUID()}` }); // CR-146b · người ký = bước Ký của quy trình Nhận HĐ
   db = connectDb(urls().hubApi, 4);
 }, 60_000);
 afterAll(async () => {

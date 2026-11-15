@@ -1,9 +1,10 @@
 // PK-FR-10 · TF5 · khoang phải: cạnh trái kéo được (280–560, nhớ độ rộng), ruột trợ lý nạp lazy; góp ý (S14) dùng chung khoang (khung dùng chung web-kit).
+
+import { useUnreadTotal } from "@ai/messages-web/hooks/use-unread";
 import { FeedbackPanel } from "@ai/web-kit/ui/FeedbackPanel";
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "~/components/ui/skeleton";
-import { useUnreadTotal } from "~/features/messages/hooks/use-unread";
 import { useShellPacks } from "~/shell/use-shell-packs";
 import type { DockMode, DockPanel } from "../hooks/use-dock";
 import { clampWidth } from "../lib/stored";

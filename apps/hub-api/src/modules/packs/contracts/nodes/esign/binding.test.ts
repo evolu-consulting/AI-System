@@ -31,7 +31,7 @@ describe("binding contracts.esign", () => {
     expect(issuesOf(bad).map((i) => i.code)).toEqual(["MOD_PORT_MISMATCH"]);
   });
 
-  it("def đã lưu còn `provider` + chuỗi người ký ⇒ nạp, kiểm và lưu lại được (provider bị bỏ)", async () => {
+  it("def đã lưu còn `provider` + chuỗi người ký ⇒ nạp, kiểm và lưu lại được (CR-146b: provider giữ lại)", async () => {
     const U = "0190a3c4-1111-7000-8000-000000000001";
     const stored = {
       provider: "docusign",
@@ -43,6 +43,7 @@ describe("binding contracts.esign", () => {
     const parsed = esignArgsSchema.safeParse(stored);
     expect(parsed.success).toBe(true);
     expect(parsed.data).toEqual({
+      provider: "docusign",
       company_signers: [{ kind: "user", id: U }],
       order: "parallel",
       due_days: 3,
@@ -61,7 +62,12 @@ describe("binding contracts.esign", () => {
     expect(await v?.("t1", { index: 0, node: "contracts.esign", executor })).toEqual([]);
     expect(seen).toEqual([parsed.data]);
     const saved = encodeEsignNodeArgs(parsed.data as EsignNodeConfig);
-    expect(saved).toEqual({ company_signers: `user:${U}`, order: "parallel", due_days: 3 });
+    expect(saved).toEqual({
+      provider: "docusign",
+      company_signers: `user:${U}`,
+      order: "parallel",
+      due_days: 3,
+    });
     expect(esignArgsSchema.safeParse(saved).success).toBe(true);
   });
 });

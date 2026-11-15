@@ -1,5 +1,125 @@
 {
   "contracts": {
+    "kinds": {
+      "pick": "Select…",
+      "title": {
+        "franchise": "Franchise details",
+        "cooperation": "Cooperation details"
+      },
+      "tab": {
+        "general": "General",
+        "fee": "Fees",
+        "legal": "Legal"
+      },
+      "unsureHint": "Yellow-bordered fields are where the AI was unsure. Please check them.",
+      "badNumbers": "Invalid number in: {{list}}",
+      "f": {
+        "role": "Our company is the",
+        "brand": "Licensed brand",
+        "territory": "Territory",
+        "exclusive": "Exclusive in the territory",
+        "initial_fee": "Initial franchise fee (VND)",
+        "fee_basis": "Recurring fee based on",
+        "fee_pct": "Rate (% of revenue)",
+        "fee_fixed": "Amount per period (VND)",
+        "period": "Billing period",
+        "ad_fee_pct": "Advertising fee (% of revenue, if any)",
+        "deposit": "Deposit (VND, if any)",
+        "foreign_franchisor": "Franchisor is overseas",
+        "moit_registered": "Registered with the Ministry of Industry and Trade",
+        "moit_registered_on": "Registration date",
+        "scope": "Goal and scope of cooperation",
+        "our_contribution": "Our contribution",
+        "partner_contribution": "Partner's contribution",
+        "split_basis": "How to split",
+        "our_share_pct": "Our share (%)",
+        "settle_period": "Settlement period"
+      },
+      "opt": {
+        "role": {
+          "franchisor": "Franchisor",
+          "franchisee": "Franchisee"
+        },
+        "fee_basis": {
+          "revenue_pct": "% of revenue",
+          "fixed": "Fixed amount"
+        },
+        "period": {
+          "month": "Monthly",
+          "quarter": "Quarterly"
+        },
+        "split_basis": {
+          "profit": "% of profit",
+          "revenue": "% of revenue",
+          "none": "No money split (memo of cooperation)"
+        },
+        "settle_period": {
+          "month": "Monthly",
+          "quarter": "Quarterly",
+          "year": "Yearly"
+        }
+      },
+      "banner": {
+        "split": "Milestones are created automatically: settlement and payout each period, renewal reminder. Counts toward revenue.",
+        "nosplit": "Memo of cooperation: renewal reminder only, does not count toward revenue."
+      },
+      "sum": {
+        "loading": "Loading…",
+        "error": "Could not load period details. Reload the page to try again.",
+        "title": {
+          "franchise": "Franchise",
+          "cooperation": "Cooperation"
+        },
+        "recordFranchise": "Record period revenue…",
+        "recordCoop": "Record period settlement…",
+        "initialFee": "Initial fee",
+        "recurringFee": "Recurring fee",
+        "inForce": "Remaining term",
+        "feeFixed": "{{v}} / {{per}}",
+        "feePct": "{{v}}% of revenue / {{per}}",
+        "monthsLeft": "{{n}} months",
+        "splitBasis": "How to split",
+        "shares": "Us / partner",
+        "settlePeriod": "Settlement period",
+        "noSplit": "Memo of cooperation: no money split, renewal reminder only.",
+        "notRecorded": "Not recorded",
+        "fee": "Fee: {{v}}",
+        "ourShare": "Us {{our}} VND · partner {{partner}} VND",
+        "per": {
+          "month": "month",
+          "quarter": "quarter",
+          "year": "year"
+        },
+        "basis": {
+          "profit": "% of profit",
+          "revenue": "% of revenue",
+          "none": "No split"
+        }
+      },
+      "period": {
+        "titleFranchise": "Revenue of the period",
+        "titleCoop": "Settle the period",
+        "hintFranchise": "Enter the revenue the partner reported; this period's fee is calculated below.",
+        "hintCoop": "Enter the period figure; our share and the partner's share are calculated below.",
+        "period": "Period",
+        "figureRevenue": "Revenue (VND)",
+        "figureProfit": "Shared profit (VND)",
+        "bad": "Invalid amount.",
+        "previewFranchise": "Fee for this period: {{fee}} VND",
+        "previewCoop": "Our share {{our}} VND · partner's share {{partner}} VND",
+        "later": "Later",
+        "saveFranchise": "Save and create the fee milestone",
+        "saveCoop": "Save settlement",
+        "savedFranchise": "Period revenue recorded",
+        "savedCoop": "Period settlement recorded"
+      },
+      "err": {
+        "incomplete": "Some details of this contract type are missing. Red fields need filling in.",
+        "locked": "Can only be edited while the contract is a draft.",
+        "periodLocked": "This period's payment is already confirmed and cannot be recorded again.",
+        "notApplicable": "This period has no report or settlement milestone."
+      }
+    },
     "cform": {
       "newTitle": "Add contract",
       "infoTitle": "Contract details",
@@ -9,14 +129,23 @@
       "saveChanges": "Save changes",
       "saved": "Contract saved",
       "deal": "Contract type",
-      "dealName": { "buy": "Buy", "sell": "Sell", "referral": "Referral" },
+      "dealName": {
+        "buy": "Buy",
+        "sell": "Sell",
+        "referral": "Referral",
+        "franchise": "Franchise",
+        "cooperation": "Cooperation"
+      },
       "dealHint": {
         "buy": "We buy from a supplier",
         "sell": "We sell to a customer",
-        "referral": "We earn a commission"
+        "referral": "We earn a commission",
+        "franchise": "License the brand, collect fees",
+        "cooperation": "Pool resources and share results"
       },
       "dealLocked": "The contract type cannot change after saving; create a new contract to change it.",
       "partnerRole": {
+        "partner": "Partner",
         "supplier": "Supplier",
         "customer": "Customer",
         "payer": "Commission payer"

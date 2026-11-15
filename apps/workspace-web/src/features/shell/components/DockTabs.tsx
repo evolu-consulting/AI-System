@@ -1,6 +1,7 @@
 // CR-132 · W3 · tab «Trợ lý AI | Tin nhắn» ở đầu khoang phải; tab Tin nhắn có chấm đỏ + số chưa đọc.
+
+import { UnreadBadge } from "@ai/messages-web/components/UnreadBadge";
 import { useTranslation } from "react-i18next";
-import { UnreadBadge } from "~/features/messages/components/UnreadBadge";
 import { cn } from "~/lib/utils";
 import type { DockTab } from "../hooks/use-dock";
 

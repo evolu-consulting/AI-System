@@ -16,11 +16,12 @@ import {
 import { type Draft, draftErrors, emptyDraft, toCreateInput } from "../domain/compose";
 import { DEMO_PRODUCTS } from "../domain/demo-products";
 import { initials } from "../domain/format";
-import { formatSize } from "../domain/media";
 import { defaultPostType, mentionScope } from "../domain/mention";
 import { defaultAudience } from "../domain/visibility";
 import { numLocale, t } from "../i18n";
 import { CategoryDialog } from "./CategoryDialog";
+import { CompanyPicker } from "./CompanyPicker";
+import { DraftAttachments } from "./DraftAttachments";
 import { DraftFields } from "./DraftFields";
 import {
   IconAttach,
@@ -29,9 +30,8 @@ import {
   IconTypeBuy,
   IconTypeNote,
   IconTypeSell,
-  IconX,
 } from "./icons";
-import { MentionPeople } from "./MentionPeople";
+import { MentionChips, MentionPicker } from "./MentionPicker";
 
 const TYPE_ICON = { sell: IconTypeSell, buy: IconTypeBuy, note: IconTypeNote } as const;
 
@@ -43,11 +43,14 @@ function AudiencePicker({
   draft,
   set,
   partners,
+  partnersMore,
   cats,
 }: {
   draft: Draft;
   set: (d: Draft) => void;
   partners: PartnerOrg[];
+  /** #269: danh sách mới là trang đầu (còn công ty khác) ⇒ xem trước không đếm được đủ. */
+  partnersMore: boolean;
   cats: string[];
 }) {
   const aud = draft.audience ?? defaultAudience(draft.type);
@@ -77,23 +80,18 @@ function AudiencePicker({
         </div>
       )}
       {aud.mode === "companies" && (
-        <div className="chips">
-          {partners
-            .filter((p) => !p.left)
-            .map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={aud.companies.includes(p.id) ? "chip on" : "chip"}
-                onClick={() => upd({ companies: toggle(aud.companies, p.id) })}
-              >
-                {p.name}
-              </button>
-            ))}
-        </div>
+        <CompanyPicker
+          selected={aud.companies}
+          onToggle={(id) => upd({ companies: toggle(aud.companies, id) })}
+        />
       )}
       <div className="audprev" data-testid="audience-preview">
-        {audienceError(aud) ?? previewText(recipients)}
+        {audienceError(aud) ??
+          (partnersMore
+            ? aud.mode === "companies"
+              ? audienceSummary(aud, draft.type)
+              : t("community.audience.previewPartial")
+            : previewText(recipients))}
       </div>
     </div>
   );
@@ -111,6 +109,7 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
   const [draft, setDraft] = useState<Draft>(() => emptyDraft(defaultPostType(types)));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [partners, setPartners] = useState<PartnerOrg[]>([]);
+  const [partnersMore, setPartnersMore] = useState(false);
   const [cats, setCats] = useState<string[]>([]);
   const [prefill, setPrefill] = useState("");
   const [busy, setBusy] = useState(false);
@@ -124,7 +123,13 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
   };
 
   useEffect(() => {
-    api.listPartners().then(setPartners, () => undefined);
+    api.listPartners({ limit: 50, offset: 0 }).then(
+      (r) => {
+        setPartners(r);
+        setPartnersMore(r.length === 50);
+      },
+      () => undefined,
+    );
     api.listCats().then(setCats, () => undefined);
   }, [api]);
 
@@ -204,15 +209,6 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
 
   return (
     <div className="card pad composer feedcomposer" data-testid="composer">
-      <button
-        type="button"
-        className="iconbtn composer-collapse"
-        data-testid="composer-collapse"
-        aria-label={t("community.composer.collapse")}
-        onClick={() => setOpen(false)}
-      >
-        <IconChevron size={16} />
-      </button>
       {isHostViewer && prefill && (
         <div className="prefill">
           <IconLock size={14} />
@@ -253,6 +249,15 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
                 ))}
               </select>
             )}
+            <button
+              type="button"
+              className="iconbtn composer-collapse"
+              data-testid="composer-collapse"
+              aria-label={t("community.composer.collapse")}
+              onClick={() => setOpen(false)}
+            >
+              <IconChevron size={16} />
+            </button>
           </div>
           <label htmlFor="draft-body" style={{ position: "absolute", left: -9999 }}>
             {t("community.composer.bodyLabel")}
@@ -267,32 +272,15 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
           {draft.type !== "note" && (
             <DraftFields draft={draft} set={setDraft} errors={errors} cats={cats} />
           )}
-          <MentionPeople
+          <MentionChips
             mentions={draft.mentions}
             onChange={(mentions) => setDraft({ ...draft, mentions })}
-            scope={mentionScope(draft)}
           />
-          {draft.media.length > 0 && (
-            <div className="attachrow">
-              {draft.media.map((m) => (
-                <span className="attach" key={m.id}>
-                  {m.label}
-                  {m.size !== undefined && (
-                    <i className="fsize">{formatSize(m.size, numLocale())}</i>
-                  )}
-                  <button
-                    type="button"
-                    aria-label={t("community.composer.removeAttachment")}
-                    onClick={() =>
-                      setDraft({ ...draft, media: draft.media.filter((x) => x.id !== m.id) })
-                    }
-                  >
-                    <IconX size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
+          <DraftAttachments
+            media={draft.media}
+            busy={uploading}
+            onChange={(media) => setDraft({ ...draft, media })}
+          />
           <div className="cbar">
             <input
               ref={fileInput}
@@ -313,6 +301,11 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
             >
               <IconAttach size={18} />
             </button>
+            <MentionPicker
+              mentions={draft.mentions}
+              onChange={(mentions) => setDraft({ ...draft, mentions })}
+              scope={mentionScope(draft)}
+            />
             {isHostViewer && (
               <button
                 type="button"
@@ -337,7 +330,13 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
             </button>
           </div>
           {isHostViewer && audOpen && (
-            <AudiencePicker draft={draft} set={setDraft} partners={partners} cats={cats} />
+            <AudiencePicker
+              draft={draft}
+              set={setDraft}
+              partners={partners}
+              partnersMore={partnersMore}
+              cats={cats}
+            />
           )}
           {errors.audience && <div className="ferr">{errors.audience}</div>}
         </div>

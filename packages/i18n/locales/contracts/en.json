@@ -1,5 +1,12 @@
 {
   "contracts": {
+    "paging": {
+      "search": "Search by name",
+      "more": "Show more",
+      "loading": "Loading…",
+      "none": "No results",
+      "error": "Could not load the list"
+    },
     "plink": {
       "title": "Link products to contract lines",
       "desc": "The contract is about to be confirmed. For each line: use an existing product or create a new one. Products are only created/linked when you confirm.",
@@ -217,7 +224,6 @@
       "rows": "{{n}} rows",
       "perPage": "Per page",
       "pageSizeAria": "Rows per page",
-      "prev": "Previous page",
       "next": "Next page"
     },
     "nav": {
@@ -748,10 +754,12 @@
       }
     },
     "review": {
+      "lead": { "number": "Contract no.", "type": "Type", "partner": "Partner" },
       "back": "← Contracts",
       "reading": "Reading the contract…",
       "checkLead": "Check the fields, then confirm.",
-      "viewFile": "📄 View original contract",
+      "viewFile": "View original contract",
+      "moreChoices": "More options",
       "orig": {
         "title": "Original contract",
         "main": "Original contract",
@@ -775,11 +783,24 @@
       "failedTitle": "This contract could not be read.",
       "failedBody": "AI could not extract information from the file (it may be blurry, a scan, or an unusual format). You can review the original file, delete it and upload a clearer copy, or enter it manually.",
       "manual": "Enter manually",
+      "manualStarted": "Switched to manual entry. Open the original file to compare.",
+      "manualHint": "Fill the empty fields from the original file. Tick the box below before Save or Submit.",
+      "manualCheck": "I have checked this against the original file",
+      "manualDirty": "Unsaved edits — save the draft, then tick again.",
+      "manualBlockWhy": "Tick “I have checked this against the original file” (after saving the draft if you just edited) to continue.",
+      "replaceFile": "Upload another file",
+      "replaceStarted": "File replaced. AI is reading it again.",
+      "manualTag": {
+        "pending": "Manual entry · needs checking",
+        "done": "Manual entry · checked",
+        "doneBy": "Manual entry · checked by {{name}}"
+      },
       "failReason": {
         "unreadable": "The file is damaged or cannot be opened. Upload another copy, or press “Enter manually”.",
         "tooLarge": "The file is too large for AI to read. Split it, or press “Enter manually”.",
         "unsupported": "This file format cannot be read automatically. Upload a PDF, DOCX or JPG/PNG image, or press “Enter manually”.",
-        "cap": "Your company has used all AI reads for today. Try again tomorrow, or press “Enter manually”."
+        "cap": "Your company has used all AI reads for today. Try again tomorrow, or press “Enter manually”.",
+        "timeout": "AI took too long to read this file. The file is kept — press “Try again”, or press “Enter manually” to fill in the details yourself."
       },
       "toList": "Back to list"
     },
@@ -826,6 +847,7 @@
         "buy": "Purchases",
         "sell": "Sales",
         "noLots": "No lots received yet.",
+        "more": "Showing the newest {{shown}} of {{total}} rows.",
         "noSales": "Nothing sold yet.",
         "lot": {
           "date": "Received",
@@ -870,6 +892,7 @@
       "open": "Create",
       "mineTitle": "Sent by me",
       "mineEmpty": "You have not sent any request yet.",
+      "mineMore": "Load more",
       "mineWaitingFor": "Waiting for {{who}}",
       "mine": {
         "waiting": "Waiting for approval",

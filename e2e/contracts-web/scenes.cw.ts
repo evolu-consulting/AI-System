@@ -71,7 +71,7 @@ const FAILED_ID = contract.id.replace(/1$/, "2");
 const reviewBoxes = {
   heading: "main h1",
   save: 'main button:text-is("Gửi duyệt")',
-  file: 'main a:has-text("Xem hợp đồng gốc")',
+  file: 'main a[aria-label="Xem hợp đồng gốc"]',
   firstField: "main input >> nth=0",
   quote: "main span.italic >> nth=0",
   items: "main table",
@@ -117,7 +117,7 @@ const HD2_SCENES: Scene[] = [
     text: ["main"],
     boxes: {
       heading: "main h1",
-      manual: 'main a:text-is("Nhập tay")',
+      manual: 'main button:text-is("Nhập tay")',
       panel: "main section >> nth=0",
     },
     mask: [],

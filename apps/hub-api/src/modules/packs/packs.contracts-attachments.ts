@@ -4,6 +4,7 @@ import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
 import type { Redis } from "../../lib/redis";
 import { recordRunFiles } from "../attachments/public";
+import type { ConnectModuleDeps } from "./contracts/connect/connect.mount";
 import { contractFilesModule } from "./contracts/contract-files.mount";
 import { CONTRACTS_KEY } from "./contracts/contracts.mount";
 import { messagesModule } from "./contracts/messages/messages.mount";
@@ -13,7 +14,15 @@ import { fileboxClients, type PackFb } from "./packs.filebox";
 export function mountContractAttachments<E extends Env>(
   app: Hono<E>,
   base: string,
-  d: { db: Db; view: PackAccessView; fb: PackFb | null; redis?: Redis | undefined },
+  d: {
+    db: Db;
+    view: PackAccessView;
+    fb: PackFb | null;
+    redis?: Redis | undefined;
+    /** CR-169 · bật vòng nền dọn tệp tin nhắn chưa gắn (server); test gọi thẳng `partnerFileSweep`. */
+    worker?: boolean | undefined;
+    signal?: AbortSignal | undefined;
+  },
 ): void {
   const { db, view, fb } = d;
   if (fb) {
@@ -21,5 +30,34 @@ export function mountContractAttachments<E extends Env>(
       recordRunFiles(db, w, { packKey: CONTRACTS_KEY, recordId });
     app.route(base, contractFilesModule(db, view, fileboxClients(fb), stepFiles)); // CR-133 (FileBox vắng ⇒ không gắn)
   }
-  app.route(base, messagesModule(db, view, { redis: d.redis, filebox: fb && fileboxClients(fb) })); // CR-132
+  app.route(
+    base,
+    messagesModule(db, view, {
+      redis: d.redis,
+      filebox: fb && fileboxClients(fb),
+      worker: d.worker,
+      signal: d.signal,
+    }),
+  ); // CR-132/169
+}
+
+/** CR-161/169 · phụ thuộc module kết nối + tin nhắn: Redis (`cc.link`/`msg.*`), FileBox (tệp tin nhắn), vòng nền dọn tệp (cùng cờ với vòng nhắc hạn). */
+export function connectDeps(
+  d: {
+    redis?: Redis | undefined;
+    appEnv?: string | undefined;
+    signal?: AbortSignal | undefined;
+    packs?: { contractsRemind?: { worker?: boolean | undefined } | undefined } | undefined;
+  },
+  fb: PackFb | null,
+): ConnectModuleDeps {
+  const env = d.appEnv ?? process.env.APP_ENV;
+  return {
+    redis: d.redis,
+    filebox: fb && fileboxClients(fb),
+    worker:
+      d.packs?.contractsRemind?.worker ??
+      ((env === "development" || env === "production") && process.env.CONTRACTS_REMIND !== "off"),
+    signal: d.signal,
+  };
 }

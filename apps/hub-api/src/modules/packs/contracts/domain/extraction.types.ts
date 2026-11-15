@@ -25,7 +25,9 @@ export type AiUnsureKey =
   | "payment_terms"
   | "delivery_terms"
   | "warranty"
-  | "penalty";
+  | "penalty"
+  /** CR-152: trường riêng Nhượng quyền / Hợp tác AI chưa chắc (`terms.<khoá>`). */
+  | `terms.${string}`;
 
 export type AiSummary = {
   main: string;
@@ -77,7 +79,7 @@ export type PenaltyTermInput = {
 };
 
 export type AiRead = {
-  deal: "referral" | "buy" | "sell" | null;
+  deal: "referral" | "buy" | "sell" | "franchise" | "cooperation" | null;
   unsure: AiUnsureKey[];
   summary: AiSummary | null;
   milestones: (AiMilestone & { verified: boolean })[];

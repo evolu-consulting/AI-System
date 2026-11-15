@@ -11,6 +11,8 @@ import { DirectoryService } from "./modules/directory/directory.service";
 import { meStreamRoutes } from "./modules/me-stream/me-stream.routes";
 import { MeStreamConns } from "./modules/me-stream/me-stream.session";
 import { UserStreamReader } from "./modules/me-stream/user-stream-reader";
+import { peopleRoutes } from "./modules/people/people.routes";
+import { PeopleService } from "./modules/people/people.service";
 import { type RoomPosterDeps, RoomRunPoster } from "./modules/rooms/agents/room-post";
 import { type RoomRunDeps, RoomRunService } from "./modules/rooms/agents/room-run.service";
 import { RoomsService } from "./modules/rooms/manage/rooms.service";
@@ -20,7 +22,7 @@ import { roomsRoutes } from "./modules/rooms/rooms.routes";
 import type { CancelService } from "./modules/runs/close/cancel.service";
 
 /** Gốc route X2a cần JWT (`app.ts` gắn `requireAuth` cho từng gốc). */
-export const X2A_PROTECTED_PREFIXES = ["/directory", "/rooms", "/me"] as const;
+export const X2A_PROTECTED_PREFIXES = ["/directory", "/rooms", "/me", "/people"] as const;
 
 /** Nhịp `: ping` của `/me/stream` khi deps không truyền `pingMs` (plan §7). */
 export const ME_STREAM_PING_MS_DEFAULT = 15_000;
@@ -69,6 +71,7 @@ export function roomPoster(d: RoomPosterDeps & { signal?: AbortSignal }): RoomRu
 /** Mount route X2a (gọi sau khi đã gắn `requireAuth`). */
 export function mountX2a<E extends Env>(app: Hono<E>, deps: X2aDeps): X2aMounted {
   app.route("/directory", directoryRoutes(new DirectoryService(deps.db)));
+  app.route("/people", peopleRoutes(new PeopleService(deps.db))); // CR-147b
   const rooms = new RoomsService(deps);
   const messages = new MessagesService(rooms);
   if (deps.rooms !== false) {

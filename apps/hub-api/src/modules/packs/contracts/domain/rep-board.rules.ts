@@ -58,7 +58,13 @@ export function scoreCells(rows: Rows, cfg: Resolved): Map<string, CellScore[]> 
   return new Map([...partyCells(rows, cfg)].map(([k, v]) => [k, v.cells]));
 }
 
-const GROUP_ORDER: Record<RepGroup, number> = { service: 0, goods: 1, referral: 2 };
+const GROUP_ORDER: Record<RepGroup, number> = {
+  service: 0,
+  goods: 1,
+  referral: 2,
+  franchise: 3,
+  cooperation: 4,
+};
 const groupOut = (c: CellScore): GroupOut => ({
   group: c.group,
   score: c.score,

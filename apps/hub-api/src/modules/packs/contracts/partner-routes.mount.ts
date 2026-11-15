@@ -13,8 +13,6 @@ import {
 } from "@ai/contracts/pack-contracts";
 import { CONTRACTS_PARTNER_CONFIRM_FEATURE as PARTNER_FEATURE } from "@ai/contracts/tenants";
 import type { Db, Tx } from "@ai/db";
-import { withHubScope } from "@ai/db/hub-scope";
-import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../lib/errors";
@@ -31,6 +29,7 @@ import {
 } from "../kit/public";
 import { decideInbox, InboxReplyClosed } from "./adapters/partner-inbox-decision.repo";
 import { type PartnerUiRepo, partnerUiRepo } from "./adapters/partner-ui.repo";
+import { type ConnectModuleDeps, connectModule } from "./connect/connect.mount";
 import { signSessionRoutes } from "./sign-session.routes";
 
 const KEY = "contracts";
@@ -53,19 +52,6 @@ const RecordBody = z.strictObject({
     .max(20)
     .default([]),
 });
-const SettingsBody = z
-  .strictObject({
-    important_min: z.number().int().min(0).max(1_000_000_000_000),
-    critical_min: z.number().int().min(1).max(1_000_000_000_000),
-    owner_user_id: z.uuid().nullable(),
-    /** CR-127 · P2 · nhóm «Người ký HĐ» (vắng ⇒ giữ nguyên; null ⇒ bỏ). Phải là nhóm của CHÍNH công ty. */
-    signer_group_id: z.uuid().nullable().optional(),
-  })
-  .refine(
-    (s) => s.critical_min > s.important_min,
-    "Ngưỡng «Rất quan trọng» phải lớn hơn ngưỡng «Quan trọng».",
-  );
-
 const pgCode = (e: unknown): string | undefined =>
   (e as { code?: string; cause?: { code?: string } })?.code ??
   (e as { cause?: { code?: string } })?.cause?.code;
@@ -157,40 +143,11 @@ function inboxDecisionRoute(r: PartnerRouter, view: PackAccessView, uow: Partner
   });
 }
 
-async function groupOfTenant(db: Db, tenantId: string, groupId: string): Promise<boolean> {
-  const rows = await withHubScope(db, { kind: "system" }, (tx) =>
-    tx.execute<{ ok: boolean }>(
-      sql`select exists (select 1 from admin.groups g where g.id = ${groupId}::uuid and g.tenant_id = ${tenantId}::uuid) as ok`,
-    ),
-  );
-  return rows[0]?.ok === true;
-}
-
-function settingsRoutes(r: PartnerRouter, view: PackAccessView, uow: PartnerUow, db: Db): void {
-  r.get("/partner/settings", packGuard(view, KEY, "admin"), async (c) =>
-    c.json(await uow.tenant(who(c), (x) => x.ui.settings()), 200),
-  );
-  r.put("/partner/settings", packGuard(view, KEY, "admin"), async (c) => {
-    const b = parseWith(SettingsBody, await readJson(c));
-    // CR-127 · P2 · nhóm «Người ký HĐ» phải thuộc CHÍNH công ty (gói không đọc `admin.*` ⇒ kiểm ở scope hub, lọc tenant tường minh).
-    if (b.signer_group_id && !(await groupOfTenant(db, c.get("user").tenantId, b.signer_group_id)))
-      throw new AppError(
-        "SIGNER_GROUP_INVALID",
-        422,
-        "Nhóm «Người ký HĐ» phải là nhóm của công ty bạn — chọn lại trong danh sách.",
-      );
-    const saved = await uow.tenant(who(c), (x) => x.ui.saveSettings(b, c.get("user").userId));
-    if (!saved)
-      throw new AppError(
-        "PARTNER_OWNER_INVALID",
-        422,
-        "Người phụ trách phải là thành viên đang dùng của công ty — chọn lại trong danh sách.",
-      );
-    return c.json({ ok: true }, 200);
-  });
-}
-
-export function partnerModule(db: Db, view: PackAccessView): Hono<PackGuardVars> {
+export function partnerModule(
+  db: Db,
+  view: PackAccessView,
+  deps: ConnectModuleDeps = {},
+): Hono<PackGuardVars> {
   const uow: PartnerUow = createPackUow(db, KEY, (tx: Tx, t: string) => ({
     ui: partnerUiRepo(tx, t),
     tx,
@@ -225,8 +182,8 @@ export function partnerModule(db: Db, view: PackAccessView): Hono<PackGuardVars>
     return c.json({ ok: true }, 200);
   });
   sendRoutes(r, view, uow);
-  settingsRoutes(r, view, uow, db);
   inboxDecisionRoute(r, view, uow);
   r.route("/", signSessionRoutes(db, view, uow)); // CR-127 · P2 · phiên ký chung
+  r.route("/", connectModule(db, view, deps)); // CR-161 · kết nối hai công ty + bài công khai (`/connect/*`)
   return r;
 }

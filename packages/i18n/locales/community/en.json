@@ -75,6 +75,7 @@
       "deliverTo": "Deliver to"
     },
     "feed": {
+      "more": "Show more posts",
       "filterAria": "Filter posts",
       "tabs": {
         "all": "All",
@@ -90,6 +91,7 @@
         "areaAll": "Area: all",
         "author": "Posted by",
         "authorAll": "Posted by: all",
+        "authorSearch": "Search company",
         "host": "Host",
         "clear": "Clear filters"
       },
@@ -124,6 +126,10 @@
       "previewMore": " and {{n}} more",
       "preview": "Visible to {{n}} companies: {{names}}{{more}}",
       "errorPickOne": "Select at least one company",
+      "companySearch": "Find a company",
+      "companyMore": "Show more companies",
+      "companyNone": "No matching company",
+      "previewPartial": "Preview covers the loaded list — more companies exist",
       "choose": "Choose audience",
       "catsPick": "Choose categories",
       "catsTitle": "Choose categories",
@@ -140,6 +146,8 @@
       "prefillBanner": "Prefilled from Sổ Hợp Tác · {{product}}",
       "prefillOption": "Sample suggestions…",
       "typeLabel": "Post type",
+      "uploading": "Uploading",
+      "retry": "Retry",
       "removeAttachment": "Remove attachment",
       "image": "Photo",
       "video": "Video",
@@ -179,6 +187,12 @@
       "cat": "Category",
       "catPlaceholder": "Category…",
       "mentionLabel": "Mention people",
+      "mentionSearch": "Search by name",
+      "mentionScopeHint": "Only people who can see this post · up to {{max}}.",
+      "mentionFull": "You have picked {{max}} people. Remove one to pick another.",
+      "mentionError": "Could not load the list, please try again.",
+      "mentionMore": "Show more people",
+      "mentionDone": "Done ({{count}} people)",
       "mentionPlaceholder": "Type a name to mention…",
       "mentionEmpty": "No one to mention",
       "mentionRemove": "Remove {{name}}",
@@ -191,6 +205,8 @@
       "errNeededBy": "Pick the needed-by date"
     },
     "post": {
+      "view": "View",
+      "downloadOf": "Download {{name}}",
       "download": "Download",
       "imageViewer": "Image viewer",
       "imagePrev": "Previous image",
@@ -235,7 +251,7 @@
       "note": "All comments appear in one shared list under the post. Type @ to mention a partner company.",
       "notePartner": "You see the host's comments, your company's comments and comments that mention you.",
       "empty": "No comments yet.",
-      "more": "Show more comments",
+      "more": "Show {{count}} more comments",
       "writeComment": "Write a comment",
       "writeCommentPlaceholder": "Write a comment… type @ to mention a company",
       "send": "Send comment",
@@ -345,7 +361,8 @@
         "colCats": "Product groups",
         "colRep": "Reputation",
         "empty": "No partners yet.",
-        "left": "left"
+        "left": "left",
+        "more": "Show more"
       },
       "rep": {
         "good": "Good",
@@ -482,6 +499,7 @@
       "common": {
         "loadError": "Could not load the list. Check your connection, then press Reload.",
         "retry": "Reload",
+        "more": "Load more",
         "cancel": "Cancel",
         "reasonNeeded": "Enter a reason so the recipient knows what to do next.",
         "submitError": "Not sent yet. Check your connection and try again; what you typed is kept.",
@@ -620,6 +638,16 @@
     "me": {
       "company": "Company",
       "companyPage": "View company page",
+      "avatarChange": "Change photo",
+      "avatarRemove": "Remove photo",
+      "coverChange": "Change cover",
+      "coverRemove": "Remove cover",
+      "imgType": "Only JPG, PNG or WebP images",
+      "imgBig": "Image up to {{mb}} MB",
+      "imgFail": "Could not save the image, try again",
+      "jobTitle": "Job title",
+      "department": "Department",
+      "avatarAlt": "Profile photo",
       "role": {
         "host_admin": "Admin",
         "host_member": "Member",

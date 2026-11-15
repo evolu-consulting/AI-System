@@ -110,21 +110,21 @@ describe("viewer.caps.contracts + contractsUrl (COM-FR-43)", () => {
     const r = await call("hA", "/viewer");
     expect(r.status).toBe(200);
     const v = CommunityViewerSchema.parse(r.json);
-    expect(v.caps).toEqual({ contracts: true });
+    expect(v.caps).toMatchObject({ contracts: true });
     expect(v.contractsUrl).toBe(SHT);
   });
 
   it("[COM-FR-43] ADR-0044: mặt Bảng tin chỉ mở cho người có quyền gói contracts ⇒ thành viên chủ quản cũng caps.contracts true", async () => {
     const v = CommunityViewerSchema.parse((await call("hM", "/viewer")).json);
     expect(v.role).toBe("host_member");
-    expect(v.caps).toEqual({ contracts: true });
+    expect(v.caps).toMatchObject({ contracts: true });
     expect(v.contractsUrl).toBe(SHT);
   });
 
   it("[COM-FR-43] đối tác ⇒ caps false, contractsUrl null (I1)", async () => {
     const v = CommunityViewerSchema.parse((await call("s1a", "/viewer")).json);
     expect(v.role).toBe("partner");
-    expect(v.caps).toEqual({ contracts: false });
+    expect(v.caps).toMatchObject({ contracts: false });
     expect(v.contractsUrl).toBeNull();
   });
 });

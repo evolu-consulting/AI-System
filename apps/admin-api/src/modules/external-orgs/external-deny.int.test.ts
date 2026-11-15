@@ -60,6 +60,7 @@ describe("com-c2 · cổng trung tâm admin-api cho đối tác", () => {
     for (const [m, p] of [
       ["GET", "/admin/users"],
       ["GET", "/admin/org"],
+      ["PUT", "/admin/org/members/00000000-0000-4000-8000-000000000001/title"],
       ["GET", "/admin/groups"],
       ["GET", "/admin/audit"],
       ["GET", "/auth/feedback"],

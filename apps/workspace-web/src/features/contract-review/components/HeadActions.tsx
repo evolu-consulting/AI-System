@@ -44,8 +44,11 @@ export function HeadActions({
   onChanged,
   approval,
   canDelete,
+  reconcileBlock = false,
 }: {
   id: string;
+  /** CR-157b: HĐ nhập tay chưa tích đối chiếu (hoặc có sửa chưa lưu) ⇒ «Xác nhận & lưu» / Gửi duyệt tắt. */
+  reconcileBlock?: boolean;
   rule: HeadRule;
   approval: HeadApprovalActs;
   canDelete: boolean;
@@ -163,6 +166,8 @@ export function HeadActions({
       testId: "act-release",
     },
   };
+  const gated = (k: string | null) =>
+    reconcileBlock && (k === "approvalConfirm" || k === "pageConfirm" || k === "resubmit");
   const items: PopItem[] = acts.menu
     .filter((m) => m.key !== "delete")
     .map((m) => {
@@ -173,10 +178,13 @@ export function HeadActions({
         testId: a.testId,
         ...(a.attr ? { dataAttr: a.attr } : {}),
         ...(m.whyKey ? { disabled: true, why: t(m.whyKey) } : {}),
+        ...(gated(m.key) ? { disabled: true, why: t("contracts.review.manualBlockWhy") } : {}),
         onSelect: a.run,
       };
     });
   const main = acts.primary && acts.primary !== "delete" ? act[acts.primary] : null;
+  // Nút chính khoá (không Gửi duyệt được) ⇒ lý do hiện NGAY cạnh nút, không chỉ trong tooltip.
+  const primaryWhy = acts.primaryWhyKey ? t(acts.primaryWhyKey) : null;
   return (
     <>
       {main && (
@@ -185,7 +193,10 @@ export function HeadActions({
           size="sm"
           data-testid={main.testId}
           data-approval={main.attr}
-          disabled={off}
+          disabled={off || gated(acts.primary) || primaryWhy !== null}
+          title={
+            primaryWhy ?? (gated(acts.primary) ? t("contracts.review.manualBlockWhy") : undefined)
+          }
           onClick={main.run}
         >
           {approval.busy && main.attr === "approve"
@@ -193,6 +204,12 @@ export function HeadActions({
             : t(main.label)}
         </Btn>
       )}
+      {primaryWhy &&
+        !rule.submitBlocked && ( // «chưa có quy trình»: dòng lý do NF1 của trang đã nói
+          <span role="status" className="text-sm text-late" data-testid="submit-why">
+            {primaryWhy}
+          </span>
+        )}
       <ContractActionsMenu id={id} canDelete={canDelete} items={items} busy={off} />
       {err && !ask && (
         <span role="alert" className="text-sm text-late" data-testid="act-error">

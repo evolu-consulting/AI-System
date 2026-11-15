@@ -20,17 +20,17 @@ describe("buildShellNav", () => {
     ]);
   });
 
-  test("thành viên/chủ sở hữu có cả hai gói: Sổ Hợp Tác trước, Community sau; đủ 7 + 2 mục", () => {
+  test("thành viên/chủ sở hữu có cả hai gói: Sổ Hợp Tác trước, Community sau, đủ 7 + 2 mục (CR-142 Sơ đồ tổ chức, CR-167 gỡ Yêu cầu)", () => {
     const groups = buildShellNav(MODULES, member);
     expect(groups.map((g) => g.key)).toEqual(["contracts", "community"]);
     expect(groups[0]?.items.map((n) => n.to)).toEqual([
       "/contracts",
       "/contracts/list",
-      "/contracts/requests",
       "/contracts/messages",
       "/contracts/approvals",
       "/contracts/partners",
       "/contracts/products",
+      "/contracts/org",
     ]);
     expect(groups[1]?.items.map((n) => n.to)).toEqual(["/community", "/community/me"]);
   });

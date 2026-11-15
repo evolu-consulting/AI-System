@@ -36,5 +36,10 @@ export type CommunityBrandCover = z.infer<typeof CommunityBrandCoverSchema>;
 /** Quyền theo gói của người xem (I3). `contracts` = có quyền đọc gói contracts (chủ quản); đối tác luôn false. */
 export const CommunityCapsSchema = z.strictObject({
   contracts: z.boolean(),
+  /** CR-147b: là chủ sở hữu công ty (quản lý gói contracts) ⇒ thấy nút «Đổi ảnh bìa» của công ty. Đối tác luôn false. */
+  companyAdmin: z.boolean(),
 });
 export type CommunityCaps = z.infer<typeof CommunityCapsSchema>;
+
+/** CR-147b · `PUT /pack/community/brand/cover` — chủ sở hữu đổi/xoá ảnh bìa công ty NGAY ở hồ sơ công ty; cùng nguồn `contracts.company_settings.cover` (CR-138). */
+export { PersonCoverSetSchema as CommunityBrandCoverSetSchema } from "../people";

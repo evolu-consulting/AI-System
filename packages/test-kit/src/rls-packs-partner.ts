@@ -16,7 +16,7 @@ const parent = (sql: Sql, table: string, t: string): Promise<string> =>
   sql
     .unsafe(`select id::text as id from ${table} where tenant_id = $1 order by id limit 1`, [t])
     .then((r) => (r[0] as unknown as { id: string }).id);
-/** Bên gửi (partner_sends), bên nhận (partner_inbox), cài đặt nhận (partner_settings, khoá = tenant_id). */
+/** Bên gửi (partner_sends), bên nhận (partner_inbox). */
 export const partnerTables: RlsTable[] = [
   {
     name: "partner_sends",
@@ -49,15 +49,5 @@ export const partnerTables: RlsTable[] = [
          values ($1, $2, $3, $4, 'Bên gửi', '2027-01-01')`,
         [rnd(pk), t, crypto.randomUUID(), crypto.randomUUID()],
       ),
-  },
-  {
-    name: "partner_settings", // khoá chính = tenant_id
-    pk: "tenant_id",
-    seed: async (o, t) => {
-      await o.unsafe("insert into contracts.partner_settings (tenant_id) values ($1)", [t]);
-      return t;
-    },
-    insert: (tx, t) =>
-      tx.unsafe("insert into contracts.partner_settings (tenant_id) values ($1)", [t]),
   },
 ];

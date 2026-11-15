@@ -2,7 +2,7 @@
 // xong thì làm mới chi tiết (kéo theo lịch sử) và báo toast; lỗi ⇒ toast câu theo mã máy chủ.
 
 import { toast } from "@ai/web-kit/ui/toast";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { fetchMembers, MEMBERS_KEY } from "~/features/contracts-list/api";
 import {
@@ -16,6 +16,7 @@ import {
   generateSummary,
   historyKey,
 } from "../api";
+import { reconcileContract, replaceContractFile, startManualEntry } from "../api-exec";
 import { manageErrorKey } from "../lib/manage";
 
 function useAction<A>(
@@ -39,6 +40,25 @@ function useAction<A>(
 
 export const useReextract = (id: string, after?: () => void) =>
   useAction(id, () => extractContract(id), "contracts.gapa1.reextract.started", after);
+
+/** CR-157: «Nhập tay» khi AI đọc lỗi/hết giờ — chuyển HĐ sang nhập tay (ô trống), tệp gốc để đối chiếu. */
+export const useStartManual = (id: string) =>
+  useAction(id, () => startManualEntry(id), "contracts.review.manualStarted");
+
+/** CR-157b: «Tải tệp khác» — thay tệp rồi AI đọc lại. */
+export const useReplaceFile = (id: string) =>
+  useAction(id, (f: File) => replaceContractFile(id, f), "contracts.review.replaceStarted");
+
+/** CR-157: tích/bỏ «Tôi đã đối chiếu với tệp gốc» — không toast (mỗi lần tích một toast là ồn). */
+export function useReconcile(id: string) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: boolean) => reconcileContract(id, v),
+    onSuccess: () => qc.invalidateQueries({ queryKey: contractKey(id) }),
+    onError: (e) => toast(t(manageErrorKey(e)), "late"),
+  });
+}
 
 export const useAssignOwner = (id: string) =>
   useAction(id, (owner: string | null) => assignOwner(id, owner), "contracts.gapa1.owner.saved");
@@ -75,9 +95,11 @@ export function useMemberNames(): (id: string | null) => string | null {
 }
 
 export function useHistory(id: string, enabled: boolean) {
-  return useQuery({
-    queryKey: historyKey(id),
-    queryFn: ({ signal }) => fetchHistory(id, signal),
+  return useInfiniteQuery({
+    queryKey: [...historyKey(id), "paged"],
+    initialPageParam: 0,
+    queryFn: ({ pageParam, signal }) => fetchHistory(id, pageParam, signal),
+    getNextPageParam: (last) => last.next_offset ?? undefined,
     enabled,
   });
 }

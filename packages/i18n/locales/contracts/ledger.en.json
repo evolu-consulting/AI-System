@@ -9,6 +9,7 @@
       "close": "Close",
       "aria": "Log with partner",
       "openTitle": "Unsettled instalments",
+      "loadMore": "Show more",
       "openEmpty": "No open instalments. The app builds them from the payment terms of a confirmed contract.",
       "recentTitle": "Recently logged",
       "recentEmpty": "Nothing logged yet.",

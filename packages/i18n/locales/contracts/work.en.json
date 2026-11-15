@@ -264,6 +264,7 @@
         "source_ended": "Source no longer valid"
       },
       "cardSale": "Sources and margin",
+      "loadMore": "Show more",
       "cardPurchase": "Sale lines bought from this contract",
       "auto": "Automatic: lowest purchase price in force",
       "sourceOf": "Source of {{name}}",
@@ -432,6 +433,10 @@
         "held": "Execution put on hold.",
         "released": "Execution hold released."
       },
+      "why": {
+        "notSubmitter": "Only the creator or the owner can submit this contract.",
+        "stepOpen": "An approval step is still open on this contract. Reload the page; if it stays, ask an admin to close it."
+      },
       "err": {
         "STATE_CONFLICT": "The contract just changed state. Reload the page and try again.",
         "CONTRACT_NOT_DRAFT": "Only a DRAFT contract can be submitted.",
@@ -440,6 +445,7 @@
         "FILE_REQUIRED": "Upload the contract document before submitting.",
         "WITHDRAW_NOT_ALLOWED": "Cannot withdraw: a reviewer already decided, only the submitter can withdraw, or the contract is no longer in review.",
         "CONTRACT_NOT_REJECTED": "Only a rejected contract can be recreated.",
+        "RECONCILE_REQUIRED": "Manual entry — tick “I have checked this against the original file” before Save or Submit.",
         "NO_APPROVAL_FLOW": "Your company has no contract approval process yet — ask an admin to create one under Processes.",
         "USE_NEW_VERSION": "Changing value, prices, parties or terms needs Upload new version.",
         "HOLD_EXISTS": "The contract is already on hold.",

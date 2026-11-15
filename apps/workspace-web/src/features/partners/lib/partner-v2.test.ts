@@ -1,7 +1,15 @@
 // V2-I · U3 · luật thuần Đối tác UI: URL, lọc HĐ theo giai đoạn, ghi chú từ tìm internet.
 import { describe, expect, test } from "bun:test";
 import type { PartnerContractRow } from "@ai/contracts/pack-contracts";
-import { byStage, noteOfLine, parsePartnersSearch, rolesOf, stageCounts } from "./partner-v2";
+import {
+  byStage,
+  noteOfLine,
+  parsePartnersSearch,
+  resolveTab,
+  rolesOf,
+  stageCounts,
+  TABS,
+} from "./partner-v2";
 
 describe("V2-I URL", () => {
   test("chỉ giữ tham số hợp lệ; không có party ⇒ danh sách; vai: khách hàng, nhà cung cấp, bên trả hoa hồng (V2-E)", () => {
@@ -49,5 +57,30 @@ describe("V2-I HĐ theo giai đoạn", () => {
   test("dòng tìm internet ⇒ nội dung ghi chú", () => {
     expect(noteOfLine({ title: "T", summary: "S", source: "x.vn" })).toBe("T: S (x.vn)");
     expect(noteOfLine({ title: "T", summary: "", source: null })).toBe("T");
+  });
+});
+
+describe("tham số tenant", () => {
+  const T = "11111111-1111-4111-8111-111111111111";
+  test("giữ tenant hợp lệ cùng party, bỏ khi lạ hoặc không có party", () => {
+    expect(parsePartnersSearch({ party: "tax:1", tenant: T, tab: "contracts" })).toEqual({
+      party: "tax:1",
+      tenant: T,
+      tab: "contracts",
+    });
+    expect(parsePartnersSearch({ party: "tax:1", tenant: "x" })).toEqual({ party: "tax:1" });
+    expect(parsePartnersSearch({ tenant: T })).toEqual({});
+  });
+});
+
+describe("CR-169 · 3 tab", () => {
+  test("chỉ Tổng quan · Hợp đồng · Sổ việc & ghi chú; tab cũ chat/feed/community ⇒ Tổng quan", () => {
+    expect(TABS).toEqual(["overview", "contracts", "review"]);
+    for (const old of ["chat", "feed", "community"]) {
+      const s = parsePartnersSearch({ party: "tax:1", tab: old });
+      expect(s).toEqual({ party: "tax:1" });
+      expect(resolveTab(s.tab)).toBe("overview");
+    }
+    expect(resolveTab("review")).toBe("review");
   });
 });

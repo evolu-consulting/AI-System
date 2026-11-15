@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { checkContract, parseShNames, parseTemplateNames } from "./env-contract.rules";
+import {
+  checkContract,
+  parseComposeNames,
+  parseShNames,
+  parseTemplateNames,
+} from "./env-contract.rules";
 
 describe("env-contract.rules", () => {
   test("parseShNames lấy heredoc, setkv, ensure, grep -q", () => {
@@ -18,6 +23,18 @@ describe("env-contract.rules", () => {
 
   test("parseTemplateNames", () => {
     expect([...parseTemplateNames("# c\nA=\nb=\nC_1=\n")].sort()).toEqual(["A", "C_1"]);
+  });
+
+  test("parseComposeNames lấy khoá NAME: trong environment/args, bỏ khoá thường", () => {
+    const y = [
+      "services:",
+      "  hub-api:",
+      "    environment:",
+      '      HUB_A: "on"',
+      "      HUB_B: $" + "{X:-1}",
+      "    cpus: 1",
+    ].join("\n");
+    expect([...parseComposeNames(y)].sort()).toEqual(["HUB_A", "HUB_B"]);
   });
 
   test("checkContract báo thiếu và chênh lệch có allowDiff", () => {

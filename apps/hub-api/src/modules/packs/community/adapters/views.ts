@@ -62,6 +62,8 @@ export function postView(a: Access, n: Names, r: PostRow, hint?: HostHint): Post
         : {}),
     })),
     commentCount: r.comments,
+    // CR-147c: DB trả mới → cũ; hiển thị cũ → mới
+    recentComments: [...(r.recent ?? [])].reverse().map((x) => commentView(a, n, x)),
     ...(r.mentions?.length
       ? { mentionedUsers: r.mentions.map((m) => ({ userId: m.user_id, name: m.name })) }
       : {}),
@@ -104,10 +106,27 @@ export function commentView(a: Access, n: Names, r: CommentRow): CommentView {
   };
 }
 
+/** Công ty của một trang `?limit=&offset=&q=` (tên không phân biệt hoa thường); không `limit` ⇒ undefined = tất cả. */
+export function pageOrgIds(
+  a: Access,
+  pg: { q?: string | undefined; limit?: number | undefined; offset: number },
+): string[] | undefined {
+  if (pg.limit === undefined) return undefined;
+  const needle = pg.q?.toLowerCase();
+  const seen = a.org === null ? a.dir.orgs : a.dir.orgs.filter((o) => o.id === a.org);
+  const named = needle ? seen.filter((o) => o.name.toLowerCase().includes(needle)) : seen;
+  return named.slice(pg.offset, pg.offset + pg.limit).map((o) => o.id);
+}
+
 /** Chủ quản: mọi công ty đối tác (bạn bè, kể cả đã rời) + nhãn; đối tác: chỉ công ty mình, không `left`/`partyKey`. */
-export function partnerViews(a: Access, rows: readonly PartnerRow[]): PartnerOrg[] {
+export function partnerViews(
+  a: Access,
+  rows: readonly PartnerRow[],
+  only?: readonly string[],
+): PartnerOrg[] {
   const by = new Map(rows.map((r) => [r.ext_org_id, r]));
-  const orgs = a.org === null ? a.dir.orgs : a.dir.orgs.filter((o) => o.id === a.org);
+  const seen = a.org === null ? a.dir.orgs : a.dir.orgs.filter((o) => o.id === a.org);
+  const orgs = only === undefined ? seen : only.flatMap((id) => seen.filter((o) => o.id === id));
   return orgs.map((o) => {
     const r = by.get(o.id);
     const v: PartnerOrg = { id: o.id, name: o.name, labels: r?.labels ?? [], cats: r?.cats ?? [] };

@@ -3,7 +3,8 @@
 // hướng tiền (`receive`/`pay`); loại khác giữ hướng theo HĐ (bán/giới thiệu ⇒ receive, mua ⇒ pay) như đợt HD7. Tiền = số nguyên đồng
 // ≤ 10¹⁵; phép chia/nhân qua BigInt (không số thực). Ngày = `YYYY-MM-DD` (so sánh chuỗi = so sánh lịch). Lớp 1: không I/O.
 
-export const DEALS = ["buy", "sell", "referral"] as const;
+/** CR-152: Nhượng quyền + Hợp tác là loại HĐ kinh tế; bộ mốc do `kind-schedule.rules.ts` sinh (không có mốc mặc định ở đây). */
+export const DEALS = ["buy", "sell", "referral", "franchise", "cooperation"] as const;
 export type Deal = (typeof DEALS)[number];
 export const MILESTONE_KINDS = [
   "delivery",
@@ -139,6 +140,7 @@ export function defaultMilestones(c: {
     due_date: due,
     owner: defaultOwner(kind, c.deal),
   });
+  if (c.deal === "franchise" || c.deal === "cooperation") return [];
   if (c.deal === "referral") return [one("commission", money)];
   return [one("delivery", give), one(primaryMoneyKind(c.deal), money)];
 }

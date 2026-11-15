@@ -2,7 +2,7 @@
 // `hub.sign_session_*`, phía suy từ `app.tenant_id`; tenant ngoài phiên không thấy HĐ ⇒ 404):
 //   GET  /contracts/:id/sign-session          — trạng thái phiên (tên công ty + người ký hai bên) + người ký chọn được (read)
 //   POST /contracts/:id/sign-session/cancel   — «Huỷ phiên ký» (write; cần lý do) — hai bên về DRAFT (bộ chuyển báo bên kia)
-//   POST /contracts/:id/sign-session/respond  — bên NHẬN: Đồng ý (chọn người ký trong nhóm «Người ký HĐ») / Xử lý bình thường / Từ chối (write; phụ trách HĐ hoặc admin)
+//   POST /contracts/:id/sign-session/respond  — bên NHẬN: Đồng ý (chọn người ký phía công ty của quy trình Nhận HĐ) / Xử lý bình thường / Từ chối (write; phụ trách HĐ hoặc admin)
 import type { Db, Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
@@ -10,7 +10,6 @@ import { z } from "zod";
 import { AppError, appError } from "../../../lib/errors";
 import { parseWith, readJson } from "../../../lib/http";
 import {
-  internalMembersOfGroups,
   type PackAccessView,
   type PackGuardVars,
   type PackUow,
@@ -24,6 +23,7 @@ import {
   type SignSessionError,
   signSessionErrorOf,
 } from "./domain/sign-session.rules";
+import { receiveSignerMembers } from "./receive-signers.service";
 
 const KEY = "contracts";
 const UUID = z.uuid();
@@ -35,14 +35,16 @@ const Respond = z.strictObject({
 });
 
 const MSG: Record<
-  SignSessionError | "SIGNER_REQUIRED" | "SIGNER_NOT_IN_GROUP" | "FORBIDDEN",
+  SignSessionError | "SIGNER_REQUIRED" | "SIGNER_NOT_IN_GROUP" | "NO_SIGN_NODE" | "FORBIDDEN",
   string
 > = {
   SESSION_NOT_ACTIVE: "Phiên ký đã kết thúc hoặc chưa tới bước này — tải lại trang.",
   SESSION_FORBIDDEN: "Hợp đồng này không thuộc phiên ký chung của công ty bạn.",
   SESSION_HASH_MISMATCH: "Văn bản ký khác bản đã thống nhất — huỷ phiên ký và gửi lại.",
-  SIGNER_REQUIRED: "Chọn người ký trong nhóm «Người ký HĐ» rồi bấm Đồng ý.",
-  SIGNER_NOT_IN_GROUP: "Người ký phải thuộc nhóm «Người ký HĐ» của công ty — chọn lại.",
+  SIGNER_REQUIRED: "Chọn người ký phía công ty rồi bấm Đồng ý.",
+  SIGNER_NOT_IN_GROUP:
+    "Người ký phải là người ký phía công ty đã đặt trong quy trình Nhận HĐ — chọn lại.",
+  NO_SIGN_NODE: "Quy trình Nhận HĐ chưa có bước Ký.",
   FORBIDDEN:
     "Chỉ người phụ trách hợp đồng nhận hoặc quản trị công ty được trả lời đề nghị ký cùng lúc.",
 };
@@ -61,14 +63,7 @@ const who = (c: { get(k: "user"): { tenantId: string; userId: string } }) => ({
   userId: c.get("user").userId,
 });
 
-async function signerGroupOf(x: { tx: Tx; tid: string }): Promise<string | null> {
-  const [r] = await x.tx.execute<{ g: string | null }>(
-    sql`select signer_group_id::text as g from contracts.partner_settings where tenant_id = ${x.tid}::uuid`,
-  );
-  return r?.g ?? null;
-}
-
-type Members = (gid: string | null) => Promise<{ id: string; name: string }[]>;
+type Members = () => Promise<{ id: string; name: string }[]>;
 type RespondIn = {
   id: string;
   b: z.infer<typeof Respond>;
@@ -89,10 +84,10 @@ export async function assertOwnerOrAdmin(
   if (!i.isAdmin && o.owner !== i.userId) fail("FORBIDDEN", 403);
 }
 
-/** Người ký chọn phải thuộc nhóm «Người ký HĐ» — nhóm đọc trong CÙNG tx với `accept` (không đua với đổi cài đặt). */
-async function signerNameOf(x: { tx: Tx; tid: string }, i: RespondIn): Promise<string | null> {
+/** Người ký chọn phải là «Người ký phía công ty» của bước Ký trong quy trình Nhận HĐ (CR-146b). */
+async function signerNameOf(_x: { tx: Tx; tid: string }, i: RespondIn): Promise<string | null> {
   if (!i.b.signer_user_id) return fail("SIGNER_REQUIRED", 422);
-  const hit = (await i.signersOf(await signerGroupOf(x))).find((m) => m.id === i.b.signer_user_id);
+  const hit = (await i.signersOf()).find((m) => m.id === i.b.signer_user_id);
   if (!hit) return fail("SIGNER_NOT_IN_GROUP", 422);
   return hit.name;
 }
@@ -110,10 +105,15 @@ async function respondTx(x: { tx: Tx; tid: string }, i: RespondIn): Promise<void
 
 export function signSessionRoutes(db: Db, view: PackAccessView, uow: Uow): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
+  /** CR-146b · quy trình Nhận HĐ chưa có bước Ký / chưa chọn người ký ⇒ lỗi nghiệp vụ `NO_SIGN_NODE` (422). */
   const signersOf = async (
     c: { get(k: "user"): { tenantId: string; userId: string } },
-    gid: string | null,
-  ) => (gid ? internalMembersOfGroups(db, who(c), [gid], { only: undefined, limit: 200 }) : []);
+    required: boolean,
+  ) => {
+    const members = await receiveSignerMembers(db, who(c).tenantId);
+    if (!members) return required ? fail("NO_SIGN_NODE", 422) : [];
+    return members;
+  };
 
   r.get("/contracts/:id/sign-session", packGuard(view, KEY, "read"), async (c) => {
     const id = parseWith(UUID, c.req.param("id"));
@@ -121,12 +121,12 @@ export function signSessionRoutes(db: Db, view: PackAccessView, uow: Uow): Hono<
       const sid = await signSessionRepo(x.tx, x.tid).sessionOf(id);
       if (!sid) return null;
       const s: SignSessionView | null = await signSessionRepo(x.tx, x.tid).mine(sid);
-      return s ? { s, gid: await signerGroupOf(x) } : null;
+      return s ? { s } : null;
     });
     // HĐ chưa/không có phiên ký chung ⇒ 200 `{session:null}` (không phải lỗi; trang chi tiết gọi cho mọi HĐ).
     if (!out) return c.json({ session: null, signers: [] }, 200);
     const signers =
-      out.s.side === "to" && out.s.status === "proposed" ? await signersOf(c, out.gid) : [];
+      out.s.side === "to" && out.s.status === "proposed" ? await signersOf(c, false) : [];
     return c.json({ session: out.s, signers }, 200);
   });
 
@@ -154,7 +154,9 @@ export function signSessionRoutes(db: Db, view: PackAccessView, uow: Uow): Hono<
     const u = c.get("user");
     const isAdmin = packActionsFor(await packAccessInput(view, KEY, u)).includes("admin");
     await uow
-      .tenant(who(c), (x) => respondTx(x, { id, b, u, isAdmin, signersOf: (g) => signersOf(c, g) }))
+      .tenant(who(c), (x) =>
+        respondTx(x, { id, b, u, isAdmin, signersOf: () => signersOf(c, true) }),
+      )
       .catch(sessionFail);
     return c.json({ ok: true }, 200);
   });

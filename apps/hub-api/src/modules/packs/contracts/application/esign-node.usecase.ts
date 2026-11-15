@@ -5,6 +5,7 @@ import {
   ESIGN_NODE_ORDERS,
   ESIGN_NODE_REMIND_HOURS_MAX,
   ESIGN_NODE_SIGNERS_MAX,
+  ESIGN_NODE_UPLOAD,
   type ESignNodeCheckOut,
   type ESignNodeOptionsOut,
   type ESignSettingsOut,
@@ -39,8 +40,6 @@ export type EsignNodeDeps = {
   /** Nhà cung cấp khả dụng của khoá (cần FileBox) hoặc null. */
   avail: (key: string) => unknown;
   directory: NodeDirectory | undefined;
-  /** Nhóm «Người ký HĐ» của công ty (`partner_settings.signer_group_id`) hoặc null. */
-  signerGroup?: (tenantId: string) => Promise<string | null>;
 };
 
 export function esignNodeApi(d: EsignNodeDeps) {
@@ -53,23 +52,18 @@ export function esignNodeApi(d: EsignNodeDeps) {
     if (r.unknown.length > 0) return [{ field: "company_signers", code: "SIGNER_NOT_IN_TENANT" }];
     return r.userIds.length === 0 ? [{ field: "company_signers", code: "NO_SIGNER" }] : [];
   };
-  /** Nhóm «Người ký HĐ» đã đặt và còn ≥ 1 thành viên dùng được ⇒ {tên, số người}; ngược lại null. */
-  const defaultGroup = async (
-    tenantId: string,
-    groups: readonly { id: string; name: string }[],
-  ): Promise<{ name: string; count: number } | null> => {
-    const g = await d.signerGroup?.(tenantId);
-    if (!g) return null;
-    const r = await d.directory?.resolve(tenantId, [{ kind: "group", id: g }]);
-    const count = r?.userIds.length ?? 0;
-    return count > 0 ? { name: groups.find((x) => x.id === g)?.name ?? "", count } : null;
+  /** CR-146b · «Ký qua»: `upload` luôn hợp lệ; nhà cung cấp phải đang bật + khả dụng của CHÍNH công ty. */
+  const providerIssue = async (tenantId: string, provider: string): Promise<Issues> => {
+    if (provider === ESIGN_NODE_UPLOAD) return [];
+    const s = await d.settingsOf(tenantId);
+    const ok = s.enabled && s.providers.some((p) => p.available && p.key === provider);
+    return ok ? [] : [{ field: "provider", code: "PROVIDER_NOT_ENABLED" }];
   };
   return {
     /** Lựa chọn cho panel node: nhà cung cấp ĐANG BẬT + Group (một lượt, không theo hàng). */
     async nodeOptions(who: PackWho): Promise<ESignNodeOptionsOut> {
       const s = await d.settings(who);
       const groups = (await d.directory?.groups(who.tenantId)) ?? [];
-      const dg = await defaultGroup(who.tenantId, groups);
       return {
         providers: s.providers
           .filter((p) => p.available)
@@ -77,7 +71,6 @@ export function esignNodeApi(d: EsignNodeDeps) {
         default_provider: s.default_provider,
         enabled: s.enabled,
         groups,
-        default_signers: dg,
         orders: ESIGN_NODE_ORDERS,
         limits: {
           signers_max: ESIGN_NODE_SIGNERS_MAX,
@@ -89,13 +82,9 @@ export function esignNodeApi(d: EsignNodeDeps) {
 
     /** Kiểm cấu hình node lúc LƯU def: nhà cung cấp phải đang bật + khả dụng, người ký/Group thuộc công ty (còn dùng được). Lỗi theo khoá trường. */
     async checkNode(tenantId: string, c: EsignNodeConfig): Promise<Issues> {
+      const a = c.provider ? await providerIssue(tenantId, c.provider) : [];
       const b = c.company_signers?.length ? await signerIssue(tenantId, c.company_signers) : [];
-      return [...b];
-    },
-
-    /** CR-141 · công ty đã đặt nhóm «Người ký HĐ» có ≥ 1 thành viên ⇒ node không chọn người ký vẫn lưu được (người ký mặc định = nhóm). */
-    async hasDefaultSigners(tenantId: string): Promise<boolean> {
-      return (await defaultGroup(tenantId, [])) !== null;
+      return [...a, ...b];
     },
 
     /** Người ký công ty của node: mục `user`/`group` ⇒ danh sách user (thứ tự khai, bỏ trùng, ≤ trần); mục lạ / rỗng ⇒ ném. */

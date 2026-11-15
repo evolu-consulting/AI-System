@@ -23,26 +23,28 @@ const VALUE_PARAM_TYPES: ReadonlySet<string> = new Set(["number", "text", "parag
 const isField = (f: unknown): f is DifyParamName =>
   typeof f === "string" && Object.hasOwn(DIFY_CONTRACT_INPUTS, f);
 
-type DealKey = "buy" | "sell" | "referral";
+type DealKey = "buy" | "sell" | "referral" | "franchise" | "cooperation";
+type DealMap = Record<"buy" | "sell" | "referral", string> &
+  Partial<Record<"franchise" | "cooperation", string>>;
 /** Nhãn loại HĐ chấp nhận cho tham số `select` (không phân biệt hoa thường/dấu). Mirror `FLOW_DEAL_LABELS` của contract. */
 const DEAL_LABELS: Record<DealKey, readonly string[]> = {
   buy: ["mua", "mua hang", "buy", "purchase"],
   sell: ["ban", "ban hang", "sell", "sale"],
   referral: ["gioi thieu", "referral"],
+  franchise: ["nhuong quyen", "franchise"],
+  cooperation: ["thoa thuan hop tac", "hop tac", "cooperation"],
 };
 const normLabel = (s: string) =>
   s.normalize("NFD").replace(/\p{M}/gu, "").replace(/đ/gi, "d").trim().toLowerCase();
 /** Loại HĐ ⇒ lựa chọn của tham số `select`; thiếu một loại ⇒ null. */
-export function dealOptionMap(
-  options: readonly string[] | undefined,
-): Record<DealKey, string> | null {
+export function dealOptionMap(options: readonly string[] | undefined): DealMap | null {
   const out: Partial<Record<DealKey, string>> = {};
   for (const d of Object.keys(DEAL_LABELS) as DealKey[]) {
     const hit = (options ?? []).find((o) => DEAL_LABELS[d].includes(normLabel(o)));
-    if (hit === undefined) return null;
-    out[d] = hit;
+    if (hit !== undefined) out[d] = hit;
+    else if (d === "buy" || d === "sell" || d === "referral") return null;
   }
-  return out as Record<DealKey, string>;
+  return out as DealMap;
 }
 
 /** Trường HĐ `field` đưa được vào tham số `p` (số chỉ nhận giá trị HĐ; `select` chỉ nhận loại HĐ có đủ nhãn khớp). */
@@ -57,7 +59,7 @@ const fieldFits = (
 /** Input run phụ của tham số `select` ở bước `stepIdx` (tham số thứ `paramIdx` của workflow): giá trị = lựa chọn theo loại HĐ. */
 export const difySelectKey = (stepIdx: number, paramIdx: number) =>
   `dify-sel-${stepIdx}-${paramIdx}`;
-export type DifySelectBinding = { key: string; map: Record<DealKey, string> };
+export type DifySelectBinding = { key: string; map: DealMap };
 /** Mọi tham số `select` được ánh xạ (từ loại HĐ) của các bước Dify ⇒ input run phụ (khai ở def, điền lúc mở run). */
 export function difySelectBindings(
   steps: readonly FlowStep[],
@@ -198,7 +200,7 @@ export function difyRunInputs(
     ...selects.map((s) => ({
       type: "text" as const,
       key: s.key,
-      text: (f.deal && Object.hasOwn(s.map, f.deal) ? s.map[f.deal as DealKey] : "").slice(
+      text: (f.deal && Object.hasOwn(s.map, f.deal) ? (s.map[f.deal as DealKey] ?? "") : "").slice(
         0,
         DIFY_TEXT_MAX,
       ),

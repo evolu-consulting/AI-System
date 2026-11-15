@@ -64,6 +64,30 @@ export const ACCEPTED_EDITS: readonly AcceptedEdit[] = [
     dbHash: "1f2fd04c161f6b890015195ed74e158204fc835df05e00d568139b90e7cc8037",
     why: "CR-127 C2: bỏ ALTER CHECK hub.evidence khỏi migration gói (chuyển sang hub 0137); CR-127 chưa deploy, DB dev đã áp bản cũ — kết quả tương đương",
   },
+  {
+    table: "__drizzle_migrations_hub",
+    tag: "0142_cr147b_people_profiles",
+    dbHash: "51dc94141053338579a32fd33f681b0c1625c0ec811782442bf98a5a70a4abfa",
+    why: "fix-int-batch: bản đã áp ở stg-test (04c527b49/b9a8fcd9d); chỉ thêm DROP POLICY IF EXISTS trước mỗi CREATE POLICY (chạy lại được), lần đầu áp tương đương",
+  },
+  {
+    table: "__drizzle_migrations_pack_contracts",
+    tag: "0116_cr161_cc_grants",
+    dbHash: "044313b23558166e500c7a35974d61acc3a0be4369b7795846b87ba7de5f404b",
+    why: "CR-169 lát 2a: bản đã áp ở stg-test (4b0824d9f); chỉ bỏ GRANT các hàm trò chuyện chung cc_* đã gỡ ở hub 0149 (DB dựng sạch lỗi nếu giữ), lần đầu áp tương đương",
+  },
+  {
+    table: "__drizzle_migrations_pack_contracts",
+    tag: "0117_cr161_cc_files_box_id",
+    dbHash: "79b0ddb00a5776030c1275db110b4501f464ad7b0829c2edd6835907b4d24ca0",
+    why: "CR-169 lát 2a: bản đã áp ở stg-test (4b0824d9f); chỉ bỏ GRANT các hàm trò chuyện chung cc_* đã gỡ ở hub 0149 (DB dựng sạch lỗi nếu giữ), lần đầu áp tương đương",
+  },
+  {
+    table: "__drizzle_migrations_hub",
+    tag: "0145_cr161_connect_links",
+    dbHash: "c05ec6646185507c2543775ad721687b35c78ae5cdf25cedc5888d56a35c0290",
+    why: "fix-int-final: bản đã áp ở stg-test (e610e35c8); chỉ thêm DROP FUNCTION IF EXISTS hub.cc_links trước CREATE OR REPLACE (chạy lại được sau 0149), lần đầu áp tương đương",
+  },
 ];
 
 type Journal = { entries: { tag: string; when: number }[] };

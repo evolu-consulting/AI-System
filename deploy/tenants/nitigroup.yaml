@@ -1,11 +1,15 @@
-# niti-onboard · tenant thật đầu tiên của app mới (AI System + gói contracts, thay sohoptac cũ). Người dùng cung cấp 2026-10-20.
-# Chạy (idempotent, chạy lại an toàn):
-#   bun --env-file=.env.local apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts \
-#     --file deploy/tenants/nitigroup.yaml --actor <uuid platform admin> [--mgmt-org <org id sohoptac>]
-# Thứ tự cutover đầy đủ: docs/specs/niti-onboard/tasks.md "Thứ tự chạy production".
+# CR-159 · nitigroup trên prod dựng SẠCH (không import sohoptac): 5 phòng có người, người dùng khai ở `users:`. Email BẬT.
+# Chạy (idempotent) với MỘT mật khẩu chung lấy từ biến môi trường (KHÔNG ghi giá trị vào repo/yaml/log):
+#   ONBOARD_PASSWORD=<mật khẩu> bun --env-file=.env.local apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts \
+#     --file deploy/tenants/nitigroup.yaml --actor <uuid platform admin> --password-env ONBOARD_PASSWORD [--no-force-change]
+# Hoặc mật khẩu tạm ngẫu nhiên từng người: thay `--password-env …` bằng `--pw-out <file, quyền 600>`. Mặc định user mới bị ép đổi mật khẩu.
+# `users:` mới ⇒ cần --password-env hoặc --pw-out (email<TAB>mật khẩu, chỉ người mới, không in ra); người đã có chỉ cập nhật tên/chức vụ/vai.
+# Quản trị công ty phải đứng ĐẦU `users:` (tạo trước, tránh lỗi "quản trị cuối cùng" khi đổi vai).
+# Mất mật khẩu tạm: đặt lại trên trang quản trị (Người dùng ⇒ Đặt lại mật khẩu); không chạy lại CLI để lấy.
 key: nitigroup
 name: CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ NITIGROUP
 timezone: Asia/Ho_Chi_Minh
+directory: listed # CR-159: bật danh bạ (cần legal_name + tax_id)
 profile:
   legal_name: CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ NITIGROUP
   address: 83 đường 48, khu phố 6, Phường Hiệp Bình, TP Hồ Chí Minh, Việt Nam
@@ -19,39 +23,22 @@ profile:
     - { label: Báo giá, number: 076.99.55.688 }
     - { label: Kỹ thuật, number: 0768.139.688 }
 
-# Bật gói qua đường admin-web (PK-FR-05): entitlement + 3 Group vai + grant + trợ lý chung (assistant).
+# Bật gói qua đường admin-web (PK-FR-05) + add-on Bảng tin (CR-130, entitlement `contracts-community`).
 packs: [contracts]
+addons: [contracts-community, contracts-partner-confirm]
 
-# Cây phòng ban (M1 + admin 0015): mọi phòng nằm ngay dưới gốc (Phòng Giám đốc), thứ tự như khai.
-# "Bộ phận / Phòng ban trong công ty" là nhãn chung, KHÔNG phải phòng ⇒ bỏ.
-# Gán người: `head: email` / `members: [email…]` — chỉ khớp user ĐÃ có (sau import); email chưa có ⇒ báo `pending_emails`.
-root: { key: pb-giam-doc, vi: Phòng Giám đốc, en: Board of Directors }
+users:
+  - { email: thuytien.le@nitigroupvn.com, name: Lê Thị Thủy Tiên, title: Giám đốc, role: admin }
+  - { email: thuyngan.le@nitigroupvn.com, name: Lê Thị Thủy Ngân, title: Phó giám đốc, role: member }
+  - { email: thuyvy.trang@nitigroupvn.com, name: Trang Thúy Vy, title: Nhân viên kinh doanh, role: member }
+  - { email: hr@nitigroupvn.com, name: "HR - NITIGROUP CO.,LTD", title: Trưởng phòng nhân sự, role: member }
+  - { email: admin@nitigroupvn.com, name: "Admin - NITIGROUP CO.,LTD", title: Trưởng phòng vận hành, role: admin }
+  - { email: thuphuong.pham@nitigroupvn.com, name: Phạm Huỳnh Thu Phương, title: Phó phòng kế toán, role: member }
+
+# Cây phòng ban: gốc Phòng Giám đốc + 4 phòng có người, thứ tự như khai. Phòng Kinh doanh chưa có trưởng.
+root: { key: pb-giam-doc, vi: Phòng Giám đốc, en: Board of Directors, head: thuytien.le@nitigroupvn.com, members: [thuyngan.le@nitigroupvn.com] }
 departments:
-  - { key: pb-hanh-chinh, vi: Phòng Hành chính tổng hợp, en: Administration }
-  - { key: pb-nhan-su, vi: Phòng Nhân sự, en: HR }
-  - { key: pb-dao-tao, vi: Phòng Đào tạo, en: Training }
-  - { key: pb-kinh-doanh, vi: Phòng Kinh doanh, en: Sales }
-  - { key: pb-cskh, vi: Phòng Chăm sóc Khách hàng, en: Customer Service }
-  - { key: pb-nc-san-pham, vi: Phòng Nghiên cứu và phát triển Sản phẩm, en: Product Development }
-  - { key: pb-nc-phat-trien, vi: Phòng Nghiên cứu và Phát triển, en: R&D }
-  - { key: pb-marketing, vi: Phòng Marketing, en: Marketing }
-  - { key: pb-vp-dai-dien, vi: Văn phòng đại diện, en: Representative office }
-  - { key: pb-quan-he-cong-chung, vi: Phòng Quan hệ công chúng, en: PR }
-  - { key: pb-ke-toan, vi: Phòng Kế toán, en: Accounting }
-  - { key: pb-tai-chinh, vi: Phòng Tài chính, en: Finance }
-  - { key: pb-kiem-toan, vi: Phòng Kiểm toán, en: Audit }
-  - { key: pb-ngan-quy, vi: Phòng Ngân quỹ, en: Treasury }
-  - { key: pb-quan-he-quoc-te, vi: Phòng Quan hệ Quốc tế, en: International Relations }
-  - { key: pb-thanh-toan-trong-nuoc, vi: Phòng Thanh toán trong nước, en: Local Payment }
-  - { key: pb-cntt, vi: Phòng Công nghệ thông tin, en: IT }
-  - { key: pb-cong-doan, vi: Công đoàn, en: Trade union }
-  - { key: pb-tru-so-chinh, vi: Trụ sở chính, en: Headquarters }
-  - { key: pb-chi-nhanh, vi: Chi nhánh, en: Branch }
-  - { key: pb-vp-dia-phuong, vi: Văn phòng địa phương, en: Regional office }
-  - { key: pb-cua-hang-ban-si, vi: Cửa hàng bán sỉ, en: Wholesaler }
-
-# Gắn với org sohoptac cho importer I1 (`mgmt-import --into-tenant nitigroup`). org_id điền khi đã biết (xem `source_orgs`
-# trong báo cáo dry-run của importer) hoặc truyền `--mgmt-org`. Đã gắn thì không đổi được sang org khác (ORG_REBIND).
-import:
-  source: mgmt-prod
-  org_id: null
+  - { key: pb-kinh-doanh, vi: Phòng Kinh doanh, en: Sales, members: [thuyvy.trang@nitigroupvn.com] }
+  - { key: pb-nhan-su, vi: Phòng Nhân sự, en: HR, head: hr@nitigroupvn.com }
+  - { key: pb-van-hanh, vi: Phòng Vận hành, en: Operations, head: admin@nitigroupvn.com }
+  - { key: pb-ke-toan, vi: Phòng Kế toán, en: Accounting, head: thuphuong.pham@nitigroupvn.com }

@@ -15,12 +15,18 @@
       "roleWord": {
         "supplier": "Nhà cung cấp",
         "customer": "Khách hàng",
-        "commission_payer": "Bên trả hoa hồng"
+        "commission_payer": "Bên trả hoa hồng",
+        "franchisee": "Bên nhận quyền",
+        "franchisor": "Bên nhượng quyền",
+        "cooperator": "Đối tác hợp tác"
       },
       "roleShort": {
         "supplier": "NCC",
         "customer": "Khách",
-        "commission_payer": "Hoa hồng"
+        "commission_payer": "Hoa hồng",
+        "franchisee": "Nhận quyền",
+        "franchisor": "Nhượng quyền",
+        "cooperator": "Hợp tác"
       },
       "badge": {
         "new": "MỚI · tạm tính"
@@ -49,8 +55,7 @@
       "tab": {
         "overview": "Tổng quan",
         "contracts": "Hợp đồng · {{n}}",
-        "review": "Sổ việc & ghi chú",
-        "community": "Bảng tin"
+        "review": "Sổ việc & ghi chú"
       },
       "roleSeg": "Chọn vai trò",
       "noScoreYet": "Chưa có việc hoặc hợp đồng nào để chấm điểm vai trò này.",
@@ -89,6 +94,7 @@
         "emptyTitle": "Không có hợp đồng",
         "emptyBody": "Đối tác này chưa có hợp đồng đã xác nhận.",
         "emptyFilter": "Không có hợp đồng ở bước này.",
+        "loadMore": "Xem thêm",
         "col": {
           "contract": "Hợp đồng",
           "deal": "Loại",

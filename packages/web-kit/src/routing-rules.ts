@@ -5,8 +5,8 @@ import type { ProcessRoutingRule, PutProcessRoutingRequest } from "@ai/contracts
 /** = `ROUTING_RULES_MAX` của hợp đồng (giữ số ở đây để không kéo zod schema vào chunk web). */
 export const RULES_MAX = 50;
 
-/** = `ROUTING_CONTRACT_KINDS` của hợp đồng (Mua / Bán / Giới thiệu) — thứ tự hiển thị. */
-export const ROUTING_KINDS = ["buy", "sell", "referral"] as const;
+/** = `ROUTING_CONTRACT_KINDS` của hợp đồng (Mua / Bán / Giới thiệu / Nhượng quyền / Hợp tác, CR-152) — thứ tự hiển thị. */
+export const ROUTING_KINDS = ["buy", "sell", "referral", "franchise", "cooperation"] as const;
 export type RoutingKind = (typeof ROUTING_KINDS)[number];
 
 export type RuleDraft = {

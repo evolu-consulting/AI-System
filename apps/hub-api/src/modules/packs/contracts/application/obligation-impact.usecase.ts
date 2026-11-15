@@ -59,7 +59,7 @@ type Ctx = { who: PackWho; h: ImpactHead; party: string; at: string; fault: Faul
 
 type Scored = { day: string; cfg: Resolved; rows: Rows };
 type CtxX = {
-  h: Pick<ImpactHead, "owner" | "kind" | "due_date" | "rep_cell">;
+  h: Pick<ImpactHead, "owner" | "kind" | "due_date" | "rep_cell" | "period_key">;
   party: string;
   at: string;
   fault: Fault | null;
@@ -179,6 +179,7 @@ export type ScoreHead = {
   kind: string;
   due_date: string;
   rep_cell?: number | null | undefined;
+  period_key?: string | null | undefined;
   party: string | null;
 };
 

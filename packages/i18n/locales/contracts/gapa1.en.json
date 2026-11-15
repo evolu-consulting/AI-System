@@ -30,6 +30,7 @@
       },
       "hist": {
         "title": "Change history",
+        "loadMore": "Show more",
         "loading": "Loading…",
         "empty": "No changes yet.",
         "system": "System",

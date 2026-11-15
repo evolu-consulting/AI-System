@@ -4,6 +4,7 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { StepRepo } from "../../application/ports";
 import { runEndHook } from "../../runs/run-end-hooks";
+import { readCoreFacts } from "./core-facts.repo";
 import { factsReaderFor, outcomeHandlerFor } from "./flow-ports";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -11,7 +12,13 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 type FlowStepRepo = Required<
   Pick<
     StepRepo,
-    "readFacts" | "ifDecisions" | "applyOutcome" | "needsAction" | "missingFact" | "runFailed"
+    | "readFacts"
+    | "readCoreFacts"
+    | "ifDecisions"
+    | "applyOutcome"
+    | "needsAction"
+    | "missingFact"
+    | "runFailed"
   >
 >;
 
@@ -21,6 +28,7 @@ export function flowStepRepo(tx: Tx, tenantId: string): FlowStepRepo {
       const r = factsReaderFor(p.pack, p.event);
       return r ? r.read(tenantId, p.recordId, keys) : null;
     },
+    readCoreFacts: (runId, keys) => readCoreFacts(tx, tenantId, runId, keys),
     async ifDecisions(runId) {
       // Lần rẽ MỚI NHẤT mỗi node Nếu (chạy lại từ Nếu ⇒ bản ghi sau thắng).
       const rows = await tx.execute<{ stage_idx: number; matched: boolean }>(sql`select distinct on

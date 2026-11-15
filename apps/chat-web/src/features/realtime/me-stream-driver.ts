@@ -12,6 +12,7 @@ import {
 } from "@ai/contracts/chat";
 import { ApiError } from "@ai/web-kit/http";
 import { backoffDelay, DOWN_AFTER_FAILURES, IDLE_TIMEOUT_MS } from "./lib/backoff";
+import { dispatchMsgFrame, isMessagesFrame, notifyMsgReconnected } from "./msg-frames";
 import type { RealtimeStore } from "./realtime-store";
 
 type Body = ReadableStream<Uint8Array>;
@@ -167,10 +168,19 @@ export class MeStreamDriver {
     if (phase !== "open") this.store.setPhase("open");
     const gap = phase === "connecting" && this.deps.hasRoomsData?.() === true;
     const reconnected = (phase === "reconnecting" || phase === "down") && lastEventId === null;
-    if (pending || gap || reconnected) this.deps.onEvent({ event: "stream.reset", data: {} });
+    if (pending || gap || reconnected) {
+      this.deps.onEvent({ event: "stream.reset", data: {} });
+      notifyMsgReconnected(); // CR-169: mục Tin nhắn tải lại (có thể lỡ `msg.*` lúc đứt)
+    }
   }
 
   private handle(raw: RawSseEvent): void {
+    // CR-169: `msg.*`/`cc.link` thuộc gói Tin nhắn — chuyển thẳng, vẫn ghi `lastEventId` để phát bù khi nối lại.
+    if (isMessagesFrame(raw.event)) {
+      if (raw.id) this.store.setLastEventId(raw.id);
+      dispatchMsgFrame({ event: raw.event, data: raw.data });
+      return;
+    }
     // X2b: `room.run_*` nằm ngoài `ME_STREAM_EVENTS` ⇒ thử parser run khi parser X2a trả null (vẫn ghi `lastEventId`).
     // P-a: sự kiện quy trình (`process.updated`, `review_task.*`, `process.notice`) là khối riêng, thử sau cùng.
     const event =

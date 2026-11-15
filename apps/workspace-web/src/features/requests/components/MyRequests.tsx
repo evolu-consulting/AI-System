@@ -1,5 +1,5 @@
 // CR-126 · «Đã gửi của tôi» dưới danh sách loại yêu cầu: tên · ngày gửi · một nhóm trạng thái; bấm ⇒ trang yêu cầu.
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
@@ -14,21 +14,25 @@ const TONE = {
 
 export function MyRequests() {
   const { t, i18n } = useTranslation();
-  const q = useQuery({
+  // CR-151: tải dần theo trang 50 («Xem thêm»), không cắt im lặng.
+  const q = useInfiniteQuery({
     queryKey: requestKeys.mine,
-    queryFn: ({ signal }) => fetchMyRequests(signal),
+    queryFn: ({ pageParam, signal }) => fetchMyRequests(pageParam, signal),
+    initialPageParam: 0,
+    getNextPageParam: (last) => last.next_offset ?? undefined,
     staleTime: 15_000,
   });
   if (q.isError || q.isPending) return null; // lỗi phụ không chặn danh sách loại yêu cầu
+  const items = q.data.pages.flatMap((p) => p.items);
   return (
     <section data-testid="my-requests" className="mt-6">
       <h2 className="mb-2 text-[15px] font-semibold">{t("contracts.requests.mineTitle")}</h2>
-      {q.data.items.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-sm text-dim">{t("contracts.requests.mineEmpty")}</p>
       ) : (
         <Panel>
           <ul className="m-0 list-none p-0">
-            {q.data.items.map((r) => (
+            {items.map((r) => (
               <li key={r.run_id} className="border-b border-rule-soft last:border-b-0">
                 <Link
                   to="/contracts/requests/$runId"
@@ -49,6 +53,17 @@ export function MyRequests() {
               </li>
             ))}
           </ul>
+          {q.hasNextPage && (
+            <button
+              type="button"
+              data-testid="my-requests-more"
+              disabled={q.isFetchingNextPage}
+              className="w-full px-5 py-2 text-label text-dim underline"
+              onClick={() => void q.fetchNextPage()}
+            >
+              {t("contracts.requests.mineMore")}
+            </button>
+          )}
         </Panel>
       )}
     </section>

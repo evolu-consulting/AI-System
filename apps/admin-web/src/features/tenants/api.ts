@@ -23,7 +23,15 @@ import { api } from "@/lib/http";
 import type { TenantFeature } from "./lib/feature-assign";
 import type { QuotaFeatureOption } from "./lib/quota-draft";
 
-export type TenantListParams = { q: string; status?: "active" | "locked"; app?: TenantApp };
+export const TENANTS_PAGE_SIZE = 50;
+export type TenantListParams = {
+  q: string;
+  status?: "active" | "locked";
+  app?: TenantApp;
+  /** CR-151 · phân trang ở máy chủ: mặc định 50 dòng/trang; hộp chọn (không phân trang) truyền `limit: 200`. */
+  offset?: number;
+  limit?: number;
+};
 
 const KEYS = {
   all: ["tenants"] as const,
@@ -31,7 +39,7 @@ const KEYS = {
   detail: (id: string) => ["tenants", "detail", id] as const,
 };
 
-/** Tenant ≤ 200 → lấy một lần; lọc trạng thái do server (`status`), số chip lấy từ `counts` của response. */
+/** Phân trang ở máy chủ (limit/offset, `total` trong response); lọc trạng thái do server (`status`), số chip lấy từ `counts`. */
 export function useTenantList(params: TenantListParams, enabled: boolean) {
   return useQuery({
     queryKey: KEYS.list(params),
@@ -39,7 +47,13 @@ export function useTenantList(params: TenantListParams, enabled: boolean) {
     placeholderData: keepPreviousData,
     queryFn: () =>
       api<TenantListResponse>("/admin/tenants", {
-        query: { limit: 200, q: params.q || undefined, status: params.status, app: params.app },
+        query: {
+          limit: params.limit ?? TENANTS_PAGE_SIZE,
+          offset: params.offset || undefined,
+          q: params.q || undefined,
+          status: params.status,
+          app: params.app,
+        },
       }),
   });
 }

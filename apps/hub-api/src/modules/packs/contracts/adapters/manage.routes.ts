@@ -4,7 +4,8 @@
 import {
   CONTRACT_ERRORS,
   CommissionEditRequestSchema,
-  HISTORY_MAX,
+  HISTORY_PAGE,
+  HistoryQuerySchema,
   LOCK_ERRORS,
   MANAGE_ERRORS,
   OwnerAssignRequestSchema,
@@ -12,7 +13,7 @@ import {
 import { Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
-import { parseWith, readJson } from "../../../../lib/http";
+import { parseQuery, parseWith, readJson } from "../../../../lib/http";
 import type { PackAccessView, PackGuardVars, PackWho } from "../../kit/public";
 import { packGuard } from "../../kit/public";
 import type {
@@ -53,9 +54,16 @@ export function manageRoutes(view: PackAccessView, d: ManageRoutesDeps): Hono<Pa
   const write = packGuard(view, KEY, "write");
 
   r.get("/contracts/:id/history", read, async (c) => {
-    const items = await d.history(whoOf(c.get("user")), idOf(c.req.param("id")), HISTORY_MAX);
-    if (!items) throw appError("NOT_FOUND");
-    return c.json({ items });
+    const q = parseQuery(c, HistoryQuerySchema);
+    const limit = q.limit ?? HISTORY_PAGE;
+    const offset = q.offset ?? 0;
+    // limit+1 ⇒ biết còn trang (không cắt im lặng)
+    const rows = await d.history(whoOf(c.get("user")), idOf(c.req.param("id")), limit + 1, offset);
+    if (!rows) throw appError("NOT_FOUND");
+    return c.json({
+      items: rows.slice(0, limit),
+      next_offset: rows.length > limit ? offset + limit : null,
+    });
   });
 
   r.get("/assignees", write, async (c) =>

@@ -6,12 +6,19 @@
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { DetailJob, DetailMilestone, ScoreRows } from "../application/reputation.ports";
-import { type CellParam, REP_CELLS, type RepGroup, type RepRole } from "../domain/rep-config.rules";
+import {
+  type CellParam,
+  COOPERATION_CELL,
+  PLAIN_SCORED_KINDS,
+  REP_CELLS,
+  type RepGroup,
+  type RepRole,
+} from "../domain/rep-config.rules";
 import { type CellInput, monthsBefore, type SrcAgg } from "../domain/rep-score.rules";
 import { contractNameSql } from "./contract-name.sql";
 import { CONFIRMED_STATUSES, json, one } from "./ledger-sql";
 
-/** Chỉ số ô (1-based, ≡ `contracts.v2e_cell`) ⇒ (nhóm, vai). */
+/** Chỉ số ô (1-based, ≡ `contracts.rep_cell_of`) ⇒ (nhóm, vai). */
 export const cellAt = (k: number) => REP_CELLS[k - 1] as readonly [RepGroup, RepRole];
 export const cellIndex = (g: RepGroup, r: RepRole): number =>
   REP_CELLS.findIndex(([a, b]) => a === g && b === r) + 1;
@@ -69,7 +76,8 @@ function arrsOf(today: string, cells: CellParam[]): Arrs {
 }
 
 const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
-const SCORED = sql.raw(`'delivery', 'payment', 'serial', 'commission'`);
+const SCORED = sql.raw(PLAIN_SCORED_KINDS.map((k) => `'${k}'`).join(", "));
+const COOP = sql.raw(String(COOPERATION_CELL));
 /** Hệ số h của ngày `at` theo hàng ô `x` (cột vô hướng b1..b3, f1..f4): tuổi < m tháng ⟺ `at` > hôm nay − m tháng. */
 const H = (at: string, x: string) =>
   sql.raw(`(case when ${x}.b1 is null or ${at} > ${x}.b1 then ${x}.f1 when ${x}.b2 is null or ${at} > ${x}.b2 then ${x}.f2
@@ -78,7 +86,10 @@ const H = (at: string, x: string) =>
 const CELL_OF = (g: string, r: string) =>
   sql.raw(`(case ${r} when 'supplier' then (case ${g} when 'service' then 1 when 'goods' then 3 end)
     when 'customer' then (case ${g} when 'service' then 2 when 'goods' then 4 end)
-    when 'commission_payer' then (case when ${g} = 'referral' then 5 end) end)`);
+    when 'commission_payer' then (case when ${g} = 'referral' then 5 end)
+    when 'franchisee' then (case when ${g} = 'franchise' then 6 end)
+    when 'franchisor' then (case when ${g} = 'franchise' then 7 end)
+    when 'cooperator' then (case when ${g} = 'cooperation' then 8 end) end)`);
 
 /**
  * `p` = tham số; `ck` = MỘT hàng mỗi ô đang chấm với tham số vô hướng (≤ 5 hàng); `cc` = HĐ của tenant thuộc ô đang chấm kèm tham số
@@ -104,7 +115,10 @@ const only = (col: string, party: string | null): SQL =>
 /** Mốc đã xác nhận + việc ghi tay chưa huỷ, mỗi nguồn gom riêng rồi nối. */
 const aggCte = (party: string | null, w: Win) => sql`ms0 as materialized (
     select o.party_key as party, ck.k as cell,
-      case when o.owner = 'partner' and o.kind in (${SCORED}) then 'm:' || o.kind else 'tx' end as src,
+      -- ≡ scoreSource (rep-config.rules): mốc kỳ «Báo cáo / Đối soát» (CR-152) là nguồn m:report.
+      case when o.owner = 'partner' and o.kind in (${SCORED}) then 'm:' || o.kind
+        when o.kind = 'other' and o.period_key is not null and (o.owner = 'partner' or ck.k = ${COOP}) then 'm:report'
+        else 'tx' end as src,
       x.h, x.h * (case when o.fault = 'partner'
         then greatest(0, 100 - ck.lpd * greatest(0, o.done_at - o.due_date)) else 100 end) as hs
     from contracts.obligations o
@@ -251,8 +265,10 @@ export async function detailRows(
         select o.id, c.rep_cell as cell, o.kind, o.title, o.contract_id, ${contractNameSql("c")} as contract, o.due_date, o.done_at, o.fault
         from p, contracts.obligations o
         join contracts.contracts c on c.tenant_id = o.tenant_id and c.id = o.contract_id
-        where o.tenant_id = p.t and o.status = 'done' and o.party_key = ${party}::text and o.owner = 'partner'
-          and o.kind in (${SCORED}) and c.rep_cell = any (p.cells) and o.done_at > p.lo[c.rep_cell] and o.done_at <= p.d
+        where o.tenant_id = p.t and o.status = 'done' and o.party_key = ${party}::text
+          and ((o.owner = 'partner' and o.kind in (${SCORED}))
+            or (o.kind = 'other' and o.period_key is not null and (o.owner = 'partner' or c.rep_cell = ${COOP})))
+          and c.rep_cell = any (p.cells) and o.done_at > p.lo[c.rep_cell] and o.done_at <= p.d
         order by o.done_at desc, o.id limit 500) x), '[]'::json),
       'jb', coalesce((select json_agg(x order by x.at desc, x.id) from (
         select e.id::text as id, e.grp, e.job_type, e.at, e.note, e.contract_id

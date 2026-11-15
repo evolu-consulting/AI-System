@@ -191,8 +191,9 @@ export type StepRepo = {
   cancelTimers(runId: string, stageRunIds: readonly string[], now: Date): Promise<void>;
   /** T19 · 1 câu: audit `branch` + sự kiện thread `branch` (chỉ run bắt đầu từ phòng); đăng bởi poster SAU COMMIT. */
   branchEvent(runId: string, e: BranchEvent): Promise<void>;
-  /** CR-122 · ≤ 1 câu (của app): dữ kiện HIỆN TẠI qua `FactsReader` đã đăng ký; không reader / không thấy bản ghi ⇒ null. */
+  /** CR-122 · ≤ 1 câu (của app): dữ kiện HIỆN TẠI qua `FactsReader` đã đăng ký; không reader / không thấy bản ghi ⇒ null. CR-160 · `readCoreFacts`: dữ kiện LÕI của lượt (`starter_is_top`), có cả lượt bắt đầu bằng phiếu. */
   readFacts?(pack: FlowPackRef, keys: readonly string[]): Promise<FlowFactsRead | null>;
+  readCoreFacts?(runId: string, keys: readonly string[]): Promise<FlowFactsRead | null>;
   /** CR-122 · 1 câu: lần rẽ MỚI NHẤT của mỗi node Nếu có vế `fact` (audit `branch` có `facts`). */
   ifDecisions?(runId: string): Promise<{ stageIdx: number; matched: boolean }[]>;
   /** CR-122 · gọi `OutcomeHandler` của app TRONG tx này (idempotent phía app). Không handler ⇒ ném (rollback, không chốt lượt). */
@@ -396,5 +397,4 @@ export type EachResult<I, T> =
   | { item: I; ok: false; error: unknown };
 /** Adapter `createHubUow` dựng đủ cả hai; mount tách thành hai object riêng (`tenantOnly`/`systemOnly`). */
 export type UnitOfWork = TenantUow & SystemUow;
-
 export type { PackTaskEventIn, PackTaskEventKind } from "./pack-task-events.ports";

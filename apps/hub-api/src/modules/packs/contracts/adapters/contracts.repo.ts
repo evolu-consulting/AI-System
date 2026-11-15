@@ -156,6 +156,7 @@ async function list(
           c.seller_signer, c.buyer_signer, c.value, c.end_date, c.owner_user_id, c.created_by, c.updated_at, c.version,
           c.extract_state, c.effect, c.superseded_at is not null as superseded, c.category_ids[1:50] as category_ids, c.locked_at is not null as locked, c.version_no,
           case when c.source = 'partner_inbox' then 'partner' else 'upload' end as source,
+          c.entry_source, c.reconciled_at is not null as reconciled,
           ${holdSql} as hold, ${versionsCount} as versions_count, pp.ord
         from (select p.id, row_number() over () as ord from p) pp
         join contracts.contracts c on c.id = pp.id and c.tenant_id = ${tid}::uuid) r), '[]'::json) as items,
@@ -250,12 +251,13 @@ const milestonesOf = sql`(select json_agg(m.j order by m.due_date, m.seq, m.id) 
       where o.contract_id = c.id and o.tenant_id = c.tenant_id and o.status <> 'replaced'
       order by o.due_date, o.seq, o.id limit ${MILESTONES_MAX}::int) m)`;
 
-/** CR-097 K2: các phiên bản thấy được của chuỗi (RLS), tăng dần, tới trần. */
+/** CR-097 K2: các phiên bản thấy được của chuỗi (RLS), tới trần. CR-151: lấy các bản MỚI NHẤT (desc) rồi xếp tăng dần; bản cũ hơn
+ *  bị bỏ thì UI báo «còn N bản cũ hơn» theo `versions_count`. */
 const versionsOf = sql`(select json_agg(json_build_object('id', v.id, 'version_no', v.version_no, 'status', v.status,
       'superseded_at', v.superseded_at, 'number', v.number, 'effective_from', v.start_date, 'effective_to', v.end_date,
       'total_value', v.value) order by v.version_no)
     from (select v.* from contracts.contracts v where v.tenant_id = c.tenant_id and v.root_id = c.root_id
-      order by v.version_no limit ${CONTRACT_VERSIONS_MAX}::int) v)`;
+      order by v.version_no desc limit ${CONTRACT_VERSIONS_MAX}::int) v)`;
 
 /** HD-NFR-02 · plan §6 Chi tiết: MỘT câu — hàng (PK, lọc `tenant_id` tường minh) + items `(contract_id, tenant_id, ord)` ≤ 500
  *  + 50 event mới nhất `(contract_id, id DESC)` + tệp (PK `files`, chưa xoá mềm). Không đọc `source_text` (chỉ `is not null`,
@@ -307,7 +309,8 @@ async function detail(
       -- CR-127 K2a-1: trạng thái phụ + hiệu lực + vòng gửi (cột K1a); X1: tạm khoá thực hiện (cột exec_hold_*)
       'hold', ${holdSql}, 'extract_state', c.extract_state, 'effect', c.effect, 'superseded', c.superseded_at is not null,
       'effect_outcome', c.effect_outcome, 'effect_outcome_at', c.effect_outcome_at, 'submit_round', c.submit_round,
-      'submitted_by', c.submitted_by,
+      'submitted_by', c.submitted_by, 'entry_source', c.entry_source, 'reconciled', c.reconciled_at is not null,
+      'reconciled_by', c.reconciled_by, 'reconciled_at', c.reconciled_at,
       -- CR-127 SG1 · K8: HĐ nhận chờ người phụ trách quyết (chỉ HĐ có bản ghi nhận; chỉ mục partial 0094)
       'awaiting_decision', exists (select 1 from contracts.partner_inbox p where p.tenant_id = c.tenant_id
         and p.contract_id = c.id and p.awaiting_decision and p.status = 'pending'),

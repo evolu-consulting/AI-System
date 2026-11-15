@@ -79,8 +79,11 @@ export async function mockApprovalFlow(page: Page, o: Opts): Promise<void> {
 }
 
 /** CR-133 · `GET …/contracts/:id/files` (khối «Tài liệu kèm») — kịch bản có catch-all trả HĐ cho mọi đường con ⇒ `files.length` vỡ; gọi SAU catch-all. */
-export async function mockContractFiles(page: Page): Promise<void> {
+export async function mockContractFiles(
+  page: Page,
+  over: { can_add?: boolean; locked?: boolean } = {},
+): Promise<void> {
   await page.route("**/pack/contracts/contracts/*/files", (r) =>
-    json(r, 200, { files: [], steps: [], can_add: false }),
+    json(r, 200, { files: [], steps: [], can_add: false, locked: false, ...over }),
   );
 }

@@ -16,6 +16,8 @@ describe("CR-122 p10 · logic chọn đối tác", () => {
       buy: "supplier",
       sell: "customer",
       referral: "commission_payer",
+      franchise: "customer",
+      cooperation: "customer",
     });
     expect(idKind("0311-110-001")).toBe("mst");
     expect(idKind("079 123 456 789")).toBe("cccd");

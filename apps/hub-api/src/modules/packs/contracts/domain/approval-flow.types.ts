@@ -44,7 +44,7 @@ export type DifyParam = {
 export type DifyWorkflow = { key: string; name: string; params: readonly DifyParam[] };
 export type ApprovalFlowIssue = { path: string; rule: ApprovalFlowRule };
 
-export type FlowDeal = "buy" | "sell" | "referral";
+export type FlowDeal = "buy" | "sell" | "referral" | "franchise" | "cooperation";
 /** CR-121 D-0 · `creator_department` theo MÃ Group (tính cả phòng con); `new_partner` = chưa có HĐ được duyệt với đối tác. */
 export type FlowCond =
   | { field: "deal"; in: FlowDeal[] }

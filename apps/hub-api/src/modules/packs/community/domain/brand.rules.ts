@@ -8,7 +8,7 @@ export type BrandView = {
   logo: string | null;
   accent: string;
 };
-export type CapsView = { contracts: boolean };
+export type CapsView = { contracts: boolean; companyAdmin: boolean };
 
 const text = (v: string | null | undefined): string | null => (v?.trim() ? v : null);
 
@@ -35,7 +35,11 @@ export function viewerCaps(
   isPartner: boolean,
   hasContracts: boolean,
   contractsUrl: string,
+  isCompanyAdmin = false,
 ): { caps: CapsView; contractsUrl: string | null } {
   const contracts = !isPartner && hasContracts;
-  return { caps: { contracts }, contractsUrl: contracts ? contractsUrl : null };
+  return {
+    caps: { contracts, companyAdmin: contracts && isCompanyAdmin },
+    contractsUrl: contracts ? contractsUrl : null,
+  };
 }

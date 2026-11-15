@@ -112,6 +112,13 @@ export function StatusCell({ r }: { r: ContractListRow }) {
       <StatusChip status={r.status} />
       {v.effect && <EffectChip effect={v.effect.effect} daysLeft={v.effect.daysLeft} />}
       {v.held && <ContractLockChip {...(r.hold?.reason ? { reason: r.hold.reason } : {})} />}
+      {r.entry_source === "manual" && (
+        <Tag tone={r.reconciled ? "grey" : "late"}>
+          {t(
+            r.reconciled ? "contracts.review.manualTag.done" : "contracts.review.manualTag.pending",
+          )}
+        </Tag>
+      )}
       {v.extract && (
         <Tag tone={v.extract === "failed" ? "late" : "grey"}>
           {t(`contracts.u6.extract.${v.extract}`)}

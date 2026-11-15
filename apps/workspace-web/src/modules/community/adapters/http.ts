@@ -1,6 +1,6 @@
 // CR-102 · C3 · adapter HTTP thật: `/pack/community/*` của hub-api (proxy cùng origin), Bearer từ phiên contracts (web-kit:
 // token trong bộ nhớ, 401 ⇒ refresh cookie một lần). Hình dữ liệu = `@ai/contracts/community`; server quyết quyền xem.
-import type { FeedQuery, JoinRequest, Report } from "@ai/contracts/community";
+import type { FeedQuery } from "@ai/contracts/community";
 import { api, apiResponse } from "@ai/web-kit/http";
 import { notifyFlowNavChanged } from "~/shared/kernel/flow-nav-event";
 import type { CommunityApi, FlowsApi } from "../application/ports";
@@ -24,7 +24,9 @@ export function feedQueryString(q: FeedQuery): Record<string, string | number | 
   };
 }
 
-const pend = (p: boolean) => (p ? { query: { pending: "1" } } : undefined);
+const pend = (p: boolean, offset = 0) => ({
+  query: { ...(p ? { pending: "1" } : {}), ...(offset > 0 ? { offset } : {}) },
+});
 const post = (body: unknown) => ({ method: "POST" as const, body });
 /** C-7 · sau mỗi quyết (duyệt/từ chối/xử lý) báo shell tải lại số đếm menu. */
 const decided = async <T>(p: Promise<T>): Promise<T> => {
@@ -35,13 +37,12 @@ const decided = async <T>(p: Promise<T>): Promise<T> => {
 
 export const createHttpFlows = (): FlowsApi => ({
   nav: () => api(`${BASE}/flows/nav`),
-  modQueue: () => api(`${BASE}/moderation/queue`),
-  myModeration: () => api(`${BASE}/moderation/mine`),
+  modQueue: (o) => api(`${BASE}/moderation/queue`, pend(false, o)),
+  myModeration: (o) => api(`${BASE}/moderation/mine`, pend(false, o)),
   decideModeration: (id, input) =>
     decided(api(`${BASE}/moderation/${enc(id)}/decide`, post(input))),
   createJoin: (input) => api(`${BASE}/join-requests`, post(input)),
-  listJoins: async (p) =>
-    (await api<{ items: JoinRequest[] }>(`${BASE}/join-requests`, pend(p))).items,
+  listJoins: (p, o) => api(`${BASE}/join-requests`, pend(p, o)),
   decideJoin: (id, input) => decided(api(`${BASE}/join-requests/${enc(id)}/decide`, post(input))),
   // Sổ đối tác SHT (vai ∪ danh bạ, dưới RLS người xem) — KHÔNG dùng `GET /partners` (bảng điểm uy tín, chỉ đối tác đã có HĐ duyệt):
   // đối tác mới nhập tay chưa có HĐ vẫn phải chọn được. Tối đa 50 dòng/lần; gõ từ khoá ⇒ tìm theo tiền tố ở máy chủ.
@@ -55,7 +56,7 @@ export const createHttpFlows = (): FlowsApi => ({
     ];
   },
   reportPost: (postId, reason) => api(`${BASE}/posts/${enc(postId)}/report`, post({ reason })),
-  listReports: async (p) => (await api<{ items: Report[] }>(`${BASE}/reports`, pend(p))).items,
+  listReports: (p, o) => api(`${BASE}/reports`, pend(p, o)),
   decideReport: (id, input) => decided(api(`${BASE}/reports/${enc(id)}/decide`, post(input))),
 });
 
@@ -65,6 +66,14 @@ export function createHttpApi(): CommunityApi {
     getViewer: () => api(`${BASE}/viewer`),
     getBrand: () => api(`${BASE}/brand`),
     getBrandCover: () => api(`${BASE}/brand/cover`),
+    getMyPeople: () => api("/people/me"),
+    setMyImage: async (kind, value) => {
+      await api(`/people/me/${kind}`, { method: "PUT", body: { [kind]: value } });
+    },
+    getPeople: (ids) => api("/people", { query: { ids: ids.join(",") } }),
+    setCompanyCover: async (cover) => {
+      await api(`${BASE}/brand/cover`, { method: "PUT", body: { cover } });
+    },
     listFeed: (q) => api(`${BASE}/feed`, { query: feedQueryString(q) }),
     uploadFile: (file) =>
       api(`${BASE}/files`, {
@@ -91,15 +100,18 @@ export function createHttpApi(): CommunityApi {
     postAction: async (id, input) =>
       (await api(`${BASE}/posts/${enc(id)}/actions`, { method: "POST", body: input })) ?? null,
     getPostSource: (id) => api(`${BASE}/posts/${enc(id)}/source`),
-    listComments: (postId, cursor) =>
-      api(`${BASE}/posts/${enc(postId)}/comments`, { query: { cursor, limit: 100 } }),
+    listComments: (postId, cursor, o) =>
+      api(`${BASE}/posts/${enc(postId)}/comments`, {
+        query: { cursor, limit: o?.limit ?? 100, dir: o?.dir, before: o?.before },
+      }),
     listMentionables: (postId, q) =>
       api(`${BASE}/posts/${enc(postId)}/mentionables`, { query: { q: q || undefined, limit: 20 } }),
-    mentionablePeople: (q, scope) =>
+    mentionablePeople: (q, scope, cursor) =>
       api(`${BASE}/mentionable-people`, {
         query: {
           q: q || undefined,
           limit: 20,
+          cursor,
           type: scope?.type,
           mode: scope?.mode,
           cats: scope?.cats?.join(",") || undefined,
@@ -119,7 +131,14 @@ export function createHttpApi(): CommunityApi {
         body: { hidden },
       }),
     listPartners: (opts) =>
-      api(`${BASE}/partners`, opts?.rep ? { query: { rep: "1" } } : undefined),
+      api(`${BASE}/partners`, {
+        query: {
+          rep: opts?.rep ? "1" : undefined,
+          q: opts?.q || undefined,
+          limit: opts?.limit,
+          offset: opts?.offset,
+        },
+      }),
     getProfileMedia: (orgId, q) =>
       api(`${BASE}/profile/${enc(orgId)}/media`, { query: { cursor: q?.cursor, limit: q?.limit } }),
     listCats: () => api(`${BASE}/cats`),

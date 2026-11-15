@@ -1,12 +1,13 @@
 {
-  "_doc": "Hop dong env: ten bien MOI bo trien khai (kit) phai tu dat (gen-env.sh / env.template / filebox-env.sh), vi mac dinh trong code am tham tat tinh nang. Chi ten, khong gia tri. Kiem: bun run check:env-contract",
+  "_doc": "Hop dong env: ten bien MOI bo trien khai (kit) phai tu dat (gen-env.sh / env.template / filebox-env.sh / docker-compose.yml), vi mac dinh trong code am tham tat tinh nang. Chi ten, khong gia tri. Kiem: bun run check:env-contract",
   "kitFiles": {
     "prod-sohoptac2": [
       "deploy/prod-sohoptac2/gen-env.sh",
       "deploy/prod-sohoptac2/env.template",
-      "deploy/prod-sohoptac2/filebox-env.sh"
+      "deploy/prod-sohoptac2/filebox-env.sh",
+      "deploy/prod-sohoptac2/docker-compose.yml"
     ],
-    "stg-test": ["deploy/stg-test/gen-env.sh"]
+    "stg-test": ["deploy/stg-test/gen-env.sh", "deploy/stg-test/docker-compose.yml"]
   },
   "vars": [
     {
@@ -22,36 +23,60 @@
     {
       "name": "HUB_NOTIFY_MODE",
       "kits": ["prod-sohoptac2", "stg-test"],
-      "note": "mac dinh off => khong gui mail; phai dat tuong minh (off|live)"
+      "note": "mac dinh off => khong gui mail; ca hai kit dat tuong minh off (khong SMTP). Bat live = nguoi dung cap SMTP roi doi tay"
+    },
+    {
+      "name": "HUB_PARTNER_MAILBOX",
+      "kits": ["prod-sohoptac2", "stg-test"],
+      "note": "vang (mac dinh off) => gui doi tac xac nhan bi chan PARTNER_CHANNEL_OFF"
+    },
+    {
+      "name": "HUB_FAST_ROUTE",
+      "kits": ["prod-sohoptac2", "stg-test"],
+      "note": "vang (mac dinh off) => tin khong tag di vong Orchestrator"
+    },
+    {
+      "name": "HUB_STICKY_AGENT",
+      "kits": ["prod-sohoptac2"],
+      "note": "vang (mac dinh off) => tin khong tag khong dinh agent vua tra loi. stg-test chua dat (lech da ghi o tasks chore-env-cleanup)"
     },
     {
       "name": "DIFY_CONSOLE_URL",
       "kits": ["prod-sohoptac2"],
       "note": "vang => khong co nut Mo trong Dify o Admin > Workflows"
-    },
-    {
-      "name": "HUB_SMTP_HOST",
-      "kits": ["prod-sohoptac2"],
-      "note": "khoa seed kho thu: thieu => mail live khong khoi tao duoc"
-    },
-    { "name": "HUB_SMTP_PORT", "kits": ["prod-sohoptac2"], "note": "khoa seed kho thu" },
-    { "name": "HUB_SMTP_SECURE", "kits": ["prod-sohoptac2"], "note": "khoa seed kho thu" },
-    { "name": "HUB_SMTP_USER", "kits": ["prod-sohoptac2"], "note": "khoa seed kho thu" },
-    { "name": "HUB_SMTP_FROM", "kits": ["prod-sohoptac2"], "note": "khoa seed kho thu" },
-    {
-      "name": "SMTP_PASSWORD",
-      "kits": ["prod-sohoptac2"],
-      "note": "bi mat: chi ten trong env.template, dat tay tren server"
     }
   ],
+  "optional": [
+    {
+      "name": "HUB_SMTP_HOST",
+      "note": "chi khi HUB_NOTIFY_MODE=live: khoi tao kho secret mail MOT lan (CR-121 D4). Ten co trong env.template; mail tat => khong dat"
+    },
+    { "name": "HUB_SMTP_PORT", "note": "nhu HUB_SMTP_HOST" },
+    { "name": "HUB_SMTP_SECURE", "note": "nhu HUB_SMTP_HOST" },
+    { "name": "HUB_SMTP_USER", "note": "nhu HUB_SMTP_HOST" },
+    { "name": "HUB_SMTP_FROM", "note": "nhu HUB_SMTP_HOST" },
+    {
+      "name": "SMTP_PASSWORD",
+      "note": "bi mat, chi khi live: dat tay tren server, khong ghi vao repo"
+    },
+    {
+      "name": "CONTRACTS_EXTRACT_TIMEOUT_S",
+      "default": "300",
+      "note": "CR-155: tran mot luot AI doc HD (10-3600 giay)"
+    },
+    {
+      "name": "CONTRACTS_EXTRACT_READ_TIMEOUT_S",
+      "default": "330",
+      "note": "CR-155: han doc HD (giay); tu nang >= tran AI + 30"
+    }
+  ],
+  "_allowDiffWhy": "Chenh co ly do: ha tang chi prod (pgbouncer, pool, ops-status, Dify, tran runtime), co tuy chon chi prod (sticky, SMTP/DocuSign/Trello khi co that), co dev/test chi stg-test (S2_STACK, LOGIN_IP_MAX_ATTEMPTS, HUB_SEED_FIXTURES, seed tool).",
   "allowDiff": [
     "S2_STACK",
-    "DIFY_CONSOLE_URL",
     "S2_DOMAIN",
     "S2_HOSTS",
     "LOGIN_IP_MAX_ATTEMPTS",
     "HUB_SEED_FIXTURES",
-    "CONTRACTS_APPROVAL_ENGINE",
     "ESIGN_PROVIDER",
     "ESIGN_PROVIDERS",
     "DOCUSIGN_INTEGRATION_KEY",
@@ -72,6 +97,31 @@
     "HUB_FLOW_RUNTIME",
     "COMMUNITY_SWEEP",
     "COMMUNITY_SWEEP_EVERY_MS",
-    "S2_PORT_COMMUNITY"
+    "HUB_SMTP_HOST",
+    "HUB_SMTP_PORT",
+    "HUB_SMTP_SECURE",
+    "HUB_SMTP_USER",
+    "HUB_SMTP_FROM",
+    "SMTP_PASSWORD",
+    "CONTRACTS_EXTRACT_TIMEOUT_S",
+    "CONTRACTS_EXTRACT_READ_TIMEOUT_S",
+    "DIFY_CONSOLE_URL",
+    "HUB_STICKY_AGENT",
+    "HUB_MAX_CONCURRENT_RUNS",
+    "HUB_DIFY_TIMEOUT_MAX_S",
+    "HUB_DB_POOL_MAX",
+    "HUB_OPS_STATUS_DIR",
+    "AGENT_RT_DB_POOL_MAX",
+    "AGENT_RT_HUB_TOOL_TIMEOUT_MAX_S",
+    "AUTH_FILE",
+    "AUTH_TYPE",
+    "DB_HOST",
+    "DB_PORT",
+    "DEFAULT_POOL_SIZE",
+    "MAX_CLIENT_CONN",
+    "MAX_PREPARED_STATEMENTS",
+    "POOL_MODE",
+    "DEMO_OWNER_PW_FILE",
+    "STG_PW_OUT"
   ]
 }

@@ -63,13 +63,25 @@ export type InsertedVersion = {
 };
 
 /** Repo trong tx: một câu (CTE files → contracts → events). Cha không hợp lệ ⇒ `UploadError("PARENT_INVALID")`. */
-export type UploadContractRepo = {
+export type UploadContractRepo = UploadReplaceRepo & {
   insert(
     row: NewUploadedContract,
   ): Promise<{ id: string; status: "draft"; extractState: UploadExtract; version: number }>;
   /** CR-097 K2 · HD-FR-101: nháp v(n+1) của chuỗi chứa `supersedesId` (kế thừa loại/phụ trách/luật thấy) — MỘT câu; điều kiện
    *  (thấy, HĐ, hiện hành, đã khoá, chưa có nháp) kiểm trong câu ⇒ `UploadError` mã tương ứng, không ghi gì. */
   insertVersion(row: NewUploadedContract, supersedesId: string): Promise<InsertedVersion>;
+};
+/** CR-157b · thay tệp của HĐ DRAFT đọc lỗi: cổng kiểm (trước quota/FileBox) + ghi (MỘT câu, điều kiện kiểm lại trong câu). */
+export type ReplaceGate = {
+  status: string;
+  extractState: string;
+  createdBy: string;
+  ownerId: string | null;
+};
+export type UploadReplaceRepo = {
+  replaceGate(id: string): Promise<ReplaceGate | null>;
+  /** `null` ⇒ không còn DRAFT + failed (đua) ⇒ không ghi gì. */
+  replaceFile(row: NewUploadedContract, id: string): Promise<{ version: number } | null>;
 };
 export type UploadTxRepos = { upload: UploadContractRepo } & KitTxRepos & ContractFlowTxRepos;
 export type UploadUow = PackUow<UploadTxRepos>;
@@ -102,7 +114,10 @@ export type UploadErrorCode =
   | "CONTRACT_NOT_LOCKED"
   | "VERSION_DRAFT_EXISTS"
   // CR-101a (K4): ngừng tạo phụ lục mới (410)
-  | "USE_VERSIONS";
+  | "USE_VERSIONS"
+  // CR-157b · «Tải tệp khác» (thay tệp HĐ nháp đọc lỗi)
+  | "REPLACE_NOT_ALLOWED"
+  | "FORBIDDEN";
 
 export class UploadError extends Error {
   constructor(

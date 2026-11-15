@@ -1,0 +1,127 @@
+// fix-review-r2 · `trigger.params.owner_user_id` của quy trình «Nhận HĐ từ đối tác»: khi LƯU phải là người nội bộ, đang hoạt động, không bị khoá,
+// đúng công ty (một câu exists, DB thật, vai hub trong scope user của tenant như lúc ghi cấu hình) ⇒ 422 PROCESS_DEF_INVALID theo trường.
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import type { ProcessDefInput } from "@ai/contracts/hub-admin";
+import { createDb, type Db } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
+import { tenants, users } from "@ai/test-kit/builders";
+import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
+import { urls } from "@ai/test-kit/env";
+import { checkOnSave, RECEIVE_OWNER_PATH, receiveOwnerCheck } from "./flow-check";
+
+let o: Sql;
+let db: Db;
+let X = "";
+let Y = "";
+let ok = "";
+let external = "";
+let inactive = "";
+let locked = "";
+let other = "";
+
+const input = (owner: string | undefined, event = "contract.received"): ProcessDefInput =>
+  ({
+    key: "r2-owner",
+    name: "r2",
+    stages: [],
+    trigger: { event, params: owner === undefined ? {} : { owner_user_id: owner } },
+  }) as unknown as ProcessDefInput;
+const check = (tid: string | null, i: ProcessDefInput) =>
+  withHubScope(db, { kind: "user", tenantId: X, userId: ok }, (tx) =>
+    receiveOwnerCheck(tx, tid, i),
+  );
+const code = (p: Promise<unknown>) =>
+  p.then(
+    () => "ok",
+    (e: { code?: string; details?: { paths?: string[] } }) =>
+      `${e.code}:${(e.details?.paths ?? []).join(",")}`,
+  );
+
+beforeAll(async () => {
+  await cloneDb("full");
+  o = openOwner(2);
+  [X, Y] = (await tenants(o, 2, 1750)) as [string, string];
+  [ok, external, inactive, locked] = (await users(o, X, 4, { from: 1750 })) as [
+    string,
+    string,
+    string,
+    string,
+  ];
+  [other] = (await users(o, Y, 1, { from: 1760 })) as [string];
+  const [org] = await o<
+    { id: string }[]
+  >`insert into admin.external_orgs (tenant_id, name) values (${X}, 'Đối tác r2') returning id::text as id`;
+  await o`delete from admin.users where id = ${external}`;
+  await o`insert into admin.users (id, tenant_id, username, email, password_hash, display_name, role, kind, external_org_id)
+    values (${external}, ${X}, 'r2-ext', 'r2-ext@kit.test', 'x', 'Đối tác', 'member', 'external', ${org?.id as string}::uuid)`;
+  await o`update admin.users set active = false where id = ${inactive}`;
+  await o`update admin.users set locked_by_tenant = true where id = ${locked}`;
+  db = createDb(urls().hubApi, { max: 2 });
+}, 120_000);
+afterAll(async () => {
+  await db?.close();
+  await o?.end({ timeout: 2 });
+});
+
+describe("fix-review-r2 · người phụ trách của quy trình Nhận HĐ khi lưu", () => {
+  it("người nội bộ đang hoạt động của công ty ⇒ qua", async () => {
+    expect(await code(check(X, input(ok)))).toBe("ok");
+  });
+  it("người công ty khác / bên ngoài / vô hiệu / bị khoá / không tồn tại ⇒ 422 PROCESS_DEF_INVALID, đường trigger.params.owner_user_id", async () => {
+    for (const who of [other, external, inactive, locked, crypto.randomUUID()])
+      expect(await code(check(X, input(who)))).toBe(`PROCESS_DEF_INVALID:${RECEIVE_OWNER_PATH}`);
+  });
+  it("không đặt người phụ trách / sự kiện khác / def thư viện (tenant null) ⇒ không kiểm", async () => {
+    expect(await code(check(X, input(undefined)))).toBe("ok");
+    expect(await code(check(X, input(other, "contract.submitted")))).toBe("ok");
+    expect(await code(check(null, input(other)))).toBe("ok");
+  });
+});
+
+describe("fix-review-r3 · người phụ trách kiểm ở MỌI đường lưu có trigger (kể cả theo khe / bản sao thư viện)", () => {
+  const save = (via: boolean, i: ProcessDefInput) =>
+    withHubScope(db, { kind: "user", tenantId: X, userId: ok }, (tx) =>
+      checkOnSave(tx, i, X, null, via),
+    );
+  it("đường bản sao / khe (không áp luật FlowDef) vẫn 422 với người phụ trách sai", async () => {
+    expect(await code(save(false, input(other)))).toBe(`PROCESS_DEF_INVALID:${RECEIVE_OWNER_PATH}`);
+    expect(await code(save(false, input(ok)))).toBe("ok");
+  });
+  it("đường FlowDef thường: vẫn chặn (luật FlowDef + người phụ trách)", async () => {
+    expect(await code(save(true, input(other)))).toStartWith("PROCESS_DEF_INVALID");
+  });
+});
+
+describe("CR-160 · «Bắt đầu khi» dùng dữ kiện lõi bị chặn khi lưu", () => {
+  const withWhen = (when: unknown) =>
+    ({
+      key: "c160",
+      name: "c160",
+      app: "contracts",
+      stages: [],
+      trigger: { event: "contract.submitted", when },
+    }) as unknown as ProcessDefInput;
+  const save = (i: ProcessDefInput) =>
+    withHubScope(db, { kind: "user", tenantId: X, userId: ok }, (tx) =>
+      checkOnSave(tx, i, X, null, true),
+    ).then(
+      () => "ok",
+      (e: { code?: string; status?: number; details?: { paths?: string[] } }) =>
+        `${e.code}:${e.status}:${(e.details?.paths ?? []).join(",")}`,
+    );
+  it("vế starter_is_top ở Bắt đầu khi ⇒ 422 TRIGGER_FACT_CORE kèm đường lỗi", async () => {
+    const when = { op: "and", conds: [{ fact: "starter_is_top", op: "eq", value: true }] };
+    expect(await save(withWhen(when))).toBe("TRIGGER_FACT_CORE:422:trigger.when.conds.0");
+  });
+  it("vế trong nhóm cũng bị chặn", async () => {
+    const when = {
+      op: "and",
+      conds: [{ op: "or", conds: [{ fact: "starter_is_top", op: "eq", value: true }] }],
+    };
+    expect(await save(withWhen(when))).toBe("TRIGGER_FACT_CORE:422:trigger.when.conds.0.conds.0");
+  });
+  it("dữ kiện thường (không phải lõi) không bị chặn bởi luật này", async () => {
+    const when = { op: "and", conds: [{ fact: "total_value", op: "gt", value: 1 }] };
+    expect(await save(withWhen(when))).not.toContain("TRIGGER_FACT_CORE");
+  });
+});

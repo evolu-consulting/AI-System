@@ -1563,7 +1563,10 @@
     "esign": {
       "title": "Cấu hình ký số",
       "default": "Theo cài đặt ký số của công ty",
-      "provider": "Nhà cung cấp",
+      "provider": "Ký qua",
+      "providerPick": "Chọn cách ký",
+      "providerUpload": "Tải lên bản đã ký (không ký số)",
+      "signersPick": "Chọn người ký",
       "order": "Thứ tự ký",
       "orders": {
         "parallel": "Song song",
@@ -1574,7 +1577,6 @@
       "no": "Không",
       "due": "Hạn (ngày)",
       "remind": "Nhắc mỗi (giờ)",
-      "defaultSigners": "Để trống: dùng nhóm Người ký HĐ ({{name}}, {{count}} người)",
       "signers": "Người ký phía công ty (tối đa {{max}})",
       "group": "Phòng ban",
       "packOff": "Công ty chưa bật Ký số — bật ở Công ty › Ứng dụng.",
@@ -1584,14 +1586,15 @@
       "disabled": "Công ty chưa bật ký số. Bật ở {{path:sign}}.",
       "err": {
         "ESIGN_DISABLED": "Công ty chưa bật ký số.",
+        "NO_PROVIDER_SELECTED": "chưa chọn «Ký qua» — chọn cách ký trong bước Ký của quy trình",
+        "PROVIDER_NOT_ENABLED": "Nhà cung cấp này chưa bật cho công ty — bật ở Cài đặt › Kết nối, hoặc chọn cách khác.",
         "PROVIDER_UNAVAILABLE": "Nhà cung cấp này chưa bật cho công ty.",
         "SIGNER_NOT_IN_TENANT": "Người ký không thuộc công ty.",
         "NO_SIGNER": "Nhóm này chưa có người ký dùng được.",
-        "NO_SIGNER_SELECTED": "chưa có người ký — chọn người ký trong bước, hoặc đặt nhóm Người ký HĐ ở Cài đặt › Ký & đối tác",
+        "NO_SIGNER_SELECTED": "chưa có người ký — chọn người ký phía công ty trong bước Ký của quy trình",
         "DIRECTORY_UNAVAILABLE": "Chưa kiểm được danh bạ, thử lại sau."
       },
       "signWith": "Ký bằng: {{name}}",
-      "signChooses": "Cách ký: người ký chọn khi ký",
       "noProvider": "chưa chọn nhà cung cấp",
       "change": "Đổi ở {{path:sign}}"
     },
@@ -1617,6 +1620,13 @@
     "moreActions": "Thao tác khác",
     "scheduleDays": "Số ngày (N)",
     "scheduleDaysRange": "Nhập số ngày từ {{min}} đến {{max}}.",
+    "receive": {
+      "important": "Quan trọng từ (triệu đồng)",
+      "critical": "Rất quan trọng từ (triệu đồng)",
+      "owner": "Người phụ trách hợp đồng nhận",
+      "ownerNone": "Chưa chọn — quản trị công ty phụ trách",
+      "range": "Ngưỡng «Rất quan trọng» phải lớn hơn «Quan trọng»."
+    },
     "testRun": {
       "button": "Chạy thử",
       "title": "Chạy thử · {{name}}",

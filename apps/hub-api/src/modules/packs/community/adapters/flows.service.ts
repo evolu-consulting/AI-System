@@ -22,6 +22,7 @@ import {
 import { EV_JOIN, EV_REPORT, joinFacts, reportFacts } from "../domain/flow-events.rules";
 import type { Access } from "./community-access";
 import { emitEvent } from "./flow-events.repo";
+import { cutPage, type FlowPage } from "./flow-page";
 import { linkJoined } from "./flows.link";
 import * as repo from "./flows.repo";
 
@@ -167,13 +168,21 @@ export const modRows = (d: FlowDeps, a: Access, ids: readonly string[]) =>
     ? d.uow.tenant(a.who, ({ tx }) => repo.modRows(tx, ids))
     : Promise.resolve([]);
 
-export const modQueue = (d: FlowDeps, a: Access) => {
+export const modQueue = async (d: FlowDeps, a: Access, p: FlowPage) => {
   if (!reviewer(a)) throw new AppError("PACK_FORBIDDEN", 403, "Forbidden");
-  return d.uow.tenant(a.who, ({ tx }) => repo.modQueue(tx, 100));
+  return cutPage(
+    await d.uow.tenant(a.who, ({ tx }) => repo.modQueue(tx, p.limit + 1, p.offset)),
+    p,
+  );
 };
 
-export const myModeration = (d: FlowDeps, a: Access) =>
-  d.uow.tenant(a.who, ({ tx }) => repo.myModeration(tx, a.who.userId, 50));
+export const myModeration = async (d: FlowDeps, a: Access, p: FlowPage) =>
+  cutPage(
+    await d.uow.tenant(a.who, ({ tx }) =>
+      repo.myModeration(tx, a.who.userId, p.limit + 1, p.offset),
+    ),
+    p,
+  );
 
 export async function decideModeration(
   d: FlowDeps,
@@ -248,9 +257,12 @@ export async function createJoin(d: FlowDeps, a: Access, input: JoinInput): Prom
 export const joinRows = (d: FlowDeps, a: Access, ids: readonly string[]) =>
   ids.length === 0 ? Promise.resolve([]) : d.uow.tenant(a.who, ({ tx }) => repo.joinRows(tx, ids));
 
-export const joinList = (d: FlowDeps, a: Access, pendingOnly: boolean) => {
+export const joinList = async (d: FlowDeps, a: Access, pendingOnly: boolean, p: FlowPage) => {
   if (a.org === null && !joinReviewer(a)) throw new AppError("PACK_FORBIDDEN", 403, "Forbidden");
-  return d.uow.tenant(a.who, ({ tx }) => repo.joinList(tx, pendingOnly, 100));
+  return cutPage(
+    await d.uow.tenant(a.who, ({ tx }) => repo.joinList(tx, pendingOnly, p.limit + 1, p.offset)),
+    p,
+  );
 };
 
 /** Tenant admin quyết; duyệt ⇒ liên kết công ty đối tác (nhãn xin) trong CÙNG tx. */
@@ -342,9 +354,12 @@ export const reportRows = (d: FlowDeps, a: Access, ids: readonly string[]) =>
     : d.uow.tenant(a.who, ({ tx }) => repo.reportRows(tx, ids));
 
 /** Chủ quản không phải admin ⇒ 403 (RLS cho chủ quản thấy mọi báo cáo ⇒ chặn ở đây); đối tác: chỉ báo cáo của mình (RLS). */
-export const reportList = (d: FlowDeps, a: Access, pendingOnly: boolean) => {
+export const reportList = async (d: FlowDeps, a: Access, pendingOnly: boolean, p: FlowPage) => {
   if (a.org === null && !reviewer(a)) throw new AppError("PACK_FORBIDDEN", 403, "Forbidden");
-  return d.uow.tenant(a.who, ({ tx }) => repo.reportList(tx, pendingOnly, 100));
+  return cutPage(
+    await d.uow.tenant(a.who, ({ tx }) => repo.reportList(tx, pendingOnly, p.limit + 1, p.offset)),
+    p,
+  );
 };
 
 export async function decideReport(

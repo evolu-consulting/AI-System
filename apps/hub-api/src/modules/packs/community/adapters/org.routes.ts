@@ -3,12 +3,14 @@
 // quản ở SHT › Đối tác (CR-130, ADR-0043) — không còn `PUT /partners/:orgId`. Thông báo = C9 (ở đây trả rỗng).
 import {
   COMMUNITY_BRAND_ACCENTS,
+  CommunityBrandCoverSetSchema,
   type CommunitySettings,
   CommunitySettingsInputSchema,
   CommunitySettingsSchema,
   type CommunityViewer,
   DEFAULT_BRAND_ACCENT,
   DEFAULT_SETTINGS,
+  PartnersPageQuerySchema,
   type Profile,
 } from "@ai/contracts/community";
 import { type Context, Hono } from "hono";
@@ -20,7 +22,7 @@ import { type Access, accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
 import * as orgs from "./org.service";
 import { profileTarget, withReputation } from "./profile.routes";
-import { partnerViews } from "./views";
+import { pageOrgIds, partnerViews } from "./views";
 
 type R = Hono<PackGuardVars>;
 type Acc = (c: Context<PackGuardVars>, need?: "read" | "write") => Promise<Access>;
@@ -54,13 +56,14 @@ async function profileOf(d: CommunityDeps, a: Access, orgId: string | undefined)
 /** `GET /viewer`: người xem + vai + công ty + quyền gói; `email` chỉ của chính người xem. */
 async function viewerOf(d: CommunityDeps, a: Access): Promise<CommunityViewer> {
   const isPartner = a.org !== null;
-  const [me, hasContracts, self] = await Promise.all([
+  const [me, hasContracts, isAdmin, self] = await Promise.all([
     orgs.own(d.uow, a),
     !isPartner && d.caps ? d.caps.contracts(a.who) : false,
+    !isPartner && d.caps ? d.caps.admin(a.who) : false,
     d.contact ? d.contact(a.who) : null,
   ]);
   return {
-    ...viewerCaps(isPartner, hasContracts, d.shtUrl),
+    ...viewerCaps(isPartner, hasContracts, d.shtUrl, isAdmin),
     userId: a.who.userId,
     name: a.dir.userName,
     email: self?.email ?? null,
@@ -97,15 +100,28 @@ function viewerAndPartners(r: R, d: CommunityDeps, access: Acc): void {
     const cover = d.brand ? await d.brand.cover(a.who.tenantId) : null;
     const body = JSON.stringify({ cover });
     const etag = `"${new Bun.CryptoHasher("sha256").update(body).digest("hex")}"`;
-    const cache = { ETag: etag, "Cache-Control": "private, max-age=300" };
+    const cache = { ETag: etag, "Cache-Control": "private, no-cache" };
     const inm = c.req.header("if-none-match");
     if (inm?.split(",").some((t) => t.trim() === etag || t.trim() === `W/${etag}`))
       return c.body(null, 304, cache);
     return c.body(body, 200, { ...cache, "Content-Type": "application/json" });
   });
+  // CR-147b: chủ sở hữu công ty đổi/xoá ảnh bìa ngay ở hồ sơ công ty — cùng cột `company_settings.cover` (CR-138), cùng luật PNG/JPG/WebP ≤ 3 MB.
+  r.put("/brand/cover", async (c) => {
+    const a = await access(c);
+    if (a.org !== null || !d.brand || !d.caps || !(await d.caps.admin(a.who)))
+      throw appError("FORBIDDEN");
+    const { cover } = parseWith(CommunityBrandCoverSetSchema, await readJson(c));
+    await d.brand.setCover(a.who.tenantId, a.who.userId, cover); // ghi người đổi vào company_settings.updated_by
+    return c.json({ cover });
+  });
   r.get("/partners", async (c) => {
     const a = await access(c);
-    const list = partnerViews(a, await orgs.partners(d.uow, a));
+    // CR-151 · #269: `?limit=` (≤ 50) ⇒ trang. Tên công ty ở danh bạ (cache, 0 SQL) ⇒ lọc `q` + cắt trang ở đó, rồi
+    // MỘT câu đọc hồ sơ đối tác CHỈ của công ty trong trang (chi phí theo trang, không theo tổng). Không `limit` ⇒ danh sách cũ.
+    const pg = parseWith(PartnersPageQuerySchema, c.req.query());
+    const ids = pageOrgIds(a, pg);
+    const list = partnerViews(a, await orgs.partners(d.uow, a, ids), ids);
     // CR-110 · COM-FR-37: tab Đối tác của hồ sơ — cột uy tín chỉ chủ quản (cổng HostBookReader), `?rep=1` để feed không trả phí
     return c.json(c.req.query("rep") === "1" ? await withReputation(d, a, list) : list);
   });

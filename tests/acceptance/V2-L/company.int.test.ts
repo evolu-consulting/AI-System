@@ -54,6 +54,7 @@ describe("V2-L · cài đặt công ty", () => {
       theme: "auto",
       own_names: [],
       own_tax_ids: [],
+      has_cover: false, // CR-138: ảnh bìa công ty (ảnh ở /company/cover), mặc định chưa có
     });
     expect(g.version).toBe(0);
     // CR-127 Z1b: cờ `approval_enabled` đã gỡ (toggle thay bằng quy trình) ⇒ GET/PUT không còn trường này.
@@ -126,9 +127,13 @@ describe("V2-L · thử tính điểm kinh doanh + mặc định uy tín", () =>
     expect((await call(c, P.hoa, "POST", "/business/config/preview", bad)).status).toBe(422);
   });
 
-  it("GET /reputation/config kèm mặc định BA của 5 ô, cài đặt chung và Loại việc", async () => {
+  it("GET /reputation/config kèm mặc định BA của các ô, cài đặt chung và Loại việc", async () => {
     const r = await ok(call(c, P.hoa, "GET", "/reputation/config"));
+    // Ngoài 5 ô gốc (hàng/dịch vụ/giới thiệu) còn hợp tác + nhượng quyền (cooperation, franchise).
     expect(Object.keys(r.defaults.cells).sort()).toEqual([
+      "cooperation:cooperator",
+      "franchise:franchisee",
+      "franchise:franchisor",
       "goods:customer",
       "goods:supplier",
       "referral:commission_payer",

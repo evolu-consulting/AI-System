@@ -1,14 +1,22 @@
 // CR-132 · W2 · /contracts/messages (`?c=<id>`): toàn màn — trái danh sách 320 px, phải hội thoại; dưới 768 px chỉ một khung một lúc
 // (ô chọn → hội thoại, nút ‹ về danh sách). Cả trang là phần của khung ứng dụng (AppShell) nên chiều cao do vùng nội dung quyết định.
+
+import { ChatView } from "@ai/messages-web/components/ChatView";
+import { ConversationPane } from "@ai/messages-web/components/ConversationPane";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useSession } from "~/features/auth/hooks/use-session";
 import { cn } from "~/lib/utils";
-import { ChatView } from "../components/ChatView";
-import { ConversationPane } from "../components/ConversationPane";
 
-export function MessagesPage({ conversationId }: { conversationId: string | null }) {
+export function MessagesPage({
+  conversationId,
+  company,
+}: {
+  conversationId: string | null;
+  /** `?company=`: mở sẵn bộ lọc công ty (CR-169). */
+  company?: string | undefined;
+}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const myId = useSession((s) => s.me?.id) ?? "";
@@ -26,7 +34,7 @@ export function MessagesPage({ conversationId }: { conversationId: string | null
           conversationId && "max-md:hidden",
         )}
       >
-        <ConversationPane myId={myId} activeId={conversationId} onSelect={open} />
+        <ConversationPane myId={myId} activeId={conversationId} onSelect={open} company={company} />
       </aside>
       <div className={cn("min-w-0 flex-1", !conversationId && "max-md:hidden")}>
         {conversationId ? (

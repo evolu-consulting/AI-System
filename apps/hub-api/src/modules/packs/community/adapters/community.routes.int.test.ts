@@ -157,6 +157,35 @@ describe("viewer / partners / cats / profile / settings / notifications", () => 
       (await ok(z.array(PartnerOrgSchema), call("s1a", "GET", "/partners"))).map((p) => p.id),
     ).toEqual([c.S1]);
   });
+  it("CR-151 · GET /partners?limit= trả trang: trang 2 không trùng trang 1, tìm theo tên, trần 50, đối tác chỉ thấy công ty mình", async () => {
+    const p1 = await ok(z.array(PartnerOrgSchema), call("hM", "GET", "/partners?limit=4&offset=0"));
+    const p2 = await ok(z.array(PartnerOrgSchema), call("hM", "GET", "/partners?limit=4&offset=4"));
+    expect(p1).toHaveLength(4);
+    expect(p2).toHaveLength(2);
+    expect(p2.some((p) => p1.some((q) => q.id === p.id))).toBe(false);
+    const hit = await ok(
+      z.array(PartnerOrgSchema),
+      call(
+        "hM",
+        "GET",
+        `/partners?limit=50&q=${encodeURIComponent(p1[0]?.name.slice(0, 4) ?? "")}`,
+      ),
+    );
+    expect(hit.some((p) => p.id === p1[0]?.id)).toBe(true);
+    const mine = await ok(z.array(PartnerOrgSchema), call("s1a", "GET", "/partners?limit=50"));
+    expect(mine.map((p) => p.id)).toEqual([c.S1]);
+    expect(call("hM", "GET", "/partners?limit=51")).resolves.toMatchObject({ status: 400 });
+  });
+  it("#269 · trang chỉ mang hồ sơ của công ty trong trang, q không khớp thì rỗng, tenant khác bị chặn", async () => {
+    const all = await ok(z.array(PartnerOrgSchema), call("hM", "GET", "/partners"));
+    const p2 = await ok(z.array(PartnerOrgSchema), call("hM", "GET", "/partners?limit=2&offset=2"));
+    expect(p2).toEqual(all.slice(2, 4)); // cùng thứ tự + cùng nội dung như danh sách đầy đủ
+    expect(
+      await ok(z.array(PartnerOrgSchema), call("hM", "GET", "/partners?limit=10&q=zzz-khong-co")),
+    ).toEqual([]);
+    // tenant B chưa bật gói ⇒ 403 PACK_DISABLED (không lộ công ty tenant này); danh bạ/RLS mỗi tenant riêng
+    expect((await call("hB", "GET", "/partners?limit=50")).status).toBe(403);
+  });
   it("CR-130: PUT /partners/:orgId đã gỡ (vai/nhóm hàng quản ở SHT › Đối tác) ⇒ 404 cho mọi người", async () => {
     const body = { labels: ["supplier"], cats: ["dong-goi"] };
     for (const u of ["hM", "hA", "s2"] as const) {

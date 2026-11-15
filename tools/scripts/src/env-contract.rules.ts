@@ -5,6 +5,8 @@ export type Contract = {
   kitFiles: Record<string, string[]>;
   vars: ContractVar[];
   allowDiff: string[];
+  /** Chỉ để tra cứu (không ép kit đặt): biến tuỳ chọn có mặc định đúng trong code. */
+  optional?: { name: string; default?: string; note?: string }[];
 };
 
 const NAME = "[A-Z][A-Z0-9_]*";
@@ -27,6 +29,13 @@ export function parseShNames(text: string): Set<string> {
 export function parseTemplateNames(text: string): Set<string> {
   const out = new Set<string>();
   for (const m of text.matchAll(new RegExp(`^(${NAME})=`, "gm"))) if (m[1]) out.add(m[1]);
+  return out;
+}
+
+/** Tên trong docker-compose.yml: khoá `NAME: giá-trị` (environment/args, thụt dòng, chữ HOA). */
+export function parseComposeNames(text: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of text.matchAll(new RegExp(`^\\s+(${NAME}):\\s`, "gm"))) if (m[1]) out.add(m[1]);
   return out;
 }
 

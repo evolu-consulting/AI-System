@@ -5,10 +5,11 @@ import {
   canAddContractFile,
   canRemoveContractFile,
   groupContractFiles,
+  isContractFilesLocked,
   mimeByName,
 } from "./contract-files.rules";
 
-const f = { created_by: "creator", owner_user_id: "owner" };
+const f = { created_by: "creator", owner_user_id: "owner", status: "draft" };
 const none = { admin: false, write: false };
 const writer = { admin: false, write: true };
 const admin = { admin: true, write: true };
@@ -74,4 +75,19 @@ describe("CR-133 gom hai nhóm", () => {
       added_at: "1970-01-01T00:00:00.000Z",
     });
   });
+});
+
+describe("CR-154 khoá tệp kèm khi HĐ không còn Nháp", () => {
+  test.each(["processing", "done", "reject", "cancelled"])(
+    "status=%s ⇒ không gắn/gỡ, kể cả quản trị",
+    (status) => {
+      const g = { ...f, status };
+      expect(isContractFilesLocked(g)).toBe(true);
+      expect(canAddContractFile(g, "x", admin)).toBe(false);
+      expect(canAddContractFile(g, "creator", writer)).toBe(false);
+      expect(canRemoveContractFile(g, "x", "x", writer)).toBe(false);
+      expect(canRemoveContractFile(g, "y", "x", admin)).toBe(false);
+    },
+  );
+  test("draft ⇒ không khoá", () => expect(isContractFilesLocked(f)).toBe(false));
 });

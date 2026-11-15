@@ -2,6 +2,7 @@
 // U3: bỏ "Cảnh báo bất thường" + huỷ việc ở bảng tiêu chí (V2-E đóng băng; huỷ/gỡ cờ có lý do: v2i-partners). Hub giả như v2i-partners.cw.ts (KHÔNG chạy trong lát; chạy một lần ở cuối đợt). Mỗi nút gửi đúng API / thân.
 import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
+import { partyPageAsHub } from "./dataset-partners";
 
 const A = "tax:0301000001";
 const NOW = "2026-10-18";
@@ -76,6 +77,7 @@ async function open(page: Page, url: string, extra: Record<string, unknown> = {}
       const table: Record<string, unknown> = {
         "/me": d.packMe,
         "/partners": role === "supplier" ? [ROW] : [],
+        "/partners/page": partyPageAsHub([ROW], new URL(r.request().url()).searchParams),
         "/partners/contract-counts": [{ party: A, n: 1 }],
         "/partners/profile": {
           party: A,
@@ -123,8 +125,7 @@ test("#24 · nhiều người liên hệ: hiện danh sách, thêm người, lư
   const list = page.getByRole("list", { name: "Điện thoại và người liên hệ" });
   await expect(list).toContainText("Chị Lan");
   await expect(list).toContainText("Phụ trách bên mình: Hoa");
-  // CR-128 (e): «Sửa liên hệ» nằm trong menu «Thao tác ▾» của đầu trang Đối tác
-  await page.getByRole("button", { name: /^Thao tác/ }).click();
+  // CR-169: bỏ menu «Thao tác»; «Sửa liên hệ» là nút chữ «Sửa» cạnh khối liên hệ
   await page.getByTestId("act-editContact").click();
   await page.getByRole("button", { name: "+ Thêm người liên hệ" }).click();
   await page.getByLabel("Họ tên 2").fill("Anh Minh");

@@ -19,6 +19,7 @@ import { fetchProducts, matchProduct, PRODUCTS_KEY } from "~/features/contract-f
 import { patchOneLine, productIdsOf } from "~/features/contract-form/hooks/use-contract-form";
 import { useNoticeDefault } from "~/features/contract-form/hooks/use-notice-default";
 import { blockerMessage } from "~/features/contract-form/lib/blocker";
+import { dealOf } from "~/features/contract-form/lib/deal";
 import { formOfDetail, patchOfForm } from "~/features/contract-form/lib/detail-form";
 import {
   EMPTY_LINE,
@@ -32,6 +33,13 @@ import {
   withNoticeDefault,
 } from "~/features/contract-form/lib/form-model";
 import {
+  isKind,
+  termsDirty,
+  termsOfServer,
+  termsToPut,
+  unsureTerms,
+} from "~/features/contract-form/lib/kind-terms";
+import {
   dealUnsure,
   formOfConfirm,
   type MsRow,
@@ -42,7 +50,14 @@ import {
 } from "~/features/contract-form/lib/review-model";
 import { suggestionPatch } from "~/features/contract-form/lib/suggest";
 import { todayIso } from "~/features/contract-shared/lib/date";
-import { contractKey, patchContractFields, saveReview } from "../api";
+import {
+  contractKey,
+  fetchKindTerms,
+  kindTermsKey,
+  patchContractFields,
+  putKindTerms,
+  saveReview,
+} from "../api";
 import { firstSaveMode } from "../lib/confirm-save";
 import { savedNoticeKey } from "../lib/review";
 import { saveErrorText } from "../lib/save-error";
@@ -119,10 +134,21 @@ function useInfoEditors(c: ContractDetail | undefined, L: Load) {
   const setDeal = useCallback(
     (d: ContractDeal) => {
       if (!c) return;
-      setF((s) => (s ? switchDeal(c, s, d) : s));
+      setF((s) => {
+        if (!s) return s;
+        const sw = switchDeal(c, s, d);
+        // CR-152: đổi sang Nhượng quyền / Hợp tác mà chưa có ô nào ⇒ lấy gợi ý AI đã đọc.
+        return isKind(d) && Object.keys(sw.terms).length === 0
+          ? { ...sw, terms: termsOfServer(c.ai?.kind_terms) }
+          : sw;
+      });
       setSug((n) => n + 1);
     },
     [c, setF, setSug],
+  );
+  const setTerm = useCallback(
+    (k: string, v: string) => setF((s) => (s ? { ...s, terms: { ...s.terms, [k]: v } } : s)),
+    [setF],
   );
   const patchLine = useCallback(
     (i: number, p: Partial<LineState>) =>
@@ -144,7 +170,7 @@ function useInfoEditors(c: ContractDetail | undefined, L: Load) {
       setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...p } : r))),
     [setRows],
   );
-  return { set, setDeal, patchLine, addLine, removeLine, setRow };
+  return { set, setDeal, setTerm, patchLine, addLine, removeLine, setRow };
 }
 
 /** Tập ô lỗi / dòng chưa gắn / ô AI chưa chắc, suy ra từ form. */
@@ -170,7 +196,15 @@ function useInfoDerived(
   return { unlinked, invalid, unsure, dealUnsure: dealIsUnsure };
 }
 
-type SaveCtx = { c: ContractDetail | undefined; id: string; confirm: boolean; f: FormState | null };
+type SaveCtx = {
+  c: ContractDetail | undefined;
+  id: string;
+  confirm: boolean;
+  f: FormState | null;
+  /** CR-152: ghi trường riêng (sau khi HĐ đã đúng loại); không phải loại mới ⇒ không làm gì. */
+  saveTerms: () => Promise<void>;
+  termsChanged: boolean;
+};
 
 /** Lưu ở bước xác nhận: MỘT `POST /review`; chặn lỗi ⇒ toast + ném. SP chỉ gắn/tạo ở hộp "Gắn sản phẩm" lúc xác nhận
  *  (atomic-confirm: cùng lệnh xác nhận). `draft` ⇒ chỉ ghi, HĐ giữ chờ xác nhận (không khoá) kể cả khi tenant tắt duyệt. */
@@ -186,17 +220,24 @@ function useSaveConfirm(x: SaveCtx, rows: MsRow[], setTried: (v: boolean) => voi
         throw new Error(stop);
       }
       const productIds = productIdsOf(f);
-      return saveReview(id, {
+      const out = await saveReview(id, {
         ...reviewRequest({ c, f, n: readNumbers(f), productIds, rows, today: todayIso() }),
         ...(draft ? { draft: true } : {}),
       });
+      await x.saveTerms(); // loại HĐ đã đổi ở lệnh trên ⇒ giờ mới ghi được trường riêng
+      return out;
     },
-    [c, f, rows, id, t, setTried],
+    [c, f, rows, id, t, setTried, x.saveTerms],
   );
 }
 
 /** Lưu + trạng thái (busy/msg/err) + hủy. `saveFirst` chỉ ghi khi có gì để ghi (luồng "Xác nhận"). */
-function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
+function useInfoSave(
+  x: SaveCtx,
+  L: Load,
+  patch: Record<string, unknown>,
+  dealTo: ContractDeal | undefined,
+) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { c, id, confirm } = x;
@@ -213,8 +254,12 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
    *  HĐ thường ⇒ PATCH ô đã đổi. Xác nhận + gắn SP là lệnh riêng sau hộp. */
   const saveFirst = useCallback(async () => {
     if (firstSaveMode(confirm) === "draft") await saveConfirm(true);
-    else if (c && Object.keys(patch).length) await patchContractFields(id, c.version, patch);
-  }, [confirm, saveConfirm, c, patch, id]);
+    else {
+      if (c && (Object.keys(patch).length || dealTo))
+        await patchContractFields(id, c.version, patch, dealTo);
+      if (x.termsChanged) await x.saveTerms();
+    }
+  }, [confirm, saveConfirm, c, patch, dealTo, id, x.termsChanged, x.saveTerms]);
   const save = useCallback(async () => {
     setErr(null);
     setMsg(null);
@@ -251,6 +296,51 @@ function useInfoSave(x: SaveCtx, L: Load, patch: Record<string, unknown>) {
   };
 }
 
+/** CR-152: trường riêng đã lưu (GET kind-terms) nạp vào form; ghi lại bằng PUT khi HĐ còn nháp. */
+function useKindTerms(c: ContractDetail | undefined, id: string, L: Load) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: kindTermsKey(id),
+    queryFn: ({ signal }) => fetchKindTerms(id, signal),
+    enabled: !!c && isKind(c.deal),
+    staleTime: Number.POSITIVE_INFINITY,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const saved = useMemo(() => termsOfServer(q.data?.terms), [q.data]);
+  const { setF, sug, f } = L;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại mỗi lần form nạp lại (`sug`) hoặc dữ liệu đã lưu đổi
+  useEffect(() => {
+    if (q.data) setF((s) => (s ? { ...s, terms: saved } : s));
+  }, [saved, sug]);
+  const deal = f?.deal;
+  const draft = c?.status === "draft";
+  const changed = !!f && isKind(deal) && draft && termsDirty(deal, f.terms, saved);
+  const save = useCallback(async () => {
+    if (!f || !isKind(f.deal) || !draft) return;
+    const { body, bad } = termsToPut(f.deal, f.terms);
+    if (bad.length) {
+      const msg = t("contracts.kinds.badNumbers", {
+        list: bad.map((k) => t(`contracts.kinds.f.${k}`)).join(", "),
+      });
+      toast(msg, "late");
+      throw new Error(msg);
+    }
+    await putKindTerms(id, body);
+    await qc.invalidateQueries({ queryKey: kindTermsKey(id) });
+  }, [f, draft, id, qc, t]);
+  const unsure = useMemo(
+    () => (f && isKind(f.deal) ? unsureTerms(c?.ai?.unsure, f.terms, saved) : new Set<string>()),
+    [c, f, saved],
+  );
+  const invalid = useMemo(
+    () => (L.tried ? new Set(q.data?.missing ?? []) : new Set<string>()),
+    [L.tried, q.data],
+  );
+  return { save, changed, unsure, invalid };
+}
+
 export function useInfoForm(c: ContractDetail | undefined, id: string) {
   // Màn xác nhận sau AI đọc = chờ xác nhận + có phần AI đọc (`ai`); HĐ nhập tay / bản đọc cũ (ai = null) giữ luồng PATCH của V2-F.
   const confirm = c?.status === "draft" && c.ai !== null;
@@ -263,7 +353,11 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
   });
   useProductSuggest(confirm, L.f, L.setF, L.sug);
   const patch = useMemo(() => (c && L.f && !confirm ? patchOfForm(c, L.f) : {}), [c, L.f, confirm]);
-  const dirty = confirm ? true : Object.keys(patch).length > 0;
+  const kind = useKindTerms(c, id, L);
+  // CR-168: nhập tay còn nháp chọn được Loại; khác loại đã lưu ⇒ gửi cùng PATCH nháp.
+  const manualDeal = c && L.f && !confirm && c.entry_source === "manual" && L.f.deal !== dealOf(c);
+  const dealTo = manualDeal && L.f ? L.f.deal : undefined;
+  const dirty = confirm ? true : Object.keys(patch).length > 0 || kind.changed || !!dealTo;
   const raw = useInfoEditors(c, L);
   // Mỗi thao tác sửa đánh dấu "đã sửa" (cho nút Huỷ).
   const mark =
@@ -279,9 +373,15 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
     addLine: mark(raw.addLine),
     removeLine: mark(raw.removeLine),
     setRow: mark(raw.setRow),
+    setTerm: mark(raw.setTerm),
   };
   const derived = useInfoDerived(c, L.f, L.tried, confirm);
-  const saving = useInfoSave({ c, id, confirm, f: L.f }, L, patch);
+  const saving = useInfoSave(
+    { c, id, confirm, f: L.f, saveTerms: kind.save, termsChanged: kind.changed },
+    L,
+    patch,
+    dealTo,
+  );
   return {
     f: L.f,
     ...editors,
@@ -289,6 +389,8 @@ export function useInfoForm(c: ContractDetail | undefined, id: string) {
     confirm,
     ...derived,
     products: products.data ?? [],
+    kindUnsure: kind.unsure,
+    kindInvalid: kind.invalid,
     dirty,
     /** Có sửa chưa lưu (cho Huỷ): bước xác nhận theo cờ đã chạm, còn lại theo bản vá. */
     edited: confirm ? L.touched : dirty,

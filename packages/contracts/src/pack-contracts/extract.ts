@@ -18,6 +18,7 @@ import {
   IsoDateSchema,
   nfcText,
 } from "./fields";
+import { KIND_TERM_UNSURE_KEYS, KIND_TERMS_BY_DEAL } from "./kind-terms";
 import { ContractDealSchema, MilestoneKindSchema } from "./milestones";
 
 export const EXTRACT_ITEMS_MAX = 500;
@@ -92,7 +93,7 @@ export const ExtractedClauseSchema = z.strictObject({
 });
 
 /** V2-G · HD-02/HD-08: trường AI chưa chắc = khoá của `fields` hoặc `deal` (loại HĐ Mua/Bán/Giới thiệu). */
-export const AI_UNSURE_KEYS = [...CONTRACT_FIELD_KEYS, "deal"] as const;
+export const AI_UNSURE_KEYS = [...CONTRACT_FIELD_KEYS, "deal", ...KIND_TERM_UNSURE_KEYS] as const;
 export type AiUnsureKey = (typeof AI_UNSURE_KEYS)[number];
 export const AI_MILESTONES_MAX = 50;
 const SUMMARY_LINES_MAX = 12;
@@ -204,6 +205,9 @@ export const ExtractionOutputSchema = z.strictObject({
   notes: z.array(AiNoteSchema).max(AI_NOTES_MAX).optional(),
   risks: z.array(AiRiskSchema).max(AI_RISKS_MAX).optional(),
   penalty_terms: z.array(PenaltyTermInputSchema).max(PENALTY_TERMS_MAX).optional(),
+  /** CR-152: trường riêng khi `deal` = franchise | cooperation (khoá của `FranchiseTermsSchema`/`CooperationTermsSchema`; lỏng ở biên,
+   *  domain chỉ giữ khoá hợp lệ). Khoá chưa chắc nằm ở `unsure` dạng `terms.<khoá>`. */
+  kind_terms: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 export type ExtractionOutput = z.infer<typeof ExtractionOutputSchema>;
 
@@ -219,6 +223,8 @@ export const AiReadSchema = z.strictObject({
   /** CR-127 K7: thẻ "Điều cần lưu ý" / "Cần chú ý" (vắng ở bản trích cũ). Phạt số ở `ContractDetail.penalty_terms`. */
   notes: z.array(AiNoteSchema).max(AI_NOTES_MAX).optional(),
   risks: z.array(AiRiskSchema).max(AI_RISKS_MAX).optional(),
+  /** CR-152: trường riêng AI đọc được cho Nhượng quyền / Hợp tác (form tô vàng ô `unsure` `terms.*`). */
+  kind_terms: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 export type AiRead = z.infer<typeof AiReadSchema>;
 
@@ -282,6 +288,8 @@ const pct = z
 export const ManualContractRequestSchema = z
   .strictObject({
     deal: ContractDealSchema.optional(),
+    /** CR-152d: trường riêng Nhượng quyền / Hợp tác (đủ trường bắt buộc: route kiểm ⇒ 422 KIND_TERMS_INCOMPLETE; loại khác ⇒ không được gửi). */
+    kind_terms: z.record(z.string(), z.unknown()).optional(),
     commission_pct: pct.nullable().optional(),
     commission_fixed: money().nullable().optional(),
     direction: ContractDirectionSchema.optional(),
@@ -306,8 +314,13 @@ export const ManualContractRequestSchema = z
     (b) =>
       b.deal === undefined ||
       b.direction === undefined ||
+      b.deal === "franchise" ||
+      b.deal === "cooperation" ||
       (b.deal === "buy") === (b.direction === "purchase"),
-    { message: "deal và direction lệch nhau", path: ["direction"] },
+    {
+      message: "deal và direction lệch nhau (franchise/cooperation: direction bị bỏ qua)",
+      path: ["direction"],
+    },
   )
   .refine(
     (b) =>
@@ -315,6 +328,24 @@ export const ManualContractRequestSchema = z
       ((b.commission_pct ?? null) === null && (b.commission_fixed ?? null) === null),
     { message: "hoa hồng chỉ cho HĐ Giới thiệu", path: ["commission_pct"] },
   )
+  .superRefine((b, ctx) => {
+    const d = b.deal;
+    if (d !== "franchise" && d !== "cooperation") {
+      if (b.kind_terms !== undefined)
+        ctx.addIssue({
+          code: "custom",
+          path: ["kind_terms"],
+          message: "chỉ cho Nhượng quyền / Hợp tác",
+        });
+      return;
+    }
+    const r = KIND_TERMS_BY_DEAL[d].safeParse(b.kind_terms ?? {});
+    if (!r.success) {
+      for (const i of r.error.issues)
+        ctx.addIssue({ code: "custom", path: ["kind_terms", ...i.path], message: i.message });
+      return;
+    }
+  })
   .refine((b) => (b.commission_pct ?? null) === null || (b.commission_fixed ?? null) === null, {
     message: "chọn % hoặc số tiền cố định",
     path: ["commission_fixed"],

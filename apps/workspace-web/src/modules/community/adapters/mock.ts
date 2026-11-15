@@ -113,6 +113,10 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       cats: p.cats,
       media: p.media.map((m, i) => ({ id: `${p.id}-m${i}`, ...m })),
       commentCount: commentCount(p),
+      recentComments: visibleComments(p)
+        .sort((a, b) => b.minAgo - a.minAgo)
+        .slice(-2)
+        .map(commentView),
       actions: actionsFor(p),
     };
     if (host) {
@@ -163,6 +167,10 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
     getViewer: async () => me,
     getBrand: async () => ({ name: HOST_ORG.name, appName: null, logo: null, accent: "indigo" }),
     getBrandCover: async () => ({ cover: null }),
+    getMyPeople: async () => ({ avatar: null, cover: null, job_title: null }),
+    setMyImage: async () => undefined,
+    getPeople: async () => ({ items: [] }),
+    setCompanyCover: async () => undefined,
     ...profileMock(
       () => me,
       () => ({ posts, comments }),
@@ -234,6 +242,19 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         ...(input.cats ? { cats: input.cats } : {}),
         ...(input.audience ? { audience: input.audience } : {}),
         ...(input.fields ? { fields: { ...p.fields, ...input.fields } } : {}),
+        // CR-147: media thay TOÀN BỘ danh sách (như server)
+        ...(input.media
+          ? {
+              media: input.media.map((m) => ({
+                kind: m.kind,
+                label: m.label,
+                fileId: m.fileId,
+                name: m.name,
+                size: m.size,
+                mime: m.mime,
+              })),
+            }
+          : {}),
         edited: true,
       });
       return toView(p);
@@ -259,24 +280,36 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       const p = get(id); // mock: bài thô = nguồn; quyền xem raw do server C3 kiểm (HT-52)
       return { id, title: p.title, body: p.body, fields: p.fields };
     },
-    listComments: async (postId) => {
+    listComments: async (postId, cursor, o) => {
       const p = get(postId);
       if (!visible(p)) throw new Error("404 Không tìm thấy bài");
-      const list = visibleComments(p).sort((a, b) => b.minAgo - a.minAgo);
-      return { comments: list.map(commentView) };
+      const asc = visibleComments(p).sort((a, b) => b.minAgo - a.minAgo);
+      if (o?.dir !== "desc") return { comments: asc.map(commentView) };
+      // CR-147c: mới → cũ, cũ hơn `before`; cursor = số đã nhận
+      const idx = o.before ? asc.findIndex((c) => c.id === o.before) : asc.length;
+      const older = asc.slice(0, Math.max(0, idx)).reverse();
+      const from = cursor ? Number(cursor) : 0;
+      const size = o.limit ?? 20;
+      const page = older.slice(from, from + size);
+      return {
+        comments: page.map(commentView),
+        ...(from + size < older.length ? { nextCursor: String(from + size) } : {}),
+      };
     },
     listMentionables: async (postId, q) => {
       if (!visible(get(postId))) throw new Error("404 Không tìm thấy bài");
       return mentionables(q);
     },
-    mentionablePeople: async (q) =>
+    mentionablePeople: async (q, _scope, cursor) =>
       me.role === "partner"
         ? []
         : [
             { userId: "u-lan", name: "Lan (Kế toán)" },
             { userId: "u-minh", name: "Minh (Mua hàng)" },
             { userId: "u-hung", name: "Hùng", orgName: "Hùng Thịnh" },
-          ].filter((x) => !q || x.name.toLowerCase().includes(q.toLowerCase())),
+          ]
+            .filter((x) => !q || x.name.toLowerCase().includes(q.toLowerCase()))
+            .slice(Number(cursor ?? 0), Number(cursor ?? 0) + 20),
     addComment: async (postId, input) => {
       const p = get(postId);
       if (!visible(p)) throw new Error("404 Không tìm thấy bài");

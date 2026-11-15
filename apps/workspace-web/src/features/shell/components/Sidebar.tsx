@@ -1,10 +1,11 @@
 // PK-FR-10 · TF5 · nav-v2 · CR-120 · thanh trái CỦA MỘT AppShell: khối công ty (logo + tên), các nhóm menu SINH TỪ MANIFEST các module
 // (`shell/nav.ts`), tài khoản ở chân. Mọi mục là `<Link>` của TanStack (điều hướng trong app, không tải lại, không biểu tượng liên kết ngoài).
 // Ghim mở 224 px (mặc định) hoặc thu thành cột biểu tượng 64 px (nút ở thanh trên); trạng thái nhớ theo trình duyệt (`nav:pinned`).
+
+import { useUnreadTotal } from "@ai/messages-web/hooks/use-unread";
 import { Link, useLinkProps } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useUnreadTotal } from "~/features/messages/hooks/use-unread";
 import { useInbox } from "~/features/overview/hooks/use-inbox";
 import { appNameOf, nameOf, useBrand } from "~/features/settings/lib/brand";
 import { cn } from "~/lib/utils";

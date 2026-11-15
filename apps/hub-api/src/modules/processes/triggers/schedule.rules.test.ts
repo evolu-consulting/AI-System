@@ -80,3 +80,38 @@ describe("CR-127 E6b · triggerParamIssue (luật lưu)", () => {
     expect(triggerParamIssue({ event: "milestone.due", params: { days: 2.5 } })).toEqual(want);
   });
 });
+
+describe("CR-146b · triggerParamIssue của quy trình Nhận HĐ", () => {
+  it("Rất quan trọng ≤ Quan trọng ⇒ lỗi khoảng ở critical_min_m; hợp lệ ⇒ null", () => {
+    const t = (im: number, cr: number) => ({
+      event: "contract.received",
+      params: { important_min_m: im, critical_min_m: cr },
+    });
+    expect(triggerParamIssue(t(500, 500))?.path).toEqual(["trigger", "params", "critical_min_m"]);
+    expect(triggerParamIssue(t(500, 400))?.min).toBe(501);
+    expect(triggerParamIssue(t(500, 2000))).toBeNull();
+  });
+
+  it("fix-review-r2 · một bên dùng mặc định (500 triệu / 2 tỷ) vẫn phải giữ Rất quan trọng > Quan trọng", () => {
+    const ev = "contract.received";
+    // chỉ nhập «Rất quan trọng» = 400 < mặc định «Quan trọng» 500 ⇒ lỗi, min = 501
+    expect(triggerParamIssue({ event: ev, params: { critical_min_m: 400 } })).toMatchObject({
+      path: ["trigger", "params", "critical_min_m"],
+      min: 501,
+    });
+    // chỉ nhập «Quan trọng» = 3000 ≥ mặc định «Rất quan trọng» 2000 ⇒ lỗi
+    expect(triggerParamIssue({ event: ev, params: { important_min_m: 3000 } })?.path).toEqual([
+      "trigger",
+      "params",
+      "critical_min_m",
+    ]);
+    // hợp lệ: một bên mặc định
+    expect(triggerParamIssue({ event: ev, params: { critical_min_m: 600 } })).toBeNull();
+    expect(triggerParamIssue({ event: ev, params: { important_min_m: 100 } })).toBeNull();
+    // không có tham số ⇒ mặc định (hợp lệ); sự kiện khác ⇒ bỏ qua
+    expect(triggerParamIssue({ event: ev, params: {} })).toBeNull();
+    expect(
+      triggerParamIssue({ event: "contract.submitted", params: { critical_min_m: 1 } }),
+    ).toBeNull();
+  });
+});

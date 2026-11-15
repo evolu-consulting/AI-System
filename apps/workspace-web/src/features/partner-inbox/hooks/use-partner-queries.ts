@@ -4,20 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "~/features/auth/hooks/use-session";
-import { fetchMembers } from "~/features/contracts-list/api";
 import { isCompanyAdmin } from "~/features/shell/lib/nav";
-import {
-  fetchPartnerConfirm,
-  fetchReceiveSettings,
-  fetchRounds,
-  partnerKeys,
-  type RecordIn,
-  recordResult,
-  saveReceiveSettings,
-} from "../api";
-import type { ReceiveSettings } from "../lib/receive-settings";
-
-const SETTINGS_KEY = ["contracts", "partner", "settings"] as const;
+import { fetchPartnerConfirm, fetchRounds, partnerKeys, type RecordIn, recordResult } from "../api";
 
 /** Các vòng gửi đối tác của một HĐ (rỗng ⇒ HĐ chưa từng gửi). */
 export function useRounds(contractId: string) {
@@ -56,27 +44,4 @@ export function usePartnerConfirmStatus(owner: boolean) {
     retry: false,
   });
   return q.data ?? null;
-}
-
-/** Cài đặt nhận HĐ đối tác (chỉ khi `owner` và công ty bật tính năng) + danh sách người phụ trách + lưu. */
-export function useReceiveSettings(owner: boolean) {
-  const qc = useQueryClient();
-  // CR-127 · U6: không còn cap menu — công ty chưa bật tính năng thì API cài đặt từ chối ⇒ `on` = đọc được cài đặt.
-  const settings = useQuery({
-    queryKey: SETTINGS_KEY,
-    queryFn: () => fetchReceiveSettings(),
-    enabled: owner,
-    retry: false,
-  });
-  const on = settings.isSuccess;
-  const members = useQuery({
-    queryKey: ["contracts", "members"],
-    queryFn: ({ signal }) => fetchMembers(signal),
-    enabled: owner && on,
-  });
-  const save = useMutation({
-    mutationFn: (s: ReceiveSettings) => saveReceiveSettings(s),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SETTINGS_KEY }),
-  });
-  return { on, settings: settings.data, members: members.data?.items ?? [], save };
 }

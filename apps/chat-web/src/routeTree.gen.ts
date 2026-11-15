@@ -15,6 +15,7 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SsoRouteImport } from './routes/sso'
 import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
+import { Route as AuthedMessagesRouteImport } from './routes/_authed/messages'
 import { Route as AuthedProcessInboxRouteImport } from './routes/_authed/process-inbox'
 import { Route as AuthedCIdRouteImport } from './routes/_authed/c.$id'
 import { Route as AuthedCNewRouteImport } from './routes/_authed/c.new'
@@ -50,6 +51,11 @@ const AuthedNotificationsRoute = AuthedNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedMessagesRoute = AuthedMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedProcessInboxRoute = AuthedProcessInboxRouteImport.update({
   id: '/process-inbox',
   path: '/process-inbox',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/sso': typeof SsoRoute
   '/notifications': typeof AuthedNotificationsRoute
+  '/messages': typeof AuthedMessagesRoute
   '/process-inbox': typeof AuthedProcessInboxRoute
   '/c/$id': typeof AuthedCIdRoute
   '/c/new': typeof AuthedCNewRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/sso': typeof SsoRoute
   '/notifications': typeof AuthedNotificationsRoute
+  '/messages': typeof AuthedMessagesRoute
   '/process-inbox': typeof AuthedProcessInboxRoute
   '/c/$id': typeof AuthedCIdRoute
   '/c/new': typeof AuthedCNewRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/sso': typeof SsoRoute
   '/_authed/notifications': typeof AuthedNotificationsRoute
+  '/_authed/messages': typeof AuthedMessagesRoute
   '/_authed/process-inbox': typeof AuthedProcessInboxRoute
   '/_authed/c/$id': typeof AuthedCIdRoute
   '/_authed/c/new': typeof AuthedCNewRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/sso'
     | '/notifications'
+    | '/messages'
     | '/process-inbox'
     | '/c/$id'
     | '/c/new'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/sso'
     | '/notifications'
+    | '/messages'
     | '/process-inbox'
     | '/c/$id'
     | '/c/new'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/sso'
     | '/_authed/notifications'
+    | '/_authed/messages'
     | '/_authed/process-inbox'
     | '/_authed/c/$id'
     | '/_authed/c/new'
@@ -206,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedNotificationsRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/messages': {
+      id: '/_authed/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof AuthedMessagesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/process-inbox': {
       id: '/_authed/process-inbox'
       path: '/process-inbox'
@@ -246,6 +265,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthedRouteChildren {
   AuthedNotificationsRoute: typeof AuthedNotificationsRoute
+  AuthedMessagesRoute: typeof AuthedMessagesRoute
   AuthedProcessInboxRoute: typeof AuthedProcessInboxRoute
   AuthedCIdRoute: typeof AuthedCIdRoute
   AuthedCNewRoute: typeof AuthedCNewRoute
@@ -255,6 +275,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedNotificationsRoute: AuthedNotificationsRoute,
+  AuthedMessagesRoute: AuthedMessagesRoute,
   AuthedProcessInboxRoute: AuthedProcessInboxRoute,
   AuthedCIdRoute: AuthedCIdRoute,
   AuthedCNewRoute: AuthedCNewRoute,

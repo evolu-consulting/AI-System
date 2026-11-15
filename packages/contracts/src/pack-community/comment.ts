@@ -2,7 +2,7 @@
 // chủ quản thấy tất cả; đối tác thấy bình luận của chủ quản + công ty mình + trên bài của mình + bình luận nhắc (@) tới mình.
 // Nhắc công ty đối tác = `mentions` (id công ty); chỉ chủ quản nhắc được (hôm nay). Danh sách gợi ý: `GET /posts/:id/mentionables`.
 import { z } from "zod";
-import { ContentHitSchema } from "./post";
+import { ContentHitSchema } from "./content-hit";
 
 /** Công ty được nhắc (@) trong bình luận. User ngoài chỉ nhận phần tử là công ty MÌNH. */
 export const MentionSchema = z.strictObject({ orgId: z.string(), name: z.string() });
@@ -35,6 +35,9 @@ export type CommentView = z.infer<typeof CommentViewSchema>;
 export const CommentListQuerySchema = z.strictObject({
   cursor: z.string().max(200).optional(),
   limit: z.number().int().min(1).max(COMMENT_PAGE_MAX).default(50),
+  /** CR-147c · `desc` = mới → cũ (tải dần phần cũ hơn); `before` = id bình luận: chỉ lấy các bình luận CŨ HƠN nó. */
+  dir: z.enum(["asc", "desc"]).default("asc"),
+  before: z.uuid().optional(),
 });
 export type CommentListQuery = z.input<typeof CommentListQuerySchema>;
 

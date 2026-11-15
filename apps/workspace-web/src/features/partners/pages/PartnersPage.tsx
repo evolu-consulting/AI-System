@@ -1,23 +1,26 @@
 // V2-I · DT-01 · S-p02 `/partners` v2 — mockup NITI: mỗi đối tác một dòng (tên, các vai, điểm từng vai, số hợp đồng), tìm + lọc vai /
-// "Cần chú ý"; bấm tên mở trang chi tiết. Điểm từ engine HD8 `GET /partners` (CR-097a): huy hiệu MỚI · tạm tính + cờ đỏ (U3); "+ Ghi việc" (sổ HD7) giữ lại.
+// "Cần chú ý"; bấm tên mở trang chi tiết. Huy hiệu MỚI · tạm tính + cờ đỏ (U3); "+ Ghi việc" (sổ HD7) giữ lại.
+// CR-151e: tìm / lọc / sắp xếp / cắt trang + gộp vai + điểm + số HĐ chạy Ở MÁY CHỦ (`GET /partners/page`, cả hai engine) — chỉ tải trang đang xem.
 import type { PartnerRole, RepRole } from "@ai/contracts/pack-contracts";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHead, Panel } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { PartnerLog } from "~/features/ledger/components/PartnerLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
-import { Pager, TableTools, useTable } from "~/features/table";
+import { Pager, TableTools } from "~/features/table";
 import { cn } from "~/lib/utils";
-import { fetchContractCounts, partnerKeys } from "../api";
 import { AddCompanyDialog } from "../components/AddCompanyDialog";
+import { ConnectedPanel } from "../components/ConnectedPanel";
+import { ConnectSearchDialog } from "../components/ConnectSearchDialog";
+import { InviteBanner } from "../components/InviteBanner";
 import { MineBanner } from "../components/MineBanner";
 import { RedFlagTag } from "../components/RedFlagTag";
 import { RepBadge } from "../components/RepBadge";
-import { usePartnerRows } from "../hooks/use-partner-scores";
-import { type PartyItem, partiesOf } from "../lib/partner-score";
+import { usePartyPage } from "../hooks/use-partner-scores";
+import { useEngine } from "../hooks/use-rep-v2e";
+import type { PartyItem } from "../lib/partner-score";
 import { REP_ROLE_ORDER, ROLES } from "../lib/partner-v2";
 
 type Filter = "all" | RepRole | "watch" | "flag";
@@ -95,40 +98,44 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
 export function PartnersPage() {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.pv2.${k}`, o);
-  const q = usePartnerRows();
-  const counts = useQuery({
-    queryKey: partnerKeys.counts,
-    queryFn: ({ signal }) => fetchContractCounts(signal),
-  });
+  const { engine } = useEngine();
   const [filter, setFilter] = useState<Filter>("all");
+  const [qRaw, setQRaw] = useState("");
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const { write } = useMe();
-  const items = useMemo(
-    () => partiesOf(q.data, new Map((counts.data ?? []).map((c) => [c.party, c.n]))),
-    [q.data, counts.data],
-  );
-  const shown = useMemo(
-    () =>
-      items.filter((p) =>
-        filter === "all"
-          ? true
-          : filter === "watch"
-            ? p.worst === "watch"
-            : filter === "flag"
-              ? p.red_flag
-              : p.roles.some((r) => r.role === filter),
-      ),
-    [items, filter],
-  );
-  const tb = useTable(shown, {
-    text: (p) => `${p.name} ${p.roles.map((r) => L(`roleWord.${r.role}`)).join(" ")}`,
-  });
+  const [finding, setFinding] = useState(false);
+  const { write, owner } = useMe();
+  // tìm gõ trễ 250 ms rồi gọi máy chủ; đổi tìm/lọc ⇒ về trang 1
+  useEffect(() => {
+    const h = setTimeout(() => {
+      setQ(qRaw.trim());
+      setPage(1);
+    }, 250);
+    return () => clearTimeout(h);
+  }, [qRaw]);
+  const list = usePartyPage({ filter, q, limit: pageSize, offset: (page - 1) * pageSize });
+  const items = list.data?.items ?? [];
+  const total = list.data?.total ?? 0;
+  const pager = {
+    page,
+    pages: Math.max(1, Math.ceil(total / pageSize)),
+    setPage,
+    total,
+    pageSize,
+    setPageSize: (n: number) => {
+      setPageSize(n);
+      setPage(1);
+    },
+  };
   const body = () => {
-    if (q.isLoading) return <Loading />;
-    if (q.error) return <ErrorLine error={q.error} />;
-    if (!items.length) return <Empty title={L("emptyTitle")}>{L("emptyBody")}</Empty>;
-    if (!tb.total)
+    if (list.isLoading) return <Loading />;
+    if (list.error) return <ErrorLine error={list.error} />;
+    if (!total && filter === "all" && !q)
+      return <Empty title={L("emptyTitle")}>{L("emptyBody")}</Empty>;
+    if (!total)
       return (
         <Empty kind="search" title={L("noMatchTitle")}>
           {L("noMatchBody")}
@@ -136,7 +143,7 @@ export function PartnersPage() {
       );
     return (
       <ul data-testid="partner-list" className="md:min-h-0 md:flex-1 md:overflow-auto">
-        {tb.shown.map((p) => (
+        {items.map((p) => (
           <Row
             key={p.party}
             p={p}
@@ -153,31 +160,50 @@ export function PartnersPage() {
         title={L("title")}
         lead={L("lead")}
         actions={
-          write && (
-            <button
-              type="button"
-              className="btn btn-outline h-9 text-[13px]"
-              onClick={() => setAdding(true)}
-            >
-              {t("contracts.vgaps.company.add")}
-            </button>
+          (write || owner) && (
+            <div className="flex gap-2">
+              {owner && (
+                <button
+                  type="button"
+                  className="btn btn-outline h-9 text-[13px]"
+                  onClick={() => setFinding(true)}
+                >
+                  {t("contracts.connect.find")}
+                </button>
+              )}
+              {write && (
+                <button
+                  type="button"
+                  className="btn btn-outline h-9 text-[13px]"
+                  onClick={() => setAdding(true)}
+                >
+                  {t("contracts.vgaps.company.add")}
+                </button>
+              )}
+            </div>
           )
         }
       />
       {adding && <AddCompanyDialog onClose={() => setAdding(false)} />}
+      {finding && <ConnectSearchDialog onClose={() => setFinding(false)} />}
+      <InviteBanner />
+      <ConnectedPanel />
       <MineBanner />
-      <TableTools q={tb.q} setQ={tb.setQ} total={tb.total} placeholder={L("search")}>
+      <TableTools q={qRaw} setQ={setQRaw} total={total} placeholder={L("search")}>
         <fieldset
           aria-label={L("roleFilter")}
           className="m-0 flex min-w-0 flex-wrap gap-1.5 border-0 p-0"
         >
-          {filtersOf(q.engine === "v2e").map((f) => (
+          {filtersOf(engine === "v2e").map((f) => (
             <button
               key={f}
               type="button"
               className="chip"
               aria-pressed={filter === f}
-              onClick={() => setFilter(f)}
+              onClick={() => {
+                setFilter(f);
+                setPage(1);
+              }}
             >
               {L(`filter.${f}`)}
             </button>
@@ -186,7 +212,7 @@ export function PartnersPage() {
       </TableTools>
       <Panel className="md:flex md:min-h-0 md:flex-1 md:flex-col">
         {body()}
-        <Pager t={tb} />
+        <Pager t={pager} />
       </Panel>
       <p className="mt-4 text-[13px] text-dim">
         {L("foot")}{" "}

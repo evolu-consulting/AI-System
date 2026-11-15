@@ -8,7 +8,7 @@ const c = (value: string | number | boolean) => ({ from: "const", value });
 const tool = (args: Record<string, unknown>) => ({
   kind: "tool",
   tool_key: "contracts-esign-send",
-  args: { contract_id: c("x"), company_signers: c(`user:${U}`), ...args },
+  args: { contract_id: c("x"), provider: c("selfsign"), company_signers: c(`user:${U}`), ...args },
 });
 
 const seen: unknown[] = [];
@@ -26,6 +26,7 @@ describe("E5b · esignNodeValidator", () => {
     });
     expect(r).toEqual([]);
     expect(seen.at(-1)).toEqual({
+      provider: "selfsign",
       company_signers: [{ kind: "user", id: U }],
       due_days: 3,
     });
@@ -62,45 +63,19 @@ describe("E5b · esignNodeValidator", () => {
   });
 });
 
-describe("CEO-review #2 · chưa chọn người ký", () => {
-  it("Ký số không có người ký công ty ⇒ chặn lưu, path + mã NO_SIGNER_SELECTED (kiểm công ty không chạy)", async () => {
+describe("CR-146b · «Ký qua» + người ký bắt buộc trong node", () => {
+  const bare = { kind: "tool", tool_key: "contracts-esign-send", args: { contract_id: c("x") } };
+  it("thiếu cả hai ⇒ chặn lưu, lỗi theo từng trường (kiểm công ty không chạy)", async () => {
     const before = seen.length;
-    const noSigner = {
-      kind: "tool",
-      tool_key: "contracts-esign-send",
-      args: { contract_id: c("x") },
-    };
-    expect(await validator("t1", { index: 4, node: ESIGN_NODE_KEY, executor: noSigner })).toEqual([
+    expect(await validator("t1", { index: 4, node: ESIGN_NODE_KEY, executor: bare })).toEqual([
+      { path: "stages.4.executor.args.provider", code: "NO_PROVIDER_SELECTED" },
       { path: "stages.4.executor.args.company_signers", code: "NO_SIGNER_SELECTED" },
     ]);
     expect(seen.length).toBe(before);
   });
-});
-
-describe("CR-141 · nhóm «Người ký HĐ» là người ký mặc định", () => {
-  const noSigner = {
-    kind: "tool",
-    tool_key: "contracts-esign-send",
-    args: { contract_id: c("x") },
-  };
-  it("có nhóm có thành viên ⇒ không chọn người ký vẫn hợp lệ (kiểm công ty vẫn chạy); chưa có ⇒ vẫn chặn", async () => {
-    const before = seen.length;
-    const withGroup = esignNodeValidator(
-      async (_t, cfg) => {
-        seen.push(cfg);
-        return [];
-      },
-      async () => true,
-    );
-    expect(await withGroup("t1", { index: 1, node: ESIGN_NODE_KEY, executor: noSigner })).toEqual(
-      [],
-    );
-    expect(seen.length).toBe(before + 1);
-    const noGroup = esignNodeValidator(
-      async () => [],
-      async () => false,
-    );
-    expect(await noGroup("t1", { index: 1, node: ESIGN_NODE_KEY, executor: noSigner })).toEqual([
+  it("có «Ký qua» mà thiếu người ký ⇒ chỉ lỗi người ký (không còn nhóm mặc định cấp công ty cứu)", async () => {
+    const st = { ...bare, args: { ...bare.args, provider: c("upload") } };
+    expect(await validator("t1", { index: 1, node: ESIGN_NODE_KEY, executor: st })).toEqual([
       { path: "stages.1.executor.args.company_signers", code: "NO_SIGNER_SELECTED" },
     ]);
   });

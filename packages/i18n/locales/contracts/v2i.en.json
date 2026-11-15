@@ -15,12 +15,18 @@
       "roleWord": {
         "supplier": "Supplier",
         "customer": "Customer",
-        "commission_payer": "Commission payer"
+        "commission_payer": "Commission payer",
+        "franchisee": "Franchisee",
+        "franchisor": "Franchisor",
+        "cooperator": "Cooperation partner"
       },
       "roleShort": {
         "supplier": "Supplier",
         "customer": "Customer",
-        "commission_payer": "Commission"
+        "commission_payer": "Commission",
+        "franchisee": "Franchisee",
+        "franchisor": "Franchisor",
+        "cooperator": "Partner"
       },
       "badge": {
         "new": "NEW · provisional"
@@ -49,8 +55,7 @@
       "tab": {
         "overview": "Overview",
         "contracts": "Contracts · {{n}}",
-        "review": "Log & notes",
-        "community": "Feed"
+        "review": "Log & notes"
       },
       "roleSeg": "Choose role",
       "noScoreYet": "No jobs or contracts to score this role yet.",
@@ -89,6 +94,7 @@
         "emptyTitle": "No contracts",
         "emptyBody": "This partner has no confirmed contracts yet.",
         "emptyFilter": "No contracts at this step.",
+        "loadMore": "Show more",
         "col": {
           "contract": "Contract",
           "deal": "Type",

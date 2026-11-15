@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   decodeEsignNodeArgs,
   ESIGN_NODE_PARAMS,
+  ESIGN_NODE_UPLOAD,
   EsignNodeConfigSchema,
   encodeEsignNodeArgs,
   esignConfigIssues,
@@ -24,6 +25,7 @@ describe("E5 · EsignNodeConfig", () => {
         { kind: "user" as const, id: U },
         { kind: "group" as const, id: G },
       ],
+      provider: "docusign",
       partner_signs: true,
       order: "parallel" as const,
       due_days: 5,
@@ -61,21 +63,31 @@ describe("E5 · EsignNodeConfig", () => {
     expect(decodeEsignNodeArgs({ company_signers: four }).ok).toBe(false); // ≤ 3 người ký công ty
   });
 
-  it("CR-125 m4 · provider cũ bị bỏ qua (def đã lưu vẫn chạy, mã hoá không ghi lại)", () => {
+  it("CR-146b · «Ký qua» (provider) đọc/ghi được; khoá sai dạng ⇒ lỗi theo khoá", () => {
     expect(decodeEsignNodeArgs({ provider: "docusign", due_days: 2 })).toEqual({
       ok: true,
-      config: { due_days: 2 },
+      config: { provider: "docusign", due_days: 2 },
     });
-    expect(decodeEsignNodeArgs({ provider: "Bad Key!" }).ok).toBe(true);
-    expect(ESIGN_NODE_PARAMS).not.toContain("provider");
-    expect("provider" in encodeEsignNodeArgs({ due_days: 2 })).toBe(false);
+    expect(decodeEsignNodeArgs({ provider: ESIGN_NODE_UPLOAD }).ok).toBe(true);
+    expect(decodeEsignNodeArgs({ provider: "Bad Key!" })).toEqual({
+      ok: false,
+      issues: ["provider"],
+    });
+    expect(ESIGN_NODE_PARAMS).toContain("provider");
+    expect(encodeEsignNodeArgs({ provider: "selfsign" }).provider).toBe("selfsign");
   });
 
-  it("CEO-review #2 · thiếu người ký công ty ⇒ NO_SIGNER_SELECTED; có người/Group ⇒ hợp lệ", () => {
+  it("CR-146b · thiếu «Ký qua» hoặc người ký ⇒ lỗi theo trường; đủ ⇒ hợp lệ", () => {
     expect(esignConfigIssues({})).toEqual([
+      { field: "provider", code: "NO_PROVIDER_SELECTED" },
       { field: "company_signers", code: "NO_SIGNER_SELECTED" },
     ]);
-    expect(esignConfigIssues({ company_signers: [{ kind: "group", id: G }] })).toEqual([]);
+    expect(esignConfigIssues({ provider: "upload" })).toEqual([
+      { field: "company_signers", code: "NO_SIGNER_SELECTED" },
+    ]);
+    expect(
+      esignConfigIssues({ provider: "upload", company_signers: [{ kind: "group", id: G }] }),
+    ).toEqual([]);
   });
 
   it("hạn ký ⇒ giờ chờ của stage chờ ký", () => {

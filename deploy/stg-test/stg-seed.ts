@@ -1,4 +1,4 @@
-// sohoptac2-staging · seed staging -test (ban cua stg-sohoptac2/stg-seed.ts; chay trong container `tool` cua project sohoptac2-staging, mount tai /app/tools/scripts/src/stg-seed.ts):
+// sohoptac2-staging · seed staging -test (chay trong container `tool` cua project sohoptac2-staging, mount tai /app/tools/scripts/src/stg-seed.ts):
 // tenant `demo` + demo-owner (mat khau tu file DEMO_OWNER.pw, KHONG in) + bat goi contracts + cong dong doi tac (seed-community-demo:
 // 3 cong ty, bai + luong mau). Goi thang ham thu vien (CLI seed tu choi host DB `pg`). TU CHOI khi APP_ENV=production hoac .env khong phai cua stg-test.
 // Mat khau tam cua doi tac ghi vao STG_PW_OUT (600).

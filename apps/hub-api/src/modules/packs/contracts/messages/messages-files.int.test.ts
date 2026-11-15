@@ -3,7 +3,7 @@
 // tải bình thường; thu hồi tin / người cuối rời ⇒ gỡ byte FileBox SAU commit. FileBox GIẢ (đếm put/remove), không mạng.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { ATTACH_MAX_BYTES } from "@ai/contracts/attach";
-import { tenants, users } from "@ai/test-kit/builders";
+import { enablePack, members, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, inPackAs, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../../lib/db";
@@ -76,6 +76,10 @@ beforeAll(async () => {
   [T, T2] = (await tenants(o, 2, 9411)) as [string, string];
   [A, B, C] = (await users(o, T, 3, { from: 9411 })) as [string, string, string];
   [V] = (await users(o, T2, 1, { from: 9420 })) as [string];
+  // CR-169: tổng chưa đọc/danh sách gộp cuộc `partner` (hàm pmsg_* đòi người gọi có quyền Sổ Hợp Tác) ⇒ cấp quyền đọc cho người dùng của test.
+  const g = await enablePack(o, [T, T2], "contracts");
+  await members(o, T, g.get(T)?.viewer as string, [A, B, C]);
+  await members(o, T2, g.get(T2)?.viewer as string, [V]);
   cid = (await uc().create(w(A), { kind: "group", title: "Hồ sơ", member_ids: [B] })).detail.id;
 }, 120_000);
 afterAll(async () => {

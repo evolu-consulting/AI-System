@@ -36,7 +36,7 @@ export function toDealRequest(
 ): DealCreateRequest {
   return {
     ...toRequest(f, n, productIds),
-    deal: f.deal,
+    deal: f.deal as DealCreateRequest["deal"], // cr152b: form chỉ có 3 loại cơ bản; hai loại mới là HĐ kinh tế
     end_date: null,
     notice_days: null,
     partner_signer: null,

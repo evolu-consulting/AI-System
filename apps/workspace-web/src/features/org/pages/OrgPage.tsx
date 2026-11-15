@@ -1,21 +1,42 @@
 // M1D-FR-02 · M1D-FR-03 · M1D-FR-04 · Cài đặt › Thành viên & phòng ban (theo màn "Thành viên" của mgmt-app): chế độ thấy, cấp quản
 // lý mỗi người, phòng ban (chỉnh ở admin qua «Chỉnh sơ đồ»). Ghi qua admin-api (tenant_admin) + hub-api (owner gói); 403 ⇒ chỉ đọc lời nhắc.
-import type { OrgResponse } from "@ai/contracts/org";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EditChartButton } from "~/features/org-chart/components/EditChartButton";
-import { fetchOrg, fetchVisibility, orgKeys, putVisibility, setManager } from "../api";
-import { managerOptions } from "../lib/org";
+import { Pager } from "~/features/table";
+import { PersonSearchSelect } from "~/shared/ui/PersonSearchSelect";
+import {
+  fetchOrgMembers,
+  fetchOrgPeoplePage,
+  fetchVisibility,
+  orgKeys,
+  putVisibility,
+  setManager,
+} from "../api";
 
 const field = "h-[34px] rounded-md border border-rule bg-panel px-2 text-body";
 
 export function OrgPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const [qRaw, setQRaw] = useState("");
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [editing, setEditing] = useState<string | null>(null);
+  useEffect(() => {
+    const h = setTimeout(() => {
+      setQ(qRaw.trim());
+      setPage(1);
+    }, 250);
+    return () => clearTimeout(h);
+  }, [qRaw]);
+  // CR-151: trang thành viên tìm + phân trang ở máy chủ (không nạp cả công ty).
   const org = useQuery({
-    queryKey: orgKeys.org,
-    queryFn: ({ signal }) => fetchOrg(signal),
+    queryKey: [...orgKeys.org, "members", q, page, pageSize],
+    queryFn: ({ signal }) => fetchOrgMembers(q, (page - 1) * pageSize, pageSize, signal),
+    placeholderData: keepPreviousData,
     retry: false,
   });
   const vis = useQuery({
@@ -44,7 +65,8 @@ export function OrgPage() {
         {t("contracts.org.ownerOnly")}
       </p>
     );
-  const data: OrgResponse = org.data ?? { members: [], departments: [] };
+  const rows = org.data?.items ?? [];
+  const total = org.data?.total ?? 0;
 
   return (
     <section className="flex flex-col gap-5">
@@ -77,6 +99,14 @@ export function OrgPage() {
           <option value="org">{t("contracts.org.modeOrg")}</option>
         </select>
       </label>
+      <input
+        type="search"
+        value={qRaw}
+        onChange={(e) => setQRaw(e.target.value)}
+        placeholder={t("contracts.paging.search")}
+        aria-label={t("contracts.paging.search")}
+        className={`${field} w-full max-w-sm`}
+      />
       <div className="overflow-x-auto rounded-lg border border-rule bg-panel">
         <table className="w-full border-collapse text-body">
           <thead>
@@ -86,35 +116,59 @@ export function OrgPage() {
             </tr>
           </thead>
           <tbody>
-            {data.members.map((m) => (
+            {rows.map((m) => (
               <tr key={m.user_id} className="border-t border-rule">
                 <td className="px-3 py-2">
                   <span className="font-medium">{m.display_name}</span>
                   <span className="ml-2 text-dim">{m.username}</span>
                 </td>
                 <td className="px-3 py-2">
-                  <select
-                    aria-label={`${t("contracts.org.manager")} · ${m.display_name}`}
-                    className={field}
-                    value={m.manager_id ?? ""}
-                    disabled={run.isPending}
-                    onChange={(e) => {
-                      const managerId = e.target.value || null;
-                      act(() => setManager(m.user_id, managerId));
-                    }}
-                  >
-                    <option value="">{t("contracts.org.none")}</option>
-                    {managerOptions(data.members, m.user_id).map((x) => (
-                      <option key={x.user_id} value={x.user_id}>
-                        {x.display_name}
-                      </option>
-                    ))}
-                  </select>
+                  {editing === m.user_id ? (
+                    <PersonSearchSelect
+                      source="org-members"
+                      fetchPage={fetchOrgPeoplePage}
+                      value={m.manager_id ?? ""}
+                      valueName={m.manager_name ?? undefined}
+                      excludeId={m.user_id}
+                      noneLabel={t("contracts.org.none")}
+                      disabled={run.isPending}
+                      onChange={(id) => {
+                        setEditing(null);
+                        act(() => setManager(m.user_id, id || null));
+                      }}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label={`${t("contracts.org.manager")} · ${m.display_name}`}
+                      className={`${field} text-left`}
+                      disabled={run.isPending}
+                      onClick={() => setEditing(m.user_id)}
+                    >
+                      {m.manager_name ?? t("contracts.org.none")}
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        {org.isSuccess && rows.length === 0 && (
+          <p className="m-0 px-3 py-3 text-body text-dim">{t("contracts.paging.none")}</p>
+        )}
+        <Pager
+          t={{
+            page,
+            pages: Math.max(1, Math.ceil(total / pageSize)),
+            setPage,
+            total,
+            pageSize,
+            setPageSize: (n) => {
+              setPageSize(n);
+              setPage(1);
+            },
+          }}
+        />
       </div>
       <div
         className="flex flex-wrap items-center gap-3 rounded-lg border border-rule bg-panel px-4 py-3"

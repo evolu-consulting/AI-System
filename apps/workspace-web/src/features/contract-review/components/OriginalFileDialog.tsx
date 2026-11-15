@@ -3,13 +3,14 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FilePreview } from "~/components/shared/file-viewer/FilePreview";
+import { viewerKind } from "~/components/shared/file-viewer/viewer-kind";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { fetchSourceText, sourceKey } from "~/features/contract-source/hooks/use-source-api";
 import {
   contractKey,
   fetchContract,
   fetchOriginalBlob,
-  isPreviewable,
   openOriginalFile,
 } from "../hooks/use-review-api";
 
@@ -78,7 +79,7 @@ function NoPreview({ entry }: { entry: OriginalEntry }) {
   );
 }
 
-function Viewer({ entry }: { entry: OriginalEntry }) {
+export function Viewer({ entry }: { entry: OriginalEntry }) {
   const { t } = useTranslation();
   const q = useQuery({
     queryKey: ["original-file", entry.id],
@@ -91,7 +92,7 @@ function Viewer({ entry }: { entry: OriginalEntry }) {
   useEffect(() => () => (url ? URL.revokeObjectURL(url) : undefined), [url]);
   if (q.isPending)
     return <p className="p-4 text-label text-dim">{t("contracts.review.orig.loading")}</p>;
-  if (!url)
+  if (!url || !q.data)
     return (
       <p role="alert" className="p-4 text-sm text-late">
         {t("contracts.review.orig.failed")}{" "}
@@ -102,23 +103,18 @@ function Viewer({ entry }: { entry: OriginalEntry }) {
     );
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-sm font-medium" title={entry.name}>
+          {entry.name}
+        </span>
         <a href={url} download={entry.name} className="btn btn-outline">
           {t("contracts.review.orig.download")}
         </a>
       </div>
-      {!isPreviewable(entry.mime) ? (
+      {viewerKind(entry.mime, entry.name) === "other" ? (
         <NoPreview entry={entry} />
-      ) : entry.mime === "application/pdf" ? (
-        <iframe
-          title={entry.name}
-          src={url}
-          className="min-h-0 w-full flex-1 rounded-md border border-rule"
-        />
       ) : (
-        <div className="min-h-0 flex-1 overflow-auto rounded-md border border-rule bg-sunk p-2">
-          <img src={url} alt={entry.name} className="mx-auto max-h-full max-w-full" />
-        </div>
+        <FilePreview blob={q.data} name={entry.name} mime={entry.mime} />
       )}
     </div>
   );

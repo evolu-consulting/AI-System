@@ -1,5 +1,12 @@
 {
   "contracts": {
+    "paging": {
+      "search": "Tìm theo tên",
+      "more": "Xem thêm",
+      "loading": "Đang tải…",
+      "none": "Không có kết quả",
+      "error": "Không tải được danh sách"
+    },
     "plink": {
       "title": "Gắn sản phẩm cho các dòng hợp đồng",
       "desc": "Hợp đồng sắp được xác nhận. Mỗi dòng: dùng sản phẩm có sẵn hoặc tạo sản phẩm mới. Sản phẩm chỉ được tạo/gắn khi bạn xác nhận.",
@@ -217,7 +224,6 @@
       "rows": "{{n}} dòng",
       "perPage": "Mỗi trang",
       "pageSizeAria": "Số dòng mỗi trang",
-      "prev": "Trang trước",
       "next": "Trang sau"
     },
     "nav": {
@@ -748,10 +754,12 @@
       }
     },
     "review": {
+      "lead": { "number": "Số HĐ", "type": "Loại", "partner": "Đối tác" },
       "back": "← Hợp đồng",
       "reading": "Đang đọc hợp đồng…",
       "checkLead": "Kiểm tra lại các trường rồi xác nhận.",
-      "viewFile": "📄 Xem hợp đồng gốc",
+      "viewFile": "Xem hợp đồng gốc",
+      "moreChoices": "Thêm lựa chọn",
       "orig": {
         "title": "Hợp đồng gốc",
         "main": "Hợp đồng gốc",
@@ -775,11 +783,24 @@
       "failedTitle": "Không đọc được hợp đồng này.",
       "failedBody": "AI chưa trích được thông tin từ file (có thể do ảnh mờ, bản quét, hoặc định dạng lạ). Bạn có thể xem lại file gốc, xoá rồi tải lên bản rõ hơn, hoặc nhập tay.",
       "manual": "Nhập tay",
+      "manualStarted": "Đã chuyển sang nhập tay. Xem tệp gốc để đối chiếu.",
+      "manualHint": "Nhập các ô còn trống theo tệp gốc. Tích ô dưới đây trước khi Lưu hoặc Gửi duyệt.",
+      "manualCheck": "Tôi đã đối chiếu với tệp gốc",
+      "manualDirty": "Có sửa chưa lưu — bấm Lưu nháp rồi tích lại.",
+      "manualBlockWhy": "Tích “Tôi đã đối chiếu với tệp gốc” (sau khi lưu nháp nếu vừa sửa) để tiếp tục.",
+      "replaceFile": "Tải tệp khác",
+      "replaceStarted": "Đã thay tệp. AI đang đọc lại.",
+      "manualTag": {
+        "pending": "Nhập tay · cần đối chiếu",
+        "done": "Nhập tay · đã đối chiếu",
+        "doneBy": "Nhập tay · đã đối chiếu bởi {{name}}"
+      },
       "failReason": {
         "unreadable": "Tệp bị hỏng hoặc không mở được. Hãy tải lên bản khác, hoặc bấm “Nhập tay”.",
         "tooLarge": "Tệp quá lớn để AI đọc. Hãy tách nhỏ tệp, hoặc bấm “Nhập tay”.",
         "unsupported": "Định dạng tệp này chưa hỗ trợ đọc tự động. Hãy tải lên PDF, DOCX hoặc ảnh JPG/PNG, hoặc bấm “Nhập tay”.",
-        "cap": "Hôm nay đã hết lượt AI đọc của công ty. Hãy thử lại ngày mai, hoặc bấm “Nhập tay”."
+        "cap": "Hôm nay đã hết lượt AI đọc của công ty. Hãy thử lại ngày mai, hoặc bấm “Nhập tay”.",
+        "timeout": "AI đọc quá lâu. Tệp vẫn được giữ — bạn có thể bấm “Thử lại”, hoặc bấm “Nhập tay” để tự nhập thông tin."
       },
       "toList": "Về danh sách"
     },
@@ -826,6 +847,7 @@
         "buy": "Mua",
         "sell": "Bán",
         "noLots": "Chưa nhập lô nào.",
+        "more": "Hiện {{shown}} dòng mới nhất trong tổng {{total}} dòng.",
         "noSales": "Chưa bán lần nào.",
         "lot": {
           "date": "Ngày nhập",
@@ -870,6 +892,7 @@
       "open": "Tạo",
       "mineTitle": "Đã gửi của tôi",
       "mineEmpty": "Bạn chưa gửi yêu cầu nào.",
+      "mineMore": "Xem thêm",
       "mineWaitingFor": "Đang chờ {{who}}",
       "mine": {
         "waiting": "Đang chờ duyệt",

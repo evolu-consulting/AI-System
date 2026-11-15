@@ -12,6 +12,7 @@ import { createPackUow } from "../../kit/adapters/pack-uow";
 import { staleMinutesFor } from "../application/approval-sweep";
 import { approvalRepo } from "./approval.repo";
 import { sweepRepo } from "./approval-sweep.repo";
+import { extractionRepo } from "./extraction.repo";
 
 let sql: Sql;
 let db: Db;
@@ -25,7 +26,7 @@ beforeAll(async () => {
   sql = openOwner(2);
   [T] = (await tenants(sql, 1, 871)) as [string];
   [A, B] = (await users(sql, T, 2, { from: 871 })) as [string, string];
-  ids = await contracts(sql, T, 8, { from: 871, createdBy: A, status: "draft" });
+  ids = await contracts(sql, T, 12, { from: 871, createdBy: A, status: "draft" });
   db = createDb(urls().hubApi, { max: 2 });
 }, 60_000);
 afterAll(async () => {
@@ -37,6 +38,7 @@ const uow = () =>
   createPackUow(db, "contracts", (tx, tid) => ({
     approval: approvalRepo(tx, tid),
     sweep: sweepRepo(tx, tid),
+    extraction: extractionRepo(tx, tid),
   }));
 const sweep = () =>
   uow().system(T, (r) => r.sweep.sweep({ staleMinutes: 15, queuedMinutes: 360, limit: 500 }));
@@ -49,9 +51,9 @@ async function seed(
 ) {
   const id = ids[i] as string;
   const aid = crypto.randomUUID();
-  await sql`insert into contracts.approvals (id, tenant_id, contract_id, status, started_by, queued_at)
+  await sql`insert into contracts.approvals (id, tenant_id, contract_id, status, started_by, queued_at, updated_at)
     values (${aid}, ${T}, ${id}, ${o.aStatus}, ${o.by ?? A},
-      ${o.queuedAgo === null ? null : mins(o.queuedAgo)})`;
+      ${o.queuedAgo === null ? null : mins(o.queuedAgo)}, ${mins(o.ago)})`;
   // CR-127: trạng thái cũ ⇒ draft + extract_state (status không đổi ⇒ không qua cổng)
   const es =
     o.status === "extracting" ? "reading" : o.status === "extract_failed" ? "failed" : "ready";
@@ -107,6 +109,85 @@ describe("M3c · STALE chỉ cho job đang chạy thật sự quá hạn [review
     expect(await row(r20.id)).toEqual({ status: "draft", extract_state: "failed", error: "STALE" });
     expect((await aRow(q7h.aid))?.status).toBe("failed");
     expect((await sweep()).closed).toBe(0);
+  });
+});
+
+describe("CR-155 · hạn đọc AI: `reading` quá hạn ⇒ failed/TIMEOUT, kết quả về muộn bị bỏ", () => {
+  const sweepT = () =>
+    uow().system(T, (r) =>
+      r.sweep.sweep({ staleMinutes: 15, queuedMinutes: 360, readTimeoutSeconds: 180, limit: 500 }),
+    );
+  const lateSave = (id: string, expected: number) =>
+    uow().tenant({ tenantId: T, userId: A }, (r) =>
+      r.extraction.saveResult(id, {
+        fields: {},
+        clauses: [],
+        warnings: [],
+        expected,
+      } as never),
+    );
+
+  it("đọc quá 3 phút (xếp hàng hoặc đang chạy) ⇒ TIMEOUT, lượt failed, event code TIMEOUT, đọc 1 phút ⇒ giữ", async () => {
+    const qOld = await seed(8, {
+      status: "extracting",
+      ago: 4,
+      aStatus: "extracting",
+      queuedAgo: 4,
+    });
+    const rOld = await seed(9, {
+      status: "extracting",
+      ago: 4,
+      aStatus: "extracting",
+      queuedAgo: null,
+    });
+    const qNew = await seed(10, {
+      status: "extracting",
+      ago: 1,
+      aStatus: "extracting",
+      queuedAgo: 1,
+    });
+    // sửa HĐ khi đang xếp hàng (contracts.updated_at mới) KHÔNG đặt lại hạn: mốc là lượt đọc (approvals.updated_at)
+    const qEdited = await seed(11, {
+      status: "extracting",
+      ago: 4,
+      aStatus: "extracting",
+      queuedAgo: 4,
+    });
+    await sql`update contracts.contracts set updated_at = now() where id = ${qEdited.id}`;
+    const s = await sweepT();
+    expect(await row(qEdited.id)).toEqual({
+      status: "draft",
+      extract_state: "failed",
+      error: "TIMEOUT",
+    });
+    expect(s.closed).toBeGreaterThanOrEqual(3); // gồm cả HĐ reading cũ của ca trước
+    expect(await row(qOld.id)).toEqual({
+      status: "draft",
+      extract_state: "failed",
+      error: "TIMEOUT",
+    });
+    expect(await row(rOld.id)).toEqual({
+      status: "draft",
+      extract_state: "failed",
+      error: "TIMEOUT",
+    });
+    expect(await row(qNew.id)).toEqual({ status: "draft", extract_state: "reading", error: null });
+    expect((await aRow(qOld.aid))?.status).toBe("failed");
+    const ev = await sql<
+      { code: string }[]
+    >`select data->>'code' as code from contracts.contract_events
+      where contract_id = ${qOld.id} and type = 'extract_failed'`;
+    expect(ev.map((e) => e.code)).toEqual(["TIMEOUT"]);
+    expect((await sweepT()).closed).toBe(0);
+  });
+
+  it("kết quả AI về sau hết giờ ⇒ BỎ (CAS extract_state = reading): HĐ vẫn failed, mã TIMEOUT", async () => {
+    const id = ids[8] as string;
+    const [cur] = await sql<
+      { version: number }[]
+    >`select version from contracts.contracts where id = ${id}`;
+    expect(await lateSave(id, cur?.version ?? 0)).toBe(false);
+    expect((await row(id))?.extract_state).toBe("failed");
   });
 });
 

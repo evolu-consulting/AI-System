@@ -35,6 +35,9 @@ const KEYS: CellKey[] = [
   "goods:supplier",
   "goods:customer",
   "referral:commission_payer",
+  "franchise:franchisee",
+  "franchise:franchisor",
+  "cooperation:cooperator",
 ];
 const rep = (): RepConfigFull => {
   const cells = Object.fromEntries(KEYS.map((k) => [k, cell()])) as Record<CellKey, Cell>;

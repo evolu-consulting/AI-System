@@ -2,8 +2,16 @@
 // `dto-mirror.test.ts`.
 import type { ProductGroup } from "./products.types";
 
-type RepRoleIn = "customer" | "supplier" | "commission_payer";
+type RepRoleIn =
+  | "customer"
+  | "supplier"
+  | "commission_payer"
+  | "franchisee"
+  | "franchisor"
+  | "cooperator";
 type OptText = string | null | undefined;
+/** Nhóm của ô uy tín (≡ `REP_GROUPS`): nhóm SP + Giới thiệu + Nhượng quyền + Hợp tác (CR-152). */
+type RepGroupIn = ProductGroup | "franchise" | "cooperation";
 
 export type QuoteCreate = {
   product: string;
@@ -47,7 +55,7 @@ export type ScoringDraft = {
 export type RepJobIn = {
   party: string;
   role: RepRoleIn;
-  group: ProductGroup;
+  group: RepGroupIn;
   job_type: string;
   at?: OptText;
   note?: OptText;
@@ -57,7 +65,7 @@ export type RepJobIn = {
 export type RepRatingIn = {
   party: string;
   role: RepRoleIn;
-  group: ProductGroup;
+  group: RepGroupIn;
   criterion: string;
   stars: number;
   reason?: OptText;
@@ -70,7 +78,7 @@ export type RepCellConfigIn = {
     weight: number;
     enabled: boolean;
     key?: OptText;
-    milestone?: "delivery" | "commission" | "serial" | "payment" | null | undefined;
+    milestone?: "delivery" | "commission" | "serial" | "payment" | "report" | null | undefined;
     penalty?: number | null | undefined;
   }[];
   window_months: number;
@@ -92,7 +100,7 @@ export type RepJobTypesIn = {
 };
 
 export type RepPreviewIn = {
-  cell?: { group: ProductGroup; role: RepRoleIn; config: RepCellConfigIn } | null | undefined;
+  cell?: { group: RepGroupIn; role: RepRoleIn; config: RepCellConfigIn } | null | undefined;
   settings?: RepSettingsIn | null | undefined;
   job_types?: RepJobTypesIn["items"] | null | undefined;
 };

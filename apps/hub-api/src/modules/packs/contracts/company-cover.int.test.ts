@@ -168,3 +168,56 @@ describe("CR-138 · ảnh bìa + màu tự chọn", () => {
     expect(JSON.stringify(spoof.json)).not.toContain("iVBOR");
   });
 });
+
+describe("CR-147b · PUT /brand/cover (đổi ảnh bìa công ty ngay ở hồ sơ công ty, cùng nguồn CR-138)", () => {
+  const A_COVER = async () => (await call("hA", "/brand/cover")).json;
+
+  it("không phải chủ sở hữu (editor) ⇒ 403, đối tác ⇒ 403, ảnh không đổi; caps.companyAdmin theo vai", async () => {
+    const before = await A_COVER();
+    expect((await call("hM", "/brand/cover", { body: { cover: null } })).status).toBe(403);
+    expect((await call("s1a", "/brand/cover", { body: { cover: null } })).status).toBe(403);
+    expect(await A_COVER()).toEqual(before);
+    expect((await call("hA", "/viewer")).json.caps.companyAdmin).toBe(true);
+    expect((await call("hM", "/viewer")).json.caps.companyAdmin).toBe(false);
+    expect((await call("s1a", "/viewer")).json.caps.companyAdmin).toBe(false);
+  });
+
+  it("thân sai (SVG, quá lớn) ⇒ 4xx và không lưu", async () => {
+    const before = await A_COVER();
+    for (const cover of [
+      "data:image/svg+xml;base64,AAAA",
+      `data:image/png;base64,${"A".repeat(4_400_000)}`,
+    ]) {
+      const r = await call("hA", "/brand/cover", { body: { cover } });
+      expect(r.status).toBeGreaterThanOrEqual(400);
+      expect(r.status).toBeLessThan(500);
+    }
+    expect(await A_COVER()).toEqual(before);
+  });
+
+  it("chủ sở hữu đổi + xoá: người khác (editor, đối tác) thấy ngay; cùng nguồn với /company/cover", async () => {
+    expect((await call("hA", "/brand/cover", { body: { cover: null } })).status).toBe(200);
+    expect((await call("hM", "/brand/cover")).json).toEqual({ cover: null });
+    const put = await call("hA", "/brand/cover", { body: { cover: COVER } });
+    expect(put.status).toBe(200);
+    expect((await call("s1a", "/brand/cover")).json).toEqual({ cover: COVER });
+    expect((await call("hA", "/c/company/cover")).json).toEqual({ cover: COVER });
+  });
+
+  it("fix-review-r1 · ghi người đổi: company_settings.updated_by = chủ sở hữu vừa đổi (không phải người cũ / rỗng)", async () => {
+    await call("hA", "/brand/cover", { body: { cover: null } });
+    const r = await sql`select updated_by from contracts.company_settings where tenant_id = ${c.A}`;
+    expect(r[0]?.updated_by).toBe(c.hA);
+  });
+
+  it("chéo tenant: chủ sở hữu B chỉ đổi bìa của B; A mang tenant B ⇒ 403", async () => {
+    const before = await A_COVER();
+    expect((await call("hB", "/brand/cover", { body: { cover: COVER } })).status).toBe(200);
+    expect(await A_COVER()).toEqual(before);
+    expect((await call("hB", "/brand/cover")).json).toEqual({ cover: COVER });
+    expect((await call("hA", "/brand/cover", { body: { cover: null }, tenant: c.B })).status).toBe(
+      403,
+    );
+    expect((await call("hB", "/brand/cover")).json).toEqual({ cover: COVER });
+  });
+});

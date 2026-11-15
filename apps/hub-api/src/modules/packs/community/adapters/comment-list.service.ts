@@ -28,12 +28,24 @@ export async function list(
   uow: Uow,
   a: Access,
   postId: string,
-  page: { cursor: { at: string; id: string } | null; limit: number },
+  page: {
+    cursor: { at: string; id: string } | null;
+    limit: number;
+    dir?: "asc" | "desc";
+    beforeId?: string | undefined;
+  },
 ): Promise<{ rows: CommentRow[]; more: boolean }> {
   const r = await uow.tenant(a.who, ({ tx }) =>
-    listComments(tx, postId, { cursor: page.cursor, limit: page.limit + 1 }),
+    listComments(tx, postId, { ...page, limit: page.limit + 1 }),
   );
   if (!r.post) throw appError("NOT_FOUND");
+  // fix-review-r1 · `before` không có / không thấy được trên bài này ⇒ 400 rõ mã (không trả [] im lặng như hết bình luận).
+  if (r.beforeOk === false)
+    throw new AppError(
+      "COMMENT_BEFORE_NOT_FOUND",
+      400,
+      "Bình luận mốc (before) không tồn tại hoặc không thấy được",
+    );
   return { rows: r.comments.slice(0, page.limit), more: r.comments.length > page.limit };
 }
 

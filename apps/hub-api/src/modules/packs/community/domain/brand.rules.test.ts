@@ -47,17 +47,25 @@ describe("toCommunityBrand [COM-FR-45]", () => {
 describe("viewerCaps [COM-FR-43]", () => {
   it("chủ quản có quyền contracts ⇒ true + url", () => {
     expect(viewerCaps(false, true, "https://sht")).toEqual({
-      caps: { contracts: true },
+      caps: { contracts: true, companyAdmin: false },
       contractsUrl: "https://sht",
     });
   });
   it("chủ quản không quyền ⇒ false + null", () => {
     expect(viewerCaps(false, false, "/")).toEqual({
-      caps: { contracts: false },
+      caps: { contracts: false, companyAdmin: false },
       contractsUrl: null,
     });
   });
   it("đối tác luôn false + null, kể cả khi cổng trả true", () => {
-    expect(viewerCaps(true, true, "/")).toEqual({ caps: { contracts: false }, contractsUrl: null });
+    expect(viewerCaps(true, true, "/")).toEqual({
+      caps: { contracts: false, companyAdmin: false },
+      contractsUrl: null,
+    });
+  });
+  it("chủ sở hữu công ty (CR-147b) ⇒ companyAdmin; đối tác thì không", () => {
+    expect(viewerCaps(false, true, "u", true).caps.companyAdmin).toBe(true);
+    expect(viewerCaps(false, false, "u", true).caps.companyAdmin).toBe(false);
+    expect(viewerCaps(true, true, "u", true).caps.companyAdmin).toBe(false);
   });
 });

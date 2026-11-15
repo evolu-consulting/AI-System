@@ -149,6 +149,8 @@ export function FlowEditorBody({
             trigger={trigger}
             readOnly={readOnly}
             onEvent={onEvent}
+            tenantId={tenantId}
+            onParams={(params) => onChange({ ...trigger, params })}
             onDays={(n) => onChange({ ...trigger, params: n === null ? {} : { days: n } })}
             onWhen={(when) => {
               const { when: _w, ...rest } = trigger;

@@ -1,66 +1,56 @@
 // CR-132 M3 · HD-MSG-01..12 · `/pack/contracts/messages/**` (mount dưới `/pack/contracts`): hội thoại, thành viên, tin, đã đọc, chưa đọc. Guard `read` của gói TRƯỚC
 // khi đọc tham số/thân; user ngoài (đối tác) ⇒ 403 `PACK_FORBIDDEN`. Không phải thành viên / không có ⇒ 404 `MSG_NOT_FOUND` (cùng thân). Lỗi nghiệp vụ trả MÃ
-// `MSG_ERRORS` (client dịch), không câu chữ riêng. KHÔNG realtime (M4), không tải tệp lên (M5).
+// `MSG_ERRORS` (client dịch), không câu chữ riêng. CR-169: cuộc `partner` ở `partner.routes.ts`.
 
 import { ATTACH_MAX_BYTES } from "@ai/contracts/attach";
 import {
   AddMembersRequestSchema,
   CreateConversationRequestSchema,
   MarkReadRequestSchema,
-  MSG_ERRORS,
+  MsgCompaniesQuerySchema,
   MsgConversationsQuerySchema,
   MsgListQuerySchema,
+  MsgPeopleQuerySchema,
   RenameConversationRequestSchema,
   SendMessageRequestSchema,
 } from "@ai/contracts/pack-contracts";
-import { type Context, Hono } from "hono";
+import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { z } from "zod";
-import { AppError, appError } from "../../../../../lib/errors";
+import { appError } from "../../../../../lib/errors";
 import { parseJson, parseQuery } from "../../../../../lib/http";
-import { type PackAccessView, type PackGuardVars, packGuard } from "../../../kit/public";
+import type { PackAccessView, PackGuardVars } from "../../../kit/public";
 import { cleanFileName, fileNameOf } from "../../adapters/upload.routes";
-import { type MessagesUsecases, MsgFail } from "../application/messages.usecase";
+import type { MessagesUsecases } from "../application/messages.usecase";
 import { decodeCursor } from "../application/messages.view";
+import { type CompanyFilter, parseCompanyFilter } from "../domain/partner.rules";
+import { partnerChatRoutes } from "./partner.routes";
+import {
+  type H,
+  helpers,
+  MULTIPART_SLACK,
+  notFound,
+  type Routes,
+  run,
+  SeqSchema,
+  storageOff,
+  tooLarge,
+} from "./route.kit";
 
-const notFound = () => new AppError("MSG_NOT_FOUND", MSG_ERRORS.MSG_NOT_FOUND, "MSG_NOT_FOUND");
-const forbidden = () => new AppError("PACK_FORBIDDEN", 403, "Forbidden");
-/** `MsgFail` ⇒ AppError(mã, HTTP theo `MSG_ERRORS`). */
-const run = <T>(p: Promise<T>): Promise<T> =>
-  p.catch((e) => {
-    if (e instanceof MsgFail) throw new AppError(e.code, MSG_ERRORS[e.code], e.code);
-    throw e;
-  });
-const SeqSchema = z.coerce.number().int().min(1);
-const MULTIPART_SLACK = 64 * 1024;
-const tooLarge = () =>
-  new AppError("MSG_FILE_TOO_LARGE", MSG_ERRORS.MSG_FILE_TOO_LARGE, "MSG_FILE_TOO_LARGE");
-const storageOff = () => new AppError("FILE_STORAGE_UNAVAILABLE", 503, "FILE_STORAGE_UNAVAILABLE");
-
-type Routes = Hono<PackGuardVars>;
-type Ctx = Context<PackGuardVars>;
-/** Phần dùng chung của mọi route: guard `read`, người gọi (đối tác ⇒ 403), tham số uuid, no-store. */
-type H = ReturnType<typeof helpers>;
-function helpers(view: PackAccessView) {
-  const who = (c: Ctx) => {
-    const u = c.get("user");
-    if (u.userKind === "external") throw forbidden(); // đối tác không nhắn tin nội bộ
-    return { tenantId: u.tenantId, userId: u.userId, userKind: u.userKind };
-  };
-  const uuid = (c: Ctx, name: string) => {
-    const v = z.uuid().safeParse(c.req.param(name));
-    if (!v.success) throw notFound();
-    return v.data;
-  };
-  const noStore = (c: Ctx) => c.header("cache-control", "no-store");
-  return { read: packGuard(view, "contracts", "read"), who, uuid, noStore };
+/** `company` sai dạng ⇒ 400 `VALIDATION_ERROR` (path `company`). */
+function companyFilter(raw: string | undefined, tenantId: string): CompanyFilter {
+  try {
+    return parseCompanyFilter(raw, tenantId);
+  } catch {
+    throw appError("VALIDATION_ERROR", {
+      issues: [{ path: ["company"], code: "invalid", message: "company" }],
+    });
+  }
 }
-
 /** Hội thoại: danh sách, chưa đọc, tạo, chi tiết, đổi tên. */
 function conversationRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   const { read, who, uuid, noStore } = h;
   r.get("/messages/unread", read, async (c) => {
-    const out = await uc.unread(who(c));
+    const out = await run(uc.unread(who(c)));
     noStore(c);
     return c.json(out);
   });
@@ -72,7 +62,8 @@ function conversationRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
       throw appError("VALIDATION_ERROR", {
         issues: [{ path: ["cursor"], code: "invalid", message: "cursor" }],
       });
-    const out = await uc.list(w, { cursor, limit: q.limit });
+    const filter = companyFilter(q.company, w.tenantId);
+    const out = await run(uc.list(w, { cursor, limit: q.limit, filter }));
     noStore(c);
     return c.json(out);
   });
@@ -187,28 +178,50 @@ function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   });
 }
 
-export type Directory = (who: {
-  tenantId: string;
-  userId: string;
-  userKind?: "internal" | "external";
-}) => Promise<{ id: string; name: string }[]>;
+/** Danh bạ + công ty (CR-148 tải dần; CR-169: lọc công ty, người công ty kết nối, chip công ty). */
+function peopleRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
+  // Danh bạ «Thành viên» TẢI DẦN (30/lần, trần 50): `own` theo phòng ban rồi tên (CR-148); `all`/công ty theo tên, người có quyền Sổ Hợp Tác.
+  r.get("/messages/people", h.read, async (c) => {
+    const w = h.who(c);
+    const q = parseQuery(c, MsgPeopleQuerySchema);
+    const filter = companyFilter(q.company, w.tenantId);
+    try {
+      const out = await run(uc.people(w, q, filter));
+      h.noStore(c);
+      return c.json(out);
+    } catch (e) {
+      if (e instanceof Error && e.message === "BAD_CURSOR")
+        throw appError("VALIDATION_ERROR", {
+          issues: [{ path: ["cursor"], code: "invalid", message: "cursor" }],
+        });
+      throw e;
+    }
+  });
+  r.get("/messages/companies", h.read, async (c) => {
+    const w = h.who(c);
+    const q = parseQuery(c, MsgCompaniesQuerySchema);
+    try {
+      const out = await run(uc.companies(w, q));
+      h.noStore(c);
+      return c.json(out);
+    } catch (e) {
+      if (e instanceof Error && e.message === "BAD_CURSOR")
+        throw appError("VALIDATION_ERROR", {
+          issues: [{ path: ["cursor"], code: "invalid", message: "cursor" }],
+        });
+      throw e;
+    }
+  });
+}
 
-export function messagesRoutes(
-  view: PackAccessView,
-  uc: MessagesUsecases,
-  directory: Directory,
-): Routes {
+export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Routes {
   const r = new Hono<PackGuardVars>();
   const h = helpers(view);
-  // CR-132b · danh bạ «Thành viên»: đồng nghiệp nội bộ của công ty (không đối tác), dùng chung cho «Nhắn tin mới» và «Thêm người».
-  r.get("/messages/people", h.read, async (c) => {
-    const items = await directory(h.who(c));
-    h.noStore(c);
-    return c.json({ items });
-  });
+  peopleRoutes(r, h, uc);
   conversationRoutes(r, h, uc);
   memberRoutes(r, h, uc);
   messageRoutes(r, h, uc);
   fileRoutes(r, h, uc);
+  partnerChatRoutes(r, h, uc); // CR-169 · `/messages/partner/:id/**`
   return r;
 }

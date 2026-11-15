@@ -54,6 +54,7 @@ HUB_ATTACH_DRIVER=local
 HUB_ATTACH_DIR=/data/attachments
 HUB_SEED_PROFILE=claude-sub-1
 HUB_NOTIFY_BASE_URL=http://localhost:$P_CONTRACTS
+HUB_NOTIFY_MODE=off
 AI_PROVIDER=subscription
 AI_SUB_CLI_PATH=/opt/claude/claude
 AI_SUB_CLAUDE_CONFIG_DIR=/claude-home/.claude
@@ -119,6 +120,8 @@ grep -q '^DIFY_CONSOLE_URL=' .env || setkv DIFY_CONSOLE_URL "http://149.202.83.5
 grep -q '^HUB_PROCESS_ENGINE=' .env || setkv HUB_PROCESS_ENGINE on
 # CR-125/126: «Yêu cầu», «Việc của tôi», duyệt/ký theo quy trình cho MỌI người dùng. Vắng ⇒ module quy trình `off` ⇒ 404 (staging 2026-11-09).
 grep -q '^HUB_PROCESS_ROUTES=' .env || setkv HUB_PROCESS_ROUTES all
+# Mail: tắt tường minh (mặc định code cũng là off). Bật thật = người dùng cấp SMTP rồi đặt HUB_NOTIFY_MODE=live tay; giá trị đã có giữ nguyên.
+grep -q '^HUB_NOTIFY_MODE=' .env || setkv HUB_NOTIFY_MODE off
 # FileBox riêng của sohoptac2: token + khoá MinIO riêng, đặt HUB_ATTACH_DRIVER=filebox (idempotent).
 bash ./filebox-env.sh
 

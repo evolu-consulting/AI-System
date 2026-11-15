@@ -39,6 +39,8 @@ export const proxy = {
   "/me/stream": HUB_URL,
   "/notifications": spaNavigation,
   // M2-chat · trợ lý: hội thoại (E6/E12 SSE) + dừng run (E15) của Agent Hub.
+  // CR-147b · hồ sơ người (`/people`: avatar, ảnh bìa, thẻ người theo lô); route SPA không dùng tiền tố này.
+  "/people": HUB_URL,
   "/conversations": HUB_URL,
   "/runs": HUB_URL,
 };
@@ -74,6 +76,19 @@ export default defineConfig({
             xyflow: {
               test: /[\\/]node_modules[\\/](@xyflow|d3-[a-z-]+|zustand|classcat)[\\/]/,
               name: "canvas-xyflow",
+              chunks: "async",
+              enforce: true,
+            },
+            // CR-149: pdf.js / docx-preview chỉ nằm ở chunk lười của hộp «Xem» (nạp khi mở PDF/Word) ⇒ bundle chính không tăng.
+            viewerPdf: {
+              test: /[\\/]node_modules[\\/]pdfjs-dist[\\/]/,
+              name: "viewer-pdf",
+              chunks: "async",
+              enforce: true,
+            },
+            viewerDocx: {
+              test: /[\\/]node_modules[\\/](docx-preview|jszip)[\\/]/,
+              name: "viewer-docx",
               chunks: "async",
               enforce: true,
             },

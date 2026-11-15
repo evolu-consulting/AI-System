@@ -68,6 +68,8 @@
     "expandSidebar": "Mở rộng thanh bên",
     "apps": "Ứng dụng",
     "appSwitching": "Đang chuyển ứng dụng…",
+    "messages": "Tin nhắn",
+    "messagesConfirm": "Xác nhận",
     "newGroup": "Nhóm mới"
   },
   "group": {
@@ -284,6 +286,12 @@
     "unavailable": "Tệp đã bị xoá",
     "download": "Tải {{filename}}",
     "waitUpload": "Chờ tải tệp xong",
+    "downloadShort": "Tải về",
+    "view": "Xem",
+    "close": "Đóng",
+    "prev": "Ảnh trước",
+    "next": "Ảnh sau",
+    "openImage": "Phóng to ảnh {{name}}",
     "downloadFailed": "Không tải được tệp.",
     "err": {
       "tooLarge": "Tệp lớn hơn 20 MB.",

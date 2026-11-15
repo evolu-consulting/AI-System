@@ -31,6 +31,7 @@
     "review": "Đang chờ {{names}} duyệt — chỉ người duyệt mới bấm được.",
     "ask": "Đang chờ {{names}} trả lời",
     "decide": "Đang chờ {{names}} hoặc quản trị viên quyết định",
+    "milestone": "Đang chờ {{names}} xác nhận mốc",
     "more": "{{first}} và {{count}} người khác",
     "group": "nhóm {{group}}",
     "reviewEscalated": "Đang chờ {{names}} hoặc {{escalated}} (đã chuyển cấp) duyệt — chỉ người duyệt mới bấm được."

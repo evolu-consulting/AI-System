@@ -1,7 +1,8 @@
 // Hook nạp bảng tin: `useFeedFilters` giữ state lọc (tab, nhóm hàng, khu vực, người đăng), `useFeed` nạp bài + facets.
 // FeedList (Profile) và FeedPage (2 cột) dùng chung để chia state giữa thanh tab và bộ lọc.
 import type { FeedQuery, FeedResponse, FeedTab, PartnerOrg } from "@ai/contracts/community";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { applyFirstPage, feedScopeKey } from "../domain/feed-merge";
 import { t } from "../i18n";
 import { useApp } from "./ctx";
 
@@ -29,18 +30,24 @@ export function useFeedFilters(
   return { tab, setTab, cat, setCat, area, setArea, author, setAuthor, query, clear };
 }
 
+/** CR-147c · nạp trang đầu (20 bài) rồi tải dần theo `nextCursor` (gọi `more.load` khi cuộn tới cuối). Đổi bộ lọc hoặc người xem ⇒ về trang đầu, bỏ danh sách cũ. */
 export function useFeed(query: FeedQuery) {
-  const { api, rev } = useApp();
+  const { api, rev, viewer } = useApp();
   const [data, setData] = useState<FeedResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const key = JSON.stringify(query);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const key = feedScopeKey(query, viewer);
+  const keyRef = useRef(key);
   // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại khi bộ lọc hoặc dữ liệu đổi
   useEffect(() => {
     let live = true;
+    const sameScope = keyRef.current === key;
+    keyRef.current = key;
+    if (!sameScope) setData(null); // đổi người xem/bộ lọc: không để bài cũ lại trên màn trong lúc chờ trang đầu
     api.listFeed(query).then(
       (r) => {
         if (!live) return;
-        setData(r);
+        setData((old) => applyFirstPage(old, r, sameScope));
         setError(null);
       },
       (e) => live && setError(e instanceof Error ? e.message : t("community.feed.loadError")),
@@ -49,7 +56,29 @@ export function useFeed(query: FeedQuery) {
       live = false;
     };
   }, [api, key, rev]);
-  return { data, error };
+  const cursor = data?.nextCursor;
+  const load = useCallback(async () => {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const r = await api.listFeed({ ...query, cursor });
+      setData((old) => {
+        if (!old) return r;
+        const have = new Set(old.items.map((p) => p.id));
+        const { nextCursor: _d, ...rest } = old;
+        return {
+          ...rest,
+          items: [...old.items, ...r.items.filter((p) => !have.has(p.id))],
+          ...(r.nextCursor ? { nextCursor: r.nextCursor } : {}),
+        };
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("community.feed.loadError"));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [api, query, cursor, loadingMore]);
+  return { data, error, more: { has: !!cursor, loading: loadingMore, load } };
 }
 
 /** Danh sách công ty: chủ quản thấy tất cả đối tác; đối tác thấy công ty của mình. */
@@ -57,7 +86,8 @@ export function usePartners(enabled = true): PartnerOrg[] {
   const { api } = useApp();
   const [partners, setPartners] = useState<PartnerOrg[]>([]);
   useEffect(() => {
-    if (enabled) api.listPartners().then(setPartners, () => undefined);
+    // CR-151: cột bên chỉ hiện 50 công ty đầu; danh sách đầy đủ ở hồ sơ › Đối tác (Xem thêm).
+    if (enabled) api.listPartners({ limit: 50, offset: 0 }).then(setPartners, () => undefined);
   }, [api, enabled]);
   return partners;
 }

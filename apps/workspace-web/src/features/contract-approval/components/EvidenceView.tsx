@@ -2,60 +2,40 @@
 // Thuần trình bày: `urls` là blob URL đã tải (fileId → URL); chưa có ⇒ «Đang tải», `failed` ⇒ báo lỗi.
 import { FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { evidenceKind } from "../lib/evidence-kind";
+import { DownloadLink, FilePreview } from "~/components/shared/file-viewer/FilePreview";
+import { viewerKind } from "~/components/shared/file-viewer/viewer-kind";
 import type { RecordLine } from "../lib/record-view";
 
 export type EvidenceUrls = {
-  urls: Readonly<Record<string, string>>;
+  blobs: Readonly<Record<string, Blob>>;
   failed: ReadonlySet<string>;
 };
 
-/** Loại không xem trước được ⇒ link nhỏ «Tải về» (ảnh/PDF không có). Blob URL của tệp đó do hộp tải khi mở. */
-function OtherFile({ f, url }: { f: RecordLine["files"][number]; url: string | undefined }) {
-  const { t } = useTranslation();
+/** Loại không xem trước được ⇒ tên + link nhỏ «Tải về» (ảnh/PDF/Word hiện thẳng, không có link). */
+function OtherFile({ f, blob }: { f: RecordLine["files"][number]; blob: Blob | undefined }) {
   return (
     <p className="m-0 flex flex-wrap items-center gap-2 text-sm" data-testid="evidence-other">
       <FileText size={16} aria-hidden /> {f.name}
-      {url && (
-        <a
-          href={url}
-          download={f.name}
-          className="text-caption text-act underline"
-          data-testid="evidence-download"
-        >
-          {t("contracts.work.u4.record.download")}
-        </a>
-      )}
+      {blob && <DownloadLink blob={blob} name={f.name} small />}
     </p>
   );
 }
 
 function FileBlock({ f, u }: { f: RecordLine["files"][number]; u: EvidenceUrls }) {
   const { t } = useTranslation();
-  const kind = evidenceKind(f.mime);
-  const url = u.urls[f.id];
+  const blob = u.blobs[f.id];
   if (u.failed.has(f.id))
     return (
       <p role="alert" className="m-0 text-caption text-late">
         {t("contracts.work.u4.record.fileError")}
       </p>
     );
-  if (kind === "other") return <OtherFile f={f} url={url} />;
-  if (!url) return <p className="m-0 text-caption text-dim">{t("contracts.common.loading")}</p>;
-  return kind === "image" ? (
-    <img
-      src={url}
-      alt={f.name}
-      className="max-h-80 max-w-full rounded-lg border border-line"
-      data-testid="evidence-image"
-    />
-  ) : (
-    <iframe
-      src={url}
-      title={f.name}
-      className="h-96 w-full rounded-lg border border-line"
-      data-testid="evidence-pdf"
-    />
+  if (viewerKind(f.mime, f.name) === "other") return <OtherFile f={f} blob={blob} />;
+  if (!blob) return <p className="m-0 text-caption text-dim">{t("contracts.common.loading")}</p>;
+  return (
+    <div className="flex h-96 flex-col" data-testid="evidence-file">
+      <FilePreview blob={blob} name={f.name} mime={f.mime} />
+    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 // CR-125 · S2 · stage của flow theo sự kiện ⇒ bước hiển thị ở Cài đặt (cùng flow tab Quy trình).
-import { expect, it } from "bun:test";
+import { describe, expect, it, test } from "bun:test";
 import { stepsOfStages } from "./event-flow-steps.rules";
 
 const approve = (name: string, step: number, after: Record<string, unknown>) => ({
@@ -37,4 +37,33 @@ it("có node Nếu ⇒ branches = true; stage rác không làm hỏng", () => {
   ]);
   expect(r.branches).toBe(true);
   expect(r.steps.map((s) => s.name)).toEqual(["Pháp chế duyệt"]);
+});
+
+describe("CR-146 · signPartnerOf (khối ký / đối tác chỉ xem)", () => {
+  const G = "11111111-1111-4111-8111-111111111111";
+  const c = (value: string | boolean) => ({ from: "const", value });
+  test("đọc args hằng của stage Ký + có Gửi đối tác", async () => {
+    const { signPartnerOf } = await import("./event-flow-steps.rules");
+    const v = signPartnerOf([
+      {
+        executor: {
+          kind: "tool",
+          tool_key: "contracts-esign-send",
+          args: { company_signers: c(`group:${G}`), partner_signs: c(true), order: c("parallel") },
+        },
+      },
+      { executor: { kind: "tool", tool_key: "contracts-partner-send", args: {} } },
+    ]);
+    expect(v).toEqual({
+      esign: { signers: [{ kind: "group", id: G }], partnerSigns: true, order: "parallel" },
+      partnerSend: true,
+    });
+  });
+  test("không có bước Ký / Gửi ⇒ esign null, partnerSend false", async () => {
+    const { signPartnerOf } = await import("./event-flow-steps.rules");
+    expect(signPartnerOf([{ executor: { kind: "approve" } }])).toEqual({
+      esign: null,
+      partnerSend: false,
+    });
+  });
 });

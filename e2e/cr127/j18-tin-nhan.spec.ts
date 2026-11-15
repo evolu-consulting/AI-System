@@ -6,6 +6,8 @@ import { test } from "../journey-approval/_test";
 import { envOf, expect, loginCw, SPEC_TENANT, U } from "./_cr127-kit";
 
 const E = envOf(SPEC_TENANT.j01);
+// CR-148: cột trái là danh bạ chia nhóm theo phòng ban (không còn «hội thoại mới nhất ở đầu») ⇒ tìm dòng của A theo tên người gửi
+const FROM = "E2E Nhân viên Kinh doanh";
 const HELLO = `Chào B ${Date.now().toString(36)}`;
 
 test("A nhắn B: B thấy chưa đọc, mở thì hết, A thấy «Đã xem»", async ({ browser }) => {
@@ -29,9 +31,9 @@ test("A nhắn B: B thấy chưa đọc, mở thì hết, A thấy «Đã xem»"
   await a.getByRole("button", { name: "Gửi", exact: true }).click();
   await expect(a.getByTestId("msg-row").filter({ hasText: HELLO })).toBeVisible();
 
-  // B: số chưa đọc ở menu + hội thoại in đậm ở đầu danh sách
+  // B: số chưa đọc ở menu + dòng của A (trong nhóm phòng của A) in đậm kèm tin mới
   await expect(b.getByTestId("nav-contracts-messages").getByTestId("nav-badge")).toHaveText("1");
-  const first = b.getByTestId("conv-row").first();
+  const first = b.getByTestId("conv-row").filter({ hasText: FROM });
   await expect(first).toHaveAttribute("data-unread", "true");
   await expect(first.getByTestId("conv-unread")).toHaveText("1");
   await expect(first).toContainText(HELLO);
@@ -40,7 +42,7 @@ test("A nhắn B: B thấy chưa đọc, mở thì hết, A thấy «Đã xem»"
   await first.click();
   await expect(b.getByTestId("msg-row").filter({ hasText: HELLO })).toBeVisible();
   await expect(b.getByTestId("nav-contracts-messages").getByTestId("nav-badge")).toHaveCount(0);
-  await expect(b.getByTestId("conv-row").first()).toHaveAttribute("data-unread", "false");
+  await expect(first).toHaveAttribute("data-unread", "false");
   await expect(a.getByTestId("msg-seen")).toHaveText("Đã xem");
 
   await ctxA.close();

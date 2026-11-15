@@ -10,6 +10,7 @@ import type {
 } from "../application/extraction.ports";
 import { initialState } from "../domain/contract-state.rules";
 import { contractStateRepo, refreshEffect } from "./contract-state.repo";
+import { kindScheduleDoneHook } from "./kind-schedule.hook";
 
 const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v);
 const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v));
@@ -177,7 +178,7 @@ function requestExtractQ(tx: Tx, tenantId: string): ExtractionRepo["requestExtra
         select id, status, extract_state, (source_text is not null or file_id is not null) as has_src
         from contracts.contracts where id = ${id}::uuid and tenant_id = ${tenantId}::uuid for update),
       u as (
-        update contracts.contracts t set extract_state = 'reading', error = null, version = t.version + 1,
+        update contracts.contracts t set extract_state = 'reading', error = null, reconciled_by = null, reconciled_at = null, version = t.version + 1,
           updated_at = now()
         from c where t.id = c.id and t.tenant_id = ${tenantId}::uuid and c.has_src
           and c.status = 'draft' and c.extract_state in ('ready', 'failed')
@@ -209,10 +210,11 @@ function insertManualQ(tx: Tx, tenantId: string): ExtractionRepo["insertManual"]
       status: "done";
     }>(sql`with c as (
         insert into contracts.contracts (id, tenant_id, kind, doc_type, source, title, direction, deal, commission_pct,
-          commission_fixed, status, extract_state, owner_user_id, created_by, fields, warnings, confirmed_at, confirmed_by)
+          commission_fixed, kind_terms, status, extract_state, owner_user_id, created_by, fields, warnings, confirmed_at,
+          confirmed_by)
         values (${m.id}::uuid, ${tenantId}::uuid, 'contract',
           case when ${src}::text is null then 'contract' else 'deal' end, ${src}::text, ${m.title}, ${m.direction}, ${m.deal},
-          ${m.commissionPct}::numeric, ${m.commissionFixed}::bigint, ${init.status}, ${init.extractState},
+          ${m.commissionPct}::numeric, ${m.commissionFixed}::bigint, ${m.kindTerms ? JSON.stringify(m.kindTerms) : null}::jsonb, ${init.status}, ${init.extractState},
           ${m.userId}::uuid, ${m.userId}::uuid, ${JSON.stringify(m.fields)}::jsonb, ${JSON.stringify(m.warnings)}::jsonb,
           now(), ${m.userId}::uuid)
         returning id, version, status, direction, fields),
@@ -241,6 +243,8 @@ function insertManualQ(tx: Tx, tenantId: string): ExtractionRepo["insertManual"]
     const r = rows[0];
     if (!r) throw new Error("insert-manual: no row");
     if (init.sideEffects.includes("refresh_effect")) await refreshEffect(tx, [r.id]);
+    // CR-152d: như khi HĐ vào DONE — sinh mốc kỳ (một câu theo tập, idempotent) CÙNG tx.
+    if (m.kindTerms) await kindScheduleDoneHook.onDone(tx, tenantId, r.id);
     return { id: r.id, version: r.version, status: r.status };
   };
 }

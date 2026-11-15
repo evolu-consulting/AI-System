@@ -9,7 +9,14 @@ import type {
 /** Hai vai có điểm (engine HD8). Vai "bên trả hoa hồng" tính như Khách hàng (CR-097 Q3). */
 export const ROLES: readonly PartnerRole[] = ["supplier", "customer"];
 /** Thứ tự vai khi gộp dòng đối tác (V2-E thêm bên trả hoa hồng). */
-export const REP_ROLE_ORDER: readonly RepRole[] = ["supplier", "customer", "commission_payer"];
+export const REP_ROLE_ORDER: readonly RepRole[] = [
+  "supplier",
+  "customer",
+  "commission_payer",
+  "franchisee",
+  "franchisor",
+  "cooperator",
+];
 export const RANGES = [3, 6, 12] as const;
 export type Range = (typeof RANGES)[number];
 /**
@@ -29,10 +36,18 @@ export function rolesOf(
       (r === "customer" && known.includes("commission_payer")),
   );
 }
-export const TABS = ["overview", "contracts", "review", "community"] as const;
+/** CR-169 · chỉ 3 tab; `?tab=chat|feed|community` cũ không nhận ⇒ Tổng quan. */
+export const TABS = ["overview", "contracts", "review"] as const;
 export type Tab = (typeof TABS)[number];
 
-export type PartnersSearch = { party?: string; role?: RepRole; tab?: Tab; range?: Range };
+export type PartnersSearch = {
+  party?: string;
+  /** CR-161 · công ty đã kết nối (mã tenant) — chỉ để lấy tên khi chưa có hợp đồng. */
+  tenant?: string;
+  role?: RepRole;
+  tab?: Tab;
+  range?: Range;
+};
 const text = (v: unknown, max: number): string | undefined =>
   typeof v === "string" && v.length > 0 && v.length <= max ? v : undefined;
 
@@ -44,7 +59,15 @@ export function parsePartnersSearch(s: Record<string, unknown>): PartnersSearch 
   const tab = TABS.find((k) => k === s.tab && k !== "overview");
   const range =
     s.range === 3 || s.range === "3" ? 3 : s.range === 6 || s.range === "6" ? 6 : undefined;
-  return { party, ...(role ? { role } : {}), ...(tab ? { tab } : {}), ...(range ? { range } : {}) };
+  const tenant =
+    typeof s.tenant === "string" && /^[0-9a-f-]{36}$/i.test(s.tenant) ? s.tenant : undefined;
+  return {
+    party,
+    ...(tenant ? { tenant } : {}),
+    ...(role ? { role } : {}),
+    ...(tab ? { tab } : {}),
+    ...(range ? { range } : {}),
+  };
 }
 // ---------- HĐ (DT-06) ----------
 export const STAGES = ["all", "not_started", "in_progress", "done"] as const;
@@ -70,3 +93,6 @@ export function noteOfLine(l: PartnerWebLine): string {
   const body = l.summary ? `${l.title}: ${l.summary}` : l.title;
   return (l.source ? `${body} (${l.source})` : body).slice(0, 2000);
 }
+
+/** Tab hiển thị: mặc định Tổng quan (tab lạ đã bị `parsePartnersSearch` bỏ). */
+export const resolveTab = (asked: Tab | undefined): Tab => asked ?? "overview";

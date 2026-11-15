@@ -17,7 +17,7 @@ export function FlowEditorLink({ className, testId }: { className?: string; test
   if (!can) return null;
   const go = async () => {
     setBusy(true);
-    const ok = await openInNewTab(() => flowEditorUrl(flow.data?.defId));
+    const ok = await openInNewTab(() => flowEditorUrl(flow.data?.[0]?.defId));
     setBusy(false);
     if (!ok) toast(t("contracts.flow.current.openFail"), "late");
   };

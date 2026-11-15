@@ -195,10 +195,16 @@ export function startFbFake(token = "fb-test-token-Zx9Pq7Lm"): FbFake {
     const id = links.get(rand);
     const f = id ? files.get(id) : undefined;
     if (!f) return json(404, { detail: "link expired" });
-    return bytesResponse(
+    const res = bytesResponse(
       (f.versions[f.versions.length - 1] as FbFile["versions"][number]).bytes,
       req,
     );
+    // Như FileBox thật (app.py: Content-Disposition attachment; filename*=UTF-8''<tên>) để trình duyệt lưu đúng tên tệp.
+    res.headers.set(
+      "content-disposition",
+      `attachment; filename*=UTF-8''${encodeURIComponent(f.name)}`,
+    );
+    return res;
   }
 
   const server = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: handle, idleTimeout: 30 });

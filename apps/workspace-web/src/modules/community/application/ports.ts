@@ -1,5 +1,6 @@
 // CR-102 · C5 · giao diện API mà UI dùng. Hai adapter: `mock` (in-memory, chạy ngay) và `http` (C3 nối `/pack/community/*`).
 // Hình dữ liệu = `@ai/contracts/community`. UI không lọc quyền xem: mọi thứ do adapter/server quyết.
+
 import type {
   AudienceMode,
   CommentPage,
@@ -17,6 +18,7 @@ import type {
   FlowNav,
   JoinRequest,
   JoinRequestInput,
+  JoinRequestList,
   Mention,
   MentionablePerson,
   ModerationItem,
@@ -33,9 +35,14 @@ import type {
   QuotePreview,
   QuoteSaved,
   Report,
+  ReportList,
   UpdatePostInput,
 } from "@ai/contracts/community";
+import type { MyPeopleProfile, PeopleResponse } from "@ai/contracts/people";
 import type { Parsed, Route } from "../domain/route";
+
+/** CR-147c · tải dần bình luận CŨ HƠN: `dir:"desc"` (mới → cũ) + `before` = id bình luận cũ nhất đang hiện (trang đầu) / `cursor` (trang sau). */
+export type CommentPageOpts = { dir?: "asc" | "desc"; before?: string; limit?: number };
 
 /** Phạm vi bản nháp để server tính "ai thấy được bài" (đối tác: bỏ qua). */
 export type PeopleScope = {
@@ -63,16 +70,17 @@ export interface RouterPort {
 /** CR-120 · 3 luồng Community (`/pack/community/{moderation,join-requests,reports,posts/:id/report,flows/nav}`). Mỗi danh sách = MỘT yêu cầu (server giới hạn 100). */
 export interface FlowsApi {
   nav(): Promise<FlowNav>;
-  modQueue(): Promise<ModerationList>;
-  myModeration(): Promise<ModerationList>;
+  /** CR-151 · mọi danh sách phân trang theo `offset` (trang ≤ 50); `nextOffset` null ⇒ hết. */
+  modQueue(offset?: number): Promise<ModerationList>;
+  myModeration(offset?: number): Promise<ModerationList>;
   decideModeration(id: string, input: FlowDecideInput): Promise<ModerationItem>;
   createJoin(input: JoinRequestInput): Promise<JoinRequest>;
-  listJoins(pendingOnly: boolean): Promise<JoinRequest[]>;
+  listJoins(pendingOnly: boolean, offset?: number): Promise<JoinRequestList>;
   decideJoin(id: string, input: FlowDecideInput): Promise<JoinRequest>;
   /** Đối tác SHT để gắn khi duyệt yêu cầu tham gia (`GET /pack/contracts/partners/search`, sổ đối tác — gồm cả đối tác chưa có HĐ); lỗi/gói tắt ⇒ chỉ còn «Tạo đối tác mới». */
   listParties(q?: string): Promise<{ party: string; name: string }[]>;
   reportPost(postId: string, reason: string): Promise<Report>;
-  listReports(pendingOnly: boolean): Promise<Report[]>;
+  listReports(pendingOnly: boolean, offset?: number): Promise<ReportList>;
   decideReport(id: string, input: FlowDecideInput): Promise<Report>;
 }
 
@@ -84,6 +92,14 @@ export interface CommunityApi {
   getBrand(): Promise<CommunityBrand>;
   /** `GET /pack/community/brand/cover` — ảnh bìa công ty chủ quản (data URL) hoặc null (CR-138 Q9). */
   getBrandCover(): Promise<CommunityBrandCover>;
+  /** CR-147b · `GET /people/me` — ảnh đại diện, ảnh bìa, chức vụ của chính mình. */
+  getMyPeople(): Promise<MyPeopleProfile>;
+  /** CR-147b · `PUT /people/me/avatar|cover` — chỉ của chính mình; `null` = xoá. */
+  setMyImage(kind: "avatar" | "cover", value: string | null): Promise<void>;
+  /** CR-147b · `GET /people?ids=` — thẻ người theo lô (tên, chức vụ, avatar, phòng ban). */
+  getPeople(ids: readonly string[]): Promise<PeopleResponse>;
+  /** CR-147b · `PUT /pack/community/brand/cover` — chỉ chủ sở hữu công ty (`viewer.caps.companyAdmin`). */
+  setCompanyCover(cover: string | null): Promise<void>;
   /** `GET /pack/community/feed` */
   listFeed(q: FeedQuery): Promise<FeedResponse>;
   /** `POST /pack/community/posts` */
@@ -95,11 +111,11 @@ export interface CommunityApi {
   /** `GET /pack/community/posts/:id/source` — bản gốc cho chính người đăng (HT-52), dùng khi sửa. */
   getPostSource(id: string): Promise<PostSource>;
   /** `GET /pack/community/posts/:id/comments` — danh sách phẳng cũ → mới, server lọc theo người xem; `cursor` = trang kế. */
-  listComments(postId: string, cursor?: string): Promise<CommentPage>;
+  listComments(postId: string, cursor?: string, opts?: CommentPageOpts): Promise<CommentPage>;
   /** `GET /pack/community/posts/:id/mentionables?q=` — công ty nhắc (@) được trên bài này (đối tác: rỗng). */
   listMentionables(postId: string, q?: string): Promise<Mention[]>;
   /** CR-145 · `GET /pack/community/mentionable-people` — người «Nhắc tên» được trong bài (≤ 20, tìm `q`); phạm vi theo bản nháp. */
-  mentionablePeople(q: string, scope?: PeopleScope): Promise<MentionablePerson[]>;
+  mentionablePeople(q: string, scope?: PeopleScope, cursor?: string): Promise<MentionablePerson[]>;
   /** `POST /pack/community/posts/:id/comments` — `mentions` = id công ty (≤ 10); ngoài tập cho phép ⇒ 422 MENTION_NOT_ALLOWED. */
   addComment(postId: string, input: CreateCommentInput): Promise<CommentView>;
   /** `PATCH /pack/community/posts/:id/comments/:cid` — người viết sửa chữ. */
@@ -109,7 +125,13 @@ export interface CommunityApi {
   /** `POST /pack/community/posts/:id/comments/:cid/hide` — chủ quản ẩn/hiện (bài của mình). */
   hideComment(postId: string, commentId: string, hidden: boolean): Promise<CommentView>;
   /** `GET /pack/community/partners` — chủ quản: bạn bè; đối tác: [công ty mình]. */
-  listPartners(opts?: { rep?: boolean }): Promise<PartnerOrg[]>;
+  listPartners(opts?: {
+    rep?: boolean;
+    /** CR-151: có `limit` ⇒ một trang (≤ 50), tìm theo tên ở máy chủ. */
+    q?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<PartnerOrg[]>;
   /** `GET /pack/community/profile/:orgId/media` — ảnh & tệp của bài người xem được thấy (CR-110 COM-FR-37). */
   getProfileMedia(orgId: string, q?: { cursor?: string; limit?: number }): Promise<ProfileMedia>;
   /** `GET /pack/community/cats` — nhóm hàng để gắn bài / chọn người xem. */

@@ -87,8 +87,8 @@ Mức dùng và ô trần "token" ở Cài đặt › Dò giá chỉ hiện cho 
 ## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
 
 #### Yêu cầu: Quy trình duyệt chỉ chọn ở một nơi (nguồn: cr125-ux-s2-current-flow)
-Cài đặt chỉ có MỘT mục quy trình ("Quy trình duyệt") và đọc cùng nguồn với trang Quy trình của công ty (flow Bật cho hợp đồng); không còn mục "Ứng dụng & quy trình" hay quy trình mặc định của khe; câu chưa có quy trình không đẩy sang quản trị nền tảng.
-- Kịch bản: khi công ty chưa có quy trình Bật thì Cài đặt nói quản trị công ty thêm ở trang Quy trình và chỉ có một mục quy trình [test: e2e/journey-approval/cr125-s2-settings-flow.spec.ts » 1 · chưa có quy trình Bật: Cài đặt nói rõ ai làm gì, không đẩy sang quản trị nền tảng, chỉ MỘT mục quy trình]
+Cài đặt chỉ có MỘT mục quy trình ("Quy trình duyệt") và đọc cùng nguồn với trang Quy trình của công ty (flow Bật cho hợp đồng); không còn mục "Ứng dụng & quy trình" hay quy trình mặc định của khe; câu chưa có quy trình nói rõ quản trị nền tảng soạn và gán quy trình, liên hệ quản trị nền tảng (người dùng chốt 2026-11-14, fix-flow-author-copy).
+- Kịch bản: khi công ty chưa có quy trình Bật thì Cài đặt nói liên hệ quản trị nền tảng và chỉ có một mục quy trình [test: e2e/journey-approval/cr125-s2-settings-flow.spec.ts » 1 · chưa có quy trình Bật: Cài đặt nói rõ ai làm gì (quản trị nền tảng soạn và gán), chỉ MỘT mục quy trình]
 - Kịch bản: khi quản trị gán flow thì Cài đặt hiện cùng tên với tab Quy trình [test: e2e/journey-approval/cr125-s2-settings-flow.spec.ts » 2 · platform admin gán flow ⇒ Cài đặt hiện CÙNG tên với tab Quy trình, không còn 'Quy trình HĐ mặc định']
 - Kịch bản: khi hỏi flow đang chạy thì lấy flow Bật của company_flows, flow Tắt không tính [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-current.int.test.ts » GET = flow Bật của company_flows: tên, bản, bước theo thứ tự, phòng ban theo tên công ty]
 - Kịch bản: khi chỉ có flow Tắt thì trả 404, không có mặc định của khe [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-current.int.test.ts » công ty chỉ có flow Tắt ⇒ 404 (không có 'mặc định của khe'), PUT không còn route]

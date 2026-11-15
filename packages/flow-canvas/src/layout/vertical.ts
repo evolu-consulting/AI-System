@@ -7,7 +7,7 @@ import type { FlowCond, FlowCondGroup, FlowWhen } from "@ai/contracts/pack-contr
 import type { Edge, Node } from "@xyflow/react";
 import { stepKindSpec } from "../registry";
 
-export type DealKind = "buy" | "sell" | "referral";
+export type DealKind = "buy" | "sell" | "referral" | "franchise" | "cooperation";
 /** Bước đầu vào (dạng `CurrentStep` của workspace-web; `kind` là chuỗi: loại lạ/DLC vẽ chung, xem `registry.ts`). */
 export type VerticalStepInput = {
   key: string;

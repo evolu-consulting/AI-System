@@ -12,13 +12,14 @@ import { Hono } from "hono";
 import { connectDb, type Db } from "../../../../lib/db";
 import { mapError } from "../../../../lib/errors";
 import { packRunsPortForTest } from "../../../../test-support/pack-runs-port";
+import { EVENT_FLOW_SQL } from "../../../processes/library/event-flow.repo";
 import { NEVER_TRIGGER } from "../../../processes/library/purchase-templates";
 import type { ClaimedEvent } from "../../../processes/triggers/dispatcher.repo";
 import { candidatesOf } from "../../../processes/triggers/dispatcher.repo";
 import { packGroups } from "../../kit/adapters/pack-groups";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import type { PackToolCatalog } from "../../kit/application/pack-tools.ports";
-import { listDifyWorkflows, readCurrentFlow } from "../application/approval-flow.usecase";
+import { listDifyWorkflows, readCurrentFlows } from "../application/approval-flow.usecase";
 import { approvalFlowRoutes } from "./approval-flow.routes";
 
 let o: Sql;
@@ -85,7 +86,7 @@ function app(tenant: string, user: string) {
   });
   h.route(
     "/",
-    approvalFlowRoutes(view, { read: readCurrentFlow(d), difyWorkflows: listDifyWorkflows({}) }),
+    approvalFlowRoutes(view, { read: readCurrentFlows(d), difyWorkflows: listDifyWorkflows({}) }),
   );
   h.onError((e, c) => {
     const m = mapError(e);
@@ -133,28 +134,36 @@ type Out = {
   name: string;
   rel_version: number;
   has_branches?: boolean;
-  other_flows?: number;
+  position?: number;
+  start_when?: unknown;
+  partner_send?: boolean;
+  sign?: unknown;
   steps: { name: string; department_name: string | null; kind: string; approver_count?: number }[];
 };
 
 it("GET = flow Bật của company_flows: tên, bản, bước theo thứ tự, phòng ban theo tên công ty", async () => {
   const ra = await app(A, own).request("/approval-flow");
-  const a = (await ra.json()) as Out;
+  const { items } = (await ra.json()) as { items: Out[] };
+  const a = items[0] as Out;
   expect({
+    count: items.length,
     status: ra.status,
     def_id: a.def_id,
     name: a.name,
     rel: a.rel_version,
     branches: a.has_branches,
-    others: a.other_flows,
+    position: a.position,
+    when: a.start_when,
     steps: a.steps.map((s) => [s.name, s.department_name, s.kind, s.approver_count]),
   }).toEqual({
+    count: 1,
     status: 200,
     def_id: flowId,
     name: "Duyệt 2 cấp",
     rel: 1,
     branches: false,
-    others: 0,
+    position: 0,
+    when: null,
     steps: [
       ["Trưởng phòng duyệt", "Kế toán A", "review", 3],
       ["Giám đốc duyệt", "Giám đốc A", "review", undefined],
@@ -175,15 +184,18 @@ it("flow bắt đầu bằng phiếu (trigger «không bao giờ», vd Quy trìn
   // id nhỏ nhất + cùng position ⇒ nếu không lọc thì đây là «flow đầu» (đúng ca e2e đỏ)
   await o`insert into hub.company_flows (id, tenant_id, flow_id, enabled, position) values ('00000000-0000-4000-8000-000000000001', ${A}, ${mid}, true, 0)`;
   try {
-    const a = (await (await app(A, own).request("/approval-flow")).json()) as Out;
-    expect([a.name, a.other_flows]).toEqual(["Duyệt 2 cấp", 0]);
+    const { items } = (await (await app(A, own).request("/approval-flow")).json()) as {
+      items: Out[];
+    };
+    expect(items.map((x) => x.name)).toEqual(["Duyệt 2 cấp"]);
   } finally {
     await o`delete from hub.company_flows where flow_id = ${mid}`;
   }
 });
 
-it("công ty chỉ có flow Tắt ⇒ 404 (không có 'mặc định của khe'), PUT không còn route", async () => {
-  expect((await app(B, own).request("/approval-flow")).status).toBe(404);
+it("công ty chỉ có flow Tắt ⇒ 200 `items: []`, PUT không còn route", async () => {
+  const rb = await app(B, own).request("/approval-flow");
+  expect([rb.status, await rb.json()]).toEqual([200, { items: [] }]);
   const put = await app(A, own).request("/approval-flow", {
     method: "PUT",
     headers: { "content-type": "application/json" },
@@ -203,7 +215,7 @@ it("CR-127 Z9 · quy trình CỦA CÔNG TY (tạo trống → lưu → «Lưu v�
   await o`insert into hub.company_flows (tenant_id, flow_id, enabled, position) values (${B}, ${cid}, true, 0)`;
   try {
     const rb = await app(B, own).request("/approval-flow");
-    const b = (await rb.json()) as Out;
+    const b = ((await rb.json()) as { items: Out[] }).items[0] as Out;
     expect([rb.status, b.def_id, b.name, b.steps.length]).toEqual([
       200,
       cid,
@@ -216,5 +228,49 @@ it("CR-127 Z9 · quy trình CỦA CÔNG TY (tạo trống → lưu → «Lưu v�
     expect(cands.map((x) => x.flowId)).toEqual([cid]); // Gửi duyệt dùng ĐÚNG flow này (không bị NO_APPROVAL_FLOW)
   } finally {
     await o`delete from hub.company_flows where flow_id = ${cid}`;
+  }
+});
+
+it("CR-146 · 3 flow Bật + 1 Tắt ⇒ đúng 3, đúng thứ tự `position`, đúng «Bắt đầu khi», tenant khác không thấy, số câu SQL cố định", async () => {
+  const st = JSON.stringify(STAGES);
+  const when = (v: number) => ({ op: "and", conds: [{ fact: "total_value", op: "ge", value: v }] });
+  const mk = async (key: string, trig: object | null, on: boolean, pos: number) => {
+    const t = JSON.stringify({ event: "contract.submitted", ...(trig ? { when: trig } : {}) });
+    const [r] = await o<
+      { id: string }[]
+    >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app, enabled)
+      values (${B}, ${key}, ${key}, ${st}::text::jsonb, ${t}::text::jsonb, 'contracts', true) returning id::text as id`;
+    await o`insert into hub.company_flows (tenant_id, flow_id, enabled, position) values (${B}, ${r?.id as string}, ${on}, ${pos})`;
+    return r?.id as string;
+  };
+  const ids = [
+    await mk("c146-c", null, true, 30),
+    await mk("c146-a", when(500), true, 10),
+    await mk("c146-off", when(1), false, 15),
+    await mk("c146-b", when(100), true, 20),
+  ];
+  try {
+    const { items } = (await (await app(B, own).request("/approval-flow")).json()) as {
+      items: Out[];
+    };
+    expect(items.map((x) => [x.name, x.position])).toEqual([
+      ["c146-a", 10],
+      ["c146-b", 20],
+      ["c146-c", 30],
+    ]);
+    expect(
+      items.map(
+        (x) => (x.start_when as { conds: { value: number }[] } | null)?.conds[0]?.value ?? null,
+      ),
+    ).toEqual([500, 100, null]);
+    const mine = (await (await app(A, own).request("/approval-flow")).json()) as { items: Out[] };
+    expect(mine.items.map((x) => x.name)).toEqual(["Duyệt 2 cấp"]); // chéo tenant
+    // flow thêm KHÔNG thêm câu SQL: eventFlows đúng MỘT câu cho cả danh sách
+    const rows = await withHubScope(hubDb, { kind: "system" }, (tx) =>
+      tx.execute(EVENT_FLOW_SQL(B, "contract.submitted")),
+    );
+    expect([...rows].length).toBe(3);
+  } finally {
+    await o`delete from hub.company_flows where flow_id = any(${ids}::uuid[])`;
   }
 });

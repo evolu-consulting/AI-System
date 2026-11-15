@@ -25,10 +25,24 @@ export const ledgerKeys = {
   partner: (contractId: string) => ["contract", contractId, "partner"] as const,
 };
 
-export const fetchInstalments = (party: string, contractId?: string, signal?: AbortSignal) =>
-  api<Obligation[]>(`${BASE}/obligations${q({ party, contract_id: contractId, status: "open" })}`, {
-    signal,
-  });
+/** CR-151 mục 11: một trang đợt mở. Xin `limit` = cỡ trang + 1 (limit+1) để biết còn trang; trang đầu `offset` = 0. */
+export const INSTALMENT_PAGE = 50;
+export const fetchInstalments = (
+  party: string,
+  contractId: string | undefined,
+  offset: number,
+  signal?: AbortSignal,
+) =>
+  api<Obligation[]>(
+    `${BASE}/obligations${q({
+      party,
+      contract_id: contractId,
+      status: "open",
+      limit: String(INSTALMENT_PAGE + 1),
+      offset: offset ? String(offset) : undefined,
+    })}`,
+    { signal },
+  );
 export const fetchPartnerEvents = (party: string, signal?: AbortSignal) =>
   api<PartnerEvent[]>(`${BASE}/partner-events${q({ party })}`, { signal });
 export const fetchContractPartner = (contractId: string, signal?: AbortSignal) =>

@@ -2,6 +2,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { i18n, initI18n } from "~/app/i18n";
+import "~/app/messages-host";
 import { DockTabs } from "./DockTabs";
 
 beforeAll(async () => {

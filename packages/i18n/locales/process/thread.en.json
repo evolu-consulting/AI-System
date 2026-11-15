@@ -31,6 +31,7 @@
     "review": "Waiting for {{names}} to review — only reviewers can act.",
     "ask": "Waiting for {{names}} to answer",
     "decide": "Waiting for {{names}} or an administrator to decide",
+    "milestone": "Waiting for {{names}} to confirm the milestone",
     "more": "{{first}} and {{count}} others",
     "group": "group {{group}}",
     "reviewEscalated": "Waiting for {{names}} or {{escalated}} (escalated) to review — only reviewers can act."

@@ -1,9 +1,9 @@
-// V2-F · HD-01 · mockup `.kindpick`: ba ô chọn loại hợp đồng Mua / Bán / Giới thiệu (radiogroup). `locked` ⇒ không đổi được (HĐ đã lưu, HD-09).
+// V2-F · HD-01 · mockup `.kindpick`: năm ô chọn loại hợp đồng Mua / Bán / Giới thiệu / Nhượng quyền / Hợp tác (radiogroup). `locked` ⇒ không đổi được (HĐ đã lưu, HD-09).
 import type { ContractDeal } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { SegButton } from "~/components/shared/seg-button";
 import { cn } from "~/lib/utils";
-import { DEALS } from "../lib/deal";
+import { ALL_DEALS } from "../lib/deal";
 
 const tile = (on: boolean, locked: boolean) =>
   cn(
@@ -27,6 +27,8 @@ export function DealTiles({
 }) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.cform.${k}`);
+  // CR-153: 5 loại luôn hiện (Thêm giao dịch, xác nhận sau AI, chi tiết HĐ mọi trạng thái).
+  const deals = ALL_DEALS;
   return (
     <div className="flex flex-col gap-1.5">
       <span id="deal-label" className="text-[13px]">
@@ -37,11 +39,11 @@ export function DealTiles({
         aria-labelledby="deal-label"
         data-unsure={unsure || undefined}
         className={cn(
-          "grid grid-cols-3 gap-2.5",
+          "grid grid-cols-3 gap-2.5 max-sm:grid-cols-2",
           unsure && "rounded-xl border border-soon-line bg-soon-bg p-1.5",
         )}
       >
-        {DEALS.map((d) => (
+        {deals.map((d) => (
           <SegButton
             key={d}
             checked={d === value}

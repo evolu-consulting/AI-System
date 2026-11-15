@@ -50,3 +50,49 @@ export function stepsOfStages(stages: readonly unknown[]): EventSteps {
   const branches = list.some((s) => s.executor?.kind === "if");
   return { steps, branches };
 }
+
+// CR-146 · khối chỉ xem «Ký và đối tác của quy trình này»: đọc args HẰNG của stage Ký số / Gửi đối tác của CHÍNH flow.
+export type EsignView = {
+  signers: { kind: "user" | "group"; id: string }[];
+  partnerSigns: boolean | null;
+  order: "parallel" | "sequential" | null;
+};
+export type SignPartnerView = { esign: EsignView | null; partnerSend: boolean };
+
+const ESIGN_TOOL = "contracts-esign-send";
+const PARTNER_TOOL = "contracts-partner-send";
+type ToolStage = { executor?: { kind?: unknown; tool_key?: unknown; args?: unknown } | null };
+const SIGNER = /^(user|group):([0-9a-f-]{36})$/i;
+
+function constArgs(args: unknown): Record<string, string | number | boolean> {
+  const out: Record<string, string | number | boolean> = {};
+  if (typeof args !== "object" || args === null) return out;
+  for (const [k, v] of Object.entries(args)) {
+    const c = v as { from?: unknown; value?: unknown } | null;
+    if (c?.from === "const" && ["string", "number", "boolean"].includes(typeof c.value))
+      out[k] = c.value as string | number | boolean;
+  }
+  return out;
+}
+
+export function signPartnerOf(stages: readonly unknown[]): SignPartnerView {
+  const tools = stages.filter(isObj).map((s) => (s as ToolStage).executor);
+  const es = tools.find((e) => e?.kind === "tool" && e.tool_key === ESIGN_TOOL);
+  const partnerSend = tools.some((e) => e?.kind === "tool" && e.tool_key === PARTNER_TOOL);
+  if (!es) return { esign: null, partnerSend };
+  const a = constArgs(es.args);
+  const signers = String(a.company_signers ?? "")
+    .split(",")
+    .flatMap((x) => {
+      const m = SIGNER.exec(x.trim());
+      return m ? [{ kind: m[1] as "user" | "group", id: m[2] as string }] : [];
+    });
+  const order = a.order === "parallel" || a.order === "sequential" ? a.order : null;
+  const ps =
+    a.partner_signs === true || a.partner_signs === "true"
+      ? true
+      : a.partner_signs === false || a.partner_signs === "false"
+        ? false
+        : null;
+  return { esign: { signers, partnerSigns: ps, order }, partnerSend };
+}

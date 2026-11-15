@@ -8,6 +8,8 @@ export const ROLE_OF_DEAL: Record<ContractDeal, PartnerRoleV2> = {
   buy: "supplier",
   sell: "customer",
   referral: "commission_payer",
+  franchise: "customer",
+  cooperation: "customer",
 };
 
 export const digitsOf = (s: string | null | undefined): string => (s ?? "").replace(/\D/g, "");

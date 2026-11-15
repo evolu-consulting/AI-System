@@ -1,0 +1,492 @@
+{
+  "id": "cr146-flow-settings",
+  "title": "Nhiều quy trình duyệt + Ký và đối tác theo từng quy trình",
+  "roles": [
+    {
+      "key": "quantri",
+      "label": "Quản trị công ty"
+    },
+    {
+      "key": "nhanvien",
+      "label": "Nhân viên"
+    }
+  ],
+  "screens": [
+    {
+      "id": "caidat-quytrinh",
+      "title": "Cài đặt › Quy trình duyệt",
+      "role": "quantri",
+      "blocks": [
+        {
+          "type": "banner",
+          "kind": "info",
+          "text": "Hợp đồng đi theo quy trình ĐẦU TIÊN có điều kiện khớp, xét từ trên xuống."
+        },
+        {
+          "type": "states",
+          "variants": [
+            {
+              "key": "nhieu",
+              "label": "Có 3 quy trình bật",
+              "blocks": [
+                {
+                  "type": "table",
+                  "cols": [
+                    "Thứ tự",
+                    "Quy trình",
+                    "Bắt đầu khi",
+                    "Bước"
+                  ],
+                  "rows": [
+                    [
+                      "1",
+                      "Duyệt 3 cấp",
+                      "Giá trị ≥ 500 triệu",
+                      "Trưởng phòng → Kế toán trưởng → Giám đốc → Ký"
+                    ],
+                    [
+                      "2",
+                      "Duyệt phòng Mua hàng",
+                      "Phòng = Mua hàng",
+                      "Trưởng phòng Mua hàng → Ký"
+                    ],
+                    [
+                      "3",
+                      "Duyệt 2 cấp",
+                      "Mọi hợp đồng còn lại",
+                      "Trưởng phòng → Giám đốc → Ký"
+                    ]
+                  ]
+                },
+                {
+                  "type": "cards",
+                  "items": [
+                    {
+                      "title": "Duyệt 3 cấp",
+                      "text": "Bấm để xem sơ đồ và cách ký",
+                      "badge": "Đang bật",
+                      "tone": "ok",
+                      "goto": "chitiet"
+                    },
+                    {
+                      "title": "Duyệt 2 cấp",
+                      "text": "Bấm để xem sơ đồ và cách ký",
+                      "badge": "Đang bật",
+                      "tone": "ok",
+                      "goto": "chitiet"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "key": "trong",
+              "label": "Chưa có quy trình",
+              "blocks": [
+                {
+                  "type": "empty",
+                  "title": "Công ty chưa bật quy trình duyệt hợp đồng nào",
+                  "text": "Quản trị công ty thêm và bật quy trình ở trang Quy trình.",
+                  "action": "Mở trang Quy trình",
+                  "goto": "buoc-ky"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "button",
+          "label": "Mở trang Quy trình (bật, tắt, đổi thứ tự)",
+          "goto": "buoc-ky",
+          "variant": "secondary"
+        },
+        {
+          "type": "button",
+          "label": "Sang tab Kết nối",
+          "goto": "ketnoi",
+          "variant": "secondary"
+        }
+      ]
+    },
+    {
+      "id": "chitiet",
+      "title": "Quy trình «Duyệt 3 cấp»",
+      "role": "quantri",
+      "blocks": [
+        {
+          "type": "badge",
+          "text": "Bắt đầu khi: Giá trị ≥ 500 triệu",
+          "tone": "info"
+        },
+        {
+          "type": "tabs",
+          "tabs": [
+            {
+              "key": "sodo",
+              "label": "Sơ đồ",
+              "blocks": [
+                {
+                  "type": "text",
+                  "text": "[Sơ đồ quy trình như Cài đặt hiện nay: Bắt đầu → Trưởng phòng → Kế toán trưởng → Giám đốc → Ký hợp đồng → Gửi đối tác → Ghi Đã duyệt; nhánh Từ chối / Trả lại]"
+                }
+              ]
+            },
+            {
+              "key": "ds",
+              "label": "Danh sách",
+              "blocks": [
+                {
+                  "type": "steps",
+                  "items": [
+                    {
+                      "label": "Trưởng phòng của người đề xuất duyệt",
+                      "status": "done",
+                      "who": "Phòng của người đề xuất"
+                    },
+                    {
+                      "label": "Kế toán trưởng duyệt",
+                      "status": "done",
+                      "who": "Kế toán trưởng"
+                    },
+                    {
+                      "label": "Giám đốc duyệt",
+                      "status": "open",
+                      "who": "Giám đốc"
+                    },
+                    {
+                      "label": "Ký hợp đồng",
+                      "status": "waiting",
+                      "who": "Người ký: Giám đốc · Ký qua: VNPT eContract"
+                    },
+                    {
+                      "label": "Gửi đối tác xác nhận",
+                      "status": "waiting",
+                      "who": "Qua hệ thống"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "Ký và đối tác của quy trình này"
+        },
+        {
+          "type": "table",
+          "cols": [
+            "Mục",
+            "Cài đặt"
+          ],
+          "rows": [
+            [
+              "Ký qua",
+              "VNPT eContract"
+            ],
+            [
+              "Người ký bên mình",
+              "Giám đốc"
+            ],
+            [
+              "Đối tác ký",
+              "Có, ký sau mình"
+            ],
+            [
+              "Gửi đối tác xác nhận",
+              "Có"
+            ]
+          ]
+        },
+        {
+          "type": "button",
+          "label": "Sửa ở trang Quy trình",
+          "goto": "buoc-ky",
+          "variant": "secondary"
+        },
+        {
+          "type": "button",
+          "label": "Quay lại danh sách",
+          "goto": "caidat-quytrinh",
+          "variant": "secondary"
+        }
+      ]
+    },
+    {
+      "id": "ketnoi",
+      "title": "Cài đặt › Kết nối",
+      "role": "quantri",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "Tài khoản công ty dùng chung. Ký thế nào, ai ký, gửi đối tác ra sao: đặt trong từng quy trình."
+        },
+        {
+          "type": "stats",
+          "items": [
+            {
+              "label": "Ký số",
+              "value": "Đã nối VNPT eContract"
+            },
+            {
+              "label": "Đối tác xác nhận",
+              "value": "Đang bật"
+            }
+          ]
+        },
+        {
+          "type": "field",
+          "label": "Cho phép ký số",
+          "kind": "checkbox",
+          "value": "true"
+        },
+        {
+          "type": "toast",
+          "trigger": "Lưu",
+          "kind": "success",
+          "text": "Đã lưu"
+        },
+        {
+          "type": "button",
+          "label": "Quay lại Quy trình duyệt",
+          "goto": "caidat-quytrinh",
+          "variant": "secondary"
+        }
+      ]
+    },
+    {
+      "id": "buoc-ky",
+      "title": "Trang Quy trình › bước «Ký hợp đồng»",
+      "role": "quantri",
+      "blocks": [
+        {
+          "type": "field",
+          "label": "Ký qua",
+          "kind": "select",
+          "value": "VNPT eContract",
+          "options": [
+            "VNPT eContract",
+            "Tải lên bản đã ký (không ký số)"
+          ],
+          "required": true
+        },
+        {
+          "type": "field",
+          "label": "Người ký bên mình",
+          "kind": "select",
+          "value": "",
+          "options": [
+            "Giám đốc",
+            "Phó giám đốc",
+            "Nhóm Người ký HĐ"
+          ],
+          "required": true
+        },
+        {
+          "type": "field",
+          "label": "Đối tác ký",
+          "kind": "checkbox",
+          "value": "true"
+        },
+        {
+          "type": "field",
+          "label": "Hạn ký (ngày)",
+          "kind": "number",
+          "value": "3"
+        },
+        {
+          "type": "states",
+          "variants": [
+            {
+              "key": "thieu",
+              "label": "Thiếu người ký",
+              "blocks": [
+                {
+                  "type": "banner",
+                  "kind": "error",
+                  "text": "Bước «Ký hợp đồng» chưa chọn người ký bên mình — chưa lưu được quy trình."
+                }
+              ]
+            },
+            {
+              "key": "du",
+              "label": "Đủ thông tin",
+              "blocks": [
+                {
+                  "type": "toast",
+                  "trigger": "Lưu quy trình",
+                  "kind": "success",
+                  "text": "Đã lưu quy trình «Duyệt 3 cấp»"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "button",
+          "label": "Cấu hình quy trình Nhận HĐ",
+          "goto": "nhan-hd",
+          "variant": "secondary"
+        }
+      ]
+    },
+    {
+      "id": "nhan-hd",
+      "title": "Trang Quy trình › «Nhận HĐ từ đối tác»",
+      "role": "quantri",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "Mức quan trọng của hợp đồng đối tác gửi tới, theo giá trị."
+        },
+        {
+          "type": "field",
+          "label": "Quan trọng từ (triệu đồng)",
+          "kind": "number",
+          "value": "200",
+          "required": true
+        },
+        {
+          "type": "field",
+          "label": "Rất quan trọng từ (triệu đồng)",
+          "kind": "number",
+          "value": "1000",
+          "required": true
+        },
+        {
+          "type": "field",
+          "label": "Người phụ trách hợp đồng nhận",
+          "kind": "select",
+          "value": "Trần Bình",
+          "options": [
+            "Trần Bình",
+            "Lê Mai"
+          ],
+          "required": true
+        },
+        {
+          "type": "toast",
+          "trigger": "Lưu quy trình",
+          "kind": "success",
+          "text": "Đã lưu"
+        }
+      ]
+    },
+    {
+      "id": "nv-quytrinh",
+      "title": "Cài đặt › Quy trình duyệt (nhân viên)",
+      "role": "nhanvien",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "Hợp đồng của bạn đi theo quy trình đầu tiên khớp điều kiện."
+        },
+        {
+          "type": "table",
+          "cols": [
+            "Thứ tự",
+            "Quy trình",
+            "Bắt đầu khi"
+          ],
+          "rows": [
+            [
+              "1",
+              "Duyệt 3 cấp",
+              "Giá trị ≥ 500 triệu"
+            ],
+            [
+              "2",
+              "Duyệt phòng Mua hàng",
+              "Phòng = Mua hàng"
+            ],
+            [
+              "3",
+              "Duyệt 2 cấp",
+              "Mọi hợp đồng còn lại"
+            ]
+          ]
+        },
+        {
+          "type": "cards",
+          "items": [
+            {
+              "title": "Duyệt 2 cấp",
+              "text": "Xem sơ đồ (chỉ xem)",
+              "tone": "info",
+              "goto": "chitiet"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "flow": [
+    {
+      "from": "caidat-quytrinh",
+      "action": "Xem các quy trình đang bật và thứ tự xét",
+      "to": "chitiet",
+      "by": "quantri"
+    },
+    {
+      "from": "chitiet",
+      "action": "Sửa cách ký của quy trình ở trang Quy trình",
+      "to": "buoc-ky",
+      "by": "quantri"
+    },
+    {
+      "from": "buoc-ky",
+      "action": "Đặt mức quan trọng cho hợp đồng nhận về",
+      "to": "nhan-hd",
+      "by": "quantri"
+    },
+    {
+      "from": "caidat-quytrinh",
+      "action": "Kiểm tra tài khoản ký số đã nối",
+      "to": "ketnoi",
+      "by": "quantri"
+    },
+    {
+      "from": "nv-quytrinh",
+      "action": "Nhân viên xem hợp đồng của mình đi quy trình nào",
+      "to": "chitiet",
+      "by": "nhanvien"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "screen": "nv-quytrinh",
+      "text": "Nhân viên (không phải quản trị) có thấy danh sách quy trình không?",
+      "options": [
+        "Có, chỉ xem",
+        "Không thấy"
+      ],
+      "default": "Có, chỉ xem"
+    },
+    {
+      "id": "q2",
+      "screen": "buoc-ky",
+      "text": "Bước Ký có lựa chọn «Tải lên bản đã ký (không ký số)» ngay trong quy trình không?",
+      "options": [
+        "Có",
+        "Không, luôn ký số"
+      ],
+      "default": "Có"
+    },
+    {
+      "id": "q3",
+      "screen": "caidat-quytrinh",
+      "text": "Có cần ô «Thử: hợp đồng X triệu, phòng Y sẽ đi quy trình nào?» không?",
+      "options": [
+        "Chưa cần",
+        "Cần"
+      ],
+      "default": "Chưa cần"
+    }
+  ],
+  "notes": [
+    "Bật, tắt, đổi thứ tự quy trình chỉ làm ở trang Quy trình — Cài đặt chỉ xem.",
+    "Không còn «Người ký HĐ» và «Nhà cung cấp mặc định» chung cho cả công ty.",
+    "Chốt 2026-11-14: mỗi quy trình vẫn có sơ đồ (công tắc Sơ đồ | Danh sách như hiện nay)."
+  ]
+}

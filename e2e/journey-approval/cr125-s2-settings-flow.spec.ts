@@ -72,7 +72,7 @@ async function createCompanyApproval(): Promise<void> {
   });
 }
 
-/** CR-138b · ký số nằm ở tab «Ký & đối tác» (`?sec=sign`), không còn trong «Quy trình duyệt». */
+/** CR-138b · ký số nằm ở tab «Kết nối» (`?sec=sign`, CR-146), không còn trong «Quy trình duyệt». */
 async function openSignSettings(page: Page): Promise<void> {
   await page.goto(`${E.cw}/contracts/settings?sec=sign`);
   await expect(page.getByTestId("sign-partner-pane")).toBeVisible({ timeout: 30_000 });
@@ -80,12 +80,12 @@ async function openSignSettings(page: Page): Promise<void> {
 
 async function openFlowSettings(page: Page): Promise<void> {
   await page.goto(`${E.cw}/contracts/settings?sec=flow`);
-  await expect(
-    page.getByTestId("flow-none").or(page.getByTestId("flow-current-title")),
-  ).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("flow-none").or(page.getByTestId("flow-list-items"))).toBeVisible({
+    timeout: 30_000,
+  });
 }
 
-test("1 · chưa có quy trình Bật: Cài đặt nói rõ ai làm gì, không đẩy sang quản trị nền tảng, chỉ MỘT mục quy trình", async ({
+test("1 · chưa có quy trình Bật: Cài đặt nói rõ ai làm gì (quản trị nền tảng soạn và gán), chỉ MỘT mục quy trình", async ({
   browser,
 }, testInfo) => {
   const page = await ctxPage(browser);
@@ -93,8 +93,8 @@ test("1 · chưa có quy trình Bật: Cài đặt nói rõ ai làm gì, không 
   await openFlowSettings(page);
   const none = page.getByTestId("flow-none");
   await expect(none).toContainText("chưa có quy trình duyệt hợp đồng nào đang bật");
-  // Phạm vi = khối quy trình duyệt. Khối "Đối tác xác nhận" (S7) cùng mục Cài đặt có hợp lệ nhãn "Quản trị nền tảng làm" cho từng điều kiện.
-  await expect(none.getByText(/quản trị nền tảng/i)).toHaveCount(0);
+  // Người dùng chốt 2026-11-14 (d8e8831c3): quy trình do quản trị nền tảng soạn và gán ⇒ câu nói rõ liên hệ quản trị nền tảng.
+  await expect(none).toContainText("liên hệ quản trị nền tảng");
   await expect(page.getByTestId("flow-open-page")).toBeVisible();
   const dlg = page.getByRole("dialog");
   await expect(dlg.getByRole("button", { name: /Ứng dụng & quy trình/ })).toHaveCount(0);
@@ -126,6 +126,12 @@ test("2 · platform admin dựng quy trình từ sơ đồ trống + áp dụng 
     });
   }).toPass({ timeout: 60_000 });
   await expect(page.getByTestId("flow-readonly-lead")).not.toContainText("quản trị nền tảng");
+  // CR-146 · danh sách MỌI quy trình Bật theo thứ tự xét; flow vừa dựng không điều kiện ⇒ «Mọi hợp đồng còn lại»; khối ký/đối tác chỉ xem.
+  await expect(page.getByTestId("flow-item-0")).toContainText(adminName);
+  await expect(page.getByTestId("flow-when-0")).toContainText("Mọi hợp đồng còn lại");
+  await expect(page.getByTestId("flow-sign-block")).toContainText(
+    "Ký và đối tác của quy trình này",
+  );
   await expect(page.getByText("Quy trình HĐ mặc định")).toHaveCount(0);
   await expect(page.getByTestId("flow-default-badge")).toHaveCount(0);
   await page.getByTestId("flow-view-list").click();
@@ -148,7 +154,7 @@ test("3 · công tắc ký số trong Cài đặt bật được thật (lưu, t
   await expect(page.getByText("Đã lưu cài đặt ký số.")).toBeVisible();
   await expect(sw).toBeChecked({ checked: !was });
   await safeReload(page);
-  await openSignSettings(page); // sau tải lại: mở lại hộp Cài đặt › Ký & đối tác (trạng thái đọc từ máy chủ, không từ bộ nhớ trang)
+  await openSignSettings(page); // sau tải lại: mở lại hộp Cài đặt › Kết nối (trạng thái đọc từ máy chủ, không từ bộ nhớ trang)
   await expect(page.getByTestId("esign-enabled")).toBeChecked({ checked: !was });
   await page.screenshot({ path: testInfo.outputPath("s2-after-esign.png") });
 });

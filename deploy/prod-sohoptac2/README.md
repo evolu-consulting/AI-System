@@ -368,7 +368,7 @@ e2e: `e2e-deployed.ps1 -Domain evoluconsulting.com -Hosts prod` (hoac `DEP_DOMAI
 
 
 ## Deploy CR-118 (web gộp + 301 community) — rollout / rollback
-Chỉ chạy khi người dùng xác nhận deploy. **UAT trước** trên host qua `deploy/stg-cr118/` (project `sohoptac2-cr118`, image `:cr118`, cổng 2853x, tunnel; xem README ở đó) — **không** build/tag `sohoptac2-app:latest` ngoài `deploy.ps1`.
+Chỉ chạy khi người dùng xác nhận deploy. **UAT trước** trên staging `deploy/stg-test/` (xem README ở đó; kit UAT `stg-cr118` đã gỡ) — **không** build/tag `sohoptac2-app:latest` ngoài `deploy.ps1`.
 
 **Thay đổi trong kit:** Dockerfile bỏ build/copy `community-web` (web = `workspace-web` gộp + `admin-web` + `chat-web`; `studio-web` vẫn build cho hub); nginx `8081` thêm `/me/stream` → hub, `/community/*` rơi vào `try_files … /index.html`; `8085` (community.<d>) = 301 HTML → `https://app.<d>/community` (`community-test.<d>` → `app-test.<d>`; CR-119: host sohoptac đã bỏ; `/sso` → `/sso`; fragment `#/…` do trình duyệt giữ và web gộp ánh xạ), **proxy `/auth`,`/pack`,`/conversations`,`/runs`,`/me/stream` giữ 30 ngày** (mốc ghi trong `nginx.conf`); `gen-env.sh`: `S2_PUBLIC_COMMUNITY_URL` = `<SHT>/community` ⇒ hub `COMMUNITY_WEB_URL` + `APP_URL_COMMUNITY`; hub `quote.service` dựng link `/community` (không `#/feed`). Edge không đổi (server community cũ vẫn forward `:8085`).
 
@@ -410,3 +410,11 @@ Chạy **trước** `deploy.ps1`, chỉ sau khi người dùng đồng ý: `powe
 7. Số lượt duyệt máy cũ còn dở (`contracts.approvals`, `mode='machine'`, chưa xong): chỉ in số.
 8. `HUB_FLOW_RUNTIME` của container hub-api: `off` ⇒ CHẶN (CR-121 gỡ đường dự phòng của web), `on`/trống ⇒ OK.
 Test: `packages/db/src/preflight-cr121.int.test.ts` (chạy file SQL trên DB đủ migration).
+
+## Tạo công ty (CR-159) — một lệnh, xong là dùng được
+File khai báo `deploy/tenants/<key>.yaml` (công ty, người, phòng ban, gói, add-on, `directory: listed`). Một lệnh chạy 3 bước, lặp lại an toàn:
+`ACTOR=<uuid platform admin> PW='<mật khẩu chung>' bash deploy/tenants/onboard-all.sh --tenant <key> [--no-flows] [--dry-run]`
+1. **Onboarding** (`tenant-onboard.cli.ts`, role admin_api, `ADMIN_API_DATABASE_URL`): công ty + người (mật khẩu chung từ biến `PW`, bắt đổi lần đầu) + gói + add-on + **danh bạ công ty bật** (đủ `legal_name` + `tax_id`; ghi audit như nút trên UI; `directory: unlisted` để không bật).
+2. **Cài AI** (`tenant-ai-setup.ts --apply`, chủ migration, `DATABASE_URL`): agent `assistant`, cấp cho nhóm có quyền contracts, gói knowledge, agent mặc định. Chỉ ghi SQL, không cần đăng nhập Claude trước.
+3. **Quy trình** (`tenant-flows.ts`, chỉ evolu/nitigroup/preschool; cần admin-api + hub-api chạy và `SEED_ADMIN_USERNAME/PASSWORD`).
+Mật khẩu chỉ qua biến môi trường, không vào file/log. Trên máy chủ chạy trong container `tool` (cùng biến môi trường).

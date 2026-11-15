@@ -3,7 +3,7 @@
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { NewTenant, OnboardRepo, TenantNow } from "../application/ports";
-import { type DeptRow, splitProfile } from "../domain/onboard.rules";
+import { type DeptRow, splitProfile, type UserNow } from "../domain/onboard.rules";
 
 const run = async <T>(tx: Tx, q: SQL): Promise<T[]> => (await tx.execute(q)) as unknown as T[];
 const json = (x: unknown): string => JSON.stringify(x);
@@ -176,6 +176,45 @@ export async function setHeads(
   return r?.n ?? 0;
 }
 
+/** CR-159 · người dùng của tenant theo email (một câu); chức vụ ở `hub.people_profiles`. */
+export async function readUsers(
+  tx: Tx,
+  key: string,
+  emails: readonly string[],
+): Promise<UserNow[]> {
+  return run<UserNow>(
+    tx,
+    sql`select u.id, lower(u.email) as email, u.display_name, u.role, u.version, pp.job_title
+      from admin.users u join admin.tenants t on t.id = u.tenant_id and t.key = ${key}
+      left join hub.people_profiles pp on pp.user_id = u.id and pp.tenant_id = u.tenant_id
+      where lower(u.email) = any(array(select jsonb_array_elements_text(${json(emails)}::jsonb)))`,
+  );
+}
+
+/** Tenant của platform admin (actor cho users.service). */
+export async function actorTenant(tx: Tx, actorId: string): Promise<string | null> {
+  const [r] = await run<{ tenant_id: string }>(
+    tx,
+    sql`select u.tenant_id from admin.users u join admin.tenants t on t.id = u.tenant_id
+      where u.id = ${actorId}::uuid and u.role = 'platform_admin' and u.active and not u.locked_by_tenant and t.active`,
+  );
+  return r?.tenant_id ?? null;
+}
+
+/** Entitlement còn hiệu lực của tenant với feature. */
+export async function hasEntitlement(
+  tx: Tx,
+  featureId: string,
+  tenantId: string,
+): Promise<boolean> {
+  const rows = await run<{ one: number }>(
+    tx,
+    sql`select 1 as one from admin.feature_entitlements where feature_id = ${featureId}::uuid
+      and tenant_id = ${tenantId}::uuid and revoked_at is null`,
+  );
+  return rows.length > 0;
+}
+
 /** Nối các hàm SQL với một tx scope platform thành cổng `OnboardRepo` của use case. */
 export const onboardRepo = (tx: Tx): OnboardRepo => ({
   actorOk: (a) => actorOk(tx, a),
@@ -188,3 +227,12 @@ export const onboardRepo = (tx: Tx): OnboardRepo => ({
   addMembers: (t, p, a) => addMembers(tx, t, p, a),
   setHeads: (t, h) => setHeads(tx, t, h),
 });
+
+/** Danh bạ công ty đang bật chưa (CR-159). */
+export async function directoryOn(tx: Tx, tenantId: string): Promise<boolean> {
+  const rows = await run<{ on: boolean }>(
+    tx,
+    sql`select directory_listed as on from admin.tenants where id = ${tenantId}::uuid`,
+  );
+  return rows[0]?.on === true;
+}

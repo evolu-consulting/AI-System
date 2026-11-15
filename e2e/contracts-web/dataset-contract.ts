@@ -134,6 +134,9 @@ export function normOver<T extends Record<string, unknown>>(o: T): T {
 export function contractAsHub(status = contract.status) {
   const c = contract;
   const at = "2026-10-18T02:00:00.000Z";
+  // Cùng luật máy chủ (contract-can.ts): submit = nháp + đọc xong + người xem là người tạo/phụ trách (mock: người xem = dataset.user).
+  const st = newStatus(status);
+  const canSubmit = st.status === "draft" && st.extract_state === "ready";
   return {
     id: c.id,
     kind: "contract",
@@ -144,7 +147,7 @@ export function contractAsHub(status = contract.status) {
     submitted_by: null,
     ...newStatus(status),
     can: {
-      submit: false,
+      submit: canSubmit,
       withdraw: false,
       recreate: false,
       new_version: false,

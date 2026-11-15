@@ -64,6 +64,7 @@ const CLAIM_MESSAGES: Record<ChatClaimErrorCode, string> = {
   DELEGATE_FORBIDDEN: "Not allowed to manage this delegation",
   FORBIDDEN_TENANT_ADMIN_WRITE: "Company admins cannot change this",
   TRIGGER_PARAM_RANGE: "Value is out of range",
+  TRIGGER_FACT_CORE: "This fact cannot be used in the start condition",
   CLAIM_HOURS_RANGE: "Hours must be between 1 and 168",
   ESCALATE_TARGET_REQUIRED: "Escalation target is required",
 };

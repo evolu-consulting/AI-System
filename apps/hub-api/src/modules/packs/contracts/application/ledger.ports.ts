@@ -22,6 +22,8 @@ export type LockedObligation = {
   /** MS-impact: việc của ai + ô uy tín V2-E (chỉ câu khoá đọc; chấm delta trong tx xác nhận không cần thêm câu). */
   owner?: "partner" | "ours" | null;
   rep_cell?: number | null;
+  /** CR-152: khoá kỳ của mốc báo cáo / đối soát (nguồn điểm `m:report`). */
+  period_key?: string | null;
   direction: Direction;
   kind: ObligationKind;
   status: "open" | "done" | "cancelled";
@@ -138,6 +140,8 @@ export type LedgerReadRepo = {
     status?: string;
     direction?: string;
     due_before?: string;
+    limit?: number;
+    offset?: number;
   }): Promise<Obligation[]>;
   events(party: string, role: string | null): Promise<PartnerEvent[]>;
   contractPartner(contractId: string): Promise<ContractPartner | null>;

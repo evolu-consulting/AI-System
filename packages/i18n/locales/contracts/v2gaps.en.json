@@ -60,10 +60,10 @@
         "pending": "Not scored yet"
       },
       "mine": {
-        "title": "Our own reputation",
-        "none": "None of our own tasks were completed in the last {{days}} days.",
-        "allOnTime": "All {{total}} of our own tasks in the last {{days}} days were on time.",
-        "someLate": "{{late}} of {{total}} of our own tasks were late in the last {{days}} days ({{pct}}% on time). Fault: ours {{ours}}, partner {{partner}}, unknown {{unknown}}. Our own faults do not lower a partner's score.",
+        "title": "We keep our word with partners",
+        "none": "None of our company's milestones (payment, delivery…) with partners fell due in the last {{days}} days, so there is no score yet.",
+        "allOnTime": "Our company met all {{total}} milestones (payment, delivery…) in the last {{days}} days.",
+        "someLate": "Our company was late on {{late}} of {{total}} milestones in the last {{days}} days ({{pct}}% on time). Fault: ours {{ours}}, partner {{partner}}, unknown {{unknown}}. Our own faults do not lower a partner's score.",
         "blamed": "Partners blamed: {{list}}."
       }
     }

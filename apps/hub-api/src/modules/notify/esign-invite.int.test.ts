@@ -84,7 +84,7 @@ const sendInvite = async (id: string) => {
   if (!tool) throw new Error("thiếu tool contracts-esign-send");
   await tool.run(
     { tenantId: T1, userId: A, runId: null },
-    { contract_id: id, company_signers: `user:${B}` },
+    { contract_id: id, provider: "selfsign", company_signers: `user:${B}` }, // CR-146: node ký bắt buộc «Ký qua» (không lùi về mặc định công ty)
   );
   const before = email.sent.length;
   await drain(deps());

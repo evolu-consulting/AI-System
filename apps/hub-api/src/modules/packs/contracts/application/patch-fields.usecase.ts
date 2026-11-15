@@ -23,6 +23,10 @@ export type LockedContract = {
   status: string;
   /** Giao dịch (`deal`) không thuộc khoá K4. */
   doc_type?: string;
+  /** CR-168 · loại + hướng hiện có (đổi Loại HĐ nhập tay). */
+  deal?: string | null;
+  direction?: string | null;
+  entry_source?: string | null;
 };
 export type SavedContract = { version: number; updated_at: string };
 
@@ -33,14 +37,38 @@ export type ContractFieldsRepo = {
   /** CTE: UPDATE `fields`, `version+1`, `updated_at=now()` (điều kiện `version = expected`) + INSERT event `field_edited`. */
   save(
     id: string,
-    s: { fields: ContractFields; changes: FieldChange[]; expected: number; actor: string },
+    s: {
+      fields: ContractFields;
+      changes: FieldChange[];
+      expected: number;
+      actor: string;
+      /** CR-168: loại mới (đã qua `dealChange`); server suy `direction`. */
+      deal?: PatchDeal;
+    },
   ): Promise<SavedContract>;
 };
 
+export type PatchDeal = "buy" | "sell" | "referral" | "franchise" | "cooperation";
 export type PatchFieldsInput = {
   version: number;
   fields: Partial<Record<ContractFieldKey, FieldValue>>;
+  /** CR-168: đổi Loại HĐ (chỉ nhập tay còn nháp). */
+  deal?: PatchDeal;
 };
+
+const dealNow = (c: LockedContract): string =>
+  c.deal ?? (c.direction === "purchase" ? "buy" : "sell");
+
+/** CR-168: loại mới khác loại hiện có ⇒ phải là HĐ nhập tay còn nháp (và kinds riêng chỉ cho `contract`), không thì khoá. */
+function dealChange(cur: LockedContract, want: PatchDeal | undefined): "none" | "ok" | "locked" {
+  if (!want || want === dealNow(cur)) return "none";
+  const kind = want === "franchise" || want === "cooperation";
+  const ok =
+    cur.entry_source === "manual" &&
+    cur.status === "draft" &&
+    (!kind || cur.doc_type === "contract");
+  return ok ? "ok" : "locked";
+}
 export type PatchFieldsOk = {
   id: string;
   version: number;
@@ -74,16 +102,22 @@ async function applyPatch(
   if (cur.version !== input.version)
     return { kind: "stale", current: { version: cur.version }, updated_at: cur.updated_at };
   const { fields, changes } = applyEdits(cur.fields, input.fields);
-  if (changes.length === 0)
+  const dc = dealChange(cur, input.deal);
+  if (dc === "locked") return { kind: "locked" };
+  if (changes.length === 0 && dc === "none")
     return { kind: "ok", out: { id, version: cur.version, updated_at: cur.updated_at, fields } };
   const changed = changes.map((c) => c.key);
-  if (lockVerdict({ status: cur.status, docType: cur.doc_type, changed }) === "locked")
+  if (
+    changes.length > 0 &&
+    lockVerdict({ status: cur.status, docType: cur.doc_type, changed }) === "locked"
+  )
     return { kind: "locked" };
   const saved = await r.fields.save(id, {
     fields,
     changes,
     expected: cur.version,
     actor: who.userId,
+    ...(dc === "ok" && input.deal ? { deal: input.deal } : {}),
   });
   await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);
   return { kind: "ok", out: { id, ...saved, fields } };

@@ -188,8 +188,8 @@ export type PackRunsPort = {
   ): Promise<"created" | "exists" | "synced">;
   /** CR-105 · quy trình đang chạy của khe cho tenant (gán ⇒ mặc định ⇒ bản xuất bản), MỘT câu scope system; không có ⇒ null. */
   resolveSlot(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
-  /** CR-125 · S2 · flow đang chạy của công ty cho sự kiện (company_flows Bật), MỘT câu scope system; không có ⇒ null. */
-  eventFlow?(tenantId: string, event: string): Promise<EventFlow | null>;
+  /** CR-146 · MỌI flow Bật của công ty cho sự kiện (company_flows, theo `position`), MỘT câu scope system; không có ⇒ []. */
+  eventFlows?(tenantId: string, event: string): Promise<EventFlow[]>;
   /** dlc-agent-flows · def thư viện `defKey` của khe ở bản xuất bản hiện hành (agent chỉ định quy trình, KHÔNG qua gán tenant);
    *  không có ⇒ null. Vắng (bản giả) ⇒ gói báo lỗi khi agent có chỉ định. */
   resolveSlotDef?(slot: string, defKey: string): Promise<ResolvedSlot | null>;

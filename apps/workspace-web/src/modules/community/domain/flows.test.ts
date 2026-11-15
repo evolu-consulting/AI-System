@@ -1,7 +1,14 @@
 // CR-120 · cr120-community-flow-ui · mapper trạng thái duyệt bài / lỗi tranh chấp.
 import { describe, expect, it } from "bun:test";
 import type { ModerationItem } from "@ai/contracts/community";
-import { byPostId, hasOpenModeration, isConflict, moderationNote, queueReasonKey } from "./flows";
+import {
+  byPostId,
+  hasOpenModeration,
+  isConflict,
+  loadAllMine,
+  moderationNote,
+  queueReasonKey,
+} from "./flows";
 
 const base: ModerationItem = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -82,5 +89,22 @@ describe("hàng chờ + lỗi", () => {
   });
   it("gộp theo id một lần", () => {
     expect(byPostId([base]).get(base.id)).toBe(base);
+  });
+});
+
+describe("CR-151 · loadAllMine", () => {
+  it("gom mọi trang theo nextOffset, mỗi trang một lời gọi, dừng khi nextOffset rỗng", async () => {
+    const mk = (id: string) => ({ id }) as never;
+    const calls: number[] = [];
+    const pages: Record<number, { items: never[]; nextOffset: number | null }> = {
+      0: { items: [mk("a"), mk("b")], nextOffset: 2 },
+      2: { items: [mk("c")], nextOffset: null },
+    };
+    const all = await loadAllMine(async (o) => {
+      calls.push(o);
+      return pages[o] as { items: never[]; nextOffset: number | null };
+    });
+    expect(all.map((x: { id: string }) => x.id)).toEqual(["a", "b", "c"]);
+    expect(calls).toEqual([0, 2]);
   });
 });

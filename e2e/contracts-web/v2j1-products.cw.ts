@@ -128,9 +128,16 @@ async function install(page: Page) {
     contentType: "application/json",
     body: JSON.stringify(body),
   });
-  await page.route("**/pack/contracts/business/products", (r) =>
-    r.fulfill(j({ items: ITEMS, counts: { all: 3, service: 1, goods: 1, referral: 1 } })),
-  );
+  // CR-151: danh sách là trang máy chủ (?limit&offset&group&q) — giả lập lọc nhóm + tìm.
+  await page.route("**/pack/contracts/business/products?*", (r) => {
+    const u = new URL(r.request().url());
+    const g = u.searchParams.get("group");
+    const q = (u.searchParams.get("q") ?? "").toLowerCase();
+    const items = ITEMS.filter((x) => (!g || x.group === g) && x.name.toLowerCase().includes(q));
+    return r.fulfill(
+      j({ items, total: items.length, counts: { all: 3, service: 1, goods: 1, referral: 1 } }),
+    );
+  });
   await page.route(`**/pack/contracts/business/products/${GOODS}`, (r) => r.fulfill(j(DETAIL)));
   await page.route(`**/pack/contracts/business/products/${GOODS}/contracts`, (r) =>
     r.fulfill(j({ items: CONTRACTS })),

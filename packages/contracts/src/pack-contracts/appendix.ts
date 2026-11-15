@@ -31,10 +31,26 @@ export type ContractAppendixRef = z.infer<typeof ContractAppendixRefSchema>;
 
 // ---------- danh bạ + loại hàng ----------
 export const MEMBERS_MAX = 1000;
+/** CR-151 · trần một trang khi gọi `GET /members?limit=` (hộp chọn người: tìm máy chủ + tải dần). */
+export const MEMBERS_PAGE_MAX = 50;
+export const MembersQuerySchema = z.strictObject({
+  q: z
+    .string()
+    .trim()
+    .max(100)
+    .transform((v) => (v === "" ? undefined : v))
+    .optional(),
+  /** Có `limit` ⇒ chế độ trang (≤ MEMBERS_PAGE_MAX, có `next_offset`); không có ⇒ danh bạ đầy đủ ≤ MEMBERS_MAX (tra tên). */
+  limit: z.coerce.number().int().min(1).max(MEMBERS_PAGE_MAX).optional(),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+});
+export type MembersQuery = z.infer<typeof MembersQuerySchema>;
 export const MembersResponseSchema = z.strictObject({
   items: z
     .array(z.strictObject({ id: z.uuid(), name: z.string().min(1).max(200) }))
     .max(MEMBERS_MAX),
+  /** Chế độ trang: offset của trang kế, null = hết. */
+  next_offset: z.number().int().nullable().optional(),
 });
 export type MembersResponse = z.infer<typeof MembersResponseSchema>;
 

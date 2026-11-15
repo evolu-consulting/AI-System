@@ -16,7 +16,7 @@ import { FIELD, Num } from "./controls";
 import { TryBox, TryNum } from "./TryBox";
 
 type Props = { cell: Cell; set: (c: Cell) => void; share: number; good: number; fair: number };
-const MS: Milestone[] = ["delivery", "payment", "serial", "commission"];
+const MS: Milestone[] = ["delivery", "payment", "serial", "commission", "report"];
 
 type RowProps = {
   x: Criterion;

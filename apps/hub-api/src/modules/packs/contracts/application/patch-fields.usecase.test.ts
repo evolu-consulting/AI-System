@@ -101,3 +101,36 @@ describe("patchFields", () => {
     expect(r.kind).toBe("ok");
   });
 });
+
+describe("patchFields · CR-168 đổi Loại HĐ nhập tay", () => {
+  const manual = () => ({
+    ...base(),
+    doc_type: "contract",
+    deal: "sell",
+    direction: "sale",
+    entry_source: "manual",
+  });
+  it("nhập tay + nháp ⇒ save kèm deal, kể cả khi không đổi trường nào", async () => {
+    const s = setup(manual());
+    const r = await s.run(who, ID, { version: 1, fields: {}, deal: "buy" });
+    expect(r.kind).toBe("ok");
+    expect(s.saves[0]).toMatchObject({ deal: "buy" });
+  });
+  it("loại y cũ ⇒ không save", async () => {
+    const s = setup(manual());
+    await s.run(who, ID, { version: 1, fields: {}, deal: "sell" });
+    expect(s.saves).toHaveLength(0);
+  });
+  it("không phải nhập tay ⇒ locked, không ghi", async () => {
+    const s = setup({ ...manual(), entry_source: null });
+    expect(await s.run(who, ID, { version: 1, fields: {}, deal: "buy" })).toEqual({
+      kind: "locked",
+    });
+    expect(s.saves).toHaveLength(0);
+  });
+  it("Nhượng quyền trên giao dịch (doc_type ≠ contract) ⇒ locked", async () => {
+    const s = setup({ ...manual(), doc_type: "deal" });
+    const r = await s.run(who, ID, { version: 1, fields: {}, deal: "franchise" });
+    expect(r.kind).toBe("locked");
+  });
+});

@@ -17,6 +17,9 @@ export type BizFilter = { id?: string; group?: string; q?: string };
 export type BizExtras = {
   lots: BizLotOut[];
   sales: BizSaleOut[];
+  /** CR-151: tổng lô / dòng bán trong 12 tháng (danh sách chỉ trả 100 gần nhất) ⇒ UI báo «còn nữa». */
+  lots_total?: number;
+  sales_total?: number;
   contracts_count: number;
 };
 

@@ -9,9 +9,8 @@
         "feed": "Bảng tin"
       },
       "signPane": {
-        "esign": "Áp dụng cho bước Ký hợp đồng của quy trình duyệt.",
-        "work": "Áp dụng cho bước Ký hợp đồng của quy trình duyệt.",
-        "partner": "Dùng cho bước «Gửi đối tác xác nhận» (gửi đi) và quy trình Nhận HĐ (nhận về). Chưa đủ điều kiện ⇒ các bước này không chạy được."
+        "esign": "Tài khoản công ty dùng chung. Ký thế nào, ai ký, gửi đối tác ra sao: đặt trong từng quy trình.",
+        "partner": "Trạng thái «Đối tác xác nhận» dùng cho bước «Gửi đối tác xác nhận» và quy trình Nhận HĐ. Chưa đủ điều kiện ⇒ các bước này không chạy được."
       },
       "sec": {
         "feed": "Thông báo",
@@ -26,8 +25,8 @@
         "flow": "Quy trình duyệt",
         "flowHint": "Các bước, phòng ban, hạn xử lý, điều kiện",
         "scoutHint": "Mặc định theo nhóm, trần lượt dò/tháng",
-        "sign": "Ký & đối tác",
-        "signHint": "Ký số, người ký, đối tác xác nhận"
+        "sign": "Kết nối",
+        "signHint": "Ký số, đối tác xác nhận"
       },
       "unsaved": "Có thay đổi chưa lưu",
       "isDefault": "Đang áp dụng",
@@ -194,12 +193,52 @@
     },
     "flow": {
       "current": {
+        "listLead": "Hợp đồng đi theo quy trình ĐẦU TIÊN có điều kiện khớp, xét từ trên xuống.",
+        "unreadable": "Không đọc được điều kiện",
+        "always": "Mọi hợp đồng còn lại",
+        "startWhen": "Bắt đầu khi: {{when}}",
+        "stepCount": "{{count}} bước",
+        "listLabel": "Quy trình duyệt đang bật",
+        "pick": "Xem sơ đồ",
+        "and": " và ",
+        "or": " hoặc ",
+        "cond": {
+          "value": "Giá trị {{op}} {{v}} triệu",
+          "deal": "Loại hợp đồng = {{v}}",
+          "dept": "Phòng = {{v}}",
+          "importance": "Mức quan trọng = {{v}}",
+          "newPartner": "Đối tác mới",
+          "oldPartner": "Đối tác đã có hợp đồng",
+          "other": "{{fact}} {{op}} {{v}}",
+          "deals": {
+            "buy": "Mua",
+            "sell": "Bán",
+            "referral": "Giới thiệu"
+          },
+          "levels": {
+            "normal": "Bình thường",
+            "important": "Quan trọng",
+            "critical": "Rất quan trọng"
+          }
+        },
+        "signBlock": {
+          "title": "Ký và đối tác của quy trình này",
+          "noEsign": "Quy trình này không có bước Ký.",
+          "signers": "Người ký phía công ty: {{names}}",
+          "noSigners": "Người ký phía công ty: chưa chọn",
+          "unnamed": "người đã nghỉ hoặc không còn quyền",
+          "partnerSigns": "Đối tác ký: có",
+          "partnerNoSign": "Đối tác ký: không, chỉ công ty ký",
+          "partnerAuto": "Đối tác ký: theo hợp đồng (có email thì đối tác ký)",
+          "sequential": "Thứ tự: lần lượt",
+          "parallel": "Thứ tự: cùng lúc",
+          "send": "Gửi đối tác xác nhận: có",
+          "noSend": "Gửi đối tác xác nhận: không"
+        },
         "title": "Quy trình duyệt đang áp dụng: {{name}} · v{{version}}",
-        "lead": "Đây là quy trình đang chạy cho hợp đồng của công ty, cùng dữ liệu với trang Quy trình. Quản trị công ty đổi quy trình ở trang Quy trình.",
-        "noFlow": "Công ty chưa có quy trình duyệt hợp đồng nào đang bật. Quản trị công ty thêm và bật quy trình ở trang Quy trình.",
+        "noFlow": "Công ty chưa có quy trình duyệt hợp đồng nào đang bật. Quản trị nền tảng soạn và gán quy trình cho công ty — liên hệ quản trị nền tảng.",
         "openPage": "Mở trang Quy trình",
         "branches": "Quy trình có rẽ nhánh theo điều kiện: các bước dưới đây là những bước có thể chạy; xem sơ đồ đầy đủ ở trang Quy trình.",
-        "others": "Còn {{count}} quy trình khác cũng đang bật, xét theo thứ tự ở trang Quy trình.",
         "saveNote": "Mục này chỉ để xem nên không có gì cần lưu.",
         "editLink": "Chỉnh quy trình duyệt",
         "openFail": "Không mở được trang chỉnh quy trình.",
@@ -290,7 +329,9 @@
       "deal": {
         "buy": "Mua",
         "sell": "Bán",
-        "referral": "Giới thiệu"
+        "referral": "Giới thiệu",
+        "franchise": "Nhượng quyền",
+        "cooperation": "Thỏa thuận hợp tác"
       },
       "op": "Cách kết hợp",
       "opAnd": "VÀ",

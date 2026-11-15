@@ -7,7 +7,7 @@ import type {
   PartnerCommunityCandidate,
   PartnerContactPerson,
   PartnerContractCount,
-  PartnerContractRow,
+  PartnerContractsPage,
   PartnerNote,
   PartnerProfile,
   PartnerRole,
@@ -15,6 +15,7 @@ import type {
   PartnerRow,
   PartnerScore,
   PartnerWebSearch,
+  PartyPage,
   PriceProduct,
   QuoteCreate,
   RepAttentionRow,
@@ -48,6 +49,7 @@ export const partnerKeys = {
   history: (role: PartnerRole) => ["scoring", role, "history"] as const,
   // V2-I (khoá bắt đầu `partners` ⇒ mọi thao tác ghi đối tác làm mới cả danh sách lẫn chi tiết)
   counts: ["partners", "counts"] as const,
+  page: (o: object) => ["partners", "page", o] as const,
   score: (party: string, role: PartnerRole) => ["partners", "score", party, role] as const,
   profile: (party: string) => ["partners", "profile", party] as const,
   contacts: (party: string) => ["partners", "contacts", party] as const,
@@ -71,6 +73,20 @@ export const partnerKeys = {
 
 export const fetchPartners = (role: PartnerRole | "all", signal?: AbortSignal) =>
   api<PartnerRow[]>(`${BASE}/partners?role=${role}`, { signal });
+/** CR-151e: một trang đối tác (cả hai engine) — lọc / tìm / sắp xếp / cắt trang ở máy chủ. */
+export const fetchPartyPage = (
+  o: { filter: string; q: string; sort?: string; limit: number; offset: number },
+  signal?: AbortSignal,
+) => {
+  const p = new URLSearchParams({
+    filter: o.filter,
+    limit: String(o.limit),
+    offset: String(o.offset),
+  });
+  if (o.q) p.set("q", o.q);
+  if (o.sort) p.set("sort", o.sort);
+  return api<PartyPage>(`${BASE}/partners/page?${p}`, { signal });
+};
 export const fetchPartnerScore = (party: string, role: PartnerRole, signal?: AbortSignal) =>
   api<PartnerScore>(`${BASE}/partners/score?party=${enc(party)}&role=${role}`, { signal });
 
@@ -97,8 +113,11 @@ export const fetchProfile = (party: string, signal?: AbortSignal) =>
   api<PartnerProfile>(`${BASE}/partners/profile?party=${enc(party)}`, { signal });
 export const fetchRoles = (party: string, signal?: AbortSignal) =>
   api<PartnerRoleRow[]>(`${BASE}/partners/roles?party=${enc(party)}`, { signal });
-export const fetchPartnerContracts = (party: string, signal?: AbortSignal) =>
-  api<PartnerContractRow[]>(`${BASE}/partners/contracts?party=${enc(party)}`, { signal });
+export const fetchPartnerContracts = (party: string, offset = 0, signal?: AbortSignal) =>
+  api<PartnerContractsPage>(
+    `${BASE}/partners/contracts?party=${enc(party)}${offset ? `&offset=${offset}` : ""}`,
+    { signal },
+  );
 export const fetchContractCounts = (signal?: AbortSignal) =>
   api<PartnerContractCount[]>(`${BASE}/partners/contract-counts`, { signal });
 export const fetchNotes = (party: string, signal?: AbortSignal) =>

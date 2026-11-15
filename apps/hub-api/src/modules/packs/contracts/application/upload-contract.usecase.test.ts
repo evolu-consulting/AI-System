@@ -31,6 +31,8 @@ function fakeRepos(st: St): UploadTxRepos {
         st.inserted.push(r);
         return { id: r.id, status: "draft" as const, extractState: r.extractState, version: 1 };
       },
+      replaceGate: async () => null,
+      replaceFile: async () => null,
       insertVersion: async () => {
         throw new Error("not used");
       },

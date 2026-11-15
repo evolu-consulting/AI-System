@@ -67,7 +67,11 @@ test("HĐ nguyên tắc: nhãn loại, khối chứng từ con, % hạn mức, c
 }) => {
   await installV2f(page, { role: "editor", contract: () => framework() });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
-  await expect(page.getByTestId("doc-type-tag")).toHaveText("Hợp đồng nguyên tắc");
+  // CR-135 Q12: nhãn chữ loại thành icon cạnh tên (`doc-type-icon`, aria-label = tên loại)
+  await expect(page.getByTestId("doc-type-icon")).toHaveAttribute(
+    "aria-label",
+    "Hợp đồng nguyên tắc",
+  );
   const panel = page.getByTestId("frame-panel");
   await expect(panel).toBeVisible();
   await expect(page.getByTestId("frame-count")).toHaveText("2");
@@ -226,7 +230,7 @@ test("giao dịch: Nâng thành hợp đồng ⇒ cần file + số; multipart /
     );
   });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
-  await expect(page.getByTestId("doc-type-tag")).toHaveText("Giao dịch");
+  await expect(page.getByTestId("doc-type-icon")).toHaveAttribute("aria-label", "Giao dịch");
   await expect(page.getByTestId("edit-log")).toContainText("Giá trị");
   await page.getByTestId("promote-open").click();
   const submit = page.getByTestId("promote-submit");

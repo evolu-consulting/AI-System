@@ -47,6 +47,7 @@ export function HistoryPanel({ id }: { id: string }) {
   const [open, setOpen] = useState(false);
   const q = useHistory(id, open);
   const nameOf = useMemberNames();
+  const items = q.data?.pages.flatMap((p) => p.items) ?? [];
   return (
     <Panel className="my-4">
       <button
@@ -63,16 +64,26 @@ export function HistoryPanel({ id }: { id: string }) {
         <div className="px-5 pb-4" data-testid="history">
           {q.isPending && <p className="text-dim">{t("contracts.gapa1.hist.loading")}</p>}
           {q.isError && <p role="alert">{t("contracts.errors.unknown")}</p>}
-          {q.data && q.data.items.length === 0 && (
+          {q.data && items.length === 0 && (
             <p className="text-dim">{t("contracts.gapa1.hist.empty")}</p>
           )}
           {q.data && (
             <ul>
-              {q.data.items.filter(isVisibleEvent).map((h, i) => (
+              {items.filter(isVisibleEvent).map((h, i) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: sự kiện không có id trong phản hồi; danh sách chỉ đọc
                 <Line key={i} h={historyLine(h)} nameOf={nameOf} />
               ))}
             </ul>
+          )}
+          {q.hasNextPage && (
+            <button
+              type="button"
+              className="mt-2 text-[12.5px] text-dim hover:underline"
+              disabled={q.isFetchingNextPage}
+              onClick={() => void q.fetchNextPage()}
+            >
+              {t("contracts.gapa1.hist.loadMore")}
+            </button>
           )}
         </div>
       )}

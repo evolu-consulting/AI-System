@@ -25,6 +25,9 @@ import {
   INPROC_DEFAULT_CONCURRENCY,
   type InprocLimiter,
 } from "./adapters/inproc-limit";
+import { kindScheduleDoneHook } from "./adapters/kind-schedule.hook";
+import { packAssignees } from "./adapters/manage.members";
+import { manualEntryRoutes } from "./adapters/manual-entry.routes";
 import { reviewRoutes } from "./adapters/review.routes";
 import { submitRoutes } from "./adapters/submit.routes";
 import {
@@ -39,7 +42,9 @@ import { recordEngineDecision, recordTaskEvents } from "./application/approval-d
 import { flowRequestExtract, flowStarter } from "./application/approval-flow";
 import type { ApprovalFlowTxRepos } from "./application/approval-flow.usecase";
 import {
+  EXTRACT_READ_TIMEOUT_S,
   QUEUED_STALE_MINUTES,
+  readTimeoutSecondsFor,
   type SweepDeps,
   staleMinutesFor,
   startApprovalSweeper,
@@ -50,6 +55,7 @@ import { createManual } from "./application/create-manual.usecase";
 import { handleExtractJob } from "./application/extract-job.usecase";
 import type { TaxRegistry } from "./application/extraction.ports";
 import { createExtractionQueue, type ExtractionQueue } from "./application/extraction-queue";
+import { reconcileEntry, startManualEntry } from "./application/manual-entry.usecase";
 import {
   linkContractProducts,
   type ProductLinksTxRepos,
@@ -211,6 +217,7 @@ export function contractsAiModule(
   const engOpts = { hd2: d.transport !== undefined, legacyMachine: d.approvalEngine === false };
   const gate = mountContractFlow(db, flow.timeZoneOf ? safeTimeZone(flow.timeZoneOf) : undefined); // CR-122 A1: cổng cờ + đăng ký FactsReader/OutcomeHandler
   registerContractDoneHook(aiMilestonesDoneHook, "mốc-AI"); // CR-127 K7 · HĐ vào DONE ⇒ lập mốc từ AI (BR-43)
+  registerContractDoneHook(kindScheduleDoneHook, "mốc-loại-HĐ"); // CR-152 · Nhượng quyền / Hợp tác vào DONE ⇒ bộ mốc theo kỳ
   bindUnsourcedContractEvents(); // CR-127 B0: sự kiện manifest chưa có nguồn phát (tạm tới X2/X3/K6/E10)
   mountContractAccess(db); // CR-127 E3b: cổng kit `ContractAccess` (uỷ quyền / giao việc)
   const engFlow = { ...flow, groups: withCreatorDepartments(flow.groups, db), flowGate: gate }; // CR-121 D-1
@@ -298,7 +305,17 @@ function approvalModule(
     evidenceFile: async (w, i, e, f) => (await ad.card?.evidenceFile(w, i, e, f)) ?? null, // CR-127 · E4b
     recordPdf: async (w, i) => (await ad.card?.recordPdf(w, i)) ?? null, // CR-127 · U4b-3
   });
-  approval.route("/", flowTemplateRoutes(view, o.uow, flow));
+  approval.route(
+    "/",
+    flowTemplateRoutes(view, o.uow, flow, async (w, ids) => {
+      const want = new Set(ids);
+      return new Map(
+        (await packAssignees(o.db, view, "contracts").list(w))
+          .filter((m) => want.has(m.id))
+          .map((m) => [m.id, m.name]),
+      );
+    }),
+  );
   const fr = contractsFlowRoutes(o.db, view, { get, act }); // CR-120 · mặc định bật; HUB_FLOW_RUNTIME=off = tắt route (404, không còn rollback web)
   if (fr) approval.route("/", fr);
   return approval;
@@ -331,6 +348,13 @@ function reviewModule(
       preview: submitPreview(sub), // CR-127 · M4
     }),
   );
+  r.route(
+    "/",
+    manualEntryRoutes(view, {
+      start: startManualEntry({ uow }),
+      reconcile: reconcileEntry({ uow }),
+    }),
+  ); // CR-157
   return r;
 }
 
@@ -347,6 +371,11 @@ function startSweep(
     tenants: flow.tenants,
     staleMinutes: staleMinutesFor(claimIdleMs()),
     queuedMinutes: envInt("CONTRACTS_QUEUE_STALE_MIN", QUEUED_STALE_MINUTES),
+    // CR-155 · AI đọc quá hạn (mặc định max(180, trần AI + 30) = 330 s) ⇒ `failed` mã `TIMEOUT`; kết quả AI về muộn bị bỏ (CAS `reading`).
+    readTimeoutS: readTimeoutSecondsFor(
+      envInt("CONTRACTS_EXTRACT_READ_TIMEOUT_S", EXTRACT_READ_TIMEOUT_S),
+      agentTimeoutMs() / 1000,
+    ),
     ...(eng ? { engine: { port: () => flow.engine?.port } } : {}),
   };
   if (d.onHandles) {

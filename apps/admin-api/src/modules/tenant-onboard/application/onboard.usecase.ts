@@ -1,12 +1,19 @@
 // niti-onboard · onboarding tenant chạy lại được: (1) một tx `write`: tạo/cập nhật tenant (tên, múi giờ, hồ sơ, marker
 // importer) + Group phòng ban (vi/en) + cây phòng ban + thành viên/trưởng phòng theo email; (2) mỗi gói: `enablePack` (PK-FR-05,
 // cùng đường admin-web — entitlement + 3 Group vai + grant + trợ lý gói `packs.grant_agents`). Không đổi ⇒ không ghi, không audit.
+// CR-159: thứ tự = đọc người dùng (chỉ đọc, kiểm `--pw-out`) → tx tenant → người dùng (usecase users.service) → gói → add-on → tx phòng ban
+// (trưởng/thành viên) — người dùng có TRƯỚC phòng ban nên không còn `pending`; gói sau người dùng nên quản trị mới thành Chủ gói
+// (`enablePack` + `grantTenantAdmins`, đúng đường wizard) và người thường vào nhóm vai khai trong yaml (`addPackMembers`).
 import {
   bindDecision,
   deptRows,
   memberPairs,
   type OnboardSpec,
+  packRoleRows,
+  planUsers,
   profileSame,
+  roleOf,
+  usernameOf,
 } from "../domain/onboard.rules";
 import type { OnboardPorts, OnboardRepo, OnboardSink, TenantNow } from "./ports";
 
@@ -16,6 +23,9 @@ export type OnboardReport = {
   departments: { total: number; groups_created: number; groups_renamed: number; changed: number };
   members: { added: number; heads_set: number; pending_emails: string[] };
   packs: { key: string; groups: number }[];
+  /** CR-159 · chỉ số đếm + email vừa tạo; KHÔNG bao giờ có mật khẩu. */
+  users: { created: number; updated: number; unchanged: number; created_emails: string[] };
+  addons: { key: string; granted: boolean }[];
 };
 
 type Step = { tid: string; created: boolean; updated: boolean; binding: OnboardReport["binding"] };
@@ -93,20 +103,95 @@ async function orgStep(
   };
 }
 
-function record(ch: OnboardSink, s: OnboardSpec, st: Step, o: Awaited<ReturnType<typeof orgStep>>) {
-  const d = o.departments;
-  const groupsChanged =
-    d.groups_created + d.groups_renamed + d.changed + o.members.added + o.members.heads_set > 0;
-  if (st.created || st.updated) ch.changed("tenant", st.tid);
-  if (groupsChanged) ch.changed("group", st.tid);
-  if (!(st.created || st.updated || groupsChanged)) return;
+function recordTenant(ch: OnboardSink, s: OnboardSpec, st: Step) {
+  if (!(st.created || st.updated)) return;
+  ch.changed("tenant", st.tid);
   ch.audit({
     op: st.created ? "create" : "update",
     entityId: st.tid,
     entityName: s.key,
     tenantId: st.tid,
-    summary: { op: "tenant.onboard", binding: st.binding, ...o.departments, ...o.members },
+    summary: { op: "tenant.onboard", binding: st.binding },
   });
+}
+
+function recordOrg(
+  ch: OnboardSink,
+  s: OnboardSpec,
+  st: Step,
+  o: Awaited<ReturnType<typeof orgStep>>,
+) {
+  const d = o.departments;
+  const changed =
+    d.groups_created + d.groups_renamed + d.changed + o.members.added + o.members.heads_set > 0;
+  if (!changed) return;
+  ch.changed("group", st.tid);
+  ch.audit({
+    op: "update",
+    entityId: st.tid,
+    entityName: s.key,
+    tenantId: st.tid,
+    summary: { op: "tenant.onboard.org", ...o.departments, ...o.members },
+  });
+}
+
+type UserPlan = ReturnType<typeof planUsers>;
+
+/** Người dùng: tạo mới (mật khẩu tạm ghi file ngay khi sinh) rồi cập nhật tên/vai/chức vụ; không đổi mật khẩu người đã có. */
+async function usersStep(p: OnboardPorts, tid: string, plan: UserPlan) {
+  for (const u of plan.create) {
+    const r = await p.createUser(
+      tid,
+      {
+        username: usernameOf(u.email),
+        display_name: u.name,
+        email: u.email,
+        role: roleOf(u.role),
+      },
+      {
+        ...(p.sharedPassword ? { password: p.sharedPassword } : {}),
+        mustChange: p.forceChange !== false,
+      },
+    );
+    // Ghi ngay để lỗi sau đó không làm mất mật khẩu; mật khẩu chung => chỉ ghi email (không bao giờ ghi mật khẩu chung).
+    if (p.sharedPassword) await p.savePassword?.(u.email);
+    else await (p.savePassword as NonNullable<typeof p.savePassword>)(u.email, r.tempPassword);
+    await p.setJobTitle(tid, r.id, u.title);
+  }
+  for (const u of plan.update) {
+    if (Object.keys(u.set).length > 0) await p.updateUser(u.id, u.version, u.set);
+    if (u.title !== undefined) await p.setJobTitle(tid, u.id, u.title);
+  }
+  return {
+    created: plan.create.length,
+    updated: plan.update.length,
+    unchanged: plan.unchanged,
+    created_emails: plan.create.map((u) => u.email),
+  };
+}
+
+/** Chỉ đọc, trước mọi câu ghi: phòng ban hợp lệ; có người dùng mới mà thiếu nơi ghi mật khẩu ⇒ dừng. */
+async function precheck(p: OnboardPorts, s: OnboardSpec): Promise<UserPlan> {
+  const { issues } = deptRows(s);
+  if (issues.length > 0) throw p.fail("VALIDATION_ERROR", { reason: "DEPARTMENTS", issues });
+  for (const k of s.addons)
+    if (!(await p.addonKnown(k)))
+      throw p.fail("VALIDATION_ERROR", { reason: "ADDON_UNKNOWN", addon: k });
+  const now = await p.readUsers(
+    s.key,
+    s.users.map((u) => u.email),
+  );
+  const plan = planUsers(s.users, now);
+  if (plan.create.length > 0 && !p.savePassword && !p.sharedPassword)
+    throw p.fail("VALIDATION_ERROR", { reason: "PW_OUT_REQUIRED", new_users: plan.create.length });
+  if (plan.create.length > 0 && p.probeSink && p.savePassword) {
+    try {
+      await p.probeSink();
+    } catch {
+      throw p.fail("VALIDATION_ERROR", { reason: "PW_OUT_NOT_WRITABLE" });
+    }
+  }
+  return plan;
 }
 
 export async function onboardTenant(
@@ -114,23 +199,31 @@ export async function onboardTenant(
   s: OnboardSpec,
   actorId: string,
 ): Promise<OnboardReport> {
-  const first = await p.write(async (repo, ch) => {
+  const plan = await precheck(p, s);
+  const st = await p.write(async (repo, ch) => {
     if (!(await repo.actorOk(actorId))) throw p.fail("FORBIDDEN");
-    const st = await tenantStep(p, repo, s, actorId);
-    const o = await orgStep({ p, repo }, st.tid, s, actorId);
-    record(ch, s, st, o);
-    return { st, o };
+    const t = await tenantStep(p, repo, s, actorId);
+    recordTenant(ch, s, t);
+    return t;
   });
+  const users = await usersStep(p, st.tid, plan);
   const packs: OnboardReport["packs"] = [];
-  for (const k of s.packs) {
-    const r = await p.enablePack(first.st.tid, k);
-    packs.push({ key: k, groups: r.groups });
-  }
-  const { st, o } = first;
+  const roles = packRoleRows(s.users);
+  for (const k of s.packs)
+    packs.push({ key: k, groups: (await p.enablePack(st.tid, k, roles)).groups });
+  const addons: OnboardReport["addons"] = [];
+  for (const k of s.addons) addons.push({ key: k, granted: await p.grantAddon(st.tid, k) });
+  const o = await p.write(async (repo, ch) => {
+    const r = await orgStep({ p, repo }, st.tid, s, actorId);
+    recordOrg(ch, s, st, r);
+    return r;
+  });
   return {
     tenant: { id: st.tid, key: s.key, created: st.created, updated: st.updated },
     binding: st.binding,
     ...o,
     packs,
+    users,
+    addons,
   };
 }

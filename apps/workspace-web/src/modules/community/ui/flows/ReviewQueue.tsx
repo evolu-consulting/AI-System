@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { useApp } from "../../application/ctx";
 import { isConflict, queueReasonKey } from "../../domain/flows";
 import { t } from "../../i18n";
-import { FlowPage, ListState, ReasonDialog, useFlowList } from "./parts";
+import { FlowPage, ListState, LoadMore, ReasonDialog, usePagedFlowList } from "./parts";
 
 export default function ReviewQueuePage() {
   const { api, toast, bump } = useApp();
-  const list = useFlowList(async () => (await api.flows.modQueue()).items);
+  const list = usePagedFlowList((o) => api.flows.modQueue(o));
   const [rejecting, setRejecting] = useState<ModerationItem | null>(null);
   // UX-S5 · còn bài "đang kiểm tra" ⇒ nạp lại mỗi 10 giây để bài sang "Cần bạn duyệt" (có nút Duyệt/Ẩn) mà không phải tải lại trang
   const checking = !!list.items?.some((m) => !m.awaitingReview);
@@ -97,6 +97,7 @@ export default function ReviewQueuePage() {
           </article>
         );
       })}
+      <LoadMore more={list.more} busy={list.busy} onMore={() => void list.loadMore()} />
       {rejecting && (
         <ReasonDialog
           testId="review-reject-dialog"

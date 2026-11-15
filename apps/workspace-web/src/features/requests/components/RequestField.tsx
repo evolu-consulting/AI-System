@@ -6,6 +6,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { fetchOrgPeoplePage } from "~/features/org/api";
+import { PersonSearchSelect } from "~/shared/ui/PersonSearchSelect";
 import { uploadAttachment } from "../api";
 import { useOrgOptions } from "../hooks/use-org-options";
 import type { RField, RValue } from "../lib/request-form";
@@ -85,24 +87,36 @@ function Files({ field, value, onChange }: Pick<Props, "field" | "value" | "onCh
 
 function OrgSelect({ field, value, onChange }: Pick<Props, "field" | "value" | "onChange">) {
   const { t } = useTranslation();
-  const org = useOrgOptions(true);
   const people = field.type === "people";
-  const options = people ? org.people : org.departments;
-  const cur = people ? ((value as string[])[0] ?? "") : (value as string);
+  const org = useOrgOptions(!people);
+  const [name, setName] = useState("");
+  if (people) {
+    // CR-151: người chọn qua hộp tìm ở máy chủ + «Xem thêm», không nạp cả công ty.
+    return (
+      <PersonSearchSelect
+        id={`req-${field.key}`}
+        source="org-members"
+        fetchPage={fetchOrgPeoplePage}
+        value={(value as string[])[0] ?? ""}
+        valueName={name}
+        noneLabel={t("contracts.requests.pickPerson")}
+        onChange={(id, n) => {
+          setName(n);
+          onChange(id ? [id] : []);
+        }}
+      />
+    );
+  }
   return (
     <>
       <select
         id={`req-${field.key}`}
         className="h-9 w-full rounded-md border border-rule bg-panel px-2 text-sm"
-        value={cur}
-        onChange={(e) =>
-          onChange(people ? (e.target.value ? [e.target.value] : []) : e.target.value)
-        }
+        value={value as string}
+        onChange={(e) => onChange(e.target.value)}
       >
-        <option value="">
-          {t(people ? "contracts.requests.pickPerson" : "contracts.requests.pickDept")}
-        </option>
-        {options.map((o) => (
+        <option value="">{t("contracts.requests.pickDept")}</option>
+        {org.departments.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>

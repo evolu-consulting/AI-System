@@ -664,6 +664,10 @@
     }
   },
   "orgEdit": {
+    "titlesHeading": "Chức vụ nhân viên",
+    "titleLabel": "Chức vụ",
+    "titlePlaceholder": "VD: Trưởng nhóm bán hàng",
+    "titleSave": "Lưu chức vụ",
     "lead": "Sơ đồ cây của công ty: thêm phòng, đổi tên, chọn «Thuộc phòng», đặt trưởng phòng, thêm/bớt thành viên. Sổ Hợp Tác chỉ xem sơ đồ này.",
     "newName": "Tên phòng mới",
     "newParent": "Thuộc phòng của phòng mới",

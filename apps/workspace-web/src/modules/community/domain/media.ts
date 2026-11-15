@@ -79,22 +79,3 @@ export function acceptedTypes(): string {
     .map((e) => e.toUpperCase())
     .join(", ");
 }
-
-/** Mục media của bài tách ảnh (có tệp để vẽ) khỏi phần còn lại (tệp, mục mẫu chưa có `fileId`). */
-export function splitMedia(media: MediaItem[]): { images: MediaItem[]; others: MediaItem[] } {
-  const images: MediaItem[] = [];
-  const others: MediaItem[] = [];
-  for (const m of media) (m.kind === "image" && m.fileId ? images : others).push(m);
-  return { images, others };
-}
-
-/** Lưới ảnh thu nhỏ: tối đa 3 ô; ô cuối phủ «+extra» khi còn ảnh dư. */
-export function imageGrid(n: number): { shown: number; extra: number; cols: 1 | 2 | 3 } {
-  if (n <= 0) return { shown: 0, extra: 0, cols: 1 };
-  const shown = Math.min(n, 3);
-  return { shown, extra: n - shown, cols: shown as 1 | 2 | 3 };
-}
-
-/** Qua lại giữa ảnh trong hộp phóng to (vòng tròn). */
-export const stepImage = (i: number, delta: number, n: number): number =>
-  n <= 0 ? 0 : (((i + delta) % n) + n) % n;

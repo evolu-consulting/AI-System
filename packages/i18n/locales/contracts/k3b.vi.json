@@ -3,6 +3,7 @@
     "versions": {
       "title": "Phiên bản hợp đồng",
       "view": "Xem",
+      "older": "Chỉ hiện các phiên bản mới nhất; còn {{n}} phiên bản cũ hơn.",
       "kind": { "superseded": "đã thay thế", "draft": "nháp", "current": "hiện hành" },
       "superseded": "Đã thay thế bởi Phiên bản {{n}}",
       "supersededNoNo": "Đã thay thế bởi phiên bản mới",

@@ -16,6 +16,12 @@ const toast = (page: Page) => page.locator("[data-sonner-toast]").first();
 const writes = (sent: Sent[]) => sent.filter((s) => s.method !== "GET");
 const review = (sent: Sent[]) => sent.filter((s) => s.path.endsWith("/review"));
 
+/** CR-135 Q2 / CR-128 (e): «Lưu nháp» và «Huỷ» của nháp lần đầu nằm trong menu «Thao tác ▾» (`act-saveDraft`, `act-cancel`). */
+async function headAct(page: Page, testId: "act-saveDraft" | "act-cancel") {
+  await page.getByTestId("head-actions-menu").click();
+  await page.getByTestId(testId).click();
+}
+
 async function openReview(page: Page, init: Parameters<typeof installV2g>[1] = {}) {
   const ctx = await installV2g(page, init);
   await mockContractFiles(page); // CR-133: khối «Tài liệu kèm» gọi /files — không để catch-all trả HĐ
@@ -61,7 +67,7 @@ test("Lưu = MỘT POST /review (trường + loại + dòng + mốc giữ lại)
 }) => {
   const { sent } = await openReview(page);
   await page.getByLabel("Giữ mốc Giao hàng đợt 1").uncheck();
-  await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
+  await headAct(page, "act-saveDraft");
   await expect(toast(page)).toContainText("Đã lưu nháp");
   expect(review(sent)).toHaveLength(1);
   expect(sent.filter((s) => s.path === "/pack/contracts/products")).toHaveLength(0);
@@ -73,7 +79,7 @@ test("Lưu = MỘT POST /review (trường + loại + dòng + mốc giữ lại)
       version: 3,
       deal: "sell",
       draft: true, // lock-strict: "Lưu nháp" chỉ ghi, không xác nhận / khoá
-      fields: { number: "01-2026-HDMB-PN" }, // p12: số chứng từ AI đọc "01/2026/HĐMB-PN" được chuẩn hoá khi nạp form (review-model.ts)
+      // CR-135 Q3: số HĐ giữ nguyên văn (không tự chuẩn hoá khi nạp form) ⇒ chưa sửa ô nào thì không có `fields`
       items: [
         {
           id: ITEM1,
@@ -107,25 +113,25 @@ test("đổi Bán → Mua: đối tác dựng lại theo bên bán, gửi deal=b
   await page.getByRole("radio", { name: /^Mua/ }).click();
   await expect(page.getByLabel(/^Nhà cung cấp/)).toHaveValue("Công ty TNHH Bao Bì Phương Nam");
   await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_USB.id); // gợi ý chạy lại theo loại mới
-  await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
+  await headAct(page, "act-saveDraft");
   await expect(toast(page)).toBeVisible();
   const b = review(sent)[0]?.body as { deal: string; fields?: Record<string, unknown> };
   expect(b.deal).toBe("buy");
-  // chỉ còn số chứng từ đã chuẩn hoá (p12); đối tác dựng lại không phải là "trường đổi" ⇒ không gửi
-  expect(b.fields).toEqual({ number: "01-2026-HDMB-PN" });
+  // đối tác dựng lại không phải là "trường đổi" ⇒ không gửi; CR-135 Q3: số HĐ giữ nguyên văn ⇒ không có `fields`
+  expect(b.fields).toBeUndefined();
 });
 
 test("Hủy = bỏ chỉnh sửa, KHÔNG gửi yêu cầu ghi nào", async ({ page }) => {
   const { sent } = await openReview(page);
   await page.locator("#cf-title").fill("Tên đã sửa");
-  await page.getByRole("button", { name: "Huỷ" }).click();
+  await headAct(page, "act-cancel");
   await expect(page.locator("#cf-title")).toHaveValue("Hợp đồng mua bán bao bì 2026");
   expect(writes(sent)).toEqual([]);
 });
 
 test("Huỷ khi chưa sửa gì ⇒ về danh sách hợp đồng (không gửi gì, giữ nháp)", async ({ page }) => {
   const { sent } = await openReview(page);
-  await page.getByRole("button", { name: "Huỷ" }).click();
+  await headAct(page, "act-cancel");
   await expect(page).toHaveURL(/\/contracts\/list$/);
   expect(writes(sent)).toEqual([]);
 });
@@ -133,7 +139,7 @@ test("Huỷ khi chưa sửa gì ⇒ về danh sách hợp đồng (không gửi 
 test("dòng chưa gắn SP chặn Lưu (5.5a) — không gửi /review", async ({ page }) => {
   const { sent } = await openReview(page);
   await page.getByLabel("Gắn dòng 2 với sản phẩm").selectOption("");
-  await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
+  await headAct(page, "act-saveDraft");
   await expect(page.getByRole("alert").first()).toContainText("chưa gắn sản phẩm");
   expect(review(sent)).toHaveLength(0);
 });

@@ -1,0 +1,36 @@
+# CR-159 · tenant evolu (công ty chủ). Prod dựng sạch 2026-11. Email tắt tới khi xác nhận domain: chưa có công tắc theo tenant
+# (HUB_NOTIFY_MODE là chung toàn hệ thống) ⇒ ghi "Việc còn lại" ở docs/specs/cr159-onboard-users/tasks.md, KHÔNG khai notify_email.
+# Chạy (idempotent) với MỘT mật khẩu chung lấy từ biến môi trường (KHÔNG ghi giá trị vào repo/yaml/log):
+#   ONBOARD_PASSWORD=<mật khẩu> bun --env-file=.env.local apps/admin-api/src/modules/tenant-onboard/tenant-onboard.cli.ts \
+#     --file deploy/tenants/evolu.yaml --actor <uuid platform admin> --password-env ONBOARD_PASSWORD [--no-force-change]
+# Hoặc mật khẩu tạm ngẫu nhiên từng người: thay `--password-env …` bằng `--pw-out <file, quyền 600>`. Mặc định user mới bị ép đổi mật khẩu.
+# `users:` mới ⇒ cần --password-env hoặc --pw-out; người đã có chỉ cập nhật tên/chức vụ/vai (không đổi mật khẩu). `admin` = quản trị công ty.
+# Quản trị công ty phải đứng ĐẦU `users:` (tạo trước, tránh lỗi "quản trị cuối cùng" khi đổi vai).
+# Mất mật khẩu tạm: đặt lại trên trang quản trị (Người dùng ⇒ Đặt lại mật khẩu); không chạy lại CLI để lấy.
+key: evolu
+name: Evolu
+timezone: Asia/Ho_Chi_Minh
+
+# CR-165b · hồ sơ công ty. MST tạm 10 số (hệ thống buộc 10 chữ số: TENANT_PROFILE_TAX_CODE_RE) — chờ người dùng xác nhận MST 10 số (đã đưa 88888888).
+directory: listed # CR-159: bật danh bạ (cần legal_name + tax_id)
+profile:
+  legal_name: Công ty EvoluConsultants
+  tax_id: "8888888888"
+
+packs: [contracts]
+addons: [contracts-community, contracts-partner-confirm] # Bảng tin
+
+users:
+  - { email: thomas.tran@evolu.com, name: Thomas Tran, title: Giám đốc, role: admin }
+  - { email: julian.bui@evolu.com, name: Julian Bui, title: Trưởng phòng kinh doanh, role: admin }
+  - { email: rowan.hoang@evolu.com, name: Rowan Hoang, title: Trưởng phòng chăm sóc khách hàng, role: member }
+  - { email: vio.ngo@evolu.com, name: Vio Ngo, title: Trưởng phòng kĩ thuật, role: member }
+  - { email: edgar.nguyen@evolu.com, name: Edgar Nguyen, title: "Trưởng phòng Research & development", role: member }
+
+# Người dùng có TRƯỚC phòng ban ⇒ trưởng/thành viên gán ngay, không còn pending.
+root: { key: pb-ban-giam-doc, vi: Ban Giám đốc, en: Board of Directors, head: thomas.tran@evolu.com }
+departments:
+  - { key: pb-kinh-doanh, vi: Phòng Kinh doanh, en: Sales, head: julian.bui@evolu.com }
+  - { key: pb-cskh, vi: Phòng Chăm sóc khách hàng, en: Customer Care, head: rowan.hoang@evolu.com }
+  - { key: pb-ky-thuat, vi: Phòng Kỹ thuật, en: Engineering, head: vio.ngo@evolu.com }
+  - { key: pb-rd, vi: "Phòng R&D", en: R&D, head: edgar.nguyen@evolu.com }

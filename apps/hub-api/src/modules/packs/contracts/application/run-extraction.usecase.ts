@@ -12,6 +12,7 @@ import {
   type VerifiedExtraction,
 } from "../domain/extraction.rules";
 import { fillFields } from "../domain/fields.rules";
+import { isKindDeal } from "../domain/kind-terms.rules";
 import { NO_OWN, type OwnParties, ownDeal } from "../domain/own-side.rules";
 import { prefillVersionNumber } from "../domain/version-number.rules";
 import { ruleWarnings } from "../domain/warnings.rules";
@@ -116,7 +117,7 @@ type SaveInput = {
 
 /** V2-L: biết công ty mình đứng bên nào ⇒ chốt Mua/Bán (bỏ "chưa chắc" của loại HĐ). Giới thiệu và HĐ không phân định được: giữ nguyên. */
 export function withOwnDeal(out: ApplyOutput, own: OwnParties): ApplyOutput {
-  if (!out.ai || out.ai.deal === "referral") return out;
+  if (!out.ai || out.ai.deal === "referral" || isKindDeal(out.ai.deal)) return out;
   const f = out.fields;
   const deal = ownDeal(
     {

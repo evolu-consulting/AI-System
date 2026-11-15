@@ -41,9 +41,14 @@ export type ListRowRaw = Omit<
   | "hold"
   | "waiting"
   | "source"
+  | "entry_source"
+  | "reconciled"
 > & {
   /** CR-127 K8 · vắng (hàng cũ / fake) ⇒ `upload`. */
   source?: ContractListRow["source"];
+  /** CR-157 · cột `entry_source` / có `reconciled_at`; vắng ⇒ AI đọc. */
+  entry_source?: string | null;
+  reconciled?: boolean;
   /** CR-127 K2a-1 · vắng (hàng cũ / fake) ⇒ `ready` / null / false / null. */
   extract_state?: ContractListRow["extract_state"];
   effect?: ContractListRow["effect"];
@@ -101,6 +106,10 @@ export function toContractListRow(r: ListRowRaw, del?: ListDeleteCtx): ContractL
     superseded: r.superseded === true,
     hold: r.hold ?? null,
     source: r.source ?? "upload",
+    // CR-157: chỉ HĐ nhập tay mới có khoá (hàng AI giữ nguyên bộ khoá cũ).
+    ...(r.entry_source === "manual"
+      ? { entry_source: "manual" as const, reconciled: r.reconciled === true }
+      : {}),
   };
 }
 
@@ -141,6 +150,8 @@ export type DetailRaw = Omit<ListRowRaw, "category_ids" | "ord"> & {
   effect_outcome_at?: string | null;
   submit_round?: number;
   submitted_by?: string | null;
+  reconciled_by?: string | null;
+  reconciled_at?: string | null;
   /** CR-127 SG1: HĐ nhận chờ người phụ trách quyết (K8); lý do Trả lại gần nhất (HĐ DRAFT) + người gọi đã quyết ở một bước (BR-26). */
   awaiting_decision?: boolean;
   return_reason?: string | null;
@@ -220,6 +231,12 @@ function stateExtrasOf(r: DetailRaw, row: Omit<ContractListRow, "category_ids">,
     effect_outcome_at: r.effect_outcome_at ? iso(r.effect_outcome_at) : null,
     submit_round: r.submit_round ?? 0,
     submitted_by: r.submitted_by ?? null,
+    ...(r.entry_source === "manual"
+      ? {
+          reconciled_by: r.reconciled_by ?? null,
+          reconciled_at: r.reconciled_at ? iso(r.reconciled_at) : null,
+        }
+      : {}),
     awaiting_decision: r.awaiting_decision === true,
     return_reason: returnReasonOf(r, actor),
     can: canOf(

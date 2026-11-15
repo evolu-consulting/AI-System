@@ -438,7 +438,7 @@ test("1 · nhân viên: Tạo yêu cầu → phiếu «Đề xuất mua hàng» 
   test.setTimeout(300_000);
   const emp = await ctxPage(browser);
   await loginCw(emp, E, U.employee);
-  await emp.getByTestId("nav-contracts-requests").click();
+  await emp.goto(`${E.cw}/contracts/requests`); // CR-167: menu «Yêu cầu» đã gỡ, vào thẳng URL
   const item = emp.getByTestId("startable-flow").filter({ hasText: FLOW });
   await expect(item).toBeVisible({ timeout: 60_000 }); // mọi người trong công ty được bắt đầu
   await item.click();

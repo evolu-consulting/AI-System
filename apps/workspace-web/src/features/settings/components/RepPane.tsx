@@ -22,7 +22,7 @@ type Props = {
   onTab: (t: CellTab) => void;
   set: (d: RepData) => void;
 };
-const GROUPS = ["service", "goods", "referral"] as const;
+const GROUPS = ["service", "goods", "referral", "franchise", "cooperation"] as const;
 
 export function previewBody(
   d: RepData,

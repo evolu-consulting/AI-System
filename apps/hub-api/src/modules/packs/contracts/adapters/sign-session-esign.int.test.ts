@@ -17,6 +17,7 @@ import { contractsFactsReader } from "../flow-events.mount";
 import { onSignSessions, receiveInbox } from "../partner-mailbox.mount";
 import { esignRepo } from "./esign.repo";
 import { type SignSessionRepo, signSessionRepo } from "./sign-session.repo";
+import { receiveFlowFixture } from "./test/receive-flow.fixture";
 
 let o: Sql;
 let db: Db;
@@ -119,7 +120,7 @@ beforeAll(async () => {
   [UA] = (await users(o, A, 1, { from: 1707 })) as [string];
   [UB] = (await users(o, B, 1, { from: 1708 })) as [string];
   await o`insert into hub.partner_links (from_tenant, to_tenant, requested_at, accepted_at) values (${A}, ${B}, now(), now())`;
-  await o`insert into contracts.partner_settings (tenant_id, signer_group_id) values (${B}, gen_random_uuid())`;
+  await receiveFlowFixture(o, B, { signers: `group:${crypto.randomUUID()}` }); // CR-146b
   db = connectDb(urls().hubApi, 4);
 }, 60_000);
 afterAll(async () => {

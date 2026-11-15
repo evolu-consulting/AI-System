@@ -74,3 +74,17 @@ describe("CR-121 Q-1 · GET /admin/tenants?app=", () => {
     expect(by["q1-c"]).toEqual(["contracts"]); // zz-sales (cột); contracts-read đã thu hồi
   });
 });
+
+describe("CR-151 · GET /admin/tenants phân trang limit/offset", () => {
+  test("trang 2 đúng, không trùng trang 1, total không đổi theo trang, counts.all đủ", async () => {
+    const p1 = await listTenants(ctx, PLATFORM, { limit: 2, offset: 0 } as never);
+    const p2 = await listTenants(ctx, PLATFORM, { limit: 2, offset: 2 } as never);
+    expect(p1.items).toHaveLength(2);
+    expect(p2.items.length).toBeGreaterThanOrEqual(1);
+    const k1 = p1.items.map((t) => t.key);
+    expect(p2.items.some((t) => k1.includes(t.key))).toBe(false);
+    expect(p1.total).toBe(p2.total);
+    expect(p1.total).toBeGreaterThanOrEqual(3);
+    expect(p2.counts.all).toBe(p1.counts.all);
+  });
+});

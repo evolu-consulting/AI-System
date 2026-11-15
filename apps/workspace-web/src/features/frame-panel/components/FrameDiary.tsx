@@ -37,6 +37,8 @@ export function FrameDiary({
   const L = (k: string) => t(`contracts.docframe.${k}`);
   const nodes = mergeDiary(c.milestones, c.doc?.children ?? []);
   const canEdit = write && !c.locked;
+  // CR-154b · không có mốc/chứng từ nào và không thêm được ⇒ không hiện khung trống.
+  if (nodes.length === 0 && !canEdit) return null;
   return (
     <Panel>
       <div className="flex flex-wrap items-center gap-3 border-b border-rule-soft px-5 py-3.5">

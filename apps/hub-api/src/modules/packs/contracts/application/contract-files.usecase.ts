@@ -8,6 +8,7 @@ import {
   canAddContractFile,
   canRemoveContractFile,
   groupContractFiles,
+  isContractFilesLocked,
   MAX_CONTRACT_FILES,
   mimeByName,
   type OwnFileRow,
@@ -42,10 +43,14 @@ export type ContractFilesRepo = {
 export type ContractFilesRepos = { contractFiles: ContractFilesRepo };
 
 export class ContractFilesFail extends Error {
-  constructor(readonly kind: "not_found" | "forbidden" | "file_type" | "full") {
+  constructor(readonly kind: "not_found" | "forbidden" | "file_type" | "full" | "locked") {
     super(kind);
   }
 }
+
+const removeOrGone = async (repo: ContractFilesRepo, id: string, fileId: string) => {
+  if (!(await repo.remove(id, fileId))) throw new ContractFilesFail("not_found");
+};
 
 export type ContractFilesUsecases = ReturnType<typeof contractFilesUsecases>;
 
@@ -71,6 +76,7 @@ export function contractFilesUsecases(d: {
           canRemoveContractFile(own.facts, by, who.userId, role),
         ),
         can_add: canAddContractFile(own.facts, who.userId, role),
+        locked: isContractFilesLocked(own.facts),
       };
     },
     async add(who: PackWho, id: string, role: DeleteRole, f: { name: string; bytes: Uint8Array }) {
@@ -79,6 +85,7 @@ export function contractFilesUsecases(d: {
       const n = await d.uow.tenant(who, async (r) => {
         const facts = await r.contractFiles.facts(id);
         if (!facts) throw new ContractFilesFail("not_found");
+        if (isContractFilesLocked(facts)) throw new ContractFilesFail("locked");
         if (!canAddContractFile(facts, who.userId, role)) throw new ContractFilesFail("forbidden");
         return r.contractFiles.count(id);
       });
@@ -103,7 +110,12 @@ export function contractFilesUsecases(d: {
         });
       if (!ok) {
         await d.files.remove(org, put.fileId);
-        throw new ContractFilesFail("full");
+        // Đua: HĐ vừa rời Nháp giữa hai tx ⇒ khoá, không phải đủ trần.
+        const locked = await d.uow.tenant(who, async (r) => {
+          const f = await r.contractFiles.facts(id);
+          return !!f && isContractFilesLocked(f);
+        });
+        throw new ContractFilesFail(locked ? "locked" : "full");
       }
       return { id: row.id, name: row.name, mime, size: row.size };
     },
@@ -112,9 +124,10 @@ export function contractFilesUsecases(d: {
         const facts = await r.contractFiles.facts(id);
         const ref = facts ? await r.contractFiles.find(id, fileId) : null;
         if (!facts || !ref) throw new ContractFilesFail("not_found");
+        if (isContractFilesLocked(facts)) throw new ContractFilesFail("locked");
         if (!canRemoveContractFile(facts, ref.added_by, who.userId, role))
           throw new ContractFilesFail("forbidden");
-        if (!(await r.contractFiles.remove(id, fileId))) throw new ContractFilesFail("not_found");
+        await removeOrGone(r.contractFiles, id, fileId);
       });
     },
     /** Link tải ngắn hạn (FileBox); không thấy HĐ / tệp ⇒ null. */

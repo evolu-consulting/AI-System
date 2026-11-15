@@ -97,9 +97,21 @@ test("editor: HĐ chờ xác nhận ⇒ xác nhận hộp thoại rồi một PO
 
 test("editor: đọc lỗi ⇒ nút Thử lại gọi POST /extract", async ({ page }) => {
   const sent = await open(page, "editor", { status: "extract_failed", error: "AGENT_FAILED" });
-  await page.getByTestId("reextract").first().click();
+  await page.getByTestId("failed-more").click(); // CR-162: Thử lại nằm trong menu «⋯» của thẻ
+  await page.getByRole("menu").getByTestId("reextract").click(); // CR-166: menu vẽ ra ngoài thẻ (portal). (nút «AI đọc lại từ đầu» ở khung quản lý cùng testid)
   await page.getByTestId("reextract-confirm").click();
   await expect.poll(() => sent.filter((s) => s.path.endsWith("/extract")).length).toBe(1);
+});
+
+// CR-155: AI đọc quá lâu (máy chủ đổi `reading` → failed/TIMEOUT) ⇒ màn nói lý do + giữ tệp + đường tự nhập (Nhập tay) và Thử lại.
+test("editor: đọc hết giờ (TIMEOUT) ⇒ nêu «AI đọc quá lâu», có Nhập tay và Thử lại", async ({
+  page,
+}) => {
+  await open(page, "editor", { status: "draft", extract_state: "failed", error: "TIMEOUT" });
+  await expect(page.getByText(/AI đọc quá lâu/).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Nhập tay" })).toBeVisible(); // CR-157: nút (không còn link /contracts/c/new)
+  await page.getByTestId("failed-more").click();
+  await expect(page.getByRole("menu").getByTestId("reextract")).toBeVisible();
 });
 
 // CR-127 Q11: ca «Tạo tóm tắt bằng AI» đã xoá — thẻ Tóm tắt đã thay bằng «Điều cần lưu ý».

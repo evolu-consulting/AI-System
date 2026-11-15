@@ -20,6 +20,7 @@ import {
   readFrames,
 } from "../domain/messages.events";
 import { canEditGroup, dmKey, groupSizeOk, messageEmpty } from "../domain/messages.rules";
+import { type CompanyFilter, sourcesOf } from "../domain/partner.rules";
 import { leaveOrRemove, MsgFail, openDirect, openGroup, sendInTx } from "./messages.ops";
 import type {
   MessagesRepo,
@@ -37,6 +38,8 @@ import {
   summaryOf,
 } from "./messages.view";
 import { type MessagesFileOps, messagesFileOps } from "./messages-files.usecase";
+import { type DirectoryFn, partnerOps } from "./partner.usecase";
+import { partnerChatOps } from "./partner-chat.usecase";
 
 export { MsgFail };
 
@@ -56,6 +59,19 @@ async function retryOnRace<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * CR-169 · lỗi quyền PHẦN ĐỐI TÁC (`pmsg_ctx` ném 42501: người qua guard gói bằng quyền khác, không thuộc nhóm có contracts-read/write/admin) không được làm hỏng phần nội bộ:
+ * chạy lại bản chỉ-nội-bộ (tx mới; tx cũ đã huỷ). Lỗi khác ném lại.
+ */
+async function internalOnPartnerDenied<T>(full: () => Promise<T>, internalOnly: () => Promise<T>) {
+  try {
+    return await full();
+  } catch (e) {
+    if (pgCodeOf(e) === "42501") return internalOnly();
+    throw e;
+  }
+}
+
 /** Kiểm quyền thao tác NHÓM (đổi tên / thêm người) với khoá hàng hội thoại: 404 → 1-1 cố định (409) → chỉ chủ (403). */
 async function lockGroupAsOwner(r: MessagesRepo, me: string, cid: string) {
   const f = await r.facts(me, cid, true);
@@ -68,6 +84,8 @@ async function lockGroupAsOwner(r: MessagesRepo, me: string, cid: string) {
 type Deps = {
   uow: PackUow<MessagesRepos>;
   people: PeopleLookup;
+  /** CR-169 · danh bạ `own` (đồng nghiệp, CR-148); vắng ⇒ `own` trả rỗng (test không dùng danh bạ). */
+  directory?: DirectoryFn | undefined;
   newId: () => string;
   /** Phát `msg.*` tới `/me/stream` SAU commit (một pipeline Redis cho cả lô khung); vắng (không Redis) ⇒ không phát. Lỗi Redis chỉ log, không ném. */
   publish?: PackStreamPublishMany | undefined;
@@ -101,7 +119,7 @@ function context(d: Deps): Ctx {
 }
 
 /** Tạo hội thoại: 1-1 (tái dùng nếu đã có) và nhóm. */
-function creationOps(c: Ctx) {
+function creationOps(c: Ctx, partner: ReturnType<typeof partnerOps>) {
   const { d, emit, detail, active } = c;
   async function createDirect(who: PackWho, peer: string) {
     const me = who.userId;
@@ -139,6 +157,7 @@ function creationOps(c: Ctx) {
       who: PackWho,
       req: CreateConversationRequest,
     ): Promise<{ detail: ConversationDetail; created: boolean }> {
+      if (req.kind === "partner") return partner.createPartner(who, req);
       return req.kind === "direct"
         ? createDirect(who, req.user_id)
         : createGroup(who, req.title, req.member_ids);
@@ -152,11 +171,26 @@ function conversationOps(c: Ctx) {
   return {
     async list(
       who: PackWho,
-      q: { cursor: { at: string; id: string } | null; limit: number },
+      q: { cursor: { at: string; id: string } | null; limit: number; filter?: CompanyFilter },
     ): Promise<ConversationPage> {
-      const rows = await d.uow.tenant(who, (r) =>
-        r.messages.conversations(who.userId, q.cursor, q.limit + 1),
-      );
+      const filter: CompanyFilter = q.filter ?? { kind: "all" };
+      const source = sourcesOf(filter);
+      const loadPage = (src: typeof source) =>
+        d.uow.tenant(who, (r) =>
+          r.messages.conversations(who.userId, {
+            cursor: q.cursor,
+            limit: q.limit + 1,
+            source: src,
+            company: filter.kind === "company" ? filter.tenantId : null,
+          }),
+        );
+      // Chỉ lọc công ty (nguồn partner thuần) mới để lỗi quyền đi lên (403); `all`/`own` còn phần nội bộ.
+      const rows = source.internal
+        ? await internalOnPartnerDenied(
+            () => loadPage(source),
+            () => loadPage({ internal: true, partner: false }),
+          )
+        : await loadPage(source);
       const page = rows.slice(0, q.limit);
       const people = await peopleOf(who, page);
       const last = page[page.length - 1];
@@ -168,7 +202,11 @@ function conversationOps(c: Ctx) {
     },
 
     async unread(who: PackWho): Promise<UnreadResponse> {
-      return { total: await d.uow.tenant(who, (r) => r.messages.unread(who.userId)) };
+      const total = await internalOnPartnerDenied(
+        () => d.uow.tenant(who, (r) => r.messages.unread(who.userId)),
+        () => d.uow.tenant(who, (r) => r.messages.unread(who.userId, false)),
+      );
+      return { total };
     },
 
     async get(who: PackWho, cid: string): Promise<ConversationDetail> {
@@ -235,11 +273,16 @@ function readOps(c: Ctx) {
     },
 
     async markRead(who: PackWho, cid: string, seq: number): Promise<{ unread_total: number }> {
-      const out = await d.uow.tenant(who, async (r) => {
-        const row = await r.messages.markRead(who.userId, cid, seq);
-        if (row === null) throw new MsgFail("MSG_NOT_FOUND");
-        return { row, unread_total: await r.messages.unread(who.userId) };
-      });
+      const mark = (withPartner: boolean) =>
+        d.uow.tenant(who, async (r) => {
+          const row = await r.messages.markRead(who.userId, cid, seq);
+          if (row === null) throw new MsgFail("MSG_NOT_FOUND");
+          return { row, unread_total: await r.messages.unread(who.userId, withPartner) };
+        });
+      const out = await internalOnPartnerDenied(
+        () => mark(true),
+        () => mark(false),
+      );
       // Chỉ phát khi mốc đọc TIẾN (mở lại hội thoại đã đọc hết không sinh sự kiện).
       if (out.row.seq > out.row.prev)
         await emit(readFrames(cid, who.userId, out.row.seq, out.row.member_ids));
@@ -288,8 +331,25 @@ function sendOps(c: Ctx) {
 
 export function messagesUsecases(d: Deps) {
   const c = context(d);
+  const partner = partnerOps({
+    uow: d.uow,
+    people: d.people,
+    directory: d.directory ?? (async () => ({ items: [], next_cursor: null })),
+    emit: c.emit,
+  });
+  const partnerChat = partnerChatOps({
+    uow: d.uow,
+    people: d.people,
+    emit: c.emit,
+    files: d.files,
+    fileOps: c.fileOps,
+    newId: d.newId,
+  });
   return {
-    ...creationOps(c),
+    ...partnerChat,
+    ...creationOps(c, partner),
+    people: partner.people,
+    companies: partner.companies,
     ...conversationOps(c),
     ...memberOps(c),
     ...readOps(c),

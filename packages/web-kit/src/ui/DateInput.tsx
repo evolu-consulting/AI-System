@@ -78,7 +78,7 @@ const S = {
     color: "inherit",
     cursor: "pointer",
   },
-  foot: { display: "flex", justifyContent: "space-between", marginTop: 8 },
+  foot: { display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8 },
   link: {
     border: 0,
     background: "transparent",
@@ -159,6 +159,7 @@ function Calendar(p: {
             );
           })}
       </div>
+      {/* button-gap-ok: S.foot có gap: 8 */}
       <div style={S.foot}>
         <button type="button" style={S.link} onClick={() => p.onPick(today)}>
           Hôm nay

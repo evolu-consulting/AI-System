@@ -7,6 +7,7 @@ import {
   type DealErrorCode,
   DOC_ERRORS,
   LOCK_ERRORS,
+  MANUAL_ENTRY_ERRORS,
   PromoteFormSchema,
   UploadContractFormSchema,
   UploadDocFormSchema,
@@ -20,7 +21,11 @@ import { parseWith } from "../../../../lib/http";
 import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import type { PromoteContract } from "../application/promote-contract.usecase";
 import { type UploadDoc, UploadError } from "../application/upload-contract.ports";
-import type { UploadContract, UploadContractInput } from "../application/upload-contract.usecase";
+import type {
+  ReplaceContractFile,
+  UploadContract,
+  UploadContractInput,
+} from "../application/upload-contract.usecase";
 import { dealDbCode } from "../domain/deal.rules";
 import { unreadableFormat } from "../domain/upload.rules";
 import { imagesToPdf } from "./images-pdf";
@@ -38,6 +43,8 @@ export type UploadRoutesDeps = {
   upload: UploadContract;
   /** CR-101 DOC-deals · R10: nâng giao dịch thành HĐ (vắng ⇒ route không gắn). */
   promote?: PromoteContract;
+  /** CR-157b · «Tải tệp khác» (vắng ⇒ route không gắn). */
+  replace?: ReplaceContractFile;
   maxBytes: number;
   timeZoneOf: (tenantId: string) => Promise<string>;
 };
@@ -58,6 +65,8 @@ const MESSAGES: Record<UploadError["code"], string> = {
   CONTRACT_NOT_LOCKED: "Contract is not confirmed",
   VERSION_DRAFT_EXISTS: "An updated version is already pending",
   USE_VERSIONS: "Appendices are no longer created — upload an updated version",
+  REPLACE_NOT_ALLOWED: "Chỉ thay được tệp khi hợp đồng là nháp và AI đọc lỗi",
+  FORBIDDEN: "Chỉ người tạo hoặc người phụ trách được thay tệp",
 };
 const STATUS = {
   ...CONTRACT_ERRORS,
@@ -67,6 +76,8 @@ const STATUS = {
   FRAME_INVALID: DOC_ERRORS.FRAME_INVALID,
   DOCX_BUSY: 503,
   NOT_FOUND: 404,
+  FORBIDDEN: 403,
+  REPLACE_NOT_ALLOWED: MANUAL_ENTRY_ERRORS.REPLACE_NOT_ALLOWED,
   FILE_TOO_MANY_PAGES: 422,
   ESIGN_NEEDS_PDF: 422,
 } as const;
@@ -275,6 +286,24 @@ export function uploadRoutes(view: PackAccessView, d: UploadRoutesDeps): Hono<Pa
       supersedes: id,
     });
   });
+  // CR-157b · «Tải tệp khác»: HĐ DRAFT + AI đọc lỗi ⇒ thay tệp rồi AI đọc lại. Cùng đường kiểm tệp/quota/kho với tải lên.
+  const replace = d.replace;
+  if (replace)
+    r.post("/contracts/:id/replace-file", write, limit, async (c) => {
+      const id = parseWith(z.uuid(), c.req.param("id"));
+      const x = await readUpload(c, d.maxBytes);
+      try {
+        const out = await replace({ ...x, id, timeZone: await d.timeZoneOf(x.who.tenantId) });
+        return c.json({
+          id,
+          status: "draft",
+          extract_state: out.extractState,
+          version: out.version,
+        });
+      } catch (e) {
+        throw e instanceof UploadError ? toAppError(e) : e;
+      }
+    });
   if (d.promote) r.route("/", promoteRoute(d.promote, write, limit, d.maxBytes, d.timeZoneOf));
   return r;
 }

@@ -142,16 +142,6 @@ async function reconcileGroups(c: Ctx, spec: OnboardSpec): Promise<void> {
   console.log(`${TAG}: nhóm — thêm ${added} thành viên, bớt ${removed}`);
 }
 
-// ── 3b. CR-141 · nhóm «Người ký HĐ» là người ký mặc định của bước Ký hợp đồng (`partner_settings.signer_group_id`, cũng hiện ở Cài đặt › Ký & đối tác) ──
-async function setSignerGroup(c: Ctx): Promise<void> {
-  const r = await c.sql`insert into contracts.partner_settings (tenant_id, signer_group_id)
-    select ${c.tid}::uuid, g.id from admin.groups g where g.tenant_id = ${c.tid}::uuid and g.key = 'nguoi-ky-hd'
-    on conflict (tenant_id) do update set signer_group_id = excluded.signer_group_id, updated_at = now()
-    returning 1`;
-  if (r.length === 0) fail("thiếu nhóm nguoi-ky-hd để đặt người ký mặc định");
-  console.log(`${TAG}: người ký HĐ mặc định = nhóm nguoi-ky-hd`);
-}
-
 // ── 4. quy trình duyệt (starter_head) ──
 async function flows(): Promise<void> {
   const p = Bun.spawn(["bun", "tools/scripts/src/seed-cr128-flows.ts", "--skip-check"], {
@@ -262,10 +252,25 @@ async function taskState(c: Ctx, s: Sample): Promise<{ open: number; approverSee
   return { open: run.open, approverSees: hit };
 }
 
+/** CR-150 · HĐ mẫu ĐÃ được người dùng thao tác (có việc duyệt không còn «mở», hoặc không còn việc mở): chạy lại seed không kiểm «người duyệt đầu thấy việc» nữa. */
+async function touched(c: Ctx, s: Sample): Promise<boolean> {
+  const r = await c.sql`select 1 from hub.process_runs r
+    where r.pack_key = 'contracts' and r.pack_record_id = ${sampleId(s.n)}::uuid and r.status not in ('cancelled','failed','expired')
+      and (exists (select 1 from hub.review_tasks t where t.process_run_id = r.id and t.status <> 'open')
+        or not exists (select 1 from hub.review_tasks t where t.process_run_id = r.id and t.status = 'open'))
+      and exists (select 1 from hub.review_tasks t where t.process_run_id = r.id)
+    limit 1`;
+  return r.length > 0;
+}
+
 async function samples(c: Ctx): Promise<void> {
   for (const s of SAMPLES) await submitSample(c, s);
   // chờ bộ điều phối mở việc (tối đa 30 s, thoát ngay khi thấy) rồi kiểm ai nhận việc
   for (const s of SAMPLES) {
+    if (await touched(c, s)) {
+      console.log(`${TAG}: HĐ ${s.n} đã được thao tác — bỏ qua kiểm người nhận việc đầu`);
+      continue;
+    }
     let st = { open: 0, approverSees: false };
     for (const end = Date.now() + 30_000; Date.now() < end; ) {
       st = await taskState(c, s);
@@ -315,7 +320,6 @@ async function main(): Promise<void> {
     const spec = await loadSpec();
     await onboard(c, spec);
     await reconcileGroups(c, spec);
-    await setSignerGroup(c);
     await flows();
     await cleanup(c);
     await samples(c);
