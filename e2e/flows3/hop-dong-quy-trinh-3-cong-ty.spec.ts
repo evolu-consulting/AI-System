@@ -15,6 +15,7 @@ import {
   pickPartner,
   RUN,
   reloadUntil,
+  settled,
   signAndAsk,
   statusOf,
   submit,
@@ -244,17 +245,19 @@ test("FL3-6 · Quyền: người khác (không được giao) không có nút Du
   for (const u of [WHO.n.ktNv, WHO.n.ktNv2, WHO.n.phogd, WHO.n.giamdoc]) {
     const p = await as(browser, "n", u);
     await p.goto(`${EN.cw}/contracts/c/${id}`);
-    await p.waitForLoadState("networkidle");
+    await settled(p);
     await expect(p.getByTestId(BTN), `${u} không được thấy nút Duyệt`).toHaveCount(0);
   }
-  // «Việc của tôi» của người tạo không có bước duyệt chính HĐ của mình
-  await hoa.goto(`${EN.cw}/contracts/approvals`);
-  await hoa.waitForLoadState("networkidle");
-  await expect(
-    hoa
+  // «Việc của tôi»: trưởng phòng CÓ việc «Trưởng phòng duyệt», người tạo KHÔNG có việc duyệt chính HĐ của mình
+  const rowsOf = (p: typeof hoa) =>
+    p
       .getByTestId(/^(requests-waiting-row|approval-task-row)$/)
-      .filter({ hasText: "Trưởng phòng duyệt" }),
-  ).toHaveCount(0);
+      .filter({ hasText: "Trưởng phòng duyệt" });
+  await truong.goto(`${EN.cw}/contracts/approvals`);
+  await expect(rowsOf(truong).first()).toBeVisible({ timeout: 30_000 });
+  await hoa.goto(`${EN.cw}/contracts/approvals`);
+  await expect(hoa.getByRole("heading").first()).toBeVisible();
+  await expect(rowsOf(hoa)).toHaveCount(0);
   // sau khi trưởng phòng duyệt, bước Ký chỉ của Giám đốc: những người khác không có ô «tải bản đã ký»
   await approveStep(truong, EN, id, "Trưởng phòng duyệt");
   const tien = await as(browser, "n", WHO.n.giamdoc);
@@ -265,7 +268,7 @@ test("FL3-6 · Quyền: người khác (không được giao) không có nút Du
   for (const u of [WHO.n.ktNv, WHO.n.ktNv2, WHO.n.phogd, WHO.n.ktTruong]) {
     const p = await as(browser, "n", u);
     await p.goto(`${EN.cw}/contracts/c/${id}`);
-    await p.waitForLoadState("networkidle");
+    await settled(p);
     await expect(p.getByTestId("signed-upload-box"), `${u} không được thấy ô Ký`).toHaveCount(0);
   }
 });

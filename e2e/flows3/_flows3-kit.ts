@@ -169,6 +169,7 @@ export async function declineStep(
   reason: string,
 ): Promise<void> {
   await openStep(p, e, id, name);
+  await p.getByRole("button", { name: "Thao tác" }).click(); // Trả lại / Từ chối nằm trong menu «Thao tác»
   await p.getByTestId(kind === "return" ? "act-return" : "act-reject").click();
   const form = p.locator("form[data-approval=reason]");
   await expect(form).toBeVisible();
@@ -226,15 +227,31 @@ export async function openReceived(p: Page, e: Env, tag: string): Promise<string
     .filter({ has: p.getByTestId("row-view") })
     .filter({ hasText: `E2E-JOURNEY-${RUN}${tag}` })
     .first();
-  await p.goto(`${e.cw}/contracts/list?source=partner`);
   await reloadUntil(p, async () => {
-    if (await invite.isVisible().catch(() => false)) {
+    // lời mời nối lần đầu hiện ở băng đầu danh sách «Hợp đồng» (không ở bộ lọc Đối tác gửi)
+    await p.goto(`${e.cw}/contracts/list`);
+    if (await invite.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await invite.getByRole("button", { name: /Nhận/ }).click();
       await expect(p.getByTestId("partner-invite")).toHaveCount(0);
     }
+    await p.goto(`${e.cw}/contracts/list?source=partner`);
     await expect(row).toBeVisible({ timeout: 4_000 });
   });
   await row.getByTestId("row-view").click();
   await p.waitForURL(/\/contracts\/c\/[0-9a-f-]{36}/, { timeout: 30_000 });
   return /\/contracts\/c\/([0-9a-f-]{36})/.exec(p.url())?.[1] ?? "";
+}
+
+/** Trang HĐ đã tải xong phần nhìn thấy được: có chip trạng thái, hoặc lời báo không xem được (người ngoài cuộc). Không dùng `networkidle` (luồng sự kiện mở liên tục). */
+export async function settled(p: Page): Promise<void> {
+  await expect(
+    statusOf(p)
+      .first()
+      .or(
+        p
+          .locator("main")
+          .getByText(/quyền|không tìm thấy|không có/i)
+          .first(),
+      ),
+  ).toBeVisible({ timeout: 45_000 });
 }
