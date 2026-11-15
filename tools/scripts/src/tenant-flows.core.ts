@@ -1,6 +1,7 @@
 // CR-159 · lõi của `bun run tenant:flows` — đi ĐÚNG đường màn Quy trình của admin nền tảng (CR-127), không INSERT tay:
 //   GET /tenants/:tid/company-flows → (chưa có) POST sơ đồ trống → PUT /process-defs/:id (bước) → POST …/company-flows/apply → PUT …/order.
 // Chạy lại an toàn: quy trình cùng TÊN đã có, đã Bật + đã áp dụng và bước/trigger đã đúng ⇒ bỏ qua (không PUT, không đổi version).
+// CR-165: quy trình đang Bật mà TÊN không còn trong bộ (vd phiếu cũ) ⇒ TẮT (PATCH enabled=false), không xoá.
 // `Call` là cổng HTTP (CLI: fetch tới hub-api; int test: Hono in-process) ⇒ lõi không biết mạng.
 import { bindGroupKeys } from "../../../apps/hub-api/src/modules/processes/public";
 import type { FlowDef } from "./tenant-flows.data";
@@ -9,7 +10,7 @@ import type { FlowDef } from "./tenant-flows.data";
 export type Json = Record<string, any>;
 export type Res = { status: number; json: Json };
 export type Call = (method: string, path: string, body?: unknown) => Promise<Res>;
-export type Action = "created" | "updated" | "unchanged";
+export type Action = "created" | "updated" | "unchanged" | "disabled";
 export type Report = { name: string; action: Action };
 
 const fail = (msg: string): never => {
@@ -98,7 +99,25 @@ async function ensureOne(c: Ctx, def: FlowDef, dryRun: boolean): Promise<Action>
   return action;
 }
 
-/** Dựng/cập nhật mọi quy trình của công ty; xong tự kiểm: tất cả Bật + đã áp dụng (trừ dry-run). */
+/** Tắt quy trình đang Bật mà không còn trong bộ (không xoá; đã tắt rồi thì bỏ qua). `dryRun` ⇒ chỉ báo. */
+async function retireExtras(c: Ctx, defs: readonly FlowDef[], dryRun: boolean): Promise<Report[]> {
+  const keep = new Set(defs.map((d) => d.name));
+  const rows = must(await c.hub("GET", `/tenants/${c.tid}/company-flows`), [200], "đọc danh sách")
+    .items as Json[];
+  const out: Report[] = [];
+  for (const r of rows.filter((x) => x.enabled === true && !keep.has(String(x.name)))) {
+    if (!dryRun)
+      must(
+        await c.hub("PATCH", `/tenants/${c.tid}/company-flows/${r.id}`, { enabled: false }),
+        [200],
+        `tắt «${r.name}»`,
+      );
+    out.push({ name: String(r.name), action: "disabled" });
+  }
+  return out;
+}
+
+/** Dựng/cập nhật mọi quy trình của công ty (rồi tắt quy trình thừa); xong tự kiểm: tất cả Bật + đã áp dụng (trừ dry-run). */
 export async function applyTenantFlows(
   c: Ctx,
   defs: readonly FlowDef[],
@@ -106,6 +125,7 @@ export async function applyTenantFlows(
 ): Promise<Report[]> {
   const out: Report[] = [];
   for (const d of defs) out.push({ name: d.name, action: await ensureOne(c, d, o.dryRun) });
+  out.push(...(await retireExtras(c, defs, o.dryRun)));
   if (o.dryRun) return out;
   const rows = must(await c.hub("GET", `/tenants/${c.tid}/company-flows`), [200], "kiểm")
     .items as Json[];

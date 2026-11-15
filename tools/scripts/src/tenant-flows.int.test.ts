@@ -1,5 +1,6 @@
 // CR-159 · int (Hono thật defs + company-flows + DB thật): `applyTenantFlows` dựng quy trình cho 3 công ty evolu / nitigroup / preschool
 // đúng số lượng, đúng người ở từng bước; dry-run không ghi; chạy lần 2 không đổi gì (version giữ nguyên, kết quả «unchanged»).
+// CR-165 · đi từng bước theo def ĐÃ LƯU (`walk`): HĐ gửi đi → duyệt → ký → «Nhờ đối tác ký?» Có / Không; chạy lại trên công ty có quy trình cũ.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Role } from "@ai/contracts/common";
 import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
@@ -12,10 +13,12 @@ import { mapError } from "../../../apps/hub-api/src/lib/errors";
 import type { ProcessDeps } from "../../../apps/hub-api/src/modules/processes/core/ports";
 import { defsRoutes } from "../../../apps/hub-api/src/modules/processes/defs/defs.routes";
 import { companyFlowsRoutes } from "../../../apps/hub-api/src/modules/processes/library/company-flows.routes";
+import { NEVER_TRIGGER } from "./seed-purchase-flow.kit";
 import { applyTenantFlows, type Call, type Json, must } from "./tenant-flows.core";
 import {
   emailsOf,
   FLOW_NAMES,
+  type FlowDef,
   flowsFor,
   PICK_GROUP,
   TENANT_KEYS,
@@ -87,6 +90,8 @@ beforeAll(async () => {
       P("send_fields"),
       P("reply_days", "number"),
       P("assignee_group"),
+      P("sign_together", "boolean"),
+      P("sign_reason"),
     ],
   };
   const packTools = {
@@ -155,6 +160,53 @@ async function expectNoOldBranch(k: TenantKey): Promise<void> {
     expect(text).not.toContain(FALLBACK);
   }
 }
+
+type Step = { key: string; who: string };
+const SYSTEM = "(hệ thống)";
+/**
+ * Đi MỘT lượt theo def đã lưu như engine (nhánh vui): `if` theo dữ kiện / ô form đã trả lời, bước Duyệt và Làm việc ghi người làm
+ * (`approver_user_id` ⇒ email; `starter_head` ⇒ trưởng phòng của người tạo, tự leo cấp), bước hệ thống (Ký, Gửi, Chờ) ghi SYSTEM.
+ * Dừng ở bước Kết thúc; trả danh sách bước đã qua + bước Kết thúc.
+ */
+/** Bước kế của `if` theo dữ kiện «người tạo là cấp cao nhất» hoặc ô form đã trả lời. */
+function ifNext(ex: Json, st: St, top: boolean, answers: Record<string, string>): number {
+  const c = (ex.when.conds as Json[])[0] as Json;
+  const hit =
+    c.from.kind === "fact"
+      ? top && c.from.key === "starter_is_top"
+      : answers[c.from.field] === c.value;
+  return hit ? ex.then_step : (ex.else_step ?? st.step + 1);
+}
+async function walk(
+  k: TenantKey,
+  flow: string,
+  creator: string,
+  answers: Record<string, string> = {},
+): Promise<{ steps: Step[]; end: St }> {
+  const org = readOrg(k);
+  const stages = (await defOf(k, flow)).stages as St[];
+  const mail = new Map([...(ids.get(k) as Map<string, string>)].map(([e, id]) => [id, e]));
+  const head = headOfCreator(org, creator) as string;
+  const steps: Step[] = [];
+  let st = stages.find((s) => s.step === 0) as St;
+  for (let n = 0; n < 40; n++) {
+    if (st.outcome !== undefined) return { steps, end: st };
+    const ex = st.executor;
+    const id = st.after?.approver_user_id as string | undefined;
+    const human = ex.kind === "approve" || ex.kind === "form";
+    steps.push({ key: st.key, who: human ? (mail.get(id as string) ?? head) : SYSTEM });
+    const to =
+      ex.kind === "if"
+        ? ifNext(ex, st, creator === org.rootHead, answers)
+        : (st.next_step ?? st.step + 1);
+    st = stages.find((s) => s.step === to) as St;
+  }
+  throw new Error("vòng lặp");
+}
+const keysOf = (r: { steps: Step[] }) => r.steps.map((s) => s.key);
+const whoAt = (r: { steps: Step[] }, key: string) => r.steps.find((s) => s.key === key)?.who;
+const NO = { nho_doi_tac: "khong" };
+const YES = { nho_doi_tac: "co" };
 
 describe("CR-159 · quy trình 3 công ty", () => {
   it("dry-run: nói sẽ tạo, không ghi gì", async () => {
@@ -265,5 +317,116 @@ describe("CR-159 · quy trình 3 công ty", () => {
         before.map((r) => [r.id, r.def_version, r.rel_version, r.position]),
       );
     }
+  });
+
+  it("CR-165 (a) nitigroup: nhân viên tạo ⇒ Tiên duyệt ⇒ Tiên ký ⇒ chọn Không ⇒ Kết thúc «Đã duyệt» (nội bộ)", async () => {
+    const { tien, vy } = WHO.nitigroup;
+    const r = await walk("nitigroup", FLOW_NAMES.send, vy, NO);
+    expect(keysOf(r)).toEqual([
+      "re-nhanh",
+      "truong-phong",
+      "chuan-bi-ky",
+      "ky-so",
+      "cho-ky",
+      "nho-doi-tac",
+      "re-doi-tac",
+    ]);
+    expect(whoAt(r, "truong-phong")).toBe(tien); // người duyệt khác người tạo
+    expect(whoAt(r, "chuan-bi-ky")).toBe(tien);
+    expect(whoAt(r, "nho-doi-tac")).toBe(tien); // người ký quyết
+    expect(r.end.key).toBe("ket-thuc-noi-bo");
+    expect(r.end.outcome).toBe("approved");
+    expect(r.end.name).toBe("Kết thúc · Đã duyệt");
+  });
+
+  it("CR-165 (b) nitigroup: Tiên tự tạo ⇒ không bước duyệt ⇒ ký ⇒ chọn Có ⇒ tới bước chọn đối tác, gửi kèm đề nghị ký cùng lúc", async () => {
+    const { tien } = WHO.nitigroup;
+    const r = await walk("nitigroup", FLOW_NAMES.send, tien, YES);
+    expect(keysOf(r)).toEqual([
+      "re-nhanh",
+      "chuan-bi-ky",
+      "ky-so",
+      "cho-ky",
+      "nho-doi-tac",
+      "re-doi-tac",
+      "chon-doi-tac",
+      "gui-doi-tac",
+      "cho-doi-tac",
+    ]);
+    expect(whoAt(r, "chon-doi-tac")).toBe(tien);
+    expect(r.end.key).toBe("ket-thuc-approved");
+    expect(r.end.name).toBe("Kết thúc · Đã xác nhận");
+    const def = await defOf("nitigroup", FLOW_NAMES.send);
+    const gui = (def.stages as St[]).find((s) => s.key === "gui-doi-tac") as St;
+    expect(gui.executor.args.sign_together).toEqual({ from: "const", value: true });
+    expect(gui.executor.args.sign_reason.value.length).toBeGreaterThan(0);
+  });
+
+  it("CR-165 (c) preschool: Dung tạo ⇒ chuẩn bị ký ⇒ ký ⇒ chọn Có ⇒ tới bước chọn đối tác; evolu: Julian tạo ⇒ Thomas duyệt ⇒ chọn Không", async () => {
+    const { dung } = WHO.preschool;
+    const r = await walk("preschool", FLOW_NAMES.send, dung, YES);
+    expect(keysOf(r)).toEqual([
+      "chuan-bi-ky",
+      "ky-so",
+      "cho-ky",
+      "nho-doi-tac",
+      "re-doi-tac",
+      "chon-doi-tac",
+      "gui-doi-tac",
+      "cho-doi-tac",
+    ]);
+    expect(whoAt(r, "nho-doi-tac")).toBe(dung);
+    expect(whoAt(r, "chon-doi-tac")).toBe(dung);
+    const { thomas, julian } = WHO.evolu;
+    const e = await walk("evolu", FLOW_NAMES.send, julian, NO);
+    expect(whoAt(e, "truong-phong")).toBe(thomas);
+    expect(whoAt(e, "nho-doi-tac")).toBe(thomas);
+    expect(e.end.key).toBe("ket-thuc-noi-bo");
+  });
+
+  it("CR-165: Nhận hợp đồng từ đối tác không có bước «Nhờ đối tác ký?» và vẫn kết thúc Đồng ý", async () => {
+    const r = await walk("nitigroup", FLOW_NAMES.receive, WHO.nitigroup.vy);
+    expect(keysOf(r)).not.toContain("nho-doi-tac");
+    expect(r.end.outcome).toBe("confirmed");
+  });
+
+  it("CR-165: chạy lại trên công ty có quy trình cũ ⇒ thay sơ đồ cùng tên (không trùng), tắt quy trình thừa (không xoá), lần sau không đổi", async () => {
+    const k: TenantKey = "preschool";
+    const dung = WHO.preschool.dung;
+    const [send, recv] = flowsFor(k, uidOf(k)) as [FlowDef, FlowDef];
+    const phieu: FlowDef = {
+      ...recv,
+      name: "Đề nghị mua hàng / thanh toán",
+      trigger: NEVER_TRIGGER,
+    };
+    const oldSend: FlowDef = { ...send, stages: recv.stages }; // sơ đồ cũ: chưa có bước «Nhờ đối tác ký?»
+    await applyTenantFlows(ctx(k), [oldSend, recv, phieu], opt(false));
+    expect(await list(k)).toHaveLength(3);
+    expect(keysOf(await walk(k, FLOW_NAMES.send, dung))).not.toContain("nho-doi-tac");
+
+    const dry = await applyTenantFlows(ctx(k), flowsFor(k, uidOf(k)), opt(true));
+    const got = dry.map((r) => `${r.name}:${r.action}`).sort();
+    expect(got).toEqual(
+      [
+        `${FLOW_NAMES.send}:updated`,
+        `${FLOW_NAMES.receive}:unchanged`,
+        `${phieu.name}:disabled`,
+      ].sort(),
+    );
+    expect((await list(k)).find((r) => r.name === phieu.name)?.enabled).toBe(true); // dry-run không ghi
+
+    await applyTenantFlows(ctx(k), flowsFor(k, uidOf(k)), opt(false));
+    const rows = await list(k);
+    expect(rows).toHaveLength(3); // không tạo trùng, không xoá
+    const on = rows.filter((r) => r.enabled === true).map((r) => r.name);
+    expect(on.sort()).toEqual([FLOW_NAMES.send, FLOW_NAMES.receive].sort());
+    expect(rows.find((r) => r.name === phieu.name)?.enabled).toBe(false);
+    expect(keysOf(await walk(k, FLOW_NAMES.send, dung, YES))).toContain("nho-doi-tac");
+
+    const snap = (xs: Json[]) =>
+      xs.map((r) => [r.id, r.def_version, r.rel_version, r.position, r.enabled]);
+    const again = await applyTenantFlows(ctx(k), flowsFor(k, uidOf(k)), opt(false));
+    expect(again.every((r) => r.action === "unchanged")).toBe(true);
+    expect(snap(await list(k))).toEqual(snap(rows));
   });
 });

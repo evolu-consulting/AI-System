@@ -2,6 +2,8 @@
 // Người = email trong `deploy/tenants/<key>.yaml` (script tra id người dùng thật ở công ty đó rồi truyền vào `flowsFor`).
 // Mỗi công ty tối đa 3 quy trình, KHÔNG ngưỡng tiền; mọi bước Duyệt có Duyệt / Trả lại về người tạo / Từ chối (bước Kết thúc riêng):
 //   «Duyệt hợp đồng gửi đi» (contract.submitted) · «Nhận hợp đồng từ đối tác» (contract.received + người phụ trách ở trigger.params).
+// CR-165: «Duyệt hợp đồng gửi đi» = [duyệt đầu] → Chuẩn bị ký → Ký → Chờ ký xong → «Nhờ đối tác ký / xác nhận?» (trưởng gốc chọn) →
+//   Có ⇒ Gửi đối tác (chọn đối tác & người nhận → gửi kèm đề nghị ký cùng lúc → chờ trả lời) · Không ⇒ Kết thúc «Đã duyệt» (HĐ có hiệu lực nội bộ).
 // CR-167: bỏ quy trình phiếu «Đề nghị mua hàng / thanh toán» (định nghĩa lại sau); công ty chỉ còn 2 quy trình.
 // CR-160: HĐ gửi đi mở bằng nhánh `if starter_is_top` (người gửi là trưởng phòng gốc ⇒ bỏ duyệt) thay nhánh theo phòng; không còn đích dự phòng cho cấp cao nhất.
 // Người duyệt cụ thể = `after.approver_user_id` (người dùng thật của công ty, không tạo nhóm). Không còn «Quá hạn chuyển cho» (người thay thế): chỉ trưởng phòng
@@ -57,6 +59,14 @@ export const emailsOf = (key: TenantKey): string[] => Object.values(WHO[key]);
 type To = { reject: number; ret: number };
 type Uid = (email: string) => string;
 const SIGN_PROVIDER = "upload"; // «Ký qua» = tải bản đã ký
+/** CR-165 · gửi kèm «Đề nghị ký cùng lúc» (CR-127 P2: đối tác trên Evolu đồng ý trước; đối tác ngoài Evolu: bỏ qua, ký qua link như cũ). */
+const PARTNER_CFG = (group: string) => ({
+  send_fields: "total_value",
+  reply_days: 7,
+  assignee_group: group,
+  sign_together: true,
+  sign_reason: "Phía chúng tôi đã ký, xin quý công ty ký cùng lúc",
+});
 
 const personAfter = (uid: string, backup?: string, o: Record<string, unknown> = {}) => {
   const { group_key: _k, ...after } = reviewNew("") as Record<string, unknown>;
@@ -113,19 +123,25 @@ const partner = (
   group: string,
   go: { returned: number; declined: number },
 ): Stage[] =>
-  partnerSend(step, { send_fields: "total_value", reply_days: 7, assignee_group: group }, go).map(
-    (s) =>
-      (s as { key?: string }).key === "chon-doi-tac"
-        ? {
-            ...s,
-            after: personAfter(picker, undefined, { exclude_starter: false, group_key: group }),
-          }
-        : s,
+  partnerSend(step, PARTNER_CFG(group), go).map((s) =>
+    (s as { key?: string }).key === "chon-doi-tac"
+      ? {
+          ...s,
+          after: personAfter(picker, undefined, { exclude_starter: false, group_key: group }),
+        }
+      : s,
   );
-/** «Người gửi là cấp cao nhất?» (CR-160, dữ kiện `starter_is_top`: người gửi là trưởng phòng gốc): Đúng ⇒ bỏ bước duyệt (`skip`), Sai ⇒ trưởng phòng (`head`). */
-const ifTop = (step: number, skip: number, head: number): Stage => ({
-  key: "re-nhanh",
-  name: "Người gửi là cấp cao nhất?",
+/** Node «Nếu» đứng một mình: `cond` đúng ⇒ `then`, sai ⇒ `otherwise`. */
+const ifStage = (
+  key: string,
+  name: string,
+  step: number,
+  cond: Record<string, unknown>,
+  then: number,
+  otherwise: number,
+): Stage => ({
+  key,
+  name,
   step,
   instruction: "",
   real_action: false,
@@ -137,16 +153,61 @@ const ifTop = (step: number, skip: number, head: number): Stage => ({
   autofix: null,
   executor: {
     kind: "if",
-    when: {
-      op: "and",
-      conds: [{ from: { kind: "fact", key: "starter_is_top" }, op: "eq", value: true }],
-    },
-    then_step: skip,
-    else_step: head,
+    when: { op: "and", conds: [cond] },
+    then_step: then,
+    else_step: otherwise,
   },
-  output: { filename: "re-nhanh.md", template: "x", required_sections: ["x"], fields: [] },
+  output: { filename: `${key}.md`, template: "x", required_sections: ["x"], fields: [] },
   after: { kind: "auto", branch: [] },
 });
+/** «Người gửi là cấp cao nhất?» (CR-160, dữ kiện `starter_is_top`: người gửi là trưởng phòng gốc): Đúng ⇒ bỏ bước duyệt (`skip`), Sai ⇒ trưởng phòng (`head`). */
+const ifTop = (step: number, skip: number, head: number): Stage =>
+  ifStage(
+    "re-nhanh",
+    "Người gửi là cấp cao nhất?",
+    step,
+    { from: { kind: "fact", key: "starter_is_top" }, op: "eq", value: true },
+    skip,
+    head,
+  );
+const ASK = { stage: "nho-doi-tac", field: "nho_doi_tac", yes: "co", no: "khong" } as const;
+const ASK_LABEL = "Nhờ đối tác ký / xác nhận trên hệ thống?";
+/** CR-165 · bước quyết do người ký làm (form một ô Có / Không); người tạo cũng được làm (không loại người gửi). */
+const askPartner = (step: number, signer: string): Stage => {
+  const s = workBy(ASK.stage, "Nhờ đối tác ký?", step, signer, [txt("x", "x")]);
+  return {
+    ...s,
+    executor: {
+      kind: "form",
+      fields: [
+        {
+          key: ASK.field,
+          label: ASK_LABEL,
+          type: "select",
+          required: true,
+          options: [
+            { value: ASK.yes, label: "Có" },
+            { value: ASK.no, label: "Không" },
+          ],
+        },
+      ],
+    },
+    output: {
+      ...(s.output as Record<string, unknown>),
+      fields: [{ key: ASK.field, type: "string", required: false }],
+    },
+  };
+};
+/** Có ⇒ khối Gửi đối tác (`yes`), Không ⇒ Kết thúc nội bộ (`no`). */
+const ifAsk = (step: number, yes: number, no: number): Stage =>
+  ifStage(
+    "re-doi-tac",
+    ASK_LABEL,
+    step,
+    { from: { kind: "field", stage_key: ASK.stage, field: ASK.field }, op: "eq", value: ASK.yes },
+    yes,
+    no,
+  );
 const finishes = (at: number, ok: [string, string]) => [
   finish(at, ok[0], ok[1]),
   finish(at + 1, ok[0] === "confirmed" ? "declined" : "rejected", "Từ chối"),
@@ -181,17 +242,24 @@ function gate(org: Org, step: number, to: To, top: string, kind: Kind): Gate {
   };
 }
 const topOf = (org: Org, uid: Uid): string => uid(org.rootHead as string);
-/** HĐ gửi đi: [duyệt đầu] → Ký (trưởng gốc) → Gửi đối tác xác nhận → Kết thúc. */
+/**
+ * HĐ gửi đi: [duyệt đầu] → Ký (trưởng gốc) → Chờ ký xong → «Nhờ đối tác ký?» (trưởng gốc) → Nếu Có ⇒ Gửi đối tác (3 bước) → Kết thúc «Đã xác nhận» ·
+ * Không ⇒ Kết thúc «Đã duyệt» (nội bộ). Kết thúc: Đã xác nhận · Từ chối · Trả lại · Đã duyệt (nội bộ).
+ */
 function sendFlow(org: Org, uid: Uid, group: string): Stage[] {
   const top = topOf(org, uid);
-  const end = gateWidth(org, "send") + 2 + 3; // duyệt + Ký + Chờ ký + 3 bước Gửi đối tác
+  const end = gateWidth(org, "send") + 2 + 2 + 3; // duyệt + Ký + Chờ ký + Hỏi + Nếu + 3 bước Gửi đối tác
   const g = gate(org, 0, { reject: end + 1, ret: end + 2 }, top, "send");
+  const n = g.next;
   return norm([
     ...g.stages,
-    sign(g.next, top),
-    esignWait(g.next + 1, end + 1),
-    ...partner(g.next + 2, top, group, { returned: end + 2, declined: end + 1 }),
+    sign(n, top),
+    esignWait(n + 1, end + 1),
+    askPartner(n + 2, top),
+    ifAsk(n + 3, n + 4, end + 3),
+    ...partner(n + 4, top, group, { returned: end + 2, declined: end + 1 }),
     ...finishes(end, ["approved", "Đã xác nhận"]),
+    { ...finish(end + 3, "approved", "Đã duyệt"), key: "ket-thuc-noi-bo" },
   ]);
 }
 /** Nhận HĐ: [duyệt đầu từ người phụ trách] → Ký (trưởng gốc) → Kết thúc (Đồng ý / Từ chối / Trả lại). */
