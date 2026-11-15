@@ -4,7 +4,7 @@
 import { type Browser, expect, type Locator, type Page } from "@playwright/test";
 import { PDFDocument, StandardFonts } from "../../apps/hub-api/node_modules/pdf-lib";
 import { type Env, loginCw, stepOf, uploadAndOpen } from "../journey-approval/_journey";
-import { CO, type Side } from "./_flows3-org";
+import { CO, type Side } from "./_flows3-who";
 
 const need = (n: string): string => {
   const v = process.env[n];

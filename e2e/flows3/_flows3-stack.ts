@@ -20,7 +20,8 @@ import {
 } from "../_kit/api";
 import { enableFlowTriggers } from "../_kit/flows";
 import { seedPartner } from "../journey-approval/_partner-pick";
-import { CO, seedPeople, userOf, WHO } from "./_flows3-org";
+import { seedPeople } from "./_flows3-org";
+import { CO, userOf, WHO } from "./_flows3-who";
 
 const need = (n: string): string => {
   const v = process.env[n];

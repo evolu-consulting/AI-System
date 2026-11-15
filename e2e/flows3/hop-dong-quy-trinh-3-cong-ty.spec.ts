@@ -20,7 +20,7 @@ import {
   submit,
   uploadSigned,
 } from "./_flows3-kit";
-import { CO, WHO } from "./_flows3-org";
+import { CO, WHO } from "./_flows3-who";
 
 const [EN, EE, EP] = [envOf("n"), envOf("e"), envOf("p")];
 const BTN = /^act-(approve|pass)$/;
