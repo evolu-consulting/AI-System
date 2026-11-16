@@ -2,7 +2,7 @@
 // R1 không tràn ngang · R2 vùng bấm ≥ 44 · R3 chữ ≥ 12 · R4 nút trợ lý không che nút bấm lúc mở trang. Hàm đo + ngoại lệ: `_kit/mobile-rules.ts`.
 // Backend giả `installHub` (như scenes.cw.ts); API chưa giả (tin nhắn, sơ đồ, thông báo…) trả danh sách rỗng ⇒ đo trạng thái rỗng.
 // Không sleep. Màn Bảng tin / hồ sơ / yêu cầu / báo cáo: `community-web/mobile-rules.cm.ts`.
-import { expect, type Page, test } from "@playwright/test";
+import { type Page, test } from "@playwright/test";
 import { expectMobileRules, MOBILE_USE, settle } from "../_kit/mobile-rules";
 import { installHub } from "./_hub";
 import { ACTIVE_ID } from "./dataset-v2f";
