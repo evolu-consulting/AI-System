@@ -12,7 +12,7 @@
   --muted: #f5f5f5;
   --muted-foreground: #6b6b6b;
   --muted-strong-foreground: #525252;
-  --subtle-foreground: #6b6b6b; /* gộp với muted-foreground (tokens-map.md) */
+  --subtle-foreground: var(--muted-foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
   --placeholder: #a3a3a3;
 
   /* Thương hiệu */
@@ -69,28 +69,33 @@
   --mention-command: #92400e;
   --mention-process: #0f766e;
 
-  --radius: 8px;
+  --radius: 8px; /* shadcn cũ; thang bo góc nay là --radius-sm/md/lg trong @theme */
+
+  /* CR-177: token dùng chung cho component. Thời lượng toast: TOAST_MS / TOAST_UNDO_MS trong ui/toast.tsx. */
+  --duration-fast: 150ms;
+  --control-md: 40px;
+  --control-sm: 32px;
 
   /* Code (plan-frontend-theme.md §3, §5) */
   --code-bg: #f5f5fa;
-  --code-fg: #0a0a0a;
+  --code-fg: var(--foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
   --code-keyword: #8a3fa8;
   --code-string: #0b6b3a;
   --code-number: #9a4a00;
   --code-title: #2a55a8;
-  --code-comment: #6b6b6b;
+  --code-comment: var(--muted-foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
 
   /* Riêng mgmt-app (reference/.../index.css:13-45) */
-  --sunk: #f6f6fa;
+  --sunk: var(--muted); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
   --bubble: #f1f1f7;
-  --rule: #e5e5ec;
-  --rule-soft: #efeff4;
-  --field: #d4d4dc;
-  --ink: #0f1020;
-  --ink-2: #45465a;
-  --dim: #6b6c80;
+  --rule: var(--border); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
+  --rule-soft: var(--row-divider); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
+  --field: var(--input); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
+  --ink: var(--foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
+  --ink-2: var(--muted-strong-foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
+  --dim: var(--muted-foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
   --act-line: #c7d2fe;
-  --soon: #8a4306;
+  --soon: var(--warning); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
   --soon-line: #f5cf9a;
   --late-line: #f6b8b8;
   --idle-bg: #f1f1f4;
@@ -124,6 +129,18 @@
   --brand-rose: #e11d48;
 }
 
+@media (max-width: 640px) {
+  :root {
+    --control-md: 44px;
+    --control-sm: 40px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+  }
+}
+
 /* Tối theo mgmt-app (quyết định người dùng D-02, 2026-10-19: contracts-web giống hệt mgmt-app): bộ tối của
    `reference/mgmt-app-contracts/web/src/index.css:49-59` (xám-tím lạnh, nút primary indigo sáng + chữ tối), thay bộ "Midnight" của admin-web.
    Token mgmt có sẵn lấy nguyên giá trị; token shadcn mgmt không có (secondary, sidebar, code, destructive…) suy ra từ cùng bảng màu.
@@ -139,7 +156,7 @@
   --muted: #1d1f33;
   --muted-foreground: #a1a3b8;
   --muted-strong-foreground: #c3c5d6;
-  --subtle-foreground: #a1a3b8;
+  --subtle-foreground: var(--muted-foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
   --placeholder: #8a8ca3;
 
   --primary: #818cf8;
@@ -201,24 +218,24 @@
   --chart-5: #e08bb4;
 
   --code-bg: #0b0c18;
-  --code-fg: #ececf4;
+  --code-fg: var(--foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
   --code-keyword: #d7a6f0;
   --code-string: #8fd9a8;
   --code-number: #f2b872;
   --code-title: #9db8f5;
-  --code-comment: #a1a3b8;
+  --code-comment: var(--muted-foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
 
   /* Riêng mgmt-app, bản tối (reference/.../index.css:49-58) */
-  --sunk: #1d1f33;
+  --sunk: var(--muted); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
   --bubble: #202238;
-  --rule: #2a2c44;
-  --rule-soft: #23253b;
-  --field: #3a3c58;
-  --ink: #ececf4;
-  --ink-2: #c3c5d6;
-  --dim: #a1a3b8;
+  --rule: var(--border); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
+  --rule-soft: var(--row-divider); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
+  --field: var(--input); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
+  --ink: var(--foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
+  --ink-2: var(--muted-strong-foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
+  --dim: var(--muted-foreground); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
   --act-line: #4b4f8f;
-  --soon: #fbbf24;
+  --soon: var(--warning); /* bí danh tạm, CR-177, gỡ ở lát chuyển app */
   --soon-line: #6b4d12;
   --late-line: #7a2e2e;
   --idle-bg: #24253a;
@@ -320,7 +337,20 @@
   --color-new-bg: var(--new-bg);
   --color-grad-to: var(--grad-to);
 
-  /* Thang chữ ngữ nghĩa theo canvas; không ghi đè thang mặc định để component shadcn giữ nguyên. */
+  /* CR-177: 6 cỡ chữ chung (ghi đè thang mặc định Tailwind) + 3 mức bo góc. Tên ngữ nghĩa bên dưới giữ tạm tới lát chuyển app. */
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 18px;
+  --text-md: 14px;
+  --text-md--line-height: 20px;
+  --text-lg: 16px;
+  --text-lg--line-height: 24px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+
   --text-micro: 11px;
   --text-micro--line-height: 16px;
   --text-caption: 12px;
@@ -340,10 +370,9 @@
   --text-display: 40px;
   --text-display--line-height: 48px;
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 2px);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px; /* nhãn, avatar: rounded-full */
 
   --shadow-toast: 0 8px 24px var(--shadow-color-toast);
   --shadow-dialog: 0 20px 48px var(--shadow-color-dialog);

@@ -7,6 +7,9 @@ import type { ReactNode } from "react";
 export const SUCCESS_TOAST_MS = 3000;
 export const ERROR_TOAST_MS = 3000;
 export const INFO_TOAST_MS = 8000;
+/** CR-177: toast thường 3 giây, toast có «Hoàn tác» 6 giây. */
+export const TOAST_MS = 3000;
+export const TOAST_UNDO_MS = 6000;
 
 export type ToastAction = { label: string; onClick: () => void };
 type SonnerMod = typeof import("sonner");

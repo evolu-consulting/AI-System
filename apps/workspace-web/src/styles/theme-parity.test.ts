@@ -133,6 +133,12 @@ describe("gói token ↔ mgmt-app", () => {
       ':root[data-theme="dark"]',
     );
     const c = tokensOf(tokensCss, ".dark");
+    // CR-177: bí danh `var(--x)` được giải ra giá trị thật trước khi so.
+    const resolve = (k: string): string | undefined => {
+      const v = c.get(k);
+      const m = v ? /^var\((--[\w-]+)\)$/.exec(v) : null;
+      return m ? c.get(m[1] as string) : v;
+    };
     expect(mgmt.size).toBeGreaterThan(25);
     // Lệch có chủ đích (CR-125 tương phản): --input tối #686c99 (viền ô nhập ≥3:1 trên card), mgmt #3a3c58 chỉ 1.64:1.
     expect(c.get("--input")).toBe("#686c99");
@@ -146,7 +152,6 @@ describe("gói token ↔ mgmt-app", () => {
       "--bubble",
       "--rule",
       "--rule-soft",
-      "--field",
       "--ink",
       "--ink-2",
       "--dim",
@@ -159,7 +164,9 @@ describe("gói token ↔ mgmt-app", () => {
       "--scroll",
       "--scroll-hover",
     ]) {
-      expect({ [k]: c.get(k) }).toEqual({ [k]: mgmt.get(`--color-${k.slice(2)}`) });
+      expect({ [k]: resolve(k) }).toEqual({ [k]: mgmt.get(`--color-${k.slice(2)}`) });
     }
+    // CR-177: --field là bí danh của --input (một giá trị); lệch mgmt #3a3c58 có chủ đích, trùng ghi chú --input ở trên.
+    expect(resolve("--field")).toBe("#686c99");
   });
 });
