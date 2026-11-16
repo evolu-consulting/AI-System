@@ -146,7 +146,10 @@ async function giveEvidence(p: Page): Promise<void> {
       mimeType: "application/pdf",
       buffer: await pdfOf([`Y KIEN DUYET ${RUN}`]),
     });
-    await expect(ev.getByTestId("evidence-file-list")).toBeVisible({ timeout: 30_000 });
+    // chờ thẻ tệp thật: lúc đang tải lên danh sách hiện khung chờ, bấm gửi sớm thì ô còn thiếu tệp ⇒ không gửi
+    await expect(ev.getByTestId("evidence-file-list").getByText(`y-kien-${RUN}.pdf`)).toBeVisible({
+      timeout: 30_000,
+    });
   }
   await ev.getByTestId(/^request-(approve|pass)-confirm$/).click();
 }
@@ -192,7 +195,9 @@ export async function declineStep(
         mimeType: "application/pdf",
         buffer: await pdfOf([`LY DO ${RUN}`]),
       });
-      await expect(ev.getByTestId("evidence-file-list")).toBeVisible({ timeout: 30_000 });
+      await expect(ev.getByTestId("evidence-file-list").getByText(`ly-do-${RUN}.pdf`)).toBeVisible({
+        timeout: 30_000,
+      });
     }
     await ok.click();
     await expect(ev).toBeHidden({ timeout: 60_000 });

@@ -31,3 +31,14 @@ describe("Shell · khung rỗng", () => {
     expect(sheet).toContain("Hợp đồng nào sắp hết hạn trong 60 ngày?");
   });
 });
+
+describe("DockSheet · trả focus", () => {
+  test("trả focus về nút đã mở ngăn khi nút còn trên trang; không ném lỗi khi nút đã gỡ hoặc không có", async () => {
+    const { returnFocus } = await import("./DockSheet");
+    let n = 0;
+    returnFocus({ isConnected: true, focus: () => n++ });
+    returnFocus({ isConnected: false, focus: () => n++ });
+    returnFocus(null);
+    expect(n).toBe(1);
+  });
+});

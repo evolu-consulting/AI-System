@@ -66,7 +66,7 @@ test("CR177-W1 · nhóm nút chọn một (loại hợp đồng): mũi tên chuy
   page,
 }) => {
   await install(page);
-  await page.goto("/contracts/new");
+  await page.goto("/contracts/new?type=deal"); // «Giao dịch»: có nhóm chọn loại HĐ (DealTiles); luồng tải lên thì không
   const group = page.getByRole("radiogroup").first();
   const radios = group.getByRole("radio");
   await radios.first().focus();

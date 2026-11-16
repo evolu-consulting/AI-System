@@ -90,8 +90,9 @@ test("HĐ nguyên tắc: hộp thêm mốc chỉ có Nhắc gia hạn + Khác", 
   await installV2f(page, { role: "editor", contract: () => framework() });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("frame-add-milestone").click();
-  const kinds = page.getByRole("dialog").locator("#ms-kind option");
-  await expect(kinds).toHaveCount(2);
+  // CR-177 W2: «Loại mốc» là ô chọn Radix (không còn <option>) ⇒ mở ô rồi đếm mục
+  await page.getByRole("dialog").locator("#ms-kind").click();
+  await expect(page.getByRole("listbox").getByRole("option")).toHaveCount(2);
 });
 
 test("gắn chứng từ có sẵn: chọn ⇒ POST /attach {ids}; lệch đối tác ⇒ câu tiếng Việt; gỡ ⇒ DELETE /frame", async ({
