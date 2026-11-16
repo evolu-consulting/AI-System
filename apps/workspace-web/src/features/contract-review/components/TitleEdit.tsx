@@ -2,9 +2,9 @@
 
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
+import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { TruncText } from "~/components/shared/TruncText";
 
 export function TitleEdit({
   value,
@@ -22,7 +22,7 @@ export function TitleEdit({
   const [err, setErr] = useState<string | null>(null);
   const busy = useRef(false);
   const esc = useRef(false);
-  if (!editable) return <span>{value}</span>;
+  if (!editable) return <TruncText text={value} lines={2} className="min-w-0 break-words" />;
   const stop = () => {
     setEditing(false);
     setErr(null);
@@ -56,7 +56,7 @@ export function TitleEdit({
               setEditing(true);
             }}
           >
-            <TruncText>{value}</TruncText>
+            <TruncText text={value} lines={2} focusable={false} className="break-words" />
           </button>
         </TooltipTrigger>
         <TooltipContent>{t("contracts.review.titleEdit")}</TooltipContent>

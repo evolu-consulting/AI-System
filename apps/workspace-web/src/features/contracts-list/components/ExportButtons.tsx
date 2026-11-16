@@ -9,7 +9,7 @@ import type { ExportFile } from "../lib/export-file";
 
 export type ExportFormat = "xlsx" | "csv";
 // ux-excel E1: MỘT nút "Xuất" + menu (Excel / CSV).
-const EXPORT_FORMATS: ExportFormat[] = ["xlsx", "csv"];
+export const EXPORT_FORMATS: ExportFormat[] = ["xlsx", "csv"];
 
 function save(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
@@ -22,7 +22,8 @@ function save(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export function ExportButtons({ run }: { run: (f: ExportFormat) => Promise<ExportFile> }) {
+/** Chạy xuất + báo kết quả; dùng chung cho nút «Xuất» (desktop) và menu «⋯» của đầu trang điện thoại (CR-180). */
+export function useExporter(run: (f: ExportFormat) => Promise<ExportFile>) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState<ExportFormat | null>(null);
   async function go(f: ExportFormat) {
@@ -41,6 +42,12 @@ export function ExportButtons({ run }: { run: (f: ExportFormat) => Promise<Expor
       setBusy(null);
     }
   }
+  return { go, busy };
+}
+
+export function ExportButtons({ run }: { run: (f: ExportFormat) => Promise<ExportFile> }) {
+  const { t } = useTranslation();
+  const { go, busy } = useExporter(run);
   return (
     <PopMenu
       ariaLabel={t("contracts.list.export.menu")}

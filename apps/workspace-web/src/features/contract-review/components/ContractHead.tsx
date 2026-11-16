@@ -37,7 +37,7 @@ function Titled({
 }) {
   const left = daysUntil(c.end_date, new Date().toISOString().slice(0, 10));
   return (
-    <span className="flex min-w-0 items-center gap-2" data-testid="head-title">
+    <span className="flex min-w-0 items-center gap-2 max-sm:flex-wrap" data-testid="head-title">
       <DocTypeIcon kind={(c.doc?.doc_type ?? "contract") as DocKind} />
       <TitleEdit
         value={title}
@@ -56,7 +56,7 @@ function Titled({
 export function ContractHead(p: Props) {
   const { t } = useTranslation();
   const crumb = (
-    <Link to="/contracts/list" className="hover:underline">
+    <Link to="/contracts/list" className="tap-target hover:underline">
       {t("contracts.review.back")}
     </Link>
   );

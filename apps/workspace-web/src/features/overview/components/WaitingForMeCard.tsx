@@ -28,7 +28,9 @@ export function WaitingForMeCard() {
         </b>
         <span className="block text-[12.5px] text-dim">{t("contracts.waiting.hint")}</span>
       </span>
-      <span className="shrink-0 text-sm font-medium text-act">{t("contracts.waiting.open")}</span>
+      <span className="tap-target shrink-0 text-sm font-medium text-act">
+        {t("contracts.waiting.open")}
+      </span>
     </Link>
   );
 }

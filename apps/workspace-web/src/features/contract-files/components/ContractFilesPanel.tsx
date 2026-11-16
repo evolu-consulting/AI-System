@@ -3,7 +3,6 @@
 
 import type { ContractOwnFile, ContractStepFile } from "@ai/contracts/pack-contracts";
 import { AttachDropzone } from "@ai/web-kit/ui/AttachDropzone";
-import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { lazy, Suspense, useState } from "react";
@@ -198,17 +197,16 @@ export function ContractFilesPanel({ id }: { id: string }) {
         </p>
       )}
       {empty && (
-        <EmptyState
-          kind="empty"
-          testId="cfiles-empty"
-          title={t(
+        // CR-180: câu trạng thái trống là chữ đọc (text-sm), không phải tiêu đề cỡ lớn.
+        <p data-testid="cfiles-empty" className="mt-2 text-sm text-muted-foreground">
+          {t(
             data.locked
               ? "contracts.cfiles.emptyLocked"
               : data.can_add
                 ? "contracts.cfiles.empty"
                 : "contracts.cfiles.emptyReadOnly",
           )}
-        />
+        </p>
       )}
       {data.files.length > 0 && (
         <ul className="mt-2 divide-y divide-rule" data-testid="cfiles-own">

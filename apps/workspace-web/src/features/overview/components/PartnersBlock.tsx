@@ -22,7 +22,10 @@ function Hd8Block() {
         title={t("contracts.overview.partners.title")}
         meta={t("contracts.overview.partners.lead")}
         aside={
-          <Link to="/contracts/partners" className="font-medium text-act hover:underline">
+          <Link
+            to="/contracts/partners"
+            className="tap-target font-medium text-act hover:underline"
+          >
             {t("contracts.overview.partners.all")}
           </Link>
         }

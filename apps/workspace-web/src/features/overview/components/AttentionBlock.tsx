@@ -20,7 +20,10 @@ export function AttentionBlock() {
         title={t("contracts.rep3.attention.title")}
         meta={t("contracts.rep3.attention.lead")}
         aside={
-          <Link to="/contracts/partners" className="font-medium text-act hover:underline">
+          <Link
+            to="/contracts/partners"
+            className="tap-target font-medium text-act hover:underline"
+          >
             {t("contracts.overview.partners.all")}
           </Link>
         }

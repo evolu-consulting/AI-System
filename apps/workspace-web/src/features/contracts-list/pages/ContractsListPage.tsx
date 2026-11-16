@@ -3,13 +3,14 @@
 // (cần quyền ghi; CR-097: bỏ "Thêm thủ công" — HĐ phải có văn bản đã ký). Dữ liệu phía server (HD1 list + `progress` V2-A). Nút Xoá ẩn tới V2-M (đảo sổ kho khi xoá).
 
 import { Button } from "@ai/web-kit/ui/kit/button";
+import { FilterBar } from "@ai/web-kit/ui/kit/filter-bar";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Fragment, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { promptDialog } from "~/components/shared/dialog-bus";
-import { PageHead, Panel } from "~/components/shared/layout";
+import { Panel } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ColumnFilters, ColumnPicker, Pager, TableTools, useColumns } from "~/features/table";
@@ -25,8 +26,9 @@ import {
 } from "../components/ContractCells";
 import { DateFilterControl } from "../components/DateFilterControl";
 import { DocTypeFilter } from "../components/DocTypeFilter";
-import { ExportButtons } from "../components/ExportButtons";
+import { useExporter } from "../components/ExportButtons";
 import { QueueExtractDialog } from "../components/ExtractDialog";
+import { ListHeader } from "../components/ListHeader";
 import { NeedPdfNotice } from "../components/NeedPdfNotice";
 import { PartnerInviteBand } from "../components/PartnerInviteBand";
 import { QuotaDialog } from "../components/QuotaDialog";
@@ -45,7 +47,6 @@ import {
   parseDateSearch,
 } from "../lib/date-filter";
 import { buildRows, type DocFilter, parseDocFilter } from "../lib/doc-list";
-import { UPLOAD_ACCEPT } from "../lib/upload-queue";
 
 const errText = (e: unknown, t: (k: string) => string): string =>
   (e as { status?: number } | null)?.status === 409
@@ -118,6 +119,7 @@ export function ContractsListPage() {
       locked: key === "title" || key === "status",
     })),
   );
+  const exporter = useExporter((f) => exportContracts(exportQs(f)));
   const delDialog = useDeleteDialog();
   const flow = useRowFlow(list.data?.items); // CR-118: huy hiệu "Cần xử lý", một yêu cầu cho cả trang
   const ctx: RowCtx = useMemo(
@@ -164,41 +166,12 @@ export function ContractsListPage() {
       onFiles={(fs) => fs.length && pick(fs)}
       className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col"
     >
-      <PageHead
-        title={t("contracts.contractsPage.title")}
-        actions={
-          <>
-            <ExportButtons run={(f) => exportContracts(exportQs(f))} />
-            {write && (
-              <>
-                <input
-                  ref={file}
-                  type="file"
-                  hidden
-                  multiple
-                  accept={UPLOAD_ACCEPT}
-                  onChange={(e) => {
-                    const picked = Array.from(e.target.files ?? []);
-                    e.target.value = "";
-                    if (picked.length) pick(picked);
-                  }}
-                />
-                <Link
-                  to="/contracts/c/new"
-                  search={{ type: "deal" }}
-                  className="btn btn-quiet btn-sm"
-                  data-testid="add-deal"
-                >
-                  {t("contracts.doclist.addDeal")}
-                </Link>
-                <Button variant="primary" size="sm" onClick={() => file.current?.click()}>
-                  <UploadIcon />
-                  {t("contracts.list.add")}
-                </Button>
-              </>
-            )}
-          </>
-        }
+      <ListHeader
+        write={!!write}
+        fileRef={file}
+        onPick={pick}
+        exporter={exporter}
+        run={(f) => exportContracts(exportQs(f))}
       />
       {delDialog.node}
       <NeedPdfNotice names={notPdf} />
@@ -219,19 +192,24 @@ export function ContractsListPage() {
         </p>
       )}
       <PartnerInviteBand />
-      <DocTypeFilter value={docType} counts={counts} onChange={setDocType} />
+      <FilterBar
+        className="mb-3"
+        chips={<DocTypeFilter value={docType} counts={counts} onChange={setDocType} />}
+        activeCount={table.filter.active.length + (isDateActive(date) ? 1 : 0)}
+        advanced={
+          <>
+            <ColumnFilters filter={table.filter} />
+            <DateFilterControl value={date} onChange={setDate} />
+            <ColumnPicker cols={cols} />
+          </>
+        }
+      />
       <TableTools
         q={table.q}
         setQ={table.setQ}
         total={table.total}
         placeholder={t("contracts.list.search")}
-      >
-        <ColumnFilters filter={table.filter} />
-        <DateFilterControl value={date} onChange={setDate} />
-        <span className="max-sm:hidden">
-          <ColumnPicker cols={cols} />
-        </span>
-      </TableTools>
+      />
       <Panel className="md:flex md:min-h-0 md:flex-1 md:flex-col">
         {list.isLoading ? (
           <Loading />
@@ -324,19 +302,3 @@ function addCategoryButton(t: (k: string) => string, onClick: () => void) {
     </Button>
   );
 }
-
-const UploadIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M12 16V4M6 10l6-6 6 6M4 20h16" />
-  </svg>
-);

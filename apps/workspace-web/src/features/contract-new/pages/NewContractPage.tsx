@@ -2,10 +2,11 @@
 // (cùng hàng đợi như danh sách). Form nhập tay giữ ở `ManualContractForm` cho việc Giao dịch sau này.
 
 import { AttachDropzone } from "@ai/web-kit/ui/AttachDropzone";
+import { PageHeader } from "@ai/web-kit/ui/kit/page-header";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useAttachPickLabels } from "~/components/shared/AttachField";
-import { PageHead, Panel } from "~/components/shared/layout";
+import { Panel } from "~/components/shared/layout";
 import { QueueExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
 import { UploadPanel } from "~/features/contracts-list/components/UploadPanel";
 import { useUploadQueue } from "~/features/contracts-list/hooks/use-upload-queue";
@@ -20,14 +21,12 @@ export function NewContractPage() {
   const queue = useUploadQueue((id) => void nav({ to: "/contracts/c/$id", params: { id } }));
   return (
     <div className="text-base leading-[1.55]">
-      <PageHead
-        crumb={
-          <Link to="/contracts/list" className="hover:underline">
-            {t("contracts.review.back")}
-          </Link>
-        }
-        title={t("contracts.cform.newTitle")}
-      />
+      <nav aria-label={t("contracts.common.breadcrumb")} className="text-label text-dim">
+        <Link to="/contracts/list" className="tap-target hover:underline">
+          {t("contracts.review.back")}
+        </Link>
+      </nav>
+      <PageHeader className="mb-5" title={t("contracts.cform.newTitle")} />
       <QueueExtractDialog items={queue.items} />
       <UploadPanel items={queue.items} onRetry={queue.retry} onClose={queue.clear} />
       <Panel>

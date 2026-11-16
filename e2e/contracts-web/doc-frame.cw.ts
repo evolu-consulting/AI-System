@@ -174,7 +174,7 @@ test("chứng từ con: liên kết «thuộc HĐ nguyên tắc»; không quyề
   });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("frame-ref")).toContainText("Khung 2026");
-  await expect(page.getByTestId("doc-file-line")).toContainText("File ký:");
+  await expect(page.getByTestId("detail-lead")).toContainText("File ký");
   await page.unrouteAll({ behavior: "ignoreErrors" });
   await installV2f(page, { role: "editor", contract: () => base({ restricted: true }) });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);

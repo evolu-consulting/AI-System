@@ -28,7 +28,7 @@ export function ContractsBlock({ today }: { today?: string }) {
         title={t("contracts.overview.contracts.title")}
         meta={facets.data && t("contracts.overview.contracts.count", { n: total })}
         aside={
-          <Link to="/contracts/list" className="font-medium text-act hover:underline">
+          <Link to="/contracts/list" className="tap-target font-medium text-act hover:underline">
             {t("contracts.overview.contracts.all")}
           </Link>
         }

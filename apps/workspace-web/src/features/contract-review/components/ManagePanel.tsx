@@ -33,7 +33,6 @@ export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
       className="inline-flex max-w-full flex-wrap items-center gap-2 max-sm:pr-4"
       data-testid="owner-row"
     >
-      <span className="text-[13px] text-dim">{t("contracts.u5.owner.label")}</span>
       {write ? (
         <OptionSelect
           className="w-auto max-w-full min-w-0 [field-sizing:content]"

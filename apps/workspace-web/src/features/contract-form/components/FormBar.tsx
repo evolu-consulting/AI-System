@@ -38,12 +38,14 @@ export function FormBar({
         <h1 className="min-w-0 flex-[1_1_14rem] text-[26px] font-semibold tracking-[-0.01em] max-sm:text-[22px]">
           {title}
         </h1>
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-4 gap-y-2 max-sm:ml-0 max-sm:w-full">
           {cancel ? <div className="flex flex-wrap items-center gap-2">{cancel}</div> : null}
-          <div className="flex flex-wrap items-center gap-2">{save}</div>
+          <div className="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:flex-nowrap max-sm:[&>[data-testid^=act-]]:min-w-0 max-sm:[&>[data-testid^=act-]]:flex-1 max-sm:[&>[data-testid=confirm-save]]:flex-1">
+            {save}
+          </div>
         </div>
       </div>
-      {lead && <p className="text-sm text-dim">{lead}</p>}
+      {lead && <div className="text-sm text-dim">{lead}</div>}
     </div>
   );
 }

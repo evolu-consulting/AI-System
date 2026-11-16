@@ -148,14 +148,8 @@ export function ContractBody(p: {
     <DetailLead
       c={c}
       partner={partner}
-      file={
-        file ? (
-          <span className="inline-flex items-center gap-2">
-            <FileLink file={file} />
-            <FileRecordButton target={{ kind: "main", contractId: id }} />
-          </span>
-        ) : null
-      }
+      file={file ? <FileLink file={file} /> : null}
+      record={file ? <FileRecordButton target={{ kind: "main", contractId: id }} /> : null}
       owner={<OwnerRow c={c} write={write && c.status !== "reject"} />}
     />
   );

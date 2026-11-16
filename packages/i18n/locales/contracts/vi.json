@@ -204,6 +204,7 @@
       "view": "Xem",
       "viewAria": "Xem {{title}}",
       "viewContract": "Xem hợp đồng",
+      "rowMore": "Thao tác với hợp đồng này",
       "deleteContract": "Xoá hợp đồng"
     },
     "table": {
@@ -771,7 +772,8 @@
       "lead": {
         "number": "Số HĐ",
         "type": "Loại",
-        "partner": "Đối tác"
+        "partner": "Đối tác",
+        "record": "Hồ sơ tệp"
       },
       "back": "← Hợp đồng",
       "reading": "Đang đọc hợp đồng…",

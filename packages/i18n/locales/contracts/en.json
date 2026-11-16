@@ -204,6 +204,7 @@
       "view": "View",
       "viewAria": "View {{title}}",
       "viewContract": "View contract",
+      "rowMore": "Actions for this contract",
       "deleteContract": "Delete contract"
     },
     "table": {
@@ -771,7 +772,8 @@
       "lead": {
         "number": "Contract no.",
         "type": "Type",
-        "partner": "Partner"
+        "partner": "Partner",
+        "record": "File record"
       },
       "back": "← Contracts",
       "reading": "Reading the contract…",

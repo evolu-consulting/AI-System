@@ -111,7 +111,7 @@ export function InboxChips({
           type="button"
           aria-pressed={value === c}
           onClick={() => onChange(c)}
-          className={`rounded-full border px-3 py-1 text-sm ${
+          className={`rounded-full border px-3 py-1 text-sm max-sm:min-h-11 ${
             value === c
               ? "border-act bg-act/10 font-semibold text-act"
               : "border-rule-soft text-dim"

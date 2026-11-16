@@ -1,6 +1,7 @@
 // CR-127 · Z8 / CR-128 (e): menu «Thao tác ▾» của trang chi tiết HĐ — gom mọi thao tác phụ (Rút về, Tạm khoá, Trả lại, Từ chối… do `items` truyền vào)
 // và «Xoá hợp đồng» CUỐI, màu đỏ, có vạch ngăn (theo `can.delete` của máy chủ). Bấm Xoá ⇒ hộp xác nhận + xem trước tác động (`DeleteContractDialog`).
 // Không có mục nào ⇒ không hiện menu.
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type PopItem, PopMenu } from "~/components/shared/pop-menu";
@@ -36,9 +37,14 @@ export function ContractActionsMenu({
   return (
     <>
       <PopMenu
-        trigger={<>{t("contracts.del.menu")} ▾</>}
+        trigger={
+          <>
+            <span className="max-sm:hidden">{t("contracts.del.menu")} ▾</span>
+            <ICONS.moreActions className="hidden size-5 max-sm:block" aria-hidden="true" />
+          </>
+        }
         ariaLabel={t("contracts.del.menu")}
-        triggerClass={btnClass("quiet", "sm")}
+        triggerClass={`${btnClass("quiet", "sm")} max-sm:min-h-11 max-sm:min-w-11 max-sm:justify-center`}
         triggerTestId="head-actions-menu"
         items={all}
         busy={busy}

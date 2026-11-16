@@ -37,6 +37,7 @@ import {
   waitingView,
 } from "../lib/row-view";
 import { DocTypeTag, EyeIcon, SourceName } from "./ChildRows";
+import { MobileRowMenu } from "./MobileRowMenu";
 
 export type RowCtx = {
   /** Tiêu đề HĐ gốc của hàng phụ lục trong trang (`parents` của API). */
@@ -311,38 +312,38 @@ export function ActionsCell({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   );
 }
 
-/** Thẻ điện thoại: một thẻ mỗi HĐ. */
+/** Thẻ điện thoại: một thẻ mỗi HĐ. CR-180: tên 1 dòng; dòng 2 loại · đối tác · giá trị; trạng thái hàng riêng; Xem/Xoá vào «⋯». */
 export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const { t } = useTranslation();
   const parent = r.parent_id ? ctx.parents.get(r.parent_id) : undefined;
   const partner = partnerOfRow(r, dealOfRow(r, ctx.progress.get(r.id)));
   return (
-    <li className="relative border-b border-rule-soft last:border-0">
+    <li className="flex items-start border-b border-rule-soft last:border-0">
       <Link
         to="/contracts/c/$id"
         params={{ id: r.id }}
-        className="flex flex-col gap-1.5 px-4 py-3.5 hover:bg-sunk"
+        className="flex min-w-0 flex-1 flex-col gap-1.5 py-3.5 pl-4 hover:bg-sunk"
       >
-        <span className="flex items-center gap-2">
-          <KitTruncText text={r.title} focusable={false} className="font-semibold">
-            {r.locked && <RowLock />}
-            {r.title}
-            <VersionBadge no={r.version_no} count={r.versions_count} />
-          </KitTruncText>
-          <DealTag r={r} ctx={ctx} />
-        </span>
+        <KitTruncText text={r.title} focusable={false} className="block font-semibold">
+          {r.locked && <RowLock />}
+          {r.title}
+          <VersionBadge no={r.version_no} count={r.versions_count} />
+        </KitTruncText>
         {parent && (
           <span className="text-[13px] text-dim">
             {t("contracts.list.appendixOf", { title: parent })}
           </span>
         )}
-        <KitTruncText
-          text={[shortName(partner), r.value != null ? `${vnd(r.value)} đ` : null]
-            .filter(Boolean)
-            .join(" · ")}
-          focusable={false}
-          className="block text-[13px] text-dim"
-        />
+        <span className="flex min-w-0 items-center gap-2 text-[13px] text-dim">
+          <DealTag r={r} ctx={ctx} />
+          <KitTruncText
+            text={[shortName(partner), r.value != null ? `${vnd(r.value)} đ` : null]
+              .filter(Boolean)
+              .join(" · ")}
+            focusable={false}
+            className="min-w-0"
+          />
+        </span>
         <span>
           <StatusCell r={r} />
         </span>
@@ -352,9 +353,7 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
           </span>
         )}
       </Link>
-      <div className="absolute right-2 bottom-2">
-        <RowActions r={r} ctx={ctx} />
-      </div>
+      <MobileRowMenu r={r} onDelete={ctx.onDelete} />
     </li>
   );
 }

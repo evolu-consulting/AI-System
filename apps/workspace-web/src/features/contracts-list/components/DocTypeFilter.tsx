@@ -1,4 +1,5 @@
 ﻿// DOC-ui-list · R31/R32: bộ lọc loại chứng từ của "Hợp đồng & giao dịch" — Tất cả / HĐ nguyên tắc / HĐ kinh tế / Giao dịch, kèm số.
+import { CHIP_ROW_CLASS } from "@ai/web-kit/ui/kit/filter-bar";
 import { useTranslation } from "react-i18next";
 import { SegButton } from "~/components/shared/seg-button";
 import { cn } from "~/lib/utils";
@@ -19,7 +20,7 @@ export function DocTypeFilter({
       role="radiogroup"
       aria-label={t("contracts.doclist.filterLabel")}
       data-testid="doc-type-filter"
-      className="mb-3 flex flex-wrap gap-2"
+      className={CHIP_ROW_CLASS}
     >
       {DOC_FILTERS.map((f) => {
         const on = f === value;
@@ -30,7 +31,7 @@ export function DocTypeFilter({
             checked={on}
             onClick={() => onChange(f)}
             className={cn(
-              "rounded-full border px-3.5 py-1.5 text-[13.5px]",
+              "rounded-full border px-3.5 py-1.5 text-[13.5px] max-sm:min-h-11",
               on
                 ? "border-act bg-act-soft font-semibold text-act"
                 : "border-rule bg-panel hover:border-act-line",

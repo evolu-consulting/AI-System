@@ -88,7 +88,7 @@ export function InboxDecisionRow({ contractId, sender }: { contractId: string; s
           <Link
             to="/contracts/c/$id"
             params={{ id: contractId }}
-            className="text-caption text-act hover:underline"
+            className="tap-target text-caption text-act hover:underline"
           >
             {t("contracts.work.u4.inbox.open")}
           </Link>

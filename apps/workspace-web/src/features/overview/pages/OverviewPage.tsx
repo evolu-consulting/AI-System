@@ -1,12 +1,12 @@
 // nav-v2 · /overview "Tổng quan" (mockup NITI): đầu trang chọn kỳ (Tháng này / Quý này / 12 tháng) + 4 con số (V2-K `GET /overview`); hai cột:
 // trái Hạn và nhắc việc (V2-K `GET /my-work/todo`) · Theo nhóm SP · Đối tác cần xem lại; phải Hợp đồng · SP nên làm gì (V2-J1) · Giao dịch nhiều nhất (V2-E).
 import type { OverviewPeriod } from "@ai/contracts/pack-contracts";
+import { PageHeader } from "@ai/web-kit/ui/kit/page-header";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
-import { PageHead } from "~/components/shared/layout";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { cn } from "~/lib/utils";
 import { fetchOverview, overviewKeys } from "../api";
@@ -35,39 +35,39 @@ export function OverviewPage() {
   const today = q.data?.today;
   return (
     <div className="text-base leading-[1.55]">
-      <PageHead
+      <PageHeader
+        className="mb-5"
         title={t("contracts.overview.title")}
-        lead={today && t("contracts.overview.today", { date: viDate(today) })}
-        actions={
-          <>
-            <Link
-              to="/contracts/requests"
-              className="btn btn-primary btn-sm"
-              data-testid="quick-new-request"
-            >
-              {t("contracts.requests.quick")}
-            </Link>
-            <fieldset className="m-0 min-w-0 inline-flex rounded-lg border border-rule bg-sunk p-0.5">
-              <legend className="sr-only">{t("contracts.overview.period.label")}</legend>
-              {PERIODS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  aria-pressed={period === p}
-                  data-period={p}
-                  onClick={() => setPeriod(p)}
-                  className={cn(
-                    "h-8 rounded-md px-3 text-label font-medium",
-                    period === p ? "bg-panel text-ink shadow-sm" : "text-dim hover:text-ink",
-                  )}
-                >
-                  {t(`contracts.overview.period.${p}`)}
-                </button>
-              ))}
-            </fieldset>
-          </>
+        description={today && t("contracts.overview.today", { date: viDate(today) })}
+        primary={
+          <Link
+            to="/contracts/requests"
+            className="btn btn-primary btn-sm max-sm:justify-center"
+            data-testid="quick-new-request"
+          >
+            {t("contracts.requests.quick")}
+          </Link>
         }
-      />
+      >
+        <fieldset className="m-0 inline-flex min-w-0 rounded-lg border border-rule bg-sunk p-0.5 max-sm:flex max-sm:w-full max-sm:[&>button]:flex-1">
+          <legend className="sr-only">{t("contracts.overview.period.label")}</legend>
+          {PERIODS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              aria-pressed={period === p}
+              data-period={p}
+              onClick={() => setPeriod(p)}
+              className={cn(
+                "h-8 rounded-md px-3 text-label font-medium max-sm:h-11",
+                period === p ? "bg-panel text-ink shadow-sm" : "text-dim hover:text-ink",
+              )}
+            >
+              {t(`contracts.overview.period.${p}`)}
+            </button>
+          ))}
+        </fieldset>
+      </PageHeader>
       <WaitingForMeCard />
       {isEmptyOverview(q.data) && <QuickStartCard write={write} />}
       <div className="mb-4">

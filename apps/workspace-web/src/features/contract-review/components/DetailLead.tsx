@@ -2,24 +2,25 @@
 // CR-101 R33: thêm nhãn loại chứng từ (HĐ kinh tế / HĐ nguyên tắc / Giao dịch) + liên kết "thuộc HĐ nguyên tắc" (không quyền xem ⇒ nhãn riêng)
 // + dòng File ký (HĐ) hoặc Tệp (giao dịch).
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
+import { MetaList } from "@ai/web-kit/ui/kit/meta-list";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { MetaLine } from "~/components/shared/meta-line";
 import { TruncText } from "~/components/shared/TruncText";
 import { Tag } from "~/components/shared/tag";
 import { DEAL_TONE, dealOf } from "~/features/contract-form/lib/deal";
 import { frameLinkOf } from "~/features/frame-panel/lib/frame-view";
+import { bareLabel, showFileItem } from "../lib/lead-items";
 
-function FrameRef({ doc }: { doc: ContractDetail["doc"] }) {
-  const { t } = useTranslation();
+/** Mục «thuộc HĐ nguyên tắc»: nhãn + liên kết (không quyền xem ⇒ nhãn riêng). */
+function frameItem(doc: ContractDetail["doc"], belongs: string, restricted: string) {
   const link = frameLinkOf(doc);
   if (!link) return null;
   if (link.kind === "restricted")
-    return <span data-testid="frame-ref-restricted">{t("contracts.docframe.restricted")}</span>;
-  return (
-    <span>
-      {t("contracts.docframe.belongs")}{" "}
+    return { label: belongs, value: <span data-testid="frame-ref-restricted">{restricted}</span> };
+  return {
+    label: belongs,
+    value: (
       <Link
         to="/contracts/c/$id"
         params={{ id: link.id }}
@@ -29,67 +30,72 @@ function FrameRef({ doc }: { doc: ContractDetail["doc"] }) {
         {link.number ? `${link.number} · ` : ""}
         {link.title}
       </Link>
-    </span>
-  );
+    ),
+  };
 }
 
-/** CR-168: mỗi mục dòng thông tin có nhãn rõ («Số HĐ 1», «Loại Bán», «Đối tác …»). */
-function Labeled({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <span className="inline-flex items-baseline gap-1">
-      <span className="shrink-0">{label}</span>
-      <span className="min-w-0 font-medium text-ink">{children}</span>
-    </span>
-  );
-}
-
+/** CR-168/CR-180: dòng thông tin có nhãn («Số HĐ 1 · Loại Bán …» ở desktop; «nhãn: giá trị» từng dòng ở điện thoại). */
 export function DetailLead({
   c,
   partner,
   owner,
   file,
+  record,
 }: {
   c: ContractDetail;
   partner: string;
-  /** CR-128 (e): «Xem file gốc» nằm ở dòng thông tin (không còn nút đầu trang). */
+  /** Nút xem file gốc (cạnh tên file ký). */
   file?: ReactNode;
-  /** Mục «Phụ trách» (cuối dòng, cùng phân cách). */
+  /** Nút «Hồ sơ» của file (một mục riêng). */
+  record?: ReactNode;
+  /** Mục «Phụ trách» (cuối dòng). */
   owner?: ReactNode;
 }) {
   const { t } = useTranslation();
   const deal = dealOf(c);
   const n = c.fields.number?.value;
   const type = c.doc?.doc_type ?? "contract";
-  const fileLabel = t(
-    type === "deal" ? "contracts.docframe.fileDeal" : "contracts.docframe.fileSigned",
+  const fileLabel = bareLabel(
+    t(type === "deal" ? "contracts.docframe.fileDeal" : "contracts.docframe.fileSigned"),
+  );
+  const frame = frameItem(
+    c.doc,
+    t("contracts.docframe.belongs"),
+    t("contracts.docframe.restricted"),
   );
   return (
-    <MetaLine>
-      {typeof n === "string" && n ? (
-        <Labeled label={t("contracts.review.lead.number")}>{n}</Labeled>
-      ) : null}
-      <Labeled label={t("contracts.review.lead.type")}>
-        <Tag tone={DEAL_TONE[deal]}>{t(`contracts.cform.dealName.${deal}`)}</Tag>
-      </Labeled>
-      {partner ? (
-        <Labeled label={t("contracts.review.lead.partner")}>
-          <TruncText maxWidth="16rem">{partner}</TruncText>
-        </Labeled>
-      ) : null}
-      {frameLinkOf(c.doc) ? <FrameRef doc={c.doc} /> : null}
-      {c.doc && type !== "framework" ? (
-        <span
-          data-testid="doc-file-line"
-          className="inline-flex max-w-[24rem] items-baseline gap-1"
-        >
-          <span className="shrink-0">{fileLabel}</span>
-          <TruncText title={c.file?.name ?? ""}>
-            {c.file ? c.file.name : t("contracts.docframe.noFile")}
-          </TruncText>
-        </span>
-      ) : null}
-      {file}
-      {owner}
-    </MetaLine>
+    <div data-testid="detail-lead">
+      <MetaList
+        className="text-sm text-dim sm:[&_dt]:not-sr-only"
+        items={[
+          { label: t("contracts.review.lead.number"), value: typeof n === "string" ? n : null },
+          {
+            label: t("contracts.review.lead.type"),
+            value: <Tag tone={DEAL_TONE[deal]}>{t(`contracts.cform.dealName.${deal}`)}</Tag>,
+          },
+          {
+            label: t("contracts.review.lead.partner"),
+            value: partner ? <TruncText maxWidth="16rem">{partner}</TruncText> : null,
+          },
+          ...(frame ? [frame] : []),
+          {
+            label: fileLabel,
+            value: showFileItem(type, !!c.doc, !!c.file) ? (
+              <span
+                data-testid="doc-file-line"
+                className="inline-flex min-w-0 max-w-full items-center gap-1"
+              >
+                <TruncText title={c.file?.name ?? ""} className="max-w-[24rem]">
+                  {c.file ? c.file.name : t("contracts.docframe.noFile")}
+                </TruncText>
+                {file}
+              </span>
+            ) : null,
+          },
+          { label: t("contracts.review.lead.record"), value: record },
+          { label: t("contracts.u5.owner.label"), value: owner },
+        ]}
+      />
+    </div>
   );
 }

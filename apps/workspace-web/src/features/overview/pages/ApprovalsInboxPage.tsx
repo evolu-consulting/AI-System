@@ -1,9 +1,11 @@
 // CR-126 · «Việc của tôi» (/contracts/approvals): MỘT hộp việc — duyệt HĐ + ký (`GET /my-work`) và bước yêu cầu/quy trình/phiếu
 // (`GET /me/review-tasks`, gồm run con). Mỗi dòng: việc nào · bước nào · mở. Rỗng ⇒ nói vì sao + bước kế.
+
+import { PageHeader } from "@ai/web-kit/ui/kit/page-header";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHead, Panel } from "~/components/shared/layout";
+import { Panel } from "~/components/shared/layout";
 import { Skeleton } from "~/components/ui/skeleton";
 import { InboxChips, InboxRowList } from "../components/InboxRowList";
 import { useInbox } from "../hooks/use-inbox";
@@ -26,9 +28,10 @@ export function ApprovalsInboxPage() {
   const loading = work.isPending || requests.kind === "loading";
   return (
     <div data-testid="approvals-inbox">
-      <PageHead
+      <PageHeader
+        className="mb-5"
         title={t("contracts.approvalsPage.title")}
-        lead={t("contracts.approvalsPage.subtitle")}
+        description={t("contracts.approvalsPage.subtitle")}
       />
       {loading ? (
         <Skeleton className="h-24 w-full" />
@@ -45,7 +48,7 @@ export function ApprovalsInboxPage() {
             </p>
             <Link
               to="/contracts/list"
-              className="mt-4 inline-block text-sm font-medium text-act hover:underline"
+              className="tap-target mt-4 text-sm font-medium text-act hover:underline"
             >
               {t("contracts.approvalsPage.emptyNext")}
             </Link>

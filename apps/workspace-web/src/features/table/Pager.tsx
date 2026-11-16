@@ -19,7 +19,7 @@ export type PagerState = {
 };
 
 const NAV =
-  "grid h-8 min-w-8 place-items-center rounded-full px-2 text-label tabular-nums transition-colors";
+  "grid h-8 min-w-8 max-sm:h-11 max-sm:min-w-11 place-items-center rounded-full px-2 text-label tabular-nums transition-colors";
 
 export function Pager({ t: s }: { t: PagerState }) {
   const { t } = useTranslation();
