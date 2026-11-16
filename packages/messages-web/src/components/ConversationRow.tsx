@@ -100,24 +100,25 @@ export function ConversationRow({
             )}
           </span>
           {company && (
-            <span data-testid="conv-company-line" className="flex min-w-0 items-center gap-1.5">
+            <span data-testid="conv-company-line" className="flex min-w-0">
               <Badge
                 status="warn"
                 icon={<IconBuilding width={12} height={12} />}
                 data-testid="conv-company"
-                className="min-w-0 max-w-[60%] shrink"
+                className="min-w-0 max-w-full shrink"
               >
                 <TruncText text={company} focusable={false} />
               </Badge>
-              {sub && (
-                <TruncText
-                  text={sub}
-                  focusable={false}
-                  data-testid="conv-job"
-                  className="flex-1 text-micro text-dim"
-                />
-              )}
             </span>
+          )}
+          {/* CR-179: chức vụ một hàng riêng dưới công ty (người dùng: «title và công ty nên xuống hàng») */}
+          {company && sub && (
+            <TruncText
+              text={sub}
+              focusable={false}
+              data-testid="conv-job"
+              className="block text-micro text-dim"
+            />
           )}
           <span
             className={cn(

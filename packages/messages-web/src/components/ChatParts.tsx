@@ -81,7 +81,7 @@ export function ChatHeader({
     <header
       className={cn(
         "flex shrink-0 items-center gap-2 border-b border-rule-soft",
-        compact ? "h-12 px-2" : "h-14 px-4",
+        compact ? "min-h-12 px-2 py-1.5" : "min-h-14 px-4 py-2",
       )}
     >
       {onBack && (
@@ -104,23 +104,20 @@ export function ChatHeader({
           <TruncText text={title} className="block" />
         </h2>
         {company && (
-          <div className="flex min-w-0 items-center gap-1.5">
+          <div className="flex min-w-0">
             <Badge
               status="warn"
               icon={<IconBuilding width={12} height={12} />}
               data-testid="chat-company"
-              className="min-w-0 max-w-[60%] shrink"
+              className="min-w-0 max-w-full shrink"
             >
               <TruncText text={company} focusable={false} />
             </Badge>
-            {subtitle && (
-              <TruncText
-                text={subtitle}
-                data-testid="chat-job"
-                className="flex-1 text-micro text-dim"
-              />
-            )}
           </div>
+        )}
+        {/* CR-179: chức vụ một hàng riêng dưới công ty */}
+        {company && subtitle && (
+          <TruncText text={subtitle} data-testid="chat-job" className="block text-micro text-dim" />
         )}
       </div>
       <button

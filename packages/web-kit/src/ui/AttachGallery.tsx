@@ -156,8 +156,9 @@ export function ImageGrid({
       style={{
         display: big ? "flex" : "grid",
         gap: 8,
-        maxWidth: big ? ATTACH_SIZE.oneMaxWidth : ATTACH_SIZE.gridMaxWidth,
-        width: "100%",
+        // CR-179 sửa: rộng CỐ ĐỊNH bằng px (không `100%`) — trong bong bóng chat (co theo nội dung) `100%` + ảnh absolute ⇒ khung 0×0, ảnh biến mất.
+        width: big ? ATTACH_SIZE.oneMaxWidth : ATTACH_SIZE.gridMaxWidth,
+        maxWidth: "100%",
         ...(center ? { marginInline: "auto", justifyContent: "center" } : null),
         ...GRID[variant],
       }}
@@ -270,8 +271,8 @@ export function AttachGallery(props: AttachGalleryProps) {
             gap: 8,
             margin: 0,
             padding: 0,
-            width: "100%",
-            maxWidth: ATTACH_SIZE.cardMaxWidth,
+            width: ATTACH_SIZE.cardMaxWidth,
+            maxWidth: "100%",
             ...(center ? { marginInline: "auto" } : null),
           }}
         >
