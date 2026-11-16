@@ -34,7 +34,7 @@
       "you": "You",
       "previewMine": "You: {{text}}",
       "previewOther": "{{who}}: {{text}}",
-      "previewFiles": "📎 File",
+      "previewFiles": "Sent a file",
       "previewDeleted": "Message was recalled",
       "deleted": "Message was recalled",
       "today": "Today",

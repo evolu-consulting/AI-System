@@ -82,3 +82,10 @@ export const IconImage = (p: P) => (
     <path d="m21 15-4.5-4.5L6 21" />
   </svg>
 );
+/** CR-179 · dòng xem trước tin cuối có tệp. */
+export const IconFile = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z" />
+    <path d="M14 3v4h4" />
+  </svg>
+);
