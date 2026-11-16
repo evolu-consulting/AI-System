@@ -687,7 +687,12 @@
   }
   [data-mod="community"] .feedcomposer.collapsed .ctype {
     flex: 1;
+    min-width: 0;
     justify-content: center;
+    gap: 5px;
+    padding: 0 6px;
+    white-space: nowrap;
+    font-size: 13px;
   }
   [data-mod="community"] .feedcomposer.collapsed .ctype span {
     display: inline;
