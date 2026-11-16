@@ -6,7 +6,7 @@ import { Badge } from "@ai/web-kit/ui/kit/badge";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { type MutableRefObject, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { msgKeys } from "../api";
 import { useConversation, useMarkRead, useMessages, useOutbox, useRevoke } from "../hooks/use-chat";
@@ -18,6 +18,7 @@ import { errorKey, isGone } from "../lib/errors";
 import { lastMineSeq } from "../lib/message-pages";
 import { composerLocked } from "../lib/perms";
 import { cn, confirmDialog, Skeleton } from "../ui";
+import { DropOverlay, useFileDrop } from "./file-drop";
 import { GroupMembersSheet } from "./GroupMembersSheet";
 import { MessageComposer } from "./MessageComposer";
 import { MessageList } from "./MessageList";
@@ -279,13 +280,22 @@ function ChatBody({
 }
 
 /** Chân khung: ô soạn; cuộc `partner` chỉ đọc ⇒ câu giải thích thay ô soạn (CR-169). */
-function ChatFooter({ d, onSend }: { d: ConversationDetail; onSend: Box["send"] }) {
+function ChatFooter({
+  d,
+  onSend,
+  dropSink,
+}: {
+  d: ConversationDetail;
+  onSend: Box["send"];
+  dropSink: MutableRefObject<((files: File[]) => void) | null>;
+}) {
   const { t } = useTranslation();
   if (d.kind === "partner" && d.read_only) return <ReadOnlyNotice d={d} />;
   return (
     <MessageComposer
       conversationId={d.id}
       onSend={onSend}
+      dropSink={dropSink}
       lockedReason={composerLocked(d) ? t("contracts.messages.peerGone") : null}
     />
   );
@@ -299,6 +309,9 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
   const box = useOutbox(id, myId);
   const [sheet, setSheet] = useState(false);
   const [feed, setFeed] = useState(false);
+  const dropSink = useRef<((files: File[]) => void) | null>(null);
+  const drop = useFileDrop(dropSink);
+  const dropping = drop.active;
   const last = msgs.items[msgs.items.length - 1]?.seq ?? null;
   useMarkRead(id, conv.data ? last : null, myId);
   const readAt = useOpenReadMark(id, conv.data, myId);
@@ -320,7 +333,11 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
     <section
       aria-label={d ? convTitle(d) : t("contracts.messages.title")}
       data-testid="chat-view"
-      className={cn("flex h-full min-h-0 flex-col bg-panel", !compact && "border-l border-rule")}
+      className={cn(
+        "relative flex h-full min-h-0 flex-col bg-panel",
+        !compact && "border-l border-rule",
+      )}
+      {...drop.handlers}
     >
       <ChatHeader
         title={d ? convTitle(d) : ""}
@@ -335,7 +352,8 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
       />
       <ChatBody d={d} msgs={msgs} box={box} myId={myId} readAt={readAt} />
       <PartnerFeed d={d} open={feed} onClose={() => setFeed(false)} />
-      {d && <ChatFooter d={d} onSend={box.send} />}
+      {d && <ChatFooter d={d} onSend={box.send} dropSink={dropSink} />}
+      {dropping && <DropOverlay label={t("contracts.messages.dropHere")} />}
       {d?.kind === "group" && (
         <GroupMembersSheet
           open={sheet}

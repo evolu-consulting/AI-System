@@ -52,3 +52,11 @@ export const IconMore = (p: P) => (
     <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth={3} />
   </svg>
 );
+/** CR-178 · M2 · nút emoji ở ô soạn (khái niệm `emoji` của bộ kit; kit chưa xuất `ICONS` qua đường import nên vẽ lại cùng nét Smile). */
+export const IconSmile = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+    <path d="M9 9h.01M15 9h.01" />
+  </svg>
+);

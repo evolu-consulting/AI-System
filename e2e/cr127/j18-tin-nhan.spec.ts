@@ -68,3 +68,60 @@ test("A nhắn B: B thấy chưa đọc, mở thì hết, A thấy «Đã xem»"
   await ctxA.close();
   await ctxB.close();
 });
+
+// CR-178 · M2 · ô soạn: chọn emoji ⇒ chèn vào chữ; dán ảnh chụp màn hình ⇒ chip tệp; gửi ⇒ B (người nhận, khác người gửi) thấy tin có emoji (chưa chạy trong lát).
+test("A chèn emoji và dán ảnh rồi gửi, B thấy", async ({ browser }) => {
+  test.setTimeout(180_000);
+  const ctxA = await browser.newContext();
+  const ctxB = await browser.newContext();
+  const a = await ctxA.newPage();
+  const b = await ctxB.newPage();
+  await loginCw(a, E, U.employee);
+  await loginCw(b, E, U.director);
+  await b.goto("/contracts/messages");
+
+  await a.goto("/contracts/messages");
+  await a.getByRole("button", { name: "Nhắn tin mới" }).first().click();
+  const dlg = a.getByTestId("new-conv-dialog");
+  await dlg.getByRole("searchbox", { name: "Tìm đồng nghiệp" }).fill("giam");
+  await dlg.getByRole("checkbox").first().check();
+  await dlg.getByRole("button", { name: "Nhắn tin", exact: true }).click();
+
+  const box = a.getByRole("textbox", { name: "Nhập tin nhắn" });
+  const TEXT = `Emoji ${Date.now().toString(36)}`;
+  await box.fill(TEXT);
+  // emoji: mở bảng, chọn ô đầu ⇒ chèn tại con trỏ (cuối chữ), bảng đóng, focus về ô soạn
+  await a.getByTestId("composer-emoji").click();
+  await a.getByTestId("emoji-picker").getByRole("gridcell").first().click();
+  await expect(a.getByTestId("emoji-picker")).toHaveCount(0);
+  await expect(box).toBeFocused();
+  await expect(box).toHaveValue(new RegExp(`^${TEXT}p{Extended_Pictographic}`, "u"));
+
+  // dán ảnh chụp màn hình (không có chữ) ⇒ chip tệp «image.png»
+  await box.evaluate((el) => {
+    const png = Uint8Array.from(
+      atob(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==",
+      ),
+      (c) => c.charCodeAt(0),
+    );
+    const dt = new DataTransfer();
+    dt.items.add(new File([png], "image.png", { type: "image/png" }));
+    el.dispatchEvent(
+      new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }),
+    );
+  });
+  await expect(a.getByText("image.png")).toBeVisible();
+  await a.getByRole("button", { name: "Gửi", exact: true }).click();
+  await expect(a.getByTestId("msg-row").filter({ hasText: TEXT })).toBeVisible();
+
+  // B (người nhận): thấy tin có emoji
+  const first = b.getByTestId("conv-row").filter({ hasText: FROM });
+  await first.click();
+  await expect(b.getByTestId("msg-row").filter({ hasText: TEXT })).toContainText(
+    /\p{Extended_Pictographic}/u,
+  );
+
+  await ctxA.close();
+  await ctxB.close();
+});

@@ -4,12 +4,14 @@ import { type FileRef, MSG_BODY_MAX } from "@ai/contracts/pack-contracts";
 import { attachPickLabels } from "@ai/web-kit/attach-layout";
 import { AttachDraftList } from "@ai/web-kit/ui/AttachDraft";
 import { AttachPickButton } from "@ai/web-kit/ui/AttachDropzone";
-import { useEffect, useRef, useState } from "react";
+import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useStagedFiles } from "../hooks/use-staged-files";
 import { IconSend } from "../icons";
 import { attachLabels, toDraftItem } from "../lib/attach-view";
+import { insertAtCursor, pastedFiles } from "../lib/composer";
 import { ATTACH_ACCEPT } from "../lib/files";
+import { EmojiButton } from "./EmojiButton";
 
 /** ~6 dòng (leading-6 = 24px) rồi cuộn; khớp `max-h-36` (144px). */
 const MAX_H = 144;
@@ -18,15 +20,49 @@ export function MessageComposer({
   conversationId,
   onSend,
   lockedReason,
+  dropSink,
 }: {
   conversationId: string;
   onSend: (body: string, files: readonly FileRef[]) => void;
   lockedReason: string | null;
+  /** CR-178 · M2 · khung chat đặt hàm nhận tệp thả vào đây (null khi ô khoá). */
+  dropSink?: MutableRefObject<((files: File[]) => void) | null>;
 }) {
   const { t, i18n } = useTranslation();
   const [text, setText] = useState("");
   const box = useRef<HTMLTextAreaElement>(null);
   const staged = useStagedFiles(conversationId);
+  const caret = useRef<number | null>(null);
+  const locked = lockedReason !== null;
+  useEffect(() => {
+    if (!dropSink) return;
+    dropSink.current = locked ? null : staged.add;
+    return () => {
+      dropSink.current = null;
+    };
+  });
+  // đặt con trỏ sau emoji vừa chèn (sau khi React ghi chữ mới)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chạy theo `text`
+  useEffect(() => {
+    const el = box.current;
+    if (el && caret.current !== null) {
+      el.setSelectionRange(caret.current, caret.current);
+      caret.current = null;
+    }
+  }, [text]);
+  const insertEmoji = (emoji: string) => {
+    const el = box.current;
+    const r = insertAtCursor(
+      text,
+      el?.selectionStart ?? text.length,
+      el?.selectionEnd ?? text.length,
+      emoji,
+      MSG_BODY_MAX,
+    );
+    if (!r) return;
+    caret.current = r.caret;
+    setText(r.text);
+  };
   // biome-ignore lint/correctness/useExhaustiveDependencies: cao theo nội dung mỗi lần gõ
   useEffect(() => {
     const el = box.current;
@@ -75,7 +111,7 @@ export function MessageComposer({
         />
       </div>
       {/* CR-178 · chữ ở trên, hàng nút cố định ở đáy (đính kèm trái, Gửi phải) ⇒ gõ thêm dòng thì nút không nhảy; cao tối đa ~6 dòng rồi cuộn.
-          M2 chèn nút emoji cạnh «Đính kèm» (cột trái của hàng nút). */}
+          M2: nút emoji cạnh «Đính kèm»; dán ảnh/kéo thả ⇒ `staged.add`. */}
       <div className="rounded-2xl border border-rule bg-panel focus-within:border-act-line">
         <textarea
           ref={box}
@@ -85,6 +121,12 @@ export function MessageComposer({
           placeholder={t("contracts.messages.placeholder")}
           aria-label={t("contracts.messages.composer")}
           onChange={(e) => setText(e.target.value)}
+          onPaste={(e) => {
+            const files = pastedFiles(e.clipboardData);
+            if (files.length === 0) return;
+            e.preventDefault();
+            staged.add(files);
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
@@ -95,6 +137,7 @@ export function MessageComposer({
         />
         <div className="flex items-center justify-between px-2 pb-2" data-testid="composer-actions">
           <div className="flex items-center gap-1">
+            <EmojiButton onPick={insertEmoji} onClosed={() => box.current?.focus()} />
             <AttachPickButton
               labels={attachPickLabels(t, "contracts.messages.attachPick")}
               accept={ATTACH_ACCEPT}

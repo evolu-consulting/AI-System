@@ -45,6 +45,15 @@
       "loadOlder": "Xem tin cũ hơn",
       "noDept": "Chưa có phòng",
       "loadingMore": "Đang tải…",
+      "emoji": {
+        "open": "Chèn emoji",
+        "search": "Tìm emoji…",
+        "skin": "Đổi màu da",
+        "recent": "Dùng gần đây",
+        "loading": "Đang tải…",
+        "empty": "Không có emoji phù hợp."
+      },
+      "dropHere": "Thả tệp để gửi kèm",
       "composer": "Nhập tin nhắn",
       "placeholder": "Nhập tin nhắn…",
       "send": "Gửi",

@@ -330,6 +330,7 @@
         "@ai/contracts": "workspace:*",
         "@ai/web-kit": "workspace:*",
         "@tanstack/react-query": "5.104.0",
+        "frimousse": "0.4.0",
         "react-i18next": "17.0.15",
       },
       "devDependencies": {
@@ -1158,6 +1159,8 @@
     "fflate": ["fflate@0.8.3", "", {}, "sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA=="],
 
     "find-up": ["find-up@4.1.0", "", { "dependencies": { "locate-path": "^5.0.0", "path-exists": "^4.0.0" } }, "sha512-PpOwAdQ/YlXQ2vj8a3h8IipDuYRi3wceVQQGYWxNINccq40Anw7BlsEXCMbt1Zt+OLA6Fq9suIpIWD0OsnISlw=="],
+
+    "frimousse": ["frimousse@0.4.0", "", { "peerDependencies": { "react": "^18 || ^19", "typescript": ">=5.1.0" }, "optionalPeers": ["typescript"] }, "sha512-wA/1Xt9UTk51wYNpy+EvHKPUA4jdm4NuEFzSNNZxqT0Nxrj4RFwYByjRMuaq4qSLOco/ikDCpLKesB8W1w2q+Q=="],
 
     "fsevents": ["fsevents@2.3.3", "", { "os": "darwin" }, "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw=="],
 

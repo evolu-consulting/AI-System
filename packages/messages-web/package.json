@@ -19,6 +19,7 @@
     "@ai/contracts": "workspace:*",
     "@ai/web-kit": "workspace:*",
     "@tanstack/react-query": "5.104.0",
+    "frimousse": "0.4.0",
     "react-i18next": "17.0.15"
   },
   "devDependencies": {
