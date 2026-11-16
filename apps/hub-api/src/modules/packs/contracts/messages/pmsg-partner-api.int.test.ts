@@ -35,7 +35,12 @@ let o: Sql;
 let db: Db;
 let redis: Redis;
 /** FileBox giả: đếm byte lên/gỡ, link theo org. */
-const box = { puts: 0, live: new Set<string>(), removed: [] as { org: string; id: string }[] };
+const box = {
+  mode: "ok" as "ok" | "down" | "big",
+  puts: 0,
+  live: new Set<string>(),
+  removed: [] as { org: string; id: string }[],
+};
 const fakeBox = (org: string) => ({
   postFile: async () => {
     box.puts++;
@@ -44,6 +49,12 @@ const fakeBox = (org: string) => ({
     return { fileId, versionId: "v1" };
   },
   getLink: async (id: string) => (box.live.has(id) ? `https://fb.test/${org}/${id}` : null),
+  getContent: async (id: string, max?: number) => {
+    if (box.mode === "down") throw new Error("filebox down http://filebox.internal:9000/secret");
+    if (box.mode === "big" && max !== undefined)
+      throw Object.assign(new Error("big"), { name: "StorageTooLarge" });
+    return box.live.has(id) ? new Uint8Array([37, 80, 68, 70, 1, 2, 3]) : null;
+  },
   deleteFile: async (id: string) => {
     box.removed.push({ org, id });
     return box.live.delete(id) ? ("deleted" as const) : ("missing" as const);
@@ -97,7 +108,6 @@ function app(user: string) {
     messagesModule(db, view(), {
       redis,
       filebox: fakeBox,
-      fetchFile: async () => new Response(new Uint8Array([37, 80, 68, 70, 1, 2, 3])),
     }),
   );
   h.onError((e, c) => {
@@ -302,6 +312,14 @@ describe("CR-169 3b · tệp: tải lên, chưa gắn thì chỉ người tải 
     expect(new Uint8Array(await r.arrayBuffer())).toEqual(PDF);
     const out = await app(LAN).request(`${P(vyHa)}/files/${fileA}/content`);
     expect(out.status).toBe(404);
+    // FileBox lỗi ⇒ 503 không lộ URL nội bộ; tệp quá lớn ⇒ 413
+    box.mode = "down";
+    const down = await app(HA).request(`${P(vyHa)}/files/${fileA}/content`);
+    expect(down.status).toBe(503);
+    expect(await down.text()).not.toContain("filebox.internal");
+    box.mode = "big";
+    expect((await app(HA).request(`${P(vyHa)}/files/${fileA}/content`)).status).toBe(413);
+    box.mode = "ok";
   });
 
   it("đuôi lạ ⇒ 415; > 20 MB ⇒ 413 trước khi đọc thân; không byte nào lên FileBox", async () => {

@@ -34,6 +34,7 @@ const fakeBox = (org: string) => ({
     return { fileId, versionId: "v1" };
   },
   getLink: async (id: string) => (box.live.has(id) ? `https://fb.test/${org}/${id}` : null),
+  getContent: async () => null,
   deleteFile: async (id: string) =>
     box.live.delete(id) ? ("deleted" as const) : ("missing" as const),
 });

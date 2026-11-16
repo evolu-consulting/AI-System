@@ -24,6 +24,7 @@ function setup(rows: Map<string, PackFileRow & { tenantId: string }>) {
       calls.push({ org, op: "post", arg: name });
       return { fileId: "fb-new", versionId: "v1" };
     },
+    getContent: async () => null,
     getLink: async (fileId) => {
       calls.push({ org, op: "link", arg: fileId });
       return `http://fb/d/${fileId}-tok`;

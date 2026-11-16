@@ -1,5 +1,5 @@
 // CR-178 · M3 · «Xem trước tệp»: hộp lớn nền tối. Ảnh (png/jpg/gif/webp) và PDF xem trong trang; Word/Excel/ZIP… chỉ «Tải về».
-// AN TOÀN: tải byte về bằng link ngắn hạn, gắn đúng `mime` đã lưu, xem qua `blob:` (ảnh `<img>`, PDF `<iframe sandbox>`), thu hồi khi đổi tệp/đóng; svg/html không bao giờ render.
+// AN TOÀN: tải byte qua hub-api (`…/files/:id/content`, Bearer, cùng origin; không `fetch` xuyên origin tới FileBox) và gắn đúng `mime` đã lưu, xem qua `blob:` (ảnh `<img>`, PDF `<iframe sandbox>`), thu hồi khi đổi tệp/đóng; svg/html không bao giờ render.
 import type { MsgAttachment } from "@ai/contracts/pack-contracts";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@ai/web-kit/ui/kit/dialog";
 import { toast } from "@ai/web-kit/ui/toast";

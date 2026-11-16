@@ -43,6 +43,36 @@ type Attempt = { res: Response | null; status: number | null };
 /** Một yêu cầu đã có token — gom tham số của `#retry`/`#attempt` (nợ #212). */
 type Req = { method: string; path: string; body: Uint8Array | undefined; token: string };
 
+/** Đọc thân phản hồi nhưng dừng và ném `StorageTooLarge` ngay khi vượt `max` byte (`content-length` lớn hơn ⇒ ném trước khi đọc). */
+export async function readCapped(res: Response, max: number): Promise<Uint8Array> {
+  const declared = Number(res.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > max) {
+    await res.body?.cancel().catch(() => undefined);
+    throw new StorageTooLarge("filebox content too large");
+  }
+  const reader = res.body?.getReader();
+  if (!reader) return new Uint8Array(0);
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      await reader.cancel().catch(() => undefined);
+      throw new StorageTooLarge("filebox content too large");
+    }
+    parts.push(value);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const c of parts) {
+    out.set(c, at);
+    at += c.byteLength;
+  }
+  return out;
+}
+
 export class FileboxClient {
   #ca: string | null | undefined; // undefined = chưa đọc; null = không dùng (http/mock)
 
@@ -60,14 +90,16 @@ export class FileboxClient {
     return { fileId: j.file_id, versionId: j.version_id };
   }
 
-  /** `GET /files/{id}/content` (idempotent) ⇒ toàn bộ byte (200/206); 404 ⇒ null (content-missing); khác ⇒ fail-closed. */
-  async getContent(fileId: string): Promise<Uint8Array | null> {
+  /** `GET /files/{id}/content` (idempotent) ⇒ toàn bộ byte (200/206); 404 ⇒ null (content-missing); khác ⇒ fail-closed.
+   * `maxBytes` (tuỳ chọn): vượt (theo `content-length` hoặc đếm khi đọc) ⇒ `StorageTooLarge`, không đọc hết. */
+  async getContent(fileId: string, maxBytes?: number): Promise<Uint8Array | null> {
     const res = await this.#send("GET", `/files/${encodeURIComponent(fileId)}/content`, {
       retryable: true,
     });
     if (res.status === 404) return null;
     if (!res.ok) throw new FileboxUnavailable(`filebox content ${res.status}`);
-    return new Uint8Array(await res.arrayBuffer());
+    if (maxBytes === undefined) return new Uint8Array(await res.arrayBuffer());
+    return readCapped(res, maxBytes);
   }
 
   /** `GET /files/{id}/link` (idempotent) ⇒ URL tải tuyệt đối (`FILEBOX_URL + /d/…`); 404 ⇒ null. */

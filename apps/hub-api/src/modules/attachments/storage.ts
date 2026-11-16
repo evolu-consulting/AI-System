@@ -49,7 +49,9 @@ export interface AttachmentStorage {
 }
 
 /** Vượt `maxBytes` khi ghi (413). */
-export class StorageTooLarge extends Error {}
+export class StorageTooLarge extends Error {
+  override name = "StorageTooLarge"; // gói (packs/**) không import module attachments ⇒ nhận diện theo tên
+}
 /** `inspect` từ chối nội dung (415). */
 export class StorageRejected extends Error {}
 /** Khoá sai / thư mục tenant ngoài gốc. */

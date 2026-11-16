@@ -12,6 +12,7 @@ import type { PackUow } from "../application/ports";
 export type PackFileboxClient = {
   postFile(name: string, bytes: Uint8Array): Promise<{ fileId: string; versionId: string }>;
   getLink(fileId: string): Promise<string | null>;
+  getContent(fileId: string, maxBytes?: number): Promise<Uint8Array | null>;
   deleteFile(fileId: string): Promise<"deleted" | "missing">;
 };
 

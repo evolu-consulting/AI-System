@@ -1,7 +1,7 @@
 // HUB-FR-138 · nợ #212: `#retry`/`#attempt` gom tham số thành một object — hành vi giữ nguyên: GET 5xx ⇒ thử lại theo
 // `retryDelaysMs` cùng method/path/token; POST không retry; 401 ⇒ làm mới token đúng một lần. Máy chủ giả cục bộ (Bun.serve).
 import { afterAll, describe, expect, test } from "bun:test";
-import { FileboxClient } from "./filebox.client";
+import { FileboxClient, readCapped } from "./filebox.client";
 
 type Hit = { method: string; path: string; auth: string | null };
 const hits: Hit[] = [];
@@ -75,5 +75,19 @@ describe("FileboxClient · publicPath (FileBox riêng nội bộ)", () => {
       log: log as never,
     });
     expect(await c.getLink("f1")).toBe("/_fb/d/x");
+  });
+});
+
+describe("CR-178 · readCapped: trần byte khi đọc thân FileBox", () => {
+  const body = (n: number, headers: Record<string, string> = {}) =>
+    new Response(new Uint8Array(n).fill(7), { headers });
+  test("đúng trần ⇒ đủ byte; vượt trần (đếm khi đọc) ⇒ StorageTooLarge", async () => {
+    expect((await readCapped(body(10), 10)).byteLength).toBe(10);
+    await expect(readCapped(body(11), 10)).rejects.toMatchObject({ name: "StorageTooLarge" });
+  });
+  test("content-length khai báo vượt trần ⇒ ném trước khi đọc", async () => {
+    await expect(readCapped(body(5, { "content-length": "999" }), 10)).rejects.toMatchObject({
+      name: "StorageTooLarge",
+    });
   });
 });

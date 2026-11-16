@@ -22,7 +22,7 @@ Không đổi migration, contract zod, web-kit. Chạm: `apps/hub-api/.../messag
 
 ## Quyết định trong lúc làm
 - Byte tệp trả bằng `content-type: application/octet-stream` + `nosniff` + `content-disposition: attachment` + CSP `sandbox` (server không tin kiểu tệp); web gắn `mime` đã lưu từ danh sách «Ảnh & tệp» và chỉ ảnh raster/PDF mới hiển thị (qua `previewKind`), PDF trong `<iframe sandbox>`.
-- Server đọc byte từ link FileBox bằng `fetch` phía server (cùng mạng với client FileBox của chính hub-api); link tương đối (FileBox qua proxy công khai cùng origin) ⇒ route trả 404 vì trình duyệt tự tải được, không cần đường này. Thêm `deps.fetchFile` ở `messagesModule` cho test.
+- Server đọc byte máy chủ ↔ máy chủ bằng `filebox(org).getContent(id, ATTACH_MAX_BYTES)` (có token, timeout, retry; chạy được cả khi bật `FILEBOX_PUBLIC_PATH`). Vượt 20 MB (theo `content-length` hoặc đếm khi đọc, `readCapped`) ⇒ 413 `MSG_FILE_TOO_LARGE`; FileBox lỗi ⇒ 503 `FILE_STORAGE_UNAVAILABLE`, không lộ URL nội bộ. Hiện buffer cả tệp (≤ 20 MB), chưa stream.
 - Việc ngoài phạm vi (A12): `pmsg-db.int.test.ts:412` đang lỗi tsc sẵn (không do lát này).
 
 ## Delta (so với docs/current)
@@ -37,4 +37,4 @@ Xem trước ảnh/PDF của «Ảnh & tệp» tải byte qua hub-api (`GET …/
 - Kịch bản: B mở «Ảnh & tệp» ⇒ «Xem trước» PDF hiển thị trong hộp [test: e2e/cr127/j18-tim-tin-nhan.spec.ts » B tìm «bao gia» ra tin của A, mở đúng tin]
 
 ## Việc còn lại
-Chờ kết quả e2e `cr127,cr169`; int test chưa chạy (chạy trên evotest khi điều phối gộp).
+Không. (e2e `cr127,cr169` xanh phần Tin nhắn; `j07` flaky ngoài phạm vi. Int `messages-files`, `pmsg-partner-api`, `messages-read-cr178` xanh 31/0.)

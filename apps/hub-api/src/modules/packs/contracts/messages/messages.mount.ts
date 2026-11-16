@@ -1,7 +1,10 @@
 // CR-132 M3 · HD-MSG-01..12 · nối API tin nhắn Sổ Hợp Tác: `PackUow` (role `contracts_rw`) + tra người dùng (kit, admin.users) → use case → route. Gắn dưới
 // `/pack/contracts` ở `packs.mount.ts`.
+import { ATTACH_MAX_BYTES } from "@ai/contracts/attach";
+import { MSG_ERRORS } from "@ai/contracts/pack-contracts";
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
+import { AppError } from "../../../../lib/errors";
 import { logger } from "../../../../lib/logger";
 import { startLoop } from "../../../../lib/loop";
 import type { Redis } from "../../../../lib/redis";
@@ -32,8 +35,6 @@ export function messagesModule(
     redis?: Redis | undefined;
     filebox?: ((org: string) => PackFileboxClient) | null | undefined;
     worker?: boolean | undefined;
-    /** Thay `fetch` khi đọc byte từ link FileBox (test). */
-    fetchFile?: ((url: string) => Promise<Response>) | undefined;
     signal?: AbortSignal | undefined;
   } = {},
 ): Hono<PackGuardVars> {
@@ -45,11 +46,19 @@ export function messagesModule(
           await filebox(org).deleteFile(fileId);
         },
         link: (org, fileId) => filebox(org).getLink(fileId),
+        // CR-178 · xem trước: máy chủ ↔ máy chủ qua client FileBox (có token, timeout, retry); tối đa ATTACH_MAX_BYTES. FileBox lỗi ⇒ 503 (không lộ URL nội bộ); quá lớn ⇒ 413.
         bytes: async (org, fileId) => {
-          const url = await filebox(org).getLink(fileId);
-          if (!url || !/^https?:\/\//.test(url)) return null; // link tương đối (qua proxy công khai) ⇒ trình duyệt tự tải cùng origin
-          const res = await (deps.fetchFile ?? fetch)(url).catch(() => null);
-          return res?.ok ? new Uint8Array(await res.arrayBuffer()) : null;
+          try {
+            return await filebox(org).getContent(fileId, ATTACH_MAX_BYTES);
+          } catch (e) {
+            if (e instanceof Error && e.name === "StorageTooLarge")
+              throw new AppError(
+                "MSG_FILE_TOO_LARGE",
+                MSG_ERRORS.MSG_FILE_TOO_LARGE,
+                "MSG_FILE_TOO_LARGE",
+              );
+            throw new AppError("FILE_STORAGE_UNAVAILABLE", 503, "FILE_STORAGE_UNAVAILABLE");
+          }
         },
       }
     : undefined;
