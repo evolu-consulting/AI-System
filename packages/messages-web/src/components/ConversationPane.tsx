@@ -122,8 +122,6 @@ export function ConversationPane({
       <NewConversationDialog
         open={creating}
         myId={myId}
-        ownId={ownId}
-        ownName={own?.name ?? ""}
         onClose={() => setCreating(false)}
         onOpened={(id) => {
           setCreating(false);

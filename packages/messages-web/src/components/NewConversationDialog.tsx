@@ -1,11 +1,14 @@
 // CR-132 · W2 · «Nhắn tin mới»: chọn 1 người ⇒ mở 1-1; chọn ≥ 2 ⇒ hiện «Tên nhóm» (bắt buộc) + «Tạo nhóm».
+// CR-178 · hai tab: «Công ty mình» (theo phòng ban, chọn nhiều ⇒ nhóm, tối đa 50) và «Đối tác» (chọn công ty rồi 1 người ⇒ nhắn riêng; nhóm chỉ nội bộ).
+// Người đã chọn hiện thành chip ở ô «Tới:».
 import { MSG_GROUP_MAX, MSG_TITLE_MAX, type MsgPerson } from "@ai/contracts/pack-contracts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCompanies, useCreateConversation } from "../hooks/use-conversations";
+import { IconClose } from "../icons";
 import { errorKey } from "../lib/errors";
-import { pickMode } from "../lib/people";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui";
+import { type NewChatTab, needsGroupName, planNewChat, toggleSelection } from "../lib/new-chat";
+import { cn, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui";
 import { PeoplePicker } from "./PeoplePicker";
 
 function GroupNameField({
@@ -26,6 +29,7 @@ function GroupNameField({
         maxLength={MSG_TITLE_MAX}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={error}
+        data-testid="new-conv-title"
         className="h-9 rounded-lg border border-field bg-panel px-3 text-[13.5px] outline-none focus-visible:border-act-line"
       />
       <span className={error ? "text-late" : "text-dim"}>
@@ -37,33 +41,91 @@ function GroupNameField({
   );
 }
 
-/** CR-169 · «Người của công ty»: công ty mình (nhắn riêng/nhóm) hoặc một công ty đã kết nối (nhắn riêng 1 người). */
-function ScopeField({
+/** Ô «Tới:» — chip người đã chọn (bấm × để bỏ). */
+function ToField({
+  people,
+  onRemove,
+}: {
+  people: readonly MsgPerson[];
+  onRemove: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  if (people.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-label" data-testid="new-conv-to">
+      <span className="text-dim">{t("contracts.messages.toLabel")}</span>
+      {people.map((p) => (
+        <span
+          key={p.id}
+          data-testid="new-conv-chip"
+          className="inline-flex max-w-44 items-center gap-1 rounded-full bg-act-soft py-0.5 pr-1 pl-2.5"
+        >
+          <span className="truncate">{p.name}</span>
+          <button
+            type="button"
+            onClick={() => onRemove(p.id)}
+            aria-label={t("contracts.messages.removePicked", { name: p.name })}
+            className="grid h-5 w-5 place-items-center rounded-full text-dim hover:bg-sunk hover:text-ink"
+          >
+            <IconClose width={12} height={12} />
+          </button>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function TabBar({ tab, onTab }: { tab: NewChatTab; onTab: (t: NewChatTab) => void }) {
+  const { t } = useTranslation();
+  const item = (id: NewChatTab, label: string) => (
+    <button
+      type="button"
+      aria-pressed={tab === id}
+      data-testid={`new-tab-${id}`}
+      onClick={() => onTab(id)}
+      className={cn(
+        "h-8 rounded-lg px-3 text-label",
+        tab === id ? "bg-act-soft font-semibold text-ink" : "text-dim hover:bg-sunk",
+      )}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div role="toolbar" aria-label={t("contracts.messages.newTitle")} className="flex gap-1">
+      {item("own", t("contracts.messages.tabOwn"))}
+      {item("partner", t("contracts.messages.tabPartnerNew"))}
+    </div>
+  );
+}
+
+/** Tab «Đối tác»: chọn công ty đã kết nối (mặc định công ty đầu), rồi chọn 1 người của công ty đó. */
+function CompanyField({
   value,
   onChange,
-  ownId,
-  ownName,
   enabled,
 }: {
   value: string;
   onChange: (v: string) => void;
-  ownId: string;
-  ownName: string;
   enabled: boolean;
 }) {
   const { t } = useTranslation();
   const companies = useCompanies(enabled);
-  if (companies.items.length === 0 && !companies.hasNextPage) return null;
+  const first = companies.items[0]?.id;
+  useEffect(() => {
+    if (!value && first) onChange(first);
+  }, [value, first, onChange]);
+  if (companies.items.length === 0 && !companies.hasNextPage)
+    return <p className="m-0 text-label text-dim">{t("contracts.messages.partnerNone")}</p>;
   return (
     <label className="grid gap-1 text-label">
-      <span className="font-medium">{t("contracts.messages.scopeLabel")}</span>
+      <span className="font-medium">{t("contracts.messages.pickCompany")}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         data-testid="new-conv-scope"
         className="h-9 rounded-lg border border-field bg-panel px-2 text-[13.5px] outline-none focus-visible:border-act-line"
       >
-        <option value="own">{ownName || ownId}</option>
         {companies.items.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}
@@ -86,71 +148,51 @@ function ScopeField({
 export function NewConversationDialog({
   open,
   myId,
-  ownId,
-  ownName,
   onClose,
   onOpened,
 }: {
   open: boolean;
   myId: string;
-  ownId: string;
-  ownName: string;
   onClose: () => void;
   /** Mở hội thoại vừa tạo / đã có. */
   onOpened: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const create = useCreateConversation();
-  const [sel, setSel] = useState<ReadonlySet<string>>(new Set());
+  const [tab, setTab] = useState<NewChatTab>("own");
+  const [picked, setPicked] = useState<readonly MsgPerson[]>([]);
   const [title, setTitle] = useState("");
   const [touched, setTouched] = useState(false);
-  const [scope, setScope] = useState("own");
-  const [pickedPerson, setPickedPerson] = useState<MsgPerson | null>(null);
-  const partner = scope !== "own";
-  const mode = partner ? (sel.size > 0 ? "direct" : "none") : pickMode(sel.size);
-  const nameMissing = mode === "group" && title.trim() === "";
+  const [company, setCompany] = useState("");
+  const ids = picked.map((x) => x.id);
+  const plan = planNewChat(tab, ids, title, picked[0] ?? null);
+  const nameMissing = needsGroupName(tab, ids.length) && title.trim() === "";
+  const full = tab === "own" && ids.length >= MSG_GROUP_MAX - 1;
   const reset = () => {
-    setSel(new Set());
+    setTab("own");
+    setPicked([]);
     setTitle("");
     setTouched(false);
-    setScope("own");
-    setPickedPerson(null);
+    setCompany("");
     create.reset();
   };
-  const changeScope = (v: string) => {
-    setScope(v);
-    setSel(new Set());
-    setPickedPerson(null);
+  const changeTab = (next: NewChatTab) => {
+    setTab(next);
+    setPicked([]);
     create.reset();
   };
   const toggle = (id: string, person: MsgPerson) => {
-    if (partner) {
-      // Công ty khác: nhắn riêng 1 người, chọn người khác thì thay.
-      setSel((s) => (s.has(id) ? new Set() : new Set([id])));
-      setPickedPerson((p) => (p?.id === id ? null : person));
-      return;
-    }
-    setSel((s) => {
-      const n = new Set(s);
-      if (!n.delete(id)) n.add(id);
-      return n;
-    });
+    const next = new Set(toggleSelection(ids, id, tab));
+    setPicked((cur) =>
+      [...cur, person].filter(
+        (x, i, a) => next.has(x.id) && a.findIndex((y) => y.id === x.id) === i,
+      ),
+    );
   };
   const submit = () => {
     setTouched(true);
-    const ids = [...sel];
-    if (mode === "none" || mode === "full" || nameMissing || create.isPending) return;
-    const body =
-      partner && pickedPerson
-        ? ({
-            kind: "partner",
-            tenant_id: pickedPerson.company.id,
-            user_id: pickedPerson.id,
-          } as const)
-        : mode === "direct" && ids[0]
-          ? ({ kind: "direct", user_id: ids[0] } as const)
-          : ({ kind: "group", title: title.trim(), member_ids: ids } as const);
-    create.mutate(body, {
+    if (!plan.ok || create.isPending) return;
+    create.mutate(plan.body, {
       onSuccess: (d) => {
         reset();
         onOpened(d.id);
@@ -162,9 +204,7 @@ export function NewConversationDialog({
     onClose();
   };
   const label =
-    mode === "group" || mode === "full"
-      ? t("contracts.messages.createGroup")
-      : t("contracts.messages.openChat");
+    ids.length >= 2 ? t("contracts.messages.createGroup") : t("contracts.messages.openChat");
   return (
     <Dialog
       open={open}
@@ -176,35 +216,33 @@ export function NewConversationDialog({
         <DialogHeader>
           <DialogTitle>{t("contracts.messages.newTitle")}</DialogTitle>
           <DialogDescription>
-            {partner ? t("contracts.messages.pickHintPartner") : t("contracts.messages.pickHint")}
+            {tab === "partner"
+              ? t("contracts.messages.pickHintPartner")
+              : t("contracts.messages.pickHint")}
           </DialogDescription>
         </DialogHeader>
-        <ScopeField
-          value={scope}
-          onChange={changeScope}
-          ownId={ownId}
-          ownName={ownName}
-          enabled={open}
+        <TabBar tab={tab} onTab={changeTab} />
+        <ToField
+          people={picked}
+          onRemove={(id) => setPicked((c) => c.filter((x) => x.id !== id))}
         />
-        <PeoplePicker
-          key={scope}
-          enabled={open}
-          selected={sel}
-          onToggle={toggle}
-          disabledIds={[myId]}
-          company={scope}
-        />
-        {sel.size > 0 && (
-          <p className="m-0 text-label text-dim">
-            {t("contracts.messages.selectedN", { n: sel.size })}
-          </p>
+        {tab === "partner" && <CompanyField value={company} onChange={setCompany} enabled={open} />}
+        {(tab === "own" || company) && (
+          <PeoplePicker
+            key={tab === "own" ? "own" : company}
+            enabled={open}
+            selected={new Set(ids)}
+            onToggle={toggle}
+            disabledIds={[myId]}
+            company={tab === "own" ? "own" : company}
+          />
         )}
-        {mode === "full" && (
+        {full && (
           <p role="alert" className="m-0 text-label text-late">
             {t("contracts.messages.groupFull", { n: MSG_GROUP_MAX })}
           </p>
         )}
-        {(mode === "group" || mode === "full") && (
+        {needsGroupName(tab, ids.length) && (
           <GroupNameField value={title} onChange={setTitle} error={touched && nameMissing} />
         )}
         {create.isError && (
@@ -219,7 +257,7 @@ export function NewConversationDialog({
           <button
             type="button"
             className="btn btn-primary"
-            disabled={mode === "none" || mode === "full" || create.isPending}
+            disabled={ids.length === 0 || create.isPending}
             onClick={submit}
           >
             {label}
