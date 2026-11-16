@@ -20,9 +20,9 @@ export const buttonVariants = cva(
         ghost: "bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
       },
       size: {
-        md: "h-[var(--control-md)] rounded-md px-4 text-md",
-        sm: "h-[var(--control-sm)] rounded-sm px-3 text-sm",
-        icon: "size-[var(--control-md)] rounded-md text-md",
+        md: "h-[var(--control-md)] max-sm:min-h-11 rounded-md px-4 text-md",
+        sm: "h-[var(--control-sm)] max-sm:min-h-11 rounded-sm px-3 text-sm",
+        icon: "size-[var(--control-md)] max-sm:min-h-11 max-sm:min-w-11 rounded-md text-md",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },

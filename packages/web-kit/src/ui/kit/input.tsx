@@ -10,7 +10,7 @@ export function Input({ className, type = "text", ...props }: ComponentProps<"in
     <input
       data-slot="input"
       type={type}
-      className={cn(fieldBase, "h-[var(--control-md)]", className)}
+      className={cn(fieldBase, "h-[var(--control-md)] max-sm:min-h-11", className)}
       {...props}
     />
   );

@@ -14,7 +14,7 @@ export const ToggleGroupItem = ({ className, ...p }: React.ComponentProps<typeof
   <P.Item
     data-slot="toggle-group-item"
     className={cn(
-      "inline-flex h-[var(--control-md)] items-center justify-center px-3 text-sm transition-colors duration-[var(--duration-fast)] first:rounded-l-md last:rounded-r-md hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground",
+      "inline-flex h-[var(--control-md)] max-sm:min-h-11 max-sm:min-w-11 items-center justify-center px-3 text-sm transition-colors duration-[var(--duration-fast)] first:rounded-l-md last:rounded-r-md hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground",
       className,
     )}
     {...p}

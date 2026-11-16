@@ -132,7 +132,13 @@
 @media (max-width: 640px) {
   :root {
     --control-md: 44px;
-    --control-sm: 40px;
+    --control-sm: 44px; /* CR-180 luật 1: vùng bấm ≥ 44px mọi cỡ */
+  }
+  /* CR-180: link chữ đứng riêng trên điện thoại cũng có vùng bấm 44px. */
+  .tap-target {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

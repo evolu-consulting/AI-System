@@ -5,7 +5,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 function NotificationsRoute() {
   const navigate = useNavigate();
-  return <NotificationsPage onNavigate={(href) => void navigate(splitHref(href) as { to: "/" })} />;
+  return (
+    <NotificationsPage
+      embedded
+      onNavigate={(href) => void navigate(splitHref(href) as { to: "/" })}
+    />
+  );
 }
 
 export const Route = createFileRoute("/_authed/contracts/notifications")({

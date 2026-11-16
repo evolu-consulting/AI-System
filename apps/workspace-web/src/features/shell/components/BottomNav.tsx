@@ -17,7 +17,7 @@ import { buildShellNav } from "~/shell/nav";
 import { useShellPacks } from "~/shell/use-shell-packs";
 
 const ITEM =
-  "relative flex h-14 flex-col items-center justify-center gap-0.5 px-1 text-micro text-dim aria-[current=page]:font-semibold aria-[current=page]:text-act";
+  "relative flex h-14 flex-col items-center justify-center gap-0.5 px-0.5 text-xs text-dim aria-[current=page]:font-semibold aria-[current=page]:text-act";
 
 function WaitingItem() {
   const { t } = useTranslation();
@@ -29,7 +29,7 @@ function WaitingItem() {
         {n && (
           <span
             data-testid="bottom-waiting-count"
-            className="tnum absolute -right-3 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-late px-1 text-[10px] font-bold leading-none text-white"
+            className="tnum absolute -right-3 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-late px-1 text-micro font-bold leading-none text-white"
           >
             {n}
           </span>

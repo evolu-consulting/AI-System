@@ -40,7 +40,7 @@ export function DropdownMenuItem({
       data-slot="dropdown-menu-item"
       data-variant={danger ? "danger" : "default"}
       className={cn(
-        "relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors duration-[var(--duration-fast)] select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
+        "relative flex cursor-default items-center gap-2 max-sm:min-h-11 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors duration-[var(--duration-fast)] select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
         danger &&
           "text-destructive data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive",
         className,

@@ -128,12 +128,12 @@ describe("thang chữ và bo góc (CR-177)", () => {
 });
 
 describe("token điều khiển, chuyển động, toast (CR-177)", () => {
-  test("chiều cao nút 40/32, điện thoại 44/40; chuyển động 150ms, giảm chuyển động = 0", () => {
+  test("chiều cao nút 40/32, điện thoại 44/44 (CR-180); chuyển động 150ms, giảm chuyển động = 0", () => {
     expect(light.get("--control-md")).toBe("40px");
     expect(light.get("--control-sm")).toBe("32px");
     expect(light.get("--duration-fast")).toBe("150ms");
     expect(css).toMatch(
-      /max-width: 640px\)\s*\{\s*:root\s*\{\s*--control-md: 44px;\s*--control-sm: 40px;/,
+      /max-width: 640px\)\s*\{\s*:root\s*\{\s*--control-md: 44px;\s*--control-sm: 44px;/,
     );
     expect(css).toMatch(
       /prefers-reduced-motion: reduce\)\s*\{\s*:root\s*\{\s*--duration-fast: 0ms;/,

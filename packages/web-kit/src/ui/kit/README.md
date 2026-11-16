@@ -16,3 +16,10 @@ Import: `@ai/web-kit/ui/kit/<tên>`. Màu/cỡ/bo góc lấy từ `styles/tokens
 - `trunc-text` — `<TruncText text="Tên đầy đủ" lines={1|2} className="…" />` (cắt «…»; chỉ khi tràn mới có tooltip đủ chữ + focus bàn phím; thay `truncate` trần/`title=`)
 
 Test: `kit-a.test.tsx` (bun test, không render DOM: duyệt cây phần tử).
+
+## Mobile (CR-180)
+- `page-header` — `<PageHeader title description? primary={<Button>…</Button>} actions={[{label, icon?, onSelect, danger?, disabled?, reason?}]}>{tab/lọc}</PageHeader>`
+- `filter-bar` — `<FilterBar chips={<ToggleGroup…/>} advanced={<Select…/>} activeCount={2} />` (điện thoại: chip cuộn ngang + nút «Lọc» mở Sheet)
+- `meta-list` — `<MetaList items={[{label:"Đối tác", value:"ABC"}, …]} />` (mục rỗng tự bỏ)
+- lớp `tap-target` — link chữ đứng riêng: `<a className="tap-target …">` (≥ 44px trên điện thoại)
+Test: `apps/workspace-web/src/components/shared/mobile-kit.test.tsx`.

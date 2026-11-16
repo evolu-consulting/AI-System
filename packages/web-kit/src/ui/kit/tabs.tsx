@@ -10,7 +10,7 @@ export const TabsList = ({ className, ...p }: React.ComponentProps<typeof P.List
   <P.List
     data-slot="tabs-list"
     className={cn(
-      "inline-flex h-[var(--control-md)] items-center gap-1 rounded-md bg-muted p-1 text-muted-foreground",
+      "inline-flex h-[var(--control-md)] max-sm:h-auto items-center gap-1 rounded-md bg-muted p-1 text-muted-foreground",
       className,
     )}
     {...p}
@@ -20,7 +20,7 @@ export const TabsTrigger = ({ className, ...p }: React.ComponentProps<typeof P.T
   <P.Trigger
     data-slot="tabs-trigger"
     className={cn(
-      "inline-flex items-center justify-center rounded-sm px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors duration-[var(--duration-fast)] focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+      "inline-flex items-center justify-center max-sm:min-h-11 rounded-sm px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors duration-[var(--duration-fast)] focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
       className,
     )}
     {...p}

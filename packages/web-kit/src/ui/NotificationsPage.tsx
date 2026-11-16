@@ -11,6 +11,8 @@ export type NotificationsPageProps = {
   swUrl?: string;
   labels?: Partial<NotifyLabels>;
   transport?: NotifyTransport;
+  /** CR-180: nằm trong shell đã có lề + `<main>` ⇒ bỏ lề riêng (tránh thụt 2 lớp trên điện thoại) và dùng `<section>`. */
+  embedded?: boolean;
 };
 
 const WRAP: CSSProperties = {
@@ -49,8 +51,9 @@ export function NotificationsPage(p: NotificationsPageProps): ReactElement {
       else window.location.assign(n.link);
     }
   };
+  const Wrap = p.embedded ? "section" : "main";
   return (
-    <main style={WRAP}>
+    <Wrap style={p.embedded ? { ...WRAP, padding: "0 0 24px" } : WRAP}>
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h1 style={{ margin: 0, fontSize: 22 }}>{L.title}</h1>
         {feed.unread > 0 && (
@@ -107,6 +110,6 @@ export function NotificationsPage(p: NotificationsPageProps): ReactElement {
         <h2 style={{ fontSize: 18, margin: "0 0 8px" }}>{L.prefsTitle}</h2>
         <NotifyPrefsPanel labels={p.labels} swUrl={p.swUrl} transport={p.transport} />
       </div>
-    </main>
+    </Wrap>
   );
 }
