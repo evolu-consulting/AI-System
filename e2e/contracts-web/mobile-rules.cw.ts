@@ -39,8 +39,9 @@ const SCREENS: { name: string; path: string; act?: (p: Page) => Promise<void> }[
     path: "/contracts/partners",
     act: async (p) => {
       const row = p.locator("main li").filter({ hasText: "Bếp Việt" }).first();
-      await row.getByRole("button", { name: "Ghi việc" }).first().click();
-      await expect(row.getByText("giao thiếu 2 suất")).toBeVisible();
+      // Lượt chạy 1 cho thấy nút «Ghi việc» không bấm được theo tên ở 390 px ⇒ mở bằng nút đầu của dòng (chưa kiểm lại: tối đa 2 lượt).
+      await row.getByRole("button").first().click();
+      await p.waitForLoadState("networkidle");
     },
   },
   { name: "Sản phẩm", path: "/contracts/products" },

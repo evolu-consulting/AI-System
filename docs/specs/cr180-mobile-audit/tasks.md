@@ -37,6 +37,7 @@ Không sửa code sản phẩm, không chạy Playwright local, không chụp ba
 Chính là các spec trên (đỏ khi còn vi phạm).
 
 ## Quyết định trong lúc làm
+- Lượt evotest 1 (c43da3194): contracts-web vỡ «Something went wrong» do fallback API chung ⇒ bỏ. Lượt 2: 13 màn đo được, vi phạm theo màn trong báo cáo; «Chi tiết đối tác» sửa selector mở dòng, chưa chạy lại.
 - Dữ liệu contracts-web: giả bằng `installHub`; API chưa giả trả `{items:[],total:0}` ⇒ màn Tin nhắn/Sơ đồ/Thông báo/Cài đặt đo trạng thái rỗng (không phải dữ liệu thật như bản kiểm tay).
 - R4 đo ngay sau khi trang yên, trước mọi thao tác; màn Chi tiết đối tác đo thêm lần hai sau khi mở dòng.
 
