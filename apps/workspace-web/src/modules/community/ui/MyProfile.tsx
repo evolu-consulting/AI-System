@@ -1,27 +1,23 @@
-// CR-129 L5 · hồ sơ CÁ NHÂN `/community/me`: đầu trang = người (tên, vai), khối phụ «Công ty» (tên, nhãn, link trang công ty);
+// CR-129 L5 · hồ sơ CÁ NHÂN `/community/me`: đầu trang = người (tên, vai, công ty, email — xem MyProfileHeader);
 // tab «Bài đăng của tôi» (feed theo người) và «Bài đăng của tổ chức» (feed theo công ty). Áp cho chủ quản và đối tác.
 
 import type { MyPeopleProfile } from "@ai/contracts/people";
-import { Avatar } from "@ai/web-kit/ui/kit/avatar";
-import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
 import { useEffect, useState } from "react";
 import { useApp } from "../application/ctx";
-import { safeCover } from "../domain/brand";
 import {
   ME_SECTIONS,
   type MeSection,
   meFeedFixed,
-  meRoleKey,
   meShowsComposer,
   resolveMeSection,
 } from "../domain/me-profile";
 import { t } from "../i18n";
 import { Composer } from "./Composer";
 import { FeedList } from "./Feed";
-import { ImagePick } from "./profile/ImagePick";
+import { MyProfileHeader } from "./MyProfileHeader";
 
 export function MyProfilePage() {
-  const { api, viewer, route, go, href, brand } = useApp();
+  const { api, viewer, route, go } = useApp();
   const [mine, setMine] = useState<MyPeopleProfile | null>(null);
   const [dept, setDept] = useState<string | null>(null);
   useEffect(() => {
@@ -42,101 +38,14 @@ export function MyProfilePage() {
     await api.setMyImage(kind, v);
     setMine((m) => ({ avatar: null, cover: null, job_title: null, ...m, [kind]: v }));
   };
-  const cover = safeCover(mine?.cover ?? null);
   const section = resolveMeSection(route.section);
   const open = (s: MeSection) => go({ name: "me", ...(s === "mine" ? {} : { section: s }) });
-  const labels = viewer.labels
-    .map((l) =>
-      t(l === "supplier" ? "community.profile.labelSupplier" : "community.profile.labelBuyer"),
-    )
-    .join(" · ");
   return (
     <div className="ws">
       <main className="wsmain">
         <div className="wscenter" data-testid="me-page">
           <div className="card">
-            <div className="imgedit-host" style={{ position: "relative" }}>
-              {cover ? (
-                <img
-                  src={cover}
-                  alt=""
-                  data-testid="me-cover"
-                  className="cover pcover"
-                  style={{ width: "100%", objectFit: "cover", display: "block" }}
-                />
-              ) : (
-                <div className="cover pcover" data-testid="me-cover-default" />
-              )}
-              <ImagePick
-                kind="cover"
-                testId="me-cover-edit"
-                hasImage={cover !== null}
-                onSave={save("cover")}
-              />
-            </div>
-            <div className="phero">
-              <div className="imgedit-host imgedit-avatar">
-                <PersonAvatar name={viewer.name} src={mine?.avatar} size={72} testId="me-avatar" />
-                <ImagePick
-                  kind="avatar"
-                  testId="me-avatar-edit"
-                  hasImage={!!mine?.avatar}
-                  onSave={save("avatar")}
-                />
-              </div>
-              <div className="pname">
-                <h1>{viewer.name}</h1>
-                <div className="sub">{t(meRoleKey(viewer.role))}</div>
-                {mine?.job_title && (
-                  <div className="sub" data-testid="me-job-title">
-                    {t("community.me.jobTitle")}: {mine.job_title}
-                  </div>
-                )}
-                {dept && (
-                  <div className="sub" data-testid="me-department">
-                    {t("community.me.department")}: {dept}
-                  </div>
-                )}
-                {viewer.email && (
-                  <div className="sub" data-testid="me-email">
-                    {t("community.me.email")}: {viewer.email}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div
-              className="pcard"
-              data-testid="me-company"
-              style={{ borderTop: "1px solid var(--rule-soft)" }}
-            >
-              {/* CR-179 (UAT): logo công ty tròn, cùng hàng với chữ «Công ty»; tên + trang công ty ở cột bên phải logo. */}
-              <div className="flex items-start gap-3" data-testid="me-company-row">
-                <Avatar
-                  kind="company"
-                  name={viewer.orgName}
-                  src={brand.logo}
-                  size={40}
-                  className="shrink-0 rounded-full"
-                  data-testid="me-company-logo"
-                />
-                <div className="min-w-0">
-                  <h2 style={{ fontSize: 13, margin: 0 }}>{t("community.me.company")}</h2>
-                  <p className="m-0">
-                    <b>{viewer.orgName}</b>
-                    {labels && <span className="muted"> · {labels}</span>}
-                  </p>
-                  <a
-                    href={href({ name: "profile" })}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      go({ name: "profile" });
-                    }}
-                  >
-                    {t("community.me.companyPage")}
-                  </a>
-                </div>
-              </div>
-            </div>
+            <MyProfileHeader mine={mine} dept={dept} onSave={save} />
             <div className="ptabs tabs" role="tablist" aria-label={t("community.profile.tabsAria")}>
               {ME_SECTIONS.map((s) => (
                 <button

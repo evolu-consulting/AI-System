@@ -1,6 +1,12 @@
 // CR-129 L5 · hồ sơ cá nhân: tab, bộ lọc feed, vai.
 import { describe, expect, test } from "bun:test";
-import { meFeedFixed, meRoleKey, meShowsComposer, resolveMeSection } from "./me-profile";
+import {
+  meFeedFixed,
+  meRoleKey,
+  meShowsComposer,
+  meSubtitle,
+  resolveMeSection,
+} from "./me-profile";
 import { parsePath, routeToPath } from "./route";
 
 describe("me-profile", () => {
@@ -23,5 +29,11 @@ describe("me-profile", () => {
     expect(routeToPath({ name: "me", section: "org" })).toBe("/community/me/org");
     expect(parsePath("/community/me/org").route).toEqual({ name: "me", section: "org" });
     expect(parsePath("/community/me").route).toEqual({ name: "me" });
+  });
+  test("CR-179 dòng phụ chức vụ · phòng ban: thiếu phần nào bỏ phần đó", () => {
+    expect(meSubtitle("Giám đốc", "Ban Giám đốc")).toBe("Giám đốc · Ban Giám đốc");
+    expect(meSubtitle("Giám đốc", null)).toBe("Giám đốc");
+    expect(meSubtitle(undefined, "Kinh doanh")).toBe("Kinh doanh");
+    expect(meSubtitle("  ", "")).toBe("");
   });
 });

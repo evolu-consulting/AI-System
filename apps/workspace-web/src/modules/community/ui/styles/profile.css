@@ -224,3 +224,47 @@
   right: auto;
   text-align: left;
 }
+
+/* CR-179 · đầu trang hồ sơ cá nhân (phương án A): bìa thấp 88px, avatar đè mép bìa; khối `.mehero` nằm TRÊN bìa (z-index) để tên không bị đè. */
+[data-mod="community"] .pcover.mecover {
+  height: 88px;
+  background: var(--cm-accent-soft);
+}
+[data-mod="community"] .imgedit-cover .imgpick {
+  top: 8px;
+  right: 8px;
+  left: auto;
+  transform: none;
+}
+[data-mod="community"] .mehero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 0 20px 16px;
+  margin-top: -36px;
+}
+[data-mod="community"] .mehero-avatar {
+  background: var(--card);
+  box-shadow: 0 0 0 4px var(--card);
+}
+[data-mod="community"] .mehero-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 40px;
+}
+@media (max-width: 640px) {
+  [data-mod="community"] .mehero {
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 16px 14px;
+  }
+  [data-mod="community"] .mehero-info {
+    width: 100%;
+    padding-top: 0;
+  }
+}

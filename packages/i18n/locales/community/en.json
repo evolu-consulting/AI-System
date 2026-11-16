@@ -653,7 +653,6 @@
     },
     "me": {
       "company": "Company",
-      "companyPage": "View company page",
       "avatarChange": "Change photo",
       "avatarRemove": "Remove photo",
       "coverChange": "Change cover",
@@ -661,8 +660,6 @@
       "imgType": "Only JPG, PNG or WebP images",
       "imgBig": "Image up to {{mb}} MB",
       "imgFail": "Could not save the image, try again",
-      "jobTitle": "Job title",
-      "department": "Department",
       "avatarAlt": "Profile photo",
       "role": {
         "host_admin": "Admin",
@@ -673,7 +670,8 @@
         "mine": "My posts",
         "org": "Organisation posts"
       },
-      "email": "Email"
+      "emailCopy": "Copy email",
+      "emailCopied": "Copied"
     }
   }
 }

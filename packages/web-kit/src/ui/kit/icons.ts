@@ -17,6 +17,7 @@ import {
   Handshake,
   Info,
   Lock,
+  Mail,
   MessageSquare,
   MoreHorizontal,
   Paperclip,
@@ -27,6 +28,7 @@ import {
   Send,
   Smile,
   Trash2,
+  User,
   X,
   XCircle,
 } from "lucide-react";
@@ -61,6 +63,8 @@ export const ICONS = {
   emoji: Smile,
   info: Info,
   neutral: Circle,
+  email: Mail,
+  person: User,
 } as const;
 
 export type IconConcept = keyof typeof ICONS;

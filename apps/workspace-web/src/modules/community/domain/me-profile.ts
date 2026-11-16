@@ -23,3 +23,14 @@ export const meRoleKey = (role: CommunityViewer["role"]): string => `community.m
 
 /** Chỉ hiện Composer ở tab «Bài đăng của tôi» (đăng bài là việc của chính mình). */
 export const meShowsComposer = (s: MeSection): boolean => s === "mine";
+
+/** Dòng phụ «chức vụ · phòng ban»: thiếu phần nào bỏ phần đó (không «·» thừa); cả hai thiếu ⇒ chuỗi rỗng. */
+export function meSubtitle(
+  jobTitle: string | null | undefined,
+  department: string | null | undefined,
+): string {
+  return [jobTitle, department]
+    .map((x) => x?.trim() ?? "")
+    .filter((x) => x !== "")
+    .join(" · ");
+}

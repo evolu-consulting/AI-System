@@ -653,7 +653,6 @@
     },
     "me": {
       "company": "Công ty",
-      "companyPage": "Xem trang công ty",
       "avatarChange": "Đổi ảnh đại diện",
       "avatarRemove": "Xoá ảnh",
       "coverChange": "Đổi ảnh bìa",
@@ -661,8 +660,6 @@
       "imgType": "Chỉ nhận ảnh JPG, PNG hoặc WebP",
       "imgBig": "Ảnh tối đa {{mb}} MB",
       "imgFail": "Chưa lưu được ảnh, thử lại",
-      "jobTitle": "Chức vụ",
-      "department": "Phòng ban",
       "avatarAlt": "Ảnh đại diện",
       "role": {
         "host_admin": "Quản trị",
@@ -673,7 +670,8 @@
         "mine": "Bài đăng của tôi",
         "org": "Bài đăng của tổ chức"
       },
-      "email": "Email"
+      "emailCopy": "Sao chép email",
+      "emailCopied": "Đã sao chép"
     }
   }
 }
