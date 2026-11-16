@@ -332,7 +332,7 @@ const SCENES: Scene[] = [
     size: D,
     theme: "light",
     text: [NAV, "header"],
-    boxes: { ...shellBoxes, menu: 'nav[aria-label="Điều hướng chính"] [role="menu"]' },
+    boxes: { ...shellBoxes, menu: '[role="menu"]' /* CR-177 W1: Radix portal ra body */ },
     mask: [], // menu nổi lên trên vùng nội dung ⇒ không che `main` (danh sách HĐ giả, ổn định)
     ready: (p) => p.locator(NAV),
     act: async (p) => {
@@ -359,7 +359,10 @@ const SCENES: Scene[] = [
       size: D,
       theme,
       text: ["header"],
-      boxes: { ...shellBoxes, popover: 'header button[aria-label^="Thông báo"] + div' },
+      boxes: {
+        ...shellBoxes,
+        popover: '[data-slot="popover-content"]' /* CR-177 W1: Popover kit portal ra body */,
+      },
       mask: ["main"],
       ready: (p) => p.locator(NAV),
       act: async (p) => {
