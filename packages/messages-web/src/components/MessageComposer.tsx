@@ -11,6 +11,9 @@ import { IconSend } from "../icons";
 import { attachLabels, toDraftItem } from "../lib/attach-view";
 import { ATTACH_ACCEPT } from "../lib/files";
 
+/** ~6 dòng (leading-6 = 24px) rồi cuộn; khớp `max-h-36` (144px). */
+const MAX_H = 144;
+
 export function MessageComposer({
   conversationId,
   onSend,
@@ -29,7 +32,7 @@ export function MessageComposer({
     const el = box.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+    el.style.height = `${Math.min(el.scrollHeight, MAX_H)}px`;
   }, [text]);
   if (lockedReason)
     return (
@@ -71,15 +74,9 @@ export function MessageComposer({
           locale={i18n.language}
         />
       </div>
-      <div className="flex items-center gap-1 rounded-2xl border border-rule bg-panel focus-within:border-act-line">
-        <AttachPickButton
-          labels={attachPickLabels(t, "contracts.messages.attachPick")}
-          accept={ATTACH_ACCEPT}
-          check={false}
-          inputTestId="composer-file-input"
-          onFiles={staged.add}
-          className="my-0 ml-2 grid h-8 w-8 shrink-0 place-items-center rounded-xl text-dim hover:bg-sunk hover:text-ink"
-        />
+      {/* CR-178 · chữ ở trên, hàng nút cố định ở đáy (đính kèm trái, Gửi phải) ⇒ gõ thêm dòng thì nút không nhảy; cao tối đa ~6 dòng rồi cuộn.
+          M2 chèn nút emoji cạnh «Đính kèm» (cột trái của hàng nút). */}
+      <div className="rounded-2xl border border-rule bg-panel focus-within:border-act-line">
         <textarea
           ref={box}
           rows={1}
@@ -94,16 +91,28 @@ export function MessageComposer({
               send();
             }
           }}
-          className="block max-h-40 min-h-12 min-w-0 flex-1 resize-none bg-transparent px-2 py-3 text-[13.5px] leading-relaxed outline-none placeholder:text-dim"
+          className="block max-h-36 min-h-10 w-full resize-none overflow-y-auto bg-transparent px-3.5 pt-2.5 pb-1 text-[13.5px] leading-6 outline-none placeholder:text-dim"
         />
-        <button
-          type="submit"
-          disabled={!canSend}
-          aria-label={t("contracts.messages.send")}
-          className="my-0 mr-2 grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-act text-on-act hover:bg-act-hover active:scale-95 disabled:opacity-35"
-        >
-          <IconSend width={17} height={17} strokeWidth={2.2} />
-        </button>
+        <div className="flex items-center justify-between px-2 pb-2" data-testid="composer-actions">
+          <div className="flex items-center gap-1">
+            <AttachPickButton
+              labels={attachPickLabels(t, "contracts.messages.attachPick")}
+              accept={ATTACH_ACCEPT}
+              check={false}
+              inputTestId="composer-file-input"
+              onFiles={staged.add}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-dim hover:bg-sunk hover:text-ink"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!canSend}
+            aria-label={t("contracts.messages.send")}
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-act text-on-act hover:bg-act-hover active:scale-95 disabled:opacity-35"
+          >
+            <IconSend width={17} height={17} strokeWidth={2.2} />
+          </button>
+        </div>
       </div>
     </form>
   );

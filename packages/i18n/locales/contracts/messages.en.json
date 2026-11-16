@@ -152,7 +152,28 @@
         "download": "Download",
         "view": "View",
         "failed": "Could not load the file. Try again later."
-      }
+      },
+      "tabAll": "All",
+      "tabUnread": "Unread",
+      "tabPartner": "Partners",
+      "tabsLabel": "Filter conversations",
+      "partnerPick": "Choose a partner company",
+      "partnerNone": "No partner companies yet.",
+      "partnerClear": "Clear partner filter",
+      "emptyUnread": "No unread messages.",
+      "unreadDivider": "Unread messages",
+      "newBelow": "↓ {{n}} new",
+      "msgMore": "Message actions",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyFailed": "Could not copy.",
+      "toLabel": "To:",
+      "tabOwn": "My company",
+      "tabPartnerNew": "Partners",
+      "removePicked": "Remove {{name}}",
+      "seenBy": "Seen by: {{names}}",
+      "pickCompany": "Partner company",
+      "emojiSlot": "Emoji"
     }
   }
 }

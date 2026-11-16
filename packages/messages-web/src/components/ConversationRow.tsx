@@ -2,9 +2,11 @@
 
 import type { ConversationSummary } from "@ai/contracts/pack-contracts";
 import type { PersonCard } from "@ai/contracts/people";
-import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
+import { Avatar } from "@ai/web-kit/ui/kit/avatar";
+import { Badge } from "@ai/web-kit/ui/kit/badge";
 import { useTranslation } from "react-i18next";
-import { convTitle, isUnread, partnerSubtitle, previewOf, unreadLabel } from "../lib/conversations";
+import { IconBuilding } from "../icons";
+import { convTitle, isUnread, previewOf, unreadLabel } from "../lib/conversations";
 import { listTime } from "../lib/format";
 import { cn } from "../ui";
 import { PersonTip, usePersonTip } from "./PersonTip";
@@ -52,8 +54,9 @@ export function ConversationRow({
   const n = c ? unreadLabel(c.unread) : null;
   const title = c ? convTitle(c) : (name ?? "");
   const isPerson = !c || c.kind === "direct";
-  // CR-169 · cuộc `partner`: nhãn phụ «Chức vụ · Công ty»; thẻ người (avatar/phòng ban) chỉ có cho đồng nghiệp cùng công ty.
-  const sub = c ? partnerSubtitle(c) : "";
+  // CR-178 · cuộc `partner`: nhãn công ty (cam) cạnh tên, avatar công ty vuông; chức vụ ở dòng phụ.
+  const company = c?.kind === "partner" ? (c.company?.name ?? "") : "";
+  const sub = c?.kind === "partner" ? (c.peer?.job_title ?? "") : "";
   const tip = usePersonTip();
   const hv = isPerson ? tip.hover : {};
   return (
@@ -72,11 +75,12 @@ export function ConversationRow({
         )}
       >
         <span {...hv} className="shrink-0">
-          <PersonAvatar
-            name={title}
+          <Avatar
+            name={company || title}
+            kind={company ? "company" : "person"}
             src={isPerson ? card?.avatar : null}
             size={40}
-            testId="conv-avatar"
+            data-testid="conv-avatar"
           />
         </span>
         <span className="min-w-0 flex-1">
@@ -90,6 +94,16 @@ export function ConversationRow({
             >
               {title}
             </span>
+            {company && (
+              <Badge
+                status="warn"
+                icon={<IconBuilding width={12} height={12} />}
+                data-testid="conv-company"
+                className="max-w-28 shrink truncate"
+              >
+                {company}
+              </Badge>
+            )}
             {c?.last_message && (
               <time dateTime={c.last_message.at} className="shrink-0 text-micro text-dim">
                 {listTime(c.last_message.at)}
@@ -97,7 +111,7 @@ export function ConversationRow({
             )}
           </span>
           {sub && (
-            <span data-testid="conv-company" className="block truncate text-micro text-dim">
+            <span data-testid="conv-job" className="block truncate text-micro text-dim">
               {sub}
             </span>
           )}

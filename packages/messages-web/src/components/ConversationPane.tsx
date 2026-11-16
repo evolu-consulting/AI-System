@@ -1,5 +1,6 @@
 // CR-132 · W2 · khối danh sách hội thoại ĐÃ NỐI dữ liệu + hộp «Nhắn tin mới» (toàn màn và khoang hẹp ở W3 dùng cùng khối này).
-// CR-169 · lát 6 · thêm bộ lọc công ty (`company` = `?company=` từ nút «Nhắn tin» ở trang đối tác), tìm người tải dần, «Bảng tin <Công ty>».
+// CR-169 · lát 6 · `company` = `?company=` từ nút «Nhắn tin» ở trang đối tác, tìm người tải dần.
+// CR-178 · 3 tab «Tất cả · Chưa đọc · Đối tác ▾» (một danh sách gần đây); «Bảng tin <Công ty>» chuyển lên đầu khung chat.
 
 import type { MsgCompany } from "@ai/contracts/pack-contracts";
 import { useEffect, useMemo, useState } from "react";
@@ -11,23 +12,17 @@ import {
 } from "../hooks/use-conversations";
 import { useDebounced } from "../hooks/use-debounced";
 import { usePersonCards } from "../hooks/use-person-cards";
+import { useUnreadTotal } from "../hooks/use-unread";
 import { messagesHost } from "../host";
-import { type CompanyFilter, companyName, parseFilter } from "../lib/company-filter";
-import { CompanyFilter as CompanyBar } from "./CompanyFilter";
+import { companyName } from "../lib/company-filter";
+import { type ListView, pickTab, viewFilter, viewFromParam, viewUnread } from "../lib/list-view";
 import { ConversationList } from "./ConversationList";
+import { ListTabs } from "./ListTabs";
 import { NewConversationDialog } from "./NewConversationDialog";
-import { PartnerFeedDialog } from "./PartnerFeedDialog";
 
 type Load = "loading" | "error" | "ready";
 const statusOf = (loading: boolean, error: boolean): Load =>
   loading ? "loading" : error ? "error" : "ready";
-type Q = { isPending: boolean; isError: boolean };
-/** Danh sách cuộc luôn cần; danh bạ chỉ cần ở «<Công ty mình>» (ở nơi khác chỉ khi tìm, lỗi của nó hiện ở mục «Người»). */
-const paneStatus = (list: Q, people: Q, directory: boolean): Load =>
-  statusOf(
-    list.isPending || (directory && people.isPending),
-    list.isError || (directory && people.isError),
-  );
 
 export function ConversationPane({
   myId,
@@ -43,23 +38,21 @@ export function ConversationPane({
 }) {
   const own = messagesHost().useOwnCompany();
   const ownId = own?.id ?? "";
-  const [filter, setFilter] = useState<CompanyFilter>(() => parseFilter(company, ownId));
-  useEffect(() => setFilter(parseFilter(company, ownId)), [company, ownId]);
+  const [view, setView] = useState<ListView>(() => viewFromParam(company, ownId));
+  useEffect(() => setView(viewFromParam(company, ownId)), [company, ownId]);
+  const filter = viewFilter(view);
   const companies = useCompanies();
-  const list = useConversations(filter);
+  const list = useConversations(filter, viewUnread(view));
+  const unreadTotal = useUnreadTotal();
   const [creating, setCreating] = useState(false);
-  const [feed, setFeed] = useState(false);
   const [q, setQ] = useState("");
   const dq = useDebounced(q.trim(), 250);
-  // «<Công ty mình>» = danh bạ nội bộ (luôn tải); «Tất cả»/công ty khác chỉ tải người khi có chữ tìm.
-  const people = usePeople(filter === "own" || dq !== "", dq, filter === "own" ? "own" : filter);
-  // Thẻ người (avatar, phòng ban) THEO LÔ cho cả người đã tải lẫn người ở các hội thoại 1-1 nội bộ.
+  // Người chỉ tải khi có chữ tìm (mục «Người» dưới cuộc khớp).
+  const people = usePeople(dq !== "", dq, filter);
+  // Thẻ người (avatar) THEO LÔ cho người ở các hội thoại 1-1 nội bộ.
   const ids = useMemo(
-    () => [
-      ...(filter === "own" ? people.items.map((x) => x.id) : []),
-      ...list.items.flatMap((c) => (c.kind === "direct" && c.peer ? [c.peer.id] : [])),
-    ],
-    [filter, people.items, list.items],
+    () => list.items.flatMap((c) => (c.kind === "direct" && c.peer ? [c.peer.id] : [])),
+    [list.items],
   );
   const cards = usePersonCards(ids);
   const create = useCreateConversation();
@@ -78,6 +71,7 @@ export function ConversationPane({
     const name = companyName(filter, companies.items);
     return name ? { id: filter, name } : null;
   }, [filter, companies.items]);
+  const setTab = (tab: ListView["tab"]) => setView((v) => pickTab(v, tab));
   const peopleStatus =
     people.isPending && people.fetchStatus !== "idle"
       ? "loading"
@@ -100,17 +94,17 @@ export function ConversationPane({
         onPickPerson={pick}
         myId={myId}
         activeId={activeId}
-        status={paneStatus(list, people, filter === "own")}
+        status={statusOf(list.isPending, list.isError)}
         hasMore={list.hasNextPage}
         loadingMore={list.isFetchingNextPage}
-        filter={filter}
+        tab={view.tab}
         company={target}
-        onFeed={() => setFeed(true)}
         filterBar={
-          <CompanyBar
-            value={filter}
-            onChange={setFilter}
-            ownName={own?.name ?? ""}
+          <ListTabs
+            view={view}
+            onTab={setTab}
+            onCompany={(id) => setView({ tab: "partner", company: id })}
+            unreadTotal={unreadTotal}
             companies={companies.items}
             hasMore={companies.hasNextPage}
             loadingMore={companies.isFetchingNextPage}
@@ -136,14 +130,6 @@ export function ConversationPane({
           onSelect(id);
         }}
       />
-      {target && (
-        <PartnerFeedDialog
-          open={feed}
-          tenant={target.id}
-          company={target.name}
-          onClose={() => setFeed(false)}
-        />
-      )}
     </>
   );
 }

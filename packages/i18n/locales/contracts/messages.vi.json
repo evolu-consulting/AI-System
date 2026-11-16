@@ -152,7 +152,28 @@
         "download": "Tải về",
         "view": "Xem",
         "failed": "Không tải được tệp. Thử lại sau."
-      }
+      },
+      "tabAll": "Tất cả",
+      "tabUnread": "Chưa đọc",
+      "tabPartner": "Đối tác",
+      "tabsLabel": "Lọc cuộc trò chuyện",
+      "partnerPick": "Chọn công ty đối tác",
+      "partnerNone": "Chưa có công ty đối tác nào.",
+      "partnerClear": "Bỏ lọc đối tác",
+      "emptyUnread": "Không còn tin chưa đọc.",
+      "unreadDivider": "Tin chưa đọc",
+      "newBelow": "↓ {{n}} tin mới",
+      "msgMore": "Thao tác với tin nhắn",
+      "copy": "Sao chép",
+      "copied": "Đã sao chép",
+      "copyFailed": "Không sao chép được.",
+      "toLabel": "Tới:",
+      "tabOwn": "Công ty mình",
+      "tabPartnerNew": "Đối tác",
+      "removePicked": "Bỏ {{name}}",
+      "seenBy": "Đã xem: {{names}}",
+      "pickCompany": "Công ty đối tác",
+      "emojiSlot": "Biểu tượng cảm xúc"
     }
   }
 }

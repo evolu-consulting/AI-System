@@ -34,7 +34,8 @@ export const msgKeys = {
   unread: ["messages", "unread"] as const,
   list: ["messages", "list"] as const,
   /** Danh sách theo bộ lọc công ty (`msgKeys.list` là tiền tố ⇒ làm mới/ghi cache cho mọi bộ lọc). */
-  listBy: (f: CompanyFilter) => ["messages", "list", f] as const,
+  listBy: (f: CompanyFilter, unread = false) =>
+    unread ? (["messages", "list", f, "unread"] as const) : (["messages", "list", f] as const),
   detail: (id: string) => ["messages", "detail", id] as const,
   msgs: (id: string) => ["messages", "msgs", id] as const,
   people: (q: string, f: CompanyFilter = "own") => ["messages", "people", f, q] as const,
@@ -50,10 +51,16 @@ export const fetchConversations = async (
   cursor: string | null,
   filter: CompanyFilter,
   signal?: AbortSignal,
+  unread = false,
 ) => {
   const company = filterParam(filter);
   const page = await api<ConversationPage>(`${BASE}/conversations`, {
-    query: { limit: MSG_LIST_PAGE, ...(cursor ? { cursor } : {}), ...(company ? { company } : {}) },
+    query: {
+      limit: MSG_LIST_PAGE,
+      ...(cursor ? { cursor } : {}),
+      ...(company ? { company } : {}),
+      ...(unread ? { unread: "true" } : {}),
+    },
     signal,
   });
   rememberKinds(page.items);

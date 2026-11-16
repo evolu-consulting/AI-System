@@ -1,20 +1,28 @@
-// CR-132 · W2 · dòng tin theo ngày (trình bày): tin của mình bên phải, tin đang gửi mờ, gửi lỗi bấm gửi lại, thu hồi tin của mình,
-// «Đã xem» dưới tin cuối của mình, nút tải dần 30 tin/lần: cuộn lên gần đầu ⇒ tự tải tin cũ hơn, giữ nguyên vị trí đang đọc (CR-148); nút «Xem tin cũ hơn» là đường dự phòng.
+// CR-132 · W2 · dòng tin theo ngày (trình bày): tin của mình bên phải, tin đang gửi mờ, gửi lỗi bấm gửi lại, nút tải dần 30 tin/lần (CR-148).
+// CR-178 · gộp tin liên tiếp cùng người (avatar + tên một lần, giờ dưới tin cuối nhóm), vạch «Tin chưa đọc» tại mốc đọc lúc mở cuộc,
+// nút nổi «↓ n tin mới» khi đang cuộn lên, «Đã xem» bằng avatar nhỏ (nhóm: tối đa 3 + «+N»).
 import type { Message } from "@ai/contracts/pack-contracts";
 import type { PersonCard } from "@ai/contracts/people";
-import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
+import { Avatar, AvatarGroup } from "@ai/web-kit/ui/kit/avatar";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { IconTrash } from "../icons";
+import {
+  groupRows,
+  groupTime,
+  newBelowCount,
+  type RowGroup,
+  unreadDividerSeq,
+} from "../lib/chat-view";
 import { dayLabel, timeLabel } from "../lib/format";
 import { dayKey } from "../lib/message-pages";
-import { canRevoke } from "../lib/perms";
-import { type DayRows, mergeRows, type PendingMsg, type Row, stateOf } from "../lib/rows";
+import { type DayRows, mergeRows, type PendingMsg } from "../lib/rows";
 import { cn } from "../ui";
-import { MessageFiles } from "./MessageFiles";
+import { Bubble } from "./MessageBubble";
 
 /** Tin đang gửi: `failed` = câu lỗi đã dịch (null = đang gửi). */
 export type OutgoingView = PendingMsg;
+
+export type SeenPerson = { name: string; src?: string | null | undefined };
 
 export type MessageListProps = {
   items: readonly Message[];
@@ -24,157 +32,16 @@ export type MessageListProps = {
   nameOf: (userId: string) => string;
   /** Thẻ người theo lô (avatar người gửi); chưa về ⇒ chữ cái đầu. */
   cardOf?: (userId: string) => PersonCard | undefined;
-  seenN: number;
+  /** Mốc đọc của mình lúc mở cuộc (vạch «Tin chưa đọc»); chưa biết ⇒ null. */
+  readAt: number | null;
+  /** Người khác đã đọc tới tin cuối của mình. */
+  seen: readonly SeenPerson[];
   hasOlder: boolean;
   loadingOlder: boolean;
   onOlder: () => void;
   onRevoke: (seq: number) => void;
   onRetry: (clientId: string) => void;
 };
-
-type BubbleProps = {
-  row: Row;
-  mine: boolean;
-  name: string;
-  avatar?: { name: string; src: string | null | undefined } | undefined;
-  revokable: boolean;
-  onRevoke: () => void;
-  onRetry: () => void;
-};
-
-/** Nội dung bubble: chữ, tệp (tin thật) hoặc tên tệp (tin đang gửi), hoặc «đã thu hồi». */
-function BubbleContent({ row }: { row: Row }) {
-  const { t } = useTranslation();
-  const m = row.kind === "sent" ? row.m : null;
-  if (m?.deleted) return <>{t("contracts.messages.deleted")}</>;
-  const body = m ? m.body : row.kind === "pending" ? row.p.body : "";
-  const names = row.kind === "pending" ? row.p.fileNames : [];
-  return (
-    <>
-      {body && <p className="m-0 whitespace-pre-wrap">{body}</p>}
-      {m && <MessageFiles conv={m.conversation_id} files={m.files} />}
-      {names.map((n) => (
-        <span key={n} className="block truncate text-[12.5px]">
-          {"📎 "}
-          {n}
-        </span>
-      ))}
-    </>
-  );
-}
-
-/** Lớp phủ giờ + thu hồi (tuyệt đối ở góc bubble ⇒ không chiếm chỗ): rê chuột / focus trong tin / chạm tin. */
-function Tools(p: {
-  m: Message;
-  mine: boolean;
-  shown: boolean;
-  revokable: boolean;
-  onRevoke: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <span
-      className={cn(
-        "absolute -top-3 z-10 flex items-center gap-1 rounded-md border border-rule bg-panel px-1.5 py-0.5 text-micro text-dim shadow-sm",
-        "opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100",
-        p.shown && "opacity-100",
-        p.mine ? "right-2" : "left-2",
-      )}
-      data-testid="msg-tools"
-    >
-      <time dateTime={p.m.at}>{timeLabel(p.m.at)}</time>
-      {p.revokable && (
-        <button
-          type="button"
-          onClick={p.onRevoke}
-          aria-label={t("contracts.messages.revoke")}
-          title={t("contracts.messages.revoke")}
-          data-testid="msg-revoke"
-          className="grid h-5 w-5 place-items-center rounded hover:bg-sunk hover:text-ink focus-visible:bg-sunk"
-        >
-          <IconTrash width={13} height={13} />
-        </button>
-      )}
-    </span>
-  );
-}
-
-/** Tin lỗi: giữ nguyên tin, nói lý do + nút «Gửi lại» (cùng client_id ⇒ server không tạo trùng). */
-function RetryLine({ reason, onRetry }: { reason: string | null; onRetry: () => void }) {
-  const { t } = useTranslation();
-  return (
-    <p className="m-0 mt-1 flex items-center gap-2 text-micro text-late" role="alert">
-      <span>{t("contracts.messages.sendFailed")}</span>
-      <span className="sr-only">{reason}</span>
-      <button
-        type="button"
-        onClick={onRetry}
-        data-testid="msg-retry"
-        className="rounded-md border border-late px-2 py-0.5 text-micro font-medium text-late hover:bg-late-bg"
-      >
-        {t("contracts.messages.resend")}
-      </button>
-    </p>
-  );
-}
-
-const bubbleTone = (deleted: boolean, state: string, mine: boolean): string =>
-  deleted
-    ? "border border-rule bg-transparent italic text-dim"
-    : state === "failed"
-      ? "border border-late bg-transparent text-ink"
-      : mine
-        ? "bg-act text-on-act"
-        : "bg-sunk text-ink";
-
-/**
- * MỘT bubble cho cả tin đang gửi / lỗi / đã gửi (cùng cấu trúc, cùng khoá client_id ⇒ không remount, độ mờ chuyển mượt).
- * Chữ tin không xê dịch khi hover (lớp phủ tuyệt đối).
- */
-function Bubble({ row, mine, name, avatar, revokable, onRevoke, onRetry }: BubbleProps) {
-  const { t } = useTranslation();
-  const state = stateOf(row);
-  const [tapped, setTapped] = useState(false);
-  const m = row.kind === "sent" ? row.m : null;
-  return (
-    <div
-      className={cn("group flex w-full min-w-0 flex-col", mine ? "items-end" : "items-start")}
-      data-testid={state === "sent" ? "msg-row" : "msg-outgoing"}
-      data-mine={mine ? "true" : "false"}
-      data-state={state}
-    >
-      {name && !mine && <span className="mb-0.5 px-8 text-micro text-dim">{name}</span>}
-      <div className="flex max-w-[85%] items-end gap-1.5">
-        {!mine && avatar && (
-          <PersonAvatar name={avatar.name} src={avatar.src} size={24} testId="msg-avatar" />
-        )}
-        <div className="relative min-w-0">
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: chạm vào tin để hiện giờ/thao tác trên cảm ứng; bàn phím dùng nút trong lớp phủ */}
-          {/* biome-ignore lint/a11y/useKeyWithClickEvents: xem trên */}
-          <div
-            onClick={() => setTapped((v) => !v)}
-            className={cn(
-              "min-w-0 rounded-2xl px-3.5 py-2 text-[13.5px] leading-relaxed transition-opacity duration-300 [overflow-wrap:anywhere]",
-              bubbleTone(m?.deleted === true, state, mine),
-              state === "sending" && "opacity-60",
-            )}
-          >
-            <BubbleContent row={row} />
-            {state === "sending" && (
-              <span className="sr-only"> {t("contracts.messages.sending")}</span>
-            )}
-          </div>
-          {m && (
-            <Tools m={m} mine={mine} shown={tapped} revokable={revokable} onRevoke={onRevoke} />
-          )}
-        </div>
-      </div>
-      {state === "failed" && row.kind === "pending" && (
-        <RetryLine reason={row.p.failed} onRetry={onRetry} />
-      )}
-    </div>
-  );
-}
 
 /** ISO một mốc của nhóm ngày (nhãn Hôm nay/Hôm qua/ngày): tin thật đầu tiên; chỉ có tin đang gửi ⇒ bây giờ. */
 const dayStart = (g: DayRows): string => {
@@ -200,13 +67,80 @@ function DayBar({ iso }: { iso: string }) {
   );
 }
 
-export function MessageList(p: MessageListProps) {
+function UnreadBar() {
   const { t } = useTranslation();
+  return (
+    <div
+      data-testid="msg-unread-divider"
+      className="my-2 flex items-center gap-3 text-micro font-semibold text-late"
+    >
+      <span className="h-px flex-1 bg-late" />
+      {t("contracts.messages.unreadDivider")}
+      <span className="h-px flex-1 bg-late" />
+    </div>
+  );
+}
+
+/** Một nhóm tin cùng người: avatar + tên một lần (tin người khác), các bubble, giờ dưới tin cuối. */
+function MessageGroup({ g, p }: { g: RowGroup; p: MessageListProps }) {
+  const time = groupTime(g);
+  const name = g.mine ? "" : p.nameOf(g.senderId);
+  return (
+    <div
+      data-testid="msg-group"
+      data-mine={g.mine ? "true" : "false"}
+      className={cn("flex min-w-0 gap-2", g.mine ? "justify-end" : "justify-start")}
+    >
+      {!g.mine && (
+        <Avatar
+          name={name}
+          src={p.cardOf?.(g.senderId)?.avatar}
+          size={24}
+          data-testid="msg-avatar"
+          className="mt-0.5"
+        />
+      )}
+      <div
+        className={cn("flex min-w-0 flex-1 flex-col gap-0.5", g.mine ? "items-end" : "items-start")}
+      >
+        {p.group && name && <span className="text-micro text-dim">{name}</span>}
+        {g.rows.map((r) => {
+          const m = r.kind === "sent" ? r.m : null;
+          return (
+            <Bubble
+              key={r.key}
+              row={r}
+              mine={g.mine}
+              myId={p.myId}
+              onRevoke={() => m && p.onRevoke(m.seq)}
+              onRetry={() => r.kind === "pending" && p.onRetry(r.p.clientId)}
+            />
+          );
+        })}
+        {time && (
+          <time dateTime={time} data-testid="msg-time" className="text-micro text-dim">
+            {timeLabel(time)}
+          </time>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const NEAR_BOTTOM_PX = 80;
+
+/** Cuộn của dòng tin: mở cuộc tới vạch chưa đọc (hoặc đáy), tin mới khi đang đọc lên trên ⇒ nút «↓ n tin mới», tải tin cũ giữ vị trí (CR-148). */
+function useChatScroll(p: MessageListProps, mark: number | null) {
   const end = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
   const firstSeq = p.items[0]?.seq ?? 0;
+  const lastSeq = p.items[p.items.length - 1]?.seq ?? 0;
   const keep = useRef<{ seq: number; h: number } | null>(null);
-  // CR-148 · tải tin cũ hơn: chèn lên đầu ⇒ giữ nguyên vị trí đang đọc (bù đúng phần chiều cao mới thêm).
+  const atBottom = useRef(mark === null);
+  const opened = useRef(false);
+  const [away, setAway] = useState(false);
+  const [seenSeq, setSeenSeq] = useState(lastSeq);
   useLayoutEffect(() => {
     const el = box.current;
     const k = keep.current;
@@ -218,59 +152,111 @@ export function MessageList(p: MessageListProps) {
     if (el) keep.current = { seq: firstSeq, h: el.scrollHeight };
     p.onOlder();
   };
-  const lastSeq = p.items[p.items.length - 1]?.seq ?? 0;
-  const failedN = p.outgoing.filter((o) => o.failed).length;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: cuộn xuống khi có tin mới/đang gửi/gửi lỗi (hiện «Gửi lại»), KHÔNG cuộn khi tải tin cũ
-  useEffect(() => {
+  const toEnd = () => {
     end.current?.scrollIntoView?.({ block: "end" });
+    atBottom.current = true;
+    setAway(false);
+    setSeenSeq(lastSeq);
+  };
+  const hasItems = p.items.length > 0;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chạy một lần khi tin đầu tiên về
+  useEffect(() => {
+    if (opened.current || !hasItems) return;
+    opened.current = true;
+    if (mark !== null && bar.current) {
+      bar.current.scrollIntoView?.({ block: "start" });
+      setSeenSeq(lastSeq);
+    } else toEnd();
+  }, [hasItems]);
+  const failedN = p.outgoing.filter((o) => o.failed).length;
+  const lastMine = p.items[p.items.length - 1]?.sender_id === p.myId;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tin mới/đang gửi/gửi lỗi: ở đáy hoặc tin của mình ⇒ cuộn xuống; đang đọc lên trên ⇒ giữ chỗ + nút «n tin mới»
+  useEffect(() => {
+    if (!opened.current) return;
+    if (atBottom.current || lastMine || p.outgoing.length > 0) toEnd();
+    else setAway(true);
   }, [lastSeq, p.outgoing.length, failedN]);
-  const avatarOf = (m: Message | null) =>
-    m && m.sender_id !== p.myId
-      ? { name: p.nameOf(m.sender_id), src: p.cardOf?.(m.sender_id)?.avatar }
-      : undefined;
-  const groups = mergeRows(p.items, p.outgoing, dayKey(new Date().toISOString()));
+  const onScroll = (el: HTMLDivElement) => {
+    if (el.scrollTop < NEAR_BOTTOM_PX && p.hasOlder && !p.loadingOlder) older();
+    const near = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
+    atBottom.current = near;
+    if (near && away) {
+      setAway(false);
+      setSeenSeq(lastSeq);
+    }
+  };
+  const newN = away ? newBelowCount(p.items, seenSeq, p.myId) : 0;
+  return { box, end, bar, older, toEnd, onScroll, newN };
+}
+
+export function MessageList(p: MessageListProps) {
+  const { t } = useTranslation();
+  // Vạch chỉ tính MỘT lần theo mốc lúc mở (tin tới sau không đẩy vạch).
+  const first = useRef<number | null | undefined>(undefined);
+  if (first.current === undefined && p.items.length > 0)
+    first.current = unreadDividerSeq(p.items, p.readAt, p.myId);
+  const mark = first.current ?? null;
+  const s = useChatScroll(p, mark);
+  const days = mergeRows(p.items, p.outgoing, dayKey(new Date().toISOString()));
   return (
-    <div
-      ref={box}
-      onScroll={(e) => {
-        if (e.currentTarget.scrollTop < 80 && p.hasOlder && !p.loadingOlder) older();
-      }}
-      className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-4 py-3"
-      data-testid="msg-list"
-    >
-      {p.hasOlder && (
-        <div className="text-center">
-          <button type="button" disabled={p.loadingOlder} onClick={older} className="btn btn-sm">
-            {t("contracts.messages.loadOlder")}
-          </button>
-        </div>
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <div
+        ref={s.box}
+        onScroll={(e) => s.onScroll(e.currentTarget)}
+        className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-4 py-3"
+        data-testid="msg-list"
+      >
+        {p.hasOlder && (
+          <div className="text-center">
+            <button
+              type="button"
+              disabled={p.loadingOlder}
+              onClick={s.older}
+              className="btn btn-sm"
+            >
+              {t("contracts.messages.loadOlder")}
+            </button>
+          </div>
+        )}
+        {days.map((d) => (
+          <div key={d.day} className="space-y-3">
+            <DayBar iso={dayStart(d)} />
+            {groupRows(d.rows, p.myId, mark).map((grp) => {
+              const f = grp.rows[0];
+              const isMark = mark !== null && f?.kind === "sent" && f.m.seq === mark;
+              return (
+                <div key={grp.key} ref={isMark ? s.bar : undefined}>
+                  {isMark && <UnreadBar />}
+                  <MessageGroup g={grp} p={p} />
+                </div>
+              );
+            })}
+          </div>
+        ))}
+        {p.seen.length > 0 && p.outgoing.length === 0 && (
+          <div
+            data-testid="msg-seen"
+            role="img"
+            aria-label={t("contracts.messages.seenBy", {
+              names: p.seen.map((x) => x.name).join(", "),
+            })}
+            className="flex justify-end"
+          >
+            <AvatarGroup people={p.seen.map((x) => ({ name: x.name, src: x.src }))} size={24} />
+          </div>
+        )}
+        <div ref={s.end} />
+      </div>
+      {s.newN > 0 && (
+        <button
+          type="button"
+          data-testid="msg-new-below"
+          onClick={s.toEnd}
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-act px-3 py-1.5 text-label font-semibold text-on-act shadow-md"
+        >
+          {t("contracts.messages.newBelow", { n: s.newN })}
+        </button>
       )}
-      {groups.map((g) => (
-        <div key={g.day} className="space-y-3">
-          <DayBar iso={dayStart(g)} />
-          {g.rows.map((r) => {
-            const m = r.kind === "sent" ? r.m : null;
-            return (
-              <Bubble
-                key={r.key}
-                row={r}
-                mine={m ? m.sender_id === p.myId : true}
-                name={m && p.group ? p.nameOf(m.sender_id) : ""}
-                avatar={avatarOf(m)}
-                revokable={m ? canRevoke(m, p.myId) : false}
-                onRevoke={() => m && p.onRevoke(m.seq)}
-                onRetry={() => r.kind === "pending" && p.onRetry(r.p.clientId)}
-              />
-            );
-          })}
-        </div>
-      ))}
-      {p.seenN > 0 && p.outgoing.length === 0 && (
-        <p data-testid="msg-seen" className="m-0 text-right text-micro text-dim">
-          {p.group ? t("contracts.messages.seenN", { n: p.seenN }) : t("contracts.messages.seen")}
-        </p>
-      )}
-      <div ref={end} />
     </div>
   );
 }

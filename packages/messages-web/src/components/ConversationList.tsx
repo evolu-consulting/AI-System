@@ -1,18 +1,14 @@
-// CR-132 · W2 · danh sách hội thoại (trình bày, không gọi mạng — dùng chung toàn màn và khoang hẹp ở W3): thanh lọc công ty, ô tìm, «Nhắn tin mới».
-// CR-169 · lát 6 · «Tất cả» và «<công ty khác>»: cuộc gần đây (mới nhất trước, tải dần) + khi tìm có mục «Người»; «<Công ty mình>»: danh bạ nội bộ
-// theo phòng ban (CR-148). Lọc một công ty ⇒ nút «Bảng tin <Công ty>». Trạng thái: đang tải · lỗi · rỗng · không khớp.
+// CR-132 · W2 · danh sách hội thoại (trình bày, không gọi mạng — dùng chung toàn màn và khoang hẹp ở W3): ô tìm, «Nhắn tin mới», 3 tab lọc.
+// CR-178 · MỘT kiểu danh sách: cuộc gần đây (mới nhất trước, tải dần) + khi tìm có mục «Người». Danh bạ theo phòng ban và nút «Bảng tin» đã chuyển
+// sang «Nhắn tin mới» và đầu khung chat. Trạng thái: đang tải · lỗi · rỗng · không khớp.
 
-import type { ConversationSummary, MsgCompany, MsgPerson } from "@ai/contracts/pack-contracts";
-import type { PersonCard } from "@ai/contracts/people";
+import type { ConversationSummary } from "@ai/contracts/pack-contracts";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { type CompanyFilter, isCompanyFilter } from "../lib/company-filter";
 import { filterConversations } from "../lib/conversations";
-import { buildDirectory } from "../lib/directory";
 import { Skeleton } from "../ui";
 import { ConversationRow } from "./ConversationRow";
-import { DirectorySections } from "./DirectorySections";
 import { LoadSentinel } from "./LoadSentinel";
 import type { ConversationListProps } from "./list-types";
 import { PeopleSearch } from "./PeopleSearch";
@@ -40,6 +36,16 @@ function RecentRows({
   );
 }
 
+function emptyTitle(
+  p: ConversationListProps,
+  t: (key: string, o?: Record<string, unknown>) => string,
+): string {
+  if (p.tab === "unread") return t("contracts.messages.emptyUnread");
+  if (p.tab === "partner" && p.company)
+    return t("contracts.messages.emptyCompany", { company: p.company.name });
+  return t("contracts.messages.emptyList");
+}
+
 /** «Tất cả» / công ty khác: cuộc gần đây; có chữ tìm ⇒ cuộc khớp + mục «Người» (chưa có cuộc). */
 function RecentView({ p, newBtn }: { p: ConversationListProps; newBtn: ReactNode }) {
   const { t } = useTranslation();
@@ -52,13 +58,9 @@ function RecentView({ p, newBtn }: { p: ConversationListProps; newBtn: ReactNode
       <EmptyState
         kind="empty"
         testId="conv-empty"
-        title={
-          p.company
-            ? t("contracts.messages.emptyCompany", { company: p.company.name })
-            : t("contracts.messages.emptyList")
-        }
-        hint={p.company ? undefined : t("contracts.messages.emptyListHint")}
-        action={newBtn}
+        title={emptyTitle(p, t)}
+        hint={p.tab === "all" ? t("contracts.messages.emptyListHint") : undefined}
+        action={p.tab === "unread" ? undefined : newBtn}
       />
     );
   const nothing =
@@ -90,30 +92,6 @@ function RecentView({ p, newBtn }: { p: ConversationListProps; newBtn: ReactNode
   );
 }
 
-function OwnView({ p, newBtn }: { p: ConversationListProps; newBtn: ReactNode }) {
-  const { t } = useTranslation();
-  const dir = buildDirectory(p.items, p.people, p.q, (id) => p.cards.get(id)?.department);
-  if (p.items.length === 0 && p.people.length === 0 && p.q.trim() === "")
-    return (
-      <EmptyState
-        kind="empty"
-        testId="conv-empty"
-        title={t("contracts.messages.emptyList")}
-        hint={t("contracts.messages.emptyListHint")}
-        action={newBtn}
-      />
-    );
-  if (dir.groups.length === 0 && dir.sections.length === 0)
-    return (
-      <EmptyState
-        kind="search"
-        title={t("contracts.messages.noMatch")}
-        hint={t("contracts.messages.noMatchHint")}
-      />
-    );
-  return <DirectorySections p={p} dir={dir} />;
-}
-
 export function ConversationList(p: ConversationListProps) {
   const { t } = useTranslation();
   const newBtn = (
@@ -135,18 +113,6 @@ export function ConversationList(p: ConversationListProps) {
         {newBtn}
       </div>
       {p.filterBar}
-      {p.company && isCompanyFilter(p.filter) && (
-        <div className="shrink-0 px-3 pb-2">
-          <button
-            type="button"
-            data-testid="open-feed"
-            onClick={p.onFeed}
-            className="btn btn-sm w-full justify-start truncate"
-          >
-            {t("contracts.messages.feed.open", { company: p.company.name })}
-          </button>
-        </div>
-      )}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {p.status === "loading" ? (
           <div className="space-y-3 p-4">
@@ -164,8 +130,6 @@ export function ConversationList(p: ConversationListProps) {
               </button>
             }
           />
-        ) : p.filter === "own" ? (
-          <OwnView p={p} newBtn={newBtn} />
         ) : (
           <RecentView p={p} newBtn={newBtn} />
         )}

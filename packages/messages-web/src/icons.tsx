@@ -42,3 +42,13 @@ export const IconTrash = (p: P) => (
     <path d="M4 7h16M9 7V4h6v3M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M10 11v6M14 11v6" />
   </svg>
 );
+export const IconBuilding = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 10h4a1 1 0 0 1 1 1v10M3 21h18M8 8h3M8 12h3M8 16h3" />
+  </svg>
+);
+export const IconMore = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth={3} />
+  </svg>
+);

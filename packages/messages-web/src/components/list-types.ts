@@ -2,7 +2,6 @@
 import type { ConversationSummary, MsgCompany, MsgPerson } from "@ai/contracts/pack-contracts";
 import type { PersonCard } from "@ai/contracts/people";
 import type { ReactNode } from "react";
-import type { CompanyFilter } from "../lib/company-filter";
 
 export type ConversationListProps = {
   items: readonly ConversationSummary[];
@@ -23,12 +22,11 @@ export type ConversationListProps = {
   loadingMore: boolean;
   /** Người đang được mở 1-1 (khoá dòng trong lúc tạo). */
   openingId: string | null;
-  filter: CompanyFilter;
-  /** Thanh chip lọc công ty (do cha nối dữ liệu). */
+  /** Tab đang chọn (để chọn câu rỗng) và công ty đối tác đang lọc (tên trong câu rỗng). */
+  tab: "all" | "unread" | "partner";
+  /** Thanh «Tất cả · Chưa đọc · Đối tác ▾» (do cha nối dữ liệu). */
   filterBar: ReactNode;
-  /** Công ty đang lọc (để nói trong câu rỗng, nút «Bảng tin»). */
   company: MsgCompany | null;
-  onFeed: () => void;
   onSelect: (id: string) => void;
   onPickPerson: (userId: string, company?: MsgCompany) => void;
   onNew: () => void;
