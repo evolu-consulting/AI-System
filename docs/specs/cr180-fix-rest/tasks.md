@@ -41,4 +41,5 @@ Trạng thái gộp: chưa gộp
 - Kịch bản: khi mở xem trước tệp thì hộp không đổi cỡ lúc tải xong [test: e2e/cr179/khung-tep-co-dinh.spec.ts » hộp nền đen giữ nguyên kích thước trước và sau khi tải xong]
 
 ## Việc còn lại
+Lượt evotest cuối (3/3): mọi ca mobile-rules xanh trừ 2 màn Đối tác (dữ liệu giả nay có dòng thật ⇒ lộ link tên 25px, «Chi tiết»/«Khách hẹn lại» dưới nút trợ lý, «Huỷ» 26px); đã sửa trong commit cuối nhưng CHƯA chạy lại (hết 3 lượt) ⇒ điều phối chạy lại `mobile-rules.cw.ts` (Đối tác, Chi tiết đối tác).
 Điều phối chụp lại ảnh «khớp baseline» (scenes, hd78, scenes-mobile).

@@ -108,7 +108,7 @@ function Buttons({
   const { remindInstalment } = useLedgerWrites();
   const receive = o.direction === "receive";
   return (
-    <span className="ml-auto flex gap-1.5">
+    <span className="ml-auto flex gap-1.5 max-sm:ml-0 max-sm:w-full max-sm:flex-wrap max-sm:pr-14">
       <Button variant="primary" size="sm" onClick={() => setMode(mode === "pay" ? null : "pay")}>
         {receive ? L("received") : L("paid")}
       </Button>

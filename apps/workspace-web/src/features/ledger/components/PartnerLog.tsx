@@ -60,7 +60,7 @@ function RecentLine({
       {voidable(e, write, owner) && (
         <Button
           variant="link"
-          className="h-auto px-0 shrink-0 text-late"
+          className="h-auto px-0 shrink-0 text-late max-sm:min-w-11"
           disabled={!!busy}
           onClick={() => void undo()}
         >

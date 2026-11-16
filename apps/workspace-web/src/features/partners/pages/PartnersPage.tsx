@@ -60,7 +60,7 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
           <Link
             to="/contracts/partners"
             search={{ party: p.party }}
-            className="block truncate font-semibold text-ink hover:text-act hover:underline"
+            className="block truncate font-semibold text-ink hover:text-act hover:underline max-sm:-my-3 max-sm:py-3"
           >
             {p.name}
           </Link>
@@ -70,7 +70,7 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
             {L("contractsN", { n: p.contracts })}
           </span>
         </span>
-        <span className="ml-auto flex shrink-0 gap-1.5">
+        <span className="ml-auto flex shrink-0 gap-1.5 max-sm:ml-0">
           {write && loggable && (
             <button
               type="button"
