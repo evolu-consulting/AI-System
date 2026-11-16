@@ -1,10 +1,10 @@
 // CR-105 · L3: một bước của Form (duyệt / Ký số / Dify) — chuyển từ contracts-web `FlowStepCard`. Phòng ban theo mã.
 import type { SlotFieldDto } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import {
   type FlowIssue,
   issueOf,

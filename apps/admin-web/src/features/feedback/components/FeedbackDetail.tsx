@@ -1,17 +1,17 @@
 // feedback · chi tiết một góp ý: nội dung, trang/app/phiên bản, tệp đính kèm, đổi trạng thái + trả lời (user thấy phản hồi trong khung góp ý).
 import { FEEDBACK_STATUSES, type FeedbackItem, type FeedbackStatus } from "@ai/contracts/feedback";
-import { notifySuccess } from "@ai/web-kit/ui/toast";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
+} from "@ai/web-kit/ui/kit/sheet";
+import { Textarea } from "@ai/web-kit/ui/kit/textarea";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { downloadAttachment, useUpdateFeedback } from "../hooks/use-feedback-api";
 
 const SELECT = "h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground";

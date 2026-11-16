@@ -1,15 +1,16 @@
 // ADM-FR-66 · CR-056 · P-a F5: ô nhập dùng chung của editor quy trình (nhãn + control + lỗi; nhãn là tên truy cập cho e2e).
-import { useTranslation } from "react-i18next";
-import { FormField } from "@/components/shared/form/FormField";
-import { Input } from "@/components/ui/input";
+
+import { Input } from "@ai/web-kit/ui/kit/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+} from "@ai/web-kit/ui/kit/select";
+import { Textarea } from "@ai/web-kit/ui/kit/textarea";
+import { useTranslation } from "react-i18next";
+import { FormField } from "@/components/shared/form/FormField";
 
 type Err = string | undefined;
 type Common = {

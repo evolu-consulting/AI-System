@@ -5,6 +5,8 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./ui/kit/cn": "./src/ui/kit/cn.ts",
+    "./ui/kit/icons": "./src/ui/kit/icons.ts",
     "./ui/*": "./src/ui/*.tsx",
     "./*": "./src/*.ts"
   },

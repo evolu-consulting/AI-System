@@ -1,10 +1,11 @@
 // CR-139d · «Cơ cấu tổ chức» (tab Thành viên › Cơ cấu): sơ đồ cây của công ty để chỉnh — thêm/đổi tên/xoá phòng, «Thuộc phòng», trưởng phòng, thành viên.
 // Sổ Hợp Tác chỉ xem cây này (nút «Chỉnh sơ đồ» dẫn về đây). Ghi qua admin-api (`/admin/org*`, `/admin/groups*`), có audit.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { notifyError } from "@ai/web-kit/ui/toast";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useWorkspaceView } from "@/features/tenants/lib/use-workspace-view";
 import { useSession } from "@/lib/auth/use-session";
 import { describeError } from "@/lib/errors";

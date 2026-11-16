@@ -1,12 +1,12 @@
 // ADM-FR-24 · M2-R23, M3-R14 · tab "Ai dùng được": bảng tenant dùng được command + group được cấp + số user thấy thật.
 import type { CommandAccessItem } from "@ai/contracts/commands";
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { Pagination } from "@/components/shared/Pagination";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/states/EmptyState";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { loadError } from "@/lib/load-error";
 import { pickLocalized } from "@/lib/localized";
 import { ACCESS_PAGE_SIZE, useCommandAccess } from "../../hooks/use-command-queries";

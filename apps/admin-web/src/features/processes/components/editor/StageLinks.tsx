@@ -1,14 +1,15 @@
 // CR-122 · U2b · FLOW2-FR-12: đích bước của flow — "Gộp tới" (`next_step`) cho mọi bước thường và "Theo kết quả chờ" (`wait_event.branches`:
 // đã ký / từ chối / huỷ / hết hạn → mỗi kết quả một bước đích). Đích là SỐ BƯỚC; `remapStepRefs` giữ đúng khi chèn/kéo/xoá bước.
-import { useTranslation } from "react-i18next";
-import { Label } from "@/components/ui/label";
+
+import { Label } from "@ai/web-kit/ui/kit/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { useTranslation } from "react-i18next";
 import { linkableSteps } from "../../lib/arrow-rules";
 import { exitHandle } from "../../lib/canvas-connect";
 import { draftClusterOf } from "../../lib/module-cluster";

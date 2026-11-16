@@ -1,12 +1,13 @@
 // ADM-FR-68 · C3 · `combobox "Tài liệu thư viện"`: nút mở Popover có ô tìm theo tên + listbox + "Tải thêm". Nút hiện tên tài liệu đã chọn.
 // Không gõ UUID (plan-frontend §2). Dữ liệu do hook `useLibraryDocPicker` cấp qua props (component không gọi API).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai/web-kit/ui/kit/popover";
 import { ChevronsUpDown } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import type { LibraryDocPickerData } from "../hooks/use-library-doc-picker";
 
 const DEBOUNCE_MS = 300;

@@ -1,8 +1,9 @@
 // CR-112 · ADM-FR-78 · dòng thông tin gói của thẻ app: trạng thái gói, số vai · số người (GET packs), huy hiệu "n vai không hiệu lực",
 // lối tắt tới tab Phân quyền, và ghi chú Knowledge.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
 import type { PackInfo } from "../../lib/apps-plan";
 import type { AppLevel } from "../../lib/feature-assign";
 

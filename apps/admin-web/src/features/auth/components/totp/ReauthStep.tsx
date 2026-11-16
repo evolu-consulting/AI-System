@@ -1,9 +1,10 @@
 // ADM-FR-08 · ms §10.1 bước 0: xác thực lại bằng mật khẩu hiện tại trước khi nhận secret.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PasswordField } from "@/components/shared/form/PasswordField";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 
 type Props = {
   busy: boolean;

@@ -1,7 +1,8 @@
 // ADM-FR-08 · ms §10.1 · trạng thái 2FA: Chưa bật (nút Bật) / Đã bật (ngày bật, số mã còn lại, Tạo lại, Tắt).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
 import { formatUpdated } from "@/lib/format";
 
 type Props = {
@@ -44,7 +45,7 @@ export function TotpStatus({
         <Button type="button" variant="outline" onClick={onRegenerate}>
           {t("twofa.regen.action")}
         </Button>
-        <Button type="button" variant="destructive" onClick={onDisable}>
+        <Button type="button" variant="danger" onClick={onDisable}>
           {t("twofa.disable.action")}
         </Button>
       </div>

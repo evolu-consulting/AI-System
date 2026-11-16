@@ -1,13 +1,13 @@
 // HUB-FR-68 · PC2-R10 · FC2 · một khoá nguồn trong sheet: tên + "Đã đặt", thay token (ô "Token mới" + "Lưu"), xoá khoá.
 // Khoá đang dùng (used_by nguồn > 0) ⇒ "Xoá khoá" tắt + câu `credential.inUse` (luật used_by H4b-1). Token KHÔNG vào log/URL.
 import type { HubSecret } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { FormField } from "@/components/shared/form/FormField";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useCredentialRow } from "../hooks/use-credential-row";
 import { sourceUsedByCount } from "../lib/errors";
 
@@ -25,7 +25,7 @@ export function CredentialRow({ cred, tenantId }: Props) {
     <li className="space-y-2 rounded-md border border-border p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-body">{cred.name}</span>
-        <Badge variant="info">{t("process.sources.credential.set")}</Badge>
+        <StatusBadge tone="info">{t("process.sources.credential.set")}</StatusBadge>
       </div>
       {used > 0 ? (
         <>

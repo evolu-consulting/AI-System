@@ -2,10 +2,6 @@
 
 import { getAppManifest } from "@ai/contracts/app-manifest";
 import type { FeatureListItem } from "@ai/contracts/features";
-import { Link } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
-import { rowClickProps } from "@/components/shared/list/row-click";
-import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
 import {
   Table,
   TableBody,
@@ -13,7 +9,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@ai/web-kit/ui/kit/table";
+import { Link } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
+import { rowClickProps } from "@/components/shared/list/row-click";
+import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
 import { useTr } from "@/lib/use-translate";
 import type { FeatureStatusFilter } from "../hooks/use-feature-queries";
 import { featureText } from "../lib/feature-label";

@@ -1,21 +1,21 @@
 // ADM-FR-20 · bước 3 · một dòng tham số lệnh: tên · mô tả VI/EN · mặc định · "Nếu trống lấy" · nuốt phần còn lại · ↑ ↓ · xoá.
 import { ARG_FALLBACKS } from "@ai/contracts/common";
-import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
-import { memo } from "react";
-import { Controller, useFormContext } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { LocalizedInput } from "@/components/shared/LocalizedInput";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
+import { memo } from "react";
+import { Controller, useFormContext } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { LocalizedInput } from "@/components/shared/LocalizedInput";
 import { useTr } from "@/lib/use-translate";
 import type { CommandFormValues } from "../../lib/schemas";
 
@@ -130,8 +130,8 @@ function ArgRowImpl({ index, total, onMove, onRemove }: Props) {
         <div className="flex gap-1">
           <Button
             type="button"
-            variant="ghost"
-            size="icon-sm"
+            variant="quiet"
+            size="icon"
             disabled={index === 0}
             aria-label={t("commands.args.row.moveUp", { n })}
             onClick={() => onMove(index, index - 1)}
@@ -140,8 +140,8 @@ function ArgRowImpl({ index, total, onMove, onRemove }: Props) {
           </Button>
           <Button
             type="button"
-            variant="ghost"
-            size="icon-sm"
+            variant="quiet"
+            size="icon"
             disabled={index === total - 1}
             aria-label={t("commands.args.row.moveDown", { n })}
             onClick={() => onMove(index, index + 1)}
@@ -150,8 +150,8 @@ function ArgRowImpl({ index, total, onMove, onRemove }: Props) {
           </Button>
           <Button
             type="button"
-            variant="ghost"
-            size="icon-sm"
+            variant="quiet"
+            size="icon"
             aria-label={t("commands.args.row.remove", { n })}
             onClick={() => onRemove(index)}
           >

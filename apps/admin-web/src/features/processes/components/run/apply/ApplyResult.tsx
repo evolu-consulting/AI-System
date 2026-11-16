@@ -1,10 +1,10 @@
 // HUB-FR-129 · P-c2 §1.3 · khối "Kết quả áp bản sửa": PR (liên kết https), nhánh, commit, rebase, tự gộp; Chỉ nhánh ⇒ tải .diff.
 // Bản chép: chat-web `shared/apply/ApplyResult.tsx` (TECH-DEBT FC11). Thuần, không fetch (trừ tải .diff qua `load`).
 import type { ApplyStageView } from "@ai/contracts/chat";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { sha7 } from "../../../lib/apply-view";
 import { shortBranch } from "../../../lib/autofix-view";
 import { type LoadContent, useDownload } from "../autofix/use-autofix-content";
@@ -78,10 +78,12 @@ function Details({ view, base }: { view: ApplyStageView; base?: string | null })
           <span className="font-mono text-muted-foreground">{t(`${K}commit`, { sha: head })}</span>
         )}
         {view.rebased && target && (
-          <Badge variant="info">{t(`${K}rebased`, { sha: target })}</Badge>
+          <StatusBadge tone="info">{t(`${K}rebased`, { sha: target })}</StatusBadge>
         )}
-        {view.auto_merge === "on" && <Badge variant="ok">{t(`${K}auto.on`)}</Badge>}
-        {view.auto_merge === "failed" && <Badge variant="warn">{t(`${K}auto.failed`)}</Badge>}
+        {view.auto_merge === "on" && <StatusBadge tone="ok">{t(`${K}auto.on`)}</StatusBadge>}
+        {view.auto_merge === "failed" && (
+          <StatusBadge tone="warn">{t(`${K}auto.failed`)}</StatusBadge>
+        )}
       </div>
       {view.rebased && target && (
         <p className="text-caption text-muted-foreground">{t(`${K}rebasedHint`)}</p>
@@ -107,7 +109,7 @@ function ApplyResultImpl({ view, base, diffFile, load }: Props) {
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold">{t(`${K}title`)}</span>
-        <Badge variant={TONE[view.status]}>{label}</Badge>
+        <StatusBadge tone={TONE[view.status]}>{label}</StatusBadge>
       </div>
       {(view.status === "pr_opened" || view.status === "pushed") && hasRef && (
         <Details view={view} base={base} />

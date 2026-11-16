@@ -1,18 +1,18 @@
 // ADM-FR-21, ADM-FR-22 · AC-A03 · một dòng input map: tên input (mono, `*` nếu bắt buộc, kiểu) · nguồn (8) · tham số / giá trị cố định.
 import { MAP_SOURCES } from "@ai/contracts/common";
-import { TriangleAlert } from "lucide-react";
-import { memo } from "react";
-import { Controller, useFormContext } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from "@ai/web-kit/ui/kit/select";
+import { TriangleAlert } from "lucide-react";
+import { memo } from "react";
+import { Controller, useFormContext } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import type { MapInput, MapWarning } from "../../lib/input-map";
 import type { CommandFormValues, MapEntryValues } from "../../lib/schemas";
 import { mapSyntax } from "../../lib/syntax";

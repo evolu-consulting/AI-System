@@ -1,12 +1,12 @@
 ﻿// CR-125 · UX-S7 (H7) · Quản trị nền tảng › Công ty › Ứng dụng: công tắc "Đối tác xác nhận hợp đồng" + danh sách điều kiện, mỗi dòng có trạng thái,
 // lý do, AI làm và nút "Làm bước này" khi nền tảng làm hộ được. Công ty (tenant_admin) chỉ xem. MỘT luật `partnerChecklist` (contracts) cho cả hai nơi.
 import type { PartnerFix, PartnerItem } from "@ai/contracts/modules";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@ai/web-kit/ui/kit/card";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { notifyError } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { describeError } from "@/lib/errors";
 import { useTr } from "@/lib/use-translate";
 import { usePartnerConfirm, usePartnerFix, useSetPartnerConfirm } from "./partner-api";

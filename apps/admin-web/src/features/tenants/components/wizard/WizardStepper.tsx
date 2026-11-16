@@ -1,7 +1,8 @@
 // CR-112 · ADM-FR-79 · thanh bước của wizard onboard: danh sách có thứ tự, bước hiện tại có aria-current="step".
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 import { stepStates, WIZARD_STEPS, type WizardStep } from "../../lib/wizard";
 
 export function WizardStepper({ current }: { current: WizardStep }) {

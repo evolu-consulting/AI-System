@@ -1,8 +1,9 @@
 // ADM-FR-71 · HUB-FR-144 · P-d1 T11b (plan-frontend §2 "Duyệt"; mockup A3): "Nhắc mỗi (giờ)" + "Chuyển cấp nếu chưa ai kiểm"
 // (sau N giờ, tới nhóm khác nhóm kiểm). Chỉ hiện khi "Sau giai đoạn" = Duyệt; tự chạy tiếp ⇒ gửi null (xử lý ở def-form).
+
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { useTranslation } from "react-i18next";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { escalateIssueKey, remindIssueKey } from "../../domain/error-keys";
 import { ESCALATE_AFTER_H, REMIND_EVERY_H } from "../../domain/limits";
 import { escalateIssues, remindIssue } from "../../domain/remind-rules";

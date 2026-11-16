@@ -1,17 +1,17 @@
 // ADM-FR-04 · hàng bộ lọc Users: chip trạng thái có số, Role, chip "Chưa đăng nhập", ô tìm. Mọi giá trị nằm trên URL.
 import type { ListCounts } from "@ai/contracts/common";
-import { X } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { FilterChips } from "@/components/shared/form/FilterChips";
-import { SearchBox } from "@/components/shared/form/SearchBox";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { FilterChips } from "@/components/shared/form/FilterChips";
+import { SearchBox } from "@/components/shared/form/SearchBox";
 import { pickLocalized } from "@/lib/localized";
 
 export type GroupFilterOption = { key: string; name: { vi: string; en?: string } };
@@ -93,8 +93,8 @@ export function UserFilters(p: Props) {
         <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-1 text-label">
           {t("users.filter.groupChip", { key: p.unknownGroupKey })}
           <Button
-            variant="ghost"
-            size="icon-sm"
+            variant="quiet"
+            size="icon"
             aria-label={t("common.clearFilters")}
             onClick={() => p.onGroup(undefined)}
           >

@@ -1,8 +1,6 @@
 // ADM-FR-04 · kết quả reset mật khẩu: khối mật khẩu tạm trong Dialog; đóng khi chưa sao chép thì hỏi lại.
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { TempPasswordPanel } from "@/components/shared/TempPasswordPanel";
-import { Button } from "@/components/ui/button";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +8,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@ai/web-kit/ui/kit/dialog";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { TempPasswordPanel } from "@/components/shared/TempPasswordPanel";
 import { UncopiedConfirm } from "../drawer/UncopiedConfirm";
 
 export type ResetResult = { tenantKey: string; username: string; password: string };

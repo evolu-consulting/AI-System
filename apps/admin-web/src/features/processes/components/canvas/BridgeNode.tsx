@@ -1,11 +1,11 @@
 // CR-122 · U2d · FLOW2-FR-26: ô cạnh cạnh vàng trên canvas — "Thiếu <trường>" + "Gợi ý cầu nối"; có đề xuất ⇒ node Ghi giá trị MỜ (xem trước)
 // kèm câu giải thích của AI và Nhận / Bỏ; không gợi ý được ⇒ lý do ngay tại ô.
 import { HiddenHandle } from "@ai/flow-canvas";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { type Node, type NodeProps, Position } from "@xyflow/react";
 import { AlertTriangle, Sparkles } from "lucide-react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { useFlowCtx } from "../flow/flow-ctx";
 
 export const BRIDGE_W = 300;
@@ -80,7 +80,7 @@ function BridgeNodeImpl({ data }: NodeProps<BridgeNodeType>) {
           <Button type="button" size="sm" onClick={() => api.accept(e)}>
             {t("process.admin.flow.bridge.accept")}
           </Button>
-          <Button type="button" size="sm" variant="ghost" onClick={() => api.dismiss(e)}>
+          <Button type="button" size="sm" variant="quiet" onClick={() => api.dismiss(e)}>
             {t("process.admin.flow.bridge.dismiss")}
           </Button>
         </div>
@@ -89,7 +89,7 @@ function BridgeNodeImpl({ data }: NodeProps<BridgeNodeType>) {
         <Button
           type="button"
           size="sm"
-          variant="ghost"
+          variant="quiet"
           className="mt-1"
           onClick={() => api.dismiss(e)}
         >

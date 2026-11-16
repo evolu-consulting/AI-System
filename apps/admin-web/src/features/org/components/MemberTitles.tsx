@@ -1,9 +1,9 @@
 // CR-147b ý 9 · «Chức vụ nhân viên» ở Cơ cấu: quản trị công ty nhập chức vụ của từng thành viên (hiện ở hồ sơ cá nhân + thẻ người).
 import type { OrgMember } from "@ai/contracts/org";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 type Props = {
   members: readonly OrgMember[];

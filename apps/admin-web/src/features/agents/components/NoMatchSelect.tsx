@@ -1,14 +1,14 @@
 // HUB-FR-77 · CR-054 · Orchestrator mặc định: "Không khớp agent nào →" [agent dự phòng | Tự trả lời | Hỏi lại người dùng] → PUT default.
 import type { AgentDefaults, AgentSettingsItem } from "@ai/contracts/hub-admin";
-import { useId } from "react";
-import { useTranslation } from "react-i18next";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
 import { pickLocalized } from "@/lib/localized";
 import { fallbackCandidates, noMatchChoice } from "../lib/agents";
 
@@ -29,7 +29,7 @@ export function NoMatchSelect({ defaults, items, disabled, onChange }: Props) {
         {t("agents.noMatch.label")}
       </label>
       <Select value={value} disabled={disabled} onValueChange={(v) => v !== value && onChange(v)}>
-        <SelectTrigger id={id} size="sm" className="h-8 w-52">
+        <SelectTrigger id={id} className="h-8 w-52">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

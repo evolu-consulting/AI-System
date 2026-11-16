@@ -1,9 +1,10 @@
 // ADM-FR-41 · M4-R06 · Q12 · banner quota dưới topbar, mọi trang của tenant_admin: không nút đóng, biến mất dưới 80%, lỗi tải → im lặng.
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Link } from "@tanstack/react-router";
 import { TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { cn } from "@/lib/utils";
 import { useQuotaBanner } from "../hooks/use-quota-banner";
 
 export function QuotaBanner() {

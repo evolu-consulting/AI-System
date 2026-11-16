@@ -2,9 +2,8 @@
 // duyệt" (mặc định, như cũ), mũi tên mở menu "Thêm bước duyệt" / "Thêm bước DLC". Hai loại bước không nối với nhau trong một
 // sơ đồ (trộn ⇒ lỗi KIND_MIX, không lưu được). dlc-step-library: "Thêm bước DLC" là menu con chọn BƯỚC MẪU của thư viện
 // (tên + việc) hoặc "Bước trống".
-import { Bell, ChevronDown, Clock, LayoutTemplate, Plus } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +14,9 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import { Bell, ChevronDown, Clock, LayoutTemplate, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useStagesMax } from "../../hooks/use-stages-max";
 
 type Template = { id: string; name: string; action: string };

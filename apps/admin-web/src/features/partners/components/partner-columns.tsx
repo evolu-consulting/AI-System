@@ -1,16 +1,16 @@
 // ADM-FR-74 · cột bảng công ty đối tác: tên (mở danh sách tài khoản), số tài khoản (hoạt động/tổng), trạng thái, menu `⋯`.
 import type { ExternalOrg } from "@ai/contracts/external-orgs";
-import type { TFunction } from "i18next";
-import { MoreHorizontal } from "lucide-react";
-import type { Column } from "@/components/shared/DataTable";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import type { TFunction } from "i18next";
+import { MoreHorizontal } from "lucide-react";
+import type { Column } from "@/components/shared/DataTable";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 
 export type PartnerColumnOpts = {
   t: TFunction;
@@ -32,7 +32,7 @@ function RowMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={t("common.moreActions")}>
+        <Button variant="quiet" size="icon" aria-label={t("common.moreActions")}>
           <MoreHorizontal aria-hidden />
         </Button>
       </DropdownMenuTrigger>

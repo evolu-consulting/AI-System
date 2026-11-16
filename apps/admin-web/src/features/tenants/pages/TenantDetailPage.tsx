@@ -1,5 +1,7 @@
 // ADM-FR-60, ADM-FR-61, ADM-FR-76 · workspace công ty /tenants/$tenantId (mẫu B): header (tên, badge, khoá/mở khoá) + tab theo `lib/workspace-tabs.ts`.
 import type { TenantDetail } from "@ai/contracts/tenants";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
 import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { getRouteApi, useRouter } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
@@ -12,8 +14,6 @@ import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TIMEZONE_UNSUPPORTED_KEY } from "@/features/processes/domain/error-keys";
 import { useSession } from "@/lib/auth/use-session";
 import { describeError, validationIssues } from "@/lib/errors";

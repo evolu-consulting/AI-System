@@ -1,14 +1,14 @@
 // CR-118 · cr118-app-config · tab "Xem trước" (F3 "X đang thấy gì?"): chọn công ty + vai (+ bản nháp chưa lưu của công ty đang sửa ở tab Công ty).
 import type { AppManifest, PreviewRole } from "@ai/contracts/app-manifest";
-import { useTranslation } from "react-i18next";
-import { EmptyState } from "@/components/shared/states/EmptyState";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { useTranslation } from "react-i18next";
+import { EmptyState } from "@/components/shared/states/EmptyState";
 import type { CompanyRow, PreviewVersion } from "../../lib/app-config";
 import { AppPreview } from "../AppPreview";
 

@@ -1,8 +1,9 @@
 // ADM-FR-71 · P-b2 (plan-frontend §1) · CR-123 Luật GỐC 2: MỘT nút "Thêm bước" (chèn bước mới sau bước đang chọn; chưa chọn ⇒ cuối); tắt khi đủ số bước.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { LayoutTemplate, ListPlus } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { useStagesMax } from "../../hooks/use-stages-max";
 
 type Props = {

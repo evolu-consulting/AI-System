@@ -1,9 +1,10 @@
 // CR-103 · fnr-if (flow-node-registry design §3): khối "Nếu" của node If — chọn AND/OR, tối đa 6 điều kiện (nguồn · phép · giá trị),
 // bước Đúng / Sai. Trình bày thuần (không fetch); lỗi theo path server `stages.i.executor.*`. Nối vào StageForm ở đợt wiring.
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { gotoSteps, opsForType } from "../../domain/branch-rules";
 import {
   type CondDraft,

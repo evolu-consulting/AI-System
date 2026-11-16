@@ -1,12 +1,13 @@
 // ADM-FR-20, ADM-FR-30 · M2 · combobox mở Popover có ô tìm + listbox (↑↓ Enter Esc), ≤ 50 mục + "Còn {n} kết quả".
 // Tự viết bằng Popover + listbox, không dùng cmdk (plan-frontend D1).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai/web-kit/ui/kit/popover";
 import { ChevronsUpDown } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { moveActive, type PickerOption, visibleOptions } from "./ref-picker";
 
 const SEARCH_DEBOUNCE_MS = 300;

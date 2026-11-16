@@ -1,11 +1,11 @@
 // CR-122 · p22 · cài đặt nền tảng "Số bước tối đa của một quy trình" (platform_admin): mặc định 22, trần 50. Trình sửa quy trình đọc giá trị này
 // (nút "Thêm bước", canvas); Hub từ chối lưu quy trình dài hơn. Một ô số + Lưu; lỗi 400/422 hiện ngay dưới ô.
 
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useProcessLimits, useSaveProcessLimits } from "../hooks/use-process-limits";
 
 export function ProcessLimitPanel() {

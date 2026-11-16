@@ -1,13 +1,13 @@
 // ADM-FR-40 · M4-AC02 · Q9 · tab Quota của tenant: bảng Cả tenant + từng feature, ô số (trống = Không giới hạn), thanh lưu dính đáy.
 // Info và Quota dùng chung `version` tenant (D7): `tenant.version` luôn là bản mới nhất, lưu tab nào cũng cập nhật cache chung.
 import type { TenantDetail } from "@ai/contracts/tenants";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@ai/web-kit/ui/kit/table";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "@/components/shared/ConnectionBanner";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { pickLocalized } from "@/lib/localized";
 import { useQuotaTab } from "../../hooks/use-quota-tab";
 import { QUOTA_FIELDS, type QuotaField } from "../../lib/quota-draft";

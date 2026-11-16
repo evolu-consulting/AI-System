@@ -1,17 +1,18 @@
 // HUB-FR-68 · PC2-R10 · FC2 · sheet "Khoá nguồn": danh sách khoá của tenant + "Tạo khoá" (mở dialog) + thay/xoá từng khoá.
 // Lazy-load (chỉ mở theo yêu cầu). Trạng thái: đang tải / rỗng / lỗi + Thử lại. Token không bao giờ hiện lại.
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@ai/web-kit/ui/kit/sheet";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useCredentialList } from "../hooks/use-credential-list";
 import { CredentialDialog } from "./CredentialDialog";
 import { CredentialRow } from "./CredentialRow";

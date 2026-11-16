@@ -1,9 +1,10 @@
 // ADM-FR-54 · /transfer: Tabs Export · Import (3 bước, FE5b). Chỉ platform_admin.
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExportTab } from "../components/ExportTab";
 import { ImportTab } from "../components/ImportTab";
 

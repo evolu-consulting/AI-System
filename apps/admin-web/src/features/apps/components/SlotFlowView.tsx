@@ -1,7 +1,6 @@
 // CR-118 · cr118-app-config · sơ đồ + bảng bước CHỈ ĐỌC của quy trình mặc định của khe (Bắt đầu → các bước → Ghi Đã duyệt, nút hệ thống khoá).
 // Sửa luôn ở ProcessEditorPage ("Xem sơ đồ" / "Nhân bản để sửa" ở thẻ khe). CR-118 · cr118-flow-canvas: sơ đồ vẽ bằng gói dùng chung `@ai/flow-canvas` (lười), bảng bước giữ ở đây.
-import { Component, lazy, type ReactNode, Suspense, useCallback } from "react";
-import { useTranslation } from "react-i18next";
+
 import {
   Table,
   TableBody,
@@ -9,7 +8,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@ai/web-kit/ui/kit/table";
+import { Component, lazy, type ReactNode, Suspense, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useSlotFlow } from "../hooks/use-slot-flow";
 import type { StepRow, StepWho } from "../lib/flow-view";
 

@@ -1,7 +1,5 @@
 // ADM-FR-67 · CR-056 · P-a F5: tab "Nhật ký" — lịch sử kiểm/hỏi/quyết/chuyển/huỷ của lượt chạy (không có tin nhắn phòng).
 import type { HistoryItem } from "@ai/contracts/chat";
-import { useTranslation } from "react-i18next";
-import { EmptyState } from "@/components/shared/states/EmptyState";
 import {
   Table,
   TableBody,
@@ -9,7 +7,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@ai/web-kit/ui/kit/table";
+import { useTranslation } from "react-i18next";
+import { EmptyState } from "@/components/shared/states/EmptyState";
 import { formatClock, type Translate } from "@/lib/format";
 
 type Props = { history: readonly HistoryItem[]; stageNames: readonly string[] };

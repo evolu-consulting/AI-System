@@ -1,6 +1,7 @@
 // CR-112 · ADM-FR-80, ADM-FR-82 · tab Phân quyền theo vai của một công ty: callout 3 tầng, khối vai theo app, gán người, Kiểm tra quyền,
 // badge "N thay đổi chưa lưu" + MỘT nút Lưu. platform_admin truyền `tenantId`; tenant_admin để trống (server suy ra từ phiên).
 import type { User } from "@ai/contracts/users";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "@/components/shared/states/EmptyState";
@@ -9,7 +10,6 @@ import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
-import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api-error";
 import { useRolesDraft } from "../hooks/use-roles-draft";
 import { sortPacks } from "../lib/levels";

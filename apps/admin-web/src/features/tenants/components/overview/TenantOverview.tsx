@@ -1,11 +1,11 @@
 // CR-112 · tab Tổng quan (COULD) + bước Xem lại của wizard · tóm tắt chỉ đọc: số người dùng, app đang bật, số vai, quota tháng (run/token).
 import type { TenantDetail } from "@ai/contracts/tenants";
+import { Card, CardContent, CardHeader, CardTitle } from "@ai/web-kit/ui/kit/card";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { QuotaBar } from "@/components/shared/quota/QuotaBar";
 import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { loadError } from "@/lib/load-error";
 import { useTr } from "@/lib/use-translate";
 import { useTenantOverview } from "../../hooks/use-tenant-overview";

@@ -1,8 +1,9 @@
 // ADM-FR-71 · HUB-FR-115 · P-d1 T11b (plan-frontend §2 "Thẻ Thông tin"; mockup A4): "Thời hạn lượt chạy (ngày)" 1…365 +
 // "Không hết hạn" (bật ⇒ ô số tắt, rỗng, gửi `ttl_days: null`).
+
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { useTranslation } from "react-i18next";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { PROCESS_TTL_DAYS } from "../../domain/limits";
 import { ttlFromValue } from "../../domain/ttl-rules";
 import type { DefDraft } from "../../lib/def-form";

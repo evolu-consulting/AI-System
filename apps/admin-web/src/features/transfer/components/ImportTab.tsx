@@ -1,16 +1,16 @@
 // ADM-FR-54 · M4-R14 · M4-R15 · M4-AC09/10 · tab Import (ms §8, artboard ImportPreview): Chọn file → Xem trước → Áp dụng.
 import { IMPORT_ITEM_TYPES, type ImportItem } from "@ai/contracts/transfer";
+import { Accordion } from "@ai/web-kit/ui/kit/accordion";
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Card, CardContent } from "@ai/web-kit/ui/kit/card";
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Accordion } from "@/components/ui/accordion";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { loadError } from "@/lib/load-error";
-import { cn } from "@/lib/utils";
 import { secretValueOk, useImportApply } from "../hooks/use-import-apply";
 import { type ImportFlow, useImportPreview } from "../hooks/use-import-preview";
 import { formatFileSize } from "../lib/import-file";

@@ -1,9 +1,9 @@
 // ADM-FR-69 · HUB-FR-125 · P-b FS-8a: nguồn của một giai đoạn — chọn ≤ 5 trong nguồn của quy trình + allowlist (mỗi dòng một glob).
 import { STAGE_SOURCES_MAX } from "@ai/contracts/hub-admin";
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import type { DraftErrors, StageDraft } from "../../lib/def-form";
 import { TextField } from "./Fields";
 

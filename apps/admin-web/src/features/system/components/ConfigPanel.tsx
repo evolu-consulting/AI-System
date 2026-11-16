@@ -8,11 +8,11 @@ import {
   type OpsCheckKey,
   type OpsSettings,
 } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import {
   type Draft,
   type FieldError,

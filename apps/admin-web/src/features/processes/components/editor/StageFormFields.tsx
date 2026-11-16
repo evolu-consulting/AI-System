@@ -1,8 +1,9 @@
 // CR-118 · cr118-flow-admin: editor trường của node `form` (thêm/xoá/đổi chỗ, loại, nhãn, bắt buộc, giới hạn, lựa chọn).
 // Mọi thay đổi đi qua `formPatch` ⇒ `output.fields` luôn khớp trường form (Hub ép, lệch ⇒ FORM_INVALID). Dùng chung Canvas + Form.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import type { FormFieldDraft } from "../../lib/draft-types";
 import {
   addField,

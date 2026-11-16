@@ -1,20 +1,21 @@
 // ADM-FR-68 · PB-R21 · form trong drawer: Ký hiệu [mới] · Loại (radiogroup) · trường theo loại · Công ty [platform, mới] · Mô tả.
 // Gating quyền: tenant_admin KHÔNG có radio `local_path` (không tồn tại trong DOM) và không bao giờ nhận KindFields của local_path.
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { FormField } from "@/components/shared/form/FormField";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { RadioGroup, RadioGroupItem } from "@ai/web-kit/ui/kit/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+} from "@ai/web-kit/ui/kit/select";
+import { Textarea } from "@ai/web-kit/ui/kit/textarea";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { FormField } from "@/components/shared/form/FormField";
 import { useTr } from "@/lib/use-translate";
 import type { LibraryDocPickerData } from "../hooks/use-library-doc-picker";
 import {

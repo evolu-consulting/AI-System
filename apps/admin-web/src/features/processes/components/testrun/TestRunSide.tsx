@@ -1,7 +1,8 @@
 // CR-127 · U3 · M3 · hai cột bên: HĐ thử (nhập tay) + "Kiểm tra trước khi áp dụng"; "Thử nhanh 4 trường hợp".
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { FactField, ScenarioRow, WarnRow } from "../../lib/test-run";
 import { SelectField, TextField } from "../editor/Fields";
 

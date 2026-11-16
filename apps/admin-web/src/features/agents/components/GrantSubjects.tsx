@@ -1,8 +1,9 @@
 // HUB-FR-78 · CR-054 · danh sách checkbox Nhóm + Người của ngăn Cấp quyền (dữ liệu từ hook, component không fetch).
+
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import { useTranslation } from "react-i18next";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export type SubjectOption = { id: string; label: string; meta: string };
 

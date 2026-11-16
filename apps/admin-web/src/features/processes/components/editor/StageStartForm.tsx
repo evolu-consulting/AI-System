@@ -1,10 +1,11 @@
 // CR-125 · cr125-manual-start-ui · panel của node «Bắt đầu bằng phiếu yêu cầu» (`core.start-form`): ô của phiếu (nhãn, mã tự sinh, loại,
 // bắt buộc, gợi ý), ai được bắt đầu (mọi người / nhóm), mẫu tên yêu cầu. Mọi đổi đi qua `startForm` của stage.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { useGroupKeyOptions } from "../../hooks/use-group-key-options";
 import {
   addStartField,
@@ -91,7 +92,7 @@ function FieldRow(p: {
           <span className="ml-auto flex gap-1">
             <Button
               type="button"
-              variant="ghost"
+              variant="quiet"
               size="icon"
               disabled={p.n === 1}
               aria-label={t(`${K}up`, { n: p.n })}
@@ -101,7 +102,7 @@ function FieldRow(p: {
             </Button>
             <Button
               type="button"
-              variant="ghost"
+              variant="quiet"
               size="icon"
               disabled={p.n === p.count}
               aria-label={t(`${K}down`, { n: p.n })}
@@ -111,7 +112,7 @@ function FieldRow(p: {
             </Button>
             <Button
               type="button"
-              variant="ghost"
+              variant="quiet"
               size="icon"
               aria-label={t(`${K}remove`, { n: p.n })}
               onClick={p.onRemove}

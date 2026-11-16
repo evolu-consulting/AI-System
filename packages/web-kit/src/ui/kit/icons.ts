@@ -4,6 +4,7 @@ import {
   Bell,
   Building2,
   Check,
+  Circle,
   CircleAlert,
   CircleCheck,
   Clock,
@@ -14,6 +15,7 @@ import {
   FileText,
   Filter,
   Handshake,
+  Info,
   Lock,
   MessageSquare,
   MoreHorizontal,
@@ -57,6 +59,8 @@ export const ICONS = {
   pin: Pin,
   copy: Copy,
   emoji: Smile,
+  info: Info,
+  neutral: Circle,
 } as const;
 
 export type IconConcept = keyof typeof ICONS;

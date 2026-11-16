@@ -1,14 +1,15 @@
 // CR-103 · R4 fnr-showcase: `/processes/showcase` — flow mẫu "Duyệt đề nghị chi": canvas chỉ đọc, form input + "Chạy thử",
 // tiến độ/nhật ký trực tiếp, nút Đạt/Chưa đạt ngay trên trang, ô "Đổi node" (minh hoạ R3). Chạy được khi AI tạm ngưng
 // (node `set`/`if` không gọi AI). Def mẫu do `tools/scripts/src/seed-flow-showcase.ts` tạo (chỉ tenant demo).
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Panel } from "@/components/shared/panel/Panel";
 import { HubLoadError, HubNotConfigured } from "@/components/shared/states/HubLoadError";
 import { LoadingState } from "@/components/shared/states/LoadingState";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { hubConfigured } from "@/lib/hub";
 import { CanvasView } from "../components/canvas/CanvasView";
 import { type StageView, stageViews } from "../components/canvas/stage-view";

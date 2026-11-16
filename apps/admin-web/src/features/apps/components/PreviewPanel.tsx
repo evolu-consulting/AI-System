@@ -1,10 +1,10 @@
 // CR-118 · cr118-app-config · khung xem trước một vai: trái = menu như người đó sẽ thấy (mục ẩn gạch mờ kèm lý do), phải = hành động
 // chính + quy trình chạy ở từng khe. Thuần trình bày — kết quả đến từ `previewApp`.
 import type { HideReason, PreviewRole, RolePreview } from "@ai/contracts/app-manifest";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Check, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { cn } from "@/lib/utils";
 
 function useReason() {
   const { t } = useTranslation();

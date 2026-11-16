@@ -1,19 +1,19 @@
 // ADM-FR-20 · M2-R15 · bước 5 "Hiển thị kết quả": output field, kiểu hiển thị, chế độ sync/async, timeout 1–600 s.
 import { COMMAND_MODES, OUTPUT_RENDERS, TIMEOUT_MAX_S, TIMEOUT_MIN_S } from "@ai/contracts/common";
-import { Controller, useFormContext } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { FormField } from "@/components/shared/form/FormField";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { RadioGroup, RadioGroupItem } from "@ai/web-kit/ui/kit/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+} from "@ai/web-kit/ui/kit/select";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
+import { Controller, useFormContext } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { FormField } from "@/components/shared/form/FormField";
 import { useTr } from "@/lib/use-translate";
 import { defaultTimeout } from "../../lib/defaults";
 import type { CommandFormValues } from "../../lib/schemas";

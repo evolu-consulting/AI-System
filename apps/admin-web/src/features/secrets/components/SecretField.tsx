@@ -1,11 +1,12 @@
 // ADM-FR-50 · M2-R03 · ô giá trị secret: type=password, nút Hiện/Ẩn chỉ tác động giá trị đang gõ (D10).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 type Props = {
   id: string;
@@ -37,8 +38,8 @@ export function SecretField({ id, label, registration, hasValue, description, er
           {hasValue ? (
             <Button
               type="button"
-              variant="ghost"
-              size="icon-sm"
+              variant="quiet"
+              size="icon"
               aria-label={shown ? t("secrets.field.hide") : t("secrets.field.show")}
               onClick={() => setShown((v) => !v)}
               className="absolute top-1/2 right-1 -translate-y-1/2"

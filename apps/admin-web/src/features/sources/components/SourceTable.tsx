@@ -2,19 +2,18 @@
 // Cột Đích: `path` chỉ in cho platform_admin qua `localPathOf` (tenant_admin luôn thấy "Ẩn…"); không đưa path vào title/aria của dòng tenant.
 import type { Role } from "@ai/contracts/common";
 import type { SourceView } from "@ai/contracts/hub-admin";
-import { MoreHorizontal } from "lucide-react";
-import { type ReactNode, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { type Column, DataTable } from "@/components/shared/DataTable";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
+import { type ReactNode, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { type Column, DataTable } from "@/components/shared/DataTable";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import {
   displayApplyMode,
   isPrivateSource,
@@ -91,8 +90,8 @@ function RowMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="icon-sm"
+          variant="quiet"
+          size="icon"
           aria-label={t("process.sources.row.actions", { key: s.key })}
         >
           <MoreHorizontal aria-hidden />
@@ -125,9 +124,9 @@ function KindCell({ s }: { s: SourceView }) {
   const { t } = useTranslation();
   return (
     <span className="flex flex-wrap items-center gap-1">
-      <Badge variant="info">{t(`process.sources.kind.${s.kind}`)}</Badge>
+      <StatusBadge tone="info">{t(`process.sources.kind.${s.kind}`)}</StatusBadge>
       {isPrivateSource(s.config) ? (
-        <Badge variant="warn">{t("process.sources.badge.private")}</Badge>
+        <StatusBadge tone="warn">{t("process.sources.badge.private")}</StatusBadge>
       ) : null}
     </span>
   );

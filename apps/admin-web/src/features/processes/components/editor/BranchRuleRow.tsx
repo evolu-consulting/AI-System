@@ -1,9 +1,10 @@
 // ADM-FR-71 · HUB-FR-147 · AC-H45 · P-d2 (plan-frontend-d2 §10; mockup 04 E3): một luật rẽ nhánh — Nếu trường · Phép so sánh · Giá trị ·
 // Thì tới bước · Xoá. Trình bày thuần (không fetch); kiểu ô giá trị theo kiểu trường.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { X } from "lucide-react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { type BranchOp, opsForType } from "../../domain/branch-rules";
 import type { BranchDraft, FieldDraft } from "../../lib/draft-types";
 import { SelectField, TextField } from "./Fields";

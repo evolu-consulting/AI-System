@@ -2,12 +2,12 @@
 
 import type { Group } from "@ai/contracts/groups";
 import type { AgentGrantListItem } from "@ai/contracts/hub-admin";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { HubLoadError, HubNotConfigured } from "@/components/shared/states/HubLoadError";
-import { Switch } from "@/components/ui/switch";
 import { hubConfigured } from "@/lib/hub";
 import { pickLocalized } from "@/lib/localized";
 import { useGroupAgents } from "../../hooks/use-group-agents";

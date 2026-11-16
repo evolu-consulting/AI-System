@@ -1,16 +1,16 @@
 // ADM-FR-75 · cột bảng tài khoản của một công ty đối tác: tên đăng nhập, tên hiển thị, email, trạng thái, đăng nhập gần nhất, menu `⋯`.
 import type { User } from "@ai/contracts/users";
-import type { TFunction } from "i18next";
-import { MoreHorizontal } from "lucide-react";
-import type { Column } from "@/components/shared/DataTable";
-import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import type { TFunction } from "i18next";
+import { MoreHorizontal } from "lucide-react";
+import type { Column } from "@/components/shared/DataTable";
+import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
 import { formatLastLogin, type Translate } from "@/lib/format";
 import {
   type PartnerUserActionKind,
@@ -56,8 +56,8 @@ function RowMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="icon-sm"
+          variant="quiet"
+          size="icon"
           aria-label={t("common.moreActions")}
           disabled={items.length === 0}
         >

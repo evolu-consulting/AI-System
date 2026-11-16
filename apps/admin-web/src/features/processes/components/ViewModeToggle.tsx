@@ -1,8 +1,9 @@
 // CR-121 c11/c17 · Q11 · MỘT công tắc Sơ đồ/Danh sách bước cho mọi chỗ xem quy trình (ngăn Công ty › Quy trình, trang chỉ-xem, trình sửa).
 // Nút icon, nhãn hiện khi rê chuột/focus (title + aria-label); lựa chọn nhớ qua `useViewMode` (canvas mặc định).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { List, Network } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import type { ViewMode } from "../lib/view-mode";
 
 const MODES: readonly ViewMode[] = ["canvas", "list"];
@@ -16,7 +17,7 @@ export function ViewModeToggle({ mode, set }: { mode: ViewMode; set: (m: ViewMod
           key={m}
           type="button" // nằm trong form của trình sửa: thiếu type ⇒ bấm là LƯU quy trình
           size="sm"
-          variant={mode === m ? "secondary" : "ghost"}
+          variant={mode === m ? "outline" : "quiet"}
           aria-pressed={mode === m}
           title={t(`tenants.flows.view.${m}`)}
           aria-label={t(`tenants.flows.view.${m}`)}

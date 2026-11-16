@@ -1,10 +1,11 @@
 // ADM-FR-60 · sidebar 248px (D18), thu gọn 64px bằng nút hoặc phím `[`, nhớ `ai.sidebarCollapsed`; < 1024px ẩn.
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconButton } from "@/components/shared/IconButton";
 import { useSession } from "@/lib/auth/use-session";
-import { cn } from "@/lib/utils";
 import { readCollapsed, writeCollapsed } from "../lib/sidebar-pref";
 import { SidebarNav } from "./SidebarNav";
 

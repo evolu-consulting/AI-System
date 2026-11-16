@@ -1,7 +1,8 @@
 // ADM-FR-03 · /member: tài khoản member dùng Evolu Copilot, không dùng trang quản trị (D8).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { session } from "@/lib/auth/session";
 
 const CHAT_APP_URL = import.meta.env.PUBLIC_CHAT_APP_URL;
@@ -30,7 +31,7 @@ export function MemberPage() {
         <Button variant="outline" asChild>
           <Link to="/account/password">{t("account.changePassword")}</Link>
         </Button>
-        <Button variant="ghost" onClick={signOut}>
+        <Button variant="quiet" onClick={signOut}>
           {t("auth.logout")}
         </Button>
       </div>

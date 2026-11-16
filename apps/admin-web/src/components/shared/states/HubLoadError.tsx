@@ -1,8 +1,9 @@
 // ADM-FR-37 · lỗi tải từ Hub (plan-frontend §2.3/§2.4): câu riêng + "Thử lại"; "Chưa cấu hình" khi vắng PUBLIC_HUB_URL.
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { CircleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 
 export function HubLoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
   const { t } = useTranslation();

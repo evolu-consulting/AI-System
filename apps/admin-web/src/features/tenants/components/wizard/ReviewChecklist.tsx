@@ -1,8 +1,9 @@
 // CR-125 · S1 · C1 · bước Xem lại: danh sách việc còn thiếu (mỗi mục một liên kết "Sửa"), rỗng ⇒ "Công ty dùng được ngay".
 // Nguồn: cùng hook với tab Ứng dụng (app đang bật, gói/vai, việc quy trình tắt) — không đọc thêm API riêng.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { hubConfigured } from "@/lib/hub";
 import { useTr } from "@/lib/use-translate";
 import { attentionOf } from "../../apps/lib/apps-table";

@@ -1,5 +1,7 @@
 // ADM-FR-66 · CR-056 · P-a F5: editor quy trình tối thiểu (`/processes/new`, `/processes/$processId`) — Cấu hình · Lượt chạy
 // (plan-frontend-admin §1, board ②). `processId` vắng ⇒ tạo mới. Mẫu + tenant_admin ⇒ chỉ xem + "Chép mẫu".
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
@@ -7,7 +9,6 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { HubNotConfigured } from "@/components/shared/states/HubLoadError";
 import { LoadingState } from "@/components/shared/states/LoadingState";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { hubConfigured } from "@/lib/hub";
 import { CompanyEditorBar } from "../components/editor/CompanyEditorBar";
 import { DefInfoCard } from "../components/editor/DefInfoCard";

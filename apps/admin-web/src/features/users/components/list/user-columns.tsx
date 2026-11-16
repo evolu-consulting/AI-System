@@ -1,17 +1,17 @@
 // ADM-FR-04 · ADM-FR-62 · cột bảng Users: tên đăng nhập (mono, "(bạn)"), [Tenant], tên hiển thị, role, Groups, đăng nhập gần nhất, trạng thái, menu `⋯`.
 import type { User } from "@ai/contracts/users";
-import type { TFunction } from "i18next";
-import { MoreHorizontal } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import type { Column } from "@/components/shared/DataTable";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import type { TFunction } from "i18next";
+import { MoreHorizontal } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { Column } from "@/components/shared/DataTable";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatClock, formatLastLogin, type Translate } from "@/lib/format";
 import { rowActions, type UserActionKind, userStatusView } from "../../lib/status";
 import { UserGroupChips } from "./UserGroupChips";
@@ -54,7 +54,7 @@ function RowMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={t("common.moreActions")}>
+        <Button variant="quiet" size="icon" aria-label={t("common.moreActions")}>
           <MoreHorizontal aria-hidden />
         </Button>
       </DropdownMenuTrigger>

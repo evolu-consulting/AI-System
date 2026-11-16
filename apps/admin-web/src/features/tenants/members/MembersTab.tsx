@@ -1,7 +1,8 @@
 // CR-121 c14 · R2 · tab Thành viên: Người dùng là mặc định; Nhóm · Đối tác · Phân quyền · Agents là MỤC CON (bộ chọn trên cùng, `?view=`),
 // không còn tab riêng. Mỗi mục nhúng màn có sẵn trong workspace công ty (cả platform_admin và tenant_admin; quyền ghi theo vai ở từng màn).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { EmbeddedTab } from "../components/EmbeddedTab";
 import { MEMBER_VIEWS, type MemberView } from "../lib/workspace-tabs";
 
@@ -24,7 +25,7 @@ export function MembersTab({
           <Button
             key={v}
             size="sm"
-            variant={view === v ? "secondary" : "ghost"}
+            variant={view === v ? "outline" : "quiet"}
             aria-pressed={view === v}
             data-testid={`members-view-${v}`}
             onClick={() => onView(v)}

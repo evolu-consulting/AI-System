@@ -1,5 +1,7 @@
 // ADM-FR-30, ADM-FR-31, ADM-BR-10 · editor Feature (/features/new, /features/$id): tab Thông tin, Commands, Tenant + thanh lưu.
 import type { FeatureDetail } from "@ai/contracts/features";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
 import { useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -11,8 +13,6 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/http";
 import { pickLocalized } from "@/lib/localized";
 import { useFeature } from "../api";

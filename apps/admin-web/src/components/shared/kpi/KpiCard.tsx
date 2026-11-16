@@ -1,12 +1,13 @@
 // ADM-FR-60, ADM-FR-41, ADM-FR-42 · M4-R09 · thẻ KPI dùng chung (Tổng quan 2 role, Chi phí & quota; plan-frontend §2).
 // `section` có `aria-labelledby` (e2e `region "<tiêu đề>"`); value `null` → "—" + tooltip "Chưa có dữ liệu từ Agent Hub";
 // đang tải → skeleton; lỗi riêng từng thẻ (ms §12.3) — thẻ khác vẫn hiện.
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { type ReactNode, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 
 type Props = {
   title: string;
@@ -24,16 +25,14 @@ type Props = {
 function NoData() {
   const { t } = useTranslation();
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button type="button" aria-label={t("overview.kpi.noData")} className="rounded-sm">
-            —
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>{t("overview.kpi.noData")}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button type="button" aria-label={t("overview.kpi.noData")} className="rounded-sm">
+          —
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{t("overview.kpi.noData")}</TooltipContent>
+    </Tooltip>
   );
 }
 

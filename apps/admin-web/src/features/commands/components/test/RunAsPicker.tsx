@@ -1,7 +1,8 @@
 // ADM-FR-23 · X1 F4 · "Chạy với tư cách user…": gõ để tìm user mọi tenant (platform_admin), chọn 1; vắng = chính admin.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
 import { SearchCombobox } from "@/components/shared/SearchCombobox";
-import { Button } from "@/components/ui/button";
 import { useRunAsOptions } from "../../hooks/use-run-as-options";
 
 export type RunAs = { id: string; label: string } | null;
@@ -31,7 +32,7 @@ export function RunAsPicker({ value, onChange, error }: Props) {
           <span>{t("commands.test.runAsPicked", { name: value.label })}</span>
           <Button
             type="button"
-            variant="ghost"
+            variant="quiet"
             size="sm"
             aria-label={t("commands.test.runAsClear", { name: value.label })}
             onClick={() => onChange(null)}

@@ -1,6 +1,7 @@
 // ADM-FR-60, ADM-FR-04 · bảng dùng chung: caption ẩn (nhãn bảng), skeleton, rỗng, lỗi; không sort (D9).
-import { memo, type ReactNode } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import {
   Table,
   TableBody,
@@ -8,8 +9,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+} from "@ai/web-kit/ui/kit/table";
+import { memo, type ReactNode } from "react";
 import { rowClickProps } from "./list/row-click";
 import { ErrorState } from "./states/ErrorState";
 import { LoadingState } from "./states/LoadingState";

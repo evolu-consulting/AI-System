@@ -1,12 +1,13 @@
 // dlc-engine · form một BƯỚC DLC trên Canvas của quy trình thư viện (khe `dlc.*`): tên, việc, agent (Agent Hub, theo khoá), lời
 // dặn, cổng duyệt (Group theo mã + được quay lại bước nào), số vòng, hạn. Sửa vào `stage.slotRaw` (+ `name`); Lưu ⇒ Hub `fromStages`
 // dựng lại `slot_body` rồi biên dịch. Bước khác loại trong cùng sơ đồ ⇒ báo KIND_MIX (không nối được, không lưu được).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   DLC_ACTIONS,
   DLC_DEFAULT_AGENT,

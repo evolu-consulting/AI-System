@@ -1,9 +1,10 @@
 // ADM-FR-72 · P-d1 T11c · ô "Múi giờ" của tenant (plan-frontend §3, FD5): ô chỉ-đọc + RefPicker nút "Đổi múi giờ".
+
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
 import { RefPicker } from "@/components/shared/RefPicker";
-import { Input } from "@/components/ui/input";
 import { timeZoneOptions, utcOffsetLabel } from "@/lib/tz-format";
 
 type Props = {

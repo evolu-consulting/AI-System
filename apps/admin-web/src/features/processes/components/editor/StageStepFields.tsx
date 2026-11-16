@@ -1,7 +1,8 @@
 // ADM-FR-71 · HUB-FR-104 · HUB-FR-118 · P-b2: "Chạy ở bước" (spinbutton, đếm từ 1) và "Nếu bị trượt" (chọn bước được quay lại).
+
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { useTranslation } from "react-i18next";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { REMIND_EVERY_H } from "../../domain/limits";
 import { useStagesMax } from "../../hooks/use-stages-max";
 import type { StageDraft } from "../../lib/def-form";

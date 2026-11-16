@@ -1,10 +1,11 @@
 // ADM-FR-08 · ms §10.1 bước 2: mã 6 số, tự gửi khi đủ; sai → `twofa.verify.wrong`, xoá ô.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { type FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { OtpInput } from "@/components/shared/form/OtpInput";
 import { isOtpComplete } from "@/components/shared/form/otp";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 
 type Props = {
   busy: boolean;

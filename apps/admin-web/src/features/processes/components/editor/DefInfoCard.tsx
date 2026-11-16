@@ -1,10 +1,11 @@
 // ADM-FR-66 · CR-056 · P-a F5: thẻ "Thông tin" của editor — tên, mô tả, thời hạn; trường kỹ thuật (ký hiệu, nhóm, ngân sách, Bật) theo `variant`.
+
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";
 import { RefPicker } from "@/components/shared/RefPicker";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useSession } from "@/lib/auth/use-session";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import type { DefDraft, DraftErrors } from "../../lib/def-form";

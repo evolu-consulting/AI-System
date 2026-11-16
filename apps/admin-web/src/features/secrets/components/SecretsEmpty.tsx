@@ -1,8 +1,9 @@
 // ADM-FR-50 · trạng thái rỗng của Secrets: chưa có secret / không khớp bộ lọc (kèm "Xoá bộ lọc").
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "@/components/shared/states/EmptyState";
-import { Button } from "@/components/ui/button";
 
 type Props = { filtered: boolean; q?: string; createAction: ReactNode; onClear: () => void };
 

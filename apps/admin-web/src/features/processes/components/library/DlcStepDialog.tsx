@@ -1,9 +1,7 @@
 // dlc-step-library · hộp thoại Thêm/Sửa BƯỚC DLC mẫu: mọi thuộc tính chọn từ danh sách (việc, agent, Group duyệt, "Từ chối ⇒"),
 // không gõ JSON. Duyệt luôn sang bước kế tiếp (chỉ hiện chữ). Lỗi ô theo contract; lỗi server (khoá trùng, 409) dưới form.
 import { DLC_STEP_ACTIONS, type DlcStepTemplate } from "@ai/contracts/hub-admin";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogBody,
@@ -11,9 +9,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { DLC_DEFAULT_AGENT, dlcUsesAgent, dlcUsesRounds } from "../../lib/dlc-slot";
 import {
   blankDlcStep,

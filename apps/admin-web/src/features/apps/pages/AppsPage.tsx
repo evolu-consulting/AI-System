@@ -1,5 +1,15 @@
 // app-catalog · /apps (chỉ platform_admin): bảng danh mục app web + thêm/sửa/xoá. Bật/tắt nhanh ngay trên bảng.
 import type { AppCatalogItem, AppCreateRequest } from "@ai/contracts/app-catalog";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@ai/web-kit/ui/kit/table";
 import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,16 +19,6 @@ import { applyFilters, type FilterGroup, isFiltered } from "@/components/shared/
 import { rowClickProps } from "@/components/shared/list/row-click";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ApiError } from "@/lib/http";
 import { useAppList, useCreateApp, useDeleteApp, useUpdateApp } from "../api";
 import { AppDrawer } from "../components/AppDrawer";

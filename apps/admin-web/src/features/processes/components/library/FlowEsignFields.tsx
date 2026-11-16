@@ -1,8 +1,9 @@
 // CR-105 · L3: trường của bước "Ký số" (bước cuối Form). Chuyển từ contracts-web `FlowEsignFields`; phòng ban theo mã; nhà cung cấp
 // nhập khoá (khe hở: danh mục nhà cung cấp ký số theo tenant không có ở admin-web); "người cụ thể" chỉ hiện khi bước đã có (giữ nguyên).
+
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { useTranslation } from "react-i18next";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import type { LibEsignStep } from "../../lib/flow-form";
 import { SelectField, TextField } from "../editor/Fields";
 import type { StepFieldProps } from "./flow-step-props";

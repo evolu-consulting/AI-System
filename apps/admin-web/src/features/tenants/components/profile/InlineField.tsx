@@ -1,9 +1,10 @@
 // CR-121 · ô thông tin sửa tại chỗ: bấm giá trị (hoặc nút bút) ⇒ ô nhập + Lưu/Huỷ; Enter lưu, Esc huỷ. Chỉ đọc khi không có quyền.
+
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { Check, Pencil, X } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconButton } from "@/components/shared/IconButton";
-import { Input } from "@/components/ui/input";
 import { useTr } from "@/lib/use-translate";
 
 type Props = {

@@ -1,11 +1,12 @@
 // CR-127 · M1 (mock Main.dc) · tab «Theo công ty»: mọi quy trình của các công ty — Quy trình · Công ty · Trạng thái. Bấm hàng ⇒ màn soạn.
 // Hub chỉ có danh sách THEO công ty ⇒ mỗi công ty một truy vấn (số công ty nhỏ); chỉ quản trị nền tảng dùng.
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useTenantPacks } from "@/features/tenants/api";
 import { useCompanyFlowList } from "@/features/tenants/flows/company-flows-api";
 import { CreateFlowDialog } from "@/features/tenants/flows/components/CreateFlowDialog";
@@ -41,9 +42,9 @@ function Rows({ tid, name }: { tid: string; name: string }) {
           </td>
           <td className="px-3 py-2">{name}</td>
           <td className="px-3 py-2">
-            <Badge variant={f.enabled ? "ok" : "outline"}>
+            <StatusBadge tone={f.enabled ? "ok" : "off"}>
               {t(f.enabled ? "process.admin.byCompany.on" : "process.admin.byCompany.draft")}
-            </Badge>
+            </StatusBadge>
           </td>
           <td className="px-3 py-2 tabular-nums">
             {f.updated_at ? new Date(f.updated_at).toLocaleDateString(i18n.language) : "—"}

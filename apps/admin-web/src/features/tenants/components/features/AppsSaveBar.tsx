@@ -1,6 +1,7 @@
 // CR-112 · ADM-FR-78 · thanh lưu dính đáy của tab "Ứng dụng & Gói": tóm tắt thay đổi chưa lưu (cấp/thu hồi + gói) + Hoàn tác + Lưu.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import type { AppsPlan } from "../../lib/apps-plan";
 
 type Props = {

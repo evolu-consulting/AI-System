@@ -1,9 +1,10 @@
 // ADM-FR-62 · ADM-FR-36 · combobox gõ-để-tìm dùng chung (Thêm người vào group, chọn người dùng ở Kiểm tra quyền): ô nhập `role=combobox`
 // có danh sách gợi ý `listbox`. Khác RefPicker (nút mở Popover) vì cần gõ thẳng vào chính combobox (e2e `fill`).
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
 export type ComboOption = { id: string; label: string; hint?: string };
 type Props = {

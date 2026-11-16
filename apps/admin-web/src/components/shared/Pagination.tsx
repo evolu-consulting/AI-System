@@ -1,6 +1,7 @@
 // ADM-FR-60, ADM-FR-04 · phân trang server: "1–50 / 120" + Trước/Sau (`nav` có nhãn).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 
 type Props = {
   offset: number;

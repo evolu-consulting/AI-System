@@ -1,16 +1,16 @@
 // ADM-FR-42 · usage-analytics · drill-down một run: mọi lời gọi AI của run (agent, model, kết quả, token, độ trễ, chi phí)
 // + tổng. Mở từ bảng bản ghi; dữ liệu do page truyền (chỉ trình bày).
 import type { UsageRun } from "@ai/contracts/usage-analytics";
-import { useTranslation } from "react-i18next";
-import { ErrorState } from "@/components/shared/states/ErrorState";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@ai/web-kit/ui/kit/sheet";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { useTranslation } from "react-i18next";
+import { ErrorState } from "@/components/shared/states/ErrorState";
 import { formatCount, formatUsd } from "@/lib/quota-format";
 import { useAppLabel } from "./labels";
 import { OutcomeBadge } from "./RecordsPanel";

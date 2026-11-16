@@ -1,7 +1,5 @@
 ﻿// CR-105 · UX: hộp thoại Nhân bản — nhập TÊN (gợi ý "<tên> – bản mới"); ký hiệu tự sinh từ tên, đọc được, duy nhất (Hub báo trùng ⇒ thử hậu tố).
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
@@ -9,9 +7,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cloneSuggestion, slugKey } from "../../lib/library-list";
 
 export type CloneSource = { id: string; name: string };

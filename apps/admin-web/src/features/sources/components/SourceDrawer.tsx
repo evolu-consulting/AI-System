@@ -1,8 +1,6 @@
 // ADM-FR-68 · drawer phải 520px (Sheet): vỏ chung cho Thêm / Sửa / Xem nguồn. `dialog` mang tên = tiêu đề. Có thay đổi chưa lưu ⇒ hỏi bỏ.
-import { type ReactNode, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { Button } from "@/components/ui/button";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Sheet,
   SheetContent,
@@ -10,7 +8,10 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@ai/web-kit/ui/kit/sheet";
+import { type ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 type Props = {
   title: string;

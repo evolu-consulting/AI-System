@@ -1,8 +1,9 @@
 // ADM-FR-54 · M4-R14 · Import bước 1 (ms §8): vùng kéo-thả + nút "Chọn file" (label bọc input file sr-only).
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Upload } from "lucide-react";
 import { type DragEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 import type { ImportFileProblem } from "../lib/import-file";
 
 type Props = { problem: ImportFileProblem | null; onPick: (file: File) => void };

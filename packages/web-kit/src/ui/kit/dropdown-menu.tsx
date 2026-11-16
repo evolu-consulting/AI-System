@@ -67,3 +67,38 @@ export const DropdownMenuSeparator = ({
     {...p}
   />
 );
+
+export const DropdownMenuGroup = (props: React.ComponentProps<typeof P.Group>) => (
+  <P.Group data-slot="dropdown-menu-group" {...props} />
+);
+export const DropdownMenuSub = (props: React.ComponentProps<typeof P.Sub>) => (
+  <P.Sub data-slot="dropdown-menu-sub" {...props} />
+);
+export const DropdownMenuSubTrigger = ({
+  className,
+  ...p
+}: React.ComponentProps<typeof P.SubTrigger>) => (
+  <P.SubTrigger
+    data-slot="dropdown-menu-sub-trigger"
+    className={cn(
+      "flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none select-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[state=open]:bg-accent",
+      className,
+    )}
+    {...p}
+  />
+);
+export const DropdownMenuSubContent = ({
+  className,
+  ...p
+}: React.ComponentProps<typeof P.SubContent>) => (
+  <P.Portal>
+    <P.SubContent
+      data-slot="dropdown-menu-sub-content"
+      className={cn(
+        "z-50 min-w-40 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+        className,
+      )}
+      {...p}
+    />
+  </P.Portal>
+);

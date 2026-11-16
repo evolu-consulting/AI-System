@@ -1,10 +1,10 @@
 // CR-139d · một phòng ban trong màn «Cơ cấu tổ chức»: tên (đổi tên), «Thuộc phòng», trưởng phòng, thành viên, xoá khỏi sơ đồ.
 import type { OrgDepartment, OrgMember } from "@ai/contracts/org";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { type DeptRow, type OrgActions, parentChoices } from "../lib/org-edit";
 
 const sel = "h-9 rounded-md border border-input bg-background px-2 text-sm";
@@ -61,7 +61,7 @@ export function DeptCard({ row, depts, members, busy, selected, act, api }: Prop
             <h3 className="font-semibold">{d.name}</h3>
             <Button
               size="sm"
-              variant="ghost"
+              variant="quiet"
               disabled={busy}
               onClick={() => {
                 setName(d.name);

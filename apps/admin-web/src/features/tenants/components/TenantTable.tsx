@@ -1,18 +1,18 @@
 // ADM-FR-60 · bảng Tenants: mã công ty (mono, link), tên, users, slot, trạng thái, menu `⋯` (Mở / Khoá / Mở khoá).
 import type { Tenant } from "@ai/contracts/tenants";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@ai/web-kit/ui/kit/dropdown-menu";
 import { Link } from "@tanstack/react-router";
 import { MoreHorizontal } from "lucide-react";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import type { Translate } from "@/lib/format";
 
 type TenantAction = (t: Tenant) => void;
@@ -73,7 +73,7 @@ function RowMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={t("common.moreActions")}>
+        <Button variant="quiet" size="icon" aria-label={t("common.moreActions")}>
           <MoreHorizontal aria-hidden />
         </Button>
       </DropdownMenuTrigger>

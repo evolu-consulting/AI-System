@@ -1,8 +1,8 @@
 ﻿// CR-105 · B2: form một BƯỚC của khe trên Canvas — tên, mã phòng ban, người duyệt/hạn/nhắc/chuyển cấp, điều kiện (loại HĐ/giá trị).
+import { Button } from "@ai/web-kit/ui/kit/button";
 // Sửa vào `stage.slotRaw` (+ `name`); khi Lưu Hub `fromStages` dựng lại `slot_body` từ `slot`. Bước Dify: chỉ xem.
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import type { StageDraft } from "../../lib/draft-types";
 import {
   issueOf,

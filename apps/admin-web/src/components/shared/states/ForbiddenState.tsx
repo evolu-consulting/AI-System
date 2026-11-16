@@ -1,8 +1,9 @@
 // ADM-FR-60 · 403 trong khung: icon khoá + H1 + giải thích + "Về Tổng quan".
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 
 /** `reason`: câu giải thích riêng của trang (mặc định "chỉ platform_admin"). */
 export function ForbiddenState({ reason }: { reason?: string }) {

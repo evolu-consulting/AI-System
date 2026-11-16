@@ -1,6 +1,7 @@
 // ADM-FR-01 · công tắc VI/EN ở trang đăng nhập (chỉ đổi cục bộ, chưa gọi server).
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 import { markLocaleChosen } from "../lib/login-locale";
 
 const OPTIONS = [

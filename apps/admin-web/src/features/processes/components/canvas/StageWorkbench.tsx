@@ -1,10 +1,10 @@
 // ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §1, FB3/FB7): bàn làm việc giai đoạn — thanh công cụ + tab Canvas/Danh sách
 // + panel bên chứa form của MỘT giai đoạn đang chọn (mặc định giai đoạn 1).
 import type { LayoutDir } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Tabs, TabsContent } from "@ai/web-kit/ui/kit/tabs";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { useStagesMax } from "../../hooks/use-stages-max";

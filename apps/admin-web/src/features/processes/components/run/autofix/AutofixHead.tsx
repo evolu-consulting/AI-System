@@ -1,9 +1,9 @@
 // HUB-FR-128 · P-c1 §1.2 · đầu khối kết quả tự sửa: vòng, nguồn@sha7, nhánh, +i −d, kiểm, Xem log / Tải log / Tải .diff.
 import type { AutofixStageView } from "@ai/contracts/chat";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { secondsLabel, shortBranch, sourceLabel } from "../../../lib/autofix-view";
 import { LogDialog } from "./LogDialog";
 import { type LoadContent, useDownload } from "./use-autofix-content";
@@ -21,34 +21,34 @@ export function AutofixHead({ view, load }: { view: AutofixStageView; load: Load
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <span className="text-sm font-semibold">{t(`${K}title`)}</span>
-      <Badge variant="info">{t(`${K}round`, { n: view.round })}</Badge>
+      <StatusBadge tone="info">{t(`${K}round`, { n: view.round })}</StatusBadge>
       <span className="font-mono text-caption">{sourceLabel(view)}</span>
       <span title={view.branch} className="font-mono text-caption text-muted-foreground">
         {shortBranch(view.branch)}
       </span>
       {st && (
         <>
-          <Badge variant="ok">{`+${st.insertions}`}</Badge>
-          <Badge variant="err">{`−${st.deletions}`}</Badge>
+          <StatusBadge tone="ok">{`+${st.insertions}`}</StatusBadge>
+          <StatusBadge tone="err">{`−${st.deletions}`}</StatusBadge>
           <span className="text-caption text-muted-foreground">
             {t(`${K}diffStat`, { n: st.files })}
           </span>
         </>
       )}
       {test && (
-        <Badge variant={test.exit_code === 0 ? "ok" : "err"}>
+        <StatusBadge tone={test.exit_code === 0 ? "ok" : "err"}>
           {test.exit_code === 0
             ? t(`${K}testOk`, { sec })
             : t(`${K}testFail`, { code: test.exit_code ?? "-", sec })}
-        </Badge>
+        </StatusBadge>
       )}
       <span className="ml-auto flex flex-wrap gap-1">
         {log && (
           <>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setLogOpen(true)}>
+            <Button type="button" size="sm" variant="quiet" onClick={() => setLogOpen(true)}>
               {t(`${K}viewLog`)}
             </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => void download(log)}>
+            <Button type="button" size="sm" variant="quiet" onClick={() => void download(log)}>
               {t(`${K}downloadLog`)}
             </Button>
           </>
@@ -77,7 +77,7 @@ function DownloadDiff({
 }) {
   const { t } = useTranslation();
   return (
-    <Button type="button" size="sm" variant="ghost" onClick={() => void onDownload(file)}>
+    <Button type="button" size="sm" variant="quiet" onClick={() => void onDownload(file)}>
       {t(`${K}downloadDiff`)}
     </Button>
   );

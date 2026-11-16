@@ -1,9 +1,10 @@
 // ADM-FR-32 · M3-R07, R09 · chế độ Sửa tab Feature: ô tick các feature đã entitlement; hàng đã thu hồi entitlement mờ, giữ tick, khoá.
+
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { useTranslation } from "react-i18next";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { pickLocalized } from "@/lib/localized";
-import { cn } from "@/lib/utils";
 import { type GrantRow, isEditable } from "../../lib/grants";
 import { FeatureMeta, FeatureRowInfo } from "./GroupFeatureList";
 

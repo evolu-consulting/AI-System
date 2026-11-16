@@ -1,8 +1,9 @@
 // CR-111 · CR-121 c12 (Q3) · thanh chọn mức "Tắt · Xem · Sửa · Quản trị" của một app (một lựa chọn; mức thiếu feature trong catalog bị khoá).
 // Không tràn khi thu gọn: nhãn cắt (`truncate`) + tooltip đầy đủ (`title`); `LevelHelp` (ⓘ) giải nghĩa mức bằng lời nghiệp vụ.
+
+import { ToggleGroup, ToggleGroupItem } from "@ai/web-kit/ui/kit/toggle-group";
 import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LEVELS } from "@/features/features/lib/feature-meta";
 import type { AppLevel } from "../../lib/feature-assign";
 

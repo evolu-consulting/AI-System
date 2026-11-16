@@ -1,18 +1,18 @@
 // CR-122 · U1 · FLOW2-FR-02/16: node "Bắt đầu khi" — luôn là node đầu của flow: chọn sự kiện app khai + điều kiện trên dữ kiện của sự kiện.
 import { triggerFactsOf } from "@ai/contracts/app-manifest";
 import type { FlowTrigger } from "@ai/contracts/hub-admin";
-import { Play } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { Play } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useUserOptions } from "../../hooks/use-user-options";
 import { eventsOfApp } from "../../lib/flow-def";
 import { FactWhenEditor } from "./FactWhenEditor";

@@ -5,10 +5,7 @@ import {
   PUBLISH_ISSUE_KEY,
   publishIssueParams,
 } from "@ai/contracts/pack-contracts";
-import { notifySuccess } from "@ai/web-kit/ui/toast";
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
@@ -16,9 +13,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Textarea } from "@ai/web-kit/ui/kit/textarea";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { processErrorSpec } from "../../lib/errors";
 import { parseSlotBody } from "../../lib/flow-form";
 import { detailsOf, errorLines, type RuleFormat } from "../../lib/library-view";

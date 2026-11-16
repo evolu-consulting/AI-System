@@ -1,9 +1,6 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-08 · modal "Phiên đăng nhập đã hết hạn" tại chỗ: nhập lại mật khẩu (và mã 2FA nếu user đã bật), dữ liệu form giữ nguyên (ui-admin 7.1).
-import { useNavigate } from "@tanstack/react-router";
-import { type FormEvent, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { PasswordField } from "@/components/shared/form/PasswordField";
-import { Button } from "@/components/ui/button";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
@@ -11,8 +8,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { useNavigate } from "@tanstack/react-router";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { PasswordField } from "@/components/shared/form/PasswordField";
 import { LoginTotpStep } from "@/features/auth/components/totp/LoginTotpStep";
 import { useTotpLogin } from "@/features/auth/hooks/use-totp-login";
 import { session } from "@/lib/auth/session";

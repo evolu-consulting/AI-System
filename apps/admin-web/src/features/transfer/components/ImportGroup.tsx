@@ -1,11 +1,11 @@
 // ADM-FR-54 · M4-AC09 · một loại thực thể trong bản xem trước (Accordion): mỗi mục có khoá, nhãn Thêm/Sửa, "Xem thay đổi" → DiffTable.
 import type { ImportItem, ImportItemType } from "@ai/contracts/transfer";
+import { AccordionContent, AccordionItem, AccordionTrigger } from "@ai/web-kit/ui/kit/accordion";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DiffTable } from "@/components/shared/diff/DiffTable";
-import { AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { diffAll } from "@/lib/diff-fields";
 
 function ItemRow({ item }: { item: ImportItem }) {
@@ -17,7 +17,9 @@ function ItemRow({ item }: { item: ImportItem }) {
     <li className="space-y-2 py-2">
       <div className="flex flex-wrap items-center gap-3">
         <span className="font-mono text-body">{item.key}</span>
-        <Badge variant={create ? "ok" : "info"}>{t(`transfer.import.op.${item.op}`)}</Badge>
+        <StatusBadge tone={create ? "ok" : "info"}>
+          {t(`transfer.import.op.${item.op}`)}
+        </StatusBadge>
         <span className="text-label text-muted-foreground">
           {t("transfer.import.fields", { n: diff.changed.length })}
         </span>

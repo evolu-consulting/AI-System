@@ -1,14 +1,14 @@
 // ADM-FR-67 · CR-056 · P-a F5: "Cần người quyết" (3 lựa chọn + ghi chú, `can_decide`) và "Huỷ lượt chạy" (`can_cancel`).
 import type { ProcessRunFullView } from "@ai/contracts/chat";
 import { DECISION_REASONS } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Textarea } from "@ai/web-kit/ui/kit/textarea";
 import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { decisionOptionKey } from "../../domain/decision-option";
 import { useAttachmentLoader } from "../../hooks/use-attachment-loader";
 import { useRunAction } from "../../hooks/use-run-data";
@@ -41,7 +41,7 @@ function ReasonTitle({ run, round }: { run: ProcessRunFullView; round?: number }
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-body font-semibold">{reasonText(t, run)}</h3>
         {r === "autofix_check_failed" && round !== undefined && (
-          <Badge variant="info">{t("process.common.autofix.round", { n: round })}</Badge>
+          <StatusBadge tone="info">{t("process.common.autofix.round", { n: round })}</StatusBadge>
         )}
       </div>
     );
@@ -147,7 +147,7 @@ export function RunActions({ run, tenantId }: Props) {
                 {options.map((o) => (
                   <Button
                     key={o}
-                    variant={o === "cancel" ? "outline" : "default"}
+                    variant={o === "cancel" ? "outline" : "primary"}
                     disabled={
                       act.isPending ||
                       (o === "use_current" && !hasOutput && d.reason !== "timer_invalid")

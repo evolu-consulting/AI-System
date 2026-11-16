@@ -1,10 +1,11 @@
 // HUB-FR-119 · HUB-FR-126 · ADM-FR-65 · P-c1 F2 (plan-frontend §1.1; mockup Pc-Editor): khối "Tự sửa mã" của một giai đoạn —
 // Switch + Nguồn + Lệnh kiểm thử/cài + Đường dẫn được sửa. Lỗi hiện `role=alert` ngay trong khối (live, cùng luật server).
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { withCurrent } from "../../hooks/use-editor-refs";
 import {
   type AutofixDraft,
@@ -72,7 +73,7 @@ export function StageAutofix(p: StageFormProps) {
           {t(`${K}switch.${a.on ? "on" : "off"}`)}
         </span>
         {autofixValid(a, index) && blockErrs.length === 0 && !fieldInvalid ? (
-          <Badge variant="ok">{t(`${K}valid`)}</Badge>
+          <StatusBadge tone="ok">{t(`${K}valid`)}</StatusBadge>
         ) : null}
       </div>
       <p className="text-caption text-muted-foreground">{t(`${K}hint`)}</p>

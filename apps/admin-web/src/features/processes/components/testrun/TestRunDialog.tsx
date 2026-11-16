@@ -1,17 +1,17 @@
 // CR-127 · U3 · BR-17 · mock M3 `TestRun`: «Chạy thử» quy trình theo sự kiện — không tạo dữ liệu thật. Bản nháp đang mở (chưa lưu cũng chạy).
 // Thay `PreviewDialog` (khe cũ). Đường đi + người nhận việc + cảnh báo do Hub trả (một nguồn luật với engine); ở đây chỉ nhập và hiển thị.
 import type { AppEventDecl } from "@ai/contracts/app-manifest";
-import { notifyError } from "@ai/web-kit/ui/toast";
-import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@ai/web-kit/ui/kit/dialog";
+import { notifyError } from "@ai/web-kit/ui/toast";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAgentUserOptions } from "@/features/agents/api";
 import { useTestRun } from "../../hooks/use-test-run";
 import { processErrorSpec } from "../../lib/errors";

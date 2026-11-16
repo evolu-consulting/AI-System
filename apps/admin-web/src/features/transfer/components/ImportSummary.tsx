@@ -1,7 +1,7 @@
 // ADM-FR-54 · M4-AC09 · chip đếm Thêm / Sửa / Không đổi = nút lọc `aria-pressed` (plan-frontend §3.5 Import 2).
 import type { ImportSummary as Summary } from "@ai/contracts/transfer";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 
 export type ImportFilter = "add" | "update" | "unchanged";
 
@@ -28,7 +28,7 @@ export function ImportSummary({ summary, filter, onFilter }: Props) {
             key={c.f}
             type="button"
             size="sm"
-            variant={on ? "default" : "outline"}
+            variant={on ? "primary" : "outline"}
             aria-pressed={on}
             onClick={() => onFilter(on ? null : c.f)}
           >

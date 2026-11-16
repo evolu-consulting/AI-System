@@ -1,12 +1,13 @@
 // ADM-FR-01 · form đăng nhập: mã công ty (mono), tên đăng nhập, mật khẩu; lỗi chung ở vùng alert trên nút, giữ giá trị.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
 import { PasswordField } from "@/components/shared/form/PasswordField";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useTr } from "@/lib/use-translate";
 import { type LoginValues, loginSchema } from "../lib/schemas";
 

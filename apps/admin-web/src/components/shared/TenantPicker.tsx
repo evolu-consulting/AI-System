@@ -1,12 +1,13 @@
 // ADM-FR-04 · chọn tenant (chỉ platform_admin): mục đầu "Tất cả tenant"; giá trị mẫu "all" vì Radix Select không nhận "" (plan §14).
-import { useTranslation } from "react-i18next";
+
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { useTranslation } from "react-i18next";
 
 export const ALL_TENANTS = "all";
 

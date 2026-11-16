@@ -2,9 +2,9 @@
 // Bí mật chỉ `path:line · quy tắc rule` (FC6, không `detail`). `failures` rỗng ⇒ câu "Không nhận được báo cáo kiểm".
 // Bản chép: chat-web `features/processes/shared/autofix/AutofixFailures.tsx` (TECH-DEBT FC2).
 import type { AutofixStageView } from "@ai/contracts/chat";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { failureGroups, isSecretFailure, secondsLabel } from "../../../lib/autofix-view";
 import { type LoadContent, useAutofixLog, useDownload } from "./use-autofix-content";
 

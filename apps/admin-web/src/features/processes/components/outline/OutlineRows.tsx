@@ -23,9 +23,9 @@ type LooseT = (key: string, opts?: Record<string, unknown>) => string;
 /** Khoá `process.admin.*` nạp lười (không nằm trong kiểu khoá của `vi.json`) ⇒ `t` nhận chuỗi tự do. */
 const useLooseT = () => useTranslation() as unknown as { t: LooseT };
 
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { DropdownMenu, DropdownMenuTrigger } from "@ai/web-kit/ui/kit/dropdown-menu";
 import type { NodeKind } from "../../lib/node-summary";
 import { useFlowCtx, useRecordWords } from "../flow/flow-ctx";
 import { NodeMenuContent, type PickedNode } from "../flow/NodeMenuContent";
@@ -176,7 +176,7 @@ export function StepRow(p: StepRowProps) {
   const act = (label: string, onClick: () => void, icon: React.ReactNode, disabled = false) => (
     <Button
       type="button"
-      variant="ghost"
+      variant="quiet"
       size="icon"
       className="size-7"
       aria-label={label}

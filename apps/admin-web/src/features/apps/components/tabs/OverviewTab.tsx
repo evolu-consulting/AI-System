@@ -1,9 +1,9 @@
 // CR-118 · cr118-app-config · tab "Tổng quan" của app: mô tả, số công ty theo mức, số khe quy trình, cảnh báo cấu hình, địa chỉ/SSO/đối tượng.
 import type { AppCatalogItem } from "@ai/contracts/app-catalog";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
 import { useTr } from "@/lib/use-translate";
 import {
   type AppWarning,

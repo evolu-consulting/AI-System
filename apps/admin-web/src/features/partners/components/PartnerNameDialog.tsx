@@ -1,17 +1,18 @@
 // ADM-FR-74 · hộp thoại "Thêm công ty đối tác" / "Đổi tên công ty": một ô Tên công ty (1..200 ký tự); 409 NAME_TAKEN hiện ngay ở ô.
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { FormField } from "@/components/shared/form/FormField";
-import { Button } from "@/components/ui/button";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { FormField } from "@/components/shared/form/FormField";
 import { isApiError } from "@/lib/errors";
 import { useTr } from "@/lib/use-translate";
 import { type PartnerNameValues, partnerNameSchema } from "../lib/schemas";

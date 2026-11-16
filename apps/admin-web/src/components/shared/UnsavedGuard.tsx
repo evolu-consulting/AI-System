@@ -1,6 +1,5 @@
 // ADM-FR-60 · chặn rời trang khi form chưa lưu: useBlocker + beforeunload + hộp thoại "Bỏ thay đổi?".
-import { useBlocker } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
+
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -9,8 +8,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+} from "@ai/web-kit/ui/kit/alert-dialog";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { useBlocker } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 
 type Props = { dirty: boolean };
 
@@ -32,7 +33,7 @@ export function UnsavedGuard({ dirty }: Props) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{t("unsaved.stay")}</AlertDialogCancel>
-          <Button variant="destructive" onClick={() => blocker.proceed?.()}>
+          <Button variant="danger" onClick={() => blocker.proceed?.()}>
             {t("unsaved.discard")}
           </Button>
         </AlertDialogFooter>

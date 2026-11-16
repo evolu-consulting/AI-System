@@ -3,9 +3,7 @@
 // Một AlertDialog: Escape và click nền không đóng; `Xem khác biệt` mở rộng tại chỗ; `Ghi đè` chuyển sang bước xác nhận
 // ngay trong hộp thoại (alertdialog mang tên câu xác nhận). Khi đang gửi lại, hộp quay về bước chọn với nút khoá để
 // hộp thoại xung đột còn hiện (không bị aria-hidden bởi hộp thoại thứ hai) tới khi bản ghi thật sự đã lưu.
-import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { DiffTable } from "@/components/shared/diff/DiffTable";
+
 import {
   AlertDialog,
   AlertDialogContent,
@@ -13,8 +11,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+} from "@ai/web-kit/ui/kit/alert-dialog";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { DiffTable } from "@/components/shared/diff/DiffTable";
 import type { DiffRow } from "@/lib/diff-fields";
 import { formatClock } from "@/lib/format";
 

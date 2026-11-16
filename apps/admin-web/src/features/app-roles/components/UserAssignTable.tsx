@@ -1,6 +1,15 @@
 // CR-112 · ADM-FR-82 · bảng gán người dùng nội bộ vào vai: Người dùng | Vai hệ thống | Vai theo ứng dụng | Quyền thực tế | Kiểm tra quyền.
 // Đối tác không có trong bảng (`kind=internal`, ADM-BR-16). Gán/gỡ ghi vào bản nháp; quyền thực tế tính lại theo nháp.
 import type { User } from "@ai/contracts/users";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@ai/web-kit/ui/kit/table";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SearchBox } from "@/components/shared/form/SearchBox";
@@ -9,15 +18,6 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ApiError } from "@/lib/api-error";
 import { USERS_PAGE, useRoleUsers } from "../hooks/use-role-users";
 import type { RolesDraft } from "../hooks/use-roles-draft";

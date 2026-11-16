@@ -1,9 +1,10 @@
 // CR-127 · U3 · M3 «Chạy thử» · cột giữa: đường đi từng bước; bước đang chờ nói "Lúc chạy thật sẽ giao cho…" + nút đóng vai.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { DecisionResult, Row, Summary } from "../../lib/test-run";
 
 type LooseT = (key: string, opts?: Record<string, unknown>) => string;

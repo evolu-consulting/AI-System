@@ -1,14 +1,15 @@
 // CR-122 · U2 · FLOW2-FR-15: khối sửa node Duyệt — chọn node đích khi Từ chối / Trả lại (thường là node Kết thúc tương ứng).
 // Chỉ cho chọn bước đứng SAU bước của mình (luật `APPROVE_INVALID`); "Mặc định" = hành vi cổng cũ.
-import { useTranslation } from "react-i18next";
-import { Label } from "@/components/ui/label";
+
+import { Label } from "@ai/web-kit/ui/kit/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { useTranslation } from "react-i18next";
 import { approveWarnings } from "../../lib/approve-rules";
 import type { StageFormProps } from "./stage-form-props";
 

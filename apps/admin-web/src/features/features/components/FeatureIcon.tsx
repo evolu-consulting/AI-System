@@ -1,5 +1,5 @@
 // ADM-FR-30 · icon của feature (map tĩnh trong lib/icons.ts); trang trí nên ẩn khỏi trình đọc màn hình.
-import { cn } from "@/lib/utils";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { iconFor } from "../lib/icons";
 
 export function FeatureIcon({ name, className }: { name: string; className?: string }) {

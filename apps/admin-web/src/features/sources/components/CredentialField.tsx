@@ -1,16 +1,16 @@
 // HUB-FR-68 · PC2-R10 · FC2/FC4 · ô "Khoá nguồn" trong form nguồn git: chọn khoá của tenant / "Không — repo công khai" /
 // "+ Tạo khoá mới…" (mở dialog, lưu xong tự chọn). Chỉ gửi id khoá; token không bao giờ ở đây.
 import type { HubSecret } from "@ai/contracts/hub-admin";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { FormField } from "@/components/shared/form/FormField";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { FormField } from "@/components/shared/form/FormField";
 import { useCredentialList } from "../hooks/use-credential-list";
 import { CRED_NEW, CRED_NONE, credentialChoice } from "../lib/credential-choice";
 import { CredentialDialog } from "./CredentialDialog";

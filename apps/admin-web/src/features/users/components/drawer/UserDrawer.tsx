@@ -1,10 +1,6 @@
 // ADM-FR-04, ADM-FR-63 · drawer 520px tạo/sửa user (URL `?drawer=new|edit&user=`); sau khi tạo hiện khối mật khẩu tạm.
 import type { User } from "@ai/contracts/users";
-import { lazy, Suspense, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Sheet,
   SheetContent,
@@ -12,9 +8,13 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@ai/web-kit/ui/kit/sheet";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
+import { lazy, Suspense, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import type { Translate } from "@/lib/format";
 import { useTr } from "@/lib/use-translate";
 import type { UserCreateValues } from "../../lib/schemas";

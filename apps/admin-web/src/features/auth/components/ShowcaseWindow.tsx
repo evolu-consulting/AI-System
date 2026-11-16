@@ -1,7 +1,8 @@
 // CR-052 phương án C · cửa sổ Evolu Control mẫu (tĩnh, trang trí): sidebar + Overview với 3 KPI (thanh xám, KHÔNG số),
 // hạn mức tháng 62% và "Thay đổi gần đây". Tên Ledger/acme chỉ là minh hoạ.
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 
 const NAV = ["overview", "companies", "users", "groups", "commands", "usage", "audit"] as const;
 const KPIS = [

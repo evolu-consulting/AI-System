@@ -1,5 +1,7 @@
 // ADM-FR-60, CR-121 R1 · sidebar 6 mục phẳng (artboard `Main`), dùng cho Sidebar và Sheet di động; mục hiện tại có aria-current="page".
 // Thu gọn: chỉ biểu tượng + tooltip (title).
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Link } from "@tanstack/react-router";
 import {
   Building2,
@@ -13,7 +15,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { useProcessEngineOn } from "@/features/processes/engine";
 import { useSession } from "@/lib/auth/use-session";
-import { cn } from "@/lib/utils";
 import { type NavItem, navItems, type SidebarNavId } from "../lib/nav";
 
 const ICONS: Record<SidebarNavId, LucideIcon> = {

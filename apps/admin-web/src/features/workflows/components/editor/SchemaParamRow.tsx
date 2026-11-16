@@ -1,19 +1,19 @@
 // ADM-FR-11 · M2-R08 · một dòng tham số input schema: tên (mono) · kiểu · bắt buộc · mô tả · lựa chọn (select) · ↑ ↓ · xoá.
 import { INPUT_TYPES } from "@ai/contracts/common";
-import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
-import { memo } from "react";
-import { Controller, useFormContext, useWatch } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
+import { memo } from "react";
+import { Controller, useFormContext, useWatch } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { useTr } from "@/lib/use-translate";
 import type { WorkflowFormValues } from "../../lib/schemas";
 
@@ -103,8 +103,8 @@ function SchemaParamRowImpl({ index, total, onMove, onRemove }: Props) {
       <div className="flex items-start gap-1">
         <Button
           type="button"
-          variant="ghost"
-          size="icon-sm"
+          variant="quiet"
+          size="icon"
           disabled={index === 0}
           aria-label={t("workflows.schema.row.moveUp", { n })}
           onClick={() => onMove(index, index - 1)}
@@ -113,8 +113,8 @@ function SchemaParamRowImpl({ index, total, onMove, onRemove }: Props) {
         </Button>
         <Button
           type="button"
-          variant="ghost"
-          size="icon-sm"
+          variant="quiet"
+          size="icon"
           disabled={index === total - 1}
           aria-label={t("workflows.schema.row.moveDown", { n })}
           onClick={() => onMove(index, index + 1)}
@@ -123,8 +123,8 @@ function SchemaParamRowImpl({ index, total, onMove, onRemove }: Props) {
         </Button>
         <Button
           type="button"
-          variant="ghost"
-          size="icon-sm"
+          variant="quiet"
+          size="icon"
           aria-label={t("workflows.schema.row.remove", { n })}
           onClick={() => onRemove(index)}
         >

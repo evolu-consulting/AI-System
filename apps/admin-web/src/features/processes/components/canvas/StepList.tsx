@@ -1,10 +1,10 @@
 // ADM-FR-71 · P-b2 (plan-frontend FB3): danh sách giai đoạn theo bước, DOM thuần — fallback khi canvas đang tải/lỗi,
 // chế độ "Danh sách" và đường bàn phím/đọc màn hình đầy đủ (mọi thao tác đổi bước làm được bằng nút ở panel).
 import { PROCESS_STEP_STAGES_MAX } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Plus } from "lucide-react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import type { StageOps } from "../../hooks/use-stage-ops";
 import { StageBody, stageButtonClass } from "./StageBody";
 import { onStageKeyDown } from "./stage-keys";
@@ -112,7 +112,7 @@ export function StepList(p0: StepListProps) {
             {p.readOnly ? null : (
               <Button
                 type="button"
-                variant="ghost"
+                variant="quiet"
                 size="sm"
                 aria-disabled={full || undefined}
                 className={full ? "opacity-50" : undefined}

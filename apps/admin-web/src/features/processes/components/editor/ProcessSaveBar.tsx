@@ -1,8 +1,9 @@
 // ADM-FR-66 · CR-056 · P-a F5: thanh lưu dính đáy của editor quy trình ("Chưa lưu thay đổi" · Huỷ · Lưu).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import type { ApplyStatus } from "../../hooks/use-apply-flow";
 import { saveModeOf } from "../../lib/company-copy";
 import { useFlowCtx, useRecordWords } from "../flow/flow-ctx";

@@ -4,7 +4,6 @@ import { Toaster } from "@ai/web-kit/ui/toaster";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ConnectionBanner } from "@/components/shared/ConnectionBanner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QuotaBanner } from "./QuotaBanner";
 import { SessionExpiredGate } from "./SessionExpiredGate";
 import { Sidebar } from "./Sidebar";
@@ -13,7 +12,7 @@ import { Topbar } from "./Topbar";
 export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   return (
-    <TooltipProvider>
+    <>
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-label focus:shadow-dialog"
@@ -36,6 +35,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
       <SessionExpiredGate />
       <Toaster position="bottom-right" />
-    </TooltipProvider>
+    </>
   );
 }

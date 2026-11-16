@@ -3,19 +3,19 @@
 
 import type { SlotFieldDto } from "@ai/contracts/hub-admin";
 import type { FlowCond } from "@ai/contracts/pack-contracts";
-import { X } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { NUM_OPS, newCond, OP_SYMBOL, type ValueOp } from "../../lib/flow-when";
 import type { GroupOption } from "./flow-step-props";
 
@@ -166,7 +166,7 @@ export function FlowCondRow({ id, cond, fields, groups, onChange, onRemove }: Pr
       <CondValue id={id} cond={cond} field={field} groups={groups} onChange={onChange} />
       <Button
         type="button"
-        variant="ghost"
+        variant="quiet"
         size="sm"
         aria-label={f("removeCond")}
         title={f("removeCond")}

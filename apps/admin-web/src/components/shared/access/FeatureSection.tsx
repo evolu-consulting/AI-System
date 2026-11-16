@@ -1,8 +1,8 @@
 // ADM-FR-36 · M3-R12 · nhóm "Feature" của AccessExplainer: feature hiệu lực kèm lý do; feature không dùng được gom sau nút "Hiện … (n)".
 import type { EffectiveFeature } from "@ai/contracts/access";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { pickLocalized } from "@/lib/localized";
 import { type ExplainCtx, grantedLines, unusableFeatureLines } from "./explain";
 import { type ReasonActions, ReasonLines } from "./ReasonLines";

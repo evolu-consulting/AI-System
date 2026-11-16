@@ -1,9 +1,10 @@
 // ADM-FR-40, ADM-FR-41, ADM-FR-42 · M4-R02, R06 · thanh quota dùng chung (Tổng quan, Tenants, Chi phí & quota; plan-frontend §2).
 // Có giới hạn → `progressbar` (aria-valuenow ≤ 100, aria-valuetext "{used} / {limit}"); vượt 100% → thanh đầy vân chéo + nhãn.
 // Giới hạn trống → chỉ chữ "{used} · Không giới hạn", KHÔNG có progressbar.
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { useTranslation } from "react-i18next";
 import { formatQuotaValue, pctLevel, pctOf, type QuotaKind } from "@/lib/quota-format";
-import { cn } from "@/lib/utils";
 
 type Props = {
   /** Tên thanh cho trình đọc màn hình và e2e: "Run", "Token", "USD" hoặc "Run · Kế toán". */

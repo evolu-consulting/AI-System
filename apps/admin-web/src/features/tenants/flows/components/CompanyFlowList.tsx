@@ -1,18 +1,18 @@
 // CR-122 · U2 · FLOW2-FR-05..09/20: MỘT danh sách flow của công ty (thay SlotRouting/RoutingRules/DrawerAssign): nhóm theo app; mỗi dòng
 // = tên · Bắt đầu khi · nguồn · trạng thái + lý do · hành động. Kéo thả đổi thứ tự (chỉ có nghĩa cho sự kiện quyết định).
 import type { CompanyFlowRow } from "@ai/contracts/hub-admin";
-import { Link } from "@tanstack/react-router";
-import { GripVertical, MoreHorizontal } from "lucide-react";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import { Link } from "@tanstack/react-router";
+import { GripVertical, MoreHorizontal } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { eventOf, eventsOfApp } from "@/features/processes/lib/flow-def";
 import { joinRecordWords } from "@/features/processes/lib/record-words";
 import { useSession } from "@/lib/auth/use-session";
@@ -42,7 +42,7 @@ function RowMenu(p: { r: CompanyFlowRow; busy: boolean; onOp: (a: FlowOp) => voi
       <DropdownMenuTrigger asChild>
         <Button
           size="sm"
-          variant="ghost"
+          variant="quiet"
           disabled={p.busy}
           aria-label={t("tenants.companyFlows.more")}
           data-testid="company-flow-more"
@@ -109,7 +109,7 @@ function Row(p: {
         <StatusBadge tone={r.enabled ? "ok" : "off"}>{k(`status.${statusKey(r)}`)}</StatusBadge>
       </div>
       <div className="flex flex-wrap justify-end gap-1">
-        <Button asChild size="sm" variant="ghost">
+        <Button asChild size="sm" variant="quiet">
           <Link
             to="/processes/$processId"
             params={{ processId: r.flow_id }}

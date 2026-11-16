@@ -2,8 +2,8 @@
 
 import { SECRET_VALUE_MAX } from "@ai/contracts/common";
 import type { MissingSecret } from "@ai/contracts/transfer";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
 
 type Props = {
   secrets: MissingSecret[];

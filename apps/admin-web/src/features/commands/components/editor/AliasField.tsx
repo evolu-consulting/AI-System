@@ -1,12 +1,12 @@
 // ADM-BR-01 · M2-R13 · ô Alias: nhập rồi `Thêm alias` (hoặc Enter); chip `Bỏ alias {name}`; ≤ 5, không trùng, không trùng command khác.
 import { ALIASES_MAX, CATALOG_KEY_RE } from "@ai/contracts/common";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { normalizeCommandName } from "@/lib/normalize";
 import { useTr } from "@/lib/use-translate";
 import { useNameCheck } from "../../hooks/use-command-queries";

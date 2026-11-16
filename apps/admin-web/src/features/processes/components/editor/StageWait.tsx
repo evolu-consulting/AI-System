@@ -1,9 +1,9 @@
 ﻿// ADM-FR-71 · HUB-FR-143 · P-d1 T11b (plan-frontend FD2/§2; mockup A1/A2): khối stage "Chờ tới ngày" — nguồn ngày, chênh lệch,
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
 // giờ, múi giờ, "Sau giai đoạn" cố định. Lỗi: live (cùng luật `waitIssues`) + lỗi server theo path (WAIT_INVALID).
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ruleErrorKey, waitIssueKey } from "../../domain/error-keys";
 import {
   type DateSource,
@@ -66,7 +66,7 @@ export function StageWait(p: StageFormProps) {
     <fieldset aria-label={t(`${K}title`)} className="space-y-3" data-testid="stage-wait">
       <div className="flex items-center justify-between gap-2">
         <strong className="text-label font-medium">{t(`${K}title`)}</strong>
-        {noValid && w.source !== "" ? <Badge variant="ok">{t(`${K}valid`)}</Badge> : null}
+        {noValid && w.source !== "" ? <StatusBadge tone="ok">{t(`${K}valid`)}</StatusBadge> : null}
       </div>
       <p className="text-caption text-muted-foreground">{t(`${K}hint`)}</p>
       <SelectField

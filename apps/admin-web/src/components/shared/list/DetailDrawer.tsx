@@ -1,15 +1,16 @@
 // CR-121 C-1b · ngăn trượt phải: đóng bằng IconButton / Esc / bấm nền (Radix Dialog: focus trap, trả focus). Rộng ≤ 420px, không tràn ở 375px.
-import type { ReactNode } from "react";
-import { useTranslation } from "react-i18next";
-import { IconButton } from "@/components/shared/IconButton";
-import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
+
 import {
   Sheet,
   SheetClose,
   SheetContent,
   SheetDescription,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@ai/web-kit/ui/kit/sheet";
+import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { IconButton } from "@/components/shared/IconButton";
+import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
 
 export type DrawerFact = { k: string; v: ReactNode };
 

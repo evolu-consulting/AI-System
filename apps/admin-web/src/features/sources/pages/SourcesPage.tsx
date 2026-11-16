@@ -1,6 +1,14 @@
 // ADM-FR-68 · PB-R21 · `/sources`: tiêu đề + lọc (Công ty [platform] · Loại nguồn · tìm ký hiệu) + bảng + drawer + xoá.
 // Cờ engine off ⇒ NotFound; `member` ⇒ Forbidden (không gọi API). Drawer/bộ lọc nằm trên URL, không có `path`.
 import type { SourceView } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@ai/web-kit/ui/kit/select";
 import { lazy, Suspense, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SearchBox } from "@/components/shared/form/SearchBox";
@@ -8,14 +16,6 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
 import { TenantPicker } from "@/components/shared/TenantPicker";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ProcessRouteGate } from "@/features/processes/components/ProcessRouteGate";
 import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";

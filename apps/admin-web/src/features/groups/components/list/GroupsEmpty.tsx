@@ -1,8 +1,9 @@
 // ADM-FR-62 · trạng thái rỗng của Groups: chưa chọn tenant (platform) / không có group / không khớp bộ lọc.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "@/components/shared/states/EmptyState";
-import { Button } from "@/components/ui/button";
 
 type Props = {
   needsTenant: boolean;

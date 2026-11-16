@@ -1,7 +1,8 @@
 // ADM-FR-68 · PB-R21 · cảnh báo BẮT BUỘC của nguồn đường dẫn cục bộ: `role="alert"` tĩnh, luôn hiện (form local_path + chế độ xem).
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
 import { TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function LocalPathWarning() {
   const { t } = useTranslation();

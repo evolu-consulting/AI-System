@@ -1,10 +1,10 @@
 // ADM-FR-51 · một dòng nhật ký: giờ · avatar chữ · câu mô tả · badge loại · chip version · nút "Xem thay đổi".
 import type { AuditItem } from "@ai/contracts/audit";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useNavigate } from "@tanstack/react-router";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { auditSentence, entityKey } from "@/lib/audit-sentence";
 import { formatClock } from "@/lib/format";
 import { useTr } from "@/lib/use-translate";
@@ -30,7 +30,7 @@ export const AuditRow = memo(function AuditRow({ item, search }: Props) {
         {initial}
       </span>
       <span className="min-w-0 flex-1 truncate text-body">{sentence}</span>
-      <Badge variant="outline">{t(`audit.entityLabel.${entityKey(item.entity)}`)}</Badge>
+      <StatusBadge tone="off">{t(`audit.entityLabel.${entityKey(item.entity)}`)}</StatusBadge>
       {item.entity_version !== null ? (
         <span className="shrink-0 rounded-sm bg-muted px-1.5 py-0.5 font-mono text-caption text-muted-foreground">
           v{item.entity_version}

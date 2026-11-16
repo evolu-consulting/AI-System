@@ -1,8 +1,9 @@
 // ADM-FR-60, ADM-FR-04 · ô tìm kiếm: `searchbox`, debounce 300 ms, Esc xoá.
+
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
 
 export const SEARCH_DEBOUNCE_MS = 300;
 

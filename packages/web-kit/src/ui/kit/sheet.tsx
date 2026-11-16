@@ -14,10 +14,11 @@ export const SheetClose = (props: React.ComponentProps<typeof P.Close>) => (
   <P.Close data-slot="sheet-close" {...props} />
 );
 
-export type SheetSide = "right" | "bottom";
+export type SheetSide = "right" | "bottom" | "left";
 export const SHEET_SIDE_CLASS: Record<SheetSide, string> = {
   right:
     "inset-y-0 right-0 h-full w-3/4 max-w-sm border-l data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right",
+  left: "inset-y-0 left-0 h-full w-3/4 max-w-sm border-r data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left",
   bottom:
     "inset-x-0 bottom-0 max-h-[90vh] rounded-t-lg border-t data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
 };
@@ -27,8 +28,13 @@ export function SheetContent({
   children,
   side = "right",
   closeLabel = "Đóng",
+  showCloseButton = true,
   ...props
-}: React.ComponentProps<typeof P.Content> & { side?: SheetSide; closeLabel?: string }) {
+}: React.ComponentProps<typeof P.Content> & {
+  side?: SheetSide;
+  closeLabel?: string;
+  showCloseButton?: boolean;
+}) {
   return (
     <P.Portal>
       <P.Overlay
@@ -47,13 +53,15 @@ export function SheetContent({
         {...props}
       >
         {children}
-        <P.Close
-          data-slot="sheet-close"
-          className="absolute top-4 right-4 rounded-sm opacity-70 hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none [&_svg]:size-4"
-        >
-          <XIcon />
-          <span className="sr-only">{closeLabel}</span>
-        </P.Close>
+        {showCloseButton && (
+          <P.Close
+            data-slot="sheet-close"
+            className="absolute top-4 right-4 rounded-sm opacity-70 hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none [&_svg]:size-4"
+          >
+            <XIcon />
+            <span className="sr-only">{closeLabel}</span>
+          </P.Close>
+        )}
       </P.Content>
     </P.Portal>
   );

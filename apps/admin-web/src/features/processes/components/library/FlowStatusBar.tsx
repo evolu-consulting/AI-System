@@ -1,10 +1,10 @@
 // CR-121 D-3: đầu trang trình sửa (Loại + nguồn + phiên bản) và thanh trạng thái (Nháp / Đã xuất bản, sẵn sàng hay còn lỗi).
 // Lỗi gồm kiểm phía client và lỗi xuất bản Hub trả (D-2: bước, trường, câu sửa); bấm một lỗi ⇒ nhảy tới đúng bước.
 import { PUBLISH_ISSUE_KEY, publishIssueParams } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
 import { statusOf } from "../../lib/library-list";
 import type { LibraryDef } from "../../library-api";
 

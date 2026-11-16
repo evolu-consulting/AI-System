@@ -1,7 +1,8 @@
 // CR-105 · L3: ô chọn phòng ban THEO MÃ (`pb-ke-toan`…) cho Form quy trình thư viện — gõ mã, gợi ý từ danh mục khe nếu Hub trả
 // (`GET /process-slots` → `group_keys`; khe hở hợp đồng). Quy trình thư viện không có id phòng ban (design §1).
+
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { FormField } from "@/components/shared/form/FormField";
-import { Input } from "@/components/ui/input";
 
 type Props = {
   id: string;

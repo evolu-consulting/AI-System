@@ -1,12 +1,13 @@
 // CR-121 R6 · c16 · /ai-tools — MỘT danh sách công cụ AI (workflow Dify) kèm "Dùng bởi"; chip lọc, ô tìm, ngăn chi tiết có "Công ty dùng".
 // Chỉ platform_admin (vai khác thấy ForbiddenState, không gọi API). Bộ lọc + công cụ đang mở nằm trên URL.
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { Bot, Terminal, Workflow } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/http";
 import { AiToolDrawer } from "../components/AiToolDrawer";
 import { AiToolsEmpty } from "../components/AiToolsEmpty";

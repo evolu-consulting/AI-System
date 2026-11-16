@@ -1,8 +1,8 @@
 // ADM-FR-36 · M3-R12 · nhóm "Command": "Thấy /x" kèm "qua feature F · group G"; command không thấy gom sau nút "Hiện … (n)" với "Vì sao không?".
 import type { EffectiveCommand } from "@ai/contracts/access";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { type ExplainCtx, hiddenLines, visibleLines } from "./explain";
 import { type ReasonActions, ReasonLines } from "./ReasonLines";
 
@@ -16,7 +16,7 @@ function HiddenRow({ c, ctx, actions }: { c: EffectiveCommand } & Omit<Props, "c
     <li className="space-y-1.5 px-4 py-2.5">
       <div className="flex items-center justify-between gap-3">
         <p className="font-mono">{t("access.check.notSees", { name: `/${c.name}` })}</p>
-        <Button variant="ghost" size="sm" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <Button variant="quiet" size="sm" aria-expanded={open} onClick={() => setOpen(!open)}>
           {t(open ? "access.check.hideWhy" : "access.check.why")}
         </Button>
       </div>

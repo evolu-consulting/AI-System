@@ -1,8 +1,9 @@
 // ADM-FR-14, ADM-FR-20, ADM-FR-30 · M2 · thanh lưu dính đáy của editor (Workflow, Command, Feature): "Chưa lưu thay đổi" · Huỷ · Lưu.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 
 type Props = {
   dirty: boolean;

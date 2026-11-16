@@ -1,8 +1,8 @@
 // ADM-FR-36 · ADM-FR-37 · M3-R11, R12, R13 · AccessExplainer dùng chung (Kiểm tra quyền + tab Quyền hiệu lực của drawer user): trình bày, KHÔNG fetch.
 // `actions` có → hiện nút gợi ý (Cấp … cho group…, Thêm vào beta-testers, Mở feature); không có → chỉ đọc.
 import type { EffectiveAccess } from "@ai/contracts/access";
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useTr } from "@/lib/use-translate";
 import { AgentSection, type EffectiveAgentsState } from "./AgentSection";
 import { CommandSection } from "./CommandSection";

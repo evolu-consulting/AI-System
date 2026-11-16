@@ -1,7 +1,7 @@
 // ADM-FR-42 · M4-R07, R08 · "Top feature theo số thu" (5 dòng) và "Top user theo số thu": "Không theo feature", badge "Vượt quota". Nhãn "Chưa định giá" theo `unpriced_rows` của dòng (priceDisplay).
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { pickLocalized } from "@/lib/localized";
 import { formatCount, formatUsd } from "@/lib/quota-format";
 import type { UsageReport } from "../lib/types";
@@ -69,14 +69,14 @@ function Row({ name, runs, tokens, usd, unpricedRows = 0 }: RowProps) {
         <td className="py-2">
           {mode === "unpriced" ? null : formatUsd(usd, i18n.language)}
           {mode === "amount" ? null : (
-            <Badge
-              variant="warn"
+            <StatusBadge
+              tone="warn"
               className={mode === "partial" ? "ml-2" : undefined}
               title={t("usage.unpriced")}
             >
               {t("usage.unpriced")}
               {mode === "partial" ? ` (${formatCount(unpricedRows, i18n.language)})` : ""}
-            </Badge>
+            </StatusBadge>
           )}
         </td>
       )}
@@ -100,7 +100,7 @@ export function TopFeatures({ rows, loading, error }: Props<Feature>) {
                   <span className="flex flex-wrap items-center gap-2">
                     <FeatureName f={f} />
                     {"overage" in f && f.overage ? (
-                      <Badge variant="err">{t("quota.badge.over")}</Badge>
+                      <StatusBadge tone="err">{t("quota.badge.over")}</StatusBadge>
                     ) : null}
                   </span>
                 }

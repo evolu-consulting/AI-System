@@ -1,10 +1,10 @@
 // ADM-FR-62 · M3-R03 · cột bảng thành viên: người dùng (tên + username mono), group khác (chip key), đăng nhập cuối, bỏ khỏi group.
 import type { GroupMember } from "@ai/contracts/groups";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import type { TFunction } from "i18next";
 import { X } from "lucide-react";
 import type { Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
 import { formatLastLogin, type Translate } from "@/lib/format";
 
 type Opts = {
@@ -60,8 +60,8 @@ export function memberColumns({ t, tr, onRemove }: Opts): Column<GroupMember>[] 
       className: "w-12 text-right",
       cell: (m) => (
         <Button
-          variant="ghost"
-          size="icon-sm"
+          variant="quiet"
+          size="icon"
           aria-label={t("groups.members.remove.aria", { username: m.username })}
           onClick={() => onRemove(m.user_id, m.username)}
         >

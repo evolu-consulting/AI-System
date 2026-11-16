@@ -2,18 +2,18 @@
 // Group phòng ban / gán lẻ). Dựng từ `GET /admin/users/:id/effective-access` (đã có), không có API tính riêng.
 import type { AppRole } from "@ai/contracts/app-roles";
 import type { User } from "@ai/contracts/users";
-import { useTranslation } from "react-i18next";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { EmptyState } from "@/components/shared/states/EmptyState";
-import { ErrorState } from "@/components/shared/states/ErrorState";
-import { LoadingState } from "@/components/shared/states/LoadingState";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@ai/web-kit/ui/kit/dialog";
+import { useTranslation } from "react-i18next";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { EmptyState } from "@/components/shared/states/EmptyState";
+import { ErrorState } from "@/components/shared/states/ErrorState";
+import { LoadingState } from "@/components/shared/states/LoadingState";
 import { ApiError } from "@/lib/api-error";
 import { pickLocalized } from "@/lib/localized";
 import { useEffectiveAccess } from "../hooks/use-effective-access";

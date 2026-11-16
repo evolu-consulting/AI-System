@@ -1,15 +1,16 @@
 // ADM-FR-71 · HUB-FR-146 · AC-H44 · P-d2 (plan-frontend-d2 §10; mockup 04 E1/E2): một thẻ tham số tool — tên mono + bắt buộc + kiểu +
 // mô tả, chọn nguồn (giá trị cố định / đầu vào / kết quả giai đoạn trước) rồi giá trị. Trình bày thuần (không fetch).
-import { memo } from "react";
-import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
+
+import { Input } from "@ai/web-kit/ui/kit/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import type { ArgSourceOption, ParamShape } from "../../domain/tool-rules";
 import type { ArgDraft } from "../../lib/draft-types";
 

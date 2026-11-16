@@ -1,19 +1,19 @@
 // ADM-FR-30 · ADM-BR-10 · tab "Thông tin": key (khoá sau khi lưu), tên + mô tả VI/EN, icon, trạng thái (`core` khoá).
 import { FEATURE_STATUSES } from "@ai/contracts/common";
-import { Controller, useFormContext } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { FormField } from "@/components/shared/form/FormField";
-import { LocalizedInput } from "@/components/shared/LocalizedInput";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { RadioGroup, RadioGroupItem } from "@ai/web-kit/ui/kit/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { Controller, useFormContext } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { FormField } from "@/components/shared/form/FormField";
+import { LocalizedInput } from "@/components/shared/LocalizedInput";
 import { useTr } from "@/lib/use-translate";
 import { FEATURE_ICON_NAMES } from "../lib/icons";
 import type { FeatureFormValues } from "../lib/schemas";

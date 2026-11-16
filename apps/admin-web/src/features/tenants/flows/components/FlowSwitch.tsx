@@ -1,7 +1,6 @@
 // CR-122 · P7 → CR-125 · c2: khối "quy trình mới" của công ty. KHÔNG còn công tắc BẬT bắt buộc: "Lưu và áp dụng" / gán quy trình là đủ (Hub tự
 // đặt cờ cùng giao dịch). Chỉ còn nút cứu hộ "Tạm dừng quy trình mới" khi đang dùng; chưa dùng ⇒ lời chỉ dẫn nói bước kế (Luật gốc 3).
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
+
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -10,8 +9,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+} from "@ai/web-kit/ui/kit/alert-dialog";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { RecordWords } from "@/features/processes/lib/record-words";
 import { useFlowSettings, useSetFlowTriggers } from "../flow-settings-api";
 import { switchStateOf } from "../lib/flow-switch-access";

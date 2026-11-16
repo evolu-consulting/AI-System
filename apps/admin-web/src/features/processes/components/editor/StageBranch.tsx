@@ -1,9 +1,10 @@
 // ADM-FR-71 · HUB-FR-147 · AC-H45 · P-d2 (plan-frontend-d2 §10; mockup 04 E3): khối "Rẽ nhánh" dưới "Sau giai đoạn" — luật đầu tiên khớp
 // được dùng; khoá khi giai đoạn không đứng một mình trong bước hoặc chưa có trường cấu trúc. Lỗi: live (contract) + server theo path.
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { BRANCH_RULES_MAX, gotoSteps, isStandalone } from "../../domain/branch-rules";
 import { emptyBranch } from "../../lib/branch-form";
 import { branchOff } from "../../lib/d2-validate";

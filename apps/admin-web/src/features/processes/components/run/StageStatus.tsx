@@ -3,7 +3,7 @@
 import type { StageView } from "@ai/contracts/chat";
 import { Clock, RotateCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { stageLabel } from "../../lib/stage-label";
 
 export function StageStatus({ stage }: { stage: StageView }) {
@@ -17,9 +17,9 @@ export function StageStatus({ stage }: { stage: StageView }) {
   );
   if (label.tone === "none") return <>{label.text}</>;
   return (
-    <Badge variant={label.tone === "info" ? "info" : "warn"}>
+    <StatusBadge tone={label.tone === "info" ? "info" : "warn"}>
       {label.tone === "info" ? <Clock aria-hidden /> : <RotateCw aria-hidden />}
       {label.text}
-    </Badge>
+    </StatusBadge>
   );
 }

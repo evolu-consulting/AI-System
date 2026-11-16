@@ -1,18 +1,18 @@
 // ADM-FR-51 · M4-R12 · thanh lọc Nhật ký: Tenant (platform) · Loại · Hành động · Người thực hiện · Thời gian · tìm theo tên.
 import { AUDIT_ACTIONS, type AuditAction, type AuditEntity } from "@ai/contracts/audit";
-import { useTranslation } from "react-i18next";
-import { PeriodFilter } from "@/components/shared/form/PeriodFilter";
-import type { Period } from "@/components/shared/form/period";
-import { SearchBox } from "@/components/shared/form/SearchBox";
-import type { TenantOption } from "@/components/shared/TenantPicker";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { useTranslation } from "react-i18next";
+import { PeriodFilter } from "@/components/shared/form/PeriodFilter";
+import type { Period } from "@/components/shared/form/period";
+import { SearchBox } from "@/components/shared/form/SearchBox";
+import type { TenantOption } from "@/components/shared/TenantPicker";
 import { entityKey } from "@/lib/audit-sentence";
 import { type AuditSearch, FILTER_ENTITIES, TENANT_FILTER_ENTITIES } from "../lib/search";
 import { AuditActorFilter } from "./AuditActorFilter";
@@ -99,7 +99,7 @@ export function AuditFilters(p: Props) {
         onChange={(q) => p.onChange({ q: q.trim() || undefined })}
       />
       {p.filtered ? (
-        <Button type="button" variant="ghost" onClick={p.onClear}>
+        <Button type="button" variant="quiet" onClick={p.onClear}>
           {t("common.clearFilters")}
         </Button>
       ) : null}

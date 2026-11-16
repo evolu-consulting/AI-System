@@ -1,5 +1,7 @@
 // ADM-FR-10, ADM-FR-11, ADM-FR-14, ADM-FR-15 · editor Workflow (/workflows/new, /workflows/$id): 4 tab, Info + Input chung một form và nút Lưu.
 import type { Workflow } from "@ai/contracts/workflows";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
 import { FormProvider } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
@@ -8,8 +10,6 @@ import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/http";
 import { useSecretOptions, useWorkflow } from "../api";
 import { SchemaBreaksAlert } from "../components/editor/SchemaBreaksAlert";

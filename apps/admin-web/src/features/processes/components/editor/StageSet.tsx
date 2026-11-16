@@ -1,9 +1,9 @@
 // CR-103 · R4 fnr-showcase · CR-122 E4/U2c: editor node `set` (họ work, không AI) — mỗi dòng: field output ← nguồn (đầu vào run · hằng ·
 // field của bước trước · dữ kiện bản ghi) kèm biến đổi kiểu. Component thuần, điều khiển từ ngoài; `StageForm` nối `stage.set.rows`.
 import { SET_AS } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import type { SetRowDraft } from "../../lib/draft-types";
 import { emptySetRow, SET_ROWS_MAX } from "../../lib/set-form";
 import { SelectField, TextField } from "./Fields";
@@ -147,7 +147,7 @@ export function StageSet(p: StageSetProps) {
             {p.readOnly ? null : (
               <Button
                 type="button"
-                variant="ghost"
+                variant="quiet"
                 size="icon"
                 className="col-span-2 justify-self-end"
                 aria-label={t(`${K}remove`)}

@@ -1,10 +1,11 @@
 // ADM-FR-62 · M3-R01 · các trường của form group dùng chung cho tạo mới (Key + Tên + Mô tả) và "Đổi tên" (Tên + Mô tả).
+
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Textarea } from "@ai/web-kit/ui/kit/textarea";
 import { Controller, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
 import { LocalizedInput } from "@/components/shared/LocalizedInput";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useTr } from "@/lib/use-translate";
 import { type GroupFormValues, typeGroupKey } from "../../lib/schemas";
 

@@ -27,8 +27,8 @@ describe("dialog", () => {
     expect(String(DialogHeader({}).props.className)).toContain("shrink-0");
     expect(String(DialogFooter({}).props.className)).toContain("shrink-0");
   });
-  test("sheet có hai phía phải và dưới", () => {
-    expect(Object.keys(SHEET_SIDE_CLASS).sort()).toEqual(["bottom", "right"]);
+  test("sheet có ba phía trái, phải và dưới", () => {
+    expect(Object.keys(SHEET_SIDE_CLASS).sort()).toEqual(["bottom", "left", "right"]);
   });
 });
 

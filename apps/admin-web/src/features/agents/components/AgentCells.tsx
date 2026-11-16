@@ -1,10 +1,10 @@
 // HUB-FR-77 · HUB-FR-78 · CR-054 · các ô nhỏ của bảng Agents: Model, "Bật cho công ty", "Ai được dùng", Thao tác.
 import type { AgentGrantRow, AgentSettingsItem } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { pickLocalized } from "@/lib/localized";
 import { isActive, modelText, type WhoChip, whoChips } from "../lib/agents";
 
@@ -80,12 +80,9 @@ export function WhoCell({
   return (
     <div className="flex flex-wrap gap-1">
       {chips.map((c) => (
-        <Badge
-          key={"id" in c ? c.id : c.kind}
-          variant={c.kind === "none" || c.kind === "off" ? "off" : "secondary"}
-        >
+        <StatusBadge key={"id" in c ? c.id : c.kind} tone="off">
           {chipLabel(c, t, i18n.language)}
-        </Badge>
+        </StatusBadge>
       ))}
     </div>
   );

@@ -3,13 +3,12 @@
 // Không có "Cấp quyền" / "Đặt mặc định" (không cấp quyền, không @mention).
 import type { MeApp } from "@ai/contracts/app-catalog";
 import type { AgentSettingsItem } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/states/EmptyState";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { openApp } from "@/features/shell/hooks/use-apps";
 import { pickLocalized } from "@/lib/localized";
 import type { AgentActions } from "../hooks/use-agent-actions";
@@ -120,7 +119,7 @@ function columns(p: Props, t: Tr, lang: string): Column<AgentSettingsItem>[] {
         <div className="flex flex-wrap items-center gap-1.5">
           <ModelCell item={row} />
           {row.tier ? (
-            <Badge variant="secondary">{t(`agents.bg.tier.${row.tier}`, row.tier)}</Badge>
+            <StatusBadge tone="off">{t(`agents.bg.tier.${row.tier}`, row.tier)}</StatusBadge>
           ) : null}
         </div>
       ),

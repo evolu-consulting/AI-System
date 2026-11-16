@@ -1,20 +1,20 @@
 // ADM-FR-10, ADM-FR-14 · tab "Thông tin": key (khoá sau khi lưu), tên, loại, secret, Base URL, output field, mô tả, công tắc Bật, `side_effect` (X1).
 import { APP_TYPES } from "@ai/contracts/common";
-import { Controller, useFormContext, useWatch } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { FormField } from "@/components/shared/form/FormField";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { RadioGroup, RadioGroupItem } from "@ai/web-kit/ui/kit/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+} from "@ai/web-kit/ui/kit/select";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
+import { Textarea } from "@ai/web-kit/ui/kit/textarea";
+import { Controller, useFormContext, useWatch } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { FormField } from "@/components/shared/form/FormField";
 import { useTr } from "@/lib/use-translate";
 import type { WorkflowFormValues } from "../../lib/schemas";
 

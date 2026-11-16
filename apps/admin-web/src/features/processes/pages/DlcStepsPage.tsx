@@ -1,16 +1,7 @@
 // dlc-step-library · `/dlc-steps` (chỉ platform_admin, cùng điều kiện engine quy trình như thư viện): bảng BƯỚC DLC mẫu + thêm/sửa/
 // xoá. Canvas khe `dlc.*` chèn bước từ thư viện này ("Thêm bước DLC").
 import type { DlcStepTemplate } from "@ai/contracts/hub-admin";
-import { notifySuccess } from "@ai/web-kit/ui/toast";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { PlatformOnly } from "@/components/shared/PlatformOnly";
-import { ErrorState } from "@/components/shared/states/ErrorState";
-import { TenantPicker } from "@/components/shared/TenantPicker";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Table,
   TableBody,
@@ -18,7 +9,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@ai/web-kit/ui/kit/table";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { PlatformOnly } from "@/components/shared/PlatformOnly";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { ErrorState } from "@/components/shared/states/ErrorState";
+import { TenantPicker } from "@/components/shared/TenantPicker";
 import { ApiError } from "@/lib/http";
 import { DlcStepDialog } from "../components/library/DlcStepDialog";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
@@ -61,7 +61,7 @@ function Row({
       <TableCell>{action(s.action)}</TableCell>
       <TableCell className="font-mono">{s.agent_key ?? t(`${S}agentDefault`)}</TableCell>
       <TableCell>
-        {s.gate_group ? <Badge variant="info">{s.gate_group}</Badge> : t(`${S}gateNone`)}
+        {s.gate_group ? <StatusBadge tone="info">{s.gate_group}</StatusBadge> : t(`${S}gateNone`)}
       </TableCell>
       <TableCell>{reject}</TableCell>
       <TableCell>{s.max_rounds}</TableCell>

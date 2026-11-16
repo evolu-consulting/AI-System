@@ -1,9 +1,9 @@
 // CR-121 C-3b · các ô số liệu của Tổng quan platform: ô lớn "Lượt chạy 24 giờ" + 5 ô nhỏ (tỷ lệ lỗi, thời gian xử lý, lỗi công cụ AI, hạn mức AI, công ty hoạt động).
 import type { OpsOverview } from "@ai/contracts/hub-admin";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { formatCount, formatUsd } from "@/lib/quota-format";
-import { cn } from "@/lib/utils";
 import { type Delta, deltaOf, fmtDec, hourBars, hourlyEmptyKey } from "../../lib/ops-overview";
 import { BentoTile, type TileError } from "./BentoTile";
 import { HourlyBars, Sparkline } from "./charts";

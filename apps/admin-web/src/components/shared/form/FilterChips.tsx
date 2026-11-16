@@ -1,6 +1,7 @@
 // ADM-FR-60, ADM-FR-04 · chip lọc chọn một: `radiogroup` + `radio` (có số tuỳ chọn), mũi tên di chuyển.
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { type KeyboardEvent, useRef } from "react";
-import { cn } from "@/lib/utils";
 
 export type Chip<V extends string> = { value: V; label: string; count?: number };
 

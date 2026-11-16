@@ -1,9 +1,7 @@
 // ADM-FR-60 · hộp thoại sau khi tạo tenant: mật khẩu tạm hiện một lần; không đóng bằng Esc/click nền/nút X (D10).
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { TempPasswordPanel } from "@/components/shared/TempPasswordPanel";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -11,8 +9,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { TempPasswordPanel } from "@/components/shared/TempPasswordPanel";
 
 type Props = {
   tenantKey: string;

@@ -1,9 +1,10 @@
 // ADM-FR-42 · M4-R03 · cột số thu theo ngày, tự vẽ SVG (plan-frontend D1, không recharts).
 // Chồng "Trong quota" (màu chính) + "Vượt quota" (vân chéo); mỗi cột có <title>; `role="img"` + bảng `sr-only`.
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { useId, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { formatUsd } from "@/lib/quota-format";
-import { cn } from "@/lib/utils";
 import { type DayInput, layoutBars } from "./bars-geometry";
 
 type Props = {

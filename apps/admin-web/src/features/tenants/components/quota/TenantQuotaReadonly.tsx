@@ -1,9 +1,7 @@
 // CR-112 · ADM-FR-77 AC4 / Q11 · tab "Chi phí & quota" rút gọn của tenant_admin: chỉ đọc, dùng tháng này so với giới hạn (run/token),
 // không tiền. Chỉ gọi GET /admin/tenants/:id/quotas (route cho tenant_admin công ty mình) — không đụng route chỉ-platform (daily-limits, grants/matrix).
-import { useTranslation } from "react-i18next";
-import { QuotaBar } from "@/components/shared/quota/QuotaBar";
-import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Skeleton } from "@/components/ui/skeleton";
+
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import {
   Table,
   TableBody,
@@ -11,7 +9,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@ai/web-kit/ui/kit/table";
+import { useTranslation } from "react-i18next";
+import { QuotaBar } from "@/components/shared/quota/QuotaBar";
+import { ErrorState } from "@/components/shared/states/ErrorState";
 import { loadError } from "@/lib/load-error";
 import { pickLocalized } from "@/lib/localized";
 import { useTenantQuotas } from "../../hooks/use-tenant-api";

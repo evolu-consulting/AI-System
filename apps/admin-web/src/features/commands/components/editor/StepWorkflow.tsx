@@ -1,15 +1,16 @@
 // ADM-FR-20 · ADM-BR-06 · bước 2 "Chọn workflow": Select Workflow (key + tên, workflow tắt mờ), thẻ tóm tắt, Alert workflow tắt / map bị bỏ.
-import { Controller, useFormContext, useWatch } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { FormField } from "@/components/shared/form/FormField";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { Controller, useFormContext, useWatch } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { FormField } from "@/components/shared/form/FormField";
 import { useTr } from "@/lib/use-translate";
 import { useWorkflowOptions } from "../../hooks/use-command-queries";
 import type { CommandFormValues } from "../../lib/schemas";

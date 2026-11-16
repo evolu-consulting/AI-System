@@ -1,7 +1,8 @@
 // ADM-FR-66 · P-a F5 · P-b2: "Sau giai đoạn" (duyệt/tự chạy), nhóm kiểm và "Hành động thật" (khoá theo bước liền trước).
+
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { useTranslation } from "react-i18next";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useApproverField } from "../../hooks/use-group-key-options";
 import { canRealAction, type StageDraft } from "../../lib/def-form";
 import { isForm } from "../../lib/form-fields";

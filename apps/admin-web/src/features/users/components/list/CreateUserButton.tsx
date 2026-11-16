@@ -1,7 +1,8 @@
 // ADM-FR-04 · nút "+ Tạo user": platform chưa chọn tenant → aria-disabled + tooltip "Chọn một tenant trước" (M1-R14).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Props = { canCreate: boolean; onCreate: () => void };
 

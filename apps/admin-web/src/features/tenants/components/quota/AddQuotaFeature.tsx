@@ -1,8 +1,9 @@
 // ADM-FR-40 · `+ Thêm quota theo feature` → Popover có combobox "Chọn feature" (feature đã entitlement + core, trừ feature đã có hàng).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RefPicker } from "@/components/shared/RefPicker";
-import { Button } from "@/components/ui/button";
 import { pickLocalized } from "@/lib/localized";
 import type { QuotaFeatureOption } from "../../lib/quota-draft";
 
@@ -40,7 +41,7 @@ export function AddQuotaFeature({ options, loading, taken, onPick }: Props) {
           setOpen(false);
         }}
       />
-      <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+      <Button type="button" variant="quiet" onClick={() => setOpen(false)}>
         {t("common.cancel")}
       </Button>
       {!loading && left.length === 0 ? (

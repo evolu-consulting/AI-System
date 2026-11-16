@@ -1,7 +1,8 @@
 // ADM-FR-35 · M3-R09 · ô tick cả hàng/cả cột (tri-state: checked | mixed | unchecked); tên truy cập do nơi gọi đặt.
 // biome-ignore-all lint/a11y/useSemanticElements: lưới ảo hoá (cửa sổ hoá hai chiều) không dùng được <table>/<input>; role đặt đúng theo WAI-ARIA grid/checkbox
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Check, Minus } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { LineState } from "../../lib/matrix";
 
 type Props = { label: string; state: LineState; onToggle: () => void };

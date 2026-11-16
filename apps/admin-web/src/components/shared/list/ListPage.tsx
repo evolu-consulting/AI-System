@@ -1,14 +1,15 @@
 // CR-121 C-1b · khung trang danh sách "Hướng A": tiêu đề + số đếm, nút hành động chính (có chữ), nút Lọc CHỈ icon mở phễu,
 // chip bộ lọc có nút xoá, dòng "n / tổng", vùng bảng (hàng bấm được mở DetailDrawer). Mỗi nhóm lọc là một control duy nhất.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai/web-kit/ui/kit/popover";
 import { Check, Funnel, X } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEmbedded } from "@/components/shared/embedded";
 import { IconButton } from "@/components/shared/IconButton";
 import { EmptyState } from "@/components/shared/states/EmptyState";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { buildChips, type FilterGroup, toggleValue } from "./list-filter";
 
 type Props = {

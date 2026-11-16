@@ -1,8 +1,9 @@
 // ADM-FR-01, ADM-FR-03 · ô mật khẩu + nút Hiện/Ẩn (`aria-pressed`). `revealed` điều khiển từ ngoài khi một nút dùng cho nhiều ô.
+
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { Eye, EyeOff } from "lucide-react";
 import { type ComponentPropsWithoutRef, forwardRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
 
 type Props = Omit<ComponentPropsWithoutRef<"input">, "type"> & {
   revealed?: boolean;

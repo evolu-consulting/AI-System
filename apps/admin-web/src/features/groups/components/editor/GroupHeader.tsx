@@ -1,15 +1,15 @@
 // ADM-FR-62 · M3-R02 · đầu editor Group: tên, "{tenant} · {mã}", tóm tắt, nhãn beta; nút `Đổi tên` và menu `⋯` (Xoá, không có ở beta-testers).
 import type { Group } from "@ai/contracts/groups";
-import { MoreHorizontal } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { pickLocalized } from "@/lib/localized";
 
 type Props = { group: Group; onRename: () => void; onDelete: () => void };
@@ -24,12 +24,12 @@ export function GroupHeader({ group, onRename, onDelete }: Props) {
       {group.is_beta ? null : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label={t("common.moreActions")}>
+            <Button variant="quiet" size="icon" aria-label={t("common.moreActions")}>
               <MoreHorizontal aria-hidden />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+            <DropdownMenuItem danger onSelect={onDelete}>
               {t("groups.menu.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>

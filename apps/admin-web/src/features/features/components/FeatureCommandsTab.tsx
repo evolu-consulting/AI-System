@@ -1,12 +1,6 @@
 // ADM-FR-30 · ADM-BR-10 · M2-R19 · tab "Commands": bảng command của feature (nháp), "Thêm command", cảnh báo command sẽ mồ côi.
 import type { FeatureDetail } from "@ai/contracts/features";
-import { X } from "lucide-react";
-import { useState } from "react";
-import { useFormContext, useWatch } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { RefPicker } from "@/components/shared/RefPicker";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Table,
   TableBody,
@@ -14,7 +8,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@ai/web-kit/ui/kit/table";
+import { X } from "lucide-react";
+import { useState } from "react";
+import { useFormContext, useWatch } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { RefPicker } from "@/components/shared/RefPicker";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { pickLocalized } from "@/lib/localized";
 import { useCommandOptions } from "../hooks/use-feature-queries";
 import { uniqueIds } from "../lib/save-merge";
@@ -92,8 +92,8 @@ export function FeatureCommandsTab({ feature }: { feature: FeatureDetail | undef
                   <TableCell>
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="icon-sm"
+                      variant="quiet"
+                      size="icon"
                       aria-label={t("features.commands.remove.aria", { name: r.name })}
                       onClick={() => change(ids.filter((x) => x !== r.id))}
                     >

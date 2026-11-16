@@ -1,7 +1,8 @@
 // ADM-FR-42 · usage-analytics · thanh chuyển giữa "Tổng quan chi phí" (/usage) và "Phân tích token" (/usage/analytics).
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 
 const TABS = [
   { to: "/usage", key: "overview" },

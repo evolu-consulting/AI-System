@@ -1,11 +1,12 @@
 // ADM-FR-08 · ms §10.2 (mẫu D, thay card đăng nhập): mã 6 số tự gửi khi đủ; hoặc mã dự phòng; "Quay lại đăng nhập".
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { type FormEvent, type MouseEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { OtpInput } from "@/components/shared/form/OtpInput";
 import { isOtpComplete } from "@/components/shared/form/otp";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { TotpLoginInput } from "../../hooks/use-totp-login";
 import { normalizeBackupCode } from "../../lib/schemas";
 

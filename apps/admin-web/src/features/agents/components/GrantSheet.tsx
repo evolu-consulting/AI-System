@@ -1,9 +1,9 @@
 // HUB-FR-78 · CR-054 · ngăn phải "Cấp quyền · <agent>": Phạm vi (Cả công ty | Chọn nhóm và người), checkbox nhóm/người,
 // dòng tóm tắt, Huỷ / Lưu (Lưu = POST/DELETE chênh lệch ở hook).
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { RadioGroup, RadioGroupItem } from "@ai/web-kit/ui/kit/radio-group";
 import {
   Sheet,
   SheetContent,
@@ -11,7 +11,8 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@ai/web-kit/ui/kit/sheet";
+import { useTranslation } from "react-i18next";
 import { pickLocalized } from "@/lib/localized";
 import type { GrantSheetState } from "../hooks/use-grant-sheet";
 import { type GrantScope, toggleIn } from "../lib/grant-draft";

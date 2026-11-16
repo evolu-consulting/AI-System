@@ -1,5 +1,6 @@
 // HUB-FR-77 · HUB-FR-78 · CR-054 · /agents (Evolu Control → Agents): agent của công ty, ai được dùng, đúng một agent mặc định.
 import type { AgentSettingsItem } from "@ai/contracts/hub-admin";
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
 import type { TFunction } from "i18next";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,7 +12,6 @@ import { EmptyState } from "@/components/shared/states/EmptyState";
 import { HubLoadError, HubNotConfigured } from "@/components/shared/states/HubLoadError";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { TenantPicker } from "@/components/shared/TenantPicker";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { hubConfigured } from "@/lib/hub";
 import { useAgentMonthUsage, useMyApps } from "../api";
 import { AgentDrawer } from "../components/AgentDrawer";

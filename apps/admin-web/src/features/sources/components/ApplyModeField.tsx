@@ -2,11 +2,11 @@
 // (gitProviderOf). URL đổi sang host không hỗ trợ khi đang chọn pr/auto_merge ⇒ về branch_only. "Mặc định" theo effectiveApplyMode.
 import type { ApplyMode } from "@ai/contracts/hub-admin";
 import { effectiveApplyMode, gitProviderOf } from "@ai/contracts/hub-admin";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { RadioGroup, RadioGroupItem } from "@ai/web-kit/ui/kit/radio-group";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 
 const MODES: ApplyMode[] = ["pr", "auto_merge", "branch_only"];
 const NEEDS_PROVIDER = (m: ApplyMode): boolean => m === "pr" || m === "auto_merge";
@@ -59,7 +59,7 @@ export function ApplyModeField({ id, url, value, onChange, error }: Props) {
                     {t(`process.sources.applyMode.${m}`)}
                   </Label>
                   {m === defaultMode ? (
-                    <Badge variant="info">{t("process.sources.applyMode.default")}</Badge>
+                    <StatusBadge tone="info">{t("process.sources.applyMode.default")}</StatusBadge>
                   ) : null}
                 </div>
                 <p className="text-caption text-muted-foreground">

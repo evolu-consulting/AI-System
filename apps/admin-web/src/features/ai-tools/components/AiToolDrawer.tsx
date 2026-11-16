@@ -1,15 +1,15 @@
 // CR-121 R6 · c16 · ngăn chi tiết của một công cụ (artboard AiTools, bấm hàng).
 // Workflow Dify: mô tả, agent/lệnh gọi tới (có link), "Công ty dùng" bật/tắt. Agent/lệnh: công ty đang dùng (chỉ xem).
 import type { AiTool } from "@ai/contracts/workflow-tools";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { Link } from "@tanstack/react-router";
 import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DependencyList } from "@/components/shared/DependencyList";
 import { DetailDrawer } from "@/components/shared/list/DetailDrawer";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { usageSections } from "@/features/workflows/lib/usage";
 import { frozenModulesOn } from "@/lib/frozen";
 import { useTr } from "@/lib/use-translate";

@@ -1,10 +1,11 @@
 // CR-105 · thanh trên của editor quy trình thư viện (UX): trạng thái (Nháp / vN), "Xuất bản" là nút chính, "Gán cho tenant",
 // "Xem trước đường đi"; Lịch sử · Nhân bản · Đặt mặc định là nút phụ. "Lưu nháp" nằm ở thanh lưu bên dưới — tách khỏi "Xuất bản".
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { Copy, History, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
 import { isDlcSlotKey } from "../../lib/dlc-slot";
 import { hasTrigger } from "../../lib/flow-def";
 import { statusOf } from "../../lib/library-list";
@@ -80,7 +81,7 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
   const status = statusOf(def);
   const ic = "size-4";
   const secondary = (a: LibraryAction, label: string, icon: React.ReactNode, off = false) => (
-    <Button type="button" size="sm" variant="ghost" disabled={off} onClick={() => onAction(a)}>
+    <Button type="button" size="sm" variant="quiet" disabled={off} onClick={() => onAction(a)}>
       {icon}
       {label}
     </Button>
@@ -125,7 +126,7 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
                 key={m}
                 type="button"
                 size="sm"
-                variant={mode === m ? "default" : "ghost"}
+                variant={mode === m ? "primary" : "quiet"}
                 aria-pressed={mode === m}
                 disabled={mode !== m && dirty}
                 title={mode !== m && dirty ? L("mode.saveFirst") : undefined}

@@ -1,10 +1,11 @@
 // ADM-BR-01 · ADM-BR-10 · bước 1 "Đặt tên và gói chức năng": tên (chuẩn hoá khi gõ, kiểm trùng khi rời ô), alias, mô tả VI/EN, feature.
+
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
 import { LocalizedInput } from "@/components/shared/LocalizedInput";
-import { Input } from "@/components/ui/input";
 import { normalizeCommandName } from "@/lib/normalize";
 import { useTr } from "@/lib/use-translate";
 import { useNameCheck } from "../../hooks/use-command-queries";

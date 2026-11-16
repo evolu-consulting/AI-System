@@ -1,10 +1,10 @@
 // ADM-FR-69 · HUB-FR-124 · P-b FS-7: một hàng "Thông tin đầu vào" — ký hiệu · nhãn · kiểu · bắt buộc · lựa chọn (chỉ select).
 import { INPUT_TYPES } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import type { DraftErrors } from "../../lib/def-form";
 import type { InputDraft, InputType } from "../../lib/sources-form";
 import { SelectField, TextField } from "./Fields";

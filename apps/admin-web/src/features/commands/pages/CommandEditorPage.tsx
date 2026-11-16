@@ -1,6 +1,10 @@
 // ADM-FR-20, ADM-FR-21, ADM-FR-22, ADM-FR-23, ADM-FR-24 · editor Command (/commands/new, /commands/$id): 5 bước trong tab "Cấu hình"
 // + tab "Ai dùng được" + panel "Chạy thử" (X1 F4: cột phải ≥ 1024px, tab khi hẹp hơn).
 import type { Command } from "@ai/contracts/commands";
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
 import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useRouter } from "@tanstack/react-router";
 import { lazy, Suspense, useState } from "react";
@@ -14,10 +18,6 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

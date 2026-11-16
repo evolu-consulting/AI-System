@@ -1,15 +1,15 @@
 // ADM-FR-30, ADM-FR-33 · menu `⋯` của một feature: Sửa · Bật · Chuyển sang Beta · Tắt · Xoá (`core` chỉ có Sửa).
 import type { FeatureListItem } from "@ai/contracts/features";
-import { Link } from "@tanstack/react-router";
-import { MoreHorizontal } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import { Link } from "@tanstack/react-router";
+import { MoreHorizontal } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { FeatureStatusFilter } from "../hooks/use-feature-queries";
 
 type Props = {
@@ -24,7 +24,7 @@ export function FeatureRowMenu({ feature, onStatus, onDelete }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={t("common.moreActions")}>
+        <Button variant="quiet" size="icon" aria-label={t("common.moreActions")}>
           <MoreHorizontal aria-hidden />
         </Button>
       </DropdownMenuTrigger>

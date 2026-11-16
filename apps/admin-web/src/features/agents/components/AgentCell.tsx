@@ -1,10 +1,10 @@
 // HUB-FR-77 · CR-054 · ô "Agent": avatar chữ, tên theo ngôn ngữ, nhãn ★ Mặc định / Điều phối, `@key` · mô tả,
 // và (Orchestrator đang mặc định) ô "Không khớp agent nào →".
 import type { AgentDefaults, AgentSettingsItem } from "@ai/contracts/hub-admin";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { pickLocalized } from "@/lib/localized";
-import { cn } from "@/lib/utils";
 import { initials, isActive } from "../lib/agents";
 import { NoMatchSelect } from "./NoMatchSelect";
 

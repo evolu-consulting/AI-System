@@ -1,9 +1,10 @@
 // ADM-FR-68 · FS6 · khối "Kiểm tra kết nối" trong drawer: nút (khoá khi chưa lưu / có thay đổi / đang chạy) + kết quả
 // `status` (200) hoặc `alert` (lỗi, câu tĩnh theo mã). SHA đủ 40 ký tự nằm ở `title`.
+
+import { Alert } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { useTr } from "@/lib/use-translate";
 import type { CheckState } from "../hooks/use-source-check";
 

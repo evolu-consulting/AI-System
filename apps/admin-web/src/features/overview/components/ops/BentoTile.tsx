@@ -1,13 +1,14 @@
 // CR-121 C-3b · ô bento dùng chung: tiêu đề + gợi ý "cách tính" + link vào trang chi tiết; trạng thái đang tải / lỗi (kèm lý do + Thử lại) của riêng từng ô.
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Info } from "lucide-react";
 import { type ReactNode, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { LoadError } from "@/lib/load-error";
-import { cn } from "@/lib/utils";
 import type { OpsLink } from "../../lib/ops-overview";
 
 export type TileError = LoadError & { onRetry?: () => void };
@@ -41,20 +42,18 @@ export function BentoTile({ title, tip, link, loading, error, className, childre
           {title}
         </h3>
         {tip ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={t("overview.ops.howCalc", { name: title })}
-                  className="rounded-sm"
-                >
-                  <Info aria-hidden className="size-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-72">{tip}</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label={t("overview.ops.howCalc", { name: title })}
+                className="rounded-sm"
+              >
+                <Info aria-hidden className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-72">{tip}</TooltipContent>
+          </Tooltip>
         ) : null}
         {link ? (
           <Link

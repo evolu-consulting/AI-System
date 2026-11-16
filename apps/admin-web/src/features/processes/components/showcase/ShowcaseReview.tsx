@@ -1,9 +1,9 @@
 // CR-103 · R4 fnr-showcase: nút Đạt / Từ chối cho task duyệt đang mở của người xem (`run.my_tasks`, `can_act`) — `RunActions`
 // chỉ lo "Cần người quyết"/Huỷ nên duyệt Đạt/Từ chối nằm riêng ở đây.
 import type { TaskDetail } from "@ai/contracts/chat";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { notifyError } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { useReviewDecision } from "../../hooks/use-run-data";
 import { processErrorSpec } from "../../lib/errors";
 

@@ -1,8 +1,9 @@
 // ADM-FR-71 · P-b2 (plan-frontend §2 "Lối tắt"): nút "?" hiện danh sách phím tắt của canvas (không phím toàn cục).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai/web-kit/ui/kit/popover";
 import { CircleHelp } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function ShortcutsHint() {
   const { t } = useTranslation();
@@ -10,7 +11,7 @@ export function ShortcutsHint() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button type="button" variant="ghost" size="icon-sm" aria-label={title} title={title}>
+        <Button type="button" variant="quiet" size="icon" aria-label={title} title={title}>
           <CircleHelp aria-hidden className="size-4" />
         </Button>
       </PopoverTrigger>

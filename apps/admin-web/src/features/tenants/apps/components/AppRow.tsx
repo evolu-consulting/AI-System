@@ -1,12 +1,13 @@
 // CR-121 c12 · R3 · MỘT hàng app của bảng: Ứng dụng · Quyền truy cập · Trạng thái (+ lý do) · Thành viên · Quy trình ("2 bật · 1 tắt").
 // Chi tiết (tính năng thêm + thông tin gói/vai) mở dưới hàng. Chữ dài cắt + tooltip.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { APPS } from "@/features/features/lib/feature-meta";
 import { useTr } from "@/lib/use-translate";
 import { AddonList } from "../../components/features/AddonList";
@@ -105,8 +106,8 @@ function DetailToggle({ open, onToggle }: { open: boolean; onToggle: () => void 
   const label = t(open ? "tenants.apps.hideDetail" : "tenants.apps.showDetail");
   return (
     <Button
-      variant="ghost"
-      size="icon-sm"
+      variant="quiet"
+      size="icon"
       className="ml-auto"
       aria-expanded={open}
       aria-label={label}

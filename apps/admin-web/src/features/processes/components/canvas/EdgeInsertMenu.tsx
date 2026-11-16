@@ -1,7 +1,8 @@
 // CR-122 · P8: nút "+" giữa cạnh — mở cùng menu "Thêm bước" nhưng chèn node vào GIỮA hai node (nhánh Đúng/Sai ⇒ nằm trên nhánh đó).
+
+import { DropdownMenu, DropdownMenuTrigger } from "@ai/web-kit/ui/kit/dropdown-menu";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { StageOps } from "../../hooks/use-stage-ops";
 import type { EdgeRef } from "../../lib/insert-on-edge";
 import { NodeMenuContent } from "../flow/NodeMenuContent";

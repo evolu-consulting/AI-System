@@ -1,9 +1,10 @@
 // ADM-FR-35 · M3-R09 · ô tick của ma trận: `button role=checkbox` (aria-checked, aria-disabled khi khoá), chấm tím khi chưa lưu.
 // biome-ignore-all lint/a11y/useSemanticElements: lưới ảo hoá (cửa sổ hoá hai chiều) không dùng được <table>/<input>; role đặt đúng theo WAI-ARIA grid/checkbox
 // `memo` với props nguyên thuỷ (D: tránh dựng lại cả lưới); tooltip dùng MỘT phần tử chung ở GrantMatrix (không nhân bản chữ trong DOM).
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Check, Minus } from "lucide-react";
 import { memo } from "react";
-import { cn } from "@/lib/utils";
 
 export const TIP_ID = "matrix-tip";
 export type TipState = { text: string; x: number; y: number; r: number; c: number };

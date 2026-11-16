@@ -1,9 +1,9 @@
 // CR-121 D-3: nút thêm bước CHỈ icon, theo `nodes` của khe (hover/tooltip hiện nhãn). Node form chưa dựng được (vd Dify cần chọn
 // workflow) hiện mờ kèm lý do; node ngoài danh mục của khe không có nút.
 import type { SlotNodeDto } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Bell, CheckCircle2, Clock, type LucideIcon, PenLine, Plus, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 
 const ICONS: Record<string, LucideIcon> = {
   "check-circle": CheckCircle2,

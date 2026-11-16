@@ -1,8 +1,9 @@
 // ADM-FR-15 · tab "Đang được dùng bởi": command (link) + agent của workflow; nạp khi mở tab, workflow mới chưa có gì.
+
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import { useTranslation } from "react-i18next";
 import { DependencyList } from "@/components/shared/DependencyList";
 import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Skeleton } from "@/components/ui/skeleton";
 import { loadError } from "@/lib/load-error";
 import { useTr } from "@/lib/use-translate";
 import { useWorkflowUsages } from "../../hooks/use-workflow-queries";

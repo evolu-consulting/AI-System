@@ -2,10 +2,10 @@
   "admin-web": {
     "button": 49,
     "select": 16,
-    "input": 10,
+    "input": 9,
     "title": 50,
-    "uiFiles": 25,
-    "arbitrary": 8
+    "uiFiles": 0,
+    "arbitrary": 6
   },
   "chat-web": {
     "button": 27,

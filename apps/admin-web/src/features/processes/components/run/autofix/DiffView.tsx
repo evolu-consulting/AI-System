@@ -1,7 +1,7 @@
 // HUB-FR-128 · P-c1 §1.2/§6 · danh sách file + diff hợp nhất. `<details>` mỗi file; nội dung chỉ mount khi mở; văn bản thuần (không HTML).
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import type { DiffFile, DiffLineKind, ParsedDiff } from "../../../lib/diff-parse";
 
 const PREFIX: Record<DiffLineKind, string> = { add: "+", del: "-", ctx: " ", note: "\\" };
@@ -88,7 +88,9 @@ function FileList({ files, onPick }: { files: DiffFile[]; onPick: (i: number) =>
             onClick={() => onPick(i)}
           >
             <span className="min-w-0 break-all font-mono">{f.path}</span>
-            {f.binary ? <Badge variant="off">{t("process.common.autofix.binary")}</Badge> : null}
+            {f.binary ? (
+              <StatusBadge tone="off">{t("process.common.autofix.binary")}</StatusBadge>
+            ) : null}
           </button>
         </li>
       ))}

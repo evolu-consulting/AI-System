@@ -1,4 +1,6 @@
 // ADM-FR-30 · /features (mẫu A): chip trạng thái có số, ô tìm, bảng phân trang server 50 dòng, đổi trạng thái/xoá ở menu hàng.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,7 +10,6 @@ import type { FilterGroup } from "@/components/shared/list/list-filter";
 import { Pagination } from "@/components/shared/Pagination";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { EmptyState } from "@/components/shared/states/EmptyState";
-import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/http";
 import { FEATURES_PAGE_SIZE, type FeatureStatusFilter, useFeatureList } from "../api";
 import { FeatureDrawer } from "../components/FeatureDrawer";

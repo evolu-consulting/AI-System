@@ -1,7 +1,8 @@
 // ADM-FR-60 · H1 + mô tả + vùng nút phải; H1 nhận focus khi vào trang (a11y). CR-112: nhúng trong workspace ⇒ h2, không cướp focus.
+
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { Info } from "lucide-react";
 import { type ReactNode, useEffect, useRef } from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEmbedded } from "./embedded";
 
 type Props = { title: string; description?: string; actions?: ReactNode; hint?: string };

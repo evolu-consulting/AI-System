@@ -1,12 +1,13 @@
 // CR-127 · M2 (mock Editor.dc) · thanh trên của màn soạn quy trình CÔNG TY: ← Quy trình · tên (sửa tại chỗ) · công ty · Nháp/Đang áp dụng · đã lưu HH:MM · Lượt chạy.
 // «Chạy thử» + «Áp dụng cho công ty» nằm ở thanh dưới (ProcessSaveBar) vì cùng một biểu mẫu.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
 import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useTenantDetail } from "@/features/tenants/api";
 import { useCompanyFlowList } from "@/features/tenants/flows/company-flows-api";
 import { DeleteDraftFlow } from "../DeleteDraftFlow";
@@ -44,7 +45,7 @@ export function CompanyEditorBar(p: Props) {
       className="mb-4 flex flex-wrap items-center gap-3 border-b border-border pb-3"
       data-testid="company-editor-bar"
     >
-      <Button variant="ghost" size="sm" asChild>
+      <Button variant="quiet" size="sm" asChild>
         <Link to="/processes">
           <ArrowLeft aria-hidden className="size-4" />
           {t("process.admin.editorBar.back")}
@@ -60,9 +61,9 @@ export function CompanyEditorBar(p: Props) {
       />
       {company ? <span className="text-body text-muted-foreground">{company}</span> : null}
       {row ? (
-        <Badge variant={row.enabled ? "ok" : "outline"}>
+        <StatusBadge tone={row.enabled ? "ok" : "off"}>
           {t(row.enabled ? "process.admin.byCompany.on" : "process.admin.byCompany.draft")}
-        </Badge>
+        </StatusBadge>
       ) : null}
       <span className="text-caption text-muted-foreground" role="status">
         {savedText(t, p.dirty, p.savedAt)}

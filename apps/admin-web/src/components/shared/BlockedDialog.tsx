@@ -1,7 +1,6 @@
 // ADM-FR-13, ADM-FR-30, ADM-FR-50 · M2 · hộp thoại chặn (`alertdialog`): lý do + DependencyList + nút Đóng.
 // Dùng khi xoá secret/workflow/feature hoặc tắt workflow đang được dùng (AC-A05).
-import type { ReactNode } from "react";
-import { useTranslation } from "react-i18next";
+
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -10,7 +9,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@ai/web-kit/ui/kit/alert-dialog";
+import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   open: boolean;

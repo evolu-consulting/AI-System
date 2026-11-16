@@ -1,9 +1,10 @@
 // ADM-FR-74 · /partners: Tenant (platform), ô tìm, bảng công ty phân trang server, `+ Thêm công ty đối tác`, drawer tài khoản (`?org=`).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
-import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
 import { PARTNERS_PAGE_SIZE } from "../api";
 import { PartnerDrawer } from "../components/PartnerDrawer";

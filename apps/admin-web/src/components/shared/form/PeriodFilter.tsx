@@ -1,14 +1,16 @@
 // ADM-FR-51, ADM-FR-52 · M4-R12 · lọc thời gian: nút `button "Thời gian: 30 ngày"` mở Popover có preset 7/30/90 ngày
 // và 2 ô ngày (plan-frontend D3, không react-day-picker). Chọn preset áp dụng ngay; tuỳ chọn cần bấm "Áp dụng".
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { fieldBase } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai/web-kit/ui/kit/popover";
+import { ToggleGroup, ToggleGroupItem } from "@ai/web-kit/ui/kit/toggle-group";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { INPUT_CLASS } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { isValidCustom, PERIOD_PRESETS, type Period } from "./period";
+
+const INPUT_CLASS = `${fieldBase} h-[var(--control-md)]`;
 
 type Props = {
   value: Period;

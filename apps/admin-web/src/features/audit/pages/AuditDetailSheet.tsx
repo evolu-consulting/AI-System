@@ -1,19 +1,19 @@
 // ADM-FR-51 · ADM-FR-52 · Q8 · M4-AC07 · AC08 · chi tiết một dòng nhật ký: Sheet 640 px ở route con `/audit/$auditId` (plan-frontend D8); nút "Khôi phục bản trước" chỉ khi `restorable`.
 import type { AuditItem } from "@ai/contracts/audit";
-import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import { RotateCcw } from "lucide-react";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@ai/web-kit/ui/kit/sheet";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import { RotateCcw } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ErrorState } from "@/components/shared/states/ErrorState";
 import { auditSentence } from "@/lib/audit-sentence";
 import { ApiError } from "@/lib/http";
 import { loadError } from "@/lib/load-error";

@@ -1,9 +1,10 @@
 // CR-127 · khối con của trình sửa quy trình (tách từ ProcessEditorPage).
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
 import { useTranslation } from "react-i18next";
 import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
 import { HubLoadError } from "@/components/shared/states/HubLoadError";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLibraryView } from "@/features/tenants/flows/api";
 import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";

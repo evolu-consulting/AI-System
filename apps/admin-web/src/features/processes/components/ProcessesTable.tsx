@@ -1,12 +1,13 @@
 // ADM-FR-65 · CR-056 · P-a F5: bảng quy trình (6 cột + hành động dòng) cho tab "Của công ty" / "Mẫu" (plan-frontend-admin §1 ①).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { formatUpdated } from "@/lib/format";
 import { isTemplateRow, rowMode } from "../lib/library-view";
 import type { LibraryListItem as Row } from "../library-api";
@@ -103,7 +104,7 @@ function WriteActions(p: { t: TFunction; r: Row; actions: RowActions }) {
   const { t, r, actions } = p;
   return (
     <>
-      <Button size="sm" variant="ghost" asChild>
+      <Button size="sm" variant="quiet" asChild>
         <Link to="/processes/$processId" params={{ processId: r.id }}>
           {L(t, "edit")}
         </Link>
@@ -123,7 +124,7 @@ function actionsColumn(t: TFunction, o: Opts): Column<Row> {
     cell: (r) => (
       <span className="flex items-center justify-end gap-1">
         {rowMode(r, canEditTemplates) === "view" ? (
-          <Button size="sm" variant="ghost" asChild>
+          <Button size="sm" variant="quiet" asChild>
             <Link to="/processes/$processId" params={{ processId: r.id }}>
               {L(t, "view")}
             </Link>

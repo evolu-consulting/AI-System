@@ -1,9 +1,9 @@
 // ADM-FR-69 · HUB-FR-124 · P-b FS-7: thẻ "Thông tin đầu vào" — khai báo ≤ 10 trường người chạy phải điền khi bắt đầu.
 import { DEF_INPUTS_MAX } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";
-import { Button } from "@/components/ui/button";
 import type { DefDraft, DraftErrors } from "../../lib/def-form";
 import { emptyInput, type InputDraft } from "../../lib/sources-form";
 import { InputRow } from "./InputRow";

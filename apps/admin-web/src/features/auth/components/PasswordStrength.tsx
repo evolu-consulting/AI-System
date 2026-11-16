@@ -1,6 +1,7 @@
 // ADM-FR-06 · "Độ mạnh: {mức}" (aria-live polite). Chỉ gợi ý.
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 import { passwordStrength } from "../lib/strength";
 
 const TONE = { weak: "text-destructive", medium: "text-warning", strong: "text-success" } as const;

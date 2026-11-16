@@ -2,14 +2,14 @@
 // `POST /admin/commands/test`; Ctrl+Enter chạy; "Dừng" huỷ fetch; 409 side effect → hộp xác nhận. Trang đã `PlatformOnly`.
 
 import { TEST_RUN_TEXT_MAX } from "@ai/contracts/hub-internal";
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Textarea } from "@ai/web-kit/ui/kit/textarea";
 import { useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { describeCommandTestError, isRunAsError } from "@/lib/errors";
 import { useTr } from "@/lib/use-translate";
 import { useCommandTest } from "../../hooks/use-command-test";

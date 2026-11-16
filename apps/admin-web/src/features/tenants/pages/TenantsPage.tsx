@@ -2,6 +2,7 @@
 // "n / tổng", bấm hàng mở ngăn tóm tắt (TenantDrawer); khoá/mở khoá ở menu hàng; chỉ platform_admin.
 // CR-121 Q-1 · lọc theo Ứng dụng (server lọc `app`, mỗi hàng trả `apps`).
 import { TENANT_APP_IDS, type TenantApp } from "@ai/contracts/tenants";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,7 +12,6 @@ import type { FilterGroup } from "@/components/shared/list/list-filter";
 import { Pagination } from "@/components/shared/Pagination";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
-import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

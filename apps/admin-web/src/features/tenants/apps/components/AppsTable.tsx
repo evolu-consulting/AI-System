@@ -1,6 +1,7 @@
 // CR-121 c12 · R3 · Công ty › Ứng dụng: dải "Cần xử lý" (Q5) + bảng app + 4 ô số chỉ xem + "Mở Quy trình" (artboard Company).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { useTr } from "@/lib/use-translate";
 import { useJobName } from "../../flows/lib/use-job-name";
 import type { Attention } from "../lib/apps-table";

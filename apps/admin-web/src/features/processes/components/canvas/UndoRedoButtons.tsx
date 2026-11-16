@@ -1,7 +1,8 @@
 // CR-123 · p25 · FLOW3-FR-06: nút Hoàn tác / Làm lại của trình sửa (cùng việc với Ctrl+Z / Ctrl+Y khi canvas đang giữ focus).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Redo2, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import type { DraftState } from "../../hooks/use-draft";
 import type { StageOps } from "../../hooks/use-stage-ops";
 
@@ -13,8 +14,8 @@ export function UndoRedoButtons({ d, ops }: { d: DraftState; ops: StageOps }) {
     <>
       <Button
         type="button"
-        variant="ghost"
-        size="icon-sm"
+        variant="quiet"
+        size="icon"
         aria-label={undo}
         title={undo}
         disabled={!d.canUndo}
@@ -25,8 +26,8 @@ export function UndoRedoButtons({ d, ops }: { d: DraftState; ops: StageOps }) {
       </Button>
       <Button
         type="button"
-        variant="ghost"
-        size="icon-sm"
+        variant="quiet"
+        size="icon"
         aria-label={redo}
         title={redo}
         disabled={!d.canRedo}

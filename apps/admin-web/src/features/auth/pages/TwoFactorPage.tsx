@@ -1,9 +1,10 @@
 // ADM-FR-08 · M4-R16 · M4-AC11 · /account/2fa (ms §10.1, canvas `Enable2FA`): card 560px, các bước trong cùng card.
 // Member bị guard chuyển về /member. Rời trang ở bước Lưu mã → UnsavedGuard.
+
+import { Card, CardContent } from "@ai/web-kit/ui/kit/card";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
-import { Card, CardContent } from "@/components/ui/card";
 import { useSession } from "@/lib/auth/use-session";
 import { BackupCodesStep } from "../components/totp/BackupCodesStep";
 import { ReauthStep } from "../components/totp/ReauthStep";

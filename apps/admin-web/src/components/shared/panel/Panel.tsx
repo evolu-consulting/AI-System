@@ -1,7 +1,8 @@
 // ADM-FR-41, ADM-FR-42 · khung card của Tổng quan: `section` có `aria-labelledby` (e2e `region "<tiêu đề>"`), lỗi/tải riêng từng card (ms §12.3).
+
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import { type ReactNode, useId } from "react";
 import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { LoadError } from "@/lib/load-error";
 
 type Props = {

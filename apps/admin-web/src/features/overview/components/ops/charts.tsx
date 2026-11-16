@@ -1,7 +1,8 @@
 // CR-121 C-3b · biểu đồ nhẹ bằng SVG/CSS (không thêm thư viện): đường xu hướng 7 ngày + 24 cột giờ xong/lỗi. Màu theo token shell.
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { useTranslation } from "react-i18next";
 import { formatClock } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import { type HourBar, sparkPoints } from "../../lib/ops-overview";
 
 export function Sparkline({

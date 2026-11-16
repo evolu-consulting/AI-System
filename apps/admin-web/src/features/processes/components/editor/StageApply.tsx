@@ -1,10 +1,11 @@
 // HUB-FR-129 · PC2-R01 · P-c2 F2 (plan-frontend FC9/FC10; mockup Pc2-Editor): khối stage "Áp bản sửa" — mô tả, "Hành động thật" bật
 // cứng, "Sau stage" = chạy tiếp cứng, huy hiệu "Hợp lệ", ghi chú nhánh và vùng lỗi `APPLY_*` (live, cùng luật server).
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { applyBlockErrors, applyIssueList, firstApplyName } from "../../lib/apply-form";
 import { SelectField } from "./Fields";
 import type { StageFormProps } from "./stage-form-props";
@@ -21,7 +22,7 @@ export function StageApply(p: StageFormProps) {
     <fieldset className="space-y-3" data-testid="stage-apply">
       <div className="flex items-center justify-between gap-2">
         <strong className="text-label font-medium">{t(`${K}title`)}</strong>
-        {keys.length === 0 ? <Badge variant="ok">{t(`${K}valid`)}</Badge> : null}
+        {keys.length === 0 ? <StatusBadge tone="ok">{t(`${K}valid`)}</StatusBadge> : null}
       </div>
       <p className="text-caption text-muted-foreground">{t(`${K}hint`)}</p>
       {keys.map((k) => (

@@ -3,23 +3,25 @@
 
 import { DIFY_RUN_STATUSES } from "@ai/contracts/workflow-runs";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Pagination } from "@/components/shared/Pagination";
-import { EmptyState } from "@/components/shared/states/EmptyState";
-import { TenantPicker } from "@/components/shared/TenantPicker";
-import { INPUT_CLASS } from "@/components/ui/input";
+import { fieldBase } from "@ai/web-kit/ui/kit/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Pagination } from "@/components/shared/Pagination";
+import { EmptyState } from "@/components/shared/states/EmptyState";
+import { TenantPicker } from "@/components/shared/TenantPicker";
 import { useTenantOptions } from "@/features/tenants/hooks/use-tenant-api";
 import { loadError } from "@/lib/load-error";
 import { RUNS_PAGE_SIZE, type RunsParams, useWorkflowRuns } from "../../hooks/use-workflow-queries";
 import { WorkflowRunsTable } from "./WorkflowRunsTable";
+
+const INPUT_CLASS = `${fieldBase} h-[var(--control-md)]`;
 
 const ALL = "all";
 

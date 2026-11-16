@@ -1,18 +1,18 @@
 // ADM-FR-62 · ADM-FR-55 · hộp thoại "Đổi tên group": chỉ Tên (VI/EN) và Mô tả; 409 → ConflictDialog.
 import type { Group } from "@ai/contracts/groups";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { FormProvider, useForm } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { useOnline } from "@/components/shared/ConnectionBanner";
-import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@ai/web-kit/ui/kit/dialog";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FormProvider, useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { useOnline } from "@/components/shared/ConnectionBanner";
+import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { useGroupConflict } from "../../hooks/use-group-conflict";
 import { type GroupFormValues, groupRenameSchema, toFormValues } from "../../lib/schemas";
 import { GroupFields } from "./GroupFields";

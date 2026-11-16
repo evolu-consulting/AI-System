@@ -1,8 +1,7 @@
 // CR-121 · R-3: thẻ xác nhận thao tác điều khiển lượt chạy — nói hậu quả + chọn lý do bắt buộc (chip) ⇒ gọi API.
 import type { RunControlReason } from "@ai/contracts/chat";
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +9,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Textarea } from "@ai/web-kit/ui/kit/textarea";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CONTROL_REASONS } from "../../lib/run-detail-view";
 
 export type ControlTarget =
@@ -131,7 +131,7 @@ export function ControlDialog({
             {t("process.admin.runDetail.ctl.cancel")}
           </Button>
           <Button
-            variant={op === "stop" ? "destructive" : "default"}
+            variant={op === "stop" ? "danger" : "primary"}
             disabled={!ready || pending}
             data-testid="control-confirm"
             onClick={() => {

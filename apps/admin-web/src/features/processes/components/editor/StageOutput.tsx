@@ -1,11 +1,11 @@
 // ADM-FR-66 · CR-056 · P-a F5: phần "kết quả" của một giai đoạn — tên tệp, mẫu, mục bắt buộc (chip), trường có cấu trúc.
 import { STAGE_SECTIONS_MAX } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { DraftErrors, StageDraft } from "../../lib/def-form";
 import { TextField } from "./Fields";
 import { OutputFields } from "./OutputFields";

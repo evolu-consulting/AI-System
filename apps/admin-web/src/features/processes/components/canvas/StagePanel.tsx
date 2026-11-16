@@ -1,8 +1,9 @@
 // ADM-FR-71 · P-b2 (plan-frontend §1): panel bên `complementary` "Chi tiết giai đoạn" — form của MỘT giai đoạn đang chọn.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { dlcDraftErrors, isDlcStep } from "../../lib/dlc-slot";
@@ -156,7 +157,7 @@ export function StagePanel({ d, w, readOnly, refs, variant = "column" }: Props) 
         <div className="mb-2 flex justify-end">
           <Button
             type="button"
-            variant="ghost"
+            variant="quiet"
             size="sm"
             aria-label={t("process.admin.canvas.drawer.close")}
             title={t("process.admin.canvas.drawer.close")}

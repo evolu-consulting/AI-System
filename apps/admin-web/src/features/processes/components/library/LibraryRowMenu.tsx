@@ -1,15 +1,16 @@
 // CR-121 f9 (UAT L2) · hành động của một dòng Thư viện gom vào menu "⋯" (như các bảng khác của admin) — bảng không tràn ở 1440px.
 // Sửa (mở trình sửa) · Nhân bản · Xoá (khoá + lý do khi là mặc định của khe / đang có công ty dùng).
-import { Link } from "@tanstack/react-router";
-import { MoreHorizontal } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import { Link } from "@tanstack/react-router";
+import { MoreHorizontal } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { deleteLock } from "../../lib/library-view";
 import type { LibraryListItem } from "../../library-api";
 
@@ -27,8 +28,8 @@ export function LibraryRowMenu({ row, onClone, onDelete }: Props) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="icon-sm"
+          variant="quiet"
+          size="icon"
           aria-label={t("common.moreActions")}
           data-testid="library-row-menu"
         >

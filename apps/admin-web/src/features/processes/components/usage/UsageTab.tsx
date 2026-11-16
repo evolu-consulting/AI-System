@@ -1,7 +1,8 @@
 // ADM-FR-67 · AC-H34 · P-a F5: tab "Token" của trang lượt chạy admin (KPI + bảng giai đoạn; admin xem `full` ⇒ mở rộng lượt gọi).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useUsageView } from "../../hooks/use-run-data";
 import { useUsageLocale } from "../../hooks/use-usage-locale";
 import { StageUsageTable } from "./StageUsageTable";

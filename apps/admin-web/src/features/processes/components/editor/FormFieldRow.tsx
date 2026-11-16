@@ -1,9 +1,10 @@
 // CR-118 · cr118-flow-admin: một trường của node `form` — nhãn, loại, mã, gợi ý, bắt buộc, giới hạn theo loại, lựa chọn (select).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import type { FormFieldDraft, FormOptionDraft } from "../../lib/draft-types";
 import { emptyOption, FORM_FIELD_TYPES, FORM_OPTIONS_MAX } from "../../lib/form-fields";
 import { SelectField, TextField } from "./Fields";
@@ -57,7 +58,7 @@ function Options(p: Pick<FormFieldRowProps, "id" | "field" | "readOnly" | "error
           {p.readOnly ? null : (
             <Button
               type="button"
-              variant="ghost"
+              variant="quiet"
               size="icon"
               className="mt-6"
               aria-label={t(`${K}removeOption`, { n: k + 1 })}
@@ -158,7 +159,7 @@ export function FormFieldRow(p: FormFieldRowProps) {
           <div className="flex gap-1">
             <Button
               type="button"
-              variant="ghost"
+              variant="quiet"
               size="icon"
               disabled={n === 1}
               aria-label={t(`${K}up`, { n })}
@@ -168,7 +169,7 @@ export function FormFieldRow(p: FormFieldRowProps) {
             </Button>
             <Button
               type="button"
-              variant="ghost"
+              variant="quiet"
               size="icon"
               disabled={n === p.count}
               aria-label={t(`${K}down`, { n })}
@@ -178,7 +179,7 @@ export function FormFieldRow(p: FormFieldRowProps) {
             </Button>
             <Button
               type="button"
-              variant="ghost"
+              variant="quiet"
               size="icon"
               aria-label={t(`${K}remove`, { n })}
               onClick={p.onRemove}

@@ -1,7 +1,8 @@
 // CR-121 · nút icon dùng chung: không viền, nhãn hiện khi hover/focus (tooltip), luôn có aria-label.
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 
 export type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label"> & {
   /** Nhãn: vừa là aria-label vừa là nội dung tooltip. */

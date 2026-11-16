@@ -1,9 +1,9 @@
 // CR-121 C-3b · ô "Cần xử lý ngay" (việc nào, bao nhiêu, bấm đi đâu) và ô "Sức khoẻ hệ thống" (4 chỉ báo + mức).
 import type { OpsOverview } from "@ai/contracts/hub-admin";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Link } from "@tanstack/react-router";
 import { Check, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 import {
   type AttentionRow,
   attentionRows,

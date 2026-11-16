@@ -1,12 +1,12 @@
 // ADM-FR-31 · M2-R22 · tab "Tenant": entitlement của feature (lưu ngay từng thao tác), cấp / thu hồi (Hoàn tác 5 s); `core` = "Mọi tenant".
 import type { Entitlement, FeatureDetail } from "@ai/contracts/features";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { Pagination } from "@/components/shared/Pagination";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/states/EmptyState";
-import { Button } from "@/components/ui/button";
 import { loadError } from "@/lib/load-error";
 import { useEntitlementActions } from "../hooks/use-entitlement-actions";
 import { ENTITLEMENTS_PAGE_SIZE, useEntitlements } from "../hooks/use-feature-queries";

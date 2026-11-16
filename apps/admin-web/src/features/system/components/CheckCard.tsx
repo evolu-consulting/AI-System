@@ -1,10 +1,10 @@
 // CR-104 · ops-ui · thẻ một check: huy hiệu trạng thái (màu + chữ), nhãn, thông điệp, giá trị, lúc kiểm/đổi, gợi ý sửa (chép được khi có lệnh).
 import type { OpsCheckKey, OpsCheckRow, OpsStatus } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
 import { copyText } from "@/lib/clipboard";
 import { extractCommand, formatValue } from "../lib/ops";
 
@@ -35,7 +35,7 @@ function Hint({ hint }: { hint: string }) {
         <Button
           type="button"
           variant="outline"
-          size="xs"
+          size="sm"
           className="mt-2"
           onClick={() => void copy()}
         >

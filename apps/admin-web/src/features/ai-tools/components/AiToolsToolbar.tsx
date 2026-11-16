@@ -1,9 +1,10 @@
 // CR-121 R6 · c16 · hàng chip (artboard AiTools): Tất cả · Đang bật · Chưa dùng + loại (Agent · Lệnh), ô "Tìm công cụ" bên phải.
+
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Bot, Terminal, Workflow, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SearchBox } from "@/components/shared/form/SearchBox";
-import { cn } from "@/lib/utils";
 import type { AiToolFilters, AiToolKind, StatusFilter, ToolCounts } from "../lib/ai-tools";
 
 function Chip(p: {

@@ -1,7 +1,5 @@
 // CR-104 · ops-ui · lịch sử 50 sự kiện: giờ, check, đổi trạng thái (từ → sang) hoặc "Đổi cấu hình bởi <người>".
 import type { OpsEvent, OpsStatus } from "@ai/contracts/hub-admin";
-import { useTranslation } from "react-i18next";
-import { StatusBadge } from "@/components/shared/StatusBadge";
 import {
   Table,
   TableBody,
@@ -9,7 +7,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@ai/web-kit/ui/kit/table";
+import { useTranslation } from "react-i18next";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { isCheckKey } from "../lib/ops";
 import { TONE, when } from "./CheckCard";
 

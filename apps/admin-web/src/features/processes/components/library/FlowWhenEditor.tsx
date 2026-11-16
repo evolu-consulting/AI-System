@@ -3,16 +3,16 @@
 
 import type { SlotFieldDto } from "@ai/contracts/hub-admin";
 import { type FlowWhen, isFlowCondGroup } from "@ai/contracts/pack-contracts";
-import { Group } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { Group } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   type Combiner,
   DEFAULT_FIELDS,
@@ -44,7 +44,7 @@ function OpToggle(p: { value: Combiner; onChange: (o: Combiner) => void; label: 
           key={o}
           type="button"
           size="sm"
-          variant={p.value === o ? "default" : "outline"}
+          variant={p.value === o ? "primary" : "outline"}
           aria-pressed={p.value === o}
           onClick={() => p.onChange(o)}
         >
@@ -161,7 +161,7 @@ export function FlowWhenEditor({ id, when, onChange, error, fields, groups = [] 
             {rowOf(c, `c${i}`, [i])}
             <Button
               type="button"
-              variant="ghost"
+              variant="quiet"
               size="sm"
               aria-label={f("toGroup")}
               title={f("toGroup")}

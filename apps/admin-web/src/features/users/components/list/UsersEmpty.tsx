@@ -1,8 +1,9 @@
 // ADM-FR-04 · trạng thái rỗng của Users: không có user / không khớp bộ lọc (kèm "Xoá bộ lọc").
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "@/components/shared/states/EmptyState";
-import { Button } from "@/components/ui/button";
 
 type Props = {
   filtered: boolean;

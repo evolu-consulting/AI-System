@@ -1,11 +1,11 @@
 // ADM-FR-40 · một hàng của bảng quota: phạm vi · 3 ô số (spinbutton "Số run · Kế toán") · nút Bỏ · thanh đã dùng.
 import type { QuotaStatus } from "@ai/contracts/quotas";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { TableCell, TableRow } from "@ai/web-kit/ui/kit/table";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { QuotaBar } from "@/components/shared/quota/QuotaBar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { TableCell, TableRow } from "@/components/ui/table";
 import { QUOTA_FIELDS, type QuotaField, type QuotaRow, validateCell } from "../../lib/quota-draft";
 
 type Props = {
@@ -117,7 +117,7 @@ export function QuotaRowView({
         {onRemove ? (
           <Button
             type="button"
-            variant="ghost"
+            variant="quiet"
             size="icon"
             aria-label={t("tenants.quota.remove", { feature: row.name })}
             onClick={onRemove}

@@ -1,12 +1,12 @@
 // CR-121 · R-3: dòng thời gian thu gọn được của lượt chạy; mục "chạy lại" có liên kết tới lượt liên quan (`ref_run_id`).
 
 import type { RunTimelineItem } from "@ai/contracts/chat";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatClock } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import { companySearch } from "../../lib/company-copy";
 
 type Props = { items: readonly RunTimelineItem[]; processKey: string; company?: string };

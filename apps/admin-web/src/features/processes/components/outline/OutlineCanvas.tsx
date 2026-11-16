@@ -3,10 +3,10 @@
 // Nút "+" là node nằm TRÊN đường nối; bấm khối = chọn + mở panel phải; lên / xuống / xoá hiện khi rê chuột lên khối.
 // Chunk nạp lười (`OutlineView` dùng `React.lazy`): kéo theo xyflow nên không nằm trong gói chính.
 import { FlowCanvas, HiddenHandle } from "@ai/flow-canvas";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import { type Edge, type Node, type NodeProps, Position } from "@xyflow/react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 import type { Loc } from "../../lib/outline-edit";
 import type { PickedNode } from "../flow/NodeMenuContent";
 import { AddGap, DoneRow, StartRow, StepRow, type StepRowProps } from "./OutlineRows";

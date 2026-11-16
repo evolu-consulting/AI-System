@@ -1,10 +1,11 @@
 // CR-125 · cr125-parallel-approval-ui · «A + B cùng duyệt» trên node Duyệt: công tắc «Duyệt cùng lúc nhiều nhóm» → danh sách nhóm (2–5, mỗi nhóm một nhãn
 // hiện trên thẻ) → luật Tất cả / Một trong số / Ít nhất N. Bật/tắt giữ nhóm đầu làm «Ai duyệt» của bước một nhóm. Lỗi lưu hiện cạnh ô (path `…after.parallel.*`).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { withCurrent } from "../../hooks/use-editor-refs";
 import {
   emptyParallelGroup,
@@ -61,7 +62,7 @@ function GroupRow(p: {
       {p.canRemove && !p.readOnly ? (
         <Button
           type="button"
-          variant="ghost"
+          variant="quiet"
           size="icon"
           className="mt-6"
           aria-label={t(`${K}remove`, { n: p.n + 1 })}

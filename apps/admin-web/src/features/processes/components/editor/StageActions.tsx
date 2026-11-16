@@ -1,5 +1,13 @@
 // ADM-FR-66 · ADM-FR-71 · P-b2: nút thao tác giai đoạn — Lên/Xuống (trong bước), đổi bước, tách bước, xoá.
 // Đây cũng là đường bàn phím/đọc màn hình thay cho kéo thả (plan-frontend FB8).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@ai/web-kit/ui/kit/dropdown-menu";
 import {
   ArrowDown,
   ArrowLeft,
@@ -10,13 +18,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { columnNeighbor } from "../../lib/step-ops";
 import { useFlowCtx } from "../flow/flow-ctx";
 import type { StageFormProps } from "./stage-form-props";
@@ -102,7 +103,7 @@ function FlowActions(p: StageFormProps & { alone: boolean }) {
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
-            variant="ghost"
+            variant="quiet"
             size="icon"
             aria-label={t("process.admin.flow.moreActions")}
             title={t("process.admin.flow.moreActions")}

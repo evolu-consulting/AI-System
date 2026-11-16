@@ -2,10 +2,11 @@
 // Khi nào chạy → bước → Nếu (hai cột Đúng / Sai, nhập lại) → Hoàn tất cố định; "+" trên đường nối; sửa chi tiết ở panel bên phải (StagePanel).
 // Vẽ bằng xyflow ở `OutlineCanvas` (nạp lười); file này giữ phần NGHIỆP VỤ: cây ⇄ bản nháp, thẻ từng bước, chèn / lên / xuống / xoá.
 // Nguồn thật là `StageDraft[]`; mọi phép sửa cấu trúc đi qua `lib/outline-edit` (cây ⇄ bản nháp, giữ uid) rồi `d.setStages`.
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
 import { lazy, Suspense, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { useStagesMax } from "../../hooks/use-stages-max";

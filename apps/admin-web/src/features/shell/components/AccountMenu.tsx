@@ -1,9 +1,5 @@
 // ADM-FR-01, ADM-FR-03, ADM-FR-08 · menu avatar: Đổi mật khẩu · Xác thực hai bước (không cho member, AC12) · Giao diện + Ngôn ngữ (PrefsPanel dùng chung) · Đăng xuất.
-import { PrefsPanel } from "@ai/web-kit/ui/PrefsPanel";
-import { Link } from "@tanstack/react-router";
-import { KeyRound, LogOut, ShieldCheck } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { IconButton } from "@/components/shared/IconButton";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +7,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import { PrefsPanel } from "@ai/web-kit/ui/PrefsPanel";
+import { Link } from "@tanstack/react-router";
+import { KeyRound, LogOut, ShieldCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { IconButton } from "@/components/shared/IconButton";
 import { useSession } from "@/lib/auth/use-session";
 import { useAccountActions } from "../hooks/use-account-actions";
 

@@ -1,12 +1,7 @@
 // feedback · /feedback (tenant_admin + platform_admin): danh sách góp ý của người dùng, lọc theo tenant (chỉ platform) · app · loại · trạng thái;
 // mở một dòng để đổi trạng thái (mới/đang xử lý/xong) và trả lời. Không gửi email.
 import { FEEDBACK_KINDS, FEEDBACK_STATUSES, type FeedbackItem } from "@ai/contracts/feedback";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Table,
   TableBody,
@@ -14,7 +9,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@ai/web-kit/ui/kit/table";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { ErrorState } from "@/components/shared/states/ErrorState";
 import { useTenantOptions } from "@/features/tenants/api";
 import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
@@ -123,7 +123,9 @@ export function FeedbackPage() {
               <TableCell>{t(`feedbackAdmin.kind.${x.kind}`)}</TableCell>
               <TableCell className="max-w-96 truncate">{x.message}</TableCell>
               <TableCell>
-                <Badge variant={TONE[x.status]}>{t(`feedbackAdmin.status.${x.status}`)}</Badge>
+                <StatusBadge tone={TONE[x.status]}>
+                  {t(`feedbackAdmin.status.${x.status}`)}
+                </StatusBadge>
               </TableCell>
             </TableRow>
           ))}

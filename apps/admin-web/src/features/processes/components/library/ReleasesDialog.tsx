@@ -1,17 +1,17 @@
 // CR-105 · L3 · B1: Lịch sử xuất bản + "Quay lại bản này" (Hub tạo bản MỚI bằng nội dung bản cũ, nháp về bản đó).
 
-import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@ai/web-kit/ui/kit/dialog";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { formatUpdated } from "@/lib/format";
 import { processErrorSpec } from "../../lib/errors";
 import {

@@ -1,10 +1,10 @@
 // HUB-FR-128 · HUB-FR-119 · P-c1 §1.2 · khối "Kết quả tự sửa mã": đầu + diff theo `status`.
 // Bản chép: admin-web `components/run/autofix/AutofixResult.tsx` (TECH-DEBT FC2). Hook tải ở `use-autofix-content`.
 import type { AutofixStageView } from "@ai/contracts/chat";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { firstFailureGroup, secondsLabel } from "../../../lib/autofix-view";
 import { DIFF_LINES_MAX } from "../../../lib/diff-parse";
 import { AutofixHead } from "./AutofixHead";

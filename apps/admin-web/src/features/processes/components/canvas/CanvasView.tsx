@@ -1,9 +1,10 @@
 // ADM-FR-71 · P-b2 (plan-frontend FB2/FB3, §1 "Trạng thái"): nạp canvas bằng `React.lazy` (chunk tên `canvas`).
 // Đang tải ⇒ StepList (không nhấp nháy rỗng); nạp lỗi ⇒ StepList + Alert + "Thử lại".
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Component, lazy, type ReactNode, Suspense, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { FlowContext } from "../flow/flow-ctx";
 import type { ProcessCanvasProps } from "./ProcessCanvas";
 import { StepList } from "./StepList";

@@ -1,5 +1,7 @@
 // ADM-FR-67 · CR-056 · CR-121 R-3: trang "Chi tiết lượt chạy" của admin (`/processes/$processId/runs/$runId`).
 // `processId` trong URL là KÝ HIỆU quy trình (không phải id) — chỉ để hiển thị; dữ liệu lấy theo `runId`.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -7,7 +9,6 @@ import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
 import { HubLoadError, HubNotConfigured } from "@/components/shared/states/HubLoadError";
 import { LoadingState } from "@/components/shared/states/LoadingState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
-import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/http";
 import { hubConfigured } from "@/lib/hub";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";

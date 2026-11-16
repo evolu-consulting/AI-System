@@ -1,8 +1,8 @@
 // HUB-FR-128 · P-c1 §1.3 · dòng tóm tắt tự sửa mã ở thẻ thread: "Tự sửa mã" · Vòng k · kiểm gần nhất · +i −d · n file · "Xem diff".
 import type { AutofixStageView } from "@ai/contracts/chat";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { lastCheck, secondsLabel } from "../../../lib/autofix-view";
 
 const K = "process.common.autofix.";
@@ -36,10 +36,12 @@ export function AutofixSummary({ view, onView }: Props) {
   const st = view.diff_stats;
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption">
-      <Badge variant="info">{t(`${K}title`)}</Badge>
-      <Badge variant="off">{t(`${K}round`, { n: view.round })}</Badge>
+      <StatusBadge tone="info">{t(`${K}title`)}</StatusBadge>
+      <StatusBadge tone="off">{t(`${K}round`, { n: view.round })}</StatusBadge>
       <span className="text-muted-foreground">{t(`${K}lastCheck`)}</span>
-      <Badge variant={CHECK_TONE[view.status] ?? "ok"}>{checkText(view, i18n.language, t)}</Badge>
+      <StatusBadge tone={CHECK_TONE[view.status] ?? "ok"}>
+        {checkText(view, i18n.language, t)}
+      </StatusBadge>
       {st && (
         <span className="text-muted-foreground">
           {`+${st.insertions} −${st.deletions} · ${t(`${K}diffStat`, { n: st.files })}`}

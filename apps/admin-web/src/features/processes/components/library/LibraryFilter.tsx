@@ -1,17 +1,18 @@
 // CR-120 · nút phễu của bảng thư viện: popover nhỏ (App · Việc · Trạng thái · Dùng bởi) + chip bộ lọc đang bật (bỏ từng cái). Lọc phía client.
-import { Filter, X } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai/web-kit/ui/kit/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { Filter, X } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useTr } from "@/lib/use-translate";
 import { useAssignableTenants } from "../../hooks/use-assignable-tenants";
 import {
@@ -53,7 +54,7 @@ function Pick(p: {
   return (
     <Field label={p.label}>
       <Select value={p.value ?? ALL} onValueChange={(v) => p.onChange(v === ALL ? undefined : v)}>
-        <SelectTrigger size="sm" className="w-full" aria-label={p.label}>
+        <SelectTrigger className="h-8 w-full" aria-label={p.label}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

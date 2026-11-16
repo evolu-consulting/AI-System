@@ -15,6 +15,7 @@ export const buttonVariants = cva(
         outline: "border-[1.5px] border-primary bg-card text-primary hover:bg-accent",
         quiet: "border border-input bg-card font-medium text-foreground hover:bg-muted",
         danger: "border-[1.5px] border-danger bg-card text-danger hover:bg-danger-bg",
+        link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
         md: "h-[var(--control-md)] rounded-md px-4 text-md",

@@ -1,6 +1,9 @@
 // CR-121 c17 · Q1/Q9/Q11 · quy trình THƯ VIỆN mở từ Công ty › Quy trình: CHỈ XEM (sơ đồ mặc định, danh sách bước là chế độ phụ).
 // CR-127 · Z5: không còn "Sao chép cho công ty này" — chỉ quản trị nền tảng soạn; bản riêng đã có (dữ liệu cũ) vẫn mở được.
 
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,9 +12,6 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { HubLoadError } from "@/components/shared/states/HubLoadError";
 import { LoadingState } from "@/components/shared/states/LoadingState";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FlowRowsView } from "@/features/apps/components/SlotFlowView";
 import { rowsFromSlotBody } from "@/features/apps/lib/flow-view";
 import { useLibraryView } from "@/features/tenants/flows/api";

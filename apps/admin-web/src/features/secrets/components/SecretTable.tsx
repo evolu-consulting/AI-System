@@ -1,18 +1,18 @@
 // ADM-FR-50 · bảng Secrets: tên (mono), `•••• last4`, ghi chú, đang được dùng bởi, cập nhật, menu `⋯`. Không có hành động xem/copy giá trị.
 import type { Secret } from "@ai/contracts/secrets";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@ai/web-kit/ui/kit/dropdown-menu";
 import { Link } from "@tanstack/react-router";
 import { MoreHorizontal } from "lucide-react";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { formatUpdated } from "@/lib/format";
 
 export type SecretAction = "replace" | "note" | "delete";
@@ -51,7 +51,7 @@ function RowMenu({ secret, onAction }: { secret: Secret; onAction: Props["onActi
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label={t("common.moreActions")}>
+        <Button variant="quiet" size="icon" aria-label={t("common.moreActions")}>
           <MoreHorizontal aria-hidden />
         </Button>
       </DropdownMenuTrigger>

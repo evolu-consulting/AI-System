@@ -1,10 +1,7 @@
 // CR-127 · U2 · M1 (mock Main.dc) · hộp "Tạo quy trình": Công ty (dropdown + một dòng tóm tắt) → Tên → "Bắt đầu từ" HAI thẻ (Sơ đồ trống / Từ mẫu Thư viện)
 // → "Tạo và mở sơ đồ" (xong mở thẳng màn soạn). Ứng dụng: công ty bật MỘT app có quy trình ⇒ dùng luôn; ≥ 2 ⇒ hỏi "Quy trình cho"; không có ⇒ nói rõ + link.
 import { APP_MANIFESTS } from "@ai/contracts/app-manifest";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
@@ -12,16 +9,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAssignableTenants } from "@/features/processes/hooks/use-assignable-tenants";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
@@ -195,7 +195,7 @@ export function CreateFlowDialog({ tenantId, tenantName, open, onOpenChange }: P
           ) : null}
         </div>
         <DialogFooter>
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="quiet" onClick={() => onOpenChange(false)}>
             {t("common.cancel")}
           </Button>
           <Button

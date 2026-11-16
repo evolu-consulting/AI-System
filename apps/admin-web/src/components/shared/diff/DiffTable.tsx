@@ -1,9 +1,9 @@
 // ADM-FR-55, ADM-FR-51 · M3-R20 · M4-R12 · bảng khác biệt theo trường dùng chung (Xung đột, Nhật ký, Import; plan-frontend D5).
 // Mặc định = bố cục xung đột (Trường · Bản của bạn · Bản mới nhất); `labels` đổi tiêu đề; `mode` create/delete chỉ còn một cột;
 // `markChanged` thêm chữ "đã đổi" (không chỉ dựa vào màu); `unchanged` thu gọn các trường không đổi sau nút "{n} trường không đổi · Hiện".
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import {
   Table,
   TableBody,
@@ -12,9 +12,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@ai/web-kit/ui/kit/table";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { DiffRow } from "@/lib/diff-fields";
-import { cn } from "@/lib/utils";
 
 export type DiffMode = "update" | "create" | "delete";
 export type DiffLabels = { caption: string; field: string; before: string; after: string };

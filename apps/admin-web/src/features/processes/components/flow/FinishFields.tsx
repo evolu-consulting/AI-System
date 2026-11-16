@@ -1,16 +1,17 @@
 // CR-122 · U1 · FLOW2-FR-15: form của node "Kết thúc" — chọn kết quả app khai cho sự kiện; hiện câu "app sẽ làm gì".
-import { Trash2 } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { StageDraft } from "../../lib/draft-types";
 import { useFlowCtx } from "./flow-ctx";
 
@@ -67,7 +68,7 @@ export function FinishFields({ stage, readOnly, onChange, onRemove }: Props) {
         )}
       </div>
       {readOnly ? null : (
-        <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
+        <Button type="button" variant="quiet" size="sm" onClick={onRemove}>
           <Trash2 aria-hidden className="size-4" />
           {t("process.admin.editor.remove")}
         </Button>

@@ -1,15 +1,15 @@
 // ADM-FR-67 · CR-056 · P-a F5: hộp thoại "Kết quả giai đoạn … · v…" — nội dung `<pre>` từ `/outputs/:oid` (admin xem `full`).
 import type { StageView } from "@ai/contracts/chat";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { useTranslation } from "react-i18next";
 import { useRunOutput } from "../../hooks/use-run-data";
 import { KnowledgeNotice } from "./KnowledgeNotice";
 

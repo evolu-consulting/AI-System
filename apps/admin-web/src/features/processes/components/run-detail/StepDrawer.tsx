@@ -1,11 +1,11 @@
 // CR-121 · R-3: ngăn "Nhật ký bước n" — tab Cơ bản (câu dễ hiểu, người xử lý, kết quả) / Gỡ lỗi (chỉ khi server trả debug).
 import type { RunStageLog } from "@ai/contracts/chat";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
 import { useTranslation } from "react-i18next";
 import { DetailDrawer } from "@/components/shared/list/DetailDrawer";
 import type { StatusTone } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatClock } from "@/lib/format";
 import { formatDuration, hasDebugTab } from "../../lib/run-detail-view";
 import type { OutputTarget } from "../run/OutputDialog";

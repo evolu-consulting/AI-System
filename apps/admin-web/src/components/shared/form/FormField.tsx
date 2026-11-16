@@ -1,7 +1,8 @@
 // ADM-FR-60 · FormField mỏng (thay `form` của shadcn): nhãn + control + mô tả + lỗi, aria-describedby/aria-invalid.
+
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { CircleAlert } from "lucide-react";
 import type { ReactNode } from "react";
-import { Label } from "@/components/ui/label";
 
 export type FieldControlProps = {
   id: string;

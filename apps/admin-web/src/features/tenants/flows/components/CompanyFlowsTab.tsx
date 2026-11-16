@@ -1,10 +1,11 @@
 // CR-122 · U2 · tab "Quy trình" của công ty — MỘT danh sách flow (`company_flows`) thay "việc → quy trình → luật" của CR-121.
 // platform_admin + tenant_admin công ty mình.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
-import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
 import { useCompanyFlowList } from "../company-flows-api";

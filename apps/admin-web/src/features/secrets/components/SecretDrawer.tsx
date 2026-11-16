@@ -1,10 +1,6 @@
 // ADM-FR-50 · M2-R04 · drawer 520px: Thêm secret / Thay giá trị / Sửa ghi chú (URL `?drawer=new|replace|note&secret=`).
 import type { Secret } from "@ai/contracts/secrets";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { DependencyList } from "@/components/shared/DependencyList";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Sheet,
   SheetContent,
@@ -12,8 +8,12 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@ai/web-kit/ui/kit/sheet";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { DependencyList } from "@/components/shared/DependencyList";
 import { formatUpdated } from "@/lib/format";
 import type { SecretFormMode, SecretFormValues } from "../lib/schemas";
 import { SecretForm, type SecretFormErrors } from "./SecretForm";

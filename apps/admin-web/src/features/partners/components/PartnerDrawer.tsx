@@ -1,5 +1,13 @@
 // ADM-FR-75 · drawer tài khoản của một công ty đối tác (`?org=`): danh sách, `+ Thêm tài khoản` (ẩn khi công ty đã vô hiệu), menu từng tài khoản.
 import type { User } from "@ai/contracts/users";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@ai/web-kit/ui/kit/sheet";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/components/shared/DataTable";
@@ -7,14 +15,6 @@ import { SearchBox } from "@/components/shared/form/SearchBox";
 import { Pagination } from "@/components/shared/Pagination";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/states/EmptyState";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { isApiError } from "@/lib/errors";
 import { useTr } from "@/lib/use-translate";
 import { PARTNERS_PAGE_SIZE, useOrg, useOrgUsers } from "../hooks/use-partner-data";

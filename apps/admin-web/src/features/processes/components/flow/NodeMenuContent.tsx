@@ -4,15 +4,15 @@
 import type { AppNodeDecl } from "@ai/contracts/app-manifest";
 import { startOutputsOf } from "@ai/contracts/app-manifest";
 import { FLOW_PALETTE_MIME } from "@ai/flow-canvas/pure";
-import { notifyInfo } from "@ai/web-kit/ui/toast";
-import { useTranslation } from "react-i18next";
 import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import { notifyInfo } from "@ai/web-kit/ui/toast";
+import { useTranslation } from "react-i18next";
 import { useSession } from "@/lib/auth/use-session";
 import { autoBindNode, mapSources } from "../../lib/auto-bind";
 import type { StageDraft } from "../../lib/def-form";

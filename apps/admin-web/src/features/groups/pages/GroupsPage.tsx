@@ -1,9 +1,10 @@
 // ADM-FR-62 · /groups (mẫu A): Tenant (platform), ô tìm, bảng phân trang server 50 dòng, `+ Tạo group`, sửa/xoá theo hàng.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
-import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
 import { GroupFilters } from "../components/list/GroupFilters";
 import { GroupsEmpty } from "../components/list/GroupsEmpty";

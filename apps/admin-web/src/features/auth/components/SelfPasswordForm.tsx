@@ -1,11 +1,12 @@
 // ADM-FR-06 · form tự đổi mật khẩu: hiện tại + mới + nhập lại; lỗi server gắn vào ô tương ứng.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
 import { PasswordField } from "@/components/shared/form/PasswordField";
-import { Button } from "@/components/ui/button";
 import { useTr } from "@/lib/use-translate";
 import { type SelfPasswordValues, selfPasswordSchema } from "../lib/schemas";
 import { PasswordStrength } from "./PasswordStrength";

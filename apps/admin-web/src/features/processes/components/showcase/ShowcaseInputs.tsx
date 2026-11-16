@@ -1,8 +1,8 @@
 // CR-103 · R4 fnr-showcase: form input của flow mẫu + nút "Chạy thử" + hai kịch bản điền sẵn. Trình bày thuần.
 import type { ProcessInputDef } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { inputIssues, SHOWCASE_PRESETS } from "../../lib/showcase";
 import { TextField } from "../editor/Fields";
 

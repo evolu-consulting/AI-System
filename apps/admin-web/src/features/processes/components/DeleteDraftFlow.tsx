@@ -1,12 +1,12 @@
 // CR-127 · Z7 · «Xoá» quy trình NHÁP của công ty (chưa áp dụng, chưa có lượt chạy) — một nút + hộp xác nhận dùng chung cho trang Quy trình theo
 // công ty và màn soạn. Hub quyết định (`deletable`); đã áp dụng/có lượt chạy ⇒ không hiện nút (Tắt thay). Chỉ quản trị nền tảng.
 import type { CompanyFlowRow } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { Button } from "@/components/ui/button";
 import { companyFlowsKey } from "@/features/tenants/flows/company-flows-api";
 import { deleteDef, useInvalidateDefs } from "../api";
 import { processErrorSpec } from "../lib/errors";
@@ -41,7 +41,7 @@ export function DeleteDraftFlow({ tenantId, flow, onDeleted }: Props) {
   return (
     <>
       <Button
-        variant="ghost"
+        variant="quiet"
         size="sm"
         className="text-destructive"
         onClick={() => setOpen(true)}

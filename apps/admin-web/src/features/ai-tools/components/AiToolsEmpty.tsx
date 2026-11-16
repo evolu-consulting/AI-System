@@ -1,8 +1,9 @@
 // CR-121 R6 · c16 · trạng thái rỗng của danh sách: chưa có công cụ · lọc "Chưa dùng" mà mọi công cụ đều có người dùng · không khớp.
+
+import { Button, buttonVariants } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "@/components/shared/states/EmptyState";
-import { Button, buttonVariants } from "@/components/ui/button";
 import type { AiToolFilters } from "../lib/ai-tools";
 
 type Props = { filters: AiToolFilters; onClear: () => void };
@@ -16,7 +17,7 @@ export function AiToolsEmpty({ filters, onClear }: Props) {
         title={t("aiTools.empty")}
         message={t("aiTools.emptyDesc")}
         action={
-          <Link to="/workflows/new" className={buttonVariants({ variant: "outline" })}>
+          <Link to="/workflows/new" className={buttonVariants({ variant: "outline", size: "md" })}>
             {t("aiTools.create")}
           </Link>
         }

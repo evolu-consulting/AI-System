@@ -1,8 +1,9 @@
 // ADM-FR-41, ADM-FR-42 · CR-121 C-3b · Tổng quan `/`: platform_admin → bento vận hành (Hub `/ops/overview`), tenant_admin → bản TenantOverview. member đã bị chuyển sang /member.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
 import { formatClock } from "@/lib/format";
 import { loadError } from "@/lib/load-error";

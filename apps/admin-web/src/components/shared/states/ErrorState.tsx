@@ -1,8 +1,9 @@
 // ADM-FR-60 · lỗi tải: `alert` "Không tải được dữ liệu" + "{message} (mã {code})" + Thử lại.
+
+import { Alert, AlertDescription, AlertTitle } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { CircleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 
 type Props = { message: string; code: string; onRetry?: () => void };
 

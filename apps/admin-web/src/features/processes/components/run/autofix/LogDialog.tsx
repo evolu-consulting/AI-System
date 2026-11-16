@@ -1,7 +1,8 @@
 // HUB-FR-128 · P-c1 §1.2 · "Xem log": Dialog đuôi 30 dòng log test (đã che bí mật phía Runtime). Chỉ tải khi mở.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@ai/web-kit/ui/kit/dialog";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { type LoadContent, useAutofixLog } from "./use-autofix-content";
 
 type Props = {

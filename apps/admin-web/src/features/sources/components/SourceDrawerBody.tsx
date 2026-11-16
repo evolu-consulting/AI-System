@@ -1,8 +1,8 @@
 // ADM-FR-68 · PB-R21 · thân drawer theo trạng thái: không tìm thấy / đang tải / XEM (không form, không path) / form + kiểm tra kết nối.
 import type { SourceView } from "@ai/contracts/hub-admin";
+import { Alert } from "@ai/web-kit/ui/kit/alert";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import { useTranslation } from "react-i18next";
-import { Alert } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useTr } from "@/lib/use-translate";
 import type { CheckState } from "../hooks/use-source-check";
 import { CheckPanel } from "./CheckPanel";

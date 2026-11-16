@@ -4,19 +4,19 @@ import {
   type AppCatalogItem,
   type AppCreateRequest,
 } from "@ai/contracts/app-catalog";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const BLANK: AppCreateRequest = {
   key: "",

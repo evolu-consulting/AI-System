@@ -1,17 +1,17 @@
 // ADM-FR-42 · usage-analytics · thanh lọc: tenant (chỉ platform_admin), khoảng ngày (preset), xô thời gian, app, agent,
 // model, user, kết quả; "Xoá lọc". Danh sách chọn lấy từ breakdown hiện có (giá trị đang chọn luôn có trong danh sách).
 import type { UsageAnalytics, UsageBreakdownRow } from "@ai/contracts/usage-analytics";
-import { X } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { TenantPicker } from "@/components/shared/TenantPicker";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { TenantPicker } from "@/components/shared/TenantPicker";
 import type { AnalyticsSearch, AnalyticsView } from "../hooks/use-analytics-view";
 import { PRESETS, type Preset } from "../lib/view";
 import { useAppLabel } from "./labels";
@@ -125,7 +125,7 @@ export function FilterBar({ v, data }: { v: AnalyticsView; data: UsageAnalytics 
         "w-36",
       )}
       {filtered ? (
-        <Button type="button" variant="ghost" size="sm" onClick={v.clear}>
+        <Button type="button" variant="quiet" size="sm" onClick={v.clear}>
           <X aria-hidden className="size-4" />
           {t("usageAnalytics.filter.clear")}
         </Button>

@@ -1,20 +1,20 @@
 // ADM-FR-60 · form tạo tenant (canvas TenantCreate): card Công ty + card Tenant admin đầu tiên, một nút "Tạo tenant" cuối trang.
 import { TENANT_TZ_DEFAULT } from "@ai/contracts/tenants";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { FormField } from "@/components/shared/form/FormField";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@ai/web-kit/ui/kit/card";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { FormField } from "@/components/shared/form/FormField";
 import { foldKeyInput } from "@/lib/normalize";
 import { useTr } from "@/lib/use-translate";
 import { type TenantCreateValues, tenantCreateSchema } from "../lib/schemas";

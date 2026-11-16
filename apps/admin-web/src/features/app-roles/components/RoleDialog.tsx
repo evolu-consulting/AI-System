@@ -1,8 +1,6 @@
 // CR-112 · ADM-FR-80 · hộp thoại "Tạo vai" / "Sửa vai" (tên + mức). Chỉ ghi vào bản nháp; lưu thật ở nút Lưu của trang.
 import type { AppRoleLevel } from "@ai/contracts/app-roles";
-import { useId, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +8,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { LEVEL_KEY, LEVELS } from "../lib/levels";
 
 export const NAME_MAX = 64;

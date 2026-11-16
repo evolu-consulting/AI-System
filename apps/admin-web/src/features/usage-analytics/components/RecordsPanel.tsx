@@ -1,11 +1,11 @@
 // ADM-FR-42 · usage-analytics · bảng bản ghi usage thô (cùng bộ lọc): thời điểm, tenant, user, app, tính năng, agent, model,
 // kết quả, token vào/ra, độ trễ, chi phí (platform). Trước/Sau (keyset), xuất CSV, bấm run ⇒ chi tiết run. Chỉ trình bày.
 import type { UsageRecord } from "@ai/contracts/usage-analytics";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatCount, formatUsd } from "@/lib/quota-format";
 import { useAppLabel } from "./labels";
 
@@ -14,7 +14,7 @@ const OUTCOME = { ok: "ok", error: "err", cancelled: "off" } as const;
 export function OutcomeBadge({ o }: { o: UsageRecord["outcome"] }) {
   const { t } = useTranslation();
   if (o === null) return <span className="text-muted-foreground">—</span>;
-  return <Badge variant={OUTCOME[o]}>{t(`usageAnalytics.outcome.${o}`)}</Badge>;
+  return <StatusBadge tone={OUTCOME[o]}>{t(`usageAnalytics.outcome.${o}`)}</StatusBadge>;
 }
 
 const td = "py-1.5 pr-3";

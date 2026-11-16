@@ -1,7 +1,8 @@
 // CR-121 c14b · chép mã công ty (artboard Tpl-Settings: "Đã chép"). Trình duyệt chặn clipboard ⇒ nói cách làm (chọn và chép tay).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { copyText } from "@/lib/clipboard";
 
 export function CopyKeyButton({ value }: { value: string }) {

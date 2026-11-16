@@ -1,10 +1,11 @@
 // ADM-FR-71 · HUB-FR-146 · AC-H44 · AC-H47 · P-d2 (plan-frontend-d2 §10; mockup 04 E1/E2): khối stage "Gọi tool" — chọn tool khả dụng
 // của công ty, bản đồ tham số, kết quả (tên tệp + trường). Nạp lười (chỉ khi chọn "Gọi tool"). Lỗi: live (cùng luật contract) + server.
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { fieldOptions, inputOptions, type ToolShape } from "../../domain/tool-rules";
 import { useProcessTools } from "../../hooks/use-process-tools";
 import { canRealAction } from "../../lib/def-form";
@@ -101,8 +102,12 @@ export default function StageTool(p: StageFormProps) {
         <div className="flex items-center justify-between gap-2">
           <strong className="text-label font-medium">{t(`${K}title`)}</strong>
           <span className="flex gap-1.5">
-            {tool?.side_effect ? <Badge variant="warn">{t(`${K}sideEffect`)}</Badge> : null}
-            {ok ? <Badge variant="ok">{t("process.admin.editor.stage.wait.valid")}</Badge> : null}
+            {tool?.side_effect ? (
+              <StatusBadge tone="warn">{t(`${K}sideEffect`)}</StatusBadge>
+            ) : null}
+            {ok ? (
+              <StatusBadge tone="ok">{t("process.admin.editor.stage.wait.valid")}</StatusBadge>
+            ) : null}
           </span>
         </div>
         <p className="text-caption text-muted-foreground">{t(`${K}hint`)}</p>

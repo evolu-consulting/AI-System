@@ -1,11 +1,15 @@
 // ADM-FR-23 · X1 F4 · kết quả "Chạy thử" (plan-frontend §2.2): dòng "{ms} ms · {in}+{out} token", tab Kết quả · Raw · Các bước;
 // `ok:false` → Alert 1 dòng + "Chi tiết từ Dify" (ẩn khi `detail` null). Không thêm lib markdown: `<pre>` xuống dòng.
 import type { CommandTestResponse } from "@ai/contracts/command-test";
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@ai/web-kit/ui/kit/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const PRE =
   "max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-label";

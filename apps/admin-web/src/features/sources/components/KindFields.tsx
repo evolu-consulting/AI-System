@@ -1,11 +1,12 @@
 // ADM-FR-68 · HUB-BR-30 · trường theo loại nguồn: git (url + nhánh + ghi chú kho công khai), library (picker tài liệu), local_path (đường dẫn + cảnh báo).
 // Không có ô mật khẩu/token (D2). `path` chỉ tồn tại trong cây này khi form do platform_admin mở (controller không cấp cho vai khác).
+
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import type { UseFormReturn } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import type { LibraryDocPickerData } from "../hooks/use-library-doc-picker";
 import type { SourceFormValues } from "../lib/schemas";
 import { ApplyModeField } from "./ApplyModeField";
@@ -127,7 +128,7 @@ function LocalFields({ form, formId, error }: Omit<Props, "picker" | "tenantId">
       <div className="space-y-1.5">
         <Label>{t("process.sources.applyMode.label")}</Label>
         <div>
-          <Badge variant="secondary">{t("process.sources.applyMode.local")}</Badge>
+          <StatusBadge tone="off">{t("process.sources.applyMode.local")}</StatusBadge>
         </div>
         <p className="text-caption text-muted-foreground">
           {t("process.sources.applyMode.local.hint")}

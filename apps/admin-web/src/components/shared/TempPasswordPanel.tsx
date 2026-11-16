@@ -1,10 +1,10 @@
 // ADM-FR-60, ADM-FR-04 · khối mật khẩu tạm (D10): 4 nhóm 4 ký tự bằng <span> (aria-hidden), ô readOnly giữ chuỗi gốc 16 ký tự.
 
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { copyText } from "@/lib/clipboard";
 
 const GROUP = 4;

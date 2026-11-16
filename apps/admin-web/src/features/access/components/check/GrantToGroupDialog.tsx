@@ -1,7 +1,6 @@
 // ADM-FR-32 · ADM-FR-36 · F4 · hộp thoại "Cấp {feature} cho group": chọn group (group của user xếp đầu) → Cấp (một batch).
 import type { FeatureMini } from "@ai/contracts/access";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
   DialogContent,
@@ -9,15 +8,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+} from "@ai/web-kit/ui/kit/dialog";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { useTranslation } from "react-i18next";
 import { pickLocalized } from "@/lib/localized";
 import { useGrantToGroup } from "../../hooks/use-grant-to-group";
 

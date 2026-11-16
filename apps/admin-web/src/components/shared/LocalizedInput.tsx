@@ -1,9 +1,10 @@
 // ADM-FR-20, ADM-FR-30 · M2 · một ô văn bản có tablist "Ngôn ngữ" VI/EN; đổi tab đổi giá trị đang sửa; badge "EN thiếu" khi EN trống.
+
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Tabs, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
+import { Textarea } from "@ai/web-kit/ui/kit/textarea";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "./form/FormField";
 import { StatusBadge } from "./StatusBadge";
 

@@ -4,7 +4,7 @@ import type { UsageTreeRow } from "@ai/contracts/usage-analytics";
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { formatCount, formatUsd } from "@/lib/quota-format";
 import { sharePct } from "../lib/view";
 import { useAppLabel, useTierLabel } from "./labels";
@@ -70,7 +70,7 @@ export function FlowTable({ rows, loading, error }: Props) {
                       </th>
                       <td className="py-1.5 pr-3">
                         <span className="font-mono text-caption">{r.model ?? "—"}</span>{" "}
-                        <Badge variant="outline">{tierLabel(r.tier)}</Badge>
+                        <StatusBadge tone="off">{tierLabel(r.tier)}</StatusBadge>
                       </td>
                       <td className="py-1.5 pr-3 tabular-nums">{formatCount(r.tokens, lang)}</td>
                       <td className="py-1.5 pr-3 tabular-nums">{sharePct(r.tokens, total)}%</td>

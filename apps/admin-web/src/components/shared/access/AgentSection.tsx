@@ -1,10 +1,10 @@
 // ADM-FR-36 · ADM-FR-37 · nhóm "Agent" của AccessExplainer (plan-frontend §2.4): trình bày, KHÔNG fetch.
 // Thấy trước rồi không thấy; mỗi dòng ✓/✕ + tên + lý do (grant) hoặc điều còn thiếu (missing).
 import type { AgentMissing, EffectiveAgent } from "@ai/contracts/hub-admin";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import { Check, X } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Skeleton } from "@/components/ui/skeleton";
 import { pickLocalized } from "@/lib/localized";
 import { useTr } from "@/lib/use-translate";
 import { HubLoadError, HubNotConfigured } from "../states/HubLoadError";

@@ -1,8 +1,9 @@
 // ADM-FR-74 · trạng thái rỗng của Đối tác: chưa chọn tenant (platform) / chưa có công ty / không khớp bộ lọc.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "@/components/shared/states/EmptyState";
-import { Button } from "@/components/ui/button";
 
 type Props = {
   needsTenant: boolean;

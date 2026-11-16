@@ -1,10 +1,11 @@
 // ADM-FR-36 · M3-R13 · tab "Quyền hiệu lực" (CHỈ ĐỌC): AccessExplainer dùng chung + link "Mở Kiểm tra quyền" (/access?tab=check&user=&tenant=).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { AccessExplainer } from "@/components/shared/access/AccessExplainer";
 import { ErrorState } from "@/components/shared/states/ErrorState";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useEffectiveAgentsState } from "@/features/hub/hooks/use-effective-agents";
 import { useUserAccess } from "../../hooks/use-user-access";
 

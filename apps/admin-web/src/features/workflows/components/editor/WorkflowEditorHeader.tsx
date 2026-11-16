@@ -1,11 +1,11 @@
 // ADM-FR-14 · AC-A13 · đầu trang editor Workflow: tên (hoặc "Workflow mới"), key mono, badge Chưa gắn/Bật/Tắt, link "Tạo command từ workflow này".
 import type { Workflow } from "@ai/contracts/workflows";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
 
 export function WorkflowEditorHeader({ workflow }: { workflow?: Workflow }) {
   const { t } = useTranslation();

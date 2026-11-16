@@ -1,10 +1,11 @@
 // ADM-FR-35 · ADM-FR-36 · M3-R13 · tab Phân quyền của workspace công ty (CR-112): 2 tab con Ma trận · Kiểm tra quyền; tenant theo workspace.
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai/web-kit/ui/kit/tabs";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RolesPanel } from "@/features/app-roles/components/RolesPanel";
 import { useSession } from "@/lib/auth/use-session";
 import { CheckTab } from "../components/check/CheckTab";

@@ -2,11 +2,11 @@
 // Quota (#quota), Khoá công ty. MỘT thanh lưu chung "Có thay đổi chưa lưu · Huỷ · Lưu" cho cả form Thông tin và form Quota; công ty đang khoá ⇒ banner.
 // Chỉ platform_admin sửa/khoá; tenant_admin xem (Quota rút gọn, không tiền).
 import type { TenantDetail } from "@ai/contracts/tenants";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { notifyError } from "@ai/web-kit/ui/toast";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "@/components/shared/ConnectionBanner";
-import { Button } from "@/components/ui/button";
 import { TenantQuotaReadonly } from "../components/quota/TenantQuotaReadonly";
 import { TenantQuotaTab } from "../components/quota/TenantQuotaTab";
 import { TenantDefaultAppCard } from "../components/TenantDefaultAppCard";
@@ -60,7 +60,7 @@ function LockSection(p: { locked: boolean; onLock: () => void; onUnlock: () => v
         {t(p.locked ? "tenants.settings.lockedNote" : "tenants.settings.lockNote")}
       </p>
       <Button
-        variant={p.locked ? "outline" : "destructive"}
+        variant={p.locked ? "outline" : "danger"}
         data-testid="settings-lock"
         onClick={p.locked ? p.onUnlock : p.onLock}
       >

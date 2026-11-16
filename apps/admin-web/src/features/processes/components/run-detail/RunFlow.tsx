@@ -1,5 +1,6 @@
 // CR-121 · R-3: sơ đồ ngang các bước của lượt chạy (hạt sáng tới bước đang chạy, viền nhấp nháy). Bấm bước ⇒ mở nhật ký bước.
 import type { RunDetailStep } from "@ai/contracts/chat";
+import { cn } from "@ai/web-kit/ui/kit/cn";
 import {
   Bell,
   Check,
@@ -13,7 +14,6 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 import { type NodeTone, nodeKindOf } from "../../lib/run-detail-view";
 
 const TONE_CLASS: Record<NodeTone, string> = {

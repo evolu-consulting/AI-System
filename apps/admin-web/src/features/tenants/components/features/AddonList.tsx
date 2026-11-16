@@ -1,7 +1,8 @@
 // CR-111 · danh sách tính năng thêm (hoặc mọi feature của app dạng danh sách): tên dễ hiểu + mô tả + công tắc.
+
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Switch } from "@/components/ui/switch";
 import { featureText } from "@/features/features/lib/feature-label";
 import { useTr } from "@/lib/use-translate";
 import type { TenantFeature } from "../../lib/feature-assign";

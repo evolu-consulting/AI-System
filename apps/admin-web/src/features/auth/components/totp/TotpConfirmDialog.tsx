@@ -1,10 +1,6 @@
 // ADM-FR-08 · ms §10.1 · hộp thoại Tắt 2FA (mật khẩu + mã) / Tạo lại mã dự phòng (mã): bấm nút mới gửi,
 // sai → alert trong hộp thoại, hộp thoại giữ mở.
-import { type FormEvent, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { OtpInput } from "@/components/shared/form/OtpInput";
-import { isOtpComplete } from "@/components/shared/form/otp";
-import { PasswordField } from "@/components/shared/form/PasswordField";
+
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -13,9 +9,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+} from "@ai/web-kit/ui/kit/alert-dialog";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { type FormEvent, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { OtpInput } from "@/components/shared/form/OtpInput";
+import { isOtpComplete } from "@/components/shared/form/otp";
+import { PasswordField } from "@/components/shared/form/PasswordField";
 import type { TotpConfirmValues } from "../../lib/totp-steps";
 
 type Props = {
@@ -88,7 +89,7 @@ export function TotpConfirmDialog(p: Props) {
             </AlertDialogCancel>
             <Button
               type="submit"
-              variant={p.destructive ? "destructive" : "default"}
+              variant={p.destructive ? "danger" : "primary"}
               disabled={!ready || p.busy}
             >
               {p.confirmLabel}

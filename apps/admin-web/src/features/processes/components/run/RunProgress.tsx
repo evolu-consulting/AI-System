@@ -1,7 +1,6 @@
 // ADM-FR-67 · CR-056 · P-a F5: tab "Tiến độ" — bảng giai đoạn (trạng thái, lần chạy, các phiên bản kết quả).
 import type { StageView } from "@ai/contracts/chat";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Table,
   TableBody,
@@ -9,7 +8,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@ai/web-kit/ui/kit/table";
+import { useTranslation } from "react-i18next";
 import { ApplySummary } from "./apply/ApplySummary";
 import { autofixAnchor } from "./autofix/AutofixBlocks";
 import { AutofixSummary } from "./autofix/AutofixSummary";

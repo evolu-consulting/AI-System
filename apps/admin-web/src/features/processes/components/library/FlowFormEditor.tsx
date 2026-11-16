@@ -2,10 +2,11 @@
 // CR-121 D-3: theo khuôn mockup — đầu trang (Loại + nguồn + phiên bản), thanh trạng thái, bộ đếm n/20, nút thêm bước chỉ icon theo
 // `nodes` của khe. Công tắc Danh sách | Sơ đồ = "Cách xem" của thanh công cụ (Sơ đồ = Canvas flow-canvas hiện có): không dựng control thứ hai.
 // Thân không biểu diễn được bằng Form (song song, nhánh…) ⇒ chỉ xem + "Sửa ở Canvas".
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { useApplyFlow } from "../../hooks/use-apply-flow";
 import { useFlowForm } from "../../hooks/use-flow-form";
 import { copyTenantId, saveModeOf } from "../../lib/company-copy";

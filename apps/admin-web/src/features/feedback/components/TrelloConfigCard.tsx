@@ -1,14 +1,14 @@
 // trello-config-ui · khối "Tích hợp › Trello" (chỉ platform_admin) trên trang Góp ý: nhập API key/token (ô mật khẩu, để trống =
 // giữ nguyên), list id; "Kiểm tra kết nối" chỉ đọc list (không tạo thẻ); "Xoá cấu hình" ⇒ dùng lại env. Không bao giờ hiện giá trị.
 import { TRELLO_LIST_ID_RE, type TrelloConfigView } from "@ai/contracts/trello-config";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ApiError } from "@/lib/api-error";
 import {
   useCheckTrello,
@@ -75,9 +75,9 @@ export function TrelloConfigCard({ enabled }: { enabled: boolean }) {
     >
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-body font-semibold">{t("feedbackAdmin.trello.title")}</h2>
-        <Badge variant={SOURCE_TONE[v.source]}>
+        <StatusBadge tone={SOURCE_TONE[v.source]}>
           {t(`feedbackAdmin.trello.source.${v.source}`)}
-        </Badge>
+        </StatusBadge>
       </div>
       <p className="text-label text-muted-foreground">{t("feedbackAdmin.trello.hint")}</p>
       <div className="grid gap-3 sm:grid-cols-3">

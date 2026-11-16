@@ -2,7 +2,7 @@
 // Tên truy cập của nút cha bắt đầu bằng "Giai đoạn n: <tên>" (e2e dùng regex); phần sau là executor/gate/huy hiệu.
 import { CircleAlert, Clock, GitBranch, Lock, ShieldCheck, Wrench, Zap } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import type { StageView } from "./stage-view";
 
 /** CR-105 UX · nút hệ thống của khe: viên thuốc xám nhỏ ("Hệ thống: chọn bước kế" / "Hệ thống: hoàn tất"). */
@@ -45,10 +45,10 @@ function SlotBody({ v }: { v: StageView }) {
       {v.hasError ? (
         <>
           {" "}
-          <Badge variant="err">
+          <StatusBadge tone="err">
             <CircleAlert aria-hidden />
             {t("process.admin.canvas.node.error")}
-          </Badge>
+          </StatusBadge>
         </>
       ) : null}
     </span>
@@ -75,9 +75,9 @@ function DlcBody({ v }: { v: StageView }) {
           <>
             <ShieldCheck aria-hidden className="mr-1 inline size-3.5 align-text-bottom" />
             {t("process.admin.library.dlc.gateOn")}{" "}
-            <Badge variant="info" title={t("process.admin.library.dlc.gateGroup")}>
+            <StatusBadge tone="info" title={t("process.admin.library.dlc.gateGroup")}>
               {s.group}
-            </Badge>
+            </StatusBadge>
           </>
         ) : (
           t("process.admin.library.dlc.gateOff")
@@ -86,10 +86,10 @@ function DlcBody({ v }: { v: StageView }) {
       {v.hasError ? (
         <>
           {" "}
-          <Badge variant="err">
+          <StatusBadge tone="err">
             <CircleAlert aria-hidden />
             {t("process.admin.canvas.node.error")}
-          </Badge>
+          </StatusBadge>
         </>
       ) : null}
     </span>
@@ -139,76 +139,78 @@ function PlainBody({ v }: { v: StageView }) {
         {v.real ? (
           <>
             {" "}
-            <Badge variant="info">{t("process.admin.canvas.node.real")}</Badge>
+            <StatusBadge tone="info">{t("process.admin.canvas.node.real")}</StatusBadge>
           </>
         ) : null}
         {v.autofix ? (
           <>
             {" "}
-            <Badge variant="info">{t("process.admin.autofix.title")}</Badge>
+            <StatusBadge tone="info">{t("process.admin.autofix.title")}</StatusBadge>
           </>
         ) : null}
         {v.wait ? (
           <>
             {" "}
-            <Badge variant="info">
+            <StatusBadge tone="info">
               <Clock aria-hidden />
               {t("process.admin.canvas.node.wait")}
-            </Badge>
+            </StatusBadge>
           </>
         ) : null}
         {v.tool ? (
           <>
             {" "}
-            <Badge variant="info">
+            <StatusBadge tone="info">
               <Wrench aria-hidden />
               {t("process.admin.canvas.node.tool")}
-            </Badge>
+            </StatusBadge>
           </>
         ) : null}
         {v.sideEffect ? (
           <>
             {" "}
-            <Badge variant="warn">{t("process.admin.canvas.node.sideEffect")}</Badge>
+            <StatusBadge tone="warn">{t("process.admin.canvas.node.sideEffect")}</StatusBadge>
           </>
         ) : null}
         {v.branch.length > 0 ? (
           <>
             {" "}
-            <Badge variant="info">
+            <StatusBadge tone="info">
               <GitBranch aria-hidden />
               {t("process.admin.canvas.node.branch", { count: v.branch.length })}
-            </Badge>
+            </StatusBadge>
           </>
         ) : null}
         {v.apply ? (
           <>
             {" "}
-            <Badge variant="info">{t("process.admin.apply.kind")}</Badge>
+            <StatusBadge tone="info">{t("process.admin.apply.kind")}</StatusBadge>
           </>
         ) : null}
         {v.backTo.map((s) => (
           <span key={s}>
             {" "}
-            <Badge variant="warn">{t("process.admin.canvas.node.back", { step: s + 1 })}</Badge>
+            <StatusBadge tone="warn">
+              {t("process.admin.canvas.node.back", { step: s + 1 })}
+            </StatusBadge>
           </span>
         ))}
         {v.locked ? (
           <>
             {" "}
-            <Badge variant="info" title={t("process.admin.library.system.hint")}>
+            <StatusBadge tone="info" title={t("process.admin.library.system.hint")}>
               <Lock aria-hidden />
               {t("process.admin.library.system.badge")}
-            </Badge>
+            </StatusBadge>
           </>
         ) : null}
         {v.hasError ? (
           <>
             {" "}
-            <Badge variant="err">
+            <StatusBadge tone="err">
               <CircleAlert aria-hidden />
               {t("process.admin.canvas.node.error")}
-            </Badge>
+            </StatusBadge>
           </>
         ) : null}
       </span>

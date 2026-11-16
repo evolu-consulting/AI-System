@@ -1,9 +1,10 @@
 // ADM-FR-65 · CR-105 UX: đầu trang danh sách quy trình — mô tả theo tab, chọn tenant (không ở tab Thư viện), nút tạo.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Button } from "@/components/ui/button";
 import { CreateFlowDialog } from "@/features/tenants/flows/components/CreateFlowDialog";
 import type { ProcessesView } from "../hooks/use-processes-view";
 

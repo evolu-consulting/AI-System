@@ -1,10 +1,11 @@
 // CR-121 D-6b: trường của bước "Thông báo" (người nhận theo vai/phòng, chuông ± mail, tiêu đề + nội dung có biến) và "Chờ tới"
 // (ngày của HĐ ± số ngày, giờ) trong Form quy trình thư viện. Lỗi hiện theo mã server (`err.NOTIFY_*` / `WAIT_OFFSET_RANGE`).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import {
   type LibNotifyStep,
   type LibWaitStep,

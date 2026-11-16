@@ -1,9 +1,9 @@
 // ADM-FR-11 · M2-R08 · tab "Input": bảng tham số nhập tay (≤ 50), thứ tự = thứ tự mảng, `+ Thêm tham số` khoá ở 50.
 import { INPUT_SCHEMA_MAX } from "@ai/contracts/common";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useCallback } from "react";
 import { useFieldArray, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import type { WorkflowFormValues } from "../../lib/schemas";
 import { SchemaParamRow } from "./SchemaParamRow";
 

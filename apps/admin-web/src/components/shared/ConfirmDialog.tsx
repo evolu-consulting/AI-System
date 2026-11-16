@@ -1,6 +1,5 @@
 // ADM-FR-60, ADM-FR-04 · hộp thoại xác nhận (`alertdialog`): vừa (Huỷ/Xác nhận) hoặc nặng (gõ lại key mới bật nút).
-import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -9,10 +8,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@ai/web-kit/ui/kit/alert-dialog";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   open: boolean;
@@ -101,11 +102,7 @@ export function ConfirmDialog({
           <AlertDialogCancel disabled={pending}>
             {cancelLabel ?? t("common.cancel")}
           </AlertDialogCancel>
-          <Button
-            variant={destructive ? "destructive" : "default"}
-            disabled={blocked}
-            onClick={run}
-          >
+          <Button variant={destructive ? "danger" : "primary"} disabled={blocked} onClick={run}>
             {confirmLabel}
           </Button>
         </AlertDialogFooter>

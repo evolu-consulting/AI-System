@@ -1,5 +1,6 @@
 // ADM-FR-50 · /secrets (canvas Secrets): chip có số, ô tìm, bảng phân trang server 50 dòng, drawer Thêm/Thay giá trị/Sửa ghi chú, xoá.
 import type { Secret } from "@ai/contracts/secrets";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { getRouteApi } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,7 +9,6 @@ import { SearchBox } from "@/components/shared/form/SearchBox";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
-import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/http";
 import { SECRETS_PAGE_SIZE, useSecretList } from "../api";
 import { SecretsEmpty } from "../components/SecretsEmpty";

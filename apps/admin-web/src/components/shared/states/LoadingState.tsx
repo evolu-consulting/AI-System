@@ -1,8 +1,9 @@
 // ADM-FR-60 · trạng thái tải: skeleton đúng hình (children) + `status` ẩn "Đang tải"; > 10 s thêm gợi ý và Thử lại.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export const SLOW_LOADING_MS = 10_000;
 

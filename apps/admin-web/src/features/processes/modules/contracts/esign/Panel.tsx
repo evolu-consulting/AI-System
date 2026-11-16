@@ -11,11 +11,11 @@ import {
   type EsignNodeConfig,
   esignConfigIssues,
 } from "@ai/contracts/pack-contracts";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Label } from "@ai/web-kit/ui/kit/label";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { useUserList } from "@/features/users/api";
 import { useSession } from "@/lib/auth/use-session";
 import { ApiError, api } from "@/lib/http";

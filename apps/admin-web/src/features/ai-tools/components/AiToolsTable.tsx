@@ -1,18 +1,18 @@
 // CR-121 R6 · c16 · bảng Công cụ AI (artboard AiTools): Công cụ (+ nhãn loại) · Trạng thái · Dùng bởi (công ty) · Thao tác.
 // Bấm hàng ⇒ ngăn chi tiết. Mỗi dòng một công cụ: agent · lệnh · workflow Dify.
 import type { AiTool } from "@ai/contracts/workflow-tools";
-import { Link } from "@tanstack/react-router";
-import { Bot, Info, MoreHorizontal, Terminal, Workflow } from "lucide-react";
-import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { type Column, DataTable } from "@/components/shared/DataTable";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@ai/web-kit/ui/kit/dropdown-menu";
+import { Link } from "@tanstack/react-router";
+import { Bot, Info, MoreHorizontal, Terminal, Workflow } from "lucide-react";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { type Column, DataTable } from "@/components/shared/DataTable";
 import type { Translate } from "@/lib/format";
 import { useTr } from "@/lib/use-translate";
 import type { CommandRowActions } from "../hooks/use-command-row-actions";
@@ -80,8 +80,8 @@ function RowMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="icon-sm"
+          variant="quiet"
+          size="icon"
           aria-label={t("aiTools.menu.label", { name: toolName(tr, tool) })}
         >
           <MoreHorizontal aria-hidden />

@@ -1,9 +1,10 @@
 // ADM-FR-71 · HUB-FR-143 · P-d1 (plan-frontend §2; mockup A1/A2): dòng múi giờ của khối "Chờ tới ngày" — tải / lỗi / mẫu / công ty.
 // Múi giờ lấy từ `GET /process-editor/context`; lỗi tải không chặn lưu (Hub vẫn kiểm).
+
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { utcOffsetLabel } from "@/lib/tz-format";
 import { useProcessTimezone } from "../../hooks/use-process-timezone";
 

@@ -1,8 +1,8 @@
 // ADM-FR-54 · M4-R14 · lỗi file import (ms §8): Alert "File không hợp lệ" + danh sách `đường dẫn: lý do` (≤ 100 mục từ server).
 import type { ImportError } from "@ai/contracts/transfer";
+import { Alert, AlertDescription, AlertTitle } from "@ai/web-kit/ui/kit/alert";
 import { AlertCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function ImportErrors({ errors }: { errors: ImportError[] }) {
   const { t } = useTranslation();

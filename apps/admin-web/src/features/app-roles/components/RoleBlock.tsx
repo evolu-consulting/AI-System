@@ -1,10 +1,7 @@
 // CR-112 · ADM-FR-80 · khối một ứng dụng của Phân quyền: bảng Vai | Mức | Người | Sửa + "Tạo vai" (vai mặc định chỉ đọc).
-import { Pencil, Plus, Trash2, Undo2 } from "lucide-react";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@ai/web-kit/ui/kit/card";
 import {
   Table,
   TableBody,
@@ -12,7 +9,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@ai/web-kit/ui/kit/table";
+import { Pencil, Plus, Trash2, Undo2 } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { LEVEL_KEY, packNameKey, roleLabel } from "../lib/levels";
 import type { RoleView } from "../lib/view";
 import { IneffectiveBadge, LevelBadge } from "./LevelBadge";
@@ -68,14 +69,14 @@ function RoleRow({
       <TableCell>{t("appRoles.role.members", { count: role.members })}</TableCell>
       <TableCell className="text-right">
         {readOnly || locked ? null : role.deleted ? (
-          <Button size="sm" variant="ghost" onClick={onRestore}>
+          <Button size="sm" variant="quiet" onClick={onRestore}>
             <Undo2 aria-hidden /> {t("appRoles.role.restore")}
           </Button>
         ) : (
           <span className="inline-flex gap-1">
             <Button
               size="sm"
-              variant="ghost"
+              variant="quiet"
               aria-label={t("appRoles.role.editAria", { name })}
               onClick={onEdit}
             >
@@ -83,7 +84,7 @@ function RoleRow({
             </Button>
             <Button
               size="sm"
-              variant="ghost"
+              variant="quiet"
               aria-label={t("appRoles.role.deleteAria", { name })}
               disabled={busy}
               title={busy ? t("appRoles.role.deleteBlocked") : undefined}

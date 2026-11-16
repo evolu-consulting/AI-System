@@ -9,7 +9,7 @@ import {
 } from "@ai/contracts/hub-admin";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { NODE_FAMILIES, swappable } from "../../lib/showcase";
 
 const K = "process.admin.showcase.swap.";
@@ -28,13 +28,13 @@ function KindBadge(p: {
 }) {
   const { t } = useTranslation();
   const v = p.kind === p.cur ? null : verdict(p.stages, p.idx, p.kind);
-  const variant = p.kind === p.cur ? "info" : v?.ok ? "ok" : "outline";
+  const variant = p.kind === p.cur ? "info" : v?.ok ? "ok" : "off";
   const note = v ? ` · ${v.ok ? t(`${K}can.ok`) : t(`${K}can.${v.reason}`)}` : "";
   return (
-    <Badge variant={variant}>
+    <StatusBadge tone={variant}>
       {p.kind}
       {note}
-    </Badge>
+    </StatusBadge>
   );
 }
 export function NodeSwapBox({ stages }: Props) {

@@ -1,11 +1,11 @@
 // HUB-FR-68 · PC2-R10 · FC2 · bảng "Tạo khoá nguồn": tên + token (chỉ ghi) + hướng dẫn quyền PAT. Hiện INLINE (role=dialog, không
 // phải Radix modal lồng nhau — tránh đóng nhầm Sheet/drawer cha). Token KHÔNG vào URL/log/cache (mutation `gcTime: 0`).
 import type { HubSecret } from "@ai/contracts/hub-admin";
+import { Alert, AlertDescription } from "@ai/web-kit/ui/kit/alert";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useTr } from "@/lib/use-translate";
 import { useCredentialCreate } from "../hooks/use-credential-create";
 

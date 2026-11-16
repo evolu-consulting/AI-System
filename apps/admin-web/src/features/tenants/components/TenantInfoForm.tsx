@@ -1,5 +1,7 @@
 // ADM-FR-60 · tab Thông tin: mã công ty readOnly, tên, slot; thanh lưu dính đáy khi có thay đổi (Ctrl+S lưu).
 import { TENANT_PROCESS_RUNS_MAX, type TenantDetail } from "@ai/contracts/tenants";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
@@ -7,8 +9,6 @@ import { useTranslation } from "react-i18next";
 import { useOnline } from "@/components/shared/ConnectionBanner";
 import { FormField } from "@/components/shared/form/FormField";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useTr } from "@/lib/use-translate";
 import { type TenantInfoValues, tenantInfoSchema } from "../lib/schemas";
 import { CopyKeyButton } from "./CopyKeyButton";

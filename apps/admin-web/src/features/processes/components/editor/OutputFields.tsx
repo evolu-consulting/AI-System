@@ -1,11 +1,11 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-d2 (D2-22): "Trường có cấu trúc" của kết quả giai đoạn — tách từ `StageOutput` để stage "Gọi tool"
 // dùng lại (tool giữ `fields`, ẩn mẫu/mục bắt buộc).
 import { STAGE_FIELDS_MAX } from "@ai/contracts/hub-admin";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Label } from "@ai/web-kit/ui/kit/label";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import type { DraftErrors, FieldDraft, StageDraft } from "../../lib/def-form";
 import { SelectField, TextField } from "./Fields";
 
@@ -65,7 +65,7 @@ function FieldRow({ field: f, fid, n, error, readOnly, set, onRemove }: RowProps
       {readOnly ? null : (
         <Button
           type="button"
-          variant="ghost"
+          variant="quiet"
           size="sm"
           aria-label={t("process.admin.editor.stage.removeField", { n })}
           onClick={onRemove}

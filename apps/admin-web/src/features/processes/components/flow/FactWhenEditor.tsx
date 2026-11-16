@@ -2,17 +2,17 @@
 // Mỗi vế một hàng lưới cùng cột: [dữ kiện] [toán tử] [giá trị] [xoá]; nhóm lồng một cấp thụt cùng một mức.
 import type { AppFactDecl } from "@ai/contracts/app-manifest";
 import type { FactCond, FactOp, FactWhen } from "@ai/contracts/hub-admin";
-import { Group, Plus, X } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@ai/web-kit/ui/kit/select";
+import { Group, Plus, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   canAddGroup,
   canAddOuter,
@@ -182,7 +182,7 @@ function CondRow(p: {
         {p.extra}
         <Button
           type="button"
-          variant="ghost"
+          variant="quiet"
           size="sm"
           disabled={p.disabled}
           aria-label={t("process.admin.flow.removeCond")}
@@ -205,7 +205,7 @@ function OpToggle(p: { value: "and" | "or"; onChange: (o: "and" | "or") => void 
           key={o}
           type="button"
           size="sm"
-          variant={p.value === o ? "default" : "outline"}
+          variant={p.value === o ? "primary" : "outline"}
           aria-pressed={p.value === o}
           onClick={() => p.onChange(o)}
         >
@@ -252,7 +252,7 @@ export function FactWhenEditor({ id, when, facts, onChange, disabled = false }: 
               {c.conds.map((x, j) => rowOf(x, `g${i}c${j}`, [i, j]))}
               <Button
                 type="button"
-                variant="ghost"
+                variant="quiet"
                 size="sm"
                 disabled={disabled || !canAddGroup(w, i)}
                 onClick={() => add(i)}
@@ -268,7 +268,7 @@ export function FactWhenEditor({ id, when, facts, onChange, disabled = false }: 
               [i],
               <Button
                 type="button"
-                variant="ghost"
+                variant="quiet"
                 size="sm"
                 disabled={disabled}
                 aria-label={t("process.admin.flow.toGroup")}

@@ -1,11 +1,12 @@
 // ADM-FR-50 · M2-R01 · form trong drawer: Thêm (tên, giá trị, ghi chú), Thay giá trị (chỉ giá trị mới), Sửa ghi chú.
 // Giá trị chỉ sống trong state RHF của form này; form unmount khi đóng drawer nên không còn nằm lại (D10).
+
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Textarea } from "@ai/web-kit/ui/kit/textarea";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { typeSecretName } from "@/lib/normalize";
 import { useTr } from "@/lib/use-translate";
 import { type SecretFormMode, type SecretFormValues, secretResolver } from "../lib/schemas";

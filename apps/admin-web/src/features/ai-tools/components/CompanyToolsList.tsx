@@ -1,9 +1,9 @@
 // CR-121 R6 · c16 (chuyển từ tab "Quy trình" của công ty, ToolRow): "Công ty dùng" trong ngăn chi tiết — mỗi công ty một công tắc.
 import type { AiTool, WorkflowCompany } from "@ai/contracts/workflow-tools";
+import { Skeleton } from "@ai/web-kit/ui/kit/skeleton";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 import type { Translate } from "@/lib/format";
 import { useCompanyTools } from "../hooks/use-company-tools";
 import { companyTally } from "../lib/ai-tools";
