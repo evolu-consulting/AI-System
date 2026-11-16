@@ -97,10 +97,13 @@ test("CR-179: mép trên ô đăng bài = mép trên thẻ «Bộ lọc» (lệc
 test("CR-179: /community/me — logo công ty tròn, cùng hàng với chữ «Công ty»", async ({ page }) => {
   await page.goto("/community/me");
   const logo = await page.getByTestId("me-company-logo").boundingBox();
-  const name = await page.getByTestId("me-company-row").locator("b").boundingBox();
-  expect(logo && name).toBeTruthy();
-  const mid = (b: { y: number; height: number } | null) => (b?.y ?? 0) + (b?.height ?? 0) / 2;
-  expect(Math.abs(mid(logo) - mid(name))).toBeLessThanOrEqual(2);
+  const label = await page.getByTestId("me-company-row").locator("h2").boundingBox();
+  expect(logo && label).toBeTruthy();
+  // chữ «Công ty» nằm cùng hàng logo: tâm dọc của chữ rơi trong chiều cao logo, chữ ở bên phải logo
+  const mid = (label?.y ?? 0) + (label?.height ?? 0) / 2;
+  expect(mid).toBeGreaterThanOrEqual(logo?.y ?? 0);
+  expect(mid).toBeLessThanOrEqual((logo?.y ?? 0) + (logo?.height ?? 0));
+  expect(label?.x ?? 0).toBeGreaterThan((logo?.x ?? 0) + (logo?.width ?? 0));
   const radius = await page
     .getByTestId("me-company-logo")
     .evaluate((el) => getComputedStyle(el).borderTopLeftRadius);

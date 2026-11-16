@@ -38,7 +38,8 @@ export function AttachViewer({
     <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay
-          style={{ position: "fixed", inset: 0, background: "rgb(0 0 0 / 0.8)", zIndex: 1000 }}
+          // CR-179 (UAT): nền đen gần kín — giao diện bên dưới không lộ lên thanh tiêu đề của trình xem.
+          style={{ position: "fixed", inset: 0, background: "rgb(0 0 0 / 0.96)", zIndex: 1000 }}
         />
         <Dialog.Content
           data-testid="image-viewer"

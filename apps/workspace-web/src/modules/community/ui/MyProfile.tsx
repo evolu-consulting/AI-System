@@ -109,28 +109,33 @@ export function MyProfilePage() {
               data-testid="me-company"
               style={{ borderTop: "1px solid var(--rule-soft)" }}
             >
-              <h2 style={{ fontSize: 13 }}>{t("community.me.company")}</h2>
-              <p className="flex items-center gap-2" data-testid="me-company-row">
+              {/* CR-179 (UAT): logo công ty tròn, cùng hàng với chữ «Công ty»; tên + trang công ty ở cột bên phải logo. */}
+              <div className="flex items-start gap-3" data-testid="me-company-row">
                 <Avatar
                   kind="company"
                   name={viewer.orgName}
                   src={brand.logo}
-                  size={32}
-                  className="rounded-full"
+                  size={40}
+                  className="shrink-0 rounded-full"
                   data-testid="me-company-logo"
                 />
-                <b>{viewer.orgName}</b>
-                {labels && <span className="muted"> · {labels}</span>}
-              </p>
-              <a
-                href={href({ name: "profile" })}
-                onClick={(e) => {
-                  e.preventDefault();
-                  go({ name: "profile" });
-                }}
-              >
-                {t("community.me.companyPage")}
-              </a>
+                <div className="min-w-0">
+                  <h2 style={{ fontSize: 13, margin: 0 }}>{t("community.me.company")}</h2>
+                  <p className="m-0">
+                    <b>{viewer.orgName}</b>
+                    {labels && <span className="muted"> · {labels}</span>}
+                  </p>
+                  <a
+                    href={href({ name: "profile" })}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      go({ name: "profile" });
+                    }}
+                  >
+                    {t("community.me.companyPage")}
+                  </a>
+                </div>
+              </div>
             </div>
             <div className="ptabs tabs" role="tablist" aria-label={t("community.profile.tabsAria")}>
               {ME_SECTIONS.map((s) => (
