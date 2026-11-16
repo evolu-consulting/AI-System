@@ -69,6 +69,8 @@ src/
 
 Web **áp nhẹ** (CR-091): chỉ tách `features/<f>/domain/`; `api.ts`, component, page, hook coi là lớp 3–4, giữ như trên. Chuyển logic thuần sang `domain/` khi task sửa logic đó (§10).
 
+**Luật dùng bộ component chung (CR-177):** `packages/web-kit/src/ui/kit/RULES.md`; mốc «chỉ giảm» cho `<button>`/`<select>`/`<input>` trần, `title=`, `components/ui` riêng, cỡ chữ/bo góc tuỳ ý: `bun run check:ui-kit` (trong `bun run check`).
+
 ### Test
 
 ```
