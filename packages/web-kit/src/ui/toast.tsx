@@ -76,6 +76,11 @@ export function notifySuccess(
   void show("success", message, { action, duration: durationMs });
 }
 
+/** CR-177: đổi lại được ⇒ toast «Hoàn tác» 6 giây (sonner tự dừng đếm khi rê chuột). `label` do app truyền (i18n), mặc định «Hoàn tác». */
+export function toastUndo(message: string, onUndo: () => void, label = "Hoàn tác"): void {
+  notifySuccess(message, { label, onClick: onUndo }, TOAST_UNDO_MS);
+}
+
 /** Thông báo không phải lỗi cứng: role status, tự ẩn sau 8 giây. */
 export function notifyInfo(message: string): void {
   void show("info", message);

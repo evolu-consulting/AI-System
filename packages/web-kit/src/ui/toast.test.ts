@@ -1,12 +1,12 @@
 // CR-125 G3 · quy ước toast duy nhất: thành công và lỗi tự ẩn sau 3 giây (CR-134 Q11), lỗi có nút hành động ở lại tới khi bấm (audit #20).
 import { describe, expect, mock, test } from "bun:test";
 
-type Call = { kind: string; opts: Record<string, unknown> };
+type Call = { kind: string; opts: Record<string, unknown>; msg?: unknown };
 const calls: Call[] = [];
 const rec =
   (kind: string) =>
-  (_m: unknown, opts: Record<string, unknown> = {}) => {
-    calls.push({ kind, opts });
+  (msg: unknown, opts: Record<string, unknown> = {}) => {
+    calls.push({ kind, opts, msg });
     return calls.length;
   };
 mock.module("sonner", () => ({
@@ -27,7 +27,9 @@ import {
   notifyError,
   notifySuccess,
   SUCCESS_TOAST_MS,
+  TOAST_UNDO_MS,
   toast,
+  toastUndo,
 } from "./toast";
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
@@ -69,5 +71,24 @@ describe("toast", () => {
       SUCCESS_TOAST_MS,
     );
     expect(calls.filter((c) => c.kind === "error" && c.opts.closeButton === true)).toHaveLength(3);
+  });
+});
+
+// CR-177 U3 · toastUndo: 6 giây, nút «Hoàn tác» gọi onUndo.
+describe("toastUndo", () => {
+  test("toastUndo gọi onUndo khi bấm nút và dùng 6000 ms", async () => {
+    let undone = 0;
+    toastUndo("Đã xoá", () => undone++);
+    await new Promise((r) => setTimeout(r, 0));
+    const c = calls[calls.length - 1];
+    if (!c) throw new Error("no toast");
+    expect(c.opts.duration).toBe(TOAST_UNDO_MS);
+    expect(TOAST_UNDO_MS).toBe(6000);
+    type Part = { props?: { action?: { onClick: () => void } } };
+    const parts = (c.msg as { props: { children: Part[] } }).props.children;
+    const btn = parts.find((x) => x?.props?.action)?.props?.action;
+    expect(btn).toBeDefined();
+    btn?.onClick();
+    expect(undone).toBe(1);
   });
 });
