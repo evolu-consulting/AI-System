@@ -3,7 +3,7 @@
 // Công ty/người: `e2e/_kit/two-companies.ts`. Nhãn nguyên văn theo spec §8 + i18n `contracts.connect.*`. Không sleep: chờ theo điều kiện (stream đẩy chuông/tin).
 import { type Browser, expect, type Page, test } from "@playwright/test";
 import { apiLogin, tenantIdByKey } from "../_kit/api";
-import { CO, POST_BODY, POST_BODY_B, WHO } from "../_kit/two-companies";
+import { CO, WHO } from "../_kit/two-companies";
 import { type Env, loginCw } from "../journey-approval/_journey";
 
 // Mặc định (không serial) + 1 worker: ca đỏ không làm các ca sau bị bỏ qua.
@@ -46,16 +46,7 @@ const partnerItem = async (page: Page, name: string) => {
   await page.getByTestId("tab-partner").click();
   return page.getByTestId("partner-item").filter({ hasText: new RegExp(name) });
 };
-/** Mở cuộc nhắn riêng với một người của công ty đối tác bằng «Nhắn tin mới › Đối tác» (có cuộc thì «Bảng tin» ở đầu khung chat mới hiện). */
-const openPartnerChat = async (page: Page) => {
-  await page.getByRole("button", { name: "Nhắn tin mới" }).first().click();
-  const dlg = page.getByTestId("new-conv-dialog");
-  await dlg.getByTestId("new-tab-partner").click();
-  await dlg.getByRole("checkbox").first().check();
-  await dlg.getByRole("button", { name: "Nhắn tin", exact: true }).click();
-};
 const tabOf = (page: Page, name: string) => page.getByRole("tab", { name, exact: true });
-let tenantA = "";
 let tenantB = "";
 
 test.beforeAll(async () => {
@@ -65,7 +56,6 @@ test.beforeAll(async () => {
     username: need("SEED_ADMIN_USERNAME"),
     password: need("SEED_ADMIN_PASSWORD"),
   });
-  tenantA = await tenantIdByKey(need("JA_API_URL"), p, EA.tenantKey);
   tenantB = await tenantIdByKey(need("JA_API_URL"), p, EB.tenantKey);
 });
 
@@ -139,31 +129,12 @@ test("CR161-J3b · Tiên mở trang đối tác của công ty đã kết nối:
   await ctx.close();
 });
 
-test("CR161-J4 · Dung (Preschool) › Tin nhắn › chip NitiGroup › «Bảng tin NitiGroup-test» thấy bài công khai của NitiGroup", async ({
-  browser,
-}) => {
-  const { ctx, page } = await open(browser, EB, WHO.dung);
-  await page.goto(`/contracts/messages?company=${tenantA}`);
-  await expect(page.getByTestId("tab-partner")).toHaveAttribute("aria-pressed", "true");
-  await openPartnerChat(page);
-  await page.getByTestId("open-feed").click(); // CR-178: nút ở đầu khung chat cuộc đối tác
-  const dlg = page.getByTestId("feed-dialog");
-  await expect(dlg.getByTestId("feed-post").filter({ hasText: POST_BODY })).toBeVisible();
-  await ctx.close();
-});
-
-test("CR161-J5 · N2: Thanh (Toàn quyền khác của NitiGroup, không phải người mời) cũng thấy Preschool đã kết nối và Bảng tin Preschool", async ({
+test("CR161-J5 · N2: Thanh (Toàn quyền khác của NitiGroup, không phải người mời) cũng thấy Preschool đã kết nối", async ({
   browser,
 }) => {
   const { ctx, page } = await open(browser, EA, WHO.thanh);
   await page.goto("/contracts/partners");
   await expect(page.getByTestId("connected-list")).toContainText(CO.b.name);
-  await page.goto(`/contracts/messages?company=${tenantB}`);
-  await openPartnerChat(page);
-  await page.getByTestId("open-feed").click();
-  await expect(
-    page.getByTestId("feed-dialog").getByTestId("feed-post").filter({ hasText: POST_BODY_B }),
-  ).toBeVisible();
   await ctx.close();
 });
 

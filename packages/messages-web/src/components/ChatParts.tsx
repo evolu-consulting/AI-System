@@ -1,8 +1,8 @@
 // CR-132 · W2 · các phần đầu khung chat (tách khỏi ChatView cho gọn): lỗi/không còn trong cuộc, đầu khung, và (CR-178 M3) thanh tìm + «Ảnh & tệp».
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { Badge } from "@ai/web-kit/ui/kit/badge";
-import { Button } from "@ai/web-kit/ui/kit/button";
 import { ICONS } from "@ai/web-kit/ui/kit/icons";
+import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { useJump } from "../hooks/use-jump";
@@ -59,7 +59,6 @@ export function ChatHeader({
   backClass,
   compact,
   onMembers,
-  onFeed,
   onFind,
   onAttach,
 }: {
@@ -69,9 +68,8 @@ export function ChatHeader({
   title: string;
   /** CR-169 · cuộc `partner`: chức vụ người kia. */
   subtitle: string;
-  /** CR-178 · cuộc `partner`: nhãn công ty + nút «Bảng tin <Công ty>». */
+  /** CR-178 · cuộc `partner`: nhãn công ty (CR-179: hàng riêng dưới tên). */
   company: string;
-  onFeed: () => void;
   members: number | null;
   onBack?: () => void;
   backClass?: string;
@@ -102,25 +100,27 @@ export function ChatHeader({
         </button>
       )}
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <h2 className="m-0 truncate text-[14.5px] font-semibold" data-testid="chat-title">
-            {title}
-          </h2>
-          {company && (
+        <h2 className="m-0 text-[14.5px] font-semibold" data-testid="chat-title">
+          <TruncText text={title} className="block" />
+        </h2>
+        {company && (
+          <div className="flex min-w-0 items-center gap-1.5">
             <Badge
               status="warn"
               icon={<IconBuilding width={12} height={12} />}
               data-testid="chat-company"
-              className="max-w-40 shrink truncate"
+              className="min-w-0 max-w-[60%] shrink"
             >
-              {company}
+              <TruncText text={company} focusable={false} />
             </Badge>
-          )}
-        </div>
-        {subtitle && (
-          <p className="m-0 truncate text-micro text-dim" data-testid="chat-job">
-            {subtitle}
-          </p>
+            {subtitle && (
+              <TruncText
+                text={subtitle}
+                data-testid="chat-job"
+                className="flex-1 text-micro text-dim"
+              />
+            )}
+          </div>
         )}
       </div>
       <button
@@ -143,11 +143,6 @@ export function ChatHeader({
       >
         <IconImage width={18} height={18} />
       </button>
-      {company && (
-        <Button variant="outline" size="sm" data-testid="open-feed" onClick={onFeed}>
-          {t("contracts.messages.feed.open", { company })}
-        </Button>
-      )}
       {members !== null && (
         <button type="button" className="btn btn-sm" onClick={onMembers} data-testid="chat-members">
           {t("contracts.messages.members", { n: members })}

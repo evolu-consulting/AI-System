@@ -6,7 +6,7 @@
 // → ngoài cuộc/không quyền → (Chat AI app) → ngắt kết nối ⇒ chỉ đọc. Không sleep: chờ theo điều kiện (stream đẩy tin/«Đã xem»).
 import { type Browser, expect, type Page, test } from "@playwright/test";
 import { apiLogin, type Session, tenantIdByKey } from "../_kit/api";
-import { CO, NAME, POST_BODY, POST_BODY_B, WHO } from "../_kit/two-companies";
+import { CO, NAME, WHO } from "../_kit/two-companies";
 import { type Env, loginCw } from "../journey-approval/_journey";
 
 test.describe.configure({ mode: "serial" });
@@ -151,7 +151,7 @@ test("CR169-J2 · Hà thấy số chưa đọc ở «Tin nhắn», mở ⇒ tin 
   await expect(row).toBeVisible();
   await row.click();
   await expect(h.page.getByTestId("chat-company")).toContainText(CO.a.name);
-  await expect(h.page.getByTestId("open-feed")).toContainText(CO.a.name); // CR-178: «Bảng tin <Công ty>» ở đầu khung chat
+  await expect(h.page.getByTestId("open-feed")).toHaveCount(0); // CR-179: bỏ nút «Bảng tin» ở Tin nhắn
   const got = msgOf(h.page, HELLO);
   await expect(got).toBeVisible();
   await expect(msgBadge(h.page)).toHaveCount(0);
@@ -244,29 +244,6 @@ test("CR169-J4 · Vy gửi nhầm một tin rồi thu hồi ⇒ cả hai bên ch
   await expect(h.page.getByText(OOPS)).toHaveCount(0); // đã thu hồi ở phía Preschool, tức thì
   await expect(h.page.getByTestId("msg-list")).toContainText("Tin nhắn đã được thu hồi");
   await v.ctx.close();
-  await h.ctx.close();
-});
-
-test("CR169-J5 · Bảng tin công ty: Vy xem «Bảng tin Preschool-test», Hà xem «Bảng tin NitiGroup-test» (nhân viên thường, chỉ đọc)", async ({
-  browser,
-}) => {
-  const v = await open(browser, EA, WHO.vy);
-  await v.page.goto("/contracts/messages");
-  await pickPartner(v.page, CO.b.name);
-  await rowOf(v.page, NAME.ha).click();
-  await v.page.getByTestId("open-feed").click(); // CR-178: nút ở đầu khung chat cuộc đối tác
-  await expect(
-    v.page.getByTestId("feed-dialog").getByTestId("feed-post").filter({ hasText: POST_BODY_B }),
-  ).toBeVisible();
-  await v.ctx.close();
-
-  const h = await open(browser, EB, WHO.ha);
-  await h.page.goto(`/contracts/messages?company=${tenantA}`);
-  await rowOf(h.page, VY).click();
-  await h.page.getByTestId("open-feed").click();
-  await expect(
-    h.page.getByTestId("feed-dialog").getByTestId("feed-post").filter({ hasText: POST_BODY }),
-  ).toBeVisible();
   await h.ctx.close();
 });
 

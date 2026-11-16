@@ -20,7 +20,6 @@ import { DropOverlay, useFileDrop } from "./file-drop";
 import { GroupMembersSheet } from "./GroupMembersSheet";
 import { MessageComposer } from "./MessageComposer";
 import { MessageList } from "./MessageList";
-import { PartnerFeedDialog } from "./PartnerFeedDialog";
 import { ReadOnlyNotice } from "./ReadOnlyNotice";
 
 export type ChatViewProps = {
@@ -67,27 +66,6 @@ const partnerJob = (d: ConversationDetail | undefined): string =>
   d?.kind === "partner" ? (d.peer?.job_title ?? "") : "";
 const partnerCompany = (d: ConversationDetail | undefined): string =>
   d?.kind === "partner" ? (d.company?.name ?? "") : "";
-
-/** «Bảng tin <Công ty>» của cuộc `partner` (hộp xem, chỉ đọc). */
-function PartnerFeed({
-  d,
-  open,
-  onClose,
-}: {
-  d: ConversationDetail | undefined;
-  open: boolean;
-  onClose: () => void;
-}) {
-  if (d?.kind !== "partner" || !d.company) return null;
-  return (
-    <PartnerFeedDialog
-      open={open}
-      tenant={d.company.id}
-      company={d.company.name}
-      onClose={onClose}
-    />
-  );
-}
 
 type Msgs = ReturnType<typeof useMessages>;
 type Box = ReturnType<typeof useOutbox>;
@@ -190,7 +168,6 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
   const msgs = useMessages(id);
   const box = useOutbox(id, myId);
   const [sheet, setSheet] = useState(false);
-  const [feed, setFeed] = useState(false);
   const jump = useJump(id, msgs.items);
   const dropSink = useRef<((files: File[]) => void) | null>(null);
   const drop = useFileDrop(dropSink);
@@ -230,7 +207,6 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
             title={d ? convTitle(d) : ""}
             subtitle={partnerJob(d)}
             company={partnerCompany(d)}
-            onFeed={() => setFeed(true)}
             members={d?.kind === "group" ? d.member_count : null}
             onBack={onBack}
             backClass={backClass}
@@ -240,7 +216,6 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
         )}
       </ChatTop>
       <ChatBody d={d} msgs={msgs} box={box} myId={myId} readAt={readAt} jump={jump} />
-      <PartnerFeed d={d} open={feed} onClose={() => setFeed(false)} />
       {d && <ChatFooter d={d} onSend={box.send} dropSink={dropSink} />}
       {dropping && <DropOverlay label={t("contracts.messages.dropHere")} />}
       {d?.kind === "group" && (

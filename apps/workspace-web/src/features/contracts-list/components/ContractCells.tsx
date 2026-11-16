@@ -11,6 +11,7 @@ import type {
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
+import { TruncText as KitTruncText } from "@ai/web-kit/ui/kit/trunc-text";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -168,14 +169,11 @@ function Dates({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
 function PartnerCell({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const name = partnerOfRow(r, dealOfRow(r, ctx.progress.get(r.id)));
   return (
-    <Tooltip open={name ? undefined : false}>
-      <TooltipTrigger asChild>
-        <td className={cn("min-w-[130px]", TD)}>
-          <span className="line-clamp-2">{shortName(name)}</span>
-        </td>
-      </TooltipTrigger>
-      <TooltipContent>{name ?? undefined}</TooltipContent>
-    </Tooltip>
+    <td className={cn("min-w-[130px]", TD)}>
+      <KitTruncText text={name ?? ""} lines={2} className="block" data-testid="partner-name">
+        {shortName(name)}
+      </KitTruncText>
+    </td>
   );
 }
 
@@ -185,21 +183,23 @@ export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode
     case "title":
       return (
         <td className="max-w-[260px] px-3 py-3 pl-5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="/contracts/c/$id"
-                params={{ id: r.id }}
-                className="block truncate font-semibold"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {r.locked && <RowLock />}
-                {r.title}
-                <VersionBadge no={r.version_no} count={r.versions_count} />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent>{r.title}</TooltipContent>
-          </Tooltip>
+          <Link
+            to="/contracts/c/$id"
+            params={{ id: r.id }}
+            className="block font-semibold"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <KitTruncText
+              text={r.title}
+              focusable={false}
+              className="block"
+              data-testid="contract-name"
+            >
+              {r.locked && <RowLock />}
+              {r.title}
+              <VersionBadge no={r.version_no} count={r.versions_count} />
+            </KitTruncText>
+          </Link>
           <SubLine r={r} ctx={ctx} />
         </td>
       );
@@ -324,16 +324,11 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
         className="flex flex-col gap-1.5 px-4 py-3.5 hover:bg-sunk"
       >
         <span className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="truncate font-semibold">
-                {r.locked && <RowLock />}
-                {r.title}
-                <VersionBadge no={r.version_no} count={r.versions_count} />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>{r.title}</TooltipContent>
-          </Tooltip>
+          <KitTruncText text={r.title} focusable={false} className="font-semibold">
+            {r.locked && <RowLock />}
+            {r.title}
+            <VersionBadge no={r.version_no} count={r.versions_count} />
+          </KitTruncText>
           <DealTag r={r} ctx={ctx} />
         </span>
         {parent && (
@@ -341,11 +336,13 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
             {t("contracts.list.appendixOf", { title: parent })}
           </span>
         )}
-        <span className="text-[13px] text-dim">
-          {[shortName(partner), r.value != null ? `${vnd(r.value)} đ` : null]
+        <KitTruncText
+          text={[shortName(partner), r.value != null ? `${vnd(r.value)} đ` : null]
             .filter(Boolean)
             .join(" · ")}
-        </span>
+          focusable={false}
+          className="block text-[13px] text-dim"
+        />
         <span>
           <StatusCell r={r} />
         </span>

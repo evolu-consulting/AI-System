@@ -139,17 +139,6 @@
         "search": "Search companies",
         "none": "No matching company."
       },
-      "feed": {
-        "open": "{{company}} board",
-        "title": "{{company}} board",
-        "hint": "Public posts from a company connected with you. View only.",
-        "empty": "{{company}} has no public posts yet.",
-        "error": "Could not load the board. Check your connection and press Retry.",
-        "files": "{{n}} files",
-        "sell": "Sell",
-        "buy": "Buy",
-        "note": "Note"
-      },
       "readOnly": {
         "disconnected": "{{company}} is no longer connected with your company. You can still read the old messages.",
         "peerGone": "{{name}} no longer uses Contracts at {{company}}."

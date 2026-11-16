@@ -1,6 +1,7 @@
 // ux-excel E5: hộp thoại "Upload hợp đồng" — "AI đang đọc ‹tên tệp›" + chip các bước. Chip sáng lần lượt theo thời gian (API chưa báo bước).
 // Đóng do cha (xong/lỗi ⇒ `open` false); nút "Ẩn" để người dùng vẫn đi chỗ khác được.
 import { Button } from "@ai/web-kit/ui/kit/button";
+import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -55,8 +56,12 @@ export function ExtractDialog({ open, name }: { open: boolean; name: string }) {
       >
         <DialogHeader>
           <DialogTitle>{t("contracts.list.upload.dialog.title")}</DialogTitle>
-          <DialogDescription role="status" className="truncate text-sm text-dim" title={name}>
-            {t("contracts.list.upload.dialog.reading", { name })}
+          <DialogDescription role="status" className="text-sm text-dim">
+            <TruncText
+              text={t("contracts.list.upload.dialog.reading", { name })}
+              focusable={false}
+              className="block"
+            />
           </DialogDescription>
         </DialogHeader>
         <DialogBody>

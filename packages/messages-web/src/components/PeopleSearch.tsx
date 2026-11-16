@@ -1,6 +1,8 @@
 // CR-169 · lát 6 · mục «Người» khi tìm: người (đồng nghiệp hoặc của công ty đã kết nối) khớp tên/chức vụ, chưa có cuộc trong danh sách.
 // Chỉ lộ tên · chức vụ · công ty (không email/điện thoại). Bấm ⇒ mở 1-1 (`partner` nếu khác công ty). Tải dần khi cuộn.
+
 import type { MsgPerson } from "@ai/contracts/pack-contracts";
+import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
 import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "../ui";
@@ -58,8 +60,12 @@ export function PeopleSearch(p: PeopleSearchProps) {
               >
                 <PersonAvatar name={x.name} src={null} size={36} testId="person-avatar" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14px] font-medium">{x.name}</span>
-                  <span className="block truncate text-micro text-dim">{sub}</span>
+                  <TruncText
+                    text={x.name}
+                    focusable={false}
+                    className="block text-[14px] font-medium"
+                  />
+                  <TruncText text={sub} focusable={false} className="block text-micro text-dim" />
                 </span>
               </button>
             </li>

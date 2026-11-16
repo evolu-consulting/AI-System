@@ -1,6 +1,8 @@
 // CR-178 · M3 · kết quả «Tìm tin nhắn» (mọi cuộc): tên cuộc, người gửi, thời gian, đoạn trích tô sáng chỗ khớp; mới nhất trước, tải dần.
+
 import type { MsgSearchHit } from "@ai/contracts/pack-contracts";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
+import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
 import { useTranslation } from "react-i18next";
 import { canSearch, useMessageSearch } from "../hooks/use-find";
 import { highlightParts } from "../lib/find";
@@ -66,8 +68,12 @@ export function SearchHits({ q, onOpen }: { q: string; onOpen: (hit: MsgSearchHi
               className="flex w-full min-w-0 flex-col gap-0.5 border-b border-rule-soft px-3 py-2.5 text-left hover:bg-sunk focus-visible:bg-sunk"
             >
               <span className="flex min-w-0 items-baseline gap-2">
-                <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">
-                  {h.title}
+                <span className="min-w-0 flex-1">
+                  <TruncText
+                    text={h.title}
+                    focusable={false}
+                    className="block text-[13.5px] font-semibold"
+                  />
                 </span>
                 <time dateTime={h.at} className="shrink-0 text-micro text-dim">
                   {listTime(h.at)}

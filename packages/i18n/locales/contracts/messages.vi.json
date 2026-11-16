@@ -139,17 +139,6 @@
         "search": "Tìm công ty",
         "none": "Không có công ty nào khớp."
       },
-      "feed": {
-        "open": "Bảng tin {{company}}",
-        "title": "Bảng tin {{company}}",
-        "hint": "Bài công khai của công ty đã kết nối với bạn. Chỉ để xem.",
-        "empty": "{{company}} chưa có bài công khai nào.",
-        "error": "Không tải được Bảng tin. Kiểm tra kết nối rồi bấm Thử lại.",
-        "files": "{{n}} tệp",
-        "sell": "Bán",
-        "buy": "Mua",
-        "note": "Ghi chú"
-      },
       "readOnly": {
         "disconnected": "{{company}} không còn kết nối với công ty bạn. Bạn vẫn xem được tin cũ.",
         "peerGone": "{{name}} không còn dùng Sổ Hợp Tác ở {{company}}."

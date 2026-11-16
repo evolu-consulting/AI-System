@@ -1,7 +1,6 @@
 // CR-132 · W2 · gọi API tin nhắn Sổ Hợp Tác (`/pack/contracts/messages/**`, spec CR-132 §4). Chỉ file này gọi mạng.
 import type {
   AddMembersRequest,
-  CcPost,
   ConversationDetail,
   ConversationPage,
   CreateConversationRequest,
@@ -45,7 +44,6 @@ export const msgKeys = {
   companies: ["messages", "companies"] as const,
   search: (q: string, conv: string | null) => ["messages", "search", conv ?? "all", q] as const,
   attach: (id: string, kind: MsgAttachKind) => ["messages", "attach", id, kind] as const,
-  feed: (tenant: string) => ["messages", "feed", tenant] as const,
 };
 
 export const fetchUnread = (signal?: AbortSignal) =>
@@ -144,17 +142,6 @@ export const fetchCompanies = (cursor: string | null, signal?: AbortSignal) =>
     query: { limit: MSG_LIST_PAGE, ...(cursor ? { cursor } : {}) },
     signal,
   });
-
-/** Bảng tin công khai của công ty đã kết nối (`GET /connect/posts/:tenant_id`, đã che; chỉ chữ + số tệp), tải dần 20/lần. */
-export const FEED_PAGE = 20;
-export const fetchFeed = (tenant: string, cursor: string | null, signal?: AbortSignal) =>
-  api<{ items: CcPost[]; next_cursor: string | null }>(
-    `/pack/contracts/connect/posts/${enc(tenant)}`,
-    {
-      query: { limit: FEED_PAGE, ...(cursor ? { cursor } : {}) },
-      signal,
-    },
-  );
 
 /** Thẻ người (avatar, phòng ban, chức vụ) THEO LÔ ≤ 50 id: hub `GET /people?ids=` — một lời gọi cho cả lô, không gọi từng người. */
 export const fetchPersonCards = async (

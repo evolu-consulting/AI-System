@@ -4,6 +4,7 @@ import type { ConversationSummary } from "@ai/contracts/pack-contracts";
 import type { PersonCard } from "@ai/contracts/people";
 import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { Badge } from "@ai/web-kit/ui/kit/badge";
+import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
 import { useTranslation } from "react-i18next";
 import { IconBuilding } from "../icons";
 import { convTitle, isUnread, previewOf, unreadLabel } from "../lib/conversations";
@@ -26,7 +27,7 @@ function Preview({ c, myId }: { c: ConversationSummary; myId: string }) {
               ? t("contracts.messages.previewOther", { who: p.who, text: p.text })
               : p.text
             : "";
-  return <span className="min-w-0 flex-1 truncate">{text}</span>;
+  return <TruncText text={text} focusable={false} className="flex-1" />;
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: một dòng trình bày (nhãn xem trước/chưa đọc/thẻ người), tách thêm chỉ làm khó đọc
@@ -85,34 +86,37 @@ export function ConversationRow({
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline gap-2">
-            <span
-              {...hv}
-              className={cn(
-                "min-w-0 flex-1 truncate text-[14px]",
-                unread ? "font-bold" : "font-medium",
-              )}
-            >
-              {title}
+            <span {...hv} className="min-w-0 flex-1">
+              <TruncText
+                text={title}
+                focusable={false}
+                className={cn("block text-[14px]", unread ? "font-bold" : "font-medium")}
+              />
             </span>
-            {company && (
-              <Badge
-                status="warn"
-                icon={<IconBuilding width={12} height={12} />}
-                data-testid="conv-company"
-                className="max-w-28 shrink truncate"
-              >
-                {company}
-              </Badge>
-            )}
             {c?.last_message && (
               <time dateTime={c.last_message.at} className="shrink-0 text-micro text-dim">
                 {listTime(c.last_message.at)}
               </time>
             )}
           </span>
-          {sub && (
-            <span data-testid="conv-job" className="block truncate text-micro text-dim">
-              {sub}
+          {company && (
+            <span data-testid="conv-company-line" className="flex min-w-0 items-center gap-1.5">
+              <Badge
+                status="warn"
+                icon={<IconBuilding width={12} height={12} />}
+                data-testid="conv-company"
+                className="min-w-0 max-w-[60%] shrink"
+              >
+                <TruncText text={company} focusable={false} />
+              </Badge>
+              {sub && (
+                <TruncText
+                  text={sub}
+                  focusable={false}
+                  data-testid="conv-job"
+                  className="flex-1 text-micro text-dim"
+                />
+              )}
             </span>
           )}
           <span

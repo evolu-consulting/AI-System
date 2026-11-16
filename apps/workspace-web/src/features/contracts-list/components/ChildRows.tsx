@@ -2,6 +2,7 @@
 
 import type { DealSource, DocType } from "@ai/contracts/pack-contracts";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
+import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
@@ -49,21 +50,18 @@ export function ChildRowCells({
           case "title":
             return (
               <td key={k} className="max-w-[260px] px-3 py-2.5 pl-5">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to="/contracts/c/$id"
-                      params={{ id: child.id }}
-                      className={cn("block truncate", orphan ? "font-semibold" : "pl-6")}
-                      data-testid={orphan ? "child-orphan" : "child-title"}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {!orphan && <span aria-hidden="true">↳ </span>}
-                      {child.title}
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent>{child.title}</TooltipContent>
-                </Tooltip>
+                <Link
+                  to="/contracts/c/$id"
+                  params={{ id: child.id }}
+                  className={cn("block", orphan ? "font-semibold" : "pl-6")}
+                  data-testid={orphan ? "child-orphan" : "child-title"}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <TruncText text={child.title} focusable={false} className="block">
+                    {!orphan && <span aria-hidden="true">↳ </span>}
+                    {child.title}
+                  </TruncText>
+                </Link>
               </td>
             );
           case "number":
@@ -129,15 +127,10 @@ export function ChildCard({ child, orphan }: { child: ListFrameChild; orphan: bo
         className={cn("flex flex-col gap-1 py-3 pr-4 hover:bg-sunk", orphan ? "pl-4" : "pl-9")}
       >
         <span className="flex items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="truncate font-medium">
-                {!orphan && <span aria-hidden="true">↳ </span>}
-                {child.title}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>{child.title}</TooltipContent>
-          </Tooltip>
+          <TruncText text={child.title} focusable={false} className="font-medium">
+            {!orphan && <span aria-hidden="true">↳ </span>}
+            {child.title}
+          </TruncText>
           <DocTypeTag doc={child.doc_type} />
         </span>
         <span className="text-[13px] text-dim">

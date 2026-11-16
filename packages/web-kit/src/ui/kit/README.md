@@ -13,5 +13,6 @@ Import: `@ai/web-kit/ui/kit/<tên>`. Màu/cỡ/bo góc lấy từ `styles/tokens
 - `badge` — `<Badge status="ok|warn|bad|info|idle" icon={<Check />}>Đã duyệt</Badge>` (icon bắt buộc)
 - `avatar` — `<Avatar name="An Bình" kind="person|company" size={32} />` · `<AvatarGroup people={[…]} />` (tối đa 3 + «+N»)
 - `field` — `<Field id="ten" label="Tên" description="…" error="…"><Input /></Field>` (gắn `aria-describedby`/`aria-invalid`)
+- `trunc-text` — `<TruncText text="Tên đầy đủ" lines={1|2} className="…" />` (cắt «…»; chỉ khi tràn mới có tooltip đủ chữ + focus bàn phím; thay `truncate` trần/`title=`)
 
 Test: `kit-a.test.tsx` (bun test, không render DOM: duyệt cây phần tử).
