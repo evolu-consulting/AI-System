@@ -54,6 +54,23 @@ export type ListQuery = {
   /** CR-178 · chỉ cuộc có tin chưa đọc (cùng luật đếm với `unread`). */
   unreadOnly: boolean;
 };
+/** CR-178 M4 · một tệp đã gửi của cuộc (đã gắn tin chưa thu hồi); `sender_name` chỉ có ở cuộc `partner` (DB tra sẵn). */
+export type RawAttachment = {
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+  seq: number;
+  sender_id: string;
+  at: string;
+  sender_name?: string;
+};
+/** Keyset `(seq, id)` DESC; `kind` null = cả hai; `limit` đã +1 (route xin thừa một dòng để biết còn trang sau). */
+export type AttachQuery = {
+  kind: "image" | "file" | null;
+  cur: { seq: number; id: string } | null;
+  limit: number;
+};
 /** Sự thật cần cho kiểm quyền thao tác nhóm (khoá hàng hội thoại khi `lock`). */
 export type MsgFacts = {
   kind: ConvKind;
@@ -155,6 +172,8 @@ export type MessagesRepo = {
   fileRef(me: string, cid: string, fileId: string): Promise<StoredFile | null>;
   /** Mọi tệp còn sống của hội thoại (trước khi xoá hội thoại ⇒ gỡ byte). */
   convFiles(cid: string): Promise<StoredFile[]>;
+  /** CR-178 M4 · tệp đã gửi của cuộc, mới nhất trước (RLS: chỉ thành viên; use case kiểm `facts` trước để phân biệt 404 với rỗng). */
+  attachments(cid: string, q: AttachQuery): Promise<RawAttachment[]>;
   /** null = không phải thành viên. Trả mốc đọc mới + cũ + mọi thành viên (đã kẹp theo `clampRead`: không lùi, không vượt tin cuối). */
   markRead(me: string, cid: string, seq: number): Promise<ReadRow | null>;
 };
@@ -200,6 +219,8 @@ export type PartnerRepo = {
   remove(id: string, seq: number): Promise<string[]>;
   /** `pmsg_mark_read` — mốc đọc mới của người gọi (chỉ tiến, kẹp ≤ last_seq). */
   markRead(id: string, seq: number): Promise<number>;
+  /** CR-178 M4 · `pmsg_files_list` — tệp đã gửi của cuộc (đọc được cả sau ngắt kết nối); không là đầu cuộc ⇒ DB ném CC404. */
+  attachments(id: string, q: AttachQuery): Promise<RawAttachment[]>;
   /** `hub.cc_connected(tenant người gọi, company)` — còn kết nối không (chọn mã 409 khi chặn tải lên sớm). */
   connected(company: string): Promise<boolean>;
   /** `pmsg_file_add` — ghi tệp tải lên (id/khoá do route sinh; `boxId` = id FileBox). CC404/CC409/CC422 do DB. */

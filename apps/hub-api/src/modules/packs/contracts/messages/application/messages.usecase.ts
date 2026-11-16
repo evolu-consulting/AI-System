@@ -38,6 +38,7 @@ import {
   summaryOf,
 } from "./messages.view";
 import { type MessagesFileOps, messagesFileOps } from "./messages-files.usecase";
+import { messagesFindOps } from "./messages-find.usecase";
 import { type DirectoryFn, partnerOps } from "./partner.usecase";
 import { partnerChatOps } from "./partner-chat.usecase";
 
@@ -360,6 +361,7 @@ export function messagesUsecases(d: Deps) {
     ...memberOps(c),
     ...readOps(c),
     ...sendOps(c),
+    ...messagesFindOps(d),
     filesEnabled: c.fileOps.filesEnabled,
     uploadFile: c.fileOps.upload,
     fileLink: c.fileOps.link,

@@ -34,6 +34,7 @@ export * from "./lock";
 export * from "./manage";
 export * from "./manual-entry";
 export * from "./messages";
+export * from "./messages-find";
 export * from "./milestones";
 export * from "./mywork";
 export * from "./obligation-impact";

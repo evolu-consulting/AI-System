@@ -12,6 +12,7 @@ import { appError } from "../../../../../lib/errors";
 import { parseJson, parseQuery } from "../../../../../lib/http";
 import { cleanFileName, fileNameOf } from "../../adapters/upload.routes";
 import type { MessagesUsecases } from "../application/messages.usecase";
+import { attachQuery } from "./messages-find.routes";
 import {
   type H,
   MULTIPART_SLACK,
@@ -97,7 +98,19 @@ function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   });
 }
 
+/** CR-178 M4 · «Ảnh & tệp» của cuộc `partner` (đọc được cả sau ngắt kết nối). */
+function attachmentRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
+  r.get(`${P}/attachments`, h.read, async (c) => {
+    const w = h.who(c);
+    const id = h.uuid(c, "id");
+    const out = await run(uc.partnerAttachments(w, id, attachQuery(c)));
+    h.noStore(c);
+    return c.json(out);
+  });
+}
+
 export function partnerChatRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   chatRoutes(r, h, uc);
+  attachmentRoutes(r, h, uc);
   fileRoutes(r, h, uc);
 }

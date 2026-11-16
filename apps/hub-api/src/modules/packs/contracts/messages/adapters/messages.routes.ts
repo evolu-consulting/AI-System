@@ -23,6 +23,7 @@ import { cleanFileName, fileNameOf } from "../../adapters/upload.routes";
 import type { MessagesUsecases } from "../application/messages.usecase";
 import { decodeCursor } from "../application/messages.view";
 import { type CompanyFilter, parseCompanyFilter } from "../domain/partner.rules";
+import { attachQuery } from "./messages-find.routes";
 import { partnerChatRoutes } from "./partner.routes";
 import {
   type H,
@@ -180,6 +181,17 @@ function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   });
 }
 
+/** CR-178 M4 · «Ảnh & tệp» của cuộc nội bộ (GET; đường riêng, không đụng POST tải lên `/files`). */
+function attachmentRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
+  r.get("/messages/conversations/:id/attachments", h.read, async (c) => {
+    const w = h.who(c);
+    const cid = h.uuid(c, "id");
+    const out = await run(uc.attachments(w, cid, attachQuery(c)));
+    h.noStore(c);
+    return c.json(out);
+  });
+}
+
 /** Danh bạ + công ty (CR-148 tải dần; CR-169: lọc công ty, người công ty kết nối, chip công ty). */
 function peopleRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   // Danh bạ «Thành viên» TẢI DẦN (30/lần, trần 50): `own` theo phòng ban rồi tên (CR-148); `all`/công ty theo tên, người có quyền Sổ Hợp Tác.
@@ -224,6 +236,7 @@ export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Rout
   memberRoutes(r, h, uc);
   messageRoutes(r, h, uc);
   fileRoutes(r, h, uc);
+  attachmentRoutes(r, h, uc);
   partnerChatRoutes(r, h, uc); // CR-169 · `/messages/partner/:id/**`
   return r;
 }

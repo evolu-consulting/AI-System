@@ -46,3 +46,43 @@ BEGIN
 END $$;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION hub.pmsg_inbox_unread(uuid, timestamptz, uuid, integer) FROM PUBLIC;
+--> statement-breakpoint
+
+-- ── M4 · «Ảnh & tệp» của một cuộc ───────────────────────────────────────────────────────────────────────────────────────────────
+-- Tệp ĐÃ GỬI (gắn tin, tin chưa thu hồi, tệp chưa xoá) của cuộc p_id, mới nhất trước, keyset (seq, id) DESC. p_kind: NULL = cả hai | 'image' (mime image/*) | 'file' (còn lại).
+-- u phải là một trong hai đầu, không thì CC404 (không lộ, P3); KHÔNG kiểm còn kết nối ⇒ đọc được cả sau ngắt (P3). Tệp chưa gắn tin (của người đang soạn) không ra.
+-- p_limit kẹp 1..31 (route xin limit+1). Tên người gửi tra sẵn bằng join (không vòng lặp).
+CREATE OR REPLACE FUNCTION hub.pmsg_files_list(p_id uuid, p_kind text, p_cur_seq bigint, p_cur_id uuid, p_limit integer)
+RETURNS TABLE (id uuid, name text, mime text, size bigint, seq bigint, sender_user uuid, sender_name text, at timestamptz)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, pg_temp
+AS $$
+#variable_conflict use_column
+DECLARE
+  v_tid uuid;
+  v_uid uuid;
+  v_lim integer := LEAST(GREATEST(COALESCE(p_limit, 30), 1), 31);
+BEGIN
+  SELECT c.tid, c.uid INTO v_tid, v_uid FROM hub.pmsg_ctx() c;
+  IF p_id IS NULL OR (p_kind IS NOT NULL AND p_kind NOT IN ('image', 'file')) THEN
+    RAISE EXCEPTION 'pmsg_files_list: đầu vào không hợp lệ' USING ERRCODE = '22023';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM hub.pmsg_threads t
+                  WHERE t.id = p_id AND ((t.a_tenant = v_tid AND t.a_user = v_uid) OR (t.b_tenant = v_tid AND t.b_user = v_uid))) THEN
+    RAISE EXCEPTION 'MSG_NOT_FOUND' USING ERRCODE = 'CC404';
+  END IF;
+  RETURN QUERY
+  SELECT f.id, f.name, f.mime, f.size, f.seq, m.sender_user, COALESCE(su.display_name, ''), m.created_at
+    FROM hub.pmsg_files f
+    JOIN hub.pmsg_messages m ON m.thread_id = f.thread_id AND m.seq = f.seq AND m.deleted_at IS NULL
+    LEFT JOIN admin.users su ON su.id = m.sender_user
+   WHERE f.thread_id = p_id AND f.seq IS NOT NULL AND f.deleted_at IS NULL
+     AND (p_kind IS NULL OR (p_kind = 'image') = (f.mime LIKE 'image/%'))
+     AND (p_cur_seq IS NULL OR p_cur_id IS NULL OR (f.seq, f.id) < (p_cur_seq, p_cur_id))
+   ORDER BY f.seq DESC, f.id DESC
+   LIMIT v_lim;
+END $$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION hub.pmsg_files_list(uuid, text, bigint, uuid, integer) FROM PUBLIC;

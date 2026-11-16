@@ -160,6 +160,7 @@ beforeAll(async () => {
   await o`update admin.users set display_name = 'Vy' where id = ${VY}`;
   await o`update admin.users set display_name = 'Hà' where id = ${HA}`;
   await o`update admin.users set display_name = 'Dũng' where id = ${DUNG}`;
+  await o`update admin.users set display_name = 'Cuong' where id = ${CUONG}`;
   await o`insert into hub.partner_links (from_tenant, to_tenant, accepted_at)
     values (${A}, ${B}, now()), (${B}, ${A}, now()), (${A}, ${C}, now()), (${C}, ${A}, now())`;
 }, 120_000);
@@ -234,5 +235,111 @@ describe("CR-178 M5 · ?unread=true lọc chưa đọc ở máy chủ (nội b�
   });
 });
 
-// M4 và M3 được thêm bên dưới.
-export const _used = { ANH, PNG, PDF, upload, PNG_NAME: "a.png" };
+type Att = {
+  items: {
+    file: { id: string; name: string; mime: string };
+    kind: string;
+    sender_name: string;
+    seq: number;
+  }[];
+  next_cursor: string | null;
+};
+const seqs = (r: Res<Att>) => r.body.items.map((i) => i.seq);
+
+describe("CR-178 M4 · Ảnh & tệp của cuộc nội bộ", () => {
+  let g = "";
+  it("người được giao (VY, không phải người tạo) liệt kê tệp đã gửi mới nhất trước; tệp chưa gửi và tệp của tin đã thu hồi không ra; lọc kind; phân trang keyset", async () => {
+    g = (await group(TIEN, "Hồ sơ thầu", [VY])).body.id;
+    const [p1, d1, p2, p3, orphan] = await Promise.all([
+      upload(TIEN, I(g), "a1.png", PNG),
+      upload(TIEN, I(g), "b.pdf", PDF),
+      upload(TIEN, I(g), "a2.png", PNG),
+      upload(TIEN, I(g), "a3.png", PNG),
+      upload(TIEN, I(g), "chua-gui.png", PNG),
+    ]);
+    expect(orphan.status).toBe(201);
+    await send(TIEN, I(g), "ảnh 1", [p1.body.id]); // seq 1
+    await send(TIEN, I(g), "tài liệu", [d1.body.id]); // seq 2
+    await send(TIEN, I(g), "ảnh 2", [p2.body.id]); // seq 3
+    const s4 = await send(TIEN, I(g), "ảnh nhầm", [p3.body.id]); // seq 4, thu hồi
+    await call(TIEN, "DELETE", `${I(g)}/messages/${s4.body.seq}`);
+    const all = await call<Att>(VY, "GET", `${I(g)}/attachments`);
+    expect([all.status, seqs(all)]).toEqual([200, [3, 2, 1]]);
+    expect(all.body.items.map((i) => [i.file.name, i.kind, i.sender_name])).toEqual([
+      ["a2.png", "image", "Tiến"],
+      ["b.pdf", "file", "Tiến"],
+      ["a1.png", "image", "Tiến"],
+    ]);
+    expect(seqs(await call<Att>(VY, "GET", `${I(g)}/attachments?kind=image`))).toEqual([3, 1]);
+    expect(seqs(await call<Att>(VY, "GET", `${I(g)}/attachments?kind=file`))).toEqual([2]);
+    const pg1 = await call<Att>(VY, "GET", `${I(g)}/attachments?limit=2`);
+    expect([seqs(pg1), pg1.body.next_cursor !== null]).toEqual([[3, 2], true]);
+    const pg2 = await call<Att>(
+      VY,
+      "GET",
+      `${I(g)}/attachments?limit=2&cursor=${pg1.body.next_cursor}`,
+    );
+    expect([seqs(pg2), pg2.body.next_cursor]).toEqual([[1], null]);
+    expect((await call<Att>(TIEN, "GET", `${I(g)}/attachments`)).status).toBe(200);
+  });
+  it("người ngoài cuộc cùng công ty (LAN), công ty khác (CUONG), id lạ ⇒ 404 MSG_NOT_FOUND; query sai ⇒ 400", async () => {
+    for (const [u, id] of [
+      [LAN, g],
+      [ANH, g],
+      [CUONG, g],
+      [DUNG, g],
+      [VY, randomUUID()],
+    ] as const) {
+      const r = await call(u, "GET", `${I(id)}/attachments`);
+      expect([u, r.status, code(r)]).toEqual([u, 404, "MSG_NOT_FOUND"]);
+    }
+    for (const qs of ["kind=svg", "cursor=%25%25", "limit=31", "limit=0"]) {
+      const r = await call(VY, "GET", `${I(g)}/attachments?${qs}`);
+      expect([qs, r.status, code(r)]).toEqual([qs, 400, "VALIDATION_ERROR"]);
+    }
+  });
+});
+
+describe("CR-178 M4 · Ảnh & tệp của cuộc partner (đọc được cả sau ngắt kết nối)", () => {
+  let vc = "";
+  it("hai đầu (VY, CUONG — CUONG không phải người mở) thấy tệp của cả hai phía; công ty thứ ba (DUNG, B không kết nối C) và đồng nghiệp ngoài cuộc (LAN) ⇒ 404", async () => {
+    vc = (await partner(VY, C, CUONG)).body.id;
+    const [a, b, c] = await Promise.all([
+      upload(VY, P(vc), "vy.png", PNG),
+      upload(CUONG, P(vc), "cuong.pdf", PDF),
+      upload(VY, P(vc), "nham.png", PNG),
+    ]);
+    expect([a.status, b.status, c.status]).toEqual([201, 201, 201]);
+    await send(VY, P(vc), "ảnh Vy", [a.body.id]); // 1
+    await send(CUONG, P(vc), "pdf Cường", [b.body.id]); // 2
+    const s3 = await send(VY, P(vc), "ảnh nhầm", [c.body.id]); // 3, thu hồi
+    await call(VY, "DELETE", `${P(vc)}/messages/${s3.body.seq}`);
+    const r = await call<Att>(CUONG, "GET", `${P(vc)}/attachments`);
+    expect([r.status, seqs(r)]).toEqual([200, [2, 1]]);
+    expect(r.body.items.map((i) => [i.file.name, i.kind, i.sender_name])).toEqual([
+      ["cuong.pdf", "file", "Cuong"],
+      ["vy.png", "image", "Vy"],
+    ]);
+    expect(seqs(await call<Att>(VY, "GET", `${P(vc)}/attachments?kind=image`))).toEqual([1]);
+    const pg1 = await call<Att>(VY, "GET", `${P(vc)}/attachments?limit=1`);
+    const pg2 = await call<Att>(
+      VY,
+      "GET",
+      `${P(vc)}/attachments?limit=1&cursor=${pg1.body.next_cursor}`,
+    );
+    expect([seqs(pg1), seqs(pg2), pg2.body.next_cursor]).toEqual([[2], [1], null]);
+    for (const u of [DUNG, HA, LAN, TIEN]) {
+      const x = await call(u, "GET", `${P(vc)}/attachments`);
+      expect([u, x.status, code(x)]).toEqual([u, 404, "MSG_NOT_FOUND"]);
+    }
+    expect((await call(VY, "GET", `${P(vc)}/attachments?kind=svg`)).status).toBe(400);
+  });
+  it("sau khi ngắt kết nối A–C vẫn liệt kê được (P3)", async () => {
+    await o`delete from hub.partner_links where (from_tenant, to_tenant) in ((${A}, ${C}), (${C}, ${A}))`;
+    expect(seqs(await call<Att>(CUONG, "GET", `${P(vc)}/attachments`))).toEqual([2, 1]);
+    expect(seqs(await call<Att>(VY, "GET", `${P(vc)}/attachments`))).toEqual([2, 1]);
+  });
+});
+
+// M3 được thêm bên dưới.
+export const _used = { ANH, HA };

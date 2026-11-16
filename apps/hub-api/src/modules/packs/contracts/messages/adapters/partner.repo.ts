@@ -7,6 +7,7 @@ import type {
   PartnerCompanyRow,
   PartnerPersonRow,
   PartnerRepo,
+  RawAttachment,
   RawConversation,
   RawMessage,
 } from "../application/messages.ports";
@@ -124,6 +125,11 @@ export function partnerRepo(tx: Tx, tid: string): PartnerRepo {
         sql`select hub.pmsg_mark_read(${id}::uuid, ${seq}::bigint)::text as n`,
       );
       return Number(r?.n ?? 0);
+    },
+    attachments(id, q) {
+      return tx.execute<RawAttachment>(sql`select a.id, a.name, a.mime, a.size::int as size, a.seq::int as seq, a.sender_user as sender_id,
+          a.sender_name, ${iso("a.at")} as at
+        from hub.pmsg_files_list(${id}::uuid, ${q.kind}::text, ${q.cur?.seq ?? null}::bigint, ${q.cur?.id ?? null}::uuid, ${q.limit}::int) a`);
     },
     async connected(company) {
       const [r] = await tx.execute<{ c: boolean }>(

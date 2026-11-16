@@ -3,5 +3,5 @@
 GRANT USAGE ON SCHEMA hub TO contracts_rw;
 --> statement-breakpoint
 GRANT EXECUTE ON FUNCTION
-  hub.pmsg_inbox_unread(uuid, timestamptz, uuid, integer)
+  hub.pmsg_inbox_unread(uuid, timestamptz, uuid, integer), hub.pmsg_files_list(uuid, text, bigint, uuid, integer)
   TO contracts_rw;
