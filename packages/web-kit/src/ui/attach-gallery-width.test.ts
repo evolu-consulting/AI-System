@@ -9,3 +9,12 @@ test("AttachGallery: lưới ảnh và danh sách tệp rộng px cố định, 
   expect(src).toContain("width: ATTACH_SIZE.cardMaxWidth,");
   expect(src).not.toMatch(/width: "100%",\s*\n\s*maxWidth: (big|ATTACH_SIZE)/);
 });
+
+test("CR-179 (UAT): xem ảnh/tệp toàn màn cách mép 5px; hộp xem phủ hết vùng (không đổi kích thước khi tải xong)", async () => {
+  const { ATTACH_SIZE } = await import("../attach-layout");
+  expect(ATTACH_SIZE.viewerInset).toBe(5);
+  expect(ATTACH_SIZE.viewerWidth).toBe("100%");
+  expect(ATTACH_SIZE.viewerHeight).toBe("100%");
+  const viewer = readFileSync(new URL("./AttachViewer.tsx", import.meta.url), "utf8");
+  expect(viewer).toContain("inset: ATTACH_SIZE.viewerInset");
+});

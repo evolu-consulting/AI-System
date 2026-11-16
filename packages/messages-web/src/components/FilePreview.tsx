@@ -120,7 +120,7 @@ export function FilePreview({
         closeLabel={t("contracts.messages.attachUi.close")}
         aria-describedby={undefined}
         data-testid="file-preview"
-        className="top-0 left-0 h-full max-h-none w-full max-w-none translate-x-0 translate-y-0 gap-3 rounded-none border-0 bg-black/90 p-3 text-white sm:max-w-none sm:p-5"
+        className="top-0 left-0 h-full max-h-none w-full max-w-none translate-x-0 translate-y-0 gap-3 rounded-none border-0 bg-black/90 p-[5px] text-white sm:max-w-none sm:p-[5px]"
       >
         <header className="flex shrink-0 items-center gap-2">
           <div className="min-w-0 flex-1">

@@ -219,9 +219,11 @@ export const ATTACH_SIZE = {
   /** Thẻ tệp: cao cố định (tên 1 dòng + dung lượng 1 dòng). */
   cardHeight: 56,
   cardMaxWidth: 420,
-  /** Hộp xem trước: theo khung nhìn, không đổi khi nội dung về. */
-  viewerWidth: "min(90vw, 960px)",
-  viewerHeight: "min(80vh, 720px)",
+  /** Hộp xem trước: phủ toàn bộ vùng xem (khung toàn màn cách mép `viewerInset`), không đổi khi nội dung về. */
+  viewerWidth: "100%",
+  viewerHeight: "100%",
+  /** CR-179 (UAT): xem ảnh/tệp toàn màn, cách mép 5px cả bốn phía. */
+  viewerInset: 5,
   /** Chip tải lên (ô soạn gọn / thường). */
   chipHeight: 56,
   chipHeightCompact: 44,

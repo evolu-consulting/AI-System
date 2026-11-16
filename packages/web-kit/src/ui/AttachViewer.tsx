@@ -2,7 +2,7 @@
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useEffect } from "react";
-import { type AttachItem, isPdfItem, stepIndex } from "../attach-layout";
+import { ATTACH_SIZE, type AttachItem, isPdfItem, stepIndex } from "../attach-layout";
 import { ViewerStage } from "./attach-frame";
 import type { AttachGalleryProps } from "./attach-gallery-props";
 import { DownloadIcon, navBtn, useLazyUrl } from "./attach-parts";
@@ -45,7 +45,7 @@ export function AttachViewer({
           aria-describedby={undefined}
           style={{
             position: "fixed",
-            inset: "4vh 4vw",
+            inset: ATTACH_SIZE.viewerInset,
             zIndex: 1001,
             display: "flex",
             flexDirection: "column",
