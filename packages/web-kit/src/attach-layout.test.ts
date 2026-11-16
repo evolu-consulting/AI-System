@@ -128,13 +128,13 @@ describe("CR-173 · validateFiles", () => {
 });
 
 describe("CR-179 · khung tệp cố định", () => {
-  test("loadPhase: chưa URL/chưa onLoad ⇒ loading; xong ⇒ ready; lỗi ⇒ error", () => {
+  test("loadPhase đổi theo URL, onLoad và lỗi", () => {
     expect(loadPhase({ url: null, failed: false, loaded: false })).toBe("loading");
     expect(loadPhase({ url: "blob:x", failed: false, loaded: false })).toBe("loading");
     expect(loadPhase({ url: "blob:x", failed: false, loaded: true })).toBe("ready");
     expect(loadPhase({ url: null, failed: true, loaded: false })).toBe("error");
   });
-  test("thumbFrame: ảnh đơn có tỉ lệ + rộng tối đa cố định; ô lưới không áp riêng", () => {
+  test("thumbFrame ảnh đơn có tỉ lệ và rộng tối đa cố định", () => {
     expect(thumbFrame(true)).toEqual({
       aspectRatio: ATTACH_SIZE.oneRatio,
       width: "100%",

@@ -34,8 +34,8 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED pack-contracts/tin-nhan.md
 #### Yêu cầu: Tệp và ảnh hiển thị trong khung cố định
 Ảnh, thẻ tệp, chip tải lên và hộp xem trước có kích thước cố định ngay từ đầu; trong lúc tải hiện nền tối + vòng xoay, tải xong ảnh hiện dần mà khung không đổi cỡ; ảnh lỗi hiện ô lỗi cùng cỡ kèm «Tải về». Hộp xem trước nền đen, giữa hộp ghi «Đang tải…» tới khi tệp sẵn sàng.
-- Kịch bản: khi tệp chưa tải xong hoặc ảnh lỗi thì trạng thái hiển thị là «đang tải» hoặc «lỗi», chỉ «sẵn sàng» khi có URL và ảnh đã onLoad [test: packages/web-kit/src/attach-layout.test.ts » loadPhase: chưa URL/chưa onLoad ⇒ loading; xong ⇒ ready; lỗi ⇒ error]
-- Kịch bản: khi chỉ có một ảnh thì khung có tỉ lệ và rộng tối đa cố định [test: packages/web-kit/src/attach-layout.test.ts » thumbFrame: ảnh đơn có tỉ lệ + rộng tối đa cố định; ô lưới không áp riêng]
+- Kịch bản: khi tệp chưa tải xong hoặc ảnh lỗi thì trạng thái hiển thị là «đang tải» hoặc «lỗi», chỉ «sẵn sàng» khi có URL và ảnh đã onLoad [test: packages/web-kit/src/attach-layout.test.ts » loadPhase đổi theo URL, onLoad và lỗi]
+- Kịch bản: khi chỉ có một ảnh thì khung có tỉ lệ và rộng tối đa cố định [test: packages/web-kit/src/attach-layout.test.ts » thumbFrame ảnh đơn có tỉ lệ và rộng tối đa cố định]
 - Kịch bản: khi người nhận mở «Xem trước» PDF thì hộp xem giữ nguyên kích thước trước và sau khi tải xong [test: e2e/cr179/khung-tep-co-dinh.spec.ts » xem trước tệp: hộp nền đen giữ nguyên kích thước trước và sau khi tải xong]
 
 ## Việc còn lại
