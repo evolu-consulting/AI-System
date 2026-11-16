@@ -12,6 +12,7 @@ import {
 } from "../attach-layout";
 import { AttachViewer } from "./AttachViewer";
 import { FramedImage } from "./attach-frame";
+import type { AttachGalleryProps } from "./attach-gallery-props";
 import {
   cardStyle,
   DownloadIcon,
@@ -22,17 +23,7 @@ import {
   useVisible,
 } from "./attach-parts";
 
-export type AttachGalleryProps = {
-  items: readonly AttachItem[];
-  getUrl: (id: string) => Promise<string>;
-  onDownload: (item: AttachItem) => void;
-  labels: AttachLabels;
-  locale?: string;
-  /** Nhãn danh sách thẻ tệp (a11y). */
-  ariaLabel?: string;
-  /** CR-166: `center` ⇒ căn giữa khung chứa (Community); mặc định `start` (chat). */
-  align?: "start" | "center";
-};
+export type { AttachGalleryProps } from "./attach-gallery-props";
 
 const GRID: Record<string, CSSProperties> = {
   two: { gridTemplateColumns: "1fr 1fr", height: ATTACH_SIZE.gridTwoHeight },
