@@ -4,6 +4,7 @@ import type { AudienceMode, PartnerOrg, PostType } from "@ai/contracts/community
 import { attachPickLabels } from "@ai/web-kit/attach-layout";
 import { AttachPickButton } from "@ai/web-kit/ui/AttachDropzone";
 import { useEffect, useState } from "react";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { uploadFiles } from "../application/attach";
 import { loadComposerOpen, saveComposerOpen } from "../application/composer-pref";
 import { useApp } from "../application/ctx";
@@ -226,21 +227,20 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
               ))}
             </fieldset>
             {isHostViewer && (
-              <select
-                className="field prefillsel"
+              <OptionSelect
+                className="prefillsel"
                 aria-label={t("community.composer.prefillFrom")}
-                title={t("community.composer.prefillFrom")}
                 value={prefill}
-                onChange={(e) => {
-                  setPrefill(e.target.value);
-                  if (e.target.value) setDraft({ ...draft, product: e.target.value });
+                onValueChange={(v) => {
+                  setPrefill(v);
+                  if (v) setDraft({ ...draft, product: v });
                 }}
               >
                 <option value="">{t("community.composer.prefillOption")}</option>
                 {DEMO_PRODUCTS.map((p) => (
                   <option key={p}>{p}</option>
                 ))}
-              </select>
+              </OptionSelect>
             )}
             <button
               type="button"

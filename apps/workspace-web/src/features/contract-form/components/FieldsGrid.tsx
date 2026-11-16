@@ -1,7 +1,9 @@
 // V2-F · HD-01/09 · mockup `fieldsHTML`: lưới ô thông tin hợp đồng dùng chung (nhập tay, xác nhận sau upload, sửa ở trang chi tiết).
 // Ô bắt buộc có dấu * và viền đỏ khi thiếu; nhãn đối tác + ô hoa hồng/giá trị đi theo loại; giá trị để trống ⇒ placeholder tự cộng.
+
 import { DOC_NUMBER_MAX, isValidDocNumber, normalizeDocNumber } from "@ai/contracts/pack-contracts";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import type { ComponentProps } from "react";
 import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -137,7 +139,7 @@ function PlainTextField({
   return (
     <Row id={`cf-${k}`} label={label} req={o.req} span={o.span} badges={badges} unsure={unsure}>
       <div className="relative">
-        <input
+        <Input
           id={`cf-${k}`}
           name={k}
           data-testid={`cf-${k}`}
@@ -153,17 +155,12 @@ function PlainTextField({
               : undefined
           }
           placeholder={o.ph}
-          aria-invalid={o.bad || undefined}
+          aria-invalid={o.bad || numBad || undefined}
           onChange={(e) =>
             onSet(k, k === "number" ? normalizeDocNumber(e.target.value, true) : e.target.value)
           }
           maxLength={k === "number" ? DOC_NUMBER_MAX : undefined}
-          className={cn(
-            "field",
-            o.mono && "font-mono",
-            (o.bad || numBad) && "border-late",
-            o.suffix && "pr-12",
-          )}
+          className={cn(o.mono && "font-mono", o.suffix && "pr-12")}
         />
         {o.suffix && (
           <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] text-dim">

@@ -1,9 +1,11 @@
 // CR-110 · COM-FR-35..37 · e2e hồ sơ community-web (mock + persona switcher). VIẾT, CHƯA CHẠY (Luật 0b).
+
 import { expect, type Page, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { spa } from "./_nav";
 
 const as = async (page: Page, id: string) => {
-  await page.getByLabel("Chọn nhân vật").selectOption(id);
+  await pickOption(page.getByLabel("Chọn nhân vật"), id);
 };
 
 test.describe("hồ sơ: chủ quản vs đối tác", () => {

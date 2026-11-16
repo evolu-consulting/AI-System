@@ -1,8 +1,11 @@
 // CR-130 · duyệt yêu cầu tham gia: «Tạo đối tác mới» (mặc định) hoặc «Gắn với đối tác có sẵn» (tìm trong đối tác SHT); câu tóm tắt nói rõ
 // sẽ gắn vào đối tác nào trước khi bấm Duyệt. Danh sách đối tác nạp khi mở ô chọn (lỗi/gói tắt ⇒ chỉ còn tạo mới).
+
 import type { JoinRequest } from "@ai/contracts/community";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { Btn } from "~/components/ui/Btn";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useApp } from "../../application/ctx";
 import { filterParties, PARTY_LIMIT, type Party } from "../../domain/join-approve";
 import { t } from "../../i18n";
@@ -60,18 +63,16 @@ export function JoinApprove({
       </fieldset>
       {link && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <input
-            className="field"
+          <Input
             aria-label={t("community.flows.join.searchParty")}
             placeholder={t("community.flows.join.searchParty")}
             value={q}
             onChange={(e) => onSearch(e.target.value)}
           />
-          <select
-            className="field"
+          <OptionSelect
             aria-label={t("community.flows.join.pickParty")}
             value={picked?.party ?? ""}
-            onChange={(e) => setPicked(shown.find((p) => p.party === e.target.value) ?? null)}
+            onValueChange={(v) => setPicked(shown.find((p) => p.party === v) ?? null)}
           >
             <option value="">{t("community.flows.join.pickParty")}</option>
             {shown.map((p) => (
@@ -79,7 +80,7 @@ export function JoinApprove({
                 {p.name}
               </option>
             ))}
-          </select>
+          </OptionSelect>
           {parties?.length === 0 && (
             <span className="muted">{t("community.flows.join.noParties")}</span>
           )}

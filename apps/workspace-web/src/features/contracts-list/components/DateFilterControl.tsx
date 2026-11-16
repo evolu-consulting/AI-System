@@ -5,6 +5,7 @@ import { CONTRACT_DATE_FIELDS, CONTRACT_DUE_PRESETS } from "@ai/contracts/light"
 import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import {
   type DateAction,
   type DateField,
@@ -41,24 +42,22 @@ export function DateFilterControl({
     <fieldset className="m-0 flex min-w-0 flex-wrap items-center gap-2 border-0 p-0">
       <legend className="sr-only">{t("contracts.list.date.label")}</legend>
       {FIELDS.length > 1 && (
-        <select
+        <OptionSelect
           aria-label={t("contracts.list.date.field")}
-          className={SELECT}
           value={value.field ?? DEFAULT_DATE_FIELD}
-          onChange={(e) => onChange({ type: "field", field: e.target.value as DateField })}
+          onValueChange={(v) => onChange({ type: "field", field: v as DateField })}
         >
           {FIELDS.map((k) => (
             <option key={k} value={k}>
               {t(`contracts.list.date.fields.${k}`)}
             </option>
           ))}
-        </select>
+        </OptionSelect>
       )}
-      <select
+      <OptionSelect
         aria-label={t("contracts.list.date.window")}
-        className={SELECT}
         value={mode}
-        onChange={(e) => setMode(e.target.value as Mode)}
+        onValueChange={(v) => setMode(v as Mode)}
       >
         <option value="">{t("contracts.list.date.any")}</option>
         {CONTRACT_DUE_PRESETS.map((p) => (
@@ -67,7 +66,7 @@ export function DateFilterControl({
           </option>
         ))}
         <option value="range">{t("contracts.list.date.range")}</option>
-      </select>
+      </OptionSelect>
       {mode === "range" && (
         <>
           <DateInput

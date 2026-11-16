@@ -1,7 +1,9 @@
 // CR-147c · «Nhắc tên» (bản mẫu cr147-mention-picker): thanh công cụ chỉ có biểu tượng 👤+; bấm mở hộp thoại tìm + chọn tối đa 10 người,
 // danh sách tải dần khi cuộn. Chỉ người xem được bài (server lọc, CR-145). Người đã chọn hiện thành chip ở ô đăng (MentionChips).
 // Ảnh đại diện: chưa có PersonAvatar trên nhánh này ⇒ chữ cái đầu; phòng ban · chức vụ: API chưa trả ⇒ chỉ hiện tên công ty (nếu có).
+
 import { POST_MENTIONS_MAX } from "@ai/contracts/community";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { useApp } from "../application/ctx";
@@ -142,9 +144,8 @@ export function MentionPicker({
             <DialogHeader>
               <DialogTitle>{label}</DialogTitle>
             </DialogHeader>
-            <input
+            <Input
               type="search"
-              className="field"
               aria-label={t("community.draft.mentionSearch")}
               placeholder={t("community.draft.mentionSearch")}
               value={q}

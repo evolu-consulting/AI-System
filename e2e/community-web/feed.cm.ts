@@ -1,8 +1,10 @@
 // CR-102 · C5 · e2e luồng chính của community-web với adapter mock (persona switcher chỉ có ở mock).
+
 import { expect, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 
 const as = async (page: import("@playwright/test").Page, id: string) => {
-  await page.getByLabel("Chọn nhân vật").selectOption(id);
+  await pickOption(page.getByLabel("Chọn nhân vật"), id);
 };
 
 test("chủ quản: đăng Cần bán, sửa (đã sửa), lưu trữ, xoá có xác nhận", async ({ page }) => {

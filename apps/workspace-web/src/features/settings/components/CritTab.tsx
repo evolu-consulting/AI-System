@@ -1,5 +1,6 @@
 // V2-L · CD-02/03: tab "Tiêu chí" của một ô — bật/tắt, trọng số (thanh trượt, hiện % sau chuẩn hoá), ≤ 8 tiêu chí tự thêm (3 kiểu),
 // kèm "thử tính" điểm theo bản nháp. Điểm uy tín thật của đối tác đổi ra sao: `ImpactBox`.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsGroup, SettingsSeg, SettingsSwitch } from "~/shared/ui/settings-layout";
@@ -12,7 +13,7 @@ import {
   type Milestone,
 } from "../lib/rep-types";
 import { levelOf, tryCriteria } from "../lib/try-calc";
-import { FIELD, Num } from "./controls";
+import { Num } from "./controls";
 import { TryBox, TryNum } from "./TryBox";
 
 type Props = { cell: Cell; set: (c: Cell) => void; share: number; good: number; fair: number };
@@ -104,10 +105,9 @@ function AddForm({ cell, set, done }: { cell: Cell; set: (c: Cell) => void; done
   };
   return (
     <div className="grid gap-3 border-t border-rule-soft bg-sunk px-5 py-4">
-      <input
+      <Input
         aria-label={s("newName")}
         placeholder={s("newName")}
-        className={FIELD}
         maxLength={60}
         value={label}
         onChange={(e) => setLabel(e.target.value)}

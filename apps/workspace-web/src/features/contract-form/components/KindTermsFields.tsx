@@ -1,10 +1,13 @@
 // CR-152 · bản mẫu `cr152-contract-kinds` (nq-form, ht-form): trường riêng của HĐ Nhượng quyền (3 tab Chung / Phí / Pháp lý) và Thỏa thuận hợp tác.
 // Ô «Đã đăng ký Bộ Công Thương» + ngày chỉ hiện khi tick «Bên nhượng quyền ở nước ngoài». Ô AI chưa chắc (`terms.<khoá>`) viền vàng như ô khác.
+
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Tag } from "~/components/shared/tag";
 import { cn } from "~/lib/utils";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { type KindDeal, type TermsState, visibleKeys } from "../lib/kind-terms";
 
 type Kind = "text" | "area" | "money" | "pct" | "check" | "date" | "select";
@@ -97,14 +100,14 @@ function FieldInput({ s, p }: { s: Spec; p: Props }) {
     );
   if (s.kind === "select")
     return (
-      <select {...common} value={v} onChange={(e) => set(e.target.value)} className={cls}>
+      <OptionSelect {...common} value={v} onValueChange={set}>
         <option value="">{t("contracts.kinds.pick")}</option>
         {s.options?.map((o) => (
           <option key={o} value={o}>
             {t(`contracts.kinds.opt.${s.k}.${o}`)}
           </option>
         ))}
-      </select>
+      </OptionSelect>
     );
   if (s.kind === "date")
     return (
@@ -131,13 +134,13 @@ function FieldInput({ s, p }: { s: Spec; p: Props }) {
   const num = s.kind === "money" || s.kind === "pct";
   return (
     <div className="relative">
-      <input
+      <Input
         {...common}
         type="text"
         inputMode={num ? "decimal" : undefined}
         value={v}
         onChange={(e) => set(e.target.value)}
-        className={cn(cls, num && "pr-10 font-mono")}
+        className={cn(num && "pr-10 font-mono")}
       />
       {num && (
         <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] text-dim">

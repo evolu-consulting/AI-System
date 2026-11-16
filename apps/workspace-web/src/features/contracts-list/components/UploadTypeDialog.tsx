@@ -1,6 +1,7 @@
 // DOC-ui-gaps · mục 3 DOC-ui-list: hộp chọn loại chứng từ trước khi tải lên — HĐ kinh tế (tuỳ chọn "Thuộc HĐ nguyên tắc") hoặc HĐ nguyên tắc
 // (hạn mức tuỳ chọn, cách đặt hàng). Giao dịch nhập tay (không tải tệp). Áp cho cả lô tệp vừa chọn.
 // TODO(AI): `ai_read.doc_type_suggest` (gợi ý tô vàng, chọn lại) chỉ có SAU khi AI đọc; cần API đổi loại sau khi đọc + hiển thị ở màn kiểm HĐ.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -92,9 +93,9 @@ export function UploadTypeDialog({
             <div className="flex flex-col gap-3 text-[13px]">
               <div className="flex flex-col gap-1">
                 <label htmlFor="up-credit">{t("contracts.doclist.upload.credit")}</label>
-                <input
+                <Input
                   id="up-credit"
-                  className="field font-mono"
+                  className="font-mono"
                   inputMode="decimal"
                   value={d.creditLimit}
                   placeholder={t("contracts.doclist.upload.creditPh")}

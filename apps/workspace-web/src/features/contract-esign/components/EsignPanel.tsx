@@ -1,10 +1,12 @@
 // cf-esign-docusign · khối "Ký số" ở chi tiết HĐ (trung lập nhà cung cấp): Gửi ký (owner/editor) ⇒ "Đang chờ ký" (Ký ngay cho người ký
 // nội bộ, Làm mới trạng thái, Huỷ) ⇒ "Đã ký số" + thời điểm + tải "Bản đã ký"; từ chối/huỷ ⇒ lý do + Gửi lại. Ký thử ⇒ nhãn rõ.
+
 import type {
   ESignEnvelopeOut,
   ESignProviderOut,
   ESignStateOut,
 } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, viDateTime } from "~/components/shared/format";
@@ -90,8 +92,8 @@ function CancelMenu({ busy, onCancel }: { busy: boolean; onCancel: (r: string) =
             <DialogTitle>{t("contracts.esign.cancelTitle")}</DialogTitle>
           </DialogHeader>
           <p className="text-[13.5px] text-dim">{t("contracts.esign.cancelWarn")}</p>
-          <input
-            className="field h-9"
+          <Input
+            className="h-9"
             aria-label={t("contracts.esign.cancelReason")}
             value={reason}
             maxLength={200}

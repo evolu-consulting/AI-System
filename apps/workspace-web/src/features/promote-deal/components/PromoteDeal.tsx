@@ -1,5 +1,6 @@
 // CR-101 DOC-ui-frame · R10: nút "Nâng thành hợp đồng" của giao dịch + hộp chọn file ký và số HĐ (bắt buộc); sau khi nâng HĐ bị khoá.
 
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -63,9 +64,8 @@ function PromoteDialog({ id, onClose }: { id: string; onClose: () => void }) {
           </div>
           <label className="flex flex-col gap-1 text-[13px]" htmlFor="promote-number">
             {L("number")}
-            <input
+            <Input
               id="promote-number"
-              className="field"
               value={number}
               maxLength={200}
               onChange={(e) => setNumber(e.target.value)}

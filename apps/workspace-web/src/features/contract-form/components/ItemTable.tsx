@@ -1,6 +1,8 @@
 // V2-F · HD-01 · 5.5a · mockup `itemsEditor` (bản 2 hàng): bảng dòng hàng — tên trên HĐ, SL, đơn vị, đơn giá, thành tiền; dưới mỗi dòng
 // là chọn SP danh mục (`ProductPicker`). Gõ xong tên mà chưa chọn SP ⇒ gợi ý qua `POST /products/match` (V2-B).
+
 import type { ContractDeal, ProductOut } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { useProductSuggest } from "../hooks/use-product-suggest";
@@ -17,7 +19,7 @@ type Props = {
   onRemove: (i: number) => void;
 };
 
-const INPUT = "field h-9";
+const _INPUT = "field h-9";
 const CELL = "px-2 pt-2 pb-1";
 
 function ItemRow({
@@ -56,40 +58,40 @@ function ItemRow({
     <>
       <tr>
         <td className={`${CELL} first:pl-5`}>
-          <input
+          <Input
             aria-label={L("itemNameAria")}
             placeholder={L("itemNamePh")}
             value={line.name}
             onChange={(e) => onPatch({ name: e.target.value })}
             onBlur={() => void suggest()}
-            className={`${INPUT} min-w-[150px]`}
+            className="min-w-[150px]"
           />
         </td>
         <td className={CELL}>
-          <input
+          <Input
             aria-label={L("itemQtyAria")}
             inputMode="decimal"
             value={line.qty}
             onChange={(e) => onPatch({ qty: e.target.value })}
-            className={`${INPUT} min-w-[64px] text-right font-mono`}
+            className="min-w-[64px] text-right font-mono"
           />
         </td>
         <td className={CELL}>
-          <input
+          <Input
             aria-label={L("itemUnitAria")}
             placeholder={L("itemUnitPh")}
             value={line.unit}
             onChange={(e) => onPatch({ unit: e.target.value })}
-            className={`${INPUT} w-[90px]`}
+            className="w-[90px]"
           />
         </td>
         <td className={CELL}>
-          <input
+          <Input
             aria-label={L("itemPriceAria")}
             inputMode="numeric"
             value={line.unit_price}
             onChange={(e) => onPatch({ unit_price: e.target.value })}
-            className={`${INPUT} min-w-[104px] text-right font-mono`}
+            className="min-w-[104px] text-right font-mono"
           />
         </td>
         <td className={`${CELL} text-right font-mono whitespace-nowrap`}>

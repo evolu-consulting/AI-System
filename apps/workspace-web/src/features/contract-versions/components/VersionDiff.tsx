@@ -1,8 +1,10 @@
 // CR-097 K3b · UC-04: so sánh hai phiên bản — bảng các trường pháp lý khác nhau.
+
 import type { ContractVersionRef } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { diffKey, fetchVersionDiff } from "../hooks/use-versions-api";
 import { defaultPair, diffRows } from "../lib/versions";
 
@@ -33,21 +35,21 @@ export function VersionDiff({
     <section data-testid="version-diff" className="mb-3 rounded-lg border border-rule bg-panel p-4">
       <h3 className="mb-2 font-semibold">{t("contracts.versions.diff.title")}</h3>
       <div className="mb-3 flex items-center gap-2 text-sm">
-        <select
+        <OptionSelect
           aria-label={t("contracts.versions.diff.from")}
           value={a}
-          onChange={(e) => setPair([e.target.value, b])}
+          onValueChange={(v) => setPair([v, b])}
         >
           {versions.map(opt)}
-        </select>
+        </OptionSelect>
         <span>→</span>
-        <select
+        <OptionSelect
           aria-label={t("contracts.versions.diff.to")}
           value={b}
-          onChange={(e) => setPair([a, e.target.value])}
+          onValueChange={(v) => setPair([a, v])}
         >
           {versions.map(opt)}
-        </select>
+        </OptionSelect>
       </div>
       {q.isError && <p className="text-sm text-late">{t("contracts.versions.diff.failed")}</p>}
       {q.data && rows.length === 0 && (

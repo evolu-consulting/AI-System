@@ -40,6 +40,12 @@
     "enabled": true,
     "rules": {
       "preset": "recommended",
+      "a11y": {
+        "noLabelWithoutControl": {
+          "level": "error",
+          "options": { "inputComponents": ["Input", "OptionSelect", "Textarea", "DateInput"] }
+        }
+      },
       "suspicious": {
         "noExplicitAny": "error",
         "noConsole": "off"

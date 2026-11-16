@@ -1,5 +1,7 @@
 // #269 · ô chọn công ty nhận bài: tìm theo tên ở máy chủ + «Xem thêm» (50 công ty/lần), không tải cả danh sách.
+
 import type { PartnerOrg } from "@ai/contracts/community";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useState } from "react";
 import { useApp } from "../application/ctx";
 import { t } from "../i18n";
@@ -46,9 +48,8 @@ export function CompanyPicker({
   const shown = list.filter((p) => !p.left);
   return (
     <div className="companypick">
-      <input
+      <Input
         type="search"
-        className="input"
         data-testid="company-search"
         placeholder={t("community.audience.companySearch")}
         aria-label={t("community.audience.companySearch")}

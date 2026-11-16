@@ -1,21 +1,22 @@
 // U3 · R39 · UT-FR-13: cờ đỏ của đối tác — danh sách việc nghiêm trọng (Không giao / Gian lận), nút "Báo cờ đỏ" (quyền ghi, lý do bắt buộc)
 // qua `POST /partner-events`, nút "Gỡ cờ" (chỉ quản lý, lý do bắt buộc) qua `POST /partner-events/:id/void`. Cờ không đổi điểm.
+
 import {
   type PartnerEvent,
   type PartnerRole,
   SEVERE_EVENT_TYPES,
 } from "@ai/contracts/pack-contracts";
-
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { ErrorLine, Loading } from "~/components/shared/states";
-
 import { useLedgerWrites, usePartnerEvents } from "~/features/ledger/hooks/use-ledger";
 import { useAskVoid } from "~/features/ledger/hooks/use-void";
 import { isSevere, today } from "~/features/ledger/lib/ledger";
 import { useAct } from "~/features/ledger/lib/use-act";
 import { useMe } from "~/features/pack-state/hooks/use-me";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 
 type SevereType = (typeof SEVERE_EVENT_TYPES)[number];
 
@@ -88,34 +89,34 @@ function ReportForm({
     <div className="space-y-2 border-t border-rule-soft px-3 py-3 text-[13px]">
       <h4 className="text-[13.5px] font-semibold">{L("report")}</h4>
       <div className="flex flex-wrap gap-2">
-        <select
-          className="field h-8 w-auto"
+        <OptionSelect
+          className="h-8 w-auto"
           aria-label={L("kind")}
           value={type}
-          onChange={(e) => setType(e.target.value as SevereType)}
+          onValueChange={(v) => setType(v as SevereType)}
         >
           {SEVERE_EVENT_TYPES.map((k) => (
             <option key={k} value={k}>
               {L(`type.${k}`)}
             </option>
           ))}
-        </select>
+        </OptionSelect>
         {roles.length > 1 && (
-          <select
-            className="field h-8 w-auto"
+          <OptionSelect
+            className="h-8 w-auto"
             aria-label={L("role")}
             value={r}
-            onChange={(e) => setR(e.target.value as PartnerRole)}
+            onValueChange={(v) => setR(v as PartnerRole)}
           >
             {roles.map((x) => (
               <option key={x} value={x}>
                 {t(`contracts.pv2.roleWord.${x}`)}
               </option>
             ))}
-          </select>
+          </OptionSelect>
         )}
-        <input
-          className="field h-8 min-w-[200px] flex-1"
+        <Input
+          className="h-8 min-w-[200px] flex-1"
           aria-label={L("reason")}
           placeholder={L("reasonPh")}
           maxLength={500}

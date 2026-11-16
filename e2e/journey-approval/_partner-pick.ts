@@ -61,9 +61,10 @@ export async function pickPartnerAndSend(
   // đối tác: gõ MST vào ô tìm ⇒ danh sách còn đúng công ty nhận («tên · MST») ⇒ chọn (HĐ mẫu không có MST đối tác nên chưa điền sẵn)
   const partner = form.locator(`[data-flow-field=${PICK.partner}]`);
   await partner.getByRole("searchbox").fill(o.partnerTaxCode);
-  const option = partner.locator("select option", { hasText: o.partnerTaxCode });
+  await partner.getByRole("combobox").click();
+  const option = page.getByRole("option", { name: new RegExp(o.partnerTaxCode) });
   await expect(option).toHaveCount(1, { timeout: 30_000 });
-  await partner.locator("select").selectOption((await option.getAttribute("value")) ?? "");
+  await option.click();
 
   // email sai dạng ⇒ báo cách sửa, chưa gửi
   const email = form.locator(`[data-flow-field=${PICK.email}] input`);

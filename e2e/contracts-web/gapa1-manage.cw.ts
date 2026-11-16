@@ -1,7 +1,9 @@
 // gap-a1 · trang chi tiết HĐ — "Giao cho" (#7), "Lịch sử thay đổi" (#4), sửa hoa hồng % (#16), "AI đọc lại từ đầu" + "Thử lại" (#5),
 // "Tạo tóm tắt bằng AI" (#17): mỗi hành động đúng MỘT yêu cầu ghi với đúng thân; viewer không thấy ô sửa. Backend giả `page.route`; chờ
 // phần tử, không sleep. (Viết trong lát, chạy ở cuối đợt — Luật 0b.)
+
 import { expect, type Page, type Route, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import type { Role } from "./dataset";
 import { ACTIVE_ID, activeContract } from "./dataset-v2f";
 import { installV2f } from "./v2f-support";
@@ -62,7 +64,7 @@ test("editor: giao cho người khác ⇒ một PUT /owner; mở lịch sử th�
   page,
 }) => {
   const sent = await open(page, "editor");
-  await page.getByTestId("owner-select").selectOption(PEOPLE[1]?.id as string);
+  await pickOption(page.getByTestId("owner-select"), PEOPLE[1]?.id as string);
   await expect.poll(() => sent.filter((s) => s.path.endsWith("/owner")).length).toBe(1);
   expect(sent.find((s) => s.path.endsWith("/owner"))?.body).toEqual({
     owner_user_id: PEOPLE[1]?.id,

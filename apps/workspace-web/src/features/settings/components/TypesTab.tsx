@@ -1,10 +1,12 @@
 // V2-L · CD-04: tab "Loại việc" — danh mục việc ghi tay (HD-06) gắn vào tiêu chí của ô: tên, tiêu chí, điểm việc (0 = việc xấu đếm).
 // Danh mục dùng chung mọi ô (lưu một lần `PUT /reputation/config/job-types`); tab chỉ hiện các loại gắn với tiêu chí của ô này.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useTranslation } from "react-i18next";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { SettingsGroup } from "~/shared/ui/settings-layout";
 import { slugKey } from "../lib/rep-data";
 import type { Cell, JobType } from "../lib/rep-types";
-import { FIELD, Num } from "./controls";
+import { Num } from "./controls";
 
 export function TypesTab({
   cell,
@@ -49,18 +51,16 @@ export function TypesTab({
           key={x.key}
           className="grid grid-cols-[1fr_200px_120px_auto] items-center gap-3 border-t border-rule-soft px-5 py-3 first:border-t-0 max-md:grid-cols-1"
         >
-          <input
+          <Input
             aria-label={s("name")}
-            className={FIELD}
             maxLength={80}
             value={x.name}
             onChange={(e) => patch(x.key, { name: e.target.value })}
           />
-          <select
+          <OptionSelect
             aria-label={s("criterion")}
-            className={FIELD}
             value={x.criterion}
-            onChange={(e) => patch(x.key, { criterion: e.target.value })}
+            onValueChange={(v) => patch(x.key, { criterion: v })}
           >
             {cell.criteria
               .filter((c) => keys.includes(c.key))
@@ -69,7 +69,7 @@ export function TypesTab({
                   {c.label}
                 </option>
               ))}
-          </select>
+          </OptionSelect>
           <Num
             value={x.score}
             min={0}

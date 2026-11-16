@@ -1,6 +1,8 @@
 // Gap #8/#9/#10 · danh sách HĐ: lọc ngày (trạng thái trên URL ⇒ truy vấn server), xuất Excel/CSV theo đúng bộ lọc, tải lên nhiều tệp
 // (mỗi tệp một lượt, tiến độ/lỗi từng tệp, nhận .md). Backend giả `page.route` như `hd5-list.cw.ts`; chờ yêu cầu/phần tử, không sleep.
+
 import { expect, type Page, type Route, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { asHub } from "./dataset";
 import { categoriesAsHub, facetsAsHub, listAsHub, membersAsHub } from "./dataset-list";
 
@@ -39,13 +41,13 @@ test.describe("Gap #10 · lọc ngày", () => {
     });
     await page.goto("/contracts/list");
     // CR-127 Q11: chỉ còn cột «Hiệu lực đến» (end_date) ⇒ không có ô «Cột ngày» để chọn
-    await page.getByLabel("Khoảng thời gian").selectOption("overdue");
+    await pickOption(page.getByLabel("Khoảng thời gian"), "overdue");
     await expect.poll(() => queries.at(-1)?.get("due")).toBe("overdue");
     expect(queries.at(-1)?.get("date_field")).toBe("end_date");
     await expect(page).toHaveURL(/due=overdue/);
     await page.reload();
-    await expect(page.getByLabel("Khoảng thời gian")).toHaveValue("overdue");
-    await page.getByLabel("Khoảng thời gian").selectOption("range");
+    await expect(page.getByLabel("Khoảng thời gian")).toHaveAttribute("data-value", "overdue");
+    await pickOption(page.getByLabel("Khoảng thời gian"), "range");
     await page.getByLabel("Từ ngày").fill("2026-01-01");
     await page.getByLabel("Đến ngày").fill("2026-03-31");
     await expect

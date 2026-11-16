@@ -5,9 +5,11 @@
 //       «Khách hàng» của chủ quản, có chuông chung, KHÔNG có nút trợ lý.
 //  J2 · Duyệt yêu cầu tham gia «Gắn với đối tác có sẵn» ⇒ hồ sơ SHT hiện tài khoản đã gắn; đối tác đã gắn tài khoản khác ⇒ câu hướng dẫn, đơn còn chờ.
 //  J3 · Một trợ lý (khoang phải chung) + một Cài đặt (nhóm «Bảng tin» › Thông báo; /community?settings=1).
+
 import { expect, type Page, test } from "@playwright/test";
 import { apiLogin, createPost, pageFetch, tenantIdByKey } from "../_kit/api";
 import { approve, createCompanyFlow, enableFlowTriggers, finish } from "../_kit/flows";
+import { pickOption } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
 import { NEW_PW, openAs, TENANT, USERNAME } from "./_stack";
 
@@ -222,7 +224,7 @@ test("CR130-J2 · duyệt đơn tham gia «Gắn với đối tác có sẵn» �
       { status: lr.status(), hasP2: rows.some((x) => x.name === P2), n: rows.length },
       "danh sách «Chọn đối tác» (GET /pack/contracts/partners)",
     ).toMatchObject({ status: 200, hasP2: true });
-    await item.getByLabel("Chọn đối tác").selectOption({ label: P2 });
+    await pickOption(item.getByLabel("Chọn đối tác"), { label: P2 });
     await expect(item.getByTestId("join-approve-summary")).toContainText(P2);
     await item.getByTestId("join-approve").click();
   };

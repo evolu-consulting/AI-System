@@ -3,6 +3,7 @@
 // HĐ đã lưu gắn lại SP (PUT) và (thẻ Tóm tắt AI đã gỡ ở chi tiết). Backend giả `page.route`; chờ phần tử/yêu cầu, không sleep. CR-127 Q10b: ca «tenant tắt duyệt» đã gỡ (mọi công ty đi quy trình; e2e/cr127 j06).
 
 import { expect, type Page, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { ACTIVE_ID, P_TOKEN } from "./dataset-v2f";
 import { ITEM1, ITEM2, P_USB, REVIEW_ID } from "./dataset-v2g";
 import { mockContractFiles } from "./flow-mock";
@@ -28,8 +29,8 @@ async function openReview(page: Page, init: Parameters<typeof installV2g>[1] = {
   await page.goto(`/contracts/c/${REVIEW_ID}`);
   await expect(page.getByTestId("review-items")).toBeVisible();
   // Gợi ý SP đến muộn: dòng 1 ("USB") được chọn sẵn theo quy tắc nhận diện, dòng 2 đề xuất tạo mới.
-  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_USB.id);
-  await expect(page.getByLabel("Gắn dòng 2 với sản phẩm")).toHaveValue("__new__");
+  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveAttribute("data-value", P_USB.id);
+  await expect(page.getByLabel("Gắn dòng 2 với sản phẩm")).toHaveAttribute("data-value", "__new__");
   return ctx;
 }
 
@@ -56,9 +57,7 @@ test("cột phải: mốc AI tìm thấy (giữ/bỏ, hạn theo ngày HĐ khi A
   await expect(page.getByLabel("Hạn mốc Giao hàng đợt 1")).toHaveValue("01/03/2026");
   await expect(page.getByLabel("Hạn mốc Thanh toán 50%")).toHaveValue("31/12/2026");
   await expect(page.getByTestId("link-0").getByText("Gợi ý")).toBeVisible();
-  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm").locator("option:checked")).toHaveText(
-    "Chữ ký số DN – USB Token",
-  );
+  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveText("Chữ ký số DN – USB Token");
 });
 
 // products-confirm: HĐ còn chờ xác nhận ⇒ KHÔNG tạo SP lúc lưu; dòng "tạo mới" gửi không kèm product_id.
@@ -112,7 +111,7 @@ test("đổi Bán → Mua: đối tác dựng lại theo bên bán, gửi deal=b
   const { sent } = await openReview(page);
   await page.getByRole("radio", { name: /^Mua/ }).click();
   await expect(page.getByLabel(/^Nhà cung cấp/)).toHaveValue("Công ty TNHH Bao Bì Phương Nam");
-  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_USB.id); // gợi ý chạy lại theo loại mới
+  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveAttribute("data-value", P_USB.id); // gợi ý chạy lại theo loại mới
   await headAct(page, "act-saveDraft");
   await expect(toast(page)).toBeVisible();
   const b = review(sent)[0]?.body as { deal: string; fields?: Record<string, unknown> };
@@ -141,7 +140,7 @@ test("dòng chưa gắn SP vẫn Lưu nháp được (CR-171); gửi ⇒ hộp G
   page,
 }) => {
   const { sent } = await openReview(page);
-  await page.getByLabel("Gắn dòng 2 với sản phẩm").selectOption("");
+  await pickOption(page.getByLabel("Gắn dòng 2 với sản phẩm"), "");
   await headAct(page, "act-saveDraft");
   await expect(toast(page)).toContainText("Đã lưu nháp");
   expect(review(sent)).toHaveLength(1);
@@ -161,7 +160,7 @@ test("chi tiết đã lưu: gắn lại SP cho dòng (PUT) + 409 ITEM_LOCKED bá
 }) => {
   const { sent, st } = await installV2g(page);
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
-  await page.getByLabel("Gắn dòng 1 với sản phẩm").selectOption(P_TOKEN.id);
+  await pickOption(page.getByLabel("Gắn dòng 1 với sản phẩm"), P_TOKEN.id);
   await expect.poll(() => writes(sent).filter((s) => s.method === "PUT").length).toBe(1);
   expect(writes(sent).find((s) => s.method === "PUT")).toEqual({
     method: "PUT",
@@ -169,6 +168,6 @@ test("chi tiết đã lưu: gắn lại SP cho dòng (PUT) + 409 ITEM_LOCKED bá
     body: { product_id: P_TOKEN.id },
   });
   st.locked = true;
-  await page.getByLabel("Gắn dòng 2 với sản phẩm").selectOption(P_TOKEN.id);
+  await pickOption(page.getByLabel("Gắn dòng 2 với sản phẩm"), P_TOKEN.id);
   await expect(page.getByRole("alert").first()).toContainText("đã phát sinh kho");
 });

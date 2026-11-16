@@ -1,6 +1,8 @@
 // CR-120 · Yêu cầu tham gia: đối tác gửi form (một công ty một yêu cầu chờ); người duyệt xem danh sách, duyệt/từ chối kèm lý do.
+
 import type { JoinRequest } from "@ai/contracts/community";
 import { PARTNER_LABELS } from "@ai/contracts/community";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useApp } from "../../application/ctx";
 import { shortDay } from "../../domain/admin-list";
@@ -74,7 +76,7 @@ function JoinForm() {
         {(["company", "contact", "email"] as const).map((k) => (
           <label key={k}>
             <b>{t(`community.flows.join.${k}`)}</b>
-            <input className="field" value={f[k]} data-testid={`join-${k}`} onChange={set(k)} />
+            <Input value={f[k]} data-testid={`join-${k}`} onChange={set(k)} />
           </label>
         ))}
         <label>

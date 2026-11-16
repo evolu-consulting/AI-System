@@ -1,6 +1,7 @@
 // CR-127 · J08 · U6 · ký cùng lúc giữa hai công ty (stack journey thật, cặp `e2e-d5a` → `e2e-d5b`; flow gửi của A có «ký cùng lúc», B có nhóm «Người ký HĐ» đã đặt ở Cài đặt):
 // bên nhận trả lời Đồng ý (chọn người ký trong nhóm) ⇒ phiên ký chung hai dòng ký ở CẢ HAI bên; Huỷ phiên ký (cần lý do); Xử lý bình thường. Nhà cung cấp selfsign ⇒ chưa có giá trị pháp lý.
 // Tiền đề: hai HĐ gửi từ A (tải → duyệt → chọn đối tác) và B đã nhận lời mời nối (băng ở đầu danh sách).
+import { pickOption } from "../_kit/ui";
 import { test } from "../journey-approval/_test";
 import {
   acceptInvite,
@@ -41,7 +42,7 @@ test("Bên nhận Đồng ý ⇒ hai dòng ký; bên gửi thấy giống nhau, 
   const card = b.getByTestId("sign-session");
   await expect(card).toHaveAttribute("data-phase", "proposed");
   await expect(card.getByRole("button", { name: /Đồng ý ký cùng lúc/ })).toBeDisabled();
-  await card.getByLabel(/Người ký phía công ty/).selectOption({ index: 1 });
+  await pickOption(card.getByLabel(/Người ký phía công ty/), { index: 1 });
   await card.getByRole("button", { name: /Đồng ý ký cùng lúc/ }).click();
   await expect(b.getByTestId("sign-session")).toHaveAttribute("data-phase", /accepted|signing/);
   await expect(b.getByTestId("cosign-row")).toHaveCount(2);

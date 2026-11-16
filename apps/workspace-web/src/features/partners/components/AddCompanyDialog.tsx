@@ -1,6 +1,8 @@
 // GAP-D2 · #23: hộp "Thêm công ty" ở trang Đối tác — gõ MST ⇒ máy chủ tra Cục Thuế (CHỈ gửi MST) rồi lưu vào danh bạ công ty; hiện
 // tên/địa chỉ/trạng thái theo Cục Thuế. Cục Thuế chưa tra được ⇒ mời nhập tên (và địa chỉ) để lưu trước, sau tra lại được.
+
 import type { Company } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -101,8 +103,8 @@ export function AddCompanyDialog({ onClose }: { onClose: () => void }) {
           >
             <label className="flex flex-col gap-1 text-[13px]">
               {L("mst")}
-              <input
-                className="field font-mono"
+              <Input
+                className="font-mono"
                 inputMode="numeric"
                 maxLength={30}
                 value={tax}
@@ -114,17 +116,11 @@ export function AddCompanyDialog({ onClose }: { onClose: () => void }) {
               <>
                 <label className="flex flex-col gap-1 text-[13px]">
                   {L("name")}
-                  <input
-                    className="field"
-                    maxLength={300}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
+                  <Input maxLength={300} value={name} onChange={(e) => setName(e.target.value)} />
                 </label>
                 <label className="flex flex-col gap-1 text-[13px]">
                   {L("address")}
-                  <input
-                    className="field"
+                  <Input
                     maxLength={500}
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}

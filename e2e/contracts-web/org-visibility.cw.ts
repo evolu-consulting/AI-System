@@ -4,7 +4,9 @@
 // Backend giả CÓ TRẠNG THÁI bằng `page.route` (như `bell.cw.ts`): luật lọc ở đây phản chiếu RLS của hub-api (đã có int test riêng ở
 // `apps/hub-api`); spec này kiểm màn hình + các yêu cầu API đúng hình + danh sách đổi theo cơ cấu. Dữ liệu duy nhất mỗi lần chạy
 // (trạng thái giả nằm trong bộ nhớ test) ⇒ chạy lại luôn xanh. Không sleep: chờ phần tử / yêu cầu.
+
 import { expect, type Page, type Route, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { asHub, dataset } from "./dataset";
 import { categoriesAsHub, facetsAsHub, listAsHub, membersAsHub, ROWS } from "./dataset-list";
 
@@ -183,7 +185,7 @@ test("M1D · đổi cơ cấu ở /settings/members ⇒ danh sách HĐ của qu�
   // Chủ sở hữu: chế độ org, Bình quản lý Chi, phòng "Kinh doanh" (mã kd) do Dũng làm trưởng, Bình là thành viên.
   f.who = "lan";
   await page.goto("/contracts/settings/members");
-  await page.getByLabel("Phạm vi xem hợp đồng").selectOption("org");
+  await pickOption(page.getByLabel("Phạm vi xem hợp đồng"), "org");
   await expect.poll(() => f.mode).toBe("org");
   // CR-151: chọn quản lý qua hộp tìm ở máy chủ (không còn select nạp cả công ty).
   await page.getByLabel("Cấp quản lý · Chi Lê").click();

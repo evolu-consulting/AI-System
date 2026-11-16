@@ -1,6 +1,8 @@
 // V2-F · HD-10 · BA 5.6: ô đối tác (nhãn theo loại HĐ) + trạng thái gợi ý từ `GET /partners/lookup` (V2-C): điểm uy tín theo vai,
 // "Đã có · thêm vai trò …", "Mới", hoặc "Đối tác mới · sẽ tạo khi lưu". Gõ ≥ 2 ký tự mới tra (debounce, không tra từng phím).
+
 import type { ContractDeal, PartnerLookup } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Tag } from "~/components/shared/tag";
@@ -111,7 +113,7 @@ export function PartnerField({
         {label} <span className="text-late">*</span>
         {unsure && <Tag tone="soon">{t("contracts.cform.unsure")}</Tag>}
       </label>
-      <input
+      <Input
         id="cf-partner"
         name="partner_name"
         data-testid="partner-input"
@@ -133,7 +135,6 @@ export function PartnerField({
             ? { background: "var(--color-soon-bg)", borderColor: "var(--color-soon-line)" }
             : undefined
         }
-        className={cn("field", invalid && "border-late")}
       />
       {open && !picked && !disabled && hits.length > 0 && (
         <ul

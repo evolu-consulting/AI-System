@@ -1,6 +1,8 @@
 // CR-152 · bản mẫu nq-chitiet / ht-chitiet: hộp «Ghi doanh thu kỳ» (Nhượng quyền) / «Ghi đối soát kỳ» (Hợp tác có chia) — chọn kỳ, nhập số,
 // thấy số tiền tính ra TRƯỚC khi lưu, rồi `PUT /periods/:key`. Chỉ kỳ còn mốc mở (kỳ đã xác nhận thu/trả thì máy chủ trả 409).
+
 import type { KindTermsView, Period } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -16,6 +18,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { coopShares, franchiseFee } from "~/features/contract-form/lib/kind-terms";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { contractKey, kindTermsKey, putPeriod } from "../api";
 import { saveErrorText } from "../lib/save-error";
 
@@ -99,25 +102,20 @@ export function PeriodDialog({
           <div className="flex flex-col gap-3 text-[13px]">
             <label className="flex flex-col gap-1" htmlFor="pd-period">
               {L("period")}
-              <select
-                id="pd-period"
-                className="field"
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-              >
+              <OptionSelect id="pd-period" value={key} onValueChange={(v) => setKey(v)}>
                 {list.map((p) => (
                   <option key={p.key} value={p.key}>
                     {p.label}
                   </option>
                 ))}
-              </select>
+              </OptionSelect>
             </label>
             <label className="flex flex-col gap-1" htmlFor="pd-figure">
               {L(cur?.figure_kind === "profit" ? "figureProfit" : "figureRevenue")}
-              <input
+              <Input
                 id="pd-figure"
                 inputMode="numeric"
-                className="field font-mono"
+                className="font-mono"
                 value={raw}
                 placeholder={cur?.figure != null ? vnd(cur.figure) : ""}
                 onChange={(e) => setRaw(e.target.value)}

@@ -1,4 +1,5 @@
 // CR-101 DOC-ui-frame · R42: "Gắn chứng từ có sẵn" — chọn nhiều HĐ / giao dịch (cùng đối tác + hướng do máy chủ kiểm) ⇒ POST /attach.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -59,8 +60,7 @@ export function AttachDialog({ frameId, attachedIds, onClose, onDone }: Props) {
           <DialogDescription>{L("attachHint")}</DialogDescription>
         </DialogHeader>
         <DialogBody>
-          <input
-            className="field"
+          <Input
             aria-label={L("attachSearch")}
             placeholder={L("attachSearch")}
             value={q}

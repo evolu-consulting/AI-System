@@ -25,10 +25,10 @@
   },
   "workspace-web": {
     "button": 314,
-    "select": 46,
-    "input": 93,
-    "title": 36,
+    "select": 0,
+    "input": 6,
+    "title": 32,
     "uiFiles": 5,
-    "arbitrary": 427
+    "arbitrary": 423
   }
 }

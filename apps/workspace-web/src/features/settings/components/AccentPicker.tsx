@@ -1,17 +1,18 @@
 // CR-138 Q8 · màu chủ đạo công ty: 12 màu đặt sẵn (dải theo sắc độ) + ô «Màu tự chọn» (#RRGGBB) có xem trước sáng/tối và kiểm tương phản
 // WCAG AA (chữ trắng trên nền nút ≥ 4.5:1). Không đạt ⇒ báo lý do + gợi ý màu gần nhất đạt chuẩn, và nút Lưu bị chặn (`firstIssue`).
+
 import {
   COMPANY_ACCENTS,
   checkAccent,
   isAccentHex,
   isAccentPreset,
 } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Btn } from "~/components/ui/Btn";
 import { accentIssue, normalizeHex } from "../lib/accent-input";
 import { accentPalette, accentSwatch } from "../lib/brand";
-import { FIELD } from "./controls";
 
 function Sample({ bg, fg, act, label }: { bg: string; fg: string; act: string; label: string }) {
   const { t } = useTranslation();
@@ -105,10 +106,10 @@ export function AccentPicker({ value, set }: { value: string; set: (accent: stri
             value={isAccentHex(value) ? value : accentSwatch(value)}
             onChange={(e) => set(e.target.value.toLowerCase())}
           />
-          <input
+          <Input
             id="co-accent-hex"
             data-testid="accent-hex"
-            className={`${FIELD} max-w-40 font-mono`}
+            className="max-w-40 font-mono"
             maxLength={7}
             spellCheck={false}
             autoComplete="off"

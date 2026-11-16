@@ -1,3 +1,4 @@
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { cn } from "~/lib/utils";
 
 export const FIELD =
@@ -26,7 +27,7 @@ export function Num({
 }) {
   return (
     <span className={cn("relative inline-flex items-center", className)}>
-      <input
+      <Input
         id={id}
         aria-label={label}
         type="number"
@@ -36,7 +37,7 @@ export function Num({
         step={step}
         value={Number.isFinite(value) ? value : ""}
         onChange={(e) => onChange(Math.min(max, Math.max(min, Number(e.target.value) || min)))}
-        className={cn(FIELD, "tabular-nums", suffix && "pr-14")}
+        className={cn("tabular-nums", suffix && "pr-14")}
       />
       {suffix && (
         <span className="pointer-events-none absolute right-3 text-caption text-dim">{suffix}</span>

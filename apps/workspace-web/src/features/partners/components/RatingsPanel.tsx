@@ -1,5 +1,6 @@
 // V2-I · DT-04 · BA §5.1i: đánh giá thủ công 1–5 sao từng tiêu chí (trộn vào điểm với tỷ trọng s). Lệch hơn `reason_gap` điểm so với dữ
 // liệu ⇒ bắt nhập lý do (máy chủ kiểm lại, 422). Mỗi tiêu chí lưu riêng; dưới là lịch sử đánh giá (mới nhất trước).
+
 import type {
   RepCellOut,
   RepCriterionOut,
@@ -7,6 +8,7 @@ import type {
   RepRatingRow,
   RepRole,
 } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -60,8 +62,8 @@ function RatingRow({
       </div>
       {editable && stars > 0 && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <input
-            className="field h-8 min-w-[200px] flex-1"
+          <Input
+            className="h-8 min-w-[200px] flex-1"
             placeholder={must ? L("reasonRequired", { gap }) : L("reasonOptional")}
             value={reason}
             maxLength={500}

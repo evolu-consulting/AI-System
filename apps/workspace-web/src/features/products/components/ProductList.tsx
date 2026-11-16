@@ -1,6 +1,8 @@
 // V2-J1 · SP-01: danh sách sản phẩm — tab Tất cả / Dịch vụ có hạn / Hàng hoá / Giới thiệu (số lượng mỗi tab), cột Tên · Loại · Đang nắm
 // giữ · Đã bán · Điểm kinh doanh (+ đề xuất). Một yêu cầu lấy cả danh sách; tab lọc phía trình duyệt. Bấm hàng mở chi tiết (`?sp=`).
+
 import type { BizProductRow } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -95,13 +97,13 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
             </Link>
           ))}
         </div>
-        <input
+        <Input
           type="search"
           value={qRaw}
           onChange={(e) => setQRaw(e.target.value)}
           placeholder={t("contracts.catalog.search")}
           aria-label={t("contracts.catalog.search")}
-          className="ml-auto h-9 w-56 rounded-lg border border-field bg-panel px-3 text-[14px]"
+          className="ml-auto h-9 w-56"
         />
         {write && (
           <button

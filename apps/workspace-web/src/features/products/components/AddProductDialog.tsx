@@ -1,4 +1,5 @@
 // gap-d1 #18 · "Thêm sản phẩm" tay (tên, nhóm, đơn vị, quy cách) ⇒ `POST /products`; xong mở chi tiết SP vừa tạo.
+
 import type { ProductGroup } from "@ai/contracts/pack-contracts";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -11,9 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { knownCatalogError, useCreateProduct } from "../hooks/use-catalog";
 import { productBody } from "../lib/catalog";
-import { FIELD, Field } from "./Field";
+import { Field } from "./Field";
 
 const GROUPS: readonly ProductGroup[] = ["goods", "service", "referral"];
 const EMPTY = { name: "", group: "goods" as ProductGroup, unit: "", spec: "" };
@@ -79,19 +81,18 @@ export function AddProductDialog({
             <label htmlFor="gd1-p-group" className="text-label text-ink-2">
               {L("group")}
             </label>
-            <select
+            <OptionSelect
               id="gd1-p-group"
               data-testid="gd1-p-group"
-              className={FIELD}
               value={f.group}
-              onChange={(e) => setF({ ...f, group: e.target.value as ProductGroup })}
+              onValueChange={(v) => setF({ ...f, group: v as ProductGroup })}
             >
               {GROUPS.map((g) => (
                 <option key={g} value={g}>
                   {t(`contracts.catalog.group.${g}`)}
                 </option>
               ))}
-            </select>
+            </OptionSelect>
           </div>
           <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
             <Field

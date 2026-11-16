@@ -1,7 +1,9 @@
 // PK-FR-10 · TF6 · phân trang luôn có dưới bảng: "1–20 / 57 dòng", số dòng mỗi trang, các trang. Khớp HD1 D-03 (page, page_size ≤ 100, total).
 // Nguồn: table.tsx:402-438.
+
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { pageList } from "./lib";
 
 /** Mỗi trang tối đa 100 = trần `page_size` của API HD1 (D-03). */
@@ -33,18 +35,18 @@ export function Pager({ t: s }: { t: PagerState }) {
       </span>
       <label className="flex items-center gap-1.5">
         {t("contracts.table.perPage")}
-        <select
-          value={s.pageSize}
-          onChange={(e) => s.setPageSize(Number(e.target.value))}
+        <OptionSelect
+          value={String(s.pageSize)}
+          onValueChange={(v) => s.setPageSize(Number(v))}
           aria-label={t("contracts.table.pageSizeAria")}
-          className="h-8 rounded-full border border-rule bg-panel px-2 text-label text-ink-2"
+          className="h-8 w-auto min-w-[4.5rem] text-label"
         >
           {PAGE_SIZES.map((n) => (
             <option key={n} value={n}>
               {n}
             </option>
           ))}
-        </select>
+        </OptionSelect>
       </label>
       <span className="ml-auto flex items-center gap-1">
         <button

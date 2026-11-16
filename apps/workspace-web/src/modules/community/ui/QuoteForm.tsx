@@ -3,7 +3,9 @@
 
 import type { HostHint, PostView, QuotePreview } from "@ai/contracts/community";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useState } from "react";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useApp } from "../application/ctx";
 import {
   compareText,
@@ -96,18 +98,16 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
       <div className="form">
         <div>
           <label htmlFor="q-prod">{t("community.quote.product")}</label>
-          <select
+          <OptionSelect
             id="q-prod"
-            className="field"
             value={d.productId}
-            onChange={(e) => set({ productId: e.target.value })}
+            onValueChange={(v) => set({ productId: v })}
           >
             {m && <option value={m.productId}>{m.name}</option>}
             <option value="new">{t("community.quote.createNew")}</option>
-          </select>
+          </OptionSelect>
           <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-            <input
-              className="field"
+            <Input
               aria-label={t("community.quote.findLabel")}
               placeholder={t("community.quote.findPlaceholder")}
               value={find}
@@ -122,9 +122,8 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
         {d.productId === "new" && (
           <div>
             <label htmlFor="q-new">{t("community.quote.newName")}</label>
-            <input
+            <Input
               id="q-new"
-              className="field"
               value={d.newName}
               onChange={(e) => set({ newName: e.target.value })}
             />
@@ -133,15 +132,14 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
         )}
         <div>
           <label htmlFor="q-sup">{t("community.quote.supplier")}</label>
-          <input id="q-sup" className="field" value={d.supplier} readOnly />
+          <Input id="q-sup" value={d.supplier} readOnly />
         </div>
         <div>
           <label htmlFor="q-price">
             {t("community.quote.price", { unit: d.unit || t("community.quote.unitFallback") })}
           </label>
-          <input
+          <Input
             id="q-price"
-            className="field"
             inputMode="numeric"
             value={d.price}
             onChange={(e) => set({ price: e.target.value })}
@@ -150,39 +148,32 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
         </div>
         <div>
           <label htmlFor="q-unit">{t("community.quote.unit")}</label>
-          <input
-            id="q-unit"
-            className="field"
-            value={d.unit}
-            onChange={(e) => set({ unit: e.target.value })}
-          />
+          <Input id="q-unit" value={d.unit} onChange={(e) => set({ unit: e.target.value })} />
         </div>
         <div>
           <label htmlFor="q-vat">VAT</label>
-          <select
+          <OptionSelect
             id="q-vat"
-            className="field"
             value={d.vatIncluded ? "in" : "out"}
-            onChange={(e) => set({ vatIncluded: e.target.value === "in" })}
+            onValueChange={(v) => set({ vatIncluded: v === "in" })}
           >
             <option value="in">{t("community.quote.vatIn")}</option>
             <option value="out">{t("community.quote.vatOut")}</option>
-          </select>
+          </OptionSelect>
         </div>
         <div>
           <label htmlFor="q-kind">{t("community.quote.kind")}</label>
-          <select
+          <OptionSelect
             id="q-kind"
-            className="field"
             value={d.kind}
-            onChange={(e) => set({ kind: e.target.value as "new" | "renew" })}
+            onValueChange={(v) => set({ kind: v as "new" | "renew" })}
           >
             {(["new", "renew"] as const).map((k) => (
               <option key={k} value={k}>
                 {t(k === "new" ? "community.quote.kindNew" : "community.quote.kindRenew")}
               </option>
             ))}
-          </select>
+          </OptionSelect>
         </div>
         <div>
           <label htmlFor="q-date">{t("community.quote.date")}</label>

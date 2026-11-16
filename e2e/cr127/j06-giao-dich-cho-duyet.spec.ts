@@ -1,5 +1,6 @@
 // CR-127 · J06 · U6 · giao dịch từ Sản phẩm & Giá gắn mốc HĐ (stack journey thật, công ty `e2e-sub-<hậu tố>` có quy trình «Giám đốc duyệt» từ sơ đồ trống): đối tác có HĐ mở ⇒ BẮT BUỘC chọn mốc hoặc
 // «Không theo hợp đồng» (+ lý do); gắn mốc cần bằng chứng. Tiền đề: HĐ DONE (nhân viên tải + Gửi duyệt) của đối tác «Công ty TNHH E2E-JOURNEY Bên Bán», mốc Giao lập bằng API.
+import { pickOption } from "../_kit/ui";
 import { test } from "../journey-approval/_test";
 import { doneContractWithMilestones, envOf, expect, loginCw, SPEC_TENANT, U } from "./_cr127-kit";
 
@@ -22,7 +23,7 @@ const fillDeal = async (page: import("@playwright/test").Page) => {
   }).toPass({ timeout: 40_000 });
   await page.getByLabel(/Tên giao dịch/).fill("Bán thùng phi 200L");
   await page.getByLabel(/Ngày giao dịch/).fill("2026-11-11");
-  await page.locator("#cf-source").selectOption("invoice");
+  await pickOption(page.locator("#cf-source"), "invoice");
 };
 
 test("Có HĐ mở ⇒ phải chọn mốc hoặc Không theo hợp đồng; thiếu lý do bị chặn", async ({ page }) => {

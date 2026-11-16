@@ -7,7 +7,9 @@ import type {
   ModerationItem,
   PartnerOrg,
 } from "@ai/contracts/community";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useRef, useState } from "react";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useApp } from "../application/ctx";
 import { useFocusPost } from "../application/focus-post";
 import { useFeed, useFeedFilters, usePartners } from "../application/useFeed";
@@ -51,21 +53,19 @@ function AuthorSelect({ f }: { f: Filters }) {
   const shown = picked && !list.some((p) => p.id === picked.id) ? [picked, ...list] : list;
   return (
     <>
-      <input
+      <Input
         type="search"
-        className="field"
         value={qRaw}
         placeholder={t("community.feed.filters.authorSearch")}
         aria-label={t("community.feed.filters.authorSearch")}
         onChange={(e) => setQRaw(e.target.value)}
       />
-      <select
-        className="field"
+      <OptionSelect
         aria-label={t("community.feed.filters.author")}
         value={f.author}
-        onChange={(e) => {
-          f.setAuthor(e.target.value);
-          setPicked(list.find((p) => p.id === e.target.value) ?? null);
+        onValueChange={(v) => {
+          f.setAuthor(v);
+          setPicked(list.find((p) => p.id === v) ?? null);
         }}
       >
         <option value="">{t("community.feed.filters.authorAll")}</option>
@@ -75,7 +75,7 @@ function AuthorSelect({ f }: { f: Filters }) {
             {p.name}
           </option>
         ))}
-      </select>
+      </OptionSelect>
     </>
   );
 }
@@ -93,28 +93,26 @@ export function FeedFilters({
   const { isHostViewer } = useApp();
   return (
     <div className={className}>
-      <select
-        className="field"
+      <OptionSelect
         aria-label={t("community.feed.filters.cat")}
         value={f.cat}
-        onChange={(e) => f.setCat(e.target.value)}
+        onValueChange={(v) => f.setCat(v)}
       >
         <option value="">{t("community.feed.filters.catAll")}</option>
         {data.facets.cats.map((c) => (
           <option key={c}>{c}</option>
         ))}
-      </select>
-      <select
-        className="field"
+      </OptionSelect>
+      <OptionSelect
         aria-label={t("community.feed.filters.area")}
         value={f.area}
-        onChange={(e) => f.setArea(e.target.value)}
+        onValueChange={(v) => f.setArea(v)}
       >
         <option value="">{t("community.feed.filters.areaAll")}</option>
         {data.facets.areas.map((c) => (
           <option key={c}>{c}</option>
         ))}
-      </select>
+      </OptionSelect>
       {isHostViewer && <AuthorSelect f={f} />}
       {hasActiveFilter({
         tab: f.tab,

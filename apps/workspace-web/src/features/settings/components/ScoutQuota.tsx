@@ -1,6 +1,7 @@
 // price-scout · Cài đặt › trần lượt dò & token mỗi tháng (trống = theo mặc định hệ thống / không giới hạn). Ô `platform_*` chỉ hiện khi
 // `can_override` (platform_admin). Hiện mức đã dùng tháng này.
 
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,7 +12,6 @@ import { isCompanyAdmin } from "~/features/shell/lib/nav";
 import { SettingsGroup, SettingsRow } from "~/shared/ui/settings-layout";
 import { useSaveScoutQuota, useScoutQuota } from "../hooks/use-scout-settings";
 import { saveErrorText } from "../lib/scout-ui";
-import { FIELD } from "./controls";
 
 const KEYS = [
   "searches_month",
@@ -50,11 +50,11 @@ export function ScoutQuota({ owner }: { owner: boolean }) {
       </p>
       {shown.map((k) => (
         <SettingsRow key={k} label={L(`quota.${k}`)} htmlFor={`scq-${k}`}>
-          <input
+          <Input
             id={`scq-${k}`}
             data-testid={`scq-${k}`}
             inputMode="numeric"
-            className={`${FIELD} max-w-60`}
+            className="max-w-60"
             value={v[k]}
             disabled={!owner || save.isPending}
             placeholder={L("quota.empty")}

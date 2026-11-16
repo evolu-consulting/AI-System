@@ -2,8 +2,10 @@
 // Backend giả `page.route` dùng ĐÚNG luật thiếu-trường của máy chủ (`kindTermsMissing` ở @ai/contracts): thiếu ⇒ 422 KIND_TERMS_INCOMPLETE.
 // Bắt lỗi người dùng: «điền hết vẫn báo thiếu» (ô tick BCT, ô AI đọc không điền sẵn, ô thiếu ở tab khác) và «dòng chưa gắn SP làm kẹt hộp Gắn sản phẩm».
 // Không sleep; chờ phần tử/yêu cầu.
+
 import { expect, type Page, type Route, test } from "@playwright/test";
 import { kindTermsMissing } from "../../packages/contracts/src/pack-contracts/kind-terms";
+import { pickOption } from "../_kit/ui";
 import { AI_SUMMARY, ITEM1, REVIEW_ID, reviewContract } from "./dataset-v2g";
 import { mockContractFiles } from "./flow-mock";
 import type { Sent } from "./v2f-support";
@@ -201,7 +203,7 @@ async function open(page: Page, o: Opt) {
   return f;
 }
 const tab = (page: Page, name: RegExp) => page.getByRole("tab", { name }).click();
-const pick = (page: Page, k: string, v: string) => page.locator(`#kt-${k}`).selectOption(v);
+const pick = (page: Page, k: string, v: string) => pickOption(page.locator(`#kt-${k}`), v);
 const fill = (page: Page, k: string, v: string) => page.locator(`#kt-${k}`).fill(v);
 
 /** Người dùng điền tay trường riêng của loại (khi AI chưa đọc / nhập tay). */
@@ -350,7 +352,7 @@ for (const deal of ["sell", "buy"] as const) {
       lines: true,
       match: "none",
     });
-    await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue("");
+    await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveAttribute("data-value", "");
     await go(page).click();
     await expect(page.getByText(/dòng .nuoc suoi. chưa gắn sản phẩm/)).toHaveCount(0);
     await expect(page.getByTestId("product-link-dialog")).toBeVisible();

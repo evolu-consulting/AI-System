@@ -1,8 +1,10 @@
 // COM-FR-27 · CR-120 · phần Community đóng góp cho thanh trên DÙNG CHUNG của AppShell: ô tìm (debounce 250 ms) + dev persona (mock) vào khe
 // "search", (CR-130: chuông là chuông chung của shell). Không còn header/brand/burger/avatar riêng (khung, menu trái và menu tài khoản do shell cấp).
 // Khe là phần tử DOM của shell (host.slots) — vẽ bằng portal; chưa có khe (test/ngoài shell) ⇒ không vẽ gì.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { type ReactNode, useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useApp } from "../application/ctx";
 import { getCommunityHostConfig } from "../application/host";
 import { t } from "../i18n";
@@ -42,7 +44,7 @@ function SearchBox() {
   return (
     <div className="search">
       <IconSearch size={16} />
-      <input
+      <Input
         type="search"
         placeholder={t("community.topbar.searchPlaceholder")}
         aria-label={t("community.topbar.searchLabel")}
@@ -59,17 +61,17 @@ function Persona() {
   return (
     <label className="persona" title={t("community.topbar.devOnlyMock")}>
       {t("community.topbar.devViewAs")}
-      <select
+      <OptionSelect
         aria-label={t("community.topbar.pickPersona")}
         value={viewer.userId}
-        onChange={(e) => setPersona(e.target.value)}
+        onValueChange={(v) => setPersona(v)}
       >
         {personas.map((p) => (
           <option key={p.id} value={p.id}>
             {p.label}
           </option>
         ))}
-      </select>
+      </OptionSelect>
     </label>
   );
 }

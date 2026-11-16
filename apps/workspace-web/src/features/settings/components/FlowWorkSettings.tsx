@@ -1,7 +1,9 @@
 // CR-127 · U4 · Cài đặt công ty: «Thời gian tự trả việc đã nhận» (giờ, 1..168 — `claim_release_h`).
 // Chỉ quản trị công ty sửa; người khác không thấy khối này (không có thao tác ẩn).
+
 import { CLAIM_RELEASE_H } from "@ai/contracts/chat";
 import { ApiError } from "@ai/web-kit/http";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -54,12 +56,12 @@ export function FlowWorkSettings() {
           hint={t("contracts.work.u4.settings.hoursHint")}
           htmlFor="fw-hours"
         >
-          <input
+          <Input
             id="fw-hours"
             type="number"
             min={CLAIM_RELEASE_H.min}
             max={CLAIM_RELEASE_H.max}
-            className="field h-10 w-28"
+            className="h-10 w-28"
             value={hours}
             onChange={(e) => setHours(Number(e.target.value))}
           />

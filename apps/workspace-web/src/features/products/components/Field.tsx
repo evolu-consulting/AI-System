@@ -1,5 +1,7 @@
 // gap-d1 · ô nhập dùng chung của các form Sản phẩm & Giá: nhãn + ô (mọi ô có nhãn gắn `htmlFor`).
+
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import type { InputHTMLAttributes } from "react";
 
 export const FIELD =
@@ -49,7 +51,7 @@ export function Field({
       <label htmlFor={id} className="text-label text-ink-2">
         {label}
       </label>
-      <input id={id} data-testid={id} className={FIELD} {...rest} />
+      <Input id={id} data-testid={id} {...rest} />
     </div>
   );
 }

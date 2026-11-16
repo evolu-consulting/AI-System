@@ -4,6 +4,7 @@
 import type { ContractDeal, FulfillRequest, Milestone } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -178,9 +179,9 @@ export function FulfillDialog(p: {
           {!post && money && (
             <div className="flex flex-col gap-1 text-[13px]">
               <label htmlFor="fulfill-amount">{L("amount")}</label>
-              <input
+              <Input
                 id="fulfill-amount"
-                className="field w-[200px] font-mono"
+                className="w-[200px] font-mono"
                 inputMode="numeric"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}

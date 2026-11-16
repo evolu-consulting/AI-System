@@ -1,5 +1,6 @@
 // CR-151 · hộp chọn người dùng chung: tìm ở máy chủ (gõ có trễ) + tải dần («Xem thêm»), không nạp cả danh sách.
 // `fetchPage(q, offset)` trả một trang ≤ 50 người + `next` (offset trang kế, null = hết).
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -39,7 +40,7 @@ export function PersonSearchSelect(p: Props) {
     .filter((m) => m.id !== p.excludeId);
   return (
     <div className="flex min-w-0 flex-col gap-1.5" data-testid="person-search">
-      <input
+      <Input
         id={p.id}
         type="search"
         value={raw}
@@ -47,7 +48,7 @@ export function PersonSearchSelect(p: Props) {
         onChange={(e) => setRaw(e.target.value)}
         placeholder={t("contracts.paging.search")}
         aria-label={t("contracts.paging.search")}
-        className="field h-10 w-full"
+        className="h-10 w-full"
       />
       <div className="max-h-48 overflow-y-auto rounded-md border border-rule-soft">
         <button

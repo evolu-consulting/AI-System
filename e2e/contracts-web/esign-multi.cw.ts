@@ -1,7 +1,9 @@
 // esign-multi · Luật 4b: (a) Cài đặt hiện các nhà cung cấp + đổi mặc định ⇒ PUT {default_provider}; (b) hộp Gửi ký có dropdown,
 // chọn "selfsign" ⇒ POST có provider, người ký công ty chỉ đọc (không name/email); (c) 1 nhà cung cấp khả dụng ⇒ không dropdown.
 // Backend giả `page.route`; không sleep.
+
 import { expect, type Page, type Route, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { asHub } from "./dataset";
 import { ACTIVE_ID, activeContract } from "./dataset-v2f";
 import { installV2f } from "./v2f-support";
@@ -81,8 +83,10 @@ test("Cài đặt: hiện 2 nhà cung cấp (pháp lý / không) và đổi mặ
   await expect(box.getByTestId("esign-prov-docusign")).toContainText("Có giá trị pháp lý");
   await expect(box.getByTestId("esign-prov-selfsign")).toContainText("Không có giá trị pháp lý");
   await expect(box.getByTestId("esign-prov-misa")).toContainText("Chưa cấu hình");
-  await expect(box.getByRole("option", { name: /MISA/ })).toHaveJSProperty("disabled", true);
-  await box.getByRole("combobox").selectOption("selfsign");
+  await box.getByRole("combobox").click();
+  await expect(page.getByRole("option", { name: /MISA/ })).toHaveAttribute("aria-disabled", "true");
+  await page.keyboard.press("Escape");
+  await pickOption(box.getByRole("combobox"), "selfsign");
   await expect.poll(() => puts.length).toBe(1);
   expect(puts[0]).toEqual({ default_provider: "selfsign" });
 });
@@ -107,11 +111,13 @@ test("Gửi ký: dropdown nhà cung cấp, chọn selfsign ⇒ POST có provider
 }) => {
   const { posts, dlg } = await openSend(page, [DOCUSIGN, SELFSIGN, MISA], "docusign");
   const sel = dlg.getByTestId("esign-provider-select");
-  await expect(sel).toHaveValue("docusign");
-  await expect(sel.locator("option")).toHaveCount(2); // MISA không khả dụng ⇒ không có
+  await expect(sel).toHaveText(/DocuSign/);
+  await sel.click();
+  await expect(page.getByRole("option")).toHaveCount(2); // MISA không khả dụng ⇒ không có
+  await page.keyboard.press("Escape");
   await expect(dlg.getByTestId("esign-company-readonly")).toContainText("lan@acme.vn");
   await expect(dlg.getByTestId("esign-signer-0").locator("input")).toHaveCount(0);
-  await sel.selectOption("selfsign");
+  await pickOption(sel, "selfsign");
   await expect(dlg.getByTestId("esign-dialog-demo")).toBeVisible();
   await dlg.getByTestId("esign-send-confirm").click();
   await expect.poll(() => posts.length).toBe(1);

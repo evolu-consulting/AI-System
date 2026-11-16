@@ -1,4 +1,5 @@
 // CR-135 Q12: đổi tên HĐ nháp tại chỗ — bấm tên ⇒ ô sửa; Enter / rời ô ⇒ lưu; Esc ⇒ huỷ. Rỗng ⇒ báo lỗi, giữ tên cũ. Chỉ trình bày: lưu do `onSave`.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TruncText } from "~/components/shared/TruncText";
@@ -57,15 +58,14 @@ export function TitleEdit({
     );
   return (
     <span className="flex min-w-0 flex-col">
-      <input
-        // biome-ignore lint/a11y/noAutofocus: người dùng vừa bấm vào tên để sửa
+      <Input
         autoFocus
         data-testid="title-input"
         aria-label={t("contracts.review.titleEdit")}
         aria-invalid={err !== null}
         value={text}
         maxLength={200}
-        className="w-full min-w-[16rem] rounded-md border border-act bg-panel px-2 py-0.5 text-[26px] font-semibold max-sm:text-[22px]"
+        className="w-full min-w-[16rem] max-sm:text-[22px]"
         onChange={(e) => {
           setText(e.target.value);
           setErr(null);

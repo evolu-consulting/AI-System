@@ -1,8 +1,11 @@
 // price-scout · ô nhập "Cấu hình dò giá" dùng chung (tab NCC & giá của SP + Cài đặt › Dò giá thị trường). Chỉ trình bày: nhận form chuỗi,
 // báo thay đổi lên trên; `inherited` (tuỳ chọn) ⇒ hiện nhãn "theo mặc định nhóm" cạnh ô đang trùng mặc định.
+
 import type { PriceScoutConfig } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { LIST_MAX, type ScoutForm } from "../lib/scout";
 
 const FIELD =
@@ -83,10 +86,9 @@ export function ScoutFields({ idp, form, set, disabled, inherited }: Props) {
       ))}
       {TEXT.map((k) => (
         <Row key={k} id={id(k)} k={k} label={L(`f.${k}`)} inherited={inherited}>
-          <input
+          <Input
             id={id(k)}
             data-testid={id(k)}
-            className={FIELD}
             value={form[k]}
             disabled={disabled}
             onChange={(e) => up(k, e.target.value)}
@@ -94,38 +96,35 @@ export function ScoutFields({ idp, form, set, disabled, inherited }: Props) {
         </Row>
       ))}
       <Row id={id("vat")} k="vat" label={L("f.vat")} inherited={inherited}>
-        <select
+        <OptionSelect
           id={id("vat")}
           data-testid={id("vat")}
-          className={FIELD}
           value={form.vat}
           disabled={disabled}
-          onChange={(e) => up("vat", e.target.value as ScoutForm["vat"])}
+          onValueChange={(v) => up("vat", v as ScoutForm["vat"])}
         >
           <option value="excl">{L("vat.excl")}</option>
           <option value="incl">{L("vat.incl")}</option>
-        </select>
+        </OptionSelect>
       </Row>
       <Row id={id("schedule")} k="schedule" label={L("f.schedule")} inherited={inherited}>
-        <select
+        <OptionSelect
           id={id("schedule")}
           data-testid={id("schedule")}
-          className={FIELD}
           value={form.schedule}
           disabled={disabled}
-          onChange={(e) => up("schedule", e.target.value as ScoutForm["schedule"])}
+          onValueChange={(v) => up("schedule", v as ScoutForm["schedule"])}
         >
           <option value="off">{L("schedule.off")}</option>
           <option value="weekly">{L("schedule.weekly")}</option>
           <option value="monthly">{L("schedule.monthly")}</option>
-        </select>
+        </OptionSelect>
       </Row>
       <Row id={id("alert_pct")} k="alert_pct" label={L("f.alert_pct")} inherited={inherited}>
-        <input
+        <Input
           id={id("alert_pct")}
           data-testid={id("alert_pct")}
           inputMode="numeric"
-          className={FIELD}
           value={form.alert_pct}
           disabled={disabled}
           placeholder={L("ph.alert_pct")}

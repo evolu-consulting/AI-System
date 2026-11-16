@@ -1,7 +1,9 @@
 // DOC-ui-list · R5–R10 · Câu 3, 4 · Luật 4b: Giao dịch là chứng từ — form dùng chung (`/contracts/new?type=deal`) gọi `POST /contracts/deals`
 // (nguồn, ô «Đã giao / đã thanh toán ngay», `settle_error`), gắn HĐ nguyên tắc qua `?frame=` + `/attach`; `/transactions*` chuyển hướng.
 // Thay bản G2 cũ (đã gỡ cùng trang Giao dịch riêng). Backend giả `page.route`; không sleep.
+
 import { expect, type Page, type Route, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { ACTIVE_ID, activeContract, NEW_ID, P_TOKEN } from "./dataset-v2f";
 import { installV2f, type Sent } from "./v2f-support";
 
@@ -71,8 +73,11 @@ async function fillDeal(page: Page, source: string | null = "invoice") {
   await page.getByLabel("Tên hàng").first().fill("USB Token");
   await page.getByLabel("Số lượng", { exact: true }).first().fill("3");
   await page.getByLabel("Đơn giá", { exact: true }).first().fill("500000");
-  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_TOKEN.id);
-  if (source) await page.getByLabel(/^Nguồn giao dịch/).selectOption(source);
+  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveAttribute(
+    "data-value",
+    P_TOKEN.id,
+  );
+  if (source) await pickOption(page.getByLabel(/^Nguồn giao dịch/), source);
 }
 
 test("form Giao dịch: nhãn riêng, không có ô chỉ của HĐ (kết thúc, nhắc hạn, người ký)", async ({

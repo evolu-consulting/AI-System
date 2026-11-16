@@ -1,6 +1,8 @@
 // V2-L · CD-01: mục "Công ty" — tên, tên ứng dụng, logo ≤ 1 MB, màu chủ đạo (12 + tự chọn), ảnh bìa, giao diện; tên + MST của chính công ty (V2-G đoán
 // Mua/Bán); cờ duyệt hợp đồng (V2-A). Sửa là sidebar/menu/nút đổi ngay (bản xem thử ở `brandStore`).
+
 import { COMPANY_LOGO_MAX_BYTES, MST_RE } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -46,9 +48,8 @@ export function CompanyPane({
     <>
       <SettingsGroup>
         <SettingsRow label={s("name")} htmlFor="co-name">
-          <input
+          <Input
             id="co-name"
-            className={FIELD}
             maxLength={60}
             readOnly
             value={c.name ?? tenantName}
@@ -60,9 +61,8 @@ export function CompanyPane({
           </p>
         </SettingsRow>
         <SettingsRow label={s("app")} htmlFor="co-app">
-          <input
+          <Input
             id="co-app"
-            className={FIELD}
             maxLength={40}
             value={c.app_name ?? ""}
             placeholder={t("contracts.app.name")}
@@ -163,12 +163,11 @@ export function CompanyPane({
       <SettingsGroup title={t("contracts.legal.title")}>
         <SettingsRow label={t("contracts.legal.threshold")} htmlFor="co-legal">
           <div className="flex flex-col gap-1">
-            <input
+            <Input
               id="co-legal"
               type="number"
               min={0}
               step={100000}
-              className={FIELD}
               value={c.legal_warn_threshold ?? 5000000}
               onChange={(e) =>
                 set({

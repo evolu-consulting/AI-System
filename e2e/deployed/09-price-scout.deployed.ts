@@ -2,7 +2,9 @@
 // tiên (nhóm có tab NCC) → tab "Nhà cung cấp & giá" → "Cấu hình dò giá": đặt từ khoá E2E, lịch tắt, Lưu ⇒ thấy "Đã dùng X/Y lượt";
 // bấm "Tìm giá trên thị trường" → "Tìm" ⇒ có kết quả hoặc thông báo không tìm thấy (agent thật, tìm web) ⇒ bộ đếm lượt tăng 1.
 // Cần: hub migrate 0052 + contracts 0040 + `hub:seed` (agent `price-scout`). Chạy: e2e-deployed.ps1 -Spec e2e/deployed/09-price-scout.deployed.ts
+
 import type { Page } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { CW, expect, login, settle, TAG, test } from "./_support";
 
 let page: Page;
@@ -36,7 +38,7 @@ test.describe("09 price-scout", () => {
     });
 
     await page.getByTestId("scout-instructions").fill(`${TAG} giá bán`);
-    await page.getByTestId("scout-schedule").selectOption("off");
+    await pickOption(page.getByTestId("scout-schedule"), "off");
     const saved = page.waitForResponse(
       (r) => r.url().includes("/price-scout") && r.request().method() === "PUT",
     );

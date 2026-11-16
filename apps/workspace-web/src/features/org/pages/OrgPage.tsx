@@ -1,10 +1,12 @@
 // M1D-FR-02 · M1D-FR-03 · M1D-FR-04 · Cài đặt › Thành viên & phòng ban (theo màn "Thành viên" của mgmt-app): chế độ thấy, cấp quản
 // lý mỗi người, phòng ban (chỉnh ở admin qua «Chỉnh sơ đồ»). Ghi qua admin-api (tenant_admin) + hub-api (owner gói); 403 ⇒ chỉ đọc lời nhắc.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EditChartButton } from "~/features/org-chart/components/EditChartButton";
 import { Pager } from "~/features/table";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { PersonSearchSelect } from "~/shared/ui/PersonSearchSelect";
 import {
   fetchOrgMembers,
@@ -84,28 +86,28 @@ export function OrgPage() {
       )}
       <label className="flex flex-col gap-1.5 text-body font-semibold">
         {t("contracts.org.mode")}
-        <select
+        <OptionSelect
           aria-label={t("contracts.org.mode")}
-          className={`${field} w-fit`}
+          className="w-fit"
           value={vis.data?.mode ?? "tenant"}
           disabled={run.isPending || !vis.data}
-          onChange={(e) => {
+          onValueChange={(v) => {
             // Đọc giá trị NGAY: `act` chạy bất đồng bộ, lúc đó select có kiểm soát đã bị React trả về giá trị cũ.
-            const mode = e.target.value as "tenant" | "org";
+            const mode = v as "tenant" | "org";
             act(() => putVisibility(mode));
           }}
         >
           <option value="tenant">{t("contracts.org.modeTenant")}</option>
           <option value="org">{t("contracts.org.modeOrg")}</option>
-        </select>
+        </OptionSelect>
       </label>
-      <input
+      <Input
         type="search"
         value={qRaw}
         onChange={(e) => setQRaw(e.target.value)}
         placeholder={t("contracts.paging.search")}
         aria-label={t("contracts.paging.search")}
-        className={`${field} w-full max-w-sm`}
+        className="w-full max-w-sm"
       />
       <div className="overflow-x-auto rounded-lg border border-rule bg-panel">
         <table className="w-full border-collapse text-body">

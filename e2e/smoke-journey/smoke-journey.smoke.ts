@@ -2,7 +2,9 @@
 // deploy/smoke/smoke-journey.ps1 tạo sẵn (giám đốc `gd` · trưởng phòng `tp` · nhân viên `nv`; quy trình «Duyệt hợp đồng gửi đi» / «Nhận hợp đồng từ đối tác»).
 // Chỉ thao tác như người dùng thật (UI). Mỗi bước ghi Đạt / Không đạt / Bỏ qua + ảnh vào $SMOKE_OUT; bước lỗi KHÔNG ném (bước độc lập vẫn chạy).
 // Bước «AI đọc hợp đồng» báo RIÊNG (lỗi AI không làm hỏng cả bài). Bước tin nhắn chỉ chạy khi CR-169 đã có trên môi trường (SMOKE_CR169=1).
+
 import { expect, type Locator, type Page, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { type Co, E, login, NAME, pdfOf, type Role, Steps, TAX } from "./_kit";
 
 const RUN = new Date().toISOString().replace(/\D/g, "").slice(2, 14);
@@ -351,8 +353,8 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
     "Giám đốc A «Nhờ đối tác ký?» = Có",
     async () => {
       await doTask(await as("a", "gd"), "Nhờ đối tác ký", async (form) => {
-        const sel = form.locator("select").first();
-        if (await sel.count()) await sel.selectOption({ label: "Có" });
+        const sel = form.getByRole("combobox").first();
+        if (await sel.count()) await pickOption(sel, { label: "Có" });
         else await form.getByLabel("Có", { exact: true }).check();
       });
     },
@@ -391,11 +393,12 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
       await doTask(await as("a", "gd"), "Chọn đối tác", async (form) => {
         const partner = form.locator("[data-flow-field=partner_tax_code]");
         await partner.getByRole("searchbox").fill(TAX.b);
-        const opt = partner.locator("select option", { hasText: TAX.b });
+        await partner.getByRole("combobox").click();
+        const opt = form.page().getByRole("option", { name: new RegExp(TAX.b) });
         await expect(opt, "Smoke B không có trong danh sách đối tác của A").toHaveCount(1, {
           timeout: 30_000,
         });
-        await partner.locator("select").selectOption((await opt.getAttribute("value")) ?? "");
+        await opt.click();
         await form
           .locator("[data-flow-field=partner_email] input")
           .fill("smoke-b-gd@smoke.invalid");

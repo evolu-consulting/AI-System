@@ -1,4 +1,5 @@
 // PK-FR-10 · TF6 · ô tìm + bộ lọc riêng của trang (children) + số kết quả, một hàng tự xuống dòng. Nguồn: table.tsx:379-400.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -29,13 +30,13 @@ export function TableTools({
           <circle cx="6.5" cy="6.5" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
           <path d="m10 10 3.5 3.5" stroke="currentColor" strokeWidth="1.4" />
         </svg>
-        <input
+        <Input
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={placeholder ?? t("contracts.table.searchPlaceholder")}
           aria-label={t("contracts.table.search")}
-          className="h-9 w-full rounded-full border border-field bg-panel pr-9 pl-9 text-[13.5px] text-ink focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
+          className="h-9 w-full pr-9 pl-9 [&::-webkit-search-cancel-button]:hidden"
         />
         {q && (
           <button

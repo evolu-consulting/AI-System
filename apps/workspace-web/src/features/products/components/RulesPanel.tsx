@@ -1,9 +1,11 @@
 // gap-d1 #20 · tab "Nhận diện" của chi tiết SP: quy tắc nhận diện dòng hợp đồng (cụm chữ ⇒ SP / thành phần) trên
 // `POST /products/:id/rules` và `DELETE /products/:id/rules/:ruleId`.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { useMe } from "~/features/pack-state/hooks/use-me";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import {
   knownCatalogError,
   useAddRule,
@@ -11,7 +13,6 @@ import {
   useDeleteRule,
 } from "../hooks/use-catalog";
 import { ruleBody } from "../lib/catalog";
-import { FIELD } from "./Field";
 
 export function RulesPanel({ productId }: { productId: string }) {
   const { t } = useTranslation();
@@ -72,10 +73,9 @@ export function RulesPanel({ productId }: { productId: string }) {
             <label htmlFor="gd1-r-pattern" className="text-label text-ink-2">
               {L("pattern")}
             </label>
-            <input
+            <Input
               id="gd1-r-pattern"
               data-testid="gd1-r-pattern"
-              className={FIELD}
               value={pattern}
               maxLength={100}
               onChange={(e) => setPattern(e.target.value)}
@@ -86,19 +86,14 @@ export function RulesPanel({ productId }: { productId: string }) {
               <label htmlFor="gd1-r-comp" className="text-label text-ink-2">
                 {L("component")}
               </label>
-              <select
-                id="gd1-r-comp"
-                className={FIELD}
-                value={comp}
-                onChange={(e) => setComp(e.target.value)}
-              >
+              <OptionSelect id="gd1-r-comp" value={comp} onValueChange={(v) => setComp(v)}>
                 <option value="">{L("wholeProduct")}</option>
                 {p.components.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </OptionSelect>
             </div>
           )}
           <button

@@ -176,3 +176,20 @@ export async function safeReload(page: Page, opts: SafeReloadOpts = {}): Promise
   await expect.poll(() => live.size, { timeout }).toBe(0);
   if (opts.ready) await expect(opts.ready).toBeVisible({ timeout });
 }
+
+/**
+ * CR-177 W2 · chọn một mục trong ô chọn của bộ kit (Radix Select): mở ô, bấm đúng mục.
+ * `spec`: chuỗi = giá trị (`data-value`, như `selectOption("x")` cũ) · `{ label }` · `{ index }`.
+ */
+export async function pickOption(
+  trigger: Locator,
+  spec: string | { label: string | RegExp } | { index: number },
+): Promise<void> {
+  const page = trigger.page();
+  await trigger.click();
+  const list = page.getByRole("listbox");
+  if (typeof spec === "string")
+    await list.locator(`[role="option"][data-value="${spec.replace(/"/g, '\\"')}"]`).click();
+  else if ("label" in spec) await list.getByRole("option", { name: spec.label }).click();
+  else await list.getByRole("option").nth(spec.index).click();
+}

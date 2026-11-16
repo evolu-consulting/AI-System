@@ -3,8 +3,10 @@
 
 import type { PartnerRole } from "@ai/contracts/pack-contracts";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useLedgerWrites } from "../hooks/use-ledger";
 import { otherKinds, today } from "../lib/ledger";
 import type { Act } from "../lib/use-act";
@@ -51,10 +53,10 @@ export function OtherForm({ party, role, contractId, busy, act }: Props) {
     <div>
       <h3 className="mb-1.5 text-[14px] font-semibold">{L("otherTitle")}</h3>
       <div className="flex flex-wrap items-center gap-2 text-[13px]">
-        <select
-          className="field h-8 w-auto"
+        <OptionSelect
+          className="h-8 w-auto"
           value={type}
-          onChange={(e) => setType(e.target.value)}
+          onValueChange={(v) => setType(v)}
           aria-label={L("kind")}
         >
           {kinds.map((k) => (
@@ -62,7 +64,7 @@ export function OtherForm({ party, role, contractId, busy, act }: Props) {
               {L(`other.${k.type}`)}
             </option>
           ))}
-        </select>
+        </OptionSelect>
         <DateInput
           className="field h-8 w-[150px]"
           value={at}
@@ -73,8 +75,8 @@ export function OtherForm({ party, role, contractId, busy, act }: Props) {
         {kind?.late && (
           <label className="flex items-center gap-1.5">
             {L("late")}
-            <input
-              className="field h-8 w-[56px] text-right font-mono"
+            <Input
+              className="h-8 w-[56px] text-right font-mono"
               inputMode="numeric"
               value={late}
               onChange={(e) => setLate(Number(e.target.value.replace(/\D/g, "")) || 0)}
@@ -83,8 +85,8 @@ export function OtherForm({ party, role, contractId, busy, act }: Props) {
             {L("days")}
           </label>
         )}
-        <input
-          className="field h-8 min-w-[180px] flex-1"
+        <Input
+          className="h-8 min-w-[180px] flex-1"
           placeholder={type === "complaint" ? L("complaintNote") : L("notePlaceholder")}
           value={note}
           maxLength={500}

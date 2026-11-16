@@ -8,6 +8,7 @@ import { AttachField } from "~/components/shared/AttachField";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { fetchOrgPeoplePage } from "~/features/org/api";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { PersonSearchSelect } from "~/shared/ui/PersonSearchSelect";
 import { uploadAttachment } from "../api";
 import { useOrgOptions } from "../hooks/use-org-options";
@@ -87,11 +88,11 @@ function OrgSelect({ field, value, onChange }: Pick<Props, "field" | "value" | "
   }
   return (
     <>
-      <select
+      <OptionSelect
         id={`req-${field.key}`}
         className="h-9 w-full rounded-md border border-rule bg-panel px-2 text-sm"
         value={value as string}
-        onChange={(e) => onChange(e.target.value)}
+        onValueChange={(v) => onChange(v)}
       >
         <option value="">{t("contracts.requests.pickDept")}</option>
         {org.departments.map((o) => (
@@ -99,7 +100,7 @@ function OrgSelect({ field, value, onChange }: Pick<Props, "field" | "value" | "
             {o.label}
           </option>
         ))}
-      </select>
+      </OptionSelect>
       {org.failed && <span className="text-label text-dim">{t("contracts.requests.noOrg")}</span>}
     </>
   );

@@ -1,9 +1,12 @@
 // CR-127 · U5 · M9/M10: "Phụ trách ▾" nằm trên dòng thông tin đầu trang (thay khối "Quản lý hợp đồng · Giao cho"); hoa hồng % của HĐ Giới thiệu và
 // "AI đọc lại từ đầu" chỉ ở DRAFT. Chỉ vai có quyền ghi thấy ô sửa.
+
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import {
   useAssignees,
   useAssignOwner,
@@ -31,13 +34,13 @@ export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
     >
       <span className="text-[13px] text-dim">{t("contracts.u5.owner.label")}</span>
       {write ? (
-        <select
-          className="input w-auto max-w-full min-w-0 [field-sizing:content]"
+        <OptionSelect
+          className="w-auto max-w-full min-w-0 [field-sizing:content]"
           aria-label={t("contracts.u5.owner.label")}
           data-testid="owner-select"
           value={cur ?? ""}
           disabled={assign.isPending || people.isPending}
-          onChange={(e) => assign.mutate(e.target.value || null)}
+          onValueChange={(v) => assign.mutate(v || null)}
         >
           <option value="">{t("contracts.gapa1.owner.none")}</option>
           {cur && !opts.some((o) => o.id === cur) && <option value={cur}>{label}</option>}
@@ -46,7 +49,7 @@ export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
               {o.name}
             </option>
           ))}
-        </select>
+        </OptionSelect>
       ) : (
         <span className="font-medium">{label}</span>
       )}
@@ -65,9 +68,9 @@ function CommissionRow({ c }: { c: ContractDetail }) {
       <label htmlFor="commission-pct" className="text-[13px] text-dim">
         {t("contracts.gapa1.commission.label")}
       </label>
-      <input
+      <Input
         id="commission-pct"
-        className="input w-24"
+        className="w-24"
         inputMode="decimal"
         value={text}
         aria-invalid={!p.ok}

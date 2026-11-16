@@ -3,7 +3,9 @@
 // V2-F · HD-01 · HD-10 · 5.5a · 5.7e · Luật 4b: form hợp đồng (nhập tay) — thanh Huỷ/Lưu dính, 3 ô loại Mua/Bán/Giới thiệu (nhãn đối tác + kho
 // đi theo loại), ô bắt buộc viền đỏ, đối tác kèm điểm uy tín / "Đối tác mới", chọn SP danh mục từng dòng (V2-B match), tồn + "Bán vượt tồn",
 // giá trị tự cộng khi để trống. Backend giả `page.route`; chờ phần tử/yêu cầu, không sleep.
+
 import { expect, type Page, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { NEW_ID, P_SIGN, P_TOKEN } from "./dataset-v2f";
 import { installV2f, type Sent } from "./v2f-support";
 
@@ -137,7 +139,7 @@ test.describe
       await l.name.fill("USB Token trắng");
       await l.qty.fill("50");
       await l.name.blur();
-      await expect(l.pick).toHaveValue(P_TOKEN.id);
+      await expect(l.pick).toHaveAttribute("data-value", P_TOKEN.id);
       await expect(page.getByText("Gợi ý", { exact: true })).toBeVisible();
       await expect(page.getByTestId("on-hand")).toHaveText("tồn 10 cái");
       await expect(page.getByTestId("oversell")).toHaveCount(0);
@@ -168,12 +170,13 @@ test.describe
       await l.name.fill("Chữ ký số 1 năm");
       await l.qty.fill("20");
       await l.name.blur();
-      await expect(l.pick).toHaveValue(P_SIGN.id);
-      await expect(page.getByLabel("Thành phần dòng 1")).toHaveValue(
+      await expect(l.pick).toHaveAttribute("data-value", P_SIGN.id);
+      await expect(page.getByLabel("Thành phần dòng 1")).toHaveAttribute(
+        "data-value",
         P_SIGN.components[1]?.id ?? "",
       );
       await expect(page.getByTestId("oversell")).toContainText("tồn 5 lượt");
-      await page.getByLabel("Thành phần dòng 1").selectOption(P_SIGN.components[0]?.id ?? "");
+      await pickOption(page.getByLabel("Thành phần dòng 1"), P_SIGN.components[0]?.id ?? "");
       await expect(page.getByTestId("oversell")).toHaveCount(0);
       await expect(page.getByTestId("on-hand")).toHaveText("tồn 40 lượt");
     });
@@ -239,7 +242,7 @@ test.describe
       await l.price.fill("1.200.000");
       await l.unit.fill("gói");
       await l.name.blur();
-      await expect(l.pick).toHaveValue(P_SIGN.id);
+      await expect(l.pick).toHaveAttribute("data-value", P_SIGN.id);
       await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
       await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
       expect(manual(sent)).toEqual({
@@ -286,9 +289,9 @@ test.describe
       await l.unit.fill("cái");
       await l.name.blur();
       // Không có gợi ý ⇒ máy chủ đề xuất tạo mới từ tên dòng.
-      await expect(l.pick).toHaveValue("__new__");
+      await expect(l.pick).toHaveAttribute("data-value", "__new__");
       await expect(page.getByLabel("Tên sản phẩm mới dòng 1")).toHaveValue("Ổ cứng ngoài 1TB");
-      await page.getByLabel("Nhóm sản phẩm dòng 1").selectOption("goods");
+      await pickOption(page.getByLabel("Nhóm sản phẩm dòng 1"), "goods");
       await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
       await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
       expect(sent.filter((s) => s.path === "/pack/contracts/products")).toEqual([]);
@@ -308,7 +311,7 @@ test.describe
       const l = line(page, 0);
       await l.name.fill("Bảo hiểm xe ô tô");
       await l.name.blur();
-      await page.getByLabel("Gắn dòng 1 với sản phẩm").selectOption({ label: "Bảo hiểm xe" });
+      await pickOption(page.getByLabel("Gắn dòng 1 với sản phẩm"), { label: "Bảo hiểm xe" });
       await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
       await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
       expect(manual(sent)?.body).toMatchObject({

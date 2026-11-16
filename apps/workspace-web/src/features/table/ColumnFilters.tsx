@@ -1,4 +1,5 @@
 // PK-FR-10 · TF6 · lọc theo cột: chip các điều kiện đã thêm, "+ Lọc" chọn cột khác, "Xoá lọc". Nguồn: table.tsx:267-285, 336-377.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
@@ -116,12 +117,12 @@ export function ColumnFilters({ filter }: { filter: FilterState }) {
                 {t("contracts.table.filterBy")}
               </p>
               {free.length > 6 && (
-                <input
+                <Input
                   value={find}
                   onChange={(e) => setFind(e.target.value)}
                   placeholder={t("contracts.table.findColumn")}
                   aria-label={t("contracts.table.findColumn")}
-                  className="mb-1 h-8 w-full rounded-lg border border-field bg-panel px-3 text-label text-ink"
+                  className="mb-1 h-8 w-full"
                 />
               )}
               {free

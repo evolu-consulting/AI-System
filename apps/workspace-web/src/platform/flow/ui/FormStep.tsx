@@ -4,10 +4,12 @@
 
 import type { FlowFormField, FormPrefill } from "@ai/contracts/flow";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Input as KitInput } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileUploadField } from "~/components/shared/FileUploadField";
 import { Btn } from "~/components/ui/Btn";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import {
   checkForm,
   type FieldErrors,
@@ -62,21 +64,20 @@ function Input({
         return (
           <FormSearchSelect
             id={id}
-            className={INPUT}
             options={selectOptions(f, prefill)}
             value={str}
             onChange={onChange}
           />
         );
       return (
-        <select id={id} className={INPUT} value={str} onChange={(e) => onChange(e.target.value)}>
+        <OptionSelect id={id} value={str} onValueChange={(v) => onChange(v)}>
           <option value="" />
           {f.options.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
           ))}
-        </select>
+        </OptionSelect>
       );
     case "date":
       return (
@@ -91,19 +92,17 @@ function Input({
     case "number":
     case "money":
       return (
-        <input
+        <KitInput
           id={id}
           inputMode={f.type === "money" || f.integer ? "numeric" : "decimal"}
-          className={INPUT}
           value={str}
           onChange={(e) => onChange(e.target.value)}
         />
       );
     case "text":
       return (
-        <input
+        <KitInput
           id={id}
-          className={INPUT}
           type={f.format === "email" ? "email" : "text"}
           maxLength={f.max_len}
           value={str}

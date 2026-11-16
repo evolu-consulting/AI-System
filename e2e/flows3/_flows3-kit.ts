@@ -1,8 +1,10 @@
 // biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-165 · bộ thao tác người dùng cho e2e quy trình thật (cùng cách `e2e/smoke-journey`, nhưng trên stack e2e): mỗi hàm = MỘT người làm MỘT việc bằng UI.
 // Không sleep: chờ theo điều kiện (`reloadUntil` tải lại tới khi điều kiện đúng — việc do engine chạy nền).
+
 import { type Browser, expect, type Locator, type Page } from "@playwright/test";
 import { PDFDocument, StandardFonts } from "../../apps/hub-api/node_modules/pdf-lib";
+import { pickOption } from "../_kit/ui";
 import { type Env, loginCw, stepOf, uploadAndOpen } from "../journey-approval/_journey";
 import { CO, type Side } from "./_flows3-who";
 
@@ -222,8 +224,8 @@ export async function signAndAsk(
   if (prep) await doTask(p, e, "Chuẩn bị ký");
   await uploadSigned(p, e, id);
   await doTask(p, e, "Nhờ đối tác ký", async (form) => {
-    const sel = form.locator("select").first();
-    if (await sel.count()) await sel.selectOption({ label: ans });
+    const sel = form.getByRole("combobox").first();
+    if (await sel.count()) await pickOption(sel, { label: ans });
     else await form.getByLabel(ans, { exact: true }).check();
   });
 }
@@ -233,11 +235,12 @@ export async function pickPartner(p: Page, e: Env, tax: string, email: string): 
   await doTask(p, e, "Chọn đối tác", async (form) => {
     const partner = form.locator("[data-flow-field=partner_tax_code]");
     await partner.getByRole("searchbox").fill(tax);
-    const opt = partner.locator("select option", { hasText: tax });
+    await partner.getByRole("combobox").click();
+    const opt = partner.page().getByRole("option", { name: new RegExp(tax) });
     await expect(opt, `đối tác ${tax} không có trong danh sách chọn`).toHaveCount(1, {
       timeout: 30_000,
     });
-    await partner.locator("select").selectOption((await opt.getAttribute("value")) ?? "");
+    await opt.click();
     await form.locator("[data-flow-field=partner_email] input").fill(email);
   });
 }

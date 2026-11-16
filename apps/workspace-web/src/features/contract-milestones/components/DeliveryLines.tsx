@@ -1,6 +1,8 @@
 // delivery-opts · bảng "Giao đợt này" trong hộp xác nhận mốc giao: SL mỗi dòng đã tính sẵn (theo % của mốc, đợt cuối lấy phần còn lại)
 // và sửa được trước khi xác nhận; HĐ Bán thiếu kho ⇒ cảnh báo (cài đặt cho phép giao vượt tồn) hoặc báo không đủ tồn.
+
 import type { ContractDeal, DeliveryView, StockCheckOut } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { deliveryReads } from "../hooks/use-milestone-writes";
@@ -92,13 +94,13 @@ export function DeliveryLines({
               <td className="text-right tabular-nums">{r.on_contract}</td>
               <td className="text-right tabular-nums">{r.delivered}</td>
               <td className="text-right">
-                <input
+                <Input
                   aria-label={`${L("colThisTime")} · ${r.name}`}
                   inputMode="decimal"
                   disabled={!editable}
                   value={r.qty}
                   onChange={(e) => set(i, e.target.value)}
-                  className="field w-[120px] text-right font-mono"
+                  className="w-[120px] text-right font-mono"
                 />
               </td>
             </tr>

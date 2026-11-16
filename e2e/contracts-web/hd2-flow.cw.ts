@@ -83,7 +83,10 @@ test.skip("HD-FR-26 · S04 · nhập tay: POST /manual đúng thân (loại Bán
   await page.getByLabel("Số lượng", { exact: true }).fill("1,5");
   await page.getByLabel("Đơn giá", { exact: true }).fill("20.000");
   await page.getByLabel("Tên hàng").blur();
-  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_TOKEN.id);
+  await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveAttribute(
+    "data-value",
+    P_TOKEN.id,
+  );
   await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
   await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
   expect(sent[0]).toEqual({

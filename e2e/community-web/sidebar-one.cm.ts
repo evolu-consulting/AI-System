@@ -1,5 +1,7 @@
 // CR-121 C-5 · thanh trái MỘT component: Community → Sổ Hợp Tác giữ nguyên cùng <nav data-testid="shell-sidebar">, mục đang chọn đúng.
+
 import { expect, type Page, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { asHub } from "../contracts-web/dataset";
 
 // Bản build mock Community không có phiên; sang Sổ Hợp Tác (`_authed`) cần phiên ⇒ giả `/auth/refresh` + `/pack/contracts/me` như e2e contracts-web
@@ -15,7 +17,7 @@ test("Community → Sổ Hợp Tác: cùng một thanh trái (shell-sidebar), m�
 }) => {
   await signedIn(page);
   await page.goto("/community");
-  await page.getByLabel("Chọn nhân vật").selectOption("an");
+  await pickOption(page.getByLabel("Chọn nhân vật"), "an");
   const side = page.getByTestId("shell-sidebar");
   await expect(side).toHaveCount(1);
   await side.evaluate((el) => {
@@ -76,7 +78,7 @@ test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duy�
     r.fulfill({ json: { items: [], open_count: 0, next_cursor: null } }),
   );
   await page.goto("/community");
-  await page.getByLabel("Chọn nhân vật").selectOption("an");
+  await pickOption(page.getByLabel("Chọn nhân vật"), "an");
   const side = page.getByTestId("shell-sidebar");
   const badge = (to: string) => side.locator(`[data-nav-item="${to}"] [data-testid="nav-badge"]`);
   await expect(badge("/community/review")).toHaveText("3");
@@ -125,7 +127,7 @@ test("Community và Sổ Hợp Tác: icon menu cùng cỡ, cụm nút Header cù
         };
       });
   await page.goto("/community");
-  await page.getByLabel("Chọn nhân vật").selectOption("an");
+  await pickOption(page.getByLabel("Chọn nhân vật"), "an");
   const cm = await iconBox();
   await expect(page.getByTestId("topbar-actions")).toHaveCount(1);
   await expect(page.getByTestId("topbar-bell")).toHaveCount(1);

@@ -1,6 +1,7 @@
 // PK-FR-10 · TF4 · form đăng nhập S01, port `reference/mgmt-app-contracts/web/src/pages/auth/LoginPage.tsx:39-63`.
 // Lệch có chủ ý (D-21): ô "Mã công ty" chỉ khi chưa biết tenant; ô "Email" là tên đăng nhập admin-api (type text, không ép email).
 // Nhãn e2e (plan-frontend §7): textbox "Mã công ty" / "Email" / "Mật khẩu", button "Hiện mật khẩu"/"Ẩn mật khẩu", "Đăng nhập".
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconEye, IconEyeOff } from "~/components/icons";
@@ -16,7 +17,7 @@ type Props = {
   onSubmit: (values: LoginValues) => void;
 };
 
-const FIELD =
+const _FIELD =
   "mt-1 h-10 w-full rounded-lg border border-field bg-panel px-3 text-sm text-ink focus:outline-2 focus:outline-act focus:-outline-offset-1";
 
 export function LoginForm({ tenant, busy, error, onSubmit }: Props) {
@@ -39,11 +40,11 @@ export function LoginForm({ tenant, busy, error, onSubmit }: Props) {
       {askTenant ? (
         <label className="text-[13px]">
           {t("contracts.login.tenant")}
-          <input
+          <Input
             name="tenant_key"
             required
             defaultValue={tenant}
-            className={`${FIELD} font-mono`}
+            className="font-mono"
             autoComplete="organization"
             autoCapitalize="none"
             spellCheck={false}
@@ -63,10 +64,9 @@ export function LoginForm({ tenant, busy, error, onSubmit }: Props) {
       )}
       <label className="text-[13px]">
         {t("contracts.login.email")}
-        <input
+        <Input
           name="username"
           required
-          className={FIELD}
           autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}
@@ -76,11 +76,11 @@ export function LoginForm({ tenant, busy, error, onSubmit }: Props) {
       <label className="text-[13px]">
         {t("contracts.login.password")}
         <span className="relative mt-1 block">
-          <input
+          <Input
             name="password"
             type={show ? "text" : "password"}
             required
-            className={`${FIELD} mt-0 block pr-11`}
+            className="mt-0 block pr-11"
             autoComplete="current-password"
           />
           <button

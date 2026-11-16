@@ -3,9 +3,11 @@
 // (+ "Ghi việc", mobile, tối) và khối "Ghi việc với …" của trang HĐ đã duyệt. (V2-I/V2-L/V2-O: `/settings/scoring` và `/products?product=`
 // đã gỡ — cách tính điểm nay ở hộp thoại Cài đặt, test `v2l-settings.cw.ts`; danh sách SP ở `v2j1-products.cw.ts`.) `CW_MODE=capture` chụp từ contracts-web và GHI baseline; chế độ so đọc baseline, thiếu ⇒ đỏ ngay. Hành vi (chỉ chế độ so):
 // mỗi nút gửi đúng API/thân. Không sleep: chờ phần tử/điều kiện. Dữ liệu `dataset-partners.ts`.
+
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { asHub } from "./dataset";
 import { contract, contractAsHub } from "./dataset-contract";
 import { partnerData, partnersAsHub } from "./dataset-partners";
@@ -237,7 +239,7 @@ test("HD7-FR-04…08 · Ghi việc: Đã thu / Đã nhắc / Khách hẹn lại 
   await row.getByLabel("Ngày hẹn mới").fill("2026-10-25");
   await row.getByRole("button", { name: "Ghi" }).click();
   const log = page.locator(LOG);
-  await log.getByLabel("Loại việc").selectOption("complaint");
+  await pickOption(log.getByLabel("Loại việc"), "complaint");
   await expect(log.getByRole("button", { name: "Ghi", exact: true }).last()).toBeDisabled();
   await log.getByLabel("Ghi chú").fill("giao thiếu");
   await log.getByRole("button", { name: "Ghi", exact: true }).last().click();

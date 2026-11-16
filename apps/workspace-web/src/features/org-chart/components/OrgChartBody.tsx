@@ -1,7 +1,9 @@
 // CR-142 · thân «Sơ đồ tổ chức»: ô tìm (chọn ⇒ nhảy tới phòng + làm nổi thẻ), sơ đồ cây, hộp thành viên khi bấm thẻ phòng.
 // Mobile: vẫn dùng sơ đồ (kéo/chụm để xem) — không có bản danh sách riêng, một khuôn cho mọi màn.
+
 import type { ContractsOrgDept } from "@ai/contracts/pack-contracts";
 import { searchDepts } from "@ai/flow-canvas/pure";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Btn } from "~/components/ui/Btn";
@@ -52,7 +54,7 @@ export function OrgChartBody({ departments }: { departments: readonly ContractsO
         <label className="sr-only" htmlFor="org-search">
           {t("contracts.orgChart.search")}
         </label>
-        <input
+        <Input
           id="org-search"
           type="search"
           value={query}
@@ -66,7 +68,7 @@ export function OrgChartBody({ departments }: { departments: readonly ContractsO
             jump(matches[(matches.indexOf(focus?.id ?? "") + 1) % matches.length]);
           }}
           placeholder={t("contracts.orgChart.search")}
-          className="h-10 w-full max-w-sm rounded-md border border-rule bg-panel px-3 text-body"
+          className="h-10 w-full max-w-sm"
         />
         {query ? (
           <Btn variant="quiet" onClick={() => setQuery("")}>

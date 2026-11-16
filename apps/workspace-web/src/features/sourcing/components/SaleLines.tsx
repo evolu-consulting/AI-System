@@ -1,9 +1,11 @@
 // W1 · bảng dòng đang bán: nguồn mua (chọn tay nếu có quyền ghi), giá mua, lãi, rủi ro (port cm-web `sourcing/Lines.tsx`).
+
 import type { SaleLine, SourceRef } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { cn } from "~/lib/utils";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useChooseSource } from "../hooks/use-sourcing";
 import { RISK_TONE, refKey, selectValue, sourcingErrorText } from "../lib/sourcing";
 
@@ -38,12 +40,12 @@ function SourceCell({
   return (
     <>
       {options.length > 0 && (
-        <select
+        <OptionSelect
           aria-label={t("contracts.sourcing.sourceOf", { name: r.name })}
           disabled={busy}
-          className="field h-9 max-w-[320px] text-[13px]"
+          className="h-9 max-w-[320px] text-sm"
           value={selectValue(r)}
-          onChange={(e) => onPick(e.target.value)}
+          onValueChange={(v) => onPick(v)}
         >
           <option value="">{t("contracts.sourcing.auto")}</option>
           {options.map((c) => (
@@ -51,7 +53,7 @@ function SourceCell({
               {label(c, t)}
             </option>
           ))}
-        </select>
+        </OptionSelect>
       )}
       {s ? (
         <span className="mt-1 block text-dim">

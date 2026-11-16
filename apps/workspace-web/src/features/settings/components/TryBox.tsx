@@ -1,4 +1,5 @@
 // V2-L · khung "Công thức & thử tính" (mockup `.trybox`): bên trái công thức, bên phải máy tính với số mẫu nhập tay. Không ghi gì.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "~/shared/ui/settings-layout";
@@ -51,7 +52,7 @@ export function TryNum({
   label: string;
 }) {
   return (
-    <input
+    <Input
       type="number"
       aria-label={label}
       min={min}
@@ -59,7 +60,7 @@ export function TryNum({
       step={step}
       value={Number.isFinite(value) ? value : ""}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="h-8 w-20 rounded-md border border-field bg-panel px-2 text-right text-caption tabular-nums"
+      className="h-8 w-20 text-right tabular-nums"
     />
   );
 }

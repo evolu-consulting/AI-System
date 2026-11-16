@@ -1,11 +1,13 @@
 // products-confirm · BA 5.5: hộp "Gắn sản phẩm" lúc xác nhận HĐ — liệt kê dòng HĐ; mỗi dòng "dùng SP có sẵn" (SP trùng tên, tốt nhất
 // chọn sẵn) hoặc "tạo SP mới" (mặc định khi không có SP trùng). Xác nhận ⇒ `onConfirm(links)`; SP chỉ được tạo/gắn sau bước này.
+
 import type {
   ContractDeal,
   ContractItem,
   ProductLink,
   ProductOut,
 } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -17,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { incomplete, initialChoices, type LinkChoice, toLinks } from "../lib/links";
 
 export type ProductLinkTarget = {
@@ -105,39 +108,39 @@ function ChoiceRow({
         {t("contracts.plink.createNew")}
       </label>
       {c.mode === "existing" ? (
-        <select
+        <OptionSelect
           aria-label={t("contracts.plink.pickAria", { name: c.item_name })}
-          className="field mt-2 h-[2.1rem] w-full"
+          className="mt-2 h-[2.1rem] w-full"
           value={c.product_id}
-          onChange={(e) => patch(i, { product_id: e.target.value })}
+          onValueChange={(v) => patch(i, { product_id: v })}
         >
           {c.candidates.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
             </option>
           ))}
-        </select>
+        </OptionSelect>
       ) : (
         <div className="mt-2 flex flex-wrap gap-2">
-          <input
+          <Input
             aria-label={t("contracts.plink.newNameAria", { name: c.item_name })}
-            className="field h-[2.1rem] min-w-[220px] flex-1"
+            className="h-[2.1rem] min-w-[220px] flex-1"
             value={c.new_name}
             maxLength={300}
             onChange={(e) => patch(i, { new_name: e.target.value })}
           />
-          <select
+          <OptionSelect
             aria-label={t("contracts.plink.groupAria")}
-            className="field h-[2.1rem] w-auto"
+            className="h-[2.1rem] w-auto"
             value={c.new_group}
-            onChange={(e) => patch(i, { new_group: e.target.value as LinkChoice["new_group"] })}
+            onValueChange={(v) => patch(i, { new_group: v as LinkChoice["new_group"] })}
           >
             {(["goods", "service", "referral"] as const).map((g) => (
               <option key={g} value={g}>
                 {t(`contracts.catalog.group.${g}`)}
               </option>
             ))}
-          </select>
+          </OptionSelect>
         </div>
       )}
     </li>

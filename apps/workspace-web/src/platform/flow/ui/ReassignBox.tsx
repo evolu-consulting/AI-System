@@ -1,7 +1,9 @@
 // CR-127 · U4b-1 · E2/E3b · «Chuyển cho…»: chọn người + lý do (bắt buộc) ⇒ `POST /review-tasks/:id/reassign`.
 // Chỉ trưởng phòng / quản trị công ty giao lại được — máy chủ quyết (`NOT_GROUP_HEAD`), lỗi hiện kèm cách khắc phục.
+
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 
 export type Person = { id: string; name: string };
 const NOTE_MAX = 500;
@@ -28,11 +30,11 @@ export function ReassignBox({
     >
       <label className="flex flex-col gap-1 text-sm">
         {t("contracts.work.u4.reassign.who")}
-        <select
+        <OptionSelect
           data-testid="reassign-who"
           className="rounded-md border border-rule bg-panel px-2 py-1.5 text-sm"
           value={to}
-          onChange={(e) => setTo(e.target.value)}
+          onValueChange={(v) => setTo(v)}
         >
           <option value="">{t("contracts.work.u4.reassign.pick")}</option>
           {people.map((p) => (
@@ -40,7 +42,7 @@ export function ReassignBox({
               {p.name}
             </option>
           ))}
-        </select>
+        </OptionSelect>
       </label>
       <label className="flex flex-col gap-1 text-sm">
         {t("contracts.work.u4.reassign.reason")}

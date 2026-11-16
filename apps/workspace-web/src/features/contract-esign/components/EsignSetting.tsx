@@ -1,9 +1,11 @@
 // cf-esign-docusign · ô "Ký số hợp đồng" trong Cài đặt › Quy trình duyệt: owner bật/tắt + chọn nhà cung cấp mặc định
 // (PUT /esign/settings); server chưa cấu hình ⇒ "Chưa cấu hình ký số", ô khoá; ký thử ⇒ nhãn không có giá trị pháp lý.
+
 import type { ESignProviderOut } from "@ai/contracts/pack-contracts";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "~/lib/api-error";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useEsignSettings } from "../hooks/use-esign-settings";
 import { esignErrKey } from "../lib/esign-view";
 import { EsignAnchorSetting } from "./EsignAnchorSetting";
@@ -24,19 +26,14 @@ function ProviderSelect({
     <div className="mt-3 flex flex-col gap-1 text-[13px]" data-testid="esign-provider-setting">
       <label className="flex items-center gap-3">
         <span className="font-semibold">{t("contracts.esign.defaultProvider")}</span>
-        <select
-          className="field"
-          value={value}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
-        >
+        <OptionSelect value={value} disabled={disabled} onValueChange={(v) => onChange(v)}>
           {providers.map((p) => (
             <option key={p.key} value={p.key} disabled={!p.available}>
               {p.label}
               {p.available ? "" : ` (${t("contracts.esign.providerUnavailable")})`}
             </option>
           ))}
-        </select>
+        </OptionSelect>
       </label>
       <ul className="text-caption text-dim">
         {providers.map((p) => (

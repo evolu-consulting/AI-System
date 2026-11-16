@@ -1,4 +1,5 @@
 // Chọn nhiều nhóm hàng trong hộp thoại (CR-129 L4): trên trang chỉ có một nút tóm tắt «A, B +N»; Xong mới ghi lựa chọn, Huỷ bỏ.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { useApp } from "../application/ctx";
@@ -43,9 +44,8 @@ export function CategoryDialog({
             <DialogHeader>
               <DialogTitle>{t("community.audience.catsTitle")}</DialogTitle>
             </DialogHeader>
-            <input
+            <Input
               type="search"
-              className="field"
               aria-label={t("community.audience.catsSearch")}
               placeholder={t("community.audience.catsSearch")}
               value={q}

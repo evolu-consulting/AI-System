@@ -1,6 +1,8 @@
 // price-scout · ô nhập "Cấu hình dò giá" ở màn SP: bật dò + lịch tự động (vận hành) + MỘT ô "Yêu cầu dò giá" viết tự do.
 // Các ô cấu trúc cũ vẫn nằm trong form (giữ nguyên giá trị lưu, vd % cảnh báo) nhưng không hiện ở đây.
+
 import { useTranslation } from "react-i18next";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { INSTRUCTIONS_MAX, type ScoutForm } from "../lib/scout";
 
 const FIELD =
@@ -44,18 +46,17 @@ export function ScoutProductFields({ form, set, disabled }: Props) {
         <label htmlFor="scout-schedule" className="text-label text-ink-2">
           {L("f.schedule")}
         </label>
-        <select
+        <OptionSelect
           id="scout-schedule"
           data-testid="scout-schedule"
-          className={FIELD}
           value={form.schedule}
           disabled={disabled}
-          onChange={(e) => set({ ...form, schedule: e.target.value as ScoutForm["schedule"] })}
+          onValueChange={(v) => set({ ...form, schedule: v as ScoutForm["schedule"] })}
         >
           <option value="off">{L("schedule.off")}</option>
           <option value="weekly">{L("schedule.weekly")}</option>
           <option value="monthly">{L("schedule.monthly")}</option>
-        </select>
+        </OptionSelect>
       </div>
     </div>
   );

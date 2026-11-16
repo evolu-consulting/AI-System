@@ -1,8 +1,10 @@
 // CR-110 · COM-FR-38..42 · CR-130 · e2e Cài đặt: MỘT hộp thoại cho cả app (Sổ Hợp Tác + Bảng tin). VIẾT, CHƯA CHẠY (chạy một lần cuối đợt).
+
 import { expect, type Page, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 
 const as = async (page: Page, id: string) => {
-  await page.getByLabel("Chọn nhân vật").selectOption(id);
+  await pickOption(page.getByLabel("Chọn nhân vật"), id);
 };
 const open = async (page: Page, name: string) => {
   await page.getByRole("button", { name: "Tài khoản" }).click();

@@ -3,6 +3,7 @@
 // ô "Đã giao / đã thanh toán ngay", "Thuộc HĐ nguyên tắc". Lưu ⇒ `POST /contracts/deals` ⇒ mở giao dịch; "xác nhận ngay" dừng giữa chừng
 // (`settle_error`) ⇒ ở lại báo lý do kèm nút mở giao dịch (giao dịch ĐÃ lưu).
 // Cảnh báo pháp lý (Câu 8): `legal-warn.ts`, ngưỡng từ GET /company; chỉ cảnh báo. Ghi chú (note): API tạo giao dịch chưa có trường.
+
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, type ReactNode, useEffect } from "react";
@@ -26,7 +27,7 @@ import { legalTotal, showLegalWarning } from "~/features/contract-form/lib/legal
 import { stockTone } from "~/features/contract-form/lib/stock-label";
 import { contractKey, fetchContract } from "~/features/contract-review/api";
 import { fetchCompany } from "~/features/settings/api";
-import { cn } from "~/lib/utils";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 
 /** Màn "đã lưu": báo giao dịch dừng giữa chừng / đã ghi vào mốc / gắn HĐ nguyên tắc lỗi. */
 function DealSaved({
@@ -165,13 +166,12 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
                 <label htmlFor="cf-source">
                   {t("contracts.doclist.source")} <span className="text-late">*</span>
                 </label>
-                <select
+                <OptionSelect
                   id="cf-source"
-                  className={cn("field", form.sourceMissing && "border-late")}
                   aria-invalid={form.sourceMissing || undefined}
                   value={extra.source}
-                  onChange={(e) =>
-                    form.setExtra((s) => ({ ...s, source: e.target.value as typeof s.source }))
+                  onValueChange={(v) =>
+                    form.setExtra((s) => ({ ...s, source: v as typeof s.source }))
                   }
                 >
                   <option value="">{t("contracts.doclist.sourcePick")}</option>
@@ -180,7 +180,7 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
                       {t(`contracts.doclist.sourceName.${s}`)}
                     </option>
                   ))}
-                </select>
+                </OptionSelect>
               </div>
               <div className="col-span-2 flex flex-col gap-1 max-lg:col-span-1">
                 <label htmlFor="cf-frame">{t("contracts.doclist.frame")}</label>

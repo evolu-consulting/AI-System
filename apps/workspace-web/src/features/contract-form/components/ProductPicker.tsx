@@ -1,9 +1,12 @@
 // V2-F · BA 5.5a/5.5c/5.5f/5.7e · mockup `linkRow`: dưới mỗi dòng HĐ — chọn "Sản phẩm trong danh mục" (hoặc tạo mới), chọn thành phần
 // khi SP có nhiều thành phần, nhãn gợi ý, tồn hiện có và cảnh báo "Bán vượt tồn" (chỉ HĐ Bán).
+
 import type { ContractDeal, ProductGroup, ProductOut } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useTranslation } from "react-i18next";
 import { Tag } from "~/components/shared/tag";
 import { cn } from "~/lib/utils";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { type LineState, NEW_PRODUCT } from "../lib/form-model";
 import { type StockHint, stockHint } from "../lib/stock";
 
@@ -27,26 +30,27 @@ function NewProductFields({
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.cform.${k}`, o);
   return (
     <>
-      <input
+      <Input
         aria-label={L("newNameAria", { n })}
         value={line.new_name}
         onChange={(e) => onPatch({ new_name: e.target.value })}
         placeholder={L("newNamePh")}
-        className={cn("field h-[2.1rem] w-[220px]", invalid && "border-late")}
+        aria-invalid={invalid || undefined}
+        className="h-[2.1rem] w-[220px]"
       />
-      <select
+      <OptionSelect
         aria-label={L("newGroupAria", { n })}
         value={deal === "referral" ? "referral" : line.new_group}
         disabled={deal === "referral"}
-        onChange={(e) => onPatch({ new_group: e.target.value as ProductGroup })}
-        className="field h-[2.1rem] w-auto min-w-[150px]"
+        onValueChange={(v) => onPatch({ new_group: v as ProductGroup })}
+        className="h-[2.1rem] w-auto min-w-[150px]"
       >
         {GROUPS.map((g) => (
           <option key={g} value={g}>
             {L(`group.${g}`)}
           </option>
         ))}
-      </select>
+      </OptionSelect>
       <Tag tone="soon">{L("newProduct")}</Tag>
     </>
   );
@@ -79,18 +83,18 @@ function ComponentSelect({
 }) {
   const { t } = useTranslation();
   return (
-    <select
+    <OptionSelect
       aria-label={t("contracts.cform.componentAria", { n })}
       value={value}
-      onChange={(e) => onPatch({ component_id: e.target.value })}
-      className="field h-[2.1rem] w-auto max-w-[260px] min-w-[200px]"
+      onValueChange={(v) => onPatch({ component_id: v })}
+      className="h-[2.1rem] w-auto max-w-[260px] min-w-[200px]"
     >
       {product.components.map((c) => (
         <option key={c.id} value={c.id}>
           {t("contracts.cform.componentOpt", { name: c.name })}
         </option>
       ))}
-    </select>
+    </OptionSelect>
   );
 }
 
@@ -131,14 +135,12 @@ export function ProductPicker({
   return (
     <div className="flex flex-wrap items-center gap-2 pl-0.5" data-testid={`link-${index}`}>
       <span className="text-[12.5px] whitespace-nowrap text-ink-2">{L("linkLabel")}</span>
-      <select
+      <OptionSelect
         aria-label={L("linkAria", { n })}
         value={line.product_id}
-        onChange={(e) => pick(e.target.value)}
-        className={cn(
-          "field h-[2.1rem] w-auto max-w-[280px] min-w-[220px]",
-          invalid && "border-late",
-        )}
+        onValueChange={(v) => pick(v)}
+        aria-invalid={invalid || undefined}
+        className="h-[2.1rem] w-auto max-w-[280px] min-w-[220px]"
       >
         <option value="">{L("linkPick")}</option>
         {options.map((p) => (
@@ -147,7 +149,7 @@ export function ProductPicker({
           </option>
         ))}
         {allowNew && <option value={NEW_PRODUCT}>{L("linkNew")}</option>}
-      </select>
+      </OptionSelect>
       {picked && picked.components.length > 1 && (
         <ComponentSelect product={picked} value={line.component_id} n={n} onPatch={onPatch} />
       )}

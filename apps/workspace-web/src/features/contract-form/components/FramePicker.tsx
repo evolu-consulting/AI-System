@@ -1,5 +1,6 @@
 // DOC-ui-list · R30 UI: chọn "Thuộc HĐ nguyên tắc" cho Giao dịch — tìm theo tên/số (không giới hạn 100, mỗi lần lấy 20 khớp), chọn một,
 // bỏ chọn được. Gắn thật sau khi lưu (`POST /contracts/:id/attach`).
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -61,10 +62,9 @@ export function FramePicker({
   const items = list.data?.items ?? [];
   return (
     <div className="flex flex-col gap-1.5">
-      <input
+      <Input
         id="cf-frame"
         type="search"
-        className="field"
         value={q}
         disabled={disabled}
         placeholder={t("contracts.doclist.frameSearch")}

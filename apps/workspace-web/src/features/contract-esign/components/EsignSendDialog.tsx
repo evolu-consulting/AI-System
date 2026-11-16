@@ -1,6 +1,8 @@
 // cf-esign-docusign · hộp "Gửi ký": người ký công ty = chính tài khoản đang đăng nhập (chỉ đọc), đối tác sửa được; ký tuần tự.
 // esign-multi · dropdown nhà cung cấp (chỉ khi > 1 khả dụng); gửi `provider` khi chọn.
+
 import type { ESignProviderOut, ESignSignerIn } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -12,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useEsignPlacement } from "../anchor-api";
 import { availableProviders, pickDefaultProvider, showProviderPicker } from "../lib/esign-view";
 
@@ -31,11 +34,10 @@ function ProviderPick({
   return (
     <label className="flex items-center gap-2 text-[13px]">
       <b>{t("contracts.esign.provider")}</b>
-      <select
-        className="field"
+      <OptionSelect
         data-testid="esign-provider-select"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onValueChange={(v) => onChange(v)}
       >
         {availableProviders(providers).map((p) => (
           <option key={p.key} value={p.key}>
@@ -43,7 +45,7 @@ function ProviderPick({
             {p.legal ? "" : ` – ${t("contracts.esign.notLegal")}`}
           </option>
         ))}
-      </select>
+      </OptionSelect>
     </label>
   );
 }
@@ -147,15 +149,15 @@ export function EsignSendDialog({
                   </span>
                 ) : (
                   <div className="flex gap-2 max-sm:flex-col">
-                    <input
-                      className="field flex-1"
+                    <Input
+                      className="flex-1"
                       aria-label={`${t("contracts.esign.name")} ${i + 1}`}
                       value={r.name}
                       maxLength={100}
                       onChange={(e) => set(i, "name", e.target.value)}
                     />
-                    <input
-                      className="field flex-1"
+                    <Input
+                      className="flex-1"
                       type="email"
                       aria-label={`${t("contracts.esign.email")} ${i + 1}`}
                       value={r.email}

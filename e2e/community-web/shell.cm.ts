@@ -2,12 +2,14 @@
 // CR-110 · COM-FR-27..31, 43 · CR-120 · e2e lớp vỏ community-web (adapter mock + persona switcher) trong MỘT AppShell dùng chung với Sổ Hợp Tác.
 // Trọng tâm: cách ly đối tác (I1/I3, HT-75/76) — nhóm "Sổ Hợp Tác" và link contracts KHÔNG có trong DOM (không phải CSS ẩn); điều hướng
 // trong app không tải lại trang; khung (menu trái, thanh trên, menu tài khoản, công tắc sáng/tối) dùng chung, không còn khung riêng của Community.
+
 import { expect, type Page, test } from "@playwright/test";
 import { HOST_ORG } from "../../apps/workspace-web/src/modules/community/adapters/seed";
+import { pickOption } from "../_kit/ui";
 import { spa } from "./_nav";
 
 const as = async (page: Page, id: string) => {
-  await page.getByLabel("Chọn nhân vật").selectOption(id);
+  await pickOption(page.getByLabel("Chọn nhân vật"), id);
 };
 const SHT = "Sổ Hợp Tác";
 const SHT_PATHS = [

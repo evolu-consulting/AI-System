@@ -1,5 +1,7 @@
 // Một bình luận trong luồng (C6): sửa/xoá của người viết, ẩn của chủ quản. `action` = chỗ gắn nút của lát khác (C7b "Lưu báo giá").
+
 import type { CommentView } from "@ai/contracts/community";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { type ReactNode, useState } from "react";
 import { initials, timeAgo, tone } from "../domain/format";
 import { type CommentActions, splitMentions } from "../domain/thread";
@@ -46,7 +48,7 @@ export function CommentItem({
             {c.authorOrgName} · {c.authorName}
           </b>
           {editing ? (
-            <input
+            <Input
               aria-label={t("community.comment.edit")}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}

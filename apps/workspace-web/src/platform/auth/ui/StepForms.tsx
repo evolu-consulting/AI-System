@@ -1,6 +1,7 @@
 // CR-118 · cr118-auth · form bước 2 của login gộp (port `community-web/src/ui/Login.tsx` StageFields): đổi mật khẩu bắt buộc
 // (mới + nhập lại) và mã TOTP / mã dự phòng. Chỉ nhận dữ liệu + callback (không gọi API). Nhãn e2e: textbox "Mật khẩu mới",
 // "Nhập lại mật khẩu mới", "Mã xác thực"; button "Lưu mật khẩu" / "Xác nhận" / "Quay lại đăng nhập".
+import { Input } from "@ai/web-kit/ui/kit/input";
 import type { FormEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -51,23 +52,11 @@ export function ChangePasswordForm(
     >
       <label className="text-[13px]">
         {t("contracts.login.newPassword")}
-        <input
-          name="next"
-          type="password"
-          required
-          className={AUTH_FIELD}
-          autoComplete="new-password"
-        />
+        <Input name="next" type="password" required autoComplete="new-password" />
       </label>
       <label className="text-[13px]">
         {t("contracts.login.confirmPassword")}
-        <input
-          name="confirm"
-          type="password"
-          required
-          className={AUTH_FIELD}
-          autoComplete="new-password"
-        />
+        <Input name="confirm" type="password" required autoComplete="new-password" />
       </label>
     </Shell>
   );
@@ -83,10 +72,10 @@ export function TotpForm(p: Common & { onSubmit: (code: string) => void }) {
     >
       <label className="text-[13px]">
         {t("contracts.login.code")}
-        <input
+        <Input
           name="code"
           required
-          className={`${AUTH_FIELD} font-mono`}
+          className="font-mono"
           autoComplete="one-time-code"
           inputMode="text"
           autoCapitalize="none"

@@ -1,4 +1,5 @@
 // gap-d1 #21 · "Nhập giá tay": NCC + giá chưa VAT (+ loại, đơn vị, ngày, ghi chú) ⇒ lưu vào bảng so sánh với nguồn "Nhập tay".
+
 import type { SupplierPriceKind } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,7 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { FIELD, Field, FieldDate } from "~/features/products/components/Field";
+import { Field, FieldDate } from "~/features/products/components/Field";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useSavePrices } from "../hooks/use-quote";
 import { type ManualPriceForm, manualPriceBody } from "../lib/suppliers";
 
@@ -89,18 +91,17 @@ export function ManualPriceDialog({
               <label htmlFor="gd1-m-kind" className="text-label text-ink-2">
                 {L("kind")}
               </label>
-              <select
+              <OptionSelect
                 id="gd1-m-kind"
-                className={FIELD}
                 value={f.kind}
-                onChange={(e) => setF({ ...f, kind: e.target.value as SupplierPriceKind })}
+                onValueChange={(v) => setF({ ...f, kind: v as SupplierPriceKind })}
               >
                 {(["new", "renew"] as const).map((k) => (
                   <option key={k} value={k}>
                     {t(`contracts.psup.kind.${k}`)}
                   </option>
                 ))}
-              </select>
+              </OptionSelect>
             </div>
             <Field
               id="gd1-m-unit"

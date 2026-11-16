@@ -2,7 +2,9 @@
 // hd78-partners.cw.ts; KHÔNG chạy trong lát, chạy một lần ở cuối đợt): huy hiệu theo band, "MỚI · tạm tính" (điểm tạm), cờ đỏ tách khỏi
 // điểm, báo cờ (lý do bắt buộc, quyền ghi) và gỡ cờ (chỉ quản lý, lý do bắt buộc), tab Hợp đồng lọc giai đoạn, ghi chú, "Tìm trên
 // internet". Không còn ô sao / ghi `/reputation/*`. Mỗi nút gửi đúng API / thân.
+
 import { expect, type Page, test } from "@playwright/test";
+import { pickOption } from "../_kit/ui";
 import { asHub, type Role } from "./dataset";
 import { partyPageAsHub } from "./dataset-partners";
 
@@ -266,7 +268,7 @@ test("UT-FR-13 · báo cờ đỏ: lý do bắt buộc (nút khoá tới khi có
   await expect(panel).toContainText("Đối tác chưa có cờ đỏ.");
   const send = panel.getByRole("button", { name: "Báo cờ", exact: true });
   await expect(send).toBeDisabled();
-  await panel.getByLabel("Loại cờ").selectOption("no_delivery");
+  await pickOption(panel.getByLabel("Loại cờ"), "no_delivery");
   await panel.getByLabel("Lý do").fill("Không giao lô 2 dù đã thu tiền");
   await send.click();
   await expect.poll(() => sent.length).toBe(1);

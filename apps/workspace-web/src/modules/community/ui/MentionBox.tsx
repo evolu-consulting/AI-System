@@ -1,6 +1,8 @@
 // Ô viết bình luận có nhắc tên «@» (CR-129): gõ `@` ⇒ popover gợi ý công ty (gọi `mentionables`), ↑↓ chọn, Enter chèn, Esc đóng.
 // Gợi ý rỗng (đối tác) ⇒ không bật popover và không gọi lại. Enter khi không có popover ⇒ gửi.
+
 import type { Mention } from "@ai/contracts/community";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { type KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { activeMention, insertMention, moveIndex } from "../domain/thread";
 import { t } from "../i18n";
@@ -120,7 +122,7 @@ export function MentionBox({
           ))}
         </div>
       )}
-      <input
+      <Input
         ref={input}
         role="combobox"
         aria-expanded={open}

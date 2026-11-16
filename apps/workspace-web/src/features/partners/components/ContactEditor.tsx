@@ -1,6 +1,8 @@
 // V2-GAPS · DT-01 → GAP-D2 · #24: sửa NHIỀU người liên hệ của đối tác ngay ở đầu trang chi tiết (tên, chức vụ, điện thoại, email,
 // người phụ trách bên mình). Lưu = thay cả danh sách; người đầu tiên hiện ở đầu trang. Dòng trống bị bỏ.
+
 import type { PartnerContactPerson } from "@ai/contracts/pack-contracts";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -59,8 +61,8 @@ export function ContactEditor({
             {FIELDS.map(([f, w, max]) => (
               <label key={f} className="flex flex-col gap-1 text-[12.5px] text-dim">
                 {L(f)}
-                <input
-                  className={`field ${w}`}
+                <Input
+                  className={w}
                   maxLength={max}
                   value={r[f]}
                   aria-label={`${L(f)} ${i + 1}`}

@@ -1,8 +1,10 @@
 // CR-124 · q4 · FLOW4-FR-14/16/17 · khối «Gửi đối tác xác nhận» ở chi tiết HĐ (bên GỬI): mỗi vòng gửi một thẻ 3 dòng (trạng thái · lý do · bước kế).
 // Vòng đang chờ có nút «Ghi nhận kết quả đối tác» (người phụ trách/ghi được HĐ; người khác không thấy nút) ⇒ Đồng ý / Trả lại / Từ chối + lý do +
 // người bên đối tác trả lời + bằng chứng. Ẩn hẳn khi HĐ chưa từng gửi đối tác.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useRecordResult, useRounds } from "../hooks/use-partner-queries";
 import { needsReason, type Round, recordIssue, roundCard } from "../lib/partner-view";
 import { PartnerCard } from "./PartnerCard";
@@ -46,21 +48,21 @@ function RecordForm({ round, onDone }: { round: Round; onDone: () => void }) {
     >
       <label className="grid gap-1">
         {t("contracts.partner.record.outcome")}
-        <select
-          className="field h-9"
+        <OptionSelect
+          className="h-9"
           value={outcome}
-          onChange={(e) => setOutcome(e.target.value as Outcome)}
+          onValueChange={(v) => setOutcome(v as Outcome)}
         >
           <option value="confirmed">{t("contracts.partner.out.opt.confirmed")}</option>
           <option value="returned">{t("contracts.partner.out.opt.returned")}</option>
           <option value="declined">{t("contracts.partner.out.opt.declined")}</option>
-        </select>
+        </OptionSelect>
       </label>
       {needsReason(outcome) && (
         <label className="grid gap-1">
           {t("contracts.partner.record.reason")}
-          <input
-            className="field h-9"
+          <Input
+            className="h-9"
             maxLength={2000}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -70,8 +72,8 @@ function RecordForm({ round, onDone }: { round: Round; onDone: () => void }) {
       <div className="grid grid-cols-2 gap-2">
         <label className="grid gap-1">
           {t("contracts.partner.record.byName")}
-          <input
-            className="field h-9"
+          <Input
+            className="h-9"
             maxLength={200}
             value={byName}
             onChange={(e) => setByName(e.target.value)}
@@ -79,8 +81,8 @@ function RecordForm({ round, onDone }: { round: Round; onDone: () => void }) {
         </label>
         <label className="grid gap-1">
           {t("contracts.partner.record.byTitle")}
-          <input
-            className="field h-9"
+          <Input
+            className="h-9"
             maxLength={200}
             value={byTitle}
             onChange={(e) => setByTitle(e.target.value)}

@@ -1,9 +1,11 @@
 // CR-127 · U6 · M2d: «Ký cùng lúc» trên chi tiết HĐ của MỖI bên — bên nhận trả lời Đồng ý / Xử lý bình thường / Từ chối; phiên ký chung hiện hai dòng ký
 // (tên công ty + người ký), «Huỷ phiên ký» cần lý do; ghi rõ chưa có giá trị pháp lý. Không có phiên ⇒ không vẽ gì.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { endedReason, type SignRow, sessionView } from "../lib/sign-session-view";
 import {
   cancelSignSession,
@@ -81,11 +83,10 @@ export function SignSessionCard({ id, write }: { id: string; write: boolean }) {
       <p className="text-[12.5px] text-dim">{t("contracts.u6.cosign.noLegal")}</p>
       {v.canRespond && (
         <div className="flex flex-wrap items-center gap-2" data-testid="cosign-respond">
-          <select
-            className="field"
+          <OptionSelect
             aria-label={t("contracts.u6.cosign.signer")}
             value={signer}
-            onChange={(e) => setSigner(e.target.value)}
+            onValueChange={(v) => setSigner(v)}
           >
             <option value="">{t("contracts.u6.cosign.pickSigner")}</option>
             {signers.map((m) => (
@@ -93,7 +94,7 @@ export function SignSessionCard({ id, write }: { id: string; write: boolean }) {
                 {m.name}
               </option>
             ))}
-          </select>
+          </OptionSelect>
           <button
             type="button"
             className="btn btn-sm btn-primary"
@@ -122,8 +123,8 @@ export function SignSessionCard({ id, write }: { id: string; write: boolean }) {
       )}
       {v.canCancel && (
         <div className="flex flex-wrap items-center gap-2" data-testid="cosign-cancel">
-          <input
-            className="field min-w-60 flex-1"
+          <Input
+            className="min-w-60 flex-1"
             placeholder={t("contracts.u6.cosign.cancelReason")}
             value={reason}
             onChange={(e) => setReason(e.target.value)}

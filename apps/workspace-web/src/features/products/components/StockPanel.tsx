@@ -1,5 +1,6 @@
 // gap-d1 #18 · tab "Kho & lô" của chi tiết SP: thành phần (tồn, giá vốn BQ), các lô, và "Nhập lô" tay (SL, đơn giá, ngày, NCC; gói suất có hạn).
 // Luật kho V2-B/V2-D giữ nguyên (BQ gia quyền, xuất FIFO) — máy chủ tính; ô xem trước chỉ là ước tính.
+
 import type { ProductComponentOut } from "@ai/contracts/pack-contracts";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
@@ -8,9 +9,10 @@ import { viDate, vnd } from "~/components/shared/format";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { today } from "~/features/ledger/lib/ledger";
 import { useMe } from "~/features/pack-state/hooks/use-me";
+import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { knownCatalogError, useAddLot, useCatalogProduct } from "../hooks/use-catalog";
 import { avgPreview, type LotForm, lotBody } from "../lib/catalog";
-import { FIELD, Field, FieldDate } from "./Field";
+import { Field, FieldDate } from "./Field";
 
 const th = "px-4 py-2.5 text-left text-xs font-semibold text-dim bg-sunk";
 const td = "border-t border-rule-soft px-4 py-2.5 text-sm";
@@ -53,13 +55,17 @@ function LotFormBox({
             <label htmlFor="gd1-l-comp" className="text-label text-ink-2">
               {L("component")}
             </label>
-            <select id="gd1-l-comp" className={FIELD} value={comp.id} onChange={set("componentId")}>
+            <OptionSelect
+              id="gd1-l-comp"
+              value={comp.id}
+              onValueChange={(v) => setF({ ...f, componentId: v })}
+            >
               {comps.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
-            </select>
+            </OptionSelect>
           </div>
         )}
         <FieldDate

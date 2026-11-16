@@ -1,4 +1,5 @@
 // PK-FR-10 · TF6 · ô sửa điều kiện lọc: danh sách giá trị để tích, và khoảng từ–đến cho cột số. Nguồn: table.tsx:215-265.
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type Cond, type FilterDef, matches } from "./lib";
@@ -40,12 +41,12 @@ export function ValuesEditor({
   return (
     <>
       {def.options.length > 6 && (
-        <input
+        <Input
           value={find}
           onChange={(e) => setFind(e.target.value)}
           placeholder={t("contracts.table.findIn", { name: def.label.toLowerCase() })}
           aria-label={t("contracts.table.findIn", { name: def.label.toLowerCase() })}
-          className="mb-1 h-8 w-full rounded-lg border border-field bg-panel px-3 text-label text-ink"
+          className="mb-1 h-8 w-full"
         />
       )}
       <div className="max-h-64 overflow-y-auto">
@@ -85,9 +86,9 @@ export function RangeEditor({ cond, set }: { cond: Cond | undefined; set: (c: Co
   const box = (label: string, v: number | null | undefined, on: (n: number | null) => void) => (
     <label className="flex flex-1 flex-col gap-1 text-caption text-dim">
       {label}
-      <input
+      <Input
         inputMode="numeric"
-        className="h-8 w-full rounded-lg border border-field bg-panel px-3 font-mono text-label text-ink"
+        className="h-8 w-full font-mono"
         value={v == null ? "" : num(v)}
         onChange={(e) => on(parse(e.target.value))}
       />
