@@ -14,6 +14,10 @@ type Route = Parameters<Parameters<Page["route"]>[1]>[0];
 const json = (r: Route, status: number, body: unknown) =>
   r.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
+// Tải nguội: mỗi ca mở trang mới ⇒ ~80 chunk JS tải lại qua tối đa 6 kết nối (evotest nhiều việc chạy cùng lúc: tới ~7 s sau goto mới vẽ xong thẻ duyệt,
+// dữ liệu đã về từ ~3 s). Phép chờ ĐẦU SAU goto chờ đúng phần tử thẻ duyệt với trần cho tải nguội; các phép chờ sau đó dùng trần mặc định.
+const COLD = { timeout: 20_000 };
+
 const G1 = "11111111-1111-4111-8111-111111111111";
 const G2 = "22222222-2222-4222-8222-222222222222";
 const TASK = "33333333-3333-4333-8333-333333333333";
@@ -98,7 +102,7 @@ test("dòng thời gian: tên bước, tên phòng, trạng thái, hạn quá h�
   await install(page, AT_STEP1({}, { due_at: "2020-01-01T00:00:00.000Z", overdue: true }));
   await page.goto(`/contracts/c/${contract.id}`);
   const tl = page.locator("[data-approval=timeline]");
-  await expect(tl.getByTestId("approval-step-0")).toContainText("Soạn & kiểm tra");
+  await expect(tl.getByTestId("approval-step-0")).toContainText("Soạn & kiểm tra", COLD);
   // CR-123 U2 · mỗi bước 3 dòng: trạng thái · lý do · bước kế (ai cần làm gì).
   await expect(tl.getByTestId("approval-step-0")).toContainText("Đã duyệt");
   await expect(tl.getByTestId("approval-step-1")).toContainText("Kế toán");
@@ -134,7 +138,7 @@ test("CR-120 · Đạt đi FlowRuntime.act (đúng task đang mở), dòng thờ
     (r.method() === "POST" ? acts : views).push(p);
   });
   await page.goto(`/contracts/c/${contract.id}`);
-  await expect(page.getByTestId("approval-step-1")).toContainText("Kế toán");
+  await expect(page.getByTestId("approval-step-1")).toContainText("Kế toán", COLD);
   expect(views).toContain(`/pack/contracts/flow/contracts.approval/${contract.id}`);
   await page.locator("[data-approval=pass]").click();
   await expect
@@ -158,7 +162,7 @@ test("CR-121 · cờ flow.runtime tắt ⇒ vẫn MỘT đường: Đạt đi ro
     if (p.includes("/flow/")) (r.method() === "POST" ? flowActs : flowViews).push(p);
   });
   await page.goto(`/contracts/c/${contract.id}`);
-  await expect(page.getByTestId("approval-step-1")).toContainText("Kế toán");
+  await expect(page.getByTestId("approval-step-1")).toContainText("Kế toán", COLD);
   await page.locator("[data-approval=pass]").click();
   await expect.poll(() => posts.length).toBe(1);
   expect(posts[0]).toEqual({ action: "approve" });
@@ -205,7 +209,7 @@ test("bước chỉ trưởng phòng, người xem không phải trưởng phòn
     AT_STEP1({ can_act: false, block_reason: "not_reviewer" }, { head_only: true }),
   );
   await page.goto(`/contracts/c/${contract.id}`);
-  await expect(page.locator("[data-approval=timeline]")).toContainText("chỉ trưởng phòng");
+  await expect(page.locator("[data-approval=timeline]")).toContainText("chỉ trưởng phòng", COLD);
   await expect(page.locator("[data-approval=note]")).toContainText("chỉ trưởng phòng duyệt");
   await expect(page.locator("[data-approval=pass]")).toHaveCount(0);
   await expect(page.locator("[data-approval=return]")).toHaveCount(0);
@@ -228,7 +232,7 @@ for (const [role, shown] of [
       json(r, 200, { ...d.grant, user: { ...d.grant.user, role } }),
     );
     await page.goto(`/contracts/c/${contract.id}`);
-    await expect(page.getByTestId("approval-step-1")).toContainText("Kế toán");
+    await expect(page.getByTestId("approval-step-1")).toContainText("Kế toán", COLD);
     await expect(page.getByTestId("approval-edit-flow")).toHaveCount(shown ? 1 : 0);
     await expect(page.getByRole("dialog", { name: "Cài đặt" })).toHaveCount(0);
   });
