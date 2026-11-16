@@ -182,7 +182,29 @@
       "removePicked": "Remove {{name}}",
       "seenBy": "Seen by: {{names}}",
       "pickCompany": "Partner company",
-      "emojiSlot": "Emoji"
+      "emojiSlot": "Emoji",
+      "find": {
+        "tabMessages": "Messages",
+        "tabPeople": "People",
+        "none": "No messages match “{{q}}”",
+        "noneHint": "Try a shorter word or drop the accents.",
+        "noneShort": "0 results",
+        "close": "Exit search",
+        "inChat": "Search in this conversation",
+        "older": "Older result",
+        "newer": "Newer result",
+        "attachTitle": "Photos & files",
+        "tabImages": "Photos",
+        "tabFiles": "Files",
+        "filterFiles": "Filter by file name",
+        "noImages": "No photos in this conversation yet",
+        "noFiles": "No files in this conversation yet",
+        "month": "{{m}}/{{y}}",
+        "goto": "Go to message",
+        "noPreview": "This file type can’t be previewed. Use “Download” to open it.",
+        "prevFile": "Previous file",
+        "nextFile": "Next file"
+      }
     }
   }
 }

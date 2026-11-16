@@ -148,10 +148,15 @@ export function Bubble({ row, mine, myId, onRevoke, onRetry }: BubbleProps) {
   };
   return (
     <div
-      className={cn("group/b flex w-full min-w-0 flex-col", mine ? "items-end" : "items-start")}
+      className={cn(
+        "group/b flex w-full min-w-0 flex-col rounded-xl",
+        "data-[flash=true]:ring-2 data-[flash=true]:ring-act motion-safe:data-[flash=true]:animate-pulse",
+        mine ? "items-end" : "items-start",
+      )}
       data-testid={state === "sent" ? "msg-row" : "msg-outgoing"}
       data-mine={mine ? "true" : "false"}
       data-state={state}
+      data-seq={m?.seq}
     >
       <div className={cn("flex max-w-[85%] items-center gap-1", mine && "flex-row-reverse")}>
         <div

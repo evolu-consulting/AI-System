@@ -60,3 +60,25 @@ export const IconSmile = (p: P) => (
     <path d="M9 9h.01M15 9h.01" />
   </svg>
 );
+export const IconChevronRight = (p: P) => (
+  <svg {...base(p)}>
+    <path d="m9 18 6-6-6-6" />
+  </svg>
+);
+export const IconChevronUp = (p: P) => (
+  <svg {...base(p)}>
+    <path d="m18 15-6-6-6 6" />
+  </svg>
+);
+export const IconChevronDown = (p: P) => (
+  <svg {...base(p)}>
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+export const IconImage = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <circle cx="9" cy="9" r="1.6" />
+    <path d="m21 15-4.5-4.5L6 21" />
+  </svg>
+);

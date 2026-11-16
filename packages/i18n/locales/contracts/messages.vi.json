@@ -182,7 +182,29 @@
       "removePicked": "Bỏ {{name}}",
       "seenBy": "Đã xem: {{names}}",
       "pickCompany": "Công ty đối tác",
-      "emojiSlot": "Biểu tượng cảm xúc"
+      "emojiSlot": "Biểu tượng cảm xúc",
+      "find": {
+        "tabMessages": "Tin nhắn",
+        "tabPeople": "Người",
+        "none": "Không có tin nào khớp «{{q}}»",
+        "noneHint": "Thử từ khoá ngắn hơn hoặc bỏ dấu.",
+        "noneShort": "0 kết quả",
+        "close": "Thoát tìm kiếm",
+        "inChat": "Tìm trong cuộc trò chuyện",
+        "older": "Kết quả cũ hơn",
+        "newer": "Kết quả mới hơn",
+        "attachTitle": "Ảnh & tệp",
+        "tabImages": "Ảnh",
+        "tabFiles": "Tệp",
+        "filterFiles": "Lọc theo tên tệp",
+        "noImages": "Chưa có ảnh nào trong cuộc trò chuyện này",
+        "noFiles": "Chưa có tệp nào trong cuộc trò chuyện này",
+        "month": "Tháng {{m}}/{{y}}",
+        "goto": "Đến tin nhắn",
+        "noPreview": "Loại tệp này không xem trước được. Bấm «Tải về» để mở.",
+        "prevFile": "Tệp trước",
+        "nextFile": "Tệp sau"
+      }
     }
   }
 }

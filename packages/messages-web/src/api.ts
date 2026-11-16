@@ -8,8 +8,11 @@ import type {
   FileRef,
   Message,
   MessagePage,
+  MsgAttachKind,
+  MsgAttachmentPage,
   MsgCompanyPage,
   MsgPeoplePage,
+  MsgSearchPage,
   SendMessageRequest,
   UnreadResponse,
 } from "@ai/contracts/pack-contracts";
@@ -40,6 +43,8 @@ export const msgKeys = {
   msgs: (id: string) => ["messages", "msgs", id] as const,
   people: (q: string, f: CompanyFilter = "own") => ["messages", "people", f, q] as const,
   companies: ["messages", "companies"] as const,
+  search: (q: string, conv: string | null) => ["messages", "search", conv ?? "all", q] as const,
+  attach: (id: string, kind: MsgAttachKind) => ["messages", "attach", id, kind] as const,
   feed: (tenant: string) => ["messages", "feed", tenant] as const,
 };
 
@@ -91,9 +96,19 @@ export const addMembers = (id: string, body: AddMembersRequest) =>
   api<ConversationDetail>(`${internal(id)}/members`, { method: "POST", body });
 export const removeMember = (id: string, userId: string) =>
   api<void>(`${internal(id)}/members/${enc(userId)}`, { method: "DELETE" });
-export const fetchMessages = (id: string, beforeSeq: number | null, signal?: AbortSignal) =>
+/** Trang tin: `aroundSeq` ⇒ nhảy tới tin đó (CR-178; kèm `has_newer`), còn lại tải thêm tin cũ hơn `beforeSeq`. */
+/** Trang tin: `aroundSeq` ⇒ nhảy tới tin đó (CR-178; kèm `has_newer`), còn lại tải thêm tin cũ hơn `beforeSeq`. */
+export const fetchMessages = (
+  id: string,
+  beforeSeq: number | null,
+  signal?: AbortSignal,
+  aroundSeq?: number,
+) =>
   api<MessagePage>(`${conv(id)}/messages`, {
-    query: { limit: MSG_LIST_PAGE, ...(beforeSeq ? { before_seq: beforeSeq } : {}) },
+    query: {
+      limit: MSG_LIST_PAGE,
+      ...(aroundSeq ? { around_seq: aroundSeq } : beforeSeq ? { before_seq: beforeSeq } : {}),
+    },
     signal,
   });
 export const sendMessage = (id: string, body: SendMessageRequest) =>
@@ -166,4 +181,45 @@ export async function fetchFileLink(
   const { url } = await api<{ url: string }>(`${fileBase(id, fileId)}/link`, { signal });
   if (!/^https?:\/\//.test(url) && !/^\/(?!\/)/.test(url)) throw new Error("bad link");
   return url;
+}
+
+/** CR-178 · tìm tin (mọi cuộc, hoặc một cuộc khi có `conversationId`), tải dần 20/lần. */
+export const fetchSearch = (
+  q: string,
+  conversationId: string | null,
+  cursor: string | null,
+  signal?: AbortSignal,
+) =>
+  api<MsgSearchPage>(`${BASE}/search`, {
+    query: {
+      q,
+      ...(conversationId ? { conversation_id: conversationId } : {}),
+      ...(cursor ? { cursor } : {}),
+    },
+    signal,
+  });
+
+/** CR-178 · «Ảnh & tệp» của một cuộc (nội bộ và `partner`), tải dần 30/lần. */
+export const fetchAttachments = (
+  id: string,
+  kind: MsgAttachKind,
+  cursor: string | null,
+  signal?: AbortSignal,
+) =>
+  api<MsgAttachmentPage>(`${conv(id)}/attachments`, {
+    query: { kind, ...(cursor ? { cursor } : {}) },
+    signal,
+  });
+
+/** CR-178 · tải byte tệp về (link ngắn hạn, không gửi cookie) và gắn đúng loại `mime` của tệp đã lưu ⇒ blob để xem trước; hỏng ⇒ ném lỗi. */
+export async function fetchFileBlob(
+  id: string,
+  fileId: string,
+  mime: string,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const url = await fetchFileLink(id, fileId, signal);
+  const res = await fetch(url, { credentials: "omit", ...(signal ? { signal } : {}) });
+  if (!res.ok) throw new Error("file fetch failed");
+  return new Blob([await res.arrayBuffer()], { type: mime });
 }

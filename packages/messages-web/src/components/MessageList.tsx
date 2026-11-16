@@ -41,6 +41,11 @@ export type MessageListProps = {
   onOlder: () => void;
   onRevoke: (seq: number) => void;
   onRetry: (clientId: string) => void;
+  /** CR-178 · tin cần cuộn tới + nháy viền (mỗi lần nhảy một `nonce` mới). */
+  focus?: { seq: number; nonce: number } | null;
+  /** Còn tin MỚI hơn trang đang có (sau khi nhảy tới tin cũ): cuộn xuống gần đáy ⇒ `onNewer`. */
+  hasNewer?: boolean;
+  onNewer?: () => void;
 };
 
 /** ISO một mốc của nhóm ngày (nhãn Hôm nay/Hôm qua/ngày): tin thật đầu tiên; chỉ có tin đang gửi ⇒ bây giờ. */
@@ -128,6 +133,28 @@ function MessageGroup({ g, p }: { g: RowGroup; p: MessageListProps }) {
 }
 
 const NEAR_BOTTOM_PX = 80;
+const FLASH_MS = 2000;
+
+/** Cuộn tin `focus.seq` vào giữa và nháy viền ~2 s (tôn trọng «giảm chuyển động»: chỉ viền, không nháy). Khai báo SAU các effect cuộn khác để thắng. */
+function useFocusSeq(
+  box: { current: HTMLDivElement | null },
+  focus: MessageListProps["focus"],
+  count: number,
+) {
+  const nonce = focus?.nonce;
+  const seq = focus?.seq;
+  const done = useRef<number | null>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chạy theo mỗi lần nhảy (nonce); `count` để thử lại khi tin đích vừa về
+  useEffect(() => {
+    if (nonce === undefined || seq === undefined || done.current === nonce) return;
+    const el = box.current?.querySelector<HTMLElement>(`[data-seq="${seq}"]`);
+    if (!el) return;
+    done.current = nonce;
+    el.scrollIntoView?.({ block: "center" });
+    el.setAttribute("data-flash", "true");
+    setTimeout(() => el.removeAttribute("data-flash"), FLASH_MS);
+  }, [nonce, count]);
+}
 
 /** Cuộn của dòng tin: mở cuộc tới vạch chưa đọc (hoặc đáy), tin mới khi đang đọc lên trên ⇒ nút «↓ n tin mới», tải tin cũ giữ vị trí (CR-148). */
 function useChatScroll(p: MessageListProps, mark: number | null) {
@@ -179,12 +206,14 @@ function useChatScroll(p: MessageListProps, mark: number | null) {
   const onScroll = (el: HTMLDivElement) => {
     if (el.scrollTop < NEAR_BOTTOM_PX && p.hasOlder && !p.loadingOlder) older();
     const near = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
-    atBottom.current = near;
+    atBottom.current = near && !p.hasNewer;
+    if (near && p.hasNewer) p.onNewer?.();
     if (near && away) {
       setAway(false);
       setSeenSeq(lastSeq);
     }
   };
+  useFocusSeq(box, p.focus, p.items.length);
   const newN = away ? newBelowCount(p.items, seenSeq, p.myId) : 0;
   return { box, end, bar, older, toEnd, onScroll, newN };
 }

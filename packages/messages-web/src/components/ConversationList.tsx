@@ -5,7 +5,10 @@
 import type { ConversationSummary } from "@ai/contracts/pack-contracts";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { canSearch } from "../hooks/use-find";
+import { IconChevronLeft } from "../icons";
 import { filterConversations } from "../lib/conversations";
 import { Skeleton } from "../ui";
 import { ConversationRow } from "./ConversationRow";
@@ -92,6 +95,36 @@ function RecentView({ p, newBtn }: { p: ConversationListProps; newBtn: ReactNode
   );
 }
 
+type FindTab = "messages" | "people";
+
+/** CR-178 · M3 · chế độ tìm (≥ 2 ký tự): tab «Tin nhắn» (kết quả tìm tin) và «Người» (cuộc + người như cũ). */
+function SearchMode({ p, newBtn }: { p: ConversationListProps; newBtn: ReactNode }) {
+  const { t } = useTranslation();
+  const [tab, setTab] = useState<FindTab>("messages");
+  const tabBtn = (k: FindTab, label: string) => (
+    <button
+      key={k}
+      type="button"
+      role="tab"
+      aria-selected={tab === k}
+      data-testid={`find-tab-${k}`}
+      onClick={() => setTab(k)}
+      className={`h-8 flex-1 border-b-2 text-[13px] font-semibold ${tab === k ? "border-act text-ink" : "border-transparent text-dim"}`}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <>
+      <div role="tablist" className="flex shrink-0 border-b border-rule-soft px-3">
+        {tabBtn("messages", t("contracts.messages.find.tabMessages"))}
+        {tabBtn("people", t("contracts.messages.find.tabPeople"))}
+      </div>
+      {tab === "messages" ? p.messageSearch : <RecentView p={p} newBtn={newBtn} />}
+    </>
+  );
+}
+
 export function ConversationList(p: ConversationListProps) {
   const { t } = useTranslation();
   const newBtn = (
@@ -99,20 +132,34 @@ export function ConversationList(p: ConversationListProps) {
       {t("contracts.messages.newChat")}
     </button>
   );
+  const finding = p.messageSearch != null && canSearch(p.q);
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="conv-list">
       <div className="flex shrink-0 items-center gap-2 px-3 pt-3 pb-2">
+        {finding && (
+          <button
+            type="button"
+            onClick={() => p.onQ("")}
+            aria-label={t("contracts.messages.find.close")}
+            title={t("contracts.messages.find.close")}
+            data-testid="find-exit"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-dim hover:bg-sunk hover:text-ink"
+          >
+            <IconChevronLeft width={18} height={18} />
+          </button>
+        )}
         <input
           type="search"
           value={p.q}
           onChange={(e) => p.onQ(e.target.value)}
+          onKeyDown={(e) => e.key === "Escape" && p.q !== "" && p.onQ("")}
           placeholder={t("contracts.messages.search")}
           aria-label={t("contracts.messages.search")}
           className="h-9 min-w-0 flex-1 rounded-lg border border-field bg-panel px-3 text-[13.5px] outline-none focus-visible:border-act-line"
         />
         {newBtn}
       </div>
-      {p.filterBar}
+      {!finding && p.filterBar}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {p.status === "loading" ? (
           <div className="space-y-3 p-4">
@@ -130,6 +177,8 @@ export function ConversationList(p: ConversationListProps) {
               </button>
             }
           />
+        ) : finding ? (
+          <SearchMode p={p} newBtn={newBtn} />
         ) : (
           <RecentView p={p} newBtn={newBtn} />
         )}

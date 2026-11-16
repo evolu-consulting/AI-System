@@ -9,7 +9,7 @@ import { fetchFileLink } from "../api";
 import { attachLabels, toAttachItem } from "../lib/attach-view";
 import { errorKey } from "../lib/errors";
 
-function saveFrom(url: string, name: string): void {
+export function saveFrom(url: string, name: string): void {
   const a = document.createElement("a");
   a.href = url;
   a.download = name;

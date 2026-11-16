@@ -4,6 +4,7 @@
 
 import type { MsgCompany } from "@ai/contracts/pack-contracts";
 import { useEffect, useMemo, useState } from "react";
+import { requestJump } from "../hooks/jump-request";
 import {
   useCompanies,
   useConversations,
@@ -19,6 +20,7 @@ import { type ListView, pickTab, viewFilter, viewFromParam, viewUnread } from ".
 import { ConversationList } from "./ConversationList";
 import { ListTabs } from "./ListTabs";
 import { NewConversationDialog } from "./NewConversationDialog";
+import { SearchHits } from "./SearchHits";
 
 type Load = "loading" | "error" | "ready";
 const statusOf = (loading: boolean, error: boolean): Load =>
@@ -109,6 +111,15 @@ export function ConversationPane({
             hasMore={companies.hasNextPage}
             loadingMore={companies.isFetchingNextPage}
             onMore={() => void companies.fetchNextPage()}
+          />
+        }
+        messageSearch={
+          <SearchHits
+            q={dq}
+            onOpen={(h) => {
+              requestJump(h.conversation_id, h.seq);
+              onSelect(h.conversation_id);
+            }}
           />
         }
         onSelect={onSelect}

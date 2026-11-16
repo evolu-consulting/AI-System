@@ -1,23 +1,21 @@
 // CR-132 · W2 · khung chat một hội thoại (toàn màn và khoang hẹp ở W3): đầu (‹ về danh sách khi có `onBack`, tên, «n thành viên»),
 // dòng tin, ô soạn. `compact` ⇒ đầu gọn, không viền ngoài. Không còn trong hội thoại (404) ⇒ câu «Bạn không còn trong cuộc trò chuyện này.».
 import type { ConversationDetail } from "@ai/contracts/pack-contracts";
-import { EmptyState } from "@ai/web-kit/ui/EmptyState";
-import { Badge } from "@ai/web-kit/ui/kit/badge";
-import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { type MutableRefObject, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { msgKeys } from "../api";
 import { useConversation, useMarkRead, useMessages, useOutbox, useRevoke } from "../hooks/use-chat";
+import { useJump } from "../hooks/use-jump";
 import { usePersonCards } from "../hooks/use-person-cards";
-import { IconBuilding, IconChevronLeft } from "../icons";
 import { seenPeople } from "../lib/chat-view";
 import { convTitle } from "../lib/conversations";
 import { errorKey, isGone } from "../lib/errors";
 import { lastMineSeq } from "../lib/message-pages";
 import { composerLocked } from "../lib/perms";
 import { cn, confirmDialog, Skeleton } from "../ui";
+import { ChatError, ChatHeader, ChatTop } from "./ChatParts";
 import { DropOverlay, useFileDrop } from "./file-drop";
 import { GroupMembersSheet } from "./GroupMembersSheet";
 import { MessageComposer } from "./MessageComposer";
@@ -34,127 +32,6 @@ export type ChatViewProps = {
   /** Lớp CSS thêm cho nút ‹ (vd `md:hidden` ở toàn màn hai cột). */
   backClass?: string;
 };
-
-function ChatError({
-  gone,
-  titleKey,
-  onBack,
-  onRetry,
-}: {
-  gone: boolean;
-  titleKey: string;
-  onBack?: () => void;
-  onRetry: () => void;
-}) {
-  const { t } = useTranslation();
-  if (gone)
-    return (
-      <EmptyState
-        kind="notFound"
-        testId="chat-gone"
-        title={t("contracts.messages.removedTitle")}
-        hint={t("contracts.messages.removedHint")}
-        action={
-          <button type="button" className="btn btn-sm" onClick={() => onBack?.()}>
-            {t("contracts.messages.back")}
-          </button>
-        }
-      />
-    );
-  return (
-    <EmptyState
-      kind="error"
-      title={t(titleKey)}
-      action={
-        <button type="button" className="btn btn-sm" onClick={onRetry}>
-          {t("contracts.messages.retry")}
-        </button>
-      }
-    />
-  );
-}
-
-function ChatHeader({
-  title,
-  subtitle,
-  company,
-  members,
-  onBack,
-  backClass,
-  compact,
-  onMembers,
-  onFeed,
-}: {
-  title: string;
-  /** CR-169 · cuộc `partner`: chức vụ người kia. */
-  subtitle: string;
-  /** CR-178 · cuộc `partner`: nhãn công ty + nút «Bảng tin <Công ty>». */
-  company: string;
-  onFeed: () => void;
-  members: number | null;
-  onBack?: () => void;
-  backClass?: string;
-  compact?: boolean;
-  onMembers: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <header
-      className={cn(
-        "flex shrink-0 items-center gap-2 border-b border-rule-soft",
-        compact ? "h-12 px-2" : "h-14 px-4",
-      )}
-    >
-      {onBack && (
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label={t("contracts.messages.back")}
-          title={t("contracts.messages.back")}
-          data-testid="chat-back"
-          className={cn(
-            "grid h-8 w-8 shrink-0 place-items-center rounded-lg text-dim hover:bg-sunk hover:text-ink",
-            backClass,
-          )}
-        >
-          <IconChevronLeft width={18} height={18} />
-        </button>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <h2 className="m-0 truncate text-[14.5px] font-semibold" data-testid="chat-title">
-            {title}
-          </h2>
-          {company && (
-            <Badge
-              status="warn"
-              icon={<IconBuilding width={12} height={12} />}
-              data-testid="chat-company"
-              className="max-w-40 shrink truncate"
-            >
-              {company}
-            </Badge>
-          )}
-        </div>
-        {subtitle && (
-          <p className="m-0 truncate text-micro text-dim" data-testid="chat-job">
-            {subtitle}
-          </p>
-        )}
-      </div>
-      {company && (
-        <Button variant="outline" size="sm" data-testid="open-feed" onClick={onFeed}>
-          {t("contracts.messages.feed.open", { company })}
-        </Button>
-      )}
-      {members !== null && (
-        <button type="button" className="btn btn-sm" onClick={onMembers} data-testid="chat-members">
-          {t("contracts.messages.members", { n: members })}
-        </button>
-      )}
-    </header>
-  );
-}
 
 /** Hỏi lại rồi thu hồi tin của mình (toast kết quả). */
 function useRevokeAction(id: string) {
@@ -222,12 +99,14 @@ function ChatBody({
   box,
   myId,
   readAt,
+  jump,
 }: {
   d: ConversationDetail | undefined;
   msgs: Msgs;
   box: Box;
   myId: string;
   readAt: number | null;
+  jump: ReturnType<typeof useJump>;
 }) {
   const { t } = useTranslation();
   const doRevoke = useRevokeAction(d?.id ?? "");
@@ -275,6 +154,9 @@ function ChatBody({
       onOlder={() => void msgs.fetchNextPage()}
       onRevoke={(s) => void doRevoke(s)}
       onRetry={box.retry}
+      focus={jump.focus}
+      hasNewer={jump.hasNewer}
+      onNewer={() => void jump.loadNewer()}
     />
   );
 }
@@ -309,6 +191,7 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
   const box = useOutbox(id, myId);
   const [sheet, setSheet] = useState(false);
   const [feed, setFeed] = useState(false);
+  const jump = useJump(id, msgs.items);
   const dropSink = useRef<((files: File[]) => void) | null>(null);
   const drop = useFileDrop(dropSink);
   const dropping = drop.active;
@@ -339,18 +222,24 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
       )}
       {...drop.handlers}
     >
-      <ChatHeader
-        title={d ? convTitle(d) : ""}
-        subtitle={partnerJob(d)}
-        company={partnerCompany(d)}
-        onFeed={() => setFeed(true)}
-        members={d?.kind === "group" ? d.member_count : null}
-        onBack={onBack}
-        backClass={backClass}
-        compact={compact}
-        onMembers={() => setSheet(true)}
-      />
-      <ChatBody d={d} msgs={msgs} box={box} myId={myId} readAt={readAt} />
+      <ChatTop id={id} jump={jump}>
+        {(onFind, onAttach) => (
+          <ChatHeader
+            onFind={onFind}
+            onAttach={onAttach}
+            title={d ? convTitle(d) : ""}
+            subtitle={partnerJob(d)}
+            company={partnerCompany(d)}
+            onFeed={() => setFeed(true)}
+            members={d?.kind === "group" ? d.member_count : null}
+            onBack={onBack}
+            backClass={backClass}
+            compact={compact}
+            onMembers={() => setSheet(true)}
+          />
+        )}
+      </ChatTop>
+      <ChatBody d={d} msgs={msgs} box={box} myId={myId} readAt={readAt} jump={jump} />
       <PartnerFeed d={d} open={feed} onClose={() => setFeed(false)} />
       {d && <ChatFooter d={d} onSend={box.send} dropSink={dropSink} />}
       {dropping && <DropOverlay label={t("contracts.messages.dropHere")} />}

@@ -32,4 +32,6 @@ export type ConversationListProps = {
   onNew: () => void;
   onMore: () => void;
   onRetry: () => void;
+  /** CR-178 · M3 · nội dung tab «Tin nhắn» khi đang tìm (kết quả tìm tin, đã nối dữ liệu); không có ⇒ chỉ tìm người/cuộc như cũ. */
+  messageSearch?: ReactNode;
 };

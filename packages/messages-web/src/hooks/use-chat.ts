@@ -18,6 +18,7 @@ import {
 } from "../api";
 import { applyNewToList, clearUnread } from "../lib/conversations";
 import { errorKey } from "../lib/errors";
+import type { AroundParam } from "../lib/find";
 import {
   applyDeleted,
   applyNewMessage,
@@ -41,8 +42,12 @@ export function useConversation(id: string) {
 export function useMessages(id: string) {
   const q = useInfiniteQuery({
     queryKey: msgKeys.msgs(id),
-    queryFn: ({ pageParam, signal }) => fetchMessages(id, pageParam, signal),
-    initialPageParam: null as number | null,
+    // CR-178 · `{ around }` = trang nhảy tới một tin (kết quả tìm / «Đến tin nhắn»): làm mới lại đúng trang đó.
+    queryFn: ({ pageParam, signal }) =>
+      typeof pageParam === "object" && pageParam
+        ? fetchMessages(id, null, signal, pageParam.around)
+        : fetchMessages(id, pageParam, signal),
+    initialPageParam: null as number | null | AroundParam,
     getNextPageParam: (last) => nextBefore([last]),
     staleTime: 30_000,
     retry: false,
