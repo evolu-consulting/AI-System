@@ -105,7 +105,8 @@ describe("MetaList", () => {
       />,
     );
     expect(out).toContain("not-first:before:content-");
-    expect(out).toContain("max-sm:flex-col");
+    expect(out).toContain("max-sm:grid-cols-[max-content_minmax(0,1fr)]"); // điện thoại: 2 cột nhãn | giá trị thẳng hàng
+    expect(out).toContain("max-sm:contents");
     expect(out).toContain("Đối tác");
     expect(out).not.toContain("Hạn");
     expect(out).toContain("Phụ trách");

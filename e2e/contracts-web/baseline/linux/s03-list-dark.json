@@ -1,27 +1,22 @@
 {
   "text": "Hợp đồng & giao dịch Xuất Thêm giao dịch Tải hợp đồng lên Tất cả9 HĐ nguyên tắc3 HĐ kinh tế3 Giao dịch3 Lọc Lọc theo ngày Mọi ngày Cột 3 kết quả Tên Số HĐ Đối tác Loại Giá trị Hiệu lực Trạng thái Đang chờ Thao tác Hợp đồng mua bán bao bì 2026 01/2026/HĐMB-PN Bao Bì Phương Nam Mua 245.000.000 đ 01/01/2026 đến 31/12/2026 Đã duyệt xong Còn hiệu lực — Hợp đồng cung cấp gia vị GV-07/2026 Gia Vị Việt Mua 80.000.000 đ — đến 31/03/2027 Nháp — Hợp đồng vận chuyển quý 4 — Thực phẩm An Khang — — — đến 20/11/2026 Đã duyệt xong Hết hạn sau 33 ngày — 1–3 / 3 dòng Mỗi trang 20 ‹ 1 ›",
   "boxes": {
-    "heading": {
-      "x": 252,
-      "y": 80,
-      "w": 273.8125,
-      "h": 40.296875
-    },
+    "heading": null,
     "search": {
       "x": 252,
-      "y": 189.21875,
+      "y": 192.296875,
       "w": 320,
       "h": 36
     },
     "table": {
       "x": 253,
-      "y": 244.21875,
+      "y": 245.296875,
       "w": 1248,
       "h": 268.671875
     },
     "firstRow": {
       "x": 253,
-      "y": 301.40625,
+      "y": 302.484375,
       "w": 1248,
       "h": 73.09375
     },

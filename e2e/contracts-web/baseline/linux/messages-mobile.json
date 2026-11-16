@@ -1,0 +1,18 @@
+{
+  "text": "Nhắn tin mới Tất cả Chưa đọc Đối tác ▾ Không tải được tin nhắn. Kiểm tra kết nối rồi bấm Thử lại. Thử lại",
+  "boxes": {
+    "header": {
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 52
+    },
+    "bottomNav": {
+      "x": 0,
+      "y": 787,
+      "w": 390,
+      "h": 57
+    },
+    "assistantFab": null
+  }
+}
