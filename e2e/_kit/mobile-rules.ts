@@ -177,7 +177,16 @@ export async function measureMobile(page: Page): Promise<Violation[]> {
 
 /** Chờ trang ổn định (không sleep: mạng yên). */
 export async function settle(page: Page): Promise<void> {
-  await page.locator("main").first().waitFor();
+  await page
+    .locator("main")
+    .first()
+    .waitFor({ timeout: 15_000 })
+    .catch(async () => {
+      const body = (await page.locator("body").innerText()).replace(/s+/g, " ").slice(0, 120);
+      throw new Error(
+        `màn không dựng được <main> (thấy: "${body}") — lỗi spec/giả API, không phải vi phạm mobile`,
+      );
+    });
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => document.fonts.ready);
 }

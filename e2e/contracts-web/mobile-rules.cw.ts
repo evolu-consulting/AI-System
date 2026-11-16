@@ -21,14 +21,7 @@ async function open(page: Page, path: string) {
       /* storage bị chặn */
     }
   });
-  // API chưa giả: rỗng thay vì lỗi mạng (đăng ký trước ⇒ route cụ thể của installHub thắng).
-  await page.route("**/pack/contracts/**", (r) =>
-    r.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ items: [], total: 0 }),
-    }),
-  );
+  // API chưa giả: để 404 như cảnh `messages-mobile` (một fallback `{items:[]}` chung làm vài màn vỡ «Something went wrong»).
   await installHub(page, true);
   await page.goto(path);
   await settle(page);
