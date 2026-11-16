@@ -13,6 +13,16 @@ export async function resetMock(): Promise<void> {
   if (r.status !== 204) throw new Error(`/__mock/reset → ${r.status}`);
 }
 
+/** Mặc định toàn cục của mock cho tin không có `#scn:`; `null` = trả về `normal`. */
+export async function setMockScenario(name: string | null): Promise<void> {
+  const r = await fetch(`${HUB}/__mock/scenario`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  if (r.status !== 204) throw new Error(`/__mock/scenario → ${r.status}`);
+}
+
 export async function expireAccess(): Promise<void> {
   const r = await fetch(`${HUB}/__mock/expire-access`, { method: "POST" });
   if (r.status !== 204) throw new Error(`/__mock/expire-access → ${r.status}`);

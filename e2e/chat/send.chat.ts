@@ -12,6 +12,7 @@ import {
   resetMock,
   scrollerHandle,
   sendMain,
+  setMockScenario,
   watchGrowth,
 } from "./_support";
 
@@ -36,6 +37,10 @@ test("CHAT-AC-05 · gửi ở ô chính tạo flow mới (không flow_id): 2 →
 test("CHAT-AC-06 · /c/new gửi 'Xin chào': chuyển /c/:id, text tăng dần, cuối = run.finished.content, Consultant [E-S2]", async ({
   page,
 }) => {
+  // «Hiện dần» đo bằng số trạng thái chữ khác nhau mà trang kịp vẽ. Kịch bản `normal` (30 delta × 4 ms ở MOCK_FAST) xong trong ~0,15 s,
+  // mà web gom delta 1 lần/khung hình ⇒ máy tải nặng chỉ vẽ 1–2 trạng thái (đỏ 12/15 khi CPU chậm 6 lần). Kịch bản `slow` nhả mỗi delta
+  // cách nhau 100 ms (hằng số, không theo tốc độ máy) ⇒ luôn có nhiều trạng thái trung gian; nội dung cuối vẫn kiểm đúng như cũ.
+  await setMockScenario("slow");
   const get = await watchGrowth(page);
   const resp = nextSendResponse(page);
   await sendMain(page, "Xin chào");
