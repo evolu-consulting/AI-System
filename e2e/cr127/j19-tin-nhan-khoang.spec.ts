@@ -53,7 +53,7 @@ test("Khoang: A gửi chữ + PDF, B thấy chấm đỏ ở nút khoang và tab
   await first.click();
   await expect(b.getByTestId("msg-files").filter({ hasText: "bao-gia.pdf" })).toBeVisible();
   await expect(b.getByTestId("dock-tab-messages").getByTestId("unread-badge")).toHaveCount(0);
-  await expect(a.getByTestId("msg-seen")).toHaveText("Đã xem");
+  await expect(a.getByTestId("msg-seen")).toHaveAttribute("aria-label", /Đã xem/);
   await b.getByRole("button", { name: "Về danh sách" }).click();
   await expect(b.getByTestId("conv-list")).toBeVisible();
   await expect(b.getByTestId("dock-messages")).toBeVisible();

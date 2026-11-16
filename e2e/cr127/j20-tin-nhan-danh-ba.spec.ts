@@ -1,51 +1,57 @@
-// CR-132b · e2e «Tin nhắn» có cột trái «Nhóm» + «Thành viên» (chưa chạy trong lát — chạy một lần cuối đợt):
-// nhân viên thấy đồng nghiệp ở «Thành viên», bấm một người chưa từng nhắn ⇒ khung chat mở ngay (không qua «Nhắn tin mới»), nhắn được.
+// CR-178 · e2e «Nhắn tin mới» (chưa chạy trong lát — chạy một lần cuối đợt): danh bạ theo phòng ban và nhóm nằm trong hộp «Nhắn tin mới»,
+// tab «Công ty mình»; danh sách cuộc chỉ còn MỘT kiểu (gần đây). Nhân viên là người tạo; giám đốc (khác người tạo) nhận.
 
 import type { Page } from "@playwright/test";
 import { test } from "../journey-approval/_test";
 import { envOf, expect, loginCw, SPEC_TENANT, U } from "./_cr127-kit";
 
 const E = envOf(SPEC_TENANT.j01);
-// CR-169: chip thứ hai của thanh lọc công ty = «<Công ty mình>» (sau «Tất cả»)
-const ownChip = (p: Page) => p.getByTestId("company-chip").nth(1);
 const HELLO = `Danh bạ ${Date.now().toString(36)}`;
+const GROUP = `Nhóm ${Date.now().toString(36)}`;
 
-test("Bấm thành viên ⇒ nhắn ngay", async ({ browser }) => {
+const openNew = async (p: Page) => {
+  await p.getByRole("button", { name: "Nhắn tin mới" }).first().click();
+  return p.getByTestId("new-conv-dialog");
+};
+
+test("Danh sách một kiểu; «Nhắn tin mới» chọn người theo phòng ban ⇒ chip «Tới:» ⇒ nhắn riêng", async ({
+  browser,
+}) => {
   test.setTimeout(120_000);
   const ctx = await browser.newContext();
   const a = await ctx.newPage();
   await loginCw(a, E, U.employee);
   await a.goto("/contracts/messages");
-  await ownChip(a).click(); // CR-169: danh bạ theo phòng ban chỉ còn ở chip «<Công ty mình>»
-  await expect(a.getByRole("region", { name: "Nhóm" })).toBeVisible();
-  const members = a.getByRole("region", { name: "Thành viên" });
-  await expect(members).toBeVisible();
-  await members.getByTestId("conv-row").first().click();
+  await expect(a.getByTestId("dept-group")).toHaveCount(0); // danh sách không còn danh bạ phòng ban
+  await expect(a.getByTestId("tab-all")).toHaveAttribute("aria-pressed", "true");
+  const dlg = await openNew(a);
+  await expect(dlg.getByTestId("dept-group").first()).toBeVisible();
+  await dlg.getByRole("checkbox").first().check();
+  await expect(dlg.getByTestId("new-conv-chip")).toHaveCount(1);
+  await dlg.getByRole("button", { name: "Nhắn tin", exact: true }).click();
   await a.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(HELLO);
   await a.getByRole("button", { name: "Gửi", exact: true }).click();
   await expect(a.getByTestId("msg-row").filter({ hasText: HELLO })).toBeVisible();
   await ctx.close();
 });
 
-// CR-148 · danh bạ chia nhóm theo phòng ban (thu gọn/mở), rê chuột lên tên ⇒ thẻ người (chưa chạy trong lát).
-test("Danh bạ theo phòng ban: thu gọn, thẻ người", async ({ browser }) => {
+test("«Nhắn tin mới»: chọn ≥ 2 người ⇒ «Tên nhóm» bắt buộc; tab «Đối tác» chọn một người, không có nhóm", async ({
+  browser,
+}) => {
   test.setTimeout(120_000);
   const ctx = await browser.newContext();
   const a = await ctx.newPage();
   await loginCw(a, E, U.employee);
   await a.goto("/contracts/messages");
-  await ownChip(a).click();
-  const members = a.getByRole("region", { name: "Thành viên" });
-  const group = members.getByTestId("dept-group").first();
-  await expect(group).toBeVisible();
-  const toggle = group.getByRole("button", { expanded: true }).first();
-  await toggle.click();
-  await expect(group.getByRole("button", { expanded: false }).first()).toBeVisible();
-  await expect(group.getByTestId("conv-row")).toHaveCount(0);
-  await group.getByRole("button", { expanded: false }).first().click();
-  // thẻ chỉ bật khi rê lên ẢNH hoặc TÊN (spec CR-148), không phải giữa dòng
-  await group.getByTestId("conv-row").first().getByTestId("conv-avatar").hover();
-  await expect(a.getByTestId("person-tip")).toBeVisible();
-  await expect(a.getByTestId("person-tip-dept")).toBeVisible();
+  const dlg = await openNew(a);
+  await dlg.getByRole("checkbox").nth(0).check();
+  await dlg.getByRole("checkbox").nth(1).check();
+  await expect(dlg.getByTestId("new-conv-chip")).toHaveCount(2);
+  await dlg.getByRole("button", { name: "Tạo nhóm" }).click();
+  await expect(dlg.getByText("Nhập tên nhóm")).toBeVisible();
+  await dlg.getByTestId("new-conv-title").fill(GROUP);
+  await dlg.getByTestId("new-tab-partner").click(); // đổi tab ⇒ bỏ chọn, nhóm chỉ nội bộ
+  await expect(dlg.getByTestId("new-conv-chip")).toHaveCount(0);
+  await expect(dlg.getByTestId("new-conv-title")).toHaveCount(0);
   await ctx.close();
 });

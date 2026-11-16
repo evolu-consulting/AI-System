@@ -37,13 +37,33 @@ test("A nhắn B: B thấy chưa đọc, mở thì hết, A thấy «Đã xem»"
   await expect(first).toHaveAttribute("data-unread", "true");
   await expect(first.getByTestId("conv-unread")).toHaveText("1");
   await expect(first).toContainText(HELLO);
+  // CR-178 · tab «Chưa đọc» (có số) chỉ giữ cuộc chưa đọc; B không phải người tạo cuộc
+  await expect(b.getByTestId("tab-unread-n")).toHaveText("1");
+  await b.getByTestId("tab-unread").click();
+  await expect(first).toBeVisible();
+  // CR-178 · A (người gửi): giờ hiện ngay dưới tin cuối của nhóm, không cần rê chuột
+  await expect(a.getByTestId("msg-time").last()).toBeVisible();
 
   // B mở hội thoại ⇒ chấm biến mất; A thấy «Đã xem»
   await first.click();
   await expect(b.getByTestId("msg-row").filter({ hasText: HELLO })).toBeVisible();
   await expect(b.getByTestId("nav-contracts-messages").getByTestId("nav-badge")).toHaveCount(0);
   await expect(first).toHaveAttribute("data-unread", "false");
-  await expect(a.getByTestId("msg-seen")).toHaveText("Đã xem");
+  await expect(a.getByTestId("msg-seen")).toHaveAttribute("aria-label", /Đã xem/);
+
+  // CR-178 · «⋯»: B (người nhận) chỉ có «Sao chép», không có «Thu hồi»; A (người gửi) có cả hai
+  const got = b.getByTestId("msg-row").filter({ hasText: HELLO });
+  await got.hover();
+  await got.getByTestId("msg-more").click();
+  await expect(b.getByTestId("msg-menu").getByTestId("msg-copy")).toBeVisible();
+  await expect(b.getByTestId("msg-menu").getByTestId("msg-revoke")).toHaveCount(0);
+  await b.keyboard.press("Escape");
+  const mine = a.getByTestId("msg-row").filter({ hasText: HELLO });
+  await mine.hover();
+  await mine.getByTestId("msg-more").click();
+  await expect(a.getByTestId("msg-menu").getByTestId("msg-copy")).toBeVisible();
+  await expect(a.getByTestId("msg-menu").getByTestId("msg-revoke")).toBeVisible();
+  await a.keyboard.press("Escape");
 
   await ctxA.close();
   await ctxB.close();

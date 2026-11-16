@@ -481,9 +481,13 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
         await a.goto(`${E.cw}/contracts/messages`);
         // Chờ chip bật + kết quả đúng người B rồi mới bấm: bấm ngay dòng đầu từng chọn nhầm đồng nghiệp A (danh sách «công ty mình» chưa đổi)
         // ⇒ tin đi vào cuộc NỘI BỘ A, B không bao giờ thấy (bản test 20261115: hub.pmsg_threads 0 dòng, msg_conversations A có cuộc nv↔gd).
-        const chipB = a.getByTestId("company-filter").getByRole("button", { name: /Smoke B/ });
-        await chipB.click({ timeout: 60_000 });
-        await expect(chipB).toHaveAttribute("aria-pressed", "true");
+        await a.getByTestId("tab-partner").click({ timeout: 60_000 });
+        await a
+          .getByTestId("partner-item")
+          .filter({ hasText: /Smoke B/ })
+          .first()
+          .click();
+        await expect(a.getByTestId("tab-partner")).toHaveAttribute("aria-pressed", "true");
         await a
           .getByRole("searchbox", { name: "Tìm người theo tên, chức vụ" })
           .fill("Nhân viên Smoke B");
@@ -506,9 +510,8 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
         const b = await as("b", "nv");
         await b.goto(`${E.cw}/contracts/messages`);
         const conv = b.getByTestId("conv-row").filter({ hasText: "Nhân viên Smoke A" });
-        // chip «Tất cả» (sau mỗi lần tải lại, vì mặc định về công ty mình)
+        // CR-178: mặc định «Tất cả» = cuộc gần đây
         await reloadUntil(b, async () => {
-          await b.getByTestId("company-chip").first().click({ timeout: 4_000 });
           await expect(conv).toBeVisible({ timeout: 4_000 });
         });
         await conv.click();

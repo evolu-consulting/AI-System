@@ -41,9 +41,16 @@ const open = async (browser: Browser, e: Env, user: string) => {
   await loginCw(page, e, user);
   return { ctx, page };
 };
-/** Chip lọc công ty ở Tin nhắn (khớp một phần tên: tên công ty hoặc tên pháp lý). */
-const chip = (page: Page, name: string) =>
-  page.getByTestId("company-filter").getByRole("button", { name: new RegExp(name) });
+/** CR-178 · tab «Đối tác ▾» ⇒ chọn công ty trong menu (thay hàng chip công ty). */
+const pickPartner = async (page: Page, name: string) => {
+  await page.getByTestId("tab-partner").click();
+  await page
+    .getByTestId("partner-item")
+    .filter({ hasText: new RegExp(name) })
+    .first()
+    .click();
+  await expect(page.getByTestId("tab-partner")).toHaveAttribute("aria-pressed", "true");
+};
 const searchBox = (page: Page) =>
   page.getByRole("searchbox", { name: "Tìm người theo tên, chức vụ" });
 const msgBadge = (page: Page) =>
@@ -98,8 +105,7 @@ test("CR169-J1 · Vy (nhân viên, không phải người mời) › Tin nhắn 
 }) => {
   const { ctx, page } = await open(browser, EA, WHO.vy);
   await page.goto("/contracts/messages");
-  await chip(page, CO.b.name).click();
-  await expect(chip(page, CO.b.name)).toHaveAttribute("aria-pressed", "true");
+  await pickPartner(page, CO.b.name);
   await searchBox(page).fill("Hà Mai");
   const row = page.getByTestId("people-results").getByTestId("person-row").first();
   await expect(row).toContainText(NAME.ha);
@@ -140,8 +146,11 @@ test("CR169-J2 · Hà thấy số chưa đọc ở «Tin nhắn», mở ⇒ tin 
   const row = rowOf(h.page, VY);
   await expect(row).toHaveAttribute("data-unread", "true");
   await expect(row.getByTestId("conv-company")).toContainText(CO.a.name);
+  await h.page.getByTestId("tab-unread").click(); // CR-178: Hà (người nhận, không phải người tạo cuộc) thấy cuộc ở «Chưa đọc»
+  await expect(row).toBeVisible();
   await row.click();
   await expect(h.page.getByTestId("chat-company")).toContainText(CO.a.name);
+  await expect(h.page.getByTestId("open-feed")).toContainText(CO.a.name); // CR-178: «Bảng tin <Công ty>» ở đầu khung chat
   const got = msgOf(h.page, HELLO);
   await expect(got).toBeVisible();
   await expect(msgBadge(h.page)).toHaveCount(0);
@@ -149,7 +158,8 @@ test("CR169-J2 · Hà thấy số chưa đọc ở «Tin nhắn», mở ⇒ tin 
   await got.getByTestId("file-download").first().click();
   expect((await down).suggestedFilename()).toBe(FILE);
 
-  await expect(v.page.getByTestId("msg-seen")).toHaveText("Đã xem");
+  await expect(v.page.getByTestId("msg-seen")).toHaveAttribute("aria-label", /Đã xem/);
+  await expect(v.page.getByTestId("msg-time").last()).toBeVisible(); // giờ dưới tin cuối nhóm, không cần rê chuột
   await h.page.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(REPLY);
   await h.page.getByRole("button", { name: "Gửi", exact: true }).click();
   await expect(msgOf(h.page, REPLY)).toBeVisible();
@@ -163,25 +173,22 @@ test("CR169-J3 · Vy: lọc chip công ty (Preschool / công ty mình) và tìm 
 }) => {
   const { ctx, page } = await open(browser, EA, WHO.vy);
   await page.goto("/contracts/messages");
-  // CR-172: mặc định lọc = công ty mình (không phải «Tất cả»); cuộc với Hà chỉ hiện ở «Tất cả»
-  await expect(chip(page, CO.a.name)).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByTestId("company-chip").first()).toHaveAttribute("aria-pressed", "false");
-  await expect(rowOf(page, NAME.ha)).toHaveCount(0);
-  await page.getByTestId("company-chip").first().click(); // «Tất cả»
-  await expect(rowOf(page, NAME.ha)).toBeVisible(); // «Tất cả»: cuộc gần đây gồm cả cuộc với Hà
-  await chip(page, CO.b.name).click();
+  // CR-178: mặc định «Tất cả» = cuộc gần đây (gồm cả cuộc với Hà), nhãn công ty cam cạnh tên
+  await expect(page.getByTestId("tab-all")).toHaveAttribute("aria-pressed", "true");
+  await expect(rowOf(page, NAME.ha)).toBeVisible();
+  await pickPartner(page, CO.b.name);
   await expect(rowOf(page, NAME.ha)).toHaveCount(1);
   await expect(rowOf(page, NAME.ha).getByTestId("conv-company")).toContainText(CO.b.name);
   await searchBox(page).fill("Mai"); // tên không dấu vẫn khớp «Hà Mai»
   await expect(rowOf(page, NAME.ha)).toBeVisible();
   await searchBox(page).fill("");
-  await chip(page, CO.a.name).click(); // chip công ty mình = danh bạ nội bộ, không có cuộc với người Preschool
-  await expect(chip(page, CO.a.name)).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("tab-all").click();
+  await page.getByTestId("tab-unread").click(); // đã đọc hết ⇒ «Chưa đọc» không còn cuộc với Hà
   await expect(rowOf(page, NAME.ha)).toHaveCount(0);
   await ctx.close();
 });
 
-test("CR172-J1 · Tin nhắn: nút Gửi và Đính kèm căn giữa theo chiều dọc với ô soạn, Sổ Hợp Tác và Chat AI cùng gói", async ({
+test("CR172-J1 · Tin nhắn: nút Gửi và Đính kèm cùng một hàng cố định ở đáy ô soạn (dưới ô chữ), Sổ Hợp Tác và Chat AI cùng gói", async ({
   browser,
 }) => {
   const v = await open(browser, EA, WHO.vy);
@@ -193,13 +200,11 @@ test("CR172-J1 · Tin nhắn: nút Gửi và Đính kèm căn giữa theo chiề
     if (!b) throw new Error("không có khung");
     return b.y + b.height / 2;
   };
-  const m = await mid(box);
-  expect(
-    Math.abs((await mid(v.page.getByRole("button", { name: "Gửi", exact: true }))) - m),
-  ).toBeLessThanOrEqual(1);
-  expect(
-    Math.abs((await mid(v.page.getByRole("button", { name: "Đính kèm tệp" }))) - m),
-  ).toBeLessThanOrEqual(1);
+  // CR-178: chữ ở trên, hàng nút ở đáy: hai nút cùng hàng và nằm dưới ô chữ; gõ thêm dòng thì hàng nút không nhảy ngang
+  const send = await mid(v.page.getByRole("button", { name: "Gửi", exact: true }));
+  const attach = await mid(v.page.getByRole("button", { name: "Đính kèm tệp" }));
+  expect(Math.abs(send - attach)).toBeLessThanOrEqual(1);
+  expect(send).toBeGreaterThan(await mid(box));
   await v.ctx.close();
 });
 
@@ -217,9 +222,18 @@ test("CR169-J4 · Vy gửi nhầm một tin rồi thu hồi ⇒ cả hai bên ch
   await expect(msgOf(v.page, OOPS)).toBeVisible();
   await expect(msgOf(h.page, OOPS)).toBeVisible();
 
+  // CR-178 · «⋯»: Hà (người nhận) chỉ có «Sao chép»; Vy (người gửi) có thêm «Thu hồi»
+  await h.ctx.grantPermissions(["clipboard-read", "clipboard-write"]);
+  const theirs = msgOf(h.page, OOPS);
+  await theirs.hover();
+  await theirs.getByTestId("msg-more").click();
+  await expect(h.page.getByTestId("msg-menu").getByTestId("msg-revoke")).toHaveCount(0);
+  await h.page.getByTestId("msg-copy").click();
+  await expect(h.page.getByText("Đã sao chép")).toBeVisible();
   const mine = msgOf(v.page, OOPS);
   await mine.hover();
-  await mine.getByTestId("msg-revoke").click();
+  await mine.getByTestId("msg-more").click();
+  await v.page.getByTestId("msg-menu").getByTestId("msg-revoke").click();
   await v.page
     .getByRole("dialog", { name: "Thu hồi" })
     .getByRole("button", { name: "Đồng ý", exact: true })
@@ -236,8 +250,9 @@ test("CR169-J5 · Bảng tin công ty: Vy xem «Bảng tin Preschool-test», Hà
 }) => {
   const v = await open(browser, EA, WHO.vy);
   await v.page.goto("/contracts/messages");
-  await chip(v.page, CO.b.name).click();
-  await v.page.getByTestId("open-feed").click();
+  await pickPartner(v.page, CO.b.name);
+  await rowOf(v.page, NAME.ha).click();
+  await v.page.getByTestId("open-feed").click(); // CR-178: nút ở đầu khung chat cuộc đối tác
   await expect(
     v.page.getByTestId("feed-dialog").getByTestId("feed-post").filter({ hasText: POST_BODY_B }),
   ).toBeVisible();
@@ -245,6 +260,7 @@ test("CR169-J5 · Bảng tin công ty: Vy xem «Bảng tin Preschool-test», Hà
 
   const h = await open(browser, EB, WHO.ha);
   await h.page.goto(`/contracts/messages?company=${tenantA}`);
+  await rowOf(h.page, VY).click();
   await h.page.getByTestId("open-feed").click();
   await expect(
     h.page.getByTestId("feed-dialog").getByTestId("feed-post").filter({ hasText: POST_BODY }),
@@ -271,7 +287,7 @@ test("CR169-J6 · N2 cách ly: Lan (cùng công ty, ngoài cuộc) không thấy
   expect(peek.status).toBe(404); // người ngoài cuộc: «không tìm thấy»
   const { ctx, page } = await open(browser, EA, WHO.lan);
   await page.goto("/contracts/messages");
-  await chip(page, CO.b.name).click();
+  await pickPartner(page, CO.b.name);
   await expect(page.getByTestId("conv-empty")).toBeVisible();
   await expect(rowOf(page, NAME.ha)).toHaveCount(0);
   await ctx.close();
@@ -319,7 +335,6 @@ test("CR169-J7 · Chat AI app: Hà vào mục «Tin nhắn» thấy cùng cuộc
   await expect(page.getByRole("textbox", { name: "Tin nhắn", exact: true })).toBeVisible();
   await page.getByTestId("nav-messages").click();
   await expect(page.getByTestId("user-chip")).toBeVisible(); // CR-172: Chat AI cũng hiện avatar + tên ở thanh trên
-  await page.getByTestId("company-chip").first().click(); // CR-172: mặc định là công ty mình; cuộc với Vy (khác công ty) ở «Tất cả»
   await rowOf(page, VY).click();
   await expect(msgOf(page, HELLO)).toBeVisible(); // cùng dữ liệu với Sổ Hợp Tác
   await page.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(NEW);
@@ -367,7 +382,11 @@ test("CR169-J8 · Tiên (người mời) › Đối tác › Preschool: 3 tab, k
 
   const v = await open(browser, EA, WHO.vy);
   await v.page.goto("/contracts/messages?company=all");
-  await expect(chip(v.page, CO.b.name)).toHaveCount(0); // hết kết nối ⇒ hết chip
+  await v.page.getByTestId("tab-partner").click(); // hết kết nối ⇒ hết công ty trong menu «Đối tác»
+  await expect(
+    v.page.getByTestId("partner-item").filter({ hasText: new RegExp(CO.b.name) }),
+  ).toHaveCount(0);
+  await v.page.keyboard.press("Escape");
   await rowOf(v.page, NAME.ha).click(); // cuộc cũ vẫn nằm ở «Tất cả»
   await expect(msgOf(v.page, HELLO)).toBeVisible();
   await expect(msgOf(v.page, REPLY)).toBeVisible();
