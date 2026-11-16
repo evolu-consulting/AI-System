@@ -35,14 +35,13 @@ test("Lời mời lần đầu ⇒ băng đầu danh sách; Nhận ⇒ băng bi�
 test("HĐ đối tác gửi hiện trong danh sách với trạng thái + Đang chờ", async ({ page }) => {
   await loginCw(page, EB, U.director);
   await page.goto("/contracts/list?source=partner");
-  const row = contractRows(page).first();
-  await expect(row.getByTestId("status-chip")).toBeVisible();
-  // lượt nhận mở NGAY SAU khi B nhận lời mời (nền tảng thả lần gửi bị giữ) ⇒ tải lại tới khi cột «Đang chờ» có người
+  // Lần gửi bị giữ chỉ được thả (HĐ hiện ở B, lượt nhận mở) SAU khi B nhận lời mời, bất đồng bộ ở nền tảng ⇒ dòng đầu tiên có thể chưa có
+  // lúc mở trang (ca trước vừa bấm Nhận). Chờ cả «có dòng + chip trạng thái» lẫn «Đang chờ» trong CÙNG vòng tải lại, không chờ cố định 5 s.
   let n = 0;
   await expect(async () => {
     if (n++ > 0) await safeReload(page);
-    await expect(contractRows(page).first().getByTestId("waiting-cell")).toBeVisible({
-      timeout: 3_000,
-    });
+    const row = contractRows(page).first();
+    await expect(row.getByTestId("status-chip")).toBeVisible({ timeout: 3_000 });
+    await expect(row.getByTestId("waiting-cell")).toBeVisible({ timeout: 3_000 });
   }).toPass({ timeout: 60_000 });
 });
