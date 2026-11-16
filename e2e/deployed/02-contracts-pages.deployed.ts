@@ -179,9 +179,9 @@ test.describe("02 contracts-web", () => {
     expect(errs.list).toEqual([]);
   });
 
-  test("Đối tác: dải 'Mình giữ hẹn với đối tác này' (C10) trên danh sách", async () => {
+  test("Đối tác: dải 'Mình giữ hẹn với các đối tác' (C10) trên danh sách", async () => {
     await go("/contracts/partners");
-    const box = page.getByRole("region", { name: "Mình giữ hẹn với đối tác này" });
+    const box = page.getByRole("region", { name: "Mình giữ hẹn với các đối tác" });
     await expect(box).toBeVisible();
     await expect(box).toContainText(/mốc/);
     expect(await bodyText(page)).not.toMatch(RAW_KEY);
