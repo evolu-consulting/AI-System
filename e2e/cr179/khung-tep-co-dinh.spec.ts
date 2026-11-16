@@ -37,8 +37,7 @@ test("xem trước tệp: hộp nền đen giữ nguyên kích thước trước
     await route.continue();
   });
   await b.goto("/contracts/messages");
-  await b.getByRole("searchbox", { name: "Tìm người theo tên, chức vụ" }).fill(`khung ${TAG}`);
-  await b.getByTestId("find-hit").first().click();
+  await b.getByTestId("conv-row").filter({ hasText: "E2E Nhân viên Kinh doanh" }).click(); // cột trái là danh bạ theo phòng ban (CR-148), không có «hit» tin nhắn theo tên tệp
   await b.getByTestId("chat-attach").click();
   await b.getByTestId("attach-tab-file").click();
   await b

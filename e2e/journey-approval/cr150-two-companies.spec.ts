@@ -45,7 +45,9 @@ const expectRound = async (
   let n = 0;
   await expect(async () => {
     if (n++ > 0) await safeReload(page);
-    await rowOf(page, run).click();
+    // sau tải lại, trang chi tiết có thể đã mở sẵn (không còn dòng danh sách) ⇒ chỉ bấm dòng khi nó đang hiện
+    const row = rowOf(page, run);
+    if (await row.isVisible()) await row.click();
     await expect(page.getByTestId("partner-round").first()).toContainText(re, { timeout: 3_000 });
   }).toPass({ timeout: 90_000 });
 };

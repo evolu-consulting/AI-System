@@ -21,6 +21,7 @@ Chạm: e2e/community-web/cr147-feed.cm.ts · e2e/journey-approval/cr150-two-com
 evotest: `run-tests.ps1 -Step e2e -Filter "community-web,cr127" -Wave -Dirty`.
 
 ## Quyết định trong lúc làm
+- Gắn `e2e/cr179/*.spec.ts` vào việc cr127 làm lộ ca `khung-tep-co-dinh` (chưa từng chạy): nó tìm tệp bằng ô tìm người (không có «hit» theo tên tệp) ⇒ đổi sang mở dòng hội thoại của A. Sau tải lại trang chi tiết có thể đã mở sẵn ⇒ `expectRound` chỉ bấm dòng khi nó hiện.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
