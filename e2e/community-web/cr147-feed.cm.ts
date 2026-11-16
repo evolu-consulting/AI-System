@@ -130,6 +130,6 @@ test("CR-179: avatar header và sidebar cùng màu nền", async ({ page }) => {
       .first()
       .evaluate((el) => getComputedStyle(el).backgroundColor);
   const head = await bg('[data-testid="user-chip"] [data-slot="avatar"]');
-  const side = await bg('[data-testid="sidebar"] [data-slot="avatar"], aside [data-slot="avatar"]');
+  const side = await bg('[data-testid="shell-sidebar"] [data-slot="avatar"]');
   expect(head).toBe(side);
 });

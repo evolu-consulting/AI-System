@@ -34,6 +34,22 @@ const rowOf = (page: import("@playwright/test").Page, run: string) =>
     .filter({ hasText: `E2E-JOURNEY-${run}` })
     .first();
 
+// B xác nhận xong thì hộp thư đã «replied» TRƯỚC khi tin báo về công ty A được phát (job nền ⇒ vòng của A còn «open» vài giây) và trang A không tự làm mới
+// ⇒ chờ đúng điều kiện: tải lại (đợi refresh token xong) tới khi thẻ `partner-round` hiện kết quả. Không sleep.
+const expectRound = async (
+  page: import("@playwright/test").Page,
+  run: string,
+  re: RegExp,
+): Promise<void> => {
+  await page.goto("/contracts/list");
+  let n = 0;
+  await expect(async () => {
+    if (n++ > 0) await safeReload(page);
+    await rowOf(page, run).click();
+    await expect(page.getByTestId("partner-round").first()).toContainText(re, { timeout: 3_000 });
+  }).toPass({ timeout: 90_000 });
+};
+
 test.beforeAll(async ({ browser }) => {
   test.setTimeout(900_000);
   // ba hợp đồng gửi từ A (nhân viên A tạo; Giám đốc A duyệt + chọn đối tác): đồng ý / trả lại / từ chối
@@ -66,11 +82,7 @@ test("B duyệt nội bộ (Giám đốc B) ⇒ A (nhân viên tạo) thấy đ�
 
   const a = await newPage(browser);
   await loginCw(a, EA, U.employee);
-  await a.goto("/contracts/list");
-  await rowOf(a, `${RUN}ok`).click();
-  await expect(a.getByTestId("partner-round").first()).toContainText(/xác nhận/i, {
-    timeout: 90_000,
-  });
+  await expectRound(a, `${RUN}ok`, /xác nhận/i);
 });
 
 test("B Trả lại có lý do ⇒ A (nhân viên) thấy trả lại + lý do", async ({ browser }) => {
@@ -88,11 +100,7 @@ test("B Trả lại có lý do ⇒ A (nhân viên) thấy trả lại + lý do",
 
   const a = await newPage(browser);
   await loginCw(a, EA, U.employee);
-  await a.goto("/contracts/list");
-  await rowOf(a, `${RUN}tl`).click();
-  await expect(a.getByTestId("partner-round").first()).toContainText(/trả lại/i, {
-    timeout: 90_000,
-  });
+  await expectRound(a, `${RUN}tl`, /trả lại/i);
   await expect(a.getByText("Sửa điều 4 về thời hạn thanh toán").first()).toBeVisible();
 });
 
@@ -110,10 +118,6 @@ test("B Từ chối có lý do ⇒ A (nhân viên) thấy từ chối + lý do",
 
   const a = await newPage(browser);
   await loginCw(a, EA, U.employee);
-  await a.goto("/contracts/list");
-  await rowOf(a, `${RUN}tc`).click();
-  await expect(a.getByTestId("partner-round").first()).toContainText(/từ chối/i, {
-    timeout: 90_000,
-  });
+  await expectRound(a, `${RUN}tc`, /từ chối/i);
   await expect(a.getByText("Giá cao hơn thoả thuận").first()).toBeVisible();
 });

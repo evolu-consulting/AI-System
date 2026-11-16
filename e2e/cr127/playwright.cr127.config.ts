@@ -13,7 +13,11 @@ process.env.CR127_READY_PORT = String(READY);
 export default defineConfig({
   ...base,
   testDir: "..",
-  testMatch: ["**/cr127/j*.spec.ts", "**/journey-approval/cr150-two-companies.spec.ts"],
+  testMatch: [
+    "**/cr127/j*.spec.ts",
+    "**/journey-approval/cr150-two-companies.spec.ts",
+    "**/cr179/*.spec.ts", // CR-179: khung tệp/ảnh trong Tin nhắn
+  ],
   testIgnore: [],
   preserveOutput: "always",
   outputDir: "../../test-results/cr127",
