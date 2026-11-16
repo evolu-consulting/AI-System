@@ -42,6 +42,13 @@ fi
 
 # EVO_CAPTURE=cw (run-tests.ps1 -Step e2e -Capture cw): chup baseline Linux cua e2e/contracts-web tu CHINH contracts-web (nav-v2:
 # khong con so voi mgmt-app), cung image/font voi lan so. Ra /out/baseline-linux; khong chay test khac.
+# EVO_CAPTURE=cm (CR-180): chup baseline Linux anh dien thoai cua e2e/community-web (scenes-mobile.cm) — ra /out/baseline-cm.
+if [ "${EVO_CAPTURE:-}" = cm ]; then
+  rm -rf e2e/community-web/baseline/linux
+  bun tools/scripts/src/run-playwright.ts CM_MODE=capture e2e/community-web/playwright.config.ts scenes-mobile.cm; rc=$?
+  mkdir -p /out/baseline-cm && cp -r e2e/community-web/baseline/linux/. /out/baseline-cm/ 2>/dev/null
+  exit $rc
+fi
 if [ "${EVO_CAPTURE:-}" = cw ]; then
   rm -rf e2e/contracts-web/baseline/linux
   bun tools/scripts/src/run-playwright.ts CW_MODE=capture e2e/contracts-web/playwright.config.ts scenes.cw cks.cw hd78-partners.cw; rc=$?
