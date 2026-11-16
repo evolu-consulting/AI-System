@@ -106,6 +106,10 @@ function boxStyle(compact: boolean, over: boolean, off: boolean | undefined): CS
   };
 }
 
+// CR-180 luật 1: điện thoại ⇒ «Chọn tệp» cao ≥ 44px (style nội tuyến không có media query).
+const CHOOSE_CSS =
+  "@media(max-width:640px){.ai-attach__choose{min-height:44px;min-width:44px;padding:0 4px!important}}";
+
 const chooseStyle: CSSProperties = {
   border: 0,
   background: "none",
@@ -128,11 +132,13 @@ function ChooseLine(p: {
 }) {
   return (
     <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+      <style>{CHOOSE_CSS}</style>
       <span>
         {p.over ? <b>{p.labels.dropActive}</b> : <>{p.labels.drop} </>}
         <button
           type="button"
           data-testid={p.testId}
+          className="ai-attach__choose"
           disabled={p.off}
           aria-describedby={p.line ? p.hintId : undefined}
           onClick={p.onChoose}

@@ -86,7 +86,7 @@ export function MyProfileHeader({
             <a
               href={href({ name: "profile" })}
               data-testid="me-company-row"
-              className="inline-flex min-w-0 items-center gap-2 font-semibold"
+              className="inline-flex min-h-11 min-w-0 items-center gap-2 font-semibold sm:min-h-0"
               onClick={(e) => {
                 e.preventDefault();
                 go({ name: "profile" });

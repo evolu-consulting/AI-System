@@ -1,0 +1,16 @@
+/* CR-180 · luật mobile (≤ 640px) cho Community: vùng bấm ≥ 44px. Nạp CUỐI CÙNG để thắng độ ưu tiên của các tệp trước. */
+@media (max-width: 640px) {
+  [data-mod="community"] .feedcomposer.collapsed .prompt,
+  [data-mod="community"] .ctype,
+  [data-mod="community"] .iconbtn,
+  [data-mod="community"] .tab,
+  [data-mod="community"] .pact button,
+  [data-mod="community"] .field {
+    min-height: 44px;
+  }
+  [data-mod="community"] .iconbtn,
+  [data-mod="community"] .imgpick-btn {
+    min-width: 44px;
+    min-height: 44px; /* nút đổi ảnh bìa/avatar: cảm ứng không có rê chuột nên nút luôn hiện (hover: none) và phải bấm được */
+  }
+}

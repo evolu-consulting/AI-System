@@ -86,7 +86,7 @@ export function ContractsBlock({ today }: { today?: string }) {
                     <Link
                       to="/contracts/c/$id"
                       params={{ id: r.id }}
-                      className="block truncate text-body font-semibold hover:underline"
+                      className="block truncate text-body font-semibold hover:underline max-sm:-my-3 max-sm:py-3"
                     >
                       {r.title}
                     </Link>

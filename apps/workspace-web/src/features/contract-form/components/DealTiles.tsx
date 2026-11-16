@@ -7,7 +7,7 @@ import { ALL_DEALS } from "../lib/deal";
 
 const tile = (on: boolean, locked: boolean) =>
   cn(
-    "flex flex-col items-start gap-0.5 rounded-[10px] border bg-panel px-3.5 py-2.5 text-left max-sm:px-2.5 max-sm:py-2",
+    "flex flex-col items-start gap-0.5 rounded-[10px] border bg-panel px-3.5 py-2.5 text-left max-sm:min-h-11 max-sm:justify-center max-sm:px-2.5 max-sm:py-2",
     on ? "border-act bg-act-soft shadow-[0_0_0_1px_var(--color-act)]" : "border-rule",
     !locked && !on && "hover:border-act-line",
     locked && !on && "opacity-50",

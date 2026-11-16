@@ -89,6 +89,10 @@ const S = {
   },
 } satisfies Record<string, CSSProperties>;
 
+// CR-180 luật 1: điện thoại ⇒ nút ngày/tháng/nút lịch đủ 44px (style nội tuyến không có media query).
+const DATE_CSS =
+  "@media(max-width:640px){.ai-date__cal{width:308px!important}.ai-date__nav,.ai-date__pick{width:44px!important;height:44px!important}.ai-date__day{height:44px!important}.ai-date__link{min-height:44px;padding:0 12px!important}}";
+
 const dayStyle = (
   c: { inMonth: boolean },
   on: boolean,
@@ -118,15 +122,27 @@ function Calendar(p: {
   const [view, setView] = useState({ year: +base.slice(0, 4), m0: +base.slice(5, 7) - 1 });
   const go = (n: number) => setView((x) => addMonths(x.year, x.m0, n));
   return (
-    <div style={{ width: 272, fontSize: 13 }} data-testid="date-popover">
+    <div className="ai-date__cal" style={{ width: 272, fontSize: 13 }} data-testid="date-popover">
       <div style={S.head}>
-        <button type="button" style={S.nav} aria-label="Tháng trước" onClick={() => go(-1)}>
+        <button
+          type="button"
+          className="ai-date__nav"
+          style={S.nav}
+          aria-label="Tháng trước"
+          onClick={() => go(-1)}
+        >
           <ChevronLeft width={16} height={16} />
         </button>
         <b>
           {VI_MONTHS[view.m0]} {view.year}
         </b>
-        <button type="button" style={S.nav} aria-label="Tháng sau" onClick={() => go(1)}>
+        <button
+          type="button"
+          className="ai-date__nav"
+          style={S.nav}
+          aria-label="Tháng sau"
+          onClick={() => go(1)}
+        >
           <ChevronRight width={16} height={16} />
         </button>
       </div>
@@ -146,6 +162,7 @@ function Calendar(p: {
             return (
               <button
                 key={c.iso}
+                className="ai-date__day"
                 type="button"
                 disabled={off}
                 aria-label={isoToVi(c.iso)}
@@ -161,10 +178,15 @@ function Calendar(p: {
       </div>
       {/* button-gap-ok: S.foot có gap: 8 */}
       <div style={S.foot}>
-        <button type="button" style={S.link} onClick={() => p.onPick(today)}>
+        <button
+          type="button"
+          className="ai-date__link"
+          style={S.link}
+          onClick={() => p.onPick(today)}
+        >
           Hôm nay
         </button>
-        <button type="button" style={S.link} onClick={() => p.onPick("")}>
+        <button type="button" className="ai-date__link" style={S.link} onClick={() => p.onPick("")}>
           Xoá
         </button>
       </div>
@@ -189,6 +211,7 @@ export function DateInput(p: DateInputProps) {
           className={cls.wrap}
           style={{ position: "relative", display: "inline-flex", alignItems: "center" }}
         >
+          <style>{DATE_CSS}</style>
           <input
             id={p.id}
             name={p.name}
@@ -217,6 +240,7 @@ export function DateInput(p: DateInputProps) {
               type="button"
               disabled={p.disabled}
               aria-label="Chọn ngày"
+              className="ai-date__pick"
               style={{
                 position: "absolute",
                 right: 4,

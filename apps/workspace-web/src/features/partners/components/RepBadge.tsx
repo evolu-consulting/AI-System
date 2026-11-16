@@ -19,7 +19,7 @@ function Tile({ b }: { b: Badge }) {
     >
       <span className="tnum text-lg leading-none">{b.shown ?? "–"}</span>
       {b.provisional && (
-        <span className="mt-0.5 text-[9px] leading-tight font-semibold tracking-wide">
+        <span className="mt-0.5 text-xs leading-tight font-semibold tracking-wide">
           {t("contracts.pv2.badge.new")}
         </span>
       )}
@@ -34,7 +34,7 @@ export function RepBadge({ row, role }: { row: Row; role?: RepRole }) {
   return (
     <span className="flex flex-col items-center gap-0.5">
       {tile}
-      <span className="text-[11px] text-dim">{t(`contracts.pv2.roleShort.${role}`)}</span>
+      <span className="text-xs text-dim">{t(`contracts.pv2.roleShort.${role}`)}</span>
     </span>
   );
 }
@@ -59,7 +59,7 @@ export function ScorePill({ row, role }: { row: Row; role: RepRole }) {
       <b className="tnum">{b.shown ?? "—"}</b>
       {t(`contracts.pv2.roleWord.${role}`)}
       {b.provisional && (
-        <span className="text-[11px] font-semibold">{t("contracts.pv2.badge.new")}</span>
+        <span className="text-xs font-semibold">{t("contracts.pv2.badge.new")}</span>
       )}
     </span>
   );

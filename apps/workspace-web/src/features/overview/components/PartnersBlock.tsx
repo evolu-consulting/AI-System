@@ -47,7 +47,7 @@ function Hd8Block() {
                 <Link
                   to="/contracts/partners"
                   search={{ party: p.party, role: p.role }}
-                  className="block truncate text-body font-semibold hover:text-act hover:underline"
+                  className="block truncate text-body font-semibold hover:text-act hover:underline max-sm:-my-3 max-sm:py-3"
                 >
                   {p.name}
                 </Link>

@@ -47,6 +47,16 @@ test("xem trước tệp: hộp nền đen giữ nguyên kích thước trước
     .click();
   const stage = b.getByTestId("preview-stage");
   await expect(stage).toBeVisible();
+  // CR-180: chờ hoạt ảnh MỞ hộp thoại (phóng 0.95 → 1) xong; vòng xoay lặp vô hạn thì bỏ qua. Hai lần đo liền nhau bằng nhau chưa đủ:
+  // khung đầu của hoạt ảnh vẫn đứng yên ở 0.95 nên đo trúng cỡ bé (1267x796) rồi lớn lên 1334x838 khi xong.
+  await stage.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Number.POSITIVE_INFINITY)
+        .map((a) => a.finished),
+    ),
+  );
   // hộp thoại có hoạt ảnh mở (phóng 0.95 → 1): đo khi đã ổn định (hai lần đo liên tiếp bằng nhau), vẫn còn trong 1,5 s chặn tải
   let last = "";
   await expect

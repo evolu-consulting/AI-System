@@ -25,7 +25,7 @@ export type ListTabsProps = {
 
 const tabCls = (on: boolean) =>
   cn(
-    "h-8 shrink-0 rounded-lg px-3 text-label",
+    "h-8 shrink-0 rounded-lg px-3 text-label max-sm:h-11",
     on ? "bg-act-soft font-semibold text-ink" : "text-dim hover:bg-sunk",
   );
 

@@ -83,6 +83,7 @@ export function Icon({ name, size = 16 }: { name: string; size?: number }): Reac
 const CSS = `
 .ai-apps{position:relative;display:inline-flex}
 .ai-apps__btn{display:inline-grid;place-items:center;width:40px;height:40px;border:0;border-radius:10px;background:transparent;color:var(--ink-2,var(--muted-foreground,#6b7280));cursor:pointer}
+@media(max-width:640px){.ai-apps__btn{width:44px;height:44px}}
 .ai-apps__btn:hover,.ai-apps__btn:focus-visible{background:var(--sunk,var(--muted,#f5f5f5));color:var(--foreground,inherit)}
 .ai-apps__menu[data-slot=dropdown-menu-content]{z-index:50;min-width:260px;padding:4px;border:1px solid var(--rule,var(--border,#e5e5e5));border-radius:10px;background:var(--panel,var(--popover,var(--card,#fff)));color:var(--popover-foreground,var(--foreground,inherit));box-shadow:0 8px 24px rgba(0,0,0,.14);font-size:14px}
 .ai-apps__item{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 10px;border-radius:6px;color:inherit;text-decoration:none;outline:none}
@@ -92,7 +93,7 @@ const CSS = `
 .ai-apps__txt{display:flex;flex-direction:column;min-width:0;flex:1}
 .ai-apps__name{font-weight:600;line-height:1.25}
 .ai-apps__desc{font-size:12px;line-height:1.25;opacity:.7}
-.ai-apps__cur{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor;opacity:.75;white-space:nowrap}
+.ai-apps__cur{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid currentColor;opacity:.75;white-space:nowrap}
 `;
 
 /** Tải một lần mỗi `reloadKey`; trả `null` khi đang tải (nút ẩn, không nháy). */

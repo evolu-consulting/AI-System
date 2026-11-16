@@ -42,7 +42,7 @@ export function Header({
     <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-rule bg-panel px-5 max-md:px-3">
       <Link
         to={(inCommunity ? "/community" : "/contracts") as never}
-        className="flex items-center gap-2 md:hidden"
+        className="flex min-h-11 items-center gap-2 md:hidden"
       >
         <BrandMark
           name={nameOf(brand, user?.tenant.name)}

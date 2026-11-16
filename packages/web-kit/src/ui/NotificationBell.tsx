@@ -36,6 +36,9 @@ const BTN: CSSProperties = {
   color: "inherit",
   cursor: "pointer",
 };
+// CR-180 luật 1: điện thoại ⇒ vùng bấm 44px (style nội tuyến không có media query).
+const BELL_CSS =
+  "@media(max-width:640px){.ai-bell__btn{width:44px!important;height:44px!important}}";
 const BADGE: CSSProperties = {
   position: "absolute",
   top: 2,
@@ -46,7 +49,7 @@ const BADGE: CSSProperties = {
   borderRadius: 8,
   background: "var(--destructive, #dc2626)",
   color: "#fff",
-  fontSize: 10,
+  fontSize: 11,
   fontWeight: 600,
   lineHeight: "16px",
   textAlign: "center",
@@ -208,6 +211,7 @@ export function NotificationBell(p: NotificationBellProps): ReactElement {
   const label = bell.unread ? L.bellUnread(bell.unread) : L.bell;
   return (
     <div style={{ position: "relative" }}>
+      <style>{BELL_CSS}</style>
       <Popover
         open={open}
         onOpenChange={(o) => {
@@ -216,7 +220,13 @@ export function NotificationBell(p: NotificationBellProps): ReactElement {
         }}
       >
         <PopoverTrigger asChild>
-          <button type="button" style={BTN} aria-label={label} title={label}>
+          <button
+            type="button"
+            className="ai-bell__btn"
+            style={BTN}
+            aria-label={label}
+            title={label}
+          >
             <BellIcon />
             {bell.unread > 0 && <span style={BADGE}>{bell.unread > 9 ? "9+" : bell.unread}</span>}
           </button>

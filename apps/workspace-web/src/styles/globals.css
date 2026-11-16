@@ -174,10 +174,16 @@
     padding: 0 0.75rem;
     font-size: 13px;
   }
-  /* CR-125 · UX L1: điện thoại ⇒ nút chính/viền đủ 44 px để bấm bằng ngón tay (Ký ngay, Duyệt…). */
+  /* CR-125 · UX L1 + CR-180 luật 1: điện thoại ⇒ mọi nút/ô/chip kiểu mgmt-app đủ 44 px để bấm bằng ngón tay. */
   @media (max-width: 639px) {
-    .btn-primary,
-    .btn-outline {
+    .btn,
+    .btn-sm,
+    .chip,
+    .field {
+      min-height: 2.75rem;
+    }
+    .btn-icon-ghost {
+      min-width: 2.75rem;
       min-height: 2.75rem;
     }
   }

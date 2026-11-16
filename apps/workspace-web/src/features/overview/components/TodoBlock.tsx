@@ -54,7 +54,7 @@ function Body({ i }: { i: TodoItem }) {
 
 function Target({ i }: { i: TodoItem }) {
   const to = todoTarget(i);
-  const cls = "flex min-w-0 flex-1 items-center gap-3 text-left";
+  const cls = "flex min-w-0 flex-1 items-center gap-3 text-left max-sm:min-h-11";
   const body = <Body i={i} />;
   if (to?.to === "/contracts/c/$id")
     return (

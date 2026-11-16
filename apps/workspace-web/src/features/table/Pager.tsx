@@ -28,7 +28,8 @@ export function Pager({ t: s }: { t: PagerState }) {
   return (
     <nav
       aria-label={t("contracts.table.pagination")}
-      className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-rule-soft px-5 py-2.5 text-label text-dim"
+      // CR-180 luật 6: điện thoại ⇒ chừa lề phải 4.5rem (nút trợ lý nổi 48px + lề 20px) để «›» không nằm dưới nút nổi dù danh sách ngắn.
+      className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-rule-soft px-5 py-2.5 text-label text-dim max-sm:pr-[4.5rem]"
     >
       <span className="tabular-nums">
         {from}–{to} / {t("contracts.table.rows", { n: s.total.toLocaleString("vi-VN") })}
@@ -48,7 +49,7 @@ export function Pager({ t: s }: { t: PagerState }) {
           ))}
         </OptionSelect>
       </label>
-      <span className="ml-auto flex items-center gap-1">
+      <span className="ml-auto flex items-center gap-1 max-sm:ml-0 max-sm:flex-wrap">
         <button
           type="button"
           className={cn(NAV, "hover:bg-sunk disabled:opacity-40")}

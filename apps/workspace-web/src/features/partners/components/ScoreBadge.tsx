@@ -30,7 +30,7 @@ export function ScoreBadge({ score, band }: { score: number | null; band: ScoreB
       className={`flex h-12 w-[54px] shrink-0 flex-col items-center justify-center rounded-lg ${CLS[band]}`}
     >
       <span className="tnum text-lg leading-none font-semibold">{score}</span>
-      <span className="mt-0.5 text-[10px] font-semibold tracking-wide">
+      <span className="mt-0.5 text-xs font-semibold tracking-wide">
         {t(`contracts.partners.badge.${band}`)}
       </span>
     </span>

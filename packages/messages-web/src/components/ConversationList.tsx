@@ -143,7 +143,7 @@ export function ConversationList(p: ConversationListProps) {
             aria-label={t("contracts.messages.find.close")}
             title={t("contracts.messages.find.close")}
             data-testid="find-exit"
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-dim hover:bg-sunk hover:text-ink"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-dim hover:bg-sunk hover:text-ink max-sm:h-11 max-sm:w-11"
           >
             <IconChevronLeft width={18} height={18} />
           </button>
@@ -155,7 +155,7 @@ export function ConversationList(p: ConversationListProps) {
           onKeyDown={(e) => e.key === "Escape" && p.q !== "" && p.onQ("")}
           placeholder={t("contracts.messages.search")}
           aria-label={t("contracts.messages.search")}
-          className="h-9 min-w-0 flex-1 rounded-lg border border-field bg-panel px-3 text-[13.5px] outline-none focus-visible:border-act-line"
+          className="h-9 min-w-0 flex-1 rounded-lg border border-field bg-panel px-3 text-[13.5px] outline-none focus-visible:border-act-line max-sm:h-11"
         />
         {newBtn}
       </div>

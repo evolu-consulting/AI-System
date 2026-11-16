@@ -64,7 +64,7 @@ test("P2 · ảnh bìa cá nhân: đổi, tải lại còn, tệp sai định d�
 test("P3 · chủ sở hữu đổi ảnh bìa công ty ngay ở trang công ty", async ({ browser }) => {
   const { page } = await openAs(browser, "host");
   await page.goto("/community/me");
-  await page.getByRole("link", { name: "Xem trang công ty" }).click();
+  await page.getByTestId("me-company-row").click(); // CR-179: hàng công ty ở đầu trang = lối vào trang công ty
   await expect(page.getByTestId("profile-page")).toBeVisible();
   await page.getByTestId("company-cover-edit-file").setInputFiles(img);
   await expect(page.getByTestId("company-cover")).toBeVisible();

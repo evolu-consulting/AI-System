@@ -137,6 +137,7 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
                       <Link
                         to="/contracts/products"
                         search={{ sp: p.id }}
+                        className="max-sm:flex max-sm:min-h-11 max-sm:min-w-36 max-sm:items-center"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {p.name}
