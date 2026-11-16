@@ -364,6 +364,7 @@ const SCENES: Scene[] = [
         popover: '[data-slot="popover-content"]' /* CR-177 W1: Popover kit portal ra body */,
       },
       // CR-177 W1: popover đã portal ra body và đè lên <main> ⇒ không `mask` main (mask vẽ đè cả popover); ẩn main bằng CSS.
+      mask: [],
       ready: (p) => p.locator(NAV),
       act: async (p) => {
         await p.addStyleTag({ content: "main{visibility:hidden}" });
