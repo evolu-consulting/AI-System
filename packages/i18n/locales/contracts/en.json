@@ -235,6 +235,7 @@
       "rows": "{{n}} rows",
       "perPage": "Per page",
       "pageSizeAria": "Rows per page",
+      "prev": "Previous page",
       "next": "Next page"
     },
     "nav": {

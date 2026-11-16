@@ -1,5 +1,5 @@
 // Ngữ cảnh trợ lý ở Bảng tin: từ khoá đang tìm (gọn khoảng trắng, giới hạn độ dài).
-import { describe, expect, test } from "bun:test";
+import { describe, expect, it, test } from "bun:test";
 import { focusCommentId, focusPostId, opensCommentThread, trimSearch } from "./search-hint";
 
 describe("search-hint · từ khoá đang tìm", () => {

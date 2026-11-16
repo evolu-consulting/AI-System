@@ -235,6 +235,7 @@
       "rows": "{{n}} dòng",
       "perPage": "Mỗi trang",
       "pageSizeAria": "Số dòng mỗi trang",
+      "prev": "Trang trước",
       "next": "Trang sau"
     },
     "nav": {
