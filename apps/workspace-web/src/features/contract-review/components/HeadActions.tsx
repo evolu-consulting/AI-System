@@ -1,13 +1,13 @@
 // CR-127 · U5 · BR-02…04, 36a, 41/42 · M10 / CR-128 (e): đầu trang HĐ chỉ MỘT nút chính (theo `headActs`) + menu «Thao tác ▾» (mọi việc còn lại, Xoá cuối).
 // Nút nào hiện/khoá do `can` của hub (đã tính quyền); lỗi nói cách khắc phục (câu VI §9). Hộp lý do/xác nhận mở từ mục menu.
 import { ApiError } from "@ai/web-kit/http";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PopItem } from "~/components/shared/pop-menu";
-import { Btn } from "~/components/ui/Btn";
 import { approvalKey } from "~/features/contract-approval/api";
 import type { ApprovalView } from "~/features/contract-approval/lib/approval";
 import { ContractActionsMenu } from "~/features/contract-delete/components/ContractActionsMenu";
@@ -215,13 +215,13 @@ export function HeadActions({
   return (
     <>
       {main && (
-        <Btn
+        <Button
           variant="primary"
           size="sm"
           data-testid={main.testId}
           data-approval={main.attr}
-          disabled={off || gated(acts.primary) || primaryWhy !== null}
-          title={
+          disabled={off}
+          disabledReason={
             primaryWhy ?? (gated(acts.primary) ? t("contracts.review.manualBlockWhy") : undefined)
           }
           onClick={main.run}
@@ -229,7 +229,7 @@ export function HeadActions({
           {approval.busy && main.attr === "approve"
             ? t("contracts.approval.approving")
             : t(main.label)}
-        </Btn>
+        </Button>
       )}
       {primaryWhy &&
         !rule.submitBlocked && ( // «chưa có quy trình»: dòng lý do NF1 của trang đã nói

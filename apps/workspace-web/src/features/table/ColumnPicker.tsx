@@ -1,4 +1,5 @@
 // PK-FR-10 · TF6 · "Cột ▾": hộp chọn cho mỗi cột, cùng kiểu viên thuốc với bộ lọc. Nguồn: table.tsx:310-334.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
 import { Caret, PILL, PILL_OFF, PILL_ON, Pop } from "./Pop";
@@ -52,13 +53,9 @@ export function ColumnPicker({ cols }: { cols: Columns }) {
       ))}
       {cols.hiddenCount > 0 && (
         <div className="mt-1 border-t border-rule-soft px-1 pt-1.5">
-          <button
-            type="button"
-            className="text-caption text-act hover:underline"
-            onClick={cols.reset}
-          >
+          <Button variant="link" className="h-auto px-0" onClick={cols.reset}>
             {t("contracts.table.showAll")}
-          </button>
+          </Button>
         </div>
       )}
     </Pop>

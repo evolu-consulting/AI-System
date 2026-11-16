@@ -1,6 +1,8 @@
 // CR-125 · m4 · MOD-FR-11 · người ký chọn cách ký lúc bấm "Ký ngay": các cách công ty đã bật (DocuSign, Ký thử, MISA…). Chỉ mở khi có > 1
 // cách khả dụng (một cách ⇒ ký thẳng, không hỏi). Chọn sẵn cách của phong bì đã gửi.
+
 import type { ESignProviderOut } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -58,18 +60,17 @@ export function EsignSignMethodDialog({
           ))}
         </div>
         <DialogFooter>
-          <button type="button" className="btn btn-quiet" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             {t("contracts.esign.close")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             data-testid="esign-method-confirm"
             disabled={busy || key === ""}
             onClick={() => onSign(key)}
           >
             {t("contracts.esign.signNow")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

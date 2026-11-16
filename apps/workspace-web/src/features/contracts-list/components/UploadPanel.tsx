@@ -1,4 +1,7 @@
 // Gap #9 · vùng kéo-thả + bảng tiến độ từng tệp. `DropOverlay` bọc cả trang: kéo tệp vào bất cứ đâu ⇒ hiện lớp phủ "Thả để tải lên".
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { Link } from "@tanstack/react-router";
 import { type DragEvent, type ReactNode, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -77,9 +80,14 @@ function Row({ item, onRetry }: { item: UploadItem; onRetry: (key: number) => vo
   return (
     <li className="px-4 py-2" data-state={item.state}>
       <div className="flex items-center gap-3 text-[13px]">
-        <span className="min-w-0 flex-1 truncate" title={item.name}>
-          {item.name} <span className="text-dim">· {sizeText(item.size)}</span>
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="min-w-0 flex-1 truncate">
+              {item.name} <span className="text-dim">· {sizeText(item.size)}</span>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{item.name}</TooltipContent>
+        </Tooltip>
         <span className={`shrink-0 font-medium ${TONE[item.state]}`}>
           {t(`contracts.list.upload.state.${item.state}`)}
         </span>
@@ -93,13 +101,9 @@ function Row({ item, onRetry }: { item: UploadItem; onRetry: (key: number) => vo
           </Link>
         )}
         {item.state === "error" && item.retryable && (
-          <button
-            type="button"
-            className="shrink-0 text-act hover:underline"
-            onClick={() => onRetry(item.key)}
-          >
+          <Button variant="link" className="h-auto px-0 shrink-0" onClick={() => onRetry(item.key)}>
             {t("contracts.list.upload.retry")}
-          </button>
+          </Button>
         )}
       </div>
       <div
@@ -146,14 +150,9 @@ export function UploadPanel({
         <strong className="font-semibold">
           {t("contracts.list.upload.title")} · {finished}/{items.length}
         </strong>
-        <button
-          type="button"
-          disabled={busy}
-          className="ml-auto text-act hover:underline disabled:cursor-not-allowed disabled:text-dim disabled:no-underline"
-          onClick={onClose}
-        >
+        <Button variant="link" disabled={busy} className="h-auto px-0 ml-auto" onClick={onClose}>
           {t("contracts.list.upload.close")}
-        </button>
+        </Button>
       </header>
       <ul className="max-h-72 divide-y divide-rule-soft overflow-auto">
         {items.map((i) => (

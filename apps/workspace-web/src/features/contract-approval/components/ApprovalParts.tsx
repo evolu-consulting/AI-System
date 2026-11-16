@@ -1,9 +1,10 @@
 // HD-FR-36 · S05 · D-02: nút duyệt trên tiêu đề ("Xác nhận" = mgmt-app `ContractPage.tsx:102-103`, cùng lớp `btn btn-primary`;
 // "Duyệt"/"Từ chối"/"Đọc lại" là lệch có chủ ý — DEVIATIONS.md, `data-approval` để harness ẩn) + khối lý do + dòng trạng thái.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
-import { Btn } from "~/components/ui/Btn";
 import type { Busy } from "../hooks/use-approval";
 import { feedbackOk } from "../lib/approval";
 
@@ -64,10 +65,12 @@ export function ReasonForm({
         </p>
       )}
       <div className="flex gap-2">
-        <Btn type="submit" variant="primary" loading={busy !== null}>
+        <Button type="submit" variant="primary" busy={busy !== null}>
           {t(SUBMIT_LABEL[kind])}
-        </Btn>
-        <Btn onClick={onCancel}>{t("contracts.common.cancel")}</Btn>
+        </Button>
+        <Button variant="quiet" onClick={onCancel}>
+          {t("contracts.common.cancel")}
+        </Button>
       </div>
     </form>
   );

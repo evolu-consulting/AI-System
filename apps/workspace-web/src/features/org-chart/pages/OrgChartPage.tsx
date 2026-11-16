@@ -1,9 +1,9 @@
 // CR-139 · Q13 · «Sơ đồ tổ chức» (/contracts/org): CR-142 sơ đồ cây (organization chart) Công ty → phòng → phòng con; bấm thẻ ⇒ thành viên, tìm ⇒ nhảy tới phòng; ai trong công ty cũng xem, chỉ xem.
 
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { PageHead, Panel } from "~/components/shared/layout";
-import { Btn } from "~/components/ui/Btn";
 import { Skeleton } from "~/components/ui/skeleton";
 import { fetchOrgChart, orgChartKey } from "../api";
 import { EditChartButton } from "../components/EditChartButton";
@@ -31,9 +31,9 @@ export function OrgChartPage() {
           <p role="alert" className="text-sm text-late" data-testid="org-error">
             {t("contracts.orgChart.loadError")}
           </p>
-          <Btn variant="outline" className="mt-3" onClick={() => void q.refetch()}>
+          <Button variant="outline" className="mt-3" onClick={() => void q.refetch()}>
             {t("contracts.orgChart.retry")}
-          </Btn>
+          </Button>
         </Panel>
       ) : (q.data?.departments.length ?? 0) === 0 ? (
         <Panel className="px-6 py-10 text-center">

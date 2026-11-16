@@ -96,8 +96,9 @@ test("owner: nhiều phiên bản ⇒ thùng rác khoá kèm lý do", async ({ p
   await listRoute(page, 2);
   await page.goto("/contracts/list");
   const first = page.getByTestId("row-delete").first();
-  await expect(first).toBeDisabled();
-  await expect(first).toHaveAttribute("title", /nhiều phiên bản/);
+  await expect(first).toHaveAttribute("aria-disabled", "true");
+  await first.hover();
+  await expect(page.getByRole("tooltip").first()).toContainText(/nhiều phiên bản/);
 });
 
 test("trang chi tiết: editor không có nút xoá", async ({ page }) => {

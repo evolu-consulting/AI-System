@@ -1,4 +1,5 @@
 // CR-101 DOC-ui-frame · R42: "Gắn chứng từ có sẵn" — chọn nhiều HĐ / giao dịch (cùng đối tác + hướng do máy chủ kiểm) ⇒ POST /attach.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -92,18 +93,17 @@ export function AttachDialog({ frameId, attachedIds, onClose, onDone }: Props) {
           )}
         </DialogBody>
         <DialogFooter>
-          <button type="button" className="btn btn-quiet" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             {t("contracts.common.cancel")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             data-testid="attach-submit"
             disabled={busy || picked.size === 0}
             onClick={() => void submit()}
           >
             {L("attachSubmit")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -2,6 +2,7 @@
 // esign-multi · dropdown nhà cung cấp (chỉ khi > 1 khả dụng); gửi `provider` khi chọn.
 
 import type { ESignProviderOut, ESignSignerIn } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -176,18 +177,17 @@ export function EsignSendDialog({
           )}
         </DialogBody>
         <DialogFooter>
-          <button type="button" className="btn btn-quiet" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             {t("contracts.esign.close")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             data-testid="esign-send-confirm"
             disabled={busy || !ok}
             onClick={send}
           >
             {busy ? t("contracts.esign.sending") : t("contracts.esign.send")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

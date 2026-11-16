@@ -1,5 +1,7 @@
 // PK-FR-10 · TF6 · ô sửa điều kiện lọc: danh sách giá trị để tích, và khoảng từ–đến cho cột số. Nguồn: table.tsx:215-265.
+
 import { Input } from "@ai/web-kit/ui/kit/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type Cond, type FilterDef, matches } from "./lib";
@@ -63,9 +65,12 @@ export function ValuesEditor({
                 set({ in: chosen.includes(o) ? chosen.filter((x) => x !== o) : [...chosen, o] })
               }
             />
-            <span className="min-w-0 truncate" title={o}>
-              {o}
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="min-w-0 truncate">{o}</span>
+              </TooltipTrigger>
+              <TooltipContent>{o}</TooltipContent>
+            </Tooltip>
           </label>
         ))}
         {!opts.length && (

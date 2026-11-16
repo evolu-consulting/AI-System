@@ -1,6 +1,8 @@
 // CR-101 DOC-ui-frame · R44 · R45 · R47: khối "Chứng từ con" của HĐ nguyên tắc (full chiều ngang, trên cùng) — giai đoạn, giá trị = Σ con,
 // hạn mức + % đã dùng, danh sách con (cảnh báo ngày ngoài hiệu lực — không chặn), gỡ liên kết, menu "Thêm vào diễn biến".
+
 import type { ContractDetail, FrameChild } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -76,14 +78,14 @@ function ChildRow({
       <td className="px-4 text-dim">{t(`contracts.gape.status.${ch.status}`, ch.status)}</td>
       <td className="px-4 text-right last:pr-5">
         {write && (
-          <button
-            type="button"
-            className="text-[12.5px] text-act hover:underline"
+          <Button
+            variant="link"
+            className="h-auto px-0"
             data-testid="frame-detach"
             onClick={() => onDetach(ch.id)}
           >
             {t("contracts.docframe.detach")}
-          </button>
+          </Button>
         )}
       </td>
     </tr>

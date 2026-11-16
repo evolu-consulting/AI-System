@@ -1,7 +1,9 @@
 // CR-127 · U4 · K8 · spec §8 #65 · HĐ đối tác gửi tới mà công ty CHƯA có quy trình nhận: người phụ trách quyết ngay trên dòng.
 // Tiêu đề «Đối tác {công ty} gửi hợp đồng — bạn quyết định», 3 nút Đồng ý · Trả lại để sửa · Từ chối (Trả lại/Từ chối cần ý kiến).
+
 import type { InboxDecisionValue } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
@@ -56,33 +58,33 @@ export function InboxDecisionRow({ contractId, sender }: { contractId: string; s
         />
       ) : (
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
+          <Button
+            variant="primary"
+            size="sm"
             data-testid="inbox-accept"
             disabled={busy}
             onClick={() => void send("accept")}
           >
             {t("contracts.work.u4.inbox.accept")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm"
+          </Button>
+          <Button
+            variant="quiet"
+            size="sm"
             data-testid="inbox-return"
             disabled={busy}
             onClick={() => setAsk("return")}
           >
             {label("return")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm border border-late text-late"
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
             data-testid="inbox-reject"
             disabled={busy}
             onClick={() => setAsk("reject")}
           >
             {label("reject")}
-          </button>
+          </Button>
           <Link
             to="/contracts/c/$id"
             params={{ id: contractId }}

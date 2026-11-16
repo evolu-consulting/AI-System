@@ -1,6 +1,7 @@
 // gap-d1 #21 · "Nhập giá tay": NCC + giá chưa VAT (+ loại, đơn vị, ngày, ghi chú) ⇒ lưu vào bảng so sánh với nguồn "Nhập tay".
 
 import type { SupplierPriceKind } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -127,12 +128,11 @@ export function ManualPriceDialog({
           )}
         </DialogBody>
         <DialogFooter className="flex-row justify-end">
-          <button type="button" className="btn btn-quiet" onClick={close}>
+          <Button variant="quiet" onClick={close}>
             {t("contracts.psup.close")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             data-testid="gd1-m-save"
             disabled={!body || save.isPending}
             onClick={() =>
@@ -140,7 +140,7 @@ export function ManualPriceDialog({
             }
           >
             {L("save")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

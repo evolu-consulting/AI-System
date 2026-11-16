@@ -1,6 +1,7 @@
 // CR-127 · U6 · M2d: «Ký cùng lúc» trên chi tiết HĐ của MỖI bên — bên nhận trả lời Đồng ý / Xử lý bình thường / Từ chối; phiên ký chung hiện hai dòng ký
 // (tên công ty + người ký), «Huỷ phiên ký» cần lý do; ghi rõ chưa có giá trị pháp lý. Không có phiên ⇒ không vẽ gì.
 
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -61,7 +62,6 @@ export function SignSessionCard({ id, write }: { id: string; write: boolean }) {
   const { session: s, signers } = q.data;
   const v = sessionView(s, write);
   const ended = endedReason(s);
-  const btn = "btn btn-sm btn-quiet";
   return (
     <section
       data-testid="sign-session"
@@ -99,30 +99,30 @@ export function SignSessionCard({ id, write }: { id: string; write: boolean }) {
               </option>
             ))}
           </OptionSelect>
-          <button
-            type="button"
-            className="btn btn-sm btn-primary"
+          <Button
+            variant="primary"
+            size="sm"
             disabled={!signer || respond.isPending}
             onClick={() => respond.mutate({ choice: "accept", signer_user_id: signer })}
           >
             {t("contracts.u6.cosign.accept")}
-          </button>
-          <button
-            type="button"
-            className={btn}
+          </Button>
+          <Button
+            variant="quiet"
+            size="sm"
             disabled={respond.isPending}
             onClick={() => respond.mutate({ choice: "normal" })}
           >
             {t("contracts.u6.cosign.normal")}
-          </button>
-          <button
-            type="button"
-            className={btn}
+          </Button>
+          <Button
+            variant="quiet"
+            size="sm"
             disabled={respond.isPending}
             onClick={() => respond.mutate({ choice: "decline" })}
           >
             {t("contracts.u6.cosign.decline")}
-          </button>
+          </Button>
         </div>
       )}
       {v.canCancel && (
@@ -133,14 +133,14 @@ export function SignSessionCard({ id, write }: { id: string; write: boolean }) {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
           />
-          <button
-            type="button"
-            className={btn}
+          <Button
+            variant="quiet"
+            size="sm"
             disabled={!reason.trim() || cancel.isPending}
             onClick={() => cancel.mutate()}
           >
             {t("contracts.u6.cosign.cancel")}
-          </button>
+          </Button>
         </div>
       )}
       {err && (

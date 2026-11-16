@@ -1,5 +1,7 @@
 // CR-135 Q12: đổi tên HĐ nháp tại chỗ — bấm tên ⇒ ô sửa; Enter / rời ô ⇒ lưu; Esc ⇒ huỷ. Rỗng ⇒ báo lỗi, giữ tên cũ. Chỉ trình bày: lưu do `onSave`.
+
 import { Input } from "@ai/web-kit/ui/kit/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TruncText } from "~/components/shared/TruncText";
@@ -41,20 +43,24 @@ export function TitleEdit({
   };
   if (!editing)
     return (
-      <button
-        type="button"
-        data-testid="title-edit"
-        title={t("contracts.review.titleEdit")}
-        aria-label={`${t("contracts.review.titleEdit")}: ${value}`}
-        className="min-w-0 max-w-full cursor-text rounded-md px-1 text-left hover:bg-sunk"
-        onClick={() => {
-          esc.current = false;
-          setText(value);
-          setEditing(true);
-        }}
-      >
-        <TruncText>{value}</TruncText>
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            data-testid="title-edit"
+            aria-label={`${t("contracts.review.titleEdit")}: ${value}`}
+            className="min-w-0 max-w-full cursor-text rounded-md px-1 text-left hover:bg-sunk"
+            onClick={() => {
+              esc.current = false;
+              setText(value);
+              setEditing(true);
+            }}
+          >
+            <TruncText>{value}</TruncText>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>{t("contracts.review.titleEdit")}</TooltipContent>
+      </Tooltip>
     );
   return (
     <span className="flex min-w-0 flex-col">

@@ -1,7 +1,10 @@
 // PK-FR-10 · TF4 · form đăng nhập S01, port `reference/mgmt-app-contracts/web/src/pages/auth/LoginPage.tsx:39-63`.
 // Lệch có chủ ý (D-21): ô "Mã công ty" chỉ khi chưa biết tenant; ô "Email" là tên đăng nhập admin-api (type text, không ép email).
 // Nhãn e2e (plan-frontend §7): textbox "Mã công ty" / "Email" / "Mật khẩu", button "Hiện mật khẩu"/"Ẩn mật khẩu", "Đăng nhập".
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconEye, IconEyeOff } from "~/components/icons";
@@ -53,13 +56,9 @@ export function LoginForm({ tenant, busy, error, onSubmit }: Props) {
       ) : (
         <p className="text-[13px] text-dim">
           {t("contracts.login.tenantKnown", { tenant })}{" "}
-          <button
-            type="button"
-            className="font-semibold text-act underline underline-offset-2"
-            onClick={() => setAskTenant(true)}
-          >
+          <Button variant="link" className="h-auto px-0" onClick={() => setAskTenant(true)}>
             {t("contracts.login.changeTenant")}
-          </button>
+          </Button>
         </p>
       )}
       <label className="text-[13px]">
@@ -83,16 +82,24 @@ export function LoginForm({ tenant, busy, error, onSubmit }: Props) {
             className="mt-0 block pr-11"
             autoComplete="current-password"
           />
-          <button
-            type="button"
-            onClick={() => setShow(!show)}
-            aria-label={
-              show ? t("contracts.login.hidePassword") : t("contracts.login.showPassword")
-            }
-            className="absolute inset-y-0 right-0 grid w-11 place-items-center text-dim hover:text-ink-2"
-          >
-            {show ? <IconEyeOff width={19} height={19} /> : <IconEye width={19} height={19} />}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="link"
+                size="icon"
+                className="absolute inset-y-0 right-0 h-auto w-11 text-dim hover:text-ink-2"
+                onClick={() => setShow(!show)}
+                aria-label={
+                  show ? t("contracts.login.hidePassword") : t("contracts.login.showPassword")
+                }
+              >
+                {show ? <IconEyeOff width={19} height={19} /> : <IconEye width={19} height={19} />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {show ? t("contracts.login.hidePassword") : t("contracts.login.showPassword")}
+            </TooltipContent>
+          </Tooltip>
         </span>
       </label>
       {error && (
@@ -100,13 +107,9 @@ export function LoginForm({ tenant, busy, error, onSubmit }: Props) {
           {error}
         </p>
       )}
-      <button
-        type="submit"
-        className="inline-flex h-11 items-center justify-center rounded-lg bg-act px-4 text-sm font-semibold text-on-act disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={busy}
-      >
+      <Button variant="primary" type="submit" className="h-11" disabled={busy}>
         {busy ? t("contracts.login.submitting") : t("contracts.login.submit")}
-      </button>
+      </Button>
       <p className="text-[12.5px] text-dim">{t("contracts.login.forgot")}</p>
     </form>
   );

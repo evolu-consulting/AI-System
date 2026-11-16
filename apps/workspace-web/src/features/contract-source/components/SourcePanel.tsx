@@ -1,5 +1,6 @@
 // gap-a2 #3: khoang "Văn bản gốc" bên phải trang HĐ — chữ AI đã đọc (Markdown thô, giữ xuống dòng); `quote` ⇒ tô sáng + cuộn tới đoạn đó,
 // không định vị được (AI diễn đạt lại) ⇒ báo rõ, vẫn hiện toàn văn. `nonce` đổi ⇒ cuộn lại dù cùng trích dẫn.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -42,9 +43,9 @@ export function SourcePanel({
     >
       <div className="flex items-center gap-2 border-b border-rule-soft px-4 py-3">
         <h2 className="text-[15px] font-semibold">{t("contracts.assistant.srcTitle")}</h2>
-        <button type="button" className="btn btn-quiet ml-auto" onClick={onClose}>
+        <Button variant="quiet" className="ml-auto" onClick={onClose}>
           {t("contracts.common.close")}
-        </button>
+        </Button>
       </div>
       {quote && !range && q.data !== undefined && (
         <p role="status" className="border-b border-rule-soft px-4 py-2 text-[12.5px] text-soon">

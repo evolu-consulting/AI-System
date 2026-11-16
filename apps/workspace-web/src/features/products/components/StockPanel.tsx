@@ -2,6 +2,7 @@
 // Luật kho V2-B/V2-D giữ nguyên (BQ gia quyền, xuất FIFO) — máy chủ tính; ô xem trước chỉ là ước tính.
 
 import type { ProductComponentOut } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -124,12 +125,12 @@ function LotFormBox({
         </p>
       )}
       <div className="flex justify-end gap-2">
-        <button type="button" className="btn btn-quiet btn-sm" onClick={onDone}>
+        <Button variant="quiet" size="sm" onClick={onDone}>
           {L("cancel")}
-        </button>
-        <button
-          type="button"
-          className="btn btn-primary btn-sm"
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
           data-testid="gd1-l-save"
           disabled={!body || add.isPending}
           onClick={() =>
@@ -147,7 +148,7 @@ function LotFormBox({
           }
         >
           {L("save")}
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -174,14 +175,15 @@ export function StockPanel({ productId }: { productId: string }) {
           </span>
         )}
         {write && stocked.length > 0 && !open && (
-          <button
-            type="button"
-            className="btn btn-outline btn-sm ml-auto"
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
             data-testid="gd1-l-open"
             onClick={() => setOpen(true)}
           >
             {L("addLot")}
-          </button>
+          </Button>
         )}
       </div>
       <div className="overflow-x-auto">

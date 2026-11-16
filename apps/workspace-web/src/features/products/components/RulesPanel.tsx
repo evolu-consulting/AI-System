@@ -1,5 +1,6 @@
 // gap-d1 #20 · tab "Nhận diện" của chi tiết SP: quy tắc nhận diện dòng hợp đồng (cụm chữ ⇒ SP / thành phần) trên
 // `POST /products/:id/rules` và `DELETE /products/:id/rules/:ruleId`.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -54,14 +55,15 @@ export function RulesPanel({ productId }: { productId: string }) {
                   : L("wholeProduct")}
               </span>
               {write && (
-                <button
-                  type="button"
-                  className="btn btn-quiet btn-sm ml-auto"
+                <Button
+                  variant="quiet"
+                  size="sm"
+                  className="ml-auto"
                   disabled={del.isPending}
                   onClick={() => del.mutate(r.id, { onError: fail })}
                 >
                   {L("remove")}
-                </button>
+                </Button>
               )}
             </li>
           ))}
@@ -96,9 +98,9 @@ export function RulesPanel({ productId }: { productId: string }) {
               </OptionSelect>
             </div>
           )}
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
+          <Button
+            variant="primary"
+            size="sm"
             data-testid="gd1-r-add"
             disabled={!body || add.isPending}
             onClick={() =>
@@ -113,7 +115,7 @@ export function RulesPanel({ productId }: { productId: string }) {
             }
           >
             {L("add")}
-          </button>
+          </Button>
         </div>
       )}
       {err && (

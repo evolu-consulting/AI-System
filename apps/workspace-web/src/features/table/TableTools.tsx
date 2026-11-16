@@ -1,5 +1,9 @@
 // PK-FR-10 · TF6 · ô tìm + bộ lọc riêng của trang (children) + số kết quả, một hàng tự xuống dòng. Nguồn: table.tsx:379-400.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { Input } from "@ai/web-kit/ui/kit/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -39,14 +43,20 @@ export function TableTools({
           className="h-9 w-full pr-9 pl-9 [&::-webkit-search-cancel-button]:hidden"
         />
         {q && (
-          <button
-            type="button"
-            aria-label={t("contracts.table.clearSearch")}
-            onClick={() => setQ("")}
-            className="absolute top-1/2 right-1 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-dim hover:bg-sunk hover:text-ink-2"
-          >
-            ✕
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="quiet"
+                size="icon"
+                className="absolute top-1/2 right-1 size-7 -translate-y-1/2 border-0 bg-transparent"
+                aria-label={t("contracts.table.clearSearch")}
+                onClick={() => setQ("")}
+              >
+                <ICONS.close className="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t("contracts.table.clearSearch")}</TooltipContent>
+          </Tooltip>
         )}
       </div>
       {children}

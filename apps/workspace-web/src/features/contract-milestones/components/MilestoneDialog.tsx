@@ -3,6 +3,7 @@
 
 import type { ContractDeal, Milestone } from "@ai/contracts/pack-contracts";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -205,21 +206,22 @@ export function MilestoneDialog({
         </DialogBody>
         <DialogFooter className="items-center gap-2">
           {edit && (
-            <button
-              type="button"
-              className="btn btn-quiet btn-sm mr-auto text-late"
+            <Button
+              variant="quiet"
+              size="sm"
+              className="mr-auto text-late"
               disabled={busy}
               onClick={() => void run(() => removeMilestone(edit.id))}
             >
               {L("deleteMilestone")}
-            </button>
+            </Button>
           )}
-          <button type="button" className="btn btn-quiet btn-sm" onClick={onClose}>
+          <Button variant="quiet" size="sm" onClick={onClose}>
             {t("contracts.common.cancel")}
-          </button>
-          <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={save}>
+          </Button>
+          <Button variant="primary" size="sm" disabled={busy} onClick={save}>
             {edit ? L("saveMilestone") : L("addMilestone")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

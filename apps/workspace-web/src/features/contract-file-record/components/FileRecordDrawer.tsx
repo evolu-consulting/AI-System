@@ -2,11 +2,11 @@
 // duyệt (dùng lại «Hồ sơ duyệt» `RecordBody`) · ký số (phong bì ký của HĐ/phiên bản đó + tải bản đã ký) · tệp là bằng chứng của bước nào.
 // Chỉ đọc dữ liệu đã có (chi tiết HĐ, hồ sơ duyệt, ký số) — ai không xem được HĐ thì các API sẵn có trả 404, ngăn nói rõ.
 import type { ContractOwnFile, ContractStepFile } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDateTime } from "~/components/shared/format";
 import { TruncText } from "~/components/shared/TruncText";
-import { Btn } from "~/components/ui/Btn";
 import {
   Dialog,
   DialogContent,
@@ -104,14 +104,14 @@ export function FileRecordDrawer({
         {r.detail.isError ? (
           <div role="alert" data-testid="frec-error" className="text-sm text-late">
             <p className="m-0">{t("contracts.frec.loadErr")}</p>
-            <Btn
+            <Button
               size="sm"
               variant="outline"
               className="mt-2"
               onClick={() => void r.detail.refetch()}
             >
               {t("contracts.cfiles.retry")}
-            </Btn>
+            </Button>
           </div>
         ) : !d ? (
           <div aria-busy="true" data-testid="frec-loading">

@@ -1,5 +1,6 @@
 // gap-a1 #4 · "Lịch sử thay đổi": dòng thời gian sự kiện của HĐ (ai · làm gì · lúc nào · khác biệt trường). Dữ liệu theo luật thấy của
 // người gọi; chỉ tải khi mở khối.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDateTime } from "~/components/shared/format";
@@ -81,14 +82,14 @@ export function HistoryPanel({ id }: { id: string }) {
             </ul>
           )}
           {q.hasNextPage && (
-            <button
-              type="button"
-              className="mt-2 text-[12.5px] text-dim hover:underline"
+            <Button
+              variant="link"
+              className="h-auto px-0 mt-2 text-dim"
               disabled={q.isFetchingNextPage}
               onClick={() => void q.fetchNextPage()}
             >
               {t("contracts.gapa1.hist.loadMore")}
-            </button>
+            </Button>
           )}
         </div>
       )}

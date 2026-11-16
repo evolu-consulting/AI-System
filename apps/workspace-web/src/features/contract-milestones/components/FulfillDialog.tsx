@@ -4,6 +4,7 @@
 import type { ContractDeal, FulfillRequest, Milestone } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
@@ -237,18 +238,18 @@ export function FulfillDialog(p: {
           )}
         </DialogBody>
         <DialogFooter className="flex-row justify-end">
-          <button type="button" className="btn btn-quiet btn-sm" onClick={p.onClose}>
+          <Button variant="quiet" size="sm" onClick={p.onClose}>
             {t("contracts.common.cancel")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             data-testid="fulfill-ok"
             disabled={busy}
             onClick={() => void go()}
           >
             {post ? L("postponeOk") : L("ok")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

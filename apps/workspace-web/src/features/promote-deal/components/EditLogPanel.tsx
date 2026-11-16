@@ -1,4 +1,5 @@
 // CR-101 DOC-ui-frame · R5: dòng thời gian "Sửa trực tiếp" của giao dịch (máy ghi, không bắt lý do) từ `GET /contracts/:id/edit-log`.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
@@ -33,14 +34,14 @@ export function EditLogPanel({ id }: { id: string }) {
       </ul>
       {q.hasNextPage && (
         <div className="border-t border-rule-soft px-5 py-2.5">
-          <button
-            type="button"
-            className="text-[12.5px] text-dim hover:underline"
+          <Button
+            variant="link"
+            className="h-auto px-0 text-dim"
             disabled={q.isFetchingNextPage}
             onClick={() => void q.fetchNextPage()}
           >
             {t("contracts.docframe.log.loadMore")}
-          </button>
+          </Button>
         </div>
       )}
     </Panel>

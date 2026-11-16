@@ -1,7 +1,9 @@
 // HD7-FR-04…08 · HD7-FR-12 · "+ Ghi việc" với một đối tác — port `mgmt-app/web/src/pages/partners/PartnerLog.tsx:46-121`: lịch
 // thanh toán (các đợt chưa xong), ghi việc khác, sổ đối tác "Đã ghi gần đây" (gồm dòng Quá hạn do hệ thống ghi, gạch dòng đã huỷ).
 // Trên trang HĐ (`contractId`) chỉ đợt của HĐ đó. Viewer không thấy nút ghi.
+
 import type { PartnerEvent, PartnerRole } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { ErrorLine, Loading } from "~/components/shared/states";
@@ -56,14 +58,14 @@ function RecentLine({
         </span>
       </span>
       {voidable(e, write, owner) && (
-        <button
-          type="button"
-          className="shrink-0 text-[12.5px] text-late hover:underline"
+        <Button
+          variant="link"
+          className="h-auto px-0 shrink-0 text-late"
           disabled={!!busy}
           onClick={() => void undo()}
         >
           {L("void")}
-        </button>
+        </Button>
       )}
     </li>
   );
@@ -97,14 +99,14 @@ export function PartnerLog({ party, role, contractId, onChange }: Props) {
           ))}
         </ul>
         {obs.hasNextPage && (
-          <button
-            type="button"
-            className="mt-1.5 text-[12.5px] text-dim hover:underline"
+          <Button
+            variant="link"
+            className="h-auto px-0 mt-1.5 text-dim"
             disabled={obs.isFetchingNextPage}
             onClick={() => void obs.fetchNextPage()}
           >
             {L("loadMore")}
-          </button>
+          </Button>
         )}
       </>
     );

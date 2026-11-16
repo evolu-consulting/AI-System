@@ -2,7 +2,10 @@
 // là chọn SP danh mục (`ProductPicker`). Gõ xong tên mà chưa chọn SP ⇒ gợi ý qua `POST /products/match` (V2-B).
 
 import type { ContractDeal, ProductOut } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { Input } from "@ai/web-kit/ui/kit/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { useProductSuggest } from "../hooks/use-product-suggest";
@@ -98,15 +101,21 @@ function ItemRow({
           {total === null ? <span className="text-dim">—</span> : vnd(total)}
         </td>
         <td className={`${CELL} text-right`}>
-          <button
-            type="button"
-            aria-label={L("removeRow")}
-            disabled={last}
-            className="px-2 text-dim hover:text-late disabled:opacity-40"
-            onClick={onRemove}
-          >
-            ×
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="quiet"
+                size="icon"
+                className="size-8"
+                aria-label={L("removeRow")}
+                disabled={last}
+                onClick={onRemove}
+              >
+                <ICONS.remove className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{L("removeRow")}</TooltipContent>
+          </Tooltip>
         </td>
       </tr>
       <tr>
@@ -169,9 +178,9 @@ export function ItemTable({ items, deal, products, unlinked, onPatch, onAdd, onR
         <tfoot>
           <tr className="border-t border-rule">
             <td colSpan={2} className="px-2 py-3 pl-5">
-              <button type="button" className="chip chip-dashed" onClick={onAdd}>
+              <Button variant="outline" size="sm" onClick={onAdd}>
                 {L("addRow")}
-              </button>
+              </Button>
             </td>
             <td colSpan={2} className="px-2 text-right text-[13px] text-dim">
               {L("sumLabel")}

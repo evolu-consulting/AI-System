@@ -1,5 +1,8 @@
 // S05 · "Xem hợp đồng gốc": hộp thoại xem tại chỗ (PDF/ảnh) + tải xuống, kèm tệp của các phụ lục (mỗi phụ lục là một HĐ có tệp riêng).
 // Quyền xem do server quyết (RLS của `file-link`: HĐ không thấy ⇒ 404); ở đây chỉ trình bày. Tệp tải bằng link FileBox ngắn hạn rồi hiện qua blob URL.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -96,17 +99,24 @@ export function Viewer({ entry }: { entry: OriginalEntry }) {
     return (
       <p role="alert" className="p-4 text-sm text-late">
         {t("contracts.review.orig.failed")}{" "}
-        <button type="button" className="underline" onClick={() => void openOriginalFile(entry.id)}>
+        <Button
+          variant="link"
+          className="h-auto px-0"
+          onClick={() => void openOriginalFile(entry.id)}
+        >
           {t("contracts.review.orig.newTab")}
-        </button>
+        </Button>
       </p>
     );
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="min-w-0 truncate text-sm font-medium" title={entry.name}>
-          {entry.name}
-        </span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="min-w-0 truncate text-sm font-medium">{entry.name}</span>
+          </TooltipTrigger>
+          <TooltipContent>{entry.name}</TooltipContent>
+        </Tooltip>
         <a href={url} download={entry.name} className="btn btn-outline">
           {t("contracts.review.orig.download")}
         </a>
@@ -164,16 +174,15 @@ export function OriginalFileDialog({
             className="flex flex-wrap gap-1"
           >
             {entries.map((e) => (
-              <button
+              <Button
                 key={e.id}
-                type="button"
+                variant={e.id === current?.id ? "primary" : "quiet"}
                 role="tab"
                 aria-selected={e.id === current?.id}
-                className={`btn ${e.id === current?.id ? "btn-primary" : "btn-quiet"}`}
                 onClick={() => setPick(e.id)}
               >
                 {e.label}
-              </button>
+              </Button>
             ))}
           </div>
         )}

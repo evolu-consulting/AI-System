@@ -1,9 +1,10 @@
 // CR-135 · Q5 · các phần của ngăn «Hồ sơ» file: thông tin file · ký số · bằng chứng của bước. Phần «Duyệt» dùng lại `RecordBody` (một nguồn).
+
+import { Button } from "@ai/web-kit/ui/kit/button";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { viDateTime } from "~/components/shared/format";
 import { TruncText } from "~/components/shared/TruncText";
-import { Btn } from "~/components/ui/Btn";
 import { mimeKind, type SignBlock } from "../lib/file-record";
 
 export function Section({
@@ -83,16 +84,16 @@ export function SignInfo({
             ))}
           </ol>
           {b.hasSignedFile && (
-            <Btn
+            <Button
               size="sm"
               variant="outline"
               className="mt-2"
               data-testid="frec-signed-download"
-              loading={busy}
+              busy={busy}
               onClick={onDownload}
             >
               {t("contracts.frec.sign.download")}
-            </Btn>
+            </Button>
           )}
         </>
       )}

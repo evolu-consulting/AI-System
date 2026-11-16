@@ -1,5 +1,6 @@
 // CR-127 · U6 · M2c · băng «lời mời nối lần đầu» ở đầu danh sách Hợp đồng (thay trang «Hợp đồng đối tác gửi» đã gỡ): công ty gửi lần đầu ⇒ Nhận / Chặn.
 // HĐ đối tác gửi đã nhận nằm ngay trong danh sách (lọc Nguồn = Đối tác gửi). Không có lời mời ⇒ không vẽ gì.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { answerInvite, fetchInbox, partnerKeys } from "~/features/partner-inbox/api";
@@ -25,22 +26,12 @@ function InviteRow({ inv }: { inv: Invite }) {
           · {t("contracts.partner.invite.first", { n: inv.held })}
         </span>
       </div>
-      <button
-        type="button"
-        className="btn btn-sm btn-primary"
-        disabled={m.isPending}
-        onClick={() => m.mutate("accept")}
-      >
+      <Button variant="primary" size="sm" disabled={m.isPending} onClick={() => m.mutate("accept")}>
         {t("contracts.partner.invite.accept")}
-      </button>
-      <button
-        type="button"
-        className="btn btn-sm btn-quiet"
-        disabled={m.isPending}
-        onClick={() => m.mutate("block")}
-      >
+      </Button>
+      <Button variant="quiet" size="sm" disabled={m.isPending} onClick={() => m.mutate("block")}>
         {t("contracts.partner.invite.block")}
-      </button>
+      </Button>
     </div>
   );
 }

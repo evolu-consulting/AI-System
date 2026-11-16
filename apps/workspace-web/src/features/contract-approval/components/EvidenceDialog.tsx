@@ -1,4 +1,5 @@
 // CR-144/149 · «Xem» một dòng hồ sơ duyệt: mở hộp, tải chữ ký/tệp (route `?inline=1` có kiểm quyền) thành Blob; hiển thị bằng hộp xem chung (ảnh / PDF / Word).
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -42,14 +43,14 @@ export function EvidenceDialog({ contractId, line }: { contractId: string; line:
   const u = useEvidenceUrls(contractId, line, open);
   return (
     <>
-      <button
-        type="button"
-        className="text-act underline"
+      <Button
+        variant="link"
+        className="h-auto px-0"
         data-testid="record-view"
         onClick={() => setOpen(true)}
       >
         {t("contracts.work.u4.record.view")}
-      </button>
+      </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>

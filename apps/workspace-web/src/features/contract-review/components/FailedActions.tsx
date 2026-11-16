@@ -1,4 +1,5 @@
 // CR-162: cụm lựa chọn của thẻ «Không đọc được hợp đồng này» — MỘT nút chính «Nhập tay» + nút menu «⋯» chứa Thử lại / Tải tệp khác. Chỉ trình bày.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PopMenu } from "~/components/shared/pop-menu";
@@ -18,15 +19,9 @@ export function FailedActions({
   const { t } = useTranslation();
   return (
     <div className="flex items-center gap-1" data-testid="failed-actions">
-      <button
-        type="button"
-        className="btn btn-primary"
-        data-testid="manual-entry"
-        disabled={pending}
-        onClick={onManual}
-      >
+      <Button variant="primary" data-testid="manual-entry" disabled={pending} onClick={onManual}>
         {t("contracts.review.manual")}
-      </button>
+      </Button>
       <PopMenu
         trigger={<MoreHorizontal size={18} aria-hidden />}
         ariaLabel={t("contracts.review.moreChoices")}

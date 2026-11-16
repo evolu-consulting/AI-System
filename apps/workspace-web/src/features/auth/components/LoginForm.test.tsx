@@ -48,7 +48,7 @@ describe("LoginForm", () => {
     const out = form({ error: "Sai thông tin đăng nhập.", busy: true });
     expect(out).toContain('role="alert"');
     expect(out).toContain("Sai thông tin đăng nhập.");
-    expect(out).toMatch(/<button type="submit"[^>]*disabled/);
+    expect(out).toMatch(/<button[^>]*type="submit"[^>]*disabled/);
   });
   test("PK-FR-10 · EN: Sign in / Company code", async () => {
     await i18n.changeLanguage("en");

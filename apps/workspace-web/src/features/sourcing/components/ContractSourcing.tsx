@@ -1,6 +1,8 @@
 // W1 · thẻ "Nguồn hàng & lãi" trên trang chi tiết HĐ (port cm-web `sourcing/Contract.tsx`): HĐ bán ⇒ mỗi dòng mua từ đâu và lãi;
 // HĐ mua ⇒ các dòng bán đang mua từ HĐ này. Không có dòng nào ⇒ không hiện gì. Đổi nguồn chỉ trên HĐ bán và cần quyền ghi.
+
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 
@@ -33,14 +35,14 @@ export function ContractSourcing({ c, write }: Props) {
       </div>
       {q.hasNextPage && (
         <div className="border-t border-rule px-5 py-2.5">
-          <button
-            type="button"
-            className="text-[12.5px] text-dim hover:underline"
+          <Button
+            variant="link"
+            className="h-auto px-0 text-dim"
             disabled={q.isFetchingNextPage}
             onClick={() => void q.fetchNextPage()}
           >
             {t("contracts.sourcing.loadMore")}
-          </button>
+          </Button>
         </div>
       )}
     </Panel>

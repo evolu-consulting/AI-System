@@ -1,5 +1,6 @@
 // gap-a1 #5 · "AI đọc lại từ đầu" (HĐ chờ xác nhận) / "Thử lại" (đọc lỗi): hộp xác nhận rồi gọi trích lại có sẵn (`POST /extract`, 202).
 // Đọc lại ghi đè phần AI đã đọc nhưng giữ ô người đã sửa.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -17,14 +18,9 @@ export function ReextractButton({ id }: { id: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        type="button"
-        className="btn btn-outline"
-        data-testid="reextract"
-        onClick={() => setOpen(true)}
-      >
+      <Button variant="outline" data-testid="reextract" onClick={() => setOpen(true)}>
         {t("contracts.gapa1.reextract.button")}
-      </button>
+      </Button>
       <ReextractDialog id={id} open={open} onOpenChange={setOpen} />
     </>
   );
@@ -51,12 +47,11 @@ export function ReextractDialog({
             <DialogDescription>{t("contracts.gapa1.reextract.warn")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <button type="button" className="btn btn-quiet" onClick={() => setOpen(false)}>
+            <Button variant="quiet" onClick={() => setOpen(false)}>
               {t("contracts.common.cancel")}
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
+            </Button>
+            <Button
+              variant="primary"
               data-testid="reextract-confirm"
               disabled={run.isPending}
               onClick={() => run.mutate(undefined)}
@@ -66,7 +61,7 @@ export function ReextractDialog({
                   ? "contracts.gapa1.reextract.running"
                   : "contracts.gapa1.reextract.confirm",
               )}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

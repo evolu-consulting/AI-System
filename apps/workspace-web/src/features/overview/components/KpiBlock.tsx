@@ -1,6 +1,8 @@
 // V2-N · 4 con số của Tổng quan (mockup NITI `kpiPanel`) + chọn kỳ: Doanh thu / Hoa hồng (thực nhận, % dự kiến, chưa thu/nhận, % so kỳ trước),
 // Lãi gộp (biên %), Hàng đang giữ. Dữ liệu `GET /overview?period=`; người dùng chỉ thấy phần của HĐ mình được xem (API tự lọc).
+
 import type { OverviewFigure, OverviewOut, OverviewPeriod } from "@ai/contracts/pack-contracts";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { changeView, moneyShort, pctOf } from "../lib/overview";
@@ -9,13 +11,17 @@ export function Delta({ pct, cmp }: { pct: number | null; cmp?: string }) {
   const d = changeView(pct);
   if (!d) return null;
   return (
-    <span
-      title={cmp}
-      data-testid="delta"
-      className={`tnum text-[12.5px] font-semibold ${d.up ? "text-ok" : "text-late"}`}
-    >
-      {d.up ? "▲" : "▼"} {d.n}%
-    </span>
+    <Tooltip open={cmp ? undefined : false}>
+      <TooltipTrigger asChild>
+        <span
+          data-testid="delta"
+          className={`tnum text-[12.5px] font-semibold ${d.up ? "text-ok" : "text-late"}`}
+        >
+          {d.up ? "▲" : "▼"} {d.n}%
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{cmp}</TooltipContent>
+    </Tooltip>
   );
 }
 

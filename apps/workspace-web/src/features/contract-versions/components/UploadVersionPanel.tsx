@@ -1,5 +1,6 @@
 // CR-097 K3b · HD-FR-101: "Tải bản cập nhật" — chọn tệp văn bản ĐÃ KÝ ⇒ một POST ⇒ mở bản nháp v(n+1).
 
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -80,18 +81,18 @@ export function UploadVersionPanel({
             )}
           </DialogBody>
           <DialogFooter className="flex-row justify-end">
-            <button type="button" className="btn btn-quiet btn-sm" onClick={onClose}>
+            <Button variant="quiet" size="sm" onClick={onClose}>
               {t("contracts.versions.upload.cancel")}
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               data-testid="upload-version-submit"
               disabled={!file || up.isPending}
               onClick={() => file && up.mutate(file)}
             >
               {t("contracts.versions.upload.submit")}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

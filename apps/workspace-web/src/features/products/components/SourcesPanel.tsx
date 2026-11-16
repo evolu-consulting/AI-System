@@ -1,5 +1,6 @@
 // gap-d1 #19 · tab "Cách lấy hàng" của chi tiết SP (BA KN-09): danh sách nguồn (NCC, thời gian giao, SL tối thiểu, giá tham chiếu),
 // "Thêm cách lấy hàng", và bảng rủi ro phụ thuộc NCC (tỉ trọng mua ⊕ nguồn đã khai báo).
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
@@ -90,12 +91,12 @@ function AddForm({ id, onDone }: { id: string; onDone: () => void }) {
         </p>
       )}
       <div className="flex justify-end gap-2">
-        <button type="button" className="btn btn-quiet btn-sm" onClick={onDone}>
+        <Button variant="quiet" size="sm" onClick={onDone}>
           {L("cancel")}
-        </button>
-        <button
-          type="button"
-          className="btn btn-primary btn-sm"
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
           data-testid="gd1-s-save"
           disabled={!body || add.isPending}
           onClick={() =>
@@ -110,7 +111,7 @@ function AddForm({ id, onDone }: { id: string; onDone: () => void }) {
           }
         >
           {L("save")}
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -131,14 +132,15 @@ export function SourcesPanel({ productId }: { productId: string }) {
       <div className="flex flex-wrap items-center gap-3 px-4 py-3">
         <h3 className="text-base font-semibold">{L("title")}</h3>
         {write && !open && (
-          <button
-            type="button"
-            className="btn btn-outline btn-sm ml-auto"
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
             data-testid="gd1-s-open"
             onClick={() => setOpen(true)}
           >
             {L("add")}
-          </button>
+          </Button>
         )}
       </div>
       {items.length === 0 ? (
@@ -168,14 +170,14 @@ export function SourcesPanel({ productId }: { productId: string }) {
                   <td className={`${td} text-dim`}>{s.note ?? ""}</td>
                   {write && (
                     <td className={`${td} text-right`}>
-                      <button
-                        type="button"
-                        className="btn btn-quiet btn-sm"
+                      <Button
+                        variant="quiet"
+                        size="sm"
                         disabled={del.isPending}
                         onClick={() => del.mutate(s.id)}
                       >
                         {L("remove")}
-                      </button>
+                      </Button>
                     </td>
                   )}
                 </tr>

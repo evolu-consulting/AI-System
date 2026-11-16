@@ -1,5 +1,7 @@
 // DOC-ui-list: nhãn loại chứng từ + hàng con thụt dưới HĐ nguyên tắc (bảng + thẻ điện thoại) của danh sách "Hợp đồng & giao dịch".
+
 import type { DealSource, DocType } from "@ai/contracts/pack-contracts";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
@@ -47,17 +49,21 @@ export function ChildRowCells({
           case "title":
             return (
               <td key={k} className="max-w-[260px] px-3 py-2.5 pl-5">
-                <Link
-                  to="/contracts/c/$id"
-                  params={{ id: child.id }}
-                  className={cn("block truncate", orphan ? "font-semibold" : "pl-6")}
-                  title={child.title}
-                  data-testid={orphan ? "child-orphan" : "child-title"}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {!orphan && <span aria-hidden="true">↳ </span>}
-                  {child.title}
-                </Link>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/contracts/c/$id"
+                      params={{ id: child.id }}
+                      className={cn("block truncate", orphan ? "font-semibold" : "pl-6")}
+                      data-testid={orphan ? "child-orphan" : "child-title"}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {!orphan && <span aria-hidden="true">↳ </span>}
+                      {child.title}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>{child.title}</TooltipContent>
+                </Tooltip>
               </td>
             );
           case "number":
@@ -93,16 +99,20 @@ export function ChildRowCells({
         }
       })}
       <td className="px-3 py-2.5 pr-5 text-right whitespace-nowrap">
-        <Link
-          to="/contracts/c/$id"
-          params={{ id: child.id }}
-          className="btn-icon-ghost"
-          aria-label={t("contracts.list.viewContract")}
-          title={t("contracts.list.viewContract")}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <EyeIcon />
-        </Link>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              to="/contracts/c/$id"
+              params={{ id: child.id }}
+              className="btn-icon-ghost"
+              aria-label={t("contracts.list.viewContract")}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <EyeIcon />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent>{t("contracts.list.viewContract")}</TooltipContent>
+        </Tooltip>
       </td>
     </>
   );
@@ -119,10 +129,15 @@ export function ChildCard({ child, orphan }: { child: ListFrameChild; orphan: bo
         className={cn("flex flex-col gap-1 py-3 pr-4 hover:bg-sunk", orphan ? "pl-4" : "pl-9")}
       >
         <span className="flex items-center gap-2">
-          <span className="truncate font-medium" title={child.title}>
-            {!orphan && <span aria-hidden="true">↳ </span>}
-            {child.title}
-          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate font-medium">
+                {!orphan && <span aria-hidden="true">↳ </span>}
+                {child.title}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{child.title}</TooltipContent>
+          </Tooltip>
           <DocTypeTag doc={child.doc_type} />
         </span>
         <span className="text-[13px] text-dim">

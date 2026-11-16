@@ -1,4 +1,5 @@
 // CR-127 · U5: hộp lý do / bằng chứng của Rút về · Tạm khoá · Mở khoá · "Không đổi gì" (tách khỏi HeadActions).
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -66,12 +67,12 @@ export function AskDialog(p: {
           )}
         </DialogBody>
         <DialogFooter className="flex-row justify-end">
-          <button type="button" className="btn btn-quiet btn-sm" onClick={p.onCancel}>
+          <Button variant="quiet" size="sm" onClick={p.onCancel}>
             {t("contracts.common.cancel")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             data-testid="ask-ok"
             disabled={p.busy}
             onClick={() => {
@@ -81,7 +82,7 @@ export function AskDialog(p: {
             }}
           >
             {L("ok")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

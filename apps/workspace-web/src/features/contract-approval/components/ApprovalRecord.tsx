@@ -1,5 +1,6 @@
 // CR-127 · U4 · M6 + M15 · hai khối gập trên thẻ duyệt: «Hồ sơ duyệt» (ai duyệt gì, ý kiến, chữ ký, tệp — theo quyền xem, BR-26) và
 // «Đã đổi so với lần trước» (lý do trả lại + trường/đoạn văn đã đổi khi gửi lại). Chỉ tải khi mở (không thêm yêu cầu lúc vào trang).
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -62,15 +63,15 @@ function PdfButton({ id }: { id: string }) {
   };
   return (
     <div className="mb-2 flex flex-wrap items-center gap-3">
-      <button
-        type="button"
-        className="btn btn-sm"
+      <Button
+        variant="quiet"
+        size="sm"
         data-testid="record-pdf"
         disabled={busy}
         onClick={() => void run()}
       >
         {t("contracts.work.u4.record.pdf")}
-      </button>
+      </Button>
       {err && (
         <span role="alert" className="text-caption text-late" data-testid="record-pdf-error">
           {t("contracts.work.u4.record.pdfError")}

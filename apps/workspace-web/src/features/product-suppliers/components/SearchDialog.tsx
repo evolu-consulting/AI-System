@@ -1,6 +1,8 @@
 // V2-J2 · SP-05: "Tìm giá trên thị trường". AI tìm web CHỈ khi người dùng bấm "Tìm" (hộp thoại nói rõ chỉ gửi tên sản phẩm); kết quả
 // là gợi ý chưa lưu — người dùng tick dòng cần rồi "Lưu vào bảng so sánh". Thay `/cks/scans`.
+
 import type { SupplierSearchOut } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
@@ -143,29 +145,27 @@ export function SearchDialog({
           )}
         </DialogBody>
         <DialogFooter className="flex-row justify-end">
-          <button type="button" className="btn btn-quiet" onClick={close}>
+          <Button variant="quiet" onClick={close}>
             {L("close")}
-          </button>
+          </Button>
           {!result && (
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button
+              variant="primary"
               data-testid="scout-search-run"
               disabled={search.isPending}
               onClick={() => search.mutate()}
             >
               {L("run")}
-            </button>
+            </Button>
           )}
           {result && result.items.length > 0 && (
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button
+              variant="primary"
               disabled={picked.size === 0 || save.isPending}
               onClick={() => save.mutate()}
             >
               {L("saveSel", { n: picked.size })}
-            </button>
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>

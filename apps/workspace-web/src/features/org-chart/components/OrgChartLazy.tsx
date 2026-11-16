@@ -1,5 +1,7 @@
 // CR-142 · nạp sơ đồ cây bằng React.lazy (chunk riêng: xyflow không phình trang khác). Lỗi nạp ⇒ báo + «Thử lại».
+
 import type { OrgChartProps } from "@ai/flow-canvas";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Component, lazy, type ReactNode, Suspense, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -29,9 +31,9 @@ export function OrgChartLazy(p: OrgChartProps) {
       fallback={() => (
         <p role="alert" className="text-sm text-late">
           {t("contracts.orgChart.chartLoadFail")}{" "}
-          <button type="button" className="underline" onClick={() => setAttempt((n) => n + 1)}>
+          <Button variant="link" className="h-auto px-0" onClick={() => setAttempt((n) => n + 1)}>
             {t("contracts.orgChart.retry")}
-          </button>
+          </Button>
         </p>
       )}
     >

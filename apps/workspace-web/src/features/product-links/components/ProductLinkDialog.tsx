@@ -7,6 +7,7 @@ import type {
   ProductLink,
   ProductOut,
 } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -56,18 +57,17 @@ export function ProductLinkDialog(o: {
           </ul>
         </DialogBody>
         <DialogFooter>
-          <button type="button" className="btn btn-quiet" onClick={o.onCancel}>
+          <Button variant="quiet" onClick={o.onCancel}>
             {t("contracts.plink.cancel")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             data-testid="product-link-confirm"
             disabled={o.busy || incomplete(cs)}
             onClick={() => o.onConfirm(toLinks(cs))}
           >
             {t("contracts.plink.confirm")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

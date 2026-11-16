@@ -1,4 +1,5 @@
 // Popup "Đã hết lượt tải hợp đồng hôm nay": hiện một lần mỗi lô khi máy chủ trả 429 UPLOAD_QUOTA.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -28,9 +29,9 @@ export function QuotaDialog({
           <DialogDescription>{text.body}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <button type="button" className="btn btn-primary" onClick={onClose}>
+          <Button variant="primary" onClick={onClose}>
             {t("contracts.list.upload.quotaPopup.ok")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,6 +1,8 @@
 // CR-152 · bản mẫu nq-chitiet / ht-chitiet: khối tóm tắt HĐ Nhượng quyền / Thỏa thuận hợp tác (phí ban đầu · phí định kỳ · còn hiệu lực, hoặc
 // cách chia), danh sách kỳ (số đã ghi, phí / phần chia) và nút ghi doanh thu / đối soát kỳ (quyền như sửa mốc: không có quyền ⇒ ẩn nút).
+
 import type { ContractDetail, KindTermsView } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -102,13 +104,9 @@ export function KindSummary({
         <div className="flex flex-wrap items-center gap-3 border-b border-rule-soft px-5 py-3.5">
           <h2 className="text-[15px] font-semibold">{L(`title.${v.deal}`)}</h2>
           {can && (
-            <button
-              type="button"
-              className="btn btn-primary btn-sm ml-auto"
-              onClick={() => setOpen(true)}
-            >
+            <Button variant="primary" size="sm" className="ml-auto" onClick={() => setOpen(true)}>
               {L(franchise ? "recordFranchise" : "recordCoop")}
-            </button>
+            </Button>
           )}
         </div>
         <div className="flex flex-col gap-4 px-5 py-4">

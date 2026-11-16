@@ -1,6 +1,8 @@
 // price-scout · "Cấu hình dò giá" trong tab NCC & giá của SP: giá trị đang áp (mặc định nhóm ⊕ ghi đè riêng), ô nào trùng mặc định nhóm có
 // nhãn "theo mặc định nhóm". Có quyền ghi ⇒ sửa + Lưu (chỉ gửi khoá khác mặc định) / "Dùng mặc định nhóm" (PUT {}). Ngoài: chỉ đọc.
+
 import type { PriceScoutProductOut } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -41,23 +43,21 @@ function Form({
       )}
       {write && (
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="btn btn-quiet"
+          <Button
+            variant="quiet"
             disabled={save.isPending}
             onClick={() => run({}, L("savedDefault"))}
           >
             {L("useDefault")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             data-testid="scout-save"
             disabled={save.isPending || issue !== null}
             onClick={() => run(overrideOf(form, data.defaults), L("saved"))}
           >
             {L("save")}
-          </button>
+          </Button>
         </div>
       )}
     </div>

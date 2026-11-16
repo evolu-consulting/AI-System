@@ -1,9 +1,11 @@
 // V2-J2 · SP-04: "So sánh giá nhà cung cấp" — Mua mới / Gia hạn, giá vốn BQ của mình, nguồn giá, uy tín, ngày (mockup-niti `cmpPanel`).
+
 import type {
   SupplierOverviewOut,
   SupplierPriceKind,
   SupplierPriceRow,
 } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -105,25 +107,15 @@ export function ComparePanel({
         )}
         {write && (
           <span className="ml-auto flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              data-testid="gd1-manual-open"
-              onClick={onManual}
-            >
+            <Button variant="outline" size="sm" data-testid="gd1-manual-open" onClick={onManual}>
               {t("contracts.gapd1.manual.open")}
-            </button>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              data-testid="gd1-quote-open"
-              onClick={onQuote}
-            >
+            </Button>
+            <Button variant="outline" size="sm" data-testid="gd1-quote-open" onClick={onQuote}>
               {t("contracts.gapd1.quote.open")}
-            </button>
-            <button type="button" className="btn btn-outline btn-sm" onClick={onSearch}>
+            </Button>
+            <Button variant="outline" size="sm" onClick={onSearch}>
               {L("search")}
-            </button>
+            </Button>
           </span>
         )}
       </div>
@@ -178,13 +170,13 @@ export function ComparePanel({
                       <div className="flex justify-end gap-2">
                         <AddPartnerButton row={r} />
                         {r.id && (
-                          <button
-                            type="button"
-                            className="btn btn-quiet btn-sm"
+                          <Button
+                            variant="quiet"
+                            size="sm"
                             onClick={() => onDelete(r.id as string)}
                           >
                             {L("remove")}
-                          </button>
+                          </Button>
                         )}
                       </div>
                     </td>

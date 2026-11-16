@@ -1,4 +1,5 @@
 // CR-126 · «Đã gửi của tôi» dưới danh sách loại yêu cầu: tên · ngày gửi · một nhóm trạng thái; bấm ⇒ trang yêu cầu.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -54,15 +55,15 @@ export function MyRequests() {
             ))}
           </ul>
           {q.hasNextPage && (
-            <button
-              type="button"
+            <Button
+              variant="link"
+              className="h-auto w-full px-5 py-2 text-dim"
               data-testid="my-requests-more"
               disabled={q.isFetchingNextPage}
-              className="w-full px-5 py-2 text-label text-dim underline"
               onClick={() => void q.fetchNextPage()}
             >
               {t("contracts.requests.mineMore")}
-            </button>
+            </Button>
           )}
         </Panel>
       )}

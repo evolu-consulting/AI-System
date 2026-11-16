@@ -1,6 +1,7 @@
 // gap-d1 #22 · "Thêm vào Đối tác" trên một dòng giá NCC: `POST /companies` (tên; MST khi khoá đối tác là `tax:<MST>`). Đã có ⇒ coi như xong.
 
 import type { SupplierPriceRow } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -14,9 +15,9 @@ export function AddPartnerButton({ row }: { row: SupplierPriceRow }) {
   const add = useAddCompany();
   if (done) return <span className="tag text-[11px]">{L("added")}</span>;
   return (
-    <button
-      type="button"
-      className="btn btn-outline btn-sm"
+    <Button
+      variant="outline"
+      size="sm"
       data-testid="gd1-add-partner"
       disabled={add.isPending}
       onClick={() =>
@@ -33,6 +34,6 @@ export function AddPartnerButton({ row }: { row: SupplierPriceRow }) {
       }
     >
       {L("add")}
-    </button>
+    </Button>
   );
 }

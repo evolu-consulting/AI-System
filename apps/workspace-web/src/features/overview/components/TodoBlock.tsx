@@ -1,8 +1,11 @@
 // V2-N · "Hạn và nhắc việc" (trước là "Cần xử lý" — đổi tên để không mâu thuẫn với thẻ "Chờ bạn": HĐ chờ chính mình ký/duyệt nằm ở thẻ đó) của Tổng quan (mockup NITI `todoPanel`): 8 nguồn từ `GET /my-work/todo`, 6 việc đầu + "Xem thêm", mỗi việc có Bỏ qua
 // (và Đã xong với "Liên hệ mời gia hạn"). Bấm việc ⇒ mở HĐ / SP / đối tác. Chỉ việc người dùng THẤY (API tự lọc).
+
 import type { TodoItem } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { Link } from "@tanstack/react-router";
-import { Check, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
@@ -88,17 +91,24 @@ function Row({ i, onAct }: { i: TodoItem; onAct: (a: "skip" | "done") => void })
     >
       <Target i={i} />
       {
-        <button
-          type="button"
-          onClick={() => onAct(done ? "done" : "skip")}
-          title={t(done ? "contracts.overview.todo.done" : "contracts.overview.todo.skip")}
-          aria-label={t(
-            done ? "contracts.overview.todo.doneAria" : "contracts.overview.todo.skipAria",
-          )}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-dim hover:bg-sunk hover:text-ink"
-        >
-          {done ? <Check size={14} /> : <X size={14} />}
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="quiet"
+              size="icon"
+              className="size-7 shrink-0 border-0 bg-transparent"
+              onClick={() => onAct(done ? "done" : "skip")}
+              aria-label={t(
+                done ? "contracts.overview.todo.doneAria" : "contracts.overview.todo.skipAria",
+              )}
+            >
+              {done ? <ICONS.approve className="size-3.5" /> : <ICONS.close className="size-3.5" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {t(done ? "contracts.overview.todo.done" : "contracts.overview.todo.skip")}
+          </TooltipContent>
+        </Tooltip>
       }
     </li>
   );
@@ -125,16 +135,16 @@ export function TodoBlock() {
           ))}
         </ul>
         {rest > 0 && (
-          <button
-            type="button"
+          <Button
+            variant="link"
             aria-expanded={all}
             onClick={() => setAll(!all)}
-            className="mx-5 my-3 text-label font-medium text-act underline underline-offset-2"
+            className="h-auto px-0 mx-5 my-3"
           >
             {all
               ? t("contracts.overview.work.less")
               : t("contracts.overview.work.more", { n: rest })}
-          </button>
+          </Button>
         )}
       </>
     );

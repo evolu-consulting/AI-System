@@ -1,6 +1,8 @@
 // CR-101 DOC-ui-frame · R44 · R47: "Diễn biến" của HĐ nguyên tắc — chứng từ con xen mốc theo ngày (tên, nhãn, ngày, giá trị, giai đoạn).
 // Mốc của HĐ NT chỉ Nhắc gia hạn + Khác (hộp thêm/sửa mốc lọc loại). Mốc chưa xác nhận sửa được bằng bút.
+
 import type { ContractDetail, Milestone } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -44,14 +46,15 @@ export function FrameDiary({
       <div className="flex flex-wrap items-center gap-3 border-b border-rule-soft px-5 py-3.5">
         <h2 className="text-[15px] font-semibold">{L("diary")}</h2>
         {canEdit && (
-          <button
-            type="button"
-            className="btn btn-outline btn-sm ml-auto"
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
             data-testid="frame-add-milestone"
             onClick={() => setDialog({ edit: null })}
           >
             {t("contracts.cdetail.addMilestoneBtn")}
-          </button>
+          </Button>
         )}
       </div>
       {err && (
@@ -96,13 +99,13 @@ export function FrameDiary({
               <Tag tone="grey">{t(`contracts.cdetail.kind.${n.m.kind}`)}</Tag>
               {n.m.confirmed && <Tag tone="ok">{L("milestoneDone")}</Tag>}
               {canEdit && !n.m.confirmed && (
-                <button
-                  type="button"
-                  className="text-[12.5px] text-act hover:underline"
+                <Button
+                  variant="link"
+                  className="h-auto px-0"
                   onClick={() => setDialog({ edit: n.m })}
                 >
                   {t("contracts.cdetail.editMilestone")}
-                </button>
+                </Button>
               )}
             </li>
           ),

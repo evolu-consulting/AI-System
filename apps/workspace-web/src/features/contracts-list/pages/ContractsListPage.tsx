@@ -2,6 +2,7 @@
 // Đối tác, Loại, Giá trị, Hiệu lực, Giai đoạn (+ bước hiện tại, đỏ khi quá hạn), Thao tác (Xem); bấm hàng mở HĐ. Nút "Upload hợp đồng"
 // (cần quyền ghi; CR-097: bỏ "Thêm thủ công" — HĐ phải có văn bản đã ký). Dữ liệu phía server (HD1 list + `progress` V2-A). Nút Xoá ẩn tới V2-M (đảo sổ kho khi xoá).
 
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
@@ -190,14 +191,10 @@ export function ContractsListPage() {
                 >
                   {t("contracts.doclist.addDeal")}
                 </Link>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={() => file.current?.click()}
-                >
+                <Button variant="primary" size="sm" onClick={() => file.current?.click()}>
                   <UploadIcon />
                   {t("contracts.list.add")}
-                </button>
+                </Button>
               </>
             )}
           </>
@@ -322,13 +319,9 @@ const hasFilters = (t: ReturnType<typeof useContractsList>["t"]) =>
 
 function addCategoryButton(t: (k: string) => string, onClick: () => void) {
   return (
-    <button
-      type="button"
-      className="text-[12.5px] font-medium text-act hover:underline"
-      onClick={onClick}
-    >
+    <Button variant="link" className="h-auto px-0" onClick={onClick}>
       {t("contracts.list.newCategory")}
-    </button>
+    </Button>
   );
 }
 

@@ -3,6 +3,8 @@
 
 import type { Obligation } from "@ai/contracts/pack-contracts";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
@@ -39,9 +41,9 @@ function PayForm({ o, busy, act, done }: FormProps) {
       <span className="text-dim">
         {at > o.due_date ? L("lateDays", { n: lateBy(at, o.due_date) }) : L("onTime")}
       </span>
-      <button
-        type="button"
-        className="btn btn-primary h-8"
+      <Button
+        variant="primary"
+        size="sm"
         disabled={!!busy || !at}
         onClick={() =>
           act(
@@ -52,7 +54,7 @@ function PayForm({ o, busy, act, done }: FormProps) {
         }
       >
         {busy === `pay:${o.id}` ? L("saving") : L("save")}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -72,9 +74,9 @@ function LaterForm({ o, busy, act, done }: FormProps) {
         onChange={(e) => setTo(e.target.value)}
         aria-label={L("laterDate")}
       />
-      <button
-        type="button"
-        className="btn btn-primary h-8"
+      <Button
+        variant="primary"
+        size="sm"
         disabled={!!busy || !to || to <= o.due_date}
         onClick={() =>
           act(`later:${o.id}`, () => postponeInstalment(o.id, to), L("toast.later")).then(
@@ -83,7 +85,7 @@ function LaterForm({ o, busy, act, done }: FormProps) {
         }
       >
         {busy === `later:${o.id}` ? L("saving") : L("save")}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -107,31 +109,27 @@ function Buttons({
   const receive = o.direction === "receive";
   return (
     <span className="ml-auto flex gap-1.5">
-      <button
-        type="button"
-        className="btn btn-primary h-8 text-[13px]"
-        onClick={() => setMode(mode === "pay" ? null : "pay")}
-      >
+      <Button variant="primary" size="sm" onClick={() => setMode(mode === "pay" ? null : "pay")}>
         {receive ? L("received") : L("paid")}
-      </button>
+      </Button>
       {receive && (
-        <button
-          type="button"
-          className="btn btn-quiet h-8 text-[13px]"
+        <Button
+          variant="quiet"
+          size="sm"
           disabled={!!busy}
           onClick={() => act(`remind:${o.id}`, () => remindInstalment(o.id), L("toast.reminded"))}
         >
           {busy === `remind:${o.id}` ? "…" : L("remind")}
-        </button>
+        </Button>
       )}
       {receive && (
-        <button
-          type="button"
-          className="btn btn-quiet h-8 text-[13px]"
+        <Button
+          variant="quiet"
+          size="sm"
           onClick={() => setMode(mode === "later" ? null : "later")}
         >
           {L("later")}
-        </button>
+        </Button>
       )}
     </span>
   );
@@ -151,11 +149,16 @@ export function InstalmentRow({ o, write, busy, act, showContract }: Props) {
         <span className="font-mono">
           {o.amount != null ? L("money", { v: vnd(o.amount) }) : "—"}
         </span>
-        <span className={late ? "text-late" : "text-dim"} title={o.basis ?? undefined}>
-          {L("due", { date: viDate(o.due_date) })}
-          {o.estimated ? L("estimated") : ""}
-          {late ? L("lateMark") : ""}
-        </span>
+        <Tooltip open={o.basis ? undefined : false}>
+          <TooltipTrigger asChild>
+            <span className={late ? "text-late" : "text-dim"}>
+              {L("due", { date: viDate(o.due_date) })}
+              {o.estimated ? L("estimated") : ""}
+              {late ? L("lateMark") : ""}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{o.basis ?? undefined}</TooltipContent>
+        </Tooltip>
         {showContract && o.contract_number && (
           <span className="text-[12.5px] text-dim">
             {L("contractNo", { n: o.contract_number })}

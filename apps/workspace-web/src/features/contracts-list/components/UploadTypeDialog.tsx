@@ -1,6 +1,7 @@
 // DOC-ui-gaps · mục 3 DOC-ui-list: hộp chọn loại chứng từ trước khi tải lên — HĐ kinh tế (tuỳ chọn "Thuộc HĐ nguyên tắc") hoặc HĐ nguyên tắc
 // (hạn mức tuỳ chọn, cách đặt hàng). Giao dịch nhập tay (không tải tệp). Áp cho cả lô tệp vừa chọn.
 // TODO(AI): `ai_read.doc_type_suggest` (gợi ý tô vàng, chọn lại) chỉ có SAU khi AI đọc; cần API đổi loại sau khi đọc + hiển thị ở màn kiểm HĐ.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -121,17 +122,12 @@ export function UploadTypeDialog({
           )}
         </DialogBody>
         <DialogFooter className="flex-row justify-end gap-2.5">
-          <button type="button" className="btn btn-quiet" onClick={onCancel}>
+          <Button variant="quiet" onClick={onCancel}>
             {t("contracts.common.cancel")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            data-testid="upload-confirm"
-            onClick={submit}
-          >
+          </Button>
+          <Button variant="primary" data-testid="upload-confirm" onClick={submit}>
             {t("contracts.doclist.upload.go")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,5 +1,6 @@
 // ux-excel E5: hộp thoại "Upload hợp đồng" — "AI đang đọc ‹tên tệp›" + chip các bước. Chip sáng lần lượt theo thời gian (API chưa báo bước).
 // Đóng do cha (xong/lỗi ⇒ `open` false); nút "Ẩn" để người dùng vẫn đi chỗ khác được.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -72,9 +73,9 @@ export function ExtractDialog({ open, name }: { open: boolean; name: string }) {
           </ul>
         </DialogBody>
         <DialogFooter className="flex-row justify-end">
-          <button type="button" className="btn btn-quiet btn-sm" onClick={() => setHidden(true)}>
+          <Button variant="quiet" size="sm" onClick={() => setHidden(true)}>
             {t("contracts.list.upload.dialog.hide")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

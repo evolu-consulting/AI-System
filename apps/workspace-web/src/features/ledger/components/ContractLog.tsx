@@ -1,6 +1,8 @@
 // HD7-FR-12 · S05: khối "Ghi việc với {tên} · khách hàng/nhà cung cấp" cuối trang HĐ đã duyệt — port `ContractPage.tsx:163-181`.
 // HĐ chưa biết đối tác ⇒ không hiện.
+
 import type { ContractStatus } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
@@ -25,14 +27,9 @@ export function ContractLog({ contractId, status }: { contractId: string; status
             · {p.data.role === "customer" ? L("roleCustomer") : L("roleSupplier")}
           </span>
         </h2>
-        <button
-          type="button"
-          className="btn btn-quiet h-9 text-[13px]"
-          aria-expanded={open}
-          onClick={() => setOpen(!open)}
-        >
+        <Button variant="quiet" size="sm" aria-expanded={open} onClick={() => setOpen(!open)}>
           {open ? L("close") : L("open")}
-        </button>
+        </Button>
       </div>
       {open && (
         <div className="mt-3">

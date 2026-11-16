@@ -1,6 +1,7 @@
 // CR-124 · q4 · FLOW4-FR-14/16/17 · khối «Gửi đối tác xác nhận» ở chi tiết HĐ (bên GỬI): mỗi vòng gửi một thẻ 3 dòng (trạng thái · lý do · bước kế).
 // Vòng đang chờ có nút «Ghi nhận kết quả đối tác» (người phụ trách/ghi được HĐ; người khác không thấy nút) ⇒ Đồng ý / Trả lại / Từ chối + lý do +
 // người bên đối tác trả lời + bằng chứng. Ẩn hẳn khi HĐ chưa từng gửi đối tác.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -105,17 +106,18 @@ function RecordForm({ round, onDone }: { round: Round; onDone: () => void }) {
         </p>
       )}
       <div className="flex gap-2">
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           type="submit"
-          className="btn btn-sm btn-primary"
-          disabled={issue !== null || m.isPending}
-          title={issue ? t(`contracts.partner.record.need.${issue}`) : undefined}
+          disabled={m.isPending}
+          disabledReason={issue ? t(`contracts.partner.record.need.${issue}`) : undefined}
         >
           {t("contracts.partner.record.save")}
-        </button>
-        <button type="button" className="btn btn-sm btn-quiet" onClick={onDone}>
+        </Button>
+        <Button variant="quiet" size="sm" onClick={onDone}>
           {t("contracts.partner.record.cancel")}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -138,14 +140,14 @@ export function PartnerSendPanel({ id, write }: { id: string; write: boolean }) 
               card={roundCard(r)}
               right={
                 write && r.status === "open" ? (
-                  <button
-                    type="button"
+                  <Button
+                    variant="primary"
+                    size="sm"
                     data-testid="partner-record-open"
-                    className="btn btn-sm btn-primary"
                     onClick={() => setOpen(r.mailbox_id)}
                   >
                     {t("contracts.partner.record.button")}
-                  </button>
+                  </Button>
                 ) : undefined
               }
             />

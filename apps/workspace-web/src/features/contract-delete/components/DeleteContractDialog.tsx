@@ -1,5 +1,6 @@
 // V2-M · HD-07: hộp xoá hợp đồng (xem trước tác động + SP mồ côi + xác nhận). Gắn khi mở (mount = mở); dùng ở trang chi tiết
 // (`goList` ⇒ về danh sách sau xoá) và ở danh sách (ở lại, danh sách được làm mới).
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -60,18 +61,17 @@ export function DeleteContractDialog(p: { id: string; onClose: () => void; goLis
           </p>
         )}
         <DialogFooter>
-          <button type="button" className="btn btn-quiet" onClick={p.onClose}>
+          <Button variant="quiet" onClick={p.onClose}>
             {t("contracts.del.cancel")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             data-testid="delete-confirm"
             disabled={!q.data || blocked !== null || del.isPending}
             onClick={() => q.data && del.mutate(pickedProducts(q.data, picked))}
           >
             {del.isPending ? t("contracts.del.deleting") : t("contracts.del.confirm")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,5 +1,9 @@
 // PK-FR-10 · TF6 · lọc theo cột: chip các điều kiện đã thêm, "+ Lọc" chọn cột khác, "Xoá lọc". Nguồn: table.tsx:267-285, 336-377.
+
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { Input } from "@ai/web-kit/ui/kit/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";
@@ -37,14 +41,22 @@ function CondChip({
           >
             {def.label}: <span className={on ? "" : "text-dim"}>{summaryOf(def, cond, t, on)}</span>
           </button>
-          <button
-            type="button"
-            onClick={remove}
-            aria-label={t("contracts.table.removeFilter", { name: def.label })}
-            className="grid h-6 w-6 place-items-center rounded-full text-caption opacity-70 hover:bg-black/5 hover:opacity-100"
-          >
-            ✕
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="quiet"
+                size="icon"
+                className="size-6 border-0 bg-transparent"
+                onClick={remove}
+                aria-label={t("contracts.table.removeFilter", { name: def.label })}
+              >
+                <ICONS.close className="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {t("contracts.table.removeFilter", { name: def.label })}
+            </TooltipContent>
+          </Tooltip>
         </span>
       )}
     >

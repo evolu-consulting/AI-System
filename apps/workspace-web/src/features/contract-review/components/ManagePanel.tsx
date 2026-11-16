@@ -2,6 +2,7 @@
 // "AI đọc lại từ đầu" chỉ ở DRAFT. Chỉ vai có quyền ghi thấy ô sửa.
 
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -76,15 +77,15 @@ function CommissionRow({ c }: { c: ContractDetail }) {
         aria-invalid={!p.ok}
         onChange={(e) => setText(e.target.value)}
       />
-      <button
-        type="button"
-        className="btn btn-primary btn-sm"
+      <Button
+        variant="primary"
+        size="sm"
         data-testid="commission-save"
         disabled={!p.ok || same || save.isPending}
         onClick={() => p.ok && save.mutate(p.value)}
       >
         {t("contracts.common.save")}
-      </button>
+      </Button>
       {!p.ok && (
         <span className="text-sm text-late">{t("contracts.gapa1.commission.invalid")}</span>
       )}

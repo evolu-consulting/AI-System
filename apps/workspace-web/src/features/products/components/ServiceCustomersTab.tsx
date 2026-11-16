@@ -1,13 +1,13 @@
 // V2-H · SP-03 (mockup NITI `custPanel`): tab "Khách đang dùng" — lọc Tất cả / Hết hạn / Sắp hết hạn / Còn hạn (kèm số), bảng khách
 // + hạn dùng + trạng thái, "Nhắc gia hạn" (khách hết / sắp hết hạn) ⇒ việc "Liên hệ mời gia hạn" vào Cần xử lý của mình.
 import type { ServiceCustomer, ServiceCustomersOut } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { Chips, Empty } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
-import { Btn } from "~/components/ui/Btn";
 import { useRemind } from "../hooks/use-remind";
 import {
   CUSTOMER_FILTERS,
@@ -31,9 +31,9 @@ function RemindCell({ productId, c }: { productId: string; c: ServiceCustomer })
     );
   if (!canRemind(c)) return null;
   return (
-    <Btn variant="outline" size="sm" loading={m.isPending} onClick={() => m.mutate()}>
+    <Button variant="outline" size="sm" busy={m.isPending} onClick={() => m.mutate()}>
       {t("contracts.svc.remind")}
-    </Btn>
+    </Button>
   );
 }
 

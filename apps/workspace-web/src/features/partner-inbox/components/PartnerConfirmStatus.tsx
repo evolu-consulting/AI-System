@@ -1,6 +1,8 @@
 // CR-125 · UX-S7 (H7) · Cài đặt › «Đối tác xác nhận hợp đồng»: công ty thấy trạng thái THẬT (đang bật hay tắt), điều kiện nào còn thiếu và AI phải làm
 // (nền tảng hay quản trị công ty). Chỉ xem: quyền cấp tính năng là của quản trị nền tảng. Cùng luật `partnerChecklist` với màn Quản trị nền tảng.
+
 import { openInNewTab } from "@ai/web-kit/auth/open-tab";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
 import { flowEditorUrl } from "~/features/settings/lib/editor-link";
@@ -15,14 +17,9 @@ function OpenFlowsButton() {
     if (!ok) toast(t("contracts.flow.current.openFail"), "late");
   };
   return (
-    <button
-      type="button"
-      data-testid="partner-open-flows"
-      className="btn btn-sm btn-outline"
-      onClick={() => void go()}
-    >
+    <Button variant="outline" size="sm" data-testid="partner-open-flows" onClick={() => void go()}>
       {t("contracts.flow.current.openPage")}
-    </button>
+    </Button>
   );
 }
 

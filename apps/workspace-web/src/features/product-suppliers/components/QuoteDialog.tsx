@@ -1,6 +1,8 @@
 // gap-d1 #21 · "Tải báo giá lên": chọn tệp PDF/văn bản ⇒ AI đọc (chỉ khi bấm "Đọc báo giá"; tệp gửi để đọc, không lưu) ⇒ dòng giá CHƯA
 // LƯU, người dùng tick dòng cần rồi "Lưu làm giá tham khảo" (nguồn Báo giá).
+
 import type { QuoteReadOut } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AttachField, fileToDraft } from "~/components/shared/AttachField";
@@ -154,24 +156,22 @@ export function QuoteDialog({
           )}
         </DialogBody>
         <DialogFooter className="flex-row justify-end">
-          <button type="button" className="btn btn-quiet" onClick={close}>
+          <Button variant="quiet" onClick={close}>
             {t("contracts.psup.close")}
-          </button>
+          </Button>
           {!result && (
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button
+              variant="primary"
               data-testid="gd1-q-run"
               disabled={!file || read.isPending}
               onClick={run}
             >
               {L("run")}
-            </button>
+            </Button>
           )}
           {result && result.items.length > 0 && (
-            <button
-              type="button"
-              className="btn btn-primary"
+            <Button
+              variant="primary"
               data-testid="gd1-q-save"
               disabled={picked.size === 0 || save.isPending}
               onClick={() =>
@@ -179,7 +179,7 @@ export function QuoteDialog({
               }
             >
               {L("save", { n: picked.size })}
-            </button>
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>

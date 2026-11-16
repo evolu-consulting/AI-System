@@ -8,7 +8,9 @@ import type {
   DealSource,
   DocType,
 } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { ICONS } from "@ai/web-kit/ui/kit/icons";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -166,9 +168,14 @@ function Dates({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
 function PartnerCell({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const name = partnerOfRow(r, dealOfRow(r, ctx.progress.get(r.id)));
   return (
-    <td className={cn("min-w-[130px]", TD)} title={name ?? undefined}>
-      <span className="line-clamp-2">{shortName(name)}</span>
-    </td>
+    <Tooltip open={name ? undefined : false}>
+      <TooltipTrigger asChild>
+        <td className={cn("min-w-[130px]", TD)}>
+          <span className="line-clamp-2">{shortName(name)}</span>
+        </td>
+      </TooltipTrigger>
+      <TooltipContent>{name ?? undefined}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -178,17 +185,21 @@ export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode
     case "title":
       return (
         <td className="max-w-[260px] px-3 py-3 pl-5">
-          <Link
-            to="/contracts/c/$id"
-            params={{ id: r.id }}
-            className="block truncate font-semibold"
-            title={r.title}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {r.locked && <RowLock />}
-            {r.title}
-            <VersionBadge no={r.version_no} count={r.versions_count} />
-          </Link>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                to="/contracts/c/$id"
+                params={{ id: r.id }}
+                className="block truncate font-semibold"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {r.locked && <RowLock />}
+                {r.title}
+                <VersionBadge no={r.version_no} count={r.versions_count} />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>{r.title}</TooltipContent>
+          </Tooltip>
           <SubLine r={r} ctx={ctx} />
         </td>
       );
@@ -249,36 +260,43 @@ function RowActions({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const del = deleteAction(r);
   return (
     <span className="inline-flex items-center gap-1">
-      <Link
-        to="/contracts/c/$id"
-        params={{ id: r.id }}
-        className="btn-icon-ghost"
-        aria-label={t("contracts.list.viewContract")}
-        title={t("contracts.list.viewContract")}
-        data-testid="row-view"
-        data-contract={r.title}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <EyeIcon />
-      </Link>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link
+            to="/contracts/c/$id"
+            params={{ id: r.id }}
+            className="btn-icon-ghost"
+            aria-label={t("contracts.list.viewContract")}
+            data-testid="row-view"
+            data-contract={r.title}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <EyeIcon />
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent>{t("contracts.list.viewContract")}</TooltipContent>
+      </Tooltip>
       {del !== "hidden" && (
-        <button
-          type="button"
-          className="btn-icon-ghost"
-          aria-label={t("contracts.list.deleteContract")}
-          title={
-            del === "versions" ? t("contracts.del.hasVersions") : t("contracts.list.deleteContract")
-          }
-          data-testid="row-delete"
-          data-contract={r.title}
-          disabled={del === "versions"}
-          onClick={(e) => {
-            e.stopPropagation();
-            ctx.onDelete?.(r.id);
-          }}
-        >
-          <TrashIcon />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="quiet"
+              size="icon"
+              className="size-8 border-0 bg-transparent"
+              aria-label={t("contracts.list.deleteContract")}
+              data-testid="row-delete"
+              data-contract={r.title}
+              {...(del === "versions" ? { disabledReason: t("contracts.del.hasVersions") } : {})}
+              onClick={(e) => {
+                e.stopPropagation();
+                ctx.onDelete?.(r.id);
+              }}
+            >
+              <ICONS.remove className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t("contracts.list.deleteContract")}</TooltipContent>
+        </Tooltip>
       )}
     </span>
   );
@@ -293,22 +311,6 @@ export function ActionsCell({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   );
 }
 
-const TrashIcon = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6" />
-  </svg>
-);
-
 /** Thẻ điện thoại: một thẻ mỗi HĐ. */
 export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const { t } = useTranslation();
@@ -322,11 +324,16 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
         className="flex flex-col gap-1.5 px-4 py-3.5 hover:bg-sunk"
       >
         <span className="flex items-center gap-2">
-          <span className="truncate font-semibold" title={r.title}>
-            {r.locked && <RowLock />}
-            {r.title}
-            <VersionBadge no={r.version_no} count={r.versions_count} />
-          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate font-semibold">
+                {r.locked && <RowLock />}
+                {r.title}
+                <VersionBadge no={r.version_no} count={r.versions_count} />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{r.title}</TooltipContent>
+          </Tooltip>
           <DealTag r={r} ctx={ctx} />
         </span>
         {parent && (

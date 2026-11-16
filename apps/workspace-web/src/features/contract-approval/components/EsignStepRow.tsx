@@ -1,7 +1,9 @@
 // esign-flow · dòng "Ký số" cuối tiến trình duyệt: chờ duyệt xong / đang gửi / đã gửi chờ ký / đã ký xong / cần xử lý (lý do + cách sửa)
 // + "Gửi lại" cho người phụ trách HĐ (hoặc mở lại HĐ ở trang chi tiết). esign-sweep2 · "Hạn ký", nhãn "Quá hạn", "Đã nhắc lúc".
 // CR-123 U2 · 3 dòng trạng thái · lý do · bước kế (`card-status.ts`).
+
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -75,15 +77,16 @@ export function EsignStepRow({ id, e }: { id: string; e: Esign }) {
           </div>
         )}
         {e.can_resend && (
-          <button
-            type="button"
+          <Button
+            variant="quiet"
+            size="sm"
             data-approval="esign-resend"
-            className="mt-1 h-8 rounded-lg border border-rule px-2 text-label hover:bg-sunk disabled:opacity-50"
+            className="mt-1"
             disabled={m.isPending}
             onClick={() => m.mutate()}
           >
             {k("resend")}
-          </button>
+          </Button>
         )}
       </div>
     </li>

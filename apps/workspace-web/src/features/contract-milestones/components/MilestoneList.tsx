@@ -1,7 +1,9 @@
 // CR-127 · U5 · BR-41…56 · M9: "Các mốc thực hiện" giữa trang chi tiết — mỗi mốc: ai làm, điều khoản gốc, hạn/trễ, Chưa ai nhận / X đang xử lý,
 // Xác nhận · Dời hạn ngay trên mốc; mốc trễ có phạt ước tính + Ghi vào công nợ / Không tính phạt. Thay cho "Dòng thời gian" cũ.
+
 import type { ContractDetail, Milestone, PenaltyView } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -84,24 +86,24 @@ function PenaltyBox({ p, onChanged }: { p: PenaltyView; onChanged: () => void })
         })}
       </p>
       <div className="mt-1.5 flex flex-wrap gap-2">
-        <button
-          type="button"
-          className="btn btn-primary btn-sm"
+        <Button
+          variant="primary"
+          size="sm"
           data-testid="penalty-book"
           disabled={busy}
           onClick={() => void run("book")}
         >
           {L("book")}
-        </button>
-        <button
-          type="button"
-          className="btn btn-sm"
+        </Button>
+        <Button
+          variant="quiet"
+          size="sm"
           data-testid="penalty-waive"
           disabled={busy}
           onClick={() => void run("waive")}
         >
           {L("waive")}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -145,15 +147,15 @@ function ClaimLine({
       >
         <span className="text-dim">{t("contracts.work.u4.claim.unclaimed")}</span>
         {v.canClaim && (
-          <button
-            type="button"
-            className="btn btn-sm"
+          <Button
+            variant="quiet"
+            size="sm"
             data-testid="ms-claim"
             disabled={busy}
             onClick={() => void run(claimTask, c.taskId)}
           >
             {t("contracts.work.u4.claim.take")}
-          </button>
+          </Button>
         )}
       </span>
     );
@@ -172,15 +174,15 @@ function ClaimLine({
       >
         <span className="text-dim">{t("contracts.u5.ms.mine")}</span>
         {v.canRelease && (
-          <button
-            type="button"
-            className="btn btn-quiet btn-sm"
+          <Button
+            variant="quiet"
+            size="sm"
             data-testid="ms-release"
             disabled={busy}
             onClick={() => void run(releaseTask, c.taskId)}
           >
             {t("contracts.work.u4.claim.release")}
-          </button>
+          </Button>
         )}
       </span>
     );
@@ -242,19 +244,19 @@ function Row(p: {
           <Tag tone="grey">{L("upcoming")}</Tag>
         )}
         {v.canPostpone && (
-          <button
-            type="button"
-            className="btn btn-quiet btn-sm"
+          <Button
+            variant="quiet"
+            size="sm"
             data-testid="ms-postpone"
             onClick={() => p.onAct(m, "postpone")}
           >
             {L("postpone")}
-          </button>
+          </Button>
         )}
         {v.canConfirm && (
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
+          <Button
+            variant="primary"
+            size="sm"
             data-testid="ms-confirm"
             onClick={() => p.onAct(m, "fulfill")}
           >
@@ -267,7 +269,7 @@ function Row(p: {
                     ? "confirmCollect"
                     : "confirm",
             )}
-          </button>
+          </Button>
         )}
       </div>
     </li>

@@ -1,6 +1,7 @@
 // gap-d1 #18 · "Thêm sản phẩm" tay (tên, nhóm, đơn vị, quy cách) ⇒ `POST /products`; xong mở chi tiết SP vừa tạo.
 
 import type { ProductGroup } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -117,18 +118,17 @@ export function AddProductDialog({
           )}
         </DialogBody>
         <DialogFooter className="flex-row justify-end">
-          <button type="button" className="btn btn-quiet" onClick={close}>
+          <Button variant="quiet" onClick={close}>
             {t("contracts.psup.close")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             data-testid="gd1-p-save"
             disabled={!body || create.isPending}
             onClick={submit}
           >
             {L("save")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -3,6 +3,7 @@
 
 import type { PartnerRole } from "@ai/contracts/pack-contracts";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -93,14 +94,14 @@ export function OtherForm({ party, role, contractId, busy, act }: Props) {
           onChange={(e) => setNote(e.target.value)}
           aria-label={L("noteAria")}
         />
-        <button
-          type="button"
-          className="btn btn-primary h-8"
+        <Button
+          variant="primary"
+          size="sm"
           disabled={!!busy || (type === "complaint" && !note.trim())}
           onClick={() => void save()}
         >
           {busy === "other" ? L("saving") : L("save")}
-        </button>
+        </Button>
       </div>
     </div>
   );

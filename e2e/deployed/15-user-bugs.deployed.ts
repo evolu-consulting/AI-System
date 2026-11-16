@@ -343,8 +343,9 @@ test.describe("15 lỗi người dùng báo", () => {
       .filter({ has: page.locator(`a[href="/contracts/c/${cid}"], a[href="/contracts/c/${v2}"]`) });
     await expect(rows.first()).toBeVisible();
     const trash = rows.first().getByTestId("row-delete");
-    await expect(trash).toBeDisabled();
-    await expect(trash).toHaveAttribute("title", /nhiều phiên bản/);
+    await expect(trash).toHaveAttribute("aria-disabled", "true");
+    await trash.hover();
+    await expect(page.getByRole("tooltip").first()).toContainText(/nhiều phiên bản/);
   });
 
   test("[xoá HĐ một phiên bản] HĐ mới tải lên (một bản) xoá được bằng thùng rác ở danh sách", async () => {

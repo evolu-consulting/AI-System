@@ -1,6 +1,7 @@
 // esign-anchor · Cài đặt › Ký số: danh sách cụm tìm khối chữ ký trong văn bản HĐ cho Bên A (công ty) / Bên B (đối tác), mỗi dòng một
 // cụm theo thứ tự ưu tiên. Owner sửa (PUT /esign/anchors); người khác chỉ xem.
 
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -47,15 +48,15 @@ export function EsignAnchorSetting({ owner }: { owner: boolean }) {
         {field("b", b, setB)}
       </div>
       {owner && (
-        <button
-          type="button"
-          className="btn btn-quiet self-start"
+        <Button
+          variant="quiet"
+          className="self-start"
           data-testid="esign-anchor-save"
           disabled={!ok || m.isPending}
           onClick={() => m.mutate({ a: lines(a), b: lines(b) })}
         >
           {t("contracts.esignAnchor.save")}
-        </button>
+        </Button>
       )}
     </div>
   );

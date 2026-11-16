@@ -1,5 +1,6 @@
 ﻿// CR-097 K3b: khối "Phiên bản hợp đồng" — v1..vN, mỗi dòng: biểu tượng trạng thái, số HĐ, hiệu lực, giá trị, nút "Xem".
 import type { ContractVersionRef } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -57,13 +58,13 @@ export function VersionsBlock({
               <span className="ml-auto tabular-nums">{vnd(v.total_value)}</span>
               <FileRecordButton target={{ kind: "main", contractId: v.id }} />
               {v.id !== currentId && (
-                <button
-                  type="button"
-                  className="btn btn-outline btn-sm"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => void nav({ to: "/contracts/c/$id", params: { id: v.id } })}
                 >
                   {t("contracts.versions.view")}
-                </button>
+                </Button>
               )}
             </li>
           );

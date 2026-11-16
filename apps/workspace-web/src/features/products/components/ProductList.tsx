@@ -2,6 +2,7 @@
 // giữ · Đã bán · Điểm kinh doanh (+ đề xuất). Một yêu cầu lấy cả danh sách; tab lọc phía trình duyệt. Bấm hàng mở chi tiết (`?sp=`).
 
 import type { BizProductRow } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -106,14 +107,14 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
           className="ml-auto h-9 w-56"
         />
         {write && (
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
+          <Button
+            variant="primary"
+            size="sm"
             data-testid="gd1-add-product"
             onClick={() => setAddOpen(true)}
           >
             {t("contracts.gapd1.add.open")}
-          </button>
+          </Button>
         )}
       </div>
       <AddProductDialog open={addOpen} onOpenChange={setAddOpen} />

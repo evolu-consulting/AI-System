@@ -1,6 +1,8 @@
 // CR-127 · U5 · M9/M10 · thân trang chi tiết HĐ (tách khỏi `ContractReviewPage`): một đầu trang + băng lý do, 4 ô số, các mốc thực hiện ở giữa,
 // thông tin + sản phẩm | Điều cần lưu ý · Cần chú ý · Hiệu lực · hồ sơ duyệt. Chỉ DRAFT là form; PROCESSING/DONE/REJECT hiện chữ đọc.
+
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -113,14 +115,14 @@ export function ContractBody(p: {
     ? { href: fileHref(id), name: c.file.name, onOpen: () => setOrigOpen(true) }
     : null;
   const saveButton = canSave ? (
-    <button
-      type="button"
-      className="btn btn-primary btn-sm"
+    <Button
+      variant="primary"
+      size="sm"
       disabled={info.busy || ap.busy || (!confirm && !info.dirty)}
       onClick={() => void info.save()}
     >
       {info.busy ? t("contracts.review.saving") : t(saveLabelKey(confirm))}
-    </button>
+    </Button>
   ) : null;
   const onCancel = () =>
     rule.cancel === "reset" ? info.reset() : void nav({ to: "/contracts/list" });

@@ -1,4 +1,5 @@
 // CR-141 · khối «Tải lên bản đã ký» ở thẻ Ký số: chọn tệp (PDF/JPG/PNG) ⇒ Tải lên ⇒ bước Ký hợp đồng xong. Chỉ hiện khi bước đang chờ và người xem được tải.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AttachField, fileToDraft } from "~/components/shared/AttachField";
@@ -31,15 +32,15 @@ export function SignedUploadBox({ up }: { up: ReturnType<typeof useSignedUpload>
         onRemove={() => setFile(null)}
       />
       <div>
-        <button
-          type="button"
-          className="btn btn-sm btn-primary"
+        <Button
+          variant="primary"
+          size="sm"
           data-testid="signed-upload-submit"
           disabled={up.busy || !file}
           onClick={() => file && void up.upload(file).then((ok) => ok && setFile(null))}
         >
           {t("contracts.esign.upload.submit")}
-        </button>
+        </Button>
       </div>
       {up.err && (
         <p role="alert" className="text-sm text-late" data-testid="signed-upload-error">

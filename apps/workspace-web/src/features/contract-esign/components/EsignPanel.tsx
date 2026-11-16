@@ -6,7 +6,10 @@ import type {
   ESignProviderOut,
   ESignStateOut,
 } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { Input } from "@ai/web-kit/ui/kit/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, viDateTime } from "~/components/shared/format";
@@ -57,16 +60,21 @@ function CancelMenu({ busy, onCancel }: { busy: boolean; onCancel: (r: string) =
   const [reason, setReason] = useState("");
   return (
     <span className="relative">
-      <button
-        type="button"
-        className={`${BTN} btn-quiet`}
-        aria-label={t("contracts.esign.more")}
-        aria-expanded={menu}
-        data-testid="esign-menu"
-        onClick={() => setMenu((o) => !o)}
-      >
-        …
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="quiet"
+            size="icon"
+            aria-label={t("contracts.esign.more")}
+            aria-expanded={menu}
+            data-testid="esign-menu"
+            onClick={() => setMenu((o) => !o)}
+          >
+            <ICONS.moreActions className="size-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t("contracts.esign.more")}</TooltipContent>
+      </Tooltip>
       {menu && (
         <div
           role="menu"
@@ -100,12 +108,11 @@ function CancelMenu({ busy, onCancel }: { busy: boolean; onCancel: (r: string) =
             onChange={(e) => setReason(e.target.value)}
           />
           <DialogFooter>
-            <button type="button" className="btn btn-quiet" onClick={() => setAsk(false)}>
+            <Button variant="quiet" onClick={() => setAsk(false)}>
               {t("contracts.esign.close")}
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
+            </Button>
+            <Button
+              variant="primary"
               data-testid="esign-cancel-confirm"
               disabled={busy || reason.trim() === ""}
               onClick={() => {
@@ -114,7 +121,7 @@ function CancelMenu({ busy, onCancel }: { busy: boolean; onCancel: (r: string) =
               }}
             >
               {t("contracts.esign.cancel")}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -123,7 +130,6 @@ function CancelMenu({ busy, onCancel }: { busy: boolean; onCancel: (r: string) =
 }
 
 type Es = ReturnType<typeof useEsign>;
-const BTN = "btn btn-sm";
 
 function Actions({
   v,
@@ -142,46 +148,37 @@ function Actions({
   return (
     <>
       {v.canSignNow && (
-        <button
-          type="button"
-          className={`${BTN} btn-primary data-[hl=true]:ring-2 data-[hl=true]:ring-offset-2 data-[hl=true]:ring-act`}
+        <Button
+          variant="primary"
+          size="sm"
+          className="data-[hl=true]:ring-2 data-[hl=true]:ring-offset-2 data-[hl=true]:ring-act"
           disabled={es.busy}
           data-testid="esign-sign-now"
           onClick={onSignNow}
         >
           {t("contracts.esign.signNow")}
-        </button>
+        </Button>
       )}
       {v.mode === "pending" && v.canCancel && (
-        <button
-          type="button"
-          className={`${BTN} btn-quiet`}
+        <Button
+          variant="quiet"
+          size="sm"
           disabled={es.busy}
           data-testid="esign-check"
           onClick={() => void es.refresh()}
         >
           {t("contracts.esign.check")}
-        </button>
+        </Button>
       )}
       {v.canDownload && (
-        <button
-          type="button"
-          className={`${BTN} btn-primary`}
-          disabled={es.busy}
-          onClick={() => void es.download()}
-        >
+        <Button variant="primary" size="sm" disabled={es.busy} onClick={() => void es.download()}>
           {t("contracts.esign.download")}
-        </button>
+        </Button>
       )}
       {v.canSend && (
-        <button
-          type="button"
-          className={`${BTN} btn-primary`}
-          data-testid="esign-send"
-          onClick={onSend}
-        >
+        <Button variant="primary" size="sm" data-testid="esign-send" onClick={onSend}>
           {t(resend ? "contracts.esign.resend" : "contracts.esign.send")}
-        </button>
+        </Button>
       )}
       {v.canCancel && <CancelMenu busy={es.busy} onCancel={(r) => void es.cancel(r)} />}
     </>

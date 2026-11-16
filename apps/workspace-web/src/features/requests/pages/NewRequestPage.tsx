@@ -2,6 +2,7 @@
 // MỖI lần mở phiếu (gửi lại = cùng yêu cầu) → sang trang yêu cầu. Lỗi theo MÃ nói bằng ngôn ngữ nghiệp vụ; lỗi 422 hiện cạnh từng ô.
 
 import { ApiError } from "@ai/web-kit/http";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useRef, useState } from "react";
@@ -113,14 +114,9 @@ function RequestForm({
             </p>
           )}
           <div>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={busy}
-              data-testid="request-submit"
-            >
+            <Button variant="primary" type="submit" disabled={busy} data-testid="request-submit">
               {t(busy ? "contracts.requests.submitting" : "contracts.requests.submit")}
-            </button>
+            </Button>
           </div>
         </form>
       </Panel>

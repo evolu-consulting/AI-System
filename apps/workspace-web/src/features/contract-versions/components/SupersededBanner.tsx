@@ -1,4 +1,5 @@
 ﻿// CR-097 K3b · HD-FR-102: banner bản bị thay — chỉ đọc hoàn toàn; "Mở bản hiện hành".
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 
@@ -24,14 +25,15 @@ export function SupersededBanner({
       </span>
       <span className="text-dim">{t("contracts.versions.readOnly")}</span>
       {currentId && (
-        <button
-          type="button"
-          className="btn btn-primary btn-sm ml-auto"
+        <Button
+          variant="primary"
+          size="sm"
+          className="ml-auto"
           data-testid="open-current"
           onClick={() => void nav({ to: "/contracts/c/$id", params: { id: currentId } })}
         >
           {t("contracts.versions.openCurrent")}
-        </button>
+        </Button>
       )}
     </div>
   );

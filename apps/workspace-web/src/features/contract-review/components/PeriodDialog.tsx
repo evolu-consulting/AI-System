@@ -2,6 +2,7 @@
 // thấy số tiền tính ra TRƯỚC khi lưu, rồi `PUT /periods/:key`. Chỉ kỳ còn mốc mở (kỳ đã xác nhận thu/trả thì máy chủ trả 409).
 
 import type { KindTermsView, Period } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -135,17 +136,17 @@ export function PeriodDialog({
           </div>
         </DialogBody>
         <DialogFooter className="gap-2">
-          <button type="button" className="btn btn-quiet btn-sm" onClick={onClose}>
+          <Button variant="quiet" size="sm" onClick={onClose}>
             {L("later")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             disabled={!ok || busy}
             onClick={() => cur && ok && void save(cur.key, figure)}
           >
             {L(franchise ? "saveFranchise" : "saveCoop")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

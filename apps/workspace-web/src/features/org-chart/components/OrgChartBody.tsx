@@ -3,10 +3,10 @@
 
 import type { ContractsOrgDept } from "@ai/contracts/pack-contracts";
 import { searchDepts } from "@ai/flow-canvas/pure";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Btn } from "~/components/ui/Btn";
 import { toChartDepts } from "../lib/org-chart-data";
 import { buildOrgTree, type OrgNode } from "../lib/org-tree";
 import { DeptMembersDialog } from "./DeptMembersDialog";
@@ -71,9 +71,9 @@ export function OrgChartBody({ departments }: { departments: readonly ContractsO
           className="h-10 w-full max-w-sm"
         />
         {query ? (
-          <Btn variant="quiet" onClick={() => setQuery("")}>
+          <Button variant="quiet" onClick={() => setQuery("")}>
             {t("contracts.orgChart.clear")}
-          </Btn>
+          </Button>
         ) : null}
       </div>
       {deferred.trim() && matches.length === 0 ? (

@@ -4,6 +4,8 @@
 import type { ContractOwnFile, ContractStepFile } from "@ai/contracts/pack-contracts";
 import { AttachDropzone } from "@ai/web-kit/ui/AttachDropzone";
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAttachPickLabels } from "~/components/shared/AttachField";
@@ -35,14 +37,9 @@ function ViewButton({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        type="button"
-        className="btn btn-outline btn-sm"
-        data-testid="cfile-view"
-        onClick={() => setOpen(true)}
-      >
+      <Button variant="outline" size="sm" data-testid="cfile-view" onClick={() => setOpen(true)}>
         {t("contracts.cfiles.view")}
-      </button>
+      </Button>
       {open && (
         <Suspense fallback={null}>
           <FileViewerDialog
@@ -78,9 +75,12 @@ function OwnRow({
       data-testid="cfile-row"
       className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm"
     >
-      <span className="min-w-0 flex-1 truncate font-medium" title={f.name}>
-        {f.name}
-      </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="min-w-0 flex-1 truncate font-medium">{f.name}</span>
+        </TooltipTrigger>
+        <TooltipContent>{f.name}</TooltipContent>
+      </Tooltip>
       <span className="text-dim tabular-nums">{sizeLabel(f.size)}</span>
       <ViewButton
         f={f}
@@ -89,9 +89,9 @@ function OwnRow({
       />
       <FileRecordButton target={{ kind: "attachment", contractId: id, file: f }} />
       {f.can_remove && (
-        <button type="button" className="btn btn-quiet btn-sm" disabled={busy} onClick={onRemove}>
+        <Button variant="quiet" size="sm" disabled={busy} onClick={onRemove}>
           {t("contracts.cfiles.remove")}
-        </button>
+        </Button>
       )}
     </li>
   );
@@ -104,9 +104,12 @@ function StepRow({ id, f }: { id: string; f: ContractStepFile }) {
       data-testid="cfile-step-row"
       className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm"
     >
-      <span className="min-w-0 flex-1 truncate font-medium" title={f.name}>
-        {f.name}
-      </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="min-w-0 flex-1 truncate font-medium">{f.name}</span>
+        </TooltipTrigger>
+        <TooltipContent>{f.name}</TooltipContent>
+      </Tooltip>
       <span className="text-dim">{t(`contracts.cfiles.source.${sourceKey(f.source)}`)}</span>
       <span className="text-dim tabular-nums">{sizeLabel(f.size)}</span>
       <ViewButton
@@ -132,14 +135,15 @@ export function ContractFilesPanel({ id }: { id: string }) {
         <p role="alert" className="mt-1 text-sm text-late">
           {t("contracts.cfiles.loadErr")}
         </p>
-        <button
-          type="button"
-          className="btn btn-outline btn-sm mt-2"
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-2"
           data-testid="cfiles-retry"
           onClick={() => void list.refetch()}
         >
           {t("contracts.cfiles.retry")}
-        </button>
+        </Button>
       </section>
     );
   if (!data)

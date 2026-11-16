@@ -1,5 +1,6 @@
 // CR-101 DOC-ui-frame · R10: nút "Nâng thành hợp đồng" của giao dịch + hộp chọn file ký và số HĐ (bắt buộc); sau khi nâng HĐ bị khoá.
 
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -78,18 +79,17 @@ function PromoteDialog({ id, onClose }: { id: string; onClose: () => void }) {
           )}
         </DialogBody>
         <DialogFooter>
-          <button type="button" className="btn btn-quiet" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             {t("contracts.common.cancel")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             data-testid="promote-submit"
             disabled={busy || !file || number.trim() === ""}
             onClick={() => void submit()}
           >
             {L("submit")}
-          </button>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -101,14 +101,9 @@ export function PromoteDeal({ id }: { id: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        type="button"
-        className="btn btn-primary btn-sm"
-        data-testid="promote-open"
-        onClick={() => setOpen(true)}
-      >
+      <Button variant="primary" size="sm" data-testid="promote-open" onClick={() => setOpen(true)}>
         {t("contracts.docframe.promote.button")}
-      </button>
+      </Button>
       {open && <PromoteDialog id={id} onClose={() => setOpen(false)} />}
     </>
   );

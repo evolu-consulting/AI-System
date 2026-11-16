@@ -4,6 +4,7 @@
 // (`settle_error`) ⇒ ở lại báo lý do kèm nút mở giao dịch (giao dịch ĐÃ lưu).
 // Cảnh báo pháp lý (Câu 8): `legal-warn.ts`, ngưỡng từ GET /company; chỉ cảnh báo. Ghi chú (note): API tạo giao dịch chưa có trường.
 
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, type ReactNode, useEffect } from "react";
@@ -135,9 +136,9 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
           </Link>
         }
         save={
-          <button type="submit" className="btn btn-primary" disabled={form.busy}>
+          <Button variant="primary" type="submit" disabled={form.busy}>
             {form.busy ? t("contracts.cform.saving") : t("contracts.doclist.save")}
-          </button>
+          </Button>
         }
       />
       {form.err && (

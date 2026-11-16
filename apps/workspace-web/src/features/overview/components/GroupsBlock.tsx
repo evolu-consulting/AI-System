@@ -1,5 +1,7 @@
 // V2-N · "Theo nhóm sản phẩm" (mockup `revChart`): mỗi nhóm một hàng — tổng kỳ, % so kỳ trước, 12 cột tháng (N tháng cuối của kỳ đậm).
+
 import type { OverviewOut } from "@ai/contracts/pack-contracts";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { barHeights, GROUP_ORDER, inPeriod, moneyShort, monthLabel } from "../lib/overview";
@@ -54,12 +56,15 @@ export function GroupsBlock({ data }: { data: OverviewOut }) {
                 className="flex h-12 items-end gap-1"
               >
                 {r.months.map((m, i) => (
-                  <span
-                    key={m.month}
-                    title={`${monthLabel(m.month)}: ${moneyShort(m.value)}`}
-                    className={`block flex-1 rounded-sm ${inPeriod(i, r.months.length, data.period) ? "" : "opacity-35"}`}
-                    style={{ height: `${hs[i]}%`, background: COLOR[r.group] }}
-                  />
+                  <Tooltip key={m.month}>
+                    <TooltipTrigger asChild>
+                      <span
+                        className={`block flex-1 rounded-sm ${inPeriod(i, r.months.length, data.period) ? "" : "opacity-35"}`}
+                        style={{ height: `${hs[i]}%`, background: COLOR[r.group] }}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>{`${monthLabel(m.month)}: ${moneyShort(m.value)}`}</TooltipContent>
+                  </Tooltip>
                 ))}
               </div>
             </div>
