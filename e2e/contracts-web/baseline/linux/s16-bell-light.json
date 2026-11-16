@@ -1,5 +1,5 @@
 {
-  "text": "Thông báo Chưa có thông báo nào. Xem tất cả Cài đặt thông báo LN Lan Nguyễn",
+  "text": "LN Lan Nguyễn",
   "boxes": {
     "sidebar": {
       "x": 0,
@@ -39,7 +39,7 @@
     },
     "popover": {
       "x": 910,
-      "y": 49.5,
+      "y": 50,
       "w": 340,
       "h": 163
     }
