@@ -25,12 +25,14 @@ const fakeClick = () => {
 
 describe("Button", () => {
   test("biến thể ra đúng class", () => {
-    const c = (variant: "primary" | "outline" | "quiet" | "danger") =>
+    const c = (variant: "primary" | "outline" | "quiet" | "danger" | "ghost") =>
       cls(Button({ variant }) as El);
     expect(c("primary")).toContain("bg-primary");
     expect(c("outline")).toContain("border-primary");
     expect(c("quiet")).toContain("border-input");
     expect(c("danger")).toContain("text-danger");
+    expect(c("ghost")).toContain("bg-transparent");
+    expect(c("ghost")).not.toContain("border");
   });
   test("cỡ md/sm/icon theo --control-* và bo góc", () => {
     expect(cls(Button({}) as El)).toContain("h-[var(--control-md)]");

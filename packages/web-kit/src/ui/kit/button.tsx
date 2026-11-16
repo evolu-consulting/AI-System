@@ -16,6 +16,8 @@ export const buttonVariants = cva(
         quiet: "border border-input bg-card font-medium text-foreground hover:bg-muted",
         danger: "border-[1.5px] border-danger bg-card text-danger hover:bg-danger-bg",
         link: "text-primary underline-offset-4 hover:underline",
+        /** Nút chỉ icon trên thanh đầu trang, thanh công cụ, menu thẻ: không viền, không nền. */
+        ghost: "bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
       },
       size: {
         md: "h-[var(--control-md)] rounded-md px-4 text-md",

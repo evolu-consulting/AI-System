@@ -10,7 +10,7 @@ export function IconButton(props: IconButtonProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="quiet" {...props} size="icon" />
+        <Button variant="ghost" {...props} size="icon" />
       </TooltipTrigger>
       <TooltipContent>{props["aria-label"]}</TooltipContent>
     </Tooltip>
