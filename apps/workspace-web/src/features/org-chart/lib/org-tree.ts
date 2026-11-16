@@ -57,17 +57,3 @@ export function headcount(n: OrgNode): number {
   add(n);
   return ids.size;
 }
-
-/** CR-180 · danh sách cây trên điện thoại: duyệt trước, mỗi dòng kèm độ sâu (0 = phòng gốc) để thụt lề. */
-export function flattenOrg(roots: readonly OrgNode[]): { node: OrgNode; depth: number }[] {
-  const out: { node: OrgNode; depth: number }[] = [];
-  const walk = (n: OrgNode, depth: number) => {
-    out.push({ node: n, depth });
-    for (const c of n.children) walk(c, depth + 1);
-  };
-  for (const r of roots) walk(r, 0);
-  return out;
-}
-
-/** CR-180 · điện thoại ⇒ danh sách cây; desktop ⇒ sơ đồ canvas. */
-export const orgViewFor = (mobile: boolean): "list" | "canvas" => (mobile ? "list" : "canvas");

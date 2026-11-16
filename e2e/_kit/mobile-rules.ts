@@ -28,6 +28,12 @@ export const MOBILE_EXEMPTIONS = {
   },
   /** Ô tick/radio ẩn thị giác (sr-only, ≤ 1 px) hoặc bọc trong <label> bấm được: tính theo nhãn bọc. */
   hiddenInput: { reason: "input thật bị ẩn thị giác; vùng bấm là nhãn/hàng bọc nó" },
+  /** Sơ đồ phóng to/thu nhỏ/kéo được (vd sơ đồ tổ chức): chữ và ô trong sơ đồ theo mức thu phóng, không đo cỡ chạm/chữ. */
+  zoomCanvas: {
+    selector: ".react-flow, [data-zoom-canvas]",
+    reason:
+      "người dùng phóng to được (chốt 2026-11-16: sơ đồ tổ chức giữ dạng sơ đồ trên điện thoại)",
+  },
   /** Phần tử ẩn (display none, visibility hidden, opacity 0, aria-hidden, ngoài khung). */
   invisible: { reason: "không nhìn thấy ⇒ không bấm được" },
 } as const;
@@ -41,7 +47,7 @@ type Raw = { overflow: string[]; tap: string[]; text: string[]; fab: string[]; s
 export async function measureMobile(page: Page): Promise<Violation[]> {
   const raw = await page.evaluate(
     // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: script đo chạy trong trang, cần một khối tự đủ
-    ({ MIN_TAP, MIN_TEXT, FAB, badge, hscroll }) => {
+    ({ MIN_TAP, MIN_TEXT, FAB, badge, hscroll, zoom }) => {
       const vw = window.innerWidth;
       const TAPPABLE =
         "button, a[href], [role=button], [role=tab], [role=combobox], [role=menuitem], input:not([type=hidden]), select, textarea";
@@ -112,6 +118,7 @@ export async function measureMobile(page: Page): Promise<Violation[]> {
           if (lab) target = lab; // hiddenInput
         }
         if (!visible(target)) continue; // invisible
+        if (target.closest(zoom)) continue; // zoomCanvas
         const r = target.getBoundingClientRect();
         if (r.right < 0 || r.left > vw) continue; // ngoài khung (trong vùng cuộn)
         if (el.tagName === "A") {
@@ -135,6 +142,7 @@ export async function measureMobile(page: Page): Promise<Violation[]> {
         if (!el || !txt || seen.has(el)) continue;
         if (["SCRIPT", "STYLE", "NOSCRIPT"].includes(el.tagName)) continue;
         if (!visible(el)) continue;
+        if (el.closest(zoom)) continue; // zoomCanvas
         seen.add(el);
         const fs = Number.parseFloat(getComputedStyle(el).fontSize);
         const isBadge = /^\d{1,3}\+?$/.test(txt);
@@ -163,6 +171,7 @@ export async function measureMobile(page: Page): Promise<Violation[]> {
       FAB: FAB_SELECTOR,
       badge: MOBILE_EXEMPTIONS.badgeMinText.px,
       hscroll: MOBILE_EXEMPTIONS.hScrollAncestor.selector,
+      zoom: MOBILE_EXEMPTIONS.zoomCanvas.selector,
     },
   );
   const uniq = (a: string[]) => [...new Set(a)];

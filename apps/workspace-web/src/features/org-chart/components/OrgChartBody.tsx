@@ -7,12 +7,10 @@ import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useIsMobile } from "~/shared/ui/use-is-mobile";
 import { toChartDepts } from "../lib/org-chart-data";
-import { buildOrgTree, filterOrg, type OrgNode, orgViewFor } from "../lib/org-tree";
+import { buildOrgTree, type OrgNode } from "../lib/org-tree";
 import { DeptMembersDialog } from "./DeptMembersDialog";
 import { OrgChartLazy } from "./OrgChartLazy";
-import { OrgTreeList } from "./OrgTreeList";
 
 function indexById(tree: readonly OrgNode[]): Map<string, OrgNode> {
   const m = new Map<string, OrgNode>();
@@ -33,7 +31,6 @@ export function OrgChartBody({ departments }: { departments: readonly ContractsO
   const depts = useMemo(() => toChartDepts(departments), [departments]);
   const tree = useMemo(() => buildOrgTree(departments), [departments]);
   const byId = useMemo(() => indexById(tree), [tree]);
-  const view = orgViewFor(useIsMobile());
   const matches = useMemo(() => searchDepts(depts, deferred), [depts, deferred]);
   const labels = useMemo(
     () => ({
@@ -85,22 +82,15 @@ export function OrgChartBody({ departments }: { departments: readonly ContractsO
           {t("contracts.orgChart.noMatch", { q: deferred })}
         </p>
       ) : null}
-      {view === "list" ? (
-        <OrgTreeList
-          tree={filterOrg(tree, deferred)}
-          highlightIds={deferred.trim() ? matches : []}
-          onSelectDept={setOpenId}
-        />
-      ) : (
-        <OrgChartLazy
-          depts={depts}
-          rootName={t("contracts.orgChart.company")}
-          labels={labels}
-          highlightIds={matches}
-          focus={focus}
-          onSelectDept={setOpenId}
-        />
-      )}
+      {/* Sơ đồ ở mọi cỡ màn — phóng to/thu nhỏ/kéo được (người dùng chốt 2026-11-16, bỏ dạng danh sách trên điện thoại). */}
+      <OrgChartLazy
+        depts={depts}
+        rootName={t("contracts.orgChart.company")}
+        labels={labels}
+        highlightIds={matches}
+        focus={focus}
+        onSelectDept={setOpenId}
+      />
       <DeptMembersDialog
         dept={openId ? (byId.get(openId) ?? null) : null}
         onClose={() => setOpenId(null)}

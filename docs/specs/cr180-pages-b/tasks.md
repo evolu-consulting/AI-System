@@ -15,7 +15,7 @@ phụ thuộc: cr180-mobile-base
 - [x] Sản phẩm & Giá: «Thêm sản phẩm» là nút chính PageHeader (chỉ ở danh sách), chip loại trong FilterBar, ô tìm rộng hết.
 - [x] Thông báo (web-kit/ui): PageHeader («Đánh dấu tất cả đã đọc» vào «⋯»), ô tích ≥ 44, nút dùng Button kit.
 - [x] Cài đặt › Thành viên: danh sách thẻ trên điện thoại (nút «Cấp quản lý» ≥ 44), chừa đáy cho nút trợ lý; khung Cài đặt: mục menu / seg ≥ 44, công tắc vùng bấm mở rộng.
-- [x] Sơ đồ tổ chức: điện thoại = danh sách cây (OrgTreeList), tìm ⇒ lọc cây; desktop giữ canvas.
+- [x] Sơ đồ tổ chức: (đã đổi lại 2026-11-16 theo người dùng) điện thoại giữ sơ đồ phóng to được; bỏ danh sách cây.
 
 ## Không làm / Chạm
 - Không đụng contract*/contracts-list/table/overview. `Pager` (features/table) vẫn h-8: thuộc lát 2a/phân trang chung.
@@ -46,11 +46,9 @@ Trạng thái gộp: chưa gộp
 Điện thoại: mỗi người một thẻ (tên, tài khoản, nút «Cấp quản lý» ≥ 44px); desktop giữ bảng.
 - Kịch bản: khi đổi cấp quản lý thì nút có nhãn «Cấp quản lý · <tên>» ở cả hai bố cục [test: e2e/contracts-web/org-visibility.cw.ts » cấp quản lý]
 
-#### Yêu cầu: Sơ đồ tổ chức là danh sách cây trên điện thoại
-Điện thoại (≤ 640px): phòng ban lồng nhau (thụt lề), mỗi dòng tên phòng · trưởng phòng · số người, vùng bấm ≥ 44px, bấm mở thành viên như bấm thẻ trên sơ đồ; ô tìm lọc cây. Desktop giữ sơ đồ canvas.
-- Kịch bản: khi có cây 3 cấp thì danh sách duyệt trước kèm độ sâu [test: apps/workspace-web/src/features/org-chart/components/OrgTreeList.test.tsx » flattenOrg]
-- Kịch bản: khi ≤ 640px thì chọn danh sách, ngược lại canvas [test: apps/workspace-web/src/features/org-chart/components/OrgTreeList.test.tsx » orgViewFor]
-- Kịch bản: mỗi phòng là một nút ≥ 44px có độ sâu [test: apps/workspace-web/src/features/org-chart/components/OrgTreeList.test.tsx » OrgTreeList]
+#### Yêu cầu: Sơ đồ tổ chức giữ dạng sơ đồ trên điện thoại
+Người dùng chốt 2026-11-16: điện thoại hiện SƠ ĐỒ như máy tính (phóng to/thu nhỏ/kéo được), không đổi sang danh sách. Chữ/ô trong sơ đồ theo mức thu phóng nên được miễn luật cỡ chữ/vùng bấm (ngoại lệ `zoomCanvas` trong `e2e/_kit/mobile-rules.ts`); phần ngoài sơ đồ vẫn theo luật mobile.
+- Kịch bản: khi mở Sơ đồ tổ chức ở 390px thì trang không tràn ngang và phần ngoài sơ đồ đạt luật mobile [test: e2e/contracts-web/mobile-rules.cw.ts » Sơ đồ tổ chức]
 
 ## Việc còn lại
 - `Pager` (features/table) còn nút h-8: cần lát phụ trách bảng/phân trang.
