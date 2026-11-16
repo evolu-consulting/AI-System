@@ -7,7 +7,7 @@ Viết tắt: `H` = `apps/hub-api/src/modules/packs/contracts/messages`.
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-Thêm vào `docs/current/pack-contracts/tin-nhan.md` (mục «API đọc — CR-178»):
+### MODIFIED pack-contracts/tin-nhan.md
 
 #### Yêu cầu: Lọc chưa đọc ở máy chủ (M5)
 `GET /messages/conversations?unread=true` chỉ trả cuộc có tin chưa đọc của người gọi (cùng luật đếm với badge: sau mốc đọc, không do mình gửi, chưa thu hồi), trộn nội bộ + `partner`, mới nhất trước, keyset `next_cursor`; trang luôn đầy (lọc trước LIMIT). `unread=false`/vắng = tất cả; giá trị khác ⇒ 400.
