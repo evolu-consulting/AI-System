@@ -111,7 +111,8 @@ describe("phân trang", () => {
     expect(html).toContain('aria-label="Phân trang"');
     expect(html).toContain('aria-label="Trang trước"');
     expect(html).toMatch(/aria-current="page"[^>]*>2</);
-    expect(html).toContain('<option value="100"');
+    expect(html).toContain('aria-label="Số dòng mỗi trang"');
+    expect(html).toContain('data-value="20"');
   });
   test("Pager: rỗng ⇒ '0–0 / 0 dòng', hai nút mũi tên khoá", () => {
     const html = renderToStaticMarkup(
