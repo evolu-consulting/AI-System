@@ -5,6 +5,7 @@
 import { type Page, test } from "@playwright/test";
 import { expectMobileRules, MOBILE_USE, settle } from "../_kit/mobile-rules";
 import { installHub } from "./_hub";
+import { partnersAsHub } from "./dataset-partners";
 import { ACTIVE_ID } from "./dataset-v2f";
 
 test.use(MOBILE_USE);
@@ -23,6 +24,27 @@ async function open(page: Page, path: string) {
   });
   // API chưa giả: để 404 như cảnh `messages-mobile` (một fallback `{items:[]}` chung làm vài màn vỡ «Something went wrong»).
   await installHub(page, true);
+  // Màn Đối tác: dữ liệu đối tác giả như hd78-partners (không giả ⇒ máy chủ trả 504 «Gateway Timeout», không có dòng nào để mở). Đăng ký SAU installHub nên chạy trước.
+  if (path.startsWith("/contracts/partners"))
+    await page.route(
+      (u) => u.pathname.startsWith("/pack/contracts/"),
+      (r) => {
+        const url = new URL(r.request().url());
+        const isGet = r.request().method() === "GET";
+        const got =
+          isGet && url.pathname === "/pack/contracts/connect/links"
+            ? { items: [], next_cursor: null }
+            : isGet
+              ? partnersAsHub(url.pathname, url.searchParams)
+              : undefined;
+        if (got === undefined) return r.fallback();
+        return r.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(got),
+        });
+      },
+    );
   await page.goto(path);
   await settle(page);
 }
