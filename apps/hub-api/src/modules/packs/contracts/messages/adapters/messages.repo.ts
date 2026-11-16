@@ -42,13 +42,17 @@ function summary(t: string, me: string, withMembers: boolean, pick: SQL) {
     order by c.last_at desc, c.id desc`;
 }
 
+/** CR-178 · chỉ cuộc còn tin chưa đọc: cùng luật đếm với `summary.unread` / `unread` (tin sau mốc đọc, không do mình gửi, chưa thu hồi); áp TRƯỚC `limit` nên trang luôn đầy. */
+const UNREAD_ONLY = sql`and c.last_seq > me.last_read_seq and exists (select 1 from contracts.msg_messages x
+    where x.tenant_id = c.tenant_id and x.conversation_id = c.id and x.seq > me.last_read_seq and x.sender_id <> me.user_id and x.deleted_at is null)`;
+
 /** Cuộc `partner` của người gọi (`pmsg_inbox`, MỘT lần gọi hàm) về cùng dạng cột với `summary` để `UNION ALL`. Tên/công ty/«chỉ đọc» đã tính trong hàm. */
 function partnerPick(q: ListQuery): SQL {
   return sql`select pm.id, 'partner'::text as kind, null::text as title, ${iso("pm.last_at")} as last_at, pm.last_at as last_ts,
       'member'::text as my_role, 2 as member_count, pm.peer_user as peer_id, pm.unread, pm.last::json as last, null::json as members,
       json_build_object('peer_name', pm.peer_name, 'peer_title', pm.peer_title, 'peer_active', pm.peer_active, 'company_id', pm.company_id,
         'company_name', pm.company_name, 'read_only', pm.read_only) as partner
-    from hub.pmsg_inbox(${q.company}::uuid, ${q.cursor?.at ?? null}::timestamptz, ${q.cursor?.id ?? null}::uuid, ${q.limit}::int) pm`;
+    from ${q.unreadOnly ? sql`hub.pmsg_inbox_unread` : sql`hub.pmsg_inbox`}(${q.company}::uuid, ${q.cursor?.at ?? null}::timestamptz, ${q.cursor?.id ?? null}::uuid, ${q.limit}::int) pm`;
 }
 
 /** Danh sách hợp nhất (P9) — MỘT câu: mỗi nguồn LIMIT n (keyset `(last_at, id)` DESC dùng chung), rồi sắp + LIMIT n ngoài. */
@@ -59,6 +63,7 @@ function listSql(t: string, me: string, q: ListQuery): SQL {
     me,
     false,
     sql`${cur ? sql`and (c.last_at, c.id) < (${cur.at}::timestamptz, ${cur.id}::uuid)` : sql``}
+      ${q.unreadOnly ? UNREAD_ONLY : sql``}
       order by c.last_at desc, c.id desc limit ${q.limit}::int`,
   );
   const cols = sql`x.id, x.kind, x.title, x.last_at, x.my_role, x.member_count, x.peer_id, x.unread, x.last, x.members, x.partner`;

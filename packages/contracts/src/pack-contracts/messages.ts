@@ -64,6 +64,11 @@ export const MsgConversationsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MSG_CONV_PAGE_MAX).default(MSG_CONV_PAGE_DEFAULT),
   /** CR-169 · `all` (mặc định) | `own` | uuid công ty kết nối; kiểm dạng bằng `parseCompanyFilter` (hub `partner.rules.ts`). */
   company: z.string().max(40).optional(),
+  /** CR-178 · `true` ⇒ chỉ cuộc có tin chưa đọc (lọc ở máy chủ, cả nội bộ lẫn `partner`); `false`/vắng ⇒ tất cả. */
+  unread: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
 });
 export type MsgConversationsQuery = z.infer<typeof MsgConversationsQuerySchema>;
 

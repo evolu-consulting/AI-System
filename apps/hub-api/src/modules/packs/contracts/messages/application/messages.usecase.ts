@@ -171,7 +171,12 @@ function conversationOps(c: Ctx) {
   return {
     async list(
       who: PackWho,
-      q: { cursor: { at: string; id: string } | null; limit: number; filter?: CompanyFilter },
+      q: {
+        cursor: { at: string; id: string } | null;
+        limit: number;
+        filter?: CompanyFilter;
+        unreadOnly?: boolean;
+      },
     ): Promise<ConversationPage> {
       const filter: CompanyFilter = q.filter ?? { kind: "all" };
       const source = sourcesOf(filter);
@@ -182,6 +187,7 @@ function conversationOps(c: Ctx) {
             limit: q.limit + 1,
             source: src,
             company: filter.kind === "company" ? filter.tenantId : null,
+            unreadOnly: q.unreadOnly === true,
           }),
         );
       // Chỉ lọc công ty (nguồn partner thuần) mới để lỗi quyền đi lên (403); `all`/`own` còn phần nội bộ.

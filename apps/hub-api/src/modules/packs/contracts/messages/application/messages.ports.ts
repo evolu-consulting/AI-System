@@ -51,6 +51,8 @@ export type ListQuery = {
   limit: number;
   source: { internal: boolean; partner: boolean };
   company: string | null;
+  /** CR-178 · chỉ cuộc có tin chưa đọc (cùng luật đếm với `unread`). */
+  unreadOnly: boolean;
 };
 /** Sự thật cần cho kiểm quyền thao tác nhóm (khoá hàng hội thoại khi `lock`). */
 export type MsgFacts = {

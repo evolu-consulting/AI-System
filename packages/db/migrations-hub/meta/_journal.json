@@ -953,6 +953,20 @@
       "when": 1806902600000,
       "tag": "0152_cr169_pmsg_people_set",
       "breakpoints": true
+    },
+    {
+      "idx": 136,
+      "version": "7",
+      "when": 1806902700000,
+      "tag": "0153_cr178_msg_read_api",
+      "breakpoints": true
+    },
+    {
+      "idx": 137,
+      "version": "7",
+      "when": 1806902800000,
+      "tag": "0154_cr178_msg_read_grants",
+      "breakpoints": true
     }
   ]
 }

@@ -63,7 +63,9 @@ function conversationRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
         issues: [{ path: ["cursor"], code: "invalid", message: "cursor" }],
       });
     const filter = companyFilter(q.company, w.tenantId);
-    const out = await run(uc.list(w, { cursor, limit: q.limit, filter }));
+    const out = await run(
+      uc.list(w, { cursor, limit: q.limit, filter, unreadOnly: q.unread === true }),
+    );
     noStore(c);
     return c.json(out);
   });
