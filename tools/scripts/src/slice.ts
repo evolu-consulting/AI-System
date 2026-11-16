@@ -64,7 +64,10 @@ function verifyHooks(dir: string): void {
   const hp = git(dir, "config", "--get", "core.hooksPath").out;
   if (hp !== "tools/hooks" || !existsSync(join(dir, "tools/hooks/pre-commit")))
     fail("hook chưa đúng (core.hooksPath)");
-  const r = git(dir, "hook", "run", "--ignore-missing", "pre-commit");
+  let r = git(dir, "hook", "run", "--ignore-missing", "pre-commit");
+  // `git hook run` cần git ≥ 2.36; git cũ ⇒ chạy thẳng file hook.
+  if (!r.ok && /'hook' is not a git command/.test(r.out))
+    r = run(dir, ["sh", "tools/hooks/pre-commit"]);
   if (!r.ok) fail(`pre-commit chạy lỗi trong worktree:\n${r.out}`);
   console.log("slice: hook pre-commit OK");
 }
