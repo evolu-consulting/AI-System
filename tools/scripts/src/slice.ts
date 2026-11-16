@@ -3,11 +3,11 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync
 import { dirname, join, resolve } from "node:path";
 import { pruneLanes, resolveLane } from "./e2e-lane";
 //   slice:new <tên> [--force]  kiểm tài nguyên (res:check: từ chối khi đĩa < 15 GB / RAM < 2 GB, `--force` bỏ qua),
-//                     tạo worktree `<gốc>/../evolu-wt/<tên>` + nhánh `slice/<tên>` từ nhánh tích hợp (SLICE_BASE, mặc định staging-improve), bun install,
+//                     tạo worktree `<gốc>/../evolu-wt/<tên>` + nhánh `slice/<tên>` từ nhánh tích hợp (SLICE_BASE, mặc định staging), bun install,
 //                     chép .env*.local, kiểm hook.
-//   slice:merge <tên> [--no-test] [--no-openspec]  openspec:check <tên> (Delta, ADR-0032), rebase lên nhánh tích hợp (SLICE_BASE, mặc định staging-improve),
-//                     check:boundaries (vi phạm mới ⇒ dừng), test:affected, rồi ff (hoặc merge) vào nhánh tích hợp (SLICE_BASE, mặc định staging-improve)
-//                     ở checkout chính (checkout chính phải đang ở nhánh tích hợp (SLICE_BASE, mặc định staging-improve)).
+//   slice:merge <tên> [--no-test] [--no-openspec]  openspec:check <tên> (Delta, ADR-0032), rebase lên nhánh tích hợp (SLICE_BASE, mặc định staging),
+//                     check:boundaries (vi phạm mới ⇒ dừng), test:affected, rồi ff (hoặc merge) vào nhánh tích hợp (SLICE_BASE, mặc định staging)
+//                     ở checkout chính (checkout chính phải đang ở nhánh tích hợp (SLICE_BASE, mặc định staging)).
 //   slice:pool [--size N]  giữ N (mặc định 3) worktree ấm ở `evolu-wt/_pool/<n>` (detached, đã bun install; đĩa < 30 GB ⇒ không dựng);
 //                     `slice:new` lấy một cái (worktree move + checkout -b) rồi bổ sung nền không chặn; hết ⇒ dựng bình thường.
 //   slice:rm <tên> [--force]       gỡ worktree + xoá nhánh (nhánh chưa merge cần --force).
