@@ -32,6 +32,8 @@ export function messagesModule(
     redis?: Redis | undefined;
     filebox?: ((org: string) => PackFileboxClient) | null | undefined;
     worker?: boolean | undefined;
+    /** Thay `fetch` khi đọc byte từ link FileBox (test). */
+    fetchFile?: ((url: string) => Promise<Response>) | undefined;
     signal?: AbortSignal | undefined;
   } = {},
 ): Hono<PackGuardVars> {
@@ -43,6 +45,12 @@ export function messagesModule(
           await filebox(org).deleteFile(fileId);
         },
         link: (org, fileId) => filebox(org).getLink(fileId),
+        bytes: async (org, fileId) => {
+          const url = await filebox(org).getLink(fileId);
+          if (!url || !/^https?:\/\//.test(url)) return null; // link tương đối (qua proxy công khai) ⇒ trình duyệt tự tải cùng origin
+          const res = await (deps.fetchFile ?? fetch)(url).catch(() => null);
+          return res?.ok ? new Uint8Array(await res.arrayBuffer()) : null;
+        },
       }
     : undefined;
   if (files && deps.worker)

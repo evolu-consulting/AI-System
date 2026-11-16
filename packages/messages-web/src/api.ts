@@ -211,15 +211,13 @@ export const fetchAttachments = (
     signal,
   });
 
-/** CR-178 · tải byte tệp về (link ngắn hạn, không gửi cookie) và gắn đúng loại `mime` của tệp đã lưu ⇒ blob để xem trước; hỏng ⇒ ném lỗi. */
+/** CR-178 · tải byte tệp về qua hub-api (`…/content`, Bearer, cùng origin ⇒ không CORS; link FileBox có thể khác origin) và gắn đúng loại `mime` của tệp đã lưu ⇒ blob để xem trước; hỏng ⇒ ném lỗi. */
 export async function fetchFileBlob(
   id: string,
   fileId: string,
   mime: string,
   signal?: AbortSignal,
 ): Promise<Blob> {
-  const url = await fetchFileLink(id, fileId, signal);
-  const res = await fetch(url, { credentials: "omit", ...(signal ? { signal } : {}) });
-  if (!res.ok) throw new Error("file fetch failed");
+  const res = await messagesHost().apiResponse(`${fileBase(id, fileId)}/content`, { signal });
   return new Blob([await res.arrayBuffer()], { type: mime });
 }

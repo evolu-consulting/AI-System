@@ -41,3 +41,16 @@ export function helpers(view: PackAccessView) {
   const noStore = (c: Ctx) => c.header("cache-control", "no-store");
   return { read: packGuard(view, "contracts", "read"), who, uuid, noStore };
 }
+
+/** CR-178 · byte tệp cho xem trước: loại LUÔN `octet-stream` + `nosniff` + `sandbox` (server không tin kiểu tệp; web gắn kiểu đã lưu rồi chỉ ảnh raster/PDF mới hiển thị qua `blob:`). */
+export const bytesResponse = (bytes: Uint8Array): Response =>
+  new Response(bytes as unknown as BodyInit, {
+    headers: {
+      "content-type": "application/octet-stream",
+      "content-length": String(bytes.byteLength),
+      "content-disposition": "attachment",
+      "x-content-type-options": "nosniff",
+      "content-security-policy": "sandbox; default-src 'none'",
+      "cache-control": "private, no-store",
+    },
+  });

@@ -92,7 +92,14 @@ function app(user: string) {
     } as never);
     await next();
   });
-  h.route("/", messagesModule(db, view(), { redis, filebox: fakeBox }));
+  h.route(
+    "/",
+    messagesModule(db, view(), {
+      redis,
+      filebox: fakeBox,
+      fetchFile: async () => new Response(new Uint8Array([37, 80, 68, 70, 1, 2, 3])),
+    }),
+  );
   h.onError((e, c) => {
     const m = mapError(e);
     return c.json(m.body, m.status);
@@ -285,6 +292,16 @@ describe("CR-169 3b · tệp: tải lên, chưa gắn thì chỉ người tải 
     const link = await call<{ url: string }>(HA, "GET", `${P(vyHa)}/files/${fileA}/link`);
     expect(link.status).toBe(200);
     expect(link.body.url).toContain(`t_${A}`);
+  });
+
+  it("CR-178 · xem trước: `/content` trả byte qua hub-api (octet-stream + nosniff); Hà (không phải người tải) đọc được, người ngoài cuộc 404", async () => {
+    const r = await app(HA).request(`${P(vyHa)}/files/${fileA}/content`);
+    expect(r.status).toBe(200);
+    expect(r.headers.get("content-type")).toBe("application/octet-stream");
+    expect(r.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(new Uint8Array(await r.arrayBuffer())).toEqual(PDF);
+    const out = await app(LAN).request(`${P(vyHa)}/files/${fileA}/content`);
+    expect(out.status).toBe(404);
   });
 
   it("đuôi lạ ⇒ 415; > 20 MB ⇒ 413 trước khi đọc thân; không byte nào lên FileBox", async () => {

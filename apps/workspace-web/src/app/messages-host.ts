@@ -1,6 +1,6 @@
 // CR-169 · lát 5a/5b · gắn `@ai/messages-web` với transport/luồng/phiên/giao diện nền của workspace-web.
 import { configureMessagesHost } from "@ai/messages-web/host";
-import { api } from "@ai/web-kit/http";
+import { api, apiResponse } from "@ai/web-kit/http";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import {
   Dialog,
@@ -17,6 +17,7 @@ import { meStream } from "~/platform/stream/me-stream";
 
 configureMessagesHost({
   api,
+  apiResponse,
   subscribe: (event, handler, onReconnected) => meStream.subscribe(event, handler, onReconnected),
   myId: () => session.getState().me?.id,
   useScope: () => useSession((s) => (s.me ? `${s.me.tenant.id}:${s.me.id}` : "")),

@@ -95,7 +95,7 @@ test("A chèn emoji và dán ảnh rồi gửi, B thấy", async ({ browser }) =
   await a.getByTestId("emoji-picker").getByRole("gridcell").first().click();
   await expect(a.getByTestId("emoji-picker")).toHaveCount(0);
   await expect(box).toBeFocused();
-  await expect(box).toHaveValue(new RegExp(`^${TEXT}p{Extended_Pictographic}`, "u"));
+  await expect(box).toHaveValue(new RegExp(`^${TEXT}\\p{Extended_Pictographic}`, "u"));
 
   // dán ảnh chụp màn hình (không có chữ) ⇒ chip tệp «image.png»
   await box.evaluate((el) => {
@@ -111,7 +111,7 @@ test("A chèn emoji và dán ảnh rồi gửi, B thấy", async ({ browser }) =
       new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }),
     );
   });
-  await expect(a.getByText("image.png")).toBeVisible();
+  await expect(a.getByRole("listitem", { name: "image.png" })).toBeVisible(); // ảnh dán hiện thumbnail (alt = tên tệp), không phải chữ
   await a.getByRole("button", { name: "Gửi", exact: true }).click();
   await expect(a.getByTestId("msg-row").filter({ hasText: TEXT })).toBeVisible();
 

@@ -367,5 +367,6 @@ export function messagesUsecases(d: Deps) {
     filesEnabled: c.fileOps.filesEnabled,
     uploadFile: c.fileOps.upload,
     fileLink: c.fileOps.link,
+    fileBytes: c.fileOps.bytes,
   };
 }

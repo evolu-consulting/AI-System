@@ -65,6 +65,22 @@ async function fileLink(d: FileDeps, who: PackWho, cid: string, fileId: string):
   return url;
 }
 
+/** CR-178 · byte tệp để xem trước (cùng kiểm quyền với `fileLink`); FileBox không trả được ⇒ 404. */
+async function fileBytes(
+  d: FileDeps,
+  who: PackWho,
+  cid: string,
+  fileId: string,
+): Promise<Uint8Array> {
+  const store = d.files;
+  if (!store) throw new Error(NO_STORE);
+  const ref = await d.uow.tenant(who, (r) => r.messages.fileRef(who.userId, cid, fileId));
+  if (!ref || ref.org !== orgForTenant(who.tenantId)) throw new MsgFail("MSG_NOT_FOUND");
+  const bytes = await store.bytes(ref.org, ref.file_id);
+  if (!bytes) throw new MsgFail("MSG_NOT_FOUND");
+  return bytes;
+}
+
 /** Gỡ byte của các tệp đã soft-delete ở DB — SAU commit, đồng thời (≤ 10 tệp/tin; hội thoại xoá có thể nhiều hơn), lỗi nuốt: hàng DB đã đánh dấu xoá. */
 async function dropBytes(d: FileDeps, files: readonly StoredFile[]): Promise<void> {
   const store = d.files;
@@ -80,5 +96,6 @@ export function messagesFileOps(d: FileDeps) {
     upload: (who: PackWho, cid: string, f: { name: string; bytes: Uint8Array }) =>
       uploadFile(d, who, cid, f),
     link: (who: PackWho, cid: string, fileId: string) => fileLink(d, who, cid, fileId),
+    bytes: (who: PackWho, cid: string, fileId: string) => fileBytes(d, who, cid, fileId),
   };
 }

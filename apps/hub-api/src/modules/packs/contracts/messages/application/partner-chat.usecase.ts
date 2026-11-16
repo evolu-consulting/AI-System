@@ -167,6 +167,17 @@ export function partnerChatOps(d: PartnerChatDeps) {
       if (!url) throw new MsgFail("MSG_NOT_FOUND");
       return url;
     },
+
+    /** CR-178 · byte tệp để xem trước (cùng kiểm quyền với `partnerFileLink`). */
+    async partnerFileBytes(who: PackWho, id: string, fileId: string): Promise<Uint8Array> {
+      const store = d.files;
+      if (!store) throw new Error(NO_STORE);
+      const ref = await d.uow.tenant(who, (r) => r.partner.fileGet(id, fileId));
+      const p = ref ? fileKeyParts(ref.key) : null;
+      const bytes = ref && p ? await store.bytes(orgForTenant(p.tenant), ref.boxId) : null;
+      if (!bytes) throw new MsgFail("MSG_NOT_FOUND");
+      return bytes;
+    },
   };
 }
 

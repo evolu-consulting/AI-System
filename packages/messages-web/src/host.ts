@@ -35,6 +35,8 @@ export type StreamFrame = { event: string; data: string };
 export type MessagesHost = {
   /** Gọi API (JSON) đã gắn Bearer/base URL của app. */
   api: <T>(path: string, opts?: RequestOptions) => Promise<T>;
+  /** Như `api` nhưng trả `Response` thô (byte tệp để xem trước; đã gắn Bearer). */
+  apiResponse: (path: string, opts?: RequestOptions) => Promise<Response>;
   /** Luồng `/me/stream`: đăng ký sự kiện, trả hàm huỷ; `onReconnected` gọi khi nối lại sau đứt. */
   subscribe: (
     event: string,

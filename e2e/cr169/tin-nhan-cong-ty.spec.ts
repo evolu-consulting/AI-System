@@ -107,6 +107,7 @@ test("CR169-J1 · Vy (nhân viên, không phải người mời) › Tin nhắn 
   await page.goto("/contracts/messages");
   await pickPartner(page, CO.b.name);
   await searchBox(page).fill("Hà Mai");
+  await page.getByTestId("find-tab-people").click(); // CR-178 M3: tìm ≥ 2 ký tự mở tab «Tin nhắn» trước; người nằm ở tab «Người»
   const row = page.getByTestId("people-results").getByTestId("person-row").first();
   await expect(row).toContainText(NAME.ha);
   await expect(row).toContainText(CO.b.name);
@@ -180,6 +181,7 @@ test("CR169-J3 · Vy: lọc chip công ty (Preschool / công ty mình) và tìm 
   await expect(rowOf(page, NAME.ha)).toHaveCount(1);
   await expect(rowOf(page, NAME.ha).getByTestId("conv-company")).toContainText(CO.b.name);
   await searchBox(page).fill("Mai"); // tên không dấu vẫn khớp «Hà Mai»
+  await page.getByTestId("find-tab-people").click(); // CR-178 M3: cuộc + người ở tab «Người»
   await expect(rowOf(page, NAME.ha)).toBeVisible();
   await searchBox(page).fill("");
   await page.getByTestId("tab-all").click();

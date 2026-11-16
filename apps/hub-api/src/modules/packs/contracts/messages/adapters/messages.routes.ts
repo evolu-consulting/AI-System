@@ -26,6 +26,7 @@ import { type CompanyFilter, parseCompanyFilter } from "../domain/partner.rules"
 import { attachQuery, searchRoutes } from "./messages-find.routes";
 import { partnerChatRoutes } from "./partner.routes";
 import {
+  bytesResponse,
   type H,
   helpers,
   MULTIPART_SLACK,
@@ -178,6 +179,14 @@ function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
     const url = await run(uc.fileLink(w, cid, fid));
     noStore(c);
     return c.json({ url });
+  });
+  // CR-178 · byte tệp qua hub-api (Bearer) cho xem trước: link FileBox có thể khác origin ⇒ trình duyệt không `fetch` được (CORS).
+  r.get("/messages/conversations/:id/files/:fileId/content", read, async (c) => {
+    const w = who(c);
+    const cid = uuid(c, "id");
+    const fid = uuid(c, "fileId");
+    if (!uc.filesEnabled) throw storageOff();
+    return bytesResponse(await run(uc.fileBytes(w, cid, fid)));
   });
 }
 

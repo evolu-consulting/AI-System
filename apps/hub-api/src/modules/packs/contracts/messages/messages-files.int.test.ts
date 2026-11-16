@@ -33,6 +33,8 @@ const store = {
   },
   remove: async (_org: string, id: string) => void removed.push(id),
   link: async (_org: string, id: string) => `https://fb.test/d/${id}`,
+  bytes: async (_org: string, id: string) =>
+    id === "fb-1" ? new Uint8Array([37, 80, 68, 70]) : null,
 };
 const uow = () =>
   createPackUow(db, "contracts", (tx, t) => ({
@@ -107,6 +109,8 @@ describe("CR-132 M5 · tệp tin nhắn: tải lên, gửi, tải xuống", () =
       (await uc().list(w(B), { cursor: null, limit: 10 })).items[0]?.last_message?.has_files,
     ).toBe(true);
     expect(await uc().fileLink(w(B), cid, fileId)).toBe("https://fb.test/d/fb-1");
+    expect(await uc().fileBytes(w(B), cid, fileId)).toEqual(new Uint8Array([37, 80, 68, 70])); // CR-178 · cùng quyền như link
+    expect(await code(uc().fileBytes(w(C), cid, fileId))).toBe("MSG_NOT_FOUND");
 
     const before = puts.length;
     expect(await code(uc().uploadFile(w(A), cid, pdf("virus.exe")))).toBe("MSG_FILE_TYPE");

@@ -14,6 +14,7 @@ import { cleanFileName, fileNameOf } from "../../adapters/upload.routes";
 import type { MessagesUsecases } from "../application/messages.usecase";
 import { attachQuery } from "./messages-find.routes";
 import {
+  bytesResponse,
   type H,
   MULTIPART_SLACK,
   notFound,
@@ -95,6 +96,13 @@ function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
     const url = await run(uc.partnerFileLink(w, id, fid));
     noStore(c);
     return c.json({ url });
+  });
+  r.get(`${P}/files/:fileId/content`, read, async (c) => {
+    const w = who(c);
+    const id = uuid(c, "id");
+    const fid = uuid(c, "fileId");
+    if (!uc.filesEnabled) throw storageOff();
+    return bytesResponse(await run(uc.partnerFileBytes(w, id, fid)));
   });
 }
 

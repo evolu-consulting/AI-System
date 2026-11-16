@@ -139,6 +139,8 @@ export type MsgFileStore = {
   put(org: string, name: string, bytes: Uint8Array): Promise<{ fileId: string; versionId: string }>;
   remove(org: string, fileId: string): Promise<void>;
   link(org: string, fileId: string): Promise<string | null>;
+  /** CR-178 · byte tệp đọc phía server (xem trước cùng origin, không CORS); không có/không tải được ⇒ null. */
+  bytes(org: string, fileId: string): Promise<Uint8Array | null>;
 };
 /** Kết quả đánh dấu đã đọc: mốc mới, mốc trước (không tiến ⇒ không phát `msg.read`), mọi thành viên. */
 export type ReadRow = { seq: number; prev: number; member_ids: string[] };

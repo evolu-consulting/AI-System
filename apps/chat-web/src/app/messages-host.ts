@@ -1,6 +1,6 @@
 // CR-169 · lát 8 · gắn `@ai/messages-web` với transport/luồng/phiên/giao diện nền của chat-web (cùng gói, cùng dữ liệu với Sổ Hợp Tác).
 import { configureMessagesHost } from "@ai/messages-web/host";
-import { api } from "@ai/web-kit/http";
+import { api, apiResponse } from "@ai/web-kit/http";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import { cn } from "~/lib/utils";
 export function messagesHostConfig(): Parameters<typeof configureMessagesHost>[0] {
   return {
     api,
+    apiResponse,
     subscribe: subscribeMsgFrames,
     myId: () => session.getState().me?.id,
     useScope: () => useSession((s) => (s.me ? `${s.me.tenant.id}:${s.me.id}` : "")),
