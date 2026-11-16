@@ -200,7 +200,9 @@ test("DT-01 · DT-02 · Tổng quan: đầu trang, huy hiệu, lý do, bảng ti
 }) => {
   await install(page);
   await openDetail(page);
-  await expect(page.getByText("MST 0301000001 · — · Nguyễn Văn A")).toBeVisible();
+  // CR-180: MST · điện thoại · liên hệ là MetaList (mục rỗng bị bỏ)
+  await expect(page.locator('[data-slot="meta-list"]')).toContainText("0301000001");
+  await expect(page.locator('[data-slot="meta-list"]')).toContainText("Nguyễn Văn A");
   await expect(page.getByRole("button", { name: "Tìm trên internet" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Hợp đồng · 3" })).toBeVisible();
   await expect(page.locator("table").first().locator("thead th")).toHaveText([

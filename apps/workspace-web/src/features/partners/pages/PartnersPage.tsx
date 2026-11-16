@@ -4,10 +4,12 @@
 
 import type { PartnerRole, RepRole } from "@ai/contracts/pack-contracts";
 import { Button } from "@ai/web-kit/ui/kit/button";
+import { FilterBar } from "@ai/web-kit/ui/kit/filter-bar";
+import { PageHeader } from "@ai/web-kit/ui/kit/page-header";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHead, Panel } from "~/components/shared/layout";
+import { Panel } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { PartnerLog } from "~/features/ledger/components/PartnerLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
@@ -72,7 +74,10 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
           {write && loggable && (
             <button
               type="button"
-              className={cn("btn h-9 text-[13px]", open ? "btn-outline" : "btn-quiet")}
+              className={cn(
+                "btn h-9 text-[13px] max-sm:min-h-11",
+                open ? "btn-outline" : "btn-quiet",
+              )}
               aria-expanded={open}
               onClick={() => setOpen(!open)}
             >
@@ -82,7 +87,7 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
           <Link
             to="/contracts/partners"
             search={{ party: p.party }}
-            className="btn btn-quiet h-9 text-[13px]"
+            className="btn btn-quiet h-9 text-[13px] max-sm:min-h-11"
           >
             {L("detail")}
           </Link>
@@ -158,24 +163,19 @@ export function PartnersPage() {
   };
   return (
     <div className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col">
-      <PageHead
+      <PageHeader
+        className="mb-5"
         title={L("title")}
-        lead={L("lead")}
-        actions={
-          (write || owner) && (
-            <div className="flex gap-2">
-              {owner && (
-                <Button variant="outline" onClick={() => setFinding(true)}>
-                  {t("contracts.connect.find")}
-                </Button>
-              )}
-              {write && (
-                <Button variant="outline" onClick={() => setAdding(true)}>
-                  {t("contracts.vgaps.company.add")}
-                </Button>
-              )}
-            </div>
+        description={L("lead")}
+        primary={
+          write && (
+            <Button variant="primary" onClick={() => setAdding(true)}>
+              {t("contracts.vgaps.company.add")}
+            </Button>
           )
+        }
+        actions={
+          owner ? [{ label: t("contracts.connect.find"), onSelect: () => setFinding(true) }] : []
         }
       />
       {adding && <AddCompanyDialog onClose={() => setAdding(false)} />}
@@ -184,25 +184,30 @@ export function PartnersPage() {
       <ConnectedPanel />
       <MineBanner />
       <TableTools q={qRaw} setQ={setQRaw} total={total} placeholder={L("search")}>
-        <fieldset
-          aria-label={L("roleFilter")}
-          className="m-0 flex min-w-0 flex-wrap gap-1.5 border-0 p-0"
-        >
-          {filtersOf(engine === "v2e").map((f) => (
-            <button
-              key={f}
-              type="button"
-              className="chip"
-              aria-pressed={filter === f}
-              onClick={() => {
-                setFilter(f);
-                setPage(1);
-              }}
+        <FilterBar
+          className="min-w-0 max-sm:w-full"
+          chips={
+            <fieldset
+              aria-label={L("roleFilter")}
+              className="m-0 flex min-w-0 flex-wrap gap-1.5 border-0 p-0 max-sm:flex-nowrap"
             >
-              {L(`filter.${f}`)}
-            </button>
-          ))}
-        </fieldset>
+              {filtersOf(engine === "v2e").map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  className="chip max-sm:min-h-11 max-sm:shrink-0"
+                  aria-pressed={filter === f}
+                  onClick={() => {
+                    setFilter(f);
+                    setPage(1);
+                  }}
+                >
+                  {L(`filter.${f}`)}
+                </button>
+              ))}
+            </fieldset>
+          }
+        />
       </TableTools>
       <Panel className="md:flex md:min-h-0 md:flex-1 md:flex-col">
         {body()}
@@ -212,7 +217,7 @@ export function PartnersPage() {
         {L("foot")}{" "}
         <Link
           to="/contracts/partners"
-          className="font-semibold text-act underline underline-offset-2"
+          className="tap-target font-semibold text-act underline underline-offset-2"
         >
           {L("howLink")}
         </Link>

@@ -3,10 +3,11 @@
 
 import type { PartnerProfile, RepRole } from "@ai/contracts/pack-contracts";
 import { Button } from "@ai/web-kit/ui/kit/button";
+import { MetaList } from "@ai/web-kit/ui/kit/meta-list";
+import { PageHeader } from "@ai/web-kit/ui/kit/page-header";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageHead } from "~/components/shared/layout";
 import { Loading } from "~/components/shared/states";
 import { searchErrorKey, useContacts, useInternetSearch } from "../hooks/use-partner-rep";
 import { flagsOf, type ScoreRow } from "../lib/partner-score";
@@ -40,14 +41,15 @@ export function PartnerHeader({
   const contacts = useContacts(party);
   return (
     <>
-      <PageHead
-        crumb={
-          <Link to="/contracts/partners" className="font-medium text-act hover:underline">
-            ← {L("title")}
-          </Link>
-        }
+      <nav aria-label={t("contracts.common.breadcrumb")} className="mb-1 text-label text-dim">
+        <Link to="/contracts/partners" className="tap-target font-medium text-act hover:underline">
+          ← {L("title")}
+        </Link>
+      </nav>
+      <PageHeader
+        className="mb-3"
         title={name}
-        lead={
+        description={
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             {roles.map((r) => {
               const x = rows.find((y) => y.role === r);
@@ -62,17 +64,12 @@ export function PartnerHeader({
               );
             })}
             <RedFlagTag flags={flagsOf(rows)} />
-            <span>
-              {L("mst")} {profile?.tax_id ?? DASH} · {profile?.phone ?? DASH} ·{" "}
-              {profile?.contact ?? DASH}
-            </span>
           </span>
         }
-        actions={
+        primary={
           write && (
             <Button
               variant="primary"
-              size="sm"
               disabled={search.isPending}
               onClick={() => {
                 setShow(true);
@@ -83,7 +80,15 @@ export function PartnerHeader({
             </Button>
           )
         }
-      />{" "}
+      />
+      <MetaList
+        className="mb-4"
+        items={[
+          { label: L("mst"), value: profile?.tax_id },
+          { label: L("phoneLabel"), value: profile?.phone },
+          { label: L("contactLabel"), value: profile?.contact },
+        ]}
+      />
       {editing && contacts.data && (
         <ContactEditor party={party} contacts={contacts.data} onClose={() => setEditing(false)} />
       )}

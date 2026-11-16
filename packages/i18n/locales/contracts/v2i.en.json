@@ -50,6 +50,8 @@
       "foot": "Scores are recomputed each time the page opens, per role (customer, supplier). Red flags are separate from the score.",
       "howLink": "⚙ How scores work",
       "mst": "Tax ID",
+      "phoneLabel": "Phone",
+      "contactLabel": "Contact",
       "noRole": "This partner has no role yet.",
       "tabs": "Partner information",
       "tab": {

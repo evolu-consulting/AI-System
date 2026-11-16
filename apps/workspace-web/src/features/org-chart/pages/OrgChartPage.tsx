@@ -1,9 +1,10 @@
 // CR-139 · Q13 · «Sơ đồ tổ chức» (/contracts/org): CR-142 sơ đồ cây (organization chart) Công ty → phòng → phòng con; bấm thẻ ⇒ thành viên, tìm ⇒ nhảy tới phòng; ai trong công ty cũng xem, chỉ xem.
 
 import { Button } from "@ai/web-kit/ui/kit/button";
+import { PageHeader } from "@ai/web-kit/ui/kit/page-header";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { PageHead, Panel } from "~/components/shared/layout";
+import { Panel } from "~/components/shared/layout";
 import { Skeleton } from "~/components/ui/skeleton";
 import { fetchOrgChart, orgChartKey } from "../api";
 import { EditChartButton } from "../components/EditChartButton";
@@ -19,10 +20,11 @@ export function OrgChartPage() {
   });
   return (
     <div data-testid="org-chart">
-      <PageHead
+      <PageHeader
+        className="mb-5"
         title={t("contracts.orgChart.title")}
-        lead={t("contracts.orgChart.lead")}
-        actions={<EditChartButton />}
+        description={t("contracts.orgChart.lead")}
+        primary={<EditChartButton />}
       />
       {q.isPending ? (
         <Skeleton className="h-24 w-full" />

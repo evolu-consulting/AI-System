@@ -64,7 +64,9 @@
         "none": "None of our company's milestones (payment, delivery…) with partners fell due in the last {{days}} days, so there is no score yet.",
         "allOnTime": "Our company met all {{total}} milestones (payment, delivery…) in the last {{days}} days.",
         "someLate": "Our company was late on {{late}} of {{total}} milestones in the last {{days}} days ({{pct}}% on time). Fault: ours {{ours}}, partner {{partner}}, unknown {{unknown}}. Our own faults do not lower a partner's score.",
-        "blamed": "Partners blamed: {{list}}."
+        "blamed": "Partners blamed: {{list}}.",
+        "more": "Show more",
+        "less": "Show less"
       }
     }
   }

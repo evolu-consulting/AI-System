@@ -4,6 +4,8 @@ import { type CSSProperties, type ReactElement, useMemo } from "react";
 import { type NotifyTransport, notifyClient } from "../notify/client";
 import { useFeed } from "../notify/hooks";
 import { mergeLabels, type NotifyLabels } from "../notify/labels";
+import { Button } from "./kit/button";
+import { PageHeader } from "./kit/page-header";
 import { NotifyPrefsPanel } from "./NotifyPrefsPanel";
 
 export type NotificationsPageProps = {
@@ -26,6 +28,7 @@ const ITEM: CSSProperties = {
   display: "block",
   width: "100%",
   padding: "12px 16px",
+  minHeight: 44,
   border: 0,
   borderBottom: "1px solid var(--rule, var(--border, #e5e5e5))",
   background: "transparent",
@@ -54,14 +57,10 @@ export function NotificationsPage(p: NotificationsPageProps): ReactElement {
   const Wrap = p.embedded ? "section" : "main";
   return (
     <Wrap style={p.embedded ? { ...WRAP, padding: "0 0 24px" } : WRAP}>
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ margin: 0, fontSize: 22 }}>{L.title}</h1>
-        {feed.unread > 0 && (
-          <button type="button" onClick={() => void feed.readAll()}>
-            {L.readAll}
-          </button>
-        )}
-      </header>
+      <PageHeader
+        title={L.title}
+        actions={feed.unread > 0 ? [{ label: L.readAll, onSelect: () => void feed.readAll() }] : []}
+      />
       <section aria-label={L.title}>
         {feed.items.length === 0 && !feed.loading && <p>{feed.error ? L.failed : L.empty}</p>}
         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -101,9 +100,9 @@ export function NotificationsPage(p: NotificationsPageProps): ReactElement {
         </ul>
         {feed.loading && <p>{L.loading}</p>}
         {feed.hasMore && !feed.loading && (
-          <button type="button" onClick={() => void feed.loadMore()}>
+          <Button variant="outline" onClick={() => void feed.loadMore()}>
             {L.loadMore}
-          </button>
+          </Button>
         )}
       </section>
       <div>

@@ -11,6 +11,7 @@ import {
   isSubscribed,
   type PushResult,
 } from "../notify/push";
+import { Button } from "./kit/button";
 
 const LEADS = [60, 30, 7, 1, 0] as const;
 type Lead = (typeof LEADS)[number][];
@@ -88,7 +89,12 @@ export function NotifyPrefsPanel(p: {
     void save(prefs, { remind_days: next.sort((a, b) => b - a) as Lead });
   };
   const check = (key: string, text: string, checked: boolean, onChange: (v: boolean) => void) => (
-    <label key={key} htmlFor={`${id}-${key}`} style={ROW}>
+    <label
+      key={key}
+      htmlFor={`${id}-${key}`}
+      style={ROW}
+      className="cursor-pointer max-sm:min-h-11"
+    >
       <input
         id={`${id}-${key}`}
         type="checkbox"
@@ -106,9 +112,9 @@ export function NotifyPrefsPanel(p: {
         <div style={ROW}>
           {check("push", L.push, prefs.push && subscribed, (v) => void togglePush(v))}
           {prefs.push && subscribed && (
-            <button type="button" onClick={() => void test()}>
+            <Button variant="outline" size="sm" onClick={() => void test()}>
               {L.pushTest}
-            </button>
+            </Button>
           )}
         </div>
         {note && (

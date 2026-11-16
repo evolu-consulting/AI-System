@@ -64,7 +64,9 @@
         "none": "Chưa có mốc nào của công ty mình (thanh toán, giao hàng…) với các đối tác tới hạn trong {{days}} ngày qua, nên chưa chấm.",
         "allOnTime": "Công ty mình giữ hẹn cả {{total}} mốc (thanh toán, giao hàng…) trong {{days}} ngày qua.",
         "someLate": "Công ty mình trễ {{late}}/{{total}} mốc trong {{days}} ngày qua ({{pct}}% đúng hạn). Lỗi do mình {{ours}}, do đối tác {{partner}}, chưa rõ {{unknown}}. Lỗi của mình không trừ điểm đối tác.",
-        "blamed": "Đối tác bị ghi lỗi: {{list}}."
+        "blamed": "Đối tác bị ghi lỗi: {{list}}.",
+        "more": "Xem thêm",
+        "less": "Thu gọn"
       }
     }
   }

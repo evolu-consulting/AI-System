@@ -105,7 +105,7 @@ export function SettingsLayout({
                   data-testid={`settings-nav-${it.id}`}
                   onClick={() => onSelect(it.id)}
                   className={cn(
-                    "flex w-full items-start gap-2.5 rounded-[10px] border px-3 py-2 text-left max-md:w-auto max-md:whitespace-nowrap",
+                    "flex w-full items-start gap-2.5 rounded-[10px] border px-3 py-2 text-left max-md:w-auto max-md:whitespace-nowrap max-sm:min-h-11 max-sm:items-center",
                     on ? "border-act-line bg-act-soft" : "border-transparent hover:bg-sunk",
                   )}
                 >
@@ -235,7 +235,7 @@ export function SettingsSwitch({
       aria-label={label}
       onClick={() => onChange(!checked)}
       className={cn(
-        "relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-60",
+        "relative h-5 w-9 shrink-0 rounded-full transition-colors before:absolute before:-inset-3 before:content-[''] disabled:opacity-60",
         checked ? "bg-act" : "bg-field",
       )}
     >
@@ -273,7 +273,7 @@ export function SettingsSeg<T extends string | number>({
           checked={value === v}
           onClick={() => onChange(v)}
           className={cn(
-            "px-3.5 py-1.5 text-[12.5px]",
+            "px-3.5 py-1.5 text-[12.5px] max-sm:min-h-11",
             value === v ? "bg-act-soft font-semibold text-act" : "text-ink-2",
           )}
         >

@@ -1,5 +1,5 @@
 // CR-142 · thân «Sơ đồ tổ chức»: ô tìm (chọn ⇒ nhảy tới phòng + làm nổi thẻ), sơ đồ cây, hộp thành viên khi bấm thẻ phòng.
-// Mobile: vẫn dùng sơ đồ (kéo/chụm để xem) — không có bản danh sách riêng, một khuôn cho mọi màn.
+// CR-180 · điện thoại (≤ 640px): danh sách cây thay canvas (tìm ⇒ lọc cây); desktop giữ canvas.
 
 import type { ContractsOrgDept } from "@ai/contracts/pack-contracts";
 import { searchDepts } from "@ai/flow-canvas/pure";
@@ -7,10 +7,12 @@ import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useIsMobile } from "~/shared/ui/use-is-mobile";
 import { toChartDepts } from "../lib/org-chart-data";
-import { buildOrgTree, type OrgNode } from "../lib/org-tree";
+import { buildOrgTree, filterOrg, type OrgNode, orgViewFor } from "../lib/org-tree";
 import { DeptMembersDialog } from "./DeptMembersDialog";
 import { OrgChartLazy } from "./OrgChartLazy";
+import { OrgTreeList } from "./OrgTreeList";
 
 function indexById(tree: readonly OrgNode[]): Map<string, OrgNode> {
   const m = new Map<string, OrgNode>();
@@ -29,7 +31,9 @@ export function OrgChartBody({ departments }: { departments: readonly ContractsO
   const [openId, setOpenId] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ id: string; seq: number } | null>(null);
   const depts = useMemo(() => toChartDepts(departments), [departments]);
-  const byId = useMemo(() => indexById(buildOrgTree(departments)), [departments]);
+  const tree = useMemo(() => buildOrgTree(departments), [departments]);
+  const byId = useMemo(() => indexById(tree), [tree]);
+  const view = orgViewFor(useIsMobile());
   const matches = useMemo(() => searchDepts(depts, deferred), [depts, deferred]);
   const labels = useMemo(
     () => ({
@@ -68,7 +72,7 @@ export function OrgChartBody({ departments }: { departments: readonly ContractsO
             jump(matches[(matches.indexOf(focus?.id ?? "") + 1) % matches.length]);
           }}
           placeholder={t("contracts.orgChart.search")}
-          className="h-10 w-full max-w-sm"
+          className="w-full sm:h-10 sm:max-w-sm"
         />
         {query ? (
           <Button variant="quiet" onClick={() => setQuery("")}>
@@ -81,14 +85,22 @@ export function OrgChartBody({ departments }: { departments: readonly ContractsO
           {t("contracts.orgChart.noMatch", { q: deferred })}
         </p>
       ) : null}
-      <OrgChartLazy
-        depts={depts}
-        rootName={t("contracts.orgChart.company")}
-        labels={labels}
-        highlightIds={matches}
-        focus={focus}
-        onSelectDept={setOpenId}
-      />
+      {view === "list" ? (
+        <OrgTreeList
+          tree={filterOrg(tree, deferred)}
+          highlightIds={deferred.trim() ? matches : []}
+          onSelectDept={setOpenId}
+        />
+      ) : (
+        <OrgChartLazy
+          depts={depts}
+          rootName={t("contracts.orgChart.company")}
+          labels={labels}
+          highlightIds={matches}
+          focus={focus}
+          onSelectDept={setOpenId}
+        />
+      )}
       <DeptMembersDialog
         dept={openId ? (byId.get(openId) ?? null) : null}
         onClose={() => setOpenId(null)}

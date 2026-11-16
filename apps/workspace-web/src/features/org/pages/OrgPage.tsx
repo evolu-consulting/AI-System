@@ -1,6 +1,8 @@
 // M1D-FR-02 · M1D-FR-03 · M1D-FR-04 · Cài đặt › Thành viên & phòng ban (theo màn "Thành viên" của mgmt-app): chế độ thấy, cấp quản
 // lý mỗi người, phòng ban (chỉnh ở admin qua «Chỉnh sơ đồ»). Ghi qua admin-api (tenant_admin) + hub-api (owner gói); 403 ⇒ chỉ đọc lời nhắc.
 import { Input } from "@ai/web-kit/ui/kit/input";
+import { PageHeader } from "@ai/web-kit/ui/kit/page-header";
+import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,6 +10,7 @@ import { EditChartButton } from "~/features/org-chart/components/EditChartButton
 import { Pager } from "~/features/table";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { PersonSearchSelect } from "~/shared/ui/PersonSearchSelect";
+import { useIsMobile } from "~/shared/ui/use-is-mobile";
 import {
   fetchOrgMembers,
   fetchOrgPeoplePage,
@@ -17,7 +20,8 @@ import {
   setManager,
 } from "../api";
 
-const field = "h-[34px] rounded-md border border-rule bg-panel px-2 text-body";
+const field =
+  "h-[34px] rounded-md border border-rule bg-panel px-2 text-body max-sm:min-h-11 max-sm:w-full";
 
 export function OrgPage() {
   const { t } = useTranslation();
@@ -46,6 +50,7 @@ export function OrgPage() {
     queryFn: ({ signal }) => fetchVisibility(signal),
     retry: false,
   });
+  const mobile = useIsMobile();
   const [err, setErr] = useState<string | null>(null);
   const run = useMutation({
     mutationFn: (fn: () => Promise<unknown>) => fn(),
@@ -70,12 +75,36 @@ export function OrgPage() {
   const rows = org.data?.items ?? [];
   const total = org.data?.total ?? 0;
 
+  const managerCell = (m: (typeof rows)[number]) =>
+    editing === m.user_id ? (
+      <PersonSearchSelect
+        source="org-members"
+        fetchPage={fetchOrgPeoplePage}
+        value={m.manager_id ?? ""}
+        valueName={m.manager_name ?? undefined}
+        excludeId={m.user_id}
+        noneLabel={t("contracts.org.none")}
+        disabled={run.isPending}
+        onChange={(id) => {
+          setEditing(null);
+          act(() => setManager(m.user_id, id || null));
+        }}
+      />
+    ) : (
+      <button
+        type="button"
+        aria-label={`${t("contracts.org.manager")} · ${m.display_name}`}
+        className={`${field} text-left`}
+        disabled={run.isPending}
+        onClick={() => setEditing(m.user_id)}
+      >
+        {m.manager_name ?? t("contracts.org.none")}
+      </button>
+    );
+
   return (
-    <section className="flex flex-col gap-5">
-      <header>
-        <h1 className="text-page-title">{t("contracts.org.title")}</h1>
-        <p className="mt-1 text-body text-dim">{t("contracts.org.lead")}</p>
-      </header>
+    <section className="flex flex-col gap-5 max-sm:pb-24">
+      <PageHeader title={t("contracts.org.title")} description={t("contracts.org.lead")} />
       {err && (
         <p
           role="alert"
@@ -107,54 +136,48 @@ export function OrgPage() {
         onChange={(e) => setQRaw(e.target.value)}
         placeholder={t("contracts.paging.search")}
         aria-label={t("contracts.paging.search")}
-        className="w-full max-w-sm"
+        className="w-full sm:max-w-sm"
       />
       <div className="overflow-x-auto rounded-lg border border-rule bg-panel">
-        <table className="w-full border-collapse text-body">
-          <thead>
-            <tr>
-              <th className="px-3 py-2 text-left text-dim">{t("contracts.org.member")}</th>
-              <th className="px-3 py-2 text-left text-dim">{t("contracts.org.manager")}</th>
-            </tr>
-          </thead>
-          <tbody>
+        {mobile ? (
+          <ul data-testid="org-member-cards" className="m-0 list-none p-0">
             {rows.map((m) => (
-              <tr key={m.user_id} className="border-t border-rule">
-                <td className="px-3 py-2">
-                  <span className="font-medium">{m.display_name}</span>
-                  <span className="ml-2 text-dim">{m.username}</span>
-                </td>
-                <td className="px-3 py-2">
-                  {editing === m.user_id ? (
-                    <PersonSearchSelect
-                      source="org-members"
-                      fetchPage={fetchOrgPeoplePage}
-                      value={m.manager_id ?? ""}
-                      valueName={m.manager_name ?? undefined}
-                      excludeId={m.user_id}
-                      noneLabel={t("contracts.org.none")}
-                      disabled={run.isPending}
-                      onChange={(id) => {
-                        setEditing(null);
-                        act(() => setManager(m.user_id, id || null));
-                      }}
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      aria-label={`${t("contracts.org.manager")} · ${m.display_name}`}
-                      className={`${field} text-left`}
-                      disabled={run.isPending}
-                      onClick={() => setEditing(m.user_id)}
-                    >
-                      {m.manager_name ?? t("contracts.org.none")}
-                    </button>
-                  )}
-                </td>
-              </tr>
+              <li
+                key={m.user_id}
+                className="flex flex-col gap-2 border-t border-rule px-4 py-3 first:border-t-0"
+              >
+                <span className="min-w-0">
+                  <TruncText text={m.display_name} className="block font-medium" />
+                  <TruncText text={m.username} className="block text-sm text-dim" />
+                </span>
+                <span className="flex flex-col gap-1 text-sm text-dim">
+                  {t("contracts.org.manager")}
+                  {managerCell(m)}
+                </span>
+              </li>
             ))}
-          </tbody>
-        </table>
+          </ul>
+        ) : (
+          <table className="w-full border-collapse text-body">
+            <thead>
+              <tr>
+                <th className="px-3 py-2 text-left text-dim">{t("contracts.org.member")}</th>
+                <th className="px-3 py-2 text-left text-dim">{t("contracts.org.manager")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((m) => (
+                <tr key={m.user_id} className="border-t border-rule">
+                  <td className="px-3 py-2">
+                    <span className="font-medium">{m.display_name}</span>
+                    <span className="ml-2 text-dim">{m.username}</span>
+                  </td>
+                  <td className="px-3 py-2">{managerCell(m)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
         {org.isSuccess && rows.length === 0 && (
           <p className="m-0 px-3 py-3 text-body text-dim">{t("contracts.paging.none")}</p>
         )}

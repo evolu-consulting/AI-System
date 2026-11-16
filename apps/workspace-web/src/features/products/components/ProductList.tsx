@@ -2,7 +2,7 @@
 // giữ · Đã bán · Điểm kinh doanh (+ đề xuất). Một yêu cầu lấy cả danh sách; tab lọc phía trình duyệt. Bấm hàng mở chi tiết (`?sp=`).
 
 import type { BizProductRow } from "@ai/contracts/pack-contracts";
-import { Button } from "@ai/web-kit/ui/kit/button";
+import { FilterBar } from "@ai/web-kit/ui/kit/filter-bar";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -11,11 +11,9 @@ import { viDate } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
-import { useMe } from "~/features/pack-state/hooks/use-me";
 import { Pager } from "~/features/table";
 import { useBizPage } from "../hooks/use-business";
 import { CATALOG_TABS, type CatalogTab, GROUP_TAG, heldView, SUGGEST_TONE } from "../lib/business";
-import { AddProductDialog } from "./AddProductDialog";
 
 export function HeldCell({ p }: { p: BizProductRow }) {
   const { t } = useTranslation();
@@ -65,8 +63,6 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
   }, [qRaw]);
   // biome-ignore lint/correctness/useExhaustiveDependencies: đổi nhóm ⇒ về trang 1
   useEffect(() => setPage(1), [tab]);
-  const { write } = useMe();
-  const [addOpen, setAddOpen] = useState(false);
   const list = useBizPage({
     ...(tab === "all" ? {} : { group: tab }),
     q,
@@ -79,45 +75,38 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
   const total = list.data?.total ?? 0;
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div
-          role="tablist"
-          aria-label={t("contracts.catalog.tabs")}
-          className="flex flex-wrap gap-1"
-        >
-          {CATALOG_TABS.map((k) => (
-            <Link
-              key={k}
-              to="/contracts/products"
-              search={k === "all" ? {} : { g: k }}
-              role="tab"
-              aria-selected={tab === k}
-              className="rounded-full border border-rule px-3 py-1 text-[13px] text-ink-2 hover:text-ink aria-selected:border-act aria-selected:bg-act-soft aria-selected:font-semibold aria-selected:text-act"
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <FilterBar
+          chips={
+            <div
+              role="tablist"
+              aria-label={t("contracts.catalog.tabs")}
+              className="flex flex-wrap gap-1 max-sm:flex-nowrap"
             >
-              {t(`contracts.catalog.tab.${k}`)} · {list.data?.counts[k] ?? 0}
-            </Link>
-          ))}
-        </div>
+              {CATALOG_TABS.map((k) => (
+                <Link
+                  key={k}
+                  to="/contracts/products"
+                  search={k === "all" ? {} : { g: k }}
+                  role="tab"
+                  aria-selected={tab === k}
+                  className="inline-flex shrink-0 items-center rounded-full border border-rule px-3 py-1 text-[13px] max-sm:min-h-11 text-ink-2 hover:text-ink aria-selected:border-act aria-selected:bg-act-soft aria-selected:font-semibold aria-selected:text-act"
+                >
+                  {t(`contracts.catalog.tab.${k}`)} · {list.data?.counts[k] ?? 0}
+                </Link>
+              ))}
+            </div>
+          }
+        />
         <Input
           type="search"
           value={qRaw}
           onChange={(e) => setQRaw(e.target.value)}
           placeholder={t("contracts.catalog.search")}
           aria-label={t("contracts.catalog.search")}
-          className="ml-auto h-9 w-56"
+          className="h-9 w-full sm:ml-auto sm:w-56"
         />
-        {write && (
-          <Button
-            variant="primary"
-            size="sm"
-            data-testid="gd1-add-product"
-            onClick={() => setAddOpen(true)}
-          >
-            {t("contracts.gapd1.add.open")}
-          </Button>
-        )}
       </div>
-      <AddProductDialog open={addOpen} onOpenChange={setAddOpen} />
       <Panel>
         {rows.length === 0 ? (
           <Empty title={t("contracts.catalog.emptyTitle")}>

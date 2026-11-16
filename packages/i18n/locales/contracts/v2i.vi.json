@@ -50,6 +50,8 @@
       "foot": "Điểm tính lại mỗi lần mở trang theo cách tính của từng vai (khách hàng, nhà cung cấp). Cờ đỏ tách khỏi điểm.",
       "howLink": "⚙ Cách tính điểm",
       "mst": "MST",
+      "phoneLabel": "Điện thoại",
+      "contactLabel": "Liên hệ",
       "noRole": "Đối tác này chưa có vai trò nào.",
       "tabs": "Thông tin đối tác",
       "tab": {
