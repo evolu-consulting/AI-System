@@ -1,4 +1,5 @@
 // CR-106 · nạp canvas bằng React.lazy (chunk `flow-canvas`). Đang tải ⇒ báo trạng thái; nạp lỗi ⇒ báo + "Thử lại".
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Component, lazy, type ReactNode, Suspense, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { FlowCanvasProps } from "./FlowCanvas";
@@ -30,9 +31,9 @@ export function FlowCanvasLazy(p: FlowCanvasProps) {
       fallback={() => (
         <p role="alert" className="mb-4 text-late">
           {t("contracts.flow.current.canvas.loadFail")}{" "}
-          <button type="button" className="underline" onClick={() => setAttempt((n) => n + 1)}>
+          <Button variant="link" onClick={() => setAttempt((n) => n + 1)}>
             {t("contracts.common.retry")}
-          </button>
+          </Button>
         </p>
       )}
     >

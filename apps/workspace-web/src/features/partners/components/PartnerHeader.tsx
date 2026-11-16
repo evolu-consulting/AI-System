@@ -1,6 +1,8 @@
 // V2-I · DT-01 · DT-07 · đầu trang chi tiết đối tác (mockup NITI): tên, vai, MST · điện thoại · liên hệ, điểm từng vai và nút
 // "Tìm trên internet" (chỉ chạy khi bấm; kết quả hiện ngay dưới đầu trang, mỗi dòng lưu được vào ghi chú).
+
 import type { PartnerProfile, RepRole } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -68,9 +70,9 @@ export function PartnerHeader({
         }
         actions={
           write && (
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
+            <Button
+              variant="primary"
+              size="sm"
               disabled={search.isPending}
               onClick={() => {
                 setShow(true);
@@ -78,7 +80,7 @@ export function PartnerHeader({
               }}
             >
               {search.isPending ? L("web.searching") : L("web.button")}
-            </button>
+            </Button>
           )
         }
       />{" "}
@@ -86,14 +88,15 @@ export function PartnerHeader({
         <ContactEditor party={party} contacts={contacts.data} onClose={() => setEditing(false)} />
       )}
       {!editing && write && contacts.data && (
-        <button
-          type="button"
+        <Button
+          variant="quiet"
+          size="sm"
+          className="mb-2"
           data-testid="act-editContact"
-          className="btn btn-sm mb-2"
           onClick={() => setEditing(true)}
         >
           {t("contracts.vgaps.contact.edit")}
-        </button>
+        </Button>
       )}
       {!editing && !!contacts.data?.length && (
         <ul

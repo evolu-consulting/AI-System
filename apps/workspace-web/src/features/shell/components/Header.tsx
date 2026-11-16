@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { IconFeedback, IconSidebar } from "~/components/icons";
 import { ConnectedBell } from "~/features/notifications/components/ConnectedBell";
 import { nameOf, useBrand } from "~/features/settings/lib/brand";
+import { IconButton } from "~/shared/ui/IconButton";
 import { topbarSlots } from "~/shell/topbar-slots";
 import { searchOwner, useNavPath } from "~/shell/use-nav-path";
 import { useShellPacks } from "~/shell/use-shell-packs";
@@ -14,8 +15,6 @@ import type { Role } from "../lib/nav";
 import { AppSwitcher } from "./AppSwitcher";
 import { BrandMark } from "./BrandMark";
 import { type ShellUser, UserMenu } from "./UserMenu";
-
-const BTN = "grid h-10 w-10 place-items-center rounded-[10px] text-ink-2 hover:bg-sunk";
 
 export function Header({
   user,
@@ -54,16 +53,14 @@ export function Header({
           {nameOf(brand, user?.tenant.name)}
         </span>
       </Link>
-      <button
-        type="button"
+      <IconButton
         onClick={onTogglePinned}
         aria-label={toggle}
-        title={toggle}
         aria-pressed={pinned}
-        className={`${BTN} max-md:hidden`}
+        className="max-md:hidden"
       >
         <IconSidebar />
-      </button>
+      </IconButton>
       <div
         ref={(el) => topbarSlots.set("search", el)}
         data-slot="topbar-search"
@@ -82,16 +79,13 @@ export function Header({
           <ConnectedBell />
         </span>
         {packs.contracts && (
-          <button
-            type="button"
+          <IconButton
             data-testid="topbar-feedback"
             onClick={onFeedback}
             aria-label={t("contracts.shell.feedback")}
-            title={t("contracts.shell.feedback")}
-            className={BTN}
           >
             <IconFeedback />
-          </button>
+          </IconButton>
         )}
         {user && (
           <span className="max-md:hidden">

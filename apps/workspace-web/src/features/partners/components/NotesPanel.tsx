@@ -1,5 +1,8 @@
 // V2-I · DT-05 · ghi chú về đối tác: người viết + ngày, thêm / xoá (người viết hoặc quản lý). Dòng lưu từ "Tìm trên internet" có nhãn nguồn.
+
 import type { PartnerNote } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,6 +11,7 @@ import { viDate } from "~/components/shared/format";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
 import { useMe } from "~/features/pack-state/hooks/use-me";
+import { IconButton } from "~/shared/ui/IconButton";
 import { useAddNote, useDeleteNote, useNotes } from "../hooks/use-partner-rep";
 
 export function NotesPanel({ party }: { party: string }) {
@@ -46,14 +50,13 @@ export function NotesPanel({ party }: { party: string }) {
               onChange={(e) => setText(e.target.value)}
             />
             <div className="mt-2 flex justify-end">
-              <button
-                type="button"
-                className="btn btn-quiet h-8"
+              <Button
+                variant="quiet"
                 disabled={add.isPending || !text.trim()}
                 onClick={() => add.mutate(text.trim())}
               >
                 {L("save")}
-              </button>
+              </Button>
             </div>
             {add.isError && (
               <p role="alert" className="text-[12.5px] text-late">
@@ -83,15 +86,14 @@ export function NotesPanel({ party }: { party: string }) {
                   <span className="whitespace-pre-wrap">{n.body}</span>
                 </span>
                 {write && (owner || n.by_user === user?.id) && (
-                  <button
-                    type="button"
-                    className="btn btn-quiet h-8 px-2 text-late"
+                  <IconButton
+                    className="px-2 text-late"
                     aria-label={L("deleteAria")}
                     disabled={del.isPending}
                     onClick={() => void remove(n)}
                   >
-                    ✕
-                  </button>
+                    <ICONS.remove />
+                  </IconButton>
                 )}
               </li>
             ))}

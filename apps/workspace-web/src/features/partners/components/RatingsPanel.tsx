@@ -8,6 +8,7 @@ import type {
   RepRatingRow,
   RepRole,
 } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
@@ -71,9 +72,8 @@ function RatingRow({
             aria-label={L("reasonFor", { name: c.label })}
             onChange={(e) => setReason(e.target.value)}
           />
-          <button
-            type="button"
-            className="btn btn-primary h-8"
+          <Button
+            variant="primary"
             disabled={save.isPending || unchanged || (must && !reason.trim())}
             onClick={() =>
               save.mutate({
@@ -87,7 +87,7 @@ function RatingRow({
             }
           >
             {save.isPending ? L("saving") : L("save")}
-          </button>
+          </Button>
         </div>
       )}
       {save.isError && (

@@ -1,6 +1,8 @@
 // Bình luận dưới bài (CR-129): MỘT danh sách phẳng (chủ quản thấy hết; đối tác thấy phần server cho phép), không còn luồng riêng theo công ty.
 // Gõ `@` nhắc tên công ty đối tác (chỉ chủ quản có gợi ý); gửi kèm `mentions` (id công ty).
+
 import type { CommentView, Mention, PostView } from "@ai/contracts/community";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { useApp } from "../application/ctx";
@@ -122,15 +124,14 @@ export function Thread({
         </div>
       )}
       {canMore && (
-        <button
-          type="button"
-          className="clink"
+        <Button
+          variant="link"
           data-testid="comments-more"
           disabled={loadingMore}
           onClick={() => more().catch(() => undefined)}
         >
           {t("community.thread.more", { count: Math.max(1, hiddenCount) })}
-        </button>
+        </Button>
       )}
       {all.map((c) => (
         <CommentItem

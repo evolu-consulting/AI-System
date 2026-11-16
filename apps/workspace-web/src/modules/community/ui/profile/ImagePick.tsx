@@ -1,5 +1,7 @@
 // CR-147b · nút chọn ảnh (avatar hoặc ảnh bìa) + nút xoá. Kiểm loại/dung lượng, báo lỗi bằng nhãn nghiệp vụ; lưu qua `onSave` (null = xoá).
+
 import { useRef, useState } from "react";
+import { IconButton } from "~/shared/ui/IconButton";
 import { checkImage, type ImageKind, maxBytesOf } from "../../domain/image";
 import { t } from "../../i18n";
 import { IconEdit, IconTrash } from "../icons";
@@ -55,29 +57,25 @@ export function ImagePick({
             e.target.value = "";
           }}
         />
-        <button
-          type="button"
+        <IconButton
           className="imgpick-btn"
           disabled={busy}
           aria-label={t(`community.me.${label}Change`)}
-          title={t(`community.me.${label}Change`)}
           data-testid={`${testId}-change`}
           onClick={() => file.current?.click()}
         >
           <IconEdit size={16} />
-        </button>
+        </IconButton>
         {hasImage && (
-          <button
-            type="button"
+          <IconButton
             className="imgpick-btn"
             disabled={busy}
             aria-label={t(`community.me.${label}Remove`)}
-            title={t(`community.me.${label}Remove`)}
             data-testid={`${testId}-remove`}
             onClick={() => void run(() => onSave(null))}
           >
             <IconTrash size={16} />
-          </button>
+          </IconButton>
         )}
       </span>
       {err && (

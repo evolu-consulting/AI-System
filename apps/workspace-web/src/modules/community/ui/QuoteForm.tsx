@@ -3,6 +3,7 @@
 
 import type { HostHint, PostView, QuotePreview } from "@ai/contracts/community";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useState } from "react";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
@@ -114,9 +115,9 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
               onChange={(e) => setFind(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && search()}
             />
-            <button type="button" className="ghost" onClick={search}>
+            <Button variant="quiet" onClick={search}>
               {t("community.quote.find")}
-            </button>
+            </Button>
           </div>
         </div>
         {d.productId === "new" && (
@@ -213,25 +214,15 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
         <div className="impact">{t("community.quote.replaces", { n: pv.replaces })}</div>
       )}
       <div className="xf">
-        <button type="button" className="ghost" onClick={onClose}>
+        <Button variant="quiet" onClick={onClose}>
           {t("community.common.cancel")}
-        </button>
-        <button
-          type="button"
-          className="ghost"
-          disabled={!ready || busy}
-          onClick={() => save(true)}
-        >
+        </Button>
+        <Button variant="quiet" disabled={!ready || busy} onClick={() => save(true)}>
           {t("community.quote.saveAndMore")}
-        </button>
-        <button
-          type="button"
-          className="primary sm"
-          disabled={!ready || busy}
-          onClick={() => save(false)}
-        >
+        </Button>
+        <Button variant="primary" size="sm" disabled={!ready || busy} onClick={() => save(false)}>
           {t("community.quote.save")}
-        </button>
+        </Button>
       </div>
     </div>
   );

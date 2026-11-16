@@ -6,6 +6,7 @@ import {
   type PartnerRole,
   SEVERE_EVENT_TYPES,
 } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -48,14 +49,9 @@ function Line({
         </span>
       </span>
       {admin && !e.voided && (
-        <button
-          type="button"
-          className="shrink-0 text-[12.5px] text-late hover:underline"
-          disabled={busy}
-          onClick={onVoid}
-        >
+        <Button variant="link" className="text-late" disabled={busy} onClick={onVoid}>
           {L("clear")}
-        </button>
+        </Button>
       )}
     </li>
   );
@@ -123,14 +119,9 @@ function ReportForm({
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
-        <button
-          type="button"
-          className="btn btn-primary h-8"
-          disabled={!!busy || !note.trim()}
-          onClick={() => void save()}
-        >
+        <Button variant="primary" disabled={!!busy || !note.trim()} onClick={() => void save()}>
           {busy === "flag" ? L("saving") : L("send")}
-        </button>
+        </Button>
       </div>
       {err && (
         <p role="alert" className="text-late">

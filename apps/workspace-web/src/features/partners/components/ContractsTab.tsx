@@ -1,6 +1,8 @@
 // V2-I · DT-06 · tab "Hợp đồng · n": HĐ đã xác nhận của đối tác, lọc theo giai đoạn Chưa bắt đầu / Đang thực hiện / Đã xong
 // (giai đoạn do máy chủ suy từ mốc — cùng luật danh sách HĐ).
+
 import type { PartnerContractRow } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -111,14 +113,14 @@ export function ContractsTab({ party }: { party: string }) {
       )}
       {q.hasNextPage && (
         <div className="border-t border-rule-soft px-5 py-2.5">
-          <button
-            type="button"
-            className="text-[12.5px] text-dim hover:underline"
+          <Button
+            variant="link"
+            className="text-dim"
             disabled={q.isFetchingNextPage}
             onClick={() => void q.fetchNextPage()}
           >
             {L("loadMore")}
-          </button>
+          </Button>
         </div>
       )}
     </section>

@@ -2,6 +2,7 @@
 // người phụ trách bên mình). Lưu = thay cả danh sách; người đầu tiên hiện ở đầu trang. Dòng trống bị bỏ.
 
 import type { PartnerContactPerson } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
@@ -70,32 +71,31 @@ export function ContactEditor({
                 />
               </label>
             ))}
-            <button
-              type="button"
-              className="btn btn-quiet h-9 text-[13px] text-late"
+            <Button
+              variant="quiet"
+              className="text-late"
               aria-label={`${L("remove")} ${i + 1}`}
               onClick={() => setRows((s) => s.filter((x) => x.key !== r.key))}
             >
               {L("remove")}
-            </button>
+            </Button>
           </li>
         ))}
       </ul>
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className="btn btn-outline h-9 text-[13px]"
+        <Button
+          variant="outline"
           disabled={rows.length >= CONTACTS_MAX}
           onClick={() => setRows((s) => [...s, blankRow()])}
         >
           {L("add")}
-        </button>
-        <button type="submit" className="btn btn-quiet h-9 text-[13px]" disabled={save.isPending}>
+        </Button>
+        <Button variant="quiet" type="submit" disabled={save.isPending}>
           {L("save")}
-        </button>
-        <button type="button" className="btn btn-outline h-9 text-[13px]" onClick={onClose}>
+        </Button>
+        <Button variant="outline" onClick={onClose}>
           {L("cancel")}
-        </button>
+        </Button>
       </div>
       {(bad || save.isError) && (
         <p role="alert" className="text-[13px] text-late">

@@ -1,4 +1,5 @@
 // Chọn nhiều nhóm hàng trong hộp thoại (CR-129 L4): trên trang chỉ có một nút tóm tắt «A, B +N»; Xong mới ghi lựa chọn, Huỷ bỏ.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
@@ -69,12 +70,12 @@ export function CategoryDialog({
             <div className="catfoot">
               <span className="meta">{t("community.audience.catsCount", { n: sel.length })}</span>
               <div className="sp" />
-              <button type="button" className="ghost" onClick={() => setOpen(false)}>
+              <Button variant="quiet" onClick={() => setOpen(false)}>
                 {t("community.audience.catsCancel")}
-              </button>
-              <button
-                type="button"
-                className="primary sm"
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
                 data-testid="cat-pick-done"
                 onClick={() => {
                   onChange(sel);
@@ -82,7 +83,7 @@ export function CategoryDialog({
                 }}
               >
                 {t("community.audience.catsDone")}
-              </button>
+              </Button>
             </div>
           </div>
         </DialogContent>

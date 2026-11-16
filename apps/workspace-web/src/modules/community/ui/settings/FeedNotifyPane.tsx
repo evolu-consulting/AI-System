@@ -1,11 +1,13 @@
 // COM-FR-39 · CR-130 · ngăn "Bảng tin › Thông báo" trong Cài đặt Sổ Hợp Tác (một trang Cài đặt cho cả app): chọn khi nào nhận thông báo
 // (lưu /pack/community/settings, tự lưu). Nạp lười từ hộp thoại Cài đặt chung; dùng chung API với trang Bảng tin (application/boot).
+
 import {
   type CommunitySettings,
   DEFAULT_SETTINGS,
   NOTIFY_KINDS,
   type NotifyKind,
 } from "@ai/contracts/community";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { use, useCallback, useEffect, useState } from "react";
 import {
@@ -60,9 +62,9 @@ export default function FeedNotifyPane() {
           className="mb-4 flex items-center gap-3"
         >
           <b className="text-label">{t("community.settings.loadError")}</b>
-          <button type="button" className="text-label text-act underline" onClick={load}>
+          <Button variant="link" onClick={load}>
             {t("community.settings.retry")}
-          </button>
+          </Button>
         </div>
       )}
       {s && (

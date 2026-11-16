@@ -2,6 +2,7 @@
 
 import type { JoinRequest } from "@ai/contracts/community";
 import { PARTNER_LABELS } from "@ai/contracts/community";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { useApp } from "../../application/ctx";
@@ -111,9 +112,9 @@ function JoinForm() {
         )}
         <div className="cbar">
           <div className="sp" />
-          <button type="button" className="primary sm" data-testid="join-submit" onClick={submit}>
+          <Button variant="primary" size="sm" data-testid="join-submit" onClick={submit}>
             {t("community.flows.join.submit")}
-          </button>
+          </Button>
         </div>
       </div>
     </section>

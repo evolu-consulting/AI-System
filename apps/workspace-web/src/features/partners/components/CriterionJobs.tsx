@@ -1,5 +1,7 @@
 // V2-I · DT-02: các việc góp điểm của MỘT tiêu chí — ngày, việc (HĐ), điểm việc, hệ số độ cũ h, trễ bao nhiêu ngày / lỗi của ai.
+
 import type { RepDetailItem } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
@@ -71,15 +73,15 @@ export function CriterionJobs({
                 {L("h", { h: i.h })}
               </span>
               {write && i.source === "job" && (
-                <button
-                  type="button"
-                  className="shrink-0 text-[12.5px] text-late hover:underline"
+                <Button
+                  variant="link"
+                  className="text-late"
                   disabled={!!busy}
                   aria-label={t("contracts.ledger.voidAria", { what: i.label })}
                   onClick={() => void ask(i.id, i.label, viDate(i.at))}
                 >
                   {t("contracts.ledger.void")}
-                </button>
+                </Button>
               )}
             </li>
           ))}

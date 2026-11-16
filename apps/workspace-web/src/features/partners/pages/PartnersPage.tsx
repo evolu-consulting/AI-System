@@ -1,7 +1,9 @@
 // V2-I · DT-01 · S-p02 `/partners` v2 — mockup NITI: mỗi đối tác một dòng (tên, các vai, điểm từng vai, số hợp đồng), tìm + lọc vai /
 // "Cần chú ý"; bấm tên mở trang chi tiết. Huy hiệu MỚI · tạm tính + cờ đỏ (U3); "+ Ghi việc" (sổ HD7) giữ lại.
 // CR-151e: tìm / lọc / sắp xếp / cắt trang + gộp vai + điểm + số HĐ chạy Ở MÁY CHỦ (`GET /partners/page`, cả hai engine) — chỉ tải trang đang xem.
+
 import type { PartnerRole, RepRole } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -163,22 +165,14 @@ export function PartnersPage() {
           (write || owner) && (
             <div className="flex gap-2">
               {owner && (
-                <button
-                  type="button"
-                  className="btn btn-outline h-9 text-[13px]"
-                  onClick={() => setFinding(true)}
-                >
+                <Button variant="outline" onClick={() => setFinding(true)}>
                   {t("contracts.connect.find")}
-                </button>
+                </Button>
               )}
               {write && (
-                <button
-                  type="button"
-                  className="btn btn-outline h-9 text-[13px]"
-                  onClick={() => setAdding(true)}
-                >
+                <Button variant="outline" onClick={() => setAdding(true)}>
                   {t("contracts.vgaps.company.add")}
-                </button>
+                </Button>
               )}
             </div>
           )

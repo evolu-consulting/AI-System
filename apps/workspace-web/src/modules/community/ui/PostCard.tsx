@@ -1,5 +1,7 @@
 // Thẻ bài (mockup `.post`): ⋯ menu (Sửa / Lưu trữ / Đã xong / Xoá + xác nhận đỏ), nhãn đã sửa / lưu trữ / ẩn, bình luận theo luồng.
-import type { MediaItem, ModerationItem, PostAction, PostView } from "@ai/contracts/community";
+
+import type { MediaItem, ModerationItem, PostView } from "@ai/contracts/community";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useEffect, useState } from "react";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { useApp } from "../application/ctx";
@@ -7,24 +9,12 @@ import { draftFromFields } from "../domain/compose";
 import { dealStrip, expiryNote, initials, timeAgo, tone } from "../domain/format";
 import { hintLines, saveButtonLabel, savedText } from "../domain/quote";
 import { opensCommentThread } from "../domain/search-hint";
-import { numLocale, t } from "../i18n";
+import { t } from "../i18n";
 import { AttachEditor } from "./AttachEditor";
 import { DraftFields } from "./DraftFields";
 import { ModerationNote, ReportDialog } from "./flows/PostFlows";
 import { Highlighted } from "./Highlighted";
-import {
-  IconArchive,
-  IconBox,
-  IconChat,
-  IconCheck,
-  IconDots,
-  IconEdit,
-  IconEyeOff,
-  IconFlag,
-  IconLock,
-  IconSave,
-  IconTrash,
-} from "./icons";
+import { IconBox, IconChat, IconCheck, IconDots, IconLock, IconSave } from "./icons";
 import { PostMedia } from "./PostMedia";
 import { has, PostMenu } from "./PostMenu";
 import { QuoteForm } from "./QuoteForm";
@@ -83,12 +73,12 @@ function EditForm({ p, onClose }: { p: PostView; onClose: () => void }) {
       />
       <div className="cbar">
         <div className="sp" />
-        <button type="button" className="ghost" onClick={onClose}>
+        <Button variant="quiet" onClick={onClose}>
           {t("community.common.cancel")}
-        </button>
-        <button type="button" className="primary sm" onClick={save}>
+        </Button>
+        <Button variant="primary" size="sm" onClick={save}>
           {t("community.post.saveChanges")}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -181,10 +171,10 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
         </div>
         <span className={`pill ${p.type}`}>{t(`community.postType.${p.type}`)}</span>
         {isHostViewer && has(p, "saveQuote") && p.type === "sell" && (
-          <button type="button" className="outline" onClick={() => openQuote(p.authorOrgName)}>
+          <Button variant="outline" onClick={() => openQuote(p.authorOrgName)}>
             <IconSave size={16} />
             {saveButtonLabel(savedCount)}
-          </button>
+          </Button>
         )}
         {hasMenu && (
           <button
@@ -326,14 +316,10 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
             p.type === "buy" &&
             p.authorSide === "host" &&
             c.authorSide === "partner" ? (
-              <button
-                type="button"
-                className="outline sm"
-                onClick={() => openQuote(c.authorOrgName, c.id)}
-              >
+              <Button variant="outline" size="sm" onClick={() => openQuote(c.authorOrgName, c.id)}>
                 <IconSave size={14} />
                 {saveButtonLabel(p.quotes?.filter((m) => m.commentId === c.id).length ?? 0)}
-              </button>
+              </Button>
             ) : null
           }
         />

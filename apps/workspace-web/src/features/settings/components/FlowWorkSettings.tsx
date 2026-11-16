@@ -3,6 +3,7 @@
 
 import { CLAIM_RELEASE_H } from "@ai/contracts/chat";
 import { ApiError } from "@ai/web-kit/http";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -72,15 +73,15 @@ export function FlowWorkSettings() {
               {bad ? t("contracts.work.u4.err.CLAIM_HOURS_RANGE") : err}
             </p>
           )}
-          <button
-            type="button"
-            className="btn btn-primary w-fit"
+          <Button
+            variant="primary"
+            className="w-fit"
             data-testid="flow-work-save"
             disabled={bad || save.isPending || !flow.data}
             onClick={() => save.mutate()}
           >
             {t("contracts.work.u4.settings.save")}
-          </button>
+          </Button>
         </div>
       </div>
     </SettingsGroup>

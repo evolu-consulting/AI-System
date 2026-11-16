@@ -1,5 +1,6 @@
 // CR-125 · cr125-form-step-card · ô «Đính kèm tệp» dùng chung: chọn tệp ⇒ tải ngay (`POST /attachments`) ⇒ giá trị ô = id tệp.
 // `multiple=false` (ô `file_ref` của form: MỘT tệp, chọn lại thì thay) hoặc nhiều tệp (phiếu yêu cầu). Chỉ đọc: `FileNames`.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -95,14 +96,9 @@ export function FileName({ id }: { id: string }) {
       ) : blocked && q.isError ? (
         name
       ) : (
-        <button
-          type="button"
-          className="text-act hover:underline"
-          data-testid="file-link"
-          onClick={() => void open()}
-        >
+        <Button variant="link" data-testid="file-link" onClick={() => void open()}>
           <TruncText maxWidth="20rem">{name}</TruncText>
-        </button>
+        </Button>
       )}
       {blocked && (
         <span role="alert" className="ml-2 text-caption text-late" data-testid="file-denied">

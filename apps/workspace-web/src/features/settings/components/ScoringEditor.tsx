@@ -1,6 +1,8 @@
 // U3 · R45 · một vai của "Cách tính điểm": bật/tắt + trọng số (tổng 100), mức TỐT/KHÁ, số việc tối thiểu, khoảng tính, hệ số gần đây,
 // chỉnh tay ±10; "xem trước" N đối tác đổi mức; Lưu tăng phiên bản + ghi lịch sử (R46). Chỉ quản lý (`owner`) sửa.
+
 import type { PartnerRole, ScoreConfigOut, ScoringDraft } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -162,23 +164,21 @@ function Body({ role, cfg, owner }: { role: PartnerRole; cfg: ScoreConfigOut; ow
       <ScoringImpact role={role} draft={dirty && !issue ? draft : null} />
       {owner && (
         <div className="mb-4 flex justify-end gap-2">
-          <button
-            type="button"
-            className="btn btn-quiet"
+          <Button
+            variant="quiet"
             disabled={!dirty || save.isPending}
             onClick={() => setDraft(base)}
           >
             {s("discard")}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
+          </Button>
+          <Button
+            variant="primary"
             data-testid="scoring-save"
             disabled={!dirty || issue !== null || save.isPending}
             onClick={doSave}
           >
             {s("save")}
-          </button>
+          </Button>
         </div>
       )}
       <ScoringHistory role={role} />

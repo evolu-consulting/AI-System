@@ -7,6 +7,7 @@ import type {
   ModerationItem,
   PartnerOrg,
 } from "@ai/contracts/community";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useRef, useState } from "react";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
@@ -120,9 +121,9 @@ export function FeedFilters({
         area: f.area,
         authorOrgId: f.author,
       }) && (
-        <button type="button" className="linkbtn" onClick={f.clear}>
+        <Button variant="link" onClick={f.clear}>
           {t("community.feed.filters.clear")}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -145,17 +146,16 @@ function FeedMore({ more }: { more: MoreFeed }) {
   }, [has, load]);
   if (!has) return null;
   return (
-    <button
+    <Button
+      variant="link"
       ref={ref}
-      type="button"
-      className="clink"
       data-testid="feed-more"
       disabled={loading}
       aria-busy={loading}
       onClick={() => void load()}
     >
       {t("community.feed.more")}
-    </button>
+    </Button>
   );
 }
 

@@ -1,6 +1,7 @@
 // #269 · ô chọn công ty nhận bài: tìm theo tên ở máy chủ + «Xem thêm» (50 công ty/lần), không tải cả danh sách.
 
 import type { PartnerOrg } from "@ai/contracts/community";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useState } from "react";
 import { useApp } from "../application/ctx";
@@ -73,15 +74,15 @@ export function CompanyPicker({
         )}
       </div>
       {more && (
-        <button
-          type="button"
-          className="btn btn-sm"
+        <Button
+          variant="quiet"
+          size="sm"
           data-testid="company-more"
           disabled={busy}
           onClick={loadMore}
         >
           {t("community.audience.companyMore")}
-        </button>
+        </Button>
       )}
     </div>
   );

@@ -1,10 +1,12 @@
 // CR-110 · COM-FR-36/37 · nội dung 4 mục hồ sơ. Mỗi mục là component riêng; `ProfilePage` chỉ ghép theo registry.
+
 import type {
   ModerationItem,
   PartnerOrg,
   Profile,
   ProfileMediaItem,
 } from "@ai/contracts/community";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "../../application/ctx";
 import { byPostId, hasOpenModeration, loadAllMine } from "../../domain/flows";
@@ -166,15 +168,15 @@ export function PartnersSection() {
         </tbody>
       </table>
       {more && (
-        <button
-          type="button"
-          className="btn btn-sm"
+        <Button
+          variant="quiet"
+          size="sm"
           data-testid="partners-more"
           disabled={busy}
           onClick={loadMore}
         >
           {t("community.profile.partners.more")}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -230,9 +232,9 @@ export function MediaSection({ orgId }: { orgId: string }) {
         ))}
       </ul>
       {next && (
-        <button type="button" className="btn" onClick={() => load(next)}>
+        <Button variant="quiet" onClick={() => load(next)}>
           {t("community.profile.files.more")}
-        </button>
+        </Button>
       )}
     </div>
   );

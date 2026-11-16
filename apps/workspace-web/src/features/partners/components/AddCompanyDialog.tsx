@@ -2,6 +2,7 @@
 // tên/địa chỉ/trạng thái theo Cục Thuế. Cục Thuế chưa tra được ⇒ mời nhập tên (và địa chỉ) để lưu trước, sau tra lại được.
 
 import type { Company } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 
 import { useState } from "react";
@@ -32,14 +33,9 @@ function Result({ c, onRefresh, busy }: { c: Company; onRefresh: () => void; bus
             : L("active")
           : L("notChecked")}
       </span>
-      <button
-        type="button"
-        className="btn btn-quiet btn-sm"
-        disabled={busy || !c.tax_id}
-        onClick={onRefresh}
-      >
+      <Button variant="quiet" size="sm" disabled={busy || !c.tax_id} onClick={onRefresh}>
         {L("refresh")}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -129,12 +125,12 @@ export function AddCompanyDialog({ onClose }: { onClose: () => void }) {
               </>
             )}
             <DialogFooter className="items-center gap-2">
-              <button type="button" className="btn btn-quiet btn-sm" onClick={onClose}>
+              <Button variant="quiet" size="sm" onClick={onClose}>
                 {t("contracts.common.cancel")}
-              </button>
-              <button type="submit" className="btn btn-primary btn-sm" disabled={create.isPending}>
+              </Button>
+              <Button variant="primary" size="sm" type="submit" disabled={create.isPending}>
                 {create.isPending ? L("looking") : needName ? L("saveFirst") : L("lookup")}
-              </button>
+              </Button>
             </DialogFooter>
           </form>
         )}
@@ -145,9 +141,9 @@ export function AddCompanyDialog({ onClose }: { onClose: () => void }) {
         )}
         {done && (
           <DialogFooter>
-            <button type="button" className="btn btn-primary btn-sm" onClick={onClose}>
+            <Button variant="primary" size="sm" onClick={onClose}>
               {L("close")}
-            </button>
+            </Button>
           </DialogFooter>
         )}
       </DialogContent>

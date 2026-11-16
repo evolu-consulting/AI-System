@@ -1,10 +1,14 @@
 // V2-I · DT-07 · intake Q8 · "Tìm trên internet": chỉ chạy khi người dùng bấm (nút ở đầu trang chi tiết); máy chủ chỉ gửi tên + MST
 // cho AI có tìm web qua gói. Kết quả là vài dòng chữ thuần; mỗi dòng có "Lưu vào ghi chú" (nguồn `internet`).
+
 import type { PartnerWebLine } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
+import { IconButton } from "~/shared/ui/IconButton";
 import { useSaveWebLine } from "../hooks/use-partner-rep";
 
 export function InternetResult({
@@ -30,14 +34,9 @@ export function InternetResult({
       <div className="flex items-center gap-2 border-b border-rule-soft px-5 py-3">
         <h3 className="text-[15px] font-semibold">{L("title")}</h3>
         <span className="text-[12.5px] text-dim">{L("hint")}</span>
-        <button
-          type="button"
-          className="btn btn-quiet ml-auto h-8 px-2"
-          aria-label={L("close")}
-          onClick={onClose}
-        >
-          ✕
-        </button>
+        <IconButton className="ml-auto px-2" aria-label={L("close")} onClick={onClose}>
+          <ICONS.close />
+        </IconButton>
       </div>
       {lines.length === 0 ? (
         <p className="px-5 py-4 text-label text-dim">{L("none")}</p>
@@ -55,14 +54,13 @@ export function InternetResult({
                 {l.source && <span className="block text-[12px] text-dim">{l.source}</span>}
               </span>
               {write && (
-                <button
-                  type="button"
-                  className="btn btn-quiet h-8 shrink-0 text-[13px]"
+                <Button
+                  variant="quiet"
                   disabled={saved.has(i) || save.isPending}
                   onClick={() => save.mutate(i)}
                 >
                   {saved.has(i) ? L("savedShort") : L("save")}
-                </button>
+                </Button>
               )}
             </li>
           ))}

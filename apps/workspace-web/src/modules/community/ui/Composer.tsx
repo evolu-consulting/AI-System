@@ -3,6 +3,7 @@
 import type { AudienceMode, PartnerOrg, PostType } from "@ai/contracts/community";
 import { attachPickLabels } from "@ai/web-kit/attach-layout";
 import { AttachPickButton } from "@ai/web-kit/ui/AttachDropzone";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useEffect, useState } from "react";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { uploadFiles } from "../application/attach";
@@ -308,9 +309,9 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
               </span>
             )}
             <div className="sp" />
-            <button type="button" className="primary" disabled={busy} onClick={publish}>
+            <Button variant="primary" disabled={busy} onClick={publish}>
               {t("community.composer.publish")}
-            </button>
+            </Button>
           </div>
           {isHostViewer && audOpen && (
             <AudiencePicker

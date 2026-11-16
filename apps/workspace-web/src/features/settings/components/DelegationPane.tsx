@@ -1,9 +1,11 @@
 // CR-127 · U4 · M14 · BR-31…34 · «Uỷ quyền khi vắng»: chọn người làm thay + khoảng ngày + loại việc (Duyệt · Bổ sung thông tin · Xác nhận
 // mốc · Ký số); danh sách uỷ quyền còn hiệu lực + Thu hồi. Quản trị công ty đặt thay người khác (chọn «Đặt cho»).
 // Lệch mock: nằm trong Cài đặt › Quy trình duyệt (không có trang «Hồ sơ của tôi» riêng ở app này).
+
 import { DELEGATION_KINDS } from "@ai/contracts/chat";
 import { ApiError } from "@ai/web-kit/http";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -150,15 +152,15 @@ export function DelegationPane() {
               {err}
             </p>
           )}
-          <button
-            type="button"
-            className="btn btn-primary w-fit"
+          <Button
+            variant="primary"
+            className="w-fit"
             data-testid="delegation-save"
             disabled={save.isPending}
             onClick={() => (issue ? setTried(true) : save.mutate())}
           >
             {t("contracts.work.u4.deleg.save")}
-          </button>
+          </Button>
         </div>
         {rows.length > 0 && (
           <ul className="m-0 list-none border-t border-rule-soft p-0" data-testid="delegation-list">
@@ -175,14 +177,14 @@ export function DelegationPane() {
                     end: new Date(Date.parse(d.to_at) - 1).toLocaleDateString("vi-VN"),
                   })}
                 </span>
-                <button
-                  type="button"
-                  className="btn btn-quiet btn-sm"
+                <Button
+                  variant="quiet"
+                  size="sm"
                   disabled={revoke.isPending}
                   onClick={() => revoke.mutate(d.id)}
                 >
                   {t("contracts.work.u4.deleg.revoke")}
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

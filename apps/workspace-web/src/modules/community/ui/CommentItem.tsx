@@ -1,6 +1,7 @@
 // Một bình luận trong luồng (C6): sửa/xoá của người viết, ẩn của chủ quản. `action` = chỗ gắn nút của lát khác (C7b "Lưu báo giá").
 
 import type { CommentView } from "@ai/contracts/community";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { type ReactNode, useState } from "react";
 import { initials, timeAgo, tone } from "../domain/format";
@@ -80,35 +81,28 @@ export function CommentItem({
           {timeAgo(c.createdAt)}
           {c.hidden ? t("community.comment.hiddenTag") : ""}
           {actions.edit && !editing && (
-            <button
-              type="button"
-              className="clink"
+            <Button
+              variant="link"
               aria-label={t("community.comment.edit")}
               onClick={() => setEditing(true)}
             >
               <IconEdit size={12} /> {t("community.comment.editShort")}
-            </button>
+            </Button>
           )}
           {actions.delete && (
-            <button
-              type="button"
-              className="clink"
-              aria-label={t("community.comment.delete")}
-              onClick={onDelete}
-            >
+            <Button variant="link" aria-label={t("community.comment.delete")} onClick={onDelete}>
               <IconTrash size={12} /> {t("community.comment.deleteShort")}
-            </button>
+            </Button>
           )}
           {actions.hide && (
-            <button
-              type="button"
-              className="clink"
+            <Button
+              variant="link"
               aria-label={c.hidden ? t("community.comment.show") : t("community.comment.hide")}
               onClick={() => onHide(!c.hidden)}
             >
               <IconEyeOff size={12} />{" "}
               {c.hidden ? t("community.comment.showShort") : t("community.comment.hideShort")}
-            </button>
+            </Button>
           )}
           {action}
         </div>

@@ -1,4 +1,5 @@
 // Trạng thái tải/lỗi của hộp thoại Cài đặt chung (tách khỏi SettingsDialog để file gọn).
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
 import { PaneSkeleton } from "~/components/shared/Refreshing";
 
@@ -18,9 +19,9 @@ export function LoadState({
       {error && (
         <p role="alert" className="text-late">
           {t("contracts.settings.loadFail")}{" "}
-          <button type="button" className="underline" onClick={retry}>
+          <Button variant="link" onClick={retry}>
             {t("contracts.common.retry")}
-          </button>
+          </Button>
         </p>
       )}
     </>

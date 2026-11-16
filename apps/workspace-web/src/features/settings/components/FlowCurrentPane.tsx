@@ -1,7 +1,9 @@
 // CR-125 · S2 · Cài đặt › "Quy trình duyệt" = MỘT cửa (thay "Ứng dụng & quy trình"): quy trình ĐANG CHẠY của công ty, đọc từ cùng nguồn với trang
 // Quy trình ở admin (`company_flows`, "Duyệt 2 cấp"…), chỉ đọc; nút "Mở trang Quy trình" cho quản trị công ty; chưa có quy trình Bật ⇒ nói rõ
 // ai làm gì ở đâu (không đẩy sang "quản trị nền tảng"). CR-106: canvas chỉ đọc + công tắc "Sơ đồ | Danh sách".
+
 import { openInNewTab } from "@ai/web-kit/auth/open-tab";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -57,15 +59,15 @@ function OpenFlowsPage() {
     if (!ok) toast(t("contracts.flow.current.openFail"), "late");
   };
   return (
-    <button
-      type="button"
+    <Button
+      variant="outline"
+      className="mb-4"
       data-testid="flow-open-page"
       disabled={busy}
-      className="btn btn-outline mb-4"
       onClick={() => void go()}
     >
       {t("contracts.flow.current.openPage")}
-    </button>
+    </Button>
   );
 }
 
@@ -156,9 +158,9 @@ function FlowBlock({ q }: { q: ReturnType<typeof useFlow> }) {
     return (
       <p role="alert" className="mb-4 text-late">
         {t("contracts.flow.loadFail")}{" "}
-        <button type="button" className="underline" onClick={() => void q.refetch()}>
+        <Button variant="link" onClick={() => void q.refetch()}>
           {t("contracts.common.retry")}
-        </button>
+        </Button>
       </p>
     );
   if (!q.data) return <p className="mb-4 text-dim">{t("contracts.common.loading")}</p>;

@@ -3,9 +3,11 @@
 // Ảnh đại diện: chưa có PersonAvatar trên nhánh này ⇒ chữ cái đầu; phòng ban · chức vụ: API chưa trả ⇒ chỉ hiện tên công ty (nếu có).
 
 import { POST_MENTIONS_MAX } from "@ai/contracts/community";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
+import { IconButton } from "~/shared/ui/IconButton";
 import { useApp } from "../application/ctx";
 import type { PeopleScope } from "../application/ports";
 import { usePeople } from "../application/usePeople";
@@ -122,13 +124,11 @@ export function MentionPicker({
   const label = t("community.draft.mentionLabel");
   return (
     <>
-      <button
-        type="button"
-        className="ghost icononly"
+      <IconButton
+        className="icononly"
         data-testid="mention-open"
         aria-haspopup="dialog"
         aria-label={label}
-        title={label}
         onClick={() => {
           setSel(mentions);
           setQ("");
@@ -137,7 +137,7 @@ export function MentionPicker({
       >
         <UserPlus />
         {mentions.length > 0 && <span className="n">{mentions.length}</span>}
-      </button>
+      </IconButton>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[460px]" aria-describedby={undefined}>
           <div data-mod="community" data-accent={brandAccent} data-testid="mention-dialog">
@@ -175,20 +175,19 @@ export function MentionPicker({
               ))}
               {more && (
                 <li ref={end}>
-                  <button type="button" className="clink" onClick={() => void loadMore()}>
+                  <Button variant="link" onClick={() => void loadMore()}>
                     {t("community.draft.mentionMore")}
-                  </button>
+                  </Button>
                 </li>
               )}
             </ul>
             <div className="cbar">
               <div className="sp" />
-              <button type="button" className="ghost" onClick={() => setOpen(false)}>
+              <Button variant="quiet" onClick={() => setOpen(false)}>
                 {t("community.common.cancel")}
-              </button>
-              <button
-                type="button"
-                className="primary"
+              </Button>
+              <Button
+                variant="primary"
                 data-testid="mention-done"
                 onClick={() => {
                   onChange(sel);
@@ -196,7 +195,7 @@ export function MentionPicker({
                 }}
               >
                 {t("community.draft.mentionDone", { count: sel.length })}
-              </button>
+              </Button>
             </div>
           </div>
         </DialogContent>

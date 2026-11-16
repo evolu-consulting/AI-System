@@ -1,4 +1,5 @@
 // CR-120 · phần dùng chung của 3 màn luồng Community: khung trang, tải danh sách MỘT yêu cầu (có lỗi + tải lại), hộp thoại nhập lý do.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import {
   Dialog,
@@ -70,15 +71,9 @@ export function LoadMore({
   return (
     <div className="cbar">
       <div className="sp" />
-      <button
-        type="button"
-        className="outline"
-        disabled={busy}
-        data-testid="flow-more"
-        onClick={onMore}
-      >
+      <Button variant="outline" disabled={busy} data-testid="flow-more" onClick={onMore}>
         {t("community.flows.common.more")}
-      </button>
+      </Button>
       <div className="sp" />
     </div>
   );
@@ -138,9 +133,9 @@ export function ListState({
     return (
       <div className="card empty" role="alert">
         <p>{t("community.flows.common.loadError")}</p>
-        <button type="button" className="outline" onClick={reload}>
+        <Button variant="outline" onClick={reload}>
           {t("community.flows.common.retry")}
-        </button>
+        </Button>
       </div>
     );
   if (!items) return <div className="card empty" aria-busy="true" />;
@@ -207,18 +202,18 @@ export function ReasonDialog(p: DialogProps) {
             )}
           </DialogBody>
           <DialogFooter className="flex-row justify-end">
-            <button type="button" className="ghost" onClick={p.onClose}>
+            <Button variant="quiet" onClick={p.onClose}>
               {t("community.flows.common.cancel")}
-            </button>
-            <button
-              type="button"
-              className="primary sm"
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               disabled={busy}
               data-testid="reason-submit"
               onClick={submit}
             >
               {p.submitLabel}
-            </button>
+            </Button>
           </DialogFooter>
         </div>
       </DialogContent>

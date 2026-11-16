@@ -1,4 +1,5 @@
 // CR-149 · PDF bằng pdf.js (nạp lười; worker đóng gói cục bộ, không CDN): cuộn các trang, phóng to/thu nhỏ. Trang vẽ khi cuộn tới.
+import { Button } from "@ai/web-kit/ui/kit/button";
 import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -87,25 +88,25 @@ export default function PdfPane({ blob, onError }: { blob: Blob; onError: () => 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2" data-testid="pdf-viewer">
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className="btn btn-outline btn-sm"
+        <Button
+          variant="outline"
+          size="sm"
           aria-label={t("contracts.fview.zoomOut")}
           disabled={si === 0}
           onClick={() => setSi(si - 1)}
         >
           −
-        </button>
+        </Button>
         <span className="w-12 text-center text-sm tabular-nums">{Math.round(scale * 100)}%</span>
-        <button
-          type="button"
-          className="btn btn-outline btn-sm"
+        <Button
+          variant="outline"
+          size="sm"
           aria-label={t("contracts.fview.zoomIn")}
           disabled={si === STEPS.length - 1}
           onClick={() => setSi(si + 1)}
         >
           +
-        </button>
+        </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto rounded-md border border-rule bg-sunk p-2">
         {Array.from({ length: doc.numPages }, (_, i) => (

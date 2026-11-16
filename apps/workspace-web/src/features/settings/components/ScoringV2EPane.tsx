@@ -2,6 +2,7 @@
 // Lưu riêng ở đây (thanh Lưu/Bỏ thay đổi của mục này), từng phần đã đổi; chỉ chủ sở hữu (`owner`) lưu được. Cấu hình điểm HD8 (`/scoring/:role`,
 // chỉnh tay ±10) không hiện ở engine này.
 
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -33,9 +34,9 @@ export function ScoringV2EPane({ owner }: { owner: boolean }) {
     return (
       <p role="alert" className="text-label text-late">
         {s("loadFail")}{" "}
-        <button type="button" className="underline" onClick={retry}>
+        <Button variant="link" onClick={retry}>
           {t("contracts.common.retry")}
-        </button>
+        </Button>
       </p>
     );
   const ch = repChangedParts(draft, state.saved);

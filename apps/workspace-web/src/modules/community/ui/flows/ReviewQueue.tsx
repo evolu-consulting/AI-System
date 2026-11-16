@@ -1,5 +1,7 @@
 // CR-120 · Hàng chờ duyệt bài (người duyệt): MỘT yêu cầu cho cả danh sách; duyệt/từ chối kèm lý do. 409 ⇒ "đã có người xử lý" + làm mới.
+
 import type { ModerationItem } from "@ai/contracts/community";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useEffect, useState } from "react";
 import { useApp } from "../../application/ctx";
 import { isConflict, queueReasonKey } from "../../domain/flows";
@@ -76,22 +78,17 @@ export default function ReviewQueuePage() {
             {m.awaitingReview && (
               <div className="cbar">
                 <div className="sp" />
-                <button
-                  type="button"
-                  className="ghost"
-                  data-testid="review-reject"
-                  onClick={() => setRejecting(m)}
-                >
+                <Button variant="quiet" data-testid="review-reject" onClick={() => setRejecting(m)}>
                   {t("community.flows.review.reject")}
-                </button>
-                <button
-                  type="button"
-                  className="primary sm"
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
                   data-testid="review-approve"
                   onClick={() => void decide(m, "approve")}
                 >
                   {t("community.flows.review.approve")}
-                </button>
+                </Button>
               </div>
             )}
           </article>
