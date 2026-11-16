@@ -39,7 +39,7 @@ Ngoài danh sách này: đủ thông tin thì làm, không hỏi "tiếp tục k
 | 1 | **Nhận** | Yêu cầu mới ⇒ Intake (`/intake`): tách ý, tra `spec:find`, phân loại, hỏi **một lượt** kèm mặc định. Câu hỏi thường, xác nhận ngắn ⇒ không Intake. "Đã có"/"Mâu thuẫn" phải kèm trích nguyên văn + `file:dòng`. |
 | 2 | **Chốt** | Ghi `CR-xxx`. CR có màn hình hoặc luồng mới ⇒ **nên** làm bản mẫu bấm được (`/prototype`, ≤ 15 phút) cho người dùng xem trước khi code. Chưa chốt ⇒ không code. |
 | 3 | **Chia** | Bản đồ file trước, rồi chia lát. Lát ≤ 20 phút (lát Opus ≤ 40). Lát chung file ⇒ nối tiếp. Giao trước số migration. |
-| 4 | **Làm** | Mỗi lát một worktree, một agent làm trọn. `tasks.md` có Delta; mỗi Kịch bản có `[test: …]`. Lỗi nhỏ (≤ 30 dòng, một vùng, không migration, không quyền) ⇒ sửa thẳng trên `platform/gd0`; nếu đổi hành vi nhìn thấy được thì vẫn ghi Delta. |
+| 4 | **Làm** | Mỗi lát một worktree, một agent làm trọn. `tasks.md` có Delta; mỗi Kịch bản có `[test: …]`. Lỗi nhỏ (≤ 30 dòng, một vùng, không migration, không quyền) ⇒ sửa thẳng trên `staging`; nếu đổi hành vi nhìn thấy được thì vẫn ghi Delta. |
 | 5 | **Kiểm** | Soát Opus cho diff chạm dữ liệu khách / RLS / quyền / trạng thái run / migration — **không bỏ qua, kể cả sửa thẳng**. e2e hành trình **một lần** cuối đợt, do điều phối chạy. Soát UI góc CEO/sale. |
 | 6 | **Phát hành** | Staging: deploy ⇒ chạy smoke (`deploy/stg-test/e2e-smoke.ps1`) ⇒ `release:log`. Prod: mục 2 + `verify:predeploy` + backup + `verify:prod`. |
 | 7 | **Đóng** | Gộp Delta vào `docs/current`, `openspec:archive`, cập nhật `STATE.md`. Xoá worktree đã gộp (hỏi người dùng). |
