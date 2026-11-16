@@ -17,6 +17,7 @@ import { deletedFrames, type MsgFrame, newFrames, readFrames } from "../domain/m
 import { messageEmpty } from "../domain/messages.rules";
 import { fileKeyOf, fileKeyParts } from "../domain/partner.files";
 import { partnerSendError } from "../domain/partner.rules";
+import { beforeOf, hasNewer } from "./messages.find";
 import { MsgFail } from "./messages.ops";
 import type { MessagesRepos, MsgFileStore, PeopleLookup } from "./messages.ports";
 import { messageOf, partnerDetailOf } from "./messages.view";
@@ -46,8 +47,18 @@ export function partnerChatOps(d: PartnerChatDeps) {
 
     /** Trang tin: `pmsg_page` (seq giảm dần, `has_more` tính trong hàm) ⇒ đảo sang cũ → mới như cuộc nội bộ. */
     async partnerMessages(who: PackWho, id: string, q: MsgListQuery): Promise<MessagePage> {
-      const p = await d.uow.tenant(who, (r) => r.partner.page(id, q.before_seq ?? null, q.limit));
-      return { items: p.items.map((m) => messageOf(m, id)).reverse(), has_more: p.has_more };
+      const got = await d.uow.tenant(who, async (r) => {
+        const page = await r.partner.page(id, beforeOf(q), q.limit);
+        // `around_seq`: tin cuối của cuộc (từ chi tiết) để biết còn tin mới hơn không.
+        const last = q.around_seq ? ((await r.partner.detail(id))?.last?.seq ?? 0) : 0;
+        return { page, last };
+      });
+      const items = got.page.items.map((m) => messageOf(m, id)).reverse();
+      return {
+        items,
+        has_more: got.page.has_more,
+        ...(q.around_seq ? { has_newer: hasNewer(items, got.last) } : {}),
+      };
     },
 
     /** Gửi (P4): idempotent theo `client_id`; gửi lặp không phát. Hết kết nối ⇒ 409 `MSG_NOT_CONNECTED`, người kia hết hợp lệ ⇒ 409 `MSG_PEER_INACTIVE` (DB). */

@@ -93,6 +93,8 @@ export type AddMembersRequest = z.infer<typeof AddMembersRequestSchema>;
 
 export const MsgListQuerySchema = z.object({
   before_seq: z.coerce.number().int().min(1).optional(),
+  /** CR-178 · nhảy tới một tin (kết quả tìm / «Đến tin nhắn»): trang gồm tin `around_seq` + tin cũ hơn và khoảng nửa trang tin mới hơn; có thì bỏ qua `before_seq`. */
+  around_seq: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(MSG_PAGE_MAX).default(MSG_PAGE_DEFAULT),
 });
 export type MsgListQuery = z.infer<typeof MsgListQuerySchema>;
@@ -134,7 +136,13 @@ export const MessageSchema = z.object({
 });
 export type Message = z.infer<typeof MessageSchema>;
 
-export const MessagePageSchema = z.object({ items: z.array(MessageSchema), has_more: z.boolean() });
+export const MessagePageSchema = z.object({
+  items: z.array(MessageSchema),
+  /** Còn tin CŨ hơn trang này. */
+  has_more: z.boolean(),
+  /** CR-178 · chỉ khi hỏi `around_seq`: còn tin MỚI hơn trang này. */
+  has_newer: z.boolean().optional(),
+});
 export type MessagePage = z.infer<typeof MessagePageSchema>;
 
 /** CR-169 · công ty đang kết nối (chip lọc, đầu kia của cuộc `partner`). */

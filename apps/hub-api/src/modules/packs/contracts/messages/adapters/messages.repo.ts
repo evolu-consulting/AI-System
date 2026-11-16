@@ -9,7 +9,7 @@ import type {
   RawConversation,
 } from "../application/messages.ports";
 import { iso } from "./messages.sql";
-import { attachmentsRepo } from "./messages-find.repo";
+import { attachmentsRepo, searchRepo } from "./messages-find.repo";
 import { messagesSendRepo } from "./messages-send.repo";
 
 const MEMBERS_JSON = sql`(select coalesce(json_agg(json_build_object('user_id', mm.user_id, 'role', mm.role,
@@ -167,5 +167,6 @@ export function messagesRepo(tx: Tx, t: string): MessagesRepo {
     ...memberRepo(tx, t),
     ...messagesSendRepo(tx, t),
     ...attachmentsRepo(tx, t),
+    ...searchRepo(tx, t),
   };
 }

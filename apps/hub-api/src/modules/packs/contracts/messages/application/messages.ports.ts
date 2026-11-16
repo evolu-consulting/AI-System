@@ -71,6 +71,29 @@ export type AttachQuery = {
   cur: { seq: number; id: string } | null;
   limit: number;
 };
+/** CR-178 M3 · một tin khớp. Cuộc `partner`: tên người gửi / người kia / công ty tra sẵn trong DB; nội bộ: `peer_id` (1-1) tra tên qua cổng `people`. */
+export type RawSearchHit = {
+  conversation_id: string;
+  kind: ConvKind;
+  title: string | null;
+  seq: number;
+  sender_id: string;
+  /** ISO µs (làm con trỏ). */
+  at: string;
+  body: string;
+  sender_name?: string;
+  peer_id?: string | null;
+  peer_name?: string;
+  company_id?: string;
+  company_name?: string;
+};
+/** `pattern` = chuỗi tìm ĐÃ thoát ` % _` (DB tự `hub.fold` + bọc `%…%`); keyset `(at, conversation_id, seq)` DESC; `limit` đã +1. */
+export type SearchQuery = {
+  pattern: string;
+  conversationId: string | null;
+  cur: { at: string; cid: string; seq: number } | null;
+  limit: number;
+};
 /** Sự thật cần cho kiểm quyền thao tác nhóm (khoá hàng hội thoại khi `lock`). */
 export type MsgFacts = {
   kind: ConvKind;
@@ -174,6 +197,8 @@ export type MessagesRepo = {
   convFiles(cid: string): Promise<StoredFile[]>;
   /** CR-178 M4 · tệp đã gửi của cuộc, mới nhất trước (RLS: chỉ thành viên; use case kiểm `facts` trước để phân biệt 404 với rỗng). */
   attachments(cid: string, q: AttachQuery): Promise<RawAttachment[]>;
+  /** CR-178 M3 · tin khớp trong các cuộc nội bộ người gọi là thành viên (RLS), bỏ tin đã thu hồi, mới nhất trước. MỘT câu. */
+  search(me: string, q: SearchQuery): Promise<RawSearchHit[]>;
   /** null = không phải thành viên. Trả mốc đọc mới + cũ + mọi thành viên (đã kẹp theo `clampRead`: không lùi, không vượt tin cuối). */
   markRead(me: string, cid: string, seq: number): Promise<ReadRow | null>;
 };
@@ -221,6 +246,8 @@ export type PartnerRepo = {
   markRead(id: string, seq: number): Promise<number>;
   /** CR-178 M4 · `pmsg_files_list` — tệp đã gửi của cuộc (đọc được cả sau ngắt kết nối); không là đầu cuộc ⇒ DB ném CC404. */
   attachments(id: string, q: AttachQuery): Promise<RawAttachment[]>;
+  /** CR-178 M3 · `pmsg_search` — tin khớp trong các cuộc `partner` người gọi là một đầu (kể cả sau ngắt kết nối). MỘT câu. */
+  search(q: SearchQuery): Promise<RawSearchHit[]>;
   /** `hub.cc_connected(tenant người gọi, company)` — còn kết nối không (chọn mã 409 khi chặn tải lên sớm). */
   connected(company: string): Promise<boolean>;
   /** `pmsg_file_add` — ghi tệp tải lên (id/khoá do route sinh; `boxId` = id FileBox). CC404/CC409/CC422 do DB. */

@@ -44,3 +44,21 @@ export function attachmentOf(r: RawAttachment, senderName: string): MsgAttachmen
 }
 
 export const kindOrNull = (k: MsgAttachKind | undefined): MsgAttachKind | null => k ?? null;
+
+/**
+ * Con trỏ `before` của trang tin. `around_seq` ⇒ lấy `limit` tin mới nhất có seq < around + ⌊limit/2⌋ + 1 (tức tin `around_seq`, tin cũ hơn và ~nửa trang tin mới hơn);
+ * không thì `before_seq` như cũ (tương thích).
+ */
+export function beforeOf(q: {
+  before_seq?: number | undefined;
+  around_seq?: number | undefined;
+  limit: number;
+}): number | null {
+  if (q.around_seq !== undefined) return q.around_seq + Math.floor(q.limit / 2) + 1;
+  return q.before_seq ?? null;
+}
+/** Còn tin mới hơn trang (`last` = seq tin cuối của cuộc; trang rỗng ⇒ còn nếu cuộc có tin). */
+export function hasNewer(items: readonly { seq: number }[], last: number): boolean {
+  const top = items[items.length - 1]?.seq ?? 0;
+  return top < last;
+}

@@ -86,3 +86,68 @@ BEGIN
 END $$;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION hub.pmsg_files_list(uuid, text, bigint, uuid, integer) FROM PUBLIC;
+--> statement-breakpoint
+
+-- ── M3 · tìm tin ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
+-- Tin khớp `p_pat` (đã thoát \ % _ ở route; hàm tự hub.fold + bọc %…%: không phân biệt hoa/dấu, khớp chứa) trong các cuộc mà u là MỘT ĐẦU (P3, kể cả đã ngắt kết nối), bỏ tin đã
+-- thu hồi. p_conv (tuỳ chọn) ⇒ chỉ cuộc đó — không là đầu của cuộc đó ⇒ 0 dòng (không lộ có tồn tại). Mới nhất trước, keyset (created_at, thread, seq) DESC; p_limit kẹp 1..21
+-- (route xin limit+1). Lọc + LIMIT trước, tên người/công ty join sau trên ≤ limit dòng. Dùng chỉ mục trigram `pmsg_messages_fold_trgm_ix` bên dưới (cùng biểu thức + điều kiện).
+CREATE OR REPLACE FUNCTION hub.pmsg_search(p_pat text, p_conv uuid, p_cur_t timestamptz, p_cur_conv uuid, p_cur_seq bigint, p_limit integer)
+RETURNS TABLE (
+  conversation_id uuid, seq bigint, sender_user uuid, sender_name text, at timestamptz, body text,
+  peer_user uuid, peer_name text, company_id uuid, company_name text
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, pg_temp
+AS $$
+#variable_conflict use_column
+DECLARE
+  v_tid uuid;
+  v_uid uuid;
+  v_lim integer := LEAST(GREATEST(COALESCE(p_limit, 20), 1), 21);
+BEGIN
+  SELECT c.tid, c.uid INTO v_tid, v_uid FROM hub.pmsg_ctx() c;
+  IF p_pat IS NULL OR char_length(btrim(p_pat)) < 2 THEN
+    RAISE EXCEPTION 'pmsg_search: đầu vào không hợp lệ' USING ERRCODE = '22023';
+  END IF;
+  RETURN QUERY
+  WITH h AS (
+    SELECT m.thread_id AS cid, m.seq AS s, m.sender_user AS su, m.created_at AS ts, m.body AS b,
+           CASE WHEN th.a_tenant = v_tid AND th.a_user = v_uid THEN th.b_tenant ELSE th.a_tenant END AS pt,
+           CASE WHEN th.a_tenant = v_tid AND th.a_user = v_uid THEN th.b_user ELSE th.a_user END AS pu
+      FROM hub.pmsg_messages m
+      JOIN hub.pmsg_threads th ON th.id = m.thread_id
+     WHERE m.deleted_at IS NULL
+       AND hub.fold(m.body) LIKE '%' || hub.fold(p_pat) || '%'
+       AND ((th.a_tenant = v_tid AND th.a_user = v_uid) OR (th.b_tenant = v_tid AND th.b_user = v_uid))
+       AND (p_conv IS NULL OR m.thread_id = p_conv)
+       AND (p_cur_t IS NULL OR p_cur_conv IS NULL OR p_cur_seq IS NULL OR (m.created_at, m.thread_id, m.seq) < (p_cur_t, p_cur_conv, p_cur_seq))
+     ORDER BY m.created_at DESC, m.thread_id DESC, m.seq DESC
+     LIMIT v_lim)
+  SELECT h.cid, h.s, h.su, COALESCE(sn.display_name, ''), h.ts, h.b, h.pu, COALESCE(pn.display_name, ''), h.pt, COALESCE(tn.legal_name, tn.name)
+    FROM h
+    LEFT JOIN admin.users sn ON sn.id = h.su
+    LEFT JOIN admin.users pn ON pn.id = h.pu
+    LEFT JOIN admin.tenants tn ON tn.id = h.pt
+   ORDER BY h.ts DESC, h.cid DESC, h.s DESC;
+END $$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION hub.pmsg_search(text, uuid, timestamptz, uuid, bigint, integer) FROM PUBLIC;
+--> statement-breakpoint
+-- Chỉ mục trigram trên `hub.fold(body)` (tin chưa thu hồi) cho LIKE '%…%'. pg_trgm có sẵn thì tạo, thiếu/không đủ quyền ⇒ bỏ qua (hàm vẫn đúng, chỉ chậm) — cùng khuôn 0152.
+-- Migration chạy trong MỘT tx ⇒ không CONCURRENTLY (ghi bảng chờ trong lúc dựng; `pmsg_messages` còn nhỏ). `lock_timeout` để không treo hàng đợi khoá nếu có phiên giữ bảng.
+SET LOCAL lock_timeout = '5s';
+--> statement-breakpoint
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm') THEN
+    BEGIN
+      EXECUTE format('CREATE INDEX IF NOT EXISTS pmsg_messages_fold_trgm_ix ON hub.pmsg_messages USING gin (hub.fold(body) %I.gin_trgm_ops) WHERE deleted_at IS NULL',
+                     (SELECT n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace WHERE e.extname = 'pg_trgm'));
+    EXCEPTION WHEN OTHERS THEN
+      RAISE NOTICE 'không tạo được index trigram tin nhắn đối tác (%): bỏ qua', SQLERRM;
+    END;
+  END IF;
+END $$;

@@ -10,6 +10,7 @@ import type {
   RawAttachment,
   RawConversation,
   RawMessage,
+  RawSearchHit,
 } from "../application/messages.ports";
 import { iso } from "./messages.sql";
 
@@ -130,6 +131,12 @@ export function partnerRepo(tx: Tx, tid: string): PartnerRepo {
       return tx.execute<RawAttachment>(sql`select a.id, a.name, a.mime, a.size::int as size, a.seq::int as seq, a.sender_user as sender_id,
           a.sender_name, ${iso("a.at")} as at
         from hub.pmsg_files_list(${id}::uuid, ${q.kind}::text, ${q.cur?.seq ?? null}::bigint, ${q.cur?.id ?? null}::uuid, ${q.limit}::int) a`);
+    },
+    search(q) {
+      return tx.execute<RawSearchHit>(sql`select s.conversation_id, 'partner'::text as kind, null::text as title, s.seq::int as seq, s.sender_user as sender_id,
+          s.sender_name, ${iso("s.at")} as at, s.body, s.peer_user as peer_id, s.peer_name, s.company_id, s.company_name
+        from hub.pmsg_search(${q.pattern}::text, ${q.conversationId}::uuid, ${q.cur?.at ?? null}::timestamptz, ${q.cur?.cid ?? null}::uuid,
+          ${q.cur?.seq ?? null}::bigint, ${q.limit}::int) s`);
     },
     async connected(company) {
       const [r] = await tx.execute<{ c: boolean }>(

@@ -85,3 +85,25 @@ export async function sendInTx(
   if (files.length !== a.req.file_ids.length) throw new MsgFail("MSG_FILE_INVALID");
   return { ...row, files };
 }
+
+/** Mã lỗi Postgres (kể cả bọc trong `cause`). */
+export const pgCodeOf = (e: unknown): string | undefined => {
+  const x = e as { code?: string; cause?: { code?: string } } | null;
+  return x?.code ?? x?.cause?.code;
+};
+
+/**
+ * CR-169 · lỗi quyền PHẦN ĐỐI TÁC (`pmsg_ctx` ném 42501: người qua guard gói bằng quyền khác, không thuộc nhóm có contracts-read/write/admin) không được làm hỏng phần nội bộ:
+ * chạy lại bản chỉ-nội-bộ (tx mới; tx cũ đã huỷ). Lỗi khác ném lại.
+ */
+export async function internalOnPartnerDenied<T>(
+  full: () => Promise<T>,
+  internalOnly: () => Promise<T>,
+) {
+  try {
+    return await full();
+  } catch (e) {
+    if (pgCodeOf(e) === "42501") return internalOnly();
+    throw e;
+  }
+}

@@ -179,7 +179,7 @@ describe("CR-178 M5 · ?unread=true lọc chưa đọc ở máy chủ (nội b�
     g1 = (await group(TIEN, "Báo giá Q1", [VY])).body.id;
     g2 = (await group(TIEN, "Kế hoạch", [VY])).body.id;
     g3 = (await group(TIEN, "Nhầm lẫn", [VY])).body.id;
-    await send(TIEN, I(g1), "báo giá 1"); // VY chưa đọc
+    await send(TIEN, I(g1), "đơn hàng 1"); // VY chưa đọc
     await send(VY, I(g2), "em gửi anh"); // TIEN chưa đọc; với VY là tin của chính mình
     const s3 = await send(TIEN, I(g3), "gửi nhầm");
     await call(TIEN, "DELETE", `${I(g3)}/messages/${s3.body.seq}`); // thu hồi ⇒ không còn chưa đọc
@@ -341,5 +341,178 @@ describe("CR-178 M4 · Ảnh & tệp của cuộc partner (đọc được cả 
   });
 });
 
-// M3 được thêm bên dưới.
-export const _used = { ANH, HA };
+type Hit = {
+  conversation_id: string;
+  kind: string;
+  title: string;
+  company: { id: string; name: string } | null;
+  seq: number;
+  sender_name: string;
+  snippet: string;
+  match: { start: number; end: number } | null;
+};
+type Found = { items: Hit[]; next_cursor: string | null };
+const SEARCH = `${MSG}/search`;
+const find = (user: string, q: string, extra = "") =>
+  call<Found>(user, "GET", `${SEARCH}?q=${encodeURIComponent(q)}${extra}`);
+/** `kind:seq` mỗi kết quả. */
+const ks = (r: Res<Found>) => r.body.items.map((h) => `${h.kind}:${h.seq}`);
+/** `cuộc#seq` mỗi kết quả. */
+const cs = (r: Res<Found>) => r.body.items.map((h) => `${h.conversation_id}#${h.seq}`);
+
+describe("CR-178 M3 · tìm tin (không phân biệt hoa/dấu, đúng người xem, keyset)", () => {
+  let gs = "";
+  let gt = "";
+  let dm = "";
+  let pv = "";
+  it("«bao gia» ra «báo giá»: người được giao (VY) thấy nội bộ + partner mới nhất trước; tin thu hồi và cuộc không là thành viên không ra", async () => {
+    await o`update admin.users set display_name = 'Lan' where id = ${LAN}`;
+    gs = (await group(TIEN, "Báo giá Q4", [VY])).body.id;
+    gt = (await group(TIEN, "Riêng Tiến-Anh", [ANH])).body.id;
+    await send(TIEN, I(gs), "Báo giá đợt 1 đã gửi"); // gs 1
+    await send(VY, I(gs), "ok em đã nhận BÁO GIÁ"); // gs 2
+    await send(TIEN, I(gs), "Cảm ơn 100% nhé"); // gs 3
+    const r4 = await send(TIEN, I(gs), "gửi nhầm báo giá"); // gs 4 — thu hồi
+    await call(TIEN, "DELETE", `${I(gs)}/messages/${r4.body.seq}`);
+    await send(TIEN, I(gs), "Đặng Văn phụ trách"); // gs 5
+    await send(TIEN, I(gt), "báo giá cho Anh"); // gt 1 — VY không là thành viên
+    dm = (
+      await call<{ id: string }>(VY, "POST", `${MSG}/conversations`, {
+        kind: "direct",
+        user_id: LAN,
+      })
+    ).body.id;
+    await send(VY, I(dm), "bao gia truoc ngay mai"); // dm 1
+    pv = (await partner(VY, B, DUNG)).body.id;
+    await send(VY, P(pv), "Báo giá hợp đồng B"); // pv 1
+    await send(DUNG, P(pv), "đã nhận báo giá"); // pv 2
+    const r = await find(VY, "bao gia");
+    expect([r.status, ks(r), r.body.next_cursor]).toEqual([
+      200,
+      ["partner:2", "partner:1", "direct:1", "group:2", "group:1"],
+      null,
+    ]);
+    const [p2, , d1, g2] = r.body.items;
+    expect([p2?.title, p2?.company?.name, p2?.sender_name]).toEqual([
+      "Dũng",
+      "Preschool Việt",
+      "Dũng",
+    ]);
+    expect([d1?.title, d1?.company, d1?.sender_name]).toEqual(["Lan", null, "Vy"]);
+    expect([g2?.title, g2?.sender_name, g2?.snippet]).toEqual([
+      "Báo giá Q4",
+      "Vy",
+      "ok em đã nhận BÁO GIÁ",
+    ]);
+    expect(g2?.snippet.slice(g2.match?.start, g2.match?.end)).toBe("BÁO GIÁ");
+  });
+  it("mỗi người chỉ thấy phần của mình: TIEN (người tạo) thấy gt + gs; LAN chỉ DM; ANH chỉ gt; DUNG chỉ partner; người thứ ba (HA), công ty thứ ba (CUONG) ⇒ rỗng", async () => {
+    expect(cs(await find(TIEN, "BAO GIA"))).toEqual([`${gt}#1`, `${gs}#2`, `${gs}#1`]);
+    expect(cs(await find(LAN, "bao gia"))).toEqual([`${dm}#1`]);
+    expect(cs(await find(ANH, "bao gia"))).toEqual([`${gt}#1`]);
+    expect(cs(await find(DUNG, "bao gia"))).toEqual([`${pv}#2`, `${pv}#1`]);
+    for (const u of [HA, CUONG]) expect([u, ks(await find(u, "bao gia"))]).toEqual([u, []]);
+  });
+  it("phân trang keyset limit=2 nối lại đúng danh sách đầy đủ", async () => {
+    const full = cs(await find(VY, "bao gia"));
+    const got: string[] = [];
+    let cursor: string | null = null;
+    for (let i = 0; i < 5; i++) {
+      const r: Res<Found> = await find(
+        VY,
+        "bao gia",
+        `&limit=2${cursor ? `&cursor=${cursor}` : ""}`,
+      );
+      got.push(...cs(r));
+      cursor = r.body.next_cursor;
+      if (!cursor) break;
+    }
+    expect([got, cursor]).toEqual([full, null]);
+    expect(full.length).toBe(5);
+  });
+  it("conversation_id: chỉ tìm trong cuộc đó; cuộc không thấy (gt với VY, partner với HA) ⇒ rỗng, không lỗi", async () => {
+    expect(cs(await find(VY, "bao gia", `&conversation_id=${gs}`))).toEqual([`${gs}#2`, `${gs}#1`]);
+    expect(cs(await find(VY, "bao gia", `&conversation_id=${pv}`))).toEqual([`${pv}#2`, `${pv}#1`]);
+    for (const [u, c] of [
+      [VY, gt],
+      [HA, pv],
+      [LAN, gs],
+      [CUONG, pv],
+      [VY, randomUUID()],
+    ] as const) {
+      const r = await find(u, "bao gia", `&conversation_id=${c}`);
+      expect([u, r.status, ks(r)]).toEqual([u, 200, []]);
+    }
+  });
+  it("khớp chứa chuỗi, đ→d, ký tự % _ là chữ thường (không là ký tự đại diện)", async () => {
+    expect(ks(await find(TIEN, "dang van"))).toEqual(["group:5"]);
+    expect(ks(await find(TIEN, "100%"))).toEqual(["group:3"]);
+    expect(ks(await find(TIEN, "1%0"))).toEqual([]);
+    expect(ks(await find(TIEN, "1_0"))).toEqual([]);
+    expect(ks(await find(TIEN, "gui nham"))).toEqual([]); // tin đã thu hồi không ra
+  });
+  it("query sai ⇒ 400: thiếu q, 1 ký tự, > 100 ký tự, limit > 20, cursor hỏng, conversation_id không phải uuid", async () => {
+    for (const qs of [
+      "",
+      "q=a",
+      `q=${"x".repeat(101)}`,
+      "q=bao&limit=21",
+      "q=bao&cursor=%25%25",
+      "q=bao&conversation_id=abc",
+    ]) {
+      const r = await call(VY, "GET", `${SEARCH}?${qs}`);
+      expect([qs.slice(0, 20), r.status, code(r)]).toEqual([
+        qs.slice(0, 20),
+        400,
+        "VALIDATION_ERROR",
+      ]);
+    }
+  });
+  it("tin partner bị thu hồi không ra; sau khi ngắt kết nối A–B hai đầu vẫn tìm được (P3), người thứ ba vẫn không", async () => {
+    const r3 = await send(DUNG, P(pv), "báo giá nhầm của Hà"); // pv 3
+    expect(ks(await find(VY, "bao gia", `&conversation_id=${pv}`))).toContain("partner:3");
+    await call(DUNG, "DELETE", `${P(pv)}/messages/${r3.body.seq}`);
+    expect(ks(await find(VY, "bao gia", `&conversation_id=${pv}`))).toEqual([
+      "partner:2",
+      "partner:1",
+    ]);
+    await o`delete from hub.partner_links where (from_tenant, to_tenant) in ((${A}, ${B}), (${B}, ${A}))`;
+    expect(cs(await find(DUNG, "bao gia"))).toEqual([`${pv}#2`, `${pv}#1`]);
+    expect(cs(await find(VY, "bao gia", `&conversation_id=${pv}`))).toEqual([`${pv}#2`, `${pv}#1`]);
+    expect(ks(await find(HA, "bao gia"))).toEqual([]);
+  });
+  it("around_seq: trang quanh một tin (nội bộ + partner), có has_newer; không có around thì giữ nguyên hành vi cũ", async () => {
+    const gc = (await group(TIEN, "Dài", [VY])).body.id;
+    for (let i = 1; i <= 12; i++) await send(TIEN, I(gc), `tin ${i}`);
+    type Pg = { items: { seq: number }[]; has_more: boolean; has_newer?: boolean };
+    const at = async (qs: string) => (await call<Pg>(VY, "GET", `${I(gc)}/messages?${qs}`)).body;
+    const mid = await at("around_seq=6&limit=6");
+    expect([mid.items.map((m) => m.seq), mid.has_more, mid.has_newer]).toEqual([
+      [4, 5, 6, 7, 8, 9],
+      true,
+      true,
+    ]);
+    const head = await at("around_seq=1&limit=6");
+    expect([head.items.map((m) => m.seq), head.has_more, head.has_newer]).toEqual([
+      [1, 2, 3, 4],
+      false,
+      true,
+    ]);
+    const tail = await at("around_seq=12&limit=6");
+    expect([tail.items.map((m) => m.seq), tail.has_more, tail.has_newer]).toEqual([
+      [7, 8, 9, 10, 11, 12],
+      true,
+      false,
+    ]);
+    const old = await at("limit=3");
+    expect([old.items.map((m) => m.seq), old.has_more, "has_newer" in old]).toEqual([
+      [10, 11, 12],
+      true,
+      false,
+    ]);
+    const pp = (await call<Pg>(DUNG, "GET", `${P(pv)}/messages?around_seq=1&limit=2`)).body;
+    expect([pp.items.map((m) => m.seq), pp.has_more, pp.has_newer]).toEqual([[1, 2], false, true]);
+    const out = await call(LAN, "GET", `${I(gc)}/messages?around_seq=6`);
+    expect([out.status, code(out)]).toEqual([404, "MSG_NOT_FOUND"]);
+  });
+});

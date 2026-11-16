@@ -23,7 +23,7 @@ import { cleanFileName, fileNameOf } from "../../adapters/upload.routes";
 import type { MessagesUsecases } from "../application/messages.usecase";
 import { decodeCursor } from "../application/messages.view";
 import { type CompanyFilter, parseCompanyFilter } from "../domain/partner.rules";
-import { attachQuery } from "./messages-find.routes";
+import { attachQuery, searchRoutes } from "./messages-find.routes";
 import { partnerChatRoutes } from "./partner.routes";
 import {
   type H,
@@ -237,6 +237,7 @@ export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Rout
   messageRoutes(r, h, uc);
   fileRoutes(r, h, uc);
   attachmentRoutes(r, h, uc);
+  searchRoutes(r, h, uc);
   partnerChatRoutes(r, h, uc); // CR-169 · `/messages/partner/:id/**`
   return r;
 }

@@ -21,7 +21,16 @@ import {
 } from "../domain/messages.events";
 import { canEditGroup, dmKey, groupSizeOk, messageEmpty } from "../domain/messages.rules";
 import { type CompanyFilter, sourcesOf } from "../domain/partner.rules";
-import { leaveOrRemove, MsgFail, openDirect, openGroup, sendInTx } from "./messages.ops";
+import { beforeOf, hasNewer } from "./messages.find";
+import {
+  internalOnPartnerDenied,
+  leaveOrRemove,
+  MsgFail,
+  openDirect,
+  openGroup,
+  pgCodeOf,
+  sendInTx,
+} from "./messages.ops";
 import type {
   MessagesRepo,
   MessagesRepos,
@@ -46,29 +55,12 @@ export { MsgFail };
 
 /** 23505 (trùng khoá: tạo 1-1 / gửi cùng `client_id` đồng thời) và 23503 (FK: hội thoại 1-1 của người kia vừa chèn) ⇒ chạy lại MỘT lần, lần sau thấy bản đã có. */
 const RACE_CODES = new Set(["23505", "23503"]);
-const pgCodeOf = (e: unknown): string | undefined => {
-  const x = e as { code?: string; cause?: { code?: string } } | null;
-  return x?.code ?? x?.cause?.code;
-};
 async function retryOnRace<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
   } catch (e) {
     const c = pgCodeOf(e);
     if (c && RACE_CODES.has(c)) return run();
-    throw e;
-  }
-}
-
-/**
- * CR-169 · lỗi quyền PHẦN ĐỐI TÁC (`pmsg_ctx` ném 42501: người qua guard gói bằng quyền khác, không thuộc nhóm có contracts-read/write/admin) không được làm hỏng phần nội bộ:
- * chạy lại bản chỉ-nội-bộ (tx mới; tx cũ đã huỷ). Lỗi khác ném lại.
- */
-async function internalOnPartnerDenied<T>(full: () => Promise<T>, internalOnly: () => Promise<T>) {
-  try {
-    return await full();
-  } catch (e) {
-    if (pgCodeOf(e) === "42501") return internalOnly();
     throw e;
   }
 }
@@ -268,15 +260,25 @@ function readOps(c: Ctx) {
   const { d, emit } = c;
   return {
     async messages(who: PackWho, cid: string, q: MsgListQuery): Promise<MessagePage> {
-      const rows = await d.uow.tenant(who, (r) =>
-        r.messages.page(who.userId, cid, q.before_seq ?? null, q.limit),
-      );
-      if (!rows) throw new MsgFail("MSG_NOT_FOUND");
-      const items = rows
+      const got = await d.uow.tenant(who, async (r) => {
+        const rows = await r.messages.page(who.userId, cid, beforeOf(q), q.limit);
+        if (!rows) return null;
+        // `around_seq`: cần tin cuối của cuộc để biết còn tin mới hơn không (thêm 1 câu, cố định).
+        const last = q.around_seq
+          ? ((await r.messages.facts(who.userId, cid, false))?.last_seq ?? 0)
+          : 0;
+        return { rows, last };
+      });
+      if (!got) throw new MsgFail("MSG_NOT_FOUND");
+      const items = got.rows
         .slice(0, q.limit)
         .reverse()
         .map((m) => messageOf(m, cid));
-      return { items, has_more: rows.length > q.limit };
+      return {
+        items,
+        has_more: got.rows.length > q.limit,
+        ...(q.around_seq ? { has_newer: hasNewer(items, got.last) } : {}),
+      };
     },
 
     async markRead(who: PackWho, cid: string, seq: number): Promise<{ unread_total: number }> {
