@@ -1,10 +1,17 @@
 ﻿// CR-097 K3b: khối "Phiên bản hợp đồng" — v1..vN, mỗi dòng: biểu tượng trạng thái, số HĐ, hiệu lực, giá trị, nút "Xem".
 import type { ContractVersionRef } from "@ai/contracts/pack-contracts";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { FileRecordButton } from "~/features/contract-file-record/components/FileRecordButton";
-import { KIND_ICON, versionKind } from "../lib/versions";
+import { KIND_ICON, type VersionKind, versionKind } from "../lib/versions";
+
+/** Icon loại dòng (trang trí: chữ loại đứng ngay cạnh). */
+function KindIcon({ kind }: { kind: VersionKind }) {
+  const Icon = ICONS[KIND_ICON[kind]];
+  return <Icon aria-hidden="true" width={14} height={14} />;
+}
 
 export function VersionsBlock({
   currentId,
@@ -40,8 +47,8 @@ export function VersionsBlock({
               className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2 text-sm"
             >
               <span className="w-8 font-semibold">v{v.version_no}</span>
-              <span>
-                {KIND_ICON[kind]} {t(`contracts.versions.kind.${kind}`)}
+              <span className="inline-flex items-center gap-1">
+                <KindIcon kind={kind} /> {t(`contracts.versions.kind.${kind}`)}
               </span>
               <span>{v.number ?? "—"}</span>
               <span className="text-dim">

@@ -8,6 +8,7 @@ import type {
   DealSource,
   DocType,
 } from "@ai/contracts/pack-contracts";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -55,12 +56,12 @@ export const columnKeysOf = (docType: string): readonly ColumnKey[] =>
 
 const TD = "px-3 py-3";
 
-/** CR-097 K3a: 🔒 trước tên HĐ đã xác nhận (khoá). */
+/** CR-097 K3a: icon khoá trước tên HĐ đã xác nhận (khoá). */
 function RowLock() {
   const { t } = useTranslation();
   return (
     <span data-testid="row-lock" role="img" aria-label={t("contracts.lock.badge")}>
-      🔒{" "}
+      <ICONS.locked aria-hidden="true" className="mr-1 inline-block" width={14} height={14} />
     </span>
   );
 }

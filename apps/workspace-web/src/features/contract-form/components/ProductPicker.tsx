@@ -2,6 +2,7 @@
 // khi SP có nhiều thành phần, nhãn gợi ý, tồn hiện có và cảnh báo "Bán vượt tồn" (chỉ HĐ Bán).
 
 import type { ContractDeal, ProductGroup, ProductOut } from "@ai/contracts/pack-contracts";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useTranslation } from "react-i18next";
 import { Tag } from "~/components/shared/tag";
@@ -64,7 +65,12 @@ function StockText({ stock }: { stock: NonNullable<StockHint> }) {
       className={cn("text-[12px]", stock.short ? "text-late" : "text-dim")}
       data-testid={stock.short ? "oversell" : "on-hand"}
     >
-      {stock.short ? `⚠ ${L("oversell")}: ` : ""}
+      {stock.short && (
+        <>
+          <ICONS.warning aria-hidden="true" className="mr-1 inline-block" width={12} height={12} />
+          {L("oversell")}:{" "}
+        </>
+      )}
       {L("onHand", { n: stock.onHand.toLocaleString("vi-VN"), unit: stock.unit ?? "" })}
     </span>
   );

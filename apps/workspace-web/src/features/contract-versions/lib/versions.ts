@@ -1,11 +1,13 @@
 ﻿// CR-097 K3b: logic thuần của khối "Phiên bản hợp đồng" — loại dòng, điều kiện nút, số phiên bản thay thế, dòng so sánh, lỗi.
 import type { ContractVersionRef } from "@ai/contracts/pack-contracts";
+import type { IconConcept } from "@ai/web-kit/ui/kit/icons";
 
 export type VersionKind = "superseded" | "draft" | "current";
-export const KIND_ICON: Record<VersionKind, string> = {
-  superseded: "📄",
-  draft: "✏",
-  current: "🔒",
+/** Loại dòng ⇒ khái niệm icon của bộ chung (`ICONS` ở web-kit), không dùng emoji. */
+export const KIND_ICON: Record<VersionKind, IconConcept> = {
+  superseded: "contract",
+  draft: "edit",
+  current: "locked",
 };
 
 /** Đã thay ⇒ superseded; chưa thay mà lớn hơn bản hiện hành (nhỏ nhất chưa bị thay) ⇒ nháp; còn lại hiện hành. */

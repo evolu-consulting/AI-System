@@ -1,9 +1,11 @@
 ﻿import { describe, expect, test } from "bun:test";
 import type { ContractVersionRef } from "@ai/contracts/pack-contracts";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import {
   canUploadUpdate,
   defaultPair,
   diffRows,
+  KIND_ICON,
   showVersionBadge,
   supersededInfo,
   versionErrorKey,
@@ -74,5 +76,12 @@ describe("versions", () => {
     expect(versionErrorKey("CONTRACT_HAS_VERSIONS")).toBe("contracts.versions.err.hasVersions");
     expect(versionErrorKey("???")).toBe("contracts.versions.err.generic");
     expect(versionErrorKey(undefined)).toBe("contracts.versions.err.generic");
+  });
+});
+
+describe("KIND_ICON (CR-177 W4: không emoji)", () => {
+  test("mỗi loại trỏ khái niệm icon của bộ chung ", () => {
+    expect(KIND_ICON).toEqual({ superseded: "contract", draft: "edit", current: "locked" });
+    for (const k of Object.values(KIND_ICON)) expect(k in ICONS).toBe(true);
   });
 });

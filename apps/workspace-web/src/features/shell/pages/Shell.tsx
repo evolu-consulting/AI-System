@@ -81,7 +81,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
         <div className="flex min-h-0 flex-1">
           <main
             className={cn(
-              "min-w-0 flex-1 overflow-y-auto px-7 py-7 max-md:px-4 max-md:pb-28",
+              "min-w-0 flex-1 overflow-y-auto px-7 pt-7 pb-[var(--fab-safe)] [--fab-safe:calc(5.5rem+env(safe-area-inset-bottom))] max-md:px-4 max-md:[--fab-safe:calc(9rem+env(safe-area-inset-bottom))]",
               layout === "board" && "md:flex md:flex-col md:overflow-hidden",
             )}
           >

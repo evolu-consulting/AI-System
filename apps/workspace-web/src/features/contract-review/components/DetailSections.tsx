@@ -1,5 +1,6 @@
 // CR-127 · U5 · M9: 4 ô số · thẻ "Điều cần lưu ý" · thẻ "Cần chú ý" · thẻ "Hiệu lực" (thay "Hạn chót hành động / Ghi nhận xử lý" và "Tóm tắt hợp đồng").
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
@@ -120,7 +121,13 @@ export function NoticeCards({ c }: { c: ContractDetail }) {
                 className="text-[13px] text-soon"
                 data-testid="risk-row"
               >
-                ⚠ <span className="text-ink">{r.text}</span>
+                <ICONS.warning
+                  aria-hidden="true"
+                  className="mr-1 inline-block"
+                  width={14}
+                  height={14}
+                />{" "}
+                <span className="text-ink">{r.text}</span>
                 {citeOf(r) && <span className="text-caption text-act"> · {citeOf(r)}</span>}
               </li>
             ))}

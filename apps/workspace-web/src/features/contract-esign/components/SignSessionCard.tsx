@@ -1,5 +1,7 @@
 // CR-127 · U6 · M2d: «Ký cùng lúc» trên chi tiết HĐ của MỖI bên — bên nhận trả lời Đồng ý / Xử lý bình thường / Từ chối; phiên ký chung hiện hai dòng ký
 // (tên công ty + người ký), «Huỷ phiên ký» cần lý do; ghi rõ chưa có giá trị pháp lý. Không có phiên ⇒ không vẽ gì.
+
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -18,7 +20,9 @@ function Row({ r }: { r: SignRow }) {
   const { t } = useTranslation();
   return (
     <li className="flex items-center gap-2" data-testid="cosign-row">
-      <span aria-hidden="true">{r.signedAt ? "✓" : "●"}</span>
+      <span aria-hidden="true">
+        {r.signedAt ? <ICONS.approve className="inline-block" width={14} height={14} /> : "●"}
+      </span>
       <b>{r.company ?? "—"}</b>
       <span className="text-dim">· {r.signer ?? "—"}</span>
       <span className="ml-auto text-dim">
