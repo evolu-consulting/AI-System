@@ -1,4 +1,6 @@
 // PK-FR-10 · TF5 · khoang ở điện thoại: sheet 85 dvh phủ từ dưới lên (trợ lý + tab Tin nhắn, hoặc góp ý).
+// CR-177 W1: dùng `Sheet` của kit (Esc đóng, aria-modal, giữ con trỏ trong ngăn, trả focus). Nút đóng của kit ẩn đi vì DockBody đã có nút đóng riêng.
+import { Sheet, SheetContent, SheetTitle } from "@ai/web-kit/ui/kit/sheet";
 import { useTranslation } from "react-i18next";
 import type { DockMode, DockPanel } from "../hooks/use-dock";
 import { DockBody } from "./AssistantDock";
@@ -16,26 +18,21 @@ export function DockSheet({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="fixed inset-0 z-40 flex flex-col lg:hidden">
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label={t("contracts.common.close")}
-        onClick={onClose}
-        className="absolute inset-0 bg-black/40"
-      />
-      <div
-        role="dialog"
-        aria-label={name}
-        className="relative mt-auto h-[85dvh] overflow-hidden rounded-t-2xl bg-panel"
+    <Sheet open onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="bottom"
+        aria-describedby={undefined}
+        closeLabel={t("contracts.common.close")}
+        className="h-[85dvh] max-h-[85dvh] gap-0 overflow-hidden rounded-t-2xl border-t-0 bg-panel p-0 lg:hidden [&>[data-slot=sheet-close]]:hidden"
       >
+        <SheetTitle className="sr-only">{name}</SheetTitle>
         <DockBody
           mode={mode}
           panel={panel}
           onClose={onClose}
           closeLabel={t("contracts.common.close")}
         />
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }

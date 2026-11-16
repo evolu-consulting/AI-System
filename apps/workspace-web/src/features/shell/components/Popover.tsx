@@ -1,6 +1,32 @@
-// PK-FR-10 · TF5 · menu nhỏ: đóng khi bấm ra ngoài hoặc Escape (Escape trả focus về nút). Nguồn: mgmt-app TopBar.tsx Popover.
-import { type ReactNode, useEffect, useRef, useState } from "react";
+// PK-FR-10 · TF5 · menu nhỏ (menu tài khoản). CR-177 W1: bên trong là Popover của kit — Esc đóng và trả focus nút,
+// mở ⇒ con trỏ vào trong, bấm ra ngoài đóng. Với `role=menu`: ↑/↓/Home/End đi giữa các mục `menuitem`.
+import { Popover as KitPopover, PopoverContent, PopoverTrigger } from "@ai/web-kit/ui/kit/popover";
+import { type KeyboardEvent, type ReactNode, useState } from "react";
+import { radioStep } from "~/components/shared/seg-button";
 import { cn } from "~/lib/utils";
+
+/** Mục cần focus khi bấm `key` ở mục `at` (-1 = con trỏ chưa ở mục nào) trong menu `n` mục. */
+export function menuStep(key: string, at: number, n: number): number | null {
+  if (at < 0) {
+    if (key === "ArrowDown" || key === "Home") return n > 0 ? 0 : null;
+    if (key === "ArrowUp" || key === "End") return n > 0 ? n - 1 : null;
+    return null;
+  }
+  return radioStep(key === "ArrowRight" || key === "ArrowLeft" ? "" : key, at, n);
+}
+
+/** ↑/↓/Home/End giữa các mục `[role=menuitem]` còn bấm được trong menu. */
+function onMenuKey(e: KeyboardEvent<HTMLElement>) {
+  const items = [
+    ...e.currentTarget.querySelectorAll<HTMLElement>(
+      '[role="menuitem"]:not(:disabled):not([aria-disabled="true"])',
+    ),
+  ];
+  const to = menuStep(e.key, items.indexOf(document.activeElement as HTMLElement), items.length);
+  if (to === null) return;
+  e.preventDefault();
+  items[to]?.focus();
+}
 
 export function Popover({
   label,
@@ -23,58 +49,40 @@ export function Popover({
   onToggle?: (open: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const box = useRef<HTMLDivElement>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const off = (e: MouseEvent) => {
-      if (!box.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const esc = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setOpen(false);
-      trigger.current?.focus();
-    };
-    document.addEventListener("mousedown", off);
-    document.addEventListener("keydown", esc);
-    return () => {
-      document.removeEventListener("mousedown", off);
-      document.removeEventListener("keydown", esc);
-    };
-  }, [open]);
+  const change = (o: boolean) => {
+    setOpen(o);
+    onToggle?.(o);
+  };
   return (
-    <div ref={box} className={cn("relative", full && "w-full")}>
-      <button
-        ref={trigger}
-        type="button"
-        aria-label={label}
-        aria-haspopup={role}
-        aria-expanded={open}
-        onClick={() => {
-          setOpen(!open);
-          onToggle?.(!open);
-        }}
-        className={cn(
-          "inline-flex h-11 items-center gap-2 rounded-lg px-2 text-left text-ink-2 hover:bg-sunk",
-          full && "w-full",
-          open && "bg-sunk",
-        )}
-      >
-        {button}
-      </button>
-      {open && (
-        // biome-ignore lint/a11y/useAriaPropsSupportedByRole: role là menu/dialog, đều nhận aria-label
-        <div
+    <div className={cn("relative", full && "w-full")}>
+      <KitPopover open={open} onOpenChange={change}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label={label}
+            aria-haspopup={role}
+            className={cn(
+              "inline-flex h-11 items-center gap-2 rounded-lg px-2 text-left text-ink-2 hover:bg-sunk",
+              full && "w-full",
+              open && "bg-sunk",
+            )}
+          >
+            {button}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
           role={role}
           aria-label={label}
-          className={cn(
-            "absolute z-50 w-[300px] max-w-[calc(100vw-24px)] overflow-hidden rounded-xl border border-rule bg-panel shadow-dialog",
-            up ? "bottom-0 left-full ml-2" : "top-12 right-0",
-          )}
+          side={up ? "right" : "bottom"}
+          align={up ? "end" : "end"}
+          sideOffset={up ? 8 : 4}
+          collisionPadding={12}
+          onKeyDown={role === "menu" ? onMenuKey : undefined}
+          className="w-[300px] max-w-[calc(100vw-24px)] overflow-hidden rounded-xl border-rule bg-panel p-0 shadow-dialog"
         >
-          {children(() => setOpen(false))}
-        </div>
-      )}
+          {children(() => change(false))}
+        </PopoverContent>
+      </KitPopover>
     </div>
   );
 }

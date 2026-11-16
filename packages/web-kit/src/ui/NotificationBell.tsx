@@ -1,10 +1,11 @@
 // gap-c #13/#35 · chuông thông báo DÙNG CHUNG cho 4 web (đặt trong slot phải của `TopShell`, trước switcher "Ứng dụng"). Mở ra 10 thông báo
 // mới nhất, "Đánh dấu tất cả đã đọc", và chân luôn có "Xem tất cả" + "Cài đặt thông báo" (form tùy chọn luôn với tới được, kể cả khi chưa có
 // thông báo). Style nội tuyến + biến màu của app như `AppSwitcher`. Điều hướng: `onNavigate(href)` (router của app) hoặc <a href>.
-import { type CSSProperties, type ReactElement, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type ReactElement, useMemo, useState } from "react";
 import { type NotificationItem, type NotifyTransport, notifyClient } from "../notify/client";
 import { useBell } from "../notify/hooks";
 import { mergeLabels, type NotifyLabels } from "../notify/labels";
+import { Popover, PopoverContent, PopoverTrigger } from "./kit/popover";
 
 export type NotificationBellProps = {
   /** Đường dẫn trang "Tất cả thông báo" (studio: có base, vd `/studio/notifications`). */
@@ -50,11 +51,10 @@ const BADGE: CSSProperties = {
   lineHeight: "16px",
   textAlign: "center",
 };
+// CR-177 W1: vị trí do Popover của kit lo (Esc đóng, trả focus nút chuông); style nội tuyến đè lên lớp mặc định của kit.
 const PANEL: CSSProperties = {
-  position: "absolute",
-  right: 0,
-  top: 42,
   zIndex: 50,
+  padding: 0,
   width: 340,
   maxWidth: "calc(100vw - 24px)",
   border: "1px solid var(--rule, var(--border, #e5e5e5))",
@@ -186,21 +186,6 @@ export function NotificationBell(p: NotificationBellProps): ReactElement {
   const client = useMemo(() => notifyClient(p.transport), [p.transport]);
   const bell = useBell(client, p.pollMs);
   const [open, setOpen] = useState(false);
-  const root = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: MouseEvent) => {
-      if (root.current && !root.current.contains(e.target as Node)) setOpen(false);
-    };
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", away);
-    document.addEventListener("keydown", esc);
-    return () => {
-      document.removeEventListener("mousedown", away);
-      document.removeEventListener("keydown", esc);
-    };
-  }, [open]);
-
   const go = (href: string) => {
     setOpen(false);
     if (p.onNavigate) p.onNavigate(href);
@@ -222,24 +207,21 @@ export function NotificationBell(p: NotificationBellProps): ReactElement {
   const showFooter = p.showFooter ?? true;
   const label = bell.unread ? L.bellUnread(bell.unread) : L.bell;
   return (
-    <div ref={root} style={{ position: "relative" }}>
-      <button
-        type="button"
-        style={BTN}
-        aria-label={label}
-        title={label}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => {
-          if (!open) void bell.refresh();
-          setOpen(!open);
+    <div style={{ position: "relative" }}>
+      <Popover
+        open={open}
+        onOpenChange={(o) => {
+          if (o) void bell.refresh();
+          setOpen(o);
         }}
       >
-        <BellIcon />
-        {bell.unread > 0 && <span style={BADGE}>{bell.unread > 9 ? "9+" : bell.unread}</span>}
-      </button>
-      {open && (
-        <div role="dialog" aria-label={L.title} style={PANEL}>
+        <PopoverTrigger asChild>
+          <button type="button" style={BTN} aria-label={label} title={label}>
+            <BellIcon />
+            {bell.unread > 0 && <span style={BADGE}>{bell.unread > 9 ? "9+" : bell.unread}</span>}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="end" sideOffset={6} aria-label={L.title} style={PANEL}>
           <div
             style={{
               display: "flex",
@@ -290,8 +272,8 @@ export function NotificationBell(p: NotificationBellProps): ReactElement {
               {anchor(settings, L.settings)}
             </div>
           )}
-        </div>
-      )}
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
