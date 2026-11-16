@@ -22,7 +22,7 @@ evotest: `run-tests.ps1 -Step e2e -Filter "community-web,cr127" -Wave -Dirty`.
 
 ## Quyết định trong lúc làm
 - Không chạy lặp (`--repeat-each`): run-tests.ps1 không có cờ chuyển đối số; ba ca cr150 (ok/tl/tc) là 3 quan sát độc lập cùng cơ chế.
-- Gắn `e2e/cr179/*.spec.ts` vào việc cr127 làm lộ ca `khung-tep-co-dinh` (chưa từng chạy): nó tìm tệp bằng ô tìm người (không có «hit» theo tên tệp) ⇒ đổi sang mở dòng hội thoại của A.
+- Gắn `e2e/cr179/*.spec.ts` vào việc cr127 làm lộ ca `khung-tep-co-dinh` (chưa từng chạy): nó tìm tệp bằng ô tìm người (không có «hit» theo tên tệp) ⇒ đổi sang mở dòng hội thoại của A; rồi lộ tiếp: đo hộp «đang tải» lúc hộp thoại còn hoạt ảnh mở (tỉ lệ 0.95) ⇒ lệch với lúc xong ⇒ đo lại khi đã ổn định (test sai, không phải lỗi khung).
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
@@ -34,3 +34,4 @@ Khi còn vòng gửi đang chờ, khối tự làm mới (5 giây/lần) để b
 - Kịch bản: khi B Trả lại có lý do thì A (nhân viên) thấy trả lại + lý do mà không tải lại [test: e2e/journey-approval/cr150-two-companies.spec.ts » B Trả lại có lý do ⇒ A (nhân viên) thấy trả lại + lý do]
 
 ## Việc còn lại
+

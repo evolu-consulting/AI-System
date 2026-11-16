@@ -47,6 +47,16 @@ test("xem trước tệp: hộp nền đen giữ nguyên kích thước trước
     .click();
   const stage = b.getByTestId("preview-stage");
   await expect(stage).toBeVisible();
+  // hộp thoại có hoạt ảnh mở (phóng 0.95 → 1): đo khi đã ổn định (hai lần đo liên tiếp bằng nhau), vẫn còn trong 1,5 s chặn tải
+  let last = "";
+  await expect
+    .poll(async () => {
+      const cur = JSON.stringify(await stage.boundingBox());
+      const same = cur === last;
+      last = cur;
+      return same;
+    })
+    .toBe(true);
   const loading = await stage.boundingBox();
   await expect(b.getByTestId("preview-pdf")).toHaveAttribute("src", /^blob:/);
   const done = await stage.boundingBox();
