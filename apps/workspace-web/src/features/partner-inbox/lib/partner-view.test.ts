@@ -1,7 +1,14 @@
 // CR-124 · q4 · thẻ 3 dòng hai phía + điều kiện hợp lệ ghi nhận thủ công (thuần).
 import { describe, expect, it } from "bun:test";
 import { PARTNER_DELETED_NAME } from "@ai/contracts/pack-contracts";
-import { type InboxItem, inboxCard, recordIssue, roundCard } from "./partner-view";
+import {
+  type InboxItem,
+  inboxCard,
+  ROUNDS_REFRESH_MS,
+  recordIssue,
+  roundCard,
+  roundsRefetchMs,
+} from "./partner-view";
 
 const item = (o: Partial<InboxItem> = {}): InboxItem => ({
   contract_id: "c1",
@@ -125,5 +132,27 @@ describe("ghi nhận thủ công hợp lệ", () => {
     expect(
       recordIssue({ ...ok, outcome: "confirmed", reason: "", channel: "platform", evidence: [] }),
     ).toBeNull();
+  });
+});
+
+// CR-179 · bên gửi (A) không tự thấy phản hồi của B: vòng còn «open» ⇒ tự làm mới đều; mọi vòng đã đóng / chưa có vòng ⇒ dừng.
+describe("roundsRefetchMs", () => {
+  const r = (status: string) =>
+    ({
+      mailbox_id: "m",
+      round: 1,
+      channel: "platform",
+      to_name: null,
+      status,
+      reason: null,
+      created_at: "",
+    }) as never;
+  it("có vòng đang mở ⇒ làm mới theo chu kỳ", () => {
+    expect(roundsRefetchMs([r("closed"), r("open")])).toBe(ROUNDS_REFRESH_MS);
+  });
+  it("không có vòng mở ⇒ không làm mới", () => {
+    expect(roundsRefetchMs([r("closed")])).toBe(false);
+    expect(roundsRefetchMs([])).toBe(false);
+    expect(roundsRefetchMs(undefined)).toBe(false);
   });
 });

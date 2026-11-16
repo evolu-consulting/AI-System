@@ -136,3 +136,10 @@ export function recordIssue(f: {
   if (f.channel === "manual" && f.evidence.filter((x) => x.trim()).length === 0) return "evidence";
   return null;
 }
+
+/** CR-179 · chu kỳ làm mới vòng gửi khi còn vòng «open» (bên gửi không có kênh đẩy khi bên nhận phản hồi; tin báo về qua job nền). */
+export const ROUNDS_REFRESH_MS = 5000;
+/** Còn vòng đang mở ⇒ làm mới đều để bên gửi thấy phản hồi mà không cần tải lại; đã đóng hết ⇒ dừng. */
+export function roundsRefetchMs(rounds: readonly Round[] | undefined): number | false {
+  return rounds?.some((r) => r.status === "open") ? ROUNDS_REFRESH_MS : false;
+}

@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useSession } from "~/features/auth/hooks/use-session";
 import { isCompanyAdmin } from "~/features/shell/lib/nav";
 import { fetchPartnerConfirm, fetchRounds, partnerKeys, type RecordIn, recordResult } from "../api";
+import { roundsRefetchMs } from "../lib/partner-view";
 
 /** Các vòng gửi đối tác của một HĐ (rỗng ⇒ HĐ chưa từng gửi). */
 export function useRounds(contractId: string) {
@@ -13,6 +14,7 @@ export function useRounds(contractId: string) {
     queryKey: partnerKeys.rounds(contractId),
     queryFn: ({ signal }) => fetchRounds(contractId, signal),
     retry: false,
+    refetchInterval: (q) => roundsRefetchMs(q.state.data?.rounds), // CR-179: A thấy B phản hồi không cần tải lại
   });
 }
 
