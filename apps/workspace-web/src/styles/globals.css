@@ -17,6 +17,9 @@
 
 /* CR-118 · gói sơ đồ dùng chung: Tailwind quét lớp CSS trong packages/flow-canvas (ngoài thư mục app). */
 @source "../../../../packages/flow-canvas/src";
+/* CR-177: bộ component chung + Tin nhắn nằm ngoài app — Tailwind phải quét để sinh lớp */
+@source "../../../../packages/web-kit/src";
+@source "../../../../packages/messages-web/src";
 
 @custom-variant dark (&:is(.dark *));
 

@@ -8,6 +8,9 @@
 @import "@fontsource-variable/jetbrains-mono";
 /* CR-125 G4 · token màu dùng chung (packages/web-kit/src/styles/tokens.css). */
 @import "../../../../packages/web-kit/src/styles/tokens.css";
+/* CR-177: bộ component chung + Tin nhắn nằm ngoài app — Tailwind phải quét để sinh lớp */
+@source "../../../../packages/web-kit/src";
+@source "../../../../packages/messages-web/src";
 
 @custom-variant dark (&:is(.dark *));
 
