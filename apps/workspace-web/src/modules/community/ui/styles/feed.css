@@ -641,3 +641,55 @@
   opacity: 1;
   color: var(--cm-accent);
 }
+
+/* ---------- CR-179 (UAT): điện thoại — đầu thẻ bài + ô đăng bài thu gọn không vỡ ---------- */
+@media (max-width: 560px) {
+  /* Đầu thẻ bài: hàng 1 = avatar · tên/meta · nút «…»; nhãn loại bài xuống hàng 2 dưới tên (tên không còn bị ép xuống 3 dòng). */
+  [data-mod="community"] .post .ph {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: 10px;
+    row-gap: 6px;
+    align-items: start;
+    padding-left: 16px;
+  }
+  [data-mod="community"] .post .ph > .av {
+    grid-row: 1 / span 2;
+  }
+  [data-mod="community"] .post .ph > .who {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  [data-mod="community"] .post .ph > .pill {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+  }
+  [data-mod="community"] .post .ph > .iconbtn {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  /* nút «Lưu báo giá» (chủ quản, bài bán) xuống hàng riêng cả bề ngang */
+  [data-mod="community"] .post .ph > button:not(.iconbtn) {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-self: start;
+  }
+  /* Ô đăng bài thu gọn: hàng 1 = avatar + ô gợi ý đủ rộng; hàng 2 = 3 nút loại bài chia đều, có chữ. */
+  [data-mod="community"] .feedcomposer.collapsed {
+    flex-wrap: wrap;
+  }
+  [data-mod="community"] .feedcomposer.collapsed .prompt {
+    flex: 1 1 calc(100% - 52px);
+  }
+  [data-mod="community"] .feedcomposer.collapsed .ctypes {
+    flex: 1 1 100%;
+  }
+  [data-mod="community"] .feedcomposer.collapsed .ctype {
+    flex: 1;
+    justify-content: center;
+  }
+  [data-mod="community"] .feedcomposer.collapsed .ctype span {
+    display: inline;
+  }
+}
