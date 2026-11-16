@@ -28,8 +28,19 @@ describe("Dialog (CR-175)", () => {
     expect(body).toContain("overflow-y-auto");
   });
 
-  test("bốn bản chép dialog cùng khung: cao tối đa 90vh, cột flex, có DialogBody", () => {
-    for (const app of ["workspace-web", "admin-web", "chat-web", "studio-web"]) {
+  test("bộ chung (web-kit/ui/kit, admin-web dùng từ CR-177) cùng khung CR-175", () => {
+    const src = readFileSync(
+      new URL("../../../../../packages/web-kit/src/ui/kit/dialog.tsx", import.meta.url),
+      "utf8",
+    );
+    for (const cls of ["max-h-[90vh]", "flex-col", "overflow-y-auto", "max-sm:max-h-[100dvh]"]) {
+      expect(src).toContain(cls);
+    }
+    expect(src).toContain("export function DialogBody");
+  });
+
+  test("ba bản chép dialog còn lại cùng khung: cao tối đa 90vh, cột flex, có DialogBody", () => {
+    for (const app of ["workspace-web", "chat-web", "studio-web"]) {
       const src = readFileSync(
         new URL(`../../../../${app}/src/components/ui/dialog.tsx`, import.meta.url),
         "utf8",
