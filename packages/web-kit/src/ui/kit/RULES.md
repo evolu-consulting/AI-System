@@ -32,7 +32,7 @@ Máy chặn: `bun run check:ui-kit` (số `<button>`/`<select>`/`<input>` trần
 ## Mobile (≤ 640px) — CR-180
 Tám luật; mỗi luật một dòng + cái dùng. Máy kiểm: e2e `cr180-mobile-audit`.
 1. Vùng bấm ≥ 44px, mọi cỡ. `Button` (md/sm/icon), `Tabs`, `ToggleGroup`, `Select`, `Input`, mục menu đã tự có (`max-sm:min-h-11`, token `--control-*` = 44). Link chữ đứng riêng: thêm lớp `tap-target`. Sai: `<a className="text-xs">` trần.
-2. Chữ ≥ 12px (`text-xs`). Ngoại lệ DUY NHẤT: số trong badge tròn nhỏ (`text-micro` 11px, ví dụ `UnreadBadge`, số «Chờ tôi»). Không thêm cỡ `text-[10px]`/`text-[11px]`. Thanh dưới: nhãn `text-xs`, 5 mục ở 360px = 72px/mục, nhãn dài bị cắt «…» (dùng `shortLabelKey`).
+2. Chữ ≥ 12px (`text-xs`). Ngoại lệ: (a) số trong badge tròn nhỏ (`text-micro` 11px, ví dụ `UnreadBadge`, số «Chờ tôi»); (b) chữ trong sơ đồ phóng to/thu nhỏ/kéo được (vd Sơ đồ tổ chức — người dùng chốt 2026-11-16 giữ sơ đồ trên điện thoại) — e2e ngoại lệ `zoomCanvas`. Không thêm cỡ `text-[10px]`/`text-[11px]`. Thanh dưới: nhãn `text-xs`, 5 mục ở 360px = 72px/mục, nhãn dài bị cắt «…» (dùng `shortLabelKey`).
 3. Đầu trang: `PageHeader` — tiêu đề 1 hàng, nút chính rộng hết ngay dưới, nút phụ vào «⋯». Sai: 3 nút xếp hàng cạnh tiêu đề.
 4. Bộ lọc: `FilterBar` — chip 1 hàng cuộn ngang (mờ mép), nâng cao vào nút «Lọc» → Sheet dưới. Sai: chip xuống 3 hàng, ô lọc chiếm nửa màn.
 5. Dòng thông tin: `MetaList` — «A · B · C» ở desktop, «nhãn: giá trị» mỗi dòng ở điện thoại; không dấu «·» đầu/cuối dòng. Sai: nối chuỗi bằng `join(" · ")`.
