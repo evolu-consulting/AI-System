@@ -24,10 +24,10 @@
     "arbitrary": 8
   },
   "workspace-web": {
-    "button": 316,
+    "button": 314,
     "select": 46,
     "input": 93,
-    "title": 37,
+    "title": 36,
     "uiFiles": 5,
     "arbitrary": 427
   }
