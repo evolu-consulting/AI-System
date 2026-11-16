@@ -32,7 +32,7 @@ Không sửa web-kit, API. Ô tìm giữ nhãn cũ «Tìm người theo tên, ch
 - ↑ = kết quả cũ hơn, ↓ = mới hơn; Enter = cũ hơn, Shift+Enter = mới hơn; «n/m+» khi còn trang.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### MODIFIED pack-contracts/tin-nhan.md
 

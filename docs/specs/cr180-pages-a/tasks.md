@@ -29,7 +29,7 @@ Không sửa kit. Không chạm Đối tác, Sản phẩm, Thông báo, Cài đ�
 - Chưa có `e2e/contracts-web/mobile-rules.cw.ts` trên nhánh này; kịch bản dưới đây dùng unit test + cập nhật e2e `doc-frame.cw.ts` (đổi `doc-file-line` ⇒ `detail-lead`, «File ký:» ⇒ «File ký»).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### ADDED web/mobile.md
 #### Yêu cầu: Trang hợp đồng theo luật Mobile (≤ 640px)

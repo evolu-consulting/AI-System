@@ -26,7 +26,7 @@ unit `shell-ui.test.tsx`, `test-all.discover.test.ts`; e2e contracts-web + flows
 - Trả focus làm ở `DockSheet` (một chỗ), không đổi kit `SheetContent`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 Không thay đổi hành vi (lý do: W1 đã chốt «ngăn trả focus về nút mở»; lát này sửa cho đúng ý đó, còn lại là sửa test và danh sách việc e2e).
 

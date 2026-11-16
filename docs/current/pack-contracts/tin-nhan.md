@@ -65,6 +65,7 @@ Tệp gắn vào hội thoại phải do chính người gửi tải lên và ch
 - Kịch bản: gắn tệp chính/tệp kèm HĐ ⇒ 42501; tệp mới tải qua tin nhắn gắn được [test: apps/hub-api/src/modules/packs/contracts/messages/messages-attach-guard.int.test.ts » tệp chính HĐ / tệp kèm HĐ]
 
 ## 5. Giao diện — w2, w3, fix-msg-web
+> Giao diện hiện hành (CR-178/179: danh sách 3 dòng, lọc, tìm, Ảnh & tệp, emoji, xem tệp) ở [tin-nhan-giao-dien.md](tin-nhan-giao-dien.md) và API mới ở [tin-nhan-tim-kiem.md](tin-nhan-tim-kiem.md); mâu thuẫn thì hai file đó thắng (vd không còn nút «Bảng tin <Công ty>»).
 #### Yêu cầu: Màn «Tin nhắn» toàn màn, menu có số chưa đọc
 «Tin nhắn» (sau «Yêu cầu») có số đỏ tổng chưa đọc; hội thoại chưa đọc in đậm kèm số (hiện đúng đến 99, «99+» khi nhiều hơn; server đếm tối đa 100), lên đầu khi có tin mới; tìm theo tên không phân biệt hoa/dấu; nói rõ đang tải/lỗi («Thử lại»)/rỗng. Xem trước một dòng ≤ 120 ký tự Unicode (không cắt đôi emoji), giống server và khi nhận tin mới. Thu hồi tin chưa đọc thì số cập nhật.
 - Kịch bản: tin mới của người khác ⇒ lên đầu, tăng chưa đọc (kẹp 99), tin mình/đang xem không tăng [test: apps/workspace-web/src/features/messages/lib/messages-lib.test.ts » msg.new của người khác]

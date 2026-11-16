@@ -39,6 +39,10 @@
 | `adr/0044-community-into-contracts-pack.md` | Community thành mặt Bảng tin của gói Sổ Hợp Tác: add-on `contracts-community`, quyền theo `contracts-*`, bỏ feature/Group `community-*` (CR-130 pha 3) |
 | `specs/CR-132/spec.md` · `specs/CR-130/` · `specs/cr133-attach/` | Spec/lát đợt 2026-11-12: Tin nhắn (lát cr132-m1..w3), Bảng tin vào SHT, Tài liệu kèm — đã gộp vào `current/` |
 | `current/web/web-hop-nhat.md` | Web hợp nhất `workspace-web`: một phiên, module lazy, `/pack/me`, đổi hướng cũ (CR-118) |
+| `current/web/giao-dien-chung.md` · `giao-dien-chung-lop-noi.md` · `giao-dien-chung-luat.md` · `ban-phim-lop-noi.md` · `nut-noi.md` · `chu-cat-tooltip.md` | Bộ giao diện chung (CR-177): token, nút/ô/avatar, hộp thoại/ô chọn/Hoàn tác, `check:ui-kit` + bảng icon, bàn phím lớp nổi, nút trợ lý nổi, chữ cắt có tooltip |
+| `current/web/mobile.md` · `mobile-trang.md` · `mobile-kiem-tu-dong.md` | Luật điện thoại ≤ 640px (CR-180): 4 luật, PageHeader/FilterBar/MetaList, trang Đối tác/Thành viên/Sơ đồ (giữ dạng sơ đồ), e2e kiểm 390px |
+| `current/pack-contracts/tin-nhan-giao-dien.md` · `tin-nhan-tim-kiem.md` · `current/web/bang-tin-giao-dien.md` · `ho-so-ca-nhan.md` | Tin nhắn mới (CR-178/179): danh sách 3 dòng, tìm, Ảnh & tệp, emoji, xem tệp toàn màn + API; Bảng tin thẳng hàng, hồ sơ cá nhân |
+| `packages/web-kit/src/ui/kit/RULES.md` | Luật UI cho người code: dùng kit, icon, phần tử trần, mobile (CR-177/180) |
 | `specs/cr112-admin-config/README.md` | CR-112 cải tổ cấu hình ai-admin: spec master, ADM-FR-76..83, lát S1..S7 |
 | `adr/0033-app-roles-source-of-truth.md` | Vai theo app là nguồn quyền (`admin.app_roles` → Group) |
 | `specs/CR-118/spec.md` | CR-118 web nghiệp vụ hợp nhất + FeatureGate OpenFeature + flow runtime + trang app + năng lực: spec master, UW-FR-01..15, bảng lát |

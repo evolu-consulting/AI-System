@@ -32,7 +32,7 @@ Không sửa kit, không đụng `features/messages` và phần của W3b. Chỉ
 Danh sách HĐ (+ dòng con, thùng rác, thẻ điện thoại, tải lên, mời đối tác) · Chi tiết HĐ (đầu trang, ký số, hộp hỏi duyệt, kỳ, tệp gốc, lịch sử, tái trích xuất) · Form HĐ (dòng hàng, khung) · Mốc/Phạt · Tệp HĐ · Phiên bản · Duyệt (hồ sơ, ký số) · Tổng quan (việc cần làm, hộp duyệt, biểu đồ nhóm) · Sổ (kỳ thanh toán, nhật ký) · Bảng (lọc cột, ô tìm) · Khung (gắn HĐ, nhật ký) · Nâng giao dịch · Đối tác gửi hồ sơ · Sản phẩm (nguồn, kho, luật, thêm) · Nhà cung cấp (so giá, báo giá, tìm, cấu hình) · Liên kết SP · Đăng nhập · Trạng thái gói · Sơ đồ tổ chức · Yêu cầu.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 Không thay đổi hành vi (lý do: chỉ đổi thành phần hiển thị nút/tooltip sang bộ chung, câu chữ, testid và thao tác giữ nguyên; nút khoá vẫn khoá, nay có lý do rê chuột).
 

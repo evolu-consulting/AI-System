@@ -47,3 +47,9 @@ Mục `contracts.partner` trên menu hiện số hợp đồng đối tác gửi
 - Kịch bản: khi công ty chưa bật tính năng nhận hợp đồng đối tác thì không có mục và không đếm [test: apps/hub-api/src/modules/packs/contracts/nav.mount.test.ts » tính năng tắt ⇒ không mục và không gọi cổng đếm]
 - Kịch bản: khi có 10.000 thư thì `/pack/nav` vẫn p95 ≤ 50 ms [test: apps/hub-api/src/modules/packs/contracts/nav.mount.perf.int.test.ts » p95 không vượt ngưỡng và số đúng (trước → sau)]
 
+## CR-180 · gộp 2026-11-16 (đợt cr177-180 · nguồn: fix-e2e-1116b)
+#### Yêu cầu: Bên gửi tự thấy phản hồi của bên nhận ở khối «Gửi đối tác»
+Khi còn vòng gửi đang chờ, khối tự làm mới (5 giây/lần) để bên gửi thấy xác nhận / trả lại / từ chối kèm lý do mà không tải lại trang; hết vòng chờ thì dừng. Code: `apps/workspace-web/src/features/partner-inbox/lib/partner-view.ts` (`roundsRefetchMs`).
+- Kịch bản: khi còn vòng «open» thì làm mới theo chu kỳ, đóng hết hoặc chưa có vòng thì dừng [test: apps/workspace-web/src/features/partner-inbox/lib/partner-view.test.ts » roundsRefetchMs]
+- Kịch bản: khi B Trả lại có lý do thì A (nhân viên) thấy trả lại + lý do mà không tải lại [test: e2e/journey-approval/cr150-two-companies.spec.ts » B Trả lại có lý do ⇒ A (nhân viên) thấy trả lại + lý do]
+

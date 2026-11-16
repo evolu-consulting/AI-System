@@ -44,7 +44,7 @@ Gỡ khỏi UI: `CompanyFilter.tsx`, `DirectorySections.tsx`. `lib/directory.ts`
 - Dòng danh sách dùng kit `Avatar`; thẻ người rê chuột (`PersonTip`) giữ nguyên cho 1-1 nội bộ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### MODIFIED pack-contracts/tin-nhan.md
 
@@ -71,7 +71,6 @@ Tin theo ngày, tải thêm theo trang; tin đang gửi mờ, lỗi bấm gửi 
 - Kịch bản: người nhận chỉ có «Sao chép», người gửi có thêm «Thu hồi»; tin thu hồi không có thao tác [test: packages/messages-web/src/lib/cr178.test.ts » CR-178 · «⋯» trên tin: quyền hiện Sao chép / Thu hồi]
 - Kịch bản: giờ dưới tin cuối, «Đã xem» avatar, «⋯» Sao chép/Thu hồi theo vai (người nhận khác người gửi) [test: e2e/cr127/j18-tin-nhan.spec.ts » A nhắn B: B thấy chưa đọc, mở thì hết, A thấy «Đã xem»]
 - Kịch bản: Hà (người nhận) chỉ có «Sao chép», Vy thu hồi qua «⋯» ⇒ hai bên chỉ còn «Tin nhắn đã được thu hồi» [test: e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J4]
-- Kịch bản: «Bảng tin <Công ty>» ở đầu khung chat cuộc đối tác [test: e2e/cr169/tin-nhan-cong-ty.spec.ts » CR169-J5]
 - Kịch bản: nút Gửi và Đính kèm cùng một hàng ở đáy ô soạn, dưới ô chữ [test: e2e/cr169/tin-nhan-cong-ty.spec.ts » CR172-J1]
 
 ## Việc còn lại

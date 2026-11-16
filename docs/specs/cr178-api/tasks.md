@@ -5,7 +5,7 @@ Web/UI do lát khác làm (sau U4 của CR-177). Migration CHỈ THÊM (hàm m�
 Viết tắt: `H` = `apps/hub-api/src/modules/packs/contracts/messages`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### MODIFIED pack-contracts/tin-nhan.md
 

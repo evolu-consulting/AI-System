@@ -28,7 +28,7 @@ Không sửa code app, không đổi component kit. Chạm: package.json (lệnh
 - Mốc đặt từ nhánh này; các lát khác đang giảm số đếm ⇒ sau khi gộp chạy `check:ui-kit --update` để hạ mốc.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### ADDED web/giao-dien-chung-luat.md
 #### Yêu cầu: Bảng khái niệm → icon dùng chung

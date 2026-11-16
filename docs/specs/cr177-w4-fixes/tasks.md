@@ -25,7 +25,7 @@ unit versions.test.ts, shell-parity.test.tsx; e2e cr177-w4-fab-safe.cw.ts (chưa
 - Tooltip nút nổi chuyển từ span CSS sang Tooltip kit; test parity kiểm aria-label.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### ADDED web/nut-noi.md
 #### Yêu cầu: Nút trợ lý nổi không che nội dung

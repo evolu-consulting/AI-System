@@ -39,7 +39,7 @@ Không đổi chữ, luồng, testid. Không chạm workspace-web, messages-web.
 - `ConfirmDialog` đã dựng trên AlertDialog kit nên giữ nguyên.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 Không thay đổi hành vi (lý do: chỉ đổi nguồn component sang bộ chung; chữ, luồng, testid giữ nguyên, lệch nhỏ do token).
 

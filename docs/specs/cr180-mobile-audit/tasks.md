@@ -42,7 +42,7 @@ Chính là các spec trên (đỏ khi còn vi phạm).
 - R4 đo ngay sau khi trang yên, trước mọi thao tác; màn Chi tiết đối tác đo thêm lần hai sau khi mở dòng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### ADDED web/mobile-kiem-tu-dong.md
 #### Yêu cầu: Các màn chính đạt 4 luật mobile ở 390 px

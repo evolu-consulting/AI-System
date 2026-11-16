@@ -34,7 +34,7 @@ Không đụng `<button>`, `title=` (W3), emoji (W4), messages, admin-web, `pack
 - Bỏ `title=` ở Composer (đã có `aria-label` giống hệt) vì prop `title` không có trên OptionSelect.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 Không thay đổi hành vi (lý do: chỉ đổi cách hiển thị ô chọn/ô nhập sang bộ component chung; giá trị, nhãn, luồng giữ nguyên)
 

@@ -27,13 +27,13 @@ Không sửa file kit có sẵn, Attach*, messages-web, Sidebar (chỉ UserMenu 
 - Ô đăng bài thẳng hàng bằng `top:-18px` + bóng nền 10px thay cho `padding-top:38px`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### ADDED web/bang-tin-giao-dien.md
 #### Yêu cầu: Bảng tin thẳng hàng và gọn
 Ô đăng bài cùng mép trên thẻ «Bộ lọc». Ô tìm «Nhắc tên» cách phần dưới ≥ 12px; nút mở nhắc tên có viền như nút cùng hàng. Hồ sơ cá nhân: logo công ty tròn đứng cùng hàng chữ «Công ty». Màn «Yêu cầu tham gia» / «Báo cáo vi phạm» rỗng hiện trạng thái trống canh giữa vùng nội dung.
 - Kịch bản: mép trên ô đăng bài = mép trên thẻ «Bộ lọc» [test: e2e/community-web/cr147-feed.cm.ts » CR-179: mép trên ô đăng bài = mép trên thẻ «Bộ lọc» (lệch ≤ 1px)]
-- Kịch bản: `/community/me` logo công ty tròn cùng hàng chữ «Công ty» [test: e2e/community-web/cr147-feed.cm.ts » CR-179: /community/me — logo công ty tròn, cùng hàng với chữ «Công ty»]
+- Kịch bản: `/community/me` logo công ty tròn cùng hàng tên công ty [test: e2e/community-web/cr147-feed.cm.ts » CR-179: /community/me — logo công ty tròn, cùng hàng với tên công ty]
 - Kịch bản: báo cáo rỗng ⇒ trạng thái trống canh giữa [test: e2e/community-web/cr147-feed.cm.ts » CR-179: «Báo cáo vi phạm» không có dữ liệu ⇒ trạng thái trống canh giữa vùng nội dung]
 
 #### Yêu cầu: Một avatar người dùng ở header và sidebar

@@ -27,7 +27,7 @@ Không sửa backend (`/connect/posts/:tenant_id` giữ). Không đụng Attach*
 - Sidebar `title={company}` giữ nguyên (thuộc shell, lát 3; là nhãn liên kết, không phải chữ cắt).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### MODIFIED pack-contracts/tin-nhan.md
 #### Yêu cầu: Nhãn công ty và bỏ nút Bảng tin ở Tin nhắn

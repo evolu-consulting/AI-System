@@ -1,6 +1,6 @@
 # Evolu Platform — luật cho Claude và mọi agent
 
-Nền tảng AI multi-tenant: lõi chung (đăng nhập, tenant, quyền, Agent Hub, MCP, RAG) + các app là gói riêng (Sổ Hợp Tác, Community…). Nhánh làm việc: `platform/gd0`.
+Nền tảng AI multi-tenant: lõi chung (đăng nhập, tenant, quyền, Agent Hub, MCP, RAG) + các app là gói riêng (Sổ Hợp Tác, Community…). Nhánh làm việc: `staging` (lên prod = merge `staging` → `main`).
 
 **Đọc trước:** `docs/STATE.md` → cần tìm gì thì `docs/INDEX.md`, mở đúng một file. Bản đồ dây chuyền: `docs/platform/dev-flow.md`. Cách làm chi tiết: `docs/WORKFLOW.md`. Chuẩn code: `docs/CONVENTIONS.md`. Lý do và lịch sử từng luật: `docs/RULES-DETAIL.md` (không nạp mỗi phiên; mâu thuẫn thì file này thắng).
 

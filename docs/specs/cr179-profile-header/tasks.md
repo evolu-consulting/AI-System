@@ -28,7 +28,7 @@ Unit `me-profile.test.ts`; e2e `cr147-feed.cm.ts`.
 - Màu bìa mặc định: `--cm-accent-soft` (theo màu chính công ty).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### ADDED web/ho-so-ca-nhan.md
 #### Yêu cầu: Đầu trang hồ sơ cá nhân

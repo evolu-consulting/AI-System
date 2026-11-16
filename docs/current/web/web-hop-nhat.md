@@ -73,3 +73,6 @@ Xem thêm: [trang-thai-trong.md](trang-thai-trong.md), [luong-thoi-gian-thuc.md]
 Workspace-web dùng đúng component chuông của web-kit như chat/admin/studio; thông báo Community và Sổ Hợp Tác chung một chuông, bấm hàng mở đúng trang (kể cả `/community?post=<id>`); chân «Xem tất cả/Cài đặt thông báo» chỉ khi có gói Sổ Hợp Tác; tin nhắn không vào chuông. Props thêm vào chuông web-kit (không slot render).
 - Kịch bản: hàng có link là `<a href>`, chưa đọc có chấm + đậm, có giờ [test: apps/workspace-web/src/features/notifications/notification-row.test.tsx » linkRows: <a href> thật, chưa đọc có chấm + đậm, có giờ]
 - Kịch bản: mặc định hàng là nút, đã đọc không chấm [test: apps/workspace-web/src/features/notifications/notification-row.test.tsx » mặc định: nút, đã đọc không chấm, không link vẫn là nút]
+
+## Gộp 2026-11-16 (đợt cr177-180)
+Luật điện thoại (vùng bấm 44px, chữ ≥ 12px, nút trợ lý không che, không tràn ngang) và khung chung: [mobile.md](mobile.md). Bộ giao diện chung + luật UI: [giao-dien-chung.md](giao-dien-chung.md).

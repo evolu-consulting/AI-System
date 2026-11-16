@@ -48,7 +48,7 @@ Giữ nguyên (không có cặp shadcn): `--bubble --act-line --soon-line --late
 - `text-sm` nay 13px (trước 14px), `text-lg` 16px (trước 18px): component shadcn đổi nhẹ cỡ chữ, theo CR-177.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### ADDED web/giao-dien-chung.md
 #### Yêu cầu: Token màu, chữ, bo góc dùng chung

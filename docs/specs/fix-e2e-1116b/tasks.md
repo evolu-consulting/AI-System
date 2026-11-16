@@ -25,7 +25,7 @@ evotest: `run-tests.ps1 -Step e2e -Filter "community-web,cr127" -Wave -Dirty`.
 - Gắn `e2e/cr179/*.spec.ts` vào việc cr127 làm lộ ca `khung-tep-co-dinh` (chưa từng chạy): nó tìm tệp bằng ô tìm người (không có «hit» theo tên tệp) ⇒ đổi sang mở dòng hội thoại của A; rồi lộ tiếp: đo hộp «đang tải» lúc hộp thoại còn hoạt ảnh mở (tỉ lệ 0.95) ⇒ lệch với lúc xong ⇒ đo lại khi đã ổn định (test sai, không phải lỗi khung).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### MODIFIED sht/gui-doi-tac-giao-dien.md
 #### Yêu cầu: Bên gửi tự thấy phản hồi của bên nhận ở khối «Gửi đối tác»

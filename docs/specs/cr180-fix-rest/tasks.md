@@ -29,7 +29,7 @@ e2e `contracts-web`, `community-web`, `community-web-stack`, `cr127` (chạy tr�
 - `khung-tep-co-dinh`: lỗi ở test (đo trúng khung đầu của hoạt ảnh phóng 0.95), không phải ở code.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### MODIFIED web/web-hop-nhat.md
 #### Yêu cầu: Mobile 4 luật (vùng bấm 44px, chữ ≥ 12px, nút trợ lý không che, không tràn ngang)

@@ -32,7 +32,7 @@ Không sửa web-kit. Việc dở: Shift giữ bảng mở (tuỳ chọn) chưa 
 - Icon emoji vẽ lại trong `icons.tsx` của gói vì kit chưa xuất `ICONS` qua đường import (báo cáo, không sửa kit).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### MODIFIED pack-contracts/tin-nhan.md
 

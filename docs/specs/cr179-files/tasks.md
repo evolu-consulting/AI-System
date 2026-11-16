@@ -29,7 +29,7 @@ Không đổi tooltip tên dài (lát 2). Không chạm Community / shell. Chạ
 - Chiều cao chip: 56 (thường) / 44 (gọn); thẻ tệp 56.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### MODIFIED pack-contracts/tin-nhan.md
 #### Yêu cầu: Tệp và ảnh hiển thị trong khung cố định

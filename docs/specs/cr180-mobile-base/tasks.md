@@ -28,7 +28,7 @@ Không chuyển trang sang component mới (lát 2). Chạm: web-kit ui/kit, tok
 - Luật 6: `main` của Shell đã có `--fab-safe` cho mọi trang (Thông báo, Cài đặt đều nằm trong main, không có cuộn riêng) ⇒ chỉ thêm luật.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### ADDED web/mobile.md
 #### Yêu cầu: Vùng bấm ≥ 44px trên điện thoại

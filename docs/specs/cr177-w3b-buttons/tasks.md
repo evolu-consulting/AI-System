@@ -19,7 +19,7 @@ phụ thuộc:
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 Không thay đổi hành vi (lý do: chỉ đổi thành phần nút/tooltip sang bộ chung, giữ câu chữ, data-testid, aria).
 

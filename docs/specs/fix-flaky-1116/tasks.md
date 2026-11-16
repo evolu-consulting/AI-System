@@ -28,7 +28,7 @@ Chạy lặp trên evotest bằng cấu hình tạm (không commit): `repeatEach
 - contracts-web: trần 20 s chỉ ở phép chờ ĐẦU sau goto (đúng điều kiện = thẻ duyệt hiện), không nâng `expect.timeout` toàn bộ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 Không thay đổi hành vi (lý do: chỉ sửa test e2e chờ sai theo tải máy; code sản phẩm, mock và cấu hình không đổi)
 

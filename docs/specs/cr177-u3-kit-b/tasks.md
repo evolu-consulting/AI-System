@@ -27,7 +27,7 @@ Không chuyển app, không sửa dialog/menu cũ. Chạm: `ui/kit/*`, `ui/toast
 - Rê chuột dừng đếm: sonner làm sẵn, không viết thêm.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### ADDED web/giao-dien-chung-lop-noi.md
 #### Yêu cầu: Hộp thoại chung cuộn riêng

@@ -26,7 +26,7 @@ Không đổi migration, contract zod, web-kit. Chạm: `apps/hub-api/.../messag
 - Việc ngoài phạm vi (A12): `pmsg-db.int.test.ts:412` đang lỗi tsc sẵn (không do lát này).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### MODIFIED pack-contracts/tin-nhan.md
 

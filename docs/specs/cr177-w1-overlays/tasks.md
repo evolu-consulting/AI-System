@@ -28,7 +28,7 @@ Không `<select>`/`<input>`/`title=` hàng loạt (W2/W3), không nút robot n�
 - Menu tài khoản chứa PrefsPanel (ô chọn) nên dùng Popover (không phải DropdownMenu) + ↑/↓ giữa các `menuitem`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-16 (đợt cr177-180)
 
 ### ADDED web/ban-phim-lop-noi.md
 #### Yêu cầu: Menu, ngăn và nhóm chọn dùng được bằng bàn phím
