@@ -6,18 +6,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { asHub } from "./dataset";
-import { approvalAsHub } from "./dataset-approval";
-import { contract, contractAsHub } from "./dataset-contract";
-import { categoriesAsHub, facetsAsHub, membersAsHub } from "./dataset-list";
-import {
-  bizListAsHub,
-  contractsListAsHub,
-  overviewAsHub,
-  partnersForOverview,
-  todoAsHub,
-} from "./dataset-overview";
-import { ACTIVE_ID, activeContract, lookupFor, matchFor, PRODUCTS } from "./dataset-v2f";
+import { FAILED_ID, installHub } from "./_hub";
+import { contract } from "./dataset-contract";
+import { ACTIVE_ID } from "./dataset-v2f";
 
 const CAPTURE = process.env.CW_MODE === "capture";
 const DIR = join(__dirname, "baseline", process.platform);
@@ -67,7 +58,6 @@ const loginBoxes = {
 };
 
 // ---------- HD2: S04 nhập tay, S05 kiểm/sửa (dữ liệu `dataset-contract.ts`) ----------
-const FAILED_ID = contract.id.replace(/1$/, "2");
 const reviewBoxes = {
   heading: "main h1",
   save: 'main button:text-is("Gửi duyệt")',
@@ -270,6 +260,21 @@ const HD5_SCENES: Scene[] = [
   },
 ];
 
+// ---------- CR-180: Tin nhắn ở 390 px (danh sách hội thoại; API tin nhắn không giả ⇒ trạng thái rỗng, ổn định) ----------
+const MSG_SCENES: Scene[] = [
+  {
+    name: "messages-mobile",
+    signedIn: true,
+    path: "/contracts/messages",
+    size: M,
+    theme: "light",
+    text: ["main"],
+    boxes: { ...mobileBoxes },
+    mask: [],
+    ready: (p) => p.locator("main"),
+  },
+];
+
 const SCENES: Scene[] = [
   ...(["light", "dark"] as const).map(
     (theme): Scene => ({
@@ -376,63 +381,9 @@ const SCENES: Scene[] = [
   ...OVERVIEW_SCENES,
   ...HD2_SCENES,
   ...HD5_SCENES,
+  ...MSG_SCENES,
   ...V2F_SCENES,
 ];
-
-/** contracts-web: `/auth/refresh` + `/pack/contracts/me` giả bằng dữ liệu chung (asHub). */
-async function installHub(page: Page, signedIn: boolean) {
-  const d = asHub("editor");
-  const json = (
-    route: Parameters<Parameters<Page["route"]>[1]>[0],
-    status: number,
-    body: unknown,
-  ) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
-  await page.route("**/auth/refresh", (r) =>
-    signedIn
-      ? json(r, 200, d.grant)
-      : json(r, 401, { error: { code: "UNAUTHORIZED", message: "Hết phiên" } }),
-  );
-  await page.route("**/pack/contracts/me", (r) => json(r, 200, d.packMe));
-  const at = (name: string) => (u: URL) => u.pathname === `/pack/contracts/${name}`;
-  await page.route(at("contracts"), (r) =>
-    json(r, 200, contractsListAsHub(new URL(r.request().url()).searchParams)),
-  );
-  await page.route(at("my-work/todo"), (r) => json(r, 200, todoAsHub()));
-  await page.route(at("overview"), (r) =>
-    json(r, 200, overviewAsHub(new URL(r.request().url()).searchParams.get("period") ?? "month")),
-  );
-  await page.route(at("business/products"), (r) => json(r, 200, bizListAsHub()));
-  await page.route(at("partners"), (r) =>
-    json(r, 200, partnersForOverview(new URL(r.request().url()).searchParams)),
-  );
-  await page.route(at("contracts/facets"), (r) => json(r, 200, facetsAsHub()));
-  await page.route(at("categories"), (r) => json(r, 200, categoriesAsHub()));
-  await page.route(at("members"), (r) => json(r, 200, membersAsHub()));
-  // V2-F: danh mục SP + gợi ý đối tác (form nhập tay) và HĐ đã có hiệu lực (dòng thời gian).
-  await page.route(at("products"), (r) => json(r, 200, { items: PRODUCTS }));
-  await page.route(at("products/match"), (r) =>
-    json(r, 200, matchFor((r.request().postDataJSON() as { text: string }).text)),
-  );
-  await page.route(at("partners/lookup"), (r) =>
-    json(r, 200, lookupFor(new URL(r.request().url()).searchParams.get("name") ?? "")),
-  );
-  await page.route(`**/pack/contracts/contracts/${ACTIVE_ID}`, (r) =>
-    json(r, 200, activeContract()),
-  );
-  await page.route(`**/pack/contracts/contracts/${contract.id}`, (r) =>
-    json(r, 200, contractAsHub()),
-  );
-  // HD3: HĐ cần kiểm ở bước duyệt cấp 1, người xem quyết được ⇒ "Xác nhận"; HĐ đọc lỗi chưa có run.
-  await page.route(`**/pack/contracts/contracts/${contract.id}/approval`, (r) =>
-    json(r, 200, approvalAsHub("level1")),
-  );
-  await page.route(`**/pack/contracts/contracts/${FAILED_ID}/approval`, (r) =>
-    json(r, 200, approvalAsHub(null)),
-  );
-  await page.route(`**/pack/contracts/contracts/${FAILED_ID}`, (r) =>
-    json(r, 200, { ...contractAsHub("extract_failed"), id: FAILED_ID, items: [], warnings: [] }),
-  );
-}
 
 async function prepare(page: Page, s: Scene) {
   // Cố định nhiễu (plan §6.4): giờ, ngôn ngữ, giao diện, panel trợ lý đóng (nội dung panel khác nhau theo thiết kế).

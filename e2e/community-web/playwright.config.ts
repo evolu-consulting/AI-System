@@ -9,6 +9,10 @@ const URL = `http://localhost:${PORT}`;
 export default defineConfig({
   testDir: ".",
   testMatch: "**/*.cm.ts",
+  // CR-180: ảnh mẫu điện thoại (scenes-mobile.cm.ts); `CM_MODE=capture` ghi baseline, mặc định so (thiếu ⇒ đỏ).
+  snapshotPathTemplate: "{testDir}/baseline/{platform}/{arg}{ext}",
+  // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e
+  updateSnapshots: process.env.CM_MODE === "capture" ? "all" : "none",
   workers: 1,
   fullyParallel: false,
   retries: 0,

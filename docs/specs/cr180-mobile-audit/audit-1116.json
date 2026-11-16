@@ -1,0 +1,438 @@
+{
+ "01-tong-quan": {
+  "url": "/contracts",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "Tháng này 91x32",
+   "Quý này 76x32",
+   "12 tháng 78x32",
+   "Xem tất cả đối tác 120x16",
+   "Xem tất cả hợp đồng 135x16"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "02-ds-hd": {
+  "url": "/contracts/list",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "Tất cả13 95x35",
+   "HĐ nguyên tắc0 142x35",
+   "HĐ kinh tế13 117x35",
+   "Giao dịch0 108x35",
+   "row-delete 32x32",
+   "Số dòng mỗi trang 72x32",
+   "Trang trước 32x32",
+   "1 32x32",
+   "Trang sau 32x32"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": [
+   "1. HOP DONG NHUONG QUYEN (1) — — Nháp AI",
+   "row-view",
+   "row-delete"
+  ]
+ },
+ "03-chi-tiet-hd": {
+  "url": "/contracts/c/01a1dee6-5e41-7000-a9b5-d13176f692c2",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "← Hợp đồng 77x16",
+   "title-edit 237x34",
+   "cfiles-add 59x20",
+   "Chọn ngày 28x28",
+   "Chung 66x34",
+   "Phí 44x34",
+   "Pháp lý 71x34"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "04-tao-hd": {
+  "url": "/contracts/c/new",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "← Hợp đồng 77x16",
+   "attach-choose 59x20"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "05-viec-cua-toi": {
+  "url": "/contracts/approvals",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "Tất cả 69x28",
+   "Cần duyệt 92x28",
+   "Cần ký 70x28"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "06-doi-tac": {
+  "url": "/contracts/partners",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "Số dòng mỗi trang 72x32",
+   "Trang trước 32x32",
+   "1 32x32",
+   "Trang sau 32x32",
+   "⚙ Cách tính điểm 112x16"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "07-chi-tiet-doi-tac": {
+  "url": "/contracts/partners",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "Số dòng mỗi trang 72x32",
+   "Trang trước 32x32",
+   "1 32x32",
+   "Trang sau 32x32",
+   "⚙ Cách tính điểm 112x16"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "08-san-pham": {
+  "url": "/contracts/products",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "Tất cả · 0 87x30",
+   "Dịch vụ có hạn · 0 137x30",
+   "Hàng hoá · 0 105x30",
+   "Giới thiệu · 0 104x30",
+   "Số dòng mỗi trang 72x32",
+   "Trang trước 32x32",
+   "1 32x32",
+   "Trang sau 32x32"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "09-so-do": {
+  "url": "/contracts/org",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "org-node-b4342a4e-6434-41b7-86d6-7c55245 57x23",
+   "org-node-fb1ae74e-558a-4501-b29e-b421912 57x23",
+   "org-node-eef77b8e-9dde-4678-b16b-0bbd1d7 57x23",
+   "org-node-8acb35e3-b7d7-4eec-98b2-d4fd086 57x23",
+   "org-node-7152ecb3-ec9f-4f70-89a5-df08235 57x23",
+   "org-node-64c3bc8e-7d73-4838-b9b6-18b9b7d 57x23",
+   "org-node-__company__ 57x23",
+   "Zoom In 26x26",
+   "Zoom Out 26x26",
+   "Fit View 26x26"
+  ],
+  "tinyText": [
+   "2 10px",
+   "KB 10px",
+   "BT 10px",
+   "EH 10px",
+   "PĐ 10px",
+   "HĐ 10px",
+   "AN 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "10-tin-nhan": {
+  "url": "/contracts/messages",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "tab-all 67x32",
+   "tab-unread 86x32",
+   "tab-partner 85x32"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "11-khung-chat": {
+  "url": "/contracts/messages?c=01a1d802-b9a3-7000-943d-9f43ee1675bc",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "chat-back 32x32",
+   "chat-find 32x32",
+   "chat-attach 32x32",
+   "composer-emoji 32x32",
+   "attach-btn 32x32",
+   "Gửi 32x32"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "12-bang-tin": {
+  "url": "/community",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "file-download 34x26"
+  ],
+  "tinyText": [
+   "2 10px",
+   "8 11.5px",
+   "2 11.5px",
+   "3 11.5px",
+   "0 11.5px",
+   "NGÂN SÁCH 11px",
+   "Cần 11px",
+   "Giao tại 11px",
+   "Cần trước 11px",
+   "GIÁ CHÀO 11px",
+   "Số lượng 11px",
+   "Khu vực 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "13-ho-so": {
+  "url": "/community/me",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "me-cover-edit-change 30x30",
+   "me-avatar-edit-change 30x30",
+   "me-company-row 146x24",
+   "file-download 34x26"
+  ],
+  "tinyText": [
+   "2 10px",
+   "DT 10px",
+   "5 11.5px",
+   "0 11.5px",
+   "GIÁ CHÀO 11px",
+   "Số lượng 11px",
+   "NGÂN SÁCH 11px",
+   "Cần 11px",
+   "Giao tại 11px",
+   "Cần trước 11px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "14-yeu-cau-tham-gia": {
+  "url": "/community/requests",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "file-download 34x26"
+  ],
+  "tinyText": [
+   "2 10px",
+   "8 11.5px",
+   "2 11.5px",
+   "3 11.5px",
+   "0 11.5px",
+   "NGÂN SÁCH 11px",
+   "Cần 11px",
+   "Giao tại 11px",
+   "Cần trước 11px",
+   "GIÁ CHÀO 11px",
+   "Số lượng 11px",
+   "Khu vực 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "15-bao-cao": {
+  "url": "/community/reports",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": []
+ },
+ "16-cai-dat": {
+  "url": "/contracts/settings/members",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "Cấp quản lý · ABC (đối tác) 30x34",
+   "Cấp quản lý · Bao bì Phương Nam (đối tác 30x34",
+   "Cấp quản lý · Bùi Văn Khoa 30x34",
+   "Cấp quản lý · Hoàng Văn Em 30x34",
+   "Cấp quản lý · Hãng NCCA (đối tác) 30x34",
+   "Cấp quản lý · Hưng Thịnh Logistics (đối  30x34",
+   "Cấp quản lý · Hồ Minh Quân 30x34",
+   "Cấp quản lý · Lê Minh Cường 30x34",
+   "Cấp quản lý · Lý Thu Hà 30x34",
+   "Cấp quản lý · Mai Văn Tùng 30x34",
+   "Cấp quản lý · Nam Việt (đối tác xin tham 30x34"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [
+   "Cấp quản lý w=87 h=57"
+  ],
+  "fabCover": [
+   "Cấp quản lý · Hồ Minh Quân"
+  ]
+ },
+ "17-thong-bao": {
+  "url": "/contracts/notifications",
+  "scrollW": 390,
+  "overflowX": [],
+  "smallTap": [
+   "D Demo Sổ Hợp Tác 172x28",
+   "Đánh dấu tất cả đã đọc 163x20",
+   "INPUT 13x13"
+  ],
+  "tinyText": [
+   "2 10px",
+   "Hợp đồng 11px",
+   "Bảng tin 11px",
+   "Tổng quan 11px",
+   "Tin nhắn 11px",
+   "bottom-waiting-count 10px",
+   "Việc của tôi 11px"
+  ],
+  "squeezed": [],
+  "fabCover": [
+   "Cần duyệt: HĐ [Demo] HĐ mua thiết bị văn",
+   "Cần duyệt: HĐ [Demo] HĐ dịch vụ chữ ký s"
+  ]
+ }
+}
