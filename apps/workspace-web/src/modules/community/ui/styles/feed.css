@@ -697,4 +697,7 @@
   [data-mod="community"] .feedcomposer.collapsed .ctype span {
     display: inline;
   }
+  [data-mod="community"] .feedcomposer.collapsed .ctype svg {
+    flex-shrink: 0;
+  }
 }
