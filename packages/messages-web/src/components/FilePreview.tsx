@@ -1,6 +1,7 @@
 // CR-178 · M3 · «Xem trước tệp»: hộp lớn nền tối. Ảnh (png/jpg/gif/webp) và PDF xem trong trang; Word/Excel/ZIP… chỉ «Tải về».
 // AN TOÀN: tải byte qua hub-api (`…/files/:id/content`, Bearer, cùng origin; không `fetch` xuyên origin tới FileBox) và gắn đúng `mime` đã lưu, xem qua `blob:` (ảnh `<img>`, PDF `<iframe sandbox>`), thu hồi khi đổi tệp/đóng; svg/html không bao giờ render.
 import type { MsgAttachment } from "@ai/contracts/pack-contracts";
+import { ViewerStage } from "@ai/web-kit/ui/attach-frame";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@ai/web-kit/ui/kit/dialog";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
@@ -43,30 +44,39 @@ const navBtn =
   "grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 disabled:opacity-30";
 const barBtn = "btn btn-sm border-white/30 bg-transparent text-white hover:bg-white/10";
 
+/** CR-179 · hộp xem CỐ ĐỊNH (nền đen): đang tải ⇒ «Đang tải…» + vòng xoay; xong ⇒ nội dung `object-contain` trong khung, hộp không đổi cỡ. */
 function Stage({ it, blob }: { it: MsgAttachment; blob: Blobbed }) {
   const { t } = useTranslation();
   const kind = previewKind(it.file.mime);
-  if (kind === "none")
-    return <p className="m-0 text-sm text-white/80">{t("contracts.messages.find.noPreview")}</p>;
-  if (blob.failed)
-    return <p className="m-0 text-sm text-white/80">{t("contracts.messages.attachUi.failed")}</p>;
-  if (!blob.url)
-    return <p className="m-0 text-sm text-white/60">{t("contracts.messages.loadingMore")}</p>;
-  return kind === "image" ? (
-    <img
-      src={blob.url}
-      alt={it.file.name}
-      data-testid="preview-image"
-      className="max-h-full max-w-full object-contain"
-    />
-  ) : (
-    <iframe
-      src={blob.url}
-      title={it.file.name}
-      sandbox=""
-      data-testid="preview-pdf"
-      className="h-full w-full rounded bg-white"
-    />
+  const msg = (text: string) => <p className="m-0 text-sm text-white/80">{text}</p>;
+  return (
+    <ViewerStage
+      loading={kind !== "none" && !blob.failed && !blob.url}
+      loadingText={t("contracts.messages.loadingMore")}
+      testId="preview-stage"
+    >
+      {kind === "none" ? (
+        msg(t("contracts.messages.find.noPreview"))
+      ) : blob.failed || !blob.url ? (
+        msg(t("contracts.messages.attachUi.failed"))
+      ) : kind === "image" ? (
+        <img
+          src={blob.url}
+          alt={it.file.name}
+          decoding="async"
+          data-testid="preview-image"
+          className="h-full w-full object-contain"
+        />
+      ) : (
+        <iframe
+          src={blob.url}
+          title={it.file.name}
+          sandbox=""
+          data-testid="preview-pdf"
+          className="h-full w-full bg-white"
+        />
+      )}
+    </ViewerStage>
   );
 }
 

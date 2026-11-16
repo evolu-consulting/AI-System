@@ -40,6 +40,7 @@ export const attachLabels = (t: T): AttachLabels => ({
   view: t("contracts.messages.attachUi.view"),
   failed: t("contracts.messages.attachUi.failed"),
   uploading: t("contracts.messages.uploading"),
+  loading: t("contracts.messages.loadingMore"),
   retry: t("contracts.messages.retry"),
   remove: (name) => t("contracts.messages.removeFile", { name }),
   unavailable: t("contracts.messages.attachUi.failed"),

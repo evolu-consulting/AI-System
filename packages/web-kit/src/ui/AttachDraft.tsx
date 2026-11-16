@@ -2,7 +2,13 @@
 // (`progress` 0..1 nếu biết, không thì chạy vô định). Ảnh xem trước lấy từ `file` (cục bộ) hoặc `getUrl(id)` (đã lên server).
 import { AlertCircle, X } from "lucide-react";
 import { type CSSProperties, useEffect, useState } from "react";
-import { type AttachLabels, fileKind, formatBytes, truncateMiddle } from "../attach-layout";
+import {
+  ATTACH_SIZE,
+  type AttachLabels,
+  fileKind,
+  formatBytes,
+  truncateMiddle,
+} from "../attach-layout";
 import {
   cardStyle,
   DANGER,
@@ -160,6 +166,7 @@ function ImageTile({
         <img
           src={url}
           alt={item.name}
+          decoding="async"
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       ) : (
@@ -204,12 +211,14 @@ function FileMeta({
   if (item.status === "uploading") {
     const size = item.size !== undefined ? formatBytes(item.size, locale) : "";
     return (
-      <>
-        <span style={{ opacity: 0.7, fontSize: 12 }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 8, height: 16 }}>
+        <span style={{ opacity: 0.7, fontSize: 12, whiteSpace: "nowrap" }}>
           {[labels.uploading, size].filter(Boolean).join(" · ")}
         </span>
-        <Bar value={item.progress} label={labels.uploading} />
-      </>
+        <span style={{ flex: 1, minWidth: 24 }}>
+          <Bar value={item.progress} label={labels.uploading} />
+        </span>
+      </span>
     );
   }
   return (
@@ -243,7 +252,14 @@ function FileRow({
         listStyle: "none",
         borderColor: failed ? DANGER : undefined,
         background: failed ? tint(DANGER, 6) : undefined,
-        width: layout === "stack" ? "100%" : compact ? 220 : 280,
+        width:
+          layout === "stack"
+            ? "100%"
+            : compact
+              ? ATTACH_SIZE.chipWidthCompact
+              : ATTACH_SIZE.chipWidth,
+        height: compact ? ATTACH_SIZE.chipHeightCompact : ATTACH_SIZE.chipHeight,
+        boxSizing: "border-box",
         padding: compact ? "4px 8px" : "8px 10px",
         gap: compact ? 6 : 10,
       }}
@@ -253,8 +269,16 @@ function FileRow({
       ) : (
         <KindTile mime={item.mime} name={item.name} />
       )}
-      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-        <span title={item.name} style={{ fontWeight: 600, overflowWrap: "anywhere" }}>
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+        <span
+          title={item.name}
+          style={{
+            fontWeight: 600,
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+          }}
+        >
           {truncateMiddle(item.name, compact ? 22 : 30)}
         </span>
         <FileMeta item={item} labels={labels} locale={locale} meta={meta} />
@@ -292,6 +316,8 @@ export function AttachDraftList(props: Props) {
             ...cardStyle,
             listStyle: "none",
             width: props.layout === "stack" ? "100%" : 260,
+            height: props.compact ? ATTACH_SIZE.chipHeightCompact : ATTACH_SIZE.chipHeight,
+            boxSizing: "border-box",
           }}
         >
           <span style={{ flex: 1 }}>

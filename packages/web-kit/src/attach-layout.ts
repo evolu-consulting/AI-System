@@ -100,6 +100,8 @@ export type AttachLabels = {
   retry: string;
   remove: (name: string) => string;
   unavailable: string;
+  /** CR-179 · «Đang tải…» trong hộp xem trước (không có ⇒ «…»). */
+  loading?: string;
 };
 
 /** CR-173 · chữ của ô chọn tệp dùng chung (app truyền — web-kit không phụ thuộc i18n). */
@@ -204,4 +206,44 @@ export function attachPickLabels(
     badType: (name) => t(`${prefix}.badType`, { name }),
     tooMany: (max) => t(`${prefix}.tooMany`, { max }),
   };
+}
+
+/** CR-179 · kích thước cố định của khung tệp (MỘT chỗ): khung có kích thước ngay lần render đầu, không phình khi tải xong. */
+export const ATTACH_SIZE = {
+  /** Ảnh đơn: khung 4:3, rộng tối đa 420. */
+  oneMaxWidth: 420,
+  oneRatio: "4 / 3",
+  gridMaxWidth: 480,
+  gridTwoHeight: 200,
+  gridManyHeight: 280,
+  /** Thẻ tệp: cao cố định (tên 1 dòng + dung lượng 1 dòng). */
+  cardHeight: 56,
+  cardMaxWidth: 420,
+  /** Hộp xem trước: theo khung nhìn, không đổi khi nội dung về. */
+  viewerWidth: "min(90vw, 960px)",
+  viewerHeight: "min(80vh, 720px)",
+  /** Chip tải lên (ô soạn gọn / thường). */
+  chipHeight: 56,
+  chipHeightCompact: 44,
+  chipWidth: 280,
+  chipWidthCompact: 220,
+} as const;
+
+export type LoadPhase = "loading" | "ready" | "error";
+
+/** Trạng thái hiển thị của một ảnh/khung: chưa có URL ⇒ loading; có URL nhưng `<img>` chưa onLoad ⇒ loading (khung giữ chỗ, ảnh ẩn). */
+export function loadPhase(s: { url: string | null; failed: boolean; loaded: boolean }): LoadPhase {
+  if (s.failed) return "error";
+  return s.url && s.loaded ? "ready" : "loading";
+}
+
+/** Kiểu khung ảnh: một ảnh ⇒ khung 4:3 cố định; lưới ⇒ ô theo ô lưới (đã cố định chiều cao ở lưới). */
+export function thumbFrame(big: boolean): {
+  aspectRatio?: string;
+  width?: string;
+  maxWidth?: number;
+} {
+  return big
+    ? { aspectRatio: ATTACH_SIZE.oneRatio, width: "100%", maxWidth: ATTACH_SIZE.oneMaxWidth }
+    : {};
 }

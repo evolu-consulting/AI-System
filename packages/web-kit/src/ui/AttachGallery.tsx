@@ -1,26 +1,23 @@
-// CR-164 · ảnh + tệp đính kèm DÙNG CHUNG (Community, Chat, công ty): lưới ảnh 1/2/3/≥4 (+N), bấm ⇒ phóng to; thẻ tệp xếp dọc.
-// Nguồn ảnh qua `getUrl(id)` (blob URL có xác thực, tự thu hồi). Chữ qua `labels`.
-import { ChevronLeft, ChevronRight, ImageOff, X } from "lucide-react";
-import { Dialog } from "radix-ui";
-import { type CSSProperties, useEffect, useState } from "react";
+import { type CSSProperties, useState } from "react";
 import {
+  ATTACH_SIZE,
   type AttachItem,
   type AttachLabels,
   formatBytes,
   imageLayout,
   isPdfItem,
   splitAttachments,
-  stepIndex,
+  thumbFrame,
   truncateMiddle,
 } from "../attach-layout";
+import { AttachViewer } from "./AttachViewer";
+import { FramedImage } from "./attach-frame";
 import {
   cardStyle,
   DownloadIcon,
   iconBtn,
   KindIcon,
   mix,
-  navBtn,
-  SpinIcon,
   useLazyUrl,
   useVisible,
 } from "./attach-parts";
@@ -38,9 +35,17 @@ export type AttachGalleryProps = {
 };
 
 const GRID: Record<string, CSSProperties> = {
-  two: { gridTemplateColumns: "1fr 1fr", height: 200 },
-  three: { gridTemplateColumns: "2fr 1fr", gridTemplateRows: "1fr 1fr", height: 280 },
-  four: { gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", height: 280 },
+  two: { gridTemplateColumns: "1fr 1fr", height: ATTACH_SIZE.gridTwoHeight },
+  three: {
+    gridTemplateColumns: "2fr 1fr",
+    gridTemplateRows: "1fr 1fr",
+    height: ATTACH_SIZE.gridManyHeight,
+  },
+  four: {
+    gridTemplateColumns: "1fr 1fr",
+    gridTemplateRows: "1fr 1fr",
+    height: ATTACH_SIZE.gridManyHeight,
+  },
 };
 
 function Thumb({
@@ -51,6 +56,7 @@ function Thumb({
   getUrl,
   labels,
   onOpen,
+  onDownload,
 }: {
   item: AttachItem;
   extra: number;
@@ -59,72 +65,78 @@ function Thumb({
   getUrl: AttachGalleryProps["getUrl"];
   labels: AttachLabels;
   onOpen: () => void;
+  onDownload?: () => void;
 }) {
-  const { ref, seen } = useVisible<HTMLButtonElement>();
+  const { ref, seen } = useVisible<HTMLDivElement>();
   const { url, failed } = useLazyUrl(getUrl, item.id, seen);
   return (
-    <button
+    <div
       ref={ref}
-      type="button"
-      data-testid="post-image"
-      aria-label={labels.openImage(item.name)}
-      onClick={onOpen}
       style={{
         position: "relative",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 0,
-        border: 0,
         overflow: "hidden",
         borderRadius: 10,
         background: mix(8),
-        color: "inherit",
-        cursor: "zoom-in",
-        minHeight: big ? 120 : 0,
         minWidth: 0,
+        ...thumbFrame(big),
         ...style,
       }}
     >
-      {url ? (
-        <img
-          src={url}
-          alt=""
-          style={
-            big
-              ? {
-                  display: "block",
-                  maxWidth: "100%",
-                  maxHeight: 360,
-                  width: "auto",
-                  height: "auto",
-                }
-              : { width: "100%", height: "100%", objectFit: "cover", display: "block" }
-          }
-        />
-      ) : failed ? (
-        <ImageOff size={24} aria-label={labels.failed} />
-      ) : (
-        <SpinIcon size={22} aria-hidden="true" />
-      )}
-      {extra > 0 && (
-        <b
-          data-testid="image-more"
+      <button
+        type="button"
+        data-testid="post-image"
+        aria-label={labels.openImage(item.name)}
+        onClick={onOpen}
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 0,
+          border: 0,
+          background: "transparent",
+          color: "inherit",
+          cursor: "zoom-in",
+        }}
+      >
+        <FramedImage url={url} failed={failed} alt="" fit="cover" labels={labels} />
+        {extra > 0 && (
+          <b
+            data-testid="image-more"
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgb(0 0 0 / 0.55)",
+              color: "white",
+              fontSize: 24,
+            }}
+          >
+            +{extra}
+          </b>
+        )}
+      </button>
+      {failed && onDownload && (
+        <button
+          type="button"
+          data-testid="thumb-download"
           style={{
+            ...iconBtn,
             position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgb(0 0 0 / 0.55)",
-            color: "white",
-            fontSize: 24,
+            left: "50%",
+            bottom: 8,
+            transform: "translateX(-50%)",
+            fontSize: 12,
           }}
+          onClick={onDownload}
         >
-          +{extra}
-        </b>
+          <DownloadIcon size={14} aria-hidden="true" /> {labels.download}
+        </button>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -133,12 +145,14 @@ export function ImageGrid({
   getUrl,
   labels,
   onOpen,
+  onDownload,
   center,
 }: {
   images: readonly AttachItem[];
   getUrl: AttachGalleryProps["getUrl"];
   labels: AttachLabels;
   onOpen: (i: number) => void;
+  onDownload?: (item: AttachItem) => void;
   center?: boolean;
 }) {
   const { variant, shown, extra } = imageLayout(images.length);
@@ -151,7 +165,8 @@ export function ImageGrid({
       style={{
         display: big ? "flex" : "grid",
         gap: 8,
-        maxWidth: big ? 420 : 480,
+        maxWidth: big ? ATTACH_SIZE.oneMaxWidth : ATTACH_SIZE.gridMaxWidth,
+        width: "100%",
         ...(center ? { marginInline: "auto", justifyContent: "center" } : null),
         ...GRID[variant],
       }}
@@ -166,6 +181,7 @@ export function ImageGrid({
           getUrl={getUrl}
           labels={labels}
           onOpen={() => onOpen(i)}
+          onDownload={onDownload ? () => onDownload(m) : undefined}
         />
       ))}
     </div>
@@ -192,11 +208,25 @@ export function FileCard({
       data-testid="file-card"
       title={off ? labels.unavailable : item.name}
       aria-disabled={off ? true : undefined}
-      style={{ ...cardStyle, listStyle: "none", opacity: off ? 0.55 : 1 }}
+      style={{
+        ...cardStyle,
+        listStyle: "none",
+        opacity: off ? 0.55 : 1,
+        height: ATTACH_SIZE.cardHeight,
+        boxSizing: "border-box",
+      }}
     >
       <KindIcon mime={item.mime} name={item.name} />
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <span className="fname" style={{ fontWeight: 600, overflowWrap: "anywhere" }}>
+        <span
+          className="fname"
+          style={{
+            fontWeight: 600,
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+          }}
+        >
           {truncateMiddle(item.name)}
         </span>
         {item.size !== undefined && (
@@ -224,122 +254,6 @@ export function FileCard({
   );
 }
 
-function Viewer({
-  list,
-  index,
-  onIndex,
-  onClose,
-  props,
-}: {
-  list: readonly AttachItem[];
-  index: number;
-  onIndex: (i: number) => void;
-  onClose: () => void;
-  props: AttachGalleryProps;
-}) {
-  const cur = list[index];
-  const n = list.length;
-  const { url, failed } = useLazyUrl(props.getUrl, cur?.id ?? "", cur !== undefined);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") onIndex(stepIndex(index, -1, n));
-      else if (e.key === "ArrowRight") onIndex(stepIndex(index, 1, n));
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [index, n, onIndex]);
-  if (!cur) return null;
-  const pdf = isPdfItem(cur);
-  const { labels } = props;
-  return (
-    <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay
-          style={{ position: "fixed", inset: 0, background: "rgb(0 0 0 / 0.8)", zIndex: 1000 }}
-        />
-        <Dialog.Content
-          data-testid="image-viewer"
-          aria-describedby={undefined}
-          style={{
-            position: "fixed",
-            inset: "4vh 4vw",
-            zIndex: 1001,
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            color: "white",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Dialog.Title
-              style={{ flex: 1, minWidth: 0, margin: 0, fontSize: 15, overflowWrap: "anywhere" }}
-            >
-              {cur.name}
-            </Dialog.Title>
-            <span className="tnum" style={{ opacity: 0.8 }}>
-              {index + 1} / {n}
-            </span>
-            <button type="button" style={navBtn} onClick={() => props.onDownload(cur)}>
-              <DownloadIcon size={16} aria-hidden="true" /> {labels.download}
-            </button>
-            <Dialog.Close style={navBtn} aria-label={labels.close}>
-              <X size={16} aria-hidden="true" />
-            </Dialog.Close>
-          </div>
-          <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", gap: 8 }}>
-            {n > 1 && (
-              <button
-                type="button"
-                style={navBtn}
-                aria-label={labels.prev}
-                onClick={() => onIndex(stepIndex(index, -1, n))}
-              >
-                <ChevronLeft size={22} aria-hidden="true" />
-              </button>
-            )}
-            <div
-              style={{
-                flex: 1,
-                minWidth: 0,
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {url && pdf ? (
-                <iframe
-                  title={cur.name}
-                  src={url}
-                  style={{ width: "100%", height: "100%", border: 0, background: "white" }}
-                />
-              ) : url ? (
-                <img
-                  src={url}
-                  alt={cur.name}
-                  style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-                />
-              ) : (
-                <span>{failed ? labels.failed : "…"}</span>
-              )}
-            </div>
-            {n > 1 && (
-              <button
-                type="button"
-                style={navBtn}
-                aria-label={labels.next}
-                onClick={() => onIndex(stepIndex(index, 1, n))}
-              >
-                <ChevronRight size={22} aria-hidden="true" />
-              </button>
-            )}
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
-
 export function AttachGallery(props: AttachGalleryProps) {
   const { items, getUrl, labels, locale, onDownload, ariaLabel, align } = props;
   const center = align === "center";
@@ -353,6 +267,7 @@ export function AttachGallery(props: AttachGalleryProps) {
         getUrl={getUrl}
         labels={labels}
         onOpen={(i) => setView({ list: images, index: i })}
+        onDownload={onDownload}
         center={center}
       />
       {files.length > 0 && (
@@ -365,7 +280,7 @@ export function AttachGallery(props: AttachGalleryProps) {
             margin: 0,
             padding: 0,
             width: "100%",
-            maxWidth: 420,
+            maxWidth: ATTACH_SIZE.cardMaxWidth,
             ...(center ? { marginInline: "auto" } : null),
           }}
         >
@@ -382,7 +297,7 @@ export function AttachGallery(props: AttachGalleryProps) {
         </ul>
       )}
       {view && (
-        <Viewer
+        <AttachViewer
           list={view.list}
           index={view.index}
           onIndex={(i) => setView({ ...view, index: i })}

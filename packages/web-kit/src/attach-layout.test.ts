@@ -1,12 +1,15 @@
 // CR-164 · bố cục ảnh/tệp dùng chung.
 import { describe, expect, test } from "bun:test";
 import {
+  ATTACH_SIZE,
   fileKind,
   formatBytes,
   imageLayout,
   isPdfItem,
+  loadPhase,
   splitAttachments,
   stepIndex,
+  thumbFrame,
   truncateMiddle,
 } from "./attach-layout";
 
@@ -121,5 +124,26 @@ describe("CR-173 · validateFiles", () => {
     const labels = attachPickLabels((k, o) => `${k}${o ? JSON.stringify(o) : ""}`, "p");
     expect(rejectText({ name: "x", reason: "size" }, labels, { maxBytes: 2048 })).toContain("2 KB");
     expect(rejectText({ name: "x", reason: "type" }, labels, {})).toBe('p.badType{"name":"x"}');
+  });
+});
+
+describe("CR-179 · khung tệp cố định", () => {
+  test("loadPhase: chưa URL/chưa onLoad ⇒ loading; xong ⇒ ready; lỗi ⇒ error", () => {
+    expect(loadPhase({ url: null, failed: false, loaded: false })).toBe("loading");
+    expect(loadPhase({ url: "blob:x", failed: false, loaded: false })).toBe("loading");
+    expect(loadPhase({ url: "blob:x", failed: false, loaded: true })).toBe("ready");
+    expect(loadPhase({ url: null, failed: true, loaded: false })).toBe("error");
+  });
+  test("thumbFrame: ảnh đơn có tỉ lệ + rộng tối đa cố định; ô lưới không áp riêng", () => {
+    expect(thumbFrame(true)).toEqual({
+      aspectRatio: ATTACH_SIZE.oneRatio,
+      width: "100%",
+      maxWidth: ATTACH_SIZE.oneMaxWidth,
+    });
+    expect(thumbFrame(false)).toEqual({});
+  });
+  test("hằng cố định: thẻ tệp và chip có chiều cao > 0", () => {
+    expect(ATTACH_SIZE.cardHeight).toBeGreaterThan(0);
+    expect(ATTACH_SIZE.chipHeightCompact).toBeLessThan(ATTACH_SIZE.chipHeight);
   });
 });
