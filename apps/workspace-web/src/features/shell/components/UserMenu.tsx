@@ -1,6 +1,8 @@
 // PK-FR-10 · TF5 · S16 menu người dùng: tên, công ty, vai (viewer/editor/owner), Cài đặt (chỉ người ghi), Đăng xuất.
 
 import { PrefsPanel } from "@ai/web-kit/ui/PrefsPanel";
+import { UserAvatar } from "@ai/web-kit/ui/UserAvatar";
+import { useMyAvatar } from "@ai/web-kit/ui/UserChip";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { FileText, Users } from "lucide-react";
@@ -27,15 +29,6 @@ export type ShellUser = {
   /** `external` = đối tác (không có trợ lý AI). */
   kind?: string;
 } | null;
-
-const initials = (name: string): string =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(-2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
 
 type BodyProps = {
   user: NonNullable<ShellUser>;
@@ -147,6 +140,7 @@ export function UserMenu({
 }) {
   const { t } = useTranslation();
   const brand = useBrand();
+  const avatar = useMyAvatar();
   if (!user) return null;
   const company = nameOf(brand, user.tenant.name);
   const name = user.display_name || user.username;
@@ -158,9 +152,7 @@ export function UserMenu({
       full={side}
       button={
         <>
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-act-soft text-caption font-semibold text-act">
-            {initials(name)}
-          </span>
+          <UserAvatar name={name} src={avatar} size={32} />
           <span
             className={`min-w-0 flex-col items-start leading-tight ${wide ? "flex" : "hidden"} ${side ? "" : "max-md:hidden"}`}
           >

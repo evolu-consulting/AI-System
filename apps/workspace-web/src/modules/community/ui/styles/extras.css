@@ -212,3 +212,10 @@
 [data-mod="community"] .mpname {
   font-weight: 600;
 }
+
+/* CR-179 · màn quản trị rỗng («Yêu cầu tham gia», «Báo cáo vi phạm»): trạng thái trống canh giữa ngang + dọc vùng nội dung (như CR-172). */
+[data-mod="community"] .flowempty {
+  display: flex;
+  width: 100%;
+  min-height: 60vh;
+}

@@ -84,3 +84,52 @@ test("hộp Nhắc tên: nút chỉ biểu tượng, tìm, chọn 2 người, «
   await page.getByTestId("mention-dialog").getByRole("button", { name: "Huỷ" }).click();
   await expect(page.getByTestId("mention-chip")).toHaveCount(2);
 });
+
+// CR-179 (chưa chạy trên evotest) · ô đăng bài thẳng hàng thẻ «Bộ lọc»; logo công ty cùng hàng chữ «Công ty»; trang trống canh giữa.
+test("CR-179: mép trên ô đăng bài = mép trên thẻ «Bộ lọc» (lệch ≤ 1px)", async ({ page }) => {
+  await page.goto("/community");
+  const comp = await page.getByTestId("composer").boundingBox();
+  const filt = await page.locator(".rail .rcard").first().boundingBox();
+  expect(comp && filt).toBeTruthy();
+  expect(Math.abs((comp?.y ?? 0) - (filt?.y ?? 99))).toBeLessThanOrEqual(1);
+});
+
+test("CR-179: /community/me — logo công ty tròn, cùng hàng với chữ «Công ty»", async ({ page }) => {
+  await page.goto("/community/me");
+  const logo = await page.getByTestId("me-company-logo").boundingBox();
+  const name = await page.getByTestId("me-company-row").locator("b").boundingBox();
+  expect(logo && name).toBeTruthy();
+  const mid = (b: { y: number; height: number } | null) => (b?.y ?? 0) + (b?.height ?? 0) / 2;
+  expect(Math.abs(mid(logo) - mid(name))).toBeLessThanOrEqual(2);
+  const radius = await page
+    .getByTestId("me-company-logo")
+    .evaluate((el) => getComputedStyle(el).borderTopLeftRadius);
+  expect(parseFloat(radius)).toBeGreaterThanOrEqual(16);
+});
+
+test("CR-179: «Báo cáo vi phạm» không có dữ liệu ⇒ trạng thái trống canh giữa vùng nội dung", async ({
+  page,
+}) => {
+  await page.goto("/community/reports");
+  const empty = page.getByTestId("reports-list-empty");
+  test.skip(!(await empty.isVisible().catch(() => false)), "seed mock có báo cáo");
+  const a = await empty.boundingBox();
+  const area = await page.locator(".wsmain").boundingBox();
+  expect(a && area).toBeTruthy();
+  const cx = (b: { x: number; width: number } | null) => (b?.x ?? 0) + (b?.width ?? 0) / 2;
+  const cy = (b: { y: number; height: number } | null) => (b?.y ?? 0) + (b?.height ?? 0) / 2;
+  expect(Math.abs(cx(a) - cx(area))).toBeLessThanOrEqual(16);
+  expect(Math.abs(cy(a) - cy(area))).toBeLessThanOrEqual(16);
+});
+
+test("CR-179: avatar header và sidebar cùng màu nền", async ({ page }) => {
+  await page.goto("/community");
+  const bg = (sel: string) =>
+    page
+      .locator(sel)
+      .first()
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+  const head = await bg('[data-testid="user-chip"] [data-slot="avatar"]');
+  const side = await bg('[data-testid="sidebar"] [data-slot="avatar"], aside [data-slot="avatar"]');
+  expect(head).toBe(side);
+});

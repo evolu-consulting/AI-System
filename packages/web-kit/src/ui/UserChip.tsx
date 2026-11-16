@@ -2,7 +2,7 @@
 // Ảnh lấy từ `/people/me` một lần cho cả phiên tab (lỗi ⇒ im lặng, rơi về chữ cái đầu).
 import { type ReactElement, useEffect, useState } from "react";
 import { api } from "../http";
-import { PersonAvatar } from "./PersonAvatar";
+import { UserAvatar } from "./UserAvatar";
 
 let cached: Promise<string | null> | null = null;
 
@@ -21,7 +21,8 @@ export function resetUserChipCache(): void {
   cached = null;
 }
 
-export function UserChip({ name, className }: { name: string; className?: string }): ReactElement {
+/** Ảnh đại diện của người đăng nhập (một lần mỗi phiên tab) — dùng chung cho header + sidebar. */
+export function useMyAvatar(): string | null {
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
@@ -30,13 +31,18 @@ export function UserChip({ name, className }: { name: string; className?: string
       live = false;
     };
   }, []);
+  return src;
+}
+
+export function UserChip({ name, className }: { name: string; className?: string }): ReactElement {
+  const src = useMyAvatar();
   return (
     <span
       data-testid="user-chip"
       className={className}
       style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0, margin: "0 4px" }}
     >
-      <PersonAvatar name={name} src={src} size={28} />
+      <UserAvatar name={name} src={src} size={32} />
       <span
         data-testid="user-chip-name"
         style={{

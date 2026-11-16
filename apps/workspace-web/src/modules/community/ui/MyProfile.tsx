@@ -2,11 +2,11 @@
 // tab «Bài đăng của tôi» (feed theo người) và «Bài đăng của tổ chức» (feed theo công ty). Áp cho chủ quản và đối tác.
 
 import type { MyPeopleProfile } from "@ai/contracts/people";
+import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
 import { useEffect, useState } from "react";
 import { useApp } from "../application/ctx";
 import { safeCover } from "../domain/brand";
-import { initials } from "../domain/format";
 import {
   ME_SECTIONS,
   type MeSection,
@@ -110,18 +110,15 @@ export function MyProfilePage() {
               style={{ borderTop: "1px solid var(--rule-soft)" }}
             >
               <h2 style={{ fontSize: 13 }}>{t("community.me.company")}</h2>
-              <p style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {brand.logo ? (
-                  <img
-                    src={brand.logo}
-                    alt=""
-                    width={24}
-                    height={24}
-                    style={{ borderRadius: 6, objectFit: "cover" }}
-                  />
-                ) : (
-                  <span className="av sm">{initials(viewer.orgName)}</span>
-                )}
+              <p className="flex items-center gap-2" data-testid="me-company-row">
+                <Avatar
+                  kind="company"
+                  name={viewer.orgName}
+                  src={brand.logo}
+                  size={32}
+                  className="rounded-full"
+                  data-testid="me-company-logo"
+                />
                 <b>{viewer.orgName}</b>
                 {labels && <span className="muted"> · {labels}</span>}
               </p>

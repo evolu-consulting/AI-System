@@ -125,7 +125,7 @@ export function MentionPicker({
   return (
     <>
       <IconButton
-        className="icononly"
+        className="ghost icononly"
         data-testid="mention-open"
         aria-haspopup="dialog"
         aria-label={label}
@@ -146,6 +146,7 @@ export function MentionPicker({
             </DialogHeader>
             <Input
               type="search"
+              className="mb-3"
               aria-label={t("community.draft.mentionSearch")}
               placeholder={t("community.draft.mentionSearch")}
               value={q}

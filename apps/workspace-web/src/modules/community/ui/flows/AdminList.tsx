@@ -36,7 +36,11 @@ export function AdminList<T extends Row, S extends string>(p: Props<T, S>) {
       setSel(null);
   }, [sel, row]);
   if (p.rows.length === 0)
-    return <EmptyState kind="empty" title={t(p.emptyKey)} testId={`${p.testId}-empty`} />;
+    return (
+      <div className="flowempty">
+        <EmptyState kind="empty" title={t(p.emptyKey)} testId={`${p.testId}-empty`} full />
+      </div>
+    );
   const open = (r: T) => {
     openedStatus.current = r.status;
     setSel(r.id);
