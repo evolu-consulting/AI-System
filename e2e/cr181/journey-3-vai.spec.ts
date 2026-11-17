@@ -89,7 +89,7 @@ test("K05-K06 · trưởng phòng (khác người tạo): «Đạt» khoá khi c
   await page.context().close();
 });
 
-test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; ô Bên B «Chờ đối tác ký», không chặn", async ({
+test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; Bên B chưa ký không chặn (tệp «Chờ đối tác»)", async ({
   browser,
 }) => {
   test.setTimeout(240_000);
@@ -98,11 +98,12 @@ test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; �
   await createSignatureIfAsked(page, "Nguyễn Giám Đốc");
   await page.goto(`${E.cw}/contracts/sign/${id}`);
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByText("Chờ đối tác ký").first()).toBeVisible(); // ô Bên B
   await page.getByRole("button", { name: "Bấm để ký" }).first().click();
   await saveSigned(page, id);
   await page.goto(`${E.cw}/contracts/c/${id}`);
   await stepEventually(page, id, "Ký hợp đồng", "passed");
+  // ô Bên B chưa ký không chặn: bước Ký xong, tệp báo «Chờ đối tác» (đối tác ký là đợt 2)
+  await expect(page.getByTestId("sign-status").first()).toContainText("Chờ đối tác");
   await page.context().close();
 });
 
