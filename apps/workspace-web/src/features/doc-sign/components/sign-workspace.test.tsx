@@ -45,7 +45,7 @@ describe("thả / kéo / xoá", () => {
     expect(items?.[0]?.parts).toHaveLength(1);
     expect(items?.[0]?.parts[0]?.page).toBe(0);
   });
-  test("kéo qua khe giữa hai trang ⇒ 2 phần; kéo lại vào một trang ⇒ 1 phần", () => {
+  test("kéo qua khe giữa hai trang ⇒ 2 phần, kéo lại vào một trang ⇒ 1 phần", () => {
     const r = { l: page0.left + 20, t: page1.top - 30, w: 120, h: 50 };
     const items = placeItem([], spec, r, pages) ?? [];
     expect(items[0]?.parts.map((x) => x.page)).toEqual([0, 1]);
@@ -54,7 +54,7 @@ describe("thả / kéo / xoá", () => {
     const back = rectFromParts(moved[0]?.parts ?? [], pages);
     expect(Math.round(back?.t ?? 0)).toBe(Math.round(page0.top + 10));
   });
-  test("Delete ⇒ hành động xoá; xoá bỏ item sửa được, giữ item của người khác", () => {
+  test("Delete ⇒ hành động xoá, xoá bỏ item sửa được và giữ item của người khác", () => {
     expect(boxKeyAction("Delete", true)).toEqual({ type: "delete" });
     expect(boxKeyAction("ArrowLeft", true)).toEqual({ type: "nudge", key: "ArrowLeft" });
     expect(boxKeyAction("Delete", false)).toBeNull();
@@ -66,7 +66,7 @@ describe("thả / kéo / xoá", () => {
     expect(left.map((i) => i.id)).toEqual(["x"]);
     expect(removeItem(left, "x")).toHaveLength(1);
   });
-  test("dirty ⇒ hỏi khi đóng; sạch ⇒ đóng luôn", () => {
+  test("dirty ⇒ hỏi khi đóng, sạch ⇒ đóng luôn", () => {
     expect(closeAction(true)).toBe("confirm");
     expect(closeAction(false)).toBe("close");
   });

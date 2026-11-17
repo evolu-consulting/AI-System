@@ -36,8 +36,8 @@ Trạng thái gộp: chưa gộp
 #### Yêu cầu: Màn ký toàn màn hình, đặt chữ ký trên tài liệu
 Người ký kéo chữ ký (hoặc ô chỗ ký) từ khay vào trang PDF, kéo/đổi cỡ/xoá, chép sang mọi trang; chữ ký đặt qua khe hai trang thành giáp lai (tối đa 5 trang).
 - Kịch bản: khi thả chữ ký từ khay vào một trang thì mục mới có đúng một phần ở trang đó [test: apps/workspace-web/src/features/doc-sign/components/sign-workspace.test.tsx » thả từ khay vào một trang ⇒ item có 1 phần ở trang đó]
-- Kịch bản: khi kéo chữ ký qua khe giữa hai trang thì mục có 2 phần [test: apps/workspace-web/src/features/doc-sign/components/sign-workspace.test.tsx » kéo qua khe giữa hai trang ⇒ 2 phần; kéo lại vào một trang ⇒ 1 phần]
-- Kịch bản: khi bấm Delete trên chữ ký sửa được thì mục bị xoá, mục của người khác giữ nguyên [test: apps/workspace-web/src/features/doc-sign/components/sign-workspace.test.tsx » Delete ⇒ hành động xoá; xoá bỏ item sửa được, giữ item của người khác]
+- Kịch bản: khi kéo chữ ký qua khe giữa hai trang thì mục có 2 phần [test: apps/workspace-web/src/features/doc-sign/components/sign-workspace.test.tsx » kéo qua khe giữa hai trang ⇒ 2 phần, kéo lại vào một trang ⇒ 1 phần]
+- Kịch bản: khi bấm Delete trên chữ ký sửa được thì mục bị xoá, mục của người khác giữ nguyên [test: apps/workspace-web/src/features/doc-sign/components/sign-workspace.test.tsx » Delete ⇒ hành động xoá, xoá bỏ item sửa được và giữ item của người khác]
 
 #### Yêu cầu: Bấm ô để ký
 Ở chế độ ký, ô của mình hiện nút «Bấm để ký»; ô của người khác chỉ hiện «Chờ <người> ký» và không bấm được.
@@ -49,7 +49,7 @@ Người ký kéo chữ ký (hoặc ô chỗ ký) từ khay vào trang PDF, kéo
 - Kịch bản: khi chữ ký số bị khoá thì mục có aria-disabled và kèm lý do [test: apps/workspace-web/src/features/doc-sign/components/sign-workspace.test.tsx » «Chữ ký số» khoá kèm lý do]
 
 #### Yêu cầu: Rời màn ký khi còn chữ ký chưa lưu
-- Kịch bản: khi còn chữ ký chưa lưu và đóng màn thì hỏi «Rời màn ký?» trước, sạch thì đóng luôn [test: apps/workspace-web/src/features/doc-sign/components/sign-workspace.test.tsx » dirty ⇒ hỏi khi đóng; sạch ⇒ đóng luôn]
+- Kịch bản: khi còn chữ ký chưa lưu và đóng màn thì hỏi «Rời màn ký?» trước, sạch thì đóng luôn [test: apps/workspace-web/src/features/doc-sign/components/sign-workspace.test.tsx » dirty ⇒ hỏi khi đóng, sạch ⇒ đóng luôn]
 
 ## Việc còn lại
 - Chưa kiểm bằng trình duyệt thật: kéo chuột, thả từ khay, chạm giữ 550ms, render pdf.js, cuộn tới trang (cần e2e/lát nối dữ liệu s12).
