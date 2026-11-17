@@ -78,3 +78,22 @@ describe("approval-record.rules · hình chữ ký", () => {
     expect("signs" in out || "files" in out || "sign" in (out.items[0] ?? {})).toBe(false);
   });
 });
+
+describe("fix-cr181-uat2 · mỗi bước một dòng — bước Ký trên tài liệu", () => {
+  test("người ký không có quyết định duyệt có dòng riêng «Ký hợp đồng» (ai, lúc nào, loại, số tệp, hình)", () => {
+    const out = buildApprovalRecord([row(A)], names, true, [
+      v({ signedBy: A }),
+      v({ signedBy: B, at: "2026-11-11T10:00:00.000000Z", kind: "digital" }),
+    ]);
+    expect(out.items.map((i) => i.action)).toEqual(["approve", "sign"]);
+    const s = out.items[1];
+    expect(s?.stage).toBe("Ký hợp đồng");
+    expect(s?.actor.display_name).toBe("Lan");
+    expect(s?.evidence).toBeNull();
+    expect(s?.sign).toMatchObject({ kind: "digital", files_signed: 1, stamp_id: ST });
+  });
+  test("người đã có dòng duyệt không bị lặp dòng ký, không có bản ký ⇒ không thêm dòng", () => {
+    expect(buildApprovalRecord([row(A)], names, true, [v({})]).items).toHaveLength(1);
+    expect(buildApprovalRecord([row(A)], names, true, []).items).toHaveLength(1);
+  });
+});

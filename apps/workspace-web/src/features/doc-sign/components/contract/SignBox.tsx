@@ -3,7 +3,7 @@ import type { SignSessionOut } from "@ai/contracts/pack-contracts";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { myProgress, waitingNames } from "../../lib/contract-view";
+import { myProgress, partnerWaitOf, waitingNames } from "../../lib/contract-view";
 
 /** Liên kết tới màn ký. routeTree.gen.ts (HEAD s12) thiếu `/contracts/sign/$id` trong union `to` ⇒ ép kiểu cho tới khi sinh lại cây route. */
 export function OpenSign({
@@ -73,6 +73,29 @@ export function SignWaitCard({ session }: { session: SignSessionOut }) {
       <p className="mb-0 mt-1 text-sm text-dim">
         {t("contracts.docsignc.waitFor", { name: waitingNames(session) })}
       </p>
+    </section>
+  );
+}
+
+/** Bên A đã ký đủ, Bên B chưa ký (đối tác ký trên Evolu: bản sau): nói rõ ai làm bước kế + «Xem bản đã ký». */
+export function PartnerWaitCard({ id, session }: { id: string; session: SignSessionOut }) {
+  const { t } = useTranslation();
+  const w = partnerWaitOf(session);
+  if (!w) return null;
+  return (
+    <section
+      data-testid="sign-partner-wait"
+      className="mb-3 rounded-lg border border-rule bg-panel p-4"
+    >
+      <p className="m-0 text-sm">{t("contracts.docsignc.partnerWait", { name: w.name })}</p>
+      <Button asChild variant="outline" size="sm" className="mt-2">
+        <a
+          href={`/contracts/signed/${encodeURIComponent(id)}?file=${encodeURIComponent(w.fileId)}`}
+          data-testid="view-signed"
+        >
+          {t("contracts.docsignc.viewSigned")}
+        </a>
+      </Button>
     </section>
   );
 }

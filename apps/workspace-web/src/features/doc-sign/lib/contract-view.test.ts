@@ -5,7 +5,10 @@ import {
   checklist,
   fileStatus,
   hasSignFiles,
+  hideLegacyEsign,
   myProgress,
+  partnerWaitOf,
+  showsPrepCard,
   signErrKey,
   signerChips,
   signStepOf,
@@ -201,8 +204,8 @@ describe("fix-cr181-uat · lỗi 1/2 · bước Ký trên tài liệu ở trang 
   test("nhóm có thành viên ⇒ chip và dòng «chờ» nói tên người", () => {
     const f = file({ fields: [fld({ signer_kind: "group", signer_ref: "g1" })] });
     const s = sess([f], { signers: [{ ...grp, members }] });
-    expect(signerChips(s)[0]?.name).toBe("Hùng, Mai");
-    expect(waitingNames(s)).toBe("Hùng, Mai");
+    expect(signerChips(s)[0]?.name).toBe("Nguyễn Văn Hùng, Trần Thị Mai");
+    expect(waitingNames(s)).toBe("Nguyễn Văn Hùng, Trần Thị Mai");
   });
   test("nhóm không có thành viên ⇒ vẫn tên nhóm, người đã ký hết không còn trong «chờ»", () => {
     expect(signerChips(sess([], { signers: [grp] }))[0]?.name).toBe("Đại diện Người ký HĐ");
@@ -219,5 +222,45 @@ describe("fix-cr181-uat · lỗi 1/2 · bước Ký trên tài liệu ở trang 
       ],
     });
     expect(waitingNames(s)).toBe("Bình");
+  });
+});
+
+describe("fix-cr181-uat2 · lỗi 1 · Bên A ký đủ, chờ Bên B; không còn khối ký số cũ", () => {
+  const A = { side: "A", kind: "user", ref: "u1", name: "An", mine: false } as const;
+  const B = { side: "B", kind: "partner", ref: "b@x.vn", name: "Anh Bảo", mine: false } as const;
+  const done = file({
+    file_id: "p1",
+    latest: { version_id: "v1", seq: 1, url: "" },
+    fields: [
+      fld({ signed: true }),
+      fld({ id: "b", side: "B", signer_kind: "partner", signer_ref: "b@x.vn" }),
+    ],
+  });
+  test("A ký đủ + còn chỗ Bên B ⇒ nói tên liên hệ và trỏ tới bản đã ký", () => {
+    expect(partnerWaitOf(sess([done], { signers: [A, B] }))).toEqual({
+      name: "Anh Bảo",
+      fileId: "p1",
+    });
+  });
+  test("A chưa ký đủ / không có Bên B / không tệp cần ký ⇒ null", () => {
+    const open = file({ latest: { version_id: null, seq: 0, url: "" }, fields: [fld({})] });
+    expect(partnerWaitOf(sess([open], { signers: [A, B] }))).toBeNull();
+    expect(partnerWaitOf(sess([done], { signers: [A] }))).toBeNull();
+    expect(partnerWaitOf(sess([], { signers: [A, B] }))).toBeNull();
+  });
+  test("khối ký số cũ ẩn khi công ty bật + có tệp cần ký (mọi trạng thái), tắt hoặc không tệp ⇒ hiện", () => {
+    expect(hideLegacyEsign(sess([done]))).toBe(true);
+    expect(hideLegacyEsign(sess([done], { enabled: false }))).toBe(false);
+    expect(hideLegacyEsign(sess([file({ needs_sign: false })]))).toBe(false);
+    expect(hideLegacyEsign(undefined)).toBe(false);
+  });
+});
+
+describe("fix-cr181-uat2 · thông báo trùng ở HĐ Nháp", () => {
+  test("thẻ Chuẩn bị chỗ ký (có danh sách kiểm tra) chỉ khi Nháp + chế độ chuẩn bị", () => {
+    expect(showsPrepCard("draft", sess([], { mode: "prep" }))).toBe(true);
+    expect(showsPrepCard("draft", sess([], { mode: "sign" }))).toBe(false);
+    expect(showsPrepCard("processing", sess([], { mode: "prep" }))).toBe(false);
+    expect(showsPrepCard("draft", undefined)).toBe(false);
   });
 });

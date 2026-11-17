@@ -45,7 +45,7 @@ function DialogContent({
       >
         {children}
         {showCloseButton && (
-          <DialogPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&_svg]:size-4">
+          <DialogPrimitive.Close className="absolute top-1 right-1 inline-flex size-11 items-center justify-center rounded-md opacity-70 transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&_svg]:size-4">
             <XIcon aria-hidden />
             <span className="sr-only">{t("contracts.common.close")}</span>
           </DialogPrimitive.Close>

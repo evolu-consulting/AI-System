@@ -196,7 +196,8 @@
           "action": {
             "approve": "Approved",
             "return": "Returned",
-            "reject": "Rejected"
+            "reject": "Rejected",
+            "sign": "Signed"
           },
           "hidden": "An opinion/signature is attached — only people in the flow can view it.",
           "signature": "View signature",

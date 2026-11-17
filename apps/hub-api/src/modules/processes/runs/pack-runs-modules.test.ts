@@ -132,7 +132,7 @@ describe("withMembers (fix-cr181-uat · lỗi 2)", () => {
     const { withMembers } = await import("./pack-runs-modules");
     expect(withMembers("Người ký HĐ", ["Nguyễn Văn Hùng"])).toBe("Người ký HĐ: Nguyễn Văn Hùng");
     expect(withMembers("Người ký HĐ", ["Nguyễn Văn Hùng", "Trần Thị Mai"])).toBe(
-      "Người ký HĐ: Hùng, Mai",
+      "Người ký HĐ: Nguyễn Văn Hùng, Trần Thị Mai",
     );
     expect(withMembers("Người ký HĐ", [])).toBe("Người ký HĐ");
   });

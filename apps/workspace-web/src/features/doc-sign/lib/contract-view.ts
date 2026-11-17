@@ -109,6 +109,29 @@ export function waitingNames(s: SignSessionOut): string {
   return [...new Set((open.length ? open : a).map(signerWho))].join(", ");
 }
 
+/**
+ * Bên A đã ký đủ (mọi tệp cần ký: chỗ ký bên công ty đã ký hết, có ≥ 1 bản đã ký) mà còn chỗ ký Bên B chưa ký ⇒ tên liên hệ đối tác; khác ⇒ null.
+ * Dùng cho dòng trạng thái «Chờ <đối tác> (Bên B) ký» ở trang HĐ mọi trạng thái (fix-cr181-uat2).
+ */
+export function partnerWaitOf(s: SignSessionOut): { name: string; fileId: string } | null {
+  const need = signFiles(s);
+  const b = s.signers.find((x) => x.side === "B");
+  if (!b || need.length === 0) return null;
+  const st = need.map((f) => fileStatus(f).kind);
+  if (!st.every((k) => k === "done" || k === "waitPartner") || !st.includes("waitPartner"))
+    return null;
+  const signed = need.find((f) => f.latest.seq > 0);
+  return signed ? { name: b.name, fileId: signed.file_id } : null;
+}
+
+/** Khối «Ký số / Gửi ký» cũ KHÔNG hiện khi công ty bật ký trên tài liệu và HĐ có tệp cần ký (ở mọi trạng thái): chỉ còn một đường ký. */
+export const hideLegacyEsign = (s: SignSessionOut | undefined | null): boolean =>
+  !!s && s.enabled && signFiles(s).length > 0;
+
+/** Thẻ «Chuẩn bị chỗ ký» (có danh sách kiểm tra) hiện khi HĐ còn Nháp và phiên ở chế độ chuẩn bị. */
+export const showsPrepCard = (status: string, s: SignSessionOut | undefined | null): boolean =>
+  !!s && status === "draft" && s.mode === "prep";
+
 /** Có tệp cần ký (hiện khung «Ký trên tài liệu» ở thẻ duyệt). */
 export const hasSignFiles = (s: SignSessionOut) => signFiles(s).length > 0;
 

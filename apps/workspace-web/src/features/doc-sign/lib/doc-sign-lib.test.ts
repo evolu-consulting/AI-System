@@ -176,10 +176,10 @@ describe("findAnchors", () => {
       },
     ]);
     const h = 160 / 2.4;
-    expect(a.A?.y).toBeCloseTo(286 - 6 - h, 6); // đỉnh ô dưới dòng chú thích, không đè chữ
+    expect(a.A?.y).toBeCloseTo(286 - 10 - h, 6); // đỉnh ô dưới dòng chú thích, không đè chữ
     expect((a.A?.y ?? 0) + h).toBeLessThan(286);
     expect(a.B?.x).toBeCloseTo(340 - 5, 6);
-    expect(a.B?.y).toBeCloseTo(286 - 6 - h, 6);
+    expect(a.B?.y).toBeCloseTo(286 - 10 - h, 6);
   });
   test("dòng chú thích của cột khác (lệch ngang xa) không bị nhận nhầm", () => {
     const a = findAnchors([

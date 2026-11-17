@@ -196,7 +196,8 @@
           "action": {
             "approve": "Duyệt",
             "return": "Trả lại",
-            "reject": "Từ chối"
+            "reject": "Từ chối",
+            "sign": "Ký"
           },
           "hidden": "Có ý kiến/chữ ký kèm theo — chỉ người trong quy trình xem được.",
           "signature": "Xem chữ ký",

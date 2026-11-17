@@ -10,7 +10,7 @@ const fontBytes = (n: string) => readFileSync(new URL(n, FONT_DIR));
 type Person = { id: string; display_name: string | null };
 export type RecordItem = {
   stage: string;
-  action: "approve" | "return" | "reject";
+  action: "approve" | "return" | "reject" | "sign";
   at: string;
   actor: Person;
   feedback: string | null;
@@ -56,6 +56,7 @@ const ACTION: Record<RecordItem["action"], string> = {
   approve: "Duyệt",
   return: "Trả lại",
   reject: "Từ chối",
+  sign: "Ký",
 };
 
 const SIGN_KIND = { internal: "Chữ ký nội bộ", digital: "Chữ ký số" } as const;
@@ -148,7 +149,12 @@ async function itemLines(
   i: Pick<RecordPdfInput, "fileNames" | "images">,
 ) {
   w.line(`${n}. ${it.stage || "Bước duyệt"} - ${ACTION[it.action]}`, { bold: true });
-  w.line(`Người quyết: ${who(it.actor)} · Lúc: ${when(it.at)}`, { indent: 14 });
+  w.line(
+    `${it.action === "sign" ? "Người ký" : "Người quyết"}: ${who(it.actor)} · Lúc: ${when(it.at)}`,
+    {
+      indent: 14,
+    },
+  );
   if (it.on_behalf_of && !it.evidence?.on_behalf_of)
     w.line(`Duyệt thay cho: ${who(it.on_behalf_of)} (uỷ quyền)`, { indent: 14 });
   if (it.override)

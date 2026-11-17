@@ -16,6 +16,7 @@
       "boxDone": "signed {{signed}}/{{files}} files",
       "turnTitle": "Sign the contract",
       "waitFor": "Waiting for {{name}} to sign",
+      "partnerWait": "Party A has fully signed. Waiting for {{name}} (Party B) to sign — signing by the partner on Evolu comes in a later release; for now you can download the signed copy and send it to the partner.",
       "gate": "Sign all your places first, then you can approve",
       "main": "Main contract",
       "needsSign": "Needs signing: {{name}}",

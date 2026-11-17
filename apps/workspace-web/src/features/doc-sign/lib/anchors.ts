@@ -21,7 +21,7 @@ const CENTER_DY = 45;
 /** Dòng chú thích dưới chỗ ký: ô đặt NGAY DƯỚI dòng này (không đè chữ). */
 export const SIGN_HINT = "(Ký, ghi rõ họ tên)";
 /** Khe giữa dòng chú thích và đỉnh ô (điểm PDF). */
-const HINT_GAP = 6;
+const HINT_GAP = 10;
 /** Chỉ nhận dòng chú thích nằm dưới cụm chữ không quá chừng này (điểm PDF) và lệch ngang không quá nửa cột chữ ký. */
 const HINT_MAX_DROP = 80;
 const HINT_MAX_DX = 130;

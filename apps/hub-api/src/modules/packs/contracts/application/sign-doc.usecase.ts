@@ -134,7 +134,7 @@ export function buildSigners(
 const maskField = (f: SignFieldOut): SignFieldOut =>
   f.signer_kind === "partner" ? { ...f, signer_ref: PARTNER_REF_MASK } : f;
 
-/** Nhãn chỗ ký: người ký kiểu nhóm có thành viên ⇒ tên người («Hùng, Mai»); còn lại giữ nhãn đã lưu. */
+/** Nhãn chỗ ký: người ký kiểu nhóm có thành viên ⇒ tên người («Nguyễn Văn Hùng, Trần Thị Mai»); còn lại giữ nhãn đã lưu. */
 const whoLabel = (f: SignFieldRowP, signers: readonly SignerEntry[]): string => {
   const k = signerKey(f.signer_kind, f.signer_ref);
   const g = signers.find((s) => s.kind === "group" && signerKey(s.kind, s.ref) === k);

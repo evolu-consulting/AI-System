@@ -9,7 +9,7 @@ import { membersLabel } from "@ai/contracts/pack-contracts";
 import { sql } from "drizzle-orm";
 import type { PackModuleOutcome, PackStepView } from "../../packs/kit/public";
 
-/** «<nhóm>: <tên người>» (nhiều người ⇒ «Hùng, Mai»); không có thành viên ⇒ chỉ tên nhóm. THUẦN. */
+/** «<nhóm>: <tên người>» (nhiều người ⇒ «Nguyễn Văn Hùng, Trần Thị Mai»); không có thành viên ⇒ chỉ tên nhóm. THUẦN. */
 export const withMembers = (group: string, names: readonly string[]): string =>
   names.length === 0 ? group : `${group}: ${membersLabel(names)}`;
 
@@ -35,7 +35,7 @@ export async function signerNamesOf(
   ];
   const out = new Map(rows.map((r) => [r.k, r.n]));
   if (groups.length === 0) return out;
-  // Nhóm ký có thành viên ⇒ «<nhóm>: <tên người>» (nhiều người ⇒ «Hùng, Mai»): người xem biết ai ký tiếp. Một câu theo tập.
+  // Nhóm ký có thành viên ⇒ «<nhóm>: <tên người>» (nhiều người ⇒ «Nguyễn Văn Hùng, Trần Thị Mai»): người xem biết ai ký tiếp. Một câu theo tập.
   const mem = (await tx.execute(sql`
     select m.group_id::text as gid, coalesce(nullif(u.display_name, ''), u.username) as n
       from admin.group_members m join admin.users u on u.id = m.user_id and u.tenant_id = m.tenant_id

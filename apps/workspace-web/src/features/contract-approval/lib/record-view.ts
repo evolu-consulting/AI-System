@@ -6,7 +6,7 @@ export type RecordLine = {
   key: string;
   /** Tên bước cho người dùng; null ⇒ không tra được tên (UI ghi «Bước duyệt»). */
   stage: string | null;
-  action: "approve" | "return" | "reject";
+  action: "approve" | "return" | "reject" | "sign";
   who: string;
   /** «thay {người được giao}» khi làm thay. */
   onBehalf: string | null;

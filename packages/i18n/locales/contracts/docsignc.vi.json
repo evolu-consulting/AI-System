@@ -16,6 +16,7 @@
       "boxDone": "đã ký {{signed}}/{{files}} tệp",
       "turnTitle": "Ký hợp đồng",
       "waitFor": "Chờ {{name}} ký",
+      "partnerWait": "Bên A đã ký đủ. Chờ {{name}} (Bên B) ký — đối tác ký trên Evolu sẽ có ở bản sau; hiện có thể tải bản đã ký để gửi đối tác.",
       "gate": "Ký xong các chỗ ký của bạn rồi mới bấm Đạt được",
       "main": "Hợp đồng chính",
       "needsSign": "Cần ký: {{name}}",

@@ -45,6 +45,9 @@ export function canReadEvidence(v: RecordViewer, c: RecordCtx): boolean {
   );
 }
 
+/** Tên bước của dòng hồ sơ cho người ký trên tài liệu (người ký công ty, bước «Ký hợp đồng»). */
+export const SIGN_STAGE = "Ký hợp đồng";
+
 const person = (id: string, names: ReadonlyMap<string, string>) => ({
   id,
   display_name: names.get(id) ?? null,
@@ -69,7 +72,7 @@ export function buildApprovalRecord(
     on_behalf_of: e.on_behalf_of ? person(e.on_behalf_of, names) : null,
     at: e.at,
   });
-  const items = rows.map((r) => ({
+  const decided = rows.map((r) => ({
     task_id: r.taskId,
     stage: r.stage,
     action: r.action,
@@ -82,6 +85,23 @@ export function buildApprovalRecord(
     evidence: r.evidence ? evidenceOf(r.evidence) : null,
     ...(info ? { sign: signOf(r.actor) } : {}),
   }));
+  // Bước Ký trên tài liệu: người ký không có quyết định duyệt vẫn có MỘT dòng riêng (ai, bước, lúc nào, loại chữ ký, số tệp).
+  const decidedBy = new Set(rows.map((r) => r.actor));
+  const signed = (info?.signs ?? [])
+    .filter((s) => !decidedBy.has(s.user.id))
+    .map((s) => ({
+      task_id: s.user.id,
+      stage: SIGN_STAGE,
+      action: "sign" as const,
+      at: s.at,
+      actor: s.user,
+      override: false,
+      on_behalf_of: null,
+      feedback: null,
+      evidence: null,
+      sign: s,
+    }));
+  const items = [...decided, ...signed].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
   return { items, can_read_evidence: readable, ...(info ?? {}) };
 }
 

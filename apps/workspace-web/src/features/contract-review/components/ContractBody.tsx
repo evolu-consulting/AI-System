@@ -24,10 +24,14 @@ import { versionGate } from "~/features/contract-versions/lib/versions";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
 import { shortName } from "~/features/contracts-list/lib/list-model";
 import { PrepCard } from "~/features/doc-sign/components/contract/PrepCard";
-import { SignTurnCard, SignWaitCard } from "~/features/doc-sign/components/contract/SignBox";
+import {
+  PartnerWaitCard,
+  SignTurnCard,
+  SignWaitCard,
+} from "~/features/doc-sign/components/contract/SignBox";
 import { SignersStrip } from "~/features/doc-sign/components/contract/SignersStrip";
 import { useContractSign } from "~/features/doc-sign/hooks/use-contract-sign";
-import { signStepOf } from "~/features/doc-sign/lib/contract-view";
+import { hideLegacyEsign, showsPrepCard, signStepOf } from "~/features/doc-sign/lib/contract-view";
 import { FramePanel } from "~/features/frame-panel/components/FramePanel";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
@@ -202,17 +206,17 @@ export function ContractBody(p: {
               />
             }
           />
-          {rule.submitBlocked && (
+          {/* Lý do chặn do ký đã nằm trong danh sách kiểm tra của thẻ «Chuẩn bị chỗ ký» ⇒ không nói hai lần. */}
+          {rule.submitBlocked && !(signBlock && showsPrepCard(c.status, session)) && (
             <p role="status" data-testid="submit-blocked" className="mb-3 text-sm text-late">
               {t(SUBMIT_BLOCK_KEY[rule.submitBlockKind ?? "no_flow"])}
             </p>
           )}
           {session && <SignersStrip session={session} />}
-          {session && c.status === "draft" && session.mode === "prep" && (
-            <PrepCard id={id} session={session} />
-          )}
+          {session && showsPrepCard(c.status, session) && <PrepCard id={id} session={session} />}
           {ondocStep === "mine" && session && <SignTurnCard id={id} session={session} />}
           {ondocStep === "other" && session && <SignWaitCard session={session} />}
+          {ondocStep === null && session && <PartnerWaitCard id={id} session={session} />}
           <HeadBanner kind={rule.banner} c={c} partner={partner} />
           <ManualBanner
             c={c}
@@ -225,7 +229,9 @@ export function ContractBody(p: {
           <PartnerSendPanel id={id} write={write} />
           <SignSessionCard id={id} write={write} />
           {/* Bước Ký trên tài liệu đang mở ⇒ KHÔNG hiện khối «Ký số / Tải lên bản đã ký» cũ (chỉ một đường ký). */}
-          {ondocStep === null && <EsignPanel id={id} locked={c.status === "done"} write={write} />}
+          {ondocStep === null && !hideLegacyEsign(session) && (
+            <EsignPanel id={id} locked={c.status === "done"} write={write} />
+          )}
           <VersionsPanels id={id} versions={c.versions} total={c.versions_count} sup={sup} />
           <ContractFilesPanel id={id} />
           <SaveNotice err={info.err ?? ap.err} />

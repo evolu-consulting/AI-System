@@ -20,9 +20,9 @@ const row: SignFieldRowP = {
 };
 
 describe("membersLabel / signerWho", () => {
-  it("một người ⇒ tên đầy đủ; nhiều người ⇒ tên riêng cách dấu phẩy", () => {
+  it("một người ⇒ tên đầy đủ; nhiều người ⇒ họ tên đầy đủ cách dấu phẩy", () => {
     expect(membersLabel([hung.name])).toBe("Nguyễn Văn Hùng");
-    expect(membersLabel([hung.name, mai.name])).toBe("Hùng, Mai");
+    expect(membersLabel([hung.name, mai.name])).toBe("Nguyễn Văn Hùng, Trần Thị Mai");
     expect(membersLabel([])).toBe("");
   });
   it("nhóm không thành viên ⇒ tên nhóm", () => {
@@ -36,7 +36,7 @@ describe("buildSigners + fieldOut với nhóm có thành viên", () => {
     const [s] = buildSigners([{ ...grp, members: [hung, mai] }], null, "me");
     expect(s?.members).toEqual([hung, mai]);
     expect(s?.name).toBe("Đại diện Người ký HĐ");
-    expect(fieldOut(row, s ? [s] : []).label).toBe("Hùng, Mai");
+    expect(fieldOut(row, s ? [s] : []).label).toBe("Nguyễn Văn Hùng, Trần Thị Mai");
   });
   it("nhóm chưa có thành viên ⇒ giữ nhãn đã lưu", () => {
     const [s] = buildSigners([grp], null, "me");

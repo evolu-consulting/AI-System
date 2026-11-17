@@ -272,7 +272,8 @@ export type ApprovalRecordFile = z.infer<typeof ApprovalRecordFileSchema>;
 export const ApprovalRecordItemSchema = z.strictObject({
   task_id: UuidSchema,
   stage: z.string().max(200),
-  action: z.enum(["approve", "return", "reject"]),
+  /** `sign` (fix-cr181-uat2) = dòng của bước Ký trên tài liệu: người ký không có quyết định duyệt; `task_id` = id người ký. */
+  action: z.enum(["approve", "return", "reject", "sign"]),
   at: IsoDateTime,
   actor: RecordPersonSchema,
   feedback: z.string().max(APPROVAL_FEEDBACK_MAX).nullable(),

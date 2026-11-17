@@ -96,11 +96,10 @@ export type SignSignerOut = {
   members?: { id: string; name: string }[];
 };
 
-/** Nhiều người ⇒ tên riêng (từ cuối) cách nhau dấu phẩy: «Hùng, Mai»; một người ⇒ tên đầy đủ. */
+/** Họ tên đầy đủ, cách nhau dấu phẩy: «Nguyễn Văn An, Hoàng Em». */
 export function membersLabel(names: readonly string[]): string {
   const n = names.map((x) => x.trim()).filter((x) => x !== "");
-  if (n.length <= 1) return n[0] ?? "";
-  return n.map((x) => x.split(/\s+/).at(-1) ?? x).join(", ");
+  return n.join(", ");
 }
 /** Người ký nói đích danh: nhóm có thành viên ⇒ tên người; còn lại ⇒ `name`. */
 export const signerWho = (s: Pick<SignSignerOut, "name" | "members">): string =>
