@@ -31,6 +31,5 @@ Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: test e2e + seed e2e)
 
 ## Việc còn lại
-- cr181: 9 pass / 3 fail (lượt 11). K05: hít khe giáp lai chưa kiểm (test đã đổi sang kéo chữ ký qua khe, chưa chạy). contract-page-sign: «Xem bản đã ký» không hiện khi mới có bản của trưởng phòng (trạng thái tệp vẫn «Chưa ký»). signed-viewer: chọn «Bản gốc» không đổi bản.
-- Đường chuột phải «Thêm chữ ký của tôi ở đây» không đặt được dấu (e2e dùng kéo từ khay).
+- cr181: 13 pass / 1 fail (lượt 13). Đỏ: journey K05 vì chuột phải «Thêm chữ ký của tôi ở đây» không đặt dấu (trang 1 và trang 3) dù đã có fa5586e32; test đã tách ca chuột phải ra riêng (chưa chạy) để K05–K09 chạy tiếp bằng kéo từ khay.
 - cr127: điều phối chạy ở checkout chính. cr141-sign-or-upload không thuộc job nào.

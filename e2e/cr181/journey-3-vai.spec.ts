@@ -11,6 +11,7 @@ import {
   dragMarkAcrossSeam,
   HEAD,
   prepareSignPlaces,
+  saleSends,
   saveSigned,
   stepEventually,
 } from "./_cr181-kit";
@@ -73,8 +74,6 @@ test("K05-K06 · trưởng phòng (khác người tạo): «Đạt» khoá khi c
   await addMineAt(page, 0, 0.5, 0.97);
   await dragMarkAcrossSeam(page, 0);
   await expect(page.getByRole("group", { name: /Chữ ký, Giáp lai 2 trang/ })).toBeVisible();
-  await addMineByMenu(page, 0, 0.3, 0.3); // đường chuột phải trang 1 (CR-181 fix chuột phải)
-  await expect(page.getByRole("group", { name: /^Chữ ký, Trang 1$/ })).toBeVisible();
   await addMineAt(page, 2, 0.5, 0.5);
   await page.getByRole("group", { name: /Chữ ký, Trang 3/ }).click();
   await page.getByRole("button", { name: "Chép sang mọi trang" }).click();
@@ -162,5 +161,21 @@ test("M01-M04 · điện thoại 390px: màn ký và trang HĐ không tràn ngan
   expect(await noOverflow()).toBe(true);
   for (const b of await page.getByRole("button", { name: /^(Lưu|Quay lại|Đóng)/ }).all())
     expect((await b.boundingBox())?.height ?? 44).toBeGreaterThanOrEqual(44);
+  await page.context().close();
+});
+
+test("Chuột phải «Thêm chữ ký của tôi ở đây» đặt được chữ ký (HĐ riêng, trưởng phòng ở bước duyệt)", async ({
+  browser,
+}) => {
+  test.setTimeout(300_000);
+  const other = await saleSends(browser, E, `${RUN}m`, U.employee);
+  const page = await newPage(browser);
+  await loginCw(page, E, HEAD);
+  await page.goto(`${E.cw}/contracts/sign/${other}`);
+  await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("button", { name: "Lưu", exact: true })).toBeDisabled();
+  await addMineByMenu(page, 0, 0.3, 0.3);
+  await expect(page.getByRole("group", { name: /^Chữ ký, Trang 1$/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Lưu", exact: true })).toBeEnabled();
   await page.context().close();
 });
