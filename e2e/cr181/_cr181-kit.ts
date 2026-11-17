@@ -5,6 +5,7 @@ import path from "node:path";
 import type { Browser, Page } from "@playwright/test";
 import fontkit from "../../apps/hub-api/node_modules/@pdf-lib/fontkit";
 import { PDFDocument } from "../../apps/hub-api/node_modules/pdf-lib";
+import { safeReload } from "../_kit/ui";
 import { type Env, expect, loginCw, newPage, uploadPdfAndOpen } from "../cr127/_cr127-kit";
 import { stepOf } from "../journey-approval/_journey";
 
@@ -75,6 +76,22 @@ export async function prepareSignPlaces(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Đã rõ" }).click();
 }
 
+/** Trang HĐ không tự cập nhật: tải lại tới khi bước `name` có trạng thái `status` (quy trình chạy nền sau «Gửi duyệt»). */
+export async function stepEventually(
+  page: Page,
+  id: string,
+  name: string,
+  status: "open" | "passed",
+): Promise<void> {
+  const isApproval = (r: import("@playwright/test").Response) =>
+    r.request().method() === "GET" && r.url().includes(`/contracts/${id}/approval`);
+  let n = 0;
+  await expect(async () => {
+    if (n++ > 0) await safeReload(page, { boot: isApproval });
+    await expect(stepOf(page, name)).toHaveAttribute("data-status", status, { timeout: 4_000 });
+  }).toPass({ timeout: 120_000 });
+}
+
 /** Sale: chuẩn bị chỗ ký, Gửi duyệt ⇒ bước «Trưởng phòng duyệt» mở. Trả id. */
 export async function saleSends(
   browser: Browser,
@@ -91,7 +108,7 @@ export async function saleSends(
   await expect(send).toBeEnabled({ timeout: 30_000 });
   await send.click();
   await expect(send).toBeHidden({ timeout: 60_000 });
-  await expect(stepOf(page, "Trưởng phòng duyệt")).toBeVisible({ timeout: 120_000 });
+  await stepEventually(page, id, "Trưởng phòng duyệt", "open");
   await page.context().close();
   return id;
 }
@@ -136,9 +153,7 @@ export async function headSignsAndPasses(browser: Browser, e: Env, id: string): 
   await page.locator("[data-approval=approve]").first().click();
   await page.getByRole("textbox", { name: "Ý kiến" }).fill("Đồng ý");
   await page.getByTestId("request-approve-confirm").click();
-  await expect(stepOf(page, "Trưởng phòng duyệt")).toHaveAttribute("data-status", "passed", {
-    timeout: 60_000,
-  });
+  await stepEventually(page, id, "Trưởng phòng duyệt", "passed");
   await page.context().close();
 }
 

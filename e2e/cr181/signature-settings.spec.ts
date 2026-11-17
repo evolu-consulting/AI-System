@@ -13,10 +13,11 @@ test("Quản trị bật ký trên tài liệu, đổi màu mực, lưu", async 
   await loginCw(page, E, U.director);
   await page.goto("/settings/signature");
   const dlg = page.getByRole("dialog", { name: "Cài đặt" });
-  await expect(dlg.getByRole("heading", { name: "Chữ ký" })).toBeVisible();
+  await expect(dlg.getByRole("heading", { name: "Chữ ký", exact: true })).toBeVisible();
 
   await dlg.getByRole("switch", { name: "Ký trên tài liệu" }).click();
   await page.getByRole("button", { name: "Bật ký trên tài liệu" }).click();
+  await expect(page.getByText("Đã bật ký trên tài liệu").first()).toBeVisible(); // lưu ngay sau xác nhận
   await dlg.getByRole("radio", { name: "Đen" }).click();
   await dlg.getByRole("button", { name: "Lưu định dạng" }).click();
   await expect(page.getByText("Đã lưu định dạng chữ ký")).toBeVisible();

@@ -3,7 +3,6 @@
 // Công ty `e2e-q5-<hậu tố>` (dựng bởi `_cr181-stack.ts`): bật «Ký trên tài liệu», KHÔNG ai có chữ ký sẵn; quy trình Trưởng phòng duyệt [ý kiến + chữ ký] → Ký `ondoc`.
 import { test } from "@playwright/test";
 import { envOf, expect, loginCw, newPage, U } from "../cr127/_cr127-kit";
-import { stepOf } from "../journey-approval/_journey";
 import {
   addMineAt,
   createSignatureIfAsked,
@@ -11,6 +10,7 @@ import {
   HEAD,
   prepareSignPlaces,
   saveSigned,
+  stepEventually,
 } from "./_cr181-kit";
 
 test.describe.configure({ mode: "serial" });
@@ -41,9 +41,7 @@ test("K01-K04 · sale: lần đầu tạo chữ ký → tải HĐ → Cần ký 
   await expect(send).toBeEnabled();
   await send.click();
   await expect(send).toBeHidden({ timeout: 60_000 });
-  await expect(stepOf(page, "Trưởng phòng duyệt")).toHaveAttribute("data-status", "open", {
-    timeout: 120_000,
-  });
+  await stepEventually(page, id, "Trưởng phòng duyệt", "open");
   await page.context().close();
 });
 
@@ -80,9 +78,7 @@ test("K05-K06 · trưởng phòng (khác người tạo): «Đạt» khoá khi c
   await expect(page.getByTestId("approver-sign")).toContainText("đã ký");
   await expect(page.getByTestId("request-approve-confirm")).toBeEnabled();
   await page.getByTestId("request-approve-confirm").click();
-  await expect(stepOf(page, "Trưởng phòng duyệt")).toHaveAttribute("data-status", "passed", {
-    timeout: 60_000,
-  });
+  await stepEventually(page, id, "Trưởng phòng duyệt", "passed");
   await page.context().close();
 });
 
@@ -98,9 +94,8 @@ test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; �
   await expect(page.getByText("Chờ đối tác ký").first()).toBeVisible(); // ô Bên B
   await page.getByRole("button", { name: "Bấm để ký" }).first().click();
   await saveSigned(page, id);
-  await expect(stepOf(page, "Ký hợp đồng")).toHaveAttribute("data-status", "passed", {
-    timeout: 120_000,
-  });
+  await page.goto(`${E.cw}/contracts/c/${id}`);
+  await stepEventually(page, id, "Ký hợp đồng", "passed");
   await page.context().close();
 });
 
