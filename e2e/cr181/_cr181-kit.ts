@@ -190,3 +190,10 @@ export async function dragMarkAcrossSeam(page: Page, n: number): Promise<void> {
   await page.mouse.move(x, y + b.height * 0.8, { steps: 12 });
   await page.mouse.up();
 }
+
+/** Đường chuột phải: chuột phải tại (fx, fy) của trang n → «Thêm chữ ký của tôi ở đây». */
+export async function addMineByMenu(page: Page, n: number, fx: number, fy: number): Promise<void> {
+  const b = await pageBox(page, n);
+  await page.mouse.click(b.x + b.width * fx, b.y + b.height * fy, { button: "right" });
+  await page.getByRole("menuitem", { name: "Thêm chữ ký của tôi ở đây" }).click();
+}

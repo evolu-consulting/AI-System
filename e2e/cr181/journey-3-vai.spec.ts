@@ -5,6 +5,7 @@ import { test } from "@playwright/test";
 import { envOf, expect, loginCw, newPage, U } from "../cr127/_cr127-kit";
 import {
   addMineAt,
+  addMineByMenu,
   createSignatureIfAsked,
   draftSample,
   dragMarkAcrossSeam,
@@ -72,7 +73,7 @@ test("K05-K06 · trưởng phòng (khác người tạo): «Đạt» khoá khi c
   await addMineAt(page, 0, 0.5, 0.97);
   await dragMarkAcrossSeam(page, 0);
   await expect(page.getByRole("group", { name: /Chữ ký, Giáp lai 2 trang/ })).toBeVisible();
-  await addMineAt(page, 2, 0.5, 0.5);
+  await addMineByMenu(page, 2, 0.5, 0.5); // đường chuột phải (CR-181 fix chuột phải)
   await page.getByRole("group", { name: /Chữ ký, Trang 3/ }).click();
   await page.getByRole("button", { name: "Chép sang mọi trang" }).click();
   await expect(page.getByRole("group", { name: /Chữ ký, Trang 6/ })).toBeVisible();
