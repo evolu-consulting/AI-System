@@ -5,19 +5,61 @@
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
+import { logger } from "../../lib/logger";
 import { eventFlowsOf } from "../processes/public";
 import { signaturesRepo } from "../signatures/public";
 import { packAssignees } from "./contracts/adapters/manage.members";
 import type { CompanySigner } from "./contracts/application/sign-doc.usecase";
+import type { SignHubPort } from "./contracts/application/sign-save.usecase";
 import { signPartnerOf } from "./contracts/domain/event-flow-steps.rules";
 import type { SignDocPorts } from "./contracts/sign-doc.mount";
 import type { PackAccessView } from "./kit/public";
 
 const FLOW_EVENT = "contract.submitted";
 
+/** Cổng hub của Lưu chữ ký (BR-K3): chữ ký đang dùng của ĐÚNG người gọi (`hub.signature_for_stamp`), thiết lập, họ tên + chức vụ (CR-147), audit `document_signed`. */
+export function signHubPort(db: Db, view: PackAccessView): SignHubPort {
+  const assignees = packAssignees(db, view, "contracts");
+  return {
+    prepare: (who) =>
+      withHubScope(db, { kind: "user", tenantId: who.tenantId, userId: who.userId }, async (tx) => {
+        const repo = signaturesRepo(tx);
+        const { settings: s } = await repo.getSettings();
+        const [p] = await tx.execute<{ name: string | null; title: string | null }>(sql`
+          select u.display_name as name, (select pp.job_title from hub.people_profiles pp
+            where pp.tenant_id = u.tenant_id and pp.user_id = u.id) as title
+          from admin.users u where u.id = ${who.userId}::uuid and u.tenant_id = ${who.tenantId}::uuid`);
+        const main = await repo.signatureForStamp(who.tenantId, who.userId, "main");
+        const initials = await repo.signatureForStamp(who.tenantId, who.userId, "initials");
+        return {
+          settings: { ink: s.ink, caption: s.caption, initials: s.initials },
+          name: p?.name ?? "",
+          title: p?.title ?? null,
+          main: main ? { id: main.id, png: main.png } : null,
+          initials: initials ? { id: initials.id, png: initials.png } : null,
+        };
+      }),
+    audit: (who, e) =>
+      withHubScope(db, { kind: "user", tenantId: who.tenantId, userId: who.userId }, async (tx) => {
+        await tx.execute(sql`insert into hub.audit_log (tenant_id, actor_id, actor_role, action, entity, entity_id, entity_name, summary)
+          values (${who.tenantId}::uuid, ${who.userId}::uuid, 'member', 'document_signed', 'signature', ${e.versionId}::uuid,
+            ${e.fileName.slice(0, 200)}, ${JSON.stringify(e.summary)}::jsonb)`);
+      }).catch((err: unknown) => {
+        logger.warn("sign-audit-failed", { versionId: e.versionId, message: String(err) });
+      }),
+    userNames: async (who, ids) => {
+      const want = new Set(ids);
+      return new Map(
+        (await assignees.list(who)).filter((m) => want.has(m.id)).map((m) => [m.id, m.name]),
+      );
+    },
+  };
+}
+
 export function signDocPorts(db: Db, view: PackAccessView): SignDocPorts {
   const assignees = packAssignees(db, view, "contracts");
   return {
+    hub: signHubPort(db, view),
     onDocEnabled: (who) =>
       withHubScope(
         db,

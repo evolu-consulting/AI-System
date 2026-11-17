@@ -1,9 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import {
   canPrepSign,
+  captionText,
   defaultNeedsSign,
   fieldsIssue,
   isPdfFile,
+  marksIssue,
+  maskPartnerRef,
   needsSignIssue,
   normalizeFields,
   type SignerEntry,
@@ -143,5 +146,59 @@ describe("chế độ", () => {
     expect(sessionMode(true, true)).toBe("prep");
     expect(sessionMode(false, true)).toBe("sign");
     expect(sessionMode(false, false)).toBe("view");
+  });
+});
+
+describe("marksIssue (BR-C1)", () => {
+  const fields = [
+    { id: "f1", signer_kind: "user", signer_ref: "u1", signed_version_id: null },
+    { id: "f2", signer_kind: "user", signer_ref: "u2", signed_version_id: null },
+    { id: "f3", signer_kind: "user", signer_ref: "u1", signed_version_id: "v" },
+  ];
+  const me: SignerEntry[] = [
+    { ...A, mine: true },
+    { ...A, ref: "u2", mine: false },
+  ];
+  it("dấu vào ô của mình ⇒ ok; ô của người khác / đã ký / không có ⇒ forbidden", () => {
+    expect(marksIssue([{ placement: "field", field_id: "f1" }], fields, me)).toBeNull();
+    expect(marksIssue([{ placement: "field", field_id: "f2" }], fields, me)).toBe("forbidden");
+    expect(marksIssue([{ placement: "field", field_id: "f3" }], fields, me)).toBe("forbidden");
+    expect(marksIssue([{ placement: "field", field_id: "zz" }], fields, me)).toBe("forbidden");
+  });
+  it("lệch kiểu dấu / trùng ô ⇒ invalid; dấu tự do không cần ô", () => {
+    expect(marksIssue([{ placement: "free", field_id: "f1" }], fields, me)).toBe("invalid");
+    expect(marksIssue([{ placement: "field" }], fields, me)).toBe("invalid");
+    const dup = { placement: "field" as const, field_id: "f1" };
+    expect(marksIssue([dup, dup], fields, me)).toBe("invalid");
+    expect(marksIssue([{ placement: "seam" }, { placement: "initials" }], fields, me)).toBeNull();
+  });
+});
+
+describe("captionText", () => {
+  const now = new Date("2026-11-17T17:05:00Z"); // 00:05 ngày 18 giờ VN
+  it("theo thiết lập, giờ Việt Nam; bỏ phần trống", () => {
+    expect(captionText(["name", "date"], { name: "Bình", title: null }, now)).toBe(
+      "Bình · 18/11/2026",
+    );
+    expect(captionText(["time", "title", "name"], { name: "Bình", title: "GĐ" }, now)).toBe(
+      "Bình · GĐ · 00:05",
+    );
+    expect(captionText(["title"], { name: "Bình", title: null }, now)).toBeUndefined();
+    expect(captionText([], { name: "Bình", title: "GĐ" }, now)).toBeUndefined();
+  });
+});
+
+describe("X2 che email đối tác", () => {
+  it("chỉ người chuẩn bị thấy ref đối tác", () => {
+    const p = {
+      side: "B" as const,
+      kind: "partner" as const,
+      ref: "b@x.vn",
+      name: "B",
+      mine: false,
+    };
+    expect(maskPartnerRef(p, true).ref).toBe("b@x.vn");
+    expect(maskPartnerRef(p, false).ref).toBe("partner");
+    expect(maskPartnerRef(A, false).ref).toBe("u1");
   });
 });

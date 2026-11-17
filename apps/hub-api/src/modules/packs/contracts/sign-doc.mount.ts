@@ -3,15 +3,18 @@
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import type { PackAccessView, PackFileboxClient, PackGuardVars } from "../kit/public";
-import { createPackUow, packTenantOnly } from "../kit/public";
+import { createPackUow, orgForTenant, packTenantOnly } from "../kit/public";
 import { contractFilesRepo } from "./adapters/contract-files.repo";
 import { signDocRepo } from "./adapters/sign-doc.repo";
 import { signDocRoutes } from "./adapters/sign-doc.routes";
 import { signDocsRepo } from "./adapters/sign-docs.repo";
 import { signFieldsRepo } from "./adapters/sign-fields.repo";
 import { probePdf } from "./adapters/sign-pdf-probe";
+import { sha256Hex, stampPdf } from "./adapters/sign-stamp.pdf";
 import { signVersionsRepo } from "./adapters/sign-versions.repo";
 import { type CompanySigner, signDocUsecases } from "./application/sign-doc.usecase";
+import { type SignHubPort, signSaveUsecases } from "./application/sign-save.usecase";
+import { noDigitalSigner, produceSigned } from "./domain/digital-signer";
 import { noTurn, type SignTurnPort } from "./domain/sign-turn.port";
 import { contractsMaxBytes } from "./upload.mount";
 
@@ -23,6 +26,8 @@ export type SignDocPorts = {
     who: { tenantId: string; userId: string },
     contractId: string,
   ) => Promise<CompanySigner[]>;
+  /** CR-181 B · chữ ký + thiết lập + hồ sơ người gọi, audit, tên người (module `signatures` + hub). */
+  hub: SignHubPort;
   /** Lát s9 cài thật; vắng ⇒ `noTurn`. */
   turn?: SignTurnPort;
 };
@@ -33,23 +38,56 @@ export function signDocModule(
   filebox: (org: string) => PackFileboxClient,
   ports: SignDocPorts,
 ): Hono<PackGuardVars> {
+  const uow = packTenantOnly(
+    createPackUow(db, "contracts", (tx, t) => ({
+      contractFiles: contractFilesRepo(tx, t),
+      signDoc: signDocRepo(tx, t),
+      docs: signDocsRepo(tx, t),
+      fields: signFieldsRepo(tx, t),
+      versions: signVersionsRepo(tx, t),
+    })),
+  );
+  const maxBytes = contractsMaxBytes();
+  const turn = ports.turn ?? noTurn;
+  const read = (org: string, boxId: string, max: number) => filebox(org).getContent(boxId, max);
   const uc = signDocUsecases({
-    uow: packTenantOnly(
-      createPackUow(db, "contracts", (tx, t) => ({
-        contractFiles: contractFilesRepo(tx, t),
-        signDoc: signDocRepo(tx, t),
-        docs: signDocsRepo(tx, t),
-        fields: signFieldsRepo(tx, t),
-        versions: signVersionsRepo(tx, t),
-      })),
-    ),
-    files: { read: (org, boxId, max) => filebox(org).getContent(boxId, max) },
-    maxBytes: contractsMaxBytes(),
+    uow,
+    files: { read },
+    maxBytes,
     probePdf,
     companySigners: ports.companySigners,
     onDocEnabled: ports.onDocEnabled,
-    turn: ports.turn ?? noTurn,
+    turn,
     newId: () => Bun.randomUUIDv7(),
   });
-  return signDocRoutes(view, uc);
+  const save = signSaveUsecases({
+    uow,
+    files: {
+      read,
+      put: (org, name, bytes) => filebox(org).postFile(name, bytes),
+      remove: async (org, fileId) => {
+        await filebox(org).deleteFile(fileId);
+      },
+    },
+    maxBytes,
+    hub: ports.hub,
+    turn,
+    companySigners: ports.companySigners,
+    onDocEnabled: ports.onDocEnabled,
+    produce: (i) =>
+      produceSigned({
+        pdf: i.pdf,
+        marks: i.marks,
+        ink: i.ink,
+        kind: i.kind,
+        signer: noDigitalSigner,
+        stamp: stampPdf,
+        sha256: sha256Hex,
+        ctx: { tenantId: i.who.tenantId, userId: i.who.userId },
+      }),
+    newId: () => Bun.randomUUIDv7(),
+    now: () => new Date(),
+    orgOf: orgForTenant,
+  });
+  return signDocRoutes(view, uc, save);
 }

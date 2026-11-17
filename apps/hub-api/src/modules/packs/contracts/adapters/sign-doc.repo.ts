@@ -2,7 +2,7 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 
-import type { PartnerSigner, SignFileRef } from "../application/sign-doc.ports";
+import type { OutFileRef, PartnerSigner, SignFileRef } from "../application/sign-doc.ports";
 
 export type SignDocRepo = ReturnType<typeof signDocRepo>;
 
@@ -34,6 +34,44 @@ export function signDocRepo(tx: Tx, tenantId: string) {
           order by x.sort, x.created_at, x.id limit 1) pc on true
         where c.id = ${contractId}::uuid and c.tenant_id = ${tenantId}::uuid`);
       return r?.email ? r : null;
+    },
+    lockDoc: async (contractId: string, fileId: string): Promise<boolean> => {
+      const rows = await tx.execute<{ file_id: string }>(sql`
+        select file_id from contracts.sign_docs
+        where contract_id = ${contractId}::uuid and file_id = ${fileId}::uuid and tenant_id = ${tenantId}::uuid for update`);
+      return rows.length > 0;
+    },
+    /** Tệp ra của bản đã ký (`contracts.files`, không gắn vào `contract_files`). */
+    insertOutFile: async (r: {
+      id: string;
+      org: string;
+      boxId: string;
+      versionId: string;
+      name: string;
+      size: number;
+      by: string;
+    }): Promise<void> => {
+      await tx.execute(sql`
+        insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
+        values (${r.id}::uuid, ${tenantId}::uuid, ${r.org}, ${r.boxId}, ${r.versionId}, ${r.name}, 'application/pdf', ${r.size}, ${r.by}::uuid)`);
+    },
+    outFile: async (
+      contractId: string,
+      fileId: string,
+      versionId: string,
+    ): Promise<OutFileRef | null> => {
+      const [r] = await tx.execute<OutFileRef>(sql`
+        select f.org, f.file_id as box_id, f.name from contracts.sign_versions v
+        join contracts.files f on f.id = v.out_file_id and f.tenant_id = v.tenant_id and f.deleted_at is null
+        where v.id = ${versionId}::uuid and v.contract_id = ${contractId}::uuid and v.file_id = ${fileId}::uuid
+          and v.tenant_id = ${tenantId}::uuid`);
+      return r ?? null;
+    },
+    outFileById: async (fileRowId: string): Promise<OutFileRef | null> => {
+      const [r] = await tx.execute<OutFileRef>(sql`
+        select f.org, f.file_id as box_id, f.name from contracts.files f
+        where f.id = ${fileRowId}::uuid and f.tenant_id = ${tenantId}::uuid and f.deleted_at is null`);
+      return r ?? null;
     },
   };
 }

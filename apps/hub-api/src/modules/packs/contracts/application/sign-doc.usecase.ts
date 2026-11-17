@@ -17,8 +17,10 @@ import {
   fieldsIssue,
   isPdfFile,
   labelOf,
+  maskPartnerRef,
   needsSignIssue,
   normalizeFields,
+  PARTNER_REF_MASK,
   type PdfProbe,
   type SignerEntry,
   sessionMode,
@@ -41,7 +43,19 @@ export type { SignDocRepos } from "./sign-doc.ports";
 /** Người ký công ty của bước Ký (Q2): người cụ thể hoặc nhóm. `mine` (tuỳ chọn) = người gọi thuộc nhóm đó. */
 export type CompanySigner = { kind: "user" | "group"; id: string; name: string; mine?: boolean };
 
-export type SignDocFailKind = "not_found" | "forbidden" | "locked" | "off" | "not_needed" | "issue";
+export type SignDocFailKind =
+  | "not_found"
+  | "forbidden"
+  | "locked"
+  | "off"
+  | "not_needed"
+  | "issue"
+  /** Q12 · chữ ký số chưa bật (409 `DIGITAL_SIGN_NOT_ENABLED`). */
+  | "digital"
+  /** K5 · người ký chưa có chữ ký (409 `SIGNATURE_MISSING`). */
+  | "signature_missing"
+  /** L1 · có người Lưu bản mới trong lúc này (409 `SIGN_VERSION_STALE`) — mở lại để ký trên bản mới nhất. */
+  | "stale";
 export class SignDocFail extends Error {
   constructor(
     readonly kind: SignDocFailKind,
@@ -99,7 +113,11 @@ export function buildSigners(
   return [...a, ...b];
 }
 
-const fieldOut = (f: SignFieldRowP, signers: readonly SignerEntry[]): SignFieldOut => ({
+/** X2 · chỗ ký đối tác: che email ở `signer_ref`. */
+const maskField = (f: SignFieldOut): SignFieldOut =>
+  f.signer_kind === "partner" ? { ...f, signer_ref: PARTNER_REF_MASK } : f;
+
+export const fieldOut = (f: SignFieldRowP, signers: readonly SignerEntry[]): SignFieldOut => ({
   id: f.id,
   side: f.side,
   signer_kind: f.signer_kind,
@@ -189,6 +207,8 @@ export function signDocUsecases(d: SignDocDeps) {
       }
       const out = await d.uow.tenant(who, async (r) => {
         await gate(r, who, id, fileId, enabled);
+        const cur = await r.docs.get(id, fileId);
+        if (cur && !cur.needs_sign) throw new SignDocFail("not_needed"); // đã tắt giữa hai tx
         if (!first.doc || first.doc.pages === null)
           await r.docs.set(id, fileId, true, pages, who.userId);
         const existing = await r.fields.listByFile(id, fileId);
@@ -220,12 +240,25 @@ export function signDocUsecases(d: SignDocDeps) {
     /** Người ký để làm khay chuẩn bị chỗ ký. null = HĐ không thấy (404). */
     async signers(who: PackWho, id: string) {
       const enabled = await d.onDocEnabled(who);
-      const partner = await d.uow.tenant(who, async (r) =>
-        (await r.contractFiles.facts(id)) ? { p: await r.signDoc.partner(id) } : null,
-      );
-      if (!partner) return null;
+      const snap = await d.uow.tenant(who, async (r) => {
+        const facts = await r.contractFiles.facts(id);
+        if (!facts) return null;
+        return { facts, files: await r.signDoc.files(id), partner: await r.signDoc.partner(id) };
+      });
+      if (!snap) return null;
       const company = await d.companySigners(who, id);
-      return { enabled, signers: buildSigners(company, partner.p, who.userId) };
+      // X2 · email liên hệ đối tác chỉ cho người đang chuẩn bị chỗ ký; người khác chỉ thấy tên.
+      const prep =
+        enabled &&
+        snap.files.some((f) =>
+          canPrepSign(who.userId, uploaderOf(f, snap.facts.created_by), snap.facts),
+        );
+      return {
+        enabled,
+        signers: buildSigners(company, snap.partner, who.userId).map((x) =>
+          maskPartnerRef(x, prep),
+        ),
+      };
     },
 
     /** Phiên màn ký: tệp + bản mới nhất + chỗ ký + người ký + chế độ. null = HĐ không thấy (404). */
@@ -292,15 +325,19 @@ export function signDocUsecases(d: SignDocDeps) {
         files.flatMap((f) => f.fields.map((x) => ({ ...x, file_id: f.file_id }))),
         signers,
       );
+      const mode = sessionMode(
+        files.some((f) => f.can_prep),
+        turn.allowed,
+      );
+      const prep = mode === "prep";
       return {
         enabled: true,
-        mode: sessionMode(
-          files.some((f) => f.can_prep),
-          turn.allowed,
-        ),
+        mode,
         locked: isContractFilesLocked(snap.facts),
-        files,
-        signers,
+        files: prep
+          ? files
+          : files.map((f) => ({ ...f, fields: f.fields.map((x) => maskField(x)) })),
+        signers: signers.map((x) => maskPartnerRef(x, prep)),
         readiness,
         turn,
         kinds,

@@ -134,3 +134,65 @@ export function signReadiness(
 /** Chế độ màn: người tải lên khi chưa khoá ⇒ prep; có lượt ⇒ sign; còn lại view. */
 export const sessionMode = (anyCanPrep: boolean, turnAllowed: boolean): "prep" | "sign" | "view" =>
   anyCanPrep ? "prep" : turnAllowed ? "sign" : "view";
+
+export type MarkIn = {
+  field_id?: string | undefined;
+  placement: "field" | "free" | "seam" | "initials";
+};
+/**
+ * BR-C1/L2 · kiểm dấu gửi lên: dấu vào ô (`field`) phải có `field_id` là chỗ ký CHƯA ký của CHÍNH người gọi trên đúng tệp này.
+ * `forbidden` ⇒ 403 (chỗ của người khác / đã ký / không thuộc tệp); `invalid` ⇒ 422 (field_id lệch kiểu dấu, trùng).
+ */
+export function marksIssue(
+  marks: readonly MarkIn[],
+  fields: readonly {
+    id: string;
+    signer_kind: string;
+    signer_ref: string;
+    signed_version_id: string | null;
+  }[],
+  signers: readonly SignerEntry[],
+): "forbidden" | "invalid" | null {
+  const seen = new Set<string>();
+  for (const m of marks) {
+    if ((m.placement === "field") !== (m.field_id !== undefined)) return "invalid";
+    if (!m.field_id) continue;
+    if (seen.has(m.field_id)) return "invalid";
+    seen.add(m.field_id);
+    const f = fields.find((x) => x.id === m.field_id);
+    if (!f || f.signed_version_id !== null) return "forbidden";
+    const mine = signers.some(
+      (s) => s.mine && signerKey(s.kind, s.ref) === signerKey(f.signer_kind, f.signer_ref),
+    );
+    if (!mine) return "forbidden";
+  }
+  return null;
+}
+
+const vn = (d: Date) => new Date(d.getTime() + 7 * 3_600_000);
+const p2 = (n: number) => String(n).padStart(2, "0");
+/** Dòng dưới chữ ký theo thiết lập (họ tên · chức vụ · ngày · giờ — giờ Việt Nam UTC+7); rỗng ⇒ undefined. */
+export function captionText(
+  parts: readonly ("name" | "title" | "date" | "time")[],
+  who: { name: string; title: string | null },
+  now: Date,
+): string | undefined {
+  const t = vn(now);
+  const v: Record<"name" | "title" | "date" | "time", string | null> = {
+    name: who.name.trim() || null,
+    title: who.title?.trim() || null,
+    date: `${p2(t.getUTCDate())}/${p2(t.getUTCMonth() + 1)}/${t.getUTCFullYear()}`,
+    time: `${p2(t.getUTCHours())}:${p2(t.getUTCMinutes())}`,
+  };
+  const order = ["name", "title", "date", "time"] as const;
+  const s = order
+    .filter((k) => parts.includes(k))
+    .flatMap((k) => v[k] ?? [])
+    .join(" · ");
+  return s || undefined;
+}
+
+/** X2 · người không chuẩn bị chỗ ký chỉ thấy TÊN đối tác, không thấy email liên hệ: `ref` của người ký/chỗ ký đối tác bị che. */
+export const PARTNER_REF_MASK = "partner";
+export const maskPartnerRef = <T extends { kind: string; ref: string }>(s: T, prep: boolean): T =>
+  prep || s.kind !== "partner" ? s : { ...s, ref: PARTNER_REF_MASK };

@@ -15,7 +15,9 @@ PHẦN B (chưa giao): POST Lưu chữ ký, các bản, nội dung bản, chặn
 - [x] A · `domain/sign-turn.port.ts`: `SignTurnPort.turnFor` + `noTurn`.
 - [x] A · `adapters/sign-doc.repo.ts` (tệp chính+kèm, đối tác), `sign-pdf-probe.ts`, `application/sign-doc.usecase.ts`, `adapters/sign-doc.routes.ts`, `sign-doc.mount.ts`, `packs.sign-doc.ts` (cổng hub), schema API trong `packages/contracts/.../doc-sign.ts`.
 - [x] A · int `adapters/sign-doc.int.test.ts` (12 ca; evotest xanh).
-- [ ] B · POST Lưu chữ ký · bản · nội dung bản (gồm `GET /sign-docs/:fileId/content` bản gốc) · chặn Gửi duyệt (dùng `signReadiness`) · cài `SignTurnPort` thật (s9).
+- [x] B · `application/sign-save.usecase.ts` (`sign`, `versions`, `content`), routes `POST /sign-docs/:fileId/sign`, `GET .../versions`, `GET .../content`, `GET .../versions/:vid/content`; cổng hub `signHubPort` (`packs.sign-doc.ts`); schema `SignSaveBodySchema`/`SignVersionsOut`; luật `marksIssue`/`captionText`/`maskPartnerRef`; 2 Minor của Opus (#1 X2, #2 đọc lại cờ).
+- [x] B · int `adapters/sign-save.int.test.ts` (10 ca; evotest xanh, cùng `sign-doc.int.test.ts` = 22 pass).
+- [ ] B còn lại · chặn Gửi duyệt (dùng `signReadiness`) + cài `SignTurnPort` thật = lát s9.
 
 ## Không làm / Chạm
 Không web, không Lưu chữ ký, không migration. Chạm: `packages/contracts/src/pack-contracts/doc-sign.ts`, `apps/hub-api/src/modules/packs/contracts/{domain,application,adapters}/sign*`, `contracts/sign-doc.mount.ts`, `packs/packs.sign-doc.ts`, `packs/packs.contracts-attachments.ts`.
@@ -35,6 +37,15 @@ Không web, không Lưu chữ ký, không migration. Chạm: `packages/contracts
 - Thiết lập công ty `on_doc_enabled` đọc qua `signaturesRepo(tx).getSettings()` (s1) trong `packs.sign-doc.ts` (gói không import module hub).
 - Công ty tắt ⇒ session `{enabled:false, mode:"view", files:[], signers:[]}` chỉ 1 câu SQL (kiểm HĐ thấy được).
 - Số câu SQL: session ≤ 6 (facts, tệp, đối tác, cờ, chỗ ký, bản) + 1 cổng hub thiết lập + cổng người ký; PATCH/PUT 2 tx nhỏ, đọc tệp FileBox ngoài tx.
+- B · Quyền POST Lưu: guard `read` của gói + `SignTurnPort` (BR-D1). Không đòi quyền ghi gói để người được giao (chỉ đọc) vẫn ký được; không có lượt ⇒ 403 `PACK_FORBIDDEN`.
+- B · Thứ tự `sign`: 404 → 409 `SIGN_ON_DOC_OFF` → lượt 403 → `digital` 409 `DIGITAL_SIGN_NOT_ENABLED` (trước khi in) → `SIGN_FILE_NOT_NEEDED` 409 → dấu (403 ô không phải của mình/đã ký, 422 `SIGN_MARK_INVALID`) → 409 `SIGNATURE_MISSING` → in (422 `SIGN_OUTSIDE_PAGE|SIGN_PAGE_NOT_FOUND|SIGN_PARTS_INVALID|SIGN_PDF_*|SIGN_TOO_MANY_PAGES`) → lưu. Dấu `placement=field` bắt buộc có `field_id` và ngược lại.
+- B · Đua L1: tx ghi khoá `sign_docs` rồi so bản mới nhất với bản đã dùng làm nền; khác ⇒ 409 `SIGN_VERSION_STALE` (tệp ra vừa đưa lên FileBox bị xoá), web mở lại để ký trên bản mới nhất.
+- B · Dòng dưới chữ ký: theo thiết lập `caption` (họ tên · chức vụ · ngày · giờ, giờ VN UTC+7), chức vụ từ `hub.people_profiles.job_title` (CR-147); dấu có `caption:false` hoặc giáp lai (nhiều trang) không in dòng. Ký nháy `initials=own` dùng chữ ký tắt, còn lại chữ ký chính.
+- B · Audit `document_signed`: `hub.audit_log` (entity `signature`, entity_id = id bản, summary: contract/file/seq/kind/ô/run/sha256), ghi SAU khi lưu; lỗi audit chỉ cảnh báo (không làm hỏng lần Lưu đã commit).
+- B · Tệp ra lưu ở FileBox + `contracts.files` (không gắn `contract_files`), tên «<tên> (đã ký).pdf». `my_open_fields_left` = số ô chưa ký của người gọi trên MỌI tệp của HĐ.
+- B · `GET .../versions`: `signed_by_name`/`signer_name` lấy theo người có quyền xem gói (null nếu ngoài danh sách). Nội dung PDF `inline`, `cache-control: private, no-store`; bản đã huỷ vẫn xem/tải được (BR-X1).
+- B · X2: `signers`/`doc-sign-session`/`versions` chỉ trả email đối tác (`signer_ref`) khi người gọi đang chuẩn bị chỗ ký (mode prep); còn lại `signer_ref` = `partner`, chỉ có tên. #2: `putFields` đọc lại `needs_sign` trong tx ghi, đã tắt ⇒ 409 `SIGN_FILE_NOT_NEEDED`.
+- B · Hiệu năng (evotest): Lưu 50 trang + 50 dấu 74 ms, Lưu 1 dấu 49 ms; số câu SQL phía gói mỗi lần Lưu = 13 (cố định, không theo số dấu) + hub 1 tx đọc (thiết lập, hồ sơ, 2 chữ ký) + 1 tx audit.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
@@ -63,7 +74,25 @@ Người tải lên khi hợp đồng chưa khoá vào chế độ chuẩn bị;
 - Kịch bản: khi công ty tắt «Ký trên tài liệu» thì phiên báo tắt và không có tệp [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-doc.int.test.ts » công ty tắt ⇒ session enabled=false, mode view, không tệp]
 - Kịch bản: khi xét ai được chuẩn bị, tệp nào cần ký, chỗ ký nào hợp lệ, còn thiếu gì thì luật thuần cho đúng kết quả [test: apps/hub-api/src/modules/packs/contracts/domain/sign.rules.test.ts » BR-C3 signReadiness]
 
+#### Yêu cầu: Lưu chữ ký — máy chủ in chữ ký của chính người ký, không nhận ảnh từ trình duyệt
+Người đang có lượt ký (không cần là người tạo hợp đồng) bấm Lưu: máy chủ lấy chữ ký đang dùng của người đó, in lên bản mới nhất của tệp, tạo một bản mới (số thứ tự tăng, bản gốc giữ nguyên), đánh dấu các ô đã ký và ghi nhật ký «document_signed». Trình duyệt chỉ gửi vị trí; gửi kèm ảnh bị từ chối. Còn ô chưa ký vẫn cho Lưu và báo số ô còn lại. Không có lượt, chữ ký số chưa bật, ô của người khác, hoặc chưa có chữ ký thì không Lưu được và không sinh bản.
+- Kịch bản: khi gửi kèm ảnh hoặc trường lạ thì bị từ chối (400) [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » body có trường ảnh ⇒ schema từ chối (400), digital/placement lạ cũng bị từ chối]
+- Kịch bản: khi người được giao (không phải người tạo) Lưu thì thành công, dấu mang đúng chữ ký đang dùng, dòng dưới có họ tên chức vụ ngày giờ VN, còn ô thì báo số ô còn lại [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » N2: người có lượt KHÁC người tạo HĐ Lưu được, dấu mang user_signature_id = chữ ký đang dùng (K3), ô đã ký, còn ô ⇒ my_open_fields_left > 0]
+- Kịch bản: khi Lưu hai lần thì được bản 1 rồi bản 2 (ký trên bản 1), tệp gốc không đổi, ô đã ký không ký lại [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » L1: hai lần Lưu ⇒ seq 1, 2 (lần 2 ký trên bản 1), bản gốc không đổi, ô đã ký không ký lại]
+- Kịch bản: khi chọn chữ ký số mà công ty chưa bật thì báo ngay và không in, không sinh bản [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » Q12: digital ⇒ 409 NGAY, không in, không bản mới, kho tệp không đổi]
+- Kịch bản: khi ô của người khác hoặc không có lượt thì bị từ chối (403), kể cả người tạo hợp đồng [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » C1: ô của người khác ⇒ 403, ô lệch kiểu dấu ⇒ 422, cổng lượt từ chối ⇒ 403 (kể cả người tạo HĐ)]
+- Kịch bản: khi chưa có chữ ký thì báo thiếu chữ ký, trang ngoài tệp thì báo lỗi, đều không sinh bản [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » K5: chưa có chữ ký ⇒ signature_missing, không bản mới, trang ngoài tệp ⇒ 422 SIGN_PAGE_NOT_FOUND]
+- Kịch bản: khi công ty khác gọi thì thấy không có hợp đồng [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » khác công ty ⇒ not_found]
+- Kịch bản: khi lấy chữ ký để in thì đúng bản đang dùng của đúng người, và nhật ký document_signed được ghi [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » signature_for_stamp trả chữ ký ĐANG DÙNG của đúng người, audit document_signed ghi vào hub.audit_log]
+- Kịch bản: khi xét dấu vào ô và dòng dưới chữ ký thì luật thuần cho đúng kết quả [test: apps/hub-api/src/modules/packs/contracts/domain/sign.rules.test.ts » marksIssue (BR-C1)] [test: apps/hub-api/src/modules/packs/contracts/domain/sign.rules.test.ts » captionText]
+- Kịch bản: khi Lưu tệp 50 trang thì dưới 3 giây và số câu SQL không đổi theo số dấu [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » Lưu tệp 50 trang: thời gian + số câu SQL mỗi lần Lưu (cố định)]
+
+#### Yêu cầu: Xem mọi bản đã ký
+Người xem được hợp đồng liệt kê và tải được bản gốc và mọi bản (kể cả bản đã huỷ), kèm người ký, giờ, loại chữ ký, các dấu và chỗ ký còn chờ. Người ngoài công ty không thấy gì. Email liên hệ của đối tác chỉ hiện cho người đang chuẩn bị chỗ ký.
+- Kịch bản: khi người xem (không có lượt) mở thì thấy bản gốc, bản 1 (đã huỷ), bản 2 và tải được từng bản, người ngoài thì không thấy [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » người xem HĐ (không có lượt) liệt kê và tải được mọi bản (kể cả đã huỷ), người ngoài ⇒ null]
+- Kịch bản: khi người không chuẩn bị chỗ ký xem người ký đối tác thì chỉ thấy tên [test: apps/hub-api/src/modules/packs/contracts/domain/sign.rules.test.ts » X2 che email đối tác]
+
 ## Việc còn lại
-- PHẦN B (xem Làm). Chưa làm: `SignTurnPort` thật (đang `noTurn`), chặn Gửi duyệt, nội dung tệp.
-- `packs.sign-doc.ts` import `processes/library/event-flow.repo` (không qua `public.ts`): nếu depcruise/`check:modules` đòi cửa công khai ⇒ thêm `eventFlowsOf` vào `processes/public.ts`.
+- Lát s9: cài `SignTurnPort` thật (đang `noTurn` ở mount), chặn Gửi duyệt bằng `signReadiness` (BR-T2/C3), `voidByRun` khi Trả lại/Từ chối, chọn quy trình đúng của lượt cho người ký công ty.
+- Chưa kiểm bằng HTTP thật (chỉ use case + schema): 400 khi gửi ảnh dựa vào `SignSaveBodySchema` strict + `parseWith`; e2e thuộc lát s15.
 - Ngoài lát: `tsc --noEmit` hub-api còn lỗi cũ `pmsg-db.int.test.ts:412`.

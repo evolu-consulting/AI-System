@@ -147,3 +147,53 @@ export type SignSessionOut = {
   turn: SignTurnOut;
   kinds: { internal: true; digital: { enabled: false; reason: string } };
 };
+
+// ---- Lát s8 phần B · Lưu chữ ký, các bản -------------------------------------------------------------------------------------------
+
+/** Một dấu trên tệp. KHÔNG có ảnh (BR-K3): máy chủ lấy chữ ký đang dùng của người gọi. `caption` = in dòng tên/ngày dưới chữ ký hay không. */
+export const SignMarkInSchema = z.strictObject({
+  field_id: z.uuid().optional(),
+  placement: SignPlacementSchema,
+  parts: SignPartsSchema,
+  caption: z.boolean(),
+});
+/** `POST /sign-docs/:fileId/sign` — strict: trường lạ (kể cả ảnh) ⇒ 400. */
+export const SignSaveBodySchema = z.strictObject({
+  kind: SignatureKindSchema,
+  marks: z.array(SignMarkInSchema).min(1).max(SIGN_MARKS_MAX),
+});
+export type SignSaveBody = z.infer<typeof SignSaveBodySchema>;
+export type SignSaveOut = { version_id: string; seq: number; my_open_fields_left: number };
+
+export type SignVersionMarkOut = {
+  signer_id: string;
+  signer_name: string | null;
+  field_id: string | null;
+  placement: SignPlacement;
+  /** Các trang (đánh số từ 0) mà dấu nằm trên. */
+  pages: number[];
+  parts: SignParts;
+  caption: string | null;
+};
+export type SignVersionItemOut = {
+  /** null + `seq` 0 = bản gốc. */
+  version_id: string | null;
+  seq: number;
+  original: boolean;
+  signed_by: string | null;
+  signed_by_name: string | null;
+  signed_at: string | null;
+  kind: SignatureKind | null;
+  voided: boolean;
+  sha256: string | null;
+  url: string;
+  marks: SignVersionMarkOut[];
+};
+export type SignVersionsOut = {
+  file_id: string;
+  name: string;
+  pages: number | null;
+  versions: SignVersionItemOut[];
+  /** Chỗ ký còn chờ (chưa ký). */
+  pending_fields: SignFieldOut[];
+};
