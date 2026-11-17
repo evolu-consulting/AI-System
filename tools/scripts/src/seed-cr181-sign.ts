@@ -1,0 +1,234 @@
+// CR-181 · s16 · dữ liệu mẫu UAT «Ký trên tài liệu» trên tenant `demo` của bản test. Chạy qua `deploy/stg-test/seed-demo.sh --sign-only`
+// (SAU `--org-only` + `--partner-only`). LẶP LẠI ĐƯỢC, CHỈ THÊM; guard: từ chối production / DB ngoài (stg-test hoặc máy dev).
+//   1) bật `on_doc_enabled` của demo (PUT /company/signature-settings bằng quản trị công ty `demo-owner`; đã bật ⇒ bỏ qua; định dạng khác = mặc định);
+//   2) quy trình «Duyệt và ký hợp đồng (ký trên tài liệu)» qua đường admin nền tảng (như seed-cr128-flows), xét ĐẦU thứ tự, điều kiện hẹp (phòng Kinh doanh + ≤ 100 triệu);
+//   3) HĐ Nháp mẫu của sale demo + 2 PDF (hợp đồng 6 trang, phụ lục 2 trang), đối tác evolu có email. KHÔNG tạo chữ ký sẵn cho ai.
+import postgres, { type Sql } from "postgres";
+import { bindGroupKeys } from "../../../apps/hub-api/src/modules/processes/public";
+import {
+  ANNEX_FILE,
+  annexPdf,
+  CONTRACT_FILE,
+  contractPdf,
+  planSignSample,
+  SIGN_CONTRACT_ID,
+  SIGN_CONTRACT_TITLE,
+  SIGN_CONTRACT_VALUE,
+  SIGN_FLOW_NAME,
+  SIGN_PARTNER,
+  SIGN_SALE,
+  SIGN_SELF,
+  SIGN_SIGNER_GROUP,
+  SIGN_TENANT,
+  signFlowOrder,
+  signFlowStages,
+  signFlowTrigger,
+  signSeedGuard,
+  signSettingsBody,
+  signSettingsNeeded,
+  withOnDocSigner,
+} from "./seed-cr181-sign.data";
+import { seedInputs } from "./seed-demo-partner.data";
+
+const TAG = "seed-cr181-sign";
+const BASE = "/pack/contracts/contracts";
+// biome-ignore lint/suspicious/noExplicitAny: JSON của API, đọc theo đường dẫn
+type Json = Record<string, any>;
+type Res = { status: number; json: Json };
+type Call = (method: string, path: string, body?: unknown) => Promise<Res>;
+
+const fail = (m: string): never => {
+  throw new Error(m);
+};
+const env = (k: string): string => process.env[k] || fail(`thiếu ${k}`);
+const must = (r: Res, ok: number[], what: string): Json =>
+  ok.includes(r.status)
+    ? r.json
+    : fail(`${what} → ${r.status} ${JSON.stringify(r.json).slice(0, 240)}`);
+
+async function login(authUrl: string, tenant: string, username: string, password: string) {
+  const res = await fetch(`${authUrl}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tenant_key: tenant, username, password }),
+  });
+  const j = (await res.json()) as Json;
+  if (j.status !== "authenticated") fail(`đăng nhập ${tenant}/${username} → ${res.status}`);
+  return String(j.access_token);
+}
+const caller =
+  (base: string, token: string): Call =>
+  async (method, path, body) => {
+    const form = body instanceof FormData;
+    const res = await fetch(`${base}${path}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(form ? {} : { "Content-Type": "application/json" }),
+      },
+      body: body === undefined ? undefined : form ? body : JSON.stringify(body),
+    });
+    const text = await res.text();
+    return { status: res.status, json: (text ? JSON.parse(text) : {}) as Json };
+  };
+
+/** 1) Bật ký trên tài liệu (quản trị công ty). */
+async function enableOnDoc(hubUrl: string, authUrl: string, pw: string): Promise<void> {
+  const owner = caller(hubUrl, await login(authUrl, SIGN_TENANT, "demo-owner", pw));
+  const cur = must(await owner("GET", "/company/signature-settings"), [200], "đọc thiết lập ký");
+  if (!signSettingsNeeded(cur.settings ?? null))
+    return void console.log(`${TAG}: ký trên tài liệu đã bật`);
+  must(
+    await owner("PUT", "/company/signature-settings", signSettingsBody()),
+    [200],
+    "bật ký trên tài liệu",
+  );
+  console.log(`${TAG}: đã bật ký trên tài liệu cho ${SIGN_TENANT}`);
+}
+
+/** 2) Quy trình theo tên (có ⇒ ghi đè bước, không nhân bản) → PUT → Áp dụng → đưa lên đầu thứ tự. */
+async function ensureFlow(hub: Call, admin: Call, tid: string): Promise<void> {
+  const base = `/tenants/${tid}/company-flows`;
+  const items = (r: Res): Json[] => (r.json.items as Json[]) ?? [];
+  const list = must(await hub("GET", base), [200], "đọc quy trình");
+  let row = items({ status: 200, json: list }).find((x) => x.name === SIGN_FLOW_NAME);
+  if (!row) {
+    const made = must(
+      await hub("POST", base, { name: SIGN_FLOW_NAME, app: "contracts", from: "blank" }),
+      [200, 201],
+      "tạo quy trình",
+    );
+    row = (made.items as Json[]).find((x) => x.flow_id === made.flow_id);
+  }
+  const flowId = String(row?.flow_id ?? fail("không thấy quy trình sau khi tạo"));
+  const gj = must(
+    await admin("GET", `/admin/groups?tenant_id=${tid}&limit=200`),
+    [200],
+    "đọc nhóm",
+  );
+  const groups = new Map((gj.items as Json[]).map((g) => [String(g.key), String(g.id)]));
+  const signer =
+    groups.get(SIGN_SIGNER_GROUP) ??
+    fail(`thiếu nhóm ${SIGN_SIGNER_GROUP} (chạy --org-only trước)`);
+  const def = must(await hub("GET", `/process-defs/${flowId}?tenant_id=${tid}`), [200], "đọc def");
+  const bound = bindGroupKeys(withOnDocSigner(signFlowStages(), signer), groups, { strip: true });
+  if (bound.missing.length) fail(`thiếu nhóm: ${bound.missing.join(", ")}`);
+  const inputs = seedInputs(def.inputs);
+  must(
+    await hub("PUT", `/process-defs/${flowId}?tenant_id=${tid}`, {
+      key: def.key,
+      name: def.name,
+      description: def.description ?? "",
+      input_hint: def.input_hint ?? "",
+      run_group_ids: def.run_group_ids ?? [],
+      stages: bound.stages,
+      token_budget: def.token_budget ?? null,
+      enabled: true,
+      sources: def.sources ?? [],
+      inputs,
+      trigger: signFlowTrigger(),
+      app: "contracts",
+      version: def.version,
+    }),
+    [200],
+    "lưu bước quy trình",
+  );
+  must(await hub("POST", `${base}/apply`, { flow_id: flowId }), [200], "áp dụng quy trình");
+  const after = items({ status: 200, json: must(await hub("GET", base), [200], "đọc lại") });
+  const mine = String(
+    after.find((x) => x.name === SIGN_FLOW_NAME)?.id ?? fail("thiếu quy trình sau áp dụng"),
+  );
+  const order = signFlowOrder(
+    after.map((x) => String(x.id)),
+    mine,
+  );
+  must(await hub("PUT", `${base}/order`, { ids: order }), [200, 204], "đặt thứ tự");
+  console.log(`${TAG}: quy trình «${SIGN_FLOW_NAME}» đã áp dụng, đứng đầu thứ tự`);
+}
+
+const pdfForm = (name: string, bytes: Uint8Array): FormData => {
+  const f = new FormData();
+  f.append("file", new File([bytes], name, { type: "application/pdf" }));
+  return f;
+};
+
+/** 3) HĐ Nháp mẫu + 2 PDF (đúng đường API của sale; HĐ tạo bằng SQL như seed-kind-samples). */
+async function ensureSample(sql: Sql, tid: string, hubUrl: string, authUrl: string, pw: string) {
+  const [st] = await sql<{ status: string }[]>`select status from contracts.contracts
+    where id = ${SIGN_CONTRACT_ID}::uuid and tenant_id = ${tid}::uuid`;
+  const names = st
+    ? (
+        await sql<
+          { name: string }[]
+        >`select name from contracts.contract_files where contract_id = ${SIGN_CONTRACT_ID}::uuid`
+      ).map((r) => r.name)
+    : [];
+  const steps = planSignSample({ exists: !!st, status: st?.status ?? null, fileNames: names });
+  if (!steps.length) return void console.log(`${TAG}: HĐ mẫu đã có — bỏ qua`);
+  const [u] = await sql<{ id: string }[]>`select id from admin.users
+    where tenant_id = ${tid}::uuid and username = ${SIGN_SALE}`;
+  const uid = u?.id ?? fail(`không có người dùng ${SIGN_SALE} (chạy --org-only trước)`);
+  const sale = caller(hubUrl, await login(authUrl, SIGN_TENANT, SIGN_SALE, pw));
+  for (const step of steps) {
+    if (step === "create") {
+      const fields = {
+        title: SIGN_CONTRACT_TITLE,
+        supplier_name: SIGN_SELF.name,
+        supplier_tax_id: SIGN_SELF.tax,
+        buyer_name: SIGN_PARTNER.name,
+        buyer_tax_id: SIGN_PARTNER.tax,
+        partner_email: SIGN_PARTNER.email,
+        total_value: SIGN_CONTRACT_VALUE,
+      };
+      await sql`insert into contracts.contracts (id, tenant_id, kind, title, direction, status, extract_state, owner_user_id, created_by, version, fields)
+        values (${SIGN_CONTRACT_ID}, ${tid}, 'contract', ${SIGN_CONTRACT_TITLE}, 'sale', 'draft', 'ready', ${uid}, ${uid}, 1, ${sql.json(fields as never)})
+        on conflict (id) do nothing`;
+    } else {
+      const doc = step === "file_contract" ? await contractPdf() : await annexPdf();
+      const name = step === "file_contract" ? CONTRACT_FILE : ANNEX_FILE;
+      must(
+        await sale("POST", `${BASE}/${SIGN_CONTRACT_ID}/files`, pdfForm(name, doc.bytes)),
+        [201],
+        `tải ${name}`,
+      );
+    }
+  }
+  console.log(`${TAG}: HĐ mẫu — ${steps.join(" → ")}`);
+}
+
+async function main(): Promise<void> {
+  const url = env("DATABASE_URL");
+  const bad = signSeedGuard(process.env, url);
+  if (bad) fail(`từ chối — ${bad}`);
+  const authUrl = process.env.AUTH_URL || process.env.ADMIN_API_URL || "http://localhost:3001";
+  const hubUrl = process.env.HUB_URL || `http://localhost:${process.env.HUB_PORT || "4000"}`;
+  const pw = env("DEMO_OWNER_PW");
+  const tok = await login(
+    authUrl,
+    "platform",
+    env("SEED_ADMIN_USERNAME"),
+    env("SEED_ADMIN_PASSWORD"),
+  );
+  const admin = caller(authUrl, tok);
+  const hub = caller(hubUrl, tok);
+  const tenants = must(await admin("GET", "/admin/tenants?limit=100"), [200], "đọc công ty");
+  const tid = String(
+    (tenants.items as Json[]).find((t) => t.key === SIGN_TENANT)?.id ??
+      fail("không có công ty demo"),
+  );
+  const sql = postgres(url, { max: 1, onnotice: () => {} });
+  try {
+    await enableOnDoc(hubUrl, authUrl, pw);
+    await ensureFlow(hub, admin, tid);
+    await ensureSample(sql, tid, hubUrl, authUrl, pw);
+  } finally {
+    await sql.end();
+  }
+  console.log(`${TAG} OK`);
+}
+
+if (import.meta.main)
+  main().catch((e) => {
+    console.error(`${TAG} lỗi: ${(e as Error).message}`);
+    process.exit(1);
+  });
