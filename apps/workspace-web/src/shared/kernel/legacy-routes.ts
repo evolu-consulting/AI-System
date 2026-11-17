@@ -45,6 +45,8 @@ export const LEGACY_EXACT: Readonly<Record<string, Exact>> = {
   "/notifications": { to: "/contracts/notifications" },
   "/feedback": { to: "/contracts/feedback" },
   "/settings": { to: "/contracts/settings" },
+  "/contracts/settings/signature": { to: "/contracts/settings?sec=signature", drop: true },
+  "/settings/signature": { to: "/contracts/settings?sec=signature", drop: true }, // CR-181 · đích của chuông «Xin đổi chữ ký»
   "/settings/members": { to: "/contracts/settings/members" },
   "/settings/scoring": { to: "/contracts/partners", drop: true },
   "/transactions": { to: "/contracts/list?type=deal", drop: true },

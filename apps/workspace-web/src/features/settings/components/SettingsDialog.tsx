@@ -39,7 +39,7 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
   const [draft, setDraft] = useState<SettingsData | null>(null);
   const [picked, setSec] = useState<SettingsNavId>("co");
   const sec = pickNav(picked, hasContracts, hasFeed, owner);
-  const csec = sec === "feed" ? null : sec;
+  const csec = sec === "feed" || sec === "signature" ? null : sec; // hai mục này tự lưu, không dùng thanh Lưu chung
   const [saving, setSaving] = useState(false);
   const s = (k: string) => t(`contracts.settings.${k}`);
 

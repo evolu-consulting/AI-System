@@ -9,6 +9,7 @@ import { FeedSettingsPane } from "./FeedSettingsPane";
 import { LoadState } from "./LoadState";
 import { SectionPanes } from "./SectionPanes";
 import { isDraftSection } from "./SettingsNav";
+import { SignaturePane } from "./SignaturePane";
 
 export type DraftForm = {
   draft: SettingsData;
@@ -35,6 +36,7 @@ export function SettingsBody({
 }) {
   const { t } = useTranslation();
   if (sec === "feed") return <FeedSettingsPane />;
+  if (sec === "signature") return <SignaturePane />;
   return (
     <>
       <LoadState {...load} />

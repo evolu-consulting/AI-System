@@ -6,7 +6,8 @@
       "sections": "Chọn phần cài đặt",
       "group": {
         "contracts": "Hợp đồng & giao dịch",
-        "feed": "Bảng tin"
+        "feed": "Bảng tin",
+        "common": "Chung"
       },
       "signPane": {
         "esign": "Tài khoản công ty dùng chung. Ký thế nào, ai ký, gửi đối tác ra sao: đặt trong từng quy trình.",
@@ -26,7 +27,9 @@
         "flowHint": "Các bước, phòng ban, hạn xử lý, điều kiện",
         "scoutHint": "Mặc định theo nhóm, trần lượt dò/tháng",
         "sign": "Kết nối",
-        "signHint": "Ký số, đối tác xác nhận"
+        "signHint": "Ký số, đối tác xác nhận",
+        "signature": "Chữ ký",
+        "signatureHint": "Định dạng chữ ký, chữ ký số"
       },
       "unsaved": "Có thay đổi chưa lưu",
       "isDefault": "Đang áp dụng",
@@ -189,6 +192,80 @@
         "saveFail": "Không lưu được cách tính điểm.",
         "historyTitle": "Lịch sử thay đổi",
         "historyNone": "Chưa có thay đổi nào."
+      },
+      "signature": {
+        "intro": "Dùng chung cho mọi app của công ty. Chỉ quản trị sửa; đổi ở đây chỉ áp dụng cho lần ký sau.",
+        "adminOnly": "Chỉ quản trị công ty sửa",
+        "onDoc": {
+          "title": "Ký trên tài liệu",
+          "label": "Ký trên tài liệu",
+          "hint": "Bật thì nhân viên được nhắc tạo chữ ký và hợp đồng có «Cần ký».",
+          "confirmTitle": "Bật ký trên tài liệu?",
+          "confirmBody": "Nhân viên sẽ được nhắc tạo chữ ký lần đầu đăng nhập và hợp đồng sẽ có trạng thái «Cần ký».",
+          "confirm": "Bật ký trên tài liệu",
+          "cancel": "Để sau"
+        },
+        "format": {
+          "title": "Định dạng chữ ký nội bộ",
+          "methods": "Cách tạo được phép",
+          "required": "Tạo lần đầu đăng nhập",
+          "caption": "Dòng dưới chữ ký",
+          "ink": "Màu mực",
+          "initials": "Chữ ký nháy",
+          "change": "Đổi chữ ký"
+        },
+        "method": {
+          "draw": "Vẽ",
+          "upload": "Tải ảnh chữ ký trên giấy",
+          "type": "Gõ họ tên"
+        },
+        "required": {
+          "yes": "Bắt buộc",
+          "later": "Cho «Làm sau»"
+        },
+        "caption": {
+          "name": "Họ tên",
+          "title": "Chức danh",
+          "date": "Ngày ký",
+          "time": "Giờ ký"
+        },
+        "ink": {
+          "blue": "Xanh",
+          "black": "Đen"
+        },
+        "initials": {
+          "shrink": "Thu nhỏ chữ ký chính",
+          "own": "Tạo thêm chữ ký tắt riêng"
+        },
+        "change": {
+          "self": "Nhân viên tự đổi",
+          "admin": "Phải quản trị cho phép"
+        },
+        "needOneMethod": "Phải cho phép ít nhất một cách tạo chữ ký",
+        "save": "Lưu định dạng",
+        "saved": "Đã lưu định dạng chữ ký. Áp dụng cho lần ký sau.",
+        "saveFail": "Không lưu được định dạng chữ ký",
+        "appliesLater": "Đổi ở đây chỉ áp dụng cho lần ký sau",
+        "preview": {
+          "title": "Xem trước trên tài liệu",
+          "note": "Chữ ký mẫu của «{{name}}» theo định dạng đang chọn."
+        },
+        "sampleName": "Nguyễn Văn Hùng",
+        "sampleTitle": "Giám đốc",
+        "digital": {
+          "title": "Chữ ký số",
+          "off": "Chưa bật",
+          "note": "Bật khi công ty đã mua chữ ký số. Sau đó chọn nhà cung cấp và người được dùng chứng thư của công ty.",
+          "enable": "Bật chữ ký số",
+          "soon": "Chưa dùng được ở đợt này"
+        },
+        "requests": {
+          "title": "Yêu cầu đổi chữ ký",
+          "allow": "Cho phép",
+          "allowAria": "Cho phép {{name}} đổi chữ ký",
+          "granted": "Đã cho phép {{name}} đổi chữ ký",
+          "fail": "Không cho phép được, thử lại"
+        }
       }
     },
     "flow": {

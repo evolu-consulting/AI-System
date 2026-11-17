@@ -13,7 +13,7 @@ export function sectionFromKey(raw: unknown): SectionId | null {
 
 /** CR-130 · như `sectionFromKey` nhưng nhận thêm "feed" (ngăn Bảng tin ▸ Thông báo): `?sec=feed` mở thẳng ngăn đó. */
 export function navFromKey(raw: unknown): SettingsNavId | null {
-  return raw === "feed" ? "feed" : sectionFromKey(raw);
+  return raw === "feed" || raw === "signature" ? raw : sectionFromKey(raw);
 }
 
 /** CR-138 Q6 · mục Sổ Hợp Tác người xem được thấy: chủ sở hữu thấy đủ 5; người khác chỉ thấy «Quy trình duyệt» (chỉ xem) — các mục còn lại chỉ đọc nên ẩn. */
@@ -31,6 +31,7 @@ export function pickNav(
   feed: boolean,
   owner = true,
 ): SettingsNavId {
+  if (want === "signature") return want; // CR-181 · nhóm Chung: mọi người xem được, không cần gói nào
   if (want === "feed") return feed ? want : contracts ? firstAllowed(owner) : "feed";
   if (!contracts) return "feed";
   return allowedSections(owner).includes(want) ? want : firstAllowed(owner);

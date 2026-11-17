@@ -15,20 +15,28 @@ describe("buildNavGroups", () => {
   test("cả hai gói ⇒ hai nhóm có tiêu đề", () => {
     expect(ids(true, true)).toEqual([
       ["contracts", "group.contracts", 6],
+      ["common", "group.common", 1],
       ["feed", "group.feed", 1],
     ]);
   });
   test("cờ community tắt ⇒ không có nhóm Bảng tin", () => {
-    expect(ids(true, false)).toEqual([["contracts", undefined, 6]]);
+    expect(ids(true, false)).toEqual([
+      ["contracts", "group.contracts", 6],
+      ["common", "group.common", 1],
+    ]);
   });
   test("CR-138 Q6 · không phải chủ sở hữu ⇒ nhóm Sổ Hợp Tác chỉ còn «Quy trình duyệt» (chỉ xem)", () => {
     const g = buildNavGroups({ hasContracts: true, hasFeed: true, owner: false, s, dot });
     expect(g.map((x) => [x.id, x.items.map((i) => i.id)])).toEqual([
       ["contracts", ["flow"]],
+      ["common", ["signature"]],
       ["feed", ["feed"]],
     ]);
   });
   test("chỉ Cộng đồng ⇒ một nhóm, không tiêu đề", () => {
-    expect(ids(false, true)).toEqual([["feed", undefined, 1]]);
+    expect(ids(false, true)).toEqual([
+      ["common", "group.common", 1],
+      ["feed", "group.feed", 1],
+    ]);
   });
 });

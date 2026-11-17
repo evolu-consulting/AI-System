@@ -6,7 +6,8 @@
       "sections": "Choose a settings section",
       "group": {
         "contracts": "Contracts & deals",
-        "feed": "Feed"
+        "feed": "Feed",
+        "common": "General"
       },
       "signPane": {
         "esign": "Shared company account. How to sign, who signs and how partners are sent: set in each process.",
@@ -26,7 +27,9 @@
         "flowHint": "Steps, departments, deadlines, conditions",
         "scoutHint": "Group defaults, monthly search cap",
         "sign": "Connections",
-        "signHint": "E-signing, partner confirmation"
+        "signHint": "E-signing, partner confirmation",
+        "signature": "Signature",
+        "signatureHint": "Signature format, digital signature"
       },
       "unsaved": "Unsaved changes",
       "isDefault": "Using defaults",
@@ -189,6 +192,80 @@
         "saveFail": "Could not save the scoring rules.",
         "historyTitle": "Change history",
         "historyNone": "No changes yet."
+      },
+      "signature": {
+        "intro": "Shared by every app in the company. Only admins can edit; changes here apply to future signing only.",
+        "adminOnly": "Only company admins can edit",
+        "onDoc": {
+          "title": "Sign on documents",
+          "label": "Sign on documents",
+          "hint": "When on, employees are asked to create a signature and contracts get «To sign».",
+          "confirmTitle": "Turn on signing on documents?",
+          "confirmBody": "Employees will be asked to create a signature at first sign-in and contracts will show «To sign».",
+          "confirm": "Turn on signing",
+          "cancel": "Not now"
+        },
+        "format": {
+          "title": "Internal signature format",
+          "methods": "Allowed ways to create",
+          "required": "First sign-in",
+          "caption": "Line under the signature",
+          "ink": "Ink colour",
+          "initials": "Initials",
+          "change": "Changing a signature"
+        },
+        "method": {
+          "draw": "Draw",
+          "upload": "Upload a photo of a paper signature",
+          "type": "Type full name"
+        },
+        "required": {
+          "yes": "Required",
+          "later": "Allow «Later»"
+        },
+        "caption": {
+          "name": "Full name",
+          "title": "Job title",
+          "date": "Date signed",
+          "time": "Time signed"
+        },
+        "ink": {
+          "blue": "Blue",
+          "black": "Black"
+        },
+        "initials": {
+          "shrink": "Shrink the main signature",
+          "own": "Create a separate initials signature"
+        },
+        "change": {
+          "self": "Employees change it themselves",
+          "admin": "An admin must allow it"
+        },
+        "needOneMethod": "At least one way to create a signature must be allowed",
+        "save": "Save format",
+        "saved": "Signature format saved. Applies to future signing.",
+        "saveFail": "Could not save the signature format",
+        "appliesLater": "Changes here apply to future signing only",
+        "preview": {
+          "title": "Preview on document",
+          "note": "Sample signature of «{{name}}» in the chosen format."
+        },
+        "sampleName": "Nguyễn Văn Hùng",
+        "sampleTitle": "Director",
+        "digital": {
+          "title": "Digital signature",
+          "off": "Off",
+          "note": "Turn on once the company has bought a digital signature. Then pick a provider and who may use the company certificate.",
+          "enable": "Turn on digital signature",
+          "soon": "Not available in this release"
+        },
+        "requests": {
+          "title": "Signature change requests",
+          "allow": "Allow",
+          "allowAria": "Allow {{name}} to change signature",
+          "granted": "{{name}} may now change their signature",
+          "fail": "Could not allow, try again"
+        }
       }
     },
     "flow": {

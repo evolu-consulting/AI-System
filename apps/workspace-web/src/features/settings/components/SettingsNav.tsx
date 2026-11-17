@@ -5,6 +5,7 @@ import {
   FileSignature,
   GitBranch,
   type LucideIcon,
+  PenLine,
   Search,
   Star,
   TrendingUp,
@@ -34,12 +35,12 @@ export function buildNavGroups(p: {
   dot: (k: SectionId) => ReactNode;
 }): SettingsNavGroup[] {
   const { s } = p;
-  const multi = p.hasContracts && p.hasFeed; // hai nhóm ⇒ có tiêu đề nhóm
+  // CR-181 · luôn có nhóm «Chung» ⇒ luôn ≥ 2 nhóm ⇒ mọi nhóm đều có tiêu đề.
   const out: SettingsNavGroup[] = [];
   if (p.hasContracts)
     out.push({
       id: "contracts",
-      label: multi ? s("group.contracts") : undefined,
+      label: s("group.contracts"),
       items: allowedSections(p.owner ?? true).map((k) => ({
         id: k,
         label: s(`sec.${k}`),
@@ -48,10 +49,19 @@ export function buildNavGroups(p: {
         badge: p.dot(k),
       })),
     });
+  // CR-181 · nhóm «Chung» (dùng chung mọi app): mục «Chữ ký», mọi thành viên xem được.
+  if (p.hasContracts || p.hasFeed)
+    out.push({
+      id: "common",
+      label: s("group.common"),
+      items: [
+        { id: "signature", label: s("sec.signature"), hint: s("sec.signatureHint"), icon: PenLine },
+      ],
+    });
   if (p.hasFeed)
     out.push({
       id: "feed",
-      label: multi ? s("group.feed") : undefined,
+      label: s("group.feed"),
       items: [{ id: "feed", label: s("sec.feed"), hint: s("sec.feedHint"), icon: Bell }],
     });
   return out;
