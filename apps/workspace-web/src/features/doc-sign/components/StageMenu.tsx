@@ -11,7 +11,8 @@ import type { SignTray } from "./types";
 export function StageMenu(p: {
   at: { x: number; y: number } | null;
   trays: SignTray[];
-  onPick: (tray: SignTray) => void;
+  /** Điểm chuột phải được chụp lại lúc chọn, vì menu đóng ngay sau đó. */
+  onPick: (tray: SignTray, at: { x: number; y: number }) => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -27,7 +28,7 @@ export function StageMenu(p: {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         {p.trays.map((tr) => (
-          <DropdownMenuItem key={tr.id} onSelect={() => p.onPick(tr)}>
+          <DropdownMenuItem key={tr.id} onSelect={() => p.at && p.onPick(tr, p.at)}>
             {tr.type === "mark"
               ? t("contracts.docsign.ctxAddMine")
               : t("contracts.docsign.ctxAddField", { name: tr.person })}

@@ -63,7 +63,7 @@ export function SignedScreen(p: {
         labelOf={labelOf}
         onVersion={(key) => {
           const v = data?.versions.find((x) => versionKey(x) === key);
-          p.onNav({ file: file.file_id, v: v?.version_id ?? undefined });
+          p.onNav({ file: file.file_id, v: v ? versionKey(v) : undefined });
         }}
         onBack={p.onBack}
         onDownload={(path) => void download(path, data?.name ?? file.name)}

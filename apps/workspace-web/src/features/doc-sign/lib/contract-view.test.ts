@@ -72,6 +72,26 @@ describe("fileStatus — đúng 5 trạng thái", () => {
   });
 });
 
+describe("fileStatus — tệp đã có bản ký", () => {
+  const signedLatest = { version_id: "v1", seq: 1, url: "" };
+  test("có bản ký nhưng còn ô chưa ký ⇒ Đang ký (x/y)", () => {
+    const s = fileStatus(
+      file({ latest: signedLatest, fields: [fld({ signed: true }), fld({ id: "g" })] }),
+    );
+    expect(s).toEqual({ kind: "partial", signed: 1, total: 2 });
+  });
+  test("có bản ký mà chữ ký không thuộc ô nào (tự do), còn ô chưa ký ⇒ Đang ký (0/1), không phải Chưa ký", () => {
+    expect(fileStatus(file({ latest: signedLatest, fields: [fld({})] }))).toEqual({
+      kind: "partial",
+      signed: 0,
+      total: 1,
+    });
+  });
+  test("chưa có bản nào ⇒ vẫn Chưa ký", () => {
+    expect(fileStatus(file({ fields: [fld({})] })).kind).toBe("unsigned");
+  });
+});
+
 describe("công tắc Cần ký", () => {
   test("khoá với người không tải lên", () =>
     expect(switchWhy(file({ can_prep: false }), false)).toBe("notUploader"));

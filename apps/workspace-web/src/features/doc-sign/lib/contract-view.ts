@@ -10,13 +10,16 @@ import type {
 export type FileStatusKind = "ref" | "unsigned" | "partial" | "waitPartner" | "done";
 export type FileStatus = { kind: FileStatusKind; signed: number; total: number };
 
-/** Tình trạng 1 tệp: Tham khảo · Chưa ký · n/m · Chờ đối tác · Đã ký đủ (n/m = chỗ ký của công ty). */
+/** Tình trạng 1 tệp: Tham khảo · Chưa ký (chưa có bản ký) · Đang ký (n/m) · Chờ đối tác · Đã ký đủ (n/m = chỗ ký của công ty). */
 export function fileStatus(f: SignFileOut): FileStatus {
   if (!f.needs_sign) return { kind: "ref", signed: 0, total: 0 };
   const own = f.fields.filter((x) => x.side === "A");
   const signed = own.filter((x) => x.signed).length;
   const partnerOpen = f.fields.some((x) => x.side === "B" && !x.signed);
-  if (own.length === 0 || signed === 0) return { kind: "unsigned", signed, total: own.length };
+  // Đã có bản ký (seq > 0, chưa bị bỏ) mà chưa ô nào được tính (chữ ký tự do) vẫn không còn là «Chưa ký».
+  const hasVersion = f.latest.seq > 0;
+  if (!hasVersion && (own.length === 0 || signed === 0))
+    return { kind: "unsigned", signed, total: own.length };
   if (signed < own.length) return { kind: "partial", signed, total: own.length };
   return { kind: partnerOpen ? "waitPartner" : "done", signed, total: own.length };
 }

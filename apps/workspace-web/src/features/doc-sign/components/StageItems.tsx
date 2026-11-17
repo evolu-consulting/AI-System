@@ -24,7 +24,7 @@ export function StageItems(p: {
   onCopyAll: (id: string) => void;
   onChangePerson: (it: SignItem) => void;
   onFieldClick: (id: string) => void;
-  onPick: (t: SignTray) => void;
+  onPick: (t: SignTray, at: { x: number; y: number }) => void;
   onCloseMenu: () => void;
 }) {
   const seams = seamsOf(p.layout.pages);

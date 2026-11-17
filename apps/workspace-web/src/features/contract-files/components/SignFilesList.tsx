@@ -59,7 +59,7 @@ function SignRow({
   const { t } = useTranslation();
   const st = fileStatus(f);
   const why = switchWhy(f, locked);
-  const signed = st.kind === "partial" || st.kind === "waitPartner" || st.kind === "done";
+  const hasSigned = f.latest.seq > 0;
   const meta = own ?? { name: f.name, mime: "application/pdf", size: 0, added_at: "" };
   const load = (signal: AbortSignal) =>
     f.is_pdf
@@ -96,13 +96,13 @@ function SignRow({
       <Places f={f} />
       <span data-testid="sign-status" data-status={st.kind}>
         {st.kind === "partial"
-          ? `${st.signed}/${st.total}`
+          ? `${t("contracts.docsignc.status.partial")} (${st.signed}/${st.total})`
           : t(`contracts.docsignc.status.${st.kind}`)}
       </span>
       {(f.is_pdf || own) && (
         <ViewButton f={meta} cacheKey={["sign-file", id, f.file_id, f.latest.seq]} load={load} />
       )}
-      {signed && f.latest.seq > 0 && (
+      {hasSigned && (
         <Button asChild variant="outline" size="sm">
           <a
             href={`/contracts/signed/${encodeURIComponent(id)}?file=${encodeURIComponent(f.file_id)}`}

@@ -13,6 +13,7 @@ import {
   jumpTarget,
   latestVersion,
   pickVersion,
+  versionKey,
   versionLabel,
 } from "../lib/viewer-model";
 import { ViewerPanel } from "./ViewerPanel";
@@ -76,6 +77,12 @@ describe("chọn bản", () => {
     expect(pickVersion(vs, undefined)?.seq).toBe(2);
     expect(pickVersion(vs, "nope")?.seq).toBe(2);
     expect(pickVersion(vs, "v1")?.seq).toBe(1);
+  });
+  test("chọn «Bản gốc»: khoá bản gốc là «original», chọn ra đúng bản gốc (không rơi về bản mới nhất)", () => {
+    const orig = vs[0] as SignVersionItemOut;
+    expect(versionKey(orig)).toBe("original");
+    expect(pickVersion(vs, versionKey(orig))).toBe(orig);
+    expect(pickVersion(vs, versionKey(orig))?.marks).toHaveLength(0);
   });
   test("bản bị bỏ (Trả lại) không là mặc định", () => {
     expect(latestVersion([ver(0), ver(1), ver(2, { voided: true })])?.seq).toBe(1);

@@ -21,12 +21,12 @@ export function latestVersion(vs: SignVersionItemOut[]): SignVersionItemOut | un
   );
 }
 
-/** Bản đang xem: `v` trên URL nếu có thật, không thì bản mới nhất. */
+/** Bản đang xem: `v` trên URL (khoá bản: id, hoặc «original» cho bản gốc) nếu có thật, không thì bản mới nhất. */
 export function pickVersion(
   vs: SignVersionItemOut[],
   versionId: string | undefined,
 ): SignVersionItemOut | undefined {
-  return (versionId ? vs.find((v) => v.version_id === versionId) : undefined) ?? latestVersion(vs);
+  return (versionId ? vs.find((v) => versionKey(v) === versionId) : undefined) ?? latestVersion(vs);
 }
 
 export const versionKey = (v: SignVersionItemOut) => v.version_id ?? "original";

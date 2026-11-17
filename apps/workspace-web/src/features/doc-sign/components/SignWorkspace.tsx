@@ -179,7 +179,7 @@ export function SignWorkspace(p: SignWorkspaceProps) {
                     if (p.signImageUrl) store.fill(fileId, id, p.signImageUrl);
                     p.onFieldClick?.(fileId, id);
                   }}
-                  onPick={(tr) => menu && place(tr, menu.x, menu.y)}
+                  onPick={(tr, at) => place(tr, at.x, at.y)}
                   onCloseMenu={() => setMenu(null)}
                 />
               );
