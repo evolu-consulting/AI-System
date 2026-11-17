@@ -7,6 +7,7 @@ import {
   addMineAt,
   createSignatureIfAsked,
   draftSample,
+  dragMarkAcrossSeam,
   HEAD,
   prepareSignPlaces,
   saveSigned,
@@ -68,12 +69,13 @@ test("K05-K06 · trưởng phòng (khác người tạo): «Đạt» khoá khi c
   await box.getByRole("link", { name: "Mở và ký" }).click();
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 30_000 });
   // trưởng phòng ký tự do: giáp lai trang 1–2 + một chữ ký trang 3 chép sang mọi trang
-  await addMineAt(page, 0, 0.5, 0.985);
-  await expect(page.getByRole("button", { name: /Chữ ký, Giáp lai 2 trang/ })).toBeVisible();
+  await addMineAt(page, 0, 0.5, 0.97);
+  await dragMarkAcrossSeam(page, 0);
+  await expect(page.getByRole("group", { name: /Chữ ký, Giáp lai 2 trang/ })).toBeVisible();
   await addMineAt(page, 2, 0.5, 0.5);
-  await page.getByRole("button", { name: /Chữ ký, Trang 3/ }).click();
+  await page.getByRole("group", { name: /Chữ ký, Trang 3/ }).click();
   await page.getByRole("button", { name: "Chép sang mọi trang" }).click();
-  await expect(page.getByRole("button", { name: /Chữ ký, Trang 6/ })).toBeVisible();
+  await expect(page.getByRole("group", { name: /Chữ ký, Trang 6/ })).toBeVisible();
   await saveSigned(page, id);
 
   await page.locator("[data-approval=pass], [data-approval=approve]").first().click();

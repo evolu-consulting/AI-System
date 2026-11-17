@@ -177,3 +177,16 @@ export async function directorSigns(
   await saveSigned(page, id);
   await page.context().close();
 }
+
+/** Kéo chữ ký đang đặt ở cuối trang `n` xuống qua khe sang trang kế (hít khe ⇒ giáp lai 2 trang). */
+export async function dragMarkAcrossSeam(page: Page, n: number): Promise<void> {
+  const mark = page.getByRole("group", { name: `Chữ ký, Trang ${n + 1}` }).first();
+  const b = await mark.boundingBox();
+  if (!b) throw new Error("chưa có chữ ký để kéo");
+  const x = b.x + b.width / 2;
+  const y = b.y + b.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + b.height * 0.8, { steps: 12 });
+  await page.mouse.up();
+}
