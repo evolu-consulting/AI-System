@@ -43,7 +43,7 @@ describe("produceSigned (BR-L5, Q12)", () => {
     expect(hasImage(await PDFDocument.load(r.bytes))).toBe(true);
   });
 
-  test("digital: bộ ký thấy bản ĐÃ in hình; kết quả là bytes bộ ký trả, sha256 trên bytes đó", async () => {
+  test("digital: bộ ký thấy bản ĐÃ in hình, kết quả là bytes bộ ký trả, sha256 trên bytes đó", async () => {
     let seen: Uint8Array | undefined;
     let ctxSeen: unknown;
     const signer: DigitalSigner = {

@@ -143,12 +143,12 @@ describe("stampPdf", () => {
     expect(at[5]).toBeCloseTo(100 + (100 - (100 * 100) / 240) / 2, 3);
   });
 
-  for (const [rot, m] of [
-    [90, [0, 1, -1, 0, 600, 0]],
-    [180, [-1, 0, 0, -1, 600, 800]],
-    [270, [0, -1, 1, 0, 0, 800]],
-  ] as const) {
-    test(`trang xoay ${rot}: ma trận hiển thị → gốc đúng`, async () => {
+  test("trang xoay 90/180/270: ma trận hiển thị → gốc đúng", async () => {
+    for (const [rot, m] of [
+      [90, [0, 1, -1, 0, 600, 0]],
+      [180, [-1, 0, 0, -1, 600, 800]],
+      [270, [0, -1, 1, 0, 0, 800]],
+    ] as const) {
       const r = await stampPdf({
         pdf: await makePdf(1, { rotate: [rot] }),
         marks: [{ png: sigPng(), parts: [part()] }],
@@ -156,8 +156,8 @@ describe("stampPdf", () => {
       });
       const cms = nums(CM, content(await PDFDocument.load(r.bytes), 0));
       expect(cms.some((x) => x.join() === m.join())).toBe(true);
-    });
-  }
+    }
+  });
 
   test("CropBox lệch gốc: ma trận cộng độ lệch", async () => {
     const r = await stampPdf({
@@ -210,7 +210,7 @@ describe("stampPdf", () => {
     ).rejects.toMatchObject({ code: "SIGN_OUTSIDE_PAGE" });
   });
 
-  test("caption một phần: nhúng Be Vietnam Pro (có dấu); ảnh giống nhau chỉ embed một lần", async () => {
+  test("caption một phần: nhúng Be Vietnam Pro và ảnh giống nhau chỉ nhúng một lần", async () => {
     const png = sigPng();
     const marks = [0, 1, 2].map((page) => ({
       png,
@@ -243,7 +243,7 @@ describe("stampPdf", () => {
     });
   });
 
-  test("> 50 trang ⇒ SIGN_TOO_MANY_PAGES; rác ⇒ SignError", async () => {
+  test("quá 50 trang ⇒ SIGN_TOO_MANY_PAGES, rác ⇒ SignError", async () => {
     await expect(
       stampPdf({ pdf: await makePdf(51), marks: [], ink: "blue" }),
     ).rejects.toMatchObject({
