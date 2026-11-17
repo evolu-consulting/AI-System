@@ -3,7 +3,8 @@
 -- Khuôn hub 0149: bảng bật RLS KHÔNG FORCE, chỉ policy `app.scope='system'` cho hub_rw ⇒ không ai đọc/ghi bảng trực tiếp ở scope người dùng; mọi đường đi qua
 -- hàm DEFINER (search_path cố định, REVOKE PUBLIC). Người dùng KHÔNG là tham số: hàm đọc `app.tenant_id`/`app.user_id` (thiếu ⇒ 42501) ⇒ chỉ đọc/ghi chữ ký của CHÍNH MÌNH.
 -- `signature_for_stamp(tenant,user,kind)` cho máy chủ in (BR-K3): ảnh luôn lấy từ DB, tham số phải KHỚP `app.tenant_id`/`app.user_id` (khác ⇒ 42501) ⇒ không đọc hộ người khác.
--- Quyền «quản trị công ty» (PUT settings, cho phép đổi) kiểm ở API (Q15), KHÔNG ở hàm DB.
+-- Quyền «quản trị công ty» (Q15) kiểm ở API; hai hàm ghi của quản trị (`sig_settings_put`, `sig_change_grant`) ĐÒI cờ `app.sig_admin = '1'` (route chỉ đặt SET LOCAL trong cùng tx
+-- SAU khi đã kiểm Q15, như `app.user_id`) — thiếu cờ ⇒ 42501, nên người dùng thường không tự ghi thiết lập / tự cấp quyền đổi. Quản trị không tự cấp cho chính mình.
 -- Mã lỗi: 42501 thiếu ngữ cảnh/không khớp · 22023 đầu vào sai · P0002 SIG_USER_NOT_FOUND (cho phép đổi cho người ngoài công ty).
 -- Audit: thêm action `signature_created|signature_settings_changed|signature_change_requested|signature_change_granted|document_signed` + entity `signature`.
 -- Chỉ THÊM. Chạy lại được: IF NOT EXISTS / CREATE OR REPLACE; GRANT lặp vô hại.
@@ -196,7 +197,7 @@ BEGIN
     FROM hub.signature_settings g WHERE g.tenant_id = c.tid;
 END $$;
 --> statement-breakpoint
--- Ghi thiết lập (upsert). CHECK của bảng chặn giá trị sai (23514). Quyền quản trị kiểm ở API.
+-- Ghi thiết lập (upsert). CHECK của bảng chặn giá trị sai (23514). Đòi `app.sig_admin = '1'` (42501).
 CREATE OR REPLACE FUNCTION hub.sig_settings_put(p_methods text[], p_required boolean, p_caption text[], p_ink text, p_initials text,
   p_change_policy text, p_on_doc_enabled boolean, p_digital_enabled boolean, p_digital_provider text)
 RETURNS TABLE (methods text[], required boolean, caption text[], ink text, initials text, change_policy text, on_doc_enabled boolean,
@@ -209,6 +210,9 @@ DECLARE
   c record;
 BEGIN
   SELECT * INTO c FROM hub.sig_ctx();
+  IF COALESCE(current_setting('app.sig_admin', true), '') <> '1' THEN
+    RAISE EXCEPTION 'sig_settings_put: cần quyền quản trị công ty' USING ERRCODE = '42501';
+  END IF;
   RETURN QUERY
   INSERT INTO hub.signature_settings AS g (tenant_id, methods, required, caption, ink, initials, change_policy, on_doc_enabled,
                                            digital_enabled, digital_provider, updated_by, updated_at)
@@ -257,7 +261,7 @@ BEGIN
 END $$;
 --> statement-breakpoint
 -- Quản trị cho phép người p_user đổi (một lần). Chưa có yêu cầu ⇒ tạo luôn hàng đã cho phép. Đã cho phép từ trước ⇒ giữ mốc cũ (fresh=false; fresh = mốc cho phép là «bây giờ» của giao dịch).
--- Quyền quản trị kiểm ở API. Người ngoài công ty ⇒ P0002.
+-- Đòi `app.sig_admin = '1'` (42501); p_user = chính mình ⇒ 42501 (quản trị không tự cấp). Người ngoài công ty ⇒ P0002.
 CREATE OR REPLACE FUNCTION hub.sig_change_grant(p_user uuid)
 RETURNS TABLE (id uuid, requested_at timestamptz, granted_at timestamptz, fresh boolean)
 LANGUAGE plpgsql
@@ -268,6 +272,12 @@ DECLARE
   c record;
 BEGIN
   SELECT * INTO c FROM hub.sig_ctx();
+  IF COALESCE(current_setting('app.sig_admin', true), '') <> '1' THEN
+    RAISE EXCEPTION 'sig_change_grant: cần quyền quản trị công ty' USING ERRCODE = '42501';
+  END IF;
+  IF p_user IS NOT DISTINCT FROM c.uid THEN
+    RAISE EXCEPTION 'sig_change_grant: không tự cấp cho chính mình' USING ERRCODE = '42501';
+  END IF;
   IF p_user IS NULL OR NOT EXISTS (SELECT 1 FROM admin.users u WHERE u.id = p_user AND u.tenant_id = c.tid) THEN
     RAISE EXCEPTION 'SIG_USER_NOT_FOUND' USING ERRCODE = 'P0002';
   END IF;
@@ -319,6 +329,9 @@ END $$;
 --> statement-breakpoint
 
 -- ── audit_log: thêm action + entity (danh sách 0087 / 0071 + mới) ──────────────────────────────────────────────────────────
+-- Bảng có thể lớn: ADD … NOT VALID (khoá ngắn) rồi VALIDATE ở statement riêng; chờ khoá tối đa 5s (khuôn 0070/0084).
+SET LOCAL lock_timeout = '5s';
+--> statement-breakpoint
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'hub_audit_log_action_check'
@@ -326,9 +339,11 @@ BEGIN
     ALTER TABLE hub.audit_log DROP CONSTRAINT IF EXISTS hub_audit_log_action_check;
     ALTER TABLE hub.audit_log ADD CONSTRAINT hub_audit_log_action_check CHECK (action IN (
       'grant', 'revoke', 'view_trace', 'create', 'update', 'delete', 'enable', 'disable', 'start', 'cancel', 'decide', 'review', 'answer', 'forward', 'view', 'copy', 'authorize_real_action', 'rotate', 'check', 'degrade', 'write_fail', 'escalate', 'escalate_skipped', 'tool_call', 'branch', 'publish', 'rollback', 'assign', 'unassign', 'set_default', 'assign_process', 'unassign_process', 'set_routing',
-      'signature_created', 'signature_settings_changed', 'signature_change_requested', 'signature_change_granted', 'document_signed'));
+      'signature_created', 'signature_settings_changed', 'signature_change_requested', 'signature_change_granted', 'document_signed')) NOT VALID;
   END IF;
 END $$;
+--> statement-breakpoint
+ALTER TABLE hub.audit_log VALIDATE CONSTRAINT hub_audit_log_action_check;
 --> statement-breakpoint
 DO $$
 BEGIN
@@ -338,9 +353,11 @@ BEGIN
     ALTER TABLE hub.audit_log ADD CONSTRAINT hub_audit_log_entity_check CHECK (
       entity IN ('agent_grant', 'run', 'agent', 'orchestrator', 'agent_entitlement', 'agent_default',
         'process_def', 'process_run', 'review_task', 'agent_team', 'secret', 'kh_connection', 'kh_query', 'kh_worklog',
-        'provider', 'model_profile', 'dlc_step_template', 'signature'));
+        'provider', 'model_profile', 'dlc_step_template', 'signature')) NOT VALID;
   END IF;
 END $$;
+--> statement-breakpoint
+ALTER TABLE hub.audit_log VALIDATE CONSTRAINT hub_audit_log_entity_check;
 --> statement-breakpoint
 
 -- ── Quyền ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -349,8 +366,7 @@ REVOKE ALL ON FUNCTION hub.sig_ctx(), hub.sig_get_active(text), hub.sig_history(
   hub.sig_change_state(), hub.sig_change_request(), hub.sig_change_grant(uuid), hub.sig_change_consume(),
   hub.signature_for_stamp(uuid, uuid, text) FROM PUBLIC;
 --> statement-breakpoint
-GRANT SELECT ON hub.user_signatures, hub.signature_settings, hub.signature_change_grants TO hub_rw;
---> statement-breakpoint
+-- Bảng KHÔNG cấp quyền cho hub_rw: mọi đường đi qua hàm DEFINER (chủ hàm bỏ qua RLS); policy `system` giữ làm lớp phòng thủ.
 GRANT EXECUTE ON FUNCTION hub.sig_get_active(text), hub.sig_history(text, integer), hub.sig_create(text, text, bytea),
   hub.sig_settings_get(), hub.sig_settings_put(text[], boolean, text[], text, text, text, boolean, boolean, text),
   hub.sig_change_state(), hub.sig_change_request(), hub.sig_change_grant(uuid), hub.sig_change_consume(),

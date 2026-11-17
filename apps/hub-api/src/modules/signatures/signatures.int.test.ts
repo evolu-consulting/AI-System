@@ -141,11 +141,13 @@ describe("CR-181 s1 · BR-K2 chỉ chữ ký của chính mình (N2: người kh
     expect(await as("b1", T.b, (r) => r.signatureForStamp(T.b, U.b1, "main"))).toBeNull();
   });
   it("bảng không đọc/ghi trực tiếp ở scope người dùng (RLS); thiếu ngữ cảnh ⇒ 42501", async () => {
-    const rows = await inHub(
-      { kind: "user", tenantId: T.a, userId: U.a1 },
-      (tx) => tx`select id from hub.user_signatures`,
+    const sel = await code(() =>
+      inHub(
+        { kind: "user", tenantId: T.a, userId: U.a1 },
+        (tx) => tx`select id from hub.user_signatures`,
+      ),
     );
-    expect(rows.length).toBe(0);
+    expect(sel).toBe("42501");
     const ins = await code(() =>
       inHub(
         { kind: "user", tenantId: T.a, userId: U.a1 },
@@ -175,11 +177,11 @@ describe("CR-181 s1 · Q10 xin đổi / cho phép đổi dùng một lần (qu�
     // chưa được cho phép ⇒ không dùng được
     expect(await as("a1", T.a, (r) => r.consumeGrant())).toBe(false);
     // quản trị (người khác) cho phép
-    const g = await as("adm", T.a, (r) => r.grantChange(U.a1));
+    const g = await as("adm", T.a, (r) => r.grantChangeAsAdmin(U.a1));
     expect(g.id).toBe(req.id);
     expect(g.grantedAt).not.toBeNull();
     expect(g.fresh).toBe(true);
-    expect((await as("adm", T.a, (r) => r.grantChange(U.a1))).fresh).toBe(false);
+    expect((await as("adm", T.a, (r) => r.grantChangeAsAdmin(U.a1))).fresh).toBe(false);
     const st = await as("a1", T.a, (r) => r.getChangeState());
     expect(st?.grantedBy).toBe(U.adm);
     // người khác không dùng được quyền của a1
@@ -195,15 +197,52 @@ describe("CR-181 s1 · Q10 xin đổi / cho phép đổi dùng một lần (qu�
     expect((await as("a1", T.a, (r) => r.requestChange())).fresh).toBe(true);
   });
   it("quản trị cho phép khi chưa ai xin ⇒ tạo hàng đã cho phép; người ngoài công ty ⇒ P0002", async () => {
-    const g = await as("adm", T.a, (r) => r.grantChange(U.a2));
+    const g = await as("adm", T.a, (r) => r.grantChangeAsAdmin(U.a2));
     expect(g.grantedAt).not.toBeNull();
     expect(await as("a2", T.a, (r) => r.consumeGrant())).toBe(true);
-    expect(await code(() => as("adm", T.a, (r) => r.grantChange(U.b1)))).toBe("P0002");
+    expect(await code(() => as("adm", T.a, (r) => r.grantChangeAsAdmin(U.b1)))).toBe("P0002");
   });
   it("quyền đổi của công ty khác không lẫn: b1 không dùng được grant của a1", async () => {
-    await as("adm", T.a, (r) => r.grantChange(U.a1));
+    await as("adm", T.a, (r) => r.grantChangeAsAdmin(U.a1));
     expect(await as("b1", T.b, (r) => r.consumeGrant())).toBe(false);
     expect(await as("b1", T.b, (r) => r.getChangeState())).toBeNull();
+  });
+});
+
+describe("CR-181 s1 · quyền quản trị: hàm ghi của quản trị đòi cờ app.sig_admin (Q10, Q15)", () => {
+  const settingsArgs = `array['draw'], true, array['name'], 'blue', 'shrink', 'self', true, false, null`;
+  it("người dùng thường gọi thẳng sig_settings_put / sig_change_grant (không cờ) ⇒ 42501, không ghi gì", async () => {
+    const u = { kind: "user", tenantId: T.a, userId: U.a2 } as const;
+    expect(
+      await code(() =>
+        inHub(u, (tx) => tx.unsafe(`select * from hub.sig_settings_put(${settingsArgs})`)),
+      ),
+    ).toBe("42501");
+    expect(
+      await code(() => inHub(u, (tx) => tx`select * from hub.sig_change_grant(${U.adm}::uuid)`)),
+    ).toBe("42501");
+    // tự cấp cho mình khi KHÔNG có cờ cũng bị chặn
+    expect(
+      await code(() => inHub(u, (tx) => tx`select * from hub.sig_change_grant(${U.a2}::uuid)`)),
+    ).toBe("42501");
+    const [n] =
+      await o`select count(*)::int as n from hub.signature_settings where tenant_id = ${T.a} and updated_by = ${U.a2}`;
+    expect(n?.n).toBe(0);
+  });
+  it("cờ chỉ có hiệu lực trong tx đặt cờ: tx sau không còn cờ", async () => {
+    await as("adm", T.a, (r) => r.grantChangeAsAdmin(U.a1));
+    expect(
+      await code(() =>
+        inHub(
+          { kind: "user", tenantId: T.a, userId: U.adm },
+          (tx) => tx`select * from hub.sig_change_grant(${U.a1}::uuid)`,
+        ),
+      ),
+    ).toBe("42501");
+  });
+  it("quản trị không tự cấp quyền đổi cho chính mình ⇒ 42501 (kể cả có cờ)", async () => {
+    expect(await code(() => as("adm", T.a, (r) => r.grantChangeAsAdmin(U.adm)))).toBe("42501");
+    expect(await as("adm", T.a, (r) => r.getChangeState())).toBeNull();
   });
 });
 
@@ -224,7 +263,7 @@ describe("CR-181 s1 · Q5 thiết lập công ty", () => {
       initials: "own" as const,
       change_policy: "admin" as const,
     };
-    const w = await as("adm", T.a, (r) => r.putSettings(next));
+    const w = await as("adm", T.a, (r) => r.putSettingsAsAdmin(next));
     expect(w.stored).toBe(true);
     expect(w.updatedBy).toBe(U.adm);
     const rd = await as("a2", T.a, (r) => r.getSettings());
@@ -232,18 +271,20 @@ describe("CR-181 s1 · Q5 thiết lập công ty", () => {
     const other = await as("b1", T.b, (r) => r.getSettings());
     expect(other.stored).toBe(false);
     // ghi lần hai = cập nhật cùng một hàng
-    await as("adm", T.a, (r) => r.putSettings({ ...next, ink: "blue" }));
+    await as("adm", T.a, (r) => r.putSettingsAsAdmin({ ...next, ink: "blue" }));
     const [n] =
       await o`select count(*)::int as n from hub.signature_settings where tenant_id = ${T.a}`;
     expect(n?.n).toBe(1);
   });
   it("giá trị sai bị CHECK chặn (23514): 0 cách tạo, mực lạ", async () => {
     const base = { ...SIGNATURE_SETTINGS_DEFAULT };
-    expect(await code(() => as("adm", T.a, (r) => r.putSettings({ ...base, methods: [] })))).toBe(
-      "23514",
-    );
     expect(
-      await code(() => as("adm", T.a, (r) => r.putSettings({ ...base, ink: "red" as never }))),
+      await code(() => as("adm", T.a, (r) => r.putSettingsAsAdmin({ ...base, methods: [] }))),
+    ).toBe("23514");
+    expect(
+      await code(() =>
+        as("adm", T.a, (r) => r.putSettingsAsAdmin({ ...base, ink: "red" as never })),
+      ),
     ).toBe("23514");
   });
 });

@@ -1,6 +1,6 @@
 // CR-181 · lát s1 · SQL chữ ký nội bộ: chỉ GỌI hàm DEFINER `hub.sig_*` / `hub.signature_for_stamp` (hub 0155) trong tx đã đặt scope người dùng
 // (`withHubScope`). Người dùng KHÔNG là tham số: hàm đọc `app.tenant_id`/`app.user_id` ⇒ chỉ chữ ký của chính người gọi (BR-K1/K2).
-// Mỗi thao tác đúng MỘT câu SQL (hàm gộp theo tập). Quyền quản trị (putSettings, grantChange) kiểm ở API/use case, không ở đây.
+// Mỗi thao tác đúng MỘT câu SQL (hàm gộp theo tập). Hai hàm của QUẢN TRỊ (putSettingsAsAdmin, grantChangeAsAdmin) chỉ gọi SAU khi route đã kiểm Q15: repo đặt `app.sig_admin` (SET LOCAL) rồi gọi hàm DB, hàm DB đòi cờ này (42501).
 
 import {
   SIGNATURE_SETTINGS_DEFAULT,
@@ -82,6 +82,13 @@ const grantOf = (r: GrantRow | undefined): ChangeGrantResult => {
 };
 
 export function signaturesRepo(tx: Tx) {
+  /** Đặt cờ quản trị (SET LOCAL) quanh một lệnh gọi hàm DB; gỡ cờ khi xong (lỗi ⇒ tx đã huỷ, cờ biến mất theo). */
+  const asAdmin = async <T>(fn: () => Promise<T>): Promise<T> => {
+    await tx.execute(sql`select set_config('app.sig_admin', '1', true)`);
+    const out = await fn();
+    await tx.execute(sql`select set_config('app.sig_admin', '', true)`);
+    return out;
+  };
   return {
     /** Bản đang dùng của tôi theo loại; null nếu chưa có. */
     async getActive(kind: SignatureKind): Promise<SignatureRecord | null> {
@@ -147,12 +154,14 @@ export function signaturesRepo(tx: Tx) {
             updatedAt: null,
           };
     },
-    /** Ghi thiết lập (upsert). CHẶN quyền ở API. */
-    async putSettings(s: SignatureSettings): Promise<SignatureSettingsRecord> {
-      const [r] = await tx.execute<SettingsRow>(
-        sql`select * from hub.sig_settings_put(${arr(s.methods)}, ${s.required}::boolean, ${arr(s.caption)}, ${s.ink}::text,
+    /** Ghi thiết lập (upsert). CHỈ gọi sau khi đã kiểm quản trị (Q15). */
+    async putSettingsAsAdmin(s: SignatureSettings): Promise<SignatureSettingsRecord> {
+      const [r] = await asAdmin(() =>
+        tx.execute<SettingsRow>(
+          sql`select * from hub.sig_settings_put(${arr(s.methods)}, ${s.required}::boolean, ${arr(s.caption)}, ${s.ink}::text,
           ${s.initials}::text, ${s.change_policy}::text, ${s.on_doc_enabled}::boolean, ${s.digital_enabled}::boolean,
           ${s.digital_provider}::text)`,
+        ),
       );
       if (!r) throw new Error("sig_settings_put: không trả dòng");
       return settingsOf(r);
@@ -181,10 +190,12 @@ export function signaturesRepo(tx: Tx) {
       );
       return grantOf(r);
     },
-    /** Quản trị cho phép `userId` đổi một lần (CHẶN quyền ở API). Người ngoài công ty ⇒ lỗi P0002. */
-    async grantChange(userId: string): Promise<ChangeGrantResult> {
-      const [r] = await tx.execute<GrantRow>(
-        sql`select id, requested_at, granted_at, fresh from hub.sig_change_grant(${userId}::uuid)`,
+    /** Quản trị cho phép `userId` đổi một lần. CHỈ gọi sau khi đã kiểm quản trị (Q15). Tự cấp cho mình ⇒ 42501; người ngoài công ty ⇒ P0002. */
+    async grantChangeAsAdmin(userId: string): Promise<ChangeGrantResult> {
+      const [r] = await asAdmin(() =>
+        tx.execute<GrantRow>(
+          sql`select id, requested_at, granted_at, fresh from hub.sig_change_grant(${userId}::uuid)`,
+        ),
       );
       return grantOf(r);
     },
