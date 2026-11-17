@@ -132,6 +132,8 @@ const HUB_TABLES = [
   "run_steps",
   "runs",
   "secrets",
+  "signature_change_grants", // CR-181 · hub 0155 · xin/cho phép đổi chữ ký (một lần)
+  "signature_settings", // CR-181 · hub 0155 · thiết lập chữ ký theo công ty
   "source_job_reads",
   "sources",
   "stage_runs",
@@ -143,6 +145,7 @@ const HUB_TABLES = [
   "usage_daily", // hub 0049 · tổng hợp usage theo ngày
   "usage_daily_dim",
   "usage_logs",
+  "user_signatures", // CR-181 · hub 0155 · chữ ký nội bộ của người dùng
   "workflow_flags",
 ];
 

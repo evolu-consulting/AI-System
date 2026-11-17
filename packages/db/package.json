@@ -19,7 +19,8 @@
     "./schema/hub-evidence": "./src/schema/hub-evidence.ts",
     "./schema/hub-secrets": "./src/schema/hub-secrets.ts",
     "./schema/hub-kh": "./src/schema/hub-kh.ts",
-    "./schema/hub-autofix": "./src/schema/hub-autofix.ts"
+    "./schema/hub-autofix": "./src/schema/hub-autofix.ts",
+    "./schema/hub-signature": "./src/schema/hub-signature.ts"
   },
   "scripts": {
     "typecheck": "tsc -p . --noEmit",

@@ -20,6 +20,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { hub } from "./hub-readonly";
 import { SECRET_AUDIT_ACTIONS, SECRET_AUDIT_ENTITIES } from "./hub-secrets";
+import { SIGNATURE_AUDIT_ACTIONS, SIGNATURE_AUDIT_ENTITIES } from "./hub-signature";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true });
 
@@ -27,8 +28,16 @@ const ts = (name: string) => timestamp(name, { withTimezone: true });
 export const K1_AUDIT_ACTIONS = ["check", "degrade", "write_fail"] as const;
 export const K1_AUDIT_ENTITIES = ["kh_connection", "kh_query", "kh_worklog"] as const;
 /** Phần audit thêm sau P-a (H4b-1 + K1) — trải vào `HUB_AUDIT_*_VALUES` (`hub.ts`, giữ file ≤ 400 dòng). */
-export const EXT_AUDIT_ACTIONS = [...SECRET_AUDIT_ACTIONS, ...K1_AUDIT_ACTIONS] as const;
-export const EXT_AUDIT_ENTITIES = [...SECRET_AUDIT_ENTITIES, ...K1_AUDIT_ENTITIES] as const;
+export const EXT_AUDIT_ACTIONS = [
+  ...SECRET_AUDIT_ACTIONS,
+  ...K1_AUDIT_ACTIONS,
+  ...SIGNATURE_AUDIT_ACTIONS, // CR-181 (0155)
+] as const;
+export const EXT_AUDIT_ENTITIES = [
+  ...SECRET_AUDIT_ENTITIES,
+  ...K1_AUDIT_ENTITIES,
+  ...SIGNATURE_AUDIT_ENTITIES, // CR-181 (0155)
+] as const;
 
 export const KH_WRITE_STATUS_VALUES = ["pending", "done", "failed", "skipped"] as const;
 

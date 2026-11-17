@@ -45,6 +45,7 @@
     "./packs": "./src/packs.ts",
     "./quotas": "./src/quotas.ts",
     "./secrets": "./src/secrets.ts",
+    "./signature": "./src/signature.ts",
     "./studio": "./src/studio/index.ts",
     "./tenants": "./src/tenants.ts",
     "./totp": "./src/totp.ts",
