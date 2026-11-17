@@ -163,6 +163,30 @@
         "loadErr": "Chưa xem được trạng thái ký. Tải lại trang rồi mở lại Hồ sơ.",
         "downloadErr": "Chưa tải được bản đã ký. Thử lại sau ít phút."
       }
+    },
+    "mySig": {
+      "titleMain": "Tạo chữ ký của bạn",
+      "titleInitials": "Tạo chữ ký tắt",
+      "how": {
+        "draw": "Vẽ",
+        "upload": "Tải ảnh",
+        "type": "Gõ họ tên"
+      },
+      "howAria": "Cách tạo chữ ký",
+      "clear": "Vẽ lại",
+      "padAria": "Khung vẽ chữ ký",
+      "padHint": "Dùng chuột hoặc ngón tay để ký vào khung",
+      "pick": "Chọn ảnh chữ ký (png, jpg)",
+      "uploadHint": "Chữ ký trên nền giấy trắng; nền sẽ tự được xoá.",
+      "nameLabel": "Họ tên",
+      "namePh": "Nguyễn Văn A",
+      "previewTitle": "Trên tài liệu sẽ trông như sau",
+      "save": "Lưu chữ ký",
+      "later": "Làm sau",
+      "errDraw": "Vẽ chữ ký trước khi lưu",
+      "errUpload": "Chọn ảnh chữ ký",
+      "errType": "Gõ họ tên",
+      "errRead": "Không đọc được ảnh"
     }
   }
 }

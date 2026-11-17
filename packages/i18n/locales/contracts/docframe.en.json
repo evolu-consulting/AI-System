@@ -163,6 +163,30 @@
         "loadErr": "Could not load the signing status. Reload the page and open the record again.",
         "downloadErr": "Could not download the signed copy. Try again in a few minutes."
       }
+    },
+    "mySig": {
+      "titleMain": "Create your signature",
+      "titleInitials": "Create your initials",
+      "how": {
+        "draw": "Draw",
+        "upload": "Upload image",
+        "type": "Type name"
+      },
+      "howAria": "How to create the signature",
+      "clear": "Redraw",
+      "padAria": "Signature drawing area",
+      "padHint": "Use your mouse or finger to sign in the box",
+      "pick": "Choose a signature image (png, jpg)",
+      "uploadHint": "Signature on white paper; the background is removed automatically.",
+      "nameLabel": "Full name",
+      "namePh": "Jane Doe",
+      "previewTitle": "How it will look on the document",
+      "save": "Save signature",
+      "later": "Do it later",
+      "errDraw": "Draw your signature before saving",
+      "errUpload": "Choose a signature image",
+      "errType": "Type your full name",
+      "errRead": "Could not read the image"
     }
   }
 }
