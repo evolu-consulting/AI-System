@@ -55,7 +55,12 @@ describe("CR-146 · signPartnerOf (khối ký / đối tác chỉ xem)", () => {
       { executor: { kind: "tool", tool_key: "contracts-partner-send", args: {} } },
     ]);
     expect(v).toEqual({
-      esign: { signers: [{ kind: "group", id: G }], partnerSigns: true, order: "parallel" },
+      esign: {
+        signers: [{ kind: "group", id: G }],
+        partnerSigns: true,
+        order: "parallel",
+        provider: null,
+      },
       partnerSend: true,
     });
   });
