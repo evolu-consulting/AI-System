@@ -23,7 +23,10 @@ export const SIGN_PROVIDER_ONDOC = "ondoc";
 export const SIGN_SIGNER_GROUP = "nguoi-ky-hd";
 /** Người tạo HĐ mẫu = sale demo (phòng Kinh doanh, trưởng phòng `binh.tran`); người ký công ty = nhóm có `demo-owner`. */
 export const SIGN_SALE = "cuong.le";
-export const SIGN_CONTRACT_ID = "c1810000-0000-4000-8000-000000000016";
+/** Đời dữ liệu của HĐ mẫu (id = `c1810000-0000-4000-8000-<REV>YYMMDD0000`). Tăng khi đổi cách dựng HĐ mẫu ⇒ lần chạy kế TẠO HĐ mới, HĐ đời cũ giữ nguyên.
+ *  REV 16 = đời đầu (fields phẳng, `total_value` không phải số trong `{value}` ⇒ bộ chọn quy trình đọc null ⇒ trượt sang «UAT · HĐ phòng Kinh doanh…»; đối tác null ⇒ không có Bên B). */
+export const SIGN_SAMPLE_REV = "17";
+export const SIGN_ID_PREFIX = `c1810000-0000-4000-8000-${SIGN_SAMPLE_REV}`;
 export const SIGN_CONTRACT_TITLE = "HĐ mẫu · Ký trên tài liệu (CR-181)";
 /** Giá trị HĐ mẫu: dưới ngưỡng của quy trình demo ⇒ quy trình mới được chọn (xem `signFlowTrigger`). */
 export const SIGN_CONTRACT_VALUE = 80_000_000;
@@ -206,19 +209,23 @@ export type SignSampleState = {
   hasMain?: boolean;
   /** Đối tác đã có liên hệ CÓ email trong sổ đối tác (Bên B của «Tự đặt theo ĐẠI DIỆN BÊN B»)? vắng ⇒ chưa. */
   hasPartnerContact?: boolean;
+  /** `fields.total_value.value` là số (điều kiện quy trình ≤ 100 triệu đọc được) VÀ có `buyer_tax_id` (đối tác xác định được)? vắng ⇒ coi là đủ (HĐ mới). */
+  hasFacts?: boolean;
 };
 export type SignSampleStep =
   | "create"
   | "file_contract"
   | "promote_main"
   | "file_annex"
-  | "partner_contact";
+  | "partner_contact"
+  | "fix_fields";
 export const CONTRACT_FILE = "hop-dong-hop-tac-mau.pdf";
 export const ANNEX_FILE = "phu-luc-01-mau.pdf";
 export function planSignSample(st: SignSampleState): SignSampleStep[] {
   if (st.exists && st.status !== "draft") return [];
   const steps: SignSampleStep[] = [];
   if (!st.exists) steps.push("create");
+  else if (st.hasFacts === false) steps.push("fix_fields");
   if (!st.fileNames.includes(CONTRACT_FILE)) steps.push("file_contract");
   // Q14: «Cần ký» mặc định bật cho tệp CHÍNH ⇒ hợp đồng mẫu phải là tệp chính của HĐ, không phải tệp kèm.
   if (!st.hasMain) steps.push("promote_main");
@@ -235,34 +242,44 @@ export const SIGN_SIGNER_USER = "demo-owner";
 export const signerNeedsAdd = (memberUsernames: readonly string[]): boolean =>
   !memberUsernames.includes(SIGN_SIGNER_USER);
 
-/** Một HĐ mẫu: id + tiêu đề. HĐ gốc (lần đầu) dùng id/tiêu đề cố định; HĐ theo ngày có hậu tố «· dd/mm» và id suy từ ngày (idempotent theo ngày). */
+/** Một HĐ mẫu: id + tiêu đề. Id/tiêu đề suy từ NGÀY (giờ VN) ⇒ chạy lại cùng ngày không tạo thêm; tiêu đề có hậu tố «· dd/mm». */
 export type SignSampleTarget = { id: string; title: string };
-export const baseSampleTarget = (): SignSampleTarget => ({
-  id: SIGN_CONTRACT_ID,
-  title: SIGN_CONTRACT_TITLE,
-});
-/** `now` theo giờ Việt Nam (UTC+7) ⇒ mã ngày YYMMDD + dd/mm; id = `c1810000-0000-4000-8000-16YYMMDD0000`. */
+/** `now` theo giờ Việt Nam (UTC+7). */
 export function dailySampleTarget(now: Date): SignSampleTarget {
   const d = new Date(now.getTime() + 7 * 3600_000);
   const p = (n: number): string => String(n).padStart(2, "0");
   const yymmdd = `${p(d.getUTCFullYear() % 100)}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}`;
+  const rev = Number(SIGN_SAMPLE_REV) > 16 ? ` · bản ${Number(SIGN_SAMPLE_REV) - 15}` : "";
   return {
-    id: `c1810000-0000-4000-8000-16${yymmdd}0000`,
-    title: `${SIGN_CONTRACT_TITLE} · ${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}`,
+    id: `${SIGN_ID_PREFIX}${yymmdd}0000`,
+    title: `${SIGN_CONTRACT_TITLE} · ${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}${rev}`,
   };
 }
 /**
- * Chọn HĐ mẫu để làm tiếp. `existing` = các HĐ mẫu đã có (id gốc hoặc id theo ngày) + trạng thái.
- * Chưa có ⇒ HĐ gốc. Còn một HĐ mẫu Nháp ⇒ dùng nó (không tạo thêm). Tất cả đã rời Nháp ⇒ HĐ của HÔM NAY (có rồi ⇒ chính nó, kế hoạch sẽ rỗng). HĐ cũ giữ nguyên.
+ * Chọn HĐ mẫu để làm tiếp. `existing` = HĐ mẫu ĐỜI HIỆN TẠI đã có (id bắt đầu bằng `SIGN_ID_PREFIX`) + trạng thái.
+ * Còn một HĐ Nháp ⇒ dùng nó (không tạo thêm); không thì HĐ của HÔM NAY (chưa có ⇒ tạo; có mà đã rời Nháp ⇒ kế hoạch rỗng). HĐ cũ giữ nguyên.
  */
 export function pickSampleTarget(
   existing: readonly { id: string; status: string }[],
   now: Date,
 ): SignSampleTarget {
-  if (existing.length === 0) return baseSampleTarget();
-  const draft = [...existing].reverse().find((e) => e.status === "draft");
   const today = dailySampleTarget(now);
-  if (!draft) return today;
-  if (draft.id === SIGN_CONTRACT_ID) return baseSampleTarget();
-  return { id: draft.id, title: today.title }; // tiêu đề chỉ dùng khi tạo; HĐ Nháp đã có giữ tiêu đề cũ
+  const draft = [...existing]
+    .reverse()
+    .find((e) => e.status === "draft" && e.id.startsWith(SIGN_ID_PREFIX));
+  return draft ? { id: draft.id, title: today.title } : today;
 }
+
+const fv = (value: string | number) => ({ value, quote: "", verified: true, edited: true });
+/**
+ * `fields` của HĐ mẫu theo hình TRÍCH XUẤT (`{value, quote, verified, edited}`) — bộ chọn quy trình đọc `fields.total_value.value` (số) và `contracts.partner_role_of`
+ * đọc bên đối tác (HĐ bán ⇒ bên mua) từ `buyer_name`/`buyer_tax_id` ⇒ khoá đối tác `tax:…` ⇒ liên hệ có email ⇒ Bên B của «Tự đặt».
+ */
+export const signSampleFields = (title: string) => ({
+  title: fv(title),
+  supplier_name: fv(SIGN_SELF.name),
+  supplier_tax_id: fv(SIGN_SELF.tax),
+  buyer_name: fv(SIGN_PARTNER.name),
+  buyer_tax_id: fv(SIGN_PARTNER.tax),
+  total_value: fv(SIGN_CONTRACT_VALUE),
+});

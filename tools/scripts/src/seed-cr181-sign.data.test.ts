@@ -4,17 +4,19 @@ import { SignatureSettingsSchema } from "../../../packages/contracts/src/signatu
 import {
   ANNEX_FILE,
   annexPdf,
-  baseSampleTarget,
   CONTRACT_FILE,
   contractPdf,
   dailySampleTarget,
   pickSampleTarget,
   planSignSample,
-  SIGN_CONTRACT_ID,
+  SIGN_ID_PREFIX,
+  SIGN_PARTNER,
   signerNeedsAdd,
   signFlowOrder,
   signFlowStages,
+  signFlowTrigger,
   signPartnerKey,
+  signSampleFields,
   signSeedGuard,
   signSettingsBody,
   signSettingsNeeded,
@@ -119,31 +121,54 @@ describe("fix-cr181-uat · lỗi 1a/3/5 · dữ liệu mẫu đủ cho kịch b�
   });
 });
 
-describe("fix-cr181-seed2 · HĐ mẫu mới khi HĐ cũ đã rời Nháp", () => {
+describe("HĐ mẫu theo ngày + đời dữ liệu", () => {
   const now = new Date("2026-11-18T03:00:00Z");
   const today = dailySampleTarget(now);
-  it("id/tiêu đề theo ngày VN", () => {
-    expect(today.title).toBe("HĐ mẫu · Ký trên tài liệu (CR-181) · 18/11");
-    expect(today.id).toBe("c1810000-0000-4000-8000-16261118" + "0000");
-    // 17:30 UTC = 00:30 hôm sau ở VN
-    expect(dailySampleTarget(new Date("2026-11-18T17:30:00Z")).title.endsWith("19/11")).toBe(true);
+  it("id/tiêu đề theo ngày VN, đời 17 ≠ đời 16 (HĐ lỗi cũ không bị dùng lại)", () => {
+    expect(today.id).toBe("c1810000-0000-4000-8000-172611180000");
+    expect(today.title).toBe("HĐ mẫu · Ký trên tài liệu (CR-181) · 18/11 · bản 2");
+    expect(today.id.startsWith(SIGN_ID_PREFIX)).toBe(true);
+    expect(dailySampleTarget(new Date("2026-11-18T17:30:00Z")).title).toContain("19/11");
   });
-  it("chưa có ⇒ HĐ gốc; còn Nháp ⇒ dùng nó; mọi HĐ đã rời Nháp ⇒ HĐ hôm nay", () => {
-    expect(pickSampleTarget([], now)).toEqual(baseSampleTarget());
-    expect(pickSampleTarget([{ id: SIGN_CONTRACT_ID, status: "draft" }], now).id).toBe(
-      SIGN_CONTRACT_ID,
-    );
-    expect(pickSampleTarget([{ id: SIGN_CONTRACT_ID, status: "processing" }], now)).toEqual(today);
+  it("chưa có ⇒ HĐ hôm nay; còn Nháp đời hiện tại ⇒ dùng nó; đã rời Nháp ⇒ HĐ hôm nay", () => {
+    expect(pickSampleTarget([], now)).toEqual(today);
+    const d = { id: `${SIGN_ID_PREFIX}2611170000`, status: "draft" };
+    expect(pickSampleTarget([d], now).id).toBe(d.id);
+    expect(pickSampleTarget([{ ...d, status: "processing" }], now)).toEqual(today);
+    // HĐ đời 16 còn Nháp (fields sai) KHÔNG được dùng lại
+    expect(
+      pickSampleTarget([{ id: "c1810000-0000-4000-8000-162611180000", status: "draft" }], now),
+    ).toEqual(today);
   });
-  it("kế hoạch: HĐ hôm nay chưa có ⇒ tạo mới đủ bước; chạy lại cùng ngày ⇒ không tạo hai HĐ", () => {
-    const rows = [{ id: SIGN_CONTRACT_ID, status: "done" }];
-    expect(pickSampleTarget(rows, now).id).toBe(today.id);
+  it("kế hoạch: HĐ chưa có ⇒ tạo đủ; Nháp fields sai ⇒ sửa fields; đã rời Nháp ⇒ rỗng (không tạo hai HĐ cùng ngày)", () => {
     expect(planSignSample({ exists: false, status: null, fileNames: [] })[0]).toBe("create");
-    // lần hai: HĐ hôm nay có và còn Nháp ⇒ chính nó; đã rời Nháp ⇒ chính nó + kế hoạch rỗng
-    const again = [...rows, { id: today.id, status: "draft" }];
-    expect(pickSampleTarget(again, now).id).toBe(today.id);
-    const moved = [...rows, { id: today.id, status: "processing" }];
-    expect(pickSampleTarget(moved, now).id).toBe(today.id);
-    expect(planSignSample({ exists: true, status: "processing", fileNames: [] })).toEqual([]);
+    const draft = {
+      exists: true,
+      status: "draft",
+      fileNames: [CONTRACT_FILE, ANNEX_FILE],
+      hasMain: true,
+      hasPartnerContact: true,
+    };
+    expect(planSignSample({ ...draft, hasFacts: false })).toEqual(["fix_fields"]);
+    expect(planSignSample({ ...draft, hasFacts: true })).toEqual([]);
+    expect(planSignSample({ ...draft, status: "processing", hasFacts: false })).toEqual([]);
+  });
+});
+
+describe("fields của HĐ mẫu khớp điều kiện quy trình", () => {
+  it("total_value.value là số ≤ ngưỡng, có đối tác bên mua (tax) ⇒ khớp when của quy trình ký trên tài liệu", () => {
+    const f = signSampleFields("x");
+    expect(typeof f.total_value.value).toBe("number");
+    const le = (
+      signFlowTrigger().when.conds as { fact: string; op: string; value: unknown }[]
+    ).find((c) => c.fact === "total_value");
+    expect(le?.op).toBe("le");
+    expect(f.total_value.value).toBeLessThanOrEqual(le?.value as number);
+    expect(f.buyer_tax_id.value).toBe(SIGN_PARTNER.tax);
+    expect(signPartnerKey()).toBe(`tax:${SIGN_PARTNER.tax}`);
+  });
+  it("giám đốc demo chưa thuộc nhóm người ký ⇒ thêm, có rồi ⇒ bỏ qua", () => {
+    expect(signerNeedsAdd(["em.hoang"])).toBe(true);
+    expect(signerNeedsAdd(["em.hoang", "demo-owner"])).toBe(false);
   });
 });

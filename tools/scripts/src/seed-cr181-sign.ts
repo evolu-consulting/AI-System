@@ -12,12 +12,10 @@ import {
   contractPdf,
   pickSampleTarget,
   planSignSample,
-  SIGN_CONTRACT_ID,
-  SIGN_CONTRACT_VALUE,
   SIGN_FLOW_NAME,
+  SIGN_ID_PREFIX,
   SIGN_PARTNER,
   SIGN_SALE,
-  SIGN_SELF,
   SIGN_SIGNER_GROUP,
   SIGN_SIGNER_USER,
   SIGN_TENANT,
@@ -29,6 +27,7 @@ import {
   signFlowStages,
   signFlowTrigger,
   signPartnerKey,
+  signSampleFields,
   signSeedGuard,
   signSettingsBody,
   signSettingsNeeded,
@@ -184,10 +183,10 @@ const pdfForm = (name: string, bytes: Uint8Array): FormData => {
   return f;
 };
 
-/** HĐ mẫu đã có (id gốc hoặc id theo ngày, `c1810000-0000-4000-8000-16…`) + trạng thái, theo id tăng dần. */
+/** HĐ mẫu ĐỜI HIỆN TẠI đã có (id theo ngày, tiền tố `SIGN_ID_PREFIX`) + trạng thái, theo id tăng dần. */
 async function existingSamples(sql: Sql, tid: string): Promise<{ id: string; status: string }[]> {
   return await sql<{ id: string; status: string }[]>`select id::text as id, status
-    from contracts.contracts where tenant_id = ${tid}::uuid and (id = ${SIGN_CONTRACT_ID}::uuid or id::text like 'c1810000-0000-4000-8000-16%')
+    from contracts.contracts where tenant_id = ${tid}::uuid and id::text like ${`${SIGN_ID_PREFIX}%`}
     order by id`;
 }
 
@@ -206,6 +205,11 @@ export async function sampleState(sql: Sql, tid: string, cid: string): Promise<S
               where cf.contract_id = ${cid}::uuid and cf.file_id = f.id and cf.tenant_id = f.tenant_id))`
       ).map((r) => r.name)
     : [];
+  const [facts] = await sql<
+    { ok: boolean }[]
+  >`select (jsonb_typeof(fields -> 'total_value' -> 'value') = 'number'
+      and coalesce(fields -> 'buyer_tax_id' ->> 'value', '') <> '') as ok
+    from contracts.contracts where id = ${cid}::uuid and tenant_id = ${tid}::uuid`;
   const [pc] = await sql<{ n: number }[]>`select count(*)::int as n from contracts.partner_contacts
     where tenant_id = ${tid}::uuid and party_key = ${signPartnerKey()} and email is not null and btrim(email) <> ''`;
   return {
@@ -214,24 +218,22 @@ export async function sampleState(sql: Sql, tid: string, cid: string): Promise<S
     fileNames: names,
     hasMain: !!st?.file_id,
     hasPartnerContact: (pc?.n ?? 0) > 0,
+    hasFacts: !!facts?.ok,
   };
 }
 
 type StepCtx = SignSampleTarget & { cid: string; sql: Sql; tid: string; uid: string; sale: Call };
 const stepSql: Partial<Record<SignSampleStep, (c: StepCtx) => Promise<void>>> = {
   create: async ({ sql, tid, uid, cid, title }) => {
-    const fields = {
-      title,
-      supplier_name: SIGN_SELF.name,
-      supplier_tax_id: SIGN_SELF.tax,
-      buyer_name: SIGN_PARTNER.name,
-      buyer_tax_id: SIGN_PARTNER.tax,
-      partner_email: SIGN_PARTNER.email,
-      total_value: SIGN_CONTRACT_VALUE,
-    };
+    const fields = signSampleFields(title);
     await sql`insert into contracts.contracts (id, tenant_id, kind, title, direction, status, extract_state, owner_user_id, created_by, version, fields)
       values (${cid}, ${tid}, 'contract', ${title}, 'sale', 'draft', 'ready', ${uid}, ${uid}, 1, ${sql.json(fields as never)})
       on conflict (id) do nothing`;
+  },
+  // Sửa HĐ Nháp có `fields` sai hình (không có số giá trị / đối tác) ⇒ ghi lại đúng hình trích xuất; chỉ khi còn Nháp.
+  fix_fields: async ({ sql, tid, cid, title }) => {
+    await sql`update contracts.contracts set fields = ${sql.json(signSampleFields(title) as never)}, updated_at = now()
+      where id = ${cid}::uuid and tenant_id = ${tid}::uuid and status = 'draft'`;
   },
   // Tệp hợp đồng vừa tải (tệp kèm) ⇒ thành tệp chính của HĐ (Q14); bỏ liên kết tệp kèm. Chỉ khi HĐ chưa có tệp chính.
   promote_main: async ({ sql, tid, cid }) => {
@@ -271,6 +273,11 @@ async function ensureSample(sql: Sql, tid: string, hubUrl: string, authUrl: stri
     if (run) await run({ ...target, cid, sql, tid, uid, sale });
     else await uploadSample(sale, cid, step);
   }
+  const after = await sampleState(sql, tid, cid);
+  if (!after.hasFacts)
+    fail(
+      `HĐ mẫu ${cid}: thiếu giá trị số hoặc đối tác trong fields — quy trình ký trên tài liệu sẽ không khớp`,
+    );
   console.log(`${TAG}: HĐ mẫu «${target.title}» — ${steps.join(" → ")}`);
 }
 
