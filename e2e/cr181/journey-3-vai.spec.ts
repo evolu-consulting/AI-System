@@ -200,9 +200,16 @@ test("K09 · Hồ sơ duyệt hiện hình chữ ký; người chỉ xem HĐ th�
   await viewer.context().close();
 });
 
-test("M01-M04 · điện thoại 390px: màn ký và trang HĐ không tràn ngang, nút ≥ 44px", async ({
+test("M01-M04 · điện thoại 390px: màn ký (chuẩn bị + chỉ xem) và trang HĐ không tràn ngang, nút ≥ 44px", async ({
   browser,
 }) => {
+  test.setTimeout(240_000);
+  // HĐ NHÁP riêng của sale (HĐ hành trình đã ký xong ⇒ màn ký chỉ còn chế độ xem): tải ở máy tính, kiểm ở điện thoại
+  const desk = await newPage(browser);
+  await loginCw(desk, E, U.employee);
+  const draftId = await draftSample(desk, E, `${RUN}d`);
+  await desk.context().close();
+
   const page = await newPage(browser, 390);
   await loginCw(page, E, U.employee);
   const noOverflow = () =>
@@ -214,11 +221,18 @@ test("M01-M04 · điện thoại 390px: màn ký và trang HĐ không tràn ngan
   expect(await noOverflow()).toBe(true);
   const view = page.getByTestId("cfile-view").first();
   expect((await view.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
-  await page.goto(`${E.cw}/contracts/sign/${id}`);
+
+  // màn ký ở chế độ chuẩn bị (HĐ nháp)
+  await page.goto(`${E.cw}/contracts/sign/${draftId}`);
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 30_000 });
   expect(await noOverflow()).toBe(true);
   for (const b of await page.getByRole("button", { name: /^(Lưu|Quay lại|Đóng)/ }).all())
     expect((await b.boundingBox())?.height ?? 44).toBeGreaterThanOrEqual(44);
+
+  // màn ký ở chế độ chỉ xem (HĐ đã ký xong): câu báo gọn, không tràn ngang
+  await page.goto(`${E.cw}/contracts/sign/${id}`);
+  await expect(page.getByText(/Bạn chưa đến lượt ký/)).toBeVisible({ timeout: 30_000 });
+  expect(await noOverflow()).toBe(true);
   await page.context().close();
 });
 
