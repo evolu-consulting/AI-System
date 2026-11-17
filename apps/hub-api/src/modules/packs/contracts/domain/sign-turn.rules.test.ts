@@ -44,7 +44,7 @@ describe("signTurnOf (BR-D1)", () => {
       run_id: "run",
     });
   });
-  test("thành viên Group duyệt ⇒ approve; người ngoài ⇒ không", () => {
+  test("thành viên Group duyệt ⇒ approve, người ngoài ⇒ không", () => {
     expect(signTurnOf(step([review("opinion_plus")], 0, { myGroups: [G1] }), U2).allowed).toBe(
       true,
     );

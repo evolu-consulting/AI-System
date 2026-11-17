@@ -40,7 +40,7 @@ Trạng thái gộp: chưa gộp
 ### ADDED pack-contracts/ky-tren-tai-lieu.md
 #### Yêu cầu: Lượt ký theo bước đang mở (BR-D1)
 Chỉ người được giao / đã nhận / thuộc Group của bước duyệt có bằng chứng (hoặc Toàn quyền) hoặc người ký công ty của bước Ký `ondoc` có lượt ký.
-- Kịch bản: khi người ngoài nhóm bước mở màn ký thì không có lượt [test: apps/hub-api/src/modules/packs/contracts/domain/sign-turn.rules.test.ts » thành viên Group duyệt ⇒ approve; người ngoài ⇒ không]
+- Kịch bản: khi người ngoài nhóm bước mở màn ký thì không có lượt [test: apps/hub-api/src/modules/packs/contracts/domain/sign-turn.rules.test.ts » thành viên Group duyệt ⇒ approve, người ngoài ⇒ không]
 - Kịch bản: khi người ký công ty mở bước Ký trên tài liệu thì được ký [test: apps/hub-api/src/modules/packs/contracts/domain/sign-turn.rules.test.ts » bước Ký ondoc: người ký (user / thành viên Group) ⇒ sign]
 #### Yêu cầu: Bước Ký trên tài liệu (BR-D3, BR-C4, Q6, Q8)
 Bước Ký `ondoc` không gửi phong bì; xong khi mọi chỗ ký Bên A của người ký công ty đã ký; Bên B không chặn; đã ký đủ từ bước duyệt ⇒ xong ngay.
