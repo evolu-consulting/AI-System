@@ -12,6 +12,7 @@ import {
   meSignatureRoutes,
   SIGNATURE_PROTECTED_PREFIXES,
 } from "./adapters/signature.routes";
+import { signatureStore } from "./adapters/signature.store";
 import { SignatureService } from "./application/signature.service";
 
 export { SIGNATURE_PROTECTED_PREFIXES };
@@ -28,9 +29,8 @@ export function mountSignatures<E extends Env>(
   d: SignaturesMountDeps,
 ): SignatureService {
   const svc = new SignatureService({
-    db: d.db,
+    store: signatureStore(d.db, d.hubAudit),
     admin: companyAdminPort(d.db, d.view),
-    audit: d.hubAudit,
   });
   app.route(ME_SIGNATURE_PREFIX, meSignatureRoutes(svc));
   app.route(COMPANY_PREFIX, companySignatureRoutes(svc));

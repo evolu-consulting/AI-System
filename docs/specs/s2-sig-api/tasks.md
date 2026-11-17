@@ -51,6 +51,8 @@ Không web, không gói contracts, không thêm thư viện. Chạm `app.ts` (3 
 - Mã lỗi mới `SIGNATURE_*` đặt ở `SIGNATURE_API_ERRORS` (contract) và ném bằng `AppError` trực tiếp — chưa gộp vào `HubErrorCode` toàn cục (khuôn i18n lỗi chưa có cho module này; web dịch theo `code`).
 - Audit ghi qua `HubAuditWriter` (tiêm được); `entity_id` của audit thiết lập = null; không ghi ảnh.
 
+- Sửa sau soát (depcruise `ca-application-inward-only`): `application/` chỉ phụ thuộc cổng `application/ports.ts` (`SignatureStore`, `CompanyAdminPort`) + `domain/signature.error.ts`; adapter `signature.store.ts` / `company-admin.ts` cài, `signatures.mount.ts` tiêm, `signature.routes.ts` đổi `SignatureError` → `AppError`. Minor #1 của Opus: policy `admin` ⇒ khoá advisory (tenant:user:kind, cùng khoá `sig_create`) trước `getActive` ở luồng tạo.
+
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 

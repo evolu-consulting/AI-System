@@ -1,6 +1,6 @@
-// CR-181 · lát s2 · use case chữ ký nội bộ. Mỗi use case = MỘT transaction scope người dùng, số câu SQL CỐ ĐỊNH (không phụ thuộc số hàng).
-// Người dùng LUÔN lấy từ JWT (BR-K2): không có tham số user ở tạo/đổi; hàm DB đọc `app.user_id`. Quản trị: kiểm Q15 TRƯỚC khi gọi repo `*AsAdmin`.
-// Audit (BR-G3) ghi cùng tx ⇒ lỗi ghi ⇒ rollback. Ảnh KHÔNG vào audit (chỉ id bản cũ/mới).
+// CR-181 · lát s2 · use case chữ ký nội bộ (lớp 2: chỉ phụ thuộc cổng `./ports`, domain, contracts). Mỗi use case = MỘT transaction scope người dùng
+// (`store.run`), số câu SQL CỐ ĐỊNH (không phụ thuộc số hàng). Người dùng LUÔN lấy từ JWT (BR-K2): không có tham số user ở tạo/đổi; hàm DB đọc
+// `app.user_id`. Quản trị: kiểm Q15 TRƯỚC khi gọi repo `*AsAdmin`. Audit (BR-G3) + chuông ghi cùng tx ⇒ lỗi ⇒ rollback. Ảnh KHÔNG vào audit.
 import type {
   ChangeRequestResponse,
   CreateSignatureBody,
@@ -11,14 +11,7 @@ import type {
   SignatureSettings,
   SignatureSettingsView,
 } from "@ai/contracts/signature";
-import type { Db, Tx } from "@ai/db";
-import { withHubScope } from "@ai/db/hub-scope";
-import { sql } from "drizzle-orm";
-import type { AuthUser } from "../../../lib/auth.middleware";
-import { AppError } from "../../../lib/errors";
-import { dbHubAudit, type HubAuditWriter } from "../../../lib/hub-audit";
-import type { CompanyAdminPort } from "../adapters/company-admin";
-import { signaturesRepo } from "../adapters/signatures.repo";
+import { SignatureError } from "../domain/signature.error";
 import {
   canChangeNow,
   changeNeedsGrant,
@@ -29,36 +22,13 @@ import {
   needsCreate,
 } from "../domain/signature.rules";
 import type { SignatureRecord, SignatureSettingsRecord } from "../domain/signature.types";
+import type { Actor, CompanyAdminPort, SignatureStore } from "./ports";
 
-export type SignatureServiceDeps = {
-  db: Db;
-  admin: CompanyAdminPort;
-  audit?: HubAuditWriter;
-};
-
-type AuditAction =
-  | "signature_created"
-  | "signature_settings_changed"
-  | "signature_change_requested"
-  | "signature_change_granted";
-type AuditBody = {
-  action: AuditAction;
-  entityId: string | null;
-  entityName: string;
-  before: Record<string, unknown> | null;
-  after: Record<string, unknown> | null;
-  summary?: Record<string, unknown>;
-};
+export type SignatureServiceDeps = { store: SignatureStore; admin: CompanyAdminPort };
 
 const PNG_PREFIX = "data:image/png;base64,";
-const scopeOf = (u: AuthUser) => ({
-  kind: "user" as const,
-  tenantId: u.tenantId,
-  userId: u.userId,
-});
-const deny = (code: string, status: 403 | 404 | 409 | 413 | 415 | 422, msg: string) =>
-  new AppError(code, status, msg);
-const notAdmin = () => deny("SIGNATURE_FORBIDDEN", 403, "Only company admins can do this");
+const notAdmin = () =>
+  new SignatureError("SIGNATURE_FORBIDDEN", 403, "Only company admins can do this");
 
 const itemOf = (r: SignatureRecord) => ({
   id: r.id,
@@ -76,53 +46,16 @@ const viewOf = (rec: SignatureSettingsRecord, canEdit: boolean): SignatureSettin
   can_edit: canEdit,
 });
 
-/** Mã SQLSTATE của lỗi DB (Drizzle bọc lỗi postgres.js ở `cause`). */
-function pgCode(err: unknown): string | null {
-  let e: unknown = err;
-  for (let i = 0; e && typeof e === "object" && i < 5; i++) {
-    const c = (e as { code?: unknown }).code;
-    if (typeof c === "string" && /^[0-9A-Z]{5}$/.test(c)) return c;
-    e = (e as { cause?: unknown }).cause;
-  }
-  return null;
-}
-
 export class SignatureService {
-  readonly #audit: HubAuditWriter;
-  constructor(private readonly d: SignatureServiceDeps) {
-    this.#audit = d.audit ?? dbHubAudit;
-  }
-
-  /** Tên hiển thị + username của người thao tác (một câu) — để audit/chuông. */
-  async #who(tx: Tx, u: AuthUser): Promise<{ username: string | null; name: string }> {
-    const [r] = await tx.execute<{ username: string; name: string }>(
-      sql`select username, coalesce(nullif(display_name, ''), username) as name from admin.users
-        where id = ${u.userId}::uuid and tenant_id = ${u.tenantId}::uuid`,
-    );
-    return { username: r?.username ?? null, name: r?.name ?? "" };
-  }
-
-  #log(tx: Tx, u: AuthUser, username: string | null, row: AuditBody): Promise<void> {
-    return this.#audit.insert(tx, {
-      tenantId: u.tenantId,
-      actorId: u.userId,
-      actorUsername: username,
-      actorRole: u.role,
-      entity: "signature",
-      hubConfigVersion: null,
-      summary: {},
-      ...row,
-    });
-  }
+  constructor(private readonly d: SignatureServiceDeps) {}
 
   /** `GET /me/signature` — 5 câu SQL (scope, chữ ký đang dùng, thiết lập, lịch sử, trạng thái xin đổi). */
-  getMine(u: AuthUser): Promise<MySignatureView> {
-    return withHubScope(this.d.db, scopeOf(u), async (tx) => {
-      const r = signaturesRepo(tx);
-      const active = await r.getActiveAll();
-      const { settings } = await r.getSettings();
-      const history = await r.listHistory(null, 20);
-      const change = changeStateOf(await r.getChangeState());
+  getMine(u: Actor): Promise<MySignatureView> {
+    return this.d.store.run(u, async ({ repo }) => {
+      const active = await repo.getActiveAll();
+      const { settings } = await repo.getSettings();
+      const history = await repo.listHistory(null, 20);
+      const change = changeStateOf(await repo.getChangeState());
       const must = needsCreate(settings, active);
       return {
         settings,
@@ -143,26 +76,41 @@ export class SignatureService {
     });
   }
 
-  /** `POST /me/signature` — ≤ 7 câu SQL cố định (kể cả quyền đổi + audit). */
-  create(u: AuthUser, body: CreateSignatureBody): Promise<CreateSignatureResponse> {
+  /** `POST /me/signature` — ≤ 8 câu SQL cố định (kể cả khoá, quyền đổi, audit). */
+  create(u: Actor, body: CreateSignatureBody): Promise<CreateSignatureResponse> {
     const png = Buffer.from(body.png, "base64");
     const chk = checkPng(png);
-    if (chk === "too_large") throw deny("SIGNATURE_TOO_LARGE", 413, "Signature image too large");
-    if (chk === "not_png") throw deny("SIGNATURE_NOT_PNG", 415, "Signature image must be PNG");
-    return withHubScope(this.d.db, scopeOf(u), async (tx) => {
-      const r = signaturesRepo(tx);
-      const { settings } = await r.getSettings();
+    if (chk === "too_large")
+      throw new SignatureError("SIGNATURE_TOO_LARGE", 413, "Signature image too large");
+    if (chk === "not_png")
+      throw new SignatureError("SIGNATURE_NOT_PNG", 415, "Signature image must be PNG");
+    return this.d.store.run(u, async (tx) => {
+      const { repo } = tx;
+      const { settings } = await repo.getSettings();
       if (!kindAllowed(settings, body.kind))
-        throw deny("SIGNATURE_INITIALS_NOT_ALLOWED", 422, "Separate initials are not enabled");
+        throw new SignatureError(
+          "SIGNATURE_INITIALS_NOT_ALLOWED",
+          422,
+          "Separate initials are not enabled",
+        );
       if (!settings.methods.includes(body.method))
-        throw deny("SIGNATURE_METHOD_NOT_ALLOWED", 422, "Creation method not allowed");
-      const existing = await r.getActive(body.kind);
+        throw new SignatureError(
+          "SIGNATURE_METHOD_NOT_ALLOWED",
+          422,
+          "Creation method not allowed",
+        );
+      // Policy `admin`: khoá (người, loại) TRƯỚC khi đọc bản đang dùng ⇒ hai lần tạo đồng thời không cùng thấy «lần đầu» (miễn quyền đổi).
+      if (settings.change_policy === "admin") await tx.lockSignature(body.kind);
+      const existing = await repo.getActive(body.kind);
       // Lần tạo đầu luôn được; đổi khi policy `admin` ⇒ tiêu MỘT quyền đổi trong CÙNG tx (lỗi sau đó ⇒ rollback ⇒ quyền còn nguyên).
-      if (changeNeedsGrant(settings, existing) && !(await r.consumeGrant()))
-        throw deny("SIGNATURE_CHANGE_NOT_ALLOWED", 403, "Signature change requires admin approval");
-      const made = await r.create(body.kind, body.method, png);
-      const who = await this.#who(tx, u);
-      await this.#log(tx, u, who.username, {
+      if (changeNeedsGrant(settings, existing) && !(await repo.consumeGrant()))
+        throw new SignatureError(
+          "SIGNATURE_CHANGE_NOT_ALLOWED",
+          403,
+          "Signature change requires admin approval",
+        );
+      const made = await repo.create(body.kind, body.method, png);
+      await tx.audit({
         action: "signature_created",
         entityId: made.id,
         entityName: body.kind,
@@ -182,59 +130,56 @@ export class SignatureService {
   }
 
   /** `POST /me/signature/change-request` — 1 câu tìm người nhận + ≤ 7 câu trong tx (chuông cùng tx). `created=false` ⇒ không báo lại. */
-  async requestChange(u: AuthUser): Promise<{ created: boolean; body: ChangeRequestResponse }> {
+  async requestChange(u: Actor): Promise<{ created: boolean; body: ChangeRequestResponse }> {
     const recipients = await this.d.admin.recipients(u.tenantId, u.userId);
-    return withHubScope(this.d.db, scopeOf(u), async (tx) => {
-      const r = signaturesRepo(tx);
-      const { settings } = await r.getSettings();
-      const active = await r.getActiveAll();
+    return this.d.store.run(u, async (tx) => {
+      const { repo } = tx;
+      const { settings } = await repo.getSettings();
+      const active = await repo.getActiveAll();
       if (!changeRequestApplies(settings, active))
-        throw deny("SIGNATURE_CHANGE_NOT_NEEDED", 409, "No admin approval needed");
-      const g = await r.requestChange();
+        throw new SignatureError("SIGNATURE_CHANGE_NOT_NEEDED", 409, "No admin approval needed");
+      const g = await repo.requestChange();
       const state: ChangeRequestResponse = {
         change: g.grantedAt === null ? "requested" : "granted",
         requested_at: g.requestedAt,
       };
       if (!g.fresh) return { created: false, body: state };
-      const who = await this.#who(tx, u);
-      await this.#log(tx, u, who.username, {
+      const who = await tx.who();
+      await tx.audit({
         action: "signature_change_requested",
         entityId: g.id,
         entityName: "change-request",
         before: null,
         after: { user_id: u.userId },
       });
-      if (recipients.length > 0) {
-        const rows = recipients.map((id) => ({
+      await tx.bell(
+        recipients.map((id) => ({
           user_id: id,
           kind: "signature.change_requested",
           title: "Xin đổi chữ ký",
           body: `${who.name} xin đổi chữ ký nội bộ.`.slice(0, 2000),
           link: "/settings/signature",
           dedup_key: `sig-change:${g.id}`,
-        }));
-        await tx.execute(sql`select notify.enqueue('hub', ${JSON.stringify(rows)}::jsonb)`);
-      }
+        })),
+      );
       return { created: true, body: state };
     });
   }
 
   /** `GET /company/signature-settings` — mọi thành viên (xem trước). 2 câu SQL (+ tra gói từ cache). */
-  async getSettings(u: AuthUser): Promise<SignatureSettingsView> {
+  async getSettings(u: Actor): Promise<SignatureSettingsView> {
     const canEdit = await this.d.admin.isAdmin(u);
-    const rec = await withHubScope(this.d.db, scopeOf(u), (tx) => signaturesRepo(tx).getSettings());
+    const rec = await this.d.store.run(u, ({ repo }) => repo.getSettings());
     return viewOf(rec, canEdit);
   }
 
   /** `PUT /company/signature-settings` — chỉ quản trị (Q15). 5 câu SQL. */
-  async putSettings(u: AuthUser, next: SignatureSettings): Promise<SignatureSettingsView> {
+  async putSettings(u: Actor, next: SignatureSettings): Promise<SignatureSettingsView> {
     if (!(await this.d.admin.isAdmin(u))) throw notAdmin();
-    return withHubScope(this.d.db, scopeOf(u), async (tx) => {
-      const r = signaturesRepo(tx);
-      const before = await r.getSettings();
-      const after = await r.putSettingsAsAdmin(next);
-      const who = await this.#who(tx, u);
-      await this.#log(tx, u, who.username, {
+    return this.d.store.run(u, async (tx) => {
+      const before = await tx.repo.getSettings();
+      const after = await tx.repo.putSettingsAsAdmin(next);
+      await tx.audit({
         action: "signature_settings_changed",
         entityId: null,
         entityName: "settings",
@@ -246,11 +191,9 @@ export class SignatureService {
   }
 
   /** `GET /company/signature-change-requests` — chỉ quản trị. 2 câu SQL. */
-  async listRequests(u: AuthUser, limit: number): Promise<SignatureChangeList> {
+  async listRequests(u: Actor, limit: number): Promise<SignatureChangeList> {
     if (!(await this.d.admin.isAdmin(u))) throw notAdmin();
-    const rows = await withHubScope(this.d.db, scopeOf(u), (tx) =>
-      signaturesRepo(tx).listChangeRequestsAsAdmin(limit),
-    );
+    const rows = await this.d.store.run(u, ({ repo }) => repo.listChangeRequestsAsAdmin(limit));
     return {
       items: rows.map((x) => ({
         user_id: x.userId,
@@ -263,39 +206,30 @@ export class SignatureService {
   }
 
   /** `POST /company/signature-change-grants` — chỉ quản trị; không tự cấp cho mình. ≤ 6 câu SQL. `created=false` ⇒ đã cho phép từ trước. */
-  async grant(
-    u: AuthUser,
-    userId: string,
-  ): Promise<{ created: boolean; body: GrantChangeResponse }> {
+  async grant(u: Actor, userId: string): Promise<{ created: boolean; body: GrantChangeResponse }> {
     if (!(await this.d.admin.isAdmin(u))) throw notAdmin();
-    return withHubScope(this.d.db, scopeOf(u), async (tx) => {
-      const r = signaturesRepo(tx);
-      const g = await r.grantChangeAsAdmin(userId).catch((e: unknown) => {
-        const code = pgCode(e);
-        if (code === "P0002") throw deny("SIGNATURE_USER_NOT_FOUND", 404, "User not found");
-        if (code === "42501")
-          throw deny("SIGNATURE_SELF_GRANT", 403, "Admins cannot grant themselves");
-        throw e;
-      });
+    return this.d.store.run(u, async (tx) => {
+      const g = await tx.repo.grantChangeAsAdmin(userId);
       if (g.grantedAt === null) throw new Error("sig_change_grant: thiếu granted_at");
       if (g.fresh) {
-        const who = await this.#who(tx, u);
-        await this.#log(tx, u, who.username, {
+        const who = await tx.who();
+        await tx.audit({
           action: "signature_change_granted",
           entityId: g.id,
           entityName: "change-grant",
           before: { user_id: userId, granted: false },
           after: { user_id: userId, granted: true, granted_by: u.userId },
         });
-        const row = {
-          user_id: userId,
-          kind: "signature.change_granted",
-          title: "Bạn được đổi chữ ký",
-          body: `${who.name} đã cho phép bạn đổi chữ ký nội bộ một lần.`.slice(0, 2000),
-          link: "/settings/signature",
-          dedup_key: `sig-grant:${g.id}`,
-        };
-        await tx.execute(sql`select notify.enqueue('hub', ${JSON.stringify([row])}::jsonb)`);
+        await tx.bell([
+          {
+            user_id: userId,
+            kind: "signature.change_granted",
+            title: "Bạn được đổi chữ ký",
+            body: `${who.name} đã cho phép bạn đổi chữ ký nội bộ một lần.`.slice(0, 2000),
+            link: "/settings/signature",
+            dedup_key: `sig-grant:${g.id}`,
+          },
+        ]);
       }
       return { created: g.fresh, body: { user_id: userId, granted_at: g.grantedAt } };
     });
