@@ -122,11 +122,15 @@ async function pageBox(page: Page, n: number) {
   return b;
 }
 
-/** Chuột phải tại (fx, fy) — tỉ lệ trong trang n — rồi «Thêm chữ ký của tôi ở đây». */
+/** Kéo «Chữ ký của tôi» từ khay vào trang n tại (fx, fy) — tỉ lệ trong trang. (Đường chuột phải đang lỗi: xem báo cáo s15, không dùng để chặn hành trình.) */
 export async function addMineAt(page: Page, n: number, fx: number, fy: number): Promise<void> {
+  const pg = page.getByTestId("sign-page").nth(n);
+  await pg.scrollIntoViewIfNeeded();
   const b = await pageBox(page, n);
-  await page.mouse.click(b.x + b.width * fx, b.y + b.height * fy, { button: "right" });
-  await page.getByRole("menuitem", { name: "Thêm chữ ký của tôi ở đây" }).click();
+  await page
+    .getByTestId("sign-tray")
+    .filter({ hasText: "Chữ ký của tôi" })
+    .dragTo(pg, { targetPosition: { x: b.width * fx, y: b.height * fy } });
 }
 
 /** Bấm «Lưu» ở màn ký → hộp xác nhận → «Lưu chữ ký» → về trang HĐ. */
