@@ -38,6 +38,13 @@ export function evidenceRuleOf(
   return { mode: m, signature: input.signature, files: input.files };
 }
 
+/** CR-181 s13 · công ty bật ký trên tài liệu ⇒ KHÔNG vẽ chữ ký tay (Q4); máy chủ gắn «Chữ ký của tôi». Tệp thành tuỳ chọn, ý kiến vẫn bắt buộc. */
+export const docSignRule = (r: EvidenceRule): EvidenceRule => ({
+  ...r,
+  mode: "opinion",
+  signature: false,
+});
+
 export type EvidenceIssue = "note" | "noteLong" | "proof" | "tooManyFiles" | null;
 
 /** Nhập đủ chưa: ý kiến 1..4000; `opinion_plus` cần thêm chữ ký hoặc ≥ 1 tệp. */

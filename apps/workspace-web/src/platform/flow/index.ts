@@ -4,7 +4,13 @@ export { flowRuntime, httpFlowRuntime } from "./adapters/http";
 export { flowViewKey, useFlowSubmitForm, useFlowSummary, useFlowView } from "./hooks/use-flow";
 export { claimView, cr127ErrorKey, whoOf } from "./lib/claim";
 export type { EvidenceDraft, EvidenceRule } from "./lib/evidence";
-export { EMPTY_EVIDENCE, evidenceBody, evidenceIssue, evidenceRuleOf } from "./lib/evidence";
+export {
+  docSignRule,
+  EMPTY_EVIDENCE,
+  evidenceBody,
+  evidenceIssue,
+  evidenceRuleOf,
+} from "./lib/evidence";
 export type { FlowRuntime } from "./port";
 export { packOfSlot } from "./port";
 export { ClaimBar } from "./ui/ClaimBar";

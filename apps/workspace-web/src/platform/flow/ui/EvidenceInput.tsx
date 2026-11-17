@@ -1,7 +1,7 @@
 // CR-127 · U4 · BR-20…26 · MỘT ô «Bằng chứng» dùng mọi nơi người dùng quyết một việc: ý kiến + chữ ký tay + tệp, theo chế độ của bước.
 // Tệp/chữ ký tải lên ngay (đường `POST /attachments` sẵn có) và giữ id trong bản nháp; lỗi nói cách khắc phục.
 import { EVIDENCE_FILES_MAX, EVIDENCE_NOTE_MAX } from "@ai/contracts/chat";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AttachField } from "~/components/shared/AttachField";
 import { uploadAttachment } from "~/components/shared/attachments";
@@ -15,6 +15,8 @@ export type EvidenceInputProps = {
   /** Lỗi hiện dưới ô (sau khi người dùng bấm gửi mà thiếu). */
   issue?: EvidenceIssue | undefined;
   disabled?: boolean | undefined;
+  /** CR-181 s13: khung «Ký trên tài liệu» thay ô vẽ chữ ký (công ty bật ký trên tài liệu). */
+  signSlot?: ReactNode;
   /** Tests truyền tải-lên giả. */
   upload?: ((f: File) => Promise<{ id: string; filename: string }>) | undefined;
 };
@@ -26,6 +28,7 @@ export function EvidenceInput({
   issue = null,
   disabled = false,
   upload = uploadAttachment,
+  signSlot,
 }: EvidenceInputProps) {
   const { t } = useTranslation();
   const [names, setNames] = useState<Record<string, string>>({});
@@ -81,6 +84,7 @@ export function EvidenceInput({
           {t("contracts.work.u4.evidence.plusHint")}
         </p>
       )}
+      {signSlot}
       {rule.signature && (
         <div>
           <p className="mb-1 text-sm font-medium">{t("contracts.work.u4.evidence.signature")}</p>

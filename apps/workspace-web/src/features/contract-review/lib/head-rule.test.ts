@@ -260,3 +260,30 @@ describe("CR-157 · nháp lần đầu luôn có «Gửi duyệt» (hoặc lý d
     expect(a.primaryWhyKey).toBeUndefined();
   });
 });
+
+describe("CR-181 s13 · lý do chặn Gửi duyệt do ký", () => {
+  const noView = { confirm: false, approve: false, reject: false };
+  test.each(["sign_no_files", "sign_missing_fields"] as const)("%s chặn kèm lý do riêng", (k) => {
+    const x = headRule({ ...base, submitBlock: k });
+    expect(x.submitBlocked).toBe(true);
+    expect(x.submitBlockKind).toBe(k);
+    expect(x.confirmSave).toBe(false);
+    expect(x.pageConfirmWhy).toBe(k);
+  });
+  test("nút chính khoá kèm câu lý do ký", () => {
+    const x = headRule({ ...base, submitBlock: "sign_no_files" });
+    const a = headActs({ rule: x, view: noView, canDelete: false });
+    expect(a.primary).toBe("pageConfirm");
+    expect(a.primaryWhyKey).toBe("contracts.docsignc.block.sign_no_files");
+  });
+  test("Gửi lại bị khoá bằng lý do ký", () => {
+    const x = headRule({ ...base, round: 1, submitBlock: "sign_missing_fields" });
+    const a = headActs({ rule: x, view: noView, canDelete: false });
+    expect(a.menu.find((m) => m.key === "resubmit")?.whyKey).toBe(
+      "contracts.docsignc.block.sign_missing_fields",
+    );
+  });
+  test("no_flow vẫn như cũ", () => {
+    expect(headRule({ ...base, submitBlock: "no_flow" }).submitBlockKind).toBe("no_flow");
+  });
+});

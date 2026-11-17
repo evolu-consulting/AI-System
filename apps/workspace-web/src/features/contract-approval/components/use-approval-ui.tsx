@@ -11,6 +11,9 @@ import { useTranslation } from "react-i18next";
 import { fetchProducts } from "~/features/contract-form/hooks/use-form-api";
 import { fetchContract } from "~/features/contract-review/hooks/use-review-api";
 import { usePeople } from "~/features/contracts-list/hooks/use-people";
+import { ApproverSignBox } from "~/features/doc-sign/components/contract/SignBox";
+import { useContractSign } from "~/features/doc-sign/hooks/use-contract-sign";
+import { hasSignFiles, myProgress } from "~/features/doc-sign/lib/contract-view";
 import {
   ProductLinkDialog,
   type ProductLinkTarget,
@@ -19,6 +22,7 @@ import {
   ClaimBar,
   claimView,
   decisionTaskOf,
+  docSignRule,
   EvidenceAsk,
   evidenceRuleOf,
   useFlowView,
@@ -97,8 +101,17 @@ export function useApprovalUi(o: {
   const cv = task ? claimView(task) : null;
   const people = usePeople(task !== null);
   const [ev, setEv] = useState<"approve" | "reject" | "return" | null>(null);
-  const ruleOf = (key: string) =>
-    evidenceRuleOf(task?.actions.find((a) => a.key === key)?.input, task?.evidence_mode, key);
+  const { session } = useContractSign(o.id);
+  // CR-181 s13: công ty bật ⇒ bỏ ô vẽ tay; có tệp cần ký của tôi ⇒ khung «Ký trên tài liệu», «Đạt» khoá tới khi ký đủ.
+  const mineSign = session && hasSignFiles(session) ? myProgress(session) : null;
+  const ruleOf = (key: string) => {
+    const r = evidenceRuleOf(
+      task?.actions.find((a) => a.key === key)?.input,
+      task?.evidence_mode,
+      key,
+    );
+    return r && session ? docSignRule(r) : r;
+  };
   const v0 = viewAfterConfirm(ap.approval, confirmed, { write: o.write, hasSource: o.hasSource });
   // Chưa nhận / người khác đang giữ ⇒ khoá nút quyết (lý do hiện ở dải nhận việc ngay dưới).
   const v: ApprovalView = cv?.decideLocked
@@ -183,6 +196,11 @@ export function useApprovalUi(o: {
             rule={ruleOf(ev) as NonNullable<ReturnType<typeof ruleOf>>}
             busy={ap.busy !== null}
             reveal
+            docSign={
+              ev === "approve" && session && mineSign && mineSign.files > 0
+                ? { slot: <ApproverSignBox id={o.id} session={session} />, ready: mineSign.ready }
+                : undefined
+            }
             onCancel={() => setEv(null)}
             onSend={async (body: EvidenceInput) => {
               const r =

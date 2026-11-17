@@ -1,0 +1,54 @@
+{
+  "contracts": {
+    "docsignc": {
+      "strip": "Signers",
+      "chipSigned": "Signed",
+      "chipNone": "No signing place yet",
+      "chipCount": "{{count}} signing places",
+      "prepTitle": "Prepare signing on the document",
+      "chkFile": "At least one file needs signing",
+      "chkFields": "Every file to sign has a place for each signer",
+      "chkFieldsFor": "File \"{{file}}\" needs a place for {{name}}",
+      "prepOpen": "Set signing places",
+      "open": "Open and sign",
+      "boxTitle": "Sign on the document",
+      "boxMine": "You have {{fields}} signing places on {{files}} files",
+      "boxDone": "signed {{signed}}/{{files}} files",
+      "turnTitle": "Sign the contract",
+      "gate": "Sign all your places first, then you can approve",
+      "main": "Main contract",
+      "needsSign": "Needs signing: {{name}}",
+      "needsSignShort": "Needs signing",
+      "placesNone": "Not set",
+      "viewSigned": "View signed copy",
+      "status": {
+        "ref": "Reference",
+        "unsigned": "Not signed",
+        "partial": "Signing",
+        "waitPartner": "Waiting for partner",
+        "done": "Fully signed"
+      },
+      "switchWhy": {
+        "locked": "The contract was sent for approval and can no longer change",
+        "notUploader": "Only the person who uploaded the file can change this",
+        "notPdf": "Only PDF files can be signed — convert to PDF and upload again"
+      },
+      "block": {
+        "sign_no_files": "No file needs signing yet — turn on \"Needs signing\" for at least one PDF",
+        "sign_missing_fields": "Signing places are incomplete — open \"Set signing places\" and add them for each signer"
+      },
+      "err": {
+        "SIGN_NOT_READY": "Cannot send for approval: a file to sign and a place for each signer are required",
+        "SIGN_REQUIRED": "You have not signed all your places — \"Open and sign\", then approve",
+        "DIGITAL_SIGN_NOT_ENABLED": "Digital signature is not enabled for your company — choose Internal signature",
+        "SIGNATURE_MISSING": "You have no signature yet — create one and try again",
+        "SIGN_VERSION_STALE": "Someone just saved a newer copy of this file — reopen it to sign the latest copy",
+        "SIGN_NOT_PDF": "Only PDF files can be signed — convert to PDF and upload again",
+        "SIGN_PDF_ENCRYPTED": "This PDF has a password — remove it and upload again",
+        "SIGN_PDF_INVALID": "This PDF cannot be read — upload another copy",
+        "SIGN_TOO_MANY_PAGES": "The file has more than 50 pages — split it and upload again",
+        "generic": "Could not save, please try again"
+      }
+    }
+  }
+}

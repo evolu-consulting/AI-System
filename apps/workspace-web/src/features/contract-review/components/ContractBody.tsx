@@ -23,6 +23,10 @@ import { VersionsPanels } from "~/features/contract-versions/components/Versions
 import { versionGate } from "~/features/contract-versions/lib/versions";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
 import { shortName } from "~/features/contracts-list/lib/list-model";
+import { PrepCard } from "~/features/doc-sign/components/contract/PrepCard";
+import { SignTurnCard } from "~/features/doc-sign/components/contract/SignBox";
+import { SignersStrip } from "~/features/doc-sign/components/contract/SignersStrip";
+import { useContractSign } from "~/features/doc-sign/hooks/use-contract-sign";
 import { FramePanel } from "~/features/frame-panel/components/FramePanel";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
@@ -33,7 +37,7 @@ import { PromoteDeal } from "~/features/promote-deal/components/PromoteDeal";
 import { contractKey, fileHref, patchContractFields } from "../api";
 import type { useInfoForm } from "../hooks/use-info-form";
 import { useMemberNames } from "../hooks/use-manage";
-import { headRule } from "../lib/head-rule";
+import { headRule, SUBMIT_BLOCK_KEY } from "../lib/head-rule";
 import { saveLabelKey } from "../lib/review";
 import { saveErrorText } from "../lib/save-error";
 import { ContractHead } from "./ContractHead";
@@ -90,6 +94,10 @@ export function ContractBody(p: {
   useEffect(() => {
     if (ap.msg) toast(ap.msg);
   }, [ap.msg]);
+  const { session } = useContractSign(id);
+  // CR-181 s9: Gửi duyệt bị chặn vì ký ⇒ nút «Xác nhận» của thẻ duyệt cũng khoá (cùng một lý do, ở nút chính của trang).
+  const signBlock = String(c.submit_block ?? "").startsWith("sign_");
+  const apView = signBlock ? { ...ap.view, confirm: false } : ap.view;
   const rule = headRule({
     status: c.status,
     extractState: c.extract_state,
@@ -100,7 +108,7 @@ export function ContractBody(p: {
     hold: c.hold !== null,
     approvalLoaded: ap.loaded,
     approvalStep: ap.step,
-    approvalConfirm: ap.view.confirm,
+    approvalConfirm: apView.confirm,
     edited: info.edited,
     submitted: ap.submitted,
     submitBlock: c.submit_block ?? null,
@@ -183,7 +191,7 @@ export function ContractBody(p: {
                 reconcileBlock={manualBlock}
                 approval={{
                   ...ap.act,
-                  view: ap.view,
+                  view: apView,
                   busy: ap.busy || info.busy,
                   pageConfirm: () => void info.confirmSave.start(),
                   saveDraft: () => void info.save(),
@@ -194,8 +202,15 @@ export function ContractBody(p: {
           />
           {rule.submitBlocked && (
             <p role="status" data-testid="submit-blocked" className="mb-3 text-sm text-late">
-              {t("contracts.u5.err.NO_APPROVAL_FLOW")}
+              {t(SUBMIT_BLOCK_KEY[rule.submitBlockKind ?? "no_flow"])}
             </p>
+          )}
+          {session && <SignersStrip session={session} />}
+          {session && c.status === "draft" && session.mode === "prep" && (
+            <PrepCard id={id} session={session} />
+          )}
+          {session?.turn.allowed && session.turn.step === "sign" && (
+            <SignTurnCard id={id} session={session} />
           )}
           <HeadBanner kind={rule.banner} c={c} partner={partner} />
           <ManualBanner

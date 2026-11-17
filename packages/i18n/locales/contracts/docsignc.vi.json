@@ -1,0 +1,54 @@
+{
+  "contracts": {
+    "docsignc": {
+      "strip": "Người ký",
+      "chipSigned": "Đã ký",
+      "chipNone": "Chưa có chỗ ký",
+      "chipCount": "{{count}} chỗ ký",
+      "prepTitle": "Chuẩn bị ký trên tài liệu",
+      "chkFile": "Có ít nhất một tệp cần ký",
+      "chkFields": "Mỗi tệp cần ký đã có chỗ ký cho từng người ký",
+      "chkFieldsFor": "Tệp «{{file}}» cần chỗ ký cho {{name}}",
+      "prepOpen": "Chuẩn bị chỗ ký",
+      "open": "Mở và ký",
+      "boxTitle": "Ký trên tài liệu",
+      "boxMine": "Bạn có {{fields}} chỗ ký trên {{files}} tệp",
+      "boxDone": "đã ký {{signed}}/{{files}} tệp",
+      "turnTitle": "Ký hợp đồng",
+      "gate": "Ký xong các chỗ ký của bạn rồi mới bấm Đạt được",
+      "main": "Hợp đồng chính",
+      "needsSign": "Cần ký: {{name}}",
+      "needsSignShort": "Cần ký",
+      "placesNone": "Chưa đặt",
+      "viewSigned": "Xem bản đã ký",
+      "status": {
+        "ref": "Tham khảo",
+        "unsigned": "Chưa ký",
+        "partial": "Đang ký",
+        "waitPartner": "Chờ đối tác",
+        "done": "Đã ký đủ"
+      },
+      "switchWhy": {
+        "locked": "Hợp đồng đã gửi duyệt, không đổi được nữa",
+        "notUploader": "Chỉ người tải tệp lên mới đổi được",
+        "notPdf": "Chỉ tệp PDF mới ký được — đổi sang PDF rồi tải lại"
+      },
+      "block": {
+        "sign_no_files": "Chưa có tệp nào cần ký — bật «Cần ký» cho ít nhất một tệp PDF",
+        "sign_missing_fields": "Chưa đặt đủ chỗ ký — mở «Chuẩn bị chỗ ký» để đặt cho từng người ký"
+      },
+      "err": {
+        "SIGN_NOT_READY": "Chưa gửi duyệt được: cần có tệp cần ký và đủ chỗ ký cho từng người ký",
+        "SIGN_REQUIRED": "Bạn chưa ký hết các chỗ ký của mình — hãy «Mở và ký» rồi bấm Đạt",
+        "DIGITAL_SIGN_NOT_ENABLED": "Công ty chưa bật chữ ký số, hãy chọn Chữ ký nội bộ",
+        "SIGNATURE_MISSING": "Bạn chưa có chữ ký — tạo chữ ký rồi thử lại",
+        "SIGN_VERSION_STALE": "Có người vừa lưu bản mới của tệp — mở lại để ký trên bản mới nhất",
+        "SIGN_NOT_PDF": "Chỉ tệp PDF mới ký được — đổi sang PDF rồi tải lại",
+        "SIGN_PDF_ENCRYPTED": "Tệp PDF có mật khẩu — bỏ mật khẩu rồi tải lại",
+        "SIGN_PDF_INVALID": "Không đọc được tệp PDF này — tải lại bản khác",
+        "SIGN_TOO_MANY_PAGES": "Tệp quá 50 trang — tách nhỏ rồi tải lại",
+        "generic": "Chưa lưu được, vui lòng thử lại"
+      }
+    }
+  }
+}

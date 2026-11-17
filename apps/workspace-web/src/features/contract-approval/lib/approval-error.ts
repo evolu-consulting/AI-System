@@ -19,6 +19,12 @@ const KEYS: Record<string, string> = {
   NO_APPROVAL_FLOW: "contracts.u5.err.NO_APPROVAL_FLOW",
   FORBIDDEN: "contracts.approval.errors.notOwner",
   PACK_FORBIDDEN: "contracts.approval.errors.notOwner",
+  // CR-181 s13: ký trên tài liệu
+  SIGN_REQUIRED: "contracts.docsignc.err.SIGN_REQUIRED",
+  SIGN_NOT_READY: "contracts.docsignc.err.SIGN_NOT_READY",
+  SIGNATURE_MISSING: "contracts.docsignc.err.SIGNATURE_MISSING",
+  SIGN_VERSION_STALE: "contracts.docsignc.err.SIGN_VERSION_STALE",
+  DIGITAL_SIGN_NOT_ENABLED: "contracts.docsignc.err.DIGITAL_SIGN_NOT_ENABLED",
   ENGINE_UNAVAILABLE: "contracts.approval.errors.engineUnavailable",
 };
 

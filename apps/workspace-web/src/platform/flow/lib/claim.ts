@@ -79,6 +79,8 @@ export const CR127_ERROR_CODES = [
 ] as const;
 
 export function cr127ErrorKey(code: string | undefined): string | null {
+  if (code === "SIGN_REQUIRED" || code === "SIGNATURE_MISSING" || code === "SIGN_VERSION_STALE")
+    return `contracts.docsignc.err.${code}`; // CR-181 s13
   return code && (CR127_ERROR_CODES as readonly string[]).includes(code)
     ? `contracts.work.u4.err.${code}`
     : null;

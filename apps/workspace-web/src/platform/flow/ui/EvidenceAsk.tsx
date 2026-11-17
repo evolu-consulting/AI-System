@@ -1,7 +1,7 @@
 // CR-127 · U4 · khối «ý kiến + chữ ký + tệp» kèm nút gửi của MỘT hành động quyết (Duyệt/Trả lại/Từ chối): dùng chung thẻ HĐ và trang yêu cầu.
 import type { EvidenceInput as EvidenceBody } from "@ai/contracts/chat";
 import type { FlowActionDef } from "@ai/contracts/flow";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Btn } from "~/components/ui/Btn";
 import {
@@ -23,6 +23,8 @@ export function EvidenceAsk(p: {
   onCancel: () => void;
   /** CR-170: mở từ nút đầu trang ⇒ cuộn tới ô, con trỏ vào ô ý kiến, nổi ô vài giây, kèm câu hướng dẫn. */
   reveal?: boolean;
+  /** CR-181 s13: khung «Ký trên tài liệu» (thay ô vẽ); `ready=false` ⇒ nút quyết khoá kèm lý do. */
+  docSign?: { slot: ReactNode; ready: boolean } | undefined;
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<EvidenceDraft>(EMPTY_EVIDENCE);
@@ -62,11 +64,14 @@ export function EvidenceAsk(p: {
         onChange={setDraft}
         issue={tried ? issue : null}
         disabled={p.busy}
+        signSlot={p.docSign?.slot}
       />
       <div className="flex gap-2">
         <Btn
           variant={ACTION_VARIANT[p.action.style]}
           loading={p.busy}
+          disabled={p.docSign ? !p.docSign.ready : false}
+          {...(p.docSign && !p.docSign.ready ? { reason: t("contracts.docsignc.gate") } : {})}
           data-testid={`request-${p.action.key}-confirm`}
           onClick={() => (issue ? setTried(true) : p.onSend(evidenceBody(draft, p.rule)))}
         >

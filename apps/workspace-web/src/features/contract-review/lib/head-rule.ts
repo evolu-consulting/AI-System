@@ -14,6 +14,20 @@ export type HeadBanner =
   | "inbox"
   | null;
 
+/** NF1 + CR-181 s9: vì sao «Gửi duyệt» bị chặn (`ContractDetail.submit_block`). */
+export type SubmitBlockKind = "no_flow" | "sign_no_files" | "sign_missing_fields";
+const SUBMIT_BLOCKS: ReadonlySet<string> = new Set([
+  "no_flow",
+  "sign_no_files",
+  "sign_missing_fields",
+]);
+/** Lý do chặn ⇒ khoá i18n (câu nghiệp vụ). */
+export const SUBMIT_BLOCK_KEY: Record<SubmitBlockKind, string> = {
+  no_flow: "contracts.u5.err.NO_APPROVAL_FLOW",
+  sign_no_files: "contracts.docsignc.block.sign_no_files",
+  sign_missing_fields: "contracts.docsignc.block.sign_missing_fields",
+};
+
 export type HeadRuleIn = {
   status: ContractStatus;
   extractState: ExtractState;
@@ -36,10 +50,10 @@ export type HeadRuleIn = {
   /** K8: HĐ đối tác gửi tới, công ty chưa có quy trình nhận ⇒ người phụ trách quyết (detail chưa trả trường ⇒ undefined). */
   awaitingDecision?: boolean | undefined;
   /** NF1: công ty chưa có quy trình duyệt khớp ⇒ Gửi duyệt bị chặn (`ContractDetail.submit_block`). */
-  submitBlock?: "no_flow" | null | undefined;
+  submitBlock?: SubmitBlockKind | null | undefined;
 };
 
-export type PageConfirmWhy = "no_flow" | "not_submitter" | "step_open" | null;
+export type PageConfirmWhy = SubmitBlockKind | "not_submitter" | "step_open" | null;
 
 /** Bước thẻ duyệt đã kết thúc (huỷ / từ chối / xong): không còn lượt đang mở ⇒ coi như không có thẻ duyệt. Máy chủ ánh xạ lượt `failed` (đọc AI hỏng) ⇒ `cancelled` (`approval-run.rules` STEP, `cardStepOf`) nên không cần khoá riêng. */
 const ENDED_STEPS: ReadonlySet<string> = new Set(["cancelled", "rejected", "done"]);
@@ -68,6 +82,8 @@ export type HeadRule = {
   pageConfirmWhy: PageConfirmWhy;
   /** NF1 · lý do + bước kế hiện cạnh nút chính khi không Gửi duyệt được (chưa có quy trình): nút chính là "Lưu nháp"; "Gửi lại" bị khoá. */
   submitBlocked: boolean;
+  /** Lý do chặn (khi `submitBlocked`); null = không chặn. */
+  submitBlockKind: SubmitBlockKind | null;
   /** Nút bị khoá vì sao (hiện cạnh nút); null = không khoá. */
   why: "reading" | "failed" | null;
   cancel: "reset" | "back";
@@ -91,18 +107,22 @@ function approvalOff(i: HeadRuleIn): boolean {
 }
 
 /** Vì sao «Gửi duyệt» của trang khoá (nháp lần đầu, không phải nút của thẻ duyệt). */
-function whyOf(i: HeadRuleIn, blocked: boolean, off: boolean): PageConfirmWhy {
-  if (blocked) return "no_flow";
+function whyOf(i: HeadRuleIn, blocked: SubmitBlockKind | null, off: boolean): PageConfirmWhy {
+  if (blocked) return blocked;
   if (!i.can.submit) return "not_submitter";
   return i.approvalLoaded && !off ? "step_open" : null;
 }
+
+const blockKindOf = (b: string | null | undefined): SubmitBlockKind | null =>
+  b && SUBMIT_BLOCKS.has(b) ? (b as SubmitBlockKind) : null;
 
 export function headRule(i: HeadRuleIn): HeadRule {
   const draft = i.status === "draft";
   const ready = i.extractState === "ready";
   const canSave = draft && i.write && !i.superseded && ready;
   const first = canSave && i.round === 0 && !i.submitted;
-  const blocked = canSave && i.submitBlock === "no_flow";
+  const blockKind = canSave ? blockKindOf(i.submitBlock) : null;
+  const blocked = blockKind !== null;
   const off = approvalOff(i);
   const confirmSave = first && off && !i.approvalConfirm && !blocked && i.can.submit;
   return {
@@ -111,7 +131,7 @@ export function headRule(i: HeadRuleIn): HeadRule {
     rename: canSave,
     draftSave: first && !i.approvalConfirm,
     confirmSave,
-    pageConfirmWhy: first && !i.approvalConfirm && !confirmSave ? whyOf(i, blocked, off) : null,
+    pageConfirmWhy: first && !i.approvalConfirm && !confirmSave ? whyOf(i, blockKind, off) : null,
     resubmit: canSave && i.round > 0 && (i.can.submit || blocked),
     withdraw: i.can.withdraw,
     recreate: i.can.recreate,
@@ -121,6 +141,7 @@ export function headRule(i: HeadRuleIn): HeadRule {
     inboxDecision: i.awaitingDecision === true,
     banner: bannerOf(i),
     submitBlocked: blocked,
+    submitBlockKind: blockKind,
     why: draft && i.extractState === "reading" ? "reading" : draft && !ready ? "failed" : null,
     cancel: i.edited ? "reset" : "back",
   };
@@ -145,19 +166,20 @@ export type HeadActKey =
   | "delete";
 
 export type HeadActIn = {
-  rule: Pick<
-    HeadRule,
-    | "sticky"
-    | "resubmit"
-    | "submitBlocked"
-    | "confirmSave"
-    | "pageConfirmWhy"
-    | "withdraw"
-    | "recreate"
-    | "newVersion"
-    | "hold"
-    | "release"
-  >;
+  rule: Partial<Pick<HeadRule, "submitBlockKind">> &
+    Pick<
+      HeadRule,
+      | "sticky"
+      | "resubmit"
+      | "submitBlocked"
+      | "confirmSave"
+      | "pageConfirmWhy"
+      | "withdraw"
+      | "recreate"
+      | "newVersion"
+      | "hold"
+      | "release"
+    >;
   /** Thẻ duyệt (cùng `ApprovalView`): chỉ các cờ cần. */
   view: { confirm: boolean; approve: boolean; reject: boolean; pass?: boolean; back?: boolean };
   canDelete: boolean;
@@ -178,7 +200,7 @@ export type HeadActs = {
 };
 
 const WHY_KEY: Record<NonNullable<PageConfirmWhy>, string> = {
-  no_flow: "contracts.u5.err.NO_APPROVAL_FLOW",
+  ...SUBMIT_BLOCK_KEY,
   not_submitter: "contracts.u5.why.notSubmitter",
   step_open: "contracts.u5.why.stepOpen",
 };
@@ -207,7 +229,9 @@ export function headActs(i: HeadActIn): HeadActs {
     ) ?? null;
   const menu: HeadMenuEntry[] = present
     .filter((k) => k !== primary)
-    .map((key) => (blocked(key) ? { key, whyKey: "contracts.u5.err.NO_APPROVAL_FLOW" } : { key }));
+    .map((key) =>
+      blocked(key) ? { key, whyKey: SUBMIT_BLOCK_KEY[r.submitBlockKind ?? "no_flow"] } : { key },
+    );
   // CR-135 Q2: nháp lần đầu — «Lưu nháp» + «Huỷ» vào menu (đầu danh sách); không có nút chính ⇒ «Lưu nháp» lên làm nút chính.
   let main = primary;
   let primaryWhyKey: string | undefined;

@@ -1,61 +1,23 @@
 // CR-133 · khối «Tài liệu kèm» trên trang chi tiết HĐ — MỘT chỗ cho mọi tệp của HĐ ngoài file chính:
-// (1) tệp gắn vào HĐ (thêm / gỡ / mở-tải), (2) tệp kèm các bước duyệt (chỉ đọc). Không đem đi ký (file chính vẫn theo luật PDF khi bật ký số).
+// (1) tệp gắn vào HĐ (thêm / gỡ / mở-tải), (2) tệp kèm các bước duyệt (chỉ đọc). Công ty bật ký trên tài liệu (CR-181 s13) ⇒ bảng có cột Cần ký / Chỗ ký / Tình trạng (SignFilesList).
 
 import type { ContractOwnFile, ContractStepFile } from "@ai/contracts/pack-contracts";
 import { AttachDropzone } from "@ai/web-kit/ui/AttachDropzone";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
-import { lazy, Suspense, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAttachPickLabels } from "~/components/shared/AttachField";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { Skeleton } from "~/components/ui/skeleton";
 import { FileRecordButton } from "~/features/contract-file-record/components/FileRecordButton";
+import { useContractSign, useNeedsSign } from "~/features/doc-sign/hooks/use-contract-sign";
+import { signErrKey } from "~/features/doc-sign/lib/contract-view";
 import { ApiError } from "~/lib/api-error";
 import { fetchOwnFileBlob, fetchStepFileBlob, useContractFiles } from "../hooks/use-contract-files";
 import { errorKey, sizeLabel, sourceKey } from "../lib/files-view";
-
-// Hộp xem nạp lười: chỉ tải khi bấm «Xem» lần đầu (giữ chunk chi tiết HĐ trong ngân sách).
-const FileViewerDialog = lazy(() =>
-  import("~/components/shared/file-viewer/FileViewerDialog").then((m) => ({
-    default: m.FileViewerDialog,
-  })),
-);
-
-/** CR-149 · nút «Xem» + hộp xem chung (ảnh / PDF / Word; loại khác ⇒ tên + «Tải về» trong hộp). */
-function ViewButton({
-  f,
-  cacheKey,
-  load,
-}: {
-  f: { name: string; mime: string; size: number; added_at: string };
-  cacheKey: readonly unknown[];
-  load: (signal: AbortSignal) => Promise<Blob>;
-}) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <Button variant="outline" size="sm" data-testid="cfile-view" onClick={() => setOpen(true)}>
-        {t("contracts.cfiles.view")}
-      </Button>
-      {open && (
-        <Suspense fallback={null}>
-          <FileViewerDialog
-            open={open}
-            onClose={() => setOpen(false)}
-            name={f.name}
-            mime={f.mime}
-            size={sizeLabel(f.size)}
-            uploadedAt={f.added_at}
-            cacheKey={cacheKey}
-            load={load}
-          />
-        </Suspense>
-      )}
-    </>
-  );
-}
+import { SignFilesList } from "./SignFilesList";
+import { ViewButton } from "./ViewButton";
 
 function OwnRow({
   id,
@@ -125,6 +87,8 @@ export function ContractFilesPanel({ id }: { id: string }) {
   const { t } = useTranslation();
   const { list, add, remove } = useContractFiles(id);
   const pick = useAttachPickLabels();
+  const { session } = useContractSign(id);
+  const needs = useNeedsSign(id);
   const [err, setErr] = useState<string | null>(null);
   const data = list.data;
   if (list.isError)
@@ -172,7 +136,14 @@ export function ContractFilesPanel({ id }: { id: string }) {
     });
     if (ok) run(remove.mutateAsync(f.id));
   };
-  const empty = data.files.length === 0 && data.steps.length === 0;
+  const toggle = (fileId: string, on: boolean) => {
+    setErr(null);
+    needs.mutateAsync({ fileId, on }).catch((e) => {
+      const k = signErrKey(e instanceof ApiError ? e.code : undefined);
+      setErr(t(k ?? "contracts.docsignc.err.generic"));
+    });
+  };
+  const empty = data.files.length === 0 && data.steps.length === 0 && !session;
   return (
     <section data-testid="cfiles" className="mb-3 rounded-lg border border-rule bg-panel p-4">
       <div className="flex items-center gap-3">
@@ -208,7 +179,17 @@ export function ContractFilesPanel({ id }: { id: string }) {
           )}
         </p>
       )}
-      {data.files.length > 0 && (
+      {session && (
+        <SignFilesList
+          id={id}
+          session={session}
+          own={data.files}
+          busy={needs.isPending || remove.isPending}
+          onToggle={toggle}
+          onRemove={(f) => void askRemove(f)}
+        />
+      )}
+      {!session && data.files.length > 0 && (
         <ul className="mt-2 divide-y divide-rule" data-testid="cfiles-own">
           {data.files.map((f) => (
             <OwnRow

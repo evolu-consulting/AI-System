@@ -56,4 +56,8 @@ const CODES = new Set([
   "RECONCILE_REQUIRED",
 ]);
 export const execErrorKey = (code: string | undefined): string | null =>
-  code && CODES.has(code) ? `contracts.u5.err.${code}` : null;
+  code === "SIGN_NOT_READY" // CR-181 s13
+    ? "contracts.docsignc.err.SIGN_NOT_READY"
+    : code && CODES.has(code)
+      ? `contracts.u5.err.${code}`
+      : null;
