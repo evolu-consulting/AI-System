@@ -40,6 +40,8 @@ export type SignWorkspaceProps = {
   signImageUrl?: string;
   /** s12 · «Tự đặt theo ĐẠI DIỆN BÊN A/B»: trả các ô đặt được cho tệp đang mở (rỗng = không thấy). Chỉ chế độ chuẩn bị. */
   autoPlace?: (doc: PDFDocumentProxy, sizes: PageSize[]) => Promise<SignItem[]>;
+  /** Khoá nút Lưu cho tệp đang mở (chế độ ký: chưa có chữ ký nào). */
+  saveDisabled?: (fileId: string) => boolean;
   saveLabel: string;
   dirty: boolean;
 };

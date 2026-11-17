@@ -3,7 +3,7 @@ import type { SignSessionOut } from "@ai/contracts/pack-contracts";
 import type { MySignatureView } from "@ai/contracts/signature";
 import { toast } from "@ai/web-kit/ui/toast";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CreateSignatureDialog } from "../components/CreateSignatureDialog";
 import { ConfirmSignDialog, ReadinessDialog } from "../components/SignDialogs";
@@ -42,7 +42,7 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
   const [ready, setReady] = useState<ReturnType<typeof readinessLines> | null>(null);
   const [create, setCreate] = useState(false);
   const [aspect, setAspect] = useState(3);
-  const byFile = useRef<Record<string, SignItem[]>>({});
+  const [byFile, setByFile] = useState<Record<string, SignItem[]>>({});
   const mode = s.mode === "prep" ? "prep" : "sign";
   const all = useMemo(() => signFiles(s), [s]);
   const initial = useMemo(() => {
@@ -88,11 +88,12 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
     return image ? [{ id: "mine", type: "mark", imageUrl: image, aspect }] : [];
   }, [mode, signers, image, aspect]);
   const onChange = useCallback((f: string, items: SignItem[]) => {
-    byFile.current[f] = items;
+    setByFile((cur) => ({ ...cur, [f]: items }));
     setDirty(true);
   }, []);
-  const list = (f: string) => byFile.current[f] ?? initial[f] ?? [];
-  const left = openFields({ ...initial, ...byFile.current });
+  const all2 = useMemo(() => ({ ...initial, ...byFile }), [initial, byFile]);
+  const list = (f: string) => all2[f] ?? [];
+  const left = openFields(all2);
 
   const finish = async () => {
     const fresh = await q.session.refetch();
@@ -123,11 +124,13 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
         onError: fail,
       },
     );
-  const doSign = (f: string) =>
+  const doSign = (f: string) => {
+    const body = buildSignBody(list(f), kind, (mine?.settings.caption ?? []).length > 0);
+    if (body.marks.length === 0) return setConfirm(null);
     q.sign.mutate(
       {
         fileId: f,
-        body: buildSignBody(list(f), kind, (mine?.settings.caption ?? []).length > 0),
+        body,
       },
       {
         onSuccess: () => {
@@ -141,6 +144,7 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
         },
       },
     );
+  };
   const autoPlace = useCallback(
     async (doc: PDFDocumentProxy, sizes: PageSize[]) =>
       itemsFromAnchors(await readAnchors(doc), signers, sizes),
@@ -156,7 +160,10 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
       <SignWorkspace
         files={files}
         mode={mode}
-        items={initial}
+        items={all2}
+        saveDisabled={(f) =>
+          mode === "sign" && buildSignBody(list(f), kind, false).marks.length === 0
+        }
         trays={trays}
         signatureKinds={[
           { kind: "internal" },

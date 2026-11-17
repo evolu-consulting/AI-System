@@ -98,6 +98,7 @@ export function SignWorkspace(p: SignWorkspaceProps) {
         kind={p.kind}
         onKind={p.onKindChange}
         saveLabel={p.saveLabel}
+        saveDisabled={p.saveDisabled?.(fileId)}
         onSave={() => p.onSave(fileId)}
         onClose={close}
       />

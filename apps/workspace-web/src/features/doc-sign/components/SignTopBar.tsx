@@ -42,6 +42,8 @@ export function SignTopBar(p: {
   onKind: (k: SignatureKind) => void;
   saveLabel: string;
   onSave: () => void;
+  /** Không có gì để lưu ⇒ khoá nút, không gửi request. */
+  saveDisabled?: boolean;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -94,7 +96,9 @@ export function SignTopBar(p: {
           <TrayChip key={tr.id} tray={tr} />
         ))}
       </div>
-      <Button onClick={p.onSave}>{p.saveLabel}</Button>
+      <Button disabled={p.saveDisabled} onClick={p.onSave}>
+        {p.saveLabel}
+      </Button>
     </header>
   );
 }
