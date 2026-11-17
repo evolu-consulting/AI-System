@@ -9,6 +9,8 @@ import { pathOf, tailOf } from "./app-path";
 export const CONTRACTS_PAGES: ReadonlySet<string> = new Set([
   "list",
   "c",
+  "sign", // CR-181 · màn ký `/contracts/sign/:id` (không phải id HĐ cũ ⇒ không đổi thành `/contracts/c/sign/…`)
+  "signed", // CR-181 · «Xem bản đã ký» `/contracts/signed/:id`
   "partners",
   "products",
   "settings",

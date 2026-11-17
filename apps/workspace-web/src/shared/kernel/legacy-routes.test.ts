@@ -17,6 +17,13 @@ describe("cr120-handson-fixes · route gốc của app không bị coi là id H�
     expect(legacyTarget("/contracts/messages")).toBeNull();
     expect(legacyTarget("/contracts/messages?c=1")).toBeNull();
   });
+  test("CR-181: /contracts/sign|signed/<id> là màn ký / xem bản đã ký, không đổi thành /contracts/c/…", () => {
+    expect(legacyTarget("/contracts/sign/abc")).toBeNull();
+    expect(legacyTarget("/contracts/signed/abc?file=f")).toBeNull();
+  });
+  test("CR-181: /my-signature là trang gốc của app, không bị chuyển hướng", () => {
+    expect(legacyTarget("/my-signature")).toBeNull();
+  });
   test("/contracts/org là «Sơ đồ tổ chức», không phải id hợp đồng", () => {
     expect(legacyTarget("/contracts/org")).toBeNull();
   });

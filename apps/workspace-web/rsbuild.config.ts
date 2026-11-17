@@ -37,6 +37,10 @@ export const proxy = {
   "/tenants": HUB_URL,
   // CR-118 N3: SSE `/me/stream` (config.changed) của hub; route SPA không dùng tiền tố này.
   "/me/stream": HUB_URL,
+  // CR-181 · chữ ký nội bộ: `/me/signature*` (của tôi) + `/company/signature-*` (cài đặt công ty) là API lõi của hub, gọi tương đối từ web.
+  // `/company/signature-` thu hẹp đúng tiền tố API (không nuốt route SPA `/company…` nếu sau này có).
+  "/me/signature": HUB_URL,
+  "/company/signature-": HUB_URL,
   "/notifications": spaNavigation,
   // M2-chat · trợ lý: hội thoại (E6/E12 SSE) + dừng run (E15) của Agent Hub.
   // CR-147b · hồ sơ người (`/people`: avatar, ảnh bìa, thẻ người theo lô); route SPA không dùng tiền tố này.

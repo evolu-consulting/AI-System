@@ -77,4 +77,22 @@ describe("kit prod · nginx web 8081 không đụng /contracts/*", () => {
     expect(hits("/notifications").length).toBeGreaterThan(0);
     expect(server).toContain("rewrite ^ /index.html last");
   });
+  // CR-181: API chữ ký nội bộ của hub phải đến được hub ở MỌI lớp chuyển tiếp (dev/preview rsbuild + nginx prod, cũng là web của bản test);
+  // thiếu một lớp ⇒ trình duyệt gọi vào web và nhận index.html. Danh sách đường lấy từ `signature.routes.ts` (me/company).
+  test("CR-181: /me/signature* và /company/signature-* có trong nginx web 8081 và proxy rsbuild, còn /my-signature (trang SPA) thì không", () => {
+    const api = [
+      "/me/signature",
+      "/me/signature/change-request",
+      "/company/signature-settings",
+      "/company/signature-change-requests",
+      "/company/signature-change-grants",
+    ];
+    const keys = Object.keys(proxy);
+    for (const p of api) {
+      expect(hits(p).length).toBeGreaterThan(0);
+      expect(keys.some((k) => p.startsWith(k))).toBe(true);
+    }
+    expect(hits("/my-signature")).toEqual([]);
+    expect(keys.some((k) => "/my-signature".startsWith(k))).toBe(false);
+  });
 });
