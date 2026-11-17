@@ -4,7 +4,7 @@
 // Viết theo khuôn e2e/cr181/sign-prep-and-sign.spec.ts; chưa chạy (điều phối chạy cuối đợt).
 import { expect, test } from "@playwright/test";
 import { envOf, loginCw, newPage, SPEC_TENANT, U } from "../cr127/_cr127-kit";
-import { HEAD, saleSends, stepEventually } from "./_cr181-kit";
+import { addMineAt, HEAD, saleSends, saveSigned, stepEventually } from "./_cr181-kit";
 
 test.describe.configure({ mode: "serial" });
 const E = envOf(SPEC_TENANT.j01);
@@ -45,10 +45,8 @@ test("người duyệt (khác người tạo): «Đạt» khoá tới khi ký đ
 
   await box.getByRole("link", { name: "Mở và ký" }).click();
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 30_000 });
-  await page.getByRole("button", { name: "Bấm để ký" }).first().click();
-  await page.getByRole("button", { name: "Lưu", exact: true }).click();
-  await page.getByRole("button", { name: "Lưu chữ ký" }).click();
-  await expect(page).toHaveURL(new RegExp(`/contracts/c/${id}`), { timeout: 30_000 });
+  await addMineAt(page, 0, 0.5, 0.5);
+  await saveSigned(page, id);
 
   await page.locator("[data-approval=pass], [data-approval=approve]").first().click();
   await page.getByRole("textbox", { name: "Ý kiến" }).fill("Đồng ý");

@@ -48,7 +48,7 @@ test("Lần đầu đăng nhập ⇒ tạo chữ ký ⇒ vào app ⇒ «Chữ k�
   await expect(page.getByRole("heading", { name: "Chữ ký của tôi" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Chữ ký đang dùng" })).toBeVisible();
   await expect(page.getByText("Chưa được gán")).toBeVisible();
-  await expect(page.getByText(/tạo bằng gõ tên/)).toBeVisible();
+  await expect(page.getByText(/tạo bằng gõ tên/).first()).toBeVisible();
 });
 
 test("Điện thoại 390px: một cột, nút Tạo chữ ký mới ≥ 44px", async ({ browser }) => {
