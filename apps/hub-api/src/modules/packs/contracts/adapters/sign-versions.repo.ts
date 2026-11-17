@@ -66,7 +66,8 @@ export function signVersionsRepo(tx: Tx, tenantId: string) {
         for update`);
       if (!lock) return null;
       const marks = JSON.stringify(
-        v.marks.map((m) => ({
+        v.marks.map((m, i) => ({
+          ord: i,
           field_id: m.fieldId,
           placement: m.placement,
           parts: m.parts,
@@ -84,10 +85,10 @@ export function signVersionsRepo(tx: Tx, tenantId: string) {
             ${v.signedBy}::uuid, ${v.kind}, ${v.runId}::uuid from s
           returning id, seq),
         m as (
-          insert into contracts.sign_marks (tenant_id, version_id, signer_id, field_id, placement, parts, user_signature_id, caption)
-          select ${tenantId}::uuid, i.id, ${v.signedBy}::uuid, x.field_id, x.placement, x.parts, x.user_signature_id, x.caption
+          insert into contracts.sign_marks (tenant_id, version_id, signer_id, field_id, placement, parts, user_signature_id, caption, ord)
+          select ${tenantId}::uuid, i.id, ${v.signedBy}::uuid, x.field_id, x.placement, x.parts, x.user_signature_id, x.caption, x.ord
           from i, jsonb_to_recordset(${marks}::jsonb)
-            as x(field_id uuid, placement text, parts jsonb, user_signature_id uuid, caption text)
+            as x(field_id uuid, placement text, parts jsonb, user_signature_id uuid, caption text, ord integer)
           returning id)
         select i.id, i.seq from i`);
       return r ?? null;
@@ -121,7 +122,7 @@ export function signVersionsRepo(tx: Tx, tenantId: string) {
         left join lateral (
           select jsonb_agg(jsonb_build_object('id', k.id, 'signer_id', k.signer_id, 'field_id', k.field_id,
             'placement', k.placement, 'parts', k.parts, 'user_signature_id', k.user_signature_id, 'caption', k.caption,
-            'created_at', k.created_at) order by k.created_at, k.id) as marks
+            'created_at', k.created_at) order by k.ord, k.id) as marks
           from contracts.sign_marks k where k.version_id = v.id and k.tenant_id = ${tenantId}::uuid) m on true
         order by v.seq`),
     /**

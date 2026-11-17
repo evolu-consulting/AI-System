@@ -72,7 +72,8 @@ export function signFieldsRepo(tx: Tx, tenantId: string) {
         d as (
           delete from contracts.sign_fields
           where contract_id = ${contractId}::uuid and file_id = ${fileId}::uuid and tenant_id = ${tenantId}::uuid
-            and signed_version_id is null and id not in (select id from n)
+            and signed_version_id is null
+            and not exists (select 1 from n where n.id = sign_fields.id)
           returning id),
         u as (
           insert into contracts.sign_fields (id, tenant_id, contract_id, file_id, side, signer_kind, signer_ref, label, parts, created_by)
@@ -87,7 +88,7 @@ export function signFieldsRepo(tx: Tx, tenantId: string) {
         select (select count(*) from d)::int as removed, (select count(*) from u)::int as upserted`);
       return r ?? { removed: 0, upserted: 0 };
     },
-    /** Đánh dấu các chỗ (chưa ký) của HĐ là đã ký trong bản `versionId`. Trả số chỗ vừa đánh dấu. */
+    /** Đánh dấu các chỗ (chưa ký) CÙNG TỆP với bản `versionId` (cùng HĐ/công ty) là đã ký trong bản đó. Trả số chỗ vừa đánh dấu. */
     markSigned: async (
       contractId: string,
       fieldIds: readonly string[],
@@ -97,6 +98,8 @@ export function signFieldsRepo(tx: Tx, tenantId: string) {
       const rows = await tx.execute<{ id: string }>(sql`
         update contracts.sign_fields set signed_by = ${by}::uuid, signed_version_id = ${versionId}::uuid
         where contract_id = ${contractId}::uuid and tenant_id = ${tenantId}::uuid and signed_version_id is null
+          and file_id = (select v.file_id from contracts.sign_versions v
+            where v.id = ${versionId}::uuid and v.contract_id = ${contractId}::uuid and v.tenant_id = ${tenantId}::uuid)
           and id in (select jsonb_array_elements_text(${JSON.stringify(fieldIds)}::jsonb)::uuid)
         returning id`);
       return rows.length;

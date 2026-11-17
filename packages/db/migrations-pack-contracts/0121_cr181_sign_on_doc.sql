@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS contracts.sign_docs (
   CONSTRAINT sign_docs_pages_ck CHECK (pages IS NULL OR pages BETWEEN 1 AND 50)
 );
 --> statement-breakpoint
+-- FK RESTRICT từ `contracts.files` (xoá/kiểm tệp) không phải quét cả bảng.
+CREATE INDEX IF NOT EXISTS sign_docs_file_idx ON contracts.sign_docs (file_id, tenant_id);
+--> statement-breakpoint
 SELECT packs.secure_table('contracts', 'sign_docs');
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS contracts.sign_versions (
@@ -52,6 +55,8 @@ CREATE INDEX IF NOT EXISTS sign_versions_latest_idx ON contracts.sign_versions (
   WHERE voided_at IS NULL;
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS sign_versions_run_idx ON contracts.sign_versions (tenant_id, run_id) WHERE run_id IS NOT NULL AND voided_at IS NULL;
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS sign_versions_out_file_idx ON contracts.sign_versions (out_file_id, tenant_id);
 --> statement-breakpoint
 SELECT packs.secure_table('contracts', 'sign_versions');
 --> statement-breakpoint
@@ -98,6 +103,7 @@ CREATE TABLE IF NOT EXISTS contracts.sign_marks (
   parts jsonb NOT NULL,
   user_signature_id uuid NOT NULL,
   caption text,
+  ord integer NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT sign_marks_pkey PRIMARY KEY (id),
   CONSTRAINT sign_marks_version_fk FOREIGN KEY (version_id, tenant_id)
@@ -107,6 +113,6 @@ CREATE TABLE IF NOT EXISTS contracts.sign_marks (
   CONSTRAINT sign_marks_caption_ck CHECK (caption IS NULL OR char_length(caption) <= 500)
 );
 --> statement-breakpoint
-CREATE INDEX IF NOT EXISTS sign_marks_version_idx ON contracts.sign_marks (tenant_id, version_id, created_at, id);
+CREATE INDEX IF NOT EXISTS sign_marks_version_idx ON contracts.sign_marks (tenant_id, version_id, ord, id);
 --> statement-breakpoint
 SELECT packs.secure_table('contracts', 'sign_marks');

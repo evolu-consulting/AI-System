@@ -252,6 +252,31 @@ describe("CR-181 s6 · chỗ ký (sign_fields)", () => {
   });
 });
 
+describe("CR-181 s6 · markSigned theo tệp", () => {
+  it("bản của tệp Y không đánh dấu được chỗ ký của tệp X", async () => {
+    const c = await mkContract();
+    const x = await mkFile();
+    const y = await mkFile();
+    const u = mkUow();
+    await u.tenant(w(U1), async (r) => {
+      await r.docs.set(c, x, true, 2, U1);
+      await r.docs.set(c, y, true, 2, U1);
+    });
+    const fx = field();
+    await u.tenant(w(U1), (r) => r.fields.replaceForFile(c, x, [fx], U1));
+    const vy = await addV(c, y, U1, null);
+    expect(
+      await u.tenant(w(U1), (r) => r.fields.markSigned(c, [fx.id], U1, vy?.id as string)),
+    ).toBe(0);
+    const row = (await u.tenant(w(U1), (r) => r.fields.listByFile(c, x)))[0];
+    expect(row).toMatchObject({ signed_by: null, signed_version_id: null });
+    const vx = await addV(c, x, U1, null, [mark(fx.id)]);
+    expect(
+      await u.tenant(w(U1), (r) => r.fields.markSigned(c, [fx.id], U1, vx?.id as string)),
+    ).toBe(1);
+  });
+});
+
 describe("CR-181 s6 · bản đã ký + dấu (sign_versions, sign_marks)", () => {
   it("seq tăng 1,2,3; latest = bản mới nhất; list kèm dấu; parts khớp schema", async () => {
     const { c, f } = await setup();

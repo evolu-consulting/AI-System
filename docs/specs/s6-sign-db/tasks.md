@@ -26,6 +26,7 @@ Không route HTTP, không luật quyền, không in PDF, không web. Chạm: `pa
 - Unique bản = (tenant_id, contract_id, file_id, seq); `seq` tính trong câu CHÈN SAU khi khoá `sign_docs FOR UPDATE` (câu riêng ⇒ snapshot mới, đua không trùng). `seq` không tái dùng khi void.
 - `replaceForFile` giữ nguyên chỗ ĐÃ ký (lịch sử); chỗ chưa ký không có trong danh sách bị xoá, trùng `id` ⇒ cập nhật (id ổn định cho s8/web).
 - `voidByRun` (Q17) cũng mở lại chỗ đã ký trong các bản bị void (`signed_by`/`signed_version_id` = null) để «gửi lại ký trên bản gốc» ký lại được. Cùng một câu.
+- `sign_marks.ord` giữ thứ tự dấu trong bản (cùng câu chèn ⇒ cùng `created_at`). Index FK: `sign_docs(file_id,tenant_id)`, `sign_versions(out_file_id,tenant_id)`.
 - `sign_marks.field_id` và `user_signature_id` không có FK (lịch sử; hub ở schema khác); `user_signature_id` NOT NULL (dấu luôn từ chữ ký đã lưu — BR-K3); cột người ký tên `signer_id`.
 - `sign_docs.pages` cho phép null (chưa đếm), 1..50; `set(.., pages=null)` giữ số trang cũ.
 - Repo không kiểm trạng thái HĐ/quyền (use case s8); `add`/`set` trả null khi HĐ/tệp không thuộc công ty.
