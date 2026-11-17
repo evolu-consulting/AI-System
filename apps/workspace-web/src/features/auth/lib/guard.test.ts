@@ -139,3 +139,18 @@ describe("bouncesHome · /community khi Bảng tin chưa bật (ADR-0044)", () =
     );
   });
 });
+
+// CR-181 · /my-signature (trang tài khoản dùng chung) không phải «app lạ»: không bị đẩy về home (lỗi: menu «Chữ ký của tôi» hiện Tổng quan).
+describe("bouncesHome · trang tài khoản /my-signature", () => {
+  test("mở được với nhân viên lẫn đối tác, không bị đẩy về home", () => {
+    expect(bouncesHome("/my-signature", { contracts: true, community: true }, "/contracts")).toBe(
+      false,
+    );
+    expect(bouncesHome("/my-signature", { contracts: false, community: true }, "/community")).toBe(
+      false,
+    );
+    expect(bouncesHome("/my-signature", { contracts: true, community: false }, "/community")).toBe(
+      false,
+    );
+  });
+});

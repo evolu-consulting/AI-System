@@ -11,6 +11,9 @@ export const PUBLIC_PATHS: ReadonlySet<string> = new Set([
   "/terms",
 ]);
 
+/** Trang tài khoản dùng chung (cần đăng nhập, mở từ menu người dùng, không thuộc app nào): không bị guard coi là «app lạ» rồi đẩy về home. */
+export const ACCOUNT_PATHS: ReadonlySet<string> = new Set(["/my-signature"]); // CR-181 · «Chữ ký của tôi»
+
 /** Gốc đường dẫn của app: `contracts` → `/contracts`. */
 export const basePathOf = <K extends string>(appKey: K): `/${K}` => `/${appKey}`;
 
@@ -29,7 +32,7 @@ export function tailOf(href: string): string {
 /** Khoá app từ path (`/contracts/c/1` → `contracts`); trang công khai / không có đoạn đầu → null. */
 export function appKeyOf(href: string): string | null {
   const path = pathOf(href);
-  if (PUBLIC_PATHS.has(path)) return null;
+  if (PUBLIC_PATHS.has(path) || ACCOUNT_PATHS.has(path)) return null;
   return /^\/([a-z][a-z0-9-]*)(?:\/|$)/.exec(path)?.[1] ?? null;
 }
 
