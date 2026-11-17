@@ -38,6 +38,8 @@ phụ lục ký sau, kiểm tra tệp. Không thêm thư viện (pdf-lib + fontk
 - Q16 Phông «Gõ họ tên»: Dancing Script (OFL) tự host trong `apps/workspace-web/public/fonts/` — chỉ dùng ở trình duyệt để vẽ ảnh chữ ký.
   Dòng dưới chữ ký in ở máy chủ bằng Be Vietnam Pro (`contracts/adapters/fonts/`).
 - Q17 Trả lại / Từ chối: các bản đã ký của lượt đó bị đánh dấu `voided_at` (không xoá, vẫn xem trong lịch sử); gửi lại ký trên bản gốc.
+- Q18 Ảnh chữ ký lưu nét ĐEN trên nền trong suốt (PNG, đã cắt sát). Màu mực (BR-K4, định dạng hiện hành) áp LÚC IN ở máy chủ bằng `@napi-rs/canvas`
+  (đã có ở hub-api) và lúc xem trước ở web (canvas `source-in`) ⇒ đổi màu mực chỉ ảnh hưởng lần ký sau.
 - Câu hỏi mở của tài liệu (6 thiết lập định dạng, bắt buộc tạo, giáp lai theo tờ… ): dùng mặc định đề xuất của tài liệu.
 
 ## 3. Dữ liệu (migration chỉ THÊM)
