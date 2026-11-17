@@ -1,0 +1,719 @@
+Duyệt và ký giấy tờ trên Evolu
+ · 
+Tóm tắt
+Công ty duyệt và ký giấy tờ ngay trên Evolu: mở tệp, đặt chữ ký lên đúng chỗ (kể cả giáp lai), bấm Lưu. Platform chỉ tạo quy trình mẫu; công ty tự giao người và tự quy định định dạng chữ ký.
+Đã chốt:
+Hai loại chữ ký. Chữ ký nội bộ: hệ thống tự quản lý, miễn phí, dùng cho việc nội bộ. Chữ ký số: mua của nhà cung cấp được cấp phép, dùng khi ký với khách/đối tác.
+Chữ ký nội bộ được tạo ngay lần đầu đăng nhập. Định dạng chữ ký do quản trị công ty cấu hình. Không dùng OTP. Tài khoản đang có mà chưa có chữ ký nội bộ cũng phải tạo ở lần đăng nhập kế tiếp. Các tài khoàn chưa có chữ kí nội bộ cũng sẽ tạo luônChữ ký thuộc về người, nằm ở lõi chung, mọi app dùng chung; chỉ chính người đó dùng được.
+Định dạng chữ ký do quản trị công ty cấu hình. Không dùng OTP. Các tài khoàn chưa có chữ kí nội bộ cũng sẽ tạo luôn
+Người tải lên tự đánh dấu tệp nào «Cần ký»; tệp còn lại chỉ để tham khảo.
+Ký trực tiếp trên tài liệu: đặt chữ ký bất kỳ chỗ nào, kéo, phóng to thu nhỏ, hai cách xem (Từng trang, Xoè quạt) để ký giáp lai, rồi Lưu. Không có «khuôn».
+Người duyệt cũng ký trên tài liệu; ký đủ các tệp cần ký mới bấm Đạt được.
+Platform tạo quy trình mẫu, mỗi bước ghi vai; quản trị công ty giao nhóm cho vai bằng cách bấm vào bước trên sơ đồ. Sơ đồ ở trang quản trị và Sổ Hợp Tác là một.
+Bổ sung sau buổi xem bản mẫu:
+Chuẩn bị chỗ ký: ngoài việc tự chọn chỗ ký, người tải lên tạo sẵn ô chỗ ký trống cho từng người ký (cả đối tác); người ký chỉ việc bấm vào ô để ký.
+Xem bản đã ký: xem lại hợp đồng có chữ ký theo từng phiên bản, danh sách chữ ký bấm vào là nhảy tới chỗ ký.
+Bản mẫu ba vai (sale, giám đốc, đối tác): Ký hợp đồng ba bên.
+Bản mẫu bấm thử: Ký trong Sổ Hợp Tác (giao diện thật, so sánh hiện tại / đề xuất) · Luồng duyệt và giao việc.
+Thuật ngữ
+Mỗi khái niệm dùng đúng một tên, trên màn hình và trong tài liệu.
+ | 
+Tên | 
+Nghĩa
+ | 
+Quy trình mẫu | 
+Chuỗi bước (Duyệt, Ký, rẽ nhánh) do platform tạo, dùng chung cho nhiều công ty
+ | 
+Vai | 
+Chỗ trống trong quy trình mẫu cho «ai làm bước này», ví dụ «Người duyệt cấp 1», «Người ký hợp đồng»
+ | 
+Nhóm | 
+Nhóm người trong công ty, thường là phòng ban; quản trị công ty tạo và thêm người
+ | 
+Giao việc | 
+Việc quản trị công ty chọn nhóm (hoặc một người) cho từng vai
+ | 
+Tệp cần ký | 
+Tệp người tải lên đánh dấu phải có chữ ký; ngược lại là tệp tham khảo
+ | 
+Chữ ký nội bộ | 
+Hình chữ ký của mỗi người, lưu trong hệ thống, dùng cho duyệt và giấy tờ nội bộ. Trên màn hình gọi là «Chữ ký của tôi»
+ | 
+Chữ ký số | 
+Chữ ký bằng chứng thư số mua của nhà cung cấp được cấp phép (USB token hoặc ký từ xa); khoá cả tệp, sửa là lộ
+ | 
+Định dạng chữ ký | 
+Quy định của công ty về cách tạo và cách hiển thị chữ ký nội bộ (mục Chữ ký cá nhân)
+ | 
+Màn ký | 
+Màn toàn màn hình để đặt chữ ký lên các tệp cần ký rồi Lưu
+ | 
+Ký giáp lai | 
+Một chữ ký nằm vắt qua mép nhiều trang, mỗi trang mang một phần; rút hay thay trang là lộ
+ | 
+Ký nháy | 
+Chữ ký nhỏ ở góc từng trang
+ | 
+Bản đã ký | 
+Bản mới của tệp sau khi Lưu, có in chữ ký; bản gốc vẫn giữ
+ | 
+Hồ sơ duyệt | 
+PDF do hệ thống lập: ai duyệt, ký, lúc nào, ý kiến, hình chữ ký, tệp đã ký
+ | 
+Chỗ ký | 
+Ô trống đặt sẵn trên tệp và gán cho đúng một người ký; người đó bấm vào ô là ký. Màu theo bên: tím Bên A, cam Bên B
+ | 
+Chuẩn bị chỗ ký | 
+Việc người tải lên đặt các ô chỗ ký trước khi gửi duyệt
+ | 
+Phiên bản | 
+Mỗi lần ai đó Lưu chữ ký tạo một phiên bản mới của tệp: Bản gốc → Sau khi Giám đốc ký → Sau khi đối tác ký
+Vai trò và quyền
+Mỗi người chỉ làm phần của mình; không ai ký thay, tạo hay xem chữ ký để dùng thay người khác.
+ | 
+Vai | 
+Được làm | 
+Không được làm
+ | 
+Platform | 
+Tạo, sửa, xuất bản quy trình mẫu (bước, nhánh, hạn, vai); gán quy trình cho công ty | 
+Chọn người cụ thể của công ty; xem chữ ký của ai
+ | 
+Quản trị công ty (chủ quản) | 
+Tạo nhóm, mời nhân viên; giao việc trên sơ đồ; cấu hình định dạng chữ ký; bật chữ ký số khi đã mua; «Sao chép để sửa» quy trình mẫu | 
+Tạo hay đổi chữ ký thay nhân viên; ký thay
+ | 
+Thành viên | 
+Xem sơ đồ quy trình và ai làm bước nào; tạo, đổi chữ ký của mình | 
+Sửa giao việc
+ | 
+Người tải lên | 
+Tải hợp đồng và tệp kèm, đánh dấu tệp cần ký, gửi duyệt; sửa khi bị trả lại | 
+Đổi đánh dấu cần ký khi hợp đồng đang duyệt
+ | 
+Người duyệt | 
+Mở tệp, ký lên các tệp cần ký, ghi ý kiến, bấm Đạt / Trả lại / Từ chối | 
+Duyệt bước không được giao
+ | 
+Người ký hợp đồng | 
+Mở tệp, đặt chữ ký, giáp lai, Lưu; dùng chữ ký số nếu quy trình yêu cầu | 
+Ký bằng chữ ký người khác
+ | 
+Đối tác (Bên B) | 
+Ký phần của mình qua link email (đợt 2) | 
+Xem hay sửa phần nội bộ
+Toàn quyền duyệt thay (đã có) vẫn duyệt thay được một bước, nhưng ký bằng chữ ký của chính mình, hồ sơ ghi rõ «duyệt thay».
+Cấu hình
+Platform cấu hình một lần cho mọi công ty; quản trị công ty cấu hình một lần khi công ty mới vào. Không có cấu hình nào lặp lại theo từng hợp đồng.
+ | 
+Ai | 
+Cấu hình gì | 
+Ở đâu | 
+Bao lâu một lần
+ | 
+Platform | 
+Quy trình mẫu: bước, nhánh theo giá trị, hạn, nhắc, vai mỗi bước; bước Ký có dùng chữ ký số hay không | 
+Trang quản trị › Quy trình | 
+Mỗi quy trình một lần
+ | 
+Platform | 
+Gán quy trình cho công ty | 
+Trang quản trị › Quy trình | 
+Mỗi công ty một lần
+ | 
+Quản trị công ty | 
+Nhóm và thành viên | 
+Trang quản trị › Nhóm | 
+Khi công ty mới vào, sau đó khi đổi người
+ | 
+Quản trị công ty | 
+Giao việc: mỗi vai chọn nhóm hoặc một người | 
+Sổ Hợp Tác › Cài đặt › Quy trình duyệt (bấm vào bước trên sơ đồ) | 
+Mỗi quy trình một lần
+ | 
+Quản trị công ty | 
+Định dạng chữ ký nội bộ | 
+Cài đặt › Chữ ký (nhóm Chung) | 
+Một lần
+ | 
+Quản trị công ty | 
+Bật chữ ký số, chọn nhà cung cấp, ai được dùng chữ ký số của công ty | 
+Cài đặt › Chữ ký (nhóm Chung) | 
+Khi công ty mua chữ ký số
+ | 
+Người tải lên | 
+Tệp nào cần ký | 
+Trang hợp đồng › Tài liệu kèm | 
+Mỗi hợp đồng (không phải cấu hình, là một thao tác khi tải lên)
+Gán quy trình cho công ty mà còn vai chưa giao người ⇒ sơ đồ đánh dấu bước đó «Chưa giao người» và hợp đồng đi tới đó sẽ dừng chờ. Bước Ký yêu cầu chữ ký số mà công ty chưa bật ⇒ báo ngay lúc gán.
+Cài đặt Sổ Hợp Tác sau khi đổi (hộp thoại Cài đặt, chỉ quản trị sửa):
+ | 
+Mục | 
+Hiện tại | 
+Sau khi đổi
+ | 
+Công ty, Điểm uy tín, Điểm kinh doanh, Dò giá thị trường, Thông báo | 
+— | 
+Không đổi
+ | 
+Quy trình duyệt | 
+Sơ đồ dạng dãy thẳng (chỉ xem), khối «Ký và đối tác của quy trình này», «Ký số › Vị trí ký», thời gian tự trả việc | 
+Sơ đồ đầy đủ (cùng sơ đồ trang quản trị) để giao việc từng vai; giữ thời gian tự trả việc; bỏ hai khối ký
+ | 
+Kết nối | 
+Ký số (công tắc, DocuSign / Ký thử) + Đối tác xác nhận | 
+Chỉ còn Đối tác xác nhận
+ | 
+Chữ ký (mới, nhóm Chung) | 
+— | 
+Định dạng chữ ký nội bộ + xem trước; Chữ ký số (bật khi đã mua)
+Đặt «Chữ ký» ở nhóm Chung của hộp thoại Cài đặt (không ở trang quản trị riêng) vì người cấu hình là quản trị công ty và chữ ký dùng cho mọi app; chỉ một chỗ sửa.
+Gọn cấu hình ký (đề xuất, chờ duyệt)
+Dùng tính năng ký trên tài liệu thì phần lớn cấu hình ký hiện có không còn cần. Sau khi gọn, mỗi quy trình chỉ còn vai + hạn cho mỗi bước và một công tắc «Cần chữ ký số» ở bước Ký.
+ | 
+Cấu hình hiện có | 
+Còn cần? | 
+Thay bằng
+ | 
+Bước Ký › «Ký qua» (DocuSign / ký thử / tải bản ký tay), bắt buộc | 
+Bỏ | 
+Mặc định ký trên tài liệu bằng chữ ký nội bộ; chỉ còn công tắc «Cần chữ ký số»
+ | 
+Bước Ký › «Người ký phía công ty» (chọn người/nhóm cụ thể), bắt buộc | 
+Bỏ | 
+Vai trong quy trình mẫu + giao việc của quản trị công ty
+ | 
+Bước Ký › hạn ký, nhắc ký, thứ tự ký, «đối tác ký» | 
+Gộp | 
+Hạn/nhắc dùng chung cách của mọi bước; thứ tự = thứ tự bước; đối tác ký = một bước «Đối tác ký» trong quy trình
+ | 
+Cài đặt › Ký số › Vị trí ký (cụm chữ Bên A/B theo công ty) | 
+Bỏ | 
+Nút «Tự đặt theo ĐẠI DIỆN BÊN A/B» (cụm chữ cố định) + kéo tay khi chuẩn bị chỗ ký
+ | 
+Cài đặt › Bật ký số, nhà cung cấp mặc định | 
+Giữ, thu gọn | 
+Chỉ dành cho chữ ký số; chuyển từ Cài đặt › Kết nối sang Cài đặt › Chữ ký, cạnh định dạng chữ ký
+ | 
+Bước Duyệt › bằng chứng: ý kiến + ảnh chữ ký tải lên hoặc tệp (CR-170) | 
+Gọn | 
+Chữ ký lấy từ «Chữ ký của tôi», ký trên tài liệu; bỏ ô tải ảnh chữ ký; tệp đính kèm thành tuỳ chọn
+ | 
+Quy trình Nhận HĐ › người phụ trách nhận, người ký bên nhận | 
+Đổi | 
+Thành vai, giao việc như mọi bước. Ngưỡng «Quan trọng / Rất quan trọng» giữ (không phải cấu hình ký)
+ | 
+DocuSign (phong bì, trang ký cuối, vị trí ô ký DocuSign) | 
+Bỏ (đang ẩn) | 
+Ký trên tài liệu; hợp đồng cũ đã ký qua DocuSign giữ nguyên, chỉ xem
+Sau khi gọn, toàn bộ cấu hình liên quan tới ký:
+Platform, trong quy trình mẫu: mỗi bước Duyệt/Ký/Đối tác ký có vai và hạn; bước Ký có thêm Cần chữ ký số (mặc định tắt).
+Quản trị công ty, một lần: nhóm, giao việc, định dạng chữ ký; chữ ký số nếu đã mua.
+Mỗi hợp đồng (thao tác, không phải cấu hình): đánh dấu tệp cần ký, chuẩn bị chỗ ký.
+Bỏ DocuSign (tạm thời ẩn chứ không xóa)và các cấu hình đã chốt ở CR-146 là đổi phạm vi đã chốt: cần anh/chị duyệt trước khi làm. Dữ liệu cũ (phong bì ký, cấu hình đã lưu) giữ nguyên để tra cứu, không xoá.
+Chuyển quy trình hợp đồng hiện tại sang cách mới
+Quy trình hợp đồng đang chạy sẽ được cập nhật sang cách mới; hợp đồng mới dùng cách mới, hợp đồng đang dở và đã ký giữ nguyên. Prod đã có khách thật nên chỉ thêm dữ liệu, không xoá, sao lưu trước khi triển khai.
+ | 
+Cái hiện có | 
+Sau khi cập nhật
+ | 
+Quy trình mẫu «Duyệt hợp đồng gửi đi», «Nhận HĐ từ đối tác» và các mẫu khác có bước Ký | 
+Platform sửa mẫu: bước Duyệt ghi vai thay mã nhóm; bước Ký bỏ «Ký qua», «Người ký phía công ty», ghi vai «Người ký hợp đồng» + công tắc «Cần chữ ký số» (tắt); thêm bước «Đối tác ký» khi đợt 2 xong. Xuất bản thành phiên bản mới của mẫu
+ | 
+Công ty đang dùng quy trình (đã gán) | 
+Tự chuyển giao việc: mỗi vai lấy nhóm cùng mã nhóm đang dùng; vai «Người ký hợp đồng» lấy người/nhóm đã chọn ở «Người ký phía công ty». Vai nào không tự điền được thì đánh dấu «Chưa giao người» và báo quản trị công ty
+ | 
+Công ty đã «Sao chép để sửa» thành bản riêng | 
+Chuyển tương tự trên bản riêng; cấu trúc bước công ty đã sửa giữ nguyên
+ | 
+Hợp đồng đang duyệt dở | 
+Chạy tiếp theo quy trình cũ tới khi xong (không đổi giữa chừng); nếu bị Trả lại và gửi lại thì chạy theo quy trình mới
+ | 
+Hợp đồng đã ký (DocuSign, ký thử, tải bản ký tay) | 
+Giữ nguyên; bản đã ký hiện trong «Xem bản đã ký» như một phiên bản
+ | 
+Hồ sơ duyệt cũ (ảnh chữ ký tải lên, tệp đính kèm) | 
+Giữ nguyên, vẫn xem được
+ | 
+Cài đặt bị bỏ (vị trí ký, «Ký qua», người ký phía công ty…) | 
+Ẩn khỏi màn hình; dữ liệu giữ để tra cứu, không xoá
+ | 
+Người dùng đang có tài khoản | 
+Lần đăng nhập kế tiếp hiện màn «Tạo chữ ký của bạn»
+Thứ tự bật: làm trên bản test → bật cho công ty demo để UAT → ổn thì bật cho các công ty khách, mỗi công ty một công tắc tạm để lùi lại nếu cần; chạy ổn định thì gỡ công tắc và bỏ hẳn cách cũ khỏi màn hình.
+Trước khi làm: rà danh sách quy trình mẫu, công ty đã gán, số hợp đồng đang dở trên prod (chỉ đọc) để biết phạm vi chuyển.
+Chữ ký cá nhân
+Mỗi người có một chữ ký nội bộ, tạo ngay lần đầu đăng nhập theo định dạng công ty quy định. Chữ ký số là lớp thêm khi công ty đã mua.
+Hai loại chữ ký
+ | 
+ | 
+Chữ ký nội bộ | 
+Chữ ký số
+ | 
+Nguồn | 
+Hệ thống tự quản lý | 
+Mua của nhà cung cấp được cấp phép (MISA, VNPT, Viettel…): USB token hoặc ký từ xa
+ | 
+Chi phí | 
+Không | 
+Công ty trả cho nhà cung cấp
+ | 
+Dùng cho | 
+Duyệt, hợp đồng lao động, cam kết, đề nghị, mọi giấy tờ nội bộ | 
+Hợp đồng với khách, đối tác, giấy tờ cần giá trị pháp lý cao
+ | 
+Trên tệp | 
+Hình chữ ký + dòng tên, ngày (theo định dạng) | 
+Vẫn hiện hình chữ ký như nội bộ, thêm dữ liệu chữ ký số khoá cả tệp
+ | 
+Biết ai ký nhờ | 
+Tài khoản đăng nhập + nhật ký của hệ thống | 
+Chứng thư số do nhà cung cấp cấp
+ | 
+Ai quản lý | 
+Chính người dùng (tạo, đổi) | 
+Quản trị công ty bật và gán cho người dùng
+Bước Ký trong quy trình ghi loại chữ ký cần dùng. Thao tác ký giống hệt nhau: đặt chữ ký lên tệp rồi Lưu; với chữ ký số, lúc Lưu hệ thống in hình chữ ký trước rồi mới ký số.
+Tạo chữ ký lần đầu đăng nhập
+Người dùng đăng nhập lần đầu (sau khi được mời vào công ty).
+Hiện màn «Tạo chữ ký của bạn» trước khi vào app, chỉ có các cách tạo mà công ty cho phép: vẽ, tải ảnh chữ ký trên giấy (tự xoá nền), gõ họ tên.
+Xem trước chữ ký đúng như sẽ in trên tệp (kèm dòng tên, chức danh, ngày theo định dạng).
+Bấm Lưu ⇒ vào app. Nếu công ty cho bỏ qua: có nút «Làm sau», và lần đầu cần ký sẽ hiện lại màn tạo ngay trong màn ký.
+Người đã có tài khoản trước khi tính năng ra mắt: hiện màn này ở lần đăng nhập kế tiếp.
+Định dạng chữ ký (quản trị công ty cấu hình)
+ | 
+Thiết lập | 
+Lựa chọn | 
+Mặc định đề xuất
+ | 
+Cách tạo được phép | 
+Vẽ · Tải ảnh · Gõ họ tên (chọn nhiều) | 
+Cả ba
+ | 
+Tạo lần đầu đăng nhập | 
+Bắt buộc · Cho «Làm sau» | 
+Bắt buộc
+ | 
+Dòng dưới chữ ký | 
+Họ tên · Chức danh · Ngày ký · Giờ ký (chọn nhiều) | 
+Họ tên + Ngày ký
+ | 
+Màu mực | 
+Xanh · Đen  | 
+Xanh
+ | 
+Chữ ký nháy | 
+Thu nhỏ chữ ký chính · Tạo thêm chữ ký tắt riêng | 
+Thu nhỏ chữ ký chính
+ | 
+Đổi chữ ký | 
+Người dùng tự đổi · Phải quản trị cho phép | 
+Người dùng tự đổi
+Đổi định dạng chỉ áp dụng cho lần ký sau; tệp đã ký giữ nguyên. Nếu bỏ một cách tạo (ví dụ bỏ «Gõ họ tên»), người đang dùng chữ ký kiểu đó được nhắc tạo lại ở lần đăng nhập sau.
+Đổi chữ ký và các trường hợp khác
+Đổi: menu tài khoản › «Chữ ký của tôi». Chữ ký cũ vào lịch sử; tệp đã ký bằng chữ ký cũ không đổi.
+Chữ ký số: cùng trang «Chữ ký của tôi» có mục «Chữ ký số» cho biết đã được gán chứng thư chưa, của nhà cung cấp nào, hết hạn khi nào.
+Nghỉ việc: tài khoản bị khoá thì chữ ký không dùng được nữa; các tệp đã ký và hồ sơ duyệt giữ nguyên.
+Bảo mật: chỉ chính người đó dùng được chữ ký của mình; khi ký, máy chủ tự lấy chữ ký của người đang đăng nhập, trình duyệt chỉ gửi vị trí.
+Quy trình mẫu và giao việc
+Platform vẽ quy trình với vai; quản trị công ty bấm thẳng vào bước trên sơ đồ để chọn nhóm làm vai đó.
+Một sơ đồ dùng chung cho trang quản trị và Sổ Hợp Tác, ba chế độ: sửa quy trình (platform), giao việc (quản trị công ty), chỉ xem (thành viên). Có nhánh Đúng/Sai, bước Ký, Hoàn tất; sau các nút Hoàn tất không vẽ đường nối.
+Giao việc: bấm vào bước ⇒ khung bên cạnh hiện vai, bước nào dùng vai đó, nhóm đang giao và danh sách người trong nhóm ⇒ chọn nhóm (hoặc một người) ⇒ «Lưu giao việc» (có hộp xác nhận).
+Một vai, nhiều bước: «Người ký hợp đồng» có ở cả hai nhánh thì giao một lần, cả hai bước đổi theo.
+Bước chưa giao: viền vàng, «Chưa giao người», kèm câu «Hợp đồng đi tới bước này sẽ dừng lại chờ».
+Quyền: chỉ quản trị công ty sửa giao việc; thành viên thấy cùng sơ đồ, chỉ xem, luôn khớp bản đã lưu.
+Khác mẫu: cần thêm bước hay đổi nhánh thì quản trị công ty «Sao chép để sửa» thành bản riêng (đã có).
+Đổi người về sau: đổi thành viên nhóm hoặc mở lại giao việc; không đụng quy trình.
+Cách này thay cách đã chốt ở CR-146 (quy trình mẫu ghi sẵn mã nhóm; bước Ký chọn người cụ thể), nên ghi vào CR mới.
+Hành trình hợp đồng
+Mỗi bước do đúng một vai làm, người làm bước sau khác người tải lên; trả lại hay từ chối đều quay về người tải lên.
+ | 
+# | 
+Bước | 
+Ai | 
+Làm gì | 
+Xong khi
+ | 
+0 | 
+Chuẩn bị (một lần) | 
+Mọi người | 
+Tạo chữ ký nội bộ lần đầu đăng nhập | 
+Có chữ ký
+ | 
+1 | 
+Tải lên | 
+Người tải lên | 
+Tải hợp đồng và tệp kèm, bật «Cần ký» cho từng tệp, chuẩn bị chỗ ký cho từng người ký (kể cả đối tác), gửi duyệt | 
+Hợp đồng chuyển «Đang duyệt»; quy trình được chọn theo luật đã có
+ | 
+2 | 
+Duyệt (có thể nhiều bước, rẽ nhánh theo giá trị) | 
+Nhóm được giao vai duyệt | 
+Mở «Mở và ký», ký lên các tệp cần ký, ghi ý kiến, bấm Đạt | 
+Đã ký đủ tệp cần ký và bấm Đạt
+ | 
+3 | 
+Công ty ký | 
+Nhóm được giao vai «Người ký hợp đồng» | 
+Mở màn ký, bấm vào các ô chỗ ký của mình (tự đặt thêm chữ ký hoặc giáp lai nếu cần), Lưu từng tệp; dùng chữ ký số nếu bước yêu cầu | 
+Đã lưu đủ tệp cần ký
+ | 
+4 | 
+Đối tác ký (đợt 2) | 
+Đối tác | 
+Mở link trong email (không cần tài khoản Evolu), tạo chữ ký nhanh, bấm vào các ô chỗ ký của mình, Lưu | 
+Đối tác lưu xong
+ | 
+5 | 
+Hoàn tất | 
+Hệ thống | 
+Lập hồ sơ duyệt có hình chữ ký, khoá hợp đồng | 
+Hợp đồng «Đã ký»
+Trả lại (ở bước duyệt): về người tải lên kèm lý do; các bản đã ký của lượt này bị bỏ, gửi lại thì chạy lại từ bước 2 và ký lại trên bản mới.
+Từ chối: dừng hợp đồng, báo người tải lên kèm lý do.
+Quá hạn: chuyển cho nhóm chuyển cấp (đã có).
+Phụ lục ký sau (vài tháng sau hợp đồng): tải vào hợp đồng cũ, chạy lại duyệt và ký cho riêng phụ lục (mặc định đề xuất, chờ chốt).
+Thông báo
+Dùng kênh đã có: «Việc của tôi», chuông trong app, email; không thêm kênh mới.
+ | 
+Khi | 
+Ai nhận | 
+Qua
+ | 
+Tới lượt duyệt hoặc ký | 
+Nhóm được giao vai của bước | 
+Việc của tôi + chuông
+ | 
+Gần hết hạn, quá hạn | 
+Người đang giữ việc; quá hạn thì nhóm chuyển cấp | 
+Chuông, nhắc theo «Nhắc mỗi» của bước
+ | 
+Công ty ký xong, tới lượt đối tác | 
+Đối tác (liên hệ trên hợp đồng) | 
+Email «Mời ký» có link riêng; nhắc lại theo hạn
+ | 
+Trả lại, Từ chối, đối tác từ chối | 
+Người tải lên | 
+Chuông + Việc của tôi, kèm lý do
+ | 
+Ký đủ | 
+Người tải lên, người phụ trách; đối tác | 
+Chuông; đối tác nhận email kèm bản đã ký
+ | 
+Giao việc còn vai trống | 
+Quản trị công ty | 
+Chuông, khi gán quy trình hoặc khi hợp đồng dừng chờ ở bước đó
+Màn ký
+Mở toàn màn hình từ nút «Mở và ký» trên thẻ duyệt; người ký chỉ cần đặt chữ ký lên, kéo, phóng to thu nhỏ, rồi Lưu.
+ | 
+Phần | 
+Mô tả
+ | 
+Thanh trên | 
+← Quay lại · số chữ ký đã đặt · cách xem (Từng trang, có tuỳ chọn Liền mép / Xoè quạt mép phải hoặc mép dưới) · phóng to, thu nhỏ · khay chữ ký (kéo thả vào trang) · Lưu
+ | 
+Tab tệp | 
+Mỗi tệp cần ký một tab; tệp lưu xong có nhãn «Đã ký» và tự chuyển sang tệp kế tiếp
+ | 
+Cột trang bên trái | 
+Ảnh nhỏ từng trang, bấm để nhảy tới; trang có chữ ký có chấm tím
+ | 
+Gợi ý sẵn | 
+Mở ra đã có một chữ ký dưới «ĐẠI DIỆN BÊN A» (tìm trong tệp); không tìm thấy thì để trống
+ | 
+Thêm chữ ký | 
+Kéo từ khay · chuột phải lên trang › «Thêm chữ ký ở đây» · điện thoại: chạm giữ
+ | 
+Sửa chữ ký | 
+Kéo để di chuyển; kéo góc để đổi cỡ (giữ tỉ lệ); phím mũi tên nhích từng chút
+ | 
+Thanh nổi khi chọn | 
+Tên, ngày (bật/tắt dòng dưới chữ ký) · Chép sang mọi trang (ký nháy) · Xoá
+ | 
+Giáp lai | 
+Kéo chữ ký đè lên mép nhiều trang; nhãn hiện «Giáp lai 5 trang: 6–10». Từng trang tự hít vào khe khi kéo tới gần (vạch tím). Xoè quạt: xấp 5 trang, mỗi trang lộ một dải mép phải, nút ‹ Trang 1–5 › để sang nhóm sau
+ | 
+Lưu | 
+Hộp xác nhận «3 chữ ký, 1 giáp lai, trên 5 trang. Sau khi lưu không sửa được; bản gốc vẫn giữ» ⇒ tạo bản đã ký
+ | 
+Rời màn | 
+Còn chữ ký chưa lưu ⇒ hỏi «Rời màn ký? Các chữ ký chưa lưu sẽ mất»
+Chữ ký đặt ở cách xem nào thì sửa ở cách xem đó; sang cách xem khác nó vẫn hiện trên trang nhưng không kéo được, để chữ ký giáp lai không bị cắt lại sai.
+Giáp lai mép phải: mỗi chữ ký trùm tối đa 5 trang, mỗi trang một lát rộng khoảng 1,4 cm; 23 trang = 5 chữ ký giáp lai. Đã thử ghép lại 5 lát ra đúng chữ ký.
+Điện thoại: chỉ có Từng trang, chạm giữ để thêm, hai ngón để phóng to.
+Chưa có chữ ký (công ty cho «Làm sau»): bấm «Mở và ký» hiện hộp tạo chữ ký ngay tại chỗ.
+Kiểu xem khi ký
+Đã chốt giữ 4 kiểu; các kiểu khác chỉ làm khi có công ty cần. Hình minh hoạ từng kiểu: Kiểu xem khi ký giáp lai.
+ | 
+Kiểu | 
+Trông như | 
+Quyết định
+ | 
+Từng trang | 
+Đọc như PDF, cuộn dọc; kéo chữ ký đè lên khe trên/dưới là giáp lai 2 trang | 
+Giữ (mặc định)
+ | 
+Từng trang · Liền mép | 
+Công tắc của Từng trang: bỏ khe hở giữa các trang, chữ ký qua mép liền mạch như khi in | 
+Giữ
+ | 
+Xoè quạt · mép phải | 
+Xấp tối đa 5 trang, mỗi trang lộ một dải mép phải; một chữ ký đè lên các dải là giáp lai cả nhóm | 
+Giữ
+ | 
+Xoè quạt · mép dưới | 
+Như trên nhưng xoè xuống, mỗi trang lộ một dải ở đáy | 
+Giữ
+ | 
+Xoè quạt mép trái/trên · Bậc thang chéo · Hai trang đối diện · Theo tờ · Lưới ảnh nhỏ | 
+Xem hình minh hoạ | 
+Tuỳ chọn, làm khi có yêu cầu
+ | 
+Dàn ngang | 
+Các trang cạnh nhau theo hàng ngang | 
+Bỏ (Xoè quạt làm việc này gọn hơn)
+Trên màn ký: nút «Từng trang | Xoè quạt»; chọn Từng trang thì có công tắc «Liền mép», chọn Xoè quạt thì chọn «Mép phải | Mép dưới» và nút ‹ Trang 1–5 ›. Điện thoại chỉ có Từng trang.
+Chuẩn bị chỗ ký (người tải lên)
+Trước khi gửi duyệt, người tải lên đặt ô chỗ ký trống cho từng người ký, trên từng tệp cần ký. Cùng màn ký, chỉ khác thứ được kéo vào trang.
+Khay trên cùng: mỗi người ký một ô «Chỗ ký» (tím = Bên A, cam = Bên B), kéo vào trang.
+Tự đặt: nút «Tự đặt theo ĐẠI DIỆN BÊN A/B» đặt sẵn ô dưới các chữ đó nếu tìm thấy.
+Chuột phải lên trang: «Thêm chỗ ký cho &lt;người&gt;».
+Sửa ô: kéo, đổi cỡ, đè qua khe hai trang thành chỗ ký giáp lai; bấm vào ô có thanh nổi «Đổi người», «Xoá».
+Lưu chỗ ký từng tệp; xong tệp này tự sang tệp kế tiếp.
+Gửi duyệt chỉ bấm được khi mọi tệp cần ký đều có chỗ ký cho mọi người ký (thẻ có danh sách kiểm tra).
+Ký vào chỗ đã chuẩn bị (người ký, đối tác)
+Ô của mình viền màu, nhấp nháy, ghi «Bấm để ký»; bấm là chữ ký vào đúng ô (ô giáp lai thì cắt đúng phần từng trang).
+Ô của người khác hiện mờ «Chờ &lt;người&gt; ký», không bấm được.
+Vẫn tự kéo thêm chữ ký từ khay như bình thường.
+Nút Lưu ghi rõ «Lưu (còn 2 chỗ chưa ký)»; hộp xác nhận nhắc lại nếu còn ô của mình chưa ký.
+Đối tác: mở link riêng trong email, không cần tài khoản; lần đầu hiện hộp tạo chữ ký nhanh (gõ tên hoặc vẽ); chỉ thấy các tệp được gửi và chỗ ký của mình; ký xong nhận email kèm bản đã ký.
+Xem bản đã ký
+Ai có quyền xem hợp đồng (và đối tác qua link) xem lại được tệp có chữ ký trông ra sao, tại mọi thời điểm.
+ | 
+Phần | 
+Mô tả
+ | 
+Mở từ | 
+Nút «Xem bản đã ký» ở bảng Tài liệu kèm, khối Hồ sơ duyệt, hoặc trang đối tác sau khi ký
+ | 
+Phiên bản | 
+Ô chọn: Bản gốc · Sau khi &lt;người&gt; ký · …; mặc định bản mới nhất
+ | 
+Tab tệp | 
+Mỗi tệp cần ký một tab, ghi «Đã ký đủ» / «1/2» / «Chưa ký»
+ | 
+Cột trang | 
+Ảnh nhỏ từng trang, chấm màu theo bên đã ký trên trang đó
+ | 
+Khung bên phải | 
+Chữ ký trong bản này: ai, kiểu (ô chỗ ký / tự đặt / giáp lai), trang, giờ, loại chữ ký (nội bộ / số); bấm là nhảy tới đúng chỗ và viền vàng nhấp nháy. Chỗ ký còn chờ: ai chưa ký, ở đâu
+ | 
+Tải về | 
+Tải đúng phiên bản đang xem
+Chỉ xem, không sửa được gì ở màn này. Với chữ ký số, khung bên phải ghi thêm chứng thư còn hiệu lực hay không.
+Luật nghiệp vụ
+Các luật dưới đây là cơ sở để viết test; mã BR dùng khi ghi spec.
+ | 
+Mã | 
+Luật
+ | 
+BR-K1 | 
+Mỗi người có đúng một chữ ký nội bộ đang dùng; chữ ký cũ vào lịch sử, không xoá.
+ | 
+BR-K2 | 
+Chỉ chính người đó tạo, đổi và dùng chữ ký của mình; quản trị không làm thay.
+ | 
+BR-K3 | 
+Khi lưu, máy chủ lấy chữ ký của người đang đăng nhập; trình duyệt chỉ gửi vị trí và cỡ, không gửi ảnh.
+ | 
+BR-K4 | 
+Chữ ký phải theo định dạng công ty đang áp dụng (cách tạo, dòng dưới, màu mực).
+ | 
+BR-K5 | 
+Người chưa có chữ ký không ký được; nếu định dạng bắt buộc thì phải tạo ngay lần đầu đăng nhập.
+ | 
+BR-T1 | 
+Chỉ người tải lên đánh dấu «Cần ký», và chỉ khi hợp đồng chưa gửi duyệt hoặc đang bị trả lại.
+ | 
+BR-T2 | 
+Gửi duyệt cần ít nhất một tệp cần ký nếu quy trình có bước ký trên tài liệu. Tệp cần ký phải là PDF (cách xử lý tệp Word: xem Câu hỏi còn mở).
+ | 
+BR-D1 | 
+Chỉ người thuộc nhóm được giao bước đang mở (hoặc toàn quyền duyệt thay) mở được màn ký của bước đó.
+ | 
+BR-D2 | 
+Bước Duyệt chỉ bấm Đạt được khi người duyệt đã lưu chữ ký trên mọi tệp cần ký và có ý kiến. Trả lại / Từ chối chỉ cần lý do.
+ | 
+BR-D3 | 
+Bước Ký xong khi mọi tệp cần ký đã có bản đã ký của người ký; nếu bước yêu cầu chữ ký số thì phải có chữ ký số hợp lệ.
+ | 
+BR-L1 | 
+Mỗi lần Lưu tạo một bản mới của tệp; bản gốc và các bản trước giữ nguyên. Người ký sau ký lên bản mới nhất.
+ | 
+BR-L2 | 
+Đã Lưu thì không sửa hay gỡ chữ ký; chỉ Trả lại làm lượt ký hiện tại bị bỏ và ký lại từ bản gốc mới.
+ | 
+BR-L3 | 
+Chữ ký phải nằm trên ít nhất một trang; phần nằm ngoài trang bị cắt.
+ | 
+BR-L4 | 
+Giáp lai mép phải: mỗi chữ ký trùm tối đa 5 trang.
+ | 
+BR-L5 | 
+Có chữ ký số thì mọi hình (chữ ký, giáp lai, ký nháy) được in trước, sau đó mới ký số; ký số của người sau được ghi nối, không làm hỏng chữ ký số trước.
+ | 
+BR-G1 | 
+Chỉ quản trị công ty sửa giao việc và định dạng chữ ký.
+ | 
+BR-G2 | 
+Đổi giao việc: bước chưa tới lượt dùng người mới; bước đang chờ giữ người cũ (mặc định đề xuất).
+ | 
+BR-G3 | 
+Mọi thao tác tạo/đổi chữ ký, đổi định dạng, giao việc, Lưu chữ ký đều ghi nhật ký: ai, lúc nào, trước và sau.
+ | 
+BR-C1 | 
+Mỗi chỗ ký gán cho đúng một người ký; chỉ người đó ký được vào ô.
+ | 
+BR-C2 | 
+Chỉ người tải lên tạo, sửa, xoá chỗ ký, và chỉ khi hợp đồng chưa gửi duyệt hoặc đang bị trả lại.
+ | 
+BR-C3 | 
+Gửi duyệt cần mỗi tệp cần ký có ít nhất một chỗ ký cho mỗi người ký của quy trình.
+ | 
+BR-C4 | 
+Bước ký của một người chỉ xong khi mọi chỗ ký của người đó đã được ký và Lưu.
+ | 
+BR-C5 | 
+Đối tác ký qua link riêng có hạn; link chỉ mở được các tệp được gửi và chỗ ký của đối tác; dùng lại link sau khi ký chỉ để xem.
+ | 
+BR-X1 | 
+Xem bản đã ký theo quyền xem hợp đồng; mọi phiên bản đều xem và tải được; không phiên bản nào bị ghi đè.
+ | 
+BR-T3 | 
+Tệp cần ký theo giới hạn tải lên đang có (tối đa 50 trang mỗi tệp); ảnh chữ ký theo giới hạn ảnh chữ ký đang có.
+ | 
+BR-X2 | 
+Hình chữ ký in trên bản đã ký: ai xem được hợp đồng đều thấy (như giấy tờ thật). Ý kiến duyệt và tệp đính kèm của bước duyệt giữ luật hiện nay: chỉ người trong quy trình xem được (mặc định đề xuất).
+Hồ sơ và bằng chứng
+Ký xong, hồ sơ hợp đồng có đủ bản gốc, bản đã ký và hồ sơ duyệt do hệ thống lập; không ai sửa được.
+Bản gốc: giữ nguyên để đối chiếu.
+Bản đã ký: mỗi lần Lưu một bản mới; xem được ai ký bản nào, lúc nào (nút «Hồ sơ» của tệp đã có). Tệp tham khảo giữ nguyên.
+Hồ sơ duyệt (PDF): tự lập và lưu khi hợp đồng ký đủ; mỗi bước ghi ai làm, vai, lúc nào, quyết định, ý kiến, hình chữ ký, loại chữ ký (nội bộ / số), số tệp đã ký, duyệt thay (nếu có); cuối cùng là danh sách tệp kèm dấu vân tay và mã kiểm tra.
+Trên trang hợp đồng: khối «Hồ sơ duyệt» hiện thẳng hình chữ ký từng người thay cho link «Xem chữ ký».
+Kiểm tra tệp (đợt sau): tải tệp lên, hệ thống so dấu vân tay và báo còn nguyên hay đã bị sửa. Với chữ ký số, mở bằng Adobe cũng kiểm được.
+Hiện nay PDF «Hồ sơ duyệt» chỉ tạo khi bấm tải và chỉ ghi «Chữ ký: có/không».
+Pháp lý tóm tắt
+Giấy tờ nội bộ dùng chữ ký nội bộ là đủ; ký với khách nên dùng chữ ký số. Tổng hợp từ trang tư vấn và hiểu biết chung, chưa đọc văn bản gốc, chưa qua luật sư.
+Ký nháy, giáp lai: luật không bắt buộc, các bên tự thoả thuận; là thông lệ để không ai thay được trang giữa. Mỗi dấu giáp lai trùm tối đa khoảng 5 tờ; phụ lục thiếu giáp lai vẫn có giá trị (luatvietnam, luatduonggia).
+Chữ ký nội bộ: Luật Giao dịch điện tử 2023 (hiệu lực 01/07/2024) công nhận chữ ký điện tử, không chỉ chữ ký số, khi xác định được người ký và tệp còn nguyên. Chữ ký nội bộ dựa vào tài khoản đăng nhập, nhật ký và dấu vân tay tệp.
+Hợp đồng lao động: Bộ luật Lao động 2019 cho giao kết bằng phương tiện điện tử, giá trị như bản giấy.
+Chữ ký số: Nghị định 130/2018 đã được thay bằng Nghị định 23/2025 (mới thấy qua tìm kiếm). Chữ ký số của tổ chức thay cho con dấu.
+Tranh chấp lớn: chữ ký số của nhà cung cấp được cấp phép mạnh hơn chữ ký nội bộ.
+Nên nhờ luật sư xác nhận trước khi dùng chữ ký nội bộ cho hợp đồng lao động thật.
+Phạm vi
+Đợt 1 làm trọn luồng chữ ký nội bộ, không cần mua dịch vụ hay thêm thư viện (hệ thống đã có bộ xử lý PDF ở máy chủ và bộ xem PDF ở web).
+Đợt 1 chưa có vai: người ký công ty lấy từ cấu hình bước Ký hiện có, người ký đối tác lấy từ liên hệ đối tác; đợt 2 chuyển sang vai + giao việc.
+ | 
+Đợt | 
+Gồm | 
+Cần từ bên ngoài
+ | 
+1 | 
+Chữ ký nội bộ: màn tạo lần đầu đăng nhập, «Chữ ký của tôi», định dạng chữ ký ở Cài đặt › Chữ ký | 
+Không
+ | 
+1 | 
+Màn ký: Từng trang, kéo thả, đổi cỡ, chuột phải, tự hít khe, chép sang mọi trang, nhiều tệp, Lưu (in chữ ký ở máy chủ, tạo bản mới, ghi nhật ký) | 
+Không
+ | 
+1 | 
+Sổ Hợp Tác: cờ «Cần ký» trên tệp, thẻ duyệt có «Mở và ký» (thay ô tải ảnh chữ ký), Hồ sơ duyệt có hình chữ ký | 
+Không
+ | 
+1 | 
+Chuẩn bị chỗ ký (ô trống gán người, tự đặt theo ĐẠI DIỆN BÊN A/B), bấm ô để ký, Xem bản đã ký theo phiên bản | 
+Không
+ | 
+2 | 
+Xoè quạt (mép phải, mép dưới), tuỳ chọn Liền mép cho Từng trang, giáp lai mép phải tự động (đã bỏ Dàn ngang) | 
+Không
+ | 
+2 | 
+Giao việc trên sơ đồ dùng chung (vai trong quy trình mẫu, quản trị công ty giao nhóm) | 
+Không
+ | 
+2 | 
+Gọn cấu hình ký (bỏ «Ký qua», «Người ký phía công ty», Vị trí ký, ẩn DocuSign); đổi Cài đặt (Quy trình duyệt, Kết nối); chuyển quy trình hiện tại sang cách mới, công tắc lùi theo từng công ty | 
+Không (cần anh/chị duyệt đổi phạm vi CR-146)
+ | 
+2 | 
+Đối tác ký qua link; phụ lục ký sau; trang kiểm tra tệp | 
+Không
+ | 
+3 | 
+Chữ ký số: bật theo công ty, gán chứng thư cho người dùng, ký số khi Lưu | 
+Công ty mua chữ ký số; chọn nhà cung cấp; có thể cần thư viện ký PDF (hỏi duyệt trước)
+Ngoài phạm vi: OTP khi ký; «khuôn» đặt chỗ ký; trang ký tài liệu đứng riêng (tải PDF bất kỳ rồi mời người ký); ảnh con dấu công ty.
+Mỗi đợt làm theo dây chuyền của dự án: ghi CR, chia việc, test quyền (có ca «người được giao, không phải người tạo»), e2e trọn hành trình, soát giao diện, chạy trên bản test trước khi lên prod.
+Câu hỏi còn mở
+Mỗi câu có mặc định đề xuất; không trả lời thì làm theo mặc định.
+ | 
+Câu hỏi | 
+Mặc định đề xuất
+ | 
+Các thiết lập định dạng chữ ký (mục Chữ ký cá nhân) đã đủ chưa, có cần thêm gì (ví dụ bắt buộc có chức danh, khung viền)? | 
+Dùng 6 thiết lập đã liệt kê
+ | 
+Người dùng có được bỏ qua màn tạo chữ ký lần đầu không? | 
+Do công ty chọn, mặc định bắt buộc
+ | 
+«Quản trị công ty» (sửa giao việc, định dạng chữ ký) là ai? | 
+Chủ gói Sổ Hợp Tác và quản trị công ty
+ | 
+Giao việc chọn nhóm hay cả một người? | 
+Được cả hai
+ | 
+Đổi người khi hợp đồng đang chạy dở? | 
+Bước chưa tới lượt dùng người mới, bước đang chờ giữ người cũ
+ | 
+Tệp Word đánh dấu cần ký thì sao? | 
+Hệ thống tự đổi sang PDF nếu làm được; không thì báo người tải lên tải bản PDF (cần kiểm tra bộ đổi hiện có)
+ | 
+Người duyệt (trưởng phòng) bắt buộc ký lên tài liệu, hay được chọn chỉ ký vào hồ sơ duyệt? | 
+Bắt buộc ký lên tài liệu; vị trí tự chọn
+ | 
+Trả lại thì các bản đã ký của lượt đó xử lý sao? | 
+Bỏ, ký lại từ bản gốc mới; vẫn giữ trong lịch sử để tra
+ | 
+Giáp lai in hai mặt: theo tờ hay theo trang? | 
+Theo tờ: chỉ mặt trước (trang lẻ)
+ | 
+Phụ lục ký sau vài tháng? | 
+Tải vào hợp đồng cũ, chạy lại duyệt và ký cho riêng phụ lục
+ | 
+Chữ ký số: mỗi người một chứng thư, hay một chứng thư của công ty cho người được uỷ quyền? | 
+Một chứng thư công ty, quản trị chọn ai được dùng
+ | 
+Nhà cung cấp chữ ký số? | 
+Chưa chọn; công ty quyết khi mua
+ | 
+Ai được chuẩn bị chỗ ký? | 
+Người tải lên; người ký chỉ tự đặt thêm chữ ký của mình
+ | 
+Người ký có được bỏ qua chỗ ký của mình không? | 
+Không; phải ký hết mới xong bước (muốn khác thì Trả lại để sửa chỗ ký)
+ | 
+Đối tác có được tự đặt thêm chữ ký ngoài ô không? | 
+Có (ví dụ giáp lai phía mình)
+ | 
+Link ký của đối tác có hạn bao lâu? | 
+Theo hạn ký của bước (mặc định 7 ngày); gửi lại được
+ | 
+Hợp đồng đang duyệt dở khi chuyển sang cách mới? | 
+Chạy tiếp quy trình cũ tới khi xong; gửi lại sau Trả lại thì dùng quy trình mới
+ | 
+Bật cách mới cho khách cùng lúc hay từng công ty? | 
+Từng công ty, demo trước; có công tắc lùi lại trong thời gian chuyển
+ | 
+Ai được thấy hình chữ ký trên bản đã ký? | 
+Ai xem được hợp đồng; ý kiến duyệt vẫn chỉ người trong quy trình (BR-X2)
