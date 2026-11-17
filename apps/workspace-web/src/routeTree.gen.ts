@@ -17,6 +17,7 @@ import { Route as SsoRouteImport } from './routes/sso'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthedCommunityRouteImport } from './routes/_authed/community'
 import { Route as AuthedContractsRouteImport } from './routes/_authed/contracts'
+import { Route as AuthedMySignatureRouteImport } from './routes/_authed/my-signature'
 import { Route as AuthedCommunityIndexRouteImport } from './routes/_authed/community/index'
 import { Route as AuthedCommunitySplatRouteImport } from './routes/_authed/community/$'
 import { Route as AuthedContractsIndexRouteImport } from './routes/_authed/contracts/index'
@@ -70,6 +71,11 @@ const TermsRoute = TermsRouteImport.update({
 const AuthedCommunityRoute = AuthedCommunityRouteImport.update({
   id: '/community',
   path: '/community',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedMySignatureRoute = AuthedMySignatureRouteImport.update({
+  id: '/my-signature',
+  path: '/my-signature',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedContractsRoute = AuthedContractsRouteImport.update({
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/community': typeof AuthedCommunityRouteWithChildren
   '/contracts': typeof AuthedContractsRouteWithChildren
+  '/my-signature': typeof AuthedMySignatureRoute
   '/community/$': typeof AuthedCommunitySplatRoute
   '/contracts/approvals': typeof AuthedContractsApprovalsRoute
   '/contracts/feedback': typeof AuthedContractsFeedbackRoute
@@ -233,6 +240,7 @@ export interface FileRoutesByTo {
   '/contracts/products': typeof AuthedContractsProductsRoute
   '/community': typeof AuthedCommunityIndexRoute
   '/contracts': typeof AuthedContractsIndexRoute
+  '/my-signature': typeof AuthedMySignatureRoute
   '/contracts/c/$id': typeof AuthedContractsCIdRoute
   '/contracts/sign/$id': typeof AuthedContractsSignIdRoute
   '/contracts/c/new': typeof AuthedContractsCNewRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authed/community': typeof AuthedCommunityRouteWithChildren
   '/_authed/contracts': typeof AuthedContractsRouteWithChildren
+  '/_authed/my-signature': typeof AuthedMySignatureRoute
   '/_authed/community/$': typeof AuthedCommunitySplatRoute
   '/_authed/contracts/approvals': typeof AuthedContractsApprovalsRoute
   '/_authed/contracts/feedback': typeof AuthedContractsFeedbackRoute
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/community'
     | '/contracts'
+    | '/my-signature'
     | '/community/$'
     | '/contracts/approvals'
     | '/contracts/feedback'
@@ -321,6 +331,7 @@ export interface FileRouteTypes {
     | '/contracts/products'
     | '/community'
     | '/contracts'
+    | '/my-signature'
     | '/contracts/c/$id'
     | '/contracts/c/new'
     | '/contracts/requests/$runId'
@@ -338,6 +349,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authed/community'
     | '/_authed/contracts'
+    | '/_authed/my-signature'
     | '/_authed/community/$'
     | '/_authed/contracts/approvals'
     | '/_authed/contracts/feedback'
@@ -417,6 +429,13 @@ declare module '@tanstack/react-router' {
       path: '/community'
       fullPath: '/community'
       preLoaderRoute: typeof AuthedCommunityRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/my-signature': {
+      id: '/_authed/my-signature'
+      path: '/my-signature'
+      fullPath: '/my-signature'
+      preLoaderRoute: typeof AuthedMySignatureRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/contracts': {
@@ -633,11 +652,13 @@ const AuthedContractsRouteWithChildren = AuthedContractsRoute._addFileChildren(
 interface AuthedRouteChildren {
   AuthedCommunityRoute: typeof AuthedCommunityRouteWithChildren
   AuthedContractsRoute: typeof AuthedContractsRouteWithChildren
+  AuthedMySignatureRoute: typeof AuthedMySignatureRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCommunityRoute: AuthedCommunityRouteWithChildren,
   AuthedContractsRoute: AuthedContractsRouteWithChildren,
+  AuthedMySignatureRoute: AuthedMySignatureRoute,
 }
 
 const AuthedRouteWithChildren =

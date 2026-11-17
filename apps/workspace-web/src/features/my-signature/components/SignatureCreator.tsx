@@ -30,6 +30,8 @@ export type SignatureCreatorProps = {
   caption: CaptionFields;
   person: { name: string; title?: string };
   allowLater: boolean;
+  /** Nhãn nút lưu (mặc định «Lưu chữ ký»). */
+  saveLabel?: string;
   step: "main" | "initials";
   onSave: (png: Blob, method: Method) => void;
   onLater?: () => void;
@@ -230,7 +232,7 @@ export function SignatureCreator(p: SignatureCreatorProps) {
       )}
       <div className="flex gap-2">
         <Button onClick={save} busy={busy}>
-          {t("contracts.mySig.save")}
+          {p.saveLabel ?? t("contracts.mySig.save")}
         </Button>
         {p.allowLater && (
           <Button variant="ghost" onClick={p.onLater}>

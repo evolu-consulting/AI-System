@@ -9,12 +9,12 @@ import { FileText, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { IconLogout } from "~/components/icons";
 import { confirmDialog } from "~/components/shared/dialog-bus";
+import { MySignatureMenuItem } from "~/features/my-signature/components/MySignatureMenuItem";
 import { nameOf, useBrand } from "~/features/settings/lib/brand";
 import { openSettings } from "~/features/settings/lib/bus";
 import { MODULES } from "~/shell/modules";
 import { buildAccountEntries } from "~/shell/nav";
 import { useShellPacks } from "~/shell/use-shell-packs";
-
 import { canSeeSettings, type Role } from "../lib/nav";
 import { AccountLinks, LegalLinks } from "./AccountSection";
 import { Popover } from "./Popover";
@@ -55,6 +55,7 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
       </div>
       <PrefsPanel />
       <AccountLinks role={user.role} close={close} />
+      <MySignatureMenuItem close={close} />
       {extra.map((e) => (
         <Link
           key={e.labelKey}

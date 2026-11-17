@@ -186,7 +186,48 @@
       "errDraw": "Vẽ chữ ký trước khi lưu",
       "errUpload": "Chọn ảnh chữ ký",
       "errType": "Gõ họ tên",
-      "errRead": "Không đọc được ảnh"
+      "errRead": "Không đọc được ảnh",
+      "gate": {
+        "hello": "Chào {{name}}",
+        "sub": "{{company}} · lần đầu đăng nhập",
+        "title": "Tạo chữ ký của bạn",
+        "lead": "Chữ ký dùng khi bạn duyệt và ký giấy tờ trên Evolu. Chỉ bạn dùng được; đổi được sau ở «Chữ ký của tôi».",
+        "saveEnter": "Lưu và vào Evolu",
+        "saveInitials": "Lưu chữ ký tắt và vào Evolu",
+        "laterToast": "Bạn sẽ được nhắc tạo chữ ký khi cần ký lần đầu",
+        "saved": "Đã lưu chữ ký. Chào mừng tới Evolu",
+        "saveFail": "Chưa lưu được chữ ký. Thử lại sau ít phút."
+      },
+      "page": {
+        "menu": "Chữ ký của tôi",
+        "title": "Chữ ký của tôi",
+        "lead": "Dùng cho mọi chỗ cần ký: duyệt, ký hợp đồng, giấy tờ nội bộ. Chỉ bạn dùng được.",
+        "loadErr": "Chưa xem được chữ ký. Tải lại trang rồi thử lại.",
+        "inUse": "Chữ ký nội bộ đang dùng",
+        "none": "Bạn chưa có chữ ký.",
+        "mainAlt": "Chữ ký đang dùng",
+        "initialsLabel": "Chữ ký tắt",
+        "initialsAlt": "Chữ ký tắt đang dùng",
+        "since": "Dùng từ {{at}} · tạo bằng {{how}}",
+        "howDraw": "vẽ",
+        "howUpload": "ảnh",
+        "howType": "gõ tên",
+        "history": "Lịch sử",
+        "noHistory": "Chưa đổi lần nào.",
+        "until": "Dùng tới {{at}}",
+        "create": "Tạo chữ ký mới",
+        "locked": "Công ty yêu cầu quản trị cho phép mới được đổi chữ ký.",
+        "requested": "Yêu cầu của bạn đang chờ quản trị cho phép.",
+        "request": "Xin đổi chữ ký",
+        "requestSent": "Đã gửi yêu cầu tới quản trị",
+        "requestFail": "Chưa gửi được yêu cầu. Thử lại sau ít phút.",
+        "dlgDesc": "Chữ ký cũ chuyển vào lịch sử.",
+        "digital": "Chữ ký số",
+        "notAssigned": "Chưa được gán",
+        "digitalNote": "Công ty chưa bật chữ ký số. Khi công ty mua và gán chứng thư cho bạn, mục này hiện nhà cung cấp, hạn dùng và trạng thái liên kết.",
+        "digitalOn": "Công ty đã bật chữ ký số nhưng chưa gán chứng thư cho bạn.",
+        "close": "Đóng"
+      }
     }
   }
 }

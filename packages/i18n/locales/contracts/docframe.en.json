@@ -186,7 +186,48 @@
       "errDraw": "Draw your signature before saving",
       "errUpload": "Choose a signature image",
       "errType": "Type your full name",
-      "errRead": "Could not read the image"
+      "errRead": "Could not read the image",
+      "gate": {
+        "hello": "Hello {{name}}",
+        "sub": "{{company}} · first sign-in",
+        "title": "Create your signature",
+        "lead": "Your signature is used when you approve and sign papers on Evolu. Only you can use it; you can change it later in “My signature”.",
+        "saveEnter": "Save and enter Evolu",
+        "saveInitials": "Save initials and enter Evolu",
+        "laterToast": "We will remind you to create a signature when you first need to sign",
+        "saved": "Signature saved. Welcome to Evolu",
+        "saveFail": "Could not save the signature. Try again in a few minutes."
+      },
+      "page": {
+        "menu": "My signature",
+        "title": "My signature",
+        "lead": "Used wherever a signature is needed: approvals, contracts, internal papers. Only you can use it.",
+        "loadErr": "Could not load your signature. Reload the page and try again.",
+        "inUse": "Internal signature in use",
+        "none": "You have no signature yet.",
+        "mainAlt": "Signature in use",
+        "initialsLabel": "Initials",
+        "initialsAlt": "Initials in use",
+        "since": "In use since {{at}} · created by {{how}}",
+        "howDraw": "drawing",
+        "howUpload": "image",
+        "howType": "typing your name",
+        "history": "History",
+        "noHistory": "Never changed.",
+        "until": "Used until {{at}}",
+        "create": "Create new signature",
+        "locked": "Your company requires an admin’s permission before you can change your signature.",
+        "requested": "Your request is waiting for an admin to allow it.",
+        "request": "Request a change",
+        "requestSent": "Request sent to your admin",
+        "requestFail": "Could not send the request. Try again in a few minutes.",
+        "dlgDesc": "Your old signature moves to history.",
+        "digital": "Digital signature",
+        "notAssigned": "Not assigned",
+        "digitalNote": "Your company has not turned on digital signatures. When the company buys and assigns a certificate to you, this section shows the provider, expiry and link status.",
+        "digitalOn": "Your company has turned on digital signatures but has not assigned a certificate to you.",
+        "close": "Close"
+      }
     }
   }
 }

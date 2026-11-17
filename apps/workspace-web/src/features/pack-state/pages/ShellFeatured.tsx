@@ -4,6 +4,7 @@
 
 import { useEffect } from "react";
 import { useSession } from "~/features/auth/hooks/use-session";
+import { FirstLoginGate } from "~/features/my-signature/components/FirstLoginGate";
 import { Shell } from "~/features/shell/pages/Shell";
 import { FeatureRoot } from "~/platform/features";
 import { useDevIdentity } from "~/shell/dev-identity";
@@ -22,7 +23,16 @@ function ShellWithMe() {
     setBlockedPacks(blockedContracts ? ["contracts"] : []);
     return () => setBlockedPacks([]);
   }, [blockedContracts]);
-  return <Shell user={dev?.user ?? user} write={me.write} owner={me.owner} />;
+  const who = dev?.user ?? user;
+  // CR-181 Q10: màn «Tạo chữ ký» chắn trước khi vào app (mọi module); bản mock/dev không gọi API.
+  return (
+    <FirstLoginGate
+      enabled={!dev}
+      person={who ? { name: who.display_name || who.username, company: who.tenant.name } : null}
+    >
+      <Shell user={who} write={me.write} owner={me.owner} />
+    </FirstLoginGate>
+  );
 }
 
 export default function ShellFeatured() {
