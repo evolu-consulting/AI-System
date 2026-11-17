@@ -292,6 +292,15 @@ export function signDocUsecases(d: SignDocDeps) {
         };
       const company = await d.companySigners(who, id);
       const turn: SignTurn = await d.turn.turnFor(who, id, who.userId);
+      const mineRun = new Set<string>(
+        turn.allowed && turn.run_id
+          ? (
+              await d.uow.tenant(who, async (r) => [
+                ...(await r.versions.signedFilesInRun(id, turn.run_id as string, who.userId)),
+              ])
+            ).map((x) => x.file_id)
+          : [],
+      );
       if (turn.allowed && turn.step === "sign" && turn.run_id && d.onSigned)
         // Cổng (`packs.sign-doc.ts onDocSigned`) tự ghi log `sign-ondoc-signed-failed` và không ném; `catch` chỉ để phiên không hỏng.
         await d.onSigned(who, id, turn.run_id).catch(() => undefined);
@@ -315,6 +324,7 @@ export function signDocUsecases(d: SignDocDeps) {
           can_prep: canPrepSign(who.userId, uploader, snap.facts),
           pages: doc?.pages ?? null,
           needs_sign: needs,
+          signed_by_me_in_turn: mineRun.has(f.file_id),
           latest: {
             version_id: v?.id ?? null,
             seq: v?.seq ?? 0,

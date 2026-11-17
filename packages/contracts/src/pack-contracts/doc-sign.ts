@@ -133,6 +133,8 @@ export type SignFileOut = {
   can_prep: boolean;
   pages: number | null;
   needs_sign: boolean;
+  /** Chính người gọi đã Lưu chữ ký (bản chưa huỷ) trên tệp này trong lượt hiện tại (`turn.run_id`); không có lượt ⇒ false. */
+  signed_by_me_in_turn: boolean;
   /** Bản mới nhất chưa huỷ: `version_id` null + `seq` 0 = bản gốc. `url` = đường dẫn tương đối dưới `/pack/contracts`. */
   latest: { version_id: string | null; seq: number; url: string };
   fields: SignFieldOut[];

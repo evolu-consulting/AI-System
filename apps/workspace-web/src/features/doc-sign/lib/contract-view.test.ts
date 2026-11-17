@@ -35,6 +35,7 @@ const file = (o: Partial<SignFileOut>): SignFileOut =>
     can_prep: true,
     pages: 3,
     needs_sign: true,
+    signed_by_me_in_turn: false,
     latest: { version_id: null, seq: 0, url: "" },
     fields: [],
     ...o,
@@ -88,6 +89,20 @@ describe("Đạt khoá tới khi ký đủ", () => {
   });
   test("ký đủ ⇒ ready", () => expect(myProgress(sess([mine(true)])).ready).toBe(true));
   test("không có chỗ của tôi ⇒ ready", () => expect(myProgress(sess([file({})])).ready).toBe(true));
+  test("lượt Duyệt, người duyệt KHÔNG có ô riêng: y = mọi tệp cần ký, x = tệp chính mình đã Lưu", () => {
+    const ap = { turn: { allowed: true, step: "approve" as const, run_id: "r" } };
+    const a = sess(
+      [
+        file({}),
+        file({ file_id: "q", signed_by_me_in_turn: true }),
+        file({ file_id: "z", needs_sign: false }),
+      ],
+      ap,
+    );
+    expect(myProgress(a)).toMatchObject({ files: 2, signed: 1, fields: 0, ready: false });
+    const b = sess([file({ signed_by_me_in_turn: true })], ap);
+    expect(myProgress(b)).toMatchObject({ files: 1, signed: 1, ready: true });
+  });
   test("hasSignFiles", () => {
     expect(hasSignFiles(sess([file({ needs_sign: false })]))).toBe(false);
     expect(hasSignFiles(sess([file({})]))).toBe(true);

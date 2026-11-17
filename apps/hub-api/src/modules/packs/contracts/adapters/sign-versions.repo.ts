@@ -104,6 +104,11 @@ export function signVersionsRepo(tx: Tx, tenantId: string) {
       return r ?? null;
     },
     /** Bản mới nhất chưa void của MỖI tệp trong HĐ (một câu). */
+    signedFilesInRun: (contractId: string, runId: string, userId: string) =>
+      tx.execute<{ file_id: string }>(sql`
+        select distinct v.file_id from contracts.sign_versions v
+        where v.contract_id = ${contractId}::uuid and v.tenant_id = ${tenantId}::uuid and v.run_id = ${runId}::uuid
+          and v.signed_by = ${userId}::uuid and v.voided_at is null`),
     latestByContract: (contractId: string) =>
       tx.execute<SignVersionRow>(sql`
         select distinct on (v.file_id) v.id, v.file_id, v.seq, v.out_file_id, v.sha256, v.signed_by, v.signature_kind, v.run_id,

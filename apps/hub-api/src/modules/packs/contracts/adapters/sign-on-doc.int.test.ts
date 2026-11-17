@@ -343,6 +343,22 @@ describe("CR-181 s6 · bản đã ký + dấu (sign_versions, sign_marks)", () =
     const next = await addV(c, f, U1, null);
     expect(next?.seq).toBe(4);
   });
+
+  it("signedFilesInRun: chỉ tệp CHÍNH người này đã Lưu trong lượt đó, bản huỷ và người khác không tính", async () => {
+    const { c, f } = await setup();
+    const run = Bun.randomUUIDv7();
+    const other = Bun.randomUUIDv7();
+    await addV(c, f, U2, run); // người khác ký cùng lượt
+    const u = mkUow();
+    const mine = (who: typeof U1, r: string) =>
+      u.tenant(w(who), (x) => x.versions.signedFilesInRun(c, r, who));
+    expect(await mine(U1, run)).toHaveLength(0);
+    await addV(c, f, U1, run);
+    expect((await mine(U1, run)).map((x) => x.file_id)).toEqual([f]);
+    expect(await mine(U1, other)).toHaveLength(0); // lượt khác
+    await u.tenant(w(U2), (x) => x.versions.voidByRun(run));
+    expect(await mine(U1, run)).toHaveLength(0); // đã huỷ (Trả lại)
+  });
 });
 
 describe("CR-181 s6 · ràng buộc dữ liệu", () => {

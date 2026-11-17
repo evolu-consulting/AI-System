@@ -38,7 +38,9 @@ export function ApproverSignBox({ id, session }: { id: string; session: SignSess
     >
       <p className="m-0 text-sm font-medium">{t("contracts.docsignc.boxTitle")}</p>
       <p className="mb-2 mt-1 text-sm text-dim">
-        {t("contracts.docsignc.boxMine", { fields: p.fields, files: p.files })}
+        {p.fields > 0
+          ? t("contracts.docsignc.boxMine", { fields: p.fields, files: p.files })
+          : t("contracts.docsignc.boxFree", { files: p.files })}
         {" · "}
         {t("contracts.docsignc.boxDone", { signed: p.signed, files: p.files })}
       </p>

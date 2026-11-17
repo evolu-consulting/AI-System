@@ -58,18 +58,27 @@ export function signerChips(s: SignSessionOut): SignerChip[] {
   });
 }
 
-/** Tiến độ của NGƯỜI GỌI: tệp có chỗ ký của tôi, đã ký hết x/y. `ready` ⇒ mở được «Đạt». */
+/**
+ * Tiến độ của NGƯỜI GỌI. Lượt Duyệt (`turn.step = "approve"`): người duyệt phải ký MỌI tệp cần ký (vị trí tự chọn, BR-D2) dù không có ô riêng ⇒
+ * y = số tệp cần ký, x = tệp chính người này đã Lưu trong lượt (`signed_by_me_in_turn`). Ngoài lượt Duyệt: tệp có chỗ ký của tôi, đã ký hết x/y.
+ * `ready` ⇒ mở được «Đạt».
+ */
 export function myProgress(s: SignSessionOut): {
   files: number;
   signed: number;
   fields: number;
   ready: boolean;
 } {
-  const mineFiles = signFiles(s).filter((f) => f.fields.some((x) => x.mine));
+  const need = signFiles(s);
+  const fields = need.reduce((n, f) => n + f.fields.filter((x) => x.mine).length, 0);
+  if (s.turn.allowed && s.turn.step === "approve") {
+    const signed = need.filter((f) => f.signed_by_me_in_turn).length;
+    return { files: need.length, signed, fields, ready: signed === need.length };
+  }
+  const mineFiles = need.filter((f) => f.fields.some((x) => x.mine));
   const signed = mineFiles.filter((f) =>
     f.fields.filter((x) => x.mine).every((x) => x.signed),
   ).length;
-  const fields = mineFiles.reduce((n, f) => n + f.fields.filter((x) => x.mine).length, 0);
   return { files: mineFiles.length, signed, fields, ready: signed === mineFiles.length };
 }
 

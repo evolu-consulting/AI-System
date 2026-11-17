@@ -130,6 +130,12 @@ export type SignDocRepos = {
   versions: {
     latestByContract(contractId: string): PromiseLike<SignVersionRowP[]>;
     latest(contractId: string, fileId: string): Promise<SignVersionRowP | null>;
+    /** Tệp mà `userId` đã Lưu (bản chưa huỷ) trong lượt `runId`. */
+    signedFilesInRun(
+      contractId: string,
+      runId: string,
+      userId: string,
+    ): PromiseLike<{ file_id: string }[]>;
     list(
       contractId: string,
       fileId: string,

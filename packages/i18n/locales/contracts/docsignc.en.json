@@ -48,7 +48,8 @@
         "SIGN_PDF_INVALID": "This PDF cannot be read — upload another copy",
         "SIGN_TOO_MANY_PAGES": "The file has more than 50 pages — split it and upload again",
         "generic": "Could not save, please try again"
-      }
+      },
+      "boxFree": "You sign anywhere you choose on {{files}} files"
     }
   }
 }

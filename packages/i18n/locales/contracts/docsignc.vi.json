@@ -48,7 +48,8 @@
         "SIGN_PDF_INVALID": "Không đọc được tệp PDF này — tải lại bản khác",
         "SIGN_TOO_MANY_PAGES": "Tệp quá 50 trang — tách nhỏ rồi tải lại",
         "generic": "Chưa lưu được, vui lòng thử lại"
-      }
+      },
+      "boxFree": "Bạn ký ở vị trí tự chọn trên {{files}} tệp"
     }
   }
 }

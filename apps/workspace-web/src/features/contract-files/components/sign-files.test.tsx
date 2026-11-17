@@ -21,6 +21,7 @@ const f = (o: Partial<SignFileOut>): SignFileOut =>
     can_prep: true,
     pages: 3,
     needs_sign: true,
+    signed_by_me_in_turn: false,
     latest: { version_id: null, seq: 0, url: "" },
     fields: [],
     ...o,
