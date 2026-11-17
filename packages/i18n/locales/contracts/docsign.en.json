@@ -1,0 +1,41 @@
+{
+  "contracts": {
+    "docsign": {
+      "close": "Close",
+      "kindLabel": "Sign with",
+      "kind": { "internal": "Internal signature", "digital": "Digital signature" },
+      "tray": {
+        "title": "Drag onto the page",
+        "mine": "My signature",
+        "field": "Signing spot for {{name}}",
+        "sideA": "Party A",
+        "sideB": "Party B"
+      },
+      "pageLabel": "Page {{n}}",
+      "seamLabel": "Across {{count}} pages: {{pages}}",
+      "dropHint": "Drag onto a page",
+      "clickToSign": "Click to sign",
+      "waiting": "Waiting for {{name}} to sign",
+      "copyAll": "Copy to every page",
+      "remove": "Delete",
+      "changePerson": "Change person",
+      "ctxAddMine": "Add my signature here",
+      "ctxAddField": "Add a signing spot for {{name}}",
+      "markAria": "Signature, {{label}}",
+      "fieldAria": "Signing spot of {{name}}",
+      "resizeAria": "Resize",
+      "rail": "Pages",
+      "railPage": "Go to page {{n}}",
+      "tabBadge": "{{count}} spots",
+      "loading": "Loading file…",
+      "loadFail": "Cannot open this file",
+      "tooManyPages": "The signature spans more than 5 pages; make it smaller or place it again",
+      "leave": {
+        "title": "Leave signing?",
+        "body": "Unsaved signatures will be lost",
+        "stay": "Stay",
+        "go": "Leave"
+      }
+    }
+  }
+}

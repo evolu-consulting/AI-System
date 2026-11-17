@@ -1,0 +1,41 @@
+{
+  "contracts": {
+    "docsign": {
+      "close": "Đóng",
+      "kindLabel": "Ký bằng",
+      "kind": { "internal": "Chữ ký nội bộ", "digital": "Chữ ký số" },
+      "tray": {
+        "title": "Kéo vào trang",
+        "mine": "Chữ ký của tôi",
+        "field": "Chỗ ký {{name}}",
+        "sideA": "Bên A",
+        "sideB": "Bên B"
+      },
+      "pageLabel": "Trang {{n}}",
+      "seamLabel": "Giáp lai {{count}} trang: {{pages}}",
+      "dropHint": "Kéo vào trang",
+      "clickToSign": "Bấm để ký",
+      "waiting": "Chờ {{name}} ký",
+      "copyAll": "Chép sang mọi trang",
+      "remove": "Xoá",
+      "changePerson": "Đổi người",
+      "ctxAddMine": "Thêm chữ ký của tôi ở đây",
+      "ctxAddField": "Thêm chỗ ký cho {{name}}",
+      "markAria": "Chữ ký, {{label}}",
+      "fieldAria": "Chỗ ký của {{name}}",
+      "resizeAria": "Đổi cỡ",
+      "rail": "Các trang",
+      "railPage": "Đến trang {{n}}",
+      "tabBadge": "{{count}} chỗ",
+      "loading": "Đang tải tệp…",
+      "loadFail": "Không mở được tệp này",
+      "tooManyPages": "Chữ ký trùm quá 5 trang, hãy thu nhỏ hoặc đặt lại",
+      "leave": {
+        "title": "Rời màn ký?",
+        "body": "Các chữ ký chưa lưu sẽ mất",
+        "stay": "Ở lại",
+        "go": "Rời đi"
+      }
+    }
+  }
+}
