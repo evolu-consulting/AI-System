@@ -127,34 +127,46 @@ export class GateService {
    * mọi tệp cần ký (409 `SIGN_REQUIRED` + `details.files`); bản đã ký là chứng cứ chữ ký (không đòi ảnh vẽ tay). Công ty tắt / run không
    * gắn gói ⇒ như cũ (CR-170). Gói đọc số câu cố định.
    */
-  async #assertEvidence(
+  async #withEvidence(
     run: Parameters<typeof evidenceModeOf>[0],
     idx: number,
     actor: string,
     b: ReviewDecisionRequest,
-  ): Promise<void> {
+  ): Promise<ReviewDecisionRequest> {
     const mode = evidenceModeOf(run, idx);
     const pk = run.packKey;
     const ask = b.result === "pass" && mode === "opinion_plus" && pk && this.d.packBeforePass;
+    const wantSignature = !!b.evidence && !b.evidence.signature_attachment_id;
     const sign = ask
-      ? await this.d.packBeforePass?.({ tenantId: run.tenantId, packKey: pk, runId: run.id, actor })
+      ? await this.d.packBeforePass?.({
+          tenantId: run.tenantId,
+          packKey: pk,
+          runId: run.id,
+          actor,
+          wantSignature,
+        })
       : null;
     if (sign && sign.missing.length > 0) throw claimError("SIGN_REQUIRED", { files: sign.missing });
     const ev = { result: b.result, mode, evidence: b.evidence, signedOnDoc: sign?.onDoc === true };
     if (evidenceCheck(ev) !== "ok") throw claimError("EVIDENCE_REQUIRED");
+    // Q4 · máy chủ gắn «Chữ ký của tôi» (đã chép thành tệp của người duyệt) vào bằng chứng thay ảnh vẽ tay.
+    const sid = sign?.signatureAttachmentId;
+    return sid && b.evidence
+      ? { ...b, evidence: { ...b.evidence, signature_attachment_id: sid } }
+      : b;
   }
 
   async #review(
     tx: Tx,
     req: Req,
     taskId: string,
-    b: ReviewDecisionRequest,
+    b0: ReviewDecisionRequest,
     form?: FormSubmit,
     onEvidence?: (evidenceId: string) => void,
   ): Promise<Outcome<TaskDetail>> {
     const { v, groupIds } = req;
     const task = await g.loadTask(tx, taskId);
-    assertMayDecide(task, req, b);
+    assertMayDecide(task, req, b0);
     const idx = task.stage_idx;
     // T19-perf · khoá run (§10, câu ĐẦU) + 2 câu đọc gửi liền (cùng kết nối ⇒ đọc SAU khi giữ khoá). Run không thấy ⇒ 404.
     const [run, recipients, s] = await Promise.all([
@@ -163,9 +175,9 @@ export class GateService {
       stageRowOf(tx, task.process_run_id, idx),
     ]);
     assertHeadGate(run, idx, task, req); // run không thấy ⇒ 404 · S1b · head_only (snapshot đã khoá)
-    assertReviewAllowed(run, idx, v.userId, b); // N2-FR-05 403 · P-b2 422 BACK_TARGET_INVALID — trước khi đóng task
+    assertReviewAllowed(run, idx, v.userId, b0); // N2-FR-05 403 · P-b2 422 BACK_TARGET_INVALID — trước khi đóng task
     // CR-127 · E4 · bước bật "Ý kiến + chữ ký hoặc tệp" ⇒ Duyệt thiếu bằng chứng = 422 TRƯỚC khi đóng task (không ghi gì). Form: bỏ qua.
-    if (!form) await this.#assertEvidence(run, idx, v.userId, b);
+    const b = form ? b0 : await this.#withEvidence(run, idx, v.userId, b0);
     const gx: Gx = { d: this.d, tx };
     // CR-127 · E5 · "Cần: tất cả": ghi phiếu (+ bằng chứng của phiếu); chưa đủ n ⇒ thẻ vẫn mở.
     const vote = await allVoteStep(

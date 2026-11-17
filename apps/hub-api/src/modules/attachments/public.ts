@@ -9,6 +9,7 @@ export {
   difyFileInput,
   uploadToDify,
 } from "./attachment-dify";
+export { insertAttachment } from "./attachments.repo"; // CR-181 s9 · chép «Chữ ký của tôi» vào bằng chứng duyệt
 export { contentLengthOf } from "./attachments.routes";
 export type { AttachmentService, OutputJob, UploadInput } from "./attachments.service";
 export { OutputClaimLost } from "./attachments.service";

@@ -93,8 +93,20 @@ export type PackDecidedEvent = {
 
 export type { PackTaskEventIn, PackTaskEventKind } from "../application/ports";
 /** CR-181 · BR-D2 · hỏi gói trước khi Đạt (run gắn gói, bước bằng chứng `opinion_plus`). */
-export type PackBeforePass = { tenantId: string; packKey: string; runId: string; actor: string };
-export type PackPassCheck = { onDoc: boolean; missing: string[] };
+export type PackBeforePass = {
+  tenantId: string;
+  packKey: string;
+  runId: string;
+  actor: string;
+  /** Bằng chứng gửi kèm chưa có chữ ký ⇒ gói chép «Chữ ký của tôi» thành tệp (Q4). */
+  wantSignature: boolean;
+};
+/** `signatureAttachmentId` = tệp `hub.attachments` (của `actor`) chứa chữ ký đang dùng (Q4); null ⇒ không có. */
+export type PackPassCheck = {
+  onDoc: boolean;
+  missing: string[];
+  signatureAttachmentId?: string | null;
+};
 export type PackTaskEvent = PackTaskEventIn & { runId: string; stageKey: string; key: string };
 
 export const NOOP_LAUNCHER: StageLauncher = { kick: async () => {} };

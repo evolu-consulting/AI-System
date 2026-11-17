@@ -23,8 +23,14 @@ export const signFlowHooks: {
   /** Thả bước chờ `esign.completed` của HĐ (cùng đường ký số / tải lên). */
   completed?: (tenantId: string, contractId: string, data: Record<string, string>) => Promise<void>;
   /** BR-D2 · trước khi Đạt bước duyệt có bằng chứng (`runId` = lượt chạy engine). null ⇒ không áp. */
-  beforePass?: (e: { tenantId: string; runId: string; actor: string }) => Promise<{
+  beforePass?: (e: {
+    tenantId: string;
+    runId: string;
+    actor: string;
+    wantSignature: boolean;
+  }) => Promise<{
     onDoc: boolean;
     missing: string[];
+    signatureAttachmentId?: string | null;
   } | null>;
 } = {};

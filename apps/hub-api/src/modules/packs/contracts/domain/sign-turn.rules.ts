@@ -25,8 +25,9 @@ type St = {
   after?: { kind?: unknown; evidence?: unknown; also_group_ids?: unknown } | null;
 };
 const asSt = (x: unknown): St => (typeof x === "object" && x !== null ? (x as St) : {});
-const isEvidenceReview = (s: St) =>
-  s.executor?.kind === "approve" && s.after?.evidence === "opinion_plus";
+/** Bước duyệt = khối Duyệt (`approve`) hoặc stage có cổng duyệt sau (`after.kind = review`, như engine đọc `evidenceModeOf`). */
+const isReview = (s: St) => s.executor?.kind === "approve" || s.after?.kind === "review";
+const isEvidenceReview = (s: St) => isReview(s) && s.after?.evidence === "opinion_plus";
 const isSignWait = (s: St) =>
   s.executor?.kind === "wait_event" && s.executor.event === "esign.completed";
 
@@ -73,7 +74,7 @@ export function signTurnOf(s: OpenSignStep | null, userId: string): SignTurn {
   if (!s) return { allowed: false, reason: "NO_OPEN_STEP" };
   const st = asSt(s.stages[s.idx]);
   const mine = new Set(s.myGroups);
-  if (st.executor?.kind === "approve") {
+  if (isReview(st)) {
     if (!isEvidenceReview(st)) return { allowed: false, reason: "STEP_NO_SIGN" };
     const t = s.task;
     if (!t) return { allowed: false, reason: "NO_OPEN_STEP" };

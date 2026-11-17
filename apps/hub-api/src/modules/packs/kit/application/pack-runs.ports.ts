@@ -330,9 +330,10 @@ export type PackRunsBridge = {
   beforePass?: Partial<
     Record<
       string,
-      (e: { tenantId: string; runId: string; actor: string }) => Promise<{
+      (e: { tenantId: string; runId: string; actor: string; wantSignature: boolean }) => Promise<{
         onDoc: boolean;
         missing: string[];
+        signatureAttachmentId?: string | null;
       } | null>
     >
   >;

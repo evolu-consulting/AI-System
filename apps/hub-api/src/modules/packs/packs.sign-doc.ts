@@ -5,18 +5,22 @@
 //   · `turn` = lượt ký theo bước đang mở của lượt (BR-D1, luật thuần `signTurnOf`);
 //   · s9 gắn `signFlowHooks`: chặn Gửi (BR-T2/C3), kiểm Đạt (BR-D2), bước Ký `ondoc` tự xong (BR-D3/C4, Q8) — `onDocSigned`.
 // Perf: cổng lượt ký = 1 câu hub (+1 đọc Group khi có Group); kiểm Đạt = 1 câu thiết lập + 1 câu gói; ô Bên A = 1 câu gói. Không theo hàng.
+
+import { createHash } from "node:crypto";
+import { ATTACH_MAX_BYTES } from "@ai/contracts/chat";
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { logger } from "../../lib/logger";
+import { type AttachmentStorage, insertAttachment, storageKey } from "../attachments/public";
 import { packRecordStepOf } from "../processes/public";
-import { signaturesRepo } from "../signatures/public";
+import { signatureForStamp, signaturesRepo } from "../signatures/public";
 import { packAssignees } from "./contracts/adapters/manage.members";
 import { signDocsRepo } from "./contracts/adapters/sign-docs.repo";
 import { signFieldsRepo } from "./contracts/adapters/sign-fields.repo";
 import type { CompanySigner } from "./contracts/application/sign-doc.usecase";
-import type { SignHubPort } from "./contracts/application/sign-save.usecase";
 import { signFlowHooks } from "./contracts/application/sign-flow.hooks";
+import type { SignHubPort } from "./contracts/application/sign-save.usecase";
 import { signPartnerOf } from "./contracts/domain/event-flow-steps.rules";
 import { signReadiness } from "./contracts/domain/sign.rules";
 import type { SignTurnPort } from "./contracts/domain/sign-turn.port";
@@ -106,7 +110,7 @@ export type SignFlow = {
 };
 
 /** s9 · gắn `signFlowHooks` + trả cổng lượt ký và `onDocSigned`. */
-export function signFlowOf(db: Db): SignFlow {
+export function signFlowOf(db: Db, storage?: AttachmentStorage): SignFlow {
   const reads = packReads(db);
   const onDoc = onDocEnabledOf(db);
   const fireIfDone = async (
@@ -123,8 +127,15 @@ export function signFlowOf(db: Db): SignFlow {
   signFlowHooks.ondocOpened = (tenantId, contractId, signers) =>
     fireIfDone(tenantId, contractId, signers).catch(safe("sign-ondoc-open-failed", contractId));
   signFlowHooks.beforePass = async (e) => {
-    if (!(await onDoc({ tenantId: e.tenantId, userId: e.actor }))) return null;
-    return { onDoc: true, missing: await reads.unsignedBy(e.tenantId, e.runId, e.actor) };
+    const who = { tenantId: e.tenantId, userId: e.actor };
+    if (!(await onDoc(who))) return null;
+    const missing = await reads.unsignedBy(e.tenantId, e.runId, e.actor);
+    const copy = missing.length === 0 && e.wantSignature && storage;
+    return {
+      onDoc: true,
+      missing,
+      signatureAttachmentId: copy ? await signatureAttachment(db, storage, who) : null,
+    };
   };
   signFlowHooks.submitCheck = async (who, contractId, flows) => {
     const stages = flows.flat();
@@ -196,6 +207,54 @@ export function signHubPort(db: Db, view: PackAccessView): SignHubPort {
   };
 }
 
+/**
+ * Q4 · chép PNG «Chữ ký của tôi» (chữ ký đang dùng, `hub.signature_for_stamp`) thành tệp `hub.attachments` CỦA người duyệt ⇒ id cho
+ * `signature_attachment_id` của bằng chứng. Ghi kho trước, rồi một câu INSERT (scope người dùng). Chưa có chữ ký / lỗi ⇒ null (bằng chứng
+ * vẫn hợp lệ nhờ bản đã ký trên tệp).
+ */
+async function signatureAttachment(
+  db: Db,
+  storage: AttachmentStorage,
+  who: Who,
+): Promise<string | null> {
+  try {
+    const sig = await signatureForStamp(db, who, "main");
+    if (!sig) return null;
+    const id = crypto.randomUUID();
+    const bytes = new Uint8Array(sig.png);
+    const staged = await storage.stage(
+      storageKey(who.tenantId, id),
+      new Blob([bytes], { type: "image/png" }).stream(),
+      { maxBytes: ATTACH_MAX_BYTES },
+    );
+    await staged.commit();
+    await withHubScope(db, { kind: "user", tenantId: who.tenantId, userId: who.userId }, (tx) =>
+      insertAttachment(tx, {
+        id,
+        tenantId: who.tenantId,
+        userId: who.userId,
+        origin: "upload",
+        jobId: null,
+        conversationId: null,
+        flowId: null,
+        filename: "chu-ky.png",
+        safeName: "chu-ky.png",
+        mime: "image/png",
+        size: bytes.byteLength,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+        fileboxFileId: staged.fileId ?? null,
+        fileboxVersionId: staged.versionId ?? null,
+      }),
+    );
+    return id;
+  } catch (e) {
+    logger.warn("sign-evidence-signature-copy-failed", {
+      error: e instanceof Error ? e.name : "unknown",
+    });
+    return null;
+  }
+}
+
 /** Stage của quy trình áp cho HĐ: lượt đang mở ⇒ snapshot của lượt; còn Nháp ⇒ quy trình mà Gửi duyệt sẽ chọn. */
 async function flowStagesOf(db: Db, who: Who, contractId: string): Promise<unknown[][]> {
   const s = await stepOf(db, who, contractId);
@@ -207,7 +266,8 @@ export function signDocPorts(db: Db, view: PackAccessView, flow?: SignFlow): Sig
   const assignees = packAssignees(db, view, "contracts");
   return {
     onDocEnabled: onDocEnabledOf(db),
-    ...(flow ? { turn: flow.turn } : {}),
+    hub: signHubPort(db, view),
+    ...(flow ? { turn: flow.turn, onDocSigned: flow.onDocSigned } : {}),
     companySigners: async (who, contractId) => {
       const flows = await flowStagesOf(db, who, contractId);
       const signers =

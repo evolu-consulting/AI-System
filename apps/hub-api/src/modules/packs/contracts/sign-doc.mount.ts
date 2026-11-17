@@ -30,6 +30,12 @@ export type SignDocPorts = {
   hub: SignHubPort;
   /** Lát s9 cài thật; vắng ⇒ `noTurn`. */
   turn?: SignTurnPort;
+  /** CR-181 · s9 · sau COMMIT của Lưu: bước Ký `ondoc` đủ ô ⇒ thả bước. */
+  onDocSigned?: (
+    who: { tenantId: string; userId: string },
+    contractId: string,
+    runId: string,
+  ) => Promise<void>;
 };
 
 export function signDocModule(
@@ -71,6 +77,7 @@ export function signDocModule(
     },
     maxBytes,
     hub: ports.hub,
+    ...(ports.onDocSigned ? { onSigned: ports.onDocSigned } : {}),
     turn,
     companySigners: ports.companySigners,
     onDocEnabled: ports.onDocEnabled,

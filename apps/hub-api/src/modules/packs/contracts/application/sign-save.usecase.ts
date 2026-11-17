@@ -81,6 +81,8 @@ export type SignSaveDeps = {
   newId: () => string;
   now: () => Date;
   orgOf: (tenantId: string) => string;
+  /** CR-181 · s9 · SAU COMMIT: bước Ký `ondoc` của lượt đủ ô Bên A ⇒ thả bước (không ném). Vắng ⇒ không báo. */
+  onSigned?: (who: PackWho, contractId: string, runId: string) => Promise<void>;
 };
 
 const urlOf = (id: string, fileId: string, vid: string | null) =>
@@ -168,6 +170,25 @@ function helpers(d: SignSaveDeps) {
   };
 }
 
+/** s9 · soát s8 #3 (TOCTOU): lượt ký kiểm lại SAU khi khoá tệp — bước đã đổi / lượt khác ⇒ bỏ (bản ghi đúng `run_id` của lượt). */
+async function turnStill(d: SignSaveDeps, who: PackWho, id: string, runId: string | null) {
+  const now = await d.turn.turnFor(who, id, who.userId);
+  if (!now.allowed || (now.run_id ?? null) !== runId) throw new SignDocFail("forbidden");
+}
+/** s9 · soát s8 #4: chỗ ký vừa bị người khác ký / không thuộc tệp ⇒ số dòng ≠ số chỗ ⇒ stale (rollback cả bản). */
+async function markAll(
+  r: Pick<SignDocRepos, "fields">,
+  id: string,
+  fieldIds: readonly string[],
+  by: string,
+  versionId: string,
+) {
+  const want = new Set(fieldIds).size;
+  if (want === 0) return;
+  if ((await r.fields.markSigned(id, fieldIds, by, versionId)) !== want)
+    throw new SignDocFail("stale");
+}
+
 export function signSaveUsecases(d: SignSaveDeps) {
   const h = helpers(d);
   return {
@@ -184,6 +205,7 @@ export function signSaveUsecases(d: SignSaveDeps) {
       const res = await d.uow
         .tenant(who, async (r) => {
           if (!(await r.signDoc.lockDoc(id, fileId))) throw new SignDocFail("not_found");
+          await turnStill(d, who, id, turn.run_id ?? null);
           const cur = await r.versions.latest(id, fileId);
           if ((cur?.id ?? null) !== (snap.latest?.id ?? null)) throw new SignDocFail("stale");
           const outRowId = d.newId();
@@ -214,7 +236,7 @@ export function signSaveUsecases(d: SignSaveDeps) {
             })),
           });
           if (!v) throw new SignDocFail("not_found");
-          if (fieldIds.length > 0) await r.fields.markSigned(id, fieldIds, who.userId, v.id);
+          await markAll(r, id, fieldIds, who.userId, v.id);
           const all = await r.fields.listByContract(id);
           const mine = (f: { signer_kind: string; signer_ref: string }) =>
             signers.some(
@@ -247,6 +269,8 @@ export function signSaveUsecases(d: SignSaveDeps) {
           },
         })
         .catch(() => undefined);
+      // s9 · BR-D3/C4 · Q8 · sau COMMIT: đủ ô Bên A của bước Ký `ondoc` ⇒ thả bước chờ (cổng tự nuốt lỗi).
+      if (turn.run_id && d.onSigned) await d.onSigned(who, id, turn.run_id).catch(() => undefined);
       return res;
     },
 
