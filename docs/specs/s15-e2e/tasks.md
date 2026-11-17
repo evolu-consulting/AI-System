@@ -31,4 +31,5 @@ Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: test e2e + seed e2e)
 
 ## Việc còn lại
-- Chạy lại cr181 sau khi hết lỗi web e2e (xem báo cáo) và 2 fix sản phẩm; chạy các test khoá cr127 (j01, j11, j17) + journey-approval cr141.
+- cr181: 5 pass / 5 fail (lượt 5). Đỏ: thẻ «Mở và ký» (`approver-sign`) không hiện cho trưởng phòng; `/my-signature` từ menu về Tổng quan. Chạy lại sau khi sản phẩm sửa.
+- cr127 (j01/j11/j17): job đếm 96 spec > 60 ⇒ evotest từ chối, cần điều phối cho -Wave; cr141-sign-or-upload không nằm trong testMatch của job nào.
