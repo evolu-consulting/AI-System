@@ -14,6 +14,7 @@ import {
   prepareSignPlaces,
   saleSends,
   saveSigned,
+  seedPartnerContact,
   stepEventually,
 } from "./_cr181-kit";
 
@@ -35,6 +36,7 @@ test("K01-K04 · sale: lần đầu tạo chữ ký → tải HĐ → Cần ký 
   expect(await createSignatureIfAsked(page, "Lê Mạnh Cường")).toBe(true);
 
   id = await draftSample(page, E, RUN);
+  await seedPartnerContact(id, "doi-tac-ky@e2e.test"); // Bên B: liên hệ đầu tiên có email (trước khi chuẩn bị chỗ ký)
   // chưa có chỗ ký ⇒ chưa gửi được, nói rõ lý do
   await expect(page.getByTestId("sign-prep")).toContainText("chỗ ký");
   await prepareSignPlaces(page);
@@ -99,6 +101,7 @@ test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; B
   await createSignatureIfAsked(page, "Nguyễn Giám Đốc");
   await page.goto(`${E.cw}/contracts/sign/${id}`);
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText(/Chờ đối tác/).first()).toBeVisible(); // ô Bên B, không chặn
   await page.getByRole("button", { name: "Bấm để ký" }).first().click();
   const isSign = (m: string, u: string) => m === "POST" && u.endsWith("/sign");
   const reqP = page.waitForRequest((r) => isSign(r.method(), r.url()));
@@ -118,11 +121,11 @@ test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; B
   const json = JSON.stringify(diag, null, 2);
   console.log("[k07-diag]", json);
   await testInfo.attach("k07-diag.json", { body: json, contentType: "application/json" });
-  // ô Bên B chưa ký không chặn: HĐ chưa có liên hệ đối tác có email nên chưa có ô Bên B ⇒ tệp «Đã ký»; ô Bên B «Chờ đối tác» cần seed liên hệ đối tác (việc kế); trang HĐ không tự cập nhật ⇒ tải lại tới khi đổi
+  // Bên A ký xong ⇒ bước Ký passed dù Bên B còn chờ (Q6); tệp báo «Chờ đối tác»; trang HĐ không tự cập nhật ⇒ tải lại tới khi đổi
   await page.goto(`${E.cw}/contracts/c/${id}`);
   await expect(async () => {
     await page.reload();
-    await expect(page.getByTestId("sign-status").first()).toContainText("Đã ký", {
+    await expect(page.getByTestId("sign-status").first()).toContainText("Chờ đối tác", {
       timeout: 5_000,
     });
   }).toPass({ timeout: 90_000 });

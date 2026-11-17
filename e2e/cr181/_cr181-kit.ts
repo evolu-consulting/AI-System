@@ -16,6 +16,7 @@ import {
   uploadPdfAndOpen,
 } from "../cr127/_cr127-kit";
 import { stepOf } from "../journey-approval/_journey";
+import { withOwner } from "../support/helpers";
 
 export const HEAD = "e2e-kd-truong";
 const FONT = path.resolve(
@@ -232,4 +233,17 @@ export async function collectDiag(
     if (u === who[0]) out.approval = await get(s, "/approval");
   }
   return out;
+}
+
+/** Đối tác của HĐ có liên hệ đầu tiên có email (người ký Bên B ở đợt 2; đợt 1 chỉ hiện «Chờ đối tác ký», không chặn). SQL owner như `seedPartner`. */
+export async function seedPartnerContact(contractId: string, email: string): Promise<void> {
+  await withOwner(async (sql) => {
+    const rows =
+      await sql`insert into contracts.partner_contacts (tenant_id, party_key, name, email, created_by)
+      select c.tenant_id, p.party_key, 'Liên hệ ký E2E', ${email}, c.created_by
+      from contracts.contracts c, lateral contracts.partner_role_of(c) p
+      where c.id = ${contractId}::uuid and p.party_key is not null returning 1`;
+    if (rows.length === 0)
+      throw new Error(`seedPartnerContact: HĐ ${contractId} chưa có đối tác (party_key)`);
+  });
 }
