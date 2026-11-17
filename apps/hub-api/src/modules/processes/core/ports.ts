@@ -92,6 +92,9 @@ export type PackDecidedEvent = {
 };
 
 export type { PackTaskEventIn, PackTaskEventKind } from "../application/ports";
+/** CR-181 · BR-D2 · hỏi gói trước khi Đạt (run gắn gói, bước bằng chứng `opinion_plus`). */
+export type PackBeforePass = { tenantId: string; packKey: string; runId: string; actor: string };
+export type PackPassCheck = { onDoc: boolean; missing: string[] };
 export type PackTaskEvent = PackTaskEventIn & { runId: string; stageKey: string; key: string };
 
 export const NOOP_LAUNCHER: StageLauncher = { kick: async () => {} };
@@ -157,6 +160,9 @@ export type ProcessDeps = {
   /** [AUDIT] · quyết task duyệt của run gắn gói đi đường chung `/review-tasks/:id/decision` ⇒ báo gói ghi lịch sử (HĐ:
    *  `stage_decided`) SAU COMMIT, cùng hàm ghi của thẻ gói. Vắng ⇒ không gói nào nghe. */
   packDecided?: (e: PackDecidedEvent) => Promise<void>;
+  /** CR-181 · BR-D2 · TRƯỚC khi Đạt bước duyệt có bằng chứng của run gắn gói: gói báo tệp cần ký người duyệt chưa Lưu chữ ký trong
+   *  lượt (`missing`) + công ty có bật ký trên tài liệu (`onDoc`). null ⇒ gói không áp (như cũ). Vắng ⇒ không gói nào áp. */
+  packBeforePass?: (e: PackBeforePass) => Promise<PackPassCheck | null>;
   /** [AUDIT] · nhận / trả / giao lại / tự trả / chuyển cấp task duyệt của run gắn gói (đã COMMIT) ⇒ gói ghi lịch sử, theo lô. */
   packTaskEvents?: (packKey: string, rows: PackTaskEvent[]) => Promise<void>;
 };

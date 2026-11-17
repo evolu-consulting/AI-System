@@ -56,6 +56,8 @@ export type EsignView = {
   signers: { kind: "user" | "group"; id: string }[];
   partnerSigns: boolean | null;
   order: "parallel" | "sequential" | null;
+  /** CR-181 · «Ký qua» của bước (khoá nhà cung cấp / `upload` / `ondoc`); vắng ⇒ null. */
+  provider?: string | null;
 };
 export type SignPartnerView = { esign: EsignView | null; partnerSend: boolean };
 
@@ -64,7 +66,7 @@ const PARTNER_TOOL = "contracts-partner-send";
 type ToolStage = { executor?: { kind?: unknown; tool_key?: unknown; args?: unknown } | null };
 const SIGNER = /^(user|group):([0-9a-f-]{36})$/i;
 
-function constArgs(args: unknown): Record<string, string | number | boolean> {
+export function constArgs(args: unknown): Record<string, string | number | boolean> {
   const out: Record<string, string | number | boolean> = {};
   if (typeof args !== "object" || args === null) return out;
   for (const [k, v] of Object.entries(args)) {
@@ -94,5 +96,6 @@ export function signPartnerOf(stages: readonly unknown[]): SignPartnerView {
       : a.partner_signs === false || a.partner_signs === "false"
         ? false
         : null;
-  return { esign: { signers, partnerSigns: ps, order }, partnerSend };
+  const provider = typeof a.provider === "string" && a.provider !== "" ? a.provider : null;
+  return { esign: { signers, partnerSigns: ps, order, provider }, partnerSend };
 }

@@ -14,11 +14,14 @@ export const SUBMIT_ERRORS = {
   NO_APPROVAL_FLOW: 409,
   /** CR-157: HĐ nhập tay chưa tích "đã đối chiếu với tệp gốc" ⇒ không Lưu/Gửi duyệt được. */
   RECONCILE_REQUIRED: 422,
+  /** CR-181 · BR-T2/C3 · thiếu tệp cần ký / chỗ ký (lý do ở `submit_block`). */
+  SIGN_NOT_READY: 422,
 } as const;
 export type SubmitErrorCode = keyof typeof SUBMIT_ERRORS;
 
 /** NF1 · lý do báo TRƯỚC vì sao không Gửi được (chi tiết HĐ `submit_block`): `no_flow` = công ty chưa có quy trình duyệt khớp. */
-export const SUBMIT_BLOCKS = ["no_flow"] as const;
+/** CR-181 · BR-T2/C3 · `sign_no_files` = quy trình có bước ký trên tài liệu mà chưa có tệp cần ký; `sign_missing_fields` = tệp cần ký thiếu chỗ ký của người ký công ty. */
+export const SUBMIT_BLOCKS = ["no_flow", "sign_no_files", "sign_missing_fields"] as const;
 export type SubmitBlock = (typeof SUBMIT_BLOCKS)[number];
 
 /** `POST /contracts/:id/submit` — gửi lần đầu hoặc Gửi lại (`submit_round > 0`, chạy lại quy trình từ bước đầu). */

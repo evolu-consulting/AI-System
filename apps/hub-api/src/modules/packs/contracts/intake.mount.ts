@@ -11,6 +11,7 @@ import type { WithConfig } from "../packs.tenant-config";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { INTAKE_TOOL_KEYS, intakeTools } from "./adapters/intake.tools";
+import { signFlowHooks } from "./application/sign-flow.hooks";
 import { type AttachmentBytes, mountCreateFromStep } from "./create-from-step.mount";
 import { contractCodeLabel } from "./domain/contract-name";
 import type { CompletedHook, ESignModule } from "./esign.mount";
@@ -122,4 +123,18 @@ export function mountIntake(
       data,
     );
   });
+  // CR-181 · s9 · bước Ký `ondoc` xong ⇒ thả bước chờ (cùng khoá `esign.completed`); BR-D2 · cầu kiểm trước khi Đạt (đọc lười).
+  signFlowHooks.completed = async (tenantId, contractId, data) => {
+    await d.packRuns?.port?.signalEvent(
+      tenantId,
+      { pack: "contracts", record_id: contractId },
+      "esign.completed",
+      data,
+    );
+  };
+  if (d.packRuns)
+    d.packRuns.beforePass = {
+      ...d.packRuns.beforePass,
+      contracts: async (e) => (await signFlowHooks.beforePass?.(e)) ?? null,
+    };
 }

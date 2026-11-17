@@ -10,12 +10,15 @@ type DetailLike = {
   status: string;
   superseded: boolean;
   can: Can;
-  submit_block?: "no_flow" | null;
+  submit_block?: "no_flow" | "sign_no_files" | "sign_missing_fields" | null;
 };
 
 export function withSubmitBlock<D extends DetailLike>(
   inner: GetContract<D>,
-  flowOpen: (who: PackWho, id: string) => Promise<boolean>,
+  flowOpen: (
+    who: PackWho,
+    id: string,
+  ) => Promise<boolean | "sign_no_files" | "sign_missing_fields">,
   onError?: (e: unknown) => void,
 ): GetContract<D> {
   return async (who, id) => {
@@ -27,7 +30,12 @@ export function withSubmitBlock<D extends DetailLike>(
       onError?.(e);
       return null;
     });
-    if (open !== false) return { ...c, submit_block: null };
-    return { ...c, can: { ...c.can, submit: false }, submit_block: "no_flow" };
+    if (open === true || open === null) return { ...c, submit_block: null };
+    // CR-181 · BR-T2/C3 · lý do ký trên tài liệu (thiếu tệp cần ký / thiếu chỗ ký) cũng chặn Gửi.
+    return {
+      ...c,
+      can: { ...c.can, submit: false },
+      submit_block: open === false ? "no_flow" : open,
+    };
   };
 }

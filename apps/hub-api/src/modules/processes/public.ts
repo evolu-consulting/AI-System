@@ -17,6 +17,8 @@ export { agentIdOf, runsAsAgent } from "./nodes/registry";
 export type { CredentialJobShape } from "./runs/apply.rules";
 export { credentialJobAllows, credentialUsername } from "./runs/apply.rules";
 export { reportMatchesJob } from "./runs/autofix.rules";
+export type { PackRecordStep } from "./runs/pack-record-step";
+export { packRecordStepOf } from "./runs/pack-record-step"; // CR-181 s9 · cổng lượt ký
 export { packRecordPort } from "./runs/pack-run-record"; // cr125-contract-from-step
 export { normSection, sectionMap } from "./runs/template.rules";
 export { bindGroupKeys, groupKeysOf } from "./triggers/group-keys.rules"; // cr126-seed-esign-signer

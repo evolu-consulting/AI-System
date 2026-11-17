@@ -110,6 +110,13 @@ export type FlowAvailability<TX = unknown> = {
     q: { tenantId: string; app: string; event: string; facts: FlowFacts },
     o: { starterId: string },
   ): Promise<FlowOutline | null>;
+  /** CR-181 · s9 · snapshot stage của các quy trình SẼ chạy (CÙNG chọn với `hasFlowFor`); không khớp ⇒ []. Hai câu cố định. */
+  stagesFor?(q: {
+    tenantId: string;
+    app: string;
+    event: string;
+    facts: FlowFacts;
+  }): Promise<unknown[][]>;
 };
 
 /** CR-127 · M4 · kết quả `outline` (cùng hình dạng với `SubmitPreviewResponse` không có `block`). */

@@ -2,6 +2,7 @@
 // kiểm cấu hình lúc LƯU def, đổi mục người ký (user/Group) thành user ký. Lớp 2: chỉ cổng.
 import {
   ESIGN_NODE_DUE_DAYS_MAX,
+  ESIGN_NODE_ONDOC,
   ESIGN_NODE_ORDERS,
   ESIGN_NODE_REMIND_HOURS_MAX,
   ESIGN_NODE_SIGNERS_MAX,
@@ -54,7 +55,8 @@ export function esignNodeApi(d: EsignNodeDeps) {
   };
   /** CR-146b · «Ký qua»: `upload` luôn hợp lệ; nhà cung cấp phải đang bật + khả dụng của CHÍNH công ty. */
   const providerIssue = async (tenantId: string, provider: string): Promise<Issues> => {
-    if (provider === ESIGN_NODE_UPLOAD) return [];
+    // CR-181 · Q1 · ký trên tài liệu không cần nhà cung cấp ký số đang bật.
+    if (provider === ESIGN_NODE_UPLOAD || provider === ESIGN_NODE_ONDOC) return [];
     const s = await d.settingsOf(tenantId);
     const ok = s.enabled && s.providers.some((p) => p.available && p.key === provider);
     return ok ? [] : [{ field: "provider", code: "PROVIDER_NOT_ENABLED" }];

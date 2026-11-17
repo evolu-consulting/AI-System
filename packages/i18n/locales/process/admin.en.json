@@ -1566,6 +1566,7 @@
       "provider": "Sign via",
       "providerPick": "Pick how to sign",
       "providerUpload": "Upload the signed copy (no e-signature)",
+      "providerOnDoc": "Sign on the document (internal signature)",
       "signersPick": "Pick signers",
       "order": "Signing order",
       "orders": {

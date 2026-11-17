@@ -326,4 +326,14 @@ export type PackRunsBridge = {
   onDecided?: Partial<Record<string, (e: PackDecided) => Promise<void>>>;
   /** [AUDIT] · gói gắn theo khoá gói; engine gọi theo lô sau COMMIT. */
   onTaskEvents?: Partial<Record<string, (rows: PackTaskEvent[]) => Promise<void>>>;
+  /** CR-181 · BR-D2 · gói gắn theo khoá gói; engine gọi TRƯỚC khi Đạt bước duyệt có bằng chứng (đọc, không ghi). */
+  beforePass?: Partial<
+    Record<
+      string,
+      (e: { tenantId: string; runId: string; actor: string }) => Promise<{
+        onDoc: boolean;
+        missing: string[];
+      } | null>
+    >
+  >;
 };

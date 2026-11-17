@@ -122,6 +122,28 @@ export class GateService {
     return out.body;
   }
 
+  /**
+   * CR-127 · E4 + CR-181 · BR-D2 · Q3/Q4: công ty bật ký trên tài liệu ⇒ Đạt bước `opinion_plus` của run gắn gói cần chữ ký đã Lưu trên
+   * mọi tệp cần ký (409 `SIGN_REQUIRED` + `details.files`); bản đã ký là chứng cứ chữ ký (không đòi ảnh vẽ tay). Công ty tắt / run không
+   * gắn gói ⇒ như cũ (CR-170). Gói đọc số câu cố định.
+   */
+  async #assertEvidence(
+    run: Parameters<typeof evidenceModeOf>[0],
+    idx: number,
+    actor: string,
+    b: ReviewDecisionRequest,
+  ): Promise<void> {
+    const mode = evidenceModeOf(run, idx);
+    const pk = run.packKey;
+    const ask = b.result === "pass" && mode === "opinion_plus" && pk && this.d.packBeforePass;
+    const sign = ask
+      ? await this.d.packBeforePass?.({ tenantId: run.tenantId, packKey: pk, runId: run.id, actor })
+      : null;
+    if (sign && sign.missing.length > 0) throw claimError("SIGN_REQUIRED", { files: sign.missing });
+    const ev = { result: b.result, mode, evidence: b.evidence, signedOnDoc: sign?.onDoc === true };
+    if (evidenceCheck(ev) !== "ok") throw claimError("EVIDENCE_REQUIRED");
+  }
+
   async #review(
     tx: Tx,
     req: Req,
@@ -143,12 +165,7 @@ export class GateService {
     assertHeadGate(run, idx, task, req); // run không thấy ⇒ 404 · S1b · head_only (snapshot đã khoá)
     assertReviewAllowed(run, idx, v.userId, b); // N2-FR-05 403 · P-b2 422 BACK_TARGET_INVALID — trước khi đóng task
     // CR-127 · E4 · bước bật "Ý kiến + chữ ký hoặc tệp" ⇒ Duyệt thiếu bằng chứng = 422 TRƯỚC khi đóng task (không ghi gì). Form: bỏ qua.
-    if (
-      !form &&
-      evidenceCheck({ result: b.result, mode: evidenceModeOf(run, idx), evidence: b.evidence }) !==
-        "ok"
-    )
-      throw claimError("EVIDENCE_REQUIRED");
+    if (!form) await this.#assertEvidence(run, idx, v.userId, b);
     const gx: Gx = { d: this.d, tx };
     // CR-127 · E5 · "Cần: tất cả": ghi phiếu (+ bằng chứng của phiếu); chưa đủ n ⇒ thẻ vẫn mở.
     const vote = await allVoteStep(

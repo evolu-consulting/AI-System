@@ -24,6 +24,7 @@ import { bridgeRoutes } from "./bridge/bridge.routes";
 import { type Clock, clockOf } from "./core/clock";
 import type { ProcessHandles } from "./core/handles";
 import type {
+  PackBeforePass,
   PackDecidedEvent,
   PackTaskEvent,
   ProcessBgDeps,
@@ -172,6 +173,13 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     ...base,
     launcher,
     ...(packDecided ? { packDecided } : {}),
+    // CR-181 · BR-D2 · gói kiểm «đã ký đủ tệp cần ký» trước khi Đạt (đọc lười mỗi lần gọi).
+    ...(bridge
+      ? {
+          packBeforePass: async (e: PackBeforePass) =>
+            (await bridge.beforePass?.[e.packKey]?.(e)) ?? null,
+        }
+      : {}),
     // [AUDIT] · nhận / trả / giao lại / tự trả / chuyển cấp ⇒ gói ghi lịch sử (`onTaskEvents[packKey]`).
     ...(bridge
       ? {

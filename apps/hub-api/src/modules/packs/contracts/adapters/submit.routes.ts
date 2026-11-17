@@ -29,6 +29,8 @@ const MSG: Record<SubmitErrorCode, string> = {
   CONTRACT_NOT_REJECTED: "Chỉ tạo lại từ hợp đồng bị từ chối.",
   RECONCILE_REQUIRED: 'Hợp đồng nhập tay — tích "Tôi đã đối chiếu với tệp gốc" trước khi gửi.',
   NO_APPROVAL_FLOW: "Công ty chưa có quy trình duyệt hợp đồng — nhờ quản trị soạn ở mục Quy trình.",
+  SIGN_NOT_READY:
+    "Chưa chuẩn bị đủ tệp cần ký và chỗ ký cho người ký — mở «Chuẩn bị chỗ ký» trước khi gửi.",
 };
 function fail(code: string, details?: Record<string, unknown>): never {
   if (code === "not_found") throw appError("NOT_FOUND");

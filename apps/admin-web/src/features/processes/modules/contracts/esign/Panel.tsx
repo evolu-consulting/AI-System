@@ -4,6 +4,7 @@
 // kiểm bằng `<…>/node-config/check` mỗi khi cấu hình đổi, lỗi hiện tại ô (`field`). Tổng quát theo manifest; bộ mã hoá ở `lib/node-config.ts`.
 import { isApproverGroup } from "@ai/contracts/groups";
 import {
+  ESIGN_NODE_ONDOC,
   ESIGN_NODE_ORDERS,
   ESIGN_NODE_UPLOAD,
   type ESignNodeCheckOut,
@@ -204,6 +205,7 @@ export function EsignPanel(p: NodePanelProps) {
             { value: DEFAULT, label: t(`${K}providerPick`) },
             ...o.providers.map((x) => ({ value: x.key, label: x.label })),
             { value: ESIGN_NODE_UPLOAD, label: t(`${K}providerUpload`) },
+            { value: ESIGN_NODE_ONDOC, label: t(`${K}providerOnDoc`) },
           ]}
           onChange={(v) => set({ provider: v === DEFAULT ? undefined : v })}
         />

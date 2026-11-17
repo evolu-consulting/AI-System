@@ -1566,6 +1566,7 @@
       "provider": "Ký qua",
       "providerPick": "Chọn cách ký",
       "providerUpload": "Tải lên bản đã ký (không ký số)",
+      "providerOnDoc": "Ký trên tài liệu (chữ ký nội bộ)",
       "signersPick": "Chọn người ký",
       "order": "Thứ tự ký",
       "orders": {

@@ -11,6 +11,7 @@ import { CONTRACTS_PACK, EV_SUBMITTED } from "../domain/contract-flow-events.rul
 import { transition } from "../domain/contract-state.rules";
 import { needsReconcile } from "../domain/manual-entry.rules";
 import type { ContractFlowGate, ContractFlowRepo } from "./contract-flow.ports";
+import { type SignSubmitBlock, signFlowHooks } from "./sign-flow.hooks";
 
 export type SubmitTxRepos = {
   sub: SubmissionsRepo;
@@ -26,7 +27,8 @@ export type SubmitErr =
   | "UNCHANGED_REASON_REQUIRED"
   | "STATE_CONFLICT"
   | "NO_APPROVAL_FLOW"
-  | "RECONCILE_REQUIRED";
+  | "RECONCILE_REQUIRED"
+  | "SIGN_NOT_READY";
 export type SubmitOk = { status: "processing" | "done"; no_flow: boolean; round: number };
 export type SubmitOpts = {
   unchangedReason?: string | undefined;
@@ -76,7 +78,19 @@ async function flowQuery(r: SubmitTxRepos, who: PackWho, id: string, d: SubmitDe
 async function flowOf(r: SubmitTxRepos, who: PackWho, id: string, d: SubmitDeps) {
   const { q, departments, eng } = await flowQuery(r, who, id, d);
   const hasFlow = eng ? await eng.availability.hasFlowFor(null, q) : false;
-  return { hasFlow, departments };
+  return { hasFlow, departments, signBlock: hasFlow ? await signBlockOf(who, id, q, eng) : null };
+}
+
+/** CR-181 · BR-T2/C3 · quy trình sẽ chạy có bước ký trên tài liệu + công ty bật + thiếu tệp/chỗ ký ⇒ lý do chặn. Vắng cổng ⇒ null. */
+async function signBlockOf(
+  who: PackWho,
+  id: string,
+  q: Parameters<FlowEngine["availability"]["hasFlowFor"]>[1],
+  eng: FlowEngine | null,
+): Promise<SignSubmitBlock | null> {
+  const check = signFlowHooks.submitCheck;
+  if (!eng?.availability.stagesFor || !check) return null;
+  return check(who, id, await eng.availability.stagesFor(q));
 }
 
 /** Hồ sơ lần gửi (+ bằng chứng "Gửi lại không đổi"). */
@@ -114,9 +128,10 @@ export async function submitInTx(
   if (!h) return { error: "not_found" };
   const bad = precheck(h, who, o);
   if (bad) return { error: bad };
-  const { hasFlow, departments } = await flowOf(r, who, id, d);
+  const { hasFlow, departments, signBlock } = await flowOf(r, who, id, d);
   // NF1 · chưa có quy trình duyệt khớp ⇒ chặn TRƯỚC mọi câu ghi (HĐ giữ DRAFT, không lượt / hồ sơ / sự kiện).
   if (!hasFlow) return { error: "NO_APPROVAL_FLOW" };
+  if (signBlock) return { error: "SIGN_NOT_READY" }; // CR-181 · BR-T2/C3 (lý do cụ thể ở `submit_block` của chi tiết)
   const plan = transition("draft", "submit", { hasFlow });
   if ("error" in plan) return { error: "STATE_CONFLICT" };
   const aid = await r.sub.openFlowLot(id, who.userId, o.links ?? null); // NF1: tới đây luôn có quy trình ⇒ luôn mở lượt
@@ -142,8 +157,19 @@ export async function submitInTx(
 
 /** NF1 · `submit_block` của chi tiết HĐ: CÙNG `flowOf` với lệnh Gửi (một nguồn) — true = Gửi sẽ có quy trình khớp. Chỉ chi tiết (không N+1). */
 export function submitFlowOpen(d: SubmitDeps & { uow: PackUow<SubmitTxRepos> }) {
-  return (who: PackWho, id: string): Promise<boolean> =>
-    d.uow.tenant(who, async (r) => (await flowOf(r, who, id, d)).hasFlow);
+  // CR-181 · s9 · cùng bộ chọn ⇒ «stage của quy trình sẽ chạy» cho người ký công ty khi HĐ còn Nháp (gắn một lần lúc dựng).
+  signFlowHooks.plannedStages = async (who, id) => {
+    const eng = d.engine();
+    if (!eng?.availability.stagesFor) return [];
+    const { q } = await d.uow.tenant(who, (r) => flowQuery(r, who, id, d));
+    return eng.availability.stagesFor(q);
+  };
+  /** true = có quy trình, không bị chặn; false = không có quy trình; chuỗi = lý do chặn ký trên tài liệu (CR-181). */
+  return (who: PackWho, id: string): Promise<boolean | SignSubmitBlock> =>
+    d.uow.tenant(who, async (r) => {
+      const f = await flowOf(r, who, id, d);
+      return f.hasFlow ? (f.signBlock ?? true) : false;
+    });
 }
 
 export type SubmitPreview =

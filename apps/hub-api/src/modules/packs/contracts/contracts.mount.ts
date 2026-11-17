@@ -66,7 +66,10 @@ export type ContractsClock = {
   /** CR-123 · u10 · cầu engine để đặt nhãn cột "Bước" (một lô `stepsViewMany` cho cả trang); vắng ⇒ không có `step_label`. */
   runs?: PackRunsBridge;
   /** CR-127 NF1 · "Gửi sẽ có quy trình khớp?" (= `submitFlowOpen` của lệnh Gửi, dựng ở `contractsAiModule`); vắng ⇒ không có `submit_block`. */
-  submitFlowOpen?: (who: PackWho, id: string) => Promise<boolean>;
+  submitFlowOpen?: (
+    who: PackWho,
+    id: string,
+  ) => Promise<boolean | "sign_no_files" | "sign_missing_fields">;
 };
 
 const stepLabelsOf = (runs: PackRunsBridge | undefined) =>

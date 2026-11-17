@@ -38,11 +38,14 @@ export function evidenceCheck(b: {
   result: "pass" | "fail" | "reject";
   mode: "opinion" | "opinion_plus" | null | undefined;
   evidence?: { note: string; signature_attachment_id?: string; attachment_ids?: readonly string[] };
+  /** CR-181 · Q4 · công ty bật ký trên tài liệu và người duyệt đã Lưu chữ ký trên mọi tệp cần ký ⇒ đã có chứng cứ chữ ký. */
+  signedOnDoc?: boolean;
 }): "ok" | "EVIDENCE_REQUIRED" {
   if (b.result !== "pass" || b.mode !== "opinion_plus") return "ok";
   const e = b.evidence;
   if (!e || !hasText(e.note)) return "EVIDENCE_REQUIRED";
-  const proof = !!e.signature_attachment_id || (e.attachment_ids?.length ?? 0) > 0;
+  const proof =
+    b.signedOnDoc === true || !!e.signature_attachment_id || (e.attachment_ids?.length ?? 0) > 0;
   return proof ? "ok" : "EVIDENCE_REQUIRED";
 }
 

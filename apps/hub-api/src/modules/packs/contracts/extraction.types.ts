@@ -47,7 +47,10 @@ export type ContractsAi = {
   myApprovals?: ReturnType<typeof myApprovals>;
   /** CR-101 DOC-deals-fix: mở lượt duyệt cấp 1 cho HĐ vừa về Chờ duyệt (nâng giao dịch khi bật duyệt). */
   /** CR-127 NF1 · "Gửi sẽ có quy trình khớp?" — cùng `flowOf` của lệnh Gửi; chi tiết HĐ dùng cho `submit_block`. */
-  submitFlowOpen: (who: PackWho, id: string) => Promise<boolean>;
+  submitFlowOpen: (
+    who: PackWho,
+    id: string,
+  ) => Promise<boolean | "sign_no_files" | "sign_missing_fields">;
 };
 export type ContractsFlowDeps = EsignHooks & {
   ai: AiClient;

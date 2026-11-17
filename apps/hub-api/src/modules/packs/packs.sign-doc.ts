@@ -1,21 +1,161 @@
-// CR-181 · s8 phần A · cổng hub cho «Ký trên tài liệu» (gói contracts không import module hub — nối ở đây, như `recordRunFiles`):
+// CR-181 · s8 phần A + s9 · cổng hub cho «Ký trên tài liệu» (gói contracts không import module hub — nối ở đây, như `recordRunFiles`):
 //   · `onDocEnabled` = thiết lập chữ ký của công ty (module `signatures`, hub 0155);
-//   · `companySigners` = `company_signers` của bước Ký trong quy trình `contract.submitted` đang bật (Q2). Chưa có lượt: lấy quy trình
-//     Bật đầu tiên (theo `position`) có bước Ký; lát s9 sẽ chọn đúng quy trình của lượt khi HĐ đã gửi duyệt.
+//   · `companySigners` = `company_signers` của bước Ký (Q2) trong quy trình CỦA LƯỢT đang mở; HĐ còn Nháp ⇒ quy trình mà bộ chọn của lệnh
+//     Gửi duyệt sẽ chọn (`signFlowHooks.plannedStages`, cùng `flowQuery` + `runPlanOf`);
+//   · `turn` = lượt ký theo bước đang mở của lượt (BR-D1, luật thuần `signTurnOf`);
+//   · s9 gắn `signFlowHooks`: chặn Gửi (BR-T2/C3), kiểm Đạt (BR-D2), bước Ký `ondoc` tự xong (BR-D3/C4, Q8) — `onDocSigned`.
+// Perf: cổng lượt ký = 1 câu hub (+1 đọc Group khi có Group); kiểm Đạt = 1 câu thiết lập + 1 câu gói; ô Bên A = 1 câu gói. Không theo hàng.
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { logger } from "../../lib/logger";
-import { eventFlowsOf } from "../processes/public";
+import { packRecordStepOf } from "../processes/public";
 import { signaturesRepo } from "../signatures/public";
 import { packAssignees } from "./contracts/adapters/manage.members";
+import { signDocsRepo } from "./contracts/adapters/sign-docs.repo";
+import { signFieldsRepo } from "./contracts/adapters/sign-fields.repo";
 import type { CompanySigner } from "./contracts/application/sign-doc.usecase";
 import type { SignHubPort } from "./contracts/application/sign-save.usecase";
+import { signFlowHooks } from "./contracts/application/sign-flow.hooks";
 import { signPartnerOf } from "./contracts/domain/event-flow-steps.rules";
+import { signReadiness } from "./contracts/domain/sign.rules";
+import type { SignTurnPort } from "./contracts/domain/sign-turn.port";
+import {
+  needsOnDoc,
+  type OndocSigner,
+  ondocDone,
+  ondocKeys,
+  ondocSignersIn,
+  ondocStepAt,
+  signBlockOf,
+  signTurnOf,
+} from "./contracts/domain/sign-turn.rules";
 import type { SignDocPorts } from "./contracts/sign-doc.mount";
-import type { PackAccessView } from "./kit/public";
+import { createPackUow, type PackAccessView } from "./kit/public";
 
-const FLOW_EVENT = "contract.submitted";
+type Who = { tenantId: string; userId: string };
+const PACK = "contracts";
+const stepOf = (db: Db, who: Who, contractId: string) =>
+  packRecordStepOf(db, {
+    tenantId: who.tenantId,
+    packKey: PACK,
+    recordId: contractId,
+    userId: who.userId,
+  });
+
+function onDocEnabledOf(db: Db) {
+  return (who: Who) =>
+    withHubScope(
+      db,
+      { kind: "user", tenantId: who.tenantId, userId: who.userId },
+      async (tx) => (await signaturesRepo(tx).getSettings()).settings.on_doc_enabled,
+    );
+}
+
+/** Đọc của gói (scope tenant hệ thống, `tenant_id` tường minh trong câu). */
+function packReads(db: Db) {
+  const uow = createPackUow(db, PACK, (tx, t) => ({
+    tx,
+    t,
+    docs: signDocsRepo(tx, t),
+    fields: signFieldsRepo(tx, t),
+  }));
+  return {
+    /** BR-D3/C4 · ô Bên A của người ký công ty (tệp còn cần ký): tổng + còn mở. Một câu. */
+    ondocCounts: (tenantId: string, contractId: string, keys: readonly string[]) =>
+      uow.system(tenantId, async (r) => {
+        const [c] = await r.tx.execute<{ total: number; open: number }>(sql`
+          select count(*)::int as total, (count(*) filter (where f.signed_version_id is null))::int as open
+          from contracts.sign_fields f
+          join contracts.sign_docs d on d.tenant_id = f.tenant_id and d.contract_id = f.contract_id
+            and d.file_id = f.file_id and d.needs_sign
+          where f.tenant_id = ${r.t}::uuid and f.contract_id = ${contractId}::uuid and f.side = 'A'
+            and (f.signer_kind || ':' || lower(f.signer_ref::text)) = any(${`{${keys.join(",")}}`}::text[])`);
+        return { total: Number(c?.total ?? 0), open: Number(c?.open ?? 0) };
+      }),
+    /** BR-D2 · tệp cần ký của HĐ thuộc lượt `runId` mà `actor` chưa có bản chưa void Lưu trong lượt này. Một câu. */
+    unsignedBy: (tenantId: string, runId: string, actor: string) =>
+      uow.system(tenantId, async (r) => {
+        const rows = await r.tx.execute<{ file_id: string }>(sql`
+          select d.file_id::text as file_id from contracts.sign_docs d
+          where d.tenant_id = ${r.t}::uuid and d.needs_sign
+            and d.contract_id = (select a.contract_id from contracts.approvals a
+              where a.tenant_id = ${r.t}::uuid and a.engine_run_id = ${runId}::uuid limit 1)
+            and not exists (select 1 from contracts.sign_versions v
+              where v.tenant_id = d.tenant_id and v.contract_id = d.contract_id and v.file_id = d.file_id
+                and v.signed_by = ${actor}::uuid and v.run_id = ${runId}::uuid and v.voided_at is null)
+          order by d.set_at, d.file_id`);
+        return rows.map((x) => x.file_id);
+      }),
+    /** BR-C3 · tệp cần ký + chỗ ký của HĐ (2 câu). */
+    prep: (tenantId: string, contractId: string) =>
+      uow.system(tenantId, async (r) => {
+        const [docs, fields] = await Promise.all([
+          r.docs.listByContract(contractId),
+          r.fields.listByContract(contractId),
+        ]);
+        return { docs, fields };
+      }),
+  };
+}
+
+export type SignFlow = {
+  turn: SignTurnPort;
+  /** Đường Lưu chữ ký gọi SAU COMMIT: bước Ký `ondoc` đang mở của đúng lượt ⇒ đủ ô Bên A thì thả bước. Không ném. */
+  onDocSigned: (ctx: Who, contractId: string, runId: string) => Promise<void>;
+};
+
+/** s9 · gắn `signFlowHooks` + trả cổng lượt ký và `onDocSigned`. */
+export function signFlowOf(db: Db): SignFlow {
+  const reads = packReads(db);
+  const onDoc = onDocEnabledOf(db);
+  const fireIfDone = async (
+    tenantId: string,
+    contractId: string,
+    signers: readonly OndocSigner[],
+  ) => {
+    if (signers.length === 0 || !signFlowHooks.completed) return;
+    if (!ondocDone(await reads.ondocCounts(tenantId, contractId, ondocKeys(signers)))) return;
+    await signFlowHooks.completed(tenantId, contractId, { signed_at: new Date().toISOString() });
+  };
+  const safe = (m: string, contractId: string) => (e: unknown) =>
+    logger.warn(m, { contract_id: contractId, error: e instanceof Error ? e.name : "unknown" });
+  signFlowHooks.ondocOpened = (tenantId, contractId, signers) =>
+    fireIfDone(tenantId, contractId, signers).catch(safe("sign-ondoc-open-failed", contractId));
+  signFlowHooks.beforePass = async (e) => {
+    if (!(await onDoc({ tenantId: e.tenantId, userId: e.actor }))) return null;
+    return { onDoc: true, missing: await reads.unsignedBy(e.tenantId, e.runId, e.actor) };
+  };
+  signFlowHooks.submitCheck = async (who, contractId, flows) => {
+    const stages = flows.flat();
+    if (!needsOnDoc(stages) || !(await onDoc(who))) return null;
+    const { docs, fields } = await reads.prep(who.tenantId, contractId);
+    const signers = ondocSignersIn(stages).map((s) => ({
+      side: "A" as const,
+      kind: s.kind,
+      ref: s.id,
+      name: "",
+      mine: false,
+    }));
+    const files = docs.map((d) => ({ file_id: d.file_id, name: "", needs_sign: d.needs_sign }));
+    return signBlockOf(signReadiness(files, fields, signers));
+  };
+  return {
+    turn: {
+      turnFor: async (ctx, contractId, userId) =>
+        signTurnOf(await stepOf(db, { ...ctx, userId }, contractId), userId),
+    },
+    onDocSigned: async (ctx, contractId, runId) => {
+      try {
+        const s = await stepOf(db, ctx, contractId);
+        if (!s || s.runId !== runId) return;
+        await fireIfDone(ctx.tenantId, contractId, ondocStepAt(s.stages, s.idx) ?? []);
+      } catch (e) {
+        safe("sign-ondoc-signed-failed", contractId)(e);
+      }
+    },
+  };
+}
 
 /** Cổng hub của Lưu chữ ký (BR-K3): chữ ký đang dùng của ĐÚNG người gọi (`hub.signature_for_stamp`), thiết lập, họ tên + chức vụ (CR-147), audit `document_signed`. */
 export function signHubPort(db: Db, view: PackAccessView): SignHubPort {
@@ -56,21 +196,22 @@ export function signHubPort(db: Db, view: PackAccessView): SignHubPort {
   };
 }
 
-export function signDocPorts(db: Db, view: PackAccessView): SignDocPorts {
+/** Stage của quy trình áp cho HĐ: lượt đang mở ⇒ snapshot của lượt; còn Nháp ⇒ quy trình mà Gửi duyệt sẽ chọn. */
+async function flowStagesOf(db: Db, who: Who, contractId: string): Promise<unknown[][]> {
+  const s = await stepOf(db, who, contractId);
+  if (s) return [s.stages];
+  return (await signFlowHooks.plannedStages?.(who, contractId)) ?? [];
+}
+
+export function signDocPorts(db: Db, view: PackAccessView, flow?: SignFlow): SignDocPorts {
   const assignees = packAssignees(db, view, "contracts");
   return {
-    hub: signHubPort(db, view),
-    onDocEnabled: (who) =>
-      withHubScope(
-        db,
-        { kind: "user", tenantId: who.tenantId, userId: who.userId },
-        async (tx) => (await signaturesRepo(tx).getSettings()).settings.on_doc_enabled,
-      ),
-    companySigners: async (who) => {
-      const flows = await eventFlowsOf(db, who.tenantId, FLOW_EVENT);
+    onDocEnabled: onDocEnabledOf(db),
+    ...(flow ? { turn: flow.turn } : {}),
+    companySigners: async (who, contractId) => {
+      const flows = await flowStagesOf(db, who, contractId);
       const signers =
-        flows.map((f) => signPartnerOf(f.stages).esign?.signers ?? []).find((s) => s.length > 0) ??
-        [];
+        flows.map((f) => signPartnerOf(f).esign?.signers ?? []).find((s) => s.length > 0) ?? [];
       if (signers.length === 0) return [];
       const groupIds = signers.filter((s) => s.kind === "group").map((s) => s.id);
       const names = new Map((await assignees.list(who)).map((m) => [m.id, m.name]));

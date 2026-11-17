@@ -8,6 +8,8 @@ import type { ESignProviderOut } from "./esign";
 
 /** CR-146b · giá trị «Ký qua» = tải lên bản đã ký, không ký số (đường chờ tải lên). */
 export const ESIGN_NODE_UPLOAD = "upload";
+/** CR-181 · Q1 · «Ký qua» = ký trên tài liệu bằng chữ ký nội bộ: không phong bì, bước chờ tới khi mọi chỗ ký Bên A đã ký (BR-D3/C4). */
+export const ESIGN_NODE_ONDOC = "ondoc";
 export const ESIGN_NODE_ORDERS = ["parallel", "sequential"] as const;
 export type EsignNodeOrder = (typeof ESIGN_NODE_ORDERS)[number];
 export const ESIGN_NODE_SIGNERS_MAX = 3;

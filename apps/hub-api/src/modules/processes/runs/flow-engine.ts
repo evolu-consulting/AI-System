@@ -12,6 +12,7 @@ import type { OutboxEvent } from "../application/ports";
 import type { ProcessDeps } from "../core/ports";
 import { RunControlService } from "../gates/run-control.service";
 import { outlineOfRun } from "../library/flow-outline.service";
+import { flowRowsOf } from "../library/flow-preview.repo";
 import { type ClaimedEvent, candidatesOf } from "../triggers/dispatcher.repo";
 import { planEvent } from "../triggers/match.rules";
 
@@ -108,6 +109,16 @@ export function flowEngineOf(d: ProcessDeps): FlowEngine {
       // CR-127 · M4 · các bước sẽ đi qua (CÙNG `runPlanOf`); chưa có quy trình khớp ⇒ null.
       async outline(q, o) {
         return outlineOfRun(d.db, q, await runPlanOf(d, q), o.starterId);
+      },
+      // CR-181 · s9 · stage của quy trình sẽ chạy (bước Ký trên tài liệu / bước duyệt có bằng chứng ⇒ chặn Gửi khi thiếu chỗ ký).
+      async stagesFor(q) {
+        const ids = (await runPlanOf(d, q)).map((c) => c.flowId);
+        if (ids.length === 0) return [];
+        const rows = await withHubScope(d.db, SYS, (tx) => flowRowsOf(tx, q.tenantId, ids));
+        return ids.flatMap((id) => {
+          const st = rows.get(id)?.stages;
+          return Array.isArray(st) ? [st as unknown[]] : [];
+        });
       },
     },
     runControl: {

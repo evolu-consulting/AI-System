@@ -26,6 +26,7 @@ import { approvalWrite } from "./approval.repo";
 import { contractStateRepo } from "./contract-state.repo";
 import { CREATOR_DEPARTMENTS_SQL } from "./flow-facts.repo";
 import { productLinksRepo } from "./product-links.repo";
+import { signVersionsRepo } from "./sign-versions.repo";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -180,6 +181,8 @@ async function applyQ(tx: Tx, tid: string, i: OutcomeInput, o: ContractOutcome):
     runId: a0.id,
   });
   if (!g.ok) return none;
+  // CR-181 · Q17 · BR-L2 · Trả lại / Từ chối ⇒ bỏ các bản đã ký của lượt (giữ để tra) + mở lại chỗ ký. CÙNG tx, một câu.
+  if (!approved) await signVersionsRepo(tx, tid).voidByRun(i.runId);
   const [r] = await tx.execute<{ links: unknown }>(sql`with
     u as (update contracts.contracts c set
         -- CR-122 · bước Ký số đã khoá HĐ; Từ chối / Trả lại ⇒ mở khoá (HĐ chưa xác nhận không giữ khoá)
