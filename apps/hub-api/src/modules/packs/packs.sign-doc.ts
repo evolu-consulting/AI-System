@@ -6,18 +6,16 @@
 //   · s9 gắn `signFlowHooks`: chặn Gửi (BR-T2/C3), kiểm Đạt (BR-D2), bước Ký `ondoc` tự xong (BR-D3/C4, Q8) — `onDocSigned`.
 // Perf: cổng lượt ký = 1 câu hub (+1 đọc Group khi có Group); kiểm Đạt = 1 câu thiết lập + 1 câu hub + 1 câu gói; ô Bên A = 1 câu gói. Không theo hàng.
 
-import { createHash } from "node:crypto";
-import { ATTACH_MAX_BYTES } from "@ai/contracts/chat";
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { logger } from "../../lib/logger";
-import { type AttachmentStorage, insertAttachment, storageKey } from "../attachments/public";
 import { packRecordStepOf } from "../processes/public";
-import { signatureForStamp, signaturesRepo } from "../signatures/public";
+import { signaturesRepo } from "../signatures/public";
 import { packAssignees } from "./contracts/adapters/manage.members";
 import { signDocsRepo } from "./contracts/adapters/sign-docs.repo";
 import { signFieldsRepo } from "./contracts/adapters/sign-fields.repo";
+import { ondocCounts } from "./contracts/adapters/sign-flow.engine";
 import type { CompanySigner } from "./contracts/application/sign-doc.usecase";
 import { signFlowHooks } from "./contracts/application/sign-flow.hooks";
 import type { SignHubPort } from "./contracts/application/sign-save.usecase";
@@ -67,29 +65,18 @@ function packReads(db: Db) {
   return {
     /** BR-D3/C4 · ô Bên A của người ký công ty (tệp còn cần ký): tổng + còn mở. Một câu. */
     ondocCounts: (tenantId: string, contractId: string, keys: readonly string[]) =>
-      uow.system(tenantId, async (r) => {
-        const [c] = await r.tx.execute<{ total: number; open: number }>(sql`
-          select count(*)::int as total, (count(*) filter (where f.signed_version_id is null))::int as open
-          from contracts.sign_fields f
-          join contracts.sign_docs d on d.tenant_id = f.tenant_id and d.contract_id = f.contract_id
-            and d.file_id = f.file_id and d.needs_sign
-          where f.tenant_id = ${r.t}::uuid and f.contract_id = ${contractId}::uuid and f.side = 'A'
-            and (f.signer_kind || ':' || lower(f.signer_ref::text)) = any(${`{${keys.join(",")}}`}::text[])`);
-        return { total: Number(c?.total ?? 0), open: Number(c?.open ?? 0) };
-      }),
-    /** BR-D2 · tệp cần ký của HĐ thuộc lượt `runId` mà `actor` chưa có bản chưa void Lưu trong lượt này. Một câu. */
-    unsignedBy: (tenantId: string, contractId: string, runId: string, actor: string) =>
-      uow.system(tenantId, async (r) => {
-        const rows = await r.tx.execute<{ file_id: string }>(sql`
-          select d.file_id::text as file_id from contracts.sign_docs d
-          where d.tenant_id = ${r.t}::uuid and d.needs_sign
-            and d.contract_id = ${contractId}::uuid
-            and not exists (select 1 from contracts.sign_versions v
+      uow.system(tenantId, (r) => ondocCounts(r.tx, r.t, contractId, keys)),
+    /** BR-D2 · tệp cần ký của HĐ + `actor` đã có bản chưa void Lưu trong lượt `runId` chưa. Một câu. */
+    signedBy: (tenantId: string, contractId: string, runId: string, actor: string) =>
+      uow.system(tenantId, (r) =>
+        r.tx.execute<{ file_id: string; signed: boolean }>(sql`
+          select d.file_id::text as file_id, exists (select 1 from contracts.sign_versions v
               where v.tenant_id = d.tenant_id and v.contract_id = d.contract_id and v.file_id = d.file_id
-                and v.signed_by = ${actor}::uuid and v.run_id = ${runId}::uuid and v.voided_at is null)
-          order by d.set_at, d.file_id`);
-        return rows.map((x) => x.file_id);
-      }),
+                and v.signed_by = ${actor}::uuid and v.run_id = ${runId}::uuid and v.voided_at is null) as signed
+          from contracts.sign_docs d
+          where d.tenant_id = ${r.t}::uuid and d.needs_sign and d.contract_id = ${contractId}::uuid
+          order by d.set_at, d.file_id`),
+      ),
     /** BR-C3 · tệp cần ký + chỗ ký của HĐ (2 câu). */
     prep: (tenantId: string, contractId: string) =>
       uow.system(tenantId, async (r) => {
@@ -109,7 +96,7 @@ export type SignFlow = {
 };
 
 /** s9 · gắn `signFlowHooks` + trả cổng lượt ký và `onDocSigned`. */
-export function signFlowOf(db: Db, storage?: AttachmentStorage): SignFlow {
+export function signFlowOf(db: Db): SignFlow {
   const reads = packReads(db);
   const onDoc = onDocEnabledOf(db);
   const fireIfDone = async (
@@ -123,8 +110,6 @@ export function signFlowOf(db: Db, storage?: AttachmentStorage): SignFlow {
   };
   const safe = (m: string, contractId: string) => (e: unknown) =>
     logger.warn(m, { contract_id: contractId, error: e instanceof Error ? e.name : "unknown" });
-  signFlowHooks.ondocOpened = (tenantId, contractId, signers) =>
-    fireIfDone(tenantId, contractId, signers).catch(safe("sign-ondoc-open-failed", contractId));
   signFlowHooks.beforePass = async (e) => {
     const who = { tenantId: e.tenantId, userId: e.actor };
     if (!(await onDoc(who))) return null;
@@ -134,13 +119,10 @@ export function signFlowOf(db: Db, storage?: AttachmentStorage): SignFlow {
         where id = ${e.runId}::uuid and tenant_id = ${e.tenantId}::uuid and pack_key = ${PACK}`),
     );
     if (!run?.id) return null;
-    const missing = await reads.unsignedBy(e.tenantId, run.id, e.runId, e.actor);
-    const copy = missing.length === 0 && e.wantSignature && storage;
-    return {
-      onDoc: true,
-      missing,
-      signatureAttachmentId: copy ? await signatureAttachment(db, storage, who) : null,
-    };
+    const files = await reads.signedBy(e.tenantId, run.id, e.runId, e.actor);
+    const missing = files.filter((f) => !f.signed).map((f) => f.file_id);
+    // Soát Opus #3: không có tệp cần ký ⇒ không coi là đã ký (luật cũ CR-170; chữ ký vẫn tự gắn theo Q4 nhờ `companyOn`).
+    return { companyOn: true, onDoc: files.length > 0 && missing.length === 0, missing };
   };
   signFlowHooks.submitCheck = async (who, contractId, flows) => {
     const stages = flows.flat();
@@ -210,54 +192,6 @@ export function signHubPort(db: Db, view: PackAccessView): SignHubPort {
       );
     },
   };
-}
-
-/**
- * Q4 · chép PNG «Chữ ký của tôi» (chữ ký đang dùng, `hub.signature_for_stamp`) thành tệp `hub.attachments` CỦA người duyệt ⇒ id cho
- * `signature_attachment_id` của bằng chứng. Ghi kho trước, rồi một câu INSERT (scope người dùng). Chưa có chữ ký / lỗi ⇒ null (bằng chứng
- * vẫn hợp lệ nhờ bản đã ký trên tệp).
- */
-async function signatureAttachment(
-  db: Db,
-  storage: AttachmentStorage,
-  who: Who,
-): Promise<string | null> {
-  try {
-    const sig = await signatureForStamp(db, who, "main");
-    if (!sig) return null;
-    const id = crypto.randomUUID();
-    const bytes = new Uint8Array(sig.png);
-    const staged = await storage.stage(
-      storageKey(who.tenantId, id),
-      new Blob([bytes], { type: "image/png" }).stream(),
-      { maxBytes: ATTACH_MAX_BYTES },
-    );
-    await staged.commit();
-    await withHubScope(db, { kind: "user", tenantId: who.tenantId, userId: who.userId }, (tx) =>
-      insertAttachment(tx, {
-        id,
-        tenantId: who.tenantId,
-        userId: who.userId,
-        origin: "upload",
-        jobId: null,
-        conversationId: null,
-        flowId: null,
-        filename: "chu-ky.png",
-        safeName: "chu-ky.png",
-        mime: "image/png",
-        size: bytes.byteLength,
-        sha256: createHash("sha256").update(bytes).digest("hex"),
-        fileboxFileId: staged.fileId ?? null,
-        fileboxVersionId: staged.versionId ?? null,
-      }),
-    );
-    return id;
-  } catch (e) {
-    logger.warn("sign-evidence-signature-copy-failed", {
-      error: e instanceof Error ? e.name : "unknown",
-    });
-    return null;
-  }
 }
 
 /** Stage của quy trình áp cho HĐ: lượt đang mở ⇒ snapshot của lượt; còn Nháp ⇒ quy trình mà Gửi duyệt sẽ chọn. */

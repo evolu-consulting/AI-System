@@ -79,6 +79,8 @@ export type SignDocDeps = {
   onDocEnabled: (who: PackWho) => Promise<boolean>;
   turn: SignTurnPort;
   newId: () => string;
+  /** CR-181 · s9 · tự phục hồi (soát Opus #2): mở phiên khi đang tới bước Ký ⇒ kiểm lại «đủ ô Bên A» và thả bước nếu đủ. */
+  onSigned?: (who: PackWho, contractId: string, runId: string) => Promise<void>;
 };
 
 const DIGITAL_OFF = "Công ty chưa bật chữ ký số";
@@ -290,6 +292,8 @@ export function signDocUsecases(d: SignDocDeps) {
         };
       const company = await d.companySigners(who, id);
       const turn: SignTurn = await d.turn.turnFor(who, id, who.userId);
+      if (turn.allowed && turn.step === "sign" && turn.run_id && d.onSigned)
+        await d.onSigned(who, id, turn.run_id).catch(() => undefined);
       const signers = buildSigners(company, snap.partner, who.userId);
       const docBy = new Map<string, SignDocRowP>(snap.docs.map((x) => [x.file_id, x]));
       const latestBy = new Map<string, SignVersionRowP>(snap.latest.map((v) => [v.file_id, v]));

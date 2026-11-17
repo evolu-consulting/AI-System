@@ -92,20 +92,20 @@ export type PackDecidedEvent = {
 };
 
 export type { PackTaskEventIn, PackTaskEventKind } from "../application/ports";
-/** CR-181 · BR-D2 · hỏi gói trước khi Đạt (run gắn gói, bước bằng chứng `opinion_plus`). */
-export type PackBeforePass = {
+/** CR-181 · BR-D2 · hỏi gói trước khi Đạt (run gắn gói, bước bằng chứng `opinion_plus`). Chỉ đọc. */
+export type PackBeforePass = { tenantId: string; packKey: string; runId: string; actor: string };
+/** `companyOn` = công ty bật ký trên tài liệu (Q4: máy chủ gắn chữ ký); `onDoc` = có ≥ 1 tệp cần ký và người duyệt đã ký đủ
+ *  (chứng cứ chữ ký); `missing` = tệp cần ký chưa ký (⇒ 409 SIGN_REQUIRED). */
+export type PackPassCheck = { companyOn: boolean; onDoc: boolean; missing: string[] };
+/** CR-181 · s9 · stage `wait_event` của run gắn gói sắp mở: gói báo sự kiện «đã xong» ngay (vd bước Ký ondoc đã đủ ô — Q8). */
+export type PackWaitOpen = {
   tenantId: string;
   packKey: string;
+  recordId: string;
   runId: string;
-  actor: string;
-  /** Bằng chứng gửi kèm chưa có chữ ký ⇒ gói chép «Chữ ký của tôi» thành tệp (Q4). */
-  wantSignature: boolean;
-};
-/** `signatureAttachmentId` = tệp `hub.attachments` (của `actor`) chứa chữ ký đang dùng (Q4); null ⇒ không có. */
-export type PackPassCheck = {
-  onDoc: boolean;
-  missing: string[];
-  signatureAttachmentId?: string | null;
+  event: string;
+  stages: unknown[];
+  idx: number;
 };
 export type PackTaskEvent = PackTaskEventIn & { runId: string; stageKey: string; key: string };
 
@@ -175,6 +175,10 @@ export type ProcessDeps = {
   /** CR-181 · BR-D2 · TRƯỚC khi Đạt bước duyệt có bằng chứng của run gắn gói: gói báo tệp cần ký người duyệt chưa Lưu chữ ký trong
    *  lượt (`missing`) + công ty có bật ký trên tài liệu (`onDoc`). null ⇒ gói không áp (như cũ). Vắng ⇒ không gói nào áp. */
   packBeforePass?: (e: PackBeforePass) => Promise<PackPassCheck | null>;
+  /** CR-181 · s9 · Q8/D3 · TRONG tx mở stage chờ (run đã khoá): true ⇒ ghi sự kiện ngay (bước xong ở vòng hẹn kế). */
+  packWaitReady?: (tx: Tx, e: PackWaitOpen) => Promise<boolean>;
+  /** CR-181 · s9 · Q17 · TRONG tx quyết «Chưa đạt» (quay lại bước trước cùng run): gói bỏ việc của lượt (vd bản đã ký). */
+  packOnBack?: (tx: Tx, e: { tenantId: string; packKey: string; runId: string }) => Promise<void>;
   /** [AUDIT] · nhận / trả / giao lại / tự trả / chuyển cấp task duyệt của run gắn gói (đã COMMIT) ⇒ gói ghi lịch sử, theo lô. */
   packTaskEvents?: (packKey: string, rows: PackTaskEvent[]) => Promise<void>;
 };

@@ -41,6 +41,10 @@ Web màn ký, Hồ sơ duyệt PDF (s10), đối tác ký qua link. Chạm lõi 
 - Cổng gói ↔ lắp ráp qua `signFlowHooks` gắn muộn (như `registerContractDoneHook`), vì gói không import module hub.
 - Bước Ký `ondoc` = stage chờ `esign.completed` ngay sau tool Ký số `provider=ondoc` gần nhất.
 
+- Bước Duyệt quyết qua form (`/review-tasks/:id/form`, node `form`) bỏ qua BR-D2 và kiểm bằng chứng như cũ (form không mang bằng chứng — CR-118).
+- Soát Opus s9: (#1) Q8 không bắn sự kiện từ tool nữa — engine hỏi gói `signWaitReady` TRONG tx mở stage chờ, đủ ô ⇒ ghi sự kiện ⇒ hẹn tới hạn ngay; (#2) tự phục hồi: mỗi lần mở phiên ký ở bước Ký ⇒ `onDocSigned` kiểm lại; (#3) không có tệp cần ký ⇒ `onDoc=false` (luật CR-170); (#4) kiểm bằng chứng TRƯỚC, chép chữ ký bằng CHÍNH tx quyết định (`gates/sign-evidence.ts`), không mở kết nối khác; (#5) «Chưa đạt» ⇒ `signOnBack` void bản của run trong tx quyết định.
+- Blob PNG chữ ký ghi kho trước INSERT trong tx quyết định: tx rollback ⇒ blob mồ côi (không có hàng), không có hàng rác DB.
+
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
@@ -66,6 +70,8 @@ Bước Ký `ondoc` không gửi phong bì; xong khi mọi chỗ ký Bên A củ
 - Kịch bản: khi người duyệt chưa ký đủ mà bấm Đạt thì bị chặn [test: apps/hub-api/src/modules/packs/sign-flow.int.test.ts » D2 · công ty bật, Đạt khi chưa ký thì thiếu tệp, ký đủ trong lượt thì không thiếu]
 - Kịch bản: khi công ty tắt thì quyết định duyệt với chữ ký vẽ tay như cũ [test: apps/hub-api/src/modules/packs/sign-flow.int.test.ts » công ty TẮT thì không áp, quyết định với chữ ký vẽ tay như cũ]
 - Kịch bản: khi Trả lại thì các bản đã ký của lượt bị bỏ và ô mở lại [test: apps/hub-api/src/modules/packs/sign-flow.int.test.ts » Q17 · Trả lại thì các bản của lượt void và ô mở lại]
+- Kịch bản: khi Chưa đạt quay lại bước trước cùng lượt thì phải ký lại [test: apps/hub-api/src/modules/packs/sign-flow.int.test.ts » Q17 · Chưa đạt quay lại bước trước cùng run thì bỏ bản đã ký của run]
+- Kịch bản: khi HĐ không có tệp cần ký thì áp luật bằng chứng cũ [test: apps/hub-api/src/modules/packs/sign-flow.int.test.ts » D2 · HĐ không có tệp cần ký thì không coi là đã ký, áp luật bằng chứng cũ]
 - Kịch bản: khi chọn Ký qua là ký trên tài liệu thì lưu quy trình không đòi nhà cung cấp ký số [test: apps/hub-api/src/modules/packs/sign-flow.int.test.ts » Q1 · lưu quy trình có Ký qua ondoc không đòi nhà cung cấp ký số]
 
 ## Việc còn lại

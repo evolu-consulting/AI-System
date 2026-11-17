@@ -320,6 +320,15 @@ export type PackTaskEvent = {
 };
 /** [AUDIT] · một quyết định đã ghi ở engine (đối soát): như `PackDecided` + lúc quyết. */
 export type PackDecidedTask = Omit<PackDecided, "packKey"> & { at: string };
+/** CR-181 · s9 · stage `wait_event` sắp mở của run gắn bản ghi gói. */
+export type PackWaitOpenIn = {
+  tenantId: string;
+  recordId: string;
+  runId: string;
+  event: string;
+  stages: unknown[];
+  idx: number;
+};
 export type PackRunsBridge = {
   port?: PackRunsPort;
   /** [AUDIT] · gói gắn lúc mount theo khoá gói; engine gọi sau COMMIT của quyết định đi đường chung. */
@@ -330,11 +339,17 @@ export type PackRunsBridge = {
   beforePass?: Partial<
     Record<
       string,
-      (e: { tenantId: string; runId: string; actor: string; wantSignature: boolean }) => Promise<{
+      (e: { tenantId: string; runId: string; actor: string }) => Promise<{
+        companyOn: boolean;
         onDoc: boolean;
         missing: string[];
-        signatureAttachmentId?: string | null;
       } | null>
     >
+  >;
+  /** CR-181 · s9 · TRONG tx engine (`tx` = Tx của engine; gói đổi role bằng `withPackRoleInTx`): stage chờ sắp mở đã xong chưa. */
+  waitReady?: Partial<Record<string, (tx: never, e: PackWaitOpenIn) => Promise<boolean>>>;
+  /** CR-181 · s9 · Q17 · TRONG tx engine: quyết «Chưa đạt» quay lại bước trước cùng run. */
+  onBack?: Partial<
+    Record<string, (tx: never, e: { tenantId: string; runId: string }) => Promise<void>>
   >;
 };

@@ -4,7 +4,6 @@
 import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
 import type { Redis } from "../../lib/redis";
-import type { AttachmentStorage } from "../attachments/public";
 import { recordRunFiles } from "../attachments/public";
 import type { ConnectModuleDeps } from "./contracts/connect/connect.mount";
 import { contractFilesModule } from "./contracts/contract-files.mount";
@@ -26,12 +25,10 @@ export function mountContractAttachments<E extends Env>(
     /** CR-169 · bật vòng nền dọn tệp tin nhắn chưa gắn (server); test gọi thẳng `partnerFileSweep`. */
     worker?: boolean | undefined;
     signal?: AbortSignal | undefined;
-    /** CR-181 · s9 · Q4 · kho tệp hub (chép «Chữ ký của tôi» vào bằng chứng duyệt). */
-    storage?: AttachmentStorage | undefined;
   },
 ): void {
   const { db, view, fb } = d;
-  const signFlow = signFlowOf(db, d.storage); // CR-181 s9 · gắn cổng ký trên tài liệu theo lượt (chặn Gửi, kiểm Đạt, bước Ký ondoc)
+  const signFlow = signFlowOf(db); // CR-181 s9 · gắn cổng ký trên tài liệu theo lượt (chặn Gửi, kiểm Đạt, bước Ký ondoc)
   if (fb) {
     const stepFiles = (w: Parameters<typeof recordRunFiles>[1], recordId: string) =>
       recordRunFiles(db, w, { packKey: CONTRACTS_KEY, recordId });
@@ -69,7 +66,3 @@ export function connectDeps(
     signal: d.signal,
   };
 }
-
-/** CR-181 · s9 · Q4 · kho tệp hub nếu app tiêm (`AppDeps.attachments`, cùng nguồn `evidenceDeps`) — chép «Chữ ký của tôi» vào bằng chứng. */
-export const storageOf = (d: { db?: Db; attachments?: { storage: AttachmentStorage } }) =>
-  d.attachments ? { storage: d.attachments.storage } : {};

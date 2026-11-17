@@ -11,6 +11,7 @@ import type { WithConfig } from "../packs.tenant-config";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { INTAKE_TOOL_KEYS, intakeTools } from "./adapters/intake.tools";
+import { signOnBack, signWaitReady } from "./adapters/sign-flow.engine";
 import { signFlowHooks } from "./application/sign-flow.hooks";
 import { type AttachmentBytes, mountCreateFromStep } from "./create-from-step.mount";
 import { contractCodeLabel } from "./domain/contract-name";
@@ -137,4 +138,8 @@ export function mountIntake(
       ...d.packRuns.beforePass,
       contracts: async (e) => (await signFlowHooks.beforePass?.(e)) ?? null,
     };
+  if (d.packRuns) {
+    d.packRuns.waitReady = { ...d.packRuns.waitReady, contracts: signWaitReady as never };
+    d.packRuns.onBack = { ...d.packRuns.onBack, contracts: signOnBack as never };
+  }
 }

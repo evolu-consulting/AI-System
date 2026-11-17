@@ -2,6 +2,7 @@
 // route mọi PF (file của từng PF, mount sẵn ⇒ PF không sửa file này), ThreadPoster + vòng nền, seam N3. Cờ tắt ⇒ `app.ts`
 // không gọi ⇒ mọi route quy trình 404, `!` là chữ thường.
 
+import type { Tx } from "@ai/db";
 import type { Env, Hono, MiddlewareHandler } from "hono";
 import { requireAdminRole } from "../../lib/admin-role.middleware";
 import { safeErrorFields } from "../../lib/errors";
@@ -27,6 +28,7 @@ import type {
   PackBeforePass,
   PackDecidedEvent,
   PackTaskEvent,
+  PackWaitOpen,
   ProcessBgDeps,
   ProcessDeps,
   ProcessStartPort,
@@ -178,6 +180,11 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
       ? {
           packBeforePass: async (e: PackBeforePass) =>
             (await bridge.beforePass?.[e.packKey]?.(e)) ?? null,
+          packWaitReady: async (tx: Tx, e: PackWaitOpen) =>
+            (await bridge.waitReady?.[e.packKey]?.(tx as never, e)) ?? false,
+          packOnBack: async (tx: Tx, e: { tenantId: string; packKey: string; runId: string }) => {
+            await bridge.onBack?.[e.packKey]?.(tx as never, e);
+          },
         }
       : {}),
     // [AUDIT] · nhận / trả / giao lại / tự trả / chuyển cấp ⇒ gói ghi lịch sử (`onTaskEvents[packKey]`).

@@ -17,7 +17,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import * as core from "../core/core.repo";
-import { claimError, processError } from "../core/errors";
+import { processError } from "../core/errors";
 import { processUpdated } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
 import { loadTaskDetails } from "../core/task-view";
@@ -36,7 +36,6 @@ import { ViewService } from "../runs/view.service";
 import { allPartialOut, allVoteStep } from "./all-vote";
 import { approveDecide } from "./approve-out";
 import { type FormSubmit, formPre, formReplayCheck } from "./form-out";
-import { evidenceCheck } from "./gate.rules";
 import { decidedOf, delegatorOf, notifyPack, postCommit, taskEvidence } from "./gates.audit";
 import {
   buildState,
@@ -52,7 +51,6 @@ import {
   assertNotClaimedByOther,
   decideOut,
   decidesByOverride,
-  evidenceModeOf,
   type Outcome,
   PASS,
   type Req,
@@ -65,6 +63,7 @@ import * as g from "./gates.repo";
 import { assertHeadGate, reviewGroupMember } from "./head-gate.check";
 import { parallelStep, partialOut } from "./parallel-approve";
 import { assertDecisionAllowed, assertReviewAllowed, cancelRunOf, reviewOut } from "./review-out";
+import { signEvidence } from "./sign-evidence";
 // HUB-FR-107 · HUB-FR-109 · AC-H28 · M5 · §3.1 · §3.4 · §10 · PF1 · cổng kiểm: `POST /review-tasks/:id/decision`
 // (Đạt/Chưa đạt), `POST /process-runs/:id/{decide,cancel}`. Khoá `process_runs` FOR UPDATE trước (§10); đóng task
 // first-wins (`core.closeTask`); máy trạng thái thuần (`transition`) → hiệu ứng DB (`gates.effects`); phát/đăng +
@@ -122,40 +121,6 @@ export class GateService {
     return out.body;
   }
 
-  /**
-   * CR-127 · E4 + CR-181 · BR-D2 · Q3/Q4: công ty bật ký trên tài liệu ⇒ Đạt bước `opinion_plus` của run gắn gói cần chữ ký đã Lưu trên
-   * mọi tệp cần ký (409 `SIGN_REQUIRED` + `details.files`); bản đã ký là chứng cứ chữ ký (không đòi ảnh vẽ tay). Công ty tắt / run không
-   * gắn gói ⇒ như cũ (CR-170). Gói đọc số câu cố định.
-   */
-  async #withEvidence(
-    run: Parameters<typeof evidenceModeOf>[0],
-    idx: number,
-    actor: string,
-    b: ReviewDecisionRequest,
-  ): Promise<ReviewDecisionRequest> {
-    const mode = evidenceModeOf(run, idx);
-    const pk = run.packKey;
-    const ask = b.result === "pass" && mode === "opinion_plus" && pk && this.d.packBeforePass;
-    const wantSignature = !!b.evidence && !b.evidence.signature_attachment_id;
-    const sign = ask
-      ? await this.d.packBeforePass?.({
-          tenantId: run.tenantId,
-          packKey: pk,
-          runId: run.id,
-          actor,
-          wantSignature,
-        })
-      : null;
-    if (sign && sign.missing.length > 0) throw claimError("SIGN_REQUIRED", { files: sign.missing });
-    const ev = { result: b.result, mode, evidence: b.evidence, signedOnDoc: sign?.onDoc === true };
-    if (evidenceCheck(ev) !== "ok") throw claimError("EVIDENCE_REQUIRED");
-    // Q4 · máy chủ gắn «Chữ ký của tôi» (đã chép thành tệp của người duyệt) vào bằng chứng thay ảnh vẽ tay.
-    const sid = sign?.signatureAttachmentId;
-    return sid && b.evidence
-      ? { ...b, evidence: { ...b.evidence, signature_attachment_id: sid } }
-      : b;
-  }
-
   async #review(
     tx: Tx,
     req: Req,
@@ -177,7 +142,7 @@ export class GateService {
     assertHeadGate(run, idx, task, req); // run không thấy ⇒ 404 · S1b · head_only (snapshot đã khoá)
     assertReviewAllowed(run, idx, v.userId, b0); // N2-FR-05 403 · P-b2 422 BACK_TARGET_INVALID — trước khi đóng task
     // CR-127 · E4 · bước bật "Ý kiến + chữ ký hoặc tệp" ⇒ Duyệt thiếu bằng chứng = 422 TRƯỚC khi đóng task (không ghi gì). Form: bỏ qua.
-    const b = form ? b0 : await this.#withEvidence(run, idx, v.userId, b0);
+    const b = form ? b0 : await signEvidence(this.d, tx, { run, idx, actor: v.userId, b: b0 }); // + CR-181 BR-D2/Q4 (form: bỏ qua)
     const gx: Gx = { d: this.d, tx };
     // CR-127 · E5 · "Cần: tất cả": ghi phiếu (+ bằng chứng của phiếu); chưa đủ n ⇒ thẻ vẫn mở.
     const vote = await allVoteStep(
@@ -228,6 +193,13 @@ export class GateService {
       throw processError("REVIEW_TASK_CLOSED");
     }
     if (!t.ok) throw processError(t.code);
+    // CR-181 · Q17 · «Chưa đạt» quay lại bước trước CÙNG run ⇒ gói bỏ bản đã ký của lượt (cùng tx, rollback chung).
+    if (b.result === "fail" && run.packKey)
+      await this.d.packOnBack?.(tx, {
+        tenantId: run.tenantId,
+        packKey: run.packKey,
+        runId: run.id,
+      });
     // CR-127 · E4 · bằng chứng CÙNG tx đóng task (rollback chung nếu lỗi); ý kiến Trả lại/Từ chối vẫn ở `feedback` như cũ.
     // E5 · phiếu "Cần: tất cả" đã ghi bằng chứng của phiếu ⇒ không ghi lần hai.
     const evIdOut = await taskEvidence(

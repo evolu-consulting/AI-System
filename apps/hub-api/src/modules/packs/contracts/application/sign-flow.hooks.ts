@@ -2,7 +2,6 @@
 // lớp lắp ráp `packs/packs.sign-doc.ts` gắn phần đọc thiết lập công ty / bước đang mở; `intake.mount.ts` gắn bắn `esign.completed`;
 // `submit.usecase.ts` gắn «stage của quy trình sẽ chạy». Vắng ⇒ hành vi cũ (không chặn, không tự xong bước).
 import type { PackWho } from "../../kit/public";
-import type { OndocSigner } from "../domain/sign-turn.rules";
 
 export type SignSubmitBlock = "sign_no_files" | "sign_missing_fields";
 export const signFlowHooks: {
@@ -14,23 +13,12 @@ export const signFlowHooks: {
     contractId: string,
     stages: readonly unknown[][],
   ) => Promise<SignSubmitBlock | null>;
-  /** Bước Ký `ondoc` vừa mở: các ô Bên A đã ký đủ (Q8) ⇒ bắn `esign.completed`. Không ném. */
-  ondocOpened?: (
-    tenantId: string,
-    contractId: string,
-    signers: readonly OndocSigner[],
-  ) => Promise<void>;
   /** Thả bước chờ `esign.completed` của HĐ (cùng đường ký số / tải lên). */
   completed?: (tenantId: string, contractId: string, data: Record<string, string>) => Promise<void>;
   /** BR-D2 · trước khi Đạt bước duyệt có bằng chứng (`runId` = lượt chạy engine). null ⇒ không áp. */
-  beforePass?: (e: {
-    tenantId: string;
-    runId: string;
-    actor: string;
-    wantSignature: boolean;
-  }) => Promise<{
+  beforePass?: (e: { tenantId: string; runId: string; actor: string }) => Promise<{
+    companyOn: boolean;
     onDoc: boolean;
     missing: string[];
-    signatureAttachmentId?: string | null;
   } | null>;
 } = {};

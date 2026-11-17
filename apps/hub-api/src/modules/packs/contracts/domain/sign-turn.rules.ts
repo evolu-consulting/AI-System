@@ -80,6 +80,8 @@ export function signTurnOf(s: OpenSignStep | null, userId: string): SignTurn {
     if (!t) return { allowed: false, reason: "NO_OPEN_STEP" };
     if (t.need === "one" && t.claimedBy && t.claimedBy !== userId)
       return { allowed: false, reason: "CLAIMED_BY_OTHER" };
+    // `after.also_group_ids` = Group «cũng quyết» của stage, là Group «Toàn quyền» của gói: cùng luật `assertMayDecide` /
+    // `decidesByOverride` (processes/gates/gates.helpers.ts — «prod-fix2 · Group "cũng quyết" của stage (vd "Toàn quyền" của gói)»).
     const groups = [t.groupId, t.escalatedGroupId, ...strs(st.after?.also_group_ids)];
     const ok =
       t.userIds.includes(userId) ||

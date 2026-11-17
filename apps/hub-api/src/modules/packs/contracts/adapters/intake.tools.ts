@@ -25,7 +25,6 @@ import type {
 import type { ESignRepo } from "../application/esign.ports";
 import type { SendNodeOpts } from "../application/esign.usecase";
 import type { ExtractionRepo } from "../application/extraction.ports";
-import { signFlowHooks } from "../application/sign-flow.hooks";
 import { contractCodeLabel } from "../domain/contract-name";
 import { withBusinessCodes } from "./intake.errors";
 
@@ -138,12 +137,9 @@ async function sendIfProvider(
   await d.send(ctx.tenantId, p.signer, id, p.signers, p.provider, p.node);
   return false;
 }
-/** CR-181 · Q1/Q8 · «Ký qua» = ký trên tài liệu ⇒ không phong bì; báo cổng kiểm «ô Bên A đã ký đủ» (không chờ: bắn sau khi tool xong). */
-function ondocStart(ctx: PackToolCtx, id: string, provider: string, cfg: EsignNodeConfig): boolean {
-  if (provider !== ESIGN_NODE_ONDOC) return false;
-  const hook = signFlowHooks.ondocOpened;
-  if (hook) void hook(ctx.tenantId, id, cfg.company_signers ?? []).catch(() => {});
-  return true;
+/** CR-181 · Q1 · «Ký qua» = ký trên tài liệu ⇒ không phong bì; «đã ký đủ từ bước duyệt» (Q8) do engine hỏi lúc mở bước chờ (`signWaitReady`). */
+function ondocStart(provider: string): boolean {
+  return provider === ESIGN_NODE_ONDOC;
 }
 /** `recordOfRun` có (máy chủ thật) ⇒ bắt buộc có lượt và HĐ là bản ghi của lượt, nếu không `ESIGN_CONTRACT_NOT_IN_RUN`. Vắng (test dựng tool trực tiếp) ⇒ false. */
 async function ownsContract(d: IntakeToolDeps, ctx: PackToolCtx, id: string): Promise<boolean> {
@@ -208,8 +204,8 @@ function rawIntakeTools(d: IntakeToolDeps): PackToolDef[] {
         // CR-141 · «Ký hợp đồng» = ký số HOẶC tải lên bản đã ký: ghi người được giao tải (trước khi gửi ký, để ký số xong sớm không bị tính nhầm là còn chờ).
         const assigned = p.node.companyUsers ?? [p.signer];
         await d.uow.tenant(who(ctx), (r) => r.esign.openSignWait(id, assigned, ctx.userId));
-        // CR-181 · Q1/Q8 · ký trên tài liệu: không phong bì; ô Bên A đã ký đủ từ bước duyệt ⇒ bước xong ngay (bắn sau, không chờ).
-        if (ondocStart(ctx, id, p.provider, cfg)) return { status: "awaiting_ondoc" };
+        // CR-181 · Q1 · ký trên tài liệu: không phong bì; bước chờ xong khi đủ ô Bên A (engine/Lưu chữ ký báo).
+        if (ondocStart(p.provider)) return { status: "awaiting_ondoc" };
         if (await sendIfProvider(d, ctx, id, p)) return { status: "awaiting_upload" };
         // CR-125 m9 · mã phong bì vừa tạo (đầu ra `envelope_id` của stage gửi; stage chờ cũng ghi khi phong bì xong).
         const e = await d.uow.tenant(who(ctx), (r) => r.esign.latest(id));

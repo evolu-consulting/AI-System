@@ -64,6 +64,7 @@ export function signDocModule(
     companySigners: ports.companySigners,
     onDocEnabled: ports.onDocEnabled,
     turn,
+    ...(ports.onDocSigned ? { onSigned: ports.onDocSigned } : {}),
     newId: () => Bun.randomUUIDv7(),
   });
   const save = signSaveUsecases({
