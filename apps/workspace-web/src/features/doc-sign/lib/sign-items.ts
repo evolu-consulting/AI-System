@@ -17,6 +17,10 @@ export type SignItem = {
   status: SignItemStatus;
   /** Ảnh chữ ký (mark). */
   imageUrl?: string;
+  /** s12 · id chỗ ký ở máy chủ — mark đặt vào ô ⇒ placement `field`. */
+  fieldId?: string;
+  /** s12 · bản «Chép sang mọi trang» ⇒ placement `initials`. */
+  initials?: boolean;
 };
 
 export type NewItem = Omit<SignItem, "parts" | "id">;
@@ -59,7 +63,14 @@ export function copyAll(
   for (const c of copyToAllPages(r, srcPage, pages, scale)) {
     const parts = partsOf(c.rect, pages);
     if (isPartsError(parts) || parts.length === 0) continue;
-    out.push({ ...src, id: newItemId(), parts, aspect: src.aspect || SIGN_FIELD_ASPECT });
+    out.push({
+      ...src,
+      id: newItemId(),
+      parts,
+      aspect: src.aspect || SIGN_FIELD_ASPECT,
+      fieldId: undefined,
+      initials: true,
+    });
   }
   return out;
 }

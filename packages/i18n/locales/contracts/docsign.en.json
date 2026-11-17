@@ -3,7 +3,10 @@
     "docsign": {
       "close": "Close",
       "kindLabel": "Sign with",
-      "kind": { "internal": "Internal signature", "digital": "Digital signature" },
+      "kind": {
+        "internal": "Internal signature",
+        "digital": "Digital signature"
+      },
       "tray": {
         "title": "Drag onto the page",
         "mine": "My signature",
@@ -35,6 +38,41 @@
         "body": "Unsaved signatures will be lost",
         "stay": "Stay",
         "go": "Leave"
+      },
+      "autoPlace": "Auto-place at «ĐẠI DIỆN BÊN A/B»",
+      "autoDone": "Placed {{count}} signing spot(s)",
+      "autoNone": "No «ĐẠI DIỆN BÊN A/B» found in this file",
+      "savePlaces": "Save signing spots",
+      "saveSign": "Save",
+      "saveLeft": "Save ({{count}} spot(s) not signed yet)",
+      "saving": "Saving…",
+      "placesSaved": "Signing spots saved",
+      "signed": "Signature saved",
+      "confirm": {
+        "title": "Save signatures?",
+        "body": "{{signatures}} signature(s), {{seams}} across-page seal(s), on {{pages}} page(s). It cannot be edited after saving; the original is kept.",
+        "ok": "Save signatures",
+        "cancel": "Review"
+      },
+      "ready": {
+        "title": "Signing spots missing",
+        "body": "Each file to sign needs a signing spot for:",
+        "noFile": "At least one file to sign is needed",
+        "noField": "{{who}} — file “{{file}}”",
+        "ok": "Got it",
+        "done": "Every file has its signing spots"
+      },
+      "digitalLocked": "Digital signature is not available yet",
+      "create": {
+        "title": "Create your signature",
+        "hint": "You need a signature before signing"
+      },
+      "noFiles": "This contract has no file to sign",
+      "noAccess": "It is not your turn to sign, or you have no right to sign this contract",
+      "err": {
+        "DIGITAL_SIGN_NOT_ENABLED": "Your company has not enabled digital signature; choose Internal signature",
+        "SIGNATURE_MISSING": "You have no signature yet; create one and sign again",
+        "generic": "Could not save, please try again"
       }
     }
   }

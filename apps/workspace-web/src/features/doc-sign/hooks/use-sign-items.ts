@@ -5,6 +5,7 @@ import { SIGN_INITIALS_SCALE } from "@ai/contracts/pack-contracts";
 import { useCallback, useState } from "react";
 import type { Rect, StagePage } from "../lib/geometry";
 import { rectFromParts } from "../lib/geometry";
+import { signField } from "../lib/session-map";
 import {
   copyAll,
   moveItem,
@@ -39,6 +40,15 @@ export function useSignItems(
       apply(f, (i) => placeItem(i, spec, rect, pages)),
     move: (f: string, id: string, rect: Rect, pages: StagePage[]) =>
       apply(f, (i) => moveItem(i, id, rect, pages)),
+    append: (f: string, add: SignItem[]) =>
+      apply(f, (i) => [
+        ...i.filter(
+          (x) =>
+            !add.some((a) => a.kind === x.kind && a.side === x.side && x.status === "editable"),
+        ),
+        ...add,
+      ]),
+    fill: (f: string, id: string, imageUrl: string) => apply(f, (i) => signField(i, id, imageUrl)),
     remove: (f: string, id: string) => apply(f, (i) => removeItem(i, id)),
     changeSide: (f: string, id: string, side: SignSide, person?: string) =>
       apply(f, (i) => setSide(i, id, side, person)),

@@ -1,5 +1,7 @@
 // CR-181 · kiểu props của màn ký toàn màn hình (s11b). Chưa gọi API: dữ liệu vào bằng props, sự kiện ra bằng callback.
 import type { SignatureKind, SignSide } from "@ai/contracts/pack-contracts";
+import type { PDFDocumentProxy } from "pdfjs-dist";
+import type { PageSize } from "../lib/layout";
 import type { SignItem } from "../lib/sign-items";
 
 export type SignFile = {
@@ -27,6 +29,10 @@ export type SignWorkspaceProps = {
   onClose: () => void;
   /** Bấm ô «Bấm để ký» của mình. */
   onFieldClick?: (fileId: string, itemId: string) => void;
+  /** s12 · ảnh chữ ký của tôi: bấm ô «Bấm để ký» ⇒ đặt ảnh vào ô (giữ parts). */
+  signImageUrl?: string;
+  /** s12 · «Tự đặt theo ĐẠI DIỆN BÊN A/B»: trả các ô đặt được cho tệp đang mở (rỗng = không thấy). Chỉ chế độ chuẩn bị. */
+  autoPlace?: (doc: PDFDocumentProxy, sizes: PageSize[]) => Promise<SignItem[]>;
   saveLabel: string;
   dirty: boolean;
 };

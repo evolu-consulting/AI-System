@@ -1,5 +1,6 @@
 // CR-181 · s11b · màn ký TOÀN MÀN HÌNH (đợt 1: chỉ «Từng trang»). Chưa gọi API: dữ liệu vào bằng props, sự kiện ra bằng callback.
 import { SIGN_FIELD_ASPECT } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePdfDoc } from "../hooks/use-pdf-doc";
@@ -23,6 +24,9 @@ const DEFAULT_W_RATIO = 0.22;
 export function SignWorkspace(p: SignWorkspaceProps) {
   const { t } = useTranslation();
   const [fileId, setFileId] = useState(p.files[0]?.id ?? "");
+  useEffect(() => {
+    if (!p.files.some((f) => f.id === fileId)) setFileId(p.files[0]?.id ?? "");
+  }, [p.files, fileId]);
   const file = p.files.find((f) => f.id === fileId);
   const pdf = usePdfDoc(file);
   const store = useSignItems(p.items, p.onChange);
@@ -34,6 +38,13 @@ export function SignWorkspace(p: SignWorkspaceProps) {
   const [goTo, setGoTo] = useState<{ index: number; nonce: number } | null>(null);
   const layoutRef = useRef<StageLayout>({ pages: [], width: 0, height: 0 });
   const [warn, setWarn] = useState(false);
+  const [auto, setAuto] = useState<number | null>(null);
+  const runAuto = async () => {
+    if (pdf.status !== "ready" || !p.autoPlace) return;
+    const found = await p.autoPlace(pdf.doc, pdf.sizes);
+    if (found.length) store.append(fileId, found);
+    setAuto(found.length);
+  };
   const items = store.byFile[fileId] ?? [];
 
   const close = () => (closeAction(p.dirty) === "confirm" ? setLeave(true) : p.onClose());
@@ -105,10 +116,25 @@ export function SignWorkspace(p: SignWorkspaceProps) {
         counts={counts}
         onSelect={(id) => {
           setFileId(id);
+          setAuto(null);
           setSel(null);
           setCur(0);
         }}
       />
+      {p.mode === "prep" && p.autoPlace && (
+        <div className="flex items-center gap-3 border-b px-3 py-1">
+          <Button size="sm" variant="outline" disabled={pdf.status !== "ready"} onClick={runAuto}>
+            {t("contracts.docsign.autoPlace")}
+          </Button>
+          {auto !== null && (
+            <p role="status" className="text-sm text-muted-foreground">
+              {auto > 0
+                ? t("contracts.docsign.autoDone", { count: auto })
+                : t("contracts.docsign.autoNone")}
+            </p>
+          )}
+        </div>
+      )}
       <div className="flex min-h-0 flex-1">
         {pdf.status === "ready" && (
           <PageRail
@@ -164,7 +190,10 @@ export function SignWorkspace(p: SignWorkspaceProps) {
                   }}
                   onCopyAll={(id) => store.copyToAll(fileId, id, layout.pages)}
                   onChangePerson={changePerson}
-                  onFieldClick={(id) => p.onFieldClick?.(fileId, id)}
+                  onFieldClick={(id) => {
+                    if (p.signImageUrl) store.fill(fileId, id, p.signImageUrl);
+                    p.onFieldClick?.(fileId, id);
+                  }}
                   onPick={(tr) => menu && place(tr, menu.x, menu.y)}
                   onCloseMenu={() => setMenu(null)}
                 />

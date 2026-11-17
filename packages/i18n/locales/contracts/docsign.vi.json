@@ -3,7 +3,10 @@
     "docsign": {
       "close": "Đóng",
       "kindLabel": "Ký bằng",
-      "kind": { "internal": "Chữ ký nội bộ", "digital": "Chữ ký số" },
+      "kind": {
+        "internal": "Chữ ký nội bộ",
+        "digital": "Chữ ký số"
+      },
       "tray": {
         "title": "Kéo vào trang",
         "mine": "Chữ ký của tôi",
@@ -35,6 +38,41 @@
         "body": "Các chữ ký chưa lưu sẽ mất",
         "stay": "Ở lại",
         "go": "Rời đi"
+      },
+      "autoPlace": "Tự đặt theo «ĐẠI DIỆN BÊN A/B»",
+      "autoDone": "Đã đặt {{count}} chỗ ký",
+      "autoNone": "Không tìm thấy «ĐẠI DIỆN BÊN A/B» trong tệp này",
+      "savePlaces": "Lưu chỗ ký",
+      "saveSign": "Lưu",
+      "saveLeft": "Lưu (còn {{count}} chỗ chưa ký)",
+      "saving": "Đang lưu…",
+      "placesSaved": "Đã lưu chỗ ký",
+      "signed": "Đã lưu chữ ký",
+      "confirm": {
+        "title": "Lưu chữ ký?",
+        "body": "{{signatures}} chữ ký, {{seams}} giáp lai, trên {{pages}} trang. Sau khi lưu không sửa được; bản gốc vẫn giữ.",
+        "ok": "Lưu chữ ký",
+        "cancel": "Xem lại"
+      },
+      "ready": {
+        "title": "Chưa đủ chỗ ký",
+        "body": "Mỗi tệp cần ký có chỗ ký cho:",
+        "noFile": "Cần có ít nhất một tệp cần ký",
+        "noField": "{{who}} — tệp «{{file}}»",
+        "ok": "Đã rõ",
+        "done": "Đã đủ chỗ ký cho mọi tệp"
+      },
+      "digitalLocked": "Chữ ký số chưa dùng được",
+      "create": {
+        "title": "Tạo chữ ký của bạn",
+        "hint": "Bạn cần có chữ ký trước khi ký"
+      },
+      "noFiles": "Hợp đồng này chưa có tệp nào cần ký",
+      "noAccess": "Bạn chưa đến lượt ký hoặc không có quyền ký hợp đồng này",
+      "err": {
+        "DIGITAL_SIGN_NOT_ENABLED": "Công ty chưa bật chữ ký số, hãy chọn Chữ ký nội bộ",
+        "SIGNATURE_MISSING": "Bạn chưa có chữ ký, hãy tạo chữ ký rồi ký lại",
+        "generic": "Chưa lưu được, vui lòng thử lại"
       }
     }
   }
