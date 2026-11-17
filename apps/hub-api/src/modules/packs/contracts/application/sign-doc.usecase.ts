@@ -293,6 +293,7 @@ export function signDocUsecases(d: SignDocDeps) {
       const company = await d.companySigners(who, id);
       const turn: SignTurn = await d.turn.turnFor(who, id, who.userId);
       if (turn.allowed && turn.step === "sign" && turn.run_id && d.onSigned)
+        // Cổng (`packs.sign-doc.ts onDocSigned`) tự ghi log `sign-ondoc-signed-failed` và không ném; `catch` chỉ để phiên không hỏng.
         await d.onSigned(who, id, turn.run_id).catch(() => undefined);
       const signers = buildSigners(company, snap.partner, who.userId);
       const docBy = new Map<string, SignDocRowP>(snap.docs.map((x) => [x.file_id, x]));

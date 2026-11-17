@@ -5,6 +5,7 @@
 import { createHash } from "node:crypto";
 import { ATTACH_MAX_BYTES, type ReviewDecisionRequest } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
+import { sql } from "drizzle-orm";
 import { insertAttachment, storageKey } from "../../attachments/public";
 import { signaturesRepo } from "../../signatures/public";
 import { claimError } from "../core/errors";
@@ -81,4 +82,32 @@ async function attachSignature(
     fileboxVersionId: staged.versionId ?? null,
   });
   return id;
+}
+
+/**
+ * CR-181 · Q17 · soát Opus s9 vòng 3: «Chưa đạt» CHỈ khi run thật sự quay lại (stage kế ≤ stage đang quyết, run chưa kết thúc) ⇒ gói bỏ việc
+ * làm từ lúc stage đích bắt đầu (vòng gần nhất) — bản ký ở stage TRƯỚC đích (vd bước Ký khi `back_to` nằm sau nó) được giữ. Cùng tx, 1 câu.
+ */
+export async function packBack(
+  d: Pick<ProcessDeps, "packOnBack">,
+  tx: Tx,
+  run: { tenantId: string; id: string; packKey?: string | null },
+  idx: number,
+  next: { status: string; stageIdx: number },
+): Promise<void> {
+  const ended = ["done", "cancelled", "failed", "expired", "rejected"].includes(next.status);
+  if (!run.packKey || !d.packOnBack || ended || next.stageIdx > idx) return;
+  const [r] = await tx.execute<{
+    since: Date | string | null;
+  }>(sql`select max(s.started_at) as since
+    from hub.stage_runs s where s.process_run_id = ${run.id}::uuid and s.tenant_id = ${run.tenantId}::uuid
+      and s.stage_idx = ${next.stageIdx}`);
+  const since = r?.since ? new Date(r.since) : null;
+  await d.packOnBack(tx, {
+    tenantId: run.tenantId,
+    packKey: run.packKey,
+    runId: run.id,
+    toIdx: next.stageIdx,
+    since,
+  });
 }

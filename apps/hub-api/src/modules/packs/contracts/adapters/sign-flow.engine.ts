@@ -7,7 +7,6 @@ import { sql } from "drizzle-orm";
 import { withPackRoleInTx } from "../../kit/public";
 import { CONTRACTS_PACK } from "../domain/contract-flow-events.rules";
 import { ondocDone, ondocKeys, ondocStepAt } from "../domain/sign-turn.rules";
-import { signVersionsRepo } from "./sign-versions.repo";
 
 /** BR-D3/C4 · Q6 · ô Bên A của người ký `keys` trên tệp còn cần ký: tổng + còn mở (Bên B không tính). Một câu, `tenant_id` tường minh. */
 export async function ondocCounts(
@@ -38,8 +37,20 @@ export async function signWaitReady(
   );
 }
 
-export async function signOnBack(tx: Tx, e: { tenantId: string; runId: string }): Promise<void> {
+/** Q17 · bỏ bản ký của run làm TỪ `since` (lúc stage đích bắt đầu) + mở lại chỗ đã ký trong các bản đó; `since` null ⇒ mọi bản của run. Một câu. */
+export async function signOnBack(
+  tx: Tx,
+  e: { tenantId: string; runId: string; since: Date | null },
+): Promise<void> {
+  const since = e.since ? e.since.toISOString() : null;
   await withPackRoleInTx(tx, CONTRACTS_PACK, e.tenantId, async () => {
-    await signVersionsRepo(tx, e.tenantId).voidByRun(e.runId);
+    await tx.execute(sql`
+      with v as (
+        update contracts.sign_versions set voided_at = now()
+        where run_id = ${e.runId}::uuid and tenant_id = ${e.tenantId}::uuid and voided_at is null
+          and (${since}::timestamptz is null or created_at >= ${since}::timestamptz)
+        returning id)
+      update contracts.sign_fields set signed_by = null, signed_version_id = null
+      where tenant_id = ${e.tenantId}::uuid and signed_version_id in (select id from v)`);
   });
 }

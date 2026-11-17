@@ -25,6 +25,7 @@ import { bridgeRoutes } from "./bridge/bridge.routes";
 import { type Clock, clockOf } from "./core/clock";
 import type { ProcessHandles } from "./core/handles";
 import type {
+  PackBack,
   PackBeforePass,
   PackDecidedEvent,
   PackTaskEvent,
@@ -182,7 +183,7 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
             (await bridge.beforePass?.[e.packKey]?.(e)) ?? null,
           packWaitReady: async (tx: Tx, e: PackWaitOpen) =>
             (await bridge.waitReady?.[e.packKey]?.(tx as never, e)) ?? false,
-          packOnBack: async (tx: Tx, e: { tenantId: string; packKey: string; runId: string }) => {
+          packOnBack: async (tx: Tx, e: PackBack) => {
             await bridge.onBack?.[e.packKey]?.(tx as never, e);
           },
         }

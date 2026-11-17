@@ -350,6 +350,9 @@ export type PackRunsBridge = {
   waitReady?: Partial<Record<string, (tx: never, e: PackWaitOpenIn) => Promise<boolean>>>;
   /** CR-181 · s9 · Q17 · TRONG tx engine: quyết «Chưa đạt» quay lại bước trước cùng run. */
   onBack?: Partial<
-    Record<string, (tx: never, e: { tenantId: string; runId: string }) => Promise<void>>
+    Record<
+      string,
+      (tx: never, e: { tenantId: string; runId: string; since: Date | null }) => Promise<void>
+    >
   >;
 };

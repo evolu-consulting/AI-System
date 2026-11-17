@@ -63,7 +63,7 @@ import * as g from "./gates.repo";
 import { assertHeadGate, reviewGroupMember } from "./head-gate.check";
 import { parallelStep, partialOut } from "./parallel-approve";
 import { assertDecisionAllowed, assertReviewAllowed, cancelRunOf, reviewOut } from "./review-out";
-import { signEvidence } from "./sign-evidence";
+import { packBack, signEvidence } from "./sign-evidence";
 // HUB-FR-107 · HUB-FR-109 · AC-H28 · M5 · §3.1 · §3.4 · §10 · PF1 · cổng kiểm: `POST /review-tasks/:id/decision`
 // (Đạt/Chưa đạt), `POST /process-runs/:id/{decide,cancel}`. Khoá `process_runs` FOR UPDATE trước (§10); đóng task
 // first-wins (`core.closeTask`); máy trạng thái thuần (`transition`) → hiệu ứng DB (`gates.effects`); phát/đăng +
@@ -193,13 +193,7 @@ export class GateService {
       throw processError("REVIEW_TASK_CLOSED");
     }
     if (!t.ok) throw processError(t.code);
-    // CR-181 · Q17 · «Chưa đạt» quay lại bước trước CÙNG run ⇒ gói bỏ bản đã ký của lượt (cùng tx, rollback chung).
-    if (b.result === "fail" && run.packKey)
-      await this.d.packOnBack?.(tx, {
-        tenantId: run.tenantId,
-        packKey: run.packKey,
-        runId: run.id,
-      });
+    if (b.result === "fail") await packBack(this.d, tx, run, idx, t.next); // CR-181 · Q17 (chỉ khi run thật sự quay lại)
     // CR-127 · E4 · bằng chứng CÙNG tx đóng task (rollback chung nếu lỗi); ý kiến Trả lại/Từ chối vẫn ở `feedback` như cũ.
     // E5 · phiếu "Cần: tất cả" đã ghi bằng chứng của phiếu ⇒ không ghi lần hai.
     const evIdOut = await taskEvidence(

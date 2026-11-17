@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../lib/db";
+import { packBack } from "../processes/gates/sign-evidence";
 import { launchTimedWaitStage } from "../processes/runs/wait-timed-launch";
 import { type ClaimWorld, claimWorld, groupTask } from "../processes/testing/claim-seed";
 import { applyContractOutcome } from "./contracts/adapters/contract-flow.repo";
@@ -95,6 +96,22 @@ const engineDeps = {
   log: { warn: () => {}, info: () => {}, error: () => {} },
   packWaitReady: (tx: never, e: Parameters<typeof signWaitReady>[1]) => signWaitReady(tx, e),
 } as never;
+const back = (x: X, idx: number, next: { status: string; stageIdx: number }) =>
+  withSystemScope(db, { kind: "system" }, (tx) =>
+    packBack(
+      { packOnBack: (t, e) => signOnBack(t, e) },
+      tx,
+      { tenantId: w.T, id: x.runId, packKey: "contracts" },
+      idx,
+      next,
+    ),
+  );
+const state = async (x: X, fa: string) => {
+  const [r] = await o<{ voided: boolean; open: boolean }[]>`select
+    (select voided_at is not null from contracts.sign_versions where contract_id = ${x.id}) as voided,
+    (select signed_version_id is null from contracts.sign_fields where id = ${fa}) as open`;
+  return r;
+};
 const turnOf = (x: X, u: string) => flow.turn.turnFor({ tenantId: w.T, userId: u }, x.id, u);
 
 beforeAll(async () => {
@@ -200,19 +217,35 @@ describe("CR-181 s9 · ký trên tài liệu theo lượt chạy", () => {
     expect(await open(y)).toEqual({ got: false, due_now: false });
   });
 
-  it("Q17 · Chưa đạt quay lại bước trước cùng run thì bỏ bản đã ký của run", async () => {
+  it("Q17 · Chưa đạt quay lại bước trước bước Ký thì bỏ bản đã ký và phải ký lại", async () => {
+    const x = await world([REVIEW(w.G), ESIGN(`user:${w.A}`), WAIT, REVIEW(w.G)], 3);
+    const fa = await field(x, "A", "user", w.A);
+    await sign(fa, await version(x, w.A), w.A);
+    await o`update hub.stage_runs set started_at = now() - interval '2 hours' where process_run_id = ${x.runId} and stage_idx = 0`;
+    await back(x, 3, { status: "waiting_review", stageIdx: 0 });
+    expect(await state(x, fa)).toEqual({ voided: true, open: true });
+    const e = { tenantId: w.T, runId: x.runId, actor: w.A };
+    expect((await signFlowHooks.beforePass?.(e))?.missing).toEqual([x.fileId]);
+  });
+
+  it("Q17 · back_to nằm sau bước Ký thì bản ký của bước Ký giữ nguyên", async () => {
+    const x = await world([REVIEW(w.G), ESIGN(`user:${w.A}`), WAIT, REVIEW(w.G), REVIEW(w.G)], 4);
+    const fa = await field(x, "A", "user", w.A);
+    await sign(fa, await version(x, w.A), w.A);
+    await o`update contracts.sign_versions set created_at = now() - interval '1 hour' where contract_id = ${x.id}`;
+    await o`insert into hub.stage_runs (tenant_id, process_run_id, stage_idx, status, started_at)
+      values (${w.T}, ${x.runId}, 3, 'done', now())`;
+    await back(x, 4, { status: "waiting_review", stageIdx: 3 });
+    expect(await state(x, fa)).toEqual({ voided: false, open: false });
+  });
+
+  it("Q17 · phiếu Chưa đạt mà run chưa quay lại thì không bỏ bản đã ký", async () => {
     const x = await world([REVIEW(w.G)], 0);
     const fa = await field(x, "A", "user", w.A);
     await sign(fa, await version(x, w.A), w.A);
-    await withSystemScope(db, { kind: "system" }, (tx) =>
-      signOnBack(tx, { tenantId: w.T, runId: x.runId }),
-    );
-    const [r] = await o<{ voided: boolean; open: boolean }[]>`select
-      (select voided_at is not null from contracts.sign_versions where contract_id = ${x.id}) as voided,
-      (select signed_version_id is null from contracts.sign_fields where id = ${fa}) as open`;
-    expect(r).toEqual({ voided: true, open: true });
-    const e = { tenantId: w.T, runId: x.runId, actor: w.A };
-    expect((await signFlowHooks.beforePass?.(e))?.missing).toEqual([x.fileId]);
+    await back(x, 0, { status: "waiting_review", stageIdx: 1 });
+    await back(x, 0, { status: "rejected", stageIdx: 0 });
+    expect(await state(x, fa)).toEqual({ voided: false, open: false });
   });
 
   it("Q17 · Trả lại thì các bản của lượt void và ô mở lại", async () => {

@@ -97,6 +97,14 @@ export type PackBeforePass = { tenantId: string; packKey: string; runId: string;
 /** `companyOn` = công ty bật ký trên tài liệu (Q4: máy chủ gắn chữ ký); `onDoc` = có ≥ 1 tệp cần ký và người duyệt đã ký đủ
  *  (chứng cứ chữ ký); `missing` = tệp cần ký chưa ký (⇒ 409 SIGN_REQUIRED). */
 export type PackPassCheck = { companyOn: boolean; onDoc: boolean; missing: string[] };
+/** CR-181 · s9 · Q17 · run quay lại stage `toIdx`; `since` = lúc stage đích bắt đầu (vòng gần nhất) — việc làm từ đó thuộc stage ≥ đích. */
+export type PackBack = {
+  tenantId: string;
+  packKey: string;
+  runId: string;
+  toIdx: number;
+  since: Date | null;
+};
 /** CR-181 · s9 · stage `wait_event` của run gắn gói sắp mở: gói báo sự kiện «đã xong» ngay (vd bước Ký ondoc đã đủ ô — Q8). */
 export type PackWaitOpen = {
   tenantId: string;
@@ -178,7 +186,7 @@ export type ProcessDeps = {
   /** CR-181 · s9 · Q8/D3 · TRONG tx mở stage chờ (run đã khoá): true ⇒ ghi sự kiện ngay (bước xong ở vòng hẹn kế). */
   packWaitReady?: (tx: Tx, e: PackWaitOpen) => Promise<boolean>;
   /** CR-181 · s9 · Q17 · TRONG tx quyết «Chưa đạt» (quay lại bước trước cùng run): gói bỏ việc của lượt (vd bản đã ký). */
-  packOnBack?: (tx: Tx, e: { tenantId: string; packKey: string; runId: string }) => Promise<void>;
+  packOnBack?: (tx: Tx, e: PackBack) => Promise<void>;
   /** [AUDIT] · nhận / trả / giao lại / tự trả / chuyển cấp task duyệt của run gắn gói (đã COMMIT) ⇒ gói ghi lịch sử, theo lô. */
   packTaskEvents?: (packKey: string, rows: PackTaskEvent[]) => Promise<void>;
 };
