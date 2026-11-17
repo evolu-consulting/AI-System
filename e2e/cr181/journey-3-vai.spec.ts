@@ -101,7 +101,8 @@ test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; B
   await createSignatureIfAsked(page, "Nguyễn Giám Đốc");
   await page.goto(`${E.cw}/contracts/sign/${id}`);
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByText(/Chờ đối tác/).first()).toBeVisible(); // ô Bên B, không chặn
+  // ô Bên B (người ký = liên hệ đối tác có email): «Chờ <tên> ký», không chặn (Q6)
+  await expect(page.getByRole("group", { name: "Chỗ ký của Liên hệ ký E2E" })).toContainText("Chờ");
   await page.getByRole("button", { name: "Bấm để ký" }).first().click();
   const isSign = (m: string, u: string) => m === "POST" && u.endsWith("/sign");
   const reqP = page.waitForRequest((r) => isSign(r.method(), r.url()));
