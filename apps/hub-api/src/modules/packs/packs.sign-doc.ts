@@ -219,7 +219,7 @@ export function signDocPorts(db: Db, view: PackAccessView, flow?: SignFlow): Sig
           ? []
           : await withHubScope(db, { kind: "system" }, (tx) =>
               tx.execute<{ id: string; name: string; mine: boolean }>(sql`
-                select g.id::text as id, g.name, exists (select 1 from admin.group_members m
+                select g.id::text as id, coalesce(nullif(g.name ->> 'vi', ''), g.name ->> 'en', g.key) as name, exists (select 1 from admin.group_members m
                   where m.group_id = g.id and m.tenant_id = g.tenant_id and m.user_id = ${who.userId}::uuid) as mine
                 from admin.groups g
                 where g.tenant_id = ${who.tenantId}::uuid and g.id = any(${`{${groupIds.join(",")}}`}::uuid[])`),
