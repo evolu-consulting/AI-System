@@ -70,6 +70,16 @@
       "noFiles": "This contract has no file to sign",
       "noAccess": "It is not your turn to sign, or you have no right to sign this contract",
       "err": {
+        "SIGN_VERSION_STALE": "Someone just signed a newer copy. Reloading so you sign the latest copy.",
+        "PACK_FORBIDDEN": "You are not allowed to sign this contract. Ask a company admin for access.",
+        "SIGN_ON_DOC_OFF": "Your company has not turned on signing on documents. Ask an admin to turn it on in Settings › Signature.",
+        "SIGN_OUTSIDE_PAGE": "The signature is outside the page. Drag it inside the page and save again.",
+        "SIGN_MARK_INVALID": "The signature position is not valid. Place it again and save.",
+        "SIGNATURE_TOO_LARGE": "Your signature image is too large. Create a smaller one.",
+        "SIGN_PDF_ENCRYPTED": "This PDF is password-protected and cannot be signed. Remove the password and upload it again.",
+        "SIGN_TOO_MANY_PAGES": "This file has too many pages to sign. Split it and upload again.",
+        "SIGN_NOT_PDF": "Only PDF files can be signed. Convert the file to PDF and upload it again.",
+        "SIGN_REQUIRED": "This file is not marked «To sign». Turn on «To sign» for the file and try again.",
         "DIGITAL_SIGN_NOT_ENABLED": "Your company has not enabled digital signature; choose Internal signature",
         "SIGNATURE_MISSING": "You have no signature yet; create one and sign again",
         "generic": "Could not save, please try again"

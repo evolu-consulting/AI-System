@@ -10,13 +10,12 @@ import { ConfirmSignDialog, ReadinessDialog } from "../components/SignDialogs";
 import { SignWorkspace } from "../components/SignWorkspace";
 import type { SignFile, SignTray } from "../components/types";
 import { fetchContent, useDocSign } from "../hooks/use-doc-sign";
-import { signErrorKey } from "../lib/errors";
+import { isStaleVersion, signErrorKey } from "../lib/errors";
 import type { PageSize } from "../lib/layout";
 import { readAnchors } from "../lib/pdf-anchors";
 import {
   buildFieldsPut,
   buildSignBody,
-  captionOf,
   itemsFromAnchors,
   itemsFromFile,
   openFields,
@@ -106,7 +105,13 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
     setDone((d) => [...d, f]);
     if (files.every((x) => x.id === f)) await finish();
   };
-  const fail = (e: unknown) => toast(t(signErrorKey(e)), "late");
+  const fail = (e: unknown) => {
+    toast(t(signErrorKey(e)), "late");
+    if (isStaleVersion(e)) {
+      setDirty(false);
+      q.refresh(); // có người vừa ký bản mới ⇒ tải lại phiên để ký trên bản mới nhất
+    }
+  };
   const savePlaces = (f: string) =>
     q.savePlaces.mutate(
       { fileId: f, body: buildFieldsPut(list(f)) },
@@ -122,7 +127,7 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
     q.sign.mutate(
       {
         fileId: f,
-        body: buildSignBody(list(f), kind, captionOf(mine?.settings.caption ?? [], me)),
+        body: buildSignBody(list(f), kind, (mine?.settings.caption ?? []).length > 0),
       },
       {
         onSuccess: () => {

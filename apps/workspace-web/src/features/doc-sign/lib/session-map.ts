@@ -1,5 +1,5 @@
 // CR-181 · s12 · hàm thuần nối phiên ký (API) ↔ mục trên màn ký: dựng mục, dựng body PUT/POST, đếm, danh sách kiểm tra.
-// Không gửi ảnh: mỗi dấu chỉ mang vị trí (parts) + dòng chú thích; máy chủ dùng chữ ký đã lưu của người gọi.
+// Không gửi ảnh: mỗi dấu chỉ mang vị trí (parts) + cờ caption (máy chủ tự dựng dòng chữ); máy chủ dùng chữ ký đã lưu của người gọi.
 import {
   SIGN_FIELD_ASPECT,
   type SignatureKind,
@@ -8,6 +8,7 @@ import {
   type SignParts,
   type SignPlacement,
   type SignReadinessOut,
+  type SignSaveBody,
   type SignSessionOut,
   type SignSignerOut,
 } from "@ai/contracts/pack-contracts";
@@ -15,13 +16,7 @@ import type { AnchorBox, Anchors } from "./anchors";
 import type { SignItem } from "./sign-items";
 
 type FieldIn = (typeof SignFieldInSchema)["_output"];
-export type SignMarkBody = {
-  field_id?: string;
-  placement: SignPlacement;
-  parts: SignParts;
-  caption: string;
-};
-export type SignPostBody = { kind: SignatureKind; marks: SignMarkBody[] };
+export type SignPostBody = SignSaveBody;
 
 /** Tệp cần ký (PDF) của phiên, theo thứ tự máy chủ trả. */
 export const signFiles = (s: SignSessionOut): SignFileOut[] =>
@@ -83,9 +78,9 @@ export function signField(items: SignItem[], id: string, imageUrl: string): Sign
 export function buildSignBody(
   items: SignItem[],
   kind: SignatureKind,
-  caption: string,
+  caption: boolean,
 ): SignPostBody {
-  const marks: SignMarkBody[] = items
+  const marks: SignSaveBody["marks"] = items
     .filter((i) => i.kind === "mark" && i.status === "editable")
     .map((i) => ({
       ...(i.fieldId ? { field_id: i.fieldId } : {}),
@@ -178,10 +173,4 @@ export function readinessLines(
       ? { key: "noFile" as const }
       : { key: "noField" as const, file: m.file_name, who: m.signer_name },
   );
-}
-
-/** Dòng chú thích dưới chữ ký theo thiết lập công ty (tên · ngày). */
-export function captionOf(fields: readonly string[], name: string, date = new Date()): string {
-  const day = fields.includes("date") ? date.toLocaleDateString("vi-VN") : "";
-  return [fields.includes("name") ? name : "", day].filter(Boolean).join(" · ");
 }

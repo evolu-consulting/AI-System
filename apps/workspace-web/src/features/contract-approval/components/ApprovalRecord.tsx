@@ -3,7 +3,7 @@
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { approvalKey, fetchApproval } from "../api";
 import {
@@ -34,19 +34,25 @@ export function SignImg({
   const key = evidence ? `ev:${evidence.id}` : `stamp:${stampId}`;
   const q = useQuery({
     queryKey: ["contract-sign-img", contractId, key],
-    queryFn: async ({ signal }) =>
-      URL.createObjectURL(
-        evidence
-          ? await fetchEvidenceBlob(contractId, evidence.id, evidence.fileId, signal)
-          : await fetchStampBlob(contractId, stampId as string, signal),
-      ),
+    queryFn: ({ signal }) =>
+      evidence
+        ? fetchEvidenceBlob(contractId, evidence.id, evidence.fileId, signal)
+        : fetchStampBlob(contractId, stampId as string, signal),
     retry: false,
     staleTime: Number.POSITIVE_INFINITY,
   });
-  if (!q.data) return null;
+  const blob = q.data;
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!blob) return;
+    const u = URL.createObjectURL(blob);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u); // đổi ảnh / gỡ ⇒ giải phóng blob
+  }, [blob]);
+  if (!url) return null;
   return (
     <img
-      src={q.data}
+      src={url}
       alt={t("contracts.work.u4.record.signAlt", { who })}
       className="mt-1 h-9 w-auto max-w-40 rounded border border-line bg-white object-contain"
       data-testid="record-sign-img"

@@ -43,3 +43,8 @@ export function putBody(s: SignatureSettings): SignatureSettings {
 
 export const sameSettings = (a: SignatureSettings, b: SignatureSettings) =>
   JSON.stringify(putBody(a)) === JSON.stringify(putBody(b));
+
+/** Bật «Ký trên tài liệu» sau hộp xác nhận: lưu ngay, chỉ đổi cờ này trên bản đã lưu (không kéo theo chỗ đang sửa dở). */
+export function onDocBody(saved: SignatureSettings): SignatureSettings {
+  return putBody({ ...saved, on_doc_enabled: true });
+}

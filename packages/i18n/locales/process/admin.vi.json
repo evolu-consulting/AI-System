@@ -1587,6 +1587,7 @@
       "disabled": "Công ty chưa bật ký số. Bật ở {{path:sign}}.",
       "err": {
         "ESIGN_DISABLED": "Công ty chưa bật ký số.",
+        "ONDOC_NOT_ENABLED": "Công ty chưa bật ký trên tài liệu (Cài đặt › Chữ ký)",
         "NO_PROVIDER_SELECTED": "chưa chọn «Ký qua» — chọn cách ký trong bước Ký của quy trình",
         "PROVIDER_NOT_ENABLED": "Nhà cung cấp này chưa bật cho công ty — bật ở Cài đặt › Kết nối, hoặc chọn cách khác.",
         "PROVIDER_UNAVAILABLE": "Nhà cung cấp này chưa bật cho công ty.",

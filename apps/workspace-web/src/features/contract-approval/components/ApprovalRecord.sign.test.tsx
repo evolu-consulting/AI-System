@@ -10,17 +10,18 @@ const S = "22222222-2222-4222-8222-222222222222";
 const person = { id: C, display_name: "Hoa" };
 
 describe("ApprovalRecord · hình chữ ký", () => {
-  test("hiện ảnh chữ ký đã in ngay trong dòng của người ký", () => {
+  test("ảnh chữ ký: blob URL tạo trong effect, không tạo khi render", () => {
     const qc = new QueryClient();
-    qc.setQueryData(["contract-sign-img", C, `stamp:${S}`], "blob:http://x/sig");
+    const blobUrl = "blob:http://x/sig";
+    URL.createObjectURL = () => blobUrl;
+    qc.setQueryData(["contract-sign-img", C, `stamp:${S}`], new Blob(["x"]));
     const out = renderToStaticMarkup(
       <QueryClientProvider client={qc}>
         <SignImg contractId={C} who="Hoa" evidence={null} stampId={S} />
       </QueryClientProvider>,
     );
-    expect(out).toContain("<img");
-    expect(out).toContain('src="blob:http://x/sig"');
-    expect(out).toContain('data-testid="record-sign-img"');
+    // URL blob tạo trong effect (và revoke khi gỡ) ⇒ SSR chưa có <img>; hiện ảnh thật do e2e phủ
+    expect(out).not.toContain("<img");
   });
   test("người chỉ xem: không có ý kiến, vẫn có mã ảnh chữ ký đã in (BR-X2)", () => {
     const lines = recordLines({

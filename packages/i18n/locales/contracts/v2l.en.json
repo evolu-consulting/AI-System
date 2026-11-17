@@ -197,6 +197,7 @@
         "intro": "Shared by every app in the company. Only admins can edit; changes here apply to future signing only.",
         "adminOnly": "Only company admins can edit",
         "onDoc": {
+          "enabled": "Signing on documents is on",
           "title": "Sign on documents",
           "label": "Sign on documents",
           "hint": "When on, employees are asked to create a signature and contracts get «To sign».",

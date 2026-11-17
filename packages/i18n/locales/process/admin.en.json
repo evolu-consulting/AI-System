@@ -1587,6 +1587,7 @@
       "disabled": "E-sign is not enabled for this company. Enable it in {{path:sign}}.",
       "err": {
         "ESIGN_DISABLED": "E-sign is not enabled.",
+        "ONDOC_NOT_ENABLED": "Your company has not turned on signing on documents (Settings › Signature)",
         "NO_PROVIDER_SELECTED": "no \"Sign via\" yet — pick how to sign in the flow's Sign step",
         "PROVIDER_NOT_ENABLED": "This provider is not turned on for the company — turn it on in Settings › Connections, or pick another.",
         "PROVIDER_UNAVAILABLE": "This provider is not enabled for the company.",

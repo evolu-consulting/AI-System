@@ -25,7 +25,13 @@ import {
   SettingsSwitch,
 } from "~/shared/ui/settings-layout";
 import { useSaveSignatureSettings, useSignatureSettings } from "../hooks/use-signature-settings";
-import { putBody, sameSettings, toggleCaption, toggleMethod } from "../lib/signature-form";
+import {
+  onDocBody,
+  putBody,
+  sameSettings,
+  toggleCaption,
+  toggleMethod,
+} from "../lib/signature-form";
 import { LoadState } from "./LoadState";
 import { ChangeRequests, DigitalCard, SignaturePreview } from "./SignatureAside";
 import { Check, Group, Radios } from "./SignatureOptions";
@@ -197,8 +203,11 @@ export function SignaturePane() {
             </Button>
             <Button
               onClick={() => {
-                set({ on_doc_enabled: true });
                 setConfirm(false);
+                save.mutate(onDocBody(q.data.settings), {
+                  onSuccess: () => toast(t(k("onDoc.enabled"))),
+                  onError: () => toast(t(k("saveFail")), "late"),
+                });
               }}
             >
               {t(k("onDoc.confirm"))}

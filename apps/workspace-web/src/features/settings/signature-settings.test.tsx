@@ -114,3 +114,13 @@ describe("nhóm Chung", () => {
     expect(pickNav("signature", true, false, false)).toBe("signature");
   });
 });
+
+describe("bật ký trên tài liệu", () => {
+  test("onDocBody: chỉ đổi cờ trên bản đã lưu, đúng schema", async () => {
+    const { onDocBody } = await import("./lib/signature-form");
+    const b = onDocBody({ ...SIGNATURE_SETTINGS_DEFAULT, on_doc_enabled: false, ink: "black" });
+    expect(b.on_doc_enabled).toBe(true);
+    expect(b.ink).toBe("black");
+    expect(SignatureSettingsSchema.safeParse(b).success).toBe(true);
+  });
+});

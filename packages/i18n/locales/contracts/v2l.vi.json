@@ -197,6 +197,7 @@
         "intro": "Dùng chung cho mọi app của công ty. Chỉ quản trị sửa; đổi ở đây chỉ áp dụng cho lần ký sau.",
         "adminOnly": "Chỉ quản trị công ty sửa",
         "onDoc": {
+          "enabled": "Đã bật ký trên tài liệu",
           "title": "Ký trên tài liệu",
           "label": "Ký trên tài liệu",
           "hint": "Bật thì nhân viên được nhắc tạo chữ ký và hợp đồng có «Cần ký».",

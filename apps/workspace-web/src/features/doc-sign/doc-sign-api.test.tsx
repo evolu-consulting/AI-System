@@ -136,3 +136,26 @@ describe("chế độ ký", () => {
     expect(html).toContain("Lưu (còn 2 chỗ chưa ký)");
   });
 });
+
+describe("fix-cr181-web · body khớp schema contracts", () => {
+  test("POST ký: caption boolean, parse bằng SignSaveBodySchema", async () => {
+    const { SignSaveBodySchema, SignFieldsPutSchema } = await import(
+      "@ai/contracts/pack-contracts"
+    );
+    const body = buildSignBody(
+      [mark({ id: "a", fieldId: "11111111-1111-4111-8111-111111111111" })],
+      "internal",
+      true,
+    );
+    expect(SignSaveBodySchema.parse(body).marks[0]?.caption).toBe(true);
+    expect(buildSignBody([mark({ id: "b" })], "internal", false).marks[0]?.caption).toBe(false);
+    expect(SignFieldsPutSchema.safeParse({ fields: [] }).success).toBe(true);
+  });
+  test("signErrorKey: mọi mã đã biết có câu riêng", async () => {
+    const { signErrorKey, SIGN_ERR_CODES } = await import("./lib/errors");
+    for (const c of SIGN_ERR_CODES)
+      expect(signErrorKey({ code: c })).toBe(`contracts.docsign.err.${c}`);
+    expect(signErrorKey({ code: "X" })).toBe("contracts.docsign.err.generic");
+    expect(SIGN_ERR_CODES.length).toBe(12);
+  });
+});
