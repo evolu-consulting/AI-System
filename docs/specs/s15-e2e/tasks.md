@@ -31,5 +31,5 @@ Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: test e2e + seed e2e)
 
 ## Việc còn lại
-- cr181: 13 pass / 1 fail (lượt 13). Đỏ: journey K05 vì chuột phải «Thêm chữ ký của tôi ở đây» không đặt dấu (trang 1 và trang 3) dù đã có fa5586e32; test đã tách ca chuột phải ra riêng (chưa chạy) để K05–K09 chạy tiếp bằng kéo từ khay.
+- cr181: 14 pass / 1 fail (lượt 15) — K05 (chuột phải, giáp lai, chép trang) và ca chuột phải riêng đã xanh. Đỏ ở K07: giám đốc Lưu (POST /sign 201 có field_id) nhưng trang HĐ vẫn «Đang ký (0/1)» + bước «Ký hợp đồng» «Đang chờ ký» sau 120 s. Test đã sửa cho khớp sản phẩm (chưa chạy): K07–K09 + 390px chưa được kiểm.
 - cr127: điều phối chạy ở checkout chính. cr141-sign-or-upload không thuộc job nào.

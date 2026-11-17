@@ -100,10 +100,15 @@ test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; B
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 60_000 });
   await page.getByRole("button", { name: "Bấm để ký" }).first().click();
   await saveSigned(page, id);
+  // ô Bên B chưa ký không chặn: tệp báo «Chờ đối tác» (đối tác ký là đợt 2); trang HĐ không tự cập nhật ⇒ tải lại tới khi đổi
   await page.goto(`${E.cw}/contracts/c/${id}`);
-  await stepEventually(page, id, "Ký hợp đồng", "passed");
-  // ô Bên B chưa ký không chặn: bước Ký xong, tệp báo «Chờ đối tác» (đối tác ký là đợt 2)
-  await expect(page.getByTestId("sign-status").first()).toContainText("Chờ đối tác");
+  await expect(async () => {
+    await page.reload();
+    await expect(page.getByTestId("sign-status").first()).toContainText("Chờ đối tác", {
+      timeout: 5_000,
+    });
+  }).toPass({ timeout: 90_000 });
+  await expect(page.getByText("Đang chờ ký")).toHaveCount(0); // bước Ký đã xong
   await page.context().close();
 });
 
