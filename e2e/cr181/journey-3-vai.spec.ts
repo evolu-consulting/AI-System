@@ -55,9 +55,10 @@ test("K05-K06 · trưởng phòng (khác người tạo): «Đạt» khoá khi c
   await loginCw(page, E, HEAD);
   await createSignatureIfAsked(page, "Trần Bình");
   await page.goto(`${E.cw}/contracts/c/${id}`);
+  await stepEventually(page, id, "Trưởng phòng duyệt", "open");
   const take = page.getByTestId("claim-take");
   if (await take.isVisible({ timeout: 15_000 }).catch(() => false)) await take.click();
-  await page.locator("[data-approval=approve]").first().click();
+  await page.locator("[data-approval=pass], [data-approval=approve]").first().click();
   const box = page.getByTestId("approver-sign");
   await expect(box).toBeVisible();
   await expect(page.getByTestId("signature-pad")).toHaveCount(0); // không vẽ tay (Q4)
@@ -75,7 +76,7 @@ test("K05-K06 · trưởng phòng (khác người tạo): «Đạt» khoá khi c
   await expect(page.getByRole("button", { name: /Chữ ký, Trang 6/ })).toBeVisible();
   await saveSigned(page, id);
 
-  await page.locator("[data-approval=approve]").first().click();
+  await page.locator("[data-approval=pass], [data-approval=approve]").first().click();
   await page.getByRole("textbox", { name: "Ý kiến" }).fill("Đồng ý, ký duyệt");
   await expect(page.getByTestId("approver-sign")).toContainText("đã ký");
   await expect(page.getByTestId("request-approve-confirm")).toBeEnabled();

@@ -142,15 +142,16 @@ export async function headSignsAndPasses(browser: Browser, e: Env, id: string): 
   const page = await newPage(browser);
   await loginCw(page, e, HEAD);
   await page.goto(`${e.cw}/contracts/c/${id}`);
+  await stepEventually(page, id, "Trưởng phòng duyệt", "open");
   const take = page.getByTestId("claim-take");
   if (await take.isVisible({ timeout: 15_000 }).catch(() => false)) await take.click();
-  await page.locator("[data-approval=approve]").first().click();
+  await page.locator("[data-approval=pass], [data-approval=approve]").first().click();
   await page.getByRole("textbox", { name: "Ý kiến" }).fill("Đồng ý");
   await page.getByTestId("approver-sign").getByRole("link", { name: "Mở và ký" }).click();
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 30_000 });
   await addMineAt(page, 0, 0.5, 0.5);
   await saveSigned(page, id);
-  await page.locator("[data-approval=approve]").first().click();
+  await page.locator("[data-approval=pass], [data-approval=approve]").first().click();
   await page.getByRole("textbox", { name: "Ý kiến" }).fill("Đồng ý");
   await page.getByTestId("request-approve-confirm").click();
   await stepEventually(page, id, "Trưởng phòng duyệt", "passed");

@@ -2,11 +2,26 @@
 // Mở hộp thoại bằng URL `/settings/signature` (đích của chuông «Xin đổi») ⇒ `/contracts/settings?sec=signature` ⇒ hộp thoại Cài đặt ở mục «Chữ ký».
 // Viết theo khuôn e2e/cr127/*; chưa chạy (điều phối chạy cuối đợt).
 
-import { envOf, expect, loginCw, newPage, SPEC_TENANT, U } from "../cr127/_cr127-kit";
+import { apiAs, envOf, expect, HUB, loginCw, newPage, SPEC_TENANT, U } from "../cr127/_cr127-kit";
 import { test } from "../journey-approval/_test";
 
 test.describe.configure({ mode: "serial" });
 const E = envOf(SPEC_TENANT.j11);
+
+// Bật ký trên tài liệu ⇒ ai chưa có chữ ký bị chắn bởi màn «Tạo chữ ký»: tạo sẵn cho quản trị và nhân viên (PNG 1×1) để spec chỉ kiểm cài đặt.
+const PNG_1X1 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+test.beforeAll(async () => {
+  for (const u of [U.director, U.employee]) {
+    const s = await apiAs(E, u, "contracts");
+    const r = await fetch(`${HUB}/me/signature`, {
+      method: "POST",
+      headers: { ...s.headers, "content-type": "application/json" },
+      body: JSON.stringify({ kind: "main", method: "type", png: PNG_1X1 }),
+    });
+    expect(r.status).toBe(201);
+  }
+});
 
 test("Quản trị bật ký trên tài liệu, đổi màu mực, lưu", async ({ browser }) => {
   const page = await newPage(browser);

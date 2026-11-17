@@ -4,7 +4,7 @@
 // Viết theo khuôn e2e/cr181/sign-prep-and-sign.spec.ts; chưa chạy (điều phối chạy cuối đợt).
 import { expect, test } from "@playwright/test";
 import { envOf, loginCw, newPage, SPEC_TENANT, U } from "../cr127/_cr127-kit";
-import { HEAD, saleSends } from "./_cr181-kit";
+import { HEAD, saleSends, stepEventually } from "./_cr181-kit";
 
 test.describe.configure({ mode: "serial" });
 const E = envOf(SPEC_TENANT.j01);
@@ -32,9 +32,10 @@ test("người duyệt (khác người tạo): «Đạt» khoá tới khi ký đ
   const page = await newPage(browser);
   await loginCw(page, E, HEAD);
   await page.goto(`${E.cw}/contracts/c/${id}`);
+  await stepEventually(page, id, "Trưởng phòng duyệt", "open");
   const take = page.getByTestId("claim-take");
   if (await take.isVisible({ timeout: 15_000 }).catch(() => false)) await take.click();
-  await page.locator("[data-approval=approve]").first().click();
+  await page.locator("[data-approval=pass], [data-approval=approve]").first().click();
   const box = page.getByTestId("approver-sign");
   await expect(box).toBeVisible();
   await expect(page.getByTestId("signature-pad")).toHaveCount(0);
@@ -49,7 +50,7 @@ test("người duyệt (khác người tạo): «Đạt» khoá tới khi ký đ
   await page.getByRole("button", { name: "Lưu chữ ký" }).click();
   await expect(page).toHaveURL(new RegExp(`/contracts/c/${id}`), { timeout: 30_000 });
 
-  await page.locator("[data-approval=approve]").first().click();
+  await page.locator("[data-approval=pass], [data-approval=approve]").first().click();
   await page.getByRole("textbox", { name: "Ý kiến" }).fill("Đồng ý");
   await expect(page.getByTestId("approver-sign")).toContainText("đã ký");
   await expect(page.getByTestId("request-approve-confirm")).toBeEnabled();
