@@ -51,6 +51,8 @@ export type IntakeToolDeps = {
   ) => Promise<void>;
   /** CR-122 · E5 · mục người ký công ty của node (user/Group) ⇒ danh sách user (đã kiểm thuộc công ty); lỗi ⇒ ném. Vắng ⇒ node không dùng được `company_signers`. */
   nodeSigners?: (tenantId: string, entries: readonly EsignNodeSigner[]) => Promise<string[]>;
+  /** CR-181 · công ty bật «ký trên tài liệu»? Vắng ⇒ không kiểm. */
+  onDocEnabled?: (tenantId: string) => Promise<boolean>;
   /** Bản ghi hợp đồng đã gắn vào lượt chạy `runId` (cầu engine); cho phép Ký số chỉ ký đúng HĐ của lượt. */
   recordOfRun?: (tenantId: string, runId: string) => Promise<string | null>;
   /** Đối tác ký hợp lệ theo schema người ký đối tác; sai ⇒ null. */
@@ -124,6 +126,11 @@ async function companyUsers(
   const users = await d.nodeSigners(tenantId, entries);
   if (users.length === 0) throw new Error("ESIGN_NODE_NO_SIGNER");
   return users;
+}
+/** CR-181 · công ty TẮT ký trên tài liệu mà bước vẫn chọn «Ký qua» = ondoc ⇒ lỗi nghiệp vụ rõ (thẻ HĐ báo vì sao dừng), không treo câm. */
+async function assertOndocAllowed(d: IntakeToolDeps, tenantId: string, provider: string) {
+  if (ondocStart(provider) && d.onDocEnabled && !(await d.onDocEnabled(tenantId)))
+    throw new Error("ONDOC_NOT_ENABLED");
 }
 /** CR-146b · «Ký qua» = tải lên bản đã ký ⇒ không tạo phong bì, bước chờ người được giao tải lên (`esign.completed` do route tải lên bắn).
  *  Ký qua nhà cung cấp mà công ty đã tắt / không còn nhà cung cấp đó ⇒ `ESIGN_DISABLED` (lỗi nghiệp vụ rõ, không tự chuyển sang tải lên). */
@@ -201,6 +208,7 @@ function rawIntakeTools(d: IntakeToolDeps): PackToolDef[] {
           ? d.parsePartner((c.partner?.name?.trim() || email).slice(0, 200), email)
           : null;
         const p = await planSend(d, ctx, cfg, parsed);
+        await assertOndocAllowed(d, ctx.tenantId, p.provider);
         // CR-141 · «Ký hợp đồng» = ký số HOẶC tải lên bản đã ký: ghi người được giao tải (trước khi gửi ký, để ký số xong sớm không bị tính nhầm là còn chờ).
         const assigned = p.node.companyUsers ?? [p.signer];
         await d.uow.tenant(who(ctx), (r) => r.esign.openSignWait(id, assigned, ctx.userId));

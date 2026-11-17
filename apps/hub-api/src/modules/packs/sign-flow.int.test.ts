@@ -14,6 +14,7 @@ import { esignNodeApi } from "./contracts/application/esign-node.usecase";
 import { signFlowHooks } from "./contracts/application/sign-flow.hooks";
 import { withSystemScope } from "./kit/testing/system-scope";
 import { type SignFlow, signFlowOf } from "./packs.sign-doc";
+import { onDocEnabledOfTenant } from "./packs.tenant-config";
 
 let o: Sql;
 let db: Db;
@@ -289,7 +290,7 @@ describe("CR-181 s9 · ký trên tài liệu theo lượt chạy", () => {
     expect(await signFlowHooks.submitCheck?.(who, x.id, [[REVIEW(w.G, "opinion")]])).toBeNull();
   });
 
-  it("Q1 · lưu quy trình có Ký qua ondoc không đòi nhà cung cấp ký số", async () => {
+  it("Q1 · lưu quy trình có Ký qua ondoc không đòi nhà cung cấp ký số, nhưng công ty TẮT ký trên tài liệu thì chặn bằng ONDOC_NOT_ENABLED", async () => {
     const no = async (): Promise<never> => {
       throw new Error("không được gọi");
     };
@@ -298,7 +299,16 @@ describe("CR-181 s9 · ký trên tài liệu theo lượt chạy", () => {
       settingsOf: no,
       avail: () => null,
       directory: undefined,
+      // cờ THẬT của công ty (hub.signature_settings qua hàm DEFINER), không hàm giả
+      onDocEnabled: onDocEnabledOfTenant(db),
     });
+    await setOnDoc(true);
     expect(await api.checkNode(w.T, { provider: "ondoc" })).toEqual([]);
+    // CR-181 · công ty TẮT ký trên tài liệu ⇒ không lưu/kích hoạt được quy trình «Ký qua» ondoc (lượt sẽ kẹt ở bước Ký)
+    await setOnDoc(false);
+    expect(await api.checkNode(w.T, { provider: "ondoc" })).toEqual([
+      { field: "provider", code: "ONDOC_NOT_ENABLED" },
+    ]);
+    expect(await api.checkNode(w.T, { provider: "upload" })).toEqual([]);
   });
 });

@@ -75,11 +75,33 @@ describe("đổi chữ ký (Q10)", () => {
 });
 
 describe("checkPng", () => {
-  const png = (n: number) => Uint8Array.from([...PNG, ...new Array(n - PNG.length).fill(1)]);
+  const png = (n: number, w = 100, h = 50) => {
+    const b = new Uint8Array(n).fill(1);
+    b.set(PNG);
+    const v = new DataView(b.buffer);
+    v.setUint32(8, 13);
+    b.set([0x49, 0x48, 0x44, 0x52], 12);
+    v.setUint32(16, w);
+    v.setUint32(20, h);
+    return b;
+  };
   it("PNG thật trong hạn ⇒ ok", () => expect(checkPng(png(100))).toBe("ok"));
   it("đúng 200 KiB ⇒ ok; hơn 1 byte ⇒ too_large (thắng not_png)", () => {
     expect(checkPng(png(SIGNATURE_PNG_MAX_BYTES))).toBe("ok");
     expect(checkPng(new Uint8Array(SIGNATURE_PNG_MAX_BYTES + 1))).toBe("too_large");
+  });
+  it("kích thước khai trong IHDR: ≤ 2000×1000 ⇒ ok, vượt rộng hoặc cao ⇒ dimensions_too_large (PNG 200 KiB khai 20000×20000)", () => {
+    expect(checkPng(png(200, 2000, 1000))).toBe("ok");
+    expect(checkPng(png(200, 2001, 10))).toBe("dimensions_too_large");
+    expect(checkPng(png(200, 10, 1001))).toBe("dimensions_too_large");
+    expect(checkPng(png(SIGNATURE_PNG_MAX_BYTES, 20000, 20000))).toBe("dimensions_too_large");
+  });
+  it("IHDR thiếu/sai (không có khối IHDR, 0 điểm ảnh) ⇒ not_png", () => {
+    const noHdr = png(200);
+    noHdr.set([0x49, 0x44, 0x41, 0x54], 12);
+    expect(checkPng(noHdr)).toBe("not_png");
+    expect(checkPng(png(200, 0, 10))).toBe("not_png");
+    expect(checkPng(Uint8Array.from([...PNG, 0, 0, 0, 13]))).toBe("not_png");
   });
   it("không phải PNG / quá ngắn ⇒ not_png", () => {
     expect(checkPng(new Uint8Array(100))).toBe("not_png");

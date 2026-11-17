@@ -34,6 +34,8 @@ export type SendNodeOpts = {
 };
 
 type Issues = ESignNodeCheckOut["issues"];
+/** CR-181 · mã issue của `provider` khi «Ký qua» = ký trên tài liệu mà công ty đang tắt (panel admin + tool contracts-esign-send dùng cùng mã). */
+export const ONDOC_NOT_ENABLED = "ONDOC_NOT_ENABLED";
 export type EsignNodeDeps = {
   /** Cài đặt ký số hiệu lực của công ty (người gọi) / của tenant (scope hệ thống). */
   settings: (who: PackWho) => Promise<ESignSettingsOut>;
@@ -41,6 +43,8 @@ export type EsignNodeDeps = {
   /** Nhà cung cấp khả dụng của khoá (cần FileBox) hoặc null. */
   avail: (key: string) => unknown;
   directory: NodeDirectory | undefined;
+  /** CR-181 · công ty có BẬT «ký trên tài liệu» không (thiết lập chữ ký, `on_doc_enabled`). */
+  onDocEnabled: (tenantId: string) => Promise<boolean>;
 };
 
 export function esignNodeApi(d: EsignNodeDeps) {
@@ -55,8 +59,12 @@ export function esignNodeApi(d: EsignNodeDeps) {
   };
   /** CR-146b · «Ký qua»: `upload` luôn hợp lệ; nhà cung cấp phải đang bật + khả dụng của CHÍNH công ty. */
   const providerIssue = async (tenantId: string, provider: string): Promise<Issues> => {
-    // CR-181 · Q1 · ký trên tài liệu không cần nhà cung cấp ký số đang bật.
-    if (provider === ESIGN_NODE_UPLOAD || provider === ESIGN_NODE_ONDOC) return [];
+    if (provider === ESIGN_NODE_UPLOAD) return [];
+    // CR-181 · Q1 · ký trên tài liệu không cần nhà cung cấp ký số, nhưng công ty TẮT ký trên tài liệu thì không ai ký được ⇒ chặn lưu/kích hoạt.
+    if (provider === ESIGN_NODE_ONDOC)
+      return (await d.onDocEnabled(tenantId))
+        ? []
+        : [{ field: "provider", code: ONDOC_NOT_ENABLED }];
     const s = await d.settingsOf(tenantId);
     const ok = s.enabled && s.providers.some((p) => p.available && p.key === provider);
     return ok ? [] : [{ field: "provider", code: "PROVIDER_NOT_ENABLED" }];

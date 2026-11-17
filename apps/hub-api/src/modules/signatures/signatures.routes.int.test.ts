@@ -31,9 +31,16 @@ const ROLE: Record<Who, "tenant_admin" | "member"> = {
 };
 const TENANT_OF: Record<Who, string> = { adm: T.a, host: T.a, hoa: T.a, tam: T.a, other: T.b };
 
-const PNG_HEAD = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-const pngBytes = (n: number, fill = 1) =>
-  Buffer.from([...PNG_HEAD, ...new Array<number>(n - 8).fill(fill)]);
+/** PNG giả: chữ ký 8 byte + IHDR (rộng × cao khai) + phần đệm — đủ qua kiểm magic/IHDR/kích thước, không cần giải mã. */
+const pngBytes = (n: number, fill = 1, w = 100, h = 50) => {
+  const head = Buffer.alloc(24);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(head);
+  head.writeUInt32BE(13, 8);
+  head.write("IHDR", 12, "ascii");
+  head.writeUInt32BE(w, 16);
+  head.writeUInt32BE(h, 20);
+  return Buffer.concat([head, Buffer.alloc(n - 24, fill)]);
+};
 const b64 = (b: Buffer) => b.toString("base64");
 
 let o: Sql;
@@ -210,7 +217,7 @@ describe("CR-181 s2 · POST /me/signature (BR-K1..K4)", () => {
     expect(rows[1]?.after.signature_id).toBe(b.json.signature.id);
     expect(JSON.stringify(rows)).not.toContain(b64(pngBytes(120, 2)).slice(0, 20));
   });
-  it("PNG > 200 KiB ⇒ 413, không phải PNG ⇒ 415, base64 sai ⇒ 400, đúng 200 KiB ⇒ 201, có user_id ⇒ 400", async () => {
+  it("PNG > 200 KiB ⇒ 413, không phải PNG ⇒ 415, khai kích thước > 2000×1000 ⇒ 422, base64 sai ⇒ 400, đúng 200 KiB ⇒ 201, có user_id ⇒ 400", async () => {
     const big = await call(
       "hoa",
       "POST",
@@ -222,6 +229,11 @@ describe("CR-181 s2 · POST /me/signature (BR-K1..K4)", () => {
     const bad = await call("hoa", "POST", "/me/signature", mk(Buffer.alloc(500, 9)));
     expect(bad.status).toBe(415);
     expect(code(bad)).toBe("SIGNATURE_NOT_PNG");
+    const wide = await call("hoa", "POST", "/me/signature", mk(pngBytes(100, 1, 20000, 20000)));
+    expect(wide.status).toBe(422); // PNG nhỏ khai 20000×20000: chặn ở biên, không để máy chủ in cấp canvas cỡ GB
+    expect(code(wide)).toBe("SIGNATURE_IMAGE_TOO_LARGE");
+    const limit = await call("hoa", "POST", "/me/signature", mk(pngBytes(100, 1, 2000, 1000)));
+    expect(limit.status).toBe(201);
     const junk = await call("hoa", "POST", "/me/signature", mk(pngBytes(100), { png: "***" }));
     expect(junk.status).toBe(400);
     const edge = await call("hoa", "POST", "/me/signature", mk(pngBytes(SIGNATURE_PNG_MAX_BYTES)));

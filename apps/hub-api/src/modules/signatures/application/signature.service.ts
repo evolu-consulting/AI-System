@@ -84,6 +84,12 @@ export class SignatureService {
       throw new SignatureError("SIGNATURE_TOO_LARGE", 413, "Signature image too large");
     if (chk === "not_png")
       throw new SignatureError("SIGNATURE_NOT_PNG", 415, "Signature image must be PNG");
+    if (chk === "dimensions_too_large")
+      throw new SignatureError(
+        "SIGNATURE_IMAGE_TOO_LARGE",
+        422,
+        "Signature image dimensions too large",
+      );
     return this.d.store.run(u, async (tx) => {
       const { repo } = tx;
       const { settings } = await repo.getSettings();

@@ -76,7 +76,7 @@ export const SignFieldInSchema = z.strictObject({
   side: SignSideSchema,
   signer_kind: SignerKindSchema,
   /** user/group ⇒ uuid; partner ⇒ email liên hệ (chữ thường). */
-  signer_ref: z.string().trim().min(1).max(320),
+  signer_ref: z.string().trim().min(1).max(300),
   parts: SignPartsSchema,
 });
 /** `PUT /sign-docs/:fileId/fields` (BR-C2): đặt TOÀN BỘ chỗ ký chưa ký của tệp. */

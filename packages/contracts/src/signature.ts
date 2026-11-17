@@ -12,7 +12,21 @@ export const SIGNATURE_INITIALS_MODES = ["shrink", "own"] as const;
 export const SIGNATURE_CHANGE_POLICIES = ["self", "admin"] as const;
 /** Ảnh PNG tối đa 200 KiB (khớp `user_signatures_png_ck`). */
 export const SIGNATURE_PNG_MAX_BYTES = 204800;
+/** Kích thước ảnh tối đa (điểm ảnh): đọc từ IHDR, chặn «PNG nhỏ khai khổng lồ» làm máy chủ in cấp canvas cỡ GB. */
+export const SIGNATURE_PNG_MAX_WIDTH = 2000;
+export const SIGNATURE_PNG_MAX_HEIGHT = 1000;
 export const SIGNATURE_PROVIDER_MAX = 60;
+
+/** Rộng × cao khai trong IHDR của PNG (chỉ đọc 24 byte đầu, không giải mã). Không phải PNG / IHDR sai / 0 ⇒ null. */
+export function pngDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  const sigOk = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every((b, i) => bytes[i] === b);
+  if (bytes.length < 24 || !sigOk) return null;
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (v.getUint32(8) !== 13 || v.getUint32(12) !== 0x49484452) return null; // độ dài 13 + "IHDR"
+  const width = v.getUint32(16);
+  const height = v.getUint32(20);
+  return width === 0 || height === 0 ? null : { width, height };
+}
 
 export const SignatureKindSchema = z.enum(SIGNATURE_KINDS);
 export const SignatureMethodSchema = z.enum(SIGNATURE_METHODS);
@@ -181,7 +195,8 @@ export const SIGNATURE_API_ERRORS = {
   SIGNATURE_FORBIDDEN: 403, // không phải quản trị công ty (BR-G1)
   SIGNATURE_CHANGE_NOT_ALLOWED: 403, // change_policy=admin, đã có chữ ký, chưa được cho phép (Q10)
   SIGNATURE_TOO_LARGE: 413, // PNG > SIGNATURE_PNG_MAX_BYTES
-  SIGNATURE_NOT_PNG: 415, // không phải PNG thật (magic bytes)
+  SIGNATURE_NOT_PNG: 415, // không phải PNG thật (magic bytes + IHDR)
+  SIGNATURE_IMAGE_TOO_LARGE: 422, // rộng > SIGNATURE_PNG_MAX_WIDTH hoặc cao > SIGNATURE_PNG_MAX_HEIGHT (khác SIGNATURE_TOO_LARGE 413 = quá dung lượng)
   SIGNATURE_METHOD_NOT_ALLOWED: 422, // cách tạo ngoài `methods` của công ty (BR-K4)
   SIGNATURE_INITIALS_NOT_ALLOWED: 422, // kind=initials khi công ty không chọn `initials = own`
   SIGNATURE_CHANGE_NOT_NEEDED: 409, // xin đổi khi không cần (policy self / chưa có chữ ký)

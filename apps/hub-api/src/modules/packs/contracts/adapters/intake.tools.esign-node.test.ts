@@ -11,7 +11,7 @@ const U2 = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const G1 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const CTX: PackToolCtx = { tenantId: "t1", userId: "u1", runId: null };
 
-function make(email: string | null = "p@x.vn", sendErr?: Error) {
+function make(email: string | null = "p@x.vn", sendErr?: Error, onDoc?: boolean) {
   const waits: unknown[][] = [];
   const sent: unknown[][] = [];
   const asked: unknown[] = [];
@@ -37,6 +37,7 @@ function make(email: string | null = "p@x.vn", sendErr?: Error) {
       return entries.flatMap((e) => (e.kind === "group" ? [U1, U2] : [e.id]));
     },
     parsePartner: (name, e) => (e.includes("@") ? { name, email: e } : null),
+    ...(onDoc === undefined ? {} : { onDocEnabled: async () => onDoc }),
   });
   const send = tools.find((t) => t.name === INTAKE_TOOL_KEYS.esignSend) as (typeof tools)[number];
   return { send, sent, asked, waits };
@@ -126,6 +127,20 @@ describe("E5 · tool Ký số theo args của node", () => {
       }),
     ).rejects.toThrow("ESIGN_NODE_CONFIG_INVALID:order");
     expect(sent).toEqual([]);
+  });
+});
+
+describe("CR-181 · «Ký qua» = ondoc khi công ty TẮT ký trên tài liệu", () => {
+  it("tắt ⇒ lỗi nghiệp vụ ONDOC_NOT_ENABLED (không treo câm, không ghi người được giao, không gửi ký), bật ⇒ chờ ký trên tài liệu", async () => {
+    const off = make("p@x.vn", undefined, false);
+    await expect(
+      off.send.run(CTX, { contract_id: ID, provider: "ondoc", company_signers: `user:${U1}` }),
+    ).rejects.toThrow("ONDOC_NOT_ENABLED");
+    expect([off.waits, off.sent]).toEqual([[], []]);
+    const on = make("p@x.vn", undefined, true);
+    expect(
+      await on.send.run(CTX, { contract_id: ID, provider: "ondoc", company_signers: `user:${U1}` }),
+    ).toEqual({ status: "awaiting_ondoc" });
   });
 });
 

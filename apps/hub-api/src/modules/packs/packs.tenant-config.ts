@@ -7,6 +7,7 @@ import type { AttachmentStorage } from "../attachments/public";
 import { attachmentBytesOf, evidenceFileBytesOf, evidenceFileNamesOf } from "../attachments/public";
 import type { ConfigCache } from "../config/public";
 import { DEFAULT_TENANT_TZ } from "../config/public";
+import { getSignatureSettings } from "../signatures/public";
 
 export type WithConfig = { config: ConfigCache };
 
@@ -38,7 +39,11 @@ export const evidenceDeps = (d: { db?: Db; attachments?: { storage: AttachmentSt
       }
     : {};
 
-/** CR-181 · s10 · ảnh chữ ký đã in theo id: MỘT câu hub (scope hệ thống) lọc `tenant_id` + `= any(array)`; id tenant khác không có trong kết quả. Gói đã kiểm id thuộc HĐ. */
+/** CR-181 · công ty có BẬT «ký trên tài liệu» (thiết lập chữ ký theo tenant; một câu hàm DEFINER 0156) — cổng tiêm cho gói Hợp đồng. */
+export const onDocEnabledOfTenant = (db: Db) => async (tenantId: string) =>
+  (await getSignatureSettings(db, tenantId)).on_doc_enabled;
+
+/** CR-181 · s10 · ảnh chữ ký đã in theo id: MỘT câu gọi hàm DEFINER `hub.signature_png_by_ids` (0157; `hub_rw` không đọc thẳng bảng) — lọc `tenant_id` + `= any(array)`; id tenant khác không có trong kết quả. Gói đã kiểm id thuộc HĐ. */
 export const stampPngOf =
   (db: Db) =>
   async (tenantId: string, ids: readonly string[]): Promise<Map<string, Uint8Array>> => {
@@ -47,8 +52,9 @@ export const stampPngOf =
       tx.execute<{
         id: string;
         png: Uint8Array;
-      }>(sql`select id::text as id, png from hub.user_signatures
-        where tenant_id = ${tenantId}::uuid and id = any(${`{${ids.join(",")}}`}::uuid[])`),
+      }>(
+        sql`select id::text as id, png from hub.signature_png_by_ids(${tenantId}::uuid, ${`{${ids.join(",")}}`}::uuid[])`,
+      ),
     );
     return new Map(rows.map((r) => [r.id, new Uint8Array(r.png)]));
   };

@@ -4,6 +4,11 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { SIGN_DOC_PAGES_MAX, type SignPart } from "@ai/contracts/pack-contracts";
+import {
+  pngDimensions,
+  SIGNATURE_PNG_MAX_HEIGHT,
+  SIGNATURE_PNG_MAX_WIDTH,
+} from "@ai/contracts/signature";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import fontkit from "@pdf-lib/fontkit";
 import {
@@ -39,6 +44,11 @@ export const sha256Hex = (b: Uint8Array): string => createHash("sha256").update(
 
 /** Nét đen nền trong ⇒ cùng nét màu mực (`source-in`: chỉ tô nơi đã có nét, giữ độ trong suốt). */
 export async function tint(png: Uint8Array, hex: string): Promise<Uint8Array> {
+  // Kiểm kích thước khai trong IHDR TRƯỚC khi giải mã/cấp canvas (PNG nhỏ khai 20000×20000 ⇒ canvas cỡ GB).
+  const dim = pngDimensions(png);
+  if (!dim) throw new SignError("SIGN_IMAGE_INVALID");
+  if (dim.width > SIGNATURE_PNG_MAX_WIDTH || dim.height > SIGNATURE_PNG_MAX_HEIGHT)
+    throw new SignError("SIGN_IMAGE_TOO_LARGE", `${dim.width}x${dim.height}`);
   let img: Awaited<ReturnType<typeof loadImage>>;
   try {
     img = await loadImage(Buffer.from(png));

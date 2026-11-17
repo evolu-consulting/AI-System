@@ -33,7 +33,7 @@ import { renderFirstPage } from "./adapters/page-thumb";
 import { partnerSendRepo } from "./adapters/partner-send.repo";
 import { signSessionRepo } from "./adapters/sign-session.repo";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
-import { type ESignUsecase, esignUsecase } from "./application/esign.usecase";
+import { type ESignDeps, type ESignUsecase, esignUsecase } from "./application/esign.usecase";
 import { esignAnchors } from "./application/esign-anchor.usecase";
 import { type EsignFlow, esignFlow } from "./application/esign-flow.usecase";
 import { inviteNotice, type ThumbRenderer } from "./application/esign-invite";
@@ -137,13 +137,12 @@ export function esignModule(
     publish?:
       | ((userIds: string[], contractId: string, status: ESignStatus) => Promise<void>)
       | undefined;
-  },
+  } & Pick<ESignDeps, "onDocEnabled">,
 ): ESignModule {
   const uow = createPackUow(db, "contracts", repos);
   let flow: EsignFlow | null = null;
   let completed: CompletedHook | null = null;
-  // CR-125 m9 · phong bì vừa sang trạng thái cuối (đã cập nhật) ⇒ đầu ra node Ký số (mã phong bì, thời điểm ký, người ký). MỘT câu đọc.
-  // Đọc lỗi ⇒ vẫn bắn sự kiện (không dữ liệu kèm) — rẽ nhánh của flow không phụ thuộc phần phụ này.
+  // CR-125 m9 · phong bì sang trạng thái cuối ⇒ đầu ra node Ký số (mã phong bì, lúc ký, người ký), MỘT câu đọc; đọc lỗi ⇒ vẫn bắn sự kiện, không dữ liệu kèm.
   const envelopeData = (tid: string, contractId: string): Promise<Record<string, string>> =>
     uow
       .system(tid, (r) => r.esign.latest(contractId))
@@ -194,6 +193,7 @@ export function esignModule(
       previewPdf: lazyPdf(1),
     }),
     directory: esignNodeDirectory(db), // CR-122 · E5
+    onDocEnabled: d.onDocEnabled,
     onStatus: async (tid, id, st) => {
       await push(tid, id, st);
       await flow?.onStatus(tid, id, st);
@@ -370,8 +370,7 @@ const streamOf =
       data: { contract_id: contractId, status },
     });
 
-/** Gắn webhook `/pack/contracts/esign/webhook/:provider` — gọi TRƯỚC `requireAuth` (không JWT; nhà cung cấp tự xác thực) — và
- *  trả use case dùng chung cho route người dùng. Gói contracts tắt / không db ⇒ undefined. */
+/** Gắn webhook `/pack/contracts/esign/webhook/:provider` (TRƯỚC `requireAuth`; nhà cung cấp tự xác thực), trả use case dùng chung. Gói tắt / không db ⇒ undefined. */
 export function mountEsignWebhook<E extends Env>(
   app: Hono<E>,
   d: {
@@ -385,7 +384,7 @@ export function mountEsignWebhook<E extends Env>(
           esign?: ESignSeam;
         }
       | undefined;
-  },
+  } & Pick<ESignDeps, "onDocEnabled">,
 ): ESignModule | undefined {
   if (!d.db || !(d.packs?.contracts ?? true)) return undefined;
   const fb = packFilebox(d.packs);
@@ -394,6 +393,7 @@ export function mountEsignWebhook<E extends Env>(
     files: fb ? fileboxClients(fb) : null,
     signal: d.signal,
     publish: d.redis ? streamOf(d.redis) : undefined,
+    onDocEnabled: d.onDocEnabled,
   });
   app.route(ESIGN_WEBHOOK_PATH, esignWebhookRoutes(u));
   return u;

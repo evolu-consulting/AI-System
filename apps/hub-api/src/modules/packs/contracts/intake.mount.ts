@@ -61,6 +61,7 @@ export function intakeWiring(
           await uow.system(tenantId, (r) => r.notify.enqueue(notices));
         })().catch(() => undefined);
       },
+      onDocEnabled: (tenantId) => esign?.onDocEnabled(tenantId) ?? Promise.resolve(true),
       nodeSigners: async (tenantId, entries) => {
         if (!esign) throw new Error("ESIGN_UNAVAILABLE");
         return esign.resolveNodeSigners(tenantId, entries); // E5 · kiểm thuộc công ty

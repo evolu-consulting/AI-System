@@ -57,6 +57,8 @@ export type ESignDeps = {
   warn?: (msg: string, meta: Record<string, unknown>) => void;
   /** CR-122 · E5 · danh bạ công ty cho node Ký số (Group + người ký theo tenant); vắng ⇒ node chỉ dùng người bắt đầu. */
   directory?: NodeDirectory;
+  /** CR-181 · công ty bật «ký trên tài liệu»? Vắng (chỉ test) ⇒ coi là bật. */
+  onDocEnabled?: ((tenantId: string) => Promise<boolean>) | undefined;
 };
 export type { NodeDirectory, SendNodeOpts } from "./esign-node.usecase";
 
@@ -67,6 +69,7 @@ const RETURN_PATH = (id: string) => new RegExp(`/contracts/(?:c/)?${id}/?$`); //
 
 export function esignUsecase(d: ESignDeps) {
   /** Adapter khả dụng của khoá (cần FileBox) hoặc null. */
+  const onDocEnabled = (tenantId: string) => d.onDocEnabled?.(tenantId) ?? Promise.resolve(true);
   const nowIso = () => (d.now?.() ?? new Date()).toISOString();
   const voidAt = voidForReopen(d.warn);
   const voidExpired = voidForExpiry(d.warn);
@@ -285,7 +288,9 @@ export function esignUsecase(d: ESignDeps) {
       settingsOf: async (tid) => out(await d.uow.system(tid, (r) => r.esign.settings())),
       avail,
       directory: d.directory,
+      onDocEnabled,
     }),
+    onDocEnabled,
     /** CR-122 · E5c · phong bì của node quá hạn ⇒ huỷ + bắn `esign.voided` (`esign-expire.ts`). */
     expireOpen: esignExpire({ ...d, avail, voidExpired }),
 

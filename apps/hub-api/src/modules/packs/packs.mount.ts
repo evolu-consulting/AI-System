@@ -71,7 +71,7 @@ import { mountedApps, verifyPackModules } from "./packs.modules-check";
 import { envInt, evidenceDeps, stepDeps, tenantLimits, tenantTz } from "./packs.tenant-config";
 import { PKDEMO_KEY, pkdemoModule } from "./pkdemo/pkdemo.mount";
 
-export { mountEsignWebhook } from "./contracts/esign.mount"; // app.ts gắn webhook trước JWT (không chạm nội bộ gói)
+export { mountEsignWebhook } from "./packs.esign-mount"; // app.ts gắn webhook trước JWT (không chạm nội bộ gói)
 
 export const PACK_PREFIX = "/pack";
 export { companyBrandModule } from "./contracts/shell.mount"; // CR-118 · brand công ty cho view năng lực

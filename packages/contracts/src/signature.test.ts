@@ -4,6 +4,7 @@ import {
   CreateSignatureBodySchema,
   GrantChangeBodySchema,
   MySignatureViewSchema,
+  pngDimensions,
   SIGNATURE_PNG_MAX_BYTES,
   SIGNATURE_SETTINGS_DEFAULT,
   SignatureSettingsSchema,
@@ -122,5 +123,26 @@ describe("CreateSignatureBodySchema (s2)", () => {
   test("GrantChangeBodySchema: user_id phải là uuid", () => {
     expect(GrantChangeBodySchema.safeParse({ user_id: ID }).success).toBe(true);
     expect(GrantChangeBodySchema.safeParse({ user_id: "1" }).success).toBe(false);
+  });
+});
+
+describe("pngDimensions (IHDR)", () => {
+  const hdr = (w: number, h: number) => {
+    const b = new Uint8Array(33);
+    b.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
+    const v = new DataView(b.buffer);
+    v.setUint32(16, w);
+    v.setUint32(20, h);
+    return b;
+  };
+  test("đọc rộng × cao khai, sai chữ ký / thiếu IHDR / 0 / quá ngắn ⇒ null", () => {
+    expect(pngDimensions(hdr(2000, 1000))).toEqual({ width: 2000, height: 1000 });
+    expect(pngDimensions(hdr(20000, 20000))).toEqual({ width: 20000, height: 20000 });
+    expect(pngDimensions(hdr(0, 5))).toBeNull();
+    expect(pngDimensions(new Uint8Array(40))).toBeNull();
+    expect(pngDimensions(hdr(5, 5).slice(0, 23))).toBeNull();
+    const noIhdr = hdr(5, 5);
+    noIhdr[12] = 0x58;
+    expect(pngDimensions(noIhdr)).toBeNull();
   });
 });

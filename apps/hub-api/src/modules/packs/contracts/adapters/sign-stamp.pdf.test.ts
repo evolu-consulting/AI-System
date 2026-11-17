@@ -107,6 +107,16 @@ describe("tint (Q18)", () => {
     expect(px(20, 10)[3]).toBe(255);
     expect(px(35, 18)[3]).toBe(0);
   });
+  test("PNG khai kích thước vượt 2000×1000 (IHDR) ⇒ SIGN_IMAGE_TOO_LARGE trước khi cấp canvas", async () => {
+    const big = new Uint8Array(sigPng(40, 20));
+    const v = new DataView(big.buffer, big.byteOffset);
+    v.setUint32(16, 20000);
+    v.setUint32(20, 20000);
+    await expect(tint(big, "#000")).rejects.toMatchObject({ code: "SIGN_IMAGE_TOO_LARGE" });
+    v.setUint32(16, 2001);
+    v.setUint32(20, 10);
+    await expect(tint(big, "#000")).rejects.toMatchObject({ code: "SIGN_IMAGE_TOO_LARGE" });
+  });
   test("ảnh hỏng ⇒ SIGN_IMAGE_INVALID", async () => {
     await expect(tint(new Uint8Array([1, 2, 3]), "#000")).rejects.toMatchObject({
       code: "SIGN_IMAGE_INVALID",

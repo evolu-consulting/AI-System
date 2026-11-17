@@ -35,6 +35,7 @@ const ISSUE_MSG: Record<string, string> = {
   SIGN_OUTSIDE_PAGE: "Chữ ký nằm ngoài trang",
   SIGN_PARTS_INVALID: "Vị trí chữ ký không hợp lệ",
   SIGN_IMAGE_INVALID: "Ảnh chữ ký không hợp lệ — tạo lại chữ ký",
+  SIGN_IMAGE_TOO_LARGE: "Ảnh chữ ký quá lớn — tạo lại chữ ký",
   SIGN_SIGNER_UNKNOWN: "Chỗ ký phải gán cho một người ký của hợp đồng",
   SIGN_PAGE_NOT_FOUND: "Chỗ ký nằm ngoài các trang của tệp",
 };

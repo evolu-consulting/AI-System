@@ -6,6 +6,7 @@ import { contracts, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../../kit/adapters/pack-uow";
+import { stampPngOf } from "../../packs.tenant-config";
 import { approvalRecord, approvalRecordPdf } from "../application/approval-record.usecase";
 import { saveApprovalRecord } from "../approval-record-save.mount";
 import { approvalEngineRepo } from "./approval-engine.repo";
@@ -23,6 +24,7 @@ const STAMP = crypto.randomUUID();
 const RUN = crypto.randomUUID();
 const stored = new Map<string, Uint8Array>();
 let failNext = false;
+let stampLoaded = 0;
 const PNG = Uint8Array.from(
   atob(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -54,6 +56,8 @@ beforeAll(async () => {
   await o`insert into contracts.sign_docs (tenant_id, contract_id, file_id, needs_sign, set_by) values (${T}, ${C}, ${F}, true, ${U1})`;
   await addVersion(1, SHA, await addFile("hd-ky.pdf"));
   db = createDb(urls().hubApi, { max: 6 });
+  // Bản ký THẬT trong hub.user_signatures: `stampPngOf` thật phải đọc được bằng role `hub_api` (qua hàm DEFINER 0157), không dùng hàm giả.
+  await o`insert into hub.user_signatures (id, tenant_id, user_id, kind, method, png) values (${STAMP}, ${T}, ${U1}, 'main', 'draw', ${Buffer.from(PNG)})`;
   const evId = crypto.randomUUID();
   await o.begin(async (tx) => {
     await tx`set local session_replication_role = replica`;
@@ -99,7 +103,11 @@ const deps = (admin: boolean, save = false) =>
     uow: uow(),
     port: () => undefined,
     isAdmin: async () => admin,
-    stampPng: async (_t: string, ids: readonly string[]) => new Map(ids.map((i) => [i, PNG])),
+    stampPng: async (t: string, ids: readonly string[]) => {
+      const got = await stampPngOf(db)(t, ids);
+      stampLoaded += got.size;
+      return got;
+    },
     savedBytes: async (_org: string, id: string) => stored.get(id) ?? null,
     ...(save ? { savePdf: saveApprovalRecord(db, files) } : {}),
   }) as never;
@@ -110,6 +118,16 @@ const saved = async () =>
   ).map((r) => r.k as string);
 
 describe("hồ sơ duyệt · hình chữ ký (s10)", () => {
+  it("stampPngOf THẬT (role hub_api): đọc đúng ảnh của tenant, tenant khác không thấy, PDF Hồ sơ duyệt lập được với bản ký thật", async () => {
+    const own = await stampPngOf(db)(T, [STAMP]);
+    expect([...(own.get(STAMP) ?? [])]).toEqual([...PNG]);
+    expect((await stampPngOf(db)(crypto.randomUUID(), [STAMP])).size).toBe(0);
+    expect((await stampPngOf(db)(T, [])).size).toBe(0);
+    stampLoaded = 0;
+    const pdf = await approvalRecordPdf(deps(true))({ tenantId: T, userId: U1 }, C);
+    expect(pdf?.bytes.byteLength).toBeGreaterThan(0);
+    expect(stampLoaded).toBeGreaterThan(0);
+  });
   it("người xem HĐ ngoài quy trình thấy hình chữ ký nhưng KHÔNG thấy ý kiến (BR-X2)", async () => {
     const r = await approvalRecord(deps(false))({ tenantId: T, userId: U2 }, C);
     expect(r?.can_read_evidence).toBe(false);

@@ -1,7 +1,10 @@
 // CR-181 · lát s2 · luật thuần của chữ ký nội bộ (lớp 1): quyết `needs_create`, `can_change`, ai phải có quyền đổi, kiểm PNG.
 // Không I/O. Route/service chỉ ghép; QC viết test trên các hàm này.
 import {
+  pngDimensions,
   SIGNATURE_PNG_MAX_BYTES,
+  SIGNATURE_PNG_MAX_HEIGHT,
+  SIGNATURE_PNG_MAX_WIDTH,
   type SignatureChangeState,
   type SignatureKind,
   type SignatureMethod,
@@ -55,14 +58,15 @@ export const changeRequestApplies = (
 export const kindAllowed = (s: SignatureSettings, kind: SignatureKind): boolean =>
   kind === "main" || s.initials === "own";
 
-export type PngCheck = "ok" | "too_large" | "not_png";
-const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+export type PngCheck = "ok" | "too_large" | "not_png" | "dimensions_too_large";
 
-/** Hạn dung lượng kiểm trước (413), rồi magic bytes PNG (415). Rỗng ⇒ not_png. */
+/** Hạn dung lượng kiểm trước (413), rồi magic bytes + IHDR PNG (415), rồi kích thước ảnh ≤ 2000×1000 (422). Rỗng ⇒ not_png. */
 export function checkPng(bytes: Uint8Array): PngCheck {
   if (bytes.length > SIGNATURE_PNG_MAX_BYTES) return "too_large";
-  if (bytes.length < PNG_MAGIC.length || !PNG_MAGIC.every((b, i) => bytes[i] === b))
-    return "not_png";
+  const d = pngDimensions(bytes);
+  if (!d) return "not_png";
+  if (d.width > SIGNATURE_PNG_MAX_WIDTH || d.height > SIGNATURE_PNG_MAX_HEIGHT)
+    return "dimensions_too_large";
   return "ok";
 }
 

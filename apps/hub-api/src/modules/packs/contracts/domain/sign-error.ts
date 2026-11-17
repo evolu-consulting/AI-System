@@ -7,6 +7,7 @@ export const SIGN_ERROR_CODES = [
   "SIGN_PDF_INVALID",
   "SIGN_TOO_MANY_PAGES",
   "SIGN_IMAGE_INVALID",
+  "SIGN_IMAGE_TOO_LARGE",
   "DIGITAL_SIGN_NOT_ENABLED",
 ] as const;
 export type SignErrorCode = (typeof SIGN_ERROR_CODES)[number];
