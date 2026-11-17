@@ -18,6 +18,7 @@ let w: ClaimWorld;
 let flow: SignFlow;
 const fired: string[] = [];
 const SHA = "a".repeat(64);
+const PARTS = [{ page: 0, x: 40, y: 40, w: 120, h: 50, cx: 40, cy: 40, cw: 120, ch: 50 }];
 const ESIGN = (signers: string) => ({
   key: "ky",
   name: "Ký",
@@ -75,7 +76,7 @@ async function world(stages: unknown[], idx: number): Promise<X> {
 async function field(x: X, side: "A" | "B", kind: string, ref: string): Promise<string> {
   const [r] = await o<{ id: string }[]>`insert into contracts.sign_fields
       (tenant_id, contract_id, file_id, side, signer_kind, signer_ref, parts, created_by)
-    values (${w.T}, ${x.id}, ${x.fileId}, ${side}, ${kind}, ${ref}, '[]'::jsonb, ${w.S}) returning id::text as id`;
+    values (${w.T}, ${x.id}, ${x.fileId}, ${side}, ${kind}, ${ref}, ${o.json(PARTS as never)}, ${w.S}) returning id::text as id`;
   return r?.id as string;
 }
 async function version(x: X, by: string, seq = 1): Promise<string> {

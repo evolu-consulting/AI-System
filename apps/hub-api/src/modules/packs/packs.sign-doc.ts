@@ -4,7 +4,7 @@
 //     Gửi duyệt sẽ chọn (`signFlowHooks.plannedStages`, cùng `flowQuery` + `runPlanOf`);
 //   · `turn` = lượt ký theo bước đang mở của lượt (BR-D1, luật thuần `signTurnOf`);
 //   · s9 gắn `signFlowHooks`: chặn Gửi (BR-T2/C3), kiểm Đạt (BR-D2), bước Ký `ondoc` tự xong (BR-D3/C4, Q8) — `onDocSigned`.
-// Perf: cổng lượt ký = 1 câu hub (+1 đọc Group khi có Group); kiểm Đạt = 1 câu thiết lập + 1 câu gói; ô Bên A = 1 câu gói. Không theo hàng.
+// Perf: cổng lượt ký = 1 câu hub (+1 đọc Group khi có Group); kiểm Đạt = 1 câu thiết lập + 1 câu hub + 1 câu gói; ô Bên A = 1 câu gói. Không theo hàng.
 
 import { createHash } from "node:crypto";
 import { ATTACH_MAX_BYTES } from "@ai/contracts/chat";
@@ -78,13 +78,12 @@ function packReads(db: Db) {
         return { total: Number(c?.total ?? 0), open: Number(c?.open ?? 0) };
       }),
     /** BR-D2 · tệp cần ký của HĐ thuộc lượt `runId` mà `actor` chưa có bản chưa void Lưu trong lượt này. Một câu. */
-    unsignedBy: (tenantId: string, runId: string, actor: string) =>
+    unsignedBy: (tenantId: string, contractId: string, runId: string, actor: string) =>
       uow.system(tenantId, async (r) => {
         const rows = await r.tx.execute<{ file_id: string }>(sql`
           select d.file_id::text as file_id from contracts.sign_docs d
           where d.tenant_id = ${r.t}::uuid and d.needs_sign
-            and d.contract_id = (select a.contract_id from contracts.approvals a
-              where a.tenant_id = ${r.t}::uuid and a.engine_run_id = ${runId}::uuid limit 1)
+            and d.contract_id = ${contractId}::uuid
             and not exists (select 1 from contracts.sign_versions v
               where v.tenant_id = d.tenant_id and v.contract_id = d.contract_id and v.file_id = d.file_id
                 and v.signed_by = ${actor}::uuid and v.run_id = ${runId}::uuid and v.voided_at is null)
@@ -129,7 +128,13 @@ export function signFlowOf(db: Db, storage?: AttachmentStorage): SignFlow {
   signFlowHooks.beforePass = async (e) => {
     const who = { tenantId: e.tenantId, userId: e.actor };
     if (!(await onDoc(who))) return null;
-    const missing = await reads.unsignedBy(e.tenantId, e.runId, e.actor);
+    // HĐ của lượt = bản ghi gói của run (`pack_record_id`), một câu hub; không có ⇒ không áp.
+    const [run] = await withHubScope(db, { kind: "system" }, (tx) =>
+      tx.execute<{ id: string | null }>(sql`select pack_record_id::text as id from hub.process_runs
+        where id = ${e.runId}::uuid and tenant_id = ${e.tenantId}::uuid and pack_key = ${PACK}`),
+    );
+    if (!run?.id) return null;
+    const missing = await reads.unsignedBy(e.tenantId, run.id, e.runId, e.actor);
     const copy = missing.length === 0 && e.wantSignature && storage;
     return {
       onDoc: true,
