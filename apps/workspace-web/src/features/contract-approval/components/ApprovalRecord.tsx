@@ -10,10 +10,48 @@ import {
   downloadRecordPdf,
   fetchApprovalRecord,
   fetchChangesSinceLast,
+  fetchEvidenceBlob,
+  fetchStampBlob,
   recordKey,
 } from "../api-record";
-import { hasChanges, recordLines, waitingOf } from "../lib/record-view";
+import { hasChanges, type RecordLine, recordLines, waitingOf } from "../lib/record-view";
 import { EvidenceDialog } from "./EvidenceDialog";
+
+/** Ảnh chữ ký nhỏ hiện thẳng trong dòng (thay link «Xem»): ảnh in thì ai xem HĐ cũng thấy; ảnh bằng chứng chỉ khi đọc được. */
+export function SignImg({
+  contractId,
+  who,
+  evidence,
+  stampId,
+}: {
+  contractId: string;
+  who: string;
+  evidence: { id: string; fileId: string } | null;
+  stampId: string | null;
+}) {
+  const { t } = useTranslation();
+  const key = evidence ? `ev:${evidence.id}` : `stamp:${stampId}`;
+  const q = useQuery({
+    queryKey: ["contract-sign-img", contractId, key],
+    queryFn: async ({ signal }) =>
+      URL.createObjectURL(
+        evidence
+          ? await fetchEvidenceBlob(contractId, evidence.id, evidence.fileId, signal)
+          : await fetchStampBlob(contractId, stampId as string, signal),
+      ),
+    retry: false,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  if (!q.data) return null;
+  return (
+    <img
+      src={q.data}
+      alt={t("contracts.work.u4.record.signAlt", { who })}
+      className="mt-1 h-9 w-auto max-w-40 rounded border border-line bg-white object-contain"
+      data-testid="record-sign-img"
+    />
+  );
+}
 
 function Fold({
   title,
@@ -81,6 +119,33 @@ function PdfButton({ id }: { id: string }) {
   );
 }
 
+/** Loại chữ ký + số tệp + hình chữ ký nhỏ của người quyết bước (hình đã in: ai xem HĐ cũng thấy). */
+function SignLine({ contractId, l }: { contractId: string; l: RecordLine }) {
+  const { t } = useTranslation();
+  const ev =
+    l.readable && l.signatureId && l.evidenceId
+      ? { id: l.evidenceId, fileId: l.signatureId }
+      : null;
+  return (
+    <>
+      {l.sign && (
+        <p className="m-0 mt-1 text-caption text-dim" data-testid="record-sign">
+          {t(`contracts.work.u4.record.signKind.${l.sign.kind}`)} ·{" "}
+          {t("contracts.work.u4.record.signFiles", { n: l.sign.filesSigned })}
+        </p>
+      )}
+      {(l.sign?.stampId || ev) && (
+        <SignImg
+          contractId={contractId}
+          who={l.who}
+          evidence={ev}
+          stampId={l.sign?.stampId ?? null}
+        />
+      )}
+    </>
+  );
+}
+
 export function RecordBody({ id }: { id: string }) {
   const { t } = useTranslation();
   const q = useQuery({
@@ -115,6 +180,15 @@ export function RecordBody({ id }: { id: string }) {
   return (
     <>
       <PdfButton id={id} />
+      {q.data.files?.some((f) => f.kind === "signed") && (
+        <a
+          href={`/contracts/signed/${encodeURIComponent(id)}`}
+          className="mb-2 inline-block text-sm underline"
+          data-testid="record-view-signed"
+        >
+          {t("contracts.work.u4.record.viewSigned")}
+        </a>
+      )}
       <ol className="m-0 list-none p-0">
         {lines.map((l) => (
           <li
@@ -127,6 +201,7 @@ export function RecordBody({ id }: { id: string }) {
             {l.override ? ` (${t("contracts.work.u4.record.override")})` : ""} ·{" "}
             {t(`contracts.work.u4.record.action.${l.action}`)} ·{" "}
             <span className="text-dim">{new Date(l.at).toLocaleString("vi-VN")}</span>
+            <SignLine contractId={id} l={l} />
             {l.note && <p className="m-0 mt-1 text-dim">“{l.note}”</p>}
             {l.hasEvidence && !l.readable && (
               <p className="m-0 mt-1 text-caption text-dim" data-testid="record-hidden">

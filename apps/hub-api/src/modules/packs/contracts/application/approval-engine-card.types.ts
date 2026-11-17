@@ -17,6 +17,12 @@ export type EvidenceNames = (
   evidenceIds: readonly string[],
 ) => Promise<Map<string, { name: string; mime: string }>>;
 
+/** CR-181 · s10 · ảnh chữ ký đã in (`hub.user_signatures.png`) theo id; id không thuộc tenant ⇒ không có trong kết quả. */
+export type StampPng = (
+  tenantId: string,
+  ids: readonly string[],
+) => Promise<Map<string, Uint8Array>>;
+
 export type Repos = {
   approval: {
     markRejected(
@@ -31,7 +37,13 @@ export type Repos = {
   };
   approvalEngine: Pick<
     ApprovalEngineRepo,
-    "setPendingLinks" | "recordOverride" | "voidOverride" | "recordDecision" | "decisionsOf"
+    | "setPendingLinks"
+    | "recordOverride"
+    | "voidOverride"
+    | "recordDecision"
+    | "decisionsOf"
+    | "signsOf"
+    | "savedRecord"
   > & {
     difyFacts?: ApprovalEngineRepo["difyFacts"];
     labels?: ApprovalEngineRepo["labels"];
@@ -45,6 +57,14 @@ export type EngineCardDeps = {
   /** CR-127 · E4b · đọc byte tệp/chữ ký của bằng chứng (cổng hub tiêm); vắng ⇒ route tải tệp bằng chứng 404. */
   evidenceBytes?: EvidenceBytes | undefined;
   evidenceNames?: EvidenceNames | undefined;
+  /** CR-181 · s10 · ảnh chữ ký đã in theo id (hub, một câu theo lô; chỉ id thuộc tenant). Vắng ⇒ không có ảnh. */
+  stampPng?: StampPng | undefined;
+  /** CR-181 · s10 · đọc byte PDF hồ sơ đã lưu ở FileBox (org, fileId). */
+  savedBytes?: ((org: string, fileId: string) => Promise<Uint8Array | null>) | undefined;
+  /** CR-181 · s10 · tên người ký chưa có trong hồ sơ (người không có bước duyệt). */
+  userNames?:
+    | ((who: PackWho, ids: readonly string[]) => Promise<ReadonlyMap<string, string>>)
+    | undefined;
   uow: { tenant<T>(who: PackWho, fn: (r: Repos) => Promise<T>): Promise<T> };
   jobs: {
     enqueue(j: {

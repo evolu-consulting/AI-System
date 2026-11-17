@@ -26,6 +26,18 @@ export async function fetchEvidenceBlob(
   return res.blob();
 }
 
+/** CR-181 · s10 · ảnh chữ ký đã in (BR-X2: ai xem HĐ cũng thấy) — kèm Bearer ⇒ blob. */
+export async function fetchStampBlob(
+  id: string,
+  stampId: string,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const res = await apiResponse(`${BASE}/${enc(id)}/approval-record/stamps/${enc(stampId)}`, {
+    signal,
+  });
+  return res.blob();
+}
+
 /** U4b-PDF · «Tải PDF» hồ sơ duyệt (cùng quyền xem hồ sơ; kèm Bearer ⇒ blob ⇒ lưu tệp). */
 export async function downloadRecordPdf(id: string): Promise<void> {
   const res = await apiResponse(`${BASE}/${enc(id)}/approval-record.pdf`);

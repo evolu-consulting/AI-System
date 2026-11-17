@@ -38,6 +38,12 @@ export type ApprovalRoutesDeps = {
     who: { userId: string; tenantId: string },
     id: string,
   ) => Promise<{ name: string; bytes: Uint8Array } | null>;
+  /** CR-181 · s10 · ảnh chữ ký đã in (BR-X2: ai xem được HĐ cũng thấy); sai/vắng ⇒ null ⇒ 404. */
+  stampFile?: (
+    who: { userId: string; tenantId: string },
+    id: string,
+    stampId: string,
+  ) => Promise<Uint8Array | null>;
   /** CR-127 · E4b · byte tệp/chữ ký của bằng chứng (BR-26); sai/không được xem/vắng ⇒ null ⇒ 404. */
   evidenceFile?: (
     who: { userId: string; tenantId: string },
@@ -92,6 +98,20 @@ export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hon
         "content-type": "application/pdf",
         "content-length": String(f.bytes.byteLength),
         "content-disposition": `attachment; filename="${f.name}"`,
+        "x-content-type-options": "nosniff",
+        "cache-control": "private, no-store",
+      },
+    });
+  });
+  r.get("/contracts/:id/approval-record/stamps/:stampId", read, async (c) => {
+    const id = parseWith(z.uuid(), c.req.param("id"));
+    const stampId = parseWith(z.uuid(), c.req.param("stampId"));
+    const bytes = await d.stampFile?.(who(c.get("user")), id, stampId);
+    if (!bytes) throw appError("NOT_FOUND");
+    return new Response(bytes as unknown as BodyInit, {
+      headers: {
+        "content-type": "image/png",
+        "content-length": String(bytes.byteLength),
         "x-content-type-options": "nosniff",
         "cache-control": "private, no-store",
       },

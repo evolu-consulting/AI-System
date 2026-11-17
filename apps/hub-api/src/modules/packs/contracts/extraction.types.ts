@@ -8,9 +8,14 @@ import type { AgentTransport } from "./adapters/extraction-agent";
 import type { FileContent } from "./adapters/source-file-text";
 import type { ApprovalGroups } from "./application/approval.usecase";
 import type { ApprovalEngineBridge } from "./application/approval-engine.ports";
-import type { EvidenceBytes, EvidenceNames } from "./application/approval-engine-card.usecase";
+import type {
+  EvidenceBytes,
+  EvidenceNames,
+  StampPng,
+} from "./application/approval-engine-card.usecase";
 import type { FlowGroups } from "./application/approval-flow.usecase";
 import type { SweepDeps, sweepApprovalsOnce } from "./application/approval-sweep";
+import type { ESignFiles } from "./application/esign.ports";
 import type { SourceFileText, TaxRegistry } from "./application/extraction.ports";
 import type { myApprovals } from "./application/mywork-approvals.usecase";
 import type { ExtractionOutcome } from "./application/run-extraction.usecase";
@@ -37,6 +42,10 @@ export type ContractsAiDeps = {
   evidenceBytes?: EvidenceBytes | undefined;
   /** CR-127 · U4b-3 · tên tệp bằng chứng cho PDF Hồ sơ duyệt (cổng hub tiêm). */
   evidenceNames?: EvidenceNames | undefined;
+  /** CR-181 · s10 · ảnh chữ ký đã in (cổng hub tiêm ở `packs.mount.ts`); vắng ⇒ hồ sơ không có ảnh. */
+  stampPng?: StampPng | undefined;
+  /** CR-181 · s10 · FileBox theo org để lưu/đọc PDF hồ sơ duyệt khi HĐ ký đủ; vắng ⇒ không lưu (route vẫn lập ngay). */
+  recordFiles?: ESignFiles | null | undefined;
 };
 
 export type ContractsAi = {

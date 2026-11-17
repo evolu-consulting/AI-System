@@ -258,6 +258,10 @@ export type ApprovalEngineRepo = {
   ): Promise<void>;
   /** CR-127 · E4 · hồ sơ duyệt: mọi `stage_decided` của HĐ (≤ 200, theo thời gian) + bằng chứng qua `hub.evidence_get` — MỘT câu. */
   decisionsOf?(contractId: string): Promise<DecisionRow[]>;
+  /** CR-181 · s10 · các bản đã ký (không huỷ) của HĐ cho hồ sơ — MỘT câu (`approval-record-signs.repo.ts`). */
+  signsOf?(contractId: string): Promise<import("../domain/approval-record.rules").SignVersionRow[]>;
+  /** CR-181 · s10 · bản PDF hồ sơ đã lưu khi HĐ ký đủ (sự kiện `approval_record_saved` mới nhất) — MỘT câu. */
+  savedRecord?(contractId: string): Promise<{ org: string; fileId: string; name: string } | null>;
   /** S3b · nhãn HĐ (số, tiêu đề) của các HĐ người dùng THẤY (RLS M1) — MỘT câu `= any`. */
   labels(
     ids: readonly string[],

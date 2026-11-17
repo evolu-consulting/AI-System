@@ -194,7 +194,7 @@ function contractsCtx(d: PacksMountDeps & { db: Db }, view: PackAccessView, fb: 
   const ai = contractsAiModule(
     db,
     view,
-    { ...aiDeps, tax, ...evidenceDeps(d) }, // CR-127 E4b: tai tep bang chung duyet
+    { ...aiDeps, tax, ...evidenceDeps(d), ...(fb ? { recordFiles: fileboxClients(fb) } : {}) }, // CR-127 E4b: tai tep bang chung duyet; CR-181 s10: luu ho so duyet
     {
       // M3 Â· AI client chung (khoÃ¡ tá»« env; test tiÃªm `model` giáº£) + Group duyá»‡t (admin.groups + cache cáº¥u hÃ¬nh)
       ai: aiClient,

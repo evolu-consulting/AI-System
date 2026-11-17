@@ -211,7 +211,11 @@
           "signatureTitle": "Chữ ký",
           "fileError": "Không mở được tệp này.",
           "download": "Tải về",
-          "stageFallback": "Bước duyệt"
+          "stageFallback": "Bước duyệt",
+          "signKind": { "internal": "Chữ ký nội bộ", "digital": "Chữ ký số" },
+          "signFiles": "{{n}} tệp đã ký",
+          "signAlt": "Chữ ký của {{who}}",
+          "viewSigned": "Xem bản đã ký"
         },
         "changes": {
           "title": "Đã đổi so với lần trước",

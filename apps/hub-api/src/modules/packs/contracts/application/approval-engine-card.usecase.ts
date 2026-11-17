@@ -13,7 +13,13 @@ import { contractRunInputs, usesContractInputs } from "../domain/approval-run-in
 import type { ApprovalState } from "./approval.ports";
 import type { ApprovalEnginePort, EngineCaller } from "./approval-engine.ports";
 import type { EngineActBody, EngineActResult, EngineCardDeps } from "./approval-engine-card.types";
-import { approvalEvidenceFile, approvalRecord, approvalRecordPdf } from "./approval-record.usecase";
+import {
+  approvalEvidenceFile,
+  approvalRecord,
+  approvalRecordArchive,
+  approvalRecordPdf,
+  approvalStampFile,
+} from "./approval-record.usecase";
 
 // contract-flow S3b · thẻ duyệt + hành động cho lượt `mode = 'engine'`. Lớp 2: chỉ cổng.
 // - `view`: MỘT lần `stepsView` của engine (≤ 2 SQL, scope người xem — `can_act` do engine quyết) trên mẫu chụp + trạng thái lượt đã
@@ -339,6 +345,9 @@ export type EngineCard = {
   evidenceFile: ReturnType<typeof approvalEvidenceFile>;
   /** CR-127 · U4b-3 · PDF Hồ sơ duyệt (cùng dữ liệu `record`). */
   recordPdf: ReturnType<typeof approvalRecordPdf>;
+  /** CR-181 · s10 · bản lưu trữ đủ nội dung (khi HĐ ký đủ) + ảnh chữ ký đã in (BR-X2). */
+  recordArchive: ReturnType<typeof approvalRecordArchive>;
+  stampFile: ReturnType<typeof approvalStampFile>;
 };
 export const engineCard = (d: EngineCardDeps): EngineCard => ({
   view: engineView(d),
@@ -346,6 +355,8 @@ export const engineCard = (d: EngineCardDeps): EngineCard => ({
   record: approvalRecord(d),
   evidenceFile: approvalEvidenceFile(d),
   recordPdf: approvalRecordPdf(d),
+  recordArchive: approvalRecordArchive(d),
+  stampFile: approvalStampFile(d),
 });
 
 export type {
@@ -354,4 +365,5 @@ export type {
   EngineCardDeps,
   EvidenceBytes,
   EvidenceNames,
+  StampPng,
 } from "./approval-engine-card.types";

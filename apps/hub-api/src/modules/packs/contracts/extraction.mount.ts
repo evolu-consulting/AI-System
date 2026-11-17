@@ -76,6 +76,7 @@ import {
 import { createRefreshParties, type TaxRetryScheduler } from "./application/tax-parties";
 import type { ExtractionStarter } from "./application/upload-contract.ports";
 import { approvalEngine, flowTemplateRoutes } from "./approval.mount";
+import { cardRoutes, recordDeps, startRecordSave } from "./approval-record-save.mount";
 import { mountContractAccess } from "./contract-access.mount";
 import { DEFAULT_TENANT_TZ, localDate } from "./domain/local-time.rules";
 import type { ContractsAi, ContractsAiDeps, ContractsFlowDeps } from "./extraction.types";
@@ -252,12 +253,12 @@ export function contractsAiModule(
             uow,
             jobs,
             redo,
-            evidenceBytes: d.evidenceBytes, // CR-127 · E4b
-            evidenceNames: d.evidenceNames, // CR-127 · U4b-3
+            ...recordDeps(d, db, view), // E4b/U4b-3 + CR-181 s10
           }),
         }
       : {}),
   };
+  if (ad.card) startRecordSave(db, d, ad.card.recordArchive);
   const tz = flow.timeZoneOf ?? (async () => DEFAULT_TENANT_TZ);
   const manual = createManual({
     uow,
@@ -308,9 +309,7 @@ function approvalModule(
     act,
     readSettings: readApprovalSettings(ad),
     saveSettings: saveApprovalSettings(ad),
-    record: async (w, i) => (await ad.card?.record(w, i)) ?? null, // CR-127 · E4
-    evidenceFile: async (w, i, e, f) => (await ad.card?.evidenceFile(w, i, e, f)) ?? null, // CR-127 · E4b
-    recordPdf: async (w, i) => (await ad.card?.recordPdf(w, i)) ?? null, // CR-127 · U4b-3
+    ...cardRoutes(ad.card), // E4/E4b/U4b-3 + CR-181 s10
   });
   approval.route(
     "/",

@@ -1,6 +1,8 @@
 // Tra cấu hình tenant cho module gói từ `ConfigCache` (0 SQL khi nóng) + đọc env số nguyên — tách khỏi `packs.mount.ts`.
 
 import type { Db } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
+import { sql } from "drizzle-orm";
 import type { AttachmentStorage } from "../attachments/public";
 import { attachmentBytesOf, evidenceFileBytesOf, evidenceFileNamesOf } from "../attachments/public";
 import type { ConfigCache } from "../config/public";
@@ -32,5 +34,21 @@ export const evidenceDeps = (d: { db?: Db; attachments?: { storage: AttachmentSt
     ? {
         evidenceBytes: evidenceFileBytesOf(d.db, d.attachments.storage),
         evidenceNames: evidenceFileNamesOf(d.db), // U4b-3 · PDF Hồ sơ duyệt
+        stampPng: stampPngOf(d.db), // CR-181 · s10 · hình chữ ký đã in
       }
     : {};
+
+/** CR-181 · s10 · ảnh chữ ký đã in theo id: MỘT câu hub (scope hệ thống) lọc `tenant_id` + `= any(array)`; id tenant khác không có trong kết quả. Gói đã kiểm id thuộc HĐ. */
+export const stampPngOf =
+  (db: Db) =>
+  async (tenantId: string, ids: readonly string[]): Promise<Map<string, Uint8Array>> => {
+    if (ids.length === 0) return new Map();
+    const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+      tx.execute<{
+        id: string;
+        png: Uint8Array;
+      }>(sql`select id::text as id, png from hub.user_signatures
+        where tenant_id = ${tenantId}::uuid and id = any(${`{${ids.join(",")}}`}::uuid[])`),
+    );
+    return new Map(rows.map((r) => [r.id, new Uint8Array(r.png)]));
+  };

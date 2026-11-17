@@ -3,7 +3,7 @@
 // tenant); (2) `stepsView` của engine (tên người, ai quyết được bước đang mở). HĐ không thấy / tenant khác ⇒ null (404).
 import type { ApprovalRecord } from "@ai/contracts/pack-contracts";
 import type { PackWho } from "../../kit/public";
-import { renderApprovalRecordPdf } from "../adapters/approval-record.pdf";
+import { type PdfImage, renderApprovalRecordPdf } from "../adapters/approval-record.pdf";
 import { buildApprovalRecord, canReadEvidence } from "../domain/approval-record.rules";
 import type { ApprovalState } from "./approval.ports";
 import type { ApprovalEngineRepo } from "./approval-engine.ports";
@@ -11,25 +11,39 @@ import type { EngineCardDeps } from "./approval-engine-card.usecase";
 
 type RecordRepos = {
   approval: { state(id: string, o: { lock: boolean }): Promise<unknown> };
-  approvalEngine: Pick<ApprovalEngineRepo, "decisionsOf"> & {
+  approvalEngine: Pick<ApprovalEngineRepo, "decisionsOf" | "signsOf" | "savedRecord"> & {
     labels?: ApprovalEngineRepo["labels"];
   };
 };
 export type ApprovalRecordDeps = Pick<
   EngineCardDeps,
-  "port" | "isAdmin" | "evidenceBytes" | "evidenceNames"
+  "port" | "isAdmin" | "evidenceBytes" | "evidenceNames" | "stampPng" | "savedBytes" | "userNames"
 > & {
   uow: { tenant<T>(who: PackWho, fn: (r: RecordRepos) => Promise<T>): Promise<T> };
 };
 
+/** Tên người ký không có bước duyệt (một câu theo lô). */
+async function fillSignerNames(
+  d: ApprovalRecordDeps,
+  who: PackWho,
+  names: Map<string, string>,
+  signs: readonly { signedBy: string }[],
+) {
+  const missing = [...new Set(signs.map((x) => x.signedBy).filter((u) => !names.has(u)))];
+  if (missing.length > 0 && d.userNames)
+    for (const [k, v] of await d.userNames(who, missing)) names.set(k, v);
+}
+
 /** Hồ sơ đã đọc + người xem có được đọc NỘI DUNG bằng chứng không (BR-26). HĐ không thấy / tenant khác ⇒ null. */
-async function loadRecord(d: ApprovalRecordDeps, who: PackWho, id: string) {
+async function loadRecord(d: ApprovalRecordDeps, who: PackWho, id: string, full = false) {
   const got = await d.uow.tenant(who, async (r) => {
     const st = (await r.approval.state(id, { lock: false })) as ApprovalState | null;
     if (!st) return null;
     const rows = (await r.approvalEngine.decisionsOf?.(id)) ?? [];
     const label = (await r.approvalEngine.labels?.([id]))?.[0]; // tên HĐ (một nguồn `contractNameSql`) — cho PDF
-    return { st, rows, label };
+    const signs = (await r.approvalEngine.signsOf?.(id)) ?? [];
+    const saved = (await r.approvalEngine.savedRecord?.(id)) ?? null;
+    return { st, rows, label, signs, saved };
   });
   if (!got) return null;
   const a = got.st.approval;
@@ -45,19 +59,24 @@ async function loadRecord(d: ApprovalRecordDeps, who: PackWho, id: string) {
     }
     if (s.task?.can_act) involved.add(who.userId); // quyết được bước đang mở (kể cả trưởng phòng duyệt)
   }
+  await fillSignerNames(d, who, names, got.signs);
   const admin = (await d.isAdmin?.(who)) ?? false;
-  const readable = canReadEvidence(
-    { userId: who.userId, admin },
-    { startedBy: a?.startedBy ?? "", owner: got.st.owner ?? null, involved },
-  );
-  return { rows: got.rows, names, readable, label: got.label };
+  // `full` = bản lưu trữ do hệ thống lập khi HĐ ký đủ (đủ ý kiến/tệp; chỉ trả lại cho người trong quy trình).
+  const readable =
+    full ||
+    canReadEvidence(
+      { userId: who.userId, admin },
+      { startedBy: a?.startedBy ?? "", owner: got.st.owner ?? null, involved },
+    );
+  // Tên người ký (không có bước duyệt) — chỉ khi `names` chưa có: lấy từ bước đã quyết; người còn lại hiện «(không rõ)».
+  return { rows: got.rows, names, readable, label: got.label, signs: got.signs, saved: got.saved };
 }
 
 export function approvalRecord(d: ApprovalRecordDeps) {
   return async (who: PackWho, id: string): Promise<ApprovalRecord | null> => {
     const rec = await loadRecord(d, who, id);
     if (!rec) return null;
-    const out: ApprovalRecord = buildApprovalRecord(rec.rows, rec.names, rec.readable);
+    const out: ApprovalRecord = buildApprovalRecord(rec.rows, rec.names, rec.readable, rec.signs);
     if (!rec.readable || !d.evidenceNames) return out;
     // CR-144 · MỘT câu theo lô: tên + loại tệp của mọi bằng chứng đọc được (không truy vấn theo từng tệp).
     const meta = await d.evidenceNames(
@@ -80,33 +99,110 @@ export function approvalRecord(d: ApprovalRecordDeps) {
   };
 }
 
+/** Ảnh chữ ký cho PDF: bằng chứng duyệt (chỉ khi đọc được, png/jpg) + chữ ký đã in — hai lần đọc theo lô, không theo từng hàng DB. */
+async function pdfImages(
+  d: ApprovalRecordDeps,
+  tenantId: string,
+  out: ReturnType<typeof buildApprovalRecord>,
+  meta: ReadonlyMap<string, { name: string; mime: string }>,
+): Promise<Map<string, PdfImage>> {
+  const images = new Map<string, PdfImage>();
+  const kindOf = (m: string) => (m === "image/png" ? "png" : m === "image/jpeg" ? "jpg" : null);
+  const stampIds = [...new Set((out.signs ?? []).flatMap((x) => (x.stamp_id ? [x.stamp_id] : [])))];
+  if (stampIds.length > 0 && d.stampPng)
+    for (const [k, bytes] of await d.stampPng(tenantId, stampIds))
+      images.set(`stamp:${k}`, { bytes, kind: "png" });
+  const evs = out.items.flatMap((x) =>
+    x.evidence?.readable && x.evidence.signature_attachment_id
+      ? [{ ev: x.evidence.id, file: x.evidence.signature_attachment_id }]
+      : [],
+  );
+  if (d.evidenceBytes)
+    await Promise.all(
+      evs.map(async ({ ev, file }) => {
+        const kind = kindOf(meta.get(file)?.mime ?? "");
+        const f = kind ? await d.evidenceBytes?.(tenantId, ev, file) : null;
+        if (f && kind) images.set(`ev:${ev}`, { bytes: f.bytes, kind });
+      }),
+    );
+  return images;
+}
+
+async function buildRecordPdf(
+  d: ApprovalRecordDeps,
+  who: PackWho,
+  id: string,
+  now: () => Date,
+  full: boolean,
+): Promise<{
+  name: string;
+  bytes: Uint8Array;
+  readable: boolean;
+  saved: SavedRef | null;
+  empty: boolean;
+} | null> {
+  const rec = await loadRecord(d, who, id, full);
+  if (!rec) return null;
+  const out = buildApprovalRecord(rec.rows, rec.names, rec.readable, rec.signs);
+  const evIds = out.items.flatMap((x) => (x.evidence?.readable ? [x.evidence.id] : []));
+  const fileNames = new Map<string, string>();
+  let meta = new Map<string, { name: string; mime: string }>();
+  if (rec.readable && d.evidenceNames) {
+    meta = await d.evidenceNames(who.tenantId, evIds);
+    for (const [k, m] of meta) fileNames.set(k, m.name);
+  }
+  const bytes = await renderApprovalRecordPdf({
+    contract: { name: rec.label?.title ?? "", number: rec.label?.number ?? null },
+    items: out.items,
+    canReadEvidence: out.can_read_evidence,
+    fileNames,
+    files: out.files ?? [],
+    images: await pdfImages(d, who.tenantId, out, meta),
+    generatedAt: now().toISOString(),
+  });
+  const name = `ho-so-duyet-${rec.label?.number ?? id.slice(0, 8)}.pdf`.replace(
+    /[^A-Za-z0-9._-]/g,
+    "-",
+  );
+  const empty = out.items.length === 0 && (out.files?.length ?? 0) === 0;
+  return { name, bytes, readable: rec.readable, saved: rec.saved, empty };
+}
+type SavedRef = { org: string; fileId: string; name: string };
+
 /**
- * CR-127 · U4b-3 · PDF "Hồ sơ duyệt": dựng từ CHÍNH `buildApprovalRecord` (một nguồn với JSON, đã lọc BR-26) + tên HĐ + tên tệp bằng chứng
- * (một câu theo lô, CHỈ khi người xem đọc được nội dung). HĐ không thấy / tenant khác ⇒ null (404).
+ * CR-127 · U4b-3 · PDF "Hồ sơ duyệt": dựng từ CHÍNH `buildApprovalRecord` (một nguồn với JSON, đã lọc BR-26) + tên HĐ + tên tệp bằng chứng.
+ * CR-181 · s10 · đã có bản lưu (HĐ ký đủ) ⇒ trả bản lưu, CHỈ cho người đọc được nội dung (bản lưu đủ ý kiến/tệp); người chỉ xem luôn nhận bản lập
+ * ngay đã lọc. HĐ không thấy / tenant khác ⇒ null (404).
  */
 export function approvalRecordPdf(d: ApprovalRecordDeps, now: () => Date = () => new Date()) {
   return async (who: PackWho, id: string): Promise<{ name: string; bytes: Uint8Array } | null> => {
     const rec = await loadRecord(d, who, id);
     if (!rec) return null;
-    const out = buildApprovalRecord(rec.rows, rec.names, rec.readable);
-    const evIds = out.items.flatMap((x) => (x.evidence?.readable ? [x.evidence.id] : []));
-    const fileNames = new Map<string, string>();
-    if (rec.readable && d.evidenceNames)
-      for (const [k, m] of await d.evidenceNames(who.tenantId, evIds)) fileNames.set(k, m.name);
-    const bytes = await renderApprovalRecordPdf({
-      contract: { name: rec.label?.title ?? "", number: rec.label?.number ?? null },
-      items: out.items,
-      canReadEvidence: out.can_read_evidence,
-      fileNames,
-      generatedAt: now().toISOString(),
-    });
-    return {
-      name: `ho-so-duyet-${rec.label?.number ?? id.slice(0, 8)}.pdf`.replace(
-        /[^A-Za-z0-9._-]/g,
-        "-",
-      ),
-      bytes,
-    };
+    if (rec.readable && rec.saved && d.savedBytes) {
+      const bytes = await d.savedBytes(rec.saved.org, rec.saved.fileId);
+      if (bytes) return { name: rec.saved.name, bytes };
+    }
+    const r = await buildRecordPdf(d, who, id, now, false);
+    return r ? { name: r.name, bytes: r.bytes } : null;
+  };
+}
+
+/** Bản lưu trữ khi HĐ ký đủ: đủ nội dung (không lọc theo người xem), hệ thống lập. */
+export function approvalRecordArchive(d: ApprovalRecordDeps, now: () => Date = () => new Date()) {
+  return async (who: PackWho, id: string): Promise<{ name: string; bytes: Uint8Array } | null> => {
+    const r = await buildRecordPdf(d, who, id, now, true);
+    return r && !r.empty ? { name: r.name, bytes: r.bytes } : null;
+  };
+}
+
+/** BR-X2 · ảnh chữ ký đã in: ai xem được HĐ cũng thấy; CHỈ ảnh thuộc một bản đã ký (không huỷ) của CHÍNH HĐ này. Sai ⇒ null (404). */
+export function approvalStampFile(d: ApprovalRecordDeps) {
+  return async (who: PackWho, id: string, stampId: string): Promise<Uint8Array | null> => {
+    if (!d.stampPng) return null;
+    const rec = await loadRecord(d, who, id);
+    const sid = stampId.toLowerCase();
+    if (!rec?.signs.some((x) => x.stampId === sid)) return null;
+    return (await d.stampPng(who.tenantId, [sid])).get(sid) ?? null;
   };
 }
 

@@ -22,6 +22,8 @@ export type RecordLine = {
   /** CR-144 · tên + loại của chữ ký/tệp (hộp «Xem»); rỗng khi không đọc được. */
   files: readonly { id: string; name: string; mime: string }[];
   evidenceId: string | null;
+  /** CR-181 · s10 · chữ ký đã in của người quyết bước này (BR-X2: ai xem HĐ cũng thấy). */
+  sign: { kind: "internal" | "digital"; filesSigned: number; stampId: string | null } | null;
 };
 
 /** Mã bước của quy trình (vd `truong-phong`, `step_2`): chữ thường + số + gạch, không dấu cách — KHÔNG phải tên cho người dùng. */
@@ -60,6 +62,9 @@ export function recordLines(
       fileIds: readable ? (e?.attachment_ids ?? []) : [],
       files: readable ? (e?.files ?? []) : [],
       evidenceId: e?.id ?? null,
+      sign: i.sign
+        ? { kind: i.sign.kind, filesSigned: i.sign.files_signed, stampId: i.sign.stamp_id }
+        : null,
     };
   });
 }

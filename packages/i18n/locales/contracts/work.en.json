@@ -211,7 +211,11 @@
           "signatureTitle": "Signature",
           "fileError": "Could not open this file.",
           "download": "Download",
-          "stageFallback": "Approval step"
+          "stageFallback": "Approval step",
+          "signKind": { "internal": "Internal signature", "digital": "Digital signature" },
+          "signFiles": "{{n}} files signed",
+          "signAlt": "Signature of {{who}}",
+          "viewSigned": "View signed copy"
         },
         "changes": {
           "title": "Changed since last time",

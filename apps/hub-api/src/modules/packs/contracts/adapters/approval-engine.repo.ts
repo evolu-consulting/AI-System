@@ -12,6 +12,7 @@ import type {
 import type { FlowStep } from "../domain/approval-flow.types";
 import { OVERRIDE_EVENT } from "../domain/approval-owner.rules";
 import { approvalWrite } from "./approval.repo";
+import { savedRecordQ, signsOfQ } from "./approval-record-signs.repo";
 import { contractNameSql } from "./contract-name.sql";
 import { contractStateRepo } from "./contract-state.repo";
 
@@ -380,5 +381,7 @@ export function approvalEngineRepo(tx: Tx, tenantId: string): ApprovalEngineRepo
     recordDecision: (id, aid, e) =>
       decisionsQ(tx, tenantId)([{ ...e, contractId: id, approvalId: aid }]),
     decisionsOf: decisionsOfQ(tx, tenantId),
+    signsOf: signsOfQ(tx, tenantId),
+    savedRecord: savedRecordQ(tx, tenantId),
   };
 }

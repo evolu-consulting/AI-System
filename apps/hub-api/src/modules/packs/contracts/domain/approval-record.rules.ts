@@ -55,7 +55,10 @@ export function buildApprovalRecord(
   rows: readonly RecordRow[],
   names: ReadonlyMap<string, string>,
   readable: boolean,
+  signRows: readonly SignVersionRow[] = [],
 ) {
+  const info = signRows.length > 0 ? buildSignInfo(signRows, names) : null;
+  const signOf = (id: string) => info?.signs.find((s) => s.user.id === id) ?? null;
   const evidenceOf = (e: NonNullable<RecordRow["evidence"]>) => ({
     id: e.id,
     readable,
@@ -77,6 +80,70 @@ export function buildApprovalRecord(
     // `feedback` có thể trùng ý kiến của bằng chứng ⇒ người chỉ xem không nhận khi có bằng chứng kèm.
     feedback: readable || r.evidence === null ? r.feedback : null,
     evidence: r.evidence ? evidenceOf(r.evidence) : null,
+    ...(info ? { sign: signOf(r.actor) } : {}),
   }));
-  return { items, can_read_evidence: readable };
+  return { items, can_read_evidence: readable, ...(info ?? {}) };
+}
+
+// ── CR-181 · s10 · hình chữ ký + tệp + dấu vân tay trong hồ sơ ─────────────────────────────────────────────────────────────────────────
+/** Một bản đã ký (không huỷ) của một tệp, kèm chữ ký đầu tiên in trong bản (`stampId`). */
+export type SignVersionRow = {
+  fileId: string;
+  fileName: string;
+  outName: string;
+  seq: number;
+  sha256: string;
+  signedBy: string;
+  kind: "internal" | "digital";
+  at: string;
+  stampId: string | null;
+};
+
+/** Mã kiểm tra ngắn = 8 ký tự đầu của sha256, viết hoa. */
+export const checkCode = (sha256: string): string => sha256.slice(0, 8).toUpperCase();
+
+/**
+ * BR-X2: hình chữ ký trên bản đã ký + danh sách tệp (ai xem được HĐ cũng thấy). `signs`: mỗi người MỘT dòng (loại của bản mới nhất người đó ký,
+ * lúc ký đầu tiên, số tệp khác nhau đã ký, ảnh = chữ ký in trong bản đầu tiên có ảnh). `files`: mỗi tệp một dòng «gốc» + bản đã ký CUỐI (seq lớn nhất).
+ */
+export function buildSignInfo(rows: readonly SignVersionRow[], names: ReadonlyMap<string, string>) {
+  const ordered = [...rows].sort((a, b) => a.at.localeCompare(b.at) || a.seq - b.seq);
+  const by = new Map<string, SignVersionRow[]>();
+  for (const r of ordered) by.set(r.signedBy, [...(by.get(r.signedBy) ?? []), r]);
+  const signs = [...by.entries()].map(([uid, vs]) => ({
+    user: person(uid, names),
+    kind: (vs[vs.length - 1] as SignVersionRow).kind,
+    files_signed: new Set(vs.map((v) => v.fileId)).size,
+    at: (vs[0] as SignVersionRow).at,
+    stamp_id: vs.find((v) => v.stampId)?.stampId ?? null,
+  }));
+  const originals = new Map<string, SignVersionRow>();
+  const last = new Map<string, SignVersionRow>();
+  for (const r of ordered) {
+    if (!originals.has(r.fileId)) originals.set(r.fileId, r);
+    const cur = last.get(r.fileId);
+    if (!cur || r.seq > cur.seq) last.set(r.fileId, r);
+  }
+  const files = [...originals.values()].flatMap((o) => {
+    const l = last.get(o.fileId) as SignVersionRow;
+    return [
+      {
+        kind: "original" as const,
+        name: o.fileName,
+        sha256: null,
+        check_code: null,
+        signed_by: null,
+        at: null,
+      },
+      {
+        kind: "signed" as const,
+        name: l.outName,
+        sha256: l.sha256,
+        check_code: checkCode(l.sha256),
+        signed_by: person(l.signedBy, names),
+        at: l.at,
+      },
+    ];
+  });
+  return { signs, files };
 }

@@ -244,6 +244,31 @@ export const ApprovalRecordEvidenceSchema = z.strictObject({
   at: IsoDateTime,
 });
 export type ApprovalRecordEvidence = z.infer<typeof ApprovalRecordEvidenceSchema>;
+/** CR-181 · s10 · chữ ký đã in của MỘT người trên các bản đã ký (không huỷ) của HĐ. `stamp_id` = ảnh chữ ký đã in (BR-X2: ai xem HĐ cũng thấy). */
+export const ApprovalRecordSignSchema = z.strictObject({
+  user: RecordPersonSchema,
+  kind: z.enum(["internal", "digital"]),
+  files_signed: z.number().int().min(1).max(500),
+  at: IsoDateTime,
+  stamp_id: UuidSchema.nullable(),
+});
+export type ApprovalRecordSign = z.infer<typeof ApprovalRecordSignSchema>;
+/** CR-181 · s10 · tệp trong hồ sơ: bản gốc / bản đã ký cuối + dấu vân tay sha256 (null khi chưa tính) và mã kiểm tra (8 ký tự đầu, viết hoa). */
+export const ApprovalRecordFileSchema = z.strictObject({
+  kind: z.enum(["original", "signed"]),
+  name: z.string().max(300),
+  sha256: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .nullable(),
+  check_code: z
+    .string()
+    .regex(/^[0-9A-F]{8}$/)
+    .nullable(),
+  signed_by: RecordPersonSchema.nullable(),
+  at: IsoDateTime.nullable(),
+});
+export type ApprovalRecordFile = z.infer<typeof ApprovalRecordFileSchema>;
 export const ApprovalRecordItemSchema = z.strictObject({
   task_id: UuidSchema,
   stage: z.string().max(200),
@@ -256,9 +281,15 @@ export const ApprovalRecordItemSchema = z.strictObject({
   /** [AUDIT] · quyết bằng uỷ quyền ⇒ người uỷ quyền (cả khi không có bằng chứng). */
   on_behalf_of: RecordPersonSchema.nullable().optional(),
   evidence: ApprovalRecordEvidenceSchema.nullable(),
+  /** CR-181 · s10 · chữ ký đã in của người quyết bước này (khi có). */
+  sign: ApprovalRecordSignSchema.nullable().optional(),
 });
 export const ApprovalRecordSchema = z.strictObject({
   items: z.array(ApprovalRecordItemSchema).max(200),
+  /** CR-181 · s10 · mọi người đã ký trên tệp của HĐ (kể cả người không có bước duyệt). */
+  signs: z.array(ApprovalRecordSignSchema).max(200).optional(),
+  /** CR-181 · s10 · danh sách tệp kèm dấu vân tay. */
+  files: z.array(ApprovalRecordFileSchema).max(400).optional(),
   /** Người xem đọc được nội dung bằng chứng (BR-26). */
   can_read_evidence: z.boolean(),
 });
