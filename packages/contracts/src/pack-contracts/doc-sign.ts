@@ -59,3 +59,91 @@ export type SignatureKind = z.infer<typeof SignatureKindSchema>;
 export const SIGN_PLACEMENTS = ["field", "free", "seam", "initials"] as const;
 export const SignPlacementSchema = z.enum(SIGN_PLACEMENTS);
 export type SignPlacement = z.infer<typeof SignPlacementSchema>;
+
+// ---- Lát s8 · API chuẩn bị chỗ ký (`/contracts/:id/…`) ---------------------------------------------------------------------------
+
+/** `PATCH /sign-docs/:fileId` (BR-T1) */
+export const SignNeedsSignBodySchema = z.strictObject({ needs_sign: z.boolean() });
+export type SignNeedsSignBody = z.infer<typeof SignNeedsSignBodySchema>;
+
+export const SIGNER_KINDS = ["user", "group", "partner"] as const;
+export const SignerKindSchema = z.enum(SIGNER_KINDS);
+export type SignerKindApi = z.infer<typeof SignerKindSchema>;
+
+/** Một chỗ ký gửi lên. `id` lạ (không phải chỗ chưa ký của tệp này) bị bỏ, máy chủ sinh id mới. `label` do máy chủ điền theo người ký. */
+export const SignFieldInSchema = z.strictObject({
+  id: z.uuid().optional(),
+  side: SignSideSchema,
+  signer_kind: SignerKindSchema,
+  /** user/group ⇒ uuid; partner ⇒ email liên hệ (chữ thường). */
+  signer_ref: z.string().trim().min(1).max(320),
+  parts: SignPartsSchema,
+});
+/** `PUT /sign-docs/:fileId/fields` (BR-C2): đặt TOÀN BỘ chỗ ký chưa ký của tệp. */
+export const SignFieldsPutSchema = z.strictObject({
+  fields: z.array(SignFieldInSchema).max(SIGN_FIELDS_MAX),
+});
+export type SignFieldsPut = z.infer<typeof SignFieldsPutSchema>;
+
+export type SignSignerOut = {
+  side: SignSide;
+  kind: SignerKindApi;
+  ref: string;
+  /** Người: tên; nhóm: «Đại diện <nhóm>»; đối tác: tên liên hệ. */
+  name: string;
+  mine: boolean;
+};
+export type SignFieldOut = {
+  id: string;
+  side: SignSide;
+  signer_kind: SignerKindApi;
+  signer_ref: string;
+  label: string;
+  parts: SignParts;
+  mine: boolean;
+  signed: boolean;
+  signed_by: string | null;
+  signed_version_id: string | null;
+};
+export type SignReadinessMissing =
+  | { code: "NO_SIGN_FILE" }
+  | {
+      code: "NO_FIELD";
+      file_id: string;
+      file_name: string;
+      signer_kind: SignerKindApi;
+      signer_ref: string;
+      signer_name: string;
+    };
+export type SignReadinessOut = { ready: boolean; missing: SignReadinessMissing[] };
+export type SignTurnOut = {
+  allowed: boolean;
+  run_id?: string;
+  step?: "approve" | "sign";
+  reason?: string;
+};
+export type SignFileOut = {
+  file_id: string;
+  name: string;
+  is_main: boolean;
+  is_pdf: boolean;
+  /** Người tải lên (tệp chính = người tạo HĐ). */
+  uploader_id: string;
+  /** Người gọi bật/tắt «Cần ký» + đặt chỗ ký được (BR-T1/C2). */
+  can_prep: boolean;
+  pages: number | null;
+  needs_sign: boolean;
+  /** Bản mới nhất chưa huỷ: `version_id` null + `seq` 0 = bản gốc. `url` = đường dẫn tương đối dưới `/pack/contracts`. */
+  latest: { version_id: string | null; seq: number; url: string };
+  fields: SignFieldOut[];
+};
+export type SignSessionOut = {
+  enabled: boolean;
+  mode: "prep" | "sign" | "view";
+  locked: boolean;
+  files: SignFileOut[];
+  signers: SignSignerOut[];
+  readiness: SignReadinessOut;
+  turn: SignTurnOut;
+  kinds: { internal: true; digital: { enabled: false; reason: string } };
+};

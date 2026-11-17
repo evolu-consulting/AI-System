@@ -5,6 +5,7 @@ export { processError } from "./core/errors";
 export type { ProcessStartPort } from "./core/ports";
 export type { HandoffShape } from "./defs/def.rules";
 export type { RunAccess } from "./domain/runs/run-access.rules";
+export { eventFlowsOf } from "./library/event-flow.repo";
 export { COMMUNITY_FLOW_TEMPLATE } from "./library/flow-templates.community";
 export {
   PURCHASE_PARENT,

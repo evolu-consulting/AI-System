@@ -8,8 +8,10 @@ import type { ConnectModuleDeps } from "./contracts/connect/connect.mount";
 import { contractFilesModule } from "./contracts/contract-files.mount";
 import { CONTRACTS_KEY } from "./contracts/contracts.mount";
 import { messagesModule } from "./contracts/messages/messages.mount";
+import { signDocModule } from "./contracts/sign-doc.mount";
 import type { PackAccessView } from "./kit/public";
 import { fileboxClients, type PackFb } from "./packs.filebox";
+import { signDocPorts } from "./packs.sign-doc";
 
 export function mountContractAttachments<E extends Env>(
   app: Hono<E>,
@@ -29,6 +31,7 @@ export function mountContractAttachments<E extends Env>(
     const stepFiles = (w: Parameters<typeof recordRunFiles>[1], recordId: string) =>
       recordRunFiles(db, w, { packKey: CONTRACTS_KEY, recordId });
     app.route(base, contractFilesModule(db, view, fileboxClients(fb), stepFiles)); // CR-133 (FileBox vắng ⇒ không gắn)
+    app.route(base, signDocModule(db, view, fileboxClients(fb), signDocPorts(db, view))); // CR-181 s8 · ký trên tài liệu
   }
   app.route(
     base,
