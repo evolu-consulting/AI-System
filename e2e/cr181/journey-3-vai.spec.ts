@@ -6,12 +6,12 @@ import { envOf, expect, loginCw, newPage, U } from "../cr127/_cr127-kit";
 import {
   addMineAt,
   addMineByMenu,
-  assignViewer,
   collectDiag,
   createSignatureIfAsked,
   draftSample,
   dragMarkAcrossSeam,
   HEAD,
+  openVisibility,
   prepareSignPlaces,
   saleSends,
   saveSigned,
@@ -152,7 +152,7 @@ test("K08 · sale: Xem bản đã ký có ba bản «Bản gốc / Sau khi … k
 test("K09 · Hồ sơ duyệt hiện hình chữ ký; người chỉ xem HĐ thấy hình nhưng không thấy ý kiến", async ({
   browser,
 }, testInfo) => {
-  await assignViewer(E, id, U.employee, "Kế toán"); // sale giao «Phụ trách» cho kế toán: xem được HĐ, không thuộc quy trình duyệt/ký
+  await openVisibility(E, U.director); // phạm vi xem = cả công ty: kế toán (ngoài quy trình duyệt/ký) xem được HĐ
   const rec = async (user: string) => {
     const page = await newPage(browser);
     await loginCw(page, E, user);

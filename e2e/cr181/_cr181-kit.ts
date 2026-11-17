@@ -248,40 +248,14 @@ export async function seedPartnerContact(contractId: string, email: string): Pro
   });
 }
 
-/** Sale (người tạo) giao «Phụ trách» cho một người ngoài quy trình (tên chứa `nameHas`) ⇒ người đó XEM được HĐ nhưng không duyệt/ký (người chỉ xem). */
-export async function assignViewer(
-  e: Env,
-  id: string,
-  creator: string,
-  nameHas: string,
-): Promise<void> {
-  const s = await apiAs(e, creator);
-  const r = await fetch(`${HUB}/pack/contracts/assignees`, { headers: s.headers });
-  const list = (await r.json()) as unknown;
-  const found: { id: string }[] = [];
-  const walk = (n: unknown): void => {
-    if (Array.isArray(n)) n.forEach(walk);
-    else if (n && typeof n === "object") {
-      const o = n as Record<string, unknown>;
-      if (
-        typeof o.id === "string" &&
-        Object.values(o).some((v) => typeof v === "string" && v.includes(nameHas))
-      )
-        found.push({ id: o.id });
-      Object.values(o).forEach(walk);
-    }
-  };
-  walk(list);
-  const who = found[0];
-  if (!who)
-    throw new Error(
-      `assignViewer: không thấy «${nameHas}» trong assignees: ${JSON.stringify(list).slice(0, 400)}`,
-    );
-  const put = await fetch(`${HUB}/pack/contracts/contracts/${id}/owner`, {
+/** Quản trị công ty (giám đốc) đặt phạm vi xem HĐ = cả công ty (`PUT /pack/contracts/visibility {mode:"tenant"}`) ⇒ người ngoài quy trình (kế toán) XEM được HĐ nhưng không duyệt/ký (người chỉ xem). */
+export async function openVisibility(e: Env, admin: string): Promise<void> {
+  const s = await apiAs(e, admin);
+  const r = await fetch(`${HUB}/pack/contracts/visibility`, {
     method: "PUT",
     headers: { ...s.headers, "content-type": "application/json" },
-    body: JSON.stringify({ owner_user_id: who.id }),
+    body: JSON.stringify({ mode: "tenant" }),
   });
-  if (put.status >= 300)
-    throw new Error(`assignViewer: PUT owner → ${put.status} ${(await put.text()).slice(0, 300)}`);
+  if (r.status >= 300)
+    throw new Error(`openVisibility: ${r.status} ${(await r.text()).slice(0, 300)}`);
 }
