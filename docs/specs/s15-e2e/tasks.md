@@ -31,5 +31,5 @@ Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: test e2e + seed e2e)
 
 ## Việc còn lại
-- cr181: 5 pass / 5 fail (lượt 5). Đỏ: thẻ «Mở và ký» (`approver-sign`) không hiện cho trưởng phòng; `/my-signature` từ menu về Tổng quan. Chạy lại sau khi sản phẩm sửa.
-- cr127 (j01/j11/j17): job đếm 96 spec > 60 ⇒ evotest từ chối, cần điều phối cho -Wave; cr141-sign-or-upload không nằm trong testMatch của job nào.
+- cr181: 7 pass / 4 fail (lượt 9). Đỏ: «Lưu chữ ký» → POST /sign body {kind,marks:[]} ⇒ 400 (web gửi marks rỗng dù đã đặt/bấm ô; `SignBody.tsx:130`); journey K05 (chuột phải sát mép trang 1 không mở menu — test đã đổi fy 0.985, chưa chạy lại).
+- cr127 (j01/j11/j17): điều phối chạy ở checkout chính. cr141-sign-or-upload không thuộc job nào.
