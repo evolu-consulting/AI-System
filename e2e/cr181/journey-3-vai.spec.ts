@@ -150,12 +150,38 @@ test("K08 · sale: Xem bản đã ký có ba bản «Bản gốc / Sau khi … k
 
 test("K09 · Hồ sơ duyệt hiện hình chữ ký; người chỉ xem HĐ thấy hình nhưng không thấy ý kiến", async ({
   browser,
-}) => {
+}, testInfo) => {
   const rec = async (user: string) => {
     const page = await newPage(browser);
     await loginCw(page, E, user);
     await page.goto(`${E.cw}/contracts/c/${id}`);
-    await page.getByTestId("approval-record").locator("summary").click(); // khối gập
+    const fold = page.getByTestId("approval-record");
+    try {
+      await expect(fold).toBeVisible({ timeout: 20_000 });
+    } catch (e) {
+      // CHẨN ĐOÁN (chỉ đính kèm): trang của CHÍNH người dùng này (snapshot mặc định của Playwright có thể là trang khác), các testid, thẻ duyệt qua API
+      const diag = {
+        user,
+        url: page.url(),
+        testids: await page.evaluate(() =>
+          [...document.querySelectorAll("[data-testid]")].map((n) => n.getAttribute("data-testid")),
+        ),
+        text: (
+          await page
+            .locator("main")
+            .innerText()
+            .catch(() => "")
+        ).slice(0, 2500),
+        ...(await collectDiag(E, id, [user])),
+      };
+      await testInfo.attach("k09-diag.json", {
+        body: JSON.stringify(diag, null, 2),
+        contentType: "application/json",
+      });
+      console.log("[k09-diag]", JSON.stringify(diag).slice(0, 6000));
+      throw e;
+    }
+    await fold.locator("summary").click(); // khối gập
     await expect(page.getByTestId("record-line").first()).toBeVisible({ timeout: 60_000 });
     return page;
   };
