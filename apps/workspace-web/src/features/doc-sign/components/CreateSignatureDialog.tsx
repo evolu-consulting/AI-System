@@ -17,7 +17,7 @@ export function CreateSignatureDialog(p: {
   open: boolean;
   view: MySignatureView;
   person: string;
-  onSave: (v: { kind: "main"; method: Method; image: string }) => void;
+  onSave: (v: { kind: "main"; method: Method; png: string }) => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -37,7 +37,11 @@ export function CreateSignatureDialog(p: {
           allowLater={false}
           step="main"
           onSave={async (png, method) =>
-            p.onSave({ kind: "main", method, image: await blobToDataUrl(png) })
+            p.onSave({
+              kind: "main",
+              method,
+              png: (await blobToDataUrl(png)).replace(/^data:[^,]*,/, ""),
+            })
           }
         />
       </DialogContent>

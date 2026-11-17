@@ -39,27 +39,25 @@ export function itemsFromFile(f: SignFileOut, mode: "prep" | "sign" | "view"): S
       aspect: SIGN_FIELD_ASPECT,
       side: x.side,
       person: x.label,
+      signerKind: x.signer_kind,
+      signerRef: x.signer_ref,
       status:
         mode === "prep" && f.can_prep ? "editable" : x.mine && mode === "sign" ? "mine" : "other",
     }));
 }
 
-const sameSigner = (s: SignSignerOut, side: string, person?: string) =>
-  s.side === side && s.name === person;
-
-/** PUT chỗ ký: chỉ ô (`kind: field`) sửa được; người ký tra theo (bên, tên). Không tra được ⇒ bỏ qua ô. */
-export function buildFieldsPut(items: SignItem[], signers: SignSignerOut[]): { fields: FieldIn[] } {
+/** PUT chỗ ký: chỉ ô (`kind: field`) sửa được; mỗi ô mang sẵn `signer_kind` + `signer_ref` (từ phiên / khay / «Đổi người»). */
+export function buildFieldsPut(items: SignItem[]): { fields: FieldIn[] } {
   const fields: FieldIn[] = [];
   for (const i of items) {
     if (i.kind !== "field" || i.status !== "editable" || !i.side) continue;
-    const s = signers.find((x) => sameSigner(x, i.side as string, i.person));
-    if (!s) continue;
+    if (!i.signerKind || !i.signerRef) continue;
     const idOk = i.fieldId && /^[0-9a-f-]{36}$/i.test(i.fieldId);
     fields.push({
       ...(idOk ? { id: i.fieldId } : {}),
-      side: s.side,
-      signer_kind: s.kind,
-      signer_ref: s.ref,
+      side: i.side,
+      signer_kind: i.signerKind,
+      signer_ref: i.signerRef,
       parts: i.parts,
     });
   }
@@ -148,6 +146,8 @@ export function itemsFromAnchors(
       aspect: SIGN_FIELD_ASPECT,
       side,
       person: who.name,
+      signerKind: who.kind,
+      signerRef: who.ref,
       status: "editable",
     });
   }

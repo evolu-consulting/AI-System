@@ -77,7 +77,7 @@ export function BoxFrame(p: BoxFrameProps) {
     else p.onDeselect();
   };
   return (
-    // biome-ignore lint/a11y/useSemanticElements: khung kéo thả có nút con, không thể là <button>
+    // biome-ignore lint/a11y/useSemanticElements: khung kéo thả có nút con, không thể là phần tử nút
     <div
       role="group"
       // biome-ignore lint/a11y/noNoninteractiveTabindex: ô phải nhận bàn phím (mũi tên/Delete/Esc)

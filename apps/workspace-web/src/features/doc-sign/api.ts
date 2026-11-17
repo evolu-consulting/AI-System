@@ -1,6 +1,10 @@
 // CR-181 · s12 · gọi API ký trên tài liệu: `/pack/contracts/contracts/:id/…` + chữ ký của tôi `/me/signature` (lõi).
 import type { SignFieldsPut, SignSessionOut } from "@ai/contracts/pack-contracts";
-import type { MySignatureView } from "@ai/contracts/signature";
+import {
+  type CreateSignatureBody,
+  CreateSignatureBodySchema,
+  type MySignatureView,
+} from "@ai/contracts/signature";
 import { api, apiResponse } from "@ai/web-kit/http";
 import type { SignPostBody } from "./lib/session-map";
 
@@ -36,9 +40,6 @@ export async function fetchContent(id: string, fileId: string, versionId: string
 export const fetchMySignature = (signal?: AbortSignal) =>
   api<MySignatureView>("/me/signature", { signal });
 
-/** `POST /me/signature` (lõi): ảnh PNG data URL + cách tạo. */
-export const saveMySignature = (body: {
-  kind: "main" | "initials";
-  method: string;
-  image: string;
-}) => api<void>("/me/signature", { method: "POST", body });
+/** `POST /me/signature` (lõi): body `{ kind, method, png }`, png = base64 thuần; parse bằng schema trước khi gửi. */
+export const saveMySignature = (body: CreateSignatureBody) =>
+  api<void>("/me/signature", { method: "POST", body: CreateSignatureBodySchema.parse(body) });

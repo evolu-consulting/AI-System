@@ -85,7 +85,7 @@ describe("chuẩn bị chỗ ký", () => {
     ]);
     expect(items).toHaveLength(1);
     expect(items[0]?.parts[0]?.page).toBe(1);
-    const put = buildFieldsPut(items, signers);
+    const put = buildFieldsPut(items);
     expect(put.fields[0]).toMatchObject({ side: "A", signer_kind: "user", signer_ref: "u1" });
   });
   test("readiness ⇒ dòng kiểm tra", () => {

@@ -1,6 +1,6 @@
 // CR-181 · trạng thái mục theo tệp. Mỗi thao tác tính lại `parts` bằng partsOf (lib/sign-items) rồi báo `onChange`.
 
-import type { SignSide } from "@ai/contracts/pack-contracts";
+import type { SignerKindApi, SignSide } from "@ai/contracts/pack-contracts";
 import { SIGN_INITIALS_SCALE } from "@ai/contracts/pack-contracts";
 import { useCallback, useState } from "react";
 import type { Rect, StagePage } from "../lib/geometry";
@@ -50,8 +50,13 @@ export function useSignItems(
       ]),
     fill: (f: string, id: string, imageUrl: string) => apply(f, (i) => signField(i, id, imageUrl)),
     remove: (f: string, id: string) => apply(f, (i) => removeItem(i, id)),
-    changeSide: (f: string, id: string, side: SignSide, person?: string) =>
-      apply(f, (i) => setSide(i, id, side, person)),
+    changeSide: (
+      f: string,
+      id: string,
+      side: SignSide,
+      person?: string,
+      signer?: { kind: SignerKindApi; ref: string },
+    ) => apply(f, (i) => setSide(i, id, side, person, signer)),
     copyToAll: (f: string, id: string, pages: StagePage[]) =>
       apply(f, (i) =>
         copyAll(i, id, pages, (it) => rectFromParts(it.parts, pages), SIGN_INITIALS_SCALE),

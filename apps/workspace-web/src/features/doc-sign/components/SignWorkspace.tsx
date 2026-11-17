@@ -1,6 +1,5 @@
 // CR-181 · s11b · màn ký TOÀN MÀN HÌNH (đợt 1: chỉ «Từng trang»). Chưa gọi API: dữ liệu vào bằng props, sự kiện ra bằng callback.
 import { SIGN_FIELD_ASPECT } from "@ai/contracts/pack-contracts";
-import { Button } from "@ai/web-kit/ui/kit/button";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePdfDoc } from "../hooks/use-pdf-doc";
@@ -9,8 +8,9 @@ import { clampToStage } from "../lib/actions";
 import { isPartsError, partsOf } from "../lib/geometry";
 import { closeAction } from "../lib/keys";
 import { pageAt } from "../lib/layout";
-import type { NewItem, SignItem } from "../lib/sign-items";
+import { type SignItem, specFromTray } from "../lib/sign-items";
 import type { Seam } from "../lib/snap";
+import { AutoPlaceBar } from "./AutoPlaceBar";
 import { FileTabs } from "./FileTabs";
 import { LeaveDialog } from "./LeaveDialog";
 import { PageRail } from "./PageRail";
@@ -38,13 +38,6 @@ export function SignWorkspace(p: SignWorkspaceProps) {
   const [goTo, setGoTo] = useState<{ index: number; nonce: number } | null>(null);
   const layoutRef = useRef<StageLayout>({ pages: [], width: 0, height: 0 });
   const [warn, setWarn] = useState(false);
-  const [auto, setAuto] = useState<number | null>(null);
-  const runAuto = async () => {
-    if (pdf.status !== "ready" || !p.autoPlace) return;
-    const found = await p.autoPlace(pdf.doc, pdf.sizes);
-    if (found.length) store.append(fileId, found);
-    setAuto(found.length);
-  };
   const items = store.byFile[fileId] ?? [];
 
   const close = () => (closeAction(p.dirty) === "confirm" ? setLeave(true) : p.onClose());
@@ -67,10 +60,7 @@ export function SignWorkspace(p: SignWorkspaceProps) {
       const w = pg.width * DEFAULT_W_RATIO;
       const h = w / aspect;
       const rect = clampToStage({ l: cx - w / 2, t: cy - h / 2, w, h }, lay);
-      const spec: NewItem =
-        tray.type === "mark"
-          ? { kind: "mark", aspect, imageUrl: tray.imageUrl, status: "editable" }
-          : { kind: "field", aspect, side: tray.side, person: tray.person, status: "editable" };
+      const spec = specFromTray(tray, aspect);
       setWarn(isPartsError(partsOf(rect, lay.pages)));
       store.add(fileId, spec, rect, lay.pages);
       setMenu(null);
@@ -96,7 +86,8 @@ export function SignWorkspace(p: SignWorkspaceProps) {
     if (fieldTrays.length === 0) return;
     const i = fieldTrays.findIndex((x) => x.type === "field" && x.person === it.person);
     const n = fieldTrays[(i + 1) % fieldTrays.length];
-    if (n?.type === "field") store.changeSide(fileId, it.id, n.side, n.person);
+    if (n?.type === "field")
+      store.changeSide(fileId, it.id, n.side, n.person, { kind: n.signerKind, ref: n.signerRef });
   };
 
   return (
@@ -116,24 +107,17 @@ export function SignWorkspace(p: SignWorkspaceProps) {
         counts={counts}
         onSelect={(id) => {
           setFileId(id);
-          setAuto(null);
           setSel(null);
           setCur(0);
         }}
       />
       {p.mode === "prep" && p.autoPlace && (
-        <div className="flex items-center gap-3 border-b px-3 py-1">
-          <Button size="sm" variant="outline" disabled={pdf.status !== "ready"} onClick={runAuto}>
-            {t("contracts.docsign.autoPlace")}
-          </Button>
-          {auto !== null && (
-            <p role="status" className="text-sm text-muted-foreground">
-              {auto > 0
-                ? t("contracts.docsign.autoDone", { count: auto })
-                : t("contracts.docsign.autoNone")}
-            </p>
-          )}
-        </div>
+        <AutoPlaceBar
+          fileId={fileId}
+          pdf={pdf.status === "ready" ? pdf : null}
+          autoPlace={p.autoPlace}
+          onFound={(found) => store.append(fileId, found)}
+        />
       )}
       <div className="flex min-h-0 flex-1">
         {pdf.status === "ready" && (

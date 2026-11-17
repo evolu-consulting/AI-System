@@ -83,6 +83,8 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
         type: "field",
         side: x.side,
         person: x.name,
+        signerKind: x.kind,
+        signerRef: x.ref,
       }));
     return image ? [{ id: "mine", type: "mark", imageUrl: image, aspect }] : [];
   }, [mode, signers, image, aspect]);
@@ -107,7 +109,7 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
   const fail = (e: unknown) => toast(t(signErrorKey(e)), "late");
   const savePlaces = (f: string) =>
     q.savePlaces.mutate(
-      { fileId: f, body: buildFieldsPut(list(f), signers) },
+      { fileId: f, body: buildFieldsPut(list(f)) },
       {
         onSuccess: () => {
           toast(t("contracts.docsign.placesSaved"));

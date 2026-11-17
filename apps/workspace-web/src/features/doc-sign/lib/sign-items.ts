@@ -1,6 +1,11 @@
 // CR-181 · mục trên màn ký (chữ ký tự do / ô chỗ ký) + thao tác thuần. Nguồn sự thật = `parts` (điểm PDF);
 // px chỉ suy ra khi vẽ (rectFromParts), nên đổi cỡ cửa sổ không làm lệch.
-import { SIGN_FIELD_ASPECT, type SignPart, type SignSide } from "@ai/contracts/pack-contracts";
+import {
+  SIGN_FIELD_ASPECT,
+  type SignerKindApi,
+  type SignPart,
+  type SignSide,
+} from "@ai/contracts/pack-contracts";
 import { copyToAllPages } from "./actions";
 import { isPartsError, partsOf, type Rect, type StagePage } from "./geometry";
 
@@ -14,6 +19,9 @@ export type SignItem = {
   side?: SignSide;
   /** Tên người (nhãn ô). */
   person?: string;
+  /** Người ký của ô (khớp `signers` của phiên): gửi nguyên khi PUT chỗ ký. */
+  signerKind?: SignerKindApi;
+  signerRef?: string;
   status: SignItemStatus;
   /** Ảnh chữ ký (mark). */
   imageUrl?: string;
@@ -43,8 +51,18 @@ export function moveItem(items: SignItem[], id: string, rect: Rect, pages: Stage
 export const removeItem = (items: SignItem[], id: string) =>
   items.filter((i) => !(i.id === id && i.status === "editable"));
 
-export function setSide(items: SignItem[], id: string, side: SignSide, person?: string) {
-  return items.map((i) => (i.id === id && i.kind === "field" ? { ...i, side, person } : i));
+export function setSide(
+  items: SignItem[],
+  id: string,
+  side: SignSide,
+  person?: string,
+  signer?: { kind: SignerKindApi; ref: string },
+) {
+  return items.map((i) =>
+    i.id === id && i.kind === "field"
+      ? { ...i, side, person, signerKind: signer?.kind, signerRef: signer?.ref }
+      : i,
+  );
 }
 
 /** «Chép sang mọi trang» (Q11): bản thu nhỏ `scale`, bỏ trang nguồn và trang đã có chữ ký này. */
@@ -73,4 +91,30 @@ export function copyAll(
     });
   }
   return out;
+}
+
+/** Mục mới từ một mục trong khay (ảnh chữ ký của tôi / ô «Chỗ ký» của một người). */
+export function specFromTray(
+  tray:
+    | { type: "mark"; imageUrl: string }
+    | {
+        type: "field";
+        side: SignSide;
+        person: string;
+        signerKind: SignerKindApi;
+        signerRef: string;
+      },
+  aspect: number,
+): NewItem {
+  if (tray.type === "mark")
+    return { kind: "mark", aspect, imageUrl: tray.imageUrl, status: "editable" };
+  return {
+    kind: "field",
+    aspect,
+    side: tray.side,
+    person: tray.person,
+    signerKind: tray.signerKind,
+    signerRef: tray.signerRef,
+    status: "editable",
+  };
 }

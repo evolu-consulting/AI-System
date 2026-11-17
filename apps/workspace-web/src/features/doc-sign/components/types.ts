@@ -1,5 +1,5 @@
 // CR-181 · kiểu props của màn ký toàn màn hình (s11b). Chưa gọi API: dữ liệu vào bằng props, sự kiện ra bằng callback.
-import type { SignatureKind, SignSide } from "@ai/contracts/pack-contracts";
+import type { SignatureKind, SignerKindApi, SignSide } from "@ai/contracts/pack-contracts";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { PageSize } from "../lib/layout";
 import type { SignItem } from "../lib/sign-items";
@@ -13,7 +13,14 @@ export type SignFile = {
 /** Mục trong khay kéo: ảnh chữ ký của tôi, hoặc ô «Chỗ ký» của một người (tím A / cam B). */
 export type SignTray =
   | { id: string; type: "mark"; imageUrl: string; aspect: number }
-  | { id: string; type: "field"; side: SignSide; person: string };
+  | {
+      id: string;
+      type: "field";
+      side: SignSide;
+      person: string;
+      signerKind: SignerKindApi;
+      signerRef: string;
+    };
 export type SignKindOption = { kind: SignatureKind; disabledReason?: string };
 
 export type SignWorkspaceProps = {
