@@ -1,9 +1,10 @@
 // CR-181 · s13 · hành trình trang hợp đồng: sale bật «Cần ký» → «Chuẩn bị chỗ ký» → Gửi duyệt; người duyệt (KHÁC người tạo)
 // thấy khung «Ký trên tài liệu», «Đạt» khoá tới khi ký xong → «Mở và ký» → quay lại → Đạt. Kiểm cả điện thoại 390px.
-// Tiền đề: công ty bật «Ký trên tài liệu», có quy trình duyệt bằng chứng «ý kiến + chữ ký hoặc tệp» (Giám đốc), HĐ có tệp PDF chính chứa «ĐẠI DIỆN BÊN A».
+// Tiền đề: công ty bật «Ký trên tài liệu», có quy trình duyệt bằng chứng «ý kiến + chữ ký hoặc tệp» (trưởng phòng e2e-kd-truong), HĐ PDF 6 trang chứa «ĐẠI DIỆN BÊN A/B» (`_cr181-kit.samplePdf`).
 // Viết theo khuôn e2e/cr181/sign-prep-and-sign.spec.ts; chưa chạy (điều phối chạy cuối đợt).
 import { expect, test } from "@playwright/test";
-import { envOf, loginCw, newPage, SPEC_TENANT, submitContract, U } from "../cr127/_cr127-kit";
+import { envOf, loginCw, newPage, SPEC_TENANT, U } from "../cr127/_cr127-kit";
+import { HEAD, saleSends } from "./_cr181-kit";
 
 test.describe.configure({ mode: "serial" });
 const E = envOf(SPEC_TENANT.j01);
@@ -12,37 +13,8 @@ let id = "";
 
 test.beforeAll(async ({ browser }) => {
   test.setTimeout(300_000);
-  // Sale (người tạo) chuẩn bị chỗ ký khi HĐ còn Nháp, rồi mới Gửi duyệt (do submitContract).
-  id = await submitContract(
-    browser,
-    E,
-    RUN,
-    undefined,
-    async (cid) => {
-      const page = await newPage(browser);
-      await loginCw(page, E, U.employee);
-      await page.goto(`${E.cw}/contracts/c/${cid}`);
-      const files = page.getByTestId("cfiles");
-      await expect(files).toBeVisible({ timeout: 30_000 });
-      // Tệp chính là dòng đầu «Hợp đồng chính», mặc định «Cần ký» (Q14); người tải lên bấm được.
-      const first = files.getByTestId("cfile-row").first();
-      await expect(first).toContainText("Hợp đồng chính");
-      const sw = first.getByRole("switch");
-      await expect(sw).toBeEnabled();
-      if ((await sw.getAttribute("aria-checked")) !== "true") await sw.click();
-      await expect(first.getByTestId("sign-status")).toContainText("Chưa ký");
-      // Chưa có chỗ ký ⇒ nút Gửi duyệt khoá kèm lý do.
-      await expect(page.getByTestId("sign-prep")).toContainText("chỗ ký");
-      await page.getByRole("link", { name: "Chuẩn bị chỗ ký" }).click();
-      await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 30_000 });
-      await page.getByRole("button", { name: /Tự đặt theo/ }).click();
-      await page.getByRole("button", { name: "Lưu chỗ ký" }).click();
-      await expect(page.getByTestId("sign-readiness")).toBeVisible({ timeout: 30_000 });
-      await page.getByRole("button", { name: "Đã rõ" }).click();
-      await page.context().close();
-    },
-    true,
-  );
+  // Sale (người tạo) chuẩn bị chỗ ký khi HĐ còn Nháp, rồi Gửi duyệt ⇒ bước «Trưởng phòng duyệt».
+  id = await saleSends(browser, E, RUN, U.employee);
 });
 
 test("sale: sau khi gửi, đầu trang có dải người ký với «n chỗ ký»", async ({ browser }) => {
@@ -58,7 +30,7 @@ test("người duyệt (khác người tạo): «Đạt» khoá tới khi ký đ
   browser,
 }) => {
   const page = await newPage(browser);
-  await loginCw(page, E, U.director);
+  await loginCw(page, E, HEAD);
   await page.goto(`${E.cw}/contracts/c/${id}`);
   const take = page.getByTestId("claim-take");
   if (await take.isVisible({ timeout: 15_000 }).catch(() => false)) await take.click();

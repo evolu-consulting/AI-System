@@ -166,13 +166,20 @@ export async function textPdf(text: string): Promise<Buffer> {
 /**
  * Như `uploadAndOpen` nhưng tệp là PDF có lớp chữ thật (`textPdf` của văn bản mẫu): phiên ký chung (BR-60) chỉ lập khi tệp HĐ là PDF (`fileShaOf`), HĐ .md ⇒ gửi thường.
  */
-async function uploadPdfAndOpen(page: Page, e: Env, run: string, total: number): Promise<string> {
+export async function uploadPdfAndOpen(
+  page: Page,
+  e: Env,
+  run: string,
+  total: number,
+  /** PDF thay cho văn bản mẫu (CR-181: HĐ 6 trang có «ĐẠI DIỆN BÊN A/B»). */
+  buffer?: Buffer,
+): Promise<string> {
   const doc = buyContract(run, total);
   await page.goto(`${e.cw}/contracts/list`);
   await page.locator('input[type="file"]').setInputFiles({
     name: `hop-dong-mua-${run}.pdf`,
     mimeType: "application/pdf",
-    buffer: await textPdf(doc.text),
+    buffer: buffer ?? (await textPdf(doc.text)),
   });
   await page.getByTestId("upload-confirm").click();
   await page.waitForURL(/\/contracts\/c\/[0-9a-f-]{36}/, { timeout: 60_000 });

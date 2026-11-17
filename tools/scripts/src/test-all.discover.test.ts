@@ -25,6 +25,7 @@ const EXPECTED = [
   "e2e/cr127/playwright.cr127.config.ts",
   "e2e/cr161/playwright.cr161.config.ts",
   "e2e/cr169/playwright.cr169.config.ts",
+  "e2e/cr181/playwright.cr181.config.ts",
   "e2e/flows3/playwright.flows3.config.ts",
   "e2e/fnr-showcase/playwright.fnr.config.ts",
   "e2e/journey-approval/playwright.journey-fsc.config.ts",

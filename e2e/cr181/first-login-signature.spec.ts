@@ -3,7 +3,7 @@
 // quản trị bật cấu hình bằng `PUT /company/signature-settings`; người dùng thành viên là người đăng nhập lần đầu (khác người cấu hình).
 // Viết theo khuôn e2e/cr127/*; chưa chạy (điều phối chạy cuối đợt).
 
-import { API, apiAs, envOf, expect, loginCw, newPage, SPEC_TENANT, U } from "../cr127/_cr127-kit";
+import { apiAs, envOf, expect, HUB, loginCw, newPage, SPEC_TENANT, U } from "../cr127/_cr127-kit";
 import { test } from "../journey-approval/_test";
 
 test.describe.configure({ mode: "serial" });
@@ -12,7 +12,7 @@ const E = envOf(SPEC_TENANT.j03);
 test.beforeAll(async () => {
   // Người quản trị công ty bật ký trên tài liệu, bắt buộc tạo chữ ký, chỉ cho «Gõ họ tên» để test không cần vẽ.
   const admin = await apiAs(E, U.director, "contracts"); // giám đốc = quản trị công ty (giả định của lát s4; s5 sẽ có hành trình quản trị riêng)
-  const res = await fetch(`${API}/company/signature-settings`, {
+  const res = await fetch(`${HUB}/company/signature-settings`, {
     method: "PUT",
     headers: { ...admin.headers, "content-type": "application/json" },
     body: JSON.stringify({

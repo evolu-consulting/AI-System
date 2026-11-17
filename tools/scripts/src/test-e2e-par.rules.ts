@@ -1,7 +1,6 @@
 // TS1 · `bun run test:e2e:par` (và bước e2e của `test:all`): chạy MỌI cấu hình Playwright song song có kiểm soát.
 // Hàm thuần: nhận danh sách cấu hình + file spec gốc + thời lượng đã đo, trả danh sách "việc" (job) mỗi việc có DB test,
 // Redis DB, cổng và thư mục dựng riêng (không hai việc chạy cùng lúc dùng chung). `test-e2e-par.ts` lo spawn.
-
 /** Redis DB cấp cho các việc e2e (0 = dev, 1..6 = ô worker của test:int:par; DB 7–15 dành cho e2e). */
 export const REDIS_DBS: readonly number[] = [7, 8, 9, 10, 11, 12, 13, 14, 15];
 
@@ -90,6 +89,7 @@ export const META: Record<string, Meta> = {
   "e2e/cr161/playwright.cr161.config.ts": JA_SUB("cr161", "120"),
   "e2e/cr169/playwright.cr169.config.ts": JA_SUB("cr169", "130"),
   "e2e/flows3/playwright.flows3.config.ts": JA_SUB("flows3", "140"),
+  "e2e/cr181/playwright.cr181.config.ts": JA_SUB("cr181", "150"), // CR-181 ký trên tài liệu, cổng 3595..
   "e2e/contracts-web/playwright.config.ts": { cost: 22 },
   // Mock thuần (không DB). Cổng web mặc định 3410 TRÙNG web của workspace-web stack (3410) ⇒ riêng 3470 để hai việc chạy cùng lúc trong một slot.
   "e2e/community-web/playwright.config.ts": { env: { COMMUNITY_E2E_PORT: "3470" }, cost: 25 },

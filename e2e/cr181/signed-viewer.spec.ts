@@ -1,7 +1,8 @@
-// CR-181 · s14 · hành trình «Xem bản đã ký»: người soạn đặt chỗ ký, giám đốc ký, rồi người soạn (khác người ký) xem bản đã ký.
-// Route mở thẳng `/contracts/signed/:id` (liên kết trên trang HĐ là lát s13). Chạy cuối đợt (điều phối).
+// CR-181 · s14 · hành trình «Xem bản đã ký»: sale tạo + chuẩn bị + gửi, trưởng phòng ký duyệt, giám đốc ký, rồi sale (khác người ký) xem bản đã ký.
+// Công ty `e2e-c22-<hậu tố>` (`_cr181-stack.ts`). Route mở thẳng `/contracts/signed/:id` (liên kết trên trang HĐ do s13).
 import { expect, test } from "@playwright/test";
-import { envOf, loginCw, newPage, SPEC_TENANT, submitContract, U } from "../cr127/_cr127-kit";
+import { envOf, loginCw, newPage, SPEC_TENANT, U } from "../cr127/_cr127-kit";
+import { directorSigns, headSignsAndPasses, saleSends } from "./_cr181-kit";
 
 test.describe.configure({ mode: "serial" });
 const E = envOf(SPEC_TENANT.j01);
@@ -9,24 +10,10 @@ const RUN = Date.now().toString(36);
 let id = "";
 
 test.beforeAll(async ({ browser }) => {
-  test.setTimeout(300_000);
-  id = await submitContract(browser, E, RUN, undefined, undefined, true);
-  const prep = await newPage(browser);
-  await loginCw(prep, E, U.employee);
-  await prep.goto(`${E.cw}/contracts/sign/${id}`);
-  await expect(prep.getByTestId("sign-workspace")).toBeVisible({ timeout: 30_000 });
-  await prep.getByRole("button", { name: /Tự đặt theo/ }).click();
-  await prep.getByRole("button", { name: "Lưu chỗ ký" }).click();
-  await prep.getByRole("button", { name: "Đã rõ" }).click();
-  await prep.context().close();
-  const sign = await newPage(browser);
-  await loginCw(sign, E, U.director);
-  await sign.goto(`${E.cw}/contracts/sign/${id}`);
-  await sign.getByRole("button", { name: "Bấm để ký" }).first().click();
-  await sign.getByRole("button", { name: "Lưu", exact: true }).click();
-  await sign.getByRole("button", { name: "Lưu chữ ký" }).click();
-  await expect(sign).toHaveURL(new RegExp(`/contracts/c/${id}`), { timeout: 30_000 });
-  await sign.context().close();
+  test.setTimeout(420_000);
+  id = await saleSends(browser, E, `${RUN}v`, U.employee);
+  await headSignsAndPasses(browser, E, id);
+  await directorSigns(browser, E, id, U.director);
 });
 
 test("xem bản đã ký: mặc định bản mới nhất, chọn Bản gốc không còn chữ ký, nhảy tới chữ ký, chỉ xem", async ({

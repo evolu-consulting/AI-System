@@ -6,7 +6,7 @@ import { envOf, expect, loginCw, newPage, SPEC_TENANT, U } from "../cr127/_cr127
 import { test } from "../journey-approval/_test";
 
 test.describe.configure({ mode: "serial" });
-const E = envOf(SPEC_TENANT.j03);
+const E = envOf(SPEC_TENANT.j11);
 
 test("Quản trị bật ký trên tài liệu, đổi màu mực, lưu", async ({ browser }) => {
   const page = await newPage(browser);
