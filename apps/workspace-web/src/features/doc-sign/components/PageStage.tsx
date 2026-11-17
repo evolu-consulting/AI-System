@@ -1,4 +1,5 @@
 // CR-181 · sân khấu «Từng trang»: pdf.js vẽ các trang theo chiều dọc (canvas theo devicePixelRatio ≤ 2); huỷ khi đổi tệp.
+
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import {
   type DragEvent,
@@ -11,6 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import type { StagePage } from "../lib/geometry";
 import { layoutPages, type PageSize } from "../lib/layout";
+import { isInsideStage } from "../lib/stage-target";
 
 export type StageLayout = { pages: StagePage[]; width: number; height: number };
 const DPR_MAX = 2;
@@ -97,6 +99,8 @@ export function PageStage(p: {
     press.current = null;
   };
   const down = (e: PointerEvent) => {
+    // Menu chuột phải (Radix, portal) vẫn chuyền sự kiện React lên đây: bỏ qua thao tác không nằm trong sân khấu thật, kẻo đóng menu trước khi chọn.
+    if (!isInsideStage(stage.current, e.target)) return;
     p.onBlank();
     if (e.pointerType === "mouse") return;
     const { x, y } = at(e.clientX, e.clientY);
