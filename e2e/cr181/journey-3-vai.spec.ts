@@ -6,6 +6,7 @@ import { envOf, expect, loginCw, newPage, U } from "../cr127/_cr127-kit";
 import {
   addMineAt,
   addMineByMenu,
+  assignViewer,
   collectDiag,
   createSignatureIfAsked,
   draftSample,
@@ -151,9 +152,11 @@ test("K08 · sale: Xem bản đã ký có ba bản «Bản gốc / Sau khi … k
 test("K09 · Hồ sơ duyệt hiện hình chữ ký; người chỉ xem HĐ thấy hình nhưng không thấy ý kiến", async ({
   browser,
 }, testInfo) => {
+  await assignViewer(E, id, U.employee, "Kế toán"); // sale giao «Phụ trách» cho kế toán: xem được HĐ, không thuộc quy trình duyệt/ký
   const rec = async (user: string) => {
     const page = await newPage(browser);
     await loginCw(page, E, user);
+    await createSignatureIfAsked(page, "Người xem"); // công ty bắt buộc tạo chữ ký: người chỉ xem cũng phải tạo lần đầu
     await page.goto(`${E.cw}/contracts/c/${id}`);
     const fold = page.getByTestId("approval-record");
     try {
