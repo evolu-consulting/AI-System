@@ -6,6 +6,7 @@ import { envOf, expect, loginCw, newPage, U } from "../cr127/_cr127-kit";
 import {
   addMineAt,
   addMineByMenu,
+  collectDiag,
   createSignatureIfAsked,
   draftSample,
   dragMarkAcrossSeam,
@@ -91,7 +92,7 @@ test("K05-K06 · trưởng phòng (khác người tạo): «Đạt» khoá khi c
 
 test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; Bên B chưa ký không chặn (tệp «Chờ đối tác»)", async ({
   browser,
-}) => {
+}, testInfo) => {
   test.setTimeout(240_000);
   const page = await newPage(browser);
   await loginCw(page, E, U.director);
@@ -99,7 +100,24 @@ test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; B
   await page.goto(`${E.cw}/contracts/sign/${id}`);
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 60_000 });
   await page.getByRole("button", { name: "Bấm để ký" }).first().click();
+  const isSign = (m: string, u: string) => m === "POST" && u.endsWith("/sign");
+  const reqP = page.waitForRequest((r) => isSign(r.method(), r.url()));
+  const resP = page.waitForResponse((r) => isSign(r.request().method(), r.url()));
   await saveSigned(page, id);
+  // CHẨN ĐOÁN (chỉ in + đính kèm, không assert): body/response POST /sign + phiên ký + bản + thẻ duyệt sau khi Lưu
+  const req = await reqP;
+  const res = await resP;
+  const diag = {
+    post: {
+      body: req.postData(),
+      status: res.status(),
+      response: await res.text().catch(() => ""),
+    },
+    ...(await collectDiag(E, id, [U.director, U.employee])),
+  };
+  const json = JSON.stringify(diag, null, 2);
+  console.log("[k07-diag]", json);
+  await testInfo.attach("k07-diag.json", { body: json, contentType: "application/json" });
   // ô Bên B chưa ký không chặn: tệp báo «Chờ đối tác» (đối tác ký là đợt 2); trang HĐ không tự cập nhật ⇒ tải lại tới khi đổi
   await page.goto(`${E.cw}/contracts/c/${id}`);
   await expect(async () => {

@@ -6,7 +6,15 @@ import type { Browser, Page } from "@playwright/test";
 import fontkit from "../../apps/hub-api/node_modules/@pdf-lib/fontkit";
 import { PDFDocument } from "../../apps/hub-api/node_modules/pdf-lib";
 import { safeReload } from "../_kit/ui";
-import { type Env, expect, loginCw, newPage, uploadPdfAndOpen } from "../cr127/_cr127-kit";
+import {
+  apiAs,
+  type Env,
+  expect,
+  HUB,
+  loginCw,
+  newPage,
+  uploadPdfAndOpen,
+} from "../cr127/_cr127-kit";
 import { stepOf } from "../journey-approval/_journey";
 
 export const HEAD = "e2e-kd-truong";
@@ -196,4 +204,32 @@ export async function addMineByMenu(page: Page, n: number, fx: number, fy: numbe
   const b = await pageBox(page, n);
   await page.mouse.click(b.x + b.width * fx, b.y + b.height * fy, { button: "right" });
   await page.getByRole("menuitem", { name: "Thêm chữ ký của tôi ở đây" }).click();
+}
+
+/** Chẩn đoán K07 (chỉ in + đính kèm, không assert): phiên ký của giám đốc/sale, các bản đã ký, thẻ duyệt của HĐ. */
+export async function collectDiag(
+  e: Env,
+  id: string,
+  who: string[],
+): Promise<Record<string, unknown>> {
+  const out: Record<string, unknown> = {};
+  const get = async (s: Awaited<ReturnType<typeof apiAs>>, path: string) => {
+    const r = await fetch(`${HUB}/pack/contracts/contracts/${id}${path}`, { headers: s.headers });
+    const t = await r.text();
+    try {
+      return { status: r.status, body: JSON.parse(t) };
+    } catch {
+      return { status: r.status, body: t.slice(0, 500) };
+    }
+  };
+  for (const u of who) {
+    const s = await apiAs(e, u);
+    const sess = await get(s, "/doc-sign-session");
+    out[`session:${u}`] = sess;
+    const fileId = (sess.body as { files?: { file_id?: string; id?: string }[] })?.files?.[0];
+    const fid = fileId?.file_id ?? fileId?.id;
+    if (fid && u === who[0]) out.versions = await get(s, `/sign-docs/${fid}/versions`);
+    if (u === who[0]) out.approval = await get(s, "/approval");
+  }
+  return out;
 }
