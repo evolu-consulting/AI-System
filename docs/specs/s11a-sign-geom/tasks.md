@@ -8,19 +8,20 @@ Lát: thư viện hình học thuần cho «Ký trên tài liệu» (không Reac
 - [x] `lib/anchors.ts` — `findAnchors` (ĐẠI DIỆN BÊN A/B, từ trang cuối ngược lên)
 - [x] `lib/doc-sign-lib.test.ts` — 16 ca; lệnh xong: `bun test apps/workspace-web/src/features/doc-sign/lib`
 
-## Delta
+## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
 
 ### ADDED docs/current/pack-contracts/ky-tren-tai-lieu.md
 
 #### Yêu cầu: Đặt chữ ký, giáp lai, ký nháy
 Chữ ký đặt trên tài liệu quy ra các phần `SignPart` theo điểm PDF (gốc dưới-trái, trang đã xoay). Chữ ký vắt qua khe giữa hai trang ở chế độ «Từng trang» thành giáp lai (2..5 trang, mỗi trang giao ≥ 1px); tâm chữ ký cách khe < 16px thì hít vào khe. Ô chỗ ký tỉ lệ 2,4:1, rộng tối thiểu 30px, mũi tên nhích 4px. «Chép sang mọi trang» đặt bản cùng vị trí ở mọi trang trừ trang nguồn, cỡ 40% (hoặc 100% khi dùng chữ ký tắt riêng). «Tự đặt chỗ ký» tìm «ĐẠI DIỆN BÊN A/B» từ trang cuối ngược lên và đặt ô ngay dưới chữ.
 
-- Kịch bản: quy đổi px↔điểm khứ hồi sai số < 0,5pt [test: apps/workspace-web/src/features/doc-sign/lib/doc-sign-lib.test.ts "khứ hồi px↔điểm"]
-- Kịch bản: giáp lai qua khe hai trang ra 2 phần đúng [test: doc-sign-lib.test.ts "giáp lai qua khe"]
-- Kịch bản: vượt 5 trang báo lỗi `too_many_pages` [test: doc-sign-lib.test.ts "vượt 5 trang"]
-- Kịch bản: hít khe trong 16px, ngoài 16px giữ nguyên [test: doc-sign-lib.test.ts describe "snap"]
-- Kịch bản: chép sang mọi trang bỏ trang nguồn, cỡ 0,4 [test: doc-sign-lib.test.ts "chép sang mọi trang"]
-- Kịch bản: cụm bị tách item / không có cụm / trang cuối ưu tiên [test: doc-sign-lib.test.ts describe "findAnchors"]
+- Kịch bản: quy đổi px↔điểm khứ hồi sai số < 0,5pt [test: apps/workspace-web/src/features/doc-sign/lib/doc-sign-lib.test.ts]
+- Kịch bản: giáp lai qua khe hai trang ra 2 phần đúng [test: apps/workspace-web/src/features/doc-sign/lib/doc-sign-lib.test.ts]
+- Kịch bản: vượt 5 trang báo lỗi `too_many_pages` [test: apps/workspace-web/src/features/doc-sign/lib/doc-sign-lib.test.ts]
+- Kịch bản: hít khe trong 16px, ngoài 16px giữ nguyên [test: apps/workspace-web/src/features/doc-sign/lib/doc-sign-lib.test.ts]
+- Kịch bản: chép sang mọi trang bỏ trang nguồn, cỡ 0,4 [test: apps/workspace-web/src/features/doc-sign/lib/doc-sign-lib.test.ts]
+- Kịch bản: cụm bị tách item / không có cụm / trang cuối ưu tiên [test: apps/workspace-web/src/features/doc-sign/lib/doc-sign-lib.test.ts]
 
 ## Quyết định trong lúc làm
 - `partsOf` dùng `ptWidth/width` từng trang (không hằng PW/PH) — trang khác cỡ vẫn đúng. Chế độ «xoè quạt» của bản mẫu (vùng lộ `visible`) không làm: đợt 1 chỉ «Từng trang»/dọc theo yêu cầu lát.
