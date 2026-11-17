@@ -41,19 +41,39 @@ export function signsOfQ(tx: Tx, tid: string): SignsOf {
   };
 }
 
-/** Sự kiện «đã lưu hồ sơ duyệt» (không cần cột mới): `data.file_id` = `contracts.files.id` của PDF đã lưu ở FileBox. */
+/** Sự kiện «đã lưu hồ sơ duyệt» (không cần cột mới): `data.file_id` = `contracts.files.id` của PDF ở FileBox, `data.versions` = khoá tập bản ký cuối. */
 export const RECORD_SAVED_EVENT = "approval_record_saved";
 
+/** Khoá tập bản ký CUỐI hiện hành chưa huỷ (mỗi tệp một bản seq lớn nhất): huỷ → ký lại ⇒ khoá đổi ⇒ bản lưu cũ hết hạn. '' khi chưa có bản ký. */
+export const versionsKeySql = (
+  t: string,
+  c: string,
+) => sql`(select coalesce(md5(string_agg(x.id::text, ',' order by x.id)), '')
+  from (select distinct on (v.file_id) v.id from contracts.sign_versions v where v.tenant_id = ${t}::uuid and v.contract_id = ${c}::uuid
+    and v.voided_at is null order by v.file_id, v.seq desc) x)`;
+
+/** MỘT câu: HĐ đã vào DONE chưa + bản lưu HỢP LỆ (khớp khoá tập bản cuối hiện hành) mới nhất. */
 export function savedRecordQ(tx: Tx, tid: string) {
   return async (contractId: string) => {
     const [r] = await tx.execute<{
-      org: string;
-      file_id: string;
-      name: string;
-    }>(sql`select f.org, f.file_id, f.name
-      from contracts.contract_events e join contracts.files f on f.tenant_id = e.tenant_id and f.id = (e.data ->> 'file_id')::uuid
-      where e.tenant_id = ${tid}::uuid and e.contract_id = ${contractId}::uuid and e.type = ${RECORD_SAVED_EVENT}
-      order by e.id desc limit 1`);
-    return r ? { org: r.org, fileId: r.file_id, name: r.name } : null;
+      done: boolean;
+      org: string | null;
+      file_id: string | null;
+      name: string | null;
+    }>(sql`select
+        (c.status = 'done') as done, s.org, s.file_id, s.name
+      from contracts.contracts c
+      left join lateral (select f.org, f.file_id, f.name from contracts.contract_events e
+        join contracts.files f on f.tenant_id = e.tenant_id and f.id = (e.data ->> 'file_id')::uuid
+        where e.tenant_id = c.tenant_id and e.contract_id = c.id and e.type = ${RECORD_SAVED_EVENT}
+          and e.data ->> 'versions' = ${versionsKeySql(tid, contractId)}
+        order by e.id desc limit 1) s on true
+      where c.id = ${contractId}::uuid and c.tenant_id = ${tid}::uuid`);
+    return {
+      done: r?.done === true,
+      saved: r?.file_id
+        ? { org: r.org as string, fileId: r.file_id, name: r.name as string }
+        : null,
+    };
   };
 }

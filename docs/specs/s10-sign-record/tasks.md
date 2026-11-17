@@ -29,6 +29,7 @@ unit: rules + PDF + web SignImg; int evotest: X2, sha256 bản cuối, PDF lưu 
 - Không migration: tham chiếu bản lưu = sự kiện `contract_events.type='approval_record_saved'` (`data.file_id` → `contracts.files.id`); 0122 chưa dùng.
 - Bản lưu đủ nội dung (ý kiến/tệp) ⇒ CHỈ trả cho người đọc được nội dung (BR-X2/BR-26); người chỉ xem luôn nhận bản lập ngay đã lọc.
 - Kích hoạt lưu bằng NOTIFY trong tx DONE (không ghi FileBox trong tx, không poll); nhiều instance: khoá advisory + «chưa có sự kiện», bản dư xoá ở FileBox.
+- Soát Opus (CHANGES REQUESTED) đã sửa: «lập khi cần» là đường chính (route PDF + khối hồ sơ: DONE + chưa có bản lưu hợp lệ ⇒ lập + lưu, `pg_try_advisory_xact_lock` trước khi lập); NOTIFY chỉ là đường nhanh. Bản lưu khoá theo tập id bản ký cuối chưa huỷ (`data.versions` = md5): huỷ → ký lại ⇒ lập mới. Người lập = bản lưu đủ nội dung (`full`), không phụ thuộc quyền một người (thiếu `created_by` ⇒ UUID hệ thống); `rec` null ⇒ log.
 - sha256 của BẢN GỐC để null (hồ sơ chưa tính; bản đã ký cuối có sha256 từ `sign_versions`).
 - Ảnh trên web: bằng chứng duyệt (chỉ khi đọc được) ưu tiên, không có thì ảnh in; tải bằng blob kèm Bearer.
 
@@ -44,9 +45,9 @@ Mỗi bước ghi người làm, bước, lúc, quyết định, ý kiến, hìn
 - Kịch bản: khi trang HĐ hiện hồ sơ duyệt thì ảnh chữ ký hiện thẳng trong dòng [test: apps/workspace-web/src/features/contract-approval/components/ApprovalRecord.sign.test.tsx » hiện ảnh chữ ký đã in ngay trong dòng của người ký]
 
 #### Yêu cầu: Tự lập và lưu PDF hồ sơ duyệt khi HĐ ký đủ
-- Kịch bản: khi HĐ ký đủ thì có PDF hồ sơ đã lưu một bản và route tải trả bản lưu cho người trong quy trình [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-record-sign.int.test.ts » HĐ ký đủ thì có PDF đã lưu một bản, người trong quy trình nhận bản lưu và người chỉ xem nhận bản lập ngay]
+- Kịch bản: khi HĐ ký đủ mà lưu lỗi lần đầu thì lần tải sau tự lưu được và người chỉ xem luôn nhận bản lập ngay [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-record-sign.int.test.ts » HĐ ký đủ: lưu lỗi lần đầu thì lần tải sau tự lưu được, người chỉ xem luôn nhận bản lập ngay]
+- Kịch bản: khi huỷ bản ký rồi ký lại thì lập bản lưu mới với sha256 mới [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-record-sign.int.test.ts » huỷ bản ký rồi ký lại: lập bản lưu mới với sha256 mới (khoá theo tập bản cuối)]
+- Kịch bản: khi bước là Toàn quyền duyệt thay thì hồ sơ ghi duyệt thay [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-record-sign.int.test.ts » hồ sơ có sha256 của bản cuối + mã kiểm tra, và bước duyệt thay ghi override]
 
 ## Việc còn lại
-- Ca «duyệt thay» trong int s10: seed trực tiếp `approval_override` cho `override=false` — đã bỏ khỏi test; đường này có test ở `approval-override-record.int.test.ts` (PDF ghi «Duyệt thay (Toàn quyền)» sẵn có). Cần seed đúng như test đó để thêm lại.
-- sha256 của bản gốc (null). Tên người ký không có bước duyệt tra qua `userNames` (chưa có test).
-- `bun run openspec:check`, `test:lock:verify`, biome toàn file chưa chạy hết (hết hạn mức công cụ).
+- sha256 của bản gốc (null). Tên người ký không có bước duyệt tra qua `userNames` (chưa có test riêng).

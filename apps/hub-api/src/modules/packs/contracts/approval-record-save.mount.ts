@@ -6,25 +6,27 @@ import { sql } from "drizzle-orm";
 import { logger } from "../../../lib/logger";
 import type { PackAccessView, PackWho } from "../kit/public";
 import { createPackUow } from "../kit/public";
-import { RECORD_SAVED_EVENT } from "./adapters/approval-record-signs.repo";
+import { RECORD_SAVED_EVENT, versionsKeySql } from "./adapters/approval-record-signs.repo";
 import { registerContractDoneHook } from "./adapters/contract-state.repo";
 import { packAssignees } from "./adapters/manage.members";
-import type { EngineCard } from "./application/approval-engine-card.usecase";
+import type { EngineCard, SavePdf } from "./application/approval-engine-card.usecase";
 import type { ContractDoneHook } from "./application/contract-done.ports";
 import type { ESignFiles } from "./application/esign.ports";
 import type { ContractsAiDeps } from "./extraction.types";
 
 export const RECORD_SAVE_CHANNEL = "contract_record_save";
 
-/** Hook DONE: báo «HĐ đã ký đủ» (NOTIFY trong tx ⇒ chỉ giao khi COMMIT). Người lập = người tạo HĐ (chỉ để chạy truy vấn gói; bản lưu đủ nội dung). */
+/** Hook DONE: báo «HĐ đã ký đủ» (NOTIFY trong tx ⇒ chỉ giao khi COMMIT) — đường nhanh; mất NOTIFY thì «lập khi cần» ở route/khối hồ sơ bù lại. */
 export const recordSaveDoneHook: ContractDoneHook = {
   async onDone(txx, tid, contractId) {
     await (txx as Tx).execute(sql`select pg_notify(${RECORD_SAVE_CHANNEL},
-      (select json_build_object('t', c.tenant_id, 'c', c.id, 'u', c.created_by)::text
+      (select json_build_object('t', c.tenant_id, 'c', c.id, 'u', coalesce(c.created_by, ${SYSTEM_USER}::uuid))::text
         from contracts.contracts c where c.id = ${contractId}::uuid and c.tenant_id = ${tid}::uuid))
       where exists (select 1 from contracts.contracts c where c.id = ${contractId}::uuid and c.tenant_id = ${tid}::uuid)`);
   },
 };
+/** Người lập khi HĐ không có `created_by`: bản lưu đủ nội dung (`full`) nên không phụ thuộc quyền của một người. */
+const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
 
 type SaveRow = {
   id: string;
@@ -35,23 +37,33 @@ type SaveRow = {
   size: number;
   by: string;
 };
+const lockKey = (contractId: string) => `record-save:${contractId}`;
 function saveRepo(tx: Tx, t: string) {
   return {
-    /** Ghi tệp + sự kiện nếu CHƯA có bản lưu (khoá advisory theo HĐ). false ⇒ đã có (người gọi xoá tệp vừa đưa lên). */
-    async insert(contractId: string, r: SaveRow): Promise<boolean> {
-      await tx.execute(
-        sql`select pg_advisory_xact_lock(hashtextextended(${`record-save:${contractId}`}, 0))`,
+    /** Khoá advisory theo HĐ (hết tx tự nhả): false ⇒ nơi khác đang lập ⇒ bỏ qua, không lập trùng. */
+    async tryLock(contractId: string): Promise<boolean> {
+      const [r] = await tx.execute<{ ok: boolean }>(
+        sql`select pg_try_advisory_xact_lock(hashtextextended(${lockKey(contractId)}, 0)) as ok`,
       );
-      const rows = await tx.execute<{ id: string }>(sql`with f as (
+      return r?.ok === true;
+    },
+    /** Đã có bản lưu khớp tập bản ký cuối hiện hành? */
+    async hasValid(contractId: string): Promise<boolean> {
+      const [r] = await tx.execute<{
+        n: number;
+      }>(sql`select count(*)::int as n from contracts.contract_events e
+        where e.tenant_id = ${t}::uuid and e.contract_id = ${contractId}::uuid and e.type = ${RECORD_SAVED_EVENT}
+          and e.data ->> 'versions' = ${versionsKeySql(t, contractId)}`);
+      return (r?.n ?? 0) > 0;
+    },
+    async insert(contractId: string, r: SaveRow): Promise<void> {
+      await tx.execute(sql`with f as (
           insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
-          select ${r.id}::uuid, ${t}::uuid, ${r.org}, ${r.fileId}, ${r.versionId}, ${r.name}, 'application/pdf', ${r.size}, ${r.by}::uuid
-          where not exists (select 1 from contracts.contract_events e where e.tenant_id = ${t}::uuid
-            and e.contract_id = ${contractId}::uuid and e.type = ${RECORD_SAVED_EVENT})
+          values (${r.id}::uuid, ${t}::uuid, ${r.org}, ${r.fileId}, ${r.versionId}, ${r.name}, 'application/pdf', ${r.size}, ${r.by}::uuid)
           returning id)
         insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
         select ${t}::uuid, ${contractId}::uuid, ${RECORD_SAVED_EVENT}, ${r.by}::uuid,
-          jsonb_build_object('file_id', f.id) from f returning id`);
-      return rows.length === 1;
+          jsonb_build_object('file_id', f.id, 'versions', ${versionsKeySql(t, contractId)}) from f`);
     },
   };
 }
@@ -61,39 +73,38 @@ export type RecordArchive = (
   id: string,
 ) => Promise<{ name: string; bytes: Uint8Array } | null>;
 
-/** Lập + lưu cho MỘT HĐ (idempotent). true ⇒ đã ghi bản lưu mới. Test gọi thẳng; bộ nghe gọi qua `mountRecordAutoSave`. */
-export function saveApprovalRecord(db: Db, files: ESignFiles, archive: RecordArchive) {
+/**
+ * Lập + lưu PDF hồ sơ cho MỘT HĐ. Một tx: `pg_try_advisory_xact_lock` TRƯỚC khi lập (không lập trùng) → đã có bản hợp lệ thì thôi → `build` → FileBox →
+ * ghi `contracts.files` + sự kiện (khoá = tập bản ký cuối). Lỗi sau khi đưa tệp lên ⇒ xoá tệp, ném lại (tx hoàn tác; lần xem sau thử lại).
+ * Trả bản vừa lưu; null ⇒ không lưu mới (đang có nơi khác lập / đã có / không có gì để lưu).
+ */
+export function saveApprovalRecord(db: Db, files: ESignFiles): SavePdf {
   const uow = createPackUow(db, "contracts", (tx: Tx, t: string) => ({ save: saveRepo(tx, t) }));
-  return async (tenantId: string, contractId: string, userId: string): Promise<boolean> => {
-    const who: PackWho = { tenantId, userId };
-    const rec = await archive(who, contractId);
-    if (!rec) return false;
-    const org = `t_${tenantId}`;
-    const put = await files(org).postFile(rec.name, rec.bytes);
-    const ok = await uow
-      .tenant(who, (r) =>
-        r.save.insert(contractId, {
+  return (who, contractId, build) =>
+    uow.tenant(who, async (r) => {
+      if (!(await r.save.tryLock(contractId)) || (await r.save.hasValid(contractId))) return null;
+      const rec = await build();
+      if (!rec) return null;
+      const org = `t_${who.tenantId}`;
+      const put = await files(org).postFile(rec.name, rec.bytes);
+      try {
+        await r.save.insert(contractId, {
           id: Bun.randomUUIDv7(),
           org,
           fileId: put.fileId,
           versionId: put.versionId,
           name: rec.name,
           size: rec.bytes.byteLength,
-          by: userId,
-        }),
-      )
-      .catch(async (e: unknown) => {
+          by: who.userId,
+        });
+      } catch (e) {
         await files(org)
           .deleteFile(put.fileId)
           .catch(() => undefined);
         throw e;
-      });
-    if (!ok)
-      await files(org)
-        .deleteFile(put.fileId)
-        .catch(() => undefined);
-    return ok;
-  };
+      }
+      return rec;
+    });
 }
 
 /** Đăng ký hook DONE + nghe NOTIFY. Trả hàm gỡ nghe (test). */
@@ -102,11 +113,18 @@ export async function mountRecordAutoSave(
   files: ESignFiles,
   archive: RecordArchive,
 ): Promise<() => Promise<void>> {
-  const save = saveApprovalRecord(db, files, archive);
+  const save = saveApprovalRecord(db, files);
   return db.listen(RECORD_SAVE_CHANNEL, (payload) => {
     const p = JSON.parse(payload) as { t?: string; c?: string; u?: string | null };
     if (!p.t || !p.c || !p.u) return;
-    save(p.t, p.c, p.u).catch((e: unknown) =>
+    const who: PackWho = { tenantId: p.t, userId: p.u };
+    const contractId = p.c;
+    const build = async () => {
+      const rec = await archive(who, contractId);
+      if (!rec) logger.warn("approval-record-archive-empty", { contract_id: contractId });
+      return rec;
+    };
+    save(who, contractId, build).catch((e: unknown) =>
       logger.warn("approval-record-save-failed", {
         contract_id: p.c,
         error: e instanceof Error ? e.name : "unknown",
@@ -120,6 +138,7 @@ export function recordDeps(d: ContractsAiDeps, db: Db, view: PackAccessView) {
   return {
     evidenceBytes: d.evidenceBytes,
     evidenceNames: d.evidenceNames,
+    ...(d.recordFiles ? { savePdf: saveApprovalRecord(db, d.recordFiles) } : {}),
     ...(d.stampPng ? { stampPng: d.stampPng } : {}),
     ...(d.recordFiles
       ? {

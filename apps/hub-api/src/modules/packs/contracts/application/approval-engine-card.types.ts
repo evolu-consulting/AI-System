@@ -23,6 +23,13 @@ export type StampPng = (
   ids: readonly string[],
 ) => Promise<Map<string, Uint8Array>>;
 
+/** CR-181 · s10 · `build` chỉ chạy khi giữ được khoá và chưa có bản lưu hợp lệ. */
+export type SavePdf = (
+  who: PackWho,
+  id: string,
+  build: () => Promise<{ name: string; bytes: Uint8Array } | null>,
+) => Promise<{ name: string; bytes: Uint8Array } | null>;
+
 export type Repos = {
   approval: {
     markRejected(
@@ -61,6 +68,8 @@ export type EngineCardDeps = {
   stampPng?: StampPng | undefined;
   /** CR-181 · s10 · đọc byte PDF hồ sơ đã lưu ở FileBox (org, fileId). */
   savedBytes?: ((org: string, fileId: string) => Promise<Uint8Array | null>) | undefined;
+  /** CR-181 · s10 · lập + lưu PDF hồ sơ (khoá advisory theo HĐ); trả bản vừa lưu hoặc null. */
+  savePdf?: SavePdf | undefined;
   /** CR-181 · s10 · tên người ký chưa có trong hồ sơ (người không có bước duyệt). */
   userNames?:
     | ((who: PackWho, ids: readonly string[]) => Promise<ReadonlyMap<string, string>>)

@@ -2,6 +2,7 @@
 // thấy ý kiến/tệp). Lớp 2: chỉ cổng. Hai lần đọc: (1) tx gói: trạng thái lượt + `stage_decided` + bằng chứng (MỘT câu, DEFINER theo
 // tenant); (2) `stepsView` của engine (tên người, ai quyết được bước đang mở). HĐ không thấy / tenant khác ⇒ null (404).
 import type { ApprovalRecord } from "@ai/contracts/pack-contracts";
+import { logger } from "../../../../lib/logger";
 import type { PackWho } from "../../kit/public";
 import { type PdfImage, renderApprovalRecordPdf } from "../adapters/approval-record.pdf";
 import { buildApprovalRecord, canReadEvidence } from "../domain/approval-record.rules";
@@ -17,7 +18,14 @@ type RecordRepos = {
 };
 export type ApprovalRecordDeps = Pick<
   EngineCardDeps,
-  "port" | "isAdmin" | "evidenceBytes" | "evidenceNames" | "stampPng" | "savedBytes" | "userNames"
+  | "port"
+  | "isAdmin"
+  | "evidenceBytes"
+  | "evidenceNames"
+  | "stampPng"
+  | "savedBytes"
+  | "userNames"
+  | "savePdf"
 > & {
   uow: { tenant<T>(who: PackWho, fn: (r: RecordRepos) => Promise<T>): Promise<T> };
 };
@@ -42,8 +50,8 @@ async function loadRecord(d: ApprovalRecordDeps, who: PackWho, id: string, full 
     const rows = (await r.approvalEngine.decisionsOf?.(id)) ?? [];
     const label = (await r.approvalEngine.labels?.([id]))?.[0]; // tên HĐ (một nguồn `contractNameSql`) — cho PDF
     const signs = (await r.approvalEngine.signsOf?.(id)) ?? [];
-    const saved = (await r.approvalEngine.savedRecord?.(id)) ?? null;
-    return { st, rows, label, signs, saved };
+    const sv = (await r.approvalEngine.savedRecord?.(id)) ?? { done: false, saved: null };
+    return { st, rows, label, signs, saved: sv.saved, done: sv.done };
   });
   if (!got) return null;
   const a = got.st.approval;
@@ -69,13 +77,46 @@ async function loadRecord(d: ApprovalRecordDeps, who: PackWho, id: string, full 
       { startedBy: a?.startedBy ?? "", owner: got.st.owner ?? null, involved },
     );
   // Tên người ký (không có bước duyệt) — chỉ khi `names` chưa có: lấy từ bước đã quyết; người còn lại hiện «(không rõ)».
-  return { rows: got.rows, names, readable, label: got.label, signs: got.signs, saved: got.saved };
+  return {
+    rows: got.rows,
+    names,
+    readable,
+    label: got.label,
+    signs: got.signs,
+    saved: got.saved,
+    done: got.done,
+  };
+}
+
+/**
+ * CR-181 · s10 · «lập khi cần»: HĐ đã ký đủ (DONE, có bản ký hoặc quyết định) mà chưa có bản lưu HỢP LỆ (khớp tập bản ký cuối hiện hành) ⇒ lập + lưu
+ * ngay (ai xem trước cũng kích hoạt; NOTIFY chỉ là đường nhanh). `savePdf` giữ khoá advisory theo HĐ; lỗi lưu chỉ ghi log (lần xem sau thử lại).
+ * Trả bản vừa lưu (đủ nội dung — người gọi chỉ dùng khi người xem đọc được), null nếu không lưu mới.
+ */
+async function ensureSaved(
+  d: ApprovalRecordDeps,
+  who: PackWho,
+  id: string,
+  rec: { done: boolean; saved: unknown; signs: readonly unknown[]; rows: readonly unknown[] },
+): Promise<{ name: string; bytes: Uint8Array } | null> {
+  if (!d.savePdf || !rec.done || rec.saved || (rec.signs.length === 0 && rec.rows.length === 0))
+    return null;
+  return d
+    .savePdf(who, id, () => approvalRecordArchive(d)(who, id))
+    .catch((e: unknown) => {
+      logger.warn("approval-record-save-failed", {
+        contract_id: id,
+        error: e instanceof Error ? e.name : "unknown",
+      });
+      return null;
+    });
 }
 
 export function approvalRecord(d: ApprovalRecordDeps) {
   return async (who: PackWho, id: string): Promise<ApprovalRecord | null> => {
     const rec = await loadRecord(d, who, id);
     if (!rec) return null;
+    await ensureSaved(d, who, id, rec);
     const out: ApprovalRecord = buildApprovalRecord(rec.rows, rec.names, rec.readable, rec.signs);
     if (!rec.readable || !d.evidenceNames) return out;
     // CR-144 · MỘT câu theo lô: tên + loại tệp của mọi bằng chứng đọc được (không truy vấn theo từng tệp).
@@ -99,7 +140,7 @@ export function approvalRecord(d: ApprovalRecordDeps) {
   };
 }
 
-/** Ảnh chữ ký cho PDF: bằng chứng duyệt (chỉ khi đọc được, png/jpg) + chữ ký đã in — hai lần đọc theo lô, không theo từng hàng DB. */
+/** Ảnh chữ ký cho PDF: chữ ký đã in = MỘT câu hub theo lô (`stampPng`); ảnh bằng chứng duyệt (chỉ khi đọc được, png/jpg) = mỗi ảnh MỘT lần đọc kho, chạy song song (≤ số bước duyệt, tối đa 200). */
 async function pdfImages(
   d: ApprovalRecordDeps,
   tenantId: string,
@@ -178,6 +219,8 @@ export function approvalRecordPdf(d: ApprovalRecordDeps, now: () => Date = () =>
   return async (who: PackWho, id: string): Promise<{ name: string; bytes: Uint8Array } | null> => {
     const rec = await loadRecord(d, who, id);
     if (!rec) return null;
+    const fresh = await ensureSaved(d, who, id, rec);
+    if (rec.readable && fresh) return fresh;
     if (rec.readable && rec.saved && d.savedBytes) {
       const bytes = await d.savedBytes(rec.saved.org, rec.saved.fileId);
       if (bytes) return { name: rec.saved.name, bytes };

@@ -365,5 +365,6 @@ export type {
   EngineCardDeps,
   EvidenceBytes,
   EvidenceNames,
+  SavePdf,
   StampPng,
 } from "./approval-engine-card.types";

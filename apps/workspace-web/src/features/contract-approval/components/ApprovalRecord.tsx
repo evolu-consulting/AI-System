@@ -2,6 +2,7 @@
 // «Đã đổi so với lần trước» (lý do trả lại + trường/đoạn văn đã đổi khi gửi lại). Chỉ tải khi mở (không thêm yêu cầu lúc vào trang).
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { approvalKey, fetchApproval } from "../api";
@@ -181,13 +182,14 @@ export function RecordBody({ id }: { id: string }) {
     <>
       <PdfButton id={id} />
       {q.data.files?.some((f) => f.kind === "signed") && (
-        <a
-          href={`/contracts/signed/${encodeURIComponent(id)}`}
+        <Link
+          to="/contracts/signed/$id"
+          params={{ id }}
           className="mb-2 inline-block text-sm underline"
           data-testid="record-view-signed"
         >
           {t("contracts.work.u4.record.viewSigned")}
-        </a>
+        </Link>
       )}
       <ol className="m-0 list-none p-0">
         {lines.map((l) => (
