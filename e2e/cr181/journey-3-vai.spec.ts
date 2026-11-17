@@ -118,11 +118,11 @@ test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; B
   const json = JSON.stringify(diag, null, 2);
   console.log("[k07-diag]", json);
   await testInfo.attach("k07-diag.json", { body: json, contentType: "application/json" });
-  // ô Bên B chưa ký không chặn: tệp báo «Chờ đối tác» (đối tác ký là đợt 2); trang HĐ không tự cập nhật ⇒ tải lại tới khi đổi
+  // ô Bên B chưa ký không chặn: HĐ chưa có liên hệ đối tác có email nên chưa có ô Bên B ⇒ tệp «Đã ký»; ô Bên B «Chờ đối tác» cần seed liên hệ đối tác (việc kế); trang HĐ không tự cập nhật ⇒ tải lại tới khi đổi
   await page.goto(`${E.cw}/contracts/c/${id}`);
   await expect(async () => {
     await page.reload();
-    await expect(page.getByTestId("sign-status").first()).toContainText("Chờ đối tác", {
+    await expect(page.getByTestId("sign-status").first()).toContainText("Đã ký", {
       timeout: 5_000,
     });
   }).toPass({ timeout: 90_000 });

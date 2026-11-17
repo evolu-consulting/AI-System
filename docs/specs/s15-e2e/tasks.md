@@ -31,5 +31,6 @@ Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: test e2e + seed e2e)
 
 ## Việc còn lại
-- cr181: 14 pass / 1 fail (lượt 15) — K05 (chuột phải, giáp lai, chép trang) và ca chuột phải riêng đã xanh. Đỏ ở K07: giám đốc Lưu (POST /sign 201 có field_id) nhưng trang HĐ vẫn «Đang ký (0/1)» + bước «Ký hợp đồng» «Đang chờ ký» sau 120 s. Test đã sửa cho khớp sản phẩm (chưa chạy): K07–K09 + 390px chưa được kiểm.
+- cr181 lượt 16: 14 pass / 1 fail (K07). Chẩn đoán: giám đốc Lưu OK (201, seq 2), run done, bước «Ký hợp đồng» passed ⇒ sản phẩm đúng; đỏ vì test chờ «Chờ đối tác» nhưng HĐ chưa có ô Bên B (không có liên hệ đối tác có email). Test đã sửa thành «Đã ký» (chưa chạy); K08, K09, 390px chưa kiểm.
+- Việc kế: seed liên hệ đối tác có email cho HĐ journey để có ô Bên B «Chờ đối tác»; chạy lại cr181.
 - cr127: điều phối chạy ở checkout chính. cr141-sign-or-upload không thuộc job nào.
