@@ -10,9 +10,9 @@ import {
   annexPdf,
   CONTRACT_FILE,
   contractPdf,
+  pickSampleTarget,
   planSignSample,
   SIGN_CONTRACT_ID,
-  SIGN_CONTRACT_TITLE,
   SIGN_CONTRACT_VALUE,
   SIGN_FLOW_NAME,
   SIGN_PARTNER,
@@ -23,6 +23,7 @@ import {
   SIGN_TENANT,
   type SignSampleState,
   type SignSampleStep,
+  type SignSampleTarget,
   signerNeedsAdd,
   signFlowOrder,
   signFlowStages,
@@ -183,17 +184,26 @@ const pdfForm = (name: string, bytes: Uint8Array): FormData => {
   return f;
 };
 
-/** Trạng thái hiện có của HĐ mẫu + sổ đối tác (để lập kế hoạch idempotent). */
-async function sampleState(sql: Sql, tid: string): Promise<SignSampleState> {
+/** HĐ mẫu đã có (id gốc hoặc id theo ngày, `c1810000-0000-4000-8000-16…`) + trạng thái, theo id tăng dần. */
+async function existingSamples(sql: Sql, tid: string): Promise<{ id: string; status: string }[]> {
+  return await sql<{ id: string; status: string }[]>`select id::text as id, status
+    from contracts.contracts where tenant_id = ${tid}::uuid and (id = ${SIGN_CONTRACT_ID}::uuid or id::text like 'c1810000-0000-4000-8000-16%')
+    order by id`;
+}
+
+/** Trạng thái hiện có của HĐ mẫu `cid` + sổ đối tác (để lập kế hoạch idempotent). Tên tệp ở `contracts.files` (tệp kèm qua `contract_files`, tệp chính qua `contracts.file_id`). */
+export async function sampleState(sql: Sql, tid: string, cid: string): Promise<SignSampleState> {
   const [st] = await sql<
     { status: string; file_id: string | null }[]
   >`select status, file_id::text as file_id
-    from contracts.contracts where id = ${SIGN_CONTRACT_ID}::uuid and tenant_id = ${tid}::uuid`;
+    from contracts.contracts where id = ${cid}::uuid and tenant_id = ${tid}::uuid`;
   const names = st
     ? (
-        await sql<
-          { name: string }[]
-        >`select name from contracts.contract_files where contract_id = ${SIGN_CONTRACT_ID}::uuid`
+        await sql<{ name: string }[]>`select f.name from contracts.files f
+          where f.tenant_id = ${tid}::uuid and (
+            f.id = ${st.file_id}::uuid
+            or exists (select 1 from contracts.contract_files cf
+              where cf.contract_id = ${cid}::uuid and cf.file_id = f.id and cf.tenant_id = f.tenant_id))`
       ).map((r) => r.name)
     : [];
   const [pc] = await sql<{ n: number }[]>`select count(*)::int as n from contracts.partner_contacts
@@ -207,11 +217,11 @@ async function sampleState(sql: Sql, tid: string): Promise<SignSampleState> {
   };
 }
 
-type StepCtx = { sql: Sql; tid: string; uid: string; sale: Call };
+type StepCtx = SignSampleTarget & { cid: string; sql: Sql; tid: string; uid: string; sale: Call };
 const stepSql: Partial<Record<SignSampleStep, (c: StepCtx) => Promise<void>>> = {
-  create: async ({ sql, tid, uid }) => {
+  create: async ({ sql, tid, uid, cid, title }) => {
     const fields = {
-      title: SIGN_CONTRACT_TITLE,
+      title,
       supplier_name: SIGN_SELF.name,
       supplier_tax_id: SIGN_SELF.tax,
       buyer_name: SIGN_PARTNER.name,
@@ -220,17 +230,17 @@ const stepSql: Partial<Record<SignSampleStep, (c: StepCtx) => Promise<void>>> = 
       total_value: SIGN_CONTRACT_VALUE,
     };
     await sql`insert into contracts.contracts (id, tenant_id, kind, title, direction, status, extract_state, owner_user_id, created_by, version, fields)
-      values (${SIGN_CONTRACT_ID}, ${tid}, 'contract', ${SIGN_CONTRACT_TITLE}, 'sale', 'draft', 'ready', ${uid}, ${uid}, 1, ${sql.json(fields as never)})
+      values (${cid}, ${tid}, 'contract', ${title}, 'sale', 'draft', 'ready', ${uid}, ${uid}, 1, ${sql.json(fields as never)})
       on conflict (id) do nothing`;
   },
   // Tệp hợp đồng vừa tải (tệp kèm) ⇒ thành tệp chính của HĐ (Q14); bỏ liên kết tệp kèm. Chỉ khi HĐ chưa có tệp chính.
-  promote_main: async ({ sql, tid }) => {
+  promote_main: async ({ sql, tid, cid }) => {
     await sql`update contracts.contracts set file_id = cf.file_id
       from contracts.contract_files cf join contracts.files f on f.id = cf.file_id and f.tenant_id = cf.tenant_id
-      where contracts.contracts.id = ${SIGN_CONTRACT_ID}::uuid and contracts.contracts.tenant_id = ${tid}::uuid
+      where contracts.contracts.id = ${cid}::uuid and contracts.contracts.tenant_id = ${tid}::uuid
         and contracts.contracts.file_id is null and cf.contract_id = contracts.contracts.id and f.name = ${CONTRACT_FILE}`;
     await sql`delete from contracts.contract_files cf using contracts.contracts c
-      where c.id = ${SIGN_CONTRACT_ID}::uuid and c.tenant_id = ${tid}::uuid and cf.contract_id = c.id and cf.file_id = c.file_id`;
+      where c.id = ${cid}::uuid and c.tenant_id = ${tid}::uuid and cf.contract_id = c.id and cf.file_id = c.file_id`;
   },
   // Bên B của «Tự đặt theo ĐẠI DIỆN BÊN B» = liên hệ đầu tiên CÓ email của đối tác (sổ đối tác), không phải `fields.partner_email`.
   partner_contact: async ({ sql, tid, uid }) => {
@@ -239,20 +249,18 @@ const stepSql: Partial<Record<SignSampleStep, (c: StepCtx) => Promise<void>>> = 
   },
 };
 
-async function uploadSample(sale: Call, step: SignSampleStep): Promise<void> {
+async function uploadSample(sale: Call, cid: string, step: SignSampleStep): Promise<void> {
   const main = step === "file_contract";
   const doc = main ? await contractPdf() : await annexPdf();
   const name = main ? CONTRACT_FILE : ANNEX_FILE;
-  must(
-    await sale("POST", `${BASE}/${SIGN_CONTRACT_ID}/files`, pdfForm(name, doc.bytes)),
-    [201],
-    `tải ${name}`,
-  );
+  must(await sale("POST", `${BASE}/${cid}/files`, pdfForm(name, doc.bytes)), [201], `tải ${name}`);
 }
 
 /** 3) HĐ Nháp mẫu + 2 PDF (đúng đường API của sale; HĐ tạo bằng SQL như seed-kind-samples). */
 async function ensureSample(sql: Sql, tid: string, hubUrl: string, authUrl: string, pw: string) {
-  const steps = planSignSample(await sampleState(sql, tid));
+  const target = pickSampleTarget(await existingSamples(sql, tid), new Date());
+  const cid = target.id;
+  const steps = planSignSample(await sampleState(sql, tid, cid));
   if (!steps.length) return void console.log(`${TAG}: HĐ mẫu đã có — bỏ qua`);
   const [u] = await sql<{ id: string }[]>`select id from admin.users
     where tenant_id = ${tid}::uuid and username = ${SIGN_SALE}`;
@@ -260,10 +268,10 @@ async function ensureSample(sql: Sql, tid: string, hubUrl: string, authUrl: stri
   const sale = caller(hubUrl, await login(authUrl, SIGN_TENANT, SIGN_SALE, pw));
   for (const step of steps) {
     const run = stepSql[step];
-    if (run) await run({ sql, tid, uid, sale });
-    else await uploadSample(sale, step);
+    if (run) await run({ ...target, cid, sql, tid, uid, sale });
+    else await uploadSample(sale, cid, step);
   }
-  console.log(`${TAG}: HĐ mẫu — ${steps.join(" → ")}`);
+  console.log(`${TAG}: HĐ mẫu «${target.title}» — ${steps.join(" → ")}`);
 }
 
 async function main(): Promise<void> {

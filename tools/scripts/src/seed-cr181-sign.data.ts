@@ -234,3 +234,35 @@ export const signPartnerKey = (): string => `tax:${SIGN_PARTNER.tax}`;
 export const SIGN_SIGNER_USER = "demo-owner";
 export const signerNeedsAdd = (memberUsernames: readonly string[]): boolean =>
   !memberUsernames.includes(SIGN_SIGNER_USER);
+
+/** Một HĐ mẫu: id + tiêu đề. HĐ gốc (lần đầu) dùng id/tiêu đề cố định; HĐ theo ngày có hậu tố «· dd/mm» và id suy từ ngày (idempotent theo ngày). */
+export type SignSampleTarget = { id: string; title: string };
+export const baseSampleTarget = (): SignSampleTarget => ({
+  id: SIGN_CONTRACT_ID,
+  title: SIGN_CONTRACT_TITLE,
+});
+/** `now` theo giờ Việt Nam (UTC+7) ⇒ mã ngày YYMMDD + dd/mm; id = `c1810000-0000-4000-8000-16YYMMDD0000`. */
+export function dailySampleTarget(now: Date): SignSampleTarget {
+  const d = new Date(now.getTime() + 7 * 3600_000);
+  const p = (n: number): string => String(n).padStart(2, "0");
+  const yymmdd = `${p(d.getUTCFullYear() % 100)}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}`;
+  return {
+    id: `c1810000-0000-4000-8000-16${yymmdd}0000`,
+    title: `${SIGN_CONTRACT_TITLE} · ${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}`,
+  };
+}
+/**
+ * Chọn HĐ mẫu để làm tiếp. `existing` = các HĐ mẫu đã có (id gốc hoặc id theo ngày) + trạng thái.
+ * Chưa có ⇒ HĐ gốc. Còn một HĐ mẫu Nháp ⇒ dùng nó (không tạo thêm). Tất cả đã rời Nháp ⇒ HĐ của HÔM NAY (có rồi ⇒ chính nó, kế hoạch sẽ rỗng). HĐ cũ giữ nguyên.
+ */
+export function pickSampleTarget(
+  existing: readonly { id: string; status: string }[],
+  now: Date,
+): SignSampleTarget {
+  if (existing.length === 0) return baseSampleTarget();
+  const draft = [...existing].reverse().find((e) => e.status === "draft");
+  const today = dailySampleTarget(now);
+  if (!draft) return today;
+  if (draft.id === SIGN_CONTRACT_ID) return baseSampleTarget();
+  return { id: draft.id, title: today.title }; // tiêu đề chỉ dùng khi tạo; HĐ Nháp đã có giữ tiêu đề cũ
+}

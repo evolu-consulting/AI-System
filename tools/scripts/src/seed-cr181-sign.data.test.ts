@@ -4,9 +4,13 @@ import { SignatureSettingsSchema } from "../../../packages/contracts/src/signatu
 import {
   ANNEX_FILE,
   annexPdf,
+  baseSampleTarget,
   CONTRACT_FILE,
   contractPdf,
+  dailySampleTarget,
+  pickSampleTarget,
   planSignSample,
+  SIGN_CONTRACT_ID,
   signerNeedsAdd,
   signFlowOrder,
   signFlowStages,
@@ -112,5 +116,34 @@ describe("fix-cr181-uat · lỗi 1a/3/5 · dữ liệu mẫu đủ cho kịch b�
     expect(signerNeedsAdd(["em.hoang"])).toBe(true);
     expect(signerNeedsAdd(["em.hoang", "demo-owner"])).toBe(false);
     expect(signPartnerKey()).toBe("tax:0100150002");
+  });
+});
+
+describe("fix-cr181-seed2 · HĐ mẫu mới khi HĐ cũ đã rời Nháp", () => {
+  const now = new Date("2026-11-18T03:00:00Z");
+  const today = dailySampleTarget(now);
+  it("id/tiêu đề theo ngày VN", () => {
+    expect(today.title).toBe("HĐ mẫu · Ký trên tài liệu (CR-181) · 18/11");
+    expect(today.id).toBe("c1810000-0000-4000-8000-16261118" + "0000");
+    // 17:30 UTC = 00:30 hôm sau ở VN
+    expect(dailySampleTarget(new Date("2026-11-18T17:30:00Z")).title.endsWith("19/11")).toBe(true);
+  });
+  it("chưa có ⇒ HĐ gốc; còn Nháp ⇒ dùng nó; mọi HĐ đã rời Nháp ⇒ HĐ hôm nay", () => {
+    expect(pickSampleTarget([], now)).toEqual(baseSampleTarget());
+    expect(pickSampleTarget([{ id: SIGN_CONTRACT_ID, status: "draft" }], now).id).toBe(
+      SIGN_CONTRACT_ID,
+    );
+    expect(pickSampleTarget([{ id: SIGN_CONTRACT_ID, status: "processing" }], now)).toEqual(today);
+  });
+  it("kế hoạch: HĐ hôm nay chưa có ⇒ tạo mới đủ bước; chạy lại cùng ngày ⇒ không tạo hai HĐ", () => {
+    const rows = [{ id: SIGN_CONTRACT_ID, status: "done" }];
+    expect(pickSampleTarget(rows, now).id).toBe(today.id);
+    expect(planSignSample({ exists: false, status: null, fileNames: [] })[0]).toBe("create");
+    // lần hai: HĐ hôm nay có và còn Nháp ⇒ chính nó; đã rời Nháp ⇒ chính nó + kế hoạch rỗng
+    const again = [...rows, { id: today.id, status: "draft" }];
+    expect(pickSampleTarget(again, now).id).toBe(today.id);
+    const moved = [...rows, { id: today.id, status: "processing" }];
+    expect(pickSampleTarget(moved, now).id).toBe(today.id);
+    expect(planSignSample({ exists: true, status: "processing", fileNames: [] })).toEqual([]);
   });
 });
