@@ -44,7 +44,7 @@ test("K01-K04 · sale: lần đầu tạo chữ ký → tải HĐ → Cần ký 
 
   await page.goto(`${E.cw}/contracts/c/${id}`);
   await expect(page.getByTestId("signers-strip")).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByTestId("signers-strip")).toContainText("Đại diện Người ký hợp đồng");
+  await expect(page.getByTestId("signers-strip")).toContainText("E2E Giám đốc");
   await expect(page.getByTestId("signers-strip")).not.toContainText("[object Object]");
   const send = page.getByRole("button", { name: "Gửi duyệt" });
   await expect(send).toBeEnabled();
