@@ -73,6 +73,35 @@
         "DIGITAL_SIGN_NOT_ENABLED": "Your company has not enabled digital signature; choose Internal signature",
         "SIGNATURE_MISSING": "You have no signature yet; create one and sign again",
         "generic": "Could not save, please try again"
+      },
+      "viewer": {
+        "title": "View signed copy",
+        "back": "Back",
+        "version": "Copy",
+        "download": "Download",
+        "original": "Original",
+        "afterSign": "After {{who}} signed · {{at}}",
+        "voided": "(discarded)",
+        "unknownSigner": "someone",
+        "statusFull": "Fully signed",
+        "statusPartial": "{{done}}/{{total}}",
+        "statusNone": "Not signed",
+        "panelTitle": "Signatures in this copy",
+        "pendingTitle": "Spots still waiting",
+        "noMarks": "No signatures in this copy yet",
+        "openList": "Signatures in this copy",
+        "pageRange": "Page {{pages}}",
+        "internal": "internal signature",
+        "digital": "digital signature",
+        "unavailable": "This signed copy cannot be viewed",
+        "noSignFiles": "This contract has no files to sign",
+        "downloadFail": "Could not download, please try again",
+        "placement": {
+          "field": "Signature box",
+          "free": "Free placement",
+          "seam": "Edge signature",
+          "initials": "Initials"
+        }
       }
     }
   }

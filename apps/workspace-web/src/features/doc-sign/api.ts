@@ -1,5 +1,5 @@
 // CR-181 · s12 · gọi API ký trên tài liệu: `/pack/contracts/contracts/:id/…` + chữ ký của tôi `/me/signature` (lõi).
-import type { SignFieldsPut, SignSessionOut } from "@ai/contracts/pack-contracts";
+import type { SignFieldsPut, SignSessionOut, SignVersionsOut } from "@ai/contracts/pack-contracts";
 import {
   type CreateSignatureBody,
   CreateSignatureBodySchema,
@@ -12,6 +12,8 @@ const base = (id: string) => `/pack/contracts/contracts/${encodeURIComponent(id)
 const doc = (id: string, fileId: string) => `${base(id)}/sign-docs/${encodeURIComponent(fileId)}`;
 
 export const sessionKey = (id: string) => ["contract", id, "doc-sign-session"] as const;
+export const versionsKey = (id: string, fileId: string) =>
+  ["contract", id, "sign-versions", fileId] as const;
 export const mySignatureKey = ["me", "signature"] as const;
 
 export const fetchSession = (id: string, signal?: AbortSignal) =>
@@ -43,3 +45,12 @@ export const fetchMySignature = (signal?: AbortSignal) =>
 /** `POST /me/signature` (lõi): body `{ kind, method, png }`, png = base64 thuần; parse bằng schema trước khi gửi. */
 export const saveMySignature = (body: CreateSignatureBody) =>
   api<void>("/me/signature", { method: "POST", body: CreateSignatureBodySchema.parse(body) });
+
+/** s14 · các bản của một tệp (bản gốc + sau mỗi lần ký) + chỗ ký còn chờ. */
+export const fetchVersions = (id: string, fileId: string, signal?: AbortSignal) =>
+  api<SignVersionsOut>(`${doc(id, fileId)}/versions`, { signal });
+
+/** s14 · PDF theo đường đầy đủ của bản (xem hoặc tải về). */
+export async function fetchPdfAt(path: string) {
+  return (await apiResponse(path)).blob();
+}
