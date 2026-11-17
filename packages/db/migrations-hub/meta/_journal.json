@@ -974,6 +974,13 @@
       "when": 1806902900000,
       "tag": "0155_cr181_signatures",
       "breakpoints": true
+    },
+    {
+      "idx": 139,
+      "version": "7",
+      "when": 1806903000000,
+      "tag": "0156_cr181_signature_admin_reads",
+      "breakpoints": true
     }
   ]
 }

@@ -38,3 +38,11 @@ export type ChangeGrantResult = {
   grantedAt: string | null;
   fresh: boolean;
 };
+/** Dòng danh sách xin/cho phép đổi của công ty (màn quản trị). `grantedAt` null = chưa cho phép. */
+export type ChangeRequestRow = {
+  userId: string;
+  name: string;
+  requestedAt: string;
+  grantedAt: string | null;
+  grantedBy: string | null;
+};

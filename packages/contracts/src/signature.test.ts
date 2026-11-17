@@ -1,6 +1,8 @@
 // CR-181 · lát s1 · contract chữ ký nội bộ: mặc định, giới hạn, hình dạng «Chữ ký của tôi».
 import { describe, expect, test } from "bun:test";
 import {
+  CreateSignatureBodySchema,
+  GrantChangeBodySchema,
   MySignatureViewSchema,
   SIGNATURE_PNG_MAX_BYTES,
   SIGNATURE_SETTINGS_DEFAULT,
@@ -59,6 +61,8 @@ describe("SignatureSettingsSchema", () => {
   });
 });
 
+const EXTRA = { history: [], can_change: true, digital: { enabled: false, assigned: false } };
+
 describe("MySignatureViewSchema", () => {
   const item = {
     id: ID,
@@ -74,11 +78,17 @@ describe("MySignatureViewSchema", () => {
       initials: null,
       needs_create: false,
       change: "none",
+      ...EXTRA,
     });
     expect(v.main).toBeNull();
   });
   test("có chữ ký chính; ảnh phải là data URL PNG", () => {
-    const base = { settings: SIGNATURE_SETTINGS_DEFAULT, initials: null, needs_create: false };
+    const base = {
+      settings: SIGNATURE_SETTINGS_DEFAULT,
+      initials: null,
+      needs_create: false,
+      ...EXTRA,
+    };
     expect(
       MySignatureViewSchema.safeParse({ ...base, main: item, change: "granted" }).success,
     ).toBe(true);
@@ -92,5 +102,25 @@ describe("MySignatureViewSchema", () => {
     expect(MySignatureViewSchema.safeParse({ ...base, main: item, change: "later" }).success).toBe(
       false,
     );
+  });
+});
+
+describe("CreateSignatureBodySchema (s2)", () => {
+  const ok = { kind: "main", method: "draw", png: "iVBORw0KGgo=" };
+  test("hợp lệ; không có tham số người dùng (BR-K2)", () => {
+    expect(CreateSignatureBodySchema.safeParse(ok).success).toBe(true);
+    expect(CreateSignatureBodySchema.safeParse({ ...ok, user_id: ID }).success).toBe(false);
+  });
+  test("base64 sai ký tự/độ dài ⇒ từ chối; data URL ⇒ từ chối (chỉ base64 thuần)", () => {
+    expect(CreateSignatureBodySchema.safeParse({ ...ok, png: "***" }).success).toBe(false);
+    expect(CreateSignatureBodySchema.safeParse({ ...ok, png: "iVBORw0KGgo" }).success).toBe(false);
+    expect(
+      CreateSignatureBodySchema.safeParse({ ...ok, png: "data:image/png;base64,AAAA" }).success,
+    ).toBe(false);
+    expect(CreateSignatureBodySchema.safeParse({ ...ok, kind: "x" }).success).toBe(false);
+  });
+  test("GrantChangeBodySchema: user_id phải là uuid", () => {
+    expect(GrantChangeBodySchema.safeParse({ user_id: ID }).success).toBe(true);
+    expect(GrantChangeBodySchema.safeParse({ user_id: "1" }).success).toBe(false);
   });
 });

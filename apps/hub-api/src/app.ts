@@ -61,6 +61,7 @@ import { RunService } from "./modules/runs/runs.service";
 import { traceRoutes } from "./modules/runs/trace/trace.routes";
 import { TraceService } from "./modules/runs/trace/trace.service";
 import { SECRETS_PROTECTED_PREFIXES } from "./modules/secrets/secrets.mount";
+import { mountSignatures, SIGNATURE_PROTECTED_PREFIXES } from "./modules/signatures/public";
 import type { ResolveBridge } from "./modules/sources/resolve.bridge";
 import { mountSources, SOURCE_PROTECTED_PREFIXES } from "./modules/sources/sources.mount";
 // HUB-NFR-04 · H1-R26 · dựng app Hono của hub-api (plan H1 §4). Factory thuần: không đọc env, để test in-process.
@@ -98,6 +99,7 @@ const PROTECTED_PREFIXES = [
   ...PROCESS_PROTECTED_PREFIXES,
   ...SOURCE_PROTECTED_PREFIXES,
   ...SECRETS_PROTECTED_PREFIXES,
+  ...SIGNATURE_PROTECTED_PREFIXES, // CR-181 · /me/signature, /company
 ];
 
 const REQUEST_ID_HEADER = "X-Request-Id";
@@ -263,6 +265,12 @@ const corsOf = (cfg: AppConfig): MiddlewareHandler =>
     ],
   });
 
+/** CR-181 · `/me/signature*` + `/company/signature-*`; vắng db/config (test khung) ⇒ không mount. Tách khỏi createApp (độ phức tạp ≤ 15). */
+function mountSignaturesIf(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache): void {
+  if (deps.db && config)
+    mountSignatures(app, { db: deps.db, view: config, hubAudit: deps.hubAudit });
+}
+
 export function createApp(cfg: AppConfig, depsIn: AppDeps = {}): Hono<AppVars> {
   const deps = withPackBridges(depsIn); // N2 · cầu gói ↔ engine
   const app = new Hono<AppVars>();
@@ -290,6 +298,7 @@ export function createApp(cfg: AppConfig, depsIn: AppDeps = {}): Hono<AppVars> {
     mountNotifyAndRelay(app, { ...deps, db: deps.db, log: logger }); // N3 + CR-121 c21b
     mountOps(app, { ...deps, db: deps.db, log: logger }); // CR-104 · ops-watch (không phụ thuộc module đóng băng)
   }
+  mountSignaturesIf(app, deps, config); // CR-181 · chữ ký nội bộ
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger, kh });
   if (deps.db && config) mountTestRun(app, { ...deps, db: deps.db, config, log: logger });
   if (deps.db && deps.attachments)

@@ -13,6 +13,7 @@ import { sql } from "drizzle-orm";
 import type {
   ChangeGrantResult,
   ChangeGrantState,
+  ChangeRequestRow,
   SignatureCreated,
   SignatureHistoryRow,
   SignatureRecord,
@@ -68,6 +69,13 @@ const recordOf = (r: SigRow): SignatureRecord => ({
   method: r.method,
   png: Buffer.from(r.png),
   createdAt: iso(r.created_at),
+});
+
+const defaultSettings = (): SignatureSettingsRecord => ({
+  settings: { ...SIGNATURE_SETTINGS_DEFAULT },
+  stored: false,
+  updatedBy: null,
+  updatedAt: null,
 });
 
 type GrantRow = { id: string; requested_at: Ts; granted_at: Ts | null; fresh: boolean };
@@ -145,14 +153,7 @@ export function signaturesRepo(tx: Tx) {
     /** Thiết lập của công ty; chưa có hàng ⇒ mặc định (`stored=false`). */
     async getSettings(): Promise<SignatureSettingsRecord> {
       const [r] = await tx.execute<SettingsRow>(sql`select * from hub.sig_settings_get()`);
-      return r
-        ? settingsOf(r)
-        : {
-            settings: { ...SIGNATURE_SETTINGS_DEFAULT },
-            stored: false,
-            updatedBy: null,
-            updatedAt: null,
-          };
+      return r ? settingsOf(r) : defaultSettings();
     },
     /** Ghi thiết lập (upsert). CHỈ gọi sau khi đã kiểm quản trị (Q15). */
     async putSettingsAsAdmin(s: SignatureSettings): Promise<SignatureSettingsRecord> {
@@ -203,6 +204,34 @@ export function signaturesRepo(tx: Tx) {
     async consumeGrant(): Promise<boolean> {
       const [r] = await tx.execute<{ ok: boolean }>(sql`select hub.sig_change_consume() as ok`);
       return r?.ok === true;
+    },
+    /** Danh sách xin/cho phép đổi đang mở của công ty (mới → cũ). CHỈ gọi sau khi đã kiểm quản trị (Q15). */
+    async listChangeRequestsAsAdmin(limit = 100): Promise<ChangeRequestRow[]> {
+      const rows = await asAdmin(() =>
+        tx.execute<{
+          user_id: string;
+          name: string;
+          requested_at: Ts;
+          granted_at: Ts | null;
+          granted_by: string | null;
+        }>(
+          sql`select user_id, name, requested_at, granted_at, granted_by from hub.sig_change_list(${limit}::integer)`,
+        ),
+      );
+      return rows.map((r) => ({
+        userId: r.user_id,
+        name: r.name,
+        requestedAt: iso(r.requested_at),
+        grantedAt: isoOrNull(r.granted_at),
+        grantedBy: r.granted_by,
+      }));
+    },
+    /** Thiết lập của MỘT công ty (không cần người dùng; scope system hoặc đúng tenant của tx). Chưa có hàng ⇒ mặc định. */
+    async settingsOfTenant(tenantId: string): Promise<SignatureSettingsRecord> {
+      const [r] = await tx.execute<SettingsRow>(
+        sql`select * from hub.sig_settings_of(${tenantId}::uuid)`,
+      );
+      return r ? settingsOf(r) : defaultSettings();
     },
     /** Máy chủ in (BR-K3): bản đang dùng của đúng người ký trong ngữ cảnh. Tham số lệch ngữ cảnh ⇒ lỗi 42501. */
     async signatureForStamp(tenantId: string, userId: string, kind: SignatureKind) {
