@@ -156,6 +156,6 @@ describe("fix-cr181-web · body khớp schema contracts", () => {
     for (const c of SIGN_ERR_CODES)
       expect(signErrorKey({ code: c })).toBe(`contracts.docsign.err.${c}`);
     expect(signErrorKey({ code: "X" })).toBe("contracts.docsign.err.generic");
-    expect(SIGN_ERR_CODES.length).toBe(12);
+    expect(SIGN_ERR_CODES.length).toBe(14);
   });
 });

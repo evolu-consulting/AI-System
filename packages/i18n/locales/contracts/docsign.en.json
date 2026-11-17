@@ -76,6 +76,8 @@
         "SIGN_OUTSIDE_PAGE": "The signature is outside the page. Drag it inside the page and save again.",
         "SIGN_MARK_INVALID": "The signature position is not valid. Place it again and save.",
         "SIGNATURE_TOO_LARGE": "Your signature image is too large. Create a smaller one.",
+        "SIGNATURE_IMAGE_TOO_LARGE": "Your signature image dimensions are too large. Create a smaller one.",
+        "SIGN_IMAGE_TOO_LARGE": "Your signature image dimensions are too large. Create a smaller one.",
         "SIGN_PDF_ENCRYPTED": "This PDF is password-protected and cannot be signed. Remove the password and upload it again.",
         "SIGN_TOO_MANY_PAGES": "This file has too many pages to sign. Split it and upload again.",
         "SIGN_NOT_PDF": "Only PDF files can be signed. Convert the file to PDF and upload it again.",

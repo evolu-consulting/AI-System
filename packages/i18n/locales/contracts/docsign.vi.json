@@ -76,6 +76,8 @@
         "SIGN_OUTSIDE_PAGE": "Chữ ký đang nằm ngoài trang. Hãy kéo vào trong trang rồi lưu lại.",
         "SIGN_MARK_INVALID": "Vị trí chữ ký chưa hợp lệ. Hãy đặt lại chữ ký rồi lưu lại.",
         "SIGNATURE_TOO_LARGE": "Ảnh chữ ký quá lớn. Hãy tạo lại chữ ký nhỏ hơn.",
+        "SIGNATURE_IMAGE_TOO_LARGE": "Ảnh chữ ký có kích thước quá lớn. Hãy tạo lại chữ ký nhỏ hơn.",
+        "SIGN_IMAGE_TOO_LARGE": "Ảnh chữ ký có kích thước quá lớn. Hãy tạo lại chữ ký nhỏ hơn.",
         "SIGN_PDF_ENCRYPTED": "Tệp PDF đang đặt mật khẩu nên không ký được. Hãy gỡ mật khẩu rồi tải lên lại.",
         "SIGN_TOO_MANY_PAGES": "Tệp có quá nhiều trang để ký. Hãy tách tệp rồi tải lên lại.",
         "SIGN_NOT_PDF": "Chỉ ký được tệp PDF. Hãy chuyển tệp sang PDF rồi tải lên lại.",
