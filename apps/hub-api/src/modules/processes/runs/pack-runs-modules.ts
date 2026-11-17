@@ -2,10 +2,16 @@
 // bước của `stepsView` — MỘT nguồn cho thẻ duyệt và mọi client. Cụm theo `moduleClusters` (@ai/contracts/hub-admin); trạng thái nghiệp vụ
 // lấy từ stage CHỜ: chưa tới / đang chờ / xong (`done` hoặc nhánh theo sự kiện: từ chối) / hết hạn (stage xong không có sự kiện = timeout).
 // Luật thuần, O(số stage), không I/O.
+
 import { type ClusterStage, moduleClusters } from "@ai/contracts/hub-admin";
 import { MODULES } from "@ai/contracts/modules";
+import { membersLabel } from "@ai/contracts/pack-contracts";
 import { sql } from "drizzle-orm";
 import type { PackModuleOutcome, PackStepView } from "../../packs/kit/public";
+
+/** «<nhóm>: <tên người>» (nhiều người ⇒ «Hùng, Mai»); không có thành viên ⇒ chỉ tên nhóm. THUẦN. */
+export const withMembers = (group: string, names: readonly string[]): string =>
+  names.length === 0 ? group : `${group}: ${membersLabel(names)}`;
 
 /** Tên người / Group ký: MỘT câu chỉ khi có người ký cấu hình (đường thường không thêm câu nào). Scope người xem (RLS). */
 export async function signerNamesOf(
@@ -27,7 +33,21 @@ export async function signerNamesOf(
       n: string;
     }>),
   ];
-  return new Map(rows.map((r) => [r.k, r.n]));
+  const out = new Map(rows.map((r) => [r.k, r.n]));
+  if (groups.length === 0) return out;
+  // Nhóm ký có thành viên ⇒ «<nhóm>: <tên người>» (nhiều người ⇒ «Hùng, Mai»): người xem biết ai ký tiếp. Một câu theo tập.
+  const mem = (await tx.execute(sql`
+    select m.group_id::text as gid, coalesce(nullif(u.display_name, ''), u.username) as n
+      from admin.group_members m join admin.users u on u.id = m.user_id and u.tenant_id = m.tenant_id
+      where m.tenant_id = ${tenantId} and m.group_id = any(${`{${groups.join(",")}}`}::uuid[])
+      order by u.display_name, u.username`)) as Iterable<{ gid: string; n: string }>;
+  const by = new Map<string, string[]>();
+  for (const m of mem) by.set(m.gid, [...(by.get(m.gid) ?? []), m.n]);
+  for (const [gid, names] of by) {
+    const key = `group:${gid}`;
+    out.set(key, withMembers(out.get(key) ?? "", names));
+  }
+  return out;
 }
 
 export type StageFact = {

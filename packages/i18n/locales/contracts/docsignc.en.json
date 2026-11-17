@@ -15,6 +15,7 @@
       "boxMine": "You have {{fields}} signing places on {{files}} files",
       "boxDone": "signed {{signed}}/{{files}} files",
       "turnTitle": "Sign the contract",
+      "waitFor": "Waiting for {{name}} to sign",
       "gate": "Sign all your places first, then you can approve",
       "main": "Main contract",
       "needsSign": "Needs signing: {{name}}",

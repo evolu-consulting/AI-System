@@ -225,11 +225,36 @@ export function signDocPorts(db: Db, view: PackAccessView, flow?: SignFlow): Sig
                 where g.tenant_id = ${who.tenantId}::uuid and g.id = any(${`{${groupIds.join(",")}}`}::uuid[])`),
             );
       const gBy = new Map(groups.map((g) => [g.id, g]));
+      // Thành viên nhóm (tên) để nói đích danh người ký tiếp: một câu theo tập, chỉ khi có nhóm.
+      const mem =
+        groupIds.length === 0
+          ? []
+          : await withHubScope(db, { kind: "system" }, (tx) =>
+              tx.execute<{ gid: string; uid: string; name: string }>(sql`
+                select m.group_id::text as gid, u.id::text as uid, coalesce(nullif(u.display_name, ''), u.username) as name
+                from admin.group_members m join admin.users u on u.id = m.user_id and u.tenant_id = m.tenant_id
+                where m.tenant_id = ${who.tenantId}::uuid and m.group_id = any(${`{${groupIds.join(",")}}`}::uuid[])
+                order by u.display_name, u.username`),
+            );
+      const memBy = new Map<string, { id: string; name: string }[]>();
+      for (const m of mem)
+        memBy.set(m.gid, [...(memBy.get(m.gid) ?? []), { id: m.uid, name: m.name }]);
       return signers.flatMap((s): CompanySigner[] => {
         if (s.kind === "user")
           return [{ kind: "user", id: s.id, name: names.get(s.id) ?? "Người ký" }];
         const g = gBy.get(s.id);
-        return g ? [{ kind: "group", id: s.id, name: g.name, mine: g.mine }] : [];
+        const members = (memBy.get(s.id) ?? []).slice(0, 20);
+        return g
+          ? [
+              {
+                kind: "group",
+                id: s.id,
+                name: g.name,
+                mine: g.mine,
+                ...(members.length ? { members } : {}),
+              },
+            ]
+          : [];
       });
     },
   };

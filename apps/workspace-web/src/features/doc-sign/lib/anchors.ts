@@ -18,6 +18,14 @@ export const ANCHOR_BOX_W = 160;
 const CENTER_DX = 75;
 const CENTER_DY = 45;
 
+/** Dòng chú thích dưới chỗ ký: ô đặt NGAY DƯỚI dòng này (không đè chữ). */
+export const SIGN_HINT = "(Ký, ghi rõ họ tên)";
+/** Khe giữa dòng chú thích và đỉnh ô (điểm PDF). */
+const HINT_GAP = 6;
+/** Chỉ nhận dòng chú thích nằm dưới cụm chữ không quá chừng này (điểm PDF) và lệch ngang không quá nửa cột chữ ký. */
+const HINT_MAX_DROP = 80;
+const HINT_MAX_DX = 130;
+
 const norm = (s: string) => s.normalize("NFC").toUpperCase().replace(/\s+/g, "");
 
 /** Tìm cụm (bỏ khoảng trắng) trong chuỗi ghép các item; trả item chứa ký tự đầu cụm. */
@@ -35,21 +43,39 @@ function findItem(items: TextItem[], phrase: string): TextItem | null {
   return idx === undefined ? null : (items[idx] ?? null);
 }
 
+/** Dòng chú thích «(Ký, ghi rõ họ tên)» gần nhất BÊN DƯỚI cụm chữ tại (x0, y0); không có ⇒ null. */
+function findHint(items: TextItem[], x0: number, y0: number): TextItem | null {
+  const hint = norm(SIGN_HINT);
+  let best: TextItem | null = null;
+  for (const it of items) {
+    const x = it.transform[4];
+    const y = it.transform[5];
+    if (x === undefined || y === undefined || !norm(it.str ?? "").includes(hint)) continue;
+    if (y >= y0 || y0 - y > HINT_MAX_DROP || Math.abs(x - x0) > HINT_MAX_DX) continue;
+    if (!best || y > (best.transform[5] ?? Number.NEGATIVE_INFINITY)) best = it;
+  }
+  return best;
+}
+
+/** Ô gợi ý của cụm chữ `side` trên một trang; không có cụm ⇒ null. Có dòng chú thích ⇒ đỉnh ô nằm dưới dòng đó; không ⇒ vị trí mặc định theo cụm chữ. */
+function boxOf(pt: PageText, side: SignSide): AnchorBox | null {
+  const it = findItem(pt.items, ANCHOR_PHRASES[side]);
+  const x0 = it?.transform[4];
+  const y0 = it?.transform[5];
+  if (x0 === undefined || y0 === undefined) return null;
+  const w = ANCHOR_BOX_W;
+  const h = w / SIGN_FIELD_ASPECT;
+  const hy = findHint(pt.items, x0, y0)?.transform[5];
+  const y = hy === undefined ? y0 - CENTER_DY - h / 2 : hy - HINT_GAP - h;
+  return { page: pt.page, x: x0 + CENTER_DX - w / 2, y, w, h };
+}
+
 /** Từ trang CUỐI ngược lên; mỗi bên lấy trang đầu tiên gặp. Không thấy ⇒ null. */
 export function findAnchors(pagesText: PageText[]): Anchors {
   const out: Anchors = { A: null, B: null };
   const sorted = [...pagesText].sort((a, b) => b.page - a.page);
   for (const pt of sorted) {
-    for (const side of ["A", "B"] as const) {
-      if (out[side]) continue;
-      const it = findItem(pt.items, ANCHOR_PHRASES[side]);
-      const x0 = it?.transform[4];
-      const y0 = it?.transform[5];
-      if (!it || x0 === undefined || y0 === undefined) continue;
-      const w = ANCHOR_BOX_W;
-      const h = w / SIGN_FIELD_ASPECT;
-      out[side] = { page: pt.page, x: x0 + CENTER_DX - w / 2, y: y0 - CENTER_DY - h / 2, w, h };
-    }
+    for (const side of ["A", "B"] as const) out[side] ??= boxOf(pt, side);
     if (out.A && out.B) break;
   }
   return out;

@@ -28,6 +28,8 @@ describe("CR-130 · pickNav (một trang Cài đặt, nhóm theo gói)", () => {
     expect(pickNav("feed", true, false)).toBe("co");
     expect(pickNav("co", false, true)).toBe("feed"); // người chỉ có Cộng đồng
     expect(pickNav("flow", false, true)).toBe("feed");
+    expect(pickNav("co", false, false)).toBe("signature"); // không gói nào ⇒ chỉ có nhóm Chung
+    expect(pickNav("signature", false, false)).toBe("signature");
   });
 });
 

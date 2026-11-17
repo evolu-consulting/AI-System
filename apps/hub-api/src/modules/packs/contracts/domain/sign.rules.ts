@@ -16,6 +16,7 @@ export type SignerEntry = {
   ref: string;
   name: string;
   mine: boolean;
+  members?: { id: string; name: string }[];
 };
 export const signerKey = (kind: string, ref: string): string => `${kind}:${ref.toLowerCase()}`;
 

@@ -7,8 +7,10 @@ import {
   CONTRACT_FILE,
   contractPdf,
   planSignSample,
+  signerNeedsAdd,
   signFlowOrder,
   signFlowStages,
+  signPartnerKey,
   signSeedGuard,
   signSettingsBody,
   signSettingsNeeded,
@@ -61,10 +63,18 @@ describe("kế hoạch HĐ mẫu", () => {
     expect(planSignSample({ exists: false, status: null, fileNames: [] })).toEqual([
       "create",
       "file_contract",
+      "promote_main",
       "file_annex",
+      "partner_contact",
     ]);
     expect(
-      planSignSample({ exists: true, status: "draft", fileNames: [CONTRACT_FILE, ANNEX_FILE] }),
+      planSignSample({
+        exists: true,
+        status: "draft",
+        fileNames: [CONTRACT_FILE, ANNEX_FILE],
+        hasMain: true,
+        hasPartnerContact: true,
+      }),
     ).toEqual([]);
     expect(planSignSample({ exists: true, status: "processing", fileNames: [] })).toEqual([]);
   });
@@ -83,5 +93,24 @@ describe("PDF mẫu", () => {
   it("phụ lục 2 trang", async () => {
     const p = await annexPdf();
     expect((await PDFDocument.load(p.bytes)).getPageCount()).toBe(2);
+  });
+});
+
+describe("fix-cr181-uat · lỗi 1a/3/5 · dữ liệu mẫu đủ cho kịch bản", () => {
+  it("HĐ nháp đã có 2 tệp nhưng hợp đồng đang là tệp kèm, đối tác chưa có liên hệ ⇒ chỉ sửa hai chỗ đó", () => {
+    expect(
+      planSignSample({
+        exists: true,
+        status: "draft",
+        fileNames: [CONTRACT_FILE, ANNEX_FILE],
+        hasMain: false,
+        hasPartnerContact: false,
+      }),
+    ).toEqual(["promote_main", "partner_contact"]);
+  });
+  it("giám đốc demo chưa thuộc nhóm người ký ⇒ thêm, có rồi ⇒ bỏ qua", () => {
+    expect(signerNeedsAdd(["em.hoang"])).toBe(true);
+    expect(signerNeedsAdd(["em.hoang", "demo-owner"])).toBe(false);
+    expect(signPartnerKey()).toBe("tax:0100150002");
   });
 });

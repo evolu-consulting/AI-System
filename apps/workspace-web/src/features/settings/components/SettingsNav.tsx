@@ -50,14 +50,13 @@ export function buildNavGroups(p: {
       })),
     });
   // CR-181 · nhóm «Chung» (dùng chung mọi app): mục «Chữ ký», mọi thành viên xem được.
-  if (p.hasContracts || p.hasFeed)
-    out.push({
-      id: "common",
-      label: s("group.common"),
-      items: [
-        { id: "signature", label: s("sec.signature"), hint: s("sec.signatureHint"), icon: PenLine },
-      ],
-    });
+  out.push({
+    id: "common",
+    label: s("group.common"),
+    items: [
+      { id: "signature", label: s("sec.signature"), hint: s("sec.signatureHint"), icon: PenLine },
+    ],
+  });
   if (p.hasFeed)
     out.push({
       id: "feed",

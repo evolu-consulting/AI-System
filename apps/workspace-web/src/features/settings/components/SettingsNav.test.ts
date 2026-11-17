@@ -33,6 +33,9 @@ describe("buildNavGroups", () => {
       ["feed", ["feed"]],
     ]);
   });
+  test("fix-cr181-uat · lỗi 4 · chưa nhận ra gói nào (đang tải / quyền gói trống) ⇒ vẫn có «Chữ ký» (mọi thành viên thấy)", () => {
+    expect(ids(false, false)).toEqual([["common", "group.common", 1]]);
+  });
   test("chỉ Cộng đồng ⇒ một nhóm, không tiêu đề", () => {
     expect(ids(false, true)).toEqual([
       ["common", "group.common", 1],

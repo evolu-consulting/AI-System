@@ -24,9 +24,10 @@ import { versionGate } from "~/features/contract-versions/lib/versions";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
 import { shortName } from "~/features/contracts-list/lib/list-model";
 import { PrepCard } from "~/features/doc-sign/components/contract/PrepCard";
-import { SignTurnCard } from "~/features/doc-sign/components/contract/SignBox";
+import { SignTurnCard, SignWaitCard } from "~/features/doc-sign/components/contract/SignBox";
 import { SignersStrip } from "~/features/doc-sign/components/contract/SignersStrip";
 import { useContractSign } from "~/features/doc-sign/hooks/use-contract-sign";
+import { signStepOf } from "~/features/doc-sign/lib/contract-view";
 import { FramePanel } from "~/features/frame-panel/components/FramePanel";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
@@ -95,6 +96,7 @@ export function ContractBody(p: {
     if (ap.msg) toast(ap.msg);
   }, [ap.msg]);
   const { session } = useContractSign(id);
+  const ondocStep = session ? signStepOf(session) : null;
   // CR-181 s9: Gửi duyệt bị chặn vì ký ⇒ nút «Xác nhận» của thẻ duyệt cũng khoá (cùng một lý do, ở nút chính của trang).
   const signBlock = String(c.submit_block ?? "").startsWith("sign_");
   const apView = signBlock ? { ...ap.view, confirm: false } : ap.view;
@@ -209,9 +211,8 @@ export function ContractBody(p: {
           {session && c.status === "draft" && session.mode === "prep" && (
             <PrepCard id={id} session={session} />
           )}
-          {session?.turn.allowed && session.turn.step === "sign" && (
-            <SignTurnCard id={id} session={session} />
-          )}
+          {ondocStep === "mine" && session && <SignTurnCard id={id} session={session} />}
+          {ondocStep === "other" && session && <SignWaitCard session={session} />}
           <HeadBanner kind={rule.banner} c={c} partner={partner} />
           <ManualBanner
             c={c}
@@ -223,7 +224,8 @@ export function ContractBody(p: {
           <ExtractDialog open={reading} name={c.file?.name ?? c.title} />
           <PartnerSendPanel id={id} write={write} />
           <SignSessionCard id={id} write={write} />
-          <EsignPanel id={id} locked={c.status === "done"} write={write} />
+          {/* Bước Ký trên tài liệu đang mở ⇒ KHÔNG hiện khối «Ký số / Tải lên bản đã ký» cũ (chỉ một đường ký). */}
+          {ondocStep === null && <EsignPanel id={id} locked={c.status === "done"} write={write} />}
           <VersionsPanels id={id} versions={c.versions} total={c.versions_count} sup={sup} />
           <ContractFilesPanel id={id} />
           <SaveNotice err={info.err ?? ap.err} />

@@ -1,10 +1,11 @@
 // CR-181 · s13 · luật thuần ký trên tài liệu cho TRANG HỢP ĐỒNG (bảng Tài liệu kèm, dải người ký, thẻ duyệt, lý do chặn Gửi duyệt).
 // Bên A = công ty, Bên B = đối tác (Q6): chỗ ký Bên B không chặn hoàn tất.
-import type {
-  SignFileOut,
-  SignReadinessMissing,
-  SignSessionOut,
-  SignSignerOut,
+import {
+  type SignFileOut,
+  type SignReadinessMissing,
+  type SignSessionOut,
+  type SignSignerOut,
+  signerWho,
 } from "@ai/contracts/pack-contracts";
 
 export type FileStatusKind = "ref" | "unsigned" | "partial" | "waitPartner" | "done";
@@ -52,7 +53,7 @@ export function signerChips(s: SignSessionOut): SignerChip[] {
     const state = mine.length === 0 ? "none" : mine.every((x) => x.signed) ? "signed" : "open";
     return {
       key: `${g.side}:${g.kind}:${g.ref}`,
-      name: g.name,
+      name: signerWho(g),
       side: g.side,
       mine: g.mine,
       count: mine.length,
@@ -83,6 +84,29 @@ export function myProgress(s: SignSessionOut): {
     f.fields.filter((x) => x.mine).every((x) => x.signed),
   ).length;
   return { files: mineFiles.length, signed, fields, ready: signed === mineFiles.length };
+}
+
+/**
+ * Bước Ký ondoc đang mở của HĐ (fix-cr181-uat, lỗi 1): người có lượt ⇒ "mine"; người ký công ty khác ⇒ "other" (lý do NOT_SIGNER);
+ * không có bước Ký ondoc ⇒ null. Trang HĐ dùng để thay khối «Ký số / Tải lên bản đã ký» cũ bằng thẻ «Ký hợp đồng».
+ */
+export function signStepOf(s: SignSessionOut): "mine" | "other" | null {
+  if (s.turn.allowed) return s.turn.step === "sign" ? "mine" : null;
+  return s.turn.reason === "NOT_SIGNER" ? "other" : null;
+}
+
+/** Tên người ký phía công ty còn phải ký (đích danh): người ký chưa ký hết chỗ của mình; không có chỗ ký ⇒ mọi người ký bên A. */
+export function waitingNames(s: SignSessionOut): string {
+  const need = signFiles(s);
+  const a = s.signers.filter((x) => x.side === "A");
+  const open = a.filter((g) =>
+    need.some((f) =>
+      f.fields.some(
+        (x) => x.side === "A" && x.signer_kind === g.kind && x.signer_ref === g.ref && !x.signed,
+      ),
+    ),
+  );
+  return [...new Set((open.length ? open : a).map(signerWho))].join(", ");
 }
 
 /** Có tệp cần ký (hiện khung «Ký trên tài liệu» ở thẻ duyệt). */

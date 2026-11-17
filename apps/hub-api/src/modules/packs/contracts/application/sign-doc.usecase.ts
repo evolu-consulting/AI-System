@@ -1,12 +1,13 @@
 // CR-181 · s8 phần A · «Ký trên tài liệu» phía HĐ — use case (lớp 2, không SQL): bật/tắt «Cần ký» (BR-T1, Q13), người ký (Q2), đặt chỗ ký
 // (BR-C1/C2), phiên chuẩn bị/ký/xem (`sessionMode`). Số câu SQL cố định: session = facts + (tệp, đối tác, cờ, chỗ ký, bản) ≤ 6; PATCH/PUT = 2 tx
 // nhỏ (kiểm → đọc tệp ngoài tx → ghi). Nội dung tệp đọc từ FileBox NGOÀI tx.
-import type {
-  SignFieldOut,
-  SignFileOut,
-  SignReadinessOut,
-  SignSessionOut,
-  SignSignerOut,
+import {
+  membersLabel,
+  type SignFieldOut,
+  type SignFileOut,
+  type SignReadinessOut,
+  type SignSessionOut,
+  type SignSignerOut,
 } from "@ai/contracts/pack-contracts";
 import type { PackUow, PackWho } from "../../kit/public";
 import { type ContractFileFacts, isContractFilesLocked } from "../domain/contract-files.rules";
@@ -41,7 +42,14 @@ import type {
 export type { SignDocRepos } from "./sign-doc.ports";
 
 /** Người ký công ty của bước Ký (Q2): người cụ thể hoặc nhóm. `mine` (tuỳ chọn) = người gọi thuộc nhóm đó. */
-export type CompanySigner = { kind: "user" | "group"; id: string; name: string; mine?: boolean };
+export type CompanySigner = {
+  kind: "user" | "group";
+  id: string;
+  name: string;
+  mine?: boolean;
+  /** Kiểu nhóm: thành viên (tên) để nói đích danh người ký tiếp. */
+  members?: { id: string; name: string }[];
+};
 
 export type SignDocFailKind =
   | "not_found"
@@ -98,7 +106,14 @@ export function buildSigners(
   const a: SignSignerOut[] = company.map((c) =>
     c.kind === "user"
       ? { side: "A", kind: "user", ref: c.id, name: c.name, mine: c.id === me }
-      : { side: "A", kind: "group", ref: c.id, name: `Đại diện ${c.name}`, mine: c.mine === true },
+      : {
+          side: "A",
+          kind: "group",
+          ref: c.id,
+          name: `Đại diện ${c.name}`,
+          mine: c.mine === true,
+          ...(c.members?.length ? { members: c.members } : {}),
+        },
   );
   const email = partner?.email?.trim().toLowerCase();
   const b: SignSignerOut[] = email
@@ -119,12 +134,19 @@ export function buildSigners(
 const maskField = (f: SignFieldOut): SignFieldOut =>
   f.signer_kind === "partner" ? { ...f, signer_ref: PARTNER_REF_MASK } : f;
 
+/** Nhãn chỗ ký: người ký kiểu nhóm có thành viên ⇒ tên người («Hùng, Mai»); còn lại giữ nhãn đã lưu. */
+const whoLabel = (f: SignFieldRowP, signers: readonly SignerEntry[]): string => {
+  const k = signerKey(f.signer_kind, f.signer_ref);
+  const g = signers.find((s) => s.kind === "group" && signerKey(s.kind, s.ref) === k);
+  return g?.members?.length ? membersLabel(g.members.map((m) => m.name)) : f.label;
+};
+
 export const fieldOut = (f: SignFieldRowP, signers: readonly SignerEntry[]): SignFieldOut => ({
   id: f.id,
   side: f.side,
   signer_kind: f.signer_kind,
   signer_ref: f.signer_ref,
-  label: f.label,
+  label: whoLabel(f, signers),
   parts: f.parts,
   mine: signers.some(
     (s) => s.mine && signerKey(s.kind, s.ref) === signerKey(f.signer_kind, f.signer_ref),

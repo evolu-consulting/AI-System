@@ -19,10 +19,15 @@ import {
   SIGN_SALE,
   SIGN_SELF,
   SIGN_SIGNER_GROUP,
+  SIGN_SIGNER_USER,
   SIGN_TENANT,
+  type SignSampleState,
+  type SignSampleStep,
+  signerNeedsAdd,
   signFlowOrder,
   signFlowStages,
   signFlowTrigger,
+  signPartnerKey,
   signSeedGuard,
   signSettingsBody,
   signSettingsNeeded,
@@ -84,6 +89,32 @@ async function enableOnDoc(hubUrl: string, authUrl: string, pw: string): Promise
     "bật ký trên tài liệu",
   );
   console.log(`${TAG}: đã bật ký trên tài liệu cho ${SIGN_TENANT}`);
+}
+
+/** 1b) Giám đốc demo phải thuộc nhóm người ký (UAT: «chưa đến lượt» khi thiếu). Chỉ THÊM; có rồi ⇒ bỏ qua. */
+async function ensureSigner(admin: Call, tid: string): Promise<void> {
+  const gj = must(
+    await admin("GET", `/admin/groups?tenant_id=${tid}&limit=200`),
+    [200],
+    "đọc nhóm",
+  );
+  const gid = String(
+    (gj.items as Json[]).find((g) => g.key === SIGN_SIGNER_GROUP)?.id ??
+      fail(`thiếu nhóm ${SIGN_SIGNER_GROUP} (chạy --org-only trước)`),
+  );
+  const mem = must(
+    await admin("GET", `/admin/groups/${gid}/members?limit=200`),
+    [200],
+    "đọc thành viên",
+  );
+  if (!signerNeedsAdd((mem.items as Json[]).map((m) => String(m.username))))
+    return void console.log(`${TAG}: ${SIGN_SIGNER_USER} đã thuộc nhóm ${SIGN_SIGNER_GROUP}`);
+  must(
+    await admin("POST", `/admin/groups/${gid}/members`, { usernames: [SIGN_SIGNER_USER] }),
+    [200, 201],
+    "thêm người ký vào nhóm",
+  );
+  console.log(`${TAG}: đã thêm ${SIGN_SIGNER_USER} vào nhóm ${SIGN_SIGNER_GROUP}`);
 }
 
 /** 2) Quy trình theo tên (có ⇒ ghi đè bước, không nhân bản) → PUT → Áp dụng → đưa lên đầu thứ tự. */
@@ -152,10 +183,12 @@ const pdfForm = (name: string, bytes: Uint8Array): FormData => {
   return f;
 };
 
-/** 3) HĐ Nháp mẫu + 2 PDF (đúng đường API của sale; HĐ tạo bằng SQL như seed-kind-samples). */
-async function ensureSample(sql: Sql, tid: string, hubUrl: string, authUrl: string, pw: string) {
-  const [st] = await sql<{ status: string }[]>`select status from contracts.contracts
-    where id = ${SIGN_CONTRACT_ID}::uuid and tenant_id = ${tid}::uuid`;
+/** Trạng thái hiện có của HĐ mẫu + sổ đối tác (để lập kế hoạch idempotent). */
+async function sampleState(sql: Sql, tid: string): Promise<SignSampleState> {
+  const [st] = await sql<
+    { status: string; file_id: string | null }[]
+  >`select status, file_id::text as file_id
+    from contracts.contracts where id = ${SIGN_CONTRACT_ID}::uuid and tenant_id = ${tid}::uuid`;
   const names = st
     ? (
         await sql<
@@ -163,35 +196,72 @@ async function ensureSample(sql: Sql, tid: string, hubUrl: string, authUrl: stri
         >`select name from contracts.contract_files where contract_id = ${SIGN_CONTRACT_ID}::uuid`
       ).map((r) => r.name)
     : [];
-  const steps = planSignSample({ exists: !!st, status: st?.status ?? null, fileNames: names });
+  const [pc] = await sql<{ n: number }[]>`select count(*)::int as n from contracts.partner_contacts
+    where tenant_id = ${tid}::uuid and party_key = ${signPartnerKey()} and email is not null and btrim(email) <> ''`;
+  return {
+    exists: !!st,
+    status: st?.status ?? null,
+    fileNames: names,
+    hasMain: !!st?.file_id,
+    hasPartnerContact: (pc?.n ?? 0) > 0,
+  };
+}
+
+type StepCtx = { sql: Sql; tid: string; uid: string; sale: Call };
+const stepSql: Partial<Record<SignSampleStep, (c: StepCtx) => Promise<void>>> = {
+  create: async ({ sql, tid, uid }) => {
+    const fields = {
+      title: SIGN_CONTRACT_TITLE,
+      supplier_name: SIGN_SELF.name,
+      supplier_tax_id: SIGN_SELF.tax,
+      buyer_name: SIGN_PARTNER.name,
+      buyer_tax_id: SIGN_PARTNER.tax,
+      partner_email: SIGN_PARTNER.email,
+      total_value: SIGN_CONTRACT_VALUE,
+    };
+    await sql`insert into contracts.contracts (id, tenant_id, kind, title, direction, status, extract_state, owner_user_id, created_by, version, fields)
+      values (${SIGN_CONTRACT_ID}, ${tid}, 'contract', ${SIGN_CONTRACT_TITLE}, 'sale', 'draft', 'ready', ${uid}, ${uid}, 1, ${sql.json(fields as never)})
+      on conflict (id) do nothing`;
+  },
+  // Tệp hợp đồng vừa tải (tệp kèm) ⇒ thành tệp chính của HĐ (Q14); bỏ liên kết tệp kèm. Chỉ khi HĐ chưa có tệp chính.
+  promote_main: async ({ sql, tid }) => {
+    await sql`update contracts.contracts set file_id = cf.file_id
+      from contracts.contract_files cf join contracts.files f on f.id = cf.file_id and f.tenant_id = cf.tenant_id
+      where contracts.contracts.id = ${SIGN_CONTRACT_ID}::uuid and contracts.contracts.tenant_id = ${tid}::uuid
+        and contracts.contracts.file_id is null and cf.contract_id = contracts.contracts.id and f.name = ${CONTRACT_FILE}`;
+    await sql`delete from contracts.contract_files cf using contracts.contracts c
+      where c.id = ${SIGN_CONTRACT_ID}::uuid and c.tenant_id = ${tid}::uuid and cf.contract_id = c.id and cf.file_id = c.file_id`;
+  },
+  // Bên B của «Tự đặt theo ĐẠI DIỆN BÊN B» = liên hệ đầu tiên CÓ email của đối tác (sổ đối tác), không phải `fields.partner_email`.
+  partner_contact: async ({ sql, tid, uid }) => {
+    await sql`insert into contracts.partner_contacts (tenant_id, party_key, name, email, created_by)
+      values (${tid}::uuid, ${signPartnerKey()}, ${SIGN_PARTNER.name}, ${SIGN_PARTNER.email}, ${uid}::uuid)`;
+  },
+};
+
+async function uploadSample(sale: Call, step: SignSampleStep): Promise<void> {
+  const main = step === "file_contract";
+  const doc = main ? await contractPdf() : await annexPdf();
+  const name = main ? CONTRACT_FILE : ANNEX_FILE;
+  must(
+    await sale("POST", `${BASE}/${SIGN_CONTRACT_ID}/files`, pdfForm(name, doc.bytes)),
+    [201],
+    `tải ${name}`,
+  );
+}
+
+/** 3) HĐ Nháp mẫu + 2 PDF (đúng đường API của sale; HĐ tạo bằng SQL như seed-kind-samples). */
+async function ensureSample(sql: Sql, tid: string, hubUrl: string, authUrl: string, pw: string) {
+  const steps = planSignSample(await sampleState(sql, tid));
   if (!steps.length) return void console.log(`${TAG}: HĐ mẫu đã có — bỏ qua`);
   const [u] = await sql<{ id: string }[]>`select id from admin.users
     where tenant_id = ${tid}::uuid and username = ${SIGN_SALE}`;
   const uid = u?.id ?? fail(`không có người dùng ${SIGN_SALE} (chạy --org-only trước)`);
   const sale = caller(hubUrl, await login(authUrl, SIGN_TENANT, SIGN_SALE, pw));
   for (const step of steps) {
-    if (step === "create") {
-      const fields = {
-        title: SIGN_CONTRACT_TITLE,
-        supplier_name: SIGN_SELF.name,
-        supplier_tax_id: SIGN_SELF.tax,
-        buyer_name: SIGN_PARTNER.name,
-        buyer_tax_id: SIGN_PARTNER.tax,
-        partner_email: SIGN_PARTNER.email,
-        total_value: SIGN_CONTRACT_VALUE,
-      };
-      await sql`insert into contracts.contracts (id, tenant_id, kind, title, direction, status, extract_state, owner_user_id, created_by, version, fields)
-        values (${SIGN_CONTRACT_ID}, ${tid}, 'contract', ${SIGN_CONTRACT_TITLE}, 'sale', 'draft', 'ready', ${uid}, ${uid}, 1, ${sql.json(fields as never)})
-        on conflict (id) do nothing`;
-    } else {
-      const doc = step === "file_contract" ? await contractPdf() : await annexPdf();
-      const name = step === "file_contract" ? CONTRACT_FILE : ANNEX_FILE;
-      must(
-        await sale("POST", `${BASE}/${SIGN_CONTRACT_ID}/files`, pdfForm(name, doc.bytes)),
-        [201],
-        `tải ${name}`,
-      );
-    }
+    const run = stepSql[step];
+    if (run) await run({ sql, tid, uid, sale });
+    else await uploadSample(sale, step);
   }
   console.log(`${TAG}: HĐ mẫu — ${steps.join(" → ")}`);
 }
@@ -219,6 +289,7 @@ async function main(): Promise<void> {
   const sql = postgres(url, { max: 1, onnotice: () => {} });
   try {
     await enableOnDoc(hubUrl, authUrl, pw);
+    await ensureSigner(admin, tid);
     await ensureFlow(hub, admin, tid);
     await ensureSample(sql, tid, hubUrl, authUrl, pw);
   } finally {

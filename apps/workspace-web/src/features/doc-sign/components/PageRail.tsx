@@ -32,7 +32,7 @@ function Thumb({ doc, n }: { doc: PDFDocumentProxy; n: number }) {
       task?.cancel();
     };
   }, [doc, n]);
-  return <canvas ref={ref} className="mx-auto block border bg-white" />;
+  return <canvas ref={ref} className="mx-auto block h-auto max-w-full border bg-white" />;
 }
 
 export function PageRail(p: {
@@ -52,7 +52,7 @@ export function PageRail(p: {
         <Button
           key={`page-${i + 1}`}
           variant="quiet"
-          className={`h-auto flex-col gap-1 p-1 ${p.current === i ? "bg-accent" : ""}`}
+          className={`h-auto w-full min-w-0 flex-col gap-1 p-1 ${p.current === i ? "bg-accent" : ""}`}
           aria-label={t("contracts.docsign.railPage", { n: i + 1 })}
           aria-current={p.current === i ? "true" : undefined}
           onClick={() => p.onGo(i)}

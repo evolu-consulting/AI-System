@@ -92,7 +92,19 @@ export type SignSignerOut = {
   /** Người: tên; nhóm: «Đại diện <nhóm>»; đối tác: tên liên hệ. */
   name: string;
   mine: boolean;
+  /** Người ký kiểu NHÓM: thành viên (tên đầy đủ) để màn hình nói đích danh ai ký tiếp; vắng/rỗng ⇒ chỉ có tên nhóm. */
+  members?: { id: string; name: string }[];
 };
+
+/** Nhiều người ⇒ tên riêng (từ cuối) cách nhau dấu phẩy: «Hùng, Mai»; một người ⇒ tên đầy đủ. */
+export function membersLabel(names: readonly string[]): string {
+  const n = names.map((x) => x.trim()).filter((x) => x !== "");
+  if (n.length <= 1) return n[0] ?? "";
+  return n.map((x) => x.split(/\s+/).at(-1) ?? x).join(", ");
+}
+/** Người ký nói đích danh: nhóm có thành viên ⇒ tên người; còn lại ⇒ `name`. */
+export const signerWho = (s: Pick<SignSignerOut, "name" | "members">): string =>
+  s.members?.length ? membersLabel(s.members.map((m) => m.name)) : s.name;
 export type SignFieldOut = {
   id: string;
   side: SignSide;

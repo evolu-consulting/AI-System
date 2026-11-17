@@ -33,7 +33,7 @@ export function pickNav(
 ): SettingsNavId {
   if (want === "signature") return want; // CR-181 · nhóm Chung: mọi người xem được, không cần gói nào
   if (want === "feed") return feed ? want : contracts ? firstAllowed(owner) : "feed";
-  if (!contracts) return "feed";
+  if (!contracts) return feed ? "feed" : "signature"; // không gói nào ⇒ chỉ còn nhóm «Chung»
   return allowedSections(owner).includes(want) ? want : firstAllowed(owner);
 }
 const firstAllowed = (owner: boolean): SectionId => allowedSections(owner)[0] ?? DEFAULT_SECTION;

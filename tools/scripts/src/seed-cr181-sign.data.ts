@@ -198,8 +198,21 @@ export const contractPdf = (): Promise<SamplePdf> => render(CONTRACT_SPEC);
 export const annexPdf = (): Promise<SamplePdf> => render(ANNEX_SPEC);
 
 /** Kế hoạch idempotent của HĐ mẫu: đã rời Nháp ⇒ không làm gì; tệp chỉ tải khi chưa có tệp cùng tên. */
-export type SignSampleState = { exists: boolean; status: string | null; fileNames: string[] };
-export type SignSampleStep = "create" | "file_contract" | "file_annex";
+export type SignSampleState = {
+  exists: boolean;
+  status: string | null;
+  fileNames: string[];
+  /** HĐ đã có tệp CHÍNH (`contracts.file_id`)? vắng ⇒ coi là chưa (HĐ mới). */
+  hasMain?: boolean;
+  /** Đối tác đã có liên hệ CÓ email trong sổ đối tác (Bên B của «Tự đặt theo ĐẠI DIỆN BÊN B»)? vắng ⇒ chưa. */
+  hasPartnerContact?: boolean;
+};
+export type SignSampleStep =
+  | "create"
+  | "file_contract"
+  | "promote_main"
+  | "file_annex"
+  | "partner_contact";
 export const CONTRACT_FILE = "hop-dong-hop-tac-mau.pdf";
 export const ANNEX_FILE = "phu-luc-01-mau.pdf";
 export function planSignSample(st: SignSampleState): SignSampleStep[] {
@@ -207,6 +220,17 @@ export function planSignSample(st: SignSampleState): SignSampleStep[] {
   const steps: SignSampleStep[] = [];
   if (!st.exists) steps.push("create");
   if (!st.fileNames.includes(CONTRACT_FILE)) steps.push("file_contract");
+  // Q14: «Cần ký» mặc định bật cho tệp CHÍNH ⇒ hợp đồng mẫu phải là tệp chính của HĐ, không phải tệp kèm.
+  if (!st.hasMain) steps.push("promote_main");
   if (!st.fileNames.includes(ANNEX_FILE)) steps.push("file_annex");
+  if (!st.hasPartnerContact) steps.push("partner_contact");
   return steps;
 }
+
+/** Khoá đối tác như `contracts.partner_role_of` (mã số thuế). */
+export const signPartnerKey = (): string => `tax:${SIGN_PARTNER.tax}`;
+
+/** Người ký công ty (giám đốc demo) phải thuộc nhóm `nguoi-ky-hd`: chưa có ⇒ cần thêm (chỉ thêm, không bớt ai). */
+export const SIGN_SIGNER_USER = "demo-owner";
+export const signerNeedsAdd = (memberUsernames: readonly string[]): boolean =>
+  !memberUsernames.includes(SIGN_SIGNER_USER);

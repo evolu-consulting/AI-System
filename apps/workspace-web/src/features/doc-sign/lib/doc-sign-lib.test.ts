@@ -163,6 +163,30 @@ describe("findAnchors", () => {
     expect(a.A?.y).toBeCloseTo(200 - 45 - 160 / 2.4 / 2, 6);
     expect(a.B?.x).toBeCloseTo(300 - 5, 6);
   });
+  test("fix-cr181-uat · lỗi 3 · có dòng «(Ký, ghi rõ họ tên)» ⇒ ô nằm dưới dòng đó, cả Bên A lẫn Bên B", () => {
+    const a = findAnchors([
+      {
+        page: 5,
+        items: [
+          item("ĐẠI DIỆN BÊN A", 100, 300),
+          item("(Ký, ghi rõ họ tên)", 100, 286),
+          item("ĐẠI DIỆN BÊN B", 340, 300),
+          item("(Ký, ghi rõ họ tên)", 340, 286),
+        ],
+      },
+    ]);
+    const h = 160 / 2.4;
+    expect(a.A?.y).toBeCloseTo(286 - 6 - h, 6); // đỉnh ô dưới dòng chú thích, không đè chữ
+    expect((a.A?.y ?? 0) + h).toBeLessThan(286);
+    expect(a.B?.x).toBeCloseTo(340 - 5, 6);
+    expect(a.B?.y).toBeCloseTo(286 - 6 - h, 6);
+  });
+  test("dòng chú thích của cột khác (lệch ngang xa) không bị nhận nhầm", () => {
+    const a = findAnchors([
+      { page: 0, items: [item("ĐẠI DIỆN BÊN A", 100, 300), item("(Ký, ghi rõ họ tên)", 400, 286)] },
+    ]);
+    expect(a.A?.y).toBeCloseTo(300 - 45 - 160 / 2.4 / 2, 6);
+  });
   test("NFC: chuỗi tổ hợp vẫn khớp", () => {
     const a = findAnchors([{ page: 0, items: [item("ĐẠI DIỆN BÊN A".normalize("NFD"))] }]);
     expect(a.A).not.toBeNull();

@@ -8,7 +8,9 @@ import {
   myProgress,
   signErrKey,
   signerChips,
+  signStepOf,
   switchWhy,
+  waitingNames,
 } from "./contract-view";
 
 const fld = (o: Partial<SignFieldOut>): SignFieldOut =>
@@ -171,5 +173,51 @@ describe("dải người ký, danh sách kiểm tra, mã lỗi", () => {
     expect(signErrKey("SIGN_REQUIRED")).toBe("contracts.docsignc.err.SIGN_REQUIRED");
     expect(signErrKey("SIGN_NOT_READY")).toBe("contracts.docsignc.err.SIGN_NOT_READY");
     expect(signErrKey("OTHER")).toBeNull();
+  });
+});
+
+describe("fix-cr181-uat · lỗi 1/2 · bước Ký trên tài liệu ở trang HĐ", () => {
+  const grp = {
+    side: "A",
+    kind: "group",
+    ref: "g1",
+    name: "Đại diện Người ký HĐ",
+    mine: false,
+  } as const;
+  const members = [
+    { id: "u1", name: "Nguyễn Văn Hùng" },
+    { id: "u2", name: "Trần Thị Mai" },
+  ];
+  test("signStepOf: có lượt ký ⇒ mine, không phải người ký ⇒ other, bước khác ⇒ null", () => {
+    expect(signStepOf(sess([], { turn: { allowed: true, step: "sign", run_id: "r" } }))).toBe(
+      "mine",
+    );
+    expect(signStepOf(sess([], { turn: { allowed: false, reason: "NOT_SIGNER" } }))).toBe("other");
+    expect(signStepOf(sess([], { turn: { allowed: true, step: "approve", run_id: "r" } }))).toBe(
+      null,
+    );
+    expect(signStepOf(sess([], { turn: { allowed: false, reason: "NO_SIGN_STEP" } }))).toBe(null);
+  });
+  test("nhóm có thành viên ⇒ chip và dòng «chờ» nói tên người", () => {
+    const f = file({ fields: [fld({ signer_kind: "group", signer_ref: "g1" })] });
+    const s = sess([f], { signers: [{ ...grp, members }] });
+    expect(signerChips(s)[0]?.name).toBe("Hùng, Mai");
+    expect(waitingNames(s)).toBe("Hùng, Mai");
+  });
+  test("nhóm không có thành viên ⇒ vẫn tên nhóm, người đã ký hết không còn trong «chờ»", () => {
+    expect(signerChips(sess([], { signers: [grp] }))[0]?.name).toBe("Đại diện Người ký HĐ");
+    const f = file({
+      fields: [
+        fld({ signer_ref: "u1", signed: true }),
+        fld({ id: "g", signer_ref: "u2", signed: false }),
+      ],
+    });
+    const s = sess([f], {
+      signers: [
+        { side: "A", kind: "user", ref: "u1", name: "An", mine: false },
+        { side: "A", kind: "user", ref: "u2", name: "Bình", mine: false },
+      ],
+    });
+    expect(waitingNames(s)).toBe("Bình");
   });
 });

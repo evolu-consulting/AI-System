@@ -15,6 +15,7 @@
       "boxMine": "Bạn có {{fields}} chỗ ký trên {{files}} tệp",
       "boxDone": "đã ký {{signed}}/{{files}} tệp",
       "turnTitle": "Ký hợp đồng",
+      "waitFor": "Chờ {{name}} ký",
       "gate": "Ký xong các chỗ ký của bạn rồi mới bấm Đạt được",
       "main": "Hợp đồng chính",
       "needsSign": "Cần ký: {{name}}",
