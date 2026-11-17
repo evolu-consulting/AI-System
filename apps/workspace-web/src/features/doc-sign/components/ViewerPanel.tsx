@@ -1,12 +1,13 @@
 // CR-181 · s14 · khung phải: «Chữ ký trong bản này» (bấm ⇒ nhảy tới + viền vàng) và «Chỗ ký còn chờ».
 import type { SignFieldOut, SignPart, SignVersionMarkOut } from "@ai/contracts/pack-contracts";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { useTranslation } from "react-i18next";
 import { jumpTarget, placementKey } from "../lib/viewer-model";
 
 export type ViewerJump = { page: number; flash: number[]; parts: SignPart[] };
 
 const ROW =
-  "flex w-full flex-col items-start gap-0.5 rounded-md border bg-card p-2 text-left text-sm hover:bg-accent max-sm:min-h-11";
+  "h-auto w-full flex-col items-start justify-start gap-0.5 whitespace-normal rounded-md border bg-card p-2 text-left text-sm font-normal text-foreground hover:bg-accent";
 
 export function ViewerPanel(p: {
   marks: SignVersionMarkOut[];
@@ -28,8 +29,10 @@ export function ViewerPanel(p: {
         {p.marks.map((m, i) => {
           const j = jumpTarget(m.parts);
           return (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               // biome-ignore lint/suspicious/noArrayIndexKey: danh sách chỉ đọc, không đổi chỗ
               key={`${m.signer_id}-${i}`}
               data-testid="viewer-mark"
@@ -50,7 +53,7 @@ export function ViewerPanel(p: {
                 {p.atOf(m)}
                 {p.kind ? ` · ${t(`contracts.docsign.viewer.${p.kind}`)}` : ""}
               </span>
-            </button>
+            </Button>
           );
         })}
       </section>
@@ -62,8 +65,10 @@ export function ViewerPanel(p: {
           {p.pending.map((f) => {
             const j = jumpTarget(f.parts);
             return (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 key={f.id}
                 data-testid="viewer-pending"
                 className={ROW}
@@ -77,7 +82,7 @@ export function ViewerPanel(p: {
                     pages: f.parts.map((x) => x.page + 1).join(", "),
                   })}
                 </span>
-              </button>
+              </Button>
             );
           })}
         </section>
