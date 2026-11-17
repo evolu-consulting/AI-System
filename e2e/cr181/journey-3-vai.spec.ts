@@ -73,7 +73,9 @@ test("K05-K06 · trưởng phòng (khác người tạo): «Đạt» khoá khi c
   await addMineAt(page, 0, 0.5, 0.97);
   await dragMarkAcrossSeam(page, 0);
   await expect(page.getByRole("group", { name: /Chữ ký, Giáp lai 2 trang/ })).toBeVisible();
-  await addMineByMenu(page, 2, 0.5, 0.5); // đường chuột phải (CR-181 fix chuột phải)
+  await addMineByMenu(page, 0, 0.3, 0.3); // đường chuột phải trang 1 (CR-181 fix chuột phải)
+  await expect(page.getByRole("group", { name: /^Chữ ký, Trang 1$/ })).toBeVisible();
+  await addMineAt(page, 2, 0.5, 0.5);
   await page.getByRole("group", { name: /Chữ ký, Trang 3/ }).click();
   await page.getByRole("button", { name: "Chép sang mọi trang" }).click();
   await expect(page.getByRole("group", { name: /Chữ ký, Trang 6/ })).toBeVisible();
