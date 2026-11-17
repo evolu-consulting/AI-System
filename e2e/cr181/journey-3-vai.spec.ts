@@ -155,7 +155,7 @@ test("K09 · Hồ sơ duyệt hiện hình chữ ký; người chỉ xem HĐ th�
     const page = await newPage(browser);
     await loginCw(page, E, user);
     await page.goto(`${E.cw}/contracts/c/${id}`);
-    await page.getByText("Hồ sơ duyệt", { exact: true }).first().click(); // khối gập
+    await page.getByTestId("approval-record").locator("summary").click(); // khối gập
     await expect(page.getByTestId("record-line").first()).toBeVisible({ timeout: 60_000 });
     return page;
   };

@@ -31,5 +31,5 @@ Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: test e2e + seed e2e)
 
 ## Việc còn lại
-- cr181 lượt 18: 16 pass / 1 fail (K09). K01–K08 + 390px + ca chuột phải xanh. K09: «Hồ sơ duyệt» là khối gập, test chưa mở khối ⇒ đã thêm bước bấm mở (chưa chạy lại; chưa kiểm hình chữ ký trong Hồ sơ và «người chỉ xem không thấy ý kiến»).
+- cr181 lượt 19 (16 pass / 1 fail, K09: getByText("Hồ sơ duyệt") không bấm được ⇒ đổi sang `approval-record` › summary, chưa chạy lại). Lượt 18: 16 pass / 1 fail (K09). K01–K08 + 390px + ca chuột phải xanh. K09: «Hồ sơ duyệt» là khối gập, test chưa mở khối ⇒ đã thêm bước bấm mở (chưa chạy lại; chưa kiểm hình chữ ký trong Hồ sơ và «người chỉ xem không thấy ý kiến»).
 - cr127: điều phối chạy ở checkout chính. cr141-sign-or-upload không thuộc job nào.
