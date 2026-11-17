@@ -19,7 +19,7 @@ export function OpenSign({
 }) {
   return (
     <Button asChild variant={variant} size="sm">
-      <Link to={"/contracts/sign/$id" as never} params={{ id } as never} data-testid={testId}>
+      <Link to="/contracts/sign/$id" params={{ id }} data-testid={testId}>
         {label}
       </Link>
     </Button>

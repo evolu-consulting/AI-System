@@ -30,14 +30,14 @@ import { Route as AuthedContractsOrgRouteImport } from './routes/_authed/contrac
 import { Route as AuthedContractsPartnerInboxRouteImport } from './routes/_authed/contracts/partner-inbox'
 import { Route as AuthedContractsPartnersRouteImport } from './routes/_authed/contracts/partners'
 import { Route as AuthedContractsProductsRouteImport } from './routes/_authed/contracts/products'
-import { Route as AuthedContractsSignIdRouteImport } from './routes/_authed/contracts/sign/$id'
-import { Route as AuthedContractsSignedIdRouteImport } from './routes/_authed/contracts/signed/$id'
 import { Route as AuthedContractsCIdRouteImport } from './routes/_authed/contracts/c/$id'
 import { Route as AuthedContractsCNewRouteImport } from './routes/_authed/contracts/c/new'
 import { Route as AuthedContractsRequestsIndexRouteImport } from './routes/_authed/contracts/requests/index'
 import { Route as AuthedContractsRequestsRunIdRouteImport } from './routes/_authed/contracts/requests/$runId'
 import { Route as AuthedContractsSettingsIndexRouteImport } from './routes/_authed/contracts/settings/index'
 import { Route as AuthedContractsSettingsMembersRouteImport } from './routes/_authed/contracts/settings/members'
+import { Route as AuthedContractsSignIdRouteImport } from './routes/_authed/contracts/sign/$id'
+import { Route as AuthedContractsSignedIdRouteImport } from './routes/_authed/contracts/signed/$id'
 import { Route as AuthedContractsRequestsNewFlowKeyRouteImport } from './routes/_authed/contracts/requests/new/$flowKey'
 
 const IndexRoute = IndexRouteImport.update({
@@ -74,14 +74,14 @@ const AuthedCommunityRoute = AuthedCommunityRouteImport.update({
   path: '/community',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedMySignatureRoute = AuthedMySignatureRouteImport.update({
-  id: '/my-signature',
-  path: '/my-signature',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedContractsRoute = AuthedContractsRouteImport.update({
   id: '/contracts',
   path: '/contracts',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedMySignatureRoute = AuthedMySignatureRouteImport.update({
+  id: '/my-signature',
+  path: '/my-signature',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedCommunityIndexRoute = AuthedCommunityIndexRouteImport.update({
@@ -147,16 +147,6 @@ const AuthedContractsProductsRoute = AuthedContractsProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => AuthedContractsRoute,
 } as any)
-const AuthedContractsSignIdRoute = AuthedContractsSignIdRouteImport.update({
-  id: '/sign/$id',
-  path: '/sign/$id',
-  getParentRoute: () => AuthedContractsRoute,
-} as any)
-const AuthedContractsSignedIdRoute = AuthedContractsSignedIdRouteImport.update({
-  id: '/signed/$id',
-  path: '/signed/$id',
-  getParentRoute: () => AuthedContractsRoute,
-} as any)
 const AuthedContractsCIdRoute = AuthedContractsCIdRouteImport.update({
   id: '/c/$id',
   path: '/c/$id',
@@ -191,6 +181,16 @@ const AuthedContractsSettingsMembersRoute =
     path: '/settings/members',
     getParentRoute: () => AuthedContractsRoute,
   } as any)
+const AuthedContractsSignIdRoute = AuthedContractsSignIdRouteImport.update({
+  id: '/sign/$id',
+  path: '/sign/$id',
+  getParentRoute: () => AuthedContractsRoute,
+} as any)
+const AuthedContractsSignedIdRoute = AuthedContractsSignedIdRouteImport.update({
+  id: '/signed/$id',
+  path: '/signed/$id',
+  getParentRoute: () => AuthedContractsRoute,
+} as any)
 const AuthedContractsRequestsNewFlowKeyRoute =
   AuthedContractsRequestsNewFlowKeyRouteImport.update({
     id: '/requests/new/$flowKey',
@@ -220,11 +220,11 @@ export interface FileRoutesByFullPath {
   '/community/': typeof AuthedCommunityIndexRoute
   '/contracts/': typeof AuthedContractsIndexRoute
   '/contracts/c/$id': typeof AuthedContractsCIdRoute
-  '/contracts/sign/$id': typeof AuthedContractsSignIdRoute
-  '/contracts/signed/$id': typeof AuthedContractsSignedIdRoute
   '/contracts/c/new': typeof AuthedContractsCNewRoute
   '/contracts/requests/$runId': typeof AuthedContractsRequestsRunIdRoute
   '/contracts/settings/members': typeof AuthedContractsSettingsMembersRoute
+  '/contracts/sign/$id': typeof AuthedContractsSignIdRoute
+  '/contracts/signed/$id': typeof AuthedContractsSignedIdRoute
   '/contracts/requests/': typeof AuthedContractsRequestsIndexRoute
   '/contracts/settings/': typeof AuthedContractsSettingsIndexRoute
   '/contracts/requests/new/$flowKey': typeof AuthedContractsRequestsNewFlowKeyRoute
@@ -235,6 +235,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/sso': typeof SsoRoute
   '/terms': typeof TermsRoute
+  '/my-signature': typeof AuthedMySignatureRoute
   '/community/$': typeof AuthedCommunitySplatRoute
   '/contracts/approvals': typeof AuthedContractsApprovalsRoute
   '/contracts/feedback': typeof AuthedContractsFeedbackRoute
@@ -247,13 +248,12 @@ export interface FileRoutesByTo {
   '/contracts/products': typeof AuthedContractsProductsRoute
   '/community': typeof AuthedCommunityIndexRoute
   '/contracts': typeof AuthedContractsIndexRoute
-  '/my-signature': typeof AuthedMySignatureRoute
   '/contracts/c/$id': typeof AuthedContractsCIdRoute
-  '/contracts/sign/$id': typeof AuthedContractsSignIdRoute
-  '/contracts/signed/$id': typeof AuthedContractsSignedIdRoute
   '/contracts/c/new': typeof AuthedContractsCNewRoute
   '/contracts/requests/$runId': typeof AuthedContractsRequestsRunIdRoute
   '/contracts/settings/members': typeof AuthedContractsSettingsMembersRoute
+  '/contracts/sign/$id': typeof AuthedContractsSignIdRoute
+  '/contracts/signed/$id': typeof AuthedContractsSignedIdRoute
   '/contracts/requests': typeof AuthedContractsRequestsIndexRoute
   '/contracts/settings': typeof AuthedContractsSettingsIndexRoute
   '/contracts/requests/new/$flowKey': typeof AuthedContractsRequestsNewFlowKeyRoute
@@ -282,11 +282,11 @@ export interface FileRoutesById {
   '/_authed/community/': typeof AuthedCommunityIndexRoute
   '/_authed/contracts/': typeof AuthedContractsIndexRoute
   '/_authed/contracts/c/$id': typeof AuthedContractsCIdRoute
-  '/_authed/contracts/sign/$id': typeof AuthedContractsSignIdRoute
-  '/_authed/contracts/signed/$id': typeof AuthedContractsSignedIdRoute
   '/_authed/contracts/c/new': typeof AuthedContractsCNewRoute
   '/_authed/contracts/requests/$runId': typeof AuthedContractsRequestsRunIdRoute
   '/_authed/contracts/settings/members': typeof AuthedContractsSettingsMembersRoute
+  '/_authed/contracts/sign/$id': typeof AuthedContractsSignIdRoute
+  '/_authed/contracts/signed/$id': typeof AuthedContractsSignedIdRoute
   '/_authed/contracts/requests/': typeof AuthedContractsRequestsIndexRoute
   '/_authed/contracts/settings/': typeof AuthedContractsSettingsIndexRoute
   '/_authed/contracts/requests/new/$flowKey': typeof AuthedContractsRequestsNewFlowKeyRoute
@@ -312,13 +312,14 @@ export interface FileRouteTypes {
     | '/contracts/partner-inbox'
     | '/contracts/partners'
     | '/contracts/products'
-    | '/contracts/signed/$id'
     | '/community/'
     | '/contracts/'
     | '/contracts/c/$id'
     | '/contracts/c/new'
     | '/contracts/requests/$runId'
     | '/contracts/settings/members'
+    | '/contracts/sign/$id'
+    | '/contracts/signed/$id'
     | '/contracts/requests/'
     | '/contracts/settings/'
     | '/contracts/requests/new/$flowKey'
@@ -329,6 +330,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/sso'
     | '/terms'
+    | '/my-signature'
     | '/community/$'
     | '/contracts/approvals'
     | '/contracts/feedback'
@@ -339,14 +341,14 @@ export interface FileRouteTypes {
     | '/contracts/partner-inbox'
     | '/contracts/partners'
     | '/contracts/products'
-    | '/contracts/signed/$id'
     | '/community'
     | '/contracts'
-    | '/my-signature'
     | '/contracts/c/$id'
     | '/contracts/c/new'
     | '/contracts/requests/$runId'
     | '/contracts/settings/members'
+    | '/contracts/sign/$id'
+    | '/contracts/signed/$id'
     | '/contracts/requests'
     | '/contracts/settings'
     | '/contracts/requests/new/$flowKey'
@@ -371,13 +373,14 @@ export interface FileRouteTypes {
     | '/_authed/contracts/partner-inbox'
     | '/_authed/contracts/partners'
     | '/_authed/contracts/products'
-    | '/_authed/contracts/signed/$id'
     | '/_authed/community/'
     | '/_authed/contracts/'
     | '/_authed/contracts/c/$id'
     | '/_authed/contracts/c/new'
     | '/_authed/contracts/requests/$runId'
     | '/_authed/contracts/settings/members'
+    | '/_authed/contracts/sign/$id'
+    | '/_authed/contracts/signed/$id'
     | '/_authed/contracts/requests/'
     | '/_authed/contracts/settings/'
     | '/_authed/contracts/requests/new/$flowKey'
@@ -443,18 +446,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedCommunityRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/my-signature': {
-      id: '/_authed/my-signature'
-      path: '/my-signature'
-      fullPath: '/my-signature'
-      preLoaderRoute: typeof AuthedMySignatureRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/contracts': {
       id: '/_authed/contracts'
       path: '/contracts'
       fullPath: '/contracts'
       preLoaderRoute: typeof AuthedContractsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/my-signature': {
+      id: '/_authed/my-signature'
+      path: '/my-signature'
+      fullPath: '/my-signature'
+      preLoaderRoute: typeof AuthedMySignatureRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/community/': {
@@ -541,20 +544,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedContractsProductsRouteImport
       parentRoute: typeof AuthedContractsRoute
     }
-    '/_authed/contracts/sign/$id': {
-      id: '/_authed/contracts/sign/$id'
-      path: '/sign/$id'
-      fullPath: '/contracts/sign/$id'
-      preLoaderRoute: typeof AuthedContractsSignIdRouteImport
-      parentRoute: typeof AuthedContractsRoute
-    }
-    '/_authed/contracts/signed/$id': {
-      id: '/_authed/contracts/signed/$id'
-      path: '/signed/$id'
-      fullPath: '/contracts/signed/$id'
-      preLoaderRoute: typeof AuthedContractsSignedIdRouteImport
-      parentRoute: typeof AuthedContractsRoute
-    }
     '/_authed/contracts/c/$id': {
       id: '/_authed/contracts/c/$id'
       path: '/c/$id'
@@ -597,6 +586,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedContractsSettingsMembersRouteImport
       parentRoute: typeof AuthedContractsRoute
     }
+    '/_authed/contracts/sign/$id': {
+      id: '/_authed/contracts/sign/$id'
+      path: '/sign/$id'
+      fullPath: '/contracts/sign/$id'
+      preLoaderRoute: typeof AuthedContractsSignIdRouteImport
+      parentRoute: typeof AuthedContractsRoute
+    }
+    '/_authed/contracts/signed/$id': {
+      id: '/_authed/contracts/signed/$id'
+      path: '/signed/$id'
+      fullPath: '/contracts/signed/$id'
+      preLoaderRoute: typeof AuthedContractsSignedIdRouteImport
+      parentRoute: typeof AuthedContractsRoute
+    }
     '/_authed/contracts/requests/new/$flowKey': {
       id: '/_authed/contracts/requests/new/$flowKey'
       path: '/requests/new/$flowKey'
@@ -633,11 +636,11 @@ interface AuthedContractsRouteChildren {
   AuthedContractsProductsRoute: typeof AuthedContractsProductsRoute
   AuthedContractsIndexRoute: typeof AuthedContractsIndexRoute
   AuthedContractsCIdRoute: typeof AuthedContractsCIdRoute
-  AuthedContractsSignIdRoute: typeof AuthedContractsSignIdRoute
-  AuthedContractsSignedIdRoute: typeof AuthedContractsSignedIdRoute
   AuthedContractsCNewRoute: typeof AuthedContractsCNewRoute
   AuthedContractsRequestsRunIdRoute: typeof AuthedContractsRequestsRunIdRoute
   AuthedContractsSettingsMembersRoute: typeof AuthedContractsSettingsMembersRoute
+  AuthedContractsSignIdRoute: typeof AuthedContractsSignIdRoute
+  AuthedContractsSignedIdRoute: typeof AuthedContractsSignedIdRoute
   AuthedContractsRequestsIndexRoute: typeof AuthedContractsRequestsIndexRoute
   AuthedContractsSettingsIndexRoute: typeof AuthedContractsSettingsIndexRoute
   AuthedContractsRequestsNewFlowKeyRoute: typeof AuthedContractsRequestsNewFlowKeyRoute
@@ -655,11 +658,11 @@ const AuthedContractsRouteChildren: AuthedContractsRouteChildren = {
   AuthedContractsProductsRoute: AuthedContractsProductsRoute,
   AuthedContractsIndexRoute: AuthedContractsIndexRoute,
   AuthedContractsCIdRoute: AuthedContractsCIdRoute,
-  AuthedContractsSignIdRoute: AuthedContractsSignIdRoute,
-  AuthedContractsSignedIdRoute: AuthedContractsSignedIdRoute,
   AuthedContractsCNewRoute: AuthedContractsCNewRoute,
   AuthedContractsRequestsRunIdRoute: AuthedContractsRequestsRunIdRoute,
   AuthedContractsSettingsMembersRoute: AuthedContractsSettingsMembersRoute,
+  AuthedContractsSignIdRoute: AuthedContractsSignIdRoute,
+  AuthedContractsSignedIdRoute: AuthedContractsSignedIdRoute,
   AuthedContractsRequestsIndexRoute: AuthedContractsRequestsIndexRoute,
   AuthedContractsSettingsIndexRoute: AuthedContractsSettingsIndexRoute,
   AuthedContractsRequestsNewFlowKeyRoute:
