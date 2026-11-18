@@ -45,3 +45,8 @@ Người dùng tải một tệp lên màn «Kiểm tra tệp»; máy chủ băm
 
 ## Việc còn lại
 - Chưa chạy e2e. Chưa có int cho `annexInherit` (cha không phải HĐ done ⇒ PARENT_INVALID).
+
+## Quyết định bổ sung (soát Opus)
+- Phụ lục chỉ tạo được bởi quản trị gói ∪ người tạo ∪ người phụ trách HĐ gốc (điều phối chốt); điều kiện nằm trong câu `annexInherit`, cùng luật `canEditContractFiles` trừ cổng khoá (HĐ đã duyệt vốn bị khoá). Người chỉ có quyền xem bị từ chối `PARENT_INVALID`.
+- Đường lỗi `UploadError` trong tx: rollback hàng phụ lục, `catch` của use case hoàn quota + gỡ tệp đã đẩy FileBox (chứng minh bằng unit + `annex.int.test.ts`).
+- Tệp «Cần ký» bật trước migration 0124 không có sha gốc ⇒ kiểm tệp chỉ khớp được bản đã ký của chúng, không báo «Bản gốc».

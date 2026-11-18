@@ -28,6 +28,7 @@ import type {
 } from "../application/upload-contract.usecase";
 import { dealDbCode } from "../domain/deal.rules";
 import { unreadableFormat } from "../domain/upload.rules";
+import { contractRoleOf } from "./contract-role";
 import { imagesToPdf } from "./images-pdf";
 import { scanLimits } from "./source-file-text";
 
@@ -266,7 +267,7 @@ export function uploadRoutes(view: PackAccessView, d: UploadRoutesDeps): Hono<Pa
       title: f.title ?? defaultTitle(x.name),
       kind: f.kind,
       parentId: f.parent_id ?? null,
-      ...(f.annex ? { annex: true } : {}),
+      ...(f.annex ? { annex: true, annexAdmin: (await contractRoleOf(view)(x.who)).admin } : {}),
       doc,
     });
   });

@@ -70,8 +70,12 @@ export type UploadContractRepo = UploadReplaceRepo & {
   /** CR-097 K2 · HD-FR-101: nháp v(n+1) của chuỗi chứa `supersedesId` (kế thừa loại/phụ trách/luật thấy) — MỘT câu; điều kiện
    *  (thấy, HĐ, hiện hành, đã khoá, chưa có nháp) kiểm trong câu ⇒ `UploadError` mã tương ứng, không ghi gì. */
   insertVersion(row: NewUploadedContract, supersedesId: string): Promise<InsertedVersion>;
-  /** CR-182 R6 · phụ lục ký sau: cha phải là HĐ (kind=contract) đã duyệt/hiệu lực mà người gọi thấy; chép hướng + đối tác/loại từ cha. false ⇒ cha không hợp lệ. */
-  annexInherit(id: string, parentId: string): Promise<boolean>;
+  /** CR-182 R6 · phụ lục ký sau: cha phải là HĐ (kind=contract) đã duyệt/hiệu lực mà người gọi thấy VÀ (quản trị gói ∪ người tạo ∪ người phụ trách HĐ gốc); chép hướng + đối tác/loại từ cha. false ⇒ cha không hợp lệ. */
+  annexInherit(
+    id: string,
+    parentId: string,
+    actor: { userId: string; admin: boolean },
+  ): Promise<boolean>;
 };
 /** CR-157b · thay tệp của HĐ DRAFT đọc lỗi: cổng kiểm (trước quota/FileBox) + ghi (MỘT câu, điều kiện kiểm lại trong câu). */
 export type ReplaceGate = {

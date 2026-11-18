@@ -21,6 +21,7 @@ type St = {
   inserted: NewUploadedContract[];
   failTx: Error | null;
   failPut: boolean;
+  annexOk: boolean;
 };
 
 function fakeRepos(st: St): UploadTxRepos {
@@ -36,7 +37,7 @@ function fakeRepos(st: St): UploadTxRepos {
       insertVersion: async () => {
         throw new Error("not used");
       },
-      annexInherit: async () => true,
+      annexInherit: async () => st.annexOk,
     },
     outbox: { enqueue: async (rows) => void st.log.push(`outbox:${rows.length}`) },
   };
@@ -74,7 +75,7 @@ function fakeDeps(o: Opts, st: St): UploadContractDeps {
 }
 
 function setup(o: Opts = {}) {
-  const st: St = { log: [], inserted: [], failTx: null, failPut: false };
+  const st: St = { log: [], inserted: [], failTx: null, failPut: false, annexOk: true };
   const run = createUploadContract(fakeDeps(o, st));
   const input = (bytes: Uint8Array, extra: Partial<Parameters<typeof run>[0]> = {}) =>
     run({
@@ -94,6 +95,28 @@ const codeOf = (p: Promise<unknown>) =>
     () => "ok",
     (e) => (e instanceof UploadError ? e.code : String(e)),
   );
+
+describe("CR-182 R6 · phụ lục ký sau", () => {
+  const PARENT = "00000000-0000-4000-8000-0000000000c1";
+  it("cha không hợp lệ (trong tx) ⇒ PARENT_INVALID, hoàn quota và gỡ tệp đã đẩy lên — không để tệp mồ côi", async () => {
+    const s = setup();
+    s.st.annexOk = false;
+    const code = await codeOf(s.input(PDF, { kind: "appendix", parentId: PARENT, annex: true }));
+    expect(code).toBe("PARENT_INVALID");
+    expect(s.log).toEqual([
+      "take:2026-10-20/2026-10-19",
+      `put:t_${T}`,
+      "refund",
+      `remove:t_${T}:f1`,
+    ]);
+  });
+  it("annex thiếu kind=appendix hoặc parent ⇒ PARENT_INVALID trước quota", async () => {
+    const s = setup();
+    expect(await codeOf(s.input(PDF, { annex: true, parentId: PARENT }))).toBe("PARENT_INVALID");
+    expect(await codeOf(s.input(PDF, { kind: "appendix", annex: true }))).toBe("PARENT_INVALID");
+    expect(s.log).toEqual([]);
+  });
+});
 
 describe("upload-contract use case", () => {
   it("PDF ⇒ một lần take (ngày tenant theo múi, ngày toàn cục UTC), put org t_<tenant>, insert + outbox, start sau commit", async () => {

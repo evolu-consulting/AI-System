@@ -152,7 +152,7 @@ export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo
       return o ? { version: Number(o.version) } : null;
     },
     insertVersion: (r, base) => insertVersion(tx, tenantId, r, base),
-    annexInherit: (id, parentId) => annexInherit(tx, tenantId, id, parentId),
+    annexInherit: (id, parentId, actor) => annexInherit(tx, tenantId, id, parentId, actor),
     insert: async (r: NewUploadedContract) => {
       const data = JSON.stringify({ name: r.name, mime: r.mime, size: r.size });
       const approvalId = r.extractState === "reading" ? (r.approvalId ?? null) : null;
@@ -204,21 +204,30 @@ export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo
   };
 }
 
-/** CR-182 R6: cha = HĐ (kind=contract) đã duyệt (status done) mà người gọi thấy (RLS) ⇒ chép hướng + đối tác/loại (fields: type, buyer_*, supplier_*); không ⇒ false. Một câu. */
+/** CR-182 R6: cha = HĐ (kind=contract) đã duyệt (status done) mà người gọi thấy (RLS) VÀ có quyền sửa (quản trị gói ∪ người tạo ∪ người phụ trách; cùng luật `canEditContractFiles` trừ cổng khoá) ⇒ chép hướng + đối tác/loại (fields: type, buyer_*, supplier_*); không ⇒ false. Một câu. */
 async function annexInherit(
   tx: Tx,
   tenantId: string,
   id: string,
   parentId: string,
+  actor: { userId: string; admin: boolean },
 ): Promise<boolean> {
-  const rows = await tx.execute<{ id: string }>(sql`update contracts.contracts n
-    set direction = p.direction,
-      fields = n.fields || coalesce((select jsonb_object_agg(e.key, e.value) from jsonb_each(p.fields) e
-        where e.key in ('type', 'buyer_name', 'buyer_tax_id', 'supplier_name', 'supplier_tax_id')), '{}'::jsonb)
-    from contracts.contracts p
-    where n.id = ${id}::uuid and n.tenant_id = ${tenantId}::uuid and p.id = ${parentId}::uuid and p.tenant_id = n.tenant_id
-      and p.kind = 'contract' and p.status = 'done'
-    returning n.id`);
+  // (1) cha hợp lệ + người gọi có quyền sửa ⇒ đọc hướng + trường cần chép; (2) ghi vào phụ lục (id đã chọn, không join).
+  const [p] = await tx.execute<{
+    direction: string | null;
+    inherit: Record<string, unknown> | string;
+  }>(
+    sql`select p.direction, coalesce((select jsonb_object_agg(e.key, e.value) from jsonb_each(p.fields) e
+        where e.key in ('type', 'buyer_name', 'buyer_tax_id', 'supplier_name', 'supplier_tax_id')), '{}'::jsonb) as inherit
+      from contracts.contracts p
+      where p.id = ${parentId}::uuid and p.tenant_id = ${tenantId}::uuid and p.kind = 'contract' and p.status = 'done'
+        and (${actor.admin}::boolean or p.created_by = ${actor.userId}::uuid or p.owner_user_id = ${actor.userId}::uuid)`,
+  );
+  if (!p) return false;
+  const inherit = typeof p.inherit === "string" ? p.inherit : JSON.stringify(p.inherit);
+  const rows = await tx.execute<{ id: string }>(sql`update contracts.contracts
+    set direction = ${p.direction}, fields = fields || ${inherit}::jsonb
+    where id = ${id}::uuid and tenant_id = ${tenantId}::uuid returning id`);
   return rows.length === 1;
 }
 
