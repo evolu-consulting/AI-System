@@ -3,7 +3,7 @@ import type { SignSessionOut } from "@ai/contracts/pack-contracts";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { myProgress, partnerWaitOf, waitingNames } from "../../lib/contract-view";
+import { myProgress, partnerWaitOf, signDoneByMe, waitLabelOf } from "../../lib/contract-view";
 import { canResend } from "../../lib/partner-link-view";
 import { PartnerLinkInfo } from "./PartnerLinkInfo";
 
@@ -55,13 +55,16 @@ export function ApproverSignBox({ id, session }: { id: string; session: SignSess
 export function SignTurnCard({ id, session }: { id: string; session: SignSessionOut }) {
   const { t } = useTranslation();
   const p = myProgress(session);
+  const done = signDoneByMe(session);
   return (
     <section data-testid="sign-turn" className="mb-3 rounded-lg border border-rule bg-panel p-4">
       <h3 className="font-semibold">{t("contracts.docsignc.turnTitle")}</h3>
       <p className="mb-2 mt-1 text-sm text-dim">
-        {t("contracts.docsignc.boxDone", { signed: p.signed, files: p.files })}
+        {done
+          ? t("contracts.docsignc.signedAll")
+          : t("contracts.docsignc.boxDone", { signed: p.signed, files: p.files })}
       </p>
-      <OpenSign id={id} label={t("contracts.docsignc.open")} />
+      {!done && <OpenSign id={id} label={t("contracts.docsignc.open")} />}
     </section>
   );
 }
@@ -73,7 +76,13 @@ export function SignWaitCard({ session }: { session: SignSessionOut }) {
     <section data-testid="sign-wait" className="mb-3 rounded-lg border border-rule bg-panel p-4">
       <h3 className="font-semibold">{t("contracts.docsignc.turnTitle")}</h3>
       <p className="mb-0 mt-1 text-sm text-dim">
-        {t("contracts.docsignc.waitFor", { name: waitingNames(session) })}
+        {(() => {
+          const w = waitLabelOf(session);
+          return t(
+            w.kind === "partner" ? "contracts.docsignc.waitPartner" : "contracts.docsignc.waitFor",
+            { name: w.name },
+          );
+        })()}
       </p>
     </section>
   );
@@ -89,7 +98,13 @@ export function PartnerWaitCard({ id, session }: { id: string; session: SignSess
       data-testid="sign-partner-wait"
       className="mb-3 rounded-lg border border-rule bg-panel p-4"
     >
-      <p className="m-0 text-sm">{t("contracts.docsignc.partnerWait", { name: w.name })}</p>
+      <h3 className="font-semibold">{t("contracts.docsignc.turnTitle")}</h3>
+      <p className="mb-1 mt-1 text-sm font-medium" data-testid="sign-step-status">
+        {t("contracts.docsignc.waitPartner", { name: w.name })}
+      </p>
+      <p className="m-0 text-sm text-dim">
+        {t("contracts.docsignc.partnerWait", { name: w.name })}
+      </p>
       {session.partner_link && (
         <PartnerLinkInfo id={id} link={session.partner_link} allowResend={canResend(session)} />
       )}

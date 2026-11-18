@@ -10,11 +10,13 @@ import {
   partnerWaitOf,
   personTip,
   showsPrepCard,
+  signDoneByMe,
   signErrKey,
   signerChips,
   signStepOf,
   switchWhy,
   waitingNames,
+  waitLabelOf,
 } from "./contract-view";
 
 const fld = (o: Partial<SignFieldOut>): SignFieldOut =>
@@ -270,5 +272,61 @@ describe("fix-cr181-uat2 · thông báo trùng ở HĐ Nháp", () => {
     expect(showsPrepCard("draft", sess([], { mode: "sign" }))).toBe(false);
     expect(showsPrepCard("processing", sess([], { mode: "prep" }))).toBe(false);
     expect(showsPrepCard("draft", undefined)).toBe(false);
+  });
+});
+
+describe("fix-cr182-wait · chờ đối tác cho mọi người xem; người ký A đã ký xong", () => {
+  const A = { side: "A", kind: "user", ref: "u1", name: "Giám đốc", mine: false } as const;
+  const B = { side: "B", kind: "partner", ref: "b@x.vn", name: "Anh Bảo", mine: false } as const;
+  const mkDone = (mine: boolean) =>
+    file({
+      file_id: "p1",
+      latest: { version_id: "v1", seq: 1, url: "" },
+      fields: [
+        fld({ signed: true, mine }),
+        fld({ id: "b", side: "B", signer_kind: "partner", signer_ref: "b@x.vn" }),
+      ],
+    });
+  const link = { state: "open" } as never;
+  test("sale (NOT_SIGNER) khi Bên A đã ký đủ ⇒ KHÔNG là 'other' (không «Chờ Giám đốc ký»)", () => {
+    const s = sess([mkDone(false)], {
+      signers: [A, B],
+      turn: { allowed: false, reason: "NOT_SIGNER" },
+      partner_link: link,
+    });
+    expect(signStepOf(s)).toBeNull();
+    expect(partnerWaitOf(s)?.name).toBe("Anh Bảo");
+  });
+  test("A chưa ký đủ ⇒ vẫn 'other'", () => {
+    const open = file({ fields: [fld({})] });
+    expect(
+      signStepOf(sess([open], { signers: [A, B], turn: { allowed: false, reason: "NOT_SIGNER" } })),
+    ).toBe("other");
+  });
+  test("giám đốc đã ký hết ô mà lượt còn allowed ⇒ myProgress ready, có ô ⇒ dùng để báo «đã ký xong»", () => {
+    const s = sess([mkDone(true)], {
+      signers: [A, B],
+      turn: { allowed: true, step: "sign", run_id: "r" },
+    });
+    expect(signStepOf(s)).toBe("mine");
+    expect(myProgress(s)).toMatchObject({ fields: 1, signed: 1, ready: true });
+    expect(signDoneByMe(s)).toBe(true);
+  });
+  test("còn ô chưa ký ⇒ chưa xong", () => {
+    const f = file({ fields: [fld({ mine: true })] });
+    expect(signDoneByMe(sess([f], { turn: { allowed: true, step: "sign", run_id: "r" } }))).toBe(
+      false,
+    );
+  });
+  test("nhãn chờ: có đối tác ⇒ «partner», còn người ký A ⇒ «signer»", () => {
+    expect(waitLabelOf(sess([mkDone(false)], { signers: [A, B] }))).toEqual({
+      kind: "partner",
+      name: "Anh Bảo",
+    });
+    const open = file({ fields: [fld({})] });
+    expect(waitLabelOf(sess([open], { signers: [A, B] }))).toEqual({
+      kind: "signer",
+      name: "Giám đốc",
+    });
   });
 });

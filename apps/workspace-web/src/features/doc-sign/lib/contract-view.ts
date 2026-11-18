@@ -103,7 +103,20 @@ export function myProgress(s: SignSessionOut): {
  */
 export function signStepOf(s: SignSessionOut): "mine" | "other" | null {
   if (s.turn.allowed) return s.turn.step === "sign" ? "mine" : null;
-  return s.turn.reason === "NOT_SIGNER" ? "other" : null;
+  // Bên A đã ký đủ (đang chờ đối tác) ⇒ không còn «Chờ <người ký A> ký»: thẻ chờ đối tác nói bước kế (fix-cr182-wait).
+  return s.turn.reason === "NOT_SIGNER" && partnerWaitOf(s) === null ? "other" : null;
+}
+
+/** Người có lượt Ký đã ký hết ô của mình (lượt còn mở vì Q9/chờ máy chủ chốt bước) ⇒ thẻ nói «Bạn đã ký xong», không mời ký lại. */
+export function signDoneByMe(s: SignSessionOut): boolean {
+  const p = myProgress(s);
+  return s.turn.allowed && s.turn.step === "sign" && p.fields > 0 && p.ready;
+}
+
+/** Dòng trạng thái bước «Ký hợp đồng»: chờ đối tác (Bên A xong) hoặc chờ người ký công ty còn lại. */
+export function waitLabelOf(s: SignSessionOut): { kind: "partner" | "signer"; name: string } {
+  const w = partnerWaitOf(s);
+  return w ? { kind: "partner", name: w.name } : { kind: "signer", name: waitingNames(s) };
 }
 
 /** Tên người ký phía công ty còn phải ký (đích danh): người ký chưa ký hết chỗ của mình; không có chỗ ký ⇒ mọi người ký bên A. */

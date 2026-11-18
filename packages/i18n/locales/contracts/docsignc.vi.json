@@ -51,7 +51,9 @@
         "SIGN_TOO_MANY_PAGES": "Tệp quá 50 trang — tách nhỏ rồi tải lại",
         "generic": "Chưa lưu được, vui lòng thử lại"
       },
-      "boxFree": "Bạn ký ở vị trí tự chọn trên {{files}} tệp"
+      "boxFree": "Bạn ký ở vị trí tự chọn trên {{files}} tệp",
+      "signedAll": "Bạn đã ký xong",
+      "waitPartner": "Chờ đối tác {{name}} ký"
     },
     "psign": {
       "loading": "Đang mở trang ký…",

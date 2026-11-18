@@ -217,7 +217,7 @@ export function ContractBody(p: {
           {session && showsPrepCard(c.status, session) && <PrepCard id={id} session={session} />}
           {ondocStep === "mine" && session && <SignTurnCard id={id} session={session} />}
           {ondocStep === "other" && session && <SignWaitCard session={session} />}
-          {ondocStep === null && session && <PartnerWaitCard id={id} session={session} />}
+          {session && <PartnerWaitCard id={id} session={session} />}
           <HeadBanner kind={rule.banner} c={c} partner={partner} />
           <ManualBanner
             c={c}

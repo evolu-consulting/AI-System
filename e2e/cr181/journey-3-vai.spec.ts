@@ -130,6 +130,10 @@ test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; B
     await expect(page.getByTestId("sign-status").first()).toContainText("Chờ đối tác", {
       timeout: 5_000,
     });
+    // fix-cr182-wait: Bên A đã ký đủ ⇒ thẻ chờ đối tác nói bước kế (không «Chờ <người ký A> ký»)
+    await expect(page.getByTestId("sign-partner-wait")).toContainText("Chờ đối tác", {
+      timeout: 5_000,
+    });
   }).toPass({ timeout: 90_000 });
   // CR-182 · BR-C5: bước Ký chỉ xong khi Bên B (đối tác) ký đủ ⇒ sau Bên A ký, bước Ký VẪN «Đang chờ ký» (trước đợt 2 đã xong)
   await expect(page.getByText("Đang chờ ký")).toHaveCount(1);
