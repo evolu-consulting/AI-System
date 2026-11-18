@@ -2,6 +2,7 @@
 // `fetchPage(q, offset)` như `PersonSearchSelect`. Vùng bấm ≥ 44px ở điện thoại.
 import type { PersonCard } from "@ai/contracts/people";
 import { Avatar } from "@ai/web-kit/ui/kit/avatar";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai/web-kit/ui/kit/popover";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -65,7 +66,7 @@ export function PersonPick(p: Props) {
     p.onChange(id, name);
     setOpen(false);
   };
-  const row = "flex min-h-11 w-full items-center px-3 py-1.5 text-left text-body hover:bg-sunk";
+  const row = "h-auto min-h-11 w-full justify-start px-3 py-1.5 text-left text-body font-normal";
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
@@ -93,30 +94,30 @@ export function PersonPick(p: Props) {
         />
         <div className="max-h-60 overflow-y-auto" data-testid="person-pick-list">
           {p.clearable && (
-            <button type="button" className={row} onClick={() => pick("", "")}>
+            <Button variant="quiet" className={row} onClick={() => pick("", "")}>
               {p.placeholder}
-            </button>
+            </Button>
           )}
           {items.map((m) => (
-            <button
+            <Button
+              variant="quiet"
               key={m.id}
-              type="button"
               aria-pressed={p.value === m.id}
               className={`${row} ${p.value === m.id ? "bg-sunk font-semibold" : ""}`}
               onClick={() => pick(m.id, m.name)}
             >
               <Face name={m.name} card={cards.get(m.id)} />
-            </button>
+            </Button>
           ))}
           {list.hasNextPage && (
-            <button
-              type="button"
+            <Button
+              variant="quiet"
               className={`${row} text-dim`}
               disabled={list.isFetchingNextPage}
               onClick={() => void list.fetchNextPage()}
             >
               {list.isFetchingNextPage ? t("contracts.paging.loading") : t("contracts.paging.more")}
-            </button>
+            </Button>
           )}
         </div>
       </PopoverContent>
