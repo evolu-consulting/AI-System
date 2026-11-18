@@ -12,7 +12,9 @@ test("gõ «@» ở ô bình luận ⇒ hộp «Nhắc tên» có lọc nhóm + 
   await box.pressSequentially("@");
   const dlg = page.getByTestId("mention-dialog");
   await expect(dlg).toBeVisible();
-  await expect(box).toHaveValue("Nhờ "); // dấu «@» vừa gõ không nằm lại trong chữ
+  // hộp là hộp thoại modal ⇒ nền bị aria-hidden: tìm ô theo includeHidden
+  const hidden = card.getByRole("combobox", { name: "Viết bình luận", includeHidden: true });
+  await expect(hidden).toHaveValue("Nhờ "); // dấu «@» vừa gõ không nằm lại trong chữ
   await expect(dlg.getByRole("combobox", { name: "Nhóm người" })).toContainText("Tất cả");
   await expect(dlg.getByRole("searchbox", { name: "Tìm theo tên" })).toBeVisible();
   await dlg.getByRole("searchbox", { name: "Tìm theo tên" }).fill("Lan");

@@ -73,7 +73,7 @@ test.describe("CR-186 · điện thoại 390px", () => {
       .getByTestId("composer")
       .getByRole("button", { name: "Cần bán", exact: true })
       .click();
-    await page.getByRole("button", { name: "Nhắc tên" }).click();
+    await page.getByTestId("composer").getByRole("button", { name: "Nhắc tên" }).click();
     const dlg = page.getByTestId("mention-dialog");
     const rows = dlg.getByTestId("mention-option");
     await expect(rows.first()).toBeVisible();
@@ -92,7 +92,7 @@ test.describe("CR-186 · máy tính", () => {
       .getByTestId("composer")
       .getByRole("button", { name: "Cần bán", exact: true })
       .click();
-    await page.getByRole("button", { name: "Nhắc tên" }).click();
+    await page.getByTestId("composer").getByRole("button", { name: "Nhắc tên" }).click();
     const dlg = page.getByTestId("mention-dialog");
     const rows = dlg.getByTestId("mention-option");
     await expect(rows).toHaveCount(4); // Tất cả

@@ -191,14 +191,16 @@ a9fcf1f4d01c89abe4ff5c54208af3446aa534987a818c60f64e16a626177dc9  e2e/community-
 0869f7718025774bb7bc28db6a5783cca87091e307ada090a7980aeb94d182c1  e2e/community-web/composer.cm.ts
 727ca5551b7f762039d98f0dc4dea292c4b42d05ded4a605400ec3ed3ed2f769  e2e/community-web/contrast.cm.ts
 0e192732d6a94fb63225416078821a90fb7bba11d6c1b36a0661ef763036832f  e2e/community-web/cr129-media.cm.ts
-affeb3bd773ebad7c486891c832a10ba323a1974d9790b519f293c7c3eb1b302  e2e/community-web/cr129-mention.cs.ts
+dab7dc95213f08abd16a8a9baf849f06db38218fac807bb5247533e2efdcd0b5  e2e/community-web/cr129-mention.cs.ts
 ed2cfe26f3a3e483ad5253cd05d38b5acb19aa5dc5f48e9712dce9142526b3e3  e2e/community-web/cr130-journey.cs.ts
 2a63eff390989c44a5a11f6ba373e9ef529109745f7d13a2e0fe7e7fbabb9dde  e2e/community-web/cr145-post-mention.cs.ts
-f214120e846342d8a185a64d0a27e2af652c0f2d10fb98d948f6f51e5d325bdb  e2e/community-web/cr147-feed.cm.ts
+a014f3887d519c25e2e4d78fd6523ea55610a9e4d72b90dde198234f990bb9c4  e2e/community-web/cr147-feed.cm.ts
 32dcc88f7f0589cf7f1395164bf3f438611b4e4f7af7a3829ea1b30c5056a2b8  e2e/community-web/cr147b-people.cs.ts
-bed22a7870a8bc76e06526b078e9d5b923400e32aca0d5c92d7ce00ee4e4dfb8  e2e/community-web/cr186-composer.cm.ts
+2b109fe3bd267f22b76b917104a662f84732f2f2ee78ce22bd8a6ca7794a0740  e2e/community-web/cr186-comment-mention.cm.ts
+d21fbc3b288fc5e24215f5cb6f8be68e268036a512ac6b12af1b836630a32cbc  e2e/community-web/cr186-composer.cm.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts
-79329b96afa716b1be24e0ec5eef292a226e2fe032a8e240a3820e6079e241a4  e2e/community-web/feed.cm.ts
+1744756cdb1e003fdaa3a592d0bcec1b0455ffb3bd279718edc88d301feb8db9  e2e/community-web/feed.cm.ts
+13fc117b2e04051c8ef5607a9b71345b3bcaef1d0fc0194d047c9f80b53282aa  e2e/community-web/fix-cr186-ui.cm.ts
 7a26054205205b1c89cd770742912398c2f4156e92f2bbf4cb5c5c1eec0d5b18  e2e/community-web/flow-edit.cs.ts
 fef6eac4dc06b0f8c3bb09cc78c54459c8a97993b7ef8c07318b257ff75a134c  e2e/community-web/flows.cs.ts
 f2ca88be95604008a3cd66ca3f16b31922ba3577ad10618f48234cc18a9d36be  e2e/community-web/flows.menu.cs.ts
@@ -208,7 +210,7 @@ f185afa07b59b7f5b89607217b2c577c76867d1e3028eba8f469e6307d2268e7  e2e/community-
 60ba4e1f0ce74e07645a0118156bf925c06708dc427a5b066c38e7c5c491ed36  e2e/community-web/playwright.deployed.config.ts
 17ddd4c4ca7bc7382f6fb651825c1f977e73c52862517ba0d71ad7ae4e3cd1a1  e2e/community-web/playwright.stack.config.ts
 09121b538b059f460042421dcb8c347a7e1861ec306d86b95357ee5c4bf5c21b  e2e/community-web/profile.cm.ts
-b8c9e11315939ab2e6e5a8085e62081151c7c3e3723cf269f64357c334692dc8  e2e/community-web/roles.cs.ts
+6dc3df9e8eca7e4db07f138472dbba5adfde9639ea2b5d51b6ce16fb580fa3f8  e2e/community-web/roles.cs.ts
 7139e0ae7e7dee862735a6f24c008626b05fd1e2bf24aaadcc20e678e1af0655  e2e/community-web/scenes-mobile.cm.ts
 d67e871558b40225b67fd4641e586ed56ea597c6b0d6b28c075c892be4f5387c  e2e/community-web/settings.cm.ts
 e797cf896a4eeed56c2ddaa144627af4563fb76eaf4851619336ae63c396b4b1  e2e/community-web/shell.cm.ts
@@ -424,6 +426,7 @@ af1e92acc993181bfa5c31c7d05801452256b3ea91e8b4a27e5b7ca0f87da998  e2e/contracts-
 656fcbc34af13b6aab80f966ddde6b3efd629c95f0449f88e1e78e2f8afd9cfb  e2e/contracts-web/cr182-annex-verify.cw.ts
 aa5ab30af9c32c2e0765120220a8d4baaacd36ef0211df77a79939e0cd6d5ab7  e2e/contracts-web/cr182-assign.cw.ts
 4e4109c7a1008686b12f38aac5cde1d7b5a77f37b2e4657ba98afeb17d72165f  e2e/contracts-web/cr184-settings.cw.ts
+879dea3e137d8fb3f2de13146d62aadc4713d3167539fa553ffb5b9aa8ac991f  e2e/contracts-web/cr185-signed-strip.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 d351d4edda7e3772462619c8cbec6e9daa497718dff44acad1d117afc4998028  e2e/contracts-web/dataset-contract.ts
 0b445d3aeeb94128fe9107461082b07a0b2807b30dfa0c8930eb762e44068d85  e2e/contracts-web/dataset-list.ts
@@ -448,7 +451,7 @@ a7b1c1f7ed5a004fefa06e0a1310a14a6ddeb7b40d356af411c77bd8e40b1560  e2e/contracts-
 3455a2cd40c45199bc0e4d3f196c6b309aed98b19bc5aef769ce99f05acaeec3  e2e/contracts-web/gap-a2-source-ask.cw.ts
 3a919a07b2dbc26ebba5120dfab2e59f531182abbec0e7a8fce57941df8a31bb  e2e/contracts-web/gap-b-list.cw.ts
 90850068e1ffb83d4581b62111fe2a6b059195368542d154b9091c27cfebac0a  e2e/contracts-web/gap-d2.cw.ts
-7389d1be48d911c51431c7fc730f61255ae262922f244832dfb09a2df93f54fe  e2e/contracts-web/gapa1-manage.cw.ts
+661785e1761539cdee88a0f1444c4a50b51a011eecf5a370201c6861f720bc49  e2e/contracts-web/gapa1-manage.cw.ts
 8b1c523d1e9c788e3030d16af8a23e7f64290962b91391c578b2cdeccb6c2884  e2e/contracts-web/hd2-flow.cw.ts
 542bd5759aecb3160e68071af706fccfb93a069ab1660a69a2b6719beabb1103  e2e/contracts-web/hd4-deadline.cw.ts
 6dca64bfb30024cc5f652acee86b8a22d3d9e04f6de90ed4e2cd9a48fbc01c14  e2e/contracts-web/hd5-list.cw.ts

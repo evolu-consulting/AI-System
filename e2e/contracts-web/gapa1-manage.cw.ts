@@ -66,7 +66,7 @@ test("editor: giao cho người khác ⇒ một PUT /owner; mở lịch sử th�
   // CR-185: «Phụ trách» là avatar, tooltip CHỈ có họ tên (không «Phụ trách: »); bấm mở danh sách (avatar + họ tên), chọn theo owner-option-<id>
   const sel = page.getByTestId("owner-select");
   // aria-label (nhãn đọc) còn «Phụ trách: tên»; tooltip khi rê chuột CHỈ là họ tên
-  await expect(sel).toHaveAttribute("aria-label", /^Phụ trách: \S/);
+  await expect(sel).toHaveAttribute("aria-label", /^Phụ trách: [^(\s]/);
   const who = ((await sel.getAttribute("aria-label")) ?? "").replace(/^Phụ trách: /, "");
   await sel.hover();
   await expect(page.getByRole("tooltip").first()).toHaveText(who); // CR-185: tooltip = đúng họ tên, không thêm chữ
