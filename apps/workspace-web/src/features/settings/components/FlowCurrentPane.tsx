@@ -12,11 +12,10 @@ import { isCompanyAdmin } from "~/features/shell/lib/nav";
 import { useFlow } from "../hooks/use-flow";
 import type { CurrentFlow } from "../lib/current-flow";
 import { flowEditorUrl } from "../lib/editor-link";
-import { whenText } from "../lib/start-when";
 import { DelegationPane } from "./DelegationPane";
 import { FlowCanvasLazy } from "./FlowCanvasLazy";
-import { FlowLegend } from "./FlowLegend";
 import { FlowList } from "./FlowList";
+import { FlowPicker } from "./FlowPicker";
 import { FlowSignBlock } from "./FlowSignBlock";
 import { FlowWorkSettings } from "./FlowWorkSettings";
 
@@ -75,77 +74,32 @@ function OpenFlowsPage() {
 function FlowDetail({ flow }: { flow: CurrentFlow }) {
   const { t } = useTranslation();
   const [view, setView] = useState<View>("canvas");
-  const run = flow.steps.map(() => true);
   return (
     <div data-testid="flow-detail">
       <h2 className="mb-2 text-lg font-semibold" data-testid="flow-current-title">
         {t("contracts.flow.current.title", { name: flow.name, version: flow.version })}
       </h2>
-      {flow.hasBranches && (
-        <p className="mb-2 text-caption text-dim" data-testid="flow-branches-note">
-          {t("contracts.flow.current.branches")}
-        </p>
-      )}
       <div>
         <ViewToggle view={view} onChange={setView} />
       </div>
-      {view === "canvas" ? (
-        <>
-          <FlowCanvasLazy steps={flow.steps} run={run} />
-          <FlowLegend />
-        </>
-      ) : (
-        <FlowList flow={flow} />
-      )}
+      {view === "canvas" ? <FlowCanvasLazy flow={flow} /> : <FlowList flow={flow} />}
       <FlowSignBlock flow={flow} />
     </div>
   );
 }
 
-/** CR-146 · danh sách MỌI quy trình đang bật, đúng thứ tự xét; bấm một dòng ⇒ xem sơ đồ của nó. */
+/** CR-146 · MỌI quy trình đang bật (thứ tự xét); chọn một ⇒ xem sơ đồ / danh sách của nó. */
 function FlowLoaded({ flows }: { flows: CurrentFlow[] }) {
   const { t } = useTranslation();
-  const [sel, setSel] = useState(0);
-  const cur = flows[Math.min(sel, flows.length - 1)] as CurrentFlow;
+  const [sel, setSel] = useState(flows[0]?.defId ?? "");
+  const cur = flows.find((f) => f.defId === sel) ?? (flows[0] as CurrentFlow);
   return (
     <>
       <p className="mb-3 text-dim" data-testid="flow-readonly-lead">
         {t("contracts.flow.current.listLead")}
       </p>
       <OpenFlowsPage />
-      <ol
-        aria-label={t("contracts.flow.current.listLabel")}
-        data-testid="flow-list-items"
-        className="mb-4 space-y-2"
-      >
-        {flows.map((f, i) => (
-          <li key={f.defId}>
-            <button
-              type="button"
-              data-testid={`flow-item-${i}`}
-              aria-pressed={i === sel}
-              className={`w-full rounded-lg border p-3 text-left ${
-                i === sel ? "border-act bg-act-soft" : "border-rule"
-              }`}
-              onClick={() => setSel(i)}
-            >
-              <span className="font-semibold">
-                {i + 1}. {f.name}
-              </span>
-              <span className="ml-2 text-caption text-dim">
-                {t("contracts.flow.current.stepCount", { count: f.steps.length })}
-              </span>
-              <span className="block text-caption text-dim" data-testid={`flow-when-${i}`}>
-                {t("contracts.flow.current.startWhen", {
-                  when: f.startWhenBad
-                    ? t("contracts.flow.current.unreadable")
-                    : whenText(f.startWhen, f.groupNames, t),
-                })}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ol>
+      <FlowPicker flows={flows} value={cur.defId} onChange={setSel} />
       <FlowDetail key={cur.defId} flow={cur} />
     </>
   );

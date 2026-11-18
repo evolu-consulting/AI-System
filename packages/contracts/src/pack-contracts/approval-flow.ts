@@ -284,6 +284,25 @@ export const ApprovalFlowCurrentStepSchema = z.strictObject({
   escalate_group_missing: z.literal(true).optional(),
 });
 export type ApprovalFlowCurrentStep = z.infer<typeof ApprovalFlowCurrentStepSchema>;
+export const APPROVAL_FLOW_GRAPH_MAX = 60;
+const StepIdx = z.number().int().min(0).max(999);
+/** CR-184 · một stage của sơ đồ: đủ để dựng nút + cạnh (`step`, `yes`/`no`, `branch`, `back_to`, `next_step`). Số bước đếm từ 0. */
+export const ApprovalFlowGraphStageSchema = z.strictObject({
+  key: z.string().min(1).max(100),
+  step: StepIdx,
+  name: z.string().max(200),
+  kind: z.enum(["review", "esign", "notify", "if", "partner_send", "wait", "end", "other"]),
+  department_name: z.string().max(200).nullable().optional(),
+  provider: z.string().max(100).nullable().optional(),
+  after: z.enum(["review", "auto"]),
+  back_to: z.array(StepIdx).max(20),
+  branch: z.array(StepIdx.nullable()).max(20),
+  yes: StepIdx.nullable(),
+  no: StepIdx.nullable(),
+  next_step: StepIdx.nullable(),
+  terminal: z.boolean(),
+});
+export type ApprovalFlowGraphStage = z.infer<typeof ApprovalFlowGraphStageSchema>;
 export const ApprovalFlowCurrentSchema = z.strictObject({
   def_id: UuidSchema,
   name: z.string().min(1).max(200),
@@ -312,9 +331,13 @@ export const ApprovalFlowCurrentSchema = z.strictObject({
         .max(ESIGN_NODE_SIGNERS_MAX),
       partner_signs: z.boolean().nullable(),
       order: z.enum(ESIGN_NODE_ORDERS).nullable(),
+      /** CR-184 · «Ký qua» của bước Ký (nhà cung cấp / `upload` / `ondoc`); vắng ⇒ chưa đặt. */
+      provider: z.string().max(100).nullable().optional(),
     })
     .nullable()
     .optional(),
+  /** CR-184 · MỌI stage của flow (theo thứ tự mảng) để Sổ Hợp Tác vẽ cùng sơ đồ với trang quản trị (chỉ xem). */
+  graph: z.array(ApprovalFlowGraphStageSchema).max(APPROVAL_FLOW_GRAPH_MAX).optional(),
   /** CR-146 · flow có bước Gửi đối tác xác nhận. */
   partner_send: z.boolean().optional(),
   /** CR-113 · chủ gói (Toàn quyền) duyệt thay được mọi bước — ghi rõ "duyệt thay" trên thẻ. */

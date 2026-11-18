@@ -3,11 +3,13 @@
 // và các kiểu cổng dùng chung (`FlowGroups`, `FlowMembers`). Lớp 2: chỉ cổng.
 
 import { type FactWhen, FactWhenSchema } from "@ai/contracts/hub-admin";
+import type { ApprovalFlowGraphStage } from "@ai/contracts/pack-contracts";
 import type { EventFlow, PackUow, PackWho } from "../../kit/public";
 import { PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
 import type { DifyWorkflow } from "../domain/approval-flow.rules";
 import type { FlowWhen } from "../domain/approval-flow.types";
 import { defaultEscalateOf, escalateOrder } from "../domain/approval-owner.rules";
+import { type GraphStage, graphOfStages } from "../domain/event-flow-graph.rules";
 import {
   type EventStep,
   type SignPartnerView,
@@ -96,7 +98,11 @@ export type CurrentFlow = {
     company_signers: { kind: "user" | "group"; name: string | null }[];
     partner_signs: boolean | null;
     order: "parallel" | "sequential" | null;
+    /** CR-184 · «Ký qua» của bước Ký. */
+    provider?: string | null;
   } | null;
+  /** CR-184 · MỌI stage của flow để vẽ sơ đồ đầy đủ (chỉ thêm; `steps` giữ nguyên). */
+  graph: ApprovalFlowGraphStage[];
   partner_send: boolean;
   /** CR-113 · chủ gói duyệt thay được mọi bước (ghi rõ "duyệt thay"); tên Group Toàn quyền (đích chuyển cấp mặc định). */
   owner_can_override: true;
@@ -187,6 +193,7 @@ export function readCurrentFlows(
       f,
       ...stepsOfStages(f.stages),
       sp: signPartnerOf(f.stages),
+      graph: graphOfStages(f.stages),
       codes: whenCodes(f.when),
     }));
     const l2 = await level2KeyOf(d, who);
@@ -244,8 +251,40 @@ export function readStartWhen(raw: unknown): {
   return r.success ? { start_when: r.data } : { start_when: null, start_when_unreadable: true };
 }
 
+/** CR-184 · stage của sơ đồ ⇒ dạng trả về: phòng duyệt theo TÊN (không lộ mã), bước đếm từ 0. */
+function graphStageOut(
+  g: GraphStage,
+  idOf: (s: { groupId: string | null; groupKey: string | null }) => string | null,
+  lk: FlowLookups,
+): ApprovalFlowGraphStage {
+  const id = g.kind === "review" ? idOf(g) : null;
+  const dept = g.kind === "review" ? ((id ? lk.names.get(id) : undefined) ?? g.groupKey) : null;
+  return {
+    key: g.key.slice(0, 100),
+    step: g.step,
+    name: g.name.slice(0, NAME_MAX),
+    kind: g.kind,
+    department_name: dept ? dept.slice(0, NAME_MAX) : null,
+    provider: g.provider,
+    after: g.after,
+    back_to: g.backTo,
+    branch: g.branch,
+    yes: g.ifs?.yes ?? null,
+    no: g.ifs?.no ?? null,
+    next_step: g.nextStep,
+    terminal: g.terminal,
+  };
+}
+
 function currentOf(
-  p: { f: EventFlow; steps: EventStep[]; branches: boolean; sp: SignPartnerView; codes: string[] },
+  p: {
+    f: EventFlow;
+    steps: EventStep[];
+    branches: boolean;
+    sp: SignPartnerView;
+    codes: string[];
+    graph: GraphStage[];
+  },
   lk: FlowLookups,
   idOf: (s: { groupId: string | null; groupKey: string | null }) => string | null,
 ): CurrentFlow {
@@ -283,8 +322,10 @@ function currentOf(
           })),
           partner_signs: e.partnerSigns,
           order: e.order,
+          provider: e.provider ?? null,
         }
       : null,
+    graph: p.graph.map((g) => graphStageOut(g, idOf, lk)),
     partner_send: p.sp.partnerSend,
     owner_can_override: true,
     owner_group_name: lk.ownerName,

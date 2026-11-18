@@ -172,6 +172,36 @@ it("GET = flow Bật của company_flows: tên, bản, bước theo thứ tự, 
   });
 });
 
+it("CR-184 · GET trả thêm `graph` = MỌI stage (cả Chờ ký xong, Kết thúc), phòng theo TÊN, `steps` cũ giữ nguyên", async () => {
+  const ra = await app(A, own).request("/approval-flow");
+  const { items } = (await ra.json()) as {
+    items: {
+      graph?: {
+        key: string;
+        kind: string;
+        step: number;
+        department_name?: string | null;
+        terminal: boolean;
+      }[];
+    }[];
+  };
+  expect(
+    (items[0]?.graph ?? []).map((g) => [
+      g.key,
+      g.kind,
+      g.step,
+      g.department_name ?? null,
+      g.terminal,
+    ]),
+  ).toEqual([
+    ["tp", "review", 0, "Kế toán A", false],
+    ["gd", "review", 1, "Giám đốc A", false],
+    ["ky", "esign", 2, null, false],
+    ["cho", "wait", 3, null, true],
+    ["end", "end", 4, null, true],
+  ]);
+});
+
 it("flow bắt đầu bằng phiếu (trigger «không bao giờ», vd Quy trình mua hàng) KHÔNG được chọn làm quy trình duyệt HĐ", async () => {
   const never = JSON.stringify(NEVER_TRIGGER);
   const [m] = await o<

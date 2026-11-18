@@ -279,6 +279,7 @@
         "always": "All remaining contracts",
         "startWhen": "Starts when: {{when}}",
         "stepCount": "{{count}} step(s)",
+        "pickLabel": "Process",
         "listLabel": "Approval processes switched on",
         "pick": "View diagram",
         "and": " and ",
@@ -319,14 +320,16 @@
         "title": "Approval process in effect: {{name}} · v{{version}}",
         "noFlow": "Your company has no contract approval process switched on. The platform admin builds and assigns processes to your company — contact the platform admin.",
         "openPage": "Open the Processes page",
-        "branches": "This process branches on conditions: the steps below are the ones that may run; see the full diagram on the Processes page.",
         "saveNote": "This section is view-only, so there is nothing to save.",
         "editLink": "Edit approval process",
         "openFail": "Could not open the process editor.",
         "esign": "E-sign",
         "kind": {
           "notify": "Notification",
-          "wait_until": "Wait until"
+          "wait_until": "Wait until",
+          "partner_send": "Send to partner",
+          "wait": "Wait",
+          "if": "If"
         },
         "conditional": "Conditional",
         "info": {
@@ -345,13 +348,16 @@
           "escalate": "Steps with a due time: when overdue, auto-escalated to {{target}} (default Full access).",
           "escalateTargetDefault": "the escalation group"
         },
-        "legend": {
-          "label": "Diagram legend",
-          "step": "Approval step",
-          "system": "System step (locked)",
-          "skip": "Skip branch",
-          "escalate": "Overdue ⇒ escalation (default Full access)",
-          "dim": "Faded = skipped in the preview"
+        "signKind": {
+          "ondoc": "Sign on the document",
+          "upload": "Upload the signed copy",
+          "provider": "E-sign ({{name}})"
+        },
+        "list": {
+          "yes": "Yes ⇒ {{to}}",
+          "no": "No ⇒ {{to}}",
+          "rule": "Branch {{n}} ⇒ {{to}}",
+          "none": "next step"
         },
         "view": {
           "label": "Process view",
@@ -359,6 +365,9 @@
           "list": "List"
         },
         "canvas": {
+          "yes": "Yes",
+          "no": "No",
+          "branch": "Branch {{n}}",
           "skip": "Not met ⇒ skipped",
           "aria": "Approval process diagram (read-only)",
           "start": "Start",

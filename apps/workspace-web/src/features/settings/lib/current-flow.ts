@@ -32,6 +32,22 @@ export type CurrentStep = {
   /** CR-113 (review) · nhóm chuyển cấp đặt tường minh đã bị xoá (lỗi cấu hình). */
   escalateMissing?: boolean;
 };
+/** CR-184 · một stage của sơ đồ (đủ để dựng nút + cạnh; số bước đếm từ 0). */
+export type CurrentGraphStage = {
+  key: string;
+  step: number;
+  name: string;
+  kind: "review" | "esign" | "notify" | "if" | "partner_send" | "wait" | "end" | "other";
+  department: string | null;
+  /** «Ký qua» của bước Ký (nhà cung cấp / `upload` / `ondoc`); bước khác ⇒ null. */
+  provider: string | null;
+  after: "review" | "auto";
+  backTo: number[];
+  branch: (number | null)[];
+  ifs: { yes: number | null; no: number | null } | null;
+  nextStep: number | null;
+  terminal: boolean;
+};
 export type CurrentFlow = {
   defId: string;
   name: string;
@@ -49,7 +65,11 @@ export type CurrentFlow = {
     signers: { kind: "user" | "group"; name: string | null }[];
     partnerSigns: boolean | null;
     order: "parallel" | "sequential" | null;
+    /** CR-184 · «Ký qua» của bước Ký. */
+    provider: string | null;
   } | null;
+  /** CR-184 · MỌI stage của quy trình (sơ đồ đầy đủ); rỗng ⇒ server cũ, dùng `steps`. */
+  graph: CurrentGraphStage[];
   partnerSend: boolean;
   /** CR-113 · Toàn quyền duyệt thay được mọi bước (vắng ⇒ true: luật chung). */
   ownerCanOverride: boolean;
@@ -70,6 +90,26 @@ export function toCurrentFlow(raw: unknown): CurrentFlow | null {
   return p.success ? fromApi(p.data) : null;
 }
 
+/** Server cũ (chưa có `graph`): dựng chuỗi thẳng từ `steps` để vẫn có sơ đồ. */
+function linearGraph(d: ApprovalFlowCurrent): NonNullable<ApprovalFlowCurrent["graph"]> {
+  const kinds = { review: "review", esign: "esign", notify: "notify", wait_until: "wait" } as const;
+  return d.steps.map((st, i) => ({
+    key: `s${i}`,
+    step: i,
+    name: st.name,
+    kind: kinds[st.kind as keyof typeof kinds] ?? "other",
+    department_name: st.department_name,
+    provider: null,
+    after: "auto" as const,
+    back_to: [],
+    branch: [],
+    yes: null,
+    no: null,
+    next_step: null,
+    terminal: false,
+  }));
+}
+
 function fromApi(d: ApprovalFlowCurrent): CurrentFlow {
   return {
     defId: d.def_id,
@@ -81,8 +121,27 @@ function fromApi(d: ApprovalFlowCurrent): CurrentFlow {
     startWhenBad: d.start_when_unreadable ?? false,
     groupNames: d.group_names ?? {},
     sign: d.sign
-      ? { signers: d.sign.company_signers, partnerSigns: d.sign.partner_signs, order: d.sign.order }
+      ? {
+          signers: d.sign.company_signers,
+          partnerSigns: d.sign.partner_signs,
+          order: d.sign.order,
+          provider: d.sign.provider ?? null,
+        }
       : null,
+    graph: (d.graph ?? linearGraph(d)).map((g) => ({
+      key: g.key,
+      step: g.step,
+      name: g.name,
+      kind: g.kind,
+      department: g.department_name ?? null,
+      provider: g.provider ?? null,
+      after: g.after,
+      backTo: g.back_to,
+      branch: g.branch,
+      ifs: g.kind === "if" ? { yes: g.yes, no: g.no } : null,
+      nextStep: g.next_step,
+      terminal: g.terminal,
+    })),
     partnerSend: d.partner_send ?? false,
     ownerCanOverride: d.owner_can_override ?? true,
     ownerGroupName: d.owner_group_name ?? null,

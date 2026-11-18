@@ -28,6 +28,7 @@ import { ForwardEdge } from "./edges/ForwardEdge";
 import { RoutedEdge } from "./edges/RoutedEdge";
 import type { FlowEditing } from "./editing";
 import { type FlowMode, interactionOf } from "./mode";
+import { DEF_VIEW_NODE_TYPES } from "./nodes/DefViewNodes";
 import { VERTICAL_NODE_TYPES } from "./nodes/VerticalNodes";
 import {
   DEFAULT_LABELS,
@@ -174,7 +175,7 @@ function Flow(p: FlowCanvasProps) {
   const it = interactionOf(p.mode, p);
   const ev = useEditing(p.editing, d.nodes, p.edges as Edge[]);
   const nodeTypes = useMemo(
-    () => ({ ...(flow ? {} : VERTICAL_NODE_TYPES), ...p.nodeTypes }),
+    () => ({ ...DEF_VIEW_NODE_TYPES, ...(flow ? {} : VERTICAL_NODE_TYPES), ...p.nodeTypes }),
     [flow, p.nodeTypes],
   );
   const common = {

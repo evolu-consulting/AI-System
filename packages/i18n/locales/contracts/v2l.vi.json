@@ -279,6 +279,7 @@
         "always": "Mọi hợp đồng còn lại",
         "startWhen": "Bắt đầu khi: {{when}}",
         "stepCount": "{{count}} bước",
+        "pickLabel": "Quy trình",
         "listLabel": "Quy trình duyệt đang bật",
         "pick": "Xem sơ đồ",
         "and": " và ",
@@ -319,14 +320,16 @@
         "title": "Quy trình duyệt đang áp dụng: {{name}} · v{{version}}",
         "noFlow": "Công ty chưa có quy trình duyệt hợp đồng nào đang bật. Quản trị nền tảng soạn và gán quy trình cho công ty — liên hệ quản trị nền tảng.",
         "openPage": "Mở trang Quy trình",
-        "branches": "Quy trình có rẽ nhánh theo điều kiện: các bước dưới đây là những bước có thể chạy; xem sơ đồ đầy đủ ở trang Quy trình.",
         "saveNote": "Mục này chỉ để xem nên không có gì cần lưu.",
         "editLink": "Chỉnh quy trình duyệt",
         "openFail": "Không mở được trang chỉnh quy trình.",
         "esign": "Ký số",
         "kind": {
           "notify": "Thông báo",
-          "wait_until": "Chờ tới"
+          "wait_until": "Chờ tới",
+          "partner_send": "Gửi đối tác",
+          "wait": "Chờ",
+          "if": "Nếu"
         },
         "conditional": "Có điều kiện",
         "info": {
@@ -345,13 +348,16 @@
           "escalate": "Bước có hạn: quá hạn tự chuyển cho {{target}} (mặc định Toàn quyền).",
           "escalateTargetDefault": "nhóm chuyển cấp"
         },
-        "legend": {
-          "label": "Chú giải sơ đồ",
-          "step": "Bước duyệt",
-          "system": "Bước hệ thống (khoá)",
-          "skip": "Nhánh bỏ qua",
-          "escalate": "Quá hạn ⇒ chuyển cấp (mặc định Toàn quyền)",
-          "dim": "Mờ = bị bỏ qua theo xem trước"
+        "signKind": {
+          "ondoc": "Ký trên tài liệu",
+          "upload": "Tải lên bản đã ký",
+          "provider": "Ký số ({{name}})"
+        },
+        "list": {
+          "yes": "Đúng ⇒ {{to}}",
+          "no": "Sai ⇒ {{to}}",
+          "rule": "Nhánh {{n}} ⇒ {{to}}",
+          "none": "bước kế"
         },
         "view": {
           "label": "Cách xem quy trình",
@@ -359,6 +365,9 @@
           "list": "Danh sách"
         },
         "canvas": {
+          "yes": "Đúng",
+          "no": "Sai",
+          "branch": "Nhánh {{n}}",
           "skip": "Không thoả ⇒ bỏ qua",
           "aria": "Sơ đồ quy trình duyệt (chỉ xem)",
           "start": "Bắt đầu",

@@ -58,6 +58,9 @@ export type FlowTheme = {
   stepIndex: string;
   stepDept: string;
   pill: string;
+  /** CR-184 · node Bắt đầu của sơ đồ chỉ xem + đa giác hình thoi của node Nếu. */
+  trigger: string;
+  ifShape: string;
 };
 
 export const DEFAULT_THEME: FlowTheme = {
@@ -75,6 +78,9 @@ export const DEFAULT_THEME: FlowTheme = {
     "flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-caption text-muted-foreground",
   stepDept: "truncate text-caption text-muted-foreground",
   pill: "rounded-full bg-accent px-2 py-0.5 text-caption font-semibold text-accent-foreground",
+  trigger:
+    "flex flex-col justify-center gap-1 overflow-hidden rounded-xl border-2 border-primary bg-card px-3 text-label",
+  ifShape: "fill-card stroke-border",
 };
 
 /** Dòng thông tin của node bước (hạn, người duyệt, chuyển cấp…): chữ do host dịch. */

@@ -1,44 +1,42 @@
-// CR-105 L4 / CR-108 · chế độ "Danh sách" của quy trình duyệt đang dùng (đối chiếu với sơ đồ canvas): mỗi bước một dòng + thông tin hạn/nhắc/người duyệt.
+// CR-105 L4 / CR-184 · chế độ "Danh sách" của quy trình đang chạy (đối chiếu với sơ đồ): CÙNG thứ tự với sơ đồ, node Nếu ghi rõ Đúng ⇒ / Sai ⇒ tới bước nào.
 import { useTranslation } from "react-i18next";
 import type { CurrentFlow } from "../lib/current-flow";
-import { StepInfoLines } from "./StepInfoLines";
+import { listRows, viewTrigger } from "../lib/flow-view";
 
 export function FlowList({ flow }: { flow: CurrentFlow }) {
   const { t } = useTranslation();
+  const rows = listRows(flow, t);
+  const trigger = viewTrigger(flow, t);
   return (
     <ol className="mb-4 flex flex-col gap-2" data-testid="flow-diagram">
-      {flow.steps.map((s, i) => (
-        <li key={s.key} className="flex items-center gap-3 rounded-lg border border-rule px-3 py-2">
-          <span className="text-caption text-dim">{i + 1}</span>
-          <span className="flex min-w-0 flex-col">
-            <span className="font-medium">{s.name}</span>
-            <StepInfoLines
-              className="!whitespace-normal"
-              info={{
-                dueH: s.dueH,
-                remindH: s.dueH !== null ? s.remindH : null,
-                approvers: s.approverCount,
-                escalate: s.escalateGroup,
-                escalateDefault: s.escalateDefault,
-                escalateMissing: s.escalateMissing,
-              }}
-            />
+      <li
+        className="flex flex-col rounded-lg border-2 border-act px-3 py-2"
+        data-testid="flow-row-start"
+      >
+        <span className="font-medium">{trigger.label}</span>
+        <span className="text-caption text-dim">{trigger.summary}</span>
+      </li>
+      {rows.map((r) => (
+        <li
+          key={r.key}
+          data-testid={`flow-row-${r.key}`}
+          className={`flex items-start gap-3 rounded-lg border px-3 py-2 ${
+            r.end ? "border-dashed border-field bg-sunk" : "border-rule"
+          }`}
+        >
+          <span className="min-w-5 text-caption text-dim">{r.index > 0 ? r.index : ""}</span>
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="font-medium">{r.title}</span>
+            {r.sub && <span className="text-caption text-dim">{r.sub}</span>}
+            {r.branches.map((b) => (
+              <span key={b} className="text-caption text-dim" data-testid="flow-row-branch">
+                {b}
+              </span>
+            ))}
           </span>
-          {s.department && s.department !== s.name && (
-            <span className="text-caption text-dim">{s.department}</span>
-          )}
-          {s.kind === "dify" && <span className="text-caption text-dim">Dify</span>}
-          {s.kind === "esign" && (
-            <span className="text-caption text-dim">{t("contracts.flow.current.esign")}</span>
-          )}
-          {(s.kind === "notify" || s.kind === "wait_until") && (
-            <span className="text-caption text-dim" data-testid={`flow-kind-${s.kind}`}>
-              {t(`contracts.flow.current.kind.${s.kind}`)}
-            </span>
-          )}
-          {s.when && s.when.conds.length > 0 && (
-            <span className="ml-auto text-caption text-dim">
-              {t("contracts.flow.current.conditional")}
+          {r.badge && (
+            <span className="rounded-full bg-act-soft px-2 py-0.5 text-caption font-semibold text-act">
+              {r.badge}
             </span>
           )}
         </li>
