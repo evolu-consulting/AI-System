@@ -11,7 +11,7 @@ import {
 } from "@ai/contracts/pack-contracts";
 import type { PackUow, PackWho } from "../../kit/public";
 import { type ContractFileFacts, isContractFilesLocked } from "../domain/contract-files.rules";
-import { statusOut } from "../domain/partner-sign.rules";
+import { canResendLink, statusOut } from "../domain/partner-sign.rules";
 import {
   canPrepSign,
   defaultNeedsSign,
@@ -251,7 +251,7 @@ export function signDocUsecases(d: SignDocDeps) {
     },
 
     /** Phiên màn ký: tệp + bản mới nhất + chỗ ký + người ký + chế độ. null = HĐ không thấy (404). */
-    async session(who: PackWho, id: string): Promise<SignSessionOut | null> {
+    async session(who: PackWho, id: string, admin = false): Promise<SignSessionOut | null> {
       const enabled = await d.onDocEnabled(who);
       const kinds = { internal: true, digital: { enabled: false, reason: DIGITAL_OFF } } as const;
       const snap = await d.uow.tenant(who, async (r) => {
@@ -344,7 +344,16 @@ export function signDocUsecases(d: SignDocDeps) {
         readiness,
         turn: await turnWithNames(d.userNames, who, turn),
         kinds,
-        partner_link: snap.plink ? statusOut(snap.plink) : null,
+        partner_link: snap.plink
+          ? statusOut(
+              snap.plink,
+              canResendLink({
+                userId: who.userId,
+                uploaderId: snap.facts.created_by,
+                isAdmin: admin,
+              }),
+            )
+          : null,
       };
     },
   };

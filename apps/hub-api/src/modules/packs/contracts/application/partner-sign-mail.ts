@@ -62,3 +62,26 @@ export async function sendMail(
     return false;
   }
 }
+
+/** Chuông «Chưa gửi được thư mời ký»: người tải lên sửa email liên hệ rồi bấm «Gửi lại link ký». */
+export const mailFailedBell = (
+  d: Pick<PartnerSignDeps, "uow">,
+  tenantId: string,
+  contractId: string,
+  c: { title: string; created_by: string },
+  linkId: string,
+) =>
+  d.uow
+    .system(tenantId, (r) =>
+      r.notify.enqueue([
+        {
+          user_id: c.created_by,
+          kind: "contract.partner_sign_mail_failed",
+          title: `Chưa gửi được thư mời ký: ${c.title}`.slice(0, 200),
+          body: "Thư mời không tới được địa chỉ email của liên hệ đối tác. Kiểm tra email liên hệ rồi bấm «Gửi lại link ký».",
+          link: `/contracts/${contractId}`,
+          dedup_key: `partner-sign-mailfail:${linkId}`,
+        },
+      ]),
+    )
+    .catch(() => undefined);

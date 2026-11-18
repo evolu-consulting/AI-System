@@ -21,7 +21,8 @@ export type LinkStatusIn = {
 };
 const isoOf = (d: Date | string | null): string | null => (d ? new Date(d).toISOString() : null);
 /** Trạng thái link phía công ty thấy (không lộ email/băm). */
-export const statusOut = (r: LinkStatusIn): PartnerLinkStatusOut => ({
+export const statusOut = (r: LinkStatusIn, canResend: boolean): PartnerLinkStatusOut => ({
+  can_resend: canResend,
   state: r.state,
   sent_at: isoOf(r.sent_at),
   opened_at: isoOf(r.opened_at),

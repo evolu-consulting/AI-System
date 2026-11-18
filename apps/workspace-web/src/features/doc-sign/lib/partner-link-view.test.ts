@@ -1,9 +1,10 @@
 // CR-182 · trạng thái link ký của đối tác ở trang HĐ: dòng thông tin, ai thấy «Gửi lại link».
 import { describe, expect, test } from "bun:test";
 import type { PartnerLinkStatusOut } from "@ai/contracts/pack-contracts";
-import { canCopyLink, canShowResend, linkLines } from "./partner-link-view";
+import { canCopyLink, canResend, canShowResend, linkLines } from "./partner-link-view";
 
 const link = (o: Partial<PartnerLinkStatusOut> = {}): PartnerLinkStatusOut => ({
+  can_resend: true,
   state: "open",
   sent_at: "2026-11-17T01:00:00.000Z",
   opened_at: null,
@@ -40,5 +41,17 @@ describe("link ký của đối tác ở trang HĐ", () => {
     expect(canCopyLink(link())).toBe(false);
     expect(canCopyLink(link({ state: "declined", sent_at: null }))).toBe(false);
     expect(canCopyLink(null)).toBe(false);
+  });
+});
+
+describe("canResend (cờ của máy chủ)", () => {
+  const sess = (l: PartnerLinkStatusOut | null) =>
+    ({ files: [{ can_prep: false }], partner_link: l }) as never;
+  test("người tải lên lúc HĐ đã khoá (can_prep=false) vẫn thấy nút khi máy chủ báo can_resend", () => {
+    expect(canResend(sess(link({ can_resend: true })))).toBe(true);
+  });
+  test("người xem thường (can_resend=false) hoặc chưa có link thì không", () => {
+    expect(canResend(sess(link({ can_resend: false })))).toBe(false);
+    expect(canResend(sess(null))).toBe(false);
   });
 });

@@ -15,6 +15,7 @@ import {
   partnerOpenFields,
   signLinkUrl,
   signStepDone,
+  statusOut,
 } from "./partner-sign.rules";
 
 const now = new Date("2026-11-18T03:00:00Z");
@@ -133,5 +134,33 @@ describe("thư mời ký", () => {
     expect(m.text).toContain("Hạn ký: 26/11/2026");
     expect(m.text).toContain("https://app.vn/ky/tok");
     expect(m.html).toContain("https://app.vn/ky/tok");
+  });
+});
+
+describe("trạng thái link phía công ty", () => {
+  it("statusOut mang cờ can_resend của máy chủ, không lộ email/băm", () => {
+    const row = {
+      state: "open" as const,
+      sent_at: null,
+      opened_at: null,
+      expires_at: "2026-11-25T00:00:00Z",
+      signed_at: null,
+      declined_at: null,
+      decline_reason: null,
+      contact_name: "Lan",
+    };
+    expect(statusOut(row, true).can_resend).toBe(true);
+    expect(statusOut(row, false).can_resend).toBe(false);
+    expect(Object.keys(statusOut(row, true)).sort()).toEqual([
+      "can_resend",
+      "contact_name",
+      "decline_reason",
+      "declined_at",
+      "expires_at",
+      "opened_at",
+      "sent_at",
+      "signed_at",
+      "state",
+    ]);
   });
 });

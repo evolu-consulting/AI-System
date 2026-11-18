@@ -1,5 +1,4 @@
-// CR-182 · đợt 2 — «Đối tác ký qua link riêng» (DB thật, role gói `contracts_rw` + RLS, hàm DEFINER theo BĂM token; route công khai THẬT `partnerSignRoutes`
-// với hạn mức trong bộ nhớ; in PDF thật; FileBox + email giả). Người ký đối tác KHÔNG có tài khoản; người gửi lại (U2) khác người tải lên (U1) — N2.
+// CR-182 · đợt 2 — đối tác ký qua link riêng (DB thật + RLS, hàm DEFINER, route công khai thật, FileBox/email giả). U2 ≠ người tải lên (N2).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { withPackScope } from "@ai/db/pack-scope";
 import { tenants, users } from "@ai/test-kit/builders";
@@ -38,7 +37,6 @@ const mails: PartnerSignMail[] = [];
 let completed = 0;
 let ipN = 10;
 let puts = 0;
-
 const BOX = { x: 40, y: 40, w: 120, h: 50, cx: 40, cy: 40, cw: 120, ch: 50 };
 const part = (page: number) => ({ page, ...BOX });
 const canvasPng = (): Uint8Array => {
@@ -49,7 +47,6 @@ const canvasPng = (): Uint8Array => {
   return c.toBuffer("image/png");
 };
 const PNG_B64 = Buffer.from(canvasPng()).toString("base64");
-
 const uow = () =>
   createPackUow(db, "contracts", (tx, t) => ({
     contractFiles: contractFilesRepo(tx, t),
@@ -60,7 +57,6 @@ const uow = () =>
     partnerSign: partnerSignRepo(tx, t),
   })) as never as import("../../kit/public").PackUow<PartnerSignRepos> &
     import("../../kit/public").PackSystemUow<PartnerSignRepos>;
-
 let off = false;
 let reserved = false; // transport live nhưng bỏ qua địa chỉ miền dành riêng (.invalid) — như bản test staging
 const warns: { m: string; f: Record<string, unknown> | undefined }[] = [];
@@ -322,11 +318,9 @@ describe("CR-182 · đối tác ký qua link", () => {
   it("HUB_NOTIFY_MODE=off: không có transport ⇒ vẫn tạo link (ghi ra log), không ném", async () => {
     const f = await fixture();
     off = true;
-    try {
-      expect(await ucs().ensureLink(T, f.id, { by: U1, force: false })).toBe("created");
-    } finally {
-      off = false;
-    }
+    const r = await ucs().ensureLink(T, f.id, { by: U1, force: false });
+    off = false;
+    expect(r).toBe("created");
   });
 
   it("token sai / sai dạng ⇒ 404, hết hạn ⇒ 410, đã thu hồi ⇒ 410", async () => {
@@ -443,7 +437,7 @@ describe("CR-182 · đối tác ký qua link", () => {
     expect((await call("GET", "", fresh)).status).toBe(200);
     const admin = await ucs().resend(w(U2), f.id, true); // quản trị công ty
     expect(admin.link.state).toBe("open");
-    const st = await ucs().status(w(U1), f.id);
+    const st = await ucs().status(w(U1), f.id, false);
     expect(st?.link).toMatchObject({ state: "open", contact_name: "Chị Lan" });
     expect(st?.link?.sent_at).not.toBeNull();
   });
@@ -558,13 +552,13 @@ describe("CR-182 · đối tác ký qua link", () => {
     expect(completed).toBe(before); // thả bước lỗi ⇒ link «đã ký» mà bước Ký còn chờ
     const waiting = { a_done: true, b_total: 1, b_open: 0 };
     countsNow = { ...waiting, run_id: "7a1d0000-0000-4000-8000-0000000000cc" }; // bước chờ của lượt KHÁC
-    await ucs().status(w(U1), f.id);
+    await ucs().status(w(U1), f.id, false);
     expect(completed).toBe(before);
     countsNow = { ...waiting, run_id: RUN };
-    await ucs().status(w(U1), f.id);
+    await ucs().status(w(U1), f.id, false);
     expect(completed).toBe(before + 1); // đúng lượt ⇒ thả
     countsNow = null; // bước đã được thả ⇒ không còn bước chờ
-    await ucs().status(w(U1), f.id);
+    await ucs().status(w(U1), f.id, false);
     expect(completed).toBe(before + 1); // không thả lặp
     countsNow = undefined;
   });
@@ -583,6 +577,14 @@ describe("CR-182 · đối tác ký qua link", () => {
     expect(r).toMatchObject({ sent: false, bell: 1 });
     mails.length = 0;
     expect((await ucs().resend(w(U1), f.id, false)).sent).toBe(true);
+  });
+
+  it("can_resend: người tải lên ⇒ true, quản trị ⇒ true, người xem thường ⇒ false, không phụ thuộc trạng thái khoá của HĐ", async () => {
+    const f = await fixture();
+    await invite(f.id); // cờ không đọc trạng thái HĐ/can_prep
+    expect((await ucs().status(w(U1), f.id, false))?.link?.can_resend).toBe(true);
+    expect((await ucs().status(w(U2), f.id, true))?.link?.can_resend).toBe(true);
+    expect((await ucs().status(w(U2), f.id, false))?.link?.can_resend).toBe(false);
   });
 
   it("POST không có CSRF / khác nguồn ⇒ 403", async () => {

@@ -12,8 +12,8 @@ export const canShowResend = (l: PartnerLinkStatusOut | null | undefined): boole
 export const canCopyLink = (l: PartnerLinkStatusOut | null | undefined): boolean =>
   !!l && l.state === "open" && l.sent_at === null;
 
-/** Người tải lên tệp chính hoặc quản trị đều có `can_prep` trên tệp ⇒ hiện nút; máy chủ vẫn kiểm lại (403 ⇒ câu báo). */
-export const canResend = (s: SignSessionOut): boolean => s.files.some((f) => f.can_prep);
+/** Máy chủ nói người xem có được gửi lại không (`can_resend`: người tải lên HĐ hoặc quản trị — cùng luật với route `resend`, kể cả lúc HĐ đã khoá để duyệt). */
+export const canResend = (s: SignSessionOut): boolean => s.partner_link?.can_resend === true;
 
 /** `value` null ở «đã mở» = chưa mở (giao diện ghi «Chưa mở»). Hạn chỉ hiện khi link còn chờ. */
 export function linkLines(l: PartnerLinkStatusOut, lang: string): PartnerLinkLine[] {

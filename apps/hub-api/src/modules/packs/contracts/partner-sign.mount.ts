@@ -11,18 +11,17 @@ import { AppError, appError } from "../../../lib/errors";
 import { parseWith } from "../../../lib/http";
 import { logger } from "../../../lib/logger";
 import {
-  checkPackAccess,
   createPackUow,
   orgForTenant,
   type PackAccessView,
   type PackFileboxClient,
   type PackGuardVars,
-  packAccessInput,
   packGuard,
   partnerSignMailer,
   partnerSignPort,
 } from "../kit/public";
 import { contractFilesRepo } from "./adapters/contract-files.repo";
+import { isResendAdmin } from "./adapters/partner-sign.admin";
 import { partnerSignRepo } from "./adapters/partner-sign.repo";
 import { signDocRepo } from "./adapters/sign-doc.repo";
 import { signDocsRepo } from "./adapters/sign-docs.repo";
@@ -149,14 +148,10 @@ export function partnerSignModule(
   const id = (c: { req: { param(k: string): string | undefined } }) =>
     parseWith(z.uuid(), c.req.param("id"));
   r.post("/contracts/:id/partner-sign/resend", read, async (c) => {
-    const i = await packAccessInput(view, "contracts", c.get("user"));
-    const admin =
-      c.get("user").role === "tenant_admin" ||
-      checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
-    return c.json(await run(uc.resend(who(c), id(c), admin)), 201);
+    return c.json(await run(uc.resend(who(c), id(c), await isResendAdmin(view, c))), 201);
   });
   r.get("/contracts/:id/partner-sign", read, async (c) => {
-    const out = await run(uc.status(who(c), id(c)));
+    const out = await run(uc.status(who(c), id(c), await isResendAdmin(view, c)));
     if (!out) throw appError("NOT_FOUND");
     c.header("cache-control", "no-store");
     return c.json(out);

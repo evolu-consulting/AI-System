@@ -19,6 +19,7 @@ import { parseWith, readJson } from "../../../../lib/http";
 import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import { SignDocFail, type SignDocUsecases } from "../application/sign-doc.usecase";
 import type { SignSaveUsecases } from "../application/sign-save.usecase";
+import { isResendAdmin } from "./partner-sign.admin";
 
 const who = (c: Context<PackGuardVars>) => {
   const u = c.get("user");
@@ -125,7 +126,7 @@ export function signDocRoutes(
     return c.json(out);
   });
   r.get("/contracts/:id/doc-sign-session", read, async (c) => {
-    const out = await run(uc.session(who(c), id(c)));
+    const out = await run(uc.session(who(c), id(c), await isResendAdmin(view, c)));
     if (!out) throw appError("NOT_FOUND");
     c.header("cache-control", "no-store");
     return c.json(out);

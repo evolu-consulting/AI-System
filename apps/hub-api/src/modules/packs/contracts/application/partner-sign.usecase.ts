@@ -28,7 +28,7 @@ import {
 } from "../domain/partner-sign.rules";
 import type { PartnerSignDeps, PartnerSignRepos } from "./partner-sign.deps";
 import type { ContactRow, LinkRow } from "./partner-sign.repo.port";
-import { sendMail } from "./partner-sign-mail";
+import { mailFailedBell, sendMail } from "./partner-sign-mail";
 import { partnerSignSave } from "./partner-sign-save";
 
 const fail = (status: SignLinkFail["status"], code: string): SignLinkFail => ({
@@ -131,30 +131,9 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
     );
     if (sent) await d.uow.system(tenantId, (r) => r.partnerSign.markSent(linkId));
     // Có transport mà thư không đi ⇒ báo người tải lên (chuông) — không để HĐ chờ trong im lặng.
-    else if (d.mailer()) await mailFailedBell(tenantId, contractId, made.c, linkId);
+    else if (d.mailer()) await mailFailedBell(d, tenantId, contractId, made.c, linkId);
     return { res: "created", url: link, sent };
   }
-  /** Chuông «Chưa gửi được thư mời ký»: người tải lên sửa email liên hệ rồi bấm «Gửi lại link ký». */
-  const mailFailedBell = (
-    tenantId: string,
-    contractId: string,
-    c: { title: string; created_by: string },
-    linkId: string,
-  ) =>
-    d.uow
-      .system(tenantId, (r) =>
-        r.notify.enqueue([
-          {
-            user_id: c.created_by,
-            kind: "contract.partner_sign_mail_failed",
-            title: `Chưa gửi được thư mời ký: ${c.title}`.slice(0, 200),
-            body: "Thư mời không tới được địa chỉ email của liên hệ đối tác. Kiểm tra email liên hệ rồi bấm «Gửi lại link ký».",
-            link: `/contracts/${contractId}`,
-            dedup_key: `partner-sign-mailfail:${linkId}`,
-          },
-        ]),
-      )
-      .catch(() => undefined);
   const ensureLink = async (...a: Parameters<typeof ensureLinkFull>) =>
     (await ensureLinkFull(...a)).res;
 
@@ -241,7 +220,7 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
         // Thư không gửi được (tắt thông báo / lỗi SMTP) ⇒ trả link gốc MỘT lần cho người có quyền gửi lại để sao chép (DB chỉ giữ băm).
         url: sent ? null : url,
         expires_at: new Date(link.expires_at).toISOString(),
-        link: statusOut(link),
+        link: statusOut(link, true), // vừa qua kiểm quyền `canResendLink`
       };
     },
 
@@ -249,12 +228,19 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
     async status(
       who: PackWho,
       contractId: string,
+      admin: boolean,
     ): Promise<{ link: PartnerLinkStatusOut | null } | null> {
       const out = await d.uow.tenant(who, async (r) => {
-        if (!(await r.contractFiles.facts(contractId))) return null;
+        const facts = await r.contractFiles.facts(contractId);
+        if (!facts) return null;
         const l = await r.partnerSign.latest(contractId);
+        const can = canResendLink({
+          userId: who.userId,
+          uploaderId: facts.created_by,
+          isAdmin: admin,
+        });
         const run = l?.state === "signed" ? await r.partnerSign.signedRun(contractId) : null;
-        return { link: l ? statusOut(l) : null, run };
+        return { link: l ? statusOut(l, can) : null, run };
       });
       // Tự phục hồi (soát #4): đối tác đã ký đủ mà bước Ký vẫn chờ (thả bước lỗi lần trước) ⇒ thả lại (`completed` idempotent).
       if (out?.link?.state === "signed") await recover(who.tenantId, contractId, out.run);

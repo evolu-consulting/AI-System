@@ -154,6 +154,8 @@ export type SignFileOut = {
 };
 /** Trạng thái link mà phía công ty thấy (phiên ký, trang HĐ). `null` ở phiên ký = HĐ chưa gửi link. */
 export type PartnerLinkStatusOut = {
+  /** Người xem này được «Gửi lại / Sao chép link» (người tải lên HĐ hoặc quản trị) — một nguồn với route `resend`, không phụ thuộc HĐ đang khoá. */
+  can_resend: boolean;
   state: "open" | "signed" | "declined" | "expired" | "revoked";
   sent_at: string | null;
   opened_at: string | null;
