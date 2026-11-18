@@ -8,13 +8,14 @@
 #   Stack stg-test chua co cong ty `evolu` ⇒ buoc partner TAO cong ty Evolu (+ goi Hop dong + quan tri uat-nhan-admin); co san thi chi them.
 # CR-152: buoc `kinds` (--kinds-only) them 2 HD mau tren demo: «Nhuong quyen Ca Phe Mau» (DONE, co moc ky) + «Thoa thuan hop tac Logistics mien Tay» (dang cho duyet). Chay SAU org + partner; khong nam trong mac dinh.
 # CR-181: buoc `sign` (--sign-only) bat ky tren tai lieu cho demo + quy trinh «Duyet va ky hop dong (ky tren tai lieu)» + 1 HD Nhap mau co 2 PDF (chay SAU org + partner; chi them, khong nam trong mac dinh).
-#   bash seed-demo.sh [--org-only | --showcase-only | --purchase-only | --partner-only | --kinds-only | --sign-only] [--trial] [--dry-run]
+#   CR-182: --sign-new = LUON tao them 1 HD mau Nhap MOI (tieu de co gio) de moi luot UAT co HD moi; --sign-only chi tao khi khong con HD Nhap nao.
+#   bash seed-demo.sh [--org-only | --showcase-only | --purchase-only | --partner-only | --kinds-only | --sign-only | --sign-new] [--trial] [--dry-run]
 set -euo pipefail
 cd "$(dirname "$0")"
 . ./lib.sh
 [ "$PROJECT" = "sohoptac2-staging" ] || { echo "seed-demo: sai project"; exit 4; }
-STEPS="org showcase purchase partner"; TRIAL=""
-for a in "$@"; do case "$a" in --org-only) STEPS=org;; --showcase-only) STEPS=showcase;; --purchase-only) STEPS=purchase;; --partner-only) STEPS=partner;; --kinds-only) STEPS=kinds;; --sign-only) STEPS=sign;; --trial) TRIAL="--trial";; esac; done
+STEPS="org showcase purchase partner"; TRIAL=""; SIGN_ARGS=""
+for a in "$@"; do case "$a" in --org-only) STEPS=org;; --showcase-only) STEPS=showcase;; --purchase-only) STEPS=purchase;; --partner-only) STEPS=partner;; --kinds-only) STEPS=kinds;; --sign-only) STEPS=sign;; --sign-new) STEPS=sign; SIGN_ARGS="--sign-new";; --trial) TRIAL="--trial";; esac; done
 MOUNTS=()
 for f in seed-src/*.ts; do [ -e "$f" ] && MOUNTS+=(-v "$PWD/$f:/app/tools/scripts/src/$(basename "$f"):ro"); done
 if [ "$DRY" = 1 ]; then echo "[dry-run] project $PROJECT, buoc: $STEPS $TRIAL, mount ${#MOUNTS[@]} file"; exit 0; fi
@@ -29,7 +30,7 @@ for s in $STEPS; do
     purchase) tool tools/scripts/src/seed-purchase-flow.ts $TRIAL ;;
     partner) tool tools/scripts/src/seed-demo-partner.ts ;;
     kinds) tool tools/scripts/src/seed-kind-samples.ts ;;
-    sign) tool tools/scripts/src/seed-cr181-sign.ts ;;
+    sign) tool tools/scripts/src/seed-cr181-sign.ts $SIGN_ARGS ;;
   esac
 done
 unset SEED_ADMIN_PASSWORD DEMO_OWNER_PW UAT_EVOLU_PW

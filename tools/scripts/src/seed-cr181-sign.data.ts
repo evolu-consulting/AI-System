@@ -80,10 +80,10 @@ export const ROLE_ASSIGNEES: readonly { role_key: string; username: string }[] =
   { role_key: ROLE_REVIEW.key, username: "binh.tran" },
   { role_key: ROLE_SIGN.key, username: "demo-owner" },
 ];
-/** Phụ: điều kiện KHÔNG BAO GIỜ đúng (như quy trình mua hàng mẫu, `total_value < -1`) ⇒ không tranh HĐ nào; chỉ để UAT xem vai chưa giao. */
+/** Phụ: điều kiện KHÔNG BAO GIỜ đúng (giá trị < -2) ⇒ không tranh HĐ nào. KHÔNG dùng đúng `NEVER_TRIGGER` (`< -1`): `event-flow.repo.ts` loại nó khỏi «quy trình đang chạy» ⇒ màn Cài đặt sẽ không liệt kê. */
 export const signFlow2Trigger = () => ({
   event: "contract.submitted",
-  when: { op: "and", conds: [{ fact: "total_value", op: "lt", value: -1 }] },
+  when: { op: "and", conds: [{ fact: "total_value", op: "lt", value: -2 }] },
 });
 
 /** Bước Duyệt theo VAI (không nhóm, không «trưởng phòng người đề xuất»): người duyệt do giao việc quyết. */
@@ -292,32 +292,35 @@ export const SIGN_SIGNER_USER = "demo-owner";
 export const signerNeedsAdd = (memberUsernames: readonly string[]): boolean =>
   !memberUsernames.includes(SIGN_SIGNER_USER);
 
-/** Một HĐ mẫu: id + tiêu đề. Id/tiêu đề suy từ NGÀY (giờ VN) ⇒ chạy lại cùng ngày không tạo thêm; tiêu đề có hậu tố «· dd/mm». */
+/** Một HĐ mẫu: id + tiêu đề. Id/tiêu đề suy từ GIỜ (phút, giờ VN) ⇒ mỗi lần tạo mới là một HĐ khác nhau; cùng phút chạy lại ⇒ cùng HĐ (idempotent). */
 export type SignSampleTarget = { id: string; title: string };
-/** `now` theo giờ Việt Nam (UTC+7). */
-export function dailySampleTarget(now: Date): SignSampleTarget {
+/** `now` theo giờ Việt Nam (UTC+7): id = `<SIGN_ID_PREFIX>YYMMDDHHMM`, tiêu đề «… · dd/mm HH:MM · bản N». */
+export function sampleTargetAt(now: Date): SignSampleTarget {
   const d = new Date(now.getTime() + 7 * 3600_000);
   const p = (n: number): string => String(n).padStart(2, "0");
-  const yymmdd = `${p(d.getUTCFullYear() % 100)}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}`;
+  const ymd = `${p(d.getUTCFullYear() % 100)}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}`;
+  const hm = `${p(d.getUTCHours())}${p(d.getUTCMinutes())}`;
   const rev = Number(SIGN_SAMPLE_REV) > 16 ? ` · bản ${Number(SIGN_SAMPLE_REV) - 15}` : "";
   return {
-    id: `${SIGN_ID_PREFIX}${yymmdd}0000`,
-    title: `${SIGN_CONTRACT_TITLE} · ${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}${rev}`,
+    id: `${SIGN_ID_PREFIX}${ymd}${hm}`,
+    title: `${SIGN_CONTRACT_TITLE} · ${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}${rev}`,
   };
 }
 /**
- * Chọn HĐ mẫu để làm tiếp. `existing` = HĐ mẫu ĐỜI HIỆN TẠI đã có (id bắt đầu bằng `SIGN_ID_PREFIX`) + trạng thái.
- * Còn một HĐ Nháp ⇒ dùng nó (không tạo thêm); không thì HĐ của HÔM NAY (chưa có ⇒ tạo; có mà đã rời Nháp ⇒ kế hoạch rỗng). HĐ cũ giữ nguyên.
+ * Chọn HĐ mẫu để làm tiếp. `existing` = HĐ mẫu ĐỜI HIỆN TẠI đã có + trạng thái.
+ * `forceNew` (`--sign-new`) ⇒ LUÔN HĐ mới (giờ hiện tại). Không thì: còn HĐ Nháp ⇒ dùng nó (idempotent); không còn Nháp nào ⇒ HĐ mới. HĐ cũ giữ nguyên.
  */
 export function pickSampleTarget(
   existing: readonly { id: string; status: string }[],
   now: Date,
+  forceNew = false,
 ): SignSampleTarget {
-  const today = dailySampleTarget(now);
+  const fresh = sampleTargetAt(now);
+  if (forceNew) return fresh;
   const draft = [...existing]
     .reverse()
     .find((e) => e.status === "draft" && e.id.startsWith(SIGN_ID_PREFIX));
-  return draft ? { id: draft.id, title: today.title } : today;
+  return draft ? { id: draft.id, title: fresh.title } : fresh;
 }
 
 const fv = (value: string | number) => ({ value, quote: "", verified: true, edited: true });

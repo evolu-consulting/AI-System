@@ -1,12 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { createRequire } from "node:module";
+import { NEVER_TRIGGER } from "../../../apps/hub-api/src/modules/processes/library/purchase-templates";
 import { SignatureSettingsSchema } from "../../../packages/contracts/src/signature";
 import {
   ANNEX_FILE,
   annexPdf,
   CONTRACT_FILE,
   contractPdf,
-  dailySampleTarget,
   pickSampleTarget,
   planSignSample,
   ROLE_REVIEW,
@@ -15,6 +15,7 @@ import {
   roleAssignPlan,
   SIGN_ID_PREFIX,
   SIGN_PARTNER,
+  sampleTargetAt,
   signerNeedsAdd,
   signFlow2Stages,
   signFlow2Trigger,
@@ -87,6 +88,8 @@ describe("quy trình theo vai (CR-182)", () => {
     expect(roleAssignPlan(new Map()).missing).toContain("binh.tran");
     expect(ROLE_SPARE.key).not.toBe(ROLE_REVIEW.key);
     expect(JSON.stringify(signFlow2Trigger().when)).toContain('"lt"');
+    // KHÔNG được bằng NEVER_TRIGGER: event-flow.repo.ts loại nó khỏi danh sách quy trình đang bật (màn Cài đặt)
+    expect(JSON.stringify(signFlow2Trigger())).not.toBe(JSON.stringify(NEVER_TRIGGER));
   });
   it("chính ĐẦU, phụ CUỐI, không nhân đôi", () => {
     expect(signFlowOrder(["a", "m", "b", "p"], "m", "p")).toEqual(["m", "a", "b", "p"]);
@@ -165,27 +168,48 @@ describe("fix-cr181-uat · lỗi 1a/3/5 · dữ liệu mẫu đủ cho kịch b�
   });
 });
 
-describe("HĐ mẫu theo ngày + đời dữ liệu", () => {
-  const now = new Date("2026-11-18T03:00:00Z");
-  const today = dailySampleTarget(now);
-  it("id/tiêu đề theo ngày VN, đời 17 ≠ đời 16 (HĐ lỗi cũ không bị dùng lại)", () => {
-    expect(today.id).toBe("c1810000-0000-4000-8000-172611180000");
-    expect(today.title).toBe("HĐ mẫu · Ký trên tài liệu (CR-181) · 18/11 · bản 2");
-    expect(today.id.startsWith(SIGN_ID_PREFIX)).toBe(true);
-    expect(dailySampleTarget(new Date("2026-11-18T17:30:00Z")).title).toContain("19/11");
+describe("HĐ mẫu theo giờ + đời dữ liệu", () => {
+  const now = new Date("2026-11-18T08:30:00Z"); // 15:30 giờ VN
+  const fresh = sampleTargetAt(now);
+  it("id/tiêu đề theo giờ VN, có phút; đời 17", () => {
+    expect(fresh.id).toBe("c1810000-0000-4000-8000-172611181530");
+    expect(fresh.title).toBe("HĐ mẫu · Ký trên tài liệu (CR-181) · 18/11 15:30 · bản 2");
+    expect(sampleTargetAt(new Date("2026-11-18T17:30:00Z")).title).toContain("19/11 00:30");
+    expect(fresh.id.startsWith(SIGN_ID_PREFIX)).toBe(true);
   });
-  it("chưa có ⇒ HĐ hôm nay; còn Nháp đời hiện tại ⇒ dùng nó; đã rời Nháp ⇒ HĐ hôm nay", () => {
-    expect(pickSampleTarget([], now)).toEqual(today);
-    const d = { id: `${SIGN_ID_PREFIX}2611170000`, status: "draft" };
+  it("--sign-only: còn Nháp ⇒ dùng nó (idempotent); không còn Nháp nào ⇒ HĐ mới", () => {
+    const d = { id: `${SIGN_ID_PREFIX}2611171000`, status: "draft" };
+    expect(pickSampleTarget([], now)).toEqual(fresh);
     expect(pickSampleTarget([d], now).id).toBe(d.id);
-    expect(pickSampleTarget([{ ...d, status: "processing" }], now)).toEqual(today);
+    expect(pickSampleTarget([{ ...d, status: "processing" }], now)).toEqual(fresh);
+    expect(
+      pickSampleTarget(
+        [
+          { ...d, status: "done" },
+          { ...d, id: "x", status: "processing" },
+        ],
+        now,
+      ),
+    ).toEqual(fresh);
     // HĐ đời 16 còn Nháp (fields sai) KHÔNG được dùng lại
     expect(
       pickSampleTarget([{ id: "c1810000-0000-4000-8000-162611180000", status: "draft" }], now),
-    ).toEqual(today);
+    ).toEqual(fresh);
   });
-  it("kế hoạch: HĐ chưa có ⇒ tạo đủ; Nháp fields sai ⇒ sửa fields; đã rời Nháp ⇒ rỗng (không tạo hai HĐ cùng ngày)", () => {
-    expect(planSignSample({ exists: false, status: null, fileNames: [] })[0]).toBe("create");
+  it("--sign-new: luôn HĐ mới dù còn Nháp; cùng phút chạy lại ⇒ cùng id", () => {
+    const d = { id: `${SIGN_ID_PREFIX}2611171000`, status: "draft" };
+    expect(pickSampleTarget([d], now, true)).toEqual(fresh);
+    expect(pickSampleTarget([d], new Date(now.getTime() + 20_000), true).id).toBe(fresh.id);
+    expect(pickSampleTarget([d], new Date(now.getTime() + 120_000), true).id).not.toBe(fresh.id);
+  });
+  it("kế hoạch: HĐ mới ⇒ tạo đủ; Nháp fields sai ⇒ sửa fields; đã rời Nháp ⇒ rỗng", () => {
+    expect(planSignSample({ exists: false, status: null, fileNames: [] })).toEqual([
+      "create",
+      "file_contract",
+      "promote_main",
+      "file_annex",
+      "partner_contact",
+    ]);
     const draft = {
       exists: true,
       status: "draft",

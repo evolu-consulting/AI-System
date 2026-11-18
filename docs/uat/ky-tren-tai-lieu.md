@@ -6,7 +6,7 @@ Mỗi ca: làm đúng vai, đúng tài khoản, đánh dấu Đạt hoặc Khôn
 ## 0. Chuẩn bị (điều phối làm một lần)
 | Việc | Cách làm |
 |---|---|
-| Nạp dữ liệu | Chạy sau `--org-only` và `--partner-only`: `bash seed-demo.sh --sign-only` (trên máy chủ bản test). Chạy lại được, chỉ thêm. Từ chối chạy ngoài bản test. |
+| Nạp dữ liệu | Chạy sau `--org-only` và `--partner-only`: `bash seed-demo.sh --sign-only` (trên máy chủ bản test). Chạy lại được, chỉ thêm. Từ chối chạy ngoài bản test. **Mỗi lượt kiểm thử cần một HĐ Nháp mới: chạy `bash seed-demo.sh --sign-new`** (luôn tạo thêm MỘT HĐ mẫu Nháp, tiêu đề có giờ, ví dụ «HĐ mẫu · Ký trên tài liệu (CR-181) · 18/11 15:30 · bản 2»; đối tác Evolu có liên hệ email, tệp hợp đồng 6 trang + phụ lục). `--sign-only` chỉ tạo HĐ mới khi KHÔNG còn HĐ Nháp nào. **Dùng HĐ do seed tạo, đừng tự tải HĐ**: ô «Khách hàng» khi tự tải là chữ tự do, không gắn được đối tác Evolu nên không có Bên B và không có link mời ký. |
 | Seed làm gì | (1) Bật «Ký trên tài liệu» cho Demo, các định dạng khác để mặc định. (2) Thêm quy trình **Duyệt và ký hợp đồng (ký trên tài liệu)**: Trưởng phòng duyệt (ý kiến + chữ ký) → Ký trên tài liệu; người làm lấy theo VAI (CR-182): «Trưởng phòng duyệt» → `binh.tran`, «Người ký hợp đồng» → `demo-owner` (seed giao qua API giao việc). Thêm quy trình phụ «Duyệt hợp đồng bổ sung (UAT · có vai chưa giao)» (vai «Giám đốc duyệt» chưa giao; đứng cuối, không khớp HĐ nào). (3) Thêm hợp đồng Nháp **HĐ mẫu · Ký trên tài liệu (CR-181)** của `cuong.le`, đối tác Evolu (có email), kèm 2 PDF: hợp đồng 6 trang (trang cuối có «ĐẠI DIỆN BÊN A / BÊN B», «(Ký, ghi rõ họ tên)») và phụ lục 2 trang. |
 | Không có sẵn | KHÔNG ai có chữ ký sẵn: lần đầu vào, mỗi người sẽ thấy màn «Tạo chữ ký của bạn». |
 | Chọn quy trình | Quy trình mới đứng ĐẦU thứ tự, chỉ khớp khi người tạo thuộc phòng Kinh doanh **và** giá trị hợp đồng ≤ 100 triệu (HĐ mẫu: 80 triệu). Hợp đồng ≥ 150 triệu của UAT hai công ty vẫn đi quy trình «UAT · …» cũ, không đổi. Muốn thử ký trên tài liệu với hợp đồng khác: tạo hợp đồng Kinh doanh dưới 100 triệu. |
@@ -50,7 +50,7 @@ Mở bằng điện thoại hoặc thu cửa sổ trình duyệt về rộng 390
 Làm SAU mục 2 (cần HĐ mẫu đã tới bước Ký, hoặc hợp đồng mới Kinh doanh dưới 100 triệu). Tài khoản như mục 1; người ngoài (đối tác) không cần tài khoản.
 
 ### 5.1 Giao việc theo vai trên sơ đồ
-Seed đã giao sẵn: «Trưởng phòng duyệt» → `binh.tran`, «Người ký hợp đồng» → `demo-owner`. Quy trình phụ **Duyệt hợp đồng bổ sung (UAT · có vai chưa giao)** có vai «Giám đốc duyệt» CHƯA giao; quy trình này đứng cuối thứ tự và không khớp hợp đồng nào nên không chặn HĐ mẫu.
+Seed đã giao sẵn: «Trưởng phòng duyệt» → `binh.tran`, «Người ký hợp đồng» → `demo-owner`. Quy trình phụ **Duyệt hợp đồng bổ sung (UAT · có vai chưa giao)** có vai «Giám đốc duyệt» CHƯA giao; quy trình này ĐANG BẬT, đứng cuối thứ tự và điều kiện (giá trị dưới -2) không bao giờ đúng nên không chặn HĐ mẫu. Cài đặt chỉ liệt kê quy trình đang bật và khác điều kiện «không bao giờ chạy» của quy trình mẫu mua hàng, nên seed dùng điều kiện riêng để nó hiện ra.
 | Mã | Vai + tài khoản | Bước bấm | Điểm cần nhìn | Đạt/Không |
 |---|---|---|---|---|
 | R01 | `demo-owner` | Cài đặt › Quy trình duyệt › mở «Duyệt và ký hợp đồng (ký trên tài liệu)» › bấm bước «Trưởng phòng duyệt» trên sơ đồ | Khung giao việc hiện vai «Trưởng phòng duyệt» đang giao cho Trần Thị Bình; đổi được sang nhóm hoặc người khác, Lưu có thông báo. Bước Ký hiện vai «Người ký hợp đồng» giao cho giám đốc; không còn ô «Ký qua» / «Người ký phía công ty». | |
@@ -66,9 +66,11 @@ Seed đã giao sẵn: «Trưởng phòng duyệt» → `binh.tran`, «Người k
 | F03 | `binh.tran` | Mở bằng điện thoại 390px | Chỉ còn «Từng trang» (không có Xoè quạt). | |
 
 ### 5.3 Đối tác ký qua link
-Bản test đặt `HUB_NOTIFY_MODE=off` nên KHÔNG gửi email thật: link mời ký nằm trong log hub-api. Lấy link (trên máy chủ bản test, điều phối làm):
-`cd ~/workspace/sohoptac2-staging && docker compose -p sohoptac2-staging logs --no-log-prefix hub-api | grep -E "partner-sign-mail-off|sign-link" | tail -3`
-Dòng log có trường `link` dạng `…/ky/<mã>` và `to` = email liên hệ đối tác (`thomas.tran@example.invalid`). Không dán link vào chỗ công khai.
+Bản test đặt `HUB_NOTIFY_MODE=off` nên KHÔNG gửi email thật. Hai cách lấy link:
+1. Trang HĐ (người tải lên / quản trị): «Gửi lại link» rồi «Sao chép link» (tạo link mới, link cũ hết hạn).
+2. Log hub-api: bản test chạy `APP_ENV=development` nên hub ghi link ra log. Trên máy chủ bản test (điều phối làm):
+`cd ~/workspace/sohoptac2-staging && docker compose -p sohoptac2-staging logs --no-log-prefix hub-api | grep partner-sign-mail-off | tail -3`
+Log dạng JSON, dòng `partner-sign-mail-off` có `to` = `thomas.tran@example.invalid`, `subject` và `link` = `…/ky/<mã>` (kèm `link_id`). Dòng chỉ có `link_id` mà không có `link` nghĩa là môi trường không phải development: dùng cách 1. Không dán link vào chỗ công khai.
 | Mã | Vai + tài khoản | Bước bấm | Điểm cần nhìn | Đạt/Không |
 |---|---|---|---|---|
 | P01 | `demo-owner` | Hoàn tất ký của bên A (sau `binh.tran`), mở trang HĐ | Khối «Chờ đối tác ký»: đã gửi lúc, «Chưa mở», hạn 7 ngày. Có dòng log mời ký (lệnh trên). | |
@@ -101,4 +103,4 @@ Dòng log có trường `link` dạng `…/ky/<mã>` và `to` = email liên hệ
 | D05 | `binh.tran` / `demo-owner` | Mở «Lịch sử uỷ quyền» | Trạng thái (còn hiệu lực / hết hạn / thu hồi), số việc đã làm thay, mở được hợp đồng. Người thường chỉ thấy uỷ quyền có mình, quản trị thấy cả công ty. Thu hồi ⇒ trạng thái đổi. | |
 
 ## 6. Dọn
-Hợp đồng mẫu là hợp đồng thật của Demo, chạy xong để nguyên. Muốn làm lại từ đầu: nhờ điều phối tạo hợp đồng Kinh doanh mới dưới 100 triệu (seed không tạo lại HĐ mẫu đã rời Nháp).
+Hợp đồng mẫu là hợp đồng thật của Demo, chạy xong để nguyên. Muốn làm lại từ đầu: chạy `bash seed-demo.sh --sign-new` để có HĐ Nháp mới (HĐ cũ giữ nguyên).

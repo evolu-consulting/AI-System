@@ -157,7 +157,11 @@ async function uploadSample(sale: Call, cid: string, step: SignSampleStep): Prom
 
 /** 3) HĐ Nháp mẫu + 2 PDF (đúng đường API của sale; HĐ tạo bằng SQL như seed-kind-samples). */
 async function ensureSample(sql: Sql, tid: string, hubUrl: string, authUrl: string, pw: string) {
-  const target = pickSampleTarget(await existingSamples(sql, tid), new Date());
+  const target = pickSampleTarget(
+    await existingSamples(sql, tid),
+    new Date(),
+    process.argv.includes("--sign-new"),
+  );
   const cid = target.id;
   const steps = planSignSample(await sampleState(sql, tid, cid));
   if (!steps.length) return void console.log(`${TAG}: HĐ mẫu đã có — bỏ qua`);
