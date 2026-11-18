@@ -103,6 +103,9 @@ export function commentView(a: Access, n: Names, r: CommentRow): CommentView {
     mentions: r.mentions
       .filter((m) => host || m === a.org)
       .map((m) => ({ orgId: m, name: n.orgName(m) })),
+    ...(r.mention_people?.length
+      ? { mentionedUsers: r.mention_people.map((m) => ({ userId: m.id, name: m.name })) }
+      : {}),
   };
 }
 

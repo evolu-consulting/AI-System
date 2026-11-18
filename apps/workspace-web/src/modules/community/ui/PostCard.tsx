@@ -15,6 +15,7 @@ import { DraftFields } from "./DraftFields";
 import { ModerationNote, ReportDialog } from "./flows/PostFlows";
 import { Highlighted } from "./Highlighted";
 import { IconBox, IconChat, IconCheck, IconDots, IconLock, IconSave } from "./icons";
+import { MentionedLine } from "./MentionedLine";
 import { PostMedia } from "./PostMedia";
 import { has, PostMenu } from "./PostMenu";
 import { QuoteForm } from "./QuoteForm";
@@ -226,13 +227,7 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
               <Highlighted text={p.body} hits={p.hits} field="body" />
             </p>
           )}
-          {p.mentionedUsers && p.mentionedUsers.length > 0 && (
-            <p className="pmentions" data-testid="post-mentions">
-              {t("community.draft.mentionShown", {
-                names: p.mentionedUsers.map((m) => m.name).join(", "),
-              })}
-            </p>
-          )}
+          <MentionedLine users={p.mentionedUsers} testId="post-mentions" />
         </div>
       )}
       {deal && (

@@ -81,6 +81,7 @@ export async function add(
         authorOrg: a.org,
         text: input.text,
         mentions,
+        people,
       });
       return { row, authorOrgOfPost: st.author_org };
     })

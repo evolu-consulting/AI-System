@@ -104,6 +104,8 @@ export type RawComment = {
   hidden: boolean;
   /** Id công ty được nhắc (@). */
   mentions?: string[];
+  /** CR-186 · người được nhắc (`internal` = chủ quản; đối tác chỉ thấy nhóm này). */
+  people?: { userId: string; name: string; internal: boolean }[];
 };
 
 const aud = (

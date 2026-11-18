@@ -9,6 +9,7 @@ import { type CommentActions, splitMentions } from "../domain/thread";
 import { t } from "../i18n";
 import { Highlighted } from "./Highlighted";
 import { IconEdit, IconEyeOff, IconTrash } from "./icons";
+import { MentionedLine } from "./MentionedLine";
 
 export type CommentItemProps = {
   comment: CommentView;
@@ -30,6 +31,8 @@ export function CommentItem({
 }: CommentItemProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(c.text);
+  // CR-186: tô đậm «@Tên» của cả công ty (CR-129, chỉ đọc) lẫn NGƯỜI được nhắc
+  const tagged = [...c.mentions, ...(c.mentionedUsers ?? [])];
   const save = async () => {
     if (draft.trim()) await onEdit(draft);
     setEditing(false);
@@ -59,8 +62,8 @@ export function CommentItem({
             />
           ) : (
             <p>
-              {c.mentions.length > 0 && !c.hits?.length ? (
-                splitMentions(c.text, c.mentions).map((part, i) =>
+              {tagged.length > 0 && !c.hits?.length ? (
+                splitMentions(c.text, tagged).map((part, i) =>
                   part.mention ? (
                     // biome-ignore lint/suspicious/noArrayIndexKey: đoạn tách từ chữ tĩnh, thứ tự cố định
                     <b key={i} className="mention" data-testid="mention-tag">
@@ -76,6 +79,7 @@ export function CommentItem({
               )}
             </p>
           )}
+          <MentionedLine users={c.mentionedUsers} testId="comment-mentions" />
         </div>
         <div className="ctime">
           {timeAgo(c.createdAt)}

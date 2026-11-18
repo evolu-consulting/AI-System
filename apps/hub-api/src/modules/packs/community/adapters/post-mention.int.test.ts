@@ -342,4 +342,37 @@ describe("CR-186 · nhắc NGƯỜI trong bình luận (mentionUserIds)", () => 
     const old = l.json.comments.find((x: { id: string }) => x.id === r.json.id);
     expect(old.mentions.map((m: { orgId: string }) => m.orgId)).toEqual([c.S1]);
   });
+
+  it("lưu + đọc: người được nhắc theo bình luận, che theo người xem (đối tác chỉ thấy chủ quản + công ty mình), sửa chữ giữ lời nhắc, không chuông mới, bình luận cũ không có trường", async () => {
+    const r = await comment("hM", [c.s2, c.hA], "lời nhắc lưu");
+    expect(r.status).toBe(201);
+    const ids = async (who: Who) => {
+      const l = await call(who, "GET", `/posts/${post}/comments?limit=100`);
+      const x = l.json.comments.find((k: { id: string }) => k.id === r.json.id);
+      return (x?.mentionedUsers ?? []).map((m: { userId: string }) => m.userId).sort();
+    };
+    expect(await ids("hA")).toEqual([c.s2, c.hA].sort()); // chủ quản thấy cả hai
+    expect(await ids("s2")).toEqual([c.s2, c.hA].sort()); // đối tác: chủ quản + công ty mình
+    expect(await ids("s1a")).toEqual([c.hA]); // công ty KHÁC (S2) bị che
+    const names = (await call("hA", "GET", `/posts/${post}/comments?limit=100`)).json.comments.find(
+      (k: { id: string }) => k.id === r.json.id,
+    ).mentionedUsers as { name: string }[];
+    expect(names.every((m) => m.name.length > 0)).toBe(true);
+    // bảng tin (recentComments) cùng luật che
+    const feed = await call("s1a", "GET", "/feed?tab=all&limit=50");
+    const it = feed.json.items.find((p: { id: string }) => p.id === post);
+    const rc = it.recentComments.find((k: { id: string }) => k.id === r.json.id);
+    expect((rc.mentionedUsers ?? []).map((m: { userId: string }) => m.userId)).toEqual([c.hA]);
+    // sửa chữ: giữ lời nhắc, không chuông mới
+    const before = (await commentBells(c.s2)).length;
+    const e = await call("hM", "PATCH", `/posts/${post}/comments/${r.json.id}`, { text: "đã sửa" });
+    expect(e.status).toBe(200);
+    expect((e.json.mentionedUsers ?? []).map((m: { userId: string }) => m.userId).sort()).toEqual(
+      [c.s2, c.hA].sort(),
+    );
+    expect(await commentBells(c.s2)).toHaveLength(before);
+    // bình luận không nhắc ai ⇒ không có trường
+    const plain = await comment("hM", [], "không nhắc");
+    expect(plain.json.mentionedUsers).toBeUndefined();
+  });
 });

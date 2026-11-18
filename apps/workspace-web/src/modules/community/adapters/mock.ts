@@ -35,6 +35,14 @@ export { PERSONAS };
 const iso = (minAgo: number) => new Date(Date.now() - minAgo * 60_000).toISOString();
 const DAY = 1440;
 
+/** Người «Nhắc tên» của mock (g = nhóm lọc). */
+const MOCK_PEOPLE = [
+  { userId: "u-lan", name: "Lan (Kế toán)", g: "internal" },
+  { userId: "u-minh", name: "Minh (Mua hàng)", g: "internal" },
+  { userId: "u-hung", name: "Hùng", orgName: "Hùng Thịnh", g: "partner" },
+  { userId: "u-abc", name: "Trần B", orgName: "Công ty TNHH ABC", g: "customer" },
+] as const;
+
 export function createMockApi(): { api: CommunityApi; setPersona: (id: string) => void } {
   let me: CommunityViewer = PERSONAS[0] as CommunityViewer;
   const quoteEnv = quoteEnvOf(() => isHost(me));
@@ -151,7 +159,15 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       mentions: (c.mentions ?? [])
         .filter((id) => host || id === me.orgId)
         .map((id) => ({ orgId: id, name: orgName(id) })),
+      ...mentionedOf(c),
     };
+  };
+  /** CR-186 · che như server: đối tác chỉ nhận người chủ quản (mock không có công ty của từng người). */
+  const mentionedOf = (c: RawComment) => {
+    const list = (c.people ?? []).filter((x) => isHost(me) || x.internal);
+    return list.length > 0
+      ? { mentionedUsers: list.map((x) => ({ userId: x.userId, name: x.name })) }
+      : {};
   };
   /** Công ty nhắc được (kiểu cũ CR-129, chỉ còn để đọc/tương thích): mọi đối tác chưa rời; đối tác: rỗng. */
   const legacyOrgs = () => (isHost(me) ? PARTNERS.filter((p) => !p.left).map((p) => p.id) : []);
@@ -292,13 +308,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
     mentionablePeople: async (q, _scope, cursor, group) =>
       me.role === "partner"
         ? []
-        : [
-            { userId: "u-lan", name: "Lan (Kế toán)", g: "internal" },
-            { userId: "u-minh", name: "Minh (Mua hàng)", g: "internal" },
-            { userId: "u-hung", name: "Hùng", orgName: "Hùng Thịnh", g: "partner" },
-            { userId: "u-abc", name: "Trần B", orgName: "Công ty TNHH ABC", g: "customer" },
-          ]
-            .filter((x) => !group || x.g === group)
+        : MOCK_PEOPLE.filter((x) => !group || x.g === group)
             .map(({ g: _g, ...x }) => x)
             .filter((x) => !q || x.name.toLowerCase().includes(q.toLowerCase()))
             .slice(Number(cursor ?? 0), Number(cursor ?? 0) + 20),
@@ -318,6 +328,9 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         minAgo: 0,
         hidden: false,
         mentions: ids,
+        people: MOCK_PEOPLE.filter((x) => (input.mentionUserIds ?? []).includes(x.userId)).map(
+          (x) => ({ userId: x.userId, name: x.name, internal: x.g === "internal" }),
+        ),
       };
       comments.push(c);
       return commentView(c);

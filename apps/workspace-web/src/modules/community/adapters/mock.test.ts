@@ -79,6 +79,19 @@ describe("mock · hành động, luồng, lộ dấu hiệu", () => {
     const seen = (await m.api.listComments("p1")).comments.find((x) => x.id === c.id);
     expect(seen?.mentions).toEqual([{ orgId: "abc", name: "Công ty TNHH ABC" }]);
   });
+  test("CR-186 · bình luận lưu người được nhắc: chủ quản thấy đủ, đối tác chỉ thấy chủ quản; không nhắc ⇒ không có trường", async () => {
+    const m = createMockApi();
+    m.setPersona("an");
+    const c = await m.api.addComment("p1", {
+      text: "@Lan @Hùng xem giúp",
+      mentionUserIds: ["u-lan", "u-hung"],
+    });
+    expect(c.mentionedUsers?.map((x) => x.userId)).toEqual(["u-lan", "u-hung"]);
+    expect((await m.api.addComment("p1", { text: "không nhắc" })).mentionedUsers).toBeUndefined();
+    m.setPersona("abc");
+    const seen = (await m.api.listComments("p1")).comments.find((x) => x.id === c.id);
+    expect(seen?.mentionedUsers?.map((x) => x.userId)).toEqual(["u-lan"]);
+  });
   test("vòng đời bài: tạo → sửa (đã sửa) → lưu trữ → bỏ lưu trữ → xoá", async () => {
     const api = as("tp");
     const p = await api.createPost({

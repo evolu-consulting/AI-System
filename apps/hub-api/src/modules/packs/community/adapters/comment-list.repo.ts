@@ -15,6 +15,8 @@ export type CommentRow = {
   created_at: string;
   /** Id công ty được nhắc (đầy đủ; `views.ts` lọc theo người xem). */
   mentions: string[];
+  /** CR-186 · NGƯỜI được nhắc (đã che theo người xem ngay trong SQL; `org` null = chủ quản). Bình luận cũ ⇒ rỗng. */
+  mention_people?: { id: string; name: string; org: string | null }[] | null;
 };
 
 /** Cột bình luận dạng JSON (cùng một dạng cho list / insert / update returning). `a` = alias của bảng. Chủ quản: raw + hits. */
@@ -23,7 +25,10 @@ export const commentJson = (a: string): SQL =>
     'author_name', ${a}.author_name, 'author_org', ${a}.author_org,
     'text', case when (select packs.viewer_ext_org()) is null then ${a}.text_raw else ${a}.text_masked end,
     'hits', case when (select packs.viewer_ext_org()) is null then ${a}.hits end,
-    'hidden', ${a}.hidden, 'created_at', ${a}.created_at, 'mentions', ${a}.mention_orgs)`);
+    'hidden', ${a}.hidden, 'created_at', ${a}.created_at, 'mentions', ${a}.mention_orgs,
+    'mention_people', (select coalesce(json_agg(e), '[]'::json) from jsonb_array_elements(${a}.mention_people) e
+      where (select packs.viewer_ext_org()) is null or e ->> 'org' is null
+        or (e ->> 'org')::uuid = (select packs.viewer_ext_org())))`);
 
 const arr = (xs: readonly string[]) => JSON.stringify(xs);
 
@@ -88,16 +93,19 @@ export type NewComment = {
   text: StoredText;
   /** Công ty được nhắc (đã kiểm, không trùng). */
   mentions: readonly string[];
+  /** CR-186 · người được nhắc (đã qua `resolvePeople`/`assertSeen`); chụp tên + công ty lúc nhắc. */
+  people?: readonly { id: string; name: string; org: string | null }[];
 };
 
 /** Thêm bình luận: MỘT câu, trả hàng vừa tạo. RLS chặn bài không thấy / sai bên / nhắc người không phải bạn (42501). */
 export async function insertComment(tx: Tx, c: NewComment): Promise<CommentRow> {
   const rows = await tx.execute<{ r: CommentRow }>(sql`
     insert into community.comments as c (tenant_id, post_id, author_user_id, author_name, author_org,
-      text_raw, text_masked, hits, mention_orgs)
+      text_raw, text_masked, hits, mention_orgs, mention_people)
     values (${c.tenantId}::uuid, ${c.postId}::uuid, ${c.userId}::uuid, ${c.authorName}, ${c.authorOrg}::uuid,
       ${c.text.raw}, ${c.text.masked}, ${JSON.stringify(c.text.hits)}::jsonb,
-      array(select jsonb_array_elements_text(${arr(c.mentions)}::jsonb)::uuid))
+      array(select jsonb_array_elements_text(${arr(c.mentions)}::jsonb)::uuid),
+      ${JSON.stringify((c.people ?? []).map((p) => ({ id: p.id, name: p.name, org: p.org })))}::jsonb)
     returning ${commentJson("c")} as r`);
   return rows[0]?.r as CommentRow;
 }
