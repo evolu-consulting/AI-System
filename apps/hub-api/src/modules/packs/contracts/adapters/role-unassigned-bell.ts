@@ -1,8 +1,9 @@
 // CR-182 · lát cr182-migrate · chuông «Chưa giao người»: lượt mở từ sự kiện bị từ chối vì vai chưa giao (lát roles: `ROLE_UNASSIGNED` ⇒ lý do
-// `FLOW_GROUP_MISSING:<khoá vai>`) ⇒ báo QUẢN TRỊ CÔNG TY (tenant_admin còn dùng được; trần 50) để giao việc ở Cài đặt › Quy trình duyệt.
+// `FLOW_GROUP_MISSING:<khoá vai>`) ⇒ báo QUẢN TRỊ CÔNG TY (tenant_admin ∨ quyền `admin` gói Sổ Hợp Tác, còn dùng được; trần 50) để giao việc ở Cài đặt › Quy trình duyệt.
 // Gọi trong tx chốt lô của bộ điều phối (hook `notLaunched`, mỗi hook có savepoint riêng ⇒ lỗi không làm hỏng lô). Chỉ hàng lỗi (ít) ⇒ không ảnh hưởng
 // đường nóng. Số câu cố định mỗi sự kiện: nhãn vai 1 + người nhận 1 + (tên HĐ + chuông) 2 trong role gói. Mã khoá không phải vai (thiếu nhóm theo MÃ của
 // mẫu Thư viện) ⇒ không tra được nhãn ⇒ không gửi chuông (lý do vẫn hiện trên thẻ HĐ như cũ). Chuông trùng (HĐ × vai) ⇒ `dedup_key` bỏ qua.
+import { packFeatureKey } from "@ai/contracts/packs";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { withPackRoleInTx } from "../../kit/public";
@@ -15,6 +16,8 @@ export const ROLE_BELL_REASON = "FLOW_GROUP_MISSING:";
 export const SIGNER_ROLE_KEY = "nguoi-ky-hop-dong";
 export const SIGNER_ROLE_LABEL = "Người ký hợp đồng";
 const ADMINS_MAX = 50;
+/** Quyền `admin` gói Sổ Hợp Tác (Q15: quản trị công ty = tenant_admin ∨ người có quyền này, trực tiếp hoặc qua nhóm). */
+const PACK_ADMIN_FEATURE = packFeatureKey(CONTRACTS_PACK, "admin");
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Khoá vai trong lý do `FLOW_GROUP_MISSING:k1,k2` (thuần); lý do khác ⇒ rỗng. */
@@ -69,7 +72,11 @@ export async function bellRoleUnassigned(
   }
   if (found.size === 0) return 0;
   const admins = await tx.execute<{ id: string }>(sql`select u.id::text as id from admin.users u
-    where u.tenant_id = ${i.tenantId}::uuid and u.role = 'tenant_admin' and u.kind = 'internal' and u.active and not u.locked_by_tenant
+    where u.tenant_id = ${i.tenantId}::uuid and u.kind = 'internal' and u.active and not u.locked_by_tenant
+      and (u.role = 'tenant_admin' or exists (select 1 from admin.feature_grants fg join admin.features f on f.id = fg.feature_id
+        where fg.tenant_id = u.tenant_id and f.key = ${PACK_ADMIN_FEATURE} and f.status <> 'off'
+          and (fg.user_id = u.id or fg.group_id in (select gm.group_id from admin.group_members gm
+            where gm.tenant_id = u.tenant_id and gm.user_id = u.id))))
     order by u.id limit ${ADMINS_MAX}`);
   if (admins.length === 0) return 0;
   const names = [...new Set(found.values())];

@@ -313,4 +313,28 @@ describe("CR-182 · chuông «Chưa giao người»", () => {
       body: "Hợp đồng HD 1 đang chờ: vai ga chưa giao người.",
     });
   });
+
+  it("quản trị gói Sổ Hợp Tác (quyền admin gói, không phải tenant admin) CŨNG nhận chuông, người thường không", async () => {
+    let [f] = await o<
+      { id: string }[]
+    >`select id::text as id from admin.features where key = 'contracts-admin'`;
+    if (!f)
+      [f] = await o<
+        { id: string }[]
+      >`insert into admin.features (key, name, status) values ('contracts-admin', '{"vi":"Quản trị Sổ Hợp Tác"}'::jsonb, 'on') returning id::text as id`;
+    await o`insert into admin.feature_grants (tenant_id, feature_id, user_id) values (${T.a}, ${f?.id as string}, ${U.u2})`;
+    const [hd] = await contracts(o, T.a, 1, { from: 3, createdBy: U.adm, status: "processing" });
+    const key = (await stagesOf(ids.d1))[0].after.role.key as string;
+    const n = await withHubScope(db, { kind: "system" }, (tx) =>
+      bellRoleUnassigned(tx, {
+        tenantId: T.a,
+        ref: hd as string,
+        reason: `FLOW_GROUP_MISSING:${key}`,
+      }),
+    );
+    expect(n).toBe(2);
+    const rows = await o<{ user_id: string }[]>`
+      select user_id::text from hub.notifications where tenant_id = ${T.a} and kind = 'contract.role_unassigned' and body like '%HD 3%'`;
+    expect(rows.map((r) => r.user_id).sort()).toEqual([U.adm, U.u2].sort());
+  });
 });

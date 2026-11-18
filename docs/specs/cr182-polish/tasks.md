@@ -14,10 +14,12 @@ Gom chỗ dở các lát trước báo lại: quyền sửa giao việc do serve
 - [x] `GET /pack/contracts/groups/:id/members?offset&limit` (quyền đọc gói, chỉ nhóm của công ty mình, 30/trang, `next`); `FlowAssignMembers` hiện thành viên (avatar + chức vụ qua `/people?ids=`) ngay khi chọn nhóm + «Xem thêm».
 - [x] `graph[].role.group_only` (vai dùng ở nhánh «cùng duyệt» của bất kỳ bước nào) ⇒ UI khoá «Một người» kèm lý do.
 - [x] `graph[].need_digital`; màn xem: bước Ký có vai ⇒ huy hiệu «Ký trên tài liệu» / «Cần chữ ký số», dòng «Người ký: <vai>» + người được giao (danh sách: «Người ký: <vai> · <người>»); def cũ chưa có vai giữ «Ký qua» cũ.
+- [x] Chuông «Chưa giao người» (`role-unassigned-bell.ts`) gửi cả người có quyền `admin` gói Sổ Hợp Tác (trực tiếp hoặc qua nhóm), không chỉ tenant admin.
+- [x] Tách `buildSigners` + `CompanySigner` khỏi `sign-doc.usecase.ts` sang `sign-doc-signers.ts` (401 ⇒ 353 dòng, không đổi hành vi; re-export giữ nguyên import).
 - [x] `esign-node`: `signer_role_label` tuỳ chọn (encode/decode); `withRoles` + graph dùng nhãn này; trình soạn admin dùng `RoleField` (chọn vai có sẵn hoặc nhập vai mới).
 
 ## Không làm / Chạm
-Không làm: chuông «Chưa giao người» cho quản trị gói Sổ Hợp Tác (`role-unassigned-bell.ts` thuộc nhánh `slice/cr182-migrate`, chưa gộp vào staging ⇒ làm sau khi gộp). Không làm: hiện vai ở bước «cùng duyệt» không có vai chính trên sơ đồ (graph chỉ mang một vai mỗi bước).
+Không làm: hiện vai ở bước «cùng duyệt» không có vai chính trên sơ đồ (graph chỉ mang một vai mỗi bước).
 Chạm: contracts (approval-flow, approval-flow-roles, esign-node, flow/with-roles), hub-api packs/contracts (routes, usecase, graph rules, mount), kit/pack-groups, workspace-web settings, admin-web esign Panel, i18n v2l.
 
 ## Test tối thiểu
@@ -28,12 +30,17 @@ unit: `event-flow-graph.rules.test.ts`, `esign-node.test.ts`, `with-roles.test.t
 - Thành viên nhóm: API chỉ trả `{id, name}` + `next`; avatar/chức vụ dùng lại `GET /people?ids=` (một lần mỗi trang) thay vì nhân đôi dữ liệu.
 - `group_only` tính theo cả quy trình (khoá vai xuất hiện ở bất kỳ nhóm «cùng duyệt» nào), vì giải vai chung một khoá.
 - Nút «Một người» bị khoá (không ẩn) kèm câu lý do, để người dùng thấy vì sao.
+- Rebase lên `cr182-migrate`: `sign()` giữ logic lùi (`blocking: !old`), chỉ thêm nhãn `signer_role_label`.
 - Nhập vai Ký mới: giữ trạng thái «đang gõ» ở panel để không bị tự điền vai mặc định đè lên.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
 ### ADDED sht/cai-dat-va-quyen.md
+#### Yêu cầu: Chuông «Chưa giao người» cũng tới quản trị gói Sổ Hợp Tác
+Chuông gửi cho tenant admin VÀ người có quyền `admin` gói Sổ Hợp Tác (trực tiếp hoặc qua nhóm); người thường không nhận.
+- Kịch bản: khi vai chưa giao mà HĐ không mở được lượt thì tenant admin và quản trị gói đều có chuông, người thường không [test: apps/hub-api/src/modules/processes/roles/roles-migrate.int.test.ts » quản trị gói Sổ Hợp Tác (quyền admin gói, không phải tenant admin) CŨNG nhận chuông, người thường không]
+
 #### Yêu cầu: Quyền sửa giao việc do máy chủ quyết (can_edit)
 `GET /pack/contracts/approval-flow` trả thêm `can_edit`: true cho quản trị công ty (tenant admin hoặc quản trị gói Sổ Hợp Tác), false cho người thường. Cài đặt › Quy trình duyệt chỉ mở khung giao việc khi `can_edit` true.
 - Kịch bản: khi người thường, quản trị gói Sổ Hợp Tác (không phải tenant admin) và tenant admin gọi GET thì `can_edit` lần lượt false, true, true [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-roles.int.test.ts » GET /approval-flow: can_edit false cho người thường, true cho quản trị gói Sổ Hợp Tác (không phải tenant admin) và tenant admin]
@@ -61,6 +68,5 @@ Bước Ký có vai người ký hiện «Người ký: <vai> · <người đư�
 - Kịch bản: khi vai Ký chưa giao thì báo bằng nhãn `signer_role_label` thay vì tên bước [test: packages/contracts/src/flow/with-roles.test.ts » Ký: có signer_role_label ⇒ vai chưa giao báo bằng nhãn này (không phải tên bước)]
 
 ## Việc còn lại
-- Chuông «Chưa giao người» gửi cả quản trị gói Sổ Hợp Tác: `role-unassigned-bell.ts` chưa có trên staging (nhánh `slice/cr182-migrate` chưa gộp) ⇒ làm sau khi gộp.
 - Bước «cùng duyệt» không có vai chính: graph chỉ mang một vai mỗi bước nên chưa bấm giao được ở sơ đồ; cần mở rộng graph thành danh sách vai mỗi bước (ngoài lát này).
 - tsc `apps/hub-api`: 1 lỗi có sẵn ở `messages/pmsg-db.int.test.ts:412` (không thuộc lát).
