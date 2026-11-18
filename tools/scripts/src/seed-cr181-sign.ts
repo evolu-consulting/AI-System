@@ -4,7 +4,6 @@
 //   2) quy trình «Duyệt và ký hợp đồng (ký trên tài liệu)» qua đường admin nền tảng (như seed-cr128-flows), xét ĐẦU thứ tự, điều kiện hẹp (phòng Kinh doanh + ≤ 100 triệu);
 //   3) HĐ Nháp mẫu của sale demo + 2 PDF (hợp đồng 6 trang, phụ lục 2 trang), đối tác evolu có email. KHÔNG tạo chữ ký sẵn cho ai.
 import postgres, { type Sql } from "postgres";
-import { bindGroupKeys } from "../../../apps/hub-api/src/modules/processes/public";
 import {
   ANNEX_FILE,
   annexPdf,
@@ -12,7 +11,6 @@ import {
   contractPdf,
   pickSampleTarget,
   planSignSample,
-  SIGN_FLOW_NAME,
   SIGN_ID_PREFIX,
   SIGN_PARTNER,
   SIGN_SALE,
@@ -23,59 +21,18 @@ import {
   type SignSampleStep,
   type SignSampleTarget,
   signerNeedsAdd,
-  signFlowOrder,
-  signFlowStages,
-  signFlowTrigger,
   signPartnerKey,
   signSampleFields,
   signSeedGuard,
   signSettingsBody,
   signSettingsNeeded,
-  withOnDocSigner,
 } from "./seed-cr181-sign.data";
-import { seedInputs } from "./seed-demo-partner.data";
 
 const TAG = "seed-cr181-sign";
 const BASE = "/pack/contracts/contracts";
-// biome-ignore lint/suspicious/noExplicitAny: JSON của API, đọc theo đường dẫn
-type Json = Record<string, any>;
-type Res = { status: number; json: Json };
-type Call = (method: string, path: string, body?: unknown) => Promise<Res>;
 
-const fail = (m: string): never => {
-  throw new Error(m);
-};
-const env = (k: string): string => process.env[k] || fail(`thiếu ${k}`);
-const must = (r: Res, ok: number[], what: string): Json =>
-  ok.includes(r.status)
-    ? r.json
-    : fail(`${what} → ${r.status} ${JSON.stringify(r.json).slice(0, 240)}`);
-
-async function login(authUrl: string, tenant: string, username: string, password: string) {
-  const res = await fetch(`${authUrl}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tenant_key: tenant, username, password }),
-  });
-  const j = (await res.json()) as Json;
-  if (j.status !== "authenticated") fail(`đăng nhập ${tenant}/${username} → ${res.status}`);
-  return String(j.access_token);
-}
-const caller =
-  (base: string, token: string): Call =>
-  async (method, path, body) => {
-    const form = body instanceof FormData;
-    const res = await fetch(`${base}${path}`, {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(form ? {} : { "Content-Type": "application/json" }),
-      },
-      body: body === undefined ? undefined : form ? body : JSON.stringify(body),
-    });
-    const text = await res.text();
-    return { status: res.status, json: (text ? JSON.parse(text) : {}) as Json };
-  };
+import { ensureFlows } from "./seed-cr181-sign.flows";
+import { type Call, caller, env, fail, type Json, login, must } from "./seed-cr181-sign.http";
 
 /** 1) Bật ký trên tài liệu (quản trị công ty). */
 async function enableOnDoc(hubUrl: string, authUrl: string, pw: string): Promise<void> {
@@ -115,66 +72,6 @@ async function ensureSigner(admin: Call, tid: string): Promise<void> {
     "thêm người ký vào nhóm",
   );
   console.log(`${TAG}: đã thêm ${SIGN_SIGNER_USER} vào nhóm ${SIGN_SIGNER_GROUP}`);
-}
-
-/** 2) Quy trình theo tên (có ⇒ ghi đè bước, không nhân bản) → PUT → Áp dụng → đưa lên đầu thứ tự. */
-async function ensureFlow(hub: Call, admin: Call, tid: string): Promise<void> {
-  const base = `/tenants/${tid}/company-flows`;
-  const items = (r: Res): Json[] => (r.json.items as Json[]) ?? [];
-  const list = must(await hub("GET", base), [200], "đọc quy trình");
-  let row = items({ status: 200, json: list }).find((x) => x.name === SIGN_FLOW_NAME);
-  if (!row) {
-    const made = must(
-      await hub("POST", base, { name: SIGN_FLOW_NAME, app: "contracts", from: "blank" }),
-      [200, 201],
-      "tạo quy trình",
-    );
-    row = (made.items as Json[]).find((x) => x.flow_id === made.flow_id);
-  }
-  const flowId = String(row?.flow_id ?? fail("không thấy quy trình sau khi tạo"));
-  const gj = must(
-    await admin("GET", `/admin/groups?tenant_id=${tid}&limit=200`),
-    [200],
-    "đọc nhóm",
-  );
-  const groups = new Map((gj.items as Json[]).map((g) => [String(g.key), String(g.id)]));
-  const signer =
-    groups.get(SIGN_SIGNER_GROUP) ??
-    fail(`thiếu nhóm ${SIGN_SIGNER_GROUP} (chạy --org-only trước)`);
-  const def = must(await hub("GET", `/process-defs/${flowId}?tenant_id=${tid}`), [200], "đọc def");
-  const bound = bindGroupKeys(withOnDocSigner(signFlowStages(), signer), groups, { strip: true });
-  if (bound.missing.length) fail(`thiếu nhóm: ${bound.missing.join(", ")}`);
-  const inputs = seedInputs(def.inputs);
-  must(
-    await hub("PUT", `/process-defs/${flowId}?tenant_id=${tid}`, {
-      key: def.key,
-      name: def.name,
-      description: def.description ?? "",
-      input_hint: def.input_hint ?? "",
-      run_group_ids: def.run_group_ids ?? [],
-      stages: bound.stages,
-      token_budget: def.token_budget ?? null,
-      enabled: true,
-      sources: def.sources ?? [],
-      inputs,
-      trigger: signFlowTrigger(),
-      app: "contracts",
-      version: def.version,
-    }),
-    [200],
-    "lưu bước quy trình",
-  );
-  must(await hub("POST", `${base}/apply`, { flow_id: flowId }), [200], "áp dụng quy trình");
-  const after = items({ status: 200, json: must(await hub("GET", base), [200], "đọc lại") });
-  const mine = String(
-    after.find((x) => x.name === SIGN_FLOW_NAME)?.id ?? fail("thiếu quy trình sau áp dụng"),
-  );
-  const order = signFlowOrder(
-    after.map((x) => String(x.id)),
-    mine,
-  );
-  must(await hub("PUT", `${base}/order`, { ids: order }), [200, 204], "đặt thứ tự");
-  console.log(`${TAG}: quy trình «${SIGN_FLOW_NAME}» đã áp dụng, đứng đầu thứ tự`);
 }
 
 const pdfForm = (name: string, bytes: Uint8Array): FormData => {
@@ -305,7 +202,14 @@ async function main(): Promise<void> {
   try {
     await enableOnDoc(hubUrl, authUrl, pw);
     await ensureSigner(admin, tid);
-    await ensureFlow(hub, admin, tid);
+    const gj = must(
+      await admin("GET", `/admin/groups?tenant_id=${tid}&limit=200`),
+      [200],
+      "đọc nhóm",
+    );
+    const groups = new Map((gj.items as Json[]).map((g) => [String(g.key), String(g.id)]));
+    const owner = caller(hubUrl, await login(authUrl, SIGN_TENANT, "demo-owner", pw));
+    await ensureFlows(hub, owner, sql, tid, groups);
     await ensureSample(sql, tid, hubUrl, authUrl, pw);
   } finally {
     await sql.end();

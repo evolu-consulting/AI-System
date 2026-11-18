@@ -12,6 +12,7 @@ import {
   reviewNew,
   type Stage,
 } from "../../../apps/hub-api/src/modules/processes/library/flow-templates.def";
+import { ESIGN_DEFAULT_SIGNER_ROLE } from "../../../packages/contracts/src/pack-contracts/esign-node";
 import { SIGNATURE_SETTINGS_DEFAULT } from "../../../packages/contracts/src/signature";
 import { seedDbHost } from "./seed-community-demo.guard";
 import { flowSeedGuard } from "./seed-flow-showcase.build";
@@ -68,44 +69,93 @@ export const signFlowTrigger = () => ({
   },
 });
 
-const headApprove = (step: number, to: { reject: number; ret: number }): Stage => {
+// CR-182 · vai thay nhóm/người cố định: quản trị công ty GIAO người cho vai (PUT /pack/contracts/approval-flow/roles).
+export const ROLE_REVIEW = { key: "truong-phong-duyet", label: "Trưởng phòng duyệt" } as const;
+export const ROLE_SIGN = ESIGN_DEFAULT_SIGNER_ROLE;
+/** Vai CHƯA giao ở quy trình phụ (UAT viền vàng «Chưa giao người»). */
+export const ROLE_SPARE = { key: "giam-doc-duyet", label: "Giám đốc duyệt" } as const;
+export const SIGN_FLOW2_NAME = "Duyệt hợp đồng bổ sung (UAT · có vai chưa giao)";
+/** Người được giao: «Trưởng phòng duyệt» → trưởng phòng Kinh doanh; «Người ký hợp đồng» → giám đốc demo. */
+export const ROLE_ASSIGNEES: readonly { role_key: string; username: string }[] = [
+  { role_key: ROLE_REVIEW.key, username: "binh.tran" },
+  { role_key: ROLE_SIGN.key, username: "demo-owner" },
+];
+/** Phụ: điều kiện KHÔNG BAO GIỜ đúng (như quy trình mua hàng mẫu, `total_value < -1`) ⇒ không tranh HĐ nào; chỉ để UAT xem vai chưa giao. */
+export const signFlow2Trigger = () => ({
+  event: "contract.submitted",
+  when: { op: "and", conds: [{ fact: "total_value", op: "lt", value: -1 }] },
+});
+
+/** Bước Duyệt theo VAI (không nhóm, không «trưởng phòng người đề xuất»): người duyệt do giao việc quyết. */
+const roleApprove = (
+  key: string,
+  step: number,
+  role: { key: string; label: string },
+  to: { reject: number; ret: number },
+): Stage => {
   const { group_key: _k, ...after } = reviewNew("") as Record<string, unknown>;
-  return approve("truong-phong", "Trưởng phòng duyệt", step, "", to, {
-    // `reviewNew` đã có bằng chứng «ý kiến + tệp/chữ ký» (`evidence: opinion_plus`, CR-127 Z2)
-    after: { ...after, approver_mode: "starter_head" },
-  });
+  // `reviewNew` đã có bằng chứng «ý kiến + tệp/chữ ký» (`evidence: opinion_plus`, CR-127 Z2)
+  return approve(key, role.label, step, "", to, { after: { ...after, role } });
 };
 
-/** Trưởng phòng duyệt (ý kiến + chữ ký) → Ký `ondoc` → Chờ ký xong → Kết thúc (+ Từ chối / Trả lại). Người ký điền ở `withOnDocSigner`. */
+/** Trưởng phòng duyệt (vai) → Ký (vai «Người ký hợp đồng»; công ty bật ký trên tài liệu ⇒ chạy `ondoc`) → Chờ ký xong → Kết thúc (+ Từ chối / Trả lại). */
 export const signFlowStages = (): unknown[] => {
   const to = { reject: 4, ret: 5 };
+  return withSignerRole(
+    norm([
+      roleApprove("truong-phong", 0, ROLE_REVIEW, to),
+      { ...esignSend(1), name: "Ký hợp đồng" },
+      esignWait(2, 4),
+      finish(3, "approved", "Đã ký"),
+      finish(4, "rejected", "Từ chối"),
+      finish(5, "returned", "Trả lại"),
+    ]),
+  );
+};
+/** Quy trình phụ: MỘT bước Duyệt theo vai chưa giao ⇒ Kết thúc. */
+export const signFlow2Stages = (): unknown[] => {
+  const to = { reject: 2, ret: 3 };
   return norm([
-    headApprove(0, to),
-    { ...esignSend(1), name: "Ký hợp đồng" },
-    esignWait(2, 4),
-    finish(3, "approved", "Đã ký"),
-    finish(4, "rejected", "Từ chối"),
-    finish(5, "returned", "Trả lại"),
+    roleApprove("giam-doc", 0, ROLE_SPARE, to),
+    finish(1, "approved", "Đã duyệt"),
+    finish(2, "rejected", "Từ chối"),
+    finish(3, "returned", "Trả lại"),
   ]);
 };
 
-/** Bước Ký: «Ký qua» = `ondoc`; người ký phía công ty = nhóm `nguoi-ky-hd` (giám đốc demo). */
-export function withOnDocSigner(stages: unknown[], signerGroupId: string): unknown[] {
+/** Bước Ký: `signer_role` = «Người ký hợp đồng»; KHÔNG ghi «Ký qua» / người ký cố định (R3). */
+export function withSignerRole(stages: unknown[]): unknown[] {
   return stages.map((s) => {
     const ex = (s as { executor?: { tool_key?: string; args?: Record<string, unknown> } }).executor;
     if (ex?.tool_key !== "contracts-esign-send") return s;
-    const args = {
-      ...ex.args,
-      provider: { from: "const", value: SIGN_PROVIDER_ONDOC },
-      company_signers: { from: "const", value: `group:${signerGroupId}` },
-    };
+    const args = { ...ex.args, signer_role: { from: "const", value: ROLE_SIGN.key } };
     return { ...(s as object), executor: { ...ex, args } };
   });
 }
 
-/** Thứ tự xét quy trình: quy trình mới lên đầu, còn lại giữ nguyên thứ tự hiện có. */
-export function signFlowOrder(existingInOrder: readonly string[], mine: string): string[] {
-  return [mine, ...existingInOrder.filter((id) => id !== mine)];
+/** Giao việc cần làm: mỗi vai → `user_id` (bỏ qua người chưa có ⇒ liệt kê ở `missing`). Giao lại cùng người là vô hại (idempotent). */
+export function roleAssignPlan(ids: ReadonlyMap<string, string>): {
+  assign: { role_key: string; user_id: string }[];
+  missing: string[];
+} {
+  const assign: { role_key: string; user_id: string }[] = [];
+  const missing: string[] = [];
+  for (const a of ROLE_ASSIGNEES) {
+    const id = ids.get(a.username);
+    if (id) assign.push({ role_key: a.role_key, user_id: id });
+    else missing.push(a.username);
+  }
+  return { assign, missing };
+}
+
+/** Thứ tự xét quy trình: `mine` lên ĐẦU, `last` xuống CUỐI (không bao giờ chặn), còn lại giữ nguyên thứ tự hiện có. */
+export function signFlowOrder(
+  existingInOrder: readonly string[],
+  mine: string,
+  last?: string,
+): string[] {
+  const rest = existingInOrder.filter((id) => id !== mine && id !== last);
+  return [mine, ...rest, ...(last ? [last] : [])];
 }
 
 // ── PDF mẫu ──

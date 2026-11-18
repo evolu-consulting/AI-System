@@ -9,9 +9,15 @@ import {
   dailySampleTarget,
   pickSampleTarget,
   planSignSample,
+  ROLE_REVIEW,
+  ROLE_SIGN,
+  ROLE_SPARE,
+  roleAssignPlan,
   SIGN_ID_PREFIX,
   SIGN_PARTNER,
   signerNeedsAdd,
+  signFlow2Stages,
+  signFlow2Trigger,
   signFlowOrder,
   signFlowStages,
   signFlowTrigger,
@@ -20,7 +26,7 @@ import {
   signSeedGuard,
   signSettingsBody,
   signSettingsNeeded,
-  withOnDocSigner,
+  withSignerRole,
 } from "./seed-cr181-sign.data";
 
 const { PDFDocument } = createRequire(
@@ -51,16 +57,54 @@ describe("thiết lập", () => {
   });
 });
 
-describe("quy trình", () => {
-  it("bước Ký dùng ondoc + nhóm người ký", () => {
-    type S = { executor?: { tool_key?: string; args?: Record<string, { value: string }> } };
-    const s = withOnDocSigner(signFlowStages(), "gid") as S[];
-    const e = s.find((x) => x.executor?.tool_key === "contracts-esign-send");
-    expect(e?.executor?.args?.provider?.value).toBe("ondoc");
-    expect(e?.executor?.args?.company_signers?.value).toBe("group:gid");
+describe("quy trình theo vai (CR-182)", () => {
+  type S = {
+    executor?: { tool_key?: string; args?: Record<string, { value: string }> };
+    after?: { role?: { key: string; label: string }; approver_mode?: string; group_id?: unknown };
+  };
+  const stages = signFlowStages() as S[];
+  it("bước Duyệt = vai «Trưởng phòng duyệt», không nhóm/«trưởng phòng người đề xuất»", () => {
+    const a = stages.find((x) => x.after?.role)?.after;
+    expect(a?.role).toEqual(ROLE_REVIEW);
+    expect(a?.approver_mode).toBeUndefined();
+    expect(a?.group_id ?? null).toBeNull();
   });
-  it("lên đầu thứ tự, không nhân đôi", () => {
-    expect(signFlowOrder(["a", "m", "b"], "m")).toEqual(["m", "a", "b"]);
+  it("bước Ký = signer_role «Người ký hợp đồng», không còn «Ký qua»/người ký cố định", () => {
+    const e = stages.find((x) => x.executor?.tool_key === "contracts-esign-send");
+    expect(e?.executor?.args?.signer_role?.value).toBe(ROLE_SIGN.key);
+    expect(ROLE_SIGN.label).toBe("Người ký hợp đồng");
+    expect(e?.executor?.args?.provider).toBeUndefined();
+    expect(e?.executor?.args?.company_signers).toBeUndefined();
+  });
+  it("withSignerRole chỉ đụng bước Ký", () => {
+    expect(withSignerRole([{ executor: { tool_key: "x", args: {} } }])).toEqual([
+      { executor: { tool_key: "x", args: {} } },
+    ]);
+  });
+  it("quy trình phụ có vai CHƯA giao và điều kiện không bao giờ đúng", () => {
+    const roles = (signFlow2Stages() as S[]).flatMap((x) => (x.after?.role ? [x.after.role] : []));
+    expect(roles).toEqual([ROLE_SPARE]);
+    expect(roleAssignPlan(new Map()).missing).toContain("binh.tran");
+    expect(ROLE_SPARE.key).not.toBe(ROLE_REVIEW.key);
+    expect(JSON.stringify(signFlow2Trigger().when)).toContain('"lt"');
+  });
+  it("chính ĐẦU, phụ CUỐI, không nhân đôi", () => {
+    expect(signFlowOrder(["a", "m", "b", "p"], "m", "p")).toEqual(["m", "a", "b", "p"]);
+    expect(signFlowOrder(["a", "b"], "m", "p")).toEqual(["m", "a", "b", "p"]);
+  });
+  it("giao việc: chỉ 2 vai của quy trình chính (không giao vai phụ); thiếu người ⇒ liệt kê", () => {
+    const p = roleAssignPlan(
+      new Map([
+        ["binh.tran", "u1"],
+        ["demo-owner", "u2"],
+      ]),
+    );
+    expect(p.assign).toEqual([
+      { role_key: ROLE_REVIEW.key, user_id: "u1" },
+      { role_key: ROLE_SIGN.key, user_id: "u2" },
+    ]);
+    expect(p.assign.some((a) => a.role_key === ROLE_SPARE.key)).toBe(false);
+    expect(roleAssignPlan(new Map([["binh.tran", "u1"]])).missing).toEqual(["demo-owner"]);
   });
 });
 
