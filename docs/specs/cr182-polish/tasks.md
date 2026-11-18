@@ -44,7 +44,7 @@ Chuông gửi cho tenant admin VÀ người có quyền `admin` gói Sổ Hợp 
 #### Yêu cầu: Quyền sửa giao việc do máy chủ quyết (can_edit)
 `GET /pack/contracts/approval-flow` trả thêm `can_edit`: true cho quản trị công ty (tenant admin hoặc quản trị gói Sổ Hợp Tác), false cho người thường. Cài đặt › Quy trình duyệt chỉ mở khung giao việc khi `can_edit` true.
 - Kịch bản: khi người thường, quản trị gói Sổ Hợp Tác (không phải tenant admin) và tenant admin gọi GET thì `can_edit` lần lượt false, true, true [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-roles.int.test.ts » GET /approval-flow: can_edit false cho người thường, true cho quản trị gói Sổ Hợp Tác (không phải tenant admin) và tenant admin]
-- Kịch bản: khi quản trị gói Sổ Hợp Tác bấm bước có vai thì khung giao việc mở ra [test: thủ công — UI, e2e cr182-qc chạy cuối đợt]
+- Kịch bản: khi quản trị gói Sổ Hợp Tác bấm bước có vai thì khung giao việc mở ra [test: e2e/cr181/journey-dot2.spec.ts » quản trị giao vai trên sơ đồ: «Trưởng phòng duyệt» và «Người ký hợp đồng» → nhóm, hết viền vàng]
 
 #### Yêu cầu: Thành viên nhóm hiện ngay khi chọn nhóm
 `GET /pack/contracts/groups/:id/members?offset&limit` trả thành viên dùng được của nhóm trong công ty (chỉ nhóm của công ty mình, tải dần theo `next`). Khung giao việc hiện danh sách (avatar, tên, chức vụ) ngay khi chọn nhóm, trước khi lưu, kèm «Xem thêm» khi nhóm lớn.

@@ -71,7 +71,7 @@ test("đối tác (không đăng nhập): mở link → tạo chữ ký nhanh �
 
   await page.getByRole("button", { name: "Xem và ký" }).click();
   const quick = page.getByTestId("partner-quick");
-  await expect(quick.getByRole("heading", { name: "Tạo chữ ký của bạn" })).toBeVisible();
+  await expect(quick.getByRole("heading", { name: "Tạo chữ ký của bạn" }).first()).toBeVisible();
   await quick.getByText("Gõ họ tên").click(); // mặc định tab «Vẽ»
   await quick.getByRole("textbox").first().fill("Trần Thị B");
   await quick.getByRole("button", { name: "Lưu chữ ký" }).click();

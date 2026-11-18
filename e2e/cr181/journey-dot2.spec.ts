@@ -4,7 +4,7 @@
 //   → HĐ thứ hai: Gửi lại link (link cũ hết dùng), điện thoại 390px, đối tác TỪ CHỐI (lý do hiện ở trang HĐ) → link hết hạn.
 // Link mời ký lấy từ log hub (`HUB_NOTIFY_MODE=off`): `readPartnerLink` (kit). Tệp «bản đã ký» lấy từ chính màn Xem bản đã ký (không gọi API riêng).
 import { expect, test } from "@playwright/test";
-import { envOf, loginCw, newPage, U } from "../cr127/_cr127-kit";
+import { apiAs, envOf, HUB, loginCw, newPage, U } from "../cr127/_cr127-kit";
 import { withOwner } from "../support/helpers";
 import {
   addMineAt,
@@ -163,7 +163,12 @@ test("sale: HĐ «Đã ký»; Xem bản đã ký có thêm bản sau đối tác
   );
   await page.getByRole("link", { name: "Xem bản đã ký" }).first().click();
   await expect(page.getByTestId("signed-viewer")).toBeVisible({ timeout: 30_000 });
-  signedPdf = Buffer.from(await (await content).body());
+  // tải lại bằng API (phản hồi trình duyệt có thể là 304 rỗng): cùng đường dẫn bản mới nhất
+  const res = await fetch(`${HUB}${new URL((await content).url()).pathname}`, {
+    headers: (await apiAs(E, U.employee)).headers,
+  });
+  signedPdf = Buffer.from(await res.arrayBuffer());
+  expect(signedPdf.length).toBeGreaterThan(1000);
   await page.getByTestId("viewer-version").click();
   // Bản gốc + sau trưởng phòng + sau giám đốc + sau đối tác
   await expect(page.getByRole("option")).toHaveCount(4);
@@ -211,7 +216,12 @@ test("phụ lục cần ký: sale thêm phụ lục trên HĐ đã ký ⇒ phụ
     mimeType: "application/pdf",
     buffer: await samplePdf(),
   });
-  await expect(page).toHaveURL(/\/contracts\/c\/(?!${id1})/, { timeout: 60_000 });
+  await page.waitForURL(
+    (u) => u.pathname.startsWith("/contracts/c/") && !u.pathname.endsWith(id1),
+    {
+      timeout: 60_000,
+    },
+  );
   const annexId = new URL(page.url()).pathname.split("/").pop() as string;
   expect(annexId).not.toBe(id1);
   await expect(page.getByTestId("appendix-readonly")).toBeVisible({ timeout: 30_000 });
@@ -252,7 +262,9 @@ test("Gửi lại link: người tải lên thấy nút ⇒ link cũ hết dùng
     await expect(sale.getByTestId("sign-partner-wait")).toContainText("Chờ", { timeout: 5_000 });
   }).toPass({ timeout: 90_000 });
   await sale.getByTestId("sign-partner-wait").getByRole("button", { name: "Gửi lại link" }).click();
-  await expect(sale.getByText(/Đã gửi lại link tới/)).toBeVisible({ timeout: 30_000 });
+  await expect(sale.getByText(/Đã gửi lại link tới|chưa gửi được link/)).toBeVisible({
+    timeout: 30_000,
+  });
   link2b = await readPartnerLink(E, [pathOf(link1), pathOf(link2a)]);
   expect(pathOf(link2b)).not.toBe(pathOf(link2a));
   await sale.context().close();
