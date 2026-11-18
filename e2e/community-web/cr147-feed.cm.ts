@@ -13,7 +13,7 @@ test("bài có 3 bình luận: hiện đủ cả 3, không có «Xem thêm» (CR
   // mock ở trong bộ nhớ ⇒ không reload; dùng bài p1 của seed (3 bình luận)
   await page.goto("/community");
   const card = page.locator('[data-post-id="p1"]');
-  await card.getByRole("button", { name: /Bình luận/ }).click();
+  // CR-186 fix: bài có bình luận hiện sẵn khối bình luận ⇒ KHÔNG bấm «Bình luận» (bấm là gập)
   await expect(card.getByText("Gói 1 năm còn ưu đãi")).toBeVisible();
   await expect(card.getByText("gửi báo giá qua đây trong hôm nay")).toBeVisible();
   await expect(card.getByText("Bên mình cần thêm chữ ký HSM")).toBeVisible();

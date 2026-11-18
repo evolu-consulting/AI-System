@@ -118,8 +118,7 @@ test.describe("CR-186 · máy tính", () => {
   }) => {
     await page.goto("/community");
     const card = page.locator('[data-post-id="p1"]');
-    await card.getByRole("button", { name: /Bình luận/ }).click();
-    await expect(card.getByText("Bên mình cần thêm chữ ký HSM")).toBeVisible(); // 3 bình luận ⇒ hiện đủ
+    await expect(card.getByText("Bên mình cần thêm chữ ký HSM")).toBeVisible(); // 3 bình luận ⇒ mở sẵn, không bấm «Bình luận» (CR-186 fix)
     await expect(card.getByTestId("comments-more")).toHaveCount(0);
     await card.getByRole("combobox", { name: "Viết bình luận" }).fill("Bình luận thứ tư");
     await card.getByRole("button", { name: "Gửi bình luận" }).click();

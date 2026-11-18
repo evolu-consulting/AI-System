@@ -21,10 +21,11 @@ const state: { hostCommentId?: string; colleague?: { username: string; pw: strin
 
 const thread = (p: Page) => postByTitle(p, POST).getByTestId("thread");
 const box = (p: Page) => thread(p).getByRole("combobox", { name: "Viết bình luận" });
-const openComments = (p: Page) =>
-  postByTitle(p, POST)
-    .getByRole("button", { name: /Bình luận/ })
-    .click();
+// CR-186 fix: bài đã có bình luận mở sẵn, bấm «Bình luận» sẽ gập ⇒ chỉ bấm khi đang gập.
+const openComments = async (p: Page) => {
+  const toggle = postByTitle(p, POST).getByRole("button", { name: /Bình luận/ });
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+};
 
 async function openFeedWithPost(p: Page) {
   await expect(async () => {

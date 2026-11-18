@@ -77,8 +77,7 @@ test("chủ quản: bình luận phẳng (không tab công ty) + audience previe
   await page.getByRole("button", { name: "Chỉ nhà cung cấp" }).click();
   await expect(page.getByTestId("audience-preview")).toContainText("Sẽ hiện với 3 công ty");
   const post = page.locator('[data-post-id="p1"]');
-  await post.getByRole("button", { name: /Bình luận/ }).click();
-  await expect(post.getByTestId("thread")).toBeVisible();
+  await expect(post.getByTestId("thread")).toBeVisible(); // p1 có bình luận ⇒ mở sẵn (CR-186)
   await expect(post.getByRole("tab")).toHaveCount(0); // CR-129: không còn luồng riêng theo công ty
   await expect(post.getByRole("combobox", { name: "Viết bình luận" })).toBeVisible();
   const tp = page.locator('[data-post-id="p5"]');

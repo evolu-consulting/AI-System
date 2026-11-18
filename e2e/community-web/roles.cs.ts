@@ -28,7 +28,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await expect(postByTitle(page, "Lịch nghỉ lễ 20/11")).not.toContainText("Chỉ chủ quản");
     // bình luận phẳng (CR-129): không còn tab công ty; chủ quản thấy số điện thoại gốc trong bình luận
     const phi = postByTitle(page, "Thùng phi 200L");
-    await phi.getByRole("button", { name: /Bình luận/ }).click();
+    await expect(phi.getByTestId("thread")).toBeVisible(); // bài có bình luận ⇒ mở sẵn (CR-186)
     await expect(phi.getByRole("tab")).toHaveCount(0);
     await expect(phi.getByTestId("thread")).toContainText("0903 123 456");
     await expect(phi.getByTestId("thread")).not.toContainText(MASK_PHONE);
@@ -55,8 +55,8 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await expect(page.getByText("Lưu báo giá")).toHaveCount(0);
     // số điện thoại trong bình luận của chính mình cũng bị che; không có tab công ty / dòng "Chỉ chủ quản thấy trao đổi"
     const phi = postByTitle(page, "Thùng phi 200L");
-    await phi.getByRole("button", { name: /Bình luận/ }).click();
-    const th = phi.getByTestId("thread");
+    const th = phi.getByTestId("thread"); // bài có bình luận ⇒ mở sẵn (CR-186)
+    await expect(th).toBeVisible();
     await expect(th.getByText("Chỉ chủ quản thấy trao đổi này.")).toHaveCount(0);
     await expect(th).not.toContainText("0903");
     await expect(th).toContainText(MASK_PHONE);
@@ -87,7 +87,8 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await expect(page.getByRole("button", { name: "Mở trợ lý giá" })).toHaveCount(0);
     // bình luận phẳng: không có tab công ty
     const mine = postByTitle(page, "Chữ ký số DN – USB Token");
-    await mine.getByRole("button", { name: /Bình luận/ }).click();
+    const mineToggle = mine.getByRole("button", { name: /Bình luận/ });
+    if ((await mineToggle.getAttribute("aria-expanded")) !== "true") await mineToggle.click(); // có bình luận ⇒ mở sẵn, chưa có ⇒ bấm mở (CR-186)
     await expect(mine.getByRole("tab")).toHaveCount(0);
     await ctx.close();
   });
