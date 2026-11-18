@@ -131,7 +131,8 @@ test("K07 · giám đốc: bấm ô của mình → Lưu → bước Ký xong; B
       timeout: 5_000,
     });
   }).toPass({ timeout: 90_000 });
-  await expect(page.getByText("Đang chờ ký")).toHaveCount(0); // bước Ký đã xong
+  // CR-182 · BR-C5: bước Ký chỉ xong khi Bên B (đối tác) ký đủ ⇒ sau Bên A ký, bước Ký VẪN «Đang chờ ký» (trước đợt 2 đã xong)
+  await expect(page.getByText("Đang chờ ký")).toHaveCount(1);
   await page.context().close();
 });
 

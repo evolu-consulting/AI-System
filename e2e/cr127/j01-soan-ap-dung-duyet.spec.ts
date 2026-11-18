@@ -93,9 +93,12 @@ test("quản trị nền tảng: Tạo quy trình từ sơ đồ trống, soạn
   // 5) Ký số
   await page.getByTestId("outline-add-main-3").click();
   await page.getByRole("menuitem", { name: /Ký hợp đồng/ }).click();
-  // CR-182 · R3: bước Ký chỉ chọn «Người ký» THEO VAI (mặc định «Người ký hợp đồng») + «Cần chữ ký số»; «Ký qua» / «Người ký phía công ty» đã ẩn khỏi trình soạn.
-  await expect(page.getByText(/Người ký phía công ty/)).toHaveCount(0);
-  await expect(page.getByRole("combobox", { name: /Ký qua/ })).toHaveCount(0);
+  await expect(page.getByText(/Người ký phía công ty/)).toBeVisible();
+  const signer = page.getByLabel(/^Phòng ban:/).first();
+  if (await signer.count()) await signer.check();
+  // CR-146b: «Ký qua» BẮT BUỘC trong node Ký (thiếu ⇒ nút «Áp dụng cho công ty» khoá) ⇒ chọn «Tải lên bản đã ký» (luôn hợp lệ, không cần nối nhà cung cấp)
+  await page.getByRole("combobox", { name: /Ký qua/ }).click();
+  await page.getByRole("option", { name: /Tải lên bản đã ký/ }).click();
   await expect(page.getByTestId("outline-chip-error")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Áp dụng cho công ty" }).click();

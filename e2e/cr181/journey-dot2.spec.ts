@@ -115,7 +115,10 @@ test("giám đốc (người ký theo vai) ký ⇒ Bên A đủ ⇒ HĐ chờ đ
   const sale = await newPage(browser);
   await loginCw(sale, E, U.employee);
   await sale.goto(`${E.cw}/contracts/c/${id1}`);
-  await expect(sale.getByTestId("sign-partner-wait")).toContainText("Chờ", { timeout: 60_000 });
+  await expect(async () => {
+    await sale.reload();
+    await expect(sale.getByTestId("sign-partner-wait")).toContainText("Chờ", { timeout: 5_000 });
+  }).toPass({ timeout: 90_000 });
   await expect(sale.getByTestId("partner-link")).toContainText("Chưa mở");
   await sale.context().close();
   link1 = await readPartnerLink(E);
@@ -147,7 +150,10 @@ test("sale: HĐ «Đã ký»; Xem bản đã ký có thêm bản sau đối tác
   const page = await newPage(browser);
   await loginCw(page, E, U.employee);
   await page.goto(`${E.cw}/contracts/c/${id1}`);
-  await expect(page.getByTestId("sign-partner-wait")).toHaveCount(0, { timeout: 60_000 });
+  await expect(async () => {
+    await page.reload();
+    await expect(page.getByTestId("sign-partner-wait")).toHaveCount(0, { timeout: 5_000 });
+  }).toPass({ timeout: 90_000 });
   await expect(page.getByTestId("signers-strip")).toContainText("Đã ký", { timeout: 60_000 });
   const content = page.waitForResponse(
     (r) => r.request().method() === "GET" && /\/sign-docs\/[^/]+\/content$/.test(r.url()),
@@ -231,7 +237,10 @@ test("HĐ thứ hai: Gửi lại link ⇒ link cũ hết dùng; điện thoại 
   const sale = await newPage(browser);
   await loginCw(sale, E, U.employee);
   await sale.goto(`${E.cw}/contracts/c/${id2}`);
-  await expect(sale.getByTestId("sign-partner-wait")).toContainText("Chờ", { timeout: 60_000 });
+  await expect(async () => {
+    await sale.reload();
+    await expect(sale.getByTestId("sign-partner-wait")).toContainText("Chờ", { timeout: 5_000 });
+  }).toPass({ timeout: 90_000 });
   await sale.getByTestId("sign-partner-wait").getByRole("button", { name: "Gửi lại link" }).click();
   await expect(sale.getByText(/Đã gửi lại link tới/)).toBeVisible({ timeout: 30_000 });
   link2b = await readPartnerLink(E, [pathOf(link1), pathOf(link2a)]);

@@ -45,7 +45,11 @@ test("công ty: sale tạo → trưởng phòng duyệt → giám đốc ký ⇒
   await loginCw(page, E, U.employee);
   await page.goto(`${E.cw}/contracts/c/${id}`);
   const wait = page.getByTestId("sign-partner-wait");
-  await expect(wait).toContainText("Chờ", { timeout: 60_000 });
+  // trang HĐ không tự cập nhật ⇒ tải lại tới khi hiện khối «Chờ đối tác ký»
+  await expect(async () => {
+    await page.reload();
+    await expect(wait).toContainText("Chờ", { timeout: 5_000 });
+  }).toPass({ timeout: 90_000 });
   await expect(page.getByTestId("partner-link")).toContainText("Đã gửi lúc");
   await expect(page.getByTestId("partner-link")).toContainText("Chưa mở");
   await expect(page.getByTestId("partner-link")).toContainText("Hạn ký");
@@ -94,7 +98,10 @@ test("công ty: HĐ «Đã ký» sau khi đối tác ký", async ({ browser }) =
   const page = await newPage(browser);
   await loginCw(page, E, U.employee);
   await page.goto(`${E.cw}/contracts/c/${id}`);
-  await expect(page.getByTestId("sign-partner-wait")).toHaveCount(0, { timeout: 60_000 });
+  await expect(async () => {
+    await page.reload();
+    await expect(page.getByTestId("sign-partner-wait")).toHaveCount(0, { timeout: 5_000 });
+  }).toPass({ timeout: 90_000 });
   await expect(page.getByTestId("signers-strip")).toContainText("Đã ký", { timeout: 60_000 });
   await page.context().close();
 });
