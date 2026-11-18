@@ -165,6 +165,8 @@ export const esignWaitTimeoutH = (c: EsignNodeConfig): number | null => esignDue
 
 /** Tên nhà cung cấp/Group cho ô chọn của panel node: `GET /pack/contracts/esign/options`. */
 export type ESignNodeOptionsOut = {
+  /** CR-182 · công ty BẬT ký trên tài liệu (`on_doc_enabled`): bước Ký «theo vai» chỉ chạy khi bật; tắt ⇒ trình soạn giữ cách cũ (chỉ đọc). */
+  on_doc_enabled: boolean;
   /** Chỉ nhà cung cấp ĐANG BẬT cho công ty (khả dụng ở server và công ty đã bật ký số); rỗng ⇒ chưa bật ký số. */
   providers: Pick<ESignProviderOut, "key" | "label" | "kind" | "legal">[];
   /** Mặc định hiệu lực của công ty (ô "Theo cài đặt chung"); null ⇒ chưa cấu hình. */

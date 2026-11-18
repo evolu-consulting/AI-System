@@ -319,4 +319,27 @@ describe("CR-181 s9 · ký trên tài liệu theo lượt chạy", () => {
     ]);
     expect(await api.checkNode(w.T, { provider: "upload" })).toEqual([]);
   });
+  it("CR-182 · bước Ký chỉ có signer_role (không provider): công ty TẮT ký trên tài liệu ⇒ ONDOC_NOT_ENABLED, BẬT ⇒ lưu được, có provider cũ ⇒ vẫn lưu được, options báo cờ", async () => {
+    const no = async (): Promise<never> => {
+      throw new Error("không được gọi");
+    };
+    const api = esignNodeApi({
+      settings: (async () => ({ providers: [], default_provider: null, enabled: false })) as never,
+      settingsOf: no,
+      avail: () => null,
+      directory: undefined,
+      onDocEnabled: onDocEnabledOfTenant(db),
+    });
+    await setOnDoc(false);
+    expect(await api.checkNode(w.T, { signer_role: "nguoi-ky-hop-dong" })).toEqual([
+      { field: "provider", code: "ONDOC_NOT_ENABLED" },
+    ]);
+    expect(
+      await api.checkNode(w.T, { signer_role: "nguoi-ky-hop-dong", provider: "upload" }),
+    ).toEqual([]);
+    expect((await api.nodeOptions({ tenantId: w.T } as never)).on_doc_enabled).toBe(false);
+    await setOnDoc(true);
+    expect(await api.checkNode(w.T, { signer_role: "nguoi-ky-hop-dong" })).toEqual([]);
+    expect((await api.nodeOptions({ tenantId: w.T } as never)).on_doc_enabled).toBe(true);
+  });
 });

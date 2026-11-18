@@ -1588,7 +1588,7 @@
       "disabled": "Công ty chưa bật ký số. Bật ở {{path:sign}}.",
       "err": {
         "ESIGN_DISABLED": "Công ty chưa bật ký số.",
-        "ONDOC_NOT_ENABLED": "Công ty chưa bật ký trên tài liệu (Cài đặt › Chữ ký)",
+        "ONDOC_NOT_ENABLED": "Công ty chưa bật ký trên tài liệu (Cài đặt › Chữ ký): bước Ký cần chọn cách ký cũ hoặc bật ký trên tài liệu",
         "NO_PROVIDER_SELECTED": "chưa chọn «Ký qua» — chọn cách ký trong bước Ký của quy trình",
         "PROVIDER_NOT_ENABLED": "Nhà cung cấp này chưa bật cho công ty — bật ở Cài đặt › Kết nối, hoặc chọn cách khác.",
         "PROVIDER_UNAVAILABLE": "Nhà cung cấp này chưa bật cho công ty.",
@@ -1606,7 +1606,8 @@
       "signerRoleHint": "Công ty tự giao người cho vai này ở Cài đặt › Quy trình duyệt.",
       "needDigital": "Cần chữ ký số",
       "legacy": "Cấu hình cũ: {{what}} (dùng khi công ty tắt ký trên tài liệu)",
-      "legacySwitch": "Chuyển sang vai"
+      "legacySwitch": "Chuyển sang vai",
+      "ondocOff": "Công ty chưa bật ký trên tài liệu (Cài đặt › Chữ ký) nên bước Ký vẫn dùng cách cũ ở trên."
     },
     "advanced": "Nâng cao",
     "moduleNote": "Nhà cung cấp, người ký và các thiết lập khác của bước này lấy từ cài đặt của ứng dụng. Mở Nâng cao nếu cần chỉnh chi tiết.",

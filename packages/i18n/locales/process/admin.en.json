@@ -1588,7 +1588,7 @@
       "disabled": "E-sign is not enabled for this company. Enable it in {{path:sign}}.",
       "err": {
         "ESIGN_DISABLED": "E-sign is not enabled.",
-        "ONDOC_NOT_ENABLED": "Your company has not turned on signing on documents (Settings › Signature)",
+        "ONDOC_NOT_ENABLED": "The company has not turned on signing on documents (Settings › Signatures): this Sign step needs the old way or turn on signing on documents",
         "NO_PROVIDER_SELECTED": "no \"Sign via\" yet — pick how to sign in the flow's Sign step",
         "PROVIDER_NOT_ENABLED": "This provider is not turned on for the company — turn it on in Settings › Connections, or pick another.",
         "PROVIDER_UNAVAILABLE": "This provider is not enabled for the company.",
@@ -1606,7 +1606,8 @@
       "signerRoleHint": "The company assigns the person to this role in Settings › Approval flow.",
       "needDigital": "Needs a digital signature",
       "legacy": "Old setup: {{what}} (used when the company turns off signing on documents)",
-      "legacySwitch": "Switch to role"
+      "legacySwitch": "Switch to role",
+      "ondocOff": "The company has not turned on signing on documents (Settings › Signatures), so this Sign step keeps the old setup above."
     },
     "advanced": "Advanced",
     "moduleNote": "The provider, signers and other settings of this step come from the app settings. Open Advanced to tweak details.",

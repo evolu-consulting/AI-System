@@ -82,6 +82,7 @@ export function esignNodeApi(d: EsignNodeDeps) {
           .filter((p) => p.available)
           .map(({ key, label, kind, legal }) => ({ key, label, kind, legal })),
         default_provider: s.default_provider,
+        on_doc_enabled: await d.onDocEnabled(who.tenantId), // CR-182 · chỉ đọc: trình soạn biết công ty bật hay tắt
         enabled: s.enabled,
         groups,
         orders: ESIGN_NODE_ORDERS,
@@ -96,14 +97,19 @@ export function esignNodeApi(d: EsignNodeDeps) {
     /** Kiểm cấu hình node lúc LƯU def: nhà cung cấp phải đang bật + khả dụng, người ký/Group thuộc công ty (còn dùng được). Lỗi theo khoá trường. */
     async checkNode(tenantId: string, c: EsignNodeConfig): Promise<Issues> {
       // CR-182 · bước Ký có vai + công ty BẬT ký trên tài liệu ⇒ `provider` cũ bị bỏ qua lúc chạy ⇒ không kiểm (khỏi chặn lưu vì DocuSign đã ẩn).
-      const skipProvider = c.signer_role ? await d.onDocEnabled(tenantId) : false;
-      const a = c.provider && !skipProvider ? await providerIssue(tenantId, c.provider) : [];
+      const onDoc = c.signer_role ? await d.onDocEnabled(tenantId) : false;
+      const a = c.provider && !onDoc ? await providerIssue(tenantId, c.provider) : [];
       const b = c.company_signers?.length ? await signerIssue(tenantId, c.company_signers) : [];
+      // CR-182 · bước chỉ có vai (không «Ký qua» cũ) mà công ty TẮT ký trên tài liệu ⇒ lượt sẽ kẹt ở bước Ký (ONDOC_NOT_ENABLED lúc chạy) ⇒ chặn lưu/kích hoạt.
+      const off =
+        c.signer_role && !c.provider && !onDoc
+          ? [{ field: "provider", code: ONDOC_NOT_ENABLED }]
+          : [];
       // CR-182 · R3 · cần chữ ký số mà công ty chưa bật ⇒ báo ngay khi lưu (đợt 3 mới có ký số, nên chưa công ty nào bật)
       const dg = c.need_digital
         ? [{ field: "need_digital", code: ESIGN_NODE_DIGITAL_NOT_ENABLED }]
         : [];
-      return [...a, ...b, ...dg];
+      return [...a, ...b, ...off, ...dg];
     },
 
     /** Người ký công ty của node: mục `user`/`group` ⇒ danh sách user (thứ tự khai, bỏ trùng, ≤ trần); mục lạ / rỗng ⇒ ném. */

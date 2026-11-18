@@ -27,6 +27,7 @@ import { SelectField, TextField } from "../../../components/editor/Fields";
 import { RoleField } from "../../../components/editor/RoleField";
 import { EsignSettingsLink } from "../../../components/flow/EsignSettingsLink";
 import { useFlowCtx } from "../../../components/flow/flow-ctx";
+import { esignRoleUi } from "../../../lib/esign-role-ui";
 import { draftClusterOf } from "../../../lib/module-cluster";
 import { checkPathOf, constArgs, ESIGN_CODEC, withConfigArgs } from "../../../lib/node-config";
 import { DEFAULT_SIGNER_ROLE, rolesOfStages } from "../../../lib/role-pick";
@@ -89,7 +90,9 @@ export function EsignPanel(p: NodePanelProps) {
   );
   // CR-182 · đang gõ vai MỚI (khoá chưa sinh được) ⇒ không tự điền vai mặc định đè lên.
   const [fresh, setFresh] = useState<StageRole | null>(null);
-  const needDefault = !readOnly && !cfg.signer_role && !fresh && !isLegacy(cfg);
+  // CR-182 · chỉ công ty BẬT ký trên tài liệu mới tự gán vai; công ty tắt ⇒ bước mới giữ cách cũ («Ký qua» + người ký công ty).
+  const ui = esignRoleUi(cfg, opts.data?.on_doc_enabled);
+  const needDefault = !readOnly && !fresh && ui.autoRole;
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy khi bước Ký còn trống vai
   useEffect(() => {
     if (!needDefault) return;
@@ -229,24 +232,26 @@ export function EsignPanel(p: NodePanelProps) {
           data-testid="esign-legacy"
         >
           <span>{t(`${K}legacy`, { what: legacyText })}</span>
-          {readOnly ? null : (
+          {readOnly ? null : ui.canSwitch ? (
             <Button
               type="button"
               size="sm"
               variant="outline"
               data-testid="esign-legacy-switch"
-              onClick={() =>
-                set({
-                  signer_role: cfg.signer_role ?? DEFAULT_SIGNER_ROLE.key,
-                  provider: undefined,
-                  company_signers: undefined,
-                })
-              }
+              // giữ «Ký qua» + người ký cũ (đường lùi khi công ty tắt lại ký trên tài liệu): lúc chạy vai thắng khi công ty bật
+              onClick={() => set({ signer_role: cfg.signer_role ?? DEFAULT_SIGNER_ROLE.key })}
             >
               {t(`${K}legacySwitch`)}
             </Button>
+          ) : (
+            <span data-testid="esign-ondoc-off">{t(`${K}ondocOff`)}</span>
           )}
         </div>
+      ) : null}
+      {ui.blocked ? (
+        <p role="alert" className="text-caption text-destructive" data-testid="esign-ondoc-blocked">
+          {t(`${K}err.ONDOC_NOT_ENABLED`)}
+        </p>
       ) : null}
       {o.enabled ? null : (
         <p role="status" className="text-caption text-warning" data-testid="esign-disabled">
