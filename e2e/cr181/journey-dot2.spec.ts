@@ -157,7 +157,9 @@ test("sale: HĐ «Đã ký»; Xem bản đã ký có thêm bản sau đối tác
   }).toPass({ timeout: 90_000 });
   await expect(page.getByTestId("signers-strip")).toContainText("Đã ký", { timeout: 60_000 });
   const content = page.waitForResponse(
-    (r) => r.request().method() === "GET" && /\/sign-docs\/[^/]+\/content$/.test(r.url()),
+    (r) =>
+      r.request().method() === "GET" &&
+      /\/sign-docs\/[^/]+\/(versions\/[^/]+\/)?content$/.test(r.url()),
   );
   await page.getByRole("link", { name: "Xem bản đã ký" }).first().click();
   await expect(page.getByTestId("signed-viewer")).toBeVisible({ timeout: 30_000 });
