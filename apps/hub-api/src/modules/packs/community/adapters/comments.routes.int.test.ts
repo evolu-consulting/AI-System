@@ -1,16 +1,11 @@
 // CR-102 · C6 · CR-129 · int route bình luận phẳng: sửa/xoá/ẩn (HT-46), ai thấy gì (HT-44), nhắc công ty (mentionables, 422), phân trang.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import {
-  CommentPageSchema,
-  CommentViewSchema,
-  MentionableSchema,
-  PostViewSchema,
-} from "@ai/contracts/community";
+import { CommentPageSchema, CommentViewSchema, PostViewSchema } from "@ai/contracts/community";
 import { createDb, type Db } from "@ai/db";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
-import { z } from "zod";
+import type { z } from "zod";
 
 import { type Cast, seedCast } from "../../../../../../../tests/acceptance/com-c3/_support/cast";
 import { mapError } from "../../../../lib/errors";
@@ -101,7 +96,6 @@ const list = async (who: Who, p: string, qs = "") =>
 const texts = async (who: Who, p: string) => (await list(who, p)).comments.map((x) => x.text);
 const add = (who: Who, p: string, text: string, mentions: string[] = []) =>
   ok(CommentViewSchema, call(who, "POST", `/posts/${p}/comments`, { text, mentions }), 201);
-const MentionablesSchema = z.array(MentionableSchema);
 
 beforeAll(async () => {
   await cloneDb("full");
@@ -215,25 +209,6 @@ describe("CR-129 bình luận phẳng theo bạn bè + nhắc đối tác", () =
     const find = async (who: Who) =>
       (await list(who, post)).comments.find((x) => x.id === t.id)?.mentions.map((m) => m.orgId);
     expect({ s1: await find("s1a"), s2: await find("s2") }).toEqual({ s1: [c.S1], s2: [c.S2] });
-  });
-
-  it("GET /mentionables: công ty còn hiệu lực thấy được bài (audience), lọc q, limit; đối tác ⇒ rỗng; bài đối tác ⇒ chỉ công ty đăng", async () => {
-    const ids = (r: { orgId: string }[]) => r.map((x) => x.orgId).sort();
-    const all = await ok(MentionablesSchema, call("hA", "GET", `/posts/${post}/mentionables`));
-    expect(ids(all)).toEqual([c.S1, c.S2, c.X].sort()); // nhà cung cấp; B1/B2 là người mua; LEFT đã rời
-    const q = await ok(MentionablesSchema, call("hA", "GET", `/posts/${post}/mentionables?q=tân`));
-    expect(q.map((x) => x.orgId)).toEqual([c.S1]);
-    const one = await ok(
-      MentionablesSchema,
-      call("hA", "GET", `/posts/${post}/mentionables?limit=1`),
-    );
-    expect(one).toHaveLength(1);
-    expect(await ok(MentionablesSchema, call("s1a", "GET", `/posts/${post}/mentionables`))).toEqual(
-      [],
-    );
-    const mine = await ok(MentionablesSchema, call("hA", "GET", `/posts/${s1Post}/mentionables`));
-    expect(mine.map((x) => x.orgId)).toEqual([c.S1]);
-    expect((await call("hA", "GET", `/posts/${post}/mentionables?limit=21`)).status).toBe(400);
   });
 
   it("POST mentions ngoài tập ⇒ 422 MENTION_NOT_ALLOWED (không ghi gì); đối tác không nhắc được ai; quá 10 ⇒ 422", async () => {

@@ -124,16 +124,34 @@ export function MentionPicker({
   mentions,
   onChange,
   scope,
+  open: openProp,
+  onOpenChange,
 }: {
   mentions: DraftMention[];
   onChange: (m: DraftMention[]) => void;
   scope: PeopleScope;
+  /** CR-186 · điều khiển từ ngoài (ô bình luận mở hộp khi gõ «@»); vắng ⇒ tự quản. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const { brandAccent, isHostViewer } = useApp();
-  const [open, setOpen] = useState(false);
+  const [openIn, setOpenIn] = useState(false);
+  const open = openProp ?? openIn;
+  const setOpen = (v: boolean) => {
+    setOpenIn(v);
+    onOpenChange?.(v);
+  };
   const [sel, setSel] = useState<DraftMention[]>(mentions);
   const [q, setQ] = useState("");
   const [group, setGroup] = useState<MentionGroup | undefined>();
+  // mỗi lần hộp MỞ (bấm nút hay gõ «@»): chọn lại từ danh sách đã nhắc, xoá ô tìm, nhóm «Tất cả»
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy khi `open` đổi
+  useEffect(() => {
+    if (!open) return;
+    setSel(mentions);
+    setQ("");
+    setGroup(undefined);
+  }, [open]);
   const { people, more, state, loadMore } = usePeople(open, q, scope, group);
   const end = useRef<HTMLLIElement>(null);
   useEffect(() => {
@@ -160,12 +178,7 @@ export function MentionPicker({
         data-testid="mention-open"
         aria-haspopup="dialog"
         aria-label={label}
-        onClick={() => {
-          setSel(mentions);
-          setQ("");
-          setGroup(undefined);
-          setOpen(true);
-        }}
+        onClick={() => setOpen(true)}
       >
         <UserPlus />
         {mentions.length > 0 && <span className="n">{mentions.length}</span>}

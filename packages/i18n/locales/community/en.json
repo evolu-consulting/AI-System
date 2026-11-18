@@ -269,16 +269,14 @@
       "quoteCommentDeleted": " · comment deleted"
     },
     "thread": {
-      "note": "All comments appear in one shared list under the post. Type @ to mention a partner company.",
+      "note": "All comments appear in one shared list under the post. Type @ to mention a person.",
       "notePartner": "You see the host's comments, your company's comments and comments that mention you.",
       "empty": "No comments yet.",
       "more": "Show {{count}} more comments",
       "writeComment": "Write a comment",
-      "writeCommentPlaceholder": "Write a comment… type @ to mention a company",
+      "writeCommentPlaceholder": "Write a comment… type @ to mention a person",
       "send": "Send comment",
-      "mentionHint": "Every partner who can see this post will be able to read this comment.",
-      "mentionList": "Companies you can mention",
-      "mentionNotAllowed": "This company can't be mentioned on this post. Remove the mention and send again.",
+      "mentionNotAllowed": "This person can't be mentioned on this post. Remove the mention and send again.",
       "sendFailed": "Couldn't send the comment, please try again."
     },
     "comment": {

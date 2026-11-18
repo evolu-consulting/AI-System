@@ -153,15 +153,8 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         .map((id) => ({ orgId: id, name: orgName(id) })),
     };
   };
-  /** Công ty chủ quản nhắc được: mọi đối tác chưa rời (mock không tính audience). Đối tác: rỗng. */
-  const mentionables = (q?: string) =>
-    isHost(me)
-      ? PARTNERS.filter(
-          (p) => !p.left && p.name.toLowerCase().includes((q ?? "").trim().toLowerCase()),
-        )
-          .slice(0, 20)
-          .map((p) => ({ orgId: p.id, name: p.name }))
-      : [];
+  /** Công ty nhắc được (kiểu cũ CR-129, chỉ còn để đọc/tương thích): mọi đối tác chưa rời; đối tác: rỗng. */
+  const legacyOrgs = () => (isHost(me) ? PARTNERS.filter((p) => !p.left).map((p) => p.id) : []);
 
   const api: CommunityApi = {
     getViewer: async () => me,
@@ -296,10 +289,6 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         ...(from + size < older.length ? { nextCursor: String(from + size) } : {}),
       };
     },
-    listMentionables: async (postId, q) => {
-      if (!visible(get(postId))) throw new Error("404 Không tìm thấy bài");
-      return mentionables(q);
-    },
     mentionablePeople: async (q, _scope, cursor, group) =>
       me.role === "partner"
         ? []
@@ -317,7 +306,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       const p = get(postId);
       if (!visible(p)) throw new Error("404 Không tìm thấy bài");
       const ids = input.mentions ?? [];
-      const allowed = new Set(mentionables().map((m) => m.orgId));
+      const allowed = new Set(legacyOrgs());
       if (ids.some((id) => !allowed.has(id)))
         throw Object.assign(new Error("422 MENTION_NOT_ALLOWED"), { code: "MENTION_NOT_ALLOWED" });
       const c: RawComment = {

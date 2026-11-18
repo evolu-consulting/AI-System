@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   bellText,
+  commentMentionText,
   commentRecipients,
   digestDue,
   kindOfBell,
@@ -188,5 +189,17 @@ describe("digestDue", () => {
       due: true,
       day: "2026-03-01",
     });
+  });
+});
+
+describe("CR-186 · chuông nhắc NGƯỜI trong bình luận", () => {
+  it("chữ, link trỏ đúng bình luận, khoá trùng một chuông mỗi bình luận", () => {
+    const t = commentMentionText({ id: "p1", title: "Keo" }, { actor: "An", ref: "c9" });
+    expect(t.title).toContain("An nhắc bạn trong một bình luận");
+    expect(t.link).toBe("/community?post=p1&comment=c9");
+    expect(t.dedup).toBe("cm:c9");
+    expect(commentMentionText({ id: "p1", title: "" }, { actor: "An", ref: "c9" }).title).toBe(
+      "An nhắc bạn trong một bình luận",
+    );
   });
 });

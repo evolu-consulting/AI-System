@@ -37,14 +37,12 @@ describe("community http adapter", () => {
     await api.getViewer();
     await api.updatePost("p1", { title: "x" });
     await api.listComments("p1");
-    await api.listMentionables("p1", "tan");
     await api.deleteComment("p1", "c1");
     await api.getProfile();
     expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual([
       "GET /pack/community/viewer",
       "PATCH /pack/community/posts/p1",
       "GET /pack/community/posts/p1/comments?limit=100",
-      "GET /pack/community/posts/p1/mentionables?q=tan&limit=20",
       "DELETE /pack/community/posts/p1/comments/c1",
       "GET /pack/community/profile",
     ]);

@@ -9,6 +9,7 @@ import {
   bellKind,
   bellText,
   type Cand,
+  commentMentionText,
   commentRecipients,
   newPostKind,
   postMentionText,
@@ -93,6 +94,8 @@ export type CommentEvent = {
   actorOrg: string | null;
   postAuthorOrg: string | null;
   mentions: readonly string[];
+  /** CR-186 · NGƯỜI được nhắc (đã kiểm quyền xem bài ở lúc ghi); nhận chuông «nhắc bạn trong một bình luận». */
+  mentionUsers?: readonly string[];
   /** Công ty đối tác CÒN hiệu lực (danh bạ) — đối tác của công ty đã rời / vắng không nhận. */
   activeOrgs: readonly string[];
 };
@@ -170,10 +173,15 @@ export function communityEvents(d: CommunityEventDeps) {
             postAuthorOrg: i.postAuthorOrg,
             mentions: i.mentions,
           };
-          return deliver(
-            r,
-            commentRecipients(cands, ctx, i.actor.userId).map((c) => ({ c, post, o })),
-          );
+          const main = commentRecipients(cands, ctx, i.actor.userId);
+          // CR-186: người được nhắc (không phải chính người viết, không trùng người đã nhận «nhắc công ty» ở trên)
+          const had = new Set(main.filter((c) => c.kind === "mention").map((c) => c.userId));
+          const text = commentMentionText(post, o);
+          const people = (i.mentionUsers ?? []).filter((u) => u !== i.actor.userId && !had.has(u));
+          return deliver(r, [
+            ...main.map((c) => ({ c, post, o })),
+            ...people.map((userId) => ({ c: { userId, kind: "mention" as const }, post, o, text })),
+          ]);
         });
       }),
 

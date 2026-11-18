@@ -280,3 +280,66 @@ describe("CR-145 nhắc người trong bài", () => {
     expect((await call("hA", "GET", `/mentionable-people?${scope}&cursor=abc`)).status).toBe(400);
   });
 });
+
+describe("CR-186 · nhắc NGƯỜI trong bình luận (mentionUserIds)", () => {
+  let post = "";
+  const comment = (who: Who, mentionUserIds: string[], text = "xin chào") =>
+    call(who, "POST", `/posts/${post}/comments`, { text, mentionUserIds });
+  const commentBells = async (u: string) =>
+    (await own`select title, link from hub.notifications where user_id = ${u}::uuid and source = 'community'
+      and kind = 'community.mention' and link like '%comment=%' order by created_at, id`) as unknown as {
+      title: string;
+      link: string;
+    }[];
+
+  it("N2 · chủ quản KHÁC người tạo bài nhắc người thấy được bài ⇒ 201, người đó nhận chuông trỏ đúng bình luận, người viết không nhận", async () => {
+    const created = await call("hA", "POST", "/posts", notePost([], { title: "Bài để bình luận" }));
+    expect(created.status).toBe(201);
+    post = created.json.id;
+    const r = await comment("hM", [c.s1a, c.hA, c.hM]);
+    expect(r.status).toBe(201);
+    const s1a = await commentBells(c.s1a);
+    expect(s1a).toHaveLength(1);
+    expect(s1a[0]?.title).toContain("nhắc bạn trong một bình luận");
+    expect(s1a[0]?.link).toBe(`/community?post=${post}&comment=${r.json.id}`);
+    expect(await commentBells(c.hA)).toHaveLength(1); // người tạo bài được nhắc ⇒ có chuông
+    expect(await commentBells(c.hM)).toHaveLength(0); // không báo chính người viết
+  });
+
+  it("người NGOÀI quyền xem bài (khách mua, bài chỉ cho NCC) ⇒ 422 MENTION_USER_NOT_ALLOWED, không ghi bình luận, không chuông, người tenant khác ⇒ 422", async () => {
+    const n = async () =>
+      (
+        (await own`select count(*)::int as n from community.comments where post_id = ${post}::uuid`) as unknown as {
+          n: number;
+        }[]
+      )[0]?.n;
+    const before = await n();
+    const r = await comment("hM", [c.b1], "chặn");
+    expect(r.status).toBe(422);
+    expect(r.json.error?.code ?? r.json.code).toBe("MENTION_USER_NOT_ALLOWED");
+    expect(await n()).toBe(before);
+    expect(await commentBells(c.b1)).toHaveLength(0);
+    expect((await comment("hM", [c.hB])).status).toBe(422);
+  });
+
+  it("đối tác nhắc đồng nghiệp công ty mình ⇒ 201 + chuông; nhắc chủ quản hay công ty khác ⇒ 422; quá 10 người ⇒ 400/422", async () => {
+    const before = (await commentBells(c.s1b)).length;
+    expect((await comment("s1a", [c.s1b])).status).toBe(201);
+    expect(await commentBells(c.s1b)).toHaveLength(before + 1);
+    expect((await comment("s1a", [c.hM])).status).toBe(422);
+    expect((await comment("s1a", [c.s2])).status).toBe(422);
+    const many = Array.from({ length: 11 }, () => crypto.randomUUID());
+    expect([400, 422]).toContain((await comment("hM", many)).status);
+  });
+
+  it("bình luận cũ (nhắc công ty, kiểu CR-129) vẫn đọc được như cũ: `mentions` còn trong danh sách", async () => {
+    const r = await call("hM", "POST", `/posts/${post}/comments`, {
+      text: "kiểu cũ",
+      mentions: [c.S1],
+    });
+    expect(r.status).toBe(201);
+    const l = await call("s1a", "GET", `/posts/${post}/comments?limit=100`);
+    const old = l.json.comments.find((x: { id: string }) => x.id === r.json.id);
+    expect(old.mentions.map((m: { orgId: string }) => m.orgId)).toEqual([c.S1]);
+  });
+});

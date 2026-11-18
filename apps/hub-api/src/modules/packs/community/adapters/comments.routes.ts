@@ -5,7 +5,6 @@ import {
   CommentListQuerySchema,
   CreateCommentInputSchema,
   HideCommentInputSchema,
-  MentionablesQuerySchema,
   UpdateCommentInputSchema,
 } from "@ai/contracts/community";
 import { type Context, Hono } from "hono";
@@ -63,20 +62,19 @@ export function commentsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     });
   });
 
-  r.get("/posts/:id/mentionables", async (c) => {
-    const a = await access(c);
-    const postId = parseIdParam(c);
-    const q = query(c, MentionablesQuerySchema);
-    const out = await list.mentionables(d.uow, a, postId, { q: q.q, limit: q.limit });
-    return c.json(out.map((o) => ({ orgId: o.id, name: o.name })));
-  });
-
   r.post("/posts/:id/comments", async (c) => {
     const a = await access(c, "write");
     const postId = parseIdParam(c);
     const input = parseWith(CreateCommentInputSchema, await readJson(c));
     const text = storeComment(input.text, otherOrgNames(a));
-    const row = await list.add(d.uow, a, postId, { text, mentions: input.mentions }, d.events); // C9: chuông SAU commit
+    const row = await list.add(
+      d.uow,
+      a,
+      postId,
+      { text, mentions: input.mentions, mentionUserIds: input.mentionUserIds },
+      d.events,
+      d.mention,
+    ); // C9: chuông SAU commit
     if (text.hits.length > 0) c.header("X-Contact-Detected", "1");
     return c.json(commentView(a, namesOf(a), row), 201);
   });

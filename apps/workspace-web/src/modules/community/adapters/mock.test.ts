@@ -66,9 +66,7 @@ describe("mock · hành động, luồng, lộ dấu hiệu", () => {
     const host = await as("an").listComments("p1");
     expect(host.comments.map((c) => c.authorOrgId)).toContain("hungthinh");
   });
-  test("nhắc @: chủ quản có gợi ý, đối tác rỗng; ngoài tập ⇒ 422; đối tác chỉ thấy nhắc tới mình", async () => {
-    expect((await as("an").listMentionables("p1", "abc")).map((m) => m.orgId)).toEqual(["abc"]);
-    expect(await as("abc").listMentionables("p1")).toEqual([]);
+  test("nhắc công ty kiểu cũ (CR-129, chỉ đọc/tương thích): ngoài tập ⇒ 422; đối tác chỉ thấy nhắc tới mình", async () => {
     const m = createMockApi();
     m.setPersona("an");
     const an = m.api;

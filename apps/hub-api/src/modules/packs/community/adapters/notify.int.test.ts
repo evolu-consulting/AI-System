@@ -253,9 +253,6 @@ describe("bình luận (emitComment)", () => {
       s1a: await kinds("s1a"),
       hA: (await bell("hA")).length,
     };
-    // gõ @ xem gợi ý = GET mentionables: không phát chuông
-    expect((await call("hA", "GET", `/posts/${hostPost}/mentionables`)).status).toBe(200);
-    expect(await kinds("s2")).toEqual(before.s2);
     // mentions bị từ chối (422) ⇒ không bình luận ⇒ không chuông
     const bad = await call("hA", "POST", `/posts/${hostPost}/comments`, {
       text: "x",

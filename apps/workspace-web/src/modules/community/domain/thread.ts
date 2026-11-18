@@ -1,4 +1,4 @@
-// Logic thuần của bình luận (CR-129): ai được sửa/xoá/ẩn, và luật nhắc tên «@» (nhận biết đang gõ, chèn, giữ lại, tách để tô đậm).
+// Logic thuần của bình luận (CR-129): ai được sửa/xoá/ẩn, và luật nhắc tên «@» (nhận biết đang gõ «@» để mở hộp «Nhắc tên» chung, tách đoạn @Tên cũ để tô đậm).
 import type { CommentView, Mention } from "@ai/contracts/community";
 
 export type CommentActions = { edit: boolean; delete: boolean; hide: boolean };
@@ -27,25 +27,6 @@ export function activeMention(
   return { start: at, query };
 }
 
-/** Chọn một gợi ý: thay `@chữ-đang-gõ` bằng `@Tên ` và trả con trỏ mới (sau dấu cách). */
-export function insertMention(
-  text: string,
-  start: number,
-  caret: number,
-  name: string,
-): { text: string; caret: number } {
-  const ins = `@${name} `;
-  return { text: text.slice(0, start) + ins + text.slice(caret), caret: start + ins.length };
-}
-
-/** Id công ty gửi lên: chỉ những người đã chọn mà `@Tên` còn nguyên trong chữ (xoá chữ ⇒ bỏ nhắc), không trùng, tối đa `max`. */
-export function mentionIds(text: string, picked: Mention[], max = 10): string[] {
-  const ids: string[] = [];
-  for (const m of picked)
-    if (text.includes(`@${m.name}`) && !ids.includes(m.orgId)) ids.push(m.orgId);
-  return ids.slice(0, max);
-}
-
 export type TextPart = { text: string; mention: boolean };
 
 /** Tách bình luận đã gửi thành đoạn thường / đoạn `@Tên` (tên dài nhất khớp trước) để tô đậm. */
@@ -70,13 +51,3 @@ export function splitMentions(text: string, mentions: Pick<Mention, "name">[]): 
   if (buf) out.push({ text: buf, mention: false });
   return out;
 }
-
-/** Lọc gợi ý theo chữ gõ (không phân biệt hoa/thường); server đã lọc, đây chỉ để mượt khi gõ tiếp. */
-export const filterMentionables = (list: Mention[], q: string): Mention[] => {
-  const k = q.trim().toLowerCase();
-  return k ? list.filter((m) => m.name.toLowerCase().includes(k)) : list;
-};
-
-/** Gợi ý đang chọn sau phím ↑/↓ (vòng tròn). */
-export const moveIndex = (cur: number, dir: 1 | -1, len: number): number =>
-  len === 0 ? 0 : (cur + dir + len) % len;

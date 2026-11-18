@@ -1,18 +1,21 @@
 // Bình luận dưới bài (CR-129): MỘT danh sách phẳng (chủ quản thấy hết; đối tác thấy phần server cho phép), không còn luồng riêng theo công ty.
-// Gõ `@` nhắc tên công ty đối tác (chỉ chủ quản có gợi ý); gửi kèm `mentions` (id công ty).
+// CR-186: gõ `@` (hoặc bấm nút «Nhắc tên») mở CHUNG hộp «Nhắc tên» của ô đăng bài (lọc nhóm + tìm, người thấy được bài); gửi `mentionUserIds`.
+// Bình luận cũ nhắc CÔNG TY (CR-129) vẫn hiện tô đậm như cũ (chỉ đọc).
 
-import type { CommentView, Mention, PostView } from "@ai/contracts/community";
+import type { CommentView, PostView } from "@ai/contracts/community";
 import { Button } from "@ai/web-kit/ui/kit/button";
+import { Input } from "@ai/web-kit/ui/kit/input";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { useApp } from "../application/ctx";
 import { initials } from "../domain/format";
+import { type DraftMention, mentionIds } from "../domain/mention";
 import { focusCommentId } from "../domain/search-hint";
-import { commentActions, mentionIds } from "../domain/thread";
+import { activeMention, commentActions } from "../domain/thread";
 import { t } from "../i18n";
 import { CommentItem } from "./CommentItem";
 import { IconLock, IconSend } from "./icons";
-import { MentionBox } from "./MentionBox";
+import { MentionPicker } from "./MentionPicker";
 
 /** Số bình luận cũ hơn tải mỗi lần bấm «Xem thêm»; số trang tối đa tự tải để tới bình luận từ chuông. */
 const PAGE = 10;
@@ -31,7 +34,8 @@ export function Thread({
 }) {
   const { api, viewer, isHostViewer, toast, urlSearch } = useApp();
   const [text, setText] = useState("");
-  const [picked, setPicked] = useState<Mention[]>([]);
+  const [mentions, setMentions] = useState<DraftMention[]>([]);
+  const [pickOpen, setPickOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   // CR-147c/CR-186: trang bảng tin đã trả 3 bình luận mới nhất + tổng số (`post.recentComments` / `commentCount`). «Xem thêm» tải tiếp
   // phần CŨ HƠN theo trang (cursor) vào `older`; không nạp hết khi mở bài.
@@ -89,14 +93,16 @@ export function Thread({
   const send = async () => {
     if (!text.trim() || busy) return;
     setBusy(true);
+    // chỉ người mà «@Tên» còn nguyên trong chữ (xoá chữ ⇒ bỏ nhắc)
+    const ids = mentionIds(mentions.filter((m) => text.includes(`@${m.name}`)));
     try {
-      await api.addComment(post.id, { text, mentions: mentionIds(text, picked) });
+      await api.addComment(post.id, { text, ...(ids.length > 0 ? { mentionUserIds: ids } : {}) });
       setText("");
-      setPicked([]);
+      setMentions([]);
       onChanged();
     } catch (e) {
       toast(
-        errCode(e) === "MENTION_NOT_ALLOWED"
+        errCode(e) === "MENTION_USER_NOT_ALLOWED"
           ? t("community.thread.mentionNotAllowed")
           : t("community.thread.sendFailed"),
       );
@@ -160,13 +166,44 @@ export function Thread({
       ))}
       <div className="cinput">
         <span className="av sm t1">{initials(viewer.orgName)}</span>
-        <MentionBox
-          text={text}
-          onText={setText}
-          picked={picked}
-          onPick={(m) => setPicked((l) => (l.some((x) => x.orgId === m.orgId) ? l : [...l, m]))}
-          fetchOptions={(q) => api.listMentionables(post.id, q)}
-          onSubmit={send}
+        <Input
+          role="combobox"
+          aria-haspopup="dialog"
+          aria-expanded={pickOpen}
+          aria-label={t("community.thread.writeComment")}
+          placeholder={t("community.thread.writeCommentPlaceholder")}
+          value={text}
+          onChange={(e) => {
+            const v = e.target.value;
+            // gõ «@» đầu từ ⇒ mở hộp «Nhắc tên» chung, bỏ dấu «@» vừa gõ
+            const at = activeMention(v, e.target.selectionStart ?? v.length);
+            if (at && at.query === "") {
+              setText(v.slice(0, at.start) + v.slice(at.start + 1));
+              setPickOpen(true);
+            } else setText(v);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              void send();
+            }
+          }}
+        />
+        <MentionPicker
+          mentions={mentions}
+          onChange={(next) => {
+            // người mới chọn ⇒ chèn «@Tên» vào chữ để người đọc thấy ai được nhắc
+            const added = next.filter((n) => !mentions.some((m) => m.userId === n.userId));
+            if (added.length > 0)
+              setText(
+                (x) =>
+                  `${x}${x && !x.endsWith(" ") ? " " : ""}${added.map((n) => `@${n.name}`).join(" ")} `,
+              );
+            setMentions(next);
+          }}
+          scope={{ postId: post.id }}
+          open={pickOpen}
+          onOpenChange={setPickOpen}
         />
         <button
           type="button"

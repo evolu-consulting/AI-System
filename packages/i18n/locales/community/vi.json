@@ -269,16 +269,14 @@
       "quoteCommentDeleted": " · bình luận đã xoá"
     },
     "thread": {
-      "note": "Mọi bình luận hiện ở một danh sách chung dưới bài. Gõ @ để nhắc tên một công ty đối tác.",
+      "note": "Mọi bình luận hiện ở một danh sách chung dưới bài. Gõ @ để nhắc tên một người.",
       "notePartner": "Bạn thấy bình luận của chủ quản, của công ty bạn và các bình luận nhắc tên bạn.",
       "empty": "Chưa có bình luận nào.",
       "more": "Xem thêm {{count}} bình luận",
       "writeComment": "Viết bình luận",
-      "writeCommentPlaceholder": "Viết bình luận… gõ @ để nhắc tên công ty",
+      "writeCommentPlaceholder": "Viết bình luận… gõ @ để nhắc tên người",
       "send": "Gửi bình luận",
-      "mentionHint": "Mọi đối tác thấy bài sẽ đọc được bình luận này.",
-      "mentionList": "Gợi ý công ty để nhắc tên",
-      "mentionNotAllowed": "Không nhắc được công ty này trên bài này. Hãy bỏ tên được nhắc rồi gửi lại.",
+      "mentionNotAllowed": "Không nhắc được người này trên bài này. Hãy bỏ tên được nhắc rồi gửi lại.",
       "sendFailed": "Chưa gửi được bình luận, vui lòng thử lại."
     },
     "comment": {

@@ -8,6 +8,7 @@ import type { StoredText } from "../domain/content.rules";
 import { type CommentRow, insertComment, listComments, orgsSeeingPost } from "./comment-list.repo";
 import type { Access } from "./community-access";
 import type { CommunityEvents } from "./notify.events";
+import { assertSeen, type MentionDeps, resolvePeople } from "./post-mention.service";
 import { postState } from "./post-write.repo";
 
 type Uow = PackUow<{ tx: Tx } & NotifyTxRepos>;
@@ -49,45 +50,23 @@ export async function list(
   return { rows: r.comments.slice(0, page.limit), more: r.comments.length > page.limit };
 }
 
-/** Công ty người viết được nhắc trên bài (theo tên, có lọc `q`, tối đa `limit`). Đối tác hôm nay ⇒ rỗng (mạng sao). Bài không thấy ⇒ 404. */
-export async function mentionables(
-  uow: Uow,
-  a: Access,
-  postId: string,
-  o: { q: string | undefined; limit: number },
-): Promise<{ id: string; name: string }[]> {
-  const needle = o.q?.toLowerCase();
-  const active = activeOrgIds(a);
-  const cands = a.dir.orgs
-    .filter((x) => x.active && mentionAllowed(a.org, x.id, active))
-    .filter((x) => needle === undefined || x.name.toLowerCase().includes(needle));
-  const ok = await uow.tenant(a.who, async ({ tx }) => {
-    if (!(await postState(tx, postId))) throw appError("NOT_FOUND");
-    return new Set(
-      await orgsSeeingPost(
-        tx,
-        a.who.tenantId,
-        postId,
-        cands.map((x) => x.id),
-      ),
-    );
-  });
-  return cands.filter((x) => ok.has(x.id)).slice(0, o.limit);
-}
-
 /** Thêm bình luận (đã kiểm nhắc); chuông phát SAU commit. Trả hàng vừa tạo. */
 export async function add(
   uow: Uow,
   a: Access,
   postId: string,
-  input: { text: StoredText; mentions: readonly string[] },
+  input: { text: StoredText; mentions: readonly string[]; mentionUserIds?: readonly string[] },
   events?: CommunityEvents,
+  mention?: MentionDeps,
 ): Promise<CommentRow> {
   const mentions = [...new Set(input.mentions)];
+  // CR-186: nhắc NGƯỜI — kiểm ngoài tx như bài đăng (người lạ/khoá/ngoài bên ⇒ 422), rồi trong tx: công ty người đó phải thấy bài.
+  const people = await resolvePeople(mention, a, input.mentionUserIds);
   const { row, authorOrgOfPost } = await uow
     .tenant(a.who, async ({ tx }) => {
       const st = await postState(tx, postId);
       if (!st) throw appError("NOT_FOUND");
+      await assertSeen(tx, a, postId, people);
       if (mentions.length > 0) {
         const active = activeOrgIds(a);
         if (!mentions.every((m) => mentionAllowed(a.org, m, active))) throw notAllowed();
@@ -117,6 +96,7 @@ export async function add(
     actorOrg: a.org,
     postAuthorOrg: authorOrgOfPost,
     mentions,
+    mentionUsers: people.map((p) => p.id),
     activeOrgs: activeOrgIds(a),
   });
   return row;

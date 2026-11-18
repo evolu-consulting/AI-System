@@ -19,7 +19,6 @@ import type {
   JoinRequest,
   JoinRequestInput,
   JoinRequestList,
-  Mention,
   MentionablePerson,
   MentionGroup,
   ModerationItem,
@@ -47,6 +46,8 @@ export type CommentPageOpts = { dir?: "asc" | "desc"; before?: string; limit?: n
 
 /** Phạm vi bản nháp để server tính "ai thấy được bài" (đối tác: bỏ qua). */
 export type PeopleScope = {
+  /** CR-186 · bình luận: người nhắc được = người thấy được bài này (server tính theo bài). */
+  postId?: string;
   type?: PostType;
   mode?: AudienceMode;
   cats?: string[];
@@ -113,8 +114,6 @@ export interface CommunityApi {
   getPostSource(id: string): Promise<PostSource>;
   /** `GET /pack/community/posts/:id/comments` — danh sách phẳng cũ → mới, server lọc theo người xem; `cursor` = trang kế. */
   listComments(postId: string, cursor?: string, opts?: CommentPageOpts): Promise<CommentPage>;
-  /** `GET /pack/community/posts/:id/mentionables?q=` — công ty nhắc (@) được trên bài này (đối tác: rỗng). */
-  listMentionables(postId: string, q?: string): Promise<Mention[]>;
   /** CR-145 · `GET /pack/community/mentionable-people` — người «Nhắc tên» được trong bài (≤ 20, tìm `q`); phạm vi theo bản nháp. CR-186: `group` thu hẹp theo nhóm (Nội bộ/Đối tác/Khách hàng). */
   mentionablePeople(
     q: string,

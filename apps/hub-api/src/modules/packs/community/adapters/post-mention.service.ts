@@ -57,7 +57,7 @@ export async function resolvePeople(
 }
 
 /** Bước 2 (trong tx, bài đã có): công ty của người được nhắc phải thấy bài (`orgsSeeingPost`, chỉ chủ quản cần). */
-async function assertSeen(tx: Tx, a: Access, postId: string, people: readonly Person[]) {
+export async function assertSeen(tx: Tx, a: Access, postId: string, people: readonly Person[]) {
   if (a.org !== null) return;
   const orgs = [...new Set(people.flatMap((p) => (p.org ? [p.org] : [])))];
   const seeing = new Set(await orgsSeeingPost(tx, a.who.tenantId, postId, orgs));

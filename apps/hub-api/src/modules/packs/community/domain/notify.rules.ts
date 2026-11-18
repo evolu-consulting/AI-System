@@ -113,6 +113,19 @@ export function postMentionText(p: PostRef, o: { actor: string }): BellText {
   };
 }
 
+/** CR-186 · «{actor} nhắc bạn trong một bình luận» (nhắc NGƯỜI trong bình luận). Cùng loại tuỳ chọn `mention`; một chuông mỗi bình luận. */
+export function commentMentionText(p: PostRef, o: { actor: string; ref: string }): BellText {
+  const t = titleQuote(p.title);
+  return {
+    title: t
+      ? `${o.actor} nhắc bạn trong một bình luận bài: ${t}`
+      : `${o.actor} nhắc bạn trong một bình luận`,
+    body: "",
+    link: `/community?post=${p.id}&comment=${o.ref}`,
+    dedup: `cm:${o.ref}`,
+  };
+}
+
 /** Chữ + link + khoá trùng. `body` = tên người gây ra sự kiện (chuông hiển thị `actorName`). Tiêu đề bài luôn là bản đã che. */
 export function bellText(k: BellKind, p: PostRef, o: { actor: string; ref: string }): BellText {
   const post = `/community?post=${p.id}`; // đường dẫn trong app (chuông chung của shell): Bảng tin cuộn tới đúng bài

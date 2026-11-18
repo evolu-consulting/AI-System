@@ -1,6 +1,6 @@
 // CR-102 · C5/C6 → CR-129 · bình luận phẳng theo bài (không còn "luồng" theo công ty). Ai thấy bình luận do server (RLS) quyết:
 // chủ quản thấy tất cả; đối tác thấy bình luận của chủ quản + công ty mình + trên bài của mình + bình luận nhắc (@) tới mình.
-// Nhắc công ty đối tác = `mentions` (id công ty); chỉ chủ quản nhắc được (hôm nay). Danh sách gợi ý: `GET /posts/:id/mentionables`.
+// Nhắc công ty đối tác = `mentions` (id công ty); chỉ chủ quản nhắc được (hôm nay). CR-186: nhắc NGƯỜI bằng `mentionUserIds` (gợi ý `GET /mentionable-people`); `mentions` (công ty) chỉ còn cho dữ liệu cũ.
 import { z } from "zod";
 import { ContentHitSchema } from "./content-hit";
 
@@ -48,19 +48,14 @@ export const CommentPageSchema = z.strictObject({
 });
 export type CommentPage = z.infer<typeof CommentPageSchema>;
 
-/** `GET /posts/:id/mentionables`: công ty người viết được nhắc trên bài này (đối tác hôm nay: rỗng). */
-export const MentionablesQuerySchema = z.strictObject({
-  q: z.string().trim().max(60).optional(),
-  limit: z.number().int().min(1).max(MENTIONABLES_MAX).default(8),
-});
-export type MentionablesQuery = z.input<typeof MentionablesQuerySchema>;
-
-export const MentionableSchema = MentionSchema;
-export type Mentionable = Mention;
-
 export const CreateCommentInputSchema = z.strictObject({
   text: z.string().trim().min(1).max(2000),
-  /** Id công ty đối tác được nhắc (≤ 10) — phải nằm trong `mentionables` của bài, ngoài tập ⇒ 422 `MENTION_NOT_ALLOWED`. */
+  /** CR-186 · NGƯỜI được nhắc (≤ 10, như bài đăng; chọn ở hộp «Nhắc tên», gợi ý `GET /mentionable-people`). Phải là người thấy được bài (đối tác: chỉ đồng nghiệp công ty mình), ngoài tập ⇒ 422 `MENTION_USER_NOT_ALLOWED`; người được nhắc nhận chuông. */
+  mentionUserIds: z.array(z.uuid()).max(COMMENT_MENTIONS_MAX).default([]),
+  /**
+   * @deprecated CR-186: UI không còn gửi. Id công ty đối tác được nhắc (kiểu cũ CR-129) — server còn nhận để tương thích, ngoài tập
+   * cho phép ⇒ 422 `MENTION_NOT_ALLOWED`. Dữ liệu cũ vẫn đọc ở `CommentView.mentions` (chỉ đọc, không backfill).
+   */
   mentions: z.array(z.uuid()).max(COMMENT_MENTIONS_MAX).default([]),
 });
 export type CreateCommentInput = z.input<typeof CreateCommentInputSchema>;

@@ -104,8 +104,6 @@ export function createHttpApi(): CommunityApi {
       api(`${BASE}/posts/${enc(postId)}/comments`, {
         query: { cursor, limit: o?.limit ?? 100, dir: o?.dir, before: o?.before },
       }),
-    listMentionables: (postId, q) =>
-      api(`${BASE}/posts/${enc(postId)}/mentionables`, { query: { q: q || undefined, limit: 20 } }),
     mentionablePeople: (q, scope, cursor, group) =>
       api(`${BASE}/mentionable-people`, {
         query: {
@@ -113,6 +111,7 @@ export function createHttpApi(): CommunityApi {
           limit: 20,
           cursor,
           group,
+          postId: scope?.postId,
           type: scope?.type,
           mode: scope?.mode,
           cats: scope?.cats?.join(",") || undefined,
