@@ -145,21 +145,21 @@
         },
         "deleg": {
           "title": "Uỷ quyền khi vắng",
-          "sub": "Việc mới giao cho người vắng sẽ tự sang người làm thay",
-          "forUser": "Đặt uỷ quyền cho",
+          "sub": "Trong thời gian này, việc mới của người vắng tự chuyển sang người được giao",
+          "forUser": "Người vắng",
           "forMe": "Chính tôi",
-          "person": "Người làm thay",
+          "person": "Giao việc cho",
           "personHint": "Bất kỳ ai trong công ty có quyền xem hợp đồng",
           "pick": "Chọn người…",
           "from": "Từ ngày",
           "to": "Tới hết ngày",
           "kinds": "Uỷ quyền việc gì",
-          "esignHint": "Ký số chỉ chọn được khi người làm thay thuộc nhóm «Người ký HĐ».",
+          "esignHint": "Ký hợp đồng chỉ chọn được khi người được giao thuộc nhóm người ký hợp đồng.",
           "kind": {
             "approve": "Duyệt",
             "form": "Bổ sung thông tin",
             "milestone": "Xác nhận mốc",
-            "esign": "Ký số"
+            "esign": "Ký hợp đồng"
           },
           "issue": {
             "person": "Chọn người làm thay.",
@@ -213,7 +213,10 @@
           "fileError": "Không mở được tệp này.",
           "download": "Tải về",
           "stageFallback": "Bước duyệt",
-          "signKind": { "internal": "Chữ ký nội bộ", "digital": "Chữ ký số" },
+          "signKind": {
+            "internal": "Chữ ký nội bộ",
+            "digital": "Chữ ký số"
+          },
           "signFiles": "{{n}} tệp đã ký",
           "signAlt": "Chữ ký của {{who}}",
           "viewSigned": "Xem bản đã ký"

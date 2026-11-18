@@ -16,7 +16,11 @@ export type PackRecordTask = {
   escalatedGroupId: string | null;
   claimedBy: string | null;
   need: string | null;
+  /** CR-184 · người gọi có việc này nhờ uỷ quyền (hàng `via='delegated'` còn sống, không có hàng giao trực tiếp) ⇒ id người vắng (A); khác ⇒ null. */
+  behalfOf: string | null;
 };
+/** CR-184 · uỷ quyền còn hiệu lực GIAO CHO người gọi: người vắng, Group của người vắng, loại việc. */
+export type PackRecordDelegation = { userId: string; groups: string[]; kinds: string[] };
 export type PackRecordStep = {
   runId: string;
   status: string;
@@ -27,6 +31,8 @@ export type PackRecordStep = {
   task: PackRecordTask | null;
   /** Group của người gọi (để so Group duyệt / chuyển cấp / «cũng quyết»). */
   myGroups: string[];
+  /** CR-184 · uỷ quyền còn hiệu lực giao cho người gọi (bước Ký `ondoc` không có task ⇒ luật gói tự xét theo loại `esign`). */
+  delegations: PackRecordDelegation[];
 };
 
 type Row = {
@@ -41,6 +47,8 @@ type Row = {
   claimed_by: string | null;
   need: string | null;
   my_groups: string[] | null;
+  behalf_of: string | null;
+  delegs: { user_id: string; groups: string[]; kinds: string[] }[] | null;
 };
 
 export async function packRecordStepOf(
@@ -57,7 +65,17 @@ export async function packRecordStepOf(
         (select a.group_id::text from hub.review_task_assignees a where a.task_id = t.id and a.tenant_id = t.tenant_id
           and a.via = 'escalated' and a.group_id is not null limit 1) as esc_group_id,
         array(select m.group_id::text from admin.group_members m
-          where m.tenant_id = pr.tenant_id and m.user_id = ${q.userId}::uuid) as my_groups
+          where m.tenant_id = pr.tenant_id and m.user_id = ${q.userId}::uuid) as my_groups,
+        case when t.id is null then null else (select a.on_behalf_of::text from hub.review_task_assignees a
+          where a.task_id = t.id and a.tenant_id = t.tenant_id and a.user_id = ${q.userId}::uuid and a.via = 'delegated'
+            and a.on_behalf_of is not null and ${delegatedLive("a")}
+            and not exists (select 1 from hub.review_task_assignees o where o.task_id = t.id and o.tenant_id = t.tenant_id
+              and o.user_id = ${q.userId}::uuid and o.via <> 'delegated') limit 1) end as behalf_of,
+        (select coalesce(jsonb_agg(jsonb_build_object('user_id', d.from_user_id, 'kinds', d.kinds,
+            'groups', array(select m.group_id::text from admin.group_members m
+              where m.tenant_id = d.tenant_id and m.user_id = d.from_user_id))), '[]'::jsonb)
+          from hub.delegations d where d.tenant_id = pr.tenant_id and d.to_user_id = ${q.userId}::uuid and d.revoked_at is null
+            and d.from_at <= now() and d.to_at > now()) as delegs
       from hub.process_runs pr
       left join lateral (select t.* from hub.review_tasks t
           join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
@@ -81,8 +99,14 @@ export async function packRecordStepOf(
           escalatedGroupId: r.esc_group_id,
           claimedBy: r.claimed_by,
           need: r.need,
+          behalfOf: r.behalf_of,
         }
       : null,
     myGroups: r.my_groups ?? [],
+    delegations: (r.delegs ?? []).map((d) => ({
+      userId: d.user_id,
+      groups: d.groups ?? [],
+      kinds: d.kinds ?? [],
+    })),
   };
 }

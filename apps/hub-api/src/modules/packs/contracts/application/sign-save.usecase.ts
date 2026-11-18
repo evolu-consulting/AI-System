@@ -17,10 +17,12 @@ import {
   isPdfFile,
   marksIssue,
   PARTNER_REF_MASK,
+  signerKey,
   uploaderOf,
 } from "../domain/sign.rules";
 import { SignError } from "../domain/sign-error";
 import type { SignTurnPort } from "../domain/sign-turn.port";
+import { behalfOfSave } from "./sign-behalf";
 import type {
   OutFileRef,
   SignDocRepos,
@@ -133,11 +135,17 @@ function helpers(d: SignSaveDeps) {
       const f = { is_main: snap.file.is_main, is_pdf: isPdfFile(snap.file) };
       if (!(snap.doc ? snap.doc.needs_sign : defaultNeedsSign(f, enabled)))
         throw new SignDocFail("not_needed");
-      const signers = buildSigners(await d.companySigners(who, id), null, who.userId);
+      const company = await d.companySigners(who, id);
+      // CR-184 · ô của mình = ô của chính người gọi + ô của người vắng mà họ làm thay (uỷ quyền còn hiệu lực).
+      const signers = buildSigners(company, null, who.userId, turn.behalf);
       const bad = marksIssue(body.marks, snap.fields, signers);
       if (bad === "forbidden") throw new SignDocFail("forbidden");
       if (bad) throw new SignDocFail("issue", "SIGN_MARK_INVALID");
-      return { turn, signers };
+      return {
+        turn,
+        signers,
+        behalfOf: behalfOfSave(company, who.userId, turn, body.marks, snap.fields),
+      };
     },
     /** Chữ ký của người gọi (K3/K5) + nền (L1) → in. */
     async render(who: PackWho, body: SignSaveBody, snap: Snap): Promise<Render> {
@@ -196,7 +204,7 @@ export function signSaveUsecases(d: SignSaveDeps) {
     async sign(who: PackWho, id: string, fileId: string, body: SignSaveBody): Promise<SignSaveOut> {
       const enabled = await d.onDocEnabled(who);
       const snap = await h.load(who, id, fileId);
-      const { turn, signers } = await h.authorize(who, id, body, snap, enabled);
+      const { turn, signers, behalfOf } = await h.authorize(who, id, body, snap, enabled);
       const { out, used, text } = await h.render(who, body, snap);
       const orgOut = d.orgOf(who.tenantId);
       const outName = `${stem(snap.file.name)} (đã ký).pdf`;
@@ -227,6 +235,7 @@ export function signSaveUsecases(d: SignSaveDeps) {
             signedBy: who.userId,
             kind: body.kind,
             runId: turn.run_id ?? null,
+            onBehalfOf: behalfOf,
             marks: body.marks.map((m, i) => ({
               fieldId: m.field_id ?? null,
               placement: m.placement,
@@ -265,6 +274,7 @@ export function signSaveUsecases(d: SignSaveDeps) {
             marks: body.marks.length,
             fields: fieldIds,
             run_id: turn.run_id ?? null,
+            ...(behalfOf ? { on_behalf_of: behalfOf } : {}),
             sha256: out.sha256,
           },
         })
@@ -293,6 +303,7 @@ export function signSaveUsecases(d: SignSaveDeps) {
       const people = new Set<string>();
       for (const v of snap.versions) {
         people.add(v.signed_by);
+        if (v.on_behalf_of) people.add(v.on_behalf_of);
         for (const m of v.marks) people.add(m.signer_id);
       }
       const names = await d.hub.userNames(who, [...people]);
@@ -323,6 +334,8 @@ export function signSaveUsecases(d: SignSaveDeps) {
             original: false,
             signed_by: v.signed_by,
             signed_by_name: names.get(v.signed_by) ?? null,
+            on_behalf_of: v.on_behalf_of ?? null,
+            on_behalf_of_name: v.on_behalf_of ? (names.get(v.on_behalf_of) ?? null) : null,
             signed_at: iso(v.created_at),
             kind: v.signature_kind,
             voided: v.voided_at !== null,

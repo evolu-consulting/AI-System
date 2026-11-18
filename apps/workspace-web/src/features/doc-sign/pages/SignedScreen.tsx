@@ -38,7 +38,11 @@ export function SignedScreen(p: {
   const labelOf = (v: SignVersionItemOut) => {
     const l = versionLabel(v, t("contracts.docsign.viewer.unknownSigner"), at(v.signed_at));
     const text =
-      l.key === "contracts.docsign.viewer.original" ? t(l.key) : t(l.key, { who: l.who, at: l.at });
+      l.key === "contracts.docsign.viewer.original"
+        ? t(l.key)
+        : l.key === "contracts.docsign.viewer.afterSignBehalf"
+          ? t(l.key, { who: l.who, at: l.at, behalf: l.behalf })
+          : t(l.key, { who: l.who, at: l.at });
     return v.voided ? `${text} ${t("contracts.docsign.viewer.voided")}` : text;
   };
   if (session.isPending)

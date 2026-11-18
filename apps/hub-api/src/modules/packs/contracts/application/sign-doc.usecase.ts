@@ -29,7 +29,7 @@ import {
   signReadiness,
   uploaderOf,
 } from "../domain/sign.rules";
-import type { SignTurn, SignTurnPort } from "../domain/sign-turn.port";
+import type { SignBehalf, SignTurn, SignTurnPort } from "../domain/sign-turn.port";
 import type {
   PartnerSigner,
   SignDocRepos,
@@ -102,16 +102,23 @@ export function buildSigners(
   company: readonly CompanySigner[],
   partner: PartnerSigner | null,
   me: string,
+  behalf: readonly SignBehalf[] = [],
 ): SignSignerOut[] {
   const a: SignSignerOut[] = company.map((c) =>
     c.kind === "user"
-      ? { side: "A", kind: "user", ref: c.id, name: c.name, mine: c.id === me }
+      ? {
+          side: "A",
+          kind: "user",
+          ref: c.id,
+          name: c.name,
+          mine: c.id === me || behalf.some((b) => b.user_id === c.id),
+        }
       : {
           side: "A",
           kind: "group",
           ref: c.id,
           name: `Đại diện ${c.name}`,
-          mine: c.mine === true,
+          mine: c.mine === true || behalf.some((b) => b.groups.includes(c.id)),
           ...(c.members?.length ? { members: c.members } : {}),
         },
   );
@@ -326,7 +333,7 @@ export function signDocUsecases(d: SignDocDeps) {
       if (turn.allowed && turn.step === "sign" && turn.run_id && d.onSigned)
         // Cổng (`packs.sign-doc.ts onDocSigned`) tự ghi log `sign-ondoc-signed-failed` và không ném; `catch` chỉ để phiên không hỏng.
         await d.onSigned(who, id, turn.run_id).catch(() => undefined);
-      const signers = buildSigners(company, snap.partner, who.userId);
+      const signers = buildSigners(company, snap.partner, who.userId, turn.behalf);
       const docBy = new Map<string, SignDocRowP>(snap.docs.map((x) => [x.file_id, x]));
       const latestBy = new Map<string, SignVersionRowP>(snap.latest.map((v) => [v.file_id, v]));
       const files: SignFileOut[] = snap.files.map((f) => {

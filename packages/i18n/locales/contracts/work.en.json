@@ -145,21 +145,21 @@
         },
         "deleg": {
           "title": "Delegate while away",
-          "sub": "New tasks for the absent person go to the delegate automatically",
-          "forUser": "Set delegation for",
+          "sub": "During this time, new tasks of the absent person move to the person assigned",
+          "forUser": "Absent person",
           "forMe": "Me",
-          "person": "Delegate",
+          "person": "Assign work to",
           "personHint": "Anyone in the company who can view the contract",
           "pick": "Pick a person…",
           "from": "From",
           "to": "Until end of",
           "kinds": "What to delegate",
-          "esignHint": "E-sign can only be delegated to members of the contract signers group.",
+          "esignHint": "Signing contracts can only be chosen when the person assigned is in the contract signers group.",
           "kind": {
             "approve": "Approve",
             "form": "Add information",
             "milestone": "Confirm milestone",
-            "esign": "E-sign"
+            "esign": "Sign contracts"
           },
           "issue": {
             "person": "Pick a delegate.",
@@ -213,7 +213,10 @@
           "fileError": "Could not open this file.",
           "download": "Download",
           "stageFallback": "Approval step",
-          "signKind": { "internal": "Internal signature", "digital": "Digital signature" },
+          "signKind": {
+            "internal": "Internal signature",
+            "digital": "Digital signature"
+          },
           "signFiles": "{{n}} files signed",
           "signAlt": "Signature of {{who}}",
           "viewSigned": "View signed copy"

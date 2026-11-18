@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   needsOnDoc,
   type OpenSignStep,
+  onBehalfOfVersion,
   ondocDone,
   ondocStepAt,
   signBlockOf,
@@ -102,5 +103,79 @@ describe("needsOnDoc / signBlockOf / ondocDone", () => {
     expect(ondocDone({ total: 0, open: 0 })).toBe(false);
     expect(ondocDone({ total: 2, open: 1 })).toBe(false);
     expect(ondocDone({ total: 2, open: 0 })).toBe(true);
+  });
+});
+
+// CR-184 · ý (5) · uỷ quyền khi vắng với ký trên tài liệu.
+describe("signTurnOf + uỷ quyền (CR-184)", () => {
+  const U3 = "00000000-0000-4000-8000-000000000003";
+  const st = [review(), esign("ondoc", `user:${U1},group:${G1}`), wait];
+  const deleg = (userId: string, kinds: string[], groups: string[] = []) => ({
+    userId,
+    kinds,
+    groups,
+  });
+  test("bước Ký: A uỷ quyền esign cho B ⇒ B có lượt sign, ghi «thay A»", () => {
+    const t = signTurnOf(step(st, 2, { task: null, delegations: [deleg(U1, ["esign"])] }), U2);
+    expect(t).toEqual({
+      allowed: true,
+      step: "sign",
+      run_id: "run",
+      behalf: [{ user_id: U1, groups: [] }],
+    });
+  });
+  test("bước Ký: A chỉ uỷ quyền approve (không esign) ⇒ B không ký được", () => {
+    const s = step(st, 2, { task: null, delegations: [deleg(U1, ["approve"])] });
+    expect(signTurnOf(s, U2).reason).toBe("NOT_SIGNER");
+  });
+  test("bước Ký: người ký qua Group — A thuộc Group ký uỷ quyền esign ⇒ B có lượt", () => {
+    const s = step(st, 2, { task: null, delegations: [deleg(U3, ["esign"], [G1])] });
+    expect(signTurnOf(s, U2).behalf).toEqual([{ user_id: U3, groups: [G1] }]);
+  });
+  test("bước Ký: người uỷ quyền không phải người ký của bước ⇒ không có lượt (C bất kỳ)", () => {
+    const s = step(st, 2, { task: null, delegations: [deleg(U3, ["esign"])] });
+    expect(signTurnOf(s, U2).allowed).toBe(false);
+    expect(signTurnOf(step(st, 2, { task: null }), U3).allowed).toBe(false);
+  });
+  test("bước duyệt: việc nhờ uỷ quyền approve (behalfOf) ⇒ approve + behalf", () => {
+    const s = step([review("opinion_plus")], 0, {
+      task: {
+        userIds: [U2],
+        groupId: null,
+        escalatedGroupId: null,
+        claimedBy: null,
+        need: "one",
+        behalfOf: U1,
+      },
+    });
+    expect(signTurnOf(s, U2)).toEqual({
+      allowed: true,
+      step: "approve",
+      run_id: "run",
+      behalf: [{ user_id: U1, groups: [] }],
+    });
+  });
+});
+
+describe("onBehalfOfVersion (CR-184)", () => {
+  const behalf = [{ user_id: U1, groups: [G1] }];
+  test("ô của A (đích danh hoặc nhóm của A) ⇒ A; ô của chính mình ⇒ null", () => {
+    expect(onBehalfOfVersion(behalf, [{ signer_kind: "user", signer_ref: U1 }], new Set())).toBe(
+      U1,
+    );
+    expect(onBehalfOfVersion(behalf, [{ signer_kind: "group", signer_ref: G1 }], new Set())).toBe(
+      U1,
+    );
+    expect(
+      onBehalfOfVersion(
+        behalf,
+        [{ signer_kind: "group", signer_ref: G1 }],
+        new Set([`group:${G1}`]),
+      ),
+    ).toBeNull();
+  });
+  test("dấu tự do: chỉ ghi thay khi người gọi không tự là người ký", () => {
+    expect(onBehalfOfVersion(behalf, [], new Set())).toBe(U1);
+    expect(onBehalfOfVersion(behalf, [], new Set([`user:${U2}`]))).toBeNull();
   });
 });

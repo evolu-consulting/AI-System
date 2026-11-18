@@ -93,6 +93,7 @@
         "download": "Download",
         "original": "Original",
         "afterSign": "After {{who}} signed · {{at}}",
+        "afterSignBehalf": "After {{who}} signed on behalf of {{behalf}} (delegation) · {{at}}",
         "voided": "(discarded)",
         "unknownSigner": "someone",
         "statusFull": "Fully signed",

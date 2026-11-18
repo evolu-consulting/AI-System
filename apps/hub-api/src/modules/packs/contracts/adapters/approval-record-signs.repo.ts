@@ -18,10 +18,11 @@ export function signsOfQ(tx: Tx, tid: string): SignsOf {
       kind: "internal" | "digital";
       at: string;
       stamp_id: string | null;
+      on_behalf_of: string | null;
     }>(sql`select v.file_id::text as file_id, f.name as file_name, o.name as out_name, v.seq, v.sha256, v.signed_by::text as signed_by,
         v.signature_kind as kind, to_char(v.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as at,
         (select m.user_signature_id::text from contracts.sign_marks m where m.tenant_id = v.tenant_id and m.version_id = v.id
-          order by m.ord, m.id limit 1) as stamp_id
+          order by m.ord, m.id limit 1) as stamp_id, v.on_behalf_of::text as on_behalf_of
       from contracts.sign_versions v
       join contracts.files f on f.id = v.file_id and f.tenant_id = v.tenant_id
       join contracts.files o on o.id = v.out_file_id and o.tenant_id = v.tenant_id
@@ -37,6 +38,7 @@ export function signsOfQ(tx: Tx, tid: string): SignsOf {
       kind: r.kind,
       at: r.at,
       stampId: r.stamp_id,
+      onBehalfOf: r.on_behalf_of,
     }));
   };
 }

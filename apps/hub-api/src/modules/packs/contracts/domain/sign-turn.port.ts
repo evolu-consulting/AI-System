@@ -1,9 +1,13 @@
 // CR-181 · s8 · cổng «đến lượt ký chưa» (BR-D1): lát s9 cài thật theo trạng thái lượt chạy; phần A dùng `noTurn`.
+/** CR-184 · người vắng A mà người gọi làm thay (uỷ quyền còn hiệu lực) + Group của A (để ô «Đại diện nhóm» của A cũng là ô của người gọi). */
+export type SignBehalf = { user_id: string; groups: string[] };
 export type SignTurn = {
   allowed: boolean;
   run_id?: string;
   step?: "approve" | "sign";
   reason?: string;
+  /** CR-184 · người vắng mà người gọi làm thay ở bước này (rỗng/không có ⇒ tự mình). */
+  behalf?: SignBehalf[];
 };
 export type SignTurnCtx = { tenantId: string; userId: string };
 export type SignTurnPort = {

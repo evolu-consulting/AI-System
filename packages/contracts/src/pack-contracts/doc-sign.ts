@@ -195,6 +195,9 @@ export type SignVersionItemOut = {
   original: boolean;
   signed_by: string | null;
   signed_by_name: string | null;
+  /** CR-184 · «B ký thay A (uỷ quyền)»: người vắng (A); null = người ký tự ký. */
+  on_behalf_of?: string | null;
+  on_behalf_of_name?: string | null;
   signed_at: string | null;
   kind: SignatureKind | null;
   voided: boolean;

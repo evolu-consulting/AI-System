@@ -96,7 +96,7 @@ export function buildApprovalRecord(
       at: s.at,
       actor: s.user,
       override: false,
-      on_behalf_of: null,
+      on_behalf_of: s.on_behalf_of,
       feedback: null,
       evidence: null,
       sign: s,
@@ -117,6 +117,8 @@ export type SignVersionRow = {
   kind: "internal" | "digital";
   at: string;
   stampId: string | null;
+  /** CR-184 · người vắng mà `signedBy` ký thay (uỷ quyền). */
+  onBehalfOf?: string | null;
 };
 
 /** Mã kiểm tra ngắn = 8 ký tự đầu của sha256, viết hoa. */
@@ -136,6 +138,11 @@ export function buildSignInfo(rows: readonly SignVersionRow[], names: ReadonlyMa
     files_signed: new Set(vs.map((v) => v.fileId)).size,
     at: (vs[0] as SignVersionRow).at,
     stamp_id: vs.find((v) => v.stampId)?.stampId ?? null,
+    // CR-184 · «ký thay A (uỷ quyền)»: người vắng của bản ký đầu tiên có ghi thay; không ⇒ null.
+    on_behalf_of: (() => {
+      const b = vs.find((v) => v.onBehalfOf)?.onBehalfOf;
+      return b ? person(b, names) : null;
+    })(),
   }));
   const originals = new Map<string, SignVersionRow>();
   const last = new Map<string, SignVersionRow>();

@@ -93,6 +93,7 @@
         "download": "Tải về",
         "original": "Bản gốc",
         "afterSign": "Sau khi {{who}} ký · {{at}}",
+        "afterSignBehalf": "Sau khi {{who}} ký thay {{behalf}} (uỷ quyền) · {{at}}",
         "voided": "(đã bỏ)",
         "unknownSigner": "một người",
         "statusFull": "Đã ký đủ",

@@ -35,9 +35,13 @@ async function fillSignerNames(
   d: ApprovalRecordDeps,
   who: PackWho,
   names: Map<string, string>,
-  signs: readonly { signedBy: string }[],
+  signs: readonly { signedBy: string; onBehalfOf?: string | null }[],
 ) {
-  const missing = [...new Set(signs.map((x) => x.signedBy).filter((u) => !names.has(u)))];
+  const missing = [
+    ...new Set(
+      signs.flatMap((x) => [x.signedBy, x.onBehalfOf ?? ""]).filter((u) => u && !names.has(u)),
+    ),
+  ];
   if (missing.length > 0 && d.userNames)
     for (const [k, v] of await d.userNames(who, missing)) names.set(k, v);
 }

@@ -156,7 +156,12 @@ async function itemLines(
     },
   );
   if (it.on_behalf_of && !it.evidence?.on_behalf_of)
-    w.line(`Duyệt thay cho: ${who(it.on_behalf_of)} (uỷ quyền)`, { indent: 14 });
+    w.line(
+      `${it.action === "sign" ? "Ký" : "Duyệt"} thay cho: ${who(it.on_behalf_of)} (uỷ quyền)`,
+      {
+        indent: 14,
+      },
+    );
   if (it.override)
     w.line("Duyệt thay (Toàn quyền) - không phải người/nhóm được giao của bước", { indent: 14 });
   const ev = it.evidence;

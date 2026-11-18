@@ -10,7 +10,9 @@ import type { StagePage } from "./geometry";
 
 export type VersionLabel =
   | { key: "contracts.docsign.viewer.original" }
-  | { key: "contracts.docsign.viewer.afterSign"; who: string; at: string };
+  | { key: "contracts.docsign.viewer.afterSign"; who: string; at: string }
+  /** CR-184 · «B ký thay A (uỷ quyền)». */
+  | { key: "contracts.docsign.viewer.afterSignBehalf"; who: string; at: string; behalf: string };
 
 /** Bản mới nhất chưa bị bỏ (Trả lại); không có ⇒ bản mới nhất. */
 export function latestVersion(vs: SignVersionItemOut[]): SignVersionItemOut | undefined {
@@ -33,7 +35,15 @@ export const versionKey = (v: SignVersionItemOut) => v.version_id ?? "original";
 
 export function versionLabel(v: SignVersionItemOut, unknown: string, at: string): VersionLabel {
   if (v.original) return { key: "contracts.docsign.viewer.original" };
-  return { key: "contracts.docsign.viewer.afterSign", who: v.signed_by_name ?? unknown, at };
+  const who = v.signed_by_name ?? unknown;
+  if (v.on_behalf_of)
+    return {
+      key: "contracts.docsign.viewer.afterSignBehalf",
+      who,
+      at,
+      behalf: v.on_behalf_of_name ?? unknown,
+    };
+  return { key: "contracts.docsign.viewer.afterSign", who, at };
 }
 
 /** Đường tải/xem PDF của bản (url máy chủ trả là đường tương đối dưới `/pack/contracts`). */

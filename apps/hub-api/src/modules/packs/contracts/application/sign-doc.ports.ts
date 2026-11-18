@@ -43,6 +43,8 @@ export type SignVersionRowP = {
   signed_by: string;
   signature_kind: SignatureKind;
   run_id: string | null;
+  /** CR-184 · người vắng mà `signed_by` ký thay (uỷ quyền). */
+  on_behalf_of?: string | null;
   created_at: Date | string;
   voided_at: Date | string | null;
 };
@@ -62,6 +64,7 @@ export type NewSignVersionP = {
   signedBy: string;
   kind: SignatureKind;
   runId: string | null;
+  onBehalfOf?: string | null;
   marks: readonly {
     fieldId: string | null;
     placement: SignPlacement;
