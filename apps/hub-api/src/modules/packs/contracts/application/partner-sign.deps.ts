@@ -6,7 +6,7 @@ import type {
   PackWho,
   PartnerSignMailer,
 } from "../../kit/public";
-import type { PartnerSignRepo } from "../adapters/partner-sign.repo";
+import type { PartnerSignRepo } from "./partner-sign.repo.port";
 import type { SignDocRepos } from "./sign-doc.ports";
 import type { StampMarkIn } from "./sign-save.usecase";
 

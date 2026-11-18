@@ -1,7 +1,7 @@
 // CR-182 · gửi thư cho đối tác qua transport email chung của thông báo (hoặc ghi link ra log khi `HUB_NOTIFY_MODE=off`).
 
-import type { ContactRow } from "../adapters/partner-sign.repo";
 import type { PartnerSignDeps } from "./partner-sign.deps";
+import type { ContactRow } from "./partner-sign.repo.port";
 
 /** Thư (hoặc log khi tắt thông báo). Không ném: lỗi gửi ⇒ link vẫn có (người tải lên bấm «Gửi lại»). */
 export async function sendMail(

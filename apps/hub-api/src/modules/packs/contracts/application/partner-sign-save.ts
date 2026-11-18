@@ -5,11 +5,11 @@
 import type { PartnerSignBody, PartnerSignSaveOut } from "@ai/contracts/pack-contracts";
 import { PARTNER_SIGN_ERRORS as E } from "@ai/contracts/pack-contracts";
 import type { PackWho, SignLinkFail, SignLinkResult } from "../../kit/public";
-import type { ContactRow, LinkRow } from "../adapters/partner-sign.repo";
 import { partnerLabel, partnerMarksIssue, partnerOpenFields } from "../domain/partner-sign.rules";
 import { captionText, isPdfFile } from "../domain/sign.rules";
 import { SignError } from "../domain/sign-error";
 import type { PartnerSignDeps, PartnerSignRepos } from "./partner-sign.deps";
+import type { ContactRow, LinkRow } from "./partner-sign.repo.port";
 import type { SignFileRef, SignVersionRowP } from "./sign-doc.ports";
 
 const fail = (status: SignLinkFail["status"], code: string): SignLinkFail => ({

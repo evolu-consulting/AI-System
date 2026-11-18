@@ -14,7 +14,6 @@ import type {
 } from "@ai/contracts/pack-contracts";
 import { PARTNER_SIGN_ERRORS as E } from "@ai/contracts/pack-contracts";
 import type { PackWho, SignLinkFail, SignLinkResult } from "../../kit/public";
-import type { ContactRow, LinkRow } from "../adapters/partner-sign.repo";
 import {
   canResendLink,
   hashLinkToken,
@@ -28,6 +27,7 @@ import {
   statusOut,
 } from "../domain/partner-sign.rules";
 import type { PartnerSignDeps, PartnerSignRepos } from "./partner-sign.deps";
+import type { ContactRow, LinkRow } from "./partner-sign.repo.port";
 import { sendMail } from "./partner-sign-mail";
 import { partnerSignSave } from "./partner-sign-save";
 

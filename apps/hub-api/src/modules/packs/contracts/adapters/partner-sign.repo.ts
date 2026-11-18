@@ -1,47 +1,21 @@
 // CR-182 · đợt 2 · SQL của «Đối tác ký qua link» (tx `PackUow`, role `contracts_rw`). Mỗi thao tác MỘT câu văn bản hằng; `tenant_id` tường minh.
 // Đường CÔNG KHAI chỉ đi qua hàm DEFINER theo BĂM token (`partner_sign_link_open/quick_put/quick_get/finish`, migration 0123) — bảng không lộ.
 // Phía công ty đọc/ghi bảng link dưới RLS tenant.
-import type { PartnerLinkState, PartnerQuickMethod } from "@ai/contracts/pack-contracts";
+import type { PartnerQuickMethod } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-
-export type LinkRow = {
-  link_id: string;
-  tenant_id: string;
-  contract_id: string;
-  contact_id: string;
-  state: PartnerLinkState;
-  expires_at: Date | string;
-  sent_at: Date | string | null;
-  opened_at: Date | string | null;
-  signed_at: Date | string | null;
-  declined_at: Date | string | null;
-  decline_reason: string | null;
-  quick_id: string | null;
-  quick_method: PartnerQuickMethod | null;
-};
-export type ContactRow = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  partner_name: string | null;
-};
-export type LinkStatusRow = {
-  state: PartnerLinkState;
-  sent_at: Date | string | null;
-  opened_at: Date | string | null;
-  expires_at: Date | string;
-  signed_at: Date | string | null;
-  declined_at: Date | string | null;
-  decline_reason: string | null;
-  contact_name: string | null;
-};
-export type PartnerSignRepo = ReturnType<typeof partnerSignRepo>;
-export type CloseCode = "ok" | "closed" | "gone" | "limit" | "invalid";
+import type {
+  CloseCode,
+  ContactRow,
+  LinkRow,
+  LinkStatusRow,
+  PartnerSignRepo,
+} from "../application/partner-sign.repo.port";
 
 const hex = (h: string) => sql`decode(${h}, 'hex')`;
 
-export function partnerSignRepo(tx: Tx, tenantId: string) {
+/** Cài cổng `PartnerSignRepo` (application) bằng SQL trong tx của `PackUow`. */
+export function partnerSignRepo(tx: Tx, tenantId: string): PartnerSignRepo {
   return {
     /** Tra link theo BĂM token (DEFINER). `audit` ⇒ ghi `opened_at` lần đầu. */
     open: async (th: string, audit: boolean): Promise<LinkRow | null> => {
