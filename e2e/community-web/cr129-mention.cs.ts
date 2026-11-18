@@ -1,9 +1,9 @@
 // CR-129 · HÀNH TRÌNH THẬT (D5, không mock) trên stack community-web (playwright.stack.config.ts, chỉ nhận `*.cs.ts`). VIẾT, CHƯA CHẠY.
-// Bình luận phẳng + @ nhắc công ty đối tác + chuông `mention` + Composer chọn nhóm hàng + hồ sơ `/community/me`.
+// Bình luận phẳng + @ nhắc NGƯỜI qua hộp «Nhắc tên» (CR-186; popover nhắc công ty + chuông công ty đã bỏ) + Composer chọn nhóm hàng + hồ sơ `/community/me`.
 // Dữ liệu đi đường người dùng: bài của chủ quản qua API đăng bài (như bấm Đăng), bình luận/@ bằng giao diện,
 // đồng nghiệp của đối tác = user thứ hai trong tài khoản công ty (admin-api) đăng bài bằng ô soạn.
-//  M1 · Chủ quản bình luận (không bước ẩn); @ chọn Tân Phát ⇒ Gửi ⇒ Tân Phát: chuông «nhắc», bấm ⇒ đúng bài + cuộn tới bình luận.
-//  M2 · Tân Phát bình luận; ABC thấy bình luận của chủ quản, KHÔNG thấy của Tân Phát; ABC/Tân Phát gõ @ không có popover.
+//  M1 · Chủ quản bình luận (không bước ẩn); @ mở hộp «Nhắc tên», chọn người công ty Tân Phát ⇒ Gửi ⇒ bình luận hiện «@Tên».
+//  M2 · Tân Phát bình luận; ABC thấy bình luận của chủ quản, KHÔNG thấy của Tân Phát.
 //  M3 · Composer: nhóm hàng chọn qua hộp thoại (cat-pick-btn → cat-pick-done); nút Đính kèm chỉ biểu tượng.
 //  M4 · /community/me: 2 tab; tab «Bài đăng của tổ chức» có bài của đồng nghiệp, tab «Bài đăng của tôi» không có.
 import { expect, type Page, test } from "@playwright/test";
@@ -51,7 +51,7 @@ test.beforeAll(async ({ browser }) => {
   await host.ctx.close();
 });
 
-test("CR129-M1 · chủ quản bình luận ngay trên bài của mình, gõ @ chọn Tân Phát ⇒ Gửi ⇒ Tân Phát thấy chuông nhắc, bấm mở đúng bài và cuộn tới bình luận", async ({
+test("CR129-M1 · chủ quản bình luận ngay trên bài của mình, gõ @ mở hộp «Nhắc tên», chọn người Tân Phát ⇒ Gửi ⇒ bình luận hiện «@Tên»", async ({
   browser,
 }) => {
   test.setTimeout(240_000);
@@ -60,49 +60,34 @@ test("CR129-M1 · chủ quản bình luận ngay trên bài của mình, gõ @ c
   await h.goto("/community");
   await openComments(h);
   await expect(box(h)).toBeVisible(); // không bước ẩn: mở bình luận là có ô nhập
+  // CR-186: «@» mở chung hộp «Nhắc tên» (nhắc NGƯỜI, thay popover nhắc công ty cũ); chọn một người công ty Tân Phát ⇒ «@Tên» vào chữ.
   await box(h).click();
-  await box(h).pressSequentially("@Tân");
-  await expect(h.getByTestId("mention-popover")).toBeVisible();
-  const opt = h.getByTestId("mention-option").filter({ hasText: ORG.supplier });
-  await expect(opt).toHaveCount(1);
-  await expect(h.getByTestId("mention-option").filter({ hasText: ORG.buyer })).toHaveCount(0); // lọc theo chữ đã gõ
-  await opt.click();
+  await box(h).pressSequentially("@");
+  const dlg0 = h.getByTestId("mention-dialog");
+  await expect(dlg0).toBeVisible();
+  const opt = dlg0.getByTestId("mention-option").filter({ hasText: ORG.supplier }).first();
+  await expect(opt).toBeVisible();
+  await opt.getByRole("checkbox").check();
+  await dlg0.getByRole("button", { name: /^Xong/ }).click();
+  await expect(box(h)).toHaveValue(/@\S/);
   await box(h).pressSequentially(` ${C_HOST}`);
   await thread(h).getByRole("button", { name: "Gửi bình luận" }).click();
   const mine = thread(h).locator("[data-comment-id]").filter({ hasText: C_HOST });
   await expect(mine).toBeVisible();
-  await expect(mine.getByTestId("mention-tag")).toContainText(ORG.supplier);
+  await expect(mine).toContainText("@");
   state.hostCommentId = (await mine.getAttribute("data-comment-id")) ?? "";
   expect(state.hostCommentId).not.toBe("");
   await host.ctx.close();
-
-  // Tân Phát: chuông có thông báo nhắc tên công ty
-  const sup = await openAs(browser, "supplier");
-  const p = sup.page;
-  await p.goto("/community");
-  await p.getByTestId("topbar-bell").getByRole("button").first().click();
-  const dlg = p.getByRole("dialog", { name: "Thông báo" });
-  await expect(dlg).toBeVisible();
-  const item = dlg.getByText(/nhắc/).first();
-  await expect(item).toBeVisible();
-  await item.click();
-  await expect(p).toHaveURL(new RegExp(`comment=${state.hostCommentId}`));
-  await expect(postByTitle(p, POST)).toBeVisible();
-  await expect(p.locator(`[data-comment-id="${state.hostCommentId}"]`)).toBeInViewport();
-  await expect(p.locator(`[data-comment-id="${state.hostCommentId}"]`)).toContainText(C_HOST);
-  await sup.ctx.close();
+  // Chuông «X nhắc bạn trong một bình luận» (nhắc NGƯỜI) do int test notify.int.test.ts / post-mention.int.test.ts phủ; chuông «nhắc công ty» đã bỏ.
 });
 
-test("CR129-M2 · Tân Phát bình luận; ABC (cùng thấy bài) thấy bình luận của chủ quản nhưng KHÔNG thấy bình luận của Tân Phát; đối tác không có popover @", async ({
+test("CR129-M2 · Tân Phát bình luận; ABC (cùng thấy bài) thấy bình luận của chủ quản nhưng KHÔNG thấy bình luận của Tân Phát; ", async ({
   browser,
 }) => {
   test.setTimeout(240_000);
   const sup = await openAs(browser, "supplier");
   await openFeedWithPost(sup.page);
   await openComments(sup.page);
-  await box(sup.page).click();
-  await box(sup.page).pressSequentially("@");
-  await expect(sup.page.getByTestId("mention-popover")).toHaveCount(0); // đối tác không nhắc được ai
   await box(sup.page).fill(C_SUP);
   await thread(sup.page).getByRole("button", { name: "Gửi bình luận" }).click();
   await expect(thread(sup.page)).toContainText(C_SUP);
@@ -113,9 +98,6 @@ test("CR129-M2 · Tân Phát bình luận; ABC (cùng thấy bài) thấy bình 
   await openComments(buyer.page);
   await expect(thread(buyer.page)).toContainText(C_HOST); // bình luận của chủ quản: bạn bè thấy
   await expect(thread(buyer.page)).not.toContainText(C_SUP); // đối tác không thấy nhau
-  await box(buyer.page).click();
-  await box(buyer.page).pressSequentially("@");
-  await expect(buyer.page.getByTestId("mention-popover")).toHaveCount(0);
   await buyer.ctx.close();
 });
 
