@@ -11,6 +11,9 @@ import { CONTRACTS_PACK } from "../domain/contract-flow-events.rules";
 export const ROLE_BELL_KIND = "contract.role_unassigned";
 export const ROLE_BELL_LINK = "/contracts/settings?sec=flow";
 export const ROLE_BELL_REASON = "FLOW_GROUP_MISSING:";
+/** Vai người ký do migration 0160 / trình soạn đặt: `args.signer_role` lưu `{from,value}` (không có `label`) ⇒ nhãn cố định. */
+export const SIGNER_ROLE_KEY = "nguoi-ky-hop-dong";
+export const SIGNER_ROLE_LABEL = "Người ký hợp đồng";
 const ADMINS_MAX = 50;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -46,12 +49,30 @@ export async function bellRoleUnassigned(
       and d.stages::text like '%"role"%' and jsonb_typeof(r) = 'object'
       and r ->> 'key' = any(array(select jsonb_array_elements_text(${JSON.stringify(keys)}::jsonb)))
     order by 1 limit 10`);
-  if (labels.length === 0) return 0;
+  const found = new Map<string, string>(labels.map((l) => [l.key, l.label]));
+  // Vai người ký ở `args.signer_role` ({from,value}) không có nhãn trong def ⇒ nhãn cố định; khoá tuỳ ý khác ⇒ tên bước Ký.
+  const rest = keys.filter((k) => !found.has(k));
+  if (rest.includes(SIGNER_ROLE_KEY)) found.set(SIGNER_ROLE_KEY, SIGNER_ROLE_LABEL);
+  const others = rest.filter((k) => k !== SIGNER_ROLE_KEY);
+  if (others.length > 0) {
+    const sg = await tx.execute<{
+      key: string;
+      label: string;
+    }>(sql`select distinct st #>> '{executor,args,signer_role,value}' as key, st ->> 'name' as label
+      from hub.process_defs d cross join lateral jsonb_array_elements(d.stages) st
+      where (d.tenant_id = ${i.tenantId}::uuid or d.tenant_id is null) and d.deleted_at is null and jsonb_typeof(d.stages) = 'array'
+        and d.stages::text like '%signer_role%' and jsonb_typeof(st) = 'object'
+        and st #>> '{executor,args,signer_role,value}' = any(array(select jsonb_array_elements_text(${JSON.stringify(others)}::jsonb)))
+        and coalesce(st ->> 'name', '') <> ''
+      limit 10`);
+    for (const r of sg) found.set(r.key, r.label);
+  }
+  if (found.size === 0) return 0;
   const admins = await tx.execute<{ id: string }>(sql`select u.id::text as id from admin.users u
     where u.tenant_id = ${i.tenantId}::uuid and u.role = 'tenant_admin' and u.kind = 'internal' and u.active and not u.locked_by_tenant
     order by u.id limit ${ADMINS_MAX}`);
   if (admins.length === 0) return 0;
-  const names = [...new Set(labels.map((l) => l.label))];
+  const names = [...new Set(found.values())];
   return withPackRoleInTx(tx, CONTRACTS_PACK, i.tenantId, async () => {
     const [c] = await tx.execute<{
       name: string | null;

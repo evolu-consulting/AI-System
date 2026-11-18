@@ -99,7 +99,10 @@ async function effectiveCfg(
   if (!cfg.signer_role) return cfg;
   if (!cfg.company_signers?.length) throw new Error("ESIGN_NODE_NO_SIGNER");
   const on = d.onDocEnabled ? await d.onDocEnabled(ctx.tenantId) : false;
-  return on ? { ...cfg, provider: ESIGN_NODE_ONDOC } : cfg;
+  if (on) return { ...cfg, provider: ESIGN_NODE_ONDOC };
+  // TẮT mà bước kiểu mới (không còn «Ký qua» cũ) ⇒ không ai ký được: báo rõ cần bật ký trên tài liệu (không gửi với provider rỗng).
+  if (!cfg.provider) throw new Error("ONDOC_NOT_ENABLED");
+  return cfg;
 }
 
 /** Người ký + thứ tự theo cấu hình node: `partner_signs` false ⇒ chỉ công ty ký; true ⇒ bắt buộc có đối tác; vắng ⇒ có email thì đối tác ký. */

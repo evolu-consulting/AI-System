@@ -186,7 +186,7 @@ describe("CR-182 · bước Ký có vai (signer_role) theo công tắc lùi on_d
       expect(on.waits[0]?.[1]).toEqual([U1, U2]);
     }
   });
-  it("công ty TẮT ⇒ chạy như cũ: gửi qua provider cũ, thiếu provider ⇒ ESIGN_NODE_CONFIG_INVALID:provider, provider ondoc ⇒ ONDOC_NOT_ENABLED", async () => {
+  it("công ty TẮT ⇒ chạy như cũ: gửi qua provider cũ, bước kiểu mới không có provider ⇒ ONDOC_NOT_ENABLED, provider ondoc ⇒ ONDOC_NOT_ENABLED", async () => {
     const off = make("p@x.vn", undefined, false);
     await off.send.run(CTX, {
       contract_id: ID,
@@ -197,7 +197,7 @@ describe("CR-182 · bước Ký có vai (signer_role) theo công tắc lùi on_d
     expect(off.sent.length).toBe(1);
     await expect(
       off.send.run(CTX, { contract_id: ID, ...role, company_signers: `user:${U1}` }),
-    ).rejects.toThrow("ESIGN_NODE_CONFIG_INVALID:provider");
+    ).rejects.toThrow("ONDOC_NOT_ENABLED");
     await expect(
       off.send.run(CTX, {
         contract_id: ID,

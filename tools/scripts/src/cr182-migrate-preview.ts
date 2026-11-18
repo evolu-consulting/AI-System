@@ -39,14 +39,21 @@ async function main(argv: readonly string[]): Promise<void> {
         { process_def_id: string; n: number }[]
       >`select process_def_id::text as process_def_id, count(*)::int as n from hub.process_runs
         where status in ('running', 'waiting_review', 'waiting_answer', 'needs_decision', 'waiting_timer') group by 1`;
+      const rr = await tx<
+        { flow_id: string; tenant_id: string }[]
+      >`select def_id::text as flow_id, tenant_id::text as tenant_id from hub.process_routing_rules`;
+      const sd = await tx<
+        { id: string }[]
+      >`select default_def_id::text as id from hub.process_slots where default_def_id is not null`;
       const assigned = new Map<string, string[]>();
-      for (const r of cf)
+      for (const r of [...cf, ...rr])
         assigned.set(r.flow_id, [...(assigned.get(r.flow_id) ?? []), r.tenant_id]);
       const out = previewPlan({
         defs,
         groupIds: new Set(g.map((x) => `${x.tenant_id}:${x.id}`)),
         groupKeys: new Set(g.map((x) => `${x.tenant_id}:${x.key}`)),
         assigned,
+        slotDefaults: new Set(sd.map((x) => x.id)),
         activeRuns: new Map(runs.map((r) => [r.process_def_id, r.n])),
       });
       console.log(`Quy trình được điền vai: ${out.defs} (${out.stages} bước)`);
@@ -56,6 +63,10 @@ async function main(argv: readonly string[]): Promise<void> {
       console.log(
         `Lượt đang chạy của các quy trình đó (giữ ảnh chụp cũ, KHÔNG đổi): ${out.activeRuns}`,
       );
+      console.log(
+        `Mẫu Thư viện dùng qua khe mặc định (mọi công ty; chạy cấu hình cũ tới khi giao việc): ${out.viaSlot.length}`,
+      );
+      for (const l of out.viaSlot) console.log(`  - ${l}`);
       console.log(`Mơ hồ (${out.ambiguous.length}):`);
       for (const l of out.ambiguous) console.log(`  - ${l}`);
       console.log(`Sẽ «Chưa giao người» (${out.unassigned.length}):`);

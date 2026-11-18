@@ -66,3 +66,29 @@ describe("cr182-migrate-preview · luật xem trước", () => {
     expect(o.tenants).toEqual(["t1", "t2"]);
   });
 });
+
+describe("cr182-migrate-preview · vừa nhóm vừa người, khe mặc định", () => {
+  it("chỗ có nhiều hơn một đích cũ ⇒ Mơ hồ, không đếm là được điền vai; mẫu Thư viện mặc định của khe được liệt kê", () => {
+    const o = previewPlan({
+      ...base,
+      slotDefaults: new Set(["lib"]),
+      defs: [
+        {
+          id: "d4",
+          tenant_id: "t1",
+          key: "both",
+          stages: [{ after: { kind: "review", group_id: G, approver_user_id: G2 } }],
+        },
+        {
+          id: "lib",
+          tenant_id: null,
+          key: "lib",
+          stages: [{ after: { kind: "review", group_key: "ga" } }],
+        },
+      ],
+    });
+    expect(o.ambiguous.some((l) => l.startsWith("both · bước 1"))).toBe(true);
+    expect(o.defs).toBe(1);
+    expect(o.viaSlot).toEqual(["lib"]);
+  });
+});

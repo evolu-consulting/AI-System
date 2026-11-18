@@ -12,6 +12,10 @@
 --   · Ký: stage `contracts-esign-send` có `company_signers` ĐÚNG MỘT mục (user:<id> hoặc group:<id>) ⇒ `signer_role = nguoi-ky-hop-dong` + giao việc mục đó.
 --     Nhiều hơn một mục (nhiều người/nhóm) KHÔNG chuyển được thành một giao việc (vai nhận một nhóm HOẶC một người; lấy người đầu = giảm số người phải ký, tạo nhóm = ghi
 --     dữ liệu công ty) ⇒ GIỮ cấu hình cũ, không thêm vai (cr182-migrate-preview liệt kê, quản trị tự gom).
+--   · Chỗ có NHIỀU hơn một đích cũ cùng lúc (vd group_id lẫn approver_user_id: người cụ thể thắng) KHÔNG chuyển (vai = một đích; đổi sẽ chuyển việc từ người sang cả nhóm) ⇒
+--     giữ cấu hình cũ, không thêm vai (preview liệt kê «Mơ hồ»).
+--   · Mẫu Thư viện dùng qua KHE (`process_routing_rules`) cũng được giao theo mã nhóm; công ty chưa có hàng giao (gán sau ngày chuyển, qua khe mặc định) vẫn chạy theo cấu hình cũ
+--     còn giữ trong stage (runtime `withRoles`: vai chưa giao + còn cấu hình cũ ⇒ dùng cũ, không chặn).
 -- Bản xuất bản (`process_def_releases`) nhận cùng `role` (cùng khoá) để lượt mở từ Thư viện đọc đúng; không sinh bản mới.
 
 CREATE TEMP TABLE IF NOT EXISTS _cr182_cand (
@@ -61,6 +65,13 @@ DECLARE
   m jsonb;
 BEGIN
   IF jsonb_typeof(p_obj) <> 'object' OR p_obj ? 'role' THEN RETURN jsonb_build_object('obj', p_obj, 'seen', p_seen); END IF;
+  -- nhiều hơn một đích cũ ⇒ mơ hồ, bỏ qua (giữ cấu hình cũ)
+  IF (CASE WHEN coalesce(p_obj ->> 'group_id', '') <> '' THEN 1 ELSE 0 END
+      + CASE WHEN coalesce(p_obj ->> 'group_key', '') <> '' THEN 1 ELSE 0 END
+      + CASE WHEN coalesce(p_obj ->> 'approver_user_id', '') <> '' THEN 1 ELSE 0 END
+      + CASE WHEN coalesce(p_obj ->> 'user_id', '') <> '' THEN 1 ELSE 0 END) > 1 THEN
+    RETURN jsonb_build_object('obj', p_obj, 'seen', p_seen);
+  END IF;
   IF coalesce(p_obj ->> 'group_id', '') <> '' THEN v_kind := 'group_id'; v_ref := p_obj ->> 'group_id';
   ELSIF coalesce(p_obj ->> 'group_key', '') <> '' THEN v_kind := 'group_key'; v_ref := p_obj ->> 'group_key';
   ELSIF coalesce(p_obj ->> 'approver_user_id', '') <> '' THEN v_kind := 'user'; v_ref := p_obj ->> 'approver_user_id';
@@ -130,6 +141,11 @@ BEGIN
   RETURN v_out;
 END $f$;
 --> statement-breakpoint
+-- Khoá ngắn + trần thời gian: dữ liệu quy trình nhỏ, nhưng không bao giờ giữ khoá lâu trên prod có khách.
+SET LOCAL lock_timeout = '5s';
+--> statement-breakpoint
+SET LOCAL statement_timeout = '120s';
+--> statement-breakpoint
 DO $m$
 DECLARE d_n int; r_n int; a_n int;
 BEGIN
@@ -163,7 +179,9 @@ BEGIN
                                                AND u.kind = 'internal' AND u.active AND NOT u.locked_by_tenant) END AS user_id
     FROM (SELECT c.def_tenant AS tenant_id WHERE c.def_tenant IS NOT NULL
           UNION ALL
-          SELECT cf.tenant_id FROM hub.company_flows cf WHERE c.def_tenant IS NULL AND cf.flow_id = c.def_id) tn
+          SELECT cf.tenant_id FROM hub.company_flows cf WHERE c.def_tenant IS NULL AND cf.flow_id = c.def_id
+          UNION
+          SELECT rr.tenant_id FROM hub.process_routing_rules rr WHERE c.def_tenant IS NULL AND rr.def_id = c.def_id) tn
   ) t
   WHERE (t.group_id IS NOT NULL) <> (t.user_id IS NOT NULL)
   ORDER BY t.tenant_id, c.def_id, c.role_key

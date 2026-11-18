@@ -15,6 +15,8 @@ export type PreviewIn = {
   assigned: ReadonlyMap<string, readonly string[]>;
   /** Lượt chưa kết thúc theo def. */
   activeRuns: ReadonlyMap<string, number>;
+  /** Def Thư viện là mẫu MẶC ĐỊNH của một khe (`process_slots.default_def_id`): mọi công ty dùng qua khe, không cần dòng gán. */
+  slotDefaults?: ReadonlySet<string>;
 };
 export type PreviewOut = {
   defs: number;
@@ -23,10 +25,18 @@ export type PreviewOut = {
   ambiguous: string[];
   unassigned: string[];
   activeRuns: number;
+  /** Mẫu Thư viện được dùng qua khe mặc định (mọi công ty) — chạy cấu hình cũ cho tới khi quản trị giao việc. */
+  viaSlot: string[];
 };
 
 type Ref = { kind: "group_id" | "group_key" | "user"; ref: string };
-const refOf = (o: Obj, withUser: boolean): Ref | null => {
+const MANY = "many" as const;
+/** Một chỗ có NHIỀU hơn một đích cũ (vd group_id + approver_user_id) ⇒ `MANY`: migration bỏ qua (giữ cấu hình cũ). */
+const refOf = (o: Obj, withUser: boolean): Ref | typeof MANY | null => {
+  const n = [o.group_id, o.group_key, ...(withUser ? [o.approver_user_id, o.user_id] : [])].filter(
+    (v) => s(v),
+  ).length;
+  if (n > 1) return MANY;
   if (s(o.group_id)) return { kind: "group_id", ref: s(o.group_id) };
   if (s(o.group_key)) return { kind: "group_key", ref: s(o.group_key) };
   if (withUser && s(o.approver_user_id)) return { kind: "user", ref: s(o.approver_user_id) };
@@ -34,15 +44,18 @@ const refOf = (o: Obj, withUser: boolean): Ref | null => {
   return null;
 };
 
-type Slots = { refs: Ref[]; sign: "none" | "one" | "many"; signRef: string };
+type Slots = { many: number; refs: Ref[]; sign: "none" | "one" | "many"; signRef: string };
 
 /** Nhóm/người CHƯA có vai trong phần Duyệt (chính, cùng duyệt, chuyển cấp). */
-function reviewRefs(a: Obj): Ref[] {
-  const out: (Ref | null)[] = [isObj(a.role) ? null : refOf(a, true)];
+function reviewRefs(a: Obj): { refs: Ref[]; many: number } {
+  const out: (Ref | typeof MANY | null)[] = [isObj(a.role) ? null : refOf(a, true)];
   const gs = isObj(a.parallel) && Array.isArray(a.parallel.groups) ? a.parallel.groups : [];
   for (const g of gs) out.push(!isObj(g) || isObj(g.role) ? null : refOf(g, false));
   if (isObj(a.escalate) && !isObj(a.escalate.role)) out.push(refOf(a.escalate, true));
-  return out.filter((r): r is Ref => r !== null);
+  return {
+    refs: out.filter((r): r is Ref => r !== null && r !== MANY),
+    many: out.filter((r) => r === MANY).length,
+  };
 }
 
 /** Bước Ký chưa có `signer_role`: không có / đúng một / nhiều mục `company_signers`. */
@@ -60,13 +73,15 @@ function signOf(st: unknown): Pick<Slots, "sign" | "signRef"> {
       ? s(args.company_signers.value).trim()
       : "";
   if (!cs) return { sign: "none", signRef: "" };
-  const parts = cs.split(/s*,s*/);
+  const parts = cs.split(/\s*,\s*/);
   const one = parts.length === 1 && SIGNER.test(parts[0] ?? "");
   return { sign: one ? "one" : "many", signRef: one ? (parts[0] ?? "") : "" };
 }
 
 const slotsOf = (st: unknown): Slots => ({
-  refs: isObj(st) && isObj(st.after) && st.after.kind === "review" ? reviewRefs(st.after) : [],
+  ...(isObj(st) && isObj(st.after) && st.after.kind === "review"
+    ? reviewRefs(st.after)
+    : { refs: [], many: 0 }),
   ...signOf(st),
 });
 
@@ -95,6 +110,8 @@ function planDef(i: PreviewIn, d: PreviewDef, forTenants: readonly string[]) {
   for (const [n, st] of (d.stages as unknown[]).entries()) {
     const x = slotsOf(st);
     const at = `${d.key} · bước ${n + 1}`;
+    if (x.many > 0)
+      ambiguous.push(`${at}: nhóm/người duyệt có nhiều hơn một đích cũ (giữ cấu hình cũ)`);
     if (x.sign === "many") ambiguous.push(`${at}: Ký nhiều người/nhóm (giữ cấu hình cũ)`);
     if (x.sign === "one" && !d.tenant_id)
       ambiguous.push(`${at}: Ký ở mẫu Thư viện (giữ cấu hình cũ)`);
@@ -132,5 +149,8 @@ export function previewPlan(i: PreviewIn): PreviewOut {
     ambiguous,
     unassigned: [...unassigned],
     activeRuns: runs,
+    viaSlot: i.defs
+      .filter((d) => d.tenant_id === null && i.slotDefaults?.has(d.id))
+      .map((d) => d.key),
   };
 }

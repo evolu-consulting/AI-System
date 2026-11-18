@@ -9,7 +9,8 @@ import { contracts, groups, tenantId, userId, users } from "@ai/test-kit/builder
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { bellRoleUnassigned } from "../../packs/contracts/adapters/role-unassigned-bell";
-import { applyRoles } from "./roles.repo";
+import { bindGroupKeys } from "../triggers/group-keys.rules";
+import { applyRoles, resolveRunRoles } from "./roles.repo";
 
 const T = { a: tenantId(1830), b: tenantId(1831) };
 const U = { adm: userId(1830), u2: userId(1831), u3: userId(1832), b1: userId(1833) };
@@ -31,7 +32,7 @@ let db: Db;
 let gA = "";
 let gB = "";
 let gC = "";
-const ids = { d1: "", d2: "", lib: "", dlc: "", run: "" };
+const ids = { d1: "", d2: "", d3: "", lib: "", dlc: "", run: "" };
 const c = (v: string) => ({ from: "const", value: v });
 const SIGN = (signers: string) => ({
   name: "Ký",
@@ -113,6 +114,10 @@ beforeAll(async () => {
   ];
   ids.d1 = await ins(T.a, "cr182-m-d1", D1);
   ids.d2 = await ins(T.a, "cr182-m-multi", [SIGN(`user:${U.u2},group:${gB}`)]);
+  // vừa nhóm vừa người duyệt cụ thể (người cụ thể thắng) ⇒ MƠ HỒ, migration bỏ qua
+  ids.d3 = await ins(T.a, "cr182-m-both", [
+    { name: "B", after: { kind: "review", group_id: gA, approver_user_id: U.u2 } },
+  ]);
   const LIB = [{ name: "L1", after: { kind: "review", group_key: "ga" } }];
   ids.lib = await ins(null, "cr182-m-lib", LIB);
   ids.dlc = await ins(
@@ -170,6 +175,11 @@ describe("CR-182 · hub 0160 điền vai + giao việc", () => {
     // Ký NHIỀU người: không thêm vai, không giao việc (giữ cấu hình cũ)
     expect((await stagesOf(ids.d2))[0].executor.args.signer_role).toBeUndefined();
     expect((await assignments(ids.d2)).length).toBe(0);
+    // vừa nhóm vừa người ⇒ bỏ qua: không vai, không giao việc, giữ cả hai trường cũ
+    const both = (await stagesOf(ids.d3))[0].after;
+    expect(both.role).toBeUndefined();
+    expect([both.group_id, both.approver_user_id]).toEqual([gA, U.u2]);
+    expect((await assignments(ids.d3)).length).toBe(0);
     // mẫu của Rowan (dlc.*) không đổi
     expect(JSON.stringify(await stagesOf(ids.dlc))).toBe(dlcBefore);
     // lượt đang chạy: ảnh chụp không đổi
@@ -230,6 +240,43 @@ describe("CR-182 · công tắc lùi on_doc_enabled ở bước Ký có vai", ()
   });
 });
 
+describe("CR-182 · vai CHƯA giao mà còn cấu hình cũ ⇒ chạy như trước, không chặn", () => {
+  const tenantWithGa = async (n: number) => {
+    const tid = tenantId(n);
+    await o`insert into admin.tenants (id, key, name) values (${tid}, ${"p" + n}, ${"P" + n}) on conflict do nothing`;
+    const gid = (await groups(o, tid, ["ga"])).get("ga") as string;
+    return { tid, gid };
+  };
+  const resolveFor = async (tid: string, gid: string) => {
+    const stages = bindGroupKeys(await stagesOf(ids.lib), new Map([["ga", gid]])).stages;
+    return withHubScope(db, { kind: "system" }, (tx) =>
+      resolveRunRoles(tx, tid, { id: ids.lib, stages }),
+    );
+  };
+  it("(a) công ty dùng mẫu Thư viện qua khe (không có company_flows, không hàng giao) ⇒ việc đúng nhóm như trước", async () => {
+    const { tid, gid } = await tenantWithGa(1832);
+    const r = await resolveFor(tid, gid);
+    expect((r.stages[0] as Stg).after.group_id).toBe(gid);
+    expect(r.unassigned.filter((x) => x.blocking)).toEqual([]);
+  });
+  it("(b) công ty được gán mẫu SAU ngày migrate (có company_flows, chưa có hàng giao) ⇒ việc đúng nhóm như trước", async () => {
+    const { tid, gid } = await tenantWithGa(1833);
+    await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${tid}, ${ids.lib}, true)`;
+    const r = await resolveFor(tid, gid);
+    expect((r.stages[0] as Stg).after.group_id).toBe(gid);
+    expect(r.unassigned.filter((x) => x.blocking)).toEqual([]);
+  });
+  it("quy trình kiểu MỚI (vai, không còn cấu hình cũ) chưa giao ⇒ vẫn chặn ROLE_UNASSIGNED", async () => {
+    const stages = [
+      { name: "N", after: { kind: "review", group_id: null, role: { key: "moi", label: "Mới" } } },
+    ];
+    const run = withHubScope(db, { kind: "system" }, (tx) =>
+      resolveRunRoles(tx, T.a, { id: ids.lib, stages }),
+    );
+    await expect(run).rejects.toMatchObject({ code: "ROLE_UNASSIGNED" });
+  });
+});
+
 describe("CR-182 · chuông «Chưa giao người»", () => {
   it("vai chưa giao ⇒ chuông tới quản trị công ty (không tới người thường), nội dung + link đúng, gửi lại không nhân đôi, mã không phải vai ⇒ không chuông", async () => {
     const [hd] = await contracts(o, T.a, 1, { createdBy: U.adm, status: "processing" });
@@ -242,10 +289,24 @@ describe("CR-182 · chuông «Chưa giao người»", () => {
     expect(await run(`FLOW_GROUP_MISSING:${key}`)).toBe(0);
     expect(await run("FLOW_GROUP_MISSING:khong-phai-vai")).toBe(0);
     expect(await run("FLOW_REFUSED")).toBe(0);
+    // vai người ký ({from,value}, không nhãn trong def) ⇒ nhãn cố định
+    const [hd2] = await contracts(o, T.a, 1, { from: 2, createdBy: U.adm, status: "processing" });
+    const n2 = await withHubScope(db, { kind: "system" }, (tx) =>
+      bellRoleUnassigned(tx, {
+        tenantId: T.a,
+        ref: hd2 as string,
+        reason: "FLOW_GROUP_MISSING:nguoi-ky-hop-dong",
+      }),
+    );
+    expect(n2).toBe(1);
+    const [b2] = await o<
+      { body: string }[]
+    >`select body from hub.notifications where tenant_id = ${T.a} and body like '%HD 2%'`;
+    expect(b2?.body).toBe("Hợp đồng HD 2 đang chờ: vai Người ký hợp đồng chưa giao người.");
     const rows = await o<{ user_id: string; title: string; body: string; link: string }[]>`
       select user_id::text, title, body, link from hub.notifications where tenant_id = ${T.a} and kind = 'contract.role_unassigned'`;
-    expect(rows.length).toBe(1);
-    expect(rows[0]).toMatchObject({
+    expect(rows.filter((r) => r.body.includes("HD 1")).length).toBe(1);
+    expect(rows.find((r) => r.body.includes("HD 1"))).toMatchObject({
       user_id: U.adm,
       title: "Chưa giao người",
       link: "/contracts/settings?sec=flow",

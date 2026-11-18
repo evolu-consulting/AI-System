@@ -81,16 +81,30 @@ type Keep = boolean;
 /** `ondoc` = công ty BẬT ký trên tài liệu ⇒ bước Ký có vai chạy `ondoc` (bỏ `provider` cũ); TẮT ⇒ giữ `provider` / `company_signers` như cũ. */
 type Ondoc = boolean;
 
+/**
+ * CR-182 · R4 · «cấu hình cũ còn đủ để chạy»: vai CHƯA giao mà chỗ này còn nhóm/người cũ (mã, id, người duyệt, người ký, đích chuyển cấp) ⇒ DÙNG cấu hình cũ,
+ * không chặn, không chuông (quy trình đã chuyển bằng migration 0160 / mẫu Thư viện dùng qua khe / công ty gán mẫu sau ngày chuyển chạy như trước).
+ * Chỉ khi chỗ này không còn gì cũ (quy trình kiểu mới) mới coi là chưa giao thật.
+ */
+const hasOld = (o: Obj, keys: readonly string[]): boolean => keys.some((k) => str(o[k]) !== null);
+
 function mainRole(a: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): Obj {
   const r = roleOf(a.role);
   if (!r) return a;
   const x = by.get(r.key);
   const { group_id: _g, group_key: _k, approver_user_id: _u, ...rest } = a;
-  if (x?.group_id) return { ...rest, group_id: x.group_id };
+  // Giao NHÓM mà bước còn người duyệt cụ thể (người cụ thể thắng như engine cũ) ⇒ giữ người đó.
+  if (x?.group_id)
+    return {
+      ...rest,
+      group_id: x.group_id,
+      ...(str(a.approver_user_id) ? { approver_user_id: a.approver_user_id } : {}),
+    };
   if (x?.user_id) return { ...rest, group_id: null, approver_user_id: x.user_id };
   if (keep) return a;
-  un.push({ stage: i, slot: "review", role_key: r.key, label: r.label, blocking: true });
-  return { ...rest, group_id: null };
+  const old = hasOld(a, ["group_id", "group_key", "approver_user_id"]);
+  un.push({ stage: i, slot: "review", role_key: r.key, label: r.label, blocking: !old });
+  return old ? a : { ...rest, group_id: null };
 }
 
 function parallelRoles(a: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): Obj {
@@ -101,9 +115,11 @@ function parallelRoles(a: Obj, i: number, by: By, un: UnassignedRole[], keep: Ke
     if (!isObj(g) || !gr) return g;
     const gid = by.get(gr.key)?.group_id ?? null; // nhánh «cùng duyệt» chỉ nhận NHÓM (không có người)
     if (!gid && keep) return g;
-    const { group_id: _gi, group_key: _gk, ...rest } = g;
+    const old = !gid && hasOld(g, ["group_id", "group_key"]);
     if (!gid)
-      un.push({ stage: i, slot: "parallel", role_key: gr.key, label: gr.label, blocking: true });
+      un.push({ stage: i, slot: "parallel", role_key: gr.key, label: gr.label, blocking: !old });
+    if (old) return g;
+    const { group_id: _gi, group_key: _gk, ...rest } = g;
     return { ...rest, group_id: gid };
   });
   return { ...a, parallel: { ...a.parallel, groups: next } };
@@ -118,8 +134,8 @@ function escalateRole(a: Obj, i: number, by: By, un: UnassignedRole[], keep: Kee
   if (x?.group_id) return { ...a, escalate: { ...rest, group_id: x.group_id } };
   if (x?.user_id) return { ...a, escalate: { ...rest, user_id: x.user_id } };
   if (keep) return a;
-  if (keep) return a;
   un.push({ stage: i, slot: "escalate", role_key: r.key, label: r.label, blocking: false });
+  if (hasOld(e, ["group_id", "group_key", "user_id"])) return a; // còn đích cũ ⇒ như trước
   return { ...a, escalate: null }; // không đích ⇒ mặc định Toàn quyền
 }
 
@@ -143,8 +159,9 @@ function sign(s: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep, ondoc
   const id = x?.group_id ? `group:${x.group_id}` : x?.user_id ? `user:${x.user_id}` : null;
   if (!id) {
     if (keep) return s;
-    un.push({ stage: i, slot: "sign", role_key: key, label: str(s.name) ?? key, blocking: true });
-    return { ...s, executor: { ...e, args } };
+    const old = constOf(e.args, SIGNERS_ARG) !== null; // còn người ký cũ ⇒ giữ, không chặn
+    un.push({ stage: i, slot: "sign", role_key: key, label: str(s.name) ?? key, blocking: !old });
+    return old ? s : { ...s, executor: { ...e, args } };
   }
   return {
     ...s,

@@ -34,14 +34,14 @@ describe("withRoles", () => {
   });
 
   it("review: vai chưa giao ⇒ trống + unassigned chặn; không đổi mảng vào", () => {
-    const st = [review({ role: role("cap-1", "Duyệt cấp 1"), approver_user_id: U1 })];
+    const st = [review({ role: role("cap-1", "Duyệt cấp 1") })];
     const o = withRoles(st, []);
     expect(afterOf(o.stages[0])).toMatchObject({ group_id: null });
     expect(afterOf(o.stages[0]).approver_user_id).toBeUndefined();
     expect(o.unassigned).toEqual([
       { stage: 0, slot: "review", role_key: "cap-1", label: "Duyệt cấp 1", blocking: true },
     ]);
-    expect(afterOf(st[0]).approver_user_id).toBe(U1);
+    expect(afterOf(st[0]).approver_user_id).toBeUndefined();
   });
 
   it("parallel: mỗi nhóm theo vai riêng; người không dùng được ⇒ unassigned", () => {
@@ -81,13 +81,16 @@ describe("withRoles", () => {
     expect(o.unassigned[0]).toMatchObject({ slot: "escalate", blocking: false });
   });
 
-  it("Ký: signer_role ⇒ args.company_signers (nhóm hoặc người); chưa giao ⇒ gỡ company_signers cũ", () => {
+  it("Ký: signer_role ⇒ args.company_signers (nhóm hoặc người); chưa giao + còn người ký cũ ⇒ giữ cũ, không chặn; không còn gì cũ ⇒ chặn", () => {
     const st = [sign({ company_signers: { from: "const", value: `user:${U1}` } })];
     const g = withRoles(st, [{ role_key: "nguoi-ky", group_id: G1, user_id: null }]);
     expect(argsOf(g.stages[0]).company_signers).toEqual({ from: "const", value: `group:${G1}` });
     const u = withRoles(st, [{ role_key: "nguoi-ky", group_id: null, user_id: U1 }]);
     expect(argsOf(u.stages[0]).company_signers).toEqual({ from: "const", value: `user:${U1}` });
-    const n = withRoles(st, []);
+    const old = withRoles(st, []);
+    expect(old.stages[0]).toBe(st[0]);
+    expect(old.unassigned).toMatchObject([{ slot: "sign", role_key: "nguoi-ky", blocking: false }]);
+    const n = withRoles([sign()], []);
     expect(argsOf(n.stages[0]).company_signers).toBeUndefined();
     expect(n.unassigned).toMatchObject([{ slot: "sign", role_key: "nguoi-ky", blocking: true }]);
   });
@@ -139,5 +142,39 @@ describe("withRoles · công tắc lùi ondoc (CR-182 R3)", () => {
     expect(withRoles([plain], asg, { ondoc: true }).stages[0]).toBe(plain);
     expect(hasSignerRole([plain])).toBe(false);
     expect(hasSignerRole([sign()])).toBe(true);
+  });
+});
+
+describe("withRoles · vai chưa giao mà còn cấu hình cũ ⇒ dùng cũ, không chặn (CR-182 R4)", () => {
+  it("Duyệt / cùng duyệt / Ký còn cấu hình cũ ⇒ giữ nguyên, báo không chặn, không còn gì cũ ⇒ chặn", () => {
+    const st = [
+      review({ role: role("a"), group_id: G1 }),
+      review({ role: role("b"), group_id: null, group_key: "ga" }),
+      review({ role: role("c"), group_id: null, approver_user_id: U1 }),
+      review({
+        role: role("d"),
+        group_id: G2,
+        parallel: {
+          rule: "all",
+          groups: [
+            { group_id: G1, label: "A", role: role("e") },
+            { group_key: "gb", label: "B", role: role("f") },
+          ],
+        },
+      }),
+      sign({ company_signers: { from: "const", value: `user:${U1}` } }),
+      review({ role: role("moi") }),
+    ];
+    const o = withRoles(st, []);
+    expect(o.stages.slice(0, 5)).toEqual(st.slice(0, 5));
+    expect(o.unassigned.filter((x) => x.blocking).map((x) => x.role_key)).toEqual(["moi"]);
+    expect(o.unassigned.filter((x) => !x.blocking).length).toBe(7);
+  });
+  it("giao NHÓM mà bước còn người duyệt cụ thể ⇒ giữ người cụ thể (người thắng như engine cũ)", () => {
+    const g = withRoles(
+      [review({ role: role("a"), group_id: G2, approver_user_id: U1 })],
+      [{ role_key: "a", group_id: G1, user_id: null }],
+    );
+    expect(afterOf(g.stages[0])).toMatchObject({ group_id: G1, approver_user_id: U1 });
   });
 });
