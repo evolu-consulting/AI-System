@@ -4,6 +4,8 @@ import { Button } from "@ai/web-kit/ui/kit/button";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { myProgress, partnerWaitOf, waitingNames } from "../../lib/contract-view";
+import { canResend } from "../../lib/partner-link-view";
+import { PartnerLinkInfo } from "./PartnerLinkInfo";
 
 /** Liên kết tới màn ký. routeTree.gen.ts (HEAD s12) thiếu `/contracts/sign/$id` trong union `to` ⇒ ép kiểu cho tới khi sinh lại cây route. */
 export function OpenSign({
@@ -88,6 +90,9 @@ export function PartnerWaitCard({ id, session }: { id: string; session: SignSess
       className="mb-3 rounded-lg border border-rule bg-panel p-4"
     >
       <p className="m-0 text-sm">{t("contracts.docsignc.partnerWait", { name: w.name })}</p>
+      {session.partner_link && (
+        <PartnerLinkInfo id={id} link={session.partner_link} allowResend={canResend(session)} />
+      )}
       <Button asChild variant="outline" size="sm" className="mt-2">
         <a
           href={`/contracts/signed/${encodeURIComponent(id)}?file=${encodeURIComponent(w.fileId)}`}

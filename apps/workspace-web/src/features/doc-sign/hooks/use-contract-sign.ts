@@ -1,7 +1,7 @@
 // CR-181 · s13 · phiên ký của MỘT hợp đồng cho trang HĐ (bảng tài liệu, dải người ký, thẻ duyệt). Công ty tắt / lỗi ⇒ `enabled=false` (giao diện như cũ).
 import type { SignSessionOut } from "@ai/contracts/pack-contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchSession, patchNeedsSign, sessionKey } from "../api";
+import { fetchSession, patchNeedsSign, resendPartnerLink, sessionKey } from "../api";
 
 export function useContractSign(id: string): {
   session: SignSessionOut | null;
@@ -26,5 +26,14 @@ export function useNeedsSign(id: string) {
       void qc.invalidateQueries({ queryKey: sessionKey(id) });
       void qc.invalidateQueries({ queryKey: ["contract", id] });
     },
+  });
+}
+
+/** CR-182 · «Gửi lại link ký»: xong thì tải lại phiên (trạng thái link: đã gửi lúc, hạn). */
+export function useResendPartnerLink(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => resendPartnerLink(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: sessionKey(id) }),
   });
 }

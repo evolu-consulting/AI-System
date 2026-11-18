@@ -16,7 +16,7 @@
       "boxDone": "đã ký {{signed}}/{{files}} tệp",
       "turnTitle": "Ký hợp đồng",
       "waitFor": "Chờ {{name}} ký",
-      "partnerWait": "Bên A đã ký đủ. Chờ {{name}} (Bên B) ký — đối tác ký trên Evolu sẽ có ở bản sau; hiện có thể tải bản đã ký để gửi đối tác.",
+      "partnerWait": "Bên A đã ký đủ. Chờ {{name}} (Bên B) ký qua link riêng.",
       "gate": "Ký xong các chỗ ký của bạn rồi mới bấm Đạt được",
       "main": "Hợp đồng chính",
       "needsSign": "Cần ký: {{name}}",
@@ -52,6 +52,102 @@
         "generic": "Chưa lưu được, vui lòng thử lại"
       },
       "boxFree": "Bạn ký ở vị trí tự chọn trên {{files}} tệp"
+    },
+    "psign": {
+      "loading": "Đang mở trang ký…",
+      "noAccount": "Trang này mở từ đường dẫn riêng trong email, không cần tài khoản Evolu.",
+      "invite": {
+        "title": "{{company}} mời bạn ký {{contract}}",
+        "hello": "Chào {{name}},",
+        "files": "Số tệp",
+        "fields": "Chỗ ký của bạn",
+        "due": "Hạn ký",
+        "hint": "Bấm vào các ô viền cam để ký. Lần đầu bạn sẽ tạo chữ ký của mình.",
+        "sign": "Xem và ký",
+        "decline": "Từ chối ký"
+      },
+      "signed": {
+        "title": "Bạn đã ký xong",
+        "body": "Bản đã ký của hai bên có thể xem lại bất cứ lúc nào bằng đường dẫn này.",
+        "at": "Ký lúc {{at}}",
+        "view": "Xem bản đã ký",
+        "download": "Tải về",
+        "viewFile": "Xem bản đã ký của {{name}}",
+        "downloadFile": "Tải về bản đã ký của {{name}}"
+      },
+      "declined": {
+        "title": "Bạn đã từ chối ký",
+        "body": "{{company}} đã nhận được thông báo. Muốn ký lại, hãy liên hệ {{company}} để được gửi lại đường dẫn.",
+        "reason": "Lý do: {{reason}}"
+      },
+      "gone": {
+        "title": "Đường dẫn ký đã hết hạn hoặc không còn dùng được",
+        "body": "Liên hệ công ty đã mời bạn ký để được gửi lại đường dẫn mới."
+      },
+      "notfound": {
+        "title": "Không tìm thấy trang ký này",
+        "body": "Kiểm tra lại đường dẫn trong email."
+      },
+      "limit": {
+        "title": "Mở quá nhiều lần",
+        "body": "Hãy thử lại sau ít phút."
+      },
+      "error": {
+        "title": "Chưa mở được trang ký",
+        "body": "Kiểm tra mạng rồi tải lại trang.",
+        "retry": "Tải lại"
+      },
+      "quick": {
+        "title": "Tạo chữ ký của bạn",
+        "desc": "Dùng cho các chỗ ký trong hợp đồng này."
+      },
+      "decl": {
+        "title": "Từ chối ký",
+        "desc": "Cho {{company}} biết lý do. Họ sẽ nhận được thông báo.",
+        "reason": "Lý do",
+        "ph": "Ví dụ: cần sửa điều khoản thanh toán",
+        "required": "Nhập lý do từ chối.",
+        "ok": "Từ chối ký",
+        "back": "Quay lại",
+        "done": "Đã gửi lý do từ chối"
+      },
+      "sign": {
+        "save": "Lưu và ký",
+        "saveLeft": "Lưu (còn {{count}} chỗ chưa ký)",
+        "saved": "Đã ký",
+        "close": "Quay lại"
+      },
+      "err": {
+        "SIGN_LINK_GONE": "Đường dẫn ký đã hết hạn hoặc bị thu hồi. Liên hệ công ty đã mời bạn để được gửi lại.",
+        "SIGN_LINK_CLOSED": "Bạn đã ký hoặc từ chối trước đó nên không thao tác thêm được.",
+        "SIGN_QUICK_MISSING": "Hãy tạo chữ ký của bạn trước khi ký.",
+        "SIGN_QUICK_PNG_INVALID": "Ảnh chữ ký chưa hợp lệ. Hãy vẽ hoặc gõ lại.",
+        "SIGN_FIELD_FORBIDDEN": "Chỗ ký này không thuộc về bạn.",
+        "SIGN_MARK_INVALID": "Vị trí chữ ký chưa hợp lệ. Hãy đặt lại trong trang.",
+        "SIGN_VERSION_STALE": "Tệp vừa được cập nhật. Trang sẽ tải lại để bạn ký trên bản mới nhất.",
+        "limit": "Thao tác quá nhanh. Hãy thử lại sau ít phút.",
+        "csrf": "Phiên làm việc đã hết. Tải lại trang rồi thử lại.",
+        "generic": "Chưa thực hiện được. Hãy thử lại sau."
+      },
+      "link": {
+        "title": "Link ký của đối tác",
+        "sentAt": "Đã gửi lúc",
+        "openedAt": "Đã mở lúc",
+        "notOpened": "Chưa mở",
+        "due": "Hạn ký",
+        "state": {
+          "open": "Chờ đối tác ký",
+          "signed": "Đối tác đã ký",
+          "declined": "Đối tác đã từ chối",
+          "expired": "Link đã hết hạn",
+          "revoked": "Link đã bị thu hồi"
+        },
+        "reason": "Lý do: {{reason}}",
+        "resend": "Gửi lại link",
+        "resent": "Đã gửi lại link tới {{name}}",
+        "resendFail": "Chưa gửi lại được link. Chỉ người tải lên hoặc quản trị gửi lại được.",
+        "noMail": "Liên hệ đối tác chưa có email nên chưa gửi được link."
+      }
     }
   }
 }

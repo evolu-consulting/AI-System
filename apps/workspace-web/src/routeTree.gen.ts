@@ -18,6 +18,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthedCommunityRouteImport } from './routes/_authed/community'
 import { Route as AuthedContractsRouteImport } from './routes/_authed/contracts'
 import { Route as AuthedMySignatureRouteImport } from './routes/_authed/my-signature'
+import { Route as KyTokenRouteImport } from './routes/ky.$token'
 import { Route as AuthedCommunityIndexRouteImport } from './routes/_authed/community/index'
 import { Route as AuthedCommunitySplatRouteImport } from './routes/_authed/community/$'
 import { Route as AuthedContractsIndexRouteImport } from './routes/_authed/contracts/index'
@@ -27,10 +28,10 @@ import { Route as AuthedContractsListRouteImport } from './routes/_authed/contra
 import { Route as AuthedContractsMessagesRouteImport } from './routes/_authed/contracts/messages'
 import { Route as AuthedContractsNotificationsRouteImport } from './routes/_authed/contracts/notifications'
 import { Route as AuthedContractsOrgRouteImport } from './routes/_authed/contracts/org'
-import { Route as AuthedContractsVerifyRouteImport } from './routes/_authed/contracts/verify'
 import { Route as AuthedContractsPartnerInboxRouteImport } from './routes/_authed/contracts/partner-inbox'
 import { Route as AuthedContractsPartnersRouteImport } from './routes/_authed/contracts/partners'
 import { Route as AuthedContractsProductsRouteImport } from './routes/_authed/contracts/products'
+import { Route as AuthedContractsVerifyRouteImport } from './routes/_authed/contracts/verify'
 import { Route as AuthedContractsCIdRouteImport } from './routes/_authed/contracts/c/$id'
 import { Route as AuthedContractsCNewRouteImport } from './routes/_authed/contracts/c/new'
 import { Route as AuthedContractsRequestsIndexRouteImport } from './routes/_authed/contracts/requests/index'
@@ -85,6 +86,11 @@ const AuthedMySignatureRoute = AuthedMySignatureRouteImport.update({
   path: '/my-signature',
   getParentRoute: () => AuthedRoute,
 } as any)
+const KyTokenRoute = KyTokenRouteImport.update({
+  id: '/ky/$token',
+  path: '/ky/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedCommunityIndexRoute = AuthedCommunityIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -132,11 +138,6 @@ const AuthedContractsOrgRoute = AuthedContractsOrgRouteImport.update({
   path: '/org',
   getParentRoute: () => AuthedContractsRoute,
 } as any)
-const AuthedContractsVerifyRoute = AuthedContractsVerifyRouteImport.update({
-  id: '/verify',
-  path: '/verify',
-  getParentRoute: () => AuthedContractsRoute,
-} as any)
 const AuthedContractsPartnerInboxRoute =
   AuthedContractsPartnerInboxRouteImport.update({
     id: '/partner-inbox',
@@ -151,6 +152,11 @@ const AuthedContractsPartnersRoute = AuthedContractsPartnersRouteImport.update({
 const AuthedContractsProductsRoute = AuthedContractsProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => AuthedContractsRoute,
+} as any)
+const AuthedContractsVerifyRoute = AuthedContractsVerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
   getParentRoute: () => AuthedContractsRoute,
 } as any)
 const AuthedContractsCIdRoute = AuthedContractsCIdRouteImport.update({
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/community': typeof AuthedCommunityRouteWithChildren
   '/contracts': typeof AuthedContractsRouteWithChildren
   '/my-signature': typeof AuthedMySignatureRoute
+  '/ky/$token': typeof KyTokenRoute
   '/community/$': typeof AuthedCommunitySplatRoute
   '/contracts/approvals': typeof AuthedContractsApprovalsRoute
   '/contracts/feedback': typeof AuthedContractsFeedbackRoute
@@ -220,10 +227,10 @@ export interface FileRoutesByFullPath {
   '/contracts/messages': typeof AuthedContractsMessagesRoute
   '/contracts/notifications': typeof AuthedContractsNotificationsRoute
   '/contracts/org': typeof AuthedContractsOrgRoute
-  '/contracts/verify': typeof AuthedContractsVerifyRoute
   '/contracts/partner-inbox': typeof AuthedContractsPartnerInboxRoute
   '/contracts/partners': typeof AuthedContractsPartnersRoute
   '/contracts/products': typeof AuthedContractsProductsRoute
+  '/contracts/verify': typeof AuthedContractsVerifyRoute
   '/community/': typeof AuthedCommunityIndexRoute
   '/contracts/': typeof AuthedContractsIndexRoute
   '/contracts/c/$id': typeof AuthedContractsCIdRoute
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/sso': typeof SsoRoute
   '/terms': typeof TermsRoute
   '/my-signature': typeof AuthedMySignatureRoute
+  '/ky/$token': typeof KyTokenRoute
   '/community/$': typeof AuthedCommunitySplatRoute
   '/contracts/approvals': typeof AuthedContractsApprovalsRoute
   '/contracts/feedback': typeof AuthedContractsFeedbackRoute
@@ -250,10 +258,10 @@ export interface FileRoutesByTo {
   '/contracts/messages': typeof AuthedContractsMessagesRoute
   '/contracts/notifications': typeof AuthedContractsNotificationsRoute
   '/contracts/org': typeof AuthedContractsOrgRoute
-  '/contracts/verify': typeof AuthedContractsVerifyRoute
   '/contracts/partner-inbox': typeof AuthedContractsPartnerInboxRoute
   '/contracts/partners': typeof AuthedContractsPartnersRoute
   '/contracts/products': typeof AuthedContractsProductsRoute
+  '/contracts/verify': typeof AuthedContractsVerifyRoute
   '/community': typeof AuthedCommunityIndexRoute
   '/contracts': typeof AuthedContractsIndexRoute
   '/contracts/c/$id': typeof AuthedContractsCIdRoute
@@ -277,6 +285,7 @@ export interface FileRoutesById {
   '/_authed/community': typeof AuthedCommunityRouteWithChildren
   '/_authed/contracts': typeof AuthedContractsRouteWithChildren
   '/_authed/my-signature': typeof AuthedMySignatureRoute
+  '/ky/$token': typeof KyTokenRoute
   '/_authed/community/$': typeof AuthedCommunitySplatRoute
   '/_authed/contracts/approvals': typeof AuthedContractsApprovalsRoute
   '/_authed/contracts/feedback': typeof AuthedContractsFeedbackRoute
@@ -284,10 +293,10 @@ export interface FileRoutesById {
   '/_authed/contracts/messages': typeof AuthedContractsMessagesRoute
   '/_authed/contracts/notifications': typeof AuthedContractsNotificationsRoute
   '/_authed/contracts/org': typeof AuthedContractsOrgRoute
-  '/_authed/contracts/verify': typeof AuthedContractsVerifyRoute
   '/_authed/contracts/partner-inbox': typeof AuthedContractsPartnerInboxRoute
   '/_authed/contracts/partners': typeof AuthedContractsPartnersRoute
   '/_authed/contracts/products': typeof AuthedContractsProductsRoute
+  '/_authed/contracts/verify': typeof AuthedContractsVerifyRoute
   '/_authed/community/': typeof AuthedCommunityIndexRoute
   '/_authed/contracts/': typeof AuthedContractsIndexRoute
   '/_authed/contracts/c/$id': typeof AuthedContractsCIdRoute
@@ -311,6 +320,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/contracts'
     | '/my-signature'
+    | '/ky/$token'
     | '/community/$'
     | '/contracts/approvals'
     | '/contracts/feedback'
@@ -318,10 +328,10 @@ export interface FileRouteTypes {
     | '/contracts/messages'
     | '/contracts/notifications'
     | '/contracts/org'
-    | '/contracts/verify'
     | '/contracts/partner-inbox'
     | '/contracts/partners'
     | '/contracts/products'
+    | '/contracts/verify'
     | '/community/'
     | '/contracts/'
     | '/contracts/c/$id'
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/sso'
     | '/terms'
     | '/my-signature'
+    | '/ky/$token'
     | '/community/$'
     | '/contracts/approvals'
     | '/contracts/feedback'
@@ -348,10 +359,10 @@ export interface FileRouteTypes {
     | '/contracts/messages'
     | '/contracts/notifications'
     | '/contracts/org'
-    | '/contracts/verify'
     | '/contracts/partner-inbox'
     | '/contracts/partners'
     | '/contracts/products'
+    | '/contracts/verify'
     | '/community'
     | '/contracts'
     | '/contracts/c/$id'
@@ -374,6 +385,7 @@ export interface FileRouteTypes {
     | '/_authed/community'
     | '/_authed/contracts'
     | '/_authed/my-signature'
+    | '/ky/$token'
     | '/_authed/community/$'
     | '/_authed/contracts/approvals'
     | '/_authed/contracts/feedback'
@@ -381,10 +393,10 @@ export interface FileRouteTypes {
     | '/_authed/contracts/messages'
     | '/_authed/contracts/notifications'
     | '/_authed/contracts/org'
-    | '/_authed/contracts/verify'
     | '/_authed/contracts/partner-inbox'
     | '/_authed/contracts/partners'
     | '/_authed/contracts/products'
+    | '/_authed/contracts/verify'
     | '/_authed/community/'
     | '/_authed/contracts/'
     | '/_authed/contracts/c/$id'
@@ -405,6 +417,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SsoRoute: typeof SsoRoute
   TermsRoute: typeof TermsRoute
+  KyTokenRoute: typeof KyTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -472,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedMySignatureRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/ky/$token': {
+      id: '/ky/$token'
+      path: '/ky/$token'
+      fullPath: '/ky/$token'
+      preLoaderRoute: typeof KyTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/community/': {
       id: '/_authed/community/'
       path: '/'
@@ -535,13 +555,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedContractsOrgRouteImport
       parentRoute: typeof AuthedContractsRoute
     }
-    '/_authed/contracts/verify': {
-      id: '/_authed/contracts/verify'
-      path: '/verify'
-      fullPath: '/contracts/verify'
-      preLoaderRoute: typeof AuthedContractsVerifyRouteImport
-      parentRoute: typeof AuthedContractsRoute
-    }
     '/_authed/contracts/partner-inbox': {
       id: '/_authed/contracts/partner-inbox'
       path: '/partner-inbox'
@@ -561,6 +574,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/contracts/products'
       preLoaderRoute: typeof AuthedContractsProductsRouteImport
+      parentRoute: typeof AuthedContractsRoute
+    }
+    '/_authed/contracts/verify': {
+      id: '/_authed/contracts/verify'
+      path: '/verify'
+      fullPath: '/contracts/verify'
+      preLoaderRoute: typeof AuthedContractsVerifyRouteImport
       parentRoute: typeof AuthedContractsRoute
     }
     '/_authed/contracts/c/$id': {
@@ -650,10 +670,10 @@ interface AuthedContractsRouteChildren {
   AuthedContractsMessagesRoute: typeof AuthedContractsMessagesRoute
   AuthedContractsNotificationsRoute: typeof AuthedContractsNotificationsRoute
   AuthedContractsOrgRoute: typeof AuthedContractsOrgRoute
-  AuthedContractsVerifyRoute: typeof AuthedContractsVerifyRoute
   AuthedContractsPartnerInboxRoute: typeof AuthedContractsPartnerInboxRoute
   AuthedContractsPartnersRoute: typeof AuthedContractsPartnersRoute
   AuthedContractsProductsRoute: typeof AuthedContractsProductsRoute
+  AuthedContractsVerifyRoute: typeof AuthedContractsVerifyRoute
   AuthedContractsIndexRoute: typeof AuthedContractsIndexRoute
   AuthedContractsCIdRoute: typeof AuthedContractsCIdRoute
   AuthedContractsCNewRoute: typeof AuthedContractsCNewRoute
@@ -673,10 +693,10 @@ const AuthedContractsRouteChildren: AuthedContractsRouteChildren = {
   AuthedContractsMessagesRoute: AuthedContractsMessagesRoute,
   AuthedContractsNotificationsRoute: AuthedContractsNotificationsRoute,
   AuthedContractsOrgRoute: AuthedContractsOrgRoute,
-  AuthedContractsVerifyRoute: AuthedContractsVerifyRoute,
   AuthedContractsPartnerInboxRoute: AuthedContractsPartnerInboxRoute,
   AuthedContractsPartnersRoute: AuthedContractsPartnersRoute,
   AuthedContractsProductsRoute: AuthedContractsProductsRoute,
+  AuthedContractsVerifyRoute: AuthedContractsVerifyRoute,
   AuthedContractsIndexRoute: AuthedContractsIndexRoute,
   AuthedContractsCIdRoute: AuthedContractsCIdRoute,
   AuthedContractsCNewRoute: AuthedContractsCNewRoute,
@@ -716,6 +736,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SsoRoute: SsoRoute,
   TermsRoute: TermsRoute,
+  KyTokenRoute: KyTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

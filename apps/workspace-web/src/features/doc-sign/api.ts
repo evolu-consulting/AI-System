@@ -1,5 +1,10 @@
 // CR-181 · s12 · gọi API ký trên tài liệu: `/pack/contracts/contracts/:id/…` + chữ ký của tôi `/me/signature` (lõi).
-import type { SignFieldsPut, SignSessionOut, SignVersionsOut } from "@ai/contracts/pack-contracts";
+import type {
+  PartnerResendOut,
+  SignFieldsPut,
+  SignSessionOut,
+  SignVersionsOut,
+} from "@ai/contracts/pack-contracts";
 import {
   type CreateSignatureBody,
   CreateSignatureBodySchema,
@@ -54,3 +59,7 @@ export const fetchVersions = (id: string, fileId: string, signal?: AbortSignal) 
 export async function fetchPdfAt(path: string) {
   return (await apiResponse(path)).blob();
 }
+
+/** CR-182 · «Gửi lại link ký» cho đối tác (người tải lên / quản trị): thu hồi link cũ, gửi link mới. */
+export const resendPartnerLink = (id: string) =>
+  api<PartnerResendOut>(`${base(id)}/partner-sign/resend`, { method: "POST" });

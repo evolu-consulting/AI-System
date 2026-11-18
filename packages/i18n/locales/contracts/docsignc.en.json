@@ -16,7 +16,7 @@
       "boxDone": "signed {{signed}}/{{files}} files",
       "turnTitle": "Sign the contract",
       "waitFor": "Waiting for {{name}} to sign",
-      "partnerWait": "Party A has fully signed. Waiting for {{name}} (Party B) to sign — signing by the partner on Evolu comes in a later release; for now you can download the signed copy and send it to the partner.",
+      "partnerWait": "Party A has signed. Waiting for {{name}} (Party B) to sign via their private link.",
       "gate": "Sign all your places first, then you can approve",
       "main": "Main contract",
       "needsSign": "Needs signing: {{name}}",
@@ -52,6 +52,102 @@
         "generic": "Could not save, please try again"
       },
       "boxFree": "You sign anywhere you choose on {{files}} files"
+    },
+    "psign": {
+      "loading": "Opening the signing page…",
+      "noAccount": "This page opens from the private link in your email. No Evolu account needed.",
+      "invite": {
+        "title": "{{company}} invites you to sign {{contract}}",
+        "hello": "Hello {{name}},",
+        "files": "Files",
+        "fields": "Your signature spots",
+        "due": "Sign by",
+        "hint": "Click the orange-bordered boxes to sign. The first time, you will create your signature.",
+        "sign": "View and sign",
+        "decline": "Decline to sign"
+      },
+      "signed": {
+        "title": "You have signed",
+        "body": "You can view the signed copy of both parties any time from this link.",
+        "at": "Signed at {{at}}",
+        "view": "View signed copy",
+        "download": "Download",
+        "viewFile": "View signed copy of {{name}}",
+        "downloadFile": "Download signed copy of {{name}}"
+      },
+      "declined": {
+        "title": "You declined to sign",
+        "body": "{{company}} has been notified. To sign after all, contact {{company}} to get a new link.",
+        "reason": "Reason: {{reason}}"
+      },
+      "gone": {
+        "title": "This signing link has expired or is no longer valid",
+        "body": "Contact the company that invited you to sign to get a new link."
+      },
+      "notfound": {
+        "title": "This signing page was not found",
+        "body": "Check the link in your email."
+      },
+      "limit": {
+        "title": "Opened too many times",
+        "body": "Please try again in a few minutes."
+      },
+      "error": {
+        "title": "Could not open the signing page",
+        "body": "Check your connection and reload the page.",
+        "retry": "Reload"
+      },
+      "quick": {
+        "title": "Create your signature",
+        "desc": "Used for the signature spots in this contract."
+      },
+      "decl": {
+        "title": "Decline to sign",
+        "desc": "Tell {{company}} why. They will be notified.",
+        "reason": "Reason",
+        "ph": "For example: the payment terms need changes",
+        "required": "Enter a reason.",
+        "ok": "Decline to sign",
+        "back": "Go back",
+        "done": "Your reason was sent"
+      },
+      "sign": {
+        "save": "Save and sign",
+        "saveLeft": "Save ({{count}} spots left to sign)",
+        "saved": "Signed",
+        "close": "Go back"
+      },
+      "err": {
+        "SIGN_LINK_GONE": "This signing link has expired or was revoked. Contact the company that invited you for a new one.",
+        "SIGN_LINK_CLOSED": "You already signed or declined, so nothing more can be done.",
+        "SIGN_QUICK_MISSING": "Create your signature before signing.",
+        "SIGN_QUICK_PNG_INVALID": "The signature image is not valid. Draw or type it again.",
+        "SIGN_FIELD_FORBIDDEN": "This signature spot is not yours.",
+        "SIGN_MARK_INVALID": "The signature position is not valid. Place it again on the page.",
+        "SIGN_VERSION_STALE": "The file was just updated. The page will reload so you sign the latest copy.",
+        "limit": "Too many actions. Please try again in a few minutes.",
+        "csrf": "Your session expired. Reload the page and try again.",
+        "generic": "Could not complete that. Please try again later."
+      },
+      "link": {
+        "title": "Partner signing link",
+        "sentAt": "Sent at",
+        "openedAt": "Opened at",
+        "notOpened": "Not opened yet",
+        "due": "Sign by",
+        "state": {
+          "open": "Waiting for the partner to sign",
+          "signed": "Partner has signed",
+          "declined": "Partner declined",
+          "expired": "Link expired",
+          "revoked": "Link revoked"
+        },
+        "reason": "Reason: {{reason}}",
+        "resend": "Resend link",
+        "resent": "Link resent to {{name}}",
+        "resendFail": "Could not resend the link. Only the uploader or an admin can resend.",
+        "noMail": "The partner contact has no email, so the link could not be sent."
+      }
     }
   }
 }

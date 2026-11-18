@@ -48,6 +48,8 @@ export const proxy = {
   // `/company/signature-` thu hẹp đúng tiền tố API (không nuốt route SPA `/company…` nếu sau này có).
   "/me/signature": HUB_URL,
   "/company/signature-": HUB_URL,
+  // CR-182 · đối tác ký qua link riêng: API công khai `/sign-link/:token/*` của hub (không JWT). Trang SPA là `/ky/:token` (không trùng tiền tố).
+  "/sign-link": HUB_URL,
   "/notifications": spaNavigation,
   // M2-chat · trợ lý: hội thoại (E6/E12 SSE) + dừng run (E15) của Agent Hub.
   // CR-147b · hồ sơ người (`/people`: avatar, ảnh bìa, thẻ người theo lô); route SPA không dùng tiền tố này.

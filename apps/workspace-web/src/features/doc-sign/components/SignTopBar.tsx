@@ -65,38 +65,42 @@ export function SignTopBar(p: {
       >
         <Close className="size-4" />
       </Button>
-      <span className="text-sm text-muted-foreground">{t("contracts.docsign.kindLabel")}</span>
-      <ToggleGroup
-        type="single"
-        value={p.kind}
-        onValueChange={(v) => {
-          const o = p.kinds.find((k) => k.kind === v);
-          if (o && !o.disabledReason) p.onKind(o.kind);
-        }}
-      >
-        {p.kinds.map((o) => {
-          const item = (
-            <ToggleGroupItem
-              key={o.kind}
-              value={o.kind}
-              aria-disabled={o.disabledReason ? "true" : undefined}
-              className={o.disabledReason ? "opacity-50" : undefined}
-            >
-              {o.disabledReason && <Locked className="mr-1 size-3" />}
-              {t(`contracts.docsign.kind.${o.kind}`)}
-              {o.disabledReason && <span className="sr-only">{o.disabledReason}</span>}
-            </ToggleGroupItem>
-          );
-          return o.disabledReason ? (
-            <Tooltip key={o.kind}>
-              <TooltipTrigger asChild>{item}</TooltipTrigger>
-              <TooltipContent>{o.disabledReason}</TooltipContent>
-            </Tooltip>
-          ) : (
-            item
-          );
-        })}
-      </ToggleGroup>
+      {p.kinds.length > 1 && (
+        <>
+          <span className="text-sm text-muted-foreground">{t("contracts.docsign.kindLabel")}</span>
+          <ToggleGroup
+            type="single"
+            value={p.kind}
+            onValueChange={(v) => {
+              const o = p.kinds.find((k) => k.kind === v);
+              if (o && !o.disabledReason) p.onKind(o.kind);
+            }}
+          >
+            {p.kinds.map((o) => {
+              const item = (
+                <ToggleGroupItem
+                  key={o.kind}
+                  value={o.kind}
+                  aria-disabled={o.disabledReason ? "true" : undefined}
+                  className={o.disabledReason ? "opacity-50" : undefined}
+                >
+                  {o.disabledReason && <Locked className="mr-1 size-3" />}
+                  {t(`contracts.docsign.kind.${o.kind}`)}
+                  {o.disabledReason && <span className="sr-only">{o.disabledReason}</span>}
+                </ToggleGroupItem>
+              );
+              return o.disabledReason ? (
+                <Tooltip key={o.kind}>
+                  <TooltipTrigger asChild>{item}</TooltipTrigger>
+                  <TooltipContent>{o.disabledReason}</TooltipContent>
+                </Tooltip>
+              ) : (
+                item
+              );
+            })}
+          </ToggleGroup>
+        </>
+      )}
       {p.view && (
         <ViewBar view={p.view.value} pageCount={p.view.pageCount} onChange={p.view.onChange} />
       )}
