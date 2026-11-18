@@ -34,12 +34,12 @@ Mọi avatar người dùng `PersonAvatar`: rê chuột, focus bàn phím hoặc
 - Kịch bản: khi avatar có viền và dấu thì trong DOM không có chữ trạng thái [test: apps/workspace-web/src/shared/ui/person-avatar.test.tsx » viền và dấu nhỏ hiện ra, không có chữ trạng thái nào trong DOM của avatar]
 - Kịch bản: khi chạm xong rồi nhận click đi kèm thì tooltip không đóng ngay [test: packages/web-kit/src/ui/kit/touch-tip.test.ts » đóng ngay sau chạm bị bỏ qua, đóng muộn hơn thì cho phép]
 
-### MODIFIED web/contract-review.md
+### ADDED web/person-avatar-phu-trach.md
 #### Yêu cầu: Ô Phụ trách
 Chỉ hiện avatar; tooltip và popover điện thoại chỉ có họ tên (không chữ «Phụ trách»); người có quyền thấy thêm «Đổi người phụ trách».
 - Kịch bản: khi chỉ đọc thì tooltip không có chữ «Phụ trách» [test: apps/workspace-web/src/features/contract-review/components/OwnerRow.test.tsx » chỉ đọc: avatar + tooltip, không có nút chọn]
 
-### MODIFIED web/doc-sign.md
+### ADDED web/person-avatar-nguoi-ky.md
 #### Yêu cầu: Dải người ký
 Mỗi người một avatar, viền tím Bên A / cam Bên B, dấu ✓ khi đã ký; «Bên A · Đã ký» là chữ cạnh avatar, tooltip chỉ họ tên.
 - Kịch bản: khi nhóm có hai thành viên thì mỗi avatar mang tên người đó [test: apps/workspace-web/src/features/doc-sign/components/contract/SignersStrip.test.tsx » nhóm: một avatar mỗi thành viên, tooltip chỉ là tên người đó]
