@@ -192,3 +192,9 @@ export const shouldRefreshOnReturn = (search: string, leftToSign: boolean): bool
  */
 export const autoSignProvider = (s: ESignStateOut): string | null =>
   s.envelope?.provider ?? s.default_provider ?? s.provider ?? null;
+
+/** CR-184 · «Vị trí ô ký» chỉ có nghĩa với nhà cung cấp kiểu `envelope` (DocuSign) đang bật. */
+export const showAnchorSetting = (s: {
+  enabled: boolean;
+  providers?: { kind: string; available: boolean }[];
+}): boolean => s.enabled && (s.providers ?? []).some((p) => p.kind === "envelope" && p.available);

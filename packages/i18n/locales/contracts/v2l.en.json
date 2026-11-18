@@ -10,7 +10,6 @@
         "common": "General"
       },
       "signPane": {
-        "esign": "Shared company account. How to sign, who signs and how partners are sent: set in each process.",
         "partner": "Partner confirmation status, used by the «Send to partner» step and the Receive contract process. Not ready ⇒ those steps cannot run."
       },
       "sec": {
@@ -27,7 +26,7 @@
         "flowHint": "Steps, departments, deadlines, conditions",
         "scoutHint": "Group defaults, monthly search cap",
         "sign": "Connections",
-        "signHint": "E-signing, partner confirmation",
+        "signHint": "Sending and receiving contracts with partners",
         "signature": "Signature",
         "signatureHint": "Signature format, digital signature"
       },
@@ -253,6 +252,10 @@
         },
         "sampleName": "Nguyễn Văn Hùng",
         "sampleTitle": "Director",
+        "provider": {
+          "title": "E-signing via provider (DocuSign / Trial)",
+          "note": "Used for Sign steps whose «Sign via» is a provider."
+        },
         "digital": {
           "title": "Digital signature",
           "off": "Off",

@@ -36,7 +36,7 @@ export function SettingsBody({
 }) {
   const { t } = useTranslation();
   if (sec === "feed") return <FeedSettingsPane />;
-  if (sec === "signature") return <SignaturePane />;
+  if (sec === "signature") return <SignaturePane owner={owner} />;
   return (
     <>
       <LoadState {...load} />

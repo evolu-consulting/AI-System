@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { ApiError } from "~/lib/api-error";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useEsignSettings } from "../hooks/use-esign-settings";
-import { esignErrKey } from "../lib/esign-view";
+import { esignErrKey, showAnchorSetting } from "../lib/esign-view";
 import { EsignAnchorSetting } from "./EsignAnchorSetting";
 
 function ProviderSelect({
@@ -124,7 +124,7 @@ export function EsignSetting({ owner }: { owner: boolean }) {
           <p className="mt-1 text-caption text-dim">{t("contracts.esign.inviteThumbHint")}</p>
         </div>
       )}
-      <EsignAnchorSetting owner={owner} />
+      {showAnchorSetting(s) && <EsignAnchorSetting owner={owner} />}
     </div>
   );
 }

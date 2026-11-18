@@ -278,3 +278,19 @@ describe("CR-125 · quay về từ nhà cung cấp ký", () => {
     ).toBeNull();
   });
 });
+
+import { showAnchorSetting } from "./esign-view";
+
+describe("showAnchorSetting (CR-184)", () => {
+  const P = (kind: string, available = true) => ({ kind, available });
+  it("có DocuSign (envelope) đang bật ⇒ hiện", () => {
+    expect(showAnchorSetting({ enabled: true, providers: [P("ca"), P("envelope")] })).toBe(true);
+  });
+  it("chỉ Ký thử/CA ⇒ ẩn", () => {
+    expect(showAnchorSetting({ enabled: true, providers: [P("ca")] })).toBe(false);
+  });
+  it("envelope chưa cấu hình hoặc ký số tắt ⇒ ẩn", () => {
+    expect(showAnchorSetting({ enabled: true, providers: [P("envelope", false)] })).toBe(false);
+    expect(showAnchorSetting({ enabled: false, providers: [P("envelope")] })).toBe(false);
+  });
+});

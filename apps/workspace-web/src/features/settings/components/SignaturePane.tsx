@@ -18,6 +18,7 @@ import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PaneSkeleton } from "~/components/shared/Refreshing";
+import { EsignSetting } from "~/features/contract-esign/components/EsignSetting";
 import {
   SettingsGroup,
   SettingsRow,
@@ -38,7 +39,7 @@ import { Check, Group, Radios } from "./SignatureOptions";
 
 const k = (x: string) => `contracts.settings.signature.${x}`;
 
-export function SignaturePane() {
+export function SignaturePane({ owner }: { owner: boolean }) {
   const { t } = useTranslation();
   const q = useSignatureSettings();
   const save = useSaveSignatureSettings();
@@ -188,6 +189,12 @@ export function SignaturePane() {
         <div className="min-w-0">
           <SignaturePreview s={draft} />
           <DigitalCard />
+          <SettingsGroup title={t(k("provider.title"))}>
+            <div className="p-5" data-testid="sig-provider">
+              <p className="text-label text-dim">{t(k("provider.note"))}</p>
+              <EsignSetting owner={owner} />
+            </div>
+          </SettingsGroup>
           {canEdit && <ChangeRequests />}
         </div>
       </div>
