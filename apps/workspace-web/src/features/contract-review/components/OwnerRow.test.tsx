@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { i18n, initI18n } from "~/app/i18n";
 import { MEMBERS_KEY } from "~/features/contracts-list/api";
 import { OwnerRow } from "./ManagePanel";
+import { OwnerPopover } from "./OwnerPopover";
 
 beforeAll(async () => {
   await initI18n();
@@ -38,5 +39,31 @@ describe("OwnerRow", () => {
   });
   test("chưa giao: hiện «Chưa giao»", () => {
     expect(render(false, null)).toContain("Chưa giao");
+  });
+});
+
+describe("OwnerPopover (điện thoại)", () => {
+  const props = {
+    face: "LC",
+    tip: "Phụ trách: Lê Minh Cường",
+    cur: "u1",
+    name: "Lê Minh Cường",
+    busy: false,
+    options: [],
+    cards: new Map(),
+    onPick: () => undefined,
+  };
+  test("nút là trigger của popover (chạm ⇒ hiện tên, không mở thẳng danh sách), nhãn «Phụ trách: tên», vùng bấm 44px", () => {
+    const out = renderToStaticMarkup(<OwnerPopover {...props} write />);
+    expect(out).toContain('data-testid="owner-select"');
+    expect(out).toContain('aria-label="Phụ trách: Lê Minh Cường"');
+    expect(out).toContain('aria-haspopup="dialog"');
+    expect(out).toContain("min-h-11");
+    expect(out).not.toContain('data-testid="owner-option-');
+  });
+  test("không quyền: vẫn là popover chỉ hiện tên (nút «Đổi người phụ trách» chỉ có khi write)", () => {
+    const out = renderToStaticMarkup(<OwnerPopover {...props} write={false} />);
+    expect(out).toContain('aria-haspopup="dialog"');
+    expect(out).not.toContain("owner-change");
   });
 });

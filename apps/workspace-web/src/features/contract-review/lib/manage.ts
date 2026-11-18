@@ -156,3 +156,12 @@ export function manageErrorKey(e: unknown): string {
   }
   return "contracts.errors.unknown";
 }
+
+/** CR-182 · danh sách chọn «Phụ trách» trên điện thoại: người đang phụ trách chưa có trong danh sách (không xem được/đã nghỉ) vẫn hiện, đứng đầu. */
+export function ownerOptions(
+  cur: string | null,
+  label: string,
+  opts: { id: string; name: string }[],
+): { id: string; name: string }[] {
+  return cur && !opts.some((o) => o.id === cur) ? [{ id: cur, name: label }, ...opts] : opts;
+}

@@ -6,7 +6,8 @@
         "label": "Assign to",
         "none": "Unassigned",
         "unknown": "(former member or not visible)",
-        "saved": "Owner changed"
+        "saved": "Owner changed",
+        "change": "Change owner"
       },
       "commission": {
         "label": "Commission (%)",

@@ -2,7 +2,6 @@
 // "AI đọc lại từ đầu" chỉ ở DRAFT. Chỉ vai có quyền ghi thấy ô sửa.
 
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
-import type { PersonCard } from "@ai/contracts/people";
 import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import {
@@ -17,18 +16,21 @@ import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { usePeopleCards } from "~/features/contract-shared/people";
 import { AvatarTip, TouchTip } from "~/shared/ui/AvatarTip";
+import { useIsMobile } from "~/shared/ui/use-is-mobile";
 import {
   useAssignees,
   useAssignOwner,
   useEditCommission,
   useMemberNames,
 } from "../hooks/use-manage";
-import { parsePct } from "../lib/manage";
+import { ownerOptions, parsePct } from "../lib/manage";
+import { OwnerFace, OwnerPopover } from "./OwnerPopover";
 import { ReextractButton } from "./ReextractButton";
 
 /** "Phụ trách" — chỉ avatar (tooltip «Phụ trách: tên»); vai có quyền ghi bấm vào để chọn người (avatar + họ tên + chức vụ). */
 export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
   const { t } = useTranslation();
+  const mobile = useIsMobile();
   const nameOf = useMemberNames();
   const people = useAssignees(write);
   const assign = useAssignOwner(c.id);
@@ -46,7 +48,19 @@ export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
   );
   return (
     <span className="inline-flex items-center gap-2" data-testid="owner-row">
-      {write ? (
+      {mobile && cur ? (
+        <OwnerPopover
+          face={face}
+          tip={tip}
+          cur={cur}
+          name={label}
+          write={write}
+          busy={assign.isPending || people.isPending}
+          options={ownerOptions(cur, label, opts)}
+          cards={cards}
+          onPick={(id) => assign.mutate(id)}
+        />
+      ) : write ? (
         <DropdownMenu>
           <TouchTip tip={tip}>
             <DropdownMenuTrigger
@@ -87,27 +101,6 @@ export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
       ) : (
         face
       )}
-    </span>
-  );
-}
-
-function OwnerFace({
-  id,
-  name,
-  cards,
-}: {
-  id: string;
-  name: string;
-  cards: Map<string, PersonCard>;
-}) {
-  const p = cards.get(id);
-  return (
-    <span className="flex min-w-0 items-center gap-2">
-      <Avatar name={name} src={p?.avatar} size={24} />
-      <span className="min-w-0">
-        <span className="block truncate">{name}</span>
-        {p?.job_title && <span className="block truncate text-dim text-xs">{p.job_title}</span>}
-      </span>
     </span>
   );
 }

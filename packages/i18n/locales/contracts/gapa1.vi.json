@@ -6,7 +6,8 @@
         "label": "Giao cho",
         "none": "Chưa giao",
         "unknown": "(người đã nghỉ hoặc không xem được)",
-        "saved": "Đã đổi người phụ trách"
+        "saved": "Đã đổi người phụ trách",
+        "change": "Đổi người phụ trách"
       },
       "commission": {
         "label": "Hoa hồng (%)",

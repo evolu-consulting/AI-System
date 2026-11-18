@@ -1,7 +1,7 @@
 // gap-a1 · luật thuần khối "Quản lý": ô hoa hồng %, dòng lịch sử, câu lỗi.
 import { describe, expect, it } from "bun:test";
 import { ApiError } from "@ai/web-kit/http";
-import { historyLine, isVisibleEvent, manageErrorKey, parsePct } from "./manage";
+import { historyLine, isVisibleEvent, manageErrorKey, ownerOptions, parsePct } from "./manage";
 
 describe("parsePct", () => {
   it("trống ⇒ null; số hợp lệ ⇒ số; ngoài 0–100 hoặc quá 2 số lẻ ⇒ sai", () => {
@@ -77,5 +77,14 @@ describe("fix-stale-resubmit · manageErrorKey", () => {
     expect(
       manageErrorKey(new ApiError(409, "CONTRACT_STALE" as never, "Contract was modified")),
     ).toBe("contracts.errors.stale");
+  });
+});
+
+describe("CR-182 · ownerOptions (Phụ trách trên điện thoại)", () => {
+  const opts = [{ id: "a", name: "An" }];
+  it("người phụ trách không có trong danh sách ⇒ đứng đầu; có rồi ⇒ giữ nguyên", () => {
+    expect(ownerOptions("x", "Xuân", opts)).toEqual([{ id: "x", name: "Xuân" }, ...opts]);
+    expect(ownerOptions("a", "An", opts)).toBe(opts);
+    expect(ownerOptions(null, "Chưa giao", opts)).toBe(opts);
   });
 });
