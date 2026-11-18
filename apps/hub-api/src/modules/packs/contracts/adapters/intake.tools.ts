@@ -69,6 +69,8 @@ const ESIGN_NODE_PARAM_DEFS: readonly PackToolDef["params"][number][] = [
     description: "Ký qua: khoá nhà cung cấp ký số hoặc «upload» (tải lên bản đã ký)",
   },
   { name: "company_signers", type: "text", required: false, description: "Người ký phía công ty" },
+  { name: "signer_role", type: "text", required: false, description: "Vai người ký phía công ty" },
+  { name: "need_digital", type: "boolean", required: false, description: "Cần chữ ký số" },
   { name: "partner_signs", type: "boolean", required: false, description: "Đối tác ký" },
   {
     name: "order",
@@ -81,6 +83,24 @@ const ESIGN_NODE_PARAM_DEFS: readonly PackToolDef["params"][number][] = [
   { name: "due_hours", type: "number", required: false, description: "Hạn ký (giờ)" },
   { name: "remind_every_hours", type: "number", required: false, description: "Nhắc mỗi (giờ)" },
 ];
+
+/**
+ * CR-182 · R3/R4 · công tắc lùi `on_doc_enabled` của công ty. Bước Ký có `signer_role`:
+ *   · người ký (`company_signers`) do giải vai điền; THIẾU (vai chưa giao) ⇒ `ESIGN_NODE_NO_SIGNER` (không lùi về người bắt đầu lượt) — cả hai chế độ;
+ *   · công ty BẬT ⇒ «Ký qua» = ký trên tài liệu, BỎ `provider` cũ (kể cả khi trống / DocuSign);
+ *   · công ty TẮT (hoặc không có cổng `onDocEnabled`) ⇒ chạy như cũ: `provider` bắt buộc, người ký như `company_signers`.
+ * Bước không có `signer_role`: giữ nguyên cấu hình.
+ */
+async function effectiveCfg(
+  d: IntakeToolDeps,
+  ctx: PackToolCtx,
+  cfg: EsignNodeConfig,
+): Promise<EsignNodeConfig> {
+  if (!cfg.signer_role) return cfg;
+  if (!cfg.company_signers?.length) throw new Error("ESIGN_NODE_NO_SIGNER");
+  const on = d.onDocEnabled ? await d.onDocEnabled(ctx.tenantId) : false;
+  return on ? { ...cfg, provider: ESIGN_NODE_ONDOC } : cfg;
+}
 
 /** Người ký + thứ tự theo cấu hình node: `partner_signs` false ⇒ chỉ công ty ký; true ⇒ bắt buộc có đối tác; vắng ⇒ có email thì đối tác ký. */
 async function planSend(
@@ -194,7 +214,7 @@ function rawIntakeTools(d: IntakeToolDeps): PackToolDef[] {
         const id = contractIdOf(args);
         const node = decodeEsignNodeArgs(args);
         if (!node.ok) throw new Error(`ESIGN_NODE_CONFIG_INVALID:${node.issues.join(",")}`);
-        const cfg = node.config;
+        const cfg = await effectiveCfg(d, ctx, node.config);
         // CR-122 · flow mới: HĐ chỉ xác nhận ở "Kết thúc · Đã duyệt" (sau Ký số) ⇒ khoá ở đây để ký đúng bản đã duyệt.
         // cr125-contract-from-step · chỉ ký HĐ là bản ghi của CHÍNH lượt này (lượt theo sự kiện HĐ hoặc HĐ do «Tạo hợp đồng từ hồ sơ» gắn).
         const viaRun = await ownsContract(d, ctx, id);

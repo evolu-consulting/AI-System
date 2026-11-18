@@ -20,6 +20,7 @@ import {
 import { endFlowRun, failRunsBatch } from "./adapters/flow-end.repo";
 import { applyReceivedOutcome } from "./adapters/partner-inbox.repo";
 import { markInboxAwaiting, markInboxAwaitingBatch } from "./adapters/partner-inbox-decision.repo";
+import { bellRoleUnassigned } from "./adapters/role-unassigned-bell";
 import { type ContractFlowGate, FLOW_OFF, type FlowPrep } from "./application/contract-flow.ports";
 import {
   CONTRACT_EVENTS,
@@ -98,8 +99,17 @@ export function contractsOutcomeHandler(): OutcomeHandler<Tx> {
         : Promise.resolve(true), // P11c · false = superseded
     // CR-127 K3 · spec §3 #7b · HĐ gửi duyệt không mở được lượt ⇒ về DRAFT kèm lý do (người gửi kiểm rồi Gửi lại).
     // CR-127 K8 · #9b · HĐ nhận không mở được / huỷ / lỗi / hết hạn lượt nhận ⇒ giữ PROCESSING, chờ người phụ trách HĐ nhận quyết.
-    notLaunched: (tx, input) =>
-      input.event === EV_SUBMITTED
+    notLaunched: async (tx, input) => {
+      // CR-182 · vai chưa giao ⇒ chuông cho quản trị công ty, trong savepoint riêng (lỗi chuông không làm hỏng việc chính bên dưới).
+      if (input.event === EV_SUBMITTED || input.event === EV_RECEIVED)
+        await tx
+          .transaction((sp) => bellRoleUnassigned(sp as unknown as Tx, input))
+          .catch((e: unknown) =>
+            logger.warn("role-unassigned-bell-failed", {
+              error: e instanceof Error ? e.name : "unknown",
+            }),
+          );
+      return input.event === EV_SUBMITTED
         ? endFlowRun(
             tx,
             { ...input, runId: null, reason: `not_launched:${input.reason}` },
@@ -107,7 +117,8 @@ export function contractsOutcomeHandler(): OutcomeHandler<Tx> {
           )
         : input.event === EV_RECEIVED
           ? markInboxAwaiting(tx, { ...input, runId: null }, "failed")
-          : Promise.resolve(false),
+          : false;
+    },
     // CR-127 K3 · #7b · lượt bị huỷ / lỗi / hết hạn ⇒ HĐ processing → draft (CAS theo run; lượt đã bị Rút về ⇒ bỏ qua).
     cancelled: (tx, input) =>
       input.event === EV_SUBMITTED

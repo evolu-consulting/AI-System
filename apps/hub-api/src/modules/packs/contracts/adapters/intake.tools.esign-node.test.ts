@@ -94,7 +94,7 @@ describe("E5 · tool Ký số theo args của node", () => {
     ]);
   });
 
-  it("partner_signs=false ⇒ chỉ công ty ký (dù có email); =true mà thiếu email ⇒ lỗi", async () => {
+  it("partner_signs=false ⇒ chỉ công ty ký (dù có email), =true mà thiếu email ⇒ lỗi", async () => {
     const a = make();
     await a.send.run(CTX, {
       contract_id: ID,
@@ -145,7 +145,7 @@ describe("CR-181 · «Ký qua» = ondoc khi công ty TẮT ký trên tài liệu
 });
 
 describe("CR-146b · «Ký qua» của node", () => {
-  it("upload ⇒ không gửi ký số, chờ tải lên; người được giao = người ký đã chọn", async () => {
+  it("upload ⇒ không gửi ký số, chờ tải lên, người được giao = người ký đã chọn", async () => {
     const u = make();
     expect(
       await u.send.run(CTX, {
@@ -157,7 +157,7 @@ describe("CR-146b · «Ký qua» của node", () => {
     expect(u.sent).toEqual([]);
     expect(u.waits[0]?.[1]).toEqual([U1, U2]);
   });
-  it("nhà cung cấp mà công ty đã tắt ký số ⇒ ESIGN_DISABLED (lỗi rõ, KHÔNG tự chờ tải lên); lỗi khác vẫn ném", async () => {
+  it("nhà cung cấp mà công ty đã tắt ký số ⇒ ESIGN_DISABLED (lỗi rõ, KHÔNG tự chờ tải lên), lỗi khác vẫn ném", async () => {
     const off = make("p@x.vn", new ESignFail("ESIGN_DISABLED", "disabled"));
     await expect(
       off.send.run(CTX, { contract_id: ID, provider: "docusign", company_signers: `user:${U1}` }),
@@ -167,5 +167,53 @@ describe("CR-146b · «Ký qua» của node", () => {
     await expect(
       boom.send.run(CTX, { contract_id: ID, provider: "docusign", company_signers: `user:${U1}` }),
     ).rejects.toBeDefined();
+  });
+});
+
+describe("CR-182 · bước Ký có vai (signer_role) theo công tắc lùi on_doc_enabled", () => {
+  const role = { signer_role: "nguoi-ky-hop-dong" };
+  it("công ty BẬT ⇒ ký trên tài liệu với người ký giải từ vai, BỎ provider cũ (kể cả docusign / trống)", async () => {
+    for (const legacy of [{ provider: "docusign" }, {}] as Record<string, string>[]) {
+      const on = make("p@x.vn", undefined, true);
+      const r = await on.send.run(CTX, {
+        contract_id: ID,
+        ...role,
+        ...legacy,
+        company_signers: `group:${G1}`,
+      });
+      expect(r).toEqual({ status: "awaiting_ondoc" });
+      expect(on.sent).toEqual([]);
+      expect(on.waits[0]?.[1]).toEqual([U1, U2]);
+    }
+  });
+  it("công ty TẮT ⇒ chạy như cũ: gửi qua provider cũ, thiếu provider ⇒ ESIGN_NODE_CONFIG_INVALID:provider, provider ondoc ⇒ ONDOC_NOT_ENABLED", async () => {
+    const off = make("p@x.vn", undefined, false);
+    await off.send.run(CTX, {
+      contract_id: ID,
+      ...role,
+      provider: "docusign",
+      company_signers: `user:${U1}`,
+    });
+    expect(off.sent.length).toBe(1);
+    await expect(
+      off.send.run(CTX, { contract_id: ID, ...role, company_signers: `user:${U1}` }),
+    ).rejects.toThrow("ESIGN_NODE_CONFIG_INVALID:provider");
+    await expect(
+      off.send.run(CTX, {
+        contract_id: ID,
+        ...role,
+        provider: "ondoc",
+        company_signers: `user:${U1}`,
+      }),
+    ).rejects.toThrow("ONDOC_NOT_ENABLED");
+  });
+  it("vai chưa giao (không có company_signers) ⇒ ESIGN_NODE_NO_SIGNER ở cả hai chế độ, không lùi về người bắt đầu lượt", async () => {
+    for (const onDoc of [true, false]) {
+      const m = make("p@x.vn", undefined, onDoc);
+      await expect(
+        m.send.run(CTX, { contract_id: ID, ...role, provider: "upload" }),
+      ).rejects.toThrow("ESIGN_NODE_NO_SIGNER");
+      expect([m.waits, m.sent]).toEqual([[], []]);
+    }
   });
 });

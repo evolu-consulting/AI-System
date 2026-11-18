@@ -95,7 +95,9 @@ export function esignNodeApi(d: EsignNodeDeps) {
 
     /** Kiểm cấu hình node lúc LƯU def: nhà cung cấp phải đang bật + khả dụng, người ký/Group thuộc công ty (còn dùng được). Lỗi theo khoá trường. */
     async checkNode(tenantId: string, c: EsignNodeConfig): Promise<Issues> {
-      const a = c.provider ? await providerIssue(tenantId, c.provider) : [];
+      // CR-182 · bước Ký có vai + công ty BẬT ký trên tài liệu ⇒ `provider` cũ bị bỏ qua lúc chạy ⇒ không kiểm (khỏi chặn lưu vì DocuSign đã ẩn).
+      const skipProvider = c.signer_role ? await d.onDocEnabled(tenantId) : false;
+      const a = c.provider && !skipProvider ? await providerIssue(tenantId, c.provider) : [];
       const b = c.company_signers?.length ? await signerIssue(tenantId, c.company_signers) : [];
       // CR-182 · R3 · cần chữ ký số mà công ty chưa bật ⇒ báo ngay khi lưu (đợt 3 mới có ký số, nên chưa công ty nào bật)
       const dg = c.need_digital

@@ -1,6 +1,6 @@
 // CR-182 · R2 · `withRoles` thuần: điền người theo vai; vai chưa giao ⇒ trống + unassigned.
 import { describe, expect, it } from "bun:test";
-import { roleKeysOf, signerRoleOf, withRoles } from "./with-roles";
+import { hasSignerRole, roleKeysOf, signerRoleOf, withRoles } from "./with-roles";
 
 const G1 = "11111111-1111-4111-8111-111111111111";
 const G2 = "22222222-2222-4222-8222-222222222222";
@@ -113,5 +113,31 @@ describe("withRoles", () => {
     expect(roleKeysOf(st)).toEqual(["a", "b", "nguoi-ky"]);
     expect(signerRoleOf(st[1])).toBe("nguoi-ky");
     expect(signerRoleOf(st[0])).toBeNull();
+  });
+});
+
+describe("withRoles · công tắc lùi ondoc (CR-182 R3)", () => {
+  const legacy = {
+    provider: { from: "const", value: "docusign" },
+    company_signers: { from: "const", value: `user:${U1}` },
+  };
+  const asg = [{ role_key: "nguoi-ky", group_id: G1, user_id: null }];
+  it("ondoc=false (công ty TẮT) ⇒ giữ provider cũ; ondoc=true (BẬT) ⇒ provider = ondoc, người ký từ vai", () => {
+    const off = withRoles([sign(legacy)], asg, { ondoc: false });
+    expect(argsOf(off.stages[0]).provider).toEqual({ from: "const", value: "docusign" });
+    const on = withRoles([sign(legacy)], asg, { ondoc: true });
+    expect(argsOf(on.stages[0]).provider).toEqual({ from: "const", value: "ondoc" });
+    expect(argsOf(on.stages[0]).company_signers).toEqual({ from: "const", value: `group:${G1}` });
+  });
+  it("vai chưa giao ⇒ không đặt ondoc (lượt bị chặn); bước Ký không có vai ⇒ không đổi", () => {
+    const n = withRoles([sign(legacy)], [], { ondoc: true });
+    expect(argsOf(n.stages[0]).provider).toEqual({ from: "const", value: "docusign" });
+    const plain = {
+      name: "Ký",
+      executor: { kind: "tool", tool_key: "contracts-esign-send", args: legacy },
+    };
+    expect(withRoles([plain], asg, { ondoc: true }).stages[0]).toBe(plain);
+    expect(hasSignerRole([plain])).toBe(false);
+    expect(hasSignerRole([sign()])).toBe(true);
   });
 });

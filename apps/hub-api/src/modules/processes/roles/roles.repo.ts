@@ -1,7 +1,13 @@
 // CR-182 · R2 · đọc giao việc theo vai (`hub.process_role_assignments`, 0159) và điền vào stage bằng `withRoles` (thuần, ở contracts).
 // Mọi điểm giải vai gọi `applyRoles` / `applyRolesMany`: số câu SQL CỐ ĐỊNH (0 nếu stage không có vai, 1 cho cả lô), lọc `tenant_id` tường minh
 // (+ RLS đọc theo tenant). Ghi (`assignRole`) chỉ qua hàm DEFINER `hub.role_assign` — hàm đòi cờ `app.company_admin` (route đặt SAU khi kiểm Q15).
-import { type RoleAssignment, roleKeysOf, type WithRolesOut, withRoles } from "@ai/contracts/flow";
+import {
+  hasSignerRole,
+  type RoleAssignment,
+  roleKeysOf,
+  type WithRolesOut,
+  withRoles,
+} from "@ai/contracts/flow";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { AppError } from "../../../lib/errors";
@@ -37,6 +43,24 @@ export async function loadRoleAssignments(
   return out;
 }
 
+/**
+ * CR-182 · R3 · công ty BẬT «ký trên tài liệu» (`on_doc_enabled`, đọc qua hàm DEFINER `hub.sig_settings_of` (hub_rw không SELECT bảng))? Chỉ hỏi khi có bước Ký dùng vai (MỘT câu, lọc tenant);
+ * không có ⇒ false, 0 SQL. Chưa lưu thiết lập ⇒ mặc định TẮT.
+ */
+export async function onDocOf(
+  tx: Tx,
+  tenantId: string,
+  stageLists: readonly (readonly unknown[])[],
+): Promise<boolean> {
+  if (!stageLists.some(hasSignerRole)) return false;
+  const [r] = await tx.execute<{
+    on: boolean;
+  }>(
+    sql`select coalesce((select s.on_doc_enabled from hub.sig_settings_of(${tenantId}::uuid) s), false) as on`,
+  );
+  return r?.on === true;
+}
+
 /** Giải vai cho MỘT quy trình. Stage không có vai ⇒ trả nguyên, không truy vấn. */
 export async function applyRoles(
   tx: Tx,
@@ -46,7 +70,8 @@ export async function applyRoles(
 ): Promise<WithRolesOut> {
   if (roleKeysOf(stages).length === 0) return { stages: [...stages], unassigned: [] };
   const m = await loadRoleAssignments(tx, tenantId, [flowId]);
-  return withRoles(stages, m.get(flowId) ?? []);
+  const ondoc = await onDocOf(tx, tenantId, [stages]);
+  return withRoles(stages, m.get(flowId) ?? [], { ondoc });
 }
 
 /** Giải vai cho nhiều quy trình (một câu cho cả lô). Giữ thứ tự đầu vào. */
@@ -57,9 +82,14 @@ export async function applyRolesMany(
 ): Promise<WithRolesOut[]> {
   const need = new Set(flows.filter((f) => roleKeysOf(f.stages).length > 0).map((f) => f.flowId));
   const m = await loadRoleAssignments(tx, tenantId, [...need]);
+  const ondoc = await onDocOf(
+    tx,
+    tenantId,
+    flows.map((f) => f.stages),
+  );
   return flows.map((f) =>
     need.has(f.flowId)
-      ? withRoles(f.stages, m.get(f.flowId) ?? [])
+      ? withRoles(f.stages, m.get(f.flowId) ?? [], { ondoc })
       : { stages: [...f.stages], unassigned: [] },
   );
 }
@@ -143,7 +173,9 @@ export async function refreshStageRoles<S>(
     from hub.process_runs where id = ${runId}::uuid and tenant_id = ${tenantId}::uuid`);
   if (!r?.def_id) return stage;
   const m = await loadRoleAssignments(tx, tenantId, [r.def_id]);
-  const next = withRoles([stage], m.get(r.def_id) ?? [], { keepUnassigned: true }).stages[0] as S;
+  const ondoc = await onDocOf(tx, tenantId, [[stage]]);
+  const next = withRoles([stage], m.get(r.def_id) ?? [], { keepUnassigned: true, ondoc })
+    .stages[0] as S;
   if (JSON.stringify(next) === JSON.stringify(stage)) return stage;
   await tx.execute(sql`update hub.process_runs set snapshot = jsonb_set(snapshot, array['stages', ${String(idx)}::text],
       ${JSON.stringify(next)}::jsonb) where id = ${runId}::uuid and tenant_id = ${tenantId}::uuid`);

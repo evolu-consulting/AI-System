@@ -28,6 +28,9 @@ export type WithRolesOut = { stages: unknown[]; unassigned: UnassignedRole[] };
 export const ESIGN_TOOL_KEY = "contracts-esign-send";
 const SIGNER_ARG = "signer_role";
 const SIGNERS_ARG = "company_signers";
+const PROVIDER_ARG = "provider";
+/** CR-182 · R3 · giá trị «Ký qua» = ký trên tài liệu (cùng `ESIGN_NODE_ONDOC` của pack-contracts; lặp ở đây để `flow` không import gói). */
+export const ONDOC_PROVIDER = "ondoc";
 
 /** Vai của một chỗ (`{key,label}`), null nếu không có / sai dạng. */
 function roleOf(v: unknown): { key: string; label: string } | null {
@@ -46,6 +49,10 @@ export function signerRoleOf(stage: unknown): string | null {
   if (!isObj(e) || e.kind !== "tool" || e.tool_key !== ESIGN_TOOL_KEY) return null;
   return constOf(e.args, SIGNER_ARG);
 }
+
+/** Có bước Ký dùng vai (cần biết công tắc `on_doc_enabled` của công ty). */
+export const hasSignerRole = (stages: readonly unknown[]): boolean =>
+  stages.some((s) => signerRoleOf(s) !== null);
 
 const groupsOf = (a: Obj): unknown[] =>
   isObj(a.parallel) && Array.isArray(a.parallel.groups) ? a.parallel.groups : [];
@@ -71,6 +78,8 @@ export function roleKeysOf(stages: readonly unknown[]): string[] {
 type By = ReadonlyMap<string, RoleAssignment>;
 /** `keep` = vai chưa giao thì GIỮ nguyên giá trị đang có trong stage (làm mới lúc mở bước), không xoá và không báo unassigned. */
 type Keep = boolean;
+/** `ondoc` = công ty BẬT ký trên tài liệu ⇒ bước Ký có vai chạy `ondoc` (bỏ `provider` cũ); TẮT ⇒ giữ `provider` / `company_signers` như cũ. */
+type Ondoc = boolean;
 
 function mainRole(a: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): Obj {
   const r = roleOf(a.role);
@@ -79,7 +88,6 @@ function mainRole(a: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): 
   const { group_id: _g, group_key: _k, approver_user_id: _u, ...rest } = a;
   if (x?.group_id) return { ...rest, group_id: x.group_id };
   if (x?.user_id) return { ...rest, group_id: null, approver_user_id: x.user_id };
-  if (keep) return a;
   if (keep) return a;
   un.push({ stage: i, slot: "review", role_key: r.key, label: r.label, blocking: true });
   return { ...rest, group_id: null };
@@ -126,7 +134,7 @@ function review(s: Obj, a: Obj, i: number, by: By, un: UnassignedRole[], keep: K
   return next === a ? s : { ...s, after: next };
 }
 
-function sign(s: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): Obj {
+function sign(s: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep, ondoc: Ondoc): Obj {
   const key = signerRoleOf(s);
   if (!key) return s;
   const e = s.executor as Obj;
@@ -140,7 +148,14 @@ function sign(s: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): Obj 
   }
   return {
     ...s,
-    executor: { ...e, args: { ...args, [SIGNERS_ARG]: { from: "const", value: id } } },
+    executor: {
+      ...e,
+      args: {
+        ...args,
+        [SIGNERS_ARG]: { from: "const", value: id },
+        ...(ondoc ? { [PROVIDER_ARG]: { from: "const", value: ONDOC_PROVIDER } } : {}),
+      },
+    },
   };
 }
 
@@ -151,16 +166,17 @@ function sign(s: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): Obj 
 export function withRoles(
   stages: readonly unknown[],
   assignments: readonly RoleAssignment[],
-  opts: { keepUnassigned?: boolean } = {},
+  opts: { keepUnassigned?: boolean; ondoc?: boolean } = {},
 ): WithRolesOut {
   const keep = opts.keepUnassigned === true;
+  const ondoc = opts.ondoc === true;
   const by: By = new Map(assignments.map((x) => [x.role_key, x]));
   const unassigned: UnassignedRole[] = [];
   const out = stages.map((s, i) => {
     if (!isObj(s)) return s;
     const a = isObj(s.after) && s.after.kind === "review" ? s.after : null;
     const r = a ? review(s, a, i, by, unassigned, keep) : s;
-    return sign(r, i, by, unassigned, keep);
+    return sign(r, i, by, unassigned, keep, ondoc);
   });
   return { stages: out, unassigned };
 }
