@@ -3,7 +3,7 @@
 // Nhắc công ty đối tác = `mentions` (id công ty); chỉ chủ quản nhắc được (hôm nay). CR-186: nhắc NGƯỜI bằng `mentionUserIds` (gợi ý `GET /mentionable-people`); `mentions` (công ty) chỉ còn cho dữ liệu cũ.
 import { z } from "zod";
 import { ContentHitSchema } from "./content-hit";
-import { PostMentionSchema } from "./post";
+import { PostMentionSchema } from "./mention";
 
 /** Công ty được nhắc (@) trong bình luận. User ngoài chỉ nhận phần tử là công ty MÌNH. */
 export const MentionSchema = z.strictObject({ orgId: z.string(), name: z.string() });
@@ -30,7 +30,7 @@ export const CommentViewSchema = z.strictObject({
   /** Công ty được nhắc (có thể rỗng). */
   mentions: z.array(MentionSchema),
   /** CR-186 · NGƯỜI được nhắc (như `PostView.mentionedUsers`); vắng khi không ai (bình luận cũ). Đã che theo người xem: đối tác chỉ nhận chủ quản hoặc công ty mình. */
-  mentionedUsers: z.array(z.lazy(() => PostMentionSchema)).optional(),
+  mentionedUsers: z.array(PostMentionSchema).optional(),
 });
 export type CommentView = z.infer<typeof CommentViewSchema>;
 

@@ -3,6 +3,7 @@ export * from "./brand";
 export * from "./comment";
 export * from "./feed";
 export * from "./flows";
+export * from "./mention";
 export * from "./post";
 export * from "./profile";
 export * from "./quote";

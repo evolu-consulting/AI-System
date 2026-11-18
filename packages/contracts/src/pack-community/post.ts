@@ -161,10 +161,6 @@ export const PostActionInputSchema = z.strictObject({
 });
 export type PostActionInput = z.infer<typeof PostActionInputSchema>;
 
-/** Người được nhắc trong bài. Đối tác chỉ nhận phần tử là chủ quản hoặc công ty mình. */
-export const PostMentionSchema = z.strictObject({ userId: z.string(), name: z.string() });
-export type PostMention = z.infer<typeof PostMentionSchema>;
-
 /** `GET /pack/community/mentionable-people`: gợi ý người nhắc được. `postId` (sửa bài) hoặc phạm vi bản nháp (`type`/`mode`/`cats`/`companies`, danh sách cách nhau dấu phẩy). */
 export const MentionablePeopleQuerySchema = z.strictObject({
   q: z.string().max(80).optional(),

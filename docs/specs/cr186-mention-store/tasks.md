@@ -10,7 +10,7 @@ phụ thuộc: cr186-comment-mention (đã gộp)
 Lưu người được nhắc theo từng bình luận để bình luận hiển thị như bài đăng («Nhắc: …», «@Tên»), che theo người xem.
 
 ## Làm
-- [x] Migration `0022_cr186_comment_mention_people` (chỉ thêm; `SET LOCAL lock_timeout='5s'`; không backfill; journal `when` = 1807000620000 > mọi `when` cùng thư mục): cột `community.comments.mention_people jsonb NOT NULL DEFAULT '[]'` = `[{id,name,org}]` (tên chụp lúc nhắc, `org` null = chủ quản) + CHECK mảng ≤ 10 (NOT VALID rồi VALIDATE).
+- [x] Migration `0022_cr186_comment_mention_people` (chỉ thêm; `SET LOCAL lock_timeout='5s'`; không backfill; journal `when` = 1807000620000 > mọi `when` cùng thư mục): cột `community.comments.mention_people jsonb NOT NULL DEFAULT '[]'` = `[{id,name,org}]` (tên chụp lúc nhắc, `org` null = chủ quản) + CHECK mảng ≤ 10 ngay trong lệnh ADD COLUMN.
 - [x] Ghi: `insertComment` lưu `people` đã qua `resolvePeople`/`assertSeen` (cùng câu INSERT). Sửa chữ (`PATCH`) không đụng cột ⇒ giữ lời nhắc, không phát chuông.
 - [x] Đọc: `commentJson` (một nguồn cho list / feed `recentComments` / insert / update) trả `mention_people` ĐÃ che ngay trong SQL (đối tác chỉ nhận chủ quản hoặc công ty mình — cùng luật `post_mentions_visible`); không thêm câu truy vấn ⇒ không N+1. `CommentView.mentionedUsers` (tuỳ chọn, như `PostView.mentionedUsers`).
 - [x] UI: `MentionedLine` dùng chung bài đăng + bình luận; `@Tên` của người được nhắc tô đậm (`splitMentions` gộp công ty cũ + người). Bình luận cũ ⇒ không trường ⇒ như hiện nay.
@@ -25,6 +25,8 @@ Lưu người được nhắc theo từng bình luận để bình luận hiển
 - unit `mock.test.ts`.
 
 ## Quyết định trong lúc làm
+- «Tên chụp lúc nhắc»: `mention_people` lưu tên người tại thời điểm nhắc (như `post_mentions.user_name`); người đổi tên sau đó, bình luận cũ vẫn hiện tên lúc nhắc — chấp nhận để không join `admin.users` ở đường đọc (feed/list) và giữ số câu SQL cố định.
+- Schema người được nhắc tách ra file lá `pack-community/mention.ts` (comment.ts ↔ post.ts không còn vòng import).
 - Dùng cột jsonb có tên (không `uuid[]` thuần) vì feed/đọc không join `admin.users`; cùng cách chụp tên của `post_mentions`, nhưng không tạo bảng mới (ít RLS, một nguồn trong hàng bình luận).
 
 ## Delta (so với docs/current)
