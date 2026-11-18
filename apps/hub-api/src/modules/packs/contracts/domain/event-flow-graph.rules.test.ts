@@ -82,3 +82,47 @@ it("CR-182 · vai dùng ở nhánh «cùng duyệt» của bất kỳ bước n�
   expect(g[0]?.role).toEqual({ key: "vai-x", label: "X", groupOnly: true });
   expect(g[2]?.role).toEqual({ key: "vai-y", label: "Y" });
 });
+
+it("CR-185 · node module + loại executor + nhánh chờ + mã kết quả của Kết thúc được trả để Sổ Hợp Tác vẽ như trang quản trị", () => {
+  const g = graphOfStages([
+    { key: "ky", name: "Ký số", step: 0, node: "contracts.esign", executor: KY },
+    {
+      key: "cho",
+      name: "Chờ ký xong",
+      step: 1,
+      node: "contracts.esign",
+      executor: {
+        kind: "wait_event",
+        branches: [
+          { on: "esign.declined", goto_step: 3 },
+          { on: "timeout", goto_step: null },
+        ],
+      },
+    },
+    {
+      key: "xong",
+      name: "Kết thúc · Đã duyệt",
+      step: 2,
+      outcome: "approved",
+      executor: { kind: "set" },
+    },
+    {
+      key: "tuchoi",
+      name: "Kết thúc · Từ chối",
+      step: 3,
+      outcome: "rejected",
+      executor: { kind: "set" },
+    },
+  ]);
+  expect(g.map((s) => [s.key, s.node, s.exec, s.outcome])).toEqual([
+    ["ky", "contracts.esign", "tool", null],
+    ["cho", "contracts.esign", "wait_event", null],
+    ["xong", null, "set", "approved"],
+    ["tuchoi", null, "set", "rejected"],
+  ]);
+  expect(g[1]?.waitBranches).toEqual([
+    { on: "esign.declined", step: 3 },
+    { on: "timeout", step: null },
+  ]);
+  expect(g[0]?.waitBranches).toEqual([]);
+});

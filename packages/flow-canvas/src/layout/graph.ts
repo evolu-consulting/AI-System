@@ -12,6 +12,9 @@ export type LayoutEdge = {
   rule?: number;
   /** CR-103 · chỉ cạnh `branch` của node If: cổng ra Đúng / Sai. */
   side?: "yes" | "no";
+  /** CR-185 · cạnh «đầu ra có tên» của ô module (Từ chối · Hết hạn): nét đứt cảnh báo, có nhãn. */
+  exit?: boolean;
+  label?: string;
 };
 
 /** `branch`: bước đích (0-based) của từng luật rẽ nhánh; null = chưa chọn. */

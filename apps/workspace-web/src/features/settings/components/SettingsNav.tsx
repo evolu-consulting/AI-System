@@ -2,7 +2,6 @@
 import {
   Bell,
   Building2,
-  FileSignature,
   GitBranch,
   type LucideIcon,
   PenLine,
@@ -23,7 +22,6 @@ const SECTION_ICON: Record<SectionId, LucideIcon> = {
   biz: TrendingUp,
   scout: Search,
   flow: GitBranch,
-  sign: FileSignature,
 };
 
 export function buildNavGroups(p: {

@@ -54,6 +54,11 @@ export type CurrentGraphStage = {
   assigned: StageAssigned | null;
   /** CR-182 · bước Ký cần chữ ký số (huy hiệu «Cần chữ ký số»); khác ⇒ «Ký trên tài liệu». */
   needDigital: boolean;
+  /** CR-185 · mã node module + loại executor + nhánh chờ + mã kết quả (Kết thúc): để vẽ cùng sơ đồ với trang quản trị. */
+  node: string | null;
+  exec: string | null;
+  waitBranches: { on: string; step: number | null }[];
+  outcome: string | null;
 };
 export type CurrentFlow = {
   defId: string;
@@ -153,6 +158,10 @@ function fromApi(d: ApprovalFlowCurrent, canEdit: boolean): CurrentFlow {
       role: g.role ?? null,
       assigned: g.assigned ?? null,
       needDigital: g.need_digital === true,
+      node: g.node ?? null,
+      exec: g.exec ?? null,
+      waitBranches: g.wait_branches ?? [],
+      outcome: g.outcome ?? null,
     })),
     canEdit,
     partnerSend: d.partner_send ?? false,

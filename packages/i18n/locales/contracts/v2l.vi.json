@@ -9,9 +9,6 @@
         "feed": "Bảng tin",
         "common": "Chung"
       },
-      "signPane": {
-        "partner": "Trạng thái «Đối tác xác nhận» dùng cho bước «Gửi đối tác xác nhận» và quy trình Nhận HĐ. Chưa đủ điều kiện ⇒ các bước này không chạy được."
-      },
       "sec": {
         "feed": "Thông báo",
         "feedHint": "Khi nào báo cho bạn trên Bảng tin",
@@ -25,8 +22,6 @@
         "flow": "Quy trình duyệt",
         "flowHint": "Các bước, phòng ban, hạn xử lý, điều kiện",
         "scoutHint": "Mặc định theo nhóm, trần lượt dò/tháng",
-        "sign": "Kết nối",
-        "signHint": "Gửi và nhận hợp đồng với đối tác",
         "signature": "Chữ ký",
         "signatureHint": "Định dạng chữ ký, chữ ký số"
       },
@@ -318,6 +313,10 @@
           "noSend": "Gửi đối tác xác nhận: không"
         },
         "title": "Quy trình duyệt đang áp dụng: {{name}} · v{{version}}",
+        "partnerWarn": {
+          "send": "Bước «Gửi đối tác xác nhận» chưa chạy được — còn thiếu: {{what}} · {{who}}",
+          "receive": "Chưa có quy trình «Nhận HĐ» — hợp đồng đối tác gửi tới chưa có nơi xử lý. Quản trị công ty tạo quy trình Nhận HĐ ở trang Quy trình."
+        },
         "noFlow": "Công ty chưa có quy trình duyệt hợp đồng nào đang bật. Quản trị nền tảng soạn và gán quy trình cho công ty — liên hệ quản trị nền tảng.",
         "openPage": "Mở trang Quy trình",
         "saveNote": "Mục này không có nút Lưu chung; giao việc và uỷ quyền có nút Lưu riêng.",
@@ -372,6 +371,7 @@
           "skip": "Không thoả ⇒ bỏ qua",
           "aria": "Sơ đồ quy trình duyệt (chỉ xem)",
           "start": "Bắt đầu",
+          "finish": "Kết thúc",
           "finalize": "Ghi Đã duyệt",
           "locked": "(bước hệ thống, không sửa được)",
           "loadFail": "Không tải được sơ đồ. Bạn vẫn xem được ở dạng danh sách."

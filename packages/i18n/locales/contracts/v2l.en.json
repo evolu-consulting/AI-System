@@ -9,9 +9,6 @@
         "feed": "Feed",
         "common": "General"
       },
-      "signPane": {
-        "partner": "Partner confirmation status, used by the «Send to partner» step and the Receive contract process. Not ready ⇒ those steps cannot run."
-      },
       "sec": {
         "feed": "Notifications",
         "feedHint": "When to notify you on the Feed",
@@ -25,8 +22,6 @@
         "flow": "Approval flow",
         "flowHint": "Steps, departments, deadlines, conditions",
         "scoutHint": "Group defaults, monthly search cap",
-        "sign": "Connections",
-        "signHint": "Sending and receiving contracts with partners",
         "signature": "Signature",
         "signatureHint": "Signature format, digital signature"
       },
@@ -318,6 +313,10 @@
           "noSend": "Send to partner for confirmation: no"
         },
         "title": "Approval process in effect: {{name}} · v{{version}}",
+        "partnerWarn": {
+          "send": "The «Send to partner» step cannot run yet — missing: {{what}} · {{who}}",
+          "receive": "No «Receive contract» process yet — contracts sent by partners have nowhere to be handled. A company admin creates it on the Processes page."
+        },
         "noFlow": "Your company has no contract approval process switched on. The platform admin builds and assigns processes to your company — contact the platform admin.",
         "openPage": "Open the Processes page",
         "saveNote": "This section has no shared Save button; task assignment and delegation have their own Save.",
@@ -372,6 +371,7 @@
           "skip": "Not met ⇒ skipped",
           "aria": "Approval process diagram (read-only)",
           "start": "Start",
+          "finish": "Finish",
           "finalize": "Record as Approved",
           "locked": "(system step, cannot be edited)",
           "loadFail": "Could not load the diagram. You can still use the list view."

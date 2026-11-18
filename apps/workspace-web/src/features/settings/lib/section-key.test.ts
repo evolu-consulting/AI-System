@@ -4,8 +4,12 @@ import { allowedSections, navFromKey, pickNav, sectionFromKey } from "./section-
 
 describe("sectionFromKey", () => {
   test("khoá hợp lệ ⇒ đúng mục", () => {
-    for (const k of ["co", "rep", "biz", "scout", "flow", "sign"])
+    for (const k of ["co", "rep", "biz", "scout", "flow"])
       expect(sectionFromKey(k)).toBe(k as never);
+  });
+  test("CR-185 · khoá cũ sign (mục «Kết nối» đã bỏ) ⇒ mục Quy trình duyệt", () => {
+    expect(sectionFromKey("sign")).toBe("flow");
+    expect(navFromKey("sign")).toBe("flow");
   });
   test("CR-125 · khoá cũ apps ⇒ mục Quy trình duyệt (đã gộp một cửa)", () => {
     expect(sectionFromKey("apps")).toBe("flow");
@@ -34,8 +38,8 @@ describe("CR-130 · pickNav (một trang Cài đặt, nhóm theo gói)", () => {
 });
 
 describe("CR-138 Q6 · mục theo quyền", () => {
-  test("chủ sở hữu thấy đủ 6 mục (CR-138b: thêm «sign» = Ký & đối tác); người khác chỉ «flow»", () => {
-    expect(allowedSections(true)).toEqual(["co", "rep", "biz", "scout", "flow", "sign"]);
+  test("chủ sở hữu thấy đủ 5 mục (CR-185: bỏ «sign» = Kết nối); người khác chỉ «flow»", () => {
+    expect(allowedSections(true)).toEqual(["co", "rep", "biz", "scout", "flow"]);
     expect(allowedSections(false)).toEqual(["flow"]);
   });
   test("link cũ tới mục bị ẩn ⇒ mục đầu tiên được phép, không lỗi", () => {

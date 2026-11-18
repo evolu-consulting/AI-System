@@ -6,9 +6,9 @@ describe("CR-125 c3 · settings-paths", () => {
     expect(settingsPath("vi", "flow")).toBe("Cài đặt › Quy trình duyệt");
     expect(settingsPath("en", "flow")).toBe("Settings › Approval flow");
   });
-  test("CR-138b · tab Kết nối", () => {
-    expect(settingsPath("vi", "sign")).toBe("Cài đặt › Kết nối");
-    expect(settingsPath("en", "sign")).toBe("Settings › Connections");
+  test("CR-185 · mục Kết nối đã bỏ (token cũ phải lộ ngay); ký số ở «Chữ ký»", () => {
+    expect(() => settingsPath("vi", "sign")).toThrow();
+    expect(settingsPath("vi", "signature")).toBe("Cài đặt › Chữ ký");
   });
   test("mục lạ hoặc khoá Hint ⇒ throw", () => {
     expect(() => settingsPath("vi", "esign")).toThrow();
@@ -26,6 +26,14 @@ describe("CR-125 c3 · settings-paths", () => {
     });
   });
   test("danh sách mục", () => {
-    expect(settingsSectionKeys()).toEqual(["feed", "co", "rep", "biz", "scout", "flow", "sign"]);
+    expect(settingsSectionKeys()).toEqual([
+      "feed",
+      "co",
+      "rep",
+      "biz",
+      "scout",
+      "flow",
+      "signature",
+    ]);
   });
 });

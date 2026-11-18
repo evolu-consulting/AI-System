@@ -1,8 +1,9 @@
 // CR-184 · sơ đồ CHỈ XEM của một quy trình đang chạy (Sổ Hợp Tác › Cài đặt › Quy trình duyệt) — dựng CÙNG đồ thị với trang quản trị:
 // cạnh từ `stepEdges` (tiến, Đúng/Sai của Nếu, rẽ nhánh), "nhảy bước" (`next_step`), node Bắt đầu → các bước đầu, node Kết thúc là điểm cuối.
 // Hàm thuần (chỉ import KIỂU của xyflow). Vị trí do ELK (`useFlowLayout`, hướng DOWN) tính ở host; ở đây chỉ ghép node/cạnh.
-import type { Edge, Node } from "@xyflow/react";
+import { type Edge, MarkerType, type Node } from "@xyflow/react";
 import { toEdge } from "../edges/toEdge";
+import { collapseDefModules, type DefExit, exitEdges } from "./def-modules";
 import type { FlowEdgeIn, FlowNodeIn } from "./elk";
 import { NODE_H, NODE_W } from "./geometry";
 import { type GraphStage, type LayoutEdge, stepEdges } from "./graph";
@@ -23,6 +24,12 @@ export type DefViewStage = GraphStage & {
   end: boolean;
   /** CR-182 · bước có vai (Duyệt / Ký). */
   role?: DefRoleView | null;
+  /** CR-185 · mã node module + loại executor + nhánh chờ (để gộp cụm như admin); vắng ⇒ không gộp. */
+  node?: string | null;
+  exec?: string | null;
+  waitBranches?: readonly { on: string; step: number | null }[];
+  /** CR-185 · đầu ra của ô module sau khi gộp (do `collapseDefModules` gắn). */
+  exits?: readonly DefExit[];
 };
 /** CR-182 · vai của bước + người được giao (chữ đã dịch sẵn); `who` null ⇒ chưa giao. */
 export type DefRoleView = {
@@ -101,7 +108,7 @@ export function defEdges(stages: readonly DefViewStage[], trigger: boolean): Lay
           }),
         )
     : [];
-  return [...start, ...jumped];
+  return [...start, ...jumped, ...exitEdges(stages)];
 }
 
 const portsOf = (s: DefViewStage): string[] | undefined => (s.ifs ? ["yes", "no"] : undefined);
@@ -144,13 +151,29 @@ export type DefNodeData = {
   selected?: boolean;
 };
 
-/** Ghép node + cạnh xyflow từ stage và toạ độ ELK (`auto`; chưa có ⇒ rỗng, host chờ). */
+/** Cạnh đầu ra có tên của ô module: nét đứt cảnh báo + nhãn (cùng kiểu trang quản trị). */
+const exitStyle = (e: Edge, label: string | undefined): Edge => ({
+  ...e,
+  ...(label
+    ? {
+        label,
+        labelStyle: { fill: "var(--color-warning)", fontSize: 12 },
+        labelBgStyle: { fill: "var(--color-card)" },
+      }
+    : {}),
+  markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-warning)" },
+  style: { stroke: "var(--color-warning)", strokeDasharray: "5 4" },
+});
+
+/** Ghép node + cạnh xyflow từ stage và toạ độ ELK (`auto`; chưa có ⇒ rỗng, host chờ). `lang` chọn nhãn đầu ra (vi/en). */
 export function buildDefViewGraph(
-  stages: readonly DefViewStage[],
+  rawStages: readonly DefViewStage[],
   trigger: DefViewTrigger | null,
   auto: ReadonlyMap<string, { x: number; y: number }> | null,
   selectedId?: string | null,
+  lang = "vi",
 ): { nodes: Node<DefNodeData>[]; edges: Edge[]; layout: ReturnType<typeof defLayoutInput> } {
+  const stages = collapseDefModules(rawStages, lang);
   const edges = defEdges(stages, trigger !== null);
   const layout = defLayoutInput(stages, edges, trigger !== null);
   const base = {
@@ -192,7 +215,7 @@ export function buildDefViewGraph(
   const rf = edges
     .filter((e) => have.has(e.source) && have.has(e.target))
     .map((e): Edge => {
-      const out = toEdge(e);
+      const out = e.exit ? exitStyle(toEdge(e), e.label) : toEdge(e);
       return out.type === undefined ? { ...out, type: "routed" } : out;
     });
   return { nodes, edges: rf, layout };

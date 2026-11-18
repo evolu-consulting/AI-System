@@ -125,3 +125,40 @@ describe("CR-182 · vai trên node", () => {
     expect(g.nodes[0]?.data.role).toBeNull();
   });
 });
+
+describe("CR-185 · gộp cụm node module + đầu ra có tên", () => {
+  const SIGN: DefViewStage[] = [
+    st("duyet", 0, { after: "review" }),
+    st("ky", 1, { node: "contracts.esign", exec: "tool" }),
+    st("cho", 2, {
+      node: "contracts.esign",
+      exec: "wait_event",
+      waitBranches: [
+        { on: "esign.declined", step: 4 },
+        { on: "timeout", step: 4 },
+      ],
+    }),
+    st("xong", 3, { end: true, terminal: true }),
+    st("tuchoi", 4, { end: true, terminal: true }),
+    st("tralai", 5, { end: true, terminal: true }),
+  ];
+  const at = (s: DefViewStage[]) => {
+    const probe = buildDefViewGraph(s, { label: "Bắt đầu", summary: "" }, null);
+    return new Map(probe.layout.nodes.map((n) => [n.id, { x: 0, y: 0 }]));
+  };
+  const g = buildDefViewGraph(SIGN, { label: "Bắt đầu", summary: "" }, at(SIGN));
+  test("Gửi ký + Chờ ký là MỘT ô, nút Kết thúc chỉ là stage có kết quả (không tự thêm)", () => {
+    expect(g.nodes.map((n) => n.id).sort()).toEqual(
+      ["duyet", "ky", "trigger", "tralai", "tuchoi", "xong"].sort(),
+    );
+  });
+  test("Từ chối · Hết hạn là MỘT cạnh nét đứt có nhãn tới Kết thúc · Từ chối, Trả lại không bị tự nối", () => {
+    const ex = g.edges.filter((e) => e.source === "ky" && e.target === "tuchoi");
+    expect(ex).toHaveLength(1);
+    expect(String(ex[0]?.label)).toContain("Từ chối");
+    expect(g.edges.some((e) => e.target === "tralai")).toBe(false);
+  });
+  test("ô gộp đi tiếp tới bước sau cụm (Ký xong → Kết thúc)", () => {
+    expect(g.edges.some((e) => e.source === "ky" && e.target === "xong")).toBe(true);
+  });
+});

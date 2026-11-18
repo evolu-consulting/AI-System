@@ -24,6 +24,10 @@ const g = (key: string, step: number, e: Partial<CurrentGraphStage> = {}): Curre
   nextStep: null,
   terminal: false,
   needDigital: false,
+  node: null,
+  exec: null,
+  waitBranches: [],
+  outcome: null,
   ...e,
 });
 function flow(graph: CurrentGraphStage[]): CurrentFlow {
@@ -125,5 +129,35 @@ describe("CR-182 · bước Ký có vai người ký", () => {
     const old = g("ky", 0, { kind: "esign", provider: "docusign" });
     expect(viewStages(flow([old]), t)[0]?.badge).toBe("Ký số (DocuSign)");
     expect(listRows(flow([old]), t)[0]?.sub).toBeNull();
+  });
+});
+
+describe("CR-185 · nút Kết thúc + ô Ký số gộp", () => {
+  test("nút Kết thúc: «Kết thúc» + kết quả thật (Đã duyệt / Từ chối / Trả lại), không tự thêm nút", () => {
+    const f = flow([
+      g("duyet", 0, { kind: "review" }),
+      g("kt1", 1, { kind: "end", terminal: true, name: "Kết thúc · Từ chối", outcome: "rejected" }),
+    ]);
+    const ends = viewStages(f, t).filter((s) => s.end);
+    expect(ends).toHaveLength(1);
+    expect(ends[0]?.title).toBe("Từ chối");
+    expect(ends[0]?.badge).toBe("Kết thúc");
+  });
+  test("stage có node module + loại executor + nhánh chờ được chuyển cho sơ đồ để gộp cụm", () => {
+    const f = flow([
+      g("ky", 0, { kind: "esign", node: "contracts.esign", exec: "tool" }),
+      g("cho", 1, {
+        kind: "wait",
+        node: "contracts.esign",
+        exec: "wait_event",
+        waitBranches: [{ on: "esign.declined", step: 2 }],
+      }),
+    ]);
+    const st = viewStages(f, t);
+    expect(st.map((s) => [s.node, s.exec])).toEqual([
+      ["contracts.esign", "tool"],
+      ["contracts.esign", "wait_event"],
+    ]);
+    expect(st[1]?.waitBranches).toEqual([{ on: "esign.declined", step: 2 }]);
   });
 });

@@ -19,7 +19,7 @@ const THEME: Partial<FlowTheme> = {
   startIcon: "size-3.5 text-act",
   finalize:
     "flex items-center justify-center gap-2 rounded-xl border border-dashed border-field bg-sunk px-3 text-label font-medium",
-  finalizeIcon: "size-4 text-dim",
+  finalizeIcon: "size-4 shrink-0 text-ok",
   step: "flex flex-col justify-center gap-1 overflow-hidden rounded-xl border bg-panel px-3 py-2",
   stepOn: "border-rule shadow-sm",
   stepIndex:
@@ -45,17 +45,20 @@ export type FlowCanvasProps = {
 };
 
 export default function FlowCanvas({ flow, selectedId, onPick }: FlowCanvasProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const stages = useMemo(() => viewStages(flow, t), [flow, t]);
   const trigger = useMemo(() => viewTrigger(flow, t), [flow, t]);
-  const struct = useMemo(() => buildDefViewGraph(stages, trigger, null).layout, [stages, trigger]);
+  const struct = useMemo(
+    () => buildDefViewGraph(stages, trigger, null, null, i18n.language).layout,
+    [stages, trigger, i18n.language],
+  );
   const auto = useFlowLayout(struct.nodes, struct.edges, {
     direction: "DOWN",
     aspectRatio: narrow() ? 0.8 : 1.8,
   });
   const { nodes, edges } = useMemo(
-    () => buildDefViewGraph(stages, trigger, auto, selectedId),
-    [stages, trigger, auto, selectedId],
+    () => buildDefViewGraph(stages, trigger, auto, selectedId, i18n.language),
+    [stages, trigger, auto, selectedId, i18n.language],
   );
   const labels = useMemo<Partial<FlowLabels>>(
     () => ({

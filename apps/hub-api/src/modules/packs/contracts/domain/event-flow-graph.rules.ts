@@ -34,6 +34,11 @@ export type GraphStage = {
   role: { key: string; label: string; groupOnly?: true } | null;
   /** CR-182 · bước Ký có bật «Cần chữ ký số» (`args.need_digital` = true). */
   needDigital: boolean;
+  /** CR-185 · mã node module + loại executor + nhánh chờ + mã kết quả (Kết thúc): để vẽ gộp cụm / cạnh đầu ra / nhãn kết thúc như trang quản trị. */
+  node: string | null;
+  exec: string | null;
+  waitBranches: { on: string; step: number | null }[];
+  outcome: string | null;
 };
 
 type Raw = {
@@ -49,6 +54,7 @@ type Raw = {
     args?: unknown;
     then_step?: unknown;
     else_step?: unknown;
+    branches?: unknown;
   } | null;
   after?: {
     kind?: unknown;
@@ -134,6 +140,15 @@ function parallelRoleKeys(stages: readonly Raw[]): ReadonlySet<string> {
 const withGroupOnly = (r: GraphStage["role"], keys: ReadonlySet<string>): GraphStage["role"] =>
   r && keys.has(r.key) ? { ...r, groupOnly: true } : r;
 
+/** CR-185 · nhánh `executor.branches` của stage chờ ({on, goto_step}); khác ⇒ rỗng. */
+function waitBranchesOf(e: Raw["executor"]): GraphStage["waitBranches"] {
+  if (e?.kind !== "wait_event" || !Array.isArray(e.branches)) return [];
+  return e.branches.flatMap((b) => {
+    const on = str((b as { on?: unknown } | null)?.on);
+    return on ? [{ on, step: num((b as { goto_step?: unknown }).goto_step) }] : [];
+  });
+}
+
 function toGraphStage(s: Raw, i: number, groupOnly: ReadonlySet<string>): GraphStage {
   const kind = kindOf(s);
   const e = s.executor;
@@ -152,6 +167,10 @@ function toGraphStage(s: Raw, i: number, groupOnly: ReadonlySet<string>): GraphS
     terminal: kind === "end" || (e?.kind === "wait_event" && str(s.node) === null),
     role: withGroupOnly(roleOfStage(s, kind), groupOnly),
     needDigital: kind === "esign" && boolArg(e?.args, "need_digital"),
+    node: str(s.node),
+    exec: str(e?.kind),
+    waitBranches: waitBranchesOf(e),
+    outcome: kind === "end" ? str(s.outcome) : null,
   };
 }
 

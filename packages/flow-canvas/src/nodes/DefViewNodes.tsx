@@ -144,7 +144,15 @@ function EndImpl({ data }: P) {
     <div style={SIZE} className={theme.finalize} data-testid="def-node-end">
       <HiddenHandle type="target" position={Position.Top} />
       <Flag aria-hidden className={theme.finalizeIcon} />
-      <span>{data.title}</span>
+      {/* cùng kiểu trang quản trị: «Kết thúc» nhỏ + kết quả (Đã duyệt / Từ chối / Trả lại) */}
+      <span className="min-w-0 text-left">
+        {data.badge && (
+          <span className="block truncate text-caption font-semibold">{data.badge}</span>
+        )}
+        <span className="block truncate" title={data.title}>
+          {data.title}
+        </span>
+      </span>
     </div>
   );
 }

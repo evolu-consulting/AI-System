@@ -8,11 +8,13 @@ import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "~/features/auth/hooks/use-session";
+import { usePartnerConfirmStatus } from "~/features/partner-inbox/hooks/use-partner-queries";
 import { isCompanyAdmin } from "~/features/shell/lib/nav";
 import { useFlow } from "../hooks/use-flow";
 import type { CurrentFlow } from "../lib/current-flow";
 import { flowEditorUrl } from "../lib/editor-link";
 import { unassignedRoles } from "../lib/flow-roles";
+import { type PartnerWarn, receiveWarn, sendWarn } from "../lib/partner-warn";
 import { DelegationPane } from "./DelegationPane";
 import { FlowAssignPanel } from "./FlowAssignPanel";
 import { FlowCanvasLazy } from "./FlowCanvasLazy";
@@ -20,6 +22,7 @@ import { FlowList } from "./FlowList";
 import { FlowPicker } from "./FlowPicker";
 import { FlowSignBlock } from "./FlowSignBlock";
 import { FlowWorkSettings } from "./FlowWorkSettings";
+import { ReceiveWarn, SendWarn } from "./PartnerWarn";
 
 type View = "canvas" | "list";
 
@@ -92,7 +95,7 @@ function AssignFooter({ flow, admin }: { flow: CurrentFlow; admin: boolean }) {
 }
 
 /** Sơ đồ / danh sách bước của MỘT quy trình + khối ký, đối tác; quản trị công ty bấm bước có vai để giao việc (CR-182). */
-function FlowDetail({ flow }: { flow: CurrentFlow }) {
+function FlowDetail({ flow, warn }: { flow: CurrentFlow; warn: PartnerWarn | null }) {
   const { t } = useTranslation();
   const admin = flow.canEdit; // CR-182 · server quyết (Q15: tenant admin ∨ admin gói Sổ Hợp Tác), không đoán theo vai tài khoản
   const [view, setView] = useState<View>("canvas");
@@ -103,6 +106,7 @@ function FlowDetail({ flow }: { flow: CurrentFlow }) {
       <h2 className="mb-2 text-lg font-semibold" data-testid="flow-current-title">
         {t("contracts.flow.current.title", { name: flow.name, version: flow.version })}
       </h2>
+      {warn && <SendWarn warn={warn} testId="flow-partner-warn" />}
       <div>
         <ViewToggle view={view} onChange={setView} />
       </div>
@@ -127,7 +131,13 @@ function FlowDetail({ flow }: { flow: CurrentFlow }) {
 }
 
 /** CR-146 · MỌI quy trình đang bật (thứ tự xét); chọn một ⇒ xem sơ đồ / danh sách của nó. */
-function FlowLoaded({ flows }: { flows: CurrentFlow[] }) {
+function FlowLoaded({
+  flows,
+  warns,
+}: {
+  flows: CurrentFlow[];
+  warns: Record<string, PartnerWarn>;
+}) {
   const { t } = useTranslation();
   const [sel, setSel] = useState(flows[0]?.defId ?? "");
   const cur = flows.find((f) => f.defId === sel) ?? (flows[0] as CurrentFlow);
@@ -137,14 +147,20 @@ function FlowLoaded({ flows }: { flows: CurrentFlow[] }) {
         {t("contracts.flow.current.listLead")}
       </p>
       <OpenFlowsPage />
-      <FlowPicker flows={flows} value={cur.defId} onChange={setSel} />
-      <FlowDetail key={cur.defId} flow={cur} />
+      <FlowPicker flows={flows} value={cur.defId} onChange={setSel} warns={warns} />
+      <FlowDetail key={cur.defId} flow={cur} warn={warns[cur.defId] ?? null} />
     </>
   );
 }
 
 /** Chưa có quy trình Bật (danh sách rỗng) ⇒ nói rõ ai làm gì ở đâu; lỗi khác ⇒ báo + thử lại. KHÔNG che «Uỷ quyền khi vắng». */
-function FlowBlock({ q }: { q: ReturnType<typeof useFlow> }) {
+function FlowBlock({
+  q,
+  warns,
+}: {
+  q: ReturnType<typeof useFlow>;
+  warns: Record<string, PartnerWarn>;
+}) {
   const { t } = useTranslation();
   if (q.isError)
     return (
@@ -165,15 +181,27 @@ function FlowBlock({ q }: { q: ReturnType<typeof useFlow> }) {
         <OpenFlowsPage />
       </>
     );
-  return <FlowLoaded flows={q.data} />;
+  return <FlowLoaded flows={q.data} warns={warns} />;
 }
 
-/** CR-138b · «Quy trình duyệt» chỉ còn danh sách quy trình đang bật (chỉ xem, thứ tự xét + «Bắt đầu khi») + «Uỷ quyền khi vắng»; kết nối ký số / đối tác ở tab «Kết nối». */
+/** CR-185 · cảnh báo điều kiện đối tác theo từng quy trình (chỉ quản trị có dữ liệu). */
+function warnsOf(c: ReturnType<typeof usePartnerConfirmStatus>, flows: CurrentFlow[] | undefined) {
+  const out: Record<string, PartnerWarn> = {};
+  for (const f of flows ?? []) {
+    const w = sendWarn(c, f);
+    if (w) out[f.defId] = w;
+  }
+  return out;
+}
+
+/** CR-138b · «Quy trình duyệt» = danh sách quy trình đang bật (chỉ xem, thứ tự xét + «Bắt đầu khi») + «Uỷ quyền khi vắng». CR-185: mục «Kết nối» đã bỏ ⇒ điều kiện gửi / nhận HĐ với đối tác thành cảnh báo ở đây. */
 export function FlowCurrentPane() {
   const q = useFlow(true);
+  const partner = usePartnerConfirmStatus(true);
   return (
     <div>
-      <FlowBlock q={q} />
+      {receiveWarn(partner) && <ReceiveWarn />}
+      <FlowBlock q={q} warns={warnsOf(partner, q.data)} />
       <FlowWorkSettings />
       <DelegationPane />
     </div>

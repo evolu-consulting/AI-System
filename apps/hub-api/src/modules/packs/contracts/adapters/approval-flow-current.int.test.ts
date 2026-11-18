@@ -202,6 +202,18 @@ it("CR-184 · GET trả thêm `graph` = MỌI stage (cả Chờ ký xong, Kết 
   ]);
 });
 
+it("CR-185 · `graph` kèm mã kết quả của Kết thúc (outcome) + loại executor, để Sổ Hợp Tác vẽ nhãn Kết thúc như trang quản trị", async () => {
+  const ra = await app(A, own).request("/approval-flow");
+  const { items } = (await ra.json()) as {
+    items: { graph?: { key: string; exec?: string | null; outcome?: string | null }[] }[];
+  };
+  const by = new Map((items[0]?.graph ?? []).map((g) => [g.key, g]));
+  expect(by.get("end")?.outcome).toBe("approved");
+  expect(by.get("end")?.exec).toBe("set");
+  expect(by.get("cho")?.exec).toBe("wait_event");
+  expect(by.get("tp")?.outcome).toBeUndefined();
+});
+
 it("flow bắt đầu bằng phiếu (trigger «không bao giờ», vd Quy trình mua hàng) KHÔNG được chọn làm quy trình duyệt HĐ", async () => {
   const never = JSON.stringify(NEVER_TRIGGER);
   const [m] = await o<

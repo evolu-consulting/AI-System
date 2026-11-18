@@ -1,5 +1,6 @@
 // CR-184 · sơ đồ + danh sách CHỈ XEM của quy trình đang chạy: cùng một đồ thị (`@ai/flow-canvas/pure`: cạnh Đúng/Sai, nhảy bước, Bắt đầu → bước đầu,
 // Kết thúc) với trang quản trị. File này chỉ ghép CHỮ nghiệp vụ (VI/EN qua `t`) lên stage + dựng dòng cho chế độ «Danh sách» theo đúng thứ tự sơ đồ.
+import { CONTRACTS_MANIFEST } from "@ai/contracts/app-manifest";
 import type { DefViewStage, DefViewTrigger } from "@ai/flow-canvas/pure";
 import type { CurrentFlow, CurrentGraphStage } from "./current-flow";
 import { roleView, whoText } from "./flow-roles";
@@ -71,6 +72,16 @@ function subOf(
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
+/** CR-185 · kết quả của quy trình Gửi duyệt (Đã duyệt / Từ chối / Trả lại) lấy từ sổ app — cùng nhãn trang quản trị vẽ trên nút Kết thúc. */
+const OUTCOME_LABELS: ReadonlyMap<string, string> = new Map(
+  (CONTRACTS_MANIFEST.events.find((e) => e.key === "contract.submitted")?.outcomes ?? []).map(
+    (o) => [o.key, o.label],
+  ),
+);
+/** Nút Kết thúc: tên = nhãn kết quả (trang quản trị), không có ⇒ tên bước. */
+const endTitle = (g: CurrentGraphStage): string =>
+  (g.outcome ? OUTCOME_LABELS.get(g.outcome) : undefined) ?? g.name;
+
 /** Stage của sơ đồ (đúng thứ tự `graph`) kèm chữ đã dịch. */
 export function viewStages(flow: CurrentFlow, t: Tr): DefViewStage[] {
   const n = approversByKey(flow);
@@ -84,10 +95,13 @@ export function viewStages(flow: CurrentFlow, t: Tr): DefViewStage[] {
     terminal: g.terminal,
     nextStep: g.nextStep,
     end: g.kind === "end",
-    title: g.name,
+    title: g.kind === "end" ? endTitle(g) : g.name,
     sub: subOf(g, n.get(g.key), t),
-    badge: badgeOf(g, t),
+    badge: g.kind === "end" ? t(`${K}.canvas.finish`) : badgeOf(g, t),
     role: g.role ? roleView(g, t) : null,
+    node: g.node,
+    exec: g.exec,
+    waitBranches: g.waitBranches,
   }));
 }
 

@@ -263,6 +263,14 @@ export function readStartWhen(raw: unknown): {
   return r.success ? { start_when: r.data } : { start_when: null, start_when_unreadable: true };
 }
 
+/** CR-185 · trường để Sổ Hợp Tác gộp cụm node module / vẽ nhãn Kết thúc như trang quản trị (chỉ khi có). */
+const moduleFields = (g: GraphStage) => ({
+  ...(g.node ? { node: g.node } : {}),
+  ...(g.exec ? { exec: g.exec } : {}),
+  ...(g.waitBranches.length > 0 ? { wait_branches: g.waitBranches } : {}),
+  ...(g.outcome ? { outcome: g.outcome } : {}),
+});
+
 /** CR-184 · stage của sơ đồ ⇒ dạng trả về: phòng duyệt theo TÊN (không lộ mã), bước đếm từ 0. */
 function graphStageOut(
   g: GraphStage,
@@ -287,6 +295,7 @@ function graphStageOut(
     next_step: g.nextStep,
     terminal: g.terminal,
     ...(g.needDigital ? { need_digital: true as const } : {}),
+    ...moduleFields(g),
     ...(g.role
       ? {
           role: {

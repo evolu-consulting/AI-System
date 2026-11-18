@@ -8,7 +8,7 @@ import { ESCALATE_AFTER_H, ProcessKeySchema, REMIND_EVERY_H } from "../chat/proc
 import { INPUT_NAME_RE, INPUT_SCHEMA_MAX, IsoDateTime, UuidSchema } from "../common";
 import { GROUP_KEY_RE } from "../groups";
 import { FactWhenSchema } from "../hub-admin/process-trigger";
-import { ApprovalFlowAssignedSchema, ApprovalFlowRoleSchema } from "./approval-flow-roles";
+import { APPROVAL_FLOW_GRAPH_MAX, ApprovalFlowGraphStageSchema } from "./approval-flow-graph";
 import { ESIGN_NODE_ORDERS, ESIGN_NODE_SIGNERS_MAX } from "./esign-node";
 import { CONTRACT_DEALS } from "./milestones";
 
@@ -285,30 +285,8 @@ export const ApprovalFlowCurrentStepSchema = z.strictObject({
   escalate_group_missing: z.literal(true).optional(),
 });
 export type ApprovalFlowCurrentStep = z.infer<typeof ApprovalFlowCurrentStepSchema>;
-export const APPROVAL_FLOW_GRAPH_MAX = 60;
-const StepIdx = z.number().int().min(0).max(999);
-/** CR-184 · một stage của sơ đồ: đủ để dựng nút + cạnh (`step`, `yes`/`no`, `branch`, `back_to`, `next_step`). Số bước đếm từ 0. */
-export const ApprovalFlowGraphStageSchema = z.strictObject({
-  key: z.string().min(1).max(100),
-  step: StepIdx,
-  name: z.string().max(200),
-  kind: z.enum(["review", "esign", "notify", "if", "partner_send", "wait", "end", "other"]),
-  department_name: z.string().max(200).nullable().optional(),
-  provider: z.string().max(100).nullable().optional(),
-  after: z.enum(["review", "auto"]),
-  back_to: z.array(StepIdx).max(20),
-  branch: z.array(StepIdx.nullable()).max(20),
-  yes: StepIdx.nullable(),
-  no: StepIdx.nullable(),
-  next_step: StepIdx.nullable(),
-  terminal: z.boolean(),
-  /** CR-182 · vai của bước Duyệt / Ký; null/vắng ⇒ bước không dùng vai. `assigned` null ⇒ vai CHƯA giao («Chưa giao người»). */
-  role: ApprovalFlowRoleSchema.nullable().optional(),
-  assigned: ApprovalFlowAssignedSchema.nullable().optional(),
-  /** CR-182 · bước Ký cần chữ ký số (công tắc «Cần chữ ký số»); vắng ⇒ ký trên tài liệu. */
-  need_digital: z.literal(true).optional(),
-});
-export type ApprovalFlowGraphStage = z.infer<typeof ApprovalFlowGraphStageSchema>;
+export type { ApprovalFlowGraphStage } from "./approval-flow-graph";
+export { APPROVAL_FLOW_GRAPH_MAX, ApprovalFlowGraphStageSchema } from "./approval-flow-graph";
 export const ApprovalFlowCurrentSchema = z.strictObject({
   def_id: UuidSchema,
   name: z.string().min(1).max(200),
