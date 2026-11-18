@@ -4,6 +4,10 @@
 -- Truy cập công khai CHỈ qua hàm DEFINER theo BĂM token (bảng không lộ cho route công khai); role gói `contracts_rw` chỉ được gọi hàm.
 -- Bản ký của đối tác: `sign_versions.signed_by` = NULL + `signer_contact_id` + `signer_label` («Đối tác: <tên liên hệ>»); dấu của đối tác ở `sign_marks`
 -- dùng `quick_signature_id` (không có `user_signature_id`), `signer_id` = id liên hệ.
+-- Migration gói chạy trong MỘT tx; `lock_timeout` như 0070/0084/0120. Ràng buộc thêm vào bảng CÓ SẴN (sign_versions / sign_marks / sign_fields) dùng
+-- `NOT VALID` (khoá ngắn, không quét) rồi `VALIDATE CONSTRAINT` ở statement riêng (khuôn 0155/0159).
+SET LOCAL lock_timeout = '5s';
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS contracts.partner_sign_links (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
@@ -63,7 +67,9 @@ ALTER TABLE contracts.sign_versions ADD COLUMN IF NOT EXISTS signer_label text;
 ALTER TABLE contracts.sign_versions DROP CONSTRAINT IF EXISTS sign_versions_signer_ck;
 --> statement-breakpoint
 ALTER TABLE contracts.sign_versions ADD CONSTRAINT sign_versions_signer_ck
-  CHECK ((signed_by IS NULL) <> (signer_contact_id IS NULL) AND (signer_contact_id IS NULL OR char_length(signer_label) BETWEEN 1 AND 300));
+  CHECK ((signed_by IS NULL) <> (signer_contact_id IS NULL) AND (signer_contact_id IS NULL OR char_length(signer_label) BETWEEN 1 AND 300)) NOT VALID;
+--> statement-breakpoint
+ALTER TABLE contracts.sign_versions VALIDATE CONSTRAINT sign_versions_signer_ck;
 --> statement-breakpoint
 ALTER TABLE contracts.sign_marks ALTER COLUMN user_signature_id DROP NOT NULL;
 --> statement-breakpoint
@@ -72,11 +78,15 @@ ALTER TABLE contracts.sign_marks ADD COLUMN IF NOT EXISTS quick_signature_id uui
 ALTER TABLE contracts.sign_marks DROP CONSTRAINT IF EXISTS sign_marks_quick_fk;
 --> statement-breakpoint
 ALTER TABLE contracts.sign_marks ADD CONSTRAINT sign_marks_quick_fk FOREIGN KEY (quick_signature_id, tenant_id)
-  REFERENCES contracts.partner_quick_signatures (id, tenant_id);
+  REFERENCES contracts.partner_quick_signatures (id, tenant_id) NOT VALID;
+--> statement-breakpoint
+ALTER TABLE contracts.sign_marks VALIDATE CONSTRAINT sign_marks_quick_fk;
 --> statement-breakpoint
 ALTER TABLE contracts.sign_marks DROP CONSTRAINT IF EXISTS sign_marks_sig_ck;
 --> statement-breakpoint
-ALTER TABLE contracts.sign_marks ADD CONSTRAINT sign_marks_sig_ck CHECK (user_signature_id IS NOT NULL OR quick_signature_id IS NOT NULL);
+ALTER TABLE contracts.sign_marks ADD CONSTRAINT sign_marks_sig_ck CHECK (user_signature_id IS NOT NULL OR quick_signature_id IS NOT NULL) NOT VALID;
+--> statement-breakpoint
+ALTER TABLE contracts.sign_marks VALIDATE CONSTRAINT sign_marks_sig_ck;
 --> statement-breakpoint
 -- Chỗ ký của Bên B được đánh dấu đã ký bằng `signed_version_id` (người ký = `sign_versions.signer_contact_id`), `signed_by` giữ NULL ⇒ chỉ ô Bên B được nới.
 ALTER TABLE contracts.sign_fields DROP CONSTRAINT IF EXISTS sign_fields_signed_ck;

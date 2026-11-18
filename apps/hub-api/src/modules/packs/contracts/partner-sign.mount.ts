@@ -113,6 +113,7 @@ export function partnerSignModule(
       }),
     mailer: () => partnerSignMailer.get(),
     baseUrl: () => partnerSignMailer.baseUrl(),
+    logLink: () => partnerSignMailer.logLink(),
     counts: ports.counts,
     complete: ports.complete,
     log: logger,

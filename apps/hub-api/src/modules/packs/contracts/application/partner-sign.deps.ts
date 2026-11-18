@@ -44,6 +44,8 @@ export type PartnerSignDeps = {
   /** Transport email chung (null ⇒ `HUB_NOTIFY_MODE=off` ⇒ ghi link ra log để kiểm). */
   mailer: () => PartnerSignMailer | null;
   baseUrl: () => string;
+  /** Chỉ bản dev/test (`APP_ENV` ≠ production) mới được ghi link ký đầy đủ ra log khi tắt thông báo. */
+  logLink: () => boolean;
   /** Bước Ký `ondoc` đang mở của HĐ: Bên A đủ chưa + số chỗ Bên B (lắp ráp ở `packs.sign-doc.ts`). */
   counts: (tenantId: string, contractId: string) => Promise<PartnerCounts>;
   /** Thả bước chờ `esign.completed` (HĐ «Đã ký»). Không ném. */

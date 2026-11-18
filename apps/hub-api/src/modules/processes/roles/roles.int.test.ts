@@ -258,4 +258,39 @@ describe("CR-182 roles · BR-G2 làm mới khi mở bước, vai chưa giao ch�
     expect(locked.unassigned.map((x) => x.role_key)).toEqual(["cap-2"]);
     await o`update admin.users set locked_by_tenant = false where id = ${U.a3}`;
   });
+
+  it("soát #9: công ty tắt «ký trên tài liệu» giữa lượt, bản chụp còn provider=ondoc ⇒ mở bước khôi phục provider của def", async () => {
+    const c = (v: string) => ({ from: "const", value: v });
+    const sign = (provider: string) => ({
+      name: "Ký",
+      executor: {
+        kind: "tool",
+        tool_key: "contracts-esign-send",
+        args: { provider: c(provider), signer_role: c("vai-ky-9") },
+      },
+    });
+    const [d] = await o<
+      { id: string }[]
+    >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app)
+      values (${T.a}, 'cr182-ky9', 'K9', ${JSON.stringify([sign("upload")])}::text::jsonb, '{"event":"contract.submitted"}'::jsonb, 'contracts')
+      returning id::text as id`;
+    await o`insert into hub.process_role_assignments (tenant_id, flow_id, role_key, group_id)
+      values (${T.a}, ${d?.id as string}, 'vai-ky-9', ${gA})`;
+    const snapStage = sign("ondoc"); // bản chụp lúc công ty còn bật on_doc
+    const runId = crypto.randomUUID();
+    await o.begin(async (tx) => {
+      await tx`set local session_replication_role = replica`;
+      await tx`insert into hub.process_runs (id, tenant_id, process_def_id, def_version, snapshot, started_by, origin_kind, input,
+          conversation_id, flow_id)
+        values (${runId}, ${T.a}, ${d?.id as string}, 1, ${JSON.stringify({ stages: [snapStage] })}::text::jsonb, ${U.a2}, 'conversation', 'x',
+          gen_random_uuid(), gen_random_uuid())`;
+    });
+    const out = (await withHubScope(db, g(T.a, "adm"), (tx) =>
+      refreshStageRoles(tx, T.a, runId, snapStage, 0),
+    )) as unknown as {
+      executor: { args: { provider: { value: string }; company_signers: { value: string } } };
+    };
+    expect(out.executor.args.provider.value).toBe("upload");
+    expect(out.executor.args.company_signers.value).toBe(`group:${gA}`);
+  });
 });

@@ -116,6 +116,7 @@ const make = () =>
             },
           },
     baseUrl: () => "https://app.test",
+    logLink: () => true,
     counts: async () =>
       countsNow === undefined ? { a_done: true, b_total: 1, b_open: 1, run_id: RUN } : countsNow,
     complete: async () => {
@@ -435,6 +436,7 @@ describe("CR-182 · đối tác ký qua link", () => {
     mails.length = 0;
     const r = await ucs().resend(w(U1), f.id, false);
     expect(r.sent).toBe(true);
+    expect(r.url).toBeNull(); // thư đã gửi ⇒ không lộ link
     const fresh = /\/ky\/([A-Za-z0-9_-]{43})/.exec(mails[0]?.text ?? "")?.[1] as string;
     expect(fresh).not.toBe(old);
     expect((await call("GET", "", old)).status).toBe(410);

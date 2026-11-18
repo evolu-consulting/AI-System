@@ -18,11 +18,14 @@ export function createPartnerSignPortRegistry(): PartnerSignPortRegistry {
 export function createPartnerSignMailerRegistry(): PartnerSignMailerRegistry {
   let m: PartnerSignMailer | null = null;
   let base = "http://localhost:3300";
+  let dev = false; // fail-closed: không biết môi trường ⇒ không ghi link ra log
   return {
-    set: (x, baseUrl) => {
+    set: (x, baseUrl, appEnv) => {
       m = x;
       if (baseUrl) base = baseUrl;
+      dev = appEnv === "development" || appEnv === "test";
     },
+    logLink: () => dev,
     get: () => m,
     baseUrl: () => base,
   };

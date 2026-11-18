@@ -1,7 +1,7 @@
 // CR-182 · trạng thái link ký của đối tác ở trang HĐ: dòng thông tin, ai thấy «Gửi lại link».
 import { describe, expect, test } from "bun:test";
 import type { PartnerLinkStatusOut } from "@ai/contracts/pack-contracts";
-import { canShowResend, linkLines } from "./partner-link-view";
+import { canCopyLink, canShowResend, linkLines } from "./partner-link-view";
 
 const link = (o: Partial<PartnerLinkStatusOut> = {}): PartnerLinkStatusOut => ({
   state: "open",
@@ -34,5 +34,11 @@ describe("link ký của đối tác ở trang HĐ", () => {
     expect(canShowResend(link({ state: "revoked" }))).toBe(true);
     expect(canShowResend(link({ state: "signed" }))).toBe(false);
     expect(canShowResend(null)).toBe(false);
+  });
+  test("sao chép link: chỉ khi link còn chờ mà thư chưa gửi được", () => {
+    expect(canCopyLink(link({ sent_at: null }))).toBe(true);
+    expect(canCopyLink(link())).toBe(false);
+    expect(canCopyLink(link({ state: "declined", sent_at: null }))).toBe(false);
+    expect(canCopyLink(null)).toBe(false);
   });
 });

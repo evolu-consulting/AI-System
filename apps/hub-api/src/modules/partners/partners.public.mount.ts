@@ -34,10 +34,11 @@ export function mountSignLinkPublic<E extends Env>(
     redis?: Redis | undefined;
     email: PartnerSignMailerLike | null;
     baseUrl: string;
+    appEnv?: string | undefined;
     now?: () => Date;
   },
 ): void {
-  partnerSignMailer.set(d.email, d.baseUrl);
+  partnerSignMailer.set(d.email, d.baseUrl, d.appEnv);
   if (!d.db) return;
   app.route(
     SIGN_LINK_PUBLIC_PATH,

@@ -3,8 +3,10 @@
 // (+ RLS đọc theo tenant). Ghi (`assignRole`) chỉ qua hàm DEFINER `hub.role_assign` — hàm đòi cờ `app.company_admin` (route đặt SAU khi kiểm Q15).
 import {
   hasSignerRole,
+  ONDOC_PROVIDER,
   type RoleAssignment,
   roleKeysOf,
+  signerRoleOf,
   type WithRolesOut,
   withRoles,
 } from "@ai/contracts/flow";
@@ -157,6 +159,22 @@ export async function withRolesDef<D extends { id: string; stages: unknown[] }>(
 }
 
 /**
+ * Soát #9 · công ty TẮT «ký trên tài liệu» giữa lượt mà bản chụp bước Ký còn `provider = ondoc` (đặt lúc bắt đầu lượt khi còn bật) ⇒ trả `provider`
+ * của def (hằng, khác `ondoc`). Def không có `provider` ⇒ giữ nguyên (nợ: TECH-DEBT). THUẦN.
+ */
+export function restoreProvider<S>(stage: S, o: { ondoc: boolean; defProvider: string | null }): S {
+  if (o.ondoc || !o.defProvider || o.defProvider === ONDOC_PROVIDER || signerRoleOf(stage) === null)
+    return stage;
+  const e = (stage as { executor: { args?: Record<string, unknown> } }).executor;
+  const cur = (e.args?.provider as { value?: unknown } | undefined)?.value;
+  if (cur !== ONDOC_PROVIDER) return stage;
+  return {
+    ...stage,
+    executor: { ...e, args: { ...e.args, provider: { from: "const", value: o.defProvider } } },
+  };
+}
+
+/**
  * BR-G2 · KHI MỞ bước: giải lại vai theo giao việc HIỆN TẠI và ghi đè bản chụp của run (`group_id` / `approver_user_id` / `company_signers`):
  * bước CHƯA tới lượt dùng người mới; bước đang chờ (đã mở) không qua đây ⇒ giữ người cũ. Vai chưa giao lúc này ⇒ giữ giá trị đã giải lúc bắt đầu lượt.
  * Stage không có vai ⇒ trả nguyên, 0 SQL. Gọi trong tx đã khoá run.
@@ -169,13 +187,22 @@ export async function refreshStageRoles<S>(
   idx: number,
 ): Promise<S> {
   if (roleKeysOf([stage]).length === 0) return stage;
-  const [r] = await tx.execute<{ def_id: string | null }>(sql`select process_def_id::text as def_id
-    from hub.process_runs where id = ${runId}::uuid and tenant_id = ${tenantId}::uuid`);
+  // `provider` của def tại bước này (chỉ khi bước đó vẫn là CÙNG vai người ký) — để khôi phục khi công ty tắt «ký trên tài liệu» (#9); cùng câu, không thêm round-trip.
+  const [r] = await tx.execute<{
+    def_id: string | null;
+    def_provider: string | null;
+  }>(sql`select p.process_def_id::text as def_id,
+      (select d.stages -> ${idx}::int #>> '{executor,args,provider,value}' from hub.process_defs d
+        where d.id = p.process_def_id and (d.tenant_id = p.tenant_id or d.tenant_id is null) and jsonb_typeof(d.stages) = 'array'
+          and d.stages -> ${idx}::int #>> '{executor,args,signer_role,value}' = ${signerRoleOf(stage)}::text) as def_provider
+    from hub.process_runs p where p.id = ${runId}::uuid and p.tenant_id = ${tenantId}::uuid`);
   if (!r?.def_id) return stage;
   const m = await loadRoleAssignments(tx, tenantId, [r.def_id]);
   const ondoc = await onDocOf(tx, tenantId, [[stage]]);
-  const next = withRoles([stage], m.get(r.def_id) ?? [], { keepUnassigned: true, ondoc })
-    .stages[0] as S;
+  const next = restoreProvider(
+    withRoles([stage], m.get(r.def_id) ?? [], { keepUnassigned: true, ondoc }).stages[0] as S,
+    { ondoc, defProvider: r.def_provider },
+  );
   if (JSON.stringify(next) === JSON.stringify(stage)) return stage;
   await tx.execute(sql`update hub.process_runs set snapshot = jsonb_set(snapshot, array['stages', ${String(idx)}::text],
       ${JSON.stringify(next)}::jsonb) where id = ${runId}::uuid and tenant_id = ${tenantId}::uuid`);

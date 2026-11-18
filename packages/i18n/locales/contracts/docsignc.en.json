@@ -146,7 +146,11 @@
         "resend": "Resend link",
         "resent": "Link resent to {{name}}",
         "resendFail": "Could not resend the link. Only the uploader or an admin can resend.",
-        "noMail": "The partner contact has no email, so the link could not be sent."
+        "noMail": "The partner contact has no email, so the link could not be sent.",
+        "notSent": "The invitation email could not be sent. Copy the link and send it to the partner.",
+        "copy": "Copy link",
+        "copied": "Link copied. The previous link no longer works.",
+        "copyFail": "Could not copy the link. Try again or press Resend link."
       }
     }
   }

@@ -62,11 +62,12 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
     sendMail(d, ...a);
 
   /** Tạo link + gửi «Mời ký». `force` ⇒ thu hồi link cũ (Gửi lại); không ⇒ đã có link chưa chốt thì thôi. */
-  async function ensureLink(
+  async function ensureLinkFull(
     tenantId: string,
     contractId: string,
     o: { by: string | null; force: boolean; stepDueAt?: Date | null },
-  ): Promise<"created" | "exists" | "no_contact"> {
+  ): Promise<{ res: "created" | "exists" | "no_contact"; url: string | null; sent: boolean }> {
+    const no = (res: "exists" | "no_contact") => ({ res, url: null, sent: false });
     const token = newLinkToken();
     const hash = await hashLinkToken(token);
     const linkId = d.newId();
@@ -110,8 +111,8 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
         nFields: fields.filter((f) => f.side === "B" && need.has(f.file_id)).length,
       };
     });
-    if (made === "none") return "no_contact";
-    if (typeof made === "string") return made;
+    if (made === "none") return no("no_contact");
+    if (typeof made === "string") return no(made);
     const link = signLinkUrl(d.baseUrl(), token);
     const sent = await mail(
       tenantId,
@@ -126,10 +127,13 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
         link,
       }),
       link,
+      linkId,
     );
     if (sent) await d.uow.system(tenantId, (r) => r.partnerSign.markSent(linkId));
-    return "created";
+    return { res: "created", url: link, sent };
   }
+  const ensureLink = async (...a: Parameters<typeof ensureLinkFull>) =>
+    (await ensureLinkFull(...a)).res;
 
   /** Tải mọi dữ kiện tệp của HĐ cho đối tác: tệp «Cần ký», chỗ ký, bản mới nhất. Ba câu cố định. */
   const snapshot = (r: PartnerSignRepos, contractId: string) =>
@@ -162,6 +166,7 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
       `partner-signed-${l.link_id}`,
       signedMail({ companyName: company, contractTitle: title, files: nFiles }),
       null,
+      l.link_id,
     );
   }
 
@@ -201,12 +206,17 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
       const counts = await d.counts(who.tenantId, contractId);
       const bOpen = partnerOpenFields(info.fields);
       if (bOpen === 0 || !(info.latest || counts?.a_done)) throw new PartnerSignFail("not_needed");
-      const res = await ensureLink(who.tenantId, contractId, { by: who.userId, force: true });
+      const { res, url, sent } = await ensureLinkFull(who.tenantId, contractId, {
+        by: who.userId,
+        force: true,
+      });
       if (res === "no_contact") throw new PartnerSignFail("no_contact");
       const link = await d.uow.tenant(who, (r) => r.partnerSign.latest(contractId));
       if (!link) throw new PartnerSignFail("not_found");
       return {
         sent: link.sent_at !== null,
+        // Thư không gửi được (tắt thông báo / lỗi SMTP) ⇒ trả link gốc MỘT lần cho người có quyền gửi lại để sao chép (DB chỉ giữ băm).
+        url: sent ? null : url,
         expires_at: new Date(link.expires_at).toISOString(),
         link: statusOut(link),
       };

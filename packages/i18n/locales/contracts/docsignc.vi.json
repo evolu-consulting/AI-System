@@ -146,7 +146,11 @@
         "resend": "Gửi lại link",
         "resent": "Đã gửi lại link tới {{name}}",
         "resendFail": "Chưa gửi lại được link. Chỉ người tải lên hoặc quản trị gửi lại được.",
-        "noMail": "Liên hệ đối tác chưa có email nên chưa gửi được link."
+        "noMail": "Liên hệ đối tác chưa có email nên chưa gửi được link.",
+        "notSent": "Chưa gửi được thư mời — sao chép link để gửi đối tác.",
+        "copy": "Sao chép link",
+        "copied": "Đã sao chép link. Link cũ không còn dùng được.",
+        "copyFail": "Chưa sao chép được link. Thử lại hoặc bấm «Gửi lại link»."
       }
     }
   }

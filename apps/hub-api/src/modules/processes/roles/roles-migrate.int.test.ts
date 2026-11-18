@@ -338,3 +338,39 @@ describe("CR-182 · chuông «Chưa giao người»", () => {
     expect(rows.map((r) => r.user_id).sort()).toEqual([U.adm, U.u2].sort());
   });
 });
+
+describe("CR-182 · soát #6 · nhãn vai Ký của chuông", () => {
+  it("đọc `signer_role_label` trước tên bước, cùng khoá ở nhiều quy trình ⇒ lấy quy trình đang Bật của công ty", async () => {
+    const mk = async (key: string, label: string, name: string) =>
+      (
+        await o<
+          { id: string }[]
+        >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app)
+        values (${T.a}, ${key}, ${key}, ${JSON.stringify([
+          {
+            name,
+            executor: {
+              kind: "tool",
+              tool_key: "contracts-esign-send",
+              args: { signer_role: c("vai-ky-moi"), signer_role_label: c(label) },
+            },
+          },
+        ])}::text::jsonb, '{"event":"contract.submitted"}'::jsonb, 'contracts') returning id::text as id`
+      )[0]?.id as string;
+    await mk("bell-khac", "Nhãn của quy trình khác", "Bước khác");
+    const on = await mk("bell-bat", "Giám đốc ký", "Bước ký");
+    await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${T.a}, ${on}, true)`;
+    const [hd] = await contracts(o, T.a, 1, { from: 4, createdBy: U.adm, status: "processing" });
+    const n = await withHubScope(db, { kind: "system" }, (tx) =>
+      bellRoleUnassigned(tx, {
+        tenantId: T.a,
+        ref: hd as string,
+        reason: "FLOW_GROUP_MISSING:vai-ky-moi",
+      }),
+    );
+    expect(n).toBeGreaterThan(0);
+    const [b] = await o<{ body: string }[]>`select body from hub.notifications
+      where tenant_id = ${T.a} and kind = 'contract.role_unassigned' and body like '%HD 4%' limit 1`;
+    expect(b?.body).toBe("Hợp đồng HD 4 đang chờ: vai Giám đốc ký chưa giao người.");
+  });
+});

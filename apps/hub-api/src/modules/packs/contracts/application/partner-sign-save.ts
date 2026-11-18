@@ -213,13 +213,13 @@ export async function partnerSignSave(
   if ("ok" in s) return s;
   const label = partnerLabel(s.contact?.name ?? null, s.contact?.partner_name ?? null);
   const text = captionText(["name", "date", "time"], { name: label, title: null }, d.now());
-  const out = await render(d, l, body, s, quick.png, text);
-  if ("ok" in out) return out;
   // BR-L2 · bước Ký còn mở (Bên A đủ, chưa đóng) ⇒ mới cho Lưu; `run_id` của bản = lượt của bước.
   // `run_id` lấy TRƯỚC khoá link (kết nối khác, ngoài tx): nếu «Trả lại» chen vào giữa thì `guardTx` thấy link đã thu hồi ⇒ 410 và rollback,
   // nên bản mang `run_id` cũ không bao giờ được ghi.
   const step = await d.counts(l.tenant_id, l.contract_id);
   if (!step?.a_done) return fail(409, E.closed);
+  const out = await render(d, l, body, s, quick.png, text);
+  if ("ok" in out) return out;
   const org = d.orgOf(l.tenant_id);
   const name = `${s.file.name.replace(/\.pdf$/i, "")} (đã ký).pdf`;
   const up = await d.files.put(org, name, out.bytes);

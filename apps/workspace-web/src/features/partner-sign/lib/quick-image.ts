@@ -1,7 +1,15 @@
 // CR-182 · ảnh chữ ký nhanh của đối tác: PNG nét đen (gửi lên) → ảnh màu xanh để đặt vào khay (xem trước giống bản in). Nhớ trong phiên trình duyệt theo link.
 import { recolor } from "~/features/my-signature/lib/signature-image";
 
-const key = (token: string) => `psign:img:${token}`;
+/** Khoá sessionStorage = SHA-256 (hex) của token — KHÔNG chứa token thô (token đủ để ký thay đối tác). Không có `crypto.subtle` (http không an toàn) ⇒ null ⇒ không nhớ. */
+export async function imageKey(token: string): Promise<string | null> {
+  try {
+    const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+    return `psign:img:${[...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
+  } catch {
+    return null;
+  }
+}
 
 export const blobToBase64 = (b: Blob) =>
   new Promise<string>((ok, no) => {
@@ -21,16 +29,18 @@ export async function blueDataUrl(png: Blob): Promise<string> {
   return recolor(c, "blue").toDataURL("image/png");
 }
 
-export const rememberImage = (token: string, url: string) => {
+export const rememberImage = async (token: string, url: string) => {
   try {
-    sessionStorage.setItem(key(token), url);
+    const k = await imageKey(token);
+    if (k) sessionStorage.setItem(k, url);
   } catch {
     // đầy / bị chặn: bỏ qua, lần sau tạo lại
   }
 };
-export const recallImage = (token: string): string | null => {
+export const recallImage = async (token: string): Promise<string | null> => {
   try {
-    return sessionStorage.getItem(key(token));
+    const k = await imageKey(token);
+    return k ? sessionStorage.getItem(k) : null;
   } catch {
     return null;
   }

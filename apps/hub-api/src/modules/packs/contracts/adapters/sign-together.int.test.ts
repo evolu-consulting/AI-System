@@ -9,7 +9,7 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { sql } from "drizzle-orm";
 import { connectDb, type Db } from "../../../../lib/db";
-import { contractAccess } from "../../kit/public";
+import { contractAccess, registerContractAccess } from "../../kit/public";
 import { mountContractAccess } from "../contract-access.mount";
 import { receiveInbox } from "../partner-mailbox.mount";
 import { assertOwnerOrAdmin } from "../sign-session.routes";
@@ -85,6 +85,7 @@ beforeAll(async () => {
   mountContractAccess(db);
 }, 60_000);
 afterAll(async () => {
+  registerContractAccess(null); // cổng toàn cục: không để lại `db` đã đóng cho file test kế tiếp (delegations.int)
   await db?.close();
   await o?.end({ timeout: 2 });
 });

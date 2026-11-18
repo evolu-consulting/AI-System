@@ -54,8 +54,10 @@ export type PartnerSignMailer = {
   ): Promise<({ ok: true } | { ok: false; permanent: boolean; code: string; skip?: boolean })[]>;
 };
 export type PartnerSignMailerRegistry = {
-  set(m: PartnerSignMailer | null, baseUrl?: string): void;
+  set(m: PartnerSignMailer | null, baseUrl?: string, appEnv?: string): void;
   get(): PartnerSignMailer | null;
   /** Gốc URL công khai dựng link `<APP_URL>/ky/<token>` (`HUB_NOTIFY_BASE_URL`). */
   baseUrl(): string;
+  /** Chỉ `APP_ENV` development/test ⇒ true: được ghi link ký đầy đủ ra log khi `HUB_NOTIFY_MODE=off`. Prod ⇒ false. */
+  logLink(): boolean;
 };

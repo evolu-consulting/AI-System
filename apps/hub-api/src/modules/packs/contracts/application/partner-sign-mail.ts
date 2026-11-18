@@ -5,12 +5,13 @@ import type { ContactRow } from "./partner-sign.repo.port";
 
 /** Thư (hoặc log khi tắt thông báo). Không ném: lỗi gửi ⇒ link vẫn có (người tải lên bấm «Gửi lại»). */
 export async function sendMail(
-  d: Pick<PartnerSignDeps, "mailer" | "log">,
+  d: Pick<PartnerSignDeps, "mailer" | "log" | "logLink">,
   tenantId: string,
   to: ContactRow,
   key: string,
   m: { subject: string; text: string; html?: string },
   linkForLog: string | null,
+  linkId: string | null,
 ): Promise<boolean> {
   const t = d.mailer();
   if (!to.email) {
@@ -18,8 +19,16 @@ export async function sendMail(
     return false;
   }
   if (!t) {
-    // HUB_NOTIFY_MODE=off (bản test/dev) ⇒ ghi link ra log để kiểm (khuôn CR-150). Chỉ khi KHÔNG có transport.
-    d.log.info("partner-sign-mail-off", { to: to.email, subject: m.subject, link: linkForLog });
+    // HUB_NOTIFY_MODE=off. Link /ky/<token> đủ để ký thay đối tác ⇒ chỉ bản dev/test mới ghi ra log (khuôn CR-150);
+    // prod chỉ ghi `link_id` — người tải lên lấy link qua «Sao chép link» (route đã đăng nhập).
+    if (d.logLink())
+      d.log.info("partner-sign-mail-off", {
+        to: to.email,
+        subject: m.subject,
+        link: linkForLog,
+        link_id: linkId,
+      });
+    else d.log.info("partner-sign-mail-off", { link_id: linkId });
     return false;
   }
   try {

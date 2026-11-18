@@ -8,6 +8,10 @@ export type PartnerLinkLine = { key: "sentAt" | "openedAt" | "due"; value: strin
 export const canShowResend = (l: PartnerLinkStatusOut | null | undefined): boolean =>
   !!l && l.state !== "signed";
 
+/** Thư mời chưa gửi được (tắt thông báo / lỗi gửi) mà link còn chờ ⇒ người tải lên / quản trị «Sao chép link» để tự gửi đối tác. */
+export const canCopyLink = (l: PartnerLinkStatusOut | null | undefined): boolean =>
+  !!l && l.state === "open" && l.sent_at === null;
+
 /** Người tải lên tệp chính hoặc quản trị đều có `can_prep` trên tệp ⇒ hiện nút; máy chủ vẫn kiểm lại (403 ⇒ câu báo). */
 export const canResend = (s: SignSessionOut): boolean => s.files.some((f) => f.can_prep);
 

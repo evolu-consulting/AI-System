@@ -1,7 +1,7 @@
 // CR-182 · cổng hook cho component (component-no-fetch): xem link, tạo chữ ký nhanh, ký một tệp, từ chối. Mọi gọi API đi qua `PartnerSignPort`.
 import type { PartnerQuickMethod, PartnerSignBody } from "@ai/contracts/pack-contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { partnerSignPort } from "../api";
 import { blobToBase64, blueDataUrl, recallImage, rememberImage } from "../lib/quick-image";
 import type { PartnerSignPort } from "../ports";
@@ -19,7 +19,16 @@ export function usePartnerLink(token: string, injected?: PartnerSignPort) {
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: false,
   });
-  const [image, setImage] = useState<string | null>(() => recallImage(token));
+  const [image, setImage] = useState<string | null>(null);
+  useEffect(() => {
+    let off = false;
+    void recallImage(token).then((u) => {
+      if (!off && u) setImage(u);
+    });
+    return () => {
+      off = true;
+    };
+  }, [token]);
   const csrf = view.data?.csrf ?? "";
   const refresh = () => qc.invalidateQueries({ queryKey: linkKey(token) });
 
@@ -27,7 +36,7 @@ export function usePartnerLink(token: string, injected?: PartnerSignPort) {
     mutationFn: async (v: { method: PartnerQuickMethod; png: Blob }) => {
       await port.quickSignature(csrf, v.method, await blobToBase64(v.png));
       const url = await blueDataUrl(v.png);
-      rememberImage(token, url);
+      await rememberImage(token, url);
       setImage(url);
     },
     onSuccess: refresh,

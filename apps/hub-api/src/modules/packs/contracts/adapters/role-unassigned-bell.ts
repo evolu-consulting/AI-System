@@ -53,7 +53,7 @@ export async function bellRoleUnassigned(
       and r ->> 'key' = any(array(select jsonb_array_elements_text(${JSON.stringify(keys)}::jsonb)))
     order by 1 limit 10`);
   const found = new Map<string, string>(labels.map((l) => [l.key, l.label]));
-  // Vai người ký ở `args.signer_role` ({from,value}) không có nhãn trong def ⇒ nhãn cố định; khoá tuỳ ý khác ⇒ tên bước Ký.
+  // Vai người ký ở `args.signer_role` ({from,value}) không có nhãn trong def ⇒ nhãn cố định; khoá tuỳ ý khác ⇒ `signer_role_label` của bước Ký, không có ⇒ tên bước.
   const rest = keys.filter((k) => !found.has(k));
   if (rest.includes(SIGNER_ROLE_KEY)) found.set(SIGNER_ROLE_KEY, SIGNER_ROLE_LABEL);
   const others = rest.filter((k) => k !== SIGNER_ROLE_KEY);
@@ -61,12 +61,15 @@ export async function bellRoleUnassigned(
     const sg = await tx.execute<{
       key: string;
       label: string;
-    }>(sql`select distinct st #>> '{executor,args,signer_role,value}' as key, st ->> 'name' as label
+    }>(sql`select distinct on (key) st #>> '{executor,args,signer_role,value}' as key,
+        coalesce(nullif(btrim(st #>> '{executor,args,signer_role_label,value}'), ''), nullif(btrim(st ->> 'name'), '')) as label
       from hub.process_defs d cross join lateral jsonb_array_elements(d.stages) st
       where (d.tenant_id = ${i.tenantId}::uuid or d.tenant_id is null) and d.deleted_at is null and jsonb_typeof(d.stages) = 'array'
         and d.stages::text like '%signer_role%' and jsonb_typeof(st) = 'object'
         and st #>> '{executor,args,signer_role,value}' = any(array(select jsonb_array_elements_text(${JSON.stringify(others)}::jsonb)))
-        and coalesce(st ->> 'name', '') <> ''
+        and coalesce(nullif(btrim(st #>> '{executor,args,signer_role_label,value}'), ''), nullif(btrim(st ->> 'name'), '')) is not null
+      -- Cùng khoá vai ở nhiều quy trình: ưu tiên quy trình đang Bật của công ty (def của lượt), rồi ổn định theo id.
+      order by key, exists (select 1 from hub.company_flows cf where cf.tenant_id = ${i.tenantId}::uuid and cf.flow_id = d.id and cf.enabled) desc, d.id
       limit 10`);
     for (const r of sg) found.set(r.key, r.label);
   }

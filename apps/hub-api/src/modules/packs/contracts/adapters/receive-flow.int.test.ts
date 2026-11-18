@@ -5,6 +5,8 @@ import { createDb, type Db } from "@ai/db";
 import { tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
+import { contractAccess, registerContractAccess } from "../../kit/public";
+import { mountContractAccess } from "../contract-access.mount";
 import { receiveFlowOf, signerMembersOf } from "./receive-flow.repo";
 
 let o: Sql;
@@ -13,6 +15,8 @@ let A = "";
 let B = "";
 let UA: string[] = [];
 let UB: string[] = [];
+let C = "";
+let UC: string[] = [];
 
 const sign = (signers: string) => [
   {
@@ -38,9 +42,10 @@ const flow = async (t: string, key: string, params: object, stages: unknown[], p
 beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
-  [A, B] = (await tenants(o, 2, 1461)) as [string, string];
+  [A, B, C] = (await tenants(o, 3, 1461)) as [string, string, string];
   UA = (await users(o, A, 2, { from: 1461 })) as string[];
   UB = (await users(o, B, 3, { from: 1465 })) as string[];
+  UC = (await users(o, C, 3, { from: 1470 })) as string[];
   await flow(
     A,
     "cr146b-nhan",
@@ -49,8 +54,10 @@ beforeAll(async () => {
     0,
   );
   db = createDb(urls().hubApi, { max: 3 });
+  mountContractAccess(db);
 }, 120_000);
 afterAll(async () => {
+  registerContractAccess(null); // cổng toàn cục: không để lại `db` đã đóng cho file test kế tiếp
   await db?.close();
   await o?.end({ timeout: 2 });
 });
@@ -94,5 +101,37 @@ describe("CR-146b · receiveFlowOf", () => {
   it("hàm hub 0143 chỉ trả cấu hình của tenant đang đặt", async () => {
     const own = await o`select hub.contract_received_params(${A}::uuid) as p`;
     expect(own[0]).toBeDefined();
+  });
+
+  it("soát #2 · bước Ký theo VAI: giải vai như lúc chạy ⇒ người ký = người được giao (isSigner + danh sách uỷ quyền), người ký cũ thì không", async () => {
+    const stages = [
+      {
+        key: "ky",
+        name: "Ký hợp đồng",
+        executor: {
+          kind: "tool",
+          tool_key: "contracts-esign-send",
+          args: {
+            provider: { from: "const", value: "upload" },
+            company_signers: { from: "const", value: `user:${UC[1]}` }, // người ký CŨ (trước khi giao việc theo vai)
+            signer_role: { from: "const", value: "nguoi-ky" },
+          },
+        },
+      },
+    ];
+    await flow(C, "cr182-nhan-vai", {}, stages, 0);
+    const acc = contractAccess();
+    const tx = {} as never;
+    // Vai chưa giao ⇒ giữ người ký cũ (không chặn).
+    expect(await acc?.isSigner(tx, C, UC[1] as string)).toBe(true);
+    const [gx] = await o<{ id: string }[]>`insert into admin.groups (tenant_id, key, name)
+      values (${C}, 'nguoi-ky-x', ${o.json({ vi: "Người ký X" })}) returning id::text as id`;
+    await o`insert into admin.group_members (tenant_id, group_id, user_id) values (${C}, ${gx?.id as string}, ${UC[0] as string})`;
+    await o`insert into hub.process_role_assignments (tenant_id, flow_id, role_key, group_id, updated_by)
+      select ${C}, d.id, 'nguoi-ky', ${gx?.id as string}, ${UC[2] as string} from hub.process_defs d where d.tenant_id = ${C} and d.key = 'cr182-nhan-vai'`;
+    expect((await receiveFlowOf(db, C)).signers).toEqual([{ kind: "group", id: gx?.id as string }]);
+    expect(await acc?.isSigner(tx, C, UC[0] as string)).toBe(true); // thành viên nhóm được giao
+    expect(await acc?.isSigner(tx, C, UC[1] as string)).toBe(false); // người ký cũ
+    expect(await acc?.isSigner(tx, C, UC[2] as string)).toBe(false); // người giao việc, không phải người ký
   });
 });

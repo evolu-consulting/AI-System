@@ -81,7 +81,13 @@ export type PartnerSignSaveOut = {
   completed: boolean;
 };
 
-export type PartnerResendOut = { sent: boolean; expires_at: string; link: PartnerLinkStatusOut };
+export type PartnerResendOut = {
+  sent: boolean;
+  /** Link ký đầy đủ — CHỈ khi thư chưa gửi được (`sent=false`), để người tải lên / quản trị sao chép gửi đối tác; còn lại null. */
+  url: string | null;
+  expires_at: string;
+  link: PartnerLinkStatusOut;
+};
 
 /** Mã lỗi của route công khai (`error.code`). */
 export const PARTNER_SIGN_ERRORS = {

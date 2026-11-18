@@ -4,6 +4,7 @@
 //   · người ký bên nhận = «Người ký phía công ty» của bước Ký (`contracts-esign-send`) trong CHÍNH quy trình đó.
 // Mỗi hàm MỘT câu SQL văn bản hằng, tenant tường minh (Luật 4c).
 
+import { type RoleAssignment, withRoles } from "@ai/contracts/flow";
 import {
   FLOW_RECEIVE_DEFAULT_CRITICAL_M,
   FLOW_RECEIVE_DEFAULT_IMPORTANT_M,
@@ -64,13 +65,25 @@ export function signersOfStages(stages: readonly unknown[]): EsignNodeSigner[] |
   return null;
 }
 
-type Row = { params: Params | null; stages: unknown[] | null };
+type Row = {
+  params: Params | null;
+  stages: unknown[] | null;
+  assignments: RoleAssignment[] | null;
+  ondoc: boolean;
+};
 
 export async function receiveFlowOf(db: Db, tenantId: string): Promise<ReceiveFlowConfig> {
   const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
     tx.execute<Row>(sql`
       select d.trigger -> 'params' as params,
-        case when d.tenant_id is null then coalesce(r.stages, d.stages) else d.stages end as stages
+        case when d.tenant_id is null then coalesce(r.stages, d.stages) else d.stages end as stages,
+        -- CR-182 · giao việc theo vai + công tắc «ký trên tài liệu» cùng câu (không thêm round-trip): người ký phải giải vai như lúc chạy (G1).
+        coalesce((select jsonb_agg(jsonb_build_object('role_key', a.role_key, 'group_id', a.group_id, 'user_id', a.user_id)
+          order by a.role_key) from hub.process_role_assignments a where a.tenant_id = cf.tenant_id and a.flow_id = d.id
+          and (a.group_id is null or exists (select 1 from admin.groups g where g.id = a.group_id and g.tenant_id = a.tenant_id))
+          and (a.user_id is null or exists (select 1 from admin.users u where u.id = a.user_id and u.tenant_id = a.tenant_id
+            and u.active and not u.locked_by_tenant))), '[]'::jsonb) as assignments,
+        coalesce((select s.on_doc_enabled from hub.sig_settings_of(cf.tenant_id) s), false) as ondoc
       from hub.company_flows cf
       join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null
         and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
@@ -81,7 +94,14 @@ export async function receiveFlowOf(db: Db, tenantId: string): Promise<ReceiveFl
   );
   return {
     ...receiveParamsOf(r?.params),
-    signers: r && Array.isArray(r.stages) ? signersOfStages(r.stages) : null,
+    signers:
+      r && Array.isArray(r.stages)
+        ? signersOfStages(
+            withRoles(r.stages, Array.isArray(r.assignments) ? r.assignments : [], {
+              ondoc: r.ondoc === true,
+            }).stages,
+          )
+        : null,
   };
 }
 
