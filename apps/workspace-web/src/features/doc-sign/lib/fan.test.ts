@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   DEFAULT_VIEW,
   editableIn,
+  effectiveView,
   FAN_PX,
   groupCount,
   groupRange,
@@ -11,7 +12,7 @@ import {
   viewKey,
 } from "./fan";
 import { isPartsError, partsOf, rectFromParts } from "./geometry";
-import { relayoutItems, type SignItem } from "./sign-items";
+import { type NewItem, placeItem, relayoutItems, type SignItem } from "./sign-items";
 
 const A4 = { ptWidth: 600, ptHeight: 800 };
 const sizes = (n: number) => Array.from({ length: n }, () => A4);
@@ -151,5 +152,24 @@ describe("kiểu xem của chữ ký", () => {
     expect(out[0]?.parts).not.toEqual(parts);
     expect(out[1]).toBe(other);
     expect(relayoutItems([other], "page", gap, flush)).toEqual([other]);
+  });
+});
+
+describe("điện thoại không làm mất kiểu xem đã chọn (fix-cr182-fan2)", () => {
+  test("hẹp ≤ 640px ⇒ hiệu lực là «Từng trang», rộng lại ⇒ trở về Xoè quạt đã chọn, không mất mép/nhóm", () => {
+    const chosen = { ...DEFAULT_VIEW, mode: "fan" as const, edge: "bottom" as const, group: 1 };
+    expect(effectiveView(chosen, true).mode).toBe("page");
+    expect(effectiveView(chosen, false)).toBe(chosen);
+    expect(effectiveView(DEFAULT_VIEW, true)).toBe(DEFAULT_VIEW);
+  });
+  test("thả vào Xoè quạt: chữ ký mang đúng khoá kiểu xem, sửa được, 1 phần trên trang đầu", () => {
+    const view = { ...DEFAULT_VIEW, mode: "fan" as const, edge: "bottom" as const };
+    const { pages } = layoutView(sizes(5), W, view);
+    const p0 = pages[0];
+    if (!p0) throw new Error("thiếu trang");
+    const spec: NewItem = { kind: "mark", aspect: 3, status: "editable", view: viewKey(view) };
+    const items = placeItem([], spec, { l: p0.left + 10, t: p0.top + 10, w: 90, h: 30 }, pages);
+    expect(items?.[0]?.view).toBe("fan-bottom-0");
+    expect(items?.[0] && editableIn(items[0], "fan-bottom-0")).toBe(true);
   });
 });

@@ -83,3 +83,7 @@ export function layoutView(sizes: PageSize[], containerWidth: number, v: StageVi
   const l = layoutPages(sizes, containerWidth, v.lien ? 0 : undefined);
   return { ...l, fan: false };
 }
+
+/** Điện thoại (≤ 640px) chỉ có «Từng trang». Chỉ là kiểu xem HIỆU LỰC: kiểu người dùng đã chọn giữ nguyên, rộng lại thì trở về. */
+export const effectiveView = (chosen: StageView, phone: boolean): StageView =>
+  phone && chosen.mode === "fan" ? { ...chosen, mode: "page" } : chosen;

@@ -8,6 +8,7 @@ import { clampToStage } from "../lib/actions";
 import {
   clampGroup,
   DEFAULT_VIEW,
+  effectiveView,
   FAN_GROUP,
   layoutView,
   type StageView,
@@ -45,7 +46,9 @@ export function SignWorkspace(p: SignWorkspaceProps) {
   const [cur, setCur] = useState(0);
   const [goTo, setGoTo] = useState<{ index: number; nonce: number } | null>(null);
   const layoutRef = useRef<StageLayout>({ pages: [], width: 0, height: 0, fan: false });
-  const [view, setView] = useState<StageView>(DEFAULT_VIEW);
+  const [chosen, setView] = useState<StageView>(DEFAULT_VIEW);
+  const [phone, setPhone] = useState(false);
+  const view = effectiveView(chosen, phone);
   const key = viewKey(view);
   const pageCount = pdf.status === "ready" ? pdf.sizes.length : 0;
   const [warn, setWarn] = useState(false);
@@ -62,11 +65,11 @@ export function SignWorkspace(p: SignWorkspaceProps) {
     return () => window.removeEventListener("keydown", k);
   }, []);
 
-  // điện thoại (≤ 640px): chỉ có «Từng trang»
+  // điện thoại (≤ 640px): chỉ có «Từng trang» — chỉ đổi kiểu xem hiệu lực, không ghi đè kiểu đã chọn (đổi cỡ cửa sổ không làm mất Xoè quạt)
   useEffect(() => {
     const mq = window.matchMedia?.("(max-width: 640px)");
     if (!mq) return;
-    const f = () => mq.matches && setView((v) => (v.mode === "fan" ? { ...v, mode: "page" } : v));
+    const f = () => setPhone(mq.matches);
     f();
     mq.addEventListener("change", f);
     return () => mq.removeEventListener("change", f);
