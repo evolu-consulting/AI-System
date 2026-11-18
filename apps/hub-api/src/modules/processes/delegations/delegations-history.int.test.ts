@@ -62,7 +62,7 @@ describe("CR-184 · lịch sử uỷ quyền", () => {
     const rev = await put({ from: w.H, to: w.X, a: -1, b: 3, revoked: { by: w.TA } });
     await doneTask(w.A, w.B);
     await doneTask(w.A, w.B);
-    const r = await svc().history(who(w.TA, "tenant_admin"), { mine: false, limit: 20, offset: 0 });
+    const r = await svc().history(who(w.TA, "tenant_admin"), { mine: false, limit: 20 });
     const by = new Map(r.items.map((i) => [i.id, i]));
     expect(by.get(live)).toMatchObject({
       status: "active",
@@ -74,42 +74,75 @@ describe("CR-184 · lịch sử uỷ quyền", () => {
     expect(by.get(old)).toMatchObject({ status: "expired", done_count: 0 });
     expect(by.get(rev)).toMatchObject({ status: "revoked", revoked_by: { id: w.TA } });
     expect(by.get(rev)?.revoked_at).not.toBeNull();
-    expect(r.next_offset).toBeNull();
+    expect(r.next_cursor).toBeNull();
   });
 
   it("phạm vi xem: người thường chỉ thấy uỷ quyền có mình; quản trị thấy cả công ty; người ngoài không thấy gì", async () => {
-    const mine = await svc().history(who(w.B), { mine: true, limit: 20, offset: 0 });
+    const mine = await svc().history(who(w.B), { mine: true, limit: 20 });
     expect(mine.items.every((i) => i.from_user.id === w.B || i.to_user.id === w.B)).toBe(true);
     expect(mine.items.length).toBeGreaterThan(0);
-    const out = await svc().history(who(w.S), { mine: true, limit: 20, offset: 0 });
+    const out = await svc().history(who(w.S), { mine: true, limit: 20 });
     expect(out.items).toEqual([]);
     const all = await svc().history(who(w.TA, "tenant_admin"), {
       mine: false,
       limit: 20,
-      offset: 0,
     });
     expect(all.items.length).toBe(3);
   });
 
-  it("tải dần: limit 2 ⇒ next_offset 2, trang sau hết", async () => {
-    const p1 = await svc().history(who(w.TA, "tenant_admin"), { mine: false, limit: 2, offset: 0 });
+  it("tải dần theo con trỏ (created_at, id): limit 2 ⇒ có con trỏ, trang sau hết, không trùng; con trỏ sai ⇒ lỗi", async () => {
+    const adm = who(w.TA, "tenant_admin");
+    const p1 = await svc().history(adm, { mine: false, limit: 2 });
     expect(p1.items.length).toBe(2);
-    expect(p1.next_offset).toBe(2);
-    const p2 = await svc().history(who(w.TA, "tenant_admin"), { mine: false, limit: 2, offset: 2 });
+    expect(p1.next_cursor).not.toBeNull();
+    const p2 = await svc().history(adm, {
+      mine: false,
+      limit: 2,
+      cursor: p1.next_cursor as string,
+    });
     expect(p2.items.length).toBe(1);
-    expect(p2.next_offset).toBeNull();
+    expect(p2.next_cursor).toBeNull();
+    const ids = [...p1.items, ...p2.items].map((i) => i.id);
+    expect(new Set(ids).size).toBe(3);
+    await expect(svc().history(adm, { mine: false, limit: 2, cursor: "bad" })).rejects.toThrow();
+  });
+
+  it("việc làm thay: con trỏ (decided_at, id); mã hợp đồng chỉ cho A, B, quản trị — trưởng phòng chỉ thấy tên bước", async () => {
+    await o`update hub.process_runs set pack_key = 'contracts', pack_record_id = gen_random_uuid()
+      where tenant_id = ${w.T} and pack_key is null`;
+    const [d] = await o<{ id: string }[]>`select id::text as id from hub.delegations
+      where tenant_id = ${w.T} and from_user_id = ${w.A} and to_user_id = ${w.B}`;
+    const id = d?.id as string;
+    const p1 = await svc().work(who(w.B), id, { limit: 1 });
+    expect(p1.items.length).toBe(1);
+    expect(p1.next_cursor).not.toBeNull();
+    const p2 = await svc().work(who(w.B), id, { limit: 1, cursor: p1.next_cursor as string });
+    expect(p2.items.length).toBe(1);
+    expect(p2.next_cursor).toBeNull();
+    expect(p2.items[0]?.task_id).not.toBe(p1.items[0]?.task_id);
+    expect(p1.items[0]?.pack_record_id).not.toBeNull();
+    expect((await svc().work(who(w.A), id, { limit: 5 })).items[0]?.pack_record_id).not.toBeNull();
+    const adm = await svc().work(who(w.TA, "tenant_admin"), id, { limit: 5 });
+    expect(adm.items[0]?.pack_record_id).not.toBeNull();
+    const head = await svc().work(who(w.H), id, { limit: 5 }); // trưởng phòng của A: xem được, nhưng không thấy mã hợp đồng
+    expect(head.items.length).toBe(2);
+    expect(head.items.every((i) => i.pack_record_id === null)).toBe(true);
+  });
+
+  it("esign-eligible: người không tồn tại / ngoài công ty ⇒ false (không lộ gì thêm)", async () => {
+    expect(await svc().esignEligible(who(w.A), crypto.randomUUID())).toBe(false);
   });
 
   it("danh sách việc làm thay + người không liên quan bị 404; thu hồi ghi người thu hồi", async () => {
     const [d] = await o<{ id: string }[]>`select id::text as id from hub.delegations
       where tenant_id = ${w.T} and from_user_id = ${w.A} and to_user_id = ${w.B}`;
-    const work = await svc().work(who(w.B), d?.id as string, { limit: 20, offset: 0 });
+    const work = await svc().work(who(w.B), d?.id as string, { limit: 20 });
     expect(work.items.length).toBe(2);
     expect(work.items[0]?.kind).toBe("review");
-    await expect(svc().work(who(w.S), d?.id as string, { limit: 20, offset: 0 })).rejects.toThrow();
+    await expect(svc().work(who(w.S), d?.id as string, { limit: 20 })).rejects.toThrow();
     // A tự thu hồi ⇒ revoked_by = A
     await svc().revoke(who(w.A), d?.id as string);
-    const h = await svc().history(who(w.A), { mine: true, limit: 20, offset: 0 });
+    const h = await svc().history(who(w.A), { mine: true, limit: 20 });
     expect(h.items.find((i) => i.id === d?.id)).toMatchObject({
       status: "revoked",
       revoked_by: { id: w.A },

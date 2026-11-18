@@ -148,13 +148,18 @@ export const DelegationHistoryItemSchema = DelegationSchema.extend({
 export type DelegationHistoryItem = z.infer<typeof DelegationHistoryItemSchema>;
 export const DelegationHistoryResponseSchema = z.strictObject({
   items: z.array(DelegationHistoryItemSchema).max(DELEGATION_PAGE_MAX),
-  /** offset trang kế; null = hết. */
-  next_offset: z.number().int().nullable(),
+  /** Con trỏ trang kế (`(created_at, id)`, mờ với client); null = hết. */
+  next_cursor: z.string().max(200).nullable(),
 });
 export type DelegationHistoryResponse = z.infer<typeof DelegationHistoryResponseSchema>;
 export const DelegationPageQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(DELEGATION_PAGE_MAX).default(20),
-  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+  /** Con trỏ của trang trước (`next_cursor`); vắng = trang đầu. */
+  cursor: z
+    .string()
+    .max(200)
+    .regex(/^[A-Za-z0-9_-]+$/)
+    .optional(),
 });
 export type DelegationPageQuery = z.infer<typeof DelegationPageQuerySchema>;
 /** Một việc người được giao đã làm thay (bấm vào dòng lịch sử). */
@@ -171,7 +176,7 @@ export const DelegationWorkItemSchema = z.strictObject({
 export type DelegationWorkItem = z.infer<typeof DelegationWorkItemSchema>;
 export const DelegationWorkResponseSchema = z.strictObject({
   items: z.array(DelegationWorkItemSchema).max(DELEGATION_PAGE_MAX),
-  next_offset: z.number().int().nullable(),
+  next_cursor: z.string().max(200).nullable(),
 });
 export type DelegationWorkResponse = z.infer<typeof DelegationWorkResponseSchema>;
 export const EsignEligibleResponseSchema = z.strictObject({ eligible: z.boolean() });

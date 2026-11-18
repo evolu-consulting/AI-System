@@ -24,22 +24,22 @@ const scope = (tenantId: string | null, admin: boolean) =>
 export const fetchDelegationHistory = (
   tenantId: string | null,
   admin: boolean,
-  offset: number,
+  cursor: string | null,
   signal?: AbortSignal,
 ) =>
   api<DelegationHistoryResponse>(`${scope(tenantId, admin)}/history`, {
-    query: { limit: "20", offset: String(offset) },
+    query: { limit: "20", ...(cursor ? { cursor } : {}) },
     signal,
   });
 export const fetchDelegationWork = (
   tenantId: string | null,
   admin: boolean,
   id: string,
-  offset: number,
+  cursor: string | null,
   signal?: AbortSignal,
 ) =>
   api<DelegationWorkResponse>(`${scope(tenantId, admin)}/${enc(id)}/work`, {
-    query: { limit: "20", offset: String(offset) },
+    query: { limit: "20", ...(cursor ? { cursor } : {}) },
     signal,
   });
 /** «Ký hợp đồng» chỉ chọn được khi người được giao thuộc nhóm người ký hợp đồng (`DELEGATE_NOT_SIGNER`). */

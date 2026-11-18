@@ -28,8 +28,8 @@ function WorkList({ d, s }: { d: DelegationHistoryItem } & { s: Scope }) {
     queryKey: [...delegationKeys.history, "work", d.id],
     queryFn: ({ pageParam, signal }) =>
       fetchDelegationWork(s.tenantId, s.admin, d.id, pageParam, signal),
-    initialPageParam: 0,
-    getNextPageParam: (l) => l.next_offset ?? undefined,
+    initialPageParam: null as string | null,
+    getNextPageParam: (l) => l.next_cursor ?? undefined,
   });
   const items = (q.data?.pages ?? []).flatMap((p) => p.items);
   if (q.isPending)
@@ -128,8 +128,8 @@ export function DelegationHistory(s: Scope) {
     queryKey: [...delegationKeys.history, s.tenantId, s.admin],
     queryFn: ({ pageParam, signal }) =>
       fetchDelegationHistory(s.tenantId, s.admin, pageParam, signal),
-    initialPageParam: 0,
-    getNextPageParam: (l) => l.next_offset ?? undefined,
+    initialPageParam: null as string | null,
+    getNextPageParam: (l) => l.next_cursor ?? undefined,
     enabled: open,
   });
   const items = (q.data?.pages ?? []).flatMap((p) => p.items);

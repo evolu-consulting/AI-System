@@ -3,6 +3,7 @@
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { DelegationKind, DelegationRow } from "../domain/tasks/delegation.rules";
+import type { PageCursor } from "./delegations.cursor";
 
 type Row = {
   id: string;
@@ -93,14 +94,17 @@ export async function listDelegations(
   return rows.map(view);
 }
 
-type HistRow = Row & { status: DelegationStatus; done_count: number | string };
+type HistRow = Row & { status: DelegationStatus; done_count: number | string; cur_at: string };
+/** Thời điểm giữ micro-giây (chuỗi ISO UTC) cho con trỏ. */
+const stamp = (col: string) =>
+  sql.raw(`to_char(${col} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`);
 type Page = {
   tenantId: string;
   viewerId: string;
   all: boolean;
   mine: boolean;
   limit: number;
-  offset: number;
+  cursor: PageCursor | null;
 };
 
 /**
@@ -111,20 +115,21 @@ type Page = {
 export async function historyDelegations(
   tx: Tx,
   a: Page,
-): Promise<{ items: HistoryView[]; next: number | null }> {
-  const rows = await tx.execute<HistRow>(sql`select ${COLS},
+): Promise<{ items: HistoryView[]; next: PageCursor | null }> {
+  const rows = await tx.execute<HistRow>(sql`select ${COLS}, ${stamp("d.created_at")} as cur_at,
     case when d.revoked_at is not null then 'revoked' when d.to_at <= now() then 'expired' else 'active' end as status,
     (select count(*) from hub.review_task_assignees x
       join hub.review_tasks t on t.id = x.task_id and t.tenant_id = x.tenant_id
       where x.tenant_id = d.tenant_id and x.via = 'delegated' and x.on_behalf_of = d.from_user_id and x.user_id = d.to_user_id
         and t.status = 'closed' and t.decided_by = d.to_user_id and t.decided_at >= d.from_at and t.decided_at < d.to_at) as done_count
     from hub.delegations d where ${visible(a)}
-    order by d.created_at desc, d.id limit ${a.limit + 1} offset ${a.offset}`);
+      ${a.cursor ? sql`and (d.created_at < ${a.cursor.at}::timestamptz or (d.created_at = ${a.cursor.at}::timestamptz and d.id > ${a.cursor.id}::uuid))` : sql``}
+    order by d.created_at desc, d.id limit ${a.limit + 1}`);
+  const page = rows.slice(0, a.limit);
+  const last = page[page.length - 1];
   return {
-    items: rows
-      .slice(0, a.limit)
-      .map((r) => ({ ...view(r), status: r.status, doneCount: Number(r.done_count) })),
-    next: rows.length > a.limit ? a.offset + a.limit : null,
+    items: page.map((r) => ({ ...view(r), status: r.status, doneCount: Number(r.done_count) })),
+    next: rows.length > a.limit && last ? { at: last.cur_at, id: last.id } : null,
   };
 }
 
@@ -137,16 +142,18 @@ type WRow = {
   pack_key: string | null;
   pack_record_id: string | null;
   decided_at: Date | string;
+  cur_at: string;
 };
 
 /** CR-184 · việc người được giao đã làm thay trong một uỷ quyền (cùng điều kiện đếm), mới nhất trước, tải dần. MỘT câu. */
 export async function delegationWork(
   tx: Tx,
-  a: { tenantId: string; id: string; limit: number; offset: number },
-): Promise<{ items: WorkRow[]; next: number | null }> {
+  a: { tenantId: string; id: string; limit: number; cursor: PageCursor | null },
+): Promise<{ items: WorkRow[]; next: PageCursor | null }> {
   const rows =
     await tx.execute<WRow>(sql`select t.id::text as task_id, t.process_run_id::text as run_id, t.kind, t.result,
-      pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name, pr.pack_key, pr.pack_record_id::text as pack_record_id, t.decided_at
+      pr.snapshot->'stages'->(s.stage_idx::int)->>'name' as stage_name, pr.pack_key, pr.pack_record_id::text as pack_record_id, t.decided_at,
+      ${stamp("t.decided_at")} as cur_at
     from hub.delegations d
     join hub.review_task_assignees x on x.tenant_id = d.tenant_id and x.via = 'delegated' and x.on_behalf_of = d.from_user_id
       and x.user_id = d.to_user_id
@@ -155,9 +162,12 @@ export async function delegationWork(
     join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
     join hub.process_runs pr on pr.id = t.process_run_id and pr.tenant_id = t.tenant_id
     where d.id = ${a.id}::uuid and d.tenant_id = ${a.tenantId}::uuid
-    order by t.decided_at desc, t.id limit ${a.limit + 1} offset ${a.offset}`);
+      ${a.cursor ? sql`and (t.decided_at < ${a.cursor.at}::timestamptz or (t.decided_at = ${a.cursor.at}::timestamptz and t.id > ${a.cursor.id}::uuid))` : sql``}
+    order by t.decided_at desc, t.id limit ${a.limit + 1}`);
+  const page = rows.slice(0, a.limit);
+  const last = page[page.length - 1];
   return {
-    items: rows.slice(0, a.limit).map((r) => ({
+    items: page.map((r) => ({
       taskId: r.task_id,
       runId: r.run_id,
       kind: r.kind,
@@ -167,7 +177,7 @@ export async function delegationWork(
       packRecordId: r.pack_record_id,
       decidedAt: toDate(r.decided_at),
     })),
-    next: rows.length > a.limit ? a.offset + a.limit : null,
+    next: rows.length > a.limit && last ? { at: last.cur_at, id: last.task_id } : null,
   };
 }
 
@@ -278,4 +288,12 @@ export async function moveOpenWork(
         and x.user_id = ${a.fromUserId}::uuid and x.via = 'initial')
       and not exists (select 1 from hub.review_task_assignees y where y.task_id = t.id and y.tenant_id = t.tenant_id
         and y.user_id = ${a.toUserId}::uuid)`);
+}
+
+/** CR-184 · người nhận hợp lệ để hỏi «Ký hợp đồng»: cùng công ty, còn hoạt động, nhân viên nội bộ (cùng luật chọn người nhận khi lưu). */
+export async function isInternalMember(tx: Tx, tenantId: string, userId: string): Promise<boolean> {
+  const [r] = await tx.execute<{ ok: boolean }>(sql`select exists (select 1 from admin.users u
+    where u.id = ${userId}::uuid and u.tenant_id = ${tenantId}::uuid and u.active and not u.locked_by_tenant
+      and u.kind = 'internal') as ok`);
+  return r?.ok === true;
 }
