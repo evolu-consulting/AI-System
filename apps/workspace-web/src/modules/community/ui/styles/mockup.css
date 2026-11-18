@@ -789,7 +789,7 @@
 }
 [data-mod="community"] .cinput input {
   flex: 1;
-  height: 40px;
+  height: 44px;
   border-radius: 999px;
   border: 1px solid var(--field);
   padding: 0 14px;
@@ -797,8 +797,9 @@
   background: var(--card);
 }
 [data-mod="community"] .sendbtn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
   border-radius: 999px;
   border: 0;
   background: var(--cm-accent);
