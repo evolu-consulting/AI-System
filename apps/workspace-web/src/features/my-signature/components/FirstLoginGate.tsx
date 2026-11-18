@@ -2,11 +2,34 @@
 // Chỉ chặn khi công ty bật ký trên tài liệu và API báo `needs_create`; API lỗi ⇒ KHÔNG chặn (ghi log). «Làm sau» chỉ khi không bắt buộc.
 import type { MySignatureView } from "@ai/contracts/signature";
 import { toast } from "@ai/web-kit/ui/toast";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCreateSignature, useMySignature } from "../hooks/use-my-signature";
 import { readLater, shouldBlock, writeLater } from "../lib/gate";
 import { CreateFlow } from "./CreateFlow";
+
+/** Chờ tối đa bấy nhiêu ms cho lượt GET đầu; quá hạn ⇒ cho vào app (API treo/chậm không được che khung app). */
+export const GATE_WAIT_MS = 3000;
+
+/**
+ * Chốt MỘT LẦN: lượt tải đầu xong (hoặc quá hạn) ⇒ sẵn sàng, không quay lại «đang chờ». Nếu không chốt, observer khác (mục menu)
+ * làm query lỗi chạy lại ⇒ `isPending` bật lại ⇒ màn chặn trả `null` ⇒ cả Shell (và menu đang mở) bị gỡ rồi dựng lại.
+ */
+export const latchReady = (was: boolean, pending: boolean): boolean => was || !pending;
+
+export function useGateReady(pending: boolean, waitMs = GATE_WAIT_MS): boolean {
+  const [was, setWas] = useState(false);
+  const ready = latchReady(was, pending);
+  useEffect(() => {
+    if (ready) {
+      if (!was) setWas(true);
+      return;
+    }
+    const id = setTimeout(() => setWas(true), waitMs);
+    return () => clearTimeout(id);
+  }, [ready, was, waitMs]);
+  return ready;
+}
 
 type Person = { name: string; company: string };
 
@@ -69,9 +92,10 @@ export function FirstLoginGate({
   const q = useMySignature(enabled && person !== null);
   const create = useCreateSignature();
   const [later, setLater] = useState(readLater);
+  const ready = useGateReady(q.isPending);
   if (q.isError)
     console.warn("[signature] không đọc được trạng thái chữ ký — cho vào app", q.error);
-  if (enabled && person && q.isPending) return null; // chờ một lượt gọi để không loé app rồi mới chặn
+  if (enabled && person && !ready) return null; // chờ một lượt gọi để không loé app rồi mới chặn
   if (!person || !q.data || !shouldBlock(q.data, later)) return <>{children}</>;
   return (
     <GateScreen

@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import type { MySignatureView } from "@ai/contracts/signature";
 import { SIGNATURE_SETTINGS_DEFAULT } from "@ai/contracts/signature";
 import { renderToStaticMarkup } from "react-dom/server";
-import { GateScreen } from "./components/FirstLoginGate";
+import { GateScreen, latchReady } from "./components/FirstLoginGate";
 import { MySignatureCards } from "./components/MySignatureCards";
 import { firstStep, shouldBlock, showMenu } from "./lib/gate";
 
@@ -90,5 +90,17 @@ describe("Chữ ký của tôi", () => {
     expect(showMenu(view())).toBe(true);
     expect(showMenu(view({}, { on_doc_enabled: false }))).toBe(false);
     expect(showMenu(undefined)).toBe(false);
+  });
+});
+
+describe("khung app không bị gỡ khi API chậm/lỗi", () => {
+  test("đã chốt sẵn sàng thì lượt tải lại (pending quay lại) KHÔNG gỡ khung app", () => {
+    // Lỗi cũ: mục menu làm query lỗi chạy lại ⇒ isPending bật lại ⇒ màn chặn trả null ⇒ Shell + menu đang mở biến mất.
+    let ready = latchReady(false, true); // đang chờ lượt đầu
+    expect(ready).toBe(false);
+    ready = latchReady(ready, false); // lượt đầu xong (lỗi hay đủ)
+    expect(ready).toBe(true);
+    ready = latchReady(ready, true); // chạy lại
+    expect(ready).toBe(true);
   });
 });
