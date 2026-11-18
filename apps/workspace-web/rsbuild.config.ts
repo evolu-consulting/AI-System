@@ -1,8 +1,15 @@
 // PK-FR-10 · TF1 · cấu hình build contracts-web (plan-frontend §0, §1; D-18: route/proxy).
+import { createRequire } from "node:module";
 import { defineConfig } from "@rsbuild/core";
 import { pluginBabel } from "@rsbuild/plugin-babel";
 import { pluginReact } from "@rsbuild/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/rspack";
+
+// CR-184 · sơ đồ quy trình ở Cài đặt (gói `@ai/flow-canvas`) chạy ELK trong web worker như admin-web (ADR-0040): phát tệp worker NGUYÊN VĂN
+// tại `/static/elk/elk-worker.min.js`, nếu không thì worker nhận index.html và sơ đồ trống.
+const elkWorker = createRequire(
+  new URL("../../packages/flow-canvas/package.json", import.meta.url),
+).resolve("elkjs/lib/elk-worker.min.js");
 
 // Client gọi đường dẫn tương đối; dev/preview proxy cùng origin ⇒ cookie refresh `Path=/auth` chạy không cần CORS.
 // `/auth` → admin-api (đăng nhập, refresh); `/pack` → hub-api (`/pack/contracts/*`, không trùng route SPA);
@@ -122,6 +129,7 @@ export default defineConfig({
   output: {
     // TS1: e2e song song build vào thư mục riêng của từng cấu hình (E2E_DIST_DIR), không đè thư mục dist chung.
     distPath: { root: process.env.E2E_DIST_DIR || "dist" },
+    copy: [{ from: elkWorker, to: "static/elk/elk-worker.min.js" }],
     // Mức tối thiểu Tailwind v4 hỗ trợ.
     overrideBrowserslist: ["chrome >= 111", "edge >= 111", "firefox >= 128", "safari >= 16.4"],
   },
