@@ -80,9 +80,11 @@ test("quy trình đang dùng: duyệt qua các bước rồi Ký số ở cuối
   // CR-106: mặc định là canvas chỉ đọc; danh sách bước (`flow-diagram`) hiện sau công tắc "Danh sách"
   await dlg.getByTestId("flow-view-list").click();
   const steps = dlg.getByTestId("flow-diagram").getByRole("listitem");
-  await expect(steps).toHaveCount(3);
+  // CR-184: danh sách đi theo sơ đồ nên có thêm dòng «Bắt đầu» ở đầu (quy trình cũ chưa có graph ⇒ chuỗi thẳng từ steps)
+  await expect(steps).toHaveCount(4);
+  await expect(steps.first()).toContainText("Bắt đầu");
   await expect(steps.last()).toContainText("Ký số hợp đồng");
-  await expect(steps.first()).toContainText("Soạn & kiểm tra");
+  await expect(steps.nth(1)).toContainText("Soạn & kiểm tra");
   await expect(dlg.getByRole("button", { name: /Thêm bước|Lưu quy trình/ })).toHaveCount(0);
   await expect(dlg.getByTestId("flow-esign-fields")).toHaveCount(0);
   expect(writes).toEqual([]);

@@ -27,4 +27,4 @@ Trạng thái gộp: chưa gộp
 Ký số qua nhà cung cấp (công tắc, nhà cung cấp mặc định, ảnh thư mời) nằm ở Cài đặt › Chữ ký, dưới thẻ «Chữ ký số»; quyền sửa giữ như cũ. «Vị trí ô ký trong văn bản hợp đồng» chỉ hiện khi có nhà cung cấp kiểu DocuSign đang bật.
 - Kịch bản: khi chỉ có nhà cung cấp Ký thử hoặc ký số tắt thì ẩn «Vị trí ô ký» [test: apps/workspace-web/src/features/contract-esign/lib/esign-view.test.ts » chỉ Ký thử/CA ⇒ ẩn]
 - Kịch bản: khi có DocuSign đang bật thì hiện «Vị trí ô ký» [test: apps/workspace-web/src/features/contract-esign/lib/esign-view.test.ts » có DocuSign (envelope) đang bật ⇒ hiện]
-- Kịch bản: công tắc ký số hiện ở Cài đặt › Chữ ký, không còn ở Kết nối [test: thủ công — e2e khoá cr125-s2-settings-flow do qc sửa]
+- Kịch bản: công tắc ký số hiện ở Cài đặt › Chữ ký, không còn ở Kết nối [test: e2e/contracts-web/cr184-settings.cw.ts » CR-184 · Kết nối chỉ còn «Gửi và nhận hợp đồng với đối tác», Ký số nằm ở Chữ ký]

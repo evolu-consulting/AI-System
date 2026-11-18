@@ -12,6 +12,27 @@ type Route = Parameters<Parameters<Page["route"]>[1]>[0];
 const json = (r: Route, status: number, body: unknown) =>
   r.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 
+const G = (
+  key: string,
+  step: number,
+  name: string,
+  kind: string,
+  o: Record<string, unknown> = {},
+) => ({
+  key,
+  step,
+  name,
+  kind,
+  after: "review",
+  back_to: [],
+  branch: [],
+  yes: null,
+  no: null,
+  next_step: null,
+  terminal: false,
+  ...o,
+});
+
 const FLOW = {
   def_id: "11111111-1111-4111-8111-111111111111",
   name: "Quy trình HĐ mặc định",
@@ -39,6 +60,15 @@ const FLOW = {
       escalate_default: true,
       approver_count: 2,
     },
+    { name: "Ký hợp đồng", department_name: null, kind: "esign", when: null },
+  ],
+  // CR-184: mọi stage của quy trình (theo thứ tự mảng) để vẽ cùng sơ đồ với trang quản trị
+  graph: [
+    G("s0", 0, "Soạn & kiểm tra", "review", { department_name: "Kinh doanh" }),
+    G("s1", 1, "Giá trị lớn?", "if", { yes: 2, no: 3 }),
+    G("s2", 2, "Giám đốc duyệt", "review", { department_name: "Ban giám đốc" }),
+    G("s3", 3, "Ký hợp đồng", "esign", { provider: "ondoc" }),
+    G("s4", 4, "Đã duyệt", "end", { terminal: true }),
   ],
 };
 
@@ -88,23 +118,18 @@ test("Cài đặt hiện quy trình đang dùng, không có form sửa", async (
   await expect(dlg.getByTestId("flow-current-title")).toHaveText(
     "Quy trình duyệt đang áp dụng: Quy trình HĐ mặc định · v4",
   );
-  // CR-106: mặc định là canvas chỉ đọc (Bắt đầu + 2 bước + Ghi Đã duyệt); công tắc "Danh sách" hiện `flow-diagram`
-  await expect(dlg.getByTestId("flow-canvas")).toBeVisible();
-  await expect(dlg.getByTestId("flow-canvas").getByText("Giám đốc duyệt")).toBeVisible();
-  await expect(dlg.getByTestId("flow-canvas").getByText("Ghi Đã duyệt")).toBeVisible();
-  // CR-108: thông tin mỗi bước trên node + nhãn điều kiện / nhánh bỏ qua trên cạnh + chú giải
+  // CR-184: sơ đồ CHỈ XEM cùng đồ thị với trang quản trị: Bắt đầu → bước → Nếu (Đúng/Sai) → Ký (Ký trên tài liệu) → Kết thúc; không còn chú giải / dòng Hạn.
   const cv = dlg.getByTestId("flow-canvas");
-  await expect(cv.getByText("Hạn 72 giờ", { exact: true })).toBeVisible();
-  await expect(cv.getByText("Hạn 24 giờ · nhắc mỗi 8 giờ")).toBeVisible();
+  await expect(cv).toBeVisible();
+  await expect(cv.getByText("Bắt đầu", { exact: true })).toBeVisible();
+  await expect(cv.getByText("Giám đốc duyệt")).toBeVisible();
   await expect(cv.getByText("3 người duyệt")).toBeVisible();
   await expect(cv.getByText("2 người duyệt")).toBeVisible();
-  await expect(cv.getByText("Quá hạn ⇒ chuyển Kế toán (mặc định)")).toBeVisible();
-  await expect(dlg.getByTestId("flow-legend")).toContainText("Quá hạn ⇒ chuyển cấp");
-  await expect(cv.getByText("Giá trị ≥ 500.000.000")).toBeVisible();
-  await expect(cv.getByText("Không thoả ⇒ bỏ qua")).toBeVisible();
-  await expect(dlg.getByTestId("flow-legend")).toContainText("Bước hệ thống (khoá)");
-  await expect(dlg.getByTestId("flow-legend")).toContainText("Nhánh bỏ qua");
-  await expect(dlg.getByTestId("flow-legend")).toContainText("Mờ = bị bỏ qua theo xem trước");
+  await expect(cv.getByText("Đúng", { exact: true })).toBeVisible();
+  await expect(cv.getByText("Sai", { exact: true })).toBeVisible();
+  await expect(cv.getByText("Ký trên tài liệu")).toBeVisible();
+  await expect(cv.getByText("Ký số", { exact: true })).toHaveCount(0);
+  await expect(dlg.getByTestId("flow-legend")).toHaveCount(0);
   // CR-108: giải thích mặc định + chỉ xem; thanh Lưu ẩn ở mục này
   // CR-125 · S2: không còn "mặc định của khe" / nhãn "liên hệ quản trị nền tảng"; lead nói quản trị công ty đổi ở trang Quy trình
   await expect(dlg.getByTestId("flow-default-badge")).toHaveCount(0);
@@ -118,8 +143,14 @@ test("Cài đặt hiện quy trình đang dùng, không có form sửa", async (
   await expect(dlg.getByTestId("flow-diagram")).toHaveCount(0);
   await dlg.getByTestId("flow-view-list").click();
   await expect(dlg.getByTestId("flow-canvas")).toHaveCount(0);
-  await expect(dlg.getByTestId("flow-diagram").getByRole("listitem")).toHaveCount(2);
-  await expect(dlg.getByTestId("flow-diagram").getByTestId("step-due")).toHaveCount(2);
+  // CR-184: Danh sách theo đúng thứ tự sơ đồ: Bắt đầu + 5 node; node Nếu ghi rõ Đúng ⇒ / Sai ⇒; bước Ký ghi «Ký trên tài liệu»
+  const list = dlg.getByTestId("flow-diagram");
+  await expect(list.getByRole("listitem")).toHaveCount(6);
+  await expect(list.getByTestId("flow-row-start")).toContainText("Bắt đầu");
+  await expect(list.getByTestId("flow-row-s1")).toContainText("Đúng ⇒ Giám đốc duyệt");
+  await expect(list.getByTestId("flow-row-s1")).toContainText("Sai ⇒ Ký hợp đồng");
+  await expect(list.getByTestId("flow-row-s3")).toContainText("Ký trên tài liệu");
+  await expect(list.getByTestId("step-due")).toHaveCount(0);
   await dlg.getByTestId("flow-view-canvas").click();
   await expect(dlg.getByTestId("flow-canvas")).toBeVisible();
   // không form sửa: không nút thêm bước/lưu, không ô nhập tên bước

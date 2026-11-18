@@ -97,7 +97,13 @@ async function companyFlow(p: Session, tid: string, name: string, stages: Json[]
   await call("POST", `/tenants/${tid}/company-flows/apply`, { flow_id: flowId });
 }
 
-async function signCompany(p: Session, key: string, presign: boolean): Promise<void> {
+/** `personal`: bước duyệt giao ĐÍCH DANH trưởng phòng Kinh doanh (`head_only`) — việc nhóm không áp được uỷ quyền (delegation-sign.spec). */
+async function signCompany(
+  p: Session,
+  key: string,
+  presign: boolean,
+  personal = false,
+): Promise<void> {
   const e = envOf(key);
   const tid = await tenantIdByKey(API, p, e.tenantKey);
   const adm = await adminOf(key);
@@ -118,12 +124,23 @@ async function signCompany(p: Session, key: string, presign: boolean): Promise<v
     methods: ["type"],
     on_doc_enabled: true,
   });
-  const head = approve("truong-phong", "Trưởng phòng duyệt", 0, CR181.headGroup, {
-    reject: 4,
-    ret: 5,
-    next: 1,
-  });
-  head.after = { ...(head.after as object), need: "one", evidence: "opinion_plus" };
+  const head = approve(
+    "truong-phong",
+    "Trưởng phòng duyệt",
+    0,
+    personal ? "pb-kinh-doanh" : CR181.headGroup,
+    {
+      reject: 4,
+      ret: 5,
+      next: 1,
+    },
+  );
+  head.after = {
+    ...(head.after as object),
+    need: "one",
+    evidence: "opinion_plus",
+    ...(personal ? { head_only: true } : {}),
+  };
   const [send, wait] = esignNode(1).map((s, i) =>
     i === 0
       ? {
@@ -159,7 +176,7 @@ async function signCompany(p: Session, key: string, presign: boolean): Promise<v
 
 async function main(): Promise<void> {
   const p = await platform();
-  await signCompany(p, SPEC_TENANT.j01, true); // contract-page-sign, sign-prep-and-sign, signed-viewer
+  await signCompany(p, SPEC_TENANT.j01, true, true); // contract-page-sign, sign-prep-and-sign, signed-viewer
   await signCompany(p, CR181.journey, false); // journey-3-vai
   // first-login (s2) và signature-settings (s3): công ty để nguyên, spec tự cấu hình
   Bun.serve({ port: READY, fetch: () => new Response("ok") });

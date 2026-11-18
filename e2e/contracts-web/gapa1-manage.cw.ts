@@ -3,7 +3,6 @@
 // phần tử, không sleep. (Viết trong lát, chạy ở cuối đợt — Luật 0b.)
 
 import { expect, type Page, type Route, test } from "@playwright/test";
-import { pickOption } from "../_kit/ui";
 import type { Role } from "./dataset";
 import { ACTIVE_ID, activeContract } from "./dataset-v2f";
 import { installV2f } from "./v2f-support";
@@ -64,7 +63,15 @@ test("editor: giao cho người khác ⇒ một PUT /owner; mở lịch sử th�
   page,
 }) => {
   const sent = await open(page, "editor");
-  await pickOption(page.getByTestId("owner-select"), PEOPLE[1]?.id as string);
+  // CR-184: «Phụ trách» là avatar kèm tooltip «Phụ trách: tên»; bấm mở danh sách (avatar + họ tên), chọn theo owner-option-<id>
+  const sel = page.getByTestId("owner-select");
+  await expect(sel).toHaveAttribute("aria-label", /^Phụ trách: /);
+  await sel.hover();
+  await expect(page.getByRole("tooltip").first()).toContainText(/^Phụ trách: /);
+  await sel.click();
+  await expect(page.getByTestId("owner-option-none")).toBeVisible();
+  await expect(page.getByTestId(`owner-option-${PEOPLE[0]?.id}`)).toContainText("Chi Nguyễn");
+  await page.getByTestId(`owner-option-${PEOPLE[1]?.id}`).click();
   await expect.poll(() => sent.filter((s) => s.path.endsWith("/owner")).length).toBe(1);
   expect(sent.find((s) => s.path.endsWith("/owner"))?.body).toEqual({
     owner_user_id: PEOPLE[1]?.id,

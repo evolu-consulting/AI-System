@@ -9,7 +9,7 @@ test.describe.configure({ mode: "serial" });
 const E = envOf(SPEC_TENANT.j01);
 const RUN = Date.now().toString(36);
 const DELEGATE = "e2e-ketoan";
-const DELEGATE_NAME = "E2E Kế toán";
+const DELEGATE_NAME = "E2E Trưởng phòng Kế toán";
 const HEAD_NAME = "E2E Trưởng phòng Kinh doanh";
 const day = (plus: number): string =>
   new Date(Date.now() + plus * 86_400_000).toISOString().slice(0, 10);
@@ -73,8 +73,10 @@ test("hồ sơ duyệt ghi người ký thật là kế toán và «thay» trư�
   await loginCw(page, E, U.employee);
   await page.goto(`${E.cw}/contracts/c/${id}`);
   const rec = page.getByTestId("approval-record");
-  await expect(rec).toContainText(DELEGATE_NAME, { timeout: 30_000 });
-  await expect(rec).toContainText(`Thay ${HEAD_NAME}`);
+  await rec.locator("summary").click(); // hồ sơ duyệt là khối gập
+  const line = rec.getByTestId("record-line").first();
+  await expect(line).toContainText(DELEGATE_NAME, { timeout: 30_000 });
+  await expect(line).toContainText(`(thay ${HEAD_NAME})`);
   await page.context().close();
 });
 

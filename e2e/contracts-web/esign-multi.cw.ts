@@ -6,6 +6,7 @@ import { expect, type Page, type Route, test } from "@playwright/test";
 import { pickOption } from "../_kit/ui";
 import { asHub } from "./dataset";
 import { ACTIVE_ID, activeContract } from "./dataset-v2f";
+import { mockSignature } from "./signature-mock";
 import { installV2f } from "./v2f-support";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
@@ -60,8 +61,9 @@ test("Cài đặt: hiện 2 nhà cung cấp (pháp lý / không) và đổi mặ
   await page.route("**/pack/contracts/me", (r) => json(r, d.packMe));
   await page.route("**/pack/contracts/groups", (r) => json(r, []));
   await page.route("**/pack/contracts/dify-workflows", (r) => json(r, { items: [] }));
-  // CR-146: ký số ở tab «Kết nối»; tab «Quy trình duyệt» đọc `{items}` (danh sách quy trình Bật).
+  // CR-184: ký số ở Cài đặt › «Chữ ký» (đã dời khỏi «Kết nối»); tab «Quy trình duyệt» đọc `{items}` (danh sách quy trình Bật).
   await page.route("**/pack/contracts/approval-flow", (r) => json(r, { items: [] }));
+  await mockSignature(page);
   const puts: unknown[] = [];
   await page.route("**/pack/contracts/esign/settings", (r) => {
     if (r.request().method() === "PUT") {
@@ -78,8 +80,10 @@ test("Cài đặt: hiện 2 nhà cung cấp (pháp lý / không) và đổi mặ
     .click();
   await page.getByRole("menuitem", { name: "Cài đặt" }).first().click();
   const dlg = page.getByRole("dialog", { name: "Cài đặt" });
-  await dlg.getByRole("button", { name: /^Kết nối/ }).click();
+  await dlg.getByRole("button", { name: /^Chữ ký/ }).click();
   const box = dlg.getByTestId("esign-provider-setting");
+  await expect(dlg.getByTestId("sig-provider")).toBeVisible();
+  await expect(dlg.getByTestId("sig-provider")).toBeVisible();
   await expect(box.getByTestId("esign-prov-docusign")).toContainText("Có giá trị pháp lý");
   await expect(box.getByTestId("esign-prov-selfsign")).toContainText("Không có giá trị pháp lý");
   await expect(box.getByTestId("esign-prov-misa")).toContainText("Chưa cấu hình");
