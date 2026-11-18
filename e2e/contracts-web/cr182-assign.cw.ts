@@ -38,8 +38,7 @@ const G = (
   ...o,
 });
 const ROLE = { key: "giam-doc", label: "Giám đốc" }; // khoá vai: chữ thường + gạch ngang (RoleKeySchema)
-const flow = (assigned: unknown, canEdit: boolean) => ({
-  can_edit: canEdit, // máy chủ quyết quyền giao việc (Q15)
+const flow = (assigned: unknown) => ({
   def_id: FLOW_ID,
   name: "Duyệt hợp đồng mua",
   rel_version: 2,
@@ -69,8 +68,9 @@ async function install(page: Page, tenantRole: string) {
     json(r, [{ id: GROUP_ID, name: "Ban giám đốc" }]),
   );
   await page.route("**/pack/contracts/dify-workflows", (r) => json(r, { items: [] }));
-  await page.route("**/pack/contracts/approval-flow", (r) =>
-    json(r, { items: [flow(assigned, tenantRole === "tenant_admin")] }),
+  await page.route(
+    "**/pack/contracts/approval-flow",
+    (r) => json(r, { items: [flow(assigned)], can_edit: tenantRole === "tenant_admin" }), // máy chủ quyết quyền giao việc (Q15), ở cấp danh sách,
   );
   await page.route("**/pack/contracts/groups/*/members*", (r) =>
     json(r, { items: ASSIGNED.members, next: null }),
@@ -125,7 +125,7 @@ test("CR-182 · thành viên thường chỉ xem: bấm bước không mở khun
   const dlg = await install(page, "member");
   const node = dlg.getByTestId("def-node-stage").filter({ hasText: "Giám đốc duyệt" });
   await expect(node).toContainText("⚠ Chưa giao người");
-  await node.click();
+  await node.click({ force: true }); // người thường: nút không phản hồi (không mở khung)
   await expect(dlg.getByTestId("assign-panel")).toHaveCount(0);
   await expect(dlg.getByTestId("assign-hint")).toContainText("Chỉ quản trị công ty đổi được");
 });

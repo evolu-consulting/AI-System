@@ -421,7 +421,7 @@ af1e92acc993181bfa5c31c7d05801452256b3ea91e8b4a27e5b7ca0f87da998  e2e/contracts-
 6ff61e6f01265c3799e1b74aa998575ae2e6d19528a22775058081beb6fbda90  e2e/contracts-web/cr177-w4-fab-safe.cw.ts
 963a97b88c07caa0a717c5b8aa39512bc46f666513773792e3e7c84f0f06ec5a  e2e/contracts-web/cr179-trunc-tooltip.cw.ts
 656fcbc34af13b6aab80f966ddde6b3efd629c95f0449f88e1e78e2f8afd9cfb  e2e/contracts-web/cr182-annex-verify.cw.ts
-ba5278c5304d2c2187aabf24511f8e07150162b2cdec302a94033d227b673576  e2e/contracts-web/cr182-assign.cw.ts
+aa5ab30af9c32c2e0765120220a8d4baaacd36ef0211df77a79939e0cd6d5ab7  e2e/contracts-web/cr182-assign.cw.ts
 cdfdfe062105139b169912545c2da1a3b4db7cdd73d24d8c183e1f632ae12ab7  e2e/contracts-web/cr184-settings.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 d351d4edda7e3772462619c8cbec6e9daa497718dff44acad1d117afc4998028  e2e/contracts-web/dataset-contract.ts
@@ -489,7 +489,7 @@ bad7160d3e316c86d46491ab566e12419686ff19cfd3118c5ce01d6c1b427171  e2e/cr121-c22-
 f84e4e9faf2e5417e9526675fa71271c1e74afe603cdb89de76bea8431e2b4a0  e2e/cr121-shell.spec.ts
 8f0411343aad3c02c6043eea45ca66230f9f7ce5123aac2a210abc68905649a5  e2e/cr121-tenant-profile.spec.ts
 d3e546a0438df688fc74b62232b3e8e851a5e030d90a2a4dc9f351c37d5b11eb  e2e/cr121-tenants-list.spec.ts
-77fd0d391b942c661be27c73f1ab6f94624f3d67ad553dc860381dcb1b00db7a  e2e/cr127/_cr127-kit.ts
+e29d6156314efea086f134d06d52a70a0e73fef5ece338a2628ee0f5b469bdca  e2e/cr127/_cr127-kit.ts
 820c39bde85d3eda2b7c27fb0dcf7f9a04d59f1cc01cb8c2b92081a21135d838  e2e/cr127/_cr127-stack.ts
 a0d025e4d7d8b3538652952b994d959875b037262293a4a78aa36645106a71d7  e2e/cr127/j01-soan-ap-dung-duyet.spec.ts
 748e552aa7a470472a3b7c6c31b2719594ca44377c41c6e083f330dc382a46aa  e2e/cr127/j03-uy-quyen.spec.ts
@@ -526,7 +526,7 @@ b1b36b37aad418573876429bf792672c8a617f6b6d58c8d90741c9e0a0c562b5  e2e/cr181/_cr1
 3aaaf4b4e6e9cff0aaa47eb019de8d050cfa2874d0428794ed80fea9ff8de958  e2e/cr181/fan-seam-sign.spec.ts
 408b8542565ec4e27123790b4e36ceba39dbb24e726e045181a854d405775a2b  e2e/cr181/first-login-signature.spec.ts
 8ad06902ad1a003b5c436fe9abb0e37a920485a293d3e8496a7bde194bdd6311  e2e/cr181/journey-3-vai.spec.ts
-de30b8f5ca821c950d4f361ba0dce32dcdb46d23678e922b655f998259b24b95  e2e/cr181/journey-dot2.spec.ts
+ab8032381678a7b4a5b384c2db3380fecba771e2fcbffa2440465f972934da81  e2e/cr181/journey-dot2.spec.ts
 4bd38d0dc8e37cf74b6d3cb61c2c93a5c2a2049cbcfff640c1d04cf775581f80  e2e/cr181/partner-sign-link.spec.ts
 268a21be480dbc26c82d6df46e4741884ecc9a98b1ee502c40b253886de47f2d  e2e/cr181/playwright.cr181.config.ts
 6fc74eae3008a70853523c4390eb6f976eb6a6924cdca182bc4cd6d3a3f2c4cf  e2e/cr181/sign-prep-and-sign.spec.ts

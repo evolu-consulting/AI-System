@@ -8,6 +8,7 @@ import { envOf, loginCw, newPage, U } from "../cr127/_cr127-kit";
 import { withOwner } from "../support/helpers";
 import {
   addMineAt,
+  collectDiag,
   directorSigns,
   draftSample,
   HEAD,
@@ -112,6 +113,10 @@ test("giám đốc (người ký theo vai) ký ⇒ Bên A đủ ⇒ HĐ chờ đ
 }) => {
   test.setTimeout(240_000);
   await directorSigns(browser, E, id1, GIAMDOC);
+  console.log(
+    "[dot2-diag]",
+    JSON.stringify(await collectDiag(E, id1, [U.employee])).slice(0, 5000),
+  );
   const sale = await newPage(browser);
   await loginCw(sale, E, U.employee);
   await sale.goto(`${E.cw}/contracts/c/${id1}`);
