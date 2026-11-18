@@ -208,6 +208,8 @@ export const UploadContractFormSchema = z.strictObject({
   kind: ContractKindSchema.default("contract"),
   parent_id: z.uuid().optional(),
   title: nfcText(CONTRACT_TITLE_MAX).min(1).optional(),
+  /** CR-182 R6 · «Thêm phụ lục cần ký»: "1" + kind=appendix + parent_id. */
+  annex: z.literal("1").optional(),
 });
 export type UploadContractForm = z.infer<typeof UploadContractFormSchema>;
 

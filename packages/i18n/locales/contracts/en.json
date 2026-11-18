@@ -45,6 +45,32 @@
     "contractsPage": {
       "title": "Contracts & transactions"
     },
+    "annex": {
+      "add": "Add an appendix to sign",
+      "hint": "Upload the appendix PDF: it is set to \"Needs signing\", then prepare the signing spots and submit for approval like a normal contract.",
+      "listTitle": "Appendices to sign",
+      "st": {
+        "draft": "Drafting",
+        "processing": "In approval and signing",
+        "done": "Approved",
+        "other": "Not finished"
+      }
+    },
+    "verify": {
+      "title": "Check a file",
+      "intro": "Pick a file to see whether it is a version Evolu stored. The file is not kept.",
+      "drop": "Drop a file here",
+      "pick": "Choose a file",
+      "hit": "Match: {{which}} of contract {{title}} · check code {{code}}",
+      "afterSign": "after {{name}} signed",
+      "original": "Original",
+      "someone": "the signer",
+      "at": "signed {{at}}",
+      "open": "View signed version",
+      "openContract": "Open contract",
+      "miss": "No stored version matches — the file may have been edited or was not made by Evolu.",
+      "error": "Could not check the file. Try again in a few minutes."
+    },
     "appendix": {
       "title": "Appendices and prices",
       "readOnly": "Legacy appendix — read only. To amend the contract, use \"Upload update\".",
@@ -240,6 +266,7 @@
       "next": "Next page"
     },
     "nav": {
+      "verify": "Check a file",
       "overview": "Overview",
       "contracts": "Contracts & transactions",
       "partners": "Partners",

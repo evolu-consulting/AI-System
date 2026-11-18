@@ -42,7 +42,10 @@ export const defaultNeedsSign = (
   companyOn: boolean,
 ): boolean => companyOn && f.is_main && f.is_pdf;
 
-export type PdfProbe = { ok: true; pages: number } | { ok: false; reason: "encrypted" | "invalid" };
+/** `sha256` = dấu vân tay tệp (CR-182 R7), có khi đọc thật; mô phỏng trong test có thể bỏ. */
+export type PdfProbe =
+  | { ok: true; pages: number; sha256?: string }
+  | { ok: false; reason: "encrypted" | "invalid" };
 export type SignFileIssue =
   | "SIGN_NOT_PDF"
   | "SIGN_PDF_ENCRYPTED"

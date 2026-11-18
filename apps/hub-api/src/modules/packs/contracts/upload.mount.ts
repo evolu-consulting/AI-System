@@ -20,6 +20,9 @@ import { scanLimits } from "./adapters/source-file-text";
 import { uploadRoutes } from "./adapters/upload.routes";
 import { uploadContractRepo } from "./adapters/upload-contract.repo";
 import { redisUploadCounter, unavailableUploadCounter } from "./adapters/upload-counter.redis";
+import { VERIFY_FILES_PER_MINUTE, verifyFileLimit } from "./adapters/verify-file.limit.redis";
+import { verifyFileRepo } from "./adapters/verify-file.repo";
+import { verifyFileRoutes } from "./adapters/verify-file.routes";
 import { zipNames } from "./adapters/zip-names";
 import { createPromoteContract } from "./application/promote-contract.usecase";
 import type { ContractFileStore, ExtractionStarter } from "./application/upload-contract.ports";
@@ -134,5 +137,18 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
       return () => q.counter.refund(who.tenantId, days);
     },
   });
-  return uploadRoutes(d.view, { upload, replace, promote, maxBytes, timeZoneOf: d.timeZoneOf });
+  const r = uploadRoutes(d.view, { upload, replace, promote, maxBytes, timeZoneOf: d.timeZoneOf });
+  // CR-182 R7 · «Kiểm tra tệp» (không lưu tệp; so sha256 trong công ty, theo quyền xem HĐ).
+  const verifyUow = createPackUow(d.db, KEY, (tx, tid) => ({ verify: verifyFileRepo(tx, tid) }));
+  return r.route(
+    "/",
+    verifyFileRoutes(d.view, {
+      maxBytes,
+      limit: verifyFileLimit({
+        ...(d.redis ? { redis: d.redis } : {}),
+        limit: VERIFY_FILES_PER_MINUTE,
+      }),
+      find: (who, sha) => verifyUow.tenant(who, (x) => x.verify.find(sha)),
+    }),
+  );
 }

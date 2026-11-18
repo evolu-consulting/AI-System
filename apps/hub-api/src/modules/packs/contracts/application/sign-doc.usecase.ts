@@ -206,14 +206,16 @@ export function signDocUsecases(d: SignDocDeps) {
       const enabled = await d.onDocEnabled(who);
       const first = await d.uow.tenant(who, (r) => gate(r, who, id, fileId, enabled));
       let pages: number | null = null;
+      let srcSha: string | null = null;
       if (needsSign) {
         const p = await probe(first.file);
         issueOf(first.file, p);
         pages = p?.ok ? p.pages : null;
+        srcSha = p?.ok ? (p.sha256 ?? null) : null;
       }
       const row = await d.uow.tenant(who, async (r) => {
         await gate(r, who, id, fileId, enabled);
-        const set = await r.docs.set(id, fileId, needsSign, pages, who.userId);
+        const set = await r.docs.set(id, fileId, needsSign, pages, who.userId, srcSha);
         if (!set) throw new SignDocFail("not_found");
         if (!needsSign) await r.fields.replaceForFile(id, fileId, [], who.userId);
         return set;

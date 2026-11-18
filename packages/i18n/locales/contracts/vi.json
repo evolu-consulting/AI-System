@@ -45,6 +45,32 @@
     "contractsPage": {
       "title": "Hợp đồng & giao dịch"
     },
+    "annex": {
+      "add": "Thêm phụ lục cần ký",
+      "hint": "Tải PDF phụ lục: tệp được đặt «Cần ký», rồi chuẩn bị chỗ ký và Gửi duyệt như hợp đồng thường.",
+      "listTitle": "Phụ lục cần ký",
+      "st": {
+        "draft": "Đang soạn",
+        "processing": "Đang duyệt và ký",
+        "done": "Đã duyệt",
+        "other": "Chưa hoàn tất"
+      }
+    },
+    "verify": {
+      "title": "Kiểm tra tệp",
+      "intro": "Chọn một tệp để biết nó có đúng là bản Evolu đã lưu hay không. Tệp không được lưu lại.",
+      "drop": "Kéo thả tệp vào đây",
+      "pick": "Chọn tệp",
+      "hit": "Khớp: {{which}} của hợp đồng {{title}} · mã kiểm tra {{code}}",
+      "afterSign": "Sau khi {{name}} ký",
+      "original": "Bản gốc",
+      "someone": "người ký",
+      "at": "ký lúc {{at}}",
+      "open": "Xem bản đã ký",
+      "openContract": "Mở hợp đồng",
+      "miss": "Không khớp bản nào đã lưu — tệp có thể đã bị sửa hoặc không phải bản do Evolu lập.",
+      "error": "Chưa kiểm được tệp. Thử lại sau ít phút."
+    },
     "appendix": {
       "title": "Phụ lục và giá",
       "readOnly": "Phụ lục cũ — chỉ đọc. Sửa đổi hợp đồng: dùng \"Tải bản cập nhật\".",
@@ -240,6 +266,7 @@
       "next": "Trang sau"
     },
     "nav": {
+      "verify": "Kiểm tra tệp",
       "overview": "Tổng quan",
       "org": "Sơ đồ tổ chức",
       "waiting": "Việc của tôi",

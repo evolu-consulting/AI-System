@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AppendixPanel } from "~/features/appendix/AppendixPanel";
 import type { ApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
 import { decideOnly } from "~/features/contract-approval/lib/approval";
 import { EsignPanel } from "~/features/contract-esign/components/EsignPanel";
@@ -234,6 +235,7 @@ export function ContractBody(p: {
           )}
           <VersionsPanels id={id} versions={c.versions} total={c.versions_count} sup={sup} />
           <ContractFilesPanel id={id} />
+          <AppendixPanel c={c} write={write && sup === null} />
           <SaveNotice err={info.err ?? ap.err} />
           <StatsRow c={c} today={today} />
           <KindSummary c={c} write={write && sup === null} today={today} />

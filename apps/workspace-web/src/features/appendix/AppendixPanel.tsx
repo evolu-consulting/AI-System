@@ -6,6 +6,8 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
+import { AnnexAdd } from "./AnnexAdd";
+import { canAddAnnex } from "./annex";
 import { fetchPrices, pricesKey } from "./api";
 
 const LINK = "font-medium text-act hover:underline";
@@ -53,9 +55,10 @@ function Prices({ id }: { id: string }) {
 }
 
 /** CR-101a (Câu 5): phụ lục cũ CHỈ ĐỌC — không gắn/gỡ, không tạo mới; sửa đổi HĐ qua "Tải bản cập nhật" (phiên bản). */
-export function AppendixPanel({ c }: { c: ContractDetail; write?: boolean }) {
+export function AppendixPanel({ c, write = false }: { c: ContractDetail; write?: boolean }) {
   const { t } = useTranslation();
-  if (!c.parent && c.appendices.length === 0) return null;
+  const canAdd = canAddAnnex(c, write);
+  if (!c.parent && c.appendices.length === 0 && !canAdd) return null;
   return (
     <section data-hd5="appendix" className="mt-5">
       <Panel className="p-5">
@@ -78,7 +81,11 @@ export function AppendixPanel({ c }: { c: ContractDetail; write?: boolean }) {
                 <Link to="/contracts/c/$id" params={{ id: a.id }} className={LINK}>
                   {a.title}
                 </Link>
-                <span className="ml-2 text-label text-dim">
+                <span className="ml-2 text-label text-dim" data-testid="annex-state">
+                  {t(
+                    `contracts.annex.st.${a.status === "draft" || a.status === "processing" || a.status === "done" ? a.status : "other"}`,
+                  )}
+                  {" · "}
                   {a.effective_date
                     ? t("contracts.appendix.effective", { date: viDate(a.effective_date) })
                     : t("contracts.appendix.noDate")}
@@ -87,6 +94,7 @@ export function AppendixPanel({ c }: { c: ContractDetail; write?: boolean }) {
             ))}
           </ul>
         )}
+        {canAdd && <AnnexAdd parentId={c.id} />}
         <Prices id={c.id} />
       </Panel>
     </section>

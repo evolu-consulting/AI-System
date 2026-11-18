@@ -157,7 +157,7 @@ export function fileNameOf(file: Blob): string {
 
 function formFields(form: FormData) {
   const pick: Record<string, string> = {};
-  for (const k of ["kind", "parent_id", "title"]) {
+  for (const k of ["kind", "parent_id", "title", "annex"]) {
     const v = form.get(k);
     if (typeof v === "string" && v !== "") pick[k] = v;
   }
@@ -266,6 +266,7 @@ export function uploadRoutes(view: PackAccessView, d: UploadRoutesDeps): Hono<Pa
       title: f.title ?? defaultTitle(x.name),
       kind: f.kind,
       parentId: f.parent_id ?? null,
+      ...(f.annex ? { annex: true } : {}),
       doc,
     });
   });

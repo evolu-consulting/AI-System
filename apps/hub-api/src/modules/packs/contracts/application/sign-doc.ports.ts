@@ -112,6 +112,7 @@ export type SignDocRepos = {
       needsSign: boolean,
       pages: number | null,
       by: string,
+      srcSha256?: string | null,
     ): Promise<SignDocRowP | null>;
   };
   fields: {

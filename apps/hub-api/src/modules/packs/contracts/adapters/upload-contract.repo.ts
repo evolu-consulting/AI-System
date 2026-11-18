@@ -152,6 +152,7 @@ export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo
       return o ? { version: Number(o.version) } : null;
     },
     insertVersion: (r, base) => insertVersion(tx, tenantId, r, base),
+    annexInherit: (id, parentId) => annexInherit(tx, tenantId, id, parentId),
     insert: async (r: NewUploadedContract) => {
       const data = JSON.stringify({ name: r.name, mime: r.mime, size: r.size });
       const approvalId = r.extractState === "reading" ? (r.approvalId ?? null) : null;
@@ -201,6 +202,24 @@ export function uploadContractRepo(tx: Tx, tenantId: string): UploadContractRepo
       }
     },
   };
+}
+
+/** CR-182 R6: cha = HĐ (kind=contract) đã duyệt (status done) mà người gọi thấy (RLS) ⇒ chép hướng + đối tác/loại (fields: type, buyer_*, supplier_*); không ⇒ false. Một câu. */
+async function annexInherit(
+  tx: Tx,
+  tenantId: string,
+  id: string,
+  parentId: string,
+): Promise<boolean> {
+  const rows = await tx.execute<{ id: string }>(sql`update contracts.contracts n
+    set direction = p.direction,
+      fields = n.fields || coalesce((select jsonb_object_agg(e.key, e.value) from jsonb_each(p.fields) e
+        where e.key in ('type', 'buyer_name', 'buyer_tax_id', 'supplier_name', 'supplier_tax_id')), '{}'::jsonb)
+    from contracts.contracts p
+    where n.id = ${id}::uuid and n.tenant_id = ${tenantId}::uuid and p.id = ${parentId}::uuid and p.tenant_id = n.tenant_id
+      and p.kind = 'contract' and p.status = 'done'
+    returning n.id`);
+  return rows.length === 1;
 }
 
 /** Cha không có / tenant khác ⇒ `PARENT_INVALID`; HĐ NT không có / không thấy / tenant khác (CR-101) ⇒ `FRAME_INVALID`. */

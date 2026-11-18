@@ -34,13 +34,15 @@ export function signDocsRepo(tx: Tx, tenantId: string) {
       needsSign: boolean,
       pages: number | null,
       by: string,
+      srcSha256: string | null = null,
     ): Promise<SignDocRow | null> => {
       const [r] = await tx.execute<SignDocRow>(sql`
-        insert into contracts.sign_docs (tenant_id, contract_id, file_id, needs_sign, pages, set_by)
-        select ${tenantId}::uuid, c.id, ${fileId}::uuid, ${needsSign}, ${pages}::int, ${by}::uuid
+        insert into contracts.sign_docs (tenant_id, contract_id, file_id, needs_sign, pages, set_by, src_sha256)
+        select ${tenantId}::uuid, c.id, ${fileId}::uuid, ${needsSign}, ${pages}::int, ${by}::uuid, ${srcSha256}
         from contracts.contracts c where c.id = ${contractId}::uuid and c.tenant_id = ${tenantId}::uuid
         on conflict (contract_id, file_id) do update
           set needs_sign = excluded.needs_sign, pages = coalesce(excluded.pages, contracts.sign_docs.pages),
+              src_sha256 = coalesce(excluded.src_sha256, contracts.sign_docs.src_sha256),
               set_by = excluded.set_by, set_at = now()
         returning file_id, needs_sign, pages, set_by, set_at`);
       return r ?? null;

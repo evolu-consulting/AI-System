@@ -74,6 +74,8 @@ export type UploadContractInput = {
   title: string;
   kind: "contract" | "appendix";
   parentId: string | null;
+  /** CR-182 R6 · «Thêm phụ lục cần ký»: cho phép tạo phụ lục (kind=appendix) dưới HĐ đã ký; cha kiểm trong tx (`annexInherit`). */
+  annex?: boolean;
   /** CR-097 K2 · HD-FR-101: "Tải bản cập nhật" cho HĐ này ⇒ nháp v(n+1) cùng chuỗi (`kind`/`parentId` bỏ qua, lấy theo bản cũ). */
   supersedes?: string;
   /** CR-101 DOC-model: loại chứng từ + HĐ NT cha (vắng ⇒ HĐ kinh tế đứng riêng). */
@@ -107,6 +109,10 @@ export function sniffUpload(bytes: Uint8Array, zipNames: (b: Uint8Array) => stri
  *  HĐ kinh tế có `parent_id` ⇒ `PARENT_INVALID`. Bản cập nhật (`supersedes`) lấy loại theo bản cũ ⇒ bỏ qua. */
 function precheckKind(i: UploadContractInput): void {
   if (i.supersedes) return;
+  if (i.annex) {
+    if (i.kind !== "appendix" || i.parentId === null) throw new UploadError("PARENT_INVALID");
+    return;
+  }
   if (i.kind === "appendix") throw new UploadError("USE_VERSIONS");
   if (i.parentId !== null) throw new UploadError("PARENT_INVALID");
 }
@@ -308,6 +314,8 @@ async function persist(
     const out = i.supersedes
       ? await r.upload.insertVersion(row, i.supersedes)
       : await r.upload.insert(row);
+    if (i.annex && i.parentId && !(await r.upload.annexInherit(out.id, i.parentId)))
+      throw new UploadError("PARENT_INVALID");
     await r.outbox.enqueue([{ entity: "contract", entity_id: out.id, op: "upsert" }]);
     await emitUploadedFlow(r, prep, out.id, s.type, i.who.userId);
     return { ...out, approvalId: s.text.ok && !i.prefill ? s.approvalId : null };

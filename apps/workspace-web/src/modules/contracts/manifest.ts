@@ -1,6 +1,13 @@
 // CR-118 · manifest module "contracts" (Sổ Hợp Tác). Khung rỗng: trỏ tới code hiện có (features/shell/lib/nav); các lát sau dời
 // features → modules/contracts/features rồi chuyển nav vào đây. CR-119 phần 2: SHT ở `/contracts/…` (basePath = `/${key}`), home = gốc.
-import { APPROVALS_NAV, MESSAGES_NAV, NAV, type NavItem, ORG_NAV } from "~/features/shell/lib/nav";
+import {
+  APPROVALS_NAV,
+  MESSAGES_NAV,
+  NAV,
+  type NavItem,
+  ORG_NAV,
+  VERIFY_NAV,
+} from "~/features/shell/lib/nav";
 import { basePathOf } from "~/shared/kernel/app-path";
 import type { ModuleManifest } from "~/shared/kernel/module-manifest";
 
@@ -22,5 +29,6 @@ export const contractsManifest: ModuleManifest<NavItem> = {
     ...NAV.slice(2, 3),
     ...NAV.slice(3),
     ORG_NAV,
+    VERIFY_NAV,
   ],
 };

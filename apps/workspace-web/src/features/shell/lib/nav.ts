@@ -1,6 +1,6 @@
 // PK-FR-10 · TF5 · nav-v2 (người dùng chốt 2026-10-20): 4 mục menu — Tổng quan · Hợp đồng · Đối tác · Sản phẩm & Giá — theo mockup NITI;
 // vai suy từ quyền gói (`write`/`owner`). CR-119 p2: mọi đường dẫn dưới `/contracts`; tuyến cũ chuyển hướng bằng shared/kernel/legacy-routes.
-import { ClipboardCheck, FilePlus2, Network } from "lucide-react";
+import { ClipboardCheck, FilePlus2, FileSearch, Network } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { IconBox, IconContract, IconMessage, IconOverview, IconPartners } from "~/components/icons";
 import { basePathOf } from "~/shared/kernel/app-path";
@@ -17,7 +17,8 @@ export type NavItem = {
     | "/contracts/messages"
     | "/contracts/org"
     | "/contracts/partners"
-    | "/contracts/products";
+    | "/contracts/products"
+    | "/contracts/verify";
   labelKey: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
   testId?: string;
@@ -82,6 +83,14 @@ export const ORG_NAV: NavItem = {
   labelKey: "contracts.nav.org",
   icon: Network,
   testId: "nav-contracts-org",
+  mobile: "more",
+};
+/** CR-182 · R7 · «Kiểm tra tệp»: so tệp với bản đã ký/bản gốc đã lưu; mọi nhân viên (máy chủ chỉ trả HĐ người đó thấy). */
+export const VERIFY_NAV: NavItem = {
+  to: `${B}/verify`,
+  labelKey: "contracts.nav.verify",
+  icon: FileSearch,
+  testId: "nav-contracts-verify",
   mobile: "more",
 };
 export type Role = "owner" | "editor" | "viewer";

@@ -28,6 +28,7 @@ function setup(starter: ExtractionStarter) {
             insertVersion: async () => {
               throw new Error("not used");
             },
+            annexInherit: async () => true,
           },
           outbox: { enqueue: async () => undefined },
         }) as never,
