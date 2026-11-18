@@ -12,7 +12,11 @@ import {
   listDifyWorkflows,
   readCurrentFlows,
 } from "./application/approval-flow.usecase";
-import { assignFlowRole, companyAdminCheck } from "./application/approval-flow-roles.usecase";
+import {
+  assignFlowRole,
+  companyAdminCheck,
+  groupMembersPage,
+} from "./application/approval-flow-roles.usecase";
 import type { ContractFlowGate } from "./application/contract-flow.ports";
 import { myApprovals } from "./application/mywork-approvals.usecase";
 
@@ -85,6 +89,7 @@ export function flowTemplateRoutes(
     difyWorkflows: listDifyWorkflows(fd),
     assignRole: assignFlowRole({ ...fd, ...(names ? { userNames: names } : {}) }),
     isAdmin: companyAdminCheck(view),
+    groupMembers: groupMembersPage(fd),
     ...(list ? { groups: list } : {}),
   });
 }

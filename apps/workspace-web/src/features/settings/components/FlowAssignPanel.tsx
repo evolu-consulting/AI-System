@@ -1,6 +1,5 @@
 // CR-182 · khung giao việc bên cạnh sơ đồ: VAI · nhãn, các bước dùng vai, Nhóm hoặc Một người, thành viên, «Bỏ thay đổi» / «Lưu giao việc» (có xác nhận).
 // Chỉ quản trị công ty thấy khung này. Ở điện thoại (≤ 640px) khung thành sheet từ dưới lên.
-import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
@@ -32,46 +31,21 @@ import { flowKeys } from "../api-flow";
 import { assignRole } from "../api-roles";
 import type { CurrentFlow, CurrentGraphStage } from "../lib/current-flow";
 import { isDirty, type RolePick, savedPick, stagesOfRole } from "../lib/flow-roles";
+import { GroupMembers } from "./FlowAssignMembers";
 
 const K = "contracts.flow.current.assign";
 type Kind = "group" | "user";
-
-function Members({ stage, draft }: { stage: CurrentGraphStage; draft: RolePick }) {
-  const { t } = useTranslation();
-  if (draft?.kind !== "group") return null;
-  const same = stage.assigned?.kind === "group" && stage.assigned.id === draft.id;
-  const list = same ? (stage.assigned?.members ?? []) : null;
-  return (
-    <section data-testid="assign-members">
-      <h4 className="mb-1 text-label font-semibold">
-        {t(`${K}.members`, { count: list?.length ?? 0 })}
-      </h4>
-      {list === null ? (
-        <p className="text-caption text-dim">{t(`${K}.membersAfterSave`)}</p>
-      ) : list.length === 0 ? (
-        <p className="text-caption text-dim">{t(`${K}.noMembers`)}</p>
-      ) : (
-        <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto">
-          {list.map((m) => (
-            <li key={m.id} className="flex min-h-8 items-center gap-2 text-body">
-              <Avatar name={m.name} size={24} />
-              <span className="truncate">{m.name}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
 
 type ChooserProps = {
   draft: RolePick;
   kind: Kind;
   onKind: (k: Kind) => void;
   onPick: (v: RolePick) => void;
+  /** Vai dùng ở nhánh «cùng duyệt» ⇒ chỉ nhận nhóm: khoá «Một người» kèm lý do. */
+  groupOnly: boolean;
 };
 
-function Chooser({ draft, kind, onKind, onPick }: ChooserProps) {
+function Chooser({ draft, kind, onKind, onPick, groupOnly }: ChooserProps) {
   const { t } = useTranslation();
   const groups = useGroups(kind === "group");
   const value = draft?.kind === kind ? draft.id : "";
@@ -86,10 +60,15 @@ function Chooser({ draft, kind, onKind, onPick }: ChooserProps) {
         <ToggleGroupItem value="group" data-testid="assign-kind-group">
           {t(`${K}.kindGroup`)}
         </ToggleGroupItem>
-        <ToggleGroupItem value="user" data-testid="assign-kind-user">
+        <ToggleGroupItem value="user" data-testid="assign-kind-user" disabled={groupOnly}>
           {t(`${K}.kindUser`)}
         </ToggleGroupItem>
       </ToggleGroup>
+      {groupOnly && (
+        <p className="text-caption text-dim" data-testid="assign-group-only">
+          {t(`${K}.groupOnly`)}
+        </p>
+      )}
       {kind === "group" ? (
         <div>
           <span className="mb-1 block text-label font-semibold">{t(`${K}.groupLabel`)}</span>
@@ -182,8 +161,9 @@ function Body({ flow, stage }: PanelProps) {
           if (draft?.kind !== k) setDraft(null);
         }}
         onPick={setDraft}
+        groupOnly={role.group_only === true}
       />
-      <Members stage={stage} draft={draft} />
+      {draft?.kind === "group" && <GroupMembers groupId={draft.id} />}
       <div className="flex flex-wrap gap-2 pt-1">
         <Button
           variant="outline"

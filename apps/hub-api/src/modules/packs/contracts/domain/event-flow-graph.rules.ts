@@ -31,7 +31,9 @@ export type GraphStage = {
   /** Điểm cuối (Kết thúc / chờ sự kiện thường): không có cạnh đi tiếp. */
   terminal: boolean;
   /** CR-182 · vai của bước Duyệt (`after.role`) / Ký (`args.signer_role`, nhãn = tên bước); không có ⇒ null. */
-  role: { key: string; label: string } | null;
+  role: { key: string; label: string; groupOnly?: true } | null;
+  /** CR-182 · bước Ký có bật «Cần chữ ký số» (`args.need_digital` = true). */
+  needDigital: boolean;
 };
 
 type Raw = {
@@ -53,6 +55,7 @@ type Raw = {
     group_id?: unknown;
     group_key?: unknown;
     role?: { key?: unknown; label?: unknown } | null;
+    parallel?: { groups?: unknown } | null;
     back_to_steps?: unknown;
     branch?: unknown;
   } | null;
@@ -80,6 +83,12 @@ function constString(args: unknown, k: string): string | null {
   return c?.from === "const" && typeof c.value === "string" && c.value !== "" ? c.value : null;
 }
 
+/** Giá trị HẰNG kiểu bool (true / "true"). */
+const boolArg = (args: unknown, k: string): boolean => {
+  const c = (args as Record<string, { from?: unknown; value?: unknown } | undefined> | null)?.[k];
+  return c?.from === "const" && (c.value === true || c.value === "true");
+};
+
 const idxList = (x: unknown): number[] => (Array.isArray(x) ? x.flatMap((n) => num(n) ?? []) : []);
 
 /** Mã nhóm duyệt của bước Duyệt (id Group hoặc mã Thư viện); bước khác ⇒ rỗng. */
@@ -99,14 +108,33 @@ const branchOf = (s: Raw, kind: GraphKind): (number | null)[] =>
 function roleOfStage(s: Raw, kind: GraphKind): GraphStage["role"] {
   if (kind === "esign") {
     const k = constString(s.executor?.args, "signer_role");
-    return k ? { key: k, label: str(s.name) ?? k } : null;
+    return k
+      ? { key: k, label: constString(s.executor?.args, "signer_role_label") ?? str(s.name) ?? k }
+      : null;
   }
   const r = kind === "review" ? s.after?.role : null;
   const key = str(r?.key);
   return key ? { key, label: str(r?.label) ?? key } : null;
 }
 
-function toGraphStage(s: Raw, i: number): GraphStage {
+/** CR-182 · khoá vai dùng ở nhánh «cùng duyệt» của BẤT KỲ bước nào ⇒ vai đó chỉ nhận NHÓM (không giao một người). */
+function parallelRoleKeys(stages: readonly Raw[]): ReadonlySet<string> {
+  const out = new Set<string>();
+  for (const s of stages) {
+    const gs = s.after?.parallel?.groups;
+    if (!Array.isArray(gs)) continue;
+    for (const g of gs) {
+      const k = isObj(g) ? str((g as { role?: { key?: unknown } | null }).role?.key) : null;
+      if (k) out.add(k);
+    }
+  }
+  return out;
+}
+
+const withGroupOnly = (r: GraphStage["role"], keys: ReadonlySet<string>): GraphStage["role"] =>
+  r && keys.has(r.key) ? { ...r, groupOnly: true } : r;
+
+function toGraphStage(s: Raw, i: number, groupOnly: ReadonlySet<string>): GraphStage {
   const kind = kindOf(s);
   const e = s.executor;
   return {
@@ -122,9 +150,13 @@ function toGraphStage(s: Raw, i: number): GraphStage {
     ifs: kind === "if" ? { yes: num(e?.then_step), no: num(e?.else_step) } : null,
     nextStep: num(s.next_step),
     terminal: kind === "end" || (e?.kind === "wait_event" && str(s.node) === null),
-    role: roleOfStage(s, kind),
+    role: withGroupOnly(roleOfStage(s, kind), groupOnly),
+    needDigital: kind === "esign" && boolArg(e?.args, "need_digital"),
   };
 }
 
-export const graphOfStages = (stages: readonly unknown[]): GraphStage[] =>
-  stages.filter(isObj).map(toGraphStage);
+export const graphOfStages = (stages: readonly unknown[]): GraphStage[] => {
+  const raws = stages.filter(isObj);
+  const keys = parallelRoleKeys(raws);
+  return raws.map((s, i) => toGraphStage(s, i, keys));
+};

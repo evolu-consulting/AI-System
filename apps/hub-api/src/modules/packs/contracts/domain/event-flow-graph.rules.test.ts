@@ -67,3 +67,18 @@ it("stage rác / thiếu trường không làm hỏng, số âm hoặc không ng
   expect(g).toHaveLength(1);
   expect(g[0]).toMatchObject({ key: "s0", kind: "if", ifs: { yes: null, no: null } });
 });
+
+it("CR-182 · vai dùng ở nhánh «cùng duyệt» của bất kỳ bước nào ⇒ groupOnly (chỉ nhận nhóm)", () => {
+  const rv = (key: string, role: unknown, parallel?: unknown) => ({
+    key,
+    executor: { kind: "approve" },
+    after: { kind: "review", role, ...(parallel ? { parallel } : {}) },
+  });
+  const g = graphOfStages([
+    rv("a", { key: "vai-x", label: "X" }),
+    rv("b", null, { groups: [{ role: { key: "vai-x", label: "X" } }] }),
+    rv("c", { key: "vai-y", label: "Y" }),
+  ]);
+  expect(g[0]?.role).toEqual({ key: "vai-x", label: "X", groupOnly: true });
+  expect(g[2]?.role).toEqual({ key: "vai-y", label: "Y" });
+});

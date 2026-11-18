@@ -351,6 +351,7 @@
         "signKind": {
           "ondoc": "Ký trên tài liệu",
           "upload": "Tải lên bản đã ký",
+          "digital": "Cần chữ ký số",
           "provider": "Ký số ({{name}})"
         },
         "list": {
@@ -377,6 +378,7 @@
         },
         "assign": {
           "roleLine": "Vai · {{label}}",
+          "signerLine": "Người ký: {{label}}",
           "unassignedWarn": "⚠ Chưa giao người",
           "groupWho": "{{name}} · {{count}} người",
           "unnamed": "Chưa đặt tên",
@@ -396,7 +398,10 @@
           "groupPlaceholder": "Chọn nhóm",
           "userPlaceholder": "Chọn người",
           "members": "Thành viên của nhóm ({{count}})",
-          "membersAfterSave": "Danh sách thành viên hiện sau khi lưu.",
+          "groupOnly": "Vai này nằm trong nhánh «cùng duyệt» nên chỉ giao được cho một nhóm.",
+          "membersMore": "Thành viên của nhóm ({{count}}+)",
+          "membersFail": "Không tải được thành viên",
+          "loadMore": "Xem thêm",
           "noMembers": "Nhóm chưa có thành viên dùng được.",
           "userNote": "Chỉ người này làm bước.",
           "discard": "Bỏ thay đổi",

@@ -305,6 +305,8 @@ export const ApprovalFlowGraphStageSchema = z.strictObject({
   /** CR-182 · vai của bước Duyệt / Ký; null/vắng ⇒ bước không dùng vai. `assigned` null ⇒ vai CHƯA giao («Chưa giao người»). */
   role: ApprovalFlowRoleSchema.nullable().optional(),
   assigned: ApprovalFlowAssignedSchema.nullable().optional(),
+  /** CR-182 · bước Ký cần chữ ký số (công tắc «Cần chữ ký số»); vắng ⇒ ký trên tài liệu. */
+  need_digital: z.literal(true).optional(),
 });
 export type ApprovalFlowGraphStage = z.infer<typeof ApprovalFlowGraphStageSchema>;
 export const ApprovalFlowCurrentSchema = z.strictObject({
@@ -353,6 +355,8 @@ export type ApprovalFlowCurrent = z.infer<typeof ApprovalFlowCurrentSchema>;
 /** CR-146 · `GET /pack/contracts/approval-flow` = MỌI flow Bật cho `contract.submitted`, đúng thứ tự xét (rỗng ⇒ chưa bật flow nào). */
 export const ApprovalFlowListSchema = z.strictObject({
   items: z.array(ApprovalFlowCurrentSchema).max(50),
+  /** CR-182 · người xem sửa được giao việc (quản trị công ty, Q15: tenant admin ∨ admin gói Sổ Hợp Tác) — cùng luật `PUT /approval-flow/roles`. */
+  can_edit: z.boolean().optional(),
 });
 export type ApprovalFlowList = z.infer<typeof ApprovalFlowListSchema>;
 

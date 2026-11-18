@@ -96,6 +96,26 @@ export function packGroups(
       }
       return out;
     },
+    /** CR-182 · một trang thành viên của MỘT Group (tải dần); cùng điều kiện `members`. */
+    async membersPage(
+      tenantId: string,
+      id: string,
+      offset: number,
+      limit: number,
+    ): Promise<{ id: string; name: string }[]> {
+      const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+        tx.execute<{
+          id: string;
+          name: string;
+        }>(sql`select u.id::text as id, coalesce(nullif(u.display_name, ''), u.username) as name
+          from admin.group_members gm join admin.users u on u.id = gm.user_id and u.tenant_id = gm.tenant_id
+          where gm.tenant_id = ${tenantId}::uuid and gm.group_id = ${id}::uuid
+            and u.active and not u.locked_by_tenant and u.kind = 'internal'
+          order by coalesce(nullif(u.display_name, ''), u.username), u.id
+          offset ${offset} limit ${limit}`),
+      );
+      return rows.map((r) => ({ id: r.id, name: r.name }));
+    },
     async userGroups(who: PackWho): Promise<ReadonlySet<string>> {
       await view.adminSettled?.();
       const u = await view.user(who.userId);

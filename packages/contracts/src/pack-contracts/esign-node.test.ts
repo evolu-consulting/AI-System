@@ -27,6 +27,7 @@ describe("E5 · EsignNodeConfig", () => {
       ],
       provider: "docusign",
       signer_role: "nguoi-ky-hop-dong", // CR-182
+      signer_role_label: "Người ký hợp đồng",
       need_digital: true,
       partner_signs: true,
       order: "parallel" as const,
@@ -118,5 +119,20 @@ describe("E5 · EsignNodeConfig", () => {
     });
     expect(encodeEsignNodeArgs({ due_hours: 4 })).toEqual({ due_hours: 4 });
     expect(decodeEsignNodeArgs({ due_hours: "99999" }).ok).toBe(false);
+  });
+});
+
+describe("CR-182 · signer_role_label", () => {
+  it("encode và decode giữ nhãn vai mới, nhãn quá 80 ký tự bị từ chối", () => {
+    const args = encodeEsignNodeArgs({ signer_role: "giam-doc", signer_role_label: "Giám đốc" });
+    expect(args).toEqual({ signer_role: "giam-doc", signer_role_label: "Giám đốc" });
+    expect(decodeEsignNodeArgs(args)).toEqual({
+      ok: true,
+      config: { signer_role: "giam-doc", signer_role_label: "Giám đốc" },
+    });
+    expect(encodeEsignNodeArgs({ signer_role: "a" })).toEqual({ signer_role: "a" });
+    expect(EsignNodeConfigSchema.safeParse({ signer_role_label: "x".repeat(81) }).success).toBe(
+      false,
+    );
   });
 });

@@ -50,8 +50,10 @@ export type CurrentGraphStage = {
   nextStep: number | null;
   terminal: boolean;
   /** CR-182 · vai của bước Duyệt / Ký (null ⇒ bước không dùng vai) + người được giao (null ⇒ chưa giao). */
-  role: { key: string; label: string } | null;
+  role: { key: string; label: string; group_only?: true } | null;
   assigned: StageAssigned | null;
+  /** CR-182 · bước Ký cần chữ ký số (huy hiệu «Cần chữ ký số»); khác ⇒ «Ký trên tài liệu». */
+  needDigital: boolean;
 };
 export type CurrentFlow = {
   defId: string;
@@ -75,6 +77,8 @@ export type CurrentFlow = {
   } | null;
   /** CR-184 · MỌI stage của quy trình (sơ đồ đầy đủ); rỗng ⇒ server cũ, dùng `steps`. */
   graph: CurrentGraphStage[];
+  /** CR-182 · người xem sửa được giao việc (server: `can_edit`, Q15) — thay cho đoán theo vai tài khoản. */
+  canEdit: boolean;
   partnerSend: boolean;
   /** CR-113 · Toàn quyền duyệt thay được mọi bước (vắng ⇒ true: luật chung). */
   ownerCanOverride: boolean;
@@ -86,13 +90,13 @@ export type Facts = { deal: DealKind; value: number | null };
 /** Thân `GET /approval-flow` (`{items}`) ⇒ danh sách theo thứ tự xét; sai hình ⇒ null (UI báo lỗi tải). */
 export function toCurrentFlows(raw: unknown): CurrentFlow[] | null {
   const p = ApprovalFlowListSchema.safeParse(raw);
-  return p.success ? p.data.items.map(fromApi) : null;
+  return p.success ? p.data.items.map((d) => fromApi(d, p.data.can_edit ?? false)) : null;
 }
 
 /** Một phần tử của danh sách ⇒ `CurrentFlow`; sai hình ⇒ null. */
 export function toCurrentFlow(raw: unknown): CurrentFlow | null {
   const p = ApprovalFlowCurrentSchema.safeParse(raw);
-  return p.success ? fromApi(p.data) : null;
+  return p.success ? fromApi(p.data, false) : null;
 }
 
 /** Server cũ (chưa có `graph`): dựng chuỗi thẳng từ `steps` để vẫn có sơ đồ. */
@@ -115,7 +119,7 @@ function linearGraph(d: ApprovalFlowCurrent): NonNullable<ApprovalFlowCurrent["g
   }));
 }
 
-function fromApi(d: ApprovalFlowCurrent): CurrentFlow {
+function fromApi(d: ApprovalFlowCurrent, canEdit: boolean): CurrentFlow {
   return {
     defId: d.def_id,
     name: d.name,
@@ -148,7 +152,9 @@ function fromApi(d: ApprovalFlowCurrent): CurrentFlow {
       terminal: g.terminal,
       role: g.role ?? null,
       assigned: g.assigned ?? null,
+      needDigital: g.need_digital === true,
     })),
+    canEdit,
     partnerSend: d.partner_send ?? false,
     ownerCanOverride: d.owner_can_override ?? true,
     ownerGroupName: d.owner_group_name ?? null,

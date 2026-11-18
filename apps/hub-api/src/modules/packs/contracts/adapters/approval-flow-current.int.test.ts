@@ -225,7 +225,7 @@ it("flow bắt đầu bằng phiếu (trigger «không bao giờ», vd Quy trìn
 
 it("công ty chỉ có flow Tắt ⇒ 200 `items: []`, PUT không còn route", async () => {
   const rb = await app(B, own).request("/approval-flow");
-  expect([rb.status, await rb.json()]).toEqual([200, { items: [] }]);
+  expect([rb.status, await rb.json()]).toEqual([200, { items: [], can_edit: expect.any(Boolean) }]);
   const put = await app(A, own).request("/approval-flow", {
     method: "PUT",
     headers: { "content-type": "application/json" },

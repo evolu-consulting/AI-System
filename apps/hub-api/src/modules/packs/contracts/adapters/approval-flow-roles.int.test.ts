@@ -14,7 +14,11 @@ import { packGroups } from "../../kit/adapters/pack-groups";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import type { PackToolCatalog } from "../../kit/application/pack-tools.ports";
 import { listDifyWorkflows, readCurrentFlows } from "../application/approval-flow.usecase";
-import { assignFlowRole, companyAdminCheck } from "../application/approval-flow-roles.usecase";
+import {
+  assignFlowRole,
+  companyAdminCheck,
+  groupMembersPage,
+} from "../application/approval-flow-roles.usecase";
 import { approvalFlowRoutes } from "./approval-flow.routes";
 
 let o: Sql;
@@ -23,6 +27,7 @@ let hubDb: Db;
 let A = "";
 let U: { admin: string; pack: string; mem: string } = { admin: "", pack: "", mem: "" };
 let gKt = "";
+let gBig = "";
 let flowId = "";
 const F = { read: "f-r", write: "f-w", admin: "f-a" };
 const ROLE = { key: "nguoi-duyet-cap-1", label: "Người duyệt cấp 1" };
@@ -89,6 +94,7 @@ function app(user: string, role: string) {
       difyWorkflows: listDifyWorkflows({}),
       assignRole: assignFlowRole(d),
       isAdmin: companyAdminCheck(view),
+      groupMembers: groupMembersPage(d),
     }),
   );
   h.onError((e, c) => {
@@ -112,8 +118,10 @@ beforeAll(async () => {
   U = { admin: us[0], pack: us[1], mem: us[2] };
   await o`update admin.users set role = 'tenant_admin' where id = ${U.admin}`;
   await enablePack(o, [A], "contracts");
-  const g = await groups(o, A, ["ke-toan"]);
+  const g = await groups(o, A, ["ke-toan", "nhom-lon"]);
   gKt = g.get("ke-toan") as string;
+  gBig = g.get("nhom-lon") as string;
+  await members(o, A, gBig, [us[2], us[1]]);
   await members(o, A, gKt, [us[2]]);
   const [r] = await o<
     { id: string }[]
@@ -186,4 +194,32 @@ it("tenant admin giao MỘT NGƯỜI cho vai Ký ⇒ 200; vai lạ ⇒ 422; cả
   expect(
     (await put(a, { flow_id: flowId, role_key: ROLE.key, group_id: gKt, user_id: U.mem })).status,
   ).toBe(400);
+});
+
+const get = (a: Hono<PackGuardVars>, path: string) => a.request(path);
+
+it("GET /approval-flow: can_edit false cho người thường, true cho quản trị gói Sổ Hợp Tác (không phải tenant admin) và tenant admin", async () => {
+  const ce = async (a: Hono<PackGuardVars>) =>
+    ((await (await get(a, "/approval-flow")).json()) as { can_edit?: boolean }).can_edit;
+  expect(await ce(app(U.mem, "member"))).toBe(false);
+  expect(await ce(app(U.pack, "member"))).toBe(true);
+  expect(await ce(app(U.admin, "tenant_admin"))).toBe(true);
+});
+
+it("GET /groups/:id/members: người thường đọc được, tải dần theo trang (next), nhóm lạ ⇒ 404, tham số sai ⇒ 400", async () => {
+  const a = app(U.mem, "member");
+  const p1 = await get(a, `/groups/${gBig}/members?limit=1`);
+  expect(p1.status).toBe(200);
+  const b1 = (await p1.json()) as { items: { id: string }[]; next: number | null };
+  expect(b1.items).toHaveLength(1);
+  expect(b1.next).toBe(1);
+  const b2 = (await (await get(a, `/groups/${gBig}/members?limit=1&offset=1`)).json()) as {
+    items: { id: string }[];
+    next: number | null;
+  };
+  expect(b2.items).toHaveLength(1);
+  expect(b2.next).toBeNull();
+  expect(new Set([...b1.items, ...b2.items].map((m) => m.id))).toEqual(new Set([U.mem, U.pack]));
+  expect((await get(a, "/groups/00000000-0000-4000-8000-000000000000/members")).status).toBe(404);
+  expect((await get(a, `/groups/${gBig}/members?limit=0`)).status).toBe(400);
 });

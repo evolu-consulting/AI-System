@@ -2,7 +2,7 @@
 // Kết thúc) với trang quản trị. File này chỉ ghép CHỮ nghiệp vụ (VI/EN qua `t`) lên stage + dựng dòng cho chế độ «Danh sách» theo đúng thứ tự sơ đồ.
 import type { DefViewStage, DefViewTrigger } from "@ai/flow-canvas/pure";
 import type { CurrentFlow, CurrentGraphStage } from "./current-flow";
-import { roleView } from "./flow-roles";
+import { roleView, whoText } from "./flow-roles";
 import { whenText } from "./start-when";
 
 type Tr = (key: string, o?: Record<string, unknown>) => string;
@@ -18,9 +18,14 @@ export function esignLabel(provider: string | null, t: Tr): string {
   return t(`${K}.esign`);
 }
 
+/** CR-182 · bước Ký có vai người ký: «Ký trên tài liệu», hoặc «Cần chữ ký số» khi bật công tắc. Def cũ chưa có vai giữ cách «Ký qua» cũ. */
+function signerKind(g: CurrentGraphStage, t: Tr): string {
+  return t(`${K}.signKind.${g.needDigital ? "digital" : "ondoc"}`);
+}
+
 /** Loại bước ⇒ nhãn ngắn (huy hiệu); Duyệt / Nếu / Kết thúc / bước kỹ thuật không cần nhãn. */
 function badgeOf(g: CurrentGraphStage, t: Tr): string | null {
-  if (g.kind === "esign") return esignLabel(g.provider, t);
+  if (g.kind === "esign") return g.role ? signerKind(g, t) : esignLabel(g.provider, t);
   if (g.kind === "partner_send") return t(`${K}.kind.partner_send`);
   if (g.kind === "notify") return t(`${K}.kind.notify`);
   if (g.kind === "wait") return t(`${K}.kind.wait`);
@@ -46,8 +51,20 @@ function approversByKey(flow: CurrentFlow): Map<string, number> {
   return out;
 }
 
-function subOf(g: CurrentGraphStage, n: number | undefined, t: Tr): string | null {
+function subOf(
+  g: CurrentGraphStage,
+  n: number | undefined,
+  t: Tr,
+  withSigner = false,
+): string | null {
+  const signer =
+    withSigner && g.kind === "esign" && g.role
+      ? [t(`${K}.assign.signerLine`, { label: g.role.label }), whoText(g.assigned, t)]
+          .filter((x) => x)
+          .join(" · ")
+      : null;
   const parts = [
+    signer,
     g.kind === "review" && g.department && g.department !== g.name ? g.department : null,
     n === undefined ? null : t(`${K}.info.${n === 1 ? "approver" : "approvers"}`, { count: n }),
   ].filter((x): x is string => x !== null);
@@ -119,7 +136,7 @@ export function listRows(flow: CurrentFlow, t: Tr): ListRow[] {
       key: g.key,
       index: plain ? ++idx : 0,
       title: g.name,
-      sub: subOf(g, n.get(g.key), t),
+      sub: subOf(g, n.get(g.key), t, true),
       badge: isIf ? t(`${K}.kind.if`) : badgeOf(g, t),
       branches,
       end: g.kind === "end",

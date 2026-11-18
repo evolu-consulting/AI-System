@@ -23,6 +23,7 @@ const g = (key: string, step: number, e: Partial<CurrentGraphStage> = {}): Curre
   ifs: null,
   nextStep: null,
   terminal: false,
+  needDigital: false,
   ...e,
 });
 function flow(graph: CurrentGraphStage[]): CurrentFlow {
@@ -92,5 +93,37 @@ describe("listRows", () => {
   test("mảng không theo thứ tự bước ⇒ danh sách vẫn theo bước", () => {
     const r = listRows(flow([g("b", 1), g("a", 0)]), t);
     expect(r.map((x) => x.title)).toEqual(["a", "b"]);
+  });
+});
+
+describe("CR-182 · bước Ký có vai người ký", () => {
+  const who = {
+    kind: "group" as const,
+    id: "g1",
+    name: "Ban giám đốc",
+    members: [{ id: "u1", name: "A" }],
+  };
+  const sign = (e: Partial<CurrentGraphStage> = {}) =>
+    g("ky", 0, {
+      kind: "esign",
+      provider: "docusign",
+      role: { key: "nguoi-ky", label: "Người ký hợp đồng" },
+      assigned: who,
+      ...e,
+    });
+  test("có vai ⇒ «Ký trên tài liệu» (không còn «Ký qua» cũ), «Cần chữ ký số» khi bật công tắc", () => {
+    expect(viewStages(flow([sign()]), t)[0]?.badge).toBe("Ký trên tài liệu");
+    expect(viewStages(flow([sign({ needDigital: true })]), t)[0]?.badge).toBe("Cần chữ ký số");
+  });
+  test("danh sách có dòng người ký kèm người được giao, node có dòng người ký", () => {
+    expect(listRows(flow([sign()]), t)[0]?.sub).toBe(
+      "Người ký: Người ký hợp đồng · Ban giám đốc · 1 người",
+    );
+    expect(viewStages(flow([sign()]), t)[0]?.role?.line).toBe("Người ký: Người ký hợp đồng");
+  });
+  test("def cũ chưa có vai ⇒ giữ cách hiện cũ theo «Ký qua»", () => {
+    const old = g("ky", 0, { kind: "esign", provider: "docusign" });
+    expect(viewStages(flow([old]), t)[0]?.badge).toBe("Ký số (DocuSign)");
+    expect(listRows(flow([old]), t)[0]?.sub).toBeNull();
   });
 });

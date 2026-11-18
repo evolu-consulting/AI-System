@@ -351,6 +351,7 @@
         "signKind": {
           "ondoc": "Sign on the document",
           "upload": "Upload the signed copy",
+          "digital": "Digital signature required",
           "provider": "E-sign ({{name}})"
         },
         "list": {
@@ -377,6 +378,7 @@
         },
         "assign": {
           "roleLine": "Role · {{label}}",
+          "signerLine": "Signer: {{label}}",
           "unassignedWarn": "⚠ No one assigned",
           "groupWho": "{{name}} · {{count}} people",
           "unnamed": "Unnamed",
@@ -396,7 +398,10 @@
           "groupPlaceholder": "Choose a group",
           "userPlaceholder": "Choose a person",
           "members": "Group members ({{count}})",
-          "membersAfterSave": "Members show after you save.",
+          "groupOnly": "This role is in a «review together» branch, so it can only be given to a group.",
+          "membersMore": "Group members ({{count}}+)",
+          "membersFail": "Couldn't load members",
+          "loadMore": "Show more",
           "noMembers": "The group has no usable members.",
           "userNote": "Only this person does the step.",
           "discard": "Discard changes",

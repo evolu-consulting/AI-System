@@ -4,10 +4,7 @@
 
 import { type RoleAssignment, withRoles } from "@ai/contracts/flow";
 import { type FactWhen, FactWhenSchema } from "@ai/contracts/hub-admin";
-import {
-  APPROVAL_FLOW_MEMBERS_MAX,
-  type ApprovalFlowGraphStage,
-} from "@ai/contracts/pack-contracts";
+import type { ApprovalFlowGraphStage } from "@ai/contracts/pack-contracts";
 import type { EventFlow, PackUow, PackWho } from "../../kit/public";
 import { PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
 import type { DifyWorkflow } from "../domain/approval-flow.rules";
@@ -289,9 +286,14 @@ function graphStageOut(
     no: g.ifs?.no ?? null,
     next_step: g.nextStep,
     terminal: g.terminal,
+    ...(g.needDigital ? { need_digital: true as const } : {}),
     ...(g.role
       ? {
-          role: { key: g.role.key, label: g.role.label.slice(0, 80) },
+          role: {
+            key: g.role.key,
+            label: g.role.label.slice(0, 80),
+            ...(g.role.groupOnly ? { group_only: true as const } : {}),
+          },
           assigned: assignedOf(by.get(g.role.key), lk),
         }
       : {}),

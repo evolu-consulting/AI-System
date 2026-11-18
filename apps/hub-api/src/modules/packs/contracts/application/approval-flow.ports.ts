@@ -20,4 +20,11 @@ export type FlowGroups = {
     ids: readonly string[],
     max: number,
   ): Promise<ReadonlyMap<string, { id: string; name: string }[]>>;
+  /** CR-182 · MỘT trang thành viên dùng được của một Group (theo tên, từ `offset`, tối đa `limit`); vắng ⇒ không có API thành viên. */
+  membersPage?(
+    tenantId: string,
+    id: string,
+    offset: number,
+    limit: number,
+  ): Promise<{ id: string; name: string }[]>;
 };

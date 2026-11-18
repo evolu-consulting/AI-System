@@ -160,7 +160,8 @@ function sign(s: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep, ondoc
   if (!id) {
     if (keep) return s;
     const old = constOf(e.args, SIGNERS_ARG) !== null; // còn người ký cũ ⇒ giữ, không chặn
-    un.push({ stage: i, slot: "sign", role_key: key, label: str(s.name) ?? key, blocking: !old });
+    const label = constOf(e.args, "signer_role_label") ?? str(s.name) ?? key;
+    un.push({ stage: i, slot: "sign", role_key: key, label, blocking: !old });
     return old ? s : { ...s, executor: { ...e, args } };
   }
   return {

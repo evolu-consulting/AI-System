@@ -17,18 +17,20 @@ import { Label } from "@ai/web-kit/ui/kit/label";
 import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUserList } from "@/features/users/api";
 import { useSession } from "@/lib/auth/use-session";
 import { ApiError, api } from "@/lib/http";
 import { hubUrl } from "@/lib/hub";
 import { SelectField, TextField } from "../../../components/editor/Fields";
+import { RoleField } from "../../../components/editor/RoleField";
 import { EsignSettingsLink } from "../../../components/flow/EsignSettingsLink";
 import { useFlowCtx } from "../../../components/flow/flow-ctx";
 import { draftClusterOf } from "../../../lib/module-cluster";
 import { checkPathOf, constArgs, ESIGN_CODEC, withConfigArgs } from "../../../lib/node-config";
 import { DEFAULT_SIGNER_ROLE, rolesOfStages } from "../../../lib/role-pick";
+import type { StageRole } from "../../../lib/role-types";
 import type { NodePanelProps } from "../../panel-registry";
 
 /** Giá trị đại diện "Theo cài đặt ứng dụng" (Radix Select không nhận value rỗng). */
@@ -85,7 +87,9 @@ export function EsignPanel(p: NodePanelProps) {
     { ...(flow?.tenantId ? { tenantId: flow.tenantId } : {}), q: "", offset: 0 },
     !!flow?.tenantId,
   );
-  const needDefault = !readOnly && !cfg.signer_role && !isLegacy(cfg);
+  // CR-182 · đang gõ vai MỚI (khoá chưa sinh được) ⇒ không tự điền vai mặc định đè lên.
+  const [fresh, setFresh] = useState<StageRole | null>(null);
+  const needDefault = !readOnly && !cfg.signer_role && !fresh && !isLegacy(cfg);
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy khi bước Ký còn trống vai
   useEffect(() => {
     if (!needDefault) return;
@@ -157,13 +161,22 @@ export function EsignPanel(p: NodePanelProps) {
     })),
   ];
   const roles = rolesOfStages(p.all);
-  const roleOptions = [
+  // CR-182 · vai người ký: chọn vai đã có (gồm vai mặc định) hoặc NHẬP vai mới; nhãn lưu ở `signer_role_label`.
+  const existing = [
     ...(roles.some((r) => r.key === DEFAULT_SIGNER_ROLE.key) ? [] : [DEFAULT_SIGNER_ROLE]),
     ...roles,
-    ...(cfg.signer_role && ![DEFAULT_SIGNER_ROLE, ...roles].some((r) => r.key === cfg.signer_role)
-      ? [{ key: cfg.signer_role, label: cfg.signer_role }]
-      : []),
-  ].map((r) => ({ value: r.key, label: r.label }));
+  ];
+  const roleValue = fresh
+    ? fresh
+    : cfg.signer_role
+      ? {
+          key: cfg.signer_role,
+          label:
+            cfg.signer_role_label ??
+            existing.find((r) => r.key === cfg.signer_role)?.label ??
+            cfg.signer_role,
+        }
+      : undefined;
   const providerName =
     cfg.provider === ESIGN_NODE_UPLOAD
       ? t(`${K}providerUpload`)
@@ -182,16 +195,19 @@ export function EsignPanel(p: NodePanelProps) {
   const toNum = (v: string) => (v.trim() === "" ? undefined : Math.trunc(Number(v)));
   return (
     <fieldset className="space-y-3" data-testid="node-config" aria-label={t(`${K}title`)}>
-      <SelectField
+      <RoleField
         id={`${stage.uid}-signer-role`}
-        label={t(`${K}signerRole`)}
-        value={cfg.signer_role ?? ""}
+        value={roleValue}
+        existing={existing}
         readOnly={readOnly}
         error={issue("signer_role") ?? issue("company_signers")}
-        placeholder={t(`${K}signerRolePick`)}
-        options={roleOptions}
-        description={t(`${K}signerRoleHint`)}
-        onChange={(v) => set({ signer_role: v })}
+        onChange={(r) => {
+          setFresh(r.key === "" ? r : null);
+          set({
+            signer_role: r.key === "" ? undefined : r.key,
+            signer_role_label: r.key === "" || r.label.trim() === "" ? undefined : r.label.trim(),
+          });
+        }}
       />
       <Label className="flex items-center gap-2 font-normal" htmlFor={`${stage.uid}-need-digital`}>
         <Switch

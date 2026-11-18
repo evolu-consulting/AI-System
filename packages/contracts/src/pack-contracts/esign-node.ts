@@ -35,6 +35,8 @@ export const EsignNodeConfigSchema = z.strictObject({
   company_signers: z.array(EsignNodeSignerSchema).min(1).max(ESIGN_NODE_SIGNERS_MAX).optional(),
   /** CR-182 · R1/R3 · khoá vai người ký phía công ty: quản trị công ty giao nhóm/người, giải lúc bắt đầu lượt ⇒ điền `company_signers`. */
   signer_role: RoleKeySchema.optional(),
+  /** CR-182 · nhãn nghiệp vụ của vai người ký (nhập vai mới ở trình soạn); vắng ⇒ nhãn lấy từ tên bước. */
+  signer_role_label: z.string().trim().min(1).max(80).optional(),
   /** CR-182 · R3 · cần chữ ký số (vắng ⇒ false; đợt 3 mới ký số). */
   need_digital: z.boolean().optional(),
   /** `true` ⇒ bắt buộc có đối tác ký (thiếu email ⇒ lỗi); `false` ⇒ chỉ công ty ký; vắng ⇒ có email thì đối tác ký như trước. */
@@ -55,6 +57,7 @@ export const ESIGN_NODE_PARAMS = [
   "provider",
   "company_signers",
   "signer_role",
+  "signer_role_label",
   "need_digital",
   "partner_signs",
   "order",
@@ -75,6 +78,7 @@ export function encodeEsignNodeArgs(c: EsignNodeConfig): EsignNodeArgs {
   if (c.company_signers)
     out.company_signers = c.company_signers.map((s) => `${s.kind}:${s.id}`).join(",");
   if (c.signer_role) out.signer_role = c.signer_role;
+  if (c.signer_role_label) out.signer_role_label = c.signer_role_label;
   if (c.need_digital) out.need_digital = true; // mặc định false ⇒ không ghi
   if (c.partner_signs !== undefined) out.partner_signs = c.partner_signs;
   if (c.order !== undefined) out.order = c.order;

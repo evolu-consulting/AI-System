@@ -16,7 +16,7 @@ export function whoText(a: StageAssigned | null, t: Tr): string | null {
 export function roleView(g: CurrentGraphStage, t: Tr): DefRoleView | null {
   if (!g.role) return null;
   return {
-    line: t(`${K}.roleLine`, { label: g.role.label }),
+    line: t(g.kind === "esign" ? `${K}.signerLine` : `${K}.roleLine`, { label: g.role.label }),
     who: whoText(g.assigned, t),
     warn: t(`${K}.unassignedWarn`),
     kind: g.assigned?.kind ?? null,

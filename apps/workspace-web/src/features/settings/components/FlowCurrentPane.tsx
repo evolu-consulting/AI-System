@@ -94,7 +94,7 @@ function AssignFooter({ flow, admin }: { flow: CurrentFlow; admin: boolean }) {
 /** Sơ đồ / danh sách bước của MỘT quy trình + khối ký, đối tác; quản trị công ty bấm bước có vai để giao việc (CR-182). */
 function FlowDetail({ flow }: { flow: CurrentFlow }) {
   const { t } = useTranslation();
-  const admin = isCompanyAdmin(useSession((s) => s.me?.role));
+  const admin = flow.canEdit; // CR-182 · server quyết (Q15: tenant admin ∨ admin gói Sổ Hợp Tác), không đoán theo vai tài khoản
   const [view, setView] = useState<View>("canvas");
   const [pick, setPick] = useState<string | null>(null);
   const stage = admin ? flow.graph.find((g) => g.key === pick && g.role) : undefined;

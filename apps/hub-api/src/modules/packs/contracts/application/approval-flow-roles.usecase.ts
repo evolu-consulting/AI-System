@@ -98,6 +98,21 @@ export function assignFlowRole(d: {
   };
 }
 
+/** CR-182 · `GET /groups/:id/members`: một trang thành viên của nhóm trong CÔNG TY của người gọi (nhóm lạ / công ty khác ⇒ null ⇒ 404). Lấy dư một người để biết còn trang sau. */
+export function groupMembersPage(d: { groups: Pick<FlowGroups, "existingIds" | "membersPage"> }) {
+  return async (
+    who: PackWho,
+    id: string,
+    offset: number,
+    limit: number,
+  ): Promise<{ items: { id: string; name: string }[]; next: number | null } | null> => {
+    if (!d.groups.membersPage || !(await d.groups.existingIds(who.tenantId, [id])).has(id))
+      return null;
+    const rows = await d.groups.membersPage(who.tenantId, id, offset, limit + 1);
+    return { items: rows.slice(0, limit), next: rows.length > limit ? offset + limit : null };
+  };
+}
+
 /** «Quản trị công ty» (Q15, BR-G1) = tenant_admin ∨ quyền `admin` gói Sổ Hợp Tác; quản trị nền tảng không phải. Cùng luật `signatures/company-admin`. */
 export const companyAdminCheck =
   (view: PackAccessView) =>

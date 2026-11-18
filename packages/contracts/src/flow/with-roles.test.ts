@@ -95,6 +95,11 @@ describe("withRoles", () => {
     expect(n.unassigned).toMatchObject([{ slot: "sign", role_key: "nguoi-ky", blocking: true }]);
   });
 
+  it("Ký: có signer_role_label ⇒ vai chưa giao báo bằng nhãn này (không phải tên bước)", () => {
+    const n = withRoles([sign({ signer_role_label: { from: "const", value: "Giám đốc" } })], []);
+    expect(n.unassigned).toMatchObject([{ slot: "sign", role_key: "nguoi-ky", label: "Giám đốc" }]);
+  });
+
   it("stage không có vai giữ nguyên (cùng tham chiếu); một vai nhiều bước giao một lần", () => {
     const plain = review({ group_id: G2 });
     const o = withRoles(

@@ -7,6 +7,8 @@ import { RoleKeySchema } from "../hub-admin/process-group-refs";
 export const ApprovalFlowRoleSchema = z.strictObject({
   key: RoleKeySchema,
   label: z.string().min(1).max(80),
+  /** Vai dùng ở nhánh «cùng duyệt» ⇒ chỉ giao được NHÓM (UI khoá «Một người»). */
+  group_only: z.literal(true).optional(),
 });
 export const APPROVAL_FLOW_MEMBERS_MAX = 50;
 export const ApprovalFlowAssignedSchema = z.strictObject({
@@ -35,3 +37,15 @@ export const ApprovalFlowRoleAssignedSchema = z.strictObject({
   assigned: ApprovalFlowAssignedSchema.nullable(),
 });
 export type ApprovalFlowRoleAssigned = z.infer<typeof ApprovalFlowRoleAssignedSchema>;
+
+/** `GET /pack/contracts/groups/:id/members?offset&limit` · thành viên dùng được của một nhóm trong công ty (tải dần; avatar + chức vụ lấy ở `GET /people?ids=`). */
+export const APPROVAL_FLOW_MEMBERS_PAGE = 30;
+export const ApprovalFlowGroupMembersQuerySchema = z.strictObject({
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+  limit: z.coerce.number().int().min(1).max(100).default(APPROVAL_FLOW_MEMBERS_PAGE),
+});
+export const ApprovalFlowGroupMembersSchema = z.strictObject({
+  items: z.array(z.strictObject({ id: UuidSchema, name: z.string().max(200) })).max(100),
+  next: z.number().int().min(0).nullable(),
+});
+export type ApprovalFlowGroupMembers = z.infer<typeof ApprovalFlowGroupMembersSchema>;
