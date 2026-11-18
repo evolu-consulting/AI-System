@@ -14,7 +14,7 @@ Soát UI lượt 6 (`docs/specs/CR-181/uat-ui-review.md`, ảnh 530) ở 390px: 
 - [x] `lib/save-label.ts` chọn khoá nhãn đầy đủ/gọn; `SignBody` và `SignWorkspace` truyền `saveShort`; khoá i18n `saveLeftShort`, `tray.mineShort` (vi, en).
 
 ## Không làm / Chạm
-`PartnerSignBody` (lát `cr182-partner-web`, chưa gộp) cần truyền `saveShort` giống `SignBody` sau khi gộp. Vùng bấm giữ ≥ 44px nhờ `Button` / `max-sm:min-h-11` sẵn có.
+`PartnerSignBody` đã truyền `saveShort` như `SignBody`. Vùng bấm giữ ≥ 44px nhờ `Button` / `max-sm:min-h-11` sẵn có.
 
 ## Test tối thiểu
 - unit: `bun test apps/workspace-web/src/features/doc-sign/lib/save-label.test.ts`.

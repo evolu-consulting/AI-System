@@ -98,6 +98,8 @@ export function PartnerSignBody({
   };
   const saveLabel =
     left > 0 ? t("contracts.psign.sign.saveLeft", { count: left }) : t("contracts.psign.sign.save");
+  // Điện thoại ≤ 640px: «Lưu · còn n» (cùng nhãn gọn với màn ký công ty).
+  const saveShort = left > 0 ? t("contracts.docsign.saveLeftShort", { count: left }) : undefined;
   return (
     <>
       <SignWorkspace
@@ -114,6 +116,7 @@ export function PartnerSignBody({
         signImageUrl={image}
         onClose={onExit}
         saveLabel={saveLabel}
+        saveShort={saveShort}
         dirty={dirty}
       />
       <ConfirmSignDialog
