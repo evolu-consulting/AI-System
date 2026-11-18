@@ -1,8 +1,7 @@
 // CR-182 · đợt 2 · cr182-partner-web · ĐỐI TÁC KÝ QUA LINK RIÊNG (BR-C5): không tài khoản, mở link trong email → tạo chữ ký nhanh → ký ô Bên B → HĐ «Đã ký».
 // Vai: sale (người tạo) → trưởng phòng (duyệt + ký) → giám đốc (người ký công ty, Bên A đủ ⇒ mời đối tác) → ĐỐI TÁC (trình duyệt sạch, không đăng nhập).
-// Lấy link: `HUB_NOTIFY_MODE=off` ghi link ra log hub (`partner-sign-mail-off`). Đặt `E2E_PARTNER_LINK` (link đầy đủ) HOẶC `E2E_HUB_LOG` (tệp log hub) để spec đọc.
-// Viết theo khuôn e2e/cr181/journey-3-vai.spec.ts; chưa chạy (điều phối chạy cuối đợt).
-import fs from "node:fs";
+// Lấy link: `HUB_NOTIFY_MODE=off` ghi link ra log hub (`partner-sign-mail-off`) — `readPartnerLink` (kit) đọc log của stack journey; `E2E_PARTNER_LINK` / `E2E_HUB_LOG` để ghi đè.
+// Viết theo khuôn e2e/cr181/journey-3-vai.spec.ts.
 import { test } from "@playwright/test";
 import { envOf, expect, loginCw, newPage, U } from "../cr127/_cr127-kit";
 import { withOwner } from "../support/helpers";
@@ -12,6 +11,7 @@ import {
   draftSample,
   headSignsAndPasses,
   prepareSignPlaces,
+  readPartnerLink,
   seedPartnerContact,
   stepEventually,
 } from "./_cr181-kit";
@@ -22,21 +22,6 @@ const RUN = Date.now().toString(36);
 const GIAMDOC = "e2e-giamdoc";
 let id = "";
 let link = "";
-
-/** Link `/ky/<token>` mới nhất trong log hub (hoặc biến môi trường). Mail gửi sau khi Bên A ký đủ (NOTIFY) ⇒ thử lại. */
-async function readLink(): Promise<string> {
-  const direct = process.env.E2E_PARTNER_LINK;
-  if (direct) return direct;
-  const file = process.env.E2E_HUB_LOG;
-  if (!file) throw new Error("Đặt E2E_PARTNER_LINK hoặc E2E_HUB_LOG để lấy link ký của đối tác");
-  let found = "";
-  await expect(async () => {
-    const m = fs.readFileSync(file, "utf8").match(/https?:\/\/[^\s"\\]+\/ky\/[A-Za-z0-9_-]+/g);
-    found = m?.at(-1) ?? "";
-    expect(found).not.toBe("");
-  }).toPass({ timeout: 60_000 });
-  return found;
-}
 
 test("công ty: sale tạo → trưởng phòng duyệt → giám đốc ký ⇒ HĐ chờ đối tác (Bên A đủ), có link ký", async ({
   browser,
@@ -66,7 +51,7 @@ test("công ty: sale tạo → trưởng phòng duyệt → giám đốc ký ⇒
   await expect(page.getByTestId("partner-link")).toContainText("Hạn ký");
   await expect(wait.getByRole("button", { name: "Gửi lại link" })).toBeVisible();
   await page.context().close();
-  link = await readLink();
+  link = await readPartnerLink(E);
 });
 
 test("đối tác (không đăng nhập): mở link → tạo chữ ký nhanh → ký ô Bên B ⇒ «Bạn đã ký xong»", async ({

@@ -21,8 +21,11 @@ test("A đặt uỷ quyền cho B từ Cài đặt › Quy trình duyệt", asyn
   await page.getByTestId("delegation-save").click();
   await expect(page.getByTestId("delegation-issue")).toContainText("Chọn người làm thay");
   // CR-151: hộp chọn người tìm ở máy chủ — gõ tên rồi bấm kết quả.
-  await pane.locator("#dg-to").fill(B_NAME);
-  await pane.getByRole("button", { name: B_NAME, exact: true }).click();
+  await pane.locator("#dg-to").click(); // CR-182/184: «Giao việc cho» là ô chọn người (PersonPick: mở ra, tìm, chọn)
+  await page
+    .getByTestId("person-pick-list")
+    .getByRole("button", { name: B_NAME })
+    .dispatchEvent("click");
   await pane.getByLabel("Từ ngày").fill(day(-1));
   await pane.getByLabel("Tới hết ngày").fill(day(3));
   await page.getByTestId("delegation-save").click();

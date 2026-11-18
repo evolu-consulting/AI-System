@@ -110,8 +110,26 @@ export const envOf = (k: string): Env => ({
 export const contractRows = (page: Page): Locator =>
   page.getByRole("row").filter({ has: page.getByTestId("row-view") });
 
-export const newPage = async (browser: Browser, w = 1440): Promise<Page> =>
-  (await browser.newContext({ locale: "vi-VN", viewport: { width: w, height: 900 } })).newPage();
+/**
+ * TẠM (qc CR-182): Chromium mới (≥ 153) trả Promise từ `Element.scrollTo()`; `PageStage.tsx:115` viết `useEffect(() => el.scrollTo(…))` ⇒ React coi Promise là hàm dọn ⇒ «TypeError: i is not a function»
+ * khi màn ký đóng (trang «Something went wrong»). Lỗi SẢN PHẨM đã báo; đoạn shim này chỉ để các ca còn lại chạy được — GỠ khi sản phẩm sửa.
+ */
+const SCROLL_SHIM = (): void => {
+  for (const proto of [Element.prototype, Window.prototype]) {
+    for (const k of ["scrollTo", "scrollBy", "scroll"] as const) {
+      const orig = (proto as unknown as Record<string, (...a: unknown[]) => unknown>)[k];
+      if (typeof orig !== "function") continue;
+      (proto as unknown as Record<string, unknown>)[k] = function (this: unknown, ...a: unknown[]) {
+        orig.apply(this, a);
+      };
+    }
+  }
+};
+export const newPage = async (browser: Browser, w = 1440): Promise<Page> => {
+  const ctx = await browser.newContext({ locale: "vi-VN", viewport: { width: w, height: 900 } });
+  await ctx.addInitScript(SCROLL_SHIM);
+  return ctx.newPage();
+};
 
 /** Phiên API của người dùng một công ty (app contracts ⇒ gọi được `/pack/contracts/*` của hub). */
 export const apiAs = (e: Env, user: string, app = "contracts"): Promise<Session> =>

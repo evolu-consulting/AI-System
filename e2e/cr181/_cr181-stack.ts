@@ -6,6 +6,7 @@
 //   · công ty `presign` có sẵn chữ ký cho sale/trưởng phòng/giám đốc (các spec không đi qua màn tạo); công ty `journey` thì KHÔNG (sale tạo ở lần đăng nhập đầu).
 // Sale (e2e-kd-nv, người tạo) ≠ trưởng phòng (e2e-kd-truong) ≠ giám đốc (e2e-giamdoc) ≠ kế toán (e2e-ketoan, người chỉ xem). Xong ⇒ mở cổng "sẵn sàng" `CR181_READY_PORT`.
 import { createRequire } from "node:module";
+import { ESIGN_DEFAULT_SIGNER_ROLE } from "../../packages/contracts/src/pack-contracts/esign-node";
 import { SIGNATURE_SETTINGS_DEFAULT } from "../../packages/contracts/src/signature";
 import { apiLogin, createGroupWith, type Session, tenantIdByKey } from "../_kit/api";
 import { approve, enableFlowTriggers, esignNode, finish } from "../_kit/flows";
@@ -15,6 +16,10 @@ const READY = Number(process.env.CR181_READY_PORT);
 type Json = Record<string, unknown>;
 const log = (s: string): void => console.log(`[cr181] ${s}`);
 export const CR181 = {
+  /** CR-182 · công ty hành trình đợt 2: quy trình THEO VAI, vai CHƯA giao (spec quản trị giao trên sơ đồ). */
+  dot2: "dot2",
+  headRole: { key: "truong-phong-duyet", label: "Trưởng phòng duyệt" },
+  signRole: ESIGN_DEFAULT_SIGNER_ROLE,
   headGroup: "cr181-truong-phong",
   signGroup: "cr181-nguoi-ky",
   head: "e2e-kd-truong",
@@ -174,10 +179,80 @@ async function signCompany(
   log(`${key}: quy trình ký trên tài liệu đã áp dụng (presign=${presign})`);
 }
 
+/**
+ * CR-182 · công ty đợt 2: nhóm «Trưởng phòng duyệt» (e2e-kd-truong) + «Người ký hợp đồng» (giám đốc) nhưng quy trình duyệt theo VAI và CHƯA giao
+ * (quản trị giao trên sơ đồ trong `journey-dot2.spec.ts`): Duyệt theo vai (bằng chứng ý kiến + chữ ký) → Ký (`signer_role`; công ty bật ký trên tài liệu ⇒ `ondoc`) → Hoàn tất.
+ * Sale / trưởng phòng / giám đốc có sẵn chữ ký. Đối tác ký qua link: liên hệ có email do spec đặt (`seedPartnerContact`).
+ */
+async function dot2Company(p: Session, key: string): Promise<void> {
+  const e = envOf(key);
+  const tid = await tenantIdByKey(API, p, e.tenantKey);
+  const adm = await adminOf(key);
+  await createGroupWith(API, adm, {
+    key: CR181.headGroup,
+    name: "Trưởng phòng duyệt",
+    usernames: [CR181.head],
+  });
+  await createGroupWith(API, adm, {
+    key: CR181.signGroup,
+    name: "Người ký hợp đồng",
+    usernames: [U.director],
+  });
+  await enableFlowTriggers(e.tenantKey);
+  await hubCall(await hubAs(key, U.director), "PUT", "/company/signature-settings", {
+    ...SIGNATURE_SETTINGS_DEFAULT,
+    methods: ["type"],
+    on_doc_enabled: true,
+  });
+  // Giữ nhóm «Trưởng phòng duyệt» ở bước: `reviewHasGroup` (def-group-keys.rules.ts) chưa nhận bước Duyệt CHỈ có vai ⇒ 422 PROCESS_DEF_INCOMPLETE khi lưu def đang bật.
+  // Vai vẫn được giải lúc bắt đầu lượt (giao việc thắng nhóm); chưa giao ⇒ lượt bị từ chối.
+  const head = approve("truong-phong", "Trưởng phòng duyệt", 0, CR181.headGroup, {
+    reject: 4,
+    ret: 5,
+    next: 1,
+  });
+  head.after = {
+    ...(head.after as object),
+    need: "one",
+    evidence: "opinion_plus",
+    role: CR181.headRole,
+  };
+  const [send, wait] = esignNode(1).map((s, i) =>
+    i === 0
+      ? {
+          ...s,
+          executor: {
+            ...(s.executor as object),
+            args: {
+              contract_id: { from: "input", key: "contract_id" },
+              signer_role: { from: "const", value: CR181.signRole.key },
+            },
+          },
+        }
+      : s,
+  );
+  await companyFlow(p, tid, `Duyệt và ký theo vai ${key}`, [
+    head,
+    { ...send, name: "Ký hợp đồng" } as Json,
+    wait as Json,
+    finish("xong", "Đã ký", 3, "approved"),
+    finish("tu-choi", "Từ chối", 4, "rejected"),
+    finish("tra-lai", "Trả lại", 5, "returned"),
+  ]);
+  for (const u of [U.employee, CR181.head, U.director])
+    await hubCall(await hubAs(key, u), "POST", "/me/signature", {
+      kind: "main",
+      method: "type",
+      png: signaturePng(),
+    });
+  log(`${key}: quy trình theo vai đã áp dụng (chưa giao vai)`);
+}
+
 async function main(): Promise<void> {
   const p = await platform();
   await signCompany(p, SPEC_TENANT.j01, true, true); // contract-page-sign, sign-prep-and-sign, signed-viewer
   await signCompany(p, CR181.journey, false); // journey-3-vai
+  await dot2Company(p, CR181.dot2); // journey-dot2
   // first-login (s2) và signature-settings (s3): công ty để nguyên, spec tự cấu hình
   Bun.serve({ port: READY, fetch: () => new Response("ok") });
   log(`sẵn sàng :${READY}`);

@@ -99,7 +99,8 @@ async function healthy(base: string, proc: Bun.Subprocess): Promise<void> {
 }
 
 /** cr125-fix-parent-timer-2 · log hub-api ra tệp (spec `cr125-purchase-full` đọc đuôi khi hỏng để chẩn đoán): `<HUB_LOG>.out` / `.err`. */
-const HUB_LOG = resolve(REPO, ".data/ja-hub/hub");
+// CR-182 · hậu tố dịch cổng ⇒ mỗi việc e2e một tệp log (spec đối tác đọc link «partner-sign-mail-off» từ `<HUB_LOG><dịch>.out|.err`).
+const HUB_LOG = resolve(REPO, `.data/ja-hub/hub${process.env.E2E_PORT_SHIFT ?? ""}`);
 mkdirSync(dirname(HUB_LOG), { recursive: true });
 const spawn = (file: string, extra: Record<string, string>, logTo?: string): Bun.Subprocess =>
   Bun.spawn([process.execPath, file], {
@@ -184,6 +185,7 @@ async function main(): Promise<void> {
         "ms",
         "fsc",
         "par",
+        "dot2", // CR-182 · hành trình đợt 2 (vai + giao việc + đối tác ký qua link), cấu hình bởi e2e/cr181/_cr181-stack.ts
       ] as const)
         await provisionExtraJourneyTenant(admin, hubDb, {
           pw: env("JA_USER_PW"),

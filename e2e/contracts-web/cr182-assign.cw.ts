@@ -37,8 +37,9 @@ const G = (
   terminal: false,
   ...o,
 });
-const ROLE = { key: "giam_doc", label: "Giám đốc" };
-const flow = (assigned: unknown) => ({
+const ROLE = { key: "giam-doc", label: "Giám đốc" }; // khoá vai: chữ thường + gạch ngang (RoleKeySchema)
+const flow = (assigned: unknown, canEdit: boolean) => ({
+  can_edit: canEdit, // máy chủ quyết quyền giao việc (Q15)
   def_id: FLOW_ID,
   name: "Duyệt hợp đồng mua",
   rel_version: 2,
@@ -68,7 +69,12 @@ async function install(page: Page, tenantRole: string) {
     json(r, [{ id: GROUP_ID, name: "Ban giám đốc" }]),
   );
   await page.route("**/pack/contracts/dify-workflows", (r) => json(r, { items: [] }));
-  await page.route("**/pack/contracts/approval-flow", (r) => json(r, { items: [flow(assigned)] }));
+  await page.route("**/pack/contracts/approval-flow", (r) =>
+    json(r, { items: [flow(assigned, tenantRole === "tenant_admin")] }),
+  );
+  await page.route("**/pack/contracts/groups/*/members*", (r) =>
+    json(r, { items: ASSIGNED.members, next: null }),
+  );
   await page.route("**/pack/contracts/approval-flow/roles", (r) => {
     const b = r.request().postDataJSON() as { role_key: string; group_id?: string | null };
     assigned = b.group_id ? ASSIGNED : null;

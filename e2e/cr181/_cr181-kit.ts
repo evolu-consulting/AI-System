@@ -259,3 +259,27 @@ export async function openVisibility(e: Env, admin: string): Promise<void> {
   if (r.status >= 300)
     throw new Error(`openVisibility: ${r.status} ${(await r.text()).slice(0, 300)}`);
 }
+
+/**
+ * Link `/ky/<mã>` MỚI NHẤT của đối tác. `HUB_NOTIFY_MODE=off` (mặc định bản test) ⇒ hub ghi link ra log (`partner-sign-mail-off`) — đọc từ
+ * `E2E_PARTNER_LINK` (nếu đặt), hoặc `E2E_HUB_LOG`, hoặc tệp log của stack journey `.data/ja-hub/hub<dịch cổng>.out|.err`. Chỉ cần ĐƯỜNG DẪN `/ky/<mã>`:
+ * gốc URL trong log là `HUB_NOTIFY_BASE_URL` (không phải cổng web của e2e) ⇒ ghép lại với `e.cw`. `after`: bỏ qua các link đã thấy (lấy link mới sau «Gửi lại»).
+ */
+export async function readPartnerLink(e: Env, after: string[] = []): Promise<string> {
+  const direct = process.env.E2E_PARTNER_LINK;
+  if (direct) return direct;
+  const base =
+    process.env.E2E_HUB_LOG ??
+    path.resolve(process.cwd(), `.data/ja-hub/hub${process.env.E2E_PORT_SHIFT ?? ""}`);
+  const files = process.env.E2E_HUB_LOG ? [base] : [`${base}.out`, `${base}.err`];
+  let found = "";
+  await expect(async () => {
+    const all = files.flatMap((f) =>
+      fs.existsSync(f) ? (fs.readFileSync(f, "utf8").match(/\/ky\/[A-Za-z0-9_-]{16,}/g) ?? []) : [],
+    );
+    const fresh = all.filter((p) => !after.includes(p));
+    found = fresh.at(-1) ?? "";
+    expect(found, "chưa có link ký của đối tác trong log hub").not.toBe("");
+  }).toPass({ timeout: 90_000 });
+  return `${e.cw}${found}`;
+}
