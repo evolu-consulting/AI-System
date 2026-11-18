@@ -15,6 +15,7 @@ import {
   type PreviewResult,
   walkFlow,
 } from "../domain/preview/flow-preview.walk";
+import { applyRoles } from "../roles/roles.repo";
 import { bindGroupKeys, groupKeysOf } from "../triggers/group-keys.rules";
 import { flowRowOf, groupIdsByKeyOf, loadWorld } from "./flow-preview.repo";
 import { tenantOf } from "./slot-assign.repo";
@@ -92,7 +93,11 @@ async function loadInput(tx: Tx, tid: string, b: PreviewRequest, at: Date) {
   const raw = (row?.stages ?? b.draft?.stages ?? []) as ProcessStageDef[];
   const event = row?.event ?? b.draft?.event ?? null;
   const ids = await groupIdsByKeyOf(tx, tid, groupKeysOf(raw));
-  const stages = bindGroupKeys(raw, ids).stages as ProcessStageDef[];
+  const bound = bindGroupKeys(raw, ids).stages as ProcessStageDef[];
+  // CR-182 · R2 · xem trước giải vai như lúc chạy (đã lưu: theo giao việc; nháp chưa có flow_id: giữ nguyên).
+  const stages = (
+    b.flow_id ? (await applyRoles(tx, tid, b.flow_id, bound)).stages : bound
+  ) as ProcessStageDef[];
   const refs = refsOf(stages);
   const world = await loadWorld(tx, tid, {
     groupIds: refs.groupIds,

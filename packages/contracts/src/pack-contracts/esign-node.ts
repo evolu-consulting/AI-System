@@ -4,6 +4,7 @@
 // dạng: logic (`EsignNodeConfig`, mảng) và dạng args (`encodeEsignNodeArgs`/`decodeEsignNodeArgs`, `company_signers` = chuỗi
 // `user:<uuid>,group:<uuid>`). Panel node dùng dạng logic; lưu def đổi sang dạng args.
 import { z } from "zod";
+import { RoleKeySchema } from "../hub-admin/process-group-refs";
 import type { ESignProviderOut } from "./esign";
 
 /** CR-146b · giá trị «Ký qua» = tải lên bản đã ký, không ký số (đường chờ tải lên). */
@@ -32,6 +33,10 @@ export const EsignNodeConfigSchema = z.strictObject({
     .optional(),
   /** Người ký phía công ty: người cụ thể hoặc Group (mọi thành viên còn dùng được). Vắng ⇒ người bắt đầu lượt như trước. */
   company_signers: z.array(EsignNodeSignerSchema).min(1).max(ESIGN_NODE_SIGNERS_MAX).optional(),
+  /** CR-182 · R1/R3 · khoá vai người ký phía công ty: quản trị công ty giao nhóm/người, giải lúc bắt đầu lượt ⇒ điền `company_signers`. */
+  signer_role: RoleKeySchema.optional(),
+  /** CR-182 · R3 · cần chữ ký số (vắng ⇒ false; đợt 3 mới ký số). */
+  need_digital: z.boolean().optional(),
   /** `true` ⇒ bắt buộc có đối tác ký (thiếu email ⇒ lỗi); `false` ⇒ chỉ công ty ký; vắng ⇒ có email thì đối tác ký như trước. */
   partner_signs: z.boolean().optional(),
   /** Song song (cùng lúc) / tuần tự (lần lượt theo danh sách, đối tác sau). Vắng ⇒ tuần tự như trước. */
@@ -49,6 +54,8 @@ export type EsignNodeConfig = z.infer<typeof EsignNodeConfigSchema>;
 export const ESIGN_NODE_PARAMS = [
   "provider",
   "company_signers",
+  "signer_role",
+  "need_digital",
   "partner_signs",
   "order",
   "due_days",
@@ -67,6 +74,8 @@ export function encodeEsignNodeArgs(c: EsignNodeConfig): EsignNodeArgs {
   if (c.provider) out.provider = c.provider;
   if (c.company_signers)
     out.company_signers = c.company_signers.map((s) => `${s.kind}:${s.id}`).join(",");
+  if (c.signer_role) out.signer_role = c.signer_role;
+  if (c.need_digital) out.need_digital = true; // mặc định false ⇒ không ghi
   if (c.partner_signs !== undefined) out.partner_signs = c.partner_signs;
   if (c.order !== undefined) out.order = c.order;
   if (c.due_days !== undefined) out.due_days = c.due_days;
@@ -105,7 +114,7 @@ const BAD = Symbol("bad");
 /** Giá trị đơn của `args` ⇒ giá trị logic (chuỗi người ký ⇒ mảng; "true"/"3" ⇒ boolean/số); chuỗi người ký sai dạng ⇒ `BAD`. */
 function coerce(k: (typeof ESIGN_NODE_PARAMS)[number], v: Scalar): unknown {
   if (k === "company_signers") return signersOf(String(v));
-  if (k === "partner_signs") return asBool(v);
+  if (k === "partner_signs" || k === "need_digital") return asBool(v);
   if (k === "due_days" || k === "due_hours" || k === "remind_every_hours") return asNum(v);
   return v;
 }
@@ -129,7 +138,8 @@ export const ESIGN_NODE_NO_PROVIDER_SELECTED = "NO_PROVIDER_SELECTED";
 export function esignConfigIssues(c: EsignNodeConfig): { field: string; code: string }[] {
   const out: { field: string; code: string }[] = [];
   if (!c.provider) out.push({ field: "provider", code: ESIGN_NODE_NO_PROVIDER_SELECTED });
-  if (!c.company_signers?.length)
+  if (!c.company_signers?.length && !c.signer_role)
+    // CR-182 · có vai ⇒ người ký lấy từ giao việc
     out.push({ field: "company_signers", code: ESIGN_NODE_NO_SIGNER_SELECTED });
   return out;
 }

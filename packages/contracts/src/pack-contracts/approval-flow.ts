@@ -8,6 +8,7 @@ import { ESCALATE_AFTER_H, ProcessKeySchema, REMIND_EVERY_H } from "../chat/proc
 import { INPUT_NAME_RE, INPUT_SCHEMA_MAX, IsoDateTime, UuidSchema } from "../common";
 import { GROUP_KEY_RE } from "../groups";
 import { FactWhenSchema } from "../hub-admin/process-trigger";
+import { ApprovalFlowAssignedSchema, ApprovalFlowRoleSchema } from "./approval-flow-roles";
 import { ESIGN_NODE_ORDERS, ESIGN_NODE_SIGNERS_MAX } from "./esign-node";
 import { CONTRACT_DEALS } from "./milestones";
 
@@ -301,6 +302,9 @@ export const ApprovalFlowGraphStageSchema = z.strictObject({
   no: StepIdx.nullable(),
   next_step: StepIdx.nullable(),
   terminal: z.boolean(),
+  /** CR-182 · vai của bước Duyệt / Ký; null/vắng ⇒ bước không dùng vai. `assigned` null ⇒ vai CHƯA giao («Chưa giao người»). */
+  role: ApprovalFlowRoleSchema.nullable().optional(),
+  assigned: ApprovalFlowAssignedSchema.nullable().optional(),
 });
 export type ApprovalFlowGraphStage = z.infer<typeof ApprovalFlowGraphStageSchema>;
 export const ApprovalFlowCurrentSchema = z.strictObject({

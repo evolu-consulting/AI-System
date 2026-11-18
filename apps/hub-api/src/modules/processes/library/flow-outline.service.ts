@@ -8,6 +8,7 @@ import type { FlowOutline } from "../../packs/kit/public";
 import { starterIsTop } from "../domain/if/core-facts.rules";
 import type { FactValue } from "../domain/if/if.rules";
 import { outlineSteps } from "../domain/preview/flow-outline";
+import { applyRolesMany } from "../roles/roles.repo";
 import { bindGroupKeys, groupKeysOf } from "../triggers/group-keys.rules";
 import type { FlowCandidate } from "../triggers/match.rules";
 import { flowRowsOf, groupIdsByKeyOf, loadWorld, rootHeadIdsOf } from "./flow-preview.repo";
@@ -48,12 +49,14 @@ export async function outlineOfRun(
       );
       const raws = picked.flatMap((c) => {
         const r = rows.get(c.flowId);
-        return r ? [{ name: r.name, stages: r.stages as ProcessStageDef[] }] : [];
+        return r ? [{ flowId: c.flowId, name: r.name, stages: r.stages as ProcessStageDef[] }] : [];
       });
+      // CR-182 · R2 · giải vai (một câu cho cả lô) trước khi đổi mã nhóm.
+      const resolved = await applyRolesMany(tx, q.tenantId, raws);
       const ids = await groupIdsByKeyOf(tx, q.tenantId, groupKeysOf(raws.flatMap((x) => x.stages)));
-      const flows = raws.map((x) => ({
+      const flows = raws.map((x, i) => ({
         name: x.name,
-        stages: bindGroupKeys(x.stages, ids).stages as ProcessStageDef[],
+        stages: bindGroupKeys(resolved[i]?.stages ?? x.stages, ids).stages as ProcessStageDef[],
       }));
       const refs = refsOf(flows.flatMap((f) => f.stages));
       const world = await loadWorld(tx, q.tenantId, {

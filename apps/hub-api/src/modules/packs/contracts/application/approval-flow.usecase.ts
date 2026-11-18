@@ -2,8 +2,12 @@
 // phòng ban theo TÊN (mã Group ⇒ id theo tenant ⇒ tên). Không còn lưu mẫu (PUT bỏ; sửa ở ai-admin). Cũng giữ `GET /dify-workflows`
 // và các kiểu cổng dùng chung (`FlowGroups`, `FlowMembers`). Lớp 2: chỉ cổng.
 
+import { type RoleAssignment, withRoles } from "@ai/contracts/flow";
 import { type FactWhen, FactWhenSchema } from "@ai/contracts/hub-admin";
-import type { ApprovalFlowGraphStage } from "@ai/contracts/pack-contracts";
+import {
+  APPROVAL_FLOW_MEMBERS_MAX,
+  type ApprovalFlowGraphStage,
+} from "@ai/contracts/pack-contracts";
 import type { EventFlow, PackUow, PackWho } from "../../kit/public";
 import { PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
 import type { DifyWorkflow } from "../domain/approval-flow.rules";
@@ -18,6 +22,7 @@ import {
 } from "../domain/event-flow-steps.rules";
 import type { ApprovalEngineBridge } from "./approval-engine.ports";
 import type { ApprovalFlowTxRepos, FlowGroups } from "./approval-flow.ports";
+import { assignedIdsOf, assignedOf, membersOf } from "./approval-flow-roles.usecase";
 
 export type { ApprovalFlowRepo, ApprovalFlowTxRepos, FlowGroups } from "./approval-flow.ports";
 
@@ -162,6 +167,8 @@ type FlowLookups = {
   counts: ReadonlyMap<string, number>;
   users: ReadonlyMap<string, string>;
   ownerName: string | null;
+  /** CR-182 · thành viên của các Group được giao cho vai (id Group ⇒ người). */
+  members: ReadonlyMap<string, { id: string; name: string }[]>;
 };
 
 const DEPT_FACT = /department|group/;
@@ -189,13 +196,18 @@ export function readCurrentFlows(
   return async (who: PackWho): Promise<{ items: CurrentFlow[] }> => {
     const flows = (await d.engine?.port?.eventFlows?.(who.tenantId, CONTRACT_FLOW_EVENT)) ?? [];
     if (flows.length === 0) return { items: [] };
-    const parsed = flows.map((f) => ({
-      f,
-      ...stepsOfStages(f.stages),
-      sp: signPartnerOf(f.stages),
-      graph: graphOfStages(f.stages),
-      codes: whenCodes(f.when),
-    }));
+    // CR-182 · R2 · màn xem giải vai như lúc chạy (thuần, 0 SQL: giao việc đã đọc cùng câu `eventFlows`) ⇒ tên phòng/người ký khớp giao việc.
+    const parsed = flows.map((f) => {
+      const stages = withRoles(f.stages, f.assignments ?? []).stages;
+      return {
+        f,
+        ...stepsOfStages(stages),
+        sp: signPartnerOf(stages),
+        graph: graphOfStages(stages),
+        codes: whenCodes(f.when),
+      };
+    });
+    const assigned = assignedIdsOf(flows);
     const l2 = await level2KeyOf(d, who);
     const codes = [
       ...new Set(
@@ -207,16 +219,18 @@ export function readCurrentFlows(
     ];
     const keys = [...new Set([...codes, PACK_OWNER_GROUP_KEY, ...(l2 ? [l2] : [])])];
     const userIds = [
-      ...new Set(
-        parsed.flatMap((p) =>
+      ...new Set([
+        ...assigned.users,
+        ...parsed.flatMap((p) =>
           (p.sp.esign?.signers ?? []).flatMap((x) => (x.kind === "user" ? [x.id] : [])),
         ),
-      ),
+      ]),
     ];
-    const [ids, list, users] = await Promise.all([
+    const [ids, list, users, members] = await Promise.all([
       d.groups.idsOf(who.tenantId, keys),
       d.groups.list ? d.groups.list(who.tenantId) : [],
       userIds.length > 0 && d.userNames ? d.userNames(who, userIds) : new Map<string, string>(),
+      membersOf(d.groups, who.tenantId, assigned.groups),
     ]);
     const names = new Map(list.map((g) => [g.id, g.name]));
     const idOf = (s: { groupId: string | null; groupKey: string | null }) =>
@@ -236,6 +250,7 @@ export function readCurrentFlows(
       counts,
       users,
       ownerName: ownerView(ids, names, l2).name,
+      members,
     };
     return { items: parsed.map((p) => currentOf(p, lk, idOf)) };
   };
@@ -256,6 +271,7 @@ function graphStageOut(
   g: GraphStage,
   idOf: (s: { groupId: string | null; groupKey: string | null }) => string | null,
   lk: FlowLookups,
+  by: ReadonlyMap<string, RoleAssignment>,
 ): ApprovalFlowGraphStage {
   const id = g.kind === "review" ? idOf(g) : null;
   const dept = g.kind === "review" ? ((id ? lk.names.get(id) : undefined) ?? g.groupKey) : null;
@@ -273,6 +289,12 @@ function graphStageOut(
     no: g.ifs?.no ?? null,
     next_step: g.nextStep,
     terminal: g.terminal,
+    ...(g.role
+      ? {
+          role: { key: g.role.key, label: g.role.label.slice(0, 80) },
+          assigned: assignedOf(by.get(g.role.key), lk),
+        }
+      : {}),
   };
 }
 
@@ -305,6 +327,7 @@ function currentOf(
     if (n) group_names[c] = n.slice(0, NAME_MAX);
   }
   const e = p.sp.esign;
+  const byRole = new Map((p.f.assignments ?? []).map((a) => [a.role_key, a]));
   return {
     def_id: p.f.defId,
     name: p.f.name,
@@ -325,7 +348,7 @@ function currentOf(
           provider: e.provider ?? null,
         }
       : null,
-    graph: p.graph.map((g) => graphStageOut(g, idOf, lk)),
+    graph: p.graph.map((g) => graphStageOut(g, idOf, lk, byRole)),
     partner_send: p.sp.partnerSend,
     owner_can_override: true,
     owner_group_name: lk.ownerName,

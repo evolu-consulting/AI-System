@@ -13,6 +13,7 @@ import type { ProcessDeps } from "../core/ports";
 import { RunControlService } from "../gates/run-control.service";
 import { outlineOfRun } from "../library/flow-outline.service";
 import { flowRowsOf } from "../library/flow-preview.repo";
+import { applyRolesMany } from "../roles/roles.repo";
 import { type ClaimedEvent, candidatesOf } from "../triggers/dispatcher.repo";
 import { planEvent } from "../triggers/match.rules";
 
@@ -114,10 +115,14 @@ export function flowEngineOf(d: ProcessDeps): FlowEngine {
       async stagesFor(q) {
         const ids = (await runPlanOf(d, q)).map((c) => c.flowId);
         if (ids.length === 0) return [];
-        const rows = await withHubScope(d.db, SYS, (tx) => flowRowsOf(tx, q.tenantId, ids));
-        return ids.flatMap((id) => {
-          const st = rows.get(id)?.stages;
-          return Array.isArray(st) ? [st as unknown[]] : [];
+        // CR-182 · R2 · đường nháp giải vai như lúc chạy (người ký công ty từ giao việc).
+        return withHubScope(d.db, SYS, async (tx) => {
+          const rows = await flowRowsOf(tx, q.tenantId, ids);
+          const flows = ids.flatMap((id) => {
+            const st = rows.get(id)?.stages;
+            return Array.isArray(st) ? [{ flowId: id, stages: st as unknown[] }] : [];
+          });
+          return (await applyRolesMany(tx, q.tenantId, flows)).map((x) => x.stages);
         });
       },
     },

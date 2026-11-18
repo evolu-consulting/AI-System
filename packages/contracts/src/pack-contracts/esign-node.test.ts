@@ -26,6 +26,8 @@ describe("E5 · EsignNodeConfig", () => {
         { kind: "group" as const, id: G },
       ],
       provider: "docusign",
+      signer_role: "nguoi-ky-hop-dong", // CR-182
+      need_digital: true,
       partner_signs: true,
       order: "parallel" as const,
       due_days: 5,
@@ -38,6 +40,17 @@ describe("E5 · EsignNodeConfig", () => {
     ).toBe(true);
     expect(Object.keys(args).sort()).toEqual([...ESIGN_NODE_PARAMS].sort());
     expect(decodeEsignNodeArgs({ ...args, contract_id: U })).toEqual({ ok: true, config: c });
+  });
+
+  it("CR-182 · vai người ký thay cho người ký cố định; need_digital=false không ghi ra args", () => {
+    expect(esignConfigIssues({ provider: "ondoc", signer_role: "nguoi-ky-hop-dong" })).toEqual([]);
+    expect(esignConfigIssues({ provider: "ondoc" }).map((i) => i.code)).toEqual([
+      "NO_SIGNER_SELECTED",
+    ]);
+    expect(encodeEsignNodeArgs({ signer_role: "a-b", need_digital: false })).toEqual({
+      signer_role: "a-b",
+    });
+    expect(EsignNodeConfigSchema.safeParse({ signer_role: "Có Dấu" }).success).toBe(false);
   });
 
   it("args dạng chuỗi (từ def lưu JSON) vẫn đọc được; giá trị rỗng = vắng", () => {

@@ -111,6 +111,8 @@ export type EventFlow = {
   stages: unknown[];
   position: number;
   when: unknown | null;
+  /** CR-182 · giao việc theo vai của công ty cho flow này (`hub.process_role_assignments`); vắng/rỗng ⇒ chưa vai nào giao. */
+  assignments?: { role_key: string; group_id: string | null; user_id: string | null }[];
 };
 
 /** CR-105 · tra quy trình đang chạy của khe cho tenant: gán, không có ⇒ mặc định; bản xuất bản hiện hành. */

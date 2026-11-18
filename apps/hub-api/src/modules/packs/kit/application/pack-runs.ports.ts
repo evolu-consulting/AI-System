@@ -197,6 +197,14 @@ export type PackRunsPort = {
   resolveSlot(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
   /** CR-146 · MỌI flow Bật của công ty cho sự kiện (company_flows, theo `position`), MỘT câu scope system; không có ⇒ []. */
   eventFlows?(tenantId: string, event: string): Promise<EventFlow[]>;
+  /** CR-182 · giao / đổi / bỏ giao MỘT vai của quy trình (hàm DB đòi cờ quản trị công ty; route ĐÃ kiểm Q15) + audit `role_assigned`; trả TRƯỚC/SAU. */
+  assignRole?(
+    who: { tenantId: string; userId: string; role: string },
+    i: { flowId: string; roleKey: string; groupId: string | null; userId: string | null },
+  ): Promise<{
+    before: { group_id: string | null; user_id: string | null };
+    after: { group_id: string | null; user_id: string | null };
+  }>;
   /** dlc-agent-flows · def thư viện `defKey` của khe ở bản xuất bản hiện hành (agent chỉ định quy trình, KHÔNG qua gán tenant);
    *  không có ⇒ null. Vắng (bản giả) ⇒ gói báo lỗi khi agent có chỉ định. */
   resolveSlotDef?(slot: string, defKey: string): Promise<ResolvedSlot | null>;

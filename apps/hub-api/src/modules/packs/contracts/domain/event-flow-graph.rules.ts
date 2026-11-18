@@ -30,6 +30,8 @@ export type GraphStage = {
   nextStep: number | null;
   /** Điểm cuối (Kết thúc / chờ sự kiện thường): không có cạnh đi tiếp. */
   terminal: boolean;
+  /** CR-182 · vai của bước Duyệt (`after.role`) / Ký (`args.signer_role`, nhãn = tên bước); không có ⇒ null. */
+  role: { key: string; label: string } | null;
 };
 
 type Raw = {
@@ -50,6 +52,7 @@ type Raw = {
     kind?: unknown;
     group_id?: unknown;
     group_key?: unknown;
+    role?: { key?: unknown; label?: unknown } | null;
     back_to_steps?: unknown;
     branch?: unknown;
   } | null;
@@ -92,6 +95,17 @@ const branchOf = (s: Raw, kind: GraphKind): (number | null)[] =>
     ? s.after.branch.map((b) => num((b as { goto_step?: unknown } | null)?.goto_step))
     : [];
 
+/** Vai của bước (CR-182): Duyệt ⇒ `after.role`; Ký ⇒ `args.signer_role` (hằng). */
+function roleOfStage(s: Raw, kind: GraphKind): GraphStage["role"] {
+  if (kind === "esign") {
+    const k = constString(s.executor?.args, "signer_role");
+    return k ? { key: k, label: str(s.name) ?? k } : null;
+  }
+  const r = kind === "review" ? s.after?.role : null;
+  const key = str(r?.key);
+  return key ? { key, label: str(r?.label) ?? key } : null;
+}
+
 function toGraphStage(s: Raw, i: number): GraphStage {
   const kind = kindOf(s);
   const e = s.executor;
@@ -108,6 +122,7 @@ function toGraphStage(s: Raw, i: number): GraphStage {
     ifs: kind === "if" ? { yes: num(e?.then_step), no: num(e?.else_step) } : null,
     nextStep: num(s.next_step),
     terminal: kind === "end" || (e?.kind === "wait_event" && str(s.node) === null),
+    role: roleOfStage(s, kind),
   };
 }
 

@@ -59,6 +59,14 @@ export type ApprovalEnginePort = {
   resolveSlot?(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
   /** CR-146 · mọi flow Bật của công ty cho sự kiện theo `position` (cùng nguồn tab Quy trình + bộ điều phối). */
   eventFlows?(tenantId: string, event: string): Promise<EventFlow[]>;
+  /** CR-182 · giao việc theo vai (quản trị công ty) — cùng kiểu `PackRunsPort.assignRole`. */
+  assignRole?(
+    who: { tenantId: string; userId: string; role: string },
+    i: { flowId: string; roleKey: string; groupId: string | null; userId: string | null },
+  ): Promise<{
+    before: { group_id: string | null; user_id: string | null };
+    after: { group_id: string | null; user_id: string | null };
+  }>;
   /** CR-118 §11.2 · chọn quy trình theo luật phòng ban của người khởi tạo; vắng ⇒ `resolveSlot`. */
   routeSlot?(
     tenantId: string,

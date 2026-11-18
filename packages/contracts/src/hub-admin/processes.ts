@@ -31,6 +31,7 @@ import {
   type StageEscalate,
   StageEscalateSchema,
   StageGroupKeySchema,
+  StageRoleSchema,
 } from "./process-group-refs";
 import { IfExecutorSchema } from "./process-if";
 import { LIBRARY_DEF_FIELDS, LIBRARY_DEF_INPUT_FIELDS } from "./process-library";
@@ -137,7 +138,7 @@ export const StageAutofixSchema = z.strictObject({
 });
 export type StageAutofix = z.infer<typeof StageAutofixSchema>;
 
-export { type StageEscalate, StageEscalateSchema, StageGroupKeySchema }; // CR-105 · id hoặc mã Group
+export { type StageEscalate, StageEscalateSchema, StageGroupKeySchema, StageRoleSchema }; // CR-105 · id hoặc mã Group
 export const ProcessStageDefSchema = z.strictObject({
   key: z.string().regex(STAGE_KEY_RE),
   name: NameSchema,
@@ -214,6 +215,7 @@ export const ProcessStageDefSchema = z.strictObject({
       approver_mode: z.enum(APPROVER_MODES).optional(),
       group_key: StageGroupKeySchema.optional(), // CR-105 · def thư viện: Group duyệt theo mã
       also_group_keys: z.array(StageGroupKeySchema).max(5).optional(), // CR-105
+      role: StageRoleSchema.optional(), // CR-182 · R1 · vai của bước Duyệt: quản trị công ty giao nhóm/người; giải lúc bắt đầu lượt (R2)
     }),
     z.strictObject({ kind: z.literal("auto"), branch: AfterBranchSchema }),
   ]),

@@ -175,6 +175,11 @@ function launchFailure(err: unknown): "duplicate" | "superseded" {
   if (isFlowEventDup(err)) return "duplicate";
   const cause = (err as { cause?: unknown } | null)?.cause;
   if (err instanceof FlowRunSuperseded || cause instanceof FlowRunSuperseded) return "superseded";
+  // CR-182 · vai chưa giao ⇒ cùng lý do «thiếu nhóm» (`FLOW_GROUP_MISSING:<khoá vai>`): HĐ dừng chờ, giao xong thì Mở lại.
+  if (err instanceof AppError && err.code === "ROLE_UNASSIGNED") {
+    const roles = (err.details as { roles?: string[] } | undefined)?.roles ?? [];
+    throw new FlowLaunchRefused(`group_missing:${roles.join(",")}`);
+  }
   if (err instanceof AppError && err.status < 500) throw new FlowLaunchRefused(err.code);
   throw err;
 }

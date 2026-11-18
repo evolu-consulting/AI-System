@@ -31,6 +31,7 @@ import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { enqueueThread } from "../core/thread";
 import { canRun } from "../domain/runs/run-access.rules";
+import { resolveRunRoles } from "../roles/roles.repo";
 import { attachFlowEvent, type FlowEventAttach } from "./flow-event-attach";
 import { kickOrFlag } from "./kick-failure";
 import { runDefIdsFor } from "./run-def-filter";
@@ -202,7 +203,9 @@ export class StartService {
                 input: req.input,
               });
         const owners = o.flowEvent?.ownerGroupIds ?? [];
-        const def = { ...def0, stages: withOwnerOverride(def0.stages, owners) };
+        // CR-182 · R2 · MỘT điểm giải vai (lượt mở từ sự kiện mà còn vai chặn chưa giao ⇒ từ chối): xem `roles.repo`.
+        const rr = await resolveRunRoles(tx, u.tenantId, def0, !!o.flowEvent);
+        const def = { ...def0, stages: withOwnerOverride(rr.stages, owners) };
         // prod-fix · run gắn bản ghi gói (lượt duyệt HĐ chờ người nhiều ngày) không chịu/không tính trần run/tenant.
         const r = await this.#insert(
           tx,

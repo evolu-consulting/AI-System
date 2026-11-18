@@ -4,3 +4,4 @@ export * from "./form-prefill";
 export * from "./module-step";
 export * from "./owner-override";
 export * from "./view";
+export * from "./with-roles";

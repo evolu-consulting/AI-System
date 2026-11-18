@@ -26,6 +26,7 @@ import { eventFlowsOf } from "../library/event-flow.repo";
 import { resolveSlot, resolveSlotDef } from "../library/slot-resolve.repo";
 import { routeSlot } from "../library/slot-route.repo";
 import { defSourceRef } from "../library/source-ref";
+import { assignRoleAudited } from "../roles/role-assign.service";
 import { updatePackInputs } from "./pack-inputs";
 import {
   asUser,
@@ -293,6 +294,7 @@ export function packRunsOf(d: ProcessDeps, sys?: Pick<SystemUow, "system">): Pac
     },
     resolveSlot: (tenantId, slot) => resolveSlot(d.db, tenantId, slot),
     eventFlows: (tenantId, event) => eventFlowsOf(d.db, tenantId, event),
+    assignRole: (who, i) => assignRoleAudited(d.db, who, i),
     resolveSlotDef: (slot, key) => resolveSlotDef(d.db, slot, key),
     routeSlot: (tenantId, slot, userId, facts) => routeSlot(d.db, tenantId, slot, userId, facts),
     sourceRefOf: defSourceRef,

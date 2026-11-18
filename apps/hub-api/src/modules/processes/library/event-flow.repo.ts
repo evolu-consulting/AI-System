@@ -3,6 +3,7 @@
 // tenant từ ngữ cảnh gói. Xét theo `position, id` như `candidatesOf` (CÙNG thứ tự bộ điều phối); trả MỌI flow, một câu SQL không đổi theo số flow.
 // Stage: def Thư viện (dữ liệu cũ) lấy từ BẢN XUẤT BẢN (`process_def_releases`); quy trình CỦA CÔNG TY (CR-127 Z9) lấy `d.stages` hiện hành —
 // «Lưu và áp dụng» không tạo bản xuất bản, bộ điều phối (`candidatesOf`) cũng chạy def công ty theo `d.stages` ⇒ MỘT nguồn "quy trình đang bật".
+import type { RoleAssignment } from "@ai/contracts/flow";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { Db } from "../../../lib/db";
@@ -19,13 +20,17 @@ type Row = {
   stages: unknown[];
   position: number;
   when: unknown | null;
+  assignments: RoleAssignment[] | null;
 };
 
 /** Câu tra (xuất cho test đếm câu). Flow Bật + def chưa xoá + đúng sự kiện + (def công ty, hoặc def Thư viện đã xuất bản). */
 export const EVENT_FLOW_SQL = (tenantId: string, event: string) => sql`
   select d.id as def_id, d.name, coalesce(d.published_version, d.version) as rel_version,
     case when d.tenant_id is null then coalesce(r.stages, d.stages) else d.stages end as stages,
-    cf.position, d.trigger -> 'when' as "when"
+    cf.position, d.trigger -> 'when' as "when",
+    -- CR-182 · giao việc theo vai của công ty (một câu, không thêm round-trip): màn xem giải vai + hiện «giao cho ai».
+    coalesce((select jsonb_agg(jsonb_build_object('role_key', a.role_key, 'group_id', a.group_id, 'user_id', a.user_id)
+      order by a.role_key) from hub.process_role_assignments a where a.tenant_id = cf.tenant_id and a.flow_id = d.id), '[]'::jsonb) as assignments
   from hub.company_flows cf
   join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null
     and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
@@ -47,5 +52,6 @@ export async function eventFlowsOf(db: Db, tenantId: string, event: string): Pro
     stages: Array.isArray(r.stages) ? r.stages : [],
     position: Number(r.position),
     when: r.when ?? null,
+    assignments: Array.isArray(r.assignments) ? r.assignments : [],
   }));
 }

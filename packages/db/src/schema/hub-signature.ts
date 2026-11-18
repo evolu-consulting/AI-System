@@ -20,6 +20,7 @@ export const SIGNATURE_AUDIT_ACTIONS = [
   "signature_change_requested",
   "signature_change_granted",
   "document_signed",
+  "role_assigned", // CR-182 (0159) · giao việc theo vai (entity `process_def`)
 ] as const;
 export const SIGNATURE_AUDIT_ENTITIES = ["signature"] as const;
 

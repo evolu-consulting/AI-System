@@ -4,11 +4,24 @@
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
+import { applyRoles } from "../../roles/roles.repo";
 import type { LauncherDeps } from "../../runs/launch-common";
 import { findDefByKey, libraryFlowDef, type StartDefRow } from "../../runs/runs.repo";
 import { bindGroupKeys, groupKeysOf } from "../../triggers/group-keys.rules";
 
+/** CR-182 · R2 · lượt con cũng giải vai theo giao việc của công ty (vai chưa giao ⇒ để trống như lượt thường). */
 export async function resolveSubprocessDef(
+  d: Pick<LauncherDeps, "db">,
+  tx: Tx,
+  tenantId: string,
+  key: string,
+): Promise<StartDefRow | null> {
+  const def = await resolveDefByKey(d, tx, tenantId, key);
+  if (!def) return null;
+  return { ...def, stages: (await applyRoles(tx, tenantId, def.id, def.stages)).stages };
+}
+
+async function resolveDefByKey(
   d: Pick<LauncherDeps, "db">,
   tx: Tx,
   tenantId: string,

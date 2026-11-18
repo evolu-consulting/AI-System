@@ -68,6 +68,34 @@ export function packGroups(
       );
       return new Map(rows.map((r) => [r.group_id, r.n]));
     },
+    /** CR-182 · thành viên dùng được (≤ `max` mỗi Group, theo tên) của lô Group: MỘT câu (cửa sổ `row_number`). */
+    async members(
+      tenantId: string,
+      ids: readonly string[],
+      max: number,
+    ): Promise<ReadonlyMap<string, { id: string; name: string }[]>> {
+      const out = new Map<string, { id: string; name: string }[]>();
+      if (ids.length === 0) return out;
+      const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+        tx.execute<{
+          group_id: string;
+          id: string;
+          name: string;
+        }>(sql`select group_id, id, name from (
+            select gm.group_id::text as group_id, u.id::text as id, coalesce(nullif(u.display_name, ''), u.username) as name,
+              row_number() over (partition by gm.group_id order by coalesce(nullif(u.display_name, ''), u.username), u.id) as rn
+            from admin.group_members gm join admin.users u on u.id = gm.user_id and u.tenant_id = gm.tenant_id
+            where gm.tenant_id = ${tenantId}::uuid and gm.group_id = any(${`{${ids.join(",")}}`}::uuid[])
+              and u.active and not u.locked_by_tenant and u.kind = 'internal') t
+          where rn <= ${max} order by group_id, rn`),
+      );
+      for (const r of rows) {
+        const l = out.get(r.group_id) ?? [];
+        l.push({ id: r.id, name: r.name });
+        out.set(r.group_id, l);
+      }
+      return out;
+    },
     async userGroups(who: PackWho): Promise<ReadonlySet<string>> {
       await view.adminSettled?.();
       const u = await view.user(who.userId);

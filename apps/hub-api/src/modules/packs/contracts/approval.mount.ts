@@ -12,6 +12,7 @@ import {
   listDifyWorkflows,
   readCurrentFlows,
 } from "./application/approval-flow.usecase";
+import { assignFlowRole } from "./application/approval-flow-roles.usecase";
 import type { ContractFlowGate } from "./application/contract-flow.ports";
 import { myApprovals } from "./application/mywork-approvals.usecase";
 
@@ -82,6 +83,13 @@ export function flowTemplateRoutes(
   return approvalFlowRoutes(view, {
     read: readCurrentFlows({ ...fd, ...(names ? { userNames: names } : {}) }),
     difyWorkflows: listDifyWorkflows(fd),
+    assignRole: assignFlowRole({ ...fd, ...(names ? { userNames: names } : {}) }),
+    isAdmin: async (user) => {
+      if (user.role === "tenant_admin") return true;
+      if (user.role === "platform_admin") return false;
+      const i = await packAccessInput(view, "contracts", user);
+      return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
+    },
     ...(list ? { groups: list } : {}),
   });
 }

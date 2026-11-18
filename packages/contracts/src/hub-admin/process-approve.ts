@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { ProcessStepSchema } from "../chat/processes";
 import { UuidSchema } from "../common";
-import { StageGroupKeySchema } from "./process-group-refs";
+import { StageGroupKeySchema, StageRoleSchema } from "./process-group-refs";
 
 /** Trường output node Duyệt ghi khi người quyết (`decision`) — node Nếu / rẽ bước đọc được. */
 export const APPROVE_DECISION_FIELD = "decision";
@@ -61,6 +61,7 @@ export const ParallelGroupSchema = z.strictObject({
   label: z.string().trim().min(1).max(PARALLEL_LABEL_MAX),
   /** CR-140 · cùng cờ `after.head_only` của bước Duyệt đơn: chỉ trưởng phòng của nhóm này duyệt nhánh (không trưởng ⇒ cả nhóm). */
   head_only: z.boolean().optional(),
+  role: StageRoleSchema.optional(), // CR-182 · vai của nhóm này (quản trị công ty giao nhóm/người; giải lúc bắt đầu lượt)
 });
 export const ParallelRuleSchema = z.union([
   z.literal("all"),

@@ -14,4 +14,10 @@ export type FlowGroups = {
   list?(tenantId: string): Promise<{ id: string; name: string }[]>;
   /** CR-108 · số thành viên còn dùng được mỗi Group (id ⇒ số); vắng ⇒ không hiện số người duyệt. */
   memberCounts?(tenantId: string, ids: readonly string[]): Promise<ReadonlyMap<string, number>>;
+  /** CR-182 · thành viên dùng được (id + tên, tối đa `max` mỗi Group) của các Group: MỘT câu cho cả lô; vắng ⇒ không hiện danh sách. */
+  members?(
+    tenantId: string,
+    ids: readonly string[],
+    max: number,
+  ): Promise<ReadonlyMap<string, { id: string; name: string }[]>>;
 };
