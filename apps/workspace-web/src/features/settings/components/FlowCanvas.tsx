@@ -28,13 +28,22 @@ const THEME: Partial<FlowTheme> = {
   trigger:
     "flex flex-col justify-center gap-1 overflow-hidden rounded-xl border-2 border-act bg-panel px-3 text-label",
   ifShape: "fill-panel stroke-rule",
+  stepWarn: "border-warning",
+  stepPick: "ring-2 ring-act",
+  roleLine: "truncate text-caption text-dim",
+  warnLine: "truncate text-caption font-semibold text-warning",
 };
 const narrow = (): boolean =>
   typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches;
 
-export type FlowCanvasProps = { flow: CurrentFlow };
+/** CR-182 · `onPick` (chỉ quản trị công ty): bấm bước có vai ⇒ mở khung giao việc; `selectedId` = bước đang mở. */
+export type FlowCanvasProps = {
+  flow: CurrentFlow;
+  selectedId?: string | null;
+  onPick?: (stageKey: string) => void;
+};
 
-export default function FlowCanvas({ flow }: FlowCanvasProps) {
+export default function FlowCanvas({ flow, selectedId, onPick }: FlowCanvasProps) {
   const { t } = useTranslation();
   const stages = useMemo(() => viewStages(flow, t), [flow, t]);
   const trigger = useMemo(() => viewTrigger(flow, t), [flow, t]);
@@ -44,8 +53,8 @@ export default function FlowCanvas({ flow }: FlowCanvasProps) {
     aspectRatio: narrow() ? 0.8 : 1.8,
   });
   const { nodes, edges } = useMemo(
-    () => buildDefViewGraph(stages, trigger, auto),
-    [stages, trigger, auto],
+    () => buildDefViewGraph(stages, trigger, auto, selectedId),
+    [stages, trigger, auto, selectedId],
   );
   const labels = useMemo<Partial<FlowLabels>>(
     () => ({
@@ -69,6 +78,9 @@ export default function FlowCanvas({ flow }: FlowCanvasProps) {
         edges={edges}
         labels={labels}
         theme={THEME}
+        onNodeClick={
+          onPick && ((n) => stages.some((s) => s.uid === n.id && s.role) && onPick(n.id))
+        }
         fitSig={nodes.map((n) => n.id).join(",")}
         fitMin={0.3}
       />

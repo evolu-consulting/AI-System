@@ -4,7 +4,7 @@ import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { Flag, Play } from "lucide-react";
 import { memo } from "react";
 import { useFlowHost } from "../context";
-import type { DefNodeData } from "../layout/def-graph";
+import type { DefNodeData, DefRoleView } from "../layout/def-graph";
 import { NODE_H, NODE_W } from "../layout/geometry";
 import { HiddenHandle } from "./HiddenHandle";
 
@@ -26,22 +26,68 @@ function TriggerImpl({ data }: P) {
   );
 }
 
-function StageImpl({ data }: P) {
+function RoleLines({ role }: { role: DefRoleView }) {
   const { theme } = useFlowHost();
   return (
-    <div style={SIZE} className={`${theme.step} ${theme.stepOn}`} data-testid="def-node-stage">
+    <>
+      <span className={theme.roleLine} data-testid="def-node-role">
+        {role.line}
+      </span>
+      {role.who ? (
+        <span className={`${theme.roleLine} flex items-center gap-1`} data-testid="def-node-who">
+          {role.kind === "user" && (
+            <span
+              aria-hidden
+              className="flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-caption font-semibold"
+            >
+              {role.who.trim().charAt(0).toUpperCase()}
+            </span>
+          )}
+          <span className="truncate">{role.who}</span>
+        </span>
+      ) : (
+        <span className={theme.warnLine} data-testid="def-node-unassigned">
+          {role.warn}
+        </span>
+      )}
+    </>
+  );
+}
+
+function StageImpl({ data }: P) {
+  const { theme } = useFlowHost();
+  const role = data.role ?? null;
+  const warn = role !== null && role.who === null;
+  const cls = [
+    theme.step,
+    theme.stepOn,
+    warn ? theme.stepWarn : "",
+    data.selected ? theme.stepPick : "",
+  ];
+  return (
+    <div
+      style={SIZE}
+      className={cls.filter(Boolean).join(" ")}
+      data-testid="def-node-stage"
+      data-unassigned={warn ? "1" : undefined}
+      data-selected={data.selected ? "1" : undefined}
+    >
       <HiddenHandle type="target" position={Position.Top} />
       <HiddenHandle type="source" position={Position.Bottom} />
       <HiddenHandle id="branch" type="source" position={Position.Right} />
       <HiddenHandle id="back-in" type="target" position={Position.Right} />
       <div className="flex items-center gap-2">
         <span className={theme.stepIndex}>{data.index}</span>
-        <span className="line-clamp-2 font-medium" title={data.title}>
+        <span
+          className={`${role ? "line-clamp-1" : "line-clamp-2"} font-medium`}
+          title={data.title}
+        >
           {data.title}
         </span>
       </div>
       {data.sub && <span className={theme.stepDept}>{data.sub}</span>}
-      {data.badge && (
+      {role && <RoleLines role={role} />}
+      {!role && data.badge && (
         <div className="flex flex-wrap gap-1">
           <span className={theme.pill}>{data.badge}</span>
         </div>

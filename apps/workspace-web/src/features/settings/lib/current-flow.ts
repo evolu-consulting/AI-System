@@ -3,6 +3,7 @@
 // "Xem trước đường đi" (luật như server: giá trị trống ⇒ điều kiện đúng).
 import type { FactWhen } from "@ai/contracts/hub-admin";
 import {
+  type ApprovalFlowAssigned,
   type ApprovalFlowCurrent,
   ApprovalFlowCurrentSchema,
   ApprovalFlowListSchema,
@@ -33,6 +34,7 @@ export type CurrentStep = {
   escalateMissing?: boolean;
 };
 /** CR-184 · một stage của sơ đồ (đủ để dựng nút + cạnh; số bước đếm từ 0). */
+export type StageAssigned = ApprovalFlowAssigned;
 export type CurrentGraphStage = {
   key: string;
   step: number;
@@ -47,6 +49,9 @@ export type CurrentGraphStage = {
   ifs: { yes: number | null; no: number | null } | null;
   nextStep: number | null;
   terminal: boolean;
+  /** CR-182 · vai của bước Duyệt / Ký (null ⇒ bước không dùng vai) + người được giao (null ⇒ chưa giao). */
+  role: { key: string; label: string } | null;
+  assigned: StageAssigned | null;
 };
 export type CurrentFlow = {
   defId: string;
@@ -141,6 +146,8 @@ function fromApi(d: ApprovalFlowCurrent): CurrentFlow {
       ifs: g.kind === "if" ? { yes: g.yes, no: g.no } : null,
       nextStep: g.next_step,
       terminal: g.terminal,
+      role: g.role ?? null,
+      assigned: g.assigned ?? null,
     })),
     partnerSend: d.partner_send ?? false,
     ownerCanOverride: d.owner_can_override ?? true,

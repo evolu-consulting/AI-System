@@ -94,3 +94,34 @@ describe("buildDefViewGraph", () => {
     expect(buildDefViewGraph(FLOW, null, null).nodes).toHaveLength(0);
   });
 });
+
+describe("CR-182 · vai trên node", () => {
+  const role = {
+    line: "Vai · Giám đốc",
+    who: null,
+    warn: "⚠ Chưa giao người",
+    kind: null,
+  } as const;
+  test("node mang vai + người, bước đang chọn đánh dấu selected", () => {
+    const stages = [
+      st("a", 0, { role }),
+      st("b", 1, { role: { ...role, who: "Nhóm A · 3 người", kind: "group" } }),
+    ];
+    const auto = new Map([
+      ["trigger", { x: 0, y: 0 }],
+      ["a", { x: 0, y: 1 }],
+      ["b", { x: 0, y: 2 }],
+    ]);
+    const g = buildDefViewGraph(stages, { label: "Bắt đầu", summary: "" }, auto, "b");
+    const a = g.nodes.find((n) => n.id === "a");
+    const b = g.nodes.find((n) => n.id === "b");
+    expect(a?.data.role?.who).toBeNull();
+    expect(a?.data.selected).toBe(false);
+    expect(b?.data.role?.who).toBe("Nhóm A · 3 người");
+    expect(b?.data.selected).toBe(true);
+  });
+  test("bước không có vai ⇒ role null", () => {
+    const g = buildDefViewGraph([st("a", 0)], null, new Map([["a", { x: 0, y: 0 }]]));
+    expect(g.nodes[0]?.data.role).toBeNull();
+  });
+});

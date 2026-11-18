@@ -2,6 +2,7 @@
 // Kết thúc) với trang quản trị. File này chỉ ghép CHỮ nghiệp vụ (VI/EN qua `t`) lên stage + dựng dòng cho chế độ «Danh sách» theo đúng thứ tự sơ đồ.
 import type { DefViewStage, DefViewTrigger } from "@ai/flow-canvas/pure";
 import type { CurrentFlow, CurrentGraphStage } from "./current-flow";
+import { roleView } from "./flow-roles";
 import { whenText } from "./start-when";
 
 type Tr = (key: string, o?: Record<string, unknown>) => string;
@@ -69,6 +70,7 @@ export function viewStages(flow: CurrentFlow, t: Tr): DefViewStage[] {
     title: g.name,
     sub: subOf(g, n.get(g.key), t),
     badge: badgeOf(g, t),
+    role: g.role ? roleView(g, t) : null,
   }));
 }
 

@@ -21,6 +21,18 @@ export type DefViewStage = GraphStage & {
   badge: string | null;
   /** Node Kết thúc (hình riêng); chờ sự kiện cũng là điểm cuối nhưng vẽ như bước. */
   end: boolean;
+  /** CR-182 · bước có vai (Duyệt / Ký). */
+  role?: DefRoleView | null;
+};
+/** CR-182 · vai của bước + người được giao (chữ đã dịch sẵn); `who` null ⇒ chưa giao. */
+export type DefRoleView = {
+  /** «Vai · <nhãn>». */
+  line: string;
+  /** «Tên nhóm · n người» hoặc tên người; null ⇒ chưa giao. */
+  who: string | null;
+  /** Chữ cảnh báo khi chưa giao («⚠ Chưa giao người»). */
+  warn: string;
+  kind: "group" | "user" | null;
 };
 export type DefViewTrigger = { label: string; summary: string };
 
@@ -127,6 +139,9 @@ export type DefNodeData = {
   badge: string | null;
   /** Số thứ tự (1-based) của bước thường; điểm đầu/cuối/Nếu ⇒ 0. */
   index: number;
+  role?: DefRoleView | null;
+  /** Bước đang được chọn ở khung giao việc. */
+  selected?: boolean;
 };
 
 /** Ghép node + cạnh xyflow từ stage và toạ độ ELK (`auto`; chưa có ⇒ rỗng, host chờ). */
@@ -134,6 +149,7 @@ export function buildDefViewGraph(
   stages: readonly DefViewStage[],
   trigger: DefViewTrigger | null,
   auto: ReadonlyMap<string, { x: number; y: number }> | null,
+  selectedId?: string | null,
 ): { nodes: Node<DefNodeData>[]; edges: Edge[]; layout: ReturnType<typeof defLayoutInput> } {
   const edges = defEdges(stages, trigger !== null);
   const layout = defLayoutInput(stages, edges, trigger !== null);
@@ -163,7 +179,14 @@ export function buildDefViewGraph(
   for (const s of stages) {
     const type: DefNodeType = s.ifs ? "defIf" : s.end ? "defEnd" : "defStage";
     const index = type === "defStage" ? ++n : 0;
-    put(s.uid, type, { title: s.title, sub: s.sub, badge: s.badge, index });
+    put(s.uid, type, {
+      title: s.title,
+      sub: s.sub,
+      badge: s.badge,
+      index,
+      role: s.role ?? null,
+      selected: s.uid === selectedId,
+    });
   }
   const have = new Set(nodes.map((x) => x.id));
   const rf = edges

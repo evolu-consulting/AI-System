@@ -61,6 +61,11 @@ export type FlowTheme = {
   /** CR-184 · node Bắt đầu của sơ đồ chỉ xem + đa giác hình thoi của node Nếu. */
   trigger: string;
   ifShape: string;
+  /** CR-182 · node có vai: viền vàng khi chưa giao người, vòng chọn, dòng vai / người. */
+  stepWarn: string;
+  stepPick: string;
+  roleLine: string;
+  warnLine: string;
 };
 
 export const DEFAULT_THEME: FlowTheme = {
@@ -81,6 +86,10 @@ export const DEFAULT_THEME: FlowTheme = {
   trigger:
     "flex flex-col justify-center gap-1 overflow-hidden rounded-xl border-2 border-primary bg-card px-3 text-label",
   ifShape: "fill-card stroke-border",
+  stepWarn: "border-warning",
+  stepPick: "ring-2 ring-primary",
+  roleLine: "truncate text-caption text-muted-foreground",
+  warnLine: "truncate text-caption font-semibold text-warning",
 };
 
 /** Dòng thông tin của node bước (hạn, người duyệt, chuyển cấp…): chữ do host dịch. */

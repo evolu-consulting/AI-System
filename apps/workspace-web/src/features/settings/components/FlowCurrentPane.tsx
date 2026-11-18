@@ -12,7 +12,9 @@ import { isCompanyAdmin } from "~/features/shell/lib/nav";
 import { useFlow } from "../hooks/use-flow";
 import type { CurrentFlow } from "../lib/current-flow";
 import { flowEditorUrl } from "../lib/editor-link";
+import { unassignedRoles } from "../lib/flow-roles";
 import { DelegationPane } from "./DelegationPane";
+import { FlowAssignPanel } from "./FlowAssignPanel";
 import { FlowCanvasLazy } from "./FlowCanvasLazy";
 import { FlowList } from "./FlowList";
 import { FlowPicker } from "./FlowPicker";
@@ -70,10 +72,32 @@ function OpenFlowsPage() {
   );
 }
 
-/** Sơ đồ / danh sách bước của MỘT quy trình + khối ký, đối tác (chỉ xem). */
+/** CR-182 · dưới sơ đồ: «Còn n vai chưa giao người…» / «Mọi bước đã có người làm.»; thành viên thường thêm «Chỉ quản trị công ty đổi được». */
+function AssignFooter({ flow, admin }: { flow: CurrentFlow; admin: boolean }) {
+  const { t } = useTranslation();
+  if (!flow.graph.some((g) => g.role)) return null;
+  const n = unassignedRoles(flow);
+  return (
+    <div className="mb-4 flex flex-col gap-1 text-body" data-testid="assign-footer">
+      <p data-testid="assign-status" className={n > 0 ? "text-warning" : "text-dim"}>
+        {n > 0
+          ? t("contracts.flow.current.assign.missing", { count: n })
+          : t("contracts.flow.current.assign.allSet")}
+      </p>
+      <p className="text-caption text-dim" data-testid="assign-hint">
+        {t(admin ? "contracts.flow.current.assign.hint" : "contracts.flow.current.assign.readonly")}
+      </p>
+    </div>
+  );
+}
+
+/** Sơ đồ / danh sách bước của MỘT quy trình + khối ký, đối tác; quản trị công ty bấm bước có vai để giao việc (CR-182). */
 function FlowDetail({ flow }: { flow: CurrentFlow }) {
   const { t } = useTranslation();
+  const admin = isCompanyAdmin(useSession((s) => s.me?.role));
   const [view, setView] = useState<View>("canvas");
+  const [pick, setPick] = useState<string | null>(null);
+  const stage = admin ? flow.graph.find((g) => g.key === pick && g.role) : undefined;
   return (
     <div data-testid="flow-detail">
       <h2 className="mb-2 text-lg font-semibold" data-testid="flow-current-title">
@@ -82,7 +106,21 @@ function FlowDetail({ flow }: { flow: CurrentFlow }) {
       <div>
         <ViewToggle view={view} onChange={setView} />
       </div>
-      {view === "canvas" ? <FlowCanvasLazy flow={flow} /> : <FlowList flow={flow} />}
+      {view === "canvas" ? (
+        <div className="flex flex-col gap-3 lg:flex-row">
+          <div className="min-w-0 flex-1">
+            <FlowCanvasLazy
+              flow={flow}
+              selectedId={stage?.key ?? null}
+              {...(admin ? { onPick: setPick } : {})}
+            />
+          </div>
+          {stage && <FlowAssignPanel flow={flow} stage={stage} onClose={() => setPick(null)} />}
+        </div>
+      ) : (
+        <FlowList flow={flow} />
+      )}
+      <AssignFooter flow={flow} admin={admin} />
       <FlowSignBlock flow={flow} />
     </div>
   );
