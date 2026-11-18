@@ -1,7 +1,7 @@
 // fix-cr186-ui (viết, CHƯA chạy) · mở Bảng tin lần đầu: bài có bình luận hiện SẴN 3 bình luận mới nhất (không phải bấm «Bình luận»). Adapter mock.
 import { expect, test } from "@playwright/test";
 
-test("bài p1 (3 bình luận) hiện sẵn cả 3, nút «Bình luận» đang mở; bấm thì gập", async ({
+test("bài p1 (3 bình luận) hiện sẵn cả 3, nút «Bình luận» đang mở, bấm thì gập", async ({
   page,
 }) => {
   await page.goto("/community");
