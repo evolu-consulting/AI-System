@@ -133,8 +133,48 @@ export const DelegationSchema = z.strictObject({
   kinds: z.array(z.enum(DELEGATION_KINDS)).min(1),
   created_by: PersonSchema,
   revoked_at: IsoDateTime.nullable(),
+  /** CR-184 · ai thu hồi (null = chưa thu hồi, hoặc thu hồi trước khi có cột này). */
+  revoked_by: PersonSchema.nullable().optional(),
 });
 export type Delegation = z.infer<typeof DelegationSchema>;
+
+// CR-184 · Lịch sử uỷ quyền (tải dần): trạng thái + số việc người được giao đã làm thay trong đợt.
+export const DELEGATION_STATUSES = ["active", "expired", "revoked"] as const;
+export const DELEGATION_PAGE_MAX = 50;
+export const DelegationHistoryItemSchema = DelegationSchema.extend({
+  status: z.enum(DELEGATION_STATUSES),
+  done_count: z.number().int().min(0),
+});
+export type DelegationHistoryItem = z.infer<typeof DelegationHistoryItemSchema>;
+export const DelegationHistoryResponseSchema = z.strictObject({
+  items: z.array(DelegationHistoryItemSchema).max(DELEGATION_PAGE_MAX),
+  /** offset trang kế; null = hết. */
+  next_offset: z.number().int().nullable(),
+});
+export type DelegationHistoryResponse = z.infer<typeof DelegationHistoryResponseSchema>;
+export const DelegationPageQuerySchema = z.strictObject({
+  limit: z.coerce.number().int().min(1).max(DELEGATION_PAGE_MAX).default(20),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+});
+export type DelegationPageQuery = z.infer<typeof DelegationPageQuerySchema>;
+/** Một việc người được giao đã làm thay (bấm vào dòng lịch sử). */
+export const DelegationWorkItemSchema = z.strictObject({
+  task_id: UuidSchema,
+  run_id: UuidSchema,
+  kind: z.string().min(1).max(40),
+  result: z.string().max(40).nullable(),
+  stage_name: z.string().max(200).nullable(),
+  pack_key: z.string().max(60).nullable(),
+  pack_record_id: UuidSchema.nullable(),
+  decided_at: IsoDateTime,
+});
+export type DelegationWorkItem = z.infer<typeof DelegationWorkItemSchema>;
+export const DelegationWorkResponseSchema = z.strictObject({
+  items: z.array(DelegationWorkItemSchema).max(DELEGATION_PAGE_MAX),
+  next_offset: z.number().int().nullable(),
+});
+export type DelegationWorkResponse = z.infer<typeof DelegationWorkResponseSchema>;
+export const EsignEligibleResponseSchema = z.strictObject({ eligible: z.boolean() });
 export const DelegationListResponseSchema = z.strictObject({
   items: z.array(DelegationSchema).max(200),
 });

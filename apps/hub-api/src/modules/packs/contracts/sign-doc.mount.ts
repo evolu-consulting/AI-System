@@ -64,6 +64,7 @@ export function signDocModule(
     companySigners: ports.companySigners,
     onDocEnabled: ports.onDocEnabled,
     turn,
+    userNames: ports.hub.userNames,
     ...(ports.onDocSigned ? { onSigned: ports.onDocSigned } : {}),
     newId: () => Bun.randomUUIDv7(),
   });

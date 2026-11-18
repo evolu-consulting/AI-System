@@ -2,7 +2,9 @@
 // Cài đặt công ty: `GET/PUT /tenants/:tid/flow-settings` (`claim_release_h`).
 import type {
   CreateDelegationRequest,
+  DelegationHistoryResponse,
   DelegationListResponse,
+  DelegationWorkResponse,
   FlowSettings,
 } from "@ai/contracts/chat";
 import { api } from "@ai/web-kit/http";
@@ -10,11 +12,42 @@ import { api } from "@ai/web-kit/http";
 const enc = encodeURIComponent;
 export const delegationKeys = {
   mine: ["settings", "delegations"] as const,
+  history: ["settings", "delegations", "history"] as const,
   flow: ["settings", "flow-settings"] as const,
 };
 
 export const fetchMyDelegations = (signal?: AbortSignal) =>
   api<DelegationListResponse>("/me/delegations", { signal });
+/** CR-184 · lịch sử uỷ quyền (tải dần). Quản trị công ty xem cả công ty (`/tenants/:tid`), người thường chỉ phần có mình (`/me`). */
+const scope = (tenantId: string | null, admin: boolean) =>
+  admin && tenantId ? `/tenants/${enc(tenantId)}/delegations` : "/me/delegations";
+export const fetchDelegationHistory = (
+  tenantId: string | null,
+  admin: boolean,
+  offset: number,
+  signal?: AbortSignal,
+) =>
+  api<DelegationHistoryResponse>(`${scope(tenantId, admin)}/history`, {
+    query: { limit: "20", offset: String(offset) },
+    signal,
+  });
+export const fetchDelegationWork = (
+  tenantId: string | null,
+  admin: boolean,
+  id: string,
+  offset: number,
+  signal?: AbortSignal,
+) =>
+  api<DelegationWorkResponse>(`${scope(tenantId, admin)}/${enc(id)}/work`, {
+    query: { limit: "20", offset: String(offset) },
+    signal,
+  });
+/** «Ký hợp đồng» chỉ chọn được khi người được giao thuộc nhóm người ký hợp đồng (`DELEGATE_NOT_SIGNER`). */
+export const fetchEsignEligible = (userId: string, signal?: AbortSignal) =>
+  api<{ eligible: boolean }>("/me/delegations/esign-eligible", {
+    query: { user_id: userId },
+    signal,
+  });
 export const createDelegation = (tenantId: string | null, b: CreateDelegationRequest) =>
   api<unknown>(
     b.for_user_id && tenantId ? `/tenants/${enc(tenantId)}/delegations` : "/me/delegations",

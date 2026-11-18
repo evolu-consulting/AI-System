@@ -3,6 +3,7 @@
     "docsign": {
       "close": "Đóng",
       "kindLabel": "Ký bằng",
+      "behalfBar": "Bạn đang ký thay {{name}} (uỷ quyền)",
       "kind": {
         "internal": "Chữ ký nội bộ",
         "digital": "Chữ ký số"

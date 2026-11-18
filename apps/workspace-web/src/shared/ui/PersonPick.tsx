@@ -1,0 +1,125 @@
+// CR-184 · ô chọn người gọn (avatar + họ tên) cùng kiểu «Phụ trách»: nút mở danh sách có ô tìm (ở máy chủ, gõ có trễ) + tải dần («Xem thêm»).
+// `fetchPage(q, offset)` như `PersonSearchSelect`. Vùng bấm ≥ 44px ở điện thoại.
+import type { PersonCard } from "@ai/contracts/people";
+import { Avatar } from "@ai/web-kit/ui/kit/avatar";
+import { Input } from "@ai/web-kit/ui/kit/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai/web-kit/ui/kit/popover";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { usePeopleCards } from "~/features/contract-shared/people";
+import type { PersonPage } from "./PersonSearchSelect";
+
+type Props = {
+  id?: string;
+  testId?: string;
+  /** Khoá cache riêng của nguồn. */
+  source: string;
+  fetchPage: (q: string, offset: number, signal?: AbortSignal) => Promise<PersonPage>;
+  value: string;
+  valueName?: string | undefined;
+  onChange: (id: string, name: string) => void;
+  /** Chữ khi chưa chọn ai (cũng là mục «bỏ chọn» đầu danh sách nếu `clearable`). */
+  placeholder: string;
+  clearable?: boolean;
+  excludeId?: string | undefined;
+  ariaLabel: string;
+};
+
+function Face({ name, card }: { name: string; card?: PersonCard | undefined }) {
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <Avatar name={name} src={card?.avatar} size={24} />
+      <span className="min-w-0">
+        <span className="block truncate">{name}</span>
+        {card?.job_title && (
+          <span className="block truncate text-dim text-xs">{card.job_title}</span>
+        )}
+      </span>
+    </span>
+  );
+}
+
+export function PersonPick(p: Props) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [raw, setRaw] = useState("");
+  const [q, setQ] = useState("");
+  useEffect(() => {
+    const h = setTimeout(() => setQ(raw.trim()), 250);
+    return () => clearTimeout(h);
+  }, [raw]);
+  const list = useInfiniteQuery({
+    queryKey: ["person-pick", p.source, q],
+    queryFn: ({ pageParam, signal }) => p.fetchPage(q, pageParam, signal),
+    initialPageParam: 0,
+    getNextPageParam: (last) => last.next ?? undefined,
+    staleTime: 30_000,
+    enabled: open,
+  });
+  const items = (list.data?.pages ?? [])
+    .flatMap((x) => x.items)
+    .filter((m) => m.id !== p.excludeId);
+  const cards = usePeopleCards([p.value, ...items.map((m) => m.id)]);
+  const pick = (id: string, name: string) => {
+    p.onChange(id, name);
+    setOpen(false);
+  };
+  const row = "flex min-h-11 w-full items-center px-3 py-1.5 text-left text-body hover:bg-sunk";
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        id={p.id}
+        data-testid={p.testId}
+        aria-label={p.ariaLabel}
+        className="inline-flex min-h-11 items-center gap-2 rounded-md border border-rule-soft bg-card px-3 text-body outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-10"
+      >
+        {p.value ? (
+          <Avatar name={p.valueName ?? ""} src={cards.get(p.value)?.avatar} size={24} />
+        ) : null}
+        <span className={p.value ? "" : "text-dim"}>{p.value ? p.valueName : p.placeholder}</span>
+        <span aria-hidden="true" className="text-dim text-xs">
+          ▾
+        </span>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-2">
+        <Input
+          type="search"
+          value={raw}
+          onChange={(e) => setRaw(e.target.value)}
+          placeholder={t("contracts.paging.search")}
+          aria-label={t("contracts.paging.search")}
+          className="mb-2 h-10 w-full"
+        />
+        <div className="max-h-60 overflow-y-auto" data-testid="person-pick-list">
+          {p.clearable && (
+            <button type="button" className={row} onClick={() => pick("", "")}>
+              {p.placeholder}
+            </button>
+          )}
+          {items.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              aria-pressed={p.value === m.id}
+              className={`${row} ${p.value === m.id ? "bg-sunk font-semibold" : ""}`}
+              onClick={() => pick(m.id, m.name)}
+            >
+              <Face name={m.name} card={cards.get(m.id)} />
+            </button>
+          ))}
+          {list.hasNextPage && (
+            <button
+              type="button"
+              className={`${row} text-dim`}
+              disabled={list.isFetchingNextPage}
+              onClick={() => void list.fetchNextPage()}
+            >
+              {list.isFetchingNextPage ? t("contracts.paging.loading") : t("contracts.paging.more")}
+            </button>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}

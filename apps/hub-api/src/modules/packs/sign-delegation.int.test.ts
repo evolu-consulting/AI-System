@@ -141,7 +141,7 @@ const DAY = 86_400_000;
 /** Uỷ quyền A → `to` (mặc định B): còn hiệu lực / hết hạn (`ended`) / đã thu hồi (`revoked`). Mỗi lần thay hàng cũ của công ty. */
 async function deleg(
   kinds: string[],
-  opt: { to?: string; ended?: boolean; revoked?: boolean } = {},
+  opt: { to?: string; ended?: boolean; revoked?: boolean; by?: string } = {},
 ) {
   const now = Date.now();
   const from = new Date(now - (opt.ended ? 3 : 1) * DAY).toISOString();
@@ -149,7 +149,7 @@ async function deleg(
   const revoked = opt.revoked ? new Date(now).toISOString() : null;
   await o`delete from hub.delegations where tenant_id = ${w.T}`;
   await o`insert into hub.delegations (tenant_id, from_user_id, to_user_id, from_at, to_at, kinds, created_by, revoked_at)
-    values (${w.T}, ${w.A}, ${opt.to ?? w.B}, ${from}::timestamptz, ${to}::timestamptz, ${`{${kinds.join(",")}}`}::text[], ${w.A},
+    values (${w.T}, ${w.A}, ${opt.to ?? w.B}, ${from}::timestamptz, ${to}::timestamptz, ${`{${kinds.join(",")}}`}::text[], ${opt.by ?? w.A},
       ${revoked}::timestamptz)`;
 }
 const turnOf = (id: string, u: string) => flow.turn.turnFor({ tenantId: w.T, userId: u }, id, u);
@@ -221,6 +221,16 @@ describe("CR-184 · bước Ký ondoc + uỷ quyền loại «Ký hợp đồng�
     expect((await turnOf(x.id, w.B)).allowed).toBe(false);
     await deleg(["esign"], { revoked: true });
     expect((await turnOf(x.id, w.B)).allowed).toBe(false);
+  });
+
+  it("quản trị đặt uỷ quyền THAY A (created_by ≠ A) ⇒ B vẫn có lượt và bản ký ghi «thay A»", async () => {
+    const x = await world(ONDOC(w.A));
+    await deleg(["esign"], { by: w.TA });
+    const t = await turnOf(x.id, w.B);
+    expect(t.allowed).toBe(true);
+    expect(t.behalf?.map((b) => b.user_id)).toEqual([w.A]);
+    await save().sign(ctx(w.B), x.id, x.fileId, markField(x.fieldA));
+    expect((await versionOf(x.id))?.behalf).toBe(w.A);
   });
 
   it("người C bất kỳ (và người tạo HĐ) ⇒ không có lượt dù A đã uỷ quyền cho B; A vẫn giữ lượt", async () => {

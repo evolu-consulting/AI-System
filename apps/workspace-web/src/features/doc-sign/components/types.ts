@@ -44,4 +44,6 @@ export type SignWorkspaceProps = {
   saveDisabled?: (fileId: string) => boolean;
   saveLabel: string;
   dirty: boolean;
+  /** CR-184 · tên người vắng mà mình đang ký thay (uỷ quyền) ⇒ thanh trên nói rõ. */
+  behalf?: string[];
 };

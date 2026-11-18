@@ -4,7 +4,9 @@
 import type {
   CreateDelegationRequest,
   Delegation,
+  DelegationHistoryResponse,
   DelegationListResponse,
+  DelegationWorkResponse,
 } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -34,6 +36,7 @@ const toDto = (d: repo.DelegationView): Delegation => ({
   kinds: [...d.kinds],
   created_by: { id: d.createdBy, display_name: d.names.by },
   revoked_at: d.revokedAt ? d.revokedAt.toISOString() : null,
+  revoked_by: d.revokedBy ? { id: d.revokedBy, display_name: d.names.rev ?? d.revokedBy } : null,
 });
 
 export class DelegationsService {
@@ -55,6 +58,76 @@ export class DelegationsService {
       repo.listDelegations(tx, { tenantId, viewerId: u.userId, all, mine: o.mine }),
     );
     return { items: rows.map(toDto) };
+  }
+
+  /** CR-184 · lịch sử uỷ quyền (tải dần): người thường thấy uỷ quyền có mình; quản trị công ty / trưởng phòng thấy theo R#43. */
+  async history(
+    u: AuthUser,
+    o: { tid?: string; mine: boolean; limit: number; offset: number },
+  ): Promise<DelegationHistoryResponse> {
+    const tenantId = this.#tenant(u, o.tid);
+    const all = actorOf(u).role !== "member";
+    const r = await this.#tx(u, tenantId, (tx) =>
+      repo.historyDelegations(tx, {
+        tenantId,
+        viewerId: u.userId,
+        all,
+        mine: o.mine,
+        limit: o.limit,
+        offset: o.offset,
+      }),
+    );
+    return {
+      items: r.items.map((h) => ({ ...toDto(h), status: h.status, done_count: h.doneCount })),
+      next_offset: r.next,
+    };
+  }
+
+  /** CR-184 · việc đã làm thay của MỘT uỷ quyền; người không xem được uỷ quyền ⇒ 404. */
+  async work(
+    u: AuthUser,
+    id: string,
+    o: { tid?: string; limit: number; offset: number },
+  ): Promise<DelegationWorkResponse> {
+    const tenantId = this.#tenant(u, o.tid);
+    const actor = actorOf(u);
+    return this.#tx(u, tenantId, async (tx) => {
+      const row = await repo.getDelegation(tx, tenantId, id);
+      const heads =
+        row && actor.role === "member"
+          ? (
+              await repo.createCtx(tx, {
+                tenantId,
+                fromUserId: row.fromUserId,
+                toUserId: row.toUserId,
+              })
+            ).headsOfFrom
+          : [];
+      if (!row || !mayViewDelegation(actor, row, heads)) throw appError("NOT_FOUND");
+      const r = await repo.delegationWork(tx, { tenantId, id, limit: o.limit, offset: o.offset });
+      return {
+        items: r.items.map((w) => ({
+          task_id: w.taskId,
+          run_id: w.runId,
+          kind: w.kind,
+          result: w.result,
+          stage_name: w.stageName,
+          pack_key: w.packKey,
+          pack_record_id: w.packRecordId,
+          decided_at: w.decidedAt.toISOString(),
+        })),
+        next_offset: r.next,
+      };
+    });
+  }
+
+  /** CR-184 · «Ký hợp đồng» chọn được cho người này không (luật `DELEGATE_NOT_SIGNER`: thuộc nhóm người ký hợp đồng). */
+  async esignEligible(u: AuthUser, userId: string): Promise<boolean> {
+    return this.#tx(
+      u,
+      u.tenantId,
+      async (tx) => (await contractAccess()?.isSigner(tx, u.tenantId, userId)) ?? false,
+    );
   }
 
   async create(u: AuthUser, b: CreateDelegationRequest, tid?: string): Promise<Delegation> {
@@ -102,7 +175,7 @@ export class DelegationsService {
         : [];
       if (!row || !mayViewDelegation(actor, row, heads)) throw appError("NOT_FOUND");
       if (!mayManageFor(actor, row.fromUserId, heads)) throw claimError("DELEGATE_FORBIDDEN");
-      await repo.revokeDelegation(tx, tenantId, id);
+      await repo.revokeDelegation(tx, tenantId, id, u.userId);
       const after = await repo.getDelegation(tx, tenantId, id);
       return toDto(after ?? row);
     });

@@ -73,7 +73,7 @@ export async function packRecordStepOf(
               and o.user_id = ${q.userId}::uuid and o.via <> 'delegated') limit 1) end as behalf_of,
         (select coalesce(jsonb_agg(jsonb_build_object('user_id', d.from_user_id, 'kinds', d.kinds,
             'groups', array(select m.group_id::text from admin.group_members m
-              where m.tenant_id = d.tenant_id and m.user_id = d.from_user_id))), '[]'::jsonb)
+              where m.tenant_id = d.tenant_id and m.user_id = d.from_user_id)) order by d.from_at, d.id), '[]'::jsonb)
           from hub.delegations d where d.tenant_id = pr.tenant_id and d.to_user_id = ${q.userId}::uuid and d.revoked_at is null
             and d.from_at <= now() and d.to_at > now()) as delegs
       from hub.process_runs pr

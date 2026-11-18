@@ -147,9 +147,13 @@
           "title": "Delegate while away",
           "sub": "During this time, new tasks of the absent person move to the person assigned",
           "forUser": "Absent person",
-          "forMe": "Me",
+          "forMe": "I am",
+          "absent": "away from",
+          "until": "until end of",
+          "assign": "hand over",
+          "forWho": "to",
+          "active": "Active delegations",
           "person": "Assign work to",
-          "personHint": "Anyone in the company who can view the contract",
           "pick": "Pick a person…",
           "from": "From",
           "to": "Until end of",
@@ -170,7 +174,21 @@
           "save": "Save delegation",
           "saved": "Delegation saved.",
           "revoke": "Revoke",
-          "row": "{{from}} → {{to}} · {{start}} – {{end}}"
+          "history": {
+            "title": "Delegation history",
+            "empty": "No delegations yet.",
+            "status": {
+              "active": "In effect",
+              "expired": "Expired",
+              "revoked": "Revoked"
+            },
+            "revokedBy": "revoked by {{name}}",
+            "revokedUnknown": "revoked (by unknown)",
+            "placedBy": "set by {{name}}",
+            "done": "{{count}} tasks done on behalf",
+            "contract": "Contract",
+            "task": "Task"
+          }
         },
         "settings": {
           "titleHours": "Taking tasks",

@@ -132,6 +132,8 @@ export type SignTurnOut = {
   run_id?: string;
   step?: "approve" | "sign";
   reason?: string;
+  /** CR-184 · người vắng mà người gọi ký thay (uỷ quyền còn hiệu lực); không có ⇒ tự mình. */
+  behalf?: { user_id: string; name: string | null }[];
 };
 export type SignFileOut = {
   file_id: string;

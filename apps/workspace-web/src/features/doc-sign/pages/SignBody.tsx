@@ -179,6 +179,13 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
         onClose={onExit}
         saveLabel={saveLabel}
         dirty={dirty}
+        behalf={
+          mode === "sign"
+            ? (s.turn.behalf ?? []).map(
+                (b) => b.name ?? t("contracts.docsign.viewer.unknownSigner"),
+              )
+            : undefined
+        }
       />
       <ConfirmSignDialog
         summary={confirm ? signSummary(list(confirm)) : null}

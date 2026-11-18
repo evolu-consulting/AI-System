@@ -22,14 +22,20 @@ test("trưởng phòng đặt uỷ quyền «Duyệt» cho kế toán (nhãn m�
   await loginCw(page, E, HEAD);
   await page.goto(`${E.cw}/contracts/settings?sec=flow`);
   const pane = page.getByTestId("delegation-pane");
-  await expect(pane).toContainText("Giao việc cho");
-  await expect(pane).toContainText("Ký hợp đồng"); // loại «Ký số» đã đổi tên
-  await pane.locator("#dg-to").fill(DELEGATE_NAME);
-  await pane.getByRole("button", { name: DELEGATE_NAME, exact: true }).click();
+  // Form MỘT câu: «<Người vắng ▾> vắng từ … đến hết … giao việc [Duyệt] [Ký hợp đồng] … cho [Chọn người ▾] [Lưu uỷ quyền]»; mặc định bật «Duyệt».
+  await expect(pane).toContainText("vắng từ");
+  await expect(pane).toContainText("giao việc");
+  await expect(page.getByTestId("delegation-kind-approve")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("delegation-kind-form")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByTestId("delegation-kind-esign")).toContainText("Ký hợp đồng"); // loại «Ký số» đã đổi tên
+  await page.getByTestId("delegation-to").click();
+  await page.getByRole("searchbox").fill(DELEGATE_NAME);
+  await page.getByRole("button", { name: DELEGATE_NAME }).first().click();
   await pane.getByLabel("Từ ngày").fill(day(-1));
   await pane.getByLabel("Tới hết ngày").fill(day(3));
   await page.getByTestId("delegation-save").click();
   await expect(page.getByTestId("delegation-list")).toContainText(DELEGATE_NAME);
+  await expect(page.getByTestId("delegation-list")).toContainText("Duyệt");
   await page.context().close();
 });
 
@@ -45,6 +51,7 @@ test("kế toán được uỷ quyền: có lượt ký, ký bằng chữ ký c�
   await page.locator("[data-approval=pass], [data-approval=approve]").first().click();
   await page.getByTestId("approver-sign").getByRole("link", { name: "Mở và ký" }).click();
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("sign-behalf")).toContainText(`Bạn đang ký thay ${HEAD_NAME}`);
   await addMineAt(page, 0, 0.5, 0.5);
   await saveSigned(page, id);
   await page.locator("[data-approval=pass], [data-approval=approve]").first().click();
@@ -68,5 +75,39 @@ test("hồ sơ duyệt ghi người ký thật là kế toán và «thay» trư�
   const rec = page.getByTestId("approval-record");
   await expect(rec).toContainText(DELEGATE_NAME, { timeout: 30_000 });
   await expect(rec).toContainText(`Thay ${HEAD_NAME}`);
+  await page.context().close();
+});
+
+test("Lịch sử uỷ quyền (thu gọn): trạng thái, người đặt, số việc đã làm thay → danh sách việc mở được hợp đồng", async ({
+  browser,
+}) => {
+  const page = await newPage(browser);
+  await loginCw(page, E, HEAD);
+  await page.goto(`${E.cw}/contracts/settings?sec=flow`);
+  await expect(page.getByTestId("delegation-history-row")).toHaveCount(0); // thu gọn: chưa nạp
+  await page.getByTestId("delegation-history-toggle").click();
+  const row = page.getByTestId("delegation-history-row").first();
+  await expect(row).toContainText(HEAD_NAME);
+  await expect(row).toContainText(DELEGATE_NAME);
+  await expect(row.getByTestId("delegation-status")).toHaveText("Còn hiệu lực");
+  await expect(row.getByTestId("delegation-done")).toContainText("1 việc đã làm thay");
+  await row.getByTestId("delegation-done").click();
+  await page.getByTestId("delegation-work").getByRole("link").first().click();
+  await expect(page).toHaveURL(new RegExp(`/contracts/c/${id}`));
+  await page.context().close();
+});
+
+test("kế toán thấy uỷ quyền có mình trong lịch sử; màn ký nói «Bạn đang ký thay …» (điện thoại 390px: nút ≥ 44px)", async ({
+  browser,
+}) => {
+  const page = await newPage(browser, 390);
+  await loginCw(page, E, DELEGATE);
+  await page.goto(`${E.cw}/contracts/settings?sec=flow`);
+  await page.getByTestId("delegation-history-toggle").click();
+  await expect(page.getByTestId("delegation-history-row").first()).toContainText(HEAD_NAME);
+  const h = await page
+    .getByTestId("delegation-history-toggle")
+    .evaluate((el) => el.getBoundingClientRect().height);
+  expect(h).toBeGreaterThanOrEqual(44);
   await page.context().close();
 });

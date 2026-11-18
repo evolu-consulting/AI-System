@@ -142,6 +142,7 @@ export function SignWorkspace(p: SignWorkspaceProps) {
             ? { value: view, pageCount, onChange: changeView }
             : undefined
         }
+        behalf={p.behalf}
       />
       <FileTabs
         files={p.files}

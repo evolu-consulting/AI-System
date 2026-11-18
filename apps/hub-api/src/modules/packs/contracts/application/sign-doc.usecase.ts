@@ -39,6 +39,8 @@ import type {
   SignVersionRowP,
 } from "./sign-doc.ports";
 
+import { turnWithNames } from "./sign-turn-out";
+
 export type { SignDocRepos } from "./sign-doc.ports";
 
 /** Người ký công ty của bước Ký (Q2): người cụ thể hoặc nhóm. `mine` (tuỳ chọn) = người gọi thuộc nhóm đó. */
@@ -86,6 +88,8 @@ export type SignDocDeps = {
   /** Thiết lập công ty: «Ký trên tài liệu» đang bật (Q5). */
   onDocEnabled: (who: PackWho) => Promise<boolean>;
   turn: SignTurnPort;
+  /** CR-184 · tên người (để nói «bạn ký thay <A>»). */
+  userNames?: (who: PackWho, ids: readonly string[]) => Promise<ReadonlyMap<string, string>>;
   newId: () => string;
   /** CR-181 · s9 · tự phục hồi (soát Opus #2): mở phiên khi đang tới bước Ký ⇒ kiểm lại «đủ ô Bên A» và thả bước nếu đủ. */
   onSigned?: (who: PackWho, contractId: string, runId: string) => Promise<void>;
@@ -383,7 +387,7 @@ export function signDocUsecases(d: SignDocDeps) {
           : files.map((f) => ({ ...f, fields: f.fields.map((x) => maskField(x)) })),
         signers: signers.map((x) => maskPartnerRef(x, prep)),
         readiness,
-        turn,
+        turn: await turnWithNames(d.userNames, who, turn),
         kinds,
       };
     },

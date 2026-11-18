@@ -147,9 +147,13 @@
           "title": "Uỷ quyền khi vắng",
           "sub": "Trong thời gian này, việc mới của người vắng tự chuyển sang người được giao",
           "forUser": "Người vắng",
-          "forMe": "Chính tôi",
+          "forMe": "Tôi",
+          "absent": "vắng từ",
+          "until": "đến hết",
+          "assign": "giao việc",
+          "forWho": "cho",
+          "active": "Đang uỷ quyền",
           "person": "Giao việc cho",
-          "personHint": "Bất kỳ ai trong công ty có quyền xem hợp đồng",
           "pick": "Chọn người…",
           "from": "Từ ngày",
           "to": "Tới hết ngày",
@@ -170,7 +174,21 @@
           "save": "Lưu uỷ quyền",
           "saved": "Đã lưu uỷ quyền.",
           "revoke": "Thu hồi",
-          "row": "{{from}} → {{to}} · {{start}} – {{end}}"
+          "history": {
+            "title": "Lịch sử uỷ quyền",
+            "empty": "Chưa có uỷ quyền nào.",
+            "status": {
+              "active": "Còn hiệu lực",
+              "expired": "Đã hết hạn",
+              "revoked": "Đã thu hồi"
+            },
+            "revokedBy": "thu hồi bởi {{name}}",
+            "revokedUnknown": "không rõ người thu hồi",
+            "placedBy": "đặt bởi {{name}}",
+            "done": "{{count}} việc đã làm thay",
+            "contract": "Hợp đồng",
+            "task": "Việc"
+          }
         },
         "settings": {
           "titleHours": "Nhận việc",

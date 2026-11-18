@@ -3,6 +3,7 @@
     "docsign": {
       "close": "Close",
       "kindLabel": "Sign with",
+      "behalfBar": "You are signing on behalf of {{name}} (delegation)",
       "kind": {
         "internal": "Internal signature",
         "digital": "Digital signature"

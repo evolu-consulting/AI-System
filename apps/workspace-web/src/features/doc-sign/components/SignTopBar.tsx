@@ -49,6 +49,8 @@ export function SignTopBar(p: {
   onClose: () => void;
   /** CR-182 · kiểu xem khi ký; không truyền ⇒ không hiện (chế độ chuẩn bị). */
   view?: { value: StageView; pageCount: number; onChange: (v: StageView) => void };
+  /** CR-184 · người vắng mà mình ký thay. */
+  behalf?: readonly string[] | undefined;
 }) {
   const { t } = useTranslation();
   const Close = ICONS.close;
@@ -97,6 +99,15 @@ export function SignTopBar(p: {
       </ToggleGroup>
       {p.view && (
         <ViewBar view={p.view.value} pageCount={p.view.pageCount} onChange={p.view.onChange} />
+      )}
+      {p.behalf && p.behalf.length > 0 && (
+        <p
+          role="status"
+          data-testid="sign-behalf"
+          className="m-0 basis-full rounded-md bg-sunk px-3 py-1.5 text-sm font-semibold"
+        >
+          {t("contracts.docsign.behalfBar", { name: p.behalf.join(", ") })}
+        </p>
       )}
       <div className="flex flex-1 flex-wrap items-center gap-2">
         {p.trays.map((tr) => (

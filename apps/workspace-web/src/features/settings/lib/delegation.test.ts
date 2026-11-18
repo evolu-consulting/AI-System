@@ -7,6 +7,7 @@ import {
   delegationIssue,
   EMPTY_DELEGATION,
   toggleKind,
+  withoutEsign,
 } from "./delegation";
 
 const A = "11111111-1111-4111-8111-111111111111";
@@ -56,5 +57,13 @@ describe("activeDelegations / toggleKind / giờ tự trả", () => {
   });
   test("giờ tự trả 1..168", () => {
     expect([0, 1, 168, 169, 1.5].map(claimHoursIssue)).toEqual([true, false, false, true, true]);
+  });
+});
+
+describe("CR-184 · form một câu", () => {
+  test("mặc định chỉ bật «Duyệt»; bỏ «Ký hợp đồng» khi người nhận không thuộc nhóm người ký", () => {
+    expect(EMPTY_DELEGATION.kinds).toEqual(["approve"]);
+    expect(withoutEsign(["approve", "esign"])).toEqual(["approve"]);
+    expect(withoutEsign(["approve"])).toEqual(["approve"]);
   });
 });

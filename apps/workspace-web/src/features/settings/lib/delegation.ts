@@ -22,7 +22,7 @@ export const EMPTY_DELEGATION: DelegationForm = {
   toUserId: "",
   from: "",
   to: "",
-  kinds: ["approve", "form", "milestone"],
+  kinds: ["approve"],
   forUserId: "",
 };
 export { DELEGATION_KINDS };
@@ -56,6 +56,10 @@ export function activeDelegations(items: readonly Delegation[], now: number): De
     .filter((d) => d.revoked_at === null && Date.parse(d.to_at) > now)
     .sort((a, b) => Date.parse(a.to_at) - Date.parse(b.to_at));
 }
+
+/** «Ký hợp đồng» không còn hợp lệ khi người được giao không thuộc nhóm người ký: bỏ chọn. */
+export const withoutEsign = (ks: readonly DelegationKind[]): DelegationKind[] =>
+  ks.filter((k) => k !== "esign");
 
 export const toggleKind = (ks: readonly DelegationKind[], k: DelegationKind): DelegationKind[] =>
   ks.includes(k) ? ks.filter((x) => x !== k) : [...ks, k];
