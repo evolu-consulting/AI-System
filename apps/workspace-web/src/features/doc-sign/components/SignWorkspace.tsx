@@ -5,6 +5,14 @@ import { useTranslation } from "react-i18next";
 import { usePdfDoc } from "../hooks/use-pdf-doc";
 import { useSignItems } from "../hooks/use-sign-items";
 import { clampToStage } from "../lib/actions";
+import {
+  clampGroup,
+  DEFAULT_VIEW,
+  FAN_GROUP,
+  layoutView,
+  type StageView,
+  viewKey,
+} from "../lib/fan";
 import { isPartsError, partsOf } from "../lib/geometry";
 import { closeAction } from "../lib/keys";
 import { pageAt } from "../lib/layout";
@@ -36,7 +44,10 @@ export function SignWorkspace(p: SignWorkspaceProps) {
   const [leave, setLeave] = useState(false);
   const [cur, setCur] = useState(0);
   const [goTo, setGoTo] = useState<{ index: number; nonce: number } | null>(null);
-  const layoutRef = useRef<StageLayout>({ pages: [], width: 0, height: 0 });
+  const layoutRef = useRef<StageLayout>({ pages: [], width: 0, height: 0, fan: false });
+  const [view, setView] = useState<StageView>(DEFAULT_VIEW);
+  const key = viewKey(view);
+  const pageCount = pdf.status === "ready" ? pdf.sizes.length : 0;
   const [warn, setWarn] = useState(false);
   const items = store.byFile[fileId] ?? [];
 
@@ -51,6 +62,31 @@ export function SignWorkspace(p: SignWorkspaceProps) {
     return () => window.removeEventListener("keydown", k);
   }, []);
 
+  // điện thoại (≤ 640px): chỉ có «Từng trang»
+  useEffect(() => {
+    const mq = window.matchMedia?.("(max-width: 640px)");
+    if (!mq) return;
+    const f = () => mq.matches && setView((v) => (v.mode === "fan" ? { ...v, mode: "page" } : v));
+    f();
+    mq.addEventListener("change", f);
+    return () => mq.removeEventListener("change", f);
+  }, []);
+  const changeView = (next: StageView) => {
+    if (pdf.status === "ready") {
+      const n = { ...next, group: clampGroup(next.group, pdf.sizes.length) };
+      const old = layoutRef.current;
+      // «Liền mép» đổi khoảng cách giữa các trang ⇒ tính lại phần cắt của chữ ký đã đặt ở «Từng trang»
+      if (view.mode === "page" && n.mode === "page" && view.lien !== n.lien)
+        store.relayout(fileId, "page", old.pages, layoutView(pdf.sizes, old.width, n).pages);
+      next = n;
+    }
+    setView(next);
+    setSel(null);
+    setSeam(null);
+    setMenu(null);
+    setWarn(false);
+  };
+
   const place = useCallback(
     (tray: SignTray, cx: number, cy: number) => {
       const lay = layoutRef.current;
@@ -60,12 +96,12 @@ export function SignWorkspace(p: SignWorkspaceProps) {
       const w = pg.width * DEFAULT_W_RATIO;
       const h = w / aspect;
       const rect = clampToStage({ l: cx - w / 2, t: cy - h / 2, w, h }, lay);
-      const spec = specFromTray(tray, aspect);
+      const spec = { ...specFromTray(tray, aspect), view: key };
       setWarn(isPartsError(partsOf(rect, lay.pages)));
       store.add(fileId, spec, rect, lay.pages);
       setMenu(null);
     },
-    [fileId, store],
+    [fileId, store, key],
   );
 
   const counts = useMemo(
@@ -101,6 +137,11 @@ export function SignWorkspace(p: SignWorkspaceProps) {
         saveDisabled={p.saveDisabled?.(fileId)}
         onSave={() => p.onSave(fileId)}
         onClose={close}
+        view={
+          p.mode === "sign" && pageCount > 0
+            ? { value: view, pageCount, onChange: changeView }
+            : undefined
+        }
       />
       <FileTabs
         files={p.files}
@@ -108,6 +149,7 @@ export function SignWorkspace(p: SignWorkspaceProps) {
         counts={counts}
         onSelect={(id) => {
           setFileId(id);
+          setView(DEFAULT_VIEW);
           setSel(null);
           setCur(0);
         }}
@@ -127,7 +169,11 @@ export function SignWorkspace(p: SignWorkspaceProps) {
             pageCount={pdf.sizes.length}
             dots={dots}
             current={cur}
-            onGo={(i) => setGoTo({ index: i, nonce: Date.now() })}
+            onGo={(i) =>
+              view.mode === "fan"
+                ? changeView({ ...view, group: Math.floor(i / FAN_GROUP) })
+                : setGoTo({ index: i, nonce: Date.now() })
+            }
           />
         )}
         {pdf.status === "loading" && (
@@ -143,6 +189,7 @@ export function SignWorkspace(p: SignWorkspaceProps) {
             key={fileId}
             doc={pdf.doc}
             sizes={pdf.sizes}
+            view={view}
             scrollTo={goTo}
             onCurrentPage={setCur}
             onBlank={() => {
@@ -160,6 +207,7 @@ export function SignWorkspace(p: SignWorkspaceProps) {
               return (
                 <StageItems
                   layout={layout}
+                  viewKey={key}
                   items={items}
                   mode={p.mode}
                   sel={sel}

@@ -10,16 +10,26 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { DEFAULT_VIEW, layoutView, type StageView, type ViewLayout } from "../lib/fan";
 import type { StagePage } from "../lib/geometry";
-import { layoutPages, type PageSize } from "../lib/layout";
+import type { PageSize } from "../lib/layout";
 import { isInsideStage } from "../lib/stage-target";
 
-export type StageLayout = { pages: StagePage[]; width: number; height: number };
+export type StageLayout = ViewLayout;
 const DPR_MAX = 2;
 const LONG_PRESS_MS = 550;
 const MOVE_CANCEL_PX = 8;
 
-function PageCanvas({ doc, page }: { doc: PDFDocumentProxy; page: StagePage }) {
+function PageCanvas({
+  doc,
+  page,
+  z,
+}: {
+  doc: PDFDocumentProxy;
+  page: StagePage;
+  /** Xoè quạt: thứ tự xếp chồng (trang đầu nằm trên). */
+  z?: number;
+}) {
   const { t } = useTranslation();
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -51,9 +61,23 @@ function PageCanvas({ doc, page }: { doc: PDFDocumentProxy; page: StagePage }) {
       aria-label={t("contracts.docsign.pageLabel", { n: page.index + 1 })}
       data-testid="sign-page"
       className="absolute bg-white shadow"
-      style={{ left: page.left, top: page.top, width: page.width, height: page.height }}
+      style={{
+        left: page.left,
+        top: page.top,
+        width: page.width,
+        height: page.height,
+        zIndex: z,
+      }}
     >
       <canvas ref={ref} className="size-full" />
+      {z !== undefined && (
+        <span
+          aria-hidden="true"
+          className="absolute right-1 top-1 text-xs font-semibold text-primary"
+        >
+          {page.index + 1}
+        </span>
+      )}
     </div>
   );
 }
@@ -61,6 +85,8 @@ function PageCanvas({ doc, page }: { doc: PDFDocumentProxy; page: StagePage }) {
 export function PageStage(p: {
   doc: PDFDocumentProxy;
   sizes: PageSize[];
+  /** Mặc định «Từng trang» (bản đã ký chỉ xem). */
+  view?: StageView;
   scrollTo: { index: number; nonce: number } | null;
   onCurrentPage: (i: number) => void;
   onDropTray: (trayId: string, x: number, y: number) => void;
@@ -81,7 +107,12 @@ export function PageStage(p: {
     setW(el.clientWidth);
     return () => ro.disconnect();
   }, []);
-  const layout = layoutPages(p.sizes, w);
+  const view = p.view ?? DEFAULT_VIEW;
+  const layout = layoutView(p.sizes, w, view);
+  const viewId = `${view.mode}-${view.edge}-${view.group}`;
+  // đổi kiểu xem/nhóm ⇒ về đầu sân khấu
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy khi đổi kiểu xem
+  useEffect(() => scroller.current?.scrollTo({ top: 0, left: 0 }), [viewId]);
   const at = (cx: number, cy: number) => {
     const b = stage.current?.getBoundingClientRect();
     return { x: cx - (b?.left ?? 0), y: cy - (b?.top ?? 0) };
@@ -121,6 +152,7 @@ export function PageStage(p: {
     if (id) p.onDropTray(id, x, y);
   };
   const onScroll = () => {
+    if (layout.fan) return;
     const el = scroller.current;
     const top = (el?.scrollTop ?? 0) + (el?.clientHeight ?? 0) / 3;
     const cur = layout.pages.findIndex((g) => top < g.top + g.height + 8);
@@ -150,8 +182,13 @@ export function PageStage(p: {
           p.onMenu(x, y);
         }}
       >
-        {layout.pages.map((g) => (
-          <PageCanvas key={g.index} doc={p.doc} page={g} />
+        {layout.pages.map((g, i) => (
+          <PageCanvas
+            key={g.index}
+            doc={p.doc}
+            page={g}
+            z={layout.fan ? layout.pages.length - i : undefined}
+          />
         ))}
         {p.children(layout)}
       </div>

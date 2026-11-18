@@ -115,6 +115,18 @@
           "seam": "Giáp lai",
           "initials": "Ký nháy"
         }
+      },
+      "view": {
+        "label": "Kiểu xem",
+        "page": "Từng trang",
+        "fan": "Xoè quạt",
+        "lien": "Liền mép",
+        "edge": "Dải lộ",
+        "edgeRight": "Mép phải",
+        "edgeBottom": "Mép dưới",
+        "prev": "Nhóm trang trước",
+        "next": "Nhóm trang sau",
+        "group": "Trang {{from}}–{{to}}"
       }
     }
   }

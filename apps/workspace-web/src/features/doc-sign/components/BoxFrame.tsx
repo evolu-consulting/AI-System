@@ -84,7 +84,7 @@ export function BoxFrame(p: BoxFrameProps) {
       tabIndex={0}
       aria-label={p.ariaLabel}
       data-testid={p.testId}
-      className={`absolute touch-none rounded-sm border-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 ${p.toneClass} ${p.editable ? "cursor-move" : ""} ${p.selected ? "ring-2 ring-ring" : ""}`}
+      className={`absolute z-10 touch-none rounded-sm border-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 ${p.toneClass} ${p.editable ? "cursor-move" : ""} ${p.selected ? "ring-2 ring-ring" : ""}`}
       style={{ left: r.l, top: r.t, width: r.w, height: r.h }}
       onPointerDown={(e) => begin(e)}
       onPointerMove={move}

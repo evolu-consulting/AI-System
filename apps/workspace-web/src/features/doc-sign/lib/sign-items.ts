@@ -7,7 +7,7 @@ import {
   type SignSide,
 } from "@ai/contracts/pack-contracts";
 import { copyToAllPages } from "./actions";
-import { isPartsError, partsOf, type Rect, type StagePage } from "./geometry";
+import { isPartsError, partsOf, type Rect, rectFromParts, type StagePage } from "./geometry";
 
 export type SignItemStatus = "editable" | "mine" | "other";
 export type SignItem = {
@@ -29,6 +29,8 @@ export type SignItem = {
   fieldId?: string;
   /** s12 · bản «Chép sang mọi trang» ⇒ placement `initials`. */
   initials?: boolean;
+  /** CR-182 · kiểu xem đã đặt chữ ký (`viewKey`); khác kiểu xem hiện tại ⇒ vẫn hiện nhưng không kéo được. Không có ⇒ «page». */
+  view?: string;
 };
 
 export type NewItem = Omit<SignItem, "parts" | "id">;
@@ -117,4 +119,24 @@ export function specFromTray(
     signerRef: tray.signerRef,
     status: "editable",
   };
+}
+
+/** CR-182 · bố cục đổi (vd «Liền mép») nhưng kiểu xem giữ nguyên ⇒ tính lại `parts` của chữ ký sửa được thuộc kiểu xem này. Không đổi gì ⇒ trả đúng mảng cũ. */
+export function relayoutItems(
+  items: SignItem[],
+  key: string,
+  oldPages: StagePage[],
+  newPages: StagePage[],
+): SignItem[] {
+  let changed = false;
+  const out = items.map((i) => {
+    if (i.status !== "editable" || (i.view ?? "page") !== key) return i;
+    const r = rectFromParts(i.parts, oldPages);
+    if (!r) return i;
+    const parts = partsOf(r, newPages);
+    if (isPartsError(parts) || parts.length === 0) return i;
+    changed = true;
+    return { ...i, parts };
+  });
+  return changed ? out : items;
 }

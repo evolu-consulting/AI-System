@@ -1,9 +1,11 @@
 // CR-181 · lớp phủ trên sân khấu: các ô/chữ ký, vạch tím hít khe, thanh nổi, menu chuột phải.
+import { editableIn } from "../lib/fan";
 import { type Rect, rectFromParts } from "../lib/geometry";
 import type { SignItem } from "../lib/sign-items";
 import { type Seam, seamsOf } from "../lib/snap";
 import { FieldBox } from "./FieldBox";
 import { FloatBar } from "./FloatBar";
+import { LockedMark } from "./LockedMark";
 import { MarkBox } from "./MarkBox";
 import type { StageLayout } from "./PageStage";
 import { StageMenu } from "./StageMenu";
@@ -11,6 +13,8 @@ import type { SignTray } from "./types";
 
 export function StageItems(p: {
   layout: StageLayout;
+  /** CR-182 · khoá kiểu xem hiện tại (`viewKey`). */
+  viewKey: string;
   items: SignItem[];
   mode: "prep" | "sign";
   sel: string | null;
@@ -27,12 +31,16 @@ export function StageItems(p: {
   onPick: (t: SignTray, at: { x: number; y: number }) => void;
   onCloseMenu: () => void;
 }) {
-  const seams = seamsOf(p.layout.pages);
-  const picked = p.items.find((i) => i.id === p.sel);
+  const fan = p.layout.fan;
+  const seams = fan ? [] : seamsOf(p.layout.pages); // xoè quạt: không có khe để hít
+  const picked = p.items.find((i) => i.id === p.sel && editableIn(i, p.viewKey));
   const pr = picked && rectFromParts(picked.parts, p.layout.pages);
   return (
     <>
       {p.items.map((it) => {
+        if (fan && it.kind === "field") return null; // ô chỗ ký chỉ ở «Từng trang»
+        if (it.kind === "mark" && (fan || it.status === "editable") && !editableIn(it, p.viewKey))
+          return <LockedMark key={it.id} item={it} pages={p.layout.pages} />;
         const rect = rectFromParts(it.parts, p.layout.pages);
         if (!rect) return null;
         const common = {
@@ -62,7 +70,7 @@ export function StageItems(p: {
         <div
           aria-hidden="true"
           data-testid="sign-seam"
-          className="pointer-events-none absolute h-0.5 bg-violet-500"
+          className="pointer-events-none absolute z-20 h-0.5 bg-violet-500"
           style={{ left: p.seam.l, top: p.seam.at, width: p.seam.w }}
         />
       )}

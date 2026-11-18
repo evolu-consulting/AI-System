@@ -11,6 +11,7 @@ import {
   moveItem,
   type NewItem,
   placeItem,
+  relayoutItems,
   removeItem,
   type SignItem,
   setSide,
@@ -63,6 +64,8 @@ export function useSignItems(
         ...add,
       ]),
     fill: (f: string, id: string, imageUrl: string) => apply(f, (i) => signField(i, id, imageUrl)),
+    relayout: (f: string, key: string, oldPages: StagePage[], newPages: StagePage[]) =>
+      apply(f, (i) => relayoutItems(i, key, oldPages, newPages)),
     remove: (f: string, id: string) => apply(f, (i) => removeItem(i, id)),
     changeSide: (
       f: string,

@@ -5,7 +5,9 @@ import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { ToggleGroup, ToggleGroupItem } from "@ai/web-kit/ui/kit/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useTranslation } from "react-i18next";
+import type { StageView } from "../lib/fan";
 import type { SignKindOption, SignTray } from "./types";
+import { ViewBar } from "./ViewBar";
 
 export function TrayChip({ tray }: { tray: SignTray }) {
   const { t } = useTranslation();
@@ -45,6 +47,8 @@ export function SignTopBar(p: {
   /** Không có gì để lưu ⇒ khoá nút, không gửi request. */
   saveDisabled?: boolean;
   onClose: () => void;
+  /** CR-182 · kiểu xem khi ký; không truyền ⇒ không hiện (chế độ chuẩn bị). */
+  view?: { value: StageView; pageCount: number; onChange: (v: StageView) => void };
 }) {
   const { t } = useTranslation();
   const Close = ICONS.close;
@@ -91,6 +95,9 @@ export function SignTopBar(p: {
           );
         })}
       </ToggleGroup>
+      {p.view && (
+        <ViewBar view={p.view.value} pageCount={p.view.pageCount} onChange={p.view.onChange} />
+      )}
       <div className="flex flex-1 flex-wrap items-center gap-2">
         {p.trays.map((tr) => (
           <TrayChip key={tr.id} tray={tr} />

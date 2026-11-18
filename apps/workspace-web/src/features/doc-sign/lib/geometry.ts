@@ -14,6 +14,8 @@ export type StagePage = {
   height: number;
   ptWidth: number;
   ptHeight: number;
+  /** Xoè quạt: phần ĐANG LỘ của trang (px). Không có ⇒ lộ cả trang. */
+  visible?: Rect;
 };
 export type PartsError = { error: "too_many_pages" };
 export type PartsResult = SignPart[] | PartsError;
@@ -22,14 +24,15 @@ export const isPartsError = (r: PartsResult): r is PartsError => !Array.isArray(
 
 const MIN_OVERLAP_PX = 1;
 
-/** Đổi rect px → các phần theo điểm PDF (gốc dưới-trái), cắt theo trang, chỉ trang giao ≥ 1px. */
+/** Đổi rect px → các phần theo điểm PDF (gốc dưới-trái), cắt theo phần đang lộ của từng trang, chỉ trang giao ≥ 1px. Toạ độ x,y,w,h vẫn quy về trang ĐẦY ĐỦ. */
 export function partsOf(r: Rect, pages: StagePage[]): PartsResult {
   const out: SignPart[] = [];
   for (const p of pages) {
-    const il = Math.max(r.l, p.left);
-    const it = Math.max(r.t, p.top);
-    const ir = Math.min(r.l + r.w, p.left + p.width);
-    const ib = Math.min(r.t + r.h, p.top + p.height);
+    const v = p.visible ?? { l: p.left, t: p.top, w: p.width, h: p.height };
+    const il = Math.max(r.l, v.l);
+    const it = Math.max(r.t, v.t);
+    const ir = Math.min(r.l + r.w, v.l + v.w);
+    const ib = Math.min(r.t + r.h, v.t + v.h);
     if (ir - il < MIN_OVERLAP_PX || ib - it < MIN_OVERLAP_PX) continue;
     const k = p.ptWidth / p.width;
     out.push({

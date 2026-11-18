@@ -115,6 +115,18 @@
           "seam": "Edge signature",
           "initials": "Initials"
         }
+      },
+      "view": {
+        "label": "View",
+        "page": "Page by page",
+        "fan": "Fan",
+        "lien": "Seamless",
+        "edge": "Visible strip",
+        "edgeRight": "Right edge",
+        "edgeBottom": "Bottom edge",
+        "prev": "Previous pages",
+        "next": "Next pages",
+        "group": "Pages {{from}}–{{to}}"
       }
     }
   }
