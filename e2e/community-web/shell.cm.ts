@@ -20,6 +20,7 @@ const SHT_PATHS = [
   "/contracts/partners",
   "/contracts/products",
   "/contracts/org", // CR-139 · Sơ đồ tổ chức
+  "/contracts/verify", // «Kiểm tra tệp»
 ];
 
 test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
@@ -50,7 +51,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
     });
   }
 
-  test("chủ quản có quyền (Admin): nhóm SHT + đúng 7 link TRONG app (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
+  test("chủ quản có quyền (Admin): nhóm SHT + đúng 8 link TRONG app (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
     page,
   }) => {
     await page.goto("/community");

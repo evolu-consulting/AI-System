@@ -199,11 +199,27 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
   });
 
   for (const c of ["a", "b"] as const) {
+    // CR-185: mục «Kết nối» đã bỏ; điều kiện đối tác là cảnh báo vàng ở «Quy trình duyệt» — ĐỦ điều kiện ⇒ không có cảnh báo nào.
     const card = async (): Promise<Page> => {
       const p = await as(c, "gd");
-      await p.goto(`${E.cw}/contracts/settings?sec=sign`);
-      await expect(p.getByTestId("partner-confirm-status")).toBeVisible({ timeout: 30_000 });
+      const loaded = p.waitForResponse((r) => /\/partner-confirm(\?|$)/.test(r.url()), {
+        timeout: 30_000,
+      });
+      await p.goto(`${E.cw}/contracts/settings?sec=flow`);
+      await expect(p.getByTestId("flow-current-title")).toBeVisible({ timeout: 30_000 });
+      await loaded;
       return p;
+    };
+    const noWarn = async (p: Page): Promise<void> => {
+      await expect(p.getByTestId("flow-partner-warn")).toHaveCount(0);
+      await expect(p.getByTestId("flow-receive-warn")).toHaveCount(0);
+      if ((await p.getByTestId("flow-select").count()) > 0) {
+        await p.getByTestId("flow-select").click();
+        await expect(
+          p.locator('[data-testid^="flow-option-"]').filter({ hasText: "⚠" }),
+        ).toHaveCount(0);
+        await p.keyboard.press("Escape");
+      }
     };
     await S.run(`S4${c}`, `Danh bạ công ty bật · công ty ${c.toUpperCase()}`, async () => {
       expect(
@@ -211,15 +227,16 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
         "Danh bạ công ty TẮT mặc định khi tạo công ty mới — phải bật tay ở Quản trị › Hồ sơ (bài tự bật để đi tiếp)",
       ).not.toBe("off");
       const p = await card();
-      await expect(p.getByTestId("partner-confirm-item-listed")).toHaveCount(0);
+      await expect(p.getByTestId("flow-current-title")).toBeVisible();
+      await expect(p.getByRole("button", { name: /^Kết nối/ })).toHaveCount(0);
+      await noWarn(p);
     });
     await S.run(
       `S5${c}`,
-      `Khung «Gửi và nhận hợp đồng với đối tác» đủ điều kiện · ${c.toUpperCase()}`,
+      `Quy trình duyệt không có cảnh báo điều kiện đối tác · ${c.toUpperCase()}`,
       async () => {
         const p = await card();
-        const sum = (await p.getByTestId("partner-confirm-summary").innerText()).trim();
-        expect(sum, `khung báo: ${sum}`).toContain("sẵn sàng gửi và nhận");
+        await noWarn(p);
       },
     );
   }

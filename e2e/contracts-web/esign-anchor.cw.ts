@@ -1,4 +1,4 @@
-// esign-anchor · Luật 4b: (a) Cài đặt › Kết nối hiện danh sách cụm Bên A/B, owner sửa ⇒ PUT /esign/anchors {a[], b[]};
+// esign-anchor · Luật 4b: (a) Cài đặt › Chữ ký hiện danh sách cụm Bên A/B, owner sửa ⇒ PUT /esign/anchors {a[], b[]};
 // (b) hộp Gửi ký hiện "Vị trí ký: trong văn bản" theo GET /esign/placement. Backend giả `page.route`; không sleep.
 import { expect, type Route, test } from "@playwright/test";
 import { asHub } from "./dataset";

@@ -63,11 +63,14 @@ test("editor: giao cho người khác ⇒ một PUT /owner; mở lịch sử th�
   page,
 }) => {
   const sent = await open(page, "editor");
-  // CR-184: «Phụ trách» là avatar kèm tooltip «Phụ trách: tên»; bấm mở danh sách (avatar + họ tên), chọn theo owner-option-<id>
+  // CR-185: «Phụ trách» là avatar, tooltip CHỈ có họ tên (không «Phụ trách: »); bấm mở danh sách (avatar + họ tên), chọn theo owner-option-<id>
   const sel = page.getByTestId("owner-select");
-  await expect(sel).toHaveAttribute("aria-label", /^Phụ trách: /);
+  // aria-label (nhãn đọc) còn «Phụ trách: tên»; tooltip khi rê chuột CHỈ là họ tên
+  await expect(sel).toHaveAttribute("aria-label", /^Phụ trách: \S/);
+  const who = ((await sel.getAttribute("aria-label")) ?? "").replace(/^Phụ trách: /, "");
   await sel.hover();
-  await expect(page.getByRole("tooltip").first()).toContainText(/^Phụ trách: /);
+  await expect(page.getByRole("tooltip").first()).toHaveText(who); // CR-185: tooltip = đúng họ tên, không thêm chữ
+  await expect(page.getByRole("tooltip").first()).not.toContainText("Phụ trách");
   await sel.click();
   await expect(page.getByTestId("owner-option-none")).toBeVisible();
   await expect(page.getByTestId(`owner-option-${PEOPLE[0]?.id}`)).toContainText("Chi Nguyễn");

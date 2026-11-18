@@ -1,5 +1,5 @@
 // CR-184 · Cài đặt: (1) quy trình đổi bằng ô chọn; (2) sơ đồ có nhánh Đúng/Sai + bước Ký hiện «Ký trên tài liệu»;
-// (3) «Kết nối» chỉ còn «Gửi và nhận hợp đồng với đối tác»; (4) «Vị trí ô ký» ẩn khi không có DocuSign. Backend giả `page.route`; không sleep.
+// (3) CR-185: mục «Kết nối» đã bỏ, ký số ở «Chữ ký»; (4) «Vị trí ô ký» ẩn khi không có DocuSign. Backend giả `page.route`; không sleep.
 import { expect, type Page, type Route, test } from "@playwright/test";
 import { asHub } from "./dataset";
 import { mockSignature } from "./signature-mock";
@@ -56,6 +56,32 @@ const FLOW_B = {
     G("b1", 1, "Đã duyệt", "end", { terminal: true }),
   ],
 };
+// CR-185 · quy trình có ô Ký số = Gửi ký + Chờ ký (cùng node module), Chờ ký rẽ Từ chối/Hết hạn tới Kết thúc · Từ chối — như trang quản trị.
+const FLOW_C = {
+  def_id: "33333333-3333-4333-8333-333333333333",
+  name: "Duyệt 2 cấp",
+  rel_version: 1,
+  steps: [
+    { name: "Duyệt", department_name: "Kinh doanh", kind: "review", approver_count: 1 },
+    { name: "Ký số", department_name: null, kind: "esign" },
+  ],
+  graph: [
+    G("c0", 0, "Duyệt", "review", { department_name: "Kinh doanh" }),
+    G("c1", 1, "Ký số", "esign", { node: "contracts.esign", exec: "tool", provider: "ondoc" }),
+    G("c2", 2, "Chờ ký xong", "wait", {
+      node: "contracts.esign",
+      exec: "wait_event",
+      after: "auto",
+      wait_branches: [
+        { on: "esign.declined", step: 3 },
+        { on: "esign.voided", step: 3 },
+        { on: "timeout", step: 3 },
+      ],
+    }),
+    G("c3", 3, "Kết thúc · Từ chối", "end", { terminal: true, outcome: "rejected" }),
+    G("c4", 4, "Kết thúc · Đã duyệt", "end", { terminal: true, outcome: "approved" }),
+  ],
+};
 const ENVELOPE = {
   key: "docusign",
   label: "DocuSign",
@@ -65,7 +91,7 @@ const ENVELOPE = {
 };
 const CA = { key: "selfsign", label: "Ký thử", kind: "ca", available: true, legal: false };
 
-async function install(page: Page, providers: unknown[]) {
+async function install(page: Page, providers: unknown[], flows: unknown[] = [FLOW_A, FLOW_B]) {
   const d = asHub("owner");
   await page.addInitScript(() => {
     try {
@@ -80,7 +106,7 @@ async function install(page: Page, providers: unknown[]) {
   await page.route("**/pack/contracts/me", (r) => json(r, d.packMe));
   await page.route("**/pack/contracts/groups", (r) => json(r, []));
   await page.route("**/pack/contracts/dify-workflows", (r) => json(r, { items: [] }));
-  await page.route("**/pack/contracts/approval-flow", (r) => json(r, { items: [FLOW_A, FLOW_B] }));
+  await page.route("**/pack/contracts/approval-flow", (r) => json(r, { items: flows }));
   await page.route("**/pack/contracts/esign/settings", (r) =>
     json(r, {
       configured: true,
@@ -138,19 +164,20 @@ test("CR-184 · sơ đồ có nhánh Đúng/Sai, bước Ký hiện «Ký trên 
   await expect(list.getByTestId("flow-row-s3")).toContainText("Ký trên tài liệu");
 });
 
-test("CR-184 · Kết nối chỉ còn «Gửi và nhận hợp đồng với đối tác», Ký số nằm ở Chữ ký", async ({
+test("CR-185 · không còn mục «Kết nối»; ký số nằm ở Chữ ký; link cũ ?sec=sign mở «Quy trình duyệt»", async ({
   page,
 }) => {
   const dlg = await install(page, [ENVELOPE]);
-  await dlg.getByRole("button", { name: /^Kết nối/ }).click();
-  await expect(dlg.getByTestId("sign-partner-pane")).toBeVisible();
-  await expect(dlg.getByTestId("sign-block-partner")).toBeVisible();
-  await expect(dlg.getByTestId("esign-enabled")).toHaveCount(0);
-  await expect(dlg.getByTestId("esign-provider-setting")).toHaveCount(0);
-  await expect(dlg.getByTestId("esign-anchor-setting")).toHaveCount(0);
+  await expect(dlg.getByRole("button", { name: /^Quy trình duyệt/ })).toBeVisible();
+  await expect(dlg.getByRole("button", { name: /^Kết nối/ })).toHaveCount(0);
+  await expect(dlg.getByTestId("sign-partner-pane")).toHaveCount(0);
   await dlg.getByRole("button", { name: /^Chữ ký/ }).click();
   await expect(dlg.getByTestId("sig-provider")).toBeVisible();
   await expect(dlg.getByTestId("esign-enabled")).toBeVisible();
+  await page.goto("/contracts/settings?sec=sign");
+  const again = page.getByRole("dialog", { name: "Cài đặt" });
+  await expect(again.getByTestId("flow-current-title")).toBeVisible();
+  await expect(again.getByTestId("sign-partner-pane")).toHaveCount(0);
 });
 
 test("CR-184 · «Vị trí ô ký» chỉ hiện khi có DocuSign; chỉ có Ký thử thì ẩn", async ({ page }) => {
@@ -164,4 +191,21 @@ test("CR-184 · «Vị trí ô ký» hiện khi có DocuSign đang bật", async
   const dlg = await install(page, [ENVELOPE, CA]);
   await dlg.getByRole("button", { name: /^Chữ ký/ }).click();
   await expect(dlg.getByTestId("esign-anchor-setting")).toBeVisible();
+});
+
+test("CR-185 · sơ đồ Quy trình duyệt khớp trang quản trị: Gửi ký + Chờ ký gộp một ô «Ký số», có cạnh «Từ chối · Hết hạn» tới Kết thúc, không tự thêm nút", async ({
+  page,
+}) => {
+  const dlg = await install(page, [ENVELOPE], [FLOW_C]);
+  await dlg.getByRole("button", { name: /^Quy trình duyệt/ }).click();
+  const cv = dlg.getByTestId("flow-canvas");
+  await expect(cv.getByText("Duyệt", { exact: true })).toBeVisible();
+  await expect(cv.getByText("Ký số", { exact: true })).toHaveCount(1);
+  await expect(cv.getByText("Chờ ký xong")).toHaveCount(0);
+  await expect(cv.getByText("Gửi ký", { exact: true })).toHaveCount(0);
+  await expect(cv.getByText("Từ chối · Hết hạn")).toBeVisible();
+  await expect(cv.getByText("Kết thúc", { exact: true })).toHaveCount(2);
+  await expect(cv.getByText("Từ chối", { exact: true })).toBeVisible();
+  await expect(cv.getByText("Đã duyệt", { exact: true })).toBeVisible();
+  await expect(cv.getByText("Trả lại")).toHaveCount(0);
 });

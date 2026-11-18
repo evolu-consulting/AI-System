@@ -1,4 +1,4 @@
-// CR-147 · e2e Bảng tin (adapter mock): bình luận chỉ hiện 2 mới nhất + «Xem thêm», sửa bài thêm/bớt tệp, nút thu gọn ô đăng thẳng hàng.
+// CR-147 · e2e Bảng tin (adapter mock): bình luận chỉ hiện 3 mới nhất + «Xem thêm» (CR-186: 2 ⇒ 3), sửa bài thêm/bớt tệp, nút thu gọn ô đăng thẳng hàng.
 import { expect, test } from "@playwright/test";
 
 const pdf = (name: string) => ({
@@ -7,18 +7,17 @@ const pdf = (name: string) => ({
   buffer: Buffer.alloc(1024, 1),
 });
 
-test("bài có 3 bình luận: mặc định 2 mới nhất, «Xem thêm 1 bình luận» mở phần cũ", async ({
+test("bài có 3 bình luận: hiện đủ cả 3, không có «Xem thêm» (CR-186; bài 4 bình luận ở cr186-composer.cm.ts)", async ({
   page,
 }) => {
-  // mock ở trong bộ nhớ ⇒ không reload; dùng bài p1 của seed (3 bình luận: «Anh Hưng» cũ nhất, rồi 2 bình luận mới hơn)
+  // mock ở trong bộ nhớ ⇒ không reload; dùng bài p1 của seed (3 bình luận)
   await page.goto("/community");
   const card = page.locator('[data-post-id="p1"]');
   await card.getByRole("button", { name: /Bình luận/ }).click();
   await expect(card.getByText("Gói 1 năm còn ưu đãi")).toBeVisible();
   await expect(card.getByText("gửi báo giá qua đây trong hôm nay")).toBeVisible();
-  await expect(card.getByText("Bên mình cần thêm chữ ký HSM")).toHaveCount(0);
-  await card.getByRole("button", { name: "Xem thêm 1 bình luận" }).click();
   await expect(card.getByText("Bên mình cần thêm chữ ký HSM")).toBeVisible();
+  await expect(card.getByRole("button", { name: /^Xem thêm/ })).toHaveCount(0);
   await expect(card.getByTestId("comments-more")).toHaveCount(0);
 });
 
