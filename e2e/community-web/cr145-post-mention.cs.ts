@@ -26,7 +26,7 @@ test("CR145-P1 · chủ quản: ô soạn mặc định «Thông báo»; nhắc 
     .getByRole("textbox", { name: /nội dung|Nội dung/ })
     .first()
     .fill(TITLE);
-  await p.getByRole("button", { name: "Nhắc tên" }).click(); // CR-147c: hộp chọn người
+  await p.getByTestId("composer").getByRole("button", { name: "Nhắc tên" }).click(); // CR-147c: hộp chọn người
   await p.getByRole("searchbox", { name: "Tìm theo tên" }).fill("Tân Phát");
   await p.getByTestId("mention-option").filter({ hasText: ORG.supplier }).first().click();
   await p.getByTestId("mention-done").click();
@@ -62,7 +62,7 @@ test("CR145-P3 · đối tác: ô «Nhắc tên» chỉ gợi ý đồng nghiệ
   const p = sup.page;
   await p.goto("/community");
   await p.locator(".ctype.sell").click();
-  await p.getByRole("button", { name: "Nhắc tên" }).click();
+  await p.getByTestId("composer").getByRole("button", { name: "Nhắc tên" }).click();
   const options = p.getByTestId("mention-option");
   const n = await options.count();
   for (let i = 0; i < n; i++) await expect(options.nth(i)).not.toContainText(ORG.buyer);
