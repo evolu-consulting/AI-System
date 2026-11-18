@@ -3,6 +3,25 @@
 import type { PartnerSignDeps } from "./partner-sign.deps";
 import type { ContactRow } from "./partner-sign.repo.port";
 
+type Res = { ok: true } | { ok: false; permanent: boolean; code: string; skip?: boolean };
+/** Thư KHÔNG đi (miền dành riêng như .invalid, SMTP từ chối…): trước đây im lặng ⇒ HĐ chờ đối tác mà không ai biết. Ghi rõ lý do; bản dev/test
+ *  ghi thêm link để lấy tay (chỉ khi miền bị bỏ qua — địa chỉ thật không bao giờ bị `skip`). */
+function logUndelivered(
+  d: Pick<PartnerSignDeps, "log" | "logLink">,
+  res: Res | undefined,
+  linkId: string | null,
+  link: string | null,
+): void {
+  const bad = res && !res.ok ? res : null;
+  d.log.warn("partner-sign-mail-undelivered", {
+    link_id: linkId,
+    code: bad?.code ?? "no_result",
+    skip: bad?.skip === true,
+    permanent: bad?.permanent ?? false,
+    ...(d.logLink() && bad?.skip ? { link } : {}),
+  });
+}
+
 /** Thư (hoặc log khi tắt thông báo). Không ném: lỗi gửi ⇒ link vẫn có (người tải lên bấm «Gửi lại»). */
 export async function sendMail(
   d: Pick<PartnerSignDeps, "mailer" | "log" | "logLink">,
@@ -35,7 +54,9 @@ export async function sendMail(
     const [res] = await t.sendBatch([
       { idempotencyKey: key, tenantId, to: to.email, toName: to.name ?? "Quý đối tác", ...m },
     ]);
-    return res?.ok === true;
+    if (res?.ok === true) return true;
+    logUndelivered(d, res, linkId, linkForLog);
+    return false;
   } catch (e) {
     d.log.warn("partner-sign-mail-failed", { error: e instanceof Error ? e.name : "unknown" });
     return false;

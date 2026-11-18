@@ -130,8 +130,31 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
       linkId,
     );
     if (sent) await d.uow.system(tenantId, (r) => r.partnerSign.markSent(linkId));
+    // Có transport mà thư không đi ⇒ báo người tải lên (chuông) — không để HĐ chờ trong im lặng.
+    else if (d.mailer()) await mailFailedBell(tenantId, contractId, made.c, linkId);
     return { res: "created", url: link, sent };
   }
+  /** Chuông «Chưa gửi được thư mời ký»: người tải lên sửa email liên hệ rồi bấm «Gửi lại link ký». */
+  const mailFailedBell = (
+    tenantId: string,
+    contractId: string,
+    c: { title: string; created_by: string },
+    linkId: string,
+  ) =>
+    d.uow
+      .system(tenantId, (r) =>
+        r.notify.enqueue([
+          {
+            user_id: c.created_by,
+            kind: "contract.partner_sign_mail_failed",
+            title: `Chưa gửi được thư mời ký: ${c.title}`.slice(0, 200),
+            body: "Thư mời không tới được địa chỉ email của liên hệ đối tác. Kiểm tra email liên hệ rồi bấm «Gửi lại link ký».",
+            link: `/contracts/${contractId}`,
+            dedup_key: `partner-sign-mailfail:${linkId}`,
+          },
+        ]),
+      )
+      .catch(() => undefined);
   const ensureLink = async (...a: Parameters<typeof ensureLinkFull>) =>
     (await ensureLinkFull(...a)).res;
 

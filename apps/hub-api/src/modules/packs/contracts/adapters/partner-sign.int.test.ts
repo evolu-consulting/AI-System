@@ -39,17 +39,8 @@ let completed = 0;
 let ipN = 10;
 let puts = 0;
 
-const part = (page: number) => ({
-  page,
-  x: 40,
-  y: 40,
-  w: 120,
-  h: 50,
-  cx: 40,
-  cy: 40,
-  cw: 120,
-  ch: 50,
-});
+const BOX = { x: 40, y: 40, w: 120, h: 50, cx: 40, cy: 40, cw: 120, ch: 50 };
+const part = (page: number) => ({ page, ...BOX });
 const canvasPng = (): Uint8Array => {
   const c = createCanvas(120, 50);
   const g = c.getContext("2d");
@@ -71,6 +62,8 @@ const uow = () =>
     import("../../kit/public").PackSystemUow<PartnerSignRepos>;
 
 let off = false;
+let reserved = false; // transport live nhưng bỏ qua địa chỉ miền dành riêng (.invalid) — như bản test staging
+const warns: { m: string; f: Record<string, unknown> | undefined }[] = [];
 let completeFails = false;
 type Counts = { a_done: boolean; b_total: number; b_open: number; run_id: string } | null;
 let countsNow: Counts | undefined;
@@ -111,6 +104,13 @@ const make = () =>
         ? null
         : {
             sendBatch: async (m) => {
+              if (reserved)
+                return m.map(() => ({
+                  ok: false as const,
+                  permanent: true,
+                  code: "skipped_reserved",
+                  skip: true,
+                }));
               mails.push(...m);
               return m.map(() => ({ ok: true as const }));
             },
@@ -123,7 +123,7 @@ const make = () =>
       if (completeFails) throw new Error("complete_failed");
       completed++;
     },
-    log: { info: () => undefined, warn: () => undefined },
+    log: { info: () => undefined, warn: (m, f) => void warns.push({ m, f }) },
     newId: () => Bun.randomUUIDv7(),
     now: () => new Date(),
     orgOf: (t) => `t_${t}`,
@@ -567,6 +567,22 @@ describe("CR-182 · đối tác ký qua link", () => {
     await ucs().status(w(U1), f.id);
     expect(completed).toBe(before + 1); // không thả lặp
     countsNow = undefined;
+  });
+
+  it("thư mời không đi được (miền dành riêng) ⇒ link vẫn được tạo nhưng KHÔNG im lặng: ghi log lý do + link, chuông cho người tải lên, gửi lại được", async () => {
+    const f = await fixture();
+    [reserved, warns.length] = [true, 0];
+    expect(await ucs().ensureLink(T, f.id, { by: U1, force: false })).toBe("created");
+    reserved = false;
+    const w1 = warns.find((x) => x.m === "partner-sign-mail-undelivered")?.f;
+    expect(w1).toMatchObject({ code: "skipped_reserved", skip: true });
+    expect(String(w1?.link)).toContain("https://app.test/ky/");
+    const [r] = await o<{ sent: boolean; bell: number }[]>`select
+      (select sent_at is not null from contracts.partner_sign_links where contract_id = ${f.id}) as sent,
+      (select count(*)::int from hub.notifications where user_id = ${U1} and kind = 'contract.partner_sign_mail_failed' and link = ${`/contracts/${f.id}`}) as bell`;
+    expect(r).toMatchObject({ sent: false, bell: 1 });
+    mails.length = 0;
+    expect((await ucs().resend(w(U1), f.id, false)).sent).toBe(true);
   });
 
   it("POST không có CSRF / khác nguồn ⇒ 403", async () => {
