@@ -24,3 +24,10 @@ export function focusCommentId(search: string): string | null {
 /** Thẻ bài `postId` phải mở sẵn bình luận khi URL là `?post=<postId>&comment=<id>` (bấm thông báo @nhắc/bình luận). */
 export const opensCommentThread = (search: string, postId: string): boolean =>
   focusPostId(search) === postId && focusCommentId(search) !== null;
+
+/** CR-186 · mở bài lần đầu thấy SẴN bình luận mới nhất: bài có ≥ 1 bình luận mở khối bình luận ngay (bài chưa có ⇒ gập, bấm «Bình luận» để viết). */
+export const opensThreadByDefault = (
+  search: string,
+  postId: string,
+  commentCount: number,
+): boolean => commentCount > 0 || opensCommentThread(search, postId);

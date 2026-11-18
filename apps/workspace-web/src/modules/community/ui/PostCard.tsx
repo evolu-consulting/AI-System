@@ -8,7 +8,7 @@ import { useApp } from "../application/ctx";
 import { draftFromFields } from "../domain/compose";
 import { dealStrip, expiryNote, initials, timeAgo, tone } from "../domain/format";
 import { hintLines, saveButtonLabel, savedText } from "../domain/quote";
-import { opensCommentThread } from "../domain/search-hint";
+import { opensCommentThread, opensThreadByDefault } from "../domain/search-hint";
 import { t } from "../i18n";
 import { AttachEditor } from "./AttachEditor";
 import { DraftFields } from "./DraftFields";
@@ -95,7 +95,8 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
   const [editing, setEditing] = useState(false);
   // Mở sẵn bình luận khi vào từ chuông `?post=<id>&comment=<id>` (CR-129).
   const fromBell = opensCommentThread(urlSearch, p.id);
-  const [open, setOpen] = useState(fromBell);
+  // CR-186: bài có bình luận ⇒ hiện sẵn 3 bình luận mới nhất (không phải bấm «Bình luận»).
+  const [open, setOpen] = useState(opensThreadByDefault(urlSearch, p.id, p.commentCount));
   // Bấm thông báo khi đã ở Bảng tin (điều hướng trong app, thẻ bài không dựng lại) ⇒ mở bình luận khi ?comment đổi.
   useEffect(() => {
     if (fromBell) setOpen(true);

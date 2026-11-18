@@ -1,6 +1,12 @@
 // Ngữ cảnh trợ lý ở Bảng tin: từ khoá đang tìm (gọn khoảng trắng, giới hạn độ dài).
 import { describe, expect, it, test } from "bun:test";
-import { focusCommentId, focusPostId, opensCommentThread, trimSearch } from "./search-hint";
+import {
+  focusCommentId,
+  focusPostId,
+  opensCommentThread,
+  opensThreadByDefault,
+  trimSearch,
+} from "./search-hint";
 
 describe("search-hint · từ khoá đang tìm", () => {
   test("gọn khoảng trắng; rỗng ⇒ null; cắt ở 200 ký tự", () => {
@@ -38,5 +44,17 @@ describe("opensCommentThread (bấm thông báo khi đã ở Bảng tin)", () =>
     expect(opensCommentThread(`?post=${P}`, P)).toBe(false);
     expect(opensCommentThread(`?post=${P}&comment=x`, P)).toBe(false);
     expect(opensCommentThread("", P)).toBe(false);
+  });
+});
+
+describe("opensThreadByDefault (CR-186: mở bài thấy sẵn bình luận mới nhất)", () => {
+  const P = "0b7e4f1a-1111-4222-8333-444455556666";
+  it("bài có bình luận ⇒ mở sẵn; bài chưa có ⇒ gập; từ chuông ⇒ luôn mở", () => {
+    expect(opensThreadByDefault("", P, 3)).toBe(true);
+    expect(opensThreadByDefault("", P, 1)).toBe(true);
+    expect(opensThreadByDefault("", P, 0)).toBe(false);
+    expect(
+      opensThreadByDefault(`?post=${P}&comment=0b7e4f1a-1111-4222-8333-444455557777`, P, 0),
+    ).toBe(true);
   });
 });
