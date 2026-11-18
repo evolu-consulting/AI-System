@@ -103,8 +103,7 @@ export function partnerMarksIssue(
     if (seen.has(m.field_id)) return "invalid";
     seen.add(m.field_id);
     const f = fields.find((x) => x.id === m.field_id);
-    if (!f || f.side !== "B" || f.file_id !== fileId || f.signed_version_id !== null)
-      return "forbidden";
+    if (f?.side !== "B" || f.file_id !== fileId || f.signed_version_id !== null) return "forbidden";
   }
   return null;
 }

@@ -102,7 +102,12 @@ export function partnerSignPorts(db: Db): PartnerSignPorts {
       const signers = s ? ondocStepAt(s.stages, s.idx) : null;
       if (!signers || signers.length === 0) return null;
       const c = await reads.ondocCounts(tenantId, contractId, ondocKeys(signers));
-      return { a_done: ondocADone(c), b_total: c.b_total, b_open: c.b_open };
+      return {
+        a_done: ondocADone(c),
+        b_total: c.b_total,
+        b_open: c.b_open,
+        run_id: s?.runId ?? "",
+      };
     },
     complete: async (tenantId, contractId) => {
       await signFlowHooks.completed?.(tenantId, contractId, {

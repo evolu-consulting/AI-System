@@ -165,6 +165,15 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
     );
   }
 
+  async function recover(tenantId: string, contractId: string): Promise<void> {
+    try {
+      const c = await d.counts(tenantId, contractId);
+      if (c?.a_done && c.b_open === 0) await d.complete(tenantId, contractId);
+    } catch (e) {
+      d.log.warn("partner-sign-recover-failed", { error: e instanceof Error ? e.name : "unknown" });
+    }
+  }
+
   return {
     ensureLink,
 
@@ -202,11 +211,14 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
       who: PackWho,
       contractId: string,
     ): Promise<{ link: PartnerLinkStatusOut | null } | null> {
-      return d.uow.tenant(who, async (r) => {
+      const out = await d.uow.tenant(who, async (r) => {
         if (!(await r.contractFiles.facts(contractId))) return null;
         const l = await r.partnerSign.latest(contractId);
         return { link: l ? statusOut(l) : null };
       });
+      // Tự phục hồi (soát #4): đối tác đã ký đủ mà bước Ký vẫn chờ (thả bước lỗi lần trước) ⇒ thả lại (`completed` idempotent).
+      if (out?.link?.state === "signed") await recover(who.tenantId, contractId);
+      return out;
     },
 
     // ---------------- công khai (theo BĂM token) ----------------
@@ -293,6 +305,7 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
         r.quickPut(th, b.method, Buffer.from(b.png).toString("base64")),
       );
       if (code === "ok") return { ok: true, data: { saved: true } } as const;
+      if (code === "limit") return fail(409, "SIGN_QUICK_LIMIT");
       return code === "invalid"
         ? fail(404, "NOT_FOUND")
         : code === "gone"

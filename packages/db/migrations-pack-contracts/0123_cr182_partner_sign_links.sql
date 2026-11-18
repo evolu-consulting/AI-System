@@ -63,20 +63,26 @@ ALTER TABLE contracts.sign_versions ADD COLUMN IF NOT EXISTS signer_label text;
 ALTER TABLE contracts.sign_versions DROP CONSTRAINT IF EXISTS sign_versions_signer_ck;
 --> statement-breakpoint
 ALTER TABLE contracts.sign_versions ADD CONSTRAINT sign_versions_signer_ck
-  CHECK (signed_by IS NOT NULL OR (signer_contact_id IS NOT NULL AND char_length(coalesce(signer_label, '')) BETWEEN 1 AND 300));
+  CHECK ((signed_by IS NULL) <> (signer_contact_id IS NULL) AND (signer_contact_id IS NULL OR char_length(signer_label) BETWEEN 1 AND 300));
 --> statement-breakpoint
 ALTER TABLE contracts.sign_marks ALTER COLUMN user_signature_id DROP NOT NULL;
 --> statement-breakpoint
 ALTER TABLE contracts.sign_marks ADD COLUMN IF NOT EXISTS quick_signature_id uuid;
 --> statement-breakpoint
+ALTER TABLE contracts.sign_marks DROP CONSTRAINT IF EXISTS sign_marks_quick_fk;
+--> statement-breakpoint
+ALTER TABLE contracts.sign_marks ADD CONSTRAINT sign_marks_quick_fk FOREIGN KEY (quick_signature_id, tenant_id)
+  REFERENCES contracts.partner_quick_signatures (id, tenant_id);
+--> statement-breakpoint
 ALTER TABLE contracts.sign_marks DROP CONSTRAINT IF EXISTS sign_marks_sig_ck;
 --> statement-breakpoint
 ALTER TABLE contracts.sign_marks ADD CONSTRAINT sign_marks_sig_ck CHECK (user_signature_id IS NOT NULL OR quick_signature_id IS NOT NULL);
 --> statement-breakpoint
--- Chỗ ký của Bên B được đánh dấu đã ký bằng `signed_version_id` (người ký = `sign_versions.signer_contact_id`), `signed_by` giữ NULL ⇒ nới ràng buộc một chiều.
+-- Chỗ ký của Bên B được đánh dấu đã ký bằng `signed_version_id` (người ký = `sign_versions.signer_contact_id`), `signed_by` giữ NULL ⇒ chỉ ô Bên B được nới.
 ALTER TABLE contracts.sign_fields DROP CONSTRAINT IF EXISTS sign_fields_signed_ck;
 --> statement-breakpoint
-ALTER TABLE contracts.sign_fields ADD CONSTRAINT sign_fields_signed_ck CHECK (signed_by IS NULL OR signed_version_id IS NOT NULL);
+ALTER TABLE contracts.sign_fields ADD CONSTRAINT sign_fields_signed_ck
+  CHECK ((signed_by IS NULL) = (signed_version_id IS NULL) OR (side = 'B' AND signed_by IS NULL AND signed_version_id IS NOT NULL));
 --> statement-breakpoint
 -- ===== Hàm DEFINER (chủ migration, `search_path` cố định). Tra theo BĂM token; trạng thái: open | signed | declined | expired | revoked. =====
 -- `partner_sign_link_open`: tra link + (audit ⇒) ghi `opened_at` lần đầu. 0 hàng ⇒ link không tồn tại.
@@ -100,7 +106,7 @@ BEGIN
       WHERE k.link_id = r.id AND k.tenant_id = r.tenant_id ORDER BY k.created_at DESC, k.id DESC LIMIT 1) q ON true;
 END $$;
 --> statement-breakpoint
--- Chữ ký nhanh mới nhất của link — CHỈ khi link còn `open`. Ghi thêm hàng mới (giữ lịch sử); 'ok' | 'gone' | 'closed' | 'invalid'.
+-- Chữ ký nhanh mới nhất của link — CHỈ khi link còn `open`. Ghi thêm hàng mới (giữ lịch sử), tối đa 20 mỗi link; 'ok' | 'gone' | 'closed' | 'limit' | 'invalid'.
 CREATE OR REPLACE FUNCTION contracts.partner_sign_quick_put(h bytea, m text, p bytea) RETURNS text
   LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
 DECLARE r contracts.partner_sign_links%ROWTYPE;
@@ -109,6 +115,7 @@ BEGIN
   IF NOT FOUND THEN RETURN 'invalid'; END IF;
   IF r.revoked_at IS NOT NULL OR r.expires_at <= now() THEN RETURN 'gone'; END IF;
   IF r.signed_at IS NOT NULL OR r.declined_at IS NOT NULL THEN RETURN 'closed'; END IF;
+  IF (SELECT count(*) FROM contracts.partner_quick_signatures k WHERE k.link_id = r.id AND k.tenant_id = r.tenant_id) >= 20 THEN RETURN 'limit'; END IF;
   INSERT INTO contracts.partner_quick_signatures (tenant_id, link_id, method, png) VALUES (r.tenant_id, r.id, m, p);
   RETURN 'ok';
 END $$;
@@ -135,8 +142,19 @@ BEGIN
   RETURN 'ok';
 END $$;
 --> statement-breakpoint
+-- Khoá hàng link (FOR UPDATE) đầu tx Lưu/chốt: hai lần Lưu song song nối đuôi nhau, và «Trả lại» (thu hồi link) đợi lần Lưu đang chạy. Trả trạng thái.
+CREATE OR REPLACE FUNCTION contracts.partner_sign_lock(h bytea) RETURNS text
+  LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+DECLARE r contracts.partner_sign_links%ROWTYPE;
+BEGIN
+  SELECT * INTO r FROM contracts.partner_sign_links l WHERE l.token_hash = h FOR UPDATE;
+  IF NOT FOUND THEN RETURN 'invalid'; END IF;
+  RETURN CASE WHEN r.revoked_at IS NOT NULL THEN 'revoked' WHEN r.signed_at IS NOT NULL THEN 'signed' WHEN r.declined_at IS NOT NULL THEN 'declined'
+    WHEN r.expires_at <= now() THEN 'expired' ELSE 'open' END;
+END $$;
+--> statement-breakpoint
 REVOKE ALL ON FUNCTION contracts.partner_sign_link_open(bytea, boolean), contracts.partner_sign_quick_put(bytea, text, bytea),
-  contracts.partner_sign_quick_get(bytea), contracts.partner_sign_finish(bytea, text, text) FROM PUBLIC;
+  contracts.partner_sign_quick_get(bytea), contracts.partner_sign_finish(bytea, text, text), contracts.partner_sign_lock(bytea) FROM PUBLIC;
 --> statement-breakpoint
 GRANT EXECUTE ON FUNCTION contracts.partner_sign_link_open(bytea, boolean), contracts.partner_sign_quick_put(bytea, text, bytea),
-  contracts.partner_sign_quick_get(bytea), contracts.partner_sign_finish(bytea, text, text) TO contracts_rw;
+  contracts.partner_sign_quick_get(bytea), contracts.partner_sign_finish(bytea, text, text), contracts.partner_sign_lock(bytea) TO contracts_rw;

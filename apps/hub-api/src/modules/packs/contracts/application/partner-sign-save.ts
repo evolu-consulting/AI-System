@@ -109,7 +109,37 @@ async function closeLink(
 
 type Put = { org: string; boxId: string; versionId: string; name: string };
 
-/** MỘT tx: bản + dấu + ô + (đủ ô) chốt link + chuông. */
+/** Ném TRONG tx để ROLLBACK (không commit bản trỏ vào tệp sắp bị xoá); bắt ở `partnerSignSave`. */
+class PartnerAbort extends Error {
+  constructor(readonly fail: SignLinkFail) {
+    super(fail.code);
+  }
+}
+const abort = (status: SignLinkFail["status"], code: string): never => {
+  throw new PartnerAbort(fail(status, code));
+};
+/** Tối đa số bản đối tác Lưu trên một HĐ (chống dồn bản bằng dấu tự đặt thêm). */
+export const PARTNER_VERSION_CAP = 40;
+
+/** Đầu tx: khoá link (FOR UPDATE) ⇒ Lưu song song nối đuôi, «Trả lại» đợi; link không còn mở ⇒ 409/410; khoá tệp; bản mới nhất không đổi; trần bản. */
+async function guardTx(
+  r: PartnerSignRepos,
+  d: PartnerSignDeps,
+  a: { l: LinkRow; th: string; body: PartnerSignBody; s: Snap },
+): Promise<void> {
+  const st = await r.partnerSign.lockState(a.th);
+  if (st === "invalid") abort(404, "NOT_FOUND");
+  if (st === "signed" || st === "declined") abort(409, E.closed);
+  if (st !== "open") abort(410, E.gone);
+  if (!(await r.signDoc.lockDoc(a.l.contract_id, a.body.file_id))) abort(404, E.fileNotFound);
+  const cur = await r.versions.latest(a.l.contract_id, a.body.file_id);
+  if ((cur?.id ?? null) !== (a.s.lastV?.id ?? null)) abort(409, E.stale);
+  if ((await r.partnerSign.versionCount(a.l.contract_id, a.l.contact_id)) >= PARTNER_VERSION_CAP)
+    abort(409, "SIGN_LINK_LIMIT");
+  void d;
+}
+
+/** MỘT tx: bản + dấu + ô + (đủ ô) chốt link + chuông. Mọi lỗi nghiệp vụ ⇒ THROW (rollback). */
 async function persist(
   d: PartnerSignDeps,
   a: {
@@ -122,14 +152,13 @@ async function persist(
     quickId: string;
     label: string;
     text: string | undefined;
+    runId: string;
   },
-): Promise<SignLinkResult<PartnerSignSaveOut>> {
+): Promise<PartnerSignSaveOut> {
   const { l, th, body, s, out, put, label } = a;
   const fieldIds = body.marks.flatMap((m) => (m.field_id ? [m.field_id] : []));
   return d.uow.system(l.tenant_id, async (r: PartnerSignRepos) => {
-    if (!(await r.signDoc.lockDoc(l.contract_id, body.file_id))) return fail(404, E.fileNotFound);
-    const cur = await r.versions.latest(l.contract_id, body.file_id);
-    if ((cur?.id ?? null) !== (s.lastV?.id ?? null)) return fail(409, E.stale);
+    await guardTx(r, d, { l, th, body, s });
     const rowId = d.newId();
     await r.signDoc.insertOutFile({
       id: rowId,
@@ -150,7 +179,7 @@ async function persist(
       signerContactId: l.contact_id,
       signerLabel: label,
       kind: "internal",
-      runId: null,
+      runId: a.runId, // BR-L2 · cùng lượt với bản của bên A ⇒ «Trả lại» void được
       marks: body.marks.map((m) => ({
         fieldId: m.field_id ?? null,
         placement: m.placement,
@@ -160,16 +189,13 @@ async function persist(
         caption: m.caption ? (a.text ?? null) : null,
       })),
     });
-    if (!v) return fail(404, E.fileNotFound);
+    if (!v) return abort(404, E.fileNotFound);
     const want = new Set(fieldIds).size;
     if (want > 0 && (await r.fields.markSigned(l.contract_id, fieldIds, null, v.id)) !== want)
-      return fail(409, E.stale);
+      abort(409, E.stale);
     const left = partnerOpenFields(await r.fields.listByContract(l.contract_id));
-    if (left === 0 && !(await closeLink(r, { l, th, s, label }))) return fail(409, E.closed);
-    return {
-      ok: true,
-      data: { version_id: v.id, seq: v.seq, open_fields_left: left, completed: left === 0 },
-    };
+    if (left === 0 && !(await closeLink(r, { l, th, s, label }))) abort(409, E.closed);
+    return { version_id: v.id, seq: v.seq, open_fields_left: left, completed: left === 0 };
   });
 }
 
@@ -191,19 +217,33 @@ export async function partnerSignSave(
   const text = captionText(["name", "date", "time"], { name: label, title: null }, d.now());
   const out = await render(d, l, body, s, quick.png, text);
   if ("ok" in out) return out;
+  // BR-L2 · bước Ký còn mở (Bên A đủ, chưa đóng) ⇒ mới cho Lưu; `run_id` của bản = lượt của bước.
+  const step = await d.counts(l.tenant_id, l.contract_id);
+  if (!step?.a_done) return fail(409, E.closed);
   const org = d.orgOf(l.tenant_id);
   const name = `${s.file.name.replace(/\.pdf$/i, "")} (đã ký).pdf`;
   const up = await d.files.put(org, name, out.bytes);
   const put: Put = { org, boxId: up.fileId, versionId: up.versionId, name };
   const drop = () => d.files.remove(org, up.fileId).catch(() => undefined);
   try {
-    const res = await persist(d, { l, th, body, s, out, put, quickId: quick.id, label, text });
-    if (!res.ok) await drop();
-    else if (res.data.completed)
+    const data = await persist(d, {
+      l,
+      th,
+      body,
+      s,
+      out,
+      put,
+      quickId: quick.id,
+      label,
+      text,
+      runId: step.run_id,
+    });
+    if (data.completed)
       await a.done({ title: s.c.title, company: s.c.company_name, contact: s.contact });
-    return res;
+    return { ok: true, data };
   } catch (e) {
-    await drop();
+    await drop(); // tx đã ROLLBACK (không còn hàng trỏ vào tệp)
+    if (e instanceof PartnerAbort) return e.fail;
     throw e;
   }
 }

@@ -37,7 +37,7 @@ export type LinkStatusRow = {
   contact_name: string | null;
 };
 export type PartnerSignRepo = ReturnType<typeof partnerSignRepo>;
-export type CloseCode = "ok" | "closed" | "gone" | "invalid";
+export type CloseCode = "ok" | "closed" | "gone" | "limit" | "invalid";
 
 const hex = (h: string) => sql`decode(${h}, 'hex')`;
 
@@ -71,6 +71,21 @@ export function partnerSignRepo(tx: Tx, tenantId: string) {
         sql`select contracts.partner_sign_finish(${hex(th)}, ${how}, ${why}) as c`,
       );
       return r?.c ?? "invalid";
+    },
+    /** Khoá hàng link FOR UPDATE (DEFINER) ⇒ trạng thái: open | signed | declined | expired | revoked | invalid. */
+    lockState: async (th: string): Promise<string> => {
+      const [r] = await tx.execute<{ s: string }>(
+        sql`select contracts.partner_sign_lock(${hex(th)}) as s`,
+      );
+      return r?.s ?? "invalid";
+    },
+    /** Số bản đối tác (liên hệ này) đã Lưu trên HĐ — trần chống dồn bản. */
+    versionCount: async (contractId: string, contactId: string): Promise<number> => {
+      const [r] = await tx.execute<{
+        n: number;
+      }>(sql`select count(*)::int as n from contracts.sign_versions
+        where tenant_id = ${tenantId}::uuid and contract_id = ${contractId}::uuid and signer_contact_id = ${contactId}::uuid`);
+      return Number(r?.n ?? 0);
     },
     contract: async (contractId: string) => {
       const [r] = await tx.execute<{ title: string; created_by: string; company_name: string }>(sql`

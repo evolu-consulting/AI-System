@@ -13,6 +13,7 @@ import { partnerSignRoutes } from "../../../partners/adapters/partner-sign.route
 import { windowLimit } from "../../../partners/adapters/window-limit";
 import { createPackUow } from "../../kit/adapters/pack-uow";
 import type { PartnerSignMail } from "../../kit/public";
+import { withSystemScope } from "../../kit/testing/system-scope";
 import type { PartnerSignRepos } from "../application/partner-sign.deps";
 import { PartnerSignFail, partnerSignUsecases } from "../application/partner-sign.usecase";
 import { noDigitalSigner, produceSigned } from "../domain/digital-signer";
@@ -22,6 +23,7 @@ import { partnerSignRepo } from "./partner-sign.repo";
 import { signDocRepo } from "./sign-doc.repo";
 import { signDocsRepo } from "./sign-docs.repo";
 import { signFieldsRepo } from "./sign-fields.repo";
+import { signOnBack } from "./sign-flow.engine";
 import { sha256Hex, stampPdf } from "./sign-stamp.pdf";
 import { signVersionsRepo } from "./sign-versions.repo";
 
@@ -69,6 +71,8 @@ const uow = () =>
     import("../../kit/public").PackSystemUow<PartnerSignRepos>;
 
 let off = false;
+let onProduce: (() => Promise<void>) | null = null;
+const RUN = "7a1d0000-0000-4000-8000-0000000000bb";
 const make = () =>
   partnerSignUsecases({
     uow: uow(),
@@ -88,15 +92,17 @@ const make = () =>
     },
     maxBytes: 50_000_000,
     produce: (i) =>
-      produceSigned({
-        pdf: i.pdf,
-        marks: i.marks,
-        ink: i.ink,
-        kind: i.kind,
-        signer: noDigitalSigner,
-        stamp: stampPdf,
-        sha256: sha256Hex,
-      }),
+      (onProduce?.() ?? Promise.resolve()).then(() =>
+        produceSigned({
+          pdf: i.pdf,
+          marks: i.marks,
+          ink: i.ink,
+          kind: i.kind,
+          signer: noDigitalSigner,
+          stamp: stampPdf,
+          sha256: sha256Hex,
+        }),
+      ),
     mailer: () =>
       off
         ? null
@@ -107,7 +113,7 @@ const make = () =>
             },
           },
     baseUrl: () => "https://app.test",
-    counts: async () => ({ a_done: true, b_total: 1, b_open: 1 }),
+    counts: async () => ({ a_done: true, b_total: 1, b_open: 1, run_id: RUN }),
     complete: async () => void completed++,
     log: { info: () => undefined, warn: () => undefined },
     newId: () => Bun.randomUUIDv7(),
@@ -138,7 +144,7 @@ async function fileRow(name: string) {
   return (f as { id: string }).id;
 }
 /** HĐ mua (đối tác = bên «supplier») + liên hệ đối tác có email + tệp chính cần ký (ô Bên A của U1 + ô Bên B) + một tệp kèm KHÔNG gửi. */
-async function fixture() {
+async function fixture(opts: { second?: boolean } = {}) {
   const tax = String(Math.floor(1e9 + Math.random() * 9e9)); // party_key theo MST ⇒ mỗi HĐ một MST riêng
   const pn = `Công ty Đối Tác ${Bun.randomUUIDv7()}`; // mỗi HĐ một đối tác riêng ⇒ liên hệ đầu tiên là của HĐ này
   const fileId = await fileRow("hop-dong.pdf");
@@ -180,9 +186,22 @@ async function fixture() {
   >`insert into contracts.sign_fields ${o(mk("B", "partner", (ct as { email: string }).email, 1) as never)} returning id`;
   const other = await fileRow("tep-kem.pdf");
   await o`insert into contracts.contract_files (tenant_id, contract_id, file_id, added_by) values (${T}, ${id}, ${other}, ${U1})`;
+  let file2 = "";
+  let b2Field = "";
+  if (opts.second) {
+    file2 = await fileRow("tep-2.pdf");
+    await o`insert into contracts.contract_files (tenant_id, contract_id, file_id, added_by) values (${T}, ${id}, ${file2}, ${U1})`;
+    await o`insert into contracts.sign_docs (tenant_id, contract_id, file_id, needs_sign, pages, set_by) values (${T}, ${id}, ${file2}, true, 3, ${U1})`;
+    const [x] = await o<
+      { id: string }[]
+    >`insert into contracts.sign_fields ${o({ ...mk("B", "partner", (ct as { email: string }).email, 1), file_id: file2 } as never)} returning id`;
+    b2Field = (x as { id: string }).id;
+  }
   return {
     id,
     fileId,
+    file2,
+    b2Field,
     other,
     contactId: (ct as { id: string }).id,
     aField: (fa[0] as { id: string }).id,
@@ -305,7 +324,9 @@ describe("CR-182 · đối tác ký qua link", () => {
   it("token sai / sai dạng ⇒ 404, hết hạn ⇒ 410, đã thu hồi ⇒ 410", async () => {
     const f = await fixture();
     const token = await invite(f.id);
-    expect((await call("GET", "", "A".repeat(43))).status).toBe(404);
+    const bad = await call("GET", "", "A".repeat(43));
+    expect(bad.status).toBe(404);
+    expect(bad.res.headers.get("referrer-policy")).toBe("no-referrer"); // token không lọt qua Referer
     expect((await call("GET", "", "ngan")).status).toBe(404);
     expect((await call("GET", "", token)).status).toBe(200);
     await o`update contracts.partner_sign_links set expires_at = now() - interval '1 minute' where contract_id = ${f.id}`;
@@ -430,6 +451,85 @@ describe("CR-182 · đối tác ký qua link", () => {
     }
     expect(last).toBe(429);
     expect(Number(retry)).toBeGreaterThan(0);
+  });
+
+  it("thu hồi link giữa lúc in và lúc ghi ⇒ 410, không còn hàng nào được ghi, tệp ra bị xoá", async () => {
+    const f = await fixture();
+    const token = await invite(f.id);
+    expect(
+      (await call("POST", "/quick-signature", token, { method: "type", png: PNG_B64 })).status,
+    ).toBe(200);
+    const before = boxes.size;
+    onProduce = async () => {
+      await o`update contracts.partner_sign_links set revoked_at = now() where contract_id = ${f.id}`;
+    };
+    const r = await call("POST", "/sign", token, {
+      file_id: f.fileId,
+      marks: [fieldMark(f.bField)],
+    });
+    onProduce = null;
+    expect(r.status).toBe(410);
+    const [n] = await o<{ v: number; m: number; o: number }[]>`select
+      (select count(*) from contracts.sign_versions where contract_id = ${f.id})::int as v,
+      (select count(*) from contracts.sign_marks m join contracts.sign_versions v on v.id = m.version_id where v.contract_id = ${f.id})::int as m,
+      (select count(*) from contracts.files where tenant_id = ${T} and name like '%(đã ký)%' and created_by = ${U1} and id not in (select out_file_id from contracts.sign_versions))::int as o`;
+    expect(n).toMatchObject({ v: 0, m: 0, o: 0 });
+    expect(boxes.size).toBe(before);
+    const [fl] = await o<
+      { v: string | null }[]
+    >`select signed_version_id::text as v from contracts.sign_fields where id = ${f.bField}`;
+    expect(fl?.v).toBeNull();
+  });
+
+  it("Trả lại sau khi đối tác đã ký một tệp ⇒ bản bị void, ô mở lại, link 410, bản ký có run_id của lượt", async () => {
+    const f = await fixture({ second: true });
+    const token = await invite(f.id);
+    expect(
+      (await call("POST", "/quick-signature", token, { method: "draw", png: PNG_B64 })).status,
+    ).toBe(200);
+    const r = await call("POST", "/sign", token, {
+      file_id: f.fileId,
+      marks: [fieldMark(f.bField)],
+    });
+    expect(r.json).toMatchObject({ completed: false, open_fields_left: 1 });
+    const [v] = await o<
+      { run: string }[]
+    >`select run_id::text as run from contracts.sign_versions where contract_id = ${f.id}`;
+    expect(v?.run).toBe(RUN);
+    await withSystemScope(db, { kind: "system" }, (tx) =>
+      signOnBack(tx, { tenantId: T, runId: RUN, since: null }),
+    );
+    const [after] = await o<{ voided: boolean; open: boolean }[]>`select
+      (select voided_at is not null from contracts.sign_versions where contract_id = ${f.id}) as voided,
+      (select signed_version_id is null from contracts.sign_fields where id = ${f.bField}) as open`;
+    expect(after).toMatchObject({ voided: true, open: true });
+    expect((await call("GET", "", token)).status).toBe(410);
+    const again = await call("POST", "/sign", token, {
+      file_id: f.fileId,
+      marks: [fieldMark(f.bField)],
+    });
+    expect(again.status).toBe(410);
+  });
+
+  it("hai tệp Lưu song song ⇒ link được chốt đúng một lần, hợp đồng hoàn tất một lần", async () => {
+    const f = await fixture({ second: true });
+    const token = await invite(f.id);
+    expect(
+      (await call("POST", "/quick-signature", token, { method: "type", png: PNG_B64 })).status,
+    ).toBe(200);
+    const before = completed;
+    const [a, b] = await Promise.all([
+      call("POST", "/sign", token, { file_id: f.fileId, marks: [fieldMark(f.bField)] }),
+      call("POST", "/sign", token, { file_id: f.file2, marks: [fieldMark(f.b2Field)] }),
+    ]);
+    expect([a.status, b.status]).toEqual([201, 201]);
+    const done = [a, b].filter((x) => (x.json as { completed: boolean }).completed);
+    expect(done).toHaveLength(1);
+    expect(completed).toBe(before + 1);
+    const [l] = await o<
+      { n: number }[]
+    >`select count(*)::int as n from contracts.partner_sign_links where contract_id = ${f.id} and signed_at is not null`;
+    expect(l?.n).toBe(1);
   });
 
   it("POST không có CSRF / khác nguồn ⇒ 403", async () => {

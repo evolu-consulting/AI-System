@@ -12,7 +12,13 @@ import type { StampMarkIn } from "./sign-save.usecase";
 
 export type PartnerSignRepos = SignDocRepos & NotifyTxRepos & { partnerSign: PartnerSignRepo };
 /** Bộ đếm của bước Ký `ondoc` đang mở (null = không có bước Ký đang mở). */
-export type PartnerCounts = { a_done: boolean; b_total: number; b_open: number } | null;
+export type PartnerCounts = {
+  a_done: boolean;
+  b_total: number;
+  b_open: number;
+  /** Lượt chạy (engine) của bước Ký đang mở — ghi vào bản ký của đối tác (BR-L2). */
+  run_id: string;
+} | null;
 
 export type PartnerSignDeps = {
   uow: PackUow<PartnerSignRepos> & PackSystemUow<PartnerSignRepos>;

@@ -33,6 +33,8 @@ Không web. Không thêm tệp đính kèm vào email (transport thông báo ch�
 - Đối tác ký đủ khi mọi ô Bên B (mọi tệp cần ký) đã ký; được tự đặt thêm dấu (cả giáp lai) nhưng không bắt buộc. Một lần Lưu = một tệp (`file_id` trong thân).
 - Từ chối: chốt link + chuông kèm lý do, KHÔNG dừng lượt chạy; người tải lên bấm «Gửi lại link ký» (thu hồi link cũ, tạo link mới). Liên hệ chưa có email ⇒ chuông «Chưa mời được đối tác ký».
 - Chữ ký nhanh in màu xanh, dòng dưới = «Đối tác: <tên liên hệ> · ngày · giờ»; bản ký `signed_by` NULL + `signer_contact_id`; `sign_marks.signer_id` = id liên hệ.
+- Soát Opus (CHANGES REQUESTED) đã sửa: (#1) lỗi nghiệp vụ trong tx Lưu ⇒ THROW `PartnerAbort` ⇒ ROLLBACK rồi mới xoá tệp ra (không còn hàng trỏ vào tệp mất); (#2) bản ký của đối tác ghi `run_id` = lượt của bước Ký đang mở (`counts().run_id`), chỉ Lưu khi bước còn mở; `signOnBack` thu hồi link đang mở của HĐ có bản ký trong lượt ở câu TRƯỚC (cùng tx) rồi mới void bản — hai câu chứ không một, vì cần snapshot mới sau khi lần Lưu đang chạy nhả khoá hàng link; (#3) hàm DEFINER `partner_sign_lock` (FOR UPDATE hàng link, trả trạng thái) là câu đầu tx Lưu: Lưu song song nối đuôi, link không còn mở ⇒ 409/410 kể cả khi còn ô; (#4) `status` (trang HĐ) tự phục hồi: link «đã ký» mà bước Ký còn chờ ⇒ gọi `completed` lại (phiên ký đã tự phục hồi qua `onDocSigned`); (#5) `Referrer-Policy: no-referrer` mọi response `/sign-link/` + nginx `location ~ ^/ky/` (chỉ ở `nginx.conf` của web; hai file edge chỉ proxy nên header đi theo response); (#6) CHECK chặt trong 0123; (#7) chỉ ghi link ra log khi KHÔNG có transport (`off`); (#8) FK `sign_marks.quick_signature_id`; (#9) trần 20 chữ ký nhanh mỗi link (`partner_sign_quick_put` ⇒ 'limit'), trần 40 bản đối tác mỗi HĐ; (#10) `log_format` in đúng tiền tố `/sign-link/:token`, `/ky/:token`.
+- Email KHÔNG đính kèm bản đã ký (transport thông báo chưa hỗ trợ đính kèm): thay bằng nhắc mở lại link mời để xem/tải bản đã ký (link «đã ký» còn xem được kể cả quá hạn).
 - Test cũ `sign-flow.int.test.ts › D3/C4` (Q6: ô Bên B không chặn) đổi theo đợt 2: còn ô Bên B ⇒ mời đối tác, chưa thả bước.
 - `HUB_NOTIFY_MODE=off` ⇒ không có transport ⇒ link ghi ra log `partner-sign-mail-off` (khuôn CR-150) để kiểm.
 
@@ -65,6 +67,12 @@ Lần đầu đối tác tạo chữ ký nhanh (gõ tên hoặc vẽ, PNG ≤ 20
 - Kịch bản: khi đối tác từ chối thì ghi lý do và báo người tải lên [test: apps/hub-api/src/modules/packs/contracts/adapters/partner-sign.int.test.ts » từ chối: ghi lý do, báo người tải lên kèm lý do, từ chối/ký lại ⇒ 409, thiếu lý do ⇒ 400]
 - Kịch bản: khi gửi lại thì link cũ hết dùng, người không phải người tải lên hay quản trị bị từ chối, trạng thái link hiện đủ [test: apps/hub-api/src/modules/packs/contracts/adapters/partner-sign.int.test.ts » gửi lại: chỉ người tải lên/quản trị, link cũ ⇒ 410, link mới mở được, trạng thái link hiện đã gửi/mở/hạn]
 - Kịch bản: khi xét ai được gửi lại thì chỉ người tải lên hoặc quản trị [test: apps/hub-api/src/modules/packs/contracts/domain/partner-sign.rules.test.ts » gửi lại: người tải lên hoặc quản trị, người khác không]
+
+#### Yêu cầu: Trả lại làm bản ký của đối tác mất hiệu lực, Lưu hỏng không để lại dữ liệu
+Bản ký của đối tác thuộc cùng lượt chạy với bản của bên A: Trả lại làm void bản, mở lại ô và thu hồi link (410). Lần Lưu bị huỷ giữa chừng (link bị thu hồi lúc đang in) không ghi hàng nào và xoá tệp ra. Hai tệp Lưu song song chỉ chốt link một lần.
+- Kịch bản: khi link bị thu hồi giữa lúc in và lúc ghi thì không còn hàng nào được ghi [test: apps/hub-api/src/modules/packs/contracts/adapters/partner-sign.int.test.ts » thu hồi link giữa lúc in và lúc ghi ⇒ 410, không còn hàng nào được ghi, tệp ra bị xoá]
+- Kịch bản: khi Trả lại sau khi đối tác đã ký một tệp thì bản bị void, ô mở lại, link bị thu hồi [test: apps/hub-api/src/modules/packs/contracts/adapters/partner-sign.int.test.ts » Trả lại sau khi đối tác đã ký một tệp ⇒ bản bị void, ô mở lại, link 410, bản ký có run_id của lượt]
+- Kịch bản: khi hai tệp Lưu song song thì link chốt đúng một lần [test: apps/hub-api/src/modules/packs/contracts/adapters/partner-sign.int.test.ts » hai tệp Lưu song song ⇒ link được chốt đúng một lần, hợp đồng hoàn tất một lần]
 
 ## Việc còn lại
 - Web công khai `/ky/<token>` + «Gửi lại link ký» ở trang HĐ (lát `cr182-partner-web`); seed demo (lát `cr182-seed`); in tên đối tác ở dòng «Người ký» của Hồ sơ duyệt.

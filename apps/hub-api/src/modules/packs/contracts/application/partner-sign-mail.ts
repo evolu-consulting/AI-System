@@ -13,7 +13,11 @@ export async function sendMail(
   linkForLog: string | null,
 ): Promise<boolean> {
   const t = d.mailer();
-  if (!t || !to.email) {
+  if (!to.email) {
+    d.log.warn("partner-sign-mail-no-email", {});
+    return false;
+  }
+  if (!t) {
     // HUB_NOTIFY_MODE=off (bản test/dev) ⇒ ghi link ra log để kiểm (khuôn CR-150). Chỉ khi KHÔNG có transport.
     d.log.info("partner-sign-mail-off", { to: to.email, subject: m.subject, link: linkForLog });
     return false;

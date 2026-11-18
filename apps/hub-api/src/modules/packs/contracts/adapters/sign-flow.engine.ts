@@ -66,6 +66,14 @@ export async function signOnBack(
 ): Promise<void> {
   const since = e.since ? e.since.toISOString() : null;
   await withPackRoleInTx(tx, CONTRACTS_PACK, e.tenantId, async () => {
+    // CR-182 · BR-L2 · THU HỒI link ký đang mở của HĐ có bản ký trong lượt này — câu TRƯỚC, cùng tx: lần Lưu của đối tác đang chạy (giữ khoá hàng link) xong
+    // rồi câu void bên dưới mới chạy (snapshot mới) ⇒ thấy bản đó và void nó; lần Lưu sau thấy link đã thu hồi ⇒ 410.
+    await tx.execute(sql`
+      update contracts.partner_sign_links set revoked_at = now()
+      where tenant_id = ${e.tenantId}::uuid and revoked_at is null and signed_at is null and declined_at is null
+        and contract_id in (select contract_id from contracts.sign_versions
+          where run_id = ${e.runId}::uuid and tenant_id = ${e.tenantId}::uuid and voided_at is null
+            and (${since}::timestamptz is null or created_at >= ${since}::timestamptz))`);
     await tx.execute(sql`
       with v as (
         update contracts.sign_versions set voided_at = now()
