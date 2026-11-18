@@ -180,9 +180,8 @@ describe("E5 · args của node ghi đè cài đặt ký số của app", () => 
     const ok = { provider: "selfsign", company_signers: [{ kind: "user" as const, id: B }] };
     expect(await u.checkNode(T1, ok)).toEqual([]);
     expect(await u.checkNode(T1, { ...ok, provider: "upload" })).toEqual([]);
-    expect(await u.checkNode(T1, { ...ok, provider: "docusign" })).toEqual([
-      { field: "provider", code: "PROVIDER_NOT_ENABLED" }, // chưa bật ở công ty ⇒ lỗi theo trường
-    ]);
+    // CR-182 · R3: DocuSign đã ẩn khỏi danh sách chọn ⇒ cấu hình CŨ (provider docusign) được giữ nguyên, không chặn lưu (không còn PROVIDER_NOT_ENABLED)
+    expect(await u.checkNode(T1, { ...ok, provider: "docusign" })).toEqual([]);
     expect(await u.checkNode(T1, { ...ok, company_signers: [{ kind: "user", id: X }] })).toEqual([
       { field: "company_signers", code: "SIGNER_NOT_IN_TENANT" },
     ]);

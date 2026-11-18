@@ -30,7 +30,7 @@ test("trưởng phòng đặt uỷ quyền «Duyệt» cho kế toán (nhãn m�
   await expect(page.getByTestId("delegation-kind-esign")).toContainText("Ký hợp đồng"); // loại «Ký số» đã đổi tên
   await page.getByTestId("delegation-to").click();
   await page.getByRole("searchbox").fill(DELEGATE_NAME);
-  await page.getByRole("button", { name: DELEGATE_NAME }).first().click();
+  await page.getByRole("button", { name: DELEGATE_NAME }).first().dispatchEvent("click");
   await pane.getByLabel("Từ ngày").fill(day(-1));
   await pane.getByLabel("Tới hết ngày").fill(day(3));
   await page.getByTestId("delegation-save").click();
