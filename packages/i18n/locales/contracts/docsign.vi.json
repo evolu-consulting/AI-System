@@ -69,6 +69,11 @@
         "hint": "Bạn cần có chữ ký trước khi ký"
       },
       "noFiles": "Hợp đồng này chưa có tệp nào cần ký",
+      "crash": {
+        "title": "Không mở được màn ký",
+        "body": "Có lỗi khi hiển thị màn ký. Dữ liệu bạn đã lưu vẫn còn. Hãy tải lại trang.",
+        "reload": "Tải lại"
+      },
       "noAccess": "Bạn chưa đến lượt ký hoặc không có quyền ký hợp đồng này",
       "err": {
         "SIGN_VERSION_STALE": "Có người vừa ký bản mới. Đang tải lại để bạn ký trên bản mới nhất.",

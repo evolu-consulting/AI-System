@@ -253,7 +253,7 @@
         "sampleName": "Nguyễn Văn Hùng",
         "sampleTitle": "Director",
         "provider": {
-          "title": "E-signing via provider (DocuSign / Trial)",
+          "title": "E-signing via provider",
           "note": "Used for Sign steps whose «Sign via» is a provider."
         },
         "digital": {
@@ -320,7 +320,7 @@
         "title": "Approval process in effect: {{name}} · v{{version}}",
         "noFlow": "Your company has no contract approval process switched on. The platform admin builds and assigns processes to your company — contact the platform admin.",
         "openPage": "Open the Processes page",
-        "saveNote": "This section is view-only, so there is nothing to save.",
+        "saveNote": "This section has no shared Save button; task assignment and delegation have their own Save.",
         "editLink": "Edit approval process",
         "openFail": "Could not open the process editor.",
         "esign": "E-sign",

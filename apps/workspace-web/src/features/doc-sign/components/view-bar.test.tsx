@@ -99,6 +99,8 @@ describe("chữ ký theo kiểu xem", () => {
     expect(h).toContain('data-testid="sign-mark-locked"');
     expect(h).not.toContain('data-testid="sign-mark"');
     expect(h).not.toContain("cursor-move");
+    // khung ngoài có cỡ (không chỉ con tuyệt đối) ⇒ Playwright `toBeVisible` thấy được (cr181 fan-seam-sign)
+    expect(h).toContain("pointer-events-none absolute inset-0");
     expect(h).toContain("Giáp lai 5 trang: 1, 2, 3, 4, 5");
   });
 });

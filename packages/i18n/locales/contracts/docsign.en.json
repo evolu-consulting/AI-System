@@ -69,6 +69,11 @@
         "hint": "You need a signature before signing"
       },
       "noFiles": "This contract has no file to sign",
+      "crash": {
+        "title": "Could not open the signing screen",
+        "body": "Something went wrong showing the signing screen. Anything you saved is kept. Please reload the page.",
+        "reload": "Reload"
+      },
       "noAccess": "It is not your turn to sign, or you have no right to sign this contract",
       "err": {
         "SIGN_VERSION_STALE": "Someone just signed a newer copy. Reloading so you sign the latest copy.",

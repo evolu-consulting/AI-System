@@ -4,7 +4,7 @@ import type { SignSessionOut } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { usePeopleCards } from "~/features/contract-shared/people";
 import { AvatarTip } from "~/shared/ui/AvatarTip";
-import { signerChips } from "../../lib/contract-view";
+import { personTip, signerChips } from "../../lib/contract-view";
 
 export function SignersStrip({ session }: { session: SignSessionOut }) {
   const { t } = useTranslation();
@@ -27,7 +27,6 @@ export function SignersStrip({ session }: { session: SignSessionOut }) {
             : c.state === "none"
               ? t("contracts.docsignc.chipNone")
               : t("contracts.docsignc.chipCount", { count: c.count });
-        const group = c.people.length > 1;
         return (
           <li
             key={c.key}
@@ -40,7 +39,7 @@ export function SignersStrip({ session }: { session: SignSessionOut }) {
                 key={p.id ?? p.name}
                 name={p.name}
                 src={p.id ? cards.get(p.id)?.avatar : null}
-                tip={`${group ? c.name : p.name} · ${side} · ${state}`}
+                tip={personTip(p, side, state)}
                 ring={c.side === "A" ? "ring-act" : "ring-late"}
                 badge={
                   c.state === "signed" ? (

@@ -43,7 +43,7 @@ export function LockedMark({ item, pages }: { item: SignItem; pages: StagePage[]
       role="group"
       aria-label={t("contracts.docsign.markAria", { label: markLabel(t, item) })}
       data-testid="sign-mark-locked"
-      className="pointer-events-none absolute left-0 top-0 z-10"
+      className="pointer-events-none absolute inset-0 z-10"
     >
       {where.map(({ q, p }) => {
         const s = meet(

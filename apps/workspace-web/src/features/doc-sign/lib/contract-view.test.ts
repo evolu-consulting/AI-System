@@ -8,6 +8,7 @@ import {
   hideLegacyEsign,
   myProgress,
   partnerWaitOf,
+  personTip,
   showsPrepCard,
   signErrKey,
   signerChips,
@@ -206,6 +207,13 @@ describe("fix-cr181-uat · lỗi 1/2 · bước Ký trên tài liệu ở trang 
     const s = sess([f], { signers: [{ ...grp, members }] });
     expect(signerChips(s)[0]?.name).toBe("Nguyễn Văn Hùng, Trần Thị Mai");
     expect(waitingNames(s)).toBe("Nguyễn Văn Hùng, Trần Thị Mai");
+  });
+  test("CR-182 · nhóm nhiều người ⇒ mỗi avatar một tooltip đúng tên người đó, không lặp cả danh sách", () => {
+    const f = file({ fields: [fld({ signer_kind: "group", signer_ref: "g1" })] });
+    const c = signerChips(sess([f], { signers: [{ ...grp, members }] }))[0];
+    const tips = (c?.people ?? []).map((p) => personTip(p, "Bên A", "1 chỗ ký"));
+    expect(tips).toEqual(["Nguyễn Văn Hùng · Bên A · 1 chỗ ký", "Trần Thị Mai · Bên A · 1 chỗ ký"]);
+    for (const t of tips) expect(t).not.toContain(",");
   });
   test("nhóm không có thành viên ⇒ vẫn tên nhóm, người đã ký hết không còn trong «chờ»", () => {
     expect(signerChips(sess([], { signers: [grp] }))[0]?.name).toBe("Đại diện Người ký HĐ");

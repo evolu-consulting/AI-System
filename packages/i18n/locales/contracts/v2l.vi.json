@@ -253,7 +253,7 @@
         "sampleName": "Nguyễn Văn Hùng",
         "sampleTitle": "Giám đốc",
         "provider": {
-          "title": "Ký số qua nhà cung cấp (DocuSign / Ký thử)",
+          "title": "Ký số qua nhà cung cấp",
           "note": "Dùng cho bước Ký có «Ký qua» là nhà cung cấp."
         },
         "digital": {
@@ -320,7 +320,7 @@
         "title": "Quy trình duyệt đang áp dụng: {{name}} · v{{version}}",
         "noFlow": "Công ty chưa có quy trình duyệt hợp đồng nào đang bật. Quản trị nền tảng soạn và gán quy trình cho công ty — liên hệ quản trị nền tảng.",
         "openPage": "Mở trang Quy trình",
-        "saveNote": "Mục này chỉ để xem nên không có gì cần lưu.",
+        "saveNote": "Mục này không có nút Lưu chung; giao việc và uỷ quyền có nút Lưu riêng.",
         "editLink": "Chỉnh quy trình duyệt",
         "openFail": "Không mở được trang chỉnh quy trình.",
         "esign": "Ký số",

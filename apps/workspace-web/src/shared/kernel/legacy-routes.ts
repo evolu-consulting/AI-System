@@ -11,6 +11,7 @@ export const CONTRACTS_PAGES: ReadonlySet<string> = new Set([
   "c",
   "sign", // CR-181 · màn ký `/contracts/sign/:id` (không phải id HĐ cũ ⇒ không đổi thành `/contracts/c/sign/…`)
   "signed", // CR-181 · «Xem bản đã ký» `/contracts/signed/:id`
+  "verify", // CR-181 · «Kiểm tra tệp» `/contracts/verify` (không phải id HĐ cũ)
   "partners",
   "products",
   "settings",

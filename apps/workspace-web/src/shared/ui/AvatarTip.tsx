@@ -6,25 +6,64 @@ import { type ReactElement, type ReactNode, useRef, useState } from "react";
 
 const HOLD_MS = 400;
 const SHOW_MS = 2500;
+/** Sau chạm, Radix còn gửi `click` ⇒ đóng tooltip ngay; bỏ qua lệnh đóng trong khoảng này. */
+const TAP_GUARD_MS = 500;
 
-/** Bọc MỘT phần tử (asChild) bằng tooltip có thêm chạm-giữ. */
-export function TouchTip({ tip, children }: { tip: string; children: ReactElement }) {
+/** Lệnh đóng ngay sau một cú chạm là `click` đi kèm ⇒ bỏ qua (để tên không nháy rồi tắt). */
+export const ignoreClose = (now: number, tapAt: number): boolean => now - tapAt < TAP_GUARD_MS;
+
+/**
+ * Bọc MỘT phần tử (asChild) bằng tooltip có thêm chạm-giữ. `tap` ⇒ chạm một cái cũng hiện tên (avatar chỉ để xem, điện thoại không có rê chuột);
+ * không bật `tap` cho phần tử đã có việc khi bấm (menu, nút).
+ */
+export function TouchTip({
+  tip,
+  tap,
+  children,
+}: {
+  tip: string;
+  tap?: boolean;
+  children: ReactElement;
+}) {
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clear = () => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
   };
-  const onTouchStart = () => {
+  const moved = useRef(false);
+  const tapAt = useRef(0);
+  const show = () => {
+    setOpen(true);
+    timer.current = setTimeout(() => setOpen(false), SHOW_MS);
+  };
+  const onTouchEnd = () => {
+    if (!tap || moved.current) return;
     clear();
-    timer.current = setTimeout(() => {
-      setOpen(true);
-      timer.current = setTimeout(() => setOpen(false), SHOW_MS);
-    }, HOLD_MS);
+    tapAt.current = Date.now();
+    show();
+  };
+  const onTouchStart = () => {
+    moved.current = false;
+    clear();
+    timer.current = setTimeout(show, HOLD_MS);
+  };
+  const onTouchMove = () => {
+    moved.current = true;
+    clear();
+  };
+  const onOpenChange = (o: boolean) => {
+    if (!o && ignoreClose(Date.now(), tapAt.current)) return;
+    setOpen(o);
   };
   return (
-    <Tooltip open={open} onOpenChange={setOpen}>
-      <TooltipTrigger asChild onTouchStart={onTouchStart} onTouchMove={clear}>
+    <Tooltip open={open} onOpenChange={onOpenChange}>
+      <TooltipTrigger
+        asChild
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         {children}
       </TooltipTrigger>
       <TooltipContent>{tip}</TooltipContent>
@@ -52,7 +91,7 @@ export function AvatarTip({
   testId?: string;
 }) {
   return (
-    <TouchTip tip={tip}>
+    <TouchTip tip={tip} tap>
       <span
         // biome-ignore lint/a11y/noNoninteractiveTabindex: avatar cần focus bàn phím để hiện tooltip
         tabIndex={0}

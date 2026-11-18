@@ -112,7 +112,9 @@ export function PageStage(p: {
   const viewId = `${view.mode}-${view.edge}-${view.group}`;
   // đổi kiểu xem/nhóm ⇒ về đầu sân khấu
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy khi đổi kiểu xem
-  useEffect(() => scroller.current?.scrollTo({ top: 0, left: 0 }), [viewId]);
+  useEffect(() => {
+    scroller.current?.scrollTo({ top: 0, left: 0 });
+  }, [viewId]);
   const at = (cx: number, cy: number) => {
     const b = stage.current?.getBoundingClientRect();
     return { x: cx - (b?.left ?? 0), y: cy - (b?.top ?? 0) };

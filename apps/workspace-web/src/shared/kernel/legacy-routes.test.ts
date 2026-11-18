@@ -1,5 +1,7 @@
 // CR-119 phần 2 · một bảng URL cũ → mới (SHT dưới `/contracts`) + chuẩn `basePath` của app.
 import { describe, expect, test } from "bun:test";
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
 import { appKeyOf, basePathOf, isUnderApp, pathOf } from "./app-path";
 import { canonicalHref, LEGACY_EXACT, legacyTarget } from "./legacy-routes";
 
@@ -112,4 +114,24 @@ describe("app-path · basePath = /<appKey>", () => {
     expect(isUnderApp("/contractsx", "contracts")).toBe(false);
     expect(pathOf("/a/b/?q=1#h")).toBe("/a/b");
   });
+});
+
+describe("CR-182 · mọi route con của /contracts/* (quét cây route) không bị legacyTarget đổi thành /contracts/c/…", () => {
+  const dir = join(import.meta.dir, "../../routes/_authed/contracts");
+  // Đoạn đầu mỗi route: tên file/thư mục, bỏ `.tsx`, bỏ `index` và tham số `$id`.
+  const segments = readdirSync(dir)
+    .map((n) => n.replace(/\.tsx$/, ""))
+    .filter((n) => n !== "index" && !n.startsWith("$") && n !== "c");
+  test("quét được cây route (không rỗng, có verify)", () => {
+    expect(segments.length).toBeGreaterThan(8);
+    expect(segments).toContain("verify");
+  });
+  test.each(segments)(
+    "/contracts/%s (và /contracts/%s/<id>) giữ nguyên hoặc về route gốc",
+    (seg) => {
+      for (const href of [`/contracts/${seg}`, `/contracts/${seg}/abc`, `/contracts/${seg}?x=1`]) {
+        expect(legacyTarget(href) ?? "").not.toStartWith("/contracts/c/");
+      }
+    },
+  );
 });

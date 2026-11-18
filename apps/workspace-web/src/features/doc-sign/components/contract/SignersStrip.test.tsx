@@ -57,10 +57,12 @@ describe("SignersStrip", () => {
     const out = html();
     expect(out.match(/data-testid="signed-mark"/g)?.length).toBe(1);
   });
-  test("nhóm: một avatar mỗi thành viên, tooltip liệt kê tên", () => {
+  test("nhóm: một avatar mỗi thành viên, mỗi tooltip đúng tên người đó", () => {
     const out = html();
     expect(out).toContain('aria-label="An Nguyễn"');
     expect(out).toContain('aria-label="Bình Trần"');
-    expect(out).toContain("An Nguyễn, Bình Trần · Bên A");
+    expect(out).toContain("An Nguyễn · Bên A");
+    expect(out).toContain("Bình Trần · Bên A");
+    expect(out).not.toContain("An Nguyễn, Bình Trần");
   });
 });
