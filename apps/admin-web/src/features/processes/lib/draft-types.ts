@@ -3,6 +3,7 @@
 import type { FormFieldType, LayoutDir, ProcessStageDef, SetAs } from "@ai/contracts/hub-admin";
 import type { AutofixDraft } from "./autofix-form";
 import type { ParallelDraft } from "./parallel-form";
+import type { StageRole } from "./role-types";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
 import type { StartFormDraft } from "./start-form.types";
 
@@ -21,9 +22,6 @@ export type WaitDraft = {
   /** Sự kiện phụ cũng kết thúc chờ (`also_events`, ≤ 3) — giữ nguyên khi lưu. */
   also?: string[];
 };
-/** CR-182 · vai của bước Duyệt/Ký: khoá slug + nhãn (khớp `StageRoleSchema` của contract). */
-export type StageRole = { key: string; label: string };
-
 /** CR-127 · E3c: quá hạn chuyển cho một PHÒNG (`groupId`) hoặc một NGƯỜI (`userId`) — đúng một; `groupKey` = mã phòng của mẫu Thư viện (giữ nguyên). */
 export type EscalateDraft = {
   on: boolean;

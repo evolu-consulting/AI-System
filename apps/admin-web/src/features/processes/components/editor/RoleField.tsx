@@ -1,8 +1,8 @@
 // CR-182 · R1 · ô «Vai»: chọn lại vai đã có trong quy trình hoặc nhập nhãn vai mới (khoá vai sinh từ nhãn). Trình bày thuần, không gọi API.
 
 import { useTranslation } from "react-i18next";
-import type { StageRole } from "../../lib/draft-types";
 import { ROLE_LABEL_LIMIT, ROLE_NEW, roleFromLabel, roleKeyOf } from "../../lib/role-pick";
+import type { StageRole } from "../../lib/role-types";
 import { SelectField, TextField } from "./Fields";
 
 type Props = {

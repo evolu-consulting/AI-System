@@ -9,8 +9,8 @@ import {
   type ParallelRule,
   parallelStageIssues,
 } from "@ai/contracts/hub-admin";
-import type { StageRole } from "./draft-types";
 import { roleToDef } from "./role-pick";
+import type { StageRole } from "./role-types";
 
 export { PARALLEL_GROUPS, PARALLEL_KEY, PARALLEL_LABEL_MAX };
 

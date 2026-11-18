@@ -7,7 +7,6 @@ import { Label } from "@ai/web-kit/ui/kit/label";
 import { Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { withCurrent } from "../../hooks/use-editor-refs";
-import type { StageRole } from "../../lib/draft-types";
 import {
   emptyParallelGroup,
   PARALLEL_GROUPS,
@@ -18,6 +17,7 @@ import {
   startParallel,
 } from "../../lib/parallel-form";
 import { ROLE_PICK, rolesOfStages } from "../../lib/role-pick";
+import type { StageRole } from "../../lib/role-types";
 import { SelectField, TextField } from "./Fields";
 import { RoleField } from "./RoleField";
 import type { StageFormProps } from "./stage-form-props";

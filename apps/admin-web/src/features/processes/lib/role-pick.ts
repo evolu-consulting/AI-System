@@ -1,5 +1,12 @@
 // CR-182 · R1 · view-model THUẦN của «Theo vai»: khoá vai sinh từ nhãn, gom vai đã có trong quy trình để chọn lại. Không React.
-import type { StageDraft, StageRole } from "./draft-types";
+import type { StageRole } from "./role-types";
+
+/** Phần của bước nháp mà `rolesOfStages` đọc (không import `StageDraft` để khỏi vòng). */
+type RoleSource = {
+  review?: { role?: StageRole | undefined } | undefined;
+  parallel?: { groups: readonly { role?: StageRole | undefined }[] } | undefined;
+  escalate?: { role?: StageRole | undefined } | undefined;
+};
 
 /** Giá trị đại diện «Theo vai» trong các ô chọn người duyệt / nơi chuyển (khác mọi `u:<id>` / `g:<id>` / id nhóm). */
 export const ROLE_PICK = "__role";
@@ -42,7 +49,7 @@ export const roleToDef = (r: StageRole | undefined): StageRole | undefined =>
   roleReady(r) ? { key: r.key, label: r.label.trim() } : undefined;
 
 /** Mọi vai đang dùng trong quy trình (Duyệt, nhóm cùng duyệt, chuyển cấp), một khoá một dòng, theo thứ tự xuất hiện. */
-export function rolesOfStages(stages: readonly StageDraft[]): StageRole[] {
+export function rolesOfStages(stages: readonly RoleSource[]): StageRole[] {
   const seen = new Map<string, StageRole>();
   const add = (r: StageRole | undefined) => {
     if (roleReady(r) && !seen.has(r.key)) seen.set(r.key, r);
