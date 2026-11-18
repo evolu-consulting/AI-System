@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { CommentViewSchema } from "./comment";
 import { ContentHitSchema } from "./content-hit";
+import { PostMentionSchema } from "./mention";
 import { HostHintSchema, QuoteMarkSchema } from "./quote";
 
 export const POST_TYPES = ["sell", "buy", "note"] as const;
