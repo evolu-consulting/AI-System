@@ -105,18 +105,50 @@ const allowedTypes = (host: boolean, labels: readonly string[]): PostType[] =>
 const hasDraft = (d: Draft): boolean =>
   d.body.trim() !== "" || d.media.length > 0 || d.mentions.length > 0;
 
-/** CR-186 · điện thoại + đã cuộn xuống: ô đăng chỉ còn MỘT dòng «Viết bài…». */
-function CompactBar({ orgName, onOpen }: { orgName: string; onOpen: () => void }) {
+/** Ô đăng thu gọn: ô gợi ý + 3 nút loại bài; `small` (CR-186, điện thoại + đã cuộn xuống) chỉ còn MỘT dòng «Viết bài…». */
+function CollapsedBar({
+  small,
+  orgName,
+  types,
+  onPrompt,
+  onPick,
+}: {
+  small: boolean;
+  orgName: string;
+  types: PostType[];
+  onPrompt: () => void;
+  onPick: (ty: PostType) => void;
+}) {
   return (
     <div
-      className="card pad composer feedcomposer collapsed compact"
+      className={`card pad composer feedcomposer collapsed${small ? " compact" : ""}`}
       data-testid="composer"
-      data-compact="true"
+      {...(small ? { "data-compact": "true" } : {})}
     >
       <span className="av t1">{initials(orgName)}</span>
-      <button type="button" className="prompt" onClick={onOpen}>
-        {t("community.composer.writePost")}
+      <button type="button" className="prompt" onClick={onPrompt}>
+        {small
+          ? t("community.composer.writePost")
+          : t("community.composer.prompt", { org: orgName })}
       </button>
+      <div className="ctypes" hidden={small}>
+        {types.map((ty) => {
+          const Ic = TYPE_ICON[ty];
+          return (
+            <button
+              key={ty}
+              type="button"
+              className={`ctype ${ty}`}
+              data-type={ty}
+              aria-label={typeLabel(ty)}
+              onClick={() => onPick(ty)}
+            >
+              <Ic size={16} />
+              <span>{typeLabel(ty)}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -206,39 +238,20 @@ export function Composer({
     }
   };
 
-  if (compact && !hasDraft(draft)) return <CompactBar orgName={viewer.orgName} onOpen={expand} />;
-
-  if (!open) {
+  const small = compact && !hasDraft(draft); // CR-186: một dòng «Viết bài…»
+  if (!open || small)
     return (
-      <div className="card pad composer feedcomposer collapsed" data-testid="composer">
-        <span className="av t1">{initials(viewer.orgName)}</span>
-        <button type="button" className="prompt" onClick={() => setOpen(true)}>
-          {t("community.composer.prompt", { org: viewer.orgName })}
-        </button>
-        <div className="ctypes">
-          {types.map((ty) => {
-            const Ic = TYPE_ICON[ty];
-            return (
-              <button
-                key={ty}
-                type="button"
-                className={`ctype ${ty}`}
-                data-type={ty}
-                aria-label={typeLabel(ty)}
-                onClick={() => {
-                  setDraft(emptyDraft(ty));
-                  setOpen(true);
-                }}
-              >
-                <Ic size={16} />
-                <span>{typeLabel(ty)}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <CollapsedBar
+        small={small}
+        orgName={viewer.orgName}
+        types={types}
+        onPrompt={small ? expand : () => setOpen(true)}
+        onPick={(ty) => {
+          setDraft(emptyDraft(ty));
+          setOpen(true);
+        }}
+      />
     );
-  }
 
   return (
     <div className="card pad composer feedcomposer" data-testid="composer">

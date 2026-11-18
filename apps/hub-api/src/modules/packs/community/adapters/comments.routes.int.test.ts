@@ -276,7 +276,7 @@ describe("CR-129 bình luận phẳng theo bạn bè + nhắc đối tác", () =
   });
 });
 
-describe("CR-147c · bảng tin trả kèm 3 bình luận mới nhất + tổng số; tải dần phần cũ hơn", () => {
+describe("CR-147c · bảng tin trả kèm 3 bình luận mới nhất + tổng số, tải dần phần cũ hơn", () => {
   const feedItem = async (who: Who, id: string) => {
     const r = await call(who, "GET", "/feed?tab=all&limit=50");
     expect(r.status).toBe(200);

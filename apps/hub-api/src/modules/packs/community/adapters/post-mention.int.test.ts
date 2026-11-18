@@ -226,7 +226,7 @@ describe("CR-145 nhắc người trong bài", () => {
     expect(byPost.json.map((p: { userId: string }) => p.userId)).not.toContain(c.b1);
   });
 
-  it("CR-186 · lọc nhóm: Nội bộ = chủ quản; Đối tác = công ty NCC; Khách hàng = công ty có vai mua; chỉ thu hẹp (không mở thêm quyền); group sai ⇒ 400", async () => {
+  it("CR-186 · lọc nhóm: Nội bộ = chủ quản, Đối tác = công ty NCC, Khách hàng = công ty có vai mua, chỉ thu hẹp (không mở thêm quyền), group sai ⇒ 400", async () => {
     const ids = async (who: Who, qs: string) =>
       (
         (

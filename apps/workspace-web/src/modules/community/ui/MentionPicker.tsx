@@ -4,10 +4,10 @@
 // (nội bộ ⇒ «Nội bộ»), cao ≥ 44px, cách đều. Chức vụ: API chưa trả ⇒ chưa hiện (ghi ở Delta).
 
 import { MENTION_GROUPS, type MentionGroup, POST_MENTIONS_MAX } from "@ai/contracts/community";
-import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
 import { Input } from "@ai/web-kit/ui/kit/input";
+import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
 import {
   Select,
   SelectContent,
@@ -92,7 +92,7 @@ function PersonRow({
           htmlFor={`mp-${p.userId}`}
           className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3"
         >
-          <Avatar name={p.name} size={32} />
+          <PersonAvatar name={p.name} id={p.userId} size={32} interactive={false} />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-sm font-semibold">{p.name}</span>
             <span className="truncate text-xs text-muted-foreground">
