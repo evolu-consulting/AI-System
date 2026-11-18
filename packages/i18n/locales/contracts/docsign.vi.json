@@ -11,6 +11,7 @@
       "tray": {
         "title": "Kéo vào trang",
         "mine": "Chữ ký của tôi",
+        "mineShort": "Của tôi",
         "field": "Chỗ ký {{name}}",
         "sideA": "Bên A",
         "sideB": "Bên B"
@@ -46,6 +47,7 @@
       "savePlaces": "Lưu chỗ ký",
       "saveSign": "Lưu",
       "saveLeft": "Lưu (còn {{count}} chỗ chưa ký)",
+      "saveLeftShort": "Lưu · còn {{count}}",
       "saving": "Đang lưu…",
       "placesSaved": "Đã lưu chỗ ký",
       "signed": "Đã lưu chữ ký",

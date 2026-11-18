@@ -23,15 +23,27 @@ export function TrayChip({ tray }: { tray: SignTray }) {
       draggable
       data-testid="sign-tray"
       onDragStart={(e) => e.dataTransfer.setData("text/plain", tray.id)}
-      className={`flex h-[var(--control-md)] cursor-grab items-center gap-2 rounded-md border-2 bg-background px-2 text-sm max-sm:min-h-11 ${tone}`}
+      className={`flex h-[var(--control-md)] cursor-grab max-w-full shrink-0 items-center gap-2 rounded-md border-2 bg-background px-2 text-sm max-sm:min-h-11 ${tone}`}
     >
       {tray.type === "mark" ? (
         <>
-          <img src={tray.imageUrl} alt="" draggable={false} className="h-6" />
-          {t("contracts.docsign.tray.mine")}
+          <img
+            src={tray.imageUrl}
+            alt=""
+            draggable={false}
+            className="h-6 max-w-24 shrink-0 object-contain"
+          />
+          <span className="whitespace-nowrap max-sm:sr-only">
+            {t("contracts.docsign.tray.mine")}
+          </span>
+          <span aria-hidden="true" className="whitespace-nowrap sm:hidden">
+            {t("contracts.docsign.tray.mineShort")}
+          </span>
         </>
       ) : (
-        t("contracts.docsign.tray.field", { name: tray.person })
+        <span className="max-w-40 truncate max-sm:max-w-28">
+          {t("contracts.docsign.tray.field", { name: tray.person })}
+        </span>
       )}
     </div>
   );
@@ -43,6 +55,8 @@ export function SignTopBar(p: {
   kind: SignatureKind;
   onKind: (k: SignatureKind) => void;
   saveLabel: string;
+  /** Nhãn gọn cho điện thoại (≤ 640px), vd «Lưu · còn 1»; tên truy cập vẫn là `saveLabel`. */
+  saveShort?: string;
   onSave: () => void;
   /** Không có gì để lưu ⇒ khoá nút, không gửi request. */
   saveDisabled?: boolean;
@@ -118,8 +132,22 @@ export function SignTopBar(p: {
           <TrayChip key={tr.id} tray={tr} />
         ))}
       </div>
-      <Button disabled={p.saveDisabled} onClick={p.onSave}>
-        {p.saveLabel}
+      <Button
+        disabled={p.saveDisabled}
+        onClick={p.onSave}
+        aria-label={p.saveShort ? p.saveLabel : undefined}
+        className="max-sm:px-3"
+      >
+        {p.saveShort ? (
+          <>
+            <span className="max-sm:hidden">{p.saveLabel}</span>
+            <span aria-hidden="true" className="sm:hidden">
+              {p.saveShort}
+            </span>
+          </>
+        ) : (
+          p.saveLabel
+        )}
       </Button>
     </header>
   );

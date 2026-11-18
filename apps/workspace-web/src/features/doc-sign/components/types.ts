@@ -43,6 +43,8 @@ export type SignWorkspaceProps = {
   /** Khoá nút Lưu cho tệp đang mở (chế độ ký: chưa có chữ ký nào). */
   saveDisabled?: (fileId: string) => boolean;
   saveLabel: string;
+  /** Nhãn nút Lưu gọn cho điện thoại (≤ 640px). */
+  saveShort?: string;
   dirty: boolean;
   /** CR-184 · tên người vắng mà mình đang ký thay (uỷ quyền) ⇒ thanh trên nói rõ. */
   behalf?: string[];

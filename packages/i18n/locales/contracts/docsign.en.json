@@ -11,6 +11,7 @@
       "tray": {
         "title": "Drag onto the page",
         "mine": "My signature",
+        "mineShort": "Mine",
         "field": "Signing spot for {{name}}",
         "sideA": "Party A",
         "sideB": "Party B"
@@ -46,6 +47,7 @@
       "savePlaces": "Save signing spots",
       "saveSign": "Save",
       "saveLeft": "Save ({{count}} spot(s) not signed yet)",
+      "saveLeftShort": "Save · {{count}} left",
       "saving": "Saving…",
       "placesSaved": "Signing spots saved",
       "signed": "Signature saved",

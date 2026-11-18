@@ -13,6 +13,7 @@ import { fetchContent, useDocSign } from "../hooks/use-doc-sign";
 import { isStaleVersion, signErrorKey } from "../lib/errors";
 import type { PageSize } from "../lib/layout";
 import { readAnchors } from "../lib/pdf-anchors";
+import { saveKeys } from "../lib/save-label";
 import {
   buildFieldsPut,
   buildSignBody,
@@ -151,10 +152,9 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
     [signers],
   );
   const d = s.kinds.digital;
-  let saveLabel = t("contracts.docsign.savePlaces");
-  if (mode === "sign")
-    saveLabel =
-      left > 0 ? t("contracts.docsign.saveLeft", { count: left }) : t("contracts.docsign.saveSign");
+  const keys = saveKeys(mode, left);
+  const saveLabel = t(`contracts.docsign.${keys.full}`, { count: left });
+  const saveShort = keys.short ? t(`contracts.docsign.${keys.short}`, { count: left }) : undefined;
   return (
     <>
       <SignWorkspace
@@ -178,6 +178,7 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
         autoPlace={mode === "prep" ? autoPlace : undefined}
         onClose={onExit}
         saveLabel={saveLabel}
+        saveShort={saveShort}
         dirty={dirty}
         behalf={
           mode === "sign"
