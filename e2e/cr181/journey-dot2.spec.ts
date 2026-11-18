@@ -133,7 +133,8 @@ test("đối tác (không đăng nhập): mở link → tạo chữ ký nhanh �
   await expect(page.getByTestId("partner-invite")).toContainText("mời bạn ký", { timeout: 30_000 });
   await page.getByRole("button", { name: "Xem và ký" }).click();
   const quick = page.getByTestId("partner-quick");
-  await quick.getByRole("textbox", { name: "Họ tên" }).fill("Trần Thị B");
+  await quick.getByText("Gõ họ tên").click(); // mặc định tab «Vẽ»
+  await quick.getByRole("textbox").first().fill("Trần Thị B");
   await quick.getByRole("button", { name: "Lưu chữ ký" }).click();
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Bấm để ký" }).first().click();
@@ -225,7 +226,7 @@ test("phụ lục cần ký: sale thêm phụ lục trên HĐ đã ký ⇒ phụ
   await page.context().close();
 });
 
-test("HĐ thứ hai: Gửi lại link ⇒ link cũ hết dùng; điện thoại 390px; đối tác TỪ CHỐI ⇒ lý do hiện ở trang HĐ", async ({
+test("HĐ thứ hai: sale gửi duyệt → trưởng phòng → giám đốc ký ⇒ có link ký của đối tác", async ({
   browser,
 }) => {
   test.setTimeout(600_000);
@@ -233,6 +234,13 @@ test("HĐ thứ hai: Gửi lại link ⇒ link cũ hết dùng; điện thoại 
   await headSignsAndPasses(browser, E, id2);
   await directorSigns(browser, E, id2, GIAMDOC);
   link2a = await readPartnerLink(E, [pathOf(link1)]);
+  link2b = link2a;
+});
+
+test("Gửi lại link: người tải lên thấy nút ⇒ link cũ hết dùng, link mới dùng được", async ({
+  browser,
+}) => {
+  test.setTimeout(240_000);
 
   const sale = await newPage(browser);
   await loginCw(sale, E, U.employee);
@@ -255,7 +263,12 @@ test("HĐ thứ hai: Gửi lại link ⇒ link cũ hết dùng; điện thoại 
     { timeout: 30_000 },
   );
   await old.context().close();
+});
 
+test("HĐ thứ hai: điện thoại 390px; đối tác TỪ CHỐI ⇒ lý do hiện ở trang HĐ", async ({
+  browser,
+}) => {
+  test.setTimeout(300_000);
   // 390px: không tràn ngang, nút ≥ 44px
   const ctx = await browser.newContext({ viewport: { width: 390, height: 800 }, locale: "vi-VN" });
   const phone = await ctx.newPage();

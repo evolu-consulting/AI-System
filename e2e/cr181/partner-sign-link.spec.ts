@@ -50,7 +50,7 @@ test("công ty: sale tạo → trưởng phòng duyệt → giám đốc ký ⇒
     await page.reload();
     await expect(wait).toContainText("Chờ", { timeout: 5_000 });
   }).toPass({ timeout: 90_000 });
-  await expect(page.getByTestId("partner-link")).toContainText("Đã gửi lúc");
+  await expect(page.getByTestId("partner-link")).toContainText("Chưa gửi được thư mời");
   await expect(page.getByTestId("partner-link")).toContainText("Chưa mở");
   await expect(page.getByTestId("partner-link")).toContainText("Hạn ký");
   await expect(wait.getByRole("button", { name: "Gửi lại link" })).toBeVisible();
@@ -72,7 +72,8 @@ test("đối tác (không đăng nhập): mở link → tạo chữ ký nhanh �
   await page.getByRole("button", { name: "Xem và ký" }).click();
   const quick = page.getByTestId("partner-quick");
   await expect(quick.getByRole("heading", { name: "Tạo chữ ký của bạn" })).toBeVisible();
-  await quick.getByRole("textbox", { name: "Họ tên" }).fill("Trần Thị B");
+  await quick.getByText("Gõ họ tên").click(); // mặc định tab «Vẽ»
+  await quick.getByRole("textbox").first().fill("Trần Thị B");
   await quick.getByRole("button", { name: "Lưu chữ ký" }).click();
 
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 30_000 });

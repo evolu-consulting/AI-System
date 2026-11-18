@@ -78,7 +78,9 @@ export async function prepareSignPlaces(page: Page): Promise<void> {
   await expect(sw).toHaveAttribute("aria-checked", "true");
   await page.getByRole("link", { name: "Chuẩn bị chỗ ký" }).click();
   await expect(page.getByTestId("sign-workspace")).toBeVisible({ timeout: 30_000 });
-  await page.getByRole("button", { name: /Tự đặt theo/ }).click();
+  const auto = page.getByRole("button", { name: /Tự đặt theo/ });
+  await expect(auto).toBeEnabled({ timeout: 60_000 }); // chờ PDF dựng xong
+  await auto.click();
   await expect(page.getByRole("status")).toContainText("Đã đặt");
   await page.getByRole("button", { name: "Lưu chỗ ký" }).click();
   await expect(page.getByTestId("sign-readiness")).toBeVisible({ timeout: 30_000 });
