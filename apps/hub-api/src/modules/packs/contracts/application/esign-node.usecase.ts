@@ -1,6 +1,7 @@
 // CR-122 · E5 · FLOW2-FR-25 · node Ký số theo cấu hình riêng (tách khỏi `esign.usecase.ts`, trần 400 dòng): lựa chọn cho panel,
 // kiểm cấu hình lúc LƯU def, đổi mục người ký (user/Group) thành user ký. Lớp 2: chỉ cổng.
 import {
+  ESIGN_NODE_DIGITAL_NOT_ENABLED,
   ESIGN_NODE_DUE_DAYS_MAX,
   ESIGN_NODE_ONDOC,
   ESIGN_NODE_ORDERS,
@@ -14,6 +15,7 @@ import {
   type EsignNodeSigner,
 } from "@ai/contracts/pack-contracts";
 import type { PackWho } from "../../kit/public";
+import { isListedProvider } from "../domain/esign.providers";
 import { ESignFail } from "./esign.helpers";
 
 /** Người ký node: `userIds` đã gỡ trùng, theo thứ tự khai (người cụ thể, rồi thành viên Group); `unknown` = mục không thuộc công ty. */
@@ -60,6 +62,7 @@ export function esignNodeApi(d: EsignNodeDeps) {
   /** CR-146b · «Ký qua»: `upload` luôn hợp lệ; nhà cung cấp phải đang bật + khả dụng của CHÍNH công ty. */
   const providerIssue = async (tenantId: string, provider: string): Promise<Issues> => {
     if (provider === ESIGN_NODE_UPLOAD) return [];
+    if (!isListedProvider(provider)) return []; // CR-182 · R3 · cấu hình cũ (DocuSign đã ẩn) GIỮ nguyên, không chặn lưu
     // CR-181 · Q1 · ký trên tài liệu không cần nhà cung cấp ký số, nhưng công ty TẮT ký trên tài liệu thì không ai ký được ⇒ chặn lưu/kích hoạt.
     if (provider === ESIGN_NODE_ONDOC)
       return (await d.onDocEnabled(tenantId))
@@ -94,7 +97,11 @@ export function esignNodeApi(d: EsignNodeDeps) {
     async checkNode(tenantId: string, c: EsignNodeConfig): Promise<Issues> {
       const a = c.provider ? await providerIssue(tenantId, c.provider) : [];
       const b = c.company_signers?.length ? await signerIssue(tenantId, c.company_signers) : [];
-      return [...a, ...b];
+      // CR-182 · R3 · cần chữ ký số mà công ty chưa bật ⇒ báo ngay khi lưu (đợt 3 mới có ký số, nên chưa công ty nào bật)
+      const dg = c.need_digital
+        ? [{ field: "need_digital", code: ESIGN_NODE_DIGITAL_NOT_ENABLED }]
+        : [];
+      return [...a, ...b, ...dg];
     },
 
     /** Người ký công ty của node: mục `user`/`group` ⇒ danh sách user (thứ tự khai, bỏ trùng, ≤ trần); mục lạ / rỗng ⇒ ném. */

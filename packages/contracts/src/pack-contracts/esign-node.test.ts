@@ -42,8 +42,9 @@ describe("E5 · EsignNodeConfig", () => {
     expect(decodeEsignNodeArgs({ ...args, contract_id: U })).toEqual({ ok: true, config: c });
   });
 
-  it("CR-182 · vai người ký thay cho người ký cố định; need_digital=false không ghi ra args", () => {
+  it("CR-182 · vai người ký thay cho người ký cố định, need_digital=false không ghi ra args", () => {
     expect(esignConfigIssues({ provider: "ondoc", signer_role: "nguoi-ky-hop-dong" })).toEqual([]);
+    expect(esignConfigIssues({ signer_role: "nguoi-ky-hop-dong" })).toEqual([]); // vai đủ, không cần «Ký qua»
     expect(esignConfigIssues({ provider: "ondoc" }).map((i) => i.code)).toEqual([
       "NO_SIGNER_SELECTED",
     ]);

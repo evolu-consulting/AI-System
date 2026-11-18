@@ -135,8 +135,16 @@ function signersOf(s: string): unknown {
  */
 export const ESIGN_NODE_NO_SIGNER_SELECTED = "NO_SIGNER_SELECTED";
 export const ESIGN_NODE_NO_PROVIDER_SELECTED = "NO_PROVIDER_SELECTED";
+export const ESIGN_NODE_DIGITAL_NOT_ENABLED = "DIGITAL_NOT_ENABLED";
+/** CR-182 · R3 · vai người ký mặc định của bước Ký mới. */
+export const ESIGN_DEFAULT_SIGNER_ROLE = {
+  key: "nguoi-ky-hop-dong",
+  label: "Người ký hợp đồng",
+} as const;
 export function esignConfigIssues(c: EsignNodeConfig): { field: string; code: string }[] {
   const out: { field: string; code: string }[] = [];
+  // CR-182 · R3 · hợp lệ khi có vai người ký (người ký lấy từ giao việc); «Ký qua» + người ký cố định chỉ còn là CẤU HÌNH CŨ
+  if (c.signer_role) return out;
   if (!c.provider) out.push({ field: "provider", code: ESIGN_NODE_NO_PROVIDER_SELECTED });
   if (!c.company_signers?.length && !c.signer_role)
     // CR-182 · có vai ⇒ người ký lấy từ giao việc

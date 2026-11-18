@@ -22,6 +22,10 @@ export const PROVIDER_META: Record<string, ProviderMeta> = {
   misa: { label: "MISA eSign", kind: "ca", legal: true, redirects: false },
 };
 
+/** CR-182 · R3 · nhà cung cấp ẨN khỏi mọi danh sách chọn (cài đặt, node); adapter + webhook vẫn chạy để phong bì cũ đồng bộ/xem. Lọc theo danh sách, không đổi env. */
+export const HIDDEN_PROVIDERS: ReadonlySet<string> = new Set(["docusign"]);
+export const isListedProvider = (key: string): boolean => !HIDDEN_PROVIDERS.has(key);
+
 /** Meta của khoá (khoá lạ — vd `fake` của test — ⇒ nhãn = khoá, loại envelope, pháp lý + chuyển hướng theo `demo`). */
 export const metaOf = (key: string, demo = false): ProviderMeta =>
   PROVIDER_META[key] ?? { label: key, kind: "envelope", legal: !demo, redirects: !demo };

@@ -1,5 +1,6 @@
 // CR-127 · U2 · view-model THUẦN của panel bước Duyệt (spec §8.1): Ai duyệt (phòng HOẶC người) · Cần · Hạn · Quá hạn chuyển cho · Bằng chứng.
 import type { StageDraft } from "./draft-types";
+import { EMPTY_ROLE, ROLE_PICK } from "./role-pick";
 
 type Review = NonNullable<StageDraft["review"]>;
 type Esc = StageDraft["escalate"];
@@ -16,9 +17,11 @@ export const isStarterHeadStage = (s: Pick<StageDraft, "review">): boolean =>
 export const whoValueOf = (s: Pick<StageDraft, "review">, groupValue: string): string =>
   isStarterHeadStage(s)
     ? STARTER_HEAD
-    : s.review?.approverUserId
-      ? `u:${s.review.approverUserId}`
-      : groupValue;
+    : s.review?.role
+      ? ROLE_PICK
+      : s.review?.approverUserId
+        ? `u:${s.review.approverUserId}`
+        : groupValue;
 
 /** Chọn người (`u:<id>`) ⇒ bỏ phòng; chọn phòng ⇒ bỏ người. `groupPatch` = patch phòng của `useApproverField`. */
 export function whoPatch(
@@ -26,7 +29,15 @@ export function whoPatch(
   v: string,
   groupPatch: (id: string) => Partial<StageDraft>,
 ): Partial<StageDraft> {
-  const { approverUserId: _drop, approverMode: _mode, ...rest } = s.review ?? {};
+  const { approverUserId: _drop, approverMode: _mode, role: _role, ...rest } = s.review ?? {};
+  // CR-182 · «Theo vai»: bỏ phòng/người, giữ vai đang có (hoặc vai trống chờ nhập nhãn)
+  if (v === ROLE_PICK)
+    return {
+      groupId: "",
+      groupKey: "",
+      after: "review",
+      review: { ...rest, role: s.review?.role ?? EMPTY_ROLE },
+    };
   if (v === STARTER_HEAD)
     return {
       groupId: "",
@@ -41,7 +52,7 @@ export function whoPatch(
 
 /** Giá trị ô «Quá hạn chuyển cho»: `u:<id>` | `g:<id>` | "" (chưa chọn). */
 export const dueToValueOf = (e: Esc): string =>
-  e.userId ? `u:${e.userId}` : e.groupId ? `g:${e.groupId}` : "";
+  e.role ? ROLE_PICK : e.userId ? `u:${e.userId}` : e.groupId ? `g:${e.groupId}` : "";
 
 /** Nhập Hạn: trống ⇒ tắt chuyển cấp; có số ⇒ bật (giữ nơi chuyển đã chọn). */
 export const withDue = (e: Esc, hours: string): Esc =>
@@ -49,6 +60,8 @@ export const withDue = (e: Esc, hours: string): Esc =>
 
 /** Chọn nơi chuyển: người ⇒ `userId`, phòng ⇒ `groupId` (đúng một). */
 export const withDueTo = (e: Esc, v: string): Esc =>
-  v.startsWith("u:")
-    ? { on: true, afterH: e.afterH, groupId: "", userId: v.slice(2) }
-    : { on: true, afterH: e.afterH, groupId: v.slice(2) };
+  v === ROLE_PICK
+    ? { on: true, afterH: e.afterH, groupId: "", role: e.role ?? EMPTY_ROLE }
+    : v.startsWith("u:")
+      ? { on: true, afterH: e.afterH, groupId: "", userId: v.slice(2) }
+      : { on: true, afterH: e.afterH, groupId: v.slice(2) };

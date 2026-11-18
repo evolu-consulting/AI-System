@@ -7,7 +7,7 @@ import type {
   ESignSignerIn,
   ESignStatus,
 } from "@ai/contracts/pack-contracts";
-import { effectiveDefault, metaOf } from "../domain/esign.providers";
+import { effectiveDefault, isListedProvider, metaOf } from "../domain/esign.providers";
 import { isOpen } from "../domain/esign.rules";
 import { isSigned, isTurnOf } from "../domain/esign-signer.rules";
 import type {
@@ -161,7 +161,9 @@ export function settingsOut(
   s: { enabled: boolean; defaultProvider: string | null; inviteThumbnail: boolean },
   demoOf: (key: string) => boolean,
 ): ESignSettingsOut {
-  const list = entries.map((e) => ({ ...e, available: e.available && hasFiles }));
+  const list = entries
+    .filter((e) => isListedProvider(e.key)) // CR-182 · R3 · DocuSign ẩn khỏi danh sách hiển thị
+    .map((e) => ({ ...e, available: e.available && hasFiles }));
   const def = effectiveDefault(list, s.defaultProvider);
   return {
     configured: def !== null,

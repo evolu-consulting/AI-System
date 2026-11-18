@@ -9,6 +9,8 @@ import {
   type ParallelRule,
   parallelStageIssues,
 } from "@ai/contracts/hub-admin";
+import type { StageRole } from "./draft-types";
+import { roleToDef } from "./role-pick";
 
 export { PARALLEL_GROUPS, PARALLEL_KEY, PARALLEL_LABEL_MAX };
 
@@ -19,6 +21,8 @@ export type ParallelGroupDraft = {
   groupKey?: string;
   label: string;
   headOnly?: boolean;
+  /** CR-182 · «Theo vai»: vai của nhóm này (thay cho nhóm chọn sẵn). */
+  role?: StageRole;
 };
 export type ParallelRuleKind = "all" | "any" | "min";
 export type ParallelDraft = { groups: ParallelGroupDraft[]; rule: ParallelRuleKind; min: string };
@@ -38,6 +42,7 @@ export function parallelFromDef(p: ApproveParallel): ParallelDraft {
       ...(g.group_key ? { groupKey: g.group_key } : {}),
       label: g.label,
       ...(g.head_only ? { headOnly: true } : {}),
+      ...(g.role ? { role: g.role } : {}),
     })),
     rule: typeof rule === "object" ? "min" : rule,
     min: typeof rule === "object" ? String(rule.min) : String(Math.max(2, p.groups.length)),
@@ -56,6 +61,7 @@ export function parallelToDef(d: ParallelDraft): ApproveParallel {
       // nhãn bắt buộc 1–80 ký tự: chưa gõ ⇒ «Nhóm n» (không để lưu hỏng vì ô trống)
       label: g.label.trim() === "" ? `Nhóm ${i + 1}` : g.label.trim().slice(0, PARALLEL_LABEL_MAX),
       ...(g.headOnly ? { head_only: true } : {}),
+      ...(roleToDef(g.role) ? { role: roleToDef(g.role) } : {}),
     })),
     rule: ruleOf(d),
   } as ApproveParallel;
@@ -86,7 +92,7 @@ export function parallelErrors(
   for (const i of parallelStageIssues(shaped)) e[i.path] = `${PARALLEL_KEY}.${i.rule}`;
   stages.forEach((s, i) => {
     if (!s.parallel || !forEnable) return;
-    if (s.parallel.groups.some((g) => g.groupId === "" && !g.groupKey))
+    if (s.parallel.groups.some((g) => g.groupId === "" && !g.groupKey && !g.role))
       e[`stages.${i}.after.parallel.groups`] ??= "process.admin.parallel.groupMissing";
   });
   return e;

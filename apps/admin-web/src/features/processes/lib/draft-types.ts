@@ -21,6 +21,9 @@ export type WaitDraft = {
   /** Sự kiện phụ cũng kết thúc chờ (`also_events`, ≤ 3) — giữ nguyên khi lưu. */
   also?: string[];
 };
+/** CR-182 · vai của bước Duyệt/Ký: khoá slug + nhãn (khớp `StageRoleSchema` của contract). */
+export type StageRole = { key: string; label: string };
+
 /** CR-127 · E3c: quá hạn chuyển cho một PHÒNG (`groupId`) hoặc một NGƯỜI (`userId`) — đúng một; `groupKey` = mã phòng của mẫu Thư viện (giữ nguyên). */
 export type EscalateDraft = {
   on: boolean;
@@ -28,6 +31,8 @@ export type EscalateDraft = {
   groupId: string;
   userId?: string;
   groupKey?: string;
+  /** CR-182 · «Theo vai»: vai thay cho phòng/người cố định (công ty tự giao người). */
+  role?: StageRole;
 };
 
 /** CR-127 · U2 · phần của bước Duyệt mà màn soạn sửa (`need`, `evidence`) + phần giữ nguyên khi mở / lưu (không để mất khi qua bản nháp). */
@@ -40,6 +45,8 @@ export type ReviewExtra = {
   approverMode?: "starter_head";
   alsoGroupIds?: string[];
   alsoGroupKeys?: string[];
+  /** CR-182 · «Theo vai»: vai người duyệt (công ty tự giao nhóm/người). Khoá rỗng = đang nhập nhãn. */
+  role?: StageRole;
 };
 
 /** P-d2 · nguồn một tham số tool: `from` rỗng = chưa chọn; `value` = giá trị cố định | khoá input | `<stage_key>:<field>`. */

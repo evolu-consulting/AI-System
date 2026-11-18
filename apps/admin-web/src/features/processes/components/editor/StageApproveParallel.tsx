@@ -7,6 +7,7 @@ import { Label } from "@ai/web-kit/ui/kit/label";
 import { Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { withCurrent } from "../../hooks/use-editor-refs";
+import type { StageRole } from "../../lib/draft-types";
 import {
   emptyParallelGroup,
   PARALLEL_GROUPS,
@@ -16,7 +17,9 @@ import {
   type ParallelRuleKind,
   startParallel,
 } from "../../lib/parallel-form";
+import { ROLE_PICK, rolesOfStages } from "../../lib/role-pick";
 import { SelectField, TextField } from "./Fields";
+import { RoleField } from "./RoleField";
 import type { StageFormProps } from "./stage-form-props";
 
 const K = "process.admin.parallel.";
@@ -28,6 +31,7 @@ function GroupRow(p: {
   n: number;
   g: ParallelGroupDraft;
   options: { value: string; label: string }[];
+  existingRoles: readonly StageRole[];
   canRemove: boolean;
   readOnly: boolean;
   onChange: (g: ParallelGroupDraft) => void;
@@ -41,13 +45,20 @@ function GroupRow(p: {
       <SelectField
         id={`${p.uid}-pg${p.n}`}
         label={t(`${K}group`, { n: p.n + 1 })}
-        value={g.groupId}
+        value={g.role ? ROLE_PICK : g.groupId}
         readOnly={p.readOnly}
         placeholder={t("process.admin.editor.stage.approverPh")}
-        options={withCurrent(p.options, g.groupId, t("process.admin.editor.gone"))}
+        options={[
+          ...withCurrent(p.options, g.groupId, t("process.admin.editor.gone")),
+          { value: ROLE_PICK, label: t("process.admin.editor.stage.approverByRole") },
+        ]}
         onChange={(v) => {
+          if (v === ROLE_PICK) {
+            p.onChange({ ...g, groupId: "", role: g.role ?? { key: "", label: "" } });
+            return;
+          }
           const auto = g.label === "" || g.label === nameOf(g.groupId);
-          const { groupKey: _drop, ...rest } = g;
+          const { groupKey: _drop, role: _role, ...rest } = g;
           p.onChange({ ...rest, groupId: v, label: auto ? nameOf(v) : g.label });
         }}
       />
@@ -74,6 +85,17 @@ function GroupRow(p: {
       ) : (
         <span />
       )}
+      {g.role ? (
+        <div className="col-span-3">
+          <RoleField
+            id={`${p.uid}-pg${p.n}`}
+            value={g.role}
+            existing={p.existingRoles}
+            readOnly={p.readOnly}
+            onChange={(role) => p.onChange({ ...g, role })}
+          />
+        </div>
+      ) : null}
       <Label className="col-span-3 flex items-center gap-2 font-normal">
         <Checkbox
           checked={g.headOnly === true}
@@ -167,6 +189,7 @@ export function StageApproveParallel(p: StageFormProps) {
                 n={i}
                 g={g}
                 options={options}
+                existingRoles={rolesOfStages(p.all)}
                 readOnly={readOnly}
                 canRemove={d.groups.length > PARALLEL_GROUPS.min}
                 onChange={(ng) => set({ ...d, groups: d.groups.map((x, j) => (j === i ? ng : x)) })}

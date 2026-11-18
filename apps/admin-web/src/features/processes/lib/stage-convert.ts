@@ -14,6 +14,7 @@ import type { ReviewExtra, StageDraft } from "./draft-types";
 import { normalizeForm } from "./form-fields";
 import { emptyIf, normalizeIf } from "./if-form";
 import { parallelFromDef, parallelToDef } from "./parallel-form";
+import { roleToDef } from "./role-pick";
 import { emptySet, normalizeSet } from "./set-form";
 import { repairSlot } from "./slot-canvas";
 import {
@@ -156,9 +157,14 @@ function reviewExtraToDraft(
     ...(rv.approver_mode === "starter_head" ? { approverMode: "starter_head" as const } : {}),
     ...(rv.also_group_ids?.length ? { alsoGroupIds: [...rv.also_group_ids] } : {}),
     ...(rv.also_group_keys?.length ? { alsoGroupKeys: [...rv.also_group_keys] } : {}),
+    ...(rv.role ? { role: rv.role } : {}),
   };
   return Object.keys(r).length > 0 ? { review: r } : {};
 }
+const roleDefOf = (r: ReviewExtra["role"]) => {
+  const role = roleToDef(r);
+  return role ? { role } : {};
+};
 const reviewExtraToDef = (r: ReviewExtra | undefined) =>
   r
     ? {
@@ -169,6 +175,7 @@ const reviewExtraToDef = (r: ReviewExtra | undefined) =>
         ...(r.approverMode === "starter_head" ? { approver_mode: "starter_head" as const } : {}),
         ...(r.alsoGroupIds?.length ? { also_group_ids: r.alsoGroupIds } : {}),
         ...(r.alsoGroupKeys?.length ? { also_group_keys: r.alsoGroupKeys } : {}),
+        ...roleDefOf(r.role),
       }
     : {};
 

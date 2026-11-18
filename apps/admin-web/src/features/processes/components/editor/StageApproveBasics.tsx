@@ -16,8 +16,10 @@ import {
   withDueTo,
 } from "../../lib/approve-panel";
 import type { ReviewExtra } from "../../lib/draft-types";
+import { ROLE_PICK, rolesOfStages } from "../../lib/role-pick";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { SelectField, TextField } from "./Fields";
+import { RoleField } from "./RoleField";
 import { StageApproveParallel } from "./StageApproveParallel";
 import type { StageFormProps } from "./stage-form-props";
 
@@ -34,8 +36,10 @@ export function StageApproveBasics(p: StageFormProps) {
   const flow = useFlowCtx();
   const lib = !!flow && !flow.tenantId;
   const head = { value: STARTER_HEAD, label: t(`${K}approverStarterHead`) };
+  const roleOpt = { value: ROLE_PICK, label: t(`${K}approverByRole`) };
   const whoOptions = [
     head,
+    roleOpt,
     ...(lib
       ? who.options
       : [...who.options, ...refs.users.map((u) => ({ value: `u:${u.value}`, label: u.label }))]),
@@ -62,6 +66,7 @@ export function StageApproveBasics(p: StageFormProps) {
       gone,
     ),
     ...refs.users.map((u) => ({ value: `u:${u.value}`, label: u.label })),
+    { value: ROLE_PICK, label: t(`${K}approverByRole`) },
   ];
   const toErr =
     live.groupId === "same"
@@ -82,6 +87,15 @@ export function StageApproveBasics(p: StageFormProps) {
           error={gErr ? t(gErr) : undefined}
           options={whoOptions}
           onChange={pickWho}
+        />
+      )}
+      {stage.parallel || whoValue !== ROLE_PICK ? null : (
+        <RoleField
+          id={`${stage.uid}-approver`}
+          value={stage.review?.role}
+          existing={rolesOfStages(p.all)}
+          readOnly={readOnly}
+          onChange={(role) => setReview({ role })}
         />
       )}
       <StageApproveParallel {...p} />
@@ -118,6 +132,15 @@ export function StageApproveBasics(p: StageFormProps) {
           error={toErr ? t(toErr) : undefined}
           options={dueOptions}
           onChange={(v) => onChange({ escalate: withDueTo(esc, v) })}
+        />
+      ) : null}
+      {esc.on && dueTo === ROLE_PICK ? (
+        <RoleField
+          id={`${stage.uid}-due-to`}
+          value={esc.role}
+          existing={rolesOfStages(p.all)}
+          readOnly={readOnly}
+          onChange={(role) => onChange({ escalate: { ...esc, role } })}
         />
       ) : null}
       <SelectField

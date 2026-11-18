@@ -487,7 +487,8 @@
       "evidence_opinion": "Opinion only",
       "evidence_opinion_plus": "Opinion + signature or file",
       "answerBy": "Time to respond (hours)",
-      "answerByHint": "After this the approver is reminded. {{min}} to {{max}} hours."
+      "answerByHint": "After this the approver is reminded. {{min}} to {{max}} hours.",
+      "approverByRole": "By role (company assigns the person)"
     },
     "limits": "Run limits",
     "limitsText": "Contracts waiting more than 7 days alert the owner.",
@@ -1594,11 +1595,18 @@
         "SIGNER_NOT_IN_TENANT": "The signer is not in this company.",
         "NO_SIGNER": "This group has no usable signer.",
         "NO_SIGNER_SELECTED": "no signer yet — pick the company signer in the Sign step of the flow",
-        "DIRECTORY_UNAVAILABLE": "Could not check the directory, try again later."
+        "DIRECTORY_UNAVAILABLE": "Could not check the directory, try again later.",
+        "DIGITAL_NOT_ENABLED": "Needs a digital signature but the company has not turned it on"
       },
       "signWith": "Sign with: {{name}}",
       "noProvider": "no provider chosen",
-      "change": "Change in {{path:sign}}"
+      "change": "Change in {{path:sign}}",
+      "signerRole": "Signer",
+      "signerRolePick": "Pick a signer role",
+      "signerRoleHint": "The company assigns the person to this role in Settings › Approval flow.",
+      "needDigital": "Needs a digital signature",
+      "legacy": "Old setup: {{what}} (used when the company turns off signing on documents)",
+      "legacySwitch": "Switch to role"
     },
     "advanced": "Advanced",
     "moduleNote": "The provider, signers and other settings of this step come from the app settings. Open Advanced to tweak details.",
@@ -1758,5 +1766,13 @@
     },
     "toolNote": "This step runs a system feature. Details are under “Advanced”.",
     "toolNoteCompany": "This step runs a system feature; its content is preset by the platform."
+  },
+  "role": {
+    "pick": "Role",
+    "new": "New role…",
+    "label": "Role name",
+    "labelPh": "e.g. First-level approver",
+    "hint": "The company assigns a group or person to this role in Settings › Approval flow.",
+    "labelInvalid": "The role name needs letters or digits."
   }
 }

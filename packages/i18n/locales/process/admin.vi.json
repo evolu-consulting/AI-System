@@ -487,7 +487,8 @@
       "evidence_opinion": "Chỉ ý kiến",
       "evidence_opinion_plus": "Ý kiến + chữ ký hoặc tệp",
       "answerBy": "Hạn trả lời (giờ)",
-      "answerByHint": "Quá hạn, hệ thống nhắc người duyệt. Từ {{min}} đến {{max}} giờ."
+      "answerByHint": "Quá hạn, hệ thống nhắc người duyệt. Từ {{min}} đến {{max}} giờ.",
+      "approverByRole": "Theo vai (công ty tự giao người)"
     },
     "limits": "Giới hạn của một lượt chạy",
     "limitsText": "Chờ quá 7 ngày sẽ báo người phụ trách.",
@@ -1594,11 +1595,18 @@
         "SIGNER_NOT_IN_TENANT": "Người ký không thuộc công ty.",
         "NO_SIGNER": "Nhóm này chưa có người ký dùng được.",
         "NO_SIGNER_SELECTED": "chưa có người ký — chọn người ký phía công ty trong bước Ký của quy trình",
-        "DIRECTORY_UNAVAILABLE": "Chưa kiểm được danh bạ, thử lại sau."
+        "DIRECTORY_UNAVAILABLE": "Chưa kiểm được danh bạ, thử lại sau.",
+        "DIGITAL_NOT_ENABLED": "Cần chữ ký số nhưng công ty chưa bật"
       },
       "signWith": "Ký bằng: {{name}}",
       "noProvider": "chưa chọn nhà cung cấp",
-      "change": "Đổi ở {{path:sign}}"
+      "change": "Đổi ở {{path:sign}}",
+      "signerRole": "Người ký",
+      "signerRolePick": "Chọn vai người ký",
+      "signerRoleHint": "Công ty tự giao người cho vai này ở Cài đặt › Quy trình duyệt.",
+      "needDigital": "Cần chữ ký số",
+      "legacy": "Cấu hình cũ: {{what}} (dùng khi công ty tắt ký trên tài liệu)",
+      "legacySwitch": "Chuyển sang vai"
     },
     "advanced": "Nâng cao",
     "moduleNote": "Nhà cung cấp, người ký và các thiết lập khác của bước này lấy từ cài đặt của ứng dụng. Mở Nâng cao nếu cần chỉnh chi tiết.",
@@ -1758,5 +1766,13 @@
     },
     "toolNote": "Bước này chạy một tính năng của hệ thống. Chỉnh chi tiết ở “Nâng cao”.",
     "toolNoteCompany": "Bước này chạy một tính năng của hệ thống; nội dung do nền tảng cài sẵn."
+  },
+  "role": {
+    "pick": "Vai",
+    "new": "Vai mới…",
+    "label": "Tên vai",
+    "labelPh": "Ví dụ: Người duyệt cấp 1",
+    "hint": "Công ty sẽ giao nhóm hoặc người cho vai này ở Cài đặt › Quy trình duyệt.",
+    "labelInvalid": "Tên vai cần có chữ hoặc số."
   }
 }

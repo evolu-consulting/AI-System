@@ -81,6 +81,16 @@ describe("CR-146b · «Ký qua» + người ký bắt buộc trong node", () => 
   });
 });
 
+describe("CR-182 · R3 · bước Ký có vai người ký", () => {
+  const bare = { kind: "tool", tool_key: "contracts-esign-send", args: { contract_id: c("x") } };
+  it("có signer_role (không «Ký qua», không người ký cố định) ⇒ hợp lệ, vẫn kiểm theo công ty", async () => {
+    const before = seen.length;
+    const st = { ...bare, args: { ...bare.args, signer_role: c("nguoi-ky-hop-dong") } };
+    expect(await validator("t1", { index: 2, node: ESIGN_NODE_KEY, executor: st })).toEqual([]);
+    expect(seen.length).toBe(before + 1);
+  });
+});
+
 describe("E5d · validator theo khoá tool", () => {
   it("stage gọi thẳng tool không mang `node` vẫn bị kiểm, và không kiểm hai lần khi có cả node lẫn tool", async () => {
     nodeConfigRegistry.registerTool("contracts-esign-send", validator);

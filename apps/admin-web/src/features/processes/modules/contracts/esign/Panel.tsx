@@ -12,10 +12,12 @@ import {
   type EsignNodeConfig,
   esignConfigIssues,
 } from "@ai/contracts/pack-contracts";
-import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
+import { Button } from "@ai/web-kit/ui/kit/button";
 import { Label } from "@ai/web-kit/ui/kit/label";
+import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useUserList } from "@/features/users/api";
 import { useSession } from "@/lib/auth/use-session";
@@ -26,6 +28,7 @@ import { EsignSettingsLink } from "../../../components/flow/EsignSettingsLink";
 import { useFlowCtx } from "../../../components/flow/flow-ctx";
 import { draftClusterOf } from "../../../lib/module-cluster";
 import { checkPathOf, constArgs, ESIGN_CODEC, withConfigArgs } from "../../../lib/node-config";
+import { DEFAULT_SIGNER_ROLE, rolesOfStages } from "../../../lib/role-pick";
 import type { NodePanelProps } from "../../panel-registry";
 
 /** Giá trị đại diện "Theo cài đặt ứng dụng" (Radix Select không nhận value rỗng). */
@@ -55,52 +58,13 @@ function useCheck(path: string, cfg: EsignNodeConfig, on: boolean) {
   });
 }
 
+/** CR-182 · R3 · bước Ký mới chưa có vai và chưa có cấu hình cũ ⇒ mặc định vai «Người ký hợp đồng». */
+const isLegacy = (c: EsignNodeConfig): boolean => !!c.provider || !!c.company_signers?.length;
+
 const sid = (s: { kind: string; id: string }) => `${s.kind}:${s.id}`;
 
 type Choice = { kind: "user" | "group"; id: string; label: string };
 
-/** Chọn người ký công ty (người/Group), tối đa `max`; trống ⇒ "Theo cài đặt ứng dụng". */
-function SignerPicker(p: {
-  label: string;
-  signers: readonly { kind: string; id: string }[];
-  choices: readonly Choice[];
-  max: number;
-  readOnly: boolean;
-  placeholder: string;
-  error: string | undefined;
-  onToggle: (c: Choice) => void;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label>{p.label}</Label>
-      {p.signers.length === 0 ? (
-        <p className="m-0 text-caption text-muted-foreground">{p.placeholder}</p>
-      ) : null}
-      <ul className="m-0 grid max-h-36 list-none grid-cols-2 gap-x-3 gap-y-1 overflow-y-auto p-0">
-        {p.choices.map((c) => {
-          const on = p.signers.some((x) => sid(x) === sid(c));
-          return (
-            <li key={sid(c)}>
-              <Label className="flex items-center gap-1.5 font-normal">
-                <Checkbox
-                  checked={on}
-                  disabled={p.readOnly || (!on && p.signers.length >= p.max)}
-                  onCheckedChange={() => p.onToggle(c)}
-                />
-                <span className="truncate">{c.label}</span>
-              </Label>
-            </li>
-          );
-        })}
-      </ul>
-      {p.error ? (
-        <p role="alert" className="m-0 text-caption text-destructive">
-          {p.error}
-        </p>
-      ) : null}
-    </div>
-  );
-}
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CR-127 · U2 — form nhiều ô, tách ở đợt dọn sau
 export function EsignPanel(p: NodePanelProps) {
   const { t } = useTranslation();
@@ -121,6 +85,13 @@ export function EsignPanel(p: NodePanelProps) {
     { ...(flow?.tenantId ? { tenantId: flow.tenantId } : {}), q: "", offset: 0 },
     !!flow?.tenantId,
   );
+  const needDefault = !readOnly && !cfg.signer_role && !isLegacy(cfg);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ chạy khi bước Ký còn trống vai
+  useEffect(() => {
+    if (!needDefault) return;
+    const next = { ...cfg, signer_role: DEFAULT_SIGNER_ROLE.key };
+    p.onChange({ tool: withConfigArgs(stage.tool, codec.keys, codec.encode(next)) });
+  }, [needDefault]);
   if (!conf) return null;
   // lỗi theo ô: kiểm trực tiếp (`node-config/check`) hoặc lỗi lưu của server (`stages.<i>.executor.args.<khoá>`)
   const issue = (f: string) => {
@@ -173,11 +144,6 @@ export function EsignPanel(p: NodePanelProps) {
   const o = opts.data;
   const dflt = t(`${K}default`);
   const signers = cfg.company_signers ?? [];
-  const toggle = (s: { kind: "user" | "group"; id: string }) => {
-    const on = signers.some((x) => sid(x) === sid(s));
-    const next = on ? signers.filter((x) => sid(x) !== sid(s)) : [...signers, s];
-    set({ company_signers: next.length > 0 ? next.slice(0, o.limits.signers_max) : undefined });
-  };
   const choices = [
     ...o.groups.filter(isApproverGroup).map((g) => ({
       kind: "group" as const,
@@ -190,31 +156,87 @@ export function EsignPanel(p: NodePanelProps) {
       label: u.display_name ?? u.username,
     })),
   ];
+  const roles = rolesOfStages(p.all);
+  const roleOptions = [
+    ...(roles.some((r) => r.key === DEFAULT_SIGNER_ROLE.key) ? [] : [DEFAULT_SIGNER_ROLE]),
+    ...roles,
+    ...(cfg.signer_role && ![DEFAULT_SIGNER_ROLE, ...roles].some((r) => r.key === cfg.signer_role)
+      ? [{ key: cfg.signer_role, label: cfg.signer_role }]
+      : []),
+  ].map((r) => ({ value: r.key, label: r.label }));
+  const providerName =
+    cfg.provider === ESIGN_NODE_UPLOAD
+      ? t(`${K}providerUpload`)
+      : cfg.provider === ESIGN_NODE_ONDOC
+        ? t(`${K}providerOnDoc`)
+        : (o.providers.find((x) => x.key === cfg.provider)?.label ?? cfg.provider);
+  const legacyText = [
+    providerName,
+    signers.length > 0
+      ? signers.map((x) => choices.find((c) => sid(c) === sid(x))?.label ?? x.id).join(", ")
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const num = (v: number | undefined) => (v === undefined ? "" : String(v));
   const toNum = (v: string) => (v.trim() === "" ? undefined : Math.trunc(Number(v)));
   return (
     <fieldset className="space-y-3" data-testid="node-config" aria-label={t(`${K}title`)}>
-      <div className="flex flex-wrap items-start gap-x-3" data-testid="esign-provider-line">
-        <SelectField
-          id={`${stage.uid}-provider`}
-          label={t(`${K}provider`)}
-          value={cfg.provider ?? DEFAULT}
-          readOnly={readOnly}
-          error={issue("provider")}
-          options={[
-            { value: DEFAULT, label: t(`${K}providerPick`) },
-            ...o.providers.map((x) => ({ value: x.key, label: x.label })),
-            { value: ESIGN_NODE_UPLOAD, label: t(`${K}providerUpload`) },
-            { value: ESIGN_NODE_ONDOC, label: t(`${K}providerOnDoc`) },
-          ]}
-          onChange={(v) => set({ provider: v === DEFAULT ? undefined : v })}
+      <SelectField
+        id={`${stage.uid}-signer-role`}
+        label={t(`${K}signerRole`)}
+        value={cfg.signer_role ?? ""}
+        readOnly={readOnly}
+        error={issue("signer_role") ?? issue("company_signers")}
+        placeholder={t(`${K}signerRolePick`)}
+        options={roleOptions}
+        description={t(`${K}signerRoleHint`)}
+        onChange={(v) => set({ signer_role: v })}
+      />
+      <Label className="flex items-center gap-2 font-normal" htmlFor={`${stage.uid}-need-digital`}>
+        <Switch
+          id={`${stage.uid}-need-digital`}
+          checked={cfg.need_digital === true}
+          disabled={readOnly}
+          onCheckedChange={(v) => set({ need_digital: v ? true : undefined })}
         />
-        {o.enabled ? null : (
-          <p role="status" className="text-caption text-warning" data-testid="esign-disabled">
-            {t(`${K}disabled`)} <EsignSettingsLink />
-          </p>
-        )}
-      </div>
+        {t(`${K}needDigital`)}
+      </Label>
+      {issue("need_digital") ? (
+        <p role="alert" className="m-0 text-caption text-destructive">
+          {issue("need_digital")}
+        </p>
+      ) : null}
+      {isLegacy(cfg) ? (
+        <div
+          className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2 text-caption text-muted-foreground"
+          data-testid="esign-legacy"
+        >
+          <span>{t(`${K}legacy`, { what: legacyText })}</span>
+          {readOnly ? null : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              data-testid="esign-legacy-switch"
+              onClick={() =>
+                set({
+                  signer_role: cfg.signer_role ?? DEFAULT_SIGNER_ROLE.key,
+                  provider: undefined,
+                  company_signers: undefined,
+                })
+              }
+            >
+              {t(`${K}legacySwitch`)}
+            </Button>
+          )}
+        </div>
+      ) : null}
+      {o.enabled ? null : (
+        <p role="status" className="text-caption text-warning" data-testid="esign-disabled">
+          {t(`${K}disabled`)} <EsignSettingsLink />
+        </p>
+      )}
       <div className="grid grid-cols-2 items-start gap-3">
         <SelectField
           id={`${stage.uid}-order`}
@@ -265,16 +287,6 @@ export function EsignPanel(p: NodePanelProps) {
           onChange={(v) => set({ remind_every_hours: toNum(v) })}
         />
       </div>
-      <SignerPicker
-        label={t(`${K}signers`, { max: o.limits.signers_max })}
-        signers={signers}
-        choices={choices}
-        max={o.limits.signers_max}
-        readOnly={readOnly}
-        placeholder={t(`${K}signersPick`)}
-        error={issue("company_signers")}
-        onToggle={toggle}
-      />{" "}
     </fieldset>
   );
 }

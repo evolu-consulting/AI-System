@@ -14,6 +14,7 @@ import { type DateSource, dateSources, parseSourceValue, waitIssues } from "../d
 import { emptyAutofix } from "./autofix-form";
 import type { EscalateDraft, StageDraft, WaitDraft } from "./draft-types";
 import { isMilestone } from "./milestone-panel";
+import { roleToDef } from "./role-pick";
 import type { InputDraft } from "./sources-form";
 import { timedWaitErrors } from "./timed-wait-form";
 
@@ -100,6 +101,8 @@ export const escalateToDef = (s: Pick<StageDraft, "escalate">): StageEscalate | 
   const e = s.escalate;
   if (!e.on) return null;
   const after_h = hours(e.afterH);
+  const role = roleToDef(e.role);
+  if (e.role) return (role ? { after_h, role } : { after_h }) as StageEscalate; // CR-182 · «Theo vai»
   if (e.userId) return { after_h, user_id: e.userId } as StageEscalate;
   return e.groupKey && !e.groupId
     ? { after_h, group_key: e.groupKey }
@@ -117,6 +120,7 @@ export function escalateFromDef(e: StageEscalate | null | undefined): EscalateDr
         groupId: x.group_id ?? "",
         ...(x.user_id ? { userId: x.user_id } : {}),
         ...(x.group_key ? { groupKey: x.group_key } : {}),
+        ...(x.role ? { role: x.role } : {}),
       }
     : emptyEscalate();
 }
