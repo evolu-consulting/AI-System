@@ -46,7 +46,7 @@ describe("esignRoleUi · oldWay (j01: công ty tắt ⇒ bước Ký mới KHÔN
     expect(esignRoleUi({ provider: "upload" }, false).oldWay).toBe(true);
     expect(esignRoleUi({}, undefined).oldWay).toBe(true);
   });
-  test("bật ⇒ ô Vai (mặc định điền sẵn); đã có vai ⇒ ô Vai dù công ty tắt (kèm cảnh báo)", () => {
+  test("bật ⇒ ô Vai (mặc định điền sẵn), đã có vai ⇒ ô Vai dù công ty tắt (kèm cảnh báo)", () => {
     expect(esignRoleUi({}, true).oldWay).toBe(false);
     expect(esignRoleUi({ signer_role: "a" }, false).oldWay).toBe(false);
   });
