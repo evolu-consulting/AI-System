@@ -46,7 +46,9 @@ const COLS = sql`coalesce(d.stages -> 0 ->> 'node', '') = ${START_FORM_NODE_KEY}
       when jsonb_typeof(st -> 'after' -> 'parallel' -> 'groups') = 'array'
         and jsonb_array_length(st -> 'after' -> 'parallel' -> 'groups') > 0
         then exists (select 1 from jsonb_array_elements(st -> 'after' -> 'parallel' -> 'groups') g
-          where coalesce(g ->> 'group_id', '') = '' and coalesce(g ->> 'group_key', '') = '')
+          where coalesce(g ->> 'group_id', '') = '' and coalesce(g ->> 'group_key', '') = '' and g -> 'role' is null)
+      -- CR-182 · bước Duyệt theo vai (after.role) ⇒ công ty giao nhóm/người cho vai, không cần group_id.
+      when st -> 'after' -> 'role' is not null then false
       -- CR-139 · «Trưởng phòng của người đề xuất» (approver_mode = 'starter_head') không cần phòng.
       when st -> 'after' ->> 'approver_mode' = 'starter_head' then false
       else coalesce(st -> 'after' ->> 'group_id', '') = '' and coalesce(st -> 'after' ->> 'approver_user_id', '') = ''

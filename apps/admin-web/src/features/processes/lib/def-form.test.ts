@@ -76,6 +76,21 @@ describe("validateDraft", () => {
     );
     expect(validateDraft({ ...d, stages: [{ ...s, groupId: G }] }, true)).toEqual({});
   });
+  test("CR-182 · bật khi bước Duyệt chỉ có vai ⇒ không báo thiếu Group, vai chưa nhập nhãn thì vẫn báo", () => {
+    const d = validDraft();
+    const s = { ...(d.stages[0] as never as (typeof d.stages)[0]), after: "review" as const };
+    const role = { key: "nguoi-duyet-cap-1", label: "Người duyệt cấp 1" };
+    expect(
+      validateDraft({ ...d, stages: [{ ...s, review: { role } }] }, true)[
+        "stages.0.after.group_id"
+      ],
+    ).toBeUndefined();
+    expect(
+      validateDraft({ ...d, stages: [{ ...s, review: { role: { key: "", label: "" } } }] }, true)[
+        "stages.0.after.group_id"
+      ],
+    ).toBe("process.admin.apiError.PROCESS_DEF_INCOMPLETE");
+  });
 });
 
 describe("chuyển đổi nháp ↔ input", () => {

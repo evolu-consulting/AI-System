@@ -21,6 +21,7 @@ import { carryErrors, d2LiveErrors, toolSubmitErrors } from "./d2-validate";
 import { normalizeForm } from "./form-fields";
 import { fillDraftDefaults, followRename } from "./node-defaults";
 import { PARALLEL_KEY, parallelErrors } from "./parallel-form";
+import { roleToDef } from "./role-pick";
 import { type InputDraft, inputsToDef, inputsToDraft, validateSourcesPart } from "./sources-form";
 import { emptyStage, intOrNull, num, stageToDraft, stageToInput } from "./stage-convert";
 import { slugKey } from "./stage-key";
@@ -199,6 +200,7 @@ export function validateDraft(
       s.groupId === "" &&
       !s.groupKey &&
       !s.parallel &&
+      !roleToDef(s.review?.role) && // CR-182 · «Theo vai»: công ty giao người cho vai
       s.review?.approverMode !== "starter_head" &&
       !isMilestone(s) && // để trống = người phụ trách hợp đồng
       !slotHasReviewer(s)

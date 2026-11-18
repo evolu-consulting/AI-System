@@ -126,6 +126,28 @@ describe("CR-105 · Group theo mã trong def thư viện", () => {
     expect(reviewHasGroup(st(undefined), false)).toBe(false);
   });
 
+  it("CR-182 · vai (`after.role`, nhóm cùng duyệt có `role`) tính là đã có người làm, vai rỗng/sai dạng thì không", () => {
+    const role = { key: "nguoi-duyet-cap-1", label: "Người duyệt cấp 1" };
+    const st = (after: Record<string, unknown>) =>
+      ({ after: { kind: "review", group_id: null, ...after } }) as unknown as Parameters<
+        typeof reviewHasGroup
+      >[0];
+    expect(reviewHasGroup(st({ role }), false)).toBe(true);
+    expect(reviewHasGroup(st({ role }), true)).toBe(true);
+    expect(reviewHasGroup(st({}), false)).toBe(false);
+    const par = (groups: unknown[]) => st({ parallel: { groups, rule: "all" } });
+    expect(
+      reviewHasGroup(
+        par([
+          { role, label: "A" },
+          { group_id: G, label: "B" },
+        ]),
+        false,
+      ),
+    ).toBe(true);
+    expect(reviewHasGroup(par([{ role, label: "A" }, { label: "B" }]), false)).toBe(false);
+  });
+
   it("CR-127 · Z2 · bước Duyệt chỉ có người (không phòng): hợp lệ ở def công ty, mẫu Thư viện vẫn đòi mã Group", () => {
     const only = {
       after: { kind: "review", group_id: null, approver_user_id: G },

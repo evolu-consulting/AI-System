@@ -4,6 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Role } from "@ai/contracts/common";
 import { MODULES } from "@ai/contracts/modules";
+import { withHubScope } from "@ai/db/hub-scope";
 import { tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
@@ -13,6 +14,8 @@ import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
 import { nodeConfigRegistry } from "../../packs/kit/public";
 import type { ProcessDeps } from "../core/ports";
+import { assignRoleAudited } from "../roles/role-assign.service";
+import { applyRoles } from "../roles/roles.repo";
 import { defsRoutes } from "./defs.routes";
 
 const X = tenantId(1231);
@@ -351,5 +354,49 @@ describe("CR-122 N2 · cạnh lệch giao diện + chạy tay", () => {
     } finally {
       contractsOff = false;
     }
+  });
+});
+
+describe("CR-182 · lưu quy trình BẬT chỉ có vai (không group_id / company_signers / provider)", () => {
+  const ROLE = { key: "nguoi-duyet-cap-1", label: "Người duyệt cấp 1" };
+  it("bước Duyệt chỉ có `role` ⇒ lưu 2xx (không PROCESS_DEF_INCOMPLETE), rồi giao người ⇒ lượt chạy giải được vai", async () => {
+    const r = await call(
+      "POST",
+      "/process-defs",
+      body({
+        key: "cr182-role-only",
+        trigger: null,
+        stages: [
+          stage("duyet", 0, {
+            after: { kind: "review", group_id: null, role: ROLE },
+            next_step: 1,
+          }),
+          stage("xong", 1, { outcome: "approved" }),
+        ],
+      }),
+    );
+    expect([r.status, r.json.code ?? r.json.error?.code]).toEqual([
+      r.status < 300 ? r.status : 200,
+      undefined,
+    ]);
+    expect(r.status).toBeLessThan(300);
+    const defId = r.json.id as string;
+    const who = { tenantId: X, userId: userId(1231), role: "tenant_admin", isAdmin: true };
+    await assignRoleAudited(db, who, {
+      flowId: defId,
+      roleKey: ROLE.key,
+      groupId: null,
+      userId: userId(1231),
+    });
+    const [row] = await o<
+      { stages: unknown[] }[]
+    >`select stages from hub.process_defs where id = ${defId}::uuid`;
+    const out = await withHubScope(db, { kind: "user", tenantId: X, userId: userId(1231) }, (tx) =>
+      applyRoles(tx, X, defId, row?.stages ?? []),
+    );
+    expect(out.unassigned).toEqual([]);
+    expect((out.stages[0] as { after: { approver_user_id?: string } }).after.approver_user_id).toBe(
+      userId(1231),
+    );
   });
 });

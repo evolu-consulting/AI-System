@@ -56,7 +56,12 @@ export function reviewHasGroup(s: Stage, library: boolean): boolean {
   if (s.after.kind !== "review") return true;
   const groups = s.after.parallel?.groups;
   if (groups && groups.length > 0)
-    return groups.every((g) => (g.group_id ?? null) !== null || g.group_key !== undefined);
+    // CR-182 · nhánh có `role` ⇒ nhóm do công ty giao (đã có người làm theo vai)
+    return groups.every(
+      (g) => (g.group_id ?? null) !== null || g.group_key !== undefined || g.role !== undefined,
+    );
+  // CR-182 · bước Duyệt theo vai: quản trị công ty giao nhóm/người cho vai ⇒ coi là đã có người làm (vai chưa giao bị chặn lúc mở lượt).
+  if (s.after.role !== undefined) return true;
   // CR-139 · «Trưởng phòng của người đề xuất» không cần phòng (engine phân giải lúc mở việc) — cả def công ty lẫn mẫu Thư viện.
   if (s.after.approver_mode === "starter_head") return true;
   // CR-127 · Z2 · bước Duyệt chỉ có người (`approver_user_id`, không phòng) hợp lệ ở def công ty; mẫu Thư viện không trỏ người.
