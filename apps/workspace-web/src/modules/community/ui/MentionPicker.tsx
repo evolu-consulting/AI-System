@@ -1,20 +1,35 @@
 // CR-147c · «Nhắc tên» (bản mẫu cr147-mention-picker): thanh công cụ chỉ có biểu tượng 👤+; bấm mở hộp thoại tìm + chọn tối đa 10 người,
 // danh sách tải dần khi cuộn. Chỉ người xem được bài (server lọc, CR-145). Người đã chọn hiện thành chip ở ô đăng (MentionChips).
-// Ảnh đại diện: chưa có PersonAvatar trên nhánh này ⇒ chữ cái đầu; phòng ban · chức vụ: API chưa trả ⇒ chỉ hiện tên công ty (nếu có).
+// CR-186: chủ quản có thêm ô lọc nhóm (Tất cả · Nội bộ · Đối tác · Khách hàng) cạnh ô tìm tên; mỗi dòng: avatar + họ tên + công ty
+// (nội bộ ⇒ «Nội bộ»), cao ≥ 44px, cách đều. Chức vụ: API chưa trả ⇒ chưa hiện (ghi ở Delta).
 
-import { POST_MENTIONS_MAX } from "@ai/contracts/community";
+import { MENTION_GROUPS, type MentionGroup, POST_MENTIONS_MAX } from "@ai/contracts/community";
+import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { Button } from "@ai/web-kit/ui/kit/button";
+import { Checkbox } from "@ai/web-kit/ui/kit/checkbox";
 import { Input } from "@ai/web-kit/ui/kit/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@ai/web-kit/ui/kit/select";
 import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { IconButton } from "~/shared/ui/IconButton";
 import { useApp } from "../application/ctx";
 import type { PeopleScope } from "../application/ports";
 import { usePeople } from "../application/usePeople";
-import { initials } from "../domain/format";
 import type { DraftMention } from "../domain/mention";
 import { t } from "../i18n";
 import { IconX } from "./icons";
+
+const GROUP_LABEL: Record<MentionGroup, () => string> = {
+  internal: () => t("community.draft.mentionGroupInternal"),
+  partner: () => t("community.draft.mentionGroupPartner"),
+  customer: () => t("community.draft.mentionGroupCustomer"),
+};
 
 type Person = { userId: string; name: string; orgName?: string | undefined };
 const toMention = (o: Person): DraftMention => ({
@@ -63,14 +78,29 @@ function PersonRow({
 }) {
   return (
     <li>
-      <label className="mprow" data-testid="mention-option">
-        <input type="checkbox" checked={on} disabled={disabled && !on} onChange={toggle} />
-        <span className="av sm t1" aria-hidden="true">
-          {initials(p.name)}
-        </span>
-        <span className="mpname">{p.name}</span>
-        {p.orgName && <span className="muted">{p.orgName}</span>}
-      </label>
+      <div
+        className="flex min-h-11 items-center gap-3 rounded-md px-2 py-2 hover:bg-muted"
+        data-testid="mention-option"
+      >
+        <Checkbox
+          id={`mp-${p.userId}`}
+          checked={on}
+          disabled={disabled && !on}
+          onCheckedChange={toggle}
+        />
+        <label
+          htmlFor={`mp-${p.userId}`}
+          className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3"
+        >
+          <Avatar name={p.name} size={32} />
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate text-sm font-semibold">{p.name}</span>
+            <span className="truncate text-xs text-muted-foreground">
+              {p.orgName ?? t("community.draft.mentionGroupInternal")}
+            </span>
+          </span>
+        </label>
+      </div>
     </li>
   );
 }
@@ -99,11 +129,12 @@ export function MentionPicker({
   onChange: (m: DraftMention[]) => void;
   scope: PeopleScope;
 }) {
-  const { brandAccent } = useApp();
+  const { brandAccent, isHostViewer } = useApp();
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState<DraftMention[]>(mentions);
   const [q, setQ] = useState("");
-  const { people, more, state, loadMore } = usePeople(open, q, scope);
+  const [group, setGroup] = useState<MentionGroup | undefined>();
+  const { people, more, state, loadMore } = usePeople(open, q, scope, group);
   const end = useRef<HTMLLIElement>(null);
   useEffect(() => {
     const el = end.current;
@@ -132,6 +163,7 @@ export function MentionPicker({
         onClick={() => {
           setSel(mentions);
           setQ("");
+          setGroup(undefined);
           setOpen(true);
         }}
       >
@@ -144,14 +176,38 @@ export function MentionPicker({
             <DialogHeader>
               <DialogTitle>{label}</DialogTitle>
             </DialogHeader>
-            <Input
-              type="search"
-              className="mb-3"
-              aria-label={t("community.draft.mentionSearch")}
-              placeholder={t("community.draft.mentionSearch")}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row" data-testid="mention-filters">
+              {isHostViewer && (
+                <Select
+                  value={group ?? "all"}
+                  onValueChange={(v) => setGroup(v === "all" ? undefined : (v as MentionGroup))}
+                >
+                  <SelectTrigger
+                    className="sm:w-40"
+                    aria-label={t("community.draft.mentionGroupLabel")}
+                    data-testid="mention-group"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("community.draft.mentionGroupAll")}</SelectItem>
+                    {MENTION_GROUPS.map((g) => (
+                      <SelectItem key={g} value={g}>
+                        {GROUP_LABEL[g]()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Input
+                type="search"
+                className="flex-1"
+                aria-label={t("community.draft.mentionSearch")}
+                placeholder={t("community.draft.mentionSearch")}
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
             <p className="fhint">
               {t("community.draft.mentionScopeHint", { max: POST_MENTIONS_MAX })}
             </p>
@@ -160,7 +216,14 @@ export function MentionPicker({
                 {t("community.draft.mentionFull", { max: POST_MENTIONS_MAX })}
               </div>
             )}
-            <ul className="mplist" data-testid="mention-list" aria-busy={state === "loading"}>
+            <ul
+              className="mplist flex flex-col gap-1"
+              data-testid="mention-list"
+              aria-busy={state === "loading"}
+            >
+              {state === "loading" && people.length === 0 && (
+                <li className="fhint">{t("community.draft.mentionLoading")}</li>
+              )}
               {state === "error" && <li className="fhint">{t("community.draft.mentionError")}</li>}
               {state === "ok" && people.length === 0 && (
                 <li className="fhint">{t("community.draft.mentionEmpty")}</li>

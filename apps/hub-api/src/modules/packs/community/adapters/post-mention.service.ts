@@ -8,7 +8,12 @@ import type { PackUow, PeopleReader, Person } from "../../kit/public";
 import { type Audience, defaultAudience, type PostType } from "../domain/audience.rules";
 import { orgsSeeingPost } from "./comment-list.repo";
 import type { Access } from "./community-access";
-import { type DraftScope, orgsSeeingDraft, replaceMentions } from "./post-mention.repo";
+import {
+  type DraftScope,
+  orgsInGroup,
+  orgsSeeingDraft,
+  replaceMentions,
+} from "./post-mention.repo";
 import { postState } from "./post-write.repo";
 
 export type MentionDeps = {
@@ -87,8 +92,15 @@ export async function suggest(
   const act = [...activeOrgIds(a)];
   const orgs = await uow.tenant(a.who, async ({ tx }): Promise<string[]> => {
     if (q.postId && !(await postState(tx, q.postId))) throw appError("NOT_FOUND");
-    if (a.org !== null) return [a.org]; // đối tác: chỉ công ty mình
-    if (q.postId) return orgsSeeingPost(tx, tenant, q.postId, act);
+    // CR-186: lọc nhóm CHỈ thu hẹp tập công ty đã được phép (không mở thêm quyền); «Nội bộ» ⇒ không công ty nào.
+    const inGroup = (list: string[]) =>
+      q.group === "internal"
+        ? Promise.resolve([] as string[])
+        : q.group
+          ? orgsInGroup(tx, list, q.group)
+          : Promise.resolve(list);
+    if (a.org !== null) return inGroup([a.org]); // đối tác: chỉ công ty mình
+    if (q.postId) return inGroup(await orgsSeeingPost(tx, tenant, q.postId, act));
     const type = (q.type ?? "note") as PostType;
     const def: Audience = defaultAudience(type);
     const draft: DraftScope = {
@@ -96,12 +108,13 @@ export async function suggest(
       cats: csv(q.cats),
       audience: q.mode ? { mode: q.mode, cats: csv(q.audCats), companies: csv(q.companies) } : def,
     };
-    return orgsSeeingDraft(tx, draft, act);
+    return inGroup(await orgsSeeingDraft(tx, draft, act));
   });
   const members = orgs.length
     ? await d.orgMembers(tenant, orgs)
     : new Map<string, readonly string[]>();
-  const ids = [...(a.org === null ? await d.hosts(tenant) : []), ...[...members.values()].flat()];
+  const hostsOn = a.org === null && (!q.group || q.group === "internal");
+  const ids = [...(hostsOn ? await d.hosts(tenant) : []), ...[...members.values()].flat()];
   const rows = await d.people(
     tenant,
     ids.filter((i) => i !== a.who.userId),

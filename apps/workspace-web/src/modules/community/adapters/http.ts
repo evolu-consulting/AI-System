@@ -106,12 +106,13 @@ export function createHttpApi(): CommunityApi {
       }),
     listMentionables: (postId, q) =>
       api(`${BASE}/posts/${enc(postId)}/mentionables`, { query: { q: q || undefined, limit: 20 } }),
-    mentionablePeople: (q, scope, cursor) =>
+    mentionablePeople: (q, scope, cursor, group) =>
       api(`${BASE}/mentionable-people`, {
         query: {
           q: q || undefined,
           limit: 20,
           cursor,
+          group,
           type: scope?.type,
           mode: scope?.mode,
           cats: scope?.cats?.join(",") || undefined,

@@ -14,6 +14,7 @@ import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useApp } from "../application/ctx";
 import { useFocusPost } from "../application/focus-post";
 import { useFeed, useFeedFilters, usePartners } from "../application/useFeed";
+import { composerCompact, useNarrow, useStuck } from "../application/useStuck";
 import { hasActiveFilter } from "../domain/filters";
 import { t } from "../i18n";
 import { Composer } from "./Composer";
@@ -223,11 +224,14 @@ export function FeedPage() {
   const { data, error, more } = useFeed(f.query);
   const partners = usePartners();
   useFocusPost(!!data);
+  const { sentinel, stuck, toTop } = useStuck();
+  const narrow = useNarrow();
   return (
     <div className="feedwrap">
       <div className="feedcol">
-        <div className="stickytop">
-          <Composer />
+        <div ref={sentinel} className="stickysentinel" aria-hidden="true" />
+        <div className="stickytop" data-stuck={stuck}>
+          <Composer compact={composerCompact(stuck, narrow)} onExpand={toTop} />
           <div className="feedbar">
             <div className="tabs" role="tablist" aria-label={t("community.feed.filterAria")}>
               {TABS.map((t) => (

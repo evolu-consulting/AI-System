@@ -14,3 +14,51 @@
     min-height: 44px; /* nút đổi ảnh bìa/avatar: cảm ứng không có rê chuột nên nút luôn hiện (hover: none) và phải bấm được */
   }
 }
+
+/* CR-186 · ô đăng bài trên điện thoại (≤ 640px): loại bài = MỘT hàng nút gọn cuộn ngang (không tràn, cao ≥ 44px); bỏ avatar để thân ô
+`   rộng hết cỡ; một dòng «Viết bài…» khi đã cuộn xuống (Composer \`compact\`). Nạp cuối ⇒ thắng độ ưu tiên của feed.css. */
+@media (max-width: 640px) {
+  [data-mod="community"] .feedcomposer .cmain > .av {
+    display: none;
+  }
+  [data-mod="community"] .feedcomposer .ctop {
+    padding-right: 52px;
+  }
+  [data-mod="community"] .feedcomposer .seg {
+    display: flex;
+    flex: 1 1 100%;
+    min-width: 0; /* fieldset mặc định min-content ⇒ không co được, làm vỡ hàng */
+    min-inline-size: 0;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  [data-mod="community"] .feedcomposer .seg::-webkit-scrollbar {
+    display: none;
+  }
+  [data-mod="community"] .feedcomposer .seg button {
+    flex: none;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 16px;
+  }
+  [data-mod="community"] .feedcomposer .ctop .prefillsel {
+    flex: 1 1 100%;
+    max-width: none;
+    height: 44px;
+  }
+  [data-mod="community"] .composer-collapse {
+    width: 44px;
+    height: 44px;
+  }
+  [data-mod="community"] .feedcomposer.collapsed.compact {
+    flex-wrap: nowrap;
+    padding: 8px 12px;
+  }
+  [data-mod="community"] .feedcomposer.collapsed.compact .prompt {
+    flex: 1 1 auto;
+  }
+}

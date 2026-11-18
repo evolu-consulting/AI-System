@@ -102,6 +102,9 @@ const Cats = z.array(z.string().min(1).max(80)).max(10).default([]);
 /** CR-145 · nhắc NGƯỜI trong bài đăng: tối đa 10 (server chỉ nhận người thấy được bài — 422 `MENTION_USER_NOT_ALLOWED`). */
 export const POST_MENTIONS_MAX = 10;
 export const MENTION_PEOPLE_MAX = 20;
+/** CR-186 · nhóm lọc của hộp «Nhắc tên» (thứ tự hiển thị sau «Tất cả»). */
+export const MENTION_GROUPS = ["internal", "partner", "customer"] as const;
+export type MentionGroup = (typeof MENTION_GROUPS)[number];
 const MentionUserIds = z.array(z.uuid()).max(POST_MENTIONS_MAX).optional();
 
 export const CreatePostInputSchema = z.discriminatedUnion("type", [
@@ -177,6 +180,8 @@ export const MentionablePeopleQuerySchema = z.strictObject({
   cats: z.string().max(1000).optional(),
   audCats: z.string().max(1000).optional(),
   companies: z.string().max(1000).optional(),
+  /** CR-186 · lọc nhóm: `internal` = chủ quản, `partner` = công ty đối tác (NCC), `customer` = công ty khách hàng (có vai mua). Vắng = tất cả. Chỉ thu hẹp, không mở thêm quyền. */
+  group: z.enum(MENTION_GROUPS).optional(),
 });
 export type MentionablePeopleQuery = z.input<typeof MentionablePeopleQuerySchema>;
 
@@ -209,7 +214,7 @@ export const PostViewSchema = z.strictObject({
   cats: z.array(z.string()),
   media: z.array(MediaItemSchema),
   commentCount: z.number().int().nonnegative(),
-  /** CR-147c · 2 bình luận MỚI NHẤT (cũ → mới; đã lọc theo người xem như `GET …/comments`); `commentCount` = tổng. Xem thêm: `GET …/comments?dir=desc&before=<id cũ nhất đang hiện>`. */
+  /** CR-147c · CR-186 · 3 bình luận MỚI NHẤT (cũ → mới; đã lọc theo người xem như `GET …/comments`); `commentCount` = tổng. Xem thêm: `GET …/comments?dir=desc&before=<id cũ nhất đang hiện>`. */
   recentComments: z.array(z.lazy(() => CommentViewSchema)).default([]),
   /** CR-145 · người được nhắc ("Nhắc: A, B"); vắng khi không ai. */
   mentionedUsers: z.array(PostMentionSchema).optional(),

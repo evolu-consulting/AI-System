@@ -94,14 +94,45 @@ function AudiencePicker({
   );
 }
 
-export function Composer({ onPosted }: { onPosted?: () => void }) {
-  const { api, viewer, isHostViewer, bump, toast } = useApp();
-  const types: PostType[] = isHostViewer
+const allowedTypes = (host: boolean, labels: readonly string[]): PostType[] =>
+  host
     ? ["sell", "buy", "note"]
     : ([
-        viewer.labels.includes("supplier") ? "sell" : null,
-        viewer.labels.includes("customer") ? "buy" : null,
+        labels.includes("supplier") ? "sell" : null,
+        labels.includes("customer") ? "buy" : null,
       ].filter(Boolean) as PostType[]);
+
+const hasDraft = (d: Draft): boolean =>
+  d.body.trim() !== "" || d.media.length > 0 || d.mentions.length > 0;
+
+/** CR-186 · điện thoại + đã cuộn xuống: ô đăng chỉ còn MỘT dòng «Viết bài…». */
+function CompactBar({ orgName, onOpen }: { orgName: string; onOpen: () => void }) {
+  return (
+    <div
+      className="card pad composer feedcomposer collapsed compact"
+      data-testid="composer"
+      data-compact="true"
+    >
+      <span className="av t1">{initials(orgName)}</span>
+      <button type="button" className="prompt" onClick={onOpen}>
+        {t("community.composer.writePost")}
+      </button>
+    </div>
+  );
+}
+
+/** `compact` (CR-186, điện thoại + đã cuộn xuống): chỉ MỘT dòng «Viết bài…»; bấm ⇒ mở đầy đủ (`onExpand` cuộn về đầu khối). */
+export function Composer({
+  onPosted,
+  compact = false,
+  onExpand,
+}: {
+  onPosted?: () => void;
+  compact?: boolean;
+  onExpand?: () => void;
+}) {
+  const { api, viewer, isHostViewer, bump, toast } = useApp();
+  const types = allowedTypes(isHostViewer, viewer.labels);
   // CR-145: chủ quản mặc định «Thông báo»; đối tác ⇒ loại đầu tiên được phép
   const [draft, setDraft] = useState<Draft>(() => emptyDraft(defaultPostType(types)));
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -133,6 +164,11 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
     if (types.length > 0 && !types.includes(draft.type))
       setDraft(emptyDraft(defaultPostType(types)));
   }, [types, draft.type]);
+
+  const expand = () => {
+    setOpen(true);
+    onExpand?.();
+  };
 
   const publish = async () => {
     const e = draftErrors(draft);
@@ -169,6 +205,8 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
       setUploading(false);
     }
   };
+
+  if (compact && !hasDraft(draft)) return <CompactBar orgName={viewer.orgName} onOpen={expand} />;
 
   if (!open) {
     return (

@@ -33,7 +33,7 @@ export function Thread({
   const [text, setText] = useState("");
   const [picked, setPicked] = useState<Mention[]>([]);
   const [busy, setBusy] = useState(false);
-  // CR-147c: trang bảng tin đã trả 2 bình luận mới nhất + tổng số (`post.recentComments` / `commentCount`). «Xem thêm» tải tiếp
+  // CR-147c/CR-186: trang bảng tin đã trả 3 bình luận mới nhất + tổng số (`post.recentComments` / `commentCount`). «Xem thêm» tải tiếp
   // phần CŨ HƠN theo trang (cursor) vào `older`; không nạp hết khi mở bài.
   const [older, setOlder] = useState<CommentView[]>([]);
   const [expanded, setExpanded] = useState(false);

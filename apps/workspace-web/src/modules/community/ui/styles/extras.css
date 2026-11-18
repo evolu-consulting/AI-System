@@ -194,23 +194,13 @@
   line-height: 1;
 }
 
-/* CR-147c · hộp «Nhắc tên»: danh sách cuộn, mỗi dòng checkbox + ảnh (chữ cái đầu) + tên + công ty */
+/* CR-147c · hộp «Nhắc tên»: danh sách cuộn (CR-186: dòng = Tailwind trong MentionPicker.tsx; ở đây chỉ vùng cuộn) */
 [data-mod="community"] .mplist {
   list-style: none;
   margin: 8px 0;
   padding: 0;
-  max-height: 320px;
+  max-height: min(50vh, 360px);
   overflow-y: auto;
-}
-[data-mod="community"] .mprow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 4px;
-  cursor: pointer;
-}
-[data-mod="community"] .mpname {
-  font-weight: 600;
 }
 
 /* CR-179 · màn quản trị rỗng («Yêu cầu tham gia», «Báo cáo vi phạm»): trạng thái trống canh giữa ngang + dọc vùng nội dung (như CR-172). */

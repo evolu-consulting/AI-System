@@ -701,3 +701,15 @@
     flex-shrink: 0;
   }
 }
+
+/* CR-186 · mốc 1px trước khối dính (useStuck) + viền bóng nhẹ dưới khối khi ĐANG dính để bài cuộn bên dưới không dính vào mép. */
+[data-mod="community"] .stickysentinel {
+  height: 1px;
+  margin-bottom: -1px;
+  pointer-events: none;
+}
+[data-mod="community"] .stickytop[data-stuck="true"]:not(:has(.feedcomposer:not(.collapsed))) {
+  box-shadow:
+    0 -10px 0 var(--cm-feed-bg),
+    0 8px 10px -8px color-mix(in srgb, var(--ink) 40%, transparent);
+}

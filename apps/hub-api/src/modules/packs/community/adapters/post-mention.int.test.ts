@@ -226,6 +226,43 @@ describe("CR-145 nhắc người trong bài", () => {
     expect(byPost.json.map((p: { userId: string }) => p.userId)).not.toContain(c.b1);
   });
 
+  it("CR-186 · lọc nhóm: Nội bộ = chủ quản; Đối tác = công ty NCC; Khách hàng = công ty có vai mua; chỉ thu hẹp (không mở thêm quyền); group sai ⇒ 400", async () => {
+    const ids = async (who: Who, qs: string) =>
+      (
+        (
+          await call(
+            who,
+            "GET",
+            `/mentionable-people?type=note${qs.includes("mode=") ? "" : "&mode=all"}&${qs}`,
+          )
+        ).json as { userId: string }[]
+      ).map((p) => p.userId);
+    const internal = await ids("hA", "group=internal");
+    expect(internal).toContain(c.hM);
+    expect(internal).not.toContain(c.s1a);
+    expect(internal).not.toContain(c.b1);
+    const partner = await ids("hA", "group=partner");
+    expect(partner).toContain(c.s1a);
+    expect(partner).toContain(c.s2);
+    expect(partner).not.toContain(c.b1);
+    expect(partner).not.toContain(c.hM);
+    const customer = await ids("hA", "group=customer");
+    expect(customer).toContain(c.b1);
+    expect(customer).not.toContain(c.s1a);
+    expect(customer).not.toContain(c.hM);
+    // tìm tên + nhóm cùng lúc
+    expect(await ids("hA", "group=partner&q=S1b")).toEqual([c.s1b]);
+    // phạm vi người xem vẫn giữ: bài chỉ cho nhóm NCC ⇒ khách hàng thuần (B1) không lọt; công ty vừa NCC vừa mua (X) vẫn có
+    const scoped = await ids("hA", "group=customer&mode=suppliers");
+    expect(scoped).not.toContain(c.b1);
+    expect(scoped).not.toContain(c.s1a);
+    // đối tác: chỉ đồng nghiệp công ty mình; Nội bộ ⇒ rỗng; Khách hàng (công ty mình là NCC) ⇒ rỗng
+    expect(await ids("s1a", "group=internal")).toEqual([]);
+    expect(await ids("s1a", "group=customer")).toEqual([]);
+    expect(await ids("s1a", "group=partner")).toEqual([c.s1b]);
+    expect((await call("hA", "GET", "/mentionable-people?group=lạ")).status).toBe(400);
+  });
+
   it("CR-147c · tải dần theo cursor: limit=1 từng người ghép lại = danh sách đủ, không lặp, không lọt người ngoài phạm vi; cursor sai ⇒ 400", async () => {
     const scope = "type=note&mode=suppliers";
     const full = (await call("hA", "GET", `/mentionable-people?${scope}`)).json.map(

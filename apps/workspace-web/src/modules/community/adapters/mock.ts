@@ -115,7 +115,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       commentCount: commentCount(p),
       recentComments: visibleComments(p)
         .sort((a, b) => b.minAgo - a.minAgo)
-        .slice(-2)
+        .slice(-3)
         .map(commentView),
       actions: actionsFor(p),
     };
@@ -300,14 +300,17 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       if (!visible(get(postId))) throw new Error("404 Không tìm thấy bài");
       return mentionables(q);
     },
-    mentionablePeople: async (q, _scope, cursor) =>
+    mentionablePeople: async (q, _scope, cursor, group) =>
       me.role === "partner"
         ? []
         : [
-            { userId: "u-lan", name: "Lan (Kế toán)" },
-            { userId: "u-minh", name: "Minh (Mua hàng)" },
-            { userId: "u-hung", name: "Hùng", orgName: "Hùng Thịnh" },
+            { userId: "u-lan", name: "Lan (Kế toán)", g: "internal" },
+            { userId: "u-minh", name: "Minh (Mua hàng)", g: "internal" },
+            { userId: "u-hung", name: "Hùng", orgName: "Hùng Thịnh", g: "partner" },
+            { userId: "u-abc", name: "Trần B", orgName: "Công ty TNHH ABC", g: "customer" },
           ]
+            .filter((x) => !group || x.g === group)
+            .map(({ g: _g, ...x }) => x)
             .filter((x) => !q || x.name.toLowerCase().includes(q.toLowerCase()))
             .slice(Number(cursor ?? 0), Number(cursor ?? 0) + 20),
     addComment: async (postId, input) => {

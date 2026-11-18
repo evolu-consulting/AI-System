@@ -56,3 +56,23 @@ export async function mentionedIds(tx: Tx, tenantId: string, postId: string): Pr
     where tenant_id = ${tenantId}::uuid and post_id = ${postId}::uuid order by created_at, user_id limit 50`);
   return rows.map((r) => r.user_id);
 }
+
+/**
+ * CR-186 · lọc nhóm «Nhắc tên»: trong `orgs`, công ty nào thuộc nhóm. `customer` = có vai khách hàng (người mua); `partner` = có vai
+ * nhà cung cấp hoặc chưa có vai nào (không gồm công ty chỉ là khách hàng). Công ty vừa NCC vừa mua nằm ở cả hai nhóm. Một câu theo mảng,
+ * cùng nguồn vai với `orgsSeeingDraft` (`contracts.community_partners`) ⇒ không mở thêm quyền xem.
+ */
+export async function orgsInGroup(
+  tx: Tx,
+  orgs: readonly string[],
+  group: "partner" | "customer",
+): Promise<string[]> {
+  if (orgs.length === 0) return [];
+  const rows = await tx.execute<{ org: string }>(sql`
+    with o as (select jsonb_array_elements_text(${arr(orgs)}::jsonb)::uuid as id)
+    select o.id::text as org
+    from o left join contracts.community_partners(array(select id from o)) pc on pc.ext_org_id = o.id
+    where case when ${group}::text = 'customer' then 'customer' = any(coalesce(pc.roles, '{}'::text[]))
+      else 'supplier' = any(coalesce(pc.roles, '{}'::text[])) or not 'customer' = any(coalesce(pc.roles, '{}'::text[])) end`);
+  return rows.map((r) => r.org);
+}

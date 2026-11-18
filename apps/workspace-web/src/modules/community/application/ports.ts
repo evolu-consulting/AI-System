@@ -21,6 +21,7 @@ import type {
   JoinRequestList,
   Mention,
   MentionablePerson,
+  MentionGroup,
   ModerationItem,
   ModerationList,
   PartnerOrg,
@@ -114,8 +115,13 @@ export interface CommunityApi {
   listComments(postId: string, cursor?: string, opts?: CommentPageOpts): Promise<CommentPage>;
   /** `GET /pack/community/posts/:id/mentionables?q=` — công ty nhắc (@) được trên bài này (đối tác: rỗng). */
   listMentionables(postId: string, q?: string): Promise<Mention[]>;
-  /** CR-145 · `GET /pack/community/mentionable-people` — người «Nhắc tên» được trong bài (≤ 20, tìm `q`); phạm vi theo bản nháp. */
-  mentionablePeople(q: string, scope?: PeopleScope, cursor?: string): Promise<MentionablePerson[]>;
+  /** CR-145 · `GET /pack/community/mentionable-people` — người «Nhắc tên» được trong bài (≤ 20, tìm `q`); phạm vi theo bản nháp. CR-186: `group` thu hẹp theo nhóm (Nội bộ/Đối tác/Khách hàng). */
+  mentionablePeople(
+    q: string,
+    scope?: PeopleScope,
+    cursor?: string,
+    group?: MentionGroup,
+  ): Promise<MentionablePerson[]>;
   /** `POST /pack/community/posts/:id/comments` — `mentions` = id công ty (≤ 10); ngoài tập cho phép ⇒ 422 MENTION_NOT_ALLOWED. */
   addComment(postId: string, input: CreateCommentInput): Promise<CommentView>;
   /** `PATCH /pack/community/posts/:id/comments/:cid` — người viết sửa chữ. */

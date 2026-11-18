@@ -276,7 +276,7 @@ describe("CR-129 bình luận phẳng theo bạn bè + nhắc đối tác", () =
   });
 });
 
-describe("CR-147c · bảng tin trả kèm 2 bình luận mới nhất + tổng số; tải dần phần cũ hơn", () => {
+describe("CR-147c · bảng tin trả kèm 3 bình luận mới nhất + tổng số; tải dần phần cũ hơn", () => {
   const feedItem = async (who: Who, id: string) => {
     const r = await call(who, "GET", "/feed?tab=all&limit=50");
     expect(r.status).toBe(200);
@@ -285,7 +285,7 @@ describe("CR-147c · bảng tin trả kèm 2 bình luận mới nhất + tổng 
     ).find((x) => x.id === id);
   };
 
-  it("recentComments = 2 cuối của danh sách người xem được (bình luận riêng tư không lộ qua 2 bình luận mới nhất); commentCount = tổng nhìn thấy", async () => {
+  it("recentComments = 3 cuối của danh sách người xem được (bình luận riêng tư không lộ qua 3 bình luận mới nhất); commentCount = tổng nhìn thấy", async () => {
     await add("s1a", post, "r1 S1");
     await add("s2", post, "r1 S2 riêng");
     await add("hA", post, "r1 chủ quản");
@@ -293,7 +293,7 @@ describe("CR-147c · bảng tin trả kèm 2 bình luận mới nhất + tổng 
       const all = (await list(who, post, "?limit=100")).comments.map((x) => x.id);
       const it = await feedItem(who, post);
       expect(it?.commentCount).toBe(all.length);
-      expect(it?.recentComments.map((x) => x.id)).toEqual(all.slice(-2));
+      expect(it?.recentComments.map((x) => x.id)).toEqual(all.slice(-3));
     }
     // S1 không thấy bình luận riêng của S2 ở bất kỳ chỗ nào trong feed
     const s1 = await feedItem("s1a", post);
