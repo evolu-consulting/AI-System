@@ -194,8 +194,9 @@ a9fcf1f4d01c89abe4ff5c54208af3446aa534987a818c60f64e16a626177dc9  e2e/community-
 affeb3bd773ebad7c486891c832a10ba323a1974d9790b519f293c7c3eb1b302  e2e/community-web/cr129-mention.cs.ts
 ed2cfe26f3a3e483ad5253cd05d38b5acb19aa5dc5f48e9712dce9142526b3e3  e2e/community-web/cr130-journey.cs.ts
 2a63eff390989c44a5a11f6ba373e9ef529109745f7d13a2e0fe7e7fbabb9dde  e2e/community-web/cr145-post-mention.cs.ts
-fb161555c24037543d0ccebbf4ba058e103077f334af860a3d6b543a165652f5  e2e/community-web/cr147-feed.cm.ts
+f214120e846342d8a185a64d0a27e2af652c0f2d10fb98d948f6f51e5d325bdb  e2e/community-web/cr147-feed.cm.ts
 32dcc88f7f0589cf7f1395164bf3f438611b4e4f7af7a3829ea1b30c5056a2b8  e2e/community-web/cr147b-people.cs.ts
+bed22a7870a8bc76e06526b078e9d5b923400e32aca0d5c92d7ce00ee4e4dfb8  e2e/community-web/cr186-composer.cm.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts
 79329b96afa716b1be24e0ec5eef292a226e2fe032a8e240a3820e6079e241a4  e2e/community-web/feed.cm.ts
 7a26054205205b1c89cd770742912398c2f4156e92f2bbf4cb5c5c1eec0d5b18  e2e/community-web/flow-edit.cs.ts
@@ -209,8 +210,8 @@ f185afa07b59b7f5b89607217b2c577c76867d1e3028eba8f469e6307d2268e7  e2e/community-
 09121b538b059f460042421dcb8c347a7e1861ec306d86b95357ee5c4bf5c21b  e2e/community-web/profile.cm.ts
 b8c9e11315939ab2e6e5a8085e62081151c7c3e3723cf269f64357c334692dc8  e2e/community-web/roles.cs.ts
 7139e0ae7e7dee862735a6f24c008626b05fd1e2bf24aaadcc20e678e1af0655  e2e/community-web/scenes-mobile.cm.ts
-c024f8280478056797d1f910a0d1b35734eb77ea8f8241b0a4ee50d18dc4a796  e2e/community-web/settings.cm.ts
-c75f5ed19235f0b4286fbd7f66a92bc9444aa910401fa3e7ec14d3f091d4d0a1  e2e/community-web/shell.cm.ts
+d67e871558b40225b67fd4641e586ed56ea597c6b0d6b28c075c892be4f5387c  e2e/community-web/settings.cm.ts
+e797cf896a4eeed56c2ddaa144627af4563fb76eaf4851619336ae63c396b4b1  e2e/community-web/shell.cm.ts
 15a1c3a859370f8b11c839b215d8be465f29567fd4316fa15d4bee72b203153b  e2e/community-web/sidebar-one.cm.ts
 b345899fee5f07e8231a7ee4423b624f073e12c67af2bbda3ca7e0a1bbca926b  e2e/conflict-commands.spec.ts
 050ead1589157a3c1adfd87beadfa578732e86c83ffdc94c661af3c5bc731c91  e2e/conflict-features.spec.ts
@@ -266,7 +267,7 @@ d0d9490c2d44471b7e8c9c9ba830f0ec56b87d08994c7122582227f5e8e3c084  e2e/contracts-
 b382ef8e6383ec1803e30d79aef1f9d3ce4557476983ee5603a8519b07ec9937  e2e/contracts-web/baseline/linux/s05-review-dark.png
 305e18f4e00ba3581476f16013ede645c5bcbcdfd978d62206fea9e95ad66931  e2e/contracts-web/baseline/linux/s05-review-light.json
 a35d5f730ef91eb35c996e73b02fc8bb71bc3a1e611d682c11dcabdada95954a  e2e/contracts-web/baseline/linux/s05-review-light.png
-e3b854e6ac58dc2336277510900d3147a576d0c843e21e4e5c209a4e8265da96  e2e/contracts-web/baseline/linux/s05-review-mobile.json
+982ce953fe3a6936079639047dae409497123d468a4cf01698fb3c849d782960  e2e/contracts-web/baseline/linux/s05-review-mobile.json
 cfa6ecd0f18288a332f0d108539c1bd943e2bee7b8165a2b73efd2d3a9693b01  e2e/contracts-web/baseline/linux/s05-review-mobile.png
 5e77a086ccffdb36852ec8a3f367106edbe2d5db0929488cc3be80b54a5c254e  e2e/contracts-web/baseline/linux/s08-prices-dark.json
 2d720b3dcc5d18bd46a84fd4c9f589430e77617320cd8224025ede839211d87c  e2e/contracts-web/baseline/linux/s08-prices-dark.png
@@ -310,7 +311,7 @@ e90503ac15c2a6ad5eef9ad40f3a68cd042dc35cafc38f0108de43a6ef74a630  e2e/contracts-
 e973bca81a0285952cba18dfd7915d467e75cec769c90d45ec83c369ad2098a8  e2e/contracts-web/baseline/linux/v2f-detail-dark.png
 e90503ac15c2a6ad5eef9ad40f3a68cd042dc35cafc38f0108de43a6ef74a630  e2e/contracts-web/baseline/linux/v2f-detail-light.json
 e973bca81a0285952cba18dfd7915d467e75cec769c90d45ec83c369ad2098a8  e2e/contracts-web/baseline/linux/v2f-detail-light.png
-8a1bf7bb22515cddce6e0a93ecf2afd54f27c9be3a07dcf00c6370b870ecd184  e2e/contracts-web/baseline/linux/v2f-detail-mobile.json
+ed733da5e4f7cfcd38120cce3fe64079fa0641c3594365a7570988de882d6630  e2e/contracts-web/baseline/linux/v2f-detail-mobile.json
 c580bafd73373b3bd84d834cc16cd8f5a4fc78866d3ff5d1546597f0b7656330  e2e/contracts-web/baseline/linux/v2f-detail-mobile.png
 d4aa84f40d97e77a5bdab4de6a9c2aa358ff35d68b636434ce006163b9eb080b  e2e/contracts-web/baseline/win32/overview-dark.json
 3af7eb6f81f77021f722eaf9644099a41066198cef4cc9be757b51d72d725ef4  e2e/contracts-web/baseline/win32/overview-dark.png
@@ -422,7 +423,7 @@ af1e92acc993181bfa5c31c7d05801452256b3ea91e8b4a27e5b7ca0f87da998  e2e/contracts-
 963a97b88c07caa0a717c5b8aa39512bc46f666513773792e3e7c84f0f06ec5a  e2e/contracts-web/cr179-trunc-tooltip.cw.ts
 656fcbc34af13b6aab80f966ddde6b3efd629c95f0449f88e1e78e2f8afd9cfb  e2e/contracts-web/cr182-annex-verify.cw.ts
 aa5ab30af9c32c2e0765120220a8d4baaacd36ef0211df77a79939e0cd6d5ab7  e2e/contracts-web/cr182-assign.cw.ts
-cdfdfe062105139b169912545c2da1a3b4db7cdd73d24d8c183e1f632ae12ab7  e2e/contracts-web/cr184-settings.cw.ts
+4e4109c7a1008686b12f38aac5cde1d7b5a77f37b2e4657ba98afeb17d72165f  e2e/contracts-web/cr184-settings.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 d351d4edda7e3772462619c8cbec6e9daa497718dff44acad1d117afc4998028  e2e/contracts-web/dataset-contract.ts
 0b445d3aeeb94128fe9107461082b07a0b2807b30dfa0c8930eb762e44068d85  e2e/contracts-web/dataset-list.ts
@@ -435,7 +436,7 @@ a3673328ff03e15ab2c5295eab2d3e1163a97885cc13fc4bf1f7d9927243a6dc  e2e/contracts-
 e3becf19b1f0a60264817812894bfb6ef3d0cafdc389416126d6790c1aba0a80  e2e/contracts-web/delivery-stock-409.cw.ts
 7af50c6752dc54b361ec0a27e2741c682c60cdcc357e36cd67d99c73d0e97936  e2e/contracts-web/doc-frame.cw.ts
 9af4eefbf60d0c00cd156ee6ceda5bf1b7a4c9ec3742765d4b486d4b2c8571a1  e2e/contracts-web/doc-list.cw.ts
-56c773c0f3d4511026e05e3f9fd34f5850b2004d553083537a507a2b577a8b87  e2e/contracts-web/esign-anchor.cw.ts
+dc6402daaee44dbe517e8781b4b3ab13a1787cb50d8ceb93d71c2bc4f3037e31  e2e/contracts-web/esign-anchor.cw.ts
 f6d4d8989165b47e5a8fd5a8f6b1f4dae0249ac52471d46dab962f3c85b584cc  e2e/contracts-web/esign-flow.cw.ts
 1eaa09e319b984c0f6c9613aeadd827e8d563a7091059da6e8eef8418737c746  e2e/contracts-web/esign-method.cw.ts
 3162f55f016dc2eb82656d614a5d2bd1212568a8d175d0f3ae908f72066d4c11  e2e/contracts-web/esign-multi.cw.ts
@@ -447,7 +448,7 @@ a7b1c1f7ed5a004fefa06e0a1310a14a6ddeb7b40d356af411c77bd8e40b1560  e2e/contracts-
 3455a2cd40c45199bc0e4d3f196c6b309aed98b19bc5aef769ce99f05acaeec3  e2e/contracts-web/gap-a2-source-ask.cw.ts
 3a919a07b2dbc26ebba5120dfab2e59f531182abbec0e7a8fce57941df8a31bb  e2e/contracts-web/gap-b-list.cw.ts
 90850068e1ffb83d4581b62111fe2a6b059195368542d154b9091c27cfebac0a  e2e/contracts-web/gap-d2.cw.ts
-47d4cb567e30354078ad164930bba4e062a55c5b75672b0d6190151a3fa433b3  e2e/contracts-web/gapa1-manage.cw.ts
+7389d1be48d911c51431c7fc730f61255ae262922f244832dfb09a2df93f54fe  e2e/contracts-web/gapa1-manage.cw.ts
 8b1c523d1e9c788e3030d16af8a23e7f64290962b91391c578b2cdeccb6c2884  e2e/contracts-web/hd2-flow.cw.ts
 542bd5759aecb3160e68071af706fccfb93a069ab1660a69a2b6719beabb1103  e2e/contracts-web/hd4-deadline.cw.ts
 6dca64bfb30024cc5f652acee86b8a22d3d9e04f6de90ed4e2cd9a48fbc01c14  e2e/contracts-web/hd5-list.cw.ts
@@ -615,7 +616,7 @@ f000be1b92208458058de509b7e25c13396acb7738d1192e8812c0894fd1334d  e2e/pm-checkli
 d2b4a5ea412e75c211bd082ccd13abef72c2e34a4954c499a13feeef2a46aecb  e2e/secrets.spec.ts
 c112ee578cc7fec40f180eed28020d678d58de2921f60aa05a3eadc692b230cd  e2e/smoke-journey/_kit.ts
 b8409f2030bc0415c2912122b831fc07c210f4f2a9672e1d852cdf450fbcd296  e2e/smoke-journey/playwright.smoke.config.ts
-fb43a3edef4b44c79c67c0620638463c898ad515b772670f991291080dec374a  e2e/smoke-journey/smoke-journey.smoke.ts
+e5f111e17f26bbb42dbd29ac947bc0f62a0e16e960dbb0ab776ae8c7dc973333  e2e/smoke-journey/smoke-journey.smoke.ts
 4d981c522670bcef4dda52aa84f2b194dccff6ae435d90e202cf77052ba5fdd9  e2e/smoke.spec.ts
 5e7d57500308564cf59e4f7f23f5737a7b59a40eb8aeb23185868c3bceaf27ab  e2e/studio/_h4b2.ts
 0c133f40d6ff9a28c5085851fc01c8ff093fc482932e13f8775db5cf8d50f1ea  e2e/studio/_k1-kh.ts
