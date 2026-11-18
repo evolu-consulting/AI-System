@@ -3,11 +3,8 @@
 // (test `def-parity.test.ts` ở admin-web khoá hai bên khớp nhau). Hàm thuần.
 import { moduleClusters } from "@ai/contracts/hub-admin";
 import { featureNodeByKey, MODULES } from "@ai/contracts/modules";
-import type { DefViewStage } from "./def-graph";
+import type { DefExit, DefViewStage } from "./def-types";
 import type { LayoutEdge } from "./graph";
-
-/** Đầu ra của ô module đã gắn đích: `main` = «đi tiếp» (cạnh tiến thường), còn lại = cạnh nét đứt có nhãn. */
-export type DefExit = { key: string; label: string; main: boolean; to: string[] };
 
 const pick = (l: { vi: string; en: string }, lang: string): string =>
   lang.startsWith("en") ? l.en : l.vi;

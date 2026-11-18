@@ -3,44 +3,17 @@
 // Hàm thuần (chỉ import KIỂU của xyflow). Vị trí do ELK (`useFlowLayout`, hướng DOWN) tính ở host; ở đây chỉ ghép node/cạnh.
 import { type Edge, MarkerType, type Node } from "@xyflow/react";
 import { toEdge } from "../edges/toEdge";
-import { collapseDefModules, type DefExit, exitEdges } from "./def-modules";
+import { collapseDefModules, exitEdges } from "./def-modules";
+import type { DefRoleView, DefViewStage } from "./def-types";
 import type { FlowEdgeIn, FlowNodeIn } from "./elk";
 import { NODE_H, NODE_W } from "./geometry";
-import { type GraphStage, type LayoutEdge, stepEdges } from "./graph";
+import { type LayoutEdge, stepEdges } from "./graph";
+
+export type { DefExit, DefRoleView, DefViewStage } from "./def-types";
 
 /** Id node Bắt đầu (nguồn của cạnh tới mọi bước đầu). */
 export const DEF_TRIGGER_ID = "trigger";
 
-/** Stage của sơ đồ chỉ xem: phần dựng cạnh + chữ đã dịch sẵn (hàm thuần không gọi i18n). */
-export type DefViewStage = GraphStage & {
-  /** Bước có "Sau đó đi tiếp" khác bước kế (nhảy tới bước `nextStep`, 0-based). */
-  nextStep: number | null;
-  title: string;
-  /** Dòng phụ (phòng duyệt / cách ký…); null ⇒ ẩn. */
-  sub: string | null;
-  /** Nhãn loại bước (Duyệt, Gửi đối tác…); null ⇒ ẩn. */
-  badge: string | null;
-  /** Node Kết thúc (hình riêng); chờ sự kiện cũng là điểm cuối nhưng vẽ như bước. */
-  end: boolean;
-  /** CR-182 · bước có vai (Duyệt / Ký). */
-  role?: DefRoleView | null;
-  /** CR-185 · mã node module + loại executor + nhánh chờ (để gộp cụm như admin); vắng ⇒ không gộp. */
-  node?: string | null;
-  exec?: string | null;
-  waitBranches?: readonly { on: string; step: number | null }[];
-  /** CR-185 · đầu ra của ô module sau khi gộp (do `collapseDefModules` gắn). */
-  exits?: readonly DefExit[];
-};
-/** CR-182 · vai của bước + người được giao (chữ đã dịch sẵn); `who` null ⇒ chưa giao. */
-export type DefRoleView = {
-  /** «Vai · <nhãn>». */
-  line: string;
-  /** «Tên nhóm · n người» hoặc tên người; null ⇒ chưa giao. */
-  who: string | null;
-  /** Chữ cảnh báo khi chưa giao («⚠ Chưa giao người»). */
-  warn: string;
-  kind: "group" | "user" | null;
-};
 export type DefViewTrigger = { label: string; summary: string };
 
 type JumpStage = {
