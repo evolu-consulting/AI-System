@@ -5,9 +5,10 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Env, Hono } from "hono";
 import type { Logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
-import { partnerMailboxPort } from "../packs/kit/public";
+import { partnerMailboxPort, partnerSignMailer, partnerSignPort } from "../packs/kit/public";
 import { replyByToken, viewByToken } from "./adapters/email.repo";
 import { partnerPublicRoutes } from "./adapters/partner-public.routes";
+import { partnerSignRoutes, SIGN_LINK_PUBLIC_PATH } from "./adapters/partner-sign.routes";
 import { windowLimit } from "./adapters/window-limit";
 import { PARTNER_PUBLIC_PATH } from "./domain/email-link.rules";
 import type { PublicStore } from "./domain/email-view.types";
@@ -20,6 +21,34 @@ export const publicStore = (db: Db): PublicStore => ({
   view: (h, o) => withHubScope(db, SYS, (tx) => viewByToken(tx, h, o)),
   reply: (h, f, o) => withHubScope(db, SYS, (tx) => replyByToken(tx, h, f, o)),
 });
+
+/**
+ * CR-182 · trang công khai «Đối tác ký qua link» (`/sign-link/:token`, không JWT) + gắn transport email chung cho gói Hợp đồng (thư «Mời ký»).
+ * KHÔNG phụ thuộc `HUB_PARTNER_MAILBOX`: link chỉ có khi công ty bật «Ký trên tài liệu» và HĐ có chỗ ký Bên B. `email` null (`HUB_NOTIFY_MODE=off`) ⇒ gói ghi link ra log.
+ */
+export function mountSignLinkPublic<E extends Env>(
+  app: Hono<E>,
+  d: {
+    db?: Db | undefined;
+    trustProxyHops?: number | undefined;
+    redis?: Redis | undefined;
+    email: PartnerSignMailerLike | null;
+    baseUrl: string;
+    now?: () => Date;
+  },
+): void {
+  partnerSignMailer.set(d.email, d.baseUrl);
+  if (!d.db) return;
+  app.route(
+    SIGN_LINK_PUBLIC_PATH,
+    partnerSignRoutes({
+      port: () => partnerSignPort.get(),
+      hops: d.trustProxyHops ?? 0,
+      limit: windowLimit({ redis: d.redis, ...(d.now ? { now: d.now } : {}) }),
+    }) as never,
+  );
+}
+type PartnerSignMailerLike = NonNullable<Parameters<typeof partnerSignMailer.set>[0]>;
 
 export function mountPartnerPublic<E extends Env>(
   app: Hono<E>,

@@ -157,5 +157,13 @@ export function signBlockOf(r: SignReadinessOut): "sign_no_files" | "sign_missin
 }
 
 /** BR-D3 / BR-C4 / Q6 · bước Ký xong khi có ≥ 1 chỗ ký Bên A của người ký công ty và tất cả đã ký (Bên B không tính). */
-export const ondocDone = (c: { total: number; open: number }): boolean =>
+/** CR-182 · «Đối tác ký»: còn chỗ ký Bên B chưa ký (`b_open`) ⇒ bước Ký CHƯA xong (chờ đối tác). */
+export const ondocDone = (c: {
+  total: number;
+  open: number;
+  b_open?: number;
+  b_total?: number;
+}): boolean => c.total > 0 && c.open === 0 && (c.b_open ?? 0) === 0;
+/** Bên A đã ký đủ (không xét Bên B). */
+export const ondocADone = (c: { total: number; open: number }): boolean =>
   c.total > 0 && c.open === 0;

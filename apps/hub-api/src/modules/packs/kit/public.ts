@@ -76,6 +76,12 @@ export {
   createPartnerMailboxPortRegistry,
   partnerMailboxPort,
 } from "./adapters/partner-mailbox-port";
+export {
+  createPartnerSignMailerRegistry,
+  createPartnerSignPortRegistry,
+  partnerSignMailer,
+  partnerSignPort,
+} from "./adapters/partner-sign-port";
 export { createPdfConverter } from "./adapters/pdf/index";
 export type { PeopleReader, Person } from "./adapters/people-reader";
 export { peopleReader } from "./adapters/people-reader";
@@ -166,6 +172,13 @@ export type {
   PartnerPdf,
   PartnerReplyRow,
 } from "./application/partner-mailbox.ports";
+export type {
+  PartnerSignMail,
+  PartnerSignMailer,
+  PartnerSignPublicPort,
+  SignLinkFail,
+  SignLinkResult,
+} from "./application/partner-sign.ports";
 export type { PackSystemUow, PackUow, PackWho } from "./application/ports";
 export type { RecordLabelRegistry, RecordLabelSource } from "./application/record-label.ports";
 export type {

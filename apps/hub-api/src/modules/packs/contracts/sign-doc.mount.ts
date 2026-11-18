@@ -5,6 +5,7 @@ import type { Hono } from "hono";
 import type { PackAccessView, PackFileboxClient, PackGuardVars } from "../kit/public";
 import { createPackUow, orgForTenant, packTenantOnly } from "../kit/public";
 import { contractFilesRepo } from "./adapters/contract-files.repo";
+import { partnerSignRepo } from "./adapters/partner-sign.repo";
 import { signDocRepo } from "./adapters/sign-doc.repo";
 import { signDocRoutes } from "./adapters/sign-doc.routes";
 import { signDocsRepo } from "./adapters/sign-docs.repo";
@@ -51,6 +52,7 @@ export function signDocModule(
       docs: signDocsRepo(tx, t),
       fields: signFieldsRepo(tx, t),
       versions: signVersionsRepo(tx, t),
+      partnerSign: partnerSignRepo(tx, t),
     })),
   );
   const maxBytes = contractsMaxBytes();

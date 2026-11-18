@@ -13,6 +13,8 @@ export const signFlowHooks: {
     contractId: string,
     stages: readonly unknown[][],
   ) => Promise<SignSubmitBlock | null>;
+  /** CR-182 · Bên A ký đủ + còn chỗ Bên B ⇒ mời đối tác ký (tạo link + gửi mail; idempotent). Vắng ⇒ không mời. */
+  partnerStart?: (tenantId: string, contractId: string, by: string | null) => Promise<void>;
   /** Thả bước chờ `esign.completed` của HĐ (cùng đường ký số / tải lên). */
   completed?: (tenantId: string, contractId: string, data: Record<string, string>) => Promise<void>;
   /** BR-D2 · trước khi Đạt bước duyệt có bằng chứng (`runId` = lượt chạy engine). null ⇒ không áp. */

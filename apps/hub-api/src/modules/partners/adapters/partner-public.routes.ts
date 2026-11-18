@@ -47,7 +47,7 @@ export type PartnerPublicDeps = {
 
 type Ctx = Context;
 
-function harden(c: Ctx, csp: string): void {
+export function harden(c: Ctx, csp: string): void {
   c.header("Cache-Control", "no-store");
   c.header("Referrer-Policy", "no-referrer");
   c.header("X-Robots-Tag", "noindex, nofollow, noarchive");
@@ -62,7 +62,7 @@ const html = (c: Ctx, body: string, status: 200 | 303 | 403 | 404 | 410 | 422 | 
 };
 
 /** IP client: có `hops` proxy tin cậy ⇒ phần tử thứ `hops` từ cuối của X-Forwarded-For (dùng chung với admin-api); không ⇒ IP socket. Không đọc được ⇒ null. */
-function ipOf(c: Ctx, hops: number): string | null {
+export function ipOf(c: Ctx, hops: number): string | null {
   if (hops > 0) {
     const ip = forwardedIp(c.req.header("x-forwarded-for"), hops);
     return ip && ip.length <= 64 ? ip : null;
@@ -89,7 +89,7 @@ export function sameSiteRequest(h: { get(n: string): string | null | undefined }
   }
 }
 
-function safeEq(a: string, b: string): boolean {
+export function safeEq(a: string, b: string): boolean {
   const x = Buffer.from(a);
   const y = Buffer.from(b);
   return x.length === y.length && timingSafeEqual(x, y);

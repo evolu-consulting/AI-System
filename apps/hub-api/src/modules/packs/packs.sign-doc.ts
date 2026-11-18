@@ -25,6 +25,7 @@ import type { SignTurnPort } from "./contracts/domain/sign-turn.port";
 import {
   needsOnDoc,
   type OndocSigner,
+  ondocADone,
   ondocDone,
   ondocKeys,
   ondocSignersIn,
@@ -32,6 +33,7 @@ import {
   signBlockOf,
   signTurnOf,
 } from "./contracts/domain/sign-turn.rules";
+import type { PartnerSignPorts } from "./contracts/partner-sign.mount";
 import type { SignDocPorts } from "./contracts/sign-doc.mount";
 import { createPackUow, type PackAccessView } from "./kit/public";
 
@@ -64,6 +66,7 @@ function packReads(db: Db) {
   }));
   return {
     /** BR-D3/C4 · ô Bên A của người ký công ty (tệp còn cần ký): tổng + còn mở. Một câu. */
+    /** BR-D3/C4 + CR-182 · ô Bên A của `keys` (tổng, còn mở) + ô Bên B (tổng, còn mở). Một câu. */
     ondocCounts: (tenantId: string, contractId: string, keys: readonly string[]) =>
       uow.system(tenantId, (r) => ondocCounts(r.tx, r.t, contractId, keys)),
     /** BR-D2 · tệp cần ký của HĐ + `actor` đã có bản chưa void Lưu trong lượt `runId` chưa. Một câu. */
@@ -89,6 +92,26 @@ function packReads(db: Db) {
   };
 }
 
+/** CR-182 · «Đối tác ký»: bộ đếm bước Ký `ondoc` đang mở + thả bước khi đối tác ký đủ (gắn cho `partnerSignModule`). */
+export function partnerSignPorts(db: Db): PartnerSignPorts {
+  const reads = packReads(db);
+  const NIL = "00000000-0000-0000-0000-000000000000";
+  return {
+    counts: async (tenantId, contractId) => {
+      const s = await stepOf(db, { tenantId, userId: NIL }, contractId);
+      const signers = s ? ondocStepAt(s.stages, s.idx) : null;
+      if (!signers || signers.length === 0) return null;
+      const c = await reads.ondocCounts(tenantId, contractId, ondocKeys(signers));
+      return { a_done: ondocADone(c), b_total: c.b_total, b_open: c.b_open };
+    },
+    complete: async (tenantId, contractId) => {
+      await signFlowHooks.completed?.(tenantId, contractId, {
+        signed_at: new Date().toISOString(),
+      });
+    },
+  };
+}
+
 export type SignFlow = {
   turn: SignTurnPort;
   /** Đường Lưu chữ ký gọi SAU COMMIT: bước Ký `ondoc` đang mở của đúng lượt ⇒ đủ ô Bên A thì thả bước. Không ném. */
@@ -103,9 +126,14 @@ export function signFlowOf(db: Db): SignFlow {
     tenantId: string,
     contractId: string,
     signers: readonly OndocSigner[],
+    by: string | null,
   ) => {
     if (signers.length === 0 || !signFlowHooks.completed) return;
-    if (!ondocDone(await reads.ondocCounts(tenantId, contractId, ondocKeys(signers)))) return;
+    const c = await reads.ondocCounts(tenantId, contractId, ondocKeys(signers));
+    // CR-182 · Bên A đủ nhưng còn chỗ Bên B ⇒ chưa thả bước: mời đối tác ký (link riêng); đối tác ký đủ mới thả (`partnerSignPorts.complete`).
+    if (ondocADone(c) && c.b_open > 0)
+      return void (await signFlowHooks.partnerStart?.(tenantId, contractId, by));
+    if (!ondocDone(c)) return;
     await signFlowHooks.completed(tenantId, contractId, { signed_at: new Date().toISOString() });
   };
   const safe = (m: string, contractId: string) => (e: unknown) =>
@@ -147,7 +175,7 @@ export function signFlowOf(db: Db): SignFlow {
       try {
         const s = await stepOf(db, ctx, contractId);
         if (!s || s.runId !== runId) return;
-        await fireIfDone(ctx.tenantId, contractId, ondocStepAt(s.stages, s.idx) ?? []);
+        await fireIfDone(ctx.tenantId, contractId, ondocStepAt(s.stages, s.idx) ?? [], ctx.userId);
       } catch (e) {
         safe("sign-ondoc-signed-failed", contractId)(e);
       }

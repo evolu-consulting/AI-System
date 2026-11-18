@@ -11,7 +11,10 @@ export type SignVersionRow = {
   seq: number;
   out_file_id: string;
   sha256: string;
-  signed_by: string;
+  /** null = bản của ĐỐI TÁC ký qua link (CR-182): người ký = `signer_contact_id`/`signer_label`. */
+  signed_by: string | null;
+  signer_contact_id?: string | null;
+  signer_label?: string | null;
   signature_kind: SignatureKind;
   run_id: string | null;
   /** CR-184 · người vắng mà `signed_by` ký thay (uỷ quyền); null = tự ký. */
@@ -26,7 +29,7 @@ export type SignMarkRow = {
   field_id: string | null;
   placement: SignPlacement;
   parts: SignParts;
-  user_signature_id: string;
+  user_signature_id: string | null;
   caption: string | null;
   created_at: string;
 };
@@ -37,7 +40,9 @@ export type NewSignMark = {
   fieldId: string | null;
   placement: SignPlacement;
   parts: SignParts;
-  userSignatureId: string;
+  userSignatureId: string | null;
+  /** CR-182 · chữ ký nhanh của đối tác (thay cho `userSignatureId`). */
+  quickSignatureId?: string | null;
   caption: string | null;
 };
 
@@ -47,7 +52,10 @@ export type NewSignVersion = {
   fileId: string;
   outFileId: string;
   sha256: string;
-  signedBy: string;
+  signedBy: string | null;
+  /** CR-182 · đối tác ký: `signedBy` null + id liên hệ + nhãn «Đối tác: …». */
+  signerContactId?: string | null;
+  signerLabel?: string | null;
   kind: SignatureKind;
   runId: string | null;
   onBehalfOf?: string | null;
@@ -75,6 +83,7 @@ export function signVersionsRepo(tx: Tx, tenantId: string) {
           placement: m.placement,
           parts: m.parts,
           user_signature_id: m.userSignatureId,
+          quick_signature_id: m.quickSignatureId ?? null,
           caption: m.caption,
         })),
       );
@@ -83,15 +92,15 @@ export function signVersionsRepo(tx: Tx, tenantId: string) {
           select coalesce(max(seq), 0) + 1 as n from contracts.sign_versions
           where contract_id = ${v.contractId}::uuid and file_id = ${v.fileId}::uuid and tenant_id = ${tenantId}::uuid),
         i as (
-          insert into contracts.sign_versions (id, tenant_id, contract_id, file_id, seq, out_file_id, sha256, signed_by, signature_kind, run_id, on_behalf_of)
+          insert into contracts.sign_versions (id, tenant_id, contract_id, file_id, seq, out_file_id, sha256, signed_by, signature_kind, run_id, on_behalf_of, signer_contact_id, signer_label)
           select ${v.id}::uuid, ${tenantId}::uuid, ${v.contractId}::uuid, ${v.fileId}::uuid, s.n, ${v.outFileId}::uuid, ${v.sha256},
-            ${v.signedBy}::uuid, ${v.kind}, ${v.runId}::uuid, ${v.onBehalfOf ?? null}::uuid from s
+            ${v.signedBy}::uuid, ${v.kind}, ${v.runId}::uuid, ${v.onBehalfOf ?? null}::uuid, ${v.signerContactId ?? null}::uuid, ${v.signerLabel ?? null} from s
           returning id, seq),
         m as (
-          insert into contracts.sign_marks (tenant_id, version_id, signer_id, field_id, placement, parts, user_signature_id, caption, ord)
-          select ${tenantId}::uuid, i.id, ${v.signedBy}::uuid, x.field_id, x.placement, x.parts, x.user_signature_id, x.caption, x.ord
+          insert into contracts.sign_marks (tenant_id, version_id, signer_id, field_id, placement, parts, user_signature_id, quick_signature_id, caption, ord)
+          select ${tenantId}::uuid, i.id, coalesce(${v.signedBy}::uuid, ${v.signerContactId ?? null}::uuid), x.field_id, x.placement, x.parts, x.user_signature_id, x.quick_signature_id, x.caption, x.ord
           from i, jsonb_to_recordset(${marks}::jsonb)
-            as x(field_id uuid, placement text, parts jsonb, user_signature_id uuid, caption text, ord integer)
+            as x(field_id uuid, placement text, parts jsonb, user_signature_id uuid, quick_signature_id uuid, caption text, ord integer)
           returning id)
         select i.id, i.seq from i`);
       return r ?? null;
@@ -99,7 +108,7 @@ export function signVersionsRepo(tx: Tx, tenantId: string) {
     /** Bản mới nhất chưa void của một tệp. */
     latest: async (contractId: string, fileId: string): Promise<SignVersionRow | null> => {
       const [r] = await tx.execute<SignVersionRow>(sql`
-        select v.id, v.file_id, v.seq, v.out_file_id, v.sha256, v.signed_by, v.signature_kind, v.run_id, v.on_behalf_of, v.created_at, v.voided_at
+        select v.id, v.file_id, v.seq, v.out_file_id, v.sha256, v.signed_by, v.signer_contact_id, v.signer_label, v.signature_kind, v.run_id, v.on_behalf_of, v.created_at, v.voided_at
         from contracts.sign_versions v
         where v.contract_id = ${contractId}::uuid and v.file_id = ${fileId}::uuid and v.tenant_id = ${tenantId}::uuid
           and v.voided_at is null
@@ -114,7 +123,7 @@ export function signVersionsRepo(tx: Tx, tenantId: string) {
           and v.signed_by = ${userId}::uuid and v.voided_at is null`),
     latestByContract: (contractId: string) =>
       tx.execute<SignVersionRow>(sql`
-        select distinct on (v.file_id) v.id, v.file_id, v.seq, v.out_file_id, v.sha256, v.signed_by, v.signature_kind, v.run_id, v.on_behalf_of,
+        select distinct on (v.file_id) v.id, v.file_id, v.seq, v.out_file_id, v.sha256, v.signed_by, v.signer_contact_id, v.signer_label, v.signature_kind, v.run_id, v.on_behalf_of,
           v.created_at, v.voided_at
         from contracts.sign_versions v
         where v.contract_id = ${contractId}::uuid and v.tenant_id = ${tenantId}::uuid and v.voided_at is null
@@ -122,7 +131,7 @@ export function signVersionsRepo(tx: Tx, tenantId: string) {
     /** Mọi bản của tệp (kể cả đã void — lịch sử) kèm dấu, seq tăng dần. */
     list: (contractId: string, fileId: string) =>
       tx.execute<SignVersionWithMarks>(sql`
-        select v.id, v.file_id, v.seq, v.out_file_id, v.sha256, v.signed_by, v.signature_kind, v.run_id, v.on_behalf_of, v.created_at, v.voided_at,
+        select v.id, v.file_id, v.seq, v.out_file_id, v.sha256, v.signed_by, v.signer_contact_id, v.signer_label, v.signature_kind, v.run_id, v.on_behalf_of, v.created_at, v.voided_at,
           coalesce(m.marks, '[]'::jsonb) as marks
         from (select * from contracts.sign_versions
               where contract_id = ${contractId}::uuid and file_id = ${fileId}::uuid and tenant_id = ${tenantId}::uuid

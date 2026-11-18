@@ -302,7 +302,7 @@ export function signSaveUsecases(d: SignSaveDeps) {
       if (!snap) return null;
       const people = new Set<string>();
       for (const v of snap.versions) {
-        people.add(v.signed_by);
+        if (v.signed_by) people.add(v.signed_by);
         if (v.on_behalf_of) people.add(v.on_behalf_of);
         for (const m of v.marks) people.add(m.signer_id);
       }
@@ -333,7 +333,9 @@ export function signSaveUsecases(d: SignSaveDeps) {
             seq: v.seq,
             original: false,
             signed_by: v.signed_by,
-            signed_by_name: names.get(v.signed_by) ?? null,
+            signed_by_name: v.signed_by
+              ? (names.get(v.signed_by) ?? null)
+              : (v.signer_label ?? null),
             on_behalf_of: v.on_behalf_of ?? null,
             on_behalf_of_name: v.on_behalf_of ? (names.get(v.on_behalf_of) ?? null) : null,
             signed_at: iso(v.created_at),

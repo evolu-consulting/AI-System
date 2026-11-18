@@ -152,6 +152,19 @@ export type SignFileOut = {
   latest: { version_id: string | null; seq: number; url: string };
   fields: SignFieldOut[];
 };
+/** Trạng thái link mà phía công ty thấy (phiên ký, trang HĐ). `null` ở phiên ký = HĐ chưa gửi link. */
+export type PartnerLinkStatusOut = {
+  state: "open" | "signed" | "declined" | "expired" | "revoked";
+  sent_at: string | null;
+  opened_at: string | null;
+  expires_at: string;
+  signed_at: string | null;
+  declined_at: string | null;
+  decline_reason: string | null;
+  /** Tên liên hệ nhận link (không lộ email). */
+  contact_name: string | null;
+};
+
 export type SignSessionOut = {
   enabled: boolean;
   mode: "prep" | "sign" | "view";
@@ -161,6 +174,8 @@ export type SignSessionOut = {
   readiness: SignReadinessOut;
   turn: SignTurnOut;
   kinds: { internal: true; digital: { enabled: false; reason: string } };
+  /** CR-182 · link ký của đối tác (mới nhất); null = chưa gửi. */
+  partner_link?: PartnerLinkStatusOut | null;
 };
 
 // ---- Lát s8 phần B · Lưu chữ ký, các bản -------------------------------------------------------------------------------------------

@@ -174,17 +174,25 @@ describe("CR-181 s9 · ký trên tài liệu theo lượt chạy", () => {
     await setOnDoc(true);
   });
 
-  it("D3/C4 · bước Ký ondoc xong khi đủ ô Bên A, ô Bên B không chặn", async () => {
+  it("D3/C4 + CR-182 · bước Ký ondoc xong khi đủ ô Bên A VÀ ô Bên B đã ký: Bên A đủ mà còn ô Bên B ⇒ mời đối tác ký, chưa thả bước", async () => {
     const x = await world([REVIEW(w.G), ESIGN(`user:${w.A}`), WAIT], 2);
     const fa = await field(x, "A", "user", w.A);
     await field(x, "B", "partner", "doi-tac@example.com");
     expect((await turnOf(x, w.A)).step).toBe("sign");
     expect((await turnOf(x, w.B)).allowed).toBe(false);
+    const invited: string[] = [];
+    signFlowHooks.partnerStart = async (_t, c) => void invited.push(c);
     await flow.onDocSigned({ tenantId: w.T, userId: w.A }, x.id, x.runId);
     expect(fired).not.toContain(x.id);
+    expect(invited).toEqual([]); // Bên A chưa ký xong ⇒ chưa mời
     await sign(fa, await version(x, w.A), w.A);
     await flow.onDocSigned({ tenantId: w.T, userId: w.A }, x.id, x.runId);
+    expect(fired).not.toContain(x.id); // còn ô Bên B ⇒ HĐ chưa «Đã ký»
+    expect(invited).toEqual([x.id]); // ⇒ mời đối tác ký
+    await o`delete from contracts.sign_fields where contract_id = ${x.id} and side = 'B'`; // (đối tác ký đủ ≙ không còn ô Bên B mở)
+    await flow.onDocSigned({ tenantId: w.T, userId: w.A }, x.id, x.runId);
     expect(fired).toContain(x.id);
+    signFlowHooks.partnerStart = undefined as never;
   });
 
   it("Q8 · người duyệt kiêm người ký đã ký ô ở bước duyệt thì bước Ký tự xong", async () => {

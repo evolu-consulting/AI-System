@@ -9,10 +9,11 @@ import type { ConnectModuleDeps } from "./contracts/connect/connect.mount";
 import { contractFilesModule } from "./contracts/contract-files.mount";
 import { CONTRACTS_KEY } from "./contracts/contracts.mount";
 import { messagesModule } from "./contracts/messages/messages.mount";
+import { partnerSignModule } from "./contracts/partner-sign.mount";
 import { signDocModule } from "./contracts/sign-doc.mount";
 import type { PackAccessView } from "./kit/public";
 import { fileboxClients, type PackFb } from "./packs.filebox";
-import { signDocPorts, signFlowOf } from "./packs.sign-doc";
+import { partnerSignPorts, signDocPorts, signFlowOf } from "./packs.sign-doc";
 
 export function mountContractAttachments<E extends Env>(
   app: Hono<E>,
@@ -34,6 +35,14 @@ export function mountContractAttachments<E extends Env>(
       recordRunFiles(db, w, { packKey: CONTRACTS_KEY, recordId });
     app.route(base, contractFilesModule(db, view, fileboxClients(fb), stepFiles)); // CR-133 (FileBox vắng ⇒ không gắn)
     app.route(base, signDocModule(db, view, fileboxClients(fb), signDocPorts(db, view, signFlow))); // CR-181 s8 · ký trên tài liệu
+    // CR-182 · đối tác ký qua link riêng (cổng công khai + gửi lại + NOTIFY mời ký)
+    app.route(
+      base,
+      partnerSignModule(db, view, fileboxClients(fb), partnerSignPorts(db), {
+        worker: d.worker,
+        signal: d.signal,
+      }),
+    );
   }
   app.route(
     base,

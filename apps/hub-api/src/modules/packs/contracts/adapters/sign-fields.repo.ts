@@ -92,7 +92,7 @@ export function signFieldsRepo(tx: Tx, tenantId: string) {
     markSigned: async (
       contractId: string,
       fieldIds: readonly string[],
-      by: string,
+      by: string | null,
       versionId: string,
     ): Promise<number> => {
       const rows = await tx.execute<{ id: string }>(sql`

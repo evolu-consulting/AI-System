@@ -45,6 +45,7 @@ export * from "./partner-community";
 export * from "./partner-deleted";
 export * from "./partner-party";
 export * from "./partner-roles";
+export * from "./partner-sign";
 export * from "./partners";
 export * from "./penalty";
 export * from "./price-scout";

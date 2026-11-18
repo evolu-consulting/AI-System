@@ -6,6 +6,7 @@ import { mountMailRelay } from "./modules/internal/mail-relay.routes";
 import { mountNotify } from "./modules/notify/notify.mount";
 import {
   mountPartnerPublic,
+  mountSignLinkPublic,
   startPartnerEmailLoop,
 } from "./modules/partners/partners.public.mount";
 
@@ -23,6 +24,8 @@ export function mountNotifyAndRelay<E extends Env>(
   const email = mountNotify(app, d).email;
   // CR-124 · q5 · trang công khai trả lời qua link email (không JWT, token riêng; ngoài PROTECTED_PREFIXES). Chỉ khi `partnerMailbox` bật.
   mountPartnerPublic(app, d);
+  // CR-182 · trang công khai «Đối tác ký qua link» (`/sign-link/:token`, không JWT) + transport email cho thư «Mời ký».
+  mountSignLinkPublic(app, { ...d, email, baseUrl: d.notify?.baseUrl ?? "http://localhost:3300" });
   // CR-124 · q5 · email cho bên nhận chưa dùng nền tảng: cùng cờ + cùng cờ vòng nền với bộ chuyển hộp thư (test gọi `partnerEmailOnce`).
   if (d.partnerMailbox === true && d.processLoops !== false)
     startPartnerEmailLoop({

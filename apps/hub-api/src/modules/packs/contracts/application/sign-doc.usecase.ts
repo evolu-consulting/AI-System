@@ -1,6 +1,7 @@
 // CR-181 · s8 phần A · «Ký trên tài liệu» phía HĐ — use case (lớp 2, không SQL): bật/tắt «Cần ký» (BR-T1, Q13), người ký (Q2), đặt chỗ ký
 // (BR-C1/C2), phiên chuẩn bị/ký/xem (`sessionMode`). Số câu SQL cố định: session = facts + (tệp, đối tác, cờ, chỗ ký, bản) ≤ 6; PATCH/PUT = 2 tx
 // nhỏ (kiểm → đọc tệp ngoài tx → ghi). Nội dung tệp đọc từ FileBox NGOÀI tx.
+
 import {
   membersLabel,
   type SignFieldOut,
@@ -11,6 +12,7 @@ import {
 } from "@ai/contracts/pack-contracts";
 import type { PackUow, PackWho } from "../../kit/public";
 import { type ContractFileFacts, isContractFilesLocked } from "../domain/contract-files.rules";
+import { statusOut } from "../domain/partner-sign.rules";
 import {
   canPrepSign,
   defaultNeedsSign,
@@ -311,7 +313,8 @@ export function signDocUsecases(d: SignDocDeps) {
         const docs = await r.docs.listByContract(id);
         const fields = await r.fields.listByContract(id);
         const latest = await r.versions.latestByContract(id);
-        return { facts, off: false as const, files, partner, docs, fields, latest };
+        const plink = r.partnerSign ? await r.partnerSign.latest(id) : null; // CR-182 · trạng thái link ký của đối tác
+        return { facts, off: false as const, files, partner, docs, fields, latest, plink };
       });
       if (!snap) return null;
       if (snap.off)
@@ -391,6 +394,7 @@ export function signDocUsecases(d: SignDocDeps) {
         readiness,
         turn: await turnWithNames(d.userNames, who, turn),
         kinds,
+        partner_link: snap.plink ? statusOut(snap.plink) : null,
       };
     },
   };

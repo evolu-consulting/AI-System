@@ -6,6 +6,7 @@ import type {
   SignPlacement,
   SignSide,
 } from "@ai/contracts/pack-contracts";
+import type { LinkStatusIn } from "../domain/partner-sign.rules";
 import type { ContractFilesRepo } from "./contract-files.usecase";
 
 export type SignFileRef = {
@@ -40,7 +41,9 @@ export type SignVersionRowP = {
   seq: number;
   out_file_id: string;
   sha256: string;
-  signed_by: string;
+  signed_by: string | null;
+  signer_contact_id?: string | null;
+  signer_label?: string | null;
   signature_kind: SignatureKind;
   run_id: string | null;
   /** CR-184 · người vắng mà `signed_by` ký thay (uỷ quyền). */
@@ -61,7 +64,9 @@ export type NewSignVersionP = {
   fileId: string;
   outFileId: string;
   sha256: string;
-  signedBy: string;
+  signedBy: string | null;
+  signerContactId?: string | null;
+  signerLabel?: string | null;
   kind: SignatureKind;
   runId: string | null;
   onBehalfOf?: string | null;
@@ -69,7 +74,8 @@ export type NewSignVersionP = {
     fieldId: string | null;
     placement: SignPlacement;
     parts: SignParts;
-    userSignatureId: string;
+    userSignatureId: string | null;
+    quickSignatureId?: string | null;
     caption: string | null;
   }[];
 };
@@ -85,6 +91,8 @@ export type NewSignFieldP = {
 
 export type SignDocRepos = {
   contractFiles: ContractFilesRepo;
+  /** CR-182 · link ký của đối tác (vắng ⇒ phiên không có `partner_link`). */
+  partnerSign?: { latest(contractId: string): Promise<LinkStatusIn | null> };
   signDoc: {
     files(contractId: string): PromiseLike<SignFileRef[]>;
     partner(contractId: string): Promise<PartnerSigner | null>;
@@ -127,7 +135,7 @@ export type SignDocRepos = {
     markSigned(
       contractId: string,
       fieldIds: readonly string[],
-      by: string,
+      by: string | null,
       versionId: string,
     ): Promise<number>;
   };
