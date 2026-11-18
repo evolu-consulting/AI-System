@@ -199,7 +199,7 @@ export type PackRunsPort = {
   eventFlows?(tenantId: string, event: string): Promise<EventFlow[]>;
   /** CR-182 · giao / đổi / bỏ giao MỘT vai của quy trình (hàm DB đòi cờ quản trị công ty; route ĐÃ kiểm Q15) + audit `role_assigned`; trả TRƯỚC/SAU. */
   assignRole?(
-    who: { tenantId: string; userId: string; role: string },
+    who: { tenantId: string; userId: string; role: string; isAdmin: boolean },
     i: { flowId: string; roleKey: string; groupId: string | null; userId: string | null },
   ): Promise<{
     before: { group_id: string | null; user_id: string | null };

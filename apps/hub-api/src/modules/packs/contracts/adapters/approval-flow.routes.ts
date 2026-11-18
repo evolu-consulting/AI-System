@@ -35,7 +35,7 @@ export function approvalFlowRoutes(
     if (!(await d.isAdmin(user))) return c.json({ error: { code: "FORBIDDEN" } }, 403);
     const p = ApprovalFlowRoleAssignSchema.safeParse(await c.req.json().catch(() => null));
     if (!p.success) return c.json({ error: { code: "VALIDATION_ERROR" } }, 400);
-    return c.json(await d.assignRole({ ...who(user), role: user.role }, p.data));
+    return c.json(await d.assignRole({ ...who(user), role: user.role, isAdmin: true }, p.data));
   });
   // S3b · tên phòng ban cho UI luồng: scope tenant của token, ai đọc được gói đều gọi được.
   r.get("/groups", packGuard(view, KEY, "read"), async (c) =>

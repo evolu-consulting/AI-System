@@ -1,5 +1,6 @@
 // HUB-FR-105 · D3 · D10 · phần "lập kế hoạch" của launcher (tách khỏi `launcher.ts` để phá vòng launcher <-> launcher-batch):
 // `plan` (trong tx scope `user`: khoá run, chọn stage queued, kiểm quyền, tạo `hub.runs`) + `launchAfterCommit` (sau COMMIT).
+
 import type { ProcessRunStatus } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
@@ -9,6 +10,7 @@ import type { StageLauncher } from "../core/ports";
 import { isTerminal } from "../domain/runs/run-state.rules";
 import { stageIdxsOfStep } from "../domain/runs/step.rules";
 import { nodeLauncherOf } from "../nodes/registry.launch";
+import { refreshStageRoles } from "../roles/roles.repo";
 import { type KickResult, type LauncherDeps, lostPermission, type StageRow } from "./launch-common";
 import { gateResolve, type Head } from "./launcher-prompt";
 import { stageDriver } from "./stage-driver";
@@ -84,8 +86,11 @@ export async function plan(
   const next = await nextQueued(tx, runId, head, Number(run.currentStep));
   if (!next) return { kind: "skip" };
   const { idx, stage, more } = next;
-  const def = head.snapshot.stages[idx];
-  if (!def) return { kind: "skip" };
+  const def0 = head.snapshot.stages[idx];
+  if (!def0) return { kind: "skip" };
+  // CR-182 · BR-G2 · mở bước ⇒ giải lại vai theo giao việc hiện tại (bước chưa tới lượt dùng người mới).
+  const def = await refreshStageRoles(tx, u.tenantId, runId, def0, idx);
+  head.snapshot.stages[idx] = def;
   // PB-R05 · cổng nguồn: def có nguồn ∧ chưa ghim ⇒ enqueue `source.resolve` (idempotent: run đã khoá FOR UPDATE),
   // KHÔNG launch stage nào của run. Runtime báo `/sources-resolved` ⇒ ghim + kick lại.
   if (await gateResolve(tx, runId, head)) return { kind: "skip" };

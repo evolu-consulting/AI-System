@@ -21,14 +21,18 @@ Không làm: trình soạn admin (cr182-admin), màn giao việc (cr182-assign),
 Chạm: contracts (`hub-admin/process-*`, `pack-contracts/esign-node|approval-flow`, `flow/with-roles`), db (0159, journal, audit actions), hub-api (processes/roles, runs, library, packs/contracts).
 
 ## Test tối thiểu
-unit `with-roles.test.ts`, `esign-node.test.ts`; int evotest `roles.int.test.ts` + `approval-flow-current.int.test.ts` (11 xanh).
+unit `with-roles.test.ts`, `esign-node.test.ts`; int evotest `roles.int.test.ts`, `approval-flow-roles.int.test.ts` (route PUT), `approval-flow-current.int.test.ts` (19 xanh).
 
 ## Quyết định trong lúc làm
 - Cờ ghi quản trị đặt tên chung `app.company_admin` (không dùng `sig_admin`); hàm tái dùng `hub.sig_ctx()`.
 - Audit: action `role_assigned`, entity `process_def` (entity_id = flow), before/after = `{role_key, group_id, user_id}`.
 - Giao việc theo (tenant, flow_id = process_defs.id, role_key); nhánh «cùng duyệt» chỉ nhận NHÓM (giao người ⇒ coi là chưa giao).
 - Vai chưa giao khi MỞ LƯỢT từ sự kiện: từ chối mở (AppError `ROLE_UNASSIGNED` ⇒ `FlowLaunchRefused group_missing:<khoá vai>` ⇒ lý do có sẵn `FLOW_GROUP_MISSING:<khoá vai>`, HĐ dừng chờ + «Mở lại»). Chuông cho quản trị công ty thuộc cr182-migrate. Chuyển cấp chưa giao ⇒ `escalate=null` (mặc định Toàn quyền), không chặn.
-- BR-G2 theo R2: giải vai tại lúc bắt đầu lượt ⇒ lượt MỚI dùng người mới; lượt đang chạy giữ ảnh chụp (kể cả bước chưa tới lượt của chính lượt đó).
+- BR-G2 theo R2: ảnh chụp giữ `role`; giải vai lúc bắt đầu lượt (chặn sớm) VÀ giải lại KHI MỞ bước (`refreshStageRoles` ở `launcher-plan.plan`, `team-runner.openReview`, `gates.effects.openReview`; có giao thì ghi đè `group_id`/`approver_user_id`/`company_signers` của bản chụp, vai bỏ giao thì giữ giá trị cũ). Bước đang chờ (đã mở) không qua đây ⇒ giữ người cũ.
+- Người/nhóm được giao mà hết hợp lệ (người bị khoá/vô hiệu, nhóm bị xoá) ⇒ `loadRoleAssignments` và cột `assignments` của `eventFlows` bỏ ⇒ coi như chưa giao.
+- Vai chặn chưa giao ⇒ từ chối MỌI đường mở lượt (tay, từ sự kiện, `!key`): 422 `ROLE_UNASSIGNED` kèm tên vai.
+- `PUT` kiểm `role_key` có trong stages của quy trình (422 `ROLE_KEY_UNKNOWN`); cờ `app.company_admin` do `assignRoleAudited` đặt sau khi kiểm `isAdmin` (bắt buộc) và gỡ ngay.
+- Journal: 0159 `when` = 1806903300000 (sau 0158 của cr184).
 - `need_digital` để `optional` (vắng = false) để không đổi kết quả decode def cũ; `esignConfigIssues`: có `signer_role` thì không đòi `company_signers`.
 - `eventFlows` thêm cột `assignments` trong CÙNG câu SQL (không thêm round-trip).
 
@@ -43,9 +47,13 @@ Bước Duyệt (kể cả nhóm cùng duyệt, chuyển cấp) và bước Ký 
 - Kịch bản: khi người thường ghi giao việc thì bị từ chối [test: apps/hub-api/src/modules/processes/roles/roles.int.test.ts » người thường gọi thẳng hub.role_assign (không cờ quản trị công ty) ⇒ 42501, không ghi gì]
 - Kịch bản: khi công ty khác đọc giao việc thì không thấy [test: apps/hub-api/src/modules/processes/roles/roles.int.test.ts » công ty khác KHÔNG đọc giao việc của công ty A]
 - Kịch bản: khi giao việc thì ghi nhật ký trước và sau [test: apps/hub-api/src/modules/processes/roles/roles.int.test.ts » quản trị giao NHÓM ⇒ ghi + audit role_assigned trước rỗng và sau nhóm, cả hai đích hay nhóm công ty khác ⇒ 22023]
+- Kịch bản: khi quản trị gói Sổ Hợp Tác không phải tenant admin ghi giao việc thì được còn người thường bị 403 [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-roles.int.test.ts » quản trị gói Sổ Hợp Tác (vai member, KHÔNG phải tenant admin) PUT ⇒ 200, nhóm kèm thành viên, audit role_assigned]
+- Kịch bản: khi đổi giao việc của vai bước sau thì bước đó mở ra cho người mới còn bước đã mở giữ người cũ [test: apps/hub-api/src/modules/processes/roles/roles.int.test.ts » BR-G2: lượt đang ở bước 1, đổi giao việc vai bước 2 ⇒ bước 2 mở ra cho người mới, bước 1 (đã mở) giữ người cũ, vai bỏ giao ⇒ giữ giá trị cũ]
+- Kịch bản: khi vai chặn chưa giao thì không mở được lượt [test: apps/hub-api/src/modules/processes/roles/roles.int.test.ts » lượt mở (tay hay từ sự kiện) mà còn vai chặn chưa giao ⇒ từ chối 422 kèm tên vai]
+- Kịch bản: khi người được giao bị khoá thì coi như chưa giao [test: apps/hub-api/src/modules/processes/roles/roles.int.test.ts » người được giao bị khoá sau khi giao ⇒ coi như chưa giao]
 - Kịch bản: khi tính ra người làm từ vai thì đúng cho duyệt, cùng duyệt, chuyển cấp, ký [test: packages/contracts/src/flow/with-roles.test.ts » review: giao nhóm ⇒ group_id, giao người ⇒ approver_user_id, bỏ mã cũ]
 
 ## Việc còn lại
-- Chưa có int chạy cả luồng mở lượt (task cho nhóm / từ chối mở khi vai chưa giao) và route PUT 403/200 với quản trị gói (cần harness app đầy đủ): hàm DB + `applyRoles` đã test, route chỉ ghép; cr182-qc nên phủ.
-- Số journal hub: 0159 `when` = 1806903200000; nếu cr184 thêm 0158 phải có `when` lớn hơn 0157 nhưng KHÔNG được lớn hơn 0159 rồi mới merge (drizzle so theo `when`).
+- Chưa có int chạy engine đầy đủ (kick lượt thật rồi thẻ duyệt cho người mới): `refreshStageRoles` test trên bản chụp của một run seed, các điểm gọi (`plan`, hai `openReview`) chỉ ghép; cr182-qc nên phủ bằng e2e.
+- Bước Ký: làm mới `company_signers` ở `plan` (trước khi chạy tool); chưa test riêng đường tool Ký.
 - Lỗi có sẵn ngoài phạm vi: `pmsg-db.int.test.ts:412` tsc, `form.rules.test.ts:107` đỏ.

@@ -5,7 +5,13 @@ import {
   type ApprovalFlowAssigned,
   type ApprovalFlowRoleAssigned,
 } from "@ai/contracts/pack-contracts";
-import type { EventFlow, PackWho } from "../../kit/public";
+import {
+  checkPackAccess,
+  type EventFlow,
+  type PackAccessView,
+  type PackWho,
+  packAccessInput,
+} from "../../kit/public";
 import type { ApprovalEngineBridge } from "./approval-engine.ports";
 import type { FlowGroups } from "./approval-flow.ports";
 
@@ -58,7 +64,7 @@ export function assignFlowRole(d: {
   userNames?: (who: PackWho, ids: readonly string[]) => Promise<ReadonlyMap<string, string>>;
 }) {
   return async (
-    who: PackWho & { role: string },
+    who: PackWho & { role: string; isAdmin: boolean },
     i: { flow_id: string; role_key: string; group_id?: string | null; user_id?: string | null },
   ): Promise<ApprovalFlowRoleAssigned> => {
     const port = d.engine?.port;
@@ -91,3 +97,13 @@ export function assignFlowRole(d: {
     };
   };
 }
+
+/** «Quản trị công ty» (Q15, BR-G1) = tenant_admin ∨ quyền `admin` gói Sổ Hợp Tác; quản trị nền tảng không phải. Cùng luật `signatures/company-admin`. */
+export const companyAdminCheck =
+  (view: PackAccessView) =>
+  async (user: { role: string; userId: string; tenantId: string }): Promise<boolean> => {
+    if (user.role === "tenant_admin") return true;
+    if (user.role === "platform_admin") return false;
+    const i = await packAccessInput(view, "contracts", user);
+    return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
+  };

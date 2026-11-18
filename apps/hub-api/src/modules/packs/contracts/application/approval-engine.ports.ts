@@ -61,7 +61,7 @@ export type ApprovalEnginePort = {
   eventFlows?(tenantId: string, event: string): Promise<EventFlow[]>;
   /** CR-182 · giao việc theo vai (quản trị công ty) — cùng kiểu `PackRunsPort.assignRole`. */
   assignRole?(
-    who: { tenantId: string; userId: string; role: string },
+    who: { tenantId: string; userId: string; role: string; isAdmin: boolean },
     i: { flowId: string; roleKey: string; groupId: string | null; userId: string | null },
   ): Promise<{
     before: { group_id: string | null; user_id: string | null };

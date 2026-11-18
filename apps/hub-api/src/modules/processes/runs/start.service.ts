@@ -31,7 +31,7 @@ import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { enqueueThread } from "../core/thread";
 import { canRun } from "../domain/runs/run-access.rules";
-import { resolveRunRoles } from "../roles/roles.repo";
+import { withRolesDef } from "../roles/roles.repo";
 import { attachFlowEvent, type FlowEventAttach } from "./flow-event-attach";
 import { kickOrFlag } from "./kick-failure";
 import { runDefIdsFor } from "./run-def-filter";
@@ -107,7 +107,7 @@ export class StartService {
         events: [],
         runId: null,
       };
-    const def = await this.#resolve(tx, u, userState, bang);
+    const def = await withRolesDef(tx, u.tenantId, await this.#resolve(tx, u, userState, bang));
     const r = await this.#insert(tx, u, {
       def,
       input: bang.kind === "process" ? bang.input : "",
@@ -203,9 +203,9 @@ export class StartService {
                 input: req.input,
               });
         const owners = o.flowEvent?.ownerGroupIds ?? [];
-        // CR-182 · R2 · MỘT điểm giải vai (lượt mở từ sự kiện mà còn vai chặn chưa giao ⇒ từ chối): xem `roles.repo`.
-        const rr = await resolveRunRoles(tx, u.tenantId, def0, !!o.flowEvent);
-        const def = { ...def0, stages: withOwnerOverride(rr.stages, owners) };
+        // CR-182 · R2 · giải vai lúc bắt đầu lượt (vai chặn chưa giao ⇒ từ chối), rồi Toàn quyền duyệt thay.
+        const rd = await withRolesDef(tx, u.tenantId, def0);
+        const def = { ...rd, stages: withOwnerOverride(rd.stages, owners) };
         // prod-fix · run gắn bản ghi gói (lượt duyệt HĐ chờ người nhiều ngày) không chịu/không tính trần run/tenant.
         const r = await this.#insert(
           tx,
@@ -242,7 +242,7 @@ export class StartService {
       this.d.db,
       { kind: "user", ...me },
       async (tx) => {
-        const def = await this.#resolve(tx, u, userState, bang);
+        const def = await withRolesDef(tx, u.tenantId, await this.#resolve(tx, u, userState, bang));
         const r = await this.#insert(tx, u, {
           def,
           input: bang.kind === "process" ? bang.input : "",

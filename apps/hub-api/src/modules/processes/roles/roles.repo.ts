@@ -6,6 +6,12 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { AppError } from "../../../lib/errors";
 
+/** Người/nhóm được giao còn hợp lệ: nhóm còn ở công ty, người còn dùng được (active, chưa bị khoá). Hết hợp lệ ⇒ coi như CHƯA giao. */
+export const VALID_ASSIGNEE = sql`and (a.group_id is null or exists (select 1 from admin.groups g
+    where g.id = a.group_id and g.tenant_id = a.tenant_id))
+  and (a.user_id is null or exists (select 1 from admin.users u
+    where u.id = a.user_id and u.tenant_id = a.tenant_id and u.active and not u.locked_by_tenant))`;
+
 type Row = { flow_id: string; role_key: string; group_id: string | null; user_id: string | null };
 
 /** Giao việc của nhiều quy trình MỘT câu (`flow_id = any(...)`); rỗng ⇒ không truy vấn. */
@@ -17,11 +23,12 @@ export async function loadRoleAssignments(
   const out = new Map<string, RoleAssignment[]>();
   if (flowIds.length === 0) return out;
   const rows =
-    await tx.execute<Row>(sql`select flow_id::text as flow_id, role_key, group_id::text as group_id,
-      user_id::text as user_id
-    from hub.process_role_assignments
-    where tenant_id = ${tenantId}::uuid
-      and flow_id = any(array(select jsonb_array_elements_text(${JSON.stringify([...new Set(flowIds)])}::jsonb))::uuid[])`);
+    await tx.execute<Row>(sql`select a.flow_id::text as flow_id, a.role_key, a.group_id::text as group_id,
+      a.user_id::text as user_id
+    from hub.process_role_assignments a
+    where a.tenant_id = ${tenantId}::uuid
+      and a.flow_id = any(array(select jsonb_array_elements_text(${JSON.stringify([...new Set(flowIds)])}::jsonb))::uuid[])
+      ${VALID_ASSIGNEE}`);
   for (const r of rows) {
     const list = out.get(r.flow_id) ?? [];
     list.push({ role_key: r.role_key, group_id: r.group_id, user_id: r.user_id });
@@ -48,10 +55,10 @@ export async function applyRolesMany(
   tenantId: string,
   flows: readonly { flowId: string; stages: readonly unknown[] }[],
 ): Promise<WithRolesOut[]> {
-  const need = flows.filter((f) => roleKeysOf(f.stages).length > 0).map((f) => f.flowId);
-  const m = await loadRoleAssignments(tx, tenantId, need);
+  const need = new Set(flows.filter((f) => roleKeysOf(f.stages).length > 0).map((f) => f.flowId));
+  const m = await loadRoleAssignments(tx, tenantId, [...need]);
   return flows.map((f) =>
-    need.includes(f.flowId)
+    need.has(f.flowId)
       ? withRoles(f.stages, m.get(f.flowId) ?? [])
       : { stages: [...f.stages], unassigned: [] },
   );
@@ -62,12 +69,15 @@ export type RoleAssignResult = {
   after: { group_id: string | null; user_id: string | null };
 };
 
-/** Giao / đổi / bỏ giao một vai. CHỈ gọi sau khi route đã kiểm quyền quản trị công ty (Q15). Lỗi DB: 42501 / 22023 / P0002 (xem 0159). */
+/** Đặt cờ quản trị công ty (SET LOCAL) — CHỈ `assignRoleAudited` gọi, ngay sau chỗ kiểm Q15 (`isAdmin`). */
+export const setCompanyAdmin = (tx: Tx, on: boolean) =>
+  tx.execute(sql`select set_config('app.company_admin', ${on ? "1" : ""}, true)`);
+
+/** Giao / đổi / bỏ giao một vai (cờ `app.company_admin` đã đặt). Lỗi DB: 42501 / 22023 / P0002 (xem 0159). */
 export async function assignRole(
   tx: Tx,
   i: { flowId: string; roleKey: string; groupId: string | null; userId: string | null },
 ): Promise<RoleAssignResult> {
-  await tx.execute(sql`select set_config('app.company_admin', '1', true)`);
   const [r] = await tx.execute<{
     before_group: string | null;
     before_user: string | null;
@@ -76,7 +86,6 @@ export async function assignRole(
   }>(sql`select before_group::text as before_group, before_user::text as before_user,
       after_group::text as after_group, after_user::text as after_user
     from hub.role_assign(${i.flowId}::uuid, ${i.roleKey}::text, ${i.groupId}::uuid, ${i.userId}::uuid)`);
-  await tx.execute(sql`select set_config('app.company_admin', '', true)`);
   if (!r) throw new Error("role_assign: không trả dòng");
   return {
     before: { group_id: r.before_group, user_id: r.before_user },
@@ -85,20 +94,58 @@ export async function assignRole(
 }
 
 /**
- * Giải vai lúc bắt đầu lượt (ảnh chụp: lượt đang chạy giữ người cũ, BR-G2). Lượt mở từ sự kiện mà còn vai CHẶN chưa giao ⇒ ném
- * `ROLE_UNASSIGNED` (422; bộ điều phối đổi thành lý do `FLOW_GROUP_MISSING:<khoá vai>` ⇒ HĐ dừng chờ «Chưa giao người», giao xong thì Mở lại).
+ * Giải vai lúc bắt đầu lượt (ảnh chụp). Còn vai CHẶN chưa giao ⇒ từ chối mở lượt (mở tay hay từ sự kiện): ném `ROLE_UNASSIGNED` (422, kèm tên vai);
+ * bộ điều phối đổi thành lý do `FLOW_GROUP_MISSING:<khoá vai>` ⇒ HĐ dừng chờ «Chưa giao người», giao xong thì Mở lại.
  */
 export async function resolveRunRoles(
   tx: Tx,
   tenantId: string,
   def: { id: string; stages: readonly unknown[] },
-  fromEvent: boolean,
 ): Promise<WithRolesOut> {
   const rr = await applyRoles(tx, tenantId, def.id, def.stages);
   const blocked = rr.unassigned.filter((x) => x.blocking);
-  if (fromEvent && blocked.length > 0)
-    throw new AppError("ROLE_UNASSIGNED", 422, "Role not assigned", {
-      roles: [...new Set(blocked.map((x) => x.role_key))].slice(0, 5),
-    });
+  if (blocked.length > 0)
+    throw new AppError(
+      "ROLE_UNASSIGNED",
+      422,
+      `Role not assigned: ${[...new Set(blocked.map((x) => x.label))].slice(0, 5).join(", ")}`,
+      {
+        roles: [...new Set(blocked.map((x) => x.role_key))].slice(0, 5),
+        labels: [...new Set(blocked.map((x) => x.label))].slice(0, 5),
+      },
+    );
   return rr;
+}
+
+/** `resolveRunRoles` trả cả def (đường mở lượt: mọi nơi dùng chung một luật). */
+export async function withRolesDef<D extends { id: string; stages: unknown[] }>(
+  tx: Tx,
+  tenantId: string,
+  def: D,
+): Promise<D> {
+  return { ...def, stages: (await resolveRunRoles(tx, tenantId, def)).stages };
+}
+
+/**
+ * BR-G2 · KHI MỞ bước: giải lại vai theo giao việc HIỆN TẠI và ghi đè bản chụp của run (`group_id` / `approver_user_id` / `company_signers`):
+ * bước CHƯA tới lượt dùng người mới; bước đang chờ (đã mở) không qua đây ⇒ giữ người cũ. Vai chưa giao lúc này ⇒ giữ giá trị đã giải lúc bắt đầu lượt.
+ * Stage không có vai ⇒ trả nguyên, 0 SQL. Gọi trong tx đã khoá run.
+ */
+export async function refreshStageRoles<S>(
+  tx: Tx,
+  tenantId: string,
+  runId: string,
+  stage: S,
+  idx: number,
+): Promise<S> {
+  if (roleKeysOf([stage]).length === 0) return stage;
+  const [r] = await tx.execute<{ def_id: string | null }>(sql`select process_def_id::text as def_id
+    from hub.process_runs where id = ${runId}::uuid and tenant_id = ${tenantId}::uuid`);
+  if (!r?.def_id) return stage;
+  const m = await loadRoleAssignments(tx, tenantId, [r.def_id]);
+  const next = withRoles([stage], m.get(r.def_id) ?? [], { keepUnassigned: true }).stages[0] as S;
+  if (JSON.stringify(next) === JSON.stringify(stage)) return stage;
+  await tx.execute(sql`update hub.process_runs set snapshot = jsonb_set(snapshot, array['stages', ${String(idx)}::text],
+      ${JSON.stringify(next)}::jsonb) where id = ${runId}::uuid and tenant_id = ${tenantId}::uuid`);
+  return next;
 }

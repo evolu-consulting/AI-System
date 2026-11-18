@@ -1,6 +1,7 @@
 // HUB-FR-107 · HUB-FR-109 · M5 · §3.1 · §3.4 · PF1 · hiệu ứng DB của cổng kiểm (tách khỏi `gates.service.ts` cho giới hạn
 // 400 dòng). Chạy TRONG tx quyết định (đã khoá `process_runs`); trả `UserEvent[]` để service phát SAU COMMIT. Thuần DB:
 // máy trạng thái (`transition`) do service gọi, đây chỉ ghi (`persist`/task/thread/notifier). Không log nội dung.
+
 import type {
   DecideProcessRunRequest,
   DecisionReason,
@@ -20,6 +21,7 @@ import { enqueueThread } from "../core/thread";
 import type { RunState } from "../domain/runs/run-state.rules";
 import { stageGateStatus, stepCountOf } from "../domain/runs/step.rules";
 import { WAIT_SKIP_TEXT, waitOutputMd } from "../domain/timers/due-at.rules";
+import { refreshStageRoles } from "../roles/roles.repo";
 import {
   persistStage,
   type StageWrite,
@@ -333,7 +335,9 @@ async function openReview(
   idx: number,
 ): Promise<UserEvent[]> {
   const { d, tx } = gx;
-  const def = snapOf(run).stages[idx];
+  const def0 = snapOf(run).stages[idx];
+  // CR-182 · BR-G2 · mở lại thẻ ⇒ giải lại vai theo giao việc hiện tại.
+  const def = def0 && (await refreshStageRoles(tx, run.tenantId, run.id, def0, idx));
   const groupId = def?.after.kind === "review" ? def.after.group_id : null;
   const stage = await stageRowOf(tx, run.id, idx);
   const outputId = stage?.current_output_id ?? null;

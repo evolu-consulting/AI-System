@@ -1,6 +1,7 @@
 // HUB-FR-106 · HUB-FR-114 · D5 · D7 · D8 · PF1 · (1) hiệu ứng máy trạng thái stage (ghi `process_outputs`/task/thread +
 // `notifier`, persist trạng thái) dùng chung cho agent đơn + nhóm; (2) chạy stage nhóm. Tách khỏi `stage-driver.ts` cho
 // giới hạn 400 dòng (một chiều `stage-driver` → `team-runner`, không ngược).
+
 import type { DecisionOption, DecisionReason } from "@ai/contracts/chat";
 import type { JobSourceRead } from "@ai/contracts/hub";
 import type { StageSource } from "@ai/contracts/hub-admin";
@@ -14,6 +15,7 @@ import { enqueueThread } from "../core/thread";
 import type { Effect, RunEvent, RunState } from "../domain/runs/run-state.rules";
 import { decisionAssignees, decisionOptionsFor } from "../domain/tasks/decision.rules";
 import { openParallel, parallelGroupIds } from "../gates/parallel-open";
+import { refreshStageRoles } from "../roles/roles.repo";
 import { executorRefOf } from "./executor-ref";
 import { outputAttachment, type PendingBlob } from "./output-attachment";
 import { refsFeedback, type StageSourceCtx, stageRefsCheck } from "./stage-sources";
@@ -223,9 +225,10 @@ async function openReview(
   c: Ctx,
   outputId: string | null,
 ): Promise<{ taskId: string; events: UserEvent[] }> {
-  const groupId = c.def.after.kind === "review" ? c.def.after.group_id : null;
+  const def = await refreshStageRoles(tx, c.head.tenant_id, c.x.runId, c.def, c.idx); // CR-182 · BR-G2
+  const groupId = def.after.kind === "review" ? def.after.group_id : null;
   const p = { tenantId: c.head.tenant_id, runId: c.x.runId, stageRunId: c.x.stageRunId, outputId };
-  const groupIds = parallelGroupIds(c.def); // CR-125 · «A + B cùng duyệt» ⇒ một thẻ mỗi nhóm
+  const groupIds = parallelGroupIds(def); // CR-125 · «A + B cùng duyệt» ⇒ một thẻ mỗi nhóm
   if (groupIds) return openParallel(d, tx, { ...p, groupIds });
   const at = new Date(d.now().getTime() + 86_400_000);
   const t = { ...p, kind: "review" as const, remindAt: at, userIds: [], groupId };

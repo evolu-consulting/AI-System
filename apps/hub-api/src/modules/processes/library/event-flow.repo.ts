@@ -30,7 +30,10 @@ export const EVENT_FLOW_SQL = (tenantId: string, event: string) => sql`
     cf.position, d.trigger -> 'when' as "when",
     -- CR-182 · giao việc theo vai của công ty (một câu, không thêm round-trip): màn xem giải vai + hiện «giao cho ai».
     coalesce((select jsonb_agg(jsonb_build_object('role_key', a.role_key, 'group_id', a.group_id, 'user_id', a.user_id)
-      order by a.role_key) from hub.process_role_assignments a where a.tenant_id = cf.tenant_id and a.flow_id = d.id), '[]'::jsonb) as assignments
+      order by a.role_key) from hub.process_role_assignments a where a.tenant_id = cf.tenant_id and a.flow_id = d.id
+      and (a.group_id is null or exists (select 1 from admin.groups g where g.id = a.group_id and g.tenant_id = a.tenant_id))
+      and (a.user_id is null or exists (select 1 from admin.users u where u.id = a.user_id and u.tenant_id = a.tenant_id
+        and u.active and not u.locked_by_tenant))), '[]'::jsonb) as assignments
   from hub.company_flows cf
   join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null
     and (d.tenant_id = cf.tenant_id or d.tenant_id is null)

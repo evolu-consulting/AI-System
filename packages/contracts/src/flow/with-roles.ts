@@ -69,25 +69,30 @@ export function roleKeysOf(stages: readonly unknown[]): string[] {
 }
 
 type By = ReadonlyMap<string, RoleAssignment>;
+/** `keep` = vai chưa giao thì GIỮ nguyên giá trị đang có trong stage (làm mới lúc mở bước), không xoá và không báo unassigned. */
+type Keep = boolean;
 
-function mainRole(a: Obj, i: number, by: By, un: UnassignedRole[]): Obj {
+function mainRole(a: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): Obj {
   const r = roleOf(a.role);
   if (!r) return a;
   const x = by.get(r.key);
   const { group_id: _g, group_key: _k, approver_user_id: _u, ...rest } = a;
   if (x?.group_id) return { ...rest, group_id: x.group_id };
   if (x?.user_id) return { ...rest, group_id: null, approver_user_id: x.user_id };
+  if (keep) return a;
+  if (keep) return a;
   un.push({ stage: i, slot: "review", role_key: r.key, label: r.label, blocking: true });
   return { ...rest, group_id: null };
 }
 
-function parallelRoles(a: Obj, i: number, by: By, un: UnassignedRole[]): Obj {
+function parallelRoles(a: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): Obj {
   const groups = groupsOf(a);
   if (groups.length === 0 || !isObj(a.parallel)) return a;
   const next = groups.map((g) => {
     const gr = isObj(g) ? roleOf(g.role) : null;
     if (!isObj(g) || !gr) return g;
     const gid = by.get(gr.key)?.group_id ?? null; // nhánh «cùng duyệt» chỉ nhận NHÓM (không có người)
+    if (!gid && keep) return g;
     const { group_id: _gi, group_key: _gk, ...rest } = g;
     if (!gid)
       un.push({ stage: i, slot: "parallel", role_key: gr.key, label: gr.label, blocking: true });
@@ -96,7 +101,7 @@ function parallelRoles(a: Obj, i: number, by: By, un: UnassignedRole[]): Obj {
   return { ...a, parallel: { ...a.parallel, groups: next } };
 }
 
-function escalateRole(a: Obj, i: number, by: By, un: UnassignedRole[]): Obj {
+function escalateRole(a: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): Obj {
   const e = isObj(a.escalate) ? a.escalate : null;
   const r = e ? roleOf(e.role) : null;
   if (!e || !r) return a;
@@ -104,16 +109,24 @@ function escalateRole(a: Obj, i: number, by: By, un: UnassignedRole[]): Obj {
   const { group_id: _a, group_key: _b, user_id: _c, ...rest } = e;
   if (x?.group_id) return { ...a, escalate: { ...rest, group_id: x.group_id } };
   if (x?.user_id) return { ...a, escalate: { ...rest, user_id: x.user_id } };
+  if (keep) return a;
+  if (keep) return a;
   un.push({ stage: i, slot: "escalate", role_key: r.key, label: r.label, blocking: false });
   return { ...a, escalate: null }; // không đích ⇒ mặc định Toàn quyền
 }
 
-function review(s: Obj, a: Obj, i: number, by: By, un: UnassignedRole[]): Obj {
-  const next = escalateRole(parallelRoles(mainRole(a, i, by, un), i, by, un), i, by, un);
+function review(s: Obj, a: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): Obj {
+  const next = escalateRole(
+    parallelRoles(mainRole(a, i, by, un, keep), i, by, un, keep),
+    i,
+    by,
+    un,
+    keep,
+  );
   return next === a ? s : { ...s, after: next };
 }
 
-function sign(s: Obj, i: number, by: By, un: UnassignedRole[]): Obj {
+function sign(s: Obj, i: number, by: By, un: UnassignedRole[], keep: Keep): Obj {
   const key = signerRoleOf(s);
   if (!key) return s;
   const e = s.executor as Obj;
@@ -121,6 +134,7 @@ function sign(s: Obj, i: number, by: By, un: UnassignedRole[]): Obj {
   const { [SIGNERS_ARG]: _drop, ...args } = isObj(e.args) ? e.args : ({} as Obj);
   const id = x?.group_id ? `group:${x.group_id}` : x?.user_id ? `user:${x.user_id}` : null;
   if (!id) {
+    if (keep) return s;
     un.push({ stage: i, slot: "sign", role_key: key, label: str(s.name) ?? key, blocking: true });
     return { ...s, executor: { ...e, args } };
   }
@@ -137,14 +151,16 @@ function sign(s: Obj, i: number, by: By, un: UnassignedRole[]): Obj {
 export function withRoles(
   stages: readonly unknown[],
   assignments: readonly RoleAssignment[],
+  opts: { keepUnassigned?: boolean } = {},
 ): WithRolesOut {
+  const keep = opts.keepUnassigned === true;
   const by: By = new Map(assignments.map((x) => [x.role_key, x]));
   const unassigned: UnassignedRole[] = [];
   const out = stages.map((s, i) => {
     if (!isObj(s)) return s;
     const a = isObj(s.after) && s.after.kind === "review" ? s.after : null;
-    const r = a ? review(s, a, i, by, unassigned) : s;
-    return sign(r, i, by, unassigned);
+    const r = a ? review(s, a, i, by, unassigned, keep) : s;
+    return sign(r, i, by, unassigned, keep);
   });
   return { stages: out, unassigned };
 }

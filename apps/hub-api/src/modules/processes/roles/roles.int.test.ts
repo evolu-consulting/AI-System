@@ -8,7 +8,7 @@ import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, inHub, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { assignRoleAudited } from "./role-assign.service";
-import { applyRoles, loadRoleAssignments } from "./roles.repo";
+import { applyRoles, loadRoleAssignments, refreshStageRoles, resolveRunRoles } from "./roles.repo";
 
 const T = { a: tenantId(1820), b: tenantId(1821) };
 const U = { adm: userId(1820), a2: userId(1821), a3: userId(1822), b1: userId(1823) };
@@ -24,13 +24,29 @@ const STAGES = [
     },
   },
 ];
+const STAGES2 = [
+  {
+    name: "Duyệt 1",
+    after: { kind: "review", group_id: null, role: { key: "cap-1", label: "Duyệt cấp 1" } },
+  },
+  {
+    name: "Duyệt 2",
+    after: { kind: "review", group_id: null, role: { key: "cap-2", label: "Duyệt cấp 2" } },
+  },
+];
 let o: Sql;
 let db: Db;
 let flowId = "";
+let flow2 = "";
 let gA = "";
 let gB = "";
 const g = (t: string, k: keyof typeof U) => ({ kind: "user", tenantId: t, userId: U[k] }) as const;
-const who = (k: keyof typeof U) => ({ tenantId: T.a, userId: U[k], role: "member" });
+const who = (k: keyof typeof U, isAdmin = true) => ({
+  tenantId: T.a,
+  userId: U[k],
+  role: "member",
+  isAdmin,
+});
 const code = async (fn: () => Promise<unknown>): Promise<string> => {
   try {
     await fn();
@@ -60,6 +76,12 @@ beforeAll(async () => {
     values (${T.a}, 'cr182-roles', 'R', ${JSON.stringify(STAGES)}::text::jsonb, '{"event":"contract.submitted"}'::jsonb, 'contracts')
     returning id::text as id`;
   flowId = r?.id as string;
+  const [r2] = await o<
+    { id: string }[]
+  >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app)
+    values (${T.a}, 'cr182-roles-2', 'R2', ${JSON.stringify(STAGES2)}::text::jsonb, '{"event":"contract.submitted"}'::jsonb, 'contracts')
+    returning id::text as id`;
+  flow2 = r2?.id as string;
   db = createDb(urls().hubApi, { max: 4 });
 }, 120_000);
 afterAll(async () => {
@@ -159,5 +181,81 @@ describe("CR-182 roles · RLS + giải vai (R2) + BR-G2", () => {
     const [c] =
       await o`select count(*)::int as n from hub.process_role_assignments where tenant_id = ${T.a} and flow_id = ${flowId}::uuid`;
     expect(c?.n).toBe(1);
+  });
+});
+
+describe("CR-182 roles · BR-G2 làm mới khi mở bước, vai chưa giao chặn mở lượt, người hết hợp lệ, kiểm role_key", () => {
+  const at = (stages: unknown[], i: number) =>
+    (stages[i] as { after: { group_id: string | null } }).after;
+  const assign = (roleKey: string, groupId: string | null, userId: string | null = null) =>
+    assignRoleAudited(db, who("adm"), { flowId: flow2, roleKey, groupId, userId });
+
+  it("lượt mở (tay hay từ sự kiện) mà còn vai chặn chưa giao ⇒ từ chối 422 kèm tên vai", async () => {
+    const e = await withHubScope(db, g(T.a, "adm"), (tx) =>
+      resolveRunRoles(tx, T.a, { id: flow2, stages: STAGES2 }),
+    ).catch((x: { code?: string; status?: number; details?: { labels?: string[] } }) => x);
+    expect((e as { code?: string }).code).toBe("ROLE_UNASSIGNED");
+    expect((e as { status?: number }).status).toBe(422);
+    expect((e as { details?: { labels?: string[] } }).details?.labels).toEqual([
+      "Duyệt cấp 1",
+      "Duyệt cấp 2",
+    ]);
+  });
+
+  it("vai không có trong quy trình ⇒ 422 ROLE_KEY_UNKNOWN; không phải quản trị ⇒ FORBIDDEN", async () => {
+    const run = (isAdmin: boolean, roleKey: string) =>
+      assignRoleAudited(db, who("a2", isAdmin), {
+        flowId: flow2,
+        roleKey,
+        groupId: gA,
+        userId: null,
+      }).catch((x: { code?: string }) => x.code);
+    expect(await run(true, "khong-co")).toBe("ROLE_KEY_UNKNOWN");
+    expect(await run(false, "cap-1")).toBe("FORBIDDEN");
+  });
+
+  it("BR-G2: lượt đang ở bước 1, đổi giao việc vai bước 2 ⇒ bước 2 mở ra cho người mới, bước 1 (đã mở) giữ người cũ, vai bỏ giao ⇒ giữ giá trị cũ", async () => {
+    await assign("cap-1", gA);
+    await assign("cap-2", gA);
+    const snap = (
+      await withHubScope(db, g(T.a, "adm"), (tx) => applyRoles(tx, T.a, flow2, STAGES2))
+    ).stages;
+    expect(at(snap, 1).group_id).toBe(gA);
+    const runId = crypto.randomUUID();
+    await o.begin(async (tx) => {
+      await tx`set local session_replication_role = replica`; // run mồ côi (không cần hội thoại/flow): chỉ kiểm bản chụp
+      await tx`insert into hub.process_runs (id, tenant_id, process_def_id, def_version, snapshot, started_by, origin_kind, input,
+          conversation_id, flow_id)
+        values (${runId}, ${T.a}, ${flow2}, 1, ${JSON.stringify({ stages: snap })}::text::jsonb, ${U.a2}, 'conversation', 'x',
+          gen_random_uuid(), gen_random_uuid())`;
+    });
+    await assign("cap-1", gB); // bước 1 đang chờ: KHÔNG đổi
+    await assign("cap-2", gB); // bước 2 chưa tới lượt: dùng người mới
+    const opened = await withHubScope(db, g(T.a, "adm"), (tx) =>
+      refreshStageRoles(tx, T.a, runId, snap[1], 1),
+    );
+    expect((opened as { after: { group_id: string } }).after.group_id).toBe(gB);
+    const [row] = await o<
+      { s0: string; s1: string }[]
+    >`select snapshot->'stages'->0->'after'->>'group_id' as s0,
+      snapshot->'stages'->1->'after'->>'group_id' as s1 from hub.process_runs where id = ${runId}::uuid`;
+    expect(row).toEqual({ s0: gA, s1: gB });
+    await assign("cap-2", null);
+    const kept = await withHubScope(db, g(T.a, "adm"), (tx) =>
+      refreshStageRoles(tx, T.a, runId, opened, 1),
+    );
+    expect((kept as { after: { group_id: string } }).after.group_id).toBe(gB);
+  });
+
+  it("người được giao bị khoá sau khi giao ⇒ coi như chưa giao", async () => {
+    await assign("cap-2", null, U.a3);
+    const ok = await withHubScope(db, g(T.a, "adm"), (tx) => applyRoles(tx, T.a, flow2, STAGES2));
+    expect(ok.unassigned.map((x) => x.role_key)).toEqual([]);
+    await o`update admin.users set locked_by_tenant = true where id = ${U.a3}`;
+    const locked = await withHubScope(db, g(T.a, "adm"), (tx) =>
+      applyRoles(tx, T.a, flow2, STAGES2),
+    );
+    expect(locked.unassigned.map((x) => x.role_key)).toEqual(["cap-2"]);
+    await o`update admin.users set locked_by_tenant = false where id = ${U.a3}`;
   });
 });
