@@ -385,6 +385,7 @@
         "chip": "Tạm khoá thực hiện"
       },
       "owner": {
+        "tip": "Phụ trách: {{name}}",
         "label": "Phụ trách"
       },
       "banner": {

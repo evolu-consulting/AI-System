@@ -38,10 +38,16 @@ export type SignerChip = {
   key: string;
   name: string;
   side: "A" | "B";
+  /** CR-184 · mỗi thành viên một avatar: người ⇒ chính họ (id = ref); nhóm ⇒ các thành viên; đối tác ⇒ id null (chữ cái đầu). */
+  people: { id: string | null; name: string }[];
   mine: boolean;
   count: number;
   state: "none" | "open" | "signed";
 };
+function signerPeople(g: SignSignerOut): SignerChip["people"] {
+  if (g.members?.length) return g.members.map((m) => ({ id: m.id, name: m.name }));
+  return [{ id: g.kind === "user" ? g.ref : null, name: g.name }];
+}
 export function signerChips(s: SignSessionOut): SignerChip[] {
   const files = signFiles(s);
   return s.signers.map((g: SignSignerOut) => {
@@ -55,6 +61,7 @@ export function signerChips(s: SignSessionOut): SignerChip[] {
       key: `${g.side}:${g.kind}:${g.ref}`,
       name: signerWho(g),
       side: g.side,
+      people: signerPeople(g),
       mine: g.mine,
       count: mine.length,
       state,

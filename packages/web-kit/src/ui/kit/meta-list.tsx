@@ -16,7 +16,7 @@ export function MetaList({ items, className }: { items: MetaItem[]; className?: 
     <dl
       data-slot="meta-list"
       className={cn(
-        "m-0 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-muted-foreground max-sm:grid max-sm:grid-cols-[max-content_minmax(0,1fr)] max-sm:items-center max-sm:gap-x-3 max-sm:gap-y-1.5",
+        "m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground max-sm:grid max-sm:grid-cols-[max-content_minmax(0,1fr)] max-sm:items-center max-sm:gap-x-3 max-sm:gap-y-1.5",
         className,
       )}
     >
@@ -24,7 +24,7 @@ export function MetaList({ items, className }: { items: MetaItem[]; className?: 
         <div
           key={i.label}
           data-slot="meta-item"
-          className="flex min-w-0 gap-1 max-sm:contents sm:not-first:before:mr-1 sm:not-first:before:content-['·']"
+          className="flex min-w-0 items-center gap-1 max-sm:contents sm:not-first:before:mr-1 sm:not-first:before:content-['·']"
         >
           <dt className="sm:sr-only max-sm:after:content-[':']">{i.label}</dt>
           <dd className="m-0 min-w-0 break-words text-foreground">{i.value}</dd>

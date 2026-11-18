@@ -1,45 +1,63 @@
-// CR-181 · s13 · đầu trang HĐ: dải người ký (Bên A/B). Mỗi người một chip: tên · bên · «n chỗ ký» / «Chưa có chỗ ký» / «Đã ký».
+// CR-181 · s13 · đầu trang HĐ: dải người ký (Bên A/B). CR-184: mỗi người một avatar (nhóm: một avatar mỗi thành viên), viền tím Bên A / cam Bên B,
+// dấu ✓ nhỏ khi đã ký; tooltip «<họ tên> · Bên A · n chỗ ký / Đã ký» (chữ cũng có trong DOM, ẩn bằng sr-only).
 import type { SignSessionOut } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
+import { usePeopleCards } from "~/features/contract-shared/people";
+import { AvatarTip } from "~/shared/ui/AvatarTip";
 import { signerChips } from "../../lib/contract-view";
 
 export function SignersStrip({ session }: { session: SignSessionOut }) {
   const { t } = useTranslation();
   const chips = signerChips(session);
+  const cards = usePeopleCards(chips.flatMap((c) => c.people.map((p) => p.id)));
   if (chips.length === 0) return null;
   return (
     <ul
       data-testid="signers-strip"
       aria-label={t("contracts.docsignc.strip")}
-      className="mb-3 flex flex-wrap gap-2"
+      className="mb-3 flex flex-wrap items-center gap-3"
     >
-      {chips.map((c) => (
-        <li
-          key={c.key}
-          data-testid="signer-chip"
-          data-state={c.state}
-          className="flex items-center gap-2 rounded-md border border-rule bg-panel px-3 py-1 text-sm"
-        >
-          <span aria-hidden="true" className={c.side === "A" ? "text-act" : "text-late"}>
-            ●
-          </span>
-          <b className="font-medium">{c.name}</b>
-          <span className="text-dim">
-            {t(c.side === "A" ? "contracts.docsign.tray.sideA" : "contracts.docsign.tray.sideB")}
-          </span>
-          <span
-            className={
-              c.state === "signed" ? "text-ok" : c.state === "none" ? "text-late" : "text-dim"
-            }
+      {chips.map((c) => {
+        const side = t(
+          c.side === "A" ? "contracts.docsign.tray.sideA" : "contracts.docsign.tray.sideB",
+        );
+        const state =
+          c.state === "signed"
+            ? t("contracts.docsignc.chipSigned")
+            : c.state === "none"
+              ? t("contracts.docsignc.chipNone")
+              : t("contracts.docsignc.chipCount", { count: c.count });
+        const group = c.people.length > 1;
+        return (
+          <li
+            key={c.key}
+            data-testid="signer-chip"
+            data-state={c.state}
+            className="flex items-center gap-1"
           >
-            {c.state === "signed"
-              ? t("contracts.docsignc.chipSigned")
-              : c.state === "none"
-                ? t("contracts.docsignc.chipNone")
-                : t("contracts.docsignc.chipCount", { count: c.count })}
-          </span>
-        </li>
-      ))}
+            {c.people.map((p) => (
+              <AvatarTip
+                key={p.id ?? p.name}
+                name={p.name}
+                src={p.id ? cards.get(p.id)?.avatar : null}
+                tip={`${group ? c.name : p.name} · ${side} · ${state}`}
+                ring={c.side === "A" ? "ring-act" : "ring-late"}
+                badge={
+                  c.state === "signed" ? (
+                    <span
+                      aria-hidden="true"
+                      data-testid="signed-mark"
+                      className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-ok text-[10px] text-white ring-2 ring-card"
+                    >
+                      ✓
+                    </span>
+                  ) : null
+                }
+              />
+            ))}
+          </li>
+        );
+      })}
     </ul>
   );
 }
