@@ -32,7 +32,7 @@ Trạng thái gộp: chưa gộp
 ### ADDED pack-contracts/ky-tren-tai-lieu.md
 #### Yêu cầu: Phụ lục ký sau
 HĐ đã duyệt có nút «Thêm phụ lục cần ký»: tải PDF ⇒ tạo phụ lục dưới HĐ gốc (cùng đối tác, hướng, loại) với tệp chính «Cần ký», rồi chạy duyệt và ký riêng; HĐ gốc giữ nguyên và liệt kê phụ lục kèm trạng thái.
-- Kịch bản: khi người dùng tải phụ lục cho HĐ đã duyệt thì phụ lục có hướng và đối tác của HĐ gốc [test: thủ công — chạy trên evotest ở e2e cuối đợt]
+- Kịch bản: khi người dùng tải phụ lục cho HĐ đã duyệt thì phụ lục có hướng và đối tác của HĐ gốc [test: e2e/cr181/journey-dot2.spec.ts » phụ lục cần ký: sale thêm phụ lục trên HĐ đã ký ⇒ phụ lục dưới HĐ gốc, Gửi duyệt ⇒ trưởng phòng có việc]
 #### Yêu cầu: Kiểm tra tệp
 Người dùng tải một tệp lên màn «Kiểm tra tệp»; máy chủ băm sha256 (không lưu tệp) và so với bản đã ký, tệp gốc cần ký của công ty mình, chỉ trong HĐ người đó thấy.
 - Kịch bản: khi tệp trùng bản đã ký thì báo khớp kèm mã kiểm tra và người ký [test: apps/hub-api/src/modules/packs/contracts/adapters/verify-file.int.test.ts » khớp bản đã ký ⇒ HĐ, mã kiểm tra, người ký, bản để mở]
