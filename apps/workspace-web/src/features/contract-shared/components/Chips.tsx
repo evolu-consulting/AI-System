@@ -4,12 +4,27 @@ import { useTranslation } from "react-i18next";
 import { Tag } from "~/components/shared/tag";
 import { EFFECT_TONE, STATUS_TONE } from "../lib/status-view";
 
-export function StatusChip({ status }: { status: ContractStatus }) {
+/** `signed` (CR-182): HĐ đã duyệt xong và mọi tệp cần ký đã «Đã ký đủ» ⇒ nhãn «Đã ký» thay «Đã duyệt xong». */
+export function StatusChip({
+  status,
+  signed = false,
+}: {
+  status: ContractStatus;
+  signed?: boolean;
+}) {
   const { t } = useTranslation();
   return (
-    <span data-testid="status-chip" data-status={status}>
+    <span
+      data-testid="status-chip"
+      data-status={status}
+      data-signed={signed && status === "done" ? "1" : undefined}
+    >
       <Tag tone={STATUS_TONE[status]} className="font-semibold">
-        {t(`contracts.u5.status.${status}`)}
+        {t(
+          signed && status === "done"
+            ? "contracts.docsignc.statusSigned"
+            : `contracts.u5.status.${status}`,
+        )}
       </Tag>
     </span>
   );

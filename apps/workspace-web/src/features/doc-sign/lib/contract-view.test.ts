@@ -2,6 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import type { SignFieldOut, SignFileOut, SignSessionOut } from "@ai/contracts/pack-contracts";
 import {
+  allSigned,
   checklist,
   fileStatus,
   hasSignFiles,
@@ -320,5 +321,27 @@ describe("fix-cr182-wait · chờ đối tác cho mọi người xem; người k
       kind: "signer",
       name: "Giám đốc",
     });
+  });
+});
+
+describe("fix-cr182-signed-label · nhãn «Đã ký» khi mọi tệp cần ký đã ký đủ", () => {
+  const A1 = fld({ signed: true });
+  const B1 = (signed: boolean) =>
+    fld({ id: "b", side: "B", signer_kind: "partner", signer_ref: "b@x.vn", signed });
+  test("Bên A + Bên B đã ký ⇒ true", () => {
+    expect(allSigned(sess([file({ fields: [A1, B1(true)] })]))).toBe(true);
+  });
+  test("còn chờ đối tác ⇒ false, Bên A chưa ký ⇒ false", () => {
+    expect(allSigned(sess([file({ fields: [A1, B1(false)] })]))).toBe(false);
+    expect(allSigned(sess([file({ fields: [fld({})] })]))).toBe(false);
+  });
+  test("không có tệp cần ký, hoặc công ty tắt ⇒ false (nhãn như cũ)", () => {
+    expect(allSigned(sess([file({ needs_sign: false })]))).toBe(false);
+    expect(allSigned(sess([file({ fields: [A1] })], { enabled: false }))).toBe(false);
+  });
+  test("một tệp chưa đủ ⇒ false", () => {
+    expect(
+      allSigned(sess([file({ fields: [A1] }), file({ file_id: "q", fields: [fld({})] })])),
+    ).toBe(false);
   });
 });

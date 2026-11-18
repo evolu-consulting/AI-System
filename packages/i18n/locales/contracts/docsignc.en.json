@@ -53,7 +53,8 @@
       },
       "boxFree": "You sign anywhere you choose on {{files}} files",
       "signedAll": "You have finished signing",
-      "waitPartner": "Waiting for partner {{name}} to sign"
+      "waitPartner": "Waiting for partner {{name}} to sign",
+      "statusSigned": "Signed"
     },
     "psign": {
       "loading": "Opening the signing page…",

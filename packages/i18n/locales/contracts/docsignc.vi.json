@@ -53,7 +53,8 @@
       },
       "boxFree": "Bạn ký ở vị trí tự chọn trên {{files}} tệp",
       "signedAll": "Bạn đã ký xong",
-      "waitPartner": "Chờ đối tác {{name}} ký"
+      "waitPartner": "Chờ đối tác {{name}} ký",
+      "statusSigned": "Đã ký"
     },
     "psign": {
       "loading": "Đang mở trang ký…",

@@ -152,6 +152,12 @@ export const hideLegacyEsign = (s: SignSessionOut | undefined | null): boolean =
 export const showsPrepCard = (status: string, s: SignSessionOut | undefined | null): boolean =>
   !!s && status === "draft" && s.mode === "prep";
 
+/** CR-182: công ty bật + có tệp cần ký + MỌI tệp cần ký «Đã ký đủ» (Bên A xong, không còn chỗ Bên B chưa ký) ⇒ HĐ «Đã ký». */
+export const allSigned = (s: SignSessionOut): boolean => {
+  const need = signFiles(s);
+  return s.enabled && need.length > 0 && need.every((f) => fileStatus(f).kind === "done");
+};
+
 /** Có tệp cần ký (hiện khung «Ký trên tài liệu» ở thẻ duyệt). */
 export const hasSignFiles = (s: SignSessionOut) => signFiles(s).length > 0;
 

@@ -32,7 +32,12 @@ import {
 } from "~/features/doc-sign/components/contract/SignBox";
 import { SignersStrip } from "~/features/doc-sign/components/contract/SignersStrip";
 import { useContractSign } from "~/features/doc-sign/hooks/use-contract-sign";
-import { hideLegacyEsign, showsPrepCard, signStepOf } from "~/features/doc-sign/lib/contract-view";
+import {
+  allSigned,
+  hideLegacyEsign,
+  showsPrepCard,
+  signStepOf,
+} from "~/features/doc-sign/lib/contract-view";
 import { FramePanel } from "~/features/frame-panel/components/FramePanel";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
@@ -184,6 +189,7 @@ export function ContractBody(p: {
         <div className="flex flex-col gap-4 text-base leading-[1.55] [&>*]:mb-0!">
           <ContractHead
             c={c}
+            signed={session ? allSigned(session) : false}
             title={c.title}
             lead={lead}
             sticky={rule.sticky}

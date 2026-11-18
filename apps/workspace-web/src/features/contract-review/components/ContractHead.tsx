@@ -24,13 +24,17 @@ type Props = {
   rename?: { enabled: boolean; onSave: (next: string) => Promise<string | null> };
   /** CR-128 (e): MỘT nút chính + «Thao tác ▾» (HeadActions). */
   actions: ReactNode;
+  /** CR-182: mọi tệp cần ký đã ký đủ (cả Bên B) ⇒ nhãn «Đã ký». */
+  signed?: boolean;
 };
 
 function Titled({
   c,
   title,
   rename,
+  signed,
 }: {
+  signed?: boolean | undefined;
   c: ContractDetail;
   title: string;
   rename: Props["rename"];
@@ -45,7 +49,7 @@ function Titled({
         onSave={rename?.onSave ?? (async () => null)}
       />
       <span className="flex shrink-0 flex-wrap items-center gap-2">
-        <StatusChip status={c.status} />
+        <StatusChip status={c.status} signed={signed === true} />
         {c.effect && c.status === "done" && <EffectChip effect={c.effect} daysLeft={left} />}
         {c.hold && <ContractLockChip reason={c.hold.reason} />}
       </span>
@@ -60,7 +64,7 @@ export function ContractHead(p: Props) {
       {t("contracts.review.back")}
     </Link>
   );
-  const title = <Titled c={p.c} title={p.title} rename={p.rename} />;
+  const title = <Titled c={p.c} title={p.title} rename={p.rename} signed={p.signed} />;
   if (p.sticky)
     return (
       <FormBar accent crumb={crumb} title={title} lead={p.lead} cancel={null} save={p.actions} />
