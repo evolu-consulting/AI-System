@@ -33,6 +33,7 @@ import { checkPathOf, constArgs, ESIGN_CODEC, withConfigArgs } from "../../../li
 import { DEFAULT_SIGNER_ROLE, rolesOfStages } from "../../../lib/role-pick";
 import type { StageRole } from "../../../lib/role-types";
 import type { NodePanelProps } from "../../panel-registry";
+import { EsignOldWay } from "./EsignOldWay";
 
 /** Giá trị đại diện "Theo cài đặt ứng dụng" (Radix Select không nhận value rỗng). */
 const DEFAULT = "default";
@@ -65,8 +66,6 @@ function useCheck(path: string, cfg: EsignNodeConfig, on: boolean) {
 const isLegacy = (c: EsignNodeConfig): boolean => !!c.provider || !!c.company_signers?.length;
 
 const sid = (s: { kind: string; id: string }) => `${s.kind}:${s.id}`;
-
-type Choice = { kind: "user" | "group"; id: string; label: string };
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: CR-127 · U2 — form nhiều ô, tách ở đợt dọn sau
 export function EsignPanel(p: NodePanelProps) {
@@ -198,61 +197,83 @@ export function EsignPanel(p: NodePanelProps) {
   const toNum = (v: string) => (v.trim() === "" ? undefined : Math.trunc(Number(v)));
   return (
     <fieldset className="space-y-3" data-testid="node-config" aria-label={t(`${K}title`)}>
-      <RoleField
-        id={`${stage.uid}-signer-role`}
-        value={roleValue}
-        existing={existing}
-        readOnly={readOnly}
-        error={issue("signer_role") ?? issue("company_signers")}
-        onChange={(r) => {
-          setFresh(r.key === "" ? r : null);
-          set({
-            signer_role: r.key === "" ? undefined : r.key,
-            signer_role_label: r.key === "" || r.label.trim() === "" ? undefined : r.label.trim(),
-          });
-        }}
-      />
-      <Label className="flex items-center gap-2 font-normal" htmlFor={`${stage.uid}-need-digital`}>
-        <Switch
-          id={`${stage.uid}-need-digital`}
-          checked={cfg.need_digital === true}
-          disabled={readOnly}
-          onCheckedChange={(v) => set({ need_digital: v ? true : undefined })}
+      {ui.oldWay ? (
+        <EsignOldWay
+          uid={stage.uid}
+          cfg={cfg}
+          opts={o}
+          choices={choices}
+          readOnly={readOnly}
+          issue={issue}
+          set={set}
         />
-        {t(`${K}needDigital`)}
-      </Label>
-      {issue("need_digital") ? (
-        <p role="alert" className="m-0 text-caption text-destructive">
-          {issue("need_digital")}
-        </p>
-      ) : null}
-      {isLegacy(cfg) ? (
-        <div
-          className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2 text-caption text-muted-foreground"
-          data-testid="esign-legacy"
-        >
-          <span>{t(`${K}legacy`, { what: legacyText })}</span>
-          {readOnly ? null : ui.canSwitch ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              data-testid="esign-legacy-switch"
-              // giữ «Ký qua» + người ký cũ (đường lùi khi công ty tắt lại ký trên tài liệu): lúc chạy vai thắng khi công ty bật
-              onClick={() => set({ signer_role: cfg.signer_role ?? DEFAULT_SIGNER_ROLE.key })}
+      ) : (
+        <>
+          <RoleField
+            id={`${stage.uid}-signer-role`}
+            value={roleValue}
+            existing={existing}
+            readOnly={readOnly}
+            error={issue("signer_role") ?? issue("company_signers")}
+            onChange={(r) => {
+              setFresh(r.key === "" ? r : null);
+              set({
+                signer_role: r.key === "" ? undefined : r.key,
+                signer_role_label:
+                  r.key === "" || r.label.trim() === "" ? undefined : r.label.trim(),
+              });
+            }}
+          />
+          <Label
+            className="flex items-center gap-2 font-normal"
+            htmlFor={`${stage.uid}-need-digital`}
+          >
+            <Switch
+              id={`${stage.uid}-need-digital`}
+              checked={cfg.need_digital === true}
+              disabled={readOnly}
+              onCheckedChange={(v) => set({ need_digital: v ? true : undefined })}
+            />
+            {t(`${K}needDigital`)}
+          </Label>
+          {issue("need_digital") ? (
+            <p role="alert" className="m-0 text-caption text-destructive">
+              {issue("need_digital")}
+            </p>
+          ) : null}
+          {isLegacy(cfg) ? (
+            <div
+              className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2 text-caption text-muted-foreground"
+              data-testid="esign-legacy"
             >
-              {t(`${K}legacySwitch`)}
-            </Button>
-          ) : (
-            <span data-testid="esign-ondoc-off">{t(`${K}ondocOff`)}</span>
-          )}
-        </div>
-      ) : null}
-      {ui.blocked ? (
-        <p role="alert" className="text-caption text-destructive" data-testid="esign-ondoc-blocked">
-          {t(`${K}err.ONDOC_NOT_ENABLED`)}
-        </p>
-      ) : null}
+              <span>{t(`${K}legacy`, { what: legacyText })}</span>
+              {readOnly ? null : ui.canSwitch ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  data-testid="esign-legacy-switch"
+                  // giữ «Ký qua» + người ký cũ (đường lùi khi công ty tắt lại ký trên tài liệu): lúc chạy vai thắng khi công ty bật
+                  onClick={() => set({ signer_role: cfg.signer_role ?? DEFAULT_SIGNER_ROLE.key })}
+                >
+                  {t(`${K}legacySwitch`)}
+                </Button>
+              ) : (
+                <span data-testid="esign-ondoc-off">{t(`${K}ondocOff`)}</span>
+              )}
+            </div>
+          ) : null}
+          {ui.blocked ? (
+            <p
+              role="alert"
+              className="text-caption text-destructive"
+              data-testid="esign-ondoc-blocked"
+            >
+              {t(`${K}err.ONDOC_NOT_ENABLED`)}
+            </p>
+          ) : null}
+        </>
+      )}
       {o.enabled ? null : (
         <p role="status" className="text-caption text-warning" data-testid="esign-disabled">
           {t(`${K}disabled`)} <EsignSettingsLink />

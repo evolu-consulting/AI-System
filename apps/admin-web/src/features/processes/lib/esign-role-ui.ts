@@ -9,6 +9,8 @@ export type EsignRoleUi = {
   canSwitch: boolean;
   /** Bước chỉ có vai (không «Ký qua») mà công ty tắt ⇒ lượt sẽ kẹt: báo ngay ở panel. */
   blocked: boolean;
+  /** Công ty tắt/chưa rõ và bước chưa có vai ⇒ hiện cách cũ («Ký qua» + người ký phía công ty), KHÔNG hiện ô Vai. */
+  oldWay: boolean;
 };
 
 /** `onDoc` undefined = chưa biết (options chưa tải / API cũ) ⇒ giữ cách cũ. */
@@ -21,5 +23,6 @@ export function esignRoleUi(
     autoRole: onDoc === true && !c.signer_role && !legacy,
     canSwitch: onDoc === true && legacy && !c.signer_role,
     blocked: onDoc === false && !!c.signer_role && !c.provider,
+    oldWay: onDoc !== true && !c.signer_role,
   };
 }
