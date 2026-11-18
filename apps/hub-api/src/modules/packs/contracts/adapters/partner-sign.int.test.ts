@@ -71,6 +71,9 @@ const uow = () =>
     import("../../kit/public").PackSystemUow<PartnerSignRepos>;
 
 let off = false;
+let completeFails = false;
+type Counts = { a_done: boolean; b_total: number; b_open: number; run_id: string } | null;
+let countsNow: Counts | undefined;
 let onProduce: (() => Promise<void>) | null = null;
 const RUN = "7a1d0000-0000-4000-8000-0000000000bb";
 const make = () =>
@@ -113,8 +116,12 @@ const make = () =>
             },
           },
     baseUrl: () => "https://app.test",
-    counts: async () => ({ a_done: true, b_total: 1, b_open: 1, run_id: RUN }),
-    complete: async () => void completed++,
+    counts: async () =>
+      countsNow === undefined ? { a_done: true, b_total: 1, b_open: 1, run_id: RUN } : countsNow,
+    complete: async () => {
+      if (completeFails) throw new Error("complete_failed");
+      completed++;
+    },
     log: { info: () => undefined, warn: () => undefined },
     newId: () => Bun.randomUUIDv7(),
     now: () => new Date(),
@@ -530,6 +537,34 @@ describe("CR-182 · đối tác ký qua link", () => {
       { n: number }[]
     >`select count(*)::int as n from contracts.partner_sign_links where contract_id = ${f.id} and signed_at is not null`;
     expect(l?.n).toBe(1);
+  });
+
+  it("tự phục hồi: thả bước lỗi ở lần Lưu cuối ⇒ GET trạng thái thả bước, GET lần nữa không thả lặp, lượt khác không bị thả nhầm", async () => {
+    const f = await fixture();
+    const token = await invite(f.id);
+    expect(
+      (await call("POST", "/quick-signature", token, { method: "type", png: PNG_B64 })).status,
+    ).toBe(200);
+    const before = completed;
+    completeFails = true;
+    const r = await call("POST", "/sign", token, {
+      file_id: f.fileId,
+      marks: [fieldMark(f.bField)],
+    });
+    completeFails = false;
+    expect(r.json).toMatchObject({ completed: true });
+    expect(completed).toBe(before); // thả bước lỗi ⇒ link «đã ký» mà bước Ký còn chờ
+    const waiting = { a_done: true, b_total: 1, b_open: 0 };
+    countsNow = { ...waiting, run_id: "7a1d0000-0000-4000-8000-0000000000cc" }; // bước chờ của lượt KHÁC
+    await ucs().status(w(U1), f.id);
+    expect(completed).toBe(before);
+    countsNow = { ...waiting, run_id: RUN };
+    await ucs().status(w(U1), f.id);
+    expect(completed).toBe(before + 1); // đúng lượt ⇒ thả
+    countsNow = null; // bước đã được thả ⇒ không còn bước chờ
+    await ucs().status(w(U1), f.id);
+    expect(completed).toBe(before + 1); // không thả lặp
+    countsNow = undefined;
   });
 
   it("POST không có CSRF / khác nguồn ⇒ 403", async () => {

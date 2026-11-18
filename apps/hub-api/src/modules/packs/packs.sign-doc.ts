@@ -99,14 +99,15 @@ export function partnerSignPorts(db: Db): PartnerSignPorts {
   return {
     counts: async (tenantId, contractId) => {
       const s = await stepOf(db, { tenantId, userId: NIL }, contractId);
-      const signers = s ? ondocStepAt(s.stages, s.idx) : null;
+      if (!s) return null;
+      const signers = ondocStepAt(s.stages, s.idx);
       if (!signers || signers.length === 0) return null;
       const c = await reads.ondocCounts(tenantId, contractId, ondocKeys(signers));
       return {
         a_done: ondocADone(c),
         b_total: c.b_total,
         b_open: c.b_open,
-        run_id: s?.runId ?? "",
+        run_id: s.runId,
       };
     },
     complete: async (tenantId, contractId) => {

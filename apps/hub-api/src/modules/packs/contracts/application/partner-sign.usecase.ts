@@ -165,10 +165,16 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
     );
   }
 
-  async function recover(tenantId: string, contractId: string): Promise<void> {
+  /** Chỉ thả khi bước Ký đang chờ thuộc ĐÚNG lượt đã ký của link (`linkRun`) — không thả nhầm bước Ký `ondoc` kế tiếp của lượt khác. */
+  async function recover(
+    tenantId: string,
+    contractId: string,
+    linkRun: string | null,
+  ): Promise<void> {
     try {
       const c = await d.counts(tenantId, contractId);
-      if (c?.a_done && c.b_open === 0) await d.complete(tenantId, contractId);
+      if (linkRun && c?.a_done && c.b_open === 0 && c.run_id === linkRun)
+        await d.complete(tenantId, contractId);
     } catch (e) {
       d.log.warn("partner-sign-recover-failed", { error: e instanceof Error ? e.name : "unknown" });
     }
@@ -214,11 +220,12 @@ export function partnerSignUsecases(d: PartnerSignDeps) {
       const out = await d.uow.tenant(who, async (r) => {
         if (!(await r.contractFiles.facts(contractId))) return null;
         const l = await r.partnerSign.latest(contractId);
-        return { link: l ? statusOut(l) : null };
+        const run = l?.state === "signed" ? await r.partnerSign.signedRun(contractId) : null;
+        return { link: l ? statusOut(l) : null, run };
       });
       // Tự phục hồi (soát #4): đối tác đã ký đủ mà bước Ký vẫn chờ (thả bước lỗi lần trước) ⇒ thả lại (`completed` idempotent).
-      if (out?.link?.state === "signed") await recover(who.tenantId, contractId);
-      return out;
+      if (out?.link?.state === "signed") await recover(who.tenantId, contractId, out.run);
+      return out && { link: out.link };
     },
 
     // ---------------- công khai (theo BĂM token) ----------------

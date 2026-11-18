@@ -79,6 +79,15 @@ export function partnerSignRepo(tx: Tx, tenantId: string) {
       );
       return r?.s ?? "invalid";
     },
+    /** `run_id` của bản ký đối tác mới nhất chưa huỷ (= lượt mà link đã ký). null nếu không có. */
+    signedRun: async (contractId: string): Promise<string | null> => {
+      const [r] = await tx.execute<{
+        run: string | null;
+      }>(sql`select run_id::text as run from contracts.sign_versions
+        where tenant_id = ${tenantId}::uuid and contract_id = ${contractId}::uuid and signer_contact_id is not null and voided_at is null
+        order by created_at desc, id desc limit 1`);
+      return r?.run ?? null;
+    },
     /** Số bản đối tác (liên hệ này) đã Lưu trên HĐ — trần chống dồn bản. */
     versionCount: async (contractId: string, contactId: string): Promise<number> => {
       const [r] = await tx.execute<{
