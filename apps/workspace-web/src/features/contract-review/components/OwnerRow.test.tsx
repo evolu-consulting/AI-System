@@ -1,4 +1,4 @@
-// CR-184: «Phụ trách» chỉ hiện avatar; tooltip «Phụ trách: <họ tên>» (chữ có trong DOM); không quyền ghi ⇒ không có nút chọn.
+// CR-185: «Phụ trách» chỉ hiện avatar; tooltip CHỈ là họ tên; không quyền ghi ⇒ không có nút chọn.
 import { beforeAll, describe, expect, test } from "bun:test";
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -28,10 +28,10 @@ describe("OwnerRow", () => {
   test("chỉ đọc: avatar + tooltip, không có nút chọn", () => {
     const out = render(false, "u1");
     expect(out).toContain('aria-label="Lê Minh Cường"');
-    expect(out).toContain("Phụ trách: Lê Minh Cường");
+    expect(out).not.toContain("Phụ trách: Lê Minh Cường");
     expect(out).not.toContain("owner-select");
   });
-  test("có quyền ghi: nút mở danh sách mang nhãn «Phụ trách: tên», vùng bấm 44px trên điện thoại", () => {
+  test("có quyền ghi: nút mở danh sách mang nhãn đọc màn hình «Phụ trách: tên» (không phải tooltip), vùng bấm 44px trên điện thoại", () => {
     const out = render(true, "u1");
     expect(out).toContain('data-testid="owner-select"');
     expect(out).toContain('aria-label="Phụ trách: Lê Minh Cường"');

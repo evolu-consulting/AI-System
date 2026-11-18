@@ -2,7 +2,6 @@
 // "AI đọc lại từ đầu" chỉ ở DRAFT. Chỉ vai có quyền ghi thấy ô sửa.
 
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
-import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   DropdownMenu,
@@ -11,11 +10,12 @@ import {
   DropdownMenuTrigger,
 } from "@ai/web-kit/ui/kit/dropdown-menu";
 import { Input } from "@ai/web-kit/ui/kit/input";
+import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
+import { TouchTip } from "@ai/web-kit/ui/kit/touch-tip";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { usePeopleCards } from "~/features/contract-shared/people";
-import { AvatarTip, TouchTip } from "~/shared/ui/AvatarTip";
 import { useIsMobile } from "~/shared/ui/use-is-mobile";
 import {
   useAssignees,
@@ -27,7 +27,7 @@ import { ownerOptions, parsePct } from "../lib/manage";
 import { OwnerFace, OwnerPopover } from "./OwnerPopover";
 import { ReextractButton } from "./ReextractButton";
 
-/** "Phụ trách" — chỉ avatar (tooltip «Phụ trách: tên»); vai có quyền ghi bấm vào để chọn người (avatar + họ tên + chức vụ). */
+/** "Phụ trách" — chỉ avatar (tooltip CHỈ họ tên); vai có quyền ghi bấm vào để chọn người (avatar + họ tên + chức vụ). */
 export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
   const { t } = useTranslation();
   const mobile = useIsMobile();
@@ -42,7 +42,13 @@ export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
     : t("contracts.gapa1.owner.none");
   const tip = t("contracts.u5.owner.tip", { name: label });
   const face = cur ? (
-    <Avatar name={label} src={cards.get(cur)?.avatar} size={32} />
+    <PersonAvatar
+      name={label}
+      id={cur}
+      src={cards.get(cur)?.avatar}
+      size={32}
+      interactive={false}
+    />
   ) : (
     <span className="text-dim">{label}</span>
   );
@@ -62,7 +68,7 @@ export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
         />
       ) : write ? (
         <DropdownMenu>
-          <TouchTip tip={tip}>
+          <TouchTip tip={label}>
             <DropdownMenuTrigger
               data-testid="owner-select"
               aria-label={tip}
@@ -97,7 +103,7 @@ export function OwnerRow({ c, write }: { c: ContractDetail; write: boolean }) {
           </DropdownMenuContent>
         </DropdownMenu>
       ) : cur ? (
-        <AvatarTip name={label} src={cards.get(cur)?.avatar} tip={tip} />
+        <PersonAvatar name={label} id={cur} src={cards.get(cur)?.avatar} size={32} />
       ) : (
         face
       )}

@@ -20,7 +20,8 @@ Máy chặn: `bun run check:ui-kit` (số `<button>`/`<select>`/`<input>` trần
 
 ## Avatar
 - Người ⇒ tròn; công ty ⇒ vuông bo. Cỡ chỉ 24/32/40.
-- Nhóm tối đa 3 + «+N». Đúng: `<AvatarGroup people={…} />`. Sai: tự xếp 5 avatar chồng nhau.
+- Mọi avatar NGƯỜI dùng `PersonAvatar` (CR-185); tooltip (rê/focus/chạm) CHỈ là họ tên. Đúng: `<PersonAvatar name={n} src={a} ring="ring-act" badge={dấuĐãKý} />`; trạng thái («Bên A», «Đã ký») = viền / dấu / chữ cạnh avatar. Sai: tooltip «Phụ trách: An», tự ghép `Avatar` + `Tooltip`. Avatar nằm trong nút/mục menu đã có tên bên cạnh ⇒ `interactive={false}`. Tooltip chạm cho phần tử khác: `TouchTip`.
+- Nhóm tối đa 3 + «+N». Đúng: `<PersonAvatarGroup people={…} />` (người), `<AvatarGroup>` (công ty). Sai: tự xếp 5 avatar chồng nhau.
 
 ## Badge
 - 1–2 badge mỗi dòng; luôn có icon + chữ (không chỉ màu). Đúng: `<Badge status="ok" icon={<Check/>}>Đã duyệt</Badge>`.

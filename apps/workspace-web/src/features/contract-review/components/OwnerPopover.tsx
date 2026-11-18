@@ -1,8 +1,8 @@
 // CR-182 · fix-cr182-owner-tap · «Phụ trách» trên điện thoại: chạm avatar ⇒ popover hiện tên; người có quyền đổi thấy thêm «Đổi người phụ trách»
 // (mở danh sách ngay trong popover). Máy tính giữ cách cũ (rê chuột ⇒ tên, bấm ⇒ danh sách).
 import type { PersonCard } from "@ai/contracts/people";
-import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { Button } from "@ai/web-kit/ui/kit/button";
+import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai/web-kit/ui/kit/popover";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,7 +19,7 @@ export function OwnerFace({
   const p = cards.get(id);
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <Avatar name={name} src={p?.avatar} size={24} />
+      <PersonAvatar name={name} id={id} src={p?.avatar} size={24} interactive={false} />
       <span className="min-w-0">
         <span className="block truncate">{name}</span>
         {p?.job_title && <span className="block truncate text-dim text-xs">{p.job_title}</span>}
@@ -31,7 +31,7 @@ export function OwnerFace({
 export type OwnerPopoverProps = {
   /** Avatar (hoặc chữ «Chưa giao»). */
   face: ReactNode;
-  /** «Phụ trách: tên» — nhãn đọc màn hình của nút. */
+  /** «Phụ trách: tên» — nhãn đọc (không phải tooltip) màn hình của nút. */
   tip: string;
   /** Người đang phụ trách; null ⇒ chưa giao. */
   cur: string | null;
@@ -97,7 +97,7 @@ export function OwnerPopover(p: OwnerPopoverProps) {
         ) : (
           <div className="flex flex-col gap-2">
             <p className="px-1 text-sm" data-testid="owner-name">
-              {p.tip}
+              {p.name}
             </p>
             {p.write && (
               <Button

@@ -46,23 +46,22 @@ const html = () =>
   );
 
 describe("SignersStrip", () => {
-  test("viền tím Bên A / cam Bên B, tooltip có tên · bên · trạng thái", () => {
+  test("viền tím Bên A / cam Bên B, trạng thái là chữ cạnh avatar", () => {
     const out = html();
     expect(out).toContain("ring-act");
     expect(out).toContain("ring-late");
-    expect(out).toContain("Lê Minh Cường · Bên A · Đã ký");
-    expect(out).toContain("Trần Đối Tác · Bên B · Chưa có chỗ ký");
+    expect(out).toContain("Bên A · Đã ký");
+    expect(out).toContain("Bên B · Chưa có chỗ ký");
   });
   test("đã ký có dấu ✓, chưa ký không có", () => {
     const out = html();
     expect(out.match(/data-testid="signed-mark"/g)?.length).toBe(1);
   });
-  test("nhóm: một avatar mỗi thành viên, mỗi tooltip đúng tên người đó", () => {
+  test("nhóm: một avatar mỗi thành viên, tooltip chỉ là tên người đó", () => {
     const out = html();
     expect(out).toContain('aria-label="An Nguyễn"');
     expect(out).toContain('aria-label="Bình Trần"');
-    expect(out).toContain("An Nguyễn · Bên A");
-    expect(out).toContain("Bình Trần · Bên A");
+    expect(out).not.toContain("An Nguyễn · Bên A");
     expect(out).not.toContain("An Nguyễn, Bình Trần");
   });
 });

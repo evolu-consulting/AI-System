@@ -1,8 +1,6 @@
-// CR-184 · Avatar có tooltip: rê chuột / focus bàn phím / chạm giữ (điện thoại) ⇒ hiện `tip`. Chữ của tip cũng có trong DOM (sr-only) cho đọc màn hình.
-import { Avatar, type AvatarSize } from "@ai/web-kit/ui/kit/avatar";
-import { cn } from "@ai/web-kit/ui/kit/cn";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
-import { type ReactElement, type ReactNode, useRef, useState } from "react";
+// CR-185 · Tooltip có chạm: rê chuột / focus ⇒ hiện; điện thoại chạm-giữ (hoặc chạm một cái khi `tap`) ⇒ hiện, tự tắt sau 2,5 s. MỘT bản duy nhất (trước ở workspace-web).
+import { type ReactElement, useRef, useState } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
 
 const HOLD_MS = 400;
 const SHOW_MS = 2500;
@@ -13,7 +11,7 @@ const TAP_GUARD_MS = 500;
 export const ignoreClose = (now: number, tapAt: number): boolean => now - tapAt < TAP_GUARD_MS;
 
 /**
- * Bọc MỘT phần tử (asChild) bằng tooltip có thêm chạm-giữ. `tap` ⇒ chạm một cái cũng hiện tên (avatar chỉ để xem, điện thoại không có rê chuột);
+ * Bọc MỘT phần tử (asChild) bằng tooltip có thêm chạm-giữ. `tap` ⇒ chạm một cái cũng hiện (phần tử chỉ để xem);
  * không bật `tap` cho phần tử đã có việc khi bấm (menu, nút).
  */
 export function TouchTip({
@@ -27,12 +25,12 @@ export function TouchTip({
 }) {
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const moved = useRef(false);
+  const tapAt = useRef(0);
   const clear = () => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
   };
-  const moved = useRef(false);
-  const tapAt = useRef(0);
   const show = () => {
     setOpen(true);
     timer.current = setTimeout(() => setOpen(false), SHOW_MS);
@@ -68,40 +66,5 @@ export function TouchTip({
       </TooltipTrigger>
       <TooltipContent>{tip}</TooltipContent>
     </Tooltip>
-  );
-}
-
-export function AvatarTip({
-  name,
-  src,
-  tip,
-  size = 32,
-  ring,
-  badge,
-  testId,
-}: {
-  name: string;
-  src?: string | null;
-  tip: string;
-  size?: AvatarSize;
-  /** Lớp viền màu (vd `ring-act`). */
-  ring?: string;
-  /** Dấu nhỏ ở góc dưới phải (vd dấu ✓ đã ký). */
-  badge?: ReactNode;
-  testId?: string;
-}) {
-  return (
-    <TouchTip tip={tip} tap>
-      <span
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: avatar cần focus bàn phím để hiện tooltip
-        tabIndex={0}
-        data-testid={testId}
-        className="relative inline-flex shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <Avatar name={name} src={src} size={size} className={cn(ring && `ring-2 ${ring}`)} />
-        {badge}
-        <span className="sr-only">{tip}</span>
-      </span>
-    </TouchTip>
   );
 }

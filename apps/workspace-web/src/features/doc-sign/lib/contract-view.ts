@@ -48,10 +48,6 @@ function signerPeople(g: SignSignerOut): SignerChip["people"] {
   if (g.members?.length) return g.members.map((m) => ({ id: m.id, name: m.name }));
   return [{ id: g.kind === "user" ? g.ref : null, name: g.name }];
 }
-/** Tooltip của MỘT avatar người ký: đúng tên người đó (nhóm ⇒ không lặp tên cả nhóm) + Bên + trạng thái. */
-export function personTip(person: { name: string }, side: string, state: string): string {
-  return `${person.name} · ${side} · ${state}`;
-}
 export function signerChips(s: SignSessionOut): SignerChip[] {
   const files = signFiles(s);
   return s.signers.map((g: SignSignerOut) => {

@@ -1,10 +1,10 @@
 // CR-181 · s13 · đầu trang HĐ: dải người ký (Bên A/B). CR-184: mỗi người một avatar (nhóm: một avatar mỗi thành viên), viền tím Bên A / cam Bên B,
-// dấu ✓ nhỏ khi đã ký; tooltip «<họ tên> · Bên A · n chỗ ký / Đã ký» (chữ cũng có trong DOM, ẩn bằng sr-only).
+// dấu ✓ nhỏ khi đã ký; tooltip CHỈ họ tên (CR-185, PersonAvatar); «Bên A · Đã ký / n chỗ ký» là chữ cạnh avatar.
 import type { SignSessionOut } from "@ai/contracts/pack-contracts";
+import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
 import { useTranslation } from "react-i18next";
 import { usePeopleCards } from "~/features/contract-shared/people";
-import { AvatarTip } from "~/shared/ui/AvatarTip";
-import { personTip, signerChips } from "../../lib/contract-view";
+import { signerChips } from "../../lib/contract-view";
 
 export function SignersStrip({ session }: { session: SignSessionOut }) {
   const { t } = useTranslation();
@@ -35,11 +35,11 @@ export function SignersStrip({ session }: { session: SignSessionOut }) {
             className="flex items-center gap-1"
           >
             {c.people.map((p) => (
-              <AvatarTip
+              <PersonAvatar
                 key={p.id ?? p.name}
                 name={p.name}
+                id={p.id}
                 src={p.id ? cards.get(p.id)?.avatar : null}
-                tip={personTip(p, side, state)}
                 ring={c.side === "A" ? "ring-act" : "ring-late"}
                 badge={
                   c.state === "signed" ? (
@@ -54,6 +54,9 @@ export function SignersStrip({ session }: { session: SignSessionOut }) {
                 }
               />
             ))}
+            <span className="text-dim text-xs" data-testid="signer-state">
+              {side} · {state}
+            </span>
           </li>
         );
       })}

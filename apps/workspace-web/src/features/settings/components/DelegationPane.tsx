@@ -5,8 +5,9 @@ import type { Delegation, DelegationKind } from "@ai/contracts/chat";
 import { DELEGATION_KINDS } from "@ai/contracts/chat";
 import { ApiError } from "@ai/web-kit/http";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
-import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { Button } from "@ai/web-kit/ui/kit/button";
+import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
+import { TouchTip } from "@ai/web-kit/ui/kit/touch-tip";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -16,7 +17,6 @@ import { usePeopleCards } from "~/features/contract-shared/people";
 import { fetchMembersPage } from "~/features/contracts-list/api";
 import { isCompanyAdmin } from "~/features/shell/lib/nav";
 import { cr127ErrorKey } from "~/platform/flow/lib/claim";
-import { TouchTip } from "~/shared/ui/AvatarTip";
 import { PersonPick } from "~/shared/ui/PersonPick";
 import { SettingsGroup } from "~/shared/ui/settings-layout";
 import {
@@ -47,7 +47,7 @@ export const dayText = (iso: string, endOfRange = false): string =>
 function Person({ id, name, src }: { id: string; name: string; src?: string | null | undefined }) {
   return (
     <span className="inline-flex items-center gap-1.5" data-person={id}>
-      <Avatar name={name} src={src} size={24} />
+      <PersonAvatar name={name} id={id} src={src} size={24} interactive={false} />
       <span>{name}</span>
     </span>
   );

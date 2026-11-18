@@ -1,9 +1,9 @@
 // CR-184 · ô chọn người gọn (avatar + họ tên) cùng kiểu «Phụ trách»: nút mở danh sách có ô tìm (ở máy chủ, gõ có trễ) + tải dần («Xem thêm»).
 // `fetchPage(q, offset)` như `PersonSearchSelect`. Vùng bấm ≥ 44px ở điện thoại.
 import type { PersonCard } from "@ai/contracts/people";
-import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
+import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai/web-kit/ui/kit/popover";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -30,7 +30,7 @@ type Props = {
 function Face({ name, card }: { name: string; card?: PersonCard | undefined }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <Avatar name={name} src={card?.avatar} size={24} />
+      <PersonAvatar name={name} src={card?.avatar} size={24} interactive={false} />
       <span className="min-w-0">
         <span className="block truncate">{name}</span>
         {card?.job_title && (
@@ -76,7 +76,13 @@ export function PersonPick(p: Props) {
         className="inline-flex min-h-11 items-center gap-2 rounded-md border border-rule-soft bg-card px-3 text-body outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-10"
       >
         {p.value ? (
-          <Avatar name={p.valueName ?? ""} src={cards.get(p.value)?.avatar} size={24} />
+          <PersonAvatar
+            name={p.valueName ?? ""}
+            id={p.value}
+            src={cards.get(p.value)?.avatar}
+            size={24}
+            interactive={false}
+          />
         ) : null}
         <span className={p.value ? "" : "text-dim"}>{p.value ? p.valueName : p.placeholder}</span>
         <span aria-hidden="true" className="text-dim text-xs">

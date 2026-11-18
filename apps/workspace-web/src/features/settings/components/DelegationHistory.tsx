@@ -1,13 +1,13 @@
 // CR-184 · «Lịch sử uỷ quyền» (thu gọn, tải dần): ai vắng → giao ai · ngày – ngày · loại việc · ai đặt (khi đặt thay) · trạng thái
 // (còn hiệu lực / hết hạn / đã thu hồi + ai thu hồi, lúc nào) · số việc đã làm thay (bấm ⇒ danh sách việc, mở hợp đồng).
 import type { DelegationHistoryItem } from "@ai/contracts/chat";
-import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@ai/web-kit/ui/kit/collapsible";
+import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
@@ -86,12 +86,24 @@ function Row({
     >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
         <span className="inline-flex items-center gap-1.5">
-          <Avatar name={d.from_user.display_name} src={avatar(d.from_user.id)} size={24} />
+          <PersonAvatar
+            name={d.from_user.display_name}
+            id={d.from_user.id}
+            src={avatar(d.from_user.id)}
+            size={24}
+            interactive={false}
+          />
           {d.from_user.display_name}
         </span>
         <span aria-hidden="true">→</span>
         <span className="inline-flex items-center gap-1.5">
-          <Avatar name={d.to_user.display_name} src={avatar(d.to_user.id)} size={24} />
+          <PersonAvatar
+            name={d.to_user.display_name}
+            id={d.to_user.id}
+            src={avatar(d.to_user.id)}
+            size={24}
+            interactive={false}
+          />
           {d.to_user.display_name}
         </span>
         <span className="text-dim">

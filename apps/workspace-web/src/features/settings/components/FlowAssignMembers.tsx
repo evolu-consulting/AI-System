@@ -1,6 +1,7 @@
 // CR-182 · «Thành viên của nhóm» trong khung giao việc: hiện NGAY khi chọn nhóm (trước khi lưu), avatar + chức vụ, tải dần («Xem thêm») nếu nhóm lớn.
-import { Avatar } from "@ai/web-kit/ui/kit/avatar";
+
 import { Button } from "@ai/web-kit/ui/kit/button";
+import { PersonAvatar } from "@ai/web-kit/ui/kit/person-avatar";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { usePeopleCards } from "~/features/contract-shared/people";
@@ -18,7 +19,7 @@ function MemberRows({ items }: { items: readonly Member[] }) {
         const c = cards.get(m.id);
         return (
           <li key={m.id} className="flex min-h-8 items-center gap-2 text-body">
-            <Avatar name={m.name} src={c?.avatar} size={24} />
+            <PersonAvatar name={m.name} id={m.id} src={c?.avatar} size={24} />
             <span className="min-w-0">
               <span className="block truncate">{m.name}</span>
               {c?.job_title && (
