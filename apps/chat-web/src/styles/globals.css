@@ -1,10 +1,14 @@
 /* C1 FE · theme chat-web (chép từ admin-web). Token Sáng theo docs/design/canvas/tokens-map.md; giá trị Tối bổ sung ở F14. */
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fontsource/be-vietnam-pro/400.css";
-@import "@fontsource/be-vietnam-pro/500.css";
-@import "@fontsource/be-vietnam-pro/600.css";
-@import "@fontsource/be-vietnam-pro/700.css";
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter/latin-700.css";
+@import "@fontsource/inter/vietnamese-400.css";
+@import "@fontsource/inter/vietnamese-500.css";
+@import "@fontsource/inter/vietnamese-600.css";
+@import "@fontsource/inter/vietnamese-700.css";
 @import "@fontsource-variable/jetbrains-mono";
 /* CR-125 G4 · token màu dùng chung (packages/web-kit/src/styles/tokens.css). */
 @import "../../../../packages/web-kit/src/styles/tokens.css";
@@ -15,7 +19,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Be Vietnam Pro", system-ui, sans-serif;
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
 }
 

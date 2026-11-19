@@ -2,16 +2,16 @@
    cho phần trùng giá trị; phần riêng mgmt (sunk, bubble, rule, field, ink, dim, soon, idle, new…) giữ giá trị gốc `reference/mgmt-app-contracts/web/src/index.css:13-70`. */
 @import "tailwindcss";
 @import "tw-animate-css";
-/* Font Be Vietnam Pro như admin/chat/studio (người dùng chọn 2026-11-02): subset latin + vietnamese, đủ 400/500/600/700
+/* Font Inter chung cả 4 app (CR-187 BR-187-10): subset latin + vietnamese, đủ 400/500/600/700
    (Roboto cũ thiếu 600 ⇒ trình duyệt tự đậm, dấu tiếng Việt nhoè). */
-@import "@fontsource/be-vietnam-pro/latin-400.css";
-@import "@fontsource/be-vietnam-pro/latin-500.css";
-@import "@fontsource/be-vietnam-pro/latin-600.css";
-@import "@fontsource/be-vietnam-pro/latin-700.css";
-@import "@fontsource/be-vietnam-pro/vietnamese-400.css";
-@import "@fontsource/be-vietnam-pro/vietnamese-500.css";
-@import "@fontsource/be-vietnam-pro/vietnamese-600.css";
-@import "@fontsource/be-vietnam-pro/vietnamese-700.css";
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter/latin-700.css";
+@import "@fontsource/inter/vietnamese-400.css";
+@import "@fontsource/inter/vietnamese-500.css";
+@import "@fontsource/inter/vietnamese-600.css";
+@import "@fontsource/inter/vietnamese-700.css";
 /* CR-125 G4 · token màu dùng chung (packages/web-kit/src/styles/tokens.css). */
 @import "../../../../packages/web-kit/src/styles/tokens.css";
 
@@ -24,8 +24,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Inter", "Segoe UI", system-ui, sans-serif;
 }
 
 /* Thanh cuộn mảnh như mgmt-app (index.css:87-94) */
