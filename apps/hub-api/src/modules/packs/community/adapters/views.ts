@@ -44,6 +44,7 @@ export function postView(a: Access, n: Names, r: PostRow, hint?: HostHint): Post
     authorOrgId: orgIdOf(a, r.author_org),
     authorOrgName: n.orgName(r.author_org),
     authorName: r.author_name,
+    ...(host ? { authorUserId: r.author_user_id } : {}),
     authorSide: r.author_org === null ? "host" : "partner",
     ...(r.author_title ? { authorTitle: r.author_title } : {}),
     source: "own",

@@ -1039,17 +1039,10 @@
       "breakpoints": true
     },
     {
-      "idx": 148,
+      "idx": 150,
       "version": "7",
-      "when": 1806904300000,
-      "tag": "0168_cr191_partner_connect",
-      "breakpoints": true
-    },
-    {
-      "idx": 149,
-      "version": "7",
-      "when": 1806904500000,
-      "tag": "0170_cr191_cc_listing",
+      "when": 1806904600000,
+      "tag": "0171_cr191_cc_person_cards",
       "breakpoints": true
     },
     {

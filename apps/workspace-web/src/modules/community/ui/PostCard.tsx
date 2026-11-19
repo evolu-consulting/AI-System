@@ -88,7 +88,16 @@ function EditForm({ p, onClose }: { p: PostView; onClose: () => void }) {
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: thẻ bài theo mockup: nhiều nhánh hiển thị có điều kiện, tách thêm sẽ chỉ chuyển prop
-export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationItem | undefined }) {
+export function PostCard({
+  post: p,
+  mod,
+  avatar,
+}: {
+  post: PostView;
+  mod?: ModerationItem | undefined;
+  /** Ảnh đại diện thật của người đăng (thẻ người); vắng ⇒ chữ cái đầu. */
+  avatar?: string | null | undefined;
+}) {
   const { api, bump, toast, isHostViewer, viewer, urlSearch, dropPost } = useApp();
   const [reporting, setReporting] = useState(false);
   const canReport = p.authorOrgId !== viewer.orgId;
@@ -152,6 +161,7 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
       <div className="ph">
         <PersonAvatar
           name={p.authorName}
+          src={avatar}
           id={`${p.authorOrgId}:${p.authorName}`}
           size={40}
           className="av"

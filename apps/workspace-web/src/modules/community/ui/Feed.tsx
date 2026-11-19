@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
 import { useApp } from "../application/ctx";
 import { useFocusPost } from "../application/focus-post";
+import { usePeopleCards } from "../application/use-people-cards";
 import { useConnected, useFeed, useFeedFilters } from "../application/useFeed";
 import { composerCompact, useNarrow, useStuck } from "../application/useStuck";
 import { hasActiveFilter } from "../domain/filters";
@@ -178,6 +179,9 @@ function FeedBody({
   more: MoreFeed;
   mods?: ReadonlyMap<string, ModerationItem> | undefined;
 }) {
+  const cards = usePeopleCards(
+    (data?.items ?? []).flatMap((p) => (p.authorUserId ? [p.authorUserId] : [])),
+  );
   return (
     <div className="feedbody" data-stale={stale ? "true" : undefined} aria-busy={stale}>
       {error && (
@@ -189,7 +193,12 @@ function FeedBody({
         <div className="card empty">{t("community.feed.empty")}</div>
       )}
       {data?.items.map((p) => (
-        <PostCard key={p.id} post={p} mod={mods?.get(p.id)} />
+        <PostCard
+          key={p.id}
+          post={p}
+          mod={mods?.get(p.id)}
+          avatar={p.authorUserId ? cards.get(p.authorUserId)?.avatar : null}
+        />
       ))}
       <FeedMore more={more} />
     </div>

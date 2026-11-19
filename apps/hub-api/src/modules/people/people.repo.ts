@@ -11,11 +11,14 @@ type CardRow = {
   avatar: string | null;
   dept_id: string | null;
   dept_name: string | null;
+  company_name: string | null;
 };
 
 /** Thẻ người theo lô: MỘT câu cho cả danh sách (tên + chức vụ + avatar + phòng ban đầu tiên theo khoá). Id ngoài tenant ⇒ bị bỏ.
  *  fix-review-r1 · cờ nội bộ/đối tác của NGƯỜI GỌI lấy từ DB (`me`), không tin token: đối tác (DB hoặc token) chỉ thấy người CÙNG tổ chức
- *  đối tác của mình (không lộ nhân viên chủ quản); người gọi không còn trong tenant ⇒ rỗng. */
+ *  đối tác của mình (không lộ nhân viên chủ quản); người gọi không còn trong tenant ⇒ rỗng.
+ *  CR-191 (BR-191-13) · người nội bộ nối thêm (UNION ALL, vẫn MỘT câu) thẻ người công ty ĐÃ KẾT NỐI qua DEFINER `hub.cc_person_cards`
+ *  (chỉ tên, chức vụ, ảnh, tên công ty; id ngoài phạm vi bị bỏ). Đối tác cộng đồng (token hoặc DB) không gọi hàm này. */
 export async function cardsOf(
   tx: Tx,
   tenantId: string,
@@ -23,10 +26,17 @@ export async function cardsOf(
   tokenExternal: boolean,
   ids: readonly string[],
 ): Promise<PersonCard[]> {
+  const json = JSON.stringify(ids);
+  const cross = tokenExternal
+    ? sql``
+    : sql`
+    union all
+    select c.user_id, c.display_name, c.job_title, c.avatar, null::uuid, null::text, c.company_name
+    from hub.cc_person_cards(array(select i.id::uuid from jsonb_array_elements_text(${json}::jsonb) as i(id))) c`;
   const rows = await tx.execute<CardRow>(sql`
     with me as (select kind, external_org_id from admin.users where id = ${callerId}::uuid and tenant_id = ${tenantId}::uuid)
-    select u.id as user_id, u.display_name, pp.job_title, pp.avatar, d.group_id as dept_id, d.name as dept_name
-    from jsonb_array_elements_text(${JSON.stringify(ids)}::jsonb) as i(id)
+    select u.id as user_id, u.display_name, pp.job_title, pp.avatar, d.group_id as dept_id, d.name as dept_name, null::text as company_name
+    from jsonb_array_elements_text(${json}::jsonb) as i(id)
     join admin.users u on u.id = i.id::uuid and u.tenant_id = ${tenantId}::uuid
     join me on ((me.kind = 'internal' and not ${tokenExternal}::boolean)
       or (u.kind = 'external' and u.external_org_id is not null and u.external_org_id = me.external_org_id))
@@ -37,13 +47,14 @@ export async function cardsOf(
       join admin.departments dp on dp.group_id = gm.group_id and dp.tenant_id = gm.tenant_id
       join admin.groups g on g.id = gm.group_id and g.tenant_id = gm.tenant_id
       where gm.user_id = u.id and gm.tenant_id = u.tenant_id
-      order by g.key limit 1) d on true`);
+      order by g.key limit 1) d on true${cross}`);
   return rows.map((r) => ({
     user_id: r.user_id,
     display_name: r.display_name,
     job_title: r.job_title,
     avatar: r.avatar,
     department: r.dept_id && r.dept_name ? { id: r.dept_id, name: r.dept_name } : null,
+    ...(r.company_name ? { company_name: r.company_name } : {}),
   }));
 }
 

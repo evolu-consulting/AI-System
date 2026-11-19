@@ -56,7 +56,12 @@ type CardData = OrgNodeData & {
 type CardNode = Node<CardData, "org">;
 
 function staffList(data: CardData) {
-  return data.staff.map((m) => ({ id: m.id, name: m.name, jobTitle: m.jobTitle ?? null }));
+  return data.staff.map((m) => ({
+    id: m.id,
+    name: m.name,
+    jobTitle: m.jobTitle ?? null,
+    src: m.avatar ?? null,
+  }));
 }
 
 function ringClass(data: CardData): string {
@@ -93,6 +98,7 @@ function OrgCard({ data }: NodeProps<CardNode>) {
                 <PersonAvatar
                   id={data.head.id}
                   name={data.head.name}
+                  src={data.head.avatar ?? null}
                   size={24}
                   interactive={false}
                 />

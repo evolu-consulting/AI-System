@@ -257,6 +257,8 @@ export const PostViewSchema = z.strictObject({
   authorOrgId: z.string(),
   authorOrgName: z.string(),
   authorName: z.string(),
+  /** CR-191 BR-191-13 · mã người đăng để lấy ảnh thật (`GET /people?ids=`); CHỈ người xem nội bộ nhận. */
+  authorUserId: z.string().optional(),
   authorSide: z.enum(["host", "partner"]),
   /** CR-191 BR-191-3 · chức vụ người đăng; vắng khi chưa nhập. */
   authorTitle: z.string().max(80).optional(),

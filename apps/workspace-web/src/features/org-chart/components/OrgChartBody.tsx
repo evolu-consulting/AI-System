@@ -7,6 +7,7 @@ import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { useDeferredValue, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { usePeopleCards } from "~/features/contract-shared/people";
 import { toChartDepts } from "../lib/org-chart-data";
 import { buildOrgTree, type OrgNode } from "../lib/org-tree";
 import { DeptMembersDialog } from "./DeptMembersDialog";
@@ -28,7 +29,23 @@ export function OrgChartBody({ departments }: { departments: readonly ContractsO
   const deferred = useDeferredValue(query);
   const [openId, setOpenId] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ id: string; seq: number } | null>(null);
-  const depts = useMemo(() => toChartDepts(departments), [departments]);
+  const baseDepts = useMemo(() => toChartDepts(departments), [departments]);
+  // BR-189-2 · ảnh thật trưởng phòng + hàng avatar (thẻ người theo lô ≤ 50: trưởng phòng trước, rồi 5 nhân viên đầu mỗi phòng).
+  const cards = usePeopleCards([
+    ...baseDepts.map((d) => d.head?.id),
+    ...baseDepts.flatMap((d) => d.members.slice(0, 5).map((m) => m.id)),
+  ]);
+  const depts = useMemo(() => {
+    const face = <P extends { id: string }>(p: P) => ({
+      ...p,
+      avatar: cards.get(p.id)?.avatar ?? null,
+    });
+    return baseDepts.map((d) => ({
+      ...d,
+      head: d.head ? face(d.head) : null,
+      members: d.members.map(face),
+    }));
+  }, [baseDepts, cards]);
   const tree = useMemo(() => buildOrgTree(departments), [departments]);
   const byId = useMemo(() => indexById(tree), [tree]);
   const matches = useMemo(() => searchDepts(depts, deferred), [depts, deferred]);

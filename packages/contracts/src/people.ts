@@ -45,7 +45,8 @@ export const MyPeopleProfileSchema = z.strictObject({
 });
 export type MyPeopleProfile = z.infer<typeof MyPeopleProfileSchema>;
 
-/** `GET /people?ids=a,b,c` — 1..50 id (uuid, phân tách dấu phẩy), trùng id được gộp. */
+/** `GET /people?ids=a,b,c` — 1..50 id (uuid, phân tách dấu phẩy), trùng id được gộp. Người cùng công ty (luật cũ) + người công ty ĐÃ KẾT NỐI
+ *  (BR-191-13: chỉ họ tên, chức vụ, ảnh, tên công ty — hàm `hub.cc_person_cards`); id ngoài phạm vi bị bỏ, không lỗi. */
 export const PeopleQuerySchema = z.object({
   ids: z
     .string()
@@ -67,6 +68,8 @@ export const PersonCardSchema = z.strictObject({
   avatar: z.string().nullable(),
   /** Phòng ban (đầu tiên theo khoá) mà người đó thuộc; chưa thuộc phòng nào ⇒ null. */
   department: z.strictObject({ id: Uuid, name: z.string() }).nullable(),
+  /** CR-191 · CHỈ có khi người đó thuộc công ty ĐÃ KẾT NỐI (thẻ chéo công ty): tên công ty của họ. Người cùng công ty mình: không có. */
+  company_name: z.string().optional(),
 });
 export type PersonCard = z.infer<typeof PersonCardSchema>;
 export const PeopleResponseSchema = z.strictObject({ items: z.array(PersonCardSchema) });

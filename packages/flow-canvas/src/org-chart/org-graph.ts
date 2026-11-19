@@ -1,7 +1,13 @@
 // CR-142 · sơ đồ tổ chức dạng cây: danh sách phòng ban phẳng (parent) ⇒ nodes/edges có toạ độ (cây từ trên xuống) + tìm phòng.
 // Thuần (không React/xyflow). Bố cục tự viết (anh em cạnh nhau, cha ở giữa con) — không cần worker ELK, chạy đồng bộ, O(n).
 
-export type OrgChartPerson = { id: string; name: string; jobTitle?: string | null };
+export type OrgChartPerson = {
+  id: string;
+  name: string;
+  jobTitle?: string | null;
+  /** Ảnh đại diện thật (data URL); vắng => chữ cái đầu. */
+  avatar?: string | null;
+};
 export type OrgChartDept = {
   id: string;
   name: string;
