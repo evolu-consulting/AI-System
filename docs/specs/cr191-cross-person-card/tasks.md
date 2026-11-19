@@ -13,11 +13,11 @@ Thẻ người CHÉO công ty (BR-191-13): hàm DEFINER `hub.cc_person_cards(uui
 - [x] Hub `0171_cr191_cc_person_cards` (DEFINER, GRANT chỉ `hub_rw`, journal idx sau 0170) — người gọi lấy từ GUC; người gọi external ⇒ rỗng; không raise cho id ngoài phạm vi.
 - [x] `people.repo.cardsOf`: nối `hub.cc_person_cards` (một câu); người gọi external theo token ⇒ không nối. Contract `PersonCard.company_name?` (chỉ thẻ chéo).
 - [x] Contract `PostView.authorUserId?` (chỉ người xem nội bộ) + `views.postView`.
-- [x] Web: `community/application/use-people-cards.ts` + `Feed` → `PostCard avatar`; `PeopleSearch` (Tin nhắn) lấy ảnh qua `usePersonCards`; sơ đồ tổ chức `OrgChartBody` → `OrgChartPerson.avatar` (trưởng phòng + hàng avatar).
+- [x] Web: `community/application/use-people-cards.ts` + `Feed` → `PostCard avatar`; danh bạ Tin nhắn (`DirGroup`/`ConversationRow`, đầu khung chat) đã nhận `card.avatar` từ `usePersonCards` ⇒ tự có ảnh chéo công ty (không sửa code); sơ đồ tổ chức `OrgChartBody` → `OrgChartPerson.avatar` (trưởng phòng + hàng avatar).
 
 ## Không làm / Chạm
 - Không làm: «@» (`MentionPicker`, chưa nối ảnh); ảnh tác giả bài ĐỐI TÁC (`feed_connected` chưa trả `author_user_id` — cần migration pack-community, xem Việc còn lại); bình luận chéo.
-- Chạm: `packages/db/migrations-hub/0171*`, `apps/hub-api/src/modules/people/*`, `packages/contracts/src/{people,pack-community/post}.ts`, `…/community/adapters/views.ts`, web (community Feed/PostCard, messages-web PeopleSearch, workspace-web org-chart, flow-canvas OrgChart).
+- Chạm: `packages/db/migrations-hub/0171*`, `apps/hub-api/src/modules/people/*`, `packages/contracts/src/{people,pack-community/post}.ts`, `…/community/adapters/views.ts`, web (community Feed/PostCard, workspace-web org-chart, flow-canvas OrgChart).
 
 ## Test tối thiểu
 - int `apps/hub-api/src/modules/people/people-cross.int.test.ts` (evotest); `people.int.test.ts` không đổi (vẫn xanh).
