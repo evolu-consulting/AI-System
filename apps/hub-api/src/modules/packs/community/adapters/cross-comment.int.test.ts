@@ -168,7 +168,11 @@ describe("CR-191 · bình luận chéo công ty đã kết nối", () => {
       authorOrgId: c.B,
       mine: false,
     });
-    expect(fromB.authorOrgName.length).toBeGreaterThan(0);
+    const nb =
+      (await own`select coalesce(nullif(btrim(legal_name), ''), name) as n from admin.tenants where id = ${c.B}`) as unknown as {
+        n: string;
+      }[];
+    expect(fromB.authorOrgName).toBe(nb[0]?.n as string); // e2e CR191-C2: tên công ty người viết chéo
   });
 
   it("bài A «Chỉ nội bộ» / «Chọn công ty» không có B ⇒ B không đọc, không ghi (404)", async () => {

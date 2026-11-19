@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   activeFilterCount,
+  canReportPost,
   isPartnerPost,
   sourceCount,
   sourceKey,
@@ -34,5 +35,13 @@ describe("CR-191 lọc nguồn bảng tin gộp", () => {
     expect(sourceKey({ source: "own" })).toBe("own");
     expect(sourceKey({})).toBe("own");
     expect(isPartnerPost({ source: "connected" })).toBe(true);
+  });
+});
+
+describe("canReportPost", () => {
+  it("bài công ty đã kết nối ⇒ không «Báo cáo» (kiểm duyệt thuộc công ty đăng), bài đối tác cộng đồng ⇒ có, bài công ty mình ⇒ không", () => {
+    expect(canReportPost({ source: "connected", authorOrgId: "t-a" }, "t-b")).toBe(false);
+    expect(canReportPost({ source: "own", authorOrgId: "org-x" }, "t-b")).toBe(true);
+    expect(canReportPost({ source: "own", authorOrgId: "t-b" }, "t-b")).toBe(false);
   });
 });

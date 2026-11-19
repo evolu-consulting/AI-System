@@ -125,8 +125,11 @@ export type StateRow = {
   expires_at: string;
 };
 
-/** Trạng thái bài dưới RLS người xem (không thấy ⇒ null). */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Trạng thái bài dưới RLS người xem (không thấy ⇒ null). id không phải UUID ⇒ null, không chạy SQL (tham số rỗng làm vỡ câu). */
 export async function postState(tx: Tx, id: string): Promise<StateRow | null> {
+  if (typeof id !== "string" || !UUID_RE.test(id)) return null;
   const rows = await tx.execute<StateRow>(sql`
     select type, author_org, status, hidden, expires_at from community.posts where id = ${id}::uuid`);
   return rows[0] ?? null;

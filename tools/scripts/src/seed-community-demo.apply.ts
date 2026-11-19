@@ -223,7 +223,8 @@ async function seedReplies(uow: Uow, ac: Actors, postId: string, p: PostSample):
     const a = ac.who(r.by);
     const had = await uow.tenant(ac.host.who, ({ tx }) => commentExists(tx, postId, a.org, r.text));
     if (had) continue;
-    await comments.add(uow, a, postId, {
+    await comments.add(uow, a, {
+      postId,
       text: storeComment(r.text, otherOrgNames(a)),
       mentions: [],
     });

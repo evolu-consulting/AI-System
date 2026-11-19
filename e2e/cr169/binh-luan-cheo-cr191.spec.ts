@@ -42,6 +42,12 @@ const open = async (browser: Browser, e: Env, user: string) => {
   await page.goto("/community");
   return { ctx, page };
 };
+/** Mở bình luận (bài có bình luận đã mở sẵn 3 bình luận mới nhất — bấm lại sẽ ĐÓNG). */
+const openThread = async (c: import("@playwright/test").Locator) => {
+  const b = c.locator(".pact button");
+  if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
+  await expect(b).toHaveAttribute("aria-expanded", "true");
+};
 const card = (page: import("@playwright/test").Page) =>
   page.getByTestId("post").filter({ hasText: TITLE }).first();
 
@@ -90,7 +96,7 @@ test("CR191-C1 · Hà (Preschool, không phải người đăng) mở bài «Đ�
   const { ctx, page } = await open(browser, EB, WHO.ha);
   const c = card(page);
   await expect(c.getByTestId("post-source")).toHaveAttribute("data-source", "connected");
-  await c.locator(".pact button").click();
+  await openThread(c);
   await c.getByRole("combobox", { name: /bình luận/i }).fill(NOTE);
   await c.getByRole("combobox", { name: /bình luận/i }).press("Enter");
   const mine = c.getByTestId("comment").filter({ hasText: NOTE });
@@ -104,7 +110,7 @@ test("CR191-C2 · Tiên (quản trị NitiGroup, không phải người đăng) 
 }) => {
   const a = await open(browser, EA, WHO.tien);
   const c = card(a.page);
-  await c.locator(".pact button").click();
+  await openThread(c);
   const cm = c.getByTestId("comment").filter({ hasText: NOTE });
   await expect(cm).toContainText(CO.b.name);
   await cm.getByRole("button", { name: "Ẩn bình luận" }).click();
@@ -112,7 +118,7 @@ test("CR191-C2 · Tiên (quản trị NitiGroup, không phải người đăng) 
   await a.ctx.close();
   const b = await open(browser, EB, WHO.ha);
   const cb = card(b.page);
-  await cb.locator(".pact button").click();
+  await openThread(cb);
   await expect(cb.getByTestId("comment").filter({ hasText: NOTE })).toHaveCount(0);
   await b.ctx.close();
 });

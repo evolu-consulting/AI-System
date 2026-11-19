@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { useApp } from "../application/ctx";
 import { draftFromFields } from "../domain/compose";
-import { isPartnerPost } from "../domain/feed-source";
+import { canReportPost, isPartnerPost } from "../domain/feed-source";
 import { dealStrip, expiryNote } from "../domain/format";
 import { saveButtonLabel } from "../domain/quote";
 import { opensCommentThread, opensThreadByDefault } from "../domain/search-hint";
@@ -101,7 +101,7 @@ export function PostCard({
 }) {
   const { api, bump, toast, isHostViewer, viewer, urlSearch, dropPost } = useApp();
   const [reporting, setReporting] = useState(false);
-  const canReport = p.authorOrgId !== viewer.orgId;
+  const canReport = canReportPost(p, viewer.orgId);
   const download = (id: string, name: string) =>
     api.downloadFile(id, name).catch(() => toast(t("community.post.downloadFailed")));
   const [editing, setEditing] = useState(false);

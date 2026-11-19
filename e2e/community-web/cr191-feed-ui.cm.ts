@@ -38,7 +38,9 @@ test("đầu bài: tên, chức vụ, công ty, nhãn Công ty mình / Đối t�
   // CR-191 BR-191-12 (spec đổi nghĩa): bài đối tác có ô bình luận, không còn nhãn «chỉ xem»
   await expect(partner.getByTestId("post-viewonly")).toHaveCount(0);
   await expect(partner.locator(".pact")).toHaveCount(1);
+  // bài Đối tác: có bình luận, không Báo cáo / Sửa / Xoá (kiểm duyệt thuộc công ty đăng)
   await expect(partner.getByTestId("post-acts")).toHaveCount(0);
+  await expect(partner.getByRole("button", { name: /Báo cáo|Sửa bài|Xoá bài/ })).toHaveCount(0);
 });
 
 test("lọc loại + nguồn, số lọc đang bật, «Xoá lọc»", async ({ page }) => {

@@ -42,3 +42,9 @@ export const isPartnerPost = (p: Pick<PostView, "source">): boolean => p.source 
 /** Khoá nhãn nguồn của bài: «Công ty mình» hoặc «Đối tác». */
 export const sourceKey = (p: Pick<PostView, "source">): "own" | "connected" =>
   isPartnerPost(p) ? "connected" : "own";
+
+/** «Báo cáo» bài: chỉ bài của bên khác TRONG cộng đồng mình. Bài công ty đã kết nối ⇒ không (kiểm duyệt thuộc công ty đăng, CR-191). */
+export const canReportPost = (
+  p: Pick<PostView, "source" | "authorOrgId">,
+  viewerOrgId: string,
+): boolean => !isPartnerPost(p) && p.authorOrgId !== viewerOrgId;
