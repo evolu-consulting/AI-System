@@ -28,7 +28,7 @@ Thẻ người CHÉO công ty (BR-191-13): hàm DEFINER `hub.cc_person_cards(uui
 ## Quyết định trong lúc làm
 - Đổi số giao: hub 0171, `when` 1806904600000 (điều phối đổi từ 0169).
 - Người ngoài phạm vi ⇒ bỏ qua (không raise); chỉ lỗi 42501 khi chưa đặt người xem (hub scope `system`).
-- Chỉ người nội bộ của công ty kết nối (`kind <> 'external'`); không lọc `active` (bài cũ của người đã nghỉ vẫn có tên/ảnh như đường nội bộ).
+- Chỉ người nội bộ của công ty kết nối (`kind <> 'external'`), lọc `active` và `locked_by_tenant` cho cả người được tra lẫn người gọi (soát Opus, cùng luật `pmsg_eligible_v`).
 - Tên công ty = `legal_name` rồi `name` (như danh bạ Tin nhắn). Người cùng công ty: không có `company_name` (luật cũ giữ nguyên).
 - `authorUserId` chỉ gắn khi người xem là chủ quản (`a.org === null`) để đối tác cộng đồng không nhận mã nhân viên.
 - Sơ đồ tổ chức: thẻ người tối đa 50/lần ⇒ ưu tiên trưởng phòng, rồi 5 nhân viên đầu mỗi phòng.
@@ -45,6 +45,7 @@ Người nội bộ xem được họ tên, chức vụ, ảnh đại diện và
 - Kịch bản: khi ngắt hoặc chặn kết nối thì mất ngay, nối lại thì hiện lại [test: apps/hub-api/src/modules/people/people-cross.int.test.ts » ngắt kết nối hoặc bị chặn ⇒ mất ngay, nối lại ⇒ hiện lại (không cache)]
 - Kịch bản: khi người gọi là người dùng ngoài thì không có thẻ chéo công ty [test: apps/hub-api/src/modules/people/people-cross.int.test.ts » người gọi là người dùng ngoài (token hoặc DB) ⇒ không có thẻ chéo công ty]
 - Kịch bản: khi đọc thẻ chéo công ty thì không có email hoặc điện thoại [test: apps/hub-api/src/modules/people/people-cross.int.test.ts » chỉ trả họ tên, chức vụ, ảnh, tên công ty — KHÔNG email/điện thoại/cột khác]
+- Kịch bản: khi người được tra hoặc người gọi bị khoá hay ngừng thì không có thẻ chéo [test: apps/hub-api/src/modules/people/people-cross.int.test.ts » người bị khoá hoặc ngừng không có trong kết quả, người gọi bị khoá cũng không nhận thẻ chéo]
 - Kịch bản: khi đọc lô 50 người thì chỉ một câu SQL [test: apps/hub-api/src/modules/people/people-cross.int.test.ts » perf · MỘT câu SQL cho cả lô 50 id, p95 in số thật]
 
 ### ADDED community/anh-tac-gia-doi-tac.md

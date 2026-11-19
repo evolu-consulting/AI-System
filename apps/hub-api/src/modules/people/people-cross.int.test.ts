@@ -147,6 +147,19 @@ describe("CR-191 · thẻ người chéo công ty", () => {
     expect(JSON.stringify(item)).not.toContain("@");
   });
 
+  it("người bị khoá hoặc ngừng không có trong kết quả, người gọi bị khoá cũng không nhận thẻ chéo", async () => {
+    expect(await ids(au("a1", T.a), [U.b1, U.b2])).toEqual([U.b1, U.b2].sort());
+    await o`update admin.users set active = false where id = ${U.b2}`;
+    await o`update admin.users set locked_by_tenant = true where id = ${U.b1}`;
+    expect(await ids(au("a1", T.a), [U.b1, U.b2])).toEqual([]);
+    await o`update admin.users set active = true where id = ${U.b2}`;
+    await o`update admin.users set locked_by_tenant = false where id = ${U.b1}`;
+    expect(await ids(au("a1", T.a), [U.b1, U.b2])).toEqual([U.b1, U.b2].sort());
+    await o`update admin.users set active = false where id = ${U.a1}`;
+    expect(await ids(au("a1", T.a), [U.b1])).toEqual([]);
+    await o`update admin.users set active = true where id = ${U.a1}`;
+  });
+
   it("perf · MỘT câu SQL cho cả lô 50 id, p95 in số thật", async () => {
     const fake = Array.from(
       { length: 43 },
