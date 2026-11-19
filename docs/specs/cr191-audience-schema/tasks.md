@@ -39,7 +39,7 @@ Trạng thái gộp: chưa gộp
 Bài chủ quản có thêm mức «Chỉ nội bộ» (đối tác ngoài không thấy) và danh sách công ty đã kết nối được chọn đích danh; người nội bộ thấy mọi mức; công ty đã kết nối thấy bài «Tất cả đối tác», nhóm Nhà cung cấp/Khách hàng theo nhãn của họ, hoặc khi được chọn đích danh.
 - Kịch bản: khi bài «Chỉ nội bộ» thì chỉ người nội bộ thấy, đối tác và công ty kết nối không thấy [test: apps/hub-api/src/modules/packs/community/domain/audience.rules.test.ts » CR-191 audienceSees · bảng chân trị dùng chung (nội bộ / đối tác / công ty kết nối)]
 - Kịch bản: khi nhân viên nội bộ không phải người đăng xem bài «Chỉ nội bộ» thì vẫn thấy [test: apps/hub-api/src/modules/packs/community/adapters/visibility.rls.int.test.ts » CR-191 internal · nhân viên không phải người đăng (được giao)]
-- Kịch bản: khi bài cũ «Chọn công ty» chỉ có công ty đối tác thì công ty kết nối không thấy, đối tác trong danh sách vẫn thấy [test: apps/hub-api/src/modules/packs/community/domain/audience.rules.test.ts » «Chỉ nội bộ» ẩn với mọi đối tác; bài cũ (không có tenants) vẫn đọc ra đúng mức]
+- Kịch bản: khi bài cũ «Chọn công ty» chỉ có công ty đối tác thì công ty kết nối không thấy, đối tác trong danh sách vẫn thấy [test: apps/hub-api/src/modules/packs/community/domain/audience.rules.test.ts » CR-191 audienceSees · bảng chân trị dùng chung (nội bộ / đối tác / công ty kết nối)]
 - Kịch bản: khi chạy migration trên DB đang ở bản trước thì bài cũ giữ nguyên mức xem và không mất bài [test: packages/db/src/community-cr191-audience.int.test.ts » tiến từ bản hiện tại]
 - Kịch bản: khi lưu quá 200 công ty kết nối cho một bài thì DB từ chối [test: packages/db/src/community-cr191-audience.int.test.ts » CHECK: aud_tenants ≤ 200 (200 ok, 201 bị chặn)]
 
