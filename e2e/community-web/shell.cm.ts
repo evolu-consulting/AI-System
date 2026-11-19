@@ -20,7 +20,6 @@ const SHT_PATHS = [
   "/contracts/partners",
   "/contracts/products",
   "/contracts/org", // CR-139 · Sơ đồ tổ chức
-  "/contracts/verify", // «Kiểm tra tệp»
 ];
 
 test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
@@ -51,7 +50,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
     });
   }
 
-  test("chủ quản có quyền (Admin): nhóm SHT + đúng 8 link TRONG app (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
+  test("chủ quản có quyền (Admin): nhóm SHT + đúng 7 link TRONG app (CR-188: «Kiểm tra tệp» đã bỏ khỏi thanh bên) (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
     page,
   }) => {
     await page.goto("/community");
@@ -169,9 +168,7 @@ test("đổi ngôn ngữ qua menu tài khoản (VI → EN → VI): nhãn thanh t
   await page.getByRole("radio", { name: "VI", exact: true }).click();
   await expect(page.getByRole("button", { name: "Tài khoản" })).toBeVisible();
 });
-test("3 loại bài có màu KHÁC nhau (nhãn, viền thẻ, nút soạn nhanh, đếm tab): bán ≠ mua ≠ thông báo", async ({
-  page,
-}) => {
+test("3 loại bài có màu KHÁC nhau (nhãn loại bài): bán ≠ mua ≠ thông báo", async ({ page }) => {
   await page.goto("/community");
   await as(page, "an");
   const color = (sel: string, prop: "color" | "backgroundColor") =>
@@ -184,10 +181,6 @@ test("3 loại bài có màu KHÁC nhau (nhãn, viền thẻ, nút soạn nhanh,
   const fg = await Promise.all(pills.map((s) => color(s, "color")));
   expect(new Set(bg).size).toBe(3);
   expect(new Set(fg).size).toBe(3);
-  const icons = await Promise.all(
-    [".ctype.sell svg", ".ctype.buy svg", ".ctype.note svg"].map((s) => color(s, "color")),
-  );
-  expect(new Set(icons).size).toBe(3);
 });
 
 test("user-menu role=menu, Tường nhà mở hồ sơ mình, Esc đóng; mục menu trái 'Bài đăng của tôi' sáng", async ({

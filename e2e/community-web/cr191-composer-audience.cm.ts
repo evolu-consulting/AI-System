@@ -1,11 +1,15 @@
 // CR-191 BR-191-5/6/7/8 (viết, điều phối chạy cuối đợt) · hộp «Viết bài…», hàng hoá gợi ý, «Ai thấy bài» (n/N), «@» trong thân bài
 // (nhắc người công ty kết nối ngoài «Ai thấy bài» ⇒ hỏi Thêm công ty / Bỏ nhắc). Adapter mock, persona mặc định = chủ quản.
 import { expect, type Page, test } from "@playwright/test";
+import { settled } from "./_composer";
 
 const open = async (page: Page) => {
   await page.goto("/community");
   await page.getByRole("button", { name: "Viết bài…" }).click();
-  return page.getByTestId("composer-dialog");
+  const dlg = page.getByTestId("composer-dialog");
+  await expect(dlg).toBeVisible();
+  await settled(page); // hộp mở có hiệu ứng phóng to ⇒ đợi xong rồi mới đo khung
+  return dlg;
 };
 const pickAudience = async (page: Page, name: string) => {
   await page.getByRole("combobox", { name: "Ai thấy bài" }).click();

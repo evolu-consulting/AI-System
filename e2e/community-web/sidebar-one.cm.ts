@@ -63,8 +63,8 @@ test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duy�
   page,
 }) => {
   const items = [
-    { cap: "community.review", count: 3 },
-    { cap: "community.join", count: 120 },
+    { cap: "community.review", count: 120 },
+    { cap: "community.join", count: 120 }, // CR-191: «Yêu cầu tham gia» chỉ còn cho đối tác ⇒ người duyệt không thấy mục
     { cap: "community.reports", count: 0 },
     { cap: "contracts.review", count: 2 },
   ];
@@ -81,8 +81,8 @@ test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duy�
   await pickOption(page.getByLabel("Chọn nhân vật"), "an");
   const side = page.getByTestId("shell-sidebar");
   const badge = (to: string) => side.locator(`[data-nav-item="${to}"] [data-testid="nav-badge"]`);
-  await expect(badge("/community/review")).toHaveText("3");
-  await expect(badge("/community/join")).toHaveText("99+");
+  await expect(side.locator('[data-nav-item="/community/join"]')).toHaveCount(0); // ẩn với người duyệt (CR-191)
+  await expect(badge("/community/review")).toHaveText("99+"); // >99 ⇒ «99+»
   await expect(badge("/community/reports")).toHaveCount(0); // 0 ⇒ không hiện badge
   // CR-126 · số «Việc của tôi» đếm ở máy khách (my-work + review-tasks), không còn theo `contracts.review` ⇒ không việc = không badge
   await expect(badge("/contracts/approvals")).toHaveCount(0);

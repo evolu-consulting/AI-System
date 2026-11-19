@@ -15,9 +15,8 @@ test("cuộn tải 20 bài mỗi lần, hết bài thì dừng", async ({ page }
   await page.goto("/community");
   await expect(posts(page)).toHaveCount(20);
   await page.getByTestId("feed-more").scrollIntoViewIfNeeded();
-  await expect(posts(page)).toHaveCount(40);
-  await page.getByTestId("feed-more").scrollIntoViewIfNeeded();
-  await expect.poll(() => posts(page).count()).toBeGreaterThan(40);
+  // dữ liệu giả: 8 bài công ty mình + 2 công ty × 14 bài đối tác = 36 ⇒ trang 2 chỉ còn 16 (< 20) ⇒ hết bài, dừng
+  await expect(posts(page)).toHaveCount(36);
   await expect(page.getByTestId("feed-more")).toHaveCount(0);
 });
 

@@ -21,7 +21,11 @@ test("đổi lọc loại bài: cột bảng tin không đổi cỡ/vị trí (C
 test("nút icon của bình luận: 28px cách 2px trên máy tính", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/community");
-  const acts = page
+  const card = page.locator('[data-post-id="p1"]');
+  await card.getByRole("combobox", { name: "Viết bình luận" }).fill("Bình luận của tôi");
+  await card.getByRole("button", { name: "Gửi bình luận" }).click(); // bình luận của chính mình ⇒ có icon Sửa/Xoá (dữ liệu giả chưa trả quyền ẩn cho bình luận cũ)
+  await expect(card.getByText("Bình luận của tôi")).toBeVisible();
+  const acts = card
     .getByTestId("comment-acts")
     .filter({ has: page.locator(".iconact") })
     .first();

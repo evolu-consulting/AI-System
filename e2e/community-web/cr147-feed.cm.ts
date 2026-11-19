@@ -67,7 +67,7 @@ test("hộp Nhắc tên (mở bằng gõ «@» trong thân bài): tìm, chọn 2
   await dlg.getByTestId("mention-option").filter({ hasText: "Minh" }).getByRole("checkbox").check();
   await dlg.getByRole("button", { name: "Xong (2 người)" }).click();
   await expect(page.getByTestId("mention-chip")).toHaveCount(2);
-  await comp.locator("#draft-body").fill("Nhờ @"); // mở lại hộp, Huỷ ⇒ giữ nguyên 2 người
+  await comp.locator("#draft-body").pressSequentially(" @"); // gõ thêm «@» cuối thân (còn tên 2 người) ⇒ mở lại hộp, Huỷ ⇒ giữ nguyên 2 người
   await page.getByTestId("mention-dialog").getByRole("button", { name: "Huỷ" }).click();
   await expect(page.getByTestId("mention-chip")).toHaveCount(2);
 });

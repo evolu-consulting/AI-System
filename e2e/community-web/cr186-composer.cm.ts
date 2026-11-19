@@ -62,7 +62,7 @@ test.describe("CR-186 · máy tính", () => {
     await openMentionFromBody(page, await openComposer(page, "Cần bán"));
     const dlg = page.getByTestId("mention-dialog");
     const rows = dlg.getByTestId("mention-option");
-    await expect(rows).toHaveCount(4); // Tất cả
+    await expect(rows).toHaveCount(6); // Tất cả = 4 người công ty mình + 2 người công ty đã kết nối (CR-191)
     await dlg.getByRole("combobox", { name: "Nhóm người" }).click();
     for (const name of ["Tất cả", "Nội bộ", "Đối tác", "Khách hàng"])
       await expect(page.getByRole("option", { name, exact: true })).toBeVisible();

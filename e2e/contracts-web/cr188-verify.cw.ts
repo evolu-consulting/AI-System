@@ -84,7 +84,7 @@ test("kiểm tra tệp: không khớp ⇒ báo tệp có thể đã bị sửa",
   await open(page, EMPTY);
   await pick(page, "c.pdf");
   await expect(page.getByTestId("verify-miss")).toContainText(
-    "Không khớp giấy tờ đã ký nào của công ty",
+    "Tệp không khớp giấy tờ đã ký nào của công ty",
   );
 });
 

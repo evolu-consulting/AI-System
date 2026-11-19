@@ -109,7 +109,7 @@ test("CR169-J1 · Vy (nhân viên, không phải người mời) › Tin nhắn 
   await page.getByTestId("find-tab-people").click(); // CR-178 M3: tìm ≥ 2 ký tự mở tab «Tin nhắn» trước; người nằm ở tab «Người»
   const row = rowOf(page, NAME.ha).first();
   await expect(row).toContainText(NAME.ha);
-  await expect(row).toContainText(CO.b.name);
+  await expect(page.getByTestId("dir-group-head").filter({ hasText: CO.b.name })).toBeVisible(); // CR-190: tên công ty ở đầu nhóm, không lặp ở từng dòng
   await expect(row).not.toContainText("@"); // không lộ email / điện thoại
   await row.click();
   await expect(page.getByTestId("chat-title")).toContainText(NAME.ha);

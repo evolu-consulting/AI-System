@@ -71,6 +71,8 @@ test("chủ quản: bình luận phẳng (không tab công ty) + audience previe
   await expect(page.getByTestId("audience-preview")).toHaveText(
     /^3\/\d+ công ty đối tác thấy bài$/,
   );
+  await page.keyboard.press("Escape"); // hộp «Viết bài…» là hộp thoại: đóng để chạm bài bên dưới
+  await expect(page.getByTestId("composer-dialog")).toHaveCount(0);
   const post = page.locator('[data-post-id="p1"]');
   await expect(post.getByTestId("thread")).toBeVisible(); // p1 có bình luận ⇒ mở sẵn (CR-186)
   await expect(post.getByRole("tab")).toHaveCount(0); // CR-129: không còn luồng riêng theo công ty

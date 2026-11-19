@@ -198,7 +198,7 @@ test("kiểm tra tệp: bản đã ký ⇒ khớp; tệp gốc ⇒ khớp tệp 
     buffer: Buffer.from("%PDF-1.4 tệp lạ không phải HĐ nào của công ty"),
   });
   await expect(page.getByTestId("verify-miss")).toContainText(
-    "Không khớp giấy tờ đã ký nào của công ty",
+    "Tệp không khớp giấy tờ đã ký nào của công ty",
     {
       timeout: 30_000,
     },

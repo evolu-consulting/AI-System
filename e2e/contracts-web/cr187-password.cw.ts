@@ -14,7 +14,7 @@ test("đổi mật khẩu tại chỗ: sai hiện tại ⇒ lỗi trong hộp, r
   await page.route("**/auth/change-password", (r) => {
     posts.push(r.request().postDataJSON());
     return posts.length === 1
-      ? json(r, 400, { code: "INVALID_CURRENT_PASSWORD", message: "x" })
+      ? json(r, 400, { error: { code: "INVALID_CURRENT_PASSWORD", message: "x" } }) // hình lỗi thật của admin-api
       : r.fulfill({ status: 204 });
   });
   await page.goto("/contracts/partners");

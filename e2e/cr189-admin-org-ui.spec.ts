@@ -181,8 +181,13 @@ test("máy tính: kéo thẻ thả lên phòng cha mới ⇒ chuyển, thả và
   await undo(page, "Đã chuyển").click();
   await expect.poll(() => parentOf(ids.trong)).toBeNull();
   // kéo Kinh doanh thả lên con của nó (Hà Nội) ⇒ chặn
+  const writes: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() !== "GET") writes.push(`${r.method()} ${r.url()}`);
+  });
   await node(page, ids.kd).dragTo(node(page, ids.hn));
-  await page.waitForTimeout(300);
+  await page.evaluate(() => new Promise<void>((ok) => requestAnimationFrame(() => ok()))); // một khung hình: bộ xử lý thả đã chạy (không ngủ chờ)
+  expect(writes).toEqual([]); // UI chặn: không gửi lệnh ghi nào
   expect(await parentOf(ids.kd)).toBeNull();
 });
 
