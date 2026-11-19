@@ -1,5 +1,6 @@
 // CR-132 · W2 · các phần đầu khung chat (tách khỏi ChatView cho gọn): lỗi/không còn trong cuộc, đầu khung, và (CR-178 M3) thanh tìm + «Ảnh & tệp».
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
+import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { Badge } from "@ai/web-kit/ui/kit/badge";
 import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
@@ -50,7 +51,14 @@ export function ChatError({
   );
 }
 
+export type HeaderAvatar = {
+  src?: string | null | undefined;
+  id?: string | undefined;
+  kind: "person" | "company";
+};
+
 export function ChatHeader({
+  avatar,
   title,
   subtitle,
   company,
@@ -65,6 +73,8 @@ export function ChatHeader({
   /** CR-178 · M3 · «Tìm trong cuộc trò chuyện» và «Ảnh & tệp». */
   onFind: () => void;
   onAttach: () => void;
+  /** CR-190 · avatar đầu khung (người = tròn, đối tác = vuông bo). */
+  avatar?: HeaderAvatar | null;
   title: string;
   /** CR-169 · cuộc `partner`: chức vụ người kia. */
   subtitle: string;
@@ -98,6 +108,16 @@ export function ChatHeader({
         >
           <IconChevronLeft width={18} height={18} />
         </button>
+      )}
+      {avatar && (
+        <Avatar
+          name={title}
+          src={avatar.src}
+          kind={avatar.kind}
+          colorId={avatar.id}
+          size={40}
+          data-testid="chat-avatar"
+        />
       )}
       <div className="min-w-0 flex-1">
         <h2 className="m-0 text-[14.5px] font-semibold" data-testid="chat-title">
@@ -136,9 +156,12 @@ export function ChatHeader({
         aria-label={t("contracts.messages.find.attachTitle")}
         title={t("contracts.messages.find.attachTitle")}
         data-testid="chat-attach"
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-dim hover:bg-sunk hover:text-ink"
+        className="inline-flex h-8 min-w-8 shrink-0 items-center justify-center gap-1.5 rounded-lg px-1.5 text-dim hover:bg-sunk hover:text-ink md:px-2.5"
       >
         <IconImage width={18} height={18} />
+        <span className="hidden text-label md:inline" data-testid="chat-attach-label">
+          {t("contracts.messages.find.attachTitle")}
+        </span>
       </button>
       {members !== null && (
         <button type="button" className="btn btn-sm" onClick={onMembers} data-testid="chat-members">

@@ -41,6 +41,14 @@
       "yesterday": "Hôm qua",
       "members": "{{n}} thành viên",
       "back": "Về danh sách",
+      "firstHello": "Chưa có tin nhắn. Gửi lời chào đầu tiên",
+      "pickPerson": "Chọn một người để bắt đầu trò chuyện",
+      "pickPersonHint": "Danh sách bên trái có hết người và nhóm bạn có thể nhắn.",
+      "hello": {
+        "g1": "👋 Xin chào",
+        "g2": "Chào anh/chị, em xin phép trao đổi một việc",
+        "g3": "Bạn rảnh chút không?"
+      },
       "emptyChat": "Hãy gửi lời chào đầu tiên.",
       "loadOlder": "Xem tin cũ hơn",
       "noDept": "Chưa có phòng",

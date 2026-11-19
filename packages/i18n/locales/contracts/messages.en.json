@@ -41,6 +41,14 @@
       "yesterday": "Yesterday",
       "members": "{{n}} members",
       "back": "Back to list",
+      "firstHello": "No messages yet. Send the first greeting",
+      "pickPerson": "Pick a person to start a conversation",
+      "pickPersonHint": "The list on the left shows everyone and every group you can message.",
+      "hello": {
+        "g1": "👋 Hello",
+        "g2": "Hello, may I discuss something with you?",
+        "g3": "Are you free for a moment?"
+      },
       "emptyChat": "Send the first greeting.",
       "loadOlder": "Show older messages",
       "noDept": "No department",

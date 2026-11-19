@@ -1,9 +1,9 @@
 // CR-132 · W2 · /contracts/messages (`?c=<id>`): toàn màn — trái danh sách 320 px, phải hội thoại; dưới 768 px chỉ một khung một lúc
 // (ô chọn → hội thoại, nút ‹ về danh sách). CR-187: trang toàn màn (`FULLSCREEN_PATHS`) — Shell giữ chiều cao, trang đứng yên, chỉ khung con cuộn.
 
+import { ChatPick } from "@ai/messages-web/components/ChatPick";
 import { ChatView } from "@ai/messages-web/components/ChatView";
 import { ConversationPane } from "@ai/messages-web/components/ConversationPane";
-import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useSession } from "~/features/auth/hooks/use-session";
@@ -47,13 +47,7 @@ export function MessagesPage({
             compact
           />
         ) : (
-          <EmptyState
-            kind="empty"
-            full
-            testId="chat-pick"
-            title={t("contracts.messages.pickOne")}
-            hint={t("contracts.messages.pickOneHint")}
-          />
+          <ChatPick />
         )}
       </div>
     </div>

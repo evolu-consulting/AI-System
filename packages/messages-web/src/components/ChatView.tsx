@@ -12,10 +12,12 @@ import { usePersonCards } from "../hooks/use-person-cards";
 import { seenPeople } from "../lib/chat-view";
 import { convTitle } from "../lib/conversations";
 import { errorKey, isGone } from "../lib/errors";
+import { isFirstHello } from "../lib/first-hello";
 import { lastMineSeq } from "../lib/message-pages";
 import { composerLocked } from "../lib/perms";
 import { cn, confirmDialog, Skeleton } from "../ui";
 import { ChatError, ChatHeader, ChatTop } from "./ChatParts";
+import { FirstHello } from "./FirstHello";
 import { DropOverlay, useFileDrop } from "./file-drop";
 import { GroupMembersSheet } from "./GroupMembersSheet";
 import { MessageComposer } from "./MessageComposer";
@@ -70,6 +72,31 @@ const partnerCompany = (d: ConversationDetail | undefined): string =>
 type Msgs = ReturnType<typeof useMessages>;
 type Box = ReturnType<typeof useOutbox>;
 
+/** Cuộc chưa có tin: avatar to + câu chào gợi ý (cuộc chỉ đọc/khoá ⇒ không có câu bấm gửi). */
+function HelloFor({
+  d,
+  cards,
+  send,
+}: {
+  d: ConversationDetail;
+  cards: ReturnType<typeof usePersonCards>;
+  send: Box["send"];
+}) {
+  const grp = d.kind === "group";
+  return (
+    <FirstHello
+      name={convTitle(d)}
+      avatar={grp ? null : cards.get(d.peer?.id ?? "")?.avatar}
+      peerId={grp ? undefined : d.peer?.id}
+      kind={d.kind === "partner" ? "company" : "person"}
+      job={grp ? "" : (d.peer?.job_title ?? "")}
+      company={partnerCompany(d)}
+      disabled={(d.kind === "partner" && d.read_only) || composerLocked(d)}
+      onPick={(text) => send(text, [])}
+    />
+  );
+}
+
 /** Phần giữa: đang tải · trống · dòng tin. */
 function ChatBody({
   d,
@@ -105,15 +132,8 @@ function ChatBody({
         <Skeleton className="h-8 w-3/5" />
       </div>
     );
-  if (msgs.items.length === 0 && outgoing.length === 0)
-    return (
-      <div
-        className="grid min-h-0 flex-1 place-items-center p-6 text-center text-[13.5px] text-dim"
-        data-testid="chat-empty"
-      >
-        {t("contracts.messages.emptyChat")}
-      </div>
-    );
+  if (isFirstHello(true, msgs.items.length, outgoing.length))
+    return <HelloFor d={d} cards={cards} send={box.send} />;
   return (
     <MessageList
       items={msgs.items}
@@ -175,6 +195,9 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
   const last = msgs.items[msgs.items.length - 1]?.seq ?? null;
   useMarkRead(id, conv.data ? last : null, myId);
   const readAt = useOpenReadMark(id, conv.data, myId);
+  const peerCards = usePersonCards(
+    useMemo(() => (conv.data?.peer ? [conv.data.peer.id] : []), [conv.data?.peer]),
+  );
 
   if (conv.isError || msgs.isError)
     return (
@@ -189,6 +212,8 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
       />
     );
   const d = conv.data;
+  const peerId = d && d.kind !== "group" ? (d.peer?.id ?? "") : "";
+  const peerAvatar = peerCards.get(peerId)?.avatar;
   return (
     <section
       aria-label={d ? convTitle(d) : t("contracts.messages.title")}
@@ -205,6 +230,15 @@ export function ChatView({ conversationId: id, myId, onBack, compact, backClass 
             onFind={onFind}
             onAttach={onAttach}
             title={d ? convTitle(d) : ""}
+            avatar={
+              d
+                ? {
+                    src: peerAvatar,
+                    id: peerId || undefined,
+                    kind: d.kind === "partner" ? "company" : "person",
+                  }
+                : null
+            }
             subtitle={partnerJob(d)}
             company={partnerCompany(d)}
             members={d?.kind === "group" ? d.member_count : null}

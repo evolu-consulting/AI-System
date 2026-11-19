@@ -13,7 +13,8 @@ import {
   type RowGroup,
   unreadDividerSeq,
 } from "../lib/chat-view";
-import { dayLabel, timeLabel } from "../lib/format";
+import { dayBarText } from "../lib/first-hello";
+import { timeLabel } from "../lib/format";
 import { dayKey } from "../lib/message-pages";
 import { type DayRows, mergeRows, type PendingMsg } from "../lib/rows";
 import { cn } from "../ui";
@@ -56,18 +57,19 @@ const dayStart = (g: DayRows): string => {
 
 function DayBar({ iso }: { iso: string }) {
   const { t } = useTranslation();
-  const d = dayLabel(iso);
-  const text =
-    d.kind === "today"
-      ? t("contracts.messages.today")
-      : d.kind === "yesterday"
-        ? t("contracts.messages.yesterday")
-        : d.text;
+  const text = dayBarText(iso, {
+    today: t("contracts.messages.today"),
+    yesterday: t("contracts.messages.yesterday"),
+  });
+  // CR-190 · nhãn ngày dính đầu khung khi cuộn (mỗi ngày một nhãn, nhãn sau đẩy nhãn trước).
   return (
-    <div className="my-3 flex items-center gap-3 text-micro text-dim">
-      <span className="h-px flex-1 bg-rule-soft" />
-      {text}
-      <span className="h-px flex-1 bg-rule-soft" />
+    <div className="pointer-events-none sticky top-0 z-10 my-2 flex justify-center">
+      <span
+        data-testid="msg-day"
+        className="rounded-full bg-sunk px-2.5 py-0.5 text-micro text-dim shadow-sm"
+      >
+        {text}
+      </span>
     </div>
   );
 }
