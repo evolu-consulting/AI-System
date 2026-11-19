@@ -4,7 +4,7 @@
 // đồng nghiệp của đối tác = user thứ hai trong tài khoản công ty (admin-api) đăng bài bằng ô soạn.
 //  M1 · Chủ quản bình luận (không bước ẩn); @ mở hộp «Nhắc tên», chọn người công ty Tân Phát ⇒ Gửi ⇒ bình luận hiện «@Tên».
 //  M2 · Tân Phát bình luận; ABC thấy bình luận của chủ quản, KHÔNG thấy của Tân Phát.
-//  M3 · Composer: nhóm hàng chọn qua hộp thoại (cat-pick-btn → cat-pick-done); nút Đính kèm chỉ biểu tượng.
+//  M3 · Composer: nút Đính kèm chỉ biểu tượng; «Ai thấy bài» không còn «Theo nhóm hàng» (CR-191, thay chọn nhóm hàng).
 //  M4 · /community/me: 2 tab; tab «Bài đăng của tổ chức» có bài của đồng nghiệp, tab «Bài đăng của tôi» không có.
 import { expect, type Page, test } from "@playwright/test";
 import { apiLogin, createPost, pageFetch, tenantIdByKey } from "../_kit/api";
@@ -102,7 +102,7 @@ test("CR129-M2 · Tân Phát bình luận; ABC (cùng thấy bài) thấy bình 
   await buyer.ctx.close();
 });
 
-test("CR129-M3 · Composer: chọn nhóm hàng qua hộp thoại (cat-pick-btn → cat-pick-done); nút Đính kèm chỉ biểu tượng", async ({
+test("CR129-M3 · Composer: nút Đính kèm chỉ biểu tượng; «Ai thấy bài» không còn «Theo nhóm hàng» (CR-191)", async ({
   browser,
 }) => {
   const host = await openAs(browser, "host");
@@ -113,16 +113,8 @@ test("CR129-M3 · Composer: chọn nhóm hàng qua hộp thoại (cat-pick-btn �
   await expect(attach).toBeVisible();
   await expect(attach).toHaveText(""); // chỉ biểu tượng, nhãn nằm ở aria-label
   await p.getByRole("combobox", { name: "Ai thấy bài" }).click();
-  await p.getByRole("option", { name: "Theo nhóm hàng" }).click();
-  await p.getByTestId("cat-pick-btn").click();
-  const dlg = p.getByRole("dialog", { name: "Chọn nhóm hàng" });
-  await expect(dlg).toBeVisible();
-  const first = dlg.getByTestId("cat-list").getByRole("checkbox").first();
-  await first.check();
-  await expect(dlg).toContainText("Đã chọn 1 nhóm");
-  await dlg.getByTestId("cat-pick-done").click();
-  await expect(dlg).toHaveCount(0);
-  await expect(p.getByTestId("cat-pick-btn")).not.toHaveText("Chọn nhóm hàng"); // nút hiện nhóm đã chọn
+  await expect(p.getByRole("option", { name: "Chỉ nội bộ" })).toBeVisible();
+  await expect(p.getByRole("option", { name: "Theo nhóm hàng" })).toHaveCount(0);
   await host.ctx.close();
 });
 

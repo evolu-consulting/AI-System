@@ -34,3 +34,9 @@ export async function openMentionFromBody(
   await expect(m).toBeVisible();
   return m;
 }
+
+/** Đóng hộp «Viết bài…» (Esc) — hộp là modal, còn mở thì phần còn lại của trang bị ẩn khỏi cây trợ năng. */
+export async function closeComposer(page: Page): Promise<void> {
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("composer-dialog")).toHaveCount(0);
+}

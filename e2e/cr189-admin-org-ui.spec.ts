@@ -135,6 +135,7 @@ test("«⋯» có đủ 4 thao tác, Đổi trưởng phòng (ô chọn avatar) 
   await expect(page.getByTestId("org-members-edit-dialog")).toContainText("sẽ chuyển sang đây");
   await page.getByTestId(`org-member-opt-${USER_ID.lan}`).click();
   await page.getByTestId("org-members-save").click();
+  await expect(page.getByTestId("org-members-edit-dialog")).toHaveCount(0); // lưu xong (hộp đóng) mới đọc DB
   const inKt = await withOwner(
     async (s) => s`select user_id from admin.group_members where group_id = ${ids.kt}`,
   );

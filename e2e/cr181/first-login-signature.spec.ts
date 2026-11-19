@@ -79,8 +79,14 @@ test("CR-188 · Cài đặt chữ ký không còn tuỳ chọn «Dòng dưới c
 }) => {
   const page = await newPage(browser);
   await loginCw(page, E, U.director);
+  // giám đốc chưa có chữ ký + công ty bắt buộc ⇒ màn «Tạo chữ ký của bạn» chắn trước (xem test đầu file): tạo xong mới vào Cài đặt
+  const first = page.getByRole("dialog", { name: "Tạo chữ ký của bạn" });
+  await expect(first).toBeVisible();
+  await first.getByRole("button", { name: "Lưu và vào Evolu" }).click();
+  await expect(first).toHaveCount(0);
   await page.goto("/settings/signature");
-  await expect(page.getByTestId("sig-format")).toBeVisible();
-  await expect(page.getByText("Dòng dưới chữ ký")).toHaveCount(0);
-  await expect(page.getByText("Giờ ký")).toHaveCount(0);
+  const fmt = page.getByTestId("sig-format");
+  await expect(fmt).toBeVisible();
+  await expect(fmt.getByText("Dòng dưới chữ ký")).toHaveCount(0); // tuỳ chọn của công ty (CR-188 bỏ); dòng dưới chữ ký nay thuộc từng bản chữ ký
+  await expect(fmt.getByText("Giờ ký")).toHaveCount(0);
 });

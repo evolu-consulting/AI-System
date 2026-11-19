@@ -137,6 +137,7 @@ test("CR169-J2 · Hà thấy số chưa đọc ở «Tin nhắn», mở ⇒ tin 
   // Vy mở sẵn cuộc (nhận «Đã xem» + trả lời qua /me/stream, không tải lại)
   const v = await open(browser, EA, WHO.vy);
   await v.page.goto("/contracts/messages?company=all");
+  await pickPartner(v.page, CO.b.name); // CR-190: nhóm đối tác mặc định thu khi không có tin chưa đọc ⇒ mở nhóm rồi mới chọn cuộc
   await rowOf(v.page, NAME.ha).click();
   await expect(msgOf(v.page, HELLO)).toBeVisible();
 

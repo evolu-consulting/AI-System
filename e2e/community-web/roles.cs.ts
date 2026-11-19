@@ -1,7 +1,7 @@
 // CR-102 · C12b · 3 vai trên stack thật + seed demo (docs/current/community/hien-thi.md): ai thấy bài nào, che liên hệ,
 // bình luận phẳng (CR-129), dấu "chỉ chủ quản". Dữ liệu = `seed-community-demo` (bài Thùng phi 200L, CKS, Băng keo…).
 import { expect, type Page, test } from "@playwright/test";
-import { openComposer as openComposerDlg } from "./_composer";
+import { closeComposer, openComposer as openComposerDlg } from "./_composer";
 import { MASK_PHONE, ORG, openAs, postByTitle, READONLY } from "./_stack";
 
 const openComposer = (page: Page) => openComposerDlg(page);
@@ -50,6 +50,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await openComposer(page); // ô soạn bài thu gọn mặc định (CR-110) ⇒ mở ra mới thấy nhắc cho đối tác
     await expect(page.getByTestId("partner-note")).toHaveText("Chỉ chủ quản thấy bài này");
     await expect(page.getByText("Lưu báo giá")).toHaveCount(0);
+    await closeComposer(page); // hộp «Viết bài» là modal ⇒ đóng rồi mới thao tác bài trong bảng tin
     // số điện thoại trong bình luận của chính mình cũng bị che; không có tab công ty / dòng "Chỉ chủ quản thấy trao đổi"
     const phi = postByTitle(page, "Thùng phi 200L");
     const th = phi.getByTestId("thread"); // bài có bình luận ⇒ mở sẵn (CR-186)
@@ -81,6 +82,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await openComposer(page); // ô soạn bài thu gọn mặc định (CR-110) ⇒ mở ra mới thấy nhắc cho đối tác
     await expect(page.getByTestId("partner-note")).toHaveText("Chỉ chủ quản thấy bài này");
     await expect(page.getByText("Lưu báo giá")).toHaveCount(0);
+    await closeComposer(page);
     await expect(page.getByRole("button", { name: "Mở trợ lý giá" })).toHaveCount(0);
     // bình luận phẳng: không có tab công ty
     const mine = postByTitle(page, "Chữ ký số DN – USB Token");

@@ -5,6 +5,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { enableFlowTriggers } from "../_kit/flows";
 import { flowRows, loginPlatformAdminUi, openCompanyFlows, openTenantAppsTab } from "../_kit/ui";
+import { openComposer } from "./_composer";
 import { ensureModerationFlow } from "./_flow";
 import { openAs, postByTitle, TENANT } from "./_stack";
 
@@ -20,12 +21,11 @@ test.describe.configure({ mode: "serial" });
 
 async function post(page: Page, title: string): Promise<void> {
   await page.goto("/community");
-  const composer = page.getByTestId("composer");
-  await composer.getByRole("button", { name: /đang có hàng/ }).click();
-  await composer.getByRole("button", { name: "Cần bán", exact: true }).click();
-  await page.getByLabel("Hàng hoá", { exact: true }).fill(title);
-  await page.getByLabel("Số lượng").fill("3 thùng");
-  await page.getByRole("button", { name: "Đăng bài" }).click();
+  const dlg = await openComposer(page, "Cần bán"); // CR-191: dòng «Viết bài…» ⇒ hộp thoại
+  await dlg.getByTestId("goods-input").fill(title);
+  await dlg.getByLabel("Số lượng").fill("3 thùng");
+  await dlg.getByRole("button", { name: "Đăng bài" }).click();
+  await expect(dlg).toHaveCount(0); // hộp đóng xong mới điều hướng tiếp
 }
 
 test("0 · platform admin gán quy trình duyệt bài + bật cờ (đường thật)", async ({ browser }) => {
