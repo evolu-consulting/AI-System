@@ -33,3 +33,10 @@ Không thay đổi hành vi (lý do: chỉ sửa e2e theo spec mới)
 
 ## Việc còn lại
 C1 và cr181 prepareSignPlaces cần điều tra code.
+
+## Lượt 3 (phân loại đỏ run 20261120-043552; chưa chạy lại — evotest cục bộ lỗi tar/khoá SSH)
+- `cr127` chết 25 s «không rút được tên ca»: webServer `_cr127-stack.ts` ném `ReferenceError: bAdmin is not defined` (dòng 193). Commit aa6e0074c gỡ `const bAdmin` khi đổi `setDirectoryListed` ⇒ vẫn dùng ở `createGroupWith`. TEST SAI ⇒ trả lại `const bAdmin = await adminOf(b)`.
+- `cr192-crop` C1 (18 px): lỗi nằm ở `a.x` của **nút bút** (dòng 82), không phải y/cuộn. Có ảnh ⇒ nút «Gỡ ảnh» hiện cạnh bút (CR-156, `profile.css:174 .imgpick` căn giữa cặp nút 30+6 px) ⇒ bút nhích 18 px — hành vi cũ, không do CR-192; so sánh bút trước (chưa ảnh) / sau (có ảnh) sai. TEST SAI ⇒ bút chỉ đo y + kích thước; avatar/bìa đo như cũ (toạ độ theo trang, chờ hồ sơ dựng xong trước khi đo).
+- `cr169` J2 dòng 149: CR-190 đưa tên công ty lên đầu nhóm (`DirGroup.tsx:100 showCompany = kind==="chat"`), dòng trong nhóm đối tác không còn `conv-company-line`. TEST SAI ⇒ kiểm `dir-group-head` có tên công ty; `conv-company-line` kiểm ở tab «Chưa đọc» (`UnreadList` showCompany).
+- `cr181` «Gửi lại link»: regex toast cũ «chưa gửi được link»; chữ thật `contracts.psign.link.noMail` = «Chưa gửi được thư mời ký…» (e2e không có thư) ⇒ TEST SAI ⇒ regex `Đã gửi lại link tới|Chưa gửi được thư mời ký`.
+- `scenes-mobile` bang-tin-mobile: bỏ qua (điều phối chụp lại).

@@ -184,6 +184,7 @@ async function partnerPair(
     app: "contracts",
   });
   await setCompanyListed(HUB, bBoss, true);
+  const bAdmin = await adminOf(b);
   const members = [U.director, U.accounting];
   for (const [key, name] of [
     ["phong-kinh-doanh", "Phòng Kinh doanh"],

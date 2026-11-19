@@ -146,9 +146,10 @@ test("CR169-J2 · Hà thấy số chưa đọc ở «Tin nhắn», mở ⇒ tin 
   await expect(msgBadge(h.page)).toHaveText("1");
   const row = rowOf(h.page, VY);
   await expect(row).toHaveAttribute("data-unread", "true");
-  await expect(row.getByTestId("conv-company-line")).toContainText(CO.a.name);
+  await expect(h.page.getByTestId("dir-group-head").filter({ hasText: CO.a.name })).toBeVisible(); // CR-190: dòng cuộc nằm trong nhóm công ty, tên công ty ở đầu nhóm (dòng không lặp)
   await h.page.getByTestId("tab-unread").click(); // CR-178: Hà (người nhận, không phải người tạo cuộc) thấy cuộc ở «Chưa đọc»
   await expect(row).toBeVisible();
+  await expect(row.getByTestId("conv-company-line")).toContainText(CO.a.name); // tab «Chưa đọc» là danh sách phẳng ⇒ dòng nêu công ty
   await row.click();
   await expect(h.page.getByTestId("chat-company")).toContainText(CO.a.name);
   await expect(h.page.getByTestId("open-feed")).toHaveCount(0); // CR-179: bỏ nút «Bảng tin» ở Tin nhắn

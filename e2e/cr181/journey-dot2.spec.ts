@@ -265,7 +265,7 @@ test("Gửi lại link: người tải lên thấy nút ⇒ link cũ hết dùng
     await expect(sale.getByTestId("sign-partner-wait")).toContainText("Chờ", { timeout: 5_000 });
   }).toPass({ timeout: 90_000 });
   await sale.getByTestId("sign-partner-wait").getByRole("button", { name: "Gửi lại link" }).click();
-  await expect(sale.getByText(/Đã gửi lại link tới|chưa gửi được link/)).toBeVisible({
+  await expect(sale.getByText(/Đã gửi lại link tới|Chưa gửi được thư mời ký/)).toBeVisible({
     timeout: 30_000,
   });
   link2b = await readPartnerLink(E, [pathOf(link1), pathOf(link2a)]);
