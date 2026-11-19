@@ -55,6 +55,13 @@ const searchBox = (page: Page) => page.getByRole("searchbox", { name: "Tìm ngư
 const msgBadge = (page: Page) =>
   page.getByTestId("nav-contracts-messages").getByTestId("nav-badge");
 const rowOf = (page: Page, text: string) => page.getByTestId("conv-row").filter({ hasText: text });
+/** CR-190 · nhóm ở cột trái có thể đang thu (không có chưa đọc) ⇒ mở mọi nhóm đang thu rồi bấm cuộc. */
+const openConv = async (page: Page, text: string) => {
+  await expect(page.getByTestId("dir-list")).toBeVisible();
+  for (const head of await page.getByTestId("dir-group-head").all())
+    if ((await head.getAttribute("aria-expanded")) === "false") await head.click();
+  await rowOf(page, text).click();
+};
 const msgOf = (page: Page, text: string) => page.getByTestId("msg-row").filter({ hasText: text });
 const apiOf = (e: Env, user: string): Promise<Session> =>
   apiLogin({
@@ -218,8 +225,8 @@ test("CR169-J4 · Vy gửi nhầm một tin rồi thu hồi ⇒ cả hai bên ch
   const h = await open(browser, EB, WHO.ha);
   await v.page.goto("/contracts/messages?company=all");
   await h.page.goto("/contracts/messages?company=all");
-  await rowOf(v.page, NAME.ha).click();
-  await rowOf(h.page, VY).click();
+  await openConv(v.page, NAME.ha);
+  await openConv(h.page, VY);
   await v.page.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(OOPS);
   await v.page.getByRole("button", { name: "Gửi", exact: true }).click();
   await expect(msgOf(v.page, OOPS)).toBeVisible();
@@ -299,7 +306,7 @@ test("CR169-J7 · Chat AI app: Hà vào mục «Tin nhắn» thấy cùng cuộc
   const NEW = `Tin từ Chat AI ${RUN}`;
   const v = await open(browser, EA, WHO.vy);
   await v.page.goto("/contracts/messages?company=all");
-  await rowOf(v.page, NAME.ha).click();
+  await openConv(v.page, NAME.ha);
 
   const ctx = await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
@@ -314,7 +321,7 @@ test("CR169-J7 · Chat AI app: Hà vào mục «Tin nhắn» thấy cùng cuộc
   await expect(page.getByRole("textbox", { name: "Tin nhắn", exact: true })).toBeVisible();
   await page.getByTestId("nav-messages").click();
   await expect(page.getByTestId("user-chip")).toBeVisible(); // CR-172: Chat AI cũng hiện avatar + tên ở thanh trên
-  await rowOf(page, VY).click();
+  await openConv(page, VY);
   await expect(msgOf(page, HELLO)).toBeVisible(); // cùng dữ liệu với Sổ Hợp Tác
   await page.getByRole("textbox", { name: "Nhập tin nhắn" }).fill(NEW);
   await page.getByRole("button", { name: "Gửi", exact: true }).click();
@@ -365,7 +372,7 @@ test("CR169-J8 · Tiên (người mời) › Đối tác › Preschool: 3 tab, k
   await expect(
     v.page.getByTestId("dir-group-head").filter({ hasText: new RegExp(CO.b.name) }),
   ).toHaveCount(0);
-  await rowOf(v.page, NAME.ha).click(); // cuộc cũ vẫn nằm ở «Tất cả»
+  await openConv(v.page, NAME.ha); // cuộc cũ vẫn nằm ở «Tất cả»
   await expect(msgOf(v.page, HELLO)).toBeVisible();
   await expect(msgOf(v.page, REPLY)).toBeVisible();
   await expect(v.page.getByTestId("read-only-notice")).toContainText("không còn kết nối");
@@ -374,7 +381,7 @@ test("CR169-J8 · Tiên (người mời) › Đối tác › Preschool: 3 tab, k
 
   const h = await open(browser, EB, WHO.ha); // phía kia cũng chỉ đọc
   await h.page.goto("/contracts/messages?company=all");
-  await rowOf(h.page, VY).click();
+  await openConv(h.page, VY);
   await expect(h.page.getByTestId("read-only-notice")).toBeVisible();
   await expect(h.page.getByRole("textbox", { name: "Nhập tin nhắn" })).toHaveCount(0);
   await h.ctx.close();
