@@ -89,3 +89,9 @@ export const IconFile = (p: P) => (
     <path d="M14 3v4h4" />
   </svg>
 );
+/** CR-190 · ghim hội thoại (đinh ghim, đặc khi đang ghim). */
+export const IconPin = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 17v5M9 3h6l-1 7 3 3v2H7v-2l3-3-1-7Z" />
+  </svg>
+);

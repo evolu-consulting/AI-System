@@ -17,6 +17,7 @@ import {
   sendMessage,
 } from "../api";
 import { applyNewToList, clearUnread } from "../lib/conversations";
+import { applyNewToDir, clearUnreadInDir } from "../lib/directory";
 import { errorKey } from "../lib/errors";
 import type { AroundParam } from "../lib/find";
 import {
@@ -26,7 +27,7 @@ import {
   type MsgPages,
   nextBefore,
 } from "../lib/message-pages";
-import { patchLists } from "./list-cache";
+import { patchDirs, patchLists } from "./list-cache";
 import { enterViewing, leaveViewing } from "./msg-realtime";
 import { useMsgRealtime } from "./use-unread";
 
@@ -86,6 +87,16 @@ export function useOutbox(id: string, myId: string) {
             return r.data;
           });
           if (!known) void qc.invalidateQueries({ queryKey: msgKeys.list });
+          // CR-190 · danh bạ nhóm: dòng của cuộc này nhảy lên đầu nhóm; chưa thấy dòng (vừa mở cuộc) ⇒ tải lại.
+          let dirs = 0;
+          let dirKnown = false;
+          patchDirs(qc, (d) => {
+            dirs++;
+            const r = applyNewToDir(d, m, { myId, viewing: true, senderName: "" });
+            dirKnown ||= r.known;
+            return r.data;
+          });
+          if (dirs > 0 && !dirKnown) void qc.invalidateQueries({ queryKey: msgKeys.dirAll });
           setOut((o) => o.filter((x) => x.clientId !== clientId));
         })
         .catch((e: unknown) => {
@@ -125,6 +136,7 @@ export function useRevoke(id: string) {
     onSuccess: (_v, seq) => {
       qc.setQueryData<MsgPages>(msgKeys.msgs(id), (o) => applyDeleted(o, seq));
       void qc.invalidateQueries({ queryKey: msgKeys.list });
+      void qc.invalidateQueries({ queryKey: msgKeys.dirAll });
     },
   });
 }
@@ -147,6 +159,7 @@ export function useMarkRead(id: string, lastSeq: number | null, myId: string) {
       markRead(id, lastSeq)
         .then((r) => {
           patchLists(qc, (l) => clearUnread(l, id));
+          patchDirs(qc, (d) => clearUnreadInDir(d, id));
           qc.setQueryData(msgKeys.unread, { total: r.unread_total });
           qc.setQueryData<ConversationDetail>(msgKeys.detail(id), (c) =>
             c
@@ -178,6 +191,7 @@ function useGroupMutation<V>(id: string, fn: (v: V) => Promise<ConversationDetai
     onSuccess: (d) => {
       if (d) qc.setQueryData(msgKeys.detail(id), d);
       void qc.invalidateQueries({ queryKey: msgKeys.list });
+      void qc.invalidateQueries({ queryKey: msgKeys.dirAll });
       void qc.invalidateQueries({ queryKey: msgKeys.detail(id) });
     },
   });

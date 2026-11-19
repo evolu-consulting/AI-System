@@ -51,8 +51,7 @@ const pickPartner = async (page: Page, name: string) => {
     .click();
   await expect(page.getByTestId("tab-partner")).toHaveAttribute("aria-pressed", "true");
 };
-const searchBox = (page: Page) =>
-  page.getByRole("searchbox", { name: "Tìm người theo tên, chức vụ" });
+const searchBox = (page: Page) => page.getByRole("searchbox", { name: "Tìm người, nhóm, công ty" });
 const msgBadge = (page: Page) =>
   page.getByTestId("nav-contracts-messages").getByTestId("nav-badge");
 const rowOf = (page: Page, text: string) => page.getByTestId("conv-row").filter({ hasText: text });

@@ -1,17 +1,19 @@
-// CR-132 · W2 · một dòng danh sách. CR-179: 3 dòng — (1) tên người + giờ, (2) «[toà nhà] công ty · chức vụ» chữ phụ không nền,
-// (3) xem trước tin cuối (chưa đọc ⇒ chữ chính đậm + số). CR-132b: dòng «Thành viên» chưa có 1-1 (`c` null) bấm là mở/tạo.
-
-import type { ConversationSummary } from "@ai/contracts/pack-contracts";
+// CR-132 · W2 · một dòng danh sách. CR-190: avatar · tên (+ghim) · «chức vụ · công ty» · tin cuối hoặc «Chưa có tin nhắn» (không giờ) · số chưa đọc;
+// «⋯» (máy tính: hiện khi rê chuột/focus; điện thoại: giữ lâu) = Ghim / Đánh dấu chưa đọc. Người chưa từng nhắn: bấm là mở cuộc, không có «⋯».
+import type { ConversationSummary, MsgDirRow } from "@ai/contracts/pack-contracts";
 import type { PersonCard } from "@ai/contracts/people";
 import { Avatar } from "@ai/web-kit/ui/kit/avatar";
 import { TruncText } from "@ai/web-kit/ui/kit/trunc-text";
+import { PersonAvatar } from "@ai/web-kit/ui/PersonAvatar";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { IconBuilding, IconFile } from "../icons";
-import { convTitle, isUnread, previewOf, unreadLabel } from "../lib/conversations";
+import { IconFile, IconPin } from "../icons";
+import { previewOf } from "../lib/conversations";
+import { type DirRowView, dirRowView } from "../lib/dir-rows";
 import { listTime } from "../lib/format";
-import { avatarNameOf, metaLineOf } from "../lib/row-view";
 import { cn } from "../ui";
 import { PersonTip, usePersonTip } from "./PersonTip";
+import { RowMenu, type RowMenuHandlers, useRowMenu } from "./RowMenu";
 
 type T = ReturnType<typeof useTranslation>["t"];
 function previewText(p: ReturnType<typeof previewOf>, t: T): string {
@@ -22,136 +24,158 @@ function previewText(p: ReturnType<typeof previewOf>, t: T): string {
   return p.who ? t("contracts.messages.previewOther", { who: p.who, text: p.text }) : p.text;
 }
 
-function Preview({ c, myId }: { c: ConversationSummary; myId: string }) {
+function Preview({ c, myId }: { c: ConversationSummary | null; myId: string }) {
   const { t } = useTranslation();
-  const p = previewOf(c, myId);
-  const text = previewText(p, t);
-  if (p.kind === "files")
+  if (!c?.last_message)
     return (
-      <span className="flex min-w-0 flex-1 items-center gap-1">
-        <IconFile width={13} height={13} aria-hidden className="shrink-0" />
-        <TruncText text={text} focusable={false} className="min-w-0 flex-1" />
+      <span data-testid="conv-empty-msg" className="min-w-0 flex-1 truncate italic">
+        {t("contracts.messages.noMessageYet")}
       </span>
     );
-  return <TruncText text={text} focusable={false} className="min-w-0 flex-1" />;
-}
-
-/** Dòng 2: «[toà nhà] Công ty · Chức vụ» — chữ phụ 12px, không nền; thiếu phần nào thì bỏ phần đó (không «·» thừa, không icon khi thiếu công ty). */
-function MetaLine({ company, job }: { company: string; job: string }) {
-  const text = company && job ? `${company} · ${job}` : company || job;
+  const p = previewOf(c, myId);
+  const text = previewText(p, t);
   return (
-    <span
-      data-testid="conv-company-line"
-      className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
-    >
-      {company && <IconBuilding width={12} height={12} aria-hidden className="shrink-0" />}
+    <span className="flex min-w-0 flex-1 items-center gap-1">
+      {p.kind === "files" && <IconFile width={13} height={13} aria-hidden className="shrink-0" />}
       <TruncText text={text} focusable={false} className="min-w-0 flex-1" />
-      {/* giữ mốc cho e2e cũ: tên công ty / chức vụ đọc được riêng */}
-      {company && (
-        <span data-testid="conv-company" className="sr-only">
-          {company}
-        </span>
-      )}
-      {job && (
-        <span data-testid="conv-job" className="sr-only">
-          {job}
-        </span>
-      )}
     </span>
   );
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: một dòng trình bày (nhãn xem trước/chưa đọc/thẻ người), tách thêm chỉ làm khó đọc
-export function ConversationRow({
-  c,
-  name,
-  myId,
-  active,
-  onOpen,
-  busy = false,
-  card,
-}: {
-  c: ConversationSummary | null;
-  /** Tên hiện khi chưa có hội thoại (thành viên chưa nhắn). */
-  name?: string;
+/** Chuyển động nhẹ CHỈ cho dòng vừa nhảy lên đầu (tắt khi người dùng chọn giảm chuyển động). */
+function useBumpMotion(on: boolean) {
+  const ref = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!on || !el || typeof el.animate !== "function") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    el.animate(
+      [
+        { transform: "translateY(12px)", opacity: 0.4 },
+        { transform: "none", opacity: 1 },
+      ],
+      { duration: 220, easing: "ease-out" },
+    );
+  }, [on]);
+  return ref;
+}
+
+function RowAvatar({ v, card }: { v: DirRowView; card: PersonCard | undefined }) {
+  return v.isGroup ? (
+    <Avatar name={v.title} kind="company" size={40} data-testid="conv-avatar" />
+  ) : (
+    <PersonAvatar
+      name={v.title}
+      id={v.personId}
+      src={card?.avatar}
+      size={40}
+      testId="conv-avatar"
+    />
+  );
+}
+
+export type ConversationRowProps = {
+  row: MsgDirRow;
+  /** Hiện tên công ty ở dòng phụ (nhóm đối tác đã có tên công ty ở đầu nhóm ⇒ false). */
+  showCompany: boolean;
   myId: string;
   active: boolean;
   onOpen: () => void;
   busy?: boolean;
   /** Thẻ người đã đọc theo lô (avatar + thẻ rê chuột); chưa về ⇒ chữ cái đầu. */
   card?: PersonCard | undefined;
-}) {
+  menu?: RowMenuHandlers | undefined;
+  /** Dòng vừa nhảy lên đầu nhóm vì có tin. */
+  bumped?: boolean;
+};
+
+export function ConversationRow(p: ConversationRowProps) {
   const { t } = useTranslation();
-  const unread = c ? isUnread(c) : false;
-  const n = c ? unreadLabel(c.unread) : null;
-  const title = c ? convTitle(c) : (name ?? "");
-  const isPerson = !c || c.kind === "direct";
-  const meta = metaLineOf(c);
+  const v = dirRowView(p.row, p.showCompany);
+  const c = p.row.conversation;
   const tip = usePersonTip();
-  const hv = isPerson ? tip.hover : {};
+  const hv = v.isGroup ? {} : tip.hover;
+  const li = useBumpMotion(p.bumped ?? false);
+  const rm = useRowMenu(Boolean(c && p.menu));
   return (
-    <li className="relative">
+    <li ref={li} {...rm.press} className="group relative" data-row-key={v.key}>
       <button
         {...tip.focus}
         type="button"
         data-testid="conv-row"
-        data-unread={unread ? "true" : "false"}
-        aria-current={active ? "true" : undefined}
-        disabled={busy}
-        onClick={onOpen}
+        data-unread={v.unread > 0 ? "true" : "false"}
+        data-pinned={v.pinned ? "true" : "false"}
+        aria-current={p.active ? "true" : undefined}
+        disabled={p.busy}
+        onClick={() => {
+          if (!rm.swallowClick()) p.onOpen();
+        }}
         className={cn(
           "flex w-full min-w-0 items-center gap-3 px-4 py-2.5 text-left hover:bg-sunk focus-visible:bg-sunk focus-visible:outline-none",
-          active && "bg-act-soft",
+          p.active && "bg-act-soft",
         )}
       >
         <span {...hv} className="shrink-0">
-          <Avatar
-            name={avatarNameOf(title)}
-            kind="person"
-            src={isPerson || c?.kind === "partner" ? card?.avatar : null}
-            size={40}
-            data-testid="conv-avatar"
-          />
+          <RowAvatar v={v} card={p.card} />
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden">
           <span className="flex min-w-0 items-baseline gap-2">
             <span {...hv} className="min-w-0 flex-1">
               <TruncText
-                text={title}
+                text={v.title}
                 focusable={false}
-                className="block text-md font-medium text-foreground"
+                className={cn(
+                  "block text-md text-foreground",
+                  v.unread > 0 ? "font-semibold" : "font-medium",
+                )}
               />
             </span>
-            {c?.last_message && (
-              <time dateTime={c.last_message.at} className="shrink-0 text-xs text-muted-foreground">
-                {listTime(c.last_message.at)}
+            {v.pinned && (
+              <span data-testid="conv-pin" role="img" aria-label={t("contracts.messages.pinned")}>
+                <IconPin width={13} height={13} className="shrink-0 text-dim" />
+              </span>
+            )}
+            {v.at && (
+              <time dateTime={v.at} className="shrink-0 text-xs text-muted-foreground">
+                {listTime(v.at)}
               </time>
             )}
           </span>
-          {meta && <MetaLine company={meta.company} job={meta.job} />}
-          {c && (
-            <span
-              className={cn(
-                "flex min-w-0 items-center gap-2 text-sm",
-                unread ? "font-semibold text-foreground" : "text-muted-foreground",
-              )}
-            >
-              <Preview c={c} myId={myId} />
-              {n && (
-                <span
-                  data-testid="conv-unread"
-                  role="img"
-                  aria-label={t("contracts.messages.unread", { n: c.unread })}
-                  className="grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-full bg-late px-1 text-xs font-semibold text-panel"
-                >
-                  {n}
-                </span>
-              )}
+          {v.sub && (
+            <span data-testid="conv-company-line" className="min-w-0 text-xs text-muted-foreground">
+              <TruncText text={v.sub} focusable={false} className="min-w-0" />
             </span>
           )}
+          <span
+            className={cn(
+              "flex min-w-0 items-center gap-2 text-sm",
+              v.unread > 0 ? "font-semibold text-foreground" : "text-muted-foreground",
+            )}
+          >
+            <Preview c={c} myId={p.myId} />
+            {v.unreadText && (
+              <span
+                data-testid="conv-unread"
+                role="img"
+                aria-label={t("contracts.messages.unread", { n: v.unread })}
+                className="grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-full bg-late px-1 text-xs font-semibold text-panel"
+              >
+                {v.unreadText}
+              </span>
+            )}
+          </span>
         </span>
       </button>
-      {isPerson && tip.open && <PersonTip name={title} card={card} />}
+      {c && p.menu && (
+        <RowMenu
+          c={c}
+          handlers={p.menu}
+          open={rm.open}
+          onOpenChange={rm.setOpen}
+          label={t("contracts.messages.rowMore", { name: v.title })}
+        />
+      )}
+      {!v.isGroup && tip.open && <PersonTip name={v.title} card={p.card} />}
     </li>
   );
 }

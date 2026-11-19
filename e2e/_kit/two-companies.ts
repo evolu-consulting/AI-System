@@ -26,7 +26,7 @@ export const WHO = {
   nam: "e2e-nam",
 } as const;
 
-/** CR-169 · tên hiển thị của người thêm (khớp ô tìm «Tìm người theo tên, chức vụ»). */
+/** CR-169 · tên hiển thị của người thêm (khớp ô tìm «Tìm người, nhóm, công ty»). */
 export const NAME = { ha: "E2E Hà Mai", lan: "E2E Lan Anh", nam: "E2E Nam Khánh" } as const;
 
 export const POST_BODY = "Bản tin NitiGroup: khai trương chi nhánh mới";

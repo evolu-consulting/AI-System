@@ -1,99 +1,218 @@
+// CR-190 · luật thuần danh bạ nhóm: sắp xếp, áp sự kiện (tin mới / đọc / thu hồi / ghim), «Xem thêm».
 import { describe, expect, it } from "bun:test";
-import type { ConversationSummary } from "@ai/contracts/pack-contracts";
+import type {
+  ConversationSummary,
+  Message,
+  MsgDirGroup,
+  MsgDirRow,
+} from "@ai/contracts/pack-contracts";
 import { missingBatches } from "./cards";
-import { readCollapsed, toggleCollapsed, writeCollapsed } from "./collapse";
-import { buildDirectory } from "./directory";
+import {
+  appendPage,
+  applyDeletedToDir,
+  applyNewToDir,
+  applyPrefsToDir,
+  bodyStatus,
+  clearUnreadInDir,
+  compareRows,
+  type DirData,
+  remaining,
+} from "./directory";
 
-const conv = (o: Partial<ConversationSummary> & { id: string }): ConversationSummary =>
+const ME = "00000000-0000-4000-8000-00000000000a";
+const CO = { id: "11111111-1111-4111-8111-111111111111", name: "Công ty A" };
+const id = (n: number) => `10000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+
+const conv = (n: number, over: Partial<ConversationSummary> = {}): ConversationSummary =>
   ({
+    id: id(n),
     kind: "direct",
     title: null,
-    peer: null,
+    peer: { id: id(500 + n), name: `P${n}`, active: true, job_title: null },
+    member_count: 2,
+    last_message: {
+      seq: 1,
+      sender_id: id(500 + n),
+      sender_name: `P${n}`,
+      preview: `tin ${n}`,
+      has_files: false,
+      deleted: false,
+      at: `2026-11-1${n}T08:00:00.000Z`,
+    },
     unread: 0,
-    last_message: null,
-    last_at: "2026-01-01T00:00:00.000Z",
-    ...o,
+    last_at: `2026-11-1${n}T08:00:00.000Z`,
+    company: null,
+    read_only: false,
+    pinned_at: null,
+    marked_unread: false,
+    ...over,
   }) as ConversationSummary;
-const P = (id: string, name: string, department: { id: string; name: string } | null = null) => ({
-  id,
-  name,
-  department,
+const row = (n: number, c: ConversationSummary | null, name = `P${n}`): MsgDirRow => ({
+  key: `u:${id(500 + n)}`,
+  conversation: c,
+  person: { id: id(500 + n), name, job_title: null, active: true, company: CO },
 });
-const flat = (d: ReturnType<typeof buildDirectory>) =>
-  d.sections.flatMap((s) => s.rows.map((r) => r.person.id));
-
-describe("CR-132b · buildDirectory", () => {
-  const people = [P("u1", "Bình"), P("u2", "An"), P("u3", "Châu")];
-  const items = [
-    conv({ id: "g1", kind: "group", title: "Kinh doanh" }),
-    conv({ id: "d3", peer: { id: "u3", name: "Châu", active: true, job_title: null } }),
-    conv({ id: "d1", peer: { id: "u1", name: "Bình", active: true, job_title: null } }),
-  ];
-  it("nhóm riêng; thành viên có hội thoại lên trước theo thứ tự mới nhất, còn lại theo tên", () => {
-    const d = buildDirectory(items, people, "");
-    expect(d.groups.map((c) => c.id)).toEqual(["g1"]);
-    expect(flat(d)).toEqual(["u3", "u1", "u2"]);
-    expect(d.sections[0]?.rows[2]?.conv).toBeNull();
-  });
-  it("lọc theo tên không dấu, áp cho cả nhóm lẫn thành viên", () => {
-    expect(flat(buildDirectory(items, people, "chau"))).toEqual(["u3"]);
-    expect(buildDirectory(items, people, "chau").groups).toEqual([]);
-    expect(buildDirectory(items, people, "kinh").groups.length).toBe(1);
-  });
-  it("1-1 cũ với người không còn trong danh bạ (bị khoá) vẫn hiện", () => {
-    const d = buildDirectory(items, [P("u2", "An")], "");
-    expect(flat(d)).toEqual(["u3", "u1", "u2"]);
-  });
+const group = (items: MsgDirRow[], over: Partial<MsgDirGroup> = {}): MsgDirGroup => ({
+  key: "internal",
+  kind: "internal",
+  company: null,
+  total: items.length,
+  unread: items.reduce((s, r) => s + (r.conversation?.unread ?? 0), 0),
+  items,
+  next_cursor: null,
+  ...over,
 });
+const keys = (d: DirData, g = 0) => d.groups[g]?.items.map((r) => r.key) ?? [];
+const msg = (convId: string, from: string, at: string): Message =>
+  ({
+    id: id(900),
+    seq: 2,
+    conversation_id: convId,
+    sender_id: from,
+    client_id: id(901),
+    body: "mới",
+    files: [],
+    at,
+    deleted: false,
+  }) as Message;
+const ctx = { myId: ME, viewing: false, senderName: "P1" };
 
-describe("CR-148 · danh bạ theo phòng ban", () => {
-  const kd = { id: "d1", name: "Kinh doanh" };
-  const kt = { id: "d2", name: "Kế toán" };
-  const people = [P("u1", "Bình", kd), P("u2", "An"), P("u3", "Châu", kt), P("u4", "Anh", kd)];
-  it("nhóm theo phòng (tên phòng), «Chưa có phòng» cuối, trong phòng theo tên", () => {
-    const d = buildDirectory([], people, "");
-    expect(d.sections.map((s) => s.name)).toEqual(["Kế toán", "Kinh doanh", null]);
-    expect(d.sections[1]?.rows.map((r) => r.person.id)).toEqual(["u4", "u1"]);
-    expect(d.sections[2]?.key).toBe("none");
-  });
-  it("1-1 với người chưa tải trang danh bạ: lấy phòng từ thẻ, thiếu thẻ ⇒ Chưa có phòng", () => {
-    const items = [
-      conv({ id: "dx", peer: { id: "ux", name: "Xuân", active: true, job_title: null } }),
+describe("CR-190 · thứ tự dòng trong nhóm", () => {
+  it("ghim → tin mới nhất → chưa từng nhắn theo tên A→Z, ghim vẫn theo tin mới nhất", () => {
+    const rows = [
+      row(1, null, "Bình"),
+      row(2, conv(2)),
+      row(3, conv(3, { pinned_at: "2026-11-01T00:00:00.000Z" })),
+      row(4, null, "An"),
+      row(5, conv(5, { pinned_at: "2026-11-02T00:00:00.000Z" })),
+      row(6, null, "Ân"),
     ];
-    expect(buildDirectory(items, [], "", () => kd).sections[0]?.name).toBe("Kinh doanh");
-    expect(buildDirectory(items, [], "").sections[0]?.name).toBeNull();
+    const names = [...rows].sort(compareRows).map((r) => r.person?.name);
+    expect(names).toEqual(["P5", "P3", "P2", "An", "Ân", "Bình"]);
   });
-  it("lọc tên làm nhóm rỗng biến mất", () => {
-    expect(buildDirectory([], people, "chau").sections.map((s) => s.name)).toEqual(["Kế toán"]);
+  it("cuộc đã mở nhưng chưa có tin = chưa từng nhắn (xếp theo tên, không giờ)", () => {
+    const empty = row(1, conv(1, { last_message: null }), "Zed");
+    const sent = row(2, conv(2));
+    expect([empty, sent].sort(compareRows)[0]).toBe(sent);
   });
 });
 
-describe("CR-148 · thu gọn nhóm trong phiên", () => {
-  const mem = () => {
-    const m = new Map<string, string>();
-    return {
-      getItem: (k: string) => m.get(k) ?? null,
-      setItem: (k: string, v: string) => void m.set(k, v),
-    };
+describe("CR-190 · tin mới ⇒ dòng nhảy lên đầu nhóm, chỉ nhóm đó đổi", () => {
+  const other = group([row(7, conv(7))], { key: "chat", kind: "chat" });
+  const d: DirData = {
+    groups: [group([row(3, conv(3)), row(2, conv(2)), row(1, null, "An")]), other],
   };
-  it("bật/tắt rồi đọc lại, dữ liệu hỏng ⇒ rỗng", () => {
-    const st = mem();
-    writeCollapsed(toggleCollapsed(new Set(), "d1"), st);
-    expect([...readCollapsed(st)]).toEqual(["d1"]);
-    writeCollapsed(toggleCollapsed(readCollapsed(st), "d1"), st);
-    expect(readCollapsed(st).size).toBe(0);
-    expect(readCollapsed({ getItem: () => "{hỏng" }).size).toBe(0);
+  it("người khác gửi: lên đầu, chưa đọc +1, xem trước mới, tổng nhóm +1", () => {
+    const r = applyNewToDir(d, msg(id(2), id(502), "2026-11-19T09:00:00.000Z"), ctx);
+    expect(r.known).toBe(true);
+    expect(keys(r.data)).toEqual([`u:${id(502)}`, `u:${id(503)}`, `u:${id(501)}`]);
+    expect(r.data.groups[0]?.items[0]?.conversation?.unread).toBe(1);
+    expect(r.data.groups[0]?.unread).toBe(1);
+    expect(r.data.groups[1]).toBe(other);
+  });
+  it("mình gửi hoặc đang xem: không cộng chưa đọc", () => {
+    const mine = applyNewToDir(d, msg(id(2), ME, "2026-11-19T09:00:00.000Z"), ctx);
+    expect(mine.data.groups[0]?.unread).toBe(0);
+    const viewing = applyNewToDir(d, msg(id(2), id(502), "2026-11-19T09:00:00.000Z"), {
+      ...ctx,
+      viewing: true,
+    });
+    expect(viewing.data.groups[0]?.unread).toBe(0);
+  });
+  it("người chưa từng nhắn (chưa có cuộc) hoặc cuộc lạ ⇒ known=false để tải lại", () => {
+    expect(applyNewToDir(d, msg(id(99), id(599), "2026-11-19T09:00:00.000Z"), ctx).known).toBe(
+      false,
+    );
+  });
+  it("dòng ghim vẫn ở trên dòng vừa nhắn", () => {
+    const pinned = group([
+      row(3, conv(3, { pinned_at: "2026-11-01T00:00:00.000Z" })),
+      row(2, conv(2)),
+    ]);
+    const r = applyNewToDir(
+      { groups: [pinned] },
+      msg(id(2), id(502), "2026-11-19T09:00:00.000Z"),
+      ctx,
+    );
+    expect(keys(r.data)[0]).toBe(`u:${id(503)}`);
+  });
+});
+
+describe("CR-190 · đọc, thu hồi, ghim, cờ", () => {
+  const d: DirData = {
+    groups: [group([row(1, conv(1, { unread: 3 })), row(2, conv(2, { unread: 1 }))])],
+  };
+  it("đã đọc ⇒ chưa đọc cuộc về 0 và tổng nhóm trừ đúng", () => {
+    const r = clearUnreadInDir(d, id(1));
+    expect(r.groups[0]?.unread).toBe(1);
+    expect(clearUnreadInDir(d, id(77))).toEqual(d);
+  });
+  it("thu hồi tin cuối ⇒ xem trước thành đã thu hồi", () => {
+    const r = applyDeletedToDir(d, id(1), 1);
+    const c = r.groups[0]?.items.find((x) => x.conversation?.id === id(1))?.conversation;
+    expect(c?.last_message?.deleted).toBe(true);
+    const same = applyDeletedToDir(d, id(1), 5);
+    expect(same.groups[0]?.items.map((x) => x.conversation?.last_message?.deleted)).toEqual([
+      false,
+      false,
+    ]);
+  });
+  it("ghim ⇒ lên đầu nhóm, bỏ ghim ⇒ về chỗ theo tin", () => {
+    const pinned = applyPrefsToDir(d, id(1), {
+      pinned_at: "2026-11-19T00:00:00.000Z",
+      marked_unread: false,
+    });
+    expect(keys(pinned)[0]).toBe(`u:${id(501)}`);
+    const back = applyPrefsToDir(pinned, id(2), {
+      pinned_at: "2026-11-20T00:00:00.000Z",
+      marked_unread: false,
+    });
+    expect(keys(back)[0]).toBe(`u:${id(502)}`);
+  });
+  it("đánh dấu chưa đọc cuộc đã đọc ⇒ hiện 1 và nhóm +1 (max(thật, cờ))", () => {
+    const clean: DirData = { groups: [group([row(1, conv(1))])] };
+    const r = applyPrefsToDir(clean, id(1), { pinned_at: null, marked_unread: true });
+    expect(r.groups[0]?.items[0]?.conversation?.unread).toBe(1);
+    expect(r.groups[0]?.unread).toBe(1);
+  });
+});
+
+describe("CR-190 · «Xem thêm (n)»", () => {
+  const first = group([row(1, null, "An"), row(2, null, "Bình")], { total: 5, next_cursor: "c1" });
+  it("n = tổng − số dòng đã tải; hết thì 0", () => {
+    expect(remaining(first)).toBe(3);
+    expect(remaining({ total: 2, items: first.items })).toBe(0);
+  });
+  it("nối trang kế vào cuối nhóm, bỏ dòng trùng, đổi con trỏ, nhóm khác giữ nguyên", () => {
+    const other = group([], { key: "chat", kind: "chat" });
+    const d: DirData = { groups: [first, other] };
+    const r = appendPage(d, "internal", {
+      items: [row(2, null, "Bình"), row(3, null, "Châu")],
+      next_cursor: null,
+    });
+    expect(keys(r)).toEqual([`u:${id(501)}`, `u:${id(502)}`, `u:${id(503)}`]);
+    expect(r.groups[0]?.next_cursor).toBeNull();
+    expect(r.groups[1]).toBe(other);
   });
 });
 
 describe("CR-148 · thẻ người theo lô", () => {
   const ids = Array.from({ length: 120 }, (_, i) => `u${i}`);
   it("chia lô ≤ 50, bỏ trùng và id đã có", () => {
-    const b = missingBatches([...ids, "u1"], (id) => id === "u0");
+    const b = missingBatches([...ids, "u1"], (x) => x === "u0");
     expect(b.map((x) => x.length)).toEqual([50, 50, 19]);
     expect(b.flat()).not.toContain("u0");
   });
   it("không thiếu ai ⇒ không gọi", () => {
     expect(missingBatches(ids, () => true)).toEqual([]);
+  });
+});
+
+describe("CR-190 · trạng thái thân (chống nháy)", () => {
+  it("chưa có danh bạ: chờ hoặc lỗi, có danh bạ cũ ⇒ vẫn hiện (làm mờ), lỗi chỉ khi tab Chưa đọc lỗi", () => {
+    expect(bodyStatus(false, false, false)).toBe("loading");
+    expect(bodyStatus(false, true, false)).toBe("error");
+    expect(bodyStatus(true, true, false)).toBe("ready");
+    expect(bodyStatus(true, false, true)).toBe("error");
   });
 });

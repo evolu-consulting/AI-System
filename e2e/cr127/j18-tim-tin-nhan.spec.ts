@@ -46,7 +46,7 @@ test("B tìm «bao gia» ra tin của A, mở đúng tin; «Ảnh & tệp» + xe
 
   // B: tìm không dấu ⇒ tab «Tin nhắn» có tin của A, chỗ khớp được tô sáng; bấm ⇒ cuộc mở, tin đó nháy viền
   await b.goto("/contracts/messages");
-  await b.getByRole("searchbox", { name: "Tìm người theo tên, chức vụ" }).fill(`bao gia ${TAG}`);
+  await b.getByRole("searchbox", { name: "Tìm người, nhóm, công ty" }).fill(`bao gia ${TAG}`);
   const hit = b.getByTestId("find-hit").filter({ hasText: QUOTE });
   await expect(hit).toBeVisible();
   await expect(hit.locator("mark")).toContainText(/báo giá/i);
@@ -80,7 +80,7 @@ test("B tìm «bao gia» ra tin của A, mở đúng tin; «Ảnh & tệp» + xe
 
   // Người ngoài cuộc (kế toán, không phải người gửi/nhận): tìm không ra
   await c.goto("/contracts/messages");
-  await c.getByRole("searchbox", { name: "Tìm người theo tên, chức vụ" }).fill(`bao gia ${TAG}`);
+  await c.getByRole("searchbox", { name: "Tìm người, nhóm, công ty" }).fill(`bao gia ${TAG}`);
   await expect(c.getByTestId("find-empty")).toBeVisible();
   await expect(c.getByTestId("find-hit")).toHaveCount(0);
 

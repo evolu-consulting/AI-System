@@ -19,6 +19,7 @@ import {
   senderNameFrom,
   unreadOf,
 } from "../lib/conversations";
+import { applyDeletedToDir, applyNewToDir, clearUnreadInDir } from "../lib/directory";
 import {
   applyDeleted,
   applyNewMessage,
@@ -26,7 +27,7 @@ import {
   type MsgPages,
 } from "../lib/message-pages";
 import { createViewing } from "../lib/viewing";
-import { mergedList, patchLists } from "./list-cache";
+import { mergedList, patchDirs, patchLists } from "./list-cache";
 
 const viewing = createViewing();
 /** Khung chat mở / đóng hội thoại `id` (đóng chỉ xoá khi vẫn là `id`): tin tới khi đang xem không cộng chưa đọc. */
@@ -44,6 +45,7 @@ function scheduleListRefresh(qc: QueryClient): void {
   refreshTimer = setTimeout(() => {
     refreshTimer = null;
     void qc.invalidateQueries({ queryKey: msgKeys.list });
+    void qc.invalidateQueries({ queryKey: msgKeys.dirAll });
   }, REFRESH_COALESCE_MS);
 }
 
@@ -72,12 +74,24 @@ function onNew(qc: QueryClient, f: StreamFrame): void {
   const merged = mergedList(qc);
   const detail = qc.getQueryData<ConversationDetail>(msgKeys.detail(d.conversation_id));
   const name = senderNameFrom(merged, detail?.members, d.conversation_id, m.sender_id);
-  let known = false;
+  // «Biết» tính riêng cho danh sách phẳng và danh bạ nhóm: nguồn nào đang có trong cache mà chưa thấy cuộc ⇒ tải lại (GỘP).
+  let lists = 0;
+  let listKnown = false;
   patchLists(qc, (l) => {
+    lists++;
     const res = applyNewToList(l, m, { myId, viewing: viewingNow, senderName: mine ? "" : name });
-    known ||= res.known;
+    listKnown ||= res.known;
     return res.data;
   });
+  let dirs = 0;
+  let dirKnown = false;
+  patchDirs(qc, (dd) => {
+    dirs++;
+    const res = applyNewToDir(dd, m, { myId, viewing: viewingNow, senderName: mine ? "" : name });
+    dirKnown ||= res.known;
+    return res.data;
+  });
+  const known = lists + dirs > 0 && (lists === 0 || listKnown) && (dirs === 0 || dirKnown);
   // Hội thoại mới (chưa có trong cache) hoặc nhóm chưa biết tên người gửi ⇒ tải lại danh sách, GỘP (tên lấy từ dữ liệu có sẵn trước).
   if (!known || (!mine && !name)) scheduleListRefresh(qc);
   if (!mine && !viewingNow)
@@ -93,6 +107,7 @@ function onRead(qc: QueryClient, f: StreamFrame): void {
   if (d.user_id === myId) {
     // Tab khác của mình đã đọc ⇒ xoá chấm; tổng lấy lại (đúng hơn tự trừ).
     patchLists(qc, (l) => clearUnread(l, d.conversation_id));
+    patchDirs(qc, (dd) => clearUnreadInDir(dd, d.conversation_id));
     void qc.invalidateQueries({ queryKey: msgKeys.unread });
     return;
   }
@@ -108,6 +123,7 @@ function onDeleted(qc: QueryClient, f: StreamFrame): void {
   // Tin bị thu hồi có thể là tin chưa đọc của mình ⇒ số chưa đọc của hội thoại đổi (client không biết mốc đọc) ⇒ tải lại danh sách gộp.
   if (unreadOf(mergedList(qc), d.conversation_id) > 0) scheduleListRefresh(qc);
   patchLists(qc, (l) => applyDeletedToList(l, d.conversation_id, d.seq));
+  patchDirs(qc, (dd) => applyDeletedToDir(dd, d.conversation_id, d.seq));
   void qc.invalidateQueries({ queryKey: msgKeys.unread });
 }
 
@@ -115,6 +131,7 @@ function onConversation(qc: QueryClient, f: StreamFrame): void {
   const d = parse(f, MsgConversationEventDataSchema);
   if (!d) return;
   void qc.invalidateQueries({ queryKey: msgKeys.list });
+  void qc.invalidateQueries({ queryKey: msgKeys.dirAll });
   void qc.invalidateQueries({ queryKey: msgKeys.detail(d.conversation_id) });
   void qc.invalidateQueries({ queryKey: msgKeys.unread });
 }
@@ -123,6 +140,7 @@ function onConversation(qc: QueryClient, f: StreamFrame): void {
 function onLink(qc: QueryClient): void {
   void qc.invalidateQueries({ queryKey: msgKeys.companies });
   void qc.invalidateQueries({ queryKey: msgKeys.list });
+  void qc.invalidateQueries({ queryKey: msgKeys.dirAll });
   void qc.invalidateQueries({ queryKey: ["messages", "detail"] });
   void qc.invalidateQueries({ queryKey: msgKeys.unread });
 }

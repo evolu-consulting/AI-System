@@ -24,6 +24,9 @@ test("Danh sách một kiểu; «Nhắn tin mới» chọn người theo phòng 
   await a.goto("/contracts/messages");
   await expect(a.getByTestId("dept-group")).toHaveCount(0); // danh sách không còn danh bạ phòng ban
   await expect(a.getByTestId("tab-all")).toHaveAttribute("aria-pressed", "true");
+  // CR-190: cột trái là danh bạ nhóm theo thứ tự cố định («Nhóm chat» rồi «Nội bộ» đứng cuối), không có tab «Đối tác ▾»
+  await expect(a.getByTestId("tab-partner")).toHaveCount(0);
+  await expect(a.getByTestId("dir-group").last()).toHaveAttribute("data-group", "internal");
   const dlg = await openNew(a);
   await expect(dlg.getByTestId("dept-group").first()).toBeVisible();
   await dlg.getByRole("checkbox").first().check();

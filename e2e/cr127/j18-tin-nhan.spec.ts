@@ -6,7 +6,7 @@ import { test } from "../journey-approval/_test";
 import { envOf, expect, loginCw, SPEC_TENANT, U } from "./_cr127-kit";
 
 const E = envOf(SPEC_TENANT.j01);
-// CR-148: cột trái là danh bạ chia nhóm theo phòng ban (không còn «hội thoại mới nhất ở đầu») ⇒ tìm dòng của A theo tên người gửi
+// CR-190: cột trái là danh bạ nhóm (công ty đối tác A→Z · Nhóm chat · Nội bộ; nhóm có chưa đọc mở sẵn) ⇒ tìm dòng của A theo tên người gửi
 const FROM = "E2E Nhân viên Kinh doanh";
 const HELLO = `Chào B ${Date.now().toString(36)}`;
 
@@ -41,6 +41,10 @@ test("A nhắn B: B thấy chưa đọc, mở thì hết, A thấy «Đã xem»"
   await expect(b.getByTestId("tab-unread-n")).toHaveText("1");
   await b.getByTestId("tab-unread").click();
   await expect(first).toBeVisible();
+  await b.getByTestId("tab-all").click(); // CR-190: về danh bạ nhóm — dòng của A đứng đầu nhóm «Nội bộ» (nhóm có chưa đọc mở sẵn)
+  await expect(b.locator('[data-group="internal"]').getByTestId("conv-row").first()).toContainText(
+    FROM,
+  );
   // CR-178 · A (người gửi): giờ hiện ngay dưới tin cuối của nhóm, không cần rê chuột
   await expect(a.getByTestId("msg-time").last()).toBeVisible();
 

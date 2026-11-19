@@ -2,10 +2,16 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { msgKeys } from "../api";
 import type { ListPages } from "../lib/conversations";
+import { type DirData, dirConversations } from "../lib/directory";
 
 /** Áp `fn` vào mọi bản danh sách đang có trong cache. */
 export function patchLists(qc: QueryClient, fn: (l: ListPages) => ListPages): void {
   qc.setQueriesData<ListPages>({ queryKey: msgKeys.list }, (l) => (l ? fn(l) : l));
+}
+
+/** CR-190 · áp `fn` vào mọi bản danh bạ nhóm đang có trong cache (mỗi ô tìm một bản). */
+export function patchDirs(qc: QueryClient, fn: (d: DirData) => DirData): void {
+  qc.setQueriesData<DirData>({ queryKey: msgKeys.dirAll }, (d) => (d ? fn(d) : d));
 }
 
 /** Các bản danh sách đang có trong cache (chưa tải ⇒ bỏ qua). */
@@ -19,7 +25,15 @@ export function cachedLists(qc: QueryClient): ListPages[] {
 export function mergedList(qc: QueryClient): ListPages {
   return {
     pages: [
-      { items: cachedLists(qc).flatMap((l) => l.pages.flatMap((p) => p.items)), next_cursor: null },
+      {
+        items: [
+          ...cachedLists(qc).flatMap((l) => l.pages.flatMap((p) => p.items)),
+          ...qc
+            .getQueriesData<DirData>({ queryKey: msgKeys.dirAll })
+            .flatMap(([, d]) => dirConversations(d)),
+        ],
+        next_cursor: null,
+      },
     ],
   };
 }

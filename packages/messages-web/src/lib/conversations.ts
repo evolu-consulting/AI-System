@@ -84,6 +84,21 @@ export const bumpTotal = (total: number, d: number): number =>
 
 export type NewCtx = { myId: string; viewing: boolean; senderName: string };
 
+/** Một cuộc nhận tin mới: xem trước + giờ cập nhật; chưa đọc +1 nếu của người khác và không đang xem. */
+export function applyNewToConv(
+  c: ConversationSummary,
+  m: Message,
+  ctx: NewCtx,
+): ConversationSummary {
+  const bump = m.sender_id !== ctx.myId && !ctx.viewing ? 1 : 0;
+  return {
+    ...c,
+    last_message: lastOf(m, ctx.senderName),
+    last_at: m.at,
+    unread: Math.min(MSG_UNREAD_CONV_CAP, c.unread + bump),
+  };
+}
+
 /** `msg.new`: cập nhật xem trước + giờ, đưa lên đầu; chưa đọc +1 nếu của người khác và không đang xem. `known=false` ⇒ chưa có trong cache (tải lại danh sách). */
 export function applyNewToList(
   list: ListPages,
@@ -100,13 +115,7 @@ export function applyNewToList(
     }),
   }));
   if (!found) return { data: list, known: false };
-  const bump = m.sender_id !== ctx.myId && !ctx.viewing ? 1 : 0;
-  const next: ConversationSummary = {
-    ...found,
-    last_message: lastOf(m, ctx.senderName),
-    last_at: m.at,
-    unread: Math.min(MSG_UNREAD_CONV_CAP, found.unread + bump),
-  };
+  const next = applyNewToConv(found, m, ctx);
   const [first, ...rest] = pages;
   if (!first) return { data: list, known: false };
   return {

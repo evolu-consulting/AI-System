@@ -509,7 +509,7 @@ test("Hành trình thật: hai công ty gửi/nhận hợp đồng, kết nối,
           .click();
         await expect(a.getByTestId("tab-partner")).toHaveAttribute("aria-pressed", "true");
         await a
-          .getByRole("searchbox", { name: "Tìm người theo tên, chức vụ" })
+          .getByRole("searchbox", { name: "Tìm người, nhóm, công ty" })
           .fill("Nhân viên Smoke B");
         const person = a.getByTestId("people-results").getByTestId("person-row").first();
         await expect(person).toContainText("Nhân viên Smoke B", { timeout: 30_000 });

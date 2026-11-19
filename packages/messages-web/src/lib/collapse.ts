@@ -1,36 +1,44 @@
-// CR-148 · nhớ nhóm phòng ban nào đang thu gọn TRONG PHIÊN (sessionStorage; đóng tab là quên). Mặc định mọi nhóm mở. Truy cập lỗi (chế độ riêng tư) ⇒ coi như không nhớ.
-const KEY = "msg.dir.collapsed";
+// CR-190 · nhớ nhóm nào người dùng đã mở/thu trên máy này (localStorage). Chưa từng chọn ⇒ theo mặc định: nhóm có tin chưa đọc mở sẵn, còn lại thu.
+// Truy cập lỗi (chế độ riêng tư, bị chặn) ⇒ coi như không nhớ, không báo lỗi.
+const KEY = "msg.dir.open.v1";
 
-export function readCollapsed(storage: Pick<Storage, "getItem"> | undefined = safe()): Set<string> {
+export type OpenMap = Readonly<Record<string, boolean>>;
+
+export function readOpen(storage: Pick<Storage, "getItem"> | undefined = safe()): OpenMap {
   try {
-    const v = JSON.parse(storage?.getItem(KEY) ?? "[]");
-    return new Set(Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+    const v: unknown = JSON.parse(storage?.getItem(KEY) ?? "{}");
+    if (typeof v !== "object" || v === null || Array.isArray(v)) return {};
+    const out: Record<string, boolean> = {};
+    for (const [k, x] of Object.entries(v)) if (typeof x === "boolean") out[k] = x;
+    return out;
   } catch {
-    return new Set();
+    return {};
   }
 }
 
-export function writeCollapsed(
-  s: ReadonlySet<string>,
+export function writeOpen(
+  m: OpenMap,
   storage: Pick<Storage, "setItem"> | undefined = safe(),
 ): void {
   try {
-    storage?.setItem(KEY, JSON.stringify([...s]));
+    storage?.setItem(KEY, JSON.stringify(m));
   } catch {
     /* không nhớ được cũng không sao */
   }
 }
 
-/** Bật/tắt một nhóm; trả tập mới (không sửa tập cũ). */
-export function toggleCollapsed(s: ReadonlySet<string>, key: string): Set<string> {
-  const n = new Set(s);
-  if (!n.delete(key)) n.add(key);
-  return n;
-}
+/** Nhóm đang mở? Đã chọn ⇒ theo lựa chọn; chưa ⇒ mở khi có tin chưa đọc. */
+export const isOpen = (m: OpenMap, key: string, unread: number): boolean => m[key] ?? unread > 0;
+
+/** Đặt mở/thu một nhóm; trả bản mới (không sửa bản cũ). */
+export const setOpen = (m: OpenMap, key: string, open: boolean): OpenMap => ({
+  ...m,
+  [key]: open,
+});
 
 function safe(): Storage | undefined {
   try {
-    return typeof sessionStorage === "undefined" ? undefined : sessionStorage;
+    return typeof localStorage === "undefined" ? undefined : localStorage;
   } catch {
     return undefined;
   }

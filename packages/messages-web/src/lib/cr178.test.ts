@@ -1,4 +1,4 @@
-// CR-178 · M1 · luật thuần giao diện Tin nhắn mới: tab danh sách, gộp tin, vạch chưa đọc, «n tin mới», «Đã xem», «⋯», «Nhắn tin mới».
+// CR-178 · M1 · luật thuần giao diện Tin nhắn mới: gộp tin, vạch chưa đọc, «n tin mới», «Đã xem», «⋯», «Nhắn tin mới».
 import { describe, expect, it } from "bun:test";
 import type { ConversationMember, Message, MsgPerson } from "@ai/contracts/pack-contracts";
 import {
@@ -9,7 +9,6 @@ import {
   seenPeople,
   unreadDividerSeq,
 } from "./chat-view";
-import { ALL_VIEW, pickTab, viewFilter, viewFromParam, viewUnread } from "./list-view";
 import { groupByDept, needsGroupName, planNewChat, toggleSelection } from "./new-chat";
 import type { Row } from "./rows";
 
@@ -44,28 +43,6 @@ const mem = (id: string, read: number): ConversationMember =>
     last_read_seq: read,
     active: true,
   }) as ConversationMember;
-
-describe("CR-178 · tab danh sách", () => {
-  it("Tất cả/Chưa đọc không lọc công ty; Chưa đọc gọi unread", () => {
-    expect(viewFilter(ALL_VIEW)).toBe("all");
-    expect(viewUnread({ tab: "unread", company: null })).toBe(true);
-    expect(viewUnread(ALL_VIEW)).toBe(false);
-  });
-  it("Đối tác chọn công ty ⇒ lọc công ty đó; chưa chọn ⇒ giữ nguyên view", () => {
-    expect(viewFilter({ tab: "partner", company: CO })).toBe(CO);
-    expect(pickTab(ALL_VIEW, "partner")).toEqual(ALL_VIEW);
-    expect(pickTab({ tab: "all", company: CO }, "partner")).toEqual({
-      tab: "partner",
-      company: CO,
-    });
-  });
-  it("?company= đối tác ⇒ tab Đối tác; own/rỗng/công ty mình ⇒ Tất cả", () => {
-    expect(viewFromParam(CO, "x")).toEqual({ tab: "partner", company: CO });
-    expect(viewFromParam("own", CO)).toEqual(ALL_VIEW);
-    expect(viewFromParam(undefined, CO)).toEqual(ALL_VIEW);
-    expect(viewFromParam(CO, CO)).toEqual(ALL_VIEW);
-  });
-});
 
 describe("CR-178 · gộp tin liên tiếp cùng người", () => {
   it("cùng người trong 5 phút ⇒ một nhóm, giờ lấy ở tin cuối", () => {

@@ -19,13 +19,14 @@ import { flattenList, type ListPages, sortConversations } from "../lib/conversat
 import { useMsgRealtime } from "./use-unread";
 
 /** Danh sách cuộc (mới nhất trước), tải dần; `filter` = «Tất cả» / công ty mình / một công ty đã kết nối. */
-export function useConversations(filter: CompanyFilter = "all", unread = false) {
+export function useConversations(filter: CompanyFilter = "all", unread = false, enabled = true) {
   useMsgRealtime();
   const q = useInfiniteQuery({
     queryKey: msgKeys.listBy(filter, unread),
     queryFn: ({ pageParam, signal }) => fetchConversations(pageParam, filter, signal, unread),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.next_cursor,
+    enabled,
     staleTime: 30_000,
     retry: false,
   });
@@ -74,6 +75,7 @@ export function useCreateConversation() {
     onSuccess: (d) => {
       qc.setQueryData(msgKeys.detail(d.id), d);
       void qc.invalidateQueries({ queryKey: msgKeys.list });
+      void qc.invalidateQueries({ queryKey: msgKeys.dirAll });
     },
   });
 }

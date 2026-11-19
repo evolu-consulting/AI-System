@@ -3,6 +3,7 @@ import type {
   AddMembersRequest,
   ConversationDetail,
   ConversationPage,
+  ConvPrefs,
   CreateConversationRequest,
   FileRef,
   Message,
@@ -10,6 +11,8 @@ import type {
   MsgAttachKind,
   MsgAttachmentPage,
   MsgCompanyPage,
+  MsgDirectoryResponse,
+  MsgDirGroup,
   MsgPeoplePage,
   MsgSearchPage,
   SendMessageRequest,
@@ -35,6 +38,9 @@ export const msgKeys = {
   all: ["messages"] as const,
   unread: ["messages", "unread"] as const,
   list: ["messages", "list"] as const,
+  /** CR-190 · danh bạ nhóm (trang Tin nhắn); KHÔNG dưới `list` vì hình dữ liệu khác. */
+  dirAll: ["messages", "dir"] as const,
+  dir: (q: string) => ["messages", "dir", q] as const,
   /** Danh sách theo bộ lọc công ty (`msgKeys.list` là tiền tố ⇒ làm mới/ghi cache cho mọi bộ lọc). */
   listBy: (f: CompanyFilter, unread = false) =>
     unread ? (["messages", "list", f, "unread"] as const) : (["messages", "list", f] as const),
@@ -45,6 +51,32 @@ export const msgKeys = {
   search: (q: string, conv: string | null) => ["messages", "search", conv ?? "all", q] as const,
   attach: (id: string, kind: MsgAttachKind) => ["messages", "attach", id, kind] as const,
 };
+
+/** CR-190 · danh bạ nhóm: không `group` ⇒ mọi nhóm, 15 dòng đầu mỗi nhóm. */
+export const fetchDirectory = async (q: string, signal?: AbortSignal) => {
+  const r = await api<MsgDirectoryResponse>(`${BASE}/directory`, {
+    query: q ? { q } : {},
+    signal,
+  });
+  rememberKinds(
+    r.groups.flatMap((g) => g.items.flatMap((i) => (i.conversation ? [i.conversation] : []))),
+  );
+  return r;
+};
+/** «Xem thêm» của MỘT nhóm: trang kế theo con trỏ riêng nhóm. */
+export const fetchDirectoryMore = async (group: string, cursor: string, q: string) => {
+  const r = await api<MsgDirectoryResponse>(`${BASE}/directory`, {
+    query: { group, cursor, ...(q ? { q } : {}) },
+  });
+  const g: MsgDirGroup | undefined = r.groups[0];
+  rememberKinds((g?.items ?? []).flatMap((i) => (i.conversation ? [i.conversation] : [])));
+  return g ?? null;
+};
+/** CR-190 · ghim / cờ «chưa đọc» của người gọi (cuộc nội bộ và đối tác cùng một đường `conv(id)`). */
+export const setPinned = (id: string, pinned: boolean) =>
+  api<ConvPrefs>(`${conv(id)}/pin`, { method: "PUT", body: { pinned } });
+export const setMarkedUnread = (id: string, unread: boolean) =>
+  api<ConvPrefs>(`${conv(id)}/mark-unread`, { method: "PUT", body: { unread } });
 
 export const fetchUnread = (signal?: AbortSignal) =>
   api<UnreadResponse>(`${BASE}/unread`, { signal });
