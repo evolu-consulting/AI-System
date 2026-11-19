@@ -199,6 +199,7 @@ a014f3887d519c25e2e4d78fd6523ea55610a9e4d72b90dde198234f990bb9c4  e2e/community-
 2b109fe3bd267f22b76b917104a662f84732f2f2ee78ce22bd8a6ca7794a0740  e2e/community-web/cr186-comment-mention.cm.ts
 d21fbc3b288fc5e24215f5cb6f8be68e268036a512ac6b12af1b836630a32cbc  e2e/community-web/cr186-composer.cm.ts
 cb467ca365c9d0bfcbf35025d017a538ade0ffa48be6847bf1ce9cc5be4a550e  e2e/community-web/cr186-mention-store.cm.ts
+96530418b3634e76673d23eb2868e063aa797428198fb9534069c324f747c248  e2e/community-web/cr187-ui.cm.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts
 1744756cdb1e003fdaa3a592d0bcec1b0455ffb3bd279718edc88d301feb8db9  e2e/community-web/feed.cm.ts
 13fc117b2e04051c8ef5607a9b71345b3bcaef1d0fc0194d047c9f80b53282aa  e2e/community-web/fix-cr186-ui.cm.ts
@@ -430,7 +431,7 @@ aa5ab30af9c32c2e0765120220a8d4baaacd36ef0211df77a79939e0cd6d5ab7  e2e/contracts-
 a5c40c6dcc9dc304ba938ce5bba08b07ccb64ae6c6fc17fe979372e14a8549b1  e2e/contracts-web/cr187-discover.cw.ts
 509aa9bf9da695efd622909d9a849460313d727f1b713203f4036376c2ff7fa4  e2e/contracts-web/cr187-password.cw.ts
 7ad8589bd0fd16d43fba08a3247aafb4aa9d0251392d414b96791d222a76eb71  e2e/contracts-web/cr188-verify.cw.ts
-c41f0d6579a0321bff82f0be52d118ef67000ced49119e5729fc53feebc53bf0  e2e/contracts-web/cr189-avatar-list.cw.ts
+e8af07a5543cb008f0ec62224455e5e1db954e3b188c31a1465fa1c410f8ae7b  e2e/contracts-web/cr189-avatar-list.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 d351d4edda7e3772462619c8cbec6e9daa497718dff44acad1d117afc4998028  e2e/contracts-web/dataset-contract.ts
 0b445d3aeeb94128fe9107461082b07a0b2807b30dfa0c8930eb762e44068d85  e2e/contracts-web/dataset-list.ts
@@ -540,6 +541,7 @@ a9921563a54274301cc71bb63fe74548c95b918d0fdf72149b7351289483bebf  e2e/cr181/jour
 6fc74eae3008a70853523c4390eb6f976eb6a6924cdca182bc4cd6d3a3f2c4cf  e2e/cr181/sign-prep-and-sign.spec.ts
 0a7209ae085de52e2d8d233b6c57ce538f2a1968fee73b72b9787afe99a6276a  e2e/cr181/signature-settings.spec.ts
 0f672fb9333a268d2a499f4329c3acd349ed59556c14d077e21e98979e82b24d  e2e/cr181/signed-viewer.spec.ts
+db0b07a7b4a0cf2ea45bc5fac4e4c2aeaee8629e2d34dc067e390cbfe9d61fc8  e2e/cr187/messages-fullscreen.spec.ts
 5f6463f2cf998ff7a41248b28166addc2fbd6cbeffe6e4b328a3d810dab1e87f  e2e/deployed/01-login-sso.deployed.ts
 2645e54a263d1befd509f8ad2d95718775d441ac71aba0f6c7a7a8dd5801e8b1  e2e/deployed/02-contracts-pages.deployed.ts
 b767faf467e5231cd37c48d9286e7f452faded6fd33f402a4998987e38cd190c  e2e/deployed/03-chat.deployed.ts

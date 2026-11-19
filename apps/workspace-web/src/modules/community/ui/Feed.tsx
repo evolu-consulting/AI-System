@@ -165,14 +165,16 @@ function FeedBody({
   error,
   mods,
   more,
+  stale = false,
 }: {
   data: FeedResponse | null;
   error: string | null;
+  stale?: boolean;
   more: MoreFeed;
   mods?: ReadonlyMap<string, ModerationItem> | undefined;
 }) {
   return (
-    <>
+    <div className="feedbody" data-stale={stale ? "true" : undefined} aria-busy={stale}>
       {error && (
         <div className="card empty" role="alert">
           {error}
@@ -185,7 +187,7 @@ function FeedBody({
         <PostCard key={p.id} post={p} mod={mods?.get(p.id)} />
       ))}
       <FeedMore more={more} />
-    </>
+    </div>
   );
 }
 
@@ -197,7 +199,7 @@ export function FeedList({
   mods,
 }: Props) {
   const f = useFeedFilters(fixed);
-  const { data, error, more } = useFeed(f.query);
+  const { data, error, stale, more } = useFeed(f.query);
   return (
     <>
       <fieldset className="chips" aria-label={t("community.feed.filterAria")}>
@@ -209,19 +211,19 @@ export function FeedList({
             aria-pressed={f.tab === t.id}
             onClick={() => f.setTab(t.id)}
           >
-            {tabLabel(t.id)} <span className="n">{data?.counts[t.id] ?? 0}</span>
+            {tabLabel(t.id)} <span className="n">{data ? (data.counts[t.id] ?? 0) : "–"}</span>
           </button>
         ))}
       </fieldset>
       {withFilters && data && <FeedFilters f={f} data={data} className="selrow" />}
-      <FeedBody data={data} error={error} mods={mods} more={more} />
+      <FeedBody data={data} error={error} mods={mods} more={more} stale={stale} />
     </>
   );
 }
 
 export function FeedPage() {
   const f = useFeedFilters();
-  const { data, error, more } = useFeed(f.query);
+  const { data, error, stale, more } = useFeed(f.query);
   const partners = usePartners();
   useFocusPost(!!data);
   const { sentinel, stuck, toTop } = useStuck();
@@ -244,13 +246,14 @@ export function FeedPage() {
                   className={f.tab === t.id ? "tab on" : "tab"}
                   onClick={() => f.setTab(t.id)}
                 >
-                  {tabLabel(t.id)} <span className="n">{data?.counts[t.id] ?? 0}</span>
+                  {tabLabel(t.id)}{" "}
+                  <span className="n">{data ? (data.counts[t.id] ?? 0) : "–"}</span>
                 </button>
               ))}
             </div>
           </div>
         </div>
-        <FeedBody data={data} error={error} more={more} />
+        <FeedBody data={data} error={error} more={more} stale={stale} />
       </div>
       <FeedRail
         filters={data ? <FeedFilters f={f} data={data} className="rfilter" /> : null}

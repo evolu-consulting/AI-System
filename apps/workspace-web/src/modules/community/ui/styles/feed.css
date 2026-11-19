@@ -713,3 +713,12 @@
     0 -10px 0 var(--cm-feed-bg),
     0 8px 10px -8px color-mix(in srgb, var(--ink) 40%, transparent);
 }
+
+/* CR-187 BR-187-9 · đổi tab/lọc: giữ bài cũ, làm mờ tới khi có trang mới (không trắng rồi hiện lại) */
+[data-mod="community"] .feedbody {
+  transition: opacity var(--duration-fast, 150ms);
+}
+[data-mod="community"] .feedbody[data-stale="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+}

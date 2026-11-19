@@ -2,7 +2,7 @@
 // FeedList (Profile) và FeedPage (2 cột) dùng chung để chia state giữa thanh tab và bộ lọc.
 import type { FeedQuery, FeedResponse, FeedTab, PartnerOrg } from "@ai/contracts/community";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { applyFirstPage, feedScopeKey, withoutGone } from "../domain/feed-merge";
+import { applyFirstPage, feedScopeKey, scopeChange, withoutGone } from "../domain/feed-merge";
 import { t } from "../i18n";
 import { useApp } from "./ctx";
 
@@ -30,27 +30,36 @@ export function useFeedFilters(
   return { tab, setTab, cat, setCat, area, setArea, author, setAuthor, query, clear };
 }
 
-/** CR-147c · nạp trang đầu (20 bài) rồi tải dần theo `nextCursor` (gọi `more.load` khi cuộn tới cuối). Đổi bộ lọc hoặc người xem ⇒ về trang đầu, bỏ danh sách cũ. */
+/** CR-147c · nạp trang đầu (20 bài) rồi tải dần theo `nextCursor` (gọi `more.load` khi cuộn tới cuối). Đổi người xem ⇒ bỏ danh sách cũ; chỉ đổi tab/bộ lọc ⇒ giữ bài cũ + `stale` (UI làm mờ) tới khi có trang đầu mới (CR-187 BR-187-9). */
 export function useFeed(query: FeedQuery) {
   const { api, rev, viewer, gone } = useApp();
   const [data, setData] = useState<FeedResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const key = feedScopeKey(query, viewer);
-  const keyRef = useRef(key);
+  const [stale, setStale] = useState(false);
+  const viewerKey = `${viewer.userId}|${viewer.orgId}|${viewer.role}`;
+  const keyRef = useRef({ key, viewer: viewerKey });
   // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại khi bộ lọc hoặc dữ liệu đổi
   useEffect(() => {
     let live = true;
-    const sameScope = keyRef.current === key;
-    keyRef.current = key;
-    if (!sameScope) setData(null); // đổi người xem/bộ lọc: không để bài cũ lại trên màn trong lúc chờ trang đầu
+    const change = scopeChange(keyRef.current, { key, viewer: viewerKey });
+    const sameScope = change === "same";
+    keyRef.current = { key, viewer: viewerKey };
+    if (change === "reset") setData(null); // đổi người xem: không để bài cũ trên màn
+    if (change === "stale") setStale(true); // đổi tab/lọc: giữ bài cũ, làm mờ
     api.listFeed(query).then(
       (r) => {
         if (!live) return;
         setData((old) => applyFirstPage(old, r, sameScope));
+        setStale(false);
         setError(null);
       },
-      (e) => live && setError(e instanceof Error ? e.message : t("community.feed.loadError")),
+      (e) => {
+        if (!live) return;
+        setStale(false);
+        setError(e instanceof Error ? e.message : t("community.feed.loadError"));
+      },
     );
     return () => {
       live = false;
@@ -58,7 +67,7 @@ export function useFeed(query: FeedQuery) {
   }, [api, key, rev]);
   const cursor = data?.nextCursor;
   const load = useCallback(async () => {
-    if (!cursor || loadingMore) return;
+    if (!cursor || loadingMore || stale) return;
     setLoadingMore(true);
     try {
       const r = await api.listFeed({ ...query, cursor });
@@ -77,9 +86,9 @@ export function useFeed(query: FeedQuery) {
     } finally {
       setLoadingMore(false);
     }
-  }, [api, query, cursor, loadingMore]);
+  }, [api, query, cursor, loadingMore, stale]);
   const shown = useMemo(() => withoutGone(data, gone), [data, gone]);
-  return { data: shown, error, more: { has: !!cursor, loading: loadingMore, load } };
+  return { data: shown, error, stale, more: { has: !!cursor, loading: loadingMore, load } };
 }
 
 /** Danh sách công ty: chủ quản thấy tất cả đối tác; đối tác thấy công ty của mình. */

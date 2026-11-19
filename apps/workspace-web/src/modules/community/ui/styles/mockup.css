@@ -522,6 +522,7 @@
   margin: 0 0 14px;
 }
 [data-mod="community"] .chip {
+  font-weight: 500;
   height: 36px;
   padding: 0 14px;
   border: 1px solid var(--field);
@@ -541,7 +542,6 @@
   background: var(--cm-accent-soft);
   border-color: transparent;
   color: var(--cm-accent);
-  font-weight: 600;
 }
 [data-mod="community"] .chip.on .n {
   color: var(--cm-accent);

@@ -2,6 +2,7 @@
 
 import type { MediaItem, ModerationItem, PostView } from "@ai/contracts/community";
 import { Button } from "@ai/web-kit/ui/kit/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ai/web-kit/ui/kit/tooltip";
 import { useEffect, useState } from "react";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { useApp } from "../application/ctx";
@@ -179,15 +180,20 @@ export function PostCard({ post: p, mod }: { post: PostView; mod?: ModerationIte
           </Button>
         )}
         {hasMenu && (
-          <button
-            type="button"
-            className="iconbtn"
-            aria-label={t("community.post.options")}
-            aria-expanded={menu}
-            onClick={() => setMenu(!menu)}
-          >
-            <IconDots />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="iconbtn"
+                aria-label={t("community.post.options")}
+                aria-expanded={menu}
+                onClick={() => setMenu(!menu)}
+              >
+                <IconDots />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{t("community.post.options")}</TooltipContent>
+          </Tooltip>
         )}
       </div>
       {menu && (

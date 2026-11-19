@@ -146,3 +146,67 @@ describe("token điều khiển, chuyển động, toast (CR-177)", () => {
     expect(t.TOAST_UNDO_MS).toBe(6000);
   });
 });
+
+// CR-187 BR-187-7 · tương phản chữ/nền ≥ 4,5:1 (WCAG AA) cho cặp token dùng ở Community + Sổ Hợp Tác, cả sáng lẫn tối.
+const hexOf = (map: Map<string, string>, name: string): string => {
+  let v = map.get(name);
+  for (let i = 0; v && ALIAS.test(v) && i < 4; i++)
+    v = map.get(`--${(ALIAS.exec(v) as RegExpExecArray)[1]}`);
+  if (!v || !/^#[0-9a-f]{6}$/i.test(v)) throw new Error(`${name} không phải màu hex: ${v}`);
+  return v;
+};
+const lum = (hex: string): number => {
+  const c = [1, 3, 5].map((i) => {
+    const x = Number.parseInt(hex.slice(i, i + 2), 16) / 255;
+    return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+  }) as [number, number, number];
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+};
+export const contrast = (a: string, b: string): number => {
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x) as [number, number];
+  return (hi + 0.05) / (lo + 0.05);
+};
+/** [chữ, nền]: chữ chính/phụ trên nền trang, thẻ, ô chìm; nhãn loại bài; nút chính; trạng thái; avatar; thanh bên. */
+const TEXT_PAIRS: [string, string][] = [
+  ["--foreground", "--background"],
+  ["--foreground", "--card"],
+  ["--muted-foreground", "--background"],
+  ["--muted-foreground", "--card"],
+  ["--muted-foreground", "--muted"],
+  ["--muted-strong-foreground", "--card"],
+  ["--primary", "--card"],
+  ["--primary-foreground", "--primary"],
+  ["--accent-foreground", "--accent"],
+  ["--secondary-foreground", "--secondary"],
+  ["--destructive-foreground", "--destructive"],
+  ["--destructive", "--card"],
+  ["--success", "--success-bg"],
+  ["--warning", "--warning-bg"],
+  ["--danger", "--danger-bg"],
+  ["--type-sell-ink", "--type-sell-soft"],
+  ["--type-buy-ink", "--type-buy-soft"],
+  ["--type-note-ink", "--type-note-soft"],
+  ["--type-sell", "--card"],
+  ["--type-buy", "--card"],
+  ["--type-note", "--card"],
+  ["--sidebar-foreground", "--sidebar"],
+  ["--sidebar-accent-foreground", "--sidebar-accent"],
+  ...Array.from({ length: 10 }, (_, i): [string, string] => [
+    `--avatar-${i + 1}-fg`,
+    `--avatar-${i + 1}-bg`,
+  ]),
+];
+
+const lowPairs = (map: Map<string, string>) =>
+  TEXT_PAIRS.map(([fg, bg]) => [fg, bg, contrast(hexOf(map, fg), hexOf(map, bg))] as const)
+    .filter(([, , r]) => r < 4.5)
+    .map(([fg, bg, r]) => `${fg} trên ${bg} = ${r.toFixed(2)}`);
+
+describe("tương phản chữ/nền ≥ 4,5:1 (CR-187)", () => {
+  test("chế độ sáng: mọi cặp chữ/nền token đạt 4,5", () => {
+    expect(lowPairs(light)).toEqual([]);
+  });
+  test("chế độ tối: mọi cặp chữ/nền token đạt 4,5", () => {
+    expect(lowPairs(dark)).toEqual([]);
+  });
+});

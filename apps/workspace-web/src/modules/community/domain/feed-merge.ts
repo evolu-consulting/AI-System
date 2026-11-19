@@ -35,3 +35,14 @@ export function withoutGone(
   if (!data || gone.size === 0 || !data.items.some((p) => gone.has(p.id))) return data;
   return { ...data, items: data.items.filter((p) => !gone.has(p.id)) };
 }
+
+/** CR-187 BR-187-9 · Đổi phạm vi bảng tin: cùng người xem + chỉ đổi tab/bộ lọc ⇒ giữ dữ liệu cũ, đánh dấu `stale` (UI làm mờ);
+ *  đổi người xem ⇒ bỏ hẳn (bài cũ có thể người xem mới không được thấy); không đổi ⇒ nạp lại êm. */
+export type ScopeChange = "same" | "stale" | "reset";
+export function scopeChange(
+  prev: { key: string; viewer: string },
+  next: { key: string; viewer: string },
+): ScopeChange {
+  if (prev.viewer !== next.viewer) return "reset";
+  return prev.key === next.key ? "same" : "stale";
+}

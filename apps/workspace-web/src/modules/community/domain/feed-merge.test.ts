@@ -1,7 +1,13 @@
 // [CR-147] Gộp trang đầu bảng tin: đổi người xem/bộ lọc ⇒ bỏ danh sách cũ (không giữ bài người xem mới không được thấy).
 import { describe, expect, test } from "bun:test";
 import type { FeedResponse } from "@ai/contracts/community";
-import { applyFirstPage, feedScopeKey, mergeFirstPage, withoutGone } from "./feed-merge";
+import {
+  applyFirstPage,
+  feedScopeKey,
+  mergeFirstPage,
+  scopeChange,
+  withoutGone,
+} from "./feed-merge";
 
 const post = (id: string) => ({ id }) as unknown as FeedResponse["items"][number];
 const page = (ids: string[], next?: string): FeedResponse =>
@@ -61,5 +67,22 @@ describe("withoutGone", () => {
     const d = page(["a"]);
     expect(withoutGone(d, new Set(["zz"]))).toBe(d);
     expect(withoutGone(null, new Set(["a"]))).toBeNull();
+  });
+});
+
+describe("scopeChange · đổi tab giữ dữ liệu cũ (CR-187 BR-187-9)", () => {
+  const s = (key: string, viewer = "u1") => ({ key, viewer });
+  test("cùng người xem đổi tab ⇒ stale giữ bài cũ làm mờ, trang mới thay hẳn", () => {
+    expect(scopeChange(s("all"), s("sell"))).toBe("stale");
+    expect(applyFirstPage(page(["a", "b"]), page(["s1"]), false).items.map((p) => p.id)).toEqual([
+      "s1",
+    ]);
+  });
+  test("không đổi ⇒ same (nạp lại êm, gộp trang đã tải dần)", () => {
+    expect(scopeChange(s("all"), s("all"))).toBe("same");
+  });
+  test("đổi người xem ⇒ reset (bỏ bài cũ, kể cả khi bộ lọc cũng đổi)", () => {
+    expect(scopeChange(s("all", "u1"), s("all", "u2"))).toBe("reset");
+    expect(scopeChange(s("all", "u1"), s("sell", "u2"))).toBe("reset");
   });
 });

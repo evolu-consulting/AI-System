@@ -1,13 +1,13 @@
 // Một bình luận trong luồng (C6): sửa/xoá của người viết, ẩn của chủ quản. `action` = chỗ gắn nút của lát khác (C7b "Lưu báo giá").
 
 import type { CommentView } from "@ai/contracts/community";
-import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { type ReactNode, useState } from "react";
 import { initials, timeAgo, tone } from "../domain/format";
 import { type CommentActions, splitMentions } from "../domain/thread";
 import { t } from "../i18n";
 import { Highlighted } from "./Highlighted";
+import { IconAction } from "./IconAction";
 import { IconEdit, IconEyeOff, IconTrash } from "./icons";
 import { MentionedLine } from "./MentionedLine";
 
@@ -84,30 +84,26 @@ export function CommentItem({
         <div className="ctime">
           {timeAgo(c.createdAt)}
           {c.hidden ? t("community.comment.hiddenTag") : ""}
-          {actions.edit && !editing && (
-            <Button
-              variant="link"
-              aria-label={t("community.comment.edit")}
-              onClick={() => setEditing(true)}
-            >
-              <IconEdit size={12} /> {t("community.comment.editShort")}
-            </Button>
-          )}
-          {actions.delete && (
-            <Button variant="link" aria-label={t("community.comment.delete")} onClick={onDelete}>
-              <IconTrash size={12} /> {t("community.comment.deleteShort")}
-            </Button>
-          )}
-          {actions.hide && (
-            <Button
-              variant="link"
-              aria-label={c.hidden ? t("community.comment.show") : t("community.comment.hide")}
-              onClick={() => onHide(!c.hidden)}
-            >
-              <IconEyeOff size={12} />{" "}
-              {c.hidden ? t("community.comment.showShort") : t("community.comment.hideShort")}
-            </Button>
-          )}
+          <span className="acts" data-testid="comment-acts">
+            {actions.edit && !editing && (
+              <IconAction label={t("community.comment.edit")} onClick={() => setEditing(true)}>
+                <IconEdit size={16} />
+              </IconAction>
+            )}
+            {actions.delete && (
+              <IconAction label={t("community.comment.delete")} onClick={onDelete}>
+                <IconTrash size={16} />
+              </IconAction>
+            )}
+            {actions.hide && (
+              <IconAction
+                label={c.hidden ? t("community.comment.show") : t("community.comment.hide")}
+                onClick={() => onHide(!c.hidden)}
+              >
+                <IconEyeOff size={16} />
+              </IconAction>
+            )}
+          </span>
           {action}
         </div>
       </div>

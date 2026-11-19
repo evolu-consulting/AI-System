@@ -113,8 +113,8 @@ export function ConversationRow({
             data-testid="conv-avatar"
           />
         </span>
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-baseline gap-2">
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden">
+          <span className="flex min-w-0 items-baseline gap-2">
             <span {...hv} className="min-w-0 flex-1">
               <TruncText
                 text={title}

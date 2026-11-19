@@ -65,8 +65,10 @@ describe("menu (nav-v2)", () => {
 });
 
 describe("cờ toàn màn (CR-187 BR-187-8)", () => {
-  test("mặc định chưa trang nào toàn màn; khai báo đường dẫn ⇒ khớp chính nó và con", () => {
-    expect(isFullscreen("/contracts/messages")).toBe(false);
+  test("mặc định chỉ Tin nhắn toàn màn, khai báo đường dẫn ⇒ khớp chính nó và con", () => {
+    expect(isFullscreen("/contracts/messages")).toBe(true);
+    expect(isFullscreen("/contracts/list")).toBe(false);
+    expect(isFullscreen("/community")).toBe(false);
     expect(isFullscreen("/contracts/messages", ["/contracts/messages"])).toBe(true);
     expect(isFullscreen("/contracts/messages/c1", ["/contracts/messages"])).toBe(true);
     expect(isFullscreen("/contracts/messages-x", ["/contracts/messages"])).toBe(false);

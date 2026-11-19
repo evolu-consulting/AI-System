@@ -164,3 +164,26 @@
   width: 100%;
   min-height: 60vh;
 }
+
+/* CR-187 BR-187-6 · nút icon Sửa/Xoá/Ẩn của bình luận: 28px cách 2px (máy tính); điện thoại 44px sát nhau (mobile.css) */
+[data-mod="community"] .ctime .acts {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+[data-mod="community"] .iconact {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--dim);
+}
+[data-mod="community"] .iconact:hover,
+[data-mod="community"] .iconact:focus-visible {
+  background: var(--cm-surface-2);
+  color: var(--ink);
+}

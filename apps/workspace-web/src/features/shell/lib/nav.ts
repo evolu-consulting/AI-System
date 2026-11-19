@@ -114,8 +114,8 @@ export const fabHiddenOn = (pathname: string): boolean =>
   pathname === `${B}/messages` || pathname.startsWith(`${B}/messages/`);
 
 /** CR-187 BR-187-8 · Trang toàn màn: vùng nội dung đứng yên (không cuộn), khung con tự cuộn. Trang khai báo đường dẫn ở đây; Shell không còn cần `calc(100dvh-…)` viết cứng.
- *  Lát này chỉ dựng cờ, chưa áp trang nào (Tin nhắn, sơ đồ, màn ký áp ở lát sau). */
-export const FULLSCREEN_PATHS: readonly string[] = [];
+ *  Đã áp: Tin nhắn (CR-187 BR-187-4); sơ đồ, màn ký áp ở lát sau. */
+export const FULLSCREEN_PATHS: readonly string[] = [`${B}/messages`];
 export const isFullscreen = (
   pathname: string,
   paths: readonly string[] = FULLSCREEN_PATHS,

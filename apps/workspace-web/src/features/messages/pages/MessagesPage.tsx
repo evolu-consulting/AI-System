@@ -1,5 +1,5 @@
 // CR-132 · W2 · /contracts/messages (`?c=<id>`): toàn màn — trái danh sách 320 px, phải hội thoại; dưới 768 px chỉ một khung một lúc
-// (ô chọn → hội thoại, nút ‹ về danh sách). Cả trang là phần của khung ứng dụng (AppShell) nên chiều cao do vùng nội dung quyết định.
+// (ô chọn → hội thoại, nút ‹ về danh sách). CR-187: trang toàn màn (`FULLSCREEN_PATHS`) — Shell giữ chiều cao, trang đứng yên, chỉ khung con cuộn.
 
 import { ChatView } from "@ai/messages-web/components/ChatView";
 import { ConversationPane } from "@ai/messages-web/components/ConversationPane";
@@ -25,12 +25,12 @@ export function MessagesPage({
   return (
     <div
       data-testid="messages-page"
-      className="flex h-[calc(100dvh-8rem)] min-h-[420px] overflow-hidden rounded-xl border border-rule bg-panel max-md:h-[calc(100dvh-10rem)]"
+      className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-rule bg-panel"
     >
       <aside
         aria-label={t("contracts.messages.title")}
         className={cn(
-          "w-80 shrink-0 border-r border-rule-soft max-md:w-full",
+          "w-80 shrink-0 overflow-hidden border-r border-rule-soft max-md:w-full",
           conversationId && "max-md:hidden",
         )}
       >

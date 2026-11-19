@@ -204,8 +204,8 @@
   --ring: #818cf8;
   --error-border: #f97066;
 
-  --destructive: #b42318;
-  --destructive-foreground: #ffffff;
+  --destructive: #f97066; /* CR-187: chữ đỏ trên nền tối ≥ 4,5; nút đỏ đặc dùng chữ tối bên dưới */
+  --destructive-foreground: #2a0a08;
   --success: #6ee7a8;
   --success-bg: #0f2e20;
   --warning: #fbbf24;

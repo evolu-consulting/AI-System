@@ -206,7 +206,7 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
       </label>
       {pv && <div className="impact">{compareText(pv.compare)}</div>}
       {pv?.warnings.map((w) => (
-        <div className="impact" role="alert" key={w.code} style={{ color: "#8a4306" }}>
+        <div role="alert" key={w.code} className="impact text-warning">
           {warningText(w)}
         </div>
       ))}

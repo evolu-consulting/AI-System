@@ -13,6 +13,13 @@
     min-width: 44px;
     min-height: 44px; /* nút đổi ảnh bìa/avatar: cảm ứng không có rê chuột nên nút luôn hiện (hover: none) và phải bấm được */
   }
+  [data-mod="community"] .ctime .acts {
+    gap: 0;
+  }
+  [data-mod="community"] .iconact {
+    width: 44px;
+    height: 44px; /* CR-187 BR-187-6: vùng bấm 44px, sát nhau */
+  }
 }
 
 /* CR-186 · ô đăng bài trên điện thoại (≤ 640px): loại bài = MỘT hàng nút gọn cuộn ngang (không tràn, cao ≥ 44px); bỏ avatar để thân ô
