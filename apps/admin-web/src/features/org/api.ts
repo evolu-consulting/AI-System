@@ -1,5 +1,12 @@
-// CR-139d · gọi API cơ cấu tổ chức: `/admin/org*` (phòng ban, trưởng phòng, phòng cha) + `/admin/groups*` (tạo, đổi tên, thành viên).
-import type { OrgResponse } from "@ai/contracts/org";
+// CR-139d · CR-189 · gọi API cơ cấu tổ chức `/admin/org*`: đọc một lần, sửa trực tiếp trên sơ đồ (tạo/đổi tên/chuyển/xoá phòng,
+// thêm-bớt thành viên). Kết quả các lời gọi ghi mang đủ dữ liệu để Hoàn tác (tên cũ, phòng cũ, phòng cha được đưa về).
+import type {
+  DeptCreateResponse,
+  DeptMemberRemoveResponse,
+  DeptMembersAddResponse,
+  DeptRenameResponse,
+  OrgResponse,
+} from "@ai/contracts/org";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 
@@ -20,12 +27,14 @@ export function useOrgApi(tenantId: string | undefined) {
       qc.invalidateQueries({ queryKey: ["groups"] }),
     ]);
   const id = encodeURIComponent;
+  const dept = (gid: string) => `/admin/org/departments/${id(gid)}`;
   return {
     refresh,
+    /** Đổi trưởng phòng và/hoặc phòng cha (`parent_group_id` vắng = giữ nguyên, null = lên công ty). */
     setDept: (
       gid: string,
       body: { head_user_id: string | null; parent_group_id?: string | null },
-    ) => api(`/admin/org/departments/${id(gid)}`, { method: "PUT", body, ...q(tenantId) }),
+    ) => api(dept(gid), { method: "PUT", body, ...q(tenantId) }),
     /** CR-147b ý 9 · chức vụ nhân viên (rỗng = xoá). */
     setTitle: (uid: string, job_title: string | null) =>
       api(`/admin/org/members/${id(uid)}/title`, {
@@ -33,33 +42,31 @@ export function useOrgApi(tenantId: string | undefined) {
         body: { job_title },
         ...q(tenantId),
       }),
-    removeDept: (gid: string) =>
-      api(`/admin/org/departments/${id(gid)}`, { method: "DELETE", ...q(tenantId) }),
-    /** Phòng mới = Group mới rồi đánh dấu phòng ban (kèm phòng cha). */
-    async createDept(key: string, name: string, parent: string | null) {
-      const g = await api<{ id: string }>("/admin/groups", {
+    createDept: (name: string, parent_group_id: string | null) =>
+      api<DeptCreateResponse>("/admin/org/departments", {
         method: "POST",
-        body: { key, name: { vi: name }, description: null },
+        body: { name, parent_group_id },
         ...q(tenantId),
-      });
-      await api(`/admin/org/departments/${id(g.id)}`, {
+      }),
+    renameDept: (gid: string, name: string) =>
+      api<DeptRenameResponse>(`${dept(gid)}/name`, {
         method: "PUT",
-        body: { head_user_id: null, parent_group_id: parent },
+        body: { name },
         ...q(tenantId),
-      });
-    },
-    async rename(gid: string, name: string) {
-      const g = await api<{ version: number; name: Record<string, string> }>(
-        `/admin/groups/${id(gid)}`,
-      );
-      await api(`/admin/groups/${id(gid)}`, {
-        method: "PATCH",
-        body: { version: g.version, name: { ...g.name, vi: name } },
-      });
-    },
-    addMember: (gid: string, username: string) =>
-      api(`/admin/groups/${id(gid)}/members`, { method: "POST", body: { usernames: [username] } }),
+      }),
+    addMembers: (gid: string, user_ids: string[]) =>
+      api<DeptMembersAddResponse>(`${dept(gid)}/members`, {
+        method: "POST",
+        body: { user_ids },
+        ...q(tenantId),
+      }),
     removeMember: (gid: string, uid: string) =>
-      api(`/admin/groups/${id(gid)}/members/${id(uid)}`, { method: "DELETE" }),
+      api<DeptMemberRemoveResponse>(`${dept(gid)}/members/${id(uid)}`, {
+        method: "DELETE",
+        ...q(tenantId),
+      }),
+    removeDept: (gid: string) => api(dept(gid), { method: "DELETE", ...q(tenantId) }),
   };
 }
+
+export type OrgApi = ReturnType<typeof useOrgApi>;

@@ -1,57 +1,68 @@
-// CR-139d · «Cơ cấu tổ chức» (tab Thành viên › Cơ cấu): sơ đồ cây của công ty để chỉnh — thêm/đổi tên/xoá phòng, «Thuộc phòng», trưởng phòng, thành viên.
-// Sổ Hợp Tác chỉ xem cây này (nút «Chỉnh sơ đồ» dẫn về đây). Ghi qua admin-api (`/admin/org*`, `/admin/groups*`), có audit.
-
-import { Button } from "@ai/web-kit/ui/kit/button";
-import { Input } from "@ai/web-kit/ui/kit/input";
+// CR-139d · CR-189 · «Cơ cấu tổ chức» (Admin › Công ty › Thành viên › Cơ cấu): SỬA TRỰC TIẾP trên sơ đồ — «+» thêm phòng con gõ tên tại chỗ,
+// bấm tên đổi tên, «⋯» (đổi trưởng phòng · thêm/bớt thành viên · chuyển phòng cha · xoá), kéo thả trên máy tính. Mọi thay đổi có toast «Hoàn tác»
+// 6 giây. Sổ Hợp Tác chỉ xem cây này (nút «Chỉnh sơ đồ» dẫn về đây). Ghi qua admin-api (`/admin/org*`), có audit.
+import type { OrgChartEdit } from "@ai/flow-canvas";
 import { notifyError } from "@ai/web-kit/ui/toast";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useWorkspaceView } from "@/features/tenants/lib/use-workspace-view";
 import { useSession } from "@/lib/auth/use-session";
-import { describeError } from "@/lib/errors";
-import { ApiError } from "@/lib/http";
-import { useTr } from "@/lib/use-translate";
 import { useOrgApi, useOrgData } from "../api";
-import { DeptCard } from "../components/DeptCard";
+import { DeptMenu } from "../components/DeptMenu";
 import { MemberTitles } from "../components/MemberTitles";
-import { OrgPreview } from "../components/OrgPreview";
+import { OrgDiagram } from "../components/OrgDiagram";
+import {
+  DeleteDialog,
+  HeadDialog,
+  MembersDialog,
+  MoveDialog,
+  type OrgDialogKind,
+} from "../components/OrgDialogs";
 import { toChartDepts } from "../lib/org-chart-data";
-import { buildDeptTree, deptKey, flattenTree } from "../lib/org-edit";
+import { canMoveDept } from "../lib/org-edit";
+import { useIsTouch } from "../lib/use-is-touch";
+import { useOrgOps } from "../lib/use-org-ops";
 
 export function OrgEditor() {
   const { t } = useTranslation();
-  const tr = useTr();
   const view = useWorkspaceView(useSession((s) => s.me));
   const org = useOrgData(view.tenantId);
   const api = useOrgApi(view.tenantId);
-  const [busy, setBusy] = useState(false);
-  const [name, setName] = useState("");
-  const [parent, setParent] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
-  const depts = org.data?.departments ?? [];
-  const rows = useMemo(() => flattenTree(buildDeptTree(depts)), [depts]);
+  const depts = useMemo(() => org.data?.departments ?? [], [org.data]);
+  const members = useMemo(() => org.data?.members ?? [], [org.data]);
   const chart = useMemo(() => toChartDepts(org.data), [org.data]);
-  // CR-142 · bấm thẻ phòng trên sơ đồ ⇒ chọn + cuộn tới phòng đó ở form bên dưới
-  const pick = (id: string) => {
-    setSelected(id);
-    document
-      .querySelector(`[data-testid="org-dept-${id}"]`)
-      ?.scrollIntoView?.({ block: "center", behavior: "smooth" });
-  };
+  const ops = useOrgOps(api, depts);
+  const touch = useIsTouch();
+  const [dlg, setDlg] = useState<{ kind: OrgDialogKind; id: string } | null>(null);
 
-  const act = (fn: () => Promise<unknown>) => {
-    setBusy(true);
-    fn()
-      .then(api.refresh)
-      .catch((err: unknown) => {
-        if (err instanceof ApiError && err.code === "UNAUTHORIZED") return;
-        if (err instanceof ApiError && JSON.stringify(err.details ?? "").includes("dept_cycle"))
-          return notifyError(t("orgEdit.cycle"));
-        const spec = describeError(err);
-        notifyError(tr(spec.key, spec.params));
-      })
-      .finally(() => setBusy(false));
-  };
+  const edit = useMemo<OrgChartEdit>(
+    () => ({
+      touch,
+      labels: {
+        addChild: (name) => t("orgEdit.addChild", { name }),
+        rename: t("orgEdit.renameHint"),
+        renameInput: t("orgEdit.renameInput"),
+        newName: t("orgEdit.newName"),
+        newPlaceholder: t("orgEdit.newPlaceholder"),
+        ok: t("orgEdit.add"),
+        cancel: t("common.cancel"),
+        nameRequired: t("orgEdit.nameRequired"),
+        dragHint: t("orgEdit.dragHint"),
+      },
+      onAdd: ops.add,
+      onRename: ops.rename,
+      canMove: (id, to) => canMoveDept(depts, id, to),
+      onMove: (id, to) => void ops.move(id, to).then((err) => err && notifyError(err)),
+      renderMenu: (id) => (
+        <DeptMenu
+          id={id}
+          name={depts.find((d) => d.group_id === id)?.name ?? ""}
+          onPick={(kind) => setDlg({ kind, id })}
+        />
+      ),
+    }),
+    [t, touch, ops, depts],
+  );
 
   if (org.isError)
     return (
@@ -59,77 +70,33 @@ export function OrgEditor() {
         {t("orgEdit.loadError")}
       </p>
     );
+  const target = dlg ? depts.find((d) => d.group_id === dlg.id) : undefined;
+  const common = target && { dept: target, depts, members, ops, onClose: () => setDlg(null) };
   return (
     <section className="space-y-3" data-testid="org-editor">
       <p className="text-sm text-muted-foreground">{t("orgEdit.lead")}</p>
-      {chart.length > 0 ? <OrgPreview depts={chart} selectedId={selected} onSelect={pick} /> : null}
-      <form
-        className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const title = name.trim();
-          if (!title) return;
-          act(async () => {
-            await api.createDept(deptKey(title), title, parent || null);
-            setName("");
-            setParent("");
-          });
-        }}
-      >
-        <label htmlFor="org-new-name" className="flex flex-col gap-1 text-sm">
-          {t("orgEdit.newName")}
-          <Input
-            id="org-new-name"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="h-9 w-64"
-            maxLength={120}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          {t("orgEdit.parent")}
-          <select
-            aria-label={t("orgEdit.newParent")}
-            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-            value={parent}
-            onChange={(e) => setParent(e.target.value)}
-          >
-            <option value="">{t("orgEdit.rootCompany")}</option>
-            {rows.map((r) => (
-              <option key={r.dept.group_id} value={r.dept.group_id}>
-                {`${"— ".repeat(r.depth)}${r.dept.name}`}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Button type="submit" disabled={busy || !name.trim()}>
-          {t("orgEdit.add")}
-        </Button>
-      </form>
-      {org.isPending ? null : rows.length === 0 ? (
+      {org.isPending ? null : <OrgDiagram depts={chart} edit={edit} />}
+      {chart.length === 0 && !org.isPending ? (
         <p className="text-sm text-muted-foreground" data-testid="org-editor-empty">
           {t("orgEdit.empty")}
         </p>
-      ) : (
-        <ul className="space-y-2" data-testid="org-editor-tree">
-          {rows.map((r) => (
-            <DeptCard
-              key={r.dept.group_id}
-              row={r}
-              depts={depts}
-              members={org.data?.members ?? []}
-              busy={busy}
-              selected={r.dept.group_id === selected}
-              act={act}
-              api={api}
-            />
-          ))}
-        </ul>
-      )}
-      {(org.data?.members.length ?? 0) > 0 ? (
-        <MemberTitles members={org.data?.members ?? []} busy={busy} act={act} save={api.setTitle} />
       ) : null}
+      {members.length > 0 ? (
+        <MemberTitles
+          members={members}
+          busy={false}
+          act={(fn) =>
+            void fn()
+              .then(api.refresh)
+              .catch((e: unknown) => notifyError(ops.text(e)))
+          }
+          save={api.setTitle}
+        />
+      ) : null}
+      {common && dlg?.kind === "head" ? <HeadDialog {...common} /> : null}
+      {common && dlg?.kind === "members" ? <MembersDialog {...common} /> : null}
+      {common && dlg?.kind === "move" ? <MoveDialog {...common} /> : null}
+      {common && dlg?.kind === "delete" ? <DeleteDialog {...common} /> : null}
     </section>
   );
 }

@@ -1,18 +1,8 @@
-// CR-139d · luật thuần của màn «Cơ cấu tổ chức» (admin): danh sách phòng ban phẳng (`parent_group_id`) ⇒ cây; chọn «Thuộc phòng» không tạo vòng.
-import type { OrgDepartment } from "@ai/contracts/org";
+// CR-139d · CR-189 · luật thuần của màn «Cơ cấu tổ chức» (admin): danh sách phòng ban phẳng (`parent_group_id`) ⇒ cây; chặn vòng khi chuyển
+// phòng cha; đếm «còn người/phòng con» để báo trước khi xoá; câu lỗi nghiệp vụ từ mã lỗi API.
+import type { OrgAccessChange, OrgDepartment } from "@ai/contracts/org";
 
 export type DeptNode = OrgDepartment & { children: DeptNode[] };
-/** Các thao tác ghi mà thẻ phòng ban cần (cài đặt ở `api.ts`; component chỉ nhận qua props, không gọi API). */
-export type OrgActions = {
-  setDept: (
-    gid: string,
-    body: { head_user_id: string | null; parent_group_id?: string | null },
-  ) => Promise<unknown>;
-  removeDept: (gid: string) => Promise<unknown>;
-  rename: (gid: string, name: string) => Promise<unknown>;
-  addMember: (gid: string, username: string) => Promise<unknown>;
-  removeMember: (gid: string, uid: string) => Promise<unknown>;
-};
 export type DeptRow = { dept: OrgDepartment; depth: number };
 
 /** Từ `start` leo lên cha; true nếu gặp `target` (hoặc chính `start`). Dừng khi lặp (dữ liệu hỏng không treo UI). */
@@ -66,18 +56,62 @@ export function parentChoices(depts: readonly OrgDepartment[], id: string): Dept
   return flattenTree(buildDeptTree(depts)).filter((r) => valid.has(r.dept.group_id));
 }
 
-/** Khoá nhóm ([a-z0-9-]{2,32}) tự sinh từ tên: bỏ dấu, gạch nối, thêm hậu tố ngẫu nhiên để không trùng. */
-export function deptKey(name: string, rand: () => number = Math.random): string {
-  const slug = name
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .replace(/đ/gi, "d")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 22);
-  const tail = Math.floor(rand() * 36 ** 4)
-    .toString(36)
-    .padStart(4, "0");
-  return `${slug || "phong"}-${tail}`;
+/**
+ * Kéo/chọn phòng `id` sang phòng cha `to` (null = công ty) có hợp lệ không: phòng phải còn tồn tại, KHÔNG vào chính nó hay con cháu của nó
+ * (chặn ở UI, API cũng chặn `dept_cycle`), và phải khác phòng cha hiện tại.
+ */
+export function canMoveDept(
+  depts: readonly OrgDepartment[],
+  id: string,
+  to: string | null,
+): boolean {
+  const byId = new Map(depts.map((d) => [d.group_id, d]));
+  const cur = byId.get(id);
+  if (!cur || to === cur.parent_group_id) return false;
+  if (to === null) return true;
+  return byId.has(to) && !climbsTo(byId, to, id);
+}
+
+/** Số người (thành viên ∪ trưởng phòng, không đếm trùng) và số phòng con của một phòng — báo trước khi xoá. */
+export function deptLoad(
+  depts: readonly OrgDepartment[],
+  id: string,
+): { members: number; children: number } {
+  const d = depts.find((x) => x.group_id === id);
+  const people = new Set(d?.member_ids ?? []);
+  if (d?.head_user_id) people.add(d.head_user_id);
+  return {
+    members: people.size,
+    children: depts.filter((x) => x.parent_group_id === id).length,
+  };
+}
+
+export type OrgErrorSpec = { key: string; params?: Record<string, string | number> };
+
+/**
+ * Mã lỗi sửa cơ cấu ⇒ câu nghiệp vụ (key i18n). `null` = không phải lỗi cơ cấu (host dùng câu lỗi chung).
+ * DEPT_NOT_EMPTY `{members, children}`, MEMBER_IS_HEAD, DEPT_IN_USE `{open_reviews}`, NAME_TAKEN, dept_cycle.
+ */
+export function orgErrorSpec(err: { code: string; details?: unknown }): OrgErrorSpec | null {
+  const d = (err.details ?? {}) as Record<string, unknown>;
+  const n = (k: string) => (typeof d[k] === "number" ? (d[k] as number) : 0);
+  if (err.code === "DEPT_NOT_EMPTY") {
+    const m = n("members");
+    const c = n("children");
+    const what = m > 0 && c > 0 ? "both" : m > 0 ? "members" : "children";
+    return { key: `orgEdit.err.notEmpty.${what}`, params: { members: m, children: c } };
+  }
+  if (err.code === "MEMBER_IS_HEAD") return { key: "orgEdit.err.memberIsHead" };
+  if (err.code === "DEPT_IN_USE")
+    return { key: "orgEdit.err.inUse", params: { count: n("open_reviews") } };
+  if (err.code === "NAME_TAKEN") return { key: "orgEdit.err.nameTaken" };
+  if (JSON.stringify(d).includes("dept_cycle")) return { key: "orgEdit.cycle" };
+  return null;
+}
+
+/** Có quyền theo nhóm đổi ⇒ tham số cho câu «Quyền theo phòng đổi…»; không đổi ⇒ null. */
+export function accessNote(
+  a: OrgAccessChange | undefined,
+): { gained: number; lost: number } | null {
+  return a && (a.gained > 0 || a.lost > 0) ? { gained: a.gained, lost: a.lost } : null;
 }

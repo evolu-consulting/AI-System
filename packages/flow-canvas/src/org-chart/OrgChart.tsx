@@ -13,8 +13,10 @@ import {
   ReactFlowProvider,
   useReactFlow,
 } from "@xyflow/react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { HiddenHandle } from "../nodes/HiddenHandle";
+import { OrgEditCard } from "./OrgEditCard";
+import type { DragRef, OrgChartEdit } from "./OrgEditParts";
 import {
   buildOrgGraph,
   ORG_NODE_H,
@@ -43,6 +45,8 @@ export type OrgChartProps = {
   /** Đổi giá trị ⇒ đưa khung nhìn tới phòng đó. `seq` tăng để bấm lại cùng phòng vẫn nhảy tới. */
   focus?: { id: string; seq: number } | null;
   onSelectDept?: (id: string) => void;
+  /** CR-189 · chế độ sửa trực tiếp (admin): «+», đổi tên tại chỗ, «⋯», kéo thả. Vắng ⇒ chỉ xem như cũ. */
+  edit?: OrgChartEdit;
   className?: string;
 };
 
@@ -52,6 +56,8 @@ type CardData = OrgNodeData & {
   selected: boolean;
   lit: boolean;
   onSelect?: (id: string) => void;
+  edit?: OrgChartEdit;
+  drag: DragRef;
 };
 type CardNode = Node<CardData, "org">;
 
@@ -70,9 +76,7 @@ function ringClass(data: CardData): string {
 }
 
 /** BR-189-2 · thẻ phòng: tên · trưởng phòng (avatar + họ tên) · «N người · tổng M» · hàng avatar nhân viên (bấm mở danh sách). */
-function OrgCard({ data }: NodeProps<CardNode>) {
-  const company = data.kind === "company";
-  const ring = ringClass(data);
+function ViewCard({ data, company, ring }: { data: CardData; company: boolean; ring: string }) {
   const staff = staffList(data);
   return (
     <>
@@ -132,6 +136,29 @@ function OrgCard({ data }: NodeProps<CardNode>) {
   );
 }
 
+function OrgCard({ data }: NodeProps<CardNode>) {
+  const company = data.kind === "company";
+  const ring = ringClass(data);
+  if (data.edit)
+    return (
+      <>
+        <HiddenHandle type="target" position={Position.Top} />
+        <OrgEditCard
+          nodeId={data.nodeId}
+          data={data}
+          edit={data.edit}
+          drag={data.drag}
+          ring={ring}
+          company={company}
+          noHead={data.labels.noHead}
+          countText={`${data.labels.people(data.count)}${data.hasChildren ? ` ${data.labels.peopleTotal(data.total)}` : ""}`}
+        />
+        <HiddenHandle type="source" position={Position.Bottom} />
+      </>
+    );
+  return <ViewCard data={data} company={company} ring={ring} />;
+}
+
 const NODE_TYPES = { org: OrgCard };
 
 function FocusEffect({ focus, nodes }: { focus: OrgChartProps["focus"]; nodes: CardNode[] }) {
@@ -149,7 +176,8 @@ function FocusEffect({ focus, nodes }: { focus: OrgChartProps["focus"]; nodes: C
 }
 
 function Inner(p: OrgChartProps) {
-  const { depts, rootName, labels, selectedId, highlightIds, focus, onSelectDept } = p;
+  const { depts, rootName, labels, selectedId, highlightIds, focus, onSelectDept, edit } = p;
+  const drag = useRef<string | null>(null);
   // bố cục chỉ tính lại khi dữ liệu đổi (không khi chọn/tìm)
   const graph = useMemo(() => buildOrgGraph(depts, rootName), [depts, rootName]);
   const lit = useMemo(() => new Set(highlightIds ?? []), [highlightIds]);
@@ -169,10 +197,12 @@ function Inner(p: OrgChartProps) {
           labels,
           selected: n.id === selectedId,
           lit: lit.has(n.id),
+          drag,
+          ...(edit ? { edit } : {}),
           ...(onSelectDept ? { onSelect: onSelectDept } : {}),
         },
       })),
-    [graph, labels, selectedId, lit, onSelectDept],
+    [graph, labels, selectedId, lit, onSelectDept, edit],
   );
   const edges = useMemo<Edge[]>(
     () =>

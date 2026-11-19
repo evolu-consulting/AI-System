@@ -1,5 +1,6 @@
-// CR-142 · xem trước sơ đồ cây ở «Cơ cấu» (cùng component với Sổ Hợp Tác, nạp lười). Bấm thẻ phòng ⇒ chọn phòng đó ở form bên dưới.
-import type { OrgChartDept } from "@ai/flow-canvas/pure";
+// CR-142 · CR-189 · sơ đồ cây ở «Cơ cấu» — CHẾ ĐỘ SỬA TRỰC TIẾP (cùng component với Sổ Hợp Tác, nạp lười): «+» thêm phòng con, bấm tên đổi tên,
+// «⋯» thao tác khác, kéo thả (máy tính) để chuyển phòng cha. Chữ do host cấp (i18n).
+import type { OrgChartDept, OrgChartEdit } from "@ai/flow-canvas";
 import { Component, lazy, type ReactNode, Suspense, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -20,11 +21,10 @@ class Boundary extends Component<
 
 type Props = {
   depts: readonly OrgChartDept[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
+  edit: OrgChartEdit;
 };
 
-export function OrgPreview({ depts, selectedId, onSelect }: Props) {
+export function OrgDiagram({ depts, edit }: Props) {
   const { t } = useTranslation();
   const labels = useMemo(
     () => ({
@@ -44,6 +44,11 @@ export function OrgPreview({ depts, selectedId, onSelect }: Props) {
   return (
     <div data-testid="org-preview" className="space-y-1">
       <p className="text-sm text-muted-foreground">{t("orgEdit.preview")}</p>
+      {edit.touch ? null : (
+        <p className="text-xs text-muted-foreground" data-testid="org-drag-hint">
+          {t("orgEdit.dragHint")}
+        </p>
+      )}
       <Boundary
         fallback={
           <p role="alert" className="text-sm text-destructive">
@@ -62,9 +67,8 @@ export function OrgPreview({ depts, selectedId, onSelect }: Props) {
             depts={depts}
             rootName={t("orgEdit.company")}
             labels={labels}
-            selectedId={selectedId}
-            onSelectDept={onSelect}
-            className="h-[min(60vh,480px)] min-h-[280px] w-full rounded-lg border bg-background"
+            edit={edit}
+            className="h-[min(70vh,560px)] min-h-[320px] w-full rounded-lg border bg-background"
           />
         </Suspense>
       </Boundary>

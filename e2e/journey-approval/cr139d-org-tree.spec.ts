@@ -1,7 +1,7 @@
 // biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-139d · HÀNH TRÌNH «Sơ đồ tổ chức dạng cây» trên công ty mẫu `demo` (bun run demo:org):
 // nhân viên (cuong.le) xem cây + mở thành viên, KHÔNG có «Chỉnh sơ đồ»; quản trị công ty (JA_ORG_ADMIN, mặc định owner) bấm «Chỉnh sơ đồ»
-// ⇒ sang ai-admin, thêm phòng con thuộc phòng có sẵn, đặt trưởng phòng ⇒ Sổ Hợp Tác hiện phòng mới trong cây. Không chạy trong lát; chạy MỘT lần cuối đợt.
+// ⇒ sang ai-admin, «+» thêm phòng con tại chỗ (CR-189) ⇒ Sổ Hợp Tác hiện phòng mới trong cây. Không chạy trong lát; chạy MỘT lần cuối đợt.
 import { expect, test } from "@playwright/test";
 
 const need = (n: string): string => {
@@ -40,7 +40,7 @@ test("nhân viên xem cây, mở thành viên, không thấy «Chỉnh sơ đồ
   await expect(page.getByTestId("org-edit")).toHaveCount(0);
 });
 
-test("quản trị chỉnh sơ đồ ở admin ⇒ cây ở Sổ Hợp Tác đổi theo; vòng cha–con bị chặn", async ({
+test("quản trị chỉnh sơ đồ ở admin ⇒ cây ở Sổ Hợp Tác đổi theo, vòng cha–con bị chặn", async ({
   browser,
 }) => {
   test.setTimeout(180_000);
@@ -49,21 +49,20 @@ test("quản trị chỉnh sơ đồ ở admin ⇒ cây ở Sổ Hợp Tác đ�
   await page.goto(`${CW}/contracts/org`);
   await page.getByTestId("org-edit").click();
   await expect(page.getByTestId("org-editor")).toBeVisible({ timeout: 30_000 });
-  await page.getByLabel("Tên phòng mới").fill(NEW_DEPT);
-  await page.getByLabel("Thuộc phòng của phòng mới").selectOption({ label: "Phòng Kinh doanh" });
-  await page.getByRole("button", { name: "Thêm phòng" }).click();
-  await expect(page.getByRole("heading", { name: NEW_DEPT })).toBeVisible();
-  // CR-142 · xem trước sơ đồ ở admin: bấm thẻ phòng mới ⇒ chọn phòng đó ở form.
-  await page
+  // CR-189 · sửa trực tiếp trên sơ đồ: «+» dưới thẻ «Phòng Kinh doanh» ⇒ gõ tên phòng con tại chỗ (không còn form «Thêm phòng»).
+  const kd = page
     .getByTestId("org-preview")
-    .locator("[data-testid^=org-node-]", { hasText: NEW_DEPT })
-    .click();
-  await expect(page.locator("[data-testid^=org-dept-][data-selected=true]")).toContainText(
-    NEW_DEPT,
-  );
-  // Phòng cha không được chọn chính con của nó: «Phòng Kinh doanh» không có phòng mới trong danh sách «Thuộc phòng».
-  const parentOpts = page.getByLabel("Thuộc phòng · Phòng Kinh doanh").locator("option");
-  await expect(parentOpts.filter({ hasText: NEW_DEPT })).toHaveCount(0);
+    .locator("[data-testid^=org-node-]", { hasText: "Phòng Kinh doanh" })
+    .first();
+  await kd.locator("[data-testid^=org-add-]").first().click();
+  await page.locator("[data-testid^=org-add-input-]").fill(NEW_DEPT);
+  await page.locator("[data-testid^=org-add-ok-]").click();
+  await expect(page.getByTestId("org-preview")).toContainText(NEW_DEPT, { timeout: 30_000 });
+  // Phòng cha không được chọn chính con của nó: «Chuyển sang phòng cha khác» của «Phòng Kinh doanh» không liệt kê phòng mới.
+  await kd.locator("[data-testid^=org-menu-]").first().click();
+  await page.getByTestId("org-menu-move").click();
+  await expect(page.getByTestId("org-move-dialog")).not.toContainText(NEW_DEPT);
+  await page.keyboard.press("Escape");
   await page.goto(`${CW}/contracts/org`);
   await expect(page.getByTestId("org-tree")).toContainText(NEW_DEPT, { timeout: 30_000 });
 });

@@ -5,7 +5,13 @@ export { type EdgeInsertInfo, type FlowHost, FlowHostCtx, useFlowHost } from "./
 export { toEdge } from "./edges/toEdge";
 export { FlowCanvas, type FlowCanvasProps } from "./FlowCanvas";
 export { HiddenHandle } from "./nodes/HiddenHandle";
-export { OrgChart, type OrgChartLabels, type OrgChartProps } from "./org-chart";
+export {
+  OrgChart,
+  type OrgChartEdit,
+  type OrgChartEditLabels,
+  type OrgChartLabels,
+  type OrgChartProps,
+} from "./org-chart";
 export * from "./pure";
 export {
   DEFAULT_LABELS,

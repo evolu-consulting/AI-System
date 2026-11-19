@@ -135,9 +135,10 @@ async function install(page: Page): Promise<Fake> {
     (r) => {
       const url = new URL(r.request().url());
       const id = decodeURIComponent(url.pathname.split("/").at(-1) ?? "");
-      const body = r.request().postDataJSON() as Record<string, string | null>;
+      const body = (r.request().postDataJSON() ?? {}) as Record<string, string | null>; // CR-189: DELETE không có body
       f.puts.push({ path: url.pathname, body });
       if (url.pathname.includes("/managers/")) f.managers.set(id, body.manager_id ?? null);
+      else if (r.request().method() === "DELETE") return deleteDeptFake(f, r, id);
       else {
         const d = f.depts.find((x) => x.group_id === id);
         if (d) d.head_user_id = body.head_user_id ?? null;
@@ -146,6 +147,21 @@ async function install(page: Page): Promise<Fake> {
     },
   );
   return f;
+}
+
+/** CR-189 · nghĩa xoá mới của `DELETE /admin/org/departments/:id`: chỉ phòng rỗng (người + phòng con) xoá được, còn thì 409 DEPT_NOT_EMPTY. */
+function deleteDeptFake(f: Fake, r: Route, id: string) {
+  const d = f.depts.find((x) => x.group_id === id);
+  const kids = f.depts.filter((x) => x.parent_group_id === id).length;
+  const members = d ? d.member_ids.length + (d.head_user_id ? 1 : 0) : 0;
+  if (!d || members > 0 || kids > 0)
+    return json(
+      r,
+      { error: { code: "DEPT_NOT_EMPTY", details: { members, children: kids } } },
+      409,
+    );
+  f.depts = f.depts.filter((x) => x.group_id !== id);
+  return json(r, { ok: true });
 }
 
 /** Đăng nhập lại bằng người khác (backend giả đổi người; tải lại trang ⇒ `/auth/refresh` trả người mới) rồi mở danh sách HĐ. */

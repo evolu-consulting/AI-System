@@ -470,7 +470,7 @@ b8fa4e6495c0cde739bb1db6edd833c21489625beda598b6da8a0e7687181acd  e2e/contracts-
 00f0ffa0c6a72412aa47ebe8c559b4a3c02b80e5bc00dba994082e3b1bb75366  e2e/contracts-web/legacy-routes.cw.ts
 248480d19fdfe9d4c1a8f0c5ee6deeeb5a5b5ba122a3f1cbcace8088ecd39768  e2e/contracts-web/mobile-rules.cw.ts
 57baf0dd0488bb55de6fb6aa5d3369d659a81025f7aa7f7e6cb0236971f4fa75  e2e/contracts-web/ms-impact.cw.ts
-9933c226d14692fd141f8d7e0938a23c1f1d2c9ecc6fd719d3841350107e6ccb  e2e/contracts-web/org-visibility.cw.ts
+723adfe33e248aa4bb967e21d6a99caa2441669a3ad78e041e0088329502f56a  e2e/contracts-web/org-visibility.cw.ts
 55b57ba282263d1631663697bca3be9c4bf657f91067afe6edcaa0ef234cf084  e2e/contracts-web/overview.cw.ts
 ebb860458e023f120e9305ba36e0a05a69da1fbcf1d65372f64d89c09f314f74  e2e/contracts-web/playwright.config.ts
 13f6fa4f714f98de07d57420def78a25c595f48282694993eea6566ad64ca0cd  e2e/contracts-web/rep3-engine.cw.ts
@@ -546,6 +546,7 @@ a9921563a54274301cc71bb63fe74548c95b918d0fdf72149b7351289483bebf  e2e/cr181/jour
 0a7209ae085de52e2d8d233b6c57ce538f2a1968fee73b72b9787afe99a6276a  e2e/cr181/signature-settings.spec.ts
 0f672fb9333a268d2a499f4329c3acd349ed59556c14d077e21e98979e82b24d  e2e/cr181/signed-viewer.spec.ts
 db0b07a7b4a0cf2ea45bc5fac4e4c2aeaee8629e2d34dc067e390cbfe9d61fc8  e2e/cr187/messages-fullscreen.spec.ts
+0780b82b79dbf2780935bdf7cc20760fa1a8332c68cfb915644552110318ce7c  e2e/cr189-admin-org-ui.spec.ts
 2831c683f1e1a655bec14c85143a07355303887b8647da7a589ea0cfc71d06e1  e2e/cr190/danh-sach-trai.spec.ts
 39a9d5ee30fe931c1b46121dc921746663e218b374ef0de8a42aaeb3b37f1d90  e2e/cr190/khung-chat.spec.ts
 5f6463f2cf998ff7a41248b28166addc2fbd6cbeffe6e4b328a3d810dab1e87f  e2e/deployed/01-login-sso.deployed.ts
@@ -601,7 +602,7 @@ de5e69d2b4fcb2d183d0307260a33b2517f256fa88b5de4c487aaf6e95059a5c  e2e/journey-ap
 b7ba4bd583e645a8b745a99958166f99c38da209c6a897b753465aa2936b5cb3  e2e/journey-approval/cr125-s1-onboard.spec.ts
 49393b16a047e9b988088db69d91b5556eed23f797d4dadbb165d8f6edd652e6  e2e/journey-approval/cr125-s2-settings-flow.spec.ts
 28609e8def51805edd8cfb42975642b97641d9b868f8e94c0798d209645ad1a3  e2e/journey-approval/cr139b-starter-head.spec.ts
-21269a27138d5846f37fb6c8fb6f2e28b0ac61458660f03ee2e7e54f251a11e3  e2e/journey-approval/cr139d-org-tree.spec.ts
+199f94a576d3cbfbca570a00dbf70c95a946f861536c9adb367f017be9829f26  e2e/journey-approval/cr139d-org-tree.spec.ts
 a55e1877f9a13b9c477a4a0b8d2afdb289874e8fde52c2c75aeb33a27c0c4b9a  e2e/journey-approval/cr141-sign-or-upload.spec.ts
 3ab456a3319400787d3399cc156621263a8ae78206a18353685068035f8d1348  e2e/journey-approval/cr150-two-companies.spec.ts
 0bb6c2469a1a45f9adf84565b1dc49b87ad088d4ae2a4696669fbd57feabbd63  e2e/journey-approval/cr187-members.spec.ts
