@@ -52,7 +52,8 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
         p.red_flag ? "bg-late-bg/40" : p.worst === "watch" && "bg-soon-bg/50",
       )}
     >
-      <div className="flex flex-wrap items-center gap-4 px-5 py-3.5">
+      {/* Điện thoại: chừa cột phải cho nút trợ lý nổi (48 px + lề) để tên/nút của dòng không nằm dưới nó, dù dòng rơi vào đúng độ cao của nút (luật R4). */}
+      <div className="flex flex-wrap items-center gap-4 px-5 py-3.5 max-sm:pe-16">
         <span className="flex shrink-0 gap-2">
           {p.roles.map((r) => (
             <RepBadge key={r.role} row={r} role={r.role} />

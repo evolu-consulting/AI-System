@@ -23,7 +23,7 @@ export function ConnectedPanel() {
     );
   if (items.length === 0) return null;
   return (
-    <Panel className="mb-3">
+    <Panel className="mb-3 shrink-0">
       <h2 className="px-5 pt-3 text-[13px] font-semibold text-dim">
         {t("contracts.connect.connectedTitle")}
       </h2>

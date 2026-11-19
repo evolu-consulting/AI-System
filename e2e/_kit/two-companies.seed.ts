@@ -14,8 +14,8 @@ import {
   grantFeature,
   removeGroupMember,
   type Session,
+  setCompanyListed,
   setCompanyProfile,
-  setDirectoryListed,
   tenantIdByKey,
 } from "./api";
 import { CO, NAME, POST_BODY, POST_BODY_B, WHO } from "./two-companies";
@@ -95,7 +95,7 @@ export async function configurePair(o: {
       password: o.pw,
       app: "contracts",
     });
-    await setDirectoryListed(o.api, boss, id, true);
+    await setCompanyListed(o.hub, boss, true);
     await createPost(o.hub, boss, { type: "note", body: side === "a" ? POST_BODY : POST_BODY_B });
     if (side === "a") await removeGroupMember(o.api, o.platform, id, "contracts-editor", WHO.nam);
   }

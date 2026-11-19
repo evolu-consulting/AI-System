@@ -27,12 +27,13 @@ export function DiscoverableCard() {
     },
     onError: () => notifyError(L("fail")),
   });
-  if (!q.data) return null;
+  // Phản hồi sai dạng (máy chủ giả/lỗi) ⇒ không vẽ thẻ với giá trị rỗng.
+  if (!q.data || typeof q.data.listed !== "boolean") return null;
   const v = discoverableView(q.data, owner);
   return (
     <section
       data-testid="discoverable-card"
-      className="mb-4 flex items-start justify-between gap-4 rounded-lg border border-rule-soft bg-card px-5 py-4"
+      className="mb-4 flex shrink-0 items-start justify-between gap-4 rounded-lg border border-rule-soft bg-card px-5 py-4"
     >
       <div className="grid gap-1">
         <label htmlFor="discoverable-switch" className="font-semibold text-ink">

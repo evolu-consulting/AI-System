@@ -435,6 +435,16 @@ export async function setCompanyProfile(
   });
 }
 
+/** CR-191 · quản trị Sổ Hợp Tác (Toàn quyền) bật/tắt «cho tìm thấy» của CHÍNH công ty qua route gói contracts — `PUT /pack/contracts/connect/listing`
+ *  (thay `PUT /admin/tenants/:id/directory`, vốn chỉ `tenant_admin`). */
+export async function setCompanyListed(hub: string, s: Session, listed: boolean): Promise<void> {
+  await call(`${hub}/pack/contracts/connect/listing`, {
+    method: "PUT",
+    token: s.token,
+    body: JSON.stringify({ listed }),
+  });
+}
+
 /** CR-124 · quản trị công ty bật/tắt "Cho phép công ty khác tìm thấy và gửi HĐ cho chúng tôi" — `PUT /admin/tenants/:id/directory`. */
 export async function setDirectoryListed(
   admin: string,

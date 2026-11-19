@@ -134,27 +134,23 @@ function Sent({ l, locked }: { l: ConnectLink; locked: boolean }) {
   );
 }
 
+/** Khối rỗng (không có yêu cầu / lời mời) ẩn hẳn: không chiếm chỗ, không đẩy danh sách đối tác xuống. `shrink-0`: trong cột flex của trang, khối `overflow-hidden` không được co lại đè lên nút của khối kế. */
 function Block({
   title,
-  empty,
   items,
   render,
   testId,
 }: {
   title: string;
-  empty: string;
   items: ConnectLink[];
   render: (l: ConnectLink) => React.ReactNode;
   testId: string;
 }) {
+  if (items.length === 0) return null;
   return (
-    <Panel className="mb-3">
+    <Panel className="mb-3 shrink-0">
       <h2 className="px-5 pt-3 text-[13px] font-semibold text-dim">{title}</h2>
-      {items.length === 0 ? (
-        <p className="px-5 py-3 text-[13px] text-dim">{empty}</p>
-      ) : (
-        <ul data-testid={testId}>{items.map(render)}</ul>
-      )}
+      <ul data-testid={testId}>{items.map(render)}</ul>
     </Panel>
   );
 }
@@ -164,12 +160,13 @@ function InviteSetting({ locked }: { locked: boolean }) {
   const q = useConnectSettings();
   const { setInviteBy } = useConnectWrites();
   const fail = useFail();
-  if (!q.data) return null;
   const OPTS: ConnectInviteBy[] = ["admin", "all"];
+  // Phản hồi sai dạng (máy chủ giả/lỗi) ⇒ không vẽ thẻ cài đặt.
+  if (!q.data || !OPTS.includes(q.data.invite_by)) return null;
   return (
     <section
       data-testid="connect-setting"
-      className="mb-3 flex flex-wrap items-start justify-between gap-4 rounded-lg border border-rule-soft bg-card px-5 py-4"
+      className="mb-3 flex shrink-0 flex-wrap items-start justify-between gap-4 rounded-lg border border-rule-soft bg-card px-5 py-4"
     >
       <div className="grid gap-1">
         <span className="font-semibold text-ink">{t("contracts.connect.hub.settingTitle")}</span>
@@ -220,14 +217,12 @@ export function ConnectRequestsPanel() {
     <div data-testid="connect-hub">
       <Block
         title={t("contracts.connect.hub.requestsTitle")}
-        empty={t("contracts.connect.hub.requestsEmpty")}
         items={reqs.data?.items ?? []}
         render={(l) => <Request key={l.tenant_id} l={l} locked={locked} />}
         testId="connect-requests"
       />
       <Block
         title={t("contracts.connect.hub.sentTitle")}
-        empty={t("contracts.connect.hub.sentEmpty")}
         items={sent.data?.items ?? []}
         render={(l) => <Sent key={l.tenant_id} l={l} locked={locked} />}
         testId="connect-sent-list"
