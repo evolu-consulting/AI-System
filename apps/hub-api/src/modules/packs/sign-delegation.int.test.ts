@@ -34,7 +34,7 @@ const png = (): Uint8Array => {
   return c.toBuffer("image/png");
 };
 // Mỗi người một chữ ký RIÊNG (id khác nhau) — để chứng minh B không dùng chữ ký của A (BR-K2/K3).
-const SIG_OF = new Map<string, { id: string; png: Uint8Array }>();
+const SIG_OF = new Map<string, { id: string; png: Uint8Array; caption: string | null }>();
 
 const ONDOC = (uid: string) => [
   {
@@ -80,9 +80,7 @@ const save = () =>
     maxBytes: 50_000_000,
     hub: {
       prepare: async (who) => ({
-        settings: { ink: "blue", caption: ["name"], initials: "shrink" },
-        name: "Người ký",
-        title: null,
+        settings: { ink: "blue", initials: "shrink" },
         main: SIG_OF.get(who.userId) ?? null,
         initials: null,
       }),
@@ -174,7 +172,8 @@ beforeAll(async () => {
   await o`insert into hub.signature_settings (tenant_id, on_doc_enabled) values (${w.T}, true)
     on conflict (tenant_id) do update set on_doc_enabled = true`;
   flow = signFlowOf(db);
-  for (const u of [w.A, w.B, w.X]) SIG_OF.set(u, { id: crypto.randomUUID(), png: png() });
+  for (const u of [w.A, w.B, w.X])
+    SIG_OF.set(u, { id: crypto.randomUUID(), png: png(), caption: "Người ký" });
 }, 120_000);
 afterAll(async () => {
   await db?.close();

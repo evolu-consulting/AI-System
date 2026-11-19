@@ -221,8 +221,8 @@ export async function stampPdf(i: StampInput): Promise<StampResult> {
     const texts = [m.caption, m.signedOn].flatMap((x) => (x ? [x] : []));
     if (texts.length > 0) font ??= await loadCaptionFont(doc);
     for (const [i, q] of parts.entries()) {
-      const last = i === parts.length - 1 && texts.length > 0 && font;
-      drawPart(c, img, q, last ? { texts, font } : undefined);
+      const isLast = i === parts.length - 1;
+      drawPart(c, img, q, isLast && texts.length > 0 && font ? { texts, font } : undefined);
     }
   }
   const bytes = await doc.save();

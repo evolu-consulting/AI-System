@@ -268,12 +268,12 @@ describe("stampPdf", () => {
       });
       const d = await PDFDocument.load(r.bytes);
       const n = (i: number) => content(d, i).split(/\sBT\s/).length - 1;
-      return [n(0), n(1)];
+      return [n(0), n(1)] as [number, number];
     };
     const [b0, b1] = await mk({});
     const on = "Ký ngày 18/11/2026 00:05";
-    expect(await mk({ caption: "A · B", signedOn: on })).toEqual([b0, (b1 as number) + 2]);
-    expect(await mk({ signedOn: on })).toEqual([b0, (b1 as number) + 1]);
+    expect(await mk({ caption: "A · B", signedOn: on })).toEqual([b0, b1 + 2]);
+    expect(await mk({ signedOn: on })).toEqual([b0, b1 + 1]);
   });
 
   test("CR-188 · layoutLines: đủ chỗ giữ cả hai dòng, không đè nhau; thiếu chỗ bỏ dòng đầu giữ dòng cuối", () => {

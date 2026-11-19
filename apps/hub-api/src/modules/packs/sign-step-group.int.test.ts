@@ -39,7 +39,11 @@ const png = (): Uint8Array => {
   g.fillRect(10, 10, 80, 20);
   return c.toBuffer("image/png");
 };
-const SIG = { id: "5160a000-0000-4000-8000-0000000000c1", png: png() };
+const SIG = {
+  id: "5160a000-0000-4000-8000-0000000000c1",
+  png: png(),
+  caption: "Giám đốc" as string | null,
+};
 
 const stages = (g: string) => [
   {
@@ -95,9 +99,7 @@ const save = () =>
     maxBytes: 50_000_000,
     hub: {
       prepare: async () => ({
-        settings: { ink: "blue", caption: ["name"], initials: "shrink" },
-        name: "Giám đốc",
-        title: null,
+        settings: { ink: "blue", initials: "shrink" },
         main: SIG,
         initials: null,
       }),
