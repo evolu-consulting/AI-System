@@ -8,6 +8,8 @@
 3. Lỗi/hành vi mới: viết test đỏ trước (N8). Quyền/RLS: có ca «người được giao, không phải người tạo» (N2).
 4. Chỉ chạy unit + int của file sửa (int nặng ⇒ evotest `powershell -File deploy/evotest/run-tests.ps1 -Step int -Filter "<đường dẫn>" -Dirty`, đặt `$env:EVOTEST_KEY="$HOME\.ssh\evoc_key"`); `tsc` một lần cuối chỉ gói đổi. KHÔNG chạy e2e (viết e2e trong lát, điều phối chạy cuối đợt). Tối đa 3 lượt test.
 5. Migration: chỉ thêm, đúng SỐ được giao trong brief riêng, thêm entry `meta/_journal.json`. Không sửa migration đã có.
+5b. TRƯỚC commit cuối: `bun run openspec:check <tên-lát>` trong worktree phải xanh — `[test: <đường dẫn file> » <tiêu đề test nguyên văn, không gồm describe>]`; MODIFIED/REMOVED chỉ trỏ file `docs/current/**` ĐANG CÓ, file mới dùng ADDED. Test mới dưới `tests/**`/`e2e/**` ⇒ `bun run test:lock:write` rồi `test:lock:verify` xanh.
+   evotest chạy bằng công cụ PowerShell (qua Bash `tar` lỗi rồi báo xanh giả, 0 test).
 6. Commit trong worktree, message có `[CR-xxx]`, kèm test trong cùng commit; dòng cuối:
    `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
    Không push, không merge (điều phối gộp).
