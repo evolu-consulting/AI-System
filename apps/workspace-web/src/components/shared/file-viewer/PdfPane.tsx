@@ -1,8 +1,9 @@
 // CR-149 · PDF bằng pdf.js (nạp lười; worker đóng gói cục bộ, không CDN): cuộn các trang, phóng to/thu nhỏ. Trang vẽ khi cuộn tới.
 import { Button } from "@ai/web-kit/ui/kit/button";
-import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
+import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { type OpenedPdf, openPdf } from "~/lib/pdf-worker";
 
 const STEPS = [0.6, 0.8, 1, 1.25, 1.5, 2, 3];
 
@@ -66,21 +67,21 @@ export default function PdfPane({ blob, onError }: { blob: Blob; onError: () => 
   const [si, setSi] = useState(2);
   useEffect(() => {
     let dead = false;
-    let task: PDFDocumentLoadingTask | undefined;
+    let opened: OpenedPdf | undefined;
     (async () => {
-      const pdfjs = await import("pdfjs-dist");
-      if (!pdfjs.GlobalWorkerOptions.workerPort)
-        pdfjs.GlobalWorkerOptions.workerPort = new Worker(
-          new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url),
-          { type: "module" },
-        );
-      task = pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) });
-      const d = await task.promise;
+      const data = new Uint8Array(await blob.arrayBuffer());
+      if (dead) return;
+      opened = await openPdf(data);
+      if (dead) return void opened.dispose(); // đã huỷ trong lúc dựng Worker
+      const d = await opened.task.promise;
       if (!dead) setDoc(d);
-    })().catch(() => !dead && onError());
+    })().catch((e: unknown) => {
+      if (!dead) console.error("[file-viewer] không mở được PDF", e);
+      if (!dead) onError();
+    });
     return () => {
       dead = true;
-      void task?.destroy();
+      void opened?.dispose();
     };
   }, [blob, onError]);
   if (!doc) return <p className="p-4 text-label text-dim">{t("contracts.fview.loading")}</p>;
