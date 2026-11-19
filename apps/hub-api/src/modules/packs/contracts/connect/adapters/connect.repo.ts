@@ -1,7 +1,13 @@
 // CR-161 · lát 5 · SQL của kết nối hai công ty. Mỗi hàm MỘT câu gọi hàm DEFINER hub 0145 (role `contracts_rw`, GUC `app.tenant_id`/`app.user_id`
 // do `withPackScope` đặt). Thời điểm trả về dạng ISO UTC (`to_char`, giữ micro giây để con trỏ keyset không lệch). Lô jsonb: `::text::jsonb`
 // (postgres.js mã hoá `::jsonb` thành chuỗi JSON ⇒ «lô phải là mảng»).
-import type { ConnectCompany, ConnectLink, ConnectStatus } from "@ai/contracts/pack-contracts";
+import type {
+  ConnectCompany,
+  ConnectCompanyPage,
+  ConnectInviteBy,
+  ConnectLink,
+  ConnectStatus,
+} from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { CcBell, CcOwner, ConnectRepo } from "../application/connect.ports";
@@ -39,12 +45,49 @@ export function connectRepo(tx: Tx, tid: string): ConnectRepo {
       );
       return r?.ok === true;
     },
-    /** R5 · từ chối = chặn có sẵn. */
-    async block(from: string): Promise<boolean> {
+    /** R5 + BR-191-10 · từ chối = chặn có sẵn + ghi lý do (≤ 300, DB kiểm). */
+    async decline(from: string, reason: string | null): Promise<boolean> {
       const [r] = await tx.execute<{ ok: boolean }>(
-        sql`select hub.partner_link_block(${from}::uuid) as ok`,
+        sql`select hub.cc_decline(${from}::uuid, ${reason}) as ok`,
       );
       return r?.ok === true;
+    },
+    /** BR-191-10 · thu hồi lời mời đã gửi. */
+    async withdraw(to: string): Promise<boolean> {
+      const [r] = await tx.execute<{ ok: boolean }>(sql`select hub.cc_withdraw(${to}::uuid) as ok`);
+      return r?.ok === true;
+    },
+    /** BR-191-11 · DB là nguồn quyết định (cùng hàm `cc_invite` dùng). */
+    async canInvite(userId: string): Promise<boolean> {
+      const [r] = await tx.execute<{ ok: boolean }>(
+        sql`select hub.cc_can_invite(${userId}::uuid) as ok`,
+      );
+      return r?.ok === true;
+    },
+    async inviteBy(): Promise<ConnectInviteBy> {
+      const [r] = await tx.execute<{ by: ConnectInviteBy }>(
+        sql`select invite_by as by from contracts.connect_settings where tenant_id = ${tid}::uuid`,
+      );
+      return r?.by ?? "admin";
+    },
+    async setInviteBy(by: ConnectInviteBy, actor: string): Promise<void> {
+      await tx.execute(sql`insert into contracts.connect_settings (tenant_id, invite_by, updated_by)
+        values (${tid}::uuid, ${by}, ${actor}::uuid)
+        on conflict (tenant_id) do update set invite_by = excluded.invite_by, updated_by = excluded.updated_by, updated_at = now()`);
+    },
+    async company(id: string): Promise<ConnectCompanyPage | null> {
+      const [r] = await tx.execute<{
+        tenant_id: string;
+        legal_name: string;
+        tax_code: string | null;
+        verified: boolean;
+        address: string | null;
+        cover: string | null;
+        status: ConnectStatus;
+      }>(
+        sql`select tenant_id::text, legal_name, tax_code, verified, address, cover, status from hub.cc_company_page(${id}::uuid)`,
+      );
+      return r ? { ...r, tax_code: r.tax_code ?? "" } : null;
     },
     /** R6 · xoá hai dòng chưa chặn; chưa connected ⇒ CC409 CONNECT_NOT_CONNECTED. */
     async disconnect(other: string): Promise<boolean> {

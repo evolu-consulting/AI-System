@@ -75,3 +75,31 @@ export const CcLinkEventDataSchema = z.strictObject({
   status: ConnectStatusSchema,
 });
 export type CcLinkEventData = z.infer<typeof CcLinkEventDataSchema>;
+
+// ---------- CR-191 · cài đặt «Ai được tìm và mời đối tác mới», từ chối kèm lý do, trang công ty ----------
+export const CC_REASON_MAX = 300;
+export const ConnectInviteBySchema = z.enum(["admin", "all"]);
+export type ConnectInviteBy = z.infer<typeof ConnectInviteBySchema>;
+/** `PUT /connect/settings` (chỉ người Toàn quyền). */
+export const ConnectSettingsBodySchema = z.strictObject({ invite_by: ConnectInviteBySchema });
+/** `GET /connect/settings` — `can_invite`: người đang xem có được tìm/mời đối tác mới không (theo cài đặt). */
+export const ConnectSettingsSchema = z.strictObject({
+  invite_by: ConnectInviteBySchema,
+  can_invite: z.boolean(),
+});
+export type ConnectSettings = z.infer<typeof ConnectSettingsSchema>;
+/** `POST /connect/links/:id/decline` — lý do không bắt buộc. */
+export const ConnectDeclineBodySchema = z.strictObject({
+  reason: z.string().trim().max(CC_REASON_MAX).optional(),
+});
+/** `GET /connect/companies/:id` — trang công ty: hồ sơ công khai tối thiểu, KHÔNG có bài. */
+export const ConnectCompanyPageSchema = z.strictObject({
+  tenant_id: z.uuid(),
+  legal_name: z.string(),
+  tax_code: z.string(),
+  verified: z.boolean(),
+  address: z.string().nullable(),
+  cover: z.string().nullable(),
+  status: ConnectStatusSchema,
+});
+export type ConnectCompanyPage = z.infer<typeof ConnectCompanyPageSchema>;

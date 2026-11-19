@@ -25,6 +25,7 @@ function setup(over: Partial<ConnectRepo>) {
         { tenant_id: B, user_id: U2 },
       ];
     },
+    canInvite: async () => true,
     ...over,
   } as unknown as ConnectRepo;
   const uow: PackUow<ConnectRepos> = {
@@ -88,7 +89,7 @@ describe("CR-161 · cc.link sau commit", () => {
   });
   it("từ chối: chỉ làm tươi tab của công ty từ chối (không báo bên mời)", async () => {
     const { uc, frames } = setup({
-      block: async () => true,
+      decline: async () => true,
       owners: async () => [{ tenant_id: A, user_id: U1 }],
     });
     await uc.decline(who, B);
@@ -131,7 +132,7 @@ describe("CR-161 · cc.link sau commit", () => {
         tenant: async (_w, fn) =>
           fn({
             connect: {
-              block: async () => true,
+              decline: async () => true,
               owners: async () => [{ tenant_id: A, user_id: U1 }],
             } as never,
           }),

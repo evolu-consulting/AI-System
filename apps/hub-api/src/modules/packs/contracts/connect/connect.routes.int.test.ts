@@ -1,5 +1,5 @@
 // CR-161 · lát 5 · spec §2 R1–R7, R10 · §3 · §5: route `/pack/contracts/connect/**` thật (Hono + pool `hub_api` + role `contracts_rw` + RLS).
-// R1: nhân viên (Vy, có read+write, KHÔNG có admin) ⇒ 403 `PACK_FORBIDDEN` cho MỌI route, 0 dòng đổi. N2: Dung (Toàn quyền B, không phải người
+// R1 (CR-191 sửa): nhân viên (Vy, có read+write, KHÔNG có admin) ⇒ 403 `PACK_FORBIDDEN` cho mọi thao tác ghi (mời khi cài đặt «Chỉ quản trị», đồng ý, từ chối, thu hồi, ngắt, đổi cài đặt), 0 dòng đổi; xem/tìm đối tác ĐÃ kết nối thì được. N2: Dung (Toàn quyền B, không phải người
 // tạo dữ liệu nào) đồng ý được. Mã lỗi: 422 CONNECT_NOT_LISTED, 409 CONNECT_DECLINED / CONNECT_NOT_CONNECTED, 404 không lộ (42501), 400.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
@@ -23,11 +23,14 @@ const B = tenantId(1631); // Preschool (có Bảng tin)
 const C = tenantId(1632); // công ty thứ ba
 const E = tenantId(1633); // không bật Danh bạ
 const G = tenantId(1634); // chặn A TRƯỚC khi A từng mời
+const H = tenantId(1635); // CR-191 · công ty từ chối kèm lý do (có Toàn quyền HUNG)
+const I = tenantId(1636); // CR-191 · công ty bật «cho tìm thấy», không ai đồng ý (thu hồi)
 const TIEN = userId(1630); // A · Toàn quyền
 const VY = userId(1631); // A · nhân viên (read+write)
 const DUNG = userId(1632); // B · Toàn quyền
 const CUONG = userId(1633); // C · Toàn quyền
 const POSTER = userId(1634); // B · người đăng bài
+const HUNG = userId(1635); // H · Toàn quyền
 const F = { read: "f-r", write: "f-w", admin: "f-a" };
 let o: Sql;
 let db: Db;
@@ -35,7 +38,7 @@ let who: Map<string, { tenant: string; group: string }>;
 let grp: Map<string, Record<"owner" | "editor" | "viewer", string>>;
 
 function view(): PackAccessView {
-  const all = [A, B, C, E, G];
+  const all = [A, B, C, E, G, H, I];
   return {
     catalog: async () => ({
       features: [
@@ -110,24 +113,28 @@ beforeAll(async () => {
   await o`insert into admin.tenants (id, key, name, legal_name, tax_code, directory_listed)
     values (${A}, 'cr-a', 'A', 'NitiGroup', '0100000201', true), (${B}, 'cr-b', 'B', 'Preschool Việt', '0100000202', true),
            (${C}, 'cr-c', 'C', 'Công ty Cờ', '0100000203', true), (${E}, 'cr-e', 'E', 'Công ty Ê', '0100000204', false),
-           (${G}, 'cr-g', 'G', 'Công ty Gờ', '0100000205', true)`;
+           (${G}, 'cr-g', 'G', 'Công ty Gờ', '0100000205', true),
+           (${H}, 'cr-h', 'H', 'Công ty Hát', '0100000206', true), (${I}, 'cr-i', 'I', 'Công ty Ích', '0100000207', true)`;
   await users(o, A, 2, { from: 1630 });
   await users(o, B, 1, { from: 1632 });
   await users(o, C, 1, { from: 1633 });
   await users(o, B, 1, { from: 1634 });
-  grp = await enablePack(o, [A, B, C, E, G], "contracts");
+  await users(o, H, 1, { from: 1635 });
+  grp = await enablePack(o, [A, B, C, E, G, H, I], "contracts");
   const g = (t: string) => grp.get(t) as Record<"owner" | "editor" | "viewer", string>;
   await members(o, A, g(A).owner, [TIEN]);
   await members(o, A, g(A).editor, [VY]);
   await members(o, B, g(B).owner, [DUNG]);
   await members(o, B, g(B).editor, [POSTER]);
   await members(o, C, g(C).owner, [CUONG]);
+  await members(o, H, g(H).owner, [HUNG]);
   who = new Map([
     [TIEN, { tenant: A, group: g(A).owner }],
     [VY, { tenant: A, group: g(A).editor }],
     [DUNG, { tenant: B, group: g(B).owner }],
     [POSTER, { tenant: B, group: g(B).editor }],
     [CUONG, { tenant: C, group: g(C).owner }],
+    [HUNG, { tenant: H, group: g(H).owner }],
   ]);
   await enableAddon(o, [B], "contracts-community");
   // G chặn A trước khi A từng mời: dòng (A→G) có blocked_at, KHÔNG có requested_at.
@@ -149,16 +156,16 @@ afterAll(async () => {
 });
 
 const ROUTES: [string, string, unknown?][] = [
-  ["GET", "/connect/search?q=Preschool"],
   ["POST", "/connect/invites", { tenant_id: B }],
-  ["GET", "/connect/links"],
   ["POST", `/connect/links/${B}/accept`],
   ["POST", `/connect/links/${B}/decline`],
   ["DELETE", `/connect/links/${B}`],
+  ["DELETE", `/connect/invites/${B}`],
+  ["PUT", "/connect/settings", { invite_by: "all" }],
 ];
 
 describe("CR-161 · R1 cổng Toàn quyền ở route", () => {
-  it("nhân viên (Vy) gọi MỌI route (mời, đồng ý, từ chối, ngắt, tìm, danh sách) ⇒ 403 PACK_FORBIDDEN, không đổi dòng nào", async () => {
+  it("nhân viên (Vy) mời, đồng ý, từ chối, thu hồi, ngắt, đổi cài đặt ⇒ 403 PACK_FORBIDDEN, không đổi dòng nào", async () => {
     const before = await nLinks();
     for (const [m, p, b] of ROUTES) {
       const r = await call(VY, m, p, b);

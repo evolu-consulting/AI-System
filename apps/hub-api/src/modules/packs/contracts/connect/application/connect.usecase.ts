@@ -1,7 +1,15 @@
 // CR-161 · lát 5 · use case kết nối hai công ty (spec §2 R2–R7, R10; §3). Một use case = một tx theo scope tenant (`PackUow`), số câu SQL cố
 // định (không phụ thuộc số hàng). Quyền người dùng (R1: chỉ Toàn quyền) do `packGuard` ở route — use case KHÔNG tự kiểm vai.
 // `cc.link` (`/me/stream`) phát SAU commit tới người Toàn quyền hai công ty (một pipeline Redis); lỗi Redis chỉ log, không ném.
-import type { ConnectCompany, ConnectLink, ConnectStatus } from "@ai/contracts/pack-contracts";
+import type {
+  ConnectCompany,
+  ConnectCompanyPage,
+  ConnectInviteBy,
+  ConnectLink,
+  ConnectSettings,
+  ConnectStatus,
+} from "@ai/contracts/pack-contracts";
+import { AppError } from "../../../../../lib/errors";
 import type { PackStreamFrame, PackStreamPublishMany, PackUow, PackWho } from "../../../kit/public";
 import { type Cursor, encodeCursor } from "../domain/connect.codec";
 import type { CcOwner, ConnectRepo } from "./connect.ports";
@@ -60,6 +68,9 @@ export function connectUsecases(d: ConnectDeps) {
     async invite(who: PackWho, to: string, note: string | null): Promise<ConnectStatus> {
       const name = await d.selfName(who);
       const out = await d.uow.tenant(who, async (r) => {
+        // BR-191-11: theo cài đặt công ty (DB kiểm lại ở `cc_invite`); báo 403 + lý do thay vì 404.
+        if (!(await r.connect.canInvite(who.userId)))
+          throw new AppError("PACK_FORBIDDEN", 403, "Chỉ quản trị công ty được mời đối tác mới.");
         const status = await r.connect.invite(to, note, who.userId, name);
         const owners =
           status === "pending_out" || status === "connected"
@@ -84,10 +95,10 @@ export function connectUsecases(d: ConnectDeps) {
       await emit(linkFrames(owners, who.tenantId, from, { a: "connected", b: "connected" }));
     },
 
-    /** R5 · từ chối. Không báo bên mời (Q3): chỉ làm tươi các tab của chính công ty từ chối. */
-    async decline(who: PackWho, from: string): Promise<void> {
+    /** R5 · từ chối (kèm lý do, BR-191-10). Không báo bên mời (Q3): chỉ làm tươi các tab của chính công ty từ chối. */
+    async decline(who: PackWho, from: string, reason: string | null = null): Promise<void> {
       const owners = await d.uow.tenant(who, async (r) => {
-        await r.connect.block(from);
+        await r.connect.decline(from, reason);
         return r.connect.owners([who.tenantId]);
       });
       await emit(linkFrames(owners, who.tenantId, from, { a: "none", b: "none" }));
@@ -104,6 +115,30 @@ export function connectUsecases(d: ConnectDeps) {
       });
       await emit(linkFrames(owners, who.tenantId, other, { a: "none", b: "none" }));
     },
+
+    /** BR-191-10 · thu hồi lời mời đã gửi; hai bên nhận lại trạng thái «none». */
+    async withdraw(who: PackWho, to: string): Promise<void> {
+      const owners = await d.uow.tenant(who, async (r) => {
+        const o = await r.connect.owners([who.tenantId, to]);
+        await r.connect.withdraw(to);
+        return o;
+      });
+      await emit(linkFrames(owners, who.tenantId, to, { a: "none", b: "none" }));
+    },
+
+    /** BR-191-11 · cài đặt + «tôi có được mời không». */
+    settings: (who: PackWho): Promise<ConnectSettings> =>
+      d.uow.tenant(who, async (r) => ({
+        invite_by: await r.connect.inviteBy(),
+        can_invite: await r.connect.canInvite(who.userId),
+      })),
+    async setInviteBy(who: PackWho, by: ConnectInviteBy): Promise<void> {
+      await d.uow.tenant(who, (r) => r.connect.setInviteBy(by, who.userId));
+    },
+
+    /** BR-191-9 · trang công ty (không có bài). Không thấy ⇒ null (route trả 404). */
+    company: (who: PackWho, id: string): Promise<ConnectCompanyPage | null> =>
+      d.uow.tenant(who, (r) => r.connect.company(id)),
 
     /** Danh sách kết nối: xin `limit + 1` để biết còn trang. */
     async links(

@@ -1037,6 +1037,13 @@
       "when": 1806904200000,
       "tag": "0167_cr190_pmsg_directory",
       "breakpoints": true
+    },
+    {
+      "idx": 148,
+      "version": "7",
+      "when": 1806904300000,
+      "tag": "0168_cr191_partner_connect",
+      "breakpoints": true
     }
   ]
 }
