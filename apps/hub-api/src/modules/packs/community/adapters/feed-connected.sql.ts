@@ -3,6 +3,7 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { PostType } from "../domain/audience.rules";
+import type { CommentRow } from "./comment-list.repo";
 
 export type ConnectedRow = {
   id: string;
@@ -20,6 +21,9 @@ export type ConnectedRow = {
   author_title: string | null;
   /** CR-191 BR-191-13 · mã người đăng (hàm 0031) ⇒ web lấy ảnh qua `GET /people?ids=`; hàm chỉ chạy cho người xem nội bộ. */
   author_user_id: string;
+  /** CR-191 · bình luận chéo người xem thấy: số + 3 mới nhất (mới → cũ). */
+  comment_count: number;
+  recent: CommentRow[] | null;
 };
 
 export type ConnectedFilter = {
@@ -33,11 +37,14 @@ export type ConnectedFilter = {
 
 export async function connectedQuery(tx: Tx, f: ConnectedFilter): Promise<ConnectedRow[]> {
   const rows = await tx.execute<Omit<ConnectedRow, "fields"> & { fields: unknown }>(sql`
-    select id::text, tenant_id::text, company_name, type, title_masked as title, body_masked as body, fields_masked as fields,
-      cats, edited, to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as created_at, file_count,
-      author_name, author_title, author_user_id::text as author_user_id
-    from community.feed_connected(${f.cursor?.at ?? null}::timestamptz, ${f.cursor?.id ?? null}::uuid, ${f.take}::int,
-      ${f.type}::text, ${f.source}::uuid)`);
+    with f as (select * from community.feed_connected(${f.cursor?.at ?? null}::timestamptz, ${f.cursor?.id ?? null}::uuid,
+      ${f.take}::int, ${f.type}::text, ${f.source}::uuid))
+    select f.id::text, f.tenant_id::text, f.company_name, f.type, f.title_masked as title, f.body_masked as body,
+      f.fields_masked as fields, f.cats, f.edited,
+      to_char(f.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as created_at, f.file_count,
+      f.author_name, f.author_title, f.author_user_id::text as author_user_id, coalesce(d.n, 0) as comment_count, d.recent
+    from f left join community.cross_comment_digest(array(select f.id from f)) d on d.post_id = f.id
+    order by f.created_at desc, f.id desc`);
   return rows.map((r) => ({
     ...r,
     // drizzle có thể trả jsonb thô
@@ -45,6 +52,7 @@ export async function connectedQuery(tx: Tx, f: ConnectedFilter): Promise<Connec
       ? JSON.parse(r.fields)
       : r.fields) as ConnectedRow["fields"],
     file_count: Number(r.file_count),
+    comment_count: Number(r.comment_count),
   }));
 }
 

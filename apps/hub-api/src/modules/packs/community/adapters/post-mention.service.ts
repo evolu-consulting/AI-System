@@ -8,6 +8,7 @@ import type { PackUow, PeopleReader, Person } from "../../kit/public";
 import { type Audience, defaultAudience, type PostType } from "../domain/audience.rules";
 import { orgsSeeingPost } from "./comment-list.repo";
 import type { Access } from "./community-access";
+import { crossPostTenant } from "./cross-comment.repo";
 import {
   connectedAudience,
   connectedSeeingDraft,
@@ -124,16 +125,16 @@ const csv = (s: string | undefined): string[] =>
     .filter(Boolean);
 
 /** Gợi ý người nhắc được (≤ 20, lọc `q`, không gồm chính mình). Sửa bài ⇒ theo bài (`postId`); bài mới ⇒ theo phạm vi nháp. */
-export async function suggest(
+/** Công ty đối tác (cộng đồng) mà người được gợi ý thuộc về: theo bài (`postId`) hoặc theo phạm vi nháp; lọc nhóm chỉ thu hẹp. */
+function orgsFor(
   uow: PackUow<{ tx: Tx }>,
   a: Access,
-  d: MentionDeps,
-  q: MentionablePeopleQuery & { limit: number },
-): Promise<MentionablePerson[]> {
+  q: MentionablePeopleQuery,
+): Promise<string[]> {
   const tenant = a.who.tenantId;
   const act = [...activeOrgIds(a)];
-  const orgs = await uow.tenant(a.who, async ({ tx }): Promise<string[]> => {
-    if (q.postId && !(await postState(tx, q.postId))) throw appError("NOT_FOUND");
+  return uow.tenant(a.who, async ({ tx }): Promise<string[]> => {
+    if (q.postId && !(await postState(tx, q.postId))) throw appError("NOT_FOUND"); // bài chéo: `suggestCross` trước
     // CR-186: lọc nhóm CHỈ thu hẹp tập công ty đã được phép (không mở thêm quyền); «Nội bộ» ⇒ không công ty nào.
     const inGroup = (list: string[]) =>
       q.group === "internal"
@@ -152,8 +153,18 @@ export async function suggest(
     };
     return inGroup(await orgsSeeingDraft(tx, draft, act));
   });
+}
+
+type Reach = { seeing: string[]; reach: string[]; names: Map<string, string> };
+
+/** CR-191 · công ty đã kết nối thấy bài / bài nháp (+ tên công ty) cho gợi ý «@». */
+function connectedFor(
+  uow: PackUow<{ tx: Tx }>,
+  a: Access,
+  q: MentionablePeopleQuery,
+): Promise<Reach> {
   // CR-191: `seeing` = công ty đã kết nối thấy bài; `outside=1` (ô soạn) thêm công ty KHÁC để hỏi «Thêm công ty vào / Bỏ nhắc» — chỉ gợi ý, ghi bài vẫn kiểm (422)
-  const { seeing, reach, names } = await uow.tenant(
+  return uow.tenant(
     a.who,
     async ({ tx }): Promise<{ seeing: string[]; reach: string[]; names: Map<string, string> }> => {
       if (a.org !== null || q.connected === "0" || (q.group && q.group !== "partner"))
@@ -171,6 +182,19 @@ export async function suggest(
       };
     },
   );
+}
+
+export async function suggest(
+  uow: PackUow<{ tx: Tx }>,
+  a: Access,
+  d: MentionDeps,
+  q: MentionablePeopleQuery & { limit: number },
+): Promise<MentionablePerson[]> {
+  const tenant = a.who.tenantId;
+  const cross = await crossTarget(uow, a, q.postId);
+  if (cross) return suggestCross(d, a, q, cross);
+  const orgs = await orgsFor(uow, a, q);
+  const { seeing, reach, names } = await connectedFor(uow, a, q);
   const members = orgs.length
     ? await d.orgMembers(tenant, orgs)
     : new Map<string, readonly string[]>();
@@ -197,6 +221,49 @@ export async function suggest(
         : p.org && by.get(p.org)
           ? { orgName: by.get(p.org) as string }
           : {}),
+      ...(p.title ? { title: p.title } : {}),
+    }));
+}
+
+/** CR-191 · bài của công ty ĐÃ KẾT NỐI (người xem nội bộ, bài không ở tenant mình) ⇒ tenant + tên công ty đăng; còn lại null. */
+async function crossTarget(
+  uow: PackUow<{ tx: Tx }>,
+  a: Access,
+  postId: string | undefined,
+): Promise<{ tenant: string; name: string } | null> {
+  if (!postId || a.org !== null) return null;
+  return uow.tenant(a.who, async ({ tx }) => {
+    if (await postState(tx, postId)) return null;
+    const t = await crossPostTenant(tx, postId);
+    if (!t) throw appError("NOT_FOUND");
+    const all = await connectedAudience(tx, "all", []);
+    return { tenant: t, name: all.find((x) => x.tenantId === t)?.name ?? "" };
+  });
+}
+
+/** Gợi ý «@» trên bài công ty kết nối: người thấy bài = người có quyền gói ở công ty mình + ở công ty đăng (cùng luật ghi `cross_comment_add`). */
+async function suggestCross(
+  d: MentionDeps,
+  a: Access,
+  q: MentionablePeopleQuery & { limit: number },
+  c: { tenant: string; name: string },
+): Promise<MentionablePerson[]> {
+  const [mine, theirs] = await Promise.all([d.hosts(a.who.tenantId), d.hosts(c.tenant)]);
+  const rows = await d.people(
+    a.who.tenantId,
+    mine.filter((i) => i !== a.who.userId),
+    { q: q.q, limit: q.limit, offset: q.cursor ? Number(q.cursor) : 0, foreignIds: theirs },
+  );
+  return rows
+    .filter(
+      (p) => p.id !== a.who.userId && (p.tenant === c.tenant || !isForeign(p, a.who.tenantId)),
+    )
+    .map((p) => ({
+      userId: p.id,
+      name: p.name,
+      ...(isForeign(p, a.who.tenantId)
+        ? { orgName: c.name, connected: true, tenantId: c.tenant }
+        : {}),
       ...(p.title ? { title: p.title } : {}),
     }));
 }

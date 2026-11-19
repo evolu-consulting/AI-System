@@ -36,8 +36,9 @@ test("đầu bài: tên, chức vụ, công ty, nhãn Công ty mình / Đối t�
   await expect(partner.getByTestId("post-author")).not.toHaveText("");
   await expect(partner).toContainText("Trưởng phòng kinh doanh");
   await expect(partner.getByTestId("post-company")).toContainText("Công ty");
-  await expect(partner.getByTestId("post-viewonly")).toBeVisible();
-  await expect(partner.locator(".pact")).toHaveCount(0);
+  // CR-191 BR-191-12 (spec đổi nghĩa): bài đối tác có ô bình luận, không còn nhãn «chỉ xem»
+  await expect(partner.getByTestId("post-viewonly")).toHaveCount(0);
+  await expect(partner.locator(".pact")).toHaveCount(1);
   await expect(partner.getByTestId("post-acts")).toHaveCount(0);
 });
 

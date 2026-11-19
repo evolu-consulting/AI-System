@@ -3,12 +3,14 @@ import type { CommentView, Mention } from "@ai/contracts/community";
 
 export type CommentActions = { edit: boolean; delete: boolean; hide: boolean };
 
-/** Người viết sửa/xoá bình luận của mình; chủ quản ẩn/hiện mọi bình luận trên bài chủ quản (HT-46). */
+/** Người viết sửa/xoá bình luận của mình; chủ quản ẩn/hiện mọi bình luận trên bài chủ quản (HT-46). CR-191: máy chủ báo `moderate`
+ * (người đăng bài / quản trị) ⇒ ẩn + xoá mọi bình luận trên bài mình, kể cả của người công ty kết nối. */
 export function commentActions(
-  c: Pick<CommentView, "mine">,
+  c: Pick<CommentView, "mine" | "moderate">,
   ctx: { isHost: boolean; postByHost: boolean },
 ): CommentActions {
-  return { edit: c.mine, delete: c.mine, hide: ctx.isHost && ctx.postByHost };
+  const mod = c.moderate === true && ctx.isHost && ctx.postByHost;
+  return { edit: c.mine, delete: c.mine || mod, hide: mod };
 }
 
 const QUERY_MAX = 40;

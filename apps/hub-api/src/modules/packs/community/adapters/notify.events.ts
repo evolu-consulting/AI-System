@@ -96,6 +96,9 @@ export type CommentEvent = {
   mentions: readonly string[];
   /** CR-186 · NGƯỜI được nhắc (đã kiểm quyền xem bài ở lúc ghi); nhận chuông «nhắc bạn trong một bình luận». */
   mentionUsers?: readonly string[];
+  /** CR-191 · người được nhắc ở công ty KHÁC tenant bài (đã qua DEFINER lúc ghi): chuông ở tenant CỦA HỌ, chỉ khi NGAY LÚC GỬI công ty đó
+   * còn kết nối + còn trong «Ai thấy bài» (`mention_tenants_live`). */
+  foreignMentions?: readonly { userId: string; tenant: string }[];
   /** Công ty đối tác CÒN hiệu lực (danh bạ) — đối tác của công ty đã rời / vắng không nhận. */
   activeOrgs: readonly string[];
 };
@@ -125,6 +128,40 @@ export type PriceEditedEvent = {
   titleMasked: string;
   price: string;
 };
+
+/** CR-191 · chuông «nhắc bạn» cho người công ty khác tenant bài: kiểm lại kết nối + «Ai thấy bài» ngay lúc gửi, giao ở tenant CỦA HỌ. */
+async function foreignBells(
+  d: CommunityEventDeps,
+  i: CommentEvent,
+  x: {
+    post: { id: string; title: string };
+    o: { actor: string; ref: string };
+    text: ReturnType<typeof commentMentionText>;
+  },
+): Promise<number> {
+  const far = (i.foreignMentions ?? []).filter((m) => m.userId !== i.actor.userId);
+  if (far.length === 0) return 0;
+  const tenants = [...new Set(far.map((m) => m.tenant))];
+  const live = new Set(
+    await d.uow.system(i.tenantId, (r) => mentionTenantsLive(r.tx, i.postId, tenants)),
+  );
+  let sent = 0;
+  for (const t of tenants.filter((t) => live.has(t)))
+    sent += await d.uow.system(t, (r) =>
+      deliver(
+        r,
+        far
+          .filter((m) => m.tenant === t)
+          .map((m) => ({
+            c: { userId: m.userId, kind: "mention" as const },
+            post: x.post,
+            o: x.o,
+            text: x.text,
+          })),
+      ),
+    );
+  return sent;
+}
 
 export function communityEvents(d: CommunityEventDeps) {
   /** Phát sau commit: lỗi chỉ log (hành động đã xong), trả 0. */
@@ -156,33 +193,43 @@ export function communityEvents(d: CommunityEventDeps) {
             ? await d.orgMembers(i.tenantId, i.mentions)
             : new Map<string, readonly string[]>();
         const mentioned = [...members].flatMap(([o, us]) => us.map((u) => ({ u, o })));
-        return d.uow.system(i.tenantId, async (r) => {
-          const { title, cands } = await commentCandidates(r.tx, {
-            tenantId: i.tenantId,
-            postId: i.postId,
-            actorUserId: i.actor.userId,
-            at: d.now?.() ?? new Date(),
-            activeOrgs: i.activeOrgs,
-            hosts,
-            mentioned,
-          });
-          const post = { id: i.postId, title };
-          const o = { actor: i.actor.name, ref: i.commentId };
-          const ctx = {
-            actorOrg: i.actorOrg,
-            postAuthorOrg: i.postAuthorOrg,
-            mentions: i.mentions,
-          };
-          const main = commentRecipients(cands, ctx, i.actor.userId);
-          // CR-186: người được nhắc (không phải chính người viết, không trùng người đã nhận «nhắc công ty» ở trên)
-          const had = new Set(main.filter((c) => c.kind === "mention").map((c) => c.userId));
-          const text = commentMentionText(post, o);
-          const people = (i.mentionUsers ?? []).filter((u) => u !== i.actor.userId && !had.has(u));
-          return deliver(r, [
-            ...main.map((c) => ({ c, post, o })),
-            ...people.map((userId) => ({ c: { userId, kind: "mention" as const }, post, o, text })),
-          ]);
-        });
+        return d.uow
+          .system(i.tenantId, async (r) => {
+            const { title, cands } = await commentCandidates(r.tx, {
+              tenantId: i.tenantId,
+              postId: i.postId,
+              actorUserId: i.actor.userId,
+              at: d.now?.() ?? new Date(),
+              activeOrgs: i.activeOrgs,
+              hosts,
+              mentioned,
+            });
+            const post = { id: i.postId, title };
+            const o = { actor: i.actor.name, ref: i.commentId };
+            const ctx = {
+              actorOrg: i.actorOrg,
+              postAuthorOrg: i.postAuthorOrg,
+              mentions: i.mentions,
+            };
+            const main = commentRecipients(cands, ctx, i.actor.userId);
+            // CR-186: người được nhắc (không phải chính người viết, không trùng người đã nhận «nhắc công ty» ở trên)
+            const had = new Set(main.filter((c) => c.kind === "mention").map((c) => c.userId));
+            const text = commentMentionText(post, o);
+            const people = (i.mentionUsers ?? []).filter(
+              (u) => u !== i.actor.userId && !had.has(u),
+            );
+            const n = await deliver(r, [
+              ...main.map((c) => ({ c, post, o })),
+              ...people.map((userId) => ({
+                c: { userId, kind: "mention" as const },
+                post,
+                o,
+                text,
+              })),
+            ]);
+            return { n, post, o, text };
+          })
+          .then(async (x) => x.n + (await foreignBells(d, i, x)));
       }),
 
     /** Bài mới của đối tác (đã commit) ⇒ chủ quản (newSell/newBuy) + (Cần mua khớp hàng đang có) matchBuy. Tiêu đề = bản đã che. */

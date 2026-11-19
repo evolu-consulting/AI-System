@@ -7,18 +7,19 @@ import { useEffect, useState } from "react";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { useApp } from "../application/ctx";
 import { draftFromFields } from "../domain/compose";
-import { isPartnerPost, sourceKey } from "../domain/feed-source";
-import { dealStrip, expiryNote, timeAgo } from "../domain/format";
-import { hintLines, saveButtonLabel, savedText } from "../domain/quote";
+import { isPartnerPost } from "../domain/feed-source";
+import { dealStrip, expiryNote } from "../domain/format";
+import { saveButtonLabel } from "../domain/quote";
 import { opensCommentThread, opensThreadByDefault } from "../domain/search-hint";
 import { t } from "../i18n";
 import { AttachEditor } from "./AttachEditor";
 import { DraftFields } from "./DraftFields";
 import { ModerationNote, ReportDialog } from "./flows/PostFlows";
 import { Highlighted } from "./Highlighted";
-import { IconBox, IconChat, IconCheck, IconLock, IconSave } from "./icons";
+import { IconChat, IconSave } from "./icons";
 import { MentionedLine } from "./MentionedLine";
 import { has, PostActions } from "./PostActions";
+import { HostHintNote, PostMeta, SavedQuotes } from "./PostCardParts";
 import { PostMedia } from "./PostMedia";
 import { QuoteForm } from "./QuoteForm";
 import { Thread } from "./Thread";
@@ -150,7 +151,7 @@ export function PostCard({
   const deal = dealStrip(p);
   const muted = p.status === "archived" || p.status === "done" || p.status === "expired";
   const hasMenu = canReport || p.actions.some((a) => a !== "saveQuote");
-  const expiry = expiryNote(p.expiresAt);
+  const _expiry = expiryNote(p.expiresAt);
   const partner = isPartnerPost(p);
   return (
     <article
@@ -169,37 +170,7 @@ export function PostCard({
         <div className="who">
           <b data-testid="post-author">{p.authorName}</b>
           {p.authorTitle && <span className="atitle"> · {p.authorTitle}</span>}
-          <div className="meta">
-            <span data-testid="post-company">{p.authorOrgName}</span>
-            <span
-              className={`tag sm ${partner ? "soon" : "grey"}`}
-              data-testid="post-source"
-              data-source={sourceKey(p)}
-            >
-              {t(`community.feed.source.${sourceKey(p)}`)}
-            </span>{" "}
-            · {timeAgo(p.createdAt)}
-            {!partner && (
-              <>
-                {" · "}
-                <IconLock size={12} />
-                {p.authorSide === "host"
-                  ? t("community.post.friends")
-                  : t("community.post.hostOnly")}
-              </>
-            )}
-            {p.edited && <span className="tag grey sm">{t("community.post.edited")}</span>}
-            {p.status === "archived" && (
-              <span className="tag grey sm">{t("community.post.archived")}</span>
-            )}
-            {p.status === "done" && <span className="tag ok sm">{t("community.post.done")}</span>}
-            {p.status === "expired" && (
-              <span className="tag late sm">{t("community.post.expired")}</span>
-            )}
-            {p.hidden && <span className="tag late sm">{t("community.post.hidden")}</span>}
-            {p.authorLeft && <span className="tag grey sm">{t("community.post.partnerLeft")}</span>}
-            {expiry && <span className="tag soon sm">{expiry}</span>}
-          </div>
+          <PostMeta p={p} />
         </div>
         <span className={`pill ${p.type}`}>{t(`community.postType.${p.type}`)}</span>
         {isHostViewer && has(p, "saveQuote") && p.type === "sell" && (
@@ -258,34 +229,8 @@ export function PostCard({
         </div>
       )}
       {p.media.length > 0 && <PostMedia media={p.media} onDownload={download} />}
-      {isHostViewer && p.hostHint && (
-        <div className="callout hint" data-testid="host-hint">
-          <span className="ci">
-            <IconBox />
-          </span>
-          <span className="ct">
-            <b>{hintLines(p.hostHint, p.type).lead}</b> {hintLines(p.hostHint, p.type).text}
-          </span>
-        </div>
-      )}
-      {isHostViewer &&
-        p.quotes?.map((m) => (
-          <div
-            key={`${m.itemIdx}-${m.commentId ?? ""}`}
-            className="callout saved"
-            data-testid="quote-saved"
-          >
-            <span className="ci">
-              <IconCheck size={18} />
-            </span>
-            <span className="ct">
-              <b>{t("community.post.quoteSaved")}</b> {savedText(m)}
-              {m.priceEdited && t("community.post.quotePriceEdited")}
-              {!m.priceEdited && m.postEdited && t("community.post.quotePostEdited")}
-              {m.commentDeleted && t("community.post.quoteCommentDeleted")}
-            </span>
-          </div>
-        ))}
+      {isHostViewer && <HostHintNote p={p} />}
+      {isHostViewer && <SavedQuotes p={p} />}
       {isHostViewer && quote && (
         <QuoteForm
           key={`${quote.idx}-${quote.commentId ?? ""}`}
@@ -306,24 +251,18 @@ export function PostCard({
           {t("community.feed.files", { n: p.fileCount })}
         </div>
       )}
-      {partner ? (
-        <div className="pview" data-testid="post-viewonly">
-          {t("community.feed.viewOnly")}
-        </div>
-      ) : (
-        <div className="pact">
-          <button
-            type="button"
-            className={open ? "on" : ""}
-            aria-expanded={open}
-            onClick={() => setOpen(!open)}
-          >
-            <IconChat />
-            {t("community.post.comments", { n: p.commentCount })}
-          </button>
-        </div>
-      )}
-      {open && !partner && (
+      <div className="pact">
+        <button
+          type="button"
+          className={open ? "on" : ""}
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          <IconChat />
+          {t("community.post.comments", { n: p.commentCount })}
+        </button>
+      </div>
+      {open && (
         <Thread
           post={p}
           onChanged={bump}
@@ -331,7 +270,8 @@ export function PostCard({
             isHostViewer &&
             p.type === "buy" &&
             p.authorSide === "host" &&
-            c.authorSide === "partner" ? (
+            c.authorSide === "partner" &&
+            !c.fromConnected ? (
               <Button variant="outline" size="sm" onClick={() => openQuote(c.authorOrgName, c.id)}>
                 <IconSave size={14} />
                 {saveButtonLabel(p.quotes?.filter((m) => m.commentId === c.id).length ?? 0)}

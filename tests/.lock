@@ -201,7 +201,7 @@ d21fbc3b288fc5e24215f5cb6f8be68e268036a512ac6b12af1b836630a32cbc  e2e/community-
 cb467ca365c9d0bfcbf35025d017a538ade0ffa48be6847bf1ce9cc5be4a550e  e2e/community-web/cr186-mention-store.cm.ts
 4e3db5510b91dc892f0a46bff7fc60e238d387ab19ac1e54a46c6abf6918b584  e2e/community-web/cr187-ui.cm.ts
 8636b8e8ed82051c79a60f7030965c0fcd0b5984e2daf30f54f843e79ae58508  e2e/community-web/cr191-composer-audience.cm.ts
-42413d2fb666c4bb6088da5e514576c010555c6de41793244ff25c43f10eabb5  e2e/community-web/cr191-feed-ui.cm.ts
+accfc1e3ec51931b7a12c67e75c430affcebb0b215ff3a95db53969ae51b7604  e2e/community-web/cr191-feed-ui.cm.ts
 f4af3d628a520cc84d0e7cc1be62b712dff87bbd88dab76ad416b72baae7ff9b  e2e/community-web/cr192-crop.cs.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts
 e1bf688a11f6040de14aea22cbd32de0405230c89011bd45be48a1dcd72a05bd  e2e/community-web/feed.cm.ts
@@ -527,6 +527,7 @@ b6a769ff2368a4935df4b43b37aec0a3a49428d196a405f411bb83d8f546ef23  e2e/cr127/j18-
 363b492cde8982cf226da3800c469d06654da68813fd437f62663bc689f257a8  e2e/cr161/_cr161-stack.ts
 265cf1ddfbabeeb466ee5b50bf6d0949808603647195158a683461c347fe55cf  e2e/cr161/ket-noi-cong-ty.spec.ts
 2247df12ef35c5679797557ce21b085ad59726db9beb552323c4714227f133b9  e2e/cr161/playwright.cr161.config.ts
+96b4292827cf937efe04d1817ee7085faf8805152ac384bfc35349dec04d6396  e2e/cr169/binh-luan-cheo-cr191.spec.ts
 8d7b6ea81cee9f7547e96bf25e3dd374e08f7ff19f1625689e4bdef3ac2195b3  e2e/cr169/playwright.cr169.config.ts
 1bf503d7bfd9b338d8c222f6ea3d50a620cd0904a76652e7e6de24ec8518e66b  e2e/cr169/tin-nhan-cong-ty.spec.ts
 6b1684444ff650292003dc5253debd13d1cbd13c4a3c578d80a5e94284e17ba3  e2e/cr179/khung-tep-co-dinh.spec.ts

@@ -75,7 +75,7 @@ async function feedJson(d: CommunityDeps, c: Context<PackGuardVars>, a: Access) 
   const hints = await hostHints(quoteDeps(d), a, page); // C8: một lời gọi cổng đọc mỗi trang (chỉ chủ quản)
   return {
     items: items.map((x) =>
-      x.src === "own" ? postView(a, n, x.row, hints.get(x.row.id)) : connectedView(x.row),
+      x.src === "own" ? postView(a, n, x.row, hints.get(x.row.id)) : connectedView(x.row, { a, n }),
     ),
     counts: own.counts,
     facets: own.facets,

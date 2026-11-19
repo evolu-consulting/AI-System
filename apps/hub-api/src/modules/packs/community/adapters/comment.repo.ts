@@ -21,26 +21,33 @@ export async function editComment(
   );
 }
 
-/** Xoá bình luận của chính người viết. `true` = đã xoá. */
-export async function deleteComment(tx: Tx, c: Id & { userId: string }): Promise<boolean> {
+/** Xoá bình luận của chính người viết; CR-191: hoặc người đăng bài chủ quản / quản trị (`mod`) xoá mọi bình luận trên bài đó. */
+export async function deleteComment(
+  tx: Tx,
+  c: Id & { userId: string; mod?: { admin: boolean } },
+): Promise<boolean> {
+  const mod = c.mod
+    ? sql`or exists (select 1 from community.posts p where p.id = ${c.postId}::uuid and p.author_org is null
+      and (p.author_user_id = ${c.userId}::uuid or ${c.mod.admin}::boolean))`
+    : sql``;
   const rows = await tx.execute<{ id: string }>(sql`
     delete from community.comments
-    where id = ${c.id}::uuid and post_id = ${c.postId}::uuid and author_user_id = ${c.userId}::uuid
+    where id = ${c.id}::uuid and post_id = ${c.postId}::uuid and (author_user_id = ${c.userId}::uuid ${mod})
     returning id`);
   return rows.length > 0;
 }
 
-/** ADR-0044 · CHỈ người đăng bài ẩn/hiện bình luận trên bài đó (bài chủ quản: author_org null; người khác ⇒ 0 hàng ⇒ null). */
+/** ADR-0044 · người đăng bài (CR-191: hoặc quản trị — `admin`) ẩn/hiện bình luận trên bài chủ quản; người khác ⇒ 0 hàng ⇒ null. */
 export async function hideComment(
   tx: Tx,
-  c: Id & { hidden: boolean; userId: string },
+  c: Id & { hidden: boolean; userId: string; admin?: boolean },
 ): Promise<CommentRow | null> {
   return first(
     await tx.execute<{ r: CommentRow }>(sql`
       update community.comments c set hidden = ${c.hidden}::boolean
       where c.id = ${c.id}::uuid and c.post_id = ${c.postId}::uuid
         and exists (select 1 from community.posts p where p.id = ${c.postId}::uuid and p.author_org is null
-          and p.author_user_id = ${c.userId}::uuid)
+          and (p.author_user_id = ${c.userId}::uuid or ${c.admin === true}::boolean))
       returning ${commentJson("c")} as r`),
   );
 }

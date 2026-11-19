@@ -70,10 +70,8 @@ export function commentsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const row = await list.add(
       d.uow,
       a,
-      postId,
-      { text, mentions: input.mentions, mentionUserIds: input.mentionUserIds },
-      d.events,
-      d.mention,
+      { postId, text, mentions: input.mentions, mentionUserIds: input.mentionUserIds },
+      { events: d.events, mention: d.mention },
     ); // C9: chuông SAU commit
     if (text.hits.length > 0) c.header("X-Contact-Detected", "1");
     return c.json(commentView(a, namesOf(a), row), 201);

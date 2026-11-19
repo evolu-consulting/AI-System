@@ -190,6 +190,13 @@
       "when": 1807000760000,
       "tag": "0031_cr191_feed_connected_author",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1807000780000,
+      "tag": "0032_cr191_cross_comment",
+      "breakpoints": true
     }
   ]
 }

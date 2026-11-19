@@ -3,16 +3,31 @@ import { describe, expect, test } from "bun:test";
 import { activeMention, commentActions, splitMentions } from "./thread";
 
 describe("commentActions", () => {
-  test("người viết sửa/xoá; chỉ chủ quản ẩn và chỉ trên bài chủ quản", () => {
+  test("CR-191 · moderate (người đăng/quản trị) ⇒ ẩn + xoá bình luận người khác — bài đối tác không moderate ⇒ chỉ của mình", () => {
+    expect(
+      commentActions({ mine: false, moderate: true }, { isHost: true, postByHost: true }),
+    ).toEqual({
+      edit: false,
+      delete: true,
+      hide: true,
+    });
+    expect(commentActions({ mine: true }, { isHost: true, postByHost: false })).toEqual({
+      edit: true,
+      delete: true,
+      hide: false,
+    });
+  });
+  test("người viết sửa/xoá — chỉ chủ quản ẩn và chỉ trên bài chủ quản", () => {
     expect(commentActions({ mine: true }, { isHost: false, postByHost: true })).toEqual({
       edit: true,
       delete: true,
       hide: false,
     });
+    // soát Opus #1 (G3): chỉ người máy chủ báo `moderate` (người đăng / quản trị) mới có Ẩn
     expect(commentActions({ mine: false }, { isHost: true, postByHost: true })).toEqual({
       edit: false,
       delete: false,
-      hide: true,
+      hide: false,
     });
     expect(commentActions({ mine: false }, { isHost: true, postByHost: false }).hide).toBe(false);
   });

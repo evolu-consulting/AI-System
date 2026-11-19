@@ -31,6 +31,10 @@ export const CommentViewSchema = z.strictObject({
   mentions: z.array(MentionSchema),
   /** CR-186 · NGƯỜI được nhắc (như `PostView.mentionedUsers`); vắng khi không ai (bình luận cũ). Đã che theo người xem: đối tác chỉ nhận chủ quản hoặc công ty mình. */
   mentionedUsers: z.array(PostMentionSchema).optional(),
+  /** CR-191 · người viết thuộc công ty ĐÃ KẾT NỐI khác công ty người xem (`authorOrgName` = tên công ty đó). */
+  fromConnected: z.boolean().optional(),
+  /** CR-191 · người xem (người đăng bài / quản trị công ty đăng) được ẩn/xoá bình luận này. */
+  moderate: z.boolean().optional(),
 });
 export type CommentView = z.infer<typeof CommentViewSchema>;
 
