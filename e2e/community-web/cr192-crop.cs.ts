@@ -62,6 +62,9 @@ test("C1 · đổi ảnh đại diện qua hộp cắt, bố cục hồ sơ khô
   await page.getByTestId("crop-save").click();
   const img = page.locator('img[data-testid="me-avatar"]');
   await expect(img).toBeVisible();
+  // ảnh hiện TRƯỚC khi hộp cắt đóng (lưu xong mới đóng); hộp còn mở thì Radix khoá cuộn ⇒ thanh cuộn biến mất, nội dung nhích ~18px.
+  // Chỉ đo bố cục khi hộp đã đóng hẳn.
+  await expect(page.getByTestId("crop-dialog")).toHaveCount(0);
   const src = (await img.getAttribute("src")) as string;
   expect(src.startsWith("data:image/")).toBe(true);
   expect(Math.floor((src.split(",")[1] as string).length * 0.75)).toBeLessThanOrEqual(153_600);
