@@ -44,7 +44,26 @@
         "langEn": "English",
         "changePassword": "Change password",
         "twofa": "Two-factor authentication",
-        "openFail": "Could not open the account page. Please try again."
+        "openFail": "Could not open the account page. Please try again.",
+        "pw": {
+          "title": "Change password",
+          "current": "Current password",
+          "next": "New password",
+          "confirm": "Repeat new password",
+          "hint": "At least 10 characters. A long, memorable phrase works well.",
+          "submit": "Change password",
+          "cancel": "Cancel",
+          "needCurrent": "Enter your current password.",
+          "wrong": "Current password is incorrect.",
+          "same": "The new password must differ from the current one.",
+          "done": "Password changed",
+          "strength": {
+            "label": "Strength: {{level}}",
+            "weak": "Weak",
+            "medium": "Medium",
+            "strong": "Strong"
+          }
+        }
       },
       "legal": {
         "terms": "Terms of use",
@@ -77,6 +96,16 @@
         "p5Body": "You may ask to view, correct or delete your personal information through your organisation's administrator.",
         "p6Title": "Contact",
         "p6Body": "Send privacy questions to your organisation's administrator or the platform provider."
+      },
+      "discover": {
+        "title": "Let other companies find your company",
+        "why": "When off, other companies cannot find you; they can still send by email.",
+        "needProfile": "Fill in the company legal name and tax code before turning this on.",
+        "needAdmin": "Only a company administrator can change this.",
+        "on": "On",
+        "off": "Off",
+        "saved": "Saved",
+        "fail": "Could not save. Please try again."
       }
     }
   }

@@ -18,6 +18,7 @@ import { cn } from "~/lib/utils";
 import { AddCompanyDialog } from "../components/AddCompanyDialog";
 import { ConnectedPanel } from "../components/ConnectedPanel";
 import { ConnectSearchDialog } from "../components/ConnectSearchDialog";
+import { DiscoverableCard } from "../components/DiscoverableCard";
 import { InviteBanner } from "../components/InviteBanner";
 import { MineBanner } from "../components/MineBanner";
 import { RedFlagTag } from "../components/RedFlagTag";
@@ -181,6 +182,7 @@ export function PartnersPage() {
       {adding && <AddCompanyDialog onClose={() => setAdding(false)} />}
       {finding && <ConnectSearchDialog onClose={() => setFinding(false)} />}
       <InviteBanner />
+      <DiscoverableCard />
       <ConnectedPanel />
       <MineBanner />
       <TableTools q={qRaw} setQ={setQRaw} total={total} placeholder={L("search")}>

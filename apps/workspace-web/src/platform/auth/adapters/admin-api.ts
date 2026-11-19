@@ -2,7 +2,7 @@
 // `ai_rt_contracts`). Đổi mật khẩu bắt buộc / bước 2FA trả `LoginResponse` như login; chỉ `authenticated` mới nạp phiên.
 // Endpoint có sẵn (admin-api `auth.routes.ts`: `/change-password` nhánh change_token, `/totp/verify`) — không thêm endpoint.
 import type { LoginResponse } from "@ai/contracts/chat";
-import { sendPublic } from "@ai/web-kit/http";
+import { api, sendPublic } from "@ai/web-kit/http";
 import type { AuthPort } from "../port";
 import { session } from "../session";
 
@@ -21,6 +21,11 @@ export const adminApiAuth: AuthPort = {
       }),
     );
   },
+  changeOwnPassword: (currentPassword, newPassword) =>
+    api<void>("/auth/change-password", {
+      method: "POST",
+      body: { current_password: currentPassword, new_password: newPassword },
+    }),
   async verifyTotp(totpToken, code) {
     const c = code.trim();
     const body = /^\d{6}$/.test(c)

@@ -1,5 +1,4 @@
-// CR-124 q2 · Công ty › Hồ sơ › "Danh bạ công ty": quản trị công ty bật/tắt cho công ty khác tìm thấy (mặc định tắt);
-// quản trị nền tảng đặt "Đã xác minh" (hiện ngày + người xác minh). Chữ phổ thông, một dòng giải thích.
+// CR-124 q2 · Công ty › Hồ sơ › "Danh bạ công ty": quản trị nền tảng đặt "Đã xác minh" (hiện ngày + người xác minh). Chữ phổ thông, một dòng giải thích.
 import type { TenantCompanyProfile } from "@ai/contracts/tenants";
 import { Card, CardContent, CardHeader, CardTitle } from "@ai/web-kit/ui/kit/card";
 import { Switch } from "@ai/web-kit/ui/kit/switch";
@@ -43,11 +42,10 @@ function Row(p: {
 export function DirectoryCard({ tenantId, profile, isPlatform }: Props) {
   const { t, i18n } = useTranslation();
   const tr = useTr();
-  const listed = useSetDirectory(tenantId, "listed");
-  const verified = useSetDirectory(tenantId, "verified");
+  const verified = useSetDirectory(tenantId);
   const v = directoryView(profile, isPlatform);
 
-  const run = (m: typeof listed) => async (value: boolean) => {
+  const run = (m: typeof verified) => async (value: boolean) => {
     try {
       await m.mutateAsync(value);
       notifySuccess(t("tenants.company.saved"));
@@ -57,6 +55,7 @@ export function DirectoryCard({ tenantId, profile, isPlatform }: Props) {
     }
   };
 
+  if (!v.verified.visible) return null; // CR-187: công tắc «cho tìm thấy» ở Sổ Hợp Tác; ở đây chỉ còn «Đã xác minh» (quản trị nền tảng)
   const when = v.verified.at
     ? new Date(v.verified.at).toLocaleDateString(i18n.language === "en" ? "en-GB" : "vi-VN")
     : "";
@@ -67,33 +66,18 @@ export function DirectoryCard({ tenantId, profile, isPlatform }: Props) {
       </CardHeader>
       <CardContent className="divide-y divide-border">
         <Row
-          id="dir-listed"
-          label={t("tenants.directory.listed")}
+          id="dir-verified"
+          label={t("tenants.directory.verified")}
           hint={
-            v.listed.needProfile
-              ? t("tenants.directory.needProfile")
-              : t("tenants.directory.listedWhy")
+            v.verified.checked
+              ? t("tenants.directory.verifiedBy", { date: when, name: v.verified.by ?? "—" })
+              : t("tenants.directory.verifiedWhy")
           }
-          checked={v.listed.checked}
-          enabled={v.listed.enabled}
-          busy={listed.isPending}
-          onChange={(x) => void run(listed)(x)}
+          checked={v.verified.checked}
+          enabled={v.verified.enabled}
+          busy={verified.isPending}
+          onChange={(x) => void run(verified)(x)}
         />
-        {v.verified.visible ? (
-          <Row
-            id="dir-verified"
-            label={t("tenants.directory.verified")}
-            hint={
-              v.verified.checked
-                ? t("tenants.directory.verifiedBy", { date: when, name: v.verified.by ?? "—" })
-                : t("tenants.directory.verifiedWhy")
-            }
-            checked={v.verified.checked}
-            enabled={v.verified.enabled}
-            busy={verified.isPending}
-            onChange={(x) => void run(verified)(x)}
-          />
-        ) : null}
       </CardContent>
     </Card>
   );

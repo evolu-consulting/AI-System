@@ -15,6 +15,7 @@ import { useNavPath } from "~/shell/use-nav-path";
 import { useShellPacks } from "~/shell/use-shell-packs";
 import { AssistantDock } from "../components/AssistantDock";
 import { BottomNav } from "../components/BottomNav";
+import { ChangePasswordHost } from "../components/ChangePasswordHost";
 import { DockSheet } from "../components/DockSheet";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
@@ -114,6 +115,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
       </div>
       <BottomNav />
       <SettingsDialogLazy owner={owner} tenantName={user?.tenant.name ?? ""} />
+      <ChangePasswordHost />
       {showAssistant && (
         <AssistantFab
           onClick={dock.openAssistant}

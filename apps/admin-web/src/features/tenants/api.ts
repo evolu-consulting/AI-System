@@ -91,15 +91,15 @@ export function useUpdateTenantProfile(id: string) {
   });
 }
 
-/** CR-124 q2 · công tắc danh bạ: `listed` (quản trị công ty) hoặc `verified` (quản trị nền tảng); trả hồ sơ mới. */
-export function useSetDirectory(id: string, kind: "listed" | "verified") {
+/** CR-124 q2 · dấu «Đã xác minh» (quản trị nền tảng); trả hồ sơ mới. CR-187: công tắc `listed` đã chuyển sang workspace-web. */
+export function useSetDirectory(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (value: boolean) =>
-      api<TenantCompanyProfile>(
-        `/admin/tenants/${id}/${kind === "listed" ? "directory" : "directory-verified"}`,
-        { method: "PUT", body: { [kind]: value } },
-      ),
+      api<TenantCompanyProfile>(`/admin/tenants/${id}/directory-verified`, {
+        method: "PUT",
+        body: { verified: value },
+      }),
     onSuccess: (res) => {
       qc.setQueryData(PROFILE_KEY(id), res);
       void qc.invalidateQueries({ queryKey: KEYS.detail(id) });

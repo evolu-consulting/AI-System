@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { passwordStrength } from "./strength";
+import { passwordStrength } from "./password-strength";
 
 describe("ADM-FR-06 · độ mạnh mật khẩu", () => {
   test("ngắn hoặc ít loại ký tự → weak", () => {

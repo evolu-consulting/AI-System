@@ -44,7 +44,26 @@
         "langEn": "English",
         "changePassword": "Đổi mật khẩu",
         "twofa": "Xác thực hai bước",
-        "openFail": "Không mở được trang tài khoản. Vui lòng thử lại."
+        "openFail": "Không mở được trang tài khoản. Vui lòng thử lại.",
+        "pw": {
+          "title": "Đổi mật khẩu",
+          "current": "Mật khẩu hiện tại",
+          "next": "Mật khẩu mới",
+          "confirm": "Nhập lại mật khẩu mới",
+          "hint": "Tối thiểu 10 ký tự. Nên dùng một câu dài dễ nhớ.",
+          "submit": "Đổi mật khẩu",
+          "cancel": "Huỷ",
+          "needCurrent": "Nhập mật khẩu hiện tại.",
+          "wrong": "Mật khẩu hiện tại không đúng.",
+          "same": "Mật khẩu mới phải khác mật khẩu hiện tại.",
+          "done": "Đã đổi mật khẩu",
+          "strength": {
+            "label": "Độ mạnh: {{level}}",
+            "weak": "Yếu",
+            "medium": "Trung bình",
+            "strong": "Mạnh"
+          }
+        }
       },
       "legal": {
         "terms": "Điều khoản sử dụng",
@@ -77,6 +96,16 @@
         "p5Body": "Bạn có thể yêu cầu xem, chỉnh sửa hoặc xoá thông tin cá nhân của mình thông qua quản trị viên của tổ chức.",
         "p6Title": "Liên hệ",
         "p6Body": "Mọi câu hỏi về quyền riêng tư xin gửi tới quản trị viên của tổ chức hoặc đơn vị cung cấp nền tảng."
+      },
+      "discover": {
+        "title": "Cho công ty khác tìm thấy công ty mình",
+        "why": "Khi tắt, công ty khác không tìm thấy bạn; họ vẫn gửi được qua email.",
+        "needProfile": "Cần điền Tên pháp lý và Mã số thuế của công ty trước khi bật.",
+        "needAdmin": "Chỉ quản trị công ty mới đổi được.",
+        "on": "Đang bật",
+        "off": "Đang tắt",
+        "saved": "Đã lưu",
+        "fail": "Không lưu được. Vui lòng thử lại."
       }
     }
   }
