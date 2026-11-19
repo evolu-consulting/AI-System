@@ -17,13 +17,20 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { errCodeOf, useCompanySearch, useConnectWrites } from "../hooks/use-connect";
+import {
+  errCodeOf,
+  useCompanySearch,
+  useConnectSettings,
+  useConnectWrites,
+} from "../hooks/use-connect";
 import { connectErrKey, noteOf, partnerSearchOf, searchReady } from "../lib/connect";
+import { CompanyPageDialog } from "./CompanyPageDialog";
 import { ConnectStatusBadge } from "./ConnectStatusBadge";
 
-function Line({ c }: { c: ConnectCompany }) {
+function Line({ c, canInvite }: { c: ConnectCompany; canInvite: boolean }) {
   const { t } = useTranslation();
   const { invite, accept } = useConnectWrites();
+  const [page, setPage] = useState(false);
   const fail = (e: unknown) =>
     toast(t(`contracts.connect.err.${connectErrKey(errCodeOf(e))}`), "late");
   const send = async () => {
@@ -57,6 +64,10 @@ function Line({ c }: { c: ConnectCompany }) {
         )}
       </div>
       <ConnectStatusBadge status={c.status} />
+      <Btn size="sm" variant="quiet" onClick={() => setPage(true)}>
+        {t("contracts.connect.hub.page.open")}
+      </Btn>
+      {page && <CompanyPageDialog id={c.tenant_id} onClose={() => setPage(false)} />}
       {c.status === "connected" && (
         <Link
           to="/contracts/partners"
@@ -66,7 +77,7 @@ function Line({ c }: { c: ConnectCompany }) {
           {t("contracts.connect.openPartner")}
         </Link>
       )}
-      {c.status === "none" && (
+      {c.status === "none" && canInvite && (
         <Btn size="sm" variant="primary" loading={invite.isPending} onClick={() => void send()}>
           {t("contracts.connect.send.button")}
         </Btn>
@@ -88,6 +99,7 @@ function Line({ c }: { c: ConnectCompany }) {
 function Results({ q, raw }: { q: string; raw: string }) {
   const { t } = useTranslation();
   const res = useCompanySearch(q);
+  const canInvite = useConnectSettings().data?.can_invite === true;
   if (!searchReady(raw))
     return <p className="text-[13px] text-dim">{t("contracts.connect.search.short")}</p>;
   if (q.trim() !== raw.trim() || res.isLoading)
@@ -108,7 +120,7 @@ function Results({ q, raw }: { q: string; raw: string }) {
   return (
     <ul data-testid="connect-results">
       {items.map((c) => (
-        <Line key={c.tenant_id} c={c} />
+        <Line key={c.tenant_id} c={c} canInvite={canInvite} />
       ))}
     </ul>
   );
@@ -116,6 +128,7 @@ function Results({ q, raw }: { q: string; raw: string }) {
 
 export function ConnectSearchDialog({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
+  const settings = useConnectSettings();
   const [raw, setRaw] = useState("");
   const [q, setQ] = useState("");
   useEffect(() => {
@@ -127,7 +140,11 @@ export function ConnectSearchDialog({ onClose }: { onClose: () => void }) {
       <DialogContent aria-label={t("contracts.connect.search.title")}>
         <DialogHeader>
           <DialogTitle>{t("contracts.connect.search.title")}</DialogTitle>
-          <DialogDescription>{t("contracts.connect.search.hint")}</DialogDescription>
+          <DialogDescription data-testid="connect-search-hint">
+            {settings.data?.can_invite === false
+              ? t("contracts.connect.hub.onlyConnected")
+              : t("contracts.connect.search.hint")}
+          </DialogDescription>
         </DialogHeader>
         <DialogBody>
           <div className="space-y-1.5">

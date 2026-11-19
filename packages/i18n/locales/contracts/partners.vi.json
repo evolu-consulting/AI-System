@@ -220,7 +220,34 @@
         "failed": "Chưa làm được. Kiểm tra mạng rồi thử lại."
       },
       "message": "Nhắn tin",
-      "openPartner": "Mở trang đối tác"
+      "openPartner": "Mở trang đối tác",
+      "hub": {
+        "requestsTitle": "Yêu cầu kết nối",
+        "requestsEmpty": "Chưa có yêu cầu kết nối nào.",
+        "sentTitle": "Lời mời đã gửi",
+        "sentEmpty": "Bạn chưa gửi lời mời nào đang chờ.",
+        "withdraw": "Thu hồi",
+        "withdrawn": "Đã thu hồi lời mời.",
+        "declineBtn": "Từ chối",
+        "declineReason": "Lý do (không bắt buộc)",
+        "declineSend": "Từ chối yêu cầu",
+        "declineKeep": "Giữ lại",
+        "declined": "Đã từ chối yêu cầu.",
+        "lockedWhy": "Chỉ quản trị công ty (người có quyền Toàn quyền) làm được việc này.",
+        "settingTitle": "Ai được tìm và mời đối tác mới",
+        "settingAdmin": "Chỉ quản trị công ty",
+        "settingAll": "Mọi nhân viên",
+        "settingSaved": "Đã lưu cài đặt.",
+        "onlyConnected": "Bạn chỉ tìm được đối tác đã kết nối. Muốn tìm công ty mới, hãy nhờ quản trị công ty.",
+        "page": {
+          "open": "Xem trang công ty",
+          "address": "Nơi đặt trụ sở",
+          "noAddress": "Chưa có địa chỉ",
+          "invite": "Mời kết nối",
+          "back": "Quay lại",
+          "gone": "Không mở được trang công ty này."
+        }
+      }
     }
   }
 }

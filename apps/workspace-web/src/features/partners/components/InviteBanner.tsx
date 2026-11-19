@@ -23,7 +23,7 @@ function Row({ l }: { l: ConnectLink }) {
       cancelLabel: t("contracts.connect.decline.keep"),
       danger: true,
     });
-    if (ok) decline.mutate(l.tenant_id, { onError: fail });
+    if (ok) decline.mutate({ tenant: l.tenant_id }, { onError: fail });
   };
   const by = l.invited_by_name
     ? ` · ${t("contracts.connect.invite.by", { who: l.invited_by_name })}`

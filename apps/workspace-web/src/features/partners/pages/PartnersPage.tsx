@@ -17,9 +17,9 @@ import { Pager, TableTools } from "~/features/table";
 import { cn } from "~/lib/utils";
 import { AddCompanyDialog } from "../components/AddCompanyDialog";
 import { ConnectedPanel } from "../components/ConnectedPanel";
+import { ConnectRequestsPanel } from "../components/ConnectRequestsPanel";
 import { ConnectSearchDialog } from "../components/ConnectSearchDialog";
 import { DiscoverableCard } from "../components/DiscoverableCard";
-import { InviteBanner } from "../components/InviteBanner";
 import { MineBanner } from "../components/MineBanner";
 import { RedFlagTag } from "../components/RedFlagTag";
 import { RepBadge } from "../components/RepBadge";
@@ -115,7 +115,7 @@ export function PartnersPage() {
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [finding, setFinding] = useState(false);
-  const { write, owner } = useMe();
+  const { write } = useMe();
   // tìm gõ trễ 250 ms rồi gọi máy chủ; đổi tìm/lọc ⇒ về trang 1
   useEffect(() => {
     const h = setTimeout(() => {
@@ -175,13 +175,11 @@ export function PartnersPage() {
             </Button>
           )
         }
-        actions={
-          owner ? [{ label: t("contracts.connect.find"), onSelect: () => setFinding(true) }] : []
-        }
+        actions={[{ label: t("contracts.connect.find"), onSelect: () => setFinding(true) }]}
       />
       {adding && <AddCompanyDialog onClose={() => setAdding(false)} />}
       {finding && <ConnectSearchDialog onClose={() => setFinding(false)} />}
-      <InviteBanner />
+      <ConnectRequestsPanel />
       <DiscoverableCard />
       <ConnectedPanel />
       <MineBanner />

@@ -220,7 +220,34 @@
         "failed": "Could not do that. Check your connection and try again."
       },
       "message": "Message",
-      "openPartner": "Open partner page"
+      "openPartner": "Open partner page",
+      "hub": {
+        "requestsTitle": "Connection requests",
+        "requestsEmpty": "No connection requests.",
+        "sentTitle": "Invitations sent",
+        "sentEmpty": "You have no pending invitations.",
+        "withdraw": "Withdraw",
+        "withdrawn": "Invitation withdrawn.",
+        "declineBtn": "Decline",
+        "declineReason": "Reason (optional)",
+        "declineSend": "Decline request",
+        "declineKeep": "Keep",
+        "declined": "Request declined.",
+        "lockedWhy": "Only company admins (people with Full access) can do this.",
+        "settingTitle": "Who can find and invite new partners",
+        "settingAdmin": "Company admins only",
+        "settingAll": "All employees",
+        "settingSaved": "Setting saved.",
+        "onlyConnected": "You can only search connected partners. To find new companies, ask a company admin.",
+        "page": {
+          "open": "View company page",
+          "address": "Head office",
+          "noAddress": "No address yet",
+          "invite": "Invite to connect",
+          "back": "Back",
+          "gone": "This company page cannot be opened."
+        }
+      }
     }
   }
 }

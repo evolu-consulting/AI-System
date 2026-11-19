@@ -13,16 +13,7 @@ import { DisconnectButton } from "./DisconnectButton";
 export function ConnectedPanel() {
   const { t } = useTranslation();
   const { owner } = useMe();
-  const q = useLinks("connected", owner);
-  if (!owner)
-    return (
-      <p
-        data-testid="connect-staff-note"
-        className="mb-3 rounded-xl border border-rule bg-sunk px-4 py-3 text-[13px] text-dim"
-      >
-        {t("contracts.connect.staffNote")}
-      </p>
-    );
+  const q = useLinks("connected");
   const items = q.data?.items ?? [];
   if (q.error)
     return (
@@ -58,7 +49,7 @@ export function ConnectedPanel() {
             >
               {t("contracts.connect.openPartner")}
             </Link>
-            <DisconnectButton tenant={l.tenant_id} name={l.legal_name} />
+            {owner && <DisconnectButton tenant={l.tenant_id} name={l.legal_name} />}
           </li>
         ))}
       </ul>

@@ -84,7 +84,7 @@ test("CR161-J2 · Dung (Preschool, Toàn quyền, không phải người mời) 
   const { ctx, page } = await open(browser, EB, WHO.dung);
   await (await bell(page, `${CO.a.name} muốn kết nối với bạn`)).click();
   await expect(page).toHaveURL(/\/contracts\/partners\?.*invites=1/);
-  const band = page.getByTestId("connect-invite").filter({ hasText: CO.a.name });
+  const band = page.getByTestId("connect-request").filter({ hasText: CO.a.name });
   await expect(band).toContainText(`Lời nhắn: «${NOTE}»`);
   await band.getByRole("button", { name: "Đồng ý", exact: true }).click();
   await expect(band).toHaveCount(0);
@@ -138,18 +138,35 @@ test("CR161-J5 · N2: Thanh (Toàn quyền khác của NitiGroup, không phải 
   await ctx.close();
 });
 
-test("CR161-J6 · Vy (nhân viên NitiGroup): không nút «Tìm công ty», chỉ băng giải thích", async ({
+test("CR161-J6 · CR-191: Vy (nhân viên NitiGroup) xem được đối tác đã kết nối nhưng mọi nút ghi bị khoá kèm lý do, 403 ở máy chủ", async ({
   browser,
 }) => {
   const { ctx, page } = await open(browser, EA, WHO.vy);
   await page.goto("/contracts/partners");
-  await expect(page.getByTestId("connect-staff-note")).toContainText(
-    "Chỉ người có quyền Toàn quyền mới gửi hoặc nhận lời mời kết nối.",
+  await expect(page.getByTestId("connected-list")).toContainText(CO.b.name);
+  await expect(page.getByRole("button", { name: "Ngắt kết nối" })).toHaveCount(0);
+  const setting = page.getByTestId("connect-setting");
+  await expect(setting).toContainText("Ai được tìm và mời đối tác mới");
+  await expect(page.getByTestId("connect-locked-why")).toContainText(
+    "Chỉ quản trị công ty (người có quyền Toàn quyền) làm được việc này.",
   );
-  await expect(page.getByRole("button", { name: "Tìm công ty" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Gửi lời mời kết nối" })).toHaveCount(0);
-  await expect(page.getByTestId("connected-list")).toHaveCount(0);
-  // API cũng chặn: nhân viên gọi danh sách kết nối ⇒ 403 (R1); nhưng CR-169: vẫn thấy chip công ty đã kết nối trong Tin nhắn
+  await expect(page.getByTestId("connect-setting-all")).toBeDisabled();
+  // Mặc định «Chỉ quản trị công ty»: Vy tìm được công ty ĐÃ kết nối, không có nút mời.
+  await page.getByRole("button", { name: "Tìm công ty" }).click();
+  const dlg = page.getByRole("dialog", { name: "Tìm công ty để kết nối" });
+  await expect(dlg.getByTestId("connect-search-hint")).toContainText(
+    "Bạn chỉ tìm được đối tác đã kết nối",
+  );
+  await dlg.getByLabel("Tên công ty hoặc mã số thuế").fill("Preschool");
+  const row = dlg.getByTestId("connect-results").getByRole("listitem").first();
+  await expect(row).toContainText("Đã kết nối");
+  await expect(row.getByRole("button", { name: "Gửi lời mời kết nối" })).toHaveCount(0);
+  // Trang công ty: bìa + MST + nơi, không có bài.
+  await row.getByRole("button", { name: "Xem trang công ty" }).click();
+  const company = page.getByTestId("company-page");
+  await expect(company).toContainText("MST");
+  await expect(page.getByTestId("company-cover")).toBeVisible();
+  await expect(company.getByRole("button", { name: "Mời kết nối" })).toHaveCount(0);
   const s = await apiLogin({
     base: need("JA_API_URL"),
     tenantKey: EA.tenantKey,
@@ -157,16 +174,45 @@ test("CR161-J6 · Vy (nhân viên NitiGroup): không nút «Tìm công ty», ch�
     password: EA.pw,
     app: "contracts",
   });
-  const r = await fetch(
-    `${need("JA_HUB_URL")}/pack/contracts/connect/links?status=connected&limit=50`,
-    {
-      headers: s.headers,
-    },
-  );
-  expect(r.status).toBe(403);
+  const base = `${need("JA_HUB_URL")}/pack/contracts/connect`;
+  expect(
+    (await fetch(`${base}/links?status=connected&limit=50`, { headers: s.headers })).status,
+  ).toBe(200);
+  const put = await fetch(`${base}/settings`, {
+    method: "PUT",
+    headers: { ...s.headers, "content-type": "application/json" },
+    body: JSON.stringify({ invite_by: "all" }),
+  });
+  expect(put.status).toBe(403);
   await page.goto("/contracts/messages");
   await expect(await partnerItem(page, CO.b.name)).toBeVisible();
   await ctx.close();
+});
+
+test("CR191-J1 · Tiên (quản trị) đổi «Ai được tìm và mời đối tác mới» sang «Mọi nhân viên» ⇒ Vy (nhân viên) được tìm và mời, đổi lại ⇒ Vy hết được", async ({
+  browser,
+}) => {
+  const tien = await open(browser, EA, WHO.tien);
+  await tien.page.goto("/contracts/partners");
+  await tien.page.getByTestId("connect-setting-all").click();
+  await expect(tien.page.getByTestId("connect-setting-all")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  const vy = await open(browser, EA, WHO.vy);
+  await vy.page.goto("/contracts/partners");
+  await vy.page.getByRole("button", { name: "Tìm công ty" }).click();
+  const dlg = vy.page.getByRole("dialog", { name: "Tìm công ty để kết nối" });
+  await expect(dlg.getByTestId("connect-search-hint")).toContainText(
+    "Chỉ hiện những công ty đã bật Danh bạ",
+  );
+  await tien.page.getByTestId("connect-setting-admin").click();
+  await expect(tien.page.getByTestId("connect-setting-admin")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await tien.ctx.close();
+  await vy.ctx.close();
 });
 
 test("CR161-J7 · Tiên ngắt kết nối ⇒ chip NitiGroup biến mất ở Tin nhắn của Dung", async ({

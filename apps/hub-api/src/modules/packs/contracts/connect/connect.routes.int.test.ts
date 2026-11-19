@@ -435,7 +435,7 @@ describe("CR-191 · BR-191-9/10/11 tìm + mời theo cài đặt, từ chối k�
     expect((await call(VY, "GET", "/connect/links?status=connected")).status).toBe(200);
   });
 
-  it("trang công ty: Vy chỉ mở công ty đã kết nối; Tiên mở cả công ty bật «cho tìm thấy»; công ty tắt «cho tìm thấy» ⇒ 404 với cả hai", async () => {
+  it("trang công ty: Vy chỉ mở công ty đã kết nối, Tiên mở cả công ty bật «cho tìm thấy», công ty tắt «cho tìm thấy» ⇒ 404 với cả hai", async () => {
     const ok = await call<{ tenant_id: string; legal_name: string }>(
       VY,
       "GET",
@@ -452,7 +452,7 @@ describe("CR-191 · BR-191-9/10/11 tìm + mời theo cài đặt, từ chối k�
     expect((await call(TIEN, "GET", "/connect/companies/xyz")).status).toBe(400);
   });
 
-  it("«Mọi nhân viên» cho Vy tìm + mời; thu hồi và đổi cài đặt vẫn chỉ quản trị; Tiên thu hồi ⇒ dòng mất; đổi lại «Chỉ quản trị» ⇒ Vy lại 403", async () => {
+  it("«Mọi nhân viên» cho Vy tìm + mời, thu hồi và đổi cài đặt vẫn chỉ quản trị, Tiên thu hồi ⇒ dòng mất, đổi lại «Chỉ quản trị» ⇒ Vy lại 403", async () => {
     const put = await call(TIEN, "PUT", "/connect/settings", { invite_by: "all" });
     expect([put.status, put.body]).toEqual([200, { ok: true }]);
     expect((await call(TIEN, "PUT", "/connect/settings", { invite_by: "x" })).status).toBe(400);
@@ -504,7 +504,7 @@ describe("CR-191 · BR-191-9/10/11 tìm + mời theo cài đặt, từ chối k�
     await call(TIEN, "PUT", "/connect/settings", { invite_by: "admin" });
   });
 
-  it("từ chối kèm lý do (Hùng, quản trị H, không phải người mời): lưu lý do; lý do > 300 ⇒ 400; Vy không từ chối được", async () => {
+  it("từ chối kèm lý do (Hùng, quản trị H, không phải người mời): lưu lý do, lý do > 300 ⇒ 400", async () => {
     expect((await call(TIEN, "POST", "/connect/invites", { tenant_id: H })).body).toEqual({
       status: "pending_out",
     });
