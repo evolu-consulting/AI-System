@@ -6,18 +6,34 @@ import { type SQL, sql } from "drizzle-orm";
 import { appError } from "../../lib/errors";
 import { pgArray } from "../../lib/sql";
 
-/** `ok` = gọi được hàm; `absent` = DB không có bảng Hub; `broken` = có bảng Hub nhưng hàm vắng/chưa cấp (lỗi triển khai). */
-export type OrgRefsState = "ok" | "absent" | "broken";
+/**
+ * `ok` = gọi được hàm (Hub thật); `stub` = Hub GIẢ của môi trường chỉ-admin/dev (`migrations-dev/0000_hub_stub.sql`: có `agent_grants` nhưng không có
+ * bảng quy trình/việc duyệt ⇒ không có hàm) — chỉ còn agent để kiểm; `absent` = không có Hub; `broken` = Hub THẬT (có `review_tasks`) mà hàm
+ * vắng/chưa cấp (lỗi triển khai).
+ */
+export type OrgRefsState = "ok" | "stub" | "absent" | "broken";
 
 export async function orgRefsState(tx: Tx): Promise<OrgRefsState> {
   const r = (await tx.execute(sql`select
     coalesce(has_function_privilege(to_regprocedure('hub.org_group_refs(uuid,uuid[])'), 'EXECUTE'), false) as fn,
-    to_regclass('hub.agent_grants') is not null as tables`)) as unknown as {
+    to_regclass('hub.agent_grants') is not null as agents,
+    to_regclass('hub.review_tasks') is not null as real`)) as unknown as {
     fn: boolean;
-    tables: boolean;
+    agents: boolean;
+    real: boolean;
   }[];
   if (r[0]?.fn === true) return "ok";
-  return r[0]?.tables === true ? "broken" : "absent";
+  if (r[0]?.real === true) return "broken";
+  return r[0]?.agents === true ? "stub" : "absent";
+}
+
+/** Hub giả: chỉ có `agent_grants` (admin_rw có SELECT) ⇒ đếm agent cấp cho nhóm trực tiếp. */
+async function stubAgentCount(tx: Tx, t: string, groupId: string): Promise<number> {
+  const r = (await tx.execute(sql`select count(*)::int as n from hub.agent_grants
+    where tenant_id = ${t}::uuid and subject_type = 'group' and subject_id = ${groupId}::uuid`)) as unknown as {
+    n: number;
+  }[];
+  return r[0]?.n ?? 0;
 }
 
 /** Dùng cho tính `access` (chỉ báo, không mất dữ liệu): chỉ `ok` mới đọc Hub, còn lại bỏ qua phần Hub. */
@@ -41,6 +57,7 @@ export async function groupRefCounts(tx: Tx, t: string, groupId: string): Promis
   const state = await orgRefsState(tx);
   if (state === "broken") throw appError("INTERNAL_ERROR", { reason: "hub_refs_unavailable" });
   if (state === "absent") return none;
+  if (state === "stub") return { ...none, agents: await stubAgentCount(tx, t, groupId) };
   const rows =
     (await tx.execute(sql`select kind, count(distinct item_id)::int as n, count(*)::int as rows
     from hub.org_group_refs(${t}::uuid, ${pgArray([groupId], "uuid")}) group by kind`)) as unknown as {

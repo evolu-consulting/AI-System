@@ -153,6 +153,19 @@ describe("CR-189 · hành trình do quản trị được giao (khác người t
         .status,
     ).toBe(400);
   });
+  it("DB chỉ có Hub giả (môi trường chỉ-admin): xoá phòng rỗng ⇒ 204 (không 500), phòng còn agent theo nhóm ⇒ 204 nhưng Group giữ", async () => {
+    const binh = await env.token("acme", "binh");
+    const empty = await mk(binh, "Trống");
+    const kept = await mk(binh, "Có agent");
+    await env.owner`insert into hub.agent_grants (agent_id, tenant_id, subject_type, subject_id)
+      values (gen_random_uuid(), ${TENANT_ID.acme}, 'group', ${kept})`;
+    expect((await env.call("DELETE", `${BASE}/${empty}`, { token: binh })).status).toBe(204);
+    expect((await env.call("DELETE", `${BASE}/${kept}`, { token: binh })).status).toBe(204);
+    const g =
+      await env.owner`select (select count(*)::int from admin.groups where id = ${empty}) as e,
+      (select count(*)::int from admin.groups where id = ${kept}) as k`;
+    expect([g[0]?.e, g[0]?.k]).toEqual([0, 1]);
+  });
   it("quản trị công ty khác (hoa, globex) ⇒ 404 ở mọi thao tác trên phòng của acme, không ghi", async () => {
     const binh = await env.token("acme", "binh");
     const hoa = await env.token("globex", "hoa");
