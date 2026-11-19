@@ -15,6 +15,7 @@ Intake + góp ý từng vòng: `docs/specs/CR-187/intake-2026-11-19.md`.
 - BR-187-7 Chế độ Tối: mọi chữ Community + Sổ Hợp Tác ≥ 4,5:1 cả hai chế độ; có test tự động đo tương phản token.
 - BR-187-8 Luật cuộn (ghi `packages/web-kit/src/ui/kit/RULES.md`): (1) mỗi chiều một vùng cuộn, không lồng dọc; (2) trang thường: trang cuộn; (3) trang toàn màn (Tin nhắn, sơ đồ, màn ký): trang đứng, khung con cuộn (cờ toàn màn của Shell, bỏ `calc(100dvh-…)` viết cứng); (4) khung con chỉ cuộn khi tải dần hoặc > 8 mục; (5) `scrollbar-gutter: stable`.
 - BR-187-9 Luật chống nháy (ghi RULES.md): (1) đổi tab/lọc giữ dữ liệu cũ làm mờ tới khi có mới; (2) số đếm không về 0 khi tải; (3) trạng thái chọn chỉ đổi màu nền/chữ, không đổi độ đậm/padding/viền; (4) khung chờ đúng kích thước, ảnh có `aspect-ratio`; (5) e2e đo bounding box trước/sau khi bấm. Sửa ngay chỗ đã biết: `useFeed.ts` `setData(null)` khi đổi tab (Community «Tất cả/Cần bán»).
+- BR-187-10 Phông giao diện đổi sang **Inter** cho mọi app web (workspace, admin, chat, studio): thay Be Vietnam Pro ở `--font-sans` (globals.css), giữ dự phòng `"Segoe UI", system-ui, sans-serif`; nạp đủ subset `latin` + `vietnamese`, độ đậm 400/500/600/700; số dùng `tabular-nums`. Người dùng chọn Inter + đồng ý thêm gói `@fontsource/inter` (19/11, trang so sánh https://claude.ai/artifact/LrQ4cH7hNd35G37Y6SFkAq). Ảnh mẫu so ảnh (baseline e2e) sẽ đổi ⇒ cập nhật baseline trong cùng lát.
 
 ## CR-188 · Chữ ký + Kiểm tra tệp
 - BR-188-1 Dòng dưới chữ ký = Họ tên · Chức vụ · Phòng ban (lấy sẵn từ hồ sơ, sửa được khi tạo). Màn tạo chữ ký không còn ngày tháng.
@@ -62,7 +63,7 @@ Intake + góp ý từng vòng: `docs/specs/CR-187/intake-2026-11-19.md`.
 - BR-192-2 Thu nhỏ trên máy người dùng: đại diện 400×400 ≤ 150 KB; bìa 1200×400 ≤ 400 KB. Không từ chối ảnh lớn.
 - BR-192-3 Chưa có ảnh bìa (cá nhân/công ty) ⇒ dải màu chuyển theo màu chính, không chữ, đẹp cả sáng/tối.
 - BR-192-4 Không có «Dùng ảnh mẫu».
-- BR-192-5 Ảnh nhanh (hiện ~3 s): tạo ảnh nhỏ (rộng ≤ 800px) khi tải ảnh bài; bảng tin hiện ảnh nhỏ, bấm mở gốc; tạo bù cho ảnh cũ (backfill); cache riêng tư 5 phút (bỏ `no-store`); mục tiêu < 1 s; đo trước/sau, báo số; kiểm cả Tin nhắn, hồ sơ, avatar.
+- BR-192-5 (HOÃN — người dùng 19/11: «không làm, để nghĩ thêm»; không chia lát) Ảnh nhanh (hiện ~3 s): tạo ảnh nhỏ (rộng ≤ 800px) khi tải ảnh bài; bảng tin hiện ảnh nhỏ, bấm mở gốc; tạo bù cho ảnh cũ (backfill); cache riêng tư 5 phút (bỏ `no-store`); mục tiêu < 1 s; đo trước/sau, báo số; kiểm cả Tin nhắn, hồ sơ, avatar.
 
 ## Ảnh hưởng chung
 Migration chỉ thêm (backfill trong cùng thay đổi). Lên prod cùng đợt CR-181..186: backup, `verify:predeploy`, `verify:prod`, người dùng cho phép. Soát Opus: CR-187 (BR-2), CR-188, CR-189, CR-191.
