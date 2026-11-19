@@ -16,7 +16,7 @@
 | pack-community | 0025 | cr191-audience-schema | 1807000640000 | đã gộp |
 | pack-community | 0026 | cr191-feed-merge-rls | 1807000660000 | đã gộp |
 | pack-community | 0027 | cr191-composer-audience | 1807000680000 | đã gộp |
-| pack-community | 0032 | cr191-cross-comment | 1807000780000 | giao |
+| pack-community | 0032 | cr191-cross-comment | 1807000780000 | đã gộp |
 
 | hub | 0172 | cr189-admin-org-api | 1806904700000 | đã gộp |
 | pack-community | 0029 | cr191-composer-audience | 1807000720000 | đã gộp |
