@@ -398,3 +398,138 @@ describe("CR-161 · quyền DB cho role gói (migration 0116)", () => {
     expect([usage[0]?.a, usage[0]?.b]).toEqual([true, true]);
   });
 });
+
+describe("CR-191 · BR-191-9/10/11 tìm + mời theo cài đặt, từ chối kèm lý do, thu hồi, trang công ty", () => {
+  const names = (r: Res<{ items: { tenant_id: string }[] }>) =>
+    r.body.items.map((x) => x.tenant_id);
+  it("mặc định «Chỉ quản trị công ty»: Vy (nhân viên) xem được cài đặt + đối tác đã kết nối, KHÔNG tìm thấy công ty chưa kết nối, KHÔNG mời được (403 + 0 dòng đổi)", async () => {
+    // Chuẩn bị: R6 ở trên đã ngắt A–B ⇒ nối lại (Tiên mời, Dung đồng ý).
+    await call(TIEN, "POST", "/connect/invites", { tenant_id: B });
+    await call(DUNG, "POST", `/connect/links/${A}/accept`);
+    const st = await call(VY, "GET", "/connect/settings");
+    expect([st.status, st.body]).toEqual([200, { invite_by: "admin", can_invite: false }]);
+    expect((await call(TIEN, "GET", "/connect/settings")).body).toEqual({
+      invite_by: "admin",
+      can_invite: true,
+    });
+    // B đã kết nối với A (test N2 ở trên) ⇒ Vy thấy; I đã bật «cho tìm thấy» nhưng chưa kết nối ⇒ Vy không thấy, Tiên (quản trị) thấy.
+    const vyB = await call<{ items: { tenant_id: string }[] }>(
+      VY,
+      "GET",
+      "/connect/search?q=Preschool",
+    );
+    expect(names(vyB)).toEqual([B]);
+    const vyI = await call<{ items: { tenant_id: string }[] }>(VY, "GET", "/connect/search?q=Ích");
+    expect(names(vyI)).toEqual([]);
+    const tienI = await call<{ items: { tenant_id: string }[] }>(
+      TIEN,
+      "GET",
+      "/connect/search?q=Ích",
+    );
+    expect(names(tienI)).toEqual([I]);
+    const n = await nLinks();
+    const inv = await call(VY, "POST", "/connect/invites", { tenant_id: I });
+    expect([inv.status, code(inv)]).toEqual([403, "PACK_FORBIDDEN"]);
+    expect(await nLinks()).toBe(n);
+    // Vy xem được danh sách kết nối (khoá chỉ ở thao tác ghi).
+    expect((await call(VY, "GET", "/connect/links?status=connected")).status).toBe(200);
+  });
+
+  it("trang công ty: Vy chỉ mở công ty đã kết nối; Tiên mở cả công ty bật «cho tìm thấy»; công ty tắt «cho tìm thấy» ⇒ 404 với cả hai", async () => {
+    const ok = await call<{ tenant_id: string; legal_name: string }>(
+      VY,
+      "GET",
+      `/connect/companies/${B}`,
+    );
+    expect([ok.status, ok.body.legal_name]).toEqual([200, "Preschool Việt"]);
+    expect(Object.keys(ok.body).sort()).toEqual(
+      ["address", "cover", "legal_name", "status", "tax_code", "tenant_id", "verified"].sort(),
+    );
+    expect((await call(VY, "GET", `/connect/companies/${I}`)).status).toBe(404);
+    expect((await call(TIEN, "GET", `/connect/companies/${I}`)).status).toBe(200);
+    expect((await call(TIEN, "GET", `/connect/companies/${E}`)).status).toBe(404);
+    expect((await call(TIEN, "GET", `/connect/companies/${A}`)).status).toBe(404);
+    expect((await call(TIEN, "GET", "/connect/companies/xyz")).status).toBe(400);
+  });
+
+  it("«Mọi nhân viên» cho Vy tìm + mời; thu hồi và đổi cài đặt vẫn chỉ quản trị; Tiên thu hồi ⇒ dòng mất; đổi lại «Chỉ quản trị» ⇒ Vy lại 403", async () => {
+    const put = await call(TIEN, "PUT", "/connect/settings", { invite_by: "all" });
+    expect([put.status, put.body]).toEqual([200, { ok: true }]);
+    expect((await call(TIEN, "PUT", "/connect/settings", { invite_by: "x" })).status).toBe(400);
+    expect((await call(VY, "GET", "/connect/settings")).body).toEqual({
+      invite_by: "all",
+      can_invite: true,
+    });
+    const vyI = await call<{ items: { tenant_id: string }[] }>(VY, "GET", "/connect/search?q=Ích");
+    expect(names(vyI)).toEqual([I]);
+    const inv = await call(VY, "POST", "/connect/invites", { tenant_id: I, note: "Xin chào" });
+    expect([inv.status, inv.body]).toEqual([200, { status: "pending_out" }]);
+    const [row] =
+      await o`select connect_by from hub.partner_links where from_tenant = ${A} and to_tenant = ${I}`;
+    expect(row?.connect_by).toBe(VY); // người mời là nhân viên, không phải quản trị
+    // Thu hồi: Vy không được (403), Tiên được.
+    expect((await call(VY, "DELETE", `/connect/invites/${I}`)).status).toBe(403);
+    expect((await call(VY, "PUT", "/connect/settings", { invite_by: "admin" })).status).toBe(403);
+    const mine = await call<{ items: { tenant_id: string }[] }>(
+      TIEN,
+      "GET",
+      "/connect/links?status=pending_out",
+    );
+    expect(names(mine)).toContain(I);
+    expect((await call(TIEN, "DELETE", `/connect/invites/${I}`)).status).toBe(200);
+    const after = await call<{ items: { tenant_id: string }[] }>(
+      TIEN,
+      "GET",
+      "/connect/links?status=pending_out",
+    );
+    expect(names(after)).not.toContain(I);
+    const gone =
+      await o`select 1 from hub.partner_links where from_tenant = ${A} and to_tenant = ${I}`;
+    expect(gone).toHaveLength(0);
+    expect((await call(TIEN, "DELETE", `/connect/invites/${I}`)).status).toBe(200); // lặp ⇒ không lỗi
+    // Đổi lại mặc định.
+    await call(TIEN, "PUT", "/connect/settings", { invite_by: "admin" });
+    const re = await call(VY, "POST", "/connect/invites", { tenant_id: I });
+    expect([re.status, code(re)]).toEqual([403, "PACK_FORBIDDEN"]);
+  });
+
+  it("cài đặt của công ty này không đổi công ty khác (A «Mọi nhân viên» không cho nhân viên B mời)", async () => {
+    await call(TIEN, "PUT", "/connect/settings", { invite_by: "all" });
+    expect((await call(POSTER, "GET", "/connect/settings")).body).toEqual({
+      invite_by: "admin",
+      can_invite: false,
+    });
+    const inv = await call(POSTER, "POST", "/connect/invites", { tenant_id: I });
+    expect([inv.status, code(inv)]).toEqual([403, "PACK_FORBIDDEN"]);
+    await call(TIEN, "PUT", "/connect/settings", { invite_by: "admin" });
+  });
+
+  it("từ chối kèm lý do (Hùng, quản trị H, không phải người mời): lưu lý do; lý do > 300 ⇒ 400; Vy không từ chối được", async () => {
+    expect((await call(TIEN, "POST", "/connect/invites", { tenant_id: H })).body).toEqual({
+      status: "pending_out",
+    });
+    const pend = await call<{ items: { tenant_id: string; note: string | null }[] }>(
+      HUNG,
+      "GET",
+      "/connect/links?status=pending_in",
+    );
+    expect(names(pend)).toEqual([A]);
+    expect(
+      (await call(HUNG, "POST", `/connect/links/${A}/decline`, { reason: "x".repeat(301) })).status,
+    ).toBe(400);
+    const d = await call(HUNG, "POST", `/connect/links/${A}/decline`, {
+      reason: "  Chưa có nhu cầu  ",
+    });
+    expect([d.status, d.body]).toEqual([200, { ok: true }]);
+    const [row] =
+      await o`select connect_decline_reason as r, blocked_at from hub.partner_links where from_tenant = ${A} and to_tenant = ${H}`;
+    expect(row?.r).toBe("Chưa có nhu cầu");
+    expect(row?.blocked_at).not.toBeNull();
+    const after = await call<{ items: { tenant_id: string }[] }>(
+      HUNG,
+      "GET",
+      "/connect/links?status=pending_in",
+    );
+    expect(names(after)).toEqual([]);
+  });
+});
