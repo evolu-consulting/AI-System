@@ -1,34 +1,43 @@
-// CR-187 BR-187-5 · công tắc «Cho công ty khác tìm thấy công ty mình»: ai thấy, khi nào bật được.
+// CR-187 BR-187-5 · CR-191 · công tắc «Cho công ty khác tìm thấy công ty mình»: ai đổi được, khi nào bật được.
 import { describe, expect, test } from "bun:test";
-import { canSeeDiscoverable, discoverableView } from "./discoverable";
+import { discoverableView } from "./discoverable";
 
-const base = { legal_name: "Công ty Acme", tax_code: "0312345678", directory_listed: false };
+const base = { listed: false, has_profile: true };
 
 describe("CR-187 · discoverableView", () => {
-  test("vai khác quản trị công ty không thấy thẻ", () => {
-    expect(canSeeDiscoverable("tenant_admin")).toBe(true);
-    for (const r of ["member", "platform_admin", undefined])
-      expect(canSeeDiscoverable(r)).toBe(false);
+  test("vai khác quản trị Sổ Hợp Tác ⇒ công tắc khoá + nói lý do", () => {
+    expect(discoverableView(base, false)).toEqual({
+      checked: false,
+      enabled: false,
+      needProfile: false,
+      locked: true,
+    });
   });
 
-  test("đủ tên pháp lý + MST ⇒ bật được", () => {
-    expect(discoverableView(base)).toEqual({ checked: false, enabled: true, needProfile: false });
+  test("quản trị Sổ Hợp Tác + đủ tên pháp lý + MST ⇒ bật được", () => {
+    expect(discoverableView(base, true)).toEqual({
+      checked: false,
+      enabled: true,
+      needProfile: false,
+      locked: false,
+    });
   });
 
   test("thiếu MST hoặc tên pháp lý ⇒ khoá + báo lý do", () => {
-    expect(discoverableView({ ...base, tax_code: null })).toEqual({
+    expect(discoverableView({ ...base, has_profile: false }, true)).toEqual({
       checked: false,
       enabled: false,
       needProfile: true,
+      locked: false,
     });
-    expect(discoverableView({ ...base, legal_name: null }).needProfile).toBe(true);
   });
 
   test("đang bật mà hồ sơ thiếu ⇒ vẫn tắt được", () => {
-    expect(discoverableView({ ...base, tax_code: null, directory_listed: true })).toEqual({
+    expect(discoverableView({ listed: true, has_profile: false }, true)).toEqual({
       checked: true,
       enabled: true,
       needProfile: false,
+      locked: false,
     });
   });
 });

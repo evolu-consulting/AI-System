@@ -4,6 +4,7 @@ import type {
   ConnectCompanyPage,
   ConnectInviteBy,
   ConnectLink,
+  ConnectListing,
   ConnectStatus,
 } from "@ai/contracts/pack-contracts";
 import type { Cursor } from "../domain/connect.codec";
@@ -30,6 +31,11 @@ export interface ConnectRepo {
   /** BR-191-11 · người này có được tìm/mời đối tác mới không (theo cài đặt công ty). */
   canInvite(userId: string): Promise<boolean>;
   inviteBy(): Promise<ConnectInviteBy>;
+  /** BR-187-5 · cờ «cho tìm thấy» của công ty mình (+ đủ hồ sơ để bật). */
+  listing(): Promise<ConnectListing>;
+  /** Chỉ người Toàn quyền (DB kiểm lại); true khi có đổi. */
+  setListed(listed: boolean, actor: string): Promise<boolean>;
+  auditListed(actor: string, listed: boolean): Promise<void>;
   setInviteBy(by: ConnectInviteBy, actor: string): Promise<void>;
   /** BR-191-9 · trang công ty; null ⇒ không thấy (không kết nối và không đủ điều kiện). */
   company(id: string): Promise<ConnectCompanyPage | null>;

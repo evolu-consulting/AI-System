@@ -5,6 +5,7 @@
 import {
   ConnectDeclineBodySchema,
   ConnectInviteBodySchema,
+  ConnectListingBodySchema,
   ConnectListQuerySchema,
   ConnectSearchQuerySchema,
   ConnectSettingsBodySchema,
@@ -83,6 +84,15 @@ export function connectRoutes(view: PackAccessView, uc: ConnectUsecases): Hono<P
     const b = await parseJson(c, ConnectSettingsBodySchema);
     await uc.setInviteBy(whoOf(c), b.invite_by);
     return c.json({ ok: true }, 200);
+  });
+
+  r.get("/connect/listing", seeGuard, async (c) =>
+    c.json(await uc.listing(whoOf(c)).catch(ccError), 200),
+  );
+
+  r.put("/connect/listing", guard, async (c) => {
+    const b = await parseJson(c, ConnectListingBodySchema);
+    return c.json(await uc.setListed(whoOf(c), b.listed).catch(ccError), 200);
   });
 
   r.get("/connect/companies/:tenant_id", seeGuard, async (c) => {

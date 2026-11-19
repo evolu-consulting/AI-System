@@ -217,7 +217,8 @@
         "forbidden": "Chỉ người có quyền Toàn quyền làm được việc này.",
         "invalid": "Nội dung chưa hợp lệ — kiểm tra lại rồi thử lại.",
         "gone": "Lời mời không còn nữa. Tải lại trang để xem tình trạng mới.",
-        "failed": "Chưa làm được. Kiểm tra mạng rồi thử lại."
+        "failed": "Chưa làm được. Kiểm tra mạng rồi thử lại.",
+        "needsProfile": "Cần có Tên pháp lý và Mã số thuế của công ty trước khi cho công ty khác tìm thấy."
       },
       "message": "Nhắn tin",
       "openPartner": "Mở trang đối tác",

@@ -217,7 +217,8 @@
         "forbidden": "Only people with Full access can do this.",
         "invalid": "Something is not valid — check and try again.",
         "gone": "The invite no longer exists. Reload the page to see the latest status.",
-        "failed": "Could not do that. Check your connection and try again."
+        "failed": "Could not do that. Check your connection and try again.",
+        "needsProfile": "The company needs a legal name and tax code before others can find it."
       },
       "message": "Message",
       "openPartner": "Open partner page",

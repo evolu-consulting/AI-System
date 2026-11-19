@@ -533,3 +533,49 @@ describe("CR-191 · BR-191-9/10/11 tìm + mời theo cài đặt, từ chối k�
     expect(names(after)).toEqual([]);
   });
 });
+
+describe("CR-191 · BR-187-5 công tắc «cho tìm thấy» do quản trị Sổ Hợp Tác đổi", () => {
+  const listed = async (t: string) =>
+    (await o`select directory_listed as l, version from admin.tenants where id = ${t}`)[0] as {
+      l: boolean;
+      version: number;
+    };
+  it("Tiên (quản trị SHT) tắt/bật được, version tăng, có audit, Vy (nhân viên) xem được nhưng PUT ⇒ 403 + không đổi", async () => {
+    expect((await call(VY, "GET", "/connect/listing")).body).toEqual({
+      listed: true,
+      has_profile: true,
+    });
+    const v0 = (await listed(A)).version;
+    const off = await call(TIEN, "PUT", "/connect/listing", { listed: false });
+    expect([off.status, off.body]).toEqual([200, { listed: false, has_profile: true }]);
+    expect(await listed(A)).toEqual({ l: false, version: v0 + 1 });
+    const audit =
+      await o`select count(*)::int as n from contracts.approval_settings_audit where tenant_id = ${A} and (after->>'kind') = 'cc_listed'`;
+    expect(audit[0]?.n).toBeGreaterThanOrEqual(1);
+    const vy = await call(VY, "PUT", "/connect/listing", { listed: true });
+    expect([vy.status, code(vy)]).toEqual([403, "PACK_FORBIDDEN"]);
+    expect((await listed(A)).l).toBe(false);
+    expect((await call(TIEN, "PUT", "/connect/listing", { listed: true })).status).toBe(200);
+    expect((await listed(A)).l).toBe(true);
+    expect((await call(TIEN, "PUT", "/connect/listing", { listed: "x" })).status).toBe(400);
+  });
+  it("người chỉ có vai quản trị công ty (tenant_admin) mà không thuộc nhóm Toàn quyền Sổ Hợp Tác ⇒ 403, không bật được khi thiếu MST (422)", async () => {
+    const noGroup = await call(userId(1699), "PUT", "/connect/listing", { listed: true });
+    expect(noGroup.status).toBe(403);
+    await o`update admin.tenants set directory_listed = false, tax_code = null where id = ${H}`;
+    const r = await call(HUNG, "PUT", "/connect/listing", { listed: true });
+    expect([r.status, code(r)]).toEqual([422, "CONNECT_NEEDS_PROFILE"]);
+    expect((await call(HUNG, "GET", "/connect/listing")).body).toEqual({
+      listed: false,
+      has_profile: false,
+    });
+    expect((await listed(H)).l).toBe(false);
+    // DB tự chặn dù đi đường nào: người không phải Toàn quyền của H gọi hàm ⇒ 42501.
+    await expect(
+      o.begin(async (tx) => {
+        await tx`select set_config('app.tenant_id', ${H}, true)`;
+        await tx`select hub.cc_set_listed(true, ${VY}::uuid)`;
+      }),
+    ).rejects.toThrow();
+  });
+});

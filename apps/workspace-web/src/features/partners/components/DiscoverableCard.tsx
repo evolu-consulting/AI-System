@@ -1,45 +1,34 @@
-// CR-187 BR-187-5 · Sổ Hợp Tác › Đối tác: công tắc «Cho công ty khác tìm thấy công ty mình». Chỉ quản trị công ty thấy/đổi.
-// Dùng API cũ: đọc hồ sơ `GET /admin/tenants/:id/profile`, đổi `PUT /admin/tenants/:id/directory`. Thiếu tên pháp lý/MST ⇒ khoá + nói lý do.
-import type { TenantCompanyProfile } from "@ai/contracts/tenants";
-import { api } from "@ai/web-kit/http";
+// CR-187 BR-187-5 · CR-191: Sổ Hợp Tác › Đối tác: công tắc «Cho công ty khác tìm thấy công ty mình». Người quản trị Sổ Hợp Tác (Toàn quyền)
+// của chính công ty đổi được; vai khác thấy công tắc khoá + lý do. Đi qua `/pack/contracts/connect/listing` (máy chủ kiểm quyền + điều kiện
+// tên pháp lý + MST); API admin cũ chỉ còn cho trang quản trị nền tảng.
 import { Switch } from "@ai/web-kit/ui/kit/switch";
 import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useSession } from "~/features/auth/hooks/use-session";
-import { canSeeDiscoverable, discoverableView } from "../lib/discoverable";
-
-const KEY = (id: string) => ["tenant-profile", id] as const;
+import { useMe } from "~/features/pack-state/hooks/use-me";
+import { connectKeys, fetchListing, saveListing } from "../api.connect";
+import { discoverableView } from "../lib/discoverable";
 
 export function DiscoverableCard() {
-  const me = useSession((s) => s.me);
-  if (!me || !canSeeDiscoverable(me.role)) return null;
-  return <Body tenantId={me.tenant.id} />;
-}
-
-function Body({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.gape.discover.${k}`);
+  const { owner } = useMe();
   const qc = useQueryClient();
   const q = useQuery({
-    queryKey: KEY(tenantId),
-    queryFn: ({ signal }) =>
-      api<TenantCompanyProfile>(`/admin/tenants/${tenantId}/profile`, { signal }),
+    queryKey: connectKeys.listing,
+    queryFn: ({ signal }) => fetchListing(signal),
+    retry: false,
   });
   const set = useMutation({
-    mutationFn: (listed: boolean) =>
-      api<TenantCompanyProfile>(`/admin/tenants/${tenantId}/directory`, {
-        method: "PUT",
-        body: { listed },
-      }),
+    mutationFn: saveListing,
     onSuccess: (res) => {
-      qc.setQueryData(KEY(tenantId), res);
+      qc.setQueryData(connectKeys.listing, res);
       notifySuccess(L("saved"));
     },
     onError: () => notifyError(L("fail")),
   });
   if (!q.data) return null;
-  const v = discoverableView(q.data);
+  const v = discoverableView(q.data, owner);
   return (
     <section
       data-testid="discoverable-card"
@@ -50,7 +39,11 @@ function Body({ tenantId }: { tenantId: string }) {
           {L("title")}
         </label>
         <p data-testid="discoverable-why" className="text-[13px] text-dim">
-          {v.needProfile ? L("needProfile") : L("why")}
+          {v.locked
+            ? t("contracts.connect.hub.lockedWhy")
+            : v.needProfile
+              ? L("needProfile")
+              : L("why")}
         </p>
       </div>
       <Switch

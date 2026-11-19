@@ -15,6 +15,8 @@ export const CC_ERRORS = {
   CONNECT_NOT_LISTED: 422,
   CONNECT_DECLINED: 409,
   CONNECT_NOT_CONNECTED: 409,
+  /** BR-187-5: bật «cho tìm thấy» cần tên pháp lý + MST. */
+  CONNECT_NEEDS_PROFILE: 422,
 } as const;
 export type CcErrorCode = keyof typeof CC_ERRORS;
 
@@ -103,3 +105,11 @@ export const ConnectCompanyPageSchema = z.strictObject({
   status: ConnectStatusSchema,
 });
 export type ConnectCompanyPage = z.infer<typeof ConnectCompanyPageSchema>;
+
+/** `GET /connect/listing` — công tắc «Cho công ty khác tìm thấy công ty mình» (BR-187-5, quản trị Sổ Hợp Tác). */
+export const ConnectListingSchema = z.strictObject({
+  listed: z.boolean(),
+  has_profile: z.boolean(),
+});
+export type ConnectListing = z.infer<typeof ConnectListingSchema>;
+export const ConnectListingBodySchema = z.strictObject({ listed: z.boolean() });

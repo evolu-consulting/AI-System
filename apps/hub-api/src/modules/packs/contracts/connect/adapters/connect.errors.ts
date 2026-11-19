@@ -14,6 +14,7 @@ const MESSAGES: Record<CcErrorCode, string> = {
   CONNECT_NOT_LISTED: "Công ty này chưa bật Danh bạ nên chưa nhận được lời mời kết nối.",
   CONNECT_DECLINED: "Bạn không thể gửi lại lời mời cho công ty này.",
   CONNECT_NOT_CONNECTED: "Hai công ty chưa kết nối.",
+  CONNECT_NEEDS_PROFILE: "Cần có tên pháp lý và mã số thuế trước khi cho công ty khác tìm thấy.",
 };
 const isCode = (m: string | undefined): m is CcErrorCode =>
   m !== undefined && Object.hasOwn(CC_ERRORS, m);

@@ -6,6 +6,7 @@ import type {
   ConnectCompanyPage,
   ConnectInviteBy,
   ConnectLink,
+  ConnectListing,
   ConnectSettings,
   ConnectStatus,
 } from "@ai/contracts/pack-contracts";
@@ -134,6 +135,17 @@ export function connectUsecases(d: ConnectDeps) {
       })),
     async setInviteBy(who: PackWho, by: ConnectInviteBy): Promise<void> {
       await d.uow.tenant(who, (r) => r.connect.setInviteBy(by, who.userId));
+    },
+
+    /** BR-187-5 · công tắc «cho tìm thấy»: đọc (mọi người xem gói) / ghi (người Toàn quyền, DB kiểm lại). */
+    listing: (who: PackWho): Promise<ConnectListing> =>
+      d.uow.tenant(who, (r) => r.connect.listing()),
+    async setListed(who: PackWho, listed: boolean): Promise<ConnectListing> {
+      return d.uow.tenant(who, async (r) => {
+        if (await r.connect.setListed(listed, who.userId))
+          await r.connect.auditListed(who.userId, listed);
+        return r.connect.listing();
+      });
     },
 
     /** BR-191-9 · trang công ty (không có bài). Không thấy ⇒ null (route trả 404). */

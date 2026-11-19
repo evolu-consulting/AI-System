@@ -4,6 +4,7 @@ import type {
   ConnectInviteBy,
   ConnectInviteResponseSchema,
   ConnectLink,
+  ConnectListing,
   ConnectListQuery,
   ConnectSearchResponseSchema,
   ConnectSettings,
@@ -19,6 +20,7 @@ export const connectKeys = {
   search: (q: string) => ["connect", "search", q] as const,
   links: (status: string) => ["connect", "links", status] as const,
   settings: ["connect", "settings"] as const,
+  listing: ["connect", "listing"] as const,
   company: (id: string) => ["connect", "company", id] as const,
 };
 
@@ -48,3 +50,7 @@ export const fetchCompany = (id: string, signal?: AbortSignal) =>
   api<ConnectCompanyPage>(`${BASE}/companies/${enc(id)}`, { signal });
 export const disconnectLink = (tenant: string) =>
   api<{ ok: true }>(`${BASE}/links/${enc(tenant)}`, { method: "DELETE" });
+export const fetchListing = (signal?: AbortSignal) =>
+  api<ConnectListing>(`${BASE}/listing`, { signal });
+export const saveListing = (listed: boolean) =>
+  api<ConnectListing>(`${BASE}/listing`, { method: "PUT", body: { listed } });

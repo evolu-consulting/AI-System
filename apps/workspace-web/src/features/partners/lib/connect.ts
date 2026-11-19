@@ -24,6 +24,7 @@ export type ConnectErr =
   | "notListed"
   | "declined"
   | "notConnected"
+  | "needsProfile"
   | "forbidden"
   | "invalid"
   | "gone"
@@ -32,6 +33,7 @@ const ERR_OF: Record<string, ConnectErr> = {
   CONNECT_NOT_LISTED: "notListed",
   CONNECT_DECLINED: "declined",
   CONNECT_NOT_CONNECTED: "notConnected",
+  CONNECT_NEEDS_PROFILE: "needsProfile",
   PACK_FORBIDDEN: "forbidden",
   VALIDATION_ERROR: "invalid",
   NOT_FOUND: "gone",

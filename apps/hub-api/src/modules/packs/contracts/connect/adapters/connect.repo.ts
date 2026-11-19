@@ -6,6 +6,7 @@ import type {
   ConnectCompanyPage,
   ConnectInviteBy,
   ConnectLink,
+  ConnectListing,
   ConnectStatus,
 } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
@@ -69,6 +70,24 @@ export function connectRepo(tx: Tx, tid: string): ConnectRepo {
         sql`select invite_by as by from contracts.connect_settings where tenant_id = ${tid}::uuid`,
       );
       return r?.by ?? "admin";
+    },
+    async listing(): Promise<ConnectListing> {
+      const [r] = await tx.execute<{ listed: boolean; has_profile: boolean }>(
+        sql`select listed, has_profile from hub.cc_listing()`,
+      );
+      return { listed: r?.listed === true, has_profile: r?.has_profile === true };
+    },
+    async setListed(listed: boolean, actor: string): Promise<boolean> {
+      const [r] = await tx.execute<{ ok: boolean }>(
+        sql`select hub.cc_set_listed(${listed}, ${actor}::uuid) as ok`,
+      );
+      return r?.ok === true;
+    },
+    /** Audit cấp công ty (cùng tx với đổi cờ; ghi lỗi ⇒ rollback). */
+    async auditListed(actor: string, listed: boolean): Promise<void> {
+      const st = (v: boolean) => JSON.stringify({ kind: "cc_listed", directory_listed: v });
+      await tx.execute(sql`insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after)
+        values (${tid}::uuid, ${actor}::uuid, ${st(!listed)}::text::jsonb, ${st(listed)}::text::jsonb)`);
     },
     async setInviteBy(by: ConnectInviteBy, actor: string): Promise<void> {
       await tx.execute(sql`insert into contracts.connect_settings (tenant_id, invite_by, updated_by)
