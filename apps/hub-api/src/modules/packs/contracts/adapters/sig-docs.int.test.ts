@@ -7,8 +7,9 @@ import { contracts, enablePack, members, tenants, users, visibility } from "@ai/
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../../kit/adapters/pack-uow";
+import type { SigDocsFilter } from "../application/sig-docs.usecase";
 import { decodeCursor, pageOf } from "../domain/sig-docs.rules";
-import { type SigDocsFilter, sigDocsRepo } from "./sig-docs.repo";
+import { sigDocsRepo } from "./sig-docs.repo";
 
 let sql: Sql;
 let db: Db;

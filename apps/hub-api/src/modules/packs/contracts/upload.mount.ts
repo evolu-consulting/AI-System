@@ -27,6 +27,7 @@ import { verifyFileRepo } from "./adapters/verify-file.repo";
 import { verifyFileRoutes } from "./adapters/verify-file.routes";
 import { zipNames } from "./adapters/zip-names";
 import { createPromoteContract } from "./application/promote-contract.usecase";
+import { createListSigDocs } from "./application/sig-docs.usecase";
 import type { ContractFileStore, ExtractionStarter } from "./application/upload-contract.ports";
 import {
   createReplaceFile,
@@ -146,11 +147,14 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
   const sigDocsUow = createPackUow(d.db, KEY, (tx, tid) => ({ docs: sigDocsRepo(tx, tid) }));
   r.route(
     "/",
-    sigDocsRoutes(d.view, {
-      timeZoneOf: d.timeZoneOf,
-      list: (who, admin, tz, sigId, f) =>
-        sigDocsUow.tenant(who, (x) => x.docs.list(who.userId, admin, tz, sigId, f)),
-    }),
+    sigDocsRoutes(
+      d.view,
+      createListSigDocs({
+        timeZoneOf: d.timeZoneOf,
+        list: (who, admin, tz, sigId, f) =>
+          sigDocsUow.tenant(who, (x) => x.docs.list(who.userId, admin, tz, sigId, f)),
+      }),
+    ),
   );
   return r.route(
     "/",

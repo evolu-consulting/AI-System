@@ -1,9 +1,10 @@
 // CR-188 · BR-188-5 «Giấy tờ đã ký bằng chữ ký này»: MỘT câu SQL (số câu cố định) — dấu ký của đúng phiên bản chữ ký (`sign_marks`, chỉ mục 0125)
 // ⨝ bản ký chưa huỷ ⨝ HĐ dưới RLS «xem HĐ»: HĐ người gọi không mở được thì KHÔNG có hàng. Cờ `foreign` báo chữ ký đã in bởi người KHÁC người gọi
 // (người gọi không phải quản trị ⇒ trả RỖNG, giống hệt chữ ký chưa ký gì: không lộ «đã ký hay chưa»).
-import { SIG_DOCS_PAGE, type SigDocItem, type SigDocKind } from "@ai/contracts/pack-contracts";
+import { SIG_DOCS_PAGE, type SigDocItem } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type { SigDocsFilter, SigDocsPage } from "../application/sig-docs.usecase";
 import { docKindOf } from "../domain/verify-file.rules";
 import { contractNameSql } from "./contract-name.sql";
 
@@ -19,15 +20,6 @@ type Row = {
   seq: number | null;
   signed_at: string | null;
 };
-
-export type SigDocsFilter = {
-  kind?: SigDocKind | undefined;
-  from?: string | undefined;
-  to?: string | undefined;
-  cursor: { at: string; id: string } | null;
-};
-
-export type SigDocsPage = SigDocItem[];
 
 export type SigDocsRepo = ReturnType<typeof sigDocsRepo>;
 
