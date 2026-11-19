@@ -21,4 +21,6 @@
 | hub | 0172 | cr189-admin-org-api | 1806904700000 | đã gộp |
 | pack-community | 0029 | cr191-composer-audience | 1807000720000 | đã gộp |
 
-Số kế tiếp còn trống: hub 0173 (`when` > 1806904700000), pack-contracts 0130 (> 1807000900000), pack-community 0031 (> 1807000740000; 0028 bỏ trống). Không dùng 0162/0164/0165/0169 hub, 0127 pack-contracts.
+| pack-community | 0031 | cr191-cross-person-card (author_user_id) | 1807000760000 | giao |
+
+Số kế tiếp còn trống: hub 0173 (`when` > 1806904700000), pack-contracts 0130 (> 1807000900000), pack-community 0032 (> 1807000760000; 0028 bỏ trống). Không dùng 0162/0164/0165/0169 hub, 0127 pack-contracts.
