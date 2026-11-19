@@ -48,6 +48,7 @@ import {
 } from "./messages.view";
 import { type MessagesFileOps, messagesFileOps } from "./messages-files.usecase";
 import { messagesFindOps } from "./messages-find.usecase";
+import { prefsOps, withPrefs } from "./messages-prefs.usecase";
 import { type DirectoryFn, partnerOps } from "./partner.usecase";
 import { partnerChatOps } from "./partner-chat.usecase";
 
@@ -174,14 +175,18 @@ function conversationOps(c: Ctx) {
       const filter: CompanyFilter = q.filter ?? { kind: "all" };
       const source = sourcesOf(filter);
       const loadPage = (src: typeof source) =>
-        d.uow.tenant(who, (r) =>
-          r.messages.conversations(who.userId, {
-            cursor: q.cursor,
-            limit: q.limit + 1,
-            source: src,
-            company: filter.kind === "company" ? filter.tenantId : null,
-            unreadOnly: q.unreadOnly === true,
-          }),
+        d.uow.tenant(who, async (r) =>
+          withPrefs(
+            r,
+            who.userId,
+            await r.messages.conversations(who.userId, {
+              cursor: q.cursor,
+              limit: q.limit + 1,
+              source: src,
+              company: filter.kind === "company" ? filter.tenantId : null,
+              unreadOnly: q.unreadOnly === true,
+            }),
+          ),
         );
       // Chỉ lọc công ty (nguồn partner thuần) mới để lỗi quyền đi lên (403); `all`/`own` còn phần nội bộ.
       const rows = source.internal
@@ -209,7 +214,13 @@ function conversationOps(c: Ctx) {
     },
 
     async get(who: PackWho, cid: string): Promise<ConversationDetail> {
-      return detail(who, await d.uow.tenant(who, (r) => r.messages.conversation(who.userId, cid)));
+      return detail(
+        who,
+        await d.uow.tenant(who, async (r) => {
+          const row = await r.messages.conversation(who.userId, cid);
+          return row ? ((await withPrefs(r, who.userId, [row]))[0] ?? null) : null;
+        }),
+      );
     },
 
     async rename(who: PackWho, cid: string, title: string): Promise<ConversationDetail> {
@@ -286,6 +297,7 @@ function readOps(c: Ctx) {
         d.uow.tenant(who, async (r) => {
           const row = await r.messages.markRead(who.userId, cid, seq);
           if (row === null) throw new MsgFail("MSG_NOT_FOUND");
+          await r.messages.clearUnreadMark(who.userId, "internal", cid); // mở cuộc ⇒ bỏ «đánh dấu chưa đọc» (CR-190)
           return { row, unread_total: await r.messages.unread(who.userId, withPartner) };
         });
       const out = await internalOnPartnerDenied(
@@ -360,6 +372,7 @@ export function messagesUsecases(d: Deps) {
     people: partner.people,
     companies: partner.companies,
     ...conversationOps(c),
+    ...prefsOps(d),
     ...memberOps(c),
     ...readOps(c),
     ...sendOps(c),

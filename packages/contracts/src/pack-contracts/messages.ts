@@ -113,6 +113,13 @@ export type SendMessageRequest = z.infer<typeof SendMessageRequestSchema>;
 
 export const MarkReadRequestSchema = z.object({ seq: z.number().int().min(0) });
 
+/** CR-190 · ghim / bỏ ghim một hội thoại (theo người gọi). */
+export const PinRequestSchema = z.object({ pinned: z.boolean() });
+export type PinRequest = z.infer<typeof PinRequestSchema>;
+/** CR-190 · «đánh dấu chưa đọc» (`unread: true`) / bỏ đánh dấu (`false`) — cờ riêng, không đổi mốc đã đọc. */
+export const MarkUnreadRequestSchema = z.object({ unread: z.boolean() });
+export type MarkUnreadRequest = z.infer<typeof MarkUnreadRequestSchema>;
+
 // ---------- Ra ----------
 export const FileRefSchema = z.object({
   id: z.uuid(),
@@ -198,6 +205,10 @@ export const ConversationSummarySchema = z.object({
   company: MsgCompanySchema.nullable(),
   /** CR-169 · `partner` ngắt kết nối / người kia hết hợp lệ ⇒ true (tính lúc đọc); `direct`/`group` luôn false. */
   read_only: z.boolean(),
+  /** CR-190 · thời điểm người gọi ghim cuộc này; null = không ghim (chỉ của người gọi, người khác không thấy). Máy chủ luôn gửi; vắng = không ghim. */
+  pinned_at: z.iso.datetime().nullable().optional(),
+  /** CR-190 · người gọi đã «đánh dấu chưa đọc» (cờ riêng, tự xoá khi mở cuộc). Máy chủ luôn gửi; vắng = false. */
+  marked_unread: z.boolean().optional(),
 });
 export type ConversationSummary = z.infer<typeof ConversationSummarySchema>;
 
@@ -221,6 +232,13 @@ export const ConversationPageSchema = z.object({
   next_cursor: z.string().max(200).nullable(),
 });
 export type ConversationPage = z.infer<typeof ConversationPageSchema>;
+
+/** CR-190 · trạng thái ghim + đánh dấu của người gọi sau khi đổi. */
+export const ConvPrefsSchema = z.object({
+  pinned_at: z.iso.datetime().nullable(),
+  marked_unread: z.boolean(),
+});
+export type ConvPrefs = z.infer<typeof ConvPrefsSchema>;
 
 /** Tổng chưa đọc của người gọi, kẹp 999. */
 export const UnreadResponseSchema = z.object({

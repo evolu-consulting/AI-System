@@ -44,7 +44,14 @@ export type RawConversation = {
   members: RawMember[] | null;
   /** CR-169 · chỉ `kind = 'partner'`. */
   partner: RawPartner | null;
+  /** CR-190 · ghim + đánh dấu chưa đọc của người gọi (use case gắn từ `prefsOf`; không có ⇒ vắng). */
+  pinned_at?: string | null;
+  marked_unread?: boolean;
 };
+/** CR-190 · nguồn hội thoại của bảng tuỳ chọn theo người: `internal` = `msg_*`, `partner` = `hub.pmsg_*`. */
+export type PrefKind = "internal" | "partner";
+export type PrefState = { pinned_at: string | null; marked_unread: boolean };
+export type PrefCol = "pinned_at" | "marked_unread_at";
 /** CR-169 · nguồn của danh sách hợp nhất (P9): nội bộ (`msg_*`) và/hoặc `partner` (`pmsg_*`); `company` = công ty lọc (chỉ nguồn partner). */
 export type ListQuery = {
   cursor: { at: string; id: string } | null;
@@ -201,6 +208,12 @@ export type MessagesRepo = {
   attachments(cid: string, q: AttachQuery): Promise<RawAttachment[]>;
   /** CR-178 M3 · tin khớp trong các cuộc nội bộ người gọi là thành viên (RLS), bỏ tin đã thu hồi, mới nhất trước. MỘT câu. */
   search(me: string, q: SearchQuery): Promise<RawSearchHit[]>;
+  /** CR-190 · ghim / đánh dấu chưa đọc của người gọi cho các cuộc `ids` — MỘT câu (`= any`), không theo dòng. Không có hàng ⇒ vắng trong Map. */
+  prefsOf(me: string, ids: readonly string[]): Promise<Map<string, PrefState>>;
+  /** CR-190 · bật/tắt MỘT cột tuỳ chọn (ghim hoặc cờ chưa đọc) của người gọi; trả trạng thái sau đổi. Hàng hết gì để nhớ bị xoá. */
+  setPref(me: string, kind: PrefKind, cid: string, col: PrefCol, on: boolean): Promise<PrefState>;
+  /** CR-190 · xoá cờ «chưa đọc» khi mở cuộc (một câu; không có cờ ⇒ không làm gì). */
+  clearUnreadMark(me: string, kind: PrefKind, cid: string): Promise<void>;
   /** null = không phải thành viên. Trả mốc đọc mới + cũ + mọi thành viên (đã kẹp theo `clampRead`: không lùi, không vượt tin cuối). */
   markRead(me: string, cid: string, seq: number): Promise<ReadRow | null>;
 };

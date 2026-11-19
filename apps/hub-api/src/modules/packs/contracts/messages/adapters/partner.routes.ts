@@ -4,7 +4,9 @@
 import { ATTACH_MAX_BYTES } from "@ai/contracts/attach";
 import {
   MarkReadRequestSchema,
+  MarkUnreadRequestSchema,
   MsgListQuerySchema,
+  PinRequestSchema,
   SendMessageRequestSchema,
 } from "@ai/contracts/pack-contracts";
 import { bodyLimit } from "hono/body-limit";
@@ -62,6 +64,19 @@ function chatRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
     const id = uuid(c, "id");
     const body = await parseJson(c, MarkReadRequestSchema);
     return c.json(await run(uc.partnerMarkRead(w, id, body.seq)));
+  });
+  // CR-190 · ghim / đánh dấu chưa đọc của CHÍNH người gọi; không là đầu cuộc ⇒ 404 `MSG_NOT_FOUND`.
+  r.put(`${P}/pin`, read, async (c) => {
+    const w = who(c);
+    const id = uuid(c, "id");
+    const body = await parseJson(c, PinRequestSchema);
+    return c.json(await run(uc.partnerPin(w, id, body.pinned)));
+  });
+  r.put(`${P}/mark-unread`, read, async (c) => {
+    const w = who(c);
+    const id = uuid(c, "id");
+    const body = await parseJson(c, MarkUnreadRequestSchema);
+    return c.json(await run(uc.partnerMarkUnread(w, id, body.unread)));
   });
 }
 

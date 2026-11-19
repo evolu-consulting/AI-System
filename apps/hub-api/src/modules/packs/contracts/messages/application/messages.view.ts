@@ -27,6 +27,12 @@ export function personIdsOf(rows: readonly RawConversation[]): string[] {
   return [...ids];
 }
 
+/** CR-190 · ghim + đánh dấu chưa đọc của người gọi (vắng ⇒ không ghim, không cờ). */
+const prefsOfRow = (r: RawConversation) => ({
+  pinned_at: r.pinned_at ? isoOf(r.pinned_at) : null,
+  marked_unread: r.marked_unread === true,
+});
+
 /** Cuộc `partner`: người + công ty đầu kia từ DB; `read_only` tính lúc đọc (P7). */
 function partnerSummaryOf(r: RawConversation, p: RawPartner): ConversationSummary {
   return {
@@ -52,6 +58,7 @@ function partnerSummaryOf(r: RawConversation, p: RawPartner): ConversationSummar
     last_at: isoOf(r.last_at),
     company: { id: p.company_id, name: p.company_name },
     read_only: p.read_only,
+    ...prefsOfRow(r),
   };
 }
 
@@ -82,6 +89,7 @@ export function summaryOf(r: RawConversation, people: People): ConversationSumma
     last_at: isoOf(r.last_at),
     company: null,
     read_only: false,
+    ...prefsOfRow(r),
   };
 }
 

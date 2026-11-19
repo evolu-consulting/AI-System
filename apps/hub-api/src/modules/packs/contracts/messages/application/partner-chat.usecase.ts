@@ -22,6 +22,7 @@ import { MsgFail } from "./messages.ops";
 import type { MessagesRepos, MsgFileStore, PeopleLookup } from "./messages.ports";
 import { messageOf, partnerDetailOf } from "./messages.view";
 import type { MessagesFileOps } from "./messages-files.usecase";
+import { withPrefs } from "./messages-prefs.usecase";
 
 export type PartnerChatDeps = {
   uow: PackUow<MessagesRepos>;
@@ -39,7 +40,10 @@ export function partnerChatOps(d: PartnerChatDeps) {
   return {
     /** `GET /messages/partner/:id` — chi tiết (members 2). Không là đầu cuộc ⇒ DB CC404. */
     async partnerGet(who: PackWho, id: string): Promise<ConversationDetail> {
-      const row = await d.uow.tenant(who, (r) => r.partner.detail(id));
+      const row = await d.uow.tenant(who, async (r) => {
+        const x = await r.partner.detail(id);
+        return x ? ((await withPrefs(r, who.userId, [x]))[0] ?? null) : null;
+      });
       if (!row) throw new MsgFail("MSG_NOT_FOUND");
       const self = (await d.people(who, [who.userId])).get(who.userId);
       return partnerDetailOf(row, { id: who.userId, name: self?.name ?? "" });
@@ -104,6 +108,7 @@ export function partnerChatOps(d: PartnerChatDeps) {
       const out = await d.uow.tenant(who, async (r) => {
         const row = await r.partner.detail(id);
         const mark = await r.partner.markRead(id, seq);
+        await r.messages.clearUnreadMark(who.userId, "partner", id); // mở cuộc ⇒ bỏ «đánh dấu chưa đọc» (CR-190)
         return {
           prev: row?.partner?.my_read_seq ?? 0,
           mark,

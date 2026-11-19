@@ -10,6 +10,7 @@ import type {
 } from "../application/messages.ports";
 import { iso } from "./messages.sql";
 import { attachmentsRepo, searchRepo } from "./messages-find.repo";
+import { prefsRepo } from "./messages-prefs.repo";
 import { messagesSendRepo } from "./messages-send.repo";
 
 const MEMBERS_JSON = sql`(select coalesce(json_agg(json_build_object('user_id', mm.user_id, 'role', mm.role,
@@ -80,6 +81,24 @@ function listSql(t: string, me: string, q: ListQuery): SQL {
     select ${cols} from (${body}) x order by x.last_ts desc, x.id desc limit ${q.limit}::int`;
 }
 
+/**
+ * CR-190 · cuộc người gọi «đánh dấu chưa đọc» mà KHÔNG còn tin chưa đọc thật tính +1 mỗi cuộc (cờ là «ít nhất một»; cuộc đã có tin chưa đọc thật không cộng đôi).
+ * Nội bộ: kiểm cùng luật đếm với `summary.unread` (tin sau mốc, không do mình gửi, chưa thu hồi). `partner`: không kiểm được số thật ở đây (hàm hub nội bộ) ⇒ +1 mỗi cờ.
+ */
+const flaggedCount = (
+  t: string,
+  me: string,
+  withPartner: boolean,
+) => sql`(select count(*)::int from (select 1 from contracts.msg_conv_prefs p
+    where p.tenant_id = ${t}::uuid and p.user_id = ${me}::uuid and p.marked_unread_at is not null
+      and (${withPartner ? sql`p.conv_kind = 'partner'` : sql`false`} or (p.conv_kind = 'internal'
+        and exists (select 1 from contracts.msg_members m where m.tenant_id = p.tenant_id and m.conversation_id = p.conv_id and m.user_id = p.user_id)
+        and not exists (select 1 from contracts.msg_members m join contracts.msg_conversations c on c.tenant_id = m.tenant_id and c.id = m.conversation_id
+          where m.tenant_id = p.tenant_id and m.conversation_id = p.conv_id and m.user_id = p.user_id and c.last_seq > m.last_read_seq
+            and exists (select 1 from contracts.msg_messages x where x.tenant_id = m.tenant_id and x.conversation_id = m.conversation_id
+              and x.seq > m.last_read_seq and x.sender_id <> m.user_id and x.deleted_at is null))))
+    limit 999) f)`;
+
 /** Đọc hội thoại: danh sách, chi tiết, tổng chưa đọc, sự thật cho kiểm quyền, tìm 1-1. */
 function readRepo(
   tx: Tx,
@@ -102,7 +121,7 @@ function readRepo(
           cross join lateral (select 1 from contracts.msg_messages x
             where x.tenant_id = m.tenant_id and x.conversation_id = m.conversation_id and x.seq > m.last_read_seq
               and x.sender_id <> m.user_id and x.deleted_at is null limit 100) u
-          where m.tenant_id = ${t}::uuid and m.user_id = ${me}::uuid limit 999) s) + ${withPartner ? sql`hub.pmsg_unread()` : sql`0`}, 999)::int as total`);
+          where m.tenant_id = ${t}::uuid and m.user_id = ${me}::uuid limit 999) s) + ${withPartner ? sql`hub.pmsg_unread()` : sql`0`} + ${flaggedCount(t, me, withPartner)}, 999)::int as total`);
       return r?.total ?? 0;
     },
     facts: async (me, cid, lock) => {
@@ -168,5 +187,6 @@ export function messagesRepo(tx: Tx, t: string): MessagesRepo {
     ...messagesSendRepo(tx, t),
     ...attachmentsRepo(tx, t),
     ...searchRepo(tx, t),
+    ...prefsRepo(tx, t),
   };
 }

@@ -7,10 +7,12 @@ import {
   AddMembersRequestSchema,
   CreateConversationRequestSchema,
   MarkReadRequestSchema,
+  MarkUnreadRequestSchema,
   MsgCompaniesQuerySchema,
   MsgConversationsQuerySchema,
   MsgListQuerySchema,
   MsgPeopleQuerySchema,
+  PinRequestSchema,
   RenameConversationRequestSchema,
   SendMessageRequestSchema,
 } from "@ai/contracts/pack-contracts";
@@ -138,6 +140,23 @@ function messageRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   });
 }
 
+/** CR-190 · ghim / đánh dấu chưa đọc của CHÍNH người gọi (cuộc nội bộ). Thân `{pinned}` / `{unread}`; trả `{pinned_at, marked_unread}`. Không phải thành viên ⇒ 404. */
+function prefRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
+  const { read, who, uuid } = h;
+  r.put("/messages/conversations/:id/pin", read, async (c) => {
+    const w = who(c);
+    const cid = uuid(c, "id");
+    const body = await parseJson(c, PinRequestSchema);
+    return c.json(await run(uc.pin(w, cid, body.pinned)));
+  });
+  r.put("/messages/conversations/:id/mark-unread", read, async (c) => {
+    const w = who(c);
+    const cid = uuid(c, "id");
+    const body = await parseJson(c, MarkUnreadRequestSchema);
+    return c.json(await run(uc.markUnread(w, cid, body.unread)));
+  });
+}
+
 /** Tệp (M5): tải lên (multipart `file`, gắn `msg_files` ngay, chưa gửi) + tải xuống 302 tới FileBox (+ `/link` JSON). FileBox vắng ⇒ 503. */
 function fileRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   const { read, who, uuid, noStore } = h;
@@ -244,6 +263,7 @@ export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Rout
   conversationRoutes(r, h, uc);
   memberRoutes(r, h, uc);
   messageRoutes(r, h, uc);
+  prefRoutes(r, h, uc);
   fileRoutes(r, h, uc);
   attachmentRoutes(r, h, uc);
   searchRoutes(r, h, uc);
