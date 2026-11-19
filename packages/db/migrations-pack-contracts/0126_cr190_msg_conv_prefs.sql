@@ -38,3 +38,8 @@ DROP POLICY IF EXISTS msg_conv_prefs_own_del ON contracts.msg_conv_prefs;
 --> statement-breakpoint
 CREATE POLICY msg_conv_prefs_own_del ON contracts.msg_conv_prefs AS RESTRICTIVE FOR DELETE TO contracts_rw
   USING ((SELECT packs.viewer_ext_org()) IS NULL AND user_id = NULLIF(current_setting('app.user_id', true), '')::uuid);
+--> statement-breakpoint
+-- Hàm hub mới (hub 0166) cho cờ «chưa đọc» của cuộc `partner`: migration hub chạy TRƯỚC khi role gói có trên DB dựng sạch ⇒ cấp lại ở đây, không điều kiện (khuôn 0118/0120). Chạy lại vô hại.
+GRANT USAGE ON SCHEMA hub TO contracts_rw;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION hub.pmsg_inbox_unread(uuid, timestamptz, uuid, integer, uuid[]), hub.pmsg_flagged_idle(uuid[]) TO contracts_rw;

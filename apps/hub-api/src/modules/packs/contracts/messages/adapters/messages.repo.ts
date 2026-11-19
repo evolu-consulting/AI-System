@@ -44,17 +44,33 @@ function summary(t: string, me: string, withMembers: boolean, pick: SQL) {
     order by c.last_at desc, c.id desc`;
 }
 
-/** CR-178 · chỉ cuộc còn tin chưa đọc: cùng luật đếm với `summary.unread` / `unread` (tin sau mốc đọc, không do mình gửi, chưa thu hồi); áp TRƯỚC `limit` nên trang luôn đầy. */
-const UNREAD_ONLY = sql`and c.last_seq > me.last_read_seq and exists (select 1 from contracts.msg_messages x
-    where x.tenant_id = c.tenant_id and x.conversation_id = c.id and x.seq > me.last_read_seq and x.sender_id <> me.user_id and x.deleted_at is null)`;
+/**
+ * CR-178 · chỉ cuộc còn tin chưa đọc: cùng luật đếm với `summary.unread` / `unread` (tin sau mốc đọc, không do mình gửi, chưa thu hồi); áp TRƯỚC `limit` nên trang luôn đầy.
+ * CR-190 · cộng cuộc người gọi đã «đánh dấu chưa đọc» (badge và danh sách khớp nhau).
+ */
+const UNREAD_ONLY = sql`and ((c.last_seq > me.last_read_seq and exists (select 1 from contracts.msg_messages x
+    where x.tenant_id = c.tenant_id and x.conversation_id = c.id and x.seq > me.last_read_seq and x.sender_id <> me.user_id and x.deleted_at is null))
+    or exists (select 1 from contracts.msg_conv_prefs p where p.tenant_id = me.tenant_id and p.user_id = me.user_id and p.conv_kind = 'internal'
+      and p.conv_id = c.id and p.marked_unread_at is not null))`;
+
+/** CR-190 · id cuộc `partner` người gọi đã đánh dấu chưa đọc (mảng, MỘT truy vấn con) — truyền cho hàm hub; hàm hub vẫn chỉ xét cuộc người gọi là một đầu. */
+const flaggedPartnerIds = (
+  t: string,
+  me: string,
+) => sql`array(select p.conv_id from contracts.msg_conv_prefs p
+  where p.tenant_id = ${t}::uuid and p.user_id = ${me}::uuid and p.conv_kind = 'partner' and p.marked_unread_at is not null)`;
 
 /** Cuộc `partner` của người gọi (`pmsg_inbox`, MỘT lần gọi hàm) về cùng dạng cột với `summary` để `UNION ALL`. Tên/công ty/«chỉ đọc» đã tính trong hàm. */
-function partnerPick(q: ListQuery): SQL {
+function partnerPick(t: string, me: string, q: ListQuery): SQL {
   return sql`select pm.id, 'partner'::text as kind, null::text as title, ${iso("pm.last_at")} as last_at, pm.last_at as last_ts,
       'member'::text as my_role, 2 as member_count, pm.peer_user as peer_id, pm.unread, pm.last::json as last, null::json as members,
       json_build_object('peer_name', pm.peer_name, 'peer_title', pm.peer_title, 'peer_active', pm.peer_active, 'company_id', pm.company_id,
         'company_name', pm.company_name, 'read_only', pm.read_only) as partner
-    from ${q.unreadOnly ? sql`hub.pmsg_inbox_unread` : sql`hub.pmsg_inbox`}(${q.company}::uuid, ${q.cursor?.at ?? null}::timestamptz, ${q.cursor?.id ?? null}::uuid, ${q.limit}::int) pm`;
+    from ${
+      q.unreadOnly
+        ? sql`hub.pmsg_inbox_unread(${q.company}::uuid, ${q.cursor?.at ?? null}::timestamptz, ${q.cursor?.id ?? null}::uuid, ${q.limit}::int, ${flaggedPartnerIds(t, me)})`
+        : sql`hub.pmsg_inbox(${q.company}::uuid, ${q.cursor?.at ?? null}::timestamptz, ${q.cursor?.id ?? null}::uuid, ${q.limit}::int)`
+    } pm`;
 }
 
 /** Danh sách hợp nhất (P9) — MỘT câu: mỗi nguồn LIMIT n (keyset `(last_at, id)` DESC dùng chung), rồi sắp + LIMIT n ngoài. */
@@ -75,29 +91,28 @@ function listSql(t: string, me: string, q: ListQuery): SQL {
     q.source.internal && q.source.partner ? sql`${im} union all ${pm}` : q.source.partner ? pm : im;
   const ctes = [
     q.source.internal ? sql`im as (${internal})` : null,
-    q.source.partner ? sql`pm as (${partnerPick(q)})` : null,
+    q.source.partner ? sql`pm as (${partnerPick(t, me, q)})` : null,
   ].filter((x): x is SQL => x !== null);
   return sql`with ${sql.join(ctes, sql`, `)}
     select ${cols} from (${body}) x order by x.last_ts desc, x.id desc limit ${q.limit}::int`;
 }
 
 /**
- * CR-190 · cuộc người gọi «đánh dấu chưa đọc» mà KHÔNG còn tin chưa đọc thật tính +1 mỗi cuộc (cờ là «ít nhất một»; cuộc đã có tin chưa đọc thật không cộng đôi).
- * Nội bộ: kiểm cùng luật đếm với `summary.unread` (tin sau mốc, không do mình gửi, chưa thu hồi). `partner`: không kiểm được số thật ở đây (hàm hub nội bộ) ⇒ +1 mỗi cờ.
+ * CR-190 · cuộc người gọi «đánh dấu chưa đọc» mà KHÔNG còn tin chưa đọc thật tính +1 mỗi cuộc (cờ là «ít nhất một»; cuộc đã có tin chưa đọc thật không cộng đôi) và người gọi còn là một đầu / thành viên.
+ * Nội bộ: cùng luật đếm với `summary.unread` (tin sau mốc, không do mình gửi, chưa thu hồi). `partner`: `hub.pmsg_flagged_idle` (hub 0166) áp đúng luật đó và kiểm «còn là một đầu». Một biểu thức, không theo dòng.
  */
 const flaggedCount = (
   t: string,
   me: string,
   withPartner: boolean,
-) => sql`(select count(*)::int from (select 1 from contracts.msg_conv_prefs p
-    where p.tenant_id = ${t}::uuid and p.user_id = ${me}::uuid and p.marked_unread_at is not null
-      and (${withPartner ? sql`p.conv_kind = 'partner'` : sql`false`} or (p.conv_kind = 'internal'
-        and exists (select 1 from contracts.msg_members m where m.tenant_id = p.tenant_id and m.conversation_id = p.conv_id and m.user_id = p.user_id)
-        and not exists (select 1 from contracts.msg_members m join contracts.msg_conversations c on c.tenant_id = m.tenant_id and c.id = m.conversation_id
-          where m.tenant_id = p.tenant_id and m.conversation_id = p.conv_id and m.user_id = p.user_id and c.last_seq > m.last_read_seq
-            and exists (select 1 from contracts.msg_messages x where x.tenant_id = m.tenant_id and x.conversation_id = m.conversation_id
-              and x.seq > m.last_read_seq and x.sender_id <> m.user_id and x.deleted_at is null))))
-    limit 999) f)`;
+) => sql`((select count(*)::int from (select 1 from contracts.msg_conv_prefs p
+    where p.tenant_id = ${t}::uuid and p.user_id = ${me}::uuid and p.marked_unread_at is not null and p.conv_kind = 'internal'
+      and exists (select 1 from contracts.msg_members m where m.tenant_id = p.tenant_id and m.conversation_id = p.conv_id and m.user_id = p.user_id)
+      and not exists (select 1 from contracts.msg_members m join contracts.msg_conversations c on c.tenant_id = m.tenant_id and c.id = m.conversation_id
+        where m.tenant_id = p.tenant_id and m.conversation_id = p.conv_id and m.user_id = p.user_id and c.last_seq > m.last_read_seq
+          and exists (select 1 from contracts.msg_messages x where x.tenant_id = m.tenant_id and x.conversation_id = m.conversation_id
+            and x.seq > m.last_read_seq and x.sender_id <> m.user_id and x.deleted_at is null))
+    limit 999) f) + ${withPartner ? sql`(select count(*)::int from hub.pmsg_flagged_idle(${flaggedPartnerIds(t, me)}))` : sql`0`})`;
 
 /** Đọc hội thoại: danh sách, chi tiết, tổng chưa đọc, sự thật cho kiểm quyền, tìm 1-1. */
 function readRepo(

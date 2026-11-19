@@ -166,4 +166,12 @@ describe("CR-169 · cuộc partner (view)", () => {
       [B, 2],
     ]);
   });
+  it("CR-190 · số chưa đọc hiển thị = max(chưa đọc thật, cờ ? 1 : 0): cờ trên cuộc đã đọc hết hiện 1, cuộc có tin thật không cộng đôi", () => {
+    const u = (unread: number, marked: boolean) =>
+      summaryOf(raw({ unread, marked_unread: marked }), new Map()).unread;
+    expect([u(0, true), u(0, false), u(5, true), u(5, false)]).toEqual([1, 0, 5, 5]);
+    const pu = (unread: number, marked: boolean) =>
+      summaryOf({ ...partner, unread, marked_unread: marked }, new Map()).unread;
+    expect([pu(0, true), pu(3, true), pu(3, false)]).toEqual([1, 3, 3]);
+  });
 });

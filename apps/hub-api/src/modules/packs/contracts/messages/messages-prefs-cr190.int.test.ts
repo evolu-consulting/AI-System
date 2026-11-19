@@ -208,12 +208,12 @@ describe("CR-190 · ghim cuộc nội bộ — theo người", () => {
 });
 
 describe("CR-190 · đánh dấu chưa đọc cuộc nội bộ", () => {
-  it("VY đọc hết rồi đánh dấu: cờ chỉ của VY, số chưa đọc thật vẫn 0, tổng chưa đọc +1, TIEN không bị ảnh hưởng", async () => {
+  it("VY đọc hết rồi đánh dấu: cờ chỉ của VY, cuộc hiển thị «1» chưa đọc, tổng chưa đọc +1, TIEN không bị ảnh hưởng", async () => {
     await call(VY, "POST", `${I(g1)}/read`, { seq: 1 });
     const before = await total(VY);
     const r = await call(VY, "PUT", `${I(g1)}/mark-unread`, { unread: true });
     expect([r.status, ConvPrefsSchema.parse(r.body).marked_unread]).toEqual([200, true]);
-    expect(await flag(VY, g1)).toEqual({ pinned: false, marked: true, unread: 0 });
+    expect(await flag(VY, g1)).toEqual({ pinned: false, marked: true, unread: 1 });
     expect((await flag(TIEN, g1)).marked).toBe(false);
     expect(await total(VY)).toBe(before + 1);
     expect(await total(TIEN)).toBe(0);
@@ -277,6 +277,62 @@ describe("CR-190 · cuộc đối tác (hub.pmsg_*)", () => {
     expect(await rows(VY)).toEqual([]);
     await call(HA, "PUT", `${P(vyHa)}/pin`, { pinned: false });
     expect(await rows(HA)).toEqual([]);
+  });
+});
+
+describe("CR-190 · cờ và chưa đọc thật khớp nhau: badge = danh sách (cuộc đối tác + nội bộ)", () => {
+  let td = "";
+  const unreadIds = async (u: string) => {
+    const r = await call(u, "GET", `${MSG}/conversations?unread=true`);
+    return ConversationPageSchema.parse(r.body).items.map((c) => c.id);
+  };
+  it("cuộc đối tác vừa có tin chưa đọc thật vừa có cờ: tổng không đổi, cuộc hiển thị 1 (không 2)", async () => {
+    td = (
+      await call<{ id: string }>(TIEN, "POST", `${MSG}/conversations`, {
+        kind: "partner",
+        tenant_id: B,
+        user_id: DUNG,
+      })
+    ).body.id;
+    await send(TIEN, P(td), "một");
+    const t0 = await total(DUNG);
+    const r = await call(DUNG, "PUT", `${P(td)}/mark-unread`, { unread: true });
+    expect(r.status).toBe(200);
+    expect(await total(DUNG)).toBe(t0);
+    expect((await flag(DUNG, td)).unread).toBe(1);
+    await send(TIEN, P(td), "hai");
+    expect(await total(DUNG)).toBe(t0 + 1); // tin thật tăng thì tổng tăng đúng 1, cờ không cộng thêm
+    expect((await flag(DUNG, td)).unread).toBe(2);
+  });
+  it("cuộc đối tác chỉ có cờ (đã đọc hết): tổng +1 và vào bộ lọc «Chưa đọc», mở cuộc thì ra khỏi cả hai", async () => {
+    await call(DUNG, "POST", `${P(td)}/read`, { seq: 2 });
+    expect(await unreadIds(DUNG)).toEqual([]);
+    const t0 = await total(DUNG);
+    await call(DUNG, "PUT", `${P(td)}/mark-unread`, { unread: true });
+    expect(await total(DUNG)).toBe(t0 + 1);
+    expect(await unreadIds(DUNG)).toEqual([td]);
+    expect((await flag(DUNG, td)).unread).toBe(1);
+    await call(DUNG, "POST", `${P(td)}/read`, { seq: 2 });
+    expect(await total(DUNG)).toBe(t0);
+    expect(await unreadIds(DUNG)).toEqual([]);
+  });
+  it("cuộc nội bộ chỉ có cờ vào bộ lọc «Chưa đọc» của người đánh dấu, không của người khác", async () => {
+    await call(VY, "POST", `${I(g2)}/read`, { seq: 0 });
+    const before = await unreadIds(VY);
+    expect(before).not.toContain(g2);
+    await call(VY, "PUT", `${I(g2)}/mark-unread`, { unread: true });
+    expect(await unreadIds(VY)).toContain(g2);
+    expect(await unreadIds(TIEN)).not.toContain(g2);
+    await call(VY, "POST", `${I(g2)}/read`, { seq: 0 });
+    expect(await unreadIds(VY)).not.toContain(g2);
+  });
+  it("cờ của cuộc đối tác mà người gọi không còn là một đầu (dữ liệu lạc) không được đếm và không vào bộ lọc", async () => {
+    const t0 = await total(DUNG);
+    await o`insert into contracts.msg_conv_prefs (tenant_id, user_id, conv_kind, conv_id, marked_unread_at)
+      values (${B}, ${DUNG}, 'partner', ${vyHa}, now())`; // DUNG không là đầu của cuộc VY–HA
+    expect(await total(DUNG)).toBe(t0);
+    expect(await unreadIds(DUNG)).not.toContain(vyHa);
+    await o`delete from contracts.msg_conv_prefs where user_id = ${DUNG} and conv_id = ${vyHa}`;
   });
 });
 

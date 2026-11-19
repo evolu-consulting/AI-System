@@ -27,6 +27,9 @@ export function personIdsOf(rows: readonly RawConversation[]): string[] {
   return [...ids];
 }
 
+/** CR-190 · số chưa đọc hiển thị = max(chưa đọc thật, cờ «đánh dấu chưa đọc» ? 1 : 0) — cùng luật với tổng chưa đọc (cuộc có cờ mà đã đọc hết hiện «1», không cộng đôi). */
+const shownUnread = (r: RawConversation): number => Math.max(r.unread, r.marked_unread ? 1 : 0);
+
 /** CR-190 · ghim + đánh dấu chưa đọc của người gọi (vắng ⇒ không ghim, không cờ). */
 const prefsOfRow = (r: RawConversation) => ({
   pinned_at: r.pinned_at ? isoOf(r.pinned_at) : null,
@@ -54,7 +57,7 @@ function partnerSummaryOf(r: RawConversation, p: RawPartner): ConversationSummar
           at: isoOf(r.last.at),
         }
       : null,
-    unread: capUnread(r.unread, "conversation"),
+    unread: capUnread(shownUnread(r), "conversation"),
     last_at: isoOf(r.last_at),
     company: { id: p.company_id, name: p.company_name },
     read_only: p.read_only,
@@ -85,7 +88,7 @@ export function summaryOf(r: RawConversation, people: People): ConversationSumma
           at: isoOf(r.last.at),
         }
       : null,
-    unread: capUnread(r.unread, "conversation"),
+    unread: capUnread(shownUnread(r), "conversation"),
     last_at: isoOf(r.last_at),
     company: null,
     read_only: false,
