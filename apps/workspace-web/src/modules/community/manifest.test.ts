@@ -7,6 +7,7 @@ import {
   communityRoutes,
   createCommunityRoutes,
   isLegacySettingsLink,
+  loadJoinReviewPane,
 } from "./manifest";
 
 describe("communityRoutes", () => {
@@ -103,5 +104,15 @@ describe("CR-130 · link cũ ?settings=1", () => {
     expect(isLegacySettingsLink({ settings: 0 })).toBe(false);
     expect(isLegacySettingsLink({})).toBe(false);
     expect(isLegacySettingsLink(undefined)).toBe(false);
+  });
+});
+
+describe("CR-191 · Yêu cầu tham gia chuyển sang Sổ Hợp Tác › Đối tác", () => {
+  it("menu Community không còn mục Yêu cầu tham gia, route /join giữ để chuyển hướng", () => {
+    expect(communityManifest.nav.map((n) => n.to)).not.toContain(`${COMMUNITY_BASE}/join`);
+    expect(communityRoutes.map((r) => r.id)).toContain("join");
+  });
+  it("khối nhúng nạp lười (không vào bundle đầu)", () => {
+    expect(typeof loadJoinReviewPane).toBe("function");
   });
 });

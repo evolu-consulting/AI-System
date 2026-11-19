@@ -32,10 +32,10 @@ describe("capsOf + nav Community", () => {
     expect(labels(off)).not.toContain("contracts.nav.review");
     expect(labels(off)).toContain("contracts.nav.reports");
   });
-  it("đối tác ⇒ chỉ thấy Yêu cầu tham gia", () => {
-    const l = labels(nav(["community.join", 0]));
-    expect(l).toContain("contracts.nav.join");
-    expect(l).not.toContain("contracts.nav.reports");
+  it("CR-191 · «Yêu cầu tham gia» không còn là mục menu Community (chuyển sang Sổ Hợp Tác › Đối tác)", () => {
+    const l = labels(nav(["community.join", 0], ["community.review", 1]));
+    expect(l).not.toContain("contracts.nav.join");
+    expect(l).toContain("contracts.nav.review");
   });
 });
 

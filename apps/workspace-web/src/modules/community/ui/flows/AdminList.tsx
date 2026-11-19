@@ -3,7 +3,7 @@
 import { EmptyState } from "@ai/web-kit/ui/EmptyState";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
-import { useApp } from "../../application/ctx";
+import { useFlowEnv } from "../../application/flow-env";
 import { filterByStatus, type StatusFilter, sortForReview } from "../../domain/admin-list";
 import { t } from "../../i18n";
 
@@ -24,7 +24,7 @@ type Props<T extends Row, S extends string> = {
 };
 
 export function AdminList<T extends Row, S extends string>(p: Props<T, S>) {
-  const { brandAccent } = useApp();
+  const { brandAccent } = useFlowEnv();
   const [filter, setFilter] = useState<StatusFilter<S>>("all");
   const [sel, setSel] = useState<string | null>(null);
   const openedStatus = useRef<string | null>(null);

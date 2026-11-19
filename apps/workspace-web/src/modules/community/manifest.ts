@@ -1,7 +1,7 @@
 // CR-118 · COM-FR-31 (MODIFIED) · manifest module Community — dữ liệu route + nhà máy cây route tương thích TanStack Router.
 // Shell chỉ đọc file này (luật web-shell-manifest-only). KHÔNG khởi tạo router ở đây: host truyền `createRoute` + route cha
 // (`createRoute` của @tanstack/react-router, `lazyRouteComponent` làm `lazy`). Trang tải lười ⇒ module tắt không có chunk.
-import { ClipboardCheck, Flag, Newspaper, PenLine, User, UserPlus } from "lucide-react";
+import { ClipboardCheck, Flag, Newspaper, PenLine, User } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ModuleManifest } from "~/shared/kernel/module-manifest";
 import { type CommunityHostConfig, setCommunityHost } from "./application/host";
@@ -129,14 +129,7 @@ export const communityManifest = {
       cap: "community.review",
       bottom: false,
     },
-    {
-      to: `${COMMUNITY_BASE}/join`,
-      labelKey: "contracts.nav.join",
-      icon: UserPlus,
-      testId: "nav-community-join",
-      cap: "community.join",
-      bottom: false,
-    },
+    // CR-191: «Yêu cầu tham gia» chuyển sang Sổ Hợp Tác › Đối tác (route /join giữ để chuyển hướng + form của đối tác).
     {
       to: `${COMMUNITY_BASE}/reports`,
       labelKey: "contracts.nav.reports",
@@ -157,6 +150,10 @@ export const communityShellManifest: ModuleManifest = communityManifest;
 /** CR-130 · ngăn "Bảng tin › Thông báo" của Cài đặt Sổ Hợp Tác (hộp thoại chung nạp lười khi gói Cộng đồng bật). */
 export const loadFeedSettingsPane = () =>
   import(/* webpackChunkName: "cm-settings" */ "./ui/settings/FeedNotifyPane");
+
+/** CR-191 · khối «Yêu cầu tham gia» nhúng vào Sổ Hợp Tác › Đối tác (nạp lười; chỉ khi gói Cộng đồng bật). */
+export const loadJoinReviewPane = () =>
+  import(/* webpackChunkName: "cm-join" */ "./ui/embed/JoinReviewPane");
 
 /** CR-130 · link cũ `/community?settings=1` (menu tài khoản cũ, `#/settings`): nay mở Cài đặt chung ở mục Bảng tin. */
 export const isLegacySettingsLink = (search: unknown): boolean =>

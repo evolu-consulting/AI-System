@@ -9,14 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { useApp } from "../../application/ctx";
+import { useFlowEnv } from "../../application/flow-env";
 import { t } from "../../i18n";
 
 type Page<T> = { items: T[]; nextOffset: number | null };
 
 /** CR-151 · tải danh sách dần: trang đầu + `loadMore()` nối trang kế theo `nextOffset` (một lời gọi mỗi trang). */
 export function usePagedFlowList<T>(load: (offset: number) => Promise<Page<T>>) {
-  const { rev } = useApp();
+  const { rev } = useFlowEnv();
   const [items, setItems] = useState<T[] | null>(null);
   const [next, setNext] = useState<number | null>(null);
   const [failed, setFailed] = useState(false);
@@ -156,7 +156,7 @@ type DialogProps = {
 
 /** Hộp thoại nhập lý do (từ chối bài / từ chối yêu cầu / báo cáo bài). Lỗi hiện ngay trong hộp thoại kèm cách sửa. */
 export function ReasonDialog(p: DialogProps) {
-  const { brandAccent } = useApp();
+  const { brandAccent } = useFlowEnv();
   const [text, setText] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

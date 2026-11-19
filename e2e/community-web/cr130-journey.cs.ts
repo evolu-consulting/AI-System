@@ -209,7 +209,7 @@ test("CR130-J2 · duyệt đơn tham gia «Gắn với đối tác có sẵn» �
     const row = host.page.getByTestId("join-item").filter({ hasText: org });
     const item = host.page.getByTestId("join-list-detail"); // CR-137b: bấm dòng ⇒ hộp thoại chi tiết
     await expect(async () => {
-      await host.page.goto("/community/join");
+      await host.page.goto("/contracts/partners"); // CR-191: «Yêu cầu tham gia» nay ở Sổ Hợp Tác › Đối tác
       await row.click({ timeout: 4_000 });
       await expect(item.getByTestId("join-approve")).toBeVisible({ timeout: 4_000 });
     }).toPass({ timeout: 240_000 }); // bước duyệt mở sau bước kiểm tra của hệ thống
@@ -256,6 +256,19 @@ test("CR130-J2 · duyệt đơn tham gia «Gắn với đối tác có sẵn» �
     host.page.getByText("Đối tác này đã có tài khoản Bảng tin. Chọn đối tác khác"),
   ).toBeVisible();
   await expect(b.getByTestId("join-approve")).toBeVisible();
+  await host.ctx.close();
+});
+
+test("CR191-J8 · người duyệt mở link cũ /community/join ⇒ chuyển sang Sổ Hợp Tác › Đối tác, thấy khối «Yêu cầu tham gia», menu Community không còn mục này", async ({
+  browser,
+}) => {
+  const host = await openAs(browser, "host");
+  const p = host.page;
+  await p.goto("/community/join");
+  await expect(p).toHaveURL(/\/contracts\/partners/);
+  await expect(p.getByTestId("join-requests-panel")).toBeVisible();
+  await p.goto("/community");
+  await expect(p.getByTestId("nav-community-join")).toHaveCount(0);
   await host.ctx.close();
 });
 

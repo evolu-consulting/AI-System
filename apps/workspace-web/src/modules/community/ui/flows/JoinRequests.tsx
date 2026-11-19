@@ -4,8 +4,9 @@ import type { JoinRequest } from "@ai/contracts/community";
 import { PARTNER_LABELS } from "@ai/contracts/community";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { Input } from "@ai/web-kit/ui/kit/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "../../application/ctx";
+import { useFlowEnv } from "../../application/flow-env";
 import { shortDay } from "../../domain/admin-list";
 import { isConflict } from "../../domain/flows";
 import { approveErrorKey } from "../../domain/join-approve";
@@ -13,6 +14,9 @@ import { numLocale, t } from "../../i18n";
 import { AdminList, type Column } from "./AdminList";
 import { JoinApprove } from "./JoinApprove";
 import { FlowPage, ListState, LoadMore, ReasonDialog, usePagedFlowList } from "./parts";
+
+/** Trang Sổ Hợp Tác › Đối tác (nơi người duyệt xử lý yêu cầu tham gia). */
+const PARTNERS_PATH = "/contracts/partners";
 
 const TONE: Record<JoinRequest["status"], string> = {
   pending: "tag soon sm",
@@ -121,9 +125,9 @@ function JoinForm() {
   );
 }
 
-function JoinReview() {
-  const { api, toast, bump } = useApp();
-  const list = usePagedFlowList((o) => api.flows.listJoins(false, o));
+export function JoinReview() {
+  const { flows, toast, bump } = useFlowEnv();
+  const list = usePagedFlowList((o) => flows.listJoins(false, o));
   const [rejecting, setRejecting] = useState<JoinRequest | null>(null);
   const decide = async (
     j: JoinRequest,
@@ -132,7 +136,7 @@ function JoinReview() {
     partyKey?: string,
   ) => {
     try {
-      await api.flows.decideJoin(j.id, {
+      await flows.decideJoin(j.id, {
         action,
         taskId: j.taskId,
         ...(feedback ? { feedback } : {}),
@@ -220,15 +224,19 @@ function JoinReview() {
 }
 
 export default function JoinRequestsPage() {
-  const { isHostViewer } = useApp();
+  const { isHostViewer, openContracts } = useApp();
+  // CR-191 · BR-191-10: người duyệt xem «Yêu cầu tham gia» ở Sổ Hợp Tác › Đối tác; link cũ chuyển hướng (thay mục lịch sử).
+  useEffect(() => {
+    if (isHostViewer) openContracts(PARTNERS_PATH, { replace: true });
+  }, [isHostViewer, openContracts]);
+  if (isHostViewer) return null;
   return (
     <FlowPage
       title={t("community.flows.join.title")}
-      intro={isHostViewer ? undefined : t("community.flows.join.introPartner")}
+      intro={t("community.flows.join.introPartner")}
       testId="join-page"
-      bare={isHostViewer}
     >
-      {isHostViewer ? <JoinReview /> : <JoinForm />}
+      <JoinForm />
     </FlowPage>
   );
 }

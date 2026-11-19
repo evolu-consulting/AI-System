@@ -20,6 +20,7 @@ import { ConnectedPanel } from "../components/ConnectedPanel";
 import { ConnectRequestsPanel } from "../components/ConnectRequestsPanel";
 import { ConnectSearchDialog } from "../components/ConnectSearchDialog";
 import { DiscoverableCard } from "../components/DiscoverableCard";
+import { JoinRequestsPanel } from "../components/JoinRequestsPanel";
 import { MineBanner } from "../components/MineBanner";
 import { RedFlagTag } from "../components/RedFlagTag";
 import { RepBadge } from "../components/RepBadge";
@@ -180,6 +181,7 @@ export function PartnersPage() {
       {adding && <AddCompanyDialog onClose={() => setAdding(false)} />}
       {finding && <ConnectSearchDialog onClose={() => setFinding(false)} />}
       <ConnectRequestsPanel />
+      <JoinRequestsPanel />
       <DiscoverableCard />
       <ConnectedPanel />
       <MineBanner />

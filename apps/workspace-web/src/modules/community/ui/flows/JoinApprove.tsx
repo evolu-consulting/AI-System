@@ -6,7 +6,7 @@ import { Input } from "@ai/web-kit/ui/kit/input";
 import { useState } from "react";
 import { Btn } from "~/components/ui/Btn";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
-import { useApp } from "../../application/ctx";
+import { useFlowEnv } from "../../application/flow-env";
 import { filterParties, PARTY_LIMIT, type Party } from "../../domain/join-approve";
 import { t } from "../../i18n";
 
@@ -19,7 +19,7 @@ export function JoinApprove({
   onApprove: (partyKey: string | undefined) => void;
   onReject: () => void;
 }) {
-  const { api } = useApp();
+  const { flows } = useFlowEnv();
   const [link, setLink] = useState(false);
   const [parties, setParties] = useState<Party[] | null>(null);
   const [q, setQ] = useState("");
@@ -27,13 +27,13 @@ export function JoinApprove({
   const toggle = (on: boolean) => {
     setLink(on);
     setPicked(null);
-    if (on && !parties) api.flows.listParties().then(setParties, () => setParties([]));
+    if (on && !parties) flows.listParties().then(setParties, () => setParties([]));
   };
   // Danh sách đầy (= trần máy chủ) ⇒ gõ từ khoá thì hỏi máy chủ; chưa đầy ⇒ lọc tại máy.
   const truncated = (parties?.length ?? 0) >= PARTY_LIMIT;
   const onSearch = (v: string) => {
     setQ(v);
-    if (truncated) api.flows.listParties(v).then(setParties, () => undefined);
+    if (truncated) flows.listParties(v).then(setParties, () => undefined);
   };
   const shown = filterParties(parties ?? [], truncated ? "" : q);
   return (

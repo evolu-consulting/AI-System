@@ -14,6 +14,7 @@ import { type BrandView, toBrandView } from "../domain/brand";
 import type { Route } from "../domain/route";
 import { trimSearch } from "../domain/search-hint";
 import { t } from "../i18n";
+import { type FlowEnv, FlowEnvCtx } from "./flow-env";
 import type { CommunityHost } from "./host";
 import type { CommunityApi, RouterPort } from "./ports";
 import type { Api } from "./runtime";
@@ -40,7 +41,7 @@ export type Ctx = {
   href: (r: Route) => string;
   /** Đăng xuất phiên chung / mở Sổ Hợp Tác trong app (host cấp). */
   logout: () => Promise<void>;
-  openContracts: (path: string) => void;
+  openContracts: (path: string, opts?: { replace?: boolean }) => void;
   openContractsSettings: (section: string) => void;
   contractsHref: (path: string) => string;
   search: string;
@@ -186,6 +187,10 @@ export function AppProvider({
       brandAccent,
     ],
   );
+  const flowEnv = useMemo<FlowEnv>(
+    () => ({ flows: boot.api.flows, rev, bump, toast: setMsg, brandAccent }),
+    [boot, rev, bump, brandAccent],
+  );
   if (!value)
     return (
       <div data-mod="community" data-accent={brandAccent}>
@@ -194,14 +199,16 @@ export function AppProvider({
     );
   return (
     <C.Provider value={value}>
-      <div data-mod="community" data-accent={brandAccent}>
-        {children}
-        {msg && (
-          <div className="toast" role="status">
-            {msg}
-          </div>
-        )}
-      </div>
+      <FlowEnvCtx.Provider value={flowEnv}>
+        <div data-mod="community" data-accent={brandAccent}>
+          {children}
+          {msg && (
+            <div className="toast" role="status">
+              {msg}
+            </div>
+          )}
+        </div>
+      </FlowEnvCtx.Provider>
     </C.Provider>
   );
 }

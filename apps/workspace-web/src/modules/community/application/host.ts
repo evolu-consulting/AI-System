@@ -9,7 +9,7 @@ export type CommunityHostConfig = {
   /** Kết thúc phiên chung (một phiên cho cả hai module). */
   logout(): Promise<void>;
   /** Mở trang Sổ Hợp Tác (đường dẫn gốc contracts, vd `/partners`) trong cùng app, không tải lại. */
-  openContracts(path: string): void;
+  openContracts(path: string, opts?: { replace?: boolean }): void;
   /** Mở cài đặt Sổ Hợp Tác (một mục: co|rep|biz|scout|flow) ngay trong app, không đổi URL, không tải lại. */
   openContractsSettings(section: string): void;
   /** `href` cho thẻ `<a>` tới trang Sổ Hợp Tác (mở tab mới/copy được). */

@@ -26,7 +26,7 @@ export function installCommunityHost(router: AnyRouter): void {
       subscribe: (cb) => router.subscribe("onResolved", cb),
     },
     logout: async () => (await import("~/features/auth/api")).logout(), // nạp lười: không kéo api đăng nhập vào bundle đầu
-    openContracts: (path) => go(path, false),
+    openContracts: (path, o) => go(path, o?.replace === true),
     openContractsSettings: (section) =>
       void import("~/features/settings/lib/bus").then((m) => m.openSettings(section as never)),
     contractsHref: (path) => path,
