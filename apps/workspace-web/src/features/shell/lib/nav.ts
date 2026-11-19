@@ -121,6 +121,14 @@ export function activeNav(pathname: string): NavItem | undefined {
 export const fabHiddenOn = (pathname: string): boolean =>
   pathname === `${B}/messages` || pathname.startsWith(`${B}/messages/`);
 
+/** CR-187 BR-187-8 · Trang toàn màn: vùng nội dung đứng yên (không cuộn), khung con tự cuộn. Trang khai báo đường dẫn ở đây; Shell không còn cần `calc(100dvh-…)` viết cứng.
+ *  Lát này chỉ dựng cờ, chưa áp trang nào (Tin nhắn, sơ đồ, màn ký áp ở lát sau). */
+export const FULLSCREEN_PATHS: readonly string[] = [];
+export const isFullscreen = (
+  pathname: string,
+  paths: readonly string[] = FULLSCREEN_PATHS,
+): boolean => paths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
 /** Bố cục vùng nội dung: danh sách đầy cột (`board`, rộng 1600 px, tự giữ cuộn từ md), Tổng quan (`wide`), còn lại `reading`. */
 export type PageLayout = "board" | "wide" | "reading";
 export function layoutOf(pathname: string): PageLayout {

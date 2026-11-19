@@ -37,6 +37,7 @@ export function PersonAvatar({
     <Avatar
       name={name}
       src={src}
+      colorId={id}
       size={size}
       aria-hidden={interactive ? true : undefined}
       className={cn(ring && `ring-2 ${ring}`)}

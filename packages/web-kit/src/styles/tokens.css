@@ -127,6 +127,28 @@
   --brand-green: #15803d;
   --brand-orange: #c2410c;
   --brand-rose: #e11d48;
+
+  /* CR-187 BR-187-3: màu avatar người (băm id) */
+  --avatar-1-bg: #4f46e5;
+  --avatar-1-fg: #ffffff;
+  --avatar-2-bg: #7c3aed;
+  --avatar-2-fg: #ffffff;
+  --avatar-3-bg: #be185d;
+  --avatar-3-fg: #ffffff;
+  --avatar-4-bg: #c2410c;
+  --avatar-4-fg: #ffffff;
+  --avatar-5-bg: #92400e;
+  --avatar-5-fg: #ffffff;
+  --avatar-6-bg: #0f766e;
+  --avatar-6-fg: #ffffff;
+  --avatar-7-bg: #15803d;
+  --avatar-7-fg: #ffffff;
+  --avatar-8-bg: #0369a1;
+  --avatar-8-fg: #ffffff;
+  --avatar-9-bg: #475569;
+  --avatar-9-fg: #ffffff;
+  --avatar-10-bg: #a21caf;
+  --avatar-10-fg: #ffffff;
 }
 
 @media (max-width: 640px) {
@@ -258,6 +280,28 @@
   --brand-green: #4ade80;
   --brand-orange: #fb923c;
   --brand-rose: #fb7185;
+
+  /* CR-187 BR-187-3: màu avatar người (băm id) */
+  --avatar-1-bg: #a5b4fc;
+  --avatar-1-fg: #0e0f1c;
+  --avatar-2-bg: #c4b5fd;
+  --avatar-2-fg: #0e0f1c;
+  --avatar-3-bg: #f9a8d4;
+  --avatar-3-fg: #0e0f1c;
+  --avatar-4-bg: #fdba74;
+  --avatar-4-fg: #0e0f1c;
+  --avatar-5-bg: #fcd34d;
+  --avatar-5-fg: #0e0f1c;
+  --avatar-6-bg: #5eead4;
+  --avatar-6-fg: #0e0f1c;
+  --avatar-7-bg: #86efac;
+  --avatar-7-fg: #0e0f1c;
+  --avatar-8-bg: #7dd3fc;
+  --avatar-8-fg: #0e0f1c;
+  --avatar-9-bg: #cbd5e1;
+  --avatar-9-fg: #0e0f1c;
+  --avatar-10-bg: #f0abfc;
+  --avatar-10-fg: #0e0f1c;
 }
 @theme inline {
   --color-background: var(--background);

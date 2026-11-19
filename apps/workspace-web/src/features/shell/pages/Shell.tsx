@@ -20,7 +20,7 @@ import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import type { ShellUser } from "../components/UserMenu";
 import { useDock } from "../hooks/use-dock";
-import { fabHiddenOn, layoutOf, roleOf } from "../lib/nav";
+import { fabHiddenOn, isFullscreen, layoutOf, roleOf } from "../lib/nav";
 import { NAV_PINNED_KEY, useStoredBool } from "../lib/stored";
 
 type T = (k: string, o?: Record<string, unknown>) => string;
@@ -55,6 +55,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
   const { t } = useTranslation();
   const pathname = useNavPath();
   const layout = layoutOf(pathname);
+  const fullscreen = isFullscreen(pathname);
   // CR-125 · UX L1 · thẻ hợp đồng trên điện thoại: nút trợ lý nổi che nút Duyệt/Ký ⇒ ẩn (vẫn có ở desktop).
   const onCard = /^\/contracts\/c\/(?!new(?:\/|$))[^/]+\/?$/.test(pathname);
   const dock = useDock();
@@ -83,11 +84,13 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
             className={cn(
               "min-w-0 flex-1 overflow-y-auto px-7 pt-7 pb-[var(--fab-safe)] [--fab-safe:calc(5.5rem+env(safe-area-inset-bottom))] max-md:px-4 max-md:[--fab-safe:calc(9rem+env(safe-area-inset-bottom))]",
               layout === "board" && "md:flex md:flex-col md:overflow-hidden",
+              fullscreen && "overflow-hidden",
             )}
           >
             <div
               className={cn(
                 "mx-auto w-full",
+                fullscreen && "flex h-full min-h-0 flex-col",
                 layout === "board" &&
                   "max-w-[1600px] md:flex md:min-h-0 md:flex-1 md:flex-col md:overflow-y-auto",
                 layout === "wide" && "max-w-[1560px]",

@@ -37,3 +37,19 @@ describe("PersonAvatar", () => {
     expect(out).toContain("+2");
   });
 });
+
+describe("PersonAvatar màu theo người (CR-187 BR-187-3)", () => {
+  const style = (html: string) => /style="([^"]*)"/.exec(html)?.[1] ?? "";
+  test("không ảnh + có id ⇒ nền/chữ là token avatar theo băm id; đổi tên không đổi màu", () => {
+    const a = renderToStaticMarkup(<PersonAvatar name="An" id="u-123" />);
+    const b = renderToStaticMarkup(<PersonAvatar name="An Nguyễn" id="u-123" />);
+    expect(style(a)).toMatch(/background-color:var\(--avatar-\d+-bg\)/);
+    expect(style(a)).toBe(style(b));
+  });
+  test("có ảnh ⇒ không dùng màu; không id ⇒ giữ màu mặc định", () => {
+    expect(
+      renderToStaticMarkup(<PersonAvatar name="An" id="u-123" src="data:image/png;base64,AA" />),
+    ).not.toContain("--avatar-");
+    expect(renderToStaticMarkup(<PersonAvatar name="An" />)).not.toContain("--avatar-");
+  });
+});

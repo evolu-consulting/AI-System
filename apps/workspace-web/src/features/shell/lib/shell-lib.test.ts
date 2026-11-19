@@ -1,6 +1,6 @@
 // PK-FR-10 · TF5 · luật thuần của Shell: vai theo quyền gói, mục menu đang chọn, giới hạn độ rộng khoang, giao diện.
 import { describe, expect, test } from "bun:test";
-import { activeNav, canSeeSettings, fabHiddenOn, layoutOf, NAV, roleOf } from "./nav";
+import { activeNav, canSeeSettings, fabHiddenOn, isFullscreen, layoutOf, NAV, roleOf } from "./nav";
 import {
   ASSISTANT_DEFAULT,
   ASSISTANT_MAX,
@@ -61,6 +61,15 @@ describe("menu (nav-v2)", () => {
     expect(layoutOf("/contracts/c/new")).toBe("reading");
     expect(layoutOf("/community")).toBe("wide"); // CR-120: Community trong cùng khung
     expect(layoutOf("/community/profile")).toBe("wide");
+  });
+});
+
+describe("cờ toàn màn (CR-187 BR-187-8)", () => {
+  test("mặc định chưa trang nào toàn màn; khai báo đường dẫn ⇒ khớp chính nó và con", () => {
+    expect(isFullscreen("/contracts/messages")).toBe(false);
+    expect(isFullscreen("/contracts/messages", ["/contracts/messages"])).toBe(true);
+    expect(isFullscreen("/contracts/messages/c1", ["/contracts/messages"])).toBe(true);
+    expect(isFullscreen("/contracts/messages-x", ["/contracts/messages"])).toBe(false);
   });
 });
 

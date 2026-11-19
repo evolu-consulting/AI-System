@@ -27,10 +27,10 @@ type Props = {
   ariaLabel: string;
 };
 
-function Face({ name, card }: { name: string; card?: PersonCard | undefined }) {
+function Face({ id, name, card }: { id?: string; name: string; card?: PersonCard | undefined }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
-      <PersonAvatar name={name} src={card?.avatar} size={24} interactive={false} />
+      <PersonAvatar name={name} id={id} src={card?.avatar} size={24} interactive={false} />
       <span className="min-w-0">
         <span className="block truncate">{name}</span>
         {card?.job_title && (
@@ -112,7 +112,7 @@ export function PersonPick(p: Props) {
               className={`${row} ${p.value === m.id ? "bg-sunk font-semibold" : ""}`}
               onClick={() => pick(m.id, m.name)}
             >
-              <Face name={m.name} card={cards.get(m.id)} />
+              <Face id={m.id} name={m.name} card={cards.get(m.id)} />
             </Button>
           ))}
           {list.hasNextPage && (

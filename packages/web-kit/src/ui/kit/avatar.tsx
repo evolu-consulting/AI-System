@@ -1,5 +1,6 @@
 // CR-177 · Avatar: người = tròn, công ty = vuông bo. Cỡ 24/32/40. Ảnh/chữ cái đầu như PersonAvatar.
 import type { ComponentProps } from "react";
+import { avatarColorStyle } from "../avatar-color";
 import { avatarInitials } from "../PersonAvatar";
 import { cn } from "./cn";
 
@@ -15,6 +16,8 @@ export type AvatarProps = Omit<ComponentProps<"span">, "children"> & {
   src?: string | null | undefined;
   kind?: "person" | "company";
   size?: AvatarSize;
+  /** Mã người (CR-187): không ảnh ⇒ màu nền theo băm mã (người), không đổi khi đổi tên. Không dùng cho công ty. */
+  colorId?: string | null | undefined;
 };
 
 export function Avatar({
@@ -22,9 +25,12 @@ export function Avatar({
   src,
   kind = "person",
   size = 32,
+  colorId,
   className,
+  style,
   ...props
 }: AvatarProps) {
+  const byId = !src && kind === "person" ? avatarColorStyle(colorId) : undefined;
   return (
     <span
       data-slot="avatar"
@@ -37,6 +43,7 @@ export function Avatar({
         kind === "company" ? "rounded-[28%]" : "rounded-full",
         className,
       )}
+      style={byId ? { ...byId, ...style } : style}
       {...props}
     >
       {src ? (

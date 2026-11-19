@@ -40,3 +40,17 @@ Tám luật; mỗi luật một dòng + cái dùng. Máy kiểm: e2e `cr180-mobi
 6. Nút nổi (trợ lý): mọi vùng cuộn chính chừa đáy `pb-[var(--fab-safe)]` — `main` của Shell đã có. Vùng cuộn tự tạo (overflow-y-auto riêng) PHẢI tự thêm `pb-[var(--fab-safe)]`.
 7. Lề trang 16px (`px-4`) do Shell `main` cấp; trang con KHÔNG thêm lề ngang riêng và không lồng `<main>` thứ hai (trang dùng chung có prop `embedded`, ví dụ `NotificationsPage`).
 8. Một kiểu tiêu đề trang: `PageHeader` (h1 `text-2xl`). Sai: mỗi trang tự cỡ/đậm khác nhau.
+
+## Luật cuộn — CR-187 (BR-187-8)
+1. Mỗi chiều một vùng cuộn, không lồng dọc. Đúng: cả trang cuộn, hoặc chỉ khung danh sách cuộn. Sai: trang cuộn và khung bên trong cũng `overflow-y-auto`.
+2. Trang thường: trang cuộn (`main` của Shell). Sai: tự đặt `h-[calc(100dvh-…)]` rồi cuộn bên trong.
+3. Trang toàn màn (Tin nhắn, sơ đồ, màn ký): trang đứng yên, khung con cuộn. Đúng: khai báo đường dẫn trong `FULLSCREEN_PATHS` (`features/shell/lib/nav.ts`), khung con `min-h-0 flex-1 overflow-y-auto`. Sai: `calc(100dvh-8rem)` viết cứng.
+4. Khung con chỉ cuộn khi tải dần hoặc có > 8 mục. Sai: khung cao cố định cuộn cho 3 mục.
+5. Mọi vùng cuộn dọc có `scrollbar-gutter: stable`, để thanh cuộn hiện/ẩn không làm chữ nhảy ngang.
+
+## Luật chống nháy — CR-187 (BR-187-9)
+1. Đổi tab/bộ lọc: giữ dữ liệu cũ, làm mờ tới khi có dữ liệu mới. Đúng: `setData` chỉ khi có kết quả, kèm cờ `stale` để mờ. Sai: `setData(null)` khi đổi tab ⇒ trắng rồi hiện lại.
+2. Số đếm không về 0 khi đang tải: giữ số cũ hoặc «–». Sai: «Chờ tôi 0» rồi nhảy thành 5.
+3. Trạng thái chọn chỉ đổi màu nền/chữ, không đổi độ đậm, padding, viền. Sai: tab đang chọn `font-bold` hoặc thêm `border` ⇒ bề rộng nhảy.
+4. Khung chờ đúng kích thước nội dung thật (`Skeleton` cùng cao/rộng); ảnh có `aspect-ratio` hoặc width/height. Sai: ảnh không cỡ làm trang giật khi tải xong.
+5. e2e đo bounding box trước và sau khi bấm (tab, lọc, chọn): lệch ⇒ đỏ.
