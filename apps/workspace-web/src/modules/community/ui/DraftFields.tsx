@@ -55,8 +55,8 @@ export function DraftFields({
                 ...draft,
                 product: g.name,
                 unit: g.unit ?? draft.unit,
+                // đơn giá chỉ điền cho Cần bán (và chỉ khi gợi ý có giá bán); Cần mua để trống
                 ...(buy ? {} : { price: g.price ?? draft.price }),
-                ...(buy && g.price ? { budget: draft.budget || g.price } : {}),
               })
             }
           />

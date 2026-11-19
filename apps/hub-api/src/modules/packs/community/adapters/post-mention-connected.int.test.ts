@@ -281,7 +281,7 @@ describe("CR-191 · «@» người công ty đã kết nối", () => {
     await own`update hub.partner_links set blocked_at = null where from_tenant = ${c.B} and to_tenant = ${c.A}`;
   });
 
-  it("gợi ý hàng hoá nối «Sản phẩm & Giá»: Sản phẩm & Giá trước kèm đơn vị + giá gần nhất, bỏ trùng tên với hàng đã đăng, người không có quyền đọc gói ⇒ chỉ hàng đã đăng", async () => {
+  it("gợi ý hàng hoá nối «Sản phẩm & Giá»: Sản phẩm & Giá trước kèm đơn vị, KHÔNG kèm giá nhập, bỏ trùng tên với hàng đã đăng, người không có quyền đọc gói ⇒ chỉ hàng đã đăng", async () => {
     await own`insert into contracts.products (tenant_id, name, unit, grp) values
       (${c.A}, 'Băng keo 5cm', 'cuộn', 'goods'), (${c.A}, 'Thùng phi 200L', 'thùng', 'goods')`;
     await own`insert into contracts.product_supplier_prices (tenant_id, product_id, supplier_name, kind, price, unit, source, seen_on)
@@ -290,7 +290,7 @@ describe("CR-191 · «@» người công ty đã kết nối", () => {
       select tenant_id, id, 'NCC', 'new', 15000, 'cuộn', 'manual', current_date from contracts.products where tenant_id = ${c.A} and name = 'Băng keo 5cm'`;
     const g = await call("hM", "GET", "/goods-suggest");
     expect(g.json).toEqual([
-      { name: "Băng keo 5cm", unit: "cuộn", price: "15.000", source: "catalog" },
+      { name: "Băng keo 5cm", unit: "cuộn", source: "catalog" }, // không lộ giá nhập (product_supplier_prices)
       { name: "Thùng phi 200L", unit: "thùng", source: "catalog" },
     ]);
     expect(
