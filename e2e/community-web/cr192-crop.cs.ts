@@ -28,6 +28,24 @@ async function bigImage(page: import("@playwright/test").Page, w: number, h: num
 }
 
 /** Khung bao theo TRANG (cộng cuộn): nếu trình duyệt cuộn thêm lúc đóng hộp thì vị trí trên trang vẫn đúng, chỉ dịch thật mới đỏ. */
+/** Chờ khung bao các phần tử y hệt qua 3 lần đo cách 150 ms. */
+async function settled(page: import("@playwright/test").Page, ids: string[]) {
+  let prev = "";
+  let same = 0;
+  await expect
+    .poll(
+      async () => {
+        const cur = JSON.stringify(await Promise.all(ids.map((i) => box(page, i))));
+        same = cur === prev ? same + 1 : 0;
+        prev = cur;
+        await page.waitForTimeout(150);
+        return same;
+      },
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThanOrEqual(3);
+}
+
 const box = async (page: import("@playwright/test").Page, id: string) => {
   const r = (await page.getByTestId(id).first().boundingBox()) as {
     x: number;
@@ -49,7 +67,8 @@ test("C1 · đổi ảnh đại diện qua hộp cắt, bố cục hồ sơ khô
     .catch(() => undefined);
   await expect(page.getByRole("tab", { name: "Bài đăng của tôi" })).toBeVisible();
   await expect(page.getByTestId("me-avatar").first()).toBeVisible();
-  await page.waitForLoadState("networkidle"); // đo «trước» khi hồ sơ đã dựng xong (nội dung nạp muộn làm nhích bố cục)
+  // đo «trước» khi bố cục đứng yên (nội dung nạp muộn làm nhích). KHÔNG dùng networkidle: app có kết nối mở liên tục ⇒ không bao giờ «idle».
+  await settled(page, ["me-avatar", "me-cover-default"]);
   const before = {
     avatar: await box(page, "me-avatar"),
     cover: await box(page, "me-cover-default"),
