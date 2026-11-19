@@ -249,9 +249,11 @@ export function FeedPage() {
         <div ref={sentinel} className="stickysentinel" aria-hidden="true" />
         <div className="stickytop" data-stuck={stuck}>
           <Composer compact={composerCompact(stuck, narrow)} onExpand={toTop} />
-          <div className="feedbar">
-            {!narrow && <FeedFilterSheet f={f} data={data} connected={connected} narrow={false} />}
-          </div>
+          {!narrow && (
+            <div className="feedbar">
+              <FeedFilterSheet f={f} data={data} connected={connected} narrow={false} />
+            </div>
+          )}
         </div>
         <FeedBody data={data} error={error} more={more} stale={stale} />
       </div>

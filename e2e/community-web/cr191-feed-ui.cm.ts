@@ -143,3 +143,18 @@ test("điện thoại: icon thẻ bài 44px sát nhau, nút Lọc nổi đáy m�
   await fab.click();
   await expect(page.getByTestId("feed-filter-sheet")).toHaveAttribute("data-side", "bottom");
 });
+
+test("điện thoại: không còn thanh bo tròn trống dưới ô đăng bài, nút Lọc nằm trên thanh đáy", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/community");
+  await expect(page.locator(".feedbar")).toHaveCount(0);
+  const fab = await page.getByTestId("feed-filter-btn").boundingBox();
+  const nav = await page
+    .getByRole("navigation", { name: /đáy|Điều hướng/i })
+    .first()
+    .boundingBox();
+  expect(fab && nav).toBeTruthy();
+  expect((fab?.y ?? 0) + (fab?.height ?? 0)).toBeLessThanOrEqual(nav?.y ?? 0);
+});

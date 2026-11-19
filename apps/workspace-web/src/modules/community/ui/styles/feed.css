@@ -646,7 +646,11 @@
 [data-mod="community"] .filterfab {
   position: fixed;
   left: 16px; /* trái: nút trợ lý nằm phải ⇒ không đè nhau (luật R4) */
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(
+    56px +
+    16px +
+    env(safe-area-inset-bottom, 0px)
+  ); /* trên thanh điều hướng đáy (h-14) */
   z-index: 30;
   height: 48px;
   border-radius: 999px;
@@ -711,4 +715,14 @@
   gap: 16px;
   flex: 1;
   min-height: 0;
+}
+
+/* Điện thoại: chừa chỗ cuối danh sách cho thanh đáy + nút Lọc + nút trợ lý; hàng «Bình luận» không nằm dưới nút trợ lý nổi (luật R4). */
+@media (max-width: 640px) {
+  [data-mod="community"] .feedwrap {
+    padding-bottom: calc(56px + 80px + env(safe-area-inset-bottom, 0px));
+  }
+  [data-mod="community"] .post .pact {
+    padding-right: 64px;
+  }
 }

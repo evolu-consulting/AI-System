@@ -19,10 +19,10 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await expect(postByTitle(page, "Băng keo 5cm")).toHaveCount(2);
     // bài của đối tác: nhãn "Chỉ chủ quản" + "Lưu báo giá" (C7: bật cho chủ quản) mở form báo giá điền sẵn nhà cung cấp
     const tp = postByTitle(page, "Băng keo 5cm").filter({ hasText: ORG.supplier });
-    await expect(tp).toContainText("Chỉ chủ quản");
+    await expect(tp).toContainText("Chỉ nội bộ");
     await tp.getByRole("button", { name: /Lưu báo giá/ }).click();
     await expect(tp.locator("#q-sup")).toHaveValue(ORG.supplier);
-    await expect(postByTitle(page, "Lịch nghỉ lễ 20/11")).not.toContainText("Chỉ chủ quản");
+    await expect(postByTitle(page, "Lịch nghỉ lễ 20/11")).not.toContainText("Chỉ nội bộ");
     // bình luận phẳng (CR-129): không còn tab công ty; chủ quản thấy số điện thoại gốc trong bình luận
     const phi = postByTitle(page, "Thùng phi 200L");
     await expect(phi.getByTestId("thread")).toBeVisible(); // bài có bình luận ⇒ mở sẵn (CR-186)
@@ -46,7 +46,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await expect(mine).not.toContainText("0903");
     await expect(mine).not.toContainText("zalo.me");
     // thẻ bài của đối tác ghi "Chỉ chủ quản"; nhắc ở ô soạn bài (Composer) cho đối tác
-    await expect(mine).toContainText("Chỉ chủ quản");
+    await expect(mine).toContainText("Chỉ nội bộ");
     await openComposer(page); // ô soạn bài thu gọn mặc định (CR-110) ⇒ mở ra mới thấy nhắc cho đối tác
     await expect(page.getByTestId("partner-note")).toHaveText("Chỉ chủ quản thấy bài này");
     await expect(page.getByText("Lưu báo giá")).toHaveCount(0);
@@ -77,7 +77,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     await expect(postByTitle(page, "Thùng phi 200L")).toHaveCount(0); // Cần mua gửi NCC, ABC chỉ là người mua
     await expect(postByTitle(page, "Băng keo 5cm")).toHaveCount(0); // bài Tân Phát/Hưng Thịnh: chỉ chủ quản
     await expect(postByTitle(page, "Chữ ký số DN – USB Token")).toHaveCount(1); // bài Cần mua của chính ABC
-    await expect(postByTitle(page, "Chữ ký số DN – USB Token")).toContainText("Chỉ chủ quản");
+    await expect(postByTitle(page, "Chữ ký số DN – USB Token")).toContainText("Chỉ nội bộ");
     await openComposer(page); // ô soạn bài thu gọn mặc định (CR-110) ⇒ mở ra mới thấy nhắc cho đối tác
     await expect(page.getByTestId("partner-note")).toHaveText("Chỉ chủ quản thấy bài này");
     await expect(page.getByText("Lưu báo giá")).toHaveCount(0);
