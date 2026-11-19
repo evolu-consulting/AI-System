@@ -10,7 +10,6 @@ import { useTranslation } from "react-i18next";
 import { SignatureCreator } from "~/features/my-signature/components/SignatureCreator";
 
 const METHODS = ["type", "draw"] as const;
-const NO_CAPTION = { name: false, title: false, date: false, time: false };
 
 export function QuickSignatureDialog(p: {
   open: boolean;
@@ -29,7 +28,6 @@ export function QuickSignatureDialog(p: {
         <SignatureCreator
           methods={[...METHODS]}
           ink="blue"
-          caption={NO_CAPTION}
           person={{ name: p.name }}
           allowLater={false}
           step="main"

@@ -1,18 +1,20 @@
 // CR-181 · s3 · tạo chữ ký (vẽ / tải ảnh / gõ họ tên) + khung «Trên tài liệu sẽ trông như sau». Thuần UI: chưa gọi API,
 // lưu xong gọi `onSave(png, cách)`. PNG là nét đen nền trong suốt (Q18); màu mực chỉ để xem trước.
+import { SIGNATURE_CAPTION_MAX } from "@ai/contracts/signature";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { Field } from "@ai/web-kit/ui/kit/field";
 import { Input } from "@ai/web-kit/ui/kit/input";
 import { ToggleGroup, ToggleGroupItem } from "@ai/web-kit/ui/kit/toggle-group";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SIGNATURE_FONTS } from "../lib/signature-fonts";
 import {
   allowedMethods,
-  type CaptionFields,
   canvasFromImageFile,
   canvasFromName,
-  captionText,
+  DEFAULT_FONT,
   drawPreview,
+  type FontKey,
   type Ink,
   loadSignatureFont,
   type Method,
@@ -27,13 +29,14 @@ const PAD_H = 300;
 export type SignatureCreatorProps = {
   methods: Record<Method, boolean> | Method[];
   ink: Ink;
-  caption: CaptionFields;
+  /** BR-188-1 · giá trị điền sẵn «Họ tên · Chức vụ · Phòng ban» từ hồ sơ (sửa được). Không truyền ⇒ không có ô dòng dưới chữ ký. */
+  caption?: string;
   person: { name: string; title?: string };
   allowLater: boolean;
   /** Nhãn nút lưu (mặc định «Lưu chữ ký»). */
   saveLabel?: string;
   step: "main" | "initials";
-  onSave: (png: Blob, method: Method) => void;
+  onSave: (png: Blob, method: Method, caption: string | null) => void;
   onLater?: () => void;
 };
 
@@ -43,6 +46,8 @@ export function SignatureCreator(p: SignatureCreatorProps) {
   const [how, setHow] = useState<Method>(list[0] ?? "draw");
   const cur = list.includes(how) ? how : (list[0] ?? "draw");
   const [name, setName] = useState(p.person.name);
+  const [font, setFont] = useState<FontKey>(DEFAULT_FONT);
+  const [caption, setCaption] = useState(p.caption ?? "");
   const [drawn, setDrawn] = useState(false);
   const [upload, setUpload] = useState<HTMLCanvasElement | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,13 +60,9 @@ export function SignatureCreator(p: SignatureCreatorProps) {
   const current = async () => {
     if (cur === "draw") return drawn && pad.current ? trimCanvas(pad.current) : null;
     if (cur === "upload") return upload;
-    return canvasFromName(name);
+    return canvasFromName(name, font);
   };
-  const captionLine = captionText(p.caption, {
-    name: p.person.name,
-    title: p.person.title,
-    date: new Date(),
-  });
+  const captionLine = p.caption === undefined ? "" : caption;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: vẽ lại khi đổi cách/nét/tên/ảnh/mực/dòng dưới
   useEffect(() => {
@@ -72,11 +73,11 @@ export function SignatureCreator(p: SignatureCreatorProps) {
     return () => {
       live = false;
     };
-  }, [cur, drawn, name, upload, p.ink, captionLine]);
+  }, [cur, drawn, name, font, upload, p.ink, captionLine]);
 
   useEffect(() => {
-    if (cur === "type") void loadSignatureFont();
-  }, [cur]);
+    if (cur === "type") void loadSignatureFont(font);
+  }, [cur, font]);
 
   const at = (e: React.PointerEvent<HTMLCanvasElement>): [number, number] => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -131,7 +132,11 @@ export function SignatureCreator(p: SignatureCreatorProps) {
       const c = await current();
       if (!c) return setError(t("contracts.mySig.errType"));
       setError(null);
-      p.onSave(await toSignaturePng(c), cur);
+      p.onSave(
+        await toSignaturePng(c),
+        cur,
+        p.caption === undefined ? null : caption.trim() || null,
+      );
     } finally {
       setBusy(false);
     }
@@ -201,14 +206,50 @@ export function SignatureCreator(p: SignatureCreatorProps) {
       )}
 
       {cur === "type" && (
-        <Field id="sig-name" label={t("contracts.mySig.nameLabel")}>
+        <>
+          <Field id="sig-name" label={t("contracts.mySig.nameLabel")}>
+            <Input
+              value={name}
+              placeholder={t("contracts.mySig.namePh")}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError(null);
+              }}
+            />
+          </Field>
+          <ToggleGroup
+            type="single"
+            value={font}
+            onValueChange={(v) => v && setFont(v as FontKey)}
+            aria-label={t("contracts.mySig.fontAria")}
+            className="flex-wrap self-start"
+            data-testid="sig-fonts"
+          >
+            {SIGNATURE_FONTS.map((f) => (
+              <ToggleGroupItem
+                key={f.key}
+                value={f.key}
+                data-testid={`sig-font-${f.key}`}
+                style={{ fontFamily: `"${f.family}", cursive` }}
+              >
+                {f.family}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </>
+      )}
+
+      {p.caption !== undefined && (
+        <Field
+          id="sig-caption"
+          label={t("contracts.mySig.captionLabel")}
+          description={t("contracts.mySig.captionHint")}
+        >
           <Input
-            value={name}
-            placeholder={t("contracts.mySig.namePh")}
-            onChange={(e) => {
-              setName(e.target.value);
-              setError(null);
-            }}
+            value={caption}
+            maxLength={SIGNATURE_CAPTION_MAX}
+            placeholder={t("contracts.mySig.captionPh")}
+            onChange={(e) => setCaption(e.target.value)}
           />
         </Field>
       )}

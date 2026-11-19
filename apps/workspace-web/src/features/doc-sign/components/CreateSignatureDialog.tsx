@@ -17,12 +17,11 @@ export function CreateSignatureDialog(p: {
   open: boolean;
   view: MySignatureView;
   person: string;
-  onSave: (v: { kind: "main"; method: Method; png: string }) => void;
+  onSave: (v: { kind: "main"; method: Method; png: string; caption: string | null }) => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
   const s = p.view.settings;
-  const has = (c: string) => (s.caption as readonly string[]).includes(c);
   return (
     <Dialog open={p.open} onOpenChange={(o) => !o && p.onClose()}>
       <DialogContent data-testid="sign-create" closeLabel={t("contracts.docsign.close")}>
@@ -32,14 +31,15 @@ export function CreateSignatureDialog(p: {
         <SignatureCreator
           methods={[...s.methods]}
           ink={s.ink}
-          caption={{ name: has("name"), title: has("title"), date: has("date"), time: has("time") }}
+          caption={p.view.profile_caption ?? ""}
           person={{ name: p.person }}
           allowLater={false}
           step="main"
-          onSave={async (png, method) =>
+          onSave={async (png, method, caption) =>
             p.onSave({
               kind: "main",
               method,
+              caption,
               png: (await blobToDataUrl(png)).replace(/^data:[^,]*,/, ""),
             })
           }

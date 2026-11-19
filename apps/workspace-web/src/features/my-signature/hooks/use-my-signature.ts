@@ -18,8 +18,8 @@ export const useMySignature = (enabled = true) =>
 export function useCreateSignature() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { kind: SignatureKind; method: Method; png: Blob }) =>
-      createSignature(v.kind, v.method, v.png),
+    mutationFn: (v: { kind: SignatureKind; method: Method; png: Blob; caption: string | null }) =>
+      createSignature(v.kind, v.method, v.png, v.caption),
     onSuccess: () => qc.invalidateQueries({ queryKey: mySignatureKey }),
   });
 }

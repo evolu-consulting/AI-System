@@ -4,7 +4,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { SignatureCreator, type SignatureCreatorProps } from "./components/SignatureCreator";
 import {
   allowedMethods,
-  captionText,
   fitPng,
   MAX_PNG_BYTES,
   missingError,
@@ -16,7 +15,7 @@ import {
 const base: SignatureCreatorProps = {
   methods: { draw: true, upload: true, type: true },
   ink: "blue",
-  caption: { name: true, title: false, date: true, time: false },
+  caption: "Nguyễn Văn Hùng · Giám đốc · Kinh doanh",
   person: { name: "Nguyễn Văn Hùng", title: "Giám đốc" },
   allowLater: false,
   step: "main",
@@ -54,21 +53,24 @@ describe("lưu khi chưa có chữ ký", () => {
   });
 });
 
-describe("captionText", () => {
-  const d = new Date(2026, 10, 17, 9, 5);
-  const v = { name: "An", title: "GĐ", date: d };
-  test("thứ tự Họ tên · Chức danh · Ngày · Giờ", () => {
-    const s = captionText({ name: true, title: true, date: true, time: true }, v);
-    const parts = s.split(" · ");
-    expect(parts).toHaveLength(4);
-    expect(parts.slice(0, 2)).toEqual(["An", "GĐ"]);
-    expect(parts[2]).toBe(d.toLocaleDateString("vi-VN"));
+describe("CR-188 · dòng dưới chữ ký + phông (gõ họ tên)", () => {
+  test("ô «Dòng dưới chữ ký» điền sẵn từ hồ sơ, sửa được; không truyền ⇒ không có ô", () => {
+    const h = html({});
+    expect(h).toContain("contracts.mySig.captionLabel");
+    expect(h).toContain("Nguyễn Văn Hùng · Giám đốc · Kinh doanh");
+    expect(html({ caption: undefined })).not.toContain("contracts.mySig.captionLabel");
   });
-  test("chỉ dòng bật; bỏ dòng rỗng", () => {
-    expect(captionText({ name: true, title: false, date: false, time: false }, v)).toBe("An");
-    expect(
-      captionText({ name: false, title: true, date: false, time: false }, { ...v, title: "" }),
-    ).toBe("");
+  test("không còn ngày/giờ trong màn tạo", () => {
+    expect(html({})).not.toContain("toLocaleDateString");
+    expect(html({})).not.toMatch(/\d{2}\/\d{2}\/\d{4}/);
+  });
+  test("hàng chọn phông: đủ sáu phông khi chọn «Gõ họ tên»", () => {
+    const h = html({ methods: { draw: false, upload: false, type: true } });
+    for (const k of ["dancing", "pacifico", "greatvibes", "allura", "lobster", "charm"])
+      expect(h).toContain(`sig-font-${k}`);
+    expect(html({ methods: { draw: true, upload: false, type: false } })).not.toContain(
+      "sig-fonts",
+    );
   });
 });
 

@@ -8,7 +8,6 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   canvasFromName,
-  captionText,
   drawPreview,
   loadSignatureFont,
 } from "~/features/my-signature/lib/signature-image";
@@ -21,26 +20,20 @@ export function SignaturePreview({ s }: { s: SignatureSettings }) {
   const { t } = useTranslation();
   const ref = useRef<HTMLCanvasElement>(null);
   const name = t(k("sampleName"));
-  const caption = captionText(
-    {
-      name: s.caption.includes("name"),
-      title: s.caption.includes("title"),
-      date: s.caption.includes("date"),
-      time: s.caption.includes("time"),
-    },
-    { name, title: t(k("sampleTitle")), date: new Date() },
-  );
+  // BR-188-1/2 · dấu trên tài liệu: «Họ tên · Chức vụ · Phòng ban» + dòng «Ký ngày …» luôn có.
+  const caption = t(k("sampleCaption"));
+  const signedOn = t(k("sampleSignedOn"));
   useEffect(() => {
     let live = true;
     void (async () => {
       await loadSignatureFont().catch(() => undefined);
       const sig = await canvasFromName(name).catch(() => null);
-      if (live && ref.current) drawPreview(ref.current, sig, s.ink, caption);
+      if (live && ref.current) drawPreview(ref.current, sig, s.ink, caption, signedOn);
     })();
     return () => {
       live = false;
     };
-  }, [name, s.ink, caption]);
+  }, [name, s.ink, caption, signedOn]);
   return (
     <SettingsGroup title={t(k("preview.title"))}>
       <div className="p-5" data-testid="sig-preview">

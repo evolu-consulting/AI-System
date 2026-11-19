@@ -61,7 +61,12 @@ const pngOf = (): Uint8Array => {
   g.fillRect(10, 10, 80, 20);
   return c.toBuffer("image/png");
 };
-const SIG = { id: "5160a000-0000-4000-8000-000000000001", png: pngOf() };
+const SIG = {
+  id: "5160a000-0000-4000-8000-000000000001",
+  png: pngOf(),
+  caption: "Bình · Giám đốc · Kinh doanh" as string | null,
+};
+const stamped: { caption?: string; signedOn?: string }[] = [];
 
 const counted = <T extends object>(tx: T): T =>
   new Proxy(tx, {
@@ -92,9 +97,7 @@ const turn: SignTurnPort = {
 };
 const fakeHub: SignHubPort = {
   prepare: async () => ({
-    settings: { ink: "blue", caption: ["name", "title", "date", "time"], initials: "shrink" },
-    name: "Bình",
-    title: "Giám đốc",
+    settings: { ink: "blue", initials: "shrink" },
     main: sigMissing ? null : SIG,
     initials: null,
   }),
@@ -122,8 +125,9 @@ const base = (hub: SignHubPort = fakeHub): SignSaveDeps => ({
   turn,
   companySigners: company,
   onDocEnabled: async () => true,
-  produce: (i) =>
-    produceSigned({
+  produce: (i) => {
+    stamped.push(...i.marks.map((m) => ({ caption: m.caption, signedOn: m.signedOn })));
+    return produceSigned({
       pdf: i.pdf,
       marks: i.marks,
       ink: i.ink,
@@ -131,7 +135,8 @@ const base = (hub: SignHubPort = fakeHub): SignSaveDeps => ({
       signer: noDigitalSigner,
       stamp: stampPdf,
       sha256: sha256Hex,
-    }),
+    });
+  },
   newId: () => Bun.randomUUIDv7(),
   now: () => new Date("2026-11-17T08:30:00Z"),
   orgOf: (t) => `t_${t}`,
@@ -241,7 +246,12 @@ describe("CR-181 s8B · Lưu chữ ký", () => {
       await o`select user_signature_id, signer_id, caption from contracts.sign_marks where version_id = ${r.version_id}`;
     expect(marks.length).toBe(1);
     expect(marks[0]).toMatchObject({ user_signature_id: SIG.id, signer_id: U2 });
-    expect(marks[0]?.caption).toBe("Bình · Giám đốc · 17/11/2026 · 15:30");
+    expect(marks[0]?.caption).toBe("Bình · Giám đốc · Kinh doanh");
+    // BR-188-2 · dấu in = dòng caption đã lưu + «Ký ngày …» giờ VN (08:30Z ⇒ 15:30), LUÔN có (cờ caption của ô không còn quyết).
+    expect(stamped.at(-1)).toEqual({
+      caption: "Bình · Giám đốc · Kinh doanh",
+      signedOn: "Ký ngày 17/11/2026 15:30",
+    });
     const [f] =
       await o`select signed_by, signed_version_id from contracts.sign_fields where id = ${x.u2Fields[0] as string}`;
     expect(f).toMatchObject({ signed_by: U2, signed_version_id: r.version_id });
@@ -385,10 +395,11 @@ describe("CR-181 s8B · cổng hub thật (BR-K3, BR-G3)", () => {
     const hub = signHubPort(db, {} as never);
     const scope = { kind: "user", tenantId: T, userId: U2 } as const;
     const created = await withHubScope(db, scope, (tx) =>
-      signaturesRepo(tx).create("main", "type", pngOf()),
+      signaturesRepo(tx).create("main", "type", pngOf(), "Bình · Giám đốc · Kinh doanh"),
     );
     const p = await hub.prepare(w(U2));
     expect(p.main?.id).toBe(created.id);
+    expect(p.main?.caption).toBe("Bình · Giám đốc · Kinh doanh"); // BR-188-1 · bản lưu thắng hồ sơ
     expect(p.initials).toBeNull();
     expect(p.settings.ink).toBe("blue");
     const vid = Bun.randomUUIDv7();
@@ -401,6 +412,13 @@ describe("CR-181 s8B · cổng hub thật (BR-K3, BR-G3)", () => {
       entity: "signature",
       entity_name: "hd.pdf",
     });
+  });
+  it("BR-188-1 · bản không lưu caption (null) ⇒ dựng từ hồ sơ LÚC KÝ (có họ tên)", async () => {
+    const hub = signHubPort(db, {} as never);
+    const scope = { kind: "user", tenantId: T, userId: U2 } as const;
+    await withHubScope(db, scope, (tx) => signaturesRepo(tx).create("main", "type", pngOf()));
+    const p = await hub.prepare(w(U2));
+    expect(p.main?.caption).toBeTruthy();
   });
 });
 

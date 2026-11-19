@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
   canPrepSign,
-  captionText,
   defaultNeedsSign,
   fieldsIssue,
   isPdfFile,
@@ -11,6 +10,7 @@ import {
   normalizeFields,
   type SignerEntry,
   sessionMode,
+  signedOnLine,
   signReadiness,
   uploaderOf,
 } from "./sign.rules";
@@ -174,17 +174,12 @@ describe("marksIssue (BR-C1)", () => {
   });
 });
 
-describe("captionText", () => {
-  const now = new Date("2026-11-17T17:05:00Z"); // 00:05 ngày 18 giờ VN
-  it("theo thiết lập, giờ Việt Nam; bỏ phần trống", () => {
-    expect(captionText(["name", "date"], { name: "Bình", title: null }, now)).toBe(
-      "Bình · 18/11/2026",
-    );
-    expect(captionText(["time", "title", "name"], { name: "Bình", title: "GĐ" }, now)).toBe(
-      "Bình · GĐ · 00:05",
-    );
-    expect(captionText(["title"], { name: "Bình", title: null }, now)).toBeUndefined();
-    expect(captionText([], { name: "Bình", title: "GĐ" }, now)).toBeUndefined();
+describe("signedOnLine (BR-188-2)", () => {
+  it("LUÔN «Ký ngày dd/mm/yyyy hh:mm» theo giờ Việt Nam (UTC+7), qua nửa đêm sang ngày mới", () => {
+    expect(signedOnLine(new Date("2026-11-17T17:05:00Z"))).toBe("Ký ngày 18/11/2026 00:05");
+    expect(signedOnLine(new Date("2026-01-02T03:09:59Z"))).toBe("Ký ngày 02/01/2026 10:09");
+    expect(signedOnLine(new Date("2026-12-31T16:59:00Z"))).toBe("Ký ngày 31/12/2026 23:59");
+    expect(signedOnLine(new Date("2026-12-31T17:00:00Z"))).toBe("Ký ngày 01/01/2027 00:00");
   });
 });
 

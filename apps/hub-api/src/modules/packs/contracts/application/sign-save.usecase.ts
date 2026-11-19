@@ -12,11 +12,11 @@ import type {
 import type { PackUow, PackWho } from "../../kit/public";
 import {
   canPrepSign,
-  captionText,
   defaultNeedsSign,
   isPdfFile,
   marksIssue,
   PARTNER_REF_MASK,
+  signedOnLine,
   signerKey,
   uploaderOf,
 } from "../domain/sign.rules";
@@ -35,16 +35,14 @@ import { buildSigners, type CompanySigner, fieldOut, SignDocFail } from "./sign-
 
 export type StampSettings = {
   ink: "blue" | "black";
-  caption: readonly ("name" | "title" | "date" | "time")[];
   initials: "shrink" | "own";
 };
-type Sig = { id: string; png: Uint8Array };
+/** `caption` = dòng dưới chữ ký ĐÃ ĐIỀN (bản lưu hoặc dựng từ hồ sơ); null ⇒ hồ sơ trống, không in dòng này. */
+type Sig = { id: string; png: Uint8Array; caption: string | null };
 /** Cổng hub (gói không import module hub): chữ ký + thiết lập + hồ sơ người gọi, audit, tên người. */
 export type SignHubPort = {
   prepare(who: PackWho): Promise<{
     settings: StampSettings;
-    name: string;
-    title: string | null;
     main: Sig | null;
     initials: Sig | null;
   }>;
@@ -54,7 +52,13 @@ export type SignHubPort = {
   ): Promise<void>;
   userNames(who: PackWho, ids: readonly string[]): Promise<ReadonlyMap<string, string>>;
 };
-export type StampMarkIn = { png: Uint8Array; parts: SignParts; caption?: string };
+export type StampMarkIn = {
+  png: Uint8Array;
+  parts: SignParts;
+  caption?: string;
+  /** «Ký ngày dd/mm/yyyy hh:mm» — LUÔN có (BR-188-2). */
+  signedOn: string;
+};
 
 export type SignSaveDeps = {
   uow: PackUow<SignDocRepos>;
@@ -106,7 +110,6 @@ type Snap = {
 type Render = {
   out: { bytes: Uint8Array; sha256: string; pages: number };
   used: Sig[];
-  text: string | undefined;
 };
 
 function helpers(d: SignSaveDeps) {
@@ -156,12 +159,16 @@ function helpers(d: SignSaveDeps) {
         if (!s) throw new SignDocFail("signature_missing"); // K5
         used.push(s);
       }
-      const text = captionText(h.settings.caption, { name: h.name, title: h.title }, d.now());
-      const marks: StampMarkIn[] = body.marks.map((m, i) => ({
-        png: (used[i] as Sig).png,
-        parts: m.parts,
-        ...(m.caption && text ? { caption: text } : {}),
-      }));
+      const signedOn = signedOnLine(d.now());
+      const marks: StampMarkIn[] = body.marks.map((m, i) => {
+        const s = used[i] as Sig;
+        return {
+          png: s.png,
+          parts: m.parts,
+          signedOn,
+          ...(s.caption ? { caption: s.caption } : {}),
+        };
+      });
       const ref = snap.base ?? snap.file;
       const pdf = await d.files.read(ref.org, ref.box_id, d.maxBytes);
       if (!pdf) throw new SignDocFail("issue", "SIGN_PDF_INVALID");
@@ -173,7 +180,7 @@ function helpers(d: SignSaveDeps) {
             ? new SignDocFail("digital")
             : new SignDocFail("issue", e.code);
         });
-      return { out, used, text };
+      return { out, used };
     },
   };
 }
@@ -205,7 +212,7 @@ export function signSaveUsecases(d: SignSaveDeps) {
       const enabled = await d.onDocEnabled(who);
       const snap = await h.load(who, id, fileId);
       const { turn, signers, behalfOf } = await h.authorize(who, id, body, snap, enabled);
-      const { out, used, text } = await h.render(who, body, snap);
+      const { out, used } = await h.render(who, body, snap);
       const orgOut = d.orgOf(who.tenantId);
       const outName = `${stem(snap.file.name)} (đã ký).pdf`;
       const put = await d.files.put(orgOut, outName, out.bytes);
@@ -241,7 +248,7 @@ export function signSaveUsecases(d: SignSaveDeps) {
               placement: m.placement,
               parts: m.parts,
               userSignatureId: (used[i] as Sig).id,
-              caption: m.caption ? (text ?? null) : null,
+              caption: (used[i] as Sig).caption,
             })),
           });
           if (!v) throw new SignDocFail("not_found");

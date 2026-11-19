@@ -30,13 +30,22 @@ import { displayToUser, type PageView, resolveParts } from "../domain/sign-geome
 
 const FONT_URL = new URL("./fonts/BeVietnamPro-Regular.ttf", import.meta.url);
 const CAPTION_SIZE = 7.5;
+/** Co chữ cho vừa bề ngang khung chỗ ký, không nhỏ hơn mức này (dưới nữa thì cắt «…»). */
+const CAPTION_MIN_SIZE = 5;
+const LINE_GAP = 1.5;
 const INK = {
   blue: { hex: "#1f3a8a", rgb: [0.12, 0.23, 0.54] },
   black: { hex: "#1a1a1a", rgb: [0.1, 0.1, 0.1] },
 } as const;
 
 export type Ink = keyof typeof INK;
-export type StampMark = { png: Uint8Array; parts: readonly SignPart[]; caption?: string };
+/** `caption` = dòng dưới chữ ký (Họ tên · Chức vụ · Phòng ban); `signedOn` = «Ký ngày dd/mm/yyyy hh:mm» (BR-188-2, luôn có từ use case). Chỉ in khi chữ ký nằm gọn một trang. */
+export type StampMark = {
+  png: Uint8Array;
+  parts: readonly SignPart[];
+  caption?: string;
+  signedOn?: string;
+};
 export type StampInput = { pdf: Uint8Array; marks: readonly StampMark[]; ink: Ink };
 export type StampResult = { bytes: Uint8Array; sha256: string; pages: number };
 
@@ -101,7 +110,7 @@ function drawPart(
   c: Ctx,
   img: PDFImage,
   q: ReturnType<typeof resolveParts>[number],
-  caption: { text: string; font: PDFFont } | undefined,
+  lines: { texts: readonly string[]; font: PDFFont } | undefined,
 ): void {
   const page = c.pages[q.page] as PDFPage;
   if (!c.isolated.has(q.page)) {
@@ -127,15 +136,36 @@ function drawPart(
     height: h,
   });
   page.pushOperators(popGraphicsState());
-  if (caption)
-    page.drawText(caption.text, {
-      x: q.frame.x,
-      y: Math.max(4, q.frame.y - 9),
-      size: CAPTION_SIZE,
-      font: caption.font,
-      color: rgb(c.ink.rgb[0], c.ink.rgb[1], c.ink.rgb[2]),
-    });
+  if (lines) {
+    let y = q.frame.y - 9;
+    for (const raw of lines.texts) {
+      const { text, size } = fitLine(lines.font, raw, q.frame.w);
+      page.drawText(text, {
+        x: q.frame.x,
+        y: Math.max(4, y),
+        size,
+        font: lines.font,
+        color: rgb(c.ink.rgb[0], c.ink.rgb[1], c.ink.rgb[2]),
+      });
+      y -= size + LINE_GAP;
+    }
+  }
   page.pushOperators(popGraphicsState());
+}
+
+/** Một dòng chữ vừa khung: co cỡ chữ tới CAPTION_MIN_SIZE, vẫn dài hơn thì cắt bớt và thêm «…». */
+export function fitLine(
+  font: Pick<PDFFont, "widthOfTextAtSize">,
+  text: string,
+  maxWidth: number,
+): { text: string; size: number } {
+  const w = font.widthOfTextAtSize(text, CAPTION_SIZE);
+  if (w <= maxWidth) return { text, size: CAPTION_SIZE };
+  const size = Math.max(CAPTION_MIN_SIZE, (CAPTION_SIZE * maxWidth) / w);
+  if (font.widthOfTextAtSize(text, size) <= maxWidth) return { text, size };
+  let t = text;
+  while (t.length > 1 && font.widthOfTextAtSize(`${t}…`, size) > maxWidth) t = t.slice(0, -1);
+  return { text: `${t.trimEnd()}…`, size };
 }
 
 async function loadCaptionFont(doc: PDFDocument): Promise<PDFFont> {
@@ -161,10 +191,11 @@ export async function stampPdf(i: StampInput): Promise<StampResult> {
       images.set(key, img);
     }
     // Dòng chữ dưới khung: chỉ khi chữ ký nằm gọn một trang (giáp lai không có).
-    const wantCaption = Boolean(m.caption) && m.parts.length === 1;
-    if (wantCaption) font ??= await loadCaptionFont(doc);
+    const texts =
+      m.parts.length === 1 ? [m.caption, m.signedOn].flatMap((x) => (x ? [x] : [])) : [];
+    if (texts.length > 0) font ??= await loadCaptionFont(doc);
     for (const q of parts)
-      drawPart(c, img, q, wantCaption && font ? { text: m.caption as string, font } : undefined);
+      drawPart(c, img, q, texts.length > 0 && font ? { texts, font } : undefined);
   }
   const bytes = await doc.save();
   return { bytes, sha256: sha256Hex(bytes), pages: pages.length };

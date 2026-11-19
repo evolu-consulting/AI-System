@@ -37,6 +37,16 @@ test("Lần đầu đăng nhập ⇒ tạo chữ ký ⇒ vào app ⇒ «Chữ k�
   await expect(gate).toBeVisible();
   await expect(gate.getByRole("button", { name: "Làm sau" })).toHaveCount(0); // bắt buộc
   await gate.getByRole("textbox", { name: "Họ tên" }).fill("Nguyễn Văn Hùng");
+  // CR-188 BR-188-1 · «Dòng dưới chữ ký» điền sẵn từ hồ sơ (Họ tên · Chức vụ · Phòng ban), sửa được, KHÔNG có ngày tháng.
+  const cap = gate.getByRole("textbox", { name: "Dòng dưới chữ ký" });
+  await expect(cap).not.toHaveValue("");
+  expect(await cap.inputValue()).not.toMatch(/\d{2}\/\d{2}\/\d{4}/);
+  await cap.fill("Nguyễn Văn Hùng · Nhân viên · Kinh doanh");
+  // CR-188 BR-188-3 · sáu phông, chọn được; tên có dấu vẫn xem trước được.
+  for (const k of ["dancing", "pacifico", "greatvibes", "allura", "lobster", "charm"])
+    await expect(gate.getByTestId(`sig-font-${k}`)).toBeVisible();
+  await gate.getByTestId("sig-font-pacifico").click();
+  await gate.getByRole("textbox", { name: "Họ tên" }).fill("Nguyễn Thị Ánh Ngọc");
   await gate.getByRole("button", { name: "Lưu và vào Evolu" }).click();
   await expect(gate).toBeHidden();
 
@@ -62,4 +72,15 @@ test("Điện thoại 390px: một cột, nút Tạo chữ ký mới ≥ 44px", 
   const b = await page.getByRole("heading", { name: "Chữ ký số" }).boundingBox();
   expect(b?.y ?? 0).toBeGreaterThan((a?.y ?? 0) + 40); // thẻ xếp dọc, không cạnh nhau
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test("CR-188 · Cài đặt chữ ký không còn tuỳ chọn «Dòng dưới chữ ký» của công ty", async ({
+  browser,
+}) => {
+  const page = await newPage(browser);
+  await loginCw(page, E, U.director);
+  await page.goto("/settings/signature");
+  await expect(page.getByTestId("sig-format")).toBeVisible();
+  await expect(page.getByText("Dòng dưới chữ ký")).toHaveCount(0);
+  await expect(page.getByText("Giờ ký")).toHaveCount(0);
 });

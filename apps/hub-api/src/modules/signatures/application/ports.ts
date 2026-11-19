@@ -4,6 +4,7 @@ import type {
   ChangeGrantResult,
   ChangeGrantState,
   ChangeRequestRow,
+  ProfileParts,
   SignatureCreated,
   SignatureHistoryRow,
   SignatureRecord,
@@ -23,7 +24,14 @@ export type SignatureRepoPort = {
   getActive(kind: SignatureKind): Promise<SignatureRecord | null>;
   getActiveAll(): Promise<{ main: SignatureRecord | null; initials: SignatureRecord | null }>;
   listHistory(kind: SignatureKind | null, limit?: number): Promise<SignatureHistoryRow[]>;
-  create(kind: SignatureKind, method: SignatureMethod, png: Uint8Array): Promise<SignatureCreated>;
+  create(
+    kind: SignatureKind,
+    method: SignatureMethod,
+    png: Uint8Array,
+    caption?: string | null,
+  ): Promise<SignatureCreated>;
+  /** CR-188 · họ tên · chức vụ · phòng ban của tôi (điền sẵn «Dòng dưới chữ ký»). */
+  profile(): Promise<ProfileParts>;
   getSettings(): Promise<SignatureSettingsRecord>;
   putSettingsAsAdmin(s: SignatureSettings): Promise<SignatureSettingsRecord>;
   getChangeState(): Promise<ChangeGrantState | null>;

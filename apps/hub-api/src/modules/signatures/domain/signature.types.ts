@@ -8,7 +8,11 @@ export type SignatureRecord = {
   method: SignatureMethod;
   png: Buffer;
   createdAt: string;
+  /** CR-188 · dòng dưới chữ ký đã lưu theo phiên bản; null ⇒ dựng từ hồ sơ lúc ký. */
+  caption: string | null;
 };
+/** CR-188 · các phần hồ sơ ghép thành «Họ tên · Chức vụ · Phòng ban» (mỗi phần có thể trống). */
+export type ProfileParts = { name: string; title: string | null; department: string | null };
 /** Dòng lịch sử (không kèm ảnh). `retiredAt` null = bản đang dùng. */
 export type SignatureHistoryRow = {
   id: string;

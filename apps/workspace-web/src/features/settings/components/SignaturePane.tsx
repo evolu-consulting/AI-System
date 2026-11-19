@@ -1,10 +1,6 @@
 // CR-181 · s5 · Cài đặt › «Chữ ký» (nhóm Chung, mọi app dùng chung). Mọi thành viên xem; chỉ quản trị sửa (`can_edit`, Q15).
 // Tự lưu bằng nút «Lưu định dạng» (không dùng nháp chung của hộp thoại). Bật «Ký trên tài liệu» có hộp xác nhận (Q5).
-import {
-  SIGNATURE_CAPTIONS,
-  SIGNATURE_METHODS,
-  type SignatureSettings,
-} from "@ai/contracts/signature";
+import { SIGNATURE_METHODS, type SignatureSettings } from "@ai/contracts/signature";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import {
   Dialog,
@@ -26,13 +22,7 @@ import {
   SettingsSwitch,
 } from "~/shared/ui/settings-layout";
 import { useSaveSignatureSettings, useSignatureSettings } from "../hooks/use-signature-settings";
-import {
-  onDocBody,
-  putBody,
-  sameSettings,
-  toggleCaption,
-  toggleMethod,
-} from "../lib/signature-form";
+import { onDocBody, putBody, sameSettings, toggleMethod } from "../lib/signature-form";
 import { LoadState } from "./LoadState";
 import { ChangeRequests, DigitalCard, SignaturePreview } from "./SignatureAside";
 import { Check, Group, Radios } from "./SignatureOptions";
@@ -124,17 +114,6 @@ export function SignaturePane({ owner }: { owner: boolean }) {
                   ]}
                   onChange={(v) => set({ required: v === "1" })}
                 />
-              </Group>
-              <Group legend={t(k("format.caption"))}>
-                {SIGNATURE_CAPTIONS.map((c) => (
-                  <Check
-                    key={c}
-                    id={`sig-c-${c}`}
-                    label={t(k(`caption.${c}`))}
-                    checked={draft.caption.includes(c)}
-                    onChange={(v) => setDraft(toggleCaption(draft, c, v))}
-                  />
-                ))}
               </Group>
               <Group legend={t(k("format.ink"))}>
                 <Radios

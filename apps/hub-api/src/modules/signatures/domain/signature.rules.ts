@@ -73,3 +73,16 @@ export function checkPng(bytes: Uint8Array): PngCheck {
 /** «Quản trị công ty» (Q15, BR-G1): tenant_admin ∨ có quyền `admin` gói Sổ Hợp Tác. platform_admin KHÔNG (không sửa hộ công ty). */
 export const isCompanyAdmin = (role: string, hasPackAdmin: boolean): boolean =>
   role === "tenant_admin" || hasPackAdmin;
+
+/** CR-188 · BR-188-1 · dòng dưới chữ ký mặc định = Họ tên · Chức vụ · Phòng ban (bỏ phần trống); rỗng ⇒ null. */
+export function profileCaption(p: {
+  name: string;
+  title: string | null;
+  department: string | null;
+}): string | null {
+  const s = [p.name, p.title, p.department]
+    .map((x) => x?.trim() ?? "")
+    .filter((x) => x !== "")
+    .join(" · ");
+  return s === "" ? null : s;
+}

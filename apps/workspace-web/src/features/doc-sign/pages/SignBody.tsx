@@ -126,7 +126,7 @@ export function SignBody({ id, session: s, mine, onExit }: Props) {
       },
     );
   const doSign = (f: string) => {
-    const body = buildSignBody(list(f), kind, (mine?.settings.caption ?? []).length > 0);
+    const body = buildSignBody(list(f), kind, true);
     if (body.marks.length === 0) return setConfirm(null);
     q.sign.mutate(
       {

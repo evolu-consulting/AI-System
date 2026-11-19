@@ -20,6 +20,7 @@ import {
   checkPng,
   kindAllowed,
   needsCreate,
+  profileCaption,
 } from "../domain/signature.rules";
 import type { SignatureRecord, SignatureSettingsRecord } from "../domain/signature.types";
 import type { Actor, CompanyAdminPort, SignatureStore } from "./ports";
@@ -36,6 +37,7 @@ const itemOf = (r: SignatureRecord) => ({
   method: r.method,
   image: `${PNG_PREFIX}${r.png.toString("base64")}`,
   created_at: r.createdAt,
+  caption: r.caption,
 });
 
 const viewOf = (rec: SignatureSettingsRecord, canEdit: boolean): SignatureSettingsView => ({
@@ -49,7 +51,7 @@ const viewOf = (rec: SignatureSettingsRecord, canEdit: boolean): SignatureSettin
 export class SignatureService {
   constructor(private readonly d: SignatureServiceDeps) {}
 
-  /** `GET /me/signature` — 5 câu SQL (scope, chữ ký đang dùng, thiết lập, lịch sử, trạng thái xin đổi). */
+  /** `GET /me/signature` — 6 câu SQL (scope, chữ ký đang dùng, thiết lập, lịch sử, trạng thái xin đổi, hồ sơ để điền sẵn dòng dưới chữ ký). */
   getMine(u: Actor): Promise<MySignatureView> {
     return this.d.store.run(u, async ({ repo }) => {
       const active = await repo.getActiveAll();
@@ -57,6 +59,7 @@ export class SignatureService {
       const history = await repo.listHistory(null, 20);
       const change = changeStateOf(await repo.getChangeState());
       const must = needsCreate(settings, active);
+      const profile_caption = profileCaption(await repo.profile());
       return {
         settings,
         main: active.main && itemOf(active.main),
@@ -72,6 +75,7 @@ export class SignatureService {
         change,
         can_change: canChangeNow(settings, change, must),
         digital: { enabled: false, assigned: false }, // Q12 · đợt 1 luôn khoá
+        profile_caption,
       };
     });
   }
@@ -115,7 +119,8 @@ export class SignatureService {
           403,
           "Signature change requires admin approval",
         );
-      const made = await repo.create(body.kind, body.method, png);
+      const caption = body.caption?.trim() || null;
+      const made = await repo.create(body.kind, body.method, png, caption);
       await tx.audit({
         action: "signature_created",
         entityId: made.id,
@@ -130,6 +135,7 @@ export class SignatureService {
         method: body.method,
         png,
         createdAt: made.createdAt,
+        caption,
       };
       return { signature: itemOf(rec), replaced_id: made.replacedId };
     });

@@ -12,7 +12,7 @@ import { buildNavGroups } from "./components/SettingsNav";
 import { DigitalCard } from "./components/SignatureAside";
 import { SignaturePane } from "./components/SignaturePane";
 import { navFromKey, pickNav } from "./lib/section-key";
-import { putBody, toggleCaption, toggleMethod } from "./lib/signature-form";
+import { putBody, toggleMethod } from "./lib/signature-form";
 
 const view = (can_edit: boolean): SignatureSettingsView => ({
   settings: SIGNATURE_SETTINGS_DEFAULT,
@@ -59,11 +59,11 @@ describe("cách tạo", () => {
 
 describe("thân PUT", () => {
   test("đúng schema strict, đủ khoá", () => {
-    const s = toggleCaption({ ...SIGNATURE_SETTINGS_DEFAULT, ink: "black" }, "time", true);
+    const s = { ...SIGNATURE_SETTINGS_DEFAULT, ink: "black" as const };
     const b = putBody({ ...s, extra: 1 } as never);
     expect(SignatureSettingsSchema.safeParse(b).success).toBe(true);
     expect(b.ink).toBe("black");
-    expect(b.caption).toContain("time");
+    expect(b.caption).toEqual(SIGNATURE_SETTINGS_DEFAULT.caption); // giữ nguyên, không còn ô sửa
     expect("extra" in b).toBe(false);
   });
 });

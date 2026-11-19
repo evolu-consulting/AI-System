@@ -11,7 +11,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { logger } from "../../lib/logger";
 import { packRecordStepOf } from "../processes/public";
-import { signaturesRepo } from "../signatures/public";
+import { profileCaption, signaturesRepo } from "../signatures/public";
 import { packAssignees } from "./contracts/adapters/manage.members";
 import { signDocsRepo } from "./contracts/adapters/sign-docs.repo";
 import { signFieldsRepo } from "./contracts/adapters/sign-fields.repo";
@@ -197,18 +197,16 @@ export function signHubPort(db: Db, view: PackAccessView): SignHubPort {
       withHubScope(db, { kind: "user", tenantId: who.tenantId, userId: who.userId }, async (tx) => {
         const repo = signaturesRepo(tx);
         const { settings: s } = await repo.getSettings();
-        const [p] = await tx.execute<{ name: string | null; title: string | null }>(sql`
-          select u.display_name as name, (select pp.job_title from hub.people_profiles pp
-            where pp.tenant_id = u.tenant_id and pp.user_id = u.id) as title
-          from admin.users u where u.id = ${who.userId}::uuid and u.tenant_id = ${who.tenantId}::uuid`);
+        // CR-188 · dòng dưới chữ ký = bản đã lưu theo phiên bản; null ⇒ dựng từ hồ sơ LÚC KÝ (Họ tên · Chức vụ · Phòng ban).
+        const fallback = profileCaption(await repo.profile());
         const main = await repo.signatureForStamp(who.tenantId, who.userId, "main");
         const initials = await repo.signatureForStamp(who.tenantId, who.userId, "initials");
+        const of = (r: typeof main) =>
+          r ? { id: r.id, png: r.png, caption: r.caption ?? fallback } : null;
         return {
-          settings: { ink: s.ink, caption: s.caption, initials: s.initials },
-          name: p?.name ?? "",
-          title: p?.title ?? null,
-          main: main ? { id: main.id, png: main.png } : null,
-          initials: initials ? { id: initials.id, png: initials.png } : null,
+          settings: { ink: s.ink, initials: s.initials },
+          main: of(main),
+          initials: of(initials),
         };
       }),
     audit: (who, e) =>

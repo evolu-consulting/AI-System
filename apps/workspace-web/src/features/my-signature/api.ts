@@ -23,10 +23,15 @@ export async function blobToBase64(b: Blob): Promise<string> {
   return btoa(s);
 }
 
-export async function createSignature(kind: SignatureKind, method: SignatureMethod, png: Blob) {
+export async function createSignature(
+  kind: SignatureKind,
+  method: SignatureMethod,
+  png: Blob,
+  caption: string | null = null,
+) {
   return api<CreateSignatureResponse>("/me/signature", {
     method: "POST",
-    body: { kind, method, png: await blobToBase64(png) },
+    body: { kind, method, png: await blobToBase64(png), caption },
   });
 }
 

@@ -2,7 +2,7 @@
 import type { MySignatureView, SignatureKind } from "@ai/contracts/signature";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { captionFields, firstStep, needsInitialsAfterMain } from "../lib/gate";
+import { firstStep, needsInitialsAfterMain } from "../lib/gate";
 import type { Method } from "../lib/signature-image";
 import { SignatureCreator } from "./SignatureCreator";
 
@@ -10,7 +10,12 @@ export type CreateFlowProps = {
   view: MySignatureView;
   person: { name: string; title?: string };
   /** Lưu một chữ ký; ném lỗi nếu thất bại (luồng ở lại bước hiện tại). */
-  save: (kind: SignatureKind, png: Blob, method: Method) => Promise<unknown>;
+  save: (
+    kind: SignatureKind,
+    png: Blob,
+    method: Method,
+    caption: string | null,
+  ) => Promise<unknown>;
   onDone: () => void;
   onFail: () => void;
   allowLater?: boolean;
@@ -24,9 +29,9 @@ export function CreateFlow(p: CreateFlowProps) {
   const s = p.view.settings;
   const [step, setStep] = useState<"main" | "initials">(() => firstStep(p.view));
   const own = needsInitialsAfterMain(s);
-  const onSave = async (png: Blob, method: Method) => {
+  const onSave = async (png: Blob, method: Method, caption: string | null) => {
     try {
-      await p.save(step, png, method);
+      await p.save(step, png, method, caption);
     } catch {
       p.onFail();
       return;
@@ -40,7 +45,7 @@ export function CreateFlow(p: CreateFlowProps) {
       key={step}
       methods={s.methods}
       ink={s.ink}
-      caption={captionFields(s)}
+      caption={step === "main" ? (p.view.profile_caption ?? "") : undefined}
       person={p.person}
       allowLater={p.allowLater === true}
       onLater={p.onLater}

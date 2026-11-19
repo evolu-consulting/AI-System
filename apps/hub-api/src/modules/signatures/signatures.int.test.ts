@@ -9,6 +9,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, type HubScopeArg, inHub, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
+import { sql } from "drizzle-orm";
 import { type SignaturesRepo, signaturesRepo } from "./public";
 
 const T = { a: tenantId(1810), b: tenantId(1811) };
@@ -308,5 +309,63 @@ describe("CR-181 s1 · audit CHECK nhận action mới", () => {
           o`insert into hub.audit_log (tenant_id, action, entity, entity_name) values (${T.a}, 'signature_deleted', 'signature', 'x')`,
       ),
     ).toBe("23514");
+  });
+});
+
+describe("CR-188 · BR-188-1 dòng dưới chữ ký lưu theo phiên bản (hub 0161)", () => {
+  const CAP = "Nguyễn Thị Ánh Ngọc · Giám đốc · Kinh doanh";
+  it("lưu rồi đọc lại ở getActive / getActiveAll / signature_for_stamp; bản cũ giữ caption riêng; rỗng ⇒ null", async () => {
+    const first = await as("a1", T.a, (r) => r.create("main", "type", png(40, 6), `  ${CAP}  `));
+    const act = await as("a1", T.a, (r) => r.getActive("main"));
+    expect(act?.caption).toBe(CAP); // đã cắt khoảng trắng
+    expect((await as("a1", T.a, (r) => r.getActiveAll())).main?.caption).toBe(CAP);
+    expect((await as("a1", T.a, (r) => r.signatureForStamp(T.a, U.a1, "main")))?.caption).toBe(CAP);
+    const second = await as("a1", T.a, (r) => r.create("main", "type", png(41, 6), "   "));
+    expect(second.replacedId).toBe(first.id);
+    expect((await as("a1", T.a, (r) => r.getActive("main")))?.caption).toBeNull();
+    const [old] = await o`select caption from hub.user_signatures where id = ${first.id}`;
+    expect(old?.caption).toBe(CAP); // bản cũ không bị ghi đè
+    // gọi kiểu cũ (không truyền caption) vẫn chạy
+    expect((await as("a1", T.a, (r) => r.create("main", "type", png(42, 6)))).id).toBeTruthy();
+  });
+  it("quá 200 ký tự ⇒ 22023, không ghi gì; đúng 200 thì được", async () => {
+    const before = await as("a2", T.a, (r) => r.listHistory(null, 100));
+    expect(
+      await code(() => as("a2", T.a, (r) => r.create("main", "type", png(9, 2), "a".repeat(201)))),
+    ).toBe("22023");
+    expect((await as("a2", T.a, (r) => r.listHistory(null, 100))).length).toBe(before.length);
+    const ok = await as("a2", T.a, (r) => r.create("main", "type", png(9, 2), "a".repeat(200)));
+    expect(ok.id).toBeTruthy();
+  });
+  it("người KHÁC (cùng công ty, công ty khác) không đọc được caption của a1; bảng không đọc trực tiếp", async () => {
+    await as("a1", T.a, (r) => r.create("main", "type", png(43, 6), CAP));
+    expect((await as("adm", T.a, (r) => r.getActive("main")))?.caption ?? null).not.toBe(CAP);
+    expect((await as("b1", T.b, (r) => r.getActive("main")))?.caption ?? null).not.toBe(CAP);
+    expect(await code(() => as("adm", T.a, (r) => r.signatureForStamp(T.a, U.a1, "main")))).toBe(
+      "42501",
+    );
+    expect(
+      await code(() =>
+        withHubScope(db, scope("adm", T.a), (tx) =>
+          tx.execute(sql`select caption from hub.user_signatures`),
+        ),
+      ),
+    ).not.toBe("ok");
+  });
+  it("quản trị đọc theo luật cũ: signature_png_by_ids chỉ trả id + png (KHÔNG caption)", async () => {
+    const mine = await as("a1", T.a, (r) => r.getActive("main"));
+    const rows = await withHubScope(db, { kind: "system" }, (tx) =>
+      tx.execute<Record<string, unknown>>(
+        sql`select * from hub.signature_png_by_ids(${T.a}::uuid, array[${mine?.id}::uuid])`,
+      ),
+    );
+    expect(rows.length).toBe(1);
+    expect(Object.keys(rows[0] ?? {}).sort()).toEqual(["id", "png"]);
+  });
+  it("profile(): họ tên của chính người gọi, chức vụ/phòng ban trống khi chưa có", async () => {
+    const p = await as("a1", T.a, (r) => r.profile());
+    expect(p.name.length).toBeGreaterThan(0);
+    expect(p.title).toBeNull();
+    expect(p.department).toBeNull();
   });
 });

@@ -14,6 +14,7 @@ import type {
   ChangeGrantResult,
   ChangeGrantState,
   ChangeRequestRow,
+  ProfileParts,
   SignatureCreated,
   SignatureHistoryRow,
   SignatureRecord,
@@ -62,6 +63,7 @@ type SigRow = {
   method: SignatureMethod;
   png: Uint8Array;
   created_at: Ts;
+  caption: string | null;
 };
 const recordOf = (r: SigRow): SignatureRecord => ({
   id: r.id,
@@ -69,6 +71,7 @@ const recordOf = (r: SigRow): SignatureRecord => ({
   method: r.method,
   png: Buffer.from(r.png),
   createdAt: iso(r.created_at),
+  caption: r.caption,
 });
 
 const defaultSettings = (): SignatureSettingsRecord => ({
@@ -101,7 +104,7 @@ export function signaturesRepo(tx: Tx) {
     /** Bản đang dùng của tôi theo loại; null nếu chưa có. */
     async getActive(kind: SignatureKind): Promise<SignatureRecord | null> {
       const [r] = await tx.execute<SigRow>(
-        sql`select id, kind, method, png, created_at from hub.sig_get_active(${kind})`,
+        sql`select id, kind, method, png, created_at, caption from hub.sig_get_active(${kind})`,
       );
       return r ? recordOf(r) : null;
     },
@@ -111,7 +114,7 @@ export function signaturesRepo(tx: Tx) {
       initials: SignatureRecord | null;
     }> {
       const rows = await tx.execute<SigRow>(
-        sql`select id, kind, method, png, created_at from hub.sig_get_active(null::text)`,
+        sql`select id, kind, method, png, created_at, caption from hub.sig_get_active(null::text)`,
       );
       const by = (k: SignatureKind) => {
         const r = rows.find((x) => x.kind === k);
@@ -143,9 +146,10 @@ export function signaturesRepo(tx: Tx) {
       kind: SignatureKind,
       method: SignatureMethod,
       png: Uint8Array,
+      caption: string | null = null,
     ): Promise<SignatureCreated> {
       const [r] = await tx.execute<{ id: string; created_at: Ts; replaced_id: string | null }>(
-        sql`select id, created_at, replaced_id from hub.sig_create(${kind}::text, ${method}::text, ${byteaOf(png)})`,
+        sql`select id, created_at, replaced_id from hub.sig_create(${kind}::text, ${method}::text, ${byteaOf(png)}, ${caption}::text)`,
       );
       if (!r) throw new Error("sig_create: không trả dòng");
       return { id: r.id, createdAt: iso(r.created_at), replacedId: r.replaced_id };
@@ -233,6 +237,27 @@ export function signaturesRepo(tx: Tx) {
       );
       return r ? settingsOf(r) : defaultSettings();
     },
+    /** CR-188 · hồ sơ của CHÍNH người gọi (ngữ cảnh `app.user_id`): họ tên, chức vụ, phòng ban đầu tiên theo khoá — MỘT câu. */
+    async profile(): Promise<ProfileParts> {
+      const [r] = await tx.execute<{
+        name: string | null;
+        title: string | null;
+        dept: string | null;
+      }>(sql`
+        select u.display_name as name, pp.job_title as title, d.name as dept
+        from admin.users u
+        left join hub.people_profiles pp on pp.tenant_id = u.tenant_id and pp.user_id = u.id
+        left join lateral (
+          select coalesce(g.name ->> 'vi', g.key) as name
+          from admin.group_members gm
+          join admin.departments dp on dp.group_id = gm.group_id and dp.tenant_id = gm.tenant_id
+          join admin.groups g on g.id = gm.group_id and g.tenant_id = gm.tenant_id
+          where gm.user_id = u.id and gm.tenant_id = u.tenant_id
+          order by g.key limit 1) d on true
+        where u.id = nullif(current_setting('app.user_id', true), '')::uuid
+          and u.tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid`);
+      return { name: r?.name ?? "", title: r?.title ?? null, department: r?.dept ?? null };
+    },
     /** Máy chủ in (BR-K3): bản đang dùng của đúng người ký trong ngữ cảnh. Tham số lệch ngữ cảnh ⇒ lỗi 42501. */
     async signatureForStamp(tenantId: string, userId: string, kind: SignatureKind) {
       const [r] = await tx.execute<{
@@ -240,8 +265,9 @@ export function signaturesRepo(tx: Tx) {
         method: SignatureMethod;
         png: Uint8Array;
         created_at: Ts;
+        caption: string | null;
       }>(
-        sql`select id, method, png, created_at from hub.signature_for_stamp(${tenantId}::uuid, ${userId}::uuid, ${kind}::text)`,
+        sql`select id, method, png, created_at, caption from hub.signature_for_stamp(${tenantId}::uuid, ${userId}::uuid, ${kind}::text)`,
       );
       return r ? recordOf({ ...r, kind }) : null;
     },

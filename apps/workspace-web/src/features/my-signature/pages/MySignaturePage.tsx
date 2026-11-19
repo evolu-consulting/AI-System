@@ -62,7 +62,9 @@ export default function MySignaturePage() {
                 <CreateFlow
                   view={{ ...q.data, main: null }}
                   person={{ name }}
-                  save={(kind, png, method) => create.mutateAsync({ kind, method, png })}
+                  save={(kind, png, method, caption) =>
+                    create.mutateAsync({ kind, method, png, caption })
+                  }
                   onDone={() => {
                     setOpen(false);
                     toast(t("contracts.mySig.gate.saved"), "ok");

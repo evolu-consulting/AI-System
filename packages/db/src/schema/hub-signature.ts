@@ -34,6 +34,8 @@ export const userSignatures = hub.table("user_signatures", {
   png: bytea("png").notNull(),
   createdAt: ts("created_at").notNull().defaultNow(),
   retiredAt: ts("retired_at"),
+  /** CR-188 (0161) · dòng dưới chữ ký theo phiên bản; null ⇒ máy chủ dựng từ hồ sơ lúc ký. */
+  caption: text("caption"),
 });
 
 export const signatureSettings = hub.table("signature_settings", {

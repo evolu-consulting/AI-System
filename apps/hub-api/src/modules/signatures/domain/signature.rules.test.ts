@@ -10,6 +10,7 @@ import {
   isCompanyAdmin,
   kindAllowed,
   needsCreate,
+  profileCaption,
 } from "./signature.rules";
 
 const on = { ...SIGNATURE_SETTINGS_DEFAULT, on_doc_enabled: true };
@@ -116,5 +117,17 @@ describe("isCompanyAdmin (Q15)", () => {
     expect(isCompanyAdmin("member", true)).toBe(true);
     expect(isCompanyAdmin("member", false)).toBe(false);
     expect(isCompanyAdmin("platform_admin", false)).toBe(false);
+  });
+});
+
+describe("profileCaption (BR-188-1)", () => {
+  it("Họ tên · Chức vụ · Phòng ban, bỏ phần trống; hồ sơ trống ⇒ null", () => {
+    expect(profileCaption({ name: "Bình", title: "Giám đốc", department: "Kinh doanh" })).toBe(
+      "Bình · Giám đốc · Kinh doanh",
+    );
+    expect(profileCaption({ name: " Bình ", title: null, department: "Kinh doanh" })).toBe(
+      "Bình · Kinh doanh",
+    );
+    expect(profileCaption({ name: "", title: "  ", department: null })).toBeNull();
   });
 });

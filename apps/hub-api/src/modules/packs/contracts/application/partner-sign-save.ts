@@ -6,7 +6,7 @@ import type { PartnerSignBody, PartnerSignSaveOut } from "@ai/contracts/pack-con
 import { PARTNER_SIGN_ERRORS as E } from "@ai/contracts/pack-contracts";
 import type { PackWho, SignLinkFail, SignLinkResult } from "../../kit/public";
 import { partnerLabel, partnerMarksIssue, partnerOpenFields } from "../domain/partner-sign.rules";
-import { captionText, isPdfFile } from "../domain/sign.rules";
+import { isPdfFile, signedOnLine } from "../domain/sign.rules";
 import { SignError } from "../domain/sign-error";
 import type { PartnerSignDeps, PartnerSignRepos } from "./partner-sign.deps";
 import type { ContactRow, LinkRow } from "./partner-sign.repo.port";
@@ -65,6 +65,7 @@ async function render(
   s: Snap,
   png: Uint8Array,
   text: string | undefined,
+  signedOn: string,
 ): Promise<Out | SignLinkFail> {
   const ref = s.base ?? s.file;
   const pdf = await d.files.read(ref.org, ref.box_id, d.maxBytes);
@@ -79,7 +80,8 @@ async function render(
       marks: body.marks.map((m) => ({
         png,
         parts: m.parts,
-        ...(m.caption && text ? { caption: text } : {}),
+        signedOn,
+        ...(text ? { caption: text } : {}),
       })),
     });
   } catch (e) {
@@ -184,7 +186,7 @@ async function persist(
         parts: m.parts,
         userSignatureId: null,
         quickSignatureId: a.quickId,
-        caption: m.caption ? (a.text ?? null) : null,
+        caption: a.text ?? null,
       })),
     });
     if (!v) return abort(404, E.fileNotFound);
@@ -212,13 +214,15 @@ export async function partnerSignSave(
   const s = await load(d, l, body);
   if ("ok" in s) return s;
   const label = partnerLabel(s.contact?.name ?? null, s.contact?.partner_name ?? null);
-  const text = captionText(["name", "date", "time"], { name: label, title: null }, d.now());
+  // BR-188-2 · đối tác: dòng dưới = tên người ký/đối tác; «Ký ngày …» LUÔN in (giờ VN, giờ máy chủ).
+  const text = label.trim() || undefined;
+  const signedOn = signedOnLine(d.now());
   // BR-L2 · bước Ký còn mở (Bên A đủ, chưa đóng) ⇒ mới cho Lưu; `run_id` của bản = lượt của bước.
   // `run_id` lấy TRƯỚC khoá link (kết nối khác, ngoài tx): nếu «Trả lại» chen vào giữa thì `guardTx` thấy link đã thu hồi ⇒ 410 và rollback,
   // nên bản mang `run_id` cũ không bao giờ được ghi.
   const step = await d.counts(l.tenant_id, l.contract_id);
   if (!step?.a_done) return fail(409, E.closed);
-  const out = await render(d, l, body, s, quick.png, text);
+  const out = await render(d, l, body, s, quick.png, text, signedOn);
   if ("ok" in out) return out;
   const org = d.orgOf(l.tenant_id);
   const name = `${s.file.name.replace(/\.pdf$/i, "")} (đã ký).pdf`;

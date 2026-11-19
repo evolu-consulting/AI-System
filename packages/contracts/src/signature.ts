@@ -71,13 +71,17 @@ export const SIGNATURE_SETTINGS_DEFAULT: SignatureSettings = {
   digital_provider: null,
 };
 
-/** Một chữ ký của tôi: ảnh là data URL PNG (nét đen, nền trong suốt). */
+/** CR-188 · dòng dưới chữ ký tối đa 200 ký tự (khớp `user_signatures_caption_ck`). */
+export const SIGNATURE_CAPTION_MAX = 200;
+
+/** Một chữ ký của tôi: ảnh là data URL PNG (nét đen, nền trong suốt). `caption` = dòng dưới chữ ký đã lưu (null ⇒ máy chủ dựng từ hồ sơ lúc ký). */
 export const MySignatureItemSchema = z.strictObject({
   id: UuidSchema,
   kind: SignatureKindSchema,
   method: SignatureMethodSchema,
   image: z.string().startsWith("data:image/png;base64,"),
   created_at: IsoDateTime,
+  caption: z.string().max(SIGNATURE_CAPTION_MAX).nullable(),
 });
 export type MySignatureItem = z.infer<typeof MySignatureItemSchema>;
 
@@ -117,6 +121,8 @@ export const MySignatureViewSchema = z.strictObject({
   change: SignatureChangeStateSchema,
   can_change: z.boolean(),
   digital: MyDigitalStatusSchema,
+  /** CR-188 · «Họ tên · Chức vụ · Phòng ban» dựng từ hồ sơ của tôi — điền sẵn ô «Dòng dưới chữ ký» (null ⇒ hồ sơ trống). */
+  profile_caption: z.string().max(SIGNATURE_CAPTION_MAX).nullable(),
 });
 export type MySignatureView = z.infer<typeof MySignatureViewSchema>;
 
@@ -135,6 +141,8 @@ export const CreateSignatureBodySchema = z.strictObject({
     .max(SIGNATURE_PNG_BASE64_MAX_CHARS)
     .regex(BASE64_RE, "phải là base64")
     .refine((v) => v.length % 4 === 0, "base64 sai độ dài"),
+  /** CR-188 · dòng dưới chữ ký (≤ 200); thiếu/rỗng ⇒ lưu null ⇒ máy chủ dựng từ hồ sơ lúc ký. */
+  caption: z.string().trim().max(SIGNATURE_CAPTION_MAX).nullish(),
 });
 export type CreateSignatureBody = z.infer<typeof CreateSignatureBodySchema>;
 

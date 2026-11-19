@@ -204,7 +204,6 @@
           "title": "Định dạng chữ ký nội bộ",
           "methods": "Cách tạo được phép",
           "required": "Tạo lần đầu đăng nhập",
-          "caption": "Dòng dưới chữ ký",
           "ink": "Màu mực",
           "initials": "Chữ ký nháy",
           "change": "Đổi chữ ký"
@@ -217,12 +216,6 @@
         "required": {
           "yes": "Bắt buộc",
           "later": "Cho «Làm sau»"
-        },
-        "caption": {
-          "name": "Họ tên",
-          "title": "Chức danh",
-          "date": "Ngày ký",
-          "time": "Giờ ký"
         },
         "ink": {
           "blue": "Xanh",
@@ -247,6 +240,8 @@
         },
         "sampleName": "Nguyễn Văn Hùng",
         "sampleTitle": "Giám đốc",
+        "sampleCaption": "Nguyễn Văn Hùng · Giám đốc · Kinh doanh",
+        "sampleSignedOn": "Ký ngày 19/11/2026 09:30",
         "provider": {
           "title": "Ký số qua nhà cung cấp",
           "note": "Dùng cho bước Ký có «Ký qua» là nhà cung cấp."

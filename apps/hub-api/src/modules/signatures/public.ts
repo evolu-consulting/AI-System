@@ -10,6 +10,7 @@ export {
   changeNeedsGrant,
   checkPng,
   needsCreate,
+  profileCaption,
 } from "./domain/signature.rules";
 export type {
   ChangeGrantResult,

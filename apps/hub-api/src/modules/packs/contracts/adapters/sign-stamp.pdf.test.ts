@@ -11,7 +11,7 @@ import {
   PDFRawStream,
 } from "pdf-lib";
 import { SignError } from "../domain/sign-error";
-import { sha256Hex, stampPdf, tint } from "./sign-stamp.pdf";
+import { fitLine, sha256Hex, stampPdf, tint } from "./sign-stamp.pdf";
 
 /** PNG nét đen trên nền trong (vạch chéo) — mô phỏng ảnh chữ ký đã cắt sát. */
 function sigPng(w = 240, h = 100): Uint8Array {
@@ -232,6 +232,44 @@ describe("stampPdf", () => {
     );
     expect(hasFont(d, /BeVietnamPro/)).toBe(true);
     expect(images(d)).toBe(1);
+  });
+
+  test("CR-188 · dấu một phần in HAI dòng (caption + «Ký ngày …»); thiếu caption vẫn in dòng ngày; giáp lai không in", async () => {
+    const tj = async (m: { caption?: string; signedOn?: string; parts?: SignPart[] }) => {
+      const r = await stampPdf({
+        pdf: await makePdf(2),
+        marks: [{ png: sigPng(), parts: m.parts ?? [part()], ...m }],
+        ink: "blue",
+      });
+      // mỗi dòng chữ = một khối BT…ET (trừ khối chữ sẵn có của trang mẫu)
+      return content(await PDFDocument.load(r.bytes), 0).split(/\sBT\s/).length - 1;
+    };
+    const base = await tj({});
+    const on = "Ký ngày 18/11/2026 00:05";
+    expect(await tj({ caption: "Nguyễn Văn Ấn · Giám đốc · Kinh doanh", signedOn: on })).toBe(
+      base + 2,
+    );
+    expect(await tj({ signedOn: on })).toBe(base + 1);
+    expect(await tj({ caption: "A" })).toBe(base + 1);
+    expect(
+      await tj({
+        signedOn: on,
+        caption: "A",
+        parts: [part({ page: 0 }), part({ page: 1 })],
+      }),
+    ).toBe(base);
+  });
+
+  test("CR-188 · fitLine: vừa khung giữ cỡ 7,5; dài thì co tới 5 rồi cắt «…»", () => {
+    const font = { widthOfTextAtSize: (t: string, s: number) => t.length * s * 0.5 };
+    expect(fitLine(font, "abcd", 100)).toEqual({ text: "abcd", size: 7.5 });
+    const co = fitLine(font, "a".repeat(30), 100); // 30*7.5*.5=112 > 100 ⇒ co ~6,67
+    expect(co.text).toBe("a".repeat(30));
+    expect(co.size).toBeCloseTo(6.667, 2);
+    const cat = fitLine(font, "a".repeat(80), 100); // co chạm sàn 5 vẫn dài ⇒ cắt
+    expect(cat.size).toBe(5);
+    expect(cat.text.endsWith("…")).toBe(true);
+    expect(font.widthOfTextAtSize(cat.text, cat.size)).toBeLessThanOrEqual(100);
   });
 
   test("màu mực: blue và black cho kết quả khác nhau", async () => {

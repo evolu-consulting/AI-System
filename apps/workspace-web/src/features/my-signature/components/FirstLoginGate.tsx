@@ -101,7 +101,7 @@ export function FirstLoginGate({
     <GateScreen
       view={q.data}
       person={person}
-      save={(kind, png, method) => create.mutateAsync({ kind, method, png })}
+      save={(kind, png, method, caption) => create.mutateAsync({ kind, method, png, caption })}
       onDone={() => toast(t("contracts.mySig.gate.saved"), "ok")}
       onFail={() => toast(t("contracts.mySig.gate.saveFail"), "late")}
       onLater={() => {

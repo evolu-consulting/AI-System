@@ -1,9 +1,11 @@
-// CR-181 · s3 · xử lý ảnh chữ ký ở trình duyệt. Phần tính toán trên mảng điểm ảnh (thuần, test được);
+// CR-181 · s3 · xử lý ảnh chữ ký ở trình duyệt. CR-188: phông ở `signature-fonts.ts`, dòng dưới chữ ký do người dùng nhập (không còn ngày). Phần tính toán trên mảng điểm ảnh (thuần, test được);
 // phần canvas ở cuối mỏng. Q18: lưu nét ĐEN trên nền trong suốt, màu mực áp lúc in (xem trước dùng `recolor`).
+
+import { DEFAULT_FONT, type FontKey, fontCss, loadSignatureFont } from "./signature-fonts";
 
 export type Ink = "black" | "blue";
 export type Method = "draw" | "upload" | "type";
-export type CaptionFields = { name: boolean; title: boolean; date: boolean; time: boolean };
+export { DEFAULT_FONT, type FontKey, loadSignatureFont };
 
 export const MAX_PNG_BYTES = 204800;
 const TRIM_PAD = 6;
@@ -67,22 +69,6 @@ export async function fitPng(
   return last as Blob;
 }
 
-/** Dòng dưới chữ ký theo thứ tự Họ tên · Chức danh · Ngày · Giờ (chỉ dòng bật và có giá trị). */
-export function captionText(
-  fields: CaptionFields,
-  v: { name: string; title?: string; date: Date },
-  locale = "vi-VN",
-): string {
-  const parts: string[] = [];
-  if (fields.name) parts.push(v.name);
-  if (fields.title) parts.push(v.title ?? "");
-  if (fields.date) parts.push(v.date.toLocaleDateString(locale));
-  if (fields.time) {
-    parts.push(v.date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }));
-  }
-  return parts.filter(Boolean).join(" · ");
-}
-
 /** Khoá lỗi khi bấm Lưu mà chưa có chữ ký; có rồi ⇒ null. */
 export function missingError(
   how: Method,
@@ -143,30 +129,20 @@ export async function canvasFromImageFile(file: Blob): Promise<HTMLCanvasElement
   }
 }
 
-let fontReady: Promise<void> | null = null;
-/** Nạp phông Dancing Script tự host (Q16) một lần; lỗi ⇒ dùng phông chữ viết tay hệ thống. */
-export function loadSignatureFont(): Promise<void> {
-  fontReady ??= (async () => {
-    try {
-      const f = new FontFace("Dancing Script", "url(/fonts/DancingScript.ttf)", {
-        weight: "400 700",
-      });
-      document.fonts.add(await f.load());
-    } catch {
-      /* dùng phông dự phòng */
-    }
-  })();
-  return fontReady;
-}
-
 /** Chữ ký gõ: tên bằng phông viết tay + nét gạch, nét đen trên nền trong suốt. */
-export async function canvasFromName(name: string): Promise<HTMLCanvasElement | null> {
-  await loadSignatureFont();
+export async function canvasFromName(
+  name: string,
+  font: FontKey = DEFAULT_FONT,
+): Promise<HTMLCanvasElement | null> {
+  await loadSignatureFont(font);
   const text = name.trim();
   const c = make(1100, 300);
   const x = c.getContext("2d");
   if (!x || !text) return null;
-  x.font = '600 110px "Dancing Script", "Segoe Script", cursive';
+  x.font = fontCss(font, 110);
+  // Phông rộng (Pacifico…) + tên dài: co cỡ chữ cho vừa khung 1100 (chừa lề + nét gạch).
+  const wide = x.measureText(text).width;
+  if (wide > 1000) x.font = fontCss(font, Math.max(40, Math.floor((110 * 1000) / wide)));
   x.fillStyle = "#000";
   x.strokeStyle = "#000";
   x.textBaseline = "middle";
@@ -215,12 +191,13 @@ export function recolor(src: HTMLCanvasElement, ink: Ink): HTMLCanvasElement {
   return o;
 }
 
-/** Vẽ khung xem trước: chữ ký theo màu mực + dòng dưới chữ ký. */
+/** Vẽ khung xem trước: chữ ký theo màu mực + dòng dưới chữ ký (+ dòng «Ký ngày …» khi xem trước trên tài liệu). */
 export function drawPreview(
   cnv: HTMLCanvasElement,
   sig: HTMLCanvasElement | null,
   ink: Ink,
   caption: string,
+  signedOn?: string,
 ) {
   const x = cnv.getContext("2d");
   if (!x) return;
@@ -231,5 +208,6 @@ export function drawPreview(
   }
   x.fillStyle = INK_HEX[ink];
   x.font = "22px sans-serif";
-  x.fillText(caption, 70, 230);
+  x.fillText(caption, 70, signedOn ? 218 : 230, 560);
+  if (signedOn) x.fillText(signedOn, 70, 246, 560);
 }

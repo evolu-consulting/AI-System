@@ -175,25 +175,11 @@ export function marksIssue(
 
 const vn = (d: Date) => new Date(d.getTime() + 7 * 3_600_000);
 const p2 = (n: number) => String(n).padStart(2, "0");
-/** Dòng dưới chữ ký theo thiết lập (họ tên · chức vụ · ngày · giờ — giờ Việt Nam UTC+7); rỗng ⇒ undefined. */
-export function captionText(
-  parts: readonly ("name" | "title" | "date" | "time")[],
-  who: { name: string; title: string | null },
-  now: Date,
-): string | undefined {
+/** BR-188-2 · dòng «Ký ngày dd/mm/yyyy hh:mm» — giờ Việt Nam (UTC+7), `now` = giờ máy chủ lúc ký. LUÔN in, không phụ thuộc thiết lập công ty. */
+export function signedOnLine(now: Date): string {
   const t = vn(now);
-  const v: Record<"name" | "title" | "date" | "time", string | null> = {
-    name: who.name.trim() || null,
-    title: who.title?.trim() || null,
-    date: `${p2(t.getUTCDate())}/${p2(t.getUTCMonth() + 1)}/${t.getUTCFullYear()}`,
-    time: `${p2(t.getUTCHours())}:${p2(t.getUTCMinutes())}`,
-  };
-  const order = ["name", "title", "date", "time"] as const;
-  const s = order
-    .filter((k) => parts.includes(k))
-    .flatMap((k) => v[k] ?? [])
-    .join(" · ");
-  return s || undefined;
+  const date = `${p2(t.getUTCDate())}/${p2(t.getUTCMonth() + 1)}/${t.getUTCFullYear()}`;
+  return `Ký ngày ${date} ${p2(t.getUTCHours())}:${p2(t.getUTCMinutes())}`;
 }
 
 /** X2 · người không chuẩn bị chỗ ký chỉ thấy TÊN đối tác, không thấy email liên hệ: `ref` của người ký/chỗ ký đối tác bị che. */

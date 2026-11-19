@@ -1,12 +1,7 @@
-// CR-181 · s5 · Cài đặt › Chữ ký: hàm thuần của form định dạng (bật/tắt nhiều lựa chọn, bắt buộc ≥ 1 cách tạo, so nháp với bản lưu).
-import {
-  SIGNATURE_CAPTIONS,
-  SIGNATURE_METHODS,
-  type SignatureSettings,
-} from "@ai/contracts/signature";
+// CR-181 · s5 · Cài đặt › Chữ ký (CR-188: bỏ tuỳ chọn «dòng dưới chữ ký» của công ty; cột `caption` vẫn gửi nguyên, ngừng đọc): hàm thuần của form định dạng (bật/tắt nhiều lựa chọn, bắt buộc ≥ 1 cách tạo, so nháp với bản lưu).
+import { SIGNATURE_METHODS, type SignatureSettings } from "@ai/contracts/signature";
 
 type Method = (typeof SIGNATURE_METHODS)[number];
-type Caption = (typeof SIGNATURE_CAPTIONS)[number];
 
 /** Bật/tắt một phần tử, giữ thứ tự cố định của contract (không trùng). */
 function flip<T extends string>(order: readonly T[], cur: readonly T[], k: T, on: boolean): T[] {
@@ -20,10 +15,6 @@ export function toggleMethod(s: SignatureSettings, k: Method, on: boolean): Togg
   const methods = flip(SIGNATURE_METHODS, s.methods, k, on);
   if (methods.length === 0) return { next: s, blocked: true };
   return { next: { ...s, methods }, blocked: false };
-}
-
-export function toggleCaption(s: SignatureSettings, k: Caption, on: boolean): SignatureSettings {
-  return { ...s, caption: flip(SIGNATURE_CAPTIONS, s.caption, k, on) };
 }
 
 /** Thân PUT: đúng `SignatureSettingsSchema` (strict, thay cả bộ) — chỉ lấy các khoá của schema, bỏ gì thừa. */

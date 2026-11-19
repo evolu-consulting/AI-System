@@ -204,7 +204,6 @@
           "title": "Internal signature format",
           "methods": "Allowed ways to create",
           "required": "First sign-in",
-          "caption": "Line under the signature",
           "ink": "Ink colour",
           "initials": "Initials",
           "change": "Changing a signature"
@@ -217,12 +216,6 @@
         "required": {
           "yes": "Required",
           "later": "Allow «Later»"
-        },
-        "caption": {
-          "name": "Full name",
-          "title": "Job title",
-          "date": "Date signed",
-          "time": "Time signed"
         },
         "ink": {
           "blue": "Blue",
@@ -247,6 +240,8 @@
         },
         "sampleName": "Nguyễn Văn Hùng",
         "sampleTitle": "Director",
+        "sampleCaption": "Jane Doe · Director · Sales",
+        "sampleSignedOn": "Signed on 19/11/2026 09:30",
         "provider": {
           "title": "E-signing via provider",
           "note": "Used for Sign steps whose «Sign via» is a provider."

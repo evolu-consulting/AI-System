@@ -1,6 +1,6 @@
 // CR-181 · s4 · luật thuần của màn chặn + mục menu (Q5, Q10): chỉ chặn khi công ty bật và API nói cần tạo.
 import type { MySignatureView, SignatureSettings } from "@ai/contracts/signature";
-import type { CaptionFields, Method } from "./signature-image";
+import type { Method } from "./signature-image";
 
 const LATER_KEY = "sig.later";
 
@@ -20,13 +20,6 @@ export function firstStep(view: MySignatureView): "main" | "initials" {
 }
 
 export const needsInitialsAfterMain = (s: SignatureSettings): boolean => s.initials === "own";
-
-export const captionFields = (s: SignatureSettings): CaptionFields => ({
-  name: s.caption.includes("name"),
-  title: s.caption.includes("title"),
-  date: s.caption.includes("date"),
-  time: s.caption.includes("time"),
-});
 
 export const methodsOf = (s: SignatureSettings): Method[] => s.methods;
 
