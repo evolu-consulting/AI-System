@@ -28,7 +28,7 @@ export function SignaturePreview({ s }: { s: SignatureSettings }) {
     void (async () => {
       await loadSignatureFont().catch(() => undefined);
       const sig = await canvasFromName(name).catch(() => null);
-      if (live && ref.current) drawPreview(ref.current, sig, s.ink, caption, signedOn);
+      if (live && ref.current) drawPreview(ref.current, sig, s.ink, { caption, signedOn });
     })();
     return () => {
       live = false;

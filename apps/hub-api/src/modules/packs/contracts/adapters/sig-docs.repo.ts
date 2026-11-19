@@ -57,12 +57,11 @@ const toItem = (r: Row): SigDocItem | null =>
 export function sigDocsRepo(tx: Tx, tenantId: string) {
   return {
     list: async (
-      userId: string,
-      isAdmin: boolean,
-      timeZone: string,
+      viewer: { userId: string; isAdmin: boolean; timeZone: string },
       sigId: string,
       f: SigDocsFilter,
     ): Promise<SigDocsPage> => {
+      const { userId, isAdmin, timeZone } = viewer;
       const res = await tx.execute<Row>(sql`
         with own as (
           select coalesce(bool_or(m.signer_id <> ${userId}::uuid), false) as foreign

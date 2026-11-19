@@ -18,10 +18,10 @@ const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 async function tryOnce(
   cv: AvatarCanvas,
   readBlob: (b: Blob) => Promise<string>,
-  type: string,
-  q: number,
+  enc: readonly [type: string, q: number],
   log: string[],
 ): Promise<string | null> {
+  const [type, q] = enc;
   try {
     const blob = await new Promise<Blob | null>((ok) => cv.toBlob(ok, type, q));
     if (blob) return await readBlob(blob);
@@ -48,7 +48,7 @@ export async function encodeImage(
 ): Promise<string> {
   const log: string[] = [];
   for (const [type, q] of AVATAR_ENCODINGS) {
-    const url = await tryOnce(cv, readBlob, type, q, log);
+    const url = await tryOnce(cv, readBlob, [type, q], log);
     const m = url ? DATA_URL.exec(url) : null;
     if (!url || !m) {
       log.push(`${type}:not-data-url`);

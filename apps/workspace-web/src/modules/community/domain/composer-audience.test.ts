@@ -30,9 +30,14 @@ describe("CR-191 composer", () => {
   it("n/N: đối tác chưa rời + công ty kết nối, chỉ nội bộ ⇒ 0/N", () => {
     const partners = [org("a"), org("b"), org("c", true)];
     const conn = [{ sees: true }, { sees: false }];
-    expect(audienceCounts(aud({}), "note", [], partners, conn)).toEqual({ n: 3, N: 4 });
+    expect(audienceCounts(aud({}), { type: "note", cats: [] }, partners, conn)).toEqual({
+      n: 3,
+      N: 4,
+    });
     expect(
-      audienceCounts(aud({ mode: "internal" }), "note", [], partners, [{ sees: false }]),
+      audienceCounts(aud({ mode: "internal" }), { type: "note", cats: [] }, partners, [
+        { sees: false },
+      ]),
     ).toEqual({
       n: 0,
       N: 3,

@@ -218,7 +218,12 @@ export type MessagesRepo = {
   /** CR-190 · ghim / đánh dấu chưa đọc của người gọi cho các cuộc `ids` — MỘT câu (`= any`), không theo dòng. Không có hàng ⇒ vắng trong Map. */
   prefsOf(me: string, ids: readonly string[]): Promise<Map<string, PrefState>>;
   /** CR-190 · bật/tắt MỘT cột tuỳ chọn (ghim hoặc cờ chưa đọc) của người gọi; trả trạng thái sau đổi. Hàng hết gì để nhớ bị xoá. */
-  setPref(me: string, kind: PrefKind, cid: string, col: PrefCol, on: boolean): Promise<PrefState>;
+  setPref(
+    me: string,
+    conv: { kind: PrefKind; id: string },
+    col: PrefCol,
+    on: boolean,
+  ): Promise<PrefState>;
   /** CR-190 · xoá cờ «chưa đọc» khi mở cuộc (một câu; không có cờ ⇒ không làm gì). */
   clearUnreadMark(me: string, kind: PrefKind, cid: string): Promise<void>;
   /** null = không phải thành viên. Trả mốc đọc mới + cũ + mọi thành viên (đã kẹp theo `clampRead`: không lùi, không vượt tin cuối). */

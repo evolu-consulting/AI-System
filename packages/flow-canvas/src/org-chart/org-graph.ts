@@ -83,6 +83,35 @@ function ownPeople(d: OrgChartDept | undefined): Map<string, OrgChartPerson> {
   return people;
 }
 
+/** Dữ liệu một node: phòng (có `d`) hoặc gốc công ty. */
+function nodeData(
+  d: OrgChartDept | undefined,
+  rootName: string,
+  n: { direct: number; total: number; hasChildren: boolean },
+): OrgGraphNode["data"] {
+  return d
+    ? {
+        kind: "dept",
+        name: d.name,
+        head: d.head,
+        count: n.direct,
+        total: n.total,
+        hasChildren: n.hasChildren,
+        staff: staffOf(d),
+        members: d.members,
+      }
+    : {
+        kind: "company",
+        name: rootName,
+        head: null,
+        count: n.total,
+        total: n.total,
+        hasChildren: false,
+        staff: [],
+        members: [],
+      };
+}
+
 export function buildOrgGraph(depts: readonly OrgChartDept[], rootName: string): OrgGraph {
   const byId = new Map(depts.map((d) => [d.id, d]));
   const kids = childrenMap(depts);
@@ -109,27 +138,7 @@ export function buildOrgGraph(depts: readonly OrgChartDept[], rootName: string):
       id,
       x: Math.round(x),
       y: depth * (ORG_NODE_H + GAP_Y),
-      data: d
-        ? {
-            kind: "dept",
-            name: d.name,
-            head: d.head,
-            count: direct,
-            total: people.size,
-            hasChildren: childIds.length > 0,
-            staff: staffOf(d),
-            members: d.members,
-          }
-        : {
-            kind: "company",
-            name: rootName,
-            head: null,
-            count: people.size,
-            total: people.size,
-            hasChildren: false,
-            staff: [],
-            members: [],
-          },
+      data: nodeData(d, rootName, { direct, total: people.size, hasChildren: childIds.length > 0 }),
     });
     return { x, people };
   };

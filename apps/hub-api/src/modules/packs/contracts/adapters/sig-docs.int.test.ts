@@ -37,7 +37,10 @@ const uow = () =>
   });
 const list = (userId: string, admin: boolean, sig: string, f: Partial<SigDocsFilter> = {}) =>
   uow().tenant({ tenantId: A, userId }, (r) =>
-    r.docs.list(userId, admin, "Asia/Ho_Chi_Minh", sig, { cursor: null, ...f }),
+    r.docs.list({ userId, isAdmin: admin, timeZone: "Asia/Ho_Chi_Minh" }, sig, {
+      cursor: null,
+      ...f,
+    }),
   );
 
 async function mkFile(by: string, name: string): Promise<string> {

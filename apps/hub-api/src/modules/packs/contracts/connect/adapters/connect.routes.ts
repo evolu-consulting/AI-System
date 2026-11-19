@@ -10,7 +10,7 @@ import {
   ConnectSearchQuerySchema,
   ConnectSettingsBodySchema,
 } from "@ai/contracts/pack-contracts";
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import { z } from "zod";
 import { appError } from "../../../../../lib/errors";
 import { parseJson, parseQuery, parseWith } from "../../../../../lib/http";
@@ -33,12 +33,12 @@ export function cursorOf(raw: string | undefined) {
   return c;
 }
 
-export function connectRoutes(view: PackAccessView, uc: ConnectUsecases): Hono<PackGuardVars> {
-  const r = new Hono<PackGuardVars>();
-  const guard = packGuard(view, KEY, "admin");
-  // BR-191-11: xem (danh sách, cài đặt, tìm) cho mọi người có quyền xem gói; tìm/mời đối tác MỚI do DB quyết định theo cài đặt công ty.
-  const seeGuard = packGuard(view, KEY, "read");
+type Guards = { guard: MiddlewareHandler; seeGuard: MiddlewareHandler };
+type R = Hono<PackGuardVars>;
 
+/** Các route xem/tìm/mời (BR-191-11: xem cho mọi người có quyền xem gói; tìm/mời đối tác MỚI do DB quyết định theo cài đặt công ty). */
+function mountSee(r: R, g: Guards, uc: ConnectUsecases): void {
+  const { seeGuard } = g;
   r.get("/connect/search", seeGuard, async (c) => {
     const q = parseQuery(c, ConnectSearchQuerySchema);
     return c.json({ items: await uc.search(whoOf(c), q.q).catch(ccError) }, 200);
@@ -58,6 +58,23 @@ export function connectRoutes(view: PackAccessView, uc: ConnectUsecases): Hono<P
     return c.json(out, 200);
   });
 
+  r.get("/connect/settings", seeGuard, async (c) => c.json(await uc.settings(whoOf(c)), 200));
+
+  r.get("/connect/listing", seeGuard, async (c) =>
+    c.json(await uc.listing(whoOf(c)).catch(ccError), 200),
+  );
+
+  r.get("/connect/companies/:tenant_id", seeGuard, async (c) => {
+    const id = parseWith(UUID, c.req.param("tenant_id"));
+    const page = await uc.company(whoOf(c), id).catch(ccError);
+    if (!page) throw appError("NOT_FOUND");
+    return c.json(page, 200);
+  });
+}
+
+/** Các route đổi trạng thái (chấp nhận/từ chối/rút/ngắt/cài đặt) — cần quyền quản trị gói. */
+function mountAdmin(r: R, g: Guards, uc: ConnectUsecases): void {
+  const { guard } = g;
   r.post("/connect/links/:tenant_id/accept", guard, async (c) => {
     const from = parseWith(UUID, c.req.param("tenant_id"));
     await uc.accept(whoOf(c), from).catch(ccError);
@@ -78,28 +95,15 @@ export function connectRoutes(view: PackAccessView, uc: ConnectUsecases): Hono<P
     return c.json({ ok: true }, 200);
   });
 
-  r.get("/connect/settings", seeGuard, async (c) => c.json(await uc.settings(whoOf(c)), 200));
-
   r.put("/connect/settings", guard, async (c) => {
     const b = await parseJson(c, ConnectSettingsBodySchema);
     await uc.setInviteBy(whoOf(c), b.invite_by);
     return c.json({ ok: true }, 200);
   });
 
-  r.get("/connect/listing", seeGuard, async (c) =>
-    c.json(await uc.listing(whoOf(c)).catch(ccError), 200),
-  );
-
   r.put("/connect/listing", guard, async (c) => {
     const b = await parseJson(c, ConnectListingBodySchema);
     return c.json(await uc.setListed(whoOf(c), b.listed).catch(ccError), 200);
-  });
-
-  r.get("/connect/companies/:tenant_id", seeGuard, async (c) => {
-    const id = parseWith(UUID, c.req.param("tenant_id"));
-    const page = await uc.company(whoOf(c), id).catch(ccError);
-    if (!page) throw appError("NOT_FOUND");
-    return c.json(page, 200);
   });
 
   r.delete("/connect/links/:tenant_id", guard, async (c) => {
@@ -107,5 +111,12 @@ export function connectRoutes(view: PackAccessView, uc: ConnectUsecases): Hono<P
     await uc.disconnect(whoOf(c), other).catch(ccError);
     return c.json({ ok: true }, 200);
   });
+}
+
+export function connectRoutes(view: PackAccessView, uc: ConnectUsecases): Hono<PackGuardVars> {
+  const r = new Hono<PackGuardVars>();
+  const g = { guard: packGuard(view, KEY, "admin"), seeGuard: packGuard(view, KEY, "read") };
+  mountSee(r, g, uc);
+  mountAdmin(r, g, uc);
   return r;
 }

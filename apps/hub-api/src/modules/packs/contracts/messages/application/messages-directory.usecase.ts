@@ -85,12 +85,11 @@ const dirKeyOf = (r: PartnerDirRow): DirKey => ({ k1: r.k1, k2: r.k2, k3: r.k3, 
 
 /** Nhóm công ty đối tác: đầu + dòng đã cắt đúng `limit` (DB trả `limit + 1` để biết còn trang sau). */
 function partnerGroups(
-  heads: readonly PartnerDirHead[],
-  rows: readonly PartnerDirRow[],
-  limit: number,
+  src: { heads: readonly PartnerDirHead[]; rows: readonly PartnerDirRow[]; limit: number },
   rawOf: (r: PartnerDirRow) => RawConversation | null,
   people: People,
 ): MsgDirGroup[] {
+  const { heads, rows, limit } = src;
   const by = new Map<string, PartnerDirRow[]>();
   for (const r of rows) by.set(r.company_id, [...(by.get(r.company_id) ?? []), r]);
   return heads.map((h) => {
@@ -124,15 +123,16 @@ function partnerGroups(
 }
 
 type Repos = MessagesRepos;
+/** Tham số của một lần gọi danh bạ: câu hỏi + phạm vi nhóm + con trỏ đã giải mã. */
+type Ctx = { q: MsgDirectoryQuery; sc: Scope; cur: DirKey | null };
 
 /** Phần đối tác của tx 1: đầu nhóm + dòng (+ ghim) — MỘT lần gọi hàm hub mỗi việc. */
 async function loadPartner(
   r: Repos,
   me: string,
-  q: MsgDirectoryQuery,
-  sc: Scope,
-  cur: DirKey | null,
+  ctx: Ctx,
 ): Promise<Pick<Loaded, "heads" | "rows" | "raws">> {
+  const { q, sc, cur } = ctx;
   const raws = new Map<string, RawConversation>();
   if (sc.partner === null) return { heads: [], rows: [], raws };
   const search = q.q && q.q.length > 0 ? q.q : null;
@@ -214,12 +214,11 @@ const extraIdsOf = (me: string, convs: Loaded["convs"]): string[] => {
 /** Hai nhóm tự dựng + trang hiện tại; chỉ nhóm được hỏi mới áp con trỏ. */
 function ownPages(
   me: string,
-  sc: Scope,
   convs: Loaded["convs"],
   dir: DirPeopleResult,
-  q: MsgDirectoryQuery,
-  cur: DirKey | null,
+  ctx: Ctx,
 ): { chat: Own; internal: Own } {
+  const { q, sc, cur } = ctx;
   const pool = new Map(dir.people);
   pool.delete(me); // không tự nhắn mình
   const mk = (items: DirItem[], c: DirKey | null): Own => ({
@@ -240,66 +239,61 @@ function ownPages(
 const showOwn = (sc: Scope, key: "chat" | "internal", g: Own, q: MsgDirectoryQuery): boolean =>
   sc[key] && (g.items.length > 0 || (!q.q && !q.group) || q.group === key);
 
+/** Tx 1: mọi thứ cần để xếp nhóm (người gọi chưa đủ quyền đối tác ⇒ bỏ phần đối tác, chạy lại tx mới). */
+const loadTx = (d: Deps, who: PackWho, ctx: Ctx, withPartner: boolean) =>
+  d.uow.tenant(who, async (r): Promise<Loaded> => {
+    const { sc } = ctx;
+    const convs = sc.chat || sc.internal ? await r.messages.directoryConvs(who.userId) : [];
+    const partner = withPartner
+      ? await loadPartner(r, who.userId, ctx)
+      : { heads: [], rows: [], raws: new Map<string, RawConversation>() };
+    return { convs, ...partner };
+  });
+
+/** Tx 2: tin cuối của các dòng nội bộ của trang, MỘT câu `= any`. */
+async function lastOf(d: Deps, who: PackWho, items: readonly DirItem[]) {
+  const ids = items.flatMap((i) => (i.conv ? [i.conv.id] : []));
+  const byId = new Map<string, RawConversation>();
+  if (ids.length === 0) return byId;
+  for (const x of await d.uow.tenant(who, (r) => r.messages.conversationsByIds(who.userId, ids)))
+    byId.set(x.id, x);
+  return byId;
+}
+
+/** Tx 1 (+ chạy lại không phần đối tác nếu người gọi chưa đủ quyền Sổ Hợp Tác). */
+function loadAll(d: Deps, who: PackWho, ctx: Ctx) {
+  const run = (withPartner: boolean) => loadTx(d, who, ctx, withPartner);
+  const { sc } = ctx;
+  const mixed = sc.partner !== null && (sc.chat || sc.internal);
+  return mixed
+    ? internalOnPartnerDenied(
+        () => run(true),
+        () => run(false),
+      )
+    : run(true);
+}
+
+/** Tra người MỘT lần: đồng nghiệp + đầu kia/người gửi tin cuối của cuộc đã có + chính người gọi. */
+const peopleOf = (d: Deps, who: PackWho, convs: Loaded["convs"]): Promise<DirPeopleResult> =>
+  d.dirPeople
+    ? d.dirPeople(who, extraIdsOf(who.userId, convs))
+    : Promise.resolve({ company: { id: who.tenantId, name: "" }, people: new Map() });
+
 export function directoryOps(d: Deps) {
-  /** Tx 1: mọi thứ cần để xếp nhóm (người gọi chưa đủ quyền đối tác ⇒ bỏ phần đối tác, chạy lại tx mới). */
-  const load = (
-    who: PackWho,
-    q: MsgDirectoryQuery,
-    sc: Scope,
-    cur: DirKey | null,
-    withPartner: boolean,
-  ) =>
-    d.uow.tenant(who, async (r): Promise<Loaded> => {
-      const convs = sc.chat || sc.internal ? await r.messages.directoryConvs(who.userId) : [];
-      const partner = withPartner
-        ? await loadPartner(r, who.userId, q, sc, cur)
-        : { heads: [], rows: [], raws: new Map<string, RawConversation>() };
-      return { convs, ...partner };
-    });
-
-  /** Tx 2: tin cuối của các dòng nội bộ của trang, MỘT câu `= any`. */
-  const lastOf = async (who: PackWho, items: readonly DirItem[]) => {
-    const ids = items.flatMap((i) => (i.conv ? [i.conv.id] : []));
-    const byId = new Map<string, RawConversation>();
-    if (ids.length === 0) return byId;
-    for (const x of await d.uow.tenant(who, (r) => r.messages.conversationsByIds(who.userId, ids)))
-      byId.set(x.id, x);
-    return byId;
-  };
-
-  /** Tx 1 (+ chạy lại không phần đối tác nếu người gọi chưa đủ quyền Sổ Hợp Tác). */
-  const loadAll = (who: PackWho, q: MsgDirectoryQuery, sc: Scope, cur: DirKey | null) => {
-    const run = (withPartner: boolean) => load(who, q, sc, cur, withPartner);
-    const mixed = sc.partner !== null && (sc.chat || sc.internal);
-    return mixed
-      ? internalOnPartnerDenied(
-          () => run(true),
-          () => run(false),
-        )
-      : run(true);
-  };
-
-  /** Tra người MỘT lần: đồng nghiệp + đầu kia/người gửi tin cuối của cuộc đã có + chính người gọi. */
-  const peopleOf = (who: PackWho, convs: Loaded["convs"]): Promise<DirPeopleResult> =>
-    d.dirPeople
-      ? d.dirPeople(who, extraIdsOf(who.userId, convs))
-      : Promise.resolve({ company: { id: who.tenantId, name: "" }, people: new Map() });
-
   return {
     /** `GET /messages/directory` */
     async directory(who: PackWho, q: MsgDirectoryQuery): Promise<MsgDirectoryResponse> {
       const cur = q.cursor ? decodeDirCursor(q.cursor) : null;
       if (q.cursor && (!cur || !q.group)) throw new Error("BAD_CURSOR");
-      const sc = scopeOf(q.group);
-      const got = await loadAll(who, q, sc, cur);
-      const dir = await peopleOf(who, got.convs);
-      const own = ownPages(who.userId, sc, got.convs, dir, q, cur);
-      const byId = await lastOf(who, [...own.chat.page, ...own.internal.page]);
+      const ctx: Ctx = { q, sc: scopeOf(q.group), cur };
+      const { sc } = ctx;
+      const got = await loadAll(d, who, ctx);
+      const dir = await peopleOf(d, who, got.convs);
+      const own = ownPages(who.userId, got.convs, dir, ctx);
+      const byId = await lastOf(d, who, [...own.chat.page, ...own.internal.page]);
       const rowOf = rowBuilder(byId, dir.people, dir);
       const groups: MsgDirGroup[] = partnerGroups(
-        got.heads,
-        got.rows,
-        q.limit,
+        { heads: got.heads, rows: got.rows, limit: q.limit },
         (r) => (r.thread_id ? (got.raws.get(r.thread_id) ?? null) : null),
         dir.people,
       );

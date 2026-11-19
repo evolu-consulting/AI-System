@@ -35,7 +35,7 @@ export function ImageCropDialog({
   const viewH = Math.round(VIEW_W / spec.aspect);
   const [zoom, setZoom] = useState(1);
   const [c, setC] = useState({ cx: src.width / 2, cy: src.height / 2 });
-  const rect = cropRect(src.width, src.height, spec.aspect, zoom, c.cx, c.cy);
+  const rect = cropRect({ w: src.width, h: src.height }, spec.aspect, zoom, c);
   const cv = useRef<HTMLCanvasElement | null>(null);
   const drag = useRef<{ x: number; y: number } | null>(null);
 

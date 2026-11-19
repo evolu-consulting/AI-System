@@ -118,6 +118,26 @@ export function renameDept(
 
 type EmptyCheck = { members: number; children: number; has_access: boolean };
 
+/** Đếm người (thành viên + trưởng phòng, không trùng), phòng con và cấu hình quyền gắn với nhóm; còn người/phòng con ⇒ 409. */
+async function emptyCheck(
+  tx: Tx,
+  t: string,
+  groupId: string,
+  headUserId: string | null,
+): Promise<EmptyCheck> {
+  const n = (await tx.execute(sql`select
+      (select count(*)::int from (select user_id from admin.group_members
+          where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid
+        union select ${headUserId}::uuid where ${headUserId}::uuid is not null) p) as members,
+      (select count(*)::int from admin.departments where parent_group_id = ${groupId}::uuid and tenant_id = ${t}::uuid) as children,
+      (exists(select 1 from admin.feature_grants where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid)
+        or exists(select 1 from admin.app_roles where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid)) as has_access`)) as unknown as EmptyCheck[];
+  const r = n[0] as EmptyCheck;
+  if (r.members > 0 || r.children > 0)
+    throw orgDeptError("DEPT_NOT_EMPTY", { members: r.members, children: r.children });
+  return r;
+}
+
 /**
  * Xoá phòng: CHẶN khi còn người (thành viên + trưởng phòng, không đếm trùng) hoặc phòng con ⇒ 409 `DEPT_NOT_EMPTY`
  * `{ members, children }`; nhóm đang được giao việc duyệt ĐANG MỞ (Hub) ⇒ 409 `DEPT_IN_USE` `{ open_reviews }`. Phòng rỗng:
@@ -133,16 +153,7 @@ export function deleteDept(
   return configWrite(c, "group.delete", async (tx, ch) => {
     await lockOrgTree(tx, t);
     const g = await lockedDept(tx, t, groupId);
-    const n = (await tx.execute(sql`select
-      (select count(*)::int from (select user_id from admin.group_members
-          where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid
-        union select ${g.head_user_id}::uuid where ${g.head_user_id}::uuid is not null) p) as members,
-      (select count(*)::int from admin.departments where parent_group_id = ${groupId}::uuid and tenant_id = ${t}::uuid) as children,
-      (exists(select 1 from admin.feature_grants where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid)
-        or exists(select 1 from admin.app_roles where group_id = ${groupId}::uuid and tenant_id = ${t}::uuid)) as has_access`)) as unknown as EmptyCheck[];
-    const r = n[0] as EmptyCheck;
-    if (r.members > 0 || r.children > 0)
-      throw orgDeptError("DEPT_NOT_EMPTY", { members: r.members, children: r.children });
+    const r = await emptyCheck(tx, t, groupId, g.head_user_id);
     const refs = await groupRefCounts(tx, t, groupId);
     if (refs.reviewsOpen > 0) throw orgDeptError("DEPT_IN_USE", { open_reviews: refs.reviewsOpen });
     const keep = r.has_access || refs.agents + refs.processes + refs.reviewsAny > 0;

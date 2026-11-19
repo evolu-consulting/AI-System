@@ -29,7 +29,7 @@ export function prefsRepo(
       return out;
     },
     // Bật = upsert (giữ mốc cũ nếu đã bật). Tắt = xoá hàng nếu cột kia cũng trống, ngược lại chỉ NULL cột này (hai tập hàng rời nhau ⇒ một câu CTE an toàn).
-    setPref: async (me, kind, cid, col, on) => {
+    setPref: async (me, { kind, id: cid }, col, on) => {
       const key = sql`p.tenant_id = ${t}::uuid and p.user_id = ${me}::uuid and p.conv_kind = ${kind} and p.conv_id = ${cid}::uuid`;
       const c = sql.raw(col);
       const other = sql.raw(col === "pinned_at" ? "marked_unread_at" : "pinned_at");

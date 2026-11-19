@@ -196,9 +196,9 @@ export function drawPreview(
   cnv: HTMLCanvasElement,
   sig: HTMLCanvasElement | null,
   ink: Ink,
-  caption: string,
-  signedOn?: string,
+  lines: { caption: string; signedOn?: string },
 ) {
+  const { caption, signedOn } = lines;
   const x = cnv.getContext("2d");
   if (!x) return;
   x.clearRect(0, 0, cnv.width, cnv.height);

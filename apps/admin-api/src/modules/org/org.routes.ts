@@ -25,7 +25,39 @@ import {
 import { addDeptMembers, removeDeptMember } from "./org-dept.members";
 import { createDept, deleteDept, renameDept } from "./org-dept.service";
 
-export function orgRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> {
+type OrgDeps = AuthDeps & { hooks?: TestHooks };
+type Helpers = {
+  call: (c: Context<AppVars>) => OrgCall;
+  tenant: (c: Context<AppVars>) => string | undefined;
+};
+
+/** Sửa cơ cấu trên sơ đồ (CR-189 · BR-189-6). */
+function mountOrgEdit(r: Hono<AppVars>, { call, tenant }: Helpers): void {
+  r.post("/departments", async (c) => {
+    const body = await parseJson(c, DeptCreateRequestSchema);
+    return c.json(await createDept(call(c), tenant(c), body), 201);
+  });
+  r.put("/departments/:id/name", async (c) => {
+    const id = parseIdParam(c);
+    const body = await parseJson(c, DeptRenameRequestSchema);
+    return c.json(await renameDept(call(c), tenant(c), id, body));
+  });
+  r.post("/departments/:id/members", async (c) => {
+    const id = parseIdParam(c);
+    const body = await parseJson(c, DeptMembersAddRequestSchema);
+    return c.json(await addDeptMembers(call(c), tenant(c), id, body));
+  });
+  r.delete("/departments/:id/members/:userId", async (c) => {
+    const id = parseIdParam(c);
+    return c.json(await removeDeptMember(call(c), tenant(c), id, parseIdParam(c, "userId")));
+  });
+  r.delete("/departments/:id", async (c) => {
+    await deleteDept(call(c), tenant(c), parseIdParam(c));
+    return c.body(null, 204);
+  });
+}
+
+export function orgRoutes(d: OrgDeps): Hono<AppVars> {
   const r = new Hono<AppVars>();
   const call = (c: Context<AppVars>): OrgCall => ({
     ctx: d,
@@ -55,28 +87,6 @@ export function orgRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> {
     const body = await parseJson(c, DepartmentSetRequestSchema);
     return c.json(await setDepartment(call(c), tenant(c), id, body));
   });
-  // CR-189 · BR-189-6: sửa cơ cấu trên sơ đồ.
-  r.post("/departments", async (c) => {
-    const body = await parseJson(c, DeptCreateRequestSchema);
-    return c.json(await createDept(call(c), tenant(c), body), 201);
-  });
-  r.put("/departments/:id/name", async (c) => {
-    const id = parseIdParam(c);
-    const body = await parseJson(c, DeptRenameRequestSchema);
-    return c.json(await renameDept(call(c), tenant(c), id, body));
-  });
-  r.post("/departments/:id/members", async (c) => {
-    const id = parseIdParam(c);
-    const body = await parseJson(c, DeptMembersAddRequestSchema);
-    return c.json(await addDeptMembers(call(c), tenant(c), id, body));
-  });
-  r.delete("/departments/:id/members/:userId", async (c) => {
-    const id = parseIdParam(c);
-    return c.json(await removeDeptMember(call(c), tenant(c), id, parseIdParam(c, "userId")));
-  });
-  r.delete("/departments/:id", async (c) => {
-    await deleteDept(call(c), tenant(c), parseIdParam(c));
-    return c.body(null, 204);
-  });
+  mountOrgEdit(r, { call, tenant });
   return r;
 }

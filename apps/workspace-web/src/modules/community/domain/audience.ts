@@ -55,11 +55,11 @@ export function previewText(recipients: PartnerOrg[]): string {
 /** CR-191 · «n/N công ty đối tác thấy bài»: đối tác trong cộng đồng (chưa rời) + công ty đã kết nối. */
 export function audienceCounts(
   a: PostAudience,
-  type: PostType,
-  postCats: string[],
+  post: { type: PostType; cats: string[] },
   partners: PartnerOrg[],
   connected: readonly { sees: boolean }[],
 ): { n: number; N: number } {
+  const { type, cats: postCats } = post;
   return {
     n:
       previewRecipients(a, type, postCats, partners).length +

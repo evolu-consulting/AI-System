@@ -41,7 +41,7 @@ export function prefsOps(d: { uow: PackUow<MessagesRepos> }) {
       if (kind === "internal") {
         if (!(await r.messages.facts(who.userId, id, false))) throw new MsgFail("MSG_NOT_FOUND");
       } else if (!(await r.partner.detail(id))) throw new MsgFail("MSG_NOT_FOUND");
-      return outOf(await r.messages.setPref(who.userId, kind, id, col, on));
+      return outOf(await r.messages.setPref(who.userId, { kind, id }, col, on));
     });
   return {
     /** `PUT /messages/conversations/:id/pin` */

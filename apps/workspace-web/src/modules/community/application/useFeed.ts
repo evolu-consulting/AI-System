@@ -49,6 +49,18 @@ export function useFeedFilters(
   };
 }
 
+/** Nối trang kế vào danh sách đang có (bỏ bài trùng; con trỏ lấy từ trang mới). */
+function appendPage(old: FeedResponse | null, r: FeedResponse): FeedResponse {
+  if (!old) return r;
+  const have = new Set(old.items.map((p) => p.id));
+  const { nextCursor: _d, ...rest } = old;
+  return {
+    ...rest,
+    items: [...old.items, ...r.items.filter((p) => !have.has(p.id))],
+    ...(r.nextCursor ? { nextCursor: r.nextCursor } : {}),
+  };
+}
+
 /** CR-147c · nạp trang đầu (20 bài) rồi tải dần theo `nextCursor` (gọi `more.load` khi cuộn tới cuối). Đổi người xem ⇒ bỏ danh sách cũ; chỉ đổi tab/bộ lọc ⇒ giữ bài cũ + `stale` (UI làm mờ) tới khi có trang đầu mới (CR-187 BR-187-9). */
 export function useFeed(query: FeedQuery) {
   const { api, rev, viewer, gone } = useApp();
@@ -90,16 +102,7 @@ export function useFeed(query: FeedQuery) {
     setLoadingMore(true);
     try {
       const r = await api.listFeed({ ...query, cursor });
-      setData((old) => {
-        if (!old) return r;
-        const have = new Set(old.items.map((p) => p.id));
-        const { nextCursor: _d, ...rest } = old;
-        return {
-          ...rest,
-          items: [...old.items, ...r.items.filter((p) => !have.has(p.id))],
-          ...(r.nextCursor ? { nextCursor: r.nextCursor } : {}),
-        };
-      });
+      setData((old) => appendPage(old, r));
     } catch (e) {
       setError(e instanceof Error ? e.message : t("community.feed.loadError"));
     } finally {

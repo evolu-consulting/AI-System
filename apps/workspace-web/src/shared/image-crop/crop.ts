@@ -20,13 +20,13 @@ export const clampZoom = (z: number): number =>
 
 /** Vùng cắt (px ảnh gốc): khung tỉ lệ `aspect` lớn nhất vừa ảnh, chia cho `zoom`, tâm (cx,cy) bị kẹp để không ra ngoài ảnh. */
 export function cropRect(
-  w: number,
-  h: number,
+  size: { w: number; h: number },
   aspect: number,
   zoom: number,
-  cx: number,
-  cy: number,
+  center: { cx: number; cy: number },
 ): Rect {
+  const { w, h } = size;
+  const { cx, cy } = center;
   const base = w / h >= aspect ? { w: h * aspect, h } : { w, h: w / aspect };
   const z = clampZoom(zoom);
   const sw = base.w / z;
@@ -63,14 +63,20 @@ export type CropCanvas = AvatarCanvas & {
   } | null;
 };
 
+/** Cổng ra ngoài của bước vẽ: tạo canvas `w×h` + đọc blob thành data URL. */
+export type CropIO = {
+  makeCanvas: (w: number, h: number) => CropCanvas;
+  readBlob: (b: Blob) => Promise<string>;
+};
+
 /** Vẽ vùng cắt ra canvas `w×h` rồi mã hoá ≤ `maxBytes`; không đạt ⇒ thu nhỏ 80 % mỗi vòng (tối đa 5 vòng). */
 export async function cropToDataUrl(
   draw: unknown,
   rect: Rect,
   spec: CropSpec,
-  makeCanvas: (w: number, h: number) => CropCanvas,
-  readBlob: (b: Blob) => Promise<string>,
+  io: CropIO,
 ): Promise<string> {
+  const { makeCanvas, readBlob } = io;
   let last: unknown = new Error("crop: không mã hoá được");
   for (let i = 0; i < 5; i++) {
     const k = 0.8 ** i;

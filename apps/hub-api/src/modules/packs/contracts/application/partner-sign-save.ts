@@ -199,6 +199,16 @@ async function persist(
   });
 }
 
+/** Ghi tệp đã ký vào FileBox; `drop` gỡ lại khi tx lỗi. */
+async function putSigned(d: PartnerSignDeps, l: LinkRow, fileName: string, bytes: Uint8Array) {
+  const org = d.orgOf(l.tenant_id);
+  const name = `${fileName.replace(/\.pdf$/i, "")} (đã ký).pdf`;
+  const up = await d.files.put(org, name, bytes);
+  const put: Put = { org, boxId: up.fileId, versionId: up.versionId, name };
+  const drop = () => d.files.remove(org, up.fileId).catch(() => undefined);
+  return { put, drop };
+}
+
 /** Điều phối: kiểm → in → lưu tệp → tx; lỗi/huỷ ⇒ gỡ tệp vừa ghi FileBox. `done` chạy SAU COMMIT khi đủ ô. */
 export async function partnerSignSave(
   d: PartnerSignDeps,
@@ -224,11 +234,7 @@ export async function partnerSignSave(
   if (!step?.a_done) return fail(409, E.closed);
   const out = await render(d, l, body, s, quick.png, text, signedOn);
   if ("ok" in out) return out;
-  const org = d.orgOf(l.tenant_id);
-  const name = `${s.file.name.replace(/\.pdf$/i, "")} (đã ký).pdf`;
-  const up = await d.files.put(org, name, out.bytes);
-  const put: Put = { org, boxId: up.fileId, versionId: up.versionId, name };
-  const drop = () => d.files.remove(org, up.fileId).catch(() => undefined);
+  const { put, drop } = await putSigned(d, l, s.file.name, out.bytes);
   try {
     const data = await persist(d, {
       l,

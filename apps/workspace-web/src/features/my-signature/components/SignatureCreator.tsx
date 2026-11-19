@@ -68,7 +68,7 @@ export function SignatureCreator(p: SignatureCreatorProps) {
   useEffect(() => {
     let live = true;
     void current().then((c) => {
-      if (live && prev.current) drawPreview(prev.current, c, p.ink, captionLine);
+      if (live && prev.current) drawPreview(prev.current, c, p.ink, { caption: captionLine });
     });
     return () => {
       live = false;

@@ -43,7 +43,7 @@ export function AudienceField({
   useEffect(() => {
     api.audienceConnected(value.mode, value.tenants).then(setConnected, () => setConnected([]));
   }, [api, value.mode, tenantKey]);
-  const { n, N } = audienceCounts(value, type, cats, partners, connected);
+  const { n, N } = audienceCounts(value, { type, cats }, partners, connected);
   const err = audienceError(value);
   return (
     <div className="audbox" data-testid="audience-field">

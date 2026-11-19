@@ -151,8 +151,8 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
       d.view,
       createListSigDocs({
         timeZoneOf: d.timeZoneOf,
-        list: (who, admin, tz, sigId, f) =>
-          sigDocsUow.tenant(who, (x) => x.docs.list(who.userId, admin, tz, sigId, f)),
+        list: (who, view, sigId, f) =>
+          sigDocsUow.tenant(who, (x) => x.docs.list({ userId: who.userId, ...view }, sigId, f)),
       }),
     ),
   );
