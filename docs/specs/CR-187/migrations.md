@@ -7,7 +7,7 @@
 | hub | 0163 | cr191-feed-merge-rls | 1806904100000 | đã gộp |
 | hub | 0167 | cr190-msg-directory-api | 1806904200000 | đã gộp |
 | hub | 0168 | cr191-partner-connect | 1806904300000 | đã gộp |
-| hub | 0171 | cr191-cross-person-card | 1806904600000 | đang soát |
+| hub | 0171 | cr191-cross-person-card | 1806904600000 | đã gộp |
 | hub | 0170 | cr191-partner-connect | 1806904500000 | đã gộp |
 | pack-contracts | 0125 | cr188-sig-docs-history | 1807000595000 | đã gộp |
 | pack-contracts | 0126 | cr190-msg-prefs-api | 1807000600000 | đã gộp |
@@ -21,6 +21,6 @@
 | hub | 0172 | cr189-admin-org-api | 1806904700000 | đã gộp |
 | pack-community | 0029 | cr191-composer-audience | 1807000720000 | đã gộp |
 
-| pack-community | 0031 | cr191-cross-person-card (author_user_id) | 1807000760000 | đang soát |
+| pack-community | 0031 | cr191-cross-person-card (author_user_id) | 1807000760000 | đã gộp |
 
 Số kế tiếp còn trống: hub 0173 (`when` > 1806904700000), pack-contracts 0130 (> 1807000900000), pack-community 0032 (> 1807000760000; 0028 bỏ trống). Không dùng 0162/0164/0165/0169 hub, 0127 pack-contracts.
