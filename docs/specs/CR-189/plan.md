@@ -105,3 +105,8 @@ Song song được: làn A (1→2→3→4→5), làn B (6→7→8 ‖ 9), làn C
 - Q5. «Mỗi người một phòng» chỉ ở service, không trigger/ràng buộc DB (không cần số migration admin). Người đang ở nhiều phòng: giữ nguyên, báo cảnh báo. Mặc định như vậy.
 - Q6. Quy tắc cấp quản lý «CHỈ trưởng phòng» có áp phía máy chủ (400 `manager_not_head`) hay chỉ ở ô chọn? Mặc định: áp cả máy chủ cho lần gán mới.
 - Q7. Gợi ý «Chưa từng nhắn» ở nhóm công ty đối tác: người đủ điều kiện nhắn có thể rất nhiều (≤ 1000/công ty) ⇒ tải theo trang 15, tổng đếm bằng một câu. Mặc định như vậy.
+
+## 6. Bổ sung sau chốt (điều phối, 19/11)
+- Q1 ĐỔI: người dùng cho hiện ẢNH THẬT người công ty kết nối (BR-191-13) ⇒ lát mới `cr191-cross-person-card` (Sonnet high, soát Opus): hàm DEFINER thẻ người chéo công ty (tên, chức vụ, công ty, avatar) chỉ cho công ty đã kết nối; dùng ở bảng tin, «@», Tin nhắn. Migration hub `0165`. Sau lát 11.
+- Q3 ĐỔI: người dùng cho BÌNH LUẬN chéo công ty (BR-191-12) ⇒ lát mới `cr191-cross-comment` (Opus medium, soát Opus độc lập): ghi bình luận/nhắc tên qua DEFINER kiểm kết nối + audience; chuông đúng người. Migration community `0028`. Sau lát 11 và 13.
+- Q2, Q4–Q7: theo mặc định.

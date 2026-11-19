@@ -56,6 +56,8 @@ Intake + góp ý từng vòng: `docs/specs/CR-187/intake-2026-11-19.md`.
 - BR-191-9 Tìm đối tác: người có quyền (BR-191-11) tìm cả công ty chưa kết nối đã bật «cho tìm thấy», vào trang công ty (ảnh bìa, giới thiệu, ngành, nơi; không có bài), «Mời kết nối» + lời nhắn. Người khác chỉ tìm đối tác đã kết nối.
 - BR-191-10 Sổ Hợp Tác › Đối tác: Yêu cầu kết nối (Đồng ý / Từ chối + lý do) · Lời mời đã gửi (Thu hồi) · công tắc tìm thấy (BR-187-5) · cài đặt «Ai được tìm và mời đối tác mới». «Yêu cầu tham gia» của Community chuyển về đây. Đồng ý ⇒ bài họ vào bảng tin ngay.
 - BR-191-11 Chỉ quản trị công ty đồng ý/từ chối/thu hồi/đổi cài đặt; vai khác xem khoá + lý do. Cài đặt 2 mức: Chỉ quản trị công ty (mặc định) · Mọi nhân viên.
+- BR-191-12 (người dùng chốt 19/11) Người của công ty đã kết nối ĐƯỢC BÌNH LUẬN bài đối tác họ thấy được trên bảng tin (cùng luật bình luận như bài nội bộ: sửa/xoá bình luận của mình; chủ bài + quản trị công ty đăng bài được ẩn/xoá bình luận trên bài mình). «@» trong bình luận nhắc được người thấy bài. Ghi chéo công ty CHỈ qua hàm DEFINER kiểm kết nối + «Ai thấy bài» ⇒ soát Opus medium.
+- BR-191-13 (người dùng chốt 19/11) Ảnh đại diện THẬT của người công ty đã kết nối được hiện (tác giả bài/bình luận, danh sách «@», danh sách Tin nhắn): thẻ người chéo công ty chỉ trả họ tên, chức vụ, công ty, ảnh đại diện — chỉ cho người thuộc công ty đã kết nối; không trả email/điện thoại. Qua hàm DEFINER ⇒ soát Opus.
 - Không làm: ẩn bài đối tác khỏi bảng tin mình; quyền Sửa/Xoá/Ẩn giữ.
 
 ## CR-192 · Ảnh
