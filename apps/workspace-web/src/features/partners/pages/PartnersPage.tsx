@@ -5,6 +5,7 @@
 import type { PartnerRole, RepRole } from "@ai/contracts/pack-contracts";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { FilterBar } from "@ai/web-kit/ui/kit/filter-bar";
+import { ICONS } from "@ai/web-kit/ui/kit/icons";
 import { PageHeader } from "@ai/web-kit/ui/kit/page-header";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -177,7 +178,14 @@ export function PartnersPage() {
             </Button>
           )
         }
-        actions={[{ label: t("contracts.connect.find"), onSelect: () => setFinding(true) }]}
+        actions={[
+          {
+            label: t("contracts.connect.find"),
+            icon: <ICONS.search className="size-4" aria-hidden="true" />,
+            pinMobile: true,
+            onSelect: () => setFinding(true),
+          },
+        ]}
       />
       {adding && <AddCompanyDialog onClose={() => setAdding(false)} />}
       {finding && <ConnectSearchDialog onClose={() => setFinding(false)} />}

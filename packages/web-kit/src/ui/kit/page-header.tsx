@@ -1,5 +1,6 @@
 // CR-180 · Khung đầu trang dùng chung. Desktop: tiêu đề trái; nút phụ + nút chính phải.
 // Điện thoại (≤ 640px): tiêu đề 1 hàng (cắt «…»), mô tả, nút chính RỘNG HẾT ngay dưới, nút phụ gom vào menu «⋯» cạnh tiêu đề.
+// Ngoại lệ (CR-191): nút phụ đánh dấu `pinMobile` là thao tác chính của trang ⇒ hiện thành nút (icon + nhãn, ≥ 44 px) dưới nút chính, không vào «⋯».
 // Nút chính chỉ render MỘT lần (đổi chỗ bằng `order`); nút phụ desktop ẩn bằng CSS trên điện thoại (menu «⋯» thế chỗ).
 import type { ReactNode } from "react";
 import { Button } from "./button";
@@ -11,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 import { ICONS } from "./icons";
+import { splitActions } from "./page-header-actions";
 import { TruncText } from "./trunc-text";
 
 export type PageHeaderAction = {
@@ -19,6 +21,8 @@ export type PageHeaderAction = {
   onSelect: () => void;
   danger?: boolean;
   disabled?: boolean;
+  /** Thao tác chính của trang: điện thoại hiện nút riêng (icon + nhãn) thay vì gom vào «⋯». */
+  pinMobile?: boolean;
   /** Lý do khoá (chỉ có nghĩa khi `disabled`): hiện ở tooltip (desktop) và dưới nhãn (menu «⋯»). */
   reason?: string;
 };
@@ -47,6 +51,7 @@ export function PageHeader({
   moreLabel = "Thêm thao tác",
 }: PageHeaderProps) {
   const MoreIcon = ICONS.moreActions;
+  const { pinned, menu } = splitActions(actions);
   return (
     <header data-slot="page-header" className={cn("flex flex-col gap-3", className)}>
       <div className="flex flex-wrap items-start gap-x-3 gap-y-3">
@@ -74,33 +79,35 @@ export function PageHeader({
                 </Button>
               ))}
             </div>
-            <div data-slot="page-header-more" className="hidden max-sm:block">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label={moreLabel}>
-                    <MoreIcon />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {actions.map((a) => (
-                    <DropdownMenuItem
-                      key={a.label}
-                      danger={a.danger ?? false}
-                      disabled={a.disabled ?? false}
-                      onSelect={a.onSelect}
-                    >
-                      {a.icon}
-                      <span className="flex min-w-0 flex-col">
-                        <span>{a.label}</span>
-                        {a.disabled && a.reason && (
-                          <span className="text-xs text-muted-foreground">{a.reason}</span>
-                        )}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {menu.length > 0 && (
+              <div data-slot="page-header-more" className="hidden max-sm:block">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label={moreLabel}>
+                      <MoreIcon />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {menu.map((a) => (
+                      <DropdownMenuItem
+                        key={a.label}
+                        danger={a.danger ?? false}
+                        disabled={a.disabled ?? false}
+                        onSelect={a.onSelect}
+                      >
+                        {a.icon}
+                        <span className="flex min-w-0 flex-col">
+                          <span>{a.label}</span>
+                          {a.disabled && a.reason && (
+                            <span className="text-xs text-muted-foreground">{a.reason}</span>
+                          )}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
           </>
         )}
         {primary && (
@@ -109,6 +116,25 @@ export function PageHeader({
             className="max-sm:order-last max-sm:w-full max-sm:[&>*]:w-full"
           >
             {primary}
+          </div>
+        )}
+        {pinned.length > 0 && (
+          <div
+            data-slot="page-header-pinned"
+            className="hidden gap-2 max-sm:order-last max-sm:flex max-sm:w-full"
+          >
+            {pinned.map((a) => (
+              <Button
+                key={a.label}
+                variant="outline"
+                className="min-w-0 flex-1"
+                disabled={a.disabled ?? false}
+                onClick={a.onSelect}
+              >
+                {a.icon}
+                {a.label}
+              </Button>
+            ))}
           </div>
         )}
       </div>
