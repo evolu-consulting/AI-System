@@ -259,7 +259,7 @@ test("CR130-J2 · duyệt đơn tham gia «Gắn với đối tác có sẵn» �
   await host.ctx.close();
 });
 
-test("CR191-J8 · người duyệt mở link cũ /community/join ⇒ chuyển sang Sổ Hợp Tác › Đối tác, thấy khối «Yêu cầu tham gia», menu Community không còn mục này", async ({
+test("CR191-J8 · người duyệt mở link cũ /community/join ⇒ chuyển sang Sổ Hợp Tác › Đối tác, thấy khối «Yêu cầu tham gia», menu Community ẩn mục này với người duyệt", async ({
   browser,
 }) => {
   const host = await openAs(browser, "host");
@@ -268,7 +268,7 @@ test("CR191-J8 · người duyệt mở link cũ /community/join ⇒ chuyển sa
   await expect(p).toHaveURL(/\/contracts\/partners/);
   await expect(p.getByTestId("join-requests-panel")).toBeVisible();
   await p.goto("/community");
-  await expect(p.getByTestId("nav-community-join")).toHaveCount(0);
+  await expect(p.getByTestId("nav-community-join")).toHaveCount(0); // người duyệt không thấy; đối tác vẫn thấy (lối vào form)
   await host.ctx.close();
 });
 

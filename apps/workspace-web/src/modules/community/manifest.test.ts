@@ -108,8 +108,9 @@ describe("CR-130 · link cũ ?settings=1", () => {
 });
 
 describe("CR-191 · Yêu cầu tham gia chuyển sang Sổ Hợp Tác › Đối tác", () => {
-  it("menu Community không còn mục Yêu cầu tham gia, route /join giữ để chuyển hướng", () => {
-    expect(communityManifest.nav.map((n) => n.to)).not.toContain(`${COMMUNITY_BASE}/join`);
+  it("menu Community: mục Yêu cầu tham gia ẩn với người duyệt, route /join giữ để chuyển hướng", () => {
+    const j = communityManifest.nav.find((n) => n.to === `${COMMUNITY_BASE}/join`);
+    expect(j && "hideWithCap" in j && j.hideWithCap).toBe("community.reports");
     expect(communityRoutes.map((r) => r.id)).toContain("join");
   });
   it("khối nhúng nạp lười (không vào bundle đầu)", () => {

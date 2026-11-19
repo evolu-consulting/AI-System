@@ -29,7 +29,9 @@ export function buildShellNav(
       key: m.key,
       labelKey: m.groupLabelKey,
       basePath: m.basePath,
-      items: m.nav.filter((n) => !n.cap || hasCap(n.cap)),
+      items: m.nav.filter(
+        (n) => (!n.cap || hasCap(n.cap)) && !(n.hideWithCap && hasCap(n.hideWithCap)),
+      ),
     }));
 }
 

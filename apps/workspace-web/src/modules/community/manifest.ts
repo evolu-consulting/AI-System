@@ -1,7 +1,7 @@
 // CR-118 · COM-FR-31 (MODIFIED) · manifest module Community — dữ liệu route + nhà máy cây route tương thích TanStack Router.
 // Shell chỉ đọc file này (luật web-shell-manifest-only). KHÔNG khởi tạo router ở đây: host truyền `createRoute` + route cha
 // (`createRoute` của @tanstack/react-router, `lazyRouteComponent` làm `lazy`). Trang tải lười ⇒ module tắt không có chunk.
-import { ClipboardCheck, Flag, Newspaper, PenLine, User } from "lucide-react";
+import { ClipboardCheck, Flag, Newspaper, PenLine, User, UserPlus } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ModuleManifest } from "~/shared/kernel/module-manifest";
 import { type CommunityHostConfig, setCommunityHost } from "./application/host";
@@ -129,7 +129,16 @@ export const communityManifest = {
       cap: "community.review",
       bottom: false,
     },
-    // CR-191: «Yêu cầu tham gia» chuyển sang Sổ Hợp Tác › Đối tác (route /join giữ để chuyển hướng + form của đối tác).
+    // CR-191: người duyệt xử lý «Yêu cầu tham gia» ở Sổ Hợp Tác › Đối tác (route /join chuyển hướng); mục này chỉ còn cho đối tác (lối vào form gửi).
+    {
+      to: `${COMMUNITY_BASE}/join`,
+      labelKey: "contracts.nav.join",
+      icon: UserPlus,
+      testId: "nav-community-join",
+      cap: "community.join",
+      hideWithCap: "community.reports",
+      bottom: false,
+    },
     {
       to: `${COMMUNITY_BASE}/reports`,
       labelKey: "contracts.nav.reports",

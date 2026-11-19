@@ -26,6 +26,8 @@ export type NavEntry = {
   mobile?: "primary" | "more";
   /** CR-120: khoá quyền động (vai + khe đã bật, server tính): vắng ⇒ luôn hiện; có ⇒ chỉ hiện khi `hasCap(cap)` đúng. */
   cap?: string;
+  /** CR-191: ẩn mục khi người dùng CÓ khoá này (vd «Yêu cầu tham gia» của Community chỉ cho người không duyệt = không có `community.reports`). */
+  hideWithCap?: string;
   /** CR-126: mục «Việc của tôi» — số đỏ = số dòng hộp việc (đếm ở máy khách từ `/my-work` + `/me/review-tasks`), không theo `cap`. */
   inbox?: true;
   /** CR-132: số đỏ = tổng tin nhắn chưa đọc (một query `GET /messages/unread`, cập nhật realtime). */
