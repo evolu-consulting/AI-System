@@ -6,7 +6,7 @@ import { join, relative } from "node:path";
 
 const SRC = join(import.meta.dir, "..");
 /** Dữ liệu mock/regex dò nội dung — không phải chữ giao diện. */
-const ALLOW = new Set(["domain/mask.ts", "domain/demo-products.ts", "domain/filters.ts"]);
+const ALLOW = new Set(["domain/mask.ts", "domain/filters.ts"]);
 const VI = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
 
 const walk = (dir: string): string[] =>

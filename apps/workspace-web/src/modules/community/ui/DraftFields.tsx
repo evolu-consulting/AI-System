@@ -5,6 +5,7 @@ import { Input } from "@ai/web-kit/ui/kit/input";
 import { OptionSelect } from "~/shared/ui/OptionSelect";
 import type { Draft } from "../domain/compose";
 import { t } from "../i18n";
+import { GoodsCombo } from "./GoodsCombo";
 
 function F({
   label,
@@ -45,12 +46,19 @@ export function DraftFields({
   return (
     <>
       <div className="cfields">
-        <F label={t("community.draft.product")} err={errors.product}>
-          <Input
-            aria-label={t("community.draft.product")}
-            placeholder={t("community.draft.product")}
+        <F label={t("community.draft.goods")} err={errors.product}>
+          <GoodsCombo
             value={draft.product}
-            onChange={on("product")}
+            onChange={(v) => set({ ...draft, product: v })}
+            onPick={(g) =>
+              set({
+                ...draft,
+                product: g.name,
+                unit: g.unit ?? draft.unit,
+                ...(buy ? {} : { price: g.price ?? draft.price }),
+                ...(buy && g.price ? { budget: draft.budget || g.price } : {}),
+              })
+            }
           />
         </F>
         <F label={t("community.draft.qty")} err={errors.qty}>
@@ -59,6 +67,14 @@ export function DraftFields({
             placeholder={t("community.draft.qty")}
             value={draft.qty}
             onChange={on("qty")}
+          />
+        </F>
+        <F label={t("community.draft.unit")}>
+          <Input
+            aria-label={t("community.draft.unit")}
+            placeholder={t("community.draft.unit")}
+            value={draft.unit}
+            onChange={on("unit")}
           />
         </F>
         <F label={t("community.draft.price")} err={errors.price}>

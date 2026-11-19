@@ -93,13 +93,14 @@ const Req = (max: number) => z.string().trim().min(1).max(max);
 /** Trường theo loại. Cần bán: giá hoặc "liên hệ" (`price=null`). Cần mua: khu vực + ngày cần bắt buộc. */
 export const SellFieldsSchema = z.strictObject({
   product: Req(200),
-  qty: Req(100),
+  /** CR-191: số lượng + đơn vị («100 cuộn») không bắt buộc. */
+  qty: Text(100).default(""),
   price: Text(100).nullable(),
   area: Text(100).default(""),
 });
 export const BuyFieldsSchema = z.strictObject({
   product: Req(200),
-  qty: Req(100),
+  qty: Text(100).default(""),
   area: Req(100),
   /** yyyy-mm-dd */
   neededBy: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -185,8 +186,14 @@ export const MentionablePeopleQuerySchema = z.strictObject({
     .optional(),
   postId: z.uuid().optional(),
   type: z.enum(POST_TYPES).optional(),
-  mode: z.enum(["all", "suppliers", "buyers", "cats", "companies"]).optional(),
+  mode: z.enum(AUDIENCE_MODES).optional(),
   cats: z.string().max(1000).optional(),
+  /** CR-191 · id TENANT công ty đã kết nối (mode=companies), cách nhau dấu phẩy. */
+  tenants: z.string().max(1000).optional(),
+  /** CR-191 · "0" = không gồm người công ty đã kết nối (ô bình luận chưa nhắc chéo công ty). */
+  connected: z.enum(["0", "1"]).optional(),
+  /** CR-191 · "1" = thêm người công ty đã kết nối NGOÀI «Ai thấy bài» (kèm `outside`) để ô soạn hỏi thêm công ty / bỏ nhắc. */
+  outside: z.enum(["0", "1"]).optional(),
   audCats: z.string().max(1000).optional(),
   companies: z.string().max(1000).optional(),
   /** CR-186 · lọc nhóm: `internal` = chủ quản, `partner` = công ty đối tác (NCC), `customer` = công ty khách hàng (có vai mua). Vắng = tất cả. Chỉ thu hẹp, không mở thêm quyền. */
@@ -197,10 +204,41 @@ export type MentionablePeopleQuery = z.input<typeof MentionablePeopleQuerySchema
 export const MentionablePersonSchema = z.strictObject({
   userId: z.string(),
   name: z.string(),
-  /** Tên công ty đối tác; chủ quản ⇒ vắng. */
+  /** Tên công ty đối tác (hoặc công ty đã kết nối); chủ quản ⇒ vắng. */
   orgName: z.string().optional(),
+  /** CR-191 · chức vụ (nếu có hồ sơ). */
+  title: z.string().optional(),
+  /** CR-191 · người của công ty ĐÃ KẾT NỐI (khác tenant người đăng). */
+  connected: z.boolean().optional(),
+  /** CR-191 · id tenant công ty đã kết nối của người này (để «Thêm công ty vào»). */
+  tenantId: z.string().optional(),
+  /** CR-191 · người này KHÔNG thuộc «Ai thấy bài» hiện tại (chỉ có khi gợi ý với `outside=1`). */
+  outside: z.boolean().optional(),
 });
 export type MentionablePerson = z.infer<typeof MentionablePersonSchema>;
+
+/** CR-191 · `GET /pack/community/audience-connected`: công ty ĐÃ KẾT NỐI + công ty đó có thấy bài với «Ai thấy bài» `mode`/`tenants` không. */
+export const ConnectedAudienceQuerySchema = z.strictObject({
+  mode: z.enum(AUDIENCE_MODES).default("all"),
+  tenants: z.string().max(1000).optional(),
+});
+export const ConnectedAudienceCompanySchema = z.strictObject({
+  tenantId: z.string(),
+  name: z.string(),
+  sees: z.boolean(),
+});
+export type ConnectedAudienceCompany = z.infer<typeof ConnectedAudienceCompanySchema>;
+
+/** CR-191 BR-191-6 · `GET /pack/community/goods-suggest?q=`: gợi ý hàng hoá cho Cần bán/Cần mua (≤ 8, số câu cố định). */
+export const GoodsSuggestQuerySchema = z.strictObject({ q: z.string().max(80).optional() });
+export const GoodsSuggestionSchema = z.strictObject({
+  name: z.string(),
+  unit: z.string().optional(),
+  /** Đơn giá gợi ý (chữ, ví dụ "120.000"); vắng ⇒ để trống. */
+  price: z.string().optional(),
+  source: z.enum(["catalog", "posted"]),
+});
+export type GoodsSuggestion = z.infer<typeof GoodsSuggestionSchema>;
 
 export const POST_SOURCES = ["own", "connected"] as const;
 export type FeedSource = (typeof POST_SOURCES)[number];

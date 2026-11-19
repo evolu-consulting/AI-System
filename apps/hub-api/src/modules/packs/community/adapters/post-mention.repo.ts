@@ -36,14 +36,21 @@ export async function replaceMentions(
   tx: Tx,
   p: { tenantId: string; postId: string; by: string; people: readonly Person[] },
 ): Promise<string[]> {
-  const want = JSON.stringify(p.people.map((x) => ({ id: x.id, name: x.name, org: x.org })));
+  const want = JSON.stringify(
+    p.people.map((x) => ({
+      id: x.id,
+      name: x.name,
+      org: x.org,
+      tenant: x.tenant && x.tenant !== p.tenantId ? x.tenant : null,
+    })),
+  );
   const rows = await tx.execute<{ user_id: string }>(sql`
-    with want as (select (e ->> 'id')::uuid as id, e ->> 'name' as name, (e ->> 'org')::uuid as org
+    with want as (select (e ->> 'id')::uuid as id, e ->> 'name' as name, (e ->> 'org')::uuid as org, (e ->> 'tenant')::uuid as tenant
         from jsonb_array_elements(${want}::jsonb) e),
     del as (delete from community.post_mentions where post_id = ${p.postId}::uuid
         and user_id not in (select id from want)),
-    ins as (insert into community.post_mentions (tenant_id, post_id, user_id, user_name, user_org, created_by)
-        select ${p.tenantId}::uuid, ${p.postId}::uuid, w.id, w.name, w.org, ${p.by}::uuid from want w
+    ins as (insert into community.post_mentions (tenant_id, post_id, user_id, user_name, user_org, user_tenant, created_by)
+        select ${p.tenantId}::uuid, ${p.postId}::uuid, w.id, w.name, w.org, w.tenant, ${p.by}::uuid from want w
         on conflict (post_id, user_id) do nothing returning user_id)
     select user_id::text as user_id from ins`);
   return rows.map((r) => r.user_id);
@@ -75,4 +82,60 @@ export async function orgsInGroup(
     where case when ${group}::text = 'customer' then 'customer' = any(coalesce(pc.roles, '{}'::text[]))
       else 'supplier' = any(coalesce(pc.roles, '{}'::text[])) or not 'customer' = any(coalesce(pc.roles, '{}'::text[])) end`);
   return rows.map((r) => r.org);
+}
+
+/** CR-191 · người được nhắc kèm tenant của họ (null = cùng tenant/đối tác): để chuông tới đúng tenant của người nhận. `ids` vắng ⇒ mọi người được nhắc. */
+export async function mentionTargets(
+  tx: Tx,
+  tenantId: string,
+  postId: string,
+  ids?: readonly string[],
+): Promise<{ id: string; tenant: string | null }[]> {
+  const rows = await tx.execute<{ user_id: string; user_tenant: string | null }>(sql`
+    select user_id::text as user_id, user_tenant::text as user_tenant from community.post_mentions
+    where tenant_id = ${tenantId}::uuid and post_id = ${postId}::uuid
+      and (${ids === undefined}::boolean or user_id = any(array(select jsonb_array_elements_text(${JSON.stringify(ids ?? [])}::jsonb))::uuid[]))
+    order by created_at, user_id limit 50`);
+  return rows.map((x) => ({ id: x.user_id, tenant: x.user_tenant }));
+}
+
+/** CR-191 · mọi công ty đã kết nối + công ty đó có thấy bài với «Ai thấy bài» này không (DEFINER `community.connected_audience`). */
+export async function connectedAudience(
+  tx: Tx,
+  mode: string,
+  tenants: readonly string[],
+): Promise<{ tenantId: string; name: string; sees: boolean }[]> {
+  const rows = await tx.execute<{ tenant_id: string; company_name: string; sees: boolean }>(sql`
+    select tenant_id::text as tenant_id, company_name, sees
+    from community.connected_audience(${mode}::text, array(select jsonb_array_elements_text(${arr(tenants)}::jsonb))::uuid[])`);
+  return rows.map((x) => ({ tenantId: x.tenant_id, name: x.company_name, sees: x.sees }));
+}
+
+/** Tenant đã kết nối sẽ thấy bài NHÁP có «Ai thấy bài» `mode`/`tenants`. */
+export async function connectedSeeingDraft(
+  tx: Tx,
+  mode: string,
+  tenants: readonly string[],
+): Promise<string[]> {
+  return (await connectedAudience(tx, mode, tenants)).filter((x) => x.sees).map((x) => x.tenantId);
+}
+
+/** Tenant đã kết nối thấy bài ĐÃ CÓ (theo `aud_mode`/`aud_tenants` của hàng). */
+export async function connectedSeeingPost(tx: Tx, postId: string): Promise<string[]> {
+  const rows = await tx.execute<{ t: string }>(sql`
+    select t::text as t from community.mention_tenants_ok(${postId}::uuid,
+      array(select tenant_id from community.connected_audience('all', '{}'::uuid[]))) t`);
+  return rows.map((x) => x.t);
+}
+
+/** Trong `tenants`, công ty nào được nhắc người trên bài này (DEFINER). */
+export async function mentionTenantsOk(
+  tx: Tx,
+  postId: string,
+  tenants: readonly string[],
+): Promise<string[]> {
+  const rows = await tx.execute<{ t: string }>(sql`
+    select t::text as t from community.mention_tenants_ok(${postId}::uuid,
+      array(select jsonb_array_elements_text(${arr(tenants)}::jsonb))::uuid[]) t`);
+  return rows.map((x) => x.t);
 }

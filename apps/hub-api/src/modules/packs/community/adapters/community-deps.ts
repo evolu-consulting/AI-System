@@ -10,6 +10,7 @@ import type {
   SupplierQuoteWriter,
 } from "../application/pack-ports";
 import type { FlowDeps } from "./flows.service";
+import type { GoodsCatalog } from "./goods-suggest.service";
 import type { CommunityEvents } from "./notify.events";
 import type { MentionDeps } from "./post-mention.service";
 
@@ -43,6 +44,8 @@ export type CommunityDeps = {
   uploadsInflight?: number | undefined;
   /** CR-145: danh bạ người + chủ quản + thành viên công ty cho «Nhắc tên» trong bài; vắng ⇒ nhắc người ⇒ 422. */
   mention?: MentionDeps | undefined;
+  /** CR-191 · Sản phẩm & Giá của công ty cho gợi ý hàng hoá; vắng ⇒ chỉ gợi ý hàng đã đăng. */
+  goods?: GoodsCatalog | undefined;
   /** CR-120: 3 khe Community (duyệt bài, đối tác xin tham gia, báo cáo vi phạm). */
   flows?: FlowDeps | undefined;
 };

@@ -15,7 +15,7 @@ import {
   postMentionText,
 } from "../domain/notify.rules";
 import { commentCandidates, wantedOnly } from "./notify.repo";
-import { mentionedIds } from "./post-mention.repo";
+import { mentionTargets } from "./post-mention.repo";
 import { savedUsers } from "./quote.repo";
 
 /** Phần repo trong tx mà `PackUow` đưa cho gói (`notify` do bộ khung ghép sẵn). */
@@ -218,19 +218,32 @@ export function communityEvents(d: CommunityEventDeps) {
 
     /** CR-145 · nhắc NGƯỜI trong bài đăng (đã commit / đã duyệt) ⇒ «X nhắc bạn trong một bài»; một lô `notify.enqueue`, không báo chính người đăng. */
     emitPostMentions: (i: PostMentionsEvent): Promise<number> =>
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: gom người nhận theo tenant (một vòng), tách thêm chỉ làm rối
       safely("postMentions", i, async () => {
         if (i.userIds && i.userIds.length === 0) return 0;
-        return d.uow.system(i.tenantId, async (r) => {
-          const all = i.userIds ?? (await mentionedIds(r.tx, i.tenantId, i.postId));
-          const users = all.filter((u) => u !== i.actor.userId);
-          const post = { id: i.postId, title: i.titleMasked };
-          const o = { actor: i.actor.name, ref: i.postId };
-          const text = postMentionText(post, o);
-          return deliver(
-            r,
-            users.map((userId) => ({ c: { userId, kind: "mention" as const }, post, o, text })),
+        // CR-191: người công ty đã kết nối nhận chuông ở tenant CỦA HỌ (`notify.enqueue` bỏ người ngoài tenant của tx) — tenant đọc từ
+        // `post_mentions.user_tenant` (đã qua DEFINER lúc ghi bài), không từ lời gọi.
+        const targets = await d.uow.system(i.tenantId, (r) =>
+          mentionTargets(r.tx, i.tenantId, i.postId, i.userIds),
+        );
+        const post = { id: i.postId, title: i.titleMasked };
+        const o = { actor: i.actor.name, ref: i.postId };
+        const text = postMentionText(post, o);
+        const byTenant = new Map<string, string[]>();
+        for (const x of targets) {
+          if (x.id === i.actor.userId) continue;
+          const t = x.tenant ?? i.tenantId;
+          byTenant.set(t, [...(byTenant.get(t) ?? []), x.id]);
+        }
+        let sent = 0;
+        for (const [tenant, users] of byTenant)
+          sent += await d.uow.system(tenant, (r) =>
+            deliver(
+              r,
+              users.map((userId) => ({ c: { userId, kind: "mention" as const }, post, o, text })),
+            ),
           );
-        });
+        return sent;
       }),
 
     /** NCC sửa giá bài đã lưu báo giá (đã commit) ⇒ CHỈ chủ quản đã lưu (R29: không gửi gì cho NCC). `price` = giá mới (khoá trùng). */

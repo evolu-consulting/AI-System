@@ -14,6 +14,7 @@ import { applyFeedQuery, countTabs, uniqueSorted } from "../domain/filters";
 import { applyMask, detectHits, type MaskContext } from "../domain/mask";
 import { canViewPost, defaultAudience } from "../domain/visibility";
 import { commentMutations } from "./mock-comments";
+import { mockAudienceConnected, mockConnectedPeople, mockGoods } from "./mock-composer";
 import { MOCK_CONNECTED, mockConnectedPosts } from "./mock-connected";
 import { fileMock } from "./mock-files";
 import { flowsMock } from "./mock-flows";
@@ -43,7 +44,6 @@ const MOCK_PEOPLE = [
   { userId: "u-hung", name: "Hùng", orgName: "Hùng Thịnh", g: "partner" },
   { userId: "u-abc", name: "Trần B", orgName: "Công ty TNHH ABC", g: "customer" },
 ] as const;
-
 export function createMockApi(): { api: CommunityApi; setPersona: (id: string) => void } {
   let me: CommunityViewer = PERSONAS[0] as CommunityViewer;
   const quoteEnv = quoteEnvOf(() => isHost(me));
@@ -231,7 +231,6 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         },
       };
     },
-    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: adapter mock mô phỏng quy tắc hien-thi.md
     createPost: async (input) => {
       if (me.role === "partner" && input.audience)
         throw new Error("422 Đối tác không chọn người xem");
@@ -331,13 +330,17 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         ...(from + size < older.length ? { nextCursor: String(from + size) } : {}),
       };
     },
-    mentionablePeople: async (q, _scope, cursor, group) =>
-      me.role === "partner"
-        ? []
-        : MOCK_PEOPLE.filter((x) => !group || x.g === group)
-            .map(({ g: _g, ...x }) => x)
-            .filter((x) => !q || x.name.toLowerCase().includes(q.toLowerCase()))
-            .slice(Number(cursor ?? 0), Number(cursor ?? 0) + 20),
+    mentionablePeople: async (q, scope, cursor, group) => {
+      if (me.role === "partner") return [];
+      const own = MOCK_PEOPLE.filter((x) => !group || x.g === group).map(({ g: _g, ...x }) => x);
+      const conn = scope?.postId || group ? [] : mockConnectedPeople(scope);
+      return [...own, ...conn]
+        .filter((x) => !q || x.name.toLowerCase().includes(q.toLowerCase()))
+        .slice(Number(cursor ?? 0), Number(cursor ?? 0) + 20);
+    },
+    audienceConnected: async (mode, tenants) =>
+      me.role === "partner" ? [] : mockAudienceConnected(mode, tenants),
+    goodsSuggest: async (q) => (me.role === "partner" ? [] : mockGoods(q)),
     addComment: async (postId, input) => {
       const p = get(postId);
       if (!visible(p)) throw new Error("404 Không tìm thấy bài");

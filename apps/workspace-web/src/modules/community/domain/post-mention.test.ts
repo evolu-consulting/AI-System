@@ -39,7 +39,19 @@ describe("mentionIds / mentionScope", () => {
         cats: ["a"],
         audience: { mode: "suppliers", cats: [], companies: [] },
       }),
-    ).toEqual({ type: "note", cats: ["a"], mode: "suppliers", audCats: [], companies: [] });
-    expect(mentionScope({ type: "sell", cats: [] })).toEqual({ type: "sell", cats: [] });
+    ).toEqual({
+      type: "note",
+      cats: ["a"],
+      mode: "suppliers",
+      audCats: [],
+      companies: [],
+      tenants: [],
+      outside: true, // CR-191: ô soạn xin cả người công ty kết nối ngoài «Ai thấy bài» để hỏi Thêm/Bỏ
+    });
+    expect(mentionScope({ type: "sell", cats: [] })).toEqual({
+      type: "sell",
+      cats: [],
+      outside: true,
+    });
   });
 });

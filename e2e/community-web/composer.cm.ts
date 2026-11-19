@@ -3,37 +3,38 @@ import { expect, test } from "@playwright/test";
 
 const composer = (page: import("@playwright/test").Page) => page.getByTestId("composer");
 
-test("ô đăng thu gọn và mở lại, trạng thái được nhớ sau khi tải lại", async ({ page }) => {
+// CR-191 BR-191-5: ô đăng luôn MỘT dòng «Viết bài…» (không còn thu gọn/mở nhớ theo người dùng) ⇒ mở hộp thoại, đóng thì về một dòng.
+test("ô đăng là một dòng «Viết bài…»; bấm mở hộp thoại soạn bài", async ({ page }) => {
   await page.goto("/community");
-  await expect(composer(page).getByRole("button", { name: /đang có hàng cần bán/ })).toBeVisible();
-  await composer(page).getByRole("button", { name: "Cần bán", exact: true }).click();
-  await expect(page.getByTestId("composer-collapse")).toBeVisible();
-  await page.reload();
-  await expect(page.getByTestId("composer-collapse")).toBeVisible(); // đã nhớ: mở
-  await page.getByTestId("composer-collapse").click();
-  await expect(composer(page).getByRole("button", { name: /đang có hàng cần bán/ })).toBeVisible();
-  await page.reload();
-  await expect(composer(page).getByRole("button", { name: /đang có hàng cần bán/ })).toBeVisible(); // đã nhớ: thu gọn
+  await expect(composer(page).getByRole("button", { name: "Viết bài…" })).toBeVisible();
+  await composer(page).getByRole("button", { name: "Viết bài…" }).click();
+  await expect(page.getByTestId("composer-dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("composer-dialog")).toHaveCount(0);
+  await expect(composer(page).getByRole("button", { name: "Viết bài…" })).toBeVisible();
 });
 
 test("một nút Đính kèm thay Ảnh và Video: tải PDF lên, đăng bài và thấy thẻ tệp", async ({
   page,
 }) => {
   await page.goto("/community");
-  await composer(page).getByRole("button", { name: "Cần bán", exact: true }).click();
-  await expect(composer(page).getByRole("button", { name: "Đính kèm" })).toBeVisible();
-  await expect(composer(page).getByRole("button", { name: "Ảnh", exact: true })).toHaveCount(0);
-  await expect(composer(page).getByRole("button", { name: "Video", exact: true })).toHaveCount(0);
+  await composer(page).getByRole("button", { name: "Viết bài…" }).click();
+  const dlg = page.getByTestId("composer-dialog");
+  await dlg.getByRole("button", { name: "Cần bán", exact: true }).click();
+  await expect(dlg.getByRole("button", { name: "Đính kèm" })).toBeVisible();
+  await expect(dlg.getByRole("button", { name: "Ảnh", exact: true })).toHaveCount(0);
+  await expect(dlg.getByRole("button", { name: "Video", exact: true })).toHaveCount(0);
   await page.getByTestId("attach-input").setInputFiles({
     name: "bao-gia.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.alloc(2048, 1),
   });
-  const chip = composer(page).getByTestId("draft-file").filter({ hasText: "bao-gia.pdf" });
+  const chip = dlg.getByTestId("draft-file").filter({ hasText: "bao-gia.pdf" });
   await expect(chip).toBeVisible();
   await expect(chip).toContainText("2 KB");
   await page.getByLabel("Hàng hoá", { exact: true }).fill("Keo kèm PDF");
-  await page.getByLabel("Số lượng").fill("3 thùng");
+  await page.getByLabel("Số lượng").fill("3");
+  await page.getByLabel("Đơn vị").fill("thùng");
   await page.getByRole("button", { name: "Đăng bài" }).click();
   const posted = page.getByTestId("post").filter({ hasText: "Keo kèm PDF" }).first();
   await expect(posted).toBeVisible();

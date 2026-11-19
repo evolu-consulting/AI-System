@@ -116,11 +116,11 @@
     },
     "audience": {
       "label": "Audience",
-      "all": "All friends",
-      "suppliers": "Suppliers only",
-      "buyers": "Customers only",
+      "all": "All partners",
+      "suppliers": "Suppliers",
+      "buyers": "Customers",
       "cats": "By category",
-      "companies": "Specific companies",
+      "companies": "Choose companies…",
       "partnerNote": "Only the host can see this post",
       "catsList": "Categories: {{list}}",
       "catsSell": "Customers interested in the post's category",
@@ -142,7 +142,15 @@
       "catsEmpty": "No matching category",
       "catsCount": "{{n}} selected",
       "catsDone": "Done",
-      "catsCancel": "Cancel"
+      "catsCancel": "Cancel",
+      "field": "Who sees this",
+      "internal": "Internal only",
+      "count": "{{n}}/{{N}} partner companies see this post",
+      "connectedTitle": "Connected companies",
+      "mentionOutsideTitle": "{{name}} cannot see this post",
+      "mentionOutsideBody": "{{company}} is not in «Who sees this».",
+      "mentionAdd": "Add {{company}}",
+      "mentionDrop": "Remove mention"
     },
     "composer": {
       "attachPick": {
@@ -158,9 +166,6 @@
       },
       "prompt": "Does {{org}} have goods to sell or something to buy?",
       "bodyLabel": "Post content",
-      "prefillFrom": "Sample suggestions (not your company products)",
-      "prefillBanner": "Prefilled from Sổ Hợp Tác · {{product}}",
-      "prefillOption": "Sample suggestions…",
       "typeLabel": "Post type",
       "uploading": "Uploading",
       "retry": "Retry",
@@ -190,7 +195,12 @@
       "writePost": "Write a post…",
       "typeSelectAria": "Choose post type",
       "posted": "Post published",
-      "postFailed": "Could not publish"
+      "postFailed": "Could not publish",
+      "dialogTitle": "Write a post",
+      "close": "Close",
+      "bodyPlaceholder": "What do you want to share? Type @ to mention someone.",
+      "mentionPending": "Add the company or remove the mention before posting.",
+      "mentioned": "Mentioned"
     },
     "draft": {
       "product": "Goods",
@@ -226,7 +236,15 @@
       "errProduct": "Enter the goods",
       "errQty": "Enter the quantity",
       "errArea": "Enter the area",
-      "errNeededBy": "Pick the needed-by date"
+      "errNeededBy": "Pick the needed-by date",
+      "goods": "Goods",
+      "goodsHint": "Type a name or pick a suggestion",
+      "unit": "Unit",
+      "unitPrice": "Unit price",
+      "goodsCatalog": "Products & Prices",
+      "goodsPosted": "Posted before",
+      "goodsNone": "No suggestions — just type the name.",
+      "mentionOutside": "Outside «Who sees this»"
     },
     "post": {
       "view": "View",

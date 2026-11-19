@@ -31,11 +31,20 @@ const GROUP_LABEL: Record<MentionGroup, () => string> = {
   customer: () => t("community.draft.mentionGroupCustomer"),
 };
 
-type Person = { userId: string; name: string; orgName?: string | undefined };
+type Person = {
+  userId: string;
+  name: string;
+  orgName?: string | undefined;
+  title?: string | undefined;
+  tenantId?: string | undefined;
+  outside?: boolean | undefined;
+};
 const toMention = (o: Person): DraftMention => ({
   userId: o.userId,
   name: o.name,
   ...(o.orgName ? { orgName: o.orgName } : {}),
+  ...(o.tenantId ? { tenantId: o.tenantId } : {}),
+  ...(o.outside ? { outside: true } : {}),
 });
 
 export function MentionChips({
@@ -48,10 +57,29 @@ export function MentionChips({
   if (mentions.length === 0) return null;
   return (
     <div className="attachrow" data-testid="mention-people">
-      <span className="fhint">{t("community.draft.mentionLabel")}:</span>
+      <span className="fhint">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" />
+        </svg>{" "}
+        {t("community.composer.mentioned")}:
+      </span>
       {mentions.map((m) => (
-        <span className="attach" key={m.userId} data-testid="mention-chip">
+        <span
+          className="attach"
+          key={m.userId}
+          data-testid="mention-chip"
+          style={{ background: "var(--accent-soft, #e8f0fe)", fontWeight: 600 }}
+        >
           {m.name}
+          {m.outside ? ` · ${t("community.draft.mentionOutside")}` : ""}
           <button
             type="button"
             aria-label={t("community.draft.mentionRemove", { name: m.name })}
@@ -96,7 +124,10 @@ function PersonRow({
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-sm font-semibold">{p.name}</span>
             <span className="truncate text-xs text-muted-foreground">
-              {p.orgName ?? t("community.draft.mentionGroupInternal")}
+              {[p.title, p.orgName ?? t("community.draft.mentionGroupInternal")]
+                .filter(Boolean)
+                .join(" · ")}
+              {p.outside ? ` · ${t("community.draft.mentionOutside")}` : ""}
             </span>
           </span>
         </label>
@@ -126,7 +157,10 @@ export function MentionPicker({
   scope,
   open: openProp,
   onOpenChange,
+  hideButton = false,
 }: {
+  /** CR-191 · ô soạn bài mở bằng «@» trong thân bài, không có nút «Nhắc tên» riêng. */
+  hideButton?: boolean;
   mentions: DraftMention[];
   onChange: (m: DraftMention[]) => void;
   scope: PeopleScope;
@@ -173,16 +207,18 @@ export function MentionPicker({
   const label = t("community.draft.mentionLabel");
   return (
     <>
-      <IconButton
-        className="ghost icononly"
-        data-testid="mention-open"
-        aria-haspopup="dialog"
-        aria-label={label}
-        onClick={() => setOpen(true)}
-      >
-        <UserPlus />
-        {mentions.length > 0 && <span className="n">{mentions.length}</span>}
-      </IconButton>
+      {!hideButton && (
+        <IconButton
+          className="ghost icononly"
+          data-testid="mention-open"
+          aria-haspopup="dialog"
+          aria-label={label}
+          onClick={() => setOpen(true)}
+        >
+          <UserPlus />
+          {mentions.length > 0 && <span className="n">{mentions.length}</span>}
+        </IconButton>
+      )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[460px]" aria-describedby={undefined}>
           <div data-mod="community" data-accent={brandAccent} data-testid="mention-dialog">

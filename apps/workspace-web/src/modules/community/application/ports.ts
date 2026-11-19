@@ -10,12 +10,14 @@ import type {
   CommunityFile,
   CommunitySettings,
   CommunityViewer,
+  ConnectedAudienceCompany,
   CreateCommentInput,
   CreatePostInput,
   FeedQuery,
   FeedResponse,
   FlowDecideInput,
   FlowNav,
+  GoodsSuggestion,
   JoinRequest,
   JoinRequestInput,
   JoinRequestList,
@@ -53,6 +55,10 @@ export type PeopleScope = {
   cats?: string[];
   audCats?: string[];
   companies?: string[];
+  /** CR-191 · id TENANT công ty đã kết nối được chọn (mode=companies). */
+  tenants?: string[];
+  /** CR-191 · ô soạn: thêm người công ty kết nối NGOÀI «Ai thấy bài» để hỏi thêm công ty / bỏ nhắc. */
+  outside?: boolean;
 };
 
 /** Cổng định tuyến do app chủ cấp (router gộp CR-118 hoặc vỏ mỏng tạm của community-web); module không biết `location`. */
@@ -126,6 +132,10 @@ export interface CommunityApi {
     cursor?: string,
     group?: MentionGroup,
   ): Promise<MentionablePerson[]>;
+  /** CR-191 · `GET /pack/community/audience-connected` — công ty đã kết nối + cờ «thấy bài» theo «Ai thấy bài». */
+  audienceConnected(mode: AudienceMode, tenants?: string[]): Promise<ConnectedAudienceCompany[]>;
+  /** CR-191 · `GET /pack/community/goods-suggest?q=` — gợi ý hàng hoá (≤ 8). */
+  goodsSuggest(q: string): Promise<GoodsSuggestion[]>;
   /** `POST /pack/community/posts/:id/comments` — `mentions` = id công ty (≤ 10); ngoài tập cho phép ⇒ 422 MENTION_NOT_ALLOWED. */
   addComment(postId: string, input: CreateCommentInput): Promise<CommentView>;
   /** `PATCH /pack/community/posts/:id/comments/:cid` — người viết sửa chữ. */

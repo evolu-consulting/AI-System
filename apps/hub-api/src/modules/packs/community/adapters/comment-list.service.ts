@@ -61,7 +61,7 @@ export async function add(
 ): Promise<CommentRow> {
   const mentions = [...new Set(input.mentions)];
   // CR-186: nhắc NGƯỜI — kiểm ngoài tx như bài đăng (người lạ/khoá/ngoài bên ⇒ 422), rồi trong tx: công ty người đó phải thấy bài.
-  const people = await resolvePeople(mention, a, input.mentionUserIds);
+  const people = await resolvePeople(mention, a, input.mentionUserIds, false);
   const { row, authorOrgOfPost } = await uow
     .tenant(a.who, async ({ tx }) => {
       const st = await postState(tx, postId);

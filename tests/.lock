@@ -188,7 +188,7 @@ d908ab596256c0bb1bf1fa07675acb8c2cab3f6ed7e8b91b2860cbe00ce89bb0  e2e/community-
 d95da2900357ab68912fb9cc05e0577b20bc05c006f4bf4f42564445dfb1cb9c  e2e/community-web/_nav.ts
 a9fcf1f4d01c89abe4ff5c54208af3446aa534987a818c60f64e16a626177dc9  e2e/community-web/_stack.ts
 0f2b44e09fcf6f6735418a5f95f40fc8625dd22ce68148d2b49b8c26ea9976b2  e2e/community-web/baseline/linux/bang-tin-mobile.png
-0869f7718025774bb7bc28db6a5783cca87091e307ada090a7980aeb94d182c1  e2e/community-web/composer.cm.ts
+02591045da2877e7e449ab6b05fe0cf7c5815d7bd076331ea56a63309ef5ea1c  e2e/community-web/composer.cm.ts
 727ca5551b7f762039d98f0dc4dea292c4b42d05ded4a605400ec3ed3ed2f769  e2e/community-web/contrast.cm.ts
 0e192732d6a94fb63225416078821a90fb7bba11d6c1b36a0661ef763036832f  e2e/community-web/cr129-media.cm.ts
 dab7dc95213f08abd16a8a9baf849f06db38218fac807bb5247533e2efdcd0b5  e2e/community-web/cr129-mention.cs.ts
@@ -200,6 +200,7 @@ ad545def575364800bfe29da46e23e15e96136b7668056159cd84cd13b594953  e2e/community-
 d21fbc3b288fc5e24215f5cb6f8be68e268036a512ac6b12af1b836630a32cbc  e2e/community-web/cr186-composer.cm.ts
 cb467ca365c9d0bfcbf35025d017a538ade0ffa48be6847bf1ce9cc5be4a550e  e2e/community-web/cr186-mention-store.cm.ts
 4e3db5510b91dc892f0a46bff7fc60e238d387ab19ac1e54a46c6abf6918b584  e2e/community-web/cr187-ui.cm.ts
+8636b8e8ed82051c79a60f7030965c0fcd0b5984e2daf30f54f843e79ae58508  e2e/community-web/cr191-composer-audience.cm.ts
 42413d2fb666c4bb6088da5e514576c010555c6de41793244ff25c43f10eabb5  e2e/community-web/cr191-feed-ui.cm.ts
 f4af3d628a520cc84d0e7cc1be62b712dff87bbd88dab76ad416b72baae7ff9b  e2e/community-web/cr192-crop.cs.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts

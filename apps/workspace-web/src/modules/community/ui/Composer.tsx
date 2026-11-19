@@ -1,230 +1,116 @@
-// Ô soạn bài (mockup `.composer`): loại bài, trường theo loại, nhóm hàng, ảnh/video, người xem (chủ quản) / ghi chú (đối tác).
+// CR-191 BR-191-5/6/7/8 · đầu bảng tin chỉ MỘT dòng «Viết bài…» (avatar + ô giả) ⇒ hộp thoại (điện thoại toàn màn): loại bài Thông báo / Cần bán /
+// Cần mua; Thông báo không có hàng hoá; «Ai thấy bài» (chủ quản); «@» trong THÂN bài nhắc người — người công ty đã kết nối NGOÀI «Ai thấy bài»
+// ⇒ hỏi «Thêm <công ty> vào» / «Bỏ nhắc», chưa chọn ⇒ chưa đăng được. Không còn nút «Nhắc tên» riêng.
 
-import type { AudienceMode, PartnerOrg, PostType } from "@ai/contracts/community";
+import type { PostAudience, PostType } from "@ai/contracts/community";
 import { attachPickLabels } from "@ai/web-kit/attach-layout";
 import { AttachPickButton } from "@ai/web-kit/ui/AttachDropzone";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { useEffect, useState } from "react";
-import { OptionSelect } from "~/shared/ui/OptionSelect";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
 import { uploadFiles } from "../application/attach";
-import { loadComposerOpen, saveComposerOpen } from "../application/composer-pref";
 import { useApp } from "../application/ctx";
-import {
-  audienceError,
-  audienceLabel,
-  audienceSummary,
-  partnerNote,
-  previewRecipients,
-  previewText,
-} from "../domain/audience";
+import { addCompany, audienceError, partnerNote } from "../domain/audience";
 import { type Draft, draftErrors, emptyDraft, toCreateInput } from "../domain/compose";
-import { DEMO_PRODUCTS } from "../domain/demo-products";
 import { initials } from "../domain/format";
-import { defaultPostType, mentionScope } from "../domain/mention";
-import { defaultAudience } from "../domain/visibility";
+import {
+  type DraftMention,
+  defaultPostType,
+  mentionScope,
+  mentionsInBody,
+  stripMention,
+} from "../domain/mention";
+import { activeMention } from "../domain/thread";
 import { t } from "../i18n";
-import { CategoryDialog } from "./CategoryDialog";
-import { CompanyPicker } from "./CompanyPicker";
+import { ALL_AUDIENCE, AudienceField } from "./AudienceField";
 import { DraftAttachments } from "./DraftAttachments";
 import { DraftFields } from "./DraftFields";
-import { IconChevron, IconLock, IconTypeBuy, IconTypeNote, IconTypeSell } from "./icons";
+import { IconLock } from "./icons";
 import { MentionChips, MentionPicker } from "./MentionPicker";
-
-const TYPE_ICON = { sell: IconTypeSell, buy: IconTypeBuy, note: IconTypeNote } as const;
 
 const typeLabel = (x: PostType): string => t(`community.postType.${x}`);
 
-const MODES: AudienceMode[] = ["all", "suppliers", "buyers", "cats", "companies"];
-
-function AudiencePicker({
-  draft,
-  set,
-  partners,
-  partnersMore,
-  cats,
-}: {
-  draft: Draft;
-  set: (d: Draft) => void;
-  partners: PartnerOrg[];
-  /** #269: danh sách mới là trang đầu (còn công ty khác) ⇒ xem trước không đếm được đủ. */
-  partnersMore: boolean;
-  cats: string[];
-}) {
-  const aud = draft.audience ?? defaultAudience(draft.type);
-  const upd = (patch: Partial<typeof aud>) => set({ ...draft, audience: { ...aud, ...patch } });
-  const toggle = (list: string[], v: string) =>
-    list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
-  const recipients = previewRecipients(aud, draft.type, draft.cats, partners);
-  return (
-    <div className="audbox">
-      <div className="flabel">{t("community.audience.label")}</div>
-      <fieldset className="chips tight" aria-label={t("community.audience.label")}>
-        {MODES.map((m) => (
-          <button
-            key={m}
-            type="button"
-            className={aud.mode === m ? "chip on" : "chip"}
-            aria-pressed={aud.mode === m}
-            onClick={() => upd({ mode: m })}
-          >
-            {audienceLabel(m)}
-          </button>
-        ))}
-      </fieldset>
-      {aud.mode === "cats" && (
-        <div className="catsel">
-          <CategoryDialog cats={cats} value={aud.cats} onChange={(v) => upd({ cats: v })} />
-        </div>
-      )}
-      {aud.mode === "companies" && (
-        <CompanyPicker
-          selected={aud.companies}
-          onToggle={(id) => upd({ companies: toggle(aud.companies, id) })}
-        />
-      )}
-      <div className="audprev" data-testid="audience-preview">
-        {audienceError(aud) ??
-          (partnersMore
-            ? aud.mode === "companies"
-              ? audienceSummary(aud, draft.type)
-              : t("community.audience.previewPartial")
-            : previewText(recipients))}
-      </div>
-    </div>
-  );
-}
-
 const allowedTypes = (host: boolean, labels: readonly string[]): PostType[] =>
   host
-    ? ["sell", "buy", "note"]
+    ? ["note", "sell", "buy"]
     : ([
         labels.includes("supplier") ? "sell" : null,
         labels.includes("customer") ? "buy" : null,
       ].filter(Boolean) as PostType[]);
 
-const hasDraft = (d: Draft): boolean =>
-  d.body.trim() !== "" || d.media.length > 0 || d.mentions.length > 0;
-
-/** Ô đăng thu gọn: ô gợi ý + 3 nút loại bài; `small` (CR-186, điện thoại + đã cuộn xuống) chỉ còn MỘT dòng «Viết bài…». */
-function CollapsedBar({
-  small,
-  orgName,
-  types,
-  onPrompt,
-  onPick,
+/** Hỏi khi nhắc người công ty chưa nằm trong «Ai thấy bài». */
+function OutsideAsk({
+  m,
+  onAdd,
+  onDrop,
 }: {
-  small: boolean;
-  orgName: string;
-  types: PostType[];
-  onPrompt: () => void;
-  onPick: (ty: PostType) => void;
+  m: DraftMention;
+  onAdd: () => void;
+  onDrop: () => void;
 }) {
+  const company = m.orgName ?? "";
   return (
-    <div
-      className={`card pad composer feedcomposer collapsed${small ? " compact" : ""}`}
-      data-testid="composer"
-      {...(small ? { "data-compact": "true" } : {})}
-    >
-      <span className="av t1">{initials(orgName)}</span>
-      <button type="button" className="prompt" onClick={onPrompt}>
-        {small
-          ? t("community.composer.writePost")
-          : t("community.composer.prompt", { org: orgName })}
-      </button>
-      <div className="ctypes" hidden={small}>
-        {types.map((ty) => {
-          const Ic = TYPE_ICON[ty];
-          return (
-            <button
-              key={ty}
-              type="button"
-              className={`ctype ${ty}`}
-              data-type={ty}
-              aria-label={typeLabel(ty)}
-              onClick={() => onPick(ty)}
-            >
-              <Ic size={16} />
-              <span>{typeLabel(ty)}</span>
-            </button>
-          );
-        })}
+    <div className="cnote" role="alert" data-testid="mention-outside">
+      <strong>{t("community.audience.mentionOutsideTitle", { name: m.name })}</strong>{" "}
+      {t("community.audience.mentionOutsideBody", { company })}
+      <div className="cbar">
+        <Button variant="primary" size="sm" data-testid="mention-add-company" onClick={onAdd}>
+          {t("community.audience.mentionAdd", { company })}
+        </Button>
+        <Button variant="quiet" size="sm" data-testid="mention-drop" onClick={onDrop}>
+          {t("community.audience.mentionDrop")}
+        </Button>
       </div>
     </div>
   );
 }
 
-/** `compact` (CR-186, điện thoại + đã cuộn xuống): chỉ MỘT dòng «Viết bài…»; bấm ⇒ mở đầy đủ (`onExpand` cuộn về đầu khối). */
-export function Composer({
+function ComposeBody({
   onPosted,
-  compact = false,
-  onExpand,
+  onClose,
 }: {
-  onPosted?: () => void;
-  compact?: boolean;
-  onExpand?: () => void;
+  onPosted?: (() => void) | undefined;
+  onClose: () => void;
 }) {
   const { api, viewer, isHostViewer, bump, toast } = useApp();
   const types = allowedTypes(isHostViewer, viewer.labels);
-  // CR-145: chủ quản mặc định «Thông báo»; đối tác ⇒ loại đầu tiên được phép
-  const [draft, setDraft] = useState<Draft>(() => emptyDraft(defaultPostType(types)));
+  const [draft, setDraft] = useState<Draft>(() => ({
+    ...emptyDraft(defaultPostType(types)),
+    audience: ALL_AUDIENCE,
+  }));
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [partners, setPartners] = useState<PartnerOrg[]>([]);
-  const [partnersMore, setPartnersMore] = useState(false);
   const [cats, setCats] = useState<string[]>([]);
-  const [prefill, setPrefill] = useState("");
   const [busy, setBusy] = useState(false);
-  const [audOpen, setAudOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [open, setOpenState] = useState<boolean>(() => loadComposerOpen(viewer.userId) ?? false);
-  const setOpen = (v: boolean) => {
-    setOpenState(v);
-    saveComposerOpen(viewer.userId, v);
-  };
+  const [pickOpen, setPickOpen] = useState(false);
+  const aud: PostAudience = draft.audience ?? ALL_AUDIENCE;
 
   useEffect(() => {
-    api.listPartners({ limit: 50, offset: 0 }).then(
-      (r) => {
-        setPartners(r);
-        setPartnersMore(r.length === 50);
-      },
-      () => undefined,
-    );
     api.listCats().then(setCats, () => undefined);
   }, [api]);
 
-  useEffect(() => {
-    if (types.length > 0 && !types.includes(draft.type))
-      setDraft(emptyDraft(defaultPostType(types)));
-  }, [types, draft.type]);
-
-  const expand = () => {
-    setOpen(true);
-    onExpand?.();
-  };
+  const live = mentionsInBody(draft.body, draft.mentions);
+  const pending = live.find((m) => m.outside);
 
   const publish = async () => {
     const e = draftErrors(draft);
-    const aud = draft.audience ?? defaultAudience(draft.type);
     if (isHostViewer && audienceError(aud)) e.audience = audienceError(aud) as string;
+    if (pending) e.mention = t("community.composer.mentionPending");
     setErrors(e);
     if (Object.keys(e).length > 0) return;
     setBusy(true);
     try {
       await api.createPost(toCreateInput(draft, isHostViewer));
-      setDraft(emptyDraft(draft.type));
-      setPrefill("");
-      setOpen(false);
       toast(t("community.composer.posted"));
       bump();
       onPosted?.();
+      onClose();
     } catch (err) {
       toast(err instanceof Error ? err.message : t("community.composer.postFailed"));
     } finally {
       setBusy(false);
     }
   };
-  // Gộp Ảnh + Video thành "Đính kèm": MỖI tệp tải lên `POST /pack/community/files` (server quét MIME, cỡ, loại); bài gửi
-  // `media:[{id,kind,label,fileId}]`. Quá hạn mức / lỗi upload ⇒ báo Việt hoá (`uploadFiles`).
   const attach = async (files: File[]) => {
     if (files.length === 0) return;
     setUploading(true);
@@ -237,145 +123,171 @@ export function Composer({
       setUploading(false);
     }
   };
-
-  const small = compact && !hasDraft(draft); // CR-186: một dòng «Viết bài…»
-  if (!open || small)
-    return (
-      <CollapsedBar
-        small={small}
-        orgName={viewer.orgName}
-        types={types}
-        onPrompt={small ? expand : () => setOpen(true)}
-        onPick={(ty) => {
-          setDraft(emptyDraft(ty));
-          setOpen(true);
-        }}
-      />
-    );
+  const addMentions = (next: DraftMention[]) => {
+    const added = next.filter((n) => !draft.mentions.some((m) => m.userId === n.userId));
+    setDraft((d) => ({
+      ...d,
+      mentions: next,
+      body: added.length
+        ? `${d.body}${d.body && !d.body.endsWith(" ") ? " " : ""}${added.map((n) => `@${n.name}`).join(" ")} `
+        : d.body,
+    }));
+  };
 
   return (
-    <div className="card pad composer feedcomposer" data-testid="composer">
-      {isHostViewer && prefill && (
-        <div className="prefill">
-          <IconLock size={14} />
-          {t("community.composer.prefillBanner", { product: prefill })}
-        </div>
+    <div data-testid="composer-form" className="composer feedcomposer flex flex-col gap-3">
+      <fieldset className="seg" aria-label={t("community.composer.typeLabel")}>
+        {types.map((ty) => (
+          <button
+            key={ty}
+            type="button"
+            className={draft.type === ty ? "on" : ""}
+            data-type={ty}
+            aria-pressed={draft.type === ty}
+            onClick={() => setDraft({ ...draft, type: ty })}
+          >
+            {typeLabel(ty)}
+          </button>
+        ))}
+      </fieldset>
+      <label htmlFor="draft-body" style={{ position: "absolute", left: -9999 }}>
+        {t("community.composer.bodyLabel")}
+      </label>
+      <textarea
+        id="draft-body"
+        placeholder={t("community.composer.bodyPlaceholder")}
+        value={draft.body}
+        onChange={(e) => {
+          const v = e.target.value;
+          // gõ «@» đầu từ ⇒ mở danh sách người, bỏ dấu «@» vừa gõ (người chọn xong ⇒ «@Tên» vào chữ)
+          const at = activeMention(v, e.target.selectionStart ?? v.length);
+          if (at && at.query === "") {
+            setDraft({ ...draft, body: v.slice(0, at.start) + v.slice(at.start + 1) });
+            setPickOpen(true);
+          } else setDraft({ ...draft, body: v });
+        }}
+      />
+      {errors.body && <div className="ferr">{errors.body}</div>}
+      {draft.type !== "note" && (
+        <DraftFields draft={draft} set={setDraft} errors={errors} cats={cats} />
       )}
-      <div className="cmain">
-        <span className="av t1">{initials(viewer.orgName)}</span>
-        <div className="cbody">
-          <div className="ctop">
-            <fieldset className="seg" aria-label={t("community.composer.typeLabel")}>
-              {types.map((ty) => (
-                <button
-                  key={ty}
-                  type="button"
-                  className={draft.type === ty ? "on" : ""}
-                  data-type={ty}
-                  onClick={() => setDraft({ ...draft, type: ty, audience: undefined })}
-                >
-                  {typeLabel(ty)}
-                </button>
-              ))}
-            </fieldset>
-            {isHostViewer && (
-              <OptionSelect
-                className="prefillsel"
-                aria-label={t("community.composer.prefillFrom")}
-                value={prefill}
-                onValueChange={(v) => {
-                  setPrefill(v);
-                  if (v) setDraft({ ...draft, product: v });
-                }}
-              >
-                <option value="">{t("community.composer.prefillOption")}</option>
-                {DEMO_PRODUCTS.map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-              </OptionSelect>
-            )}
-            <button
-              type="button"
-              className="iconbtn composer-collapse"
-              data-testid="composer-collapse"
-              aria-label={t("community.composer.collapse")}
-              onClick={() => setOpen(false)}
-            >
-              <IconChevron size={16} />
-            </button>
-          </div>
-          <label htmlFor="draft-body" style={{ position: "absolute", left: -9999 }}>
-            {t("community.composer.bodyLabel")}
-          </label>
-          <textarea
-            id="draft-body"
-            placeholder={t("community.composer.prompt", { org: viewer.orgName })}
-            value={draft.body}
-            onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-          />
-          {errors.body && <div className="ferr">{errors.body}</div>}
-          {draft.type !== "note" && (
-            <DraftFields draft={draft} set={setDraft} errors={errors} cats={cats} />
-          )}
-          <MentionChips
-            mentions={draft.mentions}
-            onChange={(mentions) => setDraft({ ...draft, mentions })}
-          />
-          <DraftAttachments
-            media={draft.media}
-            busy={uploading}
-            onChange={(media) => setDraft({ ...draft, media })}
-          />
-          <div className="cbar">
-            <AttachPickButton
-              labels={attachPickLabels(t, "community.composer.attachPick")}
-              check={false}
-              className="ghost icononly"
-              testId="attach-btn"
-              inputTestId="attach-input"
-              disabled={uploading}
-              onFiles={(files) => void attach(files)}
-            />
-            <MentionPicker
-              mentions={draft.mentions}
-              onChange={(mentions) => setDraft({ ...draft, mentions })}
-              scope={mentionScope(draft)}
-            />
-            {isHostViewer && (
-              <button
-                type="button"
-                className="ghost audbtn"
-                aria-expanded={audOpen}
-                aria-label={t("community.audience.choose")}
-                onClick={() => setAudOpen(!audOpen)}
-              >
-                <IconLock size={13} />
-                <span className="audbtn-txt">{audienceSummary(draft.audience, draft.type)}</span>
-              </button>
-            )}
-            {!isHostViewer && (
-              <span className="meta" data-testid="partner-note">
-                <IconLock size={13} />
-                {partnerNote()}
-              </span>
-            )}
-            <div className="sp" />
-            <Button variant="primary" disabled={busy} onClick={publish}>
-              {t("community.composer.publish")}
-            </Button>
-          </div>
-          {isHostViewer && audOpen && (
-            <AudiencePicker
-              draft={draft}
-              set={setDraft}
-              partners={partners}
-              partnersMore={partnersMore}
-              cats={cats}
-            />
-          )}
-          {errors.audience && <div className="ferr">{errors.audience}</div>}
-        </div>
+      <MentionChips
+        mentions={live}
+        onChange={(m) =>
+          setDraft((d) => ({
+            ...d,
+            mentions: m,
+            body: live
+              .filter((x) => !m.some((y) => y.userId === x.userId))
+              .reduce((b, x) => stripMention(b, x.name), d.body),
+          }))
+        }
+      />
+      {pending && (
+        <OutsideAsk
+          m={pending}
+          onAdd={() => {
+            const tenant = pending.tenantId;
+            setDraft((d) => ({
+              ...d,
+              audience: tenant ? addCompany(d.audience ?? ALL_AUDIENCE, tenant) : d.audience,
+              mentions: d.mentions.map((x) =>
+                x.userId === pending.userId ? { ...x, outside: false } : x,
+              ),
+            }));
+          }}
+          onDrop={() =>
+            setDraft((d) => ({
+              ...d,
+              mentions: d.mentions.filter((x) => x.userId !== pending.userId),
+              body: stripMention(d.body, pending.name),
+            }))
+          }
+        />
+      )}
+      {errors.mention && <div className="ferr">{errors.mention}</div>}
+      <DraftAttachments
+        media={draft.media}
+        busy={uploading}
+        onChange={(media) => setDraft({ ...draft, media })}
+      />
+      {isHostViewer ? (
+        <AudienceField
+          value={aud}
+          type={draft.type}
+          cats={draft.cats}
+          onChange={(a) => setDraft({ ...draft, audience: a })}
+        />
+      ) : (
+        <span className="meta" data-testid="partner-note">
+          <IconLock size={13} />
+          {partnerNote()}
+        </span>
+      )}
+      {errors.audience && <div className="ferr">{errors.audience}</div>}
+      <div className="cbar">
+        <AttachPickButton
+          labels={attachPickLabels(t, "community.composer.attachPick")}
+          check={false}
+          className="ghost icononly"
+          testId="attach-btn"
+          inputTestId="attach-input"
+          disabled={uploading}
+          onFiles={(files) => void attach(files)}
+        />
+        <div className="sp" />
+        <Button variant="primary" disabled={busy} onClick={publish}>
+          {t("community.composer.publish")}
+        </Button>
       </div>
+      <MentionPicker
+        hideButton
+        mentions={draft.mentions}
+        onChange={addMentions}
+        scope={mentionScope({ ...draft, audience: aud })}
+        open={pickOpen}
+        onOpenChange={setPickOpen}
+      />
     </div>
+  );
+}
+
+/** Đầu bảng tin: một dòng «Viết bài…» ⇒ hộp thoại soạn bài. `compact`/`onExpand` giữ cho khớp chỗ gọi (không còn dùng: ô luôn một dòng). */
+export function Composer({
+  onPosted,
+}: {
+  onPosted?: () => void;
+  compact?: boolean;
+  onExpand?: () => void;
+}) {
+  const { viewer, brandAccent } = useApp();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <div className="card pad composer feedcomposer collapsed" data-testid="composer">
+        <span className="av t1">{initials(viewer.orgName)}</span>
+        <button
+          type="button"
+          className="prompt"
+          data-testid="composer-open"
+          onClick={() => setOpen(true)}
+        >
+          {t("community.composer.writePost")}
+        </button>
+      </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent
+          className="sm:max-w-[640px] max-sm:h-dvh max-sm:max-h-dvh max-sm:max-w-none max-sm:rounded-none"
+          aria-describedby={undefined}
+        >
+          <div data-mod="community" data-accent={brandAccent} data-testid="composer-dialog">
+            <DialogHeader>
+              <DialogTitle>{t("community.composer.dialogTitle")}</DialogTitle>
+            </DialogHeader>
+            {open && <ComposeBody onPosted={onPosted} onClose={() => setOpen(false)} />}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

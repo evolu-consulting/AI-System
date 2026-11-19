@@ -1,8 +1,10 @@
 // CR-102 · com-c3 · `/pack/community/feed|posts*` (contract `@ai/contracts/community`, route theo `community-web/src/api/client.ts`).
 // Mỗi request: quyền (cache) + danh bạ (1 câu hub) + một tx gói với số câu cố định (`post.service`). "Không thấy" = 404.
 import {
+  ConnectedAudienceQuerySchema,
   CreatePostInputSchema,
   FeedQuerySchema,
+  GoodsSuggestQuerySchema,
   MentionablePeopleQuerySchema,
   PostActionInputSchema,
   type PostSource,
@@ -16,8 +18,10 @@ import type { PackGuardVars } from "../../kit/public";
 import { mergeNewest } from "../domain/feed-merge.rules";
 import { type Access, accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
+import { suggestGoods } from "./goods-suggest.service";
 import * as posts from "./post.service";
 import type { FeedFilter } from "./post.sql";
+import { connectedAudience } from "./post-mention.repo";
 import { suggest as suggestPeople } from "./post-mention.service";
 import { quoteDeps } from "./quote.routes";
 import { hostHints } from "./quote.service";
@@ -88,6 +92,25 @@ export function postsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
   r.get("/feed", async (c) => c.json(await feedJson(d, c, await access(c))));
 
   /** CR-145: gợi ý người «Nhắc tên» (≤ 20, tìm `q`); phạm vi theo bài (`postId`) hoặc bản nháp. Không cấu hình ⇒ rỗng. */
+  /** CR-191 · công ty ĐÃ KẾT NỐI + công ty đó có thấy bài với «Ai thấy bài» này không (cho «n/N», «Chọn công ty…», gợi ý «@»). Đối tác ngoài ⇒ rỗng. */
+  r.get("/audience-connected", async (c) => {
+    const a = await access(c);
+    const q = parseWith(ConnectedAudienceQuerySchema, c.req.query());
+    if (a.org !== null) return c.json([]);
+    const tenants = (q.tenants ?? "")
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+    return c.json(await d.uow.tenant(a.who, ({ tx }) => connectedAudience(tx, q.mode, tenants)));
+  });
+
+  /** CR-191 · gợi ý hàng hoá (Cần bán/Cần mua): hàng công ty đã đăng + Sản phẩm & Giá (cổng `goods`). */
+  r.get("/goods-suggest", async (c) => {
+    const a = await access(c);
+    const q = parseWith(GoodsSuggestQuerySchema, c.req.query());
+    return c.json(await suggestGoods(d.uow, a, d.goods, q.q ?? ""));
+  });
+
   r.get("/mentionable-people", async (c) => {
     const a = await access(c);
     const raw = withoutScopeKeys(c.req.query());

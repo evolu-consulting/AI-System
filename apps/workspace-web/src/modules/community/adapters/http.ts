@@ -125,8 +125,17 @@ export function createHttpApi(): CommunityApi {
           cats: scope?.cats?.join(",") || undefined,
           audCats: scope?.audCats?.join(",") || undefined,
           companies: scope?.companies?.join(",") || undefined,
+          tenants: scope?.tenants?.join(",") || undefined,
+          outside: scope?.outside ? "1" : undefined,
+          // bình luận (theo bài) chưa nhắc chéo công ty được (lát cr191-cross-comment)
+          connected: scope?.postId ? "0" : undefined,
         },
       }),
+    audienceConnected: (mode, tenants) =>
+      api(`${BASE}/audience-connected`, {
+        query: { mode, tenants: tenants?.join(",") || undefined },
+      }),
+    goodsSuggest: (q) => api(`${BASE}/goods-suggest`, { query: { q: q || undefined } }),
     addComment: (postId, input) =>
       api(`${BASE}/posts/${enc(postId)}/comments`, { method: "POST", body: input }),
     editComment: (postId, id, text) =>

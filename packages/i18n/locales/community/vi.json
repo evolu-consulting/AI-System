@@ -116,11 +116,11 @@
     },
     "audience": {
       "label": "Người xem",
-      "all": "Tất cả bạn bè",
-      "suppliers": "Chỉ nhà cung cấp",
-      "buyers": "Chỉ khách hàng",
+      "all": "Tất cả đối tác",
+      "suppliers": "Nhà cung cấp",
+      "buyers": "Khách hàng",
       "cats": "Theo nhóm hàng",
-      "companies": "Từng công ty",
+      "companies": "Chọn công ty…",
       "partnerNote": "Chỉ chủ quản thấy bài này",
       "catsList": "Nhóm hàng: {{list}}",
       "catsSell": "Khách hàng quan tâm nhóm hàng của bài",
@@ -142,7 +142,15 @@
       "catsEmpty": "Không có nhóm hàng phù hợp",
       "catsCount": "Đã chọn {{n}} nhóm",
       "catsDone": "Xong",
-      "catsCancel": "Huỷ"
+      "catsCancel": "Huỷ",
+      "field": "Ai thấy bài",
+      "internal": "Chỉ nội bộ",
+      "count": "{{n}}/{{N}} công ty đối tác thấy bài",
+      "connectedTitle": "Công ty đã kết nối",
+      "mentionOutsideTitle": "{{name}} chưa xem được bài này",
+      "mentionOutsideBody": "{{company}} chưa nằm trong «Ai thấy bài».",
+      "mentionAdd": "Thêm {{company}} vào",
+      "mentionDrop": "Bỏ nhắc"
     },
     "composer": {
       "attachPick": {
@@ -158,9 +166,6 @@
       },
       "prompt": "{{org}} đang có hàng cần bán hay nhu cầu cần mua?",
       "bodyLabel": "Nội dung bài đăng",
-      "prefillFrom": "Gợi ý mẫu (chưa phải sản phẩm của công ty)",
-      "prefillBanner": "Điền sẵn từ Sổ Hợp Tác · {{product}}",
-      "prefillOption": "Gợi ý mẫu…",
       "typeLabel": "Loại bài",
       "uploading": "Đang tải lên",
       "retry": "Thử lại",
@@ -190,7 +195,12 @@
       "writePost": "Viết bài…",
       "typeSelectAria": "Chọn loại bài",
       "posted": "Đã đăng bài",
-      "postFailed": "Không đăng được"
+      "postFailed": "Không đăng được",
+      "dialogTitle": "Viết bài",
+      "close": "Đóng",
+      "bodyPlaceholder": "Bạn muốn chia sẻ gì? Gõ @ để nhắc người.",
+      "mentionPending": "Chọn thêm công ty hoặc bỏ nhắc trước khi đăng.",
+      "mentioned": "Đã nhắc"
     },
     "draft": {
       "product": "Hàng hoá",
@@ -226,7 +236,15 @@
       "errProduct": "Nhập hàng hoá",
       "errQty": "Nhập số lượng",
       "errArea": "Nhập khu vực",
-      "errNeededBy": "Chọn ngày cần"
+      "errNeededBy": "Chọn ngày cần",
+      "goods": "Hàng hoá",
+      "goodsHint": "Gõ tên hàng hoặc chọn gợi ý",
+      "unit": "Đơn vị",
+      "unitPrice": "Đơn giá",
+      "goodsCatalog": "Sản phẩm & Giá",
+      "goodsPosted": "Đã đăng",
+      "goodsNone": "Không có gợi ý — cứ gõ tên hàng.",
+      "mentionOutside": "Ngoài «Ai thấy bài»"
     },
     "post": {
       "view": "Xem",

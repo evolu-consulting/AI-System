@@ -7,13 +7,15 @@ import {
   type PostType,
 } from "@ai/contracts/community";
 import { t } from "../i18n";
-import { type DraftMention, mentionIds } from "./mention";
+import { type DraftMention, mentionIds, mentionsInBody } from "./mention";
 
 export type Draft = {
   type: PostType;
   body: string;
   product: string;
   qty: string;
+  /** CR-191 · đơn vị («cuộn»); gộp vào số lượng khi gửi. */
+  unit: string;
   price: string;
   area: string;
   neededBy: string;
@@ -30,6 +32,7 @@ export const emptyDraft = (type: PostType = "sell"): Draft => ({
   body: "",
   product: "",
   qty: "",
+  unit: "",
   price: "",
   area: "",
   neededBy: "",
@@ -47,8 +50,7 @@ export function draftErrors(d: Draft): Record<string, string> {
   };
   if (d.type === "note") need("body", d.body, t("community.draft.errNote"));
   else {
-    need("product", d.product, t("community.draft.errProduct"));
-    need("qty", d.qty, t("community.draft.errQty"));
+    need("product", d.product, t("community.draft.errProduct")); // CR-191: số lượng, đơn vị, đơn giá không bắt buộc
   }
   if (d.type === "buy") {
     need("area", d.area, t("community.draft.errArea"));
@@ -68,8 +70,11 @@ export function toCreateInput(d: Draft, isHostViewer: boolean): CreatePostInput 
     cats: d.cats,
     media: d.media,
     ...(isHostViewer && d.audience ? { audience: d.audience } : {}),
-    ...(d.mentions.length > 0 ? { mentionUserIds: mentionIds(d.mentions) } : {}),
+    ...(mentionsInBody(d.body, d.mentions).length > 0
+      ? { mentionUserIds: mentionIds(mentionsInBody(d.body, d.mentions)) }
+      : {}),
   };
+  const qty = [d.qty.trim(), d.unit.trim()].filter(Boolean).join(" ");
   if (d.type === "sell") {
     const price = d.price.trim();
     return {
@@ -77,7 +82,7 @@ export function toCreateInput(d: Draft, isHostViewer: boolean): CreatePostInput 
       type: "sell",
       fields: {
         product: d.product.trim(),
-        qty: d.qty.trim(),
+        qty,
         price: price === "" ? null : price,
         area: d.area.trim(),
       },
@@ -89,7 +94,7 @@ export function toCreateInput(d: Draft, isHostViewer: boolean): CreatePostInput 
       type: "buy",
       fields: {
         product: d.product.trim(),
-        qty: d.qty.trim(),
+        qty,
         area: d.area.trim(),
         neededBy: d.neededBy,
         budget: d.budget.trim(),

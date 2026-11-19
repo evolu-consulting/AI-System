@@ -32,6 +32,7 @@ import { communityFactsReaders, communityOutcomeHandler } from "./adapters/flow-
 import { communityFlowSlots } from "./adapters/flow-slots";
 import { flowsRoutes } from "./adapters/flows.routes";
 import type { FlowAgents, FlowDeps } from "./adapters/flows.service";
+import type { GoodsCatalog } from "./adapters/goods-suggest.service";
 import { communityNavSource } from "./adapters/nav.source";
 import type { CommunityEventDeps } from "./adapters/notify.events";
 import { communityEvents } from "./adapters/notify.events";
@@ -67,6 +68,8 @@ export function communityModule(
     /** ADR-0031: cổng ghi/đọc SP & Giá do `packs.mount.ts` tiêm (vắng ⇒ không Lưu báo giá / không gợi ý). */
     quotes?: SupplierQuoteWriter | undefined;
     hostBook?: HostBookReader | undefined;
+    /** CR-191: Sản phẩm & Giá của công ty cho gợi ý hàng hoá (vắng ⇒ chỉ hàng đã đăng). */
+    goods?: GoodsCatalog | undefined;
     /** CR-110: brand chủ quản + quyền gói contracts (vắng ⇒ brand mặc định theo tên tenant, caps false). */
     brand?: CompanyBrandReader | undefined;
     caps?: ContractsCapReader | undefined;
@@ -146,6 +149,7 @@ export function communityModule(
     contact: selfContactOf(db),
     quotes: opts.quotes,
     hostBook: opts.hostBook,
+    goods: opts.goods,
     brand: opts.brand,
     caps: opts.caps,
     webUrl: opts.webUrl,

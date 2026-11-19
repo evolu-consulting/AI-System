@@ -2,7 +2,14 @@
 import { POST_MENTIONS_MAX, type PostAudience, type PostType } from "@ai/contracts/community";
 
 /** Người được nhắc trong bản nháp (chip). */
-export type DraftMention = { userId: string; name: string; orgName?: string };
+export type DraftMention = {
+  userId: string;
+  name: string;
+  orgName?: string;
+  /** CR-191 · người công ty ĐÃ KẾT NỐI: id tenant + đang NGOÀI «Ai thấy bài» (chờ «Thêm công ty vào» / «Bỏ nhắc»). */
+  tenantId?: string;
+  outside?: boolean;
+};
 
 /** Loại bài mặc định: chủ quản (được đăng «Thông báo») ⇒ `note`; đối tác ⇒ loại đầu tiên được phép. */
 export const defaultPostType = (allowed: readonly PostType[]): PostType =>
@@ -14,6 +21,14 @@ export const addMention = (list: DraftMention[], m: DraftMention): DraftMention[
 
 export const mentionIds = (list: readonly DraftMention[]): string[] => list.map((m) => m.userId);
 
+/** CR-191 · «@» trong THÂN bài: chỉ người còn được viết «@Tên» trong chữ mới được nhắc (xoá chữ ⇒ bỏ nhắc). */
+export const mentionsInBody = (body: string, list: readonly DraftMention[]): DraftMention[] =>
+  list.filter((m) => body.includes(`@${m.name}`));
+
+/** Bỏ «@Tên» khỏi thân bài (Bỏ nhắc). */
+export const stripMention = (body: string, name: string): string =>
+  body.replace(`@${name}`, "").replace(/ {2,}/g, " ");
+
 /** Phạm vi bản nháp gửi server để biết «ai thấy được bài» (gợi ý người nhắc). Đối tác không có `audience` ⇒ server tự giới hạn. */
 export const mentionScope = (d: { type: PostType; cats: string[]; audience?: PostAudience }) => ({
   type: d.type,
@@ -23,6 +38,8 @@ export const mentionScope = (d: { type: PostType; cats: string[]; audience?: Pos
         mode: d.audience.mode,
         audCats: [...d.audience.cats],
         companies: [...d.audience.companies],
+        tenants: [...(d.audience.tenants ?? [])],
       }
     : {}),
+  outside: true,
 });
