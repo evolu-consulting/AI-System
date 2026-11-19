@@ -44,7 +44,10 @@ test("K01-K04 · sale: lần đầu tạo chữ ký → tải HĐ → Cần ký 
 
   await page.goto(`${E.cw}/contracts/c/${id}`);
   await expect(page.getByTestId("signers-strip")).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByTestId("signers-strip")).toContainText("E2E Giám đốc");
+  // CR-185: người ký là avatar, họ tên nằm ở tên truy cập/tooltip (không còn là chữ hiện) ⇒ tìm theo tên của avatar.
+  await expect(
+    page.getByTestId("signers-strip").getByRole("img", { name: "E2E Giám đốc" }),
+  ).toBeVisible();
   await expect(page.getByTestId("signers-strip")).not.toContainText("[object Object]");
   const send = page.getByRole("button", { name: "Gửi duyệt" });
   await expect(send).toBeEnabled();

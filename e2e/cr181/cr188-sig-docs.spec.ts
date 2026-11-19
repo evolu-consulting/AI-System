@@ -1,10 +1,11 @@
 // CR-188 · BR-188-4/5 · «Giấy tờ đã ký bằng chữ ký này» trong «Chữ ký của tôi»: nhân viên (chủ chữ ký) chọn một bản ⇒ ngăn danh sách + lọc;
 // người khác không phải quản trị (kế toán) bị 403 khi hỏi chữ ký đó; quản trị (giám đốc) xem được (200). Viết theo khuôn e2e/cr181/*; chưa chạy (điều phối chạy cuối đợt).
-import { apiAs, envOf, expect, HUB, loginCw, newPage, SPEC_TENANT, U } from "../cr127/_cr127-kit";
+import { apiAs, envOf, expect, HUB, loginCw, newPage, U } from "../cr127/_cr127-kit";
 import { test } from "../journey-approval/_test";
 
 test.describe.configure({ mode: "serial" });
-const E = envOf(SPEC_TENANT.j03);
+// Công ty `dot2` (nhân viên có sẵn chữ ký): KHÔNG dùng j03 — `first-login-signature.spec.ts` cần nhân viên j03 CHƯA có chữ ký (màn chặn lần đầu).
+const E = envOf("dot2");
 const PNG_1X1 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 let sigId = "";
