@@ -335,3 +335,56 @@ export const MsgPeoplePageSchema = z.object({
   next_cursor: z.string().max(MSG_PEOPLE_CURSOR_MAX).nullable(),
 });
 export type MsgPeoplePage = z.infer<typeof MsgPeoplePageSchema>;
+
+// CR-190 · danh bạ nhóm cho trang Tin nhắn `GET /messages/directory`: nhóm theo thứ tự cố định (từng công ty đối tác A→Z, «Nhóm chat», «Nội bộ»), mỗi nhóm có tổng người,
+// số chưa đọc và 15 dòng đầu + con trỏ «Xem thêm» RIÊNG nhóm. Dòng = người/nhóm luật HIỆN TẠI cho nhắn (kể cả chưa từng nhắn) ∪ cuộc đã có; sắp xếp: ghim → tin mới nhất → chưa từng nhắn theo tên A→Z.
+export const MSG_DIR_PAGE_DEFAULT = 15;
+export const MSG_DIR_PAGE_MAX = 50;
+export const MSG_DIR_CURSOR_MAX = 600;
+/** `partner:<uuid công ty>` | `chat` | `internal`. */
+export const MsgDirGroupKeySchema = z
+  .string()
+  .max(60)
+  .regex(/^(chat|internal|partner:[0-9a-fA-F-]{36})$/);
+export const MsgDirectoryQuerySchema = z.object({
+  /** Vắng ⇒ mọi nhóm, mỗi nhóm `limit` dòng đầu. Có ⇒ chỉ nhóm đó, trang sau `cursor`. */
+  group: MsgDirGroupKeySchema.optional(),
+  cursor: z.string().max(MSG_DIR_CURSOR_MAX).optional(),
+  /** Tìm theo người, chức vụ, tên nhóm chat, tên công ty (không phân biệt hoa/dấu). */
+  q: z.string().trim().max(80).optional(),
+  limit: z.coerce.number().int().min(1).max(MSG_DIR_PAGE_MAX).default(MSG_DIR_PAGE_DEFAULT),
+});
+export type MsgDirectoryQuery = z.infer<typeof MsgDirectoryQuerySchema>;
+export const MsgDirPersonSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  job_title: z.string().max(80).nullable(),
+  /** Người còn dùng được; false ⇒ chỉ còn lịch sử (cuộc đã có). */
+  active: z.boolean(),
+  company: MsgCompanySchema,
+});
+export type MsgDirPerson = z.infer<typeof MsgDirPersonSchema>;
+export const MsgDirRowSchema = z.object({
+  /** Ổn định theo người/nhóm: `u:<user id>` (1-1, đối tác) hoặc `c:<id cuộc>` (nhóm chat). */
+  key: z.string().max(64),
+  /** Cuộc đã có (tin cuối, chưa đọc, ghim, cờ…); chưa từng nhắn ⇒ null (mở cuộc bằng `POST /messages/conversations`). */
+  conversation: ConversationSummarySchema.nullable(),
+  /** Người của dòng 1-1/đối tác; dòng nhóm chat ⇒ null. */
+  person: MsgDirPersonSchema.nullable(),
+});
+export type MsgDirRow = z.infer<typeof MsgDirRowSchema>;
+export const MsgDirGroupSchema = z.object({
+  key: MsgDirGroupKeySchema,
+  kind: z.enum(["partner", "chat", "internal"]),
+  /** Chỉ nhóm `partner`. */
+  company: MsgCompanySchema.nullable(),
+  /** Tổng người/nhóm trong nhóm (theo `q` nếu có). */
+  total: z.number().int().min(0),
+  /** Tổng chưa đọc của nhóm = Σ max(chưa đọc thật, cờ ? 1 : 0) mỗi cuộc, kẹp 999. */
+  unread: z.number().int().min(0).max(MSG_UNREAD_TOTAL_MAX),
+  items: z.array(MsgDirRowSchema),
+  next_cursor: z.string().max(MSG_DIR_CURSOR_MAX).nullable(),
+});
+export type MsgDirGroup = z.infer<typeof MsgDirGroupSchema>;
+export const MsgDirectoryResponseSchema = z.object({ groups: z.array(MsgDirGroupSchema) });
+export type MsgDirectoryResponse = z.infer<typeof MsgDirectoryResponseSchema>;

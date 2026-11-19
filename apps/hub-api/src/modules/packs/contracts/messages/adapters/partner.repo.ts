@@ -5,6 +5,8 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type {
   PartnerCompanyRow,
+  PartnerDirHead,
+  PartnerDirRow,
   PartnerPersonRow,
   PartnerRepo,
   RawAttachment,
@@ -12,7 +14,7 @@ import type {
   RawMessage,
   RawSearchHit,
 } from "../application/messages.ports";
-import { iso } from "./messages.sql";
+import { iso, uuidArr } from "./messages.sql";
 
 type DetailRow = {
   id: string;
@@ -82,6 +84,20 @@ export function partnerRepo(tx: Tx, tid: string): PartnerRepo {
     companies(cur, limit) {
       return tx.execute<PartnerCompanyRow>(sql`select company_id, name, sort_key
         from hub.pmsg_companies(${cur?.key ?? null}::text, ${cur?.id ?? null}::uuid, ${limit}::int)`);
+    },
+    dirHeads(company, q, flagged) {
+      return tx.execute<PartnerDirHead>(sql`select company_id, name, total, unread
+        from hub.pmsg_dir_heads(${company}::uuid, ${q}::text, ${uuidArr(flagged)}::uuid[])`);
+    },
+    async dirRows(a) {
+      const rows = await tx.execute<
+        Omit<PartnerDirRow, "last"> & { last: PartnerDirRow["last"] | string }
+      >(
+        sql`select company_id, company_name, user_id, name, job_title, thread_id, last, ${iso("last_at")} as last_at, unread, peer_active, read_only, k1, k2, k3
+        from hub.pmsg_dir_rows(${a.company}::uuid, ${a.q}::text, ${uuidArr(a.pinned)}::uuid[], ${uuidArr(a.flagged)}::uuid[],
+          ${a.cur?.k1 ?? null}::int, ${a.cur?.k2 ?? null}::numeric, ${a.cur?.k3 ?? null}::text, ${a.cur?.id ?? null}::uuid, ${a.limit}::int)`,
+      );
+      return rows.map((r) => ({ ...r, last: r.last === null ? null : jsonOf(r.last) }));
     },
     async page(id, before, limit) {
       const [r] = await tx.execute<{ items: RawMessage[] | string; has_more: boolean }>(

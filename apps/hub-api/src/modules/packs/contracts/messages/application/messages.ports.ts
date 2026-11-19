@@ -1,6 +1,7 @@
 // CR-132 M3 · HD-MSG-01..12 · cổng của use case tin nhắn (lớp 2, chỉ kiểu): repo trong tx `PackUow` (role `contracts_rw`, RLS tenant + thành viên)
 // và tra người dùng (admin.users qua kit, NGOÀI tx của gói). Dòng thô từ SQL: use case/`messages.view.ts` (cùng thư mục) đổi sang DTO của contract.
 import type { ConvKind, MemberRole } from "@ai/contracts/pack-contracts";
+import type { ConvLite, DirKey } from "../domain/messages.directory";
 
 export type RawMember = {
   user_id: string;
@@ -156,6 +157,12 @@ export type MessagesRepo = {
   /** MỘT câu: nội bộ `UNION ALL` `pmsg_inbox`, mỗi nguồn LIMIT `limit`, sắp/LIMIT ngoài. */
   conversations(me: string, q: ListQuery): Promise<RawConversation[]>;
   conversation(me: string, cid: string): Promise<RawConversation | null>;
+  /** CR-190 · dòng đầy đủ (tin cuối, chưa đọc thật) của các cuộc `ids` — MỘT câu; chỉ cuộc người gọi là thành viên. */
+  conversationsByIds(me: string, ids: readonly string[]): Promise<RawConversation[]>;
+  /** CR-190 · MỌI cuộc nội bộ của người gọi bản nhẹ (kèm ghim/cờ, chưa đọc thật, người gửi tin cuối) — MỘT câu, trần 3000. */
+  directoryConvs(me: string): Promise<(ConvLite & { last_sender: string | null })[]>;
+  /** CR-190 · id cuộc `partner` người gọi đã ghim / đánh dấu chưa đọc — MỘT câu. */
+  partnerPrefs(me: string): Promise<{ pinned: string[]; flagged: string[] }>;
   /** Tổng chưa đọc (nội bộ + `partner`, đã kẹp 999) của người gọi — MỘT câu. */
   /** `withPartner=false` ⇒ chỉ nội bộ (người không có quyền Sổ Hợp Tác: `pmsg_unread` ném 42501 — use case chạy lại không có phần đối tác). */
   unread(me: string, withPartner?: boolean): Promise<number>;
@@ -227,6 +234,33 @@ export type PartnerPersonRow = {
   department_name: string | null;
   sort_key: string;
 };
+/** CR-190 · đầu một nhóm công ty (`pmsg_dir_heads`) và một dòng của nhóm (`pmsg_dir_rows`). */
+export type PartnerDirHead = { company_id: string; name: string; total: number; unread: number };
+export type PartnerDirRow = {
+  company_id: string;
+  company_name: string;
+  user_id: string;
+  name: string;
+  job_title: string | null;
+  thread_id: string | null;
+  last: RawLast | null;
+  last_at: string | null;
+  unread: number;
+  peer_active: boolean;
+  read_only: boolean;
+  k1: number;
+  k2: string;
+  k3: string;
+};
+export type PartnerDirQuery = {
+  /** null ⇒ `limit` dòng đầu của MỖI công ty. */
+  company: string | null;
+  q: string | null;
+  pinned: readonly string[];
+  flagged: readonly string[];
+  cur: DirKey | null;
+  limit: number;
+};
 export type PartnerCompanyRow = { company_id: string; name: string; sort_key: string };
 /** CR-169 · cuộc `partner` + danh bạ/công ty (hàm `hub.pmsg_*` DEFINER; người dùng lấy từ `app.user_id`, không là tham số). */
 export type PartnerRepo = {
@@ -242,6 +276,14 @@ export type PartnerRepo = {
     limit: number;
   }): Promise<PartnerPersonRow[]>;
   companies(cur: { key: string; id: string } | null, limit: number): Promise<PartnerCompanyRow[]>;
+  /** CR-190 · `pmsg_dir_heads` — đầu mọi nhóm công ty (tổng người, chưa đọc), MỘT câu. */
+  dirHeads(
+    company: string | null,
+    q: string | null,
+    flagged: readonly string[],
+  ): Promise<PartnerDirHead[]>;
+  /** CR-190 · `pmsg_dir_rows` — dòng các nhóm công ty (người nhắn được ∪ cuộc đã có), MỘT câu. */
+  dirRows(q: PartnerDirQuery): Promise<PartnerDirRow[]>;
   /** `pmsg_page` — trang tin mới → cũ (hàm tự tính `has_more`; limit kẹp 1..100). Không là đầu cuộc ⇒ DB ném CC404. */
   page(
     id: string,

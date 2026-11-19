@@ -8,7 +8,8 @@ import type {
   MsgFacts,
   RawConversation,
 } from "../application/messages.ports";
-import { iso } from "./messages.sql";
+import { iso, uuidArr } from "./messages.sql";
+import { directoryRepo } from "./messages-directory.repo";
 import { attachmentsRepo, searchRepo } from "./messages-find.repo";
 import { prefsRepo } from "./messages-prefs.repo";
 import { messagesSendRepo } from "./messages-send.repo";
@@ -118,7 +119,10 @@ const flaggedCount = (
 function readRepo(
   tx: Tx,
   t: string,
-): Pick<MessagesRepo, "conversations" | "conversation" | "unread" | "facts" | "findDm"> {
+): Pick<
+  MessagesRepo,
+  "conversations" | "conversation" | "conversationsByIds" | "unread" | "facts" | "findDm"
+> {
   return {
     conversations: (me, q) => tx.execute<RawConversation>(listSql(t, me, q)),
     conversation: async (me, cid) => {
@@ -127,6 +131,13 @@ function readRepo(
       );
       return r ?? null;
     },
+    // CR-190 · danh bạ nhóm: dòng đầy đủ (tin cuối, chưa đọc) CHỈ cho các cuộc của trang — MỘT câu `= any`, RLS thành viên.
+    conversationsByIds: (me, ids) =>
+      ids.length === 0
+        ? Promise.resolve([])
+        : tx.execute<RawConversation>(
+            summary(t, me, false, sql`and c.id = any(${uuidArr(ids)}::uuid[])`),
+          ),
     // Tổng chưa đọc — MỘT câu (spec §6): nội bộ (bỏ hội thoại đã đọc hết, quét khoảng PK `msg_messages` trần 100/hội thoại, dừng sớm ở 999) cộng `pmsg_unread()`
     // (cùng luật đếm cho cuộc `partner`), kẹp 999. Chi phí theo trần 999, không theo tổng số tin chưa đọc.
     unread: async (me, withPartner = true) => {
@@ -203,5 +214,6 @@ export function messagesRepo(tx: Tx, t: string): MessagesRepo {
     ...attachmentsRepo(tx, t),
     ...searchRepo(tx, t),
     ...prefsRepo(tx, t),
+    ...directoryRepo(tx, t),
   };
 }

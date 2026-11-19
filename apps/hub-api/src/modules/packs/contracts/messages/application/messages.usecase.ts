@@ -46,6 +46,7 @@ import {
   personIdsOf,
   summaryOf,
 } from "./messages.view";
+import { type DirectoryPeopleFn, directoryOps } from "./messages-directory.usecase";
 import { type MessagesFileOps, messagesFileOps } from "./messages-files.usecase";
 import { messagesFindOps } from "./messages-find.usecase";
 import { prefsOps, withPrefs } from "./messages-prefs.usecase";
@@ -78,6 +79,8 @@ async function lockGroupAsOwner(r: MessagesRepo, me: string, cid: string) {
 type Deps = {
   uow: PackUow<MessagesRepos>;
   people: PeopleLookup;
+  /** CR-190 · danh bạ nhóm «Nội bộ» (đồng nghiệp + người xin thêm + công ty người gọi); vắng ⇒ nhóm «Nội bộ» chỉ gồm cuộc đã có. */
+  dirPeople?: DirectoryPeopleFn | undefined;
   /** CR-169 · danh bạ `own` (đồng nghiệp, CR-148); vắng ⇒ `own` trả rỗng (test không dùng danh bạ). */
   directory?: DirectoryFn | undefined;
   newId: () => string;
@@ -373,6 +376,7 @@ export function messagesUsecases(d: Deps) {
     companies: partner.companies,
     ...conversationOps(c),
     ...prefsOps(d),
+    ...directoryOps(d),
     ...memberOps(c),
     ...readOps(c),
     ...sendOps(c),

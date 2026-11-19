@@ -10,6 +10,7 @@ import {
   MarkUnreadRequestSchema,
   MsgCompaniesQuerySchema,
   MsgConversationsQuerySchema,
+  MsgDirectoryQuerySchema,
   MsgListQuerySchema,
   MsgPeopleQuerySchema,
   PinRequestSchema,
@@ -256,10 +257,30 @@ function peopleRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
   });
 }
 
+/** CR-190 · danh bạ nhóm trang Tin nhắn: công ty đối tác A→Z, «Nhóm chat», «Nội bộ» (15 dòng đầu/nhóm + «Xem thêm» theo `group` + `cursor`). */
+function directoryRoutes(r: Routes, h: H, uc: MessagesUsecases): void {
+  r.get("/messages/directory", h.read, async (c) => {
+    const w = h.who(c);
+    const q = parseQuery(c, MsgDirectoryQuerySchema);
+    try {
+      const out = await run(uc.directory(w, q));
+      h.noStore(c);
+      return c.json(out);
+    } catch (e) {
+      if (e instanceof Error && e.message === "BAD_CURSOR")
+        throw appError("VALIDATION_ERROR", {
+          issues: [{ path: ["cursor"], code: "invalid", message: "cursor" }],
+        });
+      throw e;
+    }
+  });
+}
+
 export function messagesRoutes(view: PackAccessView, uc: MessagesUsecases): Routes {
   const r = new Hono<PackGuardVars>();
   const h = helpers(view);
   peopleRoutes(r, h, uc);
+  directoryRoutes(r, h, uc);
   conversationRoutes(r, h, uc);
   memberRoutes(r, h, uc);
   messageRoutes(r, h, uc);

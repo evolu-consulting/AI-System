@@ -3,6 +3,7 @@
 export type { ContractAccess } from "./adapters/contract-access.registry";
 export { contractAccess, registerContractAccess } from "./adapters/contract-access.registry";
 export { internalDirectoryPage } from "./adapters/directory-page";
+export { type DirectoryPerson, internalDirectoryPeople } from "./adapters/directory-people";
 export { createDocxConverter } from "./adapters/docx/index";
 export { pgExternalOrgResolver } from "./adapters/ext-org.pg";
 export { externalFirewall } from "./adapters/external-firewall.middleware";

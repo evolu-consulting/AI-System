@@ -841,6 +841,13 @@
       "when": 1807000600000,
       "tag": "0126_cr190_msg_conv_prefs",
       "breakpoints": true
+    },
+    {
+      "idx": 120,
+      "version": "7",
+      "when": 1807000800000,
+      "tag": "0128_cr190_msg_directory_grants",
+      "breakpoints": true
     }
   ]
 }

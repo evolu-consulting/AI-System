@@ -11,6 +11,7 @@ import type { Redis } from "../../../../lib/redis";
 import {
   createPackUow,
   internalDirectoryPage,
+  internalDirectoryPeople,
   internalUsersAmong,
   type PackAccessView,
   type PackFileboxClient,
@@ -79,6 +80,7 @@ export function messagesModule(
     ),
     people: internalUsersAmong(db),
     directory: internalDirectoryPage(db),
+    dirPeople: internalDirectoryPeople(db),
     newId: () => Bun.randomUUIDv7(),
     publish: redis ? packStreamPublishMany(redis, logger) : undefined,
     files,
