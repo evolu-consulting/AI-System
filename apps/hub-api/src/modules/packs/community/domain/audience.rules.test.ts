@@ -1,8 +1,10 @@
 // CR-102 · com-c3 · unit luật người xem (D2) + việc trên bài + cột raw/masked (D4).
 import { describe, expect, it } from "bun:test";
+import { TRUTH } from "../../../../../../../tests/acceptance/com-c3/_support/audience-truth";
 import {
   type Audience,
   audienceIncludes,
+  audienceSees,
   defaultAudience,
   effectiveStatus,
   partnerMayPost,
@@ -136,5 +138,26 @@ describe("rolesOfLabels [CR-130]", () => {
     expect(rolesOfLabels(["customer"])).toEqual(["customer"]);
     expect(rolesOfLabels(["supplier", "customer", "customer"])).toEqual(["supplier", "customer"]);
     expect(rolesOfLabels([])).toEqual([]);
+  });
+});
+
+describe("CR-191 audienceSees · bảng chân trị dùng chung (nội bộ / đối tác / công ty kết nối)", () => {
+  it.each(TRUTH.map((r) => [r.name, r] as const))("%s", (_n, r) => {
+    expect(audienceSees(r.aud, r.type, r.postCats, r.viewer)).toBe(r.want);
+  });
+  it("bảng phủ đủ 3 loại người xem × 6 mức", () => {
+    expect(new Set(TRUTH.map((r) => r.viewer.kind))).toEqual(
+      new Set(["internal", "partner", "connected"]),
+    );
+    expect(new Set(TRUTH.map((r) => r.aud.mode)).size).toBe(6);
+  });
+  it("«Chỉ nội bộ» ẩn với mọi đối tác; bài cũ (không có tenants) vẫn đọc ra đúng mức", () => {
+    expect(audienceIncludes(aud("internal"), "note", [], B1)).toBe(false);
+    // bài cũ `all` ⇒ công ty kết nối thấy; `companies` cũ chỉ có ext_org ⇒ công ty kết nối không thấy
+    const legacy = { mode: "companies" as const, cats: [], companies: ["b1"] };
+    expect(audienceSees(legacy, "note", [], { kind: "connected", tenantId: "t", labels: [] })).toBe(
+      false,
+    );
+    expect(audienceSees(legacy, "note", [], { kind: "partner", ...B1 })).toBe(true);
   });
 });

@@ -14,7 +14,7 @@ export type VisPost = {
 
 /** Mặc định D2: Cần bán ⇒ người mua nhóm hàng đó; Cần mua ⇒ NCC nhóm hàng đó; Thông báo ⇒ tất cả bạn bè. */
 export function defaultAudience(type: PostType): PostAudience {
-  return { mode: type === "note" ? "all" : "cats", cats: [], companies: [] };
+  return { mode: type === "note" ? "all" : "cats", cats: [], companies: [], tenants: [] };
 }
 
 /** Công ty `v` hợp với audience của bài chủ quản? (đã qua kiểm "trần = bạn bè": mọi viewer partner đều là bạn bè). */
@@ -27,6 +27,8 @@ export function audienceIncludes(
   switch (a.mode) {
     case "all":
       return true;
+    case "internal":
+      return false; // CR-191: «Chỉ nội bộ» — đối tác không thấy
     case "suppliers":
       return v.labels.includes("supplier");
     case "buyers":

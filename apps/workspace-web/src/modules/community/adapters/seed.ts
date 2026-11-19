@@ -112,7 +112,7 @@ const aud = (
   mode: PostAudience["mode"],
   cats: string[] = [],
   companies: string[] = [],
-): PostAudience => ({ mode, cats, companies });
+): PostAudience => ({ mode, cats, companies, tenants: [] });
 
 export const SEED_POSTS: RawPost[] = [
   {

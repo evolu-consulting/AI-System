@@ -15,15 +15,27 @@ export const POST_TYPE_LABEL: Record<PostType, string> = {
   note: "Thông báo",
 };
 
-/** Người xem bài chủ quản (D2): trần = bạn bè của chủ quản. */
-export const AUDIENCE_MODES = ["all", "suppliers", "buyers", "cats", "companies"] as const;
+/**
+ * «Ai thấy bài» (D2 + CR-191 BR-191-7): all = tất cả đối tác · internal = chỉ nội bộ · suppliers = nhà cung cấp · buyers = khách hàng ·
+ * companies = chọn công ty. `cats` còn để đọc bài cũ (UI mới không chọn). Trần = bạn bè của chủ quản (+ công ty ĐÃ KẾT NỐI, BR-191-1).
+ */
+export const AUDIENCE_MODES = [
+  "all",
+  "internal",
+  "suppliers",
+  "buyers",
+  "cats",
+  "companies",
+] as const;
 export type AudienceMode = (typeof AUDIENCE_MODES)[number];
 export const PostAudienceSchema = z.strictObject({
   mode: z.enum(AUDIENCE_MODES),
   /** Dùng khi `mode=cats` (nhóm hàng). */
   cats: z.array(z.string().min(1).max(80)).max(50).default([]),
-  /** Dùng khi `mode=companies` (id công ty đối tác). */
+  /** Dùng khi `mode=companies` (id công ty đối tác = ext_org trong cộng đồng). */
   companies: z.array(z.string().min(1).max(64)).max(200).default([]),
+  /** Dùng khi `mode=companies` (id TENANT của công ty đã kết nối — khác `companies`; DB `aud_tenants`, tối đa 200). */
+  tenants: z.array(z.string().uuid()).max(200).default([]),
 });
 export type PostAudience = z.infer<typeof PostAudienceSchema>;
 

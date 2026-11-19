@@ -4,11 +4,14 @@
 
 export type PostType = "sell" | "buy" | "note";
 export type Label = "supplier" | "customer";
-export type AudienceMode = "all" | "suppliers" | "buyers" | "cats" | "companies";
+export type AudienceMode = "all" | "internal" | "suppliers" | "buyers" | "cats" | "companies";
 export type Audience = {
   mode: AudienceMode;
   cats: readonly string[];
+  /** id ext_org (đối tác trong cộng đồng) — DB `aud_orgs`. */
   companies: readonly string[];
+  /** id TENANT của công ty đã kết nối (CR-191) — DB `aud_tenants`; vắng = rỗng (bài cũ). */
+  tenants?: readonly string[];
 };
 export type PostStatus = "active" | "archived" | "done" | "expired";
 export type PostAction =
@@ -44,6 +47,8 @@ export function audienceIncludes(
   switch (a.mode) {
     case "all":
       return true;
+    case "internal":
+      return false; // CR-191: «Chỉ nội bộ» — đối tác trong cộng đồng không thấy (SQL `audience_ok` ELSE false)
     case "suppliers":
       return v.labels.includes("supplier");
     case "buyers":
@@ -57,6 +62,40 @@ export function audienceIncludes(
       if (type === "buy") return v.labels.includes("supplier");
       return true;
     }
+  }
+}
+
+/**
+ * CR-191 (BR-191-1/7) · MỘT hàm cho mọi loại người xem bài CHỦ QUẢN — bảng chân trị ở `tests/acceptance/com-c3/_support/audience-truth.ts`:
+ *  - `internal`: người nội bộ tenant đăng bài (mọi vai, KHÔNG cần là người đăng/được giao) — thấy mọi mức (RLS `posts_visible`).
+ *  - `partner`: đối tác trong cộng đồng (ext_org) — luật cũ `audienceIncludes` (`internal` ⇒ không).
+ *  - `connected`: người công ty ĐÃ KẾT NỐI (tenant khác): all ⇒ có · suppliers/buyers ⇒ theo nhãn vai của công ty họ ·
+ *    companies ⇒ tenant của họ ∈ `tenants` (id ext_org ở `companies` KHÔNG áp) · internal/cats ⇒ không.
+ */
+export type AudienceViewer =
+  | { kind: "internal" }
+  | { kind: "partner"; org: string; labels: readonly Label[]; cats: readonly string[] }
+  | { kind: "connected"; tenantId: string; labels: readonly Label[] };
+
+export function audienceSees(
+  a: Audience,
+  type: PostType,
+  postCats: readonly string[],
+  v: AudienceViewer,
+): boolean {
+  if (v.kind === "internal") return true;
+  if (v.kind === "partner") return audienceIncludes(a, type, postCats, v);
+  switch (a.mode) {
+    case "all":
+      return true;
+    case "suppliers":
+      return v.labels.includes("supplier");
+    case "buyers":
+      return v.labels.includes("customer");
+    case "companies":
+      return (a.tenants ?? []).includes(v.tenantId);
+    default: // internal, cats
+      return false;
   }
 }
 

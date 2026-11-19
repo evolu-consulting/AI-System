@@ -155,6 +155,13 @@
       "when": 1807000620000,
       "tag": "0022_cr186_comment_mention_people",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1807000640000,
+      "tag": "0025_cr191_audience_schema",
+      "breakpoints": true
     }
   ]
 }
