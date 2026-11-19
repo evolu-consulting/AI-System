@@ -231,6 +231,26 @@
         "digitalNote": "Công ty chưa bật chữ ký số. Khi công ty mua và gán chứng thư cho bạn, mục này hiện nhà cung cấp, hạn dùng và trạng thái liên kết.",
         "digitalOn": "Công ty đã bật chữ ký số nhưng chưa gán chứng thư cho bạn.",
         "close": "Đóng"
+      },
+      "versions": {
+        "item": "Bản {{n}} · tạo ngày {{at}}",
+        "current": "Đang dùng"
+      },
+      "docs": {
+        "title": "Giấy tờ đã ký bằng chữ ký này",
+        "kind": "Loại giấy tờ",
+        "kindAll": "Mọi loại",
+        "from": "Từ ngày",
+        "to": "Đến ngày",
+        "loadErr": "Chưa xem được danh sách. Tải lại trang rồi thử lại.",
+        "empty": "Chưa có giấy tờ nào bạn được xem đã ký bằng bản này.",
+        "open": "Mở",
+        "more": "Xem thêm",
+        "kinds": {
+          "contract": "Hợp đồng",
+          "appendix": "Phụ lục",
+          "other": "Giấy tờ khác"
+        }
       }
     }
   }

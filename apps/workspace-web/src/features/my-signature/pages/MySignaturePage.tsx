@@ -12,9 +12,16 @@ import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "~/features/auth/hooks/use-session";
+import type { SigDocsFilter } from "../api";
 import { CreateFlow } from "../components/CreateFlow";
 import { MySignatureCards } from "../components/MySignatureCards";
-import { useCreateSignature, useMySignature, useRequestChange } from "../hooks/use-my-signature";
+import { SignedDocsPanel } from "../components/SignedDocsPanel";
+import {
+  useCreateSignature,
+  useMySignature,
+  useRequestChange,
+  useSigDocs,
+} from "../hooks/use-my-signature";
 
 export default function MySignaturePage() {
   const { t } = useTranslation();
@@ -23,6 +30,9 @@ export default function MySignaturePage() {
   const create = useCreateSignature();
   const ask = useRequestChange();
   const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [filter, setFilter] = useState<SigDocsFilter>({ kind: "", from: "", to: "" });
+  const docs = useSigDocs(picked, filter);
   const name = me?.display_name || me?.username || "";
   const request = () =>
     ask.mutate(undefined, {
@@ -48,7 +58,21 @@ export default function MySignaturePage() {
             onCreate={() => setOpen(true)}
             onRequest={request}
             requesting={ask.isPending}
+            selectedId={picked}
+            onSelect={setPicked}
           />
+          {picked && (
+            <SignedDocsPanel
+              filter={filter}
+              onFilter={setFilter}
+              items={docs.data?.pages.flatMap((pg) => pg.items) ?? []}
+              loading={docs.isPending}
+              error={docs.isError}
+              hasMore={docs.hasNextPage}
+              loadingMore={docs.isFetchingNextPage}
+              onMore={() => docs.fetchNextPage()}
+            />
+          )}
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent
               closeLabel={t("contracts.mySig.page.close")}

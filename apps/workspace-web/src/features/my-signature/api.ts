@@ -1,4 +1,6 @@
 // CR-181 · s4 · gọi API «Chữ ký của tôi» (chỉ ở đây): xem, tạo, xin đổi. Không có tham số người dùng (BR-K2).
+
+import type { SigDocKind, SigDocsResponse } from "@ai/contracts/pack-contracts";
 import type {
   ChangeRequestResponse,
   CreateSignatureResponse,
@@ -37,3 +39,26 @@ export async function createSignature(
 
 export const requestSignatureChange = () =>
   api<ChangeRequestResponse>("/me/signature/change-request", { method: "POST" });
+
+/** CR-188 · BR-188-5 · giấy tờ đã ký bằng một phiên bản chữ ký (lọc loại + khoảng ngày, 50/trang theo con trỏ). */
+export type SigDocsFilter = { kind: SigDocKind | ""; from: string; to: string };
+export const sigDocsKey = (sigId: string, f: SigDocsFilter) =>
+  ["my-signature", "documents", sigId, f] as const;
+
+export function fetchSigDocs(
+  sigId: string,
+  f: SigDocsFilter,
+  cursor: string | null,
+  signal?: AbortSignal,
+) {
+  const q = new URLSearchParams();
+  if (f.kind) q.set("kind", f.kind);
+  if (f.from) q.set("from", f.from);
+  if (f.to) q.set("to", f.to);
+  if (cursor) q.set("cursor", cursor);
+  const qs = q.size ? `?${q}` : "";
+  return api<SigDocsResponse>(
+    `/pack/contracts/my-signatures/${encodeURIComponent(sigId)}/documents${qs}`,
+    { signal },
+  );
+}

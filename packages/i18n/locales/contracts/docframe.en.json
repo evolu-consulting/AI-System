@@ -231,6 +231,26 @@
         "digitalNote": "Your company has not turned on digital signatures. When the company buys and assigns a certificate to you, this section shows the provider, expiry and link status.",
         "digitalOn": "Your company has turned on digital signatures but has not assigned a certificate to you.",
         "close": "Close"
+      },
+      "versions": {
+        "item": "Version {{n}} · created {{at}}",
+        "current": "In use"
+      },
+      "docs": {
+        "title": "Documents signed with this signature",
+        "kind": "Document type",
+        "kindAll": "All types",
+        "from": "From date",
+        "to": "To date",
+        "loadErr": "Could not load the list. Reload and try again.",
+        "empty": "No document you can view was signed with this version.",
+        "open": "Open",
+        "more": "Show more",
+        "kinds": {
+          "contract": "Contract",
+          "appendix": "Appendix",
+          "other": "Other document"
+        }
       }
     }
   }

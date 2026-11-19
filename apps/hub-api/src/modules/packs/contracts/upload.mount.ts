@@ -16,6 +16,8 @@ import { contractFlowRepo } from "./adapters/contract-flow.repo";
 import { promoteRepo } from "./adapters/deals.repo";
 import { officeText } from "./adapters/office-text";
 import { pdfPageCounter } from "./adapters/pdf-pages";
+import { sigDocsRepo } from "./adapters/sig-docs.repo";
+import { sigDocsRoutes } from "./adapters/sig-docs.routes";
 import { scanLimits } from "./adapters/source-file-text";
 import { uploadRoutes } from "./adapters/upload.routes";
 import { uploadContractRepo } from "./adapters/upload-contract.repo";
@@ -140,6 +142,15 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
   const r = uploadRoutes(d.view, { upload, replace, promote, maxBytes, timeZoneOf: d.timeZoneOf });
   // CR-182 R7 · «Kiểm tra tệp» (không lưu tệp; so sha256 trong công ty, theo quyền xem HĐ).
   const verifyUow = createPackUow(d.db, KEY, (tx, tid) => ({ verify: verifyFileRepo(tx, tid) }));
+  // CR-188 BR-188-5 · «Giấy tờ đã ký bằng chữ ký này» (MỘT câu SQL dưới RLS xem HĐ).
+  const sigDocsUow = createPackUow(d.db, KEY, (tx, tid) => ({ docs: sigDocsRepo(tx, tid) }));
+  r.route(
+    "/",
+    sigDocsRoutes(d.view, {
+      list: (who, admin, sigId, f) =>
+        sigDocsUow.tenant(who, (x) => x.docs.list(who.userId, admin, sigId, f)),
+    }),
+  );
   return r.route(
     "/",
     verifyFileRoutes(d.view, {

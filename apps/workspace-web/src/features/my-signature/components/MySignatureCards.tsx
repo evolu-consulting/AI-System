@@ -4,6 +4,7 @@ import { Badge } from "@ai/web-kit/ui/kit/badge";
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { Minus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { SignatureVersions } from "./SignatureVersions";
 
 const HOW = { draw: "howDraw", upload: "howUpload", type: "howType" } as const;
 
@@ -24,6 +25,9 @@ export function MySignatureCards(p: {
   onCreate: () => void;
   onRequest: () => void;
   requesting?: boolean;
+  /** CR-188 · phiên bản đang xem giấy tờ đã ký (BR-188-5). */
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const v = p.view;
@@ -84,18 +88,7 @@ export function MySignatureCards(p: {
         )}
         <h3 className="text-sm font-semibold">{t("contracts.mySig.page.history")}</h3>
         {v.history.length ? (
-          <ul className="grid gap-1 text-sm text-muted-foreground">
-            {v.history.map((h) => (
-              <li key={h.id}>
-                {h.retired_at
-                  ? t("contracts.mySig.page.until", { at: day(h.retired_at) })
-                  : t("contracts.mySig.page.since", {
-                      at: day(h.created_at),
-                      how: how(h.method),
-                    })}
-              </li>
-            ))}
-          </ul>
+          <SignatureVersions history={v.history} selectedId={p.selectedId} onSelect={p.onSelect} />
         ) : (
           <p className="text-sm text-muted-foreground">{t("contracts.mySig.page.noHistory")}</p>
         )}

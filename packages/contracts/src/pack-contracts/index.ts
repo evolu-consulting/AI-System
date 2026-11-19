@@ -57,6 +57,7 @@ export * from "./publish-issue-step";
 export * from "./reputation";
 export * from "./review";
 export * from "./service-customers";
+export * from "./sig-docs";
 export * from "./sourcing";
 export * from "./submit";
 export * from "./supplier-prices";
