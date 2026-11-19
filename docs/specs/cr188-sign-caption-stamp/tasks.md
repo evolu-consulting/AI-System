@@ -36,30 +36,29 @@ unit `sign.rules.test.ts` (signedOnLine), `sign-stamp.pdf.test.ts`, `signature.r
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-### MODIFIED pack-contracts/ky-tren-tai-lieu.md
+### ADDED pack-contracts/dau-ky-dong-duoi.md
 #### Yêu cầu: Dấu ký trên tài liệu
 Dấu ký in chữ ký + dòng «Họ tên · Chức vụ · Phòng ban» (bản lưu theo phiên bản chữ ký; chưa lưu thì dựng từ hồ sơ lúc ký) + dòng riêng «Ký ngày dd/mm/yyyy hh:mm» theo giờ Việt Nam, giờ máy chủ, LUÔN in; công ty không còn tuỳ chọn tắt ngày.
 - Kịch bản: khi ký thì dấu luôn có dòng «Ký ngày …» giờ VN [test: apps/hub-api/src/modules/packs/contracts/domain/sign.rules.test.ts » signedOnLine (BR-188-2)]
-- Kịch bản: khi dấu một phần thì in hai dòng và co chữ cho vừa khung [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-stamp.pdf.test.ts » CR-188 · dấu một phần in HAI dòng (caption + «Ký ngày …»); thiếu caption vẫn in dòng ngày]
-- Kịch bản: khi dấu nhiều phần thì «Ký ngày …» in ở phần cuối [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-stamp.pdf.test.ts » CR-188 · dấu nhiều phần (giáp lai/xoè quạt): «Ký ngày …» + caption in ở PHẦN CUỐI, các phần trước không in]
+- Kịch bản: khi dấu một phần thì in hai dòng và co chữ cho vừa khung [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-stamp.pdf.test.ts » CR-188 · dấu một phần in HAI dòng]
+- Kịch bản: khi dấu nhiều phần thì «Ký ngày …» in ở phần cuối [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-stamp.pdf.test.ts » CR-188 · dấu nhiều phần (giáp lai/xoè quạt)]
 - Kịch bản: khi lưu ký thì dòng caption đã lưu được in và ghi vào dấu [test: apps/hub-api/src/modules/packs/contracts/adapters/sign-save.int.test.ts » N2: người có lượt KHÁC người tạo HĐ Lưu được, dấu mang user_signature_id = chữ ký đang dùng (K3), ô đã ký, còn ô ⇒ my_open_fields_left > 0]
 
-### MODIFIED hub/chu-ky-noi-bo.md
+### ADDED hub/chu-ky-dong-duoi-phong.md
 #### Yêu cầu: Dòng dưới chữ ký
 Màn tạo chữ ký có ô «Dòng dưới chữ ký» điền sẵn Họ tên · Chức vụ · Phòng ban từ hồ sơ, sửa được, lưu theo phiên bản; xem trước không còn ngày. Chỉ chính chủ đọc được dòng này.
-- Kịch bản: khi tạo chữ ký có dòng dưới thì lưu và đọc lại đúng, bản cũ giữ dòng riêng [test: apps/hub-api/src/modules/signatures/signatures.int.test.ts » lưu rồi đọc lại ở getActive / getActiveAll / signature_for_stamp; bản cũ giữ caption riêng; rỗng ⇒ null]
-- Kịch bản: khi người khác đọc thì không thấy dòng dưới của mình [test: apps/hub-api/src/modules/signatures/signatures.int.test.ts » người KHÁC (cùng công ty, công ty khác) không đọc được caption của a1; bảng không đọc trực tiếp]
+- Kịch bản: khi tạo chữ ký có dòng dưới thì lưu và đọc lại đúng, bản cũ giữ dòng riêng [test: apps/hub-api/src/modules/signatures/signatures.int.test.ts » lưu rồi đọc lại ở getActive / getActiveAll / signature_for_stamp]
+- Kịch bản: khi người khác đọc thì không thấy dòng dưới của mình [test: apps/hub-api/src/modules/signatures/signatures.int.test.ts » người KHÁC (cùng công ty, công ty khác) không đọc được caption của a1]
 - Kịch bản: khi hồ sơ có chức vụ, phòng ban thì ô điền sẵn đủ ba phần [test: apps/hub-api/src/modules/signatures/domain/signature.rules.test.ts » profileCaption (BR-188-1)]
 - Kịch bản: khi mở màn tạo thì ô dòng dưới điền sẵn và không có ngày [test: apps/workspace-web/src/features/my-signature/my-signature.test.tsx » CR-188 · dòng dưới chữ ký + phông (gõ họ tên)]
 
 #### Yêu cầu: Sáu phông «Gõ họ tên»
 «Gõ họ tên» cho chọn Dancing Script, Pacifico, Great Vibes, Allura, Lobster, Charm (tự host, OFL, đủ dấu tiếng Việt), nạp khi dùng.
-- Kịch bản: khi kiểm từng phông thì đủ glyph «Nguyễn Thị Ánh Ngọc» [test: apps/workspace-web/src/features/my-signature/lib/signature-fonts.test.ts » sáu phông, khoá và họ phông không trùng; phông mặc định có trong danh sách]
+- Kịch bản: khi kiểm từng phông thì đủ glyph «Nguyễn Thị Ánh Ngọc» [test: apps/workspace-web/src/features/my-signature/lib/signature-fonts.test.ts » sáu phông, khoá và họ phông không trùng]
 - Kịch bản: khi người dùng chọn phông thì xem trước đổi theo [test: e2e/cr181/first-login-signature.spec.ts » Lần đầu đăng nhập ⇒ tạo chữ ký ⇒ vào app ⇒ «Chữ ký của tôi»]
 
-### REMOVED hub/chu-ky-noi-bo.md
-#### Yêu cầu: Tuỳ chọn dòng dưới chữ ký của công ty
-Công ty không còn chọn Họ tên/Chức danh/Ngày/Giờ ở Cài đặt › Chữ ký (cột `signature_settings.caption` ngừng đọc).
+#### Yêu cầu: Công ty không còn chọn dòng dưới chữ ký
+Công ty không còn chọn Họ tên/Chức danh/Ngày/Giờ ở Cài đặt › Chữ ký (thay bằng dòng lưu theo phiên bản; cột `signature_settings.caption` ngừng đọc).
 - Kịch bản: khi quản trị mở Cài đặt chữ ký thì không còn nhóm «Dòng dưới chữ ký» [test: e2e/cr181/first-login-signature.spec.ts » CR-188 · Cài đặt chữ ký không còn tuỳ chọn «Dòng dưới chữ ký» của công ty]
 
 ## Việc còn lại
