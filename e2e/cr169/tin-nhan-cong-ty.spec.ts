@@ -195,6 +195,7 @@ test("CR172-J1 · Tin nhắn: nút Gửi và Đính kèm cùng một hàng cố 
 }) => {
   const v = await open(browser, EA, WHO.vy);
   await v.page.goto("/contracts/messages?company=all");
+  await pickPartner(v.page, CO.b.name); // CR-190: nhóm công ty thu khi không có chưa đọc ⇒ mở nhóm trước
   await rowOf(v.page, NAME.ha).click();
   const box = v.page.getByRole("textbox", { name: "Nhập tin nhắn" });
   const mid = async (l: import("@playwright/test").Locator) => {
