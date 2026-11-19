@@ -179,7 +179,7 @@ test("CR169-J3 · Vy: mở nhóm công ty đối tác (Preschool) và tìm theo 
   await expect(page.getByTestId("tab-all")).toHaveAttribute("aria-pressed", "true");
   await pickPartner(page, CO.b.name);
   await expect(rowOf(page, NAME.ha)).toHaveCount(1);
-  await expect(rowOf(page, NAME.ha).getByTestId("conv-company")).toContainText(CO.b.name);
+  await expect(page.getByTestId("dir-group-head").filter({ hasText: CO.b.name })).toBeVisible(); // CR-190: tên công ty ở đầu nhóm, dòng không lặp
   await searchBox(page).fill("Mai"); // tên không dấu vẫn khớp «Hà Mai»
   await page.getByTestId("find-tab-people").click(); // CR-178 M3: cuộc + người ở tab «Người»
   await expect(rowOf(page, NAME.ha)).toBeVisible();
