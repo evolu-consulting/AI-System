@@ -1,5 +1,6 @@
 // CR-147b · mã hoá avatar từ canvas (thuần, canvas/đọc blob được tiêm vào để test): thử WebP rồi JPEG nhẹ dần; `toBlob` trả null/ném lỗi
 // (trình duyệt không mã được) ⇒ dự phòng `toDataURL`; chọn bản đầu tiên PNG/JPG/WebP ≤ 150 KB; không bản nào ⇒ ném lỗi có lý do.
+import { AVATAR_MAX_BYTES } from "@ai/contracts/people";
 import { AVATAR_ENCODINGS, pickAvatarBlob } from "./image";
 
 export type AvatarCanvas = {
@@ -36,9 +37,14 @@ async function tryOnce(
   }
 }
 
-export async function encodeAvatar(
+export const encodeAvatar = (cv: AvatarCanvas, readBlob: (b: Blob) => Promise<string>) =>
+  encodeImage(cv, readBlob, AVATAR_MAX_BYTES);
+
+/** CR-192 · cùng thuật toán cho mọi cỡ: bản đầu tiên ≤ `maxBytes`. */
+export async function encodeImage(
   cv: AvatarCanvas,
   readBlob: (b: Blob) => Promise<string>,
+  maxBytes: number,
 ): Promise<string> {
   const log: string[] = [];
   for (const [type, q] of AVATAR_ENCODINGS) {
@@ -49,7 +55,7 @@ export async function encodeAvatar(
       continue;
     }
     const cand = { type: m[1] as string, size: bytesOf(m[2] as string), url };
-    if (pickAvatarBlob([cand])) return url;
+    if (pickAvatarBlob([cand], maxBytes)) return url;
     log.push(`${type}:${cand.type} ${cand.size}B`);
   }
   throw new Error(`avatar-encode: ${log.join("; ")}`);

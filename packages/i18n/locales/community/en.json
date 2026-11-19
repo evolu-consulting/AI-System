@@ -666,6 +666,14 @@
       "imgType": "Only JPG, PNG or WebP images",
       "imgBig": "Image up to {{mb}} MB",
       "imgFail": "Could not save the image, try again",
+      "crop": {
+        "avatar": "Crop profile photo",
+        "cover": "Crop cover photo",
+        "drag": "Drag to choose the visible area",
+        "zoom": "Zoom",
+        "cancel": "Cancel",
+        "save": "Save photo"
+      },
       "avatarAlt": "Profile photo",
       "role": {
         "host_admin": "Admin",

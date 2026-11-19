@@ -666,6 +666,14 @@
       "imgType": "Chỉ nhận ảnh JPG, PNG hoặc WebP",
       "imgBig": "Ảnh tối đa {{mb}} MB",
       "imgFail": "Chưa lưu được ảnh, thử lại",
+      "crop": {
+        "avatar": "Chọn vùng ảnh đại diện",
+        "cover": "Chọn vùng ảnh bìa",
+        "drag": "Kéo để chọn vùng hiển thị",
+        "zoom": "Phóng to",
+        "cancel": "Huỷ",
+        "save": "Lưu ảnh"
+      },
       "avatarAlt": "Ảnh đại diện",
       "role": {
         "host_admin": "Quản trị",

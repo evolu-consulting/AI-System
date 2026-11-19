@@ -195,11 +195,12 @@ dab7dc95213f08abd16a8a9baf849f06db38218fac807bb5247533e2efdcd0b5  e2e/community-
 ed2cfe26f3a3e483ad5253cd05d38b5acb19aa5dc5f48e9712dce9142526b3e3  e2e/community-web/cr130-journey.cs.ts
 8fa193254be68aed8e50dd095ca4f7a8102ac8a550489e371fb8590c92f3039a  e2e/community-web/cr145-post-mention.cs.ts
 a014f3887d519c25e2e4d78fd6523ea55610a9e4d72b90dde198234f990bb9c4  e2e/community-web/cr147-feed.cm.ts
-32dcc88f7f0589cf7f1395164bf3f438611b4e4f7af7a3829ea1b30c5056a2b8  e2e/community-web/cr147b-people.cs.ts
+11e5c0c8c37e078ca2e72c6b1034bd93587e3b023267e0ce1a01885e838684b6  e2e/community-web/cr147b-people.cs.ts
 2b109fe3bd267f22b76b917104a662f84732f2f2ee78ce22bd8a6ca7794a0740  e2e/community-web/cr186-comment-mention.cm.ts
 d21fbc3b288fc5e24215f5cb6f8be68e268036a512ac6b12af1b836630a32cbc  e2e/community-web/cr186-composer.cm.ts
 cb467ca365c9d0bfcbf35025d017a538ade0ffa48be6847bf1ce9cc5be4a550e  e2e/community-web/cr186-mention-store.cm.ts
 96530418b3634e76673d23eb2868e063aa797428198fb9534069c324f747c248  e2e/community-web/cr187-ui.cm.ts
+10760bbbb3846dafa8276cd045b058e947c283e2f7aefbb09acbbcaea638a601  e2e/community-web/cr192-crop.cs.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts
 1744756cdb1e003fdaa3a592d0bcec1b0455ffb3bd279718edc88d301feb8db9  e2e/community-web/feed.cm.ts
 13fc117b2e04051c8ef5607a9b71345b3bcaef1d0fc0194d047c9f80b53282aa  e2e/community-web/fix-cr186-ui.cm.ts

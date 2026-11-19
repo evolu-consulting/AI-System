@@ -3,9 +3,9 @@ import { checkImage, pickAvatarBlob, squareCrop } from "./image";
 
 describe("ảnh hồ sơ [CR-147b]", () => {
   it("định dạng + dung lượng theo loại ảnh", () => {
-    expect(checkImage({ type: "image/png", size: 2 * 1024 * 1024 }, "avatar")).toBe("ok");
-    expect(checkImage({ type: "image/png", size: 2 * 1024 * 1024 + 1 }, "avatar")).toBe("big");
-    expect(checkImage({ type: "image/png", size: 3 * 1024 * 1024 }, "cover")).toBe("ok");
+    expect(checkImage({ type: "image/png", size: 12 * 1024 * 1024 }, "avatar")).toBe("ok");
+    expect(checkImage({ type: "image/png", size: 12 * 1024 * 1024 }, "cover")).toBe("ok");
+    expect(checkImage({ type: "image/png", size: 41 * 1024 * 1024 }, "cover")).toBe("big");
     expect(checkImage({ type: "image/gif", size: 10 }, "cover")).toBe("type");
     expect(checkImage({ type: "image/svg+xml", size: 10 }, "avatar")).toBe("type");
   });

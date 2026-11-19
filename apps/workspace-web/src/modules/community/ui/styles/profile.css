@@ -228,7 +228,8 @@
 /* CR-179 · đầu trang hồ sơ cá nhân (phương án A): bìa thấp 88px, avatar đè mép bìa; khối `.mehero` nằm TRÊN bìa (z-index) để tên không bị đè. */
 [data-mod="community"] .pcover.mecover {
   height: 88px;
-  background: var(--cm-accent-soft);
+  /* CR-192 BR-3: chưa có ảnh bìa ⇒ dải màu chuyển theo màu chính (token ⇒ đẹp cả sáng/tối), không chữ */
+  background: linear-gradient(135deg, var(--cm-accent), var(--grad-to, var(--cm-accent)));
 }
 [data-mod="community"] .imgedit-cover .imgpick {
   top: 8px;

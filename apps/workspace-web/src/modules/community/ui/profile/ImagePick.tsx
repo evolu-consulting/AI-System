@@ -2,10 +2,12 @@
 
 import { useRef, useState } from "react";
 import { IconButton } from "~/shared/ui/IconButton";
+import type { Rect } from "../../domain/crop";
 import { checkImage, type ImageKind, maxBytesOf } from "../../domain/image";
 import { t } from "../../i18n";
 import { IconEdit, IconTrash } from "../icons";
-import { avatarDataUrl, coverDataUrl } from "./image-file";
+import { ImageCropDialog } from "./ImageCropDialog";
+import { cropDataUrl, decodeSource, type Source } from "./image-file";
 
 export function ImagePick({
   kind,
@@ -21,6 +23,7 @@ export function ImagePick({
   const file = useRef<HTMLInputElement>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [src, setSrc] = useState<Source | null>(null);
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setErr(null);
@@ -40,7 +43,19 @@ export function ImagePick({
     const c = checkImage(f, kind);
     if (c === "type") return setErr(t("community.me.imgType"));
     if (c === "big") return setErr(t("community.me.imgBig", { mb: maxBytesOf(kind) / 1048576 }));
-    void run(async () => onSave(await (kind === "avatar" ? avatarDataUrl(f) : coverDataUrl(f))));
+    // CR-192: mở hộp cắt; ảnh lớn không bị từ chối — máy người dùng thu nhỏ khi bấm Lưu
+    void run(async () => setSrc(await decodeSource(f)));
+  };
+  const closeCrop = () => {
+    src?.release();
+    setSrc(null);
+  };
+  const confirm = (rect: Rect) => {
+    if (!src) return;
+    void run(async () => {
+      await onSave(await cropDataUrl(src, rect, kind));
+      closeCrop();
+    });
   };
   const label = kind === "avatar" ? "avatar" : "cover";
   return (
@@ -78,6 +93,15 @@ export function ImagePick({
           </IconButton>
         )}
       </span>
+      {src && (
+        <ImageCropDialog
+          kind={kind}
+          src={src}
+          busy={busy}
+          onCancel={closeCrop}
+          onConfirm={confirm}
+        />
+      )}
       {err && (
         <span role="alert" className="imgpick-err muted" data-testid={`${testId}-err`}>
           {err}

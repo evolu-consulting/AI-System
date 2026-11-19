@@ -26,6 +26,7 @@ test("P1 · đổi + xoá ảnh đại diện ở hồ sơ cá nhân", async ({ 
     .catch(() => undefined);
   await expect(page.locator('span[data-testid="me-avatar"]')).toBeVisible();
   await page.getByTestId("me-avatar-edit-file").setInputFiles(img);
+  await page.getByTestId("crop-save").click(); // CR-192: chọn ảnh ⇒ hộp cắt
   await expect(page.locator('img[data-testid="me-avatar"]')).toBeVisible();
   await page.reload();
   await expect(page.locator('img[data-testid="me-avatar"]')).toBeVisible();
@@ -54,6 +55,7 @@ test("P2 · ảnh bìa cá nhân: đổi, tải lại còn, tệp sai định d�
   await expect(page.getByTestId("me-cover-edit-err")).toHaveText("Chỉ nhận ảnh JPG, PNG hoặc WebP");
   await expect(page.getByTestId("me-cover-default")).toBeVisible();
   await page.getByTestId("me-cover-edit-file").setInputFiles(img);
+  await page.getByTestId("crop-save").click();
   await expect(page.getByTestId("me-cover")).toBeVisible();
   await page.reload();
   await expect(page.getByTestId("me-cover")).toBeVisible();
@@ -67,6 +69,7 @@ test("P3 · chủ sở hữu đổi ảnh bìa công ty ngay ở trang công ty"
   await page.getByTestId("me-company-row").click(); // CR-179: hàng công ty ở đầu trang = lối vào trang công ty
   await expect(page.getByTestId("profile-page")).toBeVisible();
   await page.getByTestId("company-cover-edit-file").setInputFiles(img);
+  await page.getByTestId("crop-save").click();
   await expect(page.getByTestId("company-cover")).toBeVisible();
   await page.reload();
   await expect(page.getByTestId("company-cover")).toBeVisible();
