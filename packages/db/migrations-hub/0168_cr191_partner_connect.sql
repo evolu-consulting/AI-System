@@ -282,9 +282,10 @@ REVOKE ALL ON FUNCTION hub.cc_company_page(uuid) FROM PUBLIC;
 --> statement-breakpoint
 GRANT EXECUTE ON FUNCTION hub.cc_can_invite(uuid), hub.cc_decline(uuid, text), hub.cc_withdraw(uuid), hub.cc_company_page(uuid) TO hub_rw;
 --> statement-breakpoint
+-- Role gói tạo SAU hub trên cụm sạch ⇒ cấp có điều kiện ở đây; pack-contracts 0129 cấp lại (có kiểm hàm tồn tại) cho trường hợp ngược.
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'contracts_rw') THEN
+  IF to_regrole('contracts_rw') IS NOT NULL THEN
     GRANT USAGE ON SCHEMA hub TO contracts_rw;
     GRANT EXECUTE ON FUNCTION hub.cc_can_invite(uuid), hub.cc_decline(uuid, text), hub.cc_withdraw(uuid), hub.cc_company_page(uuid) TO contracts_rw;
   END IF;

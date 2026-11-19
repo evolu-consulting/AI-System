@@ -18,7 +18,22 @@ CREATE POLICY connect_settings_internal ON contracts.connect_settings AS RESTRIC
   USING ((SELECT packs.viewer_ext_org()) IS NULL)
   WITH CHECK ((SELECT packs.viewer_ext_org()) IS NULL);
 --> statement-breakpoint
--- Hàm hub mới (hub 0168) cho role gói: migration hub chạy TRƯỚC khi role gói có trên DB dựng sạch ⇒ cấp lại ở đây, không điều kiện (khuôn 0126).
-GRANT USAGE ON SCHEMA hub TO contracts_rw;
---> statement-breakpoint
-GRANT EXECUTE ON FUNCTION hub.cc_can_invite(uuid), hub.cc_decline(uuid, text), hub.cc_withdraw(uuid), hub.cc_company_page(uuid) TO contracts_rw;
+-- Hàm hub mới (hub 0168 + 0170) cho role gói: trên cụm sạch hub chạy TRƯỚC khi `contracts_rw` có ⇒ hub bỏ qua GRANT, cấp lại Ở ĐÂY. Mỗi hàm chỉ cấp khi
+-- ĐÃ có (`to_regprocedure`) và schema `hub` có (DB chỉ chứa gói, không hub ⇒ bỏ qua, không lỗi). Gồm cả hai hàm của hub 0170 (công tắc «cho tìm thấy»).
+DO $$
+DECLARE
+  f text;
+BEGIN
+  IF to_regnamespace('hub') IS NULL THEN
+    RETURN;
+  END IF;
+  EXECUTE 'GRANT USAGE ON SCHEMA hub TO contracts_rw';
+  FOREACH f IN ARRAY ARRAY[
+    'hub.cc_can_invite(uuid)', 'hub.cc_decline(uuid, text)', 'hub.cc_withdraw(uuid)', 'hub.cc_company_page(uuid)',
+    'hub.cc_listing()', 'hub.cc_set_listed(boolean, uuid)'
+  ] LOOP
+    IF to_regprocedure(f) IS NOT NULL THEN
+      EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO contracts_rw', f);
+    END IF;
+  END LOOP;
+END $$;
