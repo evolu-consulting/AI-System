@@ -1,13 +1,13 @@
 // CR-147b · nút chọn ảnh (avatar hoặc ảnh bìa) + nút xoá. Kiểm loại/dung lượng, báo lỗi bằng nhãn nghiệp vụ; lưu qua `onSave` (null = xoá).
 
 import { useRef, useState } from "react";
+import type { Rect } from "~/shared/image-crop/crop";
+import { ImageCropDialog } from "~/shared/image-crop/ImageCropDialog";
+import { checkImage, type ImageKind, maxBytesOf } from "~/shared/image-crop/image";
+import { cropDataUrl, decodeSource, type Source } from "~/shared/image-crop/image-file";
 import { IconButton } from "~/shared/ui/IconButton";
-import type { Rect } from "../../domain/crop";
-import { checkImage, type ImageKind, maxBytesOf } from "../../domain/image";
 import { t } from "../../i18n";
 import { IconEdit, IconTrash } from "../icons";
-import { ImageCropDialog } from "./ImageCropDialog";
-import { cropDataUrl, decodeSource, type Source } from "./image-file";
 
 export function ImagePick({
   kind,
@@ -57,6 +57,13 @@ export function ImagePick({
       closeCrop();
     });
   };
+  const cropLabels = {
+    title: t(`community.me.crop.${kind}`),
+    drag: t("community.me.crop.drag"),
+    zoom: t("community.me.crop.zoom"),
+    cancel: t("community.me.crop.cancel"),
+    save: t("community.me.crop.save"),
+  };
   const label = kind === "avatar" ? "avatar" : "cover";
   return (
     <>
@@ -95,6 +102,7 @@ export function ImagePick({
       </span>
       {src && (
         <ImageCropDialog
+          labels={cropLabels}
           kind={kind}
           src={src}
           busy={busy}

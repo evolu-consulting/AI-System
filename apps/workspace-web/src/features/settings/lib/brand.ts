@@ -105,6 +105,11 @@ export const accentPalette = (a: string): Palette =>
   isAccentHex(a) ? customPalette(a) : (ACCENTS[a as CompanyAccent] ?? ACCENTS.indigo);
 /** Màu mẫu (sáng) để vẽ ô chọn. */
 export const accentSwatch = (a: string): string => accentPalette(a).l[0] as string;
+/** CR-192 · bìa mặc định (chưa có ảnh): dải chuyển màu chính → màu phụ, giống bìa hồ sơ Bảng tin. */
+export const accentGradient = (a: string): string => {
+  const p = accentPalette(a).l;
+  return `linear-gradient(135deg, ${p[0]}, ${p[4] ?? p[0]})`;
+};
 
 const vars = ([act, hover, soft, line, grad]: string[]): string =>
   `--primary:${act};--primary-strong:${hover};--accent:${soft};--accent-foreground:${hover};--ring:${act};` +

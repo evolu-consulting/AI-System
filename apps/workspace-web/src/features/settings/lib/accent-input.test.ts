@@ -2,7 +2,14 @@
 import { describe, expect, test } from "bun:test";
 import { COMPANY_ACCENTS } from "@ai/contracts/pack-contracts";
 import { accentIssue, normalizeHex } from "./accent-input";
-import { ACCENTS, accentPalette, accentSwatch, brandCss, customPalette } from "./brand";
+import {
+  ACCENTS,
+  accentGradient,
+  accentPalette,
+  accentSwatch,
+  brandCss,
+  customPalette,
+} from "./brand";
 
 describe("normalizeHex / accentIssue", () => {
   test("thiếu # ⇒ thêm; chữ hoa ⇒ thường; sai dạng giữ nguyên", () => {
@@ -48,5 +55,13 @@ describe("12 màu đặt sẵn + màu tự chọn trong brand", () => {
       expect(css).toContain(`--primary:${accentPalette(a).d[0]}`);
       expect(css).toContain('data-theme="dark"');
     }
+  });
+});
+
+describe("bìa mặc định công ty [CR-192]", () => {
+  test("dải chuyển từ màu chính sang màu phụ của bảng màu", () => {
+    const g = accentGradient("indigo");
+    expect(g).toContain(accentSwatch("indigo"));
+    expect(g).toStartWith("linear-gradient(135deg,");
   });
 });

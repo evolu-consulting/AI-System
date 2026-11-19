@@ -114,3 +114,6 @@ test("C2 · ảnh bìa 6000×4000: hộp cắt 3:1, ra 1200×400, huỷ không �
   await page.getByTestId("me-cover-edit-remove").click();
   await expect(page.getByTestId("me-cover-default")).toBeVisible();
 });
+
+// C3 (ghi chú) · Cài đặt › Công ty (app Hợp đồng): ô «Tải ảnh bìa lên» (`cover-file`) mở cùng hộp cắt 3:1 (`crop-dialog`); «Lưu ảnh» ⇒ xem trước
+// (`cover-preview`) hiện ảnh 1200×400; chưa có bìa ⇒ dải màu chuyển. Chạy ở stack hợp đồng (chưa có `*.cs.ts` cho trang này).

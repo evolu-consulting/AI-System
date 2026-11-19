@@ -1,6 +1,6 @@
 // CR-147b/CR-192 · giải mã ảnh người chọn và xuất data URL sau khi cắt. Cắt + thu nhỏ + mã hoá (400×400 ≤ 150 KB / 1200×400 ≤ 400 KB) ở `domain/crop.ts`.
-import { CROP, cropToDataUrl, type Rect } from "../../domain/crop";
-import type { ImageKind } from "../../domain/image";
+import { CROP, cropToDataUrl, type Rect } from "./crop";
+import type { ImageKind } from "./image";
 
 const read = (f: Blob): Promise<string> =>
   new Promise((ok, no) => {

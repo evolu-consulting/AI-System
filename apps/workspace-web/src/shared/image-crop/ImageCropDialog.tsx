@@ -2,21 +2,30 @@
 import { Button } from "@ai/web-kit/ui/kit/button";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
-import { CROP, clampZoom, cropRect, panCenter, ZOOM_MAX, ZOOM_MIN } from "../../domain/crop";
-import type { ImageKind } from "../../domain/image";
-import { t } from "../../i18n";
+import { CROP, clampZoom, cropRect, panCenter, ZOOM_MAX, ZOOM_MIN } from "./crop";
+import type { ImageKind } from "./image";
 import type { Source } from "./image-file";
 
 const VIEW_W = 288;
 
+export type CropLabels = {
+  title: string;
+  drag: string;
+  zoom: string;
+  cancel: string;
+  save: string;
+};
+
 export function ImageCropDialog({
   kind,
+  labels,
   src,
   busy,
   onCancel,
   onConfirm,
 }: {
   kind: ImageKind;
+  labels: CropLabels;
   src: Source;
   busy: boolean;
   onCancel: () => void;
@@ -72,7 +81,7 @@ export function ImageCropDialog({
     <Dialog open onOpenChange={(o) => !o && !busy && onCancel()}>
       <DialogContent className="sm:max-w-[360px]" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>{t(`community.me.crop.${kind}`)}</DialogTitle>
+          <DialogTitle>{labels.title}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center gap-3" data-testid="crop-dialog">
           <canvas
@@ -81,7 +90,7 @@ export function ImageCropDialog({
             height={viewH * 2}
             data-testid="crop-view"
             tabIndex={0}
-            aria-label={t("community.me.crop.drag")}
+            aria-label={labels.drag}
             className={`touch-none cursor-grab bg-muted active:cursor-grabbing ${kind === "avatar" ? "rounded-full" : "rounded-md"}`}
             style={{ width: VIEW_W, height: viewH }}
             onPointerDown={(e) => {
@@ -97,9 +106,9 @@ export function ImageCropDialog({
             }}
             onKeyDown={nudge}
           />
-          <p className="m-0 text-xs text-muted-foreground">{t("community.me.crop.drag")}</p>
+          <p className="m-0 text-xs text-muted-foreground">{labels.drag}</p>
           <label className="flex w-full items-center gap-2 text-sm">
-            <span className="shrink-0">{t("community.me.crop.zoom")}</span>
+            <span className="shrink-0">{labels.zoom}</span>
             <input
               type="range"
               min={ZOOM_MIN}
@@ -108,13 +117,13 @@ export function ImageCropDialog({
               value={zoom}
               data-testid="crop-zoom"
               className="min-w-0 flex-1"
-              aria-label={t("community.me.crop.zoom")}
+              aria-label={labels.zoom}
               onChange={(e) => setZoom(clampZoom(Number(e.target.value)))}
             />
           </label>
           <div className="flex w-full justify-end gap-2">
             <Button variant="quiet" disabled={busy} data-testid="crop-cancel" onClick={onCancel}>
-              {t("community.me.crop.cancel")}
+              {labels.cancel}
             </Button>
             <Button
               variant="primary"
@@ -123,7 +132,7 @@ export function ImageCropDialog({
               data-testid="crop-save"
               onClick={() => onConfirm(rect)}
             >
-              {t("community.me.crop.save")}
+              {labels.save}
             </Button>
           </div>
         </div>
