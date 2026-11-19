@@ -17,6 +17,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { HiddenHandle } from "../nodes/HiddenHandle";
 import { OrgEditCard } from "./OrgEditCard";
 import type { DragRef, OrgChartEdit } from "./OrgEditParts";
+import { ORG_FLOW_PROPS } from "./org-flow-props";
 import {
   buildOrgGraph,
   ORG_NODE_H,
@@ -215,10 +216,7 @@ function Inner(p: OrgChartProps) {
       nodes={nodes}
       edges={edges}
       nodeTypes={NODE_TYPES}
-      nodesDraggable={false}
-      nodesConnectable={false}
-      edgesFocusable={false}
-      elementsSelectable={false}
+      {...ORG_FLOW_PROPS}
       fitView
       fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
       minZoom={0.1}
