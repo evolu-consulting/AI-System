@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bảng tin gộp</title>
+<style>
+:root{
+  --background:#f4f4f9;--foreground:#0a0a0a;--card:#ffffff;--muted:#f5f5f5;--muted-foreground:#6b6b6b;--muted-strong-foreground:#525252;
+  --primary:#4f46e5;--primary-foreground:#ffffff;--primary-strong:#4338ca;--secondary:#f5f5f5;--accent:#eef2ff;--accent-foreground:#4338ca;
+  --ink-strong:#1e1b4b;--on-ink:#e0e7ff;--border:#e5e5e5;--input:#8a8a98;--row-divider:#f0f0f4;--ring:#4f46e5;--error-border:#d92d20;
+  --destructive:#b42318;--destructive-foreground:#ffffff;--success:#05603f;--success-bg:#e3f4ec;--warning:#7f3c04;--warning-bg:#fdf0df;
+  --danger:#9b1c1c;--danger-bg:#fde8e8;--act-line:#c7d2fe;--idle-bg:#f1f1f4;--new-bg:#f0f2ff;
+  --type-sell:#047857;--type-sell-soft:#d1fae5;--type-sell-ink:#065f46;--type-buy:#1d4ed8;--type-buy-soft:#dbeafe;--type-buy-ink:#1e40af;
+  --type-note:#b45309;--type-note-soft:#fef3c7;--type-note-ink:#92400e;
+  --shadow-dialog:0 20px 48px rgb(30 27 75 / .28);--shadow-toast:0 8px 24px rgb(30 27 75 / .25);
+  --brand-blue:#2563eb;--brand-teal:#0e7490;--brand-green:#15803d;--brand-orange:#c2410c;--brand-rose:#e11d48;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;--ctl:36px;
+}
+:root[data-theme=dark]{
+  --background:#0e0f1c;--foreground:#ececf4;--card:#17182a;--muted:#1d1f33;--muted-foreground:#a1a3b8;--muted-strong-foreground:#c3c5d6;
+  --primary:#818cf8;--primary-foreground:#0e0f1c;--primary-strong:#a5b4fc;--secondary:#1d1f33;--accent:#24264a;--accent-foreground:#a5b4fc;
+  --ink-strong:#3730a3;--on-ink:#e0e7ff;--border:#2a2c44;--input:#686c99;--row-divider:#23253b;--ring:#818cf8;--error-border:#f97066;
+  --destructive:#b42318;--destructive-foreground:#ffffff;--success:#6ee7a8;--success-bg:#0f2e20;--warning:#fbbf24;--warning-bg:#352608;
+  --danger:#fca5a5;--danger-bg:#3b1515;--act-line:#4b4f8f;--idle-bg:#24253a;--new-bg:#1c1e3a;
+  --type-sell:#34d399;--type-sell-soft:#0f2e20;--type-sell-ink:#6ee7b7;--type-buy:#60a5fa;--type-buy-soft:#172554;--type-buy-ink:#93c5fd;
+  --type-note:#fbbf24;--type-note-soft:#352608;--type-note-ink:#fcd34d;
+  --shadow-dialog:0 20px 48px rgb(0 0 0 / .5);--shadow-toast:0 8px 24px rgb(0 0 0 / .5);
+  --brand-blue:#60a5fa;--brand-teal:#22d3ee;--brand-green:#4ade80;--brand-orange:#fb923c;--brand-rose:#fb7185;
+}
+*{box-sizing:border-box}
+html{scrollbar-gutter:stable;scroll-behavior:smooth}
+body{margin:0;background:var(--background);color:var(--foreground);font:14px/20px system-ui,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+body.m{--ctl:44px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.ic{flex:none}
+/* thanh trên của bản mẫu */
+.ptop{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.ptop b{font-size:14px}
+.ptop nav{display:flex;flex-wrap:wrap;gap:4px}
+.ptop nav a{padding:6px 10px;border-radius:var(--radius-sm);color:var(--muted-strong-foreground);text-decoration:none;font-size:13px}
+.ptop nav a:hover{background:var(--accent);color:var(--accent-foreground)}
+.ctl{display:flex;gap:0;border:1px solid var(--input);border-radius:var(--radius-md);overflow:hidden}
+.ctl button{border:0;background:var(--card);padding:6px 12px;cursor:pointer;font-size:13px;color:var(--muted-strong-foreground)}
+.ctl button+button{border-left:1px solid var(--input)}
+.ctl button[aria-pressed=true]{background:var(--accent);color:var(--accent-foreground)}
+.ctl-l{font-size:12px;color:var(--muted-foreground);margin-right:4px}
+.cgrp{display:flex;align-items:center;gap:4px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{margin:0 0 40px;scroll-margin-top:110px}
+section h2{margin:16px 0 4px;font-size:20px;line-height:28px}
+.note{margin:0 0 12px;color:var(--muted-strong-foreground);background:var(--warning-bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 12px}
+.note b{color:var(--warning)}
+.memo{display:block;width:100%;max-width:760px;margin:12px auto 0;min-height:56px;border:1px solid var(--input);border-radius:var(--radius-md);background:var(--card);color:var(--foreground);padding:8px 12px;font:inherit}
+/* khung giả lập ứng dụng */
+.frame{position:relative;height:760px;width:100%;max-width:1040px;margin:0 auto;background:var(--background);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column}
+body.m .frame{max-width:390px;height:780px}
+.appbar{height:56px;flex:none;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:12px}
+.brand{display:flex;align-items:center;gap:8px;font-size:15px}
+.tabs{display:flex;gap:4px;flex:1;justify-content:center}
+.tab{padding:6px 14px;border-radius:var(--radius-md);color:var(--muted-strong-foreground)}
+.tab.on{background:var(--accent);color:var(--accent-foreground)}
+body.m .tabs .tab:not(.on){display:none}
+body.m .tabs{justify-content:flex-start}
+.rolechip{font-size:12px;background:var(--idle-bg);color:var(--muted-strong-foreground);padding:2px 8px;border-radius:var(--radius-lg)}
+.row{display:flex;align-items:center;gap:8px}
+.scroller{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;overscroll-behavior:contain}
+.frame.lock .scroller{overflow:hidden}
+.col{max-width:660px;margin:0 auto;padding:16px}
+body.m .col{padding:12px}
+.layer{position:absolute;inset:0;pointer-events:none;z-index:20}
+.layer>*{pointer-events:auto}
+/* thành phần */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-bottom:12px}
+body.m .card{padding:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:var(--ctl);padding:0 14px;border-radius:var(--radius-md);border:1px solid var(--input);background:var(--card);color:var(--foreground);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--accent)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}
+.btn.primary:hover{background:var(--primary-strong)}
+.btn.danger{background:var(--destructive);border-color:var(--destructive);color:var(--destructive-foreground)}
+.btn.quiet{border-color:transparent;background:transparent;color:var(--accent-foreground)}
+.btn.quiet:hover{background:var(--accent)}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.btn.sm{min-height:32px;padding:0 10px}
+body.m .btn.sm{min-height:44px}
+.ibtn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:var(--ctl);height:var(--ctl);border-radius:var(--radius-md);border:1px solid transparent;background:transparent;color:var(--muted-strong-foreground);cursor:pointer}
+.ibtn:hover{background:var(--accent);color:var(--accent-foreground)}
+.acts{display:flex;gap:2px}
+.acts .ibtn{width:28px;height:28px;border-radius:6px}
+.acts .ibtn svg{width:16px;height:16px}
+body.m .acts .ibtn{width:40px;height:40px}
+[data-tip]{position:relative}
+[data-tip]:hover::after,[data-tip]:focus-visible::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ink-strong);color:var(--on-ink);font-size:12px;line-height:16px;padding:4px 8px;border-radius:var(--radius-sm);white-space:nowrap;z-index:60;pointer-events:none}
+.av{display:inline-flex;align-items:center;justify-content:center;flex:none;border-radius:50%;font-weight:600;background:color-mix(in srgb,var(--c) 18%,var(--card));color:color-mix(in srgb,var(--c) 70%,var(--foreground))}
+.av.co{border-radius:8px}
+.s24{width:24px;height:24px;font-size:10px}.s32{width:32px;height:32px;font-size:12px}.s40{width:40px;height:40px;font-size:14px}.s56{width:56px;height:56px;font-size:18px;border-radius:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--radius-lg);font-size:12px;line-height:16px;white-space:nowrap}
+.b-note{background:var(--type-note-soft);color:var(--type-note-ink)}
+.b-sell{background:var(--type-sell-soft);color:var(--type-sell-ink)}
+.b-buy{background:var(--type-buy-soft);color:var(--type-buy-ink)}
+.b-ok{background:var(--success-bg);color:var(--success)}
+.b-idle{background:var(--idle-bg);color:var(--muted-strong-foreground)}
+.b-warn{background:var(--warning-bg);color:var(--warning)}
+.b-info{background:var(--accent);color:var(--accent-foreground)}
+.sub{color:var(--muted-foreground);font-size:12px;line-height:16px}
+.mention{background:var(--accent);color:var(--accent-foreground);border-radius:4px;padding:0 3px;font-weight:inherit}
+.inp,.sel{width:100%;min-height:var(--ctl);border:1px solid var(--input);border-radius:var(--radius-md);background:var(--card);color:var(--foreground);padding:0 12px;font:inherit}
+.sel{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;cursor:pointer}
+.inp::placeholder{color:var(--muted-foreground)}
+.ed{min-height:96px;border:1px solid var(--input);border-radius:var(--radius-md);background:var(--card);padding:8px 12px;outline-offset:2px;white-space:pre-wrap;word-break:break-word}
+.ed:empty::before{content:attr(data-ph);color:var(--muted-foreground)}
+.ed.one{min-height:var(--ctl);padding:7px 12px;flex:1;max-height:96px;overflow-y:auto}
+.rel{position:relative}
+.lbl{display:block;font-size:13px;line-height:20px;color:var(--muted-strong-foreground);margin-bottom:4px}
+.fld{display:block;margin-bottom:12px}
+.hint{font-size:12px;color:var(--muted-foreground);margin-top:4px}
+.err{color:var(--danger);font-size:13px;margin-right:auto}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg button{display:inline-flex;align-items:center;gap:6px;min-height:var(--ctl);padding:0 14px;border-radius:var(--radius-md);border:1px solid var(--input);background:var(--card);cursor:pointer;color:var(--muted-strong-foreground)}
+.seg button[aria-checked=true],.chip[aria-pressed=true]{background:var(--accent);color:var(--accent-foreground);border-color:var(--act-line)}
+.dd,.picker{position:absolute;left:0;right:0;z-index:30;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-dialog);max-height:220px;overflow-y:auto;padding:4px}
+.dd{top:calc(100% + 4px)}.picker{top:calc(100% + 4px)}.picker.up{top:auto;bottom:calc(100% + 4px)}
+.dd [data-act],.picker [data-i]{display:flex;align-items:center;gap:10px;width:100%;min-height:var(--ctl);padding:6px 8px;border:0;background:transparent;border-radius:var(--radius-sm);cursor:pointer;text-align:left}
+.dd [data-act]:hover,.picker [data-i]:hover,.picker [aria-selected=true]{background:var(--accent)}
+.dd .r,.picker .r{margin-left:auto;color:var(--muted-foreground);font-size:12px;white-space:nowrap}
+.alert{border:1px solid var(--soon-line,#f5cf9a);background:var(--warning-bg);color:var(--foreground);border-radius:var(--radius-md);padding:10px 12px;display:grid;gap:8px}
+.alert b{font-weight:600}
+/* hộp thoại */
+.ov{position:absolute;inset:0;background:rgb(10 10 30 / .45);display:flex;align-items:center;justify-content:center;padding:16px}
+.dlg{background:var(--card);border-radius:var(--radius-lg);box-shadow:var(--shadow-dialog);width:100%;max-width:540px;max-height:100%;display:flex;flex-direction:column;border:1px solid var(--border)}
+.dlg.sm{max-width:420px}
+.dlg-h{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border)}
+.dlg-b{padding:16px;overflow-y:auto;scrollbar-gutter:stable;flex:1;min-height:0}
+.dlg-f{display:flex;gap:8px;justify-content:flex-end;align-items:center;padding:12px 16px;border-top:1px solid var(--border);flex-wrap:wrap}
+body.m .ov-cmp{padding:0;background:var(--card)}
+body.m .ov-cmp .dlg{max-width:none;height:100%;border-radius:0;border:0;box-shadow:none}
+.deal{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--muted);border-radius:var(--radius-md);padding:8px 12px;margin:8px 0}
+.deal .sub{display:block}.deal b{font-weight:600}
+body.m .deal{grid-template-columns:1fr 1fr}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+body.m .g3{grid-template-columns:1fr 1fr}
+.vopt{display:flex;gap:10px;align-items:center;width:100%;min-height:var(--ctl);padding:8px 10px;border:0;background:transparent;border-radius:var(--radius-md);cursor:pointer;text-align:left}
+.vopt:hover{background:var(--accent)}
+.vopt .ck{margin-left:auto;visibility:hidden;color:var(--primary)}
+.vopt[aria-checked=true]{background:var(--accent);color:var(--accent-foreground)}
+.vopt[aria-checked=true] .ck{visibility:visible}
+.vpanel{border:1px solid var(--border);border-radius:var(--radius-md);padding:4px;margin-top:4px}
+/* bảng tin */
+.pagehead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.pagehead h3{margin:0;font-size:20px;line-height:28px}
+.compose{display:flex;align-items:center;gap:12px}
+.compose .fake{flex:1;min-height:44px;border:1px solid var(--input);background:var(--muted);color:var(--muted-strong-foreground);border-radius:var(--radius-lg);text-align:left;padding:0 16px;cursor:pointer}
+.fbar{position:sticky;top:0;z-index:6;background:var(--background);padding:4px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:48px}
+.fbtn{position:relative}
+.fnum{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:10px;background:var(--primary);color:var(--primary-foreground);font-size:11px;line-height:20px;text-align:center;padding:0 5px}
+.fnum[hidden]{display:none}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:var(--radius-lg);border:1px solid var(--input);background:var(--card);cursor:pointer;color:var(--muted-strong-foreground)}
+body.m .chip{min-height:44px}
+.chip .n{color:var(--muted-foreground);font-size:12px}
+.chip[aria-pressed=true] .n{color:inherit}
+.fbar .cnt{margin-left:auto;color:var(--muted-foreground);font-size:12px}
+body.m .fbar{display:none}
+.fab-btn{display:none;position:absolute;z-index:10;min-height:48px;border-radius:24px;box-shadow:var(--shadow-toast);background:var(--primary);color:var(--primary-foreground);border:0;padding:0 18px;cursor:pointer;align-items:center;gap:8px}
+body.m .fab-btn{display:inline-flex;bottom:16px;left:50%;transform:translateX(-50%)}
+body.fab:not(.m) .fab-btn{display:inline-flex;bottom:20px;right:28px}
+body.fab:not(.m) .fbar .fbtn{display:none}
+.fab-btn:hover{background:var(--primary-strong)}
+.fab-btn .fnum{background:var(--card);color:var(--primary);top:-4px;right:-4px}
+body.m .scroller.hasfab .col{padding-bottom:84px}
+body.fab .scroller.hasfab .col{padding-bottom:84px}
+#feedList{transition:opacity .15s}
+#feedList.dim{opacity:.45;pointer-events:none}
+.pcard.hidden-p{display:none}
+.phead{display:flex;gap:12px;align-items:flex-start}
+.phead .who{flex:1;min-width:0}
+.phead .who b{display:block}
+.cochip{display:inline-flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap}
+.pbody{margin:12px 0 4px;white-space:normal;word-break:break-word}
+.pfoot{display:flex;align-items:center;justify-content:space-between;margin-top:8px;border-top:1px solid var(--row-divider);padding-top:8px}
+.comments{margin-top:8px;display:grid;gap:8px}
+.cm{display:flex;gap:8px;align-items:flex-start}
+.bubble{flex:1;min-width:0;background:var(--muted);border-radius:var(--radius-md);padding:8px 12px}
+.bubble .top{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.cmf{display:flex;gap:8px;align-items:flex-start;position:relative}
+textarea.inp{padding:8px 12px;min-height:72px;resize:vertical}
+.skel{min-height:200px}
+.sk{background:linear-gradient(90deg,var(--muted),var(--row-divider),var(--muted));background-size:200% 100%;animation:sh 1.2s infinite linear;border-radius:6px}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}html{scroll-behavior:auto}}
+.empty{text-align:center;color:var(--muted-strong-foreground);padding:32px 16px}
+.end{text-align:center;color:var(--muted-foreground);padding:12px;font-size:13px}
+/* bảng lọc */
+.fp{background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-dialog);display:flex;flex-direction:column;position:absolute;width:340px;max-height:560px;border-radius:var(--radius-lg)}
+.ov-fp{background:transparent;padding:0;pointer-events:none!important}
+.ov-fp .fp{pointer-events:auto;top:112px;right:max(24px,calc(50% - 330px))}
+body.fab:not(.m) .ov-fp .fp{top:auto;bottom:84px;right:28px}
+body.m .ov-fp{pointer-events:auto!important;background:rgb(10 10 30 / .45);align-items:flex-end}
+body.m .ov-fp .fp{position:relative;top:auto;right:auto;width:100%;max-height:82%;border-radius:20px 20px 0 0;border-bottom:0}
+.fp-h{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)}
+.fp-h .grab{display:none}
+body.m .fp-h .grab{display:block;position:absolute;top:6px;left:50%;width:40px;height:4px;border-radius:2px;background:var(--input);transform:translateX(-50%)}
+.fp-b{padding:12px 16px;overflow-y:auto;scrollbar-gutter:stable;flex:1;min-height:0}
+.fp-f{display:flex;justify-content:space-between;gap:8px;padding:12px 16px;border-top:1px solid var(--border)}
+.fp-l{font-size:12px;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em;margin:8px 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.srow{display:flex;align-items:center;gap:10px;width:100%;min-height:var(--ctl);padding:4px 10px;border:1px solid transparent;border-radius:var(--radius-md);background:transparent;cursor:pointer;text-align:left}
+.srow:hover{background:var(--muted)}
+.srow[aria-pressed=true]{background:var(--accent);color:var(--accent-foreground);border-color:var(--act-line)}
+.srow .n{margin-left:auto;color:var(--muted-foreground);font-size:12px}
+.srow[aria-pressed=true] .n{color:inherit}
+/* toast */
+.toast{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink-strong);color:var(--on-ink);border-radius:var(--radius-md);padding:10px 14px;box-shadow:var(--shadow-toast);display:flex;gap:12px;align-items:center;max-width:90%;z-index:50}
+.toast button{background:transparent;border:0;color:#c7d2fe;text-decoration:underline;cursor:pointer;min-height:32px;padding:0 4px}
+/* đối tác */
+.coRow{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;margin-bottom:8px;cursor:pointer;min-height:64px}
+.coRow:hover{background:var(--accent)}
+.coRow .mid{flex:1;min-width:0}
+.cover{aspect-ratio:3/1;border-radius:var(--radius-md) var(--radius-md) 0 0;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 70%,#1e1b4b),color-mix(in srgb,var(--c) 25%,var(--card)))}
+.copage{padding:0;overflow:hidden}
+.copage .in{padding:0 16px 16px}
+.copage .hd{display:flex;gap:12px;align-items:flex-end;margin-top:-28px;flex-wrap:wrap}
+.copage .hd .av{border:3px solid var(--card)}
+.copage h4{margin:0;font-size:18px;line-height:24px}
+.h5{margin:16px 0 8px;font-size:14px;font-weight:600}
+.sw{position:relative;flex:none;width:44px;height:26px;border-radius:13px;border:0;background:var(--input);cursor:pointer;padding:0}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw[aria-checked=true]{background:var(--primary)}
+.sw[aria-checked=true]::after{transform:translateX(18px);background:var(--primary-foreground)}
+.sw[disabled]{opacity:.55;cursor:not-allowed}
+.optrow{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:var(--radius-md);border:1px solid var(--border);margin-bottom:8px;cursor:pointer;min-height:var(--ctl)}
+.optrow input{margin-top:3px;width:18px;height:18px;accent-color:var(--primary);flex:none}
+.optrow:has(input:checked){background:var(--accent);border-color:var(--act-line)}
+.crumb{color:var(--muted-foreground);font-size:13px;margin-bottom:4px}
+.banner{background:var(--idle-bg);color:var(--muted-strong-foreground);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:12px;display:flex;gap:8px;align-items:center}
+.reqRow{border-top:1px solid var(--row-divider);padding:12px 0}
+.reqRow:first-of-type{border-top:0}
+.quote{color:var(--muted-strong-foreground);margin:6px 0;font-style:italic}
+/* câu hỏi */
+.qs{max-width:860px;margin:0 auto}
+.q{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:12px}
+.q p{margin:0 0 8px;font-weight:600}
+.q label{display:flex;gap:8px;align-items:flex-start;padding:4px 0;min-height:32px;cursor:pointer}
+.q input{margin-top:3px;width:16px;height:16px;accent-color:var(--primary)}
+@media (max-width:640px){.ptop{padding:8px}.ptop nav{display:none}}
+</style>
+</head>
+<body>
+<div class="ptop">
+  <b>Bản mẫu CR-191</b>
+  <nav aria-label="Mục lục">
+    <a href="#s1">1 Bảng tin</a><a href="#s2">2 Đăng bài</a><a href="#s3">3 Bài + bình luận</a><a href="#s4">4 Tìm đối tác</a><a href="#s5">5 Cài đặt đối tác</a><a href="#qs">Câu hỏi</a>
+  </nav>
+  <div class="cgrp"><span class="ctl-l">Giao diện</span><div class="ctl"><button data-act="theme" data-v="light" aria-pressed="true">Sáng</button><button data-act="theme" data-v="dark" aria-pressed="false">Tối</button></div></div>
+  <div class="cgrp"><span class="ctl-l">Khung</span><div class="ctl"><button data-act="dev" data-v="d" aria-pressed="true">Máy tính</button><button data-act="dev" data-v="m" aria-pressed="false">Điện thoại</button></div></div>
+  <div class="cgrp"><span class="ctl-l">Vai</span><div class="ctl"><button data-act="role" data-v="admin" aria-pressed="true">Quản trị</button><button data-act="role" data-v="staff" aria-pressed="false">Nhân viên</button></div></div>
+  <div class="cgrp"><span class="ctl-l">Nút lọc (máy tính)</span><div class="ctl"><button data-act="fab" data-v="bar" aria-pressed="true">Thanh dính</button><button data-act="fab" data-v="fab" aria-pressed="false">Nút nổi</button></div></div>
+</div>
+<main>
+<section id="s1">
+  <h2>1 · Bảng tin gộp kiểu Facebook</h2>
+  <p class="note"><b>Điểm cần bạn xem:</b> bài công ty mình và bài «Tất cả đối tác» chung một dòng, không còn cột phải; thử bấm «Lọc», kéo xuống cuối để tải thêm (bản mẫu 6 bài/lần, thật là 20), thử bấm «Viết bài…».</p>
+  <div class="frame" id="fr1"><div class="appbar-slot"></div><div class="scroller hasfab" id="sc1"></div><div class="layer"></div></div>
+  <textarea class="memo" data-memo="Màn 1 · Bảng tin" aria-label="Ghi chú màn 1" placeholder="Ghi chú cho màn 1…"></textarea>
+</section>
+<section id="s2">
+  <h2>2 · Đăng bài (hộp thoại / toàn màn trên điện thoại)</h2>
+  <p class="note"><b>Điểm cần bạn xem:</b> một ô «Ai thấy bài» thay cho «Nhắc tên» + «chọn khách hàng»; gõ «@» trong nội dung, chọn người ngoài phạm vi để thấy hộp hỏi xác nhận; đổi loại bài Cần bán/Cần mua để thấy ô Hàng hoá có gợi ý.</p>
+  <div class="frame" id="fr2"><div class="appbar-slot"></div><div class="scroller" id="sc2"></div><div class="layer"></div></div>
+  <textarea class="memo" data-memo="Màn 2 · Đăng bài" aria-label="Ghi chú màn 2" placeholder="Ghi chú cho màn 2…"></textarea>
+</section>
+<section id="s3">
+  <h2>3 · Bài và bình luận</h2>
+  <p class="note"><b>Điểm cần bạn xem:</b> Sửa / Xoá / Ẩn chỉ còn icon, cách nhau 8px (rê chuột để thấy chú thích); «@tên» tô sáng ở bài và bình luận. Đổi vai để thấy ai được làm gì.</p>
+  <div class="frame" id="fr3"><div class="appbar-slot"></div><div class="scroller" id="sc3"></div><div class="layer"></div></div>
+  <textarea class="memo" data-memo="Màn 3 · Bài + bình luận" aria-label="Ghi chú màn 3" placeholder="Ghi chú cho màn 3…"></textarea>
+</section>
+<section id="s4">
+  <h2>4 · Tìm đối tác và trang công ty</h2>
+  <p class="note"><b>Điểm cần bạn xem:</b> đổi vai Quản trị / Nhân viên ở thanh trên rồi gõ «Gốm» hoặc «Điện»: Quản trị tìm được công ty chưa kết nối và bấm «Mời kết nối»; Nhân viên chỉ thấy đối tác đã kết nối.</p>
+  <div class="frame" id="fr4"><div class="appbar-slot"></div><div class="scroller" id="sc4"></div><div class="layer"></div></div>
+  <textarea class="memo" data-memo="Màn 4 · Tìm đối tác" aria-label="Ghi chú màn 4" placeholder="Ghi chú cho màn 4…"></textarea>
+</section>
+<section id="s5">
+  <h2>5 · Sổ Hợp Tác › Đối tác — yêu cầu và cài đặt</h2>
+  <p class="note"><b>Điểm cần bạn xem:</b> «Đồng ý» một yêu cầu thì công ty đó vào danh sách đối tác (bài của họ hiện ở màn 1); đổi «Ai được tìm và mời đối tác mới» rồi xem màn 4 với vai Nhân viên.</p>
+  <div class="frame" id="fr5"><div class="appbar-slot"></div><div class="scroller" id="sc5"></div><div class="layer"></div></div>
+  <textarea class="memo" data-memo="Màn 5 · Cài đặt đối tác" aria-label="Ghi chú màn 5" placeholder="Ghi chú cho màn 5…"></textarea>
+</section>
+<section id="qs">
+  <h2>Câu hỏi cần chốt</h2>
+  <div class="qs" id="qbox"></div>
+  <div class="qs"><button class="btn primary" id="copy">Chép góp ý</button> <span id="copyMsg" class="sub" role="status"></span></div>
+</section>
+</main>
+<script>
+(function(){
+'use strict';
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d');
+const IC={
+pencil:'<path d="M17 3a2.85 2.85 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+trash:'<path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+eyeoff:'<path d="M9.9 4.2A10 10 0 0 1 12 4c7 0 10 8 10 8a17 17 0 0 1-3.2 4.2"/><path d="M6.6 6.6A17 17 0 0 0 2 12s3 8 10 8a10 10 0 0 0 5.4-1.6"/><path d="M2 2l20 20"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+x:'<path d="M18 6 6 18M6 6l12 12"/>',
+search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+filter:'<path d="M3 5h18l-7 8v6l-4 2v-8Z"/>',
+plus:'<path d="M12 5v14M5 12h14"/>',
+chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.4A8 8 0 1 1 21 12Z"/>',
+send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+chev:'<path d="m6 9 6 6 6-6"/>',
+check:'<path d="M20 6 9 17l-5-5"/>',
+globe:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20Z"/>',
+lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+note:'<path d="m3 11 18-5v12L3 14v-3Z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+sell:'<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8Z"/><circle cx="7" cy="7" r="1"/>',
+buy:'<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>',
+building:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
+back:'<path d="m12 19-7-7 7-7M19 12H5"/>'
+};
+const ic=(n,s=18)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+/* ---------- dữ liệu giả ---------- */
+const DIR=[
+{id:'me',name:'Nông sản Việt Hưng',s:'VH',c:'--brand-green',kind:'me',conn:true,ind:'Nông sản và chế biến',city:'Đắk Lắk'},
+{id:'sm',name:'Logistics Sao Mai',s:'SM',c:'--brand-blue',kind:'ncc',conn:true,ind:'Vận tải và kho bãi',city:'TP.HCM',about:'Vận chuyển đường bộ, kho lạnh và giao nhận nội địa cho doanh nghiệp nông sản.'},
+{id:'dp',name:'Cơ khí Đại Phát',s:'ĐP',c:'--brand-orange',kind:'kh',conn:true,ind:'Cơ khí chế tạo',city:'Bình Dương',about:'Gia công cơ khí, sản xuất thiết bị chế biến thực phẩm.'},
+{id:'tt',name:'Bao bì Tân Tiến',s:'TT',c:'--brand-teal',kind:'ncc',conn:true,ind:'Bao bì, đóng gói',city:'Đồng Nai',about:'Sản xuất bao bì PP, thùng carton theo yêu cầu.'},
+{id:'ak',name:'Thực phẩm An Khang',s:'AK',c:'--brand-rose',kind:'kh',conn:true,ind:'Thực phẩm đóng gói',city:'Hà Nội',about:'Phân phối thực phẩm đóng gói tại miền Bắc.'},
+{id:'bh',name:'Gốm sứ Bích Hạnh',s:'BH',c:'--brand-blue',conn:false,ind:'Gốm sứ xuất khẩu',city:'Bát Tràng, Hà Nội',about:'Xưởng gốm men lam truyền thống, nhận đơn sỉ và xuất khẩu theo mẫu riêng.',pub:[{x:'Bộ sưu tập gốm men lam mùa xuân đã sẵn sàng nhận đơn sỉ từ 200 bộ.',t:'3 ngày trước'}]},
+{id:'pc',name:'Điện máy Phú Cường',s:'PC',c:'--brand-orange',conn:false,ind:'Phân phối điện máy',city:'Cần Thơ',about:'Chuỗi phân phối điện máy khu vực đồng bằng sông Cửu Long.',pub:[]},
+{id:'hg',name:'Dệt may Hồng Gấm',s:'HG',c:'--brand-rose',conn:false,req:true,msg:'Chào anh chị, bên em muốn hợp tác cung ứng vải bao bì cho đơn hàng quý 1.',date:'hôm qua',ind:'Dệt may',city:'Nam Định',about:'Dệt vải kỹ thuật và vải bao bì.',pub:[]},
+{id:'ba',name:'Vận tải Bình An',s:'BA',c:'--brand-teal',conn:false,req:true,msg:'Bình An mở thêm xe lạnh tuyến Bắc – Nam, mong được hợp tác.',date:'3 ngày trước',ind:'Vận tải đường bộ',city:'Hải Phòng',about:'Đội xe lạnh và xe tải nặng tuyến Bắc – Nam.',pub:[{x:'Mở thêm 8 xe lạnh 5 tấn tuyến Bắc – Nam.',t:'1 tuần trước'}]}
+];
+const co=id=>DIR.find(c=>c.id===id);
+const PEOPLE=[
+{n:'Nguyễn Thị Lan',r:'Giám đốc',co:'me'},{n:'Trần Văn Hậu',r:'Trưởng phòng kinh doanh',co:'me'},{n:'Phạm Quốc Bảo',r:'Kế toán trưởng',co:'me'},
+{n:'Ngô Thanh Tùng',r:'Nhân viên kinh doanh',co:'me'},{n:'Lê Thu Hà',r:'Nhân viên mua hàng',co:'dp'},{n:'Đỗ Minh Châu',r:'Điều phối vận tải',co:'sm'},
+{n:'Vũ Hải Yến',r:'Giám đốc kinh doanh',co:'ak'},{n:'Hoàng Gia Khánh',r:'Trưởng kho',co:'tt'},{n:'Bùi Ngọc Mai',r:'Nhân viên kinh doanh',co:'dp'},
+{n:'Lương Hồng Nhung',r:'Trưởng phòng mua hàng',co:'hg'}
+];
+const person=n=>PEOPLE.find(p=>p.n===n);
+const GOODS=[{n:'Gạo ST25',u:'kg',p:'17.500'},{n:'Gạo thơm Jasmine',u:'kg',p:'15.200'},{n:'Cà phê Robusta nhân xô',u:'kg',p:'98.000'},{n:'Hạt điều rang muối',u:'kg',p:'210.000'},{n:'Tiêu đen xay',u:'kg',p:'135.000'},{n:'Mật ong rừng',u:'lít',p:'210.000'},{n:'Bao bì PP dệt 50kg',u:'cái',p:'6.500'},{n:'Thùng carton 5 lớp',u:'cái',p:'4.200'}];
+const P=[
+{id:'p1',p:'Nguyễn Thị Lan',co:'me',type:'note',t:'15 phút trước',v:'Tất cả đối tác',x:'Kính gửi các đối tác: kho Bình Dương nghỉ lễ ngày 2/12, đơn đặt sau 14h ngày 1/12 sẽ giao từ 3/12. Cần giao gấp xin liên hệ @Trần Văn Hậu.',cm:[{p:'Trần Văn Hậu',t:'10 phút trước',x:'Em đã báo kho giữ lịch xe sớm cho các đơn gấp ạ.'},{p:'Lê Thu Hà',t:'5 phút trước',x:'Cảm ơn chị, bên em sẽ đặt hàng trước ngày 1/12.'}]},
+{id:'p2',p:'Đỗ Minh Châu',co:'sm',type:'note',t:'40 phút trước',v:'Tất cả đối tác',x:'Sao Mai mở thêm tuyến Đà Nẵng – TP.HCM, 2 chuyến mỗi tuần, giá cước hỗ trợ đối tác đến hết tháng 12.',cm:[]},
+{id:'p3',p:'Lê Thu Hà',co:'dp',type:'buy',t:'1 giờ trước',v:'Tất cả đối tác',x:'Cần mua số lượng lớn, giao tại Biên Hoà, thanh toán 30 ngày.',prod:'Gạo ST25',qty:'10 tấn',price:'17.500đ/kg',cm:[]},
+{id:'p4',p:'Ngô Thanh Tùng',co:'me',type:'sell',t:'2 giờ trước',v:'Khách hàng',x:'Còn hàng, giao trong 3 ngày, có chứng nhận VietGAP.',prod:'Cà phê Robusta nhân xô',qty:'5 tấn',price:'98.000đ/kg',cm:[{p:'Bùi Ngọc Mai',t:'1 giờ trước',x:'Bên em quan tâm, cho xin báo giá giao tại Bình Dương.'},{p:'Ngô Thanh Tùng',t:'50 phút trước',x:'@Bùi Ngọc Mai em gửi báo giá qua mail ngay ạ.'}]},
+{id:'p5',p:'Hoàng Gia Khánh',co:'tt',type:'sell',t:'3 giờ trước',v:'Chỉ riêng công ty bạn',x:'Giá riêng cho Việt Hưng đến hết tháng.',prod:'Thùng carton 5 lớp',qty:'20.000 cái',price:'4.200đ/cái',cm:[]},
+{id:'p6',p:'Vũ Hải Yến',co:'ak',type:'buy',t:'5 giờ trước',v:'Tất cả đối tác',x:'Cần nguồn hàng ổn định cho quý 1, ưu tiên có truy xuất nguồn gốc.',prod:'Hạt điều rang muối',qty:'2 tấn',price:'',cm:[]},
+{id:'p7',p:'Trần Văn Hậu',co:'me',type:'note',t:'hôm qua',v:'Tất cả đối tác',x:'Nhắc các đối tác gửi hồ sơ đối chiếu công nợ tháng 11 trước ngày 5/12, gửi về kế toán @Phạm Quốc Bảo.',cm:[]},
+{id:'p8',p:'Đỗ Minh Châu',co:'sm',type:'note',t:'hôm qua',v:'Tất cả đối tác',x:'Cảng Cát Lái đang ùn tắc, lịch giao dự kiến chậm 1 ngày. Sao Mai sẽ báo từng đơn.',cm:[]},
+{id:'p9',p:'Ngô Thanh Tùng',co:'me',type:'buy',t:'hôm qua',v:'Nhà cung cấp',x:'Cần báo giá giao tại Buôn Ma Thuột.',prod:'Bao bì PP dệt 50kg',qty:'30.000 cái',price:'',cm:[]},
+{id:'p10',p:'Bùi Ngọc Mai',co:'dp',type:'sell',t:'2 ngày trước',v:'Tất cả đối tác',x:'Máy sàng rung công suất 2 tấn/giờ, bảo hành 12 tháng.',prod:'Máy sàng rung',qty:'3 máy',price:'85.000.000đ/máy',cm:[]},
+{id:'p11',p:'Nguyễn Thị Lan',co:'me',type:'sell',t:'2 ngày trước',v:'Khách hàng',x:'Mật ong rừng đợt mới, đóng can 20 lít.',prod:'Mật ong rừng',qty:'500 lít',price:'210.000đ/lít',cm:[]},
+{id:'p12',p:'Vũ Hải Yến',co:'ak',type:'note',t:'3 ngày trước',v:'Tất cả đối tác',x:'An Khang tổ chức giao thương tại Hà Nội ngày 12/12, mời các đối tác đăng ký gian hàng.',cm:[]},
+{id:'p13',p:'Lương Hồng Nhung',co:'hg',type:'sell',t:'3 ngày trước',v:'Tất cả đối tác',x:'Vải bao bì PP, khổ 60cm, giao theo cuộn.',prod:'Vải PP dệt',qty:'8 tấn',price:'38.000đ/kg',cm:[]},
+{id:'p14',p:'Hoàng Gia Khánh',co:'tt',type:'note',t:'4 ngày trước',v:'Tất cả đối tác',x:'Tân Tiến nhận in logo lên thùng carton từ 1.000 cái, thời gian 5 ngày.',cm:[]}
+];
+const SET={disc:true,who:'admin'};
+let role='admin';
+const ME=()=>role==='admin'?PEOPLE[0]:PEOPLE[3];
+const canSearchNew=()=>role==='admin'||SET.who==='all';
+/* ---------- tiện ích hiển thị ---------- */
+const BR=['--brand-blue','--brand-teal','--brand-green','--brand-orange','--brand-rose'];
+const hue=s=>BR[[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%5];
+const ini=n=>{const w=n.split(' ');return (w[0][0]+w[w.length-1][0]).toUpperCase()};
+const pav=(n,s=40)=>`<span class="av s${s}" style="--c:var(${hue(n)})" aria-hidden="true">${ini(n)}</span>`;
+const cav=(id,s=24)=>`<span class="av co s${s}" style="--c:var(${co(id).c})" aria-hidden="true">${co(id).s}</span>`;
+const NAMES=PEOPLE.map(p=>p.n).sort((a,b)=>b.length-a.length);
+const RX=new RegExp('@('+NAMES.join('|')+')','g');
+const rich=t=>esc(t).replace(RX,(m,n)=>`<span class="mention">@${n}</span>`).replace(/\n/g,'<br>');
+function edText(ed){let s='';(function w(n){n.childNodes.forEach(c=>{if(c.nodeType===3)s+=c.textContent.replace(/ /g,' ');else if(c.classList&&c.classList.contains('mention'))s+='@'+c.dataset.name;else if(c.nodeName==='BR')s+='\n';else{if(s&&!s.endsWith('\n')&&/^(DIV|P)$/.test(c.nodeName))s+='\n';w(c)}})})(ed);return s.trim()}
+const TY={note:['Thông báo','note','b-note'],sell:['Cần bán','sell','b-sell'],buy:['Cần mua','buy','b-buy']};
+const appbar=a=>`<div class="appbar"><div class="brand">${cav('me',32)}<b>Việt Hưng</b></div><nav class="tabs"><span class="tab ${a==='feed'?'on':''}">Bảng tin</span><span class="tab ${a==='co'?'on':''}">Đối tác</span><span class="tab ${a==='so'?'on':''}">Sổ Hợp Tác</span></nav><div class="row"><span class="rolechip">${role==='admin'?'Quản trị':'Nhân viên'}</span>${pav(ME().n,32)}</div></div>`;
+const FR={};
+const BAR={fr1:'feed',fr2:'feed',fr3:'feed',fr4:'co',fr5:'so'};
+function bars(){Object.keys(BAR).forEach(k=>{const a=$('.appbar,.appbar-slot',FR[k]);if(a)a.outerHTML=appbar(BAR[k])})}
+['fr1','fr2','fr3','fr4','fr5'].forEach(id=>{FR[id]=document.getElementById(id)});
+/* ---------- thẻ bài ---------- */
+function postCard(p,o={}){
+  const pr=person(p.p),c=co(p.co),mine=p.p===ME().n,admin=role==='admin';
+  const T=TY[p.type],canEdit=mine&&!o.ro,canDel=(mine||(admin&&p.co==='me'))&&!o.ro,canHide=canDel;
+  const open=p.open||o.open;
+  let acts='';
+  if(canEdit)acts+=`<button class="ibtn" data-act="edit" data-id="${p.id}" data-tip="Sửa" aria-label="Sửa bài">${ic('pencil')}</button>`;
+  if(canDel)acts+=`<button class="ibtn" data-act="del" data-id="${p.id}" data-tip="Xoá" aria-label="Xoá bài">${ic('trash')}</button>`;
+  if(canHide)acts+=`<button class="ibtn" data-act="hide" data-id="${p.id}" data-tip="Ẩn" aria-label="Ẩn bài">${ic('eyeoff')}</button>`;
+  const deal=p.prod?`<div class="deal"><div><span class="sub">Hàng hoá</span><b>${esc(p.prod)}</b></div><div><span class="sub">Số lượng</span><b>${esc(p.qty||'—')}</b></div><div><span class="sub">Đơn giá</span><b>${esc(p.price||'Thoả thuận')}</b></div></div>`:'';
+  const body=p.editing?`<textarea class="inp" aria-label="Sửa nội dung bài" data-edit="${p.id}">${esc(p.x)}</textarea><div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn sm" data-act="cancel-edit" data-id="${p.id}">Huỷ</button><button class="btn sm primary" data-act="save-edit" data-id="${p.id}">Lưu</button></div>`:`<div class="pbody">${rich(p.x)}</div>`;
+  const cms=open?`<div class="comments">${p.cm.map((m,i)=>cmItem(p,m,i)).join('')}${o.ro?'':`<div class="cmf rel"><div class="ed one cm-ed" contenteditable="true" role="textbox" aria-label="Viết bình luận" data-ph="Viết bình luận… gõ @ để nhắc tên" data-id="${p.id}"></div><button class="ibtn" style="background:var(--primary);color:var(--primary-foreground)" data-act="cm-send" data-id="${p.id}" data-tip="Gửi" aria-label="Gửi bình luận">${ic('send')}</button></div>`}</div>`:'';
+  return `<article class="card pcard" data-pid="${p.id}"><div class="phead">${pav(p.p,40)}<div class="who"><b>${esc(p.p)}</b><div class="sub">${esc(pr.r)}</div><div class="cochip">${cav(p.co,24)}<span style="font-size:13px">${esc(c.name)}</span>${p.co==='me'?'<span class="badge b-idle">Công ty mình</span>':'<span class="badge b-info">Đối tác</span>'}</div><div class="sub" style="margin-top:2px">${esc(p.t)} · ${esc(p.v)}</div></div>${acts?`<div class="acts">${acts}</div>`:''}</div><div style="margin-top:8px"><span class="badge ${T[2]}">${ic(T[1],14)}${T[0]}</span></div>${deal}${body}<div class="pfoot"><button class="btn quiet sm" data-act="cm-toggle" data-id="${p.id}" aria-expanded="${open?'true':'false'}">${ic('chat',16)}${p.cm.length} bình luận</button></div>${cms}</article>`;
+}
+function cmItem(p,m,i){
+  const pr=person(m.p),mine=m.p===ME().n,admin=role==='admin';
+  if(m.hidden){if(!admin)return'';return `<div class="cm"><div class="bubble sub" style="flex:1">Bình luận đã ẩn. <button class="btn quiet sm" data-act="cm-unhide" data-id="${p.id}" data-i="${i}">Hiện lại</button></div></div>`}
+  let a='';
+  if(mine)a+=`<button class="ibtn" data-act="cm-edit" data-id="${p.id}" data-i="${i}" data-tip="Sửa" aria-label="Sửa bình luận">${ic('pencil',16)}</button>`;
+  if(mine||admin)a+=`<button class="ibtn" data-act="cm-del" data-id="${p.id}" data-i="${i}" data-tip="Xoá" aria-label="Xoá bình luận">${ic('trash',16)}</button>`;
+  if(admin&&!mine)a+=`<button class="ibtn" data-act="cm-hide" data-id="${p.id}" data-i="${i}" data-tip="Ẩn" aria-label="Ẩn bình luận">${ic('eyeoff',16)}</button>`;
+  const txt=m.editing?`<textarea class="inp" aria-label="Sửa bình luận" data-cedit="${p.id}:${i}">${esc(m.x)}</textarea><div class="row" style="margin-top:8px;justify-content:flex-end"><button class="btn sm" data-act="cm-cancel" data-id="${p.id}" data-i="${i}">Huỷ</button><button class="btn sm primary" data-act="cm-save" data-id="${p.id}" data-i="${i}">Lưu</button></div>`:`<div>${rich(m.x)}</div>`;
+  return `<div class="cm">${pav(m.p,32)}<div class="bubble"><div class="top"><div><b>${esc(m.p)}</b> <span class="sub">${esc(pr.r)} · ${esc(co(pr.co).name)}</span></div><div class="acts">${a}</div></div>${txt}<div class="sub">${esc(m.t)}</div></div></div>`;
+}
+/* ---------- engine nhắc tên ---------- */
+function mentionEngine(ed,opt){
+  const pk=document.createElement('div');pk.className='picker'+(opt.up?' up':'');pk.hidden=true;pk.setAttribute('role','listbox');pk.setAttribute('aria-label','Chọn người để nhắc');ed.parentNode.appendChild(pk);
+  let items=[],idx=0;
+  function ctx(){const s=getSelection();if(!s.rangeCount||!ed.contains(s.anchorNode)||s.anchorNode.nodeType!==3)return null;const t=s.anchorNode.textContent.slice(0,s.anchorOffset);const m=/(^|\s)@([^\s@]{0,20})$/.exec(t);return m?{node:s.anchorNode,end:s.anchorOffset,start:s.anchorOffset-m[2].length-1,q:m[2]}:null}
+  function show(){const c=ctx();if(!c){pk.hidden=true;return}const q=norm(c.q);items=PEOPLE.filter(p=>!q||norm(p.n).includes(q)).slice(0,8);idx=0;if(!items.length){pk.innerHTML='<div class="sub" style="padding:8px 12px">Không thấy người nào.</div>';pk.hidden=false;return}draw();pk.hidden=false}
+  function draw(){pk.innerHTML=items.map((p,i)=>`<button type="button" role="option" data-i="${i}" aria-selected="${i===idx}">${pav(p.n,32)}<span><b style="font-weight:600">${esc(p.n)}</b><br><span class="sub">${esc(p.r)} · ${esc(co(p.co).name)}</span></span></button>`).join('')}
+  function pick(p){const c=ctx();if(!c||!p)return;const r=document.createRange();r.setStart(c.node,c.start);r.setEnd(c.node,c.end);r.deleteContents();const sp=document.createElement('span');sp.className='mention';sp.contentEditable='false';sp.dataset.name=p.n;sp.textContent='@'+p.n;const tn=document.createTextNode(' ');r.insertNode(tn);r.insertNode(sp);const s=getSelection();s.removeAllRanges();const nr=document.createRange();nr.setStart(tn,1);nr.collapse(true);s.addRange(nr);pk.hidden=true;opt.onPick&&opt.onPick(p)}
+  pk.addEventListener('mousedown',e=>{e.preventDefault();const b=e.target.closest('[data-i]');if(b)pick(items[+b.dataset.i])});
+  ed.addEventListener('input',()=>{if(!ed.textContent&&!ed.querySelector('.mention'))ed.innerHTML='';show()});
+  ed.addEventListener('keyup',e=>{if(!['ArrowDown','ArrowUp','Enter','Escape','Tab'].includes(e.key))show()});
+  ed.addEventListener('click',show);
+  ed.addEventListener('keydown',e=>{if(pk.hidden)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();idx=(idx+(e.key==='ArrowDown'?1:-1)+items.length)%items.length;draw();return e.stopImmediatePropagation()}if((e.key==='Enter'||e.key==='Tab')&&items.length){e.preventDefault();e.stopImmediatePropagation();pick(items[idx])}else if(e.key==='Escape'){e.stopPropagation();e.stopImmediatePropagation();pk.hidden=true}});
+}
+function attachEditors(root){
+  $$('.cm-ed:not([data-eng])',root).forEach(ed=>{ed.dataset.eng='1';mentionEngine(ed,{up:true});ed.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();const b=$('[data-act=cm-send]',ed.parentNode);b&&b.click()}})});
+}
+/* ---------- toast + lớp phủ ---------- */
+function toast(fr,msg,undo){
+  const L=$('.layer',fr);$$('.toast',L).forEach(t=>t.remove());
+  const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.innerHTML=`<span>${esc(msg)}</span>${undo?'<button>Hoàn tác</button>':''}`;
+  L.appendChild(t);const k=setTimeout(()=>t.remove(),6000);
+  if(undo)$('button',t).onclick=()=>{clearTimeout(k);t.remove();undo()};
+}
+function closeOv(fr,sel){$$(sel,$('.layer',fr)).forEach(o=>o.remove());if(!$('.ov:not(.ov-fp)',$('.layer',fr)))fr.classList.remove('lock')}
+function confirmDlg(fr,title,desc,okLabel,onOk){
+  const o=document.createElement('div');o.className='ov ov-cf';
+  o.innerHTML=`<div class="dlg sm" role="alertdialog" aria-modal="true" aria-label="${esc(title)}"><div class="dlg-h"><b>${esc(title)}</b></div><div class="dlg-b">${esc(desc)}</div><div class="dlg-f"><button class="btn" data-act="cf-no" autofocus>Giữ lại</button><button class="btn danger" data-act="cf-ok">${esc(okLabel)}</button></div></div>`;
+  $('.layer',fr).appendChild(o);fr.classList.add('lock');$('[data-act=cf-no]',o).focus();
+  o.querySelector('[data-act=cf-ok]').onclick=()=>{closeOv(fr,'.ov-cf');onOk()};
+}
+/* ---------- MÀN 1: bảng tin ---------- */
+const F={type:'all',src:'all'};let shown=6,loading=false,io=null;
+const connected=()=>DIR.filter(c=>c.conn&&c.id!=='me');
+const feedAll=()=>P.filter(p=>!p.gone&&!p.hidden&&(p.co==='me'||co(p.co).conn));
+const mType=(p,t)=>t==='all'||p.type===t;
+const mSrc=(p,s)=>s==='all'||(s==='mine'?p.co==='me':s==='partners'?p.co!=='me':p.co===s);
+const feedList=()=>feedAll().filter(p=>mType(p,F.type)&&mSrc(p,F.src));
+const nType=t=>feedAll().filter(p=>mSrc(p,F.src)&&mType(p,t)).length;
+const nSrc=s=>feedAll().filter(p=>mType(p,F.type)&&mSrc(p,s)).length;
+const fcount=()=>(F.type!=='all'?1:0)+(F.src!=='all'?1:0);
+const srcName=s=>s==='mine'?'Công ty mình':s==='partners'?'Đối tác':co(s).name;
+const typeName=t=>t==='all'?'Tất cả':TY[t][0];
+function composeRow(){return `<div class="card compose">${pav(ME().n,40)}<button class="fake" data-act="open-cmp" aria-label="Viết bài">Viết bài…</button></div>`}
+function renderS1(){
+  const fr=FR.fr1,sc=$('#sc1');
+  $('.appbar-slot',fr)&&($('.appbar-slot',fr).outerHTML=appbar('feed'));
+  sc.innerHTML=`<div class="col"><div class="pagehead"><h3>Bảng tin</h3><button class="btn" data-act="go" data-v="#s4">${ic('search',16)}Tìm đối tác</button></div>${composeRow()}<div class="fbar" id="fbar"></div><div id="feedList"></div></div>`;
+  $('.layer',fr)&&!$('.fab-btn',fr)&&fr.insertBefore(Object.assign(document.createElement('button'),{className:'btn fab-btn',innerHTML:'',type:'button'}),$('.layer',fr));
+  const fb=$('.fab-btn',fr);fb.dataset.act='filt';fb.setAttribute('aria-label','Lọc bài');
+  renderBar();renderList();
+}
+function renderBar(){
+  const n=fcount(),fr=FR.fr1;
+  $('#fbar').innerHTML=`<button class="btn fbtn" data-act="filt" aria-haspopup="dialog">${ic('filter',16)}Lọc<span class="fnum" ${n?'':'hidden'}>${n}</span></button>${F.type!=='all'?`<button class="chip" data-act="f-type" data-v="all" aria-label="Bỏ lọc ${esc(typeName(F.type))}">${esc(typeName(F.type))} ${ic('x',12)}</button>`:''}${F.src!=='all'?`<button class="chip" data-act="f-src" data-v="all" aria-label="Bỏ lọc ${esc(srcName(F.src))}">${esc(srcName(F.src))} ${ic('x',12)}</button>`:''}${n?`<button class="btn quiet sm" data-act="f-clear">Xoá lọc</button>`:''}<span class="cnt">${feedList().length} bài</span>`;
+  const fb=$('.fab-btn',fr);fb.innerHTML=`${ic('filter',18)}Lọc${n?` · ${n}`:''}`;
+}
+function renderList(){
+  const L=feedList(),el=$('#feedList');
+  const vis=L.slice(0,shown);
+  let h=vis.map(p=>postCard(p)).join('');
+  if(!L.length)h=`<div class="card empty"><p>Không có bài nào khớp bộ lọc.</p><button class="btn" data-act="f-clear">Xoá lọc</button></div>`;
+  else if(L.length>shown)h+=`<div class="card skel" id="sentinel" aria-label="Đang tải thêm bài" role="status"><div class="row"><span class="sk" style="width:40px;height:40px;border-radius:50%"></span><div style="flex:1"><div class="sk" style="height:14px;width:40%;margin-bottom:6px"></div><div class="sk" style="height:12px;width:60%"></div></div></div><div class="sk" style="height:20px;width:30%;margin:12px 0"></div><div class="sk" style="height:14px;margin-bottom:6px"></div><div class="sk" style="height:14px;width:85%;margin-bottom:6px"></div><div class="sk" style="height:14px;width:60%"></div></div>`;
+  else h+=`<div class="end">Bạn đã xem hết bài.</div>`;
+  el.innerHTML=h;attachEditors(el);
+  if(io){io.disconnect()}
+  const s=$('#sentinel');
+  if(s){io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)&&!loading){loading=true;setTimeout(()=>{shown+=6;loading=false;renderList()},800)}},{root:$('#sc1')});io.observe(s)}
+}
+function setFilter(k,v){
+  const was=JSON.stringify(F);F[k]=v;if(was===JSON.stringify(F))return;
+  renderBar();renderFp();
+  const el=$('#feedList');el.classList.add('dim');
+  setTimeout(()=>{shown=6;renderList();el.classList.remove('dim');renderFp()},320);
+}
+function fpHTML(){
+  const types=['all','note','sell','buy'];
+  const srcRow=(s,label,left)=>`<button class="srow" data-act="f-src" data-v="${s}" aria-pressed="${F.src===s}">${left||''}<span>${esc(label)}</span><span class="n">${nSrc(s)}</span></button>`;
+  return `<div class="fp-h"><span class="grab"></span><b>Lọc bảng tin</b><button class="ibtn" data-act="f-close" data-tip="Đóng" aria-label="Đóng bộ lọc">${ic('x')}</button></div><div class="fp-b"><div class="fp-l">Loại bài</div><div class="chips" role="group" aria-label="Loại bài">${types.map(t=>`<button class="chip" data-act="f-type" data-v="${t}" aria-pressed="${F.type===t}">${typeName(t)} <span class="n">${nType(t)}</span></button>`).join('')}</div><div class="fp-l">Nguồn</div>${srcRow('all','Tất cả nguồn')}${srcRow('mine','Công ty mình',cav('me',24))}${srcRow('partners','Tất cả đối tác',ic('users',20))}<div class="fp-l">Theo công ty</div>${connected().map(c=>srcRow(c.id,c.name,cav(c.id,24))).join('')}</div><div class="fp-f"><button class="btn" data-act="f-clear" ${fcount()?'':'disabled'}>Xoá lọc</button><button class="btn primary" data-act="f-close">Xem ${feedList().length} bài</button></div>`;
+}
+function renderFp(){const fp=$('.ov-fp .fp',FR.fr1);if(fp){const t=$('.fp-b',fp).scrollTop;fp.innerHTML=fpHTML();$('.fp-b',fp).scrollTop=t}}
+function toggleFp(){
+  const fr=FR.fr1,L=$('.layer',fr),o=$('.ov-fp',L);
+  if(o){o.remove();return}
+  const ov=document.createElement('div');ov.className='ov ov-fp';ov.innerHTML=`<div class="fp" role="dialog" aria-label="Lọc bảng tin">${fpHTML()}</div>`;L.appendChild(ov);
+  if(document.body.classList.contains('m'))fr.classList.add('lock');
+}
+/* ---------- MÀN 2: hộp thoại đăng bài ---------- */
+const CPS=new Map();
+const VIS={all:['Tất cả đối tác','Mọi công ty đã kết nối','users'],internal:['Chỉ nội bộ','Chỉ người trong công ty mình','lock'],ncc:['Nhà cung cấp','Đối tác là nhà cung cấp của mình','building'],kh:['Khách hàng','Đối tác là khách hàng của mình','building'],custom:['Chọn công ty…','Tự chọn từng công ty','building'],pub:['Công khai','Cả công ty chưa kết nối cũng thấy (chờ chốt câu Q6)','globe']};
+const partners=()=>DIR.filter(c=>c.conn&&c.id!=='me');
+function canSee(st,id){if(id==='me')return true;const c=co(id);if(st.vis==='pub')return true;if(!c.conn)return false;return st.vis==='all'||(st.vis==='ncc'&&c.kind==='ncc')||(st.vis==='kh'&&c.kind==='kh')||(st.vis==='custom'&&st.cos.has(id))}
+function visLabel(st){return st.vis==='custom'?`Chọn công ty (${st.cos.size})`:VIS[st.vis][0]}
+function openComposer(fr,onPost){
+  closeOv(fr,'.ov-cmp');
+  const st={type:'note',vis:'all',cos:new Set(),open:false,goods:'',skip:0};CPS.set(fr,{st,onPost});
+  const o=document.createElement('div');o.className='ov ov-cmp';
+  o.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-label="Viết bài"><div class="dlg-h"><div class="row">${pav(ME().n,32)}<div><b>${esc(ME().n)}</b><div class="sub">${esc(ME().r)} · Nông sản Việt Hưng</div></div></div><button class="ibtn" data-act="cp-close" data-tip="Đóng" aria-label="Đóng">${ic('x')}</button></div>
+<div class="dlg-b"><div class="fld"><div class="lbl">Loại bài</div><div class="seg" role="radiogroup" aria-label="Loại bài">${['note','sell','buy'].map(t=>`<button type="button" role="radio" aria-checked="${t==='note'}" data-act="cp-type" data-v="${t}">${ic(TY[t][1],16)}${TY[t][0]}</button>`).join('')}</div></div>
+<div class="cp-deal" hidden><label class="fld rel"><span class="lbl">Hàng hoá</span><input class="inp cp-goods" role="combobox" aria-expanded="false" aria-autocomplete="list" autocomplete="off" placeholder="Gõ tên hàng hoặc chọn từ gợi ý"><div class="dd cp-dd" role="listbox" hidden></div></label>
+<div class="g3"><label class="fld"><span class="lbl">Số lượng</span><input class="inp cp-qty" inputmode="decimal" placeholder="VD: 5"></label><label class="fld"><span class="lbl">Đơn vị</span><input class="inp cp-unit" placeholder="kg, tấn, cái…"></label><label class="fld"><span class="lbl">Đơn giá (đ)</span><input class="inp cp-price" inputmode="numeric" placeholder="Không bắt buộc"></label></div></div>
+<div class="fld rel"><span class="lbl">Nội dung</span><div class="ed cp-ed" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Nội dung bài" data-ph="Bạn muốn chia sẻ gì với đối tác? Gõ @ để nhắc một người."></div></div>
+<div class="fld"><span class="lbl">Ai thấy bài</span><button type="button" class="sel cp-visbtn" data-act="cp-vis-toggle" aria-haspopup="listbox" aria-expanded="false"></button><div class="vpanel cp-vispanel" hidden></div><div class="hint cp-vishint"></div></div>
+<div class="cp-warn" aria-live="polite"></div></div>
+<div class="dlg-f"><span class="err cp-err" role="alert"></span><button class="btn" data-act="cp-close">Huỷ</button><button class="btn primary" data-act="cp-post">Đăng bài</button></div></div>`;
+  $('.layer',fr).appendChild(o);fr.classList.add('lock');
+  const ed=$('.cp-ed',o);mentionEngine(ed,{onPick:()=>cpCheck(fr)});
+  const g=$('.cp-goods',o);
+  g.addEventListener('focus',()=>cpGoods(fr));g.addEventListener('input',()=>{st.goods=g.value;cpGoods(fr)});
+  g.addEventListener('keydown',e=>{const dd=$('.cp-dd',o);if(e.key==='Escape'&&!dd.hidden){e.stopPropagation();dd.hidden=true}if(e.key==='ArrowDown'&&dd.hidden)cpGoods(fr);if(e.key==='ArrowDown'||e.key==='ArrowUp'){const b=$$('[data-act]',dd);if(!b.length)return;e.preventDefault();const i=b.findIndex(x=>x.getAttribute('aria-selected')==='true');b.forEach(x=>x.setAttribute('aria-selected','false'));const n=(i+(e.key==='ArrowDown'?1:-1)+b.length)%b.length;b[n].setAttribute('aria-selected','true')}if(e.key==='Enter'){const s=$('[aria-selected=true]',dd);if(s&&!dd.hidden){e.preventDefault();s.click()}}});
+  cpVis(fr);setTimeout(()=>ed.focus({preventScroll:true}),0);
+}
+function cpGoods(fr){
+  const o=$('.ov-cmp',$('.layer',fr)),{st}=CPS.get(fr),g=$('.cp-goods',o),dd=$('.cp-dd',o),q=norm(g.value.trim());
+  const L=GOODS.map((x,i)=>({x,i})).filter(({x})=>!q||norm(x.n).includes(q));
+  let h=L.map(({x,i},k)=>`<button type="button" role="option" data-act="cp-goods-pick" data-i="${i}" aria-selected="${k===0&&!!q}"><span>${esc(x.n)}</span><span class="r">${x.u} · ${x.p}đ</span></button>`).join('');
+  if(q&&!GOODS.some(x=>norm(x.n)===q))h+=`<button type="button" role="option" data-act="cp-goods-free" aria-selected="false"><span>Dùng «${esc(g.value.trim())}»</span><span class="r">nhập tay</span></button>`;
+  dd.innerHTML=h||'<div class="sub" style="padding:8px 12px">Gõ tên hàng hoá.</div>';dd.hidden=false;g.setAttribute('aria-expanded','true');
+}
+function cpVis(fr){
+  const o=$('.ov-cmp',$('.layer',fr)),{st}=CPS.get(fr);
+  $('.cp-visbtn',o).innerHTML=`<span class="row">${ic(VIS[st.vis][2],16)}${esc(visLabel(st))}</span>${ic('chev',16)}`;
+  $('.cp-visbtn',o).setAttribute('aria-expanded',st.open);
+  const pn=$('.cp-vispanel',o);pn.hidden=!st.open;
+  if(st.open){
+    pn.innerHTML=Object.keys(VIS).map(k=>`<button type="button" class="vopt" role="radio" aria-checked="${st.vis===k}" data-act="cp-vis" data-v="${k}">${ic(VIS[k][2],18)}<span><b style="font-weight:600">${VIS[k][0]}</b><br><span class="sub">${VIS[k][1]}</span></span><span class="ck">${ic('check',16)}</span></button>${k==='custom'&&st.vis==='custom'?`<div style="padding:4px 10px 8px 38px">${partners().map(c=>`<label class="optrow" style="margin:0 0 4px"><input type="checkbox" data-act="cp-co" data-v="${c.id}" ${st.cos.has(c.id)?'checked':''}>${cav(c.id,24)}<span>${esc(c.name)}<br><span class="sub">${c.kind==='ncc'?'Nhà cung cấp':'Khách hàng'}</span></span></label>`).join('')}<button class="btn sm primary" data-act="cp-vis-toggle">Xong</button></div>`:''}`).join('');
+  }
+  const n=partners().filter(c=>canSee(st,c.id)).length;
+  $('.cp-vishint',o).textContent=st.vis==='pub'?'Cả công ty chưa kết nối cũng thấy bài này.':st.vis==='internal'?'Chỉ người trong Nông sản Việt Hưng thấy.':`${n}/${partners().length} công ty đối tác thấy bài.`;
+  cpCheck(fr);
+}
+function cpCheck(fr){
+  const o=$('.ov-cmp',$('.layer',fr));if(!o)return;const {st}=CPS.get(fr);
+  const names=[...new Set($$('.mention',$('.cp-ed',o)).map(s=>s.dataset.name))];
+  const miss=names.map(person).filter(p=>p&&!canSee(st,p.co));
+  const box=$('.cp-warn',o);
+  if(!miss.length){box.innerHTML='';return}
+  const p=miss[0],c=co(p.co);
+  box.innerHTML=`<div class="alert"><div><b>${esc(p.n)}</b> thuộc <b>${esc(c.name)}</b>, công ty này chưa nằm trong «Ai thấy bài» (đang chọn: ${esc(visLabel(st))}). Người được nhắc sẽ không thấy bài.</div><div class="row" style="flex-wrap:wrap"><button class="btn sm primary" data-act="cp-addco" data-co="${p.co}">Thêm ${esc(c.name)} vào danh sách thấy bài</button><button class="btn sm" data-act="cp-unmention" data-n="${esc(p.n)}">Bỏ nhắc tên</button></div></div>`;
+}
+function cpPost(fr){
+  const o=$('.ov-cmp',$('.layer',fr)),{st,onPost}=CPS.get(fr),err=$('.cp-err',o);
+  const x=edText($('.cp-ed',o)),g=$('.cp-goods',o).value.trim();
+  const fail=m=>{err.textContent=m;return false};
+  if(st.type!=='note'&&!g)return fail('Nhập tên hàng hoá.');
+  if(!x)return fail('Nhập nội dung bài.');
+  if(st.vis==='custom'&&!st.cos.size)return fail('Chọn ít nhất một công ty.');
+  if($('.cp-warn .alert',o))return fail('Còn người được nhắc chưa thấy được bài: chọn một trong hai ở trên.');
+  const unit=$('.cp-unit',o).value.trim(),qty=$('.cp-qty',o).value.trim(),pr=$('.cp-price',o).value.trim();
+  const post={id:'n'+Date.now(),p:ME().n,co:'me',type:st.type,t:'Vừa xong',v:visLabel(st),x,cm:[]};
+  if(st.type!=='note'){post.prod=g;post.qty=[qty,unit].filter(Boolean).join(' ');post.price=pr?pr+'đ'+(unit?'/'+unit:''):''}
+  closeOv(fr,'.ov-cmp');
+  if(onPost)onPost(post);else toast(fr,'Đã đăng bài (bản mẫu, chưa lưu).');
+}
+function renderS2(){
+  const fr=FR.fr2;$('.appbar-slot',fr)&&($('.appbar-slot',fr).outerHTML=appbar('feed'));
+  $('#sc2').innerHTML=`<div class="col"><div class="pagehead"><h3>Bảng tin</h3></div>${composeRow()}${postCard(P[1],{ro:true})}${postCard(P[2],{ro:true})}</div>`;
+  openComposer(fr);
+}
+/* ---------- MÀN 3 ---------- */
+function s3Posts(){
+  const me=ME().n;const own=P.find(p=>!p.gone&&!p.hidden&&p.p===me)||P[0];
+  const col=P.find(p=>!p.gone&&!p.hidden&&p.co==='me'&&p.p!==me&&p.id!==own.id)||P[1];
+  return [own,col,P.find(p=>p.co==='dp'&&!p.gone&&!p.hidden)||P[2]];
+}
+function renderS3(){
+  const fr=FR.fr3;if($('.appbar-slot',fr))$('.appbar-slot',fr).outerHTML=appbar('feed');
+  const L=s3Posts();L[0].open=true;L[1].open=true;
+  const sc=$('#sc3'),t=sc.scrollTop;
+  sc.innerHTML=`<div class="col"><div class="pagehead"><h3>Bài của bạn và đồng nghiệp</h3></div>${L.map(p=>postCard(p)).join('')}<p class="sub">Bài thứ ba là của công ty đối tác: bạn chỉ xem và bình luận.</p></div>`;
+  sc.scrollTop=t;attachEditors(sc);
+}
+/* ---------- MÀN 4 ---------- */
+const S4={q:'',sel:null};
+const stBadge=c=>c.conn?'<span class="badge b-ok">'+ic('check',12)+'Đã kết nối</span>':c.req?'<span class="badge b-warn">Chờ bạn trả lời</span>':c.invited?'<span class="badge b-idle">Đã gửi lời mời</span>':'<span class="badge b-info">Chưa kết nối</span>';
+function s4Results(){
+  const q=norm(S4.q.trim()),can=canSearchNew();
+  const pool=DIR.filter(c=>c.id!=='me'&&(c.conn||can));
+  const L=pool.filter(c=>!q||norm(c.name).includes(q));
+  const row=c=>`<button class="coRow" data-act="co-open" data-id="${c.id}">${cav(c.id,40)}<span class="mid"><b>${esc(c.name)}</b><div class="sub">${esc(c.ind)} · ${esc(c.city)}</div></span>${stBadge(c)}</button>`;
+  if(!L.length)return `<div class="card empty"><p>Không thấy ${S4.q?`«${esc(S4.q)}»`:'công ty nào'} ${can?'trong danh bạ.':'trong đối tác đã kết nối.'}</p>${can?'':'<p class="sub">Muốn mời công ty mới? Nhờ quản trị công ty bạn.</p>'}</div>`;
+  const a=L.filter(c=>c.conn),b=L.filter(c=>!c.conn);
+  return (a.length?`<div class="h5">Đối tác đã kết nối (${a.length})</div>${a.map(row).join('')}`:'')+(b.length?`<div class="h5">Trong danh bạ, chưa kết nối (${b.length})</div>${b.map(row).join('')}`:'');
+}
+function renderS4(){
+  const fr=FR.fr4,sc=$('#sc4');$('.appbar-slot',fr)&&($('.appbar-slot',fr).outerHTML=appbar('co'));
+  const old=$('.appbar',fr);if(old)old.outerHTML=appbar('co');
+  if(!S4.sel){
+    const can=canSearchNew();
+    sc.innerHTML=`<div class="col"><div class="pagehead"><h3>Đối tác</h3></div><label class="fld"><span class="lbl">Tìm công ty</span><input class="inp co-q" type="search" value="${esc(S4.q)}" placeholder="${can?'Tìm trong cả danh bạ công ty':'Tìm trong đối tác đã kết nối'}"></label><div class="hint" style="margin:-8px 0 8px">${can?'Bạn tìm được cả công ty chưa kết nối và mời họ kết nối.':'Bạn chỉ tìm được đối tác đã kết nối.'}</div><div id="s4res">${s4Results()}</div></div>`;
+    return;
+  }
+  const c=co(S4.sel),inv=c.invited;
+  const posts=c.conn?P.filter(p=>p.co===c.id&&!p.gone).slice(0,3).map(p=>({x:p.x,t:p.t,p:p.p})):(c.pub||[]).map(p=>({x:p.x,t:p.t,p:null}));
+  let btn='';
+  if(c.conn)btn=`<span class="badge b-ok">${ic('check',12)}Đã kết nối</span><button class="btn" data-act="go-feed" data-id="${c.id}">Xem bài của họ ở bảng tin</button>`;
+  else if(c.req)btn=`<span class="badge b-warn">Họ đã gửi lời mời cho bạn</span><button class="btn primary" data-act="go" data-v="#s5">Xem yêu cầu</button>`;
+  else if(inv)btn=`<span class="badge b-idle">Đã gửi lời mời · chờ phản hồi</span><button class="btn" data-act="invite-revoke" data-id="${c.id}">Thu hồi lời mời</button>`;
+  else if(canSearchNew())btn=`<button class="btn primary" data-act="invite" data-id="${c.id}">${ic('plus',16)}Mời kết nối</button>`;
+  sc.innerHTML=`<div class="col"><button class="btn quiet" data-act="co-back" style="margin-bottom:8px">${ic('back',16)}Quay lại</button><article class="card copage"><div class="cover" style="--c:var(${c.c})"></div><div class="in"><div class="hd">${cav(c.id,56)}<div style="flex:1;min-width:180px"><h4>${esc(c.name)}</h4><div class="sub">${esc(c.ind)} · ${esc(c.city)}</div></div></div><div class="row" style="margin-top:12px;flex-wrap:wrap">${btn}</div><div class="h5">Giới thiệu</div><div>${esc(c.about||'')}</div><div class="h5">${c.conn?'Bài gần đây':'Bài công khai'}</div>${posts.length?posts.map(p=>`<div class="card" style="margin-bottom:8px"><div>${rich(p.x)}</div><div class="sub">${p.p?esc(p.p)+' · ':''}${esc(p.t)}</div></div>`).join(''):'<div class="sub">Công ty chưa có bài công khai.</div>'}${c.conn?'':'<div class="hint">Kết nối để xem thêm bài dành riêng cho đối tác.</div>'}</div></article></div>`;
+}
+function openInvite(c){
+  const fr=FR.fr4,o=document.createElement('div');o.className='ov ov-inv';
+  o.innerHTML=`<div class="dlg sm" role="dialog" aria-modal="true" aria-label="Mời kết nối"><div class="dlg-h"><b>Mời ${esc(c.name)} kết nối</b><button class="ibtn" data-act="inv-close" data-tip="Đóng" aria-label="Đóng">${ic('x')}</button></div><div class="dlg-b"><label class="fld"><span class="lbl">Lời nhắn (không bắt buộc)</span><textarea class="inp" id="invmsg">Chào ${esc(c.name)}, Nông sản Việt Hưng muốn kết nối để trao đổi hàng hoá.</textarea></label><div class="hint">Họ sẽ thấy lời mời trong Sổ Hợp Tác › Đối tác và có thể đồng ý hoặc từ chối.</div></div><div class="dlg-f"><button class="btn" data-act="inv-close">Huỷ</button><button class="btn primary" data-act="inv-send" data-id="${c.id}">Gửi lời mời</button></div></div>`;
+  $('.layer',fr).appendChild(o);fr.classList.add('lock');$('textarea',o).focus();
+}
+/* ---------- MÀN 5 ---------- */
+const S5={rej:null};
+function renderS5(){
+  const fr=FR.fr5,sc=$('#sc5'),adm=role==='admin';
+  const old=$('.appbar',fr)||$('.appbar-slot',fr);if(old)old.outerHTML=appbar('so');
+  const reqs=DIR.filter(c=>c.req&&!c.conn),sent=DIR.filter(c=>c.invited&&!c.conn&&!c.req);
+  const why=adm?'':'data-tip="Chỉ quản trị công ty xử lý được" ';
+  const reqRow=c=>`<div class="reqRow"><div class="row" style="align-items:flex-start">${cav(c.id,40)}<div style="flex:1;min-width:0"><b>${esc(c.name)}</b> <span class="sub">· ${esc(c.date)}</span><div class="sub">${esc(c.ind)} · ${esc(c.city)}</div><div class="quote">«${esc(c.msg)}»</div>${S5.rej===c.id?`<label class="fld"><span class="lbl">Lý do (không bắt buộc)</span><input class="inp" placeholder="VD: Hiện chưa có nhu cầu"></label><div class="row"><button class="btn sm" data-act="req-no" data-id="${c.id}">Huỷ</button><button class="btn sm danger" data-act="req-rej-ok" data-id="${c.id}">Gửi từ chối</button></div>`:`<div class="acts"><button class="btn primary sm" ${why}${adm?'':'disabled'} data-act="req-ok" data-id="${c.id}">Đồng ý</button><button class="btn sm" ${why}${adm?'':'disabled'} data-act="req-rej" data-id="${c.id}">Từ chối</button></div>`}</div></div></div>`;
+  sc.innerHTML=`<div class="col"><div class="crumb">Sổ Hợp Tác › Đối tác</div><div class="pagehead"><h3>Đối tác</h3></div>${adm?'':`<div class="banner">${ic('lock',16)}Chỉ quản trị công ty xử lý yêu cầu và đổi cài đặt. Bạn xem được.</div>`}
+<div class="card"><div class="row" style="justify-content:space-between"><b>Yêu cầu kết nối</b><span class="badge b-info">${reqs.length}</span></div>${reqs.length?reqs.map(reqRow).join(''):'<div class="sub" style="padding:12px 0">Không có yêu cầu nào đang chờ.</div>'}</div>
+${sent.length?`<div class="card"><b>Lời mời đã gửi</b>${sent.map(c=>`<div class="reqRow"><div class="row">${cav(c.id,40)}<div style="flex:1"><b>${esc(c.name)}</b><div class="sub">Chờ phản hồi</div></div><button class="btn sm" ${why}${adm?'':'disabled'} data-act="invite-revoke" data-id="${c.id}">Thu hồi</button></div></div>`).join('')}</div>`:''}
+<div class="card"><b>Tìm kiếm và mời</b>
+<div class="row" style="margin:12px 0;justify-content:space-between;gap:16px"><span id="swl">Cho công ty khác tìm thấy công ty mình<div class="sub">Tắt thì công ty khác không thấy bạn trong danh bạ; đối tác đã kết nối vẫn như cũ.</div></span><button class="sw" role="switch" aria-checked="${SET.disc}" aria-labelledby="swl" ${adm?'':'disabled'} data-act="sw-disc"></button></div>
+<div class="lbl" id="whol">Ai được tìm và mời đối tác mới</div><div role="radiogroup" aria-labelledby="whol">
+<label class="optrow"><input type="radio" name="who" value="admin" ${SET.who==='admin'?'checked':''} ${adm?'':'disabled'}><span><b style="font-weight:600">Chỉ quản trị công ty</b><div class="sub">Các vai khác chỉ tìm thấy đối tác đã kết nối.</div></span></label>
+<label class="optrow"><input type="radio" name="who" value="all" ${SET.who==='all'?'checked':''} ${adm?'':'disabled'}><span><b style="font-weight:600">Mọi nhân viên</b><div class="sub">Ai cũng tìm được công ty chưa kết nối và gửi lời mời.</div></span></label></div></div>
+<div class="card"><b>Đối tác đã kết nối (${partners().length})</b><div class="row" style="margin-top:8px;flex-wrap:wrap">${partners().map(c=>`<span class="badge b-idle">${cav(c.id,24)}${esc(c.name)}</span>`).join('')}</div></div></div>`;
+}
+/* ---------- đồng bộ ---------- */
+function refresh(){renderS1();renderS3();renderS4();renderS5();bars()}
+function refreshPosts(){renderBar();renderList();renderS3();renderFp()}
+/* ---------- xử lý sự kiện chung ---------- */
+const findP=id=>P.find(p=>p.id===id);
+const A={
+theme:el=>{document.documentElement.dataset.theme=el.dataset.v;$$('[data-act=theme]').forEach(b=>b.setAttribute('aria-pressed',b===el))},
+dev:el=>{document.body.classList.toggle('m',el.dataset.v==='m');$$('[data-act=dev]').forEach(b=>b.setAttribute('aria-pressed',b===el));const fo=$('.ov-fp',FR.fr1);if(fo)fo.remove();$$('.frame').forEach(f=>f.classList.remove('lock'));refresh();renderS2()},
+fab:el=>{document.body.classList.toggle('fab',el.dataset.v==='fab');$$('[data-act=fab]').forEach(b=>b.setAttribute('aria-pressed',b===el));const fo=$('.ov-fp',FR.fr1);if(fo)fo.remove()},
+role:el=>{role=el.dataset.v;$$('[data-act=role]').forEach(b=>b.setAttribute('aria-pressed',b===el));S5.rej=null;refresh();renderS2()},
+go:el=>{const t=$(el.dataset.v);t&&t.scrollIntoView()},
+'open-cmp':(el,fr)=>openComposer(fr,fr.id==='fr1'?post=>{P.unshift(post);refreshPosts();$('#sc1').scrollTop=0;toast(fr,'Đã đăng bài.')}:null),
+'cp-close':(el,fr)=>closeOv(fr,'.ov-cmp'),
+'cp-type':(el,fr)=>{const o=el.closest('.ov'),{st}=CPS.get(fr);st.type=el.dataset.v;$$('[data-act=cp-type]',o).forEach(b=>b.setAttribute('aria-checked',b===el));$('.cp-deal',o).hidden=st.type==='note';$('.cp-err',o).textContent=''},
+'cp-vis-toggle':(el,fr)=>{const {st}=CPS.get(fr);st.open=!st.open;cpVis(fr)},
+'cp-vis':(el,fr)=>{const {st}=CPS.get(fr);st.vis=el.dataset.v;st.open=st.vis==='custom';cpVis(fr)},
+'cp-co':(el,fr)=>{const {st}=CPS.get(fr);el.checked?st.cos.add(el.dataset.v):st.cos.delete(el.dataset.v);cpVis(fr)},
+'cp-goods-pick':(el,fr)=>{const o=el.closest('.ov'),x=GOODS[+el.dataset.i];$('.cp-goods',o).value=x.n;if(!$('.cp-unit',o).value)$('.cp-unit',o).value=x.u;if(!$('.cp-price',o).value)$('.cp-price',o).value=x.p;$('.cp-dd',o).hidden=true;$('.cp-qty',o).focus()},
+'cp-goods-free':(el)=>{$('.cp-dd',el.closest('.ov')).hidden=true},
+'cp-addco':(el,fr)=>{const {st}=CPS.get(fr);const set=new Set(partners().filter(c=>canSee(st,c.id)).map(c=>c.id));set.add(el.dataset.co);st.cos=set;st.vis='custom';st.open=false;cpVis(fr)},
+'cp-unmention':(el,fr)=>{const o=el.closest('.ov');$$('.mention',o).filter(s=>s.dataset.name===el.dataset.n).forEach(s=>s.replaceWith(document.createTextNode(el.dataset.n)));cpCheck(fr)},
+'cp-post':(el,fr)=>cpPost(fr),
+filt:()=>toggleFp(),
+'f-close':()=>{$('.ov-fp',FR.fr1)&&$('.ov-fp',FR.fr1).remove();FR.fr1.classList.remove('lock')},
+'f-type':el=>setFilter('type',el.dataset.v),
+'f-src':el=>setFilter('src',el.dataset.v),
+'f-clear':()=>{F.type='all';F.src='all';const el=$('#feedList');renderBar();renderFp();el.classList.add('dim');setTimeout(()=>{shown=6;renderList();el.classList.remove('dim');renderFp()},320)},
+'cm-toggle':el=>{const p=findP(el.dataset.id);p.open=!p.open;refreshPosts()},
+edit:el=>{findP(el.dataset.id).editing=true;refreshPosts()},
+'cancel-edit':el=>{findP(el.dataset.id).editing=false;refreshPosts()},
+'save-edit':(el,fr)=>{const p=findP(el.dataset.id),t=$(`[data-edit="${p.id}"]`,fr);if(t.value.trim())p.x=t.value.trim();p.editing=false;refreshPosts();toast(fr,'Đã lưu bài.')},
+del:(el,fr)=>{const p=findP(el.dataset.id);confirmDlg(fr,'Xoá bài này?','Bài sẽ biến mất với mọi người đang thấy.','Xoá bài',()=>{p.gone=true;refreshPosts();toast(fr,'Đã xoá bài.')})},
+hide:(el,fr)=>{const p=findP(el.dataset.id);p.hidden=true;refreshPosts();toast(fr,'Đã ẩn bài khỏi bảng tin.',()=>{p.hidden=false;refreshPosts()})},
+'cm-send':(el,fr)=>{const p=findP(el.dataset.id),ed=$('.cm-ed',el.parentNode),x=edText(ed);if(!x)return;p.cm.push({p:ME().n,t:'Vừa xong',x});p.open=true;refreshPosts()},
+'cm-edit':el=>{findP(el.dataset.id).cm[+el.dataset.i].editing=true;refreshPosts()},
+'cm-cancel':el=>{findP(el.dataset.id).cm[+el.dataset.i].editing=false;refreshPosts()},
+'cm-save':el=>{const p=findP(el.dataset.id),m=p.cm[+el.dataset.i],t=$(`[data-cedit="${p.id}:${el.dataset.i}"]`,el.closest('.frame'));if(t.value.trim())m.x=t.value.trim();m.editing=false;refreshPosts()},
+'cm-del':(el,fr)=>{const p=findP(el.dataset.id),i=+el.dataset.i,m=p.cm[i];p.cm.splice(i,1);refreshPosts();toast(fr,'Đã xoá bình luận.',()=>{p.cm.splice(i,0,m);refreshPosts()})},
+'cm-hide':(el,fr)=>{const m=findP(el.dataset.id).cm[+el.dataset.i];m.hidden=true;refreshPosts();toast(fr,'Đã ẩn bình luận.',()=>{m.hidden=false;refreshPosts()})},
+'cm-unhide':el=>{findP(el.dataset.id).cm[+el.dataset.i].hidden=false;refreshPosts()},
+'cf-no':(el,fr)=>closeOv(fr,'.ov-cf'),
+'co-open':el=>{S4.sel=el.dataset.id;renderS4()},
+'co-back':()=>{S4.sel=null;renderS4()},
+invite:el=>openInvite(co(el.dataset.id)),
+'inv-close':(el,fr)=>closeOv(fr,'.ov-inv'),
+'inv-send':(el,fr)=>{const c=co(el.dataset.id);c.invited=true;closeOv(fr,'.ov-inv');renderS4();renderS5();toast(fr,'Đã gửi lời mời tới '+c.name+'.')},
+'invite-revoke':(el,fr)=>{const c=co(el.dataset.id);c.invited=false;renderS4();renderS5();toast(fr,'Đã thu hồi lời mời.')},
+'go-feed':el=>{F.type='all';F.src=el.dataset.id;shown=6;renderBar();renderList();$('#s1').scrollIntoView()},
+'req-ok':(el,fr)=>{const c=co(el.dataset.id);c.conn=true;refresh();toast(fr,'Đã kết nối với '+c.name+'. Bài đối tác của họ sẽ hiện ở bảng tin.',()=>{c.conn=false;refresh()})},
+'req-rej':el=>{S5.rej=el.dataset.id;renderS5()},
+'req-no':()=>{S5.rej=null;renderS5()},
+'req-rej-ok':(el,fr)=>{const c=co(el.dataset.id);c.req=false;c.rejected=true;S5.rej=null;renderS4();renderS5();toast(fr,'Đã từ chối '+c.name+'.',()=>{c.req=true;c.rejected=false;renderS4();renderS5()})},
+'sw-disc':(el,fr)=>{SET.disc=!SET.disc;renderS5();renderS4()}
+};
+document.addEventListener('click',e=>{
+  const t=e.target;
+  if(!t.closest('.rel'))$$('.picker,.cp-dd').forEach(x=>x.hidden=true);
+  const fo=$('.ov-fp',FR.fr1);
+  if(fo){const m=document.body.classList.contains('m');if(m?t===fo:(!t.closest('.fp')&&!t.closest('.fbtn')&&!t.closest('.fab-btn')&&t.closest('#fr1'))){fo.remove();FR.fr1.classList.remove('lock')}}
+  const el=t.closest('[data-act]');if(!el||el.disabled)return;
+  const f=A[el.dataset.act];if(!f)return;
+  if(el.type==='checkbox'&&el.dataset.act!=='cp-co')return;
+  f(el,el.closest('.frame')||FR.fr1);
+});
+document.addEventListener('change',e=>{if(e.target.name==='who'){SET.who=e.target.value;renderS5();renderS4();toast(FR.fr5,'Đã lưu cài đặt.')}});
+document.addEventListener('input',e=>{if(e.target.classList.contains('co-q')){S4.q=e.target.value;$('#s4res').innerHTML=s4Results()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const o=$$('.layer .ov').pop();if(o){const fr=o.closest('.frame');o.remove();if(!$('.ov:not(.ov-fp)',$('.layer',fr)))fr.classList.remove('lock')}}});
+/* ---------- câu hỏi ---------- */
+const QS=[
+{id:'Q1',q:'Thứ tự bảng tin',o:[['Mới nhất trước, bài công ty mình không ưu tiên (đề xuất)',1],['Bài công ty mình lên trước trong ngày'],['Bài có nhiều bình luận lên trước']]},
+{id:'Q2',q:'Bài đối tác nào vào bảng tin của mình',o:[['Chỉ bài «Tất cả đối tác» hoặc chọn đích danh công ty mình (đề xuất)',1],['Thêm bài gửi theo nhóm «Nhà cung cấp» / «Khách hàng» khi mình thuộc nhóm đó']]},
+{id:'Q3',q:'Ghim bài «Thông báo» của công ty mình lên đầu',o:[['Không ghim (đề xuất)',1],['Cho ghim tối đa 1 bài, quản trị ghim']]},
+{id:'Q4',q:'Vị trí nút lọc trên máy tính',o:[['Thanh dính trên đầu bảng tin; điện thoại là nút nổi (đề xuất)',1],['Nút nổi góc phải dưới ở cả hai']]},
+{id:'Q5',q:'Ai được tìm và mời đối tác mới',o:[['Chỉ quản trị công ty; vai khác chỉ thấy đối tác đã kết nối (đề xuất)',1],['Mọi nhân viên'],['Quản trị và trưởng phòng']]},
+{id:'Q6',q:'Bài «công khai» cho công ty chưa kết nối xem ở trang công ty',o:[['Không có: trang công ty chưa kết nối chỉ có ảnh bìa và giới thiệu (đề xuất)',1],['Có thêm mức «Công khai» trong «Ai thấy bài»; bài đó hiện ở trang công ty']]},
+{id:'Q7',q:'Tải thêm bài (20 bài mỗi lần)',o:[['Tự tải khi cuộn tới cuối (đề xuất)',1],['Nút «Xem thêm» ở cuối danh sách']]}
+];
+$('#qbox').innerHTML=QS.map(q=>`<fieldset class="q" style="border:1px solid var(--border)"><legend style="padding:0 4px;font-weight:600">${q.id} · ${esc(q.q)}</legend>${q.o.map((o,i)=>`<label><input type="radio" name="${q.id}" value="${i}" ${o[1]?'checked':''}>${esc(o[0])}</label>`).join('')}</fieldset>`).join('');
+$('#copy').onclick=()=>{
+  let s='Góp ý bản mẫu CR-191 (bảng tin gộp)\n\n';
+  QS.forEach(q=>{const c=$(`input[name=${q.id}]:checked`);s+=`${q.id} ${q.q}: ${c?c.parentNode.textContent.trim():'(chưa chọn)'}\n`});
+  $$('.memo').forEach(m=>{if(m.value.trim())s+=`\n[${m.dataset.memo}] ${m.value.trim()}`});
+  const done=()=>{$('#copyMsg').textContent='Đã chép. Dán vào chat.'};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(s).then(done,()=>fallback());else fallback();
+  function fallback(){const t=document.createElement('textarea');t.value=s;document.body.appendChild(t);t.select();try{document.execCommand('copy');done()}catch(_){$('#copyMsg').textContent='Không chép được, hãy chọn và chép tay.'}t.remove()}
+};
+renderS1();renderS2();renderS3();renderS4();renderS5();
+})();
+</script>
+</body>
+</html>

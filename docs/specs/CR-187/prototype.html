@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>Bản mẫu 187</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Pacifico&family=Great+Vibes&family=Allura&family=Lobster&family=Charm:wght@600&display=swap">
+<style>
+:root{--background:#f4f4f9;--foreground:#0a0a0a;--card:#fff;--muted:#f5f5f5;--muted-foreground:#6b6b6b;--muted-strong-foreground:#525252;--placeholder:#a3a3a3;--primary:#4f46e5;--primary-foreground:#fff;--primary-strong:#4338ca;--accent:#eef2ff;--accent-foreground:#4338ca;--ink-strong:#1e1b4b;--on-ink:#e0e7ff;--border:#e5e5e5;--input:#d4d4d8;--ring:#4f46e5;--error-border:#d92d20;--destructive:#b42318;--success:#05603f;--success-bg:#e3f4ec;--warning:#7f3c04;--warning-bg:#fdf0df;--danger:#9b1c1c;--danger-bg:#fde8e8;--radius:8px;--ctl:40px;--dlgmax:440px}
+[data-theme=dark]{--background:#0e0f1c;--foreground:#ececf4;--card:#17182a;--muted:#1d1f33;--muted-foreground:#a1a3b8;--muted-strong-foreground:#c3c5d6;--placeholder:#8a8ca3;--primary:#818cf8;--primary-foreground:#0e0f1c;--primary-strong:#a5b4fc;--accent:#24264a;--accent-foreground:#a5b4fc;--ink-strong:#3730a3;--on-ink:#e0e7ff;--border:#2a2c44;--input:#686c99;--ring:#818cf8;--error-border:#f97066;--destructive:#b42318;--success:#6ee7a8;--success-bg:#0f2e20;--warning:#fbbf24;--warning-bg:#352608;--danger:#fca5a5;--danger-bg:#3b1515}
+*{box-sizing:border-box}
+html{scrollbar-gutter:stable}
+body{margin:0;background:var(--background);color:var(--foreground);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.top{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.top nav{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+.top nav a{color:var(--muted-strong-foreground);text-decoration:none;padding:4px 10px;border-radius:99px;font-size:13px;border:1px solid var(--border)}
+.top nav a:hover{background:var(--accent);color:var(--accent-foreground)}
+.stage{container-type:inline-size;margin:0 auto;max-width:1000px;padding:16px;transition:max-width .2s}
+body.mobile .stage{max-width:390px;border-left:1px dashed var(--input);border-right:1px dashed var(--input);background:var(--background)}
+body.mobile{--dlgmax:366px;--ctl:44px}
+@container (max-width:600px){:root{--ctl:44px}}
+section.screen{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin:0 0 20px;scroll-margin-top:70px}
+h2{margin:0 0 4px;font-size:18px}
+.pt{background:var(--accent);color:var(--accent-foreground);border-radius:8px;padding:6px 10px;margin:0 0 12px;font-size:13px}
+h3{font-size:14px;margin:14px 0 6px}
+.muted{color:var(--muted-foreground)}
+.btn{min-height:var(--ctl);padding:0 14px;border-radius:8px;border:1px solid var(--input);background:var(--card);color:var(--foreground);font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn:hover{background:var(--muted)}
+.btn.pri{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.btn.pri:hover{filter:brightness(1.08);background:var(--primary)}
+.btn.danger{background:var(--destructive);color:#fff;border-color:var(--destructive)}
+.btn.sm{min-height:32px;padding:0 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.ibtn{width:var(--ctl);padding:0}
+input[type=text],input[type=password],input[type=date],select,textarea{width:100%;min-height:var(--ctl);border:1px solid var(--input);border-radius:8px;background:var(--card);color:var(--foreground);padding:0 10px;font:inherit}
+textarea{padding:8px 10px;min-height:60px}
+label{display:block;font-size:13px;font-weight:500;margin:10px 0 4px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@container (max-width:600px){.grid2{grid-template-columns:1fr}}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.tab{min-height:var(--ctl);padding:0 14px;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted-strong-foreground);font:inherit;cursor:pointer}
+.tab[aria-selected=true]{color:var(--primary-strong);border-bottom-color:var(--primary);background:var(--accent)}
+.box{border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--card)}
+.sigpad{border:1px dashed var(--input);border-radius:10px;background:#fff;touch-action:none;width:100%;display:block;aspect-ratio:3/1}
+.sigprev{background:#fff;color:#111;border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-height:90px;display:flex;flex-direction:column;justify-content:center}
+.sigprev .big{font-size:38px;line-height:1.2;color:#1a237e;min-height:46px}
+.sigprev .cap{font-size:12px;color:#333;border-top:1px solid #999;margin-top:4px;padding-top:2px}
+.fonts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px}
+.fopt{border:1px solid var(--input);border-radius:8px;padding:6px 10px;background:#fff;color:#1a237e;cursor:pointer;min-height:var(--ctl);text-align:left}
+.fopt .fn{display:block;font:11px system-ui;color:#555}
+.fopt .fs{font-size:24px;line-height:1.2;display:block}
+.fopt[aria-pressed=true]{outline:2px solid var(--primary);background:#eef2ff}
+.ver{display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;width:100%;background:var(--card);color:var(--foreground);font:inherit;text-align:left;min-height:56px}
+.ver:hover{background:var(--muted)}
+.ver[aria-pressed=true]{background:var(--accent);border-color:var(--primary)}
+.ver .thumb{background:#fff;color:#1a237e;border-radius:6px;padding:2px 8px;width:110px;height:44px;display:flex;align-items:center;font-size:22px;overflow:hidden;white-space:nowrap}
+.badge{font-size:12px;padding:1px 8px;border-radius:99px;background:var(--muted);color:var(--muted-strong-foreground);border:1px solid var(--border)}
+.badge.ok{background:var(--success-bg);color:var(--success);border-color:transparent}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px 6px;border-bottom:1px solid var(--border);text-align:left;font-size:13px}
+th{color:var(--muted-foreground);font-weight:500}
+.list{max-height:240px;overflow:auto}
+@container (max-width:600px){.hide-m{display:none}}
+.pdf{background:#fff;color:#222;border:1px solid var(--input);border-radius:6px;padding:18px;aspect-ratio:3/3.6;position:relative;max-width:420px;margin:0 auto;box-shadow:0 2px 8px #0003}
+.pdf p{margin:0 0 8px;font-size:12px}.pdf .ln{height:7px;background:#e6e6e6;border-radius:3px;margin:7px 0}
+.stamp{position:absolute;right:14px;bottom:16px;width:62%;min-height:110px;border:1px dashed #888;border-radius:6px;padding:6px 8px;background:#fffef6;cursor:pointer;font-size:11px;color:#333}
+.stamp.on{border:1px solid #4f46e5;cursor:default}
+.stamp .big{font-size:30px;color:#1a237e;line-height:1.2;min-height:36px}
+.stamp .who{border-top:1px solid #999;padding-top:2px;font-weight:600}
+.stamp .when{color:#444}
+.overlay{position:fixed;inset:0;background:#000a;z-index:50;display:none;align-items:center;justify-content:center;padding:12px}
+.overlay.open{display:flex}
+.dlg{background:var(--card);color:var(--foreground);border-radius:14px;width:100%;max-width:var(--dlgmax);max-height:calc(100vh - 24px);overflow:auto;padding:18px;border:1px solid var(--border)}
+.dlg h3{font-size:17px;margin:0 0 8px}
+.rules{list-style:none;padding:0;margin:6px 0;font-size:13px}
+.rules li{color:var(--muted-foreground)}.rules li.ok{color:var(--success)}
+.rules li:before{content:"○ "}.rules li.ok:before{content:"✓ "}
+.bar{height:6px;border-radius:4px;background:var(--muted);overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;width:0;background:var(--destructive);transition:width .15s,background .15s}
+.err{color:var(--danger);background:var(--danger-bg);padding:6px 10px;border-radius:8px;font-size:13px;margin-top:8px}
+.okmsg{color:var(--success);background:var(--success-bg);padding:8px 10px;border-radius:8px;font-size:13px;margin-top:8px}
+.warnmsg{color:var(--warning);background:var(--warning-bg);padding:8px 10px;border-radius:8px;font-size:13px;margin-top:8px}
+.menu{position:absolute;right:0;top:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 20px #0004;min-width:260px;z-index:10;display:none;padding:4px}
+.menu.open{display:block}
+.menu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--foreground);font:inherit;padding:0 10px;min-height:var(--ctl);border-radius:6px;cursor:pointer}
+.menu button:hover{background:var(--accent)}
+.drop{border:2px dashed var(--input);border-radius:12px;padding:16px;text-align:center;color:var(--muted-strong-foreground)}
+.crop{position:relative;width:100%;max-width:330px;margin:8px auto;border-radius:6px;overflow:hidden;background:#000}
+.crop canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+.crop .mask{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 999px #0009}
+.crop.av{aspect-ratio:1/1}.crop.cv{aspect-ratio:3/1}
+.crop.av .hole{position:absolute;inset:6%;border-radius:50%;box-shadow:0 0 0 999px #0009;border:2px solid #fff;pointer-events:none}
+.crop.cv .hole{position:absolute;inset:0;border:2px solid #fff;pointer-events:none}
+.swatch{border-radius:10px;padding:10px 12px;border:1px solid var(--border);margin-bottom:6px}
+.ratio{font-size:12px;font-weight:600;float:right}
+.pass{color:var(--success)}.fail{color:var(--danger)}
+.chips{display:flex;gap:4px;margin-bottom:8px}
+.chip{min-height:var(--ctl);padding:0 14px;border-radius:99px;border:1px solid var(--input);background:var(--card);color:var(--foreground);font:inherit;cursor:pointer;font-weight:400}
+.chip.bad[aria-pressed=true]{font-weight:700;background:var(--accent);color:var(--accent-foreground)}
+.chip.good[aria-pressed=true]{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.fl-list{min-height:150px;transition:opacity .2s}.fl-list.dim{opacity:.45}
+.fl-list div{padding:8px;border-bottom:1px solid var(--border)}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink-strong);color:var(--on-ink);padding:10px 16px;border-radius:10px;z-index:80;display:none}
+.q{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.q label{display:flex;gap:8px;align-items:flex-start;font-weight:400;margin:2px 0;min-height:32px}
+.q input{margin-top:4px}
+.pillnote{font-size:12px}
+.fab{position:absolute;width:var(--ctl);height:var(--ctl);min-width:36px;min-height:36px;border-radius:50%;border:2px solid var(--card);background:var(--primary);color:var(--primary-foreground);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;padding:0}
+.fab:hover{background:var(--primary-strong);color:var(--primary-foreground)}
+.fab:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+[data-tip]{position:relative}
+[data-tip]:hover::after,[data-tip]:focus-visible::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);right:0;background:var(--ink-strong);color:var(--on-ink);font:12px system-ui;padding:3px 8px;border-radius:6px;white-space:nowrap;z-index:30;pointer-events:none}
+.linkbtn{background:none;border:0;color:var(--primary-strong);text-decoration:underline;font:inherit;font-size:12px;cursor:pointer;padding:0;min-height:32px}
+.crow{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div class="top">
+  <strong>Bản mẫu CR-187/188/192</strong>
+  <nav aria-label="Mục lục">
+    <a href="#s1">1 Đổi mật khẩu</a><a href="#s2">2 Chữ ký của tôi</a><a href="#s3">3 Ký trên giấy tờ</a><a href="#s4">4 Kiểm tra tệp</a><a href="#s5">5 Ảnh đại diện/bìa</a><a href="#s6">6 Sáng/Tối</a><a href="#s7">7 Chống nháy</a><a href="#qs">Câu hỏi</a>
+  </nav>
+  <button class="btn sm" id="themeBtn">Chế độ: Sáng</button>
+  <button class="btn sm" id="devBtn">Khung: Máy tính</button>
+</div>
+
+<div class="stage">
+
+<!-- 1 -->
+<section class="screen" id="s1">
+<h2>1. Đổi mật khẩu ngay trong Sổ Hợp Tác</h2>
+<p class="pt">Điểm cần bạn xem: đổi tại chỗ, không bị đưa sang trang quản trị; luật độ mạnh hiện ngay khi gõ.</p>
+<div class="box">
+  <div class="row" style="justify-content:space-between"><div><strong>Tài khoản</strong><div class="muted">Nguyễn Thảo Vy · vy.nguyen@congty-mau.vn</div></div>
+  <button class="btn pri" id="pwOpen">Đổi mật khẩu</button></div>
+  <div id="pwDone" class="okmsg" style="display:none">Đã đổi mật khẩu. Các thiết bị khác sẽ cần đăng nhập lại.</div>
+</div>
+<p class="muted pillnote">Mẫu: mật khẩu hiện tại đúng là <code>Matkhau@123</code>; nhập sai để xem lỗi.</p>
+<div class="overlay" id="pwDlg"><form class="dlg" id="pwForm" autocomplete="off">
+  <h3>Đổi mật khẩu</h3>
+  <label for="pw0">Mật khẩu hiện tại</label><input type="password" id="pw0">
+  <label for="pw1">Mật khẩu mới</label><input type="password" id="pw1">
+  <div class="bar"><i id="pwBar"></i></div>
+  <ul class="rules" id="pwRules"><li data-r="len">Ít nhất 10 ký tự</li><li data-r="up">Có chữ hoa và chữ thường</li><li data-r="num">Có chữ số</li><li data-r="sym">Có ký tự đặc biệt (! @ # …)</li></ul>
+  <label for="pw2">Nhập lại mật khẩu mới</label><input type="password" id="pw2">
+  <div class="err" id="pwErr" style="display:none"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:14px"><button type="button" class="btn" data-close="pwDlg">Huỷ</button><button class="btn pri" id="pwSave" disabled>Đổi mật khẩu</button></div>
+</form></div>
+</section>
+
+<!-- 2 -->
+<section class="screen" id="s2">
+<h2>2. Chữ ký của tôi</h2>
+<p class="pt">Điểm cần bạn xem: dòng dưới chữ ký không có ngày; tạo mới không xoá bản cũ; bấm một bản để xem giấy tờ đã ký bằng nó.</p>
+<div class="grid2">
+<div>
+  <h3>Tạo chữ ký mới</h3>
+  <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" data-t="draw">Vẽ</button><button class="tab" role="tab" aria-selected="false" data-t="type">Gõ họ tên</button><button class="tab" role="tab" aria-selected="false" data-t="img">Tải ảnh</button></div>
+  <div id="t-draw"><canvas class="sigpad" id="pad" width="600" height="200" aria-label="Vẽ chữ ký"></canvas><div class="row" style="margin-top:6px"><button class="btn sm" id="padClear">Xoá nét vẽ</button><span class="muted">Dùng ngón tay hoặc chuột để vẽ.</span></div></div>
+  <div id="t-type" style="display:none"><label for="sigName">Họ tên để tạo chữ ký</label><input type="text" id="sigName" value="Nguyễn Thảo Vy"><label>Chọn kiểu chữ</label><div class="fonts" id="fonts"></div></div>
+  <div id="t-img" style="display:none"><div class="drop">Chọn ảnh chữ ký (PNG/JPG, nền trắng hoặc trong suốt)<br><br><input type="file" accept="image/*" id="sigFile"></div><img id="sigImg" alt="" style="max-width:100%;max-height:100px;margin-top:6px;display:none;background:#fff"></div>
+  <h3>Dòng dưới chữ ký</h3>
+  <div class="grid2" style="gap:8px"><div><label for="cName">Họ tên</label><input type="text" id="cName" value="Nguyễn Thảo Vy"></div><div><label for="cPos">Chức vụ</label><input type="text" id="cPos" value="Giám đốc kinh doanh"></div></div>
+  <label for="cDep">Phòng ban</label><input type="text" id="cDep" value="Phòng Kinh doanh">
+  <h3>Xem trước</h3>
+  <div class="sigprev"><div class="big" id="prevBig"></div><div class="cap" id="prevCap"></div></div>
+  <p class="muted pillnote">Ngày giờ ký không nằm ở đây — hệ thống tự in lúc bạn ký từng giấy tờ.</p>
+  <button class="btn pri" id="sigSave" style="margin-top:6px">Lưu làm chữ ký đang dùng</button>
+</div>
+<div>
+  <h3>Lịch sử chữ ký</h3>
+  <p class="muted pillnote" style="margin-top:0">Tạo mới không xoá bản cũ. Bấm một bản để xem giấy tờ đã ký bằng nó.</p>
+  <div id="vers"></div>
+  <h3 id="docsTitle">Giấy tờ đã ký bằng chữ ký này</h3>
+  <div class="row"><select id="fType" style="flex:1;min-width:120px" aria-label="Loại giấy tờ"><option value="">Mọi loại</option><option>Hợp đồng</option><option>Phụ lục</option><option>Giấy tờ khác</option></select>
+  <input type="date" id="fFrom" style="flex:1;min-width:130px" aria-label="Từ ngày"><input type="date" id="fTo" style="flex:1;min-width:130px" aria-label="Đến ngày"></div>
+  <div class="list" id="docs" style="margin-top:6px"></div>
+</div>
+</div>
+</section>
+
+<!-- 3 -->
+<section class="screen" id="s3">
+<h2>3. Chữ ký trên giấy tờ khi ký</h2>
+<p class="pt">Điểm cần bạn xem: dấu ký có chữ ký + Họ tên · Chức vụ · Phòng ban + «Ký ngày …» — ngày giờ luôn được in.</p>
+<div class="pdf">
+  <p><strong>HỢP ĐỒNG CUNG CẤP DỊCH VỤ số 24/HĐ-2026</strong></p><p>Bên A: Công ty TNHH Mẫu Một · Bên B: Công ty CP Mẫu Hai</p>
+  <div class="ln"></div><div class="ln" style="width:90%"></div><div class="ln" style="width:95%"></div><div class="ln" style="width:70%"></div><div class="ln"></div><div class="ln" style="width:85%"></div>
+  <div class="stamp" id="stamp" role="button" tabindex="0" aria-label="Bấm để ký tại đây">Bấm để ký tại đây</div>
+</div>
+<div class="row" style="justify-content:center;margin-top:10px"><button class="btn" id="stampUndo" disabled>Bỏ dấu ký</button><span class="muted">Dùng chữ ký đang dùng ở mục 2.</span></div>
+</section>
+
+<!-- 4 -->
+<section class="screen" id="s4">
+<h2>4. Kiểm tra tệp</h2>
+<p class="pt">Điểm cần bạn xem: không cần chọn HĐ trước, hệ thống tự dò toàn bộ giấy tờ đã ký và nói tệp thuộc HĐ nào. Lối vào: nút trên thanh công cụ + «⋯» của từng HĐ.</p>
+<div class="box">
+  <div class="row" style="justify-content:space-between"><strong>Hợp đồng</strong>
+    <button class="btn sm" id="tbCheck"><span aria-hidden="true">&#128269;</span> Kiểm tra tệp</button></div>
+  <div id="ctList"></div>
+</div>
+<div class="overlay" id="vDlg"><div class="dlg">
+  <h3>Kiểm tra tệp</h3>
+  <div class="box" style="background:var(--accent);color:var(--accent-foreground);border:0">
+    <strong>Ví dụ:</strong> đối tác gửi lại qua Zalo một file HĐ và nói đây là bản đã ký. Bạn tải file lên đây. Hệ thống tự dò trong tất cả giấy tờ đã ký của công ty, không cần chọn hợp đồng trước, rồi báo tệp đó thuộc hợp đồng nào, hoặc đã bị sửa.
+  </div>
+  <div id="vCtx" class="muted pillnote" style="margin-top:8px"></div>
+  <div class="drop" style="margin-top:8px">Kéo thả tệp vào đây hoặc chọn từ máy<br><br><input type="file" id="vFile"></div>
+  <p class="muted pillnote">Bản mẫu: chưa so thật. Bấm thử một trong các kết quả:</p>
+  <div class="row"><button class="btn sm" id="vThis">Khớp HĐ này</button><button class="btn sm" id="vOther">Khớp HĐ khác</button><button class="btn sm" id="vNone">Không khớp</button></div>
+  <div id="vRes"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close="vDlg">Đóng</button></div>
+</div></div>
+</section>
+
+<!-- 5 -->
+<section class="screen" id="s5">
+<h2>5. Ảnh đại diện và ảnh bìa</h2>
+<p class="pt">Điểm cần bạn xem: chọn ảnh lớn thì có hộp cắt; ảnh được thu nhỏ tự động (~200 KB) nên không bị từ chối vì nặng.</p>
+<div class="box">
+  <div style="position:relative">
+    <div style="aspect-ratio:3/1;border-radius:10px;background:var(--accent);overflow:hidden;position:relative"><img id="coverImg" alt="Ảnh bìa" style="width:100%;height:100%;object-fit:cover;display:none"><span class="muted" id="coverPh" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">Chưa có ảnh bìa</span></div>
+    <button class="fab" id="cvBtn" aria-label="Đổi ảnh bìa" data-tip="Đổi ảnh bìa" style="right:8px;top:8px">&#9998;</button>
+    <div style="position:absolute;left:14px;bottom:-36px;width:80px;height:80px">
+      <div style="width:80px;height:80px;aspect-ratio:1/1;border-radius:50%;border:3px solid var(--card);background:var(--muted);overflow:hidden"><img id="avImg" alt="Ảnh đại diện" style="width:100%;height:100%;object-fit:cover;display:none"></div>
+      <button class="fab" id="avBtn" aria-label="Đổi ảnh đại diện" data-tip="Đổi ảnh đại diện" style="right:-6px;bottom:-4px;width:36px;height:36px">&#128247;</button>
+    </div>
+  </div>
+  <div style="height:48px"></div>
+  <input type="file" accept="image/*" id="cropFile" hidden>
+  <button class="linkbtn" id="sampleBtn">Dùng ảnh mẫu</button>
+</div>
+<div class="overlay" id="cropDlg"><div class="dlg">
+  <h3 id="cropTitle">Cắt ảnh đại diện</h3>
+  <p class="muted pillnote" style="margin:0">Kéo ảnh để chọn vùng, kéo thanh để phóng to.</p>
+  <div class="crop av" id="cropBox"><canvas id="cropCv" width="560" height="560"></canvas><div class="hole"></div></div>
+  <label for="zoom">Phóng to</label><input type="range" id="zoom" min="1" max="3" step="0.01" value="1" style="width:100%">
+  <p class="muted pillnote" id="cropInfo">Ảnh sẽ được thu nhỏ còn ~200 KB.</p>
+  <div class="row" style="justify-content:flex-end"><button class="btn" data-close="cropDlg">Huỷ</button><button class="btn pri" id="cropOk">Dùng ảnh này</button></div>
+</div></div>
+</section>
+
+<!-- 6 -->
+<section class="screen" id="s6">
+<h2>6. Trang mẫu Sáng / Tối</h2>
+<p class="pt">Điểm cần bạn xem: bấm nút «Chế độ» trên đầu trang; mọi mẫu chữ dưới đây phải ≥ 4,5 (đạt AA) ở cả hai chế độ. Tỉ lệ tính trực tiếp.</p>
+<div class="grid2">
+<div><h3>Sau (đề xuất): dùng màu theo chế độ</h3><div id="ratios"></div></div>
+<div><h3>Trước / Sau cho chữ phụ</h3>
+ <div class="swatch" style="background:var(--card)"><span class="ratio" id="bef"></span><div style="color:#6b6b6b">Trước: chữ phụ màu cứng #6b6b6b — «Cập nhật 2 giờ trước · 3 bình luận»</div></div>
+ <div class="swatch" style="background:var(--card)"><span class="ratio" id="aft"></span><div style="color:var(--muted-foreground)">Sau: chữ phụ theo chế độ — «Cập nhật 2 giờ trước · 3 bình luận»</div></div>
+ <p class="muted pillnote">«Trước» là giả định nguyên nhân (màu cứng của chế độ sáng còn sót); ở Sáng hai dòng gần như giống nhau, sang Tối dòng «Trước» chìm.</p></div>
+</div>
+</section>
+
+<!-- 7 -->
+<section class="screen" id="s7">
+<h2>7. Chống nháy khi đổi bộ lọc</h2>
+<p class="pt">Điểm cần bạn xem: bấm lần lượt các nhãn ở cả hai bên (giả lập tải 1 giây) — bên phải không nhảy, không trắng.</p>
+<div class="grid2">
+ <div><h3>Hiện nay</h3><div class="chips" id="chipsA"></div><div class="fl-list" id="listA"></div></div>
+ <div><h3>Sau</h3><div class="chips" id="chipsB"></div><div class="fl-list" id="listB"></div></div>
+</div>
+</section>
+
+<!-- Câu hỏi -->
+<section class="screen" id="qs">
+<h2>Câu hỏi cần chốt</h2>
+<div id="qbox"></div>
+<h3>Ghi chú theo màn (tuỳ chọn)</h3>
+<div id="notes"></div>
+<button class="btn pri" id="copyBtn" style="margin-top:10px">Chép góp ý</button> <span id="copyMsg" class="muted"></span>
+</section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',2500)}
+/* chung */
+$('#themeBtn').onclick=()=>{const d=document.documentElement,dk=d.dataset.theme==='dark';d.dataset.theme=dk?'light':'dark';$('#themeBtn').textContent='Chế độ: '+(dk?'Sáng':'Tối');ratios()};
+$('#devBtn').onclick=()=>{const m=document.body.classList.toggle('mobile');$('#devBtn').textContent='Khung: '+(m?'Điện thoại (390px)':'Máy tính')};
+$$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).classList.remove('open'));
+$$('.overlay').forEach(o=>o.addEventListener('mousedown',e=>{if(e.target===o)o.classList.remove('open')}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.overlay.open').forEach(o=>o.classList.remove('open'))});
+
+/* 1 mật khẩu */
+const R={len:v=>v.length>=10,up:v=>/[a-z]/.test(v)&&/[A-Z]/.test(v),num:v=>/\d/.test(v),sym:v=>/[^A-Za-z0-9]/.test(v)};
+function pwCheck(){const v=$('#pw1').value;let n=0;$$('#pwRules li').forEach(li=>{const ok=R[li.dataset.r](v);li.classList.toggle('ok',ok);n+=ok});
+ const b=$('#pwBar');b.style.width=(n*25)+'%';b.style.background=n<3?'var(--destructive)':n<4?'var(--warning-solid,#b45309)':'var(--success)';
+ $('#pwSave').disabled=!($('#pw0').value&&n===4&&$('#pw2').value===v);$('#pwErr').style.display='none'}
+['pw0','pw1','pw2'].forEach(i=>$('#'+i).addEventListener('input',pwCheck));
+$('#pwOpen').onclick=()=>{$('#pwForm').reset();pwCheck();$('#pwDlg').classList.add('open');$('#pw0').focus()};
+$('#pwForm').onsubmit=e=>{e.preventDefault();const er=$('#pwErr');
+ if($('#pw0').value!=='Matkhau@123'){er.textContent='Mật khẩu hiện tại không đúng.';er.style.display='block';return}
+ if($('#pw2').value!==$('#pw1').value){er.textContent='Hai lần nhập chưa giống nhau.';er.style.display='block';return}
+ $('#pwDlg').classList.remove('open');$('#pwDone').style.display='block';toast('Đã đổi mật khẩu')};
+$('#pw2').addEventListener('input',()=>{if($('#pw2').value&&$('#pw2').value!==$('#pw1').value){$('#pwErr').textContent='Hai lần nhập chưa giống nhau.';$('#pwErr').style.display='block'}});
+
+/* 2 chữ ký */
+const FONTS=[['Dancing Script','Dancing Script'],['Pacifico','Pacifico'],['Great Vibes','Great Vibes'],['Allura','Allura'],['Lobster','Lobster'],['Charm','Charm']];
+let font=FONTS[0][0],mode='draw',drawn=false,imgSrc='',sel=3;
+$('#fonts').innerHTML=FONTS.map(f=>`<button type="button" class="fopt" data-f="${f[0]}" aria-pressed="${f[0]===font}"><span class="fs" style="font-family:'${f[0]}',cursive"></span><span class="fn">${f[1]}</span></button>`).join('');
+function renderFonts(){const n=$('#sigName').value||'Chữ ký';$$('.fopt').forEach(b=>{b.querySelector('.fs').textContent=n;b.setAttribute('aria-pressed',b.dataset.f===font)})}
+$('#fonts').onclick=e=>{const b=e.target.closest('.fopt');if(b){font=b.dataset.f;renderFonts();prev()}};
+$('#sigName').oninput=()=>{renderFonts();prev()};
+$$('.tab').forEach(t=>t.onclick=()=>{mode=t.dataset.t;$$('.tab').forEach(x=>x.setAttribute('aria-selected',x===t));['draw','type','img'].forEach(k=>$('#t-'+k).style.display=k===mode?'':'none');prev()});
+const pad=$('#pad'),pc=pad.getContext('2d');let dn=false;pc.lineWidth=4;pc.lineCap='round';pc.strokeStyle='#1a237e';
+const pp=e=>{const r=pad.getBoundingClientRect();return[(e.clientX-r.left)*pad.width/r.width,(e.clientY-r.top)*pad.height/r.height]};
+pad.onpointerdown=e=>{dn=true;pad.setPointerCapture(e.pointerId);const[x,y]=pp(e);pc.beginPath();pc.moveTo(x,y)};
+pad.onpointermove=e=>{if(!dn)return;const[x,y]=pp(e);pc.lineTo(x,y);pc.stroke();drawn=true};
+pad.onpointerup=()=>{dn=false;prev()};
+$('#padClear').onclick=()=>{pc.clearRect(0,0,pad.width,pad.height);drawn=false;prev()};
+$('#sigFile').onchange=e=>{const f=e.target.files[0];if(!f)return;imgSrc=URL.createObjectURL(f);$('#sigImg').src=imgSrc;$('#sigImg').style.display='block';prev()};
+function bigHTML(){if(mode==='type')return`<span style="font-family:'${font}',cursive">${esc($('#sigName').value)}</span>`;
+ if(mode==='img')return imgSrc?`<img src="${imgSrc}" alt="" style="max-height:46px">`:'<span class="muted">Chưa chọn ảnh</span>';
+ return drawn?`<img src="${pad.toDataURL()}" alt="" style="height:46px">`:'<span style="color:#777;font:13px system-ui">Chưa vẽ</span>'}
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cap=()=>[$('#cName').value,$('#cPos').value,$('#cDep').value].filter(Boolean).join(' · ');
+function prev(){$('#prevBig').innerHTML=bigHTML();$('#prevCap').textContent=cap();stampRender()}
+['cName','cPos','cDep'].forEach(i=>$('#'+i).oninput=prev);
+const VERS=[{n:1,d:'15/05/2026',kind:'img',txt:'Ảnh quét',cap:'Nguyễn Thảo Vy · Nhân viên kinh doanh · Phòng Kinh doanh'},{n:2,d:'03/09/2026',kind:'type',font:'Pacifico',txt:'Thảo Vy',cap:'Nguyễn Thảo Vy · Trưởng nhóm · Phòng Kinh doanh'},{n:3,d:'12/11/2026',kind:'type',font:'Dancing Script',txt:'Nguyễn Thảo Vy',cap:'Nguyễn Thảo Vy · Giám đốc kinh doanh · Phòng Kinh doanh'}];
+const DOCS=[['Hợp đồng','HĐ 24/HĐ-2026 — Mẫu Một / Mẫu Hai','18/11/2026',3],['Phụ lục','PL 01 của HĐ 24/HĐ-2026','18/11/2026',3],['Giấy tờ khác','Biên bản nghiệm thu đợt 1','14/11/2026',3],['Hợp đồng','HĐ 19/HĐ-2026 — Mẫu Một / Mẫu Ba','20/09/2026',2],['Phụ lục','PL 02 của HĐ 11/HĐ-2026','05/09/2026',2],['Hợp đồng','HĐ 11/HĐ-2026 — Mẫu Một / Mẫu Tư','22/05/2026',1],['Giấy tờ khác','Giấy uỷ quyền','17/05/2026',1]];
+const pd=s=>{const[a,b,c]=s.split('/');return`${c}-${b}-${a}`};
+function renderVers(){$('#vers').innerHTML=[...VERS].reverse().map(v=>`<button class="ver" data-n="${v.n}" aria-pressed="${v.n===sel}"><span class="thumb" style="font-family:${v.font?`'${v.font}'`:'inherit'},cursive">${v.txt}</span><span style="flex:1"><strong>Bản ${v.n}</strong><br><span class="muted">Tạo ngày ${v.d}</span></span>${v.n===VERS.length?'<span class="badge ok">Đang dùng</span>':'<span class="badge">Bản cũ</span>'}</button>`).join('');renderDocs()}
+$('#vers').onclick=e=>{const b=e.target.closest('.ver');if(b){sel=+b.dataset.n;renderVers()}};
+function renderDocs(){$('#docsTitle').textContent=`Giấy tờ đã ký bằng chữ ký này (bản ${sel})`;
+ const t=$('#fType').value,f=$('#fFrom').value,to=$('#fTo').value;
+ const rows=DOCS.filter(d=>d[3]===sel&&(!t||d[0]===t)&&(!f||pd(d[2])>=f)&&(!to||pd(d[2])<=to));
+ $('#docs').innerHTML=rows.length?`<table><tbody>${rows.map(d=>`<tr><td>${d[1]}<br><span class="muted">${d[0]} · ${d[2]}</span></td><td style="width:70px"><button class="btn sm" data-open="${d[1]}">Mở xem</button></td></tr>`).join('')}</tbody></table>`:'<p class="muted">Không có giấy tờ nào khớp bộ lọc.</p>'}
+['fType','fFrom','fTo'].forEach(i=>$('#'+i).onchange=renderDocs);
+$('#docs').onclick=e=>{const b=e.target.closest('[data-open]');if(b)toast('Mở xem: '+b.dataset.open)};
+$('#sigSave').onclick=()=>{const n=VERS.length+1;const d=new Date(),ds=`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+ VERS.push({n,d:ds,kind:mode,font:mode==='type'?font:null,txt:mode==='type'?$('#sigName').value:mode==='draw'?'(nét vẽ)':'Ảnh',cap:cap()});sel=n;renderVers();toast(`Đã lưu bản ${n}. Bản cũ vẫn được giữ.`)};
+
+/* 3 dấu ký */
+let signed=false;
+function stampRender(){const s=$('#stamp');if(!signed){s.className='stamp';s.textContent='Bấm để ký tại đây';return}
+ const d=new Date(),p=n=>String(n).padStart(2,'0');
+ s.className='stamp on';s.innerHTML=`<div class="big">${bigHTML()}</div><div class="who">${esc(cap())}</div><div class="when">Ký ngày ${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}</div>`;
+ s.querySelector('img')&&(s.querySelector('img').style.maxHeight='36px')}
+$('#stamp').onclick=()=>{if(!signed){signed=true;$('#stampUndo').disabled=false;stampRender()}};
+$('#stamp').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#stamp').click()}};
+$('#stampUndo').onclick=()=>{signed=false;$('#stampUndo').disabled=true;stampRender()};
+
+/* 4 kiểm tra tệp */
+const CT=[{n:'HĐ 24/HĐ-2026',t:'HĐ chính',p:'Công ty CP Mẫu Hai',d:'12/11/2026 14:05'},{n:'HĐ 19/HĐ-2026',t:'HĐ chính',p:'Công ty TNHH Mẫu Ba',d:'20/09/2026 09:30'},{n:'PL 01 của HĐ 11/HĐ-2026',t:'Phụ lục',p:'Công ty TNHH Mẫu Tư',d:'05/09/2026 16:12'}];
+let ctx=null;
+$('#ctList').innerHTML=CT.map((c,i)=>`<div class="crow"><div><strong>${c.n}</strong> <span class="badge ok">Đã ký đủ</span><div class="muted">${c.p} · ${c.t}</div></div><div style="position:relative"><button class="btn ibtn" data-m="${i}" aria-label="Thêm thao tác" data-tip="Thêm thao tác">&#8943;</button><div class="menu" id="mn${i}"><button>Mở hợp đồng</button><button data-chk="${i}">Kiểm tra tệp có đúng bản này không</button></div></div></div>`).join('');
+$('#ctList').onclick=e=>{const m=e.target.closest('[data-m]'),k=e.target.closest('[data-chk]');
+ if(m){e.stopPropagation();const o=$('#mn'+m.dataset.m).classList.contains('open');$$('.menu').forEach(x=>x.classList.remove('open'));if(!o)$('#mn'+m.dataset.m).classList.add('open')}
+ if(k)openV(+k.dataset.chk)};
+document.addEventListener('click',()=>$$('.menu').forEach(x=>x.classList.remove('open')));
+$('#tbCheck').onclick=()=>openV(null);
+function openV(i){ctx=i;$('#vRes').innerHTML='';$('#vThis').style.display=i===null?'none':'';$('#vCtx').textContent=i===null?'Hệ thống dò trong toàn bộ giấy tờ đã ký của công ty.':'Mở từ '+CT[i].n+'. Hệ thống vẫn dò trong toàn bộ giấy tờ đã ký của công ty.';$('#vDlg').classList.add('open')}
+const info=c=>`<table style="margin-top:6px"><tbody><tr><th>Hợp đồng</th><td><strong>${c.n}</strong></td></tr><tr><th>Loại</th><td>${c.t}</td></tr><tr><th>Đối tác</th><td>${c.p}</td></tr><tr><th>Bản ký ngày</th><td>${c.d}</td></tr></tbody></table><button class="btn sm" style="margin-top:8px" data-go>Mở hợp đồng</button>`;
+function showMatch(c){const same=ctx!==null&&CT[ctx]===c,h=ctx===null?`<strong>Khớp giấy tờ đã ký của công ty.</strong>`:same?`<strong>Đúng bản đã ký của hợp đồng này.</strong> Tệp chưa bị sửa sau khi ký.`:`<strong>Tệp này là bản đã ký của HĐ khác: ${c.n}.</strong> Không phải hợp đồng bạn đang xem.`;
+ $('#vRes').innerHTML=`<div class="${same||ctx===null?'okmsg':'warnmsg'}">${h}${info(c)}</div>`}
+$('#vRes').onclick=e=>{if(e.target.closest('[data-go]'))toast('Mở hợp đồng…')};
+$('#vThis').onclick=()=>showMatch(CT[ctx]);
+$('#vOther').onclick=()=>showMatch(ctx===null?CT[1]:CT[(ctx+1)%CT.length]);
+$('#vNone').onclick=()=>$('#vRes').innerHTML='<div class="err"><strong>Tệp không khớp giấy tờ đã ký nào của công ty</strong> — có thể đã bị sửa hoặc không phải của công ty bạn.</div>';
+$('#vFile').onchange=e=>{const f=e.target.files[0];if(!f)return;[()=>$('#vNone').click(),()=>$('#vOther').click(),()=>ctx===null?$('#vOther').click():$('#vThis').click()][f.size%3]()};
+
+/* 5 cắt ảnh */
+let cm='av',im=null,sc=1,base=1,ox=0,oy=0,cv=$('#cropCv'),cx=cv.getContext('2d');
+const dims={av:[560,560,400,400],cv:[900,300,1200,400]};
+function open5(kind){cm=kind;$('#cropTitle').textContent=kind==='av'?'Cắt ảnh đại diện':'Cắt ảnh bìa';$('#cropBox').className='crop '+kind;
+ cv.width=dims[kind][0];cv.height=dims[kind][1];$('#cropFile').dataset.k=kind;$('#cropFile').click()}
+$('#avBtn').onclick=()=>open5('av');$('#cvBtn').onclick=()=>open5('cv');
+$('#cropFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const i=new Image();i.onload=()=>start5(i,f.size);i.src=URL.createObjectURL(f);e.target.value=''};
+$('#sampleBtn').onclick=()=>{const c=document.createElement('canvas');c.width=1600;c.height=1200;const g=c.getContext('2d');const gr=g.createLinearGradient(0,0,1600,1200);gr.addColorStop(0,'#4f46e5');gr.addColorStop(1,'#f59e0b');g.fillStyle=gr;g.fillRect(0,0,1600,1200);g.fillStyle='#fff8';g.beginPath();g.arc(560,520,260,0,7);g.fill();g.fillStyle='#0a0a0a99';g.fillRect(900,700,500,300);g.font='bold 90px sans-serif';g.fillStyle='#fff';g.fillText('Ảnh mẫu',620,1100);const i=new Image();i.onload=()=>{cm=cm||'av';open5Sample(i)};i.src=c.toDataURL()};
+function open5Sample(i){cm='av';$('#cropBox').className='crop av';cv.width=560;cv.height=560;start5(i,3.2*1048576)}
+let origSize=0;
+function start5(i,size){im=i;origSize=size;[cv.width,cv.height]=[dims[cm][0],dims[cm][1]];base=Math.max(cv.width/i.width,cv.height/i.height);sc=1;$('#zoom').value=1;ox=(cv.width-i.width*base)/2;oy=(cv.height-i.height*base)/2;
+ $('#cropInfo').textContent=`Ảnh gốc ${(size/1048576).toFixed(1).replace('.',',')} MB. Ảnh sẽ được thu nhỏ còn ~200 KB.`;$('#cropDlg').classList.add('open');draw5()}
+function clamp(){const w=im.width*base*sc,h=im.height*base*sc;ox=Math.min(0,Math.max(cv.width-w,ox));oy=Math.min(0,Math.max(cv.height-h,oy))}
+function draw5(){clamp();cx.fillStyle='#000';cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(im,ox,oy,im.width*base*sc,im.height*base*sc)}
+let dg=null;cv.onpointerdown=e=>{dg=[e.clientX,e.clientY,ox,oy];cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing'};
+cv.onpointermove=e=>{if(!dg)return;const k=cv.width/cv.getBoundingClientRect().width;ox=dg[2]+(e.clientX-dg[0])*k;oy=dg[3]+(e.clientY-dg[1])*k;draw5()};
+cv.onpointerup=()=>{dg=null;cv.style.cursor='grab'};
+$('#zoom').oninput=e=>{const n=+e.target.value,cxm=cv.width/2,cym=cv.height/2;const r=n/sc;ox=cxm-(cxm-ox)*r;oy=cym-(cym-oy)*r;sc=n;draw5()};
+$('#cropOk').onclick=()=>{const[,,ow,oh]=dims[cm],o=document.createElement('canvas');o.width=ow;o.height=oh;o.getContext('2d').drawImage(cv,0,0,ow,oh);
+ o.toBlob(b=>{const u=URL.createObjectURL(b);const t=cm==='av'?$('#avImg'):$('#coverImg');t.src=u;t.style.display='block';if(cm==='cv')$('#coverPh').style.display='none';$('#cropDlg').classList.remove('open');toast(`Đã lưu ảnh (${Math.round(b.size/1024)} KB, từ ${(origSize/1048576).toFixed(1).replace('.',',')} MB)`)},'image/jpeg',.82)};
+
+/* 6 tương phản */
+function lum(h){const c=h.replace('#','').match(/../g).map(x=>parseInt(x,16)/255).map(v=>v<=.03928?v/12.92:((v+.055)/1.055)**2.4);return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+const cr=(a,b)=>{const x=lum(a),y=lum(b),[h,l]=x>y?[x,y]:[y,x];return(h+.05)/(l+.05)};
+const cv_=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function ratios(){const P=[['Chữ chính','--foreground','--card'],['Chữ phụ','--muted-foreground','--card'],['Nhãn (badge «Bản cũ»)','--muted-strong-foreground','--muted'],['Chữ trên nền màu (nút chính)','--primary-foreground','--primary'],['Chữ nhấn (tab đang chọn)','--accent-foreground','--accent'],['Thành công','--success','--success-bg'],['Lỗi','--danger','--danger-bg'],['Cảnh báo','--warning','--warning-bg']];
+ $('#ratios').innerHTML=P.map(p=>{const f=cv_(p[1]),b=cv_(p[2]),r=cr(f,b);return`<div class="swatch" style="background:var(${p[2]});color:var(${p[1]})"><span class="ratio ${r>=4.5?'pass':'fail'}" style="background:var(--card);padding:0 6px;border-radius:6px">${r.toFixed(1)}:1 ${r>=4.5?'đạt AA':'chưa đạt'}</span>${p[0]}</div>`}).join('');
+ const c=cv_('--card'),a=cr(cv_('--muted-foreground'),c),b=cr('#6b6b6b',c);
+ [['#bef',b],['#aft',a]].forEach(([s,r])=>{const e=$(s);e.textContent=r.toFixed(1)+':1 '+(r>=4.5?'đạt AA':'chưa đạt');e.className='ratio '+(r>=4.5?'pass':'fail')})}
+ratios();
+
+/* 7 chống nháy */
+const TABS=[['Tất cả',[12,'Bán máy ép nhựa cũ','Cần mua xe nâng 3 tấn','Bán lô vải cotton','Cần mua pallet nhựa']],['Cần bán',[7,'Bán máy ép nhựa cũ','Bán lô vải cotton','Bán kệ sắt kho','Bán xe tải 1,5 tấn']],['Cần mua',[5,'Cần mua xe nâng 3 tấn','Cần mua pallet nhựa','Cần mua băng tải','Cần mua máy in tem']]];
+function mkChips(id,cls,cb){const el=$(id);let cur=0;el.innerHTML=TABS.map((t,i)=>`<button class="chip ${cls}" data-i="${i}" aria-pressed="${i===0}">${t[0]} <span class="n">${t[1][0]}</span></button>`).join('');
+ el.onclick=e=>{const b=e.target.closest('.chip');if(!b)return;cur=+b.dataset.i;$$(id+' .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));cb(cur)}}
+const L=(a,i)=>TABS[i][1].slice(1).map(x=>`<div>${x}</div>`).join('');
+$('#listA').innerHTML=L(0,0);$('#listB').innerHTML=L(0,0);
+mkChips('#chipsA','bad',i=>{const l=$('#listA');l.innerHTML='';$$('#chipsA .n').forEach(n=>n.textContent=0);setTimeout(()=>{l.innerHTML=L(0,i);$$('#chipsA .n').forEach((n,k)=>n.textContent=TABS[k][1][0])},1000)});
+mkChips('#chipsB','good',i=>{const l=$('#listB');l.classList.add('dim');setTimeout(()=>{l.innerHTML=L(0,i);l.classList.remove('dim')},1000)});
+
+/* câu hỏi */
+const Q=[['q1','Phông chữ ký (6 phông: '+FONTS.map(f=>f[0]).join(', ')+')',['Giữ cả 6 (đề xuất)','Chỉ giữ 4 phông đầu','Chỉ giữ 3 phông đầu','Chọn lại danh sách khác (ghi chú)']],
+['q2','Kiểm tra tệp: lối vào',['Nút «Kiểm tra tệp» ở thanh công cụ danh sách Hợp đồng + mục trong «⋯» của HĐ; dò toàn bộ giấy tờ đã ký (đề xuất)','Chỉ trong «⋯» của từng HĐ','Bỏ hẳn tính năng']],
+['q3','Ai xem được lịch sử chữ ký?',['Chính người đó + quản trị công ty (đề xuất)','Chỉ chính người đó','Mọi người trong công ty']],
+['q4','Danh sách «Giấy tờ đã ký» đặt ở đâu?',['Trong Chữ ký của tôi, theo từng phiên bản (đề xuất)','Một màn riêng «Giấy tờ đã ký»','Cả hai']]];
+$('#qbox').innerHTML=Q.map(q=>`<div class="q"><strong>${q[1]}</strong>${q[2].map((o,i)=>`<label><input type="radio" name="${q[0]}" value="${o}" ${i===0?'checked':''}>${o}</label>`).join('')}</div>`).join('');
+const SCR=['1 Đổi mật khẩu','2 Chữ ký của tôi','3 Ký trên giấy tờ','4 Kiểm tra tệp','5 Ảnh đại diện/bìa','6 Sáng/Tối','7 Chống nháy'];
+$('#notes').innerHTML=SCR.map((s,i)=>`<label for="nt${i}">${s}</label><textarea id="nt${i}"></textarea>`).join('');
+$('#copyBtn').onclick=async()=>{let t='Góp ý bản mẫu CR-187/188/192\n';Q.forEach(q=>{const c=document.querySelector(`input[name=${q[0]}]:checked`);t+=`- ${q[1].split(' (')[0]}: ${c.value}\n`});SCR.forEach((s,i)=>{const v=$('#nt'+i).value.trim();if(v)t+=`- Màn ${s}: ${v}\n`});
+ try{await navigator.clipboard.writeText(t);$('#copyMsg').textContent='Đã chép. Dán vào chat.'}catch(e){prompt('Chép đoạn này:',t)}};
+
+renderFonts();renderVers();prev();
+</script>
+</body>
+</html>

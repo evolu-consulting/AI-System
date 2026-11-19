@@ -280,3 +280,26 @@ Mọi thứ phía đối tác (link, tạo chữ ký nhanh, ký, «Đã ký», b
 Còn: Cao 0 · Trung 4 (chạm avatar ở 390px, nhắc tên thiếu lọc/tìm, bình luận không hiện sẵn, dải người ký không còn tên) · Thấp: «một người» thay tên đối tác ở bản đã ký, màu cảnh báo, avatar «T» một chữ, khe nhỏ trên ô đăng bài, nút < 44px (công tắc «Cần ký» 24px, «Đóng» 16px). Thêm: màn ký của đối tác ở 390px, chữ «Chữ ký của tôi» xuống dòng và tràn khỏi ô chữ ký, nút «Lưu (còn 1 chỗ chưa ký)» chiếm gần hết thanh trên (Trung nhẹ). `530-r6-dt-man-ky-390.png`.
 
 Chưa soát: so sánh sơ đồ với trang quản trị, «Từ chối ký», D02–D04, avatar ở ô chọn người/uỷ quyền, lọc «Nhắc tên» với nhiều người, cảm ứng thật.
+
+---
+
+# Lượt 7 (lượt cuối, bản `a78d37f58`, 2026-11-18)
+
+Ảnh: `D:\AI\ai-system\.data\uat-cr181\` (số 600–712, tên `r7-*`). Script `scripts\r7*.mjs`. HĐ «18:45» (đã ký, lượt 6) và «20:07 · bản 2» (đi trọn hành trình lượt này).
+
+| Điểm lỗi Trung lượt 6 | Kết quả |
+|---|---|
+| Đầu trang HĐ đã ký đủ ghi «Đã ký» | HẾT: cả «18:45» và «20:07» ghi «Đã ký · Còn hiệu lực». |
+| 390px chạm avatar người ký hiện họ tên (`hasTouch`) | HẾT cho người ký («Nguyễn Văn An») và đối tác («Công ty Evolu (UAT đối tác)»). CÒN nhỏ (Thấp): chạm avatar Phụ trách vẫn hiện thêm «Đổi người phụ trách» ngoài họ tên. |
+| 390px khay chữ ký không tràn, nút «Lưu · còn n» gọn | HẾT: màn ký đối tác và công ty đều thấy khay «[chữ ký] Của tôi» gọn một dòng và nút «Lưu · còn 1» vừa thanh trên (`672-r7-dt-man-ky-390.png`, `652-r7-gd-man-ky-390.png`). |
+| Gõ «@» mở hộp «Nhắc tên» có lọc nhóm và ô tìm | HẾT: hộp «Nhắc tên» có «Tất cả», ô tìm, ghi «Chỉ hiện người xem được bài này · tối đa 10 người», danh sách có avatar, họ tên, nhóm «Nội bộ»/công ty, nút «Huỷ» và «Xong (n người)». Chưa nhìn kỹ tab lọc từng nhóm (Nội bộ/Đối tác/Khách hàng) và độ đều dòng ở 390px. `r7-cm-nhac-ten-1440.png` |
+| Nhắc một người ⇒ người đó có chuông | KHÔNG THẤY (Trung, cần xác nhận): `cuong.le` nhắc «Trần Thị Bình» trong bình luận; chuông của `binh.tran` chỉ liệt kê việc duyệt, không có thông báo nhắc tên (mới nhất là «Cần duyệt … 20:07»). Có thể thông báo nhắc tên nằm ở nơi khác (Bảng tin) hoặc chậm. `r7-binh-chuong-1440.png` |
+| Bài ≥ 3 bình luận hiện sẵn 3 bình luận mới nhất | HẾT: bài «Thùng phi 200L» hiện sẵn cả 3 bình luận mà không cần bấm. `r7-cm-truoc-bam.png` |
+| Nút gửi bình luận ≥ 44px | HẾT: 48×48px. Nút «Xong (n người)» trong hộp nhắc cao 40px (Thấp). |
+
+## Hành trình HĐ «20:07»
+Sale (tự đặt A/B, Lưu chỗ ký không sập, Gửi duyệt) ⇒ trưởng phòng (Xoè quạt mép phải, mép dưới, Liền mép + giáp lai, Lưu, Đạt) ⇒ giám đốc (Mở và ký, ký, Lưu) ⇒ thẻ «Chờ đối tác ký» + «Sao chép link» ⇒ đối tác mở link, tạo chữ ký nhanh, ký, «Bạn đã ký xong» ⇒ HĐ «Đã ký», Xem bản đã ký có 4 bản (có «Sau khi Đối tác: Công ty Evolu ký»), Tải về PDF được: ĐẠT toàn bộ. Còn lỗi nhỏ cũ: dòng chữ ký đối tác trong «Xem bản đã ký» ghi «một người» thay vì họ tên (Thấp).
+
+## Tổng kết lượt 7
+Còn: Cao 0 · Trung 1 (nhắc tên không thấy chuông, cần xác nhận) · Thấp 3 (avatar Phụ trách còn chữ «Đổi người phụ trách»; «một người» thay tên đối tác; nút «Xong» 40px).
+Chưa soát: PDF của «20:07» (chỉ tải, không soi lại), «Từ chối ký», D02–D04, so sánh sơ đồ với trang quản trị, cảm ứng thật cho kéo thả.

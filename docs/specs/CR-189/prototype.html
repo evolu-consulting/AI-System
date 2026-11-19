@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="vi" data-theme="light" data-pal="1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cơ cấu tổ chức</title>
+<style>
+/* Giá trị chép từ packages/web-kit/src/styles/tokens.css */
+:root,[data-theme=light]{--background:#f4f4f9;--foreground:#0a0a0a;--card:#fff;--muted:#f5f5f5;--muted-foreground:#6b6b6b;--muted-strong:#525252;--primary:#4f46e5;--primary-foreground:#fff;--primary-strong:#4338ca;--accent:#eef2ff;--accent-foreground:#4338ca;--border:#e5e5e5;--input:#d4d4d8;--row:#f5f5f5;--ring:#4f46e5;--destructive:#b42318;--destructive-foreground:#fff;--success:#05603f;--success-bg:#e3f4ec;--warning:#7f3c04;--warning-bg:#fdf0df;--danger:#9b1c1c;--danger-bg:#fde8e8;--ink-strong:#1e1b4b;--shadow:0 8px 28px rgba(15,15,40,.18)}
+[data-theme=dark]{--background:#0e0f1c;--foreground:#ececf4;--card:#17182a;--muted:#1d1f33;--muted-foreground:#a1a3b8;--muted-strong:#c3c5d6;--primary:#818cf8;--primary-foreground:#0e0f1c;--primary-strong:#a5b4fc;--accent:#24264a;--accent-foreground:#a5b4fc;--border:#2a2c44;--input:#686c99;--row:#23253b;--ring:#818cf8;--destructive:#b42318;--destructive-foreground:#fff;--success:#6ee7a8;--success-bg:#0f2e20;--warning:#fbbf24;--warning-bg:#352608;--danger:#fca5a5;--danger-bg:#3b1515;--ink-strong:#3730a3;--shadow:0 8px 28px rgba(0,0,0,.6)}
+:root{--r-sm:6px;--r-md:8px;--r-lg:12px;--fs-xs:12px;--fs-sm:13px;--fs-md:14px;--fs-lg:16px;--fs-xl:20px;--fs-2xl:24px;--control:40px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--background);color:var(--foreground);font:var(--fs-md)/20px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.top{position:sticky;top:0;z-index:50;background:var(--card);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.top b{font-size:var(--fs-lg)}
+.top nav{display:flex;flex-wrap:wrap;gap:4px;flex:1}
+.top nav a{padding:6px 10px;border-radius:var(--r-sm);color:var(--muted-strong);text-decoration:none;font-size:var(--fs-sm)}
+.top nav a:hover{background:var(--accent);color:var(--accent-foreground)}
+.seg{display:inline-flex;border:1px solid var(--input);border-radius:var(--r-md);overflow:hidden}
+.seg button{border:0;background:var(--card);padding:6px 12px;font-size:var(--fs-sm)}
+.seg button[aria-pressed=true]{background:var(--primary);color:var(--primary-foreground)}
+main{padding:16px;max-width:1180px;margin:0 auto}
+section.scr{margin:0 0 40px;scroll-margin-top:70px}
+section.scr>h2{font-size:var(--fs-xl);line-height:28px;margin:0 0 4px}
+.look{margin:0 0 12px;padding:8px 12px;background:var(--accent);color:var(--accent-foreground);border-radius:var(--r-md);font-size:var(--fs-sm)}
+.look b{margin-right:4px}
+.frame{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+body[data-dev=mobile] .frame{max-width:390px;margin:0 auto}
+body[data-dev=mobile] main{max-width:430px}
+.fh{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.fh h3{margin:0;font-size:var(--fs-lg);flex:1;min-width:140px}
+.fh .app{font-size:var(--fs-xs);color:var(--muted-foreground);width:100%}
+.tabs{display:flex;gap:4px;padding:0 12px;border-bottom:1px solid var(--border)}
+.tabs button{border:0;background:none;padding:10px 12px;color:var(--muted-foreground);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected=true]{color:var(--primary-strong);border-bottom-color:var(--primary)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:var(--control);padding:0 14px;border:1px solid var(--input);border-radius:var(--r-md);background:var(--card)}
+.btn:hover{background:var(--muted)}
+.btn.pri{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.btn.pri:hover{background:var(--primary-strong)}
+.btn.dng{background:var(--destructive);color:var(--destructive-foreground);border-color:var(--destructive)}
+.btn.ico{width:var(--control);padding:0}
+.btn.sm{min-height:32px;padding:0 10px;font-size:var(--fs-sm)}
+body[data-dev=mobile] .btn{min-height:44px}
+body[data-dev=mobile] .btn.ico{width:44px}
+input[type=text],input[type=search],select{min-height:var(--control);padding:0 10px;border:1px solid var(--input);border-radius:var(--r-md);background:var(--card);min-width:0}
+body[data-dev=mobile] input[type=text],body[data-dev=mobile] input[type=search],body[data-dev=mobile] select{min-height:44px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;align-items:center}
+.tools .cnt{color:var(--muted-foreground);font-size:var(--fs-sm);margin-left:auto}
+.hint{margin:0 16px 12px;padding:8px 12px;border-radius:var(--r-md);background:var(--muted);color:var(--muted-strong);font-size:var(--fs-sm)}
+/* một vùng cuộn mỗi trục */
+.scroll{overflow:auto;scrollbar-gutter:stable;max-height:470px;border-top:1px solid var(--border)}
+table{border-collapse:collapse;width:100%}
+th{position:sticky;top:0;background:var(--muted);text-align:left;font-size:var(--fs-xs);color:var(--muted-strong);padding:8px 12px;font-weight:600;z-index:1}
+td{padding:8px 12px;border-bottom:1px solid var(--row);vertical-align:middle}
+tr:hover td{background:var(--accent)}
+.person{display:flex;align-items:center;gap:10px;min-width:0}
+.person .t{min-width:0}
+.person .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.person .s{font-size:var(--fs-xs);color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.av{display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;border-radius:50%;font-weight:600;background:var(--avb0);color:var(--avf0);user-select:none}
+.av.s24{width:24px;height:24px;font-size:10px}.av.s32{width:32px;height:32px;font-size:12px}.av.s40{width:40px;height:40px;font-size:14px}
+.sel{display:flex;align-items:center;gap:8px;width:100%;min-width:220px;min-height:var(--control);padding:0 8px;border:1px solid var(--input);border-radius:var(--r-md);background:var(--card);text-align:left}
+body[data-dev=mobile] .sel{min-height:44px}
+.sel .l{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sel .ph{color:var(--muted-foreground)}
+.warn{display:inline-flex;gap:4px;align-items:center;margin-top:4px;padding:2px 8px;border-radius:99px;background:var(--warning-bg);color:var(--warning);font-size:var(--fs-xs)}
+.chip{display:inline-block;padding:1px 8px;border-radius:99px;background:var(--accent);color:var(--accent-foreground);font-size:var(--fs-xs)}
+/* Thẻ trên điện thoại */
+body[data-dev=mobile] table,body[data-dev=mobile] tbody,body[data-dev=mobile] tr,body[data-dev=mobile] td{display:block}
+body[data-dev=mobile] thead{display:none}
+body[data-dev=mobile] tr{padding:10px 12px;border-bottom:1px solid var(--row)}
+body[data-dev=mobile] td{border:0;padding:3px 0}
+body[data-dev=mobile] tr:hover td{background:none}
+body[data-dev=mobile] .sel{min-width:0}
+body[data-dev=mobile] td[data-l]::before{content:attr(data-l);display:block;font-size:var(--fs-xs);color:var(--muted-foreground);margin-top:6px}
+/* popover / toast / modal */
+#pop{position:fixed;z-index:200;background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);box-shadow:var(--shadow);min-width:240px;max-width:min(360px,94vw);display:none}
+#pop.on{display:block}
+#pop .ps{padding:8px;border-bottom:1px solid var(--border)}
+#pop .ps input{width:100%}
+#pop .pl{max-height:min(384px,55vh);overflow:auto;scrollbar-gutter:stable;padding:4px}
+#pop .g{padding:8px 10px 2px;font-size:var(--fs-xs);color:var(--muted-foreground);font-weight:600}
+#pop .it{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:6px 8px;border:0;background:none;text-align:left;border-radius:var(--r-sm)}
+#pop .it:hover,#pop .it:focus-visible{background:var(--accent)}
+#pop .it[aria-selected=true]{background:var(--accent);color:var(--accent-foreground)}
+#pop .it .t{flex:1;min-width:0}
+#pop .it .n{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pop .it .s{font-size:var(--fs-xs);color:var(--muted-foreground)}
+#pop .it.dng{color:var(--danger)}
+#pop .ph{padding:8px 10px;font-size:var(--fs-sm);font-weight:600;border-bottom:1px solid var(--border)}
+#pop .em{padding:12px;color:var(--muted-foreground);font-size:var(--fs-sm)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:400;display:none;align-items:center;gap:12px;background:var(--ink-strong);color:#e0e7ff;padding:10px 14px;border-radius:var(--r-md);box-shadow:var(--shadow);max-width:min(560px,94vw)}
+#toast.on{display:flex}
+#toast button{background:none;border:0;color:#c7d2fe;font-weight:700;text-decoration:underline;min-height:32px}
+.ovl{position:fixed;inset:0;z-index:300;background:rgba(10,10,30,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+.dlg{background:var(--card);border-radius:var(--r-lg);width:min(460px,100%);box-shadow:var(--shadow);display:flex;flex-direction:column;max-height:90vh}
+.dlg h4{margin:0;padding:16px 16px 4px;font-size:var(--fs-lg)}
+.dlg .bd{padding:8px 16px}
+.dlg .ft{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--border);flex-wrap:wrap}
+body[data-dev=mobile] .ovl{align-items:flex-end;padding:0}
+body[data-dev=mobile] .dlg{border-radius:var(--r-lg) var(--r-lg) 0 0;width:100%;max-width:430px;margin:0 auto}
+.dlg label.f{display:block;font-size:var(--fs-sm);font-weight:600;margin:8px 0 4px}
+.chk{display:flex;align-items:center;gap:10px;min-height:44px;padding:2px 4px;border-radius:var(--r-sm)}
+.chk input{width:18px;height:18px;flex-shrink:0}
+.chk.off{opacity:.6}
+.lst{max-height:300px;overflow:auto;scrollbar-gutter:stable;border:1px solid var(--border);border-radius:var(--r-md);padding:4px;margin-top:6px}
+.err{color:var(--danger);font-size:var(--fs-xs);margin-top:4px}
+/* Màu avatar */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:14px;background:var(--card);border-radius:var(--r-md)}
+.pcell{display:flex;align-items:center;gap:10px;min-width:0}
+.pcell .n{font-size:var(--fs-sm);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcell .s{font-size:var(--fs-xs);color:var(--muted-foreground)}
+.pwrap{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px}
+body[data-dev=mobile] .pwrap{grid-template-columns:1fr}
+.pwrap>div{border:1px solid var(--border);border-radius:var(--r-md);color:var(--foreground);background:var(--background)}
+.pwrap h5{margin:0;padding:8px 14px 0;font-size:var(--fs-xs);color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em}
+.sw{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px}
+.sw span{display:inline-flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:var(--muted-foreground)}
+.ratio{font-size:10px;color:var(--success)}
+.row{padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.row label{display:inline-flex;gap:6px;align-items:center;min-height:36px}
+/* Danh sách avatar */
+.stack{display:inline-flex;align-items:center;border:0;background:none;padding:4px;border-radius:99px;min-height:32px}
+.stack:hover{background:var(--accent)}
+.stack .av{border:2px solid var(--card);margin-left:-8px}
+.stack .av:first-child{margin-left:0}
+.stack .more{margin-left:-8px;height:24px;min-width:24px;padding:0 6px;border-radius:99px;border:2px solid var(--card);box-sizing:content-box;background:var(--muted);color:var(--muted-strong);font-size:11px;font-weight:600;display:inline-flex;align-items:center;justify-content:center}
+body[data-dev=mobile] .stack{min-height:44px}
+/* Sơ đồ */
+.ctl{display:flex;gap:6px;align-items:center;padding:10px 16px;flex-wrap:wrap}
+.ctl .z{min-width:48px;text-align:center;font-size:var(--fs-sm);color:var(--muted-strong)}
+.cwrap{overflow:auto;scrollbar-gutter:stable;height:560px;border-top:1px solid var(--border);background:var(--background);background-image:radial-gradient(var(--border) 1px,transparent 1px);background-size:18px 18px}
+.chart{display:inline-block;padding:28px 32px 60px;min-width:100%;text-align:center;transform-origin:0 0}
+.tree,.tree ul{list-style:none;margin:0;padding:0}
+.tree ul{display:flex;justify-content:center;padding-top:26px;position:relative}
+.tree li{position:relative;padding:26px 8px 0;display:flex;flex-direction:column;align-items:center}
+.tree>li{padding-top:0}
+.tree li::before,.tree li::after{content:"";position:absolute;top:0;right:50%;width:50%;height:26px;border-top:2px solid var(--input)}
+.tree li::after{right:auto;left:50%;border-left:2px solid var(--input)}
+.tree li::before{border-right:2px solid var(--input)}
+.tree>li::before,.tree>li::after{display:none}
+.tree li:only-child::before,.tree li:only-child::after{display:none}
+.tree li:only-child{padding-top:0}
+.tree li:first-child::before{border:0}.tree li:last-child::after{border:0}
+.tree li:last-child::before{border-right:2px solid var(--input);border-radius:0 6px 0 0}
+.tree li:first-child::after{border-radius:6px 0 0 0}
+.tree ul::before{content:"";position:absolute;top:0;left:50%;border-left:2px solid var(--input);height:26px}
+.dcard{position:relative;width:224px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:10px 12px 8px;text-align:left;box-shadow:0 1px 2px rgba(15,15,40,.06)}
+.dcard.drag{opacity:.45}
+.dcard.drop{outline:2px solid var(--primary);outline-offset:2px;background:var(--accent)}
+.dcard.nodrop{outline:2px dashed var(--danger);outline-offset:2px}
+.dname{font-weight:700;font-size:var(--fs-md);margin-bottom:6px;padding-right:34px;overflow-wrap:anywhere}
+button.dname{border:0;background:none;padding:2px 4px;margin:-2px -4px 4px;text-align:left;border-radius:var(--r-sm);display:block;width:calc(100% - 20px)}
+button.dname:hover{background:var(--accent);text-decoration:underline dotted}
+.dhead{display:flex;align-items:center;gap:8px;font-size:var(--fs-sm);min-height:24px}
+.dhead .none{color:var(--muted-foreground)}
+.dcnt{font-size:var(--fs-xs);color:var(--muted-foreground);margin:6px 0 2px}
+.dmenu{position:absolute;top:6px;right:6px}
+.addc{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);width:28px;height:28px;border-radius:50%;border:2px solid var(--card);background:var(--primary);color:var(--primary-foreground);font-size:18px;line-height:1;padding:0;z-index:2}
+body[data-dev=mobile] .addc{width:44px;height:44px;bottom:-22px}
+body[data-dev=mobile] .tree li>.dcard{margin-bottom:0}
+.tree li.hasadd{padding-bottom:0}
+.newc input{width:100%}
+.tip{position:relative}
+.tip:hover::after,.tip:focus-visible::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ink-strong);color:#e0e7ff;font-size:11px;padding:3px 8px;border-radius:4px;white-space:nowrap;z-index:5;pointer-events:none}
+.dmenu.tip,.addc.tip{position:absolute}
+body[data-dev=mobile] .dragonly{display:none}
+.tip.below:hover::after{bottom:auto;top:calc(100% + 6px)}
+/* Câu hỏi */
+.q{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 16px;margin-bottom:10px}
+.q h4{margin:0 0 6px;font-size:var(--fs-md)}
+.q .n{color:var(--muted-foreground);font-size:var(--fs-sm);margin:0 0 6px}
+.q label{display:flex;gap:8px;align-items:flex-start;min-height:32px;padding:3px 0}
+textarea{width:100%;min-height:64px;border:1px solid var(--input);border-radius:var(--r-md);background:var(--card);padding:8px}
+.nt{margin-top:8px}
+.nt small{color:var(--muted-foreground)}
+.note{font-size:var(--fs-sm);color:var(--muted-strong);padding:8px 16px 12px}
+</style>
+<style id="pal"></style>
+</head>
+<body data-dev="desktop">
+<header class="top">
+  <b>Bản mẫu CR-189</b>
+  <nav aria-label="Mục lục">
+    <a href="#s3">1 Sơ đồ (xem)</a><a href="#s2">2 Màu avatar</a><a href="#s1">3 Thành viên</a><a href="#s4">4 Admin sửa sơ đồ</a><a href="#qs">Câu hỏi</a>
+  </nav>
+  <div class="seg" role="group" aria-label="Giao diện"><button id="bL" aria-pressed="true">Sáng</button><button id="bD" aria-pressed="false">Tối</button></div>
+  <div class="seg" role="group" aria-label="Khung"><button id="bM" aria-pressed="true">Máy tính</button><button id="bP" aria-pressed="false">Điện thoại</button></div>
+</header>
+<main>
+
+<section class="scr" id="s3">
+  <h2>1 · Sổ Hợp Tác › Sơ đồ tổ chức (chỉ xem)</h2>
+  <p class="look"><b>Điểm cần bạn xem:</b> thẻ phòng có trưởng phòng, số người («tổng N» nếu có phòng con) và hàng avatar; bấm hàng avatar để mở danh sách (Vận hành có 9 người, cuộn).</p>
+  <div class="frame">
+    <div class="fh"><span class="app">Sổ Hợp Tác · Công ty Minh Long Phát</span><h3>Thành viên &amp; phòng ban</h3></div>
+    <div class="tabs" role="tablist"><button role="tab" aria-selected="true">Sơ đồ tổ chức</button><button role="tab" aria-selected="false" id="goMem">Thành viên</button></div>
+    <div class="ctl" id="ctl3"></div>
+    <div class="cwrap" id="cw3" tabindex="0" aria-label="Sơ đồ tổ chức"></div>
+  </div>
+  <div class="frame" style="margin-top:12px">
+    <div class="fh"><h3>Mẫu component «Danh sách avatar»</h3></div>
+    <div class="row" id="stackdemo"></div>
+    <p class="note">Dùng chung mọi nơi: tối đa 5 avatar chồng nhau + «+n»; bấm mở danh sách thả xuống (avatar, tên, chức vụ; cuộn nếu hơn 8 người). Lưu ý: luật kit hiện ghi «tối đa 3» — cần sửa thành 5 cho component này (xem câu hỏi 6).</p>
+  </div>
+</section>
+
+<section class="scr" id="s2">
+  <h2>2 · Màu avatar khi không có ảnh</h2>
+  <p class="look"><b>Điểm cần bạn xem:</b> mỗi người một màu cố định (theo tên); chọn phương án 1 hoặc 2, xem cả nền sáng và tối. Số dưới ô là độ tương phản chữ (cần ≥ 4.5).</p>
+  <div class="frame">
+    <div class="row"><b>Bảng màu:</b>
+      <label><input type="radio" name="palv" value="1" checked> Phương án 1 · Đậm, chữ trắng (tối: nền nhạt, chữ đen)</label>
+      <label><input type="radio" name="palv" value="2"> Phương án 2 · Dịu, pastel (tối: nền sâu, chữ sáng)</label></div>
+    <div class="pwrap" id="pwrap"></div>
+    <p class="note">Màu theo tông của trang (indigo, tím, hồng, cam, nâu, xanh ngọc, xanh lá, xanh da trời, xám, đỏ tía). Người đổi tên vẫn giữ màu vì màu tính từ mã người. Ảnh thật luôn thắng màu. Phương án chọn ở đây áp cho mọi màn bên dưới.</p>
+  </div>
+</section>
+
+<section class="scr" id="s1">
+  <h2>3 · Sổ Hợp Tác › Thành viên &amp; phòng ban</h2>
+  <p class="look"><b>Điểm cần bạn xem:</b> ô «Cấp quản lý» chỉ liệt kê trưởng phòng, gợi ý sẵn trưởng phòng của chính người đó; thử Cao Thế Vinh (đang có cấp quản lý không phải trưởng phòng).</p>
+  <div class="frame">
+    <div class="fh"><span class="app">Sổ Hợp Tác · Công ty Minh Long Phát</span><h3>Thành viên &amp; phòng ban</h3></div>
+    <div class="tabs" role="tablist"><button role="tab" aria-selected="false" id="goOrg">Sơ đồ tổ chức</button><button role="tab" aria-selected="true">Thành viên</button></div>
+    <div class="tools">
+      <input type="search" id="mq" placeholder="Tìm theo tên" aria-label="Tìm theo tên">
+      <select id="md" aria-label="Phòng ban"></select>
+      <span class="cnt" id="mcnt"></span>
+    </div>
+    <p class="hint">Cấp quản lý quyết định ai xem được hợp đồng của ai: trưởng phòng thấy hợp đồng của người trong phòng mình. Đối tác không nằm ở danh sách này.</p>
+    <div class="scroll" id="mscroll"><table><thead><tr><th>Họ tên</th><th>Phòng ban</th><th>Cấp quản lý</th></tr></thead><tbody id="mbody"></tbody></table></div>
+  </div>
+</section>
+
+<section class="scr" id="s4">
+  <h2>4 · Admin › Công ty › Thành viên › Cơ cấu (sửa trực tiếp)</h2>
+  <p class="look"><b>Điểm cần bạn xem:</b> không còn form «Thêm phòng». Bấm «+» dưới thẻ để thêm phòng con, bấm tên để đổi tên, «⋯» để các thao tác khác; trên máy tính kéo thẻ thả lên phòng cha mới. Mọi thay đổi có «Hoàn tác». Thử xoá «Dự án mới (trống)» và xoá «Kinh doanh».</p>
+  <div class="frame">
+    <div class="fh"><span class="app">Admin · Công ty Minh Long Phát · Thành viên</span><h3>Cơ cấu</h3></div>
+    <div class="tabs" role="tablist"><button role="tab" aria-selected="false">Danh sách</button><button role="tab" aria-selected="false">Vai trò</button><button role="tab" aria-selected="true">Cơ cấu</button></div>
+    <p class="hint dragonly" style="margin-top:12px">Kéo thẻ phòng thả lên phòng cha mới để chuyển. Hoặc dùng «⋯» › «Chuyển sang phòng cha khác».</p>
+    <div class="ctl" id="ctl4"></div>
+    <div class="cwrap" id="cw4" tabindex="0" aria-label="Sơ đồ tổ chức, chế độ sửa"></div>
+  </div>
+</section>
+
+<section id="qs" class="scr">
+  <h2>Câu hỏi cần chốt</h2>
+  <div id="qbox"></div>
+  <p><button class="btn pri" id="copy">Chép góp ý</button> <span id="copied" style="color:var(--success)"></span></p>
+</section>
+</main>
+<div id="pop" role="dialog"></div>
+<div id="toast" role="status"><span id="tmsg"></span><button id="tund">Hoàn tác</button></div>
+
+<script>
+(function(){
+"use strict";
+var $=function(s,r){return (r||document).querySelector(s)};
+var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})};
+var root=document.documentElement,body=document.body;
+
+/* ---------- Bảng màu avatar ---------- */
+var PAL={
+ 1:{l:["#4f46e5","#7c3aed","#be185d","#c2410c","#92400e","#0f766e","#15803d","#0369a1","#475569","#a21caf"],lf:"#ffffff",
+    d:["#a5b4fc","#c4b5fd","#f9a8d4","#fdba74","#fcd34d","#5eead4","#86efac","#7dd3fc","#cbd5e1","#f0abfc"],df:"#0e0f1c"},
+ 2:{l:["#c7d2fe","#ddd6fe","#fbcfe8","#fed7aa","#fde68a","#99f6e4","#bbf7d0","#bae6fd","#e2e8f0","#f5d0fe"],lf:"#1e1b4b",
+    d:["#3730a3","#5b21b6","#9d174d","#9a3412","#854d0e","#115e59","#166534","#075985","#334155","#86198f"],df:"#e0e7ff"}
+};
+var NAMES=["Chàm","Tím","Hồng","Cam","Nâu","Ngọc","Lá","Trời","Xám","Tía"];
+function vars(a,f){return a.map(function(c,i){return "--avb"+i+":"+c+";--avf"+i+":"+f}).join(";")}
+(function(){var s="";for(var k in PAL){var p=PAL[k];
+ s+='[data-pal="'+k+'"]{'+vars(p.l,p.lf)+'}[data-pal="'+k+'"] [data-theme=light]{'+vars(p.l,p.lf)+'}[data-pal="'+k+'"][data-theme=dark],[data-pal="'+k+'"] [data-theme=dark]{'+vars(p.d,p.df)+'}';}
+ $("#pal").textContent=s;})();
+function lum(h){var c=[1,3,5].map(function(i){var v=parseInt(h.substr(i,2),16)/255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+function ratio(a,b){var x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
+function setPal(v){root.setAttribute("data-pal",v);document.querySelectorAll('input[name=palv],input[name=q5]').forEach(function(r){r.checked=(r.value===v)});}
+
+/* ---------- Dữ liệu giả ---------- */
+var S={people:[],depts:[]};
+function P(id,name,title,dept,mgr){S.people.push({id:id,name:name,title:title,dept:dept,mgr:mgr})}
+P("p1","Nguyễn Hoàng Nam","Giám đốc","d0",null);
+P("p2","Trần Thu Hà","Trưởng phòng Kinh doanh","d1","p1");
+P("p3","Lê Quốc Bảo","Trưởng nhóm Kinh doanh miền Nam","d11","p2");
+P("p4","Phạm Minh Châu","Trưởng nhóm Kinh doanh miền Bắc","d12","p2");
+P("p5","Đỗ Khánh Linh","Kế toán trưởng","d2","p1");
+P("p6","Võ Thanh Tâm","Trưởng phòng Nhân sự","d3","p1");
+P("p7","Bùi Gia Huy","Trưởng phòng Vận hành","d4","p1");
+P("p8","Hoàng Mai Anh","Nhân viên kinh doanh","d1","p2");
+P("p9","Ngô Đức Thịnh","Nhân viên kinh doanh","d1","p2");
+P("p10","Đặng Phương Thảo","Nhân viên kinh doanh","d11","p3");
+P("p11","Lý Tuấn Kiệt","Nhân viên kinh doanh","d11","p3");
+P("p12","Vũ Bảo Ngọc","Nhân viên kinh doanh","d12","p4");
+P("p13","Phan Gia Hân","Kế toán viên","d2","p5");
+P("p14","Cao Thế Vinh","Kế toán viên","d2","p8");
+P("p15","Tạ Ngọc Diệp","Chuyên viên nhân sự","d3","p6");
+["Mai Văn Long","Trịnh Khả Vy","Dương Anh Khoa","Lâm Thuỳ Dung","Kiều Minh Quân","Hồ Bích Ngọc","Châu Đức Anh","Tô Thiên Ân","Quách Lan Chi"].forEach(function(n,i){P("v"+i,n,i<2?"Điều phối kho":"Nhân viên vận hành","d4","p7")});
+S.depts=[
+ {id:"d0",name:"Ban Giám đốc",parent:null,head:"p1"},
+ {id:"d1",name:"Kinh doanh",parent:"d0",head:"p2"},
+ {id:"d11",name:"Kinh doanh miền Nam",parent:"d1",head:"p3"},
+ {id:"d12",name:"Kinh doanh miền Bắc",parent:"d1",head:"p4"},
+ {id:"d2",name:"Kế toán",parent:"d0",head:"p5"},
+ {id:"d3",name:"Nhân sự & Hành chính",parent:"d0",head:"p6"},
+ {id:"d4",name:"Vận hành",parent:"d0",head:"p7"},
+ {id:"d5",name:"Dự án mới (trống)",parent:"d0",head:null}
+];
+var seq=100;
+var byId=function(id){return S.people.filter(function(p){return p.id===id})[0]};
+var dById=function(id){return S.depts.filter(function(d){return d.id===id})[0]};
+function hash(s){var h=0;for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h}
+function cidx(p){return hash(p.id+"|"+p.name.split(" ").slice(-1)[0].length)%10}
+function initials(n){var w=n.trim().split(/\s+/);return (w.length>1?w[w.length-2][0]+w[w.length-1][0]:w[0].slice(0,2)).toUpperCase()}
+function av(p,size,idx){var i=(idx===undefined)?cidx(p):idx;return '<span class="av s'+(size||32)+'" role="img" aria-label="'+esc(p.name)+'" style="background:var(--avb'+i+');color:var(--avf'+i+')">'+esc(initials(p.name))+'</span>'}
+function isHead(id){return S.depts.some(function(d){return d.head===id})}
+function members(d){return S.people.filter(function(p){return p.dept===d})}
+function kids(d){return S.depts.filter(function(x){return x.parent===d})}
+function subtotal(d){return members(d).length+kids(d).reduce(function(a,k){return a+subtotal(k.id)},0)}
+function isDesc(anc,d){var x=dById(d);while(x){if(x.id===anc)return true;x=dById(x.parent)}return false}
+function dname(id){var d=dById(id);return d?d.name:"Chưa xếp phòng"}
+function isMobile(){return body.getAttribute("data-dev")==="mobile"}
+
+/* ---------- Toast / hoàn tác ---------- */
+var tt=null,undoSnap=null;
+function toast(msg,snap){$("#tmsg").textContent=msg;undoSnap=snap||null;$("#tund").style.display=snap?"":"none";$("#toast").classList.add("on");clearTimeout(tt);tt=setTimeout(function(){$("#toast").classList.remove("on")},6000)}
+$("#tund").onclick=function(){if(undoSnap){S=JSON.parse(undoSnap);renderAll();toast("Đã hoàn tác")}};
+function act(msg,fn){var snap=JSON.stringify(S);fn();renderAll();toast(msg,snap)}
+
+/* ---------- Popover ---------- */
+var pop=$("#pop"),popAnchor=null;
+function closePop(){pop.classList.remove("on");pop.innerHTML="";popAnchor=null}
+function openPop(anchor,html){
+ pop.innerHTML=html;pop.classList.add("on");popAnchor=anchor;
+ var r=anchor.getBoundingClientRect();pop.style.minWidth=Math.max(240,Math.min(r.width,360))+"px";
+ var w=pop.offsetWidth,h=pop.offsetHeight;
+ var left=Math.min(Math.max(8,r.left),innerWidth-w-8),top=r.bottom+4;
+ if(top+h>innerHeight-8)top=Math.max(8,r.top-h-4);
+ pop.style.left=left+"px";pop.style.top=top+"px";
+}
+document.addEventListener("mousedown",function(e){if(pop.classList.contains("on")&&!pop.contains(e.target)&&!(popAnchor&&popAnchor.contains(e.target)))closePop()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"){if(pop.classList.contains("on"))closePop();else closeModal()}});
+window.addEventListener("resize",closePop);
+document.addEventListener("scroll",function(e){if(!pop.contains(e.target))closePop()},true);
+
+/* Danh sách chọn: groups=[{label,items:[{id,p,sub,warn,cls}]}] */
+function picker(anchor,groups,selId,onPick,searchable){
+ function list(q){var h="",n=0;groups.forEach(function(g){var it=g.items.filter(function(i){return !q||i.p&&i.p.name.toLowerCase().indexOf(q)>=0||(i.label||"").toLowerCase().indexOf(q)>=0});
+   if(!it.length)return;if(g.label)h+='<div class="g">'+esc(g.label)+'</div>';
+   it.forEach(function(i){n++;h+='<button class="it '+(i.cls||"")+'" role="option" data-id="'+esc(i.id)+'" aria-selected="'+(i.id===selId)+'">'+(i.p?av(i.p,32):'<span class="av s32" style="background:var(--muted);color:var(--muted-strong)">–</span>')+'<span class="t"><span class="n">'+esc(i.p?i.p.name:i.label)+'</span>'+(i.sub?'<div class="s">'+esc(i.sub)+'</div>':'')+(i.warn?'<div class="warn">! '+esc(i.warn)+'</div>':'')+'</span></button>'});});
+  return n?h:'<div class="em">Không có kết quả</div>'}
+ openPop(anchor,(searchable?'<div class="ps"><input type="search" placeholder="Tìm theo tên" aria-label="Tìm theo tên"></div>':'')+'<div class="pl" role="listbox">'+list("")+'</div>');
+ var pl=$(".pl",pop);
+ function bind(){pl.querySelectorAll(".it").forEach(function(b){b.onclick=function(){var id=b.getAttribute("data-id");closePop();onPick(id)}})}
+ bind();
+ var si=$(".ps input",pop);if(si){si.oninput=function(){pl.innerHTML=list(si.value.trim().toLowerCase());bind()};si.focus()}
+ var cur=pl.querySelector('[aria-selected=true]');if(cur&&cur.scrollIntoView)cur.scrollIntoView({block:"nearest"});
+}
+
+/* ---------- Modal ---------- */
+var modalEl=null;
+function closeModal(){if(modalEl){modalEl.remove();modalEl=null}}
+function modal(title,bodyHtml,btns,wire){
+ closeModal();closePop();
+ var o=document.createElement("div");o.className="ovl";
+ o.innerHTML='<div class="dlg" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><h4>'+esc(title)+'</h4><div class="bd">'+bodyHtml+'</div><div class="ft"></div></div>';
+ var ft=$(".ft",o),focusEl=null;
+ btns.forEach(function(b){var e=document.createElement("button");e.className="btn "+(b.kind||"");e.textContent=b.label;e.onclick=function(){var keep=b.fn&&b.fn(o);if(keep!==false)closeModal()};ft.appendChild(e);if(b.focus)focusEl=e});
+ o.addEventListener("mousedown",function(e){if(e.target===o)closeModal()});
+ document.body.appendChild(o);modalEl=o;if(wire)wire(o);(focusEl||ft.lastChild).focus();
+}
+
+/* ---------- Màn 1: bảng thành viên ---------- */
+function headGroups(p){
+ var heads=S.depts.filter(function(d){return d.head&&d.head!==p.id}).map(function(d){return {id:d.head,p:byId(d.head),sub:"Trưởng phòng "+d.name}});
+ var own=heads.filter(function(h){return dById(p.dept)&&dById(p.dept).head===h.id});
+ var g=[];
+ if(p.mgr&&!isHead(p.mgr)){var c=byId(p.mgr);g.push({label:"Đang chọn",items:[{id:c.id,p:c,sub:c.title,warn:"Không phải trưởng phòng"}]})}
+ if(own.length){own[0].sub="Gợi ý · "+own[0].sub;g.push({label:"Gợi ý: trưởng phòng của bạn",items:own})}
+ g.push({label:"Trưởng phòng khác",items:heads.filter(function(h){return own.indexOf(h)<0})});
+ g.push({label:"",items:[{id:"",label:"Không có cấp quản lý",cls:""}]});
+ return g}
+function renderMembers(){
+ var q=$("#mq").value.trim().toLowerCase(),df=$("#md").value;
+ var sc=$("#mscroll"),top=sc.scrollTop;
+ var rows=S.people.filter(function(p){return (!q||p.name.toLowerCase().indexOf(q)>=0)&&(!df||p.dept===df)});
+ $("#mbody").innerHTML=rows.map(function(p){
+  var m=p.mgr?byId(p.mgr):null,bad=m&&!isHead(m.id);
+  return '<tr><td><div class="person">'+av(p,32)+'<div class="t"><div class="n">'+esc(p.name)+'</div><div class="s">'+esc(p.title)+'</div></div></div></td>'+
+  '<td data-l="Phòng ban">'+esc(dname(p.dept))+'</td>'+
+  '<td data-l="Cấp quản lý"><button class="sel" data-p="'+p.id+'" aria-haspopup="listbox" aria-label="Cấp quản lý của '+esc(p.name)+'">'+(m?av(m,24)+'<span class="l">'+esc(m.name)+'</span>':'<span class="l ph">Chưa chọn</span>')+'<span aria-hidden="true">▾</span></button>'+(bad?'<div class="warn">! '+esc(m.name)+' không phải trưởng phòng</div>':'')+'</td></tr>'}).join("");
+ $("#mcnt").textContent=S.people.length+" thành viên"+((q||df)?" · hiện "+rows.length:"");
+ sc.scrollTop=top;
+ document.querySelectorAll("#mbody .sel").forEach(function(b){b.onclick=function(){
+  var p=byId(b.getAttribute("data-p"));
+  picker(b,headGroups(p),p.mgr||"",function(id){
+   act(id?("Cấp quản lý của "+p.name+": "+byId(id).name+". Trưởng phòng này sẽ xem được hợp đồng của "+p.name+"."):("Đã bỏ cấp quản lý của "+p.name),function(){p.mgr=id||null});
+  },true)}});
+}
+function fillDeptSelect(){var s=$("#md"),v=s.value;s.innerHTML='<option value="">Tất cả phòng ban</option>'+S.depts.map(function(d){return '<option value="'+d.id+'">'+esc(d.name)+'</option>'}).join("");s.value=dById(v)?v:""}
+$("#mq").oninput=renderMembers;$("#md").onchange=renderMembers;
+
+/* ---------- Màn 2: lưới màu ---------- */
+function renderPalette(){
+ var ppl=S.people.slice(0,12);
+ function grid(theme){
+  var pl=PAL[root.getAttribute("data-pal")],bgs=theme==="dark"?pl.d:pl.l,fg=theme==="dark"?pl.df:pl.lf;
+  return '<div data-theme="'+theme+'"><h5>'+(theme==="dark"?"Nền tối":"Nền sáng")+'</h5><div class="pgrid">'+ppl.map(function(p){return '<div class="pcell">'+av(p,40)+'<div style="min-width:0"><div class="n">'+esc(p.name)+'</div><div class="s">Màu '+(cidx(p)+1)+' · '+NAMES[cidx(p)]+'</div></div></div>'}).join("")+'</div>'+
+  '<h5>Cả bảng 10 màu · cỡ 24 / 32 / 40</h5><div class="sw">'+bgs.map(function(c,i){var f={id:"x",name:"An Bình"};return '<span>'+av(f,24,i)+av(f,32,i)+av(f,40,i)+'<b class="ratio">'+ratio(c,fg).toFixed(1)+':1</b>'+i+'</span>'}).join("")+'</div></div>'}
+ $("#pwrap").innerHTML=grid("light")+grid("dark");
+}
+document.querySelectorAll("input[name=palv]").forEach(function(r){r.onchange=function(){setPal(r.value);renderPalette();syncAll()}});
+
+/* ---------- Danh sách avatar (dùng chung) ---------- */
+function stackHtml(list,did){
+ if(!list.length)return '<span style="color:var(--muted-foreground);font-size:var(--fs-xs)">Chưa có nhân viên</span>';
+ var show=list.slice(0,5),more=list.length-show.length;
+ return '<button class="stack" data-list="'+did+'" aria-label="Xem '+list.length+' nhân viên" aria-haspopup="dialog">'+show.map(function(p){return av(p,24)}).join("")+(more>0?'<span class="more">+'+more+'</span>':'')+'</button>'}
+function openStack(btn,ids,title){
+ var ppl=ids.map(byId);
+ openPop(btn,'<div class="ph">'+esc(title)+' · '+ppl.length+' người</div><div class="pl">'+ppl.map(function(p){return '<div class="it" style="cursor:default">'+av(p,32)+'<span class="t"><span class="n">'+esc(p.name)+'</span><div class="s">'+esc(p.title)+'</div></span></div>'}).join("")+'</div>');
+}
+function renderStackDemo(){
+ var a=S.people.filter(function(p){return p.dept==="d1"||p.dept==="d11"}).slice(0,2);
+ var b=S.people.filter(function(p){return p.dept==="d1"||p.dept==="d11"||p.dept==="d12"}).slice(0,5);
+ var c=members("d4");
+ $("#stackdemo").innerHTML=[[a,"2 người"],[b,"5 người (vừa đủ)"],[c,"9 người (5 + «+4», danh sách cuộn)"]].map(function(x,i){return '<div><div style="font-size:12px;color:var(--muted-foreground)">'+x[1]+'</div>'+stackHtml(x[0],"demo"+i)+'</div>'}).join("");
+ var arr=[a,b,c];
+ document.querySelectorAll("#stackdemo .stack").forEach(function(bt,i){bt.onclick=function(){openStack(bt,arr[i].map(function(p){return p.id}),"Danh sách")}});
+}
+
+/* ---------- Sơ đồ ---------- */
+var charts=[];
+function Chart(wrapSel,ctlSel,edit){
+ var wrap=$(wrapSel),ctl=$(ctlSel),zoom=1,adding=null,dragId=null,self=this;
+ charts.push(this);
+ function setZoom(z){zoom=Math.max(.4,Math.min(1.4,z));render()}
+ this.initZoom=function(){zoom=isMobile()?.7:1;render()};
+ function card(d){
+  var hd=d.head?byId(d.head):null,mem=members(d.id),staff=mem.filter(function(p){return p.id!==d.head}),k=kids(d.id);
+  var cnt=mem.length+" người"+(k.length?" · tổng "+subtotal(d.id):"");
+  var h='<div class="dcard" data-d="'+d.id+'"'+(edit&&!isMobile()&&d.parent?' draggable="true"':'')+'>';
+  h+=edit?'<button class="dname tip below" data-act="rename" data-tip="Đổi tên phòng">'+esc(d.name)+'</button>':'<div class="dname">'+esc(d.name)+'</div>';
+  h+='<div class="dhead">'+(hd?av(hd,24)+'<span>'+esc(hd.name)+'</span>':'<span class="none">Chưa có trưởng phòng</span>')+'</div>';
+  h+='<div class="dcnt">'+cnt+'</div>'+stackHtml(staff,d.id);
+  if(edit){h+='<button class="btn ico sm dmenu tip below" data-act="menu" data-tip="Thao tác phòng" aria-label="Thao tác phòng '+esc(d.name)+'" aria-haspopup="menu">⋯</button><button class="addc tip" data-act="add" data-tip="Thêm phòng con" aria-label="Thêm phòng con của '+esc(d.name)+'">+</button>'}
+  return h+'</div>'}
+ function node(d){
+  var k=kids(d.id),h='<li'+(edit?' class="hasadd"':'')+'>'+card(d);
+  var nk=adding===d.id;
+  if(k.length||nk){h+='<ul>'+k.map(node).join("")+(nk?'<li><div class="dcard newc"><label class="sr" style="display:block;font-size:12px;color:var(--muted-foreground)" for="nn">Tên phòng mới</label><input type="text" id="nn" placeholder="Ví dụ: Marketing" style="margin:4px 0 8px"><div style="display:flex;gap:6px"><button class="btn sm pri" data-act="addok">Thêm</button><button class="btn sm" data-act="addno">Huỷ</button></div><div class="err" id="nerr"></div></div></li>':'')+'</ul>'}
+  return h+'</li>'}
+ function render(){
+  var sx=wrap.scrollLeft,sy=wrap.scrollTop;
+  var roots=S.depts.filter(function(d){return !d.parent});
+  wrap.innerHTML='<div class="chart" style="zoom:'+zoom+'"><ul class="tree">'+roots.map(node).join("")+'</ul></div>';
+  ctl.innerHTML='<button class="btn ico tip below" data-z="-" data-tip="Thu nhỏ" aria-label="Thu nhỏ">−</button><span class="z">'+Math.round(zoom*100)+'%</span><button class="btn ico tip below" data-z="+" data-tip="Phóng to" aria-label="Phóng to">+</button><button class="btn" data-z="0">Vừa khung</button>'+(isMobile()?'<span style="font-size:12px;color:var(--muted-foreground)">Cuộn để xem phần còn lại</span>':'');
+  ctl.querySelectorAll("[data-z]").forEach(function(b){b.onclick=function(){var v=b.getAttribute("data-z");if(v==="-")setZoom(zoom-.15);else if(v==="+")setZoom(zoom+.15);else setZoom(isMobile()?.5:.85)}});
+  wrap.scrollLeft=sx;wrap.scrollTop=sy;
+  if(adding){var i=$("#nn",wrap);if(i)i.focus()}
+ }
+ this.render=render;
+ function doAdd(){var i=$("#nn",wrap),v=i.value.trim();if(!v){$("#nerr",wrap).textContent="Nhập tên phòng";return}
+  if(kids(adding).some(function(x){return x.name.toLowerCase()===v.toLowerCase()})){$("#nerr",wrap).textContent="Phòng con này đã có tên «"+v+"»";return}
+  var p=adding;adding=null;act("Đã thêm phòng «"+v+"»",function(){S.depts.push({id:"d"+(++seq),name:v,parent:p,head:null})})}
+ wrap.addEventListener("click",function(e){
+  var t=e.target.closest("[data-act],.stack");if(!t||!wrap.contains(t))return;
+  var c=t.closest(".dcard"),d=c?dById(c.getAttribute("data-d")):null;
+  if(t.classList.contains("stack")){openStack(t,members(d.id).filter(function(p){return p.id!==d.head}).map(function(p){return p.id}),"Nhân viên · "+d.name);return}
+  var a=t.getAttribute("data-act");
+  if(a==="add"){adding=d.id;render()}
+  else if(a==="addok")doAdd();
+  else if(a==="addno"){adding=null;render()}
+  else if(a==="rename")rename(t,d);
+  else if(a==="menu")menu(t,d);
+ });
+ wrap.addEventListener("keydown",function(e){if(e.target.id==="nn"){if(e.key==="Enter")doAdd();if(e.key==="Escape"){adding=null;render()}}});
+ function rename(btn,d){
+  var i=document.createElement("input");i.type="text";i.value=d.name;i.setAttribute("aria-label","Tên phòng");i.style.width="100%";i.style.marginBottom="6px";
+  btn.replaceWith(i);i.focus();i.select();var done=false;
+  function fin(save){if(done)return;done=true;var v=i.value.trim();
+   if(save&&v&&v!==d.name){act("Đã đổi tên phòng thành «"+v+"»",function(){d.name=v})}else render()}
+  i.onkeydown=function(e){if(e.key==="Enter")fin(true);if(e.key==="Escape")fin(false)};i.onblur=function(){fin(true)}}
+ function menu(btn,d){
+  var items=[["head","Đổi trưởng phòng"],["mem","Thêm / bớt thành viên"]];
+  if(d.parent)items.push(["move","Chuyển sang phòng cha khác"]);
+  items.push(["del","Xoá phòng",d.parent?"":"off"]);
+  openPop(btn,'<div class="pl" role="menu">'+items.map(function(i){return '<button class="it'+(i[0]==="del"?" dng":"")+'" role="menuitem" data-m="'+i[0]+'"'+(i[2]?' disabled style="opacity:.5"':'')+'><span class="t"><span class="n">'+i[1]+'</span>'+(i[2]?'<div class="s">Phòng gốc không xoá được</div>':'')+'</span></button>'}).join("")+'</div>');
+  pop.querySelectorAll("[data-m]").forEach(function(b){b.onclick=function(){var m=b.getAttribute("data-m");closePop();({head:changeHead,mem:editMembers,move:moveDlg,del:delDlg})[m](d)}})}
+ /* kéo thả (máy tính) */
+ function canDrop(from,to){var f=dById(from),t=dById(to);return f&&t&&from!==to&&f.parent&&f.parent!==to&&!isDesc(from,to)}
+ if(edit){
+  wrap.addEventListener("dragstart",function(e){var c=e.target.closest&&e.target.closest(".dcard[draggable]");if(!c)return;dragId=c.getAttribute("data-d");c.classList.add("drag");e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",dragId)});
+  wrap.addEventListener("dragover",function(e){var c=e.target.closest(".dcard");if(!c||!dragId)return;wrap.querySelectorAll(".drop,.nodrop").forEach(function(x){x.classList.remove("drop","nodrop")});
+   var ok=canDrop(dragId,c.getAttribute("data-d"));c.classList.add(ok?"drop":"nodrop");if(ok){e.preventDefault();e.dataTransfer.dropEffect="move"}});
+  wrap.addEventListener("dragend",function(){dragId=null;wrap.querySelectorAll(".drag,.drop,.nodrop").forEach(function(x){x.classList.remove("drag","drop","nodrop")})});
+  wrap.addEventListener("drop",function(e){var c=e.target.closest(".dcard");if(!c||!dragId)return;e.preventDefault();var to=c.getAttribute("data-d"),f=dragId;dragId=null;
+   if(canDrop(f,to)){act("Đã chuyển «"+dName(f)+"» sang «"+dName(to)+"»",function(){dById(f).parent=to})}else render()});
+ }
+}
+function dName(id){return dById(id).name}
+function renderCharts(){charts.forEach(function(c){c.render()})}
+
+/* ---------- Hộp thoại Admin ---------- */
+function changeHead(d){
+ var sel=d.head;
+ var inD=members(d.id),others=S.people.filter(function(p){return p.dept!==d.id&&!isHead(p.id)});
+ var groups=[{label:"Thành viên phòng này",items:inD.map(function(p){return {id:p.id,p:p,sub:p.title}})},{label:"Người ở phòng khác (sẽ chuyển về phòng này)",items:others.map(function(p){return {id:p.id,p:p,sub:dname(p.dept)}})}];
+ modal("Đổi trưởng phòng «"+d.name+"»",'<label class="f" for="hsel">Trưởng phòng</label><div id="hbox"></div><p style="font-size:12px;color:var(--muted-foreground)">Trưởng phòng sẽ là cấp quản lý gợi ý cho cả phòng.</p>',
+  [{label:"Huỷ"},{label:"Lưu",kind:"pri",fn:function(){if(!sel||sel===d.head)return;act("Đã đổi trưởng phòng «"+d.name+"» sang "+byId(sel).name,function(){var p=byId(sel);p.dept=d.id;d.head=sel})}}],
+  function(o){function draw(){var p=sel?byId(sel):null;$("#hbox",o).innerHTML='<button class="sel" id="hsel" aria-haspopup="listbox">'+(p?av(p,24)+'<span class="l">'+esc(p.name)+'</span>':'<span class="l ph">Chưa chọn</span>')+'<span aria-hidden="true">▾</span></button>';
+   $("#hsel",o).onclick=function(){picker(this,groups,sel,function(id){sel=id;draw()},true)}}draw()});
+}
+function editMembers(d){
+ var chosen={};S.people.forEach(function(p){if(p.dept===d.id)chosen[p.id]=true});
+ var parent=d.parent;
+ function body(q){return S.people.filter(function(p){return !q||p.name.toLowerCase().indexOf(q)>=0}).map(function(p){
+  var lock=isHead(p.id),hd=d.head===p.id,other=lock&&!hd;
+  return '<label class="chk'+(lock?" off":"")+'"><input type="checkbox" data-p="'+p.id+'"'+(chosen[p.id]?' checked':'')+(lock?' disabled':'')+'>'+av(p,32)+'<span class="t" style="min-width:0"><span class="n" style="font-weight:500">'+esc(p.name)+'</span><div style="font-size:12px;color:var(--muted-foreground)">'+(hd?"Trưởng phòng (đổi ở «Đổi trưởng phòng»)":other?"Trưởng phòng "+esc(dname(p.dept)):p.dept===d.id?esc(p.title):esc(dname(p.dept)))+'</div></span></label>'}).join("")}
+ modal("Thành viên «"+d.name+"»",'<input type="search" id="eq" placeholder="Tìm theo tên" aria-label="Tìm theo tên" style="width:100%"><div class="lst" id="elst">'+body("")+'</div><p style="font-size:12px;color:var(--muted-foreground)">Mỗi người thuộc một phòng: chọn người đang ở phòng khác sẽ chuyển họ sang đây. Bỏ chọn ⇒ người đó về '+(parent?"phòng cha «"+esc(dname(parent))+"»":"«Chưa xếp phòng»")+'.</p>',
+  [{label:"Huỷ"},{label:"Lưu",kind:"pri",fn:function(){act("Đã cập nhật thành viên «"+d.name+"»",function(){S.people.forEach(function(p){if(isHead(p.id))return;if(chosen[p.id])p.dept=d.id;else if(p.dept===d.id)p.dept=parent||null})})}}],
+  function(o){function bind(){o.querySelectorAll("#elst input").forEach(function(i){i.onchange=function(){chosen[i.getAttribute("data-p")]=i.checked}})}bind();
+   $("#eq",o).oninput=function(){$("#elst",o).innerHTML=body(this.value.trim().toLowerCase());bind()}});
+}
+function moveDlg(d){
+ var sel=d.parent;
+ function rows(pid,lv){return kids(pid).map(function(x){return x}).reduce(function(a,x){return a},"")}
+ var opts=[];(function walk(id,lv){var x=dById(id);var ok=!isDesc(d.id,id);if(!ok)return;opts.push({d:x,lv:lv});kids(id).forEach(function(k){walk(k.id,lv+1)})})(S.depts.filter(function(x){return !x.parent})[0].id,0);
+ modal("Chuyển «"+d.name+"» sang phòng cha khác",'<div class="lst" role="radiogroup" aria-label="Phòng cha">'+opts.map(function(o){return '<label class="chk" style="padding-left:'+(4+o.lv*18)+'px"><input type="radio" name="mv" value="'+o.d.id+'"'+(o.d.id===d.parent?' checked':'')+'><span>'+esc(o.d.name)+(o.d.id===d.parent?' <span class="chip">Hiện tại</span>':'')+'</span></label>'}).join("")+'</div><p style="font-size:12px;color:var(--muted-foreground)">Phòng con và người của phòng đi theo. Không chọn được phòng con của chính nó.</p>',
+  [{label:"Huỷ"},{label:"Chuyển",kind:"pri",fn:function(o){var r=o.querySelector("input[name=mv]:checked");if(!r||r.value===d.parent)return;act("Đã chuyển «"+d.name+"» sang «"+dName(r.value)+"»",function(){d.parent=r.value})}}]);
+}
+function delDlg(d){
+ var m=members(d.id).length,k=kids(d.id).length;
+ if(m||k){
+  var parts=[];if(m)parts.push(m+" người");if(k)parts.push(k+" phòng con");
+  modal("Chưa xoá được «"+d.name+"»",'<p>Phòng còn '+parts.join(" và ")+'. Hãy chuyển '+(m&&k?"họ":m?"họ":"phòng con")+' sang phòng khác trước, rồi xoá.</p>',
+   [{label:"Đã hiểu",focus:true}].concat(m?[{label:"Thêm / bớt thành viên",kind:"pri",fn:function(){setTimeout(function(){editMembers(d)},0)}}]:[]));
+ }else{
+  modal("Xoá phòng «"+d.name+"»?",'<p>Phòng đang trống. Bạn có thể hoàn tác ngay sau khi xoá.</p>',[{label:"Giữ lại",focus:true},{label:"Xoá phòng",kind:"dng",fn:function(){act("Đã xoá phòng «"+d.name+"»",function(){S.depts=S.depts.filter(function(x){return x.id!==d.id})})}}]);
+ }
+}
+
+/* ---------- Câu hỏi ---------- */
+var QS=[
+ ["q1","Số người trên thẻ phòng","Hiện đang: «N người · tổng M» (tổng chỉ khi có phòng con).",["Trực tiếp + «tổng N» (đề xuất)","Chỉ tổng","Chỉ trực tiếp"]],
+ ["q2","Cấp quản lý chỉ chọn trưởng phòng","Lưu ý: việc này đổi ai thấy hợp đồng của ai — trưởng phòng thấy hợp đồng của người trong phòng mình; người đang có cấp quản lý không phải trưởng phòng vẫn được giữ, kèm cảnh báo nhỏ.",["Chỉ trưởng phòng, giữ người cũ kèm cảnh báo (đề xuất)","Cho chọn bất kỳ thành viên nào"]],
+ ["q3","Xoá phòng còn người hoặc phòng con","",["Chặn, bắt chuyển trước (đề xuất)","Tự chuyển người và phòng con lên phòng cha rồi xoá"]],
+ ["q4","Kéo thả thẻ phòng trên máy tính","Điện thoại luôn chỉ dùng menu «⋯».",["Có kéo thả + menu (đề xuất)","Không, chỉ dùng menu"]],
+ ["q5","Bảng màu avatar","Xem ở mục 2.",["1","2"]],
+ ["q6","Danh sách avatar tối đa bao nhiêu","Luật kit hiện ghi tối đa 3.",["5 + «+n» (đề xuất, sửa luật kit cho component này)","3 + «+n» (giữ luật cũ)"]]
+];
+var SCR=[["s3","1 · Sơ đồ (xem)"],["s2","2 · Màu avatar"],["s1","3 · Thành viên"],["s4","4 · Admin sửa sơ đồ"]];
+(function(){
+ var h=QS.map(function(q){
+  var opts=q[3].map(function(o,i){
+   var lab=o,val=o;if(q[0]==="q5"){lab="Phương án "+o+(o==="1"?" · Đậm, chữ trắng (đề xuất)":" · Dịu, pastel");}
+   return '<label><input type="radio" name="'+q[0]+'" value="'+(q[0]==="q5"?o:i)+'"'+(i===0?' checked':'')+'> '+esc(lab)+'</label>'}).join("");
+  return '<div class="q"><h4>'+q[1]+'</h4>'+(q[2]?'<p class="n">'+q[2]+'</p>':'')+opts+'</div>'}).join("");
+ h+='<div class="q"><h4>Ghi chú theo màn</h4>'+SCR.map(function(s){return '<div class="nt"><label for="nt_'+s[0]+'"><small>'+s[1]+'</small></label><textarea id="nt_'+s[0]+'" placeholder="Góp ý…"></textarea></div>'}).join("")+'</div>';
+ $("#qbox").innerHTML=h;
+ document.querySelectorAll("input[name=q5]").forEach(function(r){r.onchange=function(){setPal(r.value);renderPalette();syncAll()}});
+})();
+$("#copy").onclick=function(){
+ var t="Góp ý bản mẫu CR-189\n";
+ QS.forEach(function(q){var r=document.querySelector("input[name="+q[0]+"]:checked");var lab=r.parentNode.textContent.trim();t+="- "+q[1]+": "+lab+"\n"});
+ SCR.forEach(function(s){var v=$("#nt_"+s[0]).value.trim();if(v)t+="Ghi chú "+s[1]+": "+v+"\n"});
+ function ok(){$("#copied").textContent="Đã chép, dán vào chat.";setTimeout(function(){$("#copied").textContent=""},3000)}
+ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,fb)}else fb();
+ function fb(){var a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");ok()}catch(e){}a.remove()}
+};
+
+/* ---------- Khung / giao diện ---------- */
+function setTheme(t){root.setAttribute("data-theme",t);$("#bL").setAttribute("aria-pressed",t==="light");$("#bD").setAttribute("aria-pressed",t==="dark");renderPalette()}
+$("#bL").onclick=function(){setTheme("light")};$("#bD").onclick=function(){setTheme("dark")};
+function setDev(d){body.setAttribute("data-dev",d);$("#bM").setAttribute("aria-pressed",d==="desktop");$("#bP").setAttribute("aria-pressed",d==="mobile");closePop();charts.forEach(function(c){c.initZoom()});renderStackDemo()}
+$("#bM").onclick=function(){setDev("desktop")};$("#bP").onclick=function(){setDev("mobile")};
+$("#goOrg").onclick=function(){$("#s3").scrollIntoView({behavior:"smooth"})};
+$("#goMem").onclick=function(){$("#s1").scrollIntoView({behavior:"smooth"})};
+
+function syncAll(){renderMembers();renderCharts();renderStackDemo()}
+function renderAll(){fillDeptSelect();renderMembers();renderCharts();renderStackDemo()}
+new Chart("#cw3","#ctl3",false);new Chart("#cw4","#ctl4",true);
+renderPalette();
+renderAll();
+if(innerWidth<640)setDev("mobile");else charts.forEach(function(c){c.initZoom()});
+})();
+</script>
+</body>
+</html>

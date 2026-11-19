@@ -51,3 +51,10 @@ Mỗi dòng do `bun run release:log --env <staging|prod> --ref <sha>` ghi (deplo
 | 2026-11-17 | staging | 85a4d1726 | admin 0040 · hub 0157 · community:0021 contracts:0121 dlc:0001 knowledge:0006 pkdemo:0002 | CR-181 | MSI VN |
 | 2026-11-17 | staging | 770c163fc | admin 0040 · hub 0157 · community:0021 contracts:0121 dlc:0001 knowledge:0006 pkdemo:0002 | CR-181 | MSI VN |
 | 2026-11-18 | staging | 336f4f2f0 | admin 0040 · hub 0157 · community:0021 contracts:0121 dlc:0001 knowledge:0006 pkdemo:0002 | CR-181 | MSI VN |
+| 2026-11-18 | staging | 1d6f1163b | admin 0040 · hub 0160 · community:0021 contracts:0124 dlc:0001 knowledge:0006 pkdemo:0002 | CR-182, CR-184, CR-181 | MSI VN |
+| 2026-11-18 | staging | 9346f0acd | admin 0040 · hub 0160 · community:0021 contracts:0124 dlc:0001 knowledge:0006 pkdemo:0002 | CR-182 | MSI VN |
+| 2026-11-18 | staging | ae145268f | admin 0040 · hub 0160 · community:0021 contracts:0124 dlc:0001 knowledge:0006 pkdemo:0002 | CR-182 | MSI VN |
+| 2026-11-18 | staging | 13d75cd42 | admin 0040 · hub 0160 · community:0021 contracts:0124 dlc:0001 knowledge:0006 pkdemo:0002 | CR-182 | MSI VN |
+| 2026-11-18 | staging | 218f86197 | admin 0040 · hub 0160 · community:0021 contracts:0124 dlc:0001 knowledge:0006 pkdemo:0002 | CR-182, CR-185, CR-186 | MSI VN |
+| 2026-11-18 | staging | a78d37f58 | admin 0040 · hub 0160 · community:0021 contracts:0124 dlc:0001 knowledge:0006 pkdemo:0002 | CR-186, CR-182, CR-129, CR-185 | MSI VN |
+| 2026-11-18 | staging | 6707a02e9 | admin 0040 · hub 0160 · community:0022 contracts:0124 dlc:0001 knowledge:0006 pkdemo:0002 | CR-186 | MSI VN |
