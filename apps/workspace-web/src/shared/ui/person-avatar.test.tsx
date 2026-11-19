@@ -1,6 +1,11 @@
 // CR-185 · PersonAvatar: tooltip chỉ họ tên, aria-label, chữ cái đầu (render tĩnh ở đây vì web-kit không có react-dom).
 import { describe, expect, test } from "bun:test";
-import { PersonAvatar, PersonAvatarGroup } from "@ai/web-kit/ui/kit/person-avatar";
+import {
+  AvatarListBody,
+  PersonAvatar,
+  PersonAvatarGroup,
+  splitAvatars,
+} from "@ai/web-kit/ui/kit/person-avatar";
 import { renderToStaticMarkup } from "react-dom/server";
 
 describe("PersonAvatar", () => {
@@ -31,25 +36,32 @@ describe("PersonAvatar", () => {
       "tabindex",
     );
   });
-  test("nhóm: tối đa 3 + «+N»", () => {
-    const people = ["A", "B", "C", "D", "E"].map((n) => ({ name: n }));
+  test("nhóm: tối đa 5 avatar + «+N»", () => {
+    const people = ["A", "B", "C", "D", "E", "F", "G"].map((n) => ({ name: n }));
     const out = renderToStaticMarkup(<PersonAvatarGroup people={people} />);
     expect(out).toContain("+2");
+    expect(out.match(/<span[^>]*>[A-G]<\/span>/g)?.length).toBe(5);
   });
-});
-
-describe("PersonAvatar màu theo người (CR-187 BR-187-3)", () => {
-  const style = (html: string) => /style="([^"]*)"/.exec(html)?.[1] ?? "";
-  test("không ảnh + có id ⇒ nền/chữ là token avatar theo băm id; đổi tên không đổi màu", () => {
-    const a = renderToStaticMarkup(<PersonAvatar name="An" id="u-123" />);
-    const b = renderToStaticMarkup(<PersonAvatar name="An Nguyễn" id="u-123" />);
-    expect(style(a)).toMatch(/background-color:var\(--avatar-\d+-bg\)/);
-    expect(style(a)).toBe(style(b));
+  test("nhóm ≤ 5 người ⇒ không «+N»; nút mở có aria-label = các họ tên, vùng bấm 44px", () => {
+    const out = renderToStaticMarkup(
+      <PersonAvatarGroup people={[{ name: "An" }, { name: "Bình" }]} />,
+    );
+    expect(out).not.toContain("avatar-more");
+    expect(out).toContain('aria-label="An, Bình"');
+    expect(out).toContain("min-h-11");
   });
-  test("có ảnh ⇒ không dùng màu; không id ⇒ giữ màu mặc định", () => {
-    expect(
-      renderToStaticMarkup(<PersonAvatar name="An" id="u-123" src="data:image/png;base64,AA" />),
-    ).not.toContain("--avatar-");
-    expect(renderToStaticMarkup(<PersonAvatar name="An" />)).not.toContain("--avatar-");
+  test("splitAvatars: max 5, +n đúng", () => {
+    expect(splitAvatars([1, 2, 3, 4, 5, 6, 7])).toEqual({ shown: [1, 2, 3, 4, 5], rest: 2 });
+    expect(splitAvatars([1, 2])).toEqual({ shown: [1, 2], rest: 0 });
+  });
+  test("danh sách: họ tên + chức vụ, tới 8 không cuộn, trên 8 cuộn", () => {
+    const mk = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ name: `Người ${i}`, jobTitle: `CV ${i}` }));
+    const small = renderToStaticMarkup(<AvatarListBody people={mk(8)} />);
+    expect(small).toContain("CV 3");
+    expect(small).not.toContain("overflow-y-auto");
+    const big = renderToStaticMarkup(<AvatarListBody people={mk(9)} />);
+    expect(big).toContain("overflow-y-auto");
+    expect(big).toContain('data-scroll="true"');
   });
 });

@@ -57,7 +57,7 @@ export function Avatar({
 
 export function AvatarGroup({
   people,
-  max = 3,
+  max = 5,
   size = 32,
   className,
 }: {

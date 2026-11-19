@@ -154,14 +154,14 @@ describe("Avatar", () => {
     expect(cls(Avatar({ name: "A", size: 40 }) as El)).toContain("size-10");
     expect(String((Avatar({ name: "An Bình" }) as El).props["aria-label"])).toBe("An Bình");
   });
-  test("AvatarGroup 5 người ⇒ 3 avatar + «+2»", () => {
-    const people = ["A", "B", "C", "D", "E"].map((name) => ({ name }));
+  test("AvatarGroup 7 người ⇒ 5 avatar + «+2»", () => {
+    const people = ["A", "B", "C", "D", "E", "F", "G"].map((name) => ({ name }));
     const g = AvatarGroup({ people }) as El;
-    expect(findAll(g, (x) => x.type === Avatar).length).toBe(3);
+    expect(findAll(g, (x) => x.type === Avatar).length).toBe(5);
     const more = findAll(g, (x) => x.props["data-slot"] === "avatar-more")[0] as El;
     expect(kids(more.props.children).join("")).toBe("+2");
   });
-  test("AvatarGroup ≤ 3 người ⇒ không có «+N»", () => {
+  test("AvatarGroup ≤ 5 người ⇒ không có «+N»", () => {
     const g = AvatarGroup({ people: [{ name: "A" }, { name: "B" }] }) as El;
     expect(findAll(g, (x) => x.props["data-slot"] === "avatar-more").length).toBe(0);
   });
