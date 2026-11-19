@@ -393,7 +393,7 @@ async function prepare(page: Page, s: Scene) {
       try {
         localStorage.setItem("ai.locale", "vi");
         localStorage.setItem("assistant:open", "0");
-        if (theme === "dark") localStorage.setItem("theme", "dark");
+        if (theme === "dark") localStorage.setItem("ai.theme", "dark");
       } catch {
         /* storage bị chặn */
       }
@@ -401,10 +401,27 @@ async function prepare(page: Page, s: Scene) {
     [s.theme],
   );
   await installHub(page, s.signedIn);
+  // CR-190: Tin nhắn đọc danh bạ nhóm; không giả thì 404 ⇒ màn lỗi. Danh bạ rỗng ⇒ trạng thái rỗng ổn định.
+  if (s.name === "messages-mobile")
+    await page.route("**/pack/contracts/messages/directory*", (r) =>
+      r.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ groups: [] }),
+      }),
+    );
   await page.setViewportSize(s.size);
   await page.goto(s.path);
   await page.addStyleTag({ content: HIDE });
   await s.ready(page).waitFor();
+  // Chặn chụp nhầm: tối thật khi <html> có class `dark` và data-theme=dark (app đọc `ai.theme`).
+  const isDark = await page.evaluate(
+    () =>
+      document.documentElement.classList.contains("dark") &&
+      document.documentElement.dataset.theme === "dark",
+  );
+  if (isDark !== (s.theme === "dark"))
+    throw new Error(`Cảnh ${s.name}: giao diện ${s.theme} nhưng <html> ${isDark ? "tối" : "sáng"}`);
   await page.evaluate(() => document.fonts.ready);
   await s.act?.(page);
 }
