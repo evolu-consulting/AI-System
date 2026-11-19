@@ -170,14 +170,13 @@ test("CR169-J2 · Hà thấy số chưa đọc ở «Tin nhắn», mở ⇒ tin 
   await h.ctx.close();
 });
 
-test("CR169-J3 · Vy: lọc chip công ty (Preschool / công ty mình) và tìm theo tên ngay trong danh sách cuộc", async ({
+test("CR169-J3 · Vy: mở nhóm công ty đối tác (Preschool) và tìm theo tên ngay trong danh sách cuộc", async ({
   browser,
 }) => {
   const { ctx, page } = await open(browser, EA, WHO.vy);
   await page.goto("/contracts/messages");
-  // CR-178: mặc định «Tất cả» = cuộc gần đây (gồm cả cuộc với Hà), nhãn công ty cam cạnh tên
+  // CR-190: «Tất cả» = danh bạ nhóm; công ty đối tác là nhóm (mặc định thu khi không có chưa đọc) ⇒ mở nhóm rồi mới thấy cuộc với Hà
   await expect(page.getByTestId("tab-all")).toHaveAttribute("aria-pressed", "true");
-  await expect(rowOf(page, NAME.ha)).toBeVisible();
   await pickPartner(page, CO.b.name);
   await expect(rowOf(page, NAME.ha)).toHaveCount(1);
   await expect(rowOf(page, NAME.ha).getByTestId("conv-company")).toContainText(CO.b.name);

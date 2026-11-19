@@ -91,9 +91,10 @@ test("tin tới ⇒ dòng của người gửi lên đầu nhóm, «Chưa đọc
   const first = group.getByTestId("conv-row").first();
   await expect(first).toContainText(FROM);
   await expect(first).toHaveAttribute("data-unread", "true");
-  await expect(first.getByTestId("conv-unread")).toHaveText("1");
+  // dữ liệu dùng chung với spec khác (A có thể đã nhắn B trước đó) ⇒ chỉ cần ≥ 1 tin chưa đọc
+  await expect(first.getByTestId("conv-unread")).toHaveText(/^([1-9]\d*|99\+)$/);
   await expect(group.getByTestId("dir-group-unread")).toBeVisible();
-  await expect(b.getByTestId("tab-unread-n")).toHaveText("1");
+  await expect(b.getByTestId("tab-unread-n")).toHaveText(/^([1-9]\d*|99\+)$/);
 
   // «Chưa đọc» chỉ còn cuộc chưa đọc
   await b.getByTestId("tab-unread").click();

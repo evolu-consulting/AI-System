@@ -23,7 +23,7 @@ describe("CR-190 · mặc định mở/thu theo chưa đọc lúc tải đầu",
     expect(isOpen({}, "internal", false, true)).toBe(true);
     expect(isOpen({ internal: false }, "internal", false, true)).toBe(true);
   });
-  it("mặc định chỉ tính một lần: hết chưa đọc không tự thu, nhóm thu vẫn thu khi có chưa đọc mới", () => {
+  it("mặc định chỉ mở thêm, không tự thu: hết chưa đọc vẫn mở, nhóm thu có chưa đọc mới thì mở", () => {
     const first = freezeDefaults({}, [
       { key: "a", unread: 2 },
       { key: "b", unread: 0 },
@@ -33,7 +33,8 @@ describe("CR-190 · mặc định mở/thu theo chưa đọc lúc tải đầu",
       { key: "b", unread: 3 },
     ]);
     expect(isOpen({}, "a", later.a, false)).toBe(true);
-    expect(isOpen({}, "b", later.b, false)).toBe(false);
+    expect(isOpen({}, "b", later.b, false)).toBe(true);
+    expect(isOpen({ b: false }, "b", later.b, false)).toBe(false);
   });
 });
 

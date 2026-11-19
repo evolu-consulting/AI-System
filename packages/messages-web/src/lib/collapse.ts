@@ -27,13 +27,13 @@ export function writeOpen(
   }
 }
 
-/** Mặc định mở/thu của mỗi nhóm CHỈ tính lần đầu thấy nhóm (có chưa đọc ⇒ mở): sau đó hết chưa đọc không tự thu. */
+/** Mặc định mở/thu của mỗi nhóm chỉ đi MỘT chiều: có chưa đọc (lúc tải đầu hoặc tin tới sau đó) ⇒ mở; hết chưa đọc không tự thu. */
 export const freezeDefaults = (
   prev: Readonly<Record<string, boolean>>,
   groups: readonly { key: string; unread: number }[],
 ): Record<string, boolean> => {
   const out: Record<string, boolean> = { ...prev };
-  for (const g of groups) if (!(g.key in out)) out[g.key] = g.unread > 0;
+  for (const g of groups) out[g.key] = out[g.key] === true || g.unread > 0;
   return out;
 };
 
