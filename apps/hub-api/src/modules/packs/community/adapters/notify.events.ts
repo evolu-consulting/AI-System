@@ -15,7 +15,7 @@ import {
   postMentionText,
 } from "../domain/notify.rules";
 import { commentCandidates, wantedOnly } from "./notify.repo";
-import { mentionTargets } from "./post-mention.repo";
+import { mentionTargets, mentionTenantsLive } from "./post-mention.repo";
 import { savedUsers } from "./quote.repo";
 
 /** Phần repo trong tx mà `PackUow` đưa cho gói (`notify` do bộ khung ghép sẵn). */
@@ -229,9 +229,17 @@ export function communityEvents(d: CommunityEventDeps) {
         const post = { id: i.postId, title: i.titleMasked };
         const o = { actor: i.actor.name, ref: i.postId };
         const text = postMentionText(post, o);
+        // soát #2: người công ty khác chỉ nhận chuông nếu NGAY BÂY GIỜ công ty còn kết nối + còn trong «Ai thấy bài» (DEFINER, tx hệ thống)
+        const far = [...new Set(targets.flatMap((x) => (x.tenant ? [x.tenant] : [])))];
+        const live = new Set(
+          far.length > 0
+            ? await d.uow.system(i.tenantId, (r) => mentionTenantsLive(r.tx, i.postId, far))
+            : [],
+        );
         const byTenant = new Map<string, string[]>();
         for (const x of targets) {
           if (x.id === i.actor.userId) continue;
+          if (x.tenant && !live.has(x.tenant)) continue;
           const t = x.tenant ?? i.tenantId;
           byTenant.set(t, [...(byTenant.get(t) ?? []), x.id]);
         }

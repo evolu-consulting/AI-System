@@ -29,6 +29,9 @@ export type PeopleReader = (
   },
 ) => Promise<Person[]>;
 
+/** Thoát ký tự đặc biệt của LIKE/ILIKE (, %, _) trước khi ghép `%q%`. */
+export const escapeLike = (q: string): string => q.replace(/[\\%_]/g, "\\$&");
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const clean = (xs: readonly string[] | undefined): string[] => [
   ...new Set((xs ?? []).filter((i) => UUID_RE.test(i))),
@@ -41,7 +44,7 @@ export function peopleReader(db: Db): PeopleReader {
     const foreign = clean(o.foreignIds);
     if ((own.length === 0 && conn.length === 0 && foreign.length === 0) || !UUID_RE.test(tenantId))
       return [];
-    const q = (o.q ?? "").trim().replace(/[%_]/g, "$&");
+    const q = escapeLike((o.q ?? "").trim());
     const arr = (x: string[]) =>
       sql`array(select jsonb_array_elements_text(${JSON.stringify(x)}::jsonb))::uuid[]`;
     const rows = await withHubScope(db, { kind: "system" }, (tx) =>

@@ -8,6 +8,9 @@ import type { PackUow } from "../../kit/public";
 import type { Access } from "./community-access";
 
 export const GOODS_MAX = 8;
+
+/** Thoát ký tự đặc biệt của ILIKE (, %, _). */
+export const escapeLike = (q: string): string => q.replace(/[\\%_]/g, "\\$&");
 export type GoodsCatalog = (
   who: Access["who"],
   q: string,
@@ -19,14 +22,20 @@ export const unitOf = (qty: string | null | undefined): string => {
   return (m?.[1] ?? "").trim().slice(0, 40);
 };
 
-export async function postedGoods(tx: Tx, q: string, limit: number): Promise<GoodsSuggestion[]> {
-  const like = `%${q.replace(/[%_]/g, "$&")}%`;
+export async function postedGoods(
+  tx: Tx,
+  tenantId: string,
+  q: string,
+  limit: number,
+): Promise<GoodsSuggestion[]> {
+  const like = `%${escapeLike(q)}%`;
   const rows = await tx.execute<{ name: string; qty: string | null; price: string | null }>(sql`
     select distinct on (lower(p.fields_raw ->> 'product'))
       p.fields_raw ->> 'product' as name, p.fields_raw ->> 'qty' as qty,
       case when p.type = 'sell' then p.fields_raw ->> 'price' end as price
     from community.posts p
-    where p.author_org is null and p.type in ('sell', 'buy') and coalesce(p.fields_raw ->> 'product', '') <> ''
+    where p.tenant_id = ${tenantId}::uuid and p.author_org is null and p.type in ('sell', 'buy')
+      and p.status = 'active' and not p.hidden and p.moderation in ('none', 'approved') and coalesce(p.fields_raw ->> 'product', '') <> ''
       and (${q} = '' or p.fields_raw ->> 'product' ilike ${like})
     order by lower(p.fields_raw ->> 'product'), p.created_at desc
     limit ${limit}::int`);
@@ -47,7 +56,9 @@ export async function suggestGoods(
 ): Promise<GoodsSuggestion[]> {
   if (a.org !== null) return [];
   const term = q.trim();
-  const posted = await uow.tenant(a.who, ({ tx }) => postedGoods(tx, term, GOODS_MAX));
+  const posted = await uow.tenant(a.who, ({ tx }) =>
+    postedGoods(tx, a.who.tenantId, term, GOODS_MAX),
+  );
   const cat = catalog ? await catalog(a.who, term, GOODS_MAX).catch(() => []) : [];
   const seen = new Set<string>();
   return [...cat, ...posted]

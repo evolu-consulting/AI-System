@@ -109,6 +109,14 @@ export const BuyFieldsSchema = z.strictObject({
 export type SellFields = z.infer<typeof SellFieldsSchema>;
 export type BuyFields = z.infer<typeof BuyFieldsSchema>;
 
+/** CR-191 · danh sách id TENANT cách nhau dấu phẩy: mỗi phần tử phải là UUID (sai ⇒ 400, không chạm SQL). */
+const UuidCsv = z
+  .string()
+  .max(1000)
+  .refine((v) => v === "" || v.split(",").every((x) => z.uuid().safeParse(x.trim()).success), {
+    message: "tenants phải là danh sách UUID",
+  });
+
 const Body = Text(5000);
 const Title = Text(200);
 const Cats = z.array(z.string().min(1).max(80)).max(10).default([]);
@@ -189,7 +197,7 @@ export const MentionablePeopleQuerySchema = z.strictObject({
   mode: z.enum(AUDIENCE_MODES).optional(),
   cats: z.string().max(1000).optional(),
   /** CR-191 · id TENANT công ty đã kết nối (mode=companies), cách nhau dấu phẩy. */
-  tenants: z.string().max(1000).optional(),
+  tenants: UuidCsv.optional(),
   /** CR-191 · "0" = không gồm người công ty đã kết nối (ô bình luận chưa nhắc chéo công ty). */
   connected: z.enum(["0", "1"]).optional(),
   /** CR-191 · "1" = thêm người công ty đã kết nối NGOÀI «Ai thấy bài» (kèm `outside`) để ô soạn hỏi thêm công ty / bỏ nhắc. */
@@ -220,7 +228,7 @@ export type MentionablePerson = z.infer<typeof MentionablePersonSchema>;
 /** CR-191 · `GET /pack/community/audience-connected`: công ty ĐÃ KẾT NỐI + công ty đó có thấy bài với «Ai thấy bài» `mode`/`tenants` không. */
 export const ConnectedAudienceQuerySchema = z.strictObject({
   mode: z.enum(AUDIENCE_MODES).default("all"),
-  tenants: z.string().max(1000).optional(),
+  tenants: UuidCsv.optional(),
 });
 export const ConnectedAudienceCompanySchema = z.strictObject({
   tenantId: z.string(),

@@ -39,6 +39,7 @@ import {
 import type { CommunityEvents } from "./notify.events";
 import { partnerRows } from "./org.repo";
 import { type FeedFilter, type FeedRaw, feedQuery, type PostRow, postById } from "./post.sql";
+import { pruneForeignMentions } from "./post-mention.repo";
 import { type MentionDeps, resolvePeople, saveMentions } from "./post-mention.service";
 import {
   applyAction,
@@ -265,6 +266,7 @@ export async function update(
     input.mentionUserIds === undefined
       ? null
       : await resolvePeople(mention, a, input.mentionUserIds);
+  const narrowed = input.audience !== undefined && !people; // soát #1
   const moderated = await moderationEnabled(flows, a.who.tenantId);
   const { row, priceEdit, reopened, added, titleMasked } = await uow.tenant(
     a.who,
@@ -279,6 +281,8 @@ export async function update(
       const audience = checkAudience(a, input.audience);
       await checkTenants(tx, audience);
       await updatePost(tx, id, content, { cats: input.cats ?? null, audience });
+      // soát #1: thu hẹp «Ai thấy bài» mà không gửi lại danh sách nhắc ⇒ bỏ người công ty kết nối không còn thấy bài
+      await pruneForeignMentions(tx, id, narrowed);
       await replaceChildren(
         tx,
         { tenantId: a.who.tenantId, postId: id },

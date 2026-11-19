@@ -139,3 +139,33 @@ export async function mentionTenantsOk(
       array(select jsonb_array_elements_text(${arr(tenants)}::jsonb))::uuid[]) t`);
   return rows.map((x) => x.t);
 }
+
+/** Soát #2 · như `mentionTenantsOk` nhưng cho tx HỆ THỐNG (chuông chạy nền, kiểm lại kết nối + «Ai thấy bài» NGAY lúc gửi). */
+export async function mentionTenantsLive(
+  tx: Tx,
+  postId: string,
+  tenants: readonly string[],
+): Promise<string[]> {
+  if (tenants.length === 0) return [];
+  const rows = await tx.execute<{ t: string }>(sql`
+    select t::text as t from community.mention_tenants_live(${postId}::uuid,
+      array(select jsonb_array_elements_text(${arr(tenants)}::jsonb))::uuid[]) t`);
+  return rows.map((x) => x.t);
+}
+
+/** Soát #1 · sửa bài thu hẹp «Ai thấy bài» mà không gửi lại danh sách nhắc ⇒ xoá người công ty kết nối không còn đạt (MỘT câu, trong tx sửa bài). */
+export async function pruneForeignMentions(
+  tx: Tx,
+  postId: string,
+  narrowed: boolean,
+): Promise<number> {
+  if (!narrowed) return 0;
+  const rows = await tx.execute<{ user_id: string }>(sql`
+    with ok as (select t from community.mention_tenants_ok(${postId}::uuid,
+      array(select distinct user_tenant from community.post_mentions where post_id = ${postId}::uuid and user_tenant is not null)) t)
+    delete from community.post_mentions m
+     where m.post_id = ${postId}::uuid and m.user_tenant is not null
+       and m.user_tenant not in (select t from ok)
+    returning m.user_id::text as user_id`);
+  return rows.length;
+}

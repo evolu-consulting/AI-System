@@ -9,9 +9,13 @@ import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
 import { type Cast, seedCast } from "../../../../../../../tests/acceptance/com-c3/_support/cast";
 import { mapError } from "../../../../lib/errors";
+import { goodsCatalogModule } from "../../contracts/goods-catalog.mount";
 import { pgExternalOrgResolver } from "../../kit/adapters/ext-org.pg";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
+import { packHosts } from "../../kit/adapters/pack-hosts";
+import { createPackUow } from "../../kit/adapters/pack-uow";
 import { communityModule } from "../community.mount";
+import { communityEvents } from "./notify.events";
 
 let own: Sql;
 let db: Db;
@@ -104,7 +108,12 @@ beforeAll(async () => {
     } as never);
     await next();
   });
-  h.route("/", communityModule(db, view(), pgExternalOrgResolver(db), {}));
+  h.route(
+    "/",
+    communityModule(db, view(), pgExternalOrgResolver(db), {
+      goods: goodsCatalogModule(db, view()),
+    }),
+  );
   h.onError((e, ctx) => {
     const m = mapError(e);
     return ctx.json(m.body, m.status);
@@ -210,6 +219,83 @@ describe("CR-191 · «@» người công ty đã kết nối", () => {
       { name: "Băng keo 5cm", unit: "cuộn", price: "12000", source: "posted" },
     ]);
     expect((await call("hM", "GET", "/goods-suggest?q=zzz")).json).toEqual([]);
+    expect((await call("s1a", "GET", "/goods-suggest")).json).toEqual([]);
+  });
+
+  it("soát #4 · tenants không phải UUID ⇒ 400 (không chạm SQL)", async () => {
+    expect((await call("hM", "GET", "/audience-connected?mode=companies&tenants=abc")).status).toBe(
+      400,
+    );
+    expect(
+      (await call("hM", "GET", "/mentionable-people?type=note&mode=companies&tenants=x,y")).status,
+    ).toBe(400);
+  });
+
+  it("soát #1 · sửa bài thu hẹp «Ai thấy bài» mà không gửi lại danh sách nhắc ⇒ bỏ người công ty kết nối không còn thấy bài", async () => {
+    const r = await call("hA", "POST", "/posts", note([c.hB], aud("all"), "Sẽ thu hẹp"));
+    expect(r.status).toBe(201);
+    const n = async () =>
+      (
+        (await own`select count(*)::int as n from community.post_mentions where post_id = ${r.json.id}::uuid`) as unknown as {
+          n: number;
+        }[]
+      )[0]?.n;
+    expect(await n()).toBe(1);
+    // sửa chữ, giữ «Ai thấy bài» (không gửi audience) ⇒ lời nhắc còn
+    expect((await call("hM", "PATCH", `/posts/${r.json.id}`, { body: "Đã sửa chữ" })).status).toBe(
+      200,
+    );
+    expect(await n()).toBe(1);
+    const up = await call("hM", "PATCH", `/posts/${r.json.id}`, { audience: aud("internal") });
+    expect(up.status).toBe(200);
+    expect(await n()).toBe(0);
+  });
+
+  it("soát #2 · chuông kiểm lại kết nối + «Ai thấy bài» NGAY lúc gửi (kể cả sau duyệt): thu hẹp hoặc ngắt trước khi gửi ⇒ không chuông", async () => {
+    const ev = communityEvents({
+      uow: createPackUow(db, "community", (tx) => ({ tx })),
+      hosts: packHosts(db, view(), "community"),
+      orgMembers: (t, ids) => pgExternalOrgResolver(db).orgMembers(t, ids),
+    });
+    const r = await call("hA", "POST", "/posts", note([c.hB], aud("all"), "Chờ gửi chuông"));
+    expect(r.status).toBe(201);
+    const send = () =>
+      ev.emitPostMentions({
+        tenantId: c.A,
+        postId: r.json.id,
+        actor: { userId: c.hA, name: "A" },
+        titleMasked: "Chờ gửi chuông",
+      });
+    // chuông lúc đăng đã gửi (khoá chống trùng theo bài + người) ⇒ xoá để thử đúng đường «gửi sau» (như sau duyệt)
+    await own`delete from hub.notifications where user_id = ${c.hB}::uuid and kind = 'community.mention'`;
+    const base = (await bells(c.hB)).length;
+    await send(); // còn kết nối + còn trong «Ai thấy bài» ⇒ có chuông
+    expect((await bells(c.hB)).length).toBe(base + 1);
+    await own`update community.posts set aud_mode = 'internal' where id = ${r.json.id}::uuid`; // thu hẹp trước khi gửi
+    await send();
+    expect((await bells(c.hB)).length).toBe(base + 1);
+    await own`update community.posts set aud_mode = 'all' where id = ${r.json.id}::uuid`;
+    await own`update hub.partner_links set blocked_at = now() where from_tenant = ${c.B} and to_tenant = ${c.A}`; // ngắt trước khi gửi
+    await send();
+    expect((await bells(c.hB)).length).toBe(base + 1);
+    await own`update hub.partner_links set blocked_at = null where from_tenant = ${c.B} and to_tenant = ${c.A}`;
+  });
+
+  it("gợi ý hàng hoá nối «Sản phẩm & Giá»: Sản phẩm & Giá trước kèm đơn vị + giá gần nhất, bỏ trùng tên với hàng đã đăng, người không có quyền đọc gói ⇒ chỉ hàng đã đăng", async () => {
+    await own`insert into contracts.products (tenant_id, name, unit, grp) values
+      (${c.A}, 'Băng keo 5cm', 'cuộn', 'goods'), (${c.A}, 'Thùng phi 200L', 'thùng', 'goods')`;
+    await own`insert into contracts.product_supplier_prices (tenant_id, product_id, supplier_name, kind, price, unit, source, seen_on)
+      select tenant_id, id, 'NCC', 'new', 9000, 'cuộn', 'manual', current_date - 5 from contracts.products where tenant_id = ${c.A} and name = 'Băng keo 5cm'`;
+    await own`insert into contracts.product_supplier_prices (tenant_id, product_id, supplier_name, kind, price, unit, source, seen_on)
+      select tenant_id, id, 'NCC', 'new', 15000, 'cuộn', 'manual', current_date from contracts.products where tenant_id = ${c.A} and name = 'Băng keo 5cm'`;
+    const g = await call("hM", "GET", "/goods-suggest");
+    expect(g.json).toEqual([
+      { name: "Băng keo 5cm", unit: "cuộn", price: "15.000", source: "catalog" },
+      { name: "Thùng phi 200L", unit: "thùng", source: "catalog" },
+    ]);
+    expect(
+      (await call("hM", "GET", "/goods-suggest?q=thung")).json.map((x: { name: string }) => x.name),
+    ).toEqual(["Thùng phi 200L"]);
     expect((await call("s1a", "GET", "/goods-suggest")).json).toEqual([]);
   });
 

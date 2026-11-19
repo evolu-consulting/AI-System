@@ -3,7 +3,7 @@ id: cr191-composer-audience
 lát: cr191-composer-audience
 cr: CR-191
 làn: đầy đủ
-migration: pack-community 0027
+migration: pack-community 0027, 0029
 phụ thuộc: cr191-audience-schema, cr191-feed-merge-rls, cr191-feed-ui
 ---
 ## Plan (ngắn)
@@ -30,7 +30,11 @@ BR-191-5/6/7/8: đầu bảng tin chỉ dòng «Viết bài…» ⇒ hộp tho�
 - «Thêm công ty vào» chuyển «Ai thấy bài» sang «Chọn công ty» có công ty đó (giữ công ty đã chọn); từ «Nhà cung cấp/Khách hàng/Chỉ nội bộ» chỉ còn công ty đó (+ đối tác đã chọn).
 - Số lượng + đơn vị gộp «100 cuộn» vào `fields.qty` (không thêm trường); `qty` giờ không bắt buộc ở contract (BR-191-6).
 - Mặc định «Ai thấy bài» = Tất cả đối tác với mọi loại bài (trước: Cần bán/mua theo nhóm hàng).
-- Gợi ý hàng: nguồn «hàng công ty đã đăng» (một câu, RLS) + cổng tuỳ chọn `goods` (Sản phẩm & Giá) ⇒ CHƯA nối (xem Việc còn lại).
+- Gợi ý hàng: «Sản phẩm & Giá» (`goods-catalog.mount.ts`: `contracts.products` + giá gần nhất ở `product_supplier_prices`, cần quyền đọc gói contracts, một câu) gộp với «hàng công ty đã đăng» (một câu, tenant tường minh, chỉ bài còn hiệu lực), bỏ trùng tên, ≤ 8, tổng 2 câu cố định. Đơn giá = giá GẦN NHẤT trong Sản phẩm & Giá (giá nhập), người dùng sửa được.
+- Soát Opus #1: sửa bài có `audience` mà không gửi `mentionUserIds` ⇒ `pruneForeignMentions` (một câu trong tx sửa bài) xoá người công ty kết nối không còn đạt `mention_tenants_ok`.
+- Soát Opus #2: chuông kiểm lại ngay lúc gửi bằng DEFINER biến thể hệ thống `community.mention_tenants_live` (migration 0029, `when` 1807000720000; không đòi `app.user_id`).
+- Soát Opus #7: `emitPostMentions` chạy MỘT vòng `uow.system(tenant người nhận)` cho mỗi công ty (≤ 10 người nhắc ⇒ vài công ty), vì `notify.enqueue` chỉ nhận người cùng tenant của tx; tenant người nhận đọc từ `post_mentions.user_tenant` (đã qua DEFINER lúc ghi), không từ lời gọi, và chỉ gửi nếu `mention_tenants_live` còn đạt.
+- Soát Opus #3/#4: `escapeLike` thoát đúng (backslash, %, _); `tenants` ở contract phải là danh sách UUID (sai ⇒ 400).
 - `composer-pref.ts` (nhớ mở/thu gọn) không còn dùng, để nguyên (nợ nhỏ).
 
 ## Delta (so với docs/current)
@@ -64,11 +68,16 @@ Trạng thái gộp: chưa gộp
 - Kịch bản: khi chọn Bỏ nhắc thì gỡ «@Tên» khỏi thân bài [test: e2e/community-web/cr191-composer-audience.cm.ts » «@» ngoài «Ai thấy bài»: Bỏ nhắc ⇒ gỡ «@Tên» khỏi thân bài và bỏ người đó]
 - Kịch bản: khi nhắc trong thân bài thì chỉ người còn «@Tên» trong chữ được gửi [test: apps/workspace-web/src/modules/community/domain/composer-audience.test.ts » «@» trong thân bài: chỉ người còn «@Tên» trong chữ mới được nhắc, Bỏ nhắc xoá «@Tên»]
 - Kịch bản: khi bấm Thêm công ty vào thì chuyển «Chọn công ty» và giữ công ty đã chọn [test: apps/workspace-web/src/modules/community/domain/composer-audience.test.ts » Thêm công ty vào: sang «Chọn công ty» có công ty đó, giữ công ty đã chọn, «Chọn công ty» rỗng ⇒ lỗi]
+- Kịch bản: khi sửa bài thu hẹp «Ai thấy bài» mà không gửi lại danh sách nhắc thì bỏ người công ty kết nối không còn thấy bài [test: apps/hub-api/src/modules/packs/community/adapters/post-mention-connected.int.test.ts » soát #1 · sửa bài thu hẹp «Ai thấy bài» mà không gửi lại danh sách nhắc ⇒ bỏ người công ty kết nối không còn thấy bài]
+- Kịch bản: khi gửi chuông (kể cả sau duyệt) mà công ty đã ngắt kết nối hoặc không còn trong «Ai thấy bài» thì không chuông [test: apps/hub-api/src/modules/packs/community/adapters/post-mention-connected.int.test.ts » soát #2 · chuông kiểm lại kết nối + «Ai thấy bài» NGAY lúc gửi (kể cả sau duyệt): thu hẹp hoặc ngắt trước khi gửi ⇒ không chuông]
+- Kịch bản: khi tenants không phải UUID thì 400 [test: apps/hub-api/src/modules/packs/community/adapters/post-mention-connected.int.test.ts » soát #4 · tenants không phải UUID ⇒ 400 (không chạm SQL)]
+- Kịch bản: khi gợi ý hàng thì Sản phẩm & Giá đứng trước kèm đơn vị và giá gần nhất, bỏ trùng tên, người không có quyền đọc gói chỉ thấy hàng đã đăng [test: apps/hub-api/src/modules/packs/community/adapters/post-mention-connected.int.test.ts » gợi ý hàng hoá nối «Sản phẩm & Giá»: Sản phẩm & Giá trước kèm đơn vị + giá gần nhất, bỏ trùng tên với hàng đã đăng, người không có quyền đọc gói ⇒ chỉ hàng đã đăng]
+- Kịch bản: khi tìm hàng có ký tự đặc biệt thì được thoát đúng [test: apps/hub-api/src/modules/packs/kit/adapters/people-reader.test.ts » thoát ký tự đặc biệt của LIKE (gạch chéo ngược, phần trăm, gạch dưới)]
 - Sửa test khoá do spec đổi nghĩa (BR-191-5/8): `apps/workspace-web/.../domain/post-mention.test.ts` (`mentionScope` thêm `tenants`, `outside`); e2e `composer.cm.ts` (ô đăng luôn một dòng «Viết bài…»; hộp thoại; Số lượng + Đơn vị).
 
 ## Việc còn lại
 - e2e khoá còn dựa vào ô đăng cũ (nút «Cần bán»/«Nhắc tên» trong `composer`, `composer-collapse`): `cr145-post-mention.cs.ts`, `cr186-composer.cm.ts`, `cr186-mention-store.cm.ts`, `fix-cr186-ui.cm.ts`, `cr147-feed.cm.ts`, `feed.cm.ts`, `cr129-media.cm.ts`, `cr129-mention.cs.ts`, `flows.cs.ts`, `roles.cs.ts` — QC sửa theo hộp thoại mới (`composer-dialog`, nút «Viết bài…»). e2e cr191-composer-audience chưa chạy.
-- Gợi ý hàng từ Sản phẩm & Giá: cổng `goods` (`CommunityDeps`/`community.mount`) đã có nhưng CHƯA nối với `contracts.products` + giá (cần cổng đọc chéo gói); hiện chỉ có nguồn «hàng đã đăng».
+- e2e khoá SẼ VỠ vì ô đăng mới (QC sửa cuối đợt, danh sách ở trên): nút «Cần bán»/«Nhắc tên»/`composer-collapse` trong `composer`, nhớ mở/thu gọn, «Gợi ý mẫu»; nhãn «Tất cả bạn bè»→«Tất cả đối tác», «Từng công ty»→«Chọn công ty…».
 - Bình luận chéo công ty, ảnh thật người công ty khác: lát `cr191-cross-comment`, `cr191-cross-person-card`.
 - Hộp «@» của ô soạn dùng hộp chọn nhiều người (checkbox) chung với bình luận, chưa là danh sách thả ngay con trỏ.
 - Nợ: `application/composer-pref.ts` không còn dùng.

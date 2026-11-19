@@ -176,6 +176,13 @@
       "when": 1807000680000,
       "tag": "0027_cr191_mention_connected",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1807000720000,
+      "tag": "0029_cr191_mention_live",
+      "breakpoints": true
     }
   ]
 }

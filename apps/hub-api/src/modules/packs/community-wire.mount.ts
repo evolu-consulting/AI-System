@@ -5,6 +5,7 @@ import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
 import type { Redis } from "ioredis";
 import type { TenantLimitsOf } from "../../lib/ai-client/ai-client.env";
+import type { GoodsCatalog } from "./community/adapters/goods-suggest.service";
 import type {
   CommunityBlobs,
   CompanyBrandReader,
@@ -21,6 +22,7 @@ import { productsRepo } from "./contracts/adapters/products.repo";
 import { supplierQuoteRepo } from "./contracts/adapters/supplier-quote.repo";
 import { saveQuoteUsecase } from "./contracts/application/save-quote.usecase";
 import { companyBrandModule } from "./contracts/brand.mount";
+import { goodsCatalogModule } from "./contracts/goods-catalog.mount";
 import { hostBookModule } from "./contracts/host-book.mount";
 import { supplierScores } from "./contracts/partners.mount";
 import {
@@ -48,6 +50,8 @@ export type CommunityPorts = {
   caps: ContractsCapReader;
   /** CR-130 · ADR-0043: cổng ghi liên kết đối tác (duyệt yêu cầu tham gia ⇒ vai + hồ sơ SHT, cùng tx). */
   partners: PartnerLinker;
+  /** CR-191 · «Sản phẩm & Giá» của công ty cho gợi ý hàng hoá. */
+  goods: GoodsCatalog;
 };
 
 export function communityPorts(
@@ -83,7 +87,14 @@ export function communityPorts(
       return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
     },
   };
-  return { quotes, hostBook, brand: companyBrandModule(db), caps, partners: partnerLinker() };
+  return {
+    quotes,
+    hostBook,
+    brand: companyBrandModule(db),
+    caps,
+    partners: partnerLinker(),
+    goods: goodsCatalogModule(db, view),
+  };
 }
 
 /** `packs.mount.ts` gọi: gắn `/pack/community/*` kèm hai cổng đã nối contracts. */
