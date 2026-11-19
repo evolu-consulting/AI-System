@@ -321,3 +321,47 @@ describe("CR-151 · trang thành viên (listOrgMembers)", () => {
     expect(OrgMembersQuerySchema.parse({}).limit).toBe(50);
   });
 });
+
+describe("CR-187 · BR-187-2 · thành viên và cơ cấu chỉ người nội bộ", () => {
+  const EXT_ORG = "01900000-0000-7000-8000-0000000f1031";
+  const EXT = "01900000-0000-7000-8000-0000000f1032";
+  const ADMIN2 = "01900000-0000-7000-8000-0000000f1033"; // quản trị khác người tạo dữ liệu (N2)
+  const callAs = (userId: string): OrgCall => ({ ...call, actor: { ...call.actor, userId } });
+  beforeEach(async () => {
+    await owner`insert into admin.external_orgs (id, tenant_id, name) values (${EXT_ORG}, ${TID}, 'Đối tác A')`;
+    await owner`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, email, kind, external_org_id)
+      values (${EXT}, ${TID}, 'aaa-doitac', 'x', 'Aaa Đối tác', 'member', 'doitac@x.test', 'external', ${EXT_ORG})`;
+    await user(ADMIN2, TID, "cuong", "tenant_admin");
+  });
+  test("getOrg: người ngoài không có trong danh sách thành viên (quản trị khác người tạo vẫn thấy đúng)", async () => {
+    const org = await getOrg(callAs(ADMIN2), undefined);
+    const ids = org.members.map((m) => m.user_id);
+    expect(ids).not.toContain(EXT);
+    expect(ids).toEqual(expect.arrayContaining([ADMIN, ADMIN2, U1, U2, U3]));
+  });
+  test("listOrgMembers: người ngoài không có trong trang, không tính vào tổng, tìm theo tên cũng không ra", async () => {
+    const page = await listOrgMembers(callAs(ADMIN2), { limit: 50, offset: 0 });
+    expect(page.items.map((m) => m.user_id)).not.toContain(EXT);
+    expect(page.total).toBe(5);
+    const s = await listOrgMembers(callAs(ADMIN2), { q: "doitac", limit: 50, offset: 0 });
+    expect([s.items.length, s.total]).toEqual([0, 0]);
+  });
+  test("gán người ngoài làm quản lý / được quản lý / trưởng phòng ⇒ 422 EXTERNAL_USER_NOT_ALLOWED, không ghi", async () => {
+    const asMgr = await setManager(call, undefined, U1, { manager_id: EXT }).catch((e) => e);
+    const managed = await setManager(call, undefined, EXT, { manager_id: U1 }).catch((e) => e);
+    expect([asMgr, managed].map((e) => (e as { code?: string }).code)).toEqual([
+      "EXTERNAL_USER_NOT_ALLOWED",
+      "EXTERNAL_USER_NOT_ALLOWED",
+    ]);
+    const [g] = await owner<{ id: string }[]>`insert into admin.groups (tenant_id, key, name)
+      values (${TID}, 'kt', '{"vi":"Kế toán"}') returning id`;
+    const head = await setDepartment(call, undefined, g?.id as string, { head_user_id: EXT }).catch(
+      (e) => e,
+    );
+    expect((head as { code?: string }).code).toBe("EXTERNAL_USER_NOT_ALLOWED");
+    const [n] = await owner<
+      { n: number }[]
+    >`select count(*)::int as n from admin.user_managers where tenant_id = ${TID}`;
+    expect(n?.n).toBe(0);
+  });
+});

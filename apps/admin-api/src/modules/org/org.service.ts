@@ -35,14 +35,14 @@ type OrgRow = {
   departments: OrgResponse["departments"] | string;
 };
 
-/** MỘT câu: thành viên đang hoạt động (≤ ORG_MEMBERS_MAX) + quản lý, phòng ban + id thành viên. */
+/** CR-187 · BR-187-2: chỉ người nội bộ (đối tác không vào cơ cấu). MỘT câu: thành viên đang hoạt động (≤ ORG_MEMBERS_MAX) + quản lý, phòng ban + id thành viên. */
 export function getOrg(c: OrgCall, q: string | undefined): Promise<OrgResponse> {
   const t = tenantOf(c, q, "read");
   return withScope(c.ctx.db, c.scope, async (tx) => {
     const rows = (await tx.execute(sql`select
       coalesce((select json_agg(json_build_object('user_id', u.id, 'username', u.username,
           'display_name', u.display_name, 'manager_id', m.manager_id, 'job_title', pp.job_title) order by lower(u.display_name), u.id)
-        from (select * from admin.users where tenant_id = ${t}::uuid and active
+        from (select * from admin.users where tenant_id = ${t}::uuid and active and kind = 'internal'
               order by lower(display_name), id limit ${ORG_MEMBERS_MAX}::int) u
         left join admin.user_managers m on m.user_id = u.id and m.tenant_id = u.tenant_id
         left join hub.people_profiles pp on pp.user_id = u.id and pp.tenant_id = u.tenant_id), '[]'::json) as members,
@@ -58,7 +58,7 @@ export function getOrg(c: OrgCall, q: string | undefined): Promise<OrgResponse> 
   });
 }
 
-/** CR-151 · MỘT câu/trang: thành viên đang hoạt động (tìm tên/tên đăng nhập, limit/offset) + tên quản lý + tổng số. */
+/** CR-151 · CR-187: chỉ người nội bộ. MỘT câu/trang: thành viên đang hoạt động (tìm tên/tên đăng nhập, limit/offset) + tên quản lý + tổng số. */
 export function listOrgMembers(c: OrgCall, q: OrgMembersQuery): Promise<OrgMembersResponse> {
   const t = tenantOf(c, q.tenant_id, "read");
   const like = q.q ? likeArg(q.q) : null; // thoát `\ % _` ⇒ khớp đúng ký tự (như danh bạ thành viên)
@@ -70,7 +70,7 @@ export function listOrgMembers(c: OrgCall, q: OrgMembersQuery): Promise<OrgMembe
       left join admin.user_managers m on m.user_id = u.id and m.tenant_id = u.tenant_id
       left join admin.users mu on mu.id = m.manager_id and mu.tenant_id = u.tenant_id
       left join hub.people_profiles pp on pp.user_id = u.id and pp.tenant_id = u.tenant_id
-      where u.tenant_id = ${t}::uuid and u.active
+      where u.tenant_id = ${t}::uuid and u.active and u.kind = 'internal'
         and (${like}::text is null or u.display_name ilike ${like}::text or u.username ilike ${like}::text)
       order by lower(u.display_name), u.id limit ${q.limit}::int offset ${q.offset}::int`)) as unknown as (OrgMemberRow & {
         total: number;
